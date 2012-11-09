@@ -1,0 +1,720 @@
+//
+//     MINOTAUR -- It's only 1/2 bull
+//
+//     (C)opyright 2008 - 2012 The MINOTAUR Team.
+//
+
+/**
+ * \file NlPresHandler.cpp
+ * \brief Presolve nonlinear contraints.
+ * \author Ashutosh Mahajan, Argonne National Laboratory
+ */
+
+#include <cmath>
+#include <iomanip>
+#include <iostream>
+#include <string.h> // for memset
+
+#include "MinotaurConfig.h"
+#include "CGraph.h"
+#include "CNode.h"
+#include "Constraint.h"
+#include "Environment.h"
+#include "Function.h"
+#include "HessianOfLag.h"
+#include "LinearFunction.h"
+#include "Logger.h"
+#include "Node.h"
+#include "Problem.h"
+#include "VarBoundMod.h"
+#include "NlPresHandler.h"
+#include "NonlinearFunction.h"
+#include "Objective.h"
+#include "Option.h"
+#include "PreAuxVars.h"
+#include "ProblemSize.h"
+#include "SolutionPool.h"
+#include "Timer.h"
+#include "Variable.h"
+
+
+using namespace Minotaur;
+const std::string NlPresHandler::me_ = "NlPresHandler: ";
+
+NlPresHandler::NlPresHandler()
+  : env_(EnvPtr()),
+    eTol_(1e-6),
+    logger_(LoggerPtr()),
+    p_(ProblemPtr())
+{
+  stats_.cBnd = 0;
+  stats_.cImp = 0;
+  stats_.conDel = 0;
+  stats_.iters = 0;
+  stats_.nMods = 0;
+  stats_.time = 0;
+  stats_.varDel = 0;
+  stats_.vBnd = 0;
+}
+
+
+NlPresHandler::NlPresHandler(EnvPtr env, ProblemPtr p)
+  : env_(env),
+    eTol_(1e-6),
+    p_(p)
+{
+  logger_ = (LoggerPtr) new Logger((LogLevel)(env->getOptions()->
+      findInt("nlin_h_log_level")->getValue()));
+  stats_.cBnd = 0;
+  stats_.cImp = 0;
+  stats_.conDel = 0;
+  stats_.iters = 0;
+  stats_.nMods = 0;
+  stats_.time = 0;
+  stats_.varDel = 0;
+  stats_.vBnd = 0;
+}
+
+
+NlPresHandler::~NlPresHandler()
+{
+  env_.reset();
+}
+
+
+void  NlPresHandler::chkRed_(Bool *changed)
+{
+  ConstraintPtr c;
+  LinearFunctionPtr lf;
+  NonlinearFunctionPtr nlf;
+  Double lfu, lfl;
+  Double nlfu, nlfl;
+  Int error = 0;
+
+  for (ConstraintConstIterator cit=p_->consBegin(); cit!=p_->consEnd();
+       ++cit) {
+    c = *cit;
+    if (c->getFunctionType()!=Linear && c->getFunctionType()!=Constant) {
+      lf = c->getFunction()->getLinearFunction();
+      nlf = c->getFunction()->getNonlinearFunction();
+      lfu = lfl = 0.0;
+      nlfu = nlfl = 0.0;
+      if (lf) {
+        lf->computeBounds(&lfl, &lfu);
+      }
+      error = 0;
+      nlf->computeBounds(&nlfl, &nlfu, &error);
+      assert(error==0);
+      if (nlfl+lfl-eTol_ > c->getLb()) {
+        p_->changeBound(c, Lower, -INFINITY);
+        *changed = true;
+      }
+      if (nlfu+lfu+eTol_ < c->getUb() && c->getUb()<INFINITY) {
+        p_->changeBound(c, Upper, INFINITY);
+        *changed = true;
+      }
+      if (c->getUb()>=nlfu+lfu-eTol_ && c->getLb()<=nlfl+lfl+eTol_) {
+        p_->markDelete(c);
+        *changed = true;
+        ++stats_.conDel;
+      }
+    }
+  }
+}
+
+
+void  NlPresHandler::coeffImpr_(Bool *changed)
+{
+  ConstraintPtr c;
+  LinearFunctionPtr lf;
+  NonlinearFunctionPtr nlf;
+  Double ll, uu;
+  Double cu, cl;
+  Double a0;
+  VariablePtr z;
+
+  if (p_->getSize()->bins<1) {
+    return;
+  }
+  for (ConstraintConstIterator cit=p_->consBegin(); cit!=p_->consEnd();
+       ++cit) {
+    c = *cit;
+    if (c->getFunctionType()==Linear || c->getFunctionType()==Constant) {
+      continue;
+    }
+    if (c->getLb()>-INFINITY && c->getUb()<INFINITY) {
+      continue;
+    }
+    lf   = c->getFunction()->getLinearFunction();
+    if (!lf) {
+      //c->write(std::cout);
+      continue;
+    }
+    nlf   = c->getFunction()->getNonlinearFunction();
+    cu = c->getUb();
+    cl = c->getLb();
+    for (VariableGroupConstIterator it2=lf->termsBegin();
+         it2 != lf->termsEnd(); ++it2) {
+      z = it2->first;
+      a0 = it2->second;
+      if ((z->getType()!=Binary && z->getType()!=ImplBin)
+          || fabs(z->getUb()-z->getLb()-1) > eTol_
+          || p_->isMarkedDel(z)
+          || nlf->hasVar(z)) {
+        continue;
+      }
+      computeImpBounds_(c, z, 0.0, &ll, &uu);
+      if (uu < cu-eTol_ && uu+a0 >= cu) {
+        // constraint is redundant when z=0
+        assert(a0 > 0);
+        lf->incTerm(z, uu-cu);
+        p_->changeBound(c, Upper, uu);
+        *changed = true;
+        ++stats_.cImp;
+        break;
+      } else if (ll > cl+eTol_ && ll+a0 < cl) {
+        // constraint is redundant when z=0
+        assert(a0 < 0);
+        lf->incTerm(z, ll-cl);
+        p_->changeBound(c, Lower, ll);
+        *changed = true;
+        ++stats_.cImp;
+        break;
+      }
+      computeImpBounds_(c, z, 1.0, &ll, &uu);
+      if (uu < cu-eTol_ && uu-a0 > cu) {
+        // constraint is redundant when z=1
+        assert(a0 < 0);
+        lf->incTerm(z, cu-uu);
+        *changed = true;
+        ++stats_.cImp;
+        break;
+      } else if (ll > cl+eTol_ && ll-a0 < cl) {
+        // constraint is redundant when z=1
+        assert(a0 > 0);
+        lf->incTerm(z, cl-ll);
+        *changed = true;
+        ++stats_.cImp;
+        break;
+      }
+    }
+  }
+}
+
+
+void NlPresHandler::bin2LinF_(ProblemPtr p, LinearFunctionPtr lf,
+                              UInt nz, const UInt *irow,
+                              const UInt *jcol,
+                              const Double *values, PreAuxVarsPtr mod)
+{
+  VariablePtr v1, v2, v3;
+  LinearFunctionPtr lf3;
+  FunctionPtr f;
+  Double lb, ub;
+
+  for (UInt i=0; i<nz; ++i) {
+    if (fabs(values[i])>1e-12) {
+      v1 = p->getVariable(irow[i]);
+      v2 = p->getVariable(jcol[i]);
+      if (v1==v2) {
+        assert(Binary == v1->getType() || ImplBin == v1->getType());
+        lf->addTerm(v1, 0.5*values[i]);
+      } else if ((Binary == v1->getType() || ImplBin == v1->getType()) &&
+                 (Binary == v2->getType() || ImplBin == v2->getType())) {
+        v3 = p->newVariable(0.0, 1.0, ImplBin);
+        lf->incTerm(v3, values[i]);
+        lf3 = (LinearFunctionPtr) new LinearFunction();
+        lf3->addTerm(v3, 1.0);
+        lf3->addTerm(v1, -1.0);
+        f = (FunctionPtr) new Function(lf3);
+        p->newConstraint(f, -INFINITY, 0.0);
+
+        lf3 = (LinearFunctionPtr) new LinearFunction();
+        lf3->addTerm(v3, 1.0);
+        lf3->addTerm(v2, -1.0);
+        f = (FunctionPtr) new Function(lf3);
+        p->newConstraint(f, -INFINITY, 0.0);
+
+        lf3 = (LinearFunctionPtr) new LinearFunction();
+        lf3->addTerm(v1, 1.0);
+        lf3->addTerm(v2, 1.0);
+        lf3->addTerm(v3, -1.0);
+        f = (FunctionPtr) new Function(lf3);
+        p->newConstraint(f, -INFINITY, 1.0);
+        mod->insert(v3);
+      } else {
+        if (Binary==v1->getType() || ImplBin==v1->getType()) {
+          // exchange
+          v3 = v1;
+          v1 = v2;
+          v2 = v3;
+        }
+        // v1 is continuous, v2 is binary.
+        assert (Binary==v2->getType() || ImplBin==v2->getType());
+        lb = (v1->getLb()<0.0) ? v1->getLb() : 0.0;
+        ub = (v1->getUb()>0.0) ? v1->getUb() : 0.0;
+        v3 = p->newVariable(lb, ub, Continuous);
+        lf->incTerm(v3, values[i]);
+
+        lf3 = (LinearFunctionPtr) new LinearFunction();
+        lf3->addTerm(v1, -1.0);
+        lf3->addTerm(v3, 1.0);
+        lf3->addTerm(v2, -v1->getLb());
+        f = (FunctionPtr) new Function(lf3);
+        p->newConstraint(f, -INFINITY, -v1->getLb());
+
+        lf3 = (LinearFunctionPtr) new LinearFunction();
+        lf3->addTerm(v1, 1.0);
+        lf3->addTerm(v3, -1.0);
+        lf3->addTerm(v2, v1->getUb());
+        f = (FunctionPtr) new Function(lf3);
+        p->newConstraint(f, -INFINITY, v1->getUb());
+
+        lf3 = (LinearFunctionPtr) new LinearFunction();
+        lf3->addTerm(v3, 1.0);
+        lf3->addTerm(v2, -v1->getUb());
+        f = (FunctionPtr) new Function(lf3);
+        p->newConstraint(f, -INFINITY, 0);
+
+        lf3 = (LinearFunctionPtr) new LinearFunction();
+        lf3->addTerm(v3, -1.0);
+        lf3->addTerm(v2, v1->getUb());
+        f = (FunctionPtr) new Function(lf3);
+        p->newConstraint(f, -INFINITY, 0);
+
+        mod->insert(v3);
+      }
+    }
+  }
+}
+
+
+void  NlPresHandler::bin2Lin_(ProblemPtr p, PreModQ *mods, Bool *changed)
+{
+  ConstraintPtr c;
+  LinearFunctionPtr lf;
+  FunctionPtr f;
+  HessianOfLagPtr hess;
+  Double *mult = 0;
+  Int err = 0;
+  Double *x = 0;
+  Double *values = 0;
+  Double *grad = 0;
+  UInt *irow = 0;
+  UInt *jcol = 0;
+  UInt nz = 0;
+  PreAuxVarsPtr mod = (PreAuxVarsPtr) new PreAuxVars();
+
+  p->calculateSize();
+  if (0==p->getSize()->quadCons && Quadratic!=p->getSize()->objType) {
+    return;
+  }
+
+  p->setNativeDer(); // TODO: avoid setting it up repeatedly.
+  hess = p->getHessian();
+  nz = hess->getNumNz();
+  mult = new Double[p->getNumCons()];
+  values = new Double[nz];
+  irow = new UInt[nz];
+  jcol = new UInt[nz];
+  x = new Double[p->getNumVars()];
+  grad = new Double[p->getNumVars()];
+  memset(mult, 0, p->getNumCons()*sizeof(Double));
+  memset(values, 0, nz*sizeof(UInt));
+  memset(irow, 0, nz*sizeof(UInt));
+  memset(jcol, 0, nz*sizeof(UInt));
+  memset(x, 0, p->getNumVars()*sizeof(Double));
+
+  hess->fillRowColIndices(irow, jcol);
+
+  // objective
+  f = p->getObjective()->getFunction();
+  if (f) {
+    if (Quadratic==f->getType()) {
+      hess->fillRowColValues(x, 1.0, mult, values, &err); assert(0==err);
+      if (canBin2Lin_(p, nz, irow, jcol, values)) {
+        memset(grad, 0, p->getNumVars()*sizeof(Double));
+        f->evalGradient(x, grad, &err); assert(0==err);
+        lf = (LinearFunctionPtr) new LinearFunction(grad, p->varsBegin(),
+                                                    p->varsEnd(), 1e-12);
+        bin2LinF_(p, lf, nz, irow, jcol, values, mod);
+        f = (FunctionPtr) new Function(lf);
+        p->newObjective(f, p->getObjective()->getConstant(), Minimize);
+        *changed = true;
+      }
+    }
+  }
+  
+
+  // constraints
+  for (ConstraintConstIterator cit=p->consBegin(); cit!=p->consEnd();
+       ++cit) {
+    c = *cit;
+    f = c->getFunction(); 
+    if (!f) {
+      continue;
+    }
+    if (Quadratic==f->getType()) {
+      mult[c->getIndex()] = 1.0;
+      memset(values, 0, nz*sizeof(UInt));
+      hess->fillRowColValues(x, 0.0, mult, values, &err); assert(0==err);
+      mult[c->getIndex()] = 0.0;
+      if (canBin2Lin_(p, nz, irow, jcol, values)) {
+        lf = f->getLinearFunction();
+        bin2LinF_(p, lf, nz, irow, jcol, values, mod);
+        f = (FunctionPtr) new Function(lf);
+        p->newConstraint(f, c->getLb(), c->getUb());
+        p->markDelete(c);
+        *changed = true;
+        cit = p->consBegin()+c->getIndex();
+      }
+    }
+  }
+
+  if (mod->getSize()>0) {
+    mods->push_back(mod);
+  }
+  p->delMarkedCons();
+  delete [] mult;
+  delete [] x;
+  delete [] values;
+  delete [] grad;
+  delete [] irow;
+  delete [] jcol;
+
+}
+
+
+Bool NlPresHandler::canBin2Lin_(ProblemPtr p, UInt nz, const UInt *irow,
+                                const UInt *jcol, const Double *values)
+{
+  VariablePtr v1, v2;
+
+  for (UInt i=0; i<nz; ++i) {
+    if (fabs(values[i])>1e-12) {
+      v1 = p->getVariable(jcol[i]);
+      v2 = p->getVariable(irow[i]);
+      // if neither binary, return false
+      if ((v1->getType()==Continuous || v1->getType()==Integer) &&
+          (v2->getType()==Continuous || v2->getType()==Integer)) {
+        return false;
+      }
+      // if either one is unbounded, return false
+      if ((v1->getUb()>=INFINITY || v1->getLb()<=-INFINITY) ||
+          (v2->getUb()>=INFINITY || v2->getLb()<=-INFINITY)) {
+        return false;
+      }
+    }
+  }
+  return true;
+}
+
+
+#if 0
+Bool  NlPresHandler::canLin_(FunctionPtr f)
+{
+  CGraphPtr cg;
+  NonlinearFunctionPtr nlf;
+  LTHessStor stor;
+  UInt i;
+  UInt nz;
+  UInt *cols;
+  std::deque<UInt> *indq;
+  VariablePtr x1;
+  VariablePtr x2;
+
+  if (f->getQuadraticFunction()) {
+    assert(!"can not do explicit quadratic function yet!");
+  }
+  
+  nlf = f->getNonlinearFunction();
+  if (!nlf) {
+    assert(!"Need nonlinear function!");
+  }
+
+  assert(Quadratic==nlf->getType());
+
+  stor.nlVars = nlf->numVars();
+  i = 0;
+  stor.rows   = new VariablePtr[stor.nlVars];
+  stor.colQs  = new std::deque<UInt>[stor.nlVars];
+  stor.starts = new UInt[stor.nlVars+1];
+  stor.nz = 0;
+  for(VariableSet::iterator it=nlf->varsBegin(); it!=nlf->varsEnd(); ++it) {
+    stor.rows[i] = (*it);
+    ++i;
+  }
+
+  nlf->fillHessStor(&stor);
+
+  nz = 0;
+  for (i=0; i<stor.nlVars; ++i) {
+    stor.starts[i] = nz;
+    nz += (stor.colQs+i)->size();
+  }
+  stor.starts[i] = nz;
+  stor.nz = nz;
+  stor.cols = new UInt[nz];
+  cols = stor.cols;
+  indq = stor.colQs;
+  nz = 0;
+  for (i=0; i<stor.nlVars; ++i, ++indq) {
+    x1 = stor.rows[i];
+    for (std::deque<UInt>::iterator it2=indq->begin(); it2!=indq->end(); 
+         ++it2,++cols) {
+      *cols = *it2;
+      ++nz;
+      x2 = p_->getVar(*cols);
+      if (Binary!=x1->getType() && ImplBin!=x1->getType() && 
+          Binary!=x2->getType() && ImplBin!=x2->getType()) {
+        return false;
+      }
+    }
+  }
+  assert(nz == stor.nz);
+  nlf->finalHessStor(&stor);
+}
+#endif
+
+
+void  NlPresHandler::computeImpBounds_(ConstraintPtr c, VariablePtr z,
+                                       Double zval, Double *lb, Double *ub)
+{
+  VariablePtr v;
+  Double ll = 0.;
+  Double uu = 0.;
+  Double l1, u1, a2, b2;
+  ConstraintPtr c2;
+  LinearFunctionPtr lf, lf2;
+  ModStack mods;
+  VarBoundModPtr m;
+  ModificationPtr m2;
+  Int error = 0;
+
+  if (zval<0.5) {
+    m = (VarBoundModPtr) new VarBoundMod(z, Upper, 0.0);
+  } else {
+    m = (VarBoundModPtr) new VarBoundMod(z, Lower, 1.0);
+  }
+  m->applyToProblem(p_);
+  mods.push(m);
+
+  for (VarSet::iterator it=c->getFunction()->varsBegin();
+       it!=c->getFunction()->varsEnd(); ++it) {
+    v = *it;
+    if (v==z) {
+      continue;
+    }
+
+    l1 = v->getLb();
+    u1 = v->getUb();
+    for (ConstrSet::iterator it2=v->consBegin(); it2!=v->consEnd(); ++it2) {
+      c2 = *it2;
+      if (c2->getFunctionType()!=Linear) {
+        continue;
+      }
+      lf2 = c2->getLinearFunction();
+      if (lf2->getNumTerms()==2 && lf2->hasVar(z)) {
+        b2 = lf2->getWeight(z);
+        a2 = lf2->getWeight(v);
+        if (a2>0 && (c2->getUb()-zval*b2)/a2 < u1) {
+          u1 = (c2->getUb()-zval*b2)/a2;
+        }
+        if (a2<0 && (c2->getUb()-zval*b2)/a2 > l1) {
+          l1 = (c2->getUb()-zval*b2)/a2;
+        }
+        if (a2>0 && (c2->getLb()-zval*b2)/a2 > l1) {
+          l1 = (c2->getLb()-zval*b2)/a2;
+        }
+        if (a2<0 && (c2->getLb()-zval*b2)/a2 < u1) {
+          u1 = (c2->getLb()-zval*b2)/a2;
+        }
+      }
+    }
+    if (l1>v->getLb()) {
+      m = (VarBoundModPtr) new VarBoundMod(v, Lower, l1);
+      m->applyToProblem(p_);
+      mods.push(m);
+    }
+    if (u1<v->getUb()) {
+      m = (VarBoundModPtr) new VarBoundMod(v, Upper, u1);
+      m->applyToProblem(p_);
+      mods.push(m);
+    }
+  }
+  c->getFunction()->getLinearFunction()->computeBounds(&ll, &uu);
+  c->getFunction()->getNonlinearFunction()->computeBounds(&l1, &u1, &error);
+  ll += l1;
+  uu += u1;
+  *lb = ll;
+  *ub = uu;
+  while (!mods.empty()) {
+    m2 = mods.top();
+    mods.pop();
+    m2->undoToProblem(p_);
+  }
+}
+
+
+std::string NlPresHandler::getName() const
+{
+  return "NlPresHandler (presolving nonlinear constraints).";
+}
+
+
+SolveStatus NlPresHandler::presolve(PreModQ *mods, Bool *changed0)
+{
+  Bool changed = true;
+  Timer *tim = env_->getNewTimer();
+
+  tim->start();
+  while(changed==true && stats_.iters < 5) {
+    changed = false;
+    chkRed_(&changed);
+    p_->delMarkedCons();
+    tightenBnds_(&changed);
+    coeffImpr_(&changed);
+    bin2Lin_(p_, mods, &changed);
+    ++stats_.iters;
+    if (changed) {
+      *changed0 = true;
+    }
+  }
+  stats_.time += tim->query();
+  delete tim;
+  return Finished;
+}
+
+
+Bool NlPresHandler::presolveNode(ProblemPtr p, NodePtr, SolutionPoolPtr s_pool,
+                                 ModVector &, ModVector &t_mods)
+{
+  FunctionPtr f = p->getObjective()->getFunction();
+  NonlinearFunctionPtr nlf;
+  LinearFunctionPtr lf;
+  Double nlfl, nlfu;
+  Double lfl, lfu;
+  Double olb;
+  Int error = 0;
+  Double a0;
+  VariablePtr z;
+  Double ub = (s_pool)?s_pool->getBestSolutionValue():INFINITY;
+  VarBoundModPtr mod;
+
+  if (f && ub<INFINITY) {
+    lf = f->getLinearFunction();
+    nlf = f->getNonlinearFunction();
+    if (lf) {
+      lfl = 0.0;
+      lfu = 0.0;
+      nlfl = 0.;
+      nlfu = 0.;
+      if (nlf) {
+        nlf->computeBounds(&nlfl, &nlfu, &error);
+        assert(error==0);
+      }
+      lf->computeBounds(&lfl, &lfu);
+      olb = lfl+nlfl;
+      if (olb<=-INFINITY) {
+        return false;
+      } else if (olb>ub) {
+        return true;
+      }
+      //std::cout << "obj lb = " << lfl+nlfl << " obj ub = " <<
+      //lfu+nlfu << " ub = " << ub << std::endl;
+
+      for (VariableGroupConstIterator it2=lf->termsBegin();
+           it2 != lf->termsEnd(); ++it2) {
+        z = it2->first;
+        if ((z->getType()==Binary || z->getType()==ImplBin)
+            && (z->getUb()-z->getLb()) > eTol_
+            && !(p->isMarkedDel(z))) {
+          a0 = it2->second;
+          if (a0>0 && olb+a0>ub) {
+            mod = (VarBoundModPtr) new VarBoundMod(z, Upper, 0.0);
+            mod->applyToProblem(p);
+            t_mods.push_back(mod);
+            ++(stats_.nMods);
+          } else if (a0<0 && olb-a0>ub) {
+            mod = (VarBoundModPtr) new VarBoundMod(z, Lower, 1.0);
+            t_mods.push_back(mod);
+            mod->applyToProblem(p);
+            ++(stats_.nMods);
+          }
+        }
+      }
+    }
+  }
+  return false;
+}
+
+
+void  NlPresHandler::tightenBnds_(Bool *changed)
+{
+  ConstraintPtr c;
+  LinearFunctionPtr lf;
+  NonlinearFunctionPtr nlf;
+  Double lfu, lfl, ub, lb;
+  Int error = 0;
+  VarBoundModVector mods;
+
+  for (ConstraintConstIterator cit=p_->consBegin(); cit!=p_->consEnd();
+       ++cit) {
+    c = *cit;
+    if (c->getFunctionType()!=Linear && c->getFunctionType()!=Constant) {
+      lf = c->getFunction()->getLinearFunction();
+      nlf = c->getFunction()->getNonlinearFunction();
+      lfu = lfl = 0.0;
+      if (lf) {
+        lf->computeBounds(&lfl, &lfu);
+      }
+      error = 0;
+      ub = c->getUb()-lfl;
+      lb = c->getLb()-lfu;
+      nlf->varBoundMods(lb, ub, mods, &error);
+      assert(error==0);
+      if (false==mods.empty()) {
+        for (VarBoundModVector::iterator it=mods.begin(); it!=mods.end(); ++it) {
+          (*it)->applyToProblem(p_);
+          ++stats_.vBnd;
+        }
+        mods.clear();
+        *changed = true;
+      }
+    }
+  }
+  return;
+}
+
+
+void NlPresHandler::writePreStats(std::ostream &out) const
+{
+  out << me_ << "Statistics for presolve by NlPresHandler:"        << std::endl
+    << me_ << "Number of iterations           = " << stats_.iters  << std::endl
+    << me_ << "Time taken in initial presolve = " << stats_.time   << std::endl
+    << me_ << "Number of variables deleted    = " << stats_.varDel << std::endl
+    << me_ << "Number of constraints deleted  = " << stats_.conDel << std::endl
+    << me_ << "Times variables tightened      = " << stats_.vBnd   << std::endl
+    << me_ << "Times constraints tightened    = " << stats_.cBnd   << std::endl
+    << me_ << "Times coefficients improved    = " << stats_.cImp   << std::endl
+    << me_ << "Changes in nodes               = " << stats_.nMods  << std::endl
+    ;
+}
+
+
+void NlPresHandler::writeStats(std::ostream &out) const
+{
+  writePreStats(out);
+}
+
+
+// Local Variables: 
+// mode: c++ 
+// eval: (c-set-style "k&r") 
+// eval: (c-set-offset 'innamespace 0) 
+// eval: (setq c-basic-offset 2) 
+// eval: (setq fill-column 78) 
+// eval: (auto-fill-mode 1) 
+// eval: (setq column-number-mode 1) 
+// eval: (setq indent-tabs-mode nil) 
+// End:

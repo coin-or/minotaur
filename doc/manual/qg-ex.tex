@@ -1,0 +1,51 @@
+%% Example of a Handler: QGHandler
+
+\section{Customizing Minotaur}
+
+There are two approaches of developing a custom solver for your specific
+needs: (i) Use minotaur libraries, and (ii) modify minotaur libraries. Here we
+will describe the later approach by modifying Minotaur to develop a
+Quesada-Grossmann (QG) type solver for convex MINLPs. We can develop this
+solver just by writing a Handler. We need to write a derived class of the base
+class Handler. We do not need to write those functions that are not relevant
+to QG.
+
+\begin{enumerate}
+\item \code+std::string getName()+: This function must return a string
+containing the name of the handler. It is used for for
+debugging and displaying status only. We just return the string ``QG Handler''
+here.
+\item \code+relax(RelaxationPtr rel, Bool isInf, BoolVector &c_list)+ 
+\begin{enumerate}
+\item Copy linear constraints from problem to relaxation. 
+\item Make a list of nonlinear constraints in problem.
+\item Solve NLP relaxation of problem.
+\item Obtain linearization of non-linear constraints at the NLP solution. Add
+those linearizations to relaxation.
+\end{enumerate}
+\item \code+Bool isFeasible(const Double *x, RelaxationPtr relaxation,+
+\code+ Bool & isInfeasible)+ 
+\begin{enumerate}
+\item Check, using VariableHandler, if \code+x+ satisfies integrality 
+constraints.
+\item If not integer, return \code+false+.
+\item Otherwise, check if \code+x+ satisfies all nonlinear constraints.
+\item If satisfied, \code+return true+.
+\end{enumerate}
+\item \code+void separate(const Double *x, NodePtr node,+\\
+\code+ RelaxationPtr rel, SolutionPoolPtr s_pool,+\\
+\code+ Bool *sol_found,+ \code+ SeparationStatus *status)+
+\begin{enumerate}
+\item Solve NLP by fixing all integer variables to values in \code+x+. 
+\item If we get an optimal solution that is better than the best ub, update
+ub. Additionally, if the optimal solution value is same as that of node LP
+relaxation, set status to \code+SepaPrune+.
+\item Add to relaxation, linearizations about the the optimal solution or the
+point where NLP engine converged. Set status to \code+SepaResolve+.
+\end{enumerate}
+\end{enumerate}
+
+The functions:
+\code+getBranchingCandidates()+, \code+getBrMod()+, \code+getBranches()+, 
+\ldots are not relevant to Q-G and hence they are not required.
+

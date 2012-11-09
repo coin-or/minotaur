@@ -1,0 +1,15 @@
+Code
+  Need to #define MINOTAUR_RUSAGE to use Ampl interface
+
+  Why no boost smart pointer typedefs for eigencalculator
+
+  Why does eigencalculator have data items if not used.
+
+Assumptions:
+
+Assume we have linear objective.
+1 quadratic constraint?
+
+binary variable for every continuous variable.
+
+

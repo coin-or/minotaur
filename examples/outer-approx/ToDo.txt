@@ -1,0 +1,68 @@
+ToDo List for Outer Approximation Example in MINOTAUR
+
+1. Re-do Makefile							DONE
+   - locations of libraries for AMPL, NLP solvers, MINOTAUR	
+   - cpp/obj files
+   - compiler options
+
+2. Re-write outer-approx.cpp
+   - NLP solvers (see AMPLMain.cpp)					DONE
+   - print number of variables, constraints, and Jacobian etc		DONE
+   - implement main algorithm
+      + read problem							DONE
+      + solve NLP relaxation						DONE
+      + create MILP relaxation						DONE
+      + solve MILP relaxation						DONE
+      + control structure of algorithm (see QGHandler.cpp)
+   - add options to AMPL driver						DONE
+
+3. Outline of Solver in PseudoCode
+
+   1. Set options for Outer Approximation (AMPL options)
+   2. Read problem from AMPL interface or other
+      -> test: print number of variables & constraints
+      Create MINLP problem instance ...
+      Create NLP problem (relaxation) ...
+      Create MILP master problem instance ... add eta < UpperBound
+      Set UpperBound=Infty; LowerBound=-Infty
+   3. IF (InitialIntegerGiven) THEN
+	 Solve NLP-Sub(InitialIntegerFixed); fix bounds; solve NLP; relax bounds
+	 IF (NLP-feasible) THEN
+	     Update upper bound & incumbent
+	 ENDIF
+      ELSE (default)
+         Solve NLP relaxation ... using NLP Engine (which solver?)
+	 IF (NLP-infeasible) THEN
+	    EXIT (MINLP infeasible)
+	 ELSEIF (IntegerFeasible) THEN
+	    EXIT (MINLP optimal)
+	 ENDIF
+      ENDIF
+   4. REPEAT
+         Linearize functions around current point & add to MILP
+	 -> test: print MILP master problem
+         Solve MILP master problem & update LowerBound
+	 IF (MILP-infeasible) THEN
+	    EXIT (OuterApproxTerminate)
+	 ENDIF
+	 Solve NLP-Sub(IntegerFixed); fix bounds; solve NLP; relax bounds
+	 IF (NLP-feasible) THEN
+	     Update upper bound & incumbent
+	 ENDIF
+	 Optimal     = LowerBound > UpperBound-TolEps
+	 Termination = Optimal & (OAIter<1000)
+      UNTIL (Termination)
+  
+
+3. Compile it all
+
+4. Link & test
+   - solve NLPs
+   - solve MILPs
+   - solve simple MINLPs
+   - test on library
+
+5. Create tests/unit tests and add to unit tests
+
+6. Get MINOTAUR to use make configure; make so that it runs 
+   out-of-the box

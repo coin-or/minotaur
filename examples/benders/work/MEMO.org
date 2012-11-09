@@ -1,0 +1,9 @@
+1. to run on some test examples;
+   - compile the code first in the parent directory
+   - ../bdlp test2.dat 4 2 
+     -- this suppose that there are four common variables and two decision
+     variables. 
+
+2. some other test programs
+   - mylp: solve an lp 
+   - solvemps: solve an lp given in the mps format

@@ -1,0 +1,6 @@
+FILTER-SQP is copyrighted by the University of Dundee, UK. The library 
+was developed by Roger Fletcher and Sven Leyffer. It is made available 
+"as is" without express or implied warranty. Permission for distributing 
+this library must be obtained from Roger Fletcher at the University of 
+Dundee (fletcher@maths.dundee.ac.uk).
+

@@ -1,0 +1,316 @@
+\documentclass[10pt]{report}
+
+\usepackage{graphics}
+
+\setlength{\textwidth}{6.0in}
+\setlength{\oddsidemargin}{23pt}
+\setlength{\evensidemargin}{23pt}
+\setlength{\topmargin}{-0.5in}
+\setlength{\textheight}{10in}
+
+\newcommand{\notimpl}[0]{(not implemented)}
+\newcommand{\honly}[0]{(only headers implemented)}
+
+\begin{document}
+
+\input{./title.tex}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\chapter{Basic Design}
+
+\section{Interfaces}
+The user can input problems through these interfaces.
+All interfaces will create an Instance or the problem in its original form.
+
+\subsection{AMPLInterface}
+Reads and creates instance from .nl stubs.
+\subsection{GAMSInterface \notimpl}
+\subsection{MINOTAUR Parser (not implemented)}
+We need to describe a way to parse an expression to compute the algebraic
+and logical expressions.  There will be a parser for AMPL, GAMS, and 
+our own internal language representation.
+
+\subsection{C++ Interface}
+User can create an Instance by creating Variables, Constraints and
+Objective.
+
+\section{Environment \honly}
+Consists of parameters, limits, (user-specified algorithm, engines?), etc.
+Should be created from an Interface.
+
+\section{Instance}
+Contain algebraic, logical, and complementarity constraint sets and 
+variables. Includes an objective function. This is what gets solved. Must have
+a SolutionSet.  Should be created from an Interface.
+
+\section{Formulation}
+Contain an algebraic, logical, and complementarity constraint sets and 
+variables.  Includes an objective function. Much like Instance. Should must a
+Solution? or SolutionSet?. Instance could be a derived class of Formulation.
+
+An Instance can be converted to a specific Formulation like a Linear
+Formulation, or a Quadratic Formulation, etc. A formulation must be able to
+translate its solution to a solution for the instance from which it was derived.
+
+A Formulation must contain a list of primary (original) and auxiliary
+(introduced during any reformulation) variables and constraints.
+
+A Formulation should have a solve method?
+
+\section{Reformulators/Solver Adapters \notimpl}
+Take an Instance or a Formulation and adapt it into a different formulation.
+e.g. convert a multilinear instance into an LP formulation.
+
+\section{Modification}
+Any changes that can be done on a formulation and an engine. Must have
+applyToFormulation() and applyToEngine() methods to make changes
+undoToFormulation() and undoToEngine() to reset the changes. 
+\subsection{VarBoundMod}
+Used to modify one of the bounds on a variable.
+
+
+\section{Engine}
+An engine used to solve specific type of feasibility/optimization subproblem 
+using an external solver (like MA27, CLP, Ipopt). 
+\subsection{LPEngine}
+LPEngine is meant for solving LPs using external solvers. It has LP
+specific functions for reduced costs, dual rays etc. It should also be able to
+select specific initial/restart algorithms (network simplex, barrier,
+dual-simplex). 
+\subsection{NLPEngine}
+NLPEngine is meant for solving NLPs. 
+
+
+\section{Solvers \notimpl}
+Not sure what these are (--ashu).
+
+\subsection{Equation Solver \notimpl}
+
+  Direct methods
+  Iterative methods
+  Preconditioners
+
+\subsection{Nonlinear Programming Solvers \notimpl}
+
+  Linear programming
+  Convex quadratic programming
+  Convex nonlinear programming
+
+  Mixed-integer linear programming
+  Mixed-integer convex quadratic programming
+  Mixed-integer convex nonlinear programming
+
+  Nonconvex solvers
+
+\section{Expression \notimpl}
+Graph data structure from inputs to output.  Tools to work with
+expression trees; constant folding; other optimizations.  Interval
+arithmetic either by slopes or other means.
+
+\section{Function}
+This class is for a function $f: \Re^n \rightarrow \Re$.  We will have
+several intrinsic function types:
+\begin{itemize}
+\item Constant functions $f(x) = b$ is a real scalar. \notimpl
+\item Linear functions $f(x) = a^Tx$ where $a$ is a vector of reals. 
+\item Sparse quadratic functions $f(x) = x^T Q x$ where $Q$ is a symmetric 
+      sparse matrix. \honly
+\item Dense quadratic functions $f(x) = x^T A R A^T x$ where $A$ is a 
+      dense $n\times m$ matrix and $R$ is a $m\times m$ symmetric sparse
+      or dense matrix. \notimpl
+\item Signomial functions $f(x) = e^{a^T \log(x) + \log(b)}$ where $a$
+      is a vector of reals and $b$ is a real scalar. \notimpl
+\item Norm function $f(x) = \| Ax + b \|_2$ where $A$ is a sparse
+      or dense $m \times n$ matrix and $b$ is a $m$-vector. \notimpl
+\item Matrix norm function $f(x) = \| Ax + b \|_R$ where $A$ is a sparse
+      or dense $m \times n$ matrix and $b$ is a $m$-vector, and $R$ is
+      a symmetric positive definite sparse or dense $m\times m$ matrix.
+      \notimpl
+\item Algebraic expression. \notimpl
+\end{itemize}
+
+There will also be compound function types that are build from other
+compound function types or intrinsic functions:
+\begin{itemize}
+\item Second order cone constraints: norm function minus a linear function
+\item Rational constraints: ratio between a quadratic and linear function
+\item Partially separable constraints: see the david gay talk.
+\end{itemize}
+
+The functions can evaluate themselves, determine their gradient, and
+their sparse or dense Hessian matrix, and perform Hessian/vector
+products.
+
+The function needs to track the variables indices on which it operates.
+Compound functions would need to track their global variable indices and
+an index set that maps variables to the subfunctions.  They should be
+able to restructure and classify themselves as variables are fixed.
+
+Knows how to over or underestimate itself.  Can get expanded into a 
+function of smaller constraints?
+
+\section{Constraint}
+
+\subsection{Algebraic Constraint}
+A constraint is of the form
+\[
+   fl \leq f(x) \leq fu
+\]
+
+The constraint objects has the lower and upper bound and contains a 
+function.  It can determine the type of function, evaluate the residual,
+gradient, Hessian contribution and Hessian vector products. Can tell what type
+it is (knapsack, gub, set partitioning \ldots for linear constraints).
+
+We should be able to fix a set of variables and then perform a split.
+
+The constraints maintain a list of variable indices.
+
+Has an index
+
+Has an optional name
+
+Has a Function 
+
+Has a type \notimpl
+
+Fix variable or variables
+
+Knows how to produce convex over and under estimators? \notimpl
+
+Knows if it is original to the problem or was added in a reformulation.
+
+\subsection{Logical Constraint \notimpl}
+SOS1, SOS2
+
+\subsection{Complementarity Constraint} \notimpl
+Has a variable index and an algebraic constraint with exactly two
+bounds.  
+
+\section{Constraint Set} \notimpl
+Probably don't need to subclass the constraint set.
+
+\subsection{Algebraic Constraint Set} \notimpl
+List of constraints
+
+Status - active, inactive, over estimator, under estimator
+
+Evaluate 
+
+Evaluate Jacobian
+
+Evaluate Hessian of Lagrangian
+
+Keeps status around; determines structure when necessary
+
+Add constraint
+
+Remove constraint
+
+\subsection{Logical Constraint Set} \notimpl
+
+\subsection{Complementarity Constraint Set} \notimpl
+
+\section{Objective}
+Very much like a Constraint. Does not have lower or upper bounds. Has a vector
+of variables appearing in it. Has a constant offset value and a sense:
+Maximize or Minimize.
+
+
+\section{Variable}
+
+\subsection{Algebraic Variable}
+Variables have a type and bounds.  They have a map of constraint
+indices which are the constraints to which they belong and in what part.
+\begin{equation}
+\label{eqn100}
+x_1 + x_1x_2 + sin(x_1) \leq 2 
+\end{equation}
+The constraint map of $x_1$ will have the constraint~(\ref{eqn100}) three
+times. Once as linear and twice as nonlinear. (Probably.)
+
+Has a lower bound possibly infinity.
+
+Has a upper bound possibly infinity.
+
+Has a list of constraint indices.
+
+Has an index.
+
+Has an optional name.
+
+Has a type: binary, integer, semicontinuous, continuous.
+
+Fix variable.
+
+Should know if it is primary or auxiliary.
+
+\subsection{Complementarity Variable \notimpl}
+
+\subsection{Logical Variable \notimpl}
+
+\section{Variable Set \notimpl}
+
+  List of variables
+
+  Status - active
+
+\section{Solution \honly}
+Contain solution values, objective function value and constraint violations.
+Some information on how, where it was found?
+
+\subsection{SolutionSet \notimpl}
+A (sorted?) Vector of Solutions? Should have ability to add new Solutions,
+compare two solutions and discard a poor solution.
+
+\section{Logger}
+Writes to std::out and std::err. Has maximum level set. Anything above this
+level is not logged.
+
+\section{Timer \honly}
+
+
+\section{Exception \honly}
+
+\section{Interrupt \honly}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\chapter{Linear Algebra}
+
+\section{Vector}
+
+\subsection{Dense Vector}
+
+\subsection{Sparse Vector}
+
+\section{Matrix}
+
+\subsection{Dense Matrix}
+
+\subsection{Sparse Matrix}
+\begin{itemize}
+\item Compressed Sparse Row Matrix
+\item Compressed Sparse Column Matrix
+\item Sparse Outer Product Matrix
+\item (row-index, col-index, value), for Ipopt?
+\end{itemize}
+
+\subsection{Symmetric Dense Matrix}
+\subsection{Symmetric Sparse Matrix}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\chapter{Branch And Bound}
+
+\section{TreeManager}
+
+\section{Node}
+
+\section{Brancher}
+
+\section{Branch}
+
+\end{document}
+

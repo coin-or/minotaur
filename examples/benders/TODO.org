@@ -1,0 +1,13 @@
+1. multiple sub-problems
+   - [ ] form the large problem efficiently
+   - [x] using MPI to handle multiple sub-problems
+
+2. form the large problem based on the power transmission network expansion
+   planning and test the code on fusion cluster
+
+3. add some code to check if the optimum has reached. 
+
+4. using the Branch-and-bound methods from minotaur to deal with the case that
+   the decision variables are integer or binary
+ 
+

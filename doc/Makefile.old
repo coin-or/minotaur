@@ -1,0 +1,10 @@
+NAME=design
+
+default: pdf
+
+pdf: dvi
+	dvipdfm -p letter $(NAME).dvi 
+
+dvi: 
+	latex $(NAME).tex; \
+	latex $(NAME).tex

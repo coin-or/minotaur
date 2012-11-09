@@ -1,0 +1,179 @@
+%% Installation guide.
+
+\section{Installing \mntr}
+\subsection{System Requirements}
+\mntr{} has been primarily developed on Debian and Ubuntu Linux operating
+systems. It has been tested on {\tt i686} and {\tt x86\_64} architecutures of
+the above operating systems. It is also regularly tested on MAC-OSX on both
+architectures. For the rest of the manual, we will assume that a user or
+developer is working on a computer with Linux operating system and all the
+standard command line utilities. We provide MAC-OSX specific
+instructions where important differences arise.
+
+
+\subsection{Obtaining \mntr}
+\mntr{} source code is available for download at the 
+\href{http://wiki.mcs.anl.gov/minotaur/index.php/Minotaur\_Download}{\mntr-download
+page}.
+
+\subsection{Prerequisites}
+The following software is necessary for compiling Minotaur.
+\begin{enumerate}
+\item Boost headers.
+\item C++ compiler.
+\item lapack and blas libraries. Header files are not required.
+On Debian/Ubuntu: \code+apt-get install liblapack-dev libblas-dev+.
+\end{enumerate}
+Optional packages that are recommended:
+\begin{enumerate}
+\item Fortran compiler. 
+On Debian/Ubuntu: \code+apt-get install gfortran+.
+On Mac, they are available by default.
+\item AMPL Solver Library.
+\item Filter-SQP
+\item Ipopt
+\item Osi-CLP
+\item CppUnit
+\item CMake
+\end{enumerate}
+
+\subsection{Installing Prerequisites}
+\subsubsection{Boost Headers}
+\subsubsection{AMPL Solver Library}
+\subsubsection{Filter-SQP}
+\subsubsection{Ipopt}
+\subsubsection{OSI-CLP}
+\subsubsection{CppUnit}
+\subsubsection{CMake}
+On Debian/Ubuntu: \code+apt-get install cmake ccmake+. On Mac, download and
+install from the CMake website \url{http://www.cmake.org/cmake/resources/software.html}.
+\subsection{Installing Minotaur}
+We will call the topmost directory that contains Minotaur source code the
+MINOTAUR\_SRC directory. It has files like `CMakeLists.txt', `README', and
+directories like `scripts', `examples', `doc' and `src'. Minotaur should never
+be compiled in this directory. A different directory should be created and all
+compiling should be done there. If a compiling process goes wrong or if the
+user does not want a particular compilation, this directory can be removed
+without affecting the Minotaur source code. 
+
+Minotaur can be compiled in two ways: by using CMake, or manually.
+Using CMake is preferred over doing it manually because CMake
+automatically configures a few things:
+\begin{itemize}
+\item The fortran compiler is used and how the function names are mangled.
+\item If the function `rusage()' is available for measuring time.
+\end{itemize}
+A user who has experience in using UNIX-style makefiles can also compile
+Minotaur using a makefile that comes with the distribution.
+
+\subsubsection{Compiling with CMake}
+\label{sec:compile_cmake}
+Suppose, we want to compile Minotaur in a directory called `build'. Follow the
+following steps:
+\begin{codeenv}
+mkdir build
+cd build
+ccmake /path/to/MINOTAUR_SRC
+\end{codeenv}
+The path argument could be relative or absolute. Now we should see a dialog
+box. Press `c' to configure. If CMake cannot find Boost headers installed in
+your system, it will complain. Press `e' in this case. Enter the location in
+the next dialog. When all options are set, the user will find a `g' option at
+the bottom. Pressing `g' will complete the configuration and generate a
+makefile. The following options can be set:
+\begin{description}
+\item[ASL\_DIR] The directory where both `asl.h' and `amplsolver.a' are
+located.
+\item[BOOST\_INC\_DIR] Directory where header files of Boost are located.
+Not required if installed in the system and no error reported by CMake.
+\item[BUILD\_SHARED\_LIBS] `ON' means shared libraries will be created. `OFF'
+means static libraries are created. On MAC, this flag should be `OFF'.
+\item[CMAKE\_BUILD\_TYPE] Set to debug, if debugging. Otherwise leave blank.
+\item[CppUNIT\_INC\_DIR] Directory where header files of CppUnit are located.
+The directory must conatin the file `cppunit/TestCase.h'.
+\item[CPPUNIT\_LIB\_DIR] Directory where libraries files of CppUnit are located.
+\item[FILTER\_SQP\_LIB] The full path to the FilterSQP library file. \\
+e.g. /home/bob/filter/src/filterlib.a
+\item[IPOPT\_INC\_DIR] Directory where header files of Ipopt are located.
+The directory must conatin the file `coin/IpIpoptApplication.hpp'.
+\item[IPOPT\_LIB\_DIR] Directory where libraries files of Ipopt are located.
+\item[OSI\_INC\_DIR] Directory where header files of CppUnit are located.
+The directory must conatin the file `cppunit/TestCase.h'
+\item[OSI\_LIB\_DIR] Directory where libraries files of OsiClp are located.
+\item[MNTR\_INSTALL\_PREFIX] Directory where libraries and executables of Minotaur
+will be installed on doing `make install'. The deafult setting of `.' installs
+them in the `lib' and 'bin' folders in the current directory.
+\end{description}
+Once all the necessary and desired options have been set, again hit `c'. CMake
+will perform some checks on the inputs. If no errors are found, hit `g' and
+CMake will exit after generating makefiles. If errors were found, hit `e' and
+fix the appropriate options. Repeat until all errors have been fixed. Pressing
+`q' will stop the CMake dialog without creating any makefiles. It may be used
+if the user wants to stop the process.
+
+If a makefile is generated successfully, the user can then do 
+\begin{codeenv}
+make 
+\end{codeenv}
+Minotaur will be compiled. If no errors are reported, perform some unit tests
+by doing:
+\begin{codeenv}
+make test
+\end{codeenv}
+The above tests will work only if CppUnit was configured. Now install Minotaur
+by doing:
+\begin{codeenv}
+make install
+\end{codeenv}
+The libraries and executables will be
+compiled depending upon the inputs given to CMake. So, for example, the user
+does not provide a filename in FILTER\_SQP\_LIB, both mntrfiltersqp and
+mntrbqpd will not be compiled. If the user did not provide ASL\_DIR, on
+executables will be generated. If there are errors in the above command, then
+the user must rerun the CMake command and repeat.
+
+If the \code+make install+ step completed successfully, then the user will
+find libraries in the `lib' directory and executables in the `bin' directory.
+The latter directory is created only if some executables need to be installed.
+Another directory `include' is created. It has a `minotaur' subdirectory that
+contains header files useful for developing code with Minotaur.
+`bin', `include' and `lib' directories are generated in the
+MNTR\_INSTALL\_PREFIX directory. It defaults to the same directory
+where Minotaur is compiled (and never to `MINOTAUR\_SRC' directory).
+
+\subsubsection{Compiling with CMake on command line}
+If the user does not want to use the dialog box, CMake can also be used
+non-interactively by calling `cmake' and passing it all the desired values.
+Here is an example, that can be modified based on the user's system:
+
+\begin{codeenv}
+cmake                                                                         \ 
+  -DBOOST_INC_DIR:PATH=/sandbox/minotaur-externals                            \
+  -DASL_DIR:PATH=/sandbox/minotaur-externals/asl                              \
+  -DFILTER_SQP_LIB:PATH=/sandbox/minotaur-externals/filter/src/filterlib.a    \
+  -DIPOPT_INC_DIR:PATH=/sandbox/minotaur-externals/ipopt-3.8.3/build/include/ \
+  -DIPOPT_LIB_DIR:PATH=/sandbox/minotaur-externals/ipopt-3.8.3/build/lib/     \
+  -DOSI_INC_DIR:PATH=/sandbox/minotaur-externals/osi-0.102.1/build/include/   \
+  -DOSI_LIB_DIR:PATH=/sandbox/minotaur-externals/osi-0.102.1/build/lib/       \
+  -DCPPUNIT_INC_DIR:PATH=/sandbox/minotaur-externals/cppunit/build/include/   \
+  -DCPPUNIT_LIB_DIR:PATH=/sandbox/minotaur-externals/cppunit/build/lib        \
+  -DBUILD_SHARED_LIBS:BOOL=1                                                  \
+  /path/to/MINOTAUR_SRC
+\end{codeenv}
+Then follow the instructions as in Section~\ref{sec:compile_cmake} to run
+\code+make+, \code+make install+ and \code+make test+.
+
+\subsubsection{Compiling manually}
+\subsection{Illegally Installing Minotaur with Externals}
+Make sure you have a C++ compiler, a fortran compiler, blas and lapack.
+\begin{codeenv}
+cd scripts
+./build_with_externals -d ./build -M .. -j NCPUS -b
+\end{codeenv}
+where NCPUS is the number of CPUs you want to use for compiling.
+On MAC, you will need some additional flags:
+\begin{codeenv}
+cd scripts
+./build_with_externals -d ./build -M .. -j NCPUS -b -C -O -s
+\end{codeenv}
+

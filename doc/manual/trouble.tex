@@ -1,0 +1,67 @@
+%% Example of a Handler: QGHandler
+
+\section{Troubleshooting}
+\begin{codeenv}
+ CMake Warning (dev) at /usr/share/cmake-2.8/Modules/FortranCInterface/Detect.cmake:93 (list):
+   Policy CMP0007 is not set: list command no longer ignores empty elements.
+   Run "cmake --help-policy CMP0007" for policy details.  Use the cmake_policy
+   command to set the policy and suppress this warning.  List has value =
+   [;my_sub;_].
+ Call Stack (most recent call first):
+   /usr/share/cmake-2.8/Modules/FortranCInterface.cmake:118 (include)
+   CMakeLists.txt:15 (INCLUDE)
+ This warning is for project developers.  Use -Wno-dev to suppress it.
+\end{codeenv}
+This an issue with some versions of CMake (e.g. 2.8.0). It can be safely
+ignored.
+
+\begin{codeenv}
+src/testing/LapackUT.cpp:27: error: variable or field ‘F77_FUNC’ declared void
+\end{codeenv}
+This an issue with some versions of CMake (e.g. 2.8.0). It can be mitigated by
+switching to version 2.8.1.
+
+\begin{codeenv}
+error: variable or field `F77_FUNC' declared void
+error: `dpotrf' was not declared in this scope
+error: `DPOTRF' was not declared in this scope
+\end{codeenv}
+Then CMake detects a fortran compiler, but can not
+detect its mangling scheme correctly.
+
+
+\begin{codeenv}
+member: .libs/libmntrbqpd.a(BqpdAux.o) cputype (7) does not 
+match previous archive members cputype (16777223) 
+(all members must match)
+\end{codeenv}
+
+It means that the fortran compiler and C++ compilers built objects for different
+architectures. Sometimes the Fortran compiler builds 32-bit code on a 64-bit
+machine. Try appending \code+FFLAGS=-m64+ to the arguments of configure. Then do 
+\code+make clean+, and then \code+make install+.
+
+\begin{codeenv}
+Undefined symbols:
+  "_dsyevr_", referenced from:
+      Minotaur::EigenCalculator::calculate_()      in Eigen.o
+      Minotaur::EigenCalculator::calculate_()      in Eigen.o
+\end{codeenv}
+\code+BUILD_SHARED_LIBS+ should be \code+OFF+ in ccmake-menu.
+
+\begin{codeenv}
+-lcrt0.a  not found
+\end{codeenv}
+Seen only on a Mac, when building examples. Remove ``-static'' flag from the
+Makefile.
+
+
+Be careful about control characters (or spaces) that may be entered by cmake.
+It may often be useful to clear all cached values for variables by doing the equivalent of 
+
+
+\begin{codeenv}
+find . -name "*Cache*" -exec rm {} \;
+\end{codeenv}
+and then ccmake ..
+or your cmake command

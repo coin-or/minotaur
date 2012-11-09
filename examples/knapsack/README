@@ -1,0 +1,14 @@
+Here is an example of calling Minotaur from a fortran code. Fortran code calls
+a C++ function, that creates a convex MINLP (from scratch, without using AMPL)
+and solves it using branch-and-bound with filter-sqp.
+
+The problem that needs to be solved is
+
+min \sum_i a_ix_i^{b_i}
+s.t. \sum_i x_i = N
+     x_i integer
+
+Fortran code supplies arrays a_i, b_i and constant N.
+
+Compiles on a Blue-Gene Q!
+

@@ -1,0 +1,15 @@
+constraint.o: constraint.cpp ../include/constraint.hpp \
+ ../include/linearfunc.hpp ../include/variable.hpp ../include/uuid.hpp \
+ ../include/type.hpp ../include/agent.hpp ../include/server.hpp
+linearfunc.o: linearfunc.cpp ../include/linearfunc.hpp \
+ ../include/variable.hpp ../include/uuid.hpp ../include/type.hpp
+objective.o: objective.cpp ../include/objective.hpp \
+ ../include/linearfunc.hpp ../include/variable.hpp ../include/uuid.hpp \
+ ../include/type.hpp
+problem.o: problem.cpp ../include/problem.hpp ../include/type.hpp \
+ ../include/agent.hpp ../include/server.hpp ../include/objective.hpp \
+ ../include/linearfunc.hpp ../include/variable.hpp ../include/uuid.hpp \
+ ../include/constraint.hpp
+uuid.o: uuid.cpp ../include/uuid.hpp
+variable.o: variable.cpp ../include/variable.hpp ../include/uuid.hpp \
+ ../include/type.hpp

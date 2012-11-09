@@ -1,0 +1,231 @@
+7/12/2012
+
+Notes from Jeff's working with MultiTermsHandler
+
+* CxUnivarHandler:  Should print log message if there is no bound.
+
+* How do we handle logging.  Shouldn't all objects have a pointer to
+  the Minotaur environment, and then the environment have a logger
+  that we can use for writing warnings and such?
+
+* Why do we pass along tmpX and grad if these are private members of
+  the class?
+
+
+
+
+8/29/2011
+
+Jim and Jeff discuss handlers and relaxation
+
+Who is responsible for managing map between 'reformulated' problem and
+the relaxed problem variables.
+
+Jeff and Jim think the Relaxation should.  Right now, the
+Relaxation(Problem) constructor just clones the problem.
+
+Instead, there should be methods to load the variables from the
+original problem to the relaxatio *and create the maps*
+
+Should provide methods for querying the maps
+
+Maybe also a method to load all *linear* constraints.
+
+
+
+
+
+
+9/13/2011
+Exploit partial separability in cgraph. we are slow 10X on arrwhd.nl,
+airport.nl etc in cute test set as compared to ASL.
+
+
+8/26/2011
+
+Ashu: Detect cppunit if it is installed in the system.
+
+
+8/25/2011
+
+Jeff: now MultilinearHandler will always just operate on a relaxationPtr
+
+Handler will now get 4 new methods: initRelaxFull()   initRelaxInc()  relaxFull() relaxInc()
+Remove relax from handler
+
+
+
+8/24/2011
+
+Things to do...
+
+We will create a PolynomialFunction(CGraph) constructor
+
+We may also have Polynomial constructor (that then creates the CGparh
+autonatically) so that the NLP solver will always be able to solve 
+
+
+
+There is an ambiguity in the use of "relax" for the different
+handlers.
+
+Handler needs to know whether it is doing an incremental adjustment to
+the relaxation or it is doing a "full rewrite" of the problem
+
+So Jim suggests that handler base class have a "relaxInc" and a
+"relaxFull"
+NodeFullRelaxer calls only relaxFull
+"nodeIncRelaxer" calls only relaxInc
+(See 8/25)
+
+
+
+
+8/2/2011
+
+Jeff and Ashu: Transformer Talk
+
+
+Transformer()
+
+/** Must return an equivalent formulation, and keep mapping of variables
+    between problems */
+
+Problem * execute(const Problem *) = 0;
+// Translate solution back and forth
+Solution *translateFrom(const Solution *) = 0;
+Solution *translateTo(const Solution *) = 0;
+
+
+private:
+  const ProblemPtr originalProblem_;
+
+
+
+UnivariateHandler()
+
+
+NOTES:
+
+This should also probably handle the case where the objective is nonlinear
+and we want to turn it into a 
+
+Design decision: Only *1* transformer per problem.
+Perhaps makeLinearObjective() could be a method in the base class.
+
+
+We will implement a PolynomialtoMultilinear transformer
+
+
+?? How do the new constraints induced by the handler get handled.
+
+Handlers should only be constructed *after* transforming the problem.
+
+
+Handler should keep list of constraints it is handling.  We decide *yes*.
+
+
+Handlers we will have:
+IntVarHandler
+LinearHandler
+QuadraticHandler (?)
+MultilinearHandler
+UnivariateHandler
+
+Then we will write a method
+bool ProblemHandled(Problem, vector<Handlers>) which returns true if
+all constraint (including integer constraints!) are handled.
+
+In the constructor of each handler
+Handler(Problem): each handler needs to make list of constraints it will handle.
+
+
+
+
+
+
+
+
+=======
+08/02/2011
+Ashu: 
+  * Bound propagation at each node.
+
+
+07/29/2011
+
+Jeff: (for Polly).  It is butt-slow.  Need to speed it up...
+
+* Does (polly) solver set dual simplex cutoff?
+* Try getting cplex/gurobi working.  Maybe try barrier for LP
+* Only build groups one time and save the information
+   (Does this explain the fact that the LP is notg monotone?)
+   If you are building groups every time, can you just look at (last/parent LP relaxation?)
+
+* Keep a warm start around?
+* Do (strong) bound tightening
+* Do max reliability branching
+* Can we do a heuristic: Just load and solve NLP solver.
+* Need to valgrind code -- maybe memory leak.(Done.)
+
+
+
+07/26/2011
+Simple branch-and-bound example, using BndProcessor and MaxVio Brancher.
+case insensitive options.
+ampl interface: cannot solve!
+osi lp solver: primal simplex for fpump.
+
+07/12/2011
+Node processor should have a cutoff parameter like treemanager.
+
+Add option in cmake to turn on/off NDEBUG definition.
+
+06/27/2011
+
+Add option in cmake to turn on/off NDEBUG definition.
+
+
+6/6/2011
+
+(w/Mahdi)
+
+Change CXQuadHandler to *convex*
+Remove bilinearhandler
+Make multilinear handle *only* multilinear.  Polynomialhandler create multilinear constraints
+
+Older...
+
+* bug in CxQuadSolver presolve, iterator is deleted!.
+
+* Handlers should translate a solution back to original problem.
+
+* statistics: Tree manager, all handlers, see e.g. QGHandler.
+
+* Quadratics: 
+   3.2 No Eigen values calculated.
+   3.3 No Second order cones detected.
+
+* put an option for only solving the root lp.
+
+* No need for ConstVariablePtr and ConstConstraintPtr.
+
+* bqpd Asserts and space (memory), ipopt asserts.
+
+* Option for objective cutoff, and initial solution by user.
+
+* move functions of Function class to linear, quadratic and nonlinear
+  functions.
+
+* Document:
+  -- How to use engine factory to get engine.
+  -- How to read, change options.
+  -- How to get timer.
+  -- How to set up branch-and-bound.
+  -- Cmake build procedure.
+
+* Check performance hit for saving duals after each solve.
+
+* Build base class DAG for nonlinear functions. Derived classes?
+
+

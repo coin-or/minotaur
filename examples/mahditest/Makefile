@@ -1,0 +1,51 @@
+XXFLAGS = -ggdb
+LD_ADD = -llapack -ldl
+
+MIN_BASE = ../../build-debug
+
+BOOST_INCDIR = ${MIN_BASE}/minotaur-externals
+
+#paths to AMPL library and include directory
+AMPL_DIR = ${MIN_BASE}/minotaur-externals/asl
+AMPL_LIB = ${AMPL_DIR}/amplsolver.a
+AMPL_INC = ${AMPL_DIR}
+
+#paths to IPOPT library and include directory
+IPOPT_INC = ${MIN_BASE}/minotaur-externals/ipopt-3.8.3/build/include/coin
+IPOPT_LIB_DIR = ${MIN_BASE}/minotaur-externals/ipopt-3.8.3/build/lib
+IPOPT_LIB = -L${IPOPT_LIB_DIR} -lipopt -Wl,-rpath=${IPOPT_LIB_DIR}
+
+#paths to FilterSQP library and include directory
+FILTER_LIB = ${MIN_BASE}/minotaur-externals/filter-87/src/filterlib.a
+
+#paths to OSI library
+OSI_LIB_DIR = ${MIN_BASE}/minotaur-externals/osi-0.102.1/build/lib
+OSI_LIB = -L${OSI_LIB_DIR} -lOsiClp -lOsi -lClp -lCoinUtils -Wl,-rpath=${OSI_LIB_DIR}
+
+#paths to MINOTAUR library and include directory
+MINOTAUR_INC = ${MIN_BASE}/include/minotaur
+MINOTAUR_LIB_DIR = ${MIN_BASE}/lib
+###############################################################################
+
+#<<<<<<< .mine
+#MINOTAUR_LIB = -L${MINOTAUR_LIB_DIR} -lminotaur -lmntrampl -lmntrbqpd -lmntrfiltersqp -lmntrosilp -lmntripopt -lmntrengfac
+#=======
+MINOTAUR_LIB = -L${MINOTAUR_LIB_DIR}  -lmntrampl -lmntrengfac -lmntrbqpd -lmntrosilp -lmntrfiltersqp -lmntripopt -lminotaur#-Wl,-rpath=${MINOTAUR_LIB_DIR}
+
+#MINOTAUR_LIB = -L${MINOTAUR_LIB_DIR} -lmntrampl -lmntrengfac -lmntrbqpd -lmntrfiltersqp -lmntrosilp -lmntripopt -lminotaur -Wl,-rpath=${MINOTAUR_LIB_DIR}
+#>>>>>>> .r1974
+
+TEST_SRCS := acctest.cpp
+TEST_OBJS := ${TEST_SRCS:.cpp=.o}
+
+CXXFLAGS += -I${MINOTAUR_INC} -I${BOOST_INCDIR} -I${AMPL_INC} -I${IPOPT_INC}
+LD_ADD += ${MINOTAUR_LIB} ${AMPL_LIB} ${FILTER_LIB} ${OSI_LIB} ${IPOPT_LIB} 
+
+acctest: ${TEST_OBJS}
+	${CXX} -o acctest ${TEST_OBJS} ${CXXFLAGS} ${LD_ADD}
+
+.cpp.o:
+	${CXX} ${CXXFLAGS} -c $< -o $@
+
+clean:
+	rm -f *.o acctest
