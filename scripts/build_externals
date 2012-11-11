@@ -158,10 +158,12 @@ cd ${DEST}
 echo "compiling CPPUNIT"
 cd minotaur-externals/${CPPUNIT}
 mkdir -p build  
-cd build  
+cd build
 mkdir -p tmp
 cd tmp
-../../configure --prefix=${DEST}/minotaur-externals/${CPPUNIT}/build --enable-doxygen=no ${STATIC_ARGS}
+## -ldl flag is needed on riemann, as there is some issue with the cppunit
+## configure file. It is not needed otherwise.
+../../configure --prefix=${DEST}/minotaur-externals/${CPPUNIT}/build --enable-doxygen=no ${STATIC_ARGS} --LIBS='-ldl'
 make -j ${CPUS} install
 cd ${DEST}
 
