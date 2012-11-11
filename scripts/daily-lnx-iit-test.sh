@@ -6,7 +6,7 @@ TEST_DIR=/home/amahajan/tmp/minotaur-test
 
 ## svn info
 USERNAME=ashu
-SVN_REPOS="svn1.discovery.wisc.edu/optimization/MINLP/trunk/src/minotaur"
+SVN_REPOS="https://repo.anl-external.org/repos/minotaur"
 
 ## Local LOGS
 WEB_DIR=/home/amahajan/misc/web/minotaur/nightly/build-log/origin

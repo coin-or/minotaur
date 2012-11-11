@@ -6,7 +6,7 @@ TEST_DIR=/sandbox/mahajan/minotaur-test
 
 ## svn info
 USERNAME=ashu
-SVN_REPOS="svn1.discovery.wisc.edu/optimization/MINLP/trunk/src/minotaur"
+SVN_REPOS="https://repo.anl-external.org/repos/minotaur"
 
 ## LOGS
 WEB_DIR=/mcs/web/research/projects/minotaur/nightly/build-log/riemann

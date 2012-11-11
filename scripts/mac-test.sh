@@ -6,7 +6,7 @@ TEST_DIR=/Users/mahajan/src/minotaur-test
 
 ## svn info
 USERNAME=ashu
-SVN_REPOS="svn1.discovery.wisc.edu/optimization/MINLP/trunk/src/minotaur"
+SVN_REPOS="https://repo.anl-external.org/repos/minotaur"
 
 ## LOGS
 WEB_HOST=login.mcs.anl.gov
