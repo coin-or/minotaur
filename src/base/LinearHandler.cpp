@@ -469,6 +469,12 @@ void LinearHandler::coeffImp_(Bool *changed)
   Double a0;
   ConstraintPtr c;
   Bool implic = true;
+  Double coeftol = 1e-4; // improve coeffs only if improvement is more than
+                         // this number.
+  Double bslack = 1e-5;  // relax bounds by this amount. Otherwise constraints
+                         // may get numerically difficult to solve, e.g.
+                         // Syn15H, Syn15M02H, Syn40M04H
+                         // etc in CMU lib.
 
   for (ConstraintConstIterator it= problem_->consBegin(); 
       it!=problem_->consEnd(); ++it) {
@@ -493,24 +499,26 @@ void LinearHandler::coeffImp_(Bool *changed)
         a0 = it2->second;
         if ((Binary == v->getType() || ImplBin == v->getType()) 
             && !problem_->isMarkedDel(v) 
-            && fabs(v->getUb()-v->getLb()-1) < intTol_) {
+            && (v->getUb()>v->getLb()+0.5)) {
           if (true==implic) {
             ll = uu = 0;
             computeImpBounds_(c, v, 1.0, &ll, &uu);
+            ll -= bslack;
+            uu += bslack;
             if (a0>0) {
               ll -= a0;
             } else {
               uu -= a0;
             }
           }
-          if (uu+a0 < ub-eTol_ && uu >= ub) {
+          if (uu+a0 < ub-coeftol && uu >= ub) {
             // constraint is redundant when x0=1
             assert(a0 < 0);
             lf->incTerm(v, ub-uu-a0);
             *changed = true;
             ++(pStats_->cImp);
             break;
-          } else if (ll+a0 > lb+eTol_ && ll <= lb) {
+          } else if (ll+a0 > lb+coeftol && ll <= lb) {
             // constraint is redundant when x0=1
             assert(a0 > 0);
             lf->incTerm(v, lb-ll-a0);
@@ -527,7 +535,7 @@ void LinearHandler::coeffImp_(Bool *changed)
               ll += a0;
             }
           }
-          if (uu-a0 < ub-eTol_ && uu >= ub) {
+          if (uu-a0 < ub-coeftol && uu >= ub) {
             // constraint is redundant when x0=0
             assert(a0 > 0);
             lf->incTerm(v, uu-a0-ub);
@@ -535,7 +543,7 @@ void LinearHandler::coeffImp_(Bool *changed)
             *changed = true;
             ++(pStats_->cImp);
             break;
-          } else if (ll-a0 > lb+eTol_ && ll <= lb) {
+          } else if (ll-a0 > lb+coeftol && ll <= lb) {
             // constraint is redundant when x0=0
             assert(a0 < 0);
             lf->incTerm(v, ll-a0-lb);
