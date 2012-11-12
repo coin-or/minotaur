@@ -22,7 +22,7 @@ usage ()
    echo "-s: Build static libraries."
    echo "-t: URL of minotaur-externals.tar.gz"
    echo ""
-   echo -n "typical usage: ./build_with_externals"
+   echo -n "typical usage: ./build_externals"
    echo -n " -d ./"
    echo -n " -j 8"
    echo ""
@@ -163,7 +163,7 @@ mkdir -p tmp
 cd tmp
 ## -ldl flag is needed on riemann, as there is some issue with the cppunit
 ## configure file. It is not needed otherwise.
-../../configure --prefix=${DEST}/minotaur-externals/${CPPUNIT}/build --enable-doxygen=no ${STATIC_ARGS} --LIBS='-ldl'
+../../configure --prefix=${DEST}/minotaur-externals/${CPPUNIT}/build --enable-doxygen=no ${STATIC_ARGS} LIBS='-ldl'
 make -j ${CPUS} install
 cd ${DEST}
 
