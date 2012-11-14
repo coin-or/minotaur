@@ -127,7 +127,7 @@ addDoxygen
 addCmake
 
 # get latest version
-svn co svn:\/\/${USERNAME}@${SVN_REPOS} ${TEST_DIR} &> svn.log
+svn co ${SVN_REPOS} ${TEST_DIR} &> svn.log
 
 echo ""
 if [ -d ${TEST_DIR}/src ]
