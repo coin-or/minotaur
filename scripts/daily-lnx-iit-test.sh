@@ -10,10 +10,10 @@ SVN_REPOS="https://repo.anl-external.org/repos/minotaur"
 EXT_URL="http://10.105.27.47/~amahajan/minotaur/restricted/minotaur-externals.tar.gz"
 
 ## Local LOGS
-WEB_DIR=/home/amahajan/misc/web/minotaur/nightly/build-log/origin
+WEB_DIR=/home/amahajan/misc/web/minotaur/nightly/origin
 
 ## Logs on webserver
-REM_WEB_DIR=optima:/home/faculty/amahajan/webpage/minotaur/nightly/build-log/origin
+REM_WEB_DIR=optima:/home/faculty/amahajan/webpage/minotaur/nightly/origin
 
 ## parallel flag
 CPUS="8"
@@ -28,7 +28,7 @@ DOXYGEN=""
 CMAKE=""
 
 ## url where logs are accessible.
-URL="http://www.ieor.iitb.ac.in/files/faculty/amahajan/minotaur/nightly/build-log/origin/index.html"
+URL="http://www.ieor.iitb.ac.in/files/faculty/amahajan/minotaur/nightly/origin/index.html"
 
 ## delimitor
 LINE="--------------------------------------------------"
@@ -301,9 +301,10 @@ cd - >> /dev/null
 
 rm -rf ${WEB_DIR}
 mkdir ${WEB_DIR}
-cp -t ${WEB_DIR}/ *.log *.err
+mkdir ${WEB_DIR}/build-log
+cp -t ${WEB_DIR}/build-log/ *.log *.err
 
-rsync -a ${WEB_DIR}/ ${REM_WEB_DIR}/
+rsync -a ${WEB_DIR}/build-log/ ${REM_WEB_DIR}/build-log/
 
 echo ""
 echo Summary
@@ -314,7 +315,7 @@ echo ""
 echo "Errors:"
 echo ${LINE}
 
-for f in ${WEB_DIR}/build-*err
+for f in ${WEB_DIR}/build-log/build-*err
 do
 	echo " "
 	echo Errors in `basename ${f} .err`:
