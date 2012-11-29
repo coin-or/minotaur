@@ -7,6 +7,7 @@ TEST_DIR=/home/amahajan/tmp/minotaur-test
 ## svn info
 USERNAME=ashu
 SVN_REPOS="https://repo.anl-external.org/repos/minotaur"
+EXT_URL="http://10.105.27.47/~amahajan/minotaur/restricted/minotaur-externals.tar.gz"
 
 ## Local LOGS
 WEB_DIR=/home/amahajan/misc/web/minotaur/nightly/build-log/origin
@@ -147,8 +148,8 @@ OPTIONS=
 ## Build all externals
 ##########################################################################
 NAME=all_externals
-./scripts/build_externals -d . -j 8 -l ${NAME}.log -r ${NAME}.err -t \
-"http://www.ieor.iitb.ac.in/files/faculty/amahajan/minotaur/restricted/minotaur-externals.tar.gz"
+./scripts/build_externals -d . -j 8 -l ${NAME}.log -r ${NAME}.err -t ${EXT_URL}
+
 
 ##########################################################################
 ## TEST 2
