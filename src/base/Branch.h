@@ -24,6 +24,8 @@ namespace Minotaur {
   typedef boost::shared_ptr <Modification> ModificationPtr;
 
   /**
+   * \brief Base class for storing branching modifications.
+   *
    * A Branch just has a vector of modifications. This vector of
    * modifications can be applied to obtain a child node from the parent's
    * relaxation. For each child node, we must have an associated Branch object.
@@ -36,43 +38,50 @@ namespace Minotaur {
       Branch();
 
       /**
-       * Add a modification to the current vector of modifications associated
+       * \brief Add a modification to the current vector of modifications associated
        * with this branch.
+       * \param [in] mod The modification that must be added to the child
+       * node.
        */
       void addMod(ModificationPtr mod);
 
-      /// Set the candidate that was used to generate this branch.
+      /** 
+       * \brief Set the candidate that was used to generate this branch.
+       * \param [in] cand The branching candidate that was used to create this
+       * branch.
+       */
       void setBrCand(BrCandPtr cand) {brCand_ = cand;};
 
       /// The first modification in the vector of modifications.
       ModificationConstIterator modsBegin() const 
       { return mods_.begin(); }
 
-      /// The end of the vector of modifications.
+      /// The last iterator of the vector of modifications.
       ModificationConstIterator modsEnd() const { return mods_.end(); }
 
       /**
-       * The reverse iterators are used for undoing the changes. It is
+       * \brief The reverse iterators are used for undoing the changes. It is
        * important that the changes are reverted in the reverse order.
        */
       ModificationRConstIterator modsRBegin() const 
       { return mods_.rbegin(); }
 
       /**
-       * The end reverse iterator for modifications. Corresponds to the first
-       * modification in the vector.
+       * \brief The last reverse iterator for modifications. Corresponds to
+       * the first modification in the vector.
        */
       ModificationRConstIterator modsREnd() const { return mods_.rend(); }
 
       /**
-       * Get the activity or the value of the branching expression before we
-       * branched.
+       * \brief Return the activity or the value of the branching expression
+       * before we branched. Used for updating pseudo-costs.
        */
       Double getActivity() const;
 
       /**
-       * Set the activity or the value of the branching expression before we
-       * branched.
+       * \brief Set the activity or the value of the branching expression
+       * before we branched.
+       * \param [in] value The value of activity.
        */
       void setActivity(Double value);
 
@@ -84,15 +93,18 @@ namespace Minotaur {
 
     protected:
       /**
-       * A vector of modifications that define this branch. A branch may have
-       * more than one modifications. For instance, fixing a variable to zero
-       * may have implications on bounds of other variables as well. 
+       * \brief A vector of modifications that define this branch.
+       *
+       * A branch may have more than one modifications. For instance, fixing a
+       * variable to zero may have implications on bounds of other variables
+       * as well. 
        */
       ModVector mods_;
 
       /**
-       * activity_ is the value of the branching expression before we branched.
-       * So, if an integer variable has value 1.3 before branching, and we
+       * \brief The value of the branching expression before we branched.
+       *
+       * If an integer variable has value 1.3 before branching, and we
        * branch on it, the value is set at 1.3
        */
       Double activity_;

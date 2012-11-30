@@ -279,8 +279,8 @@ Bool BranchAndBound::shouldStop_()
   if (tm_->getGap() < 0.0) {
     stop_bnb = true;
     status_ = SolvedOptimal;
-    logger_->MsgStream(LogInfo) << me_ << "threshold gap has been "
-      << "achieved" << std::endl
+    logger_->MsgStream(LogInfo)
+      << me_ << "threshold gap has been achieved" << std::endl
       << me_ << "gap = " << tm_->getGap() << std::endl;
   } else if (false) {//TODO: stuck in some wiered position
     stop_bnb = true;

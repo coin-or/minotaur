@@ -19,7 +19,6 @@
 
 namespace Minotaur {
 
-class DenseMatrix;
 class Engine;
 class Function;
 class HessianOfLag;
@@ -57,70 +56,201 @@ typedef boost::shared_ptr<const ProblemSize> ConstProblemSizePtr;
  */
 class Problem {
 public:
-  // ---------------------------------------------------------------------
-  // Friendships
-  // ---------------------------------------------------------------------
-  friend class Presolver;
-
-  // ---------------------------------------------------------------------
-  // constructors, destructors
-  // ---------------------------------------------------------------------
-
   /// Default constructor
   Problem();
-
-  /** 
-   * Construct a Problem with 'n' variables with lower bounds and upper
-   * bounds and with the specified type (integer, binary, continuous). 
-   * 'n' is the size of either vector. This method should throw an error
-   * if vTypes and bounds are conflicting, e.g. a binary variable is given
-   * bounds [-10, 10].
-   */
-  Problem(std::vector<Double> lbs, std::vector<Double> ubs, 
-          std::vector<VariableType> vTypes);
-
-  /** 
-   * Construct a Problem with 'n' variables with lower bounds and upper
-   * bounds. 'n' is the size of either vector.
-   */
-  Problem(std::vector<Double> lbs, std::vector<Double> ubs);
 
   /// Destroy
   virtual ~Problem();
 
-  // ---------------------------------------------------------------------
-  // build the Problem
-  // ---------------------------------------------------------------------
+  /// Add 'c' to both lb and ub of a constraint.
+  virtual void addToCons(ConstraintPtr cons, Double c);
 
-  /// Clone the given Problem class. Jacobian and Hessian in the cloned
-  /// problem are NULL.
-  boost::shared_ptr<Problem> clone() const;
+  /// Add the given linear function to the function of a constraint
+  virtual void addToConstraint(UInt id, LinearFunctionPtr lf);
 
-  /// Add a new continuous, unbounded variable to the Problem. 
-  virtual VariablePtr newVariable(); 
+  /// Add a linear function to the objective.
+  virtual void addToObj(LinearFunctionPtr lf);
+
+  /// Add a constant term to the objective.
+  virtual void addToObj(Double cb);
+
+  /// Fill up the statistics about the size of the problem into size_.
+  virtual void calculateSize(Bool shouldRedo=false);
+
+  /// Change a bound (lower or upper) on a variable with ID=id.
+  virtual void changeBound(UInt id, BoundType lu, Double new_val);
+
+  /// Change both bounds (lower and upper) on a variable with ID=id
+  virtual void changeBound(UInt id, Double new_lb, Double new_ub);
+
+  /// Change a bound (lower or upper) on a variable 'var'. 
+  virtual void changeBound(VariablePtr var, BoundType lu, Double new_val);
+
+  /// Change lower and upper bounds on the variable 'var'
+  virtual void changeBound(VariablePtr var, Double new_lb, 
+                           Double new_ub); 
+
+  /// Change a bound (lower or upper) on a constraint 'con'. 
+  virtual void changeBound(ConstraintPtr con, BoundType lu, Double new_val);
+
+  /// Change lower and upper bounds on the constraint 'con'
+  virtual void changeBound(ConstraintPtr con, Double new_lb, 
+                           Double new_ub); 
 
   /**
-   * Add a new variable with bounds, type. This method throws error 
-   * if the bounds and type conflict.
+   * \brief Change the linear function, and the bounds of a constraint.
+   * \param [in] c Original constraint that is to be changed.
+   * \param [lf] The new linear function.
+   * \param [lb] The new lower bound.
+   * \param [ub] The new upper bound.
    */
-  virtual VariablePtr newVariable(Double lb, Double ub, VariableType vType); 
-                                            
-  /**
-   * Add a new variable with bounds, type and name. This method throws 
-   * error if the bounds and type conflict.
-   */
-  virtual VariablePtr newVariable(Double lb, Double ub, VariableType vType,
-                                  std::string name); 
+  virtual void changeConstraint(ConstraintPtr con, LinearFunctionPtr lf, 
+                                Double lb, Double ub);
 
-  /// Clone the variables pointed by the iterators and add them.
   /**
-   * Given starting and stopping iterators of variables, clone these
-   * variables and them to the relaxation. Do not add them to any
-   * constraints or objectives. The IDs are not copied.
+   * Replace the objective function with the function f. Function f is
+   * cloned. If f is modified after this call, it won't affect the
+   * objective.
    */
-  virtual void newVariables(VariableConstIterator v_begin, 
-                            VariableConstIterator v_end);
-                                            
+  virtual void changeObj(FunctionPtr f, Double cb);
+
+  /**
+   * Delete the whole Problem. Variables and constraints are so
+   * interlinked that we just cant call the destructor. This function just
+   * deletes all the constraints. The variables and functions can still be
+   * used after this is called.
+   */
+  virtual void clear();
+
+  /**
+   * \brief Clone the given Problem class. Jacobian and Hessian in the cloned
+   * problem are NULL.
+   *
+   * The variables are created. If the functions are stored in native format,
+   * they are also cloned. Problem size and the initial point are cloned as
+   * well.
+   */
+  ProblemPtr clone() const;
+
+  /// Iterate over constraints.
+  virtual ConstraintConstIterator consBegin() const 
+    { return cons_.begin(); }
+
+  /// Iterate over constraints.
+  virtual ConstraintConstIterator consEnd() const { return cons_.end(); }
+
+  /// Delete marked constraints.
+  virtual void delMarkedCons();
+
+  /// Delete marked variables.
+  virtual void delMarkedVars();
+
+  /// Return what type of problem it is. May result in re-calculation of the
+  /// problem size.
+  virtual ProblemType findType();
+
+  /// Return a pointer to the constraint with ID=id.
+  virtual ConstraintPtr getConstraint(UInt id) const;
+
+  /// Return the hessian of the lagrangean. Could be NULL.
+  virtual HessianOfLagPtr getHessian() const;
+
+  /**
+   * get the initial point. Used by some engines like IpoptEngine. The
+   * pointer returned from this function should not be changed or deleted.
+   */
+  virtual const Double * getInitialPoint() const { return initialPt_; }
+
+  /// Return the jacobian. Could be NULL.
+  virtual JacobianPtr getJacobian() const;
+
+  /// Get pointer to the log manager. Could be NULL.
+  virtual LoggerPtr getLogger();
+
+  /// Return the number of constraints.
+  virtual UInt getNumCons() const { return cons_.size(); }
+
+  /// Return the number of constraints marked for deletion.
+  virtual UInt getNumDCons() const { return numDCons_; }
+
+  /// Return the number of variables marked for deletion.
+  virtual UInt getNumDVars() const { return numDVars_; }
+
+  /**
+   * Return the number of non-zeros in the hessian of the lagrangean of the 
+   * problem. The lagrangean is defined as:
+   * \\sigma . f(x) + \\sum_{i=0}^{m-1}\\lambda_i . g_i(x), 
+   * where \\sigma \\in R^1 and \\lambda \\in R^m are the dual multipliers. 
+   * The hessian, w.r.t. x, is thus a square symmetric matrix. usually the
+   * multipliers are provided by NLP solvers. 
+   * Such solvers may require during initialization, the number of non-zeros
+   * in the lower triangular of the hessian.
+   */
+  virtual UInt getNumHessNnzs() const;
+
+  /// Return the number of non zerors in the jacobian of the constraints.
+  virtual UInt getNumJacNnzs() const;
+
+  UInt getNumLinCons(); 
+
+  /// Return the number of variables.
+  virtual UInt getNumVars() const { return vars_.size(); }
+
+  /// Return a pointer to the objective Function
+  virtual ObjectivePtr getObjective() const;
+
+  /// Return the value of objective function at given point x.
+  Double getObjValue(const Double *x, Int *err) const;
+
+  /// Fill up the statistics about the size of the problem into size_.
+  ConstProblemSizePtr getSize() const;
+
+  /// Return a pointer to the variable with ID=id.
+  virtual VariablePtr getVariable(UInt id) const;
+
+  virtual Bool hasNativeDer() const;
+
+  /**
+   * Returns true if the problem has only linear constraints and linear
+   * objectives
+   */
+  virtual Bool isLinear();
+
+  /// True if a constraint is marked deleted.
+  virtual Bool isMarkedDel(ConstConstraintPtr con);
+
+  /// True if a constraint is marked deleted.
+  virtual Bool isMarkedDel(ConstVariablePtr var);
+
+  /**
+   * Returns true if the problem has 
+   * (1) linear or quadratic objective, and
+   * (2) linear constraints only.
+   */
+  virtual Bool isQP();
+
+  /**
+   * Returns true if the problem has only linear or quadratic constraints
+   * and linear or quadratic objectives.  Returns false if a problem is
+   * linear. Returns false if problem is nonlinear.
+   */
+  virtual Bool isQuadratic();
+
+  /**
+   * Check if a given vector satisfies integrality of the integer
+   * constrained variables.
+   */
+  virtual Bool isSolIntegral(const Double *x);
+
+  /// Mark a constraint as deleted.
+  virtual void markDelete(ConstraintPtr con);
+      
+  /// Mark a variable as deleted.
+  virtual void markDelete(VariablePtr var);
+      
+  /// The objective is multiplied by -1.
+  virtual void negateObj();
+
   /// Add a new binary variable.
   virtual VariablePtr newBinaryVariable(); 
                                             
@@ -145,6 +275,49 @@ public:
   virtual ObjectivePtr newObjective(FunctionPtr fun, Double cb, 
                                     ObjectiveType otyp, std::string name);
 
+  /// Add a new continuous, unbounded variable to the Problem. 
+  virtual VariablePtr newVariable(); 
+
+  /**
+   * \brief Add a new variable with bounds, type.
+   */
+  virtual VariablePtr newVariable(Double lb, Double ub, VariableType vType); 
+                                            
+  /**
+   * Add a new variable with bounds, type and name. This method throws 
+   * error if the bounds and type conflict.
+   */
+  virtual VariablePtr newVariable(Double lb, Double ub, VariableType vType,
+                                  std::string name); 
+
+  /// Clone the variables pointed by the iterators and add them.
+  /**
+   * Given starting and stopping iterators of variables, clone these
+   * variables and them to the relaxation. Do not add them to any
+   * constraints or objectives. The IDs are not copied.
+   */
+  virtual void newVariables(VariableConstIterator v_begin, 
+                            VariableConstIterator v_end);
+                                            
+  /**
+   * Prepare necessary data structures for the next solve. e.g.
+   * if constraints have been modified, then re-evalate the sparsity
+   * pattern of Jacobian and Hessian.
+   */
+  virtual void prepareForSolve();
+
+  /// Remove objective from the Problem.
+  virtual void removeObjective(); 
+
+  /// Remove the quadratic part of objective and return it.
+  virtual QuadraticFunctionPtr removeQuadFromObj();
+
+  /// Reverse the sense of a constraint.
+  virtual void reverseSense(ConstraintPtr cons);
+
+  /// Should only be called by the Engine that loads this
+  virtual void setEngine(Engine* engine);
+
   /**
    * Set an initial point. used by some engines like IpoptEngine. If the
    * initial point has already been set before, it is overwritten by the
@@ -159,195 +332,25 @@ public:
   virtual void setInitialPoint(const Double *x, Size_t k);
 
   /**
-   * Set the jacobian of the constraints. Currently there is no other way to
-   * generate/set the jacobian.
-   */
-  virtual void setJacobian(JacobianPtr jacobian);
-
-  /**
    * Set the hessian of the lagrangean. Currently there is no other way to
    * generate/set the hessian.
    */
   virtual void setHessian(HessianOfLagPtr hessian);
 
-  /// Initialize the Jacobian for a native computational graph problem 
-  void setNativeDer();
+  /**
+   * Set the jacobian of the constraints. Currently there is no other way to
+   * generate/set the jacobian.
+   */
+  virtual void setJacobian(JacobianPtr jacobian);
 
   /// Set the log manager
   virtual void  setLogger(LoggerPtr logger);
 
-  /**
-   * Prepare necessary data structures for the next solve. e.g.
-   * if constraints have been modified, then re-evalate the sparsity
-   * pattern of Jacobian and Hessian.
-   */
-  virtual void prepareForSolve();
-
-  // ---------------------------------------------------------------------
-  // get, query methods 
-  // ---------------------------------------------------------------------
-
-  /// Fill up the statistics about the size of the problem into size_.
-  ConstProblemSizePtr getSize() const;
-
-  /// Iterate over variables.
-  virtual VariableConstIterator varsBegin() const { return vars_.begin(); }
-
-  /// Iterate over variables.
-  virtual VariableConstIterator varsEnd() const { return vars_.end(); }
-
-  /// Iterate over constraints.
-  virtual ConstraintConstIterator consBegin() const 
-    { return cons_.begin(); }
-
-  /// Iterate over constraints.
-  virtual ConstraintConstIterator consEnd() const { return cons_.end(); }
-
-
-  /// Return what type of problem it is. May result in re-calculation of the
-  /// problem size.
-  virtual ProblemType findType();
-
-  /// Return a pointer to the variable with ID=id.
-  virtual VariablePtr getVariable(UInt id) const;
-
-  /// Return a pointer to the constraint with ID=id.
-  virtual ConstraintPtr getConstraint(UInt id) const;
-
-  /// Return a pointer to the objective Function
-  virtual ObjectivePtr getObjective() const;
-
-  /// Return the value of objective function at given point x.
-  Double getObjValue(const Double *x, Int *err) const;
-
-  /// Return the number of constraints.
-  virtual UInt getNumCons() const { return cons_.size(); }
-
-  /// Return the number of variables.
-  virtual UInt getNumVars() const { return vars_.size(); }
-
-  /// Return the number of variables marked for deletion.
-  virtual UInt getNumDVars() const { return numDVars_; }
-
-  /// Return the number of constraints marked for deletion.
-  virtual UInt getNumDCons() const { return numDCons_; }
-
-  /**
-   * get the initial point. Used by some engines like IpoptEngine. The
-   * pointer returned from this function should not be changed or deleted.
-   */
-  virtual const Double * getInitialPoint() const { return initialPt_; }
-
-  /// Return the number of non zerors in the jacobian of the constraints.
-  virtual UInt getNumJacNnzs() const;
-
-  /// Return the jacobian. Could be NULL.
-  virtual JacobianPtr getJacobian() const;
-
-  /**
-   * Return the number of non-zeros in the hessian of the lagrangean of the 
-   * problem. The lagrangean is defined as:
-   * \\sigma . f(x) + \\sum_{i=0}^{m-1}\\lambda_i . g_i(x), 
-   * where \\sigma \\in R^1 and \\lambda \\in R^m are the dual multipliers. 
-   * The hessian, w.r.t. x, is thus a square symmetric matrix. usually the
-   * multipliers are provided by NLP solvers. 
-   * Such solvers may require during initialization, the number of non-zeros
-   * in the lower triangular of the hessian.
-   */
-  virtual UInt getNumHessNnzs() const;
-
-  /// Return the hessian of the lagrangean. Could be NULL.
-  virtual HessianOfLagPtr getHessian() const;
-
-  /// Get pointer to the log manager. Could be NULL.
-  virtual LoggerPtr  getLogger();
-
-  virtual Bool hasNativeDer() const;
-
-  /// True if a constraint is marked deleted.
-  virtual Bool isMarkedDel(ConstVariablePtr var);
-
-  /// True if a constraint is marked deleted.
-  virtual Bool isMarkedDel(ConstConstraintPtr con);
-
-  /**
-   * Returns true if the problem has only linear constraints and linear
-   * objectives
-   */
-  virtual Bool isLinear();
-
-  /**
-   * Returns true if the problem has 
-   * (1) linear or quadratic objective, and
-   * (2) linear constraints only.
-   */
-  virtual Bool isQP();
-
-  /**
-   * Returns true if the problem has only linear or quadratic constraints
-   * and linear or quadratic objectives.  Returns false if a problem is
-   * linear. Returns false if problem is nonlinear.
-   */
-  virtual Bool isQuadratic();
-
-  /// only for debugging, developing etc.
-  virtual void write(std::ostream &out, std::streamsize out_p=6) const;
-    
-  /// Write the problem size to logger_
-  virtual void writeSize(std::ostream &out) const;
-
-  // ----------------------------------------------------------------------
-  // evaluate methods 
-  // ----------------------------------------------------------------------
-      
-  /// Fill up the statistics about the size of the problem into size_.
-  virtual void calculateSize(Bool shouldRedo=false);
-
-  /**
-   * Check if a given vector satisfies integrality of the integer
-   * constrained variables.
-   */
-  virtual Bool isSolIntegral(const Double *x);
-
-
-  // ----------------------------------------------------------------------
-  // change, modify, delete methods
-  // ----------------------------------------------------------------------
-
-  /// Change a bound (lower or upper) on a variable with ID=id.
-  virtual void changeBound(UInt id, BoundType lu, Double new_val);
-
-  /// Change both bounds (lower and upper) on a variable with ID=id
-  virtual void changeBound(UInt id, Double new_lb, Double new_ub);
-
-  /// Change a bound (lower or upper) on a variable 'var'. 
-  virtual void changeBound(VariablePtr var, BoundType lu, Double new_val);
-
-  /// Change lower and upper bounds on the variable 'var'
-  virtual void changeBound(VariablePtr var, Double new_lb, 
-                           Double new_ub); 
-
-  /// Change a bound (lower or upper) on a constraint 'con'. 
-  virtual void changeBound(ConstraintPtr con, BoundType lu, Double new_val);
-
-  /// Change lower and upper bounds on the constraint 'con'
-  virtual void changeBound(ConstraintPtr con, Double new_lb, 
-                           Double new_ub); 
+  /// Initialize the Jacobian for a native computational graph problem 
+  void setNativeDer();
 
   /// Change the variable type.
   virtual void setVarType(VariablePtr var, VariableType type);
-
-  /// Reverse the sense of a constraint.
-  virtual void reverseSense(ConstraintPtr cons);
-
-  /// Add 'c' to both lb and ub of a constraint.
-  virtual void addToCons(ConstraintPtr cons, Double c);
-
-  /// Add a linear function to the objective.
-  virtual void addToObj(LinearFunctionPtr lf);
-
-  /// Add a constant term to the objective.
-  virtual void addToObj(Double cb);
 
   /**
    * Substitute a variable 'out' with the variable 'in' through out the
@@ -355,75 +358,39 @@ public:
    */
   virtual void subst(VariablePtr out, VariablePtr in, Double rat=1.0);
 
-  /// Remove the quadratic part of objective and return it.
-  virtual QuadraticFunctionPtr removeQuadFromObj();
-
-  /// The objective is multiplied by -1.
-  virtual void negateObj();
-
-  /**
-   * Replace the objective function with the function f. Function f is
-   * cloned. If f is modified after this call, it won't affect the
-   * objective.
-   */
-  virtual void changeObj(FunctionPtr f, Double cb);
-
-  /**
-   * \brief Change the linear function, and the bounds of a constraint.
-   * \param [in] c Original constraint that is to be changed.
-   * \param [lf] The new linear function.
-   * \param [lb] The new lower bound.
-   * \param [ub] The new upper bound.
-   */
-  virtual void changeConstraint(ConstraintPtr con, LinearFunctionPtr lf, 
-                                Double lb, Double ub);
-
-  /// Mark a variable as deleted.
-  virtual void markDelete(VariablePtr var);
-      
-  /// Delete marked variables.
-  virtual void delMarkedVars();
-
-  /// Mark a constraint as deleted.
-  virtual void markDelete(ConstraintPtr con);
-      
-  /// Delete marked constraints.
-  virtual void delMarkedCons();
-
-  /// Add the given linear function to the function of a constraint
-  virtual void addToConstraint(UInt id, LinearFunctionPtr lf);
-
-  /// Remove objective from the Problem.
-  virtual void removeObjective(); 
-
-  /// Should only be called by the Engine that loads this
-  virtual void setEngine(Engine* engine);
-
   /// Should be called in the Engine's destructor
   virtual void unsetEngine();
 
-  /**
-   * Delete the whole Problem. Variables and constraints are so
-   * interlinked that we just cant call the destructor. This function just
-   * deletes all the constraints. The variables and functions can still be
-   * used after this is called.
-   */
-  virtual void clear();
+  /// Iterate over variables.
+  virtual VariableConstIterator varsBegin() const { return vars_.begin(); }
 
-  UInt getNumLinCons(); //{ return size_->linCons; }
+  /// Iterate over variables.
+  virtual VariableConstIterator varsEnd() const { return vars_.end(); }
+
+  /// only for debugging, developing etc.
+  virtual void write(std::ostream &out, std::streamsize out_p=6) const;
+    
+  /// Write the problem size to logger_
+  virtual void writeSize(std::ostream &out) const;
 
 protected:
-  /// If true, set up our own Hessian and Jacobian.
-  Bool nativeDer_;
-
-  /// Vector of variables.
-  std::vector<VariablePtr> vars_;
-
   /// Vector of constraints.
-  std::vector<ConstraintPtr> cons_;
+  ConstraintVector cons_;
 
-  /// Objective, could be NULL.
-  ObjectivePtr obj_;
+  /**
+   *  When the problem is changed, say constraints are added or deleted,
+   *  all associated changes do not happen at that time. For example, when
+   *  new constraint is added, the hessian and jacobian do not change.
+   *  This variable is true if constraints have changed since the last
+   *  time all changes were applied.
+   */
+  Bool consModed_;
+      
+  /// Engine that must be updated if problem is loaded to it, could be null 
+  Engine* engine_;
+
+  /// Pointer to the hessian of the lagrangean. Could be NULL.
+  HessianOfLagPtr hessian_;
 
   /// Initial point. Could be NULL.
   Double * initialPt_;
@@ -437,43 +404,36 @@ protected:
   /// Pointer to the jacobian of constraints. Could be NULL.
   JacobianPtr jacobian_;
 
-  /// ID of the next constraint.
-  UInt nextCId_;
-
-  /// ID of the next variable.
-  UInt nextVId_;
-
-  /// Pointer to the hessian of the lagrangean. Could be NULL.
-  HessianOfLagPtr hessian_;
-
   /**
    * Pointer to the log manager. All output messages are sent to it. Could
    * be NULL.
    */
   LoggerPtr logger_;
 
-  /// Size statistics for this Problem.
-  ProblemSizePtr size_;
+  /// If true, set up our own Hessian and Jacobian.
+  Bool nativeDer_;
 
-  /// Number of variables marked for deletion
-  UInt numDVars_;	
+  /// ID of the next constraint.
+  UInt nextCId_;
+
+  /// ID of the next variable.
+  UInt nextVId_;
 
   /// Number of constraints marked for deletion
   UInt numDCons_;
 	
-  /// Engine that must be updated if problem is loaded to it, could be null 
-  Engine* engine_;
+  /// Number of variables marked for deletion
+  UInt numDVars_;	
 
-  /**
-   * JIM: Note, I am trying to change this below...
-   *  When the problem is changed, say constraints are added or deleted,
-   *  all associated changes do not happen at that time. For example, when
-   *  new constraint is added, the hessian and jacobian do not change.
-   *  This variable is true if constraints have changed since the last
-   *  time all changes were applied.
-   */
-  Bool consModed_;
-      
+  /// Objective, could be NULL.
+  ObjectivePtr obj_;
+
+  /// Size statistics for this Problem.
+  ProblemSizePtr size_;
+
+  /// Vector of variables.
+  VarVector vars_;
+
   /// True if variables delete, added or their bounds changed.
   Bool varsModed_;
 

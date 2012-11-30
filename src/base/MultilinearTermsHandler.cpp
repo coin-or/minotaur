@@ -5,7 +5,7 @@
 //
 
 /**
- * \file MultiLinearTermsHandler.cpp
+ * \file MultilinearTermsHandler.cpp
  * \brief Handles Multilinear Terms.  Each term must appear as equal to some
  * auxiliary variable.
  * \author Jeff Linderoth
@@ -1319,9 +1319,11 @@ Hypergraph::resetWeights()
 Double
 Hypergraph::getWeight(const SetOfVars &e) 
 {
+#if DEBUG
   // Just check that it exists (debugging)
   SetOfVarsDoubleMap::const_iterator pos = weights_.find(e);
   assert(pos != weights_.end());
+#endif
 
   return weights_[e];
 
@@ -1343,9 +1345,11 @@ Hypergraph::incidentEdges(ConstVariablePtr v) const
 void
 Hypergraph::setWeight(const SetOfVars &e, Double w)
 {
+#if DEBUG
   // Just check that it exists (debugging)
   SetOfVarsDoubleMap::iterator pos = weights_.find(e);
   assert(pos != weights_.end());
+#endif
 
   if (w < 0.0001) weights_[e] = 0.0;
   else weights_[e] = w;

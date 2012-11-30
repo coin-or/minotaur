@@ -25,6 +25,9 @@ namespace Minotaur {
   typedef boost::shared_ptr<Variable> VariablePtr;
 
   /**
+   * \brief Base class for describing candidates for branching on a node in
+   * branch-and-bound.
+   *
    * A BranchCand object is something that can be branched upon. This class is
    * abstract. Examples are BrVarCand, BrSOS1Cand, BrSOS2Cand, BrHyperCand, 
    * BrGenCand etc.
@@ -37,86 +40,109 @@ namespace Minotaur {
       /// Destroy
       virtual ~BrCand() {};
 
-      /// Return the index in the pseudo cost array. If it is not in the
-      /// array, return -1.
-      virtual Int getPCostIndex() const { return pCostIndex_; };
-
-      /// Get the distance of the current point from the branching constraint:
-      /// down direction. For an integer constrained variable, x, it would be
-      /// \f$ x - \lfloor x \rfloor \f$.
-      virtual Double getDDist() = 0;
-
-      /// Get the distance of the current point from the branching constraint:
-      /// up direction
-      virtual Double getUDist() = 0;
-
-      /// Set score for this candidate. Used to compare two candidates. 
-      virtual void setScore(const Double score) { score_ = score; };
-
-      /// Get score for this candidate. Used to compare two candidates.
-      virtual Double getScore() { return score_; };
-
-      /// Return the handler that created it
-      virtual void setHandler(HandlerPtr h) { h_ = h; };
-
-      /// Return the handler that created it
-      virtual HandlerPtr getHandler() { return h_; };
-
       /**
-       * Set the preferred direction that will be processed first in the
-       * branch-and-bound tree.
+       * Return the distance of the current point from the branching constraint:
+       * down direction. For an integer constrained variable, x, it would be
+       * \f$ x - \lfloor x \rfloor \f$.
        */
-      virtual void setDir(BranchDirection d) {prefDir_ = d;};
+      virtual Double getDDist() = 0;
 
       /// Get the preferred direction.
       virtual BranchDirection getDir() const {return prefDir_;};
 
+      /// Return the handler that created this candidate.
+      virtual HandlerPtr getHandler() { return h_; };
+
       /// Display for debugging.
       virtual std::string getName() const {return "default br-cand";};
 
+      /**
+       * \brief Return the index in the pseudo cost array. If it is not in the
+       * array, return -1.
+       */
+      virtual Int getPCostIndex() const { return pCostIndex_; };
+
+      /// Return the score for this candidate. 
+      virtual Double getScore() { return score_; };
+
+      /**
+       * Return the distance of the current point from the branching constraint:
+       * up direction For an integer constrained variable, x, it would be \f$
+       * x - \lceil x \rceil \f$.
+       */
+      virtual Double getUDist() = 0;
+
+      /**
+       * \brief Set the preferred direction that will be processed first in
+       * the branch-and-bound tree.
+       */
+      virtual void setDir(BranchDirection d) {prefDir_ = d;};
+
+      /// Set the handler that created this candidate.
+      virtual void setHandler(HandlerPtr h) { h_ = h; };
+
+      /**
+       * \brief Set score for this candidate.
+       *
+       * The score is used to compare two candidates. 
+       * \param [in] score The desired score of this candidate.
+       */
+      virtual void setScore(const Double score) { score_ = score; };
+
     protected:
-      /// index of the this candidate in the pseudo-cost array.
-      Int pCostIndex_;
-
-      /// Score
-      Double score_;
-
-      /// Handler that created it
+      /// Handler that created this candidate.
       HandlerPtr h_;
+
+      /// Index of the this candidate in the pseudo-cost array.
+      Int pCostIndex_;
 
       /// Which is preferred for processing next? UpBranch or DownBranch?
       BranchDirection prefDir_;
+
+      /// Score of this candidate.
+      Double score_;
   };   
 
-  /// BrVarCand class is derived from BrCand
+
+  /** 
+   * \brief Derived class of BrCand, it defines candidates for branching on
+   * bounds of a variable.
+   */
   class BrVarCand : public BrCand {
     public:
       /// Constructor.
       BrVarCand(VariablePtr var, Int i, Double f);
 
+      /// Destroy.
       ~BrVarCand();
 
-      // getDDist().
+      // base class method.
       Double getDDist();
 
-      // getUDist().
+      // base class method.
+      std::string getName() const;
+
+      // base class method.
       Double getUDist();
 
+      // base class method.
       VariablePtr getVar();
 
-      std::string getName() const;
     private:
+      /// fractional part.
+      Double f_;
+
       /// The variable on which we should branch.
       VariablePtr var_;
 
-      /// fractional part.
-      Double f_;
   };
   typedef boost::shared_ptr<BrVarCand> BrVarCandPtr;
 
 
-  /// comparison function to sort candidates in the decreasing order of their
-  /// score. How to break ties?
+  /**
+   * \brief Comparison function to sort candidates in the decreasing order of
+   * their score. 
+   */
   Bool CompareScore(BrCandPtr c1, BrCandPtr c2); 
   
 }

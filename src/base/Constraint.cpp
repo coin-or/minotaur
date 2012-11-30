@@ -28,108 +28,32 @@ using namespace Minotaur;
 
 Constraint::Constraint() 
   : f_(FunctionPtr()),
-    lb_(-INFINITY),
-    ub_(INFINITY),
-    state_(NormalCons),
     id_(0),
     index_(0),
-    name_("")
+    lb_(-INFINITY),
+    name_(""),
+    state_(NormalCons),
+    ub_(INFINITY)
 {
 }
 
-Constraint::Constraint(UInt id, UInt index, FunctionPtr f, Double lb, Double ub, 
-    std::string name)
+
+Constraint::Constraint(UInt id, UInt index, FunctionPtr f, Double lb, Double
+                       ub, std::string name)
   :f_(f),
-   lb_(lb),
-   ub_(ub),
-   state_(NormalCons),
    id_(id),
    index_(index),
-   name_(name)
+   lb_(lb),
+   name_(name),
+   state_(NormalCons),
+   ub_(ub)
 {
 }
+
 
 Constraint::~Constraint()
 {
   f_.reset();
-}
-
-
-void Constraint::reverseSense_()
-{
-  Double tmp = lb_;
-  (*f_) *= -1;
-  lb_    = -1*ub_;
-  ub_    = -1*tmp;
-}
-
-
-void Constraint::setName_(std::string name)
-{
-  name_ = name;
-}
-
-
-Double Constraint::getActivity(const Double *x, Int *error) const
-{
-  // XXX: report status of evaluation
-  return f_->eval(x, error);
-}
-
-
-FunctionType Constraint::getFunctionType() const
-{ 
-  return f_->getType();
-}
-
-
-const LinearFunctionPtr Constraint::getLinearFunction() const
-{ 
-  return f_->getLinearFunction();
-}
-
-
-const QuadraticFunctionPtr Constraint::getQuadraticFunction() const 
-{ 
-  return f_->getQuadraticFunction();
-}
-
-
-const NonlinearFunctionPtr Constraint::getNonlinearFunction() const 
-{ 
-  return f_->getNonlinearFunction();
-}
-
-
-const std::string Constraint::getName() const 
-{
-  return name_;
-}
-
-
-void Constraint::write(std::ostream &out) const
-{
-
-  out << "subject to " << name_ << ": ";
-
-  if (f_) {
-    if (lb_ > -INFINITY) {
-      out << lb_ << " <= ";
-    } 
-    f_->write(out);
-    if (ub_ < INFINITY) {
-      out << " <= " << ub_;
-    }
-
-    if (lb_<=-INFINITY && ub_<=-INFINITY) {
-      out << lb_ << " <= ";
-      f_->write(out);
-      out << " <= " << ub_;
-    }
-  } else {
-    out << "no function in this constraint" << std::endl;
-  }
-  out << ";" << std::endl;
 }
 
 
@@ -157,6 +81,57 @@ void Constraint::delFixedVar_(VariablePtr v, Double val)
 }
 
 
+Double Constraint::getActivity(const Double *x, Int *error) const
+{
+  return f_->eval(x, error);
+}
+
+
+FunctionType Constraint::getFunctionType() const
+{ 
+  return f_->getType();
+}
+
+
+const LinearFunctionPtr Constraint::getLinearFunction() const
+{ 
+  return f_->getLinearFunction();
+}
+
+
+const std::string Constraint::getName() const 
+{
+  return name_;
+}
+
+
+const NonlinearFunctionPtr Constraint::getNonlinearFunction() const 
+{ 
+  return f_->getNonlinearFunction();
+}
+
+
+const QuadraticFunctionPtr Constraint::getQuadraticFunction() const 
+{ 
+  return f_->getQuadraticFunction();
+}
+
+
+void Constraint::reverseSense_()
+{
+  Double tmp = lb_;
+  (*f_) *= -1;
+  lb_    = -1*ub_;
+  ub_    = -1*tmp;
+}
+
+
+void Constraint::setName_(std::string name)
+{
+  name_ = name;
+}
+
+
 void Constraint::subst_(VariablePtr out, VariablePtr in, Double rat,
                         Bool *instay)
 {
@@ -165,6 +140,32 @@ void Constraint::subst_(VariablePtr out, VariablePtr in, Double rat,
     f_->subst(out, in, rat);
     *instay = f_->hasVar(in);
   }
+}
+
+
+void Constraint::write(std::ostream &out) const
+{
+
+  out << "subject to " << name_ << ": ";
+
+  if (f_) {
+    if (lb_ > -INFINITY) {
+      out << lb_ << " <= ";
+    } 
+    f_->write(out);
+    if (ub_ < INFINITY) {
+      out << " <= " << ub_;
+    }
+
+    if (lb_<=-INFINITY && ub_<=-INFINITY) {
+      out << lb_ << " <= ";
+      f_->write(out);
+      out << " <= " << ub_;
+    }
+  } else {
+    out << "no function in this constraint" << std::endl;
+  }
+  out << ";" << std::endl;
 }
 
 

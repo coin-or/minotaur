@@ -40,8 +40,8 @@ Bool Minotaur::CompareScore(BrCandPtr c1, BrCandPtr c2)
 
 
 BrVarCand::BrVarCand(VariablePtr var, Int i, Double f)
-: var_(var),
-  f_(f)
+: f_(f),
+  var_(var)
 { 
   pCostIndex_ = i;
   score_ = 0.0;
@@ -63,6 +63,12 @@ Double BrVarCand::getDDist()
 }
 
 
+std::string BrVarCand::getName() const 
+{
+  return var_->getName();
+}
+
+
 Double BrVarCand::getUDist()
 {
   return 1.-f_;
@@ -74,11 +80,6 @@ VariablePtr BrVarCand::getVar()
   return var_;
 }
 
-
-std::string BrVarCand::getName() const 
-{
-  return var_->getName();
-}
 
 // Local Variables: 
 // mode: c++ 

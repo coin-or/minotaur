@@ -266,7 +266,7 @@ doTest; listBins; testFiles; checkTest
 
 ## valgrind
 cd ${NAME}/src/testing
-valgrind --run-libc-freeres=no --leak-check=full --show-reachable=yes \
+valgrind --leak-check=full --show-reachable=yes \
 ./unittest all >> ../../../${NAME}.out 2>> ../../../${NAME}.err
 cd - >> /dev/null
 

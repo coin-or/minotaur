@@ -194,8 +194,8 @@ void Presolver::ifIntsAreBins_()
 {
   VariablePtr v_ptr;
   Double lb, ub;
-  for (VariableIterator v_iter=problem_->vars_.begin(); 
-      v_iter!=problem_->vars_.end(); ++v_iter) {
+  for (VariableConstIterator v_iter=problem_->varsBegin(); 
+      v_iter!=problem_->varsEnd(); ++v_iter) {
     v_ptr = *v_iter;
     if (v_ptr->getType()==Integer) {
       lb = v_ptr->getLb();
@@ -211,8 +211,8 @@ void Presolver::ifIntsAreBins_()
 void Presolver::standardizeConstraints_()
 {
   ConstraintPtr c_ptr;
-  for (ConstraintIterator c_iter=problem_->cons_.begin(); 
-       c_iter!=problem_->cons_.end(); ++c_iter) {
+  for (ConstraintConstIterator c_iter=problem_->consBegin(); 
+       c_iter!=problem_->consEnd(); ++c_iter) {
     c_ptr = *c_iter;
     if (c_ptr->getLb() > -INFINITY && c_ptr->getUb() >= INFINITY) {
       problem_->reverseSense(c_ptr);

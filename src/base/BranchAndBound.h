@@ -36,10 +36,10 @@ namespace Minotaur {
 
 
   /**
-   * BranchAndBound class is meant to implement the branch-and-bound
-   * algorithm. 
+   * \brief Implement a generic branch-and-bound algorithm on a single cpu. 
    */
   class BranchAndBound {
+
   public:
     /// Default constructor.
     BranchAndBound();
@@ -50,74 +50,98 @@ namespace Minotaur {
     /// Destroy.
     virtual ~BranchAndBound();
 
-    /// Add a heuristic that will be called before root node.
+    /** 
+     * \brief Add a heuristic that will be called before root node.
+     * \param [in] h The heuristic that should be called. This heuristic will
+     * be called after all previously added heuristic.
+     */
     void addPreRootHeur(HeurPtr h);
 
     /**
-     * Percentage gap between the lower and upper bounds. It is calculated as:
+     * \brief Return the percentage gap between the lower and upper bounds. 
      * 
-     * (ub - lb)/(fabs(ub)+tol)
+     * Gap percentage is calculated as
+     * \f$\frac{u - l}{\left|u\right|+\epsilon} \times 100\f$, where \f$u\f$
+     * is the upper bound, \f$l\f$ is the lower bound and \f$\epsilon\f$ is a
+     * small constant to avoid division by zero.
      */
     Double getGap();
 
     /**
-     * Get the lowerbound from the search tree. This bound is defined as the 
-     * minimum of the bounds from all active nodes. It may not be a bound on
-     * the optimal solution value.
+     * \brief Return the lower bound from the search tree.
+     *
+     * This bound is defined as the minimum of the bounds from all active
+     * nodes. It may not be a bound on the optimal solution value.
      */
     Double getLb();
 
-    /// Get a pointer to node processor.
+    /// Return a pointer to NodeProcessor used in branch-and-bound.
     NodeProcessorPtr getNodeProcessor();
 
-    /// Get a pointer to NodeRelaxer.
+    /// Return a pointer to NodeRelaxer used in branch-and-bound.
     NodeRelaxerPtr getNodeRelaxer(); 
 
     /*
-     * Get solution from the last solve. If no solution was found, return
+     * \brief Return solution from the last solve. If no solution was found, return
      * NULL.
      */
     SolutionPtr getSolution();
 
-    /// Get the final status.
+    /// Return the final status.
     SolveStatus getStatus();
 
     /**
-     * Get a pointer to the tree manager. The client can then directly query
-     * the TreeManager for its size and other attributes.
+     * \brief Return a pointer to the tree manager. The client can then
+     * directly query the TreeManager for its size and other attributes.
      */
     TreeManagerPtr getTreeManager(); 
 
     /**
-     * Get the upperbound for the solution value from the search tree. 
+     * \brief Return the upper bound for the solution value from the search tree. 
+     *
      * This bound may or may not correspond to a feasible solution of the
      * problem. It may be obtained from a feasible solution of a relaxation of 
      * the problem.
      */
     Double getUb();
 
-    /// return number of processed nodes
+    /// Return number of nodes processed while solving.
     UInt numProcNodes();
 
-    /// Set log level.
+    /**
+     * \brief Set log level.
+     *
+     * \param [in] level The desired log level for this class.
+     */
     void setLogLevel(LogLevel level);
 
-    /// Set a limit on the number of nodes in the branch-and-bound tree.
-    void setNodeLimit(UInt limit);
-
-    /// The processor that processes each node.
+    /**
+     * \brief Set the NodeProcessor that processes each node.
+     *
+     * \param [in] p The desired node-processor.
+     */
     void setNodeProcessor(NodeProcessorPtr p);
 
-    /// Is the node relaxation created incrementally or from scratch?
+    /**
+     * \brief Set the NodeRelaxer for setting-up relaxations at each node.
+     *
+     * \param [in] nr The desired node-relaxer.
+     */
     void setNodeRelaxer(NodeRelaxerPtr nr);
 
-    /// Should the root node be solved in branch-and-bound.
+    /**
+     * \brief Switch to turn on/off root-node creation.
+     *
+     * Sometimes a client may set up a root node on its own and
+     * may not want the default root node.
+     * \param [in] b True if root node should be created, false otherwise.
+     */
     void shouldCreateRoot(Bool b);
 
     /// Start solving the Problem using branch-and-bound
     void solve();
 
-    /// return total time taken
+    /// Return total time taken
     Double totalTime();
 
     /// Write statistics to the ostream out
@@ -130,14 +154,10 @@ namespace Minotaur {
     /// Pointer to the enviroment.
     EnvPtr env_;
 
-    /** 
-     * Log manager for displaying messages for Branch-and-Bound. This logger
-     * is different from those of Engines, TreeManager, Node, Branch, 
-     * Modification etc. 
-     */
+    /// Log manager for displaying messages.
     LoggerPtr logger_;
 
-    /// String name.
+    /// String name used in log messages.
     static const std::string me_;
 
     /// The processor to process each node.
@@ -150,7 +170,7 @@ namespace Minotaur {
     BabOptionsPtr options_;
 
     /**
-     * Heuristics that need to be called before creating and solving the root
+     * \brief Heuristics that need to be called before creating and solving the root
      * node.
      */
     HeurVector preHeurs_;
@@ -162,7 +182,7 @@ namespace Minotaur {
     SolutionPoolPtr solPool_;
 
     /**
-     * Statistics about the branch-and-bound (including time, number of
+     * \brief Statistics about the branch-and-bound (including time, number of
      * iterations etc.)
      */
     BabStats *stats_;
@@ -171,9 +191,11 @@ namespace Minotaur {
     SolveStatus status_;
 
     /**
-     * Timer for keeping track of time. The user or the environment from which
-     * branch-and-bound is called can set up the timer and even start it
-     * before sending it to branch-and-bound.
+     * \brief Timer for keeping track of time.
+     *
+     * The user or the environment from which branch-and-bound is called can
+     * set up the timer and even start it before sending it to
+     * branch-and-bound.
      */
     Timer *timer_;
    
@@ -181,29 +203,36 @@ namespace Minotaur {
     TreeManagerPtr tm_;
 
     /**
-     * Process the root node. NodePtr is the next candidate that will be
-     * processed after the root. It can be NULL. dive is true if we dive after
-     * processing the root.
+     * \brief Process the root node.
+     *
+     * \param [out] should_prune True if the root node can be pruned.
+     * \param [out] should_dive True if we should dive to a child node.
      */
     NodePtr processRoot_(Bool *should_prune, Bool *should_dive);
 
-    /// Check if a node can be pruned.
+    /// Return True if a node can be pruned.
     Bool shouldPrune_(NodePtr node);
 
     /**
-     * Should the branch-and-bound stop because of time limit, or node limit
-     * or if solved?
+     * \brief Check whether the branch-and-bound can stop because of time
+     * limit, or node limit or if solved?
      */
     Bool shouldStop_();
 
-    /// Display status.
+    /**
+     * \brief Display status: number of nodes, bounds, time etc.
+     *
+     * \param [in] current_uncounted If True, then the number of nodes in the
+     * log-message is incremented by one. This may happen when diving: the
+     * node being processed is not in the list of active nodes in the tree.
+     */
     void showStatus_(Bool current_uncounted);
   };
 
   /// Statistics about the branch-and-bound.
   struct BabStats 
   {
-    /// Constructor. All data should be initialized to zero.
+    /// Constructor. All data is initialized to zero.
     BabStats();
 
     /// Number of nodes processed.
@@ -227,7 +256,7 @@ namespace Minotaur {
     BabOptions(EnvPtr env);
 
     /**
-     * Should the root be created in branch-and-bound (yes), or the user calls
+     * \brief Should the root be created in branch-and-bound (yes), or the user calls
      * branch-and-bound after creating the root (no)?
      */
     Bool createRoot;
@@ -238,7 +267,7 @@ namespace Minotaur {
     /// Verbosity of log.
     LogLevel logLevel;
 
-    /// Limit on number of nodes created.
+    /// Limit on number of nodes processed.
     Double nodeLimit;
 
     /// Time limit in seconds for the branch-and-bound.

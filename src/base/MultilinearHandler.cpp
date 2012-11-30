@@ -5,7 +5,7 @@
 //
 
 /**
- * \file MultiLinearHandler.cpp
+ * \file MultilinearHandler.cpp
  * \brief Handles Multilinear Constraints
  * \author Mahdi Namizifar wrote the ugly parts.  Jeff Linderoth wrote the
  * good parts.

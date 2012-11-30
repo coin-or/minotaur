@@ -30,21 +30,23 @@ namespace Minotaur {
     VariableFunIterator;
 
   /**
-   * The Constraint class is used to manage a constraint. The general form of
-   * a constraint is:
+   * \brief The Constraint class is used to manage a constraint.
+   *
+   * The general form of a constraint is:
+   * \f[
+   * l \leq f(x) \leq u,
+   * \f]
+   * where \f$f(x)\f$ is a function of the variables and \f$l, u\f$ are
+   * constraints placed on \f$f\f$. \f$l\f$ can be \f$-\infty\f$ and/or
+   * \f$u\f$ can be \f$\infty\f$.
    * 
-   * l <= f(x) <= u,
-   * 
-   * where f(x) is a function of the variables and l, u are constraints placed
-   * on f. l can be -infinity and/or u can be infinity.
-   * 
-   * A constraint should only be constructed through a Problem. This
-   * ensures that constraints have ID's unique for that problem. A
-   * constraint can thus be part of only one problem. A function (f) that
+   * A constraint should only be constructed through a Problem object. Doing
+   * this ensures that constraints have ID's unique for that problem. A
+   * constraint can thus be part of only one problem. A function \f$f\f$ that
    * is part of a constraint should also not be shared at several places in
-   * the same problem or amongst different problems.  Similarly,
-   * constraints should be deleted only through a problem.  Changes in a
-   * constraint (e.g. changing name, bounds etc) may be done directly.
+   * the same problem or amongst different problems.  Similarly, constraints
+   * should be deleted only through a problem.  Changes in a constraint (e.g.
+   * changing name, bounds etc) may be done directly.
    * 
    * The state of a constraint describes whether the constraint is free or
    * deleted etc. It is Fixed if each variable in the constraints has been 
@@ -72,25 +74,31 @@ namespace Minotaur {
       Constraint();
 
       /**
-       * This is the only real constructor. All others call this constructor.
-       * create a constraint with an id, function f, lb, ub and the name of the 
-       * constraint.
+       * \brief This is the only real constructor. All others should call this
+       * constructor.
+       *
+       * Create a constraint with 
+       * \param [in] id The unique id of the constraint (determined by
+       * Problem object), 
+       * \param [in] f the function in the body of the constraint,
+       * \param [in] lb the lower bound, can be -INFINITY,
+       * \param [in] ub the upper bound, can be  INFINITY,
+       * \param [in] name The string name of the constraint.
        */
       Constraint(UInt id, UInt index, FunctionPtr f, Double lb, Double ub, 
           std::string name);
 
-      /**
-       * Create a constraint with function f, lb, ub. the name of the constraint
-       * is created  only when the id has been set or the setName() function is
-       * used.
-       */
-      Constraint(FunctionPtr f, Double lb, Double ub);
-
       /// Destroy
       virtual ~Constraint();
 
+      /// Get the value or activity at a given point.
+      Double getActivity(const Double *x, Int *error) const;
 
-      // get methods
+      /// Return a pointer to the function.
+      const FunctionPtr getFunction() const { return f_; }
+
+      /// Get the function type.
+      FunctionType getFunctionType() const;
 
       /// Return the unique id of the constraint.
       UInt getId() const { return id_; }
@@ -101,92 +109,78 @@ namespace Minotaur {
       /// Get the 'l' value. or the lower bound constraint on 'f'.
       Double getLb() const { return lb_; }
 
-      /// Get the 'u' value. or the upper bound constraint on 'f'.
-      Double getUb() const { return ub_; }
-
-      /// Get the function.
-      const FunctionPtr getFunction() const { return f_; }
-
-      /// Get the function type.
-      FunctionType getFunctionType() const;
-
       /// Get the linear part of the constraint function 'f'.
       const LinearFunctionPtr getLinearFunction() const;
-
-      /// Get the quadratic part of the constraint function 'f'.
-      const QuadraticFunctionPtr getQuadraticFunction() const;
-
-      /// Get the nonlinear part of the constraint function 'f'.
-      const NonlinearFunctionPtr getNonlinearFunction() const;
-
-      /// Get the current state of the constraint: freed, fixed etc.
-      ConsState getState() const { return state_; }
 
       // Get the name of the constraint. 
       const std::string getName() const;
 
-      /// Get the value or activity at a given point.
-      Double getActivity(const Double *x, Int *error) const;
+      /// Get the nonlinear part of the constraint function 'f'.
+      const NonlinearFunctionPtr getNonlinearFunction() const;
+
+      /// Get the quadratic part of the constraint function 'f'.
+      const QuadraticFunctionPtr getQuadraticFunction() const;
+
+      /// Get the current state of the constraint: freed, fixed etc.
+      ConsState getState() const { return state_; }
+
+      /// Get the 'u' value. or the upper bound constraint on 'f'.
+      Double getUb() const { return ub_; }
 
       /// display the constraint
       void write(std::ostream &out) const;
 
     protected:
-      /// set state of the constraint.
-      void setState_(ConsState state) { state_ = state; return; }
-
-      /// Change the linear part of constraint.
-      void changeLf_(LinearFunctionPtr lf);
-
-      /**
-       * Substitute a variable 'in' with rat * out.
-       */
-      void subst_(VariablePtr out, VariablePtr in, Double rat, Bool *instay);
-
       /// Add a constant to the constraint function. lb - c <= f <= ub - c.
       void add_(Double cb);
 
-      /**
-       * Set a new lower bound. could be -infinity. Can affect the state of the
-       * constraint.
-       */
-      void setLb_(Double newLb) { lb_ = newLb; }
-
-      /**
-       * Set a new upper bound. could be infinity. Can affect the state of the
-       * constraint.
-       */
-      void setUb_(Double newUb) { ub_ = newUb; }
-
-      /// set an index. 
-      void setIndex_(UInt n) { index_ = n; }
-
-      /// Set name of the constraint
-      void setName_(std::string name);
+      /// Change the linear part of constraint.
+      void changeLf_(LinearFunctionPtr lf);
 
       /// Delete variables fixed at value val.
       void delFixedVar_(VariablePtr v, Double val);
 
       /**
-       * convert the constraint from 
-       * lb <= g(x) <= ub 
-       * to
-       * -ub <= -g(x) <= lb
+       * \brief Negate the constraint.
+       *
+       * Convert the constraint to 
+       * \f[
+       * -u \leq -f(x) \leq -l
+       *  \f]
        */
       void reverseSense_();
+
+      /// Set the index. 
+      void setIndex_(UInt n) { index_ = n; }
+
+      /**
+       * \brief Set a new lower bound.
+       *
+       * The new lower bound can be -INFINITY. It can change the state of
+       * the constraint.
+       */
+      void setLb_(Double newLb) { lb_ = newLb; }
+
+      /// Set name of the constraint
+      void setName_(std::string name);
+
+      /// Set state of the constraint.
+      void setState_(ConsState state) { state_ = state; return; }
+
+      /**
+       * \brief Set a new upper bound.
+       *
+       * The new bound can be INFINITY. It can affect the state of the
+       * constraint.
+       */
+      void setUb_(Double newUb) { ub_ = newUb; }
+
+      /// \brief Substitute a variable \f$x_1\f$ by \f$rx_2\f$.
+      void subst_(VariablePtr out, VariablePtr in, Double rat, Bool *instay);
 
     private:
       /// The function 'f' in l <= f(x) <= u.
       FunctionPtr f_;
-
-      /// 'l' [-infinity, infinity).
-      Double lb_;
-
-      /// 'u' (-infinity, infinity].
-      Double ub_;
-
-      /// free or fixed etc.
-      ConsState state_;
 
       /// id that is unique for this constraint in the problem.
       UInt id_;         
@@ -194,10 +188,17 @@ namespace Minotaur {
       /// id that is unique for this constraint in the problem.
       UInt index_;         
 
+      /// 'l' [-infinity, infinity).
+      Double lb_;
+
       /// name of the constraint. could be NULL.
       std::string name_;
 
+      /// free or fixed etc.
+      ConsState state_;
 
+      /// 'u' (-infinity, infinity].
+      Double ub_;
   };
 }
 #endif
