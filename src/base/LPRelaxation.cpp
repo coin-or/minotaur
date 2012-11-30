@@ -22,7 +22,6 @@ LPRelaxation::LPRelaxation()
   : originalProblem_(ProblemPtr()) // NULL
 {
   initialPt_ = 0;
-  intTol_ = 1e-6;
   jacobian_ = JacobianPtr();
   hessian_ = HessianOfLagPtr();
   logger_ = LoggerPtr();

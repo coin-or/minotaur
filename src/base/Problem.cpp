@@ -37,7 +37,6 @@ Problem::Problem()
   consModed_(false),
   engine_(0),
   initialPt_(0), 
-  intTol_(1e-6),
   nativeDer_(false),
   nextCId_(0),
   nextVId_(0),
@@ -96,16 +95,6 @@ void Problem::addToObj(Double c)
 void Problem::addToCons(ConstraintPtr cons, Double c) 
 {
   cons->add_(c);
-}
-
-
-void Problem::addToConstraint(UInt index, LinearFunctionPtr lf)
-{
-  assert(engine_ == 0 ||
-      (!"Cannot change constraint after loading problem to engine\n")); 
-  assert(index < cons_.size());
-  cons_[index]->getFunction()->add(lf);
-  consModed_ = true;
 }
 
 
@@ -343,7 +332,6 @@ ProblemPtr Problem::clone() const
     std::copy(initialPt_, initialPt_+vars_.size(), clonePtr->initialPt_);
   }
 
-  clonePtr->intTol_    = intTol_;
   clonePtr->jacobian_  = JacobianPtr(); // NULL.
   clonePtr->nextCId_   = nextCId_;
   clonePtr->nextVId_   = nextVId_;
@@ -846,25 +834,6 @@ Bool Problem::isQuadratic()
     } 
   }
   return false;
-}
-
-
-Bool Problem::isSolIntegral(const Double *x)
-{
-  VariableConstIterator v_iter;
-  VariablePtr v_ptr;
-  VariableType v_type;
-  Int i = 0;
-
-  for (v_iter=vars_.begin(); v_iter!=vars_.end(); v_iter++, i++) {
-    v_ptr = *v_iter;
-    v_type = v_ptr->getType();
-    if ((v_type==Binary || v_type==Integer) && 
-        fabs(floor(x[i]+0.5) - x[i]) > intTol_) {
-      return false;
-    }
-  }
-  return true;
 }
 
 

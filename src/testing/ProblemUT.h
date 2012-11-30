@@ -35,7 +35,6 @@ class ProblemTest : public CppUnit::TestCase {
     void testDeleteVar(); 
     void testChangeBound(); 
     void testaddToObj(); 
-    void testSolIntegral();
  
     CPPUNIT_TEST_SUITE(ProblemTest);
     CPPUNIT_TEST(testevalCon);
@@ -46,7 +45,6 @@ class ProblemTest : public CppUnit::TestCase {
     CPPUNIT_TEST(testDeleteVar);
     CPPUNIT_TEST(testChangeBound); 
     CPPUNIT_TEST(testaddToObj);  
-    CPPUNIT_TEST(testSolIntegral); 
     CPPUNIT_TEST_SUITE_END();
 
     //void testgetCons();

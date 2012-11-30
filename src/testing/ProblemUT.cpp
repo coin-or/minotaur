@@ -146,18 +146,6 @@ ProblemTest::testaddToObj()
   CPPUNIT_ASSERT(instance_->getSize()->objLinTerms == 3);
 }
 
-void
-ProblemTest::testSolIntegral()
-{
-  LinearFunctionPtr lf = LinearFunctionPtr(new LinearFunction());
-  lf->addTerm(instance_->newVariable(0.0, 4.0, Continuous), 5.0);
-  instance_->addToObj(lf);
-  Double x[3] = {1.0, 3.0, 4.5}; 
-  CPPUNIT_ASSERT(instance_->isSolIntegral(x) == true);
-  instance_->setVarType(instance_->getVariable(2),Integer);  
-  CPPUNIT_ASSERT(instance_->isSolIntegral(x) == false);  
-} 
-
 // Local Variables: 
 // mode: c++ 
 // eval: (c-set-style "k&r") 

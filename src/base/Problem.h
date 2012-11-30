@@ -65,9 +65,6 @@ public:
   /// Add 'c' to both lb and ub of a constraint.
   virtual void addToCons(ConstraintPtr cons, Double c);
 
-  /// Add the given linear function to the function of a constraint
-  virtual void addToConstraint(UInt id, LinearFunctionPtr lf);
-
   /// Add a linear function to the objective.
   virtual void addToObj(LinearFunctionPtr lf);
 
@@ -236,12 +233,6 @@ public:
    */
   virtual Bool isQuadratic();
 
-  /**
-   * Check if a given vector satisfies integrality of the integer
-   * constrained variables.
-   */
-  virtual Bool isSolIntegral(const Double *x);
-
   /// Mark a constraint as deleted.
   virtual void markDelete(ConstraintPtr con);
       
@@ -394,12 +385,6 @@ protected:
 
   /// Initial point. Could be NULL.
   Double * initialPt_;
-
-  /**
-   * Tolerance value used to check integrality.
-   * \todo Methods to get/set this.
-   */
-  Double intTol_;
 
   /// Pointer to the jacobian of constraints. Could be NULL.
   JacobianPtr jacobian_;
