@@ -27,18 +27,19 @@ namespace Minotaur {
 
   // 1=like_red, 2=blue, 4=red, 5=yellow, 6=black, 7=pink, 8=cyan, 9=green
   // 11=orange, 12=green, 13=pink, 14=light blue
+  /// Colors for tree-visualization using vbc
   typedef enum {
-    VbcActive = 4,    /// Unsolved, open.
-    VbcFeas = 2,      /// incumbent.
-    VbcInf = 11,      /// infeasible.
-    VbcSolved = 9,    /// solved.
+    VbcActive  = 4,   /// Unsolved, open.
+    VbcFeas    = 2,   /// incumbent.
+    VbcInf     = 11,  /// infeasible.
+    VbcSolved  = 9,   /// solved.
     VbcSolving = 8,   /// currently being solved.
-    VbcSubInf = 13,   /// subtree is infeasible.
-    VbcSubOpt = 6     /// suboptimal.
+    VbcSubInf  = 13,  /// subtree is infeasible.
+    VbcSubOpt  = 6    /// suboptimal.
   } VbcColors;
 
 
-  /** Class to manage the branch-and-bound tree. */
+  /// Base class for managing the branch-and-bound tree. 
   class TreeManager {
 
   public:
@@ -48,41 +49,113 @@ namespace Minotaur {
     /// Destroy.
     ~TreeManager();
 
-    /// \return the cut off value. It is INFINITY if it is not set.
+    /// Return true if any active nodes remain in the tree. False otherwise.
+    Bool anyActiveNodesLeft();
+
+    /**
+     * \brief Branch and create new nodes.
+     *
+     * \param[in] branches The branching constraints or bounds or disjunctions
+     * that are used to create the new nodes after branching.
+     * \param[in] node The node that we wish to branch upon.
+     * \param[in] ws The warm starting information that should be linked to
+     * in the new nodes.
+     * \returns The first child node.
+     */
+    NodePtr branch(Branches branches, NodePtr node, WarmStartPtr ws);
+
+    /**
+     * \brief Return the number of active nodes, i.e. nodes that have been created,
+     * but not processed yet.
+     */
+    UInt getActiveNodes() const;
+
+    /// Return the cut off value. It is INFINITY if it is not set.
     Double getCutOff();
 
     /**
-     * \return the value stored in bestLowerBound_. It may be lower than the
-     * actual lower bound of the tree, because it is not updated continuously.
-     * Also see updateLb().
-     */
-    Double getLb();
-
-    /**
-     * \return the best known upper bound as stored in bestUpperBound_.
-     */
-    Double getUb();
-
-    /**
-     * \return the gap between the lower and upper bound as a percentage. It
+     * \brief Return the gap between the lower and upper bound as a percentage. It
      * is calculated as \f$\frac{ub-lb}{\left|ub\right|+\epsilon}\times 100\f$.
      */
     Double getGap();
 
     /**
-     * \return the size of the tree, including both active and processed
+     * \brief Return the value of the highest lower bound evaluated in the
+     * last update of he bound.
+     *
+     * Since evaluating the lower bound may be expensive or certain types of
+     * tree-managers, it may be updated infrequently. Consquently, the value
+     * returned here may be lower than the actual lower bound of
+     * the tree. Also see updateLb().
+     */
+    Double getLb();
+
+    /// Return the best known upper bound.
+    Double getUb();
+
+    /**
+     * \brief Return the size of the tree, including both active and processed
      * nodes.
      */
     UInt getSize() const;
 
     /**
-     * \return the number of active nodes, i.e. nodes that have been created,
-     * but not processed yet.
+     * \brief Search for the best candidate that can be processed next.
+     *
+     * It may prune some of the nodes if their lower bound is more than the
+     * upper bound.  \return the best candidate found. If no candidate is
+     * found, it returns NULL. The candidate is not removed from the storage.
+     * It is removed only when removeActiveNode() is called.
      */
-    UInt getActiveNodes() const;
+    NodePtr getCandidate();
+
+    /**
+     * \brief Insert the root node into the tree.
+     *
+     * \param[in] node The root node.
+     */
+    void insertRoot(NodePtr node);
+
+    /**
+     * \brief Prune a given node from the tree
+     *
+     * \param[in] node The node that must be pruned.
+     */
+    void pruneNode(NodePtr node);
+
+    /**
+     * \brief Remove a given active node from storage.
+     *
+     * It should be called after the node has been processed.
+     * \param[in] node The node to be removed from storage.
+     */
+    void removeActiveNode(NodePtr node);
+
+    /**
+     * \brief Set the cut off value for the objective function.
+     *
+     * Nodes with lower bound \f$ lb \geq value-\epsilon\f$ can be pruned.
+     * \param[in] value The cut off value. It can be INFINITY.
+     */
+    void setCutOff(Double value);
 
     /** 
-     * Recalculate the lower bound of the tree. If the active nodes are stored
+     * \brief Set the best known objective function value.
+     *
+     * The function does NOT check if the given value is better than the
+     * previous. So care should be taken to pass only the best known value. It
+     * also updates the cutoff value that is used to prune nodes.
+     * \param[in] value The best known upper bound.
+     */
+    void setUb(Double value);
+
+    /// Return true if the tree-manager recommends diving. False otherwise.
+    Bool shouldDive();
+
+    /** 
+     * \brief Recalculate and return the lower bound of the tree.
+     *
+     * If the active nodes are stored
      * in a heap, nothing really needs to be done. For other types of storage,
      * this operation may be expensive. The result is cached into
      * bestLowerBound_.
@@ -90,79 +163,27 @@ namespace Minotaur {
      */
     Double updateLb();
 
-    /**
-     * Search for the best candidate that can be processed next. It may prune
-     * some of the nodes if their lower bound is more than the upper bound.
-     * \return the best candidate found. If no candidate is found, it returns
-     * NULL. The candidate is not removed from the storage. It is removed only
-     * when removeActiveNode() is called.
-     */
-    NodePtr getCandidate();
-
-    /**
-     * Remove a given active node from storage. It should be called after the
-     * node has been processed.
-     * \param[in] node The node to be removed from storage.
-     */
-    void removeActiveNode(NodePtr node);
-
-    /** 
-     * Set the best known objective function value. The function does NOT
-     * check if the given value is better than the previous. So care should be
-     * taken to pass only the best known value. It also updates the cutoff
-     * value that is used to prune nodes.
-     * \param[in] value The best known upper bound.
-     */
-    void setUb(Double value);
-
-    /**
-     * Set the cut off value for the objective function. Nodes with lower
-     * bound \f$ lb \geq value-\epsilon\f$ can be pruned.
-     * \param[in] value The cut off value. It can be INFINITY.
-     */
-    void setCutOff(Double value);
-
-    /**
-     * Insert the root node into the tree.
-     * \param[in] node The root node.
-     */
-    void insertRoot(NodePtr node);
-
-    void pruneNode(NodePtr node);
-    //void branchAndBound();
-
-    NodePtr branch(Branches branches, NodePtr node, WarmStartPtr ws);
-
-
-    Bool anyActiveNodesLeft();
-
-    Bool shouldDive();
-
   private:
-    /// set of nodes that are still active (those who need to be processed).
+    /// Set of nodes that are still active (those who need to be processed).
     ActiveNodeStorePtr active_nodes_; 
 
-    /// File name to store tree information for vbc.
-    Bool doVbc_;
-
-    // set of nodes in the tree that have not been deleted yet.
-    std::vector<NodePtr>nodes_;
-
-    // number of nodes that have been created so far, including the ones that
-    // were deleted.
-    UInt size_;
-    
+    /// \brief Best known lower bound based on the last update.
     Double bestLowerBound_;
+
+    /// \brief Best known upper bound.
     Double bestUpperBound_;
 
-    /// Nodes with objective value above cutOff_ are assumed infeasible.
+    /// The cutoff value above which nodes are assumed infeasible.
     Double cutOff_;
 
-    /// The search order: depth first, best first or something else.
-    TreeSearchOrder searchType_;
+    /// Whether we should store tree information for vbc.
+    Bool doVbc_;
 
-    /// Tolerance
+    /// Tolerance for pruning nodes on the basis of bounds.
     const Double etol_;
+
+    /// Set of nodes in the tree that have not been deleted yet.
+    std::vector<NodePtr> nodes_;
 
     /// The acceptable gap between final lb and final ub of the instance.
     const Double reqGap_;
@@ -170,6 +191,15 @@ namespace Minotaur {
     /// The acceptable gap percentage between final lb and ub of the instance.
     Double reqRelGap_;
 
+    /// The search order: depth first, best first or something else.
+    TreeSearchOrder searchType_;
+
+    /**
+     * \brief Number of nodes that have been created so far, including the
+     * ones that were deleted.
+     */
+    UInt size_;
+    
     /// Timer is used only for vbc tree emulation.
     Timer *timer_;
 
@@ -180,14 +210,20 @@ namespace Minotaur {
     Bool shouldPrune_(NodePtr node);
 
     /**
-     * Insert a candidate (that is not root) into the tree.
+     * \brief Insert a candidate (that is not root) into the tree.
+     *
      * \param[in] node The node that is to be inserted.
      * \param[in] pop_now True if  ...
      */
     void insertCandidate_(NodePtr node, Bool pop_now = false);
 
+    /**
+     * \brief Remove a node from the tree.
+     *
+     * \param[in] node The node that is to be removed. It may remove the
+     * parents of the current node also if they are no longer required.
+     */
     void removeNode_(NodePtr node);
-
   };
 
   typedef boost::shared_ptr<TreeManager> TreeManagerPtr;

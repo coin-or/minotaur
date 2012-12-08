@@ -27,13 +27,13 @@ using namespace Minotaur;
     
     
 TreeManager::TreeManager(EnvPtr env) 
-: doVbc_(false),
-  size_(0),
-  bestLowerBound_(-INFINITY),
+: bestLowerBound_(-INFINITY),
   bestUpperBound_(INFINITY),
   cutOff_(INFINITY),
+  doVbc_(false),
   etol_(1e-6),
   reqGap_(1e-6),
+  size_(0),
   timer_(0)
 {
   std::string s = env->getOptions()->findString("tree_search")->getValue();
@@ -98,46 +98,57 @@ TreeManager::~TreeManager()
 }
 
 
-void TreeManager::insertRoot(NodePtr node)
+Bool TreeManager::anyActiveNodesLeft()
 {
-  assert(size_==0);
-  assert(active_nodes_->getSize()==0);
-
-  node->setId(0);
-  node->setDepth(0);
-  nodes_.push_back(node);
-  active_nodes_->push(node);
-  ++size_;
-  if (doVbc_) {
-    // father node color
-    vbcFile_ << toClockTime(timer_->query()) << " N 0 1 " << VbcSolving << std::endl; 
-  }
+  return !active_nodes_->isEmpty();
 }
 
 
-void TreeManager::insertCandidate_(NodePtr node, Bool pop_now)
+NodePtr TreeManager::branch(Branches branches, NodePtr node, WarmStartPtr ws)
 {
-  assert(size_>0);
+  BranchPtr branch_p;
+  NodePtr new_cand = NodePtr(); // NULL
+  NodePtr child;
+  Bool is_first = false;
 
-  // set node id and depth
-  node->setId(size_);
-  node->setDepth(node->getParent()->getDepth()+1);
-
-  // add node to the vector of all nodes.
-  nodes_.push_back(node);
-  ++size_;
-
-  // add node to the heap/stack of active nodes. If pop_now is true, the node
-  // is processed right after creating it; we don't
-  // want to keep it in active_nodes (e.g. while diving)
-  if (!pop_now) {
-    active_nodes_->push(node);
-  } 
-  if (doVbc_) {
-    vbcFile_ << toClockTime(timer_->query()) << " N "
-      << node->getParent()->getId()+1 << " " << node->getId()+1
-      << " " << VbcActive << std::endl;
+  if (searchType_ == DepthFirst || searchType_ == BestThenDive) {
+    is_first = true;
   }
+  for (BranchConstIterator br_iter=branches->begin(); br_iter!=branches->end();
+      ++br_iter) {
+    branch_p = *br_iter;
+    child = (NodePtr) new Node(node, branch_p);
+    child->setLb(node->getLb());
+    child->setTbScore(node->getTbScore());
+    child->setDepth(node->getDepth()+1);
+    node->addChild(child);
+    if (is_first) {
+      insertCandidate_(child, true);
+      is_first = false;
+      new_cand = child;
+    } else {
+      // We make a copy of the pointer to warm-start, not the full copy of the
+      // warm-start.
+      child->setWarmStart(ws);
+      insertCandidate_(child);
+    }
+    //std::cout << "inserting candidate\n";
+  }
+  if (doVbc_) {
+    vbcFile_ << toClockTime(timer_->query()) << " P " << node->getId()+1 << " "
+             << VbcSolved << std::endl;
+    if (new_cand) {
+      vbcFile_ << toClockTime(timer_->query()) << " P "
+               << new_cand->getId()+1 << " " << VbcSolving << std::endl;
+    }
+  }
+  return new_cand;
+}
+
+
+UInt TreeManager::getActiveNodes() const
+{
+  return active_nodes_->getSize();
 }
 
 
@@ -170,52 +181,9 @@ NodePtr TreeManager::getCandidate()
 }
 
 
-Bool TreeManager::shouldPrune_(NodePtr node)
+Double TreeManager::getCutOff()
 {
-  Double lb = node->getLb();
-  if (lb > cutOff_ - reqGap_ || 
-      fabs(bestUpperBound_-lb)/(fabs(bestUpperBound_)+etol_)*100 < reqRelGap_) {
-    node->setStatus(NodeHitUb);
-    return true;
-  }
-  return false;
-}
-
-
-void TreeManager::removeActiveNode(NodePtr node)
-{
-  if (doVbc_) {
-    if (node->getStatus()==NodeOptimal) {
-      vbcFile_ << toClockTime(timer_->query()) << " P "
-        << active_nodes_->top()->getId()+1 << " " << VbcFeas << std::endl;
-    } else if (node->getStatus()!=NodeInfeasible && node->getStatus()!=NodeHitUb) {
-      vbcFile_ << toClockTime(timer_->query()) << " P "
-               << active_nodes_->top()->getId()+1 << " " << VbcSolved << std::endl;
-    } 
-  }
-
-  active_nodes_->pop();
-  // active_nodes_->write(std::cout);
-  //std::cout << "size of active nodes = " << active_nodes_.size() << std::endl;
-  // dont remove the head until the candidate has been processed.
-}
-
-
-Bool TreeManager::anyActiveNodesLeft()
-{
-  return !active_nodes_->isEmpty();
-}
-
-
-UInt TreeManager::getSize() const
-{
-  return size_;
-}
-
-
-UInt TreeManager::getActiveNodes() const
-{
-  return active_nodes_->getSize();
+  return cutOff_;
 }
 
 
@@ -235,24 +203,15 @@ Double TreeManager::getGap()
 }
 
 
-void TreeManager::setCutOff(Double value)
+Double TreeManager::getLb()
 {
-  cutOff_ = value;
+  return bestLowerBound_;
 }
 
 
-Double TreeManager::getCutOff()
+UInt TreeManager::getSize() const
 {
-  return cutOff_;
-}
-
-
-void TreeManager::setUb(Double value)
-{
-  bestUpperBound_ = value;
-  if (value < cutOff_) {
-    cutOff_ = value;
-  }
+  return size_;
 }
 
 
@@ -262,18 +221,47 @@ Double TreeManager::getUb()
 }
 
 
-Double TreeManager::getLb()
+void TreeManager::insertCandidate_(NodePtr node, Bool pop_now)
 {
-  return bestLowerBound_;
+  assert(size_>0);
+
+  // set node id and depth
+  node->setId(size_);
+  node->setDepth(node->getParent()->getDepth()+1);
+
+  // add node to the vector of all nodes.
+  nodes_.push_back(node);
+  ++size_;
+
+  // add node to the heap/stack of active nodes. If pop_now is true, the node
+  // is processed right after creating it; we don't
+  // want to keep it in active_nodes (e.g. while diving)
+  if (!pop_now) {
+    active_nodes_->push(node);
+  } 
+  if (doVbc_) {
+    vbcFile_ << toClockTime(timer_->query()) << " N "
+      << node->getParent()->getId()+1 << " " << node->getId()+1
+      << " " << VbcActive << std::endl;
+  }
 }
 
 
-Double TreeManager::updateLb()
+void TreeManager::insertRoot(NodePtr node)
 {
-  // XXX: this could be an expensive operation. Try to avoid it.
-  bestLowerBound_ = active_nodes_->getBestLB();
+  assert(size_==0);
+  assert(active_nodes_->getSize()==0);
 
-  return bestLowerBound_;
+  node->setId(0);
+  node->setDepth(0);
+  nodes_.push_back(node);
+  active_nodes_->push(node);
+  ++size_;
+  if (doVbc_) {
+    // father node color
+    vbcFile_ << toClockTime(timer_->query()) << " N 0 1 " << VbcSolving
+             << std::endl; 
+  }
 }
 
 
@@ -281,6 +269,25 @@ void TreeManager::pruneNode(NodePtr node)
 {
   // XXX: if required do something before deleting the node.
   removeNode_(node);
+}
+
+
+void TreeManager::removeActiveNode(NodePtr node)
+{
+  if (doVbc_) {
+    if (node->getStatus()==NodeOptimal) {
+      vbcFile_ << toClockTime(timer_->query()) << " P "
+        << active_nodes_->top()->getId()+1 << " " << VbcFeas << std::endl;
+    } else if (node->getStatus()!=NodeInfeasible && node->getStatus()!=NodeHitUb) {
+      vbcFile_ << toClockTime(timer_->query()) << " P "
+               << active_nodes_->top()->getId()+1 << " " << VbcSolved << std::endl;
+    } 
+  }
+
+  active_nodes_->pop();
+  // active_nodes_->write(std::cout);
+  //std::cout << "size of active nodes = " << active_nodes_.size() << std::endl;
+  // dont remove the head until the candidate has been processed.
 }
 
 
@@ -343,45 +350,18 @@ void TreeManager::removeNode_(NodePtr node)
 }
 
 
-NodePtr TreeManager::branch(Branches branches, NodePtr node, WarmStartPtr ws)
+void TreeManager::setCutOff(Double value)
 {
-  BranchPtr branch_p;
-  NodePtr new_cand = NodePtr(); // NULL
-  NodePtr child;
-  Bool is_first = false;
+  cutOff_ = value;
+}
 
-  if (searchType_ == DepthFirst || searchType_ == BestThenDive) {
-    is_first = true;
+
+void TreeManager::setUb(Double value)
+{
+  bestUpperBound_ = value;
+  if (value < cutOff_) {
+    cutOff_ = value;
   }
-  for (BranchConstIterator br_iter=branches->begin(); br_iter!=branches->end();
-      ++br_iter) {
-    branch_p = *br_iter;
-    child = (NodePtr) new Node(node, branch_p);
-    child->setLb(node->getLb());
-    child->setTbScore(node->getTbScore());
-    child->setDepth(node->getDepth()+1);
-    node->addChild(child);
-    if (is_first) {
-      insertCandidate_(child, true);
-      is_first = false;
-      new_cand = child;
-    } else {
-      // We make a copy of the pointer to warm-start, not the full copy of the
-      // warm-start.
-      child->setWarmStart(ws);
-      insertCandidate_(child);
-    }
-    //std::cout << "inserting candidate\n";
-  }
-  if (doVbc_) {
-    vbcFile_ << toClockTime(timer_->query()) << " P " << node->getId()+1 << " "
-             << VbcSolved << std::endl;
-    if (new_cand) {
-      vbcFile_ << toClockTime(timer_->query()) << " P "
-               << new_cand->getId()+1 << " " << VbcSolving << std::endl;
-    }
-  }
-  return new_cand;
 }
 
 
@@ -391,6 +371,27 @@ Bool TreeManager::shouldDive()
     return true;
   } 
   return false;
+}
+
+
+Bool TreeManager::shouldPrune_(NodePtr node)
+{
+  Double lb = node->getLb();
+  if (lb > cutOff_ - reqGap_ || 
+      fabs(bestUpperBound_-lb)/(fabs(bestUpperBound_)+etol_)*100 < reqRelGap_) {
+    node->setStatus(NodeHitUb);
+    return true;
+  }
+  return false;
+}
+
+
+Double TreeManager::updateLb()
+{
+  // XXX: this could be an expensive operation. Try to avoid it.
+  bestLowerBound_ = active_nodes_->getBestLB();
+
+  return bestLowerBound_;
 }
 
 

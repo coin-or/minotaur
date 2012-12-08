@@ -55,21 +55,20 @@
         } Scoretype;
 
         /**
-         * A statistic struct for MINLP Diving heuristic
+         * \brief A statistic struct for MINLP Diving heuristic
          */
         struct DivingheurStats {
-          UInt numNLPs[4];        /// #s of NLPs solved in each selection method
-          UInt numInfeas[4];      /// #s of infeasible NLPs solved 
-          UInt errors[4];         /// #s of errors in NLPs solved
-          UInt numSol[4];         /// #s of solutions obtained
-          Double time[4];         /// Time take for each selection method
-          UInt iterations[4];     /// Number of iterations
-          UInt totalNLPs;         /// Total NLPs solved
-          UInt totalSol;          /// Total solutions found
-          UInt numLocal;          /// Total #s of local optimal soln obtained 
-                                  /// used to estimate average reduced cost
-          Double best_obj_value;  /// Best objective value of feasible solution
-          Double totalTime;       /// Total time taken in Diving heuristics
+          UInt numNLPs[4];       /// NLPs solved in each selection method.
+          UInt numInfeas[4];     /// Infeasible NLPs solved. 
+          UInt errors[4];        /// NLPs that encountered errors.
+          UInt numSol[4];        /// Solutions obtained.
+          Double time[4];        /// Time for each selection method.
+          UInt iterations[4];    /// NLP iterations.
+          UInt totalNLPs;        /// NLPs solved.
+          UInt totalSol;         /// Solutions found.
+          UInt numLocal;         /// Local optimal solutions obtained.
+          Double best_obj_value; /// Best objective value of feasible solution.
+          Double totalTime;      /// Total time taken in Diving heuristics.
         };
         
         /**

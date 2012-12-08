@@ -38,6 +38,8 @@ typedef boost::shared_ptr<QuadraticFunction> QuadraticFunctionPtr;
 typedef boost::shared_ptr<const ProblemSize> ConstProblemSizePtr;
 
 /**
+ * \brief The Problem that needs to be solved.
+ *
  * The Problem class contains the Variables, Constraints, Objectives that
  * collectively define a particular problem that can be solved. A
  * problem can be described as
@@ -131,7 +133,7 @@ public:
 
   /// Iterate over constraints.
   virtual ConstraintConstIterator consBegin() const 
-    { return cons_.begin(); }
+  { return cons_.begin(); }
 
   /// Iterate over constraints.
   virtual ConstraintConstIterator consEnd() const { return cons_.end(); }
@@ -142,8 +144,10 @@ public:
   /// Delete marked variables.
   virtual void delMarkedVars();
 
-  /// Return what type of problem it is. May result in re-calculation of the
-  /// problem size.
+  /**
+   * \brief Return what type of problem it is. May result in re-calculation of the
+   * problem size.
+   */
   virtual ProblemType findType();
 
   /// Return a pointer to the constraint with ID=id.
@@ -153,7 +157,7 @@ public:
   virtual HessianOfLagPtr getHessian() const;
 
   /**
-   * get the initial point. Used by some engines like IpoptEngine. The
+   * \brief Get the initial point. Used by some engines like IpoptEngine. The
    * pointer returned from this function should not be changed or deleted.
    */
   virtual const Double * getInitialPoint() const { return initialPt_; }
@@ -174,8 +178,10 @@ public:
   virtual UInt getNumDVars() const { return numDVars_; }
 
   /**
-   * Return the number of non-zeros in the hessian of the lagrangean of the 
-   * problem. The lagrangean is defined as:
+   * \brief Return the number of non-zeros in the hessian of the lagrangean of the 
+   * problem.
+   *
+   * The lagrangean is defined as:
    * \\sigma . f(x) + \\sum_{i=0}^{m-1}\\lambda_i . g_i(x), 
    * where \\sigma \\in R^1 and \\lambda \\in R^m are the dual multipliers. 
    * The hessian, w.r.t. x, is thus a square symmetric matrix. usually the
@@ -205,11 +211,15 @@ public:
   /// Return a pointer to the variable with ID=id.
   virtual VariablePtr getVariable(UInt id) const;
 
+  /**
+   * \brief Return true if the derivative is available through Minotaur's own
+   * routines for storing nonlinear functions.
+   */
   virtual Bool hasNativeDer() const;
 
   /**
-   * Returns true if the problem has only linear constraints and linear
-   * objectives
+   * \brief Returns true if the problem has only linear constraints and linear
+   * objectives.
    */
   virtual Bool isLinear();
 
@@ -274,15 +284,13 @@ public:
    */
   virtual VariablePtr newVariable(Double lb, Double ub, VariableType vType); 
                                             
-  /**
-   * Add a new variable with bounds, type and name. This method throws 
-   * error if the bounds and type conflict.
-   */
+  /// Add a new variable with bounds, type and name. 
   virtual VariablePtr newVariable(Double lb, Double ub, VariableType vType,
                                   std::string name); 
 
-  /// Clone the variables pointed by the iterators and add them.
   /**
+   * \brief Clone the variables pointed by the iterators and add them.
+   *
    * Given starting and stopping iterators of variables, clone these
    * variables and them to the relaxation. Do not add them to any
    * constraints or objectives. The IDs are not copied.
@@ -291,6 +299,8 @@ public:
                             VariableConstIterator v_end);
                                             
   /**
+   * \brief Setup problem data-structures for solving it.
+   *
    * Prepare necessary data structures for the next solve. e.g.
    * if constraints have been modified, then re-evalate the sparsity
    * pattern of Jacobian and Hessian.
@@ -306,46 +316,81 @@ public:
   /// Reverse the sense of a constraint.
   virtual void reverseSense(ConstraintPtr cons);
 
-  /// Should only be called by the Engine that loads this
+  /**
+   * \brief Set the engine that is used to solve this problem.
+   *
+   * The problem contains a pointer to the engine so that whenever the problem
+   * is modified, the engine also gets the modifications. This function sets
+   * the engine that must be modified whenever the problem is modified.
+   * \param[in] engine The engine pointer.
+   */
   virtual void setEngine(Engine* engine);
 
   /**
-   * Set an initial point. used by some engines like IpoptEngine. If the
+   * \brief Set an initial point.
+   *
+   * Initial point is used by some engines like IpoptEngine. If the
    * initial point has already been set before, it is overwritten by the
    * new point.
+   * \param[in] x An array of double values containing the coordinates of the
+   * initial point.
    */
   virtual void setInitialPoint(const Double *x);
 
   /** 
-   * Same as above, but only set values for the first 'k' variables. Put
-   * in because of AMPL's defined variables.
+   * \brief Set an initial point.
+   *
+   * Same as function Problem::setInitialPoint, but only set values for the
+   * first 'k' variables. Put in because of AMPL's defined variables.
+   * \param[in] x An array of double values containing the coordinates of the
+   * initial point.
+   * \param[in] k The first 'k' variables will be initialized.
    */
   virtual void setInitialPoint(const Double *x, Size_t k);
 
   /**
-   * Set the hessian of the lagrangean. Currently there is no other way to
-   * generate/set the hessian.
+   * \brief Add a pointer to the hessian of the Lagrangean. 
+   *
+   * \param[in] hessian Pointer to the HessianOfLag object.
    */
   virtual void setHessian(HessianOfLagPtr hessian);
 
   /**
-   * Set the jacobian of the constraints. Currently there is no other way to
-   * generate/set the jacobian.
+   * \brief Set the jacobian of the constraints. 
+   *
+   * \param[in] jacobian Pointer to the Jacobian object.
    */
   virtual void setJacobian(JacobianPtr jacobian);
 
-  /// Set the log manager
+  /**
+   * Set the log manager.
+   *
+   * \param[in] logger The log manager which should be used for logging.
+   */
   virtual void  setLogger(LoggerPtr logger);
 
-  /// Initialize the Jacobian for a native computational graph problem 
+  /**
+   * \brief Ask Problem to construct its own jacobian and hessian using
+   * Minotaur's native code for nonlinear functions.
+   */
   void setNativeDer();
 
-  /// Change the variable type.
+  /**
+   * \brief Change the variable type.
+   *
+   * \param[in] var The variable pointer whose type needs to be changed.
+   * \param[in] type The new VariableType.
+   */
   virtual void setVarType(VariablePtr var, VariableType type);
 
   /**
-   * Substitute a variable 'out' with the variable 'in' through out the
+   * \brief Substitute a variable 'out' with the variable 'in' through out the
    * problem.
+   *
+   * \param[in] out The variable that is to be substituted out.
+   * \param[in] in The variable that replaces the variable 'out'.
+   * \param[in] rat The ratio of substitution.
+   * \f$v_{in} = rat \times v_{out}\f$.
    */
   virtual void subst(VariablePtr out, VariablePtr in, Double rat=1.0);
 
@@ -369,11 +414,13 @@ protected:
   ConstraintVector cons_;
 
   /**
-   *  When the problem is changed, say constraints are added or deleted,
-   *  all associated changes do not happen at that time. For example, when
-   *  new constraint is added, the hessian and jacobian do not change.
-   *  This variable is true if constraints have changed since the last
-   *  time all changes were applied.
+   * \brief Flag that is turned on if the constraints are added or modified.
+   *
+   * When the problem is changed, say constraints are added or deleted,
+   * all associated changes do not happen at that time. For example, when
+   * new constraint is added, the hessian and jacobian do not change.
+   * This variable is true if constraints have changed since the last
+   * time all changes were applied.
    */
   Bool consModed_;
       
@@ -383,16 +430,13 @@ protected:
   /// Pointer to the hessian of the lagrangean. Could be NULL.
   HessianOfLagPtr hessian_;
 
-  /// Initial point. Could be NULL.
+  /// Initial point. Can be NULL.
   Double * initialPt_;
 
-  /// Pointer to the jacobian of constraints. Could be NULL.
+  /// Pointer to the jacobian of constraints. Can be NULL.
   JacobianPtr jacobian_;
 
-  /**
-   * Pointer to the log manager. All output messages are sent to it. Could
-   * be NULL.
-   */
+  /// Pointer to the log manager. All output messages are sent to it.
   LoggerPtr logger_;
 
   /// If true, set up our own Hessian and Jacobian.
@@ -432,8 +476,9 @@ protected:
   virtual void countVarTypes_();
 
   /**
-   * Update the function types of all variables based on if they appear as
-   * linear, quadratic or nonlinear in each objective and constraint.
+   * \brief Update the function types of all variables based on whether they
+   * appear as linear, quadratic or nonlinear in each objective and
+   * constraint.
    */
   virtual void findVarFunTypes_();
 
