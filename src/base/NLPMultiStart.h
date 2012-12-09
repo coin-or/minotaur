@@ -94,8 +94,8 @@ namespace Minotaur {
        * solution of the NLP solver and radius being distance between current
        * starting point amplified by a factor. 
        *
-       * \param[in] Point a Current initial point for the solver
-       * \param[in] Point b Current optimal solution
+       * \param[in] Pointa Current initial point for the solver
+       * \param[in] Pointb Current optimal solution
        * \param[in] rho The amplification factor
        * \param]in] vars Number of variables
        */

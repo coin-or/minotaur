@@ -6,7 +6,7 @@
 
 /**
  * \file ReliabilityBrancher.h
- * \brief Declar methods and data structures for reliability branching.
+ * \brief Declare methods and data structures for reliability branching.
  * \author Ashutosh Mahajan, Argonne National Laboratory
  */
 
@@ -28,8 +28,9 @@ struct RelBrStats {
   UInt engProbs;   /// Number of times called to find a branching candidate.
   UInt iters;      /// Number of iterations in strong-branching.
   UInt strBrCalls; /// Number of times strong branching on a variable.
-  Double strTime;    /// Total time spent in strong-branching.
+  Double strTime;  /// Total time spent in strong-branching.
 };
+
 
 /// A class to select a variable for branching using reliability branching.
 class ReliabilityBrancher : public Brancher {
@@ -47,7 +48,7 @@ public:
   /// Destroy.
   ~ReliabilityBrancher();
 
-  // base class.
+  // base class function.
   Branches findBranches(RelaxationPtr rel, NodePtr node, 
                         ConstSolutionPtr sol, SolutionPoolPtr s_pool, 
                         BrancherStatus & br_status, ModificationPtr &mod);
@@ -58,6 +59,7 @@ public:
   /// Get iteration limit of engine.
   UInt getIterLim();
 
+  // base class function.
   std::string getName() const;
 
   /// Return the threshhold value.
@@ -65,6 +67,7 @@ public:
 
   /**
    * \brief Initialize data structures.
+   *
    * \param[in] rel Relaxation for which this brancher is used.
    */
   void initialize(RelaxationPtr rel);
@@ -80,13 +83,15 @@ public:
   void setEngine(EnginePtr engine);
 
   /**
-   * Set iteration limit of engine.
-   * \param [in] The new iteration limit.
+   * \brief Set iteration limit of engine.
+   *
+   * \param [in] k The new iteration limit.
    */
   void setIterLim(UInt k);
 
   /**
    * \brief Set the depth at which we stop strong branching.
+   *
    * \param[in] k The new depth value.
    */
   void setMaxDepth(UInt k);
@@ -107,12 +112,26 @@ public:
    */
   void setThresh(UInt k);
 
+  // base class function.
   void updateAfterLP(NodePtr node, ConstSolutionPtr sol);
 
   /// Write statistics.
   void writeStats();
 
 private:
+
+  /**
+   * \brief Find the variable that was selected for branching.
+   * 
+   * This method can also find modifications based upon the
+   * results of strong branching.
+   * \param[in] objval Optimal objective value of the current relaxation.
+   * \param[in] cutoff The cutoff value for objective function (an upper
+   * bound).
+   * \param[in] node The node at which we are branching.
+   */
+  BrCandPtr findBestCandidate_(const Double objval, Double cutoff, 
+                               NodePtr node);
 
   /**
    * \brief Find and sort candidates for branching.
@@ -126,16 +145,6 @@ private:
   void findCandidates_();
 
   /**
-   * \brief Find the variable that was selected for branching.
-   * 
-   * This method can also find modifications based upon the
-   * results of strong branching.
-   * \param[in] Optimal objective value of the current relaxation.
-   */
-  BrCandPtr findBestCandidate_(const Double objval, Double cutoff, 
-                               NodePtr node);
-
-  /**
    * \brief Find the score of a candidate based on its pseudo costs.
    *
    * \param[in] cand The branching candidate for which score is needed.
@@ -145,6 +154,31 @@ private:
    */
   void getPCScore_(BrCandPtr cand, Double *ch_down, Double *ch_up, 
                    Double *score);
+
+  /**
+   * \brief Calculate score from the up score and down score.
+   *
+   * \param[in] up_score Up score.
+   * \param[in] down_score Down score.
+   */
+  Double getScore_(const Double & up_score, const Double & down_score);
+
+  /**
+   * \brief Check if branch can be pruned on the basis of engine status and
+   * objective value.
+   *
+   * Check status and tell if we can prune the branch. is_rel is false if
+   * the engine reports failure in convergence.
+   * \param[in] chcutoff The minimum change in objective that will lead to
+   * cutoff. A change greater than this value will exceed the
+   * objective-cutoff.
+   * \param[in] change The observed change in the objective function value.
+   * \param[in] status Solve status of the engine.
+   * \param[out] is_rel True if the engine status is reliable enough to use
+   * the solution value as a reliable bound.
+   */
+  Bool shouldPrune_(const Double &chcutoff, const Double &change, 
+                    const EngineStatus & status, Bool *is_rel);
 
   /** 
    * \brief Do strong branching on candidate.
@@ -158,21 +192,8 @@ private:
                      EngineStatus & status_up, EngineStatus & status_down);
 
   /**
-   * \brief Analyze the strong-branching results.
-   *
-   * \param[in] cand Candidate for which we performed strong branching.
-   * \param[in/out] change_up Change in the objective function in up
-   * branch. It is modified if the engine status is error or unknown.
-   * \param[in/out] change_down Same for down branch.
-   * \param[in] status_up The engine status in up branch. 
-   * \param[in] status_down The engine status in up branch.
-   */
-  void useStrongBranchInfo_(BrCandPtr cand, const Double &cutoff,
-                            Double & change_up, Double & change_down, 
-                            const EngineStatus & status_up, const EngineStatus & status_down);
-
-  /**
    * \brief Update Pseudocost based on the new costs.
+   *
    * \param[in] i Index of the candidate.
    * \param[in] new_cost The new cost estimate.
    * \param[in] cost The vector of costs of all candidates. cost[i] is to
@@ -184,24 +205,28 @@ private:
                     DoubleVector & cost, UIntVector & count);
 
   /**
-   * \brief Check if branch can be pruned on the basis of .
+   * \brief Analyze the strong-branching results.
    *
-   * Check status and tell if we can prune the branch. is_rel is false if
-   * the engine reports failure in convergence.
-   * \param[in] status
+   * \param[in] cand Candidate for which we performed strong branching.
+   * \param[in] chcutoff The minimum change in objective function value that
+   * will result in cutoff.
+   * \param[in,out] change_up Change observed in the objective function value
+   * in the up branch. It is modified if the engine status is error or
+   * unknown.
+   * \param[in,out] change_down Change observed in the objective function
+   * value in the down branch. It is modified if the engine status is error or
+   * unknown.
+   * \param[in] status_up The engine status in up branch. 
+   * \param[in] status_down The engine status in up branch.
    */
-  Bool shouldPrune_(const Double &cutoff, const Double &change, 
-                    const EngineStatus & status, Bool *is_rel);
-
-  /**
-   * \brief Calculate score from the up score and down score.
-   * \param[in] up_score Up score.
-   * \param[in] down_score Down score.
-   */
-  Double getScore_(const Double & up_score, const Double & down_score);
+  void useStrongBranchInfo_(BrCandPtr cand, const Double & chcutoff,
+                            Double & change_up, Double & change_down, 
+                            const EngineStatus & status_up,
+                            const EngineStatus & status_down);
 
   /** 
    * \brief Display score details of the candidate.
+   *
    * \param[in] cand Candidate
    * \param[in] score Score of candidate.
    * \param[in] change_up Up change.

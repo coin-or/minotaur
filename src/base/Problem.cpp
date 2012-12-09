@@ -296,7 +296,7 @@ void Problem::clear()
 ProblemPtr Problem::clone() const
 {
   ConstConstraintPtr constCPtr;
-  FunctionPtr fPtr;
+  FunctionPtr f;
   ObjectivePtr oPtr;
   VariableConstIterator vit0;
   Int err = 0;
@@ -311,18 +311,18 @@ ProblemPtr Problem::clone() const
   for (ConstraintConstIterator it=cons_.begin(); it!=cons_.end(); ++it) {
     constCPtr = *it;
     // clone the function.
-    fPtr = constCPtr->getFunction()->cloneWithVars(vit0, &err);
+    f = constCPtr->getFunction()->cloneWithVars(vit0, &err);
     assert(err==0);
-    clonePtr->newConstraint(fPtr, constCPtr->getLb(), constCPtr->getUb(),
+    clonePtr->newConstraint(f, constCPtr->getLb(), constCPtr->getUb(),
         constCPtr->getName());
   }    
 
   // add objective
   oPtr = getObjective();
   if (oPtr) {
-    fPtr = oPtr->getFunction()->cloneWithVars(vit0, &err);
+    f = oPtr->getFunction()->cloneWithVars(vit0, &err);
     assert(err==0);
-    clonePtr->newObjective(fPtr, oPtr->getConstant(),
+    clonePtr->newObjective(f, oPtr->getConstant(),
         oPtr->getObjectiveType(), oPtr->getName()); 
   } 
 
@@ -931,7 +931,7 @@ ConstraintPtr Problem::newConstraint(FunctionPtr funPtr, Double lb, Double ub)
 }
 
 
-ObjectivePtr Problem::newObjective(FunctionPtr fPtr, Double cb, 
+ObjectivePtr Problem::newObjective(FunctionPtr f, Double cb, 
                                    ObjectiveType otyp)
 {
   assert(engine_ == 0 ||
@@ -943,18 +943,18 @@ ObjectivePtr Problem::newObjective(FunctionPtr fPtr, Double cb,
   name_stream << "obj";
 
   name = name_stream.str();
-  o = newObjective(fPtr, cb, otyp, name);
+  o = newObjective(f, cb, otyp, name);
   return o;
 }
 
 
-ObjectivePtr Problem::newObjective(FunctionPtr fPtr, Double cb, 
+ObjectivePtr Problem::newObjective(FunctionPtr f, Double cb, 
                                    ObjectiveType otyp, std::string name)
 {
   assert(engine_ == 0 ||
       (!"Cannot add objective after loading problem to engine\n")); 
 
-  obj_ = (ObjectivePtr) new Objective(fPtr, cb, otyp, name);
+  obj_ = (ObjectivePtr) new Objective(f, cb, otyp, name);
   consModed_ = true;
   return obj_;
 }
@@ -974,7 +974,7 @@ VariablePtr Problem::newVariable()
 }
 
 
-VariablePtr Problem::newVariable(Double lb, Double ub, VariableType vType)
+VariablePtr Problem::newVariable(Double lb, Double ub, VariableType vtype)
 {
   assert(engine_ == 0 || 
       (!"Cannot add variables after loading problem to engine\n")); 
@@ -983,19 +983,19 @@ VariablePtr Problem::newVariable(Double lb, Double ub, VariableType vType)
   std::stringstream name_stream;
   name_stream <<  "var" << vars_.size();
   name = name_stream.str();
-  v = newVariable(lb, ub, vType, name);
+  v = newVariable(lb, ub, vtype, name);
   return v;
 } 
 
 
 
-VariablePtr Problem::newVariable(Double lb, Double ub, VariableType vType,
+VariablePtr Problem::newVariable(Double lb, Double ub, VariableType vtype,
                                  std::string name)
 {
   assert(engine_ == 0 ||
       (!"Cannot add variables after loading problem to engine\n")); 
   VariablePtr v;
-  v = (VariablePtr) new Variable(nextVId_, vars_.size(), lb, ub, vType, name);
+  v = (VariablePtr) new Variable(nextVId_, vars_.size(), lb, ub, vtype, name);
   ++nextVId_;
   vars_.push_back(v);
   varsModed_ = true;

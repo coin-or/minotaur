@@ -394,7 +394,7 @@ void ReliabilityBrancher::setThresh(UInt k)
 }
 
 
-Bool ReliabilityBrancher::shouldPrune_(const Double &cutoff, 
+Bool ReliabilityBrancher::shouldPrune_(const Double &chcutoff, 
     const Double &change, const EngineStatus & status, Bool *is_rel)
 {
   switch (status) {
@@ -406,7 +406,7 @@ Bool ReliabilityBrancher::shouldPrune_(const Double &cutoff,
      return true;
    case (ProvenLocalOptimal):
    case (ProvenOptimal):
-     if (trustCutoff_ && change>cutoff-eTol_) {
+     if (trustCutoff_ && change>chcutoff-eTol_) {
        return true;
      }
      // check feasiblity
@@ -503,7 +503,7 @@ void ReliabilityBrancher::updatePCost_(const Int & i, const Double & newCost,
 
 
 void ReliabilityBrancher::useStrongBranchInfo_(BrCandPtr cand, 
-                                               const Double &cutoff, 
+                                               const Double &chcutoff, 
                                                Double &change_up, 
                                                Double &change_down,
                                                const EngineStatus & status_up,
@@ -515,8 +515,8 @@ void ReliabilityBrancher::useStrongBranchInfo_(BrCandPtr cand,
   Bool is_rel = true;
   Double cost;
 
-  should_prune_down = shouldPrune_(cutoff, change_down, status_down, &is_rel);
-  should_prune_up   = shouldPrune_(cutoff, change_up, status_up, &is_rel);
+  should_prune_down = shouldPrune_(chcutoff, change_down, status_down, &is_rel);
+  should_prune_up   = shouldPrune_(chcutoff, change_up, status_up, &is_rel);
 
   if (!is_rel) {
     change_up = 0.;

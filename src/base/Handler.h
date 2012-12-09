@@ -186,6 +186,7 @@ public:
    * \param[in] pre_mods A pointer to a queue of PreMod objects.
    * Modifications made by the presolver must be prepended (not appended)
    * to pre_mods. The order is important for post-solve.
+   * \param[out] changed True if the presolve modified the problem.
    * \return status of presolve.
    */
   virtual SolveStatus presolve(PreModQ *pre_mods, Bool *changed) = 0;
@@ -217,7 +218,7 @@ public:
    * by this handler, with the understanding that nodes will also be fully
    * rebuilt. The relaxation is already created, it should not be
    * freed or re-allocated.
-   * \param[in/out] The relaxation that is being constructed.
+   * \param[in,out] The relaxation that is being constructed.
    * \param[out] is_inf is true if the handler finds that the
    * problem is infeasible.
    */
@@ -230,7 +231,7 @@ public:
    * by this handler, with the understanding that nodes will incrementally
    * relaxed. The relaxation is already created, it should not be
    * freed or re-allocated.
-   * \param[in/out] The relaxation that is being constructed.
+   * \param[in,out] The relaxation that is being constructed.
    * \param[out] isInfeasible is true if the handler finds that the
    * problem is infeasible.
    */
