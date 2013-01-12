@@ -1,7 +1,7 @@
 // 
 //     MINOTAUR -- It's only 1/2 bull
 // 
-//     (C)opyright 2009-- The MINOTAUR Team
+//     (C)opyright 2009 - 2013 The MINOTAUR Team
 // 
 
 //
@@ -15,7 +15,7 @@
 // \authors
 // Team Minotaur at Argonne National Lab and UW-Madison 
 // \authors
-// Copyright 2008 - 2010
+// Copyright 2009 - 2013
 //
 // <b> Additional Links </b>
 // - <a href="http://mcs.anl.gov/minotaur">Minotaur Homepage</a>
