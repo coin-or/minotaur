@@ -32,7 +32,8 @@ for f in ../src/engines/*/*.h ../src/engines/*/*.cpp ../src/engines/*/*.f \
 	 ../src/engines/*.h ../src/engines/*.cpp \
 	 ../src/base/*.h ../src/base/*.cpp \
          ../src/testing/*.cpp ../src/testing/*.h  \
-	 ../src/interfaces/ampl/*cpp ../src/interfaces/ampl/*.h
+	 ../src/interfaces/ampl/*cpp ../src/interfaces/ampl/*.h \
+	 ../src/algorithms/*.cpp 
 do
   # first check if we have the required line in the file
   if grep -q -G ${GREP_QUERY} ${f}
