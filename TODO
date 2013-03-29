@@ -226,6 +226,3 @@ Older...
 
 * Check performance hit for saving duals after each solve.
 
-* Build base class DAG for nonlinear functions. Derived classes?
-
-

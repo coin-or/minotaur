@@ -184,6 +184,11 @@ void Environment::createDefaultOptions_()
       true, 1000000000);
   options_->insert(i_option);
 
+  i_option = (IntOptionPtr) new Option<Int>("bnb_sol_limit", 
+      "Limit on the number of solutions found: >0", true, 
+      1000000000);
+  options_->insert(i_option);
+
   i_option = (IntOptionPtr) new Option<Int>("ampl_log_level", 
       "Verbosity of ampl interface: 0-6", true, LogInfo);
   options_->insert(i_option);

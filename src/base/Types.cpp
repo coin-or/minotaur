@@ -224,6 +224,8 @@ std::string Minotaur::getSolveStatusString(SolveStatus s)
     return "Interrupted";
   case (TimeLimitReached):
     return "Reached time limit";
+  case (SolLimitReached):
+    return "Reached the limit on number of solutions";
   case (Finished):
     return "Finished for some other reason";
   default:

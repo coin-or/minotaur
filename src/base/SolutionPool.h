@@ -28,23 +28,26 @@ namespace Minotaur {
     /// Construct a solution pool of a given size for a given problem
     SolutionPool(ProblemPtr problem, UInt limit=100);
 
-    /// Get number of solutions in the pool
-    UInt getNumSolutions() const;
+    /// Add Solution to the pool
+    void addSolution(ConstSolutionPtr);
 
-    /// Put a limit on the number of solutions in the pool
-    void setSizeLimit(UInt limit);
+    /// Get number of solutions in the pool
+    UInt getNumSols() const;
+
+    /// Get number of solutions in the pool
+    UInt getNumSolsFound() const;
 
     /// Get the limit on the number of solutions in the pool
     UInt getSizeLimit() const;
+
+    /// Put a limit on the number of solutions in the pool
+    void setSizeLimit(UInt limit);
 
     /// Get iterator for the first solution ...
     SolutionIterator solsBegin() { return sols_.begin(); }
 
     /// ... and the end.
     SolutionIterator solsEnd() { return sols_.end(); }
-
-    /// Add Solution to the pool
-    void addSolution(ConstSolutionPtr);
 
     /// Create a solution from a double array and add Solution to the pool.
     void addSolution(const Double *x, Double obj_value);
@@ -58,6 +61,9 @@ namespace Minotaur {
     /// Get the best objective function value
     Double getBestSolutionValue() const;
 
+    /// Write statistics to the outstream.
+    void writeStats(std::ostream &out) const; 
+
   private:
     /// The solutions are stored in a vector. 
     std::vector<SolutionPtr> sols_;
@@ -68,11 +74,23 @@ namespace Minotaur {
      */
     SolutionPtr bestSolution_;
 
+    /// For logging.
+    const static std::string me_;
+
+    /// The number of solutions added to the pool.
+    UInt numSolsFound_;
+
     /// Problem for which we are saving solutions
     ProblemPtr problem_;
 
     /// The limit on number of solutions in the pool.
     UInt sizeLimit_;
+
+    /// Time when the first solution is found.
+    Double timeFirst_;
+
+    /// Time when the last solution is found.
+    Double timeLast_;
 
   };
 

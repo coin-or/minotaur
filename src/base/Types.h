@@ -126,6 +126,7 @@ namespace Minotaur {
     IterationLimitReached,
     Interrupted,
     TimeLimitReached,
+    SolLimitReached,
     Finished
   } SolveStatus;
 

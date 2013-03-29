@@ -17,27 +17,23 @@
 
 using namespace Minotaur;
 
+const std::string SolutionPool::me_ = "SolutionPool: ";
 
-Double SolutionPool::getBestSolutionValue() const
+SolutionPool::SolutionPool (ProblemPtr problem, UInt limit)
+: bestSolution_(SolutionPtr()), // NULL
+  numSolsFound_(0),
+  problem_(problem),
+  sizeLimit_(limit),
+  timeFirst_(-1),
+  timeLast_(-1)
 {
-  if (bestSolution_) {
-    return bestSolution_->getObjValue();
-  } else {
-    return INFINITY;
-  }
 }
-
-
-SolutionPtr SolutionPool::getBestSolution()
-{
-  return bestSolution_;
-}
-
 
 void SolutionPool::addSolution(ConstSolutionPtr solution)
 {
   // XXX: for now we save only one solution.
   SolutionPtr newsol = (SolutionPtr) new Solution(solution);
+  ++numSolsFound_;
   if (sols_.size() > 0) {
     if (sols_[0]->getObjValue() > solution->getObjValue()) {
       sols_[0] = newsol;
@@ -57,14 +53,35 @@ void SolutionPool::addSolution(const Double *x, Double obj_value)
 }
 
 
-SolutionPool::SolutionPool (ProblemPtr problem, UInt limit)
-: bestSolution_(SolutionPtr()), // NULL
-  problem_(problem),
-  sizeLimit_(limit)
+SolutionPtr SolutionPool::getBestSolution()
 {
-
+  return bestSolution_;
 }
 
+
+Double SolutionPool::getBestSolutionValue() const
+{
+  if (bestSolution_) {
+    return bestSolution_->getObjValue();
+  } else {
+    return INFINITY;
+  }
+}
+
+
+UInt SolutionPool::getNumSolsFound() const
+{
+  return numSolsFound_;
+}
+
+
+void SolutionPool::writeStats(std::ostream &out) const
+{
+  out << me_ << "Number of solutions found = " << numSolsFound_ << std::endl
+      << me_ << "Time first solution found = " << timeFirst_    << std::endl
+      << me_ << "Time last solution found  = " << timeLast_     << std::endl
+      ;
+}
 
 // Local Variables: 
 // mode: c++ 

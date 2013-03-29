@@ -290,8 +290,9 @@ Bool BranchAndBound::shouldStop_()
   } else if (stats_->nodesProc >= options_->nodeLimit) {
     stop_bnb = true;
     status_ = IterationLimitReached;
-  } else if (false) { // TODO: memory limit or other limits
+  } else if (solPool_->getNumSolsFound()>=options_->solLimit) { 
     stop_bnb = true;
+    status_ = SolLimitReached;
   }
 
   return stop_bnb;
@@ -494,6 +495,7 @@ void BranchAndBound::writeStats()
   for (HeurVector::iterator it=preHeurs_.begin(); it!=preHeurs_.end(); ++it) {
     (*it)->writeStats();
   }
+  solPool_->writeStats(logger_->MsgStream(LogInfo));
 }
 
 
@@ -520,6 +522,7 @@ BabOptions::BabOptions()
   : createRoot(true),
     logLevel(LogInfo),
     nodeLimit(0),
+    solLimit(0),
     timeLimit(0.)
     
 {
@@ -530,10 +533,11 @@ BabOptions::BabOptions(EnvPtr env)
 {
   OptionDBPtr options = env->getOptions();
 
-  logLevel    = (LogLevel) options->findInt("bnb_log_level")->getValue();
-  timeLimit   = options->findDouble("bnb_time_limit")->getValue();
-  nodeLimit   = options->findInt("bnb_node_limit")->getValue();
   logInterval = options->findDouble("bnb_log_interval")->getValue();
+  logLevel    = (LogLevel) options->findInt("bnb_log_level")->getValue();
+  nodeLimit   = options->findInt("bnb_node_limit")->getValue();
+  solLimit    = options->findInt("bnb_sol_limit")->getValue();
+  timeLimit   = options->findDouble("bnb_time_limit")->getValue();
   createRoot  = true;
 }
 

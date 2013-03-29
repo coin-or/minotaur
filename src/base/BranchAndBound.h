@@ -268,7 +268,10 @@ namespace Minotaur {
     LogLevel logLevel;
 
     /// Limit on number of nodes processed.
-    Double nodeLimit;
+    UInt nodeLimit;
+
+    /// Limit on number of nodes processed.
+    UInt solLimit;
 
     /// Time limit in seconds for the branch-and-bound.
     Double timeLimit;

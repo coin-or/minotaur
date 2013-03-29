@@ -234,6 +234,8 @@ void loadProblem(EnvPtr env, MINOTAUR_AMPL::AMPLInterface* iface,
   // set initial point
   oinst->setInitialPoint(iface->getInitialPoint(), 
       oinst->getNumVars()-iface->getNumDefs());
+
+  delete timer;
 }
 
 
