@@ -13,20 +13,23 @@
 #include <cmath>
 
 #include "MinotaurConfig.h"
+#include "Environment.h"
 #include "SolutionPool.h"
+#include "Timer.h"
 
 using namespace Minotaur;
 
 const std::string SolutionPool::me_ = "SolutionPool: ";
 
-SolutionPool::SolutionPool (ProblemPtr problem, UInt limit)
+SolutionPool::SolutionPool (EnvPtr env, ProblemPtr problem, UInt limit)
 : bestSolution_(SolutionPtr()), // NULL
   numSolsFound_(0),
   problem_(problem),
   sizeLimit_(limit),
-  timeFirst_(-1),
-  timeLast_(-1)
+  timeBest_(-1),
+  timeFirst_(-1)
 {
+  timer_ = env->getTimer();
 }
 
 void SolutionPool::addSolution(ConstSolutionPtr solution)
@@ -38,10 +41,13 @@ void SolutionPool::addSolution(ConstSolutionPtr solution)
     if (sols_[0]->getObjValue() > solution->getObjValue()) {
       sols_[0] = newsol;
       bestSolution_ = newsol;
+      timeBest_ = timer_->query();
     }
   } else {
     sols_.push_back(newsol);
     bestSolution_ = newsol;
+    timeFirst_ = timer_->query();
+    timeBest_ = timeFirst_;
   }
 }
 
@@ -79,7 +85,7 @@ void SolutionPool::writeStats(std::ostream &out) const
 {
   out << me_ << "Number of solutions found = " << numSolsFound_ << std::endl
       << me_ << "Time first solution found = " << timeFirst_    << std::endl
-      << me_ << "Time last solution found  = " << timeLast_     << std::endl
+      << me_ << "Time best solution found  = " << timeBest_     << std::endl
       ;
 }
 

@@ -150,7 +150,7 @@ class Nodes(Col):
 	val = INFTY
 	def extract(self):
 		val = INFTY
-		find,val=find_int(outfile,'  nodes processed =', val)
+		find,val=find_int(outfile,'branch-and-bound: nodes processed =', val)
 		if (find<0 or val >= INFTY):
 			self.val = INFTY
 			self.writeFail()

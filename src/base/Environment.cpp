@@ -532,6 +532,12 @@ Double Environment::getTime(Int &err)
 }
 
 
+const Timer* Environment::getTimer()
+{
+  return timer_;
+}
+
+
 std::string Environment::getVersion() 
 {
   std::stringstream name_stream;

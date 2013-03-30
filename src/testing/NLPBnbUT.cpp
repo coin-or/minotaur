@@ -297,7 +297,9 @@ void NLPBnbUT::testNLPBnb1()
   ReliabilityBrancherPtr br;
   RelaxationPtr rel;
   EnginePtr e;
+  Int err = 0;
 
+  env->startTimer(err);
   BranchAndBound *bab = new BranchAndBound(env, p);
 
   IntVarHandlerPtr v_hand = (IntVarHandlerPtr) new IntVarHandler(env, p);

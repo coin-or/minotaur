@@ -348,7 +348,7 @@ void BranchAndBound::solve()
 
   // initialize solution pool
   // TODO: use user options to set the pool size. For now it is 1.
-  solPool_ = (SolutionPoolPtr) new SolutionPool(problem_, 1);
+  solPool_ = (SolutionPoolPtr) new SolutionPool(env_, problem_, 1);
 
   // call heuristics before the root, if needed 
   for (HeurVector::iterator it=preHeurs_.begin(); it!=preHeurs_.end(); ++it) {

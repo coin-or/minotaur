@@ -20,13 +20,17 @@
 
 namespace Minotaur {
 
+  class Environment;
+  class Timer;
+  typedef boost::shared_ptr<Environment> EnvPtr;
+
   class SolutionPool {
   public:
     /// Default constructor.
     SolutionPool();
 
     /// Construct a solution pool of a given size for a given problem
-    SolutionPool(ProblemPtr problem, UInt limit=100);
+    SolutionPool(EnvPtr env, ProblemPtr problem, UInt limit=100);
 
     /// Add Solution to the pool
     void addSolution(ConstSolutionPtr);
@@ -86,11 +90,14 @@ namespace Minotaur {
     /// The limit on number of solutions in the pool.
     UInt sizeLimit_;
 
+    /// Time when the best solution is found.
+    Double timeBest_;
+
     /// Time when the first solution is found.
     Double timeFirst_;
 
-    /// Time when the last solution is found.
-    Double timeLast_;
+    /// Global timer.
+    const Timer* timer_;
 
   };
 

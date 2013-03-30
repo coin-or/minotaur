@@ -52,6 +52,14 @@ namespace Minotaur {
        */
       Double getTime(Int &err);
 
+      /**
+       * Get the global timer.
+       *
+       * \return The timer used to query the time elapsed since the solver
+       * started.
+       */
+      const Timer* getTimer();
+
       /// Get the version string
       std::string getVersion();
 

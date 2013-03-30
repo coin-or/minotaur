@@ -44,7 +44,7 @@ namespace Minotaur {
 
     virtual void start()   = 0;
     virtual void stop()    = 0;
-    virtual Double query() = 0;
+    virtual Double query() const = 0;
 
   private: 
     Timer (const Timer &);
@@ -58,7 +58,6 @@ namespace Minotaur {
   class ClockTimer : public Timer {
   private:
     clock_t s_;
-    clock_t e_;
     bool is_started_;
 
   public:
@@ -78,12 +77,12 @@ namespace Minotaur {
       return;
     };
 
-    Double query() {
+    Double query() const {
       if (!is_started_) {
         throw("Some exception");
       }
-      e_ = clock();
-      return ((e_ - s_) / (Double) CLOCKS_PER_SEC);
+      
+      return ((clock() - s_) / (Double) CLOCKS_PER_SEC);
     };
   };
 
@@ -95,7 +94,6 @@ namespace Minotaur {
   class UsageTimer : public Timer {
   private:
     struct rusage s_;
-    struct rusage e_;
     bool is_started_;
 
   public:
@@ -116,29 +114,29 @@ namespace Minotaur {
     };
 
     /// Get how much cpu time has been used since this timer was started.
-    Double query() {
+    Double query() const {
       Double t1, t2, m1, m2, s1, s2, m, s;
-
+      struct rusage e;
       if (!is_started_) {
         throw("Some exception");
       }
-      getrusage(RUSAGE_SELF, &e_);
+      getrusage(RUSAGE_SELF, &e);
 
-      m1 = (Double) e_.ru_utime.tv_usec;
+      m1 = (Double) e.ru_utime.tv_usec;
       m2 = (Double) s_.ru_utime.tv_usec;
       m = m1 - m2;
 
-      s1 = (Double) e_.ru_utime.tv_sec;
+      s1 = (Double) e.ru_utime.tv_sec;
       s2 = (Double) s_.ru_utime.tv_sec;
       s = s1 - s2;
 
       t1 = s + m / MICROSEC;
     
-      m1 = (Double) e_.ru_stime.tv_usec;
+      m1 = (Double) e.ru_stime.tv_usec;
       m2 = (Double) s_.ru_stime.tv_usec;
       m = m1 - m2;
 
-      s1 = (Double) e_.ru_stime.tv_sec;
+      s1 = (Double) e.ru_stime.tv_sec;
       s2 = (Double) s_.ru_stime.tv_sec;
       s = s1 - s2;
 
