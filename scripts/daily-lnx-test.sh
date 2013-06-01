@@ -9,7 +9,7 @@ USERNAME=ashu
 SVN_REPOS="https://repo.anl-external.org/repos/minotaur"
 
 ## LOGS
-WEB_DIR=/mcs/web/research/projects/minotaur/nightly/build-log/riemann
+WEB_DIR=/mcs/web/research/projects/minotaur/nightly/build-log/petsc
 
 ## parallel flag
 CPUS="8"
@@ -28,7 +28,7 @@ DOXY_DIR="/mcs/web/research/projects/minotaur/nightly/doxygen/"
 CMAKE="/home/mahajan/install/cmake-2.8.1/bin"
 
 ## url where logs are accessible.
-URL="http://www.mcs.anl.gov/research/projects/minotaur/nightly/build-log/riemann"
+URL="http://www.mcs.anl.gov/research/projects/minotaur/nightly/build-log/petsc"
 
 ## delimitor
 LINE="--------------------------------------------------"
