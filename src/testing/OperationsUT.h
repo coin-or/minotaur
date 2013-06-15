@@ -21,18 +21,20 @@ using namespace Minotaur;
 
 class OperationsTest : public CppUnit::TestCase {
 
-  public:
-    OperationsTest(std::string name) : TestCase(name) {}
-    OperationsTest() {}
+public:
+  OperationsTest(std::string name) : TestCase(name) {}
+  OperationsTest() {}
 
-    CPPUNIT_TEST_SUITE(OperationsTest);
-    CPPUNIT_TEST(testGcd);
-    CPPUNIT_TEST(testToLower);
-    CPPUNIT_TEST_SUITE_END();
+  CPPUNIT_TEST_SUITE(OperationsTest);
+  CPPUNIT_TEST(testGcd);
+  CPPUNIT_TEST(testToLower);
+  CPPUNIT_TEST(testSortVarX);
+  CPPUNIT_TEST_SUITE_END();
 
-    void testGcd();
-    void testToLower();
-  private:
+  void testGcd();
+  void testToLower();
+  void testSortVarX();
+private:
 
 };
 

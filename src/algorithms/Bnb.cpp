@@ -39,6 +39,7 @@
 #include "Relaxation.h"
 #include "ReliabilityBrancher.h"
 #include "Solution.h"
+#include "SOS1Handler.h"
 #include "Timer.h"
 #include "TreeManager.h"
 
@@ -57,6 +58,7 @@ BranchAndBound* createBab(EnvPtr env, ProblemPtr p, EnginePtr e,
   NodeProcessorPtr nproc = NodeProcessorPtr(); // NULL
   IntVarHandlerPtr v_hand = (IntVarHandlerPtr) new IntVarHandler(env, p);
   LinHandlerPtr l_hand = (LinHandlerPtr) new LinearHandler(env, p);
+  SOS1HandlerPtr s1_hand = (SOS1HandlerPtr) new SOS1Handler(env, p);
   NlPresHandlerPtr nlhand;
   NodeIncRelaxerPtr nr;
   RelaxationPtr rel;
@@ -64,6 +66,7 @@ BranchAndBound* createBab(EnvPtr env, ProblemPtr p, EnginePtr e,
   const std::string me("bnb main: ");
   OptionDBPtr options = env->getOptions();
 
+  handlers.push_back(s1_hand);
   handlers.push_back(v_hand);
   if (true==options->findBool("presolve")->getValue()) {
     handlers.push_back(l_hand);

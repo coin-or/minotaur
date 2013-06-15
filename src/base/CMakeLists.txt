@@ -92,6 +92,8 @@ set (MINOTAUR_SOURCES
      SimpleTransformer.cpp 
      Solution.cpp 
      SolutionPool.cpp 
+     SOS.cpp 
+     SOS1Handler.cpp
      Transformer.cpp 
      TransPoly.cpp 
      TreeManager.cpp 
@@ -191,6 +193,8 @@ set (MINOTAUR_HEADERS
      SimpleTransformer.h 
      Solution.h
      SolutionPool.h
+     SOS.h
+     SOS1Handler.h
      Timer.h
      Transformer.h 
      TransPoly.h 

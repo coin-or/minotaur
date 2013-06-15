@@ -167,6 +167,7 @@ void LPProcessor::process(NodePtr node, RelaxationPtr rel,
             << rel->getNumVars() << " variables." << std::endl;
 #endif
 
+
 #if 0
   Double *svar = new Double[20];
   Bool xfeas = true;

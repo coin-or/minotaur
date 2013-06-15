@@ -28,6 +28,7 @@
 #include "Problem.h"
 #include "ProblemSize.h"
 #include "QuadraticFunction.h"
+#include "SOS.h"
 #include "Variable.h"
 
 using namespace Minotaur;
@@ -58,6 +59,8 @@ Problem::~Problem()
   vars_.clear();
   cons_.clear();
   obj_.reset();
+  sos1_.clear();
+  sos2_.clear();
 
   if (initialPt_) {
     delete [] initialPt_;
@@ -269,19 +272,28 @@ void Problem::changeObj(FunctionPtr f, Double cb)
 
 void Problem::clear() 
 {
-  VariableIterator vIter;
-  ConstraintIterator cIter;
+  VariableIterator viter;
+  ConstraintIterator citer;
+  SOSIterator siter;
   VariablePtr vPtr;
   ConstraintPtr cPtr;
 
-  for (vIter=vars_.begin(); vIter!=vars_.end(); vIter++) {
-    vPtr = *vIter;
+  for (viter=vars_.begin(); viter!=vars_.end(); viter++) {
+    vPtr = *viter;
     vPtr->clearConstraints_();
   }
 
-  for (cIter=cons_.begin(); cIter!=cons_.end(); cIter++) {
-    cPtr = *cIter;
+  for (citer=cons_.begin(); citer!=cons_.end(); citer++) {
+    cPtr = *citer;
     cPtr.reset();
+  }
+  for (siter=sos1_.begin(); siter!=sos1_.end(); siter++) {
+    delete *siter;
+    *siter = 0;
+  }
+  for (siter=sos2_.begin(); siter!=sos2_.end(); siter++) {
+    delete *siter;
+    *siter = 0;
   }
   if (engine_) {
     engine_->clear();
@@ -354,6 +366,8 @@ ProblemPtr Problem::clone() const
     clonePtr->size_->ints             = size_->ints;
     clonePtr->size_->conts            = size_->conts;
     clonePtr->size_->linCons          = size_->linCons;
+    clonePtr->size_->SOS1Cons         = size_->SOS1Cons;
+    clonePtr->size_->SOS2Cons         = size_->SOS2Cons;
     clonePtr->size_->bilinCons        = size_->bilinCons;
     clonePtr->size_->multilinCons     = size_->multilinCons;
     clonePtr->size_->quadCons         = size_->quadCons;
@@ -380,7 +394,7 @@ ProblemPtr Problem::clone() const
 
 void Problem::countConsTypes_()
 {
-  ConstraintIterator cIter;
+  ConstraintIterator citer;
   ConstraintPtr cPtr;
   LinearFunctionPtr lf;
   QuadraticFunctionPtr qf;
@@ -389,8 +403,8 @@ void Problem::countConsTypes_()
        consWithNonlin=0;
   UInt linTerms=0, quadTerms=0;
 
-  for (cIter=cons_.begin(); cIter!=cons_.end(); ++cIter) {
-    cPtr = *cIter;
+  for (citer=cons_.begin(); citer!=cons_.end(); ++citer) {
+    cPtr = *citer;
     switch (cPtr->getFunctionType()) {
      case Constant: // TODO: for now consider it linear
      case Linear:
@@ -424,6 +438,8 @@ void Problem::countConsTypes_()
     }
   }
 
+  size_->SOS1Cons     = sos1_.size();
+  size_->SOS2Cons     = sos2_.size();
   size_->linCons      = linCons;
   size_->bilinCons    = bilinCons;
   size_->multilinCons = multilinCons;
@@ -470,12 +486,12 @@ void Problem::countObjTypes_()
 
 void Problem::countVarTypes_()
 {
-  VariableIterator vIter;
+  VariableIterator viter;
   VariablePtr vPtr;
   UInt bins=0, ints=0, conts=0, fixed=0;
 
-  for (vIter=vars_.begin(); vIter!=vars_.end(); vIter++) {
-    vPtr = *vIter;
+  for (viter=vars_.begin(); viter!=vars_.end(); viter++) {
+    vPtr = *viter;
     switch (vPtr->getType()) {
      case (Binary):
        ++bins;
@@ -960,6 +976,19 @@ ObjectivePtr Problem::newObjective(FunctionPtr f, Double cb,
 }
 
 
+SOSPtr Problem::newSOS(Int n, SOSType type, Double *vals,
+                       const VarVector &vars, Int priority)
+{
+  SOSPtr sos = new SOS(n, type, vals, vars, priority);
+  if (SOS1 == type) {
+    sos1_.push_back(sos);
+  } else if (SOS2 == type) {
+    sos2_.push_back(sos);
+  }
+  return sos;
+}
+
+
 VariablePtr Problem::newVariable()
 {
   assert(engine_ == 0 ||
@@ -1204,9 +1233,9 @@ void Problem::unsetEngine()
 
 void Problem::write(std::ostream &out, std::streamsize out_p) const 
 {
-  ConstraintConstIterator cIter;
+  ConstraintConstIterator citer;
   ConstraintPtr cPtr;
-  VariableConstIterator vIter;
+  VariableConstIterator viter;
   std::streamsize old_p = out.precision();
 
   out.precision(out_p);
@@ -1214,8 +1243,8 @@ void Problem::write(std::ostream &out, std::streamsize out_p) const
     writeSize(out);
   }
 
-  for (vIter = vars_.begin(); vIter != vars_.end(); ++vIter) {
-    (*vIter)->write(out);
+  for (viter = vars_.begin(); viter != vars_.end(); ++viter) {
+    (*viter)->write(out);
   }
 
   if (obj_) {
@@ -1223,14 +1252,14 @@ void Problem::write(std::ostream &out, std::streamsize out_p) const
     out << std::endl;
   }
 
-  for (cIter = cons_.begin(); cIter != cons_.end(); ++cIter) {
-    (*cIter)->write(out);
+  for (citer = cons_.begin(); citer != cons_.end(); ++citer) {
+    (*citer)->write(out);
     out << std::endl;
   }
   out.precision(old_p);
 
-  //for (cIter = cons_.begin(); cIter != cons_.end(); ++cIter) {
-  //  (*cIter)->displayFunctionMap();
+  //for (citer = cons_.begin(); citer != cons_.end(); ++citer) {
+  //  (*citer)->displayFunctionMap();
   //}
 
 }
@@ -1246,6 +1275,8 @@ void Problem::writeSize(std::ostream &out) const
     << " Number of fixed variables = " << size_->fixed << std::endl
     << " Number of constraints = " << size_->cons << std::endl
     << " Number of linear constraints = " << size_->linCons << std::endl
+    << " Number of SOS1 constraints = " << size_->SOS1Cons << std::endl
+    << " Number of SOS2 constraints = " << size_->SOS2Cons << std::endl
     << " Number of bilinear constraints = " << size_->bilinCons << std::endl
     << " Number of multilinear constraints = " << size_->multilinCons 
     << std::endl

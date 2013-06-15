@@ -175,6 +175,15 @@ void Minotaur::BoundsOnSquare(const Double &l1, const Double &u1, Double &lb,
 }
 
 
+void Minotaur::displayArray(const Double* point, UInt n, std::ostream &out)
+{
+  for (UInt i=0; i<n; ++i, ++point) {
+    out << *point << "\t";
+  }
+  out << std::endl;
+}
+
+
 Double Minotaur::Gcd(Double d1, Double d2, const Double &etol)
 {
   Double rem;
@@ -212,7 +221,8 @@ Double Minotaur::getDistance(const Double* Pointa, const Double* Pointb, UInt n)
 }
 
 
-Double Minotaur::minArray(const Double* A, UInt n){
+Double Minotaur::minArray(const Double* A, UInt n)
+{
   Double min = A[0];
 
   for (UInt i=0; i<n; ++i, ++A){
@@ -224,12 +234,52 @@ Double Minotaur::minArray(const Double* A, UInt n){
 }
 
 
-void Minotaur::displayArray(const Double* point, UInt n, std::ostream &out)
+void Minotaur::sort(VarVector &vvec, Double *x) 
 {
-  for (UInt i=0; i<n; ++i, ++point) {
-    out << *point << "\t";
+  if (vvec.size()<=1) {
+   return;
   }
-  out << std::endl;
+  sortRec(vvec, x, 0, vvec.size()-1, vvec.size()/2);
+}
+
+
+void Minotaur::sortRec(VarVector &vvec, Double *x, int left, int right,
+                       int pivotind) 
+{
+  Double pval;
+  Double tmpval;
+  VariablePtr tmpvar;
+  int sind;
+
+  // move pivot to the rightmost
+  tmpvar = vvec[pivotind];
+  vvec[pivotind] = vvec[right];
+  vvec[right] = tmpvar;
+
+  pval = x[pivotind];
+  x[pivotind] = x[right];
+  x[right] = pval;
+
+  // move any value <= pval to the left side.
+  sind = left;
+  for (int i=left; i<right; ++i) {
+    if (x[i] <= pval) {
+      tmpvar = vvec[sind]; vvec[sind] = vvec[i]; vvec[i] = tmpvar;
+      tmpval = x[sind]; x[sind] = x[i]; x[i] = tmpval;
+      ++sind;
+    }
+  }
+
+  // move pivot to sind
+  tmpvar = vvec[sind]; vvec[sind] = vvec[right]; vvec[right] = tmpvar;
+  tmpval = x[sind]; x[sind] = x[right]; x[right] = tmpval;
+
+  if (sind-left>2) {
+    sortRec(vvec, x, left, sind-1, (sind+left)/2);
+  }
+  if (right-sind>1) {
+    sortRec(vvec, x, sind, right, (sind+right)/2);
+  }
 }
 
 

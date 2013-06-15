@@ -199,6 +199,9 @@ private:
   /// Add variables in ASL to the instance 
   void addVariablesFromASL_(Minotaur::ProblemPtr problemPtr);
 
+  /// Add 'SOS' constrants of type 1 and 2.
+  void addSOS_(Minotaur::ProblemPtr instance);
+
   /**
    * Call ASL routines and create an instance. The expression tree is
    * traversed and the instance is stored in Minotaur data structures.

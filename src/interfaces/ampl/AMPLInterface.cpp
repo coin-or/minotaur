@@ -30,6 +30,7 @@
 #include "Problem.h"
 #include "QuadraticFunction.h"
 #include "Solution.h"
+#include "SOS.h"
 #include "Variable.h"
 
 
@@ -42,6 +43,22 @@
 using namespace MINOTAUR_AMPL;
 
 const std::string AMPLInterface::me_ = "AMPLInterface: ";
+
+
+// suf_sos_ASL implemented in ASL's suf_sos.c needs priority, ref, sos, sosno
+// and sosref.
+static SufDecl suftab[] =
+{
+  { const_cast<char*>("priority"), 0, ASL_Sufkind_var, 1 },
+  { const_cast<char*>("ref"), 0, ASL_Sufkind_var | ASL_Sufkind_real, 1 },
+  { const_cast<char*>("sos"), 0, ASL_Sufkind_var, 1 },
+  { const_cast<char*>("sos"), 0, ASL_Sufkind_con, 1 },
+  { const_cast<char*>("sosno"), 0, ASL_Sufkind_var | ASL_Sufkind_real, 1 },
+  { const_cast<char*>("sosref"), 0, ASL_Sufkind_var | ASL_Sufkind_real, 1 }
+};
+
+
+
 
 // Constructor 
 AMPLInterface::AMPLInterface(Minotaur::EnvPtr env, std::string solver) 
@@ -89,7 +106,7 @@ void AMPLInterface::addDefinedVars_(Minotaur::ProblemPtr instance)
 
 
 void AMPLInterface::addLinearConstraint_(Minotaur::Int i, 
-    Minotaur::ProblemPtr instance)
+                                         Minotaur::ProblemPtr instance)
 {
   std::string cName;
   Minotaur::LinearFunctionPtr lfPtr = Minotaur::LinearFunctionPtr(); // NULL
@@ -106,7 +123,7 @@ void AMPLInterface::addLinearConstraint_(Minotaur::Int i,
 
 
 void AMPLInterface::addLinearObjective_(Minotaur::Int i, 
-    Minotaur::ProblemPtr instance)
+                                        Minotaur::ProblemPtr instance)
 {
   Minotaur::FunctionPtr fPtr;
   Minotaur::LinearFunctionPtr lfPtr = Minotaur::LinearFunctionPtr(); // null
@@ -134,7 +151,7 @@ void AMPLInterface::addLinearObjective_(Minotaur::Int i,
 // trusted for no repititions. Otherwise, there are some existing terms in lf
 // and we need to use lf->incTerm().
 void AMPLInterface::addLinearTermsFromConstr_(Minotaur::LinearFunctionPtr & lf,
-    Minotaur::Int i)
+                                              Minotaur::Int i)
 {
   cgrad *cg; // for ampl
   if (lf) {
@@ -155,7 +172,7 @@ void AMPLInterface::addLinearTermsFromConstr_(Minotaur::LinearFunctionPtr & lf,
 
 // same as getLinearTermsFromConstr_() but for objective.
 void AMPLInterface::addLinearTermsFromObj_(Minotaur::LinearFunctionPtr & lf, 
-    Minotaur::Int i)
+                                           Minotaur::Int i)
 {
   ograd *og; // for ampl
   if (lf) {
@@ -561,6 +578,65 @@ void AMPLInterface::addVariablesFromASL_(Minotaur::ProblemPtr instance)
 }
 
 
+
+// Documentation of reading SOS information from the .nl files is available in
+// the file README.suf in the asl directory.
+void AMPLInterface::addSOS_(Minotaur::ProblemPtr instance)
+{
+  int flags = ASL_suf_sos_explict_free; // = caller will explicitly free
+                                        // returned arrays.
+  int   nsos    = 0;    // number of SOS constraints.
+  int   nsosnz  = 0;    // total number of nonzeros in SOS constraints.
+  char *sostype = 0;    // +1 Type-I, -1 Type-2
+  int  *sospri  = 0;    
+  int  *sosbeg  = 0;
+  int  *sosind  = 0;
+  real *sosref  = 0;
+  int   copri[2];
+
+  Minotaur::SOSType sostypem = Minotaur::SOS1;
+  Minotaur::VarVector vars;
+
+  logger_->MsgStream(Minotaur::LogDebug2) << "Checking SOS information "
+                                          << std::endl;
+  copri[0] = 0;
+  copri[1] = 0;
+  nsos = suf_sos_ASL(myAsl_, flags, &nsosnz, &sostype, &sospri, copri, &sosbeg,
+                     &sosind, &sosref);
+  logger_->MsgStream(Minotaur::LogDebug) << "Number of SOS constraints = "
+                                          << nsos << std::endl
+                                          << "Number of SOS nonzeros = "
+                                          << nsosnz << std::endl;
+  
+  for (int i=0; i<nsos; ++i) {
+    if (sostype[i]-'0'>0) {
+      sostypem = Minotaur::SOS1;
+    } else if (sostype[i]-'0'<0) {
+      sostypem = Minotaur::SOS2;
+    } else {
+      logger_->ErrStream() << "bad SOS type." << std::endl;
+    }
+    vars.clear();
+
+    for (int j=sosbeg[i]; j<=sosbeg[i+1]; ++j) {
+      vars.push_back(instance->getVariable(sosind[j]));
+    }
+
+    instance->newSOS(sosbeg[i+1]-sosbeg[i], sostypem, sosref+sosbeg[i],
+                     vars, sospri[i]);
+  }
+
+  if (1<nsos) {
+    free(sosref);
+    // All others are freed automatically.
+    //free(sostype);
+    //free(sospri);
+    //free(sosbeg);
+    //free(sosind);
+  }
+}
+
+
 // copy the data desired data structures from ASL into Instance 
 Minotaur::ProblemPtr AMPLInterface::copyInstanceFromASL_()
 {
@@ -603,6 +679,7 @@ Minotaur::ProblemPtr AMPLInterface::copyInstanceFromASL_()
     addLinearObjective_(0, instance);
   }
 
+  addSOS_(instance);
   //instance->calculateSize();
   //instance->writeSize();
   return instance;
@@ -701,6 +778,8 @@ Minotaur::ProblemPtr AMPLInterface::copyInstanceFromASL2_()
   } else {
     addLinearObjective_(0, instance);
   }
+
+  addSOS_(instance);
 
   delete [] grad;
   delete [] x;
@@ -1312,7 +1391,7 @@ Minotaur::ProblemPtr AMPLInterface::getInstanceFromASL_(
 
   // new instance
   Minotaur::ProblemPtr instance = (Minotaur::ProblemPtr) 
-                                      new Minotaur::Problem();
+    new Minotaur::Problem();
 
   addVariablesFromASL_(instance);
   nDefVars_    = 0;
@@ -1398,6 +1477,8 @@ Minotaur::ProblemPtr AMPLInterface::getInstanceFromASL_(
       addLinearObjective_(0, instance);
     }
   }
+
+  addSOS_(instance);
 
   // all done.
   return instance;
@@ -1802,6 +1883,9 @@ void AMPLInterface::readFile_(std::string *fname, ReaderType readerType)
 
   // setup space for initial guess
   myAsl_->i.X0_ = (real *)mymalloc_ASL(nVars_*sizeof(real));
+
+  // Tell ASL about suffixes we want.
+  suf_declare_ASL(myAsl_, suftab, sizeof(suftab) / sizeof(SufDecl));
 
   // read the full program 
   switch (readerType) {

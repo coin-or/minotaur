@@ -9,6 +9,7 @@
 #include "MinotaurConfig.h"
 #include "OperationsUT.h"
 #include "Operations.h"
+#include "Problem.h"
 
 CPPUNIT_TEST_SUITE_REGISTRATION(OperationsTest);
 CPPUNIT_TEST_SUITE_NAMED_REGISTRATION(OperationsTest, "OperationsUT");
@@ -34,6 +35,45 @@ void OperationsTest::testToLower()
   toLowerCase(s);
   CPPUNIT_ASSERT(s==l);
 }
+
+
+void OperationsTest::testSortVarX()
+{
+  ProblemPtr p = (ProblemPtr) new Problem();
+  VarVector vvec;
+  Double *x = new Double[100];
+
+  // test - 1
+  for (int i=0; i<100; ++i) {
+    vvec.push_back(p->newVariable());
+    x[i] = rand() % 100;
+  }
+
+  sort(vvec, x);
+  for (int i=1; i<100; ++i) {
+    CPPUNIT_ASSERT(x[i-1]<=x[i]);
+  }
+  
+  // test - 2
+  for (int i=0; i<100; ++i) {
+    x[i] = -1;
+  }
+  sort(vvec, x);
+  for (int i=1; i<100; ++i) {
+    CPPUNIT_ASSERT(x[i-1]<=x[i]);
+  }
+  
+  // test - 3
+  for (int i=0; i<100; ++i) {
+    x[i] = vvec[i]->getIndex();
+  }
+  sort(vvec, x);
+  for (int i=1; i<100; ++i) {
+    CPPUNIT_ASSERT(x[i-1]<=x[i]);
+    CPPUNIT_ASSERT(vvec[i]->getIndex()==i);
+  }
+}
+
 
 // Local Variables: 
 // mode: c++ 

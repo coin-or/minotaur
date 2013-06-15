@@ -43,6 +43,12 @@ namespace Minotaur {
     /// Number of constraints that have a linear function only.
     UInt linCons;
 
+    /// Number of SOS Type 1 constraints.
+    UInt SOS1Cons;
+
+    /// Number of SOS Type 2 constraints.
+    UInt SOS2Cons;
+
     /**
      * Number of constraints that have a bilinear function and optionally, a
      * linear function.

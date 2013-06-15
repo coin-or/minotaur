@@ -92,6 +92,12 @@ namespace Minotaur {
     Upper
   } BoundType;
 
+  /// SOS types
+  typedef enum {
+    SOS1,
+    SOS2
+  } SOSType;
+
   /// Different states a variable can be in.
   typedef enum {
     DeletedVar, /// Marked for deletion.
@@ -214,11 +220,14 @@ namespace Minotaur {
     NLPBnb
   } AlgoType;
 
+  /// Logging
   class Logger;
   typedef boost::shared_ptr<Logger> LoggerPtr;
 
   /// What is the function type on adding two functions f1 and f2?
   FunctionType funcTypesAdd(FunctionType f1, FunctionType f2);
+
+  /// What is the function type on multiplying two functions f1 and f2?
   FunctionType funcTypesMult(FunctionType f1, FunctionType f2);
 
   /// Get the string equivalent of ProblemType.
@@ -236,16 +245,20 @@ namespace Minotaur {
   typedef std::vector<ConstraintPtr>::iterator ConstraintIterator;
   typedef std::vector<ConstraintPtr>::const_iterator ConstraintConstIterator;
   typedef std::vector<ConstraintPtr> ConstraintVector;
+
+  class SOS;
+  typedef std::vector<SOS *> SOSVector;
+  typedef SOSVector::iterator SOSIterator;
+  typedef SOSVector::const_iterator SOSConstIterator;
+
   // Serdar defined
   typedef boost::shared_ptr<ConstraintVector> ConstraintVectorPtr;
-  // Serdar ended
   typedef std::vector<ConstConstraintPtr> ConstConstraintVector;
-  // Serdar defined.
   typedef boost::shared_ptr<ConstConstraintVector> ConstConstraintVectorPtr;
-  // Serdar ended.
   typedef ConstConstraintVector::iterator ConstConstraintIterator;
   typedef std::set<ConstraintPtr> ConstrSet;
   typedef std::deque<ConstConstraintPtr> ConstrQ;
+
 
   class Variable;
   typedef boost::shared_ptr<Variable> VariablePtr;
@@ -263,10 +276,10 @@ namespace Minotaur {
   typedef std::set<ConstVariablePtr, CompareVariablePtr> VariableSet;
   typedef VariableSet::const_iterator VarSetConstIterator;
   typedef std::set<VariablePtr> VarSet;
+
   // Serdar added.
   typedef boost::shared_ptr<VarSet> VarSetPtr;
   typedef boost::shared_ptr<const VarSet> ConstVarSetPtr;
-  // Serdar ended.
   typedef std::map<ConstVariablePtr, UInt, CompareVariablePtr> VarIntMap;
   typedef VarIntMap::const_iterator VarIntMapConstIterator;
   typedef VarIntMap::iterator VarIntMapIterator;
@@ -299,9 +312,9 @@ namespace Minotaur {
   typedef boost::shared_ptr<const Modification> ConstModificationPtr;  
   typedef std::vector<ModificationPtr> ModVector;  
   typedef std::vector<ModificationPtr>::const_iterator 
-    ModificationConstIterator;
+          ModificationConstIterator;
   typedef std::vector<ModificationPtr>::const_reverse_iterator 
-    ModificationRConstIterator;
+          ModificationRConstIterator;
   typedef std::deque<ModificationPtr> ModQ;
   typedef std::stack<ModificationPtr> ModStack;
 
@@ -335,25 +348,30 @@ namespace Minotaur {
   struct CompareValueVariablePair {
   Bool operator() (VariableValuePair v1,VariableValuePair v2) const;
   };
+
   // Map to determine GUB cover.
   struct CompareValueVarInc{
     Bool operator() (VariableValuePair v1, VariableValuePair v2) const;
   };
-  typedef std::map<ConstVariablePtr, Double, CompareValueVarInc> VariableValueMap;
+  typedef std::map<ConstVariablePtr, Double, CompareValueVarInc>
+          VariableValueMap;
 
 
   // Vector of pair<ConstVariablePtr,double value> which is VariableValuePair.
   typedef std::vector<VariableValuePair> VariableValuePairVector;
   typedef boost::shared_ptr<VariableValuePairVector> VariableValuePairVectorPtr;
-  typedef std::vector<VariableValuePair>::iterator VariableValuePairVectorIterator;
+  typedef std::vector<VariableValuePair>::iterator
+          VariableValuePairVectorIterator;
   typedef std::vector<VariableValuePair>::const_iterator 
-    VariableValuePairVectorConstIterator;
+          VariableValuePairVectorConstIterator;
+
   // Cover is a VariableSet
   typedef VariableValuePairVector CoverSet;
   typedef boost::shared_ptr<CoverSet> CoverSetPtr;
   typedef boost::shared_ptr<const CoverSet> ConstCoverSetPtr;
   typedef CoverSet::iterator CoverSetIterator;
   typedef CoverSet::const_iterator CoverSetConstIterator; 
+
   // Pointers to classes added.
   class KnapsackList;
   typedef boost::shared_ptr<KnapsackList> KnapsackListPtr;

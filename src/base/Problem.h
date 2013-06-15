@@ -27,6 +27,7 @@ class LinearFunction;
 class Objective;
 struct ProblemSize;
 class QuadraticFunction;
+class SOS;
 class SparseMatrix;
 typedef boost::shared_ptr<Function> FunctionPtr;
 typedef boost::shared_ptr<Jacobian> JacobianPtr;
@@ -36,6 +37,7 @@ typedef boost::shared_ptr<Objective> ObjectivePtr;
 typedef boost::shared_ptr<ProblemSize> ProblemSizePtr;
 typedef boost::shared_ptr<QuadraticFunction> QuadraticFunctionPtr;
 typedef boost::shared_ptr<const ProblemSize> ConstProblemSizePtr;
+typedef SOS* SOSPtr;
 
 /**
  * \brief The Problem that needs to be solved.
@@ -324,10 +326,28 @@ public:
    * \param[in] cb The constant term in the objective function.
    * \param[in] otyp Whether the objective is to Minimize or Maximize.
    * \param[in] name The name for the objective function.
+   *
+   * \returns Pointer to the newly added objective function.
    */
   virtual ObjectivePtr newObjective(FunctionPtr f, Double cb, 
                                     ObjectiveType otyp, std::string name);
 
+  /** 
+   * \brief Add a new SOS constraint. 
+   *
+   * \param[in] n Number of variables in this SOS constraint.
+   * \param[in] type SOS1 (SOS type 1) or SOS2 (SOS type 2).
+   * \param[in] vals Values of coefficients of variables in the SOS constraint.
+   * \param[in] vars Variables in the constraint.
+   * \param[in] priority The priority provided by the user for this
+   * constraint.
+   *
+   * \returns Pointer to the newly added SOS data.
+   */
+  virtual SOSPtr newSOS(Int n, SOSType type, Double *vals,
+                        const VarVector &vars, Int priority);
+
+  
   /// Add a new continuous, unbounded variable to the Problem. 
   virtual VariablePtr newVariable(); 
 
@@ -453,6 +473,11 @@ public:
    */
   virtual void setVarType(VariablePtr var, VariableType type);
 
+  virtual SOSConstIterator sos1Begin() { return sos1_.begin(); };
+  virtual SOSConstIterator sos1End() { return sos1_.end(); };
+  virtual SOSConstIterator sos2Begin() { return sos2_.begin(); };
+  virtual SOSConstIterator sos2End() { return sos2_.end(); };
+
   /**
    * \brief Substitute a variable 'out' with the variable 'in' through out the
    * problem.
@@ -529,6 +554,12 @@ protected:
 
   /// Size statistics for this Problem.
   ProblemSizePtr size_;
+
+  /// SOS1 constraints.
+  SOSVector sos1_;
+
+  /// SOS2 constraints.
+  SOSVector sos2_;
 
   /// Vector of variables.
   VarVector vars_;

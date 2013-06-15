@@ -5,49 +5,48 @@
 //
 
 /**
- * \file IntVarHandler.h
- * \brief Declare the IntVarHandler class for handling integer constrained
- * variables. It checks integrality and provides branching candidates. Does
+ * \file SOS1Handler.h
+ * \brief Declare the SOS1Handler class for handling SOS type I constraints.
+ * It checks integrality and provides branching candidates. Does
  * not do any presolving and cut-generation.
- * \author Ashutosh Mahajan, Argonne National Laboratory
+ * \author Ashutosh Mahajan, IIT Bombay
  */
 
-#ifndef MINOTAURINTVARHANDLER_H
-#define MINOTAURINTVARHANDLER_H
+#ifndef MINOTAURSOS1HANDLER_H
+#define MINOTAURSOS1HANDLER_H
 
 #include "Handler.h"
 
 namespace Minotaur {
 
-
 /**
- * IntVarHandler class considers integer variables of a problem. It only
- * checks integrality of the variables. It does not implement separate()
+ * SOS1Handler class considers all SOS Type 1 constraints in the problem. It
+ * only checks integrality of the variables. It does not implement separate()
  * function.  Implements functions for isFeasible and branching. 
  */
-class IntVarHandler : public Handler {
+class SOS1Handler : public Handler {
 public:
 
   /// Default constructor.
-  IntVarHandler();
+  SOS1Handler();
 
   /// Constructor.
-  IntVarHandler(EnvPtr env, ProblemPtr problem);
+  SOS1Handler(EnvPtr env, ProblemPtr problem);
 
   /// Destroy.
-  ~IntVarHandler();
+  ~SOS1Handler();
 
   // Does nothing.
-  void relaxInitFull(RelaxationPtr rel, Bool *is_inf) ;
+  void relaxInitFull(RelaxationPtr rel, Bool *is_inf) {};
 
   // Does nothing.
-  void relaxInitInc(RelaxationPtr rel, Bool *is_inf);
+  void relaxInitInc(RelaxationPtr rel, Bool *is_inf){};
 
   // Does nothing.
-  void relaxNodeFull(NodePtr node, RelaxationPtr rel, Bool *is_inf) ;
+  void relaxNodeFull(NodePtr node, RelaxationPtr rel, Bool *is_inf) {};
 
   // Does nothing.
-  void relaxNodeInc(NodePtr node, RelaxationPtr rel, Bool *is_inf);
+  void relaxNodeInc(NodePtr node, RelaxationPtr rel, Bool *is_inf){};
 
   // Check if solution is feasible.
   Bool isFeasible(ConstSolutionPtr sol, RelaxationPtr relaxation, 
@@ -70,13 +69,13 @@ public:
 
   // Implement Handler::getBrMod().
   ModificationPtr getBrMod(BrCandPtr cand, DoubleVector &x, 
-                           RelaxationPtr rel, BranchDirection dir);
+                           RelaxationPtr rel, BranchDirection dir) {};
 
   // Implement Handler::getBranches().
   Branches getBranches(BrCandPtr cand, DoubleVector & x,
-                       RelaxationPtr rel, SolutionPoolPtr s_pool);
+                       RelaxationPtr rel, SolutionPoolPtr s_pool) {};
       
-  Bool isNeeded();
+  Bool isNeeded() {};
 
   /// Presolve. Don't do anything.
   SolveStatus presolve(PreModQ *, Bool *) {return Finished;};
@@ -90,7 +89,7 @@ public:
   {return false;};
 
   // Write name
-  std::string getName() const;
+  std::string getName() const {};
 
   /// Does nothing.
   void writePreStats(std::ostream &) const {};
@@ -105,9 +104,6 @@ private:
   /// Environment.
   EnvPtr env_;
 
-  /// True if we are doing guided dive, false otherwise.
-  Bool gDive_;
-
   /**
    * Tolerance for checking integrality.
    * If |round(x) - x| < intTol_, then it is considered to be integer
@@ -121,17 +117,14 @@ private:
   /// For log:
   static const std::string me_;
 
-  /**
-   * If true, create branches using variables of relaxation at a given node,
-   * and not the original problem.
-   */
-  Bool mRelOnly_;
-
   /// The problem for which the handler was created.
   ProblemPtr problem_;
+
+  void getFracsOrd_(SOSPtr sos, const std::vector< Double > &x, VarVector
+                    &frac_vars);
 };
-typedef boost::shared_ptr<IntVarHandler> IntVarHandlerPtr;
-typedef boost::shared_ptr<const IntVarHandler> ConstIntVarHandlerPtr;
+typedef boost::shared_ptr<SOS1Handler> SOS1HandlerPtr;
+typedef boost::shared_ptr<const SOS1Handler> ConstSOS1HandlerPtr;
 }
 #endif
 
