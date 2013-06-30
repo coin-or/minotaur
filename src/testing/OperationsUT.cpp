@@ -72,6 +72,8 @@ void OperationsTest::testSortVarX()
     CPPUNIT_ASSERT(x[i-1]<=x[i]);
     CPPUNIT_ASSERT(vvec[i]->getIndex()==i);
   }
+
+  delete [] x;
 }
 
 

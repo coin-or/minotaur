@@ -234,12 +234,25 @@ Double Minotaur::minArray(const Double* A, UInt n)
 }
 
 
-void Minotaur::sort(VarVector &vvec, Double *x) 
+void Minotaur::sort(VarVector &vvec, Double *x, Bool ascend) 
 {
   if (vvec.size()<=1) {
    return;
   }
+
+  if (ascend == false) {
+    for (Int i=vvec.size()-1; i>-1; --i) {
+      x[i] *= -1;
+    }
+  }
+
   sortRec(vvec, x, 0, vvec.size()-1, vvec.size()/2);
+
+  if (ascend == false) {
+    for (Int i=vvec.size()-1; i>-1; --i) {
+      x[i] *= -1;
+    }
+  }
 }
 
 
@@ -274,7 +287,7 @@ void Minotaur::sortRec(VarVector &vvec, Double *x, int left, int right,
   tmpvar = vvec[sind]; vvec[sind] = vvec[right]; vvec[right] = tmpvar;
   tmpval = x[sind]; x[sind] = x[right]; x[right] = tmpval;
 
-  if (sind-left>2) {
+  if (sind-left>1) {
     sortRec(vvec, x, left, sind-1, (sind+left)/2);
   }
   if (right-sind>1) {

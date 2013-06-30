@@ -13,12 +13,14 @@
  */
 
 #include <cmath>
+#include <iomanip>
 
 #include "MinotaurConfig.h"
 #include "BrCand.h"
 #include "Branch.h"
 #include "Environment.h"
 #include "Logger.h"
+#include "LinMods.h"
 #include "Operations.h"
 #include "Option.h"
 #include "ProblemSize.h"
@@ -27,7 +29,7 @@
 #include "SolutionPool.h"
 #include "SOS.h"
 #include "SOS1Handler.h"
-#include "VarBoundMod.h"
+#include "SOSBrCand.h"
 #include "Variable.h"
 
 #define SPEW 1
@@ -41,7 +43,13 @@ SOS1Handler::SOS1Handler(EnvPtr env, ProblemPtr problem)
   //logger_   = (LoggerPtr) new Logger((LogLevel) env_->getOptions()->
   //                                 findInt("intvar_h_log_level")->getValue());
   logger_   = (LoggerPtr) new Logger(LogDebug2);
-  intTol_   = env_->getOptions()->findDouble("int_tol")->getValue();
+  zTol_   = 1e-6;
+  if (false==env_->getOptions()->findBool("modify_rel_only")->getValue() &&
+      0 == problem_->getNumSOS1() && 0 == problem_->getNumSOS2()) {
+    logger_->ErrStream() << "Can not handle SOS constraints if "
+                         << "modify_rel_only flag is false";
+    assert(!"error initializing sos constraint");
+  }
   problem_  = problem;
 }
 
@@ -61,140 +69,149 @@ Bool SOS1Handler::isFeasible(ConstSolutionPtr , RelaxationPtr relaxation,
 }
 
 
+Branches SOS1Handler::getBranches(BrCandPtr cand, DoubleVector & x, 
+                                    RelaxationPtr rel, SolutionPoolPtr s_pool)
+{
+  SOSBrCandPtr scand = boost::dynamic_pointer_cast <SOSBrCand> (cand);
+  LinModsPtr mod;
+  VarBoundModPtr bmod;
+
+  BranchPtr branch1, branch2;
+  Branches branches = (Branches) new BranchPtrVector();
+
+  mod = (LinModsPtr) new LinMods();
+  for (VariableConstIterator vit=scand->lVarsBegin();vit!=scand->lVarsEnd();
+       ++vit) {
+    bmod = (VarBoundModPtr) new VarBoundMod(*vit, Upper, 0.0);
+    mod->insert(bmod);
+  }
+  branch1 = (BranchPtr) new Branch();
+  branch1->addMod(mod);
+  branch1->setActivity(scand->getLSum());
+
+  mod = (LinModsPtr) new LinMods();
+  for (VariableConstIterator vit=scand->rVarsBegin();vit!=scand->rVarsEnd();
+       ++vit) {
+    bmod = (VarBoundModPtr) new VarBoundMod(*vit, Upper, 0.0);
+    mod->insert(bmod);
+  }
+  branch2 = (BranchPtr) new Branch();
+  branch2->addMod(mod);
+  branch2->setActivity(scand->getRSum());
+
+  branches->push_back(branch1);
+  branches->push_back(branch2);
+  return branches;
+}
+
+
 void SOS1Handler::getBranchingCandidates(RelaxationPtr rel, 
-                                           const std::vector< Double > &x,
-                                           ModVector &, BrCandSet & cands,
-                                           Bool & is_inf)
+                                         const std::vector< Double > &x,
+                                         ModVector &, BrCandSet & cands,
+                                         Bool & is_inf)
 {
   SOSConstIterator siter, siter2;
   VariableConstIterator viter;
   SOSPtr sos;
   Double solval;
+  Double parsum;
   Bool is_feas = true;
-  Int nfracs = 0;
-  VarVector frac_vars;
+  VarVector lvars, rvars;
+  const Double *weights;
+  int nz;
+  Double nzsum;
+  Double nzval;
+  SOSBrCandPtr br_can;
 
   for (siter=rel->sos1Begin(); siter!=rel->sos1End(); ++siter) {
     sos = *siter;
-    getFracsOrd_(sos, x, frac_vars);
+    getNzNumSum_(sos, x, &nz, &nzsum);
+    if (nz>1) {
+      weights = sos->getWeights();
+      parsum = 0.0;
+      lvars.clear();
+      rvars.clear();
+      viter = sos->varsBegin();
+      for (; viter!=sos->varsEnd(); ++viter) {
+        nzval = x[(*viter)->getIndex()];
+        if ((parsum + nzval) < 0.5*nzsum) {
+          lvars.push_back(*viter);
+          parsum += nzval;
+        } else if (nzval+parsum - nzsum/2 < nzsum/2 - parsum) {
+          lvars.push_back(*viter);
+          parsum += nzval;
+          break;
+        } else {
+          break;
+        }
+      } 
+      for (; viter!=sos->varsEnd(); ++viter) {
+        rvars.push_back(*viter);
+      }
+      br_can = (SOSBrCandPtr) new SOSBrCand(sos, lvars, rvars, parsum,
+                                            nzsum-parsum);
+      br_can->setDir(DownBranch);
+      cands.insert(br_can);
+    }
   }
-
-  if (frac_vars.size()>3) {
-    // TODO here.
-  }
-
   is_inf = false;
 }
 
 
-void SOS1Handler::getFracsOrd_(SOSPtr sos, const std::vector< Double > &x,
-                               VarVector &frac_vars)
+ModificationPtr SOS1Handler::getBrMod(BrCandPtr cand, DoubleVector & x,
+                                      RelaxationPtr , BranchDirection dir) 
 {
-  VariableConstIterator viter;
-  Int numfixed = 0;
-  Int index;
-  ConstVariablePtr v;
-  DoubleVector frac_vals;
-
-  for (viter=sos->varsBegin(); viter!=sos->varsEnd(); ++viter) {
-    v = *viter;
-    index = v->getIndex();
-    if (fabs(floor(x[index]+0.5) - x[index]) > intTol_) {
-      frac_vars.push_back(v);
-      frac_vals.push_back(x[v->getIndex()]-floor(x[v->getIndex()]));
-    }
-  }
-
-  sort(frac_vars, &(frac_vals[0]));
-  /*
-    for (viter=sos->varsBegin(); viter!=sos->varsEnd(); ++viter) {
-      nfixed = 0;
-      v = *viter;
-      solval = x[v->getIndex()];
-      index = v->getIndex();
-        // check if number of fixed variables is large
-        nfixed = getNumFixed_(sos);
-        if (sos->getNz - nfixed > 3) {
-        } 
-        break;
-      }
-  */
-}
-
-
-#if 0
-ModificationPtr IntVarHandler::getBrMod(BrCandPtr cand, DoubleVector & x,
-                                        RelaxationPtr , BranchDirection dir) 
-{
-  // TODO: fix this dynamic cast
-  BrVarCandPtr vcand = boost::dynamic_pointer_cast <BrVarCand> (cand);
-  VariablePtr v = vcand->getVar();
-  VarBoundModPtr mod;
-  Double bnd;
+  LinModsPtr mod = (LinModsPtr) new LinMods();
+  SOSBrCandPtr scand = boost::dynamic_pointer_cast <SOSBrCand> (cand);
+  VarBoundModPtr bmod;
 
   if (dir==DownBranch) {
-    bnd = floor(x[v->getIndex()]);
-    mod = (VarBoundModPtr) new VarBoundMod(v, Upper, bnd);
+    for (VariableConstIterator vit = scand->lVarsBegin();
+         vit!=scand->lVarsEnd(); ++vit) {
+      bmod = (VarBoundModPtr) new VarBoundMod((*vit), Upper, 0.0);
+      mod->insert(bmod);
+    }
   } else {
-    bnd = ceil(x[v->getIndex()]);
-    mod = (VarBoundModPtr) new VarBoundMod(v, Lower, bnd);
+    for (VariableConstIterator vit = scand->rVarsBegin();
+         vit!=scand->rVarsEnd(); ++vit) {
+      bmod = (VarBoundModPtr) new VarBoundMod((*vit), Upper, 0.0);
+      mod->insert(bmod);
+    }
   }
   return mod;
 }
 
 
-Branches IntVarHandler::getBranches(BrCandPtr cand, DoubleVector & x, 
-                                    RelaxationPtr rel, SolutionPoolPtr s_pool)
+std::string SOS1Handler::getName() const
 {
-  BrVarCandPtr vcand = boost::dynamic_pointer_cast <BrVarCand> (cand);
-  VariablePtr v = vcand->getVar();
-  Double value = x[v->getIndex()];
-  BranchPtr branch1, branch2;
-  Branches branches = (Branches) new BranchPtrVector();
-  VarBoundModPtr mod;
-  SolutionPtr bestsol = s_pool->getBestSolution();
-
-  if (!mRelOnly_) {
-    v = rel->getOriginalVar(v);
-  }
-  mod = (VarBoundModPtr) new VarBoundMod(v, Upper, floor(value));
-  branch1 = (BranchPtr) new Branch();
-  branch1->addMod(mod);
-  branch1->setActivity(value);
-
-  mod = (VarBoundModPtr) new VarBoundMod(v, Lower, ceil(value));
-  branch2 = (BranchPtr) new Branch();
-  branch2->addMod(mod);
-  branch2->setActivity(value);
-
-  if (true==gDive_ && bestsol) {
-    if (bestsol->getPrimal()[v->getIndex()] < x[v->getIndex()]) {
-      branches->push_back(branch1);
-      branches->push_back(branch2);
-    } else {
-      branches->push_back(branch2);
-      branches->push_back(branch1);
-    }
-  } else {
-    if (cand->getDir() == DownBranch) {
-      branches->push_back(branch1);
-      branches->push_back(branch2);
-    } else {
-      branches->push_back(branch2);
-      branches->push_back(branch1);
-    }
-  }
-  return branches;
+  return "SOS1Handler (Handling SOS1 constraints).";
 }
 
 
-Double IntVarHandler::getTol() const
+void SOS1Handler::getNzNumSum_(SOSPtr sos, const DoubleVector x, int *nz,
+                               double *nzsum)
 {
-  return intTol_;
+  Double xval;
+  *nz = 0;
+  *nzsum = 0.0;
+  for (VariableConstIterator viter = sos->varsBegin(); viter!=sos->varsEnd();
+       ++viter) {
+    xval = x[(*viter)->getIndex()];
+    if (xval>zTol_) {
+      *nzsum += xval;
+      ++(*nz);
+    }
+  }
 }
 
 
-Bool IntVarHandler::isNeeded()
+Double SOS1Handler::getTol() const
+{
+  return zTol_;
+}
+
+
+Bool SOS1Handler::isNeeded()
 {
   if (problem_) {
     problem_->calculateSize();
@@ -206,41 +223,44 @@ Bool IntVarHandler::isNeeded()
 }
 
 
-void IntVarHandler::relaxInitFull(RelaxationPtr, Bool *is_inf)
+void SOS1Handler::relaxInitFull(RelaxationPtr, Bool *is_inf)
 {
   *is_inf = false;
 }
 
 
-void IntVarHandler::relaxInitInc(RelaxationPtr , Bool *is_inf)
+void SOS1Handler::relaxInitInc(RelaxationPtr , Bool *is_inf)
 {
   *is_inf = false;
 }
 
 
-void IntVarHandler::relaxNodeFull(NodePtr , RelaxationPtr, Bool *is_inf)
+void SOS1Handler::relaxNodeFull(NodePtr , RelaxationPtr, Bool *is_inf)
 {
   *is_inf = false;
 }
 
 
-void IntVarHandler::relaxNodeInc(NodePtr , RelaxationPtr , Bool *is_inf)
+void SOS1Handler::relaxNodeInc(NodePtr , RelaxationPtr , Bool *is_inf)
 {
   *is_inf = false;
 }
 
 
-void IntVarHandler::setTol(Double tol)
+void SOS1Handler::separate(ConstSolutionPtr, NodePtr , RelaxationPtr,
+                           CutManager *, SolutionPoolPtr, Bool *,
+                           SeparationStatus *status)
 {
-  intTol_ = tol;
+  *status = SepaNone;
 }
 
 
-std::string IntVarHandler::getName() const
+void SOS1Handler::setTol(Double tol)
 {
-  return "IntVarHandler (Handling integrality of variables).";
+  zTol_ = tol;
 }
-#endif
+
+
 // Local Variables: 
 // mode: c++ 
 // eval: (c-set-style "k&r") 

@@ -21,6 +21,7 @@
 #include "Objective.h"
 #include "QuadraticFunction.h"
 #include "Relaxation.h"
+#include "SOS.h"
 #include "Variable.h"
 
 using namespace Minotaur;
@@ -48,6 +49,7 @@ Relaxation::Relaxation(ProblemPtr problem)
   UInt i;
   Int err;
   VariableIterator vbeg;
+  VarVector vvec;
 
   initialPt_ = 0; //NULL
 
@@ -104,6 +106,19 @@ Relaxation::Relaxation(ProblemPtr problem)
     fun = (FunctionPtr) new Function(lf2, qf2, nl);
     cCopy = newConstraint(fun, cconstr->getLb(), cconstr->getUb(), 
                           cconstr->getName());
+  }
+
+  // add SOS1 constraints
+  vvec.clear();
+  for (SOSConstIterator it=origPr_->sos1Begin(); it!=origPr_->sos1End();
+       ++it) {
+    for (VariableConstIterator it2 = (*it)->varsBegin();
+         it2!=(*it)->varsEnd(); ++it2) {
+      vvec.push_back(vars_[(*it2)->getIndex()]);
+    }
+    newSOS((*it)->getNz(), (*it)->getType(), (*it)->getWeights(), vvec,
+           (*it)->getPriority());
+    vvec.clear();
   }
 
   // add objective

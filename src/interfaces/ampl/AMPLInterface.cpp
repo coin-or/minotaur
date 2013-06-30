@@ -618,7 +618,7 @@ void AMPLInterface::addSOS_(Minotaur::ProblemPtr instance)
     }
     vars.clear();
 
-    for (int j=sosbeg[i]; j<=sosbeg[i+1]; ++j) {
+    for (int j=sosbeg[i]; j<sosbeg[i+1]; ++j) {
       vars.push_back(instance->getVariable(sosind[j]));
     }
 

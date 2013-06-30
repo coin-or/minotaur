@@ -37,16 +37,16 @@ public:
   ~SOS1Handler();
 
   // Does nothing.
-  void relaxInitFull(RelaxationPtr rel, Bool *is_inf) {};
+  void relaxInitFull(RelaxationPtr rel, Bool *is_inf);
 
   // Does nothing.
-  void relaxInitInc(RelaxationPtr rel, Bool *is_inf){};
+  void relaxInitInc(RelaxationPtr rel, Bool *is_inf);
 
   // Does nothing.
-  void relaxNodeFull(NodePtr node, RelaxationPtr rel, Bool *is_inf) {};
+  void relaxNodeFull(NodePtr node, RelaxationPtr rel, Bool *is_inf);
 
   // Does nothing.
-  void relaxNodeInc(NodePtr node, RelaxationPtr rel, Bool *is_inf){};
+  void relaxNodeInc(NodePtr node, RelaxationPtr rel, Bool *is_inf);
 
   // Check if solution is feasible.
   Bool isFeasible(ConstSolutionPtr sol, RelaxationPtr relaxation, 
@@ -57,7 +57,7 @@ public:
    * doing anything.
    */
   void separate(ConstSolutionPtr, NodePtr , RelaxationPtr, CutManager *,
-                SolutionPoolPtr, Bool *, SeparationStatus *) {};
+                SolutionPoolPtr, Bool *, SeparationStatus *);
 
   /**
    * Find variables to branch upon. isInfeasible is true if the handler
@@ -69,19 +69,19 @@ public:
 
   // Implement Handler::getBrMod().
   ModificationPtr getBrMod(BrCandPtr cand, DoubleVector &x, 
-                           RelaxationPtr rel, BranchDirection dir) {};
+                           RelaxationPtr rel, BranchDirection dir);
 
   // Implement Handler::getBranches().
   Branches getBranches(BrCandPtr cand, DoubleVector & x,
-                       RelaxationPtr rel, SolutionPoolPtr s_pool) {};
+                       RelaxationPtr rel, SolutionPoolPtr s_pool);
       
-  Bool isNeeded() {};
+  Bool isNeeded();
 
   /// Presolve. Don't do anything.
   SolveStatus presolve(PreModQ *, Bool *) {return Finished;};
 
   /// Does nothing.
-  void postsolveGetX(const Double *, UInt, DoubleVector *) {};
+  void postsolveGetX(const Double *, UInt, DoubleVector *);
 
   /// Does nothing.
   Bool presolveNode(ProblemPtr, NodePtr, SolutionPoolPtr, ModVector &,
@@ -89,7 +89,10 @@ public:
   {return false;};
 
   // Write name
-  std::string getName() const {};
+  std::string getName() const;
+
+  void getNzNumSum_(SOSPtr sos, const DoubleVector x, int *nz,
+                    double *nzsum);
 
   /// Does nothing.
   void writePreStats(std::ostream &) const {};
@@ -106,10 +109,9 @@ private:
 
   /**
    * Tolerance for checking integrality.
-   * If |round(x) - x| < intTol_, then it is considered to be integer
-   * valued.
+   * If abs(x) < zTol_, then it is considered to be zero.
    */
-  Double intTol_;
+  Double zTol_;
 
   /// Log
   LoggerPtr logger_;
@@ -120,8 +122,6 @@ private:
   /// The problem for which the handler was created.
   ProblemPtr problem_;
 
-  void getFracsOrd_(SOSPtr sos, const std::vector< Double > &x, VarVector
-                    &frac_vars);
 };
 typedef boost::shared_ptr<SOS1Handler> SOS1HandlerPtr;
 typedef boost::shared_ptr<const SOS1Handler> ConstSOS1HandlerPtr;

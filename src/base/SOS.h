@@ -25,17 +25,20 @@ public:
   /// Default constructor
   SOS();
 
-  SOS(Int n, SOSType type, Double *vals, const VarVector &vars, Int priority);
+  SOS(Int n, SOSType type, const Double *weights, const VarVector &vars, Int priority);
 
   /// Destroy
   virtual ~SOS();
 
   Int getNz();
+  SOSType getType();
+  Int getPriority();
 
-  const Double* getVals();
+  std::string getName() const;
+  const Double* getWeights();
 
-  VariableConstIterator varsBegin() const { return vars_.begin(); };
-  VariableConstIterator varsEnd() const  { return vars_.end(); };
+  VariableConstIterator varsBegin() const;
+  VariableConstIterator varsEnd() const;
 
 private:
   /// Number of elements in the SOS
@@ -48,10 +51,13 @@ private:
   SOSType type_;
       
   /// Values
-  Double * vals_;
+  Double * weights_;
 
   /// Vector of variables.
   VarVector vars_;
+
+  /// Name of the sos-constraint
+  std::string name_;
 
 };
 }

@@ -125,7 +125,7 @@ namespace Minotaur {
       // base class method.
       Double getUDist();
 
-      // base class method.
+      /// Get the variable that we are branching on.
       VariablePtr getVar();
 
     private:

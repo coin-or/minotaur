@@ -202,6 +202,12 @@ public:
   /// Return the number of linear constraints in the problem.
   UInt getNumLinCons(); 
 
+  /// Return the number of SOS Type 1 constraints.
+  UInt getNumSOS1();
+
+  /// Return the number of SOS Type 2 constraints.
+  UInt getNumSOS2();
+
   /// Return the number of variables.
   virtual UInt getNumVars() const { return vars_.size(); }
 
@@ -337,14 +343,15 @@ public:
    *
    * \param[in] n Number of variables in this SOS constraint.
    * \param[in] type SOS1 (SOS type 1) or SOS2 (SOS type 2).
-   * \param[in] vals Values of coefficients of variables in the SOS constraint.
+   * \param[in] weights Values of coefficients of variables in the SOS
+   * constraint or just relative weights.
    * \param[in] vars Variables in the constraint.
    * \param[in] priority The priority provided by the user for this
    * constraint.
    *
    * \returns Pointer to the newly added SOS data.
    */
-  virtual SOSPtr newSOS(Int n, SOSType type, Double *vals,
+  virtual SOSPtr newSOS(Int n, SOSType type, const Double *weights,
                         const VarVector &vars, Int priority);
 
   
@@ -473,10 +480,10 @@ public:
    */
   virtual void setVarType(VariablePtr var, VariableType type);
 
-  virtual SOSConstIterator sos1Begin() { return sos1_.begin(); };
-  virtual SOSConstIterator sos1End() { return sos1_.end(); };
-  virtual SOSConstIterator sos2Begin() { return sos2_.begin(); };
-  virtual SOSConstIterator sos2End() { return sos2_.end(); };
+  virtual SOSConstIterator sos1Begin() const { return sos1_.begin(); };
+  virtual SOSConstIterator sos1End() const { return sos1_.end(); };
+  virtual SOSConstIterator sos2Begin() const { return sos2_.begin(); };
+  virtual SOSConstIterator sos2End() const { return sos2_.end(); };
 
   /**
    * \brief Substitute a variable 'out' with the variable 'in' through out the

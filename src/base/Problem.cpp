@@ -312,6 +312,7 @@ ProblemPtr Problem::clone() const
   ObjectivePtr oPtr;
   VariableConstIterator vit0;
   Int err = 0;
+  VarVector vvec;
 
   ProblemPtr clonePtr = (ProblemPtr) new Problem();
 
@@ -326,8 +327,19 @@ ProblemPtr Problem::clone() const
     f = constCPtr->getFunction()->cloneWithVars(vit0, &err);
     assert(err==0);
     clonePtr->newConstraint(f, constCPtr->getLb(), constCPtr->getUb(),
-        constCPtr->getName());
+                            constCPtr->getName());
   }    
+
+  // copy SOS1 constraints
+  vvec.clear();
+  for (SOSConstIterator it=sos1_.begin(); it!=sos1_.end(); ++it) {
+    for (VariableConstIterator it2 = (*it)->varsBegin();
+         it2!=(*it)->varsEnd(); ++it2) {
+      vvec.push_back(*it2);
+    }
+    clonePtr->newSOS((*it)->getNz(), (*it)->getType(), (*it)->getWeights(), vvec, (*it)->getPriority());
+    vvec.clear();
+  }
 
   // add objective
   oPtr = getObjective();
@@ -335,7 +347,7 @@ ProblemPtr Problem::clone() const
     f = oPtr->getFunction()->cloneWithVars(vit0, &err);
     assert(err==0);
     clonePtr->newObjective(f, oPtr->getConstant(),
-        oPtr->getObjectiveType(), oPtr->getName()); 
+                           oPtr->getObjectiveType(), oPtr->getName()); 
   } 
 
   // Now clone everything else...
@@ -743,6 +755,18 @@ UInt Problem::getNumLinCons()
 }
 
 
+UInt Problem::getNumSOS1()
+{
+  return size_->SOS1Cons;
+}
+
+
+UInt Problem::getNumSOS2()
+{
+  return size_->SOS2Cons;
+}
+
+
 ObjectivePtr Problem::getObjective() const
 {
   return obj_;
@@ -976,10 +1000,10 @@ ObjectivePtr Problem::newObjective(FunctionPtr f, Double cb,
 }
 
 
-SOSPtr Problem::newSOS(Int n, SOSType type, Double *vals,
+SOSPtr Problem::newSOS(Int n, SOSType type, const Double *weights,
                        const VarVector &vars, Int priority)
 {
-  SOSPtr sos = new SOS(n, type, vals, vars, priority);
+  SOSPtr sos = new SOS(n, type, weights, vars, priority);
   if (SOS1 == type) {
     sos1_.push_back(sos);
   } else if (SOS2 == type) {

@@ -17,6 +17,7 @@
 #include <string.h> // for memcpy
 
 #include "MinotaurConfig.h"
+#include "Operations.h"
 #include "SOS.h"
 
 using namespace Minotaur;
@@ -25,28 +26,77 @@ SOS::SOS()
 : n_(0),
   priority_(0),
   type_(SOS1),
-  vals_(0)
+  weights_(0)
 {
 }
 
 
-SOS::SOS(Int n, SOSType type, Double *vals, const VarVector &vars, Int priority) 
+SOS::SOS(Int n, SOSType type, const Double *weights, const VarVector &vars,
+         Int priority) 
 {
   n_ = n;
   priority_ = priority;
   type_ = type;
-  vals_ = new Double[n];
-  memcpy(vals_, vals, sizeof(Double)*n);
+  weights_ = new Double[n];
+  memcpy(weights_, weights, sizeof(Double)*n);
   vars_ = vars;
+  sort(vars_, weights_, -1);
+  if (SOS1==type) {
+    name_ = "SOS-1";
+  } else {
+    name_ = "SOS-2";
+  }
 }
 
 
 SOS::~SOS()
 {
   vars_.clear();
-  delete [] vals_;
+  delete [] weights_;
 }
 
+
+Int SOS::getNz()
+{
+  return n_;
+}
+
+
+Int SOS::getPriority()
+{
+  return priority_;
+}
+
+
+SOSType SOS::getType()
+{
+  return type_;
+}
+
+
+std::string SOS::getName() const
+{
+  return name_;
+}
+
+
+
+const Double* SOS::getWeights()
+{
+  return weights_;
+}
+
+
+VariableConstIterator SOS::varsBegin() const
+{
+  return vars_.begin();
+}
+
+
+VariableConstIterator SOS::varsEnd() const
+{
+  return vars_.end();
+}
 
 // Local Variables: 
 // mode: c++ 

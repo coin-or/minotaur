@@ -74,7 +74,7 @@ namespace Minotaur {
   void displayArray(const Double* point, UInt n, std::ostream &out);
 
   /// Sort a vector of variables according to values of x.
-  void sort(VarVector &vvec, Double *x);
+  void sort(VarVector &vvec, Double *x, Bool ascend=true);
   void sortRec(VarVector &vvec, Double *x, int left, int right, int pivotind);
 
   /// Convert a string to lower case.

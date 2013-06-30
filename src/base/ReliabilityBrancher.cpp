@@ -75,7 +75,7 @@ ReliabilityBrancher::~ReliabilityBrancher()
 
 
 BrCandPtr ReliabilityBrancher::findBestCandidate_(const Double objval, 
-    Double cutoff, NodePtr node)
+                                                  Double cutoff, NodePtr node)
 {
   Double best_score = -INFINITY;
   Double score, change_up, change_down, maxchange;
@@ -185,7 +185,7 @@ Branches ReliabilityBrancher::findBranches(RelaxationPtr rel, NodePtr node,
   }
 
   br_can = findBestCandidate_(sol->getObjValue(), 
-      s_pool->getBestSolutionValue(), node);
+                              s_pool->getBestSolutionValue(), node);
 
 
   if (status_ == NotModifiedByBrancher) {
@@ -228,7 +228,7 @@ void ReliabilityBrancher::findCandidates_()
   VariablePtr v_ptr;
   VariableIterator v_iter, v_iter2, best_iter;
   VariableConstIterator cv_iter;
-  UInt index;
+  Int index;
   Bool is_inf = false;   // if true, then node can be pruned.
 
   BrCandSet cands;       // candidates from which to choose one.
@@ -263,7 +263,9 @@ void ReliabilityBrancher::findCandidates_()
   // visit each candidate in and check if it has reliable pseudo costs.
   for (BrCandIter it=cands.begin(); it!=cands.end(); ++it) {
     index = (*it)->getPCostIndex();
-    if ((minNodeDist_ > fabs(stats_->calls-lastStrBranched_[index])) ||
+    if (index<0) {
+      relCands_.push_back(*it);
+    } else if ((minNodeDist_ > fabs(stats_->calls-lastStrBranched_[index])) ||
         (timesUp_[index] >= thresh_ && timesDown_[index] >= thresh_)) {
       relCands_.push_back(*it);
     } else {
@@ -316,10 +318,16 @@ std::string ReliabilityBrancher::getName() const
 void ReliabilityBrancher::getPCScore_(BrCandPtr cand, Double *ch_down, 
                                       Double *ch_up, Double *score) 
 {
-  UInt index = cand->getPCostIndex();
-  *ch_down   = cand->getDDist()*pseudoDown_[index];
-  *ch_up     = cand->getUDist()*pseudoUp_[index];
-  *score     = getScore_(*ch_up, *ch_down);
+  Int index = cand->getPCostIndex();
+  if (index>-1) {
+    *ch_down   = cand->getDDist()*pseudoDown_[index];
+    *ch_up     = cand->getUDist()*pseudoUp_[index];
+    *score     = getScore_(*ch_up, *ch_down);
+  } else {
+    *ch_down   = 0.0;
+    *ch_up     = 0.0;
+    *score     = cand->getScore();
+  }
 }
 
 
