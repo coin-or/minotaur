@@ -135,7 +135,7 @@ BrCandPtr MaxVioBrancher::findBestCandidate_()
   Double cand_score;
 
   for (BrCandIter it = cands_.begin(); it != cands_.end(); ++it) {
-    cand_score = (*it)->getDDist() + (*it)->getUDist();
+    cand_score = std::min((*it)->getDDist(),(*it)->getUDist());
     if (cand_score > best_score) {
       best_score = cand_score;
       best_cand = (*it);
