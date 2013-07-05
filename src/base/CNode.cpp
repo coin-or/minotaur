@@ -1256,8 +1256,8 @@ void CNode::propBounds(Int *error)
     lb = lb_ + r_->lb_;
     ub = ub_ + r_->ub_;
     l_->propBounds_(lb, ub, error);
-    lb = l_->lb_ - ub;
-    ub = l_->ub_ - lb;
+    lb = l_->lb_ - ub_;
+    ub = l_->ub_ - lb_;
     r_->propBounds_(lb, ub, error);
     break;
   case (OpMult):
