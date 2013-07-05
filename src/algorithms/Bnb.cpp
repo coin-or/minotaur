@@ -58,7 +58,6 @@ BranchAndBound* createBab(EnvPtr env, ProblemPtr p, EnginePtr e,
   NodeProcessorPtr nproc = NodeProcessorPtr(); // NULL
   IntVarHandlerPtr v_hand = (IntVarHandlerPtr) new IntVarHandler(env, p);
   LinHandlerPtr l_hand = (LinHandlerPtr) new LinearHandler(env, p);
-  SOS1HandlerPtr s1_hand = (SOS1HandlerPtr) new SOS1Handler(env, p);
   NlPresHandlerPtr nlhand;
   NodeIncRelaxerPtr nr;
   RelaxationPtr rel;
@@ -66,7 +65,13 @@ BranchAndBound* createBab(EnvPtr env, ProblemPtr p, EnginePtr e,
   const std::string me("bnb main: ");
   OptionDBPtr options = env->getOptions();
 
-  handlers.push_back(s1_hand);
+  if (p->getSize()->SOS1Cons>0) {
+    SOS1HandlerPtr s_hand = (SOS1HandlerPtr) new SOS1Handler(env, p);
+    handlers.push_back(s_hand);
+  }
+  if (p->getSize()->SOS2Cons>0) {
+    // add SOS2 handler here.
+  }
   handlers.push_back(v_hand);
   if (true==options->findBool("presolve")->getValue()) {
     handlers.push_back(l_hand);

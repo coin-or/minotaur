@@ -40,6 +40,7 @@ Problem::Problem()
   initialPt_(0), 
   nativeDer_(false),
   nextCId_(0),
+  nextSId_(0),
   nextVId_(0),
   numDCons_(0),
   numDVars_(0),
@@ -358,6 +359,7 @@ ProblemPtr Problem::clone() const
 
   clonePtr->jacobian_  = JacobianPtr(); // NULL.
   clonePtr->nextCId_   = nextCId_;
+  clonePtr->nextSId_   = nextSId_;
   clonePtr->nextVId_   = nextVId_;
   clonePtr->hessian_   = HessianOfLagPtr(); // NULL.
   clonePtr->logger_    = (LoggerPtr) new Logger(logger_->GetMaxLevel());
@@ -1001,14 +1003,27 @@ ObjectivePtr Problem::newObjective(FunctionPtr f, Double cb,
 
 
 SOSPtr Problem::newSOS(Int n, SOSType type, const Double *weights,
-                       const VarVector &vars, Int priority)
+                       const VarVector &vars, Int priority, std::string name)
 {
-  SOSPtr sos = new SOS(n, type, weights, vars, priority);
+  SOSPtr sos = new SOS(n, type, weights, vars, nextSId_, priority, name);
+  ++nextSId_;
   if (SOS1 == type) {
     sos1_.push_back(sos);
   } else if (SOS2 == type) {
     sos2_.push_back(sos);
   }
+  return sos;
+}
+
+
+SOSPtr Problem::newSOS(Int n, SOSType type, const Double *weights,
+                       const VarVector &vars, Int priority)
+{
+  std::string name;
+  std::stringstream name_stream;
+  name_stream <<  "sos" << (sos1_.size() + sos2_.size());
+  name = name_stream.str();
+  SOSPtr sos = newSOS(n, type, weights, vars, priority, name);
   return sos;
 }
 

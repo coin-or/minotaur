@@ -64,7 +64,7 @@ NlPresHandler::NlPresHandler(EnvPtr env, ProblemPtr p)
     p_(p)
 {
   logger_ = (LoggerPtr) new Logger((LogLevel)(env->getOptions()->
-      findInt("nlin_h_log_level")->getValue()));
+      findInt("handler_log_level")->getValue()));
   stats_.cBnd = 0;
   stats_.cImp = 0;
   stats_.conDel = 0;

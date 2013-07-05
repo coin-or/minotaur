@@ -403,7 +403,9 @@ void ReliabilityBrancher::setThresh(UInt k)
 
 
 Bool ReliabilityBrancher::shouldPrune_(const Double &chcutoff, 
-    const Double &change, const EngineStatus & status, Bool *is_rel)
+                                       const Double &change,
+                                       const EngineStatus & status,
+                                       Bool *is_rel)
 {
   switch (status) {
    case (ProvenLocalInfeasible):
@@ -486,18 +488,20 @@ void ReliabilityBrancher::updateAfterLP(NodePtr node, ConstSolutionPtr sol)
   if (parent) {
     BrCandPtr cand = node->getBranch()->getBrCand();
     Int index = cand->getPCostIndex();
-    Double oldval = node->getBranch()->getActivity();
-    Double newval = x[index];
-    Double cost = (node->getLb()-parent->getLb()) / 
-                  (fabs(newval - oldval)+eTol_);
-    if (cost < 0. || std::isinf(cost) || std::isnan(cost)) {
-      cost = 0.;
-    }
-    if (newval < oldval) {
-      updatePCost_(index, cost, pseudoDown_, timesDown_);
-    } else {
-      updatePCost_(index, cost, pseudoUp_, timesUp_);
-    }
+    if (index>-1) {
+      Double oldval = node->getBranch()->getActivity();
+      Double newval = x[index];
+      Double cost = (node->getLb()-parent->getLb()) / 
+        (fabs(newval - oldval)+eTol_);
+      if (cost < 0. || std::isinf(cost) || std::isnan(cost)) {
+        cost = 0.;
+      }
+      if (newval < oldval) {
+        updatePCost_(index, cost, pseudoDown_, timesDown_);
+      } else {
+        updatePCost_(index, cost, pseudoUp_, timesUp_);
+      }
+    } 
   }
 }
 
@@ -565,7 +569,8 @@ void ReliabilityBrancher::writeScores_(std::ostream &out)
 {
   out << me_ << "unreliable candidates:" << std::endl;
   for (BrCandVIter it=unrelCands_.begin(); it!=unrelCands_.end(); ++it) {
-    out << std::setprecision(6) << (*it)->getName() << "\t" 
+    if ((*it)->getPCostIndex()>-1) {
+      out << std::setprecision(6) << (*it)->getName() << "\t" 
         << timesDown_[(*it)->getPCostIndex()] << "\t"
         << timesUp_[(*it)->getPCostIndex()] << "\t" 
         << pseudoDown_[(*it)->getPCostIndex()] << "\t"
@@ -574,11 +579,21 @@ void ReliabilityBrancher::writeScores_(std::ostream &out)
         << rel_->getVariable((*it)->getPCostIndex())->getLb() << "\t"
         << rel_->getVariable((*it)->getPCostIndex())->getUb() << "\t"
         << std::endl;
+    } else {
+      out << std::setprecision(6) << (*it)->getName() << "\t" 
+                                  << 0 << "\t" << 0 << "\t"
+                                  << (*it)->getScore() << "\t"
+                                  << (*it)->getScore() << "\t"
+                                  << (*it)->getDDist() << "\t"
+                                  << 0.0 << "\t"
+                                  << 1.0 << "\t" << std::endl;
+    }
   }
 
   out << me_ << "reliable candidates:" << std::endl;
   for (BrCandVIter it=relCands_.begin(); it!=relCands_.end(); ++it) {
-    out << (*it)->getName() << "\t" 
+    if ((*it)->getPCostIndex()>-1) {
+      out << (*it)->getName() << "\t" 
         << timesDown_[(*it)->getPCostIndex()] << "\t"
         << timesUp_[(*it)->getPCostIndex()] << "\t" 
         << pseudoDown_[(*it)->getPCostIndex()] << "\t"
@@ -587,6 +602,15 @@ void ReliabilityBrancher::writeScores_(std::ostream &out)
         << rel_->getVariable((*it)->getPCostIndex())->getLb() << "\t"
         << rel_->getVariable((*it)->getPCostIndex())->getUb() << "\t"
         << std::endl;
+    } else {
+      out << std::setprecision(6) << (*it)->getName() << "\t" 
+          << 0 << "\t" << 0 << "\t"
+          << (*it)->getScore() << "\t"
+          << (*it)->getScore() << "\t"
+          << (*it)->getDDist() << "\t"
+          << 0.0 << "\t"
+          << 1.0 << "\t" << std::endl;
+    }
   }
 }
 

@@ -32,20 +32,17 @@ SOS::SOS()
 
 
 SOS::SOS(Int n, SOSType type, const Double *weights, const VarVector &vars,
-         Int priority) 
+         Int priority, Int id, std::string name) 
+: id_(id),
+  n_(n),
+  priority_(priority),
+  type_(type),
+  name_(name)
 {
-  n_ = n;
-  priority_ = priority;
-  type_ = type;
   weights_ = new Double[n];
   memcpy(weights_, weights, sizeof(Double)*n);
   vars_ = vars;
   sort(vars_, weights_, -1);
-  if (SOS1==type) {
-    name_ = "SOS-1";
-  } else {
-    name_ = "SOS-2";
-  }
 }
 
 
@@ -56,13 +53,19 @@ SOS::~SOS()
 }
 
 
+Int SOS::getId() const
+{
+  return id_;
+}
+
+
 Int SOS::getNz()
 {
   return n_;
 }
 
 
-Int SOS::getPriority()
+Int SOS::getPriority() const
 {
   return priority_;
 }

@@ -58,7 +58,7 @@ namespace Minotaur {
 
       /**
        * \brief Return the index in the pseudo cost array. If it is not in the
-       * array, return -1.
+       * array, return a value less than 0.
        */
       virtual Int getPCostIndex() const { return pCostIndex_; };
 

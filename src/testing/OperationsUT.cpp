@@ -68,7 +68,7 @@ void OperationsTest::testSortVarX()
     x[i] = vvec[i]->getIndex();
   }
   sort(vvec, x);
-  for (int i=1; i<100; ++i) {
+  for (UInt i=1; i<100; ++i) {
     CPPUNIT_ASSERT(x[i-1]<=x[i]);
     CPPUNIT_ASSERT(vvec[i]->getIndex()==i);
   }

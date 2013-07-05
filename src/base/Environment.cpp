@@ -229,28 +229,8 @@ void Environment::createDefaultOptions_()
       "Verbosity of presolver: 0-6", true, LogInfo);
   options_->insert(i_option);
 
-  i_option = (IntOptionPtr) new Option<Int>("nlin_h_log_level", 
-      "Verbosity of nonlinear presolve handler: 0-6", true, LogInfo);
-  options_->insert(i_option);
-
-  i_option = (IntOptionPtr) new Option<Int>("lin_h_log_level", 
-      "Verbosity of linear handler: 0-6", true, LogInfo);
-  options_->insert(i_option);
-
-  i_option = (IntOptionPtr) new Option<Int>("intvar_h_log_level", 
-      "Verbosity of variable handler: 0-6", true, LogInfo);
-  options_->insert(i_option);
-
-  i_option = (IntOptionPtr) new Option<Int>("quad_h_log_level", 
-      "Verbosity of quadratic handler: 0-6", true, LogInfo);
-  options_->insert(i_option);
-
-  i_option = (IntOptionPtr) new Option<Int>("QG_log_level", 
-      "Verbosity of Quesada-Grossmann handler: 0-6", true, LogInfo);
-  options_->insert(i_option);
-
-  i_option = (IntOptionPtr) new Option<Int>("qgAC_log_level",
-      "Verbosity of Analytic Center in Quesada-Grossmann handler: 0-6", true, LogInfo);
+  i_option = (IntOptionPtr) new Option<Int>("handler_log_level", 
+      "Verbosity of handlers: 0-6", true, LogInfo);
   options_->insert(i_option);
 
   i_option = (IntOptionPtr) new Option<Int>("MSheur_log_level", 

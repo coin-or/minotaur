@@ -65,7 +65,7 @@ LinearHandler::LinearHandler(EnvPtr env, ProblemPtr problem)
     pOpts_(0)
 {
   logger_ = (LoggerPtr) new Logger((LogLevel)(env->getOptions()->
-      findInt("lin_h_log_level")->getValue()));
+      findInt("handler_log_level")->getValue()));
   pStats_ = new LinPresolveStats();
   pOpts_  = new LinPresolveOpts();
   pOpts_->doPresolve = env->getOptions()->findBool("lin_presolve")->getValue();

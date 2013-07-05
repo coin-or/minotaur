@@ -32,7 +32,7 @@
 #include "SOSBrCand.h"
 #include "Variable.h"
 
-#define SPEW 1
+//#define SPEW 1
 
 using namespace Minotaur;
 const std::string SOS1Handler::me_ = "SOS1Handler: ";
@@ -40,14 +40,15 @@ const std::string SOS1Handler::me_ = "SOS1Handler: ";
 SOS1Handler::SOS1Handler(EnvPtr env, ProblemPtr problem)
   : env_(env)
 {
-  //logger_   = (LoggerPtr) new Logger((LogLevel) env_->getOptions()->
-  //                                 findInt("intvar_h_log_level")->getValue());
-  logger_   = (LoggerPtr) new Logger(LogDebug2);
+  logger_ = (LoggerPtr) new Logger((LogLevel) env_->getOptions()->
+                                   findInt("handler_log_level")->getValue());
   zTol_   = 1e-6;
-  if (false==env_->getOptions()->findBool("modify_rel_only")->getValue() &&
-      0 == problem_->getNumSOS1() && 0 == problem_->getNumSOS2()) {
+
+  if (false == env_->getOptions()->findBool("modify_rel_only")->getValue()
+      &&  (0 < problem_->getNumSOS1() + problem_->getNumSOS2())) {
     logger_->ErrStream() << "Can not handle SOS constraints if "
-                         << "modify_rel_only flag is false";
+                         << "modify_rel_only flag is false" 
+                         << std::endl;
     assert(!"error initializing sos constraint");
   }
   problem_  = problem;
@@ -62,15 +63,42 @@ SOS1Handler::~SOS1Handler()
 }
 
 
-Bool SOS1Handler::isFeasible(ConstSolutionPtr , RelaxationPtr relaxation, 
-                             Bool &)
+Bool SOS1Handler::isFeasible(ConstSolutionPtr sol, RelaxationPtr rel, Bool &)
 {
-  return true;
+  SOSPtr sos;
+  Bool isfeas = true;
+  int nz;
+  const Double* x = sol->getPrimal();
+
+  for (SOSConstIterator siter=rel->sos1Begin(); siter!=rel->sos1End();
+       ++siter) {
+    sos = *siter;
+    nz = 0;
+    for (VariableConstIterator viter = sos->varsBegin(); viter!=sos->varsEnd();
+         ++viter) {
+      if (x[(*viter)->getIndex()]>zTol_) {
+        ++nz;
+        if (nz>1) {
+          isfeas = false;
+          break;
+        }
+      }
+    }
+    if (false == isfeas) {
+      break;
+    }
+  }
+
+#if SPEW
+  logger_->MsgStream(LogDebug) << me_ << "isFeasible = " << isfeas
+                               << std::endl;
+#endif
+  return isfeas;
 }
 
 
-Branches SOS1Handler::getBranches(BrCandPtr cand, DoubleVector & x, 
-                                    RelaxationPtr rel, SolutionPoolPtr s_pool)
+Branches SOS1Handler::getBranches(BrCandPtr cand, DoubleVector &, 
+                                    RelaxationPtr, SolutionPoolPtr)
 {
   SOSBrCandPtr scand = boost::dynamic_pointer_cast <SOSBrCand> (cand);
   LinModsPtr mod;
@@ -112,12 +140,10 @@ void SOS1Handler::getBranchingCandidates(RelaxationPtr rel,
 {
   SOSConstIterator siter, siter2;
   VariableConstIterator viter;
+  VariablePtr var;
   SOSPtr sos;
-  Double solval;
   Double parsum;
-  Bool is_feas = true;
   VarVector lvars, rvars;
-  const Double *weights;
   int nz;
   Double nzsum;
   Double nzval;
@@ -127,38 +153,74 @@ void SOS1Handler::getBranchingCandidates(RelaxationPtr rel,
     sos = *siter;
     getNzNumSum_(sos, x, &nz, &nzsum);
     if (nz>1) {
-      weights = sos->getWeights();
       parsum = 0.0;
       lvars.clear();
       rvars.clear();
       viter = sos->varsBegin();
       for (; viter!=sos->varsEnd(); ++viter) {
-        nzval = x[(*viter)->getIndex()];
-        if ((parsum + nzval) < 0.5*nzsum) {
-          lvars.push_back(*viter);
-          parsum += nzval;
-        } else if (nzval+parsum - nzsum/2 < nzsum/2 - parsum) {
-          lvars.push_back(*viter);
-          parsum += nzval;
-          break;
-        } else {
-          break;
+        var = *viter;
+        if (var->getUb()-var->getLb()>zTol_) {
+          nzval = x[var->getIndex()];
+          if ((parsum + nzval) < 0.5*nzsum) {
+            lvars.push_back(var);
+            parsum += nzval;
+          } else if (nzval+parsum - nzsum/2 < nzsum/2 - parsum) {
+            lvars.push_back(var);
+            parsum += nzval;
+            ++viter;
+            break;
+          } else {
+            ++viter;
+            break;
+          }
         }
       } 
       for (; viter!=sos->varsEnd(); ++viter) {
-        rvars.push_back(*viter);
+        var = *viter;
+        if (var->getUb()-var->getLb()>zTol_) {
+          rvars.push_back(*viter);
+        }
       }
       br_can = (SOSBrCandPtr) new SOSBrCand(sos, lvars, rvars, parsum,
                                             nzsum-parsum);
       br_can->setDir(DownBranch);
-      cands.insert(br_can);
+      br_can->setScore(20.0*(lvars.size()-1)*(rvars.size()-1));
+      
+      if(cands.insert(br_can).second == false) {
+        std::cout << "trouble ehere\n";
+      }
+
+#if SPEW
+      logger_->MsgStream(LogDebug) << me_ << sos->getName() << " is a "
+        << " branching candidate." << std::endl
+        << me_ << "Left branch has variables ";
+      for (viter = lvars.begin(); viter!=lvars.end(); ++viter) {
+        logger_->MsgStream(LogDebug) << (*viter)->getName() << " ";
+      }
+      logger_->MsgStream(LogDebug) << std::endl
+                                   << me_ << "left sum = " << parsum
+                                   << std::endl
+                                   << me_ << "Right branch has variables ";
+      for (viter = rvars.begin(); viter!=rvars.end(); ++viter) {
+        logger_->MsgStream(LogDebug) << (*viter)->getName() << " ";
+      }
+      logger_->MsgStream(LogDebug) << std::endl
+                                   << me_ << "right sum = " << nzsum - parsum
+                                   << std::endl;
+#endif
+
+    } else {
+#if SPEW
+      logger_->MsgStream(LogDebug) << me_ << sos->getName() << " is not a "
+                                   << " branching candidate." << std::endl;
+#endif
     }
   }
   is_inf = false;
 }
 
 
-ModificationPtr SOS1Handler::getBrMod(BrCandPtr cand, DoubleVector & x,
+ModificationPtr SOS1Handler::getBrMod(BrCandPtr cand, DoubleVector &,
                                       RelaxationPtr , BranchDirection dir) 
 {
   LinModsPtr mod = (LinModsPtr) new LinMods();

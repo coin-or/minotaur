@@ -25,14 +25,16 @@ public:
   /// Default constructor
   SOS();
 
-  SOS(Int n, SOSType type, const Double *weights, const VarVector &vars, Int priority);
+  SOS(Int n, SOSType type, const Double *weights, const VarVector &vars,
+      Int priority, Int id, std::string name);
 
   /// Destroy
   virtual ~SOS();
 
+  Int getId() const;
   Int getNz();
   SOSType getType();
-  Int getPriority();
+  Int getPriority() const;
 
   std::string getName() const;
   const Double* getWeights();
@@ -41,6 +43,9 @@ public:
   VariableConstIterator varsEnd() const;
 
 private:
+  /// Index within the problem.
+  Int id_;
+
   /// Number of elements in the SOS
   Int n_;
 

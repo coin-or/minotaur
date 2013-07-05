@@ -37,7 +37,7 @@ IntVarHandler::IntVarHandler(EnvPtr env, ProblemPtr problem)
   : env_(env)
 {
   logger_   = (LoggerPtr) new Logger((LogLevel) env_->getOptions()->
-                                     findInt("intvar_h_log_level")->getValue());
+                                     findInt("handler_log_level")->getValue());
   intTol_   = env_->getOptions()->findDouble("int_tol")->getValue();
   gDive_    = env_->getOptions()->findBool("guided_dive")->getValue();
   mRelOnly_ = env_->getOptions()->findBool("modify_rel_only")->getValue();

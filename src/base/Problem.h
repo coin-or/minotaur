@@ -339,7 +339,25 @@ public:
                                     ObjectiveType otyp, std::string name);
 
   /** 
-   * \brief Add a new SOS constraint. 
+   * \brief Add a new SOS constraint with a name. 
+   *
+   * \param[in] n Number of variables in this SOS constraint.
+   * \param[in] type SOS1 (SOS type 1) or SOS2 (SOS type 2).
+   * \param[in] weights Values of coefficients of variables in the SOS
+   * constraint or just relative weights.
+   * \param[in] vars Variables in the constraint.
+   * \param[in] priority The priority provided by the user for this
+   * constraint.
+   * \param[in] name The name provided by the user for this
+   * SOS.
+   *
+   * \returns Pointer to the newly added SOS data.
+   */
+  virtual SOSPtr newSOS(Int n, SOSType type, const Double *weights,
+                        const VarVector &vars, Int priority, std::string name);
+
+  /** 
+   * \brief Add a new SOS constraint (name generated automatically). 
    *
    * \param[in] n Number of variables in this SOS constraint.
    * \param[in] type SOS1 (SOS type 1) or SOS2 (SOS type 2).
@@ -546,6 +564,9 @@ protected:
 
   /// ID of the next constraint.
   UInt nextCId_;
+
+  /// ID of the next SOS constraint.
+  Int nextSId_;
 
   /// ID of the next variable.
   UInt nextVId_;

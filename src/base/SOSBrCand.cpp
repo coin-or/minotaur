@@ -30,7 +30,7 @@ SOSBrCand::SOSBrCand()
   sos_(0)
 {
   pCostIndex_ = -1;
-  score_      = 1000;
+  score_      = 0.0;
 }
 
 
@@ -42,8 +42,8 @@ SOSBrCand::SOSBrCand(const SOS* sos, VarVector &left, VarVector &right,
   lsum_ = lsum;
   rsum_ = rsum;
   sos_ = sos;
-  pCostIndex_ = -1;
-  score_      = 1000;
+  pCostIndex_ = -1*sos->getId()-1;
+  score_      = (Double) sos->getPriority();
 }
 
 
