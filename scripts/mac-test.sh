@@ -22,7 +22,7 @@ SUMMARY="summary.log"
 DOXYGEN=
 
 ## where is cmake, leave empty if it is already in PATH
-CMAKE=
+CMAKE=/usr/local/cmake/bin/
 
 ## url where logs are accessible.
 URL="http://www.mcs.anl.gov/~mahajan/minotaur/build-log/petsc-mini"
