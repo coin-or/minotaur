@@ -20,7 +20,9 @@ SUMMARY="summary.log"
 
 ## where is doxygen, leave empty if it is already in PATH
 DOXYGEN=
-CMAKE=/Users/mahajan/src/cmake-2.8.4/bin
+
+## where is cmake, leave empty if it is already in PATH
+CMAKE=
 
 ## url where logs are accessible.
 URL="http://www.mcs.anl.gov/~mahajan/minotaur/build-log/petsc-mini"
@@ -116,7 +118,7 @@ addDoxygen
 addCmake
 
 # get latest version
-svn co svn:\/\/${USERNAME}@${SVN_REPOS} ${TEST_DIR} &> svn.log
+svn co ${SVN_REPOS} ${TEST_DIR} &> svn.log
 
 if [ -d ${TEST_DIR}/src ]
 then

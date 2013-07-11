@@ -11,7 +11,7 @@ echo "Detailed log available at " \
      "http://www.mcs.anl.gov/minotaur/nightly/build-log/petsc-mini"
 
 echo ""
-ssh petsc-mini.mcs.anl.gov
+ssh petsc-mini-nightly-test
 
 rm -rf ${WEB_DIR}
 mkdir ${WEB_DIR}
