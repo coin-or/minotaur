@@ -164,7 +164,7 @@ void MonomialFunction::multiply(Double coeff, ConstVariablePtr v, Int p)
 
 void MonomialFunction::multiply(ConstMonomialFunPtr m2)
 {
-  if (fabs(coeff_ < eTol_)) {
+  if (fabs(coeff_) < eTol_) {
     return;
   } else if (!m2 || fabs(m2->coeff_) < eTol_) {
     terms_.clear();
@@ -630,14 +630,14 @@ void PolynomialFunction::recCGMult_(MonomialVector *t1, MonomialVector *t2,
       terms->push_back(m);
     }
   }
-  if (fabs(c2>eTol_)) {
+  if (fabs(c2)>eTol_) {
     for (MonomialConstIter it = t1->begin(); it!=t1->end(); ++it) {
       m = (*it)->clone();
       (*m) *= c2;
       terms->push_back(m);
     }
   }
-  if (fabs(c1>eTol_)) {
+  if (fabs(c1)>eTol_) {
     for (MonomialConstIter it = t1->begin(); it!=t1->end(); ++it) {
       m = (*it)->clone();
       (*m) *= c1;
@@ -856,7 +856,7 @@ void PolynomialFunction::operator*=(ConstPolyFunPtr p2)
       }
     }
 
-    if (fabs(c2>eTol_)) {
+    if (fabs(c2)>eTol_) {
       for (MonomialConstIter it = oldterms.begin(); it!=oldterms.end(); ++it) {
         m = (*it)->clone();
         (*m) *= c2;
@@ -864,7 +864,7 @@ void PolynomialFunction::operator*=(ConstPolyFunPtr p2)
       }
     }
 
-    if (fabs(cb_>eTol_)) {
+    if (fabs(cb_)>eTol_) {
       for (MonomialConstIter it = p2->terms_.begin(); it!=p2->terms_.end();
           ++it) {
         m = (*it)->clone();

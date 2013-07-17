@@ -65,13 +65,13 @@ BranchAndBound* createBab(EnvPtr env, ProblemPtr p, EnginePtr e,
   const std::string me("bnb main: ");
   OptionDBPtr options = env->getOptions();
 
-  if (p->getSize()->SOS1Cons>0) {
-    SOS1HandlerPtr s_hand = (SOS1HandlerPtr) new SOS1Handler(env, p);
+  SOS1HandlerPtr s_hand = (SOS1HandlerPtr) new SOS1Handler(env, p);
+  if (s_hand->isNeeded()) {
     handlers.push_back(s_hand);
   }
-  if (p->getSize()->SOS2Cons>0) {
-    // add SOS2 handler here.
-  }
+  
+  // add SOS2 handler here.
+  
   handlers.push_back(v_hand);
   if (true==options->findBool("presolve")->getValue()) {
     handlers.push_back(l_hand);

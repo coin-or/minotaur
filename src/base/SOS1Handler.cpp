@@ -18,7 +18,9 @@
 #include "MinotaurConfig.h"
 #include "BrCand.h"
 #include "Branch.h"
+#include "Constraint.h"
 #include "Environment.h"
+#include "Function.h"
 #include "Logger.h"
 #include "LinMods.h"
 #include "Operations.h"
@@ -273,15 +275,61 @@ Double SOS1Handler::getTol() const
 }
 
 
-Bool SOS1Handler::isNeeded()
+Bool SOS1Handler::isGUB(SOS *sos)
 {
-  if (problem_) {
-    problem_->calculateSize();
-    if (problem_->getSize()->bins > 0 || problem_->getSize()->ints > 0) {
-      return true;
+  VariablePtr var;
+  Int nz = sos->getNz();
+  ConstConstraintPtr c;
+  FunctionPtr f;
+  Bool isgub = false;
+
+
+  for (VariableConstIterator viter = sos->varsBegin(); viter!=sos->varsEnd();
+       ++viter) {
+    if (Binary!=var->getType() || ImplBin!=var->getType()) {
+      return false;
     }
   }
-  return false;
+
+  // If we are here, then it means all variables are binary. Check if their sum
+  // is <= 1.
+  var = *(sos->varsBegin());
+  for (ConstrSet::iterator it=var->consBegin(); it!=var->consEnd(); ++it) {
+    c = *it;
+    f = c->getFunction();
+    isgub = true;
+    if (Linear==f->getType() || nz==f->getNumVars()) {
+      for (VariableConstIterator viter = sos->varsBegin();
+           viter!=sos->varsEnd(); ++viter) {
+        if (false==f->hasVar(*viter)) {
+        }
+      }
+    } else {
+      isgub = false;
+    }
+  }
+
+  return true;
+}
+
+
+Bool SOS1Handler::isNeeded()
+{
+  Bool is_needed = false;
+  if (problem_ &&
+      false == env_->getOptions()->findBool("ignore_SOS1")->getValue()) {
+    problem_->calculateSize();
+    if (problem_->getSize()->SOS1Cons > 0) {
+      for (SOSConstIterator siter=problem_->sos1Begin();
+           siter!=problem_->sos1End(); ++siter) {
+        if (false==isGUB(*siter)) {
+          is_needed = true;
+          break;
+        }
+      }
+    }
+  }
+  return is_needed;
 }
 
 

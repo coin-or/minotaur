@@ -114,6 +114,10 @@ void Environment::createDefaultOptions_()
       "Should presolve using quadratic handler: <0/1>", true, false);
   options_->insert(b_option);
 
+  b_option = (BoolOptionPtr) new Option<Bool>("ignore_SOS1", 
+      "Ignore all SOS1 constraints: <0/1>", true, false);
+  options_->insert(b_option);
+
   b_option = (BoolOptionPtr) new Option<Bool>("nl_presolve", 
       "Should presolve using nonlinear presolver: <0/1>", true, true);
   options_->insert(b_option);

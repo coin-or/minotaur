@@ -52,32 +52,27 @@ public:
   Bool isFeasible(ConstSolutionPtr sol, RelaxationPtr relaxation, 
                   Bool & isInfeasible);
 
-  /**
-   * We do not need separation for this handler. So we just return without
-   * doing anything.
-   */
+  /// Empty method as we do not do any separation in SOS1.
   void separate(ConstSolutionPtr, NodePtr , RelaxationPtr, CutManager *,
                 SolutionPoolPtr, Bool *, SeparationStatus *);
 
-  /**
-   * Find variables to branch upon. isInfeasible is true if the handler
-   * finds that the problem is infeasible.
-   */
+  // Base class method.
   void getBranchingCandidates(RelaxationPtr rel, 
                               const std::vector< Double > &x, ModVector & mods,
                               BrCandSet & cands, Bool & isInf);
 
-  // Implement Handler::getBrMod().
+  // Base class method.
   ModificationPtr getBrMod(BrCandPtr cand, DoubleVector &x, 
                            RelaxationPtr rel, BranchDirection dir);
 
-  // Implement Handler::getBranches().
+  //  Base class method.
   Branches getBranches(BrCandPtr cand, DoubleVector & x,
                        RelaxationPtr rel, SolutionPoolPtr s_pool);
       
+  Bool isGUB(SOS *sos);
   Bool isNeeded();
 
-  /// Presolve. Don't do anything.
+  /// Presolve. Do not do any presolving.
   SolveStatus presolve(PreModQ *, Bool *) {return Finished;};
 
   /// Does nothing.
