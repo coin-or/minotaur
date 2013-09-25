@@ -282,8 +282,15 @@ void Environment::createDefaultOptions_()
 
   // Serdar ended.
 
+  i_option = (IntOptionPtr) new Option<Int>("rand_seed", 
+      "Seed to random number generator: >=0 (0 = time(NULL))", true, 0);
+  options_->insert(i_option);
+
   i_option.reset();
 
+  
+  // double options
+  
   // Serdar added these options for MultilinearTermsHandler class
   d_option = (DoubleOptionPtr) new Option<Double>("ml_feastol", 
       "MultilinearTermsHandler feasibility tolerance.", true, 0.00001);
@@ -296,7 +303,6 @@ void Environment::createDefaultOptions_()
 
   // Serdar ended.
 
-  // double options
   d_option = (DoubleOptionPtr) new Option<Double>("bnb_time_limit", 
       "Limit on time in branch-and-bound in seconds: >0",
       true, 1e20);
@@ -352,7 +358,7 @@ void Environment::createDefaultOptions_()
   options_->insert(s_option);
 
   s_option = (StringOptionPtr) new Option<std::string>("brancher", 
-      "Name of brancher: rel, maxvio, lex", 
+      "Name of brancher: rel, maxvio, lex, rand, maxfreq", 
       true, "rel");
   options_->insert(s_option);
 

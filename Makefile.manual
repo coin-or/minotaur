@@ -162,6 +162,7 @@ BASE_SRCS = \
 	$(BASE_DIR)/LinearHandler.cpp\
 	$(BASE_DIR)/LinFeasPump.cpp \
 	$(BASE_DIR)/Logger.cpp \
+	$(BASE_DIR)/MaxFreqBrancher.cpp\
 	$(BASE_DIR)/MaxVioBrancher.cpp \
 	$(BASE_DIR)/MINLPDiving.cpp \
 	$(BASE_DIR)/NLPRelaxation.cpp \
@@ -187,6 +188,7 @@ BASE_SRCS = \
 	$(BASE_DIR)/QPDRelaxer.cpp \
 	$(BASE_DIR)/QPDProcessor.cpp \
 	$(BASE_DIR)/QuadraticFunction.cpp \
+	$(BASE_DIR)/RandomBrancher.cpp\
 	$(BASE_DIR)/Relaxation.cpp \
 	$(BASE_DIR)/ReliabilityBrancher.cpp \
 	$(BASE_DIR)/SecantMod.cpp \
@@ -249,6 +251,7 @@ ALL_HEADERS = \
 	$(BASE_DIR)/LPEngine.h \
 	$(BASE_DIR)/LPProcessor.h \
 	$(BASE_DIR)/LPRelaxation.h \
+	$(BASE_DIR)/MaxFreqBrancher.h\
 	$(BASE_DIR)/MaxVioBrancher.h \
 	$(BASE_DIR)/MINLPDiving.h \
 	$(BASE_DIR)/Modification.h \
@@ -280,6 +283,7 @@ ALL_HEADERS = \
 	$(BASE_DIR)/QPDProcessor.h \
 	$(BASE_DIR)/QPDRelaxer.h \
 	$(BASE_DIR)/QuadraticFunction.h \
+	$(BASE_DIR)/RandomBrancher.h\
 	$(BASE_DIR)/Relaxation.h \
 	$(BASE_DIR)/ReliabilityBrancher.h \
 	$(BASE_DIR)/SecantMod.h \

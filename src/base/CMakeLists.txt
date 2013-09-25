@@ -55,6 +55,7 @@ set (MINOTAUR_SOURCES
      LinearHandler.cpp
      LinFeasPump.cpp 
      Logger.cpp 
+     MaxFreqBrancher.cpp
      MaxVioBrancher.cpp
      MINLPDiving.cpp
      MultilinearTermsHandler.cpp
@@ -85,6 +86,7 @@ set (MINOTAUR_SOURCES
      QPDRelaxer.cpp 
      QPDProcessor.cpp 
      QuadraticFunction.cpp 
+     RandomBrancher.cpp
      Relaxation.cpp 
      ReliabilityBrancher.cpp 
      SecantMod.cpp 
@@ -151,6 +153,7 @@ set (MINOTAUR_HEADERS
      LPEngine.h
      LPProcessor.h
      LPRelaxation.h
+     MaxFreqBrancher.h
      MaxVioBrancher.h
      MINLPDiving.h
      Modification.h
@@ -187,6 +190,7 @@ set (MINOTAUR_HEADERS
      QPDProcessor.h 
      QPDRelaxer.h 
      QuadraticFunction.h
+     RandomBrancher.h
      Relaxation.h
      ReliabilityBrancher.h
      SecantMod.h

@@ -6,7 +6,7 @@
 
 /**
  * \file MaxVioBrancher.h
- * \brief Declar methods and data structures for maximum-violated branching.
+ * \brief Declare methods and data structures for maximum violation branching.
  * \author Ashutosh Mahajan, Argonne National Laboratory
  */
 
@@ -25,7 +25,7 @@ namespace Minotaur {
     Double time;     /// Total time spent in branching.
   };
 
-  /// A class to select a variable for branching using reliability branching.
+  /// A class to select a variable for branching using maximum-violated branching.
   class MaxVioBrancher : public Brancher {
     
     public:

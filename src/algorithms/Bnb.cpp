@@ -25,6 +25,7 @@
 #include "LinFeasPump.h"
 #include "LPEngine.h"
 #include "LPProcessor.h"
+#include "MaxFreqBrancher.h"
 #include "MaxVioBrancher.h"
 #include "MINLPDiving.h"
 #include "NLPEngine.h"
@@ -36,6 +37,7 @@
 #include "ProblemSize.h"
 #include "QPEngine.h"
 #include "Problem.h"
+#include "RandomBrancher.h"
 #include "Relaxation.h"
 #include "ReliabilityBrancher.h"
 #include "Solution.h"
@@ -161,6 +163,10 @@ BrancherPtr createBrancher(EnvPtr env, ProblemPtr p, HandlerVector handlers,
     br = (MaxVioBrancherPtr) new MaxVioBrancher(env, handlers);
   } else if (env->getOptions()->findString("brancher")->getValue() == "lex") {
     br = (LexicoBrancherPtr) new LexicoBrancher(env, handlers);
+  } else if (env->getOptions()->findString("brancher")->getValue() == "rand") {
+    br = (RandomBrancherPtr) new RandomBrancher(env, handlers);
+  } else if (env->getOptions()->findString("brancher")->getValue() == "maxfreq") {
+    br = (MaxFreqBrancherPtr) new MaxFreqBrancher(env, handlers);
   }
   std::cout << me << "brancher used = " << br->getName() << std::endl;
   return br;
