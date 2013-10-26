@@ -35,10 +35,10 @@ using namespace Minotaur;
 const std::string MaxFreqBrancher::me_ = "MaxFreq Brancher: "; 
 
 MaxFreqBrancher::MaxFreqBrancher(EnvPtr env, HandlerVector & handlers) 
-: rel_(RelaxationPtr()),  // NULL
+: status_(NotModifiedByBrancher),
+  rel_(RelaxationPtr()),  // NULL
   handlers_(handlers),     // Create a copy, the vector is not too big
-  init_(false),
-  status_(NotModifiedByBrancher)
+  init_(false)
 {
   timer_ = env->getNewTimer();
   logger_ = (LoggerPtr) new Logger((LogLevel) env->getOptions()->
@@ -128,7 +128,7 @@ Branches MaxFreqBrancher::findBranches(RelaxationPtr rel, NodePtr ,
 void MaxFreqBrancher::initialize(RelaxationPtr rel)
 {
   Int n = rel->getNumVars();
-  // initialize to zero.
+  // initialize following vectors to zero.
   fracCount_ = std::vector<UInt>(n,0); 
   unfixedCount_ = std::vector<UInt>(n,0); 
 }

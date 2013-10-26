@@ -126,7 +126,7 @@ def gnuplot(solvers, opts):
 	writeTable(solvers,df)
 	df.close()
 	proc = subprocess.Popen("gnuplot",stdin=subprocess.PIPE)
-	proc.stdin.write("set terminal postscript color solid\n")
+	proc.stdin.write("set terminal postscript color enhanced\n")
 	proc.stdin.write("set title \"%s\"\n"%opts.title)
 	proc.stdin.write("set key right bottom\n")
 	proc.stdin.write("set xlabel \"Ratio to Fastest\"\n")
