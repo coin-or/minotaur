@@ -5,36 +5,36 @@
 //
 
 /**
- * \file SOS1Handler.h
- * \brief Declare the SOS1Handler class for handling SOS type I constraints.
+ * \file SOS2Handler.h
+ * \brief Declare the SOS2Handler class for handling SOS type II constraints.
  * It checks integrality and provides branching candidates. Does
  * not do any presolving and cut-generation.
  * \author Ashutosh Mahajan, IIT Bombay
  */
 
-#ifndef MINOTAURSOS1HANDLER_H
-#define MINOTAURSOS1HANDLER_H
+#ifndef MINOTAURSOS2HANDLER_H
+#define MINOTAURSOS2HANDLER_H
 
 #include "Handler.h"
 
 namespace Minotaur {
 
 /**
- * SOS1Handler class considers all SOS Type 1 constraints in the problem. 
+ * SOS2Handler class considers all SOS Type 2 constraints in the problem. 
  * It does not implement separate() function.  Implements functions for
  * checking feasibility and branching. 
  */
-class SOS1Handler : public Handler {
+class SOS2Handler : public Handler {
 public:
 
   /// Default constructor.
-  SOS1Handler();
+  SOS2Handler();
 
   /// Constructor.
-  SOS1Handler(EnvPtr env, ProblemPtr problem);
+  SOS2Handler(EnvPtr env, ProblemPtr problem);
 
   /// Destroy.
-  ~SOS1Handler();
+  ~SOS2Handler();
 
   // Does nothing.
   void relaxInitFull(RelaxationPtr rel, Bool *is_inf);
@@ -69,7 +69,6 @@ public:
   Branches getBranches(BrCandPtr cand, DoubleVector & x,
                        RelaxationPtr rel, SolutionPoolPtr s_pool);
       
-  Bool isGUB(SOS *sos);
   Bool isNeeded();
 
   /// Presolve. Do not do any presolving.
@@ -117,9 +116,17 @@ private:
   /// The problem for which the handler was created.
   ProblemPtr problem_;
 
+  void getNzAvgWt_(SOSPtr sos, const DoubleVector x,
+                   const double *weights, int *nz, double *avgwt);
+
+  void getSumN_(SOSPtr sos, const DoubleVector &x, double *sum, int *nnz,
+                int *nv, int *nspos);
+
+  Bool isXFeasible_(const Double *x, SOSPtr sos);
+
 };
-typedef boost::shared_ptr<SOS1Handler> SOS1HandlerPtr;
-typedef boost::shared_ptr<const SOS1Handler> ConstSOS1HandlerPtr;
+typedef boost::shared_ptr<SOS2Handler> SOS2HandlerPtr;
+typedef boost::shared_ptr<const SOS2Handler> ConstSOS2HandlerPtr;
 }
 #endif
 

@@ -42,6 +42,7 @@
 #include "ReliabilityBrancher.h"
 #include "Solution.h"
 #include "SOS1Handler.h"
+#include "SOS2Handler.h"
 #include "Timer.h"
 #include "TreeManager.h"
 
@@ -66,6 +67,7 @@ BranchAndBound* createBab(EnvPtr env, ProblemPtr p, EnginePtr e,
   BrancherPtr br;
   const std::string me("bnb main: ");
   OptionDBPtr options = env->getOptions();
+  SOS2HandlerPtr s2_hand;
 
   SOS1HandlerPtr s_hand = (SOS1HandlerPtr) new SOS1Handler(env, p);
   if (s_hand->isNeeded()) {
@@ -73,6 +75,11 @@ BranchAndBound* createBab(EnvPtr env, ProblemPtr p, EnginePtr e,
   }
   
   // add SOS2 handler here.
+  s2_hand = (SOS2HandlerPtr) new SOS2Handler(env, p);
+  if (s2_hand->isNeeded()) {
+    handlers.push_back(s2_hand);
+  }
+  
   
   handlers.push_back(v_hand);
   if (true==options->findBool("presolve")->getValue()) {

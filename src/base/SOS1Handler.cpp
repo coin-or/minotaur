@@ -22,6 +22,7 @@
 #include "Environment.h"
 #include "Function.h"
 #include "Logger.h"
+#include "LinearFunction.h"
 #include "LinMods.h"
 #include "Operations.h"
 #include "Option.h"
@@ -100,7 +101,7 @@ Bool SOS1Handler::isFeasible(ConstSolutionPtr sol, RelaxationPtr rel, Bool &)
 
 
 Branches SOS1Handler::getBranches(BrCandPtr cand, DoubleVector &, 
-                                    RelaxationPtr, SolutionPoolPtr)
+                                  RelaxationPtr, SolutionPoolPtr)
 {
   SOSBrCandPtr scand = boost::dynamic_pointer_cast <SOSBrCand> (cand);
   LinModsPtr mod;
@@ -140,7 +141,7 @@ void SOS1Handler::getBranchingCandidates(RelaxationPtr rel,
                                          ModVector &, BrCandSet & cands,
                                          Bool & is_inf)
 {
-  SOSConstIterator siter, siter2;
+  SOSConstIterator siter;
   VariableConstIterator viter;
   VariablePtr var;
   SOSPtr sos;
@@ -172,7 +173,6 @@ void SOS1Handler::getBranchingCandidates(RelaxationPtr rel,
             ++viter;
             break;
           } else {
-            ++viter;
             break;
           }
         }
@@ -188,21 +188,19 @@ void SOS1Handler::getBranchingCandidates(RelaxationPtr rel,
       br_can->setDir(DownBranch);
       br_can->setScore(20.0*(lvars.size()-1)*(rvars.size()-1));
       
-      if(cands.insert(br_can).second == false) {
-        std::cout << "trouble ehere\n";
-      }
+      assert(cands.insert(br_can).second == true); 
 
 #if SPEW
       logger_->MsgStream(LogDebug) << me_ << sos->getName() << " is a "
         << " branching candidate." << std::endl
-        << me_ << "Left branch has variables ";
+        << me_ << "left branch has variables ";
       for (viter = lvars.begin(); viter!=lvars.end(); ++viter) {
         logger_->MsgStream(LogDebug) << (*viter)->getName() << " ";
       }
       logger_->MsgStream(LogDebug) << std::endl
                                    << me_ << "left sum = " << parsum
                                    << std::endl
-                                   << me_ << "Right branch has variables ";
+                                   << me_ << "right branch has variables ";
       for (viter = rvars.begin(); viter!=rvars.end(); ++viter) {
         logger_->MsgStream(LogDebug) << (*viter)->getName() << " ";
       }
@@ -281,11 +279,13 @@ Bool SOS1Handler::isGUB(SOS *sos)
   Int nz = sos->getNz();
   ConstConstraintPtr c;
   FunctionPtr f;
+  LinearFunctionPtr lf;
   Bool isgub = false;
 
 
   for (VariableConstIterator viter = sos->varsBegin(); viter!=sos->varsEnd();
        ++viter) {
+    var = *viter;
     if (Binary!=var->getType() || ImplBin!=var->getType()) {
       return false;
     }
@@ -294,22 +294,30 @@ Bool SOS1Handler::isGUB(SOS *sos)
   // If we are here, then it means all variables are binary. Check if their sum
   // is <= 1.
   var = *(sos->varsBegin());
-  for (ConstrSet::iterator it=var->consBegin(); it!=var->consEnd(); ++it) {
+  for (ConstrSet::iterator it=var->consBegin();
+       it!=var->consEnd() && false==isgub; ++it) {
     c = *it;
     f = c->getFunction();
     isgub = true;
-    if (Linear==f->getType() || nz==f->getNumVars()) {
+    if (Linear!=f->getType()) {
+      isgub = false;
+    } else if ((UInt) nz==f->getNumVars()) {
+      isgub = false;
+    } else if (fabs(c->getUb()-1.0)>zTol_) {
+      isgub = false;
+    } else {
+      lf = f->getLinearFunction();
       for (VariableConstIterator viter = sos->varsBegin();
            viter!=sos->varsEnd(); ++viter) {
-        if (false==f->hasVar(*viter)) {
+        if ((lf->getWeight(*viter)-1.0)>zTol_) {
+          isgub = false;
+          break;
         }
       }
-    } else {
-      isgub = false;
     }
   }
 
-  return true;
+  return isgub;
 }
 
 

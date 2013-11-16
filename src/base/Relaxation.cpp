@@ -116,7 +116,20 @@ Relaxation::Relaxation(ProblemPtr problem)
          it2!=(*it)->varsEnd(); ++it2) {
       vvec.push_back(vars_[(*it2)->getIndex()]);
     }
-    newSOS((*it)->getNz(), (*it)->getType(), (*it)->getWeights(), vvec,
+    newSOS((*it)->getNz(), SOS1, (*it)->getWeights(), vvec,
+           (*it)->getPriority());
+    vvec.clear();
+  }
+
+  // add SOS2 constraints
+  vvec.clear();
+  for (SOSConstIterator it=origPr_->sos2Begin(); it!=origPr_->sos2End();
+       ++it) {
+    for (VariableConstIterator it2 = (*it)->varsBegin();
+         it2!=(*it)->varsEnd(); ++it2) {
+      vvec.push_back(vars_[(*it2)->getIndex()]);
+    }
+    newSOS((*it)->getNz(), SOS2, (*it)->getWeights(), vvec,
            (*it)->getPriority());
     vvec.clear();
   }

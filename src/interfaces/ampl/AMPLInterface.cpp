@@ -603,15 +603,15 @@ void AMPLInterface::addSOS_(Minotaur::ProblemPtr instance)
   copri[1] = 0;
   nsos = suf_sos_ASL(myAsl_, flags, &nsosnz, &sostype, &sospri, copri, &sosbeg,
                      &sosind, &sosref);
-  logger_->MsgStream(Minotaur::LogDebug) << "Number of SOS constraints = "
+  logger_->MsgStream(Minotaur::LogNone)  << "Number of SOS constraints = "
                                           << nsos << std::endl
                                           << "Number of SOS nonzeros = "
                                           << nsosnz << std::endl;
   
   for (int i=0; i<nsos; ++i) {
-    if (sostype[i]-'0'>0) {
+    if (sostype[i]=='1') {
       sostypem = Minotaur::SOS1;
-    } else if (sostype[i]-'0'<0) {
+    } else if (sostype[i]=='2') {
       sostypem = Minotaur::SOS2;
     } else {
       logger_->ErrStream() << "bad SOS type." << std::endl;
@@ -626,7 +626,7 @@ void AMPLInterface::addSOS_(Minotaur::ProblemPtr instance)
                      vars, sospri[i]);
   }
 
-  if (1<nsos) {
+  if (0<nsos) {
     free(sosref);
     // All others are freed automatically.
     //free(sostype);

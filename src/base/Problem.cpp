@@ -1021,7 +1021,13 @@ SOSPtr Problem::newSOS(Int n, SOSType type, const Double *weights,
 {
   std::string name;
   std::stringstream name_stream;
-  name_stream <<  "sos" << (sos1_.size() + sos2_.size());
+  if (SOS1==type) {
+    name_stream <<  "sos1_" << (sos1_.size() + sos2_.size());
+  } else if (SOS2==type) {
+    name_stream <<  "sos2_" << (sos1_.size() + sos2_.size());
+  } else {
+    name_stream <<  "sos_" << (sos1_.size() + sos2_.size());
+  }
   name = name_stream.str();
   SOSPtr sos = newSOS(n, type, weights, vars, priority, name);
   return sos;

@@ -198,6 +198,7 @@ BASE_SRCS = \
 	$(BASE_DIR)/SolutionPool.cpp \
 	$(BASE_DIR)/SOS.cpp \
 	$(BASE_DIR)/SOS1Handler.cpp \
+	$(BASE_DIR)/SOS2Handler.cpp \
 	$(BASE_DIR)/SOSBrCand.cpp \
 	$(BASE_DIR)/Transformer.cpp \
 	$(BASE_DIR)/TransPoly.cpp \
@@ -293,6 +294,7 @@ ALL_HEADERS = \
 	$(BASE_DIR)/SolutionPool.h \
 	$(BASE_DIR)/SOS.h \
 	$(BASE_DIR)/SOS1Handler.h \
+	$(BASE_DIR)/SOS2Handler.h \
 	$(BASE_DIR)/SOSBrCand.h \
 	$(BASE_DIR)/Timer.h \
 	$(BASE_DIR)/Transformer.h  \
