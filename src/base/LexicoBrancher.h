@@ -46,8 +46,8 @@ namespace Minotaur {
        * fractional values for integer constrained variables.
        */
       Branches findBranches(RelaxationPtr rel, NodePtr node, 
-          ConstSolutionPtr sol, SolutionPoolPtr s_pool, 
-          BrancherStatus & br_status, ModificationPtr &mod);
+                            ConstSolutionPtr sol, SolutionPoolPtr s_pool, 
+                            BrancherStatus & br_status, ModVector &mods);
 
       /// Write the statistics.
       void writeStats();

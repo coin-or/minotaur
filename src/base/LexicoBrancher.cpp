@@ -70,8 +70,9 @@ LexicoBrancher::~LexicoBrancher()
 
 
 Branches LexicoBrancher::findBranches(RelaxationPtr rel, NodePtr , 
-    ConstSolutionPtr sol, SolutionPoolPtr s_pool, BrancherStatus & br_status,
-    ModificationPtr &) 
+                                      ConstSolutionPtr sol,
+                                      SolutionPoolPtr s_pool,
+                                      BrancherStatus & br_status, ModVector &) 
 {
   Branches branches;
   DoubleVector x(rel->getNumVars());

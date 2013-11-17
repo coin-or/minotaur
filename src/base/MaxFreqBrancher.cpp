@@ -59,8 +59,10 @@ MaxFreqBrancher::~MaxFreqBrancher()
 
 
 Branches MaxFreqBrancher::findBranches(RelaxationPtr rel, NodePtr , 
-    ConstSolutionPtr sol, SolutionPoolPtr s_pool, 
-    BrancherStatus & br_status, ModificationPtr &mod) 
+                                       ConstSolutionPtr sol,
+                                       SolutionPoolPtr s_pool, 
+                                       BrancherStatus & br_status,
+                                       ModVector &) 
 {
   Branches branches;
   BrCandPtr br_can = BrCandPtr(); //NULL
@@ -77,7 +79,6 @@ Branches MaxFreqBrancher::findBranches(RelaxationPtr rel, NodePtr ,
   }
   rel_ = rel;
   br_status = NotModifiedByBrancher;
-  mod.reset();
 
   findCandidates_();
 

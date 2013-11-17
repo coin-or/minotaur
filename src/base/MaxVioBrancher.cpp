@@ -56,8 +56,10 @@ MaxVioBrancher::~MaxVioBrancher()
 
 
 Branches MaxVioBrancher::findBranches(RelaxationPtr rel, NodePtr , 
-    ConstSolutionPtr sol, SolutionPoolPtr s_pool, 
-    BrancherStatus & br_status, ModificationPtr &mod) 
+                                      ConstSolutionPtr sol,
+                                      SolutionPoolPtr s_pool, 
+                                      BrancherStatus & br_status,
+                                      ModVector &) 
 {
   Branches branches;
   BrCandPtr br_can = BrCandPtr(); //NULL
@@ -72,7 +74,6 @@ Branches MaxVioBrancher::findBranches(RelaxationPtr rel, NodePtr ,
   ++(stats_->calls);
   rel_ = rel;
   br_status = NotModifiedByBrancher;
-  mod.reset();
 
   findCandidates_();
   br_can = findBestCandidate_();

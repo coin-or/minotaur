@@ -851,7 +851,7 @@ void QPDProcessor::processRootNode(NodePtr node, RelaxationPtr rel,
   ConstSolutionPtr qpsol = SolutionPtr(); // NULL
   Bool should_prune = false;
   BrancherStatus br_status;
-  ModificationPtr mod;
+  ModVector mods;
   UInt iter = 0;
   Bool should_resolve = false;
 
@@ -895,16 +895,19 @@ void QPDProcessor::processRootNode(NodePtr node, RelaxationPtr rel,
       // save warm start information before branching. This step is expensive.
       ws_ = qpe_->getWarmStartCopy();
       branches_ = brancher_->findBranches(qp_, node, sol, s_pool, 
-                                          br_status, mod);
+                                          br_status, mods);
       if (br_status==PrunedByBrancher) {
         should_prune = true;
         node->setStatus(NodeInfeasible);
         ++stats_.inf;
         break;
       } else if (br_status==ModifiedByBrancher) {
-        mod->applyToProblem(qp_);
-        mod->fromRel(qp_, p_)->applyToProblem(p_);
-        node->addModification(mod->fromRel(qp_, p_));
+        for (ModificationConstIterator miter=mods.begin(); miter!=mods.end();
+             ++miter) {
+          (*miter)->applyToProblem(qp_);
+          (*miter)->fromRel(qp_, p_)->applyToProblem(p_);
+          node->addModification((*miter)->fromRel(qp_, p_));
+        }
         should_prune = presolveNode_(node, s_pool);
         if (should_prune) {
           break;
@@ -934,7 +937,7 @@ void QPDProcessor::process(NodePtr node, RelaxationPtr rel,
   Bool should_resolve;
   BrancherStatus br_status;
   ConstSolutionPtr sol;
-  ModificationPtr mod;
+  ModVector mods;
   Int iter = 0;
 
 #if SPEW
@@ -973,16 +976,19 @@ void QPDProcessor::process(NodePtr node, RelaxationPtr rel,
       // save warm start information before branching. This step is expensive.
       ws_ = qpe_->getWarmStartCopy();
       branches_ = brancher_->findBranches(qp_, node, sol, s_pool, 
-                                          br_status, mod);
+                                          br_status, mods);
       if (br_status==PrunedByBrancher) {
         should_prune = true;
         node->setStatus(NodeInfeasible);
         ++stats_.inf;
         break;
       } else if (br_status==ModifiedByBrancher) {
-        mod->applyToProblem(qp_);
-        mod->fromRel(qp_, p_)->applyToProblem(p_);
-        node->addModification(mod->fromRel(qp_, p_));
+        for (ModificationConstIterator miter=mods.begin(); miter!=mods.end();
+             ++miter) {
+          (*miter)->applyToProblem(qp_);
+          (*miter)->fromRel(qp_, p_)->applyToProblem(p_);
+          node->addModification((*miter)->fromRel(qp_, p_));
+        }
         should_prune = presolveNode_(node, s_pool);
         if (should_prune) {
           break;

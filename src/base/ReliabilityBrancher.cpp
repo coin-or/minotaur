@@ -156,8 +156,10 @@ BrCandPtr ReliabilityBrancher::findBestCandidate_(const Double objval,
 
 
 Branches ReliabilityBrancher::findBranches(RelaxationPtr rel, NodePtr node, 
-    ConstSolutionPtr sol, SolutionPoolPtr s_pool, BrancherStatus & br_status,
-    ModificationPtr &mod) 
+                                           ConstSolutionPtr sol,
+                                           SolutionPoolPtr s_pool,
+                                           BrancherStatus & br_status,
+                                           ModVector &mods) 
 {
   Branches branches;
   BrCandPtr br_can = BrCandPtr(); //NULL
@@ -171,8 +173,7 @@ Branches ReliabilityBrancher::findBranches(RelaxationPtr rel, NodePtr node,
   rel_ = rel;
   br_status = NotModifiedByBrancher;
   status_ = NotModifiedByBrancher;
-  mod.reset();
-  mod_.reset();
+  mods_.clear();
 
   // make a copy of x, because it is overwritten while strong branching.
   x_.resize(rel->getNumVars());
@@ -184,9 +185,10 @@ Branches ReliabilityBrancher::findBranches(RelaxationPtr rel, NodePtr node,
     return branches;
   }
 
-  br_can = findBestCandidate_(sol->getObjValue(), 
-                              s_pool->getBestSolutionValue(), node);
-
+  if (status_ == NotModifiedByBrancher) {
+    br_can = findBestCandidate_(sol->getObjValue(), 
+                                s_pool->getBestSolutionValue(), node);
+  }
 
   if (status_ == NotModifiedByBrancher) {
     // surrounded by br_can :-)
@@ -202,15 +204,18 @@ Branches ReliabilityBrancher::findBranches(RelaxationPtr rel, NodePtr node,
   } else {
     // we found some modifications that can be done to the node. Send these
     // back to the processor.
-    if (mod_) {
-      mod = mod_;
+    if (mods_.size()>0) {
+      mods.insert(mods.end(),mods_.begin(),mods_.end());
     }
     br_status = status_;
 #if SPEW
-    logger_->MsgStream(LogDebug) << me_ << "found a modification"
+    logger_->MsgStream(LogDebug) << me_ << "found modifications"
                                  << std::endl;
-    if (mod) {
-      mod->write(logger_->MsgStream(LogDebug));
+    if (mods_.size()>0) {
+      for (ModificationConstIterator miter=mods_.begin(); miter!=mods_.end();
+           ++miter) {
+        (*miter)->write(logger_->MsgStream(LogDebug));
+      }
     } else if (status_==PrunedByBrancher) {
       logger_->MsgStream(LogDebug) << me_ << "Pruned." << std::endl;
     } else {
@@ -233,7 +238,6 @@ void ReliabilityBrancher::findCandidates_()
 
   BrCandSet cands;       // candidates from which to choose one.
   BrCandSet cands2;      // Temporary set.
-  ModVector mods;        // handlers may ask to modify the problem.
   Double s_wt = 1e-5;
   Double i_wt = 1e-6;
   Double score;
@@ -244,7 +248,7 @@ void ReliabilityBrancher::findCandidates_()
 
   for (HandlerIterator h = handlers_.begin(); h != handlers_.end(); ++h) {
     // ask each handler to give some candidates
-    (*h)->getBranchingCandidates(rel_, x_, mods, cands2, is_inf);
+    (*h)->getBranchingCandidates(rel_, x_, mods_, cands2, is_inf);
     for (BrCandIter it = cands2.begin(); it != cands2.end(); ++it) {
       (*it)->setHandler(*h);
     }
@@ -255,6 +259,13 @@ void ReliabilityBrancher::findCandidates_()
       cands2.clear();
       cands.clear();
       status_ = PrunedByBrancher;
+      return;
+    } else if (mods_.size()>0) {
+      status_ = ModifiedByBrancher;
+      relCands_.clear();
+      unrelCands_.clear();
+      cands2.clear();
+      cands.clear();
       return;
     }
     cands2.clear();
@@ -538,11 +549,11 @@ void ReliabilityBrancher::useStrongBranchInfo_(BrCandPtr cand,
     stats_->bndChange += 2;
   } else if (should_prune_up) {
     status_ = ModifiedByBrancher;
-    mod_    = cand->getHandler()->getBrMod(cand, x_, rel_, DownBranch);
+    mods_.push_back(cand->getHandler()->getBrMod(cand, x_, rel_, DownBranch));
     ++(stats_->bndChange);
   } else if (should_prune_down) {
     status_ = ModifiedByBrancher;
-    mod_    = cand->getHandler()->getBrMod(cand, x_, rel_, UpBranch);
+    mods_.push_back(cand->getHandler()->getBrMod(cand, x_, rel_, UpBranch));
     ++(stats_->bndChange);
   } else { 
     cost = fabs(change_down)/(fabs(cand->getDDist())+eTol_);

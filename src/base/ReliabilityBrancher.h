@@ -51,7 +51,7 @@ public:
   // base class function.
   Branches findBranches(RelaxationPtr rel, NodePtr node, 
                         ConstSolutionPtr sol, SolutionPoolPtr s_pool, 
-                        BrancherStatus & br_status, ModificationPtr &mod);
+                        BrancherStatus & br_status, ModVector &mods);
 
   /// Return value of trustCutoff parameter.
   Bool getTrustCutoff();
@@ -292,8 +292,8 @@ private:
    */
   UInt minNodeDist_;
 
-  /// Modification that can be applied to the problem.
-  ModificationPtr mod_;
+  /// Modifications that can be applied to the problem.
+  ModVector mods_;
 
   /// Vector of pseudocosts for rounding down.
   DoubleVector pseudoDown_;

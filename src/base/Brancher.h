@@ -55,8 +55,10 @@ namespace Minotaur {
        * found.
        */
       virtual Branches findBranches(RelaxationPtr rel, NodePtr node, 
-          ConstSolutionPtr sol, SolutionPoolPtr s_pool, 
-          BrancherStatus & br_status, ModificationPtr &mod) = 0;
+                                    ConstSolutionPtr sol,
+                                    SolutionPoolPtr s_pool, 
+                                    BrancherStatus & br_status,
+                                    ModVector &mods) = 0;
 
       /// Return the name of this brancher.
       virtual std::string getName() const = 0;

@@ -155,7 +155,7 @@ void LPProcessor::process(NodePtr node, RelaxationPtr rel,
   Bool should_resolve;
   BrancherStatus br_status;
   ConstSolutionPtr sol;
-  ModificationPtr mod;
+  ModVector mods;
   SeparationStatus sep_status = SepaContinue;
   Int iter = 0;
 
@@ -282,7 +282,7 @@ void LPProcessor::process(NodePtr node, RelaxationPtr rel,
       // save warm start information before branching. This step is expensive.
       ws_ = engine_->getWarmStartCopy();
       branches_ = brancher_->findBranches(relaxation_, node, sol, s_pool, 
-                                          br_status, mod);
+                                          br_status, mods);
       if (br_status==PrunedByBrancher) {
 
         should_prune = true;
@@ -290,8 +290,11 @@ void LPProcessor::process(NodePtr node, RelaxationPtr rel,
         stats_.inf++;
         break;
       } else if (br_status==ModifiedByBrancher) {
-        node->addModification(mod);
-        mod->applyToProblem(relaxation_);
+        for (ModificationConstIterator miter=mods.begin(); miter!=mods.end();
+             ++miter) {
+          node->addModification(*miter);
+          (*miter)->applyToProblem(relaxation_);
+        }
         should_prune = presolveNode_(node, s_pool);
         if (should_prune) {
           break;

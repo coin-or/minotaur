@@ -42,10 +42,9 @@ namespace Minotaur {
 
       // Find a branching candidate. Returns NULL if x does not have any
       // thing to branch on or if no branching candidates are needed. 
-      // (e.g. when we realize that problem is infeasible). 
       Branches findBranches(RelaxationPtr rel, NodePtr node, 
-          ConstSolutionPtr sol, SolutionPoolPtr s_pool, 
-          BrancherStatus & br_status, ModificationPtr &mod);
+                            ConstSolutionPtr sol, SolutionPoolPtr s_pool, 
+                            BrancherStatus & br_status, ModVector &mods);
 
       // Write the statistics.
       void writeStats();

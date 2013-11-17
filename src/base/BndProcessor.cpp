@@ -132,7 +132,7 @@ void BndProcessor::process(NodePtr node, RelaxationPtr rel,
   Bool should_resolve;
   BrancherStatus br_status;
   ConstSolutionPtr sol;
-  ModificationPtr mod;
+  ModVector mods;
   Int iter = 0;
 
   ++stats_.proc;
@@ -215,7 +215,7 @@ void BndProcessor::process(NodePtr node, RelaxationPtr rel,
     //save warm start information before branching. This step is expensive.
     ws_ = engine_->getWarmStartCopy();
     branches_ = brancher_->findBranches(relaxation_, node, sol, s_pool, 
-                                        br_status, mod);
+                                        br_status, mods);
     if (br_status==PrunedByBrancher) {
 
       should_prune = true;
@@ -223,10 +223,10 @@ void BndProcessor::process(NodePtr node, RelaxationPtr rel,
       stats_.inf++;
       break;
     } else if (br_status==ModifiedByBrancher) {
-      node->addModification(mod);
-      mod->applyToProblem(relaxation_);
-      if (should_prune) {
-        break;
+      for (ModificationConstIterator iter=mods.begin(); iter!=mods.end();
+           ++iter) {
+        node->addModification(*iter);
+        (*iter)->applyToProblem(relaxation_);
       }
       should_resolve = true;
     } 

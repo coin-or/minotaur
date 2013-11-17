@@ -80,7 +80,7 @@ Branches RandomBrancher::findBranches(RelaxationPtr rel, NodePtr ,
                                       ConstSolutionPtr sol,
                                       SolutionPoolPtr s_pool,
                                       BrancherStatus & br_status,
-                                      ModificationPtr &) 
+                                      ModVector &) 
 {
   Branches branches;
   DoubleVector x(rel->getNumVars());
