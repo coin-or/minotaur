@@ -68,13 +68,13 @@ void Node::applyMods(ProblemPtr p)
   // first apply the mods that created this node from its parent
   if (branch_) {
     for (mod_iter=branch_->modsBegin(); mod_iter!=branch_->modsEnd(); 
-        mod_iter++) {
+        ++mod_iter) {
       mod = *mod_iter;
       mod->applyToProblem(p);
     }
   }
   // now apply any other mods that were added while processing it.
-  for (mod_iter=mods_.begin(); mod_iter!=mods_.end(); mod_iter++) {
+  for (mod_iter=mods_.begin(); mod_iter!=mods_.end(); ++mod_iter) {
     mod = *mod_iter;
     mod->applyToProblem(p);
   }
@@ -89,7 +89,7 @@ void Node::applyMods(RelaxationPtr rel, ProblemPtr p)
   
   if (branch_) {
     for (mod_iter=branch_->modsBegin(); mod_iter!=branch_->modsEnd(); 
-        mod_iter++) {
+        ++mod_iter) {
       mod = *mod_iter;
       mod2 = mod->toRel(p, rel);
       mod->applyToProblem(p);
@@ -97,7 +97,7 @@ void Node::applyMods(RelaxationPtr rel, ProblemPtr p)
     }
   }
  
-  for (mod_iter=mods_.begin(); mod_iter!=mods_.end(); mod_iter++) {
+  for (mod_iter=mods_.begin(); mod_iter!=mods_.end(); ++mod_iter) {
     mod = *mod_iter;
     mod2 = mod->toRel(p, rel);
     mod->applyToProblem(p);
@@ -158,7 +158,7 @@ void Node::undoMods(ProblemPtr p)
   // http://stackoverflow.com/questions/2135094/gcc-reverse-iterator-comparison-operators-missing
   ModificationRConstIterator rend = mods_.rend();  
   // first undo the mods that were added while processing the node.
-  for (mod_iter=mods_.rbegin(); mod_iter!= rend; mod_iter++) {
+  for (mod_iter=mods_.rbegin(); mod_iter!= rend; ++mod_iter) {
     mod = *mod_iter;
     mod->undoToProblem(p);
   } 
@@ -166,7 +166,7 @@ void Node::undoMods(ProblemPtr p)
   // now undo the mods that were used to create this node from its parent.
   if (branch_) {
     for (mod_iter=branch_->modsRBegin(); mod_iter!=branch_->modsREnd(); 
-        mod_iter++) {
+        ++mod_iter) {
       mod = *mod_iter;
       mod->undoToProblem(p);
     }
@@ -182,7 +182,7 @@ void Node::undoMods(RelaxationPtr rel, ProblemPtr p)
   ModificationRConstIterator rend = mods_.rend();  
 
   
-  for (mod_iter=mods_.rbegin(); mod_iter!= rend; mod_iter++) {
+  for (mod_iter=mods_.rbegin(); mod_iter!= rend; ++mod_iter) {
     mod = *mod_iter;
     mod2 = mod->toRel(p, rel);
     mod->undoToProblem(p);
@@ -192,7 +192,7 @@ void Node::undoMods(RelaxationPtr rel, ProblemPtr p)
  
   if (branch_) {
     for (mod_iter=branch_->modsRBegin(); mod_iter!=branch_->modsREnd(); 
-        mod_iter++) {
+        ++mod_iter) {
       mod = *mod_iter;
       mod2 = mod->toRel(p, rel);
       mod->undoToProblem(p);

@@ -603,7 +603,7 @@ void AMPLInterface::addSOS_(Minotaur::ProblemPtr instance)
   copri[1] = 0;
   nsos = suf_sos_ASL(myAsl_, flags, &nsosnz, &sostype, &sospri, copri, &sosbeg,
                      &sosind, &sosref);
-  logger_->MsgStream(Minotaur::LogNone)  << "Number of SOS constraints = "
+  logger_->MsgStream(Minotaur::LogDebug)  << "Number of SOS constraints = "
                                           << nsos << std::endl
                                           << "Number of SOS nonzeros = "
                                           << nsosnz << std::endl;
