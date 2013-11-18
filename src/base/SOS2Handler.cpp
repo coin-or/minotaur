@@ -181,7 +181,7 @@ void SOS2Handler::getBranchingCandidates(RelaxationPtr rel,
                                          Bool & is_inf)
 {
   int lnz, nv, nnz, nspos;
-  double lsum, nzsum;
+  double lsum, rsum, nzsum;
   const double *xa = &(x[0]);
   SOSPtr sos;
   SOSConstIterator siter;
@@ -298,6 +298,7 @@ void SOS2Handler::getBranchingCandidates(RelaxationPtr rel,
         // branch around viter.
         // TODO: double check.
         lsum = 0.;
+        rsum = 0.;
         for (viter2=sos->varsBegin(); viter2!=viter; ++viter2) {
           if ((*viter2)->getUb()>zTol_) {
             lvars.push_back(*viter2);
@@ -308,6 +309,7 @@ void SOS2Handler::getBranchingCandidates(RelaxationPtr rel,
         ++viter2;
         for (;viter2!=sos->varsEnd(); ++viter2) {
           if ((*viter2)->getUb()>zTol_) {
+            rsum += x[(*viter2)->getIndex()];
             rvars.push_back(*viter2);
           }
         }
@@ -324,6 +326,8 @@ void SOS2Handler::getBranchingCandidates(RelaxationPtr rel,
     // violation (or fractionality) in each branch.
     if (lvars.size() + rvars.size()<1) {
       lnz = 0; // number of vars in left branch that have nonzero value in sol.
+      lsum = 0;
+      rsum = 0;
       for (viter=sos->varsBegin(); viter!=sos->varsEnd(); ++viter) {
         var = *viter;
         if (lnz>0 && lvars.size() >= floor(nv/2)) {
@@ -346,12 +350,13 @@ void SOS2Handler::getBranchingCandidates(RelaxationPtr rel,
         var = *viter;
         if (var->getUb()-var->getLb()>zTol_) {
           rvars.push_back(*viter);
+          rsum += x[var->getIndex()];
         }
       }
     }
 
     br_can = (SOSBrCandPtr) new SOSBrCand(sos, lvars, rvars, lsum,
-                                          nzsum-lsum);
+                                          rsum);
     br_can->setDir(DownBranch);
     br_can->setScore(20.0*(lvars.size())*(rvars.size()));
       
