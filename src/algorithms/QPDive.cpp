@@ -64,7 +64,6 @@ void show_help()
 int main(int argc, char** argv)
 {
   EnvPtr env      = (EnvPtr) new Environment();
-  Timer *timer    = env->getNewTimer();
   OptionDBPtr options;
 
   // interface to AMPL (NULL)
@@ -79,9 +78,14 @@ int main(int argc, char** argv)
   const std::string me("qpd main: ");
   EngineFactory *efac;
   HandlerVector handlers;
+  Int err = 0;
 
   // start timing.
-  timer->start();
+  env->startTimer(err);
+  if (err) {
+    goto CLEANUP;
+  }
+
 
   options = env->getOptions();
   options->findString("nlp_engine")->setValue("IPOPT");
@@ -129,7 +133,7 @@ int main(int argc, char** argv)
   // load the problem.
   inst = iface->readInstance(options->findString("problem_file")->getValue());
   std::cout << "time used in reading instance = " << std::fixed 
-    << std::setprecision(2) << timer->query() << std::endl;
+    << std::setprecision(2) << env->getTime(err) << std::endl; assert(0==err);
 
   // display the problem
   inst->calculateSize();
@@ -205,14 +209,13 @@ int main(int argc, char** argv)
   bab->getNodeProcessor()->getBrancher()->writeStats();
   bab->getNodeProcessor()->writeStats(std::cout);
   std::cout << me << "time used = " << std::fixed << std::setprecision(2) 
-    << timer->query() << std::endl;
+    << env->getTime(err) << std::endl; assert(0==err);
 
 
 CLEANUP:
   if (iface) {
     delete iface;
   }
-  delete timer;
   if (bab) {
     delete bab;
   }
