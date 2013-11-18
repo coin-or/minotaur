@@ -379,7 +379,7 @@ void SOS2Handler::getBranchingCandidates(RelaxationPtr rel,
       logger_->MsgStream(LogDebug) << (*viter)->getName() << " ";
     }
     logger_->MsgStream(LogDebug) << std::endl
-                                 << me_ << "right sum = " << nzsum - lsum
+                                 << me_ << "right sum = " << rsum
                                  << std::endl;
 #endif
 

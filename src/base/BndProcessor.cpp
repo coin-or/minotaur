@@ -223,10 +223,10 @@ void BndProcessor::process(NodePtr node, RelaxationPtr rel,
       stats_.inf++;
       break;
     } else if (br_status==ModifiedByBrancher) {
-      for (ModificationConstIterator iter=mods.begin(); iter!=mods.end();
-           ++iter) {
-        node->addModification(*iter);
-        (*iter)->applyToProblem(relaxation_);
+      for (ModificationConstIterator miter=mods.begin(); miter!=mods.end();
+           ++miter) {
+        node->addModification(*miter);
+        (*miter)->applyToProblem(relaxation_);
       }
       should_resolve = true;
     } 
