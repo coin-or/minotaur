@@ -151,6 +151,7 @@ void SOS1Handler::getBranchingCandidates(RelaxationPtr rel,
   Double nzsum;
   Double nzval;
   SOSBrCandPtr br_can;
+  bool is_new;
 
   for (siter=rel->sos1Begin(); siter!=rel->sos1End(); ++siter) {
     sos = *siter;
@@ -188,7 +189,8 @@ void SOS1Handler::getBranchingCandidates(RelaxationPtr rel,
       br_can->setDir(DownBranch);
       br_can->setScore(20.0*(lvars.size()-1)*(rvars.size()-1));
       
-      assert(cands.insert(br_can).second == true); 
+      is_new = cands.insert(br_can).second;
+      assert(true==is_new);
 
 #if SPEW
       logger_->MsgStream(LogDebug) << me_ << sos->getName() << " is a "

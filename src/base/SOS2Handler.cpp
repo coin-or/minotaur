@@ -191,6 +191,8 @@ void SOS2Handler::getBranchingCandidates(RelaxationPtr rel,
   SOSBrCandPtr br_can;
   VarBoundModPtr bmod;
 
+  lsum = 0;
+  rsum = 0;
   for (siter=rel->sos2Begin(); siter!=rel->sos2End(); ++siter) {
     sos = *siter;
     if (isXFeasible_(xa, sos)) {
