@@ -16,7 +16,6 @@
 
 #include "MinotaurConfig.h"
 #include "BranchAndBound.h"
-#include "CxQuadHandler.h" // for presolving
 #include "EngineFactory.h"
 #include "Environment.h"
 #include "IntVarHandler.h"
@@ -26,6 +25,7 @@
 #include "MaxVioBrancher.h"
 #include "NLPEngine.h"
 #include "NlPresHandler.h"
+#include "Objective.h"
 #include "Option.h"
 #include "Presolver.h"
 #include "Problem.h"
@@ -61,6 +61,35 @@ void show_help()
 }
 
 
+void writeSol(EnvPtr env, VarVector *orig_v, Double obj_sense,
+              BranchAndBound* bab, PresolverPtr pres,
+              MINOTAUR_AMPL::AMPLInterface* iface)
+{
+  const std::string me("bnb main: ");
+  SolutionPtr sol = bab->getSolution(); 
+  Int err = 0;
+
+  if (sol) {
+    sol = pres->getPostSol(sol);
+  }
+  if (env->getOptions()->findFlag("AMPL")->getValue()) {
+    iface->writeSolution(sol, bab->getStatus());
+  } else if (sol) {
+    sol->writePrimal(std::cout, orig_v);
+  }
+  std::cout << me << std::fixed << std::setprecision(4) << 
+    "best solution value = " << obj_sense*bab->getUb() << std::endl;
+  std::cout << me << std::fixed << std::setprecision(4) << 
+    "best bound estimate from remaining nodes = "
+    <<  obj_sense*bab->getLb() << std::endl;
+  std::cout << me << "time used = " << std::fixed << std::setprecision(2) 
+    << env->getTime(err) << std::endl; assert(0==err);
+  env->stopTimer(err); assert(0==err);
+  std::cout << me << "status of branch-and-bound: " 
+            << getSolveStatusString(bab->getStatus()) << std::endl;
+}
+
+
 int main(int argc, char** argv)
 {
   EnvPtr env      = (EnvPtr) new Environment();
@@ -79,6 +108,7 @@ int main(int argc, char** argv)
   EngineFactory *efac;
   HandlerVector handlers;
   Int err = 0;
+  Double obj_sense = 1.0;
 
   // start timing.
   env->startTimer(err);
@@ -155,6 +185,10 @@ int main(int argc, char** argv)
   inst->setInitialPoint(iface->getInitialPoint(), 
       inst->getNumVars()-iface->getNumDefs());
    
+  if (inst->getObjective() &&
+      inst->getObjective()->getObjectiveType()==Maximize) {
+    obj_sense = -1.0;
+  }
   // get presolver.
   orig_v = new VarVector(inst->varsBegin(), inst->varsEnd());
   pres = createPres(env, inst, iface->getNumDefs(), handlers);
@@ -175,42 +209,19 @@ int main(int argc, char** argv)
   bab = createBab(env, inst, engine, qe, handlers);
 
   // solve
-  if (options->findBool("solve")->getValue()==true) {
-    // start solving
-    bab->solve();
-
-    std::cout << me << "status of branch-and-bound: " 
-      << getSolveStatusString(bab->getStatus()) << std::endl;
-    // write solution
-    sol = bab->getSolution(); // presolved solution needs translation.
-    if (sol) {
-      sol2 = pres->getPostSol(sol);
-      sol = sol2;
-    }
-    if (options->findFlag("AMPL")->getValue()) {
-      iface->writeSolution(sol, bab->getStatus());
-    } else if (sol) {
-      sol->writePrimal(std::cout,orig_v);
-    }
-    std::cout << me << "nodes created in branch-and-bound = " << 
-      bab->getTreeManager()->getSize() << std::endl;
-    std::cout << me << std::fixed << std::setprecision(4) << 
-      "best bound estimate from remaining nodes = " <<  bab->getLb() 
-      << std::endl;
-    std::cout << me << std::fixed << std::setprecision(4) << 
-      "best solution value = " <<  bab->getUb() << std::endl;
-    // bit->writeStats();
-    for (HandlerVector::iterator it=handlers.begin(); it!=handlers.end(); ++it) {
-      (*it)->writeStats(std::cout);
-    }
+  if (options->findBool("solve")->getValue()==false) {
+    goto CLEANUP; 
   }
+  // start solving
+  bab->solve();
+  bab->writeStats();
   engine->writeStats();
   qe->writeStats();
-  bab->getNodeProcessor()->getBrancher()->writeStats();
-  bab->getNodeProcessor()->writeStats(std::cout);
-  std::cout << me << "time used = " << std::fixed << std::setprecision(2) 
-    << env->getTime(err) << std::endl; assert(0==err);
+  for (HandlerVector::iterator it=handlers.begin(); it!=handlers.end(); ++it) {
+    (*it)->writeStats(std::cout);
+  }
 
+  writeSol(env, orig_v, obj_sense, bab, pres, iface);
 
 CLEANUP:
   if (iface) {
