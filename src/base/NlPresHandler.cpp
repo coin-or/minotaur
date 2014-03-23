@@ -105,11 +105,11 @@ void  NlPresHandler::chkRed_(Bool *changed)
       error = 0;
       nlf->computeBounds(&nlfl, &nlfu, &error);
       assert(error==0);
-      if (nlfl+lfl-eTol_ > c->getLb()) {
+      if (c->getLb()>-INFINITY && nlfl+lfl-eTol_ > c->getLb()) {
         p_->changeBound(c, Lower, -INFINITY);
         *changed = true;
       }
-      if (nlfu+lfu+eTol_ < c->getUb() && c->getUb()<INFINITY) {
+      if (c->getUb()<INFINITY && nlfu+lfu+eTol_ < c->getUb()) {
         p_->changeBound(c, Upper, INFINITY);
         *changed = true;
       }

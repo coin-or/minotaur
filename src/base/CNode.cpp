@@ -1192,6 +1192,7 @@ void CNode::propBounds(Int *error)
   Double ub = INFINITY;
   switch (op_) {
   case (OpAbs):
+    assert(lb_>-1e-12);
     lb = -ub_;
     ub = ub_;
     l_->propBounds_(lb, ub, error);
@@ -1202,7 +1203,7 @@ void CNode::propBounds(Int *error)
     l_->propBounds_(lb, ub, error);
     break;
   case (OpAcosh):
-    assert(!"implement me!");
+    // TODO: Implement me
     break;
   case (OpAsin):
     lb = -1.0;
@@ -1210,12 +1211,13 @@ void CNode::propBounds(Int *error)
     l_->propBounds_(lb, ub, error);
     break;
   case (OpAsinh):
-    assert(!"implement me!");
+    // TODO: Implement me
     break;
   case (OpAtan):
+    // TODO: Implement me
     break;
   case (OpAtanh):
-    assert(!"implement me!");
+    // TODO: Implement me
     break;
   case (OpCeil):
     lb = floor(lb_);
@@ -1223,12 +1225,19 @@ void CNode::propBounds(Int *error)
     l_->propBounds_(lb, ub, error);
     break;
   case (OpCos):
+    // TODO: Implement me
     break;
   case (OpCosh):
-    assert(!"implement me!");
+    // TODO: Implement me
     break;
   case (OpCPow):
+    // TODO: Implement me
+    break;
   case (OpDiv):
+    BoundsOnProduct(r_->lb_, r_->ub_, lb_, ub_, lb, ub);
+    l_->propBounds_(lb, ub, error);
+    BoundsOnDiv(l_->lb_, l_->ub_, lb_, ub_, lb, ub);
+    r_->propBounds_(lb, ub, error);
     break;
   case (OpExp):
     lb = log(lb_);
@@ -1241,6 +1250,7 @@ void CNode::propBounds(Int *error)
     l_->propBounds_(lb, ub, error);
     break;
   case (OpIntDiv):
+    // TODO: Implement me
     break;
   case (OpLog):
     lb = exp(lb_);
@@ -1279,6 +1289,7 @@ void CNode::propBounds(Int *error)
     r_->propBounds_(lb, ub, error);
     break;
   case (OpPow):
+    // TODO: Implement me
     break;
   case (OpPowK):
     if (r_->val_>0) {
@@ -1309,8 +1320,10 @@ void CNode::propBounds(Int *error)
   case (OpRound):
     break;
   case (OpSin):
+    // TODO: Implement me
     break;
   case (OpSinh):
+    // TODO: Implement me
     break;
   case (OpSqr):
     ub = sqrt(ub);
@@ -1337,9 +1350,10 @@ void CNode::propBounds(Int *error)
     }
     break;
   case (OpTan):
+    // TODO: Implement me
     break;
   case (OpTanh):
-    assert(!"implement me!");
+    // TODO: Implement me
     break;
   case (OpUMinus):
     lb =-ub_;
@@ -1571,21 +1585,27 @@ void CNode::updateBnd(Int *error)
     ub_ = PI;
     break;
   case (OpAcosh):
-    assert(!"implement me!");
+    // TODO: Implement me
+    lb_ = -INFINITY;
+    ub_ = INFINITY;
     break;
   case (OpAsin):
     lb_ = -PI/2;
     ub_ =  PI/2;
     break;
   case (OpAsinh):
-    assert(!"implement me!");
+    // TODO: Implement me
+    lb_ = -INFINITY;
+    ub_ = INFINITY;
     break;
   case (OpAtan):
     lb_ = -PI/2;
     ub_ =  PI/2;
     break;
   case (OpAtanh):
-    assert(!"implement me!");
+    // TODO: Implement me
+    lb_ = -INFINITY;
+    ub_ = INFINITY;
     break;
   case (OpCeil):
     lb_ = ceil(l_->lb_);
@@ -1596,15 +1616,17 @@ void CNode::updateBnd(Int *error)
     ub_ = 1.0;
     break;
   case (OpCosh):
-    assert(!"implement me!");
+    // TODO: Implement me
+    lb_ = -INFINITY;
+    ub_ = INFINITY;
     break;
   case (OpCPow):
+    // TODO: Implement me
     lb_ = -INFINITY;
     ub_ = INFINITY;
     break;
   case (OpDiv):
-    lb_ = -INFINITY;
-    ub_ = INFINITY;
+    BoundsOnDiv(l_->lb_, l_->ub_, r_->lb_, r_->ub_, lb_, ub_);
     break;
   case (OpExp):
     if (l_->lb_==-INFINITY) {
@@ -1623,6 +1645,7 @@ void CNode::updateBnd(Int *error)
     ub_ = floor(l_->ub_);
     break;
   case (OpIntDiv):
+    // TODO: Implement me
     lb_ = -INFINITY;
     ub_ = INFINITY;
     break;
@@ -1660,14 +1683,17 @@ void CNode::updateBnd(Int *error)
     ub_ = l_->ub_+r_->ub_;
     break;
   case (OpPow):
+    // TODO: Implement me
     lb_ = -INFINITY;
     ub_ = INFINITY;
     break;
   case (OpPowK):
+    // TODO: Implement me
     lb_ = -INFINITY;
     ub_ = INFINITY;
     break;
   case (OpRound):
+    // TODO: Implement me
     lb_ = -INFINITY;
     ub_ = INFINITY;
     break;
@@ -1676,6 +1702,7 @@ void CNode::updateBnd(Int *error)
     ub_ =  1.0;
     break;
   case (OpSinh):
+    // TODO: Implement me
     lb_ = -INFINITY;
     ub_ = INFINITY;
     break;
@@ -1701,11 +1728,14 @@ void CNode::updateBnd(Int *error)
     }
     break;
   case (OpTan):
+    // TODO: Implement me
     lb_ = -INFINITY;
     ub_ = INFINITY;
     break;
   case (OpTanh):
-    assert(!"implement me!");
+    // TODO: Implement me
+    lb_ = -INFINITY;
+    ub_ = INFINITY;
     break;
   case (OpUMinus):
     lb_ =-l_->ub_;
