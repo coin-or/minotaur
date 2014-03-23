@@ -90,7 +90,7 @@ SolveStatus Presolver::solve()
   Int iters = 0;
   Int subiters = 0;
   Int n_hand = handlers_.size();
-  Int last_ch_subiter = -1000;
+  Int last_ch_subiter = -10000;
 
   logger_->MsgStream(LogInfo) << me_ << "Presolving ... " << std::endl;
   // call all handlers.
@@ -107,7 +107,7 @@ SolveStatus Presolver::solve()
       if (changed) {
         last_ch_subiter = subiters;
       }
-      if (subiters-last_ch_subiter>n_hand-2) {
+      if (subiters>n_hand-2 && subiters-last_ch_subiter>n_hand-2) {
         stop = true;
         break;
       }

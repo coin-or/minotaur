@@ -98,7 +98,7 @@ void Minotaur::symMatDotV(UInt nz, const Double *mat, const UInt *irow,
 
 
 void Minotaur::BoundsOnDiv(Double l0, Double u0, Double l1, Double u1, 
-    Double &lb, Double &ub)
+                           Double &lb, Double &ub)
 {
   BoundsOnRecip(l1, u1, l1, u1);
   BoundsOnProduct(l0, u0, l1, u1, lb, ub);
@@ -106,14 +106,14 @@ void Minotaur::BoundsOnDiv(Double l0, Double u0, Double l1, Double u1,
 
 
 void Minotaur::BoundsOnProduct(ConstVariablePtr x0, ConstVariablePtr x1,
-    Double &lb, Double &ub)
+                               Double &lb, Double &ub)
 {
   BoundsOnProduct(x0->getLb(), x0->getUb(), x1->getLb(), x1->getUb(), lb, ub);
 }
 
 
 void Minotaur::BoundsOnProduct(Double l0, Double u0, Double l1, Double u1, 
-    Double &lb, Double &ub)
+                               Double &lb, Double &ub)
 {
   lb = l0 * l1;
   ub = lb;
@@ -131,8 +131,29 @@ void Minotaur::BoundsOnProduct(Double l0, Double u0, Double l1, Double u1,
 
 void Minotaur::BoundsOnRecip(Double l0, Double u0, Double &lb, Double &ub)
 {
+  /*
+   * This code looks OK but returns bad values when (l0,u0) = (-inf,0):w
+   */
+  /*
   if (l0<0 && u0>0) {
     lb = -INFINITY;
+    ub = INFINITY;
+  } else if {
+    lb = 1.0/u0;
+    ub = 1.0/l0;
+  } 
+  */
+  if (fabs(u0-l0) < 1e-10) {
+    lb = 1.0;
+    ub = 1.0;
+  } else if (l0<-1e-10 && u0>1e-10) {
+    lb = -INFINITY;
+    ub = INFINITY;
+  } else if ((fabs(u0)<1e-10) && l0<0) {
+    lb = -INFINITY;
+    ub = 1.0/l0;
+  } else if ((fabs(l0)<1e-10) && u0<0) {
+    lb = 1.0/u0;
     ub = INFINITY;
   } else {
     lb = 1.0/u0;
