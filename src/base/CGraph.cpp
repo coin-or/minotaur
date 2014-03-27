@@ -1082,18 +1082,30 @@ void CGraph::setOut(CNode *node)
 
 
 void CGraph::varBoundMods(Double lb, Double ub, VarBoundModVector &mods,
-                          Int *error)
+                          SolveStatus *status)
 {
-  Double lb2 = -INFINITY;
-  Double ub2 = INFINITY;
+  double lb2 = -INFINITY;
+  double ub2 = INFINITY;
+  int error = 0;
+  bool is_inf = false;
 
-  *error = 0;
-  computeBounds(&lb2, &ub2, error);
-  assert(0==*error);
+  computeBounds(&lb2, &ub2, &error);
+  if (error>0) {
+    *status = SolveError;
+    return;
+  }
 
   oNode_->setBounds(lb, ub);
   for (CNodeQ::reverse_iterator it=dq_.rbegin(); it!=dq_.rend(); ++it) {
-    (*it)->propBounds(error);
+    (*it)->propBounds(&is_inf, &error);
+    if (true == is_inf) {
+      *status = SolvedInfeasible;
+      return;
+    }
+    if (error>0) {
+      *status = SolveError;
+      return;
+    }
   }
   for (CNodeQ::iterator it=vq_.begin(); it!=vq_.end(); ++it) {
     if ((*it)->getLb()>(*it)->getV()->getLb()+1e-5) {

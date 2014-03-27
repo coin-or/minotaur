@@ -187,7 +187,8 @@ public:
   {assert (!"implement me!");};
 
   virtual void varBoundMods(Double /* lb */, Double /* ub */,
-                            VarBoundModVector & /* mods */, Int * /* error */)
+                            VarBoundModVector & /* mods */,
+                            SolveStatus * /* status */)
   {};
 
   /// \return first iterator for the variables in this function.

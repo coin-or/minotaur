@@ -566,13 +566,19 @@ SolveStatus NlPresHandler::presolve(PreModQ *mods, Bool *changed0)
 {
   Bool changed = true;
   Timer *tim = env_->getNewTimer();
+  SolveStatus status = Started;
 
   tim->start();
   while(changed==true && stats_.iters < 5) {
     changed = false;
     chkRed_(&changed);
     p_->delMarkedCons();
-    tightenBnds_(&changed);
+    status = varBndsFromCons_(&changed);
+    if (SolvedInfeasible==status) {
+      stats_.time += tim->query();
+      delete tim;
+      return SolvedInfeasible;
+    }
     coeffImpr_(&changed);
     bin2Lin_(p_, mods, &changed);
     ++stats_.iters;
@@ -649,14 +655,14 @@ Bool NlPresHandler::presolveNode(ProblemPtr p, NodePtr, SolutionPoolPtr s_pool,
 }
 
 
-void  NlPresHandler::tightenBnds_(Bool *changed)
+SolveStatus NlPresHandler::varBndsFromCons_(Bool *changed)
 {
   ConstraintPtr c;
   LinearFunctionPtr lf;
   NonlinearFunctionPtr nlf;
   Double lfu, lfl, ub, lb;
-  Int error = 0;
   VarBoundModVector mods;
+  SolveStatus status = Started;
 
   for (ConstraintConstIterator cit=p_->consBegin(); cit!=p_->consEnd();
        ++cit) {
@@ -668,11 +674,14 @@ void  NlPresHandler::tightenBnds_(Bool *changed)
       if (lf) {
         lf->computeBounds(&lfl, &lfu);
       }
-      error = 0;
       ub = c->getUb()-lfl;
       lb = c->getLb()-lfu;
-      nlf->varBoundMods(lb, ub, mods, &error);
-      assert(error==0);
+      nlf->varBoundMods(lb, ub, mods, &status);
+      if (SolvedInfeasible == status) {
+        break;
+      } else if (SolveError == status) {
+        break;
+      }
       if (false==mods.empty()) {
         for (VarBoundModVector::iterator it=mods.begin(); it!=mods.end(); ++it) {
           (*it)->applyToProblem(p_);
@@ -683,7 +692,7 @@ void  NlPresHandler::tightenBnds_(Bool *changed)
       }
     }
   }
-  return;
+  return status;
 }
 
 

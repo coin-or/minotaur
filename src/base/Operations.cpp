@@ -115,24 +115,51 @@ void Minotaur::BoundsOnProduct(ConstVariablePtr x0, ConstVariablePtr x1,
 void Minotaur::BoundsOnProduct(Double l0, Double u0, Double l1, Double u1, 
                                Double &lb, Double &ub)
 {
-  lb = l0 * l1;
-  ub = lb;
 
-  lb = std::min(lb, u0*l1);
-  ub = std::max(ub, u0*l1);
+  double prod;
 
-  lb = std::min(lb, u0*u1);
-  ub = std::max(ub, u0*u1);
+  if (fabs(l0)<=1e-10 && fabs(u0)<=1e-10) {
+    lb = 0.0;
+    ub = 0.0;
+  } else if (fabs(l1)<=1e-10 && fabs(u1)<=1e-10) {
+    lb = 0.0;
+    ub = 0.0;
+  } else {
+    prod = l0*l1;
+    if (isnan(prod)) {
+      prod = -INFINITY;
+    } 
+    lb = prod;
+    ub = prod;
 
-  lb = std::min(lb, l0*u1);
-  ub = std::max(ub, l0*u1);
+    prod = u0*l1;
+    if (isnan(prod)) {
+      prod = INFINITY;
+    } 
+    lb = std::min(lb, prod);
+    ub = std::max(ub, prod);
+
+    prod = u0*u1;
+    if (isnan(prod)) {
+      prod = -INFINITY;
+    }
+    lb = std::min(lb, prod);
+    ub = std::max(ub, prod);
+
+    prod = l0*u1;
+    if (isnan(prod)) {
+      prod = INFINITY;
+    } 
+    lb = std::min(lb, prod);
+    ub = std::max(ub, prod);
+  }
 }
 
 
 void Minotaur::BoundsOnRecip(Double l0, Double u0, Double &lb, Double &ub)
 {
   /*
-   * This code looks OK but returns bad values when (l0,u0) = (-inf,0):w
+   * This code _looks_ OK but returns bad values when (l0,u0) = (-inf,0)
    */
   /*
   if (l0<0 && u0>0) {
@@ -143,9 +170,9 @@ void Minotaur::BoundsOnRecip(Double l0, Double u0, Double &lb, Double &ub)
     ub = 1.0/l0;
   } 
   */
-  if (fabs(u0-l0) < 1e-10) {
-    lb = 1.0;
-    ub = 1.0;
+  if ((fabs(u0) < 1e-10) && (fabs(l0) < 1e-10)) {
+    lb = -INFINITY;
+    ub =  INFINITY;
   } else if (l0<-1e-10 && u0>1e-10) {
     lb = -INFINITY;
     ub = INFINITY;

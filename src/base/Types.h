@@ -133,6 +133,7 @@ namespace Minotaur {
     Interrupted,
     TimeLimitReached,
     SolLimitReached,
+    SolveError,
     Finished
   } SolveStatus;
 

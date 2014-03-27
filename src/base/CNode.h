@@ -84,7 +84,7 @@ public:
   UInt numPar() const { return numPar_; };
   void propHessSpa();
   void propHessSpa2(CNodeRSet *nset);
-  void propBounds(Int *error);
+  void propBounds(bool *is_inf, Int *error);
   void hess(Int *error);
   void hess2(CNodeRSet *nset, Int *error);
   void setB(Bool b) {b_ = b;};
@@ -130,7 +130,7 @@ protected:
   CNode *uPar_;
   const Variable* v_;
   Double val_;
-  void propBounds_(Double lb, Double ub, Int *error);
+  void propBounds_(Double lb, Double ub, bool *is_inf);
 
 };
 typedef std::vector<CNode*> CNodeVector;

@@ -166,7 +166,8 @@ public:
   void subst(VariablePtr out, VariablePtr in, Double rat);
 
   // base class method.
-  void varBoundMods(Double lb, Double ub, VarBoundModVector &mods, Int *error);
+  void varBoundMods(Double lb, Double ub, VarBoundModVector &mods,
+                    SolveStatus *status);
 
   // display.
   void write(std::ostream &out) const;

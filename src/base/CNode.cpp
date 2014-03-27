@@ -1185,7 +1185,7 @@ UInt CNode::numChild() const
 }
 
 
-void CNode::propBounds(Int *error)
+void CNode::propBounds(bool *is_inf, Int *error)
 {
   errno = 0; //declared in cerrno
   Double lb = -INFINITY;
@@ -1195,12 +1195,12 @@ void CNode::propBounds(Int *error)
     assert(lb_>-1e-12);
     lb = -ub_;
     ub = ub_;
-    l_->propBounds_(lb, ub, error);
+    l_->propBounds_(lb, ub, is_inf);
     break;
   case (OpAcos):
     lb = -1.0;
     ub = 1.0;
-    l_->propBounds_(lb, ub, error);
+    l_->propBounds_(lb, ub, is_inf);
     break;
   case (OpAcosh):
     // TODO: Implement me
@@ -1208,7 +1208,7 @@ void CNode::propBounds(Int *error)
   case (OpAsin):
     lb = -1.0;
     ub = 1.0;
-    l_->propBounds_(lb, ub, error);
+    l_->propBounds_(lb, ub, is_inf);
     break;
   case (OpAsinh):
     // TODO: Implement me
@@ -1222,7 +1222,7 @@ void CNode::propBounds(Int *error)
   case (OpCeil):
     lb = floor(lb_);
     ub = floor(ub_);
-    l_->propBounds_(lb, ub, error);
+    l_->propBounds_(lb, ub, is_inf);
     break;
   case (OpCos):
     // TODO: Implement me
@@ -1235,19 +1235,19 @@ void CNode::propBounds(Int *error)
     break;
   case (OpDiv):
     BoundsOnProduct(r_->lb_, r_->ub_, lb_, ub_, lb, ub);
-    l_->propBounds_(lb, ub, error);
+    l_->propBounds_(lb, ub, is_inf);
     BoundsOnDiv(l_->lb_, l_->ub_, lb_, ub_, lb, ub);
-    r_->propBounds_(lb, ub, error);
+    r_->propBounds_(lb, ub, is_inf);
     break;
   case (OpExp):
     lb = log(lb_);
     ub = log(ub_);
-    l_->propBounds_(lb, ub, error);
+    l_->propBounds_(lb, ub, is_inf);
     break;
   case (OpFloor):
     lb = ceil(lb_);
     ub = ceil(ub_);
-    l_->propBounds_(lb, ub, error);
+    l_->propBounds_(lb, ub, is_inf);
     break;
   case (OpIntDiv):
     // TODO: Implement me
@@ -1255,26 +1255,26 @@ void CNode::propBounds(Int *error)
   case (OpLog):
     lb = exp(lb_);
     ub = exp(ub_);
-    l_->propBounds_(lb, ub, error);
+    l_->propBounds_(lb, ub, is_inf);
     break;
   case (OpLog10):
     lb = pow(10.0, lb_);
     ub = pow(10.0, ub_);
-    l_->propBounds_(lb, ub, error);
+    l_->propBounds_(lb, ub, is_inf);
     break;
   case (OpMinus):
     lb = lb_ + r_->lb_;
     ub = ub_ + r_->ub_;
-    l_->propBounds_(lb, ub, error);
+    l_->propBounds_(lb, ub, is_inf);
     lb = l_->lb_ - ub_;
     ub = l_->ub_ - lb_;
-    r_->propBounds_(lb, ub, error);
+    r_->propBounds_(lb, ub, is_inf);
     break;
   case (OpMult):
     BoundsOnDiv(lb_, ub_, r_->lb_, r_->ub_, lb, ub);
-    l_->propBounds_(lb, ub, error);
+    l_->propBounds_(lb, ub, is_inf);
     BoundsOnDiv(lb_, ub_, l_->lb_, l_->ub_, lb, ub);
-    r_->propBounds_(lb, ub, error);
+    r_->propBounds_(lb, ub, is_inf);
     break;
   case (OpNone):
     break;
@@ -1283,10 +1283,10 @@ void CNode::propBounds(Int *error)
   case (OpPlus):
     lb = lb_-r_->ub_;
     ub = ub_-r_->lb_;
-    l_->propBounds_(lb, ub, error);
+    l_->propBounds_(lb, ub, is_inf);
     lb = lb_-l_->ub_;
     ub = ub_-l_->lb_;
-    r_->propBounds_(lb, ub, error);
+    r_->propBounds_(lb, ub, is_inf);
     break;
   case (OpPow):
     // TODO: Implement me
@@ -1299,8 +1299,8 @@ void CNode::propBounds(Int *error)
         } else {
           ub =  pow(ub_, 1.0/r_->val_);
           lb = -ub;
-          l_->propBounds_(lb, ub, error);
-          std::cout << "new bounds = " << lb << " " << ub << std::endl;
+          l_->propBounds_(lb, ub, is_inf);
+          // std::cout << "new bounds = " << lb << " " << ub << std::endl;
         }
       } else if (IsInt((r_->val_+1)/2.0)) { 
         if (lb < 0) {
@@ -1313,7 +1313,7 @@ void CNode::propBounds(Int *error)
         } else {
           ub = pow(ub_, 1.0/r_->val_);
         }
-        l_->propBounds_(lb, ub, error);
+        l_->propBounds_(lb, ub, is_inf);
       }
     }
     break;
@@ -1328,12 +1328,12 @@ void CNode::propBounds(Int *error)
   case (OpSqr):
     ub = sqrt(ub);
     lb = -ub;
-    l_->propBounds_(lb, ub, error);
+    l_->propBounds_(lb, ub, is_inf);
     break;
   case (OpSqrt):
     lb = lb_*lb_;
     ub = ub_*ub_;
-    l_->propBounds_(lb, ub, error);
+    l_->propBounds_(lb, ub, is_inf);
     break;
   case (OpSumList):
     {
@@ -1345,7 +1345,7 @@ void CNode::propBounds(Int *error)
       }
       c = child_;
       for (UInt i=0; i<numChild_; ++i, ++c) {
-        (*c)->propBounds_(lb_-(ub-(*c)->ub_), ub_-(lb-(*c)->lb_), error);
+        (*c)->propBounds_(lb_-(ub-(*c)->ub_), ub_-(lb-(*c)->lb_), is_inf);
       }
     }
     break;
@@ -1358,7 +1358,7 @@ void CNode::propBounds(Int *error)
   case (OpUMinus):
     lb =-ub_;
     ub =-lb_;
-    l_->propBounds_(lb, ub, error);
+    l_->propBounds_(lb, ub, is_inf);
     break;
   case (OpVar):
     break;
@@ -1371,10 +1371,12 @@ void CNode::propBounds(Int *error)
 }
 
 
-void CNode::propBounds_(Double lb, Double ub, Int *error)
+void CNode::propBounds_(double lb, double ub, bool *is_inf)
 {
+  assert(false==isnan(lb));
+  assert(false==isnan(ub));
   if (lb > ub || ub < lb_ || lb > ub_) {
-    *error = 3141;
+    *is_inf = true;
   } else {
     if (lb > lb_) {
       lb_ = lb;

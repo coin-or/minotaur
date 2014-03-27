@@ -149,7 +149,7 @@ private:
   void  coeffImpr_(Bool *changed);
   void  computeImpBounds_(ConstraintPtr c, VariablePtr z, 
                           Double zval, Double *lb, Double *ub);
-  void  tightenBnds_(Bool *changed);
+  SolveStatus varBndsFromCons_(Bool *changed);
 };
 typedef boost::shared_ptr<NlPresHandler> NlPresHandlerPtr;
 }
