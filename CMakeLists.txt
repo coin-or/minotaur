@@ -748,8 +748,8 @@ add_custom_target(doc
   ${CMAKE_COMMAND} -E remove_directory html
   COMMAND ${CMAKE_COMMAND} -E copy ${PROJECT_SOURCE_DIR}/doc/doxyfile .
   COMMAND echo "INPUT = ${PROJECT_SOURCE_DIR}/src ${PROJECT_SOURCE_DIR}/doc" >> doxyfile
-  COMMAND echo "EXCLUDE = ${PROJECT_SOURCE_DIR}/src/testing">>doxyfile 
-  COMMAND echo "HTML_FOOTER = ${PROJECT_SOURCE_DIR}/doc/footer.html">>doxyfile
+  COMMAND echo "EXCLUDE = ${PROJECT_SOURCE_DIR}/src/testing" >> doxyfile 
+  COMMAND echo "HTML_FOOTER = ${PROJECT_SOURCE_DIR}/doc/footer.html" >> doxyfile
   COMMAND doxygen doxyfile 
   COMMAND ${CMAKE_COMMAND} -E copy ${PROJECT_SOURCE_DIR}/doc/logo/small.jpg html
   COMMAND ${CMAKE_COMMAND} -E copy ${PROJECT_SOURCE_DIR}/doc/logo/tiny.jpg html
