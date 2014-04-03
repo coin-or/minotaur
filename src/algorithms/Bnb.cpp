@@ -375,32 +375,51 @@ Int showInfo(EnvPtr env)
 }
 
 
-void writeSol(EnvPtr env, VarVector *orig_v, Double obj_sense,
-              BranchAndBound* bab, PresolverPtr pres,
+void writeSol(EnvPtr env, VarVector *orig_v,
+              PresolverPtr pres, SolutionPtr sol, SolveStatus status,
               MINOTAUR_AMPL::AMPLInterface* iface)
 {
-  const std::string me("bnb main: ");
-  SolutionPtr sol = bab->getSolution(); 
-  Int err = 0;
-
   if (sol) {
     sol = pres->getPostSol(sol);
   }
+
   if (env->getOptions()->findFlag("AMPL")->getValue()) {
-    iface->writeSolution(sol, bab->getStatus());
+    iface->writeSolution(sol, status);
   } else if (sol) {
     sol->writePrimal(std::cout, orig_v);
   }
-  std::cout << me << std::fixed << std::setprecision(4) << 
-    "best solution value = " << obj_sense*bab->getUb() << std::endl;
-  std::cout << me << std::fixed << std::setprecision(4) << 
-    "best bound estimate from remaining nodes = "
-    <<  obj_sense*bab->getLb() << std::endl;
-  std::cout << me << "time used = " << std::fixed << std::setprecision(2) 
-    << env->getTime(err) << std::endl; assert(0==err);
-  env->stopTimer(err); assert(0==err);
-  std::cout << me << "status of branch-and-bound: " 
-            << getSolveStatusString(bab->getStatus()) << std::endl;
+}
+
+
+
+void writeBnbStatus(EnvPtr env, BranchAndBound *bab, double obj_sense)
+{
+
+  const std::string me("bnb main: ");
+  int err = 0;
+
+  if (bab) {
+    std::cout << me << std::fixed << std::setprecision(4) << 
+      "best solution value = " << obj_sense*bab->getUb() << std::endl;
+    std::cout << me << std::fixed << std::setprecision(4) << 
+      "best bound estimate from remaining nodes = "
+      <<  obj_sense*bab->getLb() << std::endl;
+    std::cout << me << "time used = " << std::fixed << std::setprecision(2) 
+      << env->getTime(err) << std::endl; assert(0==err);
+    env->stopTimer(err); assert(0==err);
+    std::cout << me << "status of branch-and-bound: " 
+      << getSolveStatusString(bab->getStatus()) << std::endl;
+  } else {
+    std::cout << me << std::fixed << std::setprecision(4) << 
+      "best solution value = " << INFINITY << std::endl;
+    std::cout << me << std::fixed << std::setprecision(4) << 
+      "best bound estimate from remaining nodes = " <<  INFINITY << std::endl;
+    std::cout << me << "time used = " << std::fixed << std::setprecision(2) 
+      << env->getTime(err) << std::endl; assert(0==err);
+    env->stopTimer(err); assert(0==err);
+    std::cout << me << "status of branch-and-bound: " 
+      << getSolveStatusString(NotStarted) << std::endl;
+  }
 }
 
 
@@ -419,8 +438,8 @@ int main(int argc, char** argv)
   const std::string me("bnb main: ");
   VarVector *orig_v=0;
   HandlerVector handlers;
-  Int err = 0;
-  Double obj_sense = 1.0;
+  int err = 0;
+  double obj_sense = 1.0;
 
   env->startTimer(err);
   if (err) {
@@ -449,6 +468,13 @@ int main(int argc, char** argv)
   orig_v = new VarVector(oinst->varsBegin(), oinst->varsEnd());
   pres = presolve(env, oinst, iface->getNumDefs(), handlers);
   handlers.clear();
+  if (Finished != pres->getStatus()) {
+    std::cout << me << "status of presolve: " 
+              << getSolveStatusString(pres->getStatus()) << std::endl;
+    writeSol(env, orig_v, pres, SolutionPtr(), pres->getStatus(), iface);
+    writeBnbStatus(env, bab, obj_sense);
+    goto CLEANUP;
+  }
 
   if (false==env->getOptions()->findBool("solve")->getValue()) {
     goto CLEANUP;
@@ -467,7 +493,8 @@ int main(int argc, char** argv)
     (*it)->writeStats(std::cout);
   }
   
-  writeSol(env, orig_v, obj_sense, bab, pres, iface);
+  writeSol(env, orig_v, pres, bab->getSolution(), bab->getStatus(), iface);
+  writeBnbStatus(env, bab, obj_sense);
 
 CLEANUP:
   if (iface) {

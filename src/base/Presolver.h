@@ -49,6 +49,7 @@ namespace Minotaur {
       /// Default presolve.
       virtual void presolve() {};
 
+      virtual SolveStatus getStatus();
       /**
        * standardize is called before solving any problem even when
        * presolve is disabled. This method is necessary to standardize the

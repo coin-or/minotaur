@@ -66,6 +66,12 @@ Presolver::~Presolver()
 }
 
 
+SolveStatus Presolver::getStatus()
+{
+  return status_;
+}
+
+
 void Presolver::standardize()
 {
   //removeEmptyObj_();
@@ -115,7 +121,9 @@ SolveStatus Presolver::solve()
     }
     ++iters;
   }
-  status_ = Finished;
+  if (Started == status_) {
+    status_ = Finished;
+  }
 
   // wrap up.
   logger_->MsgStream(LogInfo) << me_ << "Finished presolving." << std::endl;
