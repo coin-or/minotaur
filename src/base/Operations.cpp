@@ -126,28 +126,28 @@ void Minotaur::BoundsOnProduct(Double l0, Double u0, Double l1, Double u1,
     ub = 0.0;
   } else {
     prod = l0*l1;
-    if (isnan(prod)) {
+    if (std::isnan(prod)) {
       prod = -INFINITY;
     } 
     lb = prod;
     ub = prod;
 
     prod = u0*l1;
-    if (isnan(prod)) {
+    if (std::isnan(prod)) {
       prod = INFINITY;
     } 
     lb = std::min(lb, prod);
     ub = std::max(ub, prod);
 
     prod = u0*u1;
-    if (isnan(prod)) {
+    if (std::isnan(prod)) {
       prod = -INFINITY;
     }
     lb = std::min(lb, prod);
     ub = std::max(ub, prod);
 
     prod = l0*u1;
-    if (isnan(prod)) {
+    if (std::isnan(prod)) {
       prod = INFINITY;
     } 
     lb = std::min(lb, prod);

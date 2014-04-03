@@ -1373,8 +1373,8 @@ void CNode::propBounds(bool *is_inf, Int *error)
 
 void CNode::propBounds_(double lb, double ub, bool *is_inf)
 {
-  assert(false==isnan(lb));
-  assert(false==isnan(ub));
+  assert(false==std::isnan(lb));
+  assert(false==std::isnan(ub));
   if (lb > ub || ub < lb_ || lb > ub_) {
     *is_inf = true;
   } else {
