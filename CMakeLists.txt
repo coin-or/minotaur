@@ -23,6 +23,13 @@ set (MSG_HEAD "Minotaur config: ")  ## must preceed every message.
 set (MINOTAUR_VERSION_MAJOR 0)
 set (MINOTAUR_VERSION_MINOR 1)
 
+
+## Stop if we are compiling in the minotaur-root directory.
+if("${PROJECT_SOURCE_DIR}" STREQUAL "${PROJECT_BINARY_DIR}")
+  message(FATAL_ERROR
+  ${MSG_HEAD} "In-source builds are not allowed. Please create a build directory and compile there.")
+endif("${PROJECT_SOURCE_DIR}" STREQUAL "${PROJECT_BINARY_DIR}")
+
 ## Enable compiler warnings
 OPTION(COMPILER_WARN "Turn compiler warnings on/off " ON)
 if (${COMPILER_WARN})
