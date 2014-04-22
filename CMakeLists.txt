@@ -6,9 +6,10 @@
 
 project(MINOTAUR CXX C Fortran)
 CMAKE_MINIMUM_REQUIRED(VERSION 2.8 FATAL_ERROR) 
+cmake_policy(SET CMP0003 NEW)
+
 ## Fortran is required for Bqpd, Filter.
 ## C is required for FortranCInterface.
-
 INCLUDE(CheckIncludeFile)
 INCLUDE(CheckIncludeFileCXX)
 INCLUDE(CheckFunctionExists)
@@ -17,18 +18,18 @@ INCLUDE(FortranCInterface)
 INCLUDE(FindSubversion)
 INCLUDE(FindPkgConfig OPTIONAL RESULT_VARIABLE MNTR_PKGCON)
 
-cmake_policy(SET CMP0003 NEW)
-set (MSG_HEAD "Minotaur config: ")  ## must preceed every message.
-
 set (MINOTAUR_VERSION_MAJOR 0)
 set (MINOTAUR_VERSION_MINOR 1)
 
+set (MSG_HEAD "Minotaur config: ")  ## must preceed every message.
 
 ## Stop if we are compiling in the minotaur-root directory.
-if("${PROJECT_SOURCE_DIR}" STREQUAL "${PROJECT_BINARY_DIR}")
+if ((EXISTS "${PROJECT_BINARY_DIR}/src/base/Types.h") OR 
+    ("${PROJECT_SOURCE_DIR}" STREQUAL "${PROJECT_BINARY_DIR}"))
   message(FATAL_ERROR
   ${MSG_HEAD} "In-source builds are not allowed. Please create a build directory and compile there.")
-endif("${PROJECT_SOURCE_DIR}" STREQUAL "${PROJECT_BINARY_DIR}")
+endif ((EXISTS "${PROJECT_BINARY_DIR}/src/base/Types.h") OR 
+       ("${PROJECT_SOURCE_DIR}" STREQUAL "${PROJECT_BINARY_DIR}"))
 
 ## Enable compiler warnings
 OPTION(COMPILER_WARN "Turn compiler warnings on/off " ON)

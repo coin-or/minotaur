@@ -468,7 +468,7 @@ int main(int argc, char** argv)
   orig_v = new VarVector(oinst->varsBegin(), oinst->varsEnd());
   pres = presolve(env, oinst, iface->getNumDefs(), handlers);
   handlers.clear();
-  if (Finished != pres->getStatus()) {
+  if (Finished != pres->getStatus() && NotStarted != pres->getStatus()) {
     std::cout << me << "status of presolve: " 
               << getSolveStatusString(pres->getStatus()) << std::endl;
     writeSol(env, orig_v, pres, SolutionPtr(), pres->getStatus(), iface);

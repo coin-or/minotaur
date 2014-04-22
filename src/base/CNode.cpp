@@ -1337,15 +1337,70 @@ void CNode::propBounds(bool *is_inf, Int *error)
     break;
   case (OpSumList):
     {
+      // TODO: move to a separate function
       CNode **c = child_;
-      lb = ub = 0.0;
+      bool inf_lb = false;
+      bool inf_ub = false;
+      double tlb;
+      double tub;
+
+      lb = 0.0;
       for (UInt i=0; i<numChild_; ++i, ++c) {
-        lb += (*c)->lb_;
-        ub += (*c)->ub_;
+        if ((*c)->lb_>-INFINITY) {
+          lb += (*c)->lb_;
+        } else if (true==inf_lb) {
+          lb = -INFINITY;
+          break;
+        } else {
+          inf_lb = true;
+        }
       }
+
       c = child_;
+      ub = 0.0;
       for (UInt i=0; i<numChild_; ++i, ++c) {
-        (*c)->propBounds_(lb_-(ub-(*c)->ub_), ub_-(lb-(*c)->lb_), is_inf);
+        if ((*c)->ub_ < INFINITY) {
+          ub += (*c)->ub_;
+        } else if (true==inf_ub) {
+          ub = INFINITY;
+          break;
+        } else {
+          inf_ub = true;
+        }
+      }
+
+      if (lb > -INFINITY || ub < INFINITY) {
+        c = child_;
+        for (UInt i=0; i<numChild_; ++i, ++c) {
+          tlb = -INFINITY;
+          tub =  INFINITY;
+          if (ub<INFINITY) {
+            if (false == inf_ub) {
+              tlb = lb_-(ub-(*c)->ub_);
+            } else if ((*c)->ub_ < INFINITY) {
+              tlb = -INFINITY;
+            } else {
+              tlb = lb_-ub;
+            }
+          } else {
+            tlb = -INFINITY;
+          }
+          if (lb>-INFINITY) {
+            if (false == inf_lb) {
+              tub = ub_-(lb-(*c)->lb_);
+            } else if ((*c)->lb_ > -INFINITY) {
+              tub = INFINITY;
+            } else {
+              tub = ub_-lb;
+            }
+          } else {
+            tub = -INFINITY;
+          }
+          (*c)->propBounds_(tlb, tub, is_inf);
+          if (true==(*is_inf)) {
+            break;
+          }
+        }
       }
     }
     break;
