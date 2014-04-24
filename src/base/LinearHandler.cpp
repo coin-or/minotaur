@@ -471,7 +471,7 @@ void LinearHandler::coeffImp_(Bool *changed)
   Bool implic = true;
   Double coeftol = 1e-4; // improve coeffs only if improvement is more than
                          // this number.
-  Double bslack = 1e-5;  // relax bounds by this amount. Otherwise constraints
+  Double bslack = 1e-4;  // relax bounds by this amount. Otherwise constraints
                          // may get numerically difficult to solve, e.g.
                          // Syn15H, Syn15M02H, Syn40M04H
                          // etc in CMU lib.
