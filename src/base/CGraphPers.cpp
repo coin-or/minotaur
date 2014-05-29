@@ -25,7 +25,8 @@
 
 using namespace Minotaur;
 
-CGraph::CGraph()
+#if 0
+CGraphPers::CGraphPers()
   : aNodes_(0),
     changed_(false),
     hInds_(0),
@@ -41,7 +42,7 @@ CGraph::CGraph()
 }
 
 
-CGraph::~CGraph()
+CGraphPers::~CGraphPers()
 {
   varNode_.clear();
   vq_.clear();
@@ -53,15 +54,15 @@ CGraph::~CGraph()
 }
 
 
-NonlinearFunctionPtr CGraph::clone(Int *err) const
+NonlinearFunctionPtr CGraphPers::clone(Int *err) const
 {
   return clone_(err);
 }
 
 
-CGraphPtr CGraph::clone_(Int *err) const
+CGraphPtr CGraphPers::clone_(Int *err) const
 {
-  CGraphPtr cg = (CGraphPtr) new CGraph();
+  CGraphPtr cg = (CGraphPtr) new CGraphPers();
   std::map<const CNode*, CNode*>nnmap;
   std::map<const CNode*, CNode*>::iterator mit;
   const CNode *const_node;
@@ -106,10 +107,10 @@ CGraphPtr CGraph::clone_(Int *err) const
 }
 
 
-NonlinearFunctionPtr CGraph::cloneWithVars(VariableConstIterator vbeg,
+NonlinearFunctionPtr CGraphPers::cloneWithVars(VariableConstIterator vbeg,
                                            Int *) const
 {
-  CGraphPtr cg = (CGraphPtr) new CGraph();
+  CGraphPtr cg = (CGraphPtr) new CGraphPers();
   std::map<const CNode*, CNode*>nnmap;
   std::map<const CNode*, CNode*>::iterator mit;
   const CNode *const_node;
@@ -152,7 +153,7 @@ NonlinearFunctionPtr CGraph::cloneWithVars(VariableConstIterator vbeg,
 }
 
 
-void CGraph::computeBounds(Double *lb, Double *ub, Int *error)
+void CGraphPers::computeBounds(Double *lb, Double *ub, Int *error)
 {
   *error = 0;
   for (CNodeQ::iterator it=vq_.begin(); it!=vq_.end(); ++it) {
@@ -166,7 +167,7 @@ void CGraph::computeBounds(Double *lb, Double *ub, Int *error)
 }
 
 
-Double CGraph::eval(const Double *x, Int *error)
+Double CGraphPers::eval(const Double *x, Int *error)
 {
   for (CNodeQ::iterator it=vq_.begin(); it!=vq_.end(); ++it) {
     (*it)->eval(x, error);
@@ -182,7 +183,7 @@ Double CGraph::eval(const Double *x, Int *error)
 }
 
 
-void CGraph::evalGradient(const Double *x, Double *grad_f, Int *error)
+void CGraphPers::evalGradient(const Double *x, Double *grad_f, Int *error)
 {
   eval(x, error);
   if (*error>0) {
@@ -198,7 +199,7 @@ void CGraph::evalGradient(const Double *x, Double *grad_f, Int *error)
 }
 
 
-void CGraph::evalHessian(Double mult, const Double *x, 
+void CGraphPers::evalHessian(Double mult, const Double *x, 
                          const LTHessStor *, Double *values, Int *error)
 {
   UInt i = 0;
@@ -272,7 +273,7 @@ void CGraph::evalHessian(Double mult, const Double *x,
 }
 
 
-void CGraph::fillHessInds_(CNode *node, UIntQ *inds)
+void CGraphPers::fillHessInds_(CNode *node, UIntQ *inds)
 {
   CNode **c1=0, **c2=0;
 
@@ -327,7 +328,7 @@ void CGraph::fillHessInds_(CNode *node, UIntQ *inds)
 }
 
 
-void CGraph::fillHessInds2_(CNode *node, UIntQ *inds)
+void CGraphPers::fillHessInds2_(CNode *node, UIntQ *inds)
 {
   std::stack<CNode *>st, st2;
   CNode *n, *n2;
@@ -389,7 +390,7 @@ void CGraph::fillHessInds2_(CNode *node, UIntQ *inds)
 }
 
 
-void CGraph::fillHessStor(LTHessStor *stor)
+void CGraphPers::fillHessStor(LTHessStor *stor)
 {
   // for each variable in this nonlinear function, find sparsity pattern of 
   // \grad (e_i . \grad(f)).
@@ -473,7 +474,7 @@ void CGraph::fillHessStor(LTHessStor *stor)
 }
 
 
-void CGraph::fillJac(const Double *x, Double *values, Int *error)
+void CGraphPers::fillJac(const Double *x, Double *values, Int *error)
 {
   UInt *goff = &gOffs_[0];
 
@@ -494,7 +495,7 @@ void CGraph::fillJac(const Double *x, Double *values, Int *error)
 }
 
 
-void CGraph::finalHessStor(const LTHessStor *stor)
+void CGraphPers::finalHessStor(const LTHessStor *stor)
 {
   UInt *st_cols;
   UInt *st_starts = stor->starts;
@@ -535,7 +536,7 @@ void CGraph::finalHessStor(const LTHessStor *stor)
 }
 
 
-void CGraph::finalize()
+void CGraphPers::finalize()
 {
   std::stack<CNode *>st;
   CNode *n1, *lchild, *rchild;
@@ -625,7 +626,7 @@ void CGraph::finalize()
 }
 
 
-void CGraph::fwdGrad_(CNode *node) 
+void CGraphPers::fwdGrad_(CNode *node) 
 {
   for (CNodeQ::iterator it=dq_.begin(); it!=dq_.end(); ++it) {
     (*it)->setGi(0.0);
@@ -645,7 +646,7 @@ void CGraph::fwdGrad_(CNode *node)
 }
 
 
-void CGraph::fwdGrad2_(std::stack<CNode *> *st2, CNode *node) 
+void CGraphPers::fwdGrad2_(std::stack<CNode *> *st2, CNode *node) 
 {
   
   CNode *n, *n2;
@@ -700,19 +701,19 @@ void CGraph::fwdGrad2_(std::stack<CNode *> *st2, CNode *node)
 }
 
 
-Double CGraph::getFixVarOffset(VariablePtr, Double)
+Double CGraphPers::getFixVarOffset(VariablePtr, Double)
 {
   return 0.0;
 }
 
 
-UInt CGraph::getNumNodes()
+UInt CGraphPers::getNumNodes()
 {
   return aNodes_.size();
 }
 
 
-NonlinearFunctionPtr CGraph::getPersp(VariablePtr z , int *err) const
+NonlinearFunctionPtr CGraphPers::getPersp(VariablePtr z , int *err) const
 {
   CNode *znode = 0;
   CNode *dnode = 0;
@@ -787,19 +788,19 @@ NonlinearFunctionPtr CGraph::getPersp(VariablePtr z , int *err) const
 }
 
 
-const CNode* CGraph::getOut() const
+const CNode* CGraphPers::getOut() const
 {
   return oNode_;
 }
 
 
-UInt CGraph::getHessNz()
+UInt CGraphPers::getHessNz()
 {
   return hNnz_;
 }
 
 
-FunctionType CGraph::getType() const
+FunctionType CGraphPers::getType() const
 { 
   if (vars_.empty()) {
     return Constant;
@@ -810,7 +811,7 @@ FunctionType CGraph::getType() const
 }
 
 
-void CGraph::grad_(Int *error)
+void CGraphPers::grad_(Int *error)
 {
   for (CNodeQ::iterator it=dq_.begin(); it!=dq_.end(); ++it) {
     (*it)->setG(0.0);
@@ -826,7 +827,7 @@ void CGraph::grad_(Int *error)
 }
 
 
-VariablePtr CGraph::getVar(const CNode *cnode) const
+VariablePtr CGraphPers::getVar(const CNode *cnode) const
 {
   //ugly and stupid.
   for (VarNodeMap::const_iterator it=varNode_.begin(); it!=varNode_.end();
@@ -840,7 +841,7 @@ VariablePtr CGraph::getVar(const CNode *cnode) const
 }
 
 
-void CGraph::getVars(VariableSet *vars)
+void CGraphPers::getVars(VariableSet *vars)
 {
   for (VarNodeMap::iterator it=varNode_.begin(); it!=varNode_.end(); ++it) {
     vars->insert(it->first);
@@ -848,7 +849,7 @@ void CGraph::getVars(VariableSet *vars)
 }
 
 
-Bool CGraph::isIdenticalTo(CGraphPtr cg)
+Bool CGraphPers::isIdenticalTo(CGraphPtr cg)
 {
   CNodeVector::iterator it1, it2;
   CNode *n1, *n2;
@@ -883,7 +884,7 @@ Bool CGraph::isIdenticalTo(CGraphPtr cg)
 }
 
 
-void CGraph::multiply(Double c)
+void CGraphPers::multiply(Double c)
 {
   if (fabs(c+1.0)<1e-12) {
     CNode *node = new CNode(OpUMinus, oNode_, 0);
@@ -898,7 +899,7 @@ void CGraph::multiply(Double c)
 }
 
 
-CNode* CGraph::newNode(OpCode op, CNode *lnode, CNode *rnode)
+CNode* CGraphPers::newNode(OpCode op, CNode *lnode, CNode *rnode)
 {
   CNode *node = new CNode(op, lnode, rnode);
   aNodes_.push_back(node);
@@ -906,7 +907,7 @@ CNode* CGraph::newNode(OpCode op, CNode *lnode, CNode *rnode)
 }
 
 
-CNode* CGraph::newNode(OpCode op, CNode **child, UInt n)
+CNode* CGraphPers::newNode(OpCode op, CNode **child, UInt n)
 {
   CNode *node = new CNode(op, child, n);
   aNodes_.push_back(node);
@@ -914,7 +915,7 @@ CNode* CGraph::newNode(OpCode op, CNode **child, UInt n)
 }
 
 
-CNode* CGraph::newNode(Double d)
+CNode* CGraphPers::newNode(Double d)
 {
   CNode *z = 0;
   CNode *node = new CNode(OpNum, z, z);
@@ -925,7 +926,7 @@ CNode* CGraph::newNode(Double d)
 }
 
 
-CNode* CGraph::newNode(Int i)
+CNode* CGraphPers::newNode(Int i)
 {
   CNode *z = 0;
   CNode *node = new CNode(OpInt, z, z);
@@ -936,7 +937,7 @@ CNode* CGraph::newNode(Int i)
 }
 
 
-CNode* CGraph::newNode(VariablePtr v)
+CNode* CGraphPers::newNode(VariablePtr v)
 {
   CNode *z = 0;
   VarNodeMap::iterator it = varNode_.find(v);
@@ -955,9 +956,9 @@ CNode* CGraph::newNode(VariablePtr v)
 
 
 #ifdef NDEBUG
-void CGraph::prepJac(VarSetConstIter vb, VarSetConstIter )
+void CGraphPers::prepJac(VarSetConstIter vb, VarSetConstIter )
 #else
-void CGraph::prepJac(VarSetConstIter vb, VarSetConstIter ve)
+void CGraphPers::prepJac(VarSetConstIter vb, VarSetConstIter ve)
 #endif
 {
   VarSetConstIter it = vb;
@@ -975,7 +976,7 @@ void CGraph::prepJac(VarSetConstIter vb, VarSetConstIter ve)
 }
 
 
-void CGraph::removeVar(VariablePtr v, Double val)
+void CGraphPers::removeVar(VariablePtr v, Double val)
 {
   VarNodeMap::iterator it = varNode_.find(v);
 
@@ -999,7 +1000,7 @@ void CGraph::removeVar(VariablePtr v, Double val)
 }
 
 
-void CGraph::revHess_(Int *error)
+void CGraphPers::revHess_(Int *error)
 {
   oNode_->setG(1.0);
   for (CNodeQ::reverse_iterator it=dq_.rbegin(); it!=dq_.rend(); ++it) {
@@ -1009,7 +1010,7 @@ void CGraph::revHess_(Int *error)
 }
 
 
-void CGraph::revHess2_(std::stack<CNode *> *st2, Double mult, UInt vind,
+void CGraphPers::revHess2_(std::stack<CNode *> *st2, Double mult, UInt vind,
                        Double *values, UInt *nz, Int *error)
 {
   CNodeRSet nset;
@@ -1044,7 +1045,7 @@ void CGraph::revHess2_(std::stack<CNode *> *st2, Double mult, UInt vind,
 }
 
 
-void CGraph::simplifyDq_()
+void CGraphPers::simplifyDq_()
 {
   UInt id = 1;
   for (CNodeQ::iterator it=dq_.begin(); it!=dq_.end();) {
@@ -1059,7 +1060,7 @@ void CGraph::simplifyDq_()
 }
 
 
-void CGraph::subst(VariablePtr out, VariablePtr in, Double rat)
+void CGraphPers::subst(VariablePtr out, VariablePtr in, Double rat)
 {
   CNode *nin = 0, *nout = 0, *nmult = 0;
   VarNodeMap::iterator it;
@@ -1215,13 +1216,13 @@ void CGraph::subst(VariablePtr out, VariablePtr in, Double rat)
 }
 
 
-void CGraph::setOut(CNode *node)
+void CGraphPers::setOut(CNode *node)
 {
   oNode_ = node;
 }
 
 
-void CGraph::varBoundMods(Double lb, Double ub, VarBoundModVector &mods,
+void CGraphPers::varBoundMods(Double lb, Double ub, VarBoundModVector &mods,
                           SolveStatus *status)
 {
   double lb2 = -INFINITY;
@@ -1260,7 +1261,7 @@ void CGraph::varBoundMods(Double lb, Double ub, VarBoundModVector &mods,
 }
 
 
-void CGraph::write(std::ostream &out) const
+void CGraphPers::write(std::ostream &out) const
 {
   if (oNode_) {
     oNode_->writeSubExp(out);
@@ -1268,6 +1269,7 @@ void CGraph::write(std::ostream &out) const
     out << 0 << std::endl;
   }
 }
+#endif
 
 // Local Variables: 
 // mode: c++ 

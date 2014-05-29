@@ -612,15 +612,15 @@ void CGraph::finalize()
       }
     }
   }
-  std::cout << std::endl
-            << "dq_ has " << dq_.size() << " elements." << std::endl
-            << "vq_ has " << vq_.size() << " elements." << std::endl
-            << "aNodes_ has " << aNodes_.size() << " elements." << std::endl;
-  std::cout << std::endl << "dq_:" << std::endl;
-  for (CNodeQ::iterator it=dq_.begin(); it!=dq_.end(); ++it) {
-    (*it)->writeSubExp(std::cout);
-    std::cout << std::endl;
-  }
+  //std::cout << std::endl
+  //          << "dq_ has " << dq_.size() << " elements." << std::endl
+  //          << "vq_ has " << vq_.size() << " elements." << std::endl
+  //          << "aNodes_ has " << aNodes_.size() << " elements." << std::endl;
+  //std::cout << std::endl << "dq_:" << std::endl;
+  //for (CNodeQ::iterator it=dq_.begin(); it!=dq_.end(); ++it) {
+  //  (*it)->writeSubExp(std::cout);
+  //  std::cout << std::endl;
+  //}
 
 }
 

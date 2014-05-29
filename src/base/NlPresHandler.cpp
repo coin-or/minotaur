@@ -661,29 +661,29 @@ void  NlPresHandler::perspRef_(ProblemPtr p, PreModQ *mods, Bool *changed)
       }
     }
     if (false == indvars.empty()) {
-      std::cout << "Found it!\n";
-      c->write(std::cout);
-      std::cout << "Indicator Variables:\n";
+      // std::cout << "Found it!\n";
+      // c->write(std::cout);
+      // std::cout << "Indicator Variables:\n";
 
-      for (VarSet::const_iterator vit=indvars.begin(); vit!=indvars.end();
-           ++vit) {
-        (*vit)->write(std::cout);
-      }
+      // for (VarSet::const_iterator vit=indvars.begin(); vit!=indvars.end();
+      //      ++vit) {
+      //   (*vit)->write(std::cout);
+      // }
       // doing the reformulation now.
       z = *(indvars.begin());
       nlf = c->getFunction()->getNonlinearFunction();
       if (false==nlf->hasVar(z)) {
         pnlf = nlf->getPersp(z, &err); assert(err==0);
-        pnlf->write(std::cout);
+        //pnlf->write(std::cout);
         p->changeConstraint(c, pnlf);
-        std::cout << "New constraint:\n";
-        c->write(std::cout);
+        //std::cout << "New constraint:\n";
+        //c->write(std::cout);
         *changed = true;
         ++stats_.pRefs;
       }
     } else {
-      std::cout << "Did not find it!\n";
-      c->write(std::cout);
+      //std::cout << "Did not find it!\n";
+      //c->write(std::cout);
     }
   }
 }
