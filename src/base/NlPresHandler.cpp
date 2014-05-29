@@ -673,7 +673,7 @@ void  NlPresHandler::perspRef_(ProblemPtr p, PreModQ *mods, Bool *changed)
       z = *(indvars.begin());
       nlf = c->getFunction()->getNonlinearFunction();
       if (false==nlf->hasVar(z)) {
-        pnlf = nlf->getPersp(z, &err); assert(err==0);
+        pnlf = nlf->getPersp(z, 1e-6, &err); assert(err==0);
         //pnlf->write(std::cout);
         p->changeConstraint(c, pnlf);
         //std::cout << "New constraint:\n";

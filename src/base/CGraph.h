@@ -43,7 +43,7 @@ public:
   NonlinearFunctionPtr cloneWithVars(VariableConstIterator, Int *) const;
 
   // base class method.
-  NonlinearFunctionPtr getPersp(VariablePtr z , int *err) const;
+  NonlinearFunctionPtr getPersp(VariablePtr z, double eps, int *err) const;
 
   // base class method.
   void computeBounds(Double *lb, Double *ub, Int *error);

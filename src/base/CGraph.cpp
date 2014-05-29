@@ -712,7 +712,7 @@ UInt CGraph::getNumNodes()
 }
 
 
-NonlinearFunctionPtr CGraph::getPersp(VariablePtr z , int *err) const
+NonlinearFunctionPtr CGraph::getPersp(VariablePtr z, double eps, int *err) const
 {
   CNode *znode = 0;
   CNode *dnode = 0;
@@ -745,6 +745,10 @@ NonlinearFunctionPtr CGraph::getPersp(VariablePtr z , int *err) const
   }
 
   znode = nlf->newNode(z);
+  if (eps>0.0) {
+    anode = nlf->newNode(eps);
+    znode = nlf->newNode(OpPlus, anode, znode);
+  } 
 
   // visit all nodes that have variables in them
   for (VarSetConstIter it = nlf->vars_.begin(); it!=nlf->vars_.end(); ++it) {

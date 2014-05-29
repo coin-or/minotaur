@@ -192,11 +192,16 @@ public:
    * Perspective of a given function f(x) with respect to a given variable z
    * is g(x,z) = z.f(x/z)
    * \param  [in] z The variable for which you take the perspective
+   * \param  [in] eps The tolerance to tackle function value at 0 value. If
+   * the perspective is approximated in the computational graph, the epsilon
+   * is added to the z variable. If the perspective uses exact graph, then
+   * an approximation in Hessian is used when z < eps.
    * \param [out] err must be nonzero if function wasn't cloned.
    * \return A new nonlinear function with an additional variable that gives
    * the perspective of this function 
    */
-  virtual NonlinearFunctionPtr getPersp(VariablePtr z , int *err) const;
+  virtual NonlinearFunctionPtr getPersp(VariablePtr z, double eps,
+                                        int *err) const;
 
   virtual void varBoundMods(Double /* lb */, Double /* ub */,
                             VarBoundModVector & /* mods */,

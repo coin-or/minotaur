@@ -51,7 +51,8 @@ Bool NonlinearFunction::hasVar(ConstVariablePtr v) const
 }
 
 
-NonlinearFunctionPtr NonlinearFunction::getPersp(VariablePtr , int *) const
+NonlinearFunctionPtr NonlinearFunction::getPersp(VariablePtr, double,
+                                                 int *) const
 {
   assert(!"implement me!");
 }
