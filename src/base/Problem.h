@@ -14,6 +14,7 @@
 #ifndef MINOTAURPROBLEM_H
 #define MINOTAURPROBLEM_H
 
+#include<ios>
 #include "Types.h"
 #include "Variable.h"
 
