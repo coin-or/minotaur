@@ -106,6 +106,9 @@ namespace Minotaur {
       void changeConstraint(ConstraintPtr con, LinearFunctionPtr lf, 
                             Double lb, Double ub);
 
+      // base class method
+      void changeConstraint(ConstraintPtr con, NonlinearFunctionPtr nlf);
+
       // Implement Engine::getWarmStart(). // NULL for now.
       ConstWarmStartPtr getWarmStart() {return WarmStartPtr(); }; 
 

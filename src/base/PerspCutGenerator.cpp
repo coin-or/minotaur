@@ -6,8 +6,8 @@
 
 
 /**
- * \file LGCIGenerator.cpp 
- * \brief Declare base class LGCIGenerator. 
+ * \file PerspCutGenerator.cpp 
+ * \brief Declare PerspCutGenerator class. 
  * \author Serdar Yildiz, Argonne National Laboratory 
 */
 

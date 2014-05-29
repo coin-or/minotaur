@@ -6,8 +6,8 @@
 
 
 /**
- * \file LGCIGenerator.h 
- * \brief Declare base class KnapsackList. 
+ * \file PerspCutGenerator.h 
+ * \brief Declare PerspCutGenerator class . 
  * \author Serdar Yildiz, Argonne National Laboratory 
  */
 

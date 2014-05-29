@@ -6,14 +6,14 @@
 
 
 /**
- * \file CGraph.h
- * \brief Declare class CGraph for storing computational graph of a nonlinear
+ * \file CGraphPers.h
+ * \brief Declare class CGraphPers for representing perspective of a nonlinear
  * function.
- * \author Ashutosh Mahajan, Argonne National Laboratory
+ * \author Ashutosh Mahajan, IIT Bombay
  */
 
-#ifndef MINOTAURCGRAPH_H
-#define MINOTAURCGRAPH_H
+#ifndef MINOTAURCGRAPHPERS_H
+#define MINOTAURCGRAPHPERS_H
 
 #include <stack>
 
@@ -30,16 +30,18 @@ typedef std::deque<CNode *> CNodeQ;
 typedef std::vector<CNode *> CNodeVector;
 typedef std::map<ConstVariablePtr, CNode*, CompareVariablePtr> VarNodeMap;
 
-class CGraph : public NonlinearFunction {
+class CGraphPers : public NonlinearFunction {
 public:
   /// Default constructor.
-  CGraph();
+  CGraphPers();
 
   /// Default constructor.
-  ~CGraph();
+  ~CGraphPers();
 
+  // base class method.
   NonlinearFunctionPtr clone(Int *err) const;
 
+  // base class method.
   NonlinearFunctionPtr cloneWithVars(VariableConstIterator, Int *) const;
 
   // base class method.
@@ -178,56 +180,14 @@ public:
   void write(std::ostream &out) const;
 
 private:
-  /// All nodes of the graph.
-  CNodeVector aNodes_; 
+  /// The computational graph of the perspective function.
+  CGraphPtr cgraph_; 
 
-  Bool changed_;
+  /// The variable used to take the perspective
+  VariablePtr z_;
 
-  /// All dependent nodes, i.e. nodes with OpCode different from OpVar, OpInt
-  /// and OpNum.
-  CNodeQ dq_;
-
-  UIntVector hInds_;
-  UInt hNnz_;
-  UIntVector hOffs_;
-  UIntVector hStarts_;
-  UIntVector gOffs_;
-
-
-  /// Topmost node or output node. We assume only one is present.
-  CNode *oNode_;
-
-  /// A map that tells which node corresponds to a given variable.
-  VarNodeMap varNode_;
-
-  /// All nodes with OpCode OpVar.
-  CNodeQ vq_;
-
-  CGraphPtr clone_(Int *err) const;
-
-  void fwdGrad_(CNode *node);
-  void fwdGrad2_(std::stack<CNode *> *st2, CNode *node);
-
-  void fillHessInds_(CNode *node, UIntQ *inds);
-  void fillHessInds2_(CNode *node, UIntQ *inds);
-
-  void revHess_(Int *error);
-  void revHess2_(std::stack<CNode *> *st2, Double mult, UInt vind,
-                 Double *values, UInt *nz, Int *error);
-
-  /**
-   *  Routine to propagate gradient by a reverse mode traversal.
-   *
-   *  \param [out] error Set to a nonzero if an error occurs. Otherwise, leave
-   *  it unchanged.
-   */
-  void grad_(Int *error);
-
-  void setupHess_(VariablePtr v, CNode *node, std::set<ConstVariablePair, 
-                  CompareVariablePair> & vps);
-
-  void simplifyDq_();
-
+  /// Tolerance for checking whether variable z is zero
+  double zTol_;
 };
 }
 #endif

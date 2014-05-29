@@ -19,8 +19,6 @@
 namespace Minotaur {
   class LinearFunction;
   class QuadraticFunction;
-  class SparseMatrix;
-  class SymmetricSparseMatrix;
   class Variable;
 
   typedef boost::shared_ptr<LinearFunction> LinearFunctionPtr;

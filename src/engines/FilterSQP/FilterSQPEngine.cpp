@@ -983,6 +983,11 @@ void FilterSQPEngine::changeConstraint(ConstraintPtr, LinearFunctionPtr,
 }
 
 
+void FilterSQPEngine::changeConstraint(ConstraintPtr, NonlinearFunctionPtr)
+{
+  consChanged_ = true;
+}
+
 ConstWarmStartPtr FilterSQPEngine::getWarmStart()
 {
   return warmSt_;

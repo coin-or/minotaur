@@ -70,6 +70,12 @@ void Constraint::changeLf_(LinearFunctionPtr lf)
 }
 
 
+void Constraint::changeNlf_(NonlinearFunctionPtr nlf)
+{
+  f_->changeNlf(nlf);
+}
+
+
 void Constraint::delFixedVar_(VariablePtr v, Double val)
 {
   if (f_ && f_->hasVar(v)) {

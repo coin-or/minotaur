@@ -222,6 +222,37 @@ void Problem::changeBound(ConstraintPtr con, BoundType lu, Double new_val)
 }
 
 
+void Problem::changeConstraint(ConstraintPtr con, NonlinearFunctionPtr nlf)
+{
+  // simply replacing lf is sufficient to take care of jacobian and hessian as
+  // well.
+
+  FunctionPtr f = con->getFunction();
+
+  assert(f);
+  assert(con == getConstraint(con->getIndex()));
+
+  // It is important to apply changes to engine first. Some engines use the
+  // old constraint stored in problem to make changes.
+  if (engine_) {
+    engine_->changeConstraint(con, nlf);
+  }
+
+
+  for (VarSet::iterator vit=f->varsBegin(); vit!=f->varsEnd(); ++vit) {
+    (*vit)->outOfConstraint_(con);
+  }
+
+  con->changeNlf_(nlf);
+
+  f = con->getFunction();
+  for (VarSet::iterator vit=f->varsBegin(); vit!=f->varsEnd(); ++vit) {
+    (*vit)->inConstraint_(con);
+  }
+  consModed_ = true;
+}
+
+
 void Problem::changeConstraint(ConstraintPtr con, LinearFunctionPtr lf, 
                                Double lb, Double ub)
 {
@@ -248,9 +279,9 @@ void Problem::changeConstraint(ConstraintPtr con, LinearFunctionPtr lf,
   con->setLb_(lb);
   con->setUb_(ub);
 
-  for (VariableGroupConstIterator it=lf->termsBegin(); it!=lf->termsEnd();
-       ++it) {
-    it->first->inConstraint_(con);
+  f = con->getFunction();
+  for (VarSet::iterator vit=f->varsBegin(); vit!=f->varsEnd(); ++vit) {
+    (*vit)->inConstraint_(con);
   }
   consModed_ = true;
 }

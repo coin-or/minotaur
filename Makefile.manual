@@ -137,6 +137,7 @@ BASE_SRCS = \
 	$(BASE_DIR)/Brancher.cpp  \
 	$(BASE_DIR)/Chol.cpp \
 	$(BASE_DIR)/CGraph.cpp \
+	$(BASE_DIR)/CGraphPers.cpp \
 	$(BASE_DIR)/CNode.cpp \
 	$(BASE_DIR)/Constraint.cpp  \
 	$(BASE_DIR)/CutInfo.cpp \
@@ -221,6 +222,7 @@ ALL_HEADERS = \
 	$(BASE_DIR)/BranchAndBound.h \
 	$(BASE_DIR)/BrCand.h \
 	$(BASE_DIR)/CGraph.h \
+	$(BASE_DIR)/CGraphPers.h \
 	$(BASE_DIR)/CNode.h \
 	$(BASE_DIR)/Constraint.h \
 	$(BASE_DIR)/CutInfo.h \

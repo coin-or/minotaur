@@ -24,6 +24,7 @@ class Function;
 class HessianOfLag;
 class Jacobian;
 class LinearFunction;
+class NonlinearFunction;
 class Objective;
 struct ProblemSize;
 class QuadraticFunction;
@@ -33,6 +34,7 @@ typedef boost::shared_ptr<Function> FunctionPtr;
 typedef boost::shared_ptr<Jacobian> JacobianPtr;
 typedef boost::shared_ptr<HessianOfLag> HessianOfLagPtr;
 typedef boost::shared_ptr<LinearFunction> LinearFunctionPtr;
+typedef boost::shared_ptr<NonlinearFunction> NonlinearFunctionPtr;
 typedef boost::shared_ptr<Objective> ObjectivePtr;
 typedef boost::shared_ptr<ProblemSize> ProblemSizePtr;
 typedef boost::shared_ptr<QuadraticFunction> QuadraticFunctionPtr;
@@ -101,12 +103,20 @@ public:
   /**
    * \brief Change the linear function, and the bounds of a constraint.
    * \param [in] con Original constraint that is to be changed.
-   * \param [lf] lf The new linear function.
-   * \param [lb] lb The new lower bound.
-   * \param [ub] ub The new upper bound.
+   * \param [in] lf The new linear function.
+   * \param [in] lb The new lower bound.
+   * \param [in] ub The new upper bound.
    */
   virtual void changeConstraint(ConstraintPtr con, LinearFunctionPtr lf, 
                                 Double lb, Double ub);
+
+  /**
+   * \brief Change the nonlinear function and bounds of a constraint.
+   * \param [in] con Original constraint that is to be changed.
+   * \param [in] nlf The new nonlinear function.
+   */
+  virtual void changeConstraint(ConstraintPtr con, NonlinearFunctionPtr nlf);
+                                
 
   /**
    * \brief Replace the objective function with a new function. 

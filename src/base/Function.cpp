@@ -487,6 +487,13 @@ void Function::changeLf(LinearFunctionPtr lf)
 }
 
 
+void Function::changeNlf(NonlinearFunctionPtr nlf)
+{
+  nlf_ = nlf;
+  collectVars_();
+}
+
+
 void Function::collectVars_()
 {
   vars_.clear();

@@ -221,6 +221,9 @@ namespace Minotaur {
       void changeConstraint(ConstraintPtr con, LinearFunctionPtr lf, 
                             Double lb, Double ub);
 
+      // Implement Engine::changeConstraint().
+      void changeConstraint(ConstraintPtr, NonlinearFunctionPtr);
+
       // Implement Engine::setIterationLimit().
       void setIterationLimit(Int limit);
 

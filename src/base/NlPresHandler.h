@@ -31,6 +31,7 @@ struct NlPresStats
   Double time; /// Total time used in initial presolve.
   Int varDel;  /// Number of variables marked for deletion.
   Int conDel;  /// Number of constraints marked for deletion.
+  Int pRefs;   /// Number of perspective reformulations
   Int vBnd;    /// Number of times variable-bounds were tightened.
   Int cBnd;    /// Number of times constraint-bounds were tightened.
   Int cImp;    /// Number of times coefficient in a constraint was improved.
@@ -135,6 +136,9 @@ private:
 
   NlPresStats stats_;
 
+  /// Tolerance for checking zero.
+  Double zTol_;
+
   /// Who am I?
   static const std::string me_;
 
@@ -149,6 +153,8 @@ private:
   void  coeffImpr_(Bool *changed);
   void  computeImpBounds_(ConstraintPtr c, VariablePtr z, 
                           Double zval, Double *lb, Double *ub);
+  void perspMod_(ConstraintPtr c, VariablePtr z);
+  void  perspRef_(ProblemPtr p, PreModQ *mods, Bool *changed);
   SolveStatus varBndsFromCons_(Bool *changed);
 };
 typedef boost::shared_ptr<NlPresHandler> NlPresHandlerPtr;

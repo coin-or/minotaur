@@ -393,6 +393,12 @@ void OsiLPEngine::changeConstraint(ConstraintPtr , LinearFunctionPtr ,
 }
 
 
+void OsiLPEngine::changeConstraint(ConstraintPtr, NonlinearFunctionPtr)
+{
+    assert(!"Cannot change a nonlinear function in OsiLPEngine");
+}
+
+
 void OsiLPEngine::changeObj(FunctionPtr f, Double)
 {
   LinearFunctionPtr lf = f->getLinearFunction();

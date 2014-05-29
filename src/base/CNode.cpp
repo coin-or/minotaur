@@ -218,7 +218,39 @@ CNode* CNode::clone() const
 }
 
 
-void CNode::copyParChild(CNode *out, std::map<const CNode*, CNode*> *nmap) const
+void CNode::changeChild(CNode *out, CNode *in)
+{
+  CNode **c;
+  UInt i;
+
+  switch (numChild_) {
+  case 1:
+    assert(l_==out);
+    l_ = in;
+    break;
+  case 2:
+    assert(l_==out || r_==out);
+    if (l_==out) {
+      l_ = in;
+    } else if (r_==out) {
+      r_ = in;
+    }
+    break;
+  default:
+    c = child_;
+    for (i=0; i<numChild_; ++i, ++c) {
+      if ((*c)==out) {
+        *c = in;
+        break;
+      }
+    }
+    assert(i<numChild_);
+  }
+}
+
+
+void CNode::copyParChild(CNode *out,
+                         std::map<const CNode*, CNode*> *nmap) const
 {
   std::map<const CNode*, CNode*>::iterator mit;
   out->numPar_ = numPar_;

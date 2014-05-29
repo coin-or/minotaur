@@ -20,6 +20,7 @@ namespace Minotaur {
 class   Constraint;
 class   Function;
 class   LinearFunction;
+class   NonlinearFunction;
 class   Solution;
 class   WarmStart;
 class   Engine;
@@ -28,6 +29,7 @@ typedef boost::shared_ptr<const Engine> ConstEnginePtr;
 typedef boost::shared_ptr<Function> FunctionPtr;
 typedef boost::shared_ptr<Constraint> ConstraintPtr;
 typedef boost::shared_ptr<LinearFunction> LinearFunctionPtr;
+typedef boost::shared_ptr<NonlinearFunction> NonlinearFunctionPtr;
 typedef boost::shared_ptr<const Solution> ConstSolutionPtr;
 typedef boost::shared_ptr<WarmStart> WarmStartPtr;
 typedef boost::shared_ptr<const WarmStart> ConstWarmStartPtr;
@@ -70,6 +72,13 @@ public:
    */
   virtual void changeConstraint(ConstraintPtr c, LinearFunctionPtr lf, 
                                 Double lb, Double ub) = 0;
+
+  /**
+   * \brief Change the nonlinear function, and the bounds of a constraint.
+   * \param [in] c Original constraint that is to be changed.
+   * \param [nlf] The new nonlinear function.
+   */
+  virtual void changeConstraint(ConstraintPtr c, NonlinearFunctionPtr nlf) = 0;
 
   /// Change objective function.
   virtual void changeObj(FunctionPtr f, Double cb) = 0;

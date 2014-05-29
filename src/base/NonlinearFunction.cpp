@@ -51,6 +51,12 @@ Bool NonlinearFunction::hasVar(ConstVariablePtr v) const
 }
 
 
+NonlinearFunctionPtr NonlinearFunction::getPersp(VariablePtr , int *) const
+{
+  assert(!"implement me!");
+}
+
+
 void NonlinearFunction::write(std::ostream &out) const
 {
   out << " nonlinear function ";

@@ -40,9 +40,9 @@ public:
   /** 
    * \brief Make a clone using new variables. 
    *
-   * \param[in] vbeg it points to the variable id 0.  vbeg+k points to
+   * \param [in] vbeg it points to the variable id 0.  vbeg+k points to
    * variable id k, where k>=0. 
-   * \param[out] err must be nonzero if function wasn't cloned.
+   * \param [out] err must be nonzero if function wasn't cloned.
    */
   virtual NonlinearFunctionPtr cloneWithVars(VariableConstIterator vbeg,
                                              Int *err) const = 0;
@@ -151,7 +151,7 @@ public:
   /**
    * \brief Check if function contains a variable.
    *
-   * \param[in] v The variable that we want to test.
+   * \param [in] v The variable that we want to test.
    * \return True if this function is has v. False if it doesn't use it. 
    */
   virtual Bool hasVar(ConstVariablePtr v) const;
@@ -185,6 +185,18 @@ public:
   virtual void subst(VariablePtr /* out */, VariablePtr /* in */,
                      Double /* rat */)
   {assert (!"implement me!");};
+
+  /**
+   * \brief Take perspective of this function with respect to a given variable.
+   *
+   * Perspective of a given function f(x) with respect to a given variable z
+   * is g(x,z) = z.f(x/z)
+   * \param  [in] z The variable for which you take the perspective
+   * \param [out] err must be nonzero if function wasn't cloned.
+   * \return A new nonlinear function with an additional variable that gives
+   * the perspective of this function 
+   */
+  virtual NonlinearFunctionPtr getPersp(VariablePtr z , int *err) const;
 
   virtual void varBoundMods(Double /* lb */, Double /* ub */,
                             VarBoundModVector & /* mods */,

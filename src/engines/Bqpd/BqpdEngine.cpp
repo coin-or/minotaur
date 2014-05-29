@@ -756,6 +756,12 @@ void BqpdEngine::changeConstraint(ConstraintPtr, LinearFunctionPtr,
 }
 
 
+void BqpdEngine::changeConstraint(ConstraintPtr, NonlinearFunctionPtr)
+{
+  assert(!"cannot change nonlinear constraints in BQPD. Only linear allowed!");
+}
+
+
 void BqpdEngine::enableStrBrSetup()
 {
   strBr_ = true;

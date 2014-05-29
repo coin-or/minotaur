@@ -56,8 +56,12 @@ public:
 
 
   CNode *clone() const;
-  void copyParChild(CNode *out, std::map<const CNode*, CNode*> *nmap) const;
   void addPar(CNode *node);
+
+  /// Replace one of the children of a given node by another node.
+  void changeChild(CNode *out, CNode *in);
+
+  void copyParChild(CNode *out, std::map<const CNode*, CNode*> *nmap) const;
   void eval(const Double *x, Int *error);
   Double eval(Double x, Int *error) const;
   FunctionType findFType();
@@ -127,6 +131,8 @@ protected:
   CNode *r_;
   Int ti_;
   Double ub_;
+
+  /// Unique parent of this node. NULL if the node has multiple parents
   CNode *uPar_;
   const Variable* v_;
   Double val_;

@@ -137,6 +137,9 @@ namespace Minotaur {
       /// Change the linear part of constraint.
       void changeLf_(LinearFunctionPtr lf);
 
+      /// Change the nonlinear part of constraint.
+      void changeNlf_(NonlinearFunctionPtr nlf);
+
       /// Delete variables fixed at value val.
       void delFixedVar_(VariablePtr v, Double val);
 

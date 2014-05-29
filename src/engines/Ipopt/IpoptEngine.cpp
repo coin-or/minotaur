@@ -695,6 +695,12 @@ void IpoptEngine::changeConstraint(ConstraintPtr, LinearFunctionPtr,
 }
 
 
+void IpoptEngine::changeConstraint(ConstraintPtr, NonlinearFunctionPtr)
+{
+  consChanged_ = true;
+}
+
+
 ConstWarmStartPtr IpoptEngine::getWarmStart()
 {
   return ws_;

@@ -45,11 +45,13 @@ NlPresHandler::NlPresHandler()
   : env_(EnvPtr()),
     eTol_(1e-6),
     logger_(LoggerPtr()),
-    p_(ProblemPtr())
+    p_(ProblemPtr()),
+    zTol_(1e-6)
 {
   stats_.cBnd = 0;
   stats_.cImp = 0;
   stats_.conDel = 0;
+  stats_.pRefs = 0;
   stats_.iters = 0;
   stats_.nMods = 0;
   stats_.time = 0;
@@ -61,13 +63,15 @@ NlPresHandler::NlPresHandler()
 NlPresHandler::NlPresHandler(EnvPtr env, ProblemPtr p)
   : env_(env),
     eTol_(1e-6),
-    p_(p)
+    p_(p),
+    zTol_(1e-6)
 {
   logger_ = (LoggerPtr) new Logger((LogLevel)(env->getOptions()->
       findInt("handler_log_level")->getValue()));
   stats_.cBnd = 0;
   stats_.cImp = 0;
   stats_.conDel = 0;
+  stats_.pRefs = 0;
   stats_.iters = 0;
   stats_.nMods = 0;
   stats_.time = 0;
@@ -562,6 +566,135 @@ std::string NlPresHandler::getName() const
 }
 
 
+void  NlPresHandler::perspRef_(ProblemPtr p, PreModQ *mods, Bool *changed)
+{
+  ConstraintPtr c, c2;
+  FunctionPtr f;
+  LinearFunctionPtr lf;
+  NonlinearFunctionPtr nlf, pnlf;  
+  double alpha, beta;
+  double lb, ub;
+  double dtmp;
+  int err = 0;
+
+  VarSet indvars0;
+  VarSet nlvars;
+  VarSet indvars;
+  VarSet candvars;
+  VariablePtr v, z;
+
+  p->calculateSize();
+
+  // first find all binary variables
+  for (VariableConstIterator vit=p->varsBegin(); vit!=p->varsEnd(); ++vit) {
+    v = *vit;
+    if (Binary==v->getType() || ImplBin==v->getType()) {
+      indvars0.insert(v);
+    }
+  }
+
+  // constraints
+  for (ConstraintConstIterator cit=p->consBegin(); cit!=p->consEnd();
+       ++cit) {
+    c = *cit;
+    f = c->getFunction(); 
+    if (!f) {
+      continue;
+    }
+    if (Quadratic!=f->getType() && Nonlinear!=f->getType()) {
+      continue;
+    }
+
+    nlvars.clear();
+    candvars.clear();
+    indvars = indvars0;
+
+    nlf = f->getNonlinearFunction();
+    nlvars.insert(nlf->varsBegin(), nlf->varsEnd());
+
+    // search for an indicator variable: We really need an implication graph
+    // here.
+    for (VarSetIter it=nlvars.begin(); it!=nlvars.end(); ++it) {
+      v = *it;
+      candvars = indvars;
+      indvars.clear();
+      for (ConstrSet::iterator cit2=v->consBegin(); cit2!=v->consEnd();
+           ++cit2) {
+        c2 = *cit2;
+        if (c2->getFunctionType()!=Linear) {
+          continue;
+        }
+        lf = c2->getLinearFunction();
+        if (lf->getNumTerms()==2) {
+          alpha = beta = 0.0;
+          alpha = lf->getWeight(v);
+          for (VariableGroupConstIterator it2 = lf->termsBegin();
+               it2!=lf->termsEnd(); ++it2) {
+            z = (it2)->first;
+            if (z->getId() != v->getId()) {
+              beta = (it2)->second;
+              break;
+            }
+          } 
+          if (candvars.end() == candvars.find(z)) {
+            continue;
+          }
+          // check if z turns v off.
+          // The constraint is of the form lb <= alpha.v + beta.z <= ub
+          lb = c2->getLb();
+          ub = c2->getUb();
+          if (alpha>0) {
+            ub = ub/alpha;
+            lb = lb/alpha;
+          } else {
+            dtmp = lb;
+            lb = ub/alpha;
+            ub = dtmp/alpha;
+          }
+          lb = std::max(lb, v->getLb());
+          ub = std::min(ub, v->getUb());
+          // lb and ub are now bounds on v;
+          if (fabs(lb)<zTol_ && fabs(ub)<zTol_) {
+            indvars.insert(z);
+          }
+        }
+      }
+    }
+    if (false == indvars.empty()) {
+      std::cout << "Found it!\n";
+      c->write(std::cout);
+      std::cout << "Indicator Variables:\n";
+
+      for (VarSet::const_iterator vit=indvars.begin(); vit!=indvars.end();
+           ++vit) {
+        (*vit)->write(std::cout);
+      }
+      // doing the reformulation now.
+      z = *(indvars.begin());
+      nlf = c->getFunction()->getNonlinearFunction();
+      if (false==nlf->hasVar(z)) {
+        pnlf = nlf->getPersp(z, &err); assert(err==0);
+        pnlf->write(std::cout);
+        p->changeConstraint(c, pnlf);
+        std::cout << "New constraint:\n";
+        c->write(std::cout);
+        *changed = true;
+        ++stats_.pRefs;
+      }
+    } else {
+      std::cout << "Did not find it!\n";
+      c->write(std::cout);
+    }
+  }
+}
+
+
+void NlPresHandler::perspMod_(ConstraintPtr c, VariablePtr z)
+{
+  NonlinearFunctionPtr nlf;
+}
+
+
 SolveStatus NlPresHandler::presolve(PreModQ *mods, Bool *changed0)
 {
   Bool changed = true;
@@ -581,6 +714,7 @@ SolveStatus NlPresHandler::presolve(PreModQ *mods, Bool *changed0)
     }
     coeffImpr_(&changed);
     bin2Lin_(p_, mods, &changed);
+    perspRef_(p_, mods, &changed);
     ++stats_.iters;
     if (changed) {
       *changed0 = true;
@@ -703,6 +837,7 @@ void NlPresHandler::writePreStats(std::ostream &out) const
     << me_ << "Time taken in initial presolve = " << stats_.time   << std::endl
     << me_ << "Number of variables deleted    = " << stats_.varDel << std::endl
     << me_ << "Number of constraints deleted  = " << stats_.conDel << std::endl
+    << me_ << "Number of perspective reform.  = " << stats_.pRefs << std::endl
     << me_ << "Times variables tightened      = " << stats_.vBnd   << std::endl
     << me_ << "Times constraints tightened    = " << stats_.cBnd   << std::endl
     << me_ << "Times coefficients improved    = " << stats_.cImp   << std::endl

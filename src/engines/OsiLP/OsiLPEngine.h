@@ -172,6 +172,9 @@ namespace Minotaur {
     void changeConstraint(ConstraintPtr con, LinearFunctionPtr lf, 
                           Double lb, Double ub);
 
+    // Implement Engine::changeConstraint().
+    void changeConstraint(ConstraintPtr c, NonlinearFunctionPtr nlf);
+
     // Implement Engine::getWarmStart().
     // See OsiLPSolver.hpp to see Osi's description of warm-start pointer.
     // It differs from solver to solver. We just return NULL for now.

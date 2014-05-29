@@ -162,6 +162,9 @@ namespace Minotaur {
       /// Change the linear function part
       virtual void changeLf(LinearFunctionPtr lf);
 
+      /// Change the nonlinear function part
+      virtual void changeNlf(NonlinearFunctionPtr nlf);
+
       /// Substitute a variable with another.
       virtual void subst(VariablePtr out, VariablePtr in, Double rat);
 
