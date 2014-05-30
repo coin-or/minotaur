@@ -723,8 +723,6 @@ NonlinearFunctionPtr CGraph::getPersp(VariablePtr z, double eps, int *err) const
   CGraphPtr nlf = clone_(err);
   CQIter2 *cqit2;
 
-  nlf->write(std::cout);
-
   if (*err) {
     return NonlinearFunctionPtr();
   }
