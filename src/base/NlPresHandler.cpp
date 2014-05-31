@@ -42,7 +42,8 @@ using namespace Minotaur;
 const std::string NlPresHandler::me_ = "NlPresHandler: ";
 
 NlPresHandler::NlPresHandler()
-  : env_(EnvPtr()),
+  : doPersp_(false),
+    env_(EnvPtr()),
     eTol_(1e-6),
     logger_(LoggerPtr()),
     p_(ProblemPtr()),
@@ -68,6 +69,7 @@ NlPresHandler::NlPresHandler(EnvPtr env, ProblemPtr p)
 {
   logger_ = (LoggerPtr) new Logger((LogLevel)(env->getOptions()->
       findInt("handler_log_level")->getValue()));
+  doPersp_ = env->getOptions()->findBool("persp_ref")->getValue();
   stats_.cBnd = 0;
   stats_.cImp = 0;
   stats_.conDel = 0;
@@ -714,7 +716,9 @@ SolveStatus NlPresHandler::presolve(PreModQ *mods, Bool *changed0)
     }
     coeffImpr_(&changed);
     bin2Lin_(p_, mods, &changed);
-    perspRef_(p_, mods, &changed);
+    if (doPersp_) {
+      perspRef_(p_, mods, &changed);
+    }
     ++stats_.iters;
     if (changed) {
       *changed0 = true;

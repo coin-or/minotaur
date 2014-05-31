@@ -122,6 +122,9 @@ public:
   // base class method.
   void writeStats(std::ostream &out) const;
 private:
+  /// Should we try perspective reformulation?
+  bool doPersp_;
+
   /// Environment.
   EnvPtr env_;
 

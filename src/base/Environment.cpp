@@ -82,6 +82,10 @@ void Environment::createDefaultOptions_()
       "Should presolve be used: <0/1>", true, false);
   options_->insert(b_option);
 
+  b_option = (BoolOptionPtr) new Option<Bool>("persp_ref", 
+      "Should prespective reformulation be used: <0/1>", true, false);
+  options_->insert(b_option);
+
   b_option = (BoolOptionPtr) new Option<Bool>("display_problem", 
       "Should display problem before solving: <0/1>", true, false);
   options_->insert(b_option);
