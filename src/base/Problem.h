@@ -436,6 +436,12 @@ public:
   virtual QuadraticFunctionPtr removeQuadFromObj();
 
   /**
+   * Remove the jacobian and hessian data structures. Useful when you want to
+   * re-compute the derivatives after a problem has been modified.
+   */
+  virtual void resetDer();
+
+  /**
    * \brief Reverse the sense of a constraint.
    * 
    * \param[in] cons The constraint whose sense has to be reversed.

@@ -24,9 +24,7 @@
 #include <QPEngine.h>
 #include <LPEngine.h>
 #include <NLPEngine.h>
-// Jim, we don't need specific engines here. Use Enginefactory to get them.
-//#include <FilterSQPEngine.h> 
-//#include <OsiLPEngine.h>
+#include "NlPresHandler.h"
 #include <NodeRelaxer.h>
 #include <NodeIncRelaxer.h>
 #include <LPProcessor.h>
@@ -72,10 +70,16 @@ struct qgStat {
 };
 
 EnginePtr getNLPEngine(EnvPtr env, ProblemPtr p);
-PresolverPtr createPres(EnvPtr env, ProblemPtr p, Size_t ndefs);
-
 void show_help();
 void writeSolutionToFile(const Double * x, UInt n);
+
+
+void setInitialOptions(EnvPtr env)
+{
+  env->getOptions()->findBool("presolve")->setValue(true);
+  env->getOptions()->findBool("use_native_cgraph")->setValue(true);
+  env->getOptions()->findBool("nl_presolve")->setValue(true);
+}
 
 
 void show_help()
@@ -87,6 +91,57 @@ void show_help()
             << "To solve an instance: qg --option1 [value] "
             << "--option2 [value] ... " << " .nl-file" << std::endl;
 }
+
+PresolverPtr presolve(EnvPtr env, ProblemPtr p, Size_t ndefs, 
+                        HandlerVector &handlers)
+{
+  PresolverPtr pres = PresolverPtr(); // NULL
+  const std::string me("qg: ");
+
+  p->calculateSize();
+  if (env->getOptions()->findBool("presolve")->getValue() == true) {
+    LinearHandlerPtr lhandler = (LinearHandlerPtr) new LinearHandler(env, p);
+    handlers.push_back(lhandler);
+    if (p->isQP() || p->isQuadratic() || p->isLinear() ||
+        true==env->getOptions()->findBool("use_native_cgraph")->getValue()) {
+      lhandler->setPreOptPurgeVars(true);
+      lhandler->setPreOptPurgeCons(true);
+      lhandler->setPreOptCoeffImp(true);
+    } else {
+      lhandler->setPreOptPurgeVars(false);
+      lhandler->setPreOptPurgeCons(false);
+      lhandler->setPreOptCoeffImp(false);
+    }
+    if (ndefs>0) {
+      lhandler->setPreOptDualFix(false);
+    } else {
+      lhandler->setPreOptDualFix(true);
+    }
+
+    if (!p->isLinear() && 
+         true==env->getOptions()->findBool("use_native_cgraph")->getValue() && 
+         true==env->getOptions()->findBool("nl_presolve")->getValue() 
+         ) {
+      NlPresHandlerPtr nlhand = (NlPresHandlerPtr) new NlPresHandler(env, p);
+      handlers.push_back(nlhand);
+    }
+
+    // write the names.
+    std::cout << me << "handlers used in presolve:" << std::endl;
+    for (HandlerIterator h = handlers.begin(); h != handlers.end(); 
+        ++h) {
+      std::cout<<(*h)->getName()<<std::endl;
+    }
+  }
+
+  pres = (PresolverPtr) new Presolver(p, env, handlers);
+  pres->standardize(); 
+  if (env->getOptions()->findBool("presolve")->getValue() == true) {
+    pres->solve();
+  }
+  return pres;
+}
+
 
 int main(int argc, char* argv[])
 {
@@ -130,8 +185,15 @@ int main(int argc, char* argv[])
   LoggerPtr logger_ = (LoggerPtr) new Logger(LogInfo);
   VarVector *orig_v=0;
 
+  int err = 0;
+
   // start timing.
-  timer->start();
+  env->startTimer(err);
+  if (err) {
+    goto CLEANUP;
+  }
+
+  setInitialOptions(env);
 
   iface = (MINOTAUR_AMPL::AMPLInterfacePtr) 
     new MINOTAUR_AMPL::AMPLInterface(env, "qg");
@@ -162,6 +224,7 @@ int main(int argc, char* argv[])
 
   std::cout << me << "Minotaur version " << env->getVersion() << std::endl;
   // load the problem.
+  timer->start();
   inst = iface->readInstance(options->findString("problem_file")->getValue());
   std::cout << me << "time used in reading instance = " << std::fixed 
     << std::setprecision(2) << timer->query() << std::endl;
@@ -178,11 +241,22 @@ int main(int argc, char* argv[])
   }
 
   // Initialize engines
-  nlp_e = getNLPEngine(env, inst);                                //Engine for Original problem
+  nlp_e = getNLPEngine(env, inst); //Engine for Original problem
 
   efac = new EngineFactory(env);
   lin_e = efac->getLPEngine();   // lp engine 
   delete efac;
+
+
+  inst->setInitialPoint(iface->getInitialPoint(), 
+      inst->getNumVars()-iface->getNumDefs());
+
+  // get presolver.
+  orig_v = new VarVector(inst->varsBegin(), inst->varsEnd());
+  pres = presolve(env, inst, iface->getNumDefs(), handlers);
+  handlers.clear();
+
+  inst->calculateSize();
 
   // create the jacobian
   if (false==env->getOptions()->findBool("use_native_cgraph")->getValue()){
@@ -190,18 +264,18 @@ int main(int argc, char* argv[])
     if (inst->isQP() || inst->isQuadratic()) {
       inst->setNativeDer();
     }
-    else{
-    	jPtr = (MINOTAUR_AMPL::AMPLJacobianPtr) 
-     				 new MINOTAUR_AMPL::AMPLJacobian(iface);
-    	inst->setJacobian(jPtr);
+    else {
+      jPtr = (MINOTAUR_AMPL::AMPLJacobianPtr)
+             new MINOTAUR_AMPL::AMPLJacobian(iface);
+      inst->setJacobian(jPtr);
 
-    	// create the hessian
-    	hPtr = (MINOTAUR_AMPL::AMPLHessianPtr) new MINOTAUR_AMPL::AMPLHessian(iface);
-    	inst->setHessian(hPtr);
-	 }
+      // create the hessian
+      hPtr = (MINOTAUR_AMPL::AMPLHessianPtr) new
+             MINOTAUR_AMPL::AMPLHessian(iface);
+      inst->setHessian(hPtr);
+    }
   } 
-  else 
-  {
+  else {
     inst->setNativeDer();
   }
 
@@ -214,29 +288,8 @@ int main(int argc, char* argv[])
   handlers.push_back(v_hand);
   assert(v_hand);
 
-//  std::cout << "hessian number of nonzero 1= " << hPtr->getNumNz() << std::endl;
   qghand = (QGHandlerPtr) new QGHandler(env, inst, nlp_e); 
-  assert(qghand);
   handlers.push_back(qghand);
-
-
-//  std::cout << "set initial point" << std::endl;
-	// set initial point
-
-  inst->setInitialPoint(iface->getInitialPoint(), 
-      inst->getNumVars()-iface->getNumDefs());
-
-//  std::cout << "get presolver" << std::endl;
-  // get presolver.
-  orig_v = new VarVector(inst->varsBegin(), inst->varsEnd());
-  pres = createPres(env, inst, iface->getNumDefs());
-  pres->standardize(); 
-  if (env->getOptions()->findBool("presolve")->getValue() == true) {
-    std::cout << me << "Presolving ... " << std::endl;
-    pres->solve();
-    std::cout << me << "Finished presolving." << std::endl;
-  }
-  inst->calculateSize();
 
   
   // report name
@@ -291,9 +344,18 @@ int main(int argc, char* argv[])
   if (options->findBool("solve")->getValue()==true) {
     // start solving
     bab->solve();
-
     std::cout << "status of branch-and-bound: " 
       << getSolveStatusString(bab->getStatus()) << std::endl;
+
+    bab->writeStats();
+    nlp_e->writeStats();
+    lin_e->writeStats();
+
+    for (HandlerVector::iterator it=handlers.begin(); it!=handlers.end();
+         ++it) {
+      (*it)->writeStats(std::cout);
+    }
+
     // write solution
     sol = bab->getSolution(); // presolved solution needs translation.
     if (sol) {
@@ -320,10 +382,6 @@ int main(int argc, char* argv[])
   std::cout << "time used = " << std::fixed << std::setprecision(2) 
             << timer->query() << std::endl;
 
-  std::cout << "number of processed nodes is = " << bab->numProcNodes() << std::endl;
-
-  std::cout << "problem name is " << options->findString("problem_file")->getValue() << std::endl;
-
 CLEANUP:
   if (iface) {
     delete iface;
@@ -331,7 +389,9 @@ CLEANUP:
   if (orig_v) {
     delete orig_v;
   }
-  delete timer;
+  if (timer) {
+    delete timer;
+  }
 
   return 0;
 }
@@ -369,47 +429,6 @@ EnginePtr getNLPEngine(EnvPtr env, ProblemPtr p)
   assert (e || (!"No engine available for this problem."));
   delete efac;
   return e;
-}
-
-
-PresolverPtr createPres(EnvPtr env, ProblemPtr p, Size_t ndefs)
-{
-  // create handlers for presolve
-  HandlerVector handlers;
-  PresolverPtr pres = PresolverPtr(); // NULL
-  p->calculateSize();
-  if (env->getOptions()->findBool("presolve")->getValue() == true) {
-    LinearHandlerPtr lhandler = (LinearHandlerPtr) new LinearHandler(env, p);
-    handlers.push_back(lhandler);
-    if (p->isQP() || p->isQuadratic() || p->isLinear()) {
-      lhandler->setPreOptPurgeVars(true);
-      lhandler->setPreOptPurgeCons(true);
-    } else {
-      lhandler->setPreOptPurgeVars(false);
-      lhandler->setPreOptPurgeCons(false);
-    }
-    if (ndefs>0) {
-      lhandler->setPreOptDualFix(false);
-    } else {
-      lhandler->setPreOptDualFix(true);
-    }
-
-    if (p->isQP() || p->isQuadratic()) {
-      CxQuadHandlerPtr cx_quad_hand = (CxQuadHandlerPtr) 
-        new CxQuadHandler(env, p);
-      handlers.push_back(cx_quad_hand);
-    }
-
-    // write the names.
-    std::cout << "handlers used in presolve:" << std::endl;
-    for (HandlerIterator h = handlers.begin(); h != handlers.end(); 
-        ++h) {
-      std::cout<<(*h)->getName()<<std::endl;
-    }
-  }
-
-  pres = (PresolverPtr) new Presolver(p, env, handlers);
-  return pres;
 }
 
 

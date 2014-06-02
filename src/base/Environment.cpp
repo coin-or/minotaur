@@ -333,7 +333,7 @@ void Environment::createDefaultOptions_()
 
   d_option = (DoubleOptionPtr) new Option<Double>("int_tol", 
       "Tolerance for checking integrality",
-      true, 0.00001);
+      true, 0.000001);
   options_->insert(d_option);
 
   d_option.reset();

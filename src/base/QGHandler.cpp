@@ -62,10 +62,11 @@ QGHandler::QGHandler()
     solRelTol_(1e-5),
     eTol_(1e-1),
     eLinTol_(1e-6),
-    numCuts_(0)
+    numCuts_(0),
+    intTol_(1e-6),
+    lastNode_(0)
 {
   logger_ = (LoggerPtr) new Logger(LogDebug2);
-  intTol_   = env_->getOptions()->findDouble("int_tol")->getValue();
 }
 
 
@@ -85,15 +86,16 @@ QGHandler::QGHandler(EnvPtr env, ProblemPtr minlp, EnginePtr nlpe)
     solRelTol_(1e-5),
     eTol_(1e-1),
     eLinTol_(1e-6),
-    numCuts_(0)
+    numCuts_(0),
+    lastNode_(0)
 {
   logger_ = (LoggerPtr) new Logger((LogLevel)env->getOptions()->
-                                   findInt("QG_log_level")->getValue());
+                                   findInt("handler_log_level")->getValue());
 
-  intTol_   = env_->getOptions()->findDouble("int_tol")->getValue();
+  intTol_  = env_->getOptions()->findDouble("int_tol")->getValue();
 
   lastSol_ = new Double[minlp_->getNumVars()];
-  stats_       = new QGStats();
+  stats_   = new QGStats();
   stats_->nlpS = 0;
   stats_->nlpF = 0;
   stats_->nlpI = 0;
@@ -105,6 +107,9 @@ QGHandler::~QGHandler()
 {
   if (stats_) {
     delete stats_;
+  }
+  if (lastSol_) {
+    delete [] lastSol_;
   }
   env_.reset();
   minlp_.reset();
@@ -253,7 +258,6 @@ void QGHandler::addInitLinearX_(const Double *x)
     lf->addTerm(objVar_, -1.);
     f2 = (FunctionPtr) new Function(lf);
     newcon = rel_->newConstraint(f2, -INFINITY, -1.0*c, "objlnrztn_cut");
-    ObjId_ = newcon->getId();
     ++(stats_->cuts);
 #if SPEW
     logger_->MsgStream(LogDebug) << me_ << "initial obj cut: " << std::endl
@@ -371,7 +375,7 @@ void QGHandler::separate(ConstSolutionPtr sol, NodePtr node, RelaxationPtr,
   Bool repeat_sol=true;
   Int i;
 
-  if (lastNode_ != node->getId()) {
+  if (node->getId()==0 || lastNode_ != node->getId()) {
     lastNode_ = node->getId();
     for (i=0; i < numvars_; i++){
       lastSol_[i]=x[i];
@@ -546,10 +550,7 @@ void QGHandler::undoLPBounds_(std::stack<Modification *> *mods)
 
 void QGHandler::solveNLP_()
 {
-  nlpe_->clear();
-  nlpe_->load(minlp_);
   nlpStatus_ = nlpe_->solve();
-  
   ++(stats_->nlpS);
 }
 

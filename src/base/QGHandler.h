@@ -273,8 +273,6 @@ private:
 
   void readSol_();
 
-  Int ObjId_;
- 
   UInt lastNode_;
   Double *lastSol_;
 

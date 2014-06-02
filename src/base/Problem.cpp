@@ -1159,6 +1159,13 @@ QuadraticFunctionPtr Problem::removeQuadFromObj()
 }
 
 
+void Problem::resetDer()
+{
+  jacobian_  = JacobianPtr(); // NULL.
+  hessian_   = HessianOfLagPtr(); // NULL.
+}
+
+
 void Problem::reverseSense(ConstraintPtr cons) 
 {
   cons->reverseSense_();
