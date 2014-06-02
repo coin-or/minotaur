@@ -94,7 +94,6 @@ QGHandler::QGHandler(EnvPtr env, ProblemPtr minlp, EnginePtr nlpe)
 
   intTol_  = env_->getOptions()->findDouble("int_tol")->getValue();
 
-  lastSol_ = new Double[minlp_->getNumVars()];
   stats_   = new QGStats();
   stats_->nlpS = 0;
   stats_->nlpF = 0;
@@ -122,6 +121,7 @@ void QGHandler::relax_(RelaxationPtr rel, Bool *is_inf)
   ConstraintPtr c;
   rel_ = rel;
   linearizeObj_(rel);
+  lastSol_ = new Double[rel_->getNumVars()];
   
   for (ConstraintConstIterator it=minlp_->consBegin(); it!=minlp_->consEnd(); 
        ++it) {
@@ -558,8 +558,8 @@ void QGHandler::solveNLP_()
 void QGHandler::OAFromPoint_(const Double *x, ConstSolutionPtr sol,
                              SeparationStatus *status)
 {
-  OAFromPoint_(x, sol->getPrimal(), status);
   relobj_ = sol->getObjValue();
+  OAFromPoint_(x, sol->getPrimal(), status);
 }
 
 
