@@ -126,7 +126,7 @@ def gnuplot(solvers, opts):
 	writeTable(solvers,df)
 	df.close()
 	proc = subprocess.Popen("gnuplot",stdin=subprocess.PIPE)
-	proc.stdin.write("set terminal postscript color enhanced\n")
+	proc.stdin.write("set terminal postscript solid color enhanced\n")
 	proc.stdin.write("set title \"%s\"\n"%opts.title)
 	proc.stdin.write("set key right bottom\n")
 	proc.stdin.write("set xlabel \"Ratio to Fastest\"\n")
@@ -135,6 +135,7 @@ def gnuplot(solvers, opts):
 	proc.stdin.write("set logscale x %f\n"%opts.logbase)
 	proc.stdin.write("set yrange [0:1]\n")
 	proc.stdin.write("set ytics 0.1\n")
+	proc.stdin.write("set format x \"%d^{%%L}\"\n"%opts.logbase)
 	proc.stdin.write("set arrow from 1,0 to 1,1 nohead lc rgb \'black\'\n")
 	if (opts.xdown>1e-10):
 		proc.stdin.write("set xrange [%f:%f]\n"%(opts.xdown,opts.autolim_))
@@ -269,7 +270,7 @@ def writeTable(ss,df):
 		j += 1
 		df.write("%7.5f"%(1.0*j/n))
 		for s in ss:
-			df.write("%8.2f"%s.ratios[i])
+			df.write("%18.4f"%s.ratios[i])
 		df.write("\n")
 
 ##################

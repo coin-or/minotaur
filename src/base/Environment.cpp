@@ -145,7 +145,7 @@ void Environment::createDefaultOptions_()
   options_->insert(b_option);
 
   b_option = (BoolOptionPtr) new Option<Bool>("modify_rel_only", 
-      "If true, apply all all modifications to relaxation only  <0/1>",
+      "If true, apply all modifications to relaxation only  <0/1>",
       true, true);
   options_->insert(b_option);
 

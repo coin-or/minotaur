@@ -948,10 +948,10 @@ void QGHandler::cutXLPObj_(const Double *, const Double *x_lp,
 void QGHandler::linearAt_(FunctionPtr f, Double fval, const Double *x, 
                           Double *c, LinearFunctionPtr *lf)
 {
-  Int n = minlp_->getNumVars();
+  Int n = rel_->getNumVars();
   Double *a = new Double[n];
-  VariableConstIterator vbeg = minlp_->varsBegin();
-  VariableConstIterator vend = minlp_->varsEnd();
+  VariableConstIterator vbeg = rel_->varsBegin();
+  VariableConstIterator vend = rel_->varsEnd();
   Int error=0;
 
   std::fill(a, a+n, 0.);
