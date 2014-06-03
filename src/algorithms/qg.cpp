@@ -344,8 +344,8 @@ int main(int argc, char* argv[])
   if (options->findBool("solve")->getValue()==true) {
     // start solving
     bab->solve();
-    std::cout << "status of branch-and-bound: " 
-      << getSolveStatusString(bab->getStatus()) << std::endl;
+    std::cout << me << "status of branch-and-bound: " 
+              << getSolveStatusString(bab->getStatus()) << std::endl;
 
     bab->writeStats();
     nlp_e->writeStats();
@@ -367,19 +367,19 @@ int main(int argc, char* argv[])
     } else if (sol) {
       sol->writePrimal(std::cout,orig_v);
     }
-    std::cout << "nodes created in branch-and-bound = " << 
+    std::cout << me << "nodes created in branch-and-bound = " << 
       bab->getTreeManager()->getSize() << std::endl;
     // commented out by ashu
     //std::cout << "nodes processed in branch-and-bound 1= " <<
     //  bab->getTreeManager()->getActiveNodes() << std::endl;
-    std::cout << std::fixed << std::setprecision(4) << 
+    std::cout << me << std::fixed << std::setprecision(4) << 
       "best bound estimate for remaining nodes = " <<  bab->getLb() 
       << std::endl;
-    std::cout << std::fixed << std::setprecision(4) << 
+    std::cout << me << std::fixed << std::setprecision(4) << 
       "best solution value = " <<  bab->getUb() << std::endl;
   }
 
-  std::cout << "time used = " << std::fixed << std::setprecision(2) 
+  std::cout << me << "time used = " << std::fixed << std::setprecision(2) 
             << timer->query() << std::endl;
 
 CLEANUP:
