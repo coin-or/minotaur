@@ -283,15 +283,15 @@ namespace Minotaur {
        * True if we want to save warm start information of the current
        * solution for the next solve. False, if no information needs to be
        * saved. Saving information does not mean that it will be used.
-       * use_ws_ flag must be on to use the warm-start information.
+       * useWs_ flag must be on to use the warm-start information.
        */
-      Bool prepare_ws_;
+      Bool prepareWs_;
 
       /**
        * True if we want to use warm-start information, either from a
        * previous solve or from a user provided structure.
        */
-      Bool use_ws_;
+      Bool useWs_;
 
       /// Where to put logs.
       LoggerPtr logger_;

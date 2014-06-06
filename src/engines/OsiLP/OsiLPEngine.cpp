@@ -141,7 +141,7 @@ OsiLPEngine::OsiLPEngine(EnvPtr env)
   std::string etype = env_->getOptions()->findString("lp_engine")->getValue();
 
   logger_ = (LoggerPtr) new Logger((LogLevel) env->getOptions()->
-      findInt("osilp_log_level")->getValue());
+                                   findInt("osilp_log_level")->getValue());
   eName_ = OsiUndefEngine;
   if (etype == "OsiClp") {
     eName_ = OsiClpEngine;
@@ -432,12 +432,20 @@ void OsiLPEngine::clear() {
 
 void OsiLPEngine::disableStrBrSetup() 
 {
+#if SPEW
+  logger_->MsgStream(LogDebug) << "OsiLP: disabling strong branching." 
+                               << std::endl;
+#endif
   strBr_ = false;
 }
 
 
 void OsiLPEngine::enableStrBrSetup() 
 {
+#if SPEW
+  logger_->MsgStream(LogDebug) << "OsiLP: enabling strong branching."
+                               << std::endl;
+#endif
   strBr_ = true;
 }
 

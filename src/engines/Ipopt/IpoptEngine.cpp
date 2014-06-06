@@ -255,8 +255,8 @@ IpoptEngine::IpoptEngine()
     consChanged_(false),
     sol_(IpoptSolPtr()),      // NULL
     ws_(IpoptWarmStartPtr()), // NULL
-    prepare_ws_(false),
-    use_ws_(false),
+    prepareWs_(false),
+    useWs_(false),
     etol_(1e-7),
     timer_(0),
     stats_(0),
@@ -301,11 +301,11 @@ IpoptEngine::IpoptEngine(EnvPtr env)
 
   status_ = EngineError;
   if (env->getOptions()->findBool("use_warmstart")->getValue()==true) {
-    prepare_ws_ = true;
-    use_ws_ = true;
+    prepareWs_ = true;
+    useWs_ = true;
   } else {
-    prepare_ws_ = false;
-    use_ws_ = false;
+    prepareWs_ = false;
+    useWs_ = false;
   }
   timer_ = env->getNewTimer();
 
@@ -346,7 +346,7 @@ void IpoptEngine::load(ProblemPtr problem)
   myapp_->Initialize();
 
   // check if warm start needs to be saved
-  if (prepare_ws_) {
+  if (prepareWs_) {
     ws_ = (IpoptWarmStartPtr) new IpoptWarmStart();
   }
 
@@ -509,7 +509,7 @@ EngineStatus IpoptEngine::solve()
   }
   // Check if warm start is enabled. If so, load the information and
   // resolve. Otherwise solve from scratch.
-  if (use_ws_ && ws_ && ws_->hasInfo()) {
+  if (useWs_ && ws_ && ws_->hasInfo()) {
     myapp_->Options()->SetStringValue("warm_start_init_point", "yes");
     mynlp_->setSolution(ws_->getPoint());
   } else {
@@ -599,7 +599,7 @@ EngineStatus IpoptEngine::solve()
      logger_->MsgStream(LogNone) << "Ipopt: error reported." << std::endl;
      status_ = EngineError;
   }
-  if (prepare_ws_) {
+  if (prepareWs_) {
     // save warm start information
     ws_->setPoint(sol_);
   }
@@ -730,7 +730,7 @@ void IpoptEngine::loadFromWarmStart(const WarmStartPtr ws)
 
     // now create a full copy.
     ws_ = (IpoptWarmStartPtr) new IpoptWarmStart(ws2);
-    if (!use_ws_) {
+    if (!useWs_) {
       logger_->MsgStream(LogInfo) << "setWarmStart() method is called but"
         " warm-start is not enabled." << std::endl;
     }
@@ -757,7 +757,7 @@ void IpoptEngine::resetIterationLimit()
 
 void IpoptEngine::disableStrBrSetup()
 {
-  prepare_ws_ = use_ws_;
+  prepareWs_ = useWs_;
   strBr_      = false;
 }
 
@@ -767,7 +767,7 @@ void IpoptEngine::enableStrBrSetup()
   if (ws_) {
     ws_->makeCopy();
   }
-  prepare_ws_ = false;
+  prepareWs_ = false;
   strBr_      = true;
 }
 
