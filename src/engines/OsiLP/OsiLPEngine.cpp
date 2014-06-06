@@ -588,6 +588,8 @@ EngineStatus OsiLPEngine::solve()
   timer_->start();
   if (true==objChanged_ && false==bndChanged_ && false==consChanged_) {
     osilp_->setHintParam(OsiDoDualInResolve, false);
+  } else {
+    osilp_->setHintParam(OsiDoDualInResolve, true);
   }
   osilp_->resolve();
 
