@@ -39,6 +39,8 @@
 #include "Variable.h"
 #include "QuadraticFunction.h"
 
+//#define SPEW 1
+
 using namespace Minotaur;
 
 
@@ -231,10 +233,15 @@ void QGHandler::addInitLinearX_(const Double *x)
     if (con->getUb() < INFINITY) {
       newcon = rel_->newConstraint(f2, -INFINITY, con->getUb()-c, "lnrztn_cut");
       ++(stats_->cuts);
+#if SPEW
+      logger_->MsgStream(LogDebug) << me_ << "initial constr. cut: ";
+      newcon->write(logger_->MsgStream(LogDebug));
+#endif
     }
 
     if (con->getLb() > -INFINITY) {
       newcon = rel_->newConstraint(f2, con->getLb()-c, INFINITY, "lnrztn_cut");
+      ++(stats_->cuts);      
 #if SPEW
       logger_->MsgStream(LogDebug) << me_ << "initial constr. cut: ";
       newcon->write(logger_->MsgStream(LogDebug));
@@ -242,13 +249,13 @@ void QGHandler::addInitLinearX_(const Double *x)
     } else if (con->getLb() - act > -solAbsTol_) {
       assert(!"bug here?");
       newcon = rel_->newConstraint(f2, act-c, INFINITY, "lnrztn_cut");
+      ++(stats_->cuts);      
 #if SPEW
       logger_->MsgStream(LogDebug) << me_ << "initial constr. cut: ";
       newcon->write(logger_->MsgStream(LogDebug));
 #endif
     }
   }
-  ++(stats_->cuts);      
 
   o = minlp_->getObjective();
   if (oNl_ && o) {
@@ -567,57 +574,75 @@ void QGHandler::OAFromPoint_(const Double *x, const Double *inf_x,
                              SeparationStatus *status)
 {
   /*
-   * x is the solution of fixed NLP ==> act = g(x), if  act <= u then the constraint is satisfied.
+   * x is the solution of fixed NLP ==> act = g(x), if  act <= u then the
+   * constraint is satisfied.
    * sol is the pointer to the solution of relaxation
    */
 
-  Double act=-INFINITY, nlpact = -INFINITY;
+  double act=-INFINITY, nlpact = -INFINITY;
   ConstraintPtr con, newcon;
-  Double c;
+  double c;
   LinearFunctionPtr lf = LinearFunctionPtr(); // NULL
   FunctionPtr f, f2;
   ObjectivePtr o;
   UInt num_cuts = 0;
-  Int error;
+  int error;
+  double vio;
   
 
   *status=SepaContinue;
 #if SPEW
-    logger_->MsgStream(LogDebug) 
-        << me_ << "Adding linearizations, inf_x = " << inf_x << std::endl;
     logger_->MsgStream(LogDebug)
-        << me_ << "number of cuts so far = " << stats_->cuts << std::endl;
+      << me_ << "Adding linearizations, inf_x = " << inf_x << std::endl;
 #endif
 
   std::vector<ConstraintPtr> conVect;
   for (CCIter it=nlCons_.begin(); it!=nlCons_.end(); ++it) {
     con = *it; 
     f = con->getFunction();
-    act = con->getActivity(x, &error);
+    act = con->getActivity(x, &error); assert (error==0);
+    nlpact =  con->getActivity(inf_x, &error); assert (error==0);
 
     if(con->getUb() < INFINITY) {
-      linearAt_(f, act, x, &c, &lf);
-      f2 = (FunctionPtr) new Function(lf);
-      newcon = rel_->newConstraint(f2, -INFINITY, con->getUb()-c, "lnrztn_cut");
-      conVect.push_back(newcon);
-      ++num_cuts;
-      *status = SepaResolve;
+      vio = std::max(nlpact-con->getUb(), 0.);
+      if (vio>solAbsTol_) {
+        linearAt_(f, act, x, &c, &lf);
+        f2 = (FunctionPtr) new Function(lf);
+        newcon = rel_->newConstraint(f2, -INFINITY, con->getUb()-c,
+                                     "lnrztn_cut");
+        conVect.push_back(newcon);
+        ++num_cuts;
+        *status = SepaResolve;
+#if SPEW
+        logger_->MsgStream(LogDebug) << me_ << "OA cut 1: " << std::endl
+          << std::setprecision(9);
+        newcon->write(logger_->MsgStream(LogDebug));
+#endif
+      }
     }
 
     if(con->getLb() > -INFINITY) {
+      vio = std::max(con->getLb()-nlpact, 0.);
       linearAt_(f, act, x, &c, &lf);
       f2 = (FunctionPtr) new Function(lf);
-      newcon = rel_->newConstraint(f2, con->getLb()-c, INFINITY, "lnrztn_cut");
-      conVect.push_back(newcon);
-      ++num_cuts; 
-      *status = SepaResolve;
+      if (vio>solAbsTol_) {
+        newcon = rel_->newConstraint(f2, con->getLb()-c, INFINITY,
+                                     "lnrztn_cut");
+        conVect.push_back(newcon);
+        ++num_cuts; 
+        *status = SepaResolve;
+#if SPEW
+        logger_->MsgStream(LogDebug) << me_ << "OA cut: " << std::endl
+          << std::setprecision(9);
+        newcon->write(logger_->MsgStream(LogDebug));
+#endif
+      }
     }
   }
 
   o = minlp_->getObjective();
   if (oNl_ && o) {
     f = o->getFunction();
-    Double vio;
     if (inf_x) {
       act = o->eval(inf_x, &error);
       vio = std::max(act-relobj_, 0.);
@@ -632,31 +657,34 @@ void QGHandler::OAFromPoint_(const Double *x, const Double *inf_x,
       conVect.push_back(newcon);
       ++num_cuts;
       *status = SepaResolve;
+#if SPEW
+      logger_->MsgStream(LogDebug) << me_ << "OA cut: " << std::endl
+        << std::setprecision(9);
+      newcon->write(logger_->MsgStream(LogDebug));
+#endif
     }
   }
 
   Int numvio = 0;
-  for ( UInt i=0; i < conVect.size(); i++){
+  for ( UInt i=0; i < conVect.size(); i++) {
     nlpact =  conVect[i]->getActivity(inf_x, &error);
-    if ( (nlpact - conVect[i]->getUb() > solAbsTol_) || (conVect[i]->getLb() - nlpact > solAbsTol_ ) )
-    {
+    if ( (nlpact - conVect[i]->getUb() > solAbsTol_)
+         || (conVect[i]->getLb() - nlpact > solAbsTol_ )) {
       ++numvio;
     }
   }
-  if (numvio == 0)
+  if (numvio == 0) {
     num_cuts=0;
+  }
   if (num_cuts == 0 ) {
     Double *x_alpha = new Double[numvars_];
-    for (CCIter it=nlCons_.begin(); it!=nlCons_.end(); ++it)
-    {
+    for (CCIter it=nlCons_.begin(); it!=nlCons_.end(); ++it) {
       con = *it;
       act = con->getActivity(inf_x, &error);
-      if (con->getUb() < INFINITY && act-con->getUb() > solAbsTol_) 
-      {
+      if (con->getUb() < INFINITY && act-con->getUb() > solAbsTol_) {
         cutXLP_(x, inf_x, x_alpha, con, true);
         OAFromPoint_(x_alpha, inf_x, status);
-      } else if (con->getLb() > -INFINITY && con->getLb()-act > solAbsTol_) 
-      {
+      } else if (con->getLb() > -INFINITY && con->getLb()-act > solAbsTol_) {
         cutXLP_(x, inf_x, x_alpha, con, false);
         OAFromPoint_(x_alpha, inf_x, status);
       }
@@ -698,10 +726,16 @@ Int QGHandler::OAFromPointInf_(const Double *x, const Double *inf_x,
       f2 = (FunctionPtr) new Function(lf);
       lpact = f2->eval(inf_x, &error);
       if (lpact - con->getUb() + c > solAbsTol_) {
-        newcon = rel_->newConstraint(f2, -INFINITY, con->getUb()-c, "lnrztn_cut");
+        newcon = rel_->newConstraint(f2, -INFINITY, con->getUb()-c,
+                                     "lnrztn_cut");
         conVect.push_back(newcon);
         ++ncuts;
         *status = SepaResolve;
+#if SPEW
+        logger_->MsgStream(LogDebug) << me_ << "OA cut: " << std::endl
+          << std::setprecision(9);
+        newcon->write(logger_->MsgStream(LogDebug));
+#endif
       }
     }
  
@@ -710,10 +744,16 @@ Int QGHandler::OAFromPointInf_(const Double *x, const Double *inf_x,
       f2 = (FunctionPtr) new Function(lf);
       lpact = f2->eval(inf_x, &error);
       if (lpact - con->getLb() + c < -solAbsTol_) {
-        newcon = rel_->newConstraint(f2, con->getLb()-c, INFINITY, "lnrztn_cut");
+        newcon = rel_->newConstraint(f2, con->getLb()-c, INFINITY,
+                                     "lnrztn_cut");
         conVect.push_back(newcon);
         ++ncuts; 
         *status = SepaResolve;
+#if SPEW
+        logger_->MsgStream(LogDebug) << me_ << "OA cut: " << std::endl
+          << std::setprecision(9);
+        newcon->write(logger_->MsgStream(LogDebug));
+#endif
       }
     }
   }
@@ -724,12 +764,14 @@ Int QGHandler::OAFromPointInf_(const Double *x, const Double *inf_x,
 void QGHandler::cutXLP_(const Double *x_nlp, const Double *x_lp,
                         Double *x_alpha, ConstraintPtr con, Bool dir)
 {
-  cutXLP_(x_nlp, x_lp, x_alpha, con->getFunction(), con->getUb(), con->getLb(), dir);
+  cutXLP_(x_nlp, x_lp, x_alpha, con->getFunction(), con->getUb(),
+          con->getLb(), dir);
 }
 
 
 void QGHandler::cutXLP_(const Double *x_nlp, const Double *x_lp,
-                        Double *x_alpha, FunctionPtr fn, Double ub, Double lb, Bool dir)
+                        Double *x_alpha, FunctionPtr fn, Double ub, Double lb,
+                        Bool dir)
 {
   numvars_ = minlp_->getNumVars();
   Double *gr = new Double[numvars_];
@@ -748,69 +790,55 @@ void QGHandler::cutXLP_(const Double *x_nlp, const Double *x_lp,
   
   Double inn_gr_xlp;
   Double inn_gr_xalpha;
-  if (dir)
-  {
+  if (dir) {
     eval_x_lp = fn->eval(x_lp, &error)-ub;
-    while (!stop)
-    {
+    while (!stop) {
       alpha = 0.5 * (alpha_l + alpha_u);
       std::fill(gr, gr+numvars_, 0.0);
-      for (Int i = 0; i < numvars_; i++)
-      {
+      for (Int i = 0; i < numvars_; i++) {
         x_alpha[i] = (1-alpha) * x_lp[i]+alpha * x_nlp[i];
       }
       fn->evalGradient(x_alpha, gr, &error);
       eval_x_alpha = fn->eval(x_alpha, &error)-ub;
-      if (eval_x_alpha > -eLinTol_)
-      {
+      if (eval_x_alpha > -eLinTol_) {
         inn_gr_xlp = InnerProduct(gr, x_lp, numvars_);
         inn_gr_xalpha = InnerProduct(gr, x_alpha, numvars_);
         innProd = inn_gr_xlp - inn_gr_xalpha;
-        if (innProd > solAbsTol_ || alpha_u - alpha_l < 1e-8)
-        {
+        if (innProd > solAbsTol_ || alpha_u - alpha_l < 1e-8) {
           stop = true;
         }
       }
-        if (eval_x_alpha > -solAbsTol_ || innProd < solAbsTol_)
-        {
-          if (eval_x_lp - eval_x_alpha > solAbsTol_)
-          {        
-            alpha_u = alpha;
-          } else {
-            alpha_l = alpha;
-            }
-        }  
+      if (eval_x_alpha > -solAbsTol_ || innProd < solAbsTol_) {
+        if (eval_x_lp - eval_x_alpha > solAbsTol_) {        
+          alpha_u = alpha;
+        } else {
+          alpha_l = alpha;
+        }
+      }  
     }
   } 
   else {
     eval_x_lp = fn->eval(x_lp, &error) - lb;
-    while (!stop)
-    {
+    while (!stop) {
       alpha = 0.5 * (alpha_l + alpha_u);
       std::fill(gr, gr+numvars_, 0.0);
-      for (Int i = 0; i < numvars_; i++)
-      {
+      for (Int i = 0; i < numvars_; i++) {
         x_alpha[i] = (1-alpha) * x_lp[i] + alpha * x_nlp[i];
       } 
       fn->evalGradient(x_alpha, gr, &error);
-      if (eval_x_alpha < solAbsTol_)
-      {
+      if (eval_x_alpha < solAbsTol_) {
         inn_gr_xlp = InnerProduct(gr, x_lp, numvars_);
         inn_gr_xalpha = InnerProduct(gr, x_alpha, numvars_);
         innProd = inn_gr_xlp - inn_gr_xalpha;
-        if (innProd < -eLinTol_)
-        {
+        if (innProd < -eLinTol_) {
           stop = true;
         }
       }
-        if (eval_x_alpha < -solAbsTol_ || innProd < solAbsTol_)
-        {
-          if (eval_x_lp - eval_x_alpha > solAbsTol_)
-          {
-            alpha_u = alpha;
-          } else alpha_l = alpha;
-        } 
-
+      if (eval_x_alpha < -solAbsTol_ || innProd < solAbsTol_) {
+        if (eval_x_lp - eval_x_alpha > solAbsTol_) {
+          alpha_u = alpha;
+        } else alpha_l = alpha;
+      } 
     }
   }
 }
@@ -824,7 +852,7 @@ void QGHandler::cutXLP_(const Double *x_nlp, const Double *x_lp,
   Double *gr = new Double[numvars_];
 
   FunctionPtr fn = con->getFunction();
-  FunctionPtr fn2;
+  FunctionPtr fn2 = FunctionPtr();
   LinearFunctionPtr lf;
   ConstraintPtr newcon;
 
@@ -849,68 +877,67 @@ void QGHandler::cutXLP_(const Double *x_nlp, const Double *x_lp,
     {
       alpha = 0.5 * (alpha_l + alpha_u);
       std::fill(gr, gr+numvars_, 0.0);
-      for (Int i = 0; i < numvars_; i++)
-      {
+      for (Int i = 0; i < numvars_; i++) {
         x_alpha[i] = (1-alpha) * x_lp[i] + alpha * x_nlp[i];
       }
       fn->evalGradient(x_alpha, gr, &error);
       eval_x_alpha = con->getActivity(x_alpha, &error) - con->getUb();
-      if (eval_x_alpha > -eLinTol_)
-      {
+      if (eval_x_alpha > -eLinTol_) {
         inn_gr_xlp = InnerProduct(gr, x_lp, numvars_);
         inn_gr_xalpha = InnerProduct(gr, x_alpha, numvars_);
         innProd = inn_gr_xlp - inn_gr_xalpha;
-        if (innProd > eLinTol_)
-        {
+        if (innProd > eLinTol_) {
           stop = true;
           linearAt_(fn, 0.0, x_alpha, &c, &lf);
           if (lf) {
             fn2 = (FunctionPtr) new Function(lf);
-          }  
-          if (fn2) 
-          {
-            newcon = rel_->newConstraint(fn2, -INFINITY, inn_gr_xalpha, "lnrztn");
+            newcon = rel_->newConstraint(fn2, -INFINITY, inn_gr_xalpha,
+                                         "lnrztn");
+#if SPEW
+            logger_->MsgStream(LogDebug) << me_ << "Obj cut: " << std::endl
+              << std::setprecision(9);
+            newcon->write(logger_->MsgStream(LogDebug));
+#endif
           } 
           *status = SepaResolve;
           stats_->cuts += 1;
         }
       }
-      if (eval_x_alpha < -eLinTol_ || innProd < eLinTol_)
-      {
-        if (eval_x_lp - eval_x_alpha > eLinTol_)
-        {
+      if (eval_x_alpha < -eLinTol_ || innProd < eLinTol_) {
+        if (eval_x_lp - eval_x_alpha > eLinTol_) {
           alpha_u = alpha;
         } else alpha_l = alpha;
       }
     }
   } else {
     eval_x_lp= con->getActivity(x_lp,&error) - con->getUb();
-    while (!stop)
-    {
+    while (!stop) {
       alpha = 0.5 * (alpha_l + alpha_u);
       std::fill(gr, gr+numvars_, 0.0);
-      for (Int i = 0; i < numvars_; i++)
-      {
+      for (Int i = 0; i < numvars_; i++) {
         x_alpha[i] = (1-alpha) * x_lp[i] + alpha * x_nlp[i];
       }
       fn->evalGradient(x_alpha, gr, &error);
-      if (eval_x_alpha < eLinTol_)
-      {
+      if (eval_x_alpha < eLinTol_) {
         inn_gr_xlp = InnerProduct(gr, x_lp, numvars_);
         inn_gr_xalpha = InnerProduct(gr, x_alpha, numvars_);
         innProd = inn_gr_xlp - inn_gr_xalpha;
-        if (innProd < -eLinTol_)
-        {
+        if (innProd < -eLinTol_) {
           stop = true;
           linearAt_(fn, 0.0, x_alpha, &c, &lf);
           fn2 = (FunctionPtr) new Function(lf);
-          newcon = rel_->newConstraint(fn2, INFINITY, inn_gr_xalpha, "lnrztn_cut");
+          newcon = rel_->newConstraint(fn2, INFINITY, inn_gr_xalpha,
+                                       "lnrztn_cut");
           *status = SepaResolve;
-          stats_->cuts += 1;
+          ++(stats_->cuts);
+#if SPEW
+          logger_->MsgStream(LogDebug) << me_ << "Obj cut: " << std::endl
+            << std::setprecision(9);
+          newcon->write(logger_->MsgStream(LogDebug));
+#endif
         }
       }
-      else 
-      {
+      else {
         eval_x_alpha = con->getActivity(x_alpha, &error) - con->getUb();
         if (eval_x_lp - eval_x_alpha < -eLinTol_)
         {
@@ -918,7 +945,6 @@ void QGHandler::cutXLP_(const Double *x_nlp, const Double *x_lp,
         } else alpha_l = alpha;
       }
     }
-  
   }
 }
 
@@ -941,6 +967,12 @@ void QGHandler::cutXLPObj_(const Double *, const Double *x_lp,
   lf->addTerm(objVar_, -1.);
   fn2 = (FunctionPtr) new Function(lf);
   newcon = rel_->newConstraint(fn2, -INFINITY, -1.0*c, "objlnrztn_cut");
+  ++(stats_->cuts);
+#if SPEW
+  logger_->MsgStream(LogDebug) << me_ << "Obj cut: " << std::endl
+    << std::setprecision(9);
+  newcon->write(logger_->MsgStream(LogDebug));
+#endif
   
 }
 
