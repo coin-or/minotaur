@@ -208,7 +208,7 @@ SolveStatus LinearHandler::presolve(PreModQ *pre_mods, Bool *changed0)
 
   while(changed==true && pStats_->iters < pOpts_->maxIters) {
     changed = false;
-#if DEBUG
+#if SPEW
     logger_->MsgStream(LogDebug) << me_ << "presolve iteration " 
                                  << pStats_->iters << std::endl;
 #endif
@@ -262,7 +262,7 @@ SolveStatus LinearHandler::checkBounds_(ProblemPtr p)
 {
   VariablePtr v;
   ConstraintPtr c;
-#if DEBUG
+#if SPEW
   logger_->MsgStream(LogDebug) << me_ << "checking bounds." << std::endl; 
 #endif
 
@@ -270,7 +270,7 @@ SolveStatus LinearHandler::checkBounds_(ProblemPtr p)
       ++it) {
     v = *it;
     if (v->getLb() > v->getUb()+eTol_) {
-#if DEBUG
+#if SPEW
       logger_->MsgStream(LogDebug) << me_ << "infeasible bounds: "; 
       v->write(logger_->MsgStream(LogDebug));
 #endif
@@ -281,7 +281,7 @@ SolveStatus LinearHandler::checkBounds_(ProblemPtr p)
   for (ConstraintConstIterator it=p->consBegin(); it!=p->consEnd(); ++it) {
     c = *it;
     if (c->getLb() > c->getUb()+eTol_) {
-#if DEBUG
+#if SPEW
       logger_->MsgStream(LogDebug) << me_ << "infeasible bounds: "; 
       c->write(logger_->MsgStream(LogDebug));
 #endif
@@ -346,7 +346,7 @@ void LinearHandler::tightenInts_(ProblemPtr p, Bool apply_to_prob,
   LinearFunctionPtr lf;
   ConstraintPtr c;
 
-#if DEBUG
+#if SPEW
   logger_->MsgStream(LogDebug) << me_ << "tightening bounds." << std::endl; 
 #endif
 
@@ -367,7 +367,7 @@ void LinearHandler::tightenInts_(ProblemPtr p, Bool apply_to_prob,
           chkIntToBin_(v);
         } else {
           mods->push_back(mod);
-#if DEBUG
+#if SPEW
           mod->write(logger_->MsgStream(LogDebug));
 #endif 
         }
@@ -380,7 +380,7 @@ void LinearHandler::tightenInts_(ProblemPtr p, Bool apply_to_prob,
           chkIntToBin_(v);
         } else {
           mods->push_back(mod);
-#if DEBUG
+#if SPEW
           mod->write(logger_->MsgStream(LogDebug));
 #endif 
         }
@@ -420,7 +420,7 @@ SolveStatus LinearHandler::varBndsFromCons_(ProblemPtr p, Bool apply_to_prob,
   Bool t_changed;
   SolveStatus status = Started;
 
-#if DEBUG
+#if SPEW
   logger_->MsgStream(LogDebug2) << me_ << "bounds from constraints." 
                                << std::endl; 
 #endif
@@ -447,7 +447,7 @@ SolveStatus LinearHandler::varBndsFromCons_(ProblemPtr p, Bool apply_to_prob,
                && DeletedCons!=c_ptr->getState()
                && apply_to_prob 
                && pOpts_->purgeCons) {
-#if DEBUG
+#if SPEW
       logger_->MsgStream(LogDebug) << "constraint " << c_ptr->getName() 
                                    << " is redundant\n";
 #endif
@@ -803,7 +803,7 @@ SolveStatus LinearHandler::linBndTighten_(ProblemPtr p, Bool apply_to_prob,
   }
 
   if (apply_to_prob && ll >= lb - eTol_ && uu <= ub + eTol_) {
-#if DEBUG
+#if SPEW
     logger_->MsgStream(LogDebug) << "constraint " << c_ptr->getName() 
                                  << " is redundant\n";
 #endif
@@ -898,7 +898,7 @@ void LinearHandler::updateLfBoundsFromLb_(ProblemPtr p, Bool apply_to_prob,
         }
         mod = (VarBoundModPtr) new VarBoundMod(var, Lower, nlb);
         mod->applyToProblem(p);
-#if DEBUG
+#if SPEW
         logger_->MsgStream(LogDebug2) << "mod 1: ";
         mod->write(logger_->MsgStream(LogDebug2));
         logger_->MsgStream(LogDebug2) << std::endl;
@@ -932,7 +932,7 @@ void LinearHandler::updateLfBoundsFromLb_(ProblemPtr p, Bool apply_to_prob,
 
         mod = (VarBoundModPtr) new VarBoundMod(var, Upper, nub);
         mod->applyToProblem(p);
-#if DEBUG
+#if SPEW
         logger_->MsgStream(LogDebug2) << "mod 2: ";
         mod->write(logger_->MsgStream(LogDebug2));
         logger_->MsgStream(LogDebug2) << std::endl;
@@ -985,7 +985,7 @@ void LinearHandler::updateLfBoundsFromUb_(ProblemPtr p, Bool apply_to_prob,
         }
         mod = (VarBoundModPtr) new VarBoundMod(var, Upper, nub);
         mod->applyToProblem(p);
-#if DEBUG
+#if SPEW
         logger_->MsgStream(LogDebug2) << "mod 3: ";
         mod->write(logger_->MsgStream(LogDebug2));
         logger_->MsgStream(LogDebug2) << std::endl;
@@ -1018,7 +1018,7 @@ void LinearHandler::updateLfBoundsFromUb_(ProblemPtr p, Bool apply_to_prob,
         }
         mod = (VarBoundModPtr) new VarBoundMod(var, Lower, nlb);
         mod->applyToProblem(p);
-#if DEBUG
+#if SPEW
         logger_->MsgStream(LogDebug2) << "mod 4: ";
         mod->write(logger_->MsgStream(LogDebug2));
         logger_->MsgStream(LogDebug2) << std::endl;
@@ -1132,7 +1132,7 @@ void LinearHandler::delFixedVars_(Bool *changed)
 {
   VariablePtr v;
 
-#if DEBUG
+#if SPEW
   logger_->MsgStream(LogDebug) << me_ << "finding fixed variables." 
                                << std::endl; 
 #endif
@@ -1143,7 +1143,7 @@ void LinearHandler::delFixedVars_(Bool *changed)
       problem_->markDelete(v);
       ++(pStats_->varDel);
       *changed = true;
-#if DEBUG
+#if SPEW
       logger_->MsgStream(LogDebug) << me_ << "fixed variable " 
                                    << v->getName() << std::endl; 
 #endif
@@ -1240,7 +1240,7 @@ void LinearHandler::substVars_(Bool *, PreModQ *mods)
   PreSubstVarsPtr smod = (PreSubstVarsPtr) new PreSubstVars();
   VarBoundModPtr mod;
 
-#if DEBUG
+#if SPEW
   logger_->MsgStream(LogDebug) << me_ << "substituting variables."
                                << std::endl; 
 #endif
@@ -1289,7 +1289,7 @@ void LinearHandler::substVars_(Bool *, PreModQ *mods)
           mod = (VarBoundModPtr) new VarBoundMod(in, Upper, out->getUb());
           mod->applyToProblem(problem_);
         }
-#if DEBUG
+#if SPEW
         logger_->MsgStream(LogDebug) << me_ << "substituting " 
                                      << out->getName() << " in constraint " 
                                      << c->getName() << " by " << in->getName() 
@@ -1348,7 +1348,7 @@ void LinearHandler::purgeVars_(PreModQ *pre_mods)
 {
   VariablePtr v = VariablePtr(); // NULL
 
-#if DEBUG
+#if SPEW
   logger_->MsgStream(LogDebug) << me_ << "removing variables."  
                                << std::endl; 
 #endif
