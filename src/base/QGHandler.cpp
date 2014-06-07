@@ -61,7 +61,7 @@ QGHandler::QGHandler()
     linCoeffTol_(1e-6),
     stats_(0),
     solAbsTol_(1e-5),
-    solRelTol_(1e-5),
+    solRelTol_(1e-4),
     eTol_(1e-1),
     eLinTol_(1e-6),
     numCuts_(0),
@@ -85,7 +85,7 @@ QGHandler::QGHandler(EnvPtr env, ProblemPtr minlp, EnginePtr nlpe)
     isFeas_(true),
     linCoeffTol_(1e-6),
     solAbsTol_(1e-5),
-    solRelTol_(1e-5),
+    solRelTol_(1e-4),
     eTol_(1e-1),
     eLinTol_(1e-6),
     numCuts_(0),
@@ -231,7 +231,8 @@ void QGHandler::addInitLinearX_(const Double *x)
     /// Looks like this was a bug when we didn't check the direction of the 
     /// constraint to add the linearization
     if (con->getUb() < INFINITY) {
-      newcon = rel_->newConstraint(f2, -INFINITY, con->getUb()-c, "lnrztn_cut");
+      newcon = rel_->newConstraint(f2, -INFINITY, con->getUb()-c,
+                                   "lnrztn_cut");
       ++(stats_->cuts);
 #if SPEW
       logger_->MsgStream(LogDebug) << me_ << "initial constr. cut: ";
@@ -392,7 +393,7 @@ void QGHandler::separate(ConstSolutionPtr sol, NodePtr node, RelaxationPtr,
          ++v_iter) {
       i = (*v_iter)->getIndex();
       value = x[i];
-      if (fabs(value-lastSol_[i]) > solAbsTol_) {
+      if (fabs(value-lastSol_[i]) > 0.1*solAbsTol_) {
         repeat_sol=false;
         break;
       }
@@ -458,7 +459,7 @@ void QGHandler::cutIntSol_(ConstSolutionPtr sol, SolutionPoolPtr s_pool,
 		  << ", nlpval = " << nlpval << std::endl;
 #endif
     if (lp_obj > nlpval-solAbsTol_ || 
-        lp_obj > nlpval-(fabs(nlpval)+1e-10)*solRelTol_){
+        lp_obj > nlpval-(fabs(nlpval)+1e-2)*solRelTol_){
       *status = SepaPrune;
       break;
     } else {
@@ -587,7 +588,7 @@ void QGHandler::OAFromPoint_(const Double *x, const Double *inf_x,
   ObjectivePtr o;
   UInt num_cuts = 0;
   int error;
-  double vio;
+  double vio, lpvio;
   
 
   *status=SepaContinue;
@@ -607,17 +608,26 @@ void QGHandler::OAFromPoint_(const Double *x, const Double *inf_x,
       vio = std::max(nlpact-con->getUb(), 0.);
       if (vio>solAbsTol_) {
         linearAt_(f, act, x, &c, &lf);
-        f2 = (FunctionPtr) new Function(lf);
-        newcon = rel_->newConstraint(f2, -INFINITY, con->getUb()-c,
-                                     "lnrztn_cut");
-        conVect.push_back(newcon);
-        ++num_cuts;
-        *status = SepaResolve;
+        lpvio = std::max(lf->eval(inf_x)-con->getUb()+c, 0.);
 #if SPEW
-        logger_->MsgStream(LogDebug) << me_ << "OA cut 1: " << std::endl
-          << std::setprecision(9);
-        newcon->write(logger_->MsgStream(LogDebug));
+        logger_->MsgStream(LogDebug) << me_ << con->getName() 
+                                     << " nlp-vio = " << vio
+                                     << " lp-vio = " << lpvio
+                                     << std::endl;
 #endif
+        if (lpvio>1e-4) {
+          f2 = (FunctionPtr) new Function(lf);
+          newcon = rel_->newConstraint(f2, -INFINITY, con->getUb()-c,
+                                       "lnrztn_cut");
+          conVect.push_back(newcon);
+          ++num_cuts;
+          *status = SepaResolve;
+#if SPEW
+          logger_->MsgStream(LogDebug) << me_ <<" OA cut: " << std::endl
+                                       << std::setprecision(9);
+          newcon->write(logger_->MsgStream(LogDebug));
+#endif
+        }
       }
     }
 
@@ -626,16 +636,25 @@ void QGHandler::OAFromPoint_(const Double *x, const Double *inf_x,
       linearAt_(f, act, x, &c, &lf);
       f2 = (FunctionPtr) new Function(lf);
       if (vio>solAbsTol_) {
-        newcon = rel_->newConstraint(f2, con->getLb()-c, INFINITY,
-                                     "lnrztn_cut");
-        conVect.push_back(newcon);
-        ++num_cuts; 
-        *status = SepaResolve;
+        lpvio = std::max(con->getLb()-c-lf->eval(inf_x), 0.);
 #if SPEW
-        logger_->MsgStream(LogDebug) << me_ << "OA cut: " << std::endl
-          << std::setprecision(9);
-        newcon->write(logger_->MsgStream(LogDebug));
+        logger_->MsgStream(LogDebug) << me_ << con->getName() 
+                                     << " nlp-vio = " << vio
+                                     << " lp-vio = " << lpvio
+                                     << std::endl;
 #endif
+        if (lpvio>1e-4) {
+          newcon = rel_->newConstraint(f2, con->getLb()-c, INFINITY,
+                                       "lnrztn_cut");
+          conVect.push_back(newcon);
+          ++num_cuts; 
+          *status = SepaResolve;
+#if SPEW
+          logger_->MsgStream(LogDebug) << me_ << "OA cut: " << std::endl
+                                       << std::setprecision(9);
+          newcon->write(logger_->MsgStream(LogDebug));
+#endif
+        }
       }
     }
   }
@@ -869,8 +888,7 @@ void QGHandler::cutXLP_(const Double *x_nlp, const Double *x_lp,
   Double inn_gr_xalpha;
   Double c;
 
-  if (dir)
-  {
+  if (dir) {
     eval_x_lp= con->getActivity(x_lp,&error)-con->getUb();
 
     while (!stop)
@@ -892,7 +910,7 @@ void QGHandler::cutXLP_(const Double *x_nlp, const Double *x_lp,
           if (lf) {
             fn2 = (FunctionPtr) new Function(lf);
             newcon = rel_->newConstraint(fn2, -INFINITY, inn_gr_xalpha,
-                                         "lnrztn");
+                                         "lnrztn_cut");
 #if SPEW
             logger_->MsgStream(LogDebug) << me_ << "Obj cut: " << std::endl
               << std::setprecision(9);
