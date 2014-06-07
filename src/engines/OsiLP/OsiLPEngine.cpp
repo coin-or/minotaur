@@ -124,6 +124,11 @@ OsiLPEngine::OsiLPEngine()
 #endif
   osilp_->setHintParam(OsiDoReducePrint);
   osilp_->messageHandler()->setLogLevel(0); 
+#if MNTROSICLP
+  OsiClpSolverInterface *osiclp = (OsiClpSolverInterface *)
+    (dynamic_cast<OsiClpSolverInterface*>(osilp_));
+  osiclp->setupForRepeatedUse();
+#endif
 }
 
   
@@ -162,6 +167,11 @@ OsiLPEngine::OsiLPEngine(EnvPtr env)
 
   timer_ = env->getNewTimer();
 
+#if MNTROSICLP
+  OsiClpSolverInterface *osiclp = (OsiClpSolverInterface *)
+    (dynamic_cast<OsiClpSolverInterface*>(osilp_));
+  osiclp->setupForRepeatedUse();
+#endif
 }
 
 

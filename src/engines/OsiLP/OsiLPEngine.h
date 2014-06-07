@@ -253,7 +253,7 @@ namespace Minotaur {
     ProblemPtr problem_;
 
     /// The maximum limit that can be set on Osi solver. 
-    static const Int maxIterLimit_ = 9999999;
+    int maxIterLimit_ = 10000;
   };
   
   typedef boost::shared_ptr<OsiLPEngine> OsiLPEnginePtr;
