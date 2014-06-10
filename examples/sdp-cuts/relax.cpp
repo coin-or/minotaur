@@ -10,17 +10,21 @@
  * \author Hongbo Dong, Washington State University
  */
 
+#include <cmath> // for INFINITY
 #include <iomanip>
 #include <iostream>
 #include <fstream>
 
 #include "MinotaurConfig.h"
 #include "Environment.h"
+#include "FilterSQPEngine.h"
 #include "Function.h"
+#include "IpoptEngine.h"
 #include "Option.h"
 #include "LinearFunction.h"
 #include "Problem.h"
 #include "QuadraticFunction.h"
+#include "Solution.h"
 #include "Timer.h"
 
 using namespace Minotaur;
@@ -38,8 +42,15 @@ ProblemPtr relaxProblem(EnvPtr env, ProblemPtr p)
 }
 
 
-void solveRelax()
+EngineStatus solveRelax(EnvPtr env, ProblemPtr p, ConstSolutionPtr &sol)
 {
+  EnginePtr e = (FilterSQPEnginePtr) new FilterSQPEngine(env);
+  EngineStatus status;
+
+  e->load(p);
+  status = e->solve();
+  sol = e->getSolution();
+  return status;
 }
 
 
@@ -52,30 +63,43 @@ ProblemPtr readProblem(EnvPtr env)
   FunctionPtr f;
   LinearFunctionPtr lf;
   QuadraticFunctionPtr qf;
+  VariablePtr v;
+  ConstSolutionPtr sol;
 
   fs.open(fname.c_str(), std::ios::in);
 
   // read the problem from the file here
   // This is just an example
-  // First the variables
+
+  // First the 'v' variable
+  v = p->newVariable(-INFINITY, INFINITY, Continuous, "v");
   n = 3;
   for (int i=0; i<n; ++i) {
     p->newVariable(0.0, 1.0, Continuous);
   }
 
-  // Objective: 3x_1x_2 + 5x_1x_3 + 7x_2^2 + 8x_1 - 2x_3
+  // variable v has index 0, x1 has 1, x2 has 2, x3 has 3
+  // Objective: min v
+  lf = (LinearFunctionPtr) new LinearFunction();
+  lf->incTerm(v, 1.0);
+  f = (FunctionPtr) new Function(lf);
+  p->newObjective(f, 0.0, Minimize);
+
+  // add a constraint
+  // v >= 3x1x2 + 5x1x3 + 7x2^2 + 8x1 - 2x3
   qf = (QuadraticFunctionPtr) new QuadraticFunction();
-  qf->addTerm(p->getVariable(0), p->getVariable(1), 3.0);
-  qf->addTerm(p->getVariable(0), p->getVariable(2), 5.0);
-  qf->addTerm(p->getVariable(1), p->getVariable(1), 7.0);
+  qf->incTerm(p->getVariable(1), p->getVariable(2), 3.0);
+  qf->incTerm(p->getVariable(1), p->getVariable(3), 5.0);
+  qf->incTerm(p->getVariable(2), p->getVariable(2), 7.0);
 
   lf = (LinearFunctionPtr) new LinearFunction();
-  lf->addTerm(p->getVariable(0), 8.0);
-  lf->addTerm(p->getVariable(2), -2.0);
+  lf->addTerm(p->getVariable(1), 8.0);
+  lf->addTerm(p->getVariable(3), -2.0);
+  lf->addTerm(v, -1.0);
 
   f = (FunctionPtr) new Function(lf, qf);
 
-  p->newObjective(f, 0.0, Minimize);
+  p->newConstraint(f, -INFINITY, 0.0);
 
   fs.close();
 
@@ -91,6 +115,9 @@ int main(int argc, char **argv)
   HandlerVector handlers;
   int err = 0;
   ProblemPtr p, r;
+  EngineStatus status;
+  std::string me = "sdp-cuts: ";
+  ConstSolutionPtr sol;
 
   env->startTimer(err);
 
@@ -101,11 +128,19 @@ int main(int argc, char **argv)
 
   r = relaxProblem(env, p);
 
-  solveRelax();
+  status = solveRelax(env, p, sol);
+
+  if (status == ProvenOptimal || status == ProvenLocalOptimal) {
+    std::cout << me << "feasible solution found" << std::endl;
+    sol->writePrimal(std::cout);
+  } else {
+    std::cout << me << "engine has a problem. status = " << status << std::endl;
+  }
+
 
   while (false) {
     addCut();
-    solveRelax();
+    solveRelax(env, p, sol);
   }
 
   return 0;
