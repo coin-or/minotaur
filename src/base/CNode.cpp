@@ -1460,9 +1460,10 @@ void CNode::propBounds(bool *is_inf, Int *error)
 
 void CNode::propBounds_(double lb, double ub, bool *is_inf)
 {
+  double etol = 1e-7;
   assert(false==std::isnan(lb));
   assert(false==std::isnan(ub));
-  if (lb > ub || ub < lb_ || lb > ub_) {
+  if (lb > ub + etol || ub < lb_- etol || lb > ub_ + etol) {
     *is_inf = true;
   } else {
     if (lb > lb_) {

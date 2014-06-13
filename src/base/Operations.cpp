@@ -118,7 +118,11 @@ void Minotaur::BoundsOnProduct(Double l0, Double u0, Double l1, Double u1,
 
   double prod;
 
-  if (fabs(l0)<=1e-10 && fabs(u0)<=1e-10) {
+  if ((l1==-INFINITY && u1==INFINITY) || 
+     (l0==-INFINITY && u0==INFINITY)) {
+    lb = -INFINITY;
+    ub =  INFINITY;
+  } else if (fabs(l0)<=1e-10 && fabs(u0)<=1e-10) {
     lb = 0.0;
     ub = 0.0;
   } else if (fabs(l1)<=1e-10 && fabs(u1)<=1e-10) {
