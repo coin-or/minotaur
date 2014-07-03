@@ -228,6 +228,9 @@ namespace Minotaur {
     /// Name of the engine: OsiCpx, OsiClp etc.
     OsiLPEngineName eName_;
 
+    /// The maximum limit that can be set on Osi solver. 
+    int maxIterLimit_;
+
     /// True if objective was changed after previous solve.
     Bool objChanged_;
 
@@ -237,23 +240,21 @@ namespace Minotaur {
      */
     OsiSolverInterface *osilp_;
 
+    /// Problem that is loaded, if any.
+    ProblemPtr problem_;
+
+    /// Solution.
+    SolutionPtr sol_;
+
+    /// Statistics.
+    OsiLPStats *stats_;
+
     /// True if strong-branching.
     Bool strBr_;
 
     /// Timer for OsiLP solves. Includes time spent in strong branching.
     Timer *timer_;
 
-    /// Statistics.
-    OsiLPStats *stats_;
-
-    /// Solution.
-    SolutionPtr sol_;
-
-    /// Problem that is loaded, if any.
-    ProblemPtr problem_;
-
-    /// The maximum limit that can be set on Osi solver. 
-    int maxIterLimit_ = 10000;
   };
   
   typedef boost::shared_ptr<OsiLPEngine> OsiLPEnginePtr;

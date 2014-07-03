@@ -111,10 +111,11 @@ OsiLPEngine::OsiLPEngine()
     consChanged_(true),
     env_(EnvPtr()),
     eName_(OsiUndefEngine),
+    maxIterLimit_(10000),
     objChanged_(true),
+    stats_(0),
     strBr_(false),
-    timer_(0),
-    stats_(0)
+    timer_(0)
 {
   logger_ = (LoggerPtr) new Logger(LogInfo);
 #if USE_OSILP 
@@ -136,6 +137,7 @@ OsiLPEngine::OsiLPEngine(EnvPtr env)
   : bndChanged_(true),
     consChanged_(true),
     env_(env),
+    maxIterLimit_(10000),
     objChanged_(true),
     strBr_(false)
 {
