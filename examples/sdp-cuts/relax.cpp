@@ -14,134 +14,113 @@
 #include <iomanip>
 #include <iostream>
 #include <fstream>
+#include <stdlib.h>
+
+#include <sys/types.h>
+#include <dirent.h>
+#include <errno.h>
+#include <vector>
+#include <string>
 
 #include "MinotaurConfig.h"
 #include "Environment.h"
 #include "FilterSQPEngine.h"
 #include "Function.h"
 #include "IpoptEngine.h"
+//#include "IpoptEngineTnlp.h"
 #include "Option.h"
 #include "LinearFunction.h"
 #include "Problem.h"
 #include "QuadraticFunction.h"
 #include "Solution.h"
 #include "Timer.h"
+#include "Constraint.h"
+#include "HessianOfLag.h"
+#include "Eigen.h"
 
+#include "MIQCPData.h"
+#include "MIQCP.h"
 using namespace Minotaur;
 
+//typedef std::vector<std::pair<FunctionPtr, Double> > QuadConsVec;
+//typedef std::vector<std::pair<FunctionPtr, Double> >::const_iterator QuadConsVecIterator;
 
-void addCut()
+void boxqp_cuttingplane(std::string fname)
 {
-}
+  int err = 0;
 
+  MIQCP miqcp_prob(ProbTypeBoxQP, fname);
+  //MIQCP miqcp_prob(ProbTypeBoxQP, "../data/boxqp/basic/spar020-100-1.in");
+  //miqcp_prob.writeProblem();
+  miqcp_prob.solveRelax();
+  //miqcp_prob.writeSol();
 
-ProblemPtr relaxProblem(EnvPtr env, ProblemPtr p)
-{
-  ProblemPtr r = (ProblemPtr) new Problem();
-  return r;
-}
+  for (UInt iter=1; iter<=50; iter++)
+  {
+    //std::cout<<"========================"<<std::endl;
+    std::cout<<"Iteration"<<std::setw(4)<<iter<<"  |  ";
+    bool CutFound = miqcp_prob.separateByDiagPerturbation();
+    //miqcp_prob.writeProblem();
+    if (CutFound)
+    {
+      miqcp_prob.solveRelax();
+      //miqcp_prob.writeSol();
+      std::cout<<std::setw(8)<<std::setprecision(5)<<miqcp_prob.getObj(err)<<"  ";
+    }
+    else
+    {
+      std::cout<<"  (No more cuts found.)"<<std::endl;
+      break;
+    }
 
-
-EngineStatus solveRelax(EnvPtr env, ProblemPtr p, ConstSolutionPtr &sol)
-{
-  EnginePtr e = (FilterSQPEnginePtr) new FilterSQPEngine(env);
-  EngineStatus status;
-
-  e->load(p);
-  status = e->solve();
-  sol = e->getSolution();
-  return status;
-}
-
-
-ProblemPtr readProblem(EnvPtr env)
-{
-  ProblemPtr p = (ProblemPtr) new Problem();
-  std::ifstream fs;
-  std::string fname = env->getOptions()->findString("problem_file")->getValue();
-  int n = 0;
-  FunctionPtr f;
-  LinearFunctionPtr lf;
-  QuadraticFunctionPtr qf;
-  VariablePtr v;
-  ConstSolutionPtr sol;
-
-  fs.open(fname.c_str(), std::ios::in);
-
-  // read the problem from the file here
-  // This is just an example
-
-  // First the 'v' variable
-  v = p->newVariable(-INFINITY, INFINITY, Continuous, "v");
-  n = 3;
-  for (int i=0; i<n; ++i) {
-    p->newVariable(0.0, 1.0, Continuous);
+    std::cout<<std::setw(8)<<std::setprecision(5)<<miqcp_prob.getTime(err)<<" sec."<<std::endl;
+    //std::cout<<"========================"<<std::endl;
   }
-
-  // variable v has index 0, x1 has 1, x2 has 2, x3 has 3
-  // Objective: min v
-  lf = (LinearFunctionPtr) new LinearFunction();
-  lf->incTerm(v, 1.0);
-  f = (FunctionPtr) new Function(lf);
-  p->newObjective(f, 0.0, Minimize);
-
-  // add a constraint
-  // v >= 3x1x2 + 5x1x3 + 7x2^2 + 8x1 - 2x3
-  qf = (QuadraticFunctionPtr) new QuadraticFunction();
-  qf->incTerm(p->getVariable(1), p->getVariable(2), 3.0);
-  qf->incTerm(p->getVariable(1), p->getVariable(3), 5.0);
-  qf->incTerm(p->getVariable(2), p->getVariable(2), 7.0);
-
-  lf = (LinearFunctionPtr) new LinearFunction();
-  lf->addTerm(p->getVariable(1), 8.0);
-  lf->addTerm(p->getVariable(3), -2.0);
-  lf->addTerm(v, -1.0);
-
-  f = (FunctionPtr) new Function(lf, qf);
-
-  p->newConstraint(f, -INFINITY, 0.0);
-
-  fs.close();
-
-  p->setNativeDer();
-  p->write(std::cout);
-  return p;
 }
 
+/*function... might want it in some class?*/
+int getdir (std::string dir, std::vector<std::string> &files)
+{
+    DIR *dp;
+    struct dirent *dirp;
+    if((dp  = opendir(dir.c_str())) == NULL) {
+        std::cout << "Error(" << errno << ") opening " << dir << std::endl;
+        return errno;
+    }
+
+    while ((dirp = readdir(dp)) != NULL) {
+        files.push_back(dir+std::string(dirp->d_name));
+    }
+    closedir(dp);
+    return 0;
+}
 
 int main(int argc, char **argv)
 {
-  EnvPtr env = (EnvPtr) new Environment();
-  HandlerVector handlers;
-  int err = 0;
-  ProblemPtr p, r;
-  EngineStatus status;
-  std::string me = "sdp-cuts: ";
-  ConstSolutionPtr sol;
-
-  env->startTimer(err);
-
-  // read the command line options
-  env->readOptions(argc, argv);
-
-  p = readProblem(env);
-
-  r = relaxProblem(env, p);
-
-  status = solveRelax(env, p, sol);
-
-  if (status == ProvenOptimal || status == ProvenLocalOptimal) {
-    std::cout << me << "feasible solution found" << std::endl;
-    sol->writePrimal(std::cout);
-  } else {
-    std::cout << me << "engine has a problem. status = " << status << std::endl;
+  std::vector<std::string> files;
+  getdir("../data/boxqp/basic/", files);
+  getdir("../data/boxqp/extended/", files);
+  getdir("../data/boxqp/extended2/", files);
+  //boost::regex inst_file_pattern("spar*.in");
+  //std::tr1::regex inst_file_pattern("spar*.in");
+  for (std::vector<std::string>::const_iterator it = files.begin();
+      it!= files.end(); it++)
+  {
+    //boost::regex_match(file, what, inst_file_pattern);
+    size_t found = it->find("spar");
+    // Found "spar" in filename
+    if ((found)!=std::string::npos)
+    {
+      //std::cout<<(*it)<<" at " <<found<<std::endl;
+      std::cout<<"Now work on instance "<<(*it)<<std::endl;
+      boxqp_cuttingplane(*it);
+      //break;
+    }
   }
 
+  //std::cout<<"Now work on "<<files.front()<<std::endl;
+  //boxqp_cuttingplane(files.front());
 
-  while (false) {
-    addCut();
-    solveRelax(env, p, sol);
-  }
 
   return 0;
 }
