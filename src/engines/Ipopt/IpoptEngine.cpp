@@ -324,6 +324,12 @@ IpoptEngine::IpoptEngine(EnvPtr env)
 }
 
 
+void IpoptEngine::addConstraint(ConstraintPtr)
+{
+  consChanged_ = true;
+}
+
+
 EnginePtr IpoptEngine::emptyCopy()
 {
   if (env_) {

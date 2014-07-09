@@ -144,8 +144,8 @@ namespace Minotaur {
       // Convert 'min f' to 'min -f'.
       void negateObj();
 
-      // Implement Engine::addConstraint() */
-      virtual void addConstraint(ConstraintPtr) {};
+      // Base class method
+      void addConstraint(ConstraintPtr c);
 
       // Implement Engine::changeConstraint().
       void changeConstraint(ConstraintPtr con, LinearFunctionPtr lf, 

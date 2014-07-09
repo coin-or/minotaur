@@ -278,6 +278,12 @@ FilterSQPEngine::FilterSQPEngine(EnvPtr env)
 }
 
 
+void FilterSQPEngine::addConstraint(ConstraintPtr)
+{
+  consChanged_ = true;
+}
+
+
 EnginePtr FilterSQPEngine::emptyCopy()
 {
   if (env_) {
