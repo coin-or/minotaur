@@ -27,24 +27,26 @@ typedef boost::shared_ptr<PreAuxVars> PreAuxVarsPtr;
 /// Store statistics of presolving.
 struct NlPresStats 
 {
-  Int iters;   /// Number of iterations (main cycle).
-  Double time; /// Total time used in initial presolve.
-  Int varDel;  /// Number of variables marked for deletion.
-  Int conDel;  /// Number of constraints marked for deletion.
-  Int pRefs;   /// Number of perspective reformulations
-  Int vBnd;    /// Number of times variable-bounds were tightened.
-  Int cBnd;    /// Number of times constraint-bounds were tightened.
-  Int cImp;    /// Number of times coefficient in a constraint was improved.
-  Int nMods;   /// Number of changes in nodes.
+  int iters;   /// Number of iterations (main cycle).
+  double time; /// Total time used in initial presolve.
+  int varDel;  /// Number of variables marked for deletion.
+  int conDel;  /// Number of constraints marked for deletion.
+  int pRefs;   /// Number of perspective reformulations
+  int vBnd;    /// Number of times variable-bounds were tightened.
+  int cBnd;    /// Number of times constraint-bounds were tightened.
+  int cImp;    /// Number of times coefficient in a constraint was improved.
+  int nMods;   /// Number of changes in nodes.
+  int qCone;   /// Number of times a quadratic constraint changed to a
+               /// conic constraint.
 };
 
 
 /// Options for presolve.
 struct NlPresOpts {
-  Bool doPresolve; /// True if presolve is enabled, false otherwise.
-  Bool showStats;  /// True if stats are displayed, false otherwise.
-  Int  maxIters;   /// Maximum number of iterations.
-  Bool coeffImp;   /// If True, do coefficient improvement.
+  bool doPresolve; /// True if presolve is enabled, false otherwise.
+  bool showStats;  /// True if stats are displayed, false otherwise.
+  int  maxIters;   /// Maximum number of iterations.
+  bool coeffImp;   /// If True, do coefficient improvement.
 }; 
 
 
@@ -64,34 +66,34 @@ public:
   ~NlPresHandler();
 
   // Does nothing.
-  void relaxInitFull(RelaxationPtr , Bool *) {};
+  void relaxInitFull(RelaxationPtr , bool *) {};
 
   // Does nothing.
-  void relaxInitInc(RelaxationPtr , Bool *) {};
+  void relaxInitInc(RelaxationPtr , bool *) {};
 
   // Does nothing.
-  void relaxNodeFull(NodePtr , RelaxationPtr , Bool *) {};
+  void relaxNodeFull(NodePtr , RelaxationPtr , bool *) {};
 
   // Does nothing.
-  void relaxNodeInc(NodePtr , RelaxationPtr , Bool *) {};
+  void relaxNodeInc(NodePtr , RelaxationPtr , bool *) {};
 
   /** 
    * We assume that nonlinear presolve handler is never called for checking
    * feasibility. Always return true.
    */
-  Bool isFeasible(ConstSolutionPtr, RelaxationPtr, Bool &)
+  bool isFeasible(ConstSolutionPtr, RelaxationPtr, bool &)
   {return true;}
 
   /**
    * Generate valid cuts using linear constraints.
    */
   void separate(ConstSolutionPtr , NodePtr , RelaxationPtr , CutManager *,
-                SolutionPoolPtr , Bool *, SeparationStatus *) {};
+                SolutionPoolPtr , bool *, SeparationStatus *) {};
 
   /// Does nothing.
   void getBranchingCandidates(RelaxationPtr , 
                                       const DoubleVector &, ModVector &, 
-                                      BrCandSet &, Bool &) {};
+                                      BrCandSet &, bool &) {};
 
   /// Does nothing.
   ModificationPtr getBrMod(BrCandPtr, DoubleVector &, 
@@ -104,10 +106,10 @@ public:
   {return Branches();}; // NULL
 
   // presolve.
-  SolveStatus presolve(PreModQ *pre_mods, Bool *changed);
+  SolveStatus presolve(PreModQ *pre_mods, bool *changed);
 
   // Implement Handler::presolveNode().
-  Bool presolveNode(ProblemPtr p, NodePtr node, SolutionPoolPtr s_pool,
+  bool presolveNode(ProblemPtr p, NodePtr node, SolutionPoolPtr s_pool,
                     ModVector &n_mods, ModVector &t_mods);
 
   // Write name
@@ -125,11 +127,14 @@ private:
   /// Should we try perspective reformulation?
   bool doPersp_;
 
+  /// Should we try perspective reformulation?
+  bool doQuadCone_;
+
   /// Environment.
   EnvPtr env_;
 
   /// Tolerance for checking feasibility etc.
-  Double eTol_;
+  double eTol_;
 
   /// Log manager
   LoggerPtr logger_;
@@ -140,25 +145,26 @@ private:
   NlPresStats stats_;
 
   /// Tolerance for checking zero.
-  Double zTol_;
+  double zTol_;
 
   /// Who am I?
   static const std::string me_;
 
-  void bin2Lin_(ProblemPtr p, PreModQ *mods, Bool *changed);
+  void bin2Lin_(ProblemPtr p, PreModQ *mods, bool *changed);
   void bin2LinF_(ProblemPtr p, LinearFunctionPtr lf,
                  UInt nz, const UInt *irow, const UInt *jcol,
-                 const Double *values, PreAuxVarsPtr mods);
+                 const double *values, PreAuxVarsPtr mods);
 
-  Bool canBin2Lin_(ProblemPtr p, UInt nz, const UInt *irow,
-                   const UInt *jcol, const Double *values);
-  void  chkRed_(Bool *changed);
-  void  coeffImpr_(Bool *changed);
+  bool canBin2Lin_(ProblemPtr p, UInt nz, const UInt *irow,
+                   const UInt *jcol, const double *values);
+  void  chkRed_(bool *changed);
+  void  coeffImpr_(bool *changed);
   void  computeImpBounds_(ConstraintPtr c, VariablePtr z, 
-                          Double zval, Double *lb, Double *ub);
+                          double zval, double *lb, double *ub);
   void perspMod_(ConstraintPtr c, VariablePtr z);
-  void  perspRef_(ProblemPtr p, PreModQ *mods, Bool *changed);
-  SolveStatus varBndsFromCons_(Bool *changed);
+  void perspRef_(ProblemPtr p, PreModQ *mods, bool *changed);
+  void quadConeRef_(ProblemPtr p, PreModQ *mods, bool *changed);
+  SolveStatus varBndsFromCons_(bool *changed);
 };
 typedef boost::shared_ptr<NlPresHandler> NlPresHandlerPtr;
 }

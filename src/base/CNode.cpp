@@ -301,10 +301,10 @@ void CNode::copyParChild(CNode *out,
 }
 
 
-Double CNode::eval(Double x, Int *error) const
+double CNode::eval(double x, int *error) const
 {
   errno = 0; //declared in cerrno
-  Double val = 0;
+  double val = 0;
   switch (op_) {
   case (OpAbs):
     val = fabs(x);
@@ -395,7 +395,7 @@ Double CNode::eval(Double x, Int *error) const
 }
 
 
-void CNode::eval(const Double *x, Int *error)
+void CNode::eval(const double *x, int *error)
 {
   errno = 0; //declared in cerrno
   //writeSubExp(std::cout);
@@ -904,13 +904,13 @@ void CNode::fwdGrad()
     break;
   case (OpTan):
     {
-      Double r = cos(l_->val_);
+      double r = cos(l_->val_);
       gi_ += l_->gi_/(r*r);
     }
     break;
   case (OpTanh):
     { 
-      Double r = cosh(l_->val_);
+      double r = cosh(l_->val_);
       gi_ += l_->gi_/(r*r);
     }
     break;
@@ -925,7 +925,7 @@ void CNode::fwdGrad()
 }
 
 
-void CNode::grad(Int *error)
+void CNode::grad(int *error)
 {
   errno = 0; // declared in cerrno
   switch (op_) {
@@ -1030,13 +1030,13 @@ void CNode::grad(Int *error)
     break;
   case (OpTan):
     {
-      Double r = cos(l_->val_);
+      double r = cos(l_->val_);
       l_->g_ += g_/(r*r);
     }
     break;
   case (OpTanh):
     { 
-      Double r = cosh(l_->val_);
+      double r = cosh(l_->val_);
       l_->g_ += g_/(r*r);
     }
     break;
@@ -1054,7 +1054,7 @@ void CNode::grad(Int *error)
 }
 
 
-void CNode::hess(Int *error)
+void CNode::hess(int *error)
 {
   errno = 0;
   switch (op_) {
@@ -1080,13 +1080,13 @@ void CNode::hess(Int *error)
     break;
   case (OpAtan):
     {
-    Double d = 1+l_->val_*l_->val_;
+    double d = 1+l_->val_*l_->val_;
     l_->h_ +=  h_/d - 2.0 * g_ * l_->gi_ * l_->val_/(d*d); 
     }
     break;
   case (OpAtanh):
     {
-    Double d = (1.0 - l_->val_*l_->val_);
+    double d = (1.0 - l_->val_*l_->val_);
     l_->h_ +=  h_/d + 2.0 * g_ * l_->gi_ * l_->val_/(d*d);
     }
     break;
@@ -1175,14 +1175,14 @@ void CNode::hess(Int *error)
     break;
   case (OpTan):
     {
-    Double d = cos(l_->val_);
+    double d = cos(l_->val_);
            d *= d;
     l_->h_ += h_/d  + 2.0 * g_ * l_->gi_ * tan(l_->val_)/d;
     }
     break;
   case (OpTanh):
     { 
-    Double d = cosh(l_->val_);
+    double d = cosh(l_->val_);
            d *= d;
     l_->h_ += h_/d  - 2.0 * g_ * l_->gi_ * tanh(l_->val_)/d;
       
@@ -1204,7 +1204,7 @@ void CNode::hess(Int *error)
 }
 
 
-void CNode::hess2(CNodeRSet *nset, Int *error)
+void CNode::hess2(CNodeRSet *nset, int *error)
 {
   propHessSpa2(nset);
   hess(error);
@@ -1217,11 +1217,11 @@ UInt CNode::numChild() const
 }
 
 
-void CNode::propBounds(bool *is_inf, Int *error)
+void CNode::propBounds(bool *is_inf, int *error)
 {
   errno = 0; //declared in cerrno
-  Double lb = -INFINITY;
-  Double ub = INFINITY;
+  double lb = -INFINITY;
+  double ub = INFINITY;
   switch (op_) {
   case (OpAbs):
     assert(lb_>-1e-12);
@@ -1363,9 +1363,13 @@ void CNode::propBounds(bool *is_inf, Int *error)
     l_->propBounds_(lb, ub, is_inf);
     break;
   case (OpSqrt):
-    lb = lb_*lb_;
-    ub = ub_*ub_;
-    l_->propBounds_(lb, ub, is_inf);
+    if (ub_<0.0) {
+      *is_inf = true;
+    } else if (lb>=0.0) {
+      l_->propBounds_(lb*lb, ub*ub, is_inf);
+    } else {
+      l_->propBounds_(0.0, ub*ub, is_inf);
+    }
     break;
   case (OpSumList):
     {
@@ -1640,7 +1644,7 @@ void CNode::setType(FunctionType t)
 }
 
 
-void CNode::setVal(Double v)
+void CNode::setVal(double v)
 {
   val_ = v;
   if (OpNum==op_) {
@@ -1649,7 +1653,7 @@ void CNode::setVal(Double v)
 }
 
 
-void CNode::updateBnd(Int *error)
+void CNode::updateBnd(int *error)
 {
   errno = 0; //declared in cerrno
   switch (op_) {

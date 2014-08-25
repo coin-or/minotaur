@@ -16,8 +16,6 @@
 #include <string.h> // for memset
 
 #include "MinotaurConfig.h"
-#include "CGraph.h"
-#include "CNode.h"
 #include "Constraint.h"
 #include "Environment.h"
 #include "Function.h"
@@ -43,6 +41,7 @@ const std::string NlPresHandler::me_ = "NlPresHandler: ";
 
 NlPresHandler::NlPresHandler()
   : doPersp_(false),
+    doQuadCone_(false),
     env_(EnvPtr()),
     eTol_(1e-6),
     logger_(LoggerPtr()),
@@ -55,6 +54,7 @@ NlPresHandler::NlPresHandler()
   stats_.pRefs = 0;
   stats_.iters = 0;
   stats_.nMods = 0;
+  stats_.qCone = 0;
   stats_.time = 0;
   stats_.varDel = 0;
   stats_.vBnd = 0;
@@ -70,12 +70,14 @@ NlPresHandler::NlPresHandler(EnvPtr env, ProblemPtr p)
   logger_ = (LoggerPtr) new Logger((LogLevel)(env->getOptions()->
       findInt("handler_log_level")->getValue()));
   doPersp_ = env->getOptions()->findBool("persp_ref")->getValue();
+  doQuadCone_ = env->getOptions()->findBool("quad_cone_ref")->getValue();
   stats_.cBnd = 0;
   stats_.cImp = 0;
   stats_.conDel = 0;
   stats_.pRefs = 0;
   stats_.iters = 0;
   stats_.nMods = 0;
+  stats_.qCone = 0;
   stats_.time = 0;
   stats_.varDel = 0;
   stats_.vBnd = 0;
@@ -88,14 +90,14 @@ NlPresHandler::~NlPresHandler()
 }
 
 
-void  NlPresHandler::chkRed_(Bool *changed)
+void  NlPresHandler::chkRed_(bool *changed)
 {
   ConstraintPtr c;
   LinearFunctionPtr lf;
   NonlinearFunctionPtr nlf;
   Double lfu, lfl;
   Double nlfu, nlfl;
-  Int error = 0;
+  int error = 0;
 
   for (ConstraintConstIterator cit=p_->consBegin(); cit!=p_->consEnd();
        ++cit) {
@@ -129,7 +131,8 @@ void  NlPresHandler::chkRed_(Bool *changed)
 }
 
 
-void  NlPresHandler::coeffImpr_(Bool *changed)
+// TODO: make it work even when binaries are absent from a constraint.
+void  NlPresHandler::coeffImpr_(bool *changed)
 {
   ConstraintPtr c;
   LinearFunctionPtr lf;
@@ -295,14 +298,14 @@ void NlPresHandler::bin2LinF_(ProblemPtr p, LinearFunctionPtr lf,
 }
 
 
-void  NlPresHandler::bin2Lin_(ProblemPtr p, PreModQ *mods, Bool *changed)
+void  NlPresHandler::bin2Lin_(ProblemPtr p, PreModQ *mods, bool *changed)
 {
   ConstraintPtr c;
   LinearFunctionPtr lf;
   FunctionPtr f;
   HessianOfLagPtr hess;
   Double *mult = 0;
-  Int err = 0;
+  int err = 0;
   Double *x = 0;
   Double *values = 0;
   Double *grad = 0;
@@ -391,7 +394,7 @@ void  NlPresHandler::bin2Lin_(ProblemPtr p, PreModQ *mods, Bool *changed)
 }
 
 
-Bool NlPresHandler::canBin2Lin_(ProblemPtr p, UInt nz, const UInt *irow,
+bool NlPresHandler::canBin2Lin_(ProblemPtr p, UInt nz, const UInt *irow,
                                 const UInt *jcol, const Double *values)
 {
   VariablePtr v1, v2;
@@ -417,7 +420,7 @@ Bool NlPresHandler::canBin2Lin_(ProblemPtr p, UInt nz, const UInt *irow,
 
 
 #if 0
-Bool  NlPresHandler::canLin_(FunctionPtr f)
+bool  NlPresHandler::canLin_(FunctionPtr f)
 {
   CGraphPtr cg;
   NonlinearFunctionPtr nlf;
@@ -495,7 +498,7 @@ void  NlPresHandler::computeImpBounds_(ConstraintPtr c, VariablePtr z,
   ModStack mods;
   VarBoundModPtr m;
   ModificationPtr m2;
-  Int error = 0;
+  int error = 0;
 
   if (zval<0.5) {
     m = (VarBoundModPtr) new VarBoundMod(z, Upper, 0.0);
@@ -568,7 +571,7 @@ std::string NlPresHandler::getName() const
 }
 
 
-void  NlPresHandler::perspRef_(ProblemPtr p, PreModQ *mods, Bool *changed)
+void NlPresHandler::perspRef_(ProblemPtr p, PreModQ *, bool *changed)
 {
   ConstraintPtr c, c2;
   FunctionPtr f;
@@ -691,15 +694,9 @@ void  NlPresHandler::perspRef_(ProblemPtr p, PreModQ *mods, Bool *changed)
 }
 
 
-void NlPresHandler::perspMod_(ConstraintPtr c, VariablePtr z)
+SolveStatus NlPresHandler::presolve(PreModQ *mods, bool *changed0)
 {
-  NonlinearFunctionPtr nlf;
-}
-
-
-SolveStatus NlPresHandler::presolve(PreModQ *mods, Bool *changed0)
-{
-  Bool changed = true;
+  bool changed = true;
   Timer *tim = env_->getNewTimer();
   SolveStatus status = Started;
 
@@ -719,6 +716,9 @@ SolveStatus NlPresHandler::presolve(PreModQ *mods, Bool *changed0)
     if (doPersp_) {
       perspRef_(p_, mods, &changed);
     }
+    if (doQuadCone_) {
+      quadConeRef_(p_, mods, &changed);
+    }
     ++stats_.iters;
     if (changed) {
       *changed0 = true;
@@ -730,7 +730,7 @@ SolveStatus NlPresHandler::presolve(PreModQ *mods, Bool *changed0)
 }
 
 
-Bool NlPresHandler::presolveNode(ProblemPtr p, NodePtr, SolutionPoolPtr s_pool,
+bool NlPresHandler::presolveNode(ProblemPtr p, NodePtr, SolutionPoolPtr s_pool,
                                  ModVector &, ModVector &t_mods)
 {
   FunctionPtr f = p->getObjective()->getFunction();
@@ -739,7 +739,7 @@ Bool NlPresHandler::presolveNode(ProblemPtr p, NodePtr, SolutionPoolPtr s_pool,
   Double nlfl, nlfu;
   Double lfl, lfu;
   Double olb;
-  Int error = 0;
+  int error = 0;
   Double a0;
   VariablePtr z;
   Double ub = (s_pool)?s_pool->getBestSolutionValue():INFINITY;
@@ -793,7 +793,86 @@ Bool NlPresHandler::presolveNode(ProblemPtr p, NodePtr, SolutionPoolPtr s_pool,
 }
 
 
-SolveStatus NlPresHandler::varBndsFromCons_(Bool *changed)
+//
+// x_1^2 + x_2^2 + x_3^2 <= K + Mz
+// if (M>0), we rewrite it as
+// sqrt(x_1^2 + x_2^2 + x_3^2 + eps) <= (1-z).sqrt(K+eps) + z.sqrt(K+M+eps)
+// if (M<0), we rewrite it as
+// x_1^2 + x_2^2 + x_3^2 <= (K+M) + (1-z).(-M), and then again we get the same 
+// sqrt(x_1^2 + x_2^2 + x_3^2 + eps) <= (1-z).sqrt(K+eps) + z.sqrt(K+M+eps)
+//
+// TODO: implement for qf and K<0
+// TODO: implement isSumOfSquares
+//
+void NlPresHandler::quadConeRef_(ProblemPtr p, PreModQ *, bool *changed)
+{
+  ConstraintPtr c;
+  FunctionPtr f;
+  QuadraticFunctionPtr qf;
+  LinearFunctionPtr lf, lf2;
+  NonlinearFunctionPtr nlf, nlf2;
+  VariablePtr z;
+  const double eps = 1e-4;
+  int err = 0;
+  double M, K;
+
+  for (ConstraintConstIterator cit=p->consBegin(); cit!=p->consEnd();
+       ++cit) {
+    c = *cit;
+    K = c->getUb();
+    if (K==INFINITY || K<0.0) {
+      continue;
+    }
+
+    f = c->getFunction(); 
+    if (!f) {
+      continue;
+    }
+    if (Quadratic!=f->getType()) {
+      continue;
+    }
+    qf = f->getQuadraticFunction();
+    lf = f->getLinearFunction();
+    nlf = f->getNonlinearFunction();
+    if (!lf || lf->getNumTerms()!=1) {
+      continue;
+    }
+
+    z = lf->termsBegin()->first;
+    if (z->getType()!=Binary && z->getType()!=ImplBin) {
+      continue;
+    }
+    M = -1.0*lf->termsBegin()->second;
+
+    if(nlf && qf) {
+      continue;
+    } else if (qf) {
+      assert(!"implement me!");
+    } else if (nlf) {
+      if (nlf->isSumOfSquares()) {
+        nlf2 = nlf->cloneWithVars(p->varsBegin(), &err);
+        if (err) { continue; }
+        nlf2->addConst(eps, err); if (err) { continue; }
+        nlf2->sqrRoot(err);  if (err) { continue; }
+
+        //c->write(std::cout);
+        // nlf2 <= (1-z).sqrt(K+eps) + z.sqrt(K+M+eps)
+        lf2 = (LinearFunctionPtr) new LinearFunction();
+        lf2->addTerm(z, sqrt(K+eps)-sqrt(K+M+eps));
+        f = (FunctionPtr) new Function(lf2, nlf2);
+
+        p->changeConstraint(c, nlf2);
+        p->changeConstraint(c, lf2, -INFINITY, sqrt(K+eps));
+        ++(stats_.qCone);
+        //c->write(std::cout);
+        *changed = true;
+      }
+    }
+  }
+}
+
+
+SolveStatus NlPresHandler::varBndsFromCons_(bool *changed)
 {
   ConstraintPtr c;
   LinearFunctionPtr lf;
@@ -845,6 +924,7 @@ void NlPresHandler::writePreStats(std::ostream &out) const
     << me_ << "Times variables tightened      = " << stats_.vBnd   << std::endl
     << me_ << "Times constraints tightened    = " << stats_.cBnd   << std::endl
     << me_ << "Times coefficients improved    = " << stats_.cImp   << std::endl
+    << me_ << "Times quad. changed to conic   = " << stats_.qCone  << std::endl
     << me_ << "Changes in nodes               = " << stats_.nMods  << std::endl
     ;
 }

@@ -38,26 +38,28 @@ public:
   /// Default constructor.
   ~CGraph();
 
-  NonlinearFunctionPtr clone(Int *err) const;
+  void addConst(const double eps, int &err); 
 
-  NonlinearFunctionPtr cloneWithVars(VariableConstIterator, Int *) const;
+  NonlinearFunctionPtr clone(int *err) const;
+
+  NonlinearFunctionPtr cloneWithVars(VariableConstIterator, int *) const;
 
   // base class method.
   NonlinearFunctionPtr getPersp(VariablePtr z, double eps, int *err) const;
 
   // base class method.
-  void computeBounds(Double *lb, Double *ub, Int *error);
+  void computeBounds(double *lb, double *ub, int *error);
 
   // Evaluate at a given array.
-  Double eval(const Double *x, Int *err);
+  double eval(const double *x, int *err);
 
   // Evaluate gradient at a given array.
-  void evalGradient(const Double *x, Double *grad_f, Int *error);
+  void evalGradient(const double *x, double *grad_f, int *error);
 
   // Evaluate hessian of at a given vector.
-  void evalHessian(Double mult, const Double *x, 
-                   const LTHessStor *stor, Double *values, 
-                   Int *error);
+  void evalHessian(double mult, const double *x, 
+                   const LTHessStor *stor, double *values, 
+                   int *error);
 
   // Fill hessian sparsity.
   void fillHessStor(LTHessStor *stor);
@@ -66,7 +68,7 @@ public:
   void finalHessStor(const LTHessStor *stor);
 
   // Add gradient values to sparse Jacobian
-  void fillJac(const Double *x, Double *values, Int *error);
+  void fillJac(const double *x, double *values, int *error);
 
   /**
    * After adding all the nodes of the graph, finalize is called to create the
@@ -75,7 +77,7 @@ public:
   void finalize(); 
 
   // base class method.
-  Double getFixVarOffset(VariablePtr v, Double val);
+  double getFixVarOffset(VariablePtr v, double val);
 
   // get type of function
   FunctionType getType() const;
@@ -94,8 +96,11 @@ public:
 
   Bool isIdenticalTo(CGraphPtr cg);
 
+  // base class method
+  Bool isSumOfSquares() const;
+
   // multiply by a constant.
-  void multiply(Double c);
+  void multiply(double c);
 
   /**
    * \brief Create a new node with one or two children, and add it to the
@@ -129,7 +134,7 @@ public:
    * \param [in] d The value.
    * \return The new node created in this function. Its opcode is OpNum
    */
-  CNode* newNode(Double d);
+  CNode* newNode(double d);
 
   /**
    * \brief Create a new node with constant integer value. It does not have any
@@ -138,7 +143,7 @@ public:
    * \param [in] i The value.
    * \return The new node created in this function. Its opcode is OpInt
    */
-  CNode* newNode(Int i);
+  CNode* newNode(int i);
 
   /**
    * \brief Create a new node denoting an input variable. It does not have any
@@ -157,7 +162,7 @@ public:
   void prepJac(VarSetConstIter vbeg, VarSetConstIter vend);
 
   // base class method.
-  void removeVar(VariablePtr v, Double val);
+  void removeVar(VariablePtr v, double val);
 
   /**
    * \brief Set the node that should be the output of this graph. This node
@@ -168,10 +173,13 @@ public:
   void setOut(CNode *node);
 
   // base class method.
-  void subst(VariablePtr out, VariablePtr in, Double rat);
+  void sqrRoot(int &err);
 
   // base class method.
-  void varBoundMods(Double lb, Double ub, VarBoundModVector &mods,
+  void subst(VariablePtr out, VariablePtr in, double rat);
+
+  // base class method.
+  void varBoundMods(double lb, double ub, VarBoundModVector &mods,
                     SolveStatus *status);
 
   // display.
@@ -203,7 +211,7 @@ private:
   /// All nodes with OpCode OpVar.
   CNodeQ vq_;
 
-  CGraphPtr clone_(Int *err) const;
+  CGraphPtr clone_(int *err) const;
 
   void fwdGrad_(CNode *node);
   void fwdGrad2_(std::stack<CNode *> *st2, CNode *node);
@@ -211,9 +219,12 @@ private:
   void fillHessInds_(CNode *node, UIntQ *inds);
   void fillHessInds2_(CNode *node, UIntQ *inds);
 
-  void revHess_(Int *error);
-  void revHess2_(std::stack<CNode *> *st2, Double mult, UInt vind,
-                 Double *values, UInt *nz, Int *error);
+  /// Recursive function to check whether CGraph represents a sum of squares.
+  bool isSOSRec_(CNode *node) const;
+
+  void revHess_(int *error);
+  void revHess2_(std::stack<CNode *> *st2, double mult, UInt vind,
+                 double *values, UInt *nz, int *error);
 
   /**
    *  Routine to propagate gradient by a reverse mode traversal.
@@ -221,7 +232,7 @@ private:
    *  \param [out] error Set to a nonzero if an error occurs. Otherwise, leave
    *  it unchanged.
    */
-  void grad_(Int *error);
+  void grad_(int *error);
 
   void setupHess_(VariablePtr v, CNode *node, std::set<ConstVariablePair, 
                   CompareVariablePair> & vps);

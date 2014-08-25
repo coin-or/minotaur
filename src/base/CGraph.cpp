@@ -53,13 +53,27 @@ CGraph::~CGraph()
 }
 
 
-NonlinearFunctionPtr CGraph::clone(Int *err) const
+void CGraph::addConst(const double eps, int &)
+{
+  CNode *n = newNode(eps);
+
+  if (oNode_) {
+    oNode_ = newNode(OpPlus, oNode_, n);
+  } else {
+    oNode_ = n;
+  }
+  changed_ = true;
+  finalize();
+}
+
+
+NonlinearFunctionPtr CGraph::clone(int *err) const
 {
   return clone_(err);
 }
 
 
-CGraphPtr CGraph::clone_(Int *err) const
+CGraphPtr CGraph::clone_(int *err) const
 {
   CGraphPtr cg = (CGraphPtr) new CGraph();
   std::map<const CNode*, CNode*>nnmap;
@@ -107,7 +121,7 @@ CGraphPtr CGraph::clone_(Int *err) const
 
 
 NonlinearFunctionPtr CGraph::cloneWithVars(VariableConstIterator vbeg,
-                                           Int *) const
+                                           int *) const
 {
   CGraphPtr cg = (CGraphPtr) new CGraph();
   std::map<const CNode*, CNode*>nnmap;
@@ -152,7 +166,7 @@ NonlinearFunctionPtr CGraph::cloneWithVars(VariableConstIterator vbeg,
 }
 
 
-void CGraph::computeBounds(Double *lb, Double *ub, Int *error)
+void CGraph::computeBounds(double *lb, double *ub, int *error)
 {
   *error = 0;
   for (CNodeQ::iterator it=vq_.begin(); it!=vq_.end(); ++it) {
@@ -166,7 +180,7 @@ void CGraph::computeBounds(Double *lb, Double *ub, Int *error)
 }
 
 
-Double CGraph::eval(const Double *x, Int *error)
+double CGraph::eval(const double *x, int *error)
 {
   for (CNodeQ::iterator it=vq_.begin(); it!=vq_.end(); ++it) {
     (*it)->eval(x, error);
@@ -182,7 +196,7 @@ Double CGraph::eval(const Double *x, Int *error)
 }
 
 
-void CGraph::evalGradient(const Double *x, Double *grad_f, Int *error)
+void CGraph::evalGradient(const double *x, double *grad_f, int *error)
 {
   eval(x, error);
   if (*error>0) {
@@ -198,8 +212,8 @@ void CGraph::evalGradient(const Double *x, Double *grad_f, Int *error)
 }
 
 
-void CGraph::evalHessian(Double mult, const Double *x, 
-                         const LTHessStor *, Double *values, Int *error)
+void CGraph::evalHessian(double mult, const double *x, 
+                         const LTHessStor *, double *values, int *error)
 {
   UInt i = 0;
   UInt vind;
@@ -207,7 +221,7 @@ void CGraph::evalHessian(Double mult, const Double *x,
   UInt nz = 0;
   Bool use2 = true;
   std::stack<CNode *> st2;
-  Double thresh = vq_.size();
+  double thresh = vq_.size();
 
   thresh = thresh*(thresh-1.0)/2.0 * 0.75;
 
@@ -473,7 +487,7 @@ void CGraph::fillHessStor(LTHessStor *stor)
 }
 
 
-void CGraph::fillJac(const Double *x, Double *values, Int *error)
+void CGraph::fillJac(const double *x, double *values, int *error)
 {
   UInt *goff = &gOffs_[0];
 
@@ -700,7 +714,7 @@ void CGraph::fwdGrad2_(std::stack<CNode *> *st2, CNode *node)
 }
 
 
-Double CGraph::getFixVarOffset(VariablePtr, Double)
+double CGraph::getFixVarOffset(VariablePtr, double)
 {
   return 0.0;
 }
@@ -812,7 +826,7 @@ FunctionType CGraph::getType() const
 }
 
 
-void CGraph::grad_(Int *error)
+void CGraph::grad_(int *error)
 {
   for (CNodeQ::iterator it=dq_.begin(); it!=dq_.end(); ++it) {
     (*it)->setG(0.0);
@@ -885,7 +899,34 @@ Bool CGraph::isIdenticalTo(CGraphPtr cg)
 }
 
 
-void CGraph::multiply(Double c)
+bool CGraph::isSumOfSquares() const
+{
+  return isSOSRec_(oNode_);
+}
+
+
+bool CGraph::isSOSRec_(CNode *node) const
+{
+  if (OpSqr==node->getOp()) {
+    return true;
+  } else if (OpPlus==node->getOp()) {
+    return (isSOSRec_(node->getL()) && isSOSRec_(node->getR()));
+  } else if (OpSumList==node->getOp()) {
+    CNode** c1 = (node)->getListL();
+    CNode** c2 = (node)->getListR();
+    while (c1<c2) {
+      if (!isSOSRec_(*c1)) {
+        return false;
+      }
+    }
+    return true;
+  } else if (OpNum==node->getOp() && node->getVal()>=0.0) {
+    return true;
+  }
+  return false;
+}
+
+void CGraph::multiply(double c)
 {
   if (fabs(c+1.0)<1e-12) {
     CNode *node = new CNode(OpUMinus, oNode_, 0);
@@ -916,7 +957,7 @@ CNode* CGraph::newNode(OpCode op, CNode **child, UInt n)
 }
 
 
-CNode* CGraph::newNode(Double d)
+CNode* CGraph::newNode(double d)
 {
   CNode *z = 0;
   CNode *node = new CNode(OpNum, z, z);
@@ -927,7 +968,7 @@ CNode* CGraph::newNode(Double d)
 }
 
 
-CNode* CGraph::newNode(Int i)
+CNode* CGraph::newNode(int i)
 {
   CNode *z = 0;
   CNode *node = new CNode(OpInt, z, z);
@@ -977,7 +1018,7 @@ void CGraph::prepJac(VarSetConstIter vb, VarSetConstIter ve)
 }
 
 
-void CGraph::removeVar(VariablePtr v, Double val)
+void CGraph::removeVar(VariablePtr v, double val)
 {
   VarNodeMap::iterator it = varNode_.find(v);
 
@@ -1001,7 +1042,7 @@ void CGraph::removeVar(VariablePtr v, Double val)
 }
 
 
-void CGraph::revHess_(Int *error)
+void CGraph::revHess_(int *error)
 {
   oNode_->setG(1.0);
   for (CNodeQ::reverse_iterator it=dq_.rbegin(); it!=dq_.rend(); ++it) {
@@ -1011,8 +1052,8 @@ void CGraph::revHess_(Int *error)
 }
 
 
-void CGraph::revHess2_(std::stack<CNode *> *st2, Double mult, UInt vind,
-                       Double *values, UInt *nz, Int *error)
+void CGraph::revHess2_(std::stack<CNode *> *st2, double mult, UInt vind,
+                       double *values, UInt *nz, int *error)
 {
   CNodeRSet nset;
   CNodeRSet::iterator sit; 
@@ -1061,7 +1102,21 @@ void CGraph::simplifyDq_()
 }
 
 
-void CGraph::subst(VariablePtr out, VariablePtr in, Double rat)
+void CGraph::sqrRoot(int &err)
+{
+  CNode *n = 0;
+  if (!oNode_) {
+    err = 1;
+    return;
+  }
+
+  oNode_ = newNode(OpSqrt, oNode_, n);
+  changed_ = true;
+  finalize();
+}
+
+
+void CGraph::subst(VariablePtr out, VariablePtr in, double rat)
 {
   CNode *nin = 0, *nout = 0, *nmult = 0;
   VarNodeMap::iterator it;
@@ -1223,7 +1278,7 @@ void CGraph::setOut(CNode *node)
 }
 
 
-void CGraph::varBoundMods(Double lb, Double ub, VarBoundModVector &mods,
+void CGraph::varBoundMods(double lb, double ub, VarBoundModVector &mods,
                           SolveStatus *status)
 {
   double lb2 = -INFINITY;

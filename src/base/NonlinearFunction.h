@@ -37,6 +37,10 @@ public:
   /// Destroy.
   virtual ~NonlinearFunction();
 
+  virtual void addConst(const double eps, int &err); 
+
+  virtual void sqrRoot(int &err); 
+
   /** 
    * \brief Make a clone using new variables. 
    *
@@ -154,7 +158,16 @@ public:
    * \param [in] v The variable that we want to test.
    * \return True if this function is has v. False if it doesn't use it. 
    */
-  virtual Bool hasVar(ConstVariablePtr v) const;
+  virtual bool hasVar(ConstVariablePtr v) const;
+
+  /**
+   * \brief Check if the function is a sum of square terms
+   *
+   * \return True if this function is a sum of squares, False otherwise
+   */
+  virtual bool isSumOfSquares() const {
+    return true;
+  }
 
   /**
    * \brief Multiply by a constant.

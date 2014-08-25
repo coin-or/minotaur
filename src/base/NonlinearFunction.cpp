@@ -31,6 +31,12 @@ NonlinearFunction::~NonlinearFunction()
 }
 
 
+void NonlinearFunction::addConst(const double, int &err)
+{
+  err = 1;
+}
+
+
 void NonlinearFunction::computeBounds(Double *lb, Double *ub, Int *error)
 {
   *lb = -INFINITY;
@@ -45,7 +51,7 @@ FunctionType NonlinearFunction::getType() const
 }
 
 
-Bool NonlinearFunction::hasVar(ConstVariablePtr v) const
+bool NonlinearFunction::hasVar(ConstVariablePtr v) const
 {
   return (vars_.find(v)!=vars_.end());
 }
@@ -57,6 +63,12 @@ NonlinearFunctionPtr NonlinearFunction::getPersp(VariablePtr, double,
   assert(!"implement me!");
   *err = 1;
   return NonlinearFunctionPtr();
+}
+
+
+void NonlinearFunction::sqrRoot(int &err)
+{
+  err = 1; 
 }
 
 

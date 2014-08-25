@@ -86,6 +86,11 @@ void Environment::createDefaultOptions_()
       "Should prespective reformulation be used: <0/1>", true, false);
   options_->insert(b_option);
 
+  b_option = (BoolOptionPtr) new Option<Bool>("quad_cone_ref", 
+      "tighten quadratic constraints with linear binary variables <0/1>",
+      true, true);
+  options_->insert(b_option);
+
   b_option = (BoolOptionPtr) new Option<Bool>("display_problem", 
       "Should display problem before solving: <0/1>", true, false);
   options_->insert(b_option);
