@@ -43,7 +43,6 @@ CutMan2::CutMan2()
     p_(ProblemPtr()),  // NULL
     absTol_(5e-2),
     MaxInactiveInRel_(10000),
-    MaxUnviolInPool_(1000),
     PoolSize_(200),
     CtThrsh_(0),
     ctMngrtime_(0),
@@ -69,7 +68,6 @@ CutMan2::CutMan2(EnvPtr env, ProblemPtr p)
     p_(ProblemPtr()),
     absTol_(5e-2),
     MaxInactiveInRel_(100),
-    MaxUnviolInPool_(250),
     PoolSize_(70),
     ctMngrtime_(0),
     PrntCntThrsh_(0)
@@ -77,11 +75,11 @@ CutMan2::CutMan2(EnvPtr env, ProblemPtr p)
   stats_ = new CutStat();
   timer_ = env_->getNewTimer();
   UInt n = p->getNumVars();
-  hashVec_ = new Double[n];
+  hashVec_ = new double[n];
   CtThrsh_ = 6 * (n + p->getNumCons());
 
   for (UInt i = 0; i < n; i++) {
-    hashVec_[i] = rand()/Double (RAND_MAX);
+    hashVec_[i] = rand()/double (RAND_MAX);
   }
 
   updateTime_ = 0.0;
@@ -123,9 +121,9 @@ void CutMan2::updateRel(ConstSolutionPtr sol, ProblemPtr rel)
   if ( numCuts_ >= CtThrsh_){
     timer_->start();
     UInt m = rel->getNumCons();
-    const Double *y = new Double[m];
+    const double *y = new double[m];
     y = sol->getDualOfCons();
-    Int i;
+    int i;
     CutPtr cut;
     cutList temp;
 
@@ -150,7 +148,7 @@ void CutMan2::updateRel(ConstSolutionPtr sol, ProblemPtr rel)
         ++it;
       }
     }  
-    Double al;
+    double al;
 
     if (stats_->numRelToPool != 0){
       al = 1.0 * stats_->numPoolToRel / stats_->numRelToPool;
@@ -175,7 +173,7 @@ void CutMan2::updateRel(ConstSolutionPtr sol, ProblemPtr rel)
     } else {
 	rel_.merge(temp);        
     }
-    Double a1 = timer_->query();
+    double a1 = timer_->query();
     ctMngrtime_ += a1;
     updateTime_ += a1;
     timer_->stop();
@@ -186,11 +184,11 @@ void CutMan2::updatePool(ProblemPtr rel, ConstSolutionPtr sol)
 {
   if ( numCuts_ >= CtThrsh_){
     timer_->start();
-    const Double *x = sol->getPrimal();
-    Double viol;
-    Double score;
-    Int toRel = 0;
-    Int deleted = 0;
+    const double *x = sol->getPrimal();
+    double viol;
+    double score;
+    int toRel = 0;
+    int deleted = 0;
     CutPtr cut;
     for (std::list<CutPtr>::iterator it = pool_.begin(); it != pool_.end();)
     {
@@ -216,7 +214,7 @@ void CutMan2::updatePool(ProblemPtr rel, ConstSolutionPtr sol)
   }
 }
 
-ConstraintPtr CutMan2::addCut(ProblemPtr rel,FunctionPtr fn, Double lb, Double ub, Bool, Bool neverDelete)
+ConstraintPtr CutMan2::addCut(ProblemPtr rel,FunctionPtr fn, double lb, double ub, bool, bool neverDelete)
 {
   CutPtr cut = (CutPtr) new Cut(rel,fn, lb, ub,neverDelete,false);
   addToRel_(rel,cut,true);
@@ -226,7 +224,7 @@ ConstraintPtr CutMan2::addCut(ProblemPtr rel,FunctionPtr fn, Double lb, Double u
   return cut->getConstraint();
 }
 
-void CutMan2::addToRel_(ProblemPtr rel, CutPtr cut, Bool newcut)
+void CutMan2::addToRel_(ProblemPtr rel, CutPtr cut, bool newcut)
 {
   rel_.push_back(cut);
   if (false == newcut)
@@ -254,7 +252,7 @@ void CutMan2::addToPool_(CutPtr cut)
   std::list<CutPtr>::iterator it = pool_.begin();
   CutPtr c;
   c = *it;
-  Int n = c->getInfo()->parent_active_cnts;
+  int n = c->getInfo()->parent_active_cnts;
   if (pool_.size() > PoolSize_ - 1){
     while ( n >  PrntCntThrsh_ && it != pool_.end() )
     {
@@ -277,13 +275,13 @@ void CutMan2::addToPool_(CutPtr cut)
 
 }
 
-void CutMan2::NodeIsBranched(NodePtr node, ConstSolutionPtr sol,Int num)
+void CutMan2::NodeIsBranched(NodePtr node, ConstSolutionPtr sol, int num)
 {
   CutPtr cut;
   cutList cutlist;
   NodePtr child;
-  const Double *y = sol->getDualOfCons();
-  Int i;
+  const double *y = sol->getDualOfCons();
+  int i;
   timer_->start();
     
   for (CCIter it=rel_.begin(); it != rel_.end(); ++it){
@@ -296,7 +294,7 @@ void CutMan2::NodeIsBranched(NodePtr node, ConstSolutionPtr sol,Int num)
   }
   NodeCutsMap_[node] = cutlist; 
   ChildNum_[node] = num;
-  Double a1 =  timer_->query();
+  double a1 =  timer_->query();
   ctMngrtime_ += a1;
   branchedTime_ += a1;
   timer_->stop();
@@ -322,7 +320,7 @@ void CutMan2::NodeIsProcessed(NodePtr node)
     NodeCutsMap_.erase(node->getParent());
   }
    
-  Double a1 =  timer_->query();
+  double a1 =  timer_->query();
   ctMngrtime_ += a1;
   processedTime_ += a1;
   timer_->stop();
@@ -334,8 +332,8 @@ void CutMan2::NodeIsProcessed(NodePtr node)
   ctmngrInfo_.PoolSize = pool_.size();
   ctmngrInfo_.RelToPool = stats_->numRelToPool;
   ctmngrInfo_.PoolToRel = stats_->numPoolToRel;
-  ctmngrInfo_.RelAve = (Double)stats_->RelSize/stats_->callNums;
-  ctmngrInfo_.PoolAve = (Double)stats_->PoolSize/stats_->callNums;
+  ctmngrInfo_.RelAve = (double)stats_->RelSize/stats_->callNums;
+  ctmngrInfo_.PoolAve = (double)stats_->PoolSize/stats_->callNums;
 
 }
 
@@ -372,8 +370,8 @@ void CutMan2::writeStat()
     << "CutManager: number of calls............................. = " << stats_->callNums << std::endl
     << "CutManager: size of rel................................. = " << rel_.size() << std::endl  
     << "CutManager: size of pool................................ = " << pool_.size() << std::endl
-    << "CutManager: average size of rel......................... = " << (Double)stats_->RelSize/stats_->callNums << std::endl
-    << "CutManager: average size of pool........................ = " << (Double)stats_->PoolSize/stats_->callNums << std::endl
+    << "CutManager: average size of rel......................... = " << (double)stats_->RelSize/stats_->callNums << std::endl
+    << "CutManager: average size of pool........................ = " << (double)stats_->PoolSize/stats_->callNums << std::endl
     << "CutManager: MaxInactiveInRel............................ = " << MaxInactiveInRel_ << std::endl
     << "CutManager: PrntActCnt.................................. = " << PrntCntThrsh_ << std::endl
     << "CutManager: time........................................ = " << ctMngrtime_ << std::endl

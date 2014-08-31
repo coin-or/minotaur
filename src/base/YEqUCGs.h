@@ -31,7 +31,6 @@ public:
 private:
   std::vector<CGraphPtr> cg_;
   DoubleVector hash_;
-  UInt n_;
   std::vector<OpCode> op_;
   DoubleVector rand_;
   VarVector x_;

@@ -272,14 +272,7 @@ private:
   UInt maxIterations_;
 
   /**
-   * \brief At any given node, if these many consecutive candidates are
-   * tested and the objective does not improve, we should stop.
-   */
-  UInt maxNoImprovCands_;
-
-  /**
    * \brief Do not strong-branch on more than these many candidates
-   * (maxNoImprovCands_ < maxStrongCands_)
    */
   UInt maxStrongCands_;
 

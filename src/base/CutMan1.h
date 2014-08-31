@@ -44,8 +44,8 @@ public:
   // Base class method.
   void addCut(CutPtr c);
 
-  ConstraintPtr addCut(ProblemPtr, FunctionPtr, Double, Double, 
-                       Bool, Bool) {return ConstraintPtr();};
+  ConstraintPtr addCut(ProblemPtr, FunctionPtr, double, double, 
+                       bool, bool) {return ConstraintPtr();};
 
   // Base class method.
   void addCuts(CutVectorIter cbeg, CutVectorIter cend);
@@ -66,7 +66,7 @@ public:
   void postSolveUpdate(ConstSolutionPtr sol, EngineStatus eng_status);
 
   // Base class method.
-  void separate(ConstSolutionPtr sol, Bool *separated, UInt *n_added);
+  void separate(ConstSolutionPtr sol, bool *separated, UInt *n_added);
 
   // Base class method.
   void write(std::ostream &out) const;
@@ -77,7 +77,7 @@ public:
 private:
 
   /// Absolute tolerance limit for comparing double values.
-  Double absTol_;
+  double absTol_;
 
   /// Cut storage for disabled cuts, i.e., those not added to the problem.
   CutList disCuts_;
@@ -114,10 +114,7 @@ private:
 
   CutList pool_;
 
-  /// Relative tolerance limit for comparing double values.
-  Double relTol_;
-  
-  void addToRel_(CutPtr cons,Bool new_cut);
+  void addToRel_(CutPtr cons, bool new_cut);
 
   void addToPool_(CutPtr cons);
 

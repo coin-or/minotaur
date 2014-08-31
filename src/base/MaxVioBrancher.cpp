@@ -34,8 +34,7 @@ using namespace Minotaur;
 const std::string MaxVioBrancher::me_ = "MaxVio brancher: "; 
 
 MaxVioBrancher::MaxVioBrancher(EnvPtr env, HandlerVector & handlers) 
-: eTol_(1e-6),
-  rel_(RelaxationPtr()),  // NULL
+: rel_(RelaxationPtr()),  // NULL
   handlers_(handlers)     // Create a copy, the vector is not too big
 {
   timer_ = env->getNewTimer();

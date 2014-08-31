@@ -151,7 +151,7 @@ void SOS1Handler::getBranchingCandidates(RelaxationPtr rel,
   Double nzsum;
   Double nzval;
   SOSBrCandPtr br_can;
-  bool is_new;
+  bool is_new = false;
 
   for (siter=rel->sos1Begin(); siter!=rel->sos1End(); ++siter) {
     sos = *siter;
@@ -190,7 +190,10 @@ void SOS1Handler::getBranchingCandidates(RelaxationPtr rel,
       br_can->setScore(20.0*(lvars.size()-1)*(rvars.size()-1));
       
       is_new = cands.insert(br_can).second;
-      assert(true==is_new);
+      if(false==is_new) {
+        logger_->ErrStream() << "some problem in inserting branching "
+                             << "candidates" << std::endl;
+      }
 
 #if SPEW
       logger_->MsgStream(LogDebug) << me_ << sos->getName() << " is a "

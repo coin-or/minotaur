@@ -44,7 +44,6 @@ ReliabilityBrancher::ReliabilityBrancher(EnvPtr env, HandlerVector & handlers)
   init_(false),
   maxDepth_(1000),
   maxIterations_(25),
-  maxNoImprovCands_(10),
   maxStrongCands_(20),
   minNodeDist_(50),
   rel_(RelaxationPtr()),            // NULL

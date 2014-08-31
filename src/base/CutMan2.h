@@ -160,9 +160,6 @@ private:
    */
   UInt MaxInactiveInRel_;
   
-  /// Maximum number of iterations before which a cut in the pool is deleted.
-  UInt MaxUnviolInPool_;
-
   /// Maximum pool size
   UInt PoolSize_;
 

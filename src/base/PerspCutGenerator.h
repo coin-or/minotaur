@@ -123,41 +123,51 @@ public:
 private:
   // Environment.
   EnvPtr env_;
+
   // Relaxation that cover cuts will be generated for.
   RelaxationPtr rel_;
+
   // List of cuts generated.
   CutVector cutList_;
+
   // List of violated cuts.
   CutVector viollist_;
+
   // List of violations for cuts corresponding in cut list.
   DoubleVector viols_;
+
   // List of constraints that we can obtain perspective cuts.
   // We call them perspective constraints.
   // PerspListPtr persplist_;
+  
   /** Given (possibly fractional) solution.
    *  Cut will be designed to violate this solution.
    */
   ConstSolutionPtr s_;
-  // Number of constraints used for cut generation.
-  UInt numcons_;
+
   // Violation tolerance.
   Double objtol_;
+
   // Perspective constraints.
   PerspListPtr persplist_;
+
   // Statistics for perspective cut generator.
   PerspGenStatsPtr stats_;
+
   // Hash map that is used to check if a cut is already created or not.
   std::map< std::vector<Double>, UInt > cutmap_;
+
   // Integer tolerance.
   Double intTol_;
+
   // General tolerance.
   Double eTol_;
+
   // Output file
   ofstream output_;
+
   // Output file name
   string outfile_;
-  
-
 };
 
 

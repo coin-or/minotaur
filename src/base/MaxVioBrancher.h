@@ -53,9 +53,6 @@ namespace Minotaur {
       /// Name
       const static std::string me_; 
 
-      /// Tolerance for avoiding division by zero.
-      const Double eTol_;
-
       /// The problem that is being solved at this node.
       RelaxationPtr rel_;
 

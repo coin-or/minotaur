@@ -89,16 +89,16 @@ UInt CutMan1::getNumNewCuts() const
 void CutMan1::postSolveUpdate(ConstSolutionPtr sol, EngineStatus)
 {
   UInt n = p_->getNumVars();
-  const Double *x = new Double[n];
+  const double *x = new double[n];
   x = sol->getPrimal();
   CutPtr con;
-  Double viol = 0;
+  double viol = 0;
   Bool del_const = false;
   CutList cpyrel;
   CutInfo *cinfo;
 
-  Int num_dels = 0;
-  Int err;
+  int num_dels = 0;
+  int err;
 
   for (CCIter it = enCuts_.begin(); it != enCuts_.end(); ++it) {
     con = *it;
@@ -135,12 +135,12 @@ void CutMan1::postSolveUpdate(ConstSolutionPtr sol, EngineStatus)
 void CutMan1::separate(ConstSolutionPtr sol, Bool *, UInt *)
 {
   UInt n = p_->getNumVars();
-  const Double *x = new Double[n];
+  const double *x = new double[n];
   x = sol->getPrimal();
   CutPtr con;
-  Double viol = 0;
+  double viol = 0;
   CutList cpypool;
-  Int err;
+  int err;
   CutInfo *cinfo;
  
   for (CCIter it=pool_.begin(); it != pool_.end(); ++it)

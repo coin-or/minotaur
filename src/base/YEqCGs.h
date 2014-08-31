@@ -29,11 +29,10 @@ public:
 
 private:
   DoubleVector hash_;
-  UInt n_;
   DoubleVector rand_;
   VarVector y_;
   std::vector<CGraphPtr> cg_;
-  Double evalHash_(const CNode* node, UInt rank);
+  double evalHash_(const CNode* node, UInt rank);
 };
 }
 #endif
