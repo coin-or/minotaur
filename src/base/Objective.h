@@ -58,21 +58,21 @@ namespace Minotaur {
        * Create an objective with a specific id, constant term and sense. Does
        * not need a function. A default name is created.
        */
-      Objective(Double cb = 0.0, ObjectiveType otyp = Minimize);
+      Objective(double cb = 0.0, ObjectiveType otyp = Minimize);
 
       /*
        * Create an objective with a specific function, id, constant term and
        * sense. A default name is created.
        */
-      Objective(FunctionPtr fPtr, Double cb = 0.0, 
-          ObjectiveType otyp = Minimize);
+      Objective(FunctionPtr fPtr, double cb = 0.0, 
+                ObjectiveType otyp = Minimize);
 
       /**
        * Create an objective with a specific function, id, constant term,
        * sense and a name.
        */
-      Objective(FunctionPtr fPtr, Double cb, ObjectiveType otyp, 
-          std::string name);
+      Objective(FunctionPtr fPtr, double cb, ObjectiveType otyp, 
+                std::string name);
 
       /// Destroy
       virtual ~Objective() { }
@@ -81,7 +81,7 @@ namespace Minotaur {
       // Functions that query or get information.
 
       /// Return the constant term in this objective.
-      Double getConstant() const { return cb_; }
+      double getConstant() const { return cb_; }
 
       /// Return the type (Maximize or Minimize) of this objective.
       ObjectiveType getObjectiveType() const;
@@ -128,14 +128,14 @@ namespace Minotaur {
        * Evaluate the objective function (along with the constant term) at the
        * given point x.
        */
-      Double eval(const Double *x, Int *err) const;
+      double eval(const double *x, int *err) const;
 
       /**
        * Evaluate the gradient at the given point x and fill in the gradient
        * values in the array grad_f. The array grad_f is assumed to have the
        * required size (equal to number of variables in the problem). 
        */
-      void evalGradient(const Double *x, Double *grad_f, Int *error);
+      void evalGradient(const double *x, double *grad_f, int *error);
 
       /**
        * Evaluate the gradient at the given point and fill in the gradient
@@ -143,7 +143,7 @@ namespace Minotaur {
        * required size (equal to number of variables in the problem). 
        * \todo XXX: replace this function by the one below.
        */
-      void evalGradient(VariableGroup &point, Double *grad_f);
+      void evalGradient(VariableGroup &point, double *grad_f);
 
       // Functions that modify or change the objective.
       
@@ -152,7 +152,7 @@ namespace Minotaur {
        * Constant term in the objective. When the objective is evaluated at a
        * certain point, this term is included.
        */
-      Double cb_;
+      double cb_;
 
       /// Maximize or Minimize.
       ObjectiveType otyp_;
@@ -169,7 +169,7 @@ namespace Minotaur {
        */
       std::string name_;
 
-      void delFixedVar_(VariablePtr v, Double val);
+      void delFixedVar_(VariablePtr v, double val);
 
       /// Set the state of the objective.
       void setState_(ObjState state) { state_ = state; return; }
@@ -183,12 +183,12 @@ namespace Minotaur {
       void add_(ConstLinearFunctionPtr lPtr);
 
       /// Add a constant to the objective function.
-      void add_(Double cb);
+      void add_(double cb);
 
       /// Remove the quadratic part of the function and return a pointer to it.
       QuadraticFunctionPtr removeQuadratic_();
 
-      void subst_(VariablePtr out, VariablePtr in, Double rat=1.0);
+      void subst_(VariablePtr out, VariablePtr in, double rat=1.0);
 
       /**
        * Change the sense of objective and also multiply by (-1). Instead of

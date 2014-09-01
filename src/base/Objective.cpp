@@ -28,7 +28,7 @@ Objective::Objective()
 }
 
 
-Objective::Objective(Double cb, ObjectiveType otyp)
+Objective::Objective(double cb, ObjectiveType otyp)
   : cb_(cb), 
     otyp_(otyp), 
     state_(NormalObj) 
@@ -36,7 +36,7 @@ Objective::Objective(Double cb, ObjectiveType otyp)
 }
 
 
-Objective::Objective(FunctionPtr fPtr, Double cb, ObjectiveType otyp)
+Objective::Objective(FunctionPtr fPtr, double cb, ObjectiveType otyp)
   : cb_(cb),
     otyp_(otyp),
     state_(NormalObj),
@@ -45,7 +45,7 @@ Objective::Objective(FunctionPtr fPtr, Double cb, ObjectiveType otyp)
 }
 
 
-Objective::Objective(FunctionPtr fPtr, Double cb, ObjectiveType otyp, 
+Objective::Objective(FunctionPtr fPtr, double cb, ObjectiveType otyp, 
     std::string name)
   : cb_(cb),
     otyp_(otyp),
@@ -86,7 +86,7 @@ const NonlinearFunctionPtr Objective::getNonlinearFunction() const
 }
 
 
-Double Objective::eval(const Double *x, Int *err) const
+double Objective::eval(const double *x, int *err) const
 {
   if (f_) {
     return (cb_ + f_->eval(x, err));
@@ -96,7 +96,7 @@ Double Objective::eval(const Double *x, Int *err) const
 }
 
 
-void Objective::evalGradient(const Double *x, Double *grad_f, Int *error)
+void Objective::evalGradient(const double *x, double *grad_f, int *error)
 {
   // first zero out everything
   //std::fill(grad_f, grad_f+indices.size(), 0);
@@ -129,7 +129,7 @@ void Objective::add_(ConstLinearFunctionPtr lPtr)
 }
 
 
-void Objective::add_(Double cb)
+void Objective::add_(double cb)
 {
   cb_ += cb;
 }
@@ -145,10 +145,10 @@ QuadraticFunctionPtr Objective::removeQuadratic_()
 }
 
 
-void Objective::delFixedVar_(VariablePtr v, Double val)
+void Objective::delFixedVar_(VariablePtr v, double val)
 {
   if (f_ && f_->hasVar(v)) {
-    Double offset = f_->getFixVarOffset(v, val);
+    double offset = f_->getFixVarOffset(v, val);
     // v->write(std::cout);
     cb_ += offset;
     f_->removeVar(v, val);
@@ -156,7 +156,7 @@ void Objective::delFixedVar_(VariablePtr v, Double val)
 }
 
 
-void Objective::subst_(VariablePtr out, VariablePtr in, Double rat)
+void Objective::subst_(VariablePtr out, VariablePtr in, double rat)
 {
   if (f_ && f_->hasVar(out)) {
     f_->subst(out, in, rat);

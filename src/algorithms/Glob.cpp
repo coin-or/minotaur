@@ -78,7 +78,7 @@ int main(int argc, char** argv)
   const std::string me("glob: ");
   VarVector *orig_v=0;
   HandlerVector handlers;
-  Double obj_sense = 1.0;
+  double obj_sense = 1.0;
 
   // start timing.
   timer->start();
@@ -247,12 +247,12 @@ BranchAndBound * createBab (EnvPtr env, ProblemPtr p, EnginePtr e,
   BrancherPtr br;
   SimpTranPtr trans = SimpTranPtr();
   ProblemPtr newp;
-  Int status = 0;
+  int status = 0;
   const std::string me("glob: ");
 
   handlers.clear();
-  trans = (SimpTranPtr) new SimpleTransformer(env);
-  trans->reformulate(p, newp, handlers, status);
+  trans = (SimpTranPtr) new SimpleTransformer(env, p);
+  trans->reformulate(newp, handlers, status);
   assert(0==status);
   std::cout << me << "handlers used: " << std::endl;
   for (HandlerVector::iterator it=handlers.begin(); it!=handlers.end();

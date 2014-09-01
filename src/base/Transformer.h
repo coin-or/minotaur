@@ -39,14 +39,14 @@ typedef boost::shared_ptr<const Solution> ConstSolutionPtr;
 
 
 /**
- * \brief Base class for reformulating a problem so that handlers can be
- * applied to it.
+ * \brief Abstract base class for reformulating a problem so that handlers can
+ * be applied to it.
  *
  * A transformer will create a new problem equivalent to a given problem by
  * spliting constraints, adding new variables etc. The end result is a
  * problem whose each constraint can be handled by a specific handler. This
- * class has some pure virtual methods that must be implemented by a derived
- * class. Other commonly used functions are implemented.
+ * class has some abstract virtual methods that must be implemented by a derived
+ * class. Other commonly used functions are implemented here.
  */
 class Transformer {
 public:
@@ -55,10 +55,13 @@ public:
   Transformer();
 
   /// Constructor.
-  Transformer(EnvPtr env);
+  Transformer(EnvPtr env, ConstProblemPtr oldp);
 
   /// Destroy.
   virtual ~Transformer();
+
+  /// Get the name of this Transformer.
+  virtual std::string getName() const = 0;
 
   /**
    * \brief Translate the solution of reformulated problem into that of
@@ -68,7 +71,7 @@ public:
    * \param [out] err Zero if no error is encountered, nonzero otherwise.
    * \return Solution of original problem.
    */
-  virtual SolutionPtr getSolOrig(ConstSolutionPtr sol, Int &err) = 0;
+  virtual SolutionPtr getSolOrig(ConstSolutionPtr sol, int &err) = 0;
 
   /**
    * \brief Translate the solution of originial problem into that of
@@ -78,42 +81,40 @@ public:
    * \param [out] err Zero if no error is encountered, nonzero otherwise.
    * \return Solution of the reformulated problem.
    */
-  virtual SolutionPtr getSolTrans(ConstSolutionPtr sol, Int &err) = 0;
+  virtual SolutionPtr getSolTrans(ConstSolutionPtr sol, int &err) = 0;
 
   /**
    * \brief Perform the reformulation, and assign handlers.  
    *
-   * \param [in] oldp The original problem that we want to reformulate.
    * \param [out] newp The new, reformulated problem.
    * \param [out] handlers A vector of handlers used to reformulate the
    * problem.
-   * \param [out] status Zero if reformulated successfully. nonzero otherwise.
+   * \param [out] status Zero if reformulated successfully. Nonzero otherwise.
    */
-  virtual void reformulate(ConstProblemPtr oldp, ProblemPtr &newp, 
-                           HandlerVector &handlers, Int &status) = 0;
-
-  /**
-   * Takes Problem pointed to in p, and turns it into one with a linear
-   * objective by adding a new variable if necessary.
-   * \param [in] newp The new, reformulated problem.
-   */
-  virtual void makeObjectiveLinear(ProblemPtr newp);
+  virtual void reformulate(ProblemPtr &newp, HandlerVector &handlers,
+                           int &status) = 0;
 
 protected:
   /// The pointer to environment.
   EnvPtr env_;
-
-  /// Handler for quadratic terms
-  CxQuadHandlerPtr qHandler_;
-
-  /// Handler for univariate constraints.
-  CxUnivarHandlerPtr uHandler_;
 
   /// Handler for linear constraints and variables.
   LinearHandlerPtr lHandler_;
 
   /// Logger
   LoggerPtr logger_;
+
+  /// The transformed problem
+  ProblemPtr newp_;
+
+  /// The original problem
+  ConstProblemPtr p_;
+
+  /// Handler for quadratic terms
+  CxQuadHandlerPtr qHandler_;
+
+  /// Handler for univariate constraints.
+  CxUnivarHandlerPtr uHandler_;
 
   /**
    * \brief Storage for auxiliary variables defined by relations of the form
@@ -181,6 +182,12 @@ protected:
    * added.
    */
   void copyVars_(ConstProblemPtr p, ProblemPtr newp);
+
+  /**
+   * Converts the new Problem newp_ into one with a linear objective by adding
+   * a new variable if necessary.
+   */
+  virtual void makeObjLin_();
 
   /// Convert a maximization objective into minimization.
   void minObj_();

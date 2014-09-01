@@ -36,31 +36,27 @@ public:
   TransPoly();
 
   /// Constructor.
-  TransPoly(EnvPtr env);
+  TransPoly(EnvPtr env, ConstProblemPtr p);
 
   /// Destroy.
   ~TransPoly();
 
   // base class method.
-  SolutionPtr getSolOrig(ConstSolutionPtr sol, Int &err);
+  std::string getName() const;
 
   // base class method.
-  SolutionPtr getSolTrans(ConstSolutionPtr sol, Int &err);
+  SolutionPtr getSolOrig(ConstSolutionPtr sol, int &err);
 
   // base class method.
-  void reformulate(ConstProblemPtr oldp, ProblemPtr &newp,
-                   HandlerVector &handlers, Int &status);
+  SolutionPtr getSolTrans(ConstSolutionPtr sol, int &err);
+
+  // base class method.
+  void reformulate(ProblemPtr &newp, HandlerVector &handlers, int &status);
 
 private:
 
   /// Handler that takes care of constraints of the form y=u.v.w.x
   MultilinearTermsHandlerPtr mHandler_;
-
-  /// The reformulated problem.
-  ProblemPtr newp_;
-
-  /// The original problem.
-  ConstProblemPtr oldp_;
 
   /// Save monomials so that auxiliary variables can be reused.
   YEqMonomial *yMonoms_;

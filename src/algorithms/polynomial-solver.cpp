@@ -229,8 +229,8 @@ int main(int argc, char* argv[])
   handlers.clear();
 
   // Transform the problem to the 'standard' form.
-  transformer = new TransPoly(env);
-  transformer->reformulate(orig_prob, ref_prob, handlers, err);
+  transformer = new TransPoly(env, orig_prob);
+  transformer->reformulate(ref_prob, handlers, err);
   assert(0==err);
 
 #if defined(DEBUG_POLLYMAIN)

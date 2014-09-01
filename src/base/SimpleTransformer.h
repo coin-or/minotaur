@@ -55,10 +55,13 @@ public:
   SimpleTransformer();
 
   /// Constructor.
-  SimpleTransformer(EnvPtr env);
+  SimpleTransformer(EnvPtr env, ConstProblemPtr p);
 
   /// Destroy.
   ~SimpleTransformer();
+
+  // base class method.
+  std::string getName() const;
 
   // base class method.
   SolutionPtr getSolOrig(ConstSolutionPtr sol, Int &err);
@@ -67,16 +70,13 @@ public:
   SolutionPtr getSolTrans(ConstSolutionPtr sol, Int &err);
 
   // base class method.
-  void reformulate(ConstProblemPtr oldp, ProblemPtr &newp, 
-                   HandlerVector &handlers, Int &status);
+  void reformulate(ProblemPtr &newp, HandlerVector &handlers, Int &status);
 
 
 private:
   static const std::string me_;
 
   YEqCGs *yBiVars_;
-
-  ProblemPtr newp_;
 
   void absRef_(LinearFunctionPtr lfl, VariablePtr vl, Double dl,
                VariablePtr &v, Double &d);

@@ -55,8 +55,9 @@ Transformer::Transformer()
 }
 
 
-Transformer::Transformer(EnvPtr env)
+Transformer::Transformer(EnvPtr env, ConstProblemPtr p)
   : env_(env),
+    p_(p),
     yLfs_(0),
     yUniExprs_(0),
     zTol_(1e-12)
@@ -185,18 +186,19 @@ void Transformer::copyLinear_(ConstProblemPtr p, ProblemPtr newp)
 }
 
 
-void Transformer::makeObjectiveLinear(ProblemPtr p)
+void Transformer::makeObjLin_()
 {
   ObjectivePtr obj;
-  assert(p);
+  assert(p_);
+  assert(newp_);
 
-  obj = p->getObjective();
+  obj = p_->getObjective();
   if (!obj) {
     return;
   }
   
   if (obj->getFunctionType() != Linear && obj->getFunctionType() != Constant) {
-    VariablePtr eta = p->newVariable(-INFINITY, INFINITY, Continuous);
+    VariablePtr eta = newp_->newVariable(-INFINITY, INFINITY, Continuous);
     FunctionPtr etaf;
     FunctionPtr f = obj->getFunction();
     LinearFunctionPtr lz = LinearFunctionPtr(new LinearFunction());
@@ -209,12 +211,12 @@ void Transformer::makeObjectiveLinear(ProblemPtr p)
     
     if (otype == Minimize) {
       //XXX Do you want to keep track of the objective constraint?
-      objcon = p->newConstraint(f, -INFINITY, 0.0);
+      objcon = newp_->newConstraint(f, -INFINITY, 0.0);
       if (lHandler_) {
         lHandler_->addConstraint(objcon);
       }
     } else {
-      objcon = p->newConstraint(f, 0.0, INFINITY);
+      objcon = newp_->newConstraint(f, 0.0, INFINITY);
       if (lHandler_) {
         lHandler_->addConstraint(objcon);
       }
@@ -224,8 +226,7 @@ void Transformer::makeObjectiveLinear(ProblemPtr p)
     lz2->addTerm(eta, 1.0);
     etaf = (FunctionPtr) new Function(lz2);
 
-    p->removeObjective();
-    p->newObjective(etaf, obj->getConstant(), otype);
+    newp_->newObjective(etaf, obj->getConstant(), otype);
   }
 }
 

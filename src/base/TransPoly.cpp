@@ -37,10 +37,9 @@ using namespace Minotaur;
 
 #undef DEBUG_TRANSPOLY
 
-TransPoly::TransPoly(EnvPtr env)
-  : mHandler_(MultilinearTermsHandlerPtr()),
-    newp_(ProblemPtr()),
-    oldp_(ConstProblemPtr()),
+TransPoly::TransPoly(EnvPtr env, ConstProblemPtr p)
+  : Transformer(env, p),
+    mHandler_(MultilinearTermsHandlerPtr()),
     yMonoms_(0)
 {
   env_ = env;
@@ -65,14 +64,20 @@ void TransPoly::assignMH_(ConstraintPtr con, VariablePtr v, MonomialFunPtr mf)
 }
 
 
-SolutionPtr TransPoly::getSolOrig(ConstSolutionPtr , Int &err)
+std::string TransPoly::getName() const
+{
+  return "TransPoly";
+}
+
+
+SolutionPtr TransPoly::getSolOrig(ConstSolutionPtr , int &err)
 {
   err = 1;
   return SolutionPtr();
 }
 
 
-SolutionPtr TransPoly::getSolTrans(ConstSolutionPtr , Int &err)
+SolutionPtr TransPoly::getSolTrans(ConstSolutionPtr , int &err)
 {
   err = 1;
   return SolutionPtr();
@@ -100,7 +105,7 @@ MonomialFunPtr TransPoly::monomToMl_(MonomialFunPtr mf)
         n2 = 0;
         n1 = cg->newNode(OpSqr, n1, n2);
       } else {
-        n2 = cg->newNode((Double) it->second);
+        n2 = cg->newNode((double) it->second);
         n1 = cg->newNode(OpPowK, n1, n2);
       }
       cg->setOut(n1);
@@ -111,8 +116,8 @@ MonomialFunPtr TransPoly::monomToMl_(MonomialFunPtr mf)
       if (!v) {
 
         // Jeff adding implied bounds on new variable.
-        Double lb = it->first->getLb();
-        Double ub = it->first->getUb();
+        double lb = it->first->getLb();
+        double ub = it->first->getUb();
         //XXX Fix this later
         if (lb < 0) {
           std::cerr << "Only solve polynomial problems over positive domain:";
@@ -190,7 +195,7 @@ VariablePtr TransPoly::newPolyVar_(MonomialFunPtr mf)
 
 VariablePtr TransPoly::newPolyVar_(const CNode* cnode, MonomialFunPtr mf,
                                    LinearFunctionPtr lf, VariablePtr v,
-                                   Double d, Double k)
+                                   double d, double k)
 {
   VariablePtr y;
   CGraphPtr cg;
@@ -251,9 +256,9 @@ VariablePtr TransPoly::newPolyVar_(const CNode* cnode, MonomialFunPtr mf,
 // Either k is 0 or d is 0 or both.
 void TransPoly::recursPolyRef_(const CNode *node, 
                                MonomialFunPtr &mf, LinearFunctionPtr &lf,
-                               VariablePtr &v, Double &d, Double &k)
+                               VariablePtr &v, double &d, double &k)
 {
-  Double dl, dr, kl, kr;
+  double dl, dr, kl, kr;
   LinearFunctionPtr lfl, lfr;
   VariablePtr vl, vr;
   MonomialFunPtr mfl, mfr;
@@ -335,11 +340,11 @@ void TransPoly::recursPolyRef_(const CNode *node,
     } else if (dr>0 && fabs(floor(dr+0.5)-dr)<zTol_) { // natural number
       if (mfl) {
         mf = mfl;
-        mf->toPower((Int) dr);
+        mf->toPower((int) dr);
       } else if (lfl) {
          vl = newVar_(lfl, dl, newp_);
          mf = (MonomialFunPtr) new MonomialFunction(1.0);
-         mf->multiply(1.0, vl, (Int) dr);
+         mf->multiply(1.0, vl, (int) dr);
       } else if (vl) {
         if (fabs(dl)>zTol_ && fabs(kl-1.0)>zTol_) {
           lfl = (LinearFunctionPtr) new LinearFunction();
@@ -349,7 +354,7 @@ void TransPoly::recursPolyRef_(const CNode *node,
           vl = newVar_(vl, dl, newp_);
         } 
         mf = (MonomialFunPtr) new MonomialFunction(1.0);
-        mf->multiply(1.0, vl, (Int) dr);
+        mf->multiply(1.0, vl, (int) dr);
         mf->multiply(pow(kl, dr));
       } else {
         d = pow(dl, dr);
@@ -435,10 +440,10 @@ void TransPoly::recursPolyRef_(const CNode *node,
 void TransPoly::refMinus_(MonomialFunPtr mfl, MonomialFunPtr mfr,
                          LinearFunctionPtr lfl, LinearFunctionPtr lfr,
                          VariablePtr vl, VariablePtr vr,
-                         Double dl, Double dr,
-                         Double kl, Double kr,
+                         double dl, double dr,
+                         double kl, double kr,
                          MonomialFunPtr &mf, LinearFunctionPtr &lf,
-                         VariablePtr &v, Double &d, Double &k) 
+                         VariablePtr &v, double &d, double &k) 
 {
   d = dl - dr;
   if (!mfr && !lfr && !vr) {
@@ -508,10 +513,10 @@ void TransPoly::refMinus_(MonomialFunPtr mfl, MonomialFunPtr mfr,
 void TransPoly::refMult_(MonomialFunPtr mfl, MonomialFunPtr mfr,
                          LinearFunctionPtr lfl, LinearFunctionPtr lfr,
                          VariablePtr vl, VariablePtr vr,
-                         Double dl, Double dr,
-                         Double kl, Double kr,
+                         double dl, double dr,
+                         double kl, double kr,
                          MonomialFunPtr &mf, LinearFunctionPtr &lf,
-                         VariablePtr &v, Double &d, Double &k) 
+                         VariablePtr &v, double &d, double &k) 
 {
   d = 0.0;
   if (mfl) {
@@ -607,10 +612,10 @@ void TransPoly::refMult_(MonomialFunPtr mfl, MonomialFunPtr mfr,
 void TransPoly::refPlus_(MonomialFunPtr mfl, MonomialFunPtr mfr,
                          LinearFunctionPtr lfl, LinearFunctionPtr lfr,
                          VariablePtr vl, VariablePtr vr,
-                         Double dl, Double dr,
-                         Double kl, Double kr, 
+                         double dl, double dr,
+                         double kl, double kr, 
                          MonomialFunPtr &mf, LinearFunctionPtr &lf,
-                         VariablePtr &v, Double &d, Double &k) 
+                         VariablePtr &v, double &d, double &k) 
 {
   d = dl + dr;
   if (!mfr && !lfr && !vr) {
@@ -663,12 +668,12 @@ void TransPoly::refNonlinCons_()
   LinearFunctionPtr lf;
   MonomialFunPtr mf;
   VariablePtr v;
-  Double d;
-  Double k;
+  double d;
+  double k;
 
-  assert (oldp_ && newp_);
+  assert (p_ && newp_);
 
-  for (ConstraintConstIterator it=oldp_->consBegin(); it!=oldp_->consEnd();
+  for (ConstraintConstIterator it=p_->consBegin(); it!=p_->consEnd();
        ++it) {
     c = *it;
     f = c->getFunction();
@@ -702,16 +707,16 @@ void TransPoly::refNonlinObj_()
   ObjectivePtr obj;
   FunctionPtr f;
   CGraphPtr cg;
-  Double d = 0;
+  double d = 0;
   VariablePtr v = VariablePtr();
   LinearFunctionPtr lf;
   MonomialFunPtr mf;
-  Double k;
+  double k;
 
   assert(newp_);
-  assert(oldp_);
+  assert(p_);
 
-  obj = oldp_->getObjective();
+  obj = p_->getObjective();
   if (!obj) {
     return;
   }
@@ -740,15 +745,14 @@ void TransPoly::refNonlinObj_()
 }
 
 
-void TransPoly::reformulate(ConstProblemPtr oldp, ProblemPtr &newp,
-                            HandlerVector &handlers, Int &status) 
+void TransPoly::reformulate(ProblemPtr &newp, HandlerVector &handlers,
+                            int &status) 
 {
-  assert(oldp);
+  assert(p_);
   newp = (ProblemPtr) new Problem();
   newp_ = newp;
-  oldp_ = oldp;
-  yMonoms_ = new YEqMonomial(2*oldp_->getNumVars());
-  yLfs_ = new YEqLFs(2*oldp_->getNumVars());
+  yMonoms_ = new YEqMonomial(2*p_->getNumVars());
+  yLfs_ = new YEqLFs(2*p_->getNumVars());
   yUniExprs_ = new YEqUCGs();
   lHandler_ = (LinearHandlerPtr) new LinearHandler(env_, newp_);
   handlers.push_back(lHandler_);
@@ -760,8 +764,8 @@ void TransPoly::reformulate(ConstProblemPtr oldp, ProblemPtr &newp,
                                                                        newp_);
   handlers.push_back(mHandler_);
 
-  copyVars_(oldp_, newp_);
-  copyLinear_(oldp_, newp_);
+  copyVars_(p_, newp_);
+  copyLinear_(p_, newp_);
   refNonlinCons_();
   refNonlinObj_();
 
@@ -773,8 +777,8 @@ void TransPoly::reformulate(ConstProblemPtr oldp, ProblemPtr &newp,
 
 void TransPoly::refUnivarOpPoly_(const CNode *node, MonomialFunPtr mfl,
                                  LinearFunctionPtr lfl, VariablePtr vl,
-                                 Double dl, Double kl, 
-                                 VariablePtr &v, Double &d, Double &k)
+                                 double dl, double kl, 
+                                 VariablePtr &v, double &d, double &k)
 {
   assert(node!=0);
   if (!mfl && !lfl && !vl) {

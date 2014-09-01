@@ -54,8 +54,8 @@ SimpleTransformer::SimpleTransformer()
 }
 
 
-SimpleTransformer::SimpleTransformer(EnvPtr env)
-  : Transformer(env),
+SimpleTransformer::SimpleTransformer(EnvPtr env, ConstProblemPtr p)
+  : Transformer(env, p),
     yBiVars_(0)
 {
 }
@@ -67,7 +67,7 @@ SimpleTransformer::~SimpleTransformer()
 
 
 void SimpleTransformer::absRef_(LinearFunctionPtr lfl, VariablePtr vl,
-                                Double dl, VariablePtr &v, Double &d)
+                                double dl, VariablePtr &v, double &d)
 {
   if (lfl) {
     vl = newVar_(lfl, dl, newp_);
@@ -90,10 +90,10 @@ void SimpleTransformer::absRef_(LinearFunctionPtr lfl, VariablePtr vl,
 
 
 void SimpleTransformer::bilRef_(LinearFunctionPtr lfl, VariablePtr vl,
-                                Double dl, LinearFunctionPtr lfr,
-                                VariablePtr vr, Double dr,
+                                double dl, LinearFunctionPtr lfr,
+                                VariablePtr vr, double dr,
                                 LinearFunctionPtr &lf, VariablePtr &v,
-                                Double &d)
+                                double &d)
 {
   if (lfl) {
     vl = newVar_(lfl, dl, newp_);
@@ -147,14 +147,20 @@ void SimpleTransformer::bilRef_(LinearFunctionPtr lfl, VariablePtr vl,
 }
 
 
-SolutionPtr SimpleTransformer::getSolOrig(ConstSolutionPtr, Int &err )
+std::string SimpleTransformer::getName() const
+{
+  return "SimpleTransformer";
+}
+
+
+SolutionPtr SimpleTransformer::getSolOrig(ConstSolutionPtr, int &err )
 {
   err = 1;
   return SolutionPtr();
 }
 
 
-SolutionPtr SimpleTransformer::getSolTrans(ConstSolutionPtr, Int &err )
+SolutionPtr SimpleTransformer::getSolTrans(ConstSolutionPtr, int &err )
 {
   err = 1;
   return SolutionPtr();
@@ -190,9 +196,9 @@ VariablePtr SimpleTransformer::newBilVar_(VariablePtr vl, VariablePtr vr)
 
 
 void SimpleTransformer::powKRef_(LinearFunctionPtr lfl,
-                                 VariablePtr vl, Double dl, Double k,
+                                 VariablePtr vl, double dl, double k,
                                  LinearFunctionPtr &lf, VariablePtr &v,
-                                 Double &d)
+                                 double &d)
 {
   CNode *n1, *n2;
   if (fabs(k-floor(k+0.5))>zTol_) {
@@ -228,10 +234,10 @@ void SimpleTransformer::powKRef_(LinearFunctionPtr lfl,
 // #2  v + d, or
 // d may be zero, lf and v may simultaneously be NULL. 
 void SimpleTransformer::recursRef_(const CNode *node, LinearFunctionPtr &lf,
-                                   VariablePtr &v, Double &d)
+                                   VariablePtr &v, double &d)
 {
-  Double dl = 0;
-  Double dr = 0;
+  double dl = 0;
+  double dr = 0;
   FunctionPtr f;
   LinearFunctionPtr lfl = LinearFunctionPtr();
   LinearFunctionPtr lfr = LinearFunctionPtr();
@@ -406,7 +412,7 @@ void SimpleTransformer::refNonlinCons_(ConstProblemPtr oldp)
   FunctionPtr f, f2;
   CGraphPtr cg;
   LinearFunctionPtr lf;
-  Double d, lb, ub;
+  double d, lb, ub;
   VariablePtr v = VariablePtr();
 
   assert (oldp && newp_);
@@ -459,7 +465,7 @@ void SimpleTransformer::refNonlinObj_(ConstProblemPtr oldp)
 {
   ObjectivePtr obj;
   FunctionPtr f, f2;
-  Double d = 0;
+  double d = 0;
   VariablePtr v = VariablePtr();
   LinearFunctionPtr lf, lf2;
   CGraphPtr cg;
@@ -495,20 +501,20 @@ void SimpleTransformer::refNonlinObj_(ConstProblemPtr oldp)
 }
 
 
-void SimpleTransformer::reformulate(ConstProblemPtr oldp, ProblemPtr &newp, 
-                                    HandlerVector &handlers, Int &status)
+void SimpleTransformer::reformulate(ProblemPtr &newp, HandlerVector &handlers,
+                                    int &status)
 {
-  assert(oldp);
+  assert(p_);
 
   newp = (ProblemPtr) new Problem();
   newp_ = newp;
-  yLfs_ = new YEqLFs(2*oldp->getNumVars());
+  yLfs_ = new YEqLFs(2*p_->getNumVars());
   yUniExprs_ = new YEqUCGs();
   yBiVars_ = new YEqCGs();
-  copyVars_(oldp, newp);
+  copyVars_(p_, newp);
 
   // create handlers.
-  if (oldp->getSize()->bins > 0 || oldp->getSize()->ints > 0) {
+  if (p_->getSize()->bins > 0 || p_->getSize()->ints > 0) {
     IntVarHandlerPtr ihandler = (IntVarHandlerPtr)
                                 new IntVarHandler(env_, newp);
     handlers.push_back(ihandler);
@@ -520,9 +526,9 @@ void SimpleTransformer::reformulate(ConstProblemPtr oldp, ProblemPtr &newp,
   uHandler_ = (CxUnivarHandlerPtr) new CxUnivarHandler(env_, newp);
   handlers.push_back(uHandler_);
 
-  copyLinear_(oldp, newp);
-  refNonlinCons_(oldp);
-  refNonlinObj_(oldp);
+  copyLinear_(p_, newp);
+  refNonlinCons_(p_);
+  refNonlinObj_(p_);
 
   if (!(allConsAssigned_(newp, handlers))) {
     status = 1;
@@ -535,8 +541,8 @@ void SimpleTransformer::reformulate(ConstProblemPtr oldp, ProblemPtr &newp,
 
 
 void SimpleTransformer::trigRef_(OpCode op, LinearFunctionPtr lfl,
-                                 VariablePtr vl, Double dl, VariablePtr &v,
-                                 Double &d)
+                                 VariablePtr vl, double dl, VariablePtr &v,
+                                 double &d)
 {
   if (lfl) {
     vl = newVar_(lfl, dl, newp_);
@@ -559,12 +565,12 @@ void SimpleTransformer::trigRef_(OpCode op, LinearFunctionPtr lfl,
 
 
 void SimpleTransformer::uniVarRef_(const CNode *n0, LinearFunctionPtr lfl,
-                                   VariablePtr vl, Double dl, 
+                                   VariablePtr vl, double dl, 
                                    LinearFunctionPtr &lf, VariablePtr &v,
-                                   Double &d)
+                                   double &d)
 {
   CNode *n1, *n2;
-  Int err = 0;
+  int err = 0;
   if (lfl) {
     vl = newVar_(lfl, dl, newp_);
   }

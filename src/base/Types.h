@@ -113,7 +113,7 @@ namespace Minotaur {
     NormalCons    /// Not in any other category
   } ConsState;
 
-  /// Different states a constraint can be in.
+  /// Different states an objective can be in.
   typedef enum {
     DeletedObj,  /// Marked for deletion.
     NormalObj    /// Not in any other category
