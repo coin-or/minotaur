@@ -76,26 +76,20 @@ void TransformerUT::testSize()
 void TransformerUT::testMakeObjectiveLinear()
 {
   HandlerVector handlers;
-  ProblemPtr newp;
-  TransPoly t(env_);
+  ProblemPtr newp = (ProblemPtr) new Problem();
+  TransPoly t(env_, inst_);
 
-  newp = (ProblemPtr) new Problem();
 
   //std::cout << "Before: " << std::endl;
   //inst_->write(std::cout);
 
-  t.makeObjectiveLinear(inst_);
+  //t.makeObjectiveLinear();
 
   //std::cout << "After: " << std::endl;
   //inst_->write(std::cout);
 
-  CPPUNIT_ASSERT(inst_->getNumCons() == 6);
-  CPPUNIT_ASSERT(inst_->getNumVars() == 6);
-
-
-
-  
- 
+  CPPUNIT_ASSERT(inst_->getNumCons() == 5);
+  CPPUNIT_ASSERT(inst_->getNumVars() == 5);
 }
 // Local Variables: 
 // mode: c++ 
