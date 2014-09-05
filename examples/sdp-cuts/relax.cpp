@@ -10,6 +10,9 @@
  * \author Hongbo Dong, Washington State University
  */
 
+// Put config stuff (by hand) here
+//#define MINOTAUR_RUSAGE
+
 #include <cmath> // for INFINITY
 #include <iomanip>
 #include <iostream>
@@ -21,6 +24,9 @@
 #include <errno.h>
 #include <vector>
 #include <string>
+
+//#include "MIQCPData.h"
+#include "MIQCP.h"
 
 #include "MinotaurConfig.h"
 #include "Environment.h"
@@ -38,47 +44,104 @@
 #include "HessianOfLag.h"
 #include "Eigen.h"
 
-#include "MIQCPData.h"
-#include "MIQCP.h"
+
 using namespace Minotaur;
+//using namespace MINOTAUR_AMPL;
 
-//typedef std::vector<std::pair<FunctionPtr, Double> > QuadConsVec;
-//typedef std::vector<std::pair<FunctionPtr, Double> >::const_iterator QuadConsVecIterator;
+int getdir (std::string dir, std::vector<std::string> &files);
+void doBoxQPtest();
+void boxqp_cuttingplane(std::string fname);
+void AMPL_cuttingplane(std::string fname);
 
-void boxqp_cuttingplane(std::string fname)
+int main(int argc, char **argv)
 {
+  //doBoxQPtest();
+  if (argc !=2)
+  {
+    std::cerr << "Usage: sdp-cuts <nlfile>" << std::endl;
+    exit(1);
+  }
+
+  AMPL_cuttingplane(argv[1]);
+
+  //MIQCP miqcp_prob = MIQCP(AMPLstubInput, argv[1]);
+  //miqcp_prob.separateByDiagPerturbation();
+  return 0;
+}
+
+//Cutting-plane methods for general MIQCQP in AMPL format
+void AMPL_cuttingplane(std::string fname)
+{
+  //std::cout<<"Entering cuttingplane"<<std::endl;
   int err = 0;
+  Double relaxtime = 0.0;
+  Double septime = 0.0;
 
-  MIQCP miqcp_prob(ProbTypeBoxQP, fname);
-  //MIQCP miqcp_prob(ProbTypeBoxQP, "../data/boxqp/basic/spar020-100-1.in");
+  //MIQCP miqcp_prob(ProbTypeBoxQP, fname);
+  MIQCP miqcp_prob = MIQCP(AMPLstubInput, fname);
   //miqcp_prob.writeProblem();
-  miqcp_prob.solveRelax();
-  //miqcp_prob.writeSol();
 
-  for (UInt iter=1; iter<=50; iter++)
+  if (ProvenOptimal!=miqcp_prob.getEngStatus() &&
+      ProvenLocalOptimal != miqcp_prob.getEngStatus())
+  {
+    std::cerr<<"AMPL_cuttingplane() Error: initial relaxation solve"
+        << "failed." <<std::endl;
+    return;
+  }
+  //miqcp_prob.solveEngRelax(relaxtime);
+
+  std::cout<<"                  obj    relaxTime  sepTime  TotTimer"<<std::endl;
+  //UInt maxIter = 1;
+  UInt maxIter = 50;
+  for (UInt iter=1; iter<= maxIter; iter++)
   {
     //std::cout<<"========================"<<std::endl;
     std::cout<<"Iteration"<<std::setw(4)<<iter<<"  |  ";
-    bool CutFound = miqcp_prob.separateByDiagPerturbation();
+    bool CutFound = miqcp_prob.separateByDiagPerturbation(septime);
     //miqcp_prob.writeProblem();
     if (CutFound)
     {
-      miqcp_prob.solveRelax();
-      //miqcp_prob.writeSol();
-      std::cout<<std::setw(8)<<std::setprecision(5)<<miqcp_prob.getObj(err)<<"  ";
+      //miqcp_prob.solveRelax(relaxtime);
+      miqcp_prob.solveEngRelax(relaxtime, true);
+      //miqcp_prob.writeSol(true);
+      std::cout<<std::setw(10)<<std::setprecision(8)<<miqcp_prob.getObj(err)<<"  "
+          <<std::setw(6)<<std::setprecision(4)<<relaxtime<<" "
+          <<std::setw(6)<<std::setprecision(4)<<septime<<" "
+          <<std::setw(8)<<std::setprecision(5)<<miqcp_prob.getTime(err)<<" sec."
+          <<std::endl;
     }
     else
     {
       std::cout<<"  (No more cuts found.)"<<std::endl;
       break;
     }
+  }
+  std::cout<<"Tot. Time: "<<std::setw(8)<<std::setprecision(5)<<miqcp_prob.getTime(err)<<" sec."<<std::endl;
+}
 
-    std::cout<<std::setw(8)<<std::setprecision(5)<<miqcp_prob.getTime(err)<<" sec."<<std::endl;
-    //std::cout<<"========================"<<std::endl;
+
+void doBoxQPtest()
+{
+  std::vector<std::string> files;
+  getdir("../data/boxqp/basic/", files);
+  getdir("../data/boxqp/extended/", files);
+  getdir("../data/boxqp/extended2/", files);
+  for (std::vector<std::string>::const_iterator it = files.begin();
+      it!= files.end(); it++)
+  {
+    size_t found = it->find("spar");
+    // If found "spar" in filename
+    if ((found)!=std::string::npos)
+    {
+      std::cout<<"Instance: "<<(*it)<<std::endl;
+      boxqp_cuttingplane(*it);
+      break;
+    }
   }
 }
 
-/*function... might want it in some class?*/
+/*Enumerate all files in a folder and put in a vector,
+ *  might want it in some class?*/
 int getdir (std::string dir, std::vector<std::string> &files)
 {
     DIR *dp;
@@ -95,34 +158,47 @@ int getdir (std::string dir, std::vector<std::string> &files)
     return 0;
 }
 
-int main(int argc, char **argv)
+//Cutting-plane methods for BoxQP problem in its special file format
+void boxqp_cuttingplane(std::string fname)
 {
-  std::vector<std::string> files;
-  getdir("../data/boxqp/basic/", files);
-  getdir("../data/boxqp/extended/", files);
-  getdir("../data/boxqp/extended2/", files);
-  //boost::regex inst_file_pattern("spar*.in");
-  //std::tr1::regex inst_file_pattern("spar*.in");
-  for (std::vector<std::string>::const_iterator it = files.begin();
-      it!= files.end(); it++)
+  //std::cout<<"Entering cuttingplane"<<std::endl;
+  int err = 0;
+  Double relaxtime = 0.0;
+  Double septime = 0.0;
+
+  MIQCP miqcp_prob(ProbTypeBoxQP, fname);
+  miqcp_prob.writeProblem();
+
+  miqcp_prob.solveEngRelax(relaxtime);
+  miqcp_prob.writeSol(true);
+
+  std::cout<<"        obj    relaxtime   TotTimer"<<std::endl;
+  UInt maxIter = 50;
+  for (UInt iter=1; iter<= maxIter; iter++)
   {
-    //boost::regex_match(file, what, inst_file_pattern);
-    size_t found = it->find("spar");
-    // Found "spar" in filename
-    if ((found)!=std::string::npos)
+    //std::cout<<"========================"<<std::endl;
+    std::cout<<"Iteration"<<std::setw(4)<<iter<<"  |  ";
+    bool CutFound = miqcp_prob.separateByDiagPerturbation(septime);
+    if (CutFound)
     {
-      //std::cout<<(*it)<<" at " <<found<<std::endl;
-      std::cout<<"Now work on instance "<<(*it)<<std::endl;
-      boxqp_cuttingplane(*it);
-      //break;
+      //miqcp_prob.writeProblem();
+      //miqcp_prob.solveRelax(relaxtime);
+      //miqcp_prob.writeProblem(false, true);
+      miqcp_prob.solveEngRelax(relaxtime);
+      //miqcp_prob.writeSol(true);
+      std::cout<<std::setw(10)<<std::setprecision(8)<<miqcp_prob.getObj(err)<<"  "
+          <<std::setw(6)<<std::setprecision(4)<<relaxtime<<" "
+          <<std::setw(6)<<std::setprecision(4)<<septime<<" "
+          <<std::setw(8)<<std::setprecision(5)<<miqcp_prob.getTime(err)<<" sec."
+          <<std::endl;
+    }
+    else
+    {
+      std::cout<<"  (No more cuts found.)"<<std::endl;
+      break;
     }
   }
-
-  //std::cout<<"Now work on "<<files.front()<<std::endl;
-  //boxqp_cuttingplane(files.front());
-
-
-  return 0;
+  std::cout<<"Tot. Time: "<<std::setw(8)<<std::setprecision(5)<<miqcp_prob.getTime(err)<<" sec."<<std::endl;
 }
 
 // Local Variables: 

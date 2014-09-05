@@ -34,8 +34,9 @@
 #endif
 
 void datacheck(int, double*, double*, double*, double, int, double*, int*, double*, double*);
+void printVec(double* vec, int n);
 void printMat(double* mat, int n);
-int CDlogdet_nonsmooth(int, double*, double*, double*, double, int, double*, int*, double*, double*);
+int CDlogdet_nonsmooth(int, double*, double*, double*, double, int, double*,  double*, int*, double*, double*);
 
 /*int CDlogdet_fast(int, double*, double*, double, int, unsigned int*, double*);
 int CDlogdet_ff(int, double*, double*, double, int, double*, int*, double*, double*);
