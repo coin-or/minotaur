@@ -249,6 +249,11 @@ VariablePtr Transformer::newVar_(VariablePtr iv, Double d, ProblemPtr newp)
       lf->addTerm(ov, -1.0);
       f = (FunctionPtr) new Function(lf);
       cnew = newp->newConstraint(f, -d, -d);
+#if SPEW
+      logger_->MsgStream(LogInfo) << me_ << "added new constraint "
+                                  << std::endl;
+      cnew->write(logger_->MsgStream(LogInfo));
+#endif 
       lHandler_->addConstraint(cnew);
     }
     return ov;
@@ -271,6 +276,11 @@ VariablePtr Transformer::newVar_(LinearFunctionPtr lf, Double d,
     lf->addTerm(ov, -1.0);
     f = (FunctionPtr) new Function(lf);
     cnew = newp->newConstraint(f, -d, -d);
+#if SPEW
+      logger_->MsgStream(LogInfo) << me_ << "added new constraint "
+                                  << std::endl;
+      cnew->write(logger_->MsgStream(LogInfo));
+#endif 
 
     lHandler_->addConstraint(cnew);
   }
@@ -297,6 +307,11 @@ VariablePtr Transformer::newVar_(CGraphPtr cg, ProblemPtr newp)
     lf->addTerm(ov, -1.0);
     f = (FunctionPtr) new Function(lf, cg);
     cnew = newp->newConstraint(f, 0.0, 0.0);
+#if SPEW
+      logger_->MsgStream(LogInfo) << me_ << "added new constraint "
+                                  << std::endl;
+      cnew->write(logger_->MsgStream(LogInfo));
+#endif 
     assignHandler_(cg, cnew);
 
     yUniExprs_->insert(ov, cg);

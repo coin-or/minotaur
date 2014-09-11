@@ -188,6 +188,11 @@ VariablePtr SimpleTransformer::newBilVar_(VariablePtr vl, VariablePtr vr)
     lf->addTerm(ov, -1.0);
     f = (FunctionPtr) new Function(lf, cg);
     cnew = newp_->newConstraint(f, 0.0, 0.0);
+#if SPEW
+      logger_->MsgStream(LogInfo) << me_ << "added new constraint "
+                                  << std::endl;
+      cnew->write(logger_->MsgStream(LogInfo));
+#endif 
     qHandler_->addConstraint(cnew);
     yBiVars_->insert(ov, cg);
   }
@@ -232,7 +237,9 @@ void SimpleTransformer::powKRef_(LinearFunctionPtr lfl,
 // Returns one of the following four:
 // #1 lf + d, 
 // #2  v + d, or
+// d.
 // d may be zero, lf and v may simultaneously be NULL. 
+// TODO: return an error code if there is an error?
 void SimpleTransformer::recursRef_(const CNode *node, LinearFunctionPtr &lf,
                                    VariablePtr &v, double &d)
 {
@@ -243,6 +250,7 @@ void SimpleTransformer::recursRef_(const CNode *node, LinearFunctionPtr &lf,
   LinearFunctionPtr lfr = LinearFunctionPtr();
   VariablePtr vl = VariablePtr();
   VariablePtr vr = VariablePtr();
+  VariablePtr v2 = VariablePtr();
   CNode *n1 = 0;
 
   lf = LinearFunctionPtr(); // NULL
@@ -265,7 +273,45 @@ void SimpleTransformer::recursRef_(const CNode *node, LinearFunctionPtr &lf,
     uniVarRef_(node, lfl, vl, dl, lf, v, d);
     break;
   case (OpDiv):
-    assert(!"OpDiv not implemented!");
+    // (lfl+vl+dl)/(lfr+vr+dr), there are many sub-cases
+    recursRef_(node->getL(), lfl, vl, dl);
+    recursRef_(node->getR(), lfr, vr, dr);
+
+    if (!lfl && !vl && !lfr && !vr && fabs(dl)<zTol_ && fabs(dr)<zTol_) {
+      logger_->MsgStream(LogInfo) << "seeing zero by zero" << std::endl;
+    } else if (!lfr && !vr && fabs(dr)<zTol_) {
+      logger_->MsgStream(LogInfo) << "seeing division by zero" << std::endl;
+    } else if (!lfl && !vl && fabs(dl)<zTol_) {
+      d = 0.0;
+    } else if (!lfr && !vr && fabs(dr-1.0)<zTol_) {
+      d = dl;
+      lf = lfl;
+      v = vl;
+    } else if (!lfr && !vr) {
+      d = dl/dr;
+      lf = lfr->clone(); 
+      lf->multiply(1.0/dr);
+    } else {
+      CGraphPtr cg = (CGraphPtr) new CGraph();
+      CNode *n2 = 0;
+      if (lfr) {
+        v2 = newVar_(lfr, dr, newp_);
+      } else {
+        v2 = newVar_(vr, dr, newp_);
+      }
+
+      // 1/v2
+      n1 = cg->newNode(1.0);
+      n2 = cg->newNode(v2);
+      n1 = cg->newNode(OpDiv, n1, n2);
+      cg->setOut(n1);
+      cg->finalize();
+      v2 = newVar_(cg, newp_);
+
+      lfr.reset();
+      // now we have to do (lfl + vl + dl)*v2
+      bilRef_(lfl, vl, dl, lfr, v2, 0.0, lf, v, d);
+    }
     break;
   case (OpExp):
   case (OpFloor):
@@ -311,6 +357,7 @@ void SimpleTransformer::recursRef_(const CNode *node, LinearFunctionPtr &lf,
     recursRef_(node->getL(), lfl, vl, dl);
     recursRef_(node->getR(), lfr, vr, dr);
     bilRef_(lfl, vl, dl, lfr, vr, dr, lf, v, d);
+    break;
   case (OpNone):
     break;
   case (OpNum):
@@ -423,7 +470,13 @@ void SimpleTransformer::refNonlinCons_(ConstProblemPtr oldp)
     f = c->getFunction();
     if (f->getType()!=Constant && f->getType()!=Linear) {
       cg = boost::dynamic_pointer_cast <CGraph> (f->getNonlinearFunction());
-      assert(cg);
+#if SPEW
+      if (cg) {
+        logger_->MsgStream(LogInfo) << me_ << "reformulating the constraint"
+                                    << std::endl;
+        c->write(logger_->MsgStream(LogInfo));
+      }
+#endif
       lf.reset(); v.reset(); d = 0.0;
       recursRef_(cg->getOut(), lf, v, d);
       if (v) {
@@ -435,6 +488,11 @@ void SimpleTransformer::refNonlinCons_(ConstProblemPtr oldp)
         if (lf->getNumTerms()>1) {
           f = (FunctionPtr) new Function(lf);
           cnew = newp_->newConstraint(f, c->getLb()-d, c->getUb()-d);
+#if SPEW
+          logger_->MsgStream(LogInfo) << me_ << "new constraint "
+                                      << std::endl;
+          cnew->write(logger_->MsgStream(LogInfo));
+#endif 
           lHandler_->addConstraint(cnew);
         } else {
           v = lf->termsBegin()->first;
@@ -452,6 +510,11 @@ void SimpleTransformer::refNonlinCons_(ConstProblemPtr oldp)
           if (ub<v->getUb()) {
             newp_->changeBound(v, Upper, ub);
           }
+#if SPEW
+          logger_->MsgStream(LogInfo) << me_ << "new bounds on variable "
+                                      << std::endl;
+          v->write(logger_->MsgStream(LogInfo));
+#endif 
         }
       } else {
         assert(!"empty constraint?");
@@ -506,37 +569,38 @@ void SimpleTransformer::reformulate(ProblemPtr &newp, HandlerVector &handlers,
 {
   assert(p_);
 
-  newp = (ProblemPtr) new Problem();
-  newp_ = newp;
+  newp_ = (ProblemPtr) new Problem();
   yLfs_ = new YEqLFs(2*p_->getNumVars());
   yUniExprs_ = new YEqUCGs();
   yBiVars_ = new YEqCGs();
-  copyVars_(p_, newp);
+  copyVars_(p_, newp_);
 
   // create handlers.
   if (p_->getSize()->bins > 0 || p_->getSize()->ints > 0) {
     IntVarHandlerPtr ihandler = (IntVarHandlerPtr)
-                                new IntVarHandler(env_, newp);
+                                new IntVarHandler(env_, newp_);
     handlers.push_back(ihandler);
   }
-  lHandler_ = (LinearHandlerPtr) new LinearHandler(env_, newp);
+  lHandler_ = (LinearHandlerPtr) new LinearHandler(env_, newp_);
   handlers.push_back(lHandler_);
-  qHandler_ = (CxQuadHandlerPtr) new CxQuadHandler(env_, newp);
+  qHandler_ = (CxQuadHandlerPtr) new CxQuadHandler(env_, newp_);
   handlers.push_back(qHandler_);
-  uHandler_ = (CxUnivarHandlerPtr) new CxUnivarHandler(env_, newp);
+  uHandler_ = (CxUnivarHandlerPtr) new CxUnivarHandler(env_, newp_);
   handlers.push_back(uHandler_);
 
-  copyLinear_(p_, newp);
+  copyLinear_(p_, newp_);
   refNonlinCons_(p_);
   refNonlinObj_(p_);
+  newp_->write(std::cout);
 
-  if (!(allConsAssigned_(newp, handlers))) {
+  if (!(allConsAssigned_(newp_, handlers))) {
     status = 1;
     return;
   }
   clearUnusedHandlers_(handlers);
   status = 0;
-  newp->write(std::cout);
+  newp_->write(std::cout);
+  newp = newp_;
 }
 
 
