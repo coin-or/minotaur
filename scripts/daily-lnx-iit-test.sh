@@ -13,7 +13,7 @@ EXT_URL="http://10.105.27.47/~amahajan/minotaur/restricted/minotaur-externals.ta
 WEB_DIR=/home/amahajan/misc/web/minotaur/nightly/origin
 
 ## Logs on webserver
-REM_WEB_DIR=optima:/home/faculty/amahajan/webpage/minotaur/nightly/origin
+REM_WEB_DIR=powai:/home/faculty/amahajan/webpage/minotaur/nightly/origin
 
 ## parallel flag
 CPUS="8"
