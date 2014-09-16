@@ -227,7 +227,7 @@ void NlPresHandler::bin2LinF_(ProblemPtr p, LinearFunctionPtr lf,
       v2 = p->getVariable(jcol[i]);
       if (v1==v2) {
         assert(Binary == v1->getType() || ImplBin == v1->getType());
-        lf->addTerm(v1, 0.5*values[i]);
+        lf->incTerm(v1, 0.5*values[i]);
       } else if ((Binary == v1->getType() || ImplBin == v1->getType()) &&
                  (Binary == v2->getType() || ImplBin == v2->getType())) {
         v3 = p->newVariable(0.0, 1.0, ImplBin);
