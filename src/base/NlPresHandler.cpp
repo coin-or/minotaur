@@ -306,9 +306,10 @@ void  NlPresHandler::bin2Lin_(ProblemPtr p, PreModQ *mods, bool *changed)
   HessianOfLagPtr hess;
   Double *mult = 0;
   int err = 0;
-  Double *x = 0;
-  Double *values = 0;
-  Double *grad = 0;
+  double *x = 0;
+  double *values = 0;
+  double *grad = 0;
+  double nlconst = 0;
   UInt *irow = 0;
   UInt *jcol = 0;
   UInt nz = 0;
@@ -344,11 +345,12 @@ void  NlPresHandler::bin2Lin_(ProblemPtr p, PreModQ *mods, bool *changed)
       if (canBin2Lin_(p, nz, irow, jcol, values)) {
         memset(grad, 0, p->getNumVars()*sizeof(Double));
         f->evalGradient(x, grad, &err); assert(0==err);
+        nlconst = f->eval(x, &err); assert(0==err);
         lf = (LinearFunctionPtr) new LinearFunction(grad, p->varsBegin(),
                                                     p->varsEnd(), 1e-12);
         bin2LinF_(p, lf, nz, irow, jcol, values, mod);
         f = (FunctionPtr) new Function(lf);
-        p->newObjective(f, p->getObjective()->getConstant(), Minimize);
+        p->newObjective(f, p->getObjective()->getConstant()+nlconst, Minimize);
         *changed = true;
       }
     }
