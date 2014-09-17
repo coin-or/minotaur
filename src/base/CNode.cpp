@@ -804,7 +804,13 @@ void CNode::fwdGrad()
 {
   switch (op_) {
   case (OpAbs):
-    assert(!"derivative of OpAbs not implemented!");
+    if (l_->val_>1e-10) {
+      gi_ += 1.0;
+    } else if (l_->val_<-1e-10) {
+      gi_ -= 1.0;
+    } else {
+      gi_ += 0.0;
+    }
     break;
   case (OpAcos):
     gi_ -= l_->gi_/sqrt(1-l_->val_*l_->val_); // -1/sqrt(1-x^2)
@@ -825,7 +831,11 @@ void CNode::fwdGrad()
     gi_ += l_->gi_/(1-l_->val_*l_->val_); // 1/(1-x^2)
     break;
   case (OpCeil):
-    gi_ += l_->gi_;
+    if (fabs(l_->val_ - floor(0.5+l_->val_))<1e-12) {
+      gi_ += l_->gi_;
+    } else {
+      gi_ += 0.0;
+    }
     break;
   case (OpCos):
     gi_ -= l_->gi_*sin(l_->val_);
@@ -930,7 +940,13 @@ void CNode::grad(int *error)
   errno = 0; // declared in cerrno
   switch (op_) {
   case (OpAbs):
-    assert(!"derivative of OpAbs not implemented!");
+    if (l_->val_>1e-10) {
+      l_->g_ += g_;
+    } else if (l_->val_<-1e-10) {
+      l_->g_ -= g_;
+    } else {
+      l_->g_ += 0.0;
+    }
     break;
   case (OpAcos):
     l_->g_ -= g_/sqrt(1-l_->val_*l_->val_); // -1/sqrt(1-x^2)
@@ -951,7 +967,11 @@ void CNode::grad(int *error)
     l_->g_ += g_/(1-l_->val_*l_->val_); // 1/(1-x^2)
     break;
   case (OpCeil):
-    l_->g_ += g_;
+    if (fabs(l_->val_ - floor(0.5+l_->val_))<1e-12) {
+      l_->gi_ += gi_;
+    } else {
+      l_->gi_ += 0.0;
+    }
     break;
   case (OpCos):
     l_->g_ -= g_*sin(l_->val_);
@@ -1059,7 +1079,7 @@ void CNode::hess(int *error)
   errno = 0;
   switch (op_) {
   case (OpAbs):
-    assert(!"derivative of OpAbs not implemented!");
+    l_->h_ += 0.0;
     break;
   case (OpAcos):
     l_->h_ += -h_/sqrt(1-l_->val_*l_->val_) 
