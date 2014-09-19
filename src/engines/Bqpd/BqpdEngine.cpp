@@ -7,12 +7,14 @@
 /**
  * \file BqpdEngine.cpp
  * \brief Define the class BqpdEngine.
- * \author Sven Leyffer, Argonne National Laboratory
+ * \author Ashutosh Mahajan, IIT Bombay
  * 
  * Implement the interface to bqpd engine and provide warm-starting
  * capability.
  * 
  */
+
+// #define SPEW 1
 
 #include <cmath>
 #include <iomanip>
@@ -171,7 +173,8 @@ void BqpdEngine::clear() {
   }
 }
 
-
+// kmax is the Maximum value of k. kmax = max(n - (Number of
+// constraints that are active)). set kmax= 0 iff LP. 
 void BqpdEngine::load_()
 {
   Int n       = problem_->getNumVars();
@@ -180,18 +183,34 @@ void BqpdEngine::load_()
   problem_->prepareForSolve(); // important before calling getNumJacNnzs.
   Int mxwk0   = 50000+10*(problem_->getNumJacNnzs()+n+m);
   Int mxiwk0  = 500000;    // Initial workspace
-  Int kmax    = 500;       // Maximum value of k. set kmax= 0 iff LP.
   Int lh1     = problem_->getNumHessNnzs() + 8 + 2*n + m;
-  Int mxwk    = 21*n + 8*m + mlp + lh1 + kmax*(kmax+9)/2 + mxwk0;
-  Int mxiwk   = 13*n + 4*m + mlp + lh1 + kmax + 113 + mxiwk0;
+  int kmax    = 0;
+  int mxwk    = 0;
+  int mxiwk   = 0;
   Int kk0, ll0;           // For setwsc routine.
   UInt maxa   = n + problem_->getSize()->linTerms;
   logger_->MsgStream(LogDebug1) << "Bqpd: Loaded problem." << std::endl;
-  //std::cout << "mxwk3 = " << mxwk << std::endl;
 
   // set storage map for bqpd
   kk0 = problem_->getHessian()->getNumNz() + 2;
   ll0 = problem_->getHessian()->getNumNz() + 3 + n;
+
+  // the following values are recommended for denseL.f routine of bqpd
+  // kmax    = 500;
+  // mxwk    = 21*n + 8*m + mlp + lh1 + kmax*(kmax+9)/2 + mxwk0;
+  // mxiwk   = 13*n + 4*m + mlp + lh1 + kmax + 113 + mxiwk0;
+  //
+  // but kmax = 500 may be insufficient for many instances, and if we choose a
+  // higher kmax, then mxwk will be needlessly higher (we use sparseL.f).
+  if (n<=1500) {
+    kmax    = n;
+  } else if (n<=5000) {
+    kmax    = n - (int)(m/5);
+  } else {
+    kmax    = 5000;
+  }
+  mxwk    = 21*n + 8*m + mlp + lh1 + kmax*(kmax+9)/2 + mxwk0;
+  mxiwk   = 13*n + 4*m + mlp + lh1 + kmax + 113 + mxiwk0;
   setwsc(&mxwk, &mxiwk, &kk0, &ll0);
 
   sol_ = (SolutionPtr) new Solution(INFINITY, 0, problem_);
@@ -201,10 +220,11 @@ void BqpdEngine::load_()
   }
   dualX_ = new Double[n];
   dualCons_ = new Double[m];
-  fStart_ = new BqpdData(n, m, maxa, lh1, problem_->getNumJacNnzs());
+  fStart_ = new BqpdData(n, m, kmax, maxa, lh1, problem_->getNumJacNnzs());
 
-  logger_->MsgStream(LogDebug2) << "Bqpd: " << "maxa = " << maxa 
-    << std::endl;
+#if SPEW
+  logger_->MsgStream(LogDebug2) << "Bqpd: " << "maxa = " << maxa << std::endl;
+#endif SPEW
 }
 
 
@@ -389,7 +409,6 @@ EngineStatus BqpdEngine::solve()
     setHessian_();
     // set initial point
     setInitialPoint_();
-
     // set bounds on constraints.
     setConsBounds_();
   } else if (chkPt_) {
@@ -413,13 +432,13 @@ EngineStatus BqpdEngine::solve()
     logger_->MsgStream(LogInfo) 
       << "Bqpd: failure in solving in mode " << mode << std::endl;
     switch(mode) {
-     case 0:
-       mode = 1;
-       break;
-     case 1:
-       mode = 0;
-       break;
-     default:
+    case 0:
+      mode = 1;
+      break;
+    case 1:
+      mode = 0;
+      break;
+    default:
       mode = 1;
     }
     logger_->MsgStream(LogInfo) 
@@ -462,7 +481,6 @@ void BqpdEngine::solve_(Int mode, Double &f)
 {
   fint n        = problem_->getNumVars();  // numbver of variables
   fint m        = problem_->getNumCons();  // number of constraints
-  fint kmax     = 500;     // Maximum value of k. set kmax= 0 iff LP.
   real fmin     = -1.E20;  // Lower bnd on objective, for unboundedness.
   fint mlp      = 1000;    // Max level of degeneracy. 
   fint ifail    = 0;       // Outcome status message.
@@ -473,24 +491,25 @@ void BqpdEngine::solve_(Int mode, Double &f)
   status_ = EngineUnknownStatus;
   f       = 1.E20;   
 
-#if DEBUG
+#if SPEW
   logger_->MsgStream(LogDebug2) 
     << "Bqpd:    n = " << n << std::endl
     << "Bqpd:    m = " << m << std::endl
     << "Bqpd: mode = " << mode << std::endl
-    << "Bqpd: kmax = " << kmax << std::endl
+    << "Bqpd: kmax = " << fStart_->kmax << std::endl
     << "Bqpd: solve no. = " << stats_->calls+1 << std::endl;
 #endif
 
   // solve QP by calling bqpd. x contains the final solution. f contains
   // the objective value.
   timer_->start();
-  bqpd_(&n, &m, &(fStart_->k), &kmax, fStart_->a, fStart_->la, fStart_->x,
-      fStart_->bl, fStart_->bu, &f, &fmin, fStart_->g, fStart_->r,
-      fStart_->w, fStart_->e, fStart_->ls, fStart_->alp, fStart_->lp,
-      &mlp, &(fStart_->peq), fStart_->ws, fStart_->lws, &mode, &ifail,
-      fStart_->info, &iprint, &nout);
-#if DEBUG
+  bqpd_(&n, &m, &(fStart_->k), &(fStart_->kmax), fStart_->a, fStart_->la,
+        fStart_->x, fStart_->bl, fStart_->bu, &f, &fmin, fStart_->g,
+        fStart_->r, fStart_->w, fStart_->e, fStart_->ls, fStart_->alp,
+        fStart_->lp, &mlp, &(fStart_->peq), fStart_->ws, fStart_->lws, &mode,
+        &ifail, fStart_->info, &iprint, &nout);
+
+#if SPEW
   logger_->MsgStream(LogDebug2) 
     << "Bqpd:    iters = " << fStart_->info[0] << std::endl;
 #endif
@@ -507,7 +526,7 @@ void BqpdEngine::solve_(Int mode, Double &f)
   timer_->stop();
   //writewsc();
 
-#if DEBUG
+#if SPEW
   logger_->MsgStream(LogDebug) << "Bqpd: ifail = " << ifail << std::endl;
 #endif
 
@@ -538,7 +557,7 @@ void BqpdEngine::solve_(Int mode, Double &f)
    default:
     status_ = EngineError;
   }
-#if DEBUG
+#if SPEW
   logger_->MsgStream(LogDebug) << "Bqpd: status = " << getStatusString() 
     << std::endl;
   logger_->MsgStream(LogDebug) << "Bqpd: value = " << f << std::endl;
@@ -830,10 +849,11 @@ std::string BqpdEngine::getName() const
 // ----------------------------------------------------------------------- //
 // End of BqpdEngine Class.
 // ----------------------------------------------------------------------- //
-BqpdData::BqpdData(UInt n_t, UInt m_t, UInt maxa_t, UInt lh1_t, 
+BqpdData::BqpdData(UInt n_t, UInt m_t, int kmax_t, UInt maxa_t, UInt lh1_t, 
                    UInt nJac_t, Bool zero)
  : n(n_t),
    m(m_t),
+   kmax(kmax_t),
    lh1(lh1_t),
    nJac(nJac_t),
    maxa(maxa_t),
@@ -841,7 +861,6 @@ BqpdData::BqpdData(UInt n_t, UInt m_t, UInt maxa_t, UInt lh1_t,
    k(0)
 {
   UInt nm     = n+m;
-  UInt kmax   = 500;       // Maximum value of k. set kmax= 0 iff LP.
   UInt mlp    = 1000;      // Max level of degeneracy. 
   UInt mxwk0  = 50000+10*(nJac+n+m);
   UInt mxiwk0 = 500000;    // Initial workspace
@@ -880,9 +899,8 @@ BqpdData::BqpdData(UInt n_t, UInt m_t, UInt maxa_t, UInt lh1_t,
 
 BqpdData* BqpdData::clone()
 {
-  BqpdData* lhs = new BqpdData(n, m, maxa, lh1, nJac, false);
+  BqpdData* lhs = new BqpdData(n, m, kmax, maxa, lh1, nJac, false);
   UInt nm = n+m;
-  UInt kmax   = 500;       // Maximum value of k. set kmax= 0 iff LP.
   UInt mlp    = 1000;      // Max level of degeneracy. 
   UInt mxwk0  = 50000+10*(nJac+n+m);
   UInt mxiwk0 = 500000;    // Initial workspace
@@ -919,13 +937,14 @@ BqpdData* BqpdData::clone()
 void BqpdData::copyFrom(const BqpdData* rhs)
 {
   UInt nm = n+m;
-  UInt kmax   = 500;       // Maximum value of k. set kmax= 0 iff LP.
   UInt mlp    = 1000;      // Max level of degeneracy. 
   UInt mxwk0  = 50000+10*(nJac+n+m);
   UInt mxiwk0 = 500000;    // Initial workspace
   UInt mxwk   = 21*n + 8*m + mlp + lh1 + kmax*(kmax+9)/2 + mxwk0;
   UInt mxiwk  = 13*n + 4*m + mlp + lh1 + kmax + 113 + mxiwk0;
   //std::cout << "mxwk4 = " << mxwk << std::endl;
+
+  assert(kmax==rhs->kmax);
 
   peq = rhs->peq;
   k   = rhs->k;

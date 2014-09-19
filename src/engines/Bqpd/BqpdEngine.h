@@ -248,8 +248,8 @@ namespace Minotaur {
   class BqpdData {
     public: 
       /// Constructor.
-      BqpdData(UInt n_t, UInt m_t, UInt maxa_t, UInt lh1_t, UInt nJac,
-               Bool zero=true);
+      BqpdData(UInt n_t, UInt m_t, int kmax_t, UInt maxa_t, UInt lh1_t,
+               UInt nJac, Bool zero=true);
 
       /// Allocate space and copy.
       BqpdData *clone();
@@ -268,6 +268,9 @@ namespace Minotaur {
 
       /// Number of constraints.
       UInt m;
+
+      /// kmax given to bqpd
+      int kmax;
 
       /// Number of nonzeros in Hessian.
       UInt lh1;
