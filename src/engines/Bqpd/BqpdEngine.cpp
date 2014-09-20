@@ -224,7 +224,7 @@ void BqpdEngine::load_()
 
 #if SPEW
   logger_->MsgStream(LogDebug2) << "Bqpd: " << "maxa = " << maxa << std::endl;
-#endif SPEW
+#endif 
 }
 
 
