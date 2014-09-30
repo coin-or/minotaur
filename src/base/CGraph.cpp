@@ -1292,7 +1292,7 @@ void CGraph::varBoundMods(double lb, double ub, VarBoundModVector &mods,
     return;
   }
 
-  oNode_->setBounds(lb, ub);
+  oNode_->setBounds(fmax(lb,lb2),fmin(ub,ub2));
   for (CNodeQ::reverse_iterator it=dq_.rbegin(); it!=dq_.rend(); ++it) {
     (*it)->propBounds(&is_inf, &error);
     if (true == is_inf) {
