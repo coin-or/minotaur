@@ -109,8 +109,8 @@ public:
   SolveStatus presolve(PreModQ *pre_mods, bool *changed);
 
   // Implement Handler::presolveNode().
-  bool presolveNode(ProblemPtr p, NodePtr node, SolutionPoolPtr s_pool,
-                    ModVector &n_mods, ModVector &t_mods);
+  bool presolveNode(RelaxationPtr p, NodePtr node, SolutionPoolPtr s_pool,
+                    ModVector &p_mods, ModVector &r_mods);
 
   // Write name
   std::string getName() const;

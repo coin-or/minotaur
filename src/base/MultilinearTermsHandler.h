@@ -161,7 +161,7 @@ public:
   virtual SolveStatus presolve(PreModQ *, Bool *) {return Finished;};
     
   // Implement Handler::presolveNode()
-  virtual Bool presolveNode(ProblemPtr, NodePtr, SolutionPoolPtr, ModVector &,
+  virtual Bool presolveNode(RelaxationPtr, NodePtr, SolutionPoolPtr, ModVector &,
                     ModVector &)
   {return false;};
 

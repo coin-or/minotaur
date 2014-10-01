@@ -192,24 +192,29 @@ public:
   virtual SolveStatus presolve(PreModQ *pre_mods, Bool *changed) = 0;
 
   /**
-   * \brief Presolve at a node.
+   * \brief Presolve the problem and its relaxation at a node.
    *
-   * Presolve the problem at a given node. Bound propagation and other
-   * simple modifications can be made in this function. It is called after
-   * the node relaxation is setup but before it is solved. This is not the
-   * place to make major changes.
-   * \param[in] p Problem at current node.
+   * Presolve the problem and its relaxation at a given node. Bound
+   * propagation and other simple modifications can be made in this function.
+   * It is called after the node relaxation is setup but before it is solved.
+   * Both the problem and its relaxation are presolved. Changes to the problem
+   * are stored in the tree. Changes to the relaxation are optional and may or
+   * may not be stored in the tree.
+   * \param[in] rel Relaxation at the current node.
    * \param[in] node Current node.
-   * \param[in] n_mods Unused.
    * \param[in] s_pool Pool of solutions.
-   * \param[out] t_mods Modifications that must be stored in this node so
-   * that they are applied to all descendant nodes as well.
-   * All modifications must be appended not prepended.
+   * \param[in] p_mods Unused. Modifications to the problem that must be
+   * stored in this node so that they are applied to all descendant nodes as
+   * well. All modifications must be appended not prepended.
+   * \param[out] r_mods Modifications to the relaxation that must be stored in
+   * this node so that they are applied to all descendant nodes as well.  All
+   * modifications must be appended not prepended. This may be unnecessary in
+   * certain algorithms.
    * \return true if Node can be pruned because infeasibility is detected.
    */
-  virtual Bool presolveNode(ProblemPtr p, NodePtr node,
-                            SolutionPoolPtr s_pool, ModVector &n_mods,
-                            ModVector &t_mods) = 0;
+  virtual Bool presolveNode(RelaxationPtr rel, NodePtr node,
+                            SolutionPoolPtr s_pool, ModVector &p_mods,
+                            ModVector &r_mods) = 0;
       
   /**
    * \brief Create root relaxation if doing full node relaxations.
@@ -286,11 +291,31 @@ public:
                         SolutionPoolPtr s_pool, Bool *sol_found,
                         SeparationStatus *status) = 0;
 
+  /**
+   * \brief Tell the handler whether the problem will be modified or the
+   * relaxation will be modified or both. These modifications will be saved in
+   * the tree as well.
+   *
+   * \param[in] mod_prob If true, modify the problem in branching and
+   * presolving
+   * \param[in] mod_rel If true, modify the relaxation in branching and
+   * presolving.
+   */
+  virtual void setModFlags(bool mod_prob, bool mod_rel)
+  {modProb_ = mod_prob; modRel_ = mod_rel;};
+
   /// Write statistics to ostream out.
   virtual void writeStats(std::ostream &) const {};
 
 protected:
   ConstraintVector cons_; 
+
+  /// If true, modify the original (or transformed) problem.
+  bool modProb_;
+
+  /// If true, modify the relaxation of original (or transformed) problem.
+  bool modRel_;
+
 
 };
 

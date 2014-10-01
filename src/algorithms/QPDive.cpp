@@ -61,13 +61,13 @@ void show_help()
 }
 
 
-void writeSol(EnvPtr env, VarVector *orig_v, Double obj_sense,
+void writeSol(EnvPtr env, VarVector *orig_v, double obj_sense,
               BranchAndBound* bab, PresolverPtr pres,
               MINOTAUR_AMPL::AMPLInterface* iface)
 {
   const std::string me("bnb main: ");
   SolutionPtr sol = bab->getSolution(); 
-  Int err = 0;
+  int err = 0;
 
   if (sol) {
     sol = pres->getPostSol(sol);
@@ -107,8 +107,8 @@ int main(int argc, char** argv)
   const std::string me("qpd main: ");
   EngineFactory *efac;
   HandlerVector handlers;
-  Int err = 0;
-  Double obj_sense = 1.0;
+  int err = 0;
+  double obj_sense = 1.0;
 
   // start timing.
   env->startTimer(err);
@@ -126,7 +126,6 @@ int main(int argc, char** argv)
   env->readOptions(argc, argv);
   options->findString("interface_type")->setValue("AMPL");
   // in bnb, modify bounds on original problem, not QP.
-  options->findBool("modify_rel_only")->setValue(false);
   options->findBool("use_native_cgraph")->setValue(true);
   //options->findBool("presolve")->setValue(false);
 
@@ -270,6 +269,8 @@ BranchAndBound * createBab (EnvPtr env, ProblemPtr p, EnginePtr e,
   QPDRelaxerPtr nr;
   const std::string me("qpd main: ");
 
+  v_hand->setModFlags(true, true);
+  l_hand->setModFlags(true, true);
   handlers.push_back(v_hand);
   handlers.push_back(l_hand);
   nproc = (QPDProcessorPtr) new QPDProcessor(env, p, e, qe, handlers);

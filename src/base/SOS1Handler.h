@@ -79,7 +79,7 @@ public:
   void postsolveGetX(const Double *, UInt, DoubleVector *);
 
   /// Does nothing.
-  Bool presolveNode(ProblemPtr, NodePtr, SolutionPoolPtr, ModVector &,
+  Bool presolveNode(RelaxationPtr, NodePtr, SolutionPoolPtr, ModVector &,
                     ModVector &)
   {return false;};
 
@@ -102,12 +102,6 @@ private:
   /// Environment.
   EnvPtr env_;
 
-  /**
-   * Tolerance for checking integrality.
-   * If abs(x) < zTol_, then it is considered to be zero.
-   */
-  Double zTol_;
-
   /// Log
   LoggerPtr logger_;
 
@@ -117,6 +111,12 @@ private:
   /// The problem for which the handler was created.
   ProblemPtr problem_;
 
+  /**
+   * \brief Tolerance for checking integrality.
+   *
+   * If abs(x) < zTol_, then it is considered to be zero.
+   */
+  Double zTol_;
 };
 typedef boost::shared_ptr<SOS1Handler> SOS1HandlerPtr;
 typedef boost::shared_ptr<const SOS1Handler> ConstSOS1HandlerPtr;

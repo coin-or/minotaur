@@ -129,6 +129,15 @@ public:
   virtual void changeObj(FunctionPtr f, Double cb);
 
   /**
+   * \brief Check whether variables used in the constraints belong to the
+   * problem or not.
+   *
+   * This is a sanity check, used only for debugging.
+   * \returns 1 if the check failed, 0 if passed.
+   */
+  virtual int checkConVars() const;
+
+  /**
    * \brief Delete the whole Problem.
    *
    * Variables and constraints are so interlinked that we just can not call
@@ -575,6 +584,9 @@ protected:
 
   /// Pointer to the log manager. All output messages are sent to it.
   LoggerPtr logger_;
+
+  /// For logging
+  static const std::string me_;
 
   /// If true, set up our own Hessian and Jacobian.
   Bool nativeDer_;

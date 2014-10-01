@@ -17,7 +17,6 @@
 #include "CGraph.h"
 #include "CNode.h"
 #include "Constraint.h"
-#include "CxQuadHandler.h"
 #include "CxUnivarHandler.h"
 #include "Function.h"
 #include "LinearFunction.h"
@@ -26,6 +25,7 @@
 #include "Objective.h"
 #include "PolynomialFunction.h"
 #include "Problem.h"
+#include "QuadHandler.h"
 #include "Solution.h"
 #include "TransPoly.h"
 #include "YEqMonomial.h"
@@ -756,7 +756,7 @@ void TransPoly::reformulate(ProblemPtr &newp, HandlerVector &handlers,
   yUniExprs_ = new YEqUCGs();
   lHandler_ = (LinearHandlerPtr) new LinearHandler(env_, newp_);
   handlers.push_back(lHandler_);
-  qHandler_ = (CxQuadHandlerPtr) new CxQuadHandler(env_, newp_);
+  qHandler_ = (QuadHandlerPtr) new QuadHandler(env_, newp_);
   handlers.push_back(qHandler_);
   uHandler_ = (CxUnivarHandlerPtr) new CxUnivarHandler(env_, newp_);
   handlers.push_back(uHandler_);

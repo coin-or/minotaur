@@ -27,7 +27,8 @@ Node::Node()
     depth_(0),
     id_(0),
     lb_(-INFINITY),
-    mods_(0), 
+    pMods_(0), 
+    rMods_(0), 
     parent_(boost::shared_ptr<Node>()),
     status_(NodeNotProcessed),
     tbScore_(0)
@@ -39,7 +40,8 @@ Node::Node(NodePtr parentNode, BranchPtr branch)
   : branch_(branch),
     depth_(0),
     id_(0),
-    mods_(0), 
+    pMods_(0), 
+    rMods_(0), 
     parent_(parentNode),
     status_(NodeNotProcessed),
     tbScore_(0)
@@ -50,7 +52,8 @@ Node::Node(NodePtr parentNode, BranchPtr branch)
 
 Node::~Node()
 {
-  mods_.clear();
+  pMods_.clear();
+  rMods_.clear();
   children_.clear();
 }
 
@@ -61,48 +64,50 @@ void Node::addChild(NodePtr childNode)
 }
 
 
-void Node::applyMods(ProblemPtr p)
+void Node::applyPMods(ProblemPtr p)
 {
   ModificationConstIterator mod_iter;
   ModificationPtr mod;
   // first apply the mods that created this node from its parent
   if (branch_) {
-    for (mod_iter=branch_->modsBegin(); mod_iter!=branch_->modsEnd(); 
+    for (mod_iter=branch_->pModsBegin(); mod_iter!=branch_->pModsEnd(); 
         ++mod_iter) {
       mod = *mod_iter;
       mod->applyToProblem(p);
     }
   }
   // now apply any other mods that were added while processing it.
-  for (mod_iter=mods_.begin(); mod_iter!=mods_.end(); ++mod_iter) {
+  for (mod_iter=pMods_.begin(); mod_iter!=pMods_.end(); ++mod_iter) {
     mod = *mod_iter;
     mod->applyToProblem(p);
   }
 }
 
 
-void Node::applyMods(RelaxationPtr rel, ProblemPtr p)
+void Node::applyRMods(RelaxationPtr rel)
 {
   ModificationConstIterator mod_iter;
   ModificationPtr mod;
-  ModificationPtr mod2;
-  
+  // first apply the mods that created this node from its parent
   if (branch_) {
-    for (mod_iter=branch_->modsBegin(); mod_iter!=branch_->modsEnd(); 
+    for (mod_iter=branch_->rModsBegin(); mod_iter!=branch_->rModsEnd(); 
         ++mod_iter) {
       mod = *mod_iter;
-      mod2 = mod->toRel(p, rel);
-      mod->applyToProblem(p);
-      mod2->applyToProblem(rel);
+      mod->applyToProblem(rel);
     }
   }
- 
-  for (mod_iter=mods_.begin(); mod_iter!=mods_.end(); ++mod_iter) {
+  // now apply any other mods that were added while processing it.
+  for (mod_iter=rMods_.begin(); mod_iter!=rMods_.end(); ++mod_iter) {
     mod = *mod_iter;
-    mod2 = mod->toRel(p, rel);
-    mod->applyToProblem(p);
-    mod2->applyToProblem(rel);
+    mod->applyToProblem(rel);
   }
+}
+
+
+void Node::applyMods(RelaxationPtr rel, ProblemPtr p)
+{
+  applyPMods(p);
+  applyRMods(rel);
 }
 
 
@@ -148,7 +153,7 @@ void Node::setWarmStart (WarmStartPtr ws)
 }
 
 
-void Node::undoMods(ProblemPtr p)
+void Node::undoPMods(ProblemPtr p)
 {
   ModificationRConstIterator mod_iter;
   ModificationPtr mod;
@@ -156,16 +161,18 @@ void Node::undoMods(ProblemPtr p)
   // explicitely request the const_reverse_iterator for rend():
   // for bug in STL C++ standard
   // http://stackoverflow.com/questions/2135094/gcc-reverse-iterator-comparison-operators-missing
-  ModificationRConstIterator rend = mods_.rend();  
+  ModificationRConstIterator rend = pMods_.rend();  
+
+
   // first undo the mods that were added while processing the node.
-  for (mod_iter=mods_.rbegin(); mod_iter!= rend; ++mod_iter) {
+  for (mod_iter=pMods_.rbegin(); mod_iter!= rend; ++mod_iter) {
     mod = *mod_iter;
     mod->undoToProblem(p);
   } 
 
   // now undo the mods that were used to create this node from its parent.
   if (branch_) {
-    for (mod_iter=branch_->modsRBegin(); mod_iter!=branch_->modsREnd(); 
+    for (mod_iter=branch_->pModsRBegin(); mod_iter!=branch_->pModsREnd(); 
         ++mod_iter) {
       mod = *mod_iter;
       mod->undoToProblem(p);
@@ -174,31 +181,38 @@ void Node::undoMods(ProblemPtr p)
 }
 
 
-void Node::undoMods(RelaxationPtr rel, ProblemPtr p)
+void Node::undoRMods(RelaxationPtr rel)
 {
   ModificationRConstIterator mod_iter;
   ModificationPtr mod;
-  ModificationPtr mod2;
-  ModificationRConstIterator rend = mods_.rend();  
 
-  
-  for (mod_iter=mods_.rbegin(); mod_iter!= rend; ++mod_iter) {
+  // explicitely request the const_reverse_iterator for rend():
+  // for bug in STL C++ standard
+  // http://stackoverflow.com/questions/2135094/gcc-reverse-iterator-comparison-operators-missing
+  ModificationRConstIterator rend = rMods_.rend();  
+
+
+  // first undo the mods that were added while processing the node.
+  for (mod_iter=rMods_.rbegin(); mod_iter!= rend; ++mod_iter) {
     mod = *mod_iter;
-    mod2 = mod->toRel(p, rel);
-    mod->undoToProblem(p);
-    mod2->undoToProblem(rel);
+    mod->undoToProblem(rel);
   } 
 
- 
+  // now undo the mods that were used to create this node from its parent.
   if (branch_) {
-    for (mod_iter=branch_->modsRBegin(); mod_iter!=branch_->modsREnd(); 
+    for (mod_iter=branch_->rModsRBegin(); mod_iter!=branch_->rModsREnd(); 
         ++mod_iter) {
       mod = *mod_iter;
-      mod2 = mod->toRel(p, rel);
-      mod->undoToProblem(p);
-      mod2->undoToProblem(rel);
+      mod->undoToProblem(rel);
     }
   }
+}
+
+
+void Node::undoMods(RelaxationPtr rel, ProblemPtr p)
+{
+  undoPMods(p);
+  undoRMods(rel);
 }
 
 

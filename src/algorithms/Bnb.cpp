@@ -71,18 +71,21 @@ BranchAndBound* createBab(EnvPtr env, ProblemPtr p, EnginePtr e,
 
   SOS1HandlerPtr s_hand = (SOS1HandlerPtr) new SOS1Handler(env, p);
   if (s_hand->isNeeded()) {
+    s_hand->setModFlags(false, true);
     handlers.push_back(s_hand);
   }
   
   // add SOS2 handler here.
   s2_hand = (SOS2HandlerPtr) new SOS2Handler(env, p);
   if (s2_hand->isNeeded()) {
+    s2_hand->setModFlags(false, true);
     handlers.push_back(s2_hand);
   }
   
   
   handlers.push_back(v_hand);
   if (true==options->findBool("presolve")->getValue()) {
+    l_hand->setModFlags(false, true);
     handlers.push_back(l_hand);
   }
   if (!p->isLinear() && 
@@ -90,6 +93,7 @@ BranchAndBound* createBab(EnvPtr env, ProblemPtr p, EnginePtr e,
        true==options->findBool("use_native_cgraph")->getValue() &&
        true==options->findBool("nl_presolve")->getValue()) {
     nlhand = (NlPresHandlerPtr) new NlPresHandler(env, p);
+    nlhand->setModFlags(false, true);
     handlers.push_back(nlhand);
   }
   if (handlers.size()>1) {
@@ -102,6 +106,7 @@ BranchAndBound* createBab(EnvPtr env, ProblemPtr p, EnginePtr e,
   bab->setNodeProcessor(nproc);
 
   nr = (NodeIncRelaxerPtr) new NodeIncRelaxer(env, handlers);
+  nr->setModFlag(false);
   rel = (RelaxationPtr) new Relaxation(p);
   rel->calculateSize();
   if (options->findBool("use_native_cgraph")->getValue() ||
@@ -263,7 +268,6 @@ void loadProblem(EnvPtr env, MINOTAUR_AMPL::AMPLInterface* iface,
 void overrideOptions(EnvPtr env)
 {
   env->getOptions()->findString("interface_type")->setValue("AMPL");
-  env->getOptions()->findBool("modify_rel_only")->setValue(true);
 }
 
 

@@ -120,9 +120,9 @@ public:
   virtual SolveStatus presolve(PreModQ *pre_mods, Bool *changed);
 
   // Implement Handler::presolveNode().
-  virtual Bool presolveNode(ProblemPtr p, NodePtr node,
-                            SolutionPoolPtr s_pool, ModVector &n_mods,
-                            ModVector &t_mods);
+  virtual Bool presolveNode(RelaxationPtr p, NodePtr node,
+                            SolutionPoolPtr s_pool, ModVector &p_mods,
+                            ModVector &r_mods);
       
 
   // Write name

@@ -45,15 +45,10 @@ SOS1Handler::SOS1Handler(EnvPtr env, ProblemPtr problem)
 {
   logger_ = (LoggerPtr) new Logger((LogLevel) env_->getOptions()->
                                    findInt("handler_log_level")->getValue());
+  modProb_ = true;
+  modRel_ = true;
   zTol_   = 1e-6;
 
-  if (false == env_->getOptions()->findBool("modify_rel_only")->getValue()
-      &&  (0 < problem_->getNumSOS1() + problem_->getNumSOS2())) {
-    logger_->ErrStream() << "Can not handle SOS constraints if "
-                         << "modify_rel_only flag is false" 
-                         << std::endl;
-    assert(!"error initializing sos constraint");
-  }
   problem_  = problem;
 }
 
@@ -101,33 +96,62 @@ Bool SOS1Handler::isFeasible(ConstSolutionPtr sol, RelaxationPtr rel, Bool &)
 
 
 Branches SOS1Handler::getBranches(BrCandPtr cand, DoubleVector &, 
-                                  RelaxationPtr, SolutionPoolPtr)
+                                  RelaxationPtr rel, SolutionPoolPtr)
 {
   SOSBrCandPtr scand = boost::dynamic_pointer_cast <SOSBrCand> (cand);
   LinModsPtr mod;
   VarBoundModPtr bmod;
+  VariablePtr v2;
 
   BranchPtr branch1, branch2;
   Branches branches = (Branches) new BranchPtrVector();
 
-  mod = (LinModsPtr) new LinMods();
-  for (VariableConstIterator vit=scand->lVarsBegin();vit!=scand->lVarsEnd();
-       ++vit) {
-    bmod = (VarBoundModPtr) new VarBoundMod(*vit, Upper, 0.0);
-    mod->insert(bmod);
-  }
   branch1 = (BranchPtr) new Branch();
-  branch1->addMod(mod);
+  if (modProb_) {
+    mod = (LinModsPtr) new LinMods();
+    for (VariableConstIterator vit=scand->lVarsBegin();vit!=scand->lVarsEnd();
+         ++vit) {
+      v2 = rel->getOriginalVar(*vit);
+      if (v2) {
+        bmod = (VarBoundModPtr) new VarBoundMod(v2, Upper, 0.0);
+        mod->insert(bmod);
+      }
+    }
+    branch1->addPMod(mod);
+  }
+  if (modRel_) {
+    mod = (LinModsPtr) new LinMods();
+    for (VariableConstIterator vit=scand->lVarsBegin();vit!=scand->lVarsEnd();
+         ++vit) {
+      bmod = (VarBoundModPtr) new VarBoundMod(*vit, Upper, 0.0);
+      mod->insert(bmod);
+    }
+    branch1->addRMod(mod);
+  }
   branch1->setActivity(scand->getLSum());
 
-  mod = (LinModsPtr) new LinMods();
-  for (VariableConstIterator vit=scand->rVarsBegin();vit!=scand->rVarsEnd();
-       ++vit) {
-    bmod = (VarBoundModPtr) new VarBoundMod(*vit, Upper, 0.0);
-    mod->insert(bmod);
-  }
   branch2 = (BranchPtr) new Branch();
-  branch2->addMod(mod);
+  if (modProb_) {
+    mod = (LinModsPtr) new LinMods();
+    for (VariableConstIterator vit=scand->rVarsBegin();vit!=scand->rVarsEnd();
+         ++vit) {
+      v2 = rel->getOriginalVar(*vit);
+      if (v2) {
+        bmod = (VarBoundModPtr) new VarBoundMod(v2, Upper, 0.0);
+        mod->insert(bmod);
+      }
+    }
+    branch2->addPMod(mod);
+  }
+  if (modRel_) {
+    mod = (LinModsPtr) new LinMods();
+    for (VariableConstIterator vit=scand->rVarsBegin();vit!=scand->rVarsEnd();
+         ++vit) {
+      bmod = (VarBoundModPtr) new VarBoundMod(*vit, Upper, 0.0);
+      mod->insert(bmod);
+    }
+    branch2->addRMod(mod);
+  }
   branch2->setActivity(scand->getRSum());
 
   branches->push_back(branch1);

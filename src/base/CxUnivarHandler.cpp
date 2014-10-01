@@ -177,7 +177,7 @@ void CxUnivarHandler::relaxInitInc(RelaxationPtr rel, Bool *)
   }
 }
 
-void CxUnivarHandler::relaxNodeInc(NodePtr node, RelaxationPtr rel, Bool *isInfeasible)
+void CxUnivarHandler::relaxNodeInc(NodePtr , RelaxationPtr rel, bool *is_inf)
 {
 
 #if defined(DEBUG_CXUNIVARHANDLER)
@@ -201,10 +201,11 @@ void CxUnivarHandler::relaxNodeInc(NodePtr node, RelaxationPtr rel, Bool *isInfe
 
   ModificationConstIterator it;
   for (it = mods.begin(); it != mods.end(); ++it) {
-    node->addModification(*it);
+    assert(!"add Mod correctly here.");
+    // node->addPMod(*it);
   }
 
- *isInfeasible = false;
+ *is_inf = false;
 }
 
 void CxUnivarConstraintData::addLin(RelaxationPtr rel, ConstVariablePtr riv,
@@ -520,13 +521,15 @@ Branches CxUnivarHandler::getBranches(BrCandPtr cand, DoubleVector &x,
 
   BranchPtr branch = (BranchPtr) new Branch();
   VarBoundModPtr mod = (VarBoundModPtr) new VarBoundMod(v, Upper, value);
-  branch->addMod(mod);
+  assert(!"add Mod correctly here.");
+  branch->addPMod(mod);
   branch->setActivity((v->getUb()-value)/len);
   branches->push_back(branch);
 
   branch = (BranchPtr) new Branch();
   mod = (VarBoundModPtr) new VarBoundMod(v, Lower, value);
-  branch->addMod(mod);
+  assert(!"add Mod correctly here.");
+  branch->addPMod(mod);
   branch->setActivity((value - v->getLb())/len);
   branches->push_back(branch);
 
@@ -632,7 +635,8 @@ CxUnivarHandler::doBranch_(BranchDirection UpOrDown, ConstVariablePtr v,
   }
 
 
-  branch->addMod(linmods);
+  assert(!"add Mod correctly here.");
+  branch->addPMod(linmods);
   return branch;
 
 }
@@ -646,7 +650,7 @@ SolveStatus CxUnivarHandler::presolve(PreModQ *, Bool *)
 
 
 // Implement Handler::presolveNode().
-Bool CxUnivarHandler::presolveNode(ProblemPtr, NodePtr, SolutionPoolPtr,
+Bool CxUnivarHandler::presolveNode(RelaxationPtr, NodePtr, SolutionPoolPtr,
                                    ModVector &, ModVector &)
 {
   return false;

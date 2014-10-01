@@ -235,7 +235,7 @@ Bool NodeFullRelaxer::strongBoundsTighten_(NodePtr node)
         if (z > ov->getLb() + updateBoundsTol_) {
           retval = true;
           m = (VarBoundModPtr) new VarBoundMod(ov,Lower,z);
-          node->addModification(m);
+          node->addPMod(m);
         }
         break;
       default:
@@ -260,7 +260,7 @@ Bool NodeFullRelaxer::strongBoundsTighten_(NodePtr node)
         if (z < ov->getUb() - updateBoundsTol_) {
           retval = true;
           m = (VarBoundModPtr) new VarBoundMod(ov,Upper,z);
-          node->addModification(m);
+          node->addPMod(m);
         }
         break;
       default:

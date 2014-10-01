@@ -71,24 +71,37 @@ namespace Minotaur {
       void addChild(NodePtr childNode);
 
       /**
+       * At each node one can make several modifications to the problem.
+       * Each such modification must be stored. This includes all the
+       * modifications that were used to create this node from its parent
+       * (while branching).
+       */
+      void addPMod(ModificationPtr m) { pMods_.push_back(m); }
+
+      /**
        * At each node one can make several modifications to the relaxation.
        * Each such modification must be stored. This includes all the
        * modifications that were used to create this node from its parent
        * (while branching).
        */
-      void addModification(ModificationPtr m) { mods_.push_back(m); }
+      void addRMod(ModificationPtr m) { rMods_.push_back(m); }
 
       /**
        * Apply the modifications including the branching that were made 
        * at this node to the problem.
        */
-      void applyMods(ProblemPtr problem);
+      void applyPMods(ProblemPtr p);
 
       /**
-       * Apply the modifications to problem. Also translate those
-       * modifications and apply them to relaxation.
+       * Apply the modifications including the branching that were made 
+       * at this node to the problem.
        */
-      void applyMods(RelaxationPtr rel, ProblemPtr problem);
+      void applyRMods(RelaxationPtr rel);
+
+      /**
+       * Apply the modifications to problem and relaxation.
+       */
+      void applyMods(RelaxationPtr rel, ProblemPtr p);
 
       /// Access the children by iterating over the vector.
       NodePtrIterator childrenBegin() { return children_.begin(); }
@@ -130,19 +143,20 @@ namespace Minotaur {
       void makeChildOf(boost::shared_ptr<const Node> parent);
 
       /**
-       * Get the first modification that was applied at this node (remember
-       * that the vector starts with modifications that were used to branch).
+       * Get the first modification that was applied at this node to the
+       * problem (and not the relaxation). Remember
+       * that the vector starts with modifications that were used to branch.
        */
-      ModificationConstIterator modsBegin() const { return mods_.begin(); }
+      ModificationConstIterator modsBegin() const { return pMods_.begin(); }
 
       /// End of modifications applied at this node.
-      ModificationConstIterator modsEnd() const { return mods_.end(); }
+      ModificationConstIterator modsEnd() const { return pMods_.end(); }
 
       /// Reverse iterators.
-      ModificationRConstIterator modsRBegin() const { return mods_.rbegin(); }
+      ModificationRConstIterator modsRBegin() const { return pMods_.rbegin(); }
 
       /// Reverse iterators.
-      ModificationRConstIterator modsREnd() const { return mods_.rend(); }
+      ModificationRConstIterator modsREnd() const { return pMods_.rend(); }
 
       /// Set the status of this node.
       void setStatus(NodeStatus status) { status_ = status; }
@@ -184,7 +198,18 @@ namespace Minotaur {
        * Undo the modifications including the branching that were made 
        * at this node to the problem.
        */
-      void undoMods(ProblemPtr p);
+      void undoPMods(ProblemPtr p);
+
+      /**
+       * Undo the modifications including the branching that were made 
+       * at this node to the problem.
+       */
+      void undoRMods(RelaxationPtr r);
+
+      /**
+       * Undo the modifications including the branching that were made 
+       * at this node to the problem and the relaxation.
+       */
       void undoMods(RelaxationPtr rel, ProblemPtr p);
 
       ///Write the node
@@ -213,10 +238,16 @@ namespace Minotaur {
       Double lb_;
 
       /**
-       * Vector of modifications that are applied at this node include the
-       * ones used in branching.
+       * Vector of modifications that are applied to the problem at this node
+       * include the ones used in branching.
        */
-      std::vector<ModificationPtr> mods_;
+      std::vector<ModificationPtr> pMods_;
+
+      /**
+       * Vector of modifications that are applied to the relaxation at this node
+       * include the ones used in branching.
+       */
+      std::vector<ModificationPtr> rMods_;
 
       /// The parent of this node. This is NULL if the node is a root node.
       NodePtr parent_;

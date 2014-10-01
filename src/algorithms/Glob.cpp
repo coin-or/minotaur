@@ -67,7 +67,6 @@ void show_help()
 int main(int argc, char** argv)
 {
   EnvPtr env      = (EnvPtr) new Environment();
-  Timer *timer    = env->getNewTimer();
   OptionDBPtr options;
   MINOTAUR_AMPL::AMPLInterfacePtr iface;
   ProblemPtr inst;     // instance that needs to be solved.
@@ -79,9 +78,10 @@ int main(int argc, char** argv)
   VarVector *orig_v=0;
   HandlerVector handlers;
   double obj_sense = 1.0;
+  int err = 0;
 
   // start timing.
-  timer->start();
+  env->startTimer(err);
 
   iface = (MINOTAUR_AMPL::AMPLInterfacePtr) 
     new MINOTAUR_AMPL::AMPLInterface(env, "glob");
@@ -133,7 +133,7 @@ int main(int argc, char** argv)
   // load the problem.
   inst = iface->readInstance(options->findString("problem_file")->getValue());
   std::cout << "time used in reading instance = " << std::fixed 
-    << std::setprecision(2) << timer->query() << std::endl;
+    << std::setprecision(2) << env->getTime(err) << std::endl;
 
   // display the problem
   inst->calculateSize();
@@ -161,9 +161,6 @@ int main(int argc, char** argv)
     std::cout << me << "Presolving ... " << std::endl;
     pres->solve();
     std::cout << me << "Finished presolving." << std::endl;
-    for (HandlerVector::iterator it=handlers.begin(); it!=handlers.end(); ++it) {
-      (*it)->writeStats(std::cout);
-    }
   }
   handlers.clear();
 
@@ -201,7 +198,7 @@ int main(int argc, char** argv)
     }
   }
   std::cout << me << "time used = " << std::fixed << std::setprecision(2) 
-    << timer->query() << std::endl;
+    << env->getTime(err) << std::endl; assert(0==err);
 
   engine->writeStats();
   bab->getNodeProcessor()->getBrancher()->writeStats();
@@ -210,7 +207,6 @@ CLEANUP:
   if (iface) {
     delete iface;
   }
-  delete timer;
   if (bab) {
     delete bab;
   }

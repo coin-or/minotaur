@@ -78,9 +78,10 @@ public:
   void initRelax(RelaxationPtr rel, DoubleVector& tmpX, DoubleVector& grad);
 
   /// Update the current relaxation based on current variable bounds
-  void updateRelax(RelaxationPtr rel, DoubleVector& tmpX, DoubleVector& grad, ModVector &mods);
+  void updateRelax(RelaxationPtr rel, DoubleVector& tmpX, DoubleVector& grad,
+                   ModVector &mods);
 
-  Bool isFeasible(const Double* x);
+  bool isFeasible(const Double* x);
   
   Double getViol(const std::vector< Double > & x);
  
@@ -89,8 +90,8 @@ public:
   // Returns the constraint that was added, which may be null if it was not
   // possible to add a constraint (e.g., due to an infinite bound)
   void addSecant(RelaxationPtr rel, ConstVariablePtr iv,
-                 ConstVariablePtr ov, FunctionPtr fn, DoubleVector& tmpX, Bool init, 
-                 ModVector &mods);
+                 ConstVariablePtr ov, FunctionPtr fn, DoubleVector& tmpX,
+                 bool init, ModVector &mods);
 
   // Creates and adds linearization inequalities to approximate the lower
   // envelope of the convex function
@@ -188,22 +189,22 @@ public:
    *  For this handler, nothing is different at root or any node when doing full
    *  relax
    */
-  void relaxInitFull(RelaxationPtr /*rel*/, Bool* /* isInfeasible */) {};
+  void relaxInitFull(RelaxationPtr /*rel*/, Bool* /* is_inf */) {};
 
-  void relaxInitInc(RelaxationPtr rel, Bool* isInfeasible);  
+  void relaxInitInc(RelaxationPtr rel, bool* is_inf);  
 
   /**
    * Check feasibility.
    */
-  Bool isFeasible(ConstSolutionPtr sol, RelaxationPtr relaxation, 
-                  Bool & isInfeasible);
+  bool isFeasible(ConstSolutionPtr sol, RelaxationPtr relaxation, 
+                  bool & isInfeasible);
 
   /**
    * Not implemented yet. Eventually, could add violated linearization
    * inequalities for underestimator portion
    */
   void separate(ConstSolutionPtr sol, NodePtr node, RelaxationPtr rel,
-                CutManager *cutman, SolutionPoolPtr s_pool, Bool *sol_found,
+                CutManager *cutman, SolutionPoolPtr s_pool, bool *sol_found,
                 SeparationStatus *status);
 
 
@@ -212,19 +213,19 @@ public:
    * and some number of linearization inequalities, at a minimum from the end
    * points
    */
-  virtual void relaxNodeFull(NodePtr /* node */, RelaxationPtr /* rel */, Bool* /* isInfeasible */) {} ; 
+  virtual void relaxNodeFull(NodePtr /* node */, RelaxationPtr /* rel */, bool* /* isInfeasible */) {} ; 
 
   /** 
    * Create a relaxation by updating the secant inequality for the upper estimator,
    * and adding lineariations at the end points, if they are new 
    */
   virtual void relaxNodeInc(NodePtr  node, RelaxationPtr rel,
-                            Bool* isInfeasible);
+                            bool* isInfeasible);
 
   /// Not implemented 
   virtual void getBranchingCandidates(RelaxationPtr rel, 
                                       const std::vector< Double > &x, ModVector & mods, BrCandSet & cands, 
-                                      Bool & isInf);
+                                      bool & isInf);
 
   // Implement Handler::getBrMod().
   virtual ModificationPtr getBrMod(BrCandPtr cand, DoubleVector &x, 
@@ -235,12 +236,12 @@ public:
                                RelaxationPtr rel, SolutionPoolPtr s_pool);
 
   // presolve.
-  virtual SolveStatus presolve(PreModQ *pre_mods, Bool *changed);
+  virtual SolveStatus presolve(PreModQ *pre_mods, bool *changed);
 
   // Implement Handler::presolveNode().
-  virtual Bool presolveNode(ProblemPtr p, NodePtr node,
-                            SolutionPoolPtr s_pool, ModVector &n_mods,
-                            ModVector &t_mods);
+  virtual bool presolveNode(RelaxationPtr p, NodePtr node,
+                            SolutionPoolPtr s_pool, ModVector &p_mods,
+                            ModVector &r_mods);
                             
 
   // Write name

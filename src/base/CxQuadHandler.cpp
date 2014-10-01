@@ -9,7 +9,7 @@
  * \brief Implement the handler for functions of the general quadratic form 
  * \f$ \sum_i x^TAx \leq b \f$,
  * where \f$A\f$ may be indefinite.
- * \author Ashutosh Mahajan, Argonne National Laboratory
+ * \author Ashutosh Mahajan, IIT Bombay
  */
 
 /// TODO:
@@ -71,7 +71,7 @@ CxQuadHandler::~CxQuadHandler()
 }
 
 
-void CxQuadHandler::relax_(RelaxationPtr rel, Bool *)
+void CxQuadHandler::relax_(RelaxationPtr rel, bool *)
 {
   ObjectivePtr oPtr;
   ConstraintConstIterator c_iter;
@@ -118,25 +118,25 @@ void CxQuadHandler::relax_(RelaxationPtr rel, Bool *)
 }
 
 
-void CxQuadHandler::relaxInitFull(RelaxationPtr rel, Bool *is_inf)
+void CxQuadHandler::relaxInitFull(RelaxationPtr rel, bool *is_inf)
 {
   relax_(rel, is_inf);
 }
 
 
-void CxQuadHandler::relaxInitInc(RelaxationPtr rel, Bool *is_inf)
+void CxQuadHandler::relaxInitInc(RelaxationPtr rel, bool *is_inf)
 {
   relax_(rel, is_inf);
 }
 
 
-void CxQuadHandler::relaxNodeFull(NodePtr, RelaxationPtr, Bool *)
+void CxQuadHandler::relaxNodeFull(NodePtr, RelaxationPtr, bool *)
 {
   assert(!"CxQuadHandler::relaxNodeFull not implemented!");
 }
 
 
-void CxQuadHandler::relaxNodeInc(NodePtr, RelaxationPtr, Bool *)
+void CxQuadHandler::relaxNodeInc(NodePtr, RelaxationPtr, bool *)
 {
   assert(!"CxQuadHandler::relaxNodeInc not implemented!");
 }
@@ -146,7 +146,7 @@ void CxQuadHandler::relaxTwoSided_(QuadraticFunctionPtr qf,
     ConstraintPtr cons, RelaxationPtr rel)
 {
   VariablePtr v0, v1, v;
-  Double vlb, vub;
+  double vlb, vub;
   FunctionPtr f;
 
   QuadraticFunctionPtr cx_qf0 = (QuadraticFunctionPtr) new QuadraticFunction();
@@ -232,7 +232,7 @@ void CxQuadHandler::relaxOneSided_(QuadraticFunctionPtr qf,
     ConstraintPtr cons, RelaxationPtr rel)
 {
   VariablePtr v0, v1, v;
-  Double vlb, vub;
+  double vlb, vub;
   FunctionPtr f;
 
   QuadraticFunctionPtr cx_qf0 = (QuadraticFunctionPtr) new QuadraticFunction();
@@ -282,7 +282,7 @@ void CxQuadHandler::relaxObj_(ObjectivePtr obj, RelaxationPtr rel)
   QuadraticFunctionPtr qf, cx_qf0;
   LinearFunctionPtr lf0, lf1;
   FunctionPtr f;
-  Double vlb, vub;
+  double vlb, vub;
   VariablePtr v,v0,v1;
   if (!obj) {
    return;
@@ -340,9 +340,9 @@ void CxQuadHandler::addSecant_(VariablePtr x, VariablePtr y, RelaxationPtr rel)
   ConstraintPtr cons;
   FunctionPtr f;
 
-  Double lb = x->getLb();
-  Double ub = x->getUb();
-  Double r;
+  double lb = x->getLb();
+  double ub = x->getUb();
+  double r;
 
   lf = getNewSecantLf_(x, y, lb, ub, r);
 
@@ -360,7 +360,8 @@ void CxQuadHandler::addSecant_(VariablePtr x, VariablePtr y, RelaxationPtr rel)
 
 
 LinearFunctionPtr CxQuadHandler::getNewSecantLf_(VariablePtr x, VariablePtr y,
-    Double & lb, Double & ub, Double & r)
+                                                 double & lb, double & ub,
+                                                 double & r)
 {
   LinearFunctionPtr lf = LinearFunctionPtr(); // NULL
   r = -ub*lb;
@@ -397,12 +398,12 @@ VariablePtr CxQuadHandler::addMcCormickUpper_(VariablePtr x0, VariablePtr x1,
   // add two McCormick inequalities for \f$  y \leq x0.x1 \f$.
   McCormickPtr mcc = (McCormickPtr) new McCormick(x0, x1, McCormick::GT);
   McCormickSetIter biter = mcCons_.find(mcc);
-  Double lb = 0, ub = 0;
+  double lb = 0, ub = 0;
   LinearFunctionPtr lf;
   FunctionPtr f;
   ConstraintPtr cons;
   VariablePtr y = VariablePtr();   // NULL
-  Bool exists = true;
+  bool exists = true;
 
   if (biter==mcCons_.end()) {
     exists = false;
@@ -457,12 +458,12 @@ VariablePtr CxQuadHandler::addMcCormickLower_(VariablePtr x0, VariablePtr x1,
   // add two McCormick inequalities for \f$ y \geq x0.x1 \f$.
   McCormickPtr mcc = (McCormickPtr) new McCormick(x0, x1, McCormick::LT);
   McCormickSetIter biter = mcCons_.find(mcc);
-  Double lb = 0, ub = 0;
+  double lb = 0, ub = 0;
   LinearFunctionPtr lf;
   FunctionPtr f;
   ConstraintPtr cons;
   VariablePtr y = VariablePtr();   // NULL
-  Bool exists = true;
+  bool exists = true;
 
   if (biter==mcCons_.end()) {
     exists = false;
@@ -511,8 +512,9 @@ VariablePtr CxQuadHandler::addMcCormickLower_(VariablePtr x0, VariablePtr x1,
 }
 
 
-LinearFunctionPtr CxQuadHandler::getMcLf_(VariablePtr x0, Double lb0, Double ub0,
-    VariablePtr x1, Double lb1, Double ub1, VariablePtr y, Double &rhs, UInt i)
+LinearFunctionPtr CxQuadHandler::getMcLf_(VariablePtr x0, double lb0, double ub0,
+                                          VariablePtr x1, double lb1, double ub1,
+                                          VariablePtr y, double &rhs, UInt i)
 {
   LinearFunctionPtr lf = (LinearFunctionPtr) new LinearFunction();
   assert(y->getLb() > -1e15 && y->getUb() < 1e15);
@@ -557,10 +559,10 @@ LinearFunctionPtr CxQuadHandler::getMcLf_(VariablePtr x0, Double lb0, Double ub0
 }
 
 
-Bool CxQuadHandler::isFeasible(ConstSolutionPtr sol, RelaxationPtr , Bool & )
+bool CxQuadHandler::isFeasible(ConstSolutionPtr sol, RelaxationPtr , bool & )
 {
-  Double yval, xval;
-  const Double *x = sol->getPrimal();
+  double yval, xval;
+  const double *x = sol->getPrimal();
 
   for (VarSecantMapIter it=cvCons_.begin(); it != cvCons_.end(); ++it) {
     // check if y <= x^2
@@ -590,16 +592,16 @@ Bool CxQuadHandler::isFeasible(ConstSolutionPtr sol, RelaxationPtr , Bool & )
 
 
 void CxQuadHandler::getBranchingCandidates(RelaxationPtr, 
-    const DoubleVector &x, ModVector & , BrCandSet & cands, 
-    Bool & is_inf)
+                                           const DoubleVector &x, ModVector &,
+                                           BrCandSet & cands, bool & is_inf)
 {
-  Double yval, x0val, x1val;
+  double yval, x0val, x1val;
   BrVarCandPtr br_can;
   VariablePtr x0, x1;
   UIntSet cand_inds;
-  std::pair<UIntSet::iterator, Bool> ret;
+  std::pair<UIntSet::iterator, bool> ret;
 #if DEBUG
-  Bool check;
+  bool check;
 #endif
 
   is_inf = false;
@@ -681,7 +683,7 @@ void CxQuadHandler::getBranchingCandidates(RelaxationPtr,
 ModificationPtr CxQuadHandler::getBrMod(BrCandPtr cand, DoubleVector &xval, 
     RelaxationPtr , BranchDirection dir)
 {
-  Double            lb, ub, lb1, ub1, b2, rhs=0;
+  double            lb, ub, lb1, ub1, b2, rhs=0;
   BoundType         lu;
   ConstraintPtr     cons;
   BrVarCandPtr      vcand = boost::dynamic_pointer_cast <BrVarCand> (cand);
@@ -765,28 +767,44 @@ ModificationPtr CxQuadHandler::getBrMod(BrCandPtr cand, DoubleVector &xval,
 
 
 Branches CxQuadHandler::getBranches(BrCandPtr cand, DoubleVector & x,
-                                    RelaxationPtr, SolutionPoolPtr)
+                                    RelaxationPtr rel, SolutionPoolPtr)
 {
   BrVarCandPtr vcand = boost::dynamic_pointer_cast <BrVarCand> (cand);
   VariablePtr v = vcand->getVar();
-  Double value = x[v->getIndex()];
+  VariablePtr v2;
+  double value = x[v->getIndex()];
   BranchPtr branch;
   Branches branches = (Branches) new BranchPtrVector();
+  VarBoundModPtr mod;
 
   // can't branch on something that is at its bounds.
   assert(value > v->getLb()+1e-8 && value < v->getUb()-1e-8);
 
   // down branch
-  VarBoundModPtr mod = (VarBoundModPtr) new VarBoundMod(v, Upper, value);
   branch = (BranchPtr) new Branch();
-  branch->addMod(mod);
+  if (modProb_) {
+    mod = (VarBoundModPtr) new VarBoundMod(v, Upper, value);
+    branch->addPMod(mod);
+  }
+  if (modRel_) {
+    v2 = rel->getRelaxationVar(v);
+    mod = (VarBoundModPtr) new VarBoundMod(v2, Upper, value);
+    branch->addRMod(mod);
+  }
   branch->setActivity(0.5);// TODO: set this correctly
   branches->push_back(branch);
 
   // up branch
-  mod    = (VarBoundModPtr) new VarBoundMod(v, Lower, value);
   branch = (BranchPtr) new Branch();
-  branch->addMod(mod);
+  if (modProb_) {
+    mod    = (VarBoundModPtr) new VarBoundMod(v, Lower, value);
+    branch->addPMod(mod);
+  }
+  if (modRel_) {
+    v2 = rel->getRelaxationVar(v);
+    mod = (VarBoundModPtr) new VarBoundMod(v2, Lower, value);
+    branch->addRMod(mod);
+  }
   branch->setActivity(0.5); // TODO: set this correctly
   branches->push_back(branch);
 
@@ -800,7 +818,7 @@ Branches CxQuadHandler::getBranches(BrCandPtr cand, DoubleVector & x,
 
 
 void CxQuadHandler::separate(ConstSolutionPtr, NodePtr , RelaxationPtr ,
-                             CutManager *, SolutionPoolPtr , Bool *,
+                             CutManager *, SolutionPoolPtr , bool *,
                              SeparationStatus *)
 {
 
@@ -808,12 +826,12 @@ void CxQuadHandler::separate(ConstSolutionPtr, NodePtr , RelaxationPtr ,
 
 
 
-Bool CxQuadHandler::presolveNode(ProblemPtr p, NodePtr, SolutionPoolPtr,
-                                 ModVector &, ModVector &t_mods)
+bool CxQuadHandler::presolveNode(RelaxationPtr rel, NodePtr, SolutionPoolPtr,
+                                 ModVector &, ModVector &r_mods)
 {
   // visit each concave square constraint and update Secant if the bounds have
   // changed.
-  Double lb, ub, lb1, ub1, r;
+  double lb, ub, lb1, ub1, r;
   ConstraintPtr cons;
   VariablePtr x0, x1, y;
   VarBoundMod2Ptr b2mod;
@@ -832,25 +850,25 @@ Bool CxQuadHandler::presolveNode(ProblemPtr p, NodePtr, SolutionPoolPtr,
     if (lb1>y->getLb()+eTol_ && ub1<y->getUb()-eTol_) {
       // bounds on y and also the secant approximation can be updated.
       b2mod  = (VarBoundMod2Ptr) new VarBoundMod2(y, lb1, ub1);
-      b2mod->applyToProblem(p);
-      t_mods.push_back(b2mod);
+      b2mod->applyToProblem(rel);
+      r_mods.push_back(b2mod);
       lf   = getNewSecantLf_(x0, y, lb, ub, r);
       lmod = (LinConModPtr) new LinConMod(cons, lf, -INFINITY, r);
-      lmod->applyToProblem(p);
+      lmod->applyToProblem(rel);
     } else if (lb1>y->getLb()+eTol_) {
       bmod  = (VarBoundModPtr) new VarBoundMod(y, Lower, lb1);
-      bmod->applyToProblem(p);
-      t_mods.push_back(bmod);
+      bmod->applyToProblem(rel);
+      r_mods.push_back(bmod);
       lf   = getNewSecantLf_(x0, y, lb, ub, r);
       lmod = (LinConModPtr) new LinConMod(cons, lf, -INFINITY, r);
-      lmod->applyToProblem(p);
+      lmod->applyToProblem(rel);
     } else if (ub1<y->getUb()-eTol_) {
       bmod  = (VarBoundModPtr) new VarBoundMod(y, Upper, ub1);
-      bmod->applyToProblem(p);
-      t_mods.push_back(bmod);
+      bmod->applyToProblem(rel);
+      r_mods.push_back(bmod);
       lf   = getNewSecantLf_(x0, y, lb, ub, r);
       lmod = (LinConModPtr) new LinConMod(cons, lf, -INFINITY, r);
-      lmod->applyToProblem(p);
+      lmod->applyToProblem(rel);
     } else {
       lf = cons->getLinearFunction();
       if ((cons->getUb()+lb*ub)>1e-8 || 
@@ -858,7 +876,7 @@ Bool CxQuadHandler::presolveNode(ProblemPtr p, NodePtr, SolutionPoolPtr,
         // bounds are up to date but the constraint needs update.
         lf   = getNewSecantLf_(x0, y, lb, ub, r);
         lmod = (LinConModPtr) new LinConMod(cons, lf, -INFINITY, r);
-        lmod->applyToProblem(p);
+        lmod->applyToProblem(rel);
       }
     }
   }
@@ -871,18 +889,18 @@ Bool CxQuadHandler::presolveNode(ProblemPtr p, NodePtr, SolutionPoolPtr,
     BoundsOnProduct(x0, x1, lb, ub);
     if (lb>y->getLb()+eTol_ && ub<y->getUb()-eTol_) {
       b2mod  = (VarBoundMod2Ptr) new VarBoundMod2(y, lb, ub);
-      t_mods.push_back(b2mod);
-      b2mod->applyToProblem(p);
+      r_mods.push_back(b2mod);
+      b2mod->applyToProblem(rel);
 
     } else if (lb>y->getLb()+eTol_) {
       bmod  = (VarBoundModPtr) new VarBoundMod(y, Lower, lb);
-      t_mods.push_back(bmod);
-      bmod->applyToProblem(p);
+      r_mods.push_back(bmod);
+      bmod->applyToProblem(rel);
 
     } else if (ub<y->getUb()-eTol_) {
       bmod  = (VarBoundModPtr) new VarBoundMod(y, Upper, ub);
-      t_mods.push_back(bmod);
-      bmod->applyToProblem(p);
+      r_mods.push_back(bmod);
+      bmod->applyToProblem(rel);
 
     } 
 
@@ -890,31 +908,31 @@ Bool CxQuadHandler::presolveNode(ProblemPtr p, NodePtr, SolutionPoolPtr,
       lf = getMcLf_(x0, x0->getLb(), x0->getUb(), x1, x1->getLb(), x1->getUb(), 
           y, r, 0);
       lmod = (LinConModPtr) new LinConMod(mcc->getC0(), lf, -INFINITY, r);
-      lmod->applyToProblem(p);
+      lmod->applyToProblem(rel);
 
       lf = getMcLf_(x0, x0->getLb(), x0->getUb(), x1, x1->getLb(), x1->getUb(), 
           y, r, 1);
       lmod = (LinConModPtr) new LinConMod(mcc->getC1(), lf, -INFINITY, r);
-      lmod->applyToProblem(p);
+      lmod->applyToProblem(rel);
     }
 
     if (mcc->getSense() == McCormick::GT || mcc->getSense() == McCormick::EQ) {
       lf = getMcLf_(x0, x0->getLb(), x0->getUb(), x1, x1->getLb(), x1->getUb(), 
           y, r, 2);
       lmod = (LinConModPtr) new LinConMod(mcc->getC2(), lf, -INFINITY, r);
-      lmod->applyToProblem(p);
+      lmod->applyToProblem(rel);
 
       lf = getMcLf_(x0, x0->getLb(), x0->getUb(), x1, x1->getLb(), x1->getUb(), 
           y, r, 3);
       lmod = (LinConModPtr) new LinConMod(mcc->getC3(), lf, -INFINITY, r);
-      lmod->applyToProblem(p);
+      lmod->applyToProblem(rel);
     }
   }
   return false;
 }
 
 
-SolveStatus CxQuadHandler::presolve(PreModQ *, Bool *)
+SolveStatus CxQuadHandler::presolve(PreModQ *, bool *)
 {
   return Finished; // disabled for now.
   removeFixed_();
@@ -929,7 +947,7 @@ void CxQuadHandler::removeFixed_()
   LinearFunctionPtr lf = (LinearFunctionPtr) new LinearFunction();
   FunctionPtr f;
   ConstraintConstIterator c_iter;
-  Double c;
+  double c;
 
   if (oPtr && oPtr->getFunctionType() == Quadratic) {
     c = 0.;
@@ -960,13 +978,13 @@ void CxQuadHandler::removeFixed_()
 
 
 void CxQuadHandler::removeFixedFun_(FunctionPtr f, LinearFunctionPtr lf2, 
-    Double *c)
+                                    double *c)
 {
   QuadraticFunctionPtr qf,qf2;
   LinearFunctionPtr lf;
-  Bool new_lf = false;
+  bool new_lf = false;
   ConstVariablePtr v1, v2;
-  Double l1, l2, u1, u2;
+  double l1, l2, u1, u2;
 
   qf = f->getQuadraticFunction();
   lf = f->getLinearFunction();
@@ -1042,7 +1060,7 @@ void CxQuadHandler::binToLinFun_(FunctionPtr f, LinearFunctionPtr lf2)
 {
   QuadraticFunctionPtr qf;
   LinearFunctionPtr lf;
-  Bool new_lf = false;
+  bool new_lf = false;
 
   qf = f->getQuadraticFunction();
   lf = f->getLinearFunction();
@@ -1099,7 +1117,7 @@ McCormick::~McCormick()
 }
 
 
-Bool Minotaur::CompareMcCormick::operator()(McCormickPtr b0, McCormickPtr b1)
+bool Minotaur::CompareMcCormick::operator()(McCormickPtr b0, McCormickPtr b1)
   const
 {
   UInt b0x0 = b0->getX0()->getId();
@@ -1115,11 +1133,11 @@ Bool Minotaur::CompareMcCormick::operator()(McCormickPtr b0, McCormickPtr b1)
 }
 
 
-Bool McCormick::isViolated(const Double *x, const Double &tol) const
+bool McCormick::isViolated(const double *x, const double &tol) const
 {
 
-  Double xval = x[x0_->getIndex()] * x[x1_->getIndex()];
-  Double yval  = x[y_->getIndex()];
+  double xval = x[x0_->getIndex()] * x[x1_->getIndex()];
+  double yval  = x[y_->getIndex()];
   switch (s_) {
    case (LT): 
      if (xval > yval+tol) {
@@ -1144,10 +1162,10 @@ Bool McCormick::isViolated(const Double *x, const Double &tol) const
 }
 
 
-Bool McCormick::isViolated(const Double &x0val, const Double &x1val, 
-    const Double &yval, const Double &tol) const
+bool McCormick::isViolated(const double &x0val, const double &x1val, 
+                           const double &yval, const double &tol) const
 {
-  Double xval = x1val*x0val;
+  double xval = x1val*x0val;
   switch (s_) {
    case (LT): 
      if (xval > yval+tol) {

@@ -1178,6 +1178,9 @@ void LinearHandler::relax_(ProblemPtr p, RelaxationPtr rel, Bool *is_inf)
       // create a clone of this linear function.
       newf = f->cloneWithVars(rel->varsBegin(), &err);
       rel->newObjective(newf, oPtr->getConstant(), Minimize);
+    } else if (!f) {
+      newf.reset();
+      rel->newObjective(newf, oPtr->getConstant(), Minimize);
     } else { 
       // NULL
     }
@@ -1374,8 +1377,8 @@ void LinearHandler::purgeVars_(PreModQ *pre_mods)
 }
 
 
-Bool LinearHandler::presolveNode(ProblemPtr p, NodePtr node, SolutionPoolPtr, 
-                                 ModVector &, ModVector &t_mods)
+Bool LinearHandler::presolveNode(RelaxationPtr rel, NodePtr node, SolutionPoolPtr, 
+                                 ModVector &, ModVector &r_mods)
 {
   SolveStatus status = Started;
   if (false == pOpts_->doPresolve || 
@@ -1383,7 +1386,7 @@ Bool LinearHandler::presolveNode(ProblemPtr p, NodePtr node, SolutionPoolPtr,
     return false;
   }
 
-  simplePresolve(p, t_mods, status);
+  simplePresolve(rel, r_mods, status);
   return (status==SolvedInfeasible);
 }
 

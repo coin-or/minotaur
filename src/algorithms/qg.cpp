@@ -202,7 +202,6 @@ int main(int argc, char* argv[])
   env->readOptions(argc, argv);
   options = env->getOptions();
   options->findString("interface_type")->setValue("AMPL");
-  options->findBool("modify_rel_only")->setValue(true);
 
   // check if user needs help.
   if (options->findBool("show_options")->getValue() ||
@@ -281,14 +280,17 @@ int main(int argc, char* argv[])
 
   // Initialize the handlers
   l_hand = (LinearHandlerPtr) new LinearHandler(env, inst);
+  l_hand->setModFlags(false, true);
   handlers.push_back(l_hand);
   assert(l_hand);
 
   v_hand = (IntVarHandlerPtr) new IntVarHandler(env, inst);
+  v_hand->setModFlags(false, true);
   handlers.push_back(v_hand);
   assert(v_hand);
 
   qghand = (QGHandlerPtr) new QGHandler(env, inst, nlp_e); 
+  qghand->setModFlags(false, true);
   handlers.push_back(qghand);
 
   

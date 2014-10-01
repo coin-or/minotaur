@@ -86,6 +86,7 @@ set (MINOTAUR_SOURCES
      QGHandler.cpp 
      QPDRelaxer.cpp 
      QPDProcessor.cpp 
+     QuadHandler.cpp 
      QuadraticFunction.cpp 
      RandomBrancher.cpp
      Relaxation.cpp 
@@ -191,6 +192,7 @@ set (MINOTAUR_HEADERS
      QPEngine.h
      QGHandler.h
      QPDProcessor.h 
+     QuadHandler.h 
      QPDRelaxer.h 
      QuadraticFunction.h
      RandomBrancher.h

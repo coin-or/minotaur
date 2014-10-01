@@ -38,11 +38,18 @@ public:
   Branch();
 
   /**
-   * \brief Add a modification to the current vector of modifications
+   * \brief Add a problem modification to the current vector of modifications
    * associated with this branch.
    * \param [in] mod The modification that must be added to the child node.
    */
-  void addMod(ModificationPtr mod);
+  void addPMod(ModificationPtr mod);
+
+  /**
+   * \brief Add a relaxation modification to the current vector of modifications
+   * associated with this branch.
+   * \param [in] mod The modification that must be added to the child node.
+   */
+  void addRMod(ModificationPtr mod);
 
   /** 
    * \brief Set the candidate that was used to generate this branch.
@@ -51,25 +58,49 @@ public:
    */
   void setBrCand(BrCandPtr cand) {brCand_ = cand;};
 
-  /// The first modification in the vector of modifications.
-  ModificationConstIterator modsBegin() const 
-  { return mods_.begin(); }
+  /// The first modification in the vector of modifications (problem).
+  ModificationConstIterator pModsBegin() const
+  { return pMods_.begin(); }
 
-  /// The last iterator of the vector of modifications.
-  ModificationConstIterator modsEnd() const { return mods_.end(); }
+  /// The first modification in the vector of modifications (relaxation).
+  ModificationConstIterator rModsBegin() const
+  { return rMods_.begin(); }
+
+  /// The last iterator of the vector of modifications (problem).
+  ModificationConstIterator pModsEnd() const
+  { return pMods_.end(); }
+
+  /// The last iterator of the vector of modifications (relaxation).
+  ModificationConstIterator rModsEnd() const
+  { return rMods_.end(); }
 
   /**
-   * \brief The reverse iterators are used for undoing the changes. It is
-   * important that the changes are reverted in the reverse order.
+   * \brief The reverse iterators are used for undoing the changes to the
+   * problem. It is important that the changes are reverted in the reverse
+   * order.
    */
-  ModificationRConstIterator modsRBegin() const 
-  { return mods_.rbegin(); }
+  ModificationRConstIterator pModsRBegin() const 
+  { return pMods_.rbegin(); }
 
   /**
-   * \brief The last reverse iterator for modifications. Corresponds to
-   * the first modification in the vector.
+   * \brief The reverse iterators are used for undoing the changes to the
+   * relaxation. It is important that the changes are reverted in the reverse
+   * order.
    */
-  ModificationRConstIterator modsREnd() const { return mods_.rend(); }
+  ModificationRConstIterator rModsRBegin() const 
+  { return rMods_.rbegin(); }
+
+  /**
+   * \brief The last reverse iterator for modifications for the problem.
+   * Corresponds to the first modification in the vector.
+   */
+  ModificationRConstIterator pModsREnd() const { return pMods_.rend(); }
+
+  /**
+   * \brief The last reverse iterator for modifications for the relaxation.
+   * Corresponds to the first modification in the vector.
+   */
+  ModificationRConstIterator rModsREnd() const { return rMods_.rend(); }
 
   /**
    * \brief Return the activity or the value of the branching expression
@@ -91,14 +122,26 @@ public:
   void write(std::ostream &out) const;
 
 protected:
+  /// Name.
+  const static std::string me_; 
+
   /**
-   * \brief A vector of modifications that define this branch.
+   * \brief A vector of modifications of Problem that define this branch.
    *
    * A branch may have more than one modifications. For instance, fixing a
    * variable to zero may have implications on bounds of other variables
    * as well. 
    */
-  ModVector mods_;
+  ModVector pMods_;
+
+  /**
+   * \brief A vector of modifications of Relaxation that define this branch.
+   *
+   * A branch may have more than one modifications. For instance, fixing a
+   * variable to zero may have implications on bounds of other variables
+   * as well. 
+   */
+  ModVector rMods_;
 
   /**
    * \brief The value of the branching expression before we branched.

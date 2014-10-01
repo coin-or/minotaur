@@ -38,9 +38,10 @@ IntVarHandler::IntVarHandler(EnvPtr env, ProblemPtr problem)
 {
   logger_   = (LoggerPtr) new Logger((LogLevel) env_->getOptions()->
                                      findInt("handler_log_level")->getValue());
+  modProb_  = true;
+  modRel_   = true;
   intTol_   = env_->getOptions()->findDouble("int_tol")->getValue();
   gDive_    = env_->getOptions()->findBool("guided_dive")->getValue();
-  mRelOnly_ = env_->getOptions()->findBool("modify_rel_only")->getValue();
   problem_  = problem;
 }
 
@@ -53,14 +54,14 @@ IntVarHandler::~IntVarHandler()
 }
 
 
-Bool IntVarHandler::isFeasible(ConstSolutionPtr sol, RelaxationPtr relaxation, 
-                               Bool &)
+bool IntVarHandler::isFeasible(ConstSolutionPtr sol, RelaxationPtr relaxation, 
+                               bool &)
 {
   VariableConstIterator v_iter, v_iter2;
   VariableType v_type;
-  Double value;
-  const Double *x = sol->getPrimal();
-  Bool is_feas = true;
+  double value;
+  const double *x = sol->getPrimal();
+  bool is_feas = true;
 
   for (v_iter=relaxation->varsBegin(); v_iter!=relaxation->varsEnd(); 
        ++v_iter) {
@@ -86,9 +87,9 @@ Bool IntVarHandler::isFeasible(ConstSolutionPtr sol, RelaxationPtr relaxation,
 
 
 void IntVarHandler::getBranchingCandidates(RelaxationPtr rel, 
-                                           const std::vector< Double > &x,
+                                           const std::vector< double > &x,
                                            ModVector &, BrCandSet & cands,
-                                           Bool & is_inf)
+                                           bool & is_inf)
 {
   VariablePtr v;
   VariableType v_type;
@@ -103,7 +104,7 @@ void IntVarHandler::getBranchingCandidates(RelaxationPtr rel,
         fabs(floor(x[index]+0.5) - x[index]) > intTol_) {
       // yes, it can be branched upon.
       br_can = (BrVarCandPtr) new BrVarCand(v, v->getIndex(), 
-          x[index]-floor(x[index]));
+                                            x[index]-floor(x[index]));
       cands.insert(br_can);
     } 
   }
@@ -118,7 +119,7 @@ ModificationPtr IntVarHandler::getBrMod(BrCandPtr cand, DoubleVector & x,
   BrVarCandPtr vcand = boost::dynamic_pointer_cast <BrVarCand> (cand);
   VariablePtr v = vcand->getVar();
   VarBoundModPtr mod;
-  Double bnd;
+  double bnd;
 
   if (dir==DownBranch) {
     bnd = floor(x[v->getIndex()]);
@@ -136,23 +137,37 @@ Branches IntVarHandler::getBranches(BrCandPtr cand, DoubleVector & x,
 {
   BrVarCandPtr vcand = boost::dynamic_pointer_cast <BrVarCand> (cand);
   VariablePtr v = vcand->getVar();
-  Double value = x[v->getIndex()];
+  VariablePtr v2;
+  double value = x[v->getIndex()];
   BranchPtr branch1, branch2;
   Branches branches = (Branches) new BranchPtrVector();
   VarBoundModPtr mod;
   SolutionPtr bestsol = s_pool->getBestSolution();
 
-  if (!mRelOnly_) {
-    v = rel->getOriginalVar(v);
-  }
-  mod = (VarBoundModPtr) new VarBoundMod(v, Upper, floor(value));
   branch1 = (BranchPtr) new Branch();
-  branch1->addMod(mod);
+  if (modProb_) {
+    v2 = rel->getOriginalVar(v);
+    mod = (VarBoundModPtr) new VarBoundMod(v2, Upper, floor(value));
+    branch1->addPMod(mod);
+  }
+  if (modRel_) {
+    mod = (VarBoundModPtr) new VarBoundMod(v, Upper, floor(value));
+    branch1->addRMod(mod);
+  }
   branch1->setActivity(value);
 
-  mod = (VarBoundModPtr) new VarBoundMod(v, Lower, ceil(value));
   branch2 = (BranchPtr) new Branch();
-  branch2->addMod(mod);
+  if (modProb_) {
+    v2 = rel->getOriginalVar(v);
+    if (v2) {
+      mod = (VarBoundModPtr) new VarBoundMod(v2, Lower, ceil(value));
+      branch2->addPMod(mod);
+    }
+  }
+  if (modRel_) {
+    mod = (VarBoundModPtr) new VarBoundMod(v, Lower, ceil(value));
+    branch2->addRMod(mod);
+  }
   branch2->setActivity(value);
 
   if (true==gDive_ && bestsol) {
@@ -176,13 +191,13 @@ Branches IntVarHandler::getBranches(BrCandPtr cand, DoubleVector & x,
 }
 
 
-Double IntVarHandler::getTol() const
+double IntVarHandler::getTol() const
 {
   return intTol_;
 }
 
 
-Bool IntVarHandler::isNeeded()
+bool IntVarHandler::isNeeded()
 {
   if (problem_) {
     problem_->calculateSize();
@@ -194,31 +209,31 @@ Bool IntVarHandler::isNeeded()
 }
 
 
-void IntVarHandler::relaxInitFull(RelaxationPtr, Bool *is_inf)
+void IntVarHandler::relaxInitFull(RelaxationPtr, bool *is_inf)
 {
   *is_inf = false;
 }
 
 
-void IntVarHandler::relaxInitInc(RelaxationPtr , Bool *is_inf)
+void IntVarHandler::relaxInitInc(RelaxationPtr , bool *is_inf)
 {
   *is_inf = false;
 }
 
 
-void IntVarHandler::relaxNodeFull(NodePtr , RelaxationPtr, Bool *is_inf)
+void IntVarHandler::relaxNodeFull(NodePtr , RelaxationPtr, bool *is_inf)
 {
   *is_inf = false;
 }
 
 
-void IntVarHandler::relaxNodeInc(NodePtr , RelaxationPtr , Bool *is_inf)
+void IntVarHandler::relaxNodeInc(NodePtr , RelaxationPtr , bool *is_inf)
 {
   *is_inf = false;
 }
 
 
-void IntVarHandler::setTol(Double tol)
+void IntVarHandler::setTol(double tol)
 {
   intTol_ = tol;
 }

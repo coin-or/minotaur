@@ -42,14 +42,26 @@ public:
   // Implement NodeRelaxer::CreateNodeRelaxation()
   RelaxationPtr createNodeRelaxation(NodePtr node, Bool dived, Bool &prune);
 
+  /// Get the current value of modProb_ flag.
+  bool getModFlag();
+
   // Implement NodeRelaxer::reset()
   void reset(NodePtr node, Bool diving);
 
   /**
-   * Set the engine that is used to solve the relaxations. We need to set
+   * /brief Set the engine that is used to solve the relaxations. We need to set
    * it in order to be able to load warm-starts at a node.
+   *
+   * \param[in] e Engine that will be modified whenever a new node is about to
+   * be processed.
    */
   void setEngine(EnginePtr e);
+
+  /**
+   * \brief If mod_prob is true, the problem will also be modified at each
+   * node. By default, only the relaxation is modified.
+   */
+  void setModFlag(bool mod_prob);
 
   // get the relaxation pointer, rel_.
   RelaxationPtr getRelaxation();
@@ -68,16 +80,16 @@ private:
   HandlerVector handlers_;
 
   /**
-   * True if only relaxation is modified, false if both problem and
-   * relaxation are modified.
+   * True if Problem is modified in each node, false if only relaxation is
+   * modified.
    */
-  Bool modRelOnly_;
+  bool modProb_;
 
   /// The problem being solved by branch-and-bound.
   ProblemPtr p_;
 
   /**
-   * We only keep one relaxation. It is modified at each node and then
+   * \brief We only keep one relaxation. It is modified at each node and then
    * reset.
    */
   RelaxationPtr rel_;

@@ -19,7 +19,6 @@
 #include "CGraph.h"
 #include "CNode.h"
 #include "Constraint.h"
-#include "CxQuadHandler.h"
 #include "CxUnivarHandler.h"
 #include "Function.h"
 #include "IntVarHandler.h"
@@ -32,6 +31,7 @@
 #include "Problem.h"
 #include "ProblemSize.h"
 #include "QuadraticFunction.h"
+#include "QuadHandler.h"
 #include "Solution.h"
 #include "Transformer.h"
 #include "Variable.h"
@@ -167,21 +167,27 @@ void Transformer::copyLinear_(ConstProblemPtr p, ProblemPtr newp)
 
   // copy linear objective.
   obj = p->getObjective();
-  switch (obj->getFunctionType()) {
-  case (Constant):
-    f = FunctionPtr(); // NULL
-    newp->newObjective(f, obj->getConstant(), obj->getObjectiveType(),
-                       obj->getName());
-    break;
-  case (Linear):
-    newlf = obj->getFunction()->getLinearFunction()->
-            cloneWithVars(newp->varsBegin());
-    f = (FunctionPtr) new Function(newlf); 
-    newp->newObjective(f, obj->getConstant(), obj->getObjectiveType(),
-                       obj->getName());
-    break;
-  default:
-    break;
+
+  if (!obj) {
+    f.reset();
+    newp_->newObjective(f, 0.0, Minimize);
+  } else {
+    switch (obj->getFunctionType()) {
+    case (Constant):
+      f = FunctionPtr(); // NULL
+      newp->newObjective(f, obj->getConstant(), obj->getObjectiveType(),
+                         obj->getName());
+      break;
+    case (Linear):
+      newlf = obj->getFunction()->getLinearFunction()->
+      cloneWithVars(newp->varsBegin());
+      f = (FunctionPtr) new Function(newlf); 
+      newp->newObjective(f, obj->getConstant(), obj->getObjectiveType(),
+                         obj->getName());
+      break;
+    default:
+      break;
+    }
   }
 }
 
@@ -277,9 +283,9 @@ VariablePtr Transformer::newVar_(LinearFunctionPtr lf, Double d,
     f = (FunctionPtr) new Function(lf);
     cnew = newp->newConstraint(f, -d, -d);
 #if SPEW
-      logger_->MsgStream(LogInfo) << me_ << "added new constraint "
-                                  << std::endl;
-      cnew->write(logger_->MsgStream(LogInfo));
+    logger_->MsgStream(LogInfo) << me_ << "added new constraint "
+                                << std::endl;
+    cnew->write(logger_->MsgStream(LogInfo));
 #endif 
 
     lHandler_->addConstraint(cnew);

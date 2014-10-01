@@ -21,9 +21,11 @@
 
 using namespace Minotaur;
 
+const std::string Branch::me_ = "Branch: "; 
 
 Branch::Branch()
-: mods_(0),
+: pMods_(0),
+  rMods_(0),
   activity_(INFINITY),
   brCand_(BrCandPtr()) // NULL
 {
@@ -31,9 +33,15 @@ Branch::Branch()
 }
 
 
-void Branch::addMod(ModificationPtr mod) 
+void Branch::addPMod(ModificationPtr mod) 
 {
-  mods_.push_back(mod);
+  pMods_.push_back(mod);
+}
+
+
+void Branch::addRMod(ModificationPtr mod) 
+{
+  rMods_.push_back(mod);
 }
 
 
@@ -50,8 +58,14 @@ void Branch::setActivity(Double value)
 
 void Branch::write(std::ostream &out) const
 {
-  for (ModificationConstIterator it = mods_.begin();
-       it != mods_.end(); ++it) {
+  out << me_ << "Problem modifications:" << std::endl;
+  for (ModificationConstIterator it = pMods_.begin(); it != pMods_.end();
+       ++it) {
+    (*it)->write(out);
+  }
+  out << me_ << "Relaxation modifications:" << std::endl;
+  for (ModificationConstIterator it = rMods_.begin(); it != rMods_.end();
+       ++it) {
     (*it)->write(out);
   }
 }

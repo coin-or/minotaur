@@ -92,7 +92,7 @@ public:
   SolveStatus presolve(PreModQ *, Bool *) {return Finished;};
 
   /// Does nothing.
-  virtual Bool presolveNode(ProblemPtr, NodePtr,
+  virtual Bool presolveNode(RelaxationPtr, NodePtr,
                             SolutionPoolPtr, ModVector &,
                             ModVector &) {return false;};
   

@@ -188,6 +188,7 @@ BASE_SRCS = \
 	$(BASE_DIR)/QGHandler.cpp \
 	$(BASE_DIR)/QPDRelaxer.cpp \
 	$(BASE_DIR)/QPDProcessor.cpp \
+	$(BASE_DIR)/QuadHandler.cpp \
 	$(BASE_DIR)/QuadraticFunction.cpp \
 	$(BASE_DIR)/RandomBrancher.cpp\
 	$(BASE_DIR)/Relaxation.cpp \
@@ -284,6 +285,7 @@ ALL_HEADERS = \
 	$(BASE_DIR)/QPEngine.h \
 	$(BASE_DIR)/QGHandler.h \
 	$(BASE_DIR)/QPDProcessor.h \
+	$(BASE_DIR)/QuadHandler.h \
 	$(BASE_DIR)/QPDRelaxer.h \
 	$(BASE_DIR)/QuadraticFunction.h \
 	$(BASE_DIR)/RandomBrancher.h\

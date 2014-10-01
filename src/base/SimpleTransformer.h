@@ -17,23 +17,23 @@
 #include "Transformer.h"
 
 namespace Minotaur {
-class CxQuadHandler;
 class CxUnivarHandler;
 class CGraph;
 class CNode;
 class Environment;
 class LinearHandler;
 class Problem;
+class QuadHandler;
 class Solution;
 class YEqCGs;
 class YEqLFs;
 class YEqVars;
-typedef boost::shared_ptr<CxQuadHandler> CxQuadHandlerPtr;
 typedef boost::shared_ptr<CxUnivarHandler> CxUnivarHandlerPtr;
 typedef boost::shared_ptr<CGraph> CGraphPtr;
 typedef boost::shared_ptr<Environment> EnvPtr;
 typedef boost::shared_ptr<LinearHandler> LinearHandlerPtr;
 typedef boost::shared_ptr<Problem> ProblemPtr;
+typedef boost::shared_ptr<QuadHandler> QuadHandlerPtr;
 typedef boost::shared_ptr<Solution> SolutionPtr;
 typedef boost::shared_ptr<const Solution> ConstSolutionPtr;
 

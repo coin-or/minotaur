@@ -140,14 +140,14 @@ public:
   void  setSense(Sense sense) {s_ = sense;};
 
   /// Check if a bilinear constraint is violated at the current point x.
-  Bool isViolated(const Double *x, const Double &tol) const;
+  bool isViolated(const double *x, const double &tol) const;
 
   /**
    * Check if a bilinear constraint is violated for the given values of
    * \f$x_0, x_1, y\f$.
    */
-  Bool isViolated(const Double &x0val, const Double &x1val, 
-                  const Double &y0val, const Double &tol) const;
+  bool isViolated(const double &x0val, const double &x1val, 
+                  const double &y0val, const double &tol) const;
 };
 /// shared pointer to McCormick object.
 typedef boost::shared_ptr<McCormick> McCormickPtr;
@@ -158,7 +158,7 @@ typedef boost::shared_ptr<McCormick> McCormickPtr;
  * \f$(x_0, x_1)\f$).
  */
 struct CompareMcCormick {
-  Bool operator()(McCormickPtr b0, McCormickPtr b1) const;
+  bool operator()(McCormickPtr b0, McCormickPtr b1) const;
 };
 
 /// A set of McCormick objects.
@@ -198,16 +198,16 @@ protected:
   VarSet brVars_;
 
   /// Tolerance.
-  Double eTol_;
-
-  /// Original problem.
-  ProblemPtr problem_;
+  double eTol_;
 
   /// Logger.
   LoggerPtr logger_;
       
   /// For printing.
   static const std::string me_;
+
+  /// Original problem.
+  ProblemPtr problem_;
 
   /**
    * Add quadratic/linear relaxations of the quadratic range constraint 
@@ -234,7 +234,7 @@ protected:
 
   /// Get linear function and right hand side (r) for a secant constraint.
   LinearFunctionPtr getNewSecantLf_(VariablePtr x, VariablePtr y, 
-                                    Double & lb, Double & ub, Double & r);
+                                    double & lb, double & ub, double & r);
 
   /// Add all four McCormick inequalities for \f$ y = x_0x_1\f$.
   VariablePtr addMcCormick_(VariablePtr x0, VariablePtr x1, 
@@ -249,9 +249,9 @@ protected:
                                  RelaxationPtr rel);
 
   /// Generate the appropriate McCormick inequality using the bounds.
-  LinearFunctionPtr getMcLf_(VariablePtr x0, Double lb0, Double ub0,
-                             VariablePtr x1, Double lb1, Double ub1, VariablePtr y, 
-                             Double &rhs, UInt i);
+  LinearFunctionPtr getMcLf_(VariablePtr x0, double lb0, double ub0,
+                             VariablePtr x1, double lb1, double ub1, VariablePtr y, 
+                             double &rhs, UInt i);
 
   void binToLin_();
   void binToLinFun_(FunctionPtr f, LinearFunctionPtr lf2);
@@ -264,10 +264,10 @@ protected:
    * we will add the corresponding new variable in the linear function of
    * the constraint. Bounds: \f$ u_O \in [0,\sum_i\max(lb_i^2, ub_i^2)\f$].
    */
-  void relax_(RelaxationPtr rel, Bool *is_inf);
+  void relax_(RelaxationPtr rel, bool *is_inf);
 
   void removeFixed_();
-  void removeFixedFun_(FunctionPtr f, LinearFunctionPtr lf2, Double *c);
+  void removeFixedFun_(FunctionPtr f, LinearFunctionPtr lf2, double *c);
 public:
   /// Default constructor.
   CxQuadHandler(EnvPtr env, ProblemPtr problem);
@@ -276,16 +276,16 @@ public:
   ~CxQuadHandler();
 
   // Does nothing.
-  void relaxInitFull(RelaxationPtr rel, Bool *is_inf);
+  void relaxInitFull(RelaxationPtr rel, bool *is_inf);
 
   // Does nothing.
-  void relaxInitInc(RelaxationPtr rel, Bool *is_inf);
+  void relaxInitInc(RelaxationPtr rel, bool *is_inf);
 
   // Does nothing.
-  void relaxNodeFull(NodePtr node, RelaxationPtr rel, Bool *is_inf);
+  void relaxNodeFull(NodePtr node, RelaxationPtr rel, bool *is_inf);
 
   // Does nothing.
-  void relaxNodeInc(NodePtr node, RelaxationPtr rel, Bool *is_inf);
+  void relaxNodeInc(NodePtr node, RelaxationPtr rel, bool *is_inf);
 
 
   /**
@@ -295,22 +295,22 @@ public:
    * otherwise.  Checks the conditions for all such constraints but stops
    * at the first infeasible one.
    */
-  Bool isFeasible(ConstSolutionPtr sol, RelaxationPtr relaxation, 
-                  Bool &is_inf);
+  bool isFeasible(ConstSolutionPtr sol, RelaxationPtr relaxation, 
+                  bool &is_inf);
 
   /**
    * Not implemented yet.
    */
   void separate(ConstSolutionPtr sol, NodePtr node, RelaxationPtr rel, 
-                CutManager *cutman, SolutionPoolPtr s_pool, Bool *sol_found,
+                CutManager *cutman, SolutionPoolPtr s_pool, bool *sol_found,
                 SeparationStatus *status);
 
 
   /// Return \f$u_0\f$ it is constrained to be an integer.
   void getBranchingCandidates(RelaxationPtr rel, 
-                              const std::vector< Double > &x, 
+                              const std::vector< double > &x, 
                               ModVector & mods, BrCandSet & cands, 
-                              Bool & isInf);
+                              bool & isInf);
 
   // Implement Handler::getBrMod().
   ModificationPtr getBrMod(BrCandPtr cand, DoubleVector &x, 
@@ -321,12 +321,12 @@ public:
                        RelaxationPtr rel, SolutionPoolPtr s_pool);
 
   // presolve.
-  SolveStatus presolve(PreModQ *pre_mods, Bool *changed);
+  SolveStatus presolve(PreModQ *pre_mods, bool *changed);
 
   // Implement Handler::presolveNode().
-  Bool presolveNode(ProblemPtr p, NodePtr node,
-                    SolutionPoolPtr s_pool, ModVector &n_mods,
-                    ModVector &t_mods);
+  bool presolveNode(RelaxationPtr rel, NodePtr node,
+                    SolutionPoolPtr s_pool, ModVector &p_mods,
+                    ModVector &r_mods);
 
   // Write name
   std::string getName() const;

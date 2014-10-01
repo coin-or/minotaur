@@ -193,10 +193,10 @@ void Minotaur::BoundsOnRecip(Double l0, Double u0, Double &lb, Double &ub)
 }
 
 
-void Minotaur::BoundsOnSquare(ConstVariablePtr x1, Double &lb, Double &ub)
+void Minotaur::BoundsOnSquare(ConstVariablePtr x1, double &lb, double &ub)
 {
-  Double l1 = x1->getLb();
-  Double u1 = x1->getUb();
+  double l1 = x1->getLb();
+  double u1 = x1->getUb();
 
   if (u1 < 0.) {         // both bounds are negative.
     lb = u1*u1;
@@ -211,8 +211,8 @@ void Minotaur::BoundsOnSquare(ConstVariablePtr x1, Double &lb, Double &ub)
 }
 
 
-void Minotaur::BoundsOnSquare(const Double &l1, const Double &u1, Double &lb, 
-    Double &ub)
+void Minotaur::BoundsOnSquare(const double &l1, const double &u1, double &lb, 
+                              double &ub)
 {
   if (u1 < 0.) {         // both bounds are negative.
     lb = u1*u1;
@@ -227,7 +227,7 @@ void Minotaur::BoundsOnSquare(const Double &l1, const Double &u1, Double &lb,
 }
 
 
-void Minotaur::displayArray(const Double* point, UInt n, std::ostream &out)
+void Minotaur::displayArray(const double* point, UInt n, std::ostream &out)
 {
   for (UInt i=0; i<n; ++i, ++point) {
     out << *point << "\t";

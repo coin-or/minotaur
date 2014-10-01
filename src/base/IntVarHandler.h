@@ -37,95 +37,89 @@ public:
   /// Destroy.
   ~IntVarHandler();
 
-  // Does nothing.
-  void relaxInitFull(RelaxationPtr rel, Bool *is_inf) ;
+  // Implement Handler::getBranches().
+  Branches getBranches(BrCandPtr cand, DoubleVector & x,
+                       RelaxationPtr rel, SolutionPoolPtr s_pool);
+      
+  /**
+   * Find variables to branch upon. isInfeasible is true if the handler
+   * finds that the problem is infeasible.
+   */
+  void getBranchingCandidates(RelaxationPtr rel, 
+                              const std::vector< double > &x, ModVector & mods,
+                              BrCandSet & cands, bool & isInf);
 
-  // Does nothing.
-  void relaxInitInc(RelaxationPtr rel, Bool *is_inf);
+  // Implement Handler::getBrMod().
+  ModificationPtr getBrMod(BrCandPtr cand, DoubleVector &x, 
+                           RelaxationPtr rel, BranchDirection dir);
 
-  // Does nothing.
-  void relaxNodeFull(NodePtr node, RelaxationPtr rel, Bool *is_inf) ;
+  /// Return the integer tolerance.
+  double getTol() const;
 
-  // Does nothing.
-  void relaxNodeInc(NodePtr node, RelaxationPtr rel, Bool *is_inf);
+  // Write name
+  std::string getName() const;
 
   // Check if solution is feasible.
-  Bool isFeasible(ConstSolutionPtr sol, RelaxationPtr relaxation, 
-                  Bool & isInfeasible);
+  bool isFeasible(ConstSolutionPtr sol, RelaxationPtr relaxation, 
+                  bool & isInfeasible);
+
+  bool isNeeded();
+
+  /// Does nothing.
+  void postsolveGetX(const double *, UInt, DoubleVector *) {};
+
+  /// Presolve. Don't do anything.
+  SolveStatus presolve(PreModQ *, bool *) {return Finished;};
+
+  /// Does nothing.
+  bool presolveNode(RelaxationPtr, NodePtr, SolutionPoolPtr, ModVector &,
+                    ModVector &)
+  {return false;};
+
+  // Does nothing.
+  void relaxInitFull(RelaxationPtr rel, bool *is_inf) ;
+
+  // Does nothing.
+  void relaxInitInc(RelaxationPtr rel, bool *is_inf);
+
+  // Does nothing.
+  void relaxNodeFull(NodePtr node, RelaxationPtr rel, bool *is_inf) ;
+
+  // Does nothing.
+  void relaxNodeInc(NodePtr node, RelaxationPtr rel, bool *is_inf);
 
   /**
    * We do not need separation for this handler. So we just return without
    * doing anything.
    */
   void separate(ConstSolutionPtr, NodePtr , RelaxationPtr, CutManager *,
-                SolutionPoolPtr, Bool *, SeparationStatus *) {};
+                SolutionPoolPtr, bool *, SeparationStatus *) {};
 
-  /**
-   * Find variables to branch upon. isInfeasible is true if the handler
-   * finds that the problem is infeasible.
-   */
-  void getBranchingCandidates(RelaxationPtr rel, 
-                              const std::vector< Double > &x, ModVector & mods,
-                              BrCandSet & cands, Bool & isInf);
-
-  // Implement Handler::getBrMod().
-  ModificationPtr getBrMod(BrCandPtr cand, DoubleVector &x, 
-                           RelaxationPtr rel, BranchDirection dir);
-
-  // Implement Handler::getBranches().
-  Branches getBranches(BrCandPtr cand, DoubleVector & x,
-                       RelaxationPtr rel, SolutionPoolPtr s_pool);
-      
-  Bool isNeeded();
-
-  /// Presolve. Don't do anything.
-  SolveStatus presolve(PreModQ *, Bool *) {return Finished;};
-
-  /// Does nothing.
-  void postsolveGetX(const Double *, UInt, DoubleVector *) {};
-
-  /// Does nothing.
-  Bool presolveNode(ProblemPtr, NodePtr, SolutionPoolPtr, ModVector &,
-                    ModVector &)
-  {return false;};
-
-  // Write name
-  std::string getName() const;
+  /// Set the integer tolerance.
+  void setTol(double tol);
 
   /// Does nothing.
   void writePreStats(std::ostream &) const {};
-
-  /// Return the integer tolerance.
-  Double getTol() const;
-
-  /// Set the integer tolerance.
-  void setTol(Double tol);
 
 private:
   /// Environment.
   EnvPtr env_;
 
   /// True if we are doing guided dive, false otherwise.
-  Bool gDive_;
+  bool gDive_;
 
   /**
    * Tolerance for checking integrality.
    * If |round(x) - x| < intTol_, then it is considered to be integer
    * valued.
    */
-  Double intTol_;
+  double intTol_;
 
   /// Log
   LoggerPtr logger_;
 
   /// For log:
   static const std::string me_;
-
-  /**
-   * If true, create branches using variables of relaxation at a given node,
-   * and not the original problem.
-   */
-  Bool mRelOnly_;
 
   /// The problem for which the handler was created.
   ProblemPtr problem_;

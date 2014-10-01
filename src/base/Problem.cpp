@@ -32,6 +32,7 @@
 #include "Variable.h"
 
 using namespace Minotaur;
+const std::string Problem::me_ = "Problem: ";
 
 Problem::Problem() 
 : cons_(0), 
@@ -302,22 +303,48 @@ void Problem::changeObj(FunctionPtr f, Double cb)
 }
 
 
+int Problem::checkConVars() const
+{
+  ConstraintPtr c;
+  VariablePtr v;
+  int err = 0;
+
+  for (ConstraintConstIterator citer=cons_.begin(); citer!=cons_.end(); ++citer) {
+    c = *citer;
+    for (VarSet::iterator vit=c->getFunction()->varsBegin(); 
+         vit!=c->getFunction()->varsEnd(); ++vit) {
+      v = *vit;
+      if (v != vars_[v->getIndex()]) {
+        err = 1;
+        logger_->MsgStream(LogError) << me_ << "variable " << v->getName()
+                                     << " in constraint " << c->getName()
+                                     << " is not a variable of this problem."
+                                     << std::endl;
+        c->write(logger_->MsgStream(LogError));
+        logger_->MsgStream(LogError) << std::endl;
+      }
+    }
+  }
+  return err;
+}
+
+
 void Problem::clear() 
 {
   VariableIterator viter;
   ConstraintIterator citer;
   SOSIterator siter;
-  VariablePtr vPtr;
-  ConstraintPtr cPtr;
+  VariablePtr v;
+  ConstraintPtr c;
 
   for (viter=vars_.begin(); viter!=vars_.end(); viter++) {
-    vPtr = *viter;
-    vPtr->clearConstraints_();
+    v = *viter;
+    v->clearConstraints_();
   }
 
-  for (citer=cons_.begin(); citer!=cons_.end(); citer++) {
-    cPtr = *citer;
-    cPtr.reset();
+  for (citer=cons_.begin(); citer!=cons_.end(); ++citer) {
+    c = *citer;
+    c.reset();
   }
   for (siter=sos1_.begin(); siter!=sos1_.end(); siter++) {
     delete *siter;

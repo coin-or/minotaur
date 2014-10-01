@@ -111,7 +111,7 @@ public:
   //void postsolveGetX(const Double *, UInt, DoubleVector *) {};
 
   // Does nothing.
-  virtual Bool presolveNode(ProblemPtr , NodePtr ,
+  virtual Bool presolveNode(RelaxationPtr , NodePtr ,
                             SolutionPoolPtr , ModVector &,
                             ModVector &) {return false;};
 

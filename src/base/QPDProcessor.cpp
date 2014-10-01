@@ -398,14 +398,16 @@ Bool QPDProcessor::presolveNode_(NodePtr node, SolutionPoolPtr s_pool)
   // changes are possible.
   for (HandlerIterator h = handlers_.begin(); h != handlers_.end() 
       && false==is_inf; ++h) {
-    is_inf = (*h)->presolveNode(p_, node, s_pool, n_mods, t_mods);
+    assert(!"error here: We want to only modify p_, not qp_");
+    is_inf = (*h)->presolveNode(qp_, node, s_pool, n_mods, t_mods);
     //for (ModificationConstIterator m_iter=n_mods.begin(); m_iter!=n_mods.end(); 
     //    ++m_iter) {
     //  (*m_iter)->applyToProblem(relaxation_);
     //}
     for (ModificationConstIterator m_iter=t_mods.begin(); m_iter!=t_mods.end(); 
         ++m_iter) {
-      node->addModification(*m_iter);
+      assert(!"error here: think what is the right thing here");
+      node->addPMod(*m_iter);
       mod2 = (*m_iter)->toRel(p_, qp_);
       mod2->applyToProblem(qp_);
     }
@@ -906,7 +908,8 @@ void QPDProcessor::processRootNode(NodePtr node, RelaxationPtr rel,
              ++miter) {
           (*miter)->applyToProblem(qp_);
           (*miter)->fromRel(qp_, p_)->applyToProblem(p_);
-          node->addModification((*miter)->fromRel(qp_, p_));
+          assert(!"fix this");
+          node->addPMod((*miter)->fromRel(qp_, p_));
         }
         should_prune = presolveNode_(node, s_pool);
         if (should_prune) {
@@ -986,8 +989,9 @@ void QPDProcessor::process(NodePtr node, RelaxationPtr rel,
         for (ModificationConstIterator miter=mods.begin(); miter!=mods.end();
              ++miter) {
           (*miter)->applyToProblem(qp_);
+          assert(!"fix this");
           (*miter)->fromRel(qp_, p_)->applyToProblem(p_);
-          node->addModification((*miter)->fromRel(qp_, p_));
+          node->addPMod((*miter)->fromRel(qp_, p_));
         }
         should_prune = presolveNode_(node, s_pool);
         if (should_prune) {

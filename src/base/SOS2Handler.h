@@ -78,7 +78,7 @@ public:
   void postsolveGetX(const Double *, UInt, DoubleVector *);
 
   /// Does nothing.
-  Bool presolveNode(ProblemPtr, NodePtr, SolutionPoolPtr, ModVector &,
+  Bool presolveNode(RelaxationPtr, NodePtr, SolutionPoolPtr, ModVector &,
                     ModVector &)
   {return false;};
 
@@ -101,12 +101,6 @@ private:
   /// Environment.
   EnvPtr env_;
 
-  /**
-   * Tolerance for checking integrality.
-   * If abs(x) < zTol_, then it is considered to be zero.
-   */
-  Double zTol_;
-
   /// Log
   LoggerPtr logger_;
 
@@ -115,6 +109,13 @@ private:
 
   /// The problem for which the handler was created.
   ProblemPtr problem_;
+
+  /**
+   * \brief Tolerance for checking integrality.
+   *
+   * If abs(x) < zTol_, then it is considered to be zero.
+   */
+  Double zTol_;
 
   void getNzAvgWt_(SOSPtr sos, const DoubleVector x,
                    const double *weights, int *nz, double *avgwt);

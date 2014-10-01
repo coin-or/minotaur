@@ -118,12 +118,13 @@ QGHandler::~QGHandler()
 
 
 
-void QGHandler::relax_(RelaxationPtr rel, Bool *is_inf)
+void QGHandler::relax_(RelaxationPtr rel, bool *is_inf)
 {
   ConstraintPtr c;
   rel_ = rel;
   linearizeObj_(rel);
-  lastSol_ = new Double[rel_->getNumVars()];
+  lastSol_ = new double[rel_->getNumVars()];
+  numvars_ = minlp_->getNumVars();
   
   for (ConstraintConstIterator it=minlp_->consBegin(); it!=minlp_->consEnd(); 
        ++it) {
@@ -149,31 +150,31 @@ void QGHandler::relax_(RelaxationPtr rel, Bool *is_inf)
 }
 
 
-void QGHandler::relaxInitFull(RelaxationPtr rel, Bool *is_inf)
+void QGHandler::relaxInitFull(RelaxationPtr rel, bool *is_inf)
 {
   relax_(rel, is_inf);
 }
 
 
-void QGHandler::relaxInitInc(RelaxationPtr rel, Bool *is_inf)
+void QGHandler::relaxInitInc(RelaxationPtr rel, bool *is_inf)
 {
   relax_(rel, is_inf);
 }
 
 
-void QGHandler::relaxNodeFull(NodePtr , RelaxationPtr , Bool *)
+void QGHandler::relaxNodeFull(NodePtr , RelaxationPtr , bool *)
 {
   assert(!"QGHandler::relaxNodeFull not implemented!");
 }
 
-void QGHandler::relaxNodeInc(NodePtr , RelaxationPtr , Bool *)
+void QGHandler::relaxNodeInc(NodePtr , RelaxationPtr , bool *)
 {
   // do nothing.
 }
 
-void QGHandler::initLinear_(Bool *isInf)
+void QGHandler::initLinear_(bool *isInf)
 {
-  const Double *x;
+  const double *x;
 
   *isInf = false;
     
@@ -211,11 +212,11 @@ void QGHandler::initLinear_(Bool *isInf)
 }
 
 
-void QGHandler::addInitLinearX_(const Double *x)
+void QGHandler::addInitLinearX_(const double *x)
 {
   ConstraintPtr con, newcon;
-  Double act = 0;
-  Double c;
+  double act = 0;
+  double c;
   FunctionPtr f, f2;
   LinearFunctionPtr lf = LinearFunctionPtr();
   ObjectivePtr o;
@@ -306,14 +307,14 @@ void QGHandler::linearizeObj_(RelaxationPtr rel)
 }
 
 
-Bool QGHandler::isFeasible(ConstSolutionPtr sol, RelaxationPtr rel, 
-                           Bool &)
+bool QGHandler::isFeasible(ConstSolutionPtr sol, RelaxationPtr rel, 
+                           bool &)
 {
 
   FunctionPtr f;
   ConstraintPtr c;
-  Double act;
-  const Double *x = sol->getPrimal();
+  double act;
+  const double *x = sol->getPrimal();
   Int error;
 
   rel_ = rel;
@@ -340,10 +341,10 @@ Bool QGHandler::isFeasible(ConstSolutionPtr sol, RelaxationPtr rel,
 #endif
   objCutOff = false;
   if (true == oNl_ ) {
-    //Double alpha = sol->getObjValue();
+    //double alpha = sol->getObjValue();
     // It is important to check against x[.] value and not against
     // sol->getObjValue(). [See e.g. Feasibility Pump]
-    Double alpha = x[objVar_->getIndex()]; 
+    double alpha = x[objVar_->getIndex()]; 
     relobj_ = alpha;
     act = minlp_->getObjValue(x, &error);
 
@@ -371,16 +372,16 @@ Bool QGHandler::isFeasible(ConstSolutionPtr sol, RelaxationPtr rel,
 
 void QGHandler::separate(ConstSolutionPtr sol, NodePtr node, RelaxationPtr, 
                          CutManager *, SolutionPoolPtr s_pool,
-                         Bool *sol_found, SeparationStatus *status)
+                         bool *sol_found, SeparationStatus *status)
 {
   // check integer feasibility of sol; must add cuts if is integer feasible
   numvars_ = minlp_->getNumVars();
   VariableConstIterator v_iter;
   VariableType v_type;
-  Double value;
-  const Double *x = sol->getPrimal();
-  Bool is_int_feas = true; 
-  Bool repeat_sol=true;
+  double value;
+  const double *x = sol->getPrimal();
+  bool is_int_feas = true; 
+  bool repeat_sol=true;
   Int i;
 
   if (node->getId()==0 || lastNode_ != node->getId()) {
@@ -435,12 +436,12 @@ void QGHandler::separate(ConstSolutionPtr sol, NodePtr node, RelaxationPtr,
 
 
 void QGHandler::cutIntSol_(ConstSolutionPtr sol, SolutionPoolPtr s_pool, 
-                           Bool *sol_found, SeparationStatus *status)
+                           bool *sol_found, SeparationStatus *status)
 {
-  const Double *nlp_x;
-  Double nlpval = INFINITY;
-  const Double *x = sol->getPrimal();
-  Double lp_obj = (sol) ? sol->getObjValue() : -INFINITY;
+  const double *nlp_x;
+  double nlpval = INFINITY;
+  const double *x = sol->getPrimal();
+  double lp_obj = (sol) ? sol->getObjValue() : -INFINITY;
 
   fixInts_(x);
   solveNLP_();
@@ -496,10 +497,10 @@ void QGHandler::cutIntSol_(ConstSolutionPtr sol, SolutionPoolPtr s_pool,
 }
 
 
-void QGHandler::fixInts_(const Double *x)
+void QGHandler::fixInts_(const double *x)
 {
   VariablePtr v;
-  Double xval;
+  double xval;
   VarBoundMod2 *m = 0;
   for (VariableConstIterator vit=minlp_->varsBegin(); vit!=minlp_->varsEnd(); 
        ++vit) {
@@ -563,7 +564,7 @@ void QGHandler::solveNLP_()
 }
 
 
-void QGHandler::OAFromPoint_(const Double *x, ConstSolutionPtr sol,
+void QGHandler::OAFromPoint_(const double *x, ConstSolutionPtr sol,
                              SeparationStatus *status)
 {
   relobj_ = sol->getObjValue();
@@ -571,7 +572,7 @@ void QGHandler::OAFromPoint_(const Double *x, ConstSolutionPtr sol,
 }
 
 
-void QGHandler::OAFromPoint_(const Double *x, const Double *inf_x,
+void QGHandler::OAFromPoint_(const double *x, const double *inf_x,
                              SeparationStatus *status)
 {
   /*
@@ -696,7 +697,7 @@ void QGHandler::OAFromPoint_(const Double *x, const Double *inf_x,
     num_cuts=0;
   }
   if (num_cuts == 0 ) {
-    Double *x_alpha = new Double[numvars_];
+    double *x_alpha = new double[numvars_];
     for (CCIter it=nlCons_.begin(); it!=nlCons_.end(); ++it) {
       con = *it;
       act = con->getActivity(inf_x, &error);
@@ -718,15 +719,15 @@ void QGHandler::OAFromPoint_(const Double *x, const Double *inf_x,
 }
 
 
-Int QGHandler::OAFromPointInf_(const Double *x, const Double *inf_x, 
+Int QGHandler::OAFromPointInf_(const double *x, const double *inf_x, 
                             SeparationStatus *status)
 {
   Int ncuts = 0;
 
-  Double act=-INFINITY;
-  Double lpact;
+  double act=-INFINITY;
+  double lpact;
   ConstraintPtr con, newcon;
-  Double c;
+  double c;
   LinearFunctionPtr lf = LinearFunctionPtr(); // NULL
   FunctionPtr f, f2;
   ObjectivePtr o;
@@ -780,35 +781,35 @@ Int QGHandler::OAFromPointInf_(const Double *x, const Double *inf_x,
 }
 
 
-void QGHandler::cutXLP_(const Double *x_nlp, const Double *x_lp,
-                        Double *x_alpha, ConstraintPtr con, Bool dir)
+void QGHandler::cutXLP_(const double *x_nlp, const double *x_lp,
+                        double *x_alpha, ConstraintPtr con, bool dir)
 {
   cutXLP_(x_nlp, x_lp, x_alpha, con->getFunction(), con->getUb(),
           con->getLb(), dir);
 }
 
 
-void QGHandler::cutXLP_(const Double *x_nlp, const Double *x_lp,
-                        Double *x_alpha, FunctionPtr fn, Double ub, Double lb,
-                        Bool dir)
+void QGHandler::cutXLP_(const double *x_nlp, const double *x_lp,
+                        double *x_alpha, FunctionPtr fn, double ub, double lb,
+                        bool dir)
 {
   numvars_ = minlp_->getNumVars();
-  Double *gr = new Double[numvars_];
+  double *gr = new double[numvars_];
   FunctionPtr fn2;
   LinearFunctionPtr lf;
   ConstraintPtr newcon;
 
-  Double alpha_l = 0.0;
-  Double alpha_u = 1.0;
-  Bool stop = false;
-  Double alpha;
+  double alpha_l = 0.0;
+  double alpha_u = 1.0;
+  bool stop = false;
+  double alpha;
   Int error = 0;
-  Double innProd = 0.0;
-  Double eval_x_alpha = 0.0;
-  Double eval_x_lp;
+  double innProd = 0.0;
+  double eval_x_alpha = 0.0;
+  double eval_x_lp;
   
-  Double inn_gr_xlp;
-  Double inn_gr_xalpha;
+  double inn_gr_xlp;
+  double inn_gr_xalpha;
   if (dir) {
     eval_x_lp = fn->eval(x_lp, &error)-ub;
     while (!stop) {
@@ -863,30 +864,30 @@ void QGHandler::cutXLP_(const Double *x_nlp, const Double *x_lp,
 }
 
 
-void QGHandler::cutXLP_(const Double *x_nlp, const Double *x_lp,
-                         ConstraintPtr con, SeparationStatus *status, Bool dir)
+void QGHandler::cutXLP_(const double *x_nlp, const double *x_lp,
+                        ConstraintPtr con, SeparationStatus *status, bool dir)
 {
-  Double *x_alpha = new Double[numvars_];
+  double *x_alpha = new double[numvars_];
   numvars_ = minlp_->getNumVars();
-  Double *gr = new Double[numvars_];
+  double *gr = new double[numvars_];
 
   FunctionPtr fn = con->getFunction();
   FunctionPtr fn2 = FunctionPtr();
   LinearFunctionPtr lf;
   ConstraintPtr newcon;
 
-  Double alpha_l = 0.0;
-  Double alpha_u = 1.0;
-  Bool stop = false;
-  Double alpha;
+  double alpha_l = 0.0;
+  double alpha_u = 1.0;
+  bool stop = false;
+  double alpha;
   Int error = 0;
-  Double innProd = 0.0;
-  Double eval_x_alpha = 0;
-  Double eval_x_lp;
+  double innProd = 0.0;
+  double eval_x_alpha = 0;
+  double eval_x_lp;
 
-  Double inn_gr_xlp;
-  Double inn_gr_xalpha;
-  Double c;
+  double inn_gr_xlp;
+  double inn_gr_xalpha;
+  double c;
 
   if (dir) {
     eval_x_lp= con->getActivity(x_lp,&error)-con->getUb();
@@ -967,17 +968,17 @@ void QGHandler::cutXLP_(const Double *x_nlp, const Double *x_lp,
 }
 
 
-void QGHandler::cutXLPObj_(const Double *, const Double *x_lp,
-                           Double *, FunctionPtr fn)
+void QGHandler::cutXLPObj_(const double *, const double *x_lp,
+                           double *, FunctionPtr fn)
 {
 
   FunctionPtr fn2;
   LinearFunctionPtr lf = LinearFunctionPtr();
   ConstraintPtr newcon;
-  Double c;
+  double c;
   Int error = 0;
 
-  Double eval_x_lp = fn->eval(x_lp, &error);
+  double eval_x_lp = fn->eval(x_lp, &error);
 
   numvars_ = minlp_->getNumVars();
   eval_x_lp = fn->eval(x_lp, &error);
@@ -995,11 +996,11 @@ void QGHandler::cutXLPObj_(const Double *, const Double *x_lp,
 }
 
 
-void QGHandler::linearAt_(FunctionPtr f, Double fval, const Double *x, 
-                          Double *c, LinearFunctionPtr *lf)
+void QGHandler::linearAt_(FunctionPtr f, double fval, const double *x, 
+                          double *c, LinearFunctionPtr *lf)
 {
   Int n = rel_->getNumVars();
-  Double *a = new Double[n];
+  double *a = new double[n];
   VariableConstIterator vbeg = rel_->varsBegin();
   VariableConstIterator vend = rel_->varsEnd();
   Int error=0;
@@ -1007,20 +1008,20 @@ void QGHandler::linearAt_(FunctionPtr f, Double fval, const Double *x,
   std::fill(a, a+n, 0.);
   f->evalGradient(x, a, &error);
   *lf = (LinearFunctionPtr) new LinearFunction(a, vbeg, vend, linCoeffTol_); 
-  *c  = fval - InnerProduct(x, a, n);
+  *c  = fval - InnerProduct(x, a, numvars_);
   delete [] a;
 }
 
 
-void QGHandler::updateUb_(SolutionPoolPtr s_pool, Double *nlpval, 
-                          Bool *sol_found)
+void QGHandler::updateUb_(SolutionPoolPtr s_pool, double *nlpval, 
+                          bool *sol_found)
 {
-  Double     val = nlpe_->getSolutionValue();
-  Double bestval = s_pool->getBestSolutionValue();
+  double     val = nlpe_->getSolutionValue();
+  double bestval = s_pool->getBestSolutionValue();
  
 
   if (val <= bestval) {
-    const Double *x = nlpe_->getSolution()->getPrimal();
+    const double *x = nlpe_->getSolution()->getPrimal();
 #if SPEW
     logger_->MsgStream(LogDebug) 
       << me_ << "new solution found, value = " << val << std::endl;

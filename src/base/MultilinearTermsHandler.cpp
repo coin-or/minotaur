@@ -484,7 +484,7 @@ MultilinearTermsHandler::relaxNodeInc(NodePtr node,
   
   ModificationConstIterator it;
   for (it = mods.begin(); it != mods.end(); ++it) {
-    node->addModification(*it);
+    node->addRMod(*it);
   }
 
 #if defined(DEBUG_MULTILINEARTERMS_HANDLER) 
@@ -650,7 +650,8 @@ MultilinearTermsHandler::doBranch_(BranchDirection UpOrDown, ConstVariablePtr v,
   }
  
   VarBoundModPtr vmod = (VarBoundModPtr) new VarBoundMod(v, lu, branching_value);
-  branch->addMod(vmod);
+  assert(!"check whether this needs to be addRMod instead");
+  branch->addPMod(vmod);
 
   branch->setActivity(0.5);// TODO: set this correctly
   return branch;

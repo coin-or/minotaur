@@ -31,6 +31,7 @@
 #include "Option.h"
 #include "PreAuxVars.h"
 #include "ProblemSize.h"
+#include "Relaxation.h"
 #include "SolutionPool.h"
 #include "Timer.h"
 #include "Variable.h"
@@ -732,10 +733,10 @@ SolveStatus NlPresHandler::presolve(PreModQ *mods, bool *changed0)
 }
 
 
-bool NlPresHandler::presolveNode(ProblemPtr p, NodePtr, SolutionPoolPtr s_pool,
-                                 ModVector &, ModVector &t_mods)
+bool NlPresHandler::presolveNode(RelaxationPtr rel, NodePtr, SolutionPoolPtr s_pool,
+                                 ModVector &, ModVector &r_mods)
 {
-  FunctionPtr f = p->getObjective()->getFunction();
+  FunctionPtr f = rel->getObjective()->getFunction();
   NonlinearFunctionPtr nlf;
   LinearFunctionPtr lf;
   Double nlfl, nlfu;
@@ -774,17 +775,17 @@ bool NlPresHandler::presolveNode(ProblemPtr p, NodePtr, SolutionPoolPtr s_pool,
         z = it2->first;
         if ((z->getType()==Binary || z->getType()==ImplBin)
             && (z->getUb()-z->getLb()) > eTol_
-            && !(p->isMarkedDel(z))) {
+            && !(rel->isMarkedDel(z))) {
           a0 = it2->second;
           if (a0>0 && olb+a0>ub) {
             mod = (VarBoundModPtr) new VarBoundMod(z, Upper, 0.0);
-            mod->applyToProblem(p);
-            t_mods.push_back(mod);
+            mod->applyToProblem(rel);
+            r_mods.push_back(mod);
             ++(stats_.nMods);
           } else if (a0<0 && olb-a0>ub) {
             mod = (VarBoundModPtr) new VarBoundMod(z, Lower, 1.0);
-            t_mods.push_back(mod);
-            mod->applyToProblem(p);
+            r_mods.push_back(mod);
+            mod->applyToProblem(rel);
             ++(stats_.nMods);
           }
         }

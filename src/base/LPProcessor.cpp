@@ -115,26 +115,25 @@ Bool LPProcessor::isFeasible_(NodePtr node, ConstSolutionPtr sol,
 
 Bool LPProcessor::presolveNode_(NodePtr node, SolutionPoolPtr s_pool) 
 {
-  ModVector n_mods;      // Mods that are applied in this node.
-  ModVector t_mods;      // Mods that need to be saved for subsequent nodes 
-                         // as well. It is a subset of n_mods;
+  ModVector p_mods;      // Mods that are applied to the problem
+  ModVector r_mods;      // Mods that are applied to the relaxation.
   Bool is_inf = false;
 
   // TODO: make this more sophisticated: loop several times until no more
   // changes are possible.
   for (HandlerIterator h = handlers_.begin(); h != handlers_.end() 
-      && false==is_inf; ++h) {
-    is_inf = (*h)->presolveNode(relaxation_, node, s_pool, n_mods, t_mods);
-    //for (ModificationConstIterator m_iter=n_mods.begin(); m_iter!=n_mods.end(); 
-    //    ++m_iter) {
-    //  (*m_iter)->applyToProblem(relaxation_);
-    //}
-    for (ModificationConstIterator m_iter=t_mods.begin(); m_iter!=t_mods.end(); 
+       && false==is_inf; ++h) {
+    is_inf = (*h)->presolveNode(relaxation_, node, s_pool, p_mods, r_mods);
+    for (ModificationConstIterator m_iter=p_mods.begin(); m_iter!=p_mods.end(); 
         ++m_iter) {
-      node->addModification(*m_iter);
+      node->addPMod(*m_iter);
     }
-    n_mods.clear();
-    t_mods.clear();
+    for (ModificationConstIterator m_iter=r_mods.begin(); m_iter!=r_mods.end(); 
+        ++m_iter) {
+      node->addRMod(*m_iter);
+    }
+    p_mods.clear();
+    r_mods.clear();
   }
 
   if (is_inf) {
@@ -292,7 +291,7 @@ void LPProcessor::process(NodePtr node, RelaxationPtr rel,
       } else if (br_status==ModifiedByBrancher) {
         for (ModificationConstIterator miter=mods.begin(); miter!=mods.end();
              ++miter) {
-          node->addModification(*miter);
+          node->addRMod(*miter);
           (*miter)->applyToProblem(relaxation_);
         }
         should_prune = presolveNode_(node, s_pool);

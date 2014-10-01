@@ -29,9 +29,9 @@ NodeIncRelaxer::NodeIncRelaxer (EnvPtr env, HandlerVector handlers)
   : engine_(EnginePtr()),  // NULL
     env_(env),
     handlers_(handlers),
+    modProb_(true),
     rel_(RelaxationPtr()) // NULL
 {
-  modRelOnly_ = env_->getOptions()->findBool("modify_rel_only")->getValue();
 }
 
 
@@ -67,6 +67,12 @@ RelaxationPtr NodeIncRelaxer::createRootRelaxation(NodePtr, Bool &prune)
 }
 
 
+bool NodeIncRelaxer::getModFlag()
+{
+  return modProb_;
+}
+
+
 // Set and load the engine that is used to solve the relaxation.
 void NodeIncRelaxer::setEngine(EnginePtr e)
 {
@@ -74,6 +80,12 @@ void NodeIncRelaxer::setEngine(EnginePtr e)
   if (rel_) {
     engine_->load(rel_);
   }
+}
+
+
+void NodeIncRelaxer::setModFlag(bool mod_prob)
+{
+  modProb_ = mod_prob;
 }
 
 
@@ -97,16 +109,16 @@ RelaxationPtr NodeIncRelaxer::createNodeRelaxation(NodePtr node, Bool dived,
 
     // starting from the top, put in modifications made at each node to the
     // engine
-    if (modRelOnly_) {
+    if (modProb_) {
       while (!predecessors.empty()) {
         t_node = predecessors.top();
-        t_node->applyMods(rel_);
+        t_node->applyMods(rel_, p_);
         predecessors.pop();
       }
     } else {
       while (!predecessors.empty()) {
         t_node = predecessors.top();
-        t_node->applyMods(rel_, p_);
+        t_node->applyRMods(rel_);
         predecessors.pop();
       }
     }
@@ -114,10 +126,10 @@ RelaxationPtr NodeIncRelaxer::createNodeRelaxation(NodePtr node, Bool dived,
 
   // put in the modifications that were used to create this node from
   // its parent.
-  if (modRelOnly_) {
-    node->applyMods(rel_);
-  } else {
+  if (modProb_) {
     node->applyMods(rel_, p_);
+  } else {
+    node->applyRMods(rel_);
   }
 
   for (HandlerIterator h = handlers_.begin(); h != handlers_.end() && !prune; 
@@ -146,14 +158,14 @@ void NodeIncRelaxer::reset(NodePtr node, Bool diving)
   NodePtr t_node = node;
 
   if (!diving) {
-    if (modRelOnly_) {
+    if (modProb_) {
       while (t_node) {
-        t_node->undoMods(rel_);
+        t_node->undoMods(rel_, p_);
         t_node = t_node->getParent();
       }
     } else {
       while (t_node) {
-        t_node->undoMods(rel_, p_);
+        t_node->undoRMods(rel_);
         t_node = t_node->getParent();
       }
     }

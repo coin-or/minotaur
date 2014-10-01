@@ -239,7 +239,6 @@ void loadProblem(EnvPtr env, MINOTAUR_AMPL::AMPLInterface* iface,
 void overrideOptions(EnvPtr env)
 {
   env->getOptions()->findString("interface_type")->setValue("AMPL");
-  env->getOptions()->findBool("modify_rel_only")->setValue(true);
 }
 
 
