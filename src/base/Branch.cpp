@@ -11,6 +11,7 @@
  */
 
 #include <cmath>
+#include <iostream>
 
 #include "MinotaurConfig.h"
 #include "BrCand.h"
