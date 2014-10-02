@@ -918,6 +918,7 @@ bool CGraph::isSOSRec_(CNode *node) const
       if (!isSOSRec_(*c1)) {
         return false;
       }
+      ++c1;
     }
     return true;
   } else if (OpNum==node->getOp() && node->getVal()>=0.0) {
