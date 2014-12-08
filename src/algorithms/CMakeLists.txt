@@ -94,6 +94,20 @@ target_link_libraries(bnb ${ALL_EXEC_LIBS})
 # This will install the binary in bin directory.
 install(TARGETS bnb RUNTIME DESTINATION bin)
 
+##############################################################################
+## Add lines specific to your binaries in this section.
+## Use the lines meant for bnb as a template.
+##############################################################################
+set (BNB_SOURCES
+  MsBnb.cpp
+)
+
+add_executable(msbnb ${BNB_SOURCES})
+target_link_libraries(msbnb ${ALL_EXEC_LIBS})
+
+# This will install the binary in bin directory.
+install(TARGETS msbnb RUNTIME DESTINATION bin)
+
 
 ##############################################################################
 ## Add lines specific to your binaries in this section. 

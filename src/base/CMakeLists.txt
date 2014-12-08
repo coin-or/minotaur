@@ -59,6 +59,7 @@ set (MINOTAUR_SOURCES
      MaxFreqBrancher.cpp
      MaxVioBrancher.cpp
      MINLPDiving.cpp
+     MsProcessor.cpp	
      MultilinearTermsHandler.cpp
      NLPRelaxation.cpp 
      NlPresHandler.cpp
@@ -161,6 +162,7 @@ set (MINOTAUR_HEADERS
      MaxVioBrancher.h
      MINLPDiving.h
      Modification.h
+     MsProcessor.h
      MultilinearTermsHandler.h
      NLPEngine.h
      NLPRelaxation.h
