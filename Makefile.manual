@@ -167,6 +167,7 @@ BASE_SRCS = \
 	$(BASE_DIR)/MaxFreqBrancher.cpp\
 	$(BASE_DIR)/MaxVioBrancher.cpp \
 	$(BASE_DIR)/MINLPDiving.cpp \
+	$(BASE_DIR)/MsProcessor.cpp \
 	$(BASE_DIR)/NLPRelaxation.cpp \
 	$(BASE_DIR)/NlPresHandler.cpp \
 	$(BASE_DIR)/NLPMultiStart.cpp \
@@ -261,6 +262,7 @@ ALL_HEADERS = \
 	$(BASE_DIR)/MaxVioBrancher.h \
 	$(BASE_DIR)/MINLPDiving.h \
 	$(BASE_DIR)/Modification.h \
+	$(BASE_DIR)/MsProcessor.h \
 	$(BASE_DIR)/NLPEngine.h \
 	$(BASE_DIR)/NLPRelaxation.h \
 	$(BASE_DIR)/NlPresHandler.h \
