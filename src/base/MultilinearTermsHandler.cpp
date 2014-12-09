@@ -16,7 +16,7 @@
 #include <sstream>
 
 #include "Branch.h"
-#include "BrCand.h"
+#include "BrVarCand.h"
 #include "Constraint.h"
 #include "Environment.h"
 #include "Function.h"
@@ -160,7 +160,7 @@ void MultilinearTermsHandler::getBranchingCandidates(RelaxationPtr,
 
   for(SetOfVars::const_iterator it = candidates.begin(); it != candidates.end(); ++it) {
     ConstVariablePtr v = *it;
-    BrVarCandPtr br_can = (BrVarCandPtr) new BrVarCand(v, v->getIndex(), 0.5);
+    BrVarCandPtr br_can = (BrVarCandPtr) new BrVarCand(v, v->getIndex(), 0.5, 0.5);
     cands.insert(br_can);
   }
   isInf = false;

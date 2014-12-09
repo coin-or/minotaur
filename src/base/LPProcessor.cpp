@@ -28,7 +28,7 @@
 
 using namespace Minotaur;
 
-//#define SPEW 1
+// #define SPEW 1
 #undef JTL_DEBUG
 #undef PRINT_RELAXATION_SIZE
 

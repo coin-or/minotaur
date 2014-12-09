@@ -36,7 +36,7 @@ typedef boost::shared_ptr<QuadraticFunction> QuadraticFunctionPtr;
 struct LinSqr {
   VariablePtr   y;     /// The variable y.
   VariablePtr   x;     /// The variable x.
-  ConstraintPtr OECon; /// The linear constraint that gives the over estimator
+  ConstraintPtr oeCon; /// The linear constraint that gives the over estimator
 };
 
 
@@ -148,6 +148,10 @@ public:
   /// Destroy
   ~QuadHandler();
 
+  // base class method
+  void addConstraint(ConstraintPtr newcon);
+
+  void findLinPt_(double xval, double yval, double &xl, double &yl);
   // Implement Handler::getBranches().
   Branches getBranches(BrCandPtr cand, DoubleVector & x,
                        RelaxationPtr rel, SolutionPoolPtr s_pool);
@@ -211,8 +215,8 @@ private:
   ProblemPtr p_;
 
   /**
-   * \brief Container for all bilinear functions. This should contain variables and
-   * constraints of the problem, not the relaxation.
+   * \brief Container for all bilinear functions. This should contain
+   * variables and constraints of the problem, not the relaxation.
    */
   LinBilSet x0x1Funs_;
 
@@ -222,24 +226,12 @@ private:
    */
   LinSqrMap x2Funs_;
 
-  /**
-   * Get secant approximation for the inequality:
-   * \f$ y - x^2 \leq 0\f$, and add it to the relaxation.
-   */
-  void addLinSqr_(VariablePtr x, VariablePtr y, RelaxationPtr rel);
-
-  /// Add all four LinBil inequalities for \f$ y = x_0x_1\f$.
-  void addLinBil_(VariablePtr x0, VariablePtr x1, VariablePtr y,
-                  RelaxationPtr rel);
+  void addCut_(VariablePtr x, VariablePtr y, double xl, double yl, double xval,
+               double yval, RelaxationPtr rel, bool &ifcuts);
 
   void binToLin_();
 
   void binToLinFun_(FunctionPtr f, LinearFunctionPtr lf2);
-
-  /// Generate the appropriate LinBil inequality using the bounds.
-  LinearFunctionPtr getBilLf_(VariablePtr x0, double lb0, double ub0,
-                              VariablePtr x1, double lb1, double ub1,
-                              VariablePtr y, double &rhs, UInt i);
 
   /// Get linear function and right hand side (r) for the linear overestimator
   /// constraint of bilinear type.
@@ -253,11 +245,15 @@ private:
                                 double lb, double ub, double & r);
 
 
-  bool propBilBnds_(LinBilSetIter lx0x1, RelaxationPtr rel, 
-                    ModVector &p_mods, ModVector &r_mods);
+  bool propBilBnds_(LinBilPtr, bool *changed);
 
-  bool propSqrBnds_(LinSqrMapIter lx2, RelaxationPtr rel, 
-                    ModVector &p_mods, ModVector &r_mods);
+  bool propBilBnds_(LinBilPtr lx0x1, RelaxationPtr rel, bool mod_rel,
+                    bool *changed, ModVector &p_mods, ModVector &r_mods);
+
+  bool propSqrBnds_(LinSqrMapIter lx2, bool *changed);
+
+  bool propSqrBnds_(LinSqrMapIter lx2, RelaxationPtr rel, bool mod_rel,
+                    bool *changed, ModVector &p_mods, ModVector &r_mods);
 
   void relax_(RelaxationPtr rel, bool *is_inf);
 
@@ -272,6 +268,23 @@ private:
 
   void removeFixedFun_(FunctionPtr f, LinearFunctionPtr lf2, double *c);
 
+  /**
+   * \brief Modify bounds of a variable in the problem if the new bounds are
+   * tighter.
+   * \return the number of bound changes (1 or 2) if any bounds are changed.
+   * Returns -1 if the new bounds make the problem infeasible. Returns 0
+   * otherwise.
+   */
+  int updatePBounds_(VariablePtr v, double lb, double ub, bool *changed);
+  int updatePBounds_(VariablePtr v, double lb, double ub, RelaxationPtr rel,
+                     bool mod_rel, bool *changed, ModVector &p_mods,
+                     ModVector &r_mods);
+
+  int upBilCon_(LinBilPtr lx0x1, RelaxationPtr rel, ModVector &r_mods);
+  int upSqCon_(ConstraintPtr con, VariablePtr x, VariablePtr y, 
+               RelaxationPtr rel, ModVector &r_mods);
+
+  bool varBndsFromCons_(bool *changed);
 };
 
 /// Shared pointer to QuadHandler.

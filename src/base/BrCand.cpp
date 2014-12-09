@@ -7,8 +7,7 @@
 /**
  * \file BrCand.cpp
  * \author Ashutosh Mahajan, Argonne National Laboratory.
- * \brief Define the classes BranchCand and BrVarCand for storing candidates for 
- * branching.
+ * \brief Define the classes BranchCand for storing candidates for branching.
  */
 
 #include <iostream>
@@ -20,7 +19,7 @@
 using namespace Minotaur;
 
 
-Bool Minotaur::CompareScore(BrCandPtr c1, BrCandPtr c2)
+bool Minotaur::CompareScore(BrCandPtr c1, BrCandPtr c2)
 {
   if (c1->getScore() > c2->getScore()) {
     return false;
@@ -36,50 +35,6 @@ Bool Minotaur::CompareScore(BrCandPtr c1, BrCandPtr c2)
     return false;
   }
 }
-
-
-
-BrVarCand::BrVarCand(VariablePtr var, Int i, Double f)
-: f_(f),
-  var_(var)
-{ 
-  pCostIndex_ = i;
-  score_ = 0.0;
-  h_ = HandlerPtr();
-  prefDir_ = UpBranch;
-}
-
-
-BrVarCand::~BrVarCand()
-{
-  var_.reset();
-  h_.reset();
-}
-
-
-Double BrVarCand::getDDist()
-{
-  return f_;
-}
-
-
-std::string BrVarCand::getName() const 
-{
-  return var_->getName();
-}
-
-
-Double BrVarCand::getUDist()
-{
-  return 1.-f_;
-}
-
-
-VariablePtr BrVarCand::getVar()
-{
-  return var_;
-}
-
 
 // Local Variables: 
 // mode: c++ 

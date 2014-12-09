@@ -34,6 +34,17 @@ YEqUCGs::YEqUCGs()
 }
 
 
+YEqUCGs::~YEqUCGs()
+{
+  cg_.clear();
+  hash_.clear();
+  op_.clear();
+  rand_.clear();
+  x_.clear();
+  y_.clear();
+}
+
+
 Double YEqUCGs::evalHash_(const CNode* node, UInt rank)
 {
   OpCode op = node->getOp();

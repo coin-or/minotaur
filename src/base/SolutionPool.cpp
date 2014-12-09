@@ -76,6 +76,12 @@ Double SolutionPool::getBestSolutionValue() const
 }
 
 
+UInt SolutionPool::getNumSols() const
+{
+  return sols_.size();
+}
+
+
 UInt SolutionPool::getNumSolsFound() const
 {
   return numSolsFound_;

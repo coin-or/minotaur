@@ -24,7 +24,7 @@
 
 using namespace Minotaur;
 
-Double Minotaur::InnerProduct(const VariableGroup &v1, const VariableGroup &v2) 
+double Minotaur::InnerProduct(const VariableGroup &v1, const VariableGroup &v2) 
 {
   VariableGroup::const_iterator i1, i2, e1, e2;
   VariableGroup::key_compare compare = v1.key_comp();
@@ -33,7 +33,7 @@ Double Minotaur::InnerProduct(const VariableGroup &v1, const VariableGroup &v2)
   i2 = v2.begin();
   e2 = v2.end();
 
-  Double sum = 0.0;
+  double sum = 0.0;
   while ((i1 != e1) && (i2 != e2)) {
     if (compare(i1->first, i2->first)) {
       ++i1;
@@ -54,10 +54,10 @@ Double Minotaur::InnerProduct(const VariableGroup &v1, const VariableGroup &v2)
 
 //??? Should we just be using CoinPackedVector and such?
 //  Ublas sparse vectors?
-Double Minotaur::InnerProduct(const std::vector<Double> &x, 
+double Minotaur::InnerProduct(const std::vector<double> &x, 
     const VariableGroup &g)
 {
-  Double sum = 0;
+  double sum = 0;
   for (VariableGroup::const_iterator it = g.begin(); it != g.end(); ++it) {
     sum += it->second * x[it->first->getIndex()];
   }
@@ -65,9 +65,9 @@ Double Minotaur::InnerProduct(const std::vector<Double> &x,
 }
 
 
-Double Minotaur::InnerProduct(const Double *x, const Double *a, Int n) 
+double Minotaur::InnerProduct(const double *x, const double *a, Int n) 
 {
-  Double sum = 0;
+  double sum = 0;
   for (Int i=0; i<n; ++i) {
     sum += (*x) * (*a);
     ++x;
@@ -77,14 +77,14 @@ Double Minotaur::InnerProduct(const Double *x, const Double *a, Int n)
 }
 
 
-Bool Minotaur::IsInt(Double v, Double tol) 
+bool Minotaur::IsInt(double v, double tol) 
 {
   return (fabs(floor(v+0.5)-v)<tol);
 }
 
 
-void Minotaur::symMatDotV(UInt nz, const Double *mat, const UInt *irow,
-                          const UInt *jcol, const Double *v, double *prod)
+void Minotaur::symMatDotV(UInt nz, const double *mat, const UInt *irow,
+                          const UInt *jcol, const double *v, double *prod)
 {
   for (UInt i=0; i<nz; ++i) {
     if (irow[i]==jcol[i]) {
@@ -97,8 +97,8 @@ void Minotaur::symMatDotV(UInt nz, const Double *mat, const UInt *irow,
 }
 
 
-void Minotaur::BoundsOnDiv(Double l0, Double u0, Double l1, Double u1, 
-                           Double &lb, Double &ub)
+void Minotaur::BoundsOnDiv(double l0, double u0, double l1, double u1, 
+                           double &lb, double &ub)
 {
   BoundsOnRecip(l1, u1, l1, u1);
   BoundsOnProduct(l0, u0, l1, u1, lb, ub);
@@ -106,14 +106,14 @@ void Minotaur::BoundsOnDiv(Double l0, Double u0, Double l1, Double u1,
 
 
 void Minotaur::BoundsOnProduct(ConstVariablePtr x0, ConstVariablePtr x1,
-                               Double &lb, Double &ub)
+                               double &lb, double &ub)
 {
   BoundsOnProduct(x0->getLb(), x0->getUb(), x1->getLb(), x1->getUb(), lb, ub);
 }
 
 
-void Minotaur::BoundsOnProduct(Double l0, Double u0, Double l1, Double u1, 
-                               Double &lb, Double &ub)
+void Minotaur::BoundsOnProduct(double l0, double u0, double l1, double u1, 
+                               double &lb, double &ub)
 {
 
   double prod;
@@ -160,7 +160,7 @@ void Minotaur::BoundsOnProduct(Double l0, Double u0, Double l1, Double u1,
 }
 
 
-void Minotaur::BoundsOnRecip(Double l0, Double u0, Double &lb, Double &ub)
+void Minotaur::BoundsOnRecip(double l0, double u0, double &lb, double &ub)
 {
   /*
    * This code _looks_ OK but returns bad values when (l0,u0) = (-inf,0)
@@ -211,7 +211,7 @@ void Minotaur::BoundsOnSquare(ConstVariablePtr x1, double &lb, double &ub)
 }
 
 
-void Minotaur::BoundsOnSquare(const double &l1, const double &u1, double &lb, 
+void Minotaur::BoundsOnSquare(const double l1, const double u1, double &lb, 
                               double &ub)
 {
   if (u1 < 0.) {         // both bounds are negative.
@@ -236,9 +236,9 @@ void Minotaur::displayArray(const double* point, UInt n, std::ostream &out)
 }
 
 
-Double Minotaur::Gcd(Double d1, Double d2, const Double &etol)
+double Minotaur::Gcd(double d1, double d2, const double &etol)
 {
-  Double rem;
+  double rem;
   d1 = fabs(d1);
   d2 = fabs(d2);
 
@@ -262,9 +262,9 @@ Double Minotaur::Gcd(Double d1, Double d2, const Double &etol)
 }
 
 
-Double Minotaur::getDistance(const Double* Pointa, const Double* Pointb, UInt n)
+double Minotaur::getDistance(const double* Pointa, const double* Pointb, UInt n)
 {
-  Double dist = 0;
+  double dist = 0;
 
   for(UInt i=0; i<n; ++i, ++Pointa, ++Pointb){
     dist += pow(*Pointa - *Pointb, 2);
@@ -273,9 +273,9 @@ Double Minotaur::getDistance(const Double* Pointa, const Double* Pointb, UInt n)
 }
 
 
-Double Minotaur::minArray(const Double* A, UInt n)
+double Minotaur::minArray(const double* A, UInt n)
 {
-  Double min = A[0];
+  double min = A[0];
 
   for (UInt i=0; i<n; ++i, ++A){
     if (min > *A){
@@ -286,7 +286,7 @@ Double Minotaur::minArray(const Double* A, UInt n)
 }
 
 
-void Minotaur::sort(VarVector &vvec, Double *x, Bool ascend) 
+void Minotaur::sort(VarVector &vvec, double *x, bool ascend) 
 {
   if (vvec.size()<=1) {
    return;
@@ -308,11 +308,11 @@ void Minotaur::sort(VarVector &vvec, Double *x, Bool ascend)
 }
 
 
-void Minotaur::sortRec(VarVector &vvec, Double *x, int left, int right,
+void Minotaur::sortRec(VarVector &vvec, double *x, int left, int right,
                        int pivotind) 
 {
-  Double pval;
-  Double tmpval;
+  double pval;
+  double tmpval;
   VariablePtr tmpvar;
   int sind;
 
@@ -359,7 +359,7 @@ void Minotaur::toLowerCase(std::string &str)
 }
 
 
-std::string Minotaur::toClockTime(Double t)
+std::string Minotaur::toClockTime(double t)
 {
   std::string s;
   std::stringstream ss;

@@ -25,6 +25,7 @@ typedef boost::shared_ptr<CGraph> CGraphPtr;
 class YEqUCGs {
 public:
   YEqUCGs();
+  ~YEqUCGs();
   VariablePtr findY(CGraphPtr cg);
   void insert(VariablePtr auxvar, CGraphPtr cg);
 

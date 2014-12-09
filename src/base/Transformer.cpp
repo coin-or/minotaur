@@ -50,6 +50,7 @@ Transformer::Transformer()
     logger_(LoggerPtr()),
     yLfs_(0),
     yUniExprs_(0),
+    yVars_(0),
     zTol_(1e-12)
 {
 }
@@ -60,6 +61,7 @@ Transformer::Transformer(EnvPtr env, ConstProblemPtr p)
     p_(p),
     yLfs_(0),
     yUniExprs_(0),
+    yVars_(0),
     zTol_(1e-12)
 {
   logger_ = (LoggerPtr) new Logger((LogLevel)(env->getOptions()
@@ -70,6 +72,15 @@ Transformer::Transformer(EnvPtr env, ConstProblemPtr p)
 
 Transformer::~Transformer() 
 {
+  if (yLfs_) {
+    delete yLfs_;
+  }
+  if (yUniExprs_) {
+    delete yUniExprs_;
+  }
+  if (yVars_) {
+    delete yVars_;
+  }
 }
 
 
@@ -256,9 +267,9 @@ VariablePtr Transformer::newVar_(VariablePtr iv, Double d, ProblemPtr newp)
       f = (FunctionPtr) new Function(lf);
       cnew = newp->newConstraint(f, -d, -d);
 #if SPEW
-      logger_->MsgStream(LogInfo) << me_ << "added new constraint "
-                                  << std::endl;
-      cnew->write(logger_->MsgStream(LogInfo));
+      logger_->MsgStream(LogDebug) << me_ << "added new constraint "
+                                   << std::endl;
+      cnew->write(logger_->MsgStream(LogDebug));
 #endif 
       lHandler_->addConstraint(cnew);
     }
@@ -283,9 +294,9 @@ VariablePtr Transformer::newVar_(LinearFunctionPtr lf, Double d,
     f = (FunctionPtr) new Function(lf);
     cnew = newp->newConstraint(f, -d, -d);
 #if SPEW
-    logger_->MsgStream(LogInfo) << me_ << "added new constraint "
-                                << std::endl;
-    cnew->write(logger_->MsgStream(LogInfo));
+    logger_->MsgStream(LogDebug) << me_ << "added new constraint "
+                                 << std::endl;
+    cnew->write(logger_->MsgStream(LogDebug));
 #endif 
 
     lHandler_->addConstraint(cnew);
@@ -314,9 +325,9 @@ VariablePtr Transformer::newVar_(CGraphPtr cg, ProblemPtr newp)
     f = (FunctionPtr) new Function(lf, cg);
     cnew = newp->newConstraint(f, 0.0, 0.0);
 #if SPEW
-      logger_->MsgStream(LogInfo) << me_ << "added new constraint "
-                                  << std::endl;
-      cnew->write(logger_->MsgStream(LogInfo));
+      logger_->MsgStream(LogDebug) << me_ << "added new constraint "
+                                   << std::endl;
+      cnew->write(logger_->MsgStream(LogDebug));
 #endif 
     assignHandler_(cg, cnew);
 

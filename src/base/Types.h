@@ -186,11 +186,11 @@ namespace Minotaur {
 
   /// Status from separation routine:
   typedef enum {
-    SepaContinue, /// Separation routine wants nothing.
-    SepaResolve,  /// Separation routine wants the relaxation resolved.
-    SepaPrune,    /// No need to further solve the subproblem.
-    SepaNone,     /// No separation found.
-    SepaError     /// Problem separating a point.
+    SepaContinue, ///< Separation routine wants nothing.
+    SepaResolve,  ///< Separation routine wants the relaxation resolved.
+    SepaPrune,    ///< No need to further solve the subproblem.
+    SepaNone,     ///< No separation found.
+    SepaError     ///< Problem separating a point.
   } SeparationStatus;
 
 

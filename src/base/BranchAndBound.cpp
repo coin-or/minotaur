@@ -164,14 +164,12 @@ NodePtr BranchAndBound::processRoot_(Bool *should_prune, Bool *should_dive)
 #endif
   tm_->insertRoot(current_node);
 
-  //std
   if (options_->createRoot == true) {
     rel = nodeRlxr_->createRootRelaxation(current_node, prune);
+    rel->setProblem(problem_);
   } else {
     rel = nodeRlxr_->getRelaxation();
   }
-
-  // Here you should apply the modifications found in createRootRelaxation
 
   // solve the root node
 #if SPEW

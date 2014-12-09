@@ -32,11 +32,15 @@
 #include "PreSubstVars.h"
 #include "Relaxation.h"
 #include "Solution.h"
+#include "SolutionPool.h"
 #include "Timer.h"
 #include "LinearHandler.h"
 #include "VarBoundMod.h"
 #include "Variable.h"
 
+//#define SPEW 1
+//TODO:
+// remove nintmods
 
 using namespace Minotaur;
 const std::string LinearHandler::me_ = "LinearHandler: ";
@@ -102,10 +106,37 @@ LinearHandler::~LinearHandler()
 }
 
 
+void LinearHandler::copyBndsFromRel_(RelaxationPtr rel, ModVector &p_mods)
+{
+  VarBoundModPtr mod;
+  VariablePtr xp;
+  VariablePtr xr;
+
+  for (VariableConstIterator it=problem_->varsBegin(); it!=problem_->varsEnd();
+       ++it) {
+    xp = *it;
+    xr = rel->getRelaxationVar(xp);
+    if (!xr) {
+      continue;
+    }
+    if (xr->getLb() > xp->getLb()+eTol_) {
+      mod = (VarBoundModPtr) new  VarBoundMod(xp, Lower, xr->getLb());
+      mod->applyToProblem(problem_);
+      p_mods.push_back(mod);
+    }
+    if (xr->getUb() < xp->getUb()-eTol_) {
+      mod = (VarBoundModPtr) new  VarBoundMod(xp, Upper, xr->getUb());
+      mod->applyToProblem(problem_);
+      p_mods.push_back(mod);
+    }
+  }
+}
+
+
 void LinearHandler::findLinVars_()
 {
   VariablePtr v;
-  Bool is_lin;
+  bool is_lin;
   FunctionPtr of = problem_->getObjective()->getFunction();
 
   linVars_.clear();
@@ -185,17 +216,17 @@ void LinearHandler::fixToCont_()
 
 
 void LinearHandler::separate(ConstSolutionPtr, NodePtr , RelaxationPtr , 
-                             CutManager *, SolutionPoolPtr , Bool *,
+                             CutManager *, SolutionPoolPtr , bool *,
                              SeparationStatus *)
 {
   // do nothing.
 }
 
 
-SolveStatus LinearHandler::presolve(PreModQ *pre_mods, Bool *changed0)
+SolveStatus LinearHandler::presolve(PreModQ *pre_mods, bool *changed0)
 {
   SolveStatus status = Started;
-  Bool changed = true;
+  bool changed = true;
   ModQ *dmods = 0; // NULL
   Timer *timer = env_->getNewTimer();
   UInt itemp=0;
@@ -292,14 +323,14 @@ SolveStatus LinearHandler::checkBounds_(ProblemPtr p)
 }
 
 
-void LinearHandler::chkSing_(Bool *changed)
+void LinearHandler::chkSing_(bool *changed)
 {
   ConstraintPtr c;
   LinearFunctionPtr lf;
   FunctionPtr of = problem_->getObjective()->getFunction();
   VariablePtr v;
-  Double coeff;
-  Bool del_var;
+  double coeff;
+  bool del_var;
 
   findLinVars_();
   for (VarQueueConstIter vit=linVars_.begin(); vit!=linVars_.end(); ++vit) {
@@ -331,17 +362,21 @@ void LinearHandler::chkSing_(Bool *changed)
         problem_->markDelete(v);
         ++(pStats_->varDel);
         *changed = true;
+#if SPEW
+        logger_->MsgStream(LogDebug) << me_ << "variable " << v->getName() 
+                                     << " is a singleton. Fixed." << std::endl;
+#endif
       }
     } 
   }
 }
 
 
-void LinearHandler::tightenInts_(ProblemPtr p, Bool apply_to_prob, 
-    Bool *changed, ModQ *mods)
+void LinearHandler::tightenInts_(ProblemPtr p, bool apply_to_prob, 
+                                 bool *changed, ModQ *mods)
 {
   VariablePtr v;
-  Double lb, ub;
+  double lb, ub;
   VarBoundModPtr mod;
   LinearFunctionPtr lf;
   ConstraintPtr c;
@@ -413,11 +448,12 @@ void LinearHandler::tightenInts_(ProblemPtr p, Bool apply_to_prob,
 }
 
 
-SolveStatus LinearHandler::varBndsFromCons_(ProblemPtr p, Bool apply_to_prob, 
-    Bool *changed, ModQ *mods, UInt *nintmods)
+SolveStatus LinearHandler::varBndsFromCons_(ProblemPtr p, bool apply_to_prob, 
+                                            bool *changed, ModQ *mods,
+                                            UInt *nintmods)
 {
   ConstraintPtr c_ptr;
-  Bool t_changed;
+  bool t_changed;
   SolveStatus status = Started;
 
 #if SPEW
@@ -460,18 +496,71 @@ SolveStatus LinearHandler::varBndsFromCons_(ProblemPtr p, Bool apply_to_prob,
 }
 
 
-void LinearHandler::coeffImp_(Bool *changed)
+SolveStatus LinearHandler::varBndsFromObj_(ProblemPtr p, double ub, bool apply_to_prob, 
+                                           bool *changed, ModQ *mods)
+{
+  ObjectivePtr o_ptr;
+  bool t_changed = true;
+  SolveStatus status = Started;
+  LinearFunctionPtr lf = LinearFunctionPtr(); // NULL
+  double ll, uu, sing_ll, sing_uu;
+  UInt nintmods = 0; // unused
+
+#if SPEW
+  logger_->MsgStream(LogDebug2) << me_ << "bounds from objective" 
+                                << std::endl; 
+#endif
+
+  o_ptr = p->getObjective();
+  if (o_ptr) {
+    lf = o_ptr->getLinearFunction();
+  }
+  if (lf && o_ptr->getFunctionType() == Linear) {
+    while (true == t_changed) {
+      t_changed = false;
+      sing_ll = INFINITY, sing_uu = INFINITY;
+      getLfBnds_(lf, &ll, &uu);
+      if (ll < -infty_ || uu > infty_) {
+        getSingLfBnds_(lf, &sing_ll, &sing_uu);
+      }
+
+      if (ll > ub+eTol_) {
+        logger_->MsgStream(LogDebug) << "Problem infeasible." << std::endl 
+                                     << "objective " << o_ptr->getName()
+                                     << std::fixed    << std::setprecision(8) 
+                                     << " lower = "   << ll 
+                                     << " upper = "   << ub 
+                                     << std::endl;
+        return SolvedInfeasible;
+      }
+      if (ll > -infty_) {
+        updateLfBoundsFromUb_(p, apply_to_prob, lf, ub, ll, false, &t_changed, 
+                              mods, &nintmods);
+      } else if (sing_ll > -infty_) {
+        updateLfBoundsFromUb_(p, apply_to_prob, lf, ub, sing_ll, true, &t_changed, 
+                              mods, &nintmods);
+      }
+      if (true == t_changed) {
+        *changed = true;
+      }
+    }
+  }
+  return status;
+}
+
+
+void LinearHandler::coeffImp_(bool *changed)
 {
   LinearFunctionPtr lf;
   VariablePtr v;
-  Double ll, uu; // lower and upper bounds implied by bounds on vars.
-  Double lb, ub; // lower and upper bounds on a constraint.
-  Double a0;
+  double ll, uu; // lower and upper bounds implied by bounds on vars.
+  double lb, ub; // lower and upper bounds on a constraint.
+  double a0;
   ConstraintPtr c;
-  Bool implic = true;
-  Double coeftol = 1e-4; // improve coeffs only if improvement is more than
+  bool implic = true;
+  double coeftol = 1e-4; // improve coeffs only if improvement is more than
                          // this number.
-  Double bslack = 1e-4;  // relax bounds by this amount. Otherwise constraints
+  double bslack = 1e-4;  // relax bounds by this amount. Otherwise constraints
                          // may get numerically difficult to solve, e.g.
                          // Syn15H, Syn15M02H, Syn40M04H
                          // etc in CMU lib.
@@ -560,12 +649,12 @@ void LinearHandler::coeffImp_(Bool *changed)
 
 
 void  LinearHandler::computeImpBounds_(ConstraintPtr c, VariablePtr z,
-                                       Double zval, Double *lb, Double *ub)
+                                       double zval, double *lb, double *ub)
 {
   VariablePtr v;
-  Double ll = 0.;
-  Double uu = 0.;
-  Double l1, u1, a2, b2;
+  double ll = 0.;
+  double uu = 0.;
+  double l1, u1, a2, b2;
   ConstraintPtr c2;
   LinearFunctionPtr lf, lf2;
   ModStack mods;
@@ -634,13 +723,13 @@ void  LinearHandler::computeImpBounds_(ConstraintPtr c, VariablePtr z,
 }
 
 
-void LinearHandler::dualFix_(Bool *changed)
+void LinearHandler::dualFix_(bool *changed)
 {
   VariablePtr v;
   ConstraintPtr c;
-  Double w;
-  Int dir, cdir;
-  ModificationPtr mod;
+  double w;
+  int dir, cdir;
+  ModificationPtr mod = ModificationPtr(); //null
   LinearFunctionPtr olf = problem_->getObjective()->getLinearFunction();
 
   findLinVars_();
@@ -712,21 +801,29 @@ void LinearHandler::dualFix_(Bool *changed)
         ++(pStats_->vBnd);
       }
     }
+#if SPEW
+    if (mod) {
+      logger_->MsgStream(LogDebug) << me_ << "variable " << v->getName() 
+                                   << " fixed by dual fixing" << std::endl;
+      mod->write(logger_->MsgStream(LogDebug));
+      mod.reset();
+    }
+#endif
   }
 }
 
 
-void LinearHandler::dupRows_(Bool *changed)
+void LinearHandler::dupRows_(bool *changed)
 {
   const UInt n = problem_->getNumVars();
   const UInt m = problem_->getNumCons();
   UInt i,j;
-  Int err = 0;
+  int err = 0;
   DoubleVector r1, r2;
   DoubleVector h1;
   DoubleVector h2;
   ConstraintPtr c1, c2;
-  Bool is_deleted;
+  bool is_deleted;
 
   r1.reserve(n);
   r2.reserve(n);
@@ -734,8 +831,8 @@ void LinearHandler::dupRows_(Bool *changed)
   h2.reserve(m);
 
   for (i=0; i<n; ++i) {
-    r1.push_back((Double) rand()/(RAND_MAX)*10.0);
-    r2.push_back((Double) rand()/(RAND_MAX)*10.0);
+    r1.push_back((double) rand()/(RAND_MAX)*10.0);
+    r2.push_back((double) rand()/(RAND_MAX)*10.0);
   }
 
   i=0;
@@ -781,14 +878,15 @@ void LinearHandler::dupRows_(Bool *changed)
 }
 
 
-SolveStatus LinearHandler::linBndTighten_(ProblemPtr p, Bool apply_to_prob, 
-    ConstraintPtr c_ptr, Bool *changed, ModQ *mods, UInt *nintmods)
+SolveStatus LinearHandler::linBndTighten_(ProblemPtr p, bool apply_to_prob, 
+                                          ConstraintPtr c_ptr, bool *changed,
+                                          ModQ *mods, UInt *nintmods)
 {
   LinearFunctionPtr lf = c_ptr->getLinearFunction();
-  Double lb = c_ptr->getLb();
-  Double ub = c_ptr->getUb();
-  Double ll, uu;
-  Double sing_ll = -INFINITY, sing_uu = INFINITY;
+  double lb = c_ptr->getLb();
+  double ub = c_ptr->getUb();
+  double ll, uu;
+  double sing_ll = -INFINITY, sing_uu = INFINITY;
 
   *changed = false;
 
@@ -843,10 +941,10 @@ SolveStatus LinearHandler::linBndTighten_(ProblemPtr p, Bool apply_to_prob,
   if (lb > -infty_) {
     if (uu < infty_) {
       updateLfBoundsFromLb_(p, apply_to_prob, lf, lb, uu, false, changed, 
-          mods, nintmods);
+                            mods, nintmods);
     } else if (sing_uu < infty_) {
       updateLfBoundsFromLb_(p, apply_to_prob, lf, lb, sing_uu, true, changed, 
-          mods, nintmods);
+                            mods, nintmods);
     }
   }
 
@@ -860,23 +958,25 @@ SolveStatus LinearHandler::linBndTighten_(ProblemPtr p, Bool apply_to_prob,
   if (ub < infty_) {
     if (ll > -infty_) {
       updateLfBoundsFromUb_(p, apply_to_prob, lf, ub, ll, false, changed, 
-          mods, nintmods);
+                            mods, nintmods);
     } else if (sing_ll > -infty_) {
       updateLfBoundsFromUb_(p, apply_to_prob, lf, ub, sing_ll, true, changed, 
-          mods, nintmods);
+                            mods, nintmods);
     }
   }
   return Started;
 }
 
 
-void LinearHandler::updateLfBoundsFromLb_(ProblemPtr p, Bool apply_to_prob, 
-    LinearFunctionPtr lf, Double lb, Double uu, Bool is_sing, Bool *changed, 
-    ModQ* mods, UInt *nintmods)
+void LinearHandler::updateLfBoundsFromLb_(ProblemPtr p, bool apply_to_prob, 
+                                          LinearFunctionPtr lf, double lb,
+                                          double uu, bool is_sing,
+                                          bool *changed, 
+                                          ModQ* mods, UInt *nintmods)
 {
   ConstVariablePtr cvar;
   VariablePtr var;
-  Double coef, vlb, vub, nlb, nub;
+  double coef, vlb, vub, nlb, nub;
   VarBoundModPtr mod;
 
   for (VariableGroupConstIterator it=lf->termsBegin(); it != lf->termsEnd(); 
@@ -957,13 +1057,15 @@ void LinearHandler::updateLfBoundsFromLb_(ProblemPtr p, Bool apply_to_prob,
 }
 
 
-void LinearHandler::updateLfBoundsFromUb_(ProblemPtr p, Bool apply_to_prob, 
-    LinearFunctionPtr lf, Double ub, Double ll, Bool is_sing, Bool *changed,
-    ModQ *mods, UInt *nintmods)
+void LinearHandler::updateLfBoundsFromUb_(ProblemPtr p, bool apply_to_prob, 
+                                          LinearFunctionPtr lf, double ub,
+                                          double ll, bool is_sing,
+                                          bool *changed, ModQ *mods,
+                                          UInt *nintmods)
 {
   ConstVariablePtr cvar;
   VariablePtr var;
-  Double coef, vlb, vub, nlb, nub;
+  double coef, vlb, vub, nlb, nub;
   VarBoundModPtr mod;
 
   for (VariableGroupConstIterator it=lf->termsBegin(); it!=lf->termsEnd(); 
@@ -1043,11 +1145,11 @@ void LinearHandler::updateLfBoundsFromUb_(ProblemPtr p, Bool apply_to_prob,
 }
 
 
-void LinearHandler::getLfBnds_(LinearFunctionPtr lf, Double *lo, Double *up)
+void LinearHandler::getLfBnds_(LinearFunctionPtr lf, double *lo, double *up)
 {
-  Double lb = 0;
-  Double ub = 0;
-  Double coef, vlb, vub;
+  double lb = 0;
+  double ub = 0;
+  double coef, vlb, vub;
 
   for (VariableGroupConstIterator it = lf->termsBegin(); it != lf->termsEnd(); 
       ++it) {
@@ -1067,14 +1169,14 @@ void LinearHandler::getLfBnds_(LinearFunctionPtr lf, Double *lo, Double *up)
 }
 
 
-void LinearHandler::getSingLfBnds_(LinearFunctionPtr lf, Double *lo, 
-    Double *up)
+void LinearHandler::getSingLfBnds_(LinearFunctionPtr lf, double *lo, 
+                                   double *up)
 {
-  Double lb = 0;
-  Double ub = 0;
-  Double coef, vlb, vub;
-  Bool lo_is_sing = false, up_is_sing = false;
-  Bool lo_is_finite = true, up_is_finite = true;
+  double lb = 0;
+  double ub = 0;
+  double coef, vlb, vub;
+  bool lo_is_sing = false, up_is_sing = false;
+  bool lo_is_finite = true, up_is_finite = true;
 
   for (VariableGroupConstIterator it = lf->termsBegin(); it != lf->termsEnd(); 
       ++it) {
@@ -1128,7 +1230,7 @@ void LinearHandler::getSingLfBnds_(LinearFunctionPtr lf, Double *lo,
 }
 
 
-void LinearHandler::delFixedVars_(Bool *changed)
+void LinearHandler::delFixedVars_(bool *changed)
 {
   VariablePtr v;
 
@@ -1152,14 +1254,14 @@ void LinearHandler::delFixedVars_(Bool *changed)
 }
 
 
-void LinearHandler::relax_(ProblemPtr p, RelaxationPtr rel, Bool *is_inf)
+void LinearHandler::relax_(ProblemPtr p, RelaxationPtr rel, bool *is_inf)
 {
   ConstraintConstIterator c_iter;
   ObjectivePtr oPtr;
   VariableConstIterator v_iter;
   VariablePtr v, v2;
   FunctionPtr f, newf;
-  Int err = 0;
+  int err = 0;
 
   *is_inf = false;
 
@@ -1208,37 +1310,37 @@ void LinearHandler::relax_(ProblemPtr p, RelaxationPtr rel, Bool *is_inf)
 }
 
 
-void LinearHandler::relaxInitFull(RelaxationPtr rel, Bool *is_inf)
+void LinearHandler::relaxInitFull(RelaxationPtr rel, bool *is_inf)
 {
   relax_(problem_, rel, is_inf);
 }
 
 
-void LinearHandler::relaxInitInc(RelaxationPtr rel, Bool *is_inf)
+void LinearHandler::relaxInitInc(RelaxationPtr rel, bool *is_inf)
 {
   relax_(problem_, rel, is_inf);
 }
 
 
-void LinearHandler::relaxNodeFull(NodePtr, RelaxationPtr rel, Bool *is_inf) 
+void LinearHandler::relaxNodeFull(NodePtr, RelaxationPtr rel, bool *is_inf) 
 {
   relax_(problem_, rel, is_inf);
 }
 
 
-void LinearHandler::relaxNodeInc(NodePtr, RelaxationPtr, Bool *)
+void LinearHandler::relaxNodeInc(NodePtr, RelaxationPtr, bool *)
 {
   // Do nothing.
 }
 
 
-void LinearHandler::substVars_(Bool *, PreModQ *mods)
+void LinearHandler::substVars_(bool *, PreModQ *mods)
 {
   ConstraintPtr c;
   LinearFunctionPtr lf;
   VariablePtr v1, v2, out, in;
   VariableType intype, outtype;
-  Double a1, a2;
+  double a1, a2;
   VariableGroupConstIterator git;
   PreSubstVarsPtr smod = (PreSubstVarsPtr) new PreSubstVars();
   VarBoundModPtr mod;
@@ -1297,7 +1399,6 @@ void LinearHandler::substVars_(Bool *, PreModQ *mods)
                                      << out->getName() << " in constraint " 
                                      << c->getName() << " by " << in->getName() 
                                      << std::endl;
-        //in->write(std::cout); out->write(std::cout); c->write(std::cout);
 #endif
         problem_->subst(out, in);
         problem_->markDelete(c);
@@ -1306,7 +1407,7 @@ void LinearHandler::substVars_(Bool *, PreModQ *mods)
         ++(pStats_->conDel);
         smod->insert(out, in);
       } else if (v1->getType() == Continuous && v2->getType() == Continuous) {
-        Double rat = 1.0;
+        double rat = 1.0;
         if (v1->getNumCons()<v2->getNumCons()) {
           in  = v1;
           out = v2;
@@ -1338,6 +1439,12 @@ void LinearHandler::substVars_(Bool *, PreModQ *mods)
         ++(pStats_->varDel);
         ++(pStats_->conDel);
         smod->insert(out, in, rat);
+#if SPEW
+        logger_->MsgStream(LogDebug) << me_ << "substituting " 
+                                     << out->getName() << " in constraint " 
+                                     << c->getName() << " by " << in->getName() 
+                                     << std::endl;
+#endif
       }  
     }
   }
@@ -1365,7 +1472,8 @@ void LinearHandler::purgeVars_(PreModQ *pre_mods)
         it!=problem_->varsEnd(); ++it) {
       v = *it;
       if (problem_->isMarkedDel(v)) {
-        //v->write(std::cout);
+        std::cout << "deleting *********\n";
+        v->write(std::cout);
         dmod->insert(v);
         //preDelVars_.push_front(v);
       }
@@ -1377,8 +1485,9 @@ void LinearHandler::purgeVars_(PreModQ *pre_mods)
 }
 
 
-Bool LinearHandler::presolveNode(RelaxationPtr rel, NodePtr node, SolutionPoolPtr, 
-                                 ModVector &, ModVector &r_mods)
+bool LinearHandler::presolveNode(RelaxationPtr rel, NodePtr node,
+                                 SolutionPoolPtr spool, ModVector &p_mods,
+                                 ModVector &r_mods)
 {
   SolveStatus status = Started;
   if (false == pOpts_->doPresolve || 
@@ -1386,15 +1495,16 @@ Bool LinearHandler::presolveNode(RelaxationPtr rel, NodePtr node, SolutionPoolPt
     return false;
   }
 
-  simplePresolve(rel, r_mods, status);
+  simplePresolve(rel, spool, r_mods, status);
+  copyBndsFromRel_(rel, p_mods);
   return (status==SolvedInfeasible);
 }
 
 
-void LinearHandler::simplePresolve(ProblemPtr p, ModVector &t_mods,
-                                   SolveStatus &status) 
+void LinearHandler::simplePresolve(ProblemPtr p, SolutionPoolPtr spool,
+                                   ModVector &t_mods, SolveStatus &status) 
 {
-  Bool changed = true;
+  bool changed = true;
   ModQ mods;
   UInt max_iters = 10;
   UInt min_iters = 2;
@@ -1412,6 +1522,9 @@ void LinearHandler::simplePresolve(ProblemPtr p, ModVector &t_mods,
     changed = false;
     ++iters;
     varBndsFromCons_(p, false, &changed, &mods, &nintmods);
+    if (spool && spool->getNumSols()>0) {
+      varBndsFromObj_(p, spool->getBestSolutionValue(), false, &changed, &mods);
+    }
     tightenInts_(p, false, &changed, &mods); 
     status = checkBounds_(p);
   }
@@ -1428,8 +1541,8 @@ void LinearHandler::simplePresolve(ProblemPtr p, ModVector &t_mods,
 
 void LinearHandler::chkIntToBin_(VariablePtr v)
 {
-  Double lb = v->getLb();
-  Double ub = v->getUb();
+  double lb = v->getLb();
+  double ub = v->getUb();
 
   if (v->getType()==Integer && lb > -eTol_ && ub < 1+eTol_) {
     problem_->setVarType(v, Binary);
@@ -1443,17 +1556,17 @@ const LinPresolveOpts* LinearHandler::getOpts() const
 }
 
 
-Bool LinearHandler::treatDupRows_(ConstraintPtr c1, ConstraintPtr c2,
-                                  Double mult, Bool *changed)
+bool LinearHandler::treatDupRows_(ConstraintPtr c1, ConstraintPtr c2,
+                                  double mult, bool *changed)
 {
   LinearFunctionPtr lf1 = c1->getFunction()->getLinearFunction();
   LinearFunctionPtr lf2 = c2->getFunction()->getLinearFunction();
   VariableGroupConstIterator it1, it2;
-  Bool b1=true; // if the two lf are alike.
-  Bool b2=true; // if one lf is negative of other.
-  Bool b3=true; // if one lf is some multiple of other.
-  Double d1, d2;
-  Double lb, ub;
+  bool b1=true; // if the two lf are alike.
+  bool b2=true; // if one lf is negative of other.
+  bool b3=true; // if one lf is some multiple of other.
+  double d1, d2;
+  double lb, ub;
 
   if (lf1->getNumTerms()!=lf2->getNumTerms()) {
     return false;

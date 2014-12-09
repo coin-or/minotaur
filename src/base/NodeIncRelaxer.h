@@ -69,6 +69,8 @@ public:
   /// Set your own relaxation pointer.
   void setRelaxation(RelaxationPtr rel);
 
+  /// Set the problem pointer
+  void setProblem(ProblemPtr p);
 private:
   /// Pointer engine used to solve the relaxation.
   EnginePtr engine_;

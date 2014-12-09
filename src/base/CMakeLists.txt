@@ -18,10 +18,11 @@ include_directories("${PROJECT_BINARY_DIR}/src/base")
  
 set (MINOTAUR_SOURCES
      BndProcessor.cpp 
-     BrCand.cpp 
      Branch.cpp 
      BranchAndBound.cpp 
      Brancher.cpp 
+     BrCand.cpp 
+     BrVarCand.cpp 
      Chol.cpp
      CGraph.cpp
      CGraphPers.cpp
@@ -122,6 +123,7 @@ set (MINOTAUR_HEADERS
      Brancher.h
      BranchAndBound.h
      BrCand.h
+     BrVarCand.h
      CGraph.h
      CGraphPers.h
      CNode.h

@@ -18,7 +18,7 @@
 
 #include "MinotaurConfig.h"
 #include "Branch.h"
-#include "BrCand.h"
+#include "BrVarCand.h"
 #include "Constraint.h"
 #include "CxUnivarHandler.h"
 #include "Environment.h"
@@ -433,7 +433,10 @@ void CxUnivarHandler::getBranchingCandidates(RelaxationPtr , const
  
   // TODO: For now putting in all candidates, eventually probably want to choose a reasonable subset 
   for (curc_it = allCands.begin(); curc_it != allCands.end(); ++curc_it) {
-     BrVarCandPtr br_can = (BrVarCandPtr) new BrVarCand((*curc_it).first,(*curc_it).first->getIndex(), (*curc_it).second);
+     BrVarCandPtr br_can = (BrVarCandPtr) new BrVarCand((*curc_it).first,
+                                                        (*curc_it).first->getIndex(),
+                                                        (*curc_it).second,
+                                                        (*curc_it).second);
      cands.insert(br_can);
   }
 

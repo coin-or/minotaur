@@ -20,7 +20,7 @@
 #include <cstdio>
 #include "MinotaurConfig.h"
 #include "Branch.h"
-#include "BrCand.h"
+#include "BrVarCand.h"
 #include "Constraint.h"
 #include "Environment.h"
 #include "Function.h"
@@ -222,7 +222,7 @@ void MultilinearHandler::getBranchingCandidates(RelaxationPtr,
         std::cout << "Value: " << x1val << std::endl;
         std::cout << "ID: " << x1->getId() << std::endl;
 #endif        
-        BrVarCandPtr br_can = (BrVarCandPtr) new BrVarCand(x1, x1->getId(), viol); 
+        BrVarCandPtr br_can = (BrVarCandPtr) new BrVarCand(x1, x1->getId(), viol, viol); 
         cands.insert(br_can);
       }
       ret = cand_inds.insert(x2->getId());
@@ -234,7 +234,7 @@ void MultilinearHandler::getBranchingCandidates(RelaxationPtr,
         //std::cout << "This: " << (  x2.get()) << std::endl;
         std::cout << "ID: " << x2->getId() << std::endl;
 #endif        
-        BrVarCandPtr br_can = (BrVarCandPtr) new BrVarCand(x2, x2->getId(), viol); 
+        BrVarCandPtr br_can = (BrVarCandPtr) new BrVarCand(x2, x2->getId(), viol, viol); 
         cands.insert(br_can);
       }
       

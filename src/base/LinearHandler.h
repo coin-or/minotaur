@@ -24,36 +24,36 @@ typedef boost::shared_ptr<LinearFunction> LinearFunctionPtr;
 /// Store statistics of presolving.
 struct LinPresolveStats 
 {
-  Int iters;   /// Number of iterations (main cycle).
-  Double time; /// Total time used in initial presolve.
-  Double timeN;/// Total time used in presolveNode.
-  Int varDel;  /// Number of variables marked for deletion.
-  Int conDel;  /// Number of constraints marked for deletion.
-  Int var2Bin; /// Number of variables converted to binary.
-  Int var2Int; /// Number of variables converted to integers.
-  Int vBnd;    /// Number of times variable-bounds were tightened.
-  Int cBnd;    /// Number of times constraint-bounds were tightened.
-  Int cImp;    /// Number of times coefficient in a constraint was improved.
-  Int bImpl;   /// Number of times a binary variable was converted to 
+  int iters;   /// Number of iterations (main cycle).
+  double time; /// Total time used in initial presolve.
+  double timeN;/// Total time used in presolveNode.
+  int varDel;  /// Number of variables marked for deletion.
+  int conDel;  /// Number of constraints marked for deletion.
+  int var2Bin; /// Number of variables converted to binary.
+  int var2Int; /// Number of variables converted to integers.
+  int vBnd;    /// Number of times variable-bounds were tightened.
+  int cBnd;    /// Number of times constraint-bounds were tightened.
+  int cImp;    /// Number of times coefficient in a constraint was improved.
+  int bImpl;   /// Number of times a binary variable was converted to 
   /// implied binary.
-  Int nMods;   /// Number of changes made in all nodes.
+  int nMods;   /// Number of changes made in all nodes.
 };
 
 /// Options for presolve.
 struct LinPresolveOpts {
-  Bool doPresolve; /// True if presolve is enabled, false otherwise.
+  bool doPresolve; /// True if presolve is enabled, false otherwise.
 
-  Bool showStats;  /// True if stats are displayed, false otherwise.
+  bool showStats;  /// True if stats are displayed, false otherwise.
 
-  Int  maxIters;   /// Maximum number of iterations.
+  int  maxIters;   /// Maximum number of iterations.
 
-  Bool purgeVars;  /// If True, purge fixed variables.
+  bool purgeVars;  /// If True, purge fixed variables.
 
-  Bool purgeCons;  /// If True, purge redundant constraints.
+  bool purgeCons;  /// If True, purge redundant constraints.
 
-  Bool dualFix;    /// If True, do dual cost fixing.
+  bool dualFix;    /// If True, do dual cost fixing.
 
-  Bool coeffImp;   /// If True, do coefficient improvement.
+  bool coeffImp;   /// If True, do coefficient improvement.
 }; 
 
 
@@ -74,37 +74,37 @@ public:
   ~LinearHandler();
 
   // Does nothing.
-  void relaxInitFull(RelaxationPtr rel, Bool *is_inf) ;
+  void relaxInitFull(RelaxationPtr rel, bool *is_inf) ;
 
   // Does nothing.
-  void relaxInitInc(RelaxationPtr rel, Bool *is_inf);
+  void relaxInitInc(RelaxationPtr rel, bool *is_inf);
 
   // Does nothing.
-  void relaxNodeFull(NodePtr node, RelaxationPtr rel, Bool *is_inf) ;
+  void relaxNodeFull(NodePtr node, RelaxationPtr rel, bool *is_inf) ;
 
   // Does nothing.
-  void relaxNodeInc(NodePtr node, RelaxationPtr rel, Bool *is_inf);
+  void relaxNodeInc(NodePtr node, RelaxationPtr rel, bool *is_inf);
 
   /** 
    * We assume that linear constraints and bound constraints are always
    * satisfied. Always return true.
    */
-  Bool isFeasible(ConstSolutionPtr, RelaxationPtr, Bool &)
+  bool isFeasible(ConstSolutionPtr, RelaxationPtr, bool &)
   {return true;}
 
-  Bool isNeeded() { return true; }
+  bool isNeeded() { return true; }
 
   /**
    * Generate valid cuts using linear constraints.
    */
   void separate(ConstSolutionPtr sol, NodePtr node, 
                 RelaxationPtr rel, CutManager *cutman, SolutionPoolPtr s_pool, 
-                Bool *sol_found, SeparationStatus *status);
+                bool *sol_found, SeparationStatus *status);
 
   /// Does nothing.
   virtual void getBranchingCandidates(RelaxationPtr , 
                                       const DoubleVector &, ModVector &, 
-                                      BrCandSet &, Bool &) {};
+                                      BrCandSet &, bool &) {};
 
   /// Does nothing.
   virtual ModificationPtr getBrMod(BrCandPtr, DoubleVector &, 
@@ -117,10 +117,10 @@ public:
   {return Branches();}; // NULL
 
   // presolve.
-  virtual SolveStatus presolve(PreModQ *pre_mods, Bool *changed);
+  virtual SolveStatus presolve(PreModQ *pre_mods, bool *changed);
 
   // Implement Handler::presolveNode().
-  virtual Bool presolveNode(RelaxationPtr p, NodePtr node,
+  virtual bool presolveNode(RelaxationPtr p, NodePtr node,
                             SolutionPoolPtr s_pool, ModVector &p_mods,
                             ModVector &r_mods);
       
@@ -132,22 +132,24 @@ public:
   const LinPresolveOpts* getOpts() const;
 
   /// If true show statistics.
-  void setPreOptShowStats(Bool val) {pOpts_->showStats = val;}; 
+  void setPreOptShowStats(bool val) {pOpts_->showStats = val;}; 
 
   /// Maximum number of iterations.
-  void setPreOptMaxIters(Int val) {pOpts_->maxIters = val;}; 
+  void setPreOptMaxIters(int val) {pOpts_->maxIters = val;}; 
 
   /// If True, purge fixed variables.
-  void setPreOptPurgeVars(Bool val) {pOpts_->purgeVars = val;}; 
+  void setPreOptPurgeVars(bool val) {pOpts_->purgeVars = val;}; 
 
   /// If True, purge redundant constraints.
-  void setPreOptPurgeCons(Bool val) {pOpts_->purgeCons = val;}; 
+  void setPreOptPurgeCons(bool val) {pOpts_->purgeCons = val;}; 
 
-  void setPreOptDualFix(Bool val) {pOpts_->dualFix = val;}; 
+  void setPreOptDualFix(bool val) {pOpts_->dualFix = val;}; 
 
-  void setPreOptCoeffImp(Bool val) {pOpts_->coeffImp = val;}; 
+  void setPreOptCoeffImp(bool val) {pOpts_->coeffImp = val;}; 
 
-  void simplePresolve(ProblemPtr p, ModVector &t_mods, SolveStatus &status);
+  void simplePresolve(ProblemPtr p, SolutionPoolPtr spool, ModVector &t_mods,
+                      SolveStatus &status);
+
   /// Write the presolve statistics.
   void writePreStats(std::ostream &out) const;
 
@@ -169,13 +171,13 @@ protected:
    * If |round(x) - x| < intTol_, then it is considered to be integer
    * valued.
    */
-  const Double intTol_;
+  const double intTol_;
 
   /// Tolerance.
-  const Double eTol_;
+  const double eTol_;
 
   /// Infinity. Bounds beyond this number are treated as infinity.
-  const Double infty_;
+  const double infty_;
 
   /// Statistics of presolve.
   LinPresolveStats *pStats_;
@@ -195,15 +197,16 @@ protected:
 
   void chkIntToBin_(VariablePtr v);
 
-  void chkSing_(Bool *changed);
-  void coeffImp_(Bool *changed);
-  void computeImpBounds_(ConstraintPtr c, VariablePtr z, Double zval,
-                         Double *lb, Double *ub);
+  void chkSing_(bool *changed);
+  void coeffImp_(bool *changed);
+  void computeImpBounds_(ConstraintPtr c, VariablePtr z, double zval,
+                         double *lb, double *ub);
+  void copyBndsFromRel_(RelaxationPtr rel, ModVector &p_mods);
 
-  void delFixedVars_(Bool *changed);
+  void delFixedVars_(bool *changed);
 
-  void dualFix_(Bool *changed);
-  void dupRows_(Bool *changed);
+  void dualFix_(bool *changed);
+  void dupRows_(bool *changed);
 
   /// check if lb <= ub for all variables and constraints.
   SolveStatus checkBounds_(ProblemPtr p);
@@ -213,11 +216,11 @@ protected:
   void findAllBinCons_();
   void fixToCont_();
 
-  void getLfBnds_(LinearFunctionPtr lf, Double *lo, Double *up);
-  void getSingLfBnds_(LinearFunctionPtr lf, Double *lo, Double *up);
+  void getLfBnds_(LinearFunctionPtr lf, double *lo, double *up);
+  void getSingLfBnds_(LinearFunctionPtr lf, double *lo, double *up);
 
-  SolveStatus linBndTighten_(ProblemPtr p, Bool apply_to_prob, 
-                      ConstraintPtr c_ptr, Bool *changed, ModQ *mods, UInt *nintmods);
+  SolveStatus linBndTighten_(ProblemPtr p, bool apply_to_prob, 
+                      ConstraintPtr c_ptr, bool *changed, ModQ *mods, UInt *nintmods);
 
   void purgeVars_(PreModQ *pre_mods);
 
@@ -231,29 +234,32 @@ protected:
    * \param [out] is_inf True if problem p is found to be infeasible, false
    * otherwise.
    */
-  void relax_(ProblemPtr p, RelaxationPtr rel, Bool *is_inf);
+  void relax_(ProblemPtr p, RelaxationPtr rel, bool *is_inf);
 
-  void substVars_(Bool *changed, PreModQ *pre_mods);
+  void substVars_(bool *changed, PreModQ *pre_mods);
 
   /// Round the bounds
-  void tightenInts_(ProblemPtr p, Bool apply_to_prob, Bool *changed, 
+  void tightenInts_(ProblemPtr p, bool apply_to_prob, bool *changed, 
                     ModQ *mods);
 
-  Bool treatDupRows_(ConstraintPtr c1, ConstraintPtr c2, Double mult,
-                     Bool *changed);
+  bool treatDupRows_(ConstraintPtr c1, ConstraintPtr c2, double mult,
+                     bool *changed);
 
-  void updateLfBoundsFromLb_(ProblemPtr p, Bool apply_to_prob, 
-                             LinearFunctionPtr lf, Double lb, Double uu,
-                             Bool is_sing, Bool *changed, ModQ *mods,
+  void updateLfBoundsFromLb_(ProblemPtr p, bool apply_to_prob, 
+                             LinearFunctionPtr lf, double lb, double uu,
+                             bool is_sing, bool *changed, ModQ *mods,
                              UInt *nintmods);
 
-  void updateLfBoundsFromUb_(ProblemPtr p, Bool apply_to_prob, 
-                             LinearFunctionPtr lf, Double ub, Double ll,
-                             Bool is_sing, Bool *changed, ModQ *mods,
+  void updateLfBoundsFromUb_(ProblemPtr p, bool apply_to_prob, 
+                             LinearFunctionPtr lf, double ub, double ll,
+                             bool is_sing, bool *changed, ModQ *mods,
                              UInt *nintmods);
 
-  SolveStatus varBndsFromCons_(ProblemPtr p, Bool apply_to_prob, Bool *changed, 
+  SolveStatus varBndsFromCons_(ProblemPtr p, bool apply_to_prob, bool *changed, 
                                ModQ *mods, UInt *nintmods);
+
+  SolveStatus varBndsFromObj_(ProblemPtr p, double ub, bool apply_to_prob, 
+                              bool *changed, ModQ *mods);
 };
 typedef boost::shared_ptr<LinearHandler> LinearHandlerPtr;
 typedef boost::shared_ptr<const LinearHandler> ConstLinearHandlerPtr;

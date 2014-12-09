@@ -16,6 +16,7 @@
 
 #include <string>
 #include "Types.h"
+#include "BrCand.h"
 
 namespace Minotaur {
 

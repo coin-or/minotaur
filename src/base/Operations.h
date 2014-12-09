@@ -16,40 +16,40 @@
 #include "LinearFunction.h"
 
 namespace Minotaur {
-  Bool IsInt(Double v, Double tol=1e-12);
+  bool IsInt(double v, double tol=1e-12);
 
-  Double InnerProduct(const VariableGroup &g1, const VariableGroup &g2);
+  double InnerProduct(const VariableGroup &g1, const VariableGroup &g2);
 
-  Double InnerProduct(const std::vector<Double> &x, const VariableGroup &g2);
+  double InnerProduct(const std::vector<double> &x, const VariableGroup &g2);
 
   /// Inner product of two arrays, x and a, each of size n.
-  Double InnerProduct(const Double *x, const Double *a, Int n);
+  double InnerProduct(const double *x, const double *a, Int n);
 
-  void symMatDotV(UInt nz, const Double *mat, const UInt *irow, const UInt *jcol,
-                  const Double *v, double *prod);
+  void symMatDotV(UInt nz, const double *mat, const UInt *irow, const UInt *jcol,
+                  const double *v, double *prod);
 
-  void BoundsOnDiv(Double l0, Double u0, Double l1, Double u1, 
-                   Double &lb, Double &ub);
+  void BoundsOnDiv(double l0, double u0, double l1, double u1, 
+                   double &lb, double &ub);
 
   /// Get bounds on y, where \f$ y = x_0x_1 \f$.
   void BoundsOnProduct(ConstVariablePtr x0, ConstVariablePtr x1,
-                       Double &lb, Double &ub);
+                       double &lb, double &ub);
 
   /// Get bounds on y, where \f$ y = x_0x_1 \f$.
-  void BoundsOnProduct(Double l0, Double u0, Double l1, Double u1, Double &lb,
-                       Double &ub);
+  void BoundsOnProduct(double l0, double u0, double l1, double u1, double &lb,
+                       double &ub);
 
-  void BoundsOnRecip(Double l0, Double u0, Double &lb, Double &ub);
+  void BoundsOnRecip(double l0, double u0, double &lb, double &ub);
 
   /// Get lower and upper bounds on a square of variable.
-  void BoundsOnSquare(ConstVariablePtr x1, Double &lb, Double &ub);
+  void BoundsOnSquare(ConstVariablePtr x1, double &lb, double &ub);
 
   /**
    * Get lower and upper bounds on a square of variable whose bounds are
    * provided.
    */
-  void BoundsOnSquare(const Double &x_lb, const Double &y_lb, Double &lb, 
-                      Double &ub);
+  void BoundsOnSquare(const double x_lb, const double y_lb, double &lb, 
+                      double &ub);
 
   /**
    * Get gcd(d1, d2). Returns d2 if d1 is zero. Returns d1 if d2 is zero.
@@ -57,31 +57,31 @@ namespace Minotaur {
    * e.g. Gcd(10.5, 7.0) = 3.5. If d1 is zero, returns abs(d2), if d2 is zero,
    * returns abs(d1).
    */
-  Double Gcd(Double d1, Double d2, const Double &etol = 1e-9);
+  double Gcd(double d1, double d2, const double &etol = 1e-9);
 
   /**
    * Get distance(a,b,n). Returns the Euclidian distance between point a and point b which 
    * in n-dimensional space.
    */
-  Double getDistance(const Double* Pointa, const Double* Pointb, UInt n);
+  double getDistance(const double* Pointa, const double* Pointb, UInt n);
 
   /**
    * Get minArray. Returns the minimum element of a dynamic array.
    */
-  Double minArray(const Double* A, UInt n);
+  double minArray(const double* A, UInt n);
 
   /// To display the initial point.
-  void displayArray(const Double* point, UInt n, std::ostream &out);
+  void displayArray(const double* point, UInt n, std::ostream &out);
 
   /// Sort a vector of variables according to values of x.
-  void sort(VarVector &vvec, Double *x, Bool ascend=true);
-  void sortRec(VarVector &vvec, Double *x, int left, int right, int pivotind);
+  void sort(VarVector &vvec, double *x, bool ascend=true);
+  void sortRec(VarVector &vvec, double *x, int left, int right, int pivotind);
 
   /// Convert a string to lower case.
   void toLowerCase(std::string &str);
 
   /// Convert a double representing seconds into wall clock time HH:MM:SS:mm
-  std::string toClockTime(Double t);
+  std::string toClockTime(double t);
 }
 
 #endif

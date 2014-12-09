@@ -50,6 +50,8 @@ PresolverPtr createPres(EnvPtr env, ProblemPtr p, Size_t ndefs,
                         HandlerVector &handlers);
 EnginePtr getEngine(EnvPtr env);
 void show_help();
+int transform(EnvPtr env, ProblemPtr p, ProblemPtr &newp,
+              HandlerVector &handlers);
 
 
 
@@ -73,12 +75,13 @@ int main(int argc, char** argv)
   EnginePtr engine;    // engine for solving relaxations. 
   SolutionPtr sol, sol2;
   BranchAndBound *bab = 0;
-  PresolverPtr pres;
+  PresolverPtr pres, pres2;
   const std::string me("glob: ");
   VarVector *orig_v=0;
   HandlerVector handlers;
   double obj_sense = 1.0;
   int err = 0;
+  ProblemPtr newp;
 
   // start timing.
   env->startTimer(err);
@@ -92,6 +95,7 @@ int main(int argc, char** argv)
   options->findBool("presolve")->setValue(true);
   options->findBool("nl_presolve")->setValue(true);
   options->findBool("lin_presolve")->setValue(true);
+  options->findString("brancher")->setValue("maxvio");
   env->readOptions(argc, argv);
 
   // check if user needs help.
@@ -164,8 +168,17 @@ int main(int argc, char** argv)
   }
   handlers.clear();
 
+  err = transform(env, inst, newp, handlers);
+  assert(0==err);
+
+  std::cout << me << "Presolving transformed problem ... " << std::endl;
+  pres2 = (PresolverPtr) new Presolver(newp, env, handlers);
+
+  pres2->solve();
+  std::cout << me << "Finished presolving transformed problem" << std::endl;
+
   // get branch-and-bound
-  bab = createBab(env, inst, engine, handlers);
+  bab = createBab(env, newp, engine, handlers);
 
   // solve
   if (options->findBool("solve")->getValue()==true) {
@@ -233,6 +246,26 @@ EnginePtr getEngine(EnvPtr env)
 }
 
 
+int transform(EnvPtr env, ProblemPtr p, ProblemPtr &newp,
+              HandlerVector &handlers) 
+{
+  SimpTranPtr trans = SimpTranPtr();
+  int status = 0;
+  const std::string me("glob: ");
+
+  handlers.clear();
+  trans = (SimpTranPtr) new SimpleTransformer(env, p);
+  trans->reformulate(newp, handlers, status);
+  
+  std::cout << me << "handlers used in transformer: " << std::endl;
+  for (HandlerVector::iterator it=handlers.begin(); it!=handlers.end();
+       ++it) {
+    std::cout << "  " << (*it)->getName() << std::endl;
+  }
+  return status;
+}
+
+
 BranchAndBound * createBab (EnvPtr env, ProblemPtr p, EnginePtr e, 
                             HandlerVector &handlers)
 {
@@ -241,21 +274,8 @@ BranchAndBound * createBab (EnvPtr env, ProblemPtr p, EnginePtr e,
   NodeIncRelaxerPtr nr;
   RelaxationPtr rel;
   BrancherPtr br;
-  SimpTranPtr trans = SimpTranPtr();
-  ProblemPtr newp;
-  int status = 0;
   const std::string me("glob: ");
 
-  handlers.clear();
-  trans = (SimpTranPtr) new SimpleTransformer(env, p);
-  trans->reformulate(newp, handlers, status);
-  assert(0==status);
-  std::cout << me << "handlers used: " << std::endl;
-  for (HandlerVector::iterator it=handlers.begin(); it!=handlers.end();
-       ++it) {
-    std::cout << "  " << (*it)->getName() << std::endl;
-  }
-  nproc = (LPProcessorPtr) new LPProcessor(env, e, handlers);
   if (env->getOptions()->findString("brancher")->getValue() == "rel") {
     UInt t;
     ReliabilityBrancherPtr rel_br;
@@ -285,16 +305,17 @@ BranchAndBound * createBab (EnvPtr env, ProblemPtr p, EnginePtr e,
     br = lbr;
   }
   std::cout << me << "brancher used = " << br->getName() << std::endl;
+  nproc = (LPProcessorPtr) new LPProcessor(env, e, handlers);
   nproc->setBrancher(br);
   bab->setNodeProcessor(nproc);
 
   nr = (NodeIncRelaxerPtr) new NodeIncRelaxer(env, handlers);
+  nr->setProblem(p);
   nr->setRelaxation(rel);
   nr->setEngine(e);
   bab->setNodeRelaxer(nr);
   bab->shouldCreateRoot(true);
 
-  // heuristic
   return bab;
 }
 

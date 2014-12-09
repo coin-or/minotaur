@@ -15,7 +15,7 @@
 #include <cmath>
 
 #include "MinotaurConfig.h"
-#include "BrCand.h"
+#include "BrVarCand.h"
 #include "Branch.h"
 #include "Environment.h"
 #include "IntVarHandler.h"
@@ -104,7 +104,8 @@ void IntVarHandler::getBranchingCandidates(RelaxationPtr rel,
         fabs(floor(x[index]+0.5) - x[index]) > intTol_) {
       // yes, it can be branched upon.
       br_can = (BrVarCandPtr) new BrVarCand(v, v->getIndex(), 
-                                            x[index]-floor(x[index]));
+                                            x[index]-floor(x[index]),
+                                            ceil(x[index])-x[index]);
       cands.insert(br_can);
     } 
   }

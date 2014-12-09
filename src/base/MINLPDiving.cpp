@@ -203,7 +203,7 @@ UInt MINLPDiving::FracBounds_(UInt numfrac, const Double* x,
     mods_.push(varmod); 
     lastNodeMods_.push_back(varmod);
     status = Started;
-    lh_->simplePresolve(p_, lastNodeMods_, status);
+    lh_->simplePresolve(p_, SolutionPoolPtr(), lastNodeMods_, status);
 
 #if SPEW
     logger_->MsgStream(LogDebug) << me_ << "changed bound for variable "; 
@@ -467,7 +467,7 @@ UInt MINLPDiving::LexBounds_(UInt numfrac, const Double* x,
     mods_.push(varmod); 
     lastNodeMods_.push_back(varmod);
     status = Started;
-    lh_->simplePresolve(p_, lastNodeMods_, status);
+    lh_->simplePresolve(p_, SolutionPoolPtr(), lastNodeMods_, status);
 
 #if SPEW
     logger_->MsgStream(LogDebug) << me_ << "changed bound for variable "; 
@@ -549,7 +549,7 @@ UInt MINLPDiving::ReducedCost_(UInt numfrac, const Double* x,
     mods_.push(varmod); 
     lastNodeMods_.push_back(varmod);
     status = Started;
-    lh_->simplePresolve(p_, lastNodeMods_, status);
+    lh_->simplePresolve(p_, SolutionPoolPtr(), lastNodeMods_, status);
 
 #if SPEW
     logger_->MsgStream(LogDebug) << me_ << "changed bound for variable "; 
@@ -867,7 +867,7 @@ UInt MINLPDiving::VectorLength_(UInt numfrac, const Double* x,
     mods_.push(varmod); 
     lastNodeMods_.push_back(varmod);
     status = Started;
-    lh_->simplePresolve(p_, lastNodeMods_, status);
+    lh_->simplePresolve(p_, SolutionPoolPtr(), lastNodeMods_, status);
 
 #if SPEW
     logger_->MsgStream(LogDebug) << me_ << "changed bound for variable "; 

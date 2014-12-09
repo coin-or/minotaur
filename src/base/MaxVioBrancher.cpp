@@ -87,7 +87,8 @@ Branches MaxVioBrancher::findBranches(RelaxationPtr rel, NodePtr ,
 #if SPEW
   logger_->MsgStream(LogDebug) << me_ << "best candidate = "
                                << br_can->getName() 
-                               << " Handler: " << br_can->getHandler()->getName() << std::endl;
+                               << " Handler: "
+                               << br_can->getHandler()->getName() << std::endl;
 #endif
   } else {
     assert(!"problem finding candidate in MaxVioBrancher");

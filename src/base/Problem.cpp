@@ -309,7 +309,8 @@ int Problem::checkConVars() const
   VariablePtr v;
   int err = 0;
 
-  for (ConstraintConstIterator citer=cons_.begin(); citer!=cons_.end(); ++citer) {
+  for (ConstraintConstIterator citer=cons_.begin(); citer!=cons_.end();
+       ++citer) {
     c = *citer;
     for (VarSet::iterator vit=c->getFunction()->varsBegin(); 
          vit!=c->getFunction()->varsEnd(); ++vit) {

@@ -27,7 +27,7 @@
 
 #include "MinotaurConfig.h"
 #include "Branch.h"
-#include "BrCand.h"
+#include "BrVarCand.h"
 #include "Constraint.h"
 #include "CxQuadHandler.h"
 #include "Environment.h"
@@ -623,7 +623,8 @@ void CxQuadHandler::getBranchingCandidates(RelaxationPtr,
       ret = cand_inds.insert(s_it->first->getIndex());
       if (true == ret.second) { // does not already exist.
         br_can = (BrVarCandPtr) new BrVarCand(s_it->first, 
-            s_it->first->getIndex(), 0.5);
+                                              s_it->first->getIndex(), 0.5,
+                                              0.5);
         cands.insert(br_can);
       }
     }
@@ -649,7 +650,7 @@ void CxQuadHandler::getBranchingCandidates(RelaxationPtr,
 #endif
         ret = cand_inds.insert(x0->getIndex());
         if (true == ret.second) { // does not already exist.
-          br_can = (BrVarCandPtr) new BrVarCand(x0, x0->getIndex(), 0.5); 
+          br_can = (BrVarCandPtr) new BrVarCand(x0, x0->getIndex(), 0.5, 0.5); 
           cands.insert(br_can);
         }
       }
@@ -660,7 +661,7 @@ void CxQuadHandler::getBranchingCandidates(RelaxationPtr,
 #endif
         ret = cand_inds.insert(x1->getIndex());
         if (true == ret.second) { // does not already exist.
-          br_can = (BrVarCandPtr) new BrVarCand(x1, x1->getIndex(), 0.5); 
+          br_can = (BrVarCandPtr) new BrVarCand(x1, x1->getIndex(), 0.5, 0.5); 
           cands.insert(br_can);
         }
       }

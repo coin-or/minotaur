@@ -131,10 +131,11 @@ BASE_DIR = $(MINOTAUR)/src/base
 
 BASE_SRCS = \
 	$(BASE_DIR)/BndProcessor.cpp  \
-	$(BASE_DIR)/BrCand.cpp  \
 	$(BASE_DIR)/Branch.cpp  \
 	$(BASE_DIR)/BranchAndBound.cpp  \
 	$(BASE_DIR)/Brancher.cpp  \
+	$(BASE_DIR)/BrCand.cpp  \
+	$(BASE_DIR)/BrVarCand.cpp  \
 	$(BASE_DIR)/Chol.cpp \
 	$(BASE_DIR)/CGraph.cpp \
 	$(BASE_DIR)/CGraphPers.cpp \
@@ -222,6 +223,7 @@ ALL_HEADERS = \
 	$(BASE_DIR)/Brancher.h \
 	$(BASE_DIR)/BranchAndBound.h \
 	$(BASE_DIR)/BrCand.h \
+	$(BASE_DIR)/BrVarCand.h \
 	$(BASE_DIR)/CGraph.h \
 	$(BASE_DIR)/CGraphPers.h \
 	$(BASE_DIR)/CNode.h \

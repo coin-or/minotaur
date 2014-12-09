@@ -185,6 +185,12 @@ void NodeIncRelaxer::setRelaxation(RelaxationPtr rel)
 }
 
 
+void NodeIncRelaxer::setProblem(ProblemPtr p)
+{
+  p_ = p;
+}
+
+
 // Local Variables: 
 // mode: c++ 
 // eval: (c-set-style "k&r") 

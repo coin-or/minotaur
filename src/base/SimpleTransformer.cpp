@@ -63,6 +63,7 @@ SimpleTransformer::SimpleTransformer(EnvPtr env, ConstProblemPtr p)
 
 SimpleTransformer::~SimpleTransformer() 
 {
+  delete yBiVars_;
 }
 
 
@@ -171,30 +172,39 @@ VariablePtr SimpleTransformer::newBilVar_(VariablePtr vl, VariablePtr vr)
 {
   CGraphPtr cg = (CGraphPtr) new CGraph();
   CNode *n1 = cg->newNode(vl);
-  CNode *n2 = cg->newNode(vr);
+  CNode *n2 = 0;
   VariablePtr ov = VariablePtr();
   LinearFunctionPtr lf;
   FunctionPtr f;
   ConstraintPtr cnew;
 
-  n2 = cg->newNode(OpMult, n1, n2);
+  if (vl == vr) {
+    n2 = cg->newNode(OpSqr, n1, n2);
+  } else {
+    n2 = cg->newNode(vr);
+    n2 = cg->newNode(OpMult, n1, n2);
+  }
   cg->setOut(n2);
   cg->finalize();
 
-  ov = yBiVars_->findY(cg);
-  if (!ov) {
-    ov = newp_->newVariable();
-    lf = (LinearFunctionPtr) new LinearFunction();
-    lf->addTerm(ov, -1.0);
-    f = (FunctionPtr) new Function(lf, cg);
-    cnew = newp_->newConstraint(f, 0.0, 0.0);
+  if (vl == vr) {
+    ov = newVar_(cg, newp_);
+  } else {
+    ov = yBiVars_->findY(cg);
+    if (!ov) {
+      ov = newp_->newVariable();
+      lf = (LinearFunctionPtr) new LinearFunction();
+      lf->addTerm(ov, -1.0);
+      f = (FunctionPtr) new Function(lf, cg);
+      cnew = newp_->newConstraint(f, 0.0, 0.0);
 #if SPEW
-      logger_->MsgStream(LogDebug) << me_ << "added new constraint "
-                                  << std::endl;
+      logger_->MsgStream(LogDebug) << me_ << "added new constraint"
+                                   << std::endl;
       cnew->write(logger_->MsgStream(LogDebug));
 #endif 
-    qHandler_->addConstraint(cnew);
-    yBiVars_->insert(ov, cg);
+      qHandler_->addConstraint(cnew);
+      yBiVars_->insert(ov, cg);
+    }
   }
   return ov;
 }
@@ -611,6 +621,9 @@ void SimpleTransformer::reformulate(ProblemPtr &newp, HandlerVector &handlers,
     handlers.push_back(ihandler);
   }
   lHandler_ = (LinearHandlerPtr) new LinearHandler(env_, newp_);
+  lHandler_->setPreOptPurgeVars(false);
+  lHandler_->setPreOptPurgeCons(false);
+  lHandler_->setPreOptDualFix(false);
   handlers.push_back(lHandler_);
   qHandler_ = (QuadHandlerPtr) new QuadHandler(env_, newp_);
   handlers.push_back(qHandler_);
@@ -620,6 +633,7 @@ void SimpleTransformer::reformulate(ProblemPtr &newp, HandlerVector &handlers,
   copyLinear_(p_, newp_);
   refNonlinCons_(p_);
   refNonlinObj_(p_);
+  newp_->calculateSize();
 
 #if DEBUG
   assert(0==newp_->checkConVars());

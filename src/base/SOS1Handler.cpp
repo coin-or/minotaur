@@ -16,7 +16,6 @@
 #include <iomanip>
 
 #include "MinotaurConfig.h"
-#include "BrCand.h"
 #include "Branch.h"
 #include "Constraint.h"
 #include "Environment.h"
