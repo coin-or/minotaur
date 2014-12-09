@@ -1472,8 +1472,6 @@ void LinearHandler::purgeVars_(PreModQ *pre_mods)
         it!=problem_->varsEnd(); ++it) {
       v = *it;
       if (problem_->isMarkedDel(v)) {
-        std::cout << "deleting *********\n";
-        v->write(std::cout);
         dmod->insert(v);
         //preDelVars_.push_front(v);
       }
