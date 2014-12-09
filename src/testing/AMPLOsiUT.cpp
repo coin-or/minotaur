@@ -142,6 +142,7 @@ void AMPLOsiUT::testOsiBnB()
   NodeIncRelaxerPtr nr = (NodeIncRelaxerPtr) new NodeIncRelaxer(env, handlers);
   bab->setNodeRelaxer(nr);
   nr->setEngine(e);
+  nr->setModFlag(false);
 
   p->setNativeDer();
   bab->shouldCreateRoot(true);

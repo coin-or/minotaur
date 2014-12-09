@@ -326,6 +326,7 @@ void NLPBnbUT::testNLPBnb1()
   rel->setHessian(p->getHessian());
   nr->setRelaxation(rel);
   nr->setEngine(e);
+  nr->setModFlag(false);
 
   bab->shouldCreateRoot(false);
   bab->setLogLevel(LogNone);
