@@ -69,6 +69,7 @@ int main()
   RelaxationPtr rel = (RelaxationPtr) new Relaxation(p);
   nr->setRelaxation(rel);
   nr->setEngine(e);
+  nr->setModFlag(false);
   bab->setNodeRelaxer(nr);
   bab->shouldCreateRoot(false);
 
