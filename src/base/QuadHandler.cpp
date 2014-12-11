@@ -39,7 +39,7 @@
 #include "SolutionPool.h"
 #include "Variable.h"
 
-#define SPEW 1
+// #define SPEW 1
 // TODO:
 // * arrange alphabetically
 // * Move other classes to other files
@@ -283,7 +283,8 @@ Branches QuadHandler::getBranches(BrCandPtr cand, DoubleVector &x,
 
 void QuadHandler::getBranchingCandidates(RelaxationPtr rel,
                                          const DoubleVector &x, ModVector &,
-                                         BrCandSet & cands, bool & is_inf)
+                                         BrVarCandSet &cands,
+                                         BrCandVector &, bool &is_inf)
 {
   double yval, x0val, x1val, udis, ddis;
   BrVarCandPtr br_can;
@@ -537,10 +538,10 @@ void QuadHandler::addCut_(VariablePtr x, VariablePtr y,
                           double xl, double yl, double xval, double yval,
                           RelaxationPtr rel, bool &ifcuts)
 {
-  // add the cut 2*xl*x - y - xl*xl <= 0
+  // add the cut 2*xl*x - y - yl <= 0
   ifcuts = false;
-  if (2*xl*xval - yval - xl*xl > 1e-5 &&
-      2*xl*xval - yval > (xl*xl)*(1+1e-4)) {
+  if (2*xl*xval - yval - yl > 1e-5 &&
+      2*xl*xval - yval > yl*(1+1e-4)) {
     LinearFunctionPtr lf = (LinearFunctionPtr) new LinearFunction();
     FunctionPtr f;
     ConstraintPtr c;
@@ -626,7 +627,7 @@ bool QuadHandler::presolveNode(RelaxationPtr rel, NodePtr, SolutionPoolPtr,
   bool is_inf = false;
   // visit each quadratic constraint and see if bounds can be improved.
 
-  while (true==lchanged) {
+  while (true==changed) {
     lchanged = false;
     for (LinSqrMapIter it=x2Funs_.begin(); it != x2Funs_.end(); ++it) {
       is_inf = propSqrBnds_(it, rel, modRel_, &lchanged, p_mods, r_mods);
@@ -702,7 +703,6 @@ bool QuadHandler::propBilBnds_(LinBilPtr lx0x1, bool *changed)
   VariablePtr x0   = lx0x1->getX0();     // x0 and x1 are variables in p_
   VariablePtr x1   = lx0x1->getX1();
   VariablePtr y    = lx0x1->getY();
-  int nch;
 
   BoundsOnProduct(x0, x1, lb, ub);
   if (updatePBounds_(y, lb, ub, changed) < 0) {
@@ -729,7 +729,6 @@ bool QuadHandler::propSqrBnds_(LinSqrMapIter lx2, bool *changed)
   VariablePtr x   = lx2->first;      // x0 and y are variables in p_
   VariablePtr y   = lx2->second->y;
   double lb, ub;
-  int nch;
 
   BoundsOnSquare(x, lb, ub);
   if (updatePBounds_(y, lb, ub, changed) < 0) {
@@ -1049,7 +1048,8 @@ int QuadHandler::updatePBounds_(VariablePtr v, double lb, double ub,
 }
 
 
-int QuadHandler::upBilCon_(LinBilPtr lx0x1, RelaxationPtr rel, ModVector &r_mods)
+int QuadHandler::upBilCon_(LinBilPtr lx0x1, RelaxationPtr rel, ModVector
+                           &r_mods)
 {
   const double uptol = 1e-5;
   LinModsPtr   lmods;
@@ -1123,8 +1123,7 @@ int QuadHandler::upBilCon_(LinBilPtr lx0x1, RelaxationPtr rel, ModVector &r_mods
     lmod->applyToProblem(rel);
     r_mods.push_back(lmod);
   }
-
-
+  return 0;
 }
 
 

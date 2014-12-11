@@ -87,9 +87,9 @@ bool IntVarHandler::isFeasible(ConstSolutionPtr sol, RelaxationPtr relaxation,
 
 
 void IntVarHandler::getBranchingCandidates(RelaxationPtr rel, 
-                                           const std::vector< double > &x,
-                                           ModVector &, BrCandSet & cands,
-                                           bool & is_inf)
+                                           const DoubleVector &x,
+                                           ModVector &, BrVarCandSet &cands,
+                                           BrCandVector &, bool &is_inf)
 {
   VariablePtr v;
   VariableType v_type;

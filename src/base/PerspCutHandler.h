@@ -71,12 +71,11 @@ public:
   void separate(ConstSolutionPtr, NodePtr, RelaxationPtr, CutManager *cutman,
                 SolutionPoolPtr, Bool *, SeparationStatus * status);
 
-  /// Does nothing.
+  // Does nothing.
   virtual void getBranchingCandidates(RelaxationPtr,
-                                      const std::vector< Double > &,
-                                      ModVector &,
-                                      BrCandSet &,
-                                      Bool &) {};
+                                      const DoubleVector &, ModVector &,
+                                      BrVarCandSet &, BrCandVector &,
+                                      bool &) {};
 
   /// Does nothing.
   virtual ModificationPtr getBrMod(BrCandPtr, DoubleVector &,

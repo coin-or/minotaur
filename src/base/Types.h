@@ -329,12 +329,18 @@ namespace Minotaur {
   class   BrCand;
   typedef boost::shared_ptr<BrCand> BrCandPtr;
   typedef boost::shared_ptr<const BrCand> ConstBrCandPtr;  
-  struct CompareBrCand {
-    bool operator()(ConstBrCandPtr c1, ConstBrCandPtr c2) const;
+  typedef std::vector< BrCandPtr > BrCandVector;
+  typedef BrCandVector::iterator BrCandVIter;
+
+  class   BrVarCand;
+  typedef boost::shared_ptr<BrVarCand> BrVarCandPtr;
+  typedef boost::shared_ptr<const BrVarCand> ConstBrVarCandPtr;  
+  struct CompareVarBrCand {
+    bool operator()(ConstBrVarCandPtr c1, ConstBrVarCandPtr c2) const;
   };
-  typedef std::set<BrCandPtr, CompareBrCand> BrCandSet;  
-  typedef BrCandSet::iterator BrCandIter;
-  typedef std::vector< BrCandPtr >::iterator BrCandVIter;
+  typedef std::set<BrVarCandPtr, CompareVarBrCand> BrVarCandSet;  
+  typedef BrVarCandSet::iterator BrVarCandIter;
+  typedef std::vector< BrVarCandPtr >::iterator BrVarCandVIter;
 
   // Serdar added this block 
   // Compare some pairs.

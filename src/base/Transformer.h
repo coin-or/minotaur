@@ -25,8 +25,8 @@ class LinearHandler;
 class Problem;
 class QuadHandler;
 class Solution;
-class YEqUCGs;
 class YEqLFs;
+class YEqUCGs;
 class YEqVars;
 typedef boost::shared_ptr<CxUnivarHandler> CxUnivarHandlerPtr;
 typedef boost::shared_ptr<CGraph> CGraphPtr;
@@ -118,12 +118,6 @@ protected:
 
   /**
    * \brief Storage for auxiliary variables defined by relations of the form
-   * \f$y_i = x_j + d\f$.
-   */
-  YEqVars *yVars_;
-
-  /**
-   * \brief Storage for auxiliary variables defined by relations of the form
    * \f$y_i = c^Tx + d\f$.
    */
   YEqLFs *yLfs_;
@@ -133,6 +127,12 @@ protected:
    * \f$y_i = f(x_j)\f$.
    */
   YEqUCGs *yUniExprs_;
+
+  /**
+   * \brief Storage for auxiliary variables defined by relations of the form
+   * \f$y_i = x_j + d\f$.
+   */
+  YEqVars *yVars_;
 
   /// Tolerance for checking if a value is zero.
   const Double zTol_;

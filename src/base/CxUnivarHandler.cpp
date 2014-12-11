@@ -403,13 +403,13 @@ void CxUnivarHandler::separate(ConstSolutionPtr , NodePtr , RelaxationPtr ,
 }
 
 
-void CxUnivarHandler::getBranchingCandidates(RelaxationPtr , const
-                                             std::vector< Double > & x,
-                                             ModVector & , BrCandSet &cands , Bool
-                                             & isInf)
+void CxUnivarHandler::getBranchingCandidates(RelaxationPtr,
+                                             const DoubleVector &x,
+                                             ModVector &, BrVarCandSet &cands,
+                                             BrCandVector &, bool &is_inf)
 {
   
-  isInf = true;
+  is_inf = true;
   CxUnivarConstraintIterator dit; 
   // Create a map of variables to their weights
   // Weights will be sum of scaled violation of constraints they are argument for
@@ -420,7 +420,7 @@ void CxUnivarHandler::getBranchingCandidates(RelaxationPtr , const
   for (dit = cons_data_.begin(); dit != cons_data_.end(); ++dit) {
       curviol =(*dit)->getViol(x);   
       if (curviol > eTol_) {
-         isInf = false;
+         is_inf = false;
          curc_it = allCands.find((*dit)->getRInputVar());
          if (curc_it == allCands.end()) {
 	    allCands[(*dit)->getRInputVar()] = curviol;

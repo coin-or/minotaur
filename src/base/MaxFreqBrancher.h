@@ -84,8 +84,8 @@ namespace Minotaur {
       /// Statistics.
       MaxFreqBrStats * stats_;
 
-      /// Set of candidates.
-      BrCandSet cands_; 
+      /// Set of candidates (for simple branching on variable dichotomy).
+      BrVarCandSet cands_; 
 
       /// True if data structures are initialized. False otherwise.
       Bool init_;

@@ -85,7 +85,7 @@ public:
   /// Does nothing.
   void getBranchingCandidates(RelaxationPtr, 
                               const DoubleVector &, ModVector &,
-                              BrCandSet &, bool &) {};
+                              BrVarCandSet &, BrCandVector &, bool &) {};
 
   /// Does nothing.
   ModificationPtr getBrMod(BrCandPtr, DoubleVector &, RelaxationPtr,

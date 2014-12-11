@@ -16,6 +16,7 @@
 #include "MinotaurConfig.h"
 #include "Branch.h"
 #include "BrCand.h"
+#include "BrVarCand.h"
 #include "Engine.h"
 #include "Environment.h"
 #include "Handler.h"
@@ -235,8 +236,9 @@ void ReliabilityBrancher::findCandidates_()
   Int index;
   Bool is_inf = false;   // if true, then node can be pruned.
 
-  BrCandSet cands;       // candidates from which to choose one.
-  BrCandSet cands2;      // Temporary set.
+  BrVarCandSet cands;       // candidates from which to choose one.
+  BrVarCandSet cands2;      // Temporary set.
+  BrCandVector gencands;
   Double s_wt = 1e-5;
   Double i_wt = 1e-6;
   Double score;
@@ -247,8 +249,8 @@ void ReliabilityBrancher::findCandidates_()
 
   for (HandlerIterator h = handlers_.begin(); h != handlers_.end(); ++h) {
     // ask each handler to give some candidates
-    (*h)->getBranchingCandidates(rel_, x_, mods_, cands2, is_inf);
-    for (BrCandIter it = cands2.begin(); it != cands2.end(); ++it) {
+    (*h)->getBranchingCandidates(rel_, x_, mods_, cands2, gencands, is_inf);
+    for (BrVarCandIter it = cands2.begin(); it != cands2.end(); ++it) {
       (*it)->setHandler(*h);
     }
     cands.insert(cands2.begin(), cands2.end());
@@ -271,7 +273,7 @@ void ReliabilityBrancher::findCandidates_()
   }
 
   // visit each candidate in and check if it has reliable pseudo costs.
-  for (BrCandIter it=cands.begin(); it!=cands.end(); ++it) {
+  for (BrVarCandIter it=cands.begin(); it!=cands.end(); ++it) {
     index = (*it)->getPCostIndex();
     if (index<0) {
       relCands_.push_back(*it);

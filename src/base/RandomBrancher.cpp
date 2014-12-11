@@ -15,6 +15,7 @@
 #include "MinotaurConfig.h"
 #include "Branch.h"
 #include "BrCand.h"
+#include "BrVarCand.h"
 #include "Environment.h"
 #include "Handler.h"
 #include "RandomBrancher.h"
@@ -84,8 +85,9 @@ Branches RandomBrancher::findBranches(RelaxationPtr rel, NodePtr ,
 {
   Branches branches;
   DoubleVector x(rel->getNumVars());
-  BrCandSet cands;      // candidates from which to choose one.
-  BrCandSet cands2;      // temporary set.
+  BrVarCandSet cands;      // candidates from which to choose one.
+  BrVarCandSet cands2;     // temporary set.
+  BrCandVector gencands;
   BrCandPtr best_can = BrCandPtr(); // NULL
   ModVector mods;        // handlers may ask to modify the problem.
   Bool is_inf = false;
@@ -98,8 +100,8 @@ Branches RandomBrancher::findBranches(RelaxationPtr rel, NodePtr ,
 
   for (HandlerIterator h = handlers_.begin(); h != handlers_.end(); ++h) {
     // ask each handler to give some candidates
-    (*h)->getBranchingCandidates(rel, x, mods, cands2, is_inf);
-    for (BrCandIter it = cands2.begin(); it != cands2.end(); ++it) {
+    (*h)->getBranchingCandidates(rel, x, mods, cands2, gencands, is_inf);
+    for (BrVarCandIter it = cands2.begin(); it != cands2.end(); ++it) {
       (*it)->setHandler(*h);
     }
     cands.insert(cands2.begin(), cands2.end());
@@ -120,7 +122,7 @@ Branches RandomBrancher::findBranches(RelaxationPtr rel, NodePtr ,
   }
 
   if (cands.size() > 0) {
-    BrCandIter it = cands.begin();
+    BrVarCandIter it = cands.begin();
 
     std::advance(it,rand()%cands.size());
     best_can = *(it);
@@ -129,7 +131,7 @@ Branches RandomBrancher::findBranches(RelaxationPtr rel, NodePtr ,
     branches = best_can->getHandler()->getBranches(best_can, x, rel, s_pool); 
 #if SPEW
     logger_->MsgStream(LogDebug) << me_ << "best candidate = "
-      << best_can->getName() << std::endl;
+                                 << best_can->getName() << std::endl;
 #endif
   } else {
     assert(!"problem finding candidate in RandomBrancher");

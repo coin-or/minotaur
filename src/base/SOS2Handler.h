@@ -57,9 +57,9 @@ public:
                 SolutionPoolPtr, Bool *, SeparationStatus *);
 
   // Base class method.
-  void getBranchingCandidates(RelaxationPtr rel, 
-                              const std::vector< Double > &x, ModVector & mods,
-                              BrCandSet & cands, Bool & isInf);
+  void getBranchingCandidates(RelaxationPtr rel, const DoubleVector &x,
+                              ModVector & mods, BrVarCandSet &cands,
+                              BrCandVector &gencands, bool & is_inf);
 
   // Base class method.
   ModificationPtr getBrMod(BrCandPtr cand, DoubleVector &x, 

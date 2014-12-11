@@ -122,11 +122,11 @@ private:
 
 public:
 
-  /**
-   */
+  // base class method
   virtual void getBranchingCandidates(RelaxationPtr rel, 
                                       const DoubleVector &x, ModVector &mods, 
-                                      BrCandSet &cands, Bool &isInf );
+                                      BrVarCandSet &cands, BrCandVector &,
+                                      bool &is_inf);
     
   /**
    * Check if each multilinear term is satisfied. Stops on the first

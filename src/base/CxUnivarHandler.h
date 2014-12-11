@@ -216,16 +216,16 @@ public:
   virtual void relaxNodeFull(NodePtr /* node */, RelaxationPtr /* rel */, bool* /* isInfeasible */) {} ; 
 
   /** 
-   * Create a relaxation by updating the secant inequality for the upper estimator,
-   * and adding lineariations at the end points, if they are new 
+   * Create a relaxation by updating the secant inequality for the upper
+   * estimator, and adding lineariations at the end points, if they are new 
    */
   virtual void relaxNodeInc(NodePtr  node, RelaxationPtr rel,
                             bool* isInfeasible);
 
-  /// Not implemented 
-  virtual void getBranchingCandidates(RelaxationPtr rel, 
-                                      const std::vector< Double > &x, ModVector & mods, BrCandSet & cands, 
-                                      bool & isInf);
+  // base class method
+  virtual void getBranchingCandidates(RelaxationPtr rel, const DoubleVector &x,
+                                      ModVector &mods, BrVarCandSet &cands,
+                                      BrCandVector &gencands, bool & is_inf);
 
   // Implement Handler::getBrMod().
   virtual ModificationPtr getBrMod(BrCandPtr cand, DoubleVector &x, 

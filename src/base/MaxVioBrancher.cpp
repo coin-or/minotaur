@@ -16,6 +16,7 @@
 #include "MinotaurConfig.h"
 #include "Branch.h"
 #include "BrCand.h"
+#include "BrVarCand.h"
 #include "Environment.h"
 #include "Handler.h"
 #include "Logger.h"
@@ -27,7 +28,7 @@
 #include "Solution.h"
 #include "Timer.h"
 
-//#define SPEW 1
+#define SPEW 1
 
 using namespace Minotaur;
 
@@ -62,7 +63,7 @@ Branches MaxVioBrancher::findBranches(RelaxationPtr rel, NodePtr ,
 {
   Branches branches;
   BrCandPtr br_can = BrCandPtr(); //NULL
-  const Double *x = sol->getPrimal();
+  const double *x = sol->getPrimal();
 
   timer_->start();
   x_.resize(rel->getNumVars());
@@ -101,15 +102,16 @@ Branches MaxVioBrancher::findBranches(RelaxationPtr rel, NodePtr ,
 
 void MaxVioBrancher::findCandidates_()
 {
-  BrCandSet cands2;      // Temporary set.
+  BrVarCandSet cands2;   // Temporary set.
+  BrCandVector gencands;
   ModVector mods;        // handlers may ask to modify the problem.
-  Bool is_inf = false;
+  bool is_inf = false;
 
   cands_.clear();
   for (HandlerIterator h = handlers_.begin(); h != handlers_.end(); ++h) {
     // ask each handler to give some candidates
-    (*h)->getBranchingCandidates(rel_, x_, mods, cands2, is_inf);
-    for (BrCandIter it = cands2.begin(); it != cands2.end(); ++it) {
+    (*h)->getBranchingCandidates(rel_, x_, mods, cands2, gencands, is_inf);
+    for (BrVarCandIter it = cands2.begin(); it != cands2.end(); ++it) {
       (*it)->setHandler(*h);
     }
     cands_.insert(cands2.begin(), cands2.end());
@@ -118,10 +120,10 @@ void MaxVioBrancher::findCandidates_()
 
 #if SPEW
   logger_->MsgStream(LogDebug) << me_ << "candidates: " << std::endl;
-  for (BrCandIter it=cands_.begin(); it!=cands_.end(); ++it) {
+  for (BrVarCandIter it=cands_.begin(); it!=cands_.end(); ++it) {
     logger_->MsgStream(LogDebug)
         << std::setprecision(6) << (*it)->getName() << "\t" 
-        << x_[(*it)->getPCostIndex()] << "\t"
+        << (*it)->getDDist() << "\t" << (*it)->getUDist()
         << std::endl;
   }
 #endif
@@ -132,10 +134,10 @@ void MaxVioBrancher::findCandidates_()
 BrCandPtr MaxVioBrancher::findBestCandidate_()
 {
   BrCandPtr best_cand = BrCandPtr(); // NULL
-  Double best_score = -INFINITY;
-  Double cand_score;
+  double best_score = -INFINITY;
+  double cand_score;
 
-  for (BrCandIter it = cands_.begin(); it != cands_.end(); ++it) {
+  for (BrVarCandIter it = cands_.begin(); it != cands_.end(); ++it) {
     cand_score = std::min((*it)->getDDist(),(*it)->getUDist());
     if (cand_score > best_score) {
       best_score = cand_score;

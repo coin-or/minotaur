@@ -199,9 +199,10 @@ Branches SOS2Handler::getBranches(BrCandPtr cand, DoubleVector &,
 
 
 void SOS2Handler::getBranchingCandidates(RelaxationPtr rel, 
-                                         const std::vector< Double > &x,
-                                         ModVector &mods, BrCandSet & cands,
-                                         Bool & is_inf)
+                                         const DoubleVector &x,
+                                         ModVector &mods, BrVarCandSet &,
+                                         BrCandVector &gencands,
+                                         bool &is_inf)
 {
   int lnz, nv, nnz, nspos;
   double lsum, rsum, nzsum;
@@ -246,7 +247,7 @@ void SOS2Handler::getBranchingCandidates(RelaxationPtr rel,
         bmod = (VarBoundModPtr) new VarBoundMod((*viter), Upper, 0.0);
         mods.push_back(bmod);
       }
-      cands.clear();
+      gencands.clear();
       return;
     } else if (1==nspos) {
       // If one var has bounds away from zero, then only one of its neighbors
@@ -261,7 +262,7 @@ void SOS2Handler::getBranchingCandidates(RelaxationPtr rel,
             bmod = (VarBoundModPtr) new VarBoundMod((*viter), Upper, 0.0);
             mods.push_back(bmod);
           }
-          cands.clear();
+          gencands.clear();
           return;
         } else if ((*viter)->getUb()>zTol_) {
           break;
@@ -281,7 +282,7 @@ void SOS2Handler::getBranchingCandidates(RelaxationPtr rel,
           }
           bmod = (VarBoundModPtr) new VarBoundMod((*viter), Upper, 0.0);
           mods.push_back(bmod);
-          cands.clear();
+          gencands.clear();
           return;
         } else if ((*viter)->getUb()>zTol_) {
           break;
@@ -317,7 +318,7 @@ void SOS2Handler::getBranchingCandidates(RelaxationPtr rel,
             mods.push_back(bmod);
           }
         }
-        cands.clear();
+        gencands.clear();
         return;
       } else {
         // branch around viter.
@@ -384,10 +385,7 @@ void SOS2Handler::getBranchingCandidates(RelaxationPtr rel,
                                           rsum);
     br_can->setDir(DownBranch);
     br_can->setScore(20.0*(lvars.size())*(rvars.size()));
-      
-    if(cands.insert(br_can).second == false) {
-      std::cout << "trouble ehere\n";
-    }
+    gencands.push_back(br_can);
 
 #if SPEW
     logger_->MsgStream(LogDebug) << me_ << sos->getName() << " is a "

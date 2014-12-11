@@ -14,45 +14,46 @@
 #include "MinotaurConfig.h"
 
 #include "BrCand.h"
+#include "BrVarCand.h"
 #include "Variable.h"
 #include "Types.h"
 
 using namespace Minotaur;
 
-Bool Minotaur::CompareBrCand::operator()(ConstBrCandPtr b1,
-                                         ConstBrCandPtr b2) const
+bool Minotaur::CompareVarBrCand::operator()(ConstBrVarCandPtr b1,
+                                            ConstBrVarCandPtr b2) const
 {
   return (b1->getPCostIndex() < b2->getPCostIndex());
 }
 
 
-Bool Minotaur::CompareVariablePtr::operator()(ConstVariablePtr v1,
+bool Minotaur::CompareVariablePtr::operator()(ConstVariablePtr v1,
                                               ConstVariablePtr v2) const
 {
   return (v1->getId() < v2->getId());
 }
 
 // Serdar added.
-Bool Minotaur::CompareValueVariablePair::operator() (VariableValuePair v1, 
+bool Minotaur::CompareValueVariablePair::operator() (VariableValuePair v1, 
                                                      VariableValuePair v2) const
 {
   return (v2.second < v1.second);
 }
 
-Bool Minotaur::CompareValueVarInc::operator() (VariableValuePair v1,
+bool Minotaur::CompareValueVarInc::operator() (VariableValuePair v1,
                                                VariableValuePair v2) const
 {
   return (v1.second < v2.second);
 }
 
-Bool Minotaur::CompareIntDouble::operator() (id id1, id id2) const
+bool Minotaur::CompareIntDouble::operator() (id id1, id id2) const
 {
   return (id2.second < id1.second);
 }
 
 // Serdar ended.
 
-Bool Minotaur::CompareVariablePair::operator()(ConstVariablePair tv1,
+bool Minotaur::CompareVariablePair::operator()(ConstVariablePair tv1,
                                                ConstVariablePair tv2) const 
 {
   UInt min1 = tv1.first->getId();

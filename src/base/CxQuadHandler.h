@@ -308,9 +308,9 @@ public:
 
   /// Return \f$u_0\f$ it is constrained to be an integer.
   void getBranchingCandidates(RelaxationPtr rel, 
-                              const std::vector< double > &x, 
-                              ModVector & mods, BrCandSet & cands, 
-                              bool & isInf);
+                              const DoubleVector &x, ModVector &mods,
+                              BrVarCandSet &cands, BrCandVector &,
+                              bool & is_inf);
 
   // Implement Handler::getBrMod().
   ModificationPtr getBrMod(BrCandPtr cand, DoubleVector &x, 

@@ -16,6 +16,7 @@
 #include "MinotaurConfig.h"
 #include "Branch.h"
 #include "BrCand.h"
+#include "BrVarCand.h"
 #include "Environment.h"
 #include "Handler.h"
 #include "Logger.h"
@@ -92,7 +93,7 @@ Branches MaxFreqBrancher::findBranches(RelaxationPtr rel, NodePtr ,
 
 #if SPEW
   logger_->MsgStream(LogDebug) << me_ << "candidates: " << std::endl;
-  for (BrCandIter it=cands_.begin(); it!=cands_.end(); ++it) {
+  for (BrVarCandIter it=cands_.begin(); it!=cands_.end(); ++it) {
     logger_->MsgStream(LogDebug)
         << std::setprecision(6) << (*it)->getName() << "\t" 
         << x_[(*it)->getPCostIndex()] << "\t"
@@ -137,7 +138,8 @@ void MaxFreqBrancher::initialize(RelaxationPtr rel)
 
 void MaxFreqBrancher::findCandidates_()
 {
-  BrCandSet cands2;      // Temporary set.
+  BrVarCandSet cands2;      // Temporary set.
+  BrCandVector gencands;
   ModVector mods;        // handlers may ask to modify the problem.
   Bool is_inf = false;
   std::string handlerName;
@@ -145,8 +147,8 @@ void MaxFreqBrancher::findCandidates_()
   cands_.clear();
   for (HandlerIterator h = handlers_.begin(); h != handlers_.end(); ++h) {
     // ask each handler to give some candidates
-    (*h)->getBranchingCandidates(rel_, x_, mods, cands2, is_inf);
-    for (BrCandIter it = cands2.begin(); it != cands2.end(); ++it) {
+    (*h)->getBranchingCandidates(rel_, x_, mods, cands2, gencands, is_inf);
+    for (BrVarCandIter it = cands2.begin(); it != cands2.end(); ++it) {
       (*it)->setHandler(*h);
     }
     cands_.insert(cands2.begin(), cands2.end());
@@ -174,7 +176,7 @@ BrCandPtr MaxFreqBrancher::findBestCandidate_()
  logger_->MsgStream(LogDebug) << me_ << "candidate score from BestCand Fn: "
                                      << std::endl;
 #endif
- for (BrCandIter it = cands_.begin(); it != cands_.end(); ++it) {
+ for (BrVarCandIter it = cands_.begin(); it != cands_.end(); ++it) {
     index = (*it)->getPCostIndex();
     cand_score = (double) fracCount_[index]/((double) unfixedCount_[index]);
 #if SPEW
@@ -200,7 +202,7 @@ BrCandPtr MaxFreqBrancher::findBestCandidate_()
 void MaxFreqBrancher::updateFracCount_()
 {
   UInt index;
-  for (BrCandIter it = cands_.begin(); it != cands_.end(); ++it) {
+  for (BrVarCandIter it = cands_.begin(); it != cands_.end(); ++it) {
     index = (*it)->getPCostIndex();
     fracCount_[index] += 1;
   }

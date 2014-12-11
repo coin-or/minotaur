@@ -593,7 +593,8 @@ bool CxQuadHandler::isFeasible(ConstSolutionPtr sol, RelaxationPtr , bool & )
 
 void CxQuadHandler::getBranchingCandidates(RelaxationPtr, 
                                            const DoubleVector &x, ModVector &,
-                                           BrCandSet & cands, bool & is_inf)
+                                           BrVarCandSet &cands, BrCandVector &,
+                                           bool &is_inf)
 {
   double yval, x0val, x1val;
   BrVarCandPtr br_can;

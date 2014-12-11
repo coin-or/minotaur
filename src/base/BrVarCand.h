@@ -54,7 +54,6 @@ private:
   VariablePtr var_;
 
 };
-typedef boost::shared_ptr<BrVarCand> BrVarCandPtr;
 }
 
 #endif

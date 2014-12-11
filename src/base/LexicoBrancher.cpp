@@ -15,6 +15,7 @@
 #include "MinotaurConfig.h"
 #include "Branch.h"
 #include "BrCand.h"
+#include "BrVarCand.h"
 #include "Environment.h"
 #include "Handler.h"
 #include "LexicoBrancher.h"
@@ -76,7 +77,8 @@ Branches LexicoBrancher::findBranches(RelaxationPtr rel, NodePtr ,
 {
   Branches branches;
   DoubleVector x(rel->getNumVars());
-  BrCandSet cands;      // Temporary set.
+  BrVarCandSet cands;      // Temporary set.
+  BrCandVector gencands;      // Temporary set.
   BrCandPtr best_can = BrCandPtr(); // NULL
   ModVector mods;        // handlers may ask to modify the problem.
   Bool is_inf = false;
@@ -90,7 +92,7 @@ Branches LexicoBrancher::findBranches(RelaxationPtr rel, NodePtr ,
 
   for (HandlerIterator h = handlers_.begin(); h != handlers_.end(); ++h) {
     // ask each handler to give some candidates
-    (*h)->getBranchingCandidates(rel, x, mods, cands, is_inf);
+    (*h)->getBranchingCandidates(rel, x, mods, cands, gencands, is_inf);
     if (cands.size()>0) {
       best_can = *(cands.begin());
       best_can->setHandler(*h);

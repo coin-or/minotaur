@@ -48,7 +48,8 @@ public:
    */
   virtual void getBranchingCandidates(RelaxationPtr rel, 
                                       const DoubleVector &x, ModVector &mods, 
-                                      BrCandSet &cands, Bool &isInf );
+                                      BrVarCandSet &cands,
+                                      BrCandVector &gencands, bool &is_inf );
     
   /**
    * Check if each multilinear constraint is satisfied. Stops on the first

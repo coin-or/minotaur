@@ -89,10 +89,10 @@ public:
                 SolutionPoolPtr, Bool *, SeparationStatus * status);
 
   /// Does nothing. 
-  virtual void getBranchingCandidates(RelaxationPtr ,
-                                      const std::vector< Double > & ,
-                                      ModVector & , BrCandSet & ,
-                                      Bool & ) {};
+  virtual void getBranchingCandidates(RelaxationPtr,
+                                      const DoubleVector &, ModVector &,
+                                      BrVarCandSet &, BrCandVector &,
+                                      bool &) {};
 
   /// Does nothing.
   virtual ModificationPtr getBrMod(BrCandPtr , DoubleVector & ,

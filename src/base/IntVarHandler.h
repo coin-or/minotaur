@@ -41,13 +41,11 @@ public:
   Branches getBranches(BrCandPtr cand, DoubleVector & x,
                        RelaxationPtr rel, SolutionPoolPtr s_pool);
       
-  /**
-   * Find variables to branch upon. isInfeasible is true if the handler
-   * finds that the problem is infeasible.
-   */
+  // base class method
   void getBranchingCandidates(RelaxationPtr rel, 
-                              const std::vector< double > &x, ModVector & mods,
-                              BrCandSet & cands, bool & isInf);
+                              const DoubleVector &x, ModVector &mods,
+                              BrVarCandSet &cands, BrCandVector &gencands,
+                              bool &is_inf);
 
   // Implement Handler::getBrMod().
   ModificationPtr getBrMod(BrCandPtr cand, DoubleVector &x, 

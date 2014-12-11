@@ -99,14 +99,19 @@ public:
    * \param[in] x Solution of the relaxation.
    * \param[out] mods Any modifications that the handler found (Unused).
    * \param[out] cands The set of candidates to which branching candidates
-   * must be inserted.
+   * must be inserted. This set has candidates that want to branch on a single
+   * variable only. Other candidates must go into gencands.
+   * \param[out] gencands The vector of general branching candidates. All
+   * candidates that do not want to branch on a variable dichotomy must be
+   * added in this vector.
    * \param[out] isInf true if the handler finds that the problem 
    * is infeasible and the node can be pruned.
    */
   virtual void getBranchingCandidates(RelaxationPtr rel, 
-                                      const std::vector< Double > &x,
-                                      ModVector &mods, BrCandSet &cands,
-                                      Bool &isInf) = 0;
+                                      const DoubleVector &x,
+                                      ModVector &mods, BrVarCandSet &cands,
+                                      BrCandVector &gencands,
+                                      bool &is_inf) = 0;
       
   /**
    * \brief Get the modifcation that creates a given (up or down) branch.

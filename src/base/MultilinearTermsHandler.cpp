@@ -97,8 +97,10 @@ Branches MultilinearTermsHandler::getBranches(BrCandPtr cand, DoubleVector & x,
 
 
 void MultilinearTermsHandler::getBranchingCandidates(RelaxationPtr, 
-                                                const DoubleVector &x, ModVector &, 
-                                                BrCandSet &cands, Bool &isInf )
+                                                const DoubleVector &x,
+                                                ModVector &,
+                                                BrVarCandSet &cands,
+                                                BrCandVector &, bool &is_inf)
 {
   // Implementation notes:
   //  (1) You must insert into the set cands
@@ -163,7 +165,7 @@ void MultilinearTermsHandler::getBranchingCandidates(RelaxationPtr,
     BrVarCandPtr br_can = (BrVarCandPtr) new BrVarCand(v, v->getIndex(), 0.5, 0.5);
     cands.insert(br_can);
   }
-  isInf = false;
+  is_inf = false;
 }
 
 ModificationPtr MultilinearTermsHandler::getBrMod(BrCandPtr cand, DoubleVector &xval, 

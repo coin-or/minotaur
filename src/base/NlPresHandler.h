@@ -91,9 +91,9 @@ public:
                 SolutionPoolPtr , bool *, SeparationStatus *) {};
 
   /// Does nothing.
-  void getBranchingCandidates(RelaxationPtr , 
-                                      const DoubleVector &, ModVector &, 
-                                      BrCandSet &, bool &) {};
+  void getBranchingCandidates(RelaxationPtr, const DoubleVector &,
+                              ModVector &, BrVarCandSet &, BrCandVector &,
+                              bool &) {};
 
   /// Does nothing.
   ModificationPtr getBrMod(BrCandPtr, DoubleVector &, 

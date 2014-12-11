@@ -22,7 +22,7 @@ namespace Minotaur {
 
   struct MaxVioBrStats {
     UInt calls;      /// Number of times called to find a branching candidate.
-    Double time;     /// Total time spent in branching.
+    double time;     /// Total time spent in branching.
   };
 
   /// A class to select a variable for branching using maximum-violated branching.
@@ -71,7 +71,7 @@ namespace Minotaur {
       MaxVioBrStats * stats_;
 
       /// Set of candidates.
-      BrCandSet cands_; 
+      BrVarCandSet cands_; 
 
       /**
        * Fills up the set of candidates in the cands_ array. 
