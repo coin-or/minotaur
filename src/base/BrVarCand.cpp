@@ -63,6 +63,13 @@ VariablePtr BrVarCand::getVar()
 }
 
 
+void BrVarCand::setDist(double ddist, double udist)
+{
+  dDist_ = ddist;
+  uDist_ = udist;
+}
+
+
 // Local Variables: 
 // mode: c++ 
 // eval: (c-set-style "k&r") 

@@ -55,14 +55,8 @@ typedef LinSqrMap::iterator LinSqrMapIter; /// Iterator for LinSqrMap
  */
 class LinBil {
 private:
-  /// First variable.
-  VariablePtr x0_;
-
-  /// Second variable.
-  VariablePtr x1_;
-
-  /// Auxiliary variable.
-  VariablePtr y_;
+  /// Absolute feasibility tolerance
+  double aTol_;
 
   /// Constraint 0.
   ConstraintPtr c0_;
@@ -75,6 +69,19 @@ private:
 
   /// Constraint 3.
   ConstraintPtr c3_;
+
+  /// Relative feasibility tolerance
+  double rTol_;
+
+  /// First variable.
+  VariablePtr x0_;
+
+  /// Second variable.
+  VariablePtr x1_;
+
+  /// Auxiliary variable.
+  VariablePtr y_;
+
 
 public:
   /// Default constructor. 
@@ -102,14 +109,14 @@ public:
   VariablePtr getOtherX(ConstVariablePtr x) const;
 
   /// Check if a bilinear constraint is violated at the current point x.
-  bool isViolated(const double *x, const double &tol) const;
+  bool isViolated(const double *x) const;
 
   /**
-   * Check if a bilinear constraint is violated for the given values of
+   * \brief Check if a bilinear constraint is violated for the given values of
    * \f$x_0, x_1, y\f$.
    */
   bool isViolated(const double x0val, const double x1val, 
-                  const double y0val, const double tol) const;
+                  const double y0val) const;
 
   void setCons(ConstraintPtr c0, ConstraintPtr c1, ConstraintPtr c2,
                ConstraintPtr c3);
@@ -151,7 +158,6 @@ public:
   // base class method
   void addConstraint(ConstraintPtr newcon);
 
-  void findLinPt_(double xval, double yval, double &xl, double &yl);
   // Implement Handler::getBranches().
   Branches getBranches(BrCandPtr cand, DoubleVector & x,
                        RelaxationPtr rel, SolutionPoolPtr s_pool);
@@ -175,7 +181,7 @@ public:
   // presolve.
   SolveStatus presolve(PreModQ *pre_mods, bool *changed);
 
-  // Implement Handler::presolveNode().
+  // base class method. Tightens bounds.
   bool presolveNode(RelaxationPtr p, NodePtr node,
                     SolutionPoolPtr s_pool, ModVector &p_mods,
                     ModVector &r_mods);
@@ -193,16 +199,14 @@ public:
   void relaxNodeInc(NodePtr node, RelaxationPtr rel, bool *is_inf);
 
 
-  /**
-   * Not implemented yet.
-   */
+  // base class method. Adds linearlization cuts when available.
   void separate(ConstSolutionPtr sol, NodePtr node, RelaxationPtr rel, 
                 CutManager *cutman, SolutionPoolPtr s_pool, bool *sol_found,
                 SeparationStatus *status);
 
 private:
-  /// Tolerance.
-  double eTol_;
+  /// Absolute feasibility tolerance
+  double aTol_;
 
   /// Logger.
   LoggerPtr logger_;
@@ -212,6 +216,9 @@ private:
 
   /// Transformed problem (not the relaxation).
   ProblemPtr p_;
+
+  /// Relative feasibility tolerance
+  double rTol_;
 
   /**
    * \brief Container for all bilinear functions. This should contain
@@ -228,9 +235,7 @@ private:
   void addCut_(VariablePtr x, VariablePtr y, double xl, double yl, double xval,
                double yval, RelaxationPtr rel, bool &ifcuts);
 
-  void binToLin_();
-
-  void binToLinFun_(FunctionPtr f, LinearFunctionPtr lf2);
+  void findLinPt_(double xval, double yval, double &xl, double &yl);
 
   /// Get linear function and right hand side (r) for the linear overestimator
   /// constraint of bilinear type.
@@ -243,6 +248,8 @@ private:
   LinearFunctionPtr getNewSqLf_(VariablePtr x, VariablePtr y, 
                                 double lb, double ub, double & r);
 
+
+  bool isAtBnds_(ConstVariablePtr x, double xval);
 
   bool propBilBnds_(LinBilPtr, bool *changed);
 
@@ -262,10 +269,6 @@ private:
    */
   void relax_(ConstraintPtr cons, VariablePtr y, VariablePtr x1,
               VariablePtr x2, RelaxationPtr rel);
-
-  void removeFixed_();
-
-  void removeFixedFun_(FunctionPtr f, LinearFunctionPtr lf2, double *c);
 
   /**
    * \brief Modify bounds of a variable in the problem if the new bounds are

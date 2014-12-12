@@ -36,6 +36,12 @@ bool Minotaur::CompareScore(BrCandPtr c1, BrCandPtr c2)
   }
 }
 
+
+void BrCand::setDist(double, double )
+{
+}
+
+
 // Local Variables: 
 // mode: c++ 
 // eval: (c-set-style "k&r") 

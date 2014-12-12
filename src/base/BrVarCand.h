@@ -43,6 +43,9 @@ public:
   /// Get the variable that we are branching on.
   VariablePtr getVar();
 
+  // base class method
+  void setDist(double ddist, double udist);
+
 private:
   /// distance from lower-side branch (obtained by changing ub)
   double dDist_;

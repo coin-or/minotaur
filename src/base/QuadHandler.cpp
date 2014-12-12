@@ -51,7 +51,8 @@ using namespace Minotaur;
 const std::string QuadHandler::me_ = "QuadHandler: ";
 
 QuadHandler::QuadHandler(EnvPtr env, ProblemPtr problem)
-  : eTol_(1e-6)
+  : aTol_(1e-5),
+    rTol_(1e-4)
 {
   p_ = problem; 
   modProb_ = true;
@@ -115,66 +116,6 @@ void QuadHandler::addConstraint(ConstraintPtr newcon)
       linbil = new LinBil(x0, x1, y);
       x0x1Funs_.insert(linbil);
     }
-  }
-}
-
-
-void QuadHandler::binToLin_()
-{
-  if (p_->getSize()->bins > 0) {
-    LinearFunctionPtr lf = (LinearFunctionPtr) new LinearFunction();
-    FunctionPtr f;
-    ConstraintConstIterator c_iter;
-    ObjectivePtr oPtr = p_->getObjective();
-
-    if (oPtr && oPtr->getFunctionType() == Quadratic) {
-      f = oPtr->getFunction();
-      if (f->getType()==Quadratic) {
-        binToLinFun_(f, lf);
-        if (lf->getNumTerms()>0) {
-          lf = (LinearFunctionPtr) new LinearFunction();
-        }
-      }
-      if (lf->getNumTerms()>0) {
-        lf = (LinearFunctionPtr) new LinearFunction();
-      }
-    }
-    for (c_iter=p_->consBegin(); c_iter!=p_->consEnd(); ++c_iter) {
-      f = (*c_iter)->getFunction();
-      if (f->getType()==Quadratic) {
-        binToLinFun_(f, lf);
-        if (lf->getNumTerms()>0) {
-          lf = (LinearFunctionPtr) new LinearFunction();
-        }
-      }
-    }
-  }
-}
-
-
-void QuadHandler::binToLinFun_(FunctionPtr f, LinearFunctionPtr lf2)
-{
-  QuadraticFunctionPtr qf;
-  LinearFunctionPtr lf;
-  bool new_lf = false;
-
-  qf = f->getQuadraticFunction();
-  lf = f->getLinearFunction();
-  if (!lf) {
-    new_lf = true;
-    lf = lf2;
-  }
-  for (VariablePairGroupConstIterator it=qf->begin(); it!=qf->end(); 
-      ++it) {
-    if (it->first.first == it->first.second && it->first.first->getType() == 
-        Binary) {
-      lf->incTerm(it->first.first, 1*(it->second));
-      qf->incTerm(it->first.first, it->first.first, -1.*(it->second));
-      assert(!"bug above!");
-    }
-  }
-  if (new_lf==true && lf->getNumTerms()>0) {
-    f->add(lf); // lf is cloned and added.
   }
 }
 
@@ -286,14 +227,11 @@ void QuadHandler::getBranchingCandidates(RelaxationPtr rel,
                                          BrVarCandSet &cands,
                                          BrCandVector &, bool &is_inf)
 {
-  double yval, x0val, x1val, udis, ddis;
+  double yval, x0val, x1val, udist, ddist;
   BrVarCandPtr br_can;
   VariablePtr x0, x1;
-  UIntSet cand_inds;
-  std::pair<UIntSet::iterator, bool> ret;
-#if DEBUG
+  std::pair<BrVarCandIter, bool> ret;
   bool check;
-#endif
 
   is_inf = false;
 
@@ -306,19 +244,21 @@ void QuadHandler::getBranchingCandidates(RelaxationPtr rel,
     if ((yval - x0val*x0val)/(fabs(yval)+1e-6)>1e-4) {
 #if SPEW
       logger_->MsgStream(LogDebug2) << std::setprecision(9) << me_ 
-        << "branching candidate for secant: " << s_it->first->getName()
+        << "branching candidate for x^2: " << s_it->first->getName()
         << " value = " << x0val << " aux var: " 
         << s_it->second->y->getName() 
         << " value = " << yval << std::endl;
 #endif
-      ret = cand_inds.insert(s_it->first->getIndex());
-      if (true == ret.second) { // does not already exist.
-        ddis = (yval - x0val*x0val)/
-               sqrt(1.0+(x0->getLb()+x0val)*(x0->getLb()+x0val));
-        udis = (yval - x0val*x0val)/
-               sqrt(1.0+(x0->getUb()+x0val)*(x0->getUb()+x0val));
-        br_can = (BrVarCandPtr) new BrVarCand(x0, x0->getIndex(), ddis, udis);
-        cands.insert(br_can);
+      ddist = (yval - x0val*x0val)/
+             sqrt(1.0+(x0->getLb()+x0val)*(x0->getLb()+x0val));
+      udist = (yval - x0val*x0val)/
+             sqrt(1.0+(x0->getUb()+x0val)*(x0->getUb()+x0val));
+      br_can = (BrVarCandPtr) new BrVarCand(x0, x0->getIndex(), ddist,
+                                            udist);
+      ret = cands.insert(br_can);
+      if (false == ret.second) { // does not already exist.
+        br_can = *(ret.first);
+        br_can->setDist(ddist+br_can->getDDist(), udist+br_can->getDDist());
       }
     }
   }
@@ -332,43 +272,65 @@ void QuadHandler::getBranchingCandidates(RelaxationPtr rel,
     x0val = x[x0->getIndex()];
     x1val = x[x1->getIndex()];
     yval  = x[bil->getY()->getIndex()];
-    if (bil->isViolated(x0val, x1val, yval, eTol_)) {
-#if DEBUG
+    if (bil->isViolated(x0val, x1val, yval)) {
       check = false;
-#endif
       // If a variable is at bounds, then it is not a candidate.
-      if (x0val < x0->getUb() - eTol_ && x0val > x0->getLb() + eTol_) {
-#if DEBUG
+      if (false==isAtBnds_(x0, x0val)) {
         check = true;
-#endif
-        ret = cand_inds.insert(x0->getIndex());
-        if (true == ret.second) { // does not already exist.
-          br_can = (BrVarCandPtr) new BrVarCand(x0, x0->getIndex(), 0.5, 0.5); 
-          cands.insert(br_can);
+        if (x0val*x1val > yval) {
+          ddist = (-yval + x0val*x1val)/sqrt(1.0+x0val*x0val+
+                                            x1->getUb()*x1->getUb());
+          udist = (-yval + x0val*x1val)/sqrt(1.0+x0val*x0val+
+                                            x1->getLb()*x1->getLb());
+        } else {
+          ddist = (yval - x0val*x1val)/sqrt(1.0+x0val*x0val+
+                                            x1->getLb()*x1->getLb());
+          udist = (yval - x0val*x1val)/sqrt(1.0+x0val*x0val+
+                                            x1->getUb()*x1->getUb());
+        }
+        br_can = (BrVarCandPtr) new BrVarCand(x0, x0->getIndex(), ddist,
+                                              udist); 
+        ret = cands.insert(br_can);
+        if (false == ret.second) { // already exists.
+          br_can->setDist(ddist+br_can->getDDist(), udist+br_can->getUDist());
         }
       }
 
-      if (x1val < x1->getUb() - eTol_ && x1val > x1->getLb() + eTol_) {
-#if DEBUG
+      if (false==isAtBnds_(x1, x1val)) {
         check = true;
-#endif
-        ret = cand_inds.insert(x1->getIndex());
-        if (true == ret.second) { // does not already exist.
-          br_can = (BrVarCandPtr) new BrVarCand(x1, x1->getIndex(), 0.5, 0.5); 
-          cands.insert(br_can);
+        if (x0val*x1val > yval) {
+          ddist = (-yval + x1val*x0val)/sqrt(1.0+x1val*x1val+
+                                            x0->getUb()*x0->getUb());
+          udist = (-yval + x1val*x0val)/sqrt(1.0+x1val*x1val+
+                                            x0->getLb()*x0->getLb());
+        } else {
+          ddist = (yval - x1val*x0val)/sqrt(1.0+x1val*x1val+
+                                            x0->getLb()*x0->getLb());
+          udist = (yval - x1val*x0val)/sqrt(1.0+x1val*x1val+
+                                            x0->getUb()*x0->getUb());
         }
+        br_can = (BrVarCandPtr) new BrVarCand(x1, x1->getIndex(), ddist,
+                                              udist); 
+        ret = cands.insert(br_can);
+        if (false == ret.second) { // already exists.
+          br_can->setDist(ddist+br_can->getDDist(), udist+br_can->getUDist());
+        }
+#if SPEW
+      logger_->MsgStream(LogDebug2) << std::setprecision(9) << me_ 
+        << "branching candidate for x0x1: " << x0->getName()
+        << " = " << x0val << " " << x1->getName() << " = " << x1val 
+        << " " << bil->getY()->getName() << " = " << yval << " vio = " 
+        << fabs(x0val*x1val-yval) << std::endl;
+#endif
       }
       if (false==check) {
-        std::cout << std::setprecision(9) << x0->getName() 
+        logger_->MsgStream(LogError) << std::setprecision(9) << me_ 
+         << "both variables are at bounds, but we still want to branch on "
+         << "a bilinear constraint. " << x0->getName() 
          << " = " << x0val << " " << x1->getName() 
          << " = " << x1val << " " << bil->getY()->getName() 
          << " = " << yval  << " product = " << x0val*x1val << std::endl;
-        rel->write(std::cout);
       }
-#if DEBUG
-      assert (true==check); // If both variables are at bounds, the LinBil 
-                            // inequalities can not be violated.
-#endif
     }
   }
 }
@@ -518,7 +480,7 @@ LinearFunctionPtr QuadHandler::getNewSqLf_(VariablePtr x, VariablePtr y,
   LinearFunctionPtr lf = LinearFunctionPtr(); // NULL
   r = -ub*lb;
   assert (lb > -1e21 && ub < 1e21); // Can't approximate when unbounded
-  if (fabs(ub+lb) > eTol_) {
+  if (fabs(ub+lb) > aTol_) {
     lf = (LinearFunctionPtr) new LinearFunction();
     lf->addTerm(y, 1.);
     lf->addTerm(x, -1.*(ub+lb));
@@ -553,7 +515,7 @@ void QuadHandler::addCut_(VariablePtr x, VariablePtr y,
     ifcuts = true;
 #if SPEW
     logger_->MsgStream(LogDebug2) << me_ << "new cut added" << std::endl;
-    c->write(std::cout);
+    c->write(logger_->MsgStream(LogDebug2));
 #endif
   } else {
 #if SPEW
@@ -562,6 +524,15 @@ void QuadHandler::addCut_(VariablePtr x, VariablePtr y,
                                   << 2*xl*xval - yval - xl*xl << std::endl;
 #endif
   }
+}
+
+bool QuadHandler::isAtBnds_(ConstVariablePtr x, double xval)
+{
+  double lb = x->getLb();
+  double ub = x->getUb();
+  //double rtol = rTol_/10.0;
+  return(fabs(xval-lb) < aTol_ || fabs(xval-ub) < aTol_);
+         // fabs(xval-lb) < fabs(lb)*rtol || fabs(ub-xval) < fabs(ub)*rtol);
 }
 
 
@@ -580,18 +551,18 @@ bool QuadHandler::isFeasible(ConstSolutionPtr sol, RelaxationPtr , bool & )
     }
   }
 #if SPEW
-  logger_->MsgStream(LogDebug2) << me_ << "relaxation is secant feasible." 
+  logger_->MsgStream(LogDebug2) << me_ << "no branching candidates for y=x^2" 
                                 << std::endl;
 #endif
 
   for (LinBilSetIter it=x0x1Funs_.begin(); it != x0x1Funs_.end(); ++it) {
-    if ((*it)->isViolated(x, eTol_)) {
+    if ((*it)->isViolated(x)) {
       return false;
     }
   }
 
 #if SPEW
-  logger_->MsgStream(LogDebug2) << me_ << "relaxation is LinBil feasible." 
+  logger_->MsgStream(LogDebug2) << me_ << "no branching candidates for y=x1x2" 
                                 << std::endl;
 #endif
   return true;
@@ -736,17 +707,17 @@ bool QuadHandler::propSqrBnds_(LinSqrMapIter lx2, bool *changed)
   } 
 
   // other direction.
-  if (y->getUb()>eTol_) {
+  if (y->getUb()>aTol_) {
     ub = sqrt(y->getUb());
     lb = -ub;
     assert(y->getLb()>=0.0); // square of a number.
-    if (x->getLb() > -sqrt(y->getLb())+eTol_) {
+    if (x->getLb() > -sqrt(y->getLb())+aTol_) {
       lb = sqrt(y->getLb());
     }
     if (updatePBounds_(x, lb, ub, changed) < 0) {
       return true;
     } 
-  } else if (y->getUb()<-eTol_) {
+  } else if (y->getUb()<-aTol_) {
     return true;
   } else {
     if (updatePBounds_(x, 0.0, 0.0, changed) < 0) {
@@ -776,17 +747,17 @@ bool QuadHandler::propSqrBnds_(LinSqrMapIter lx2, RelaxationPtr rel,
   }
 
   // other direction.
-  if (y->getUb()>eTol_) {
+  if (y->getUb()>aTol_) {
     ub = sqrt(y->getUb());
     lb = -ub;
     assert(y->getLb()>=0.0);
-    if (x->getLb() > -sqrt(y->getLb())+eTol_ ) {
+    if (x->getLb() > -sqrt(y->getLb())+aTol_ ) {
       lb = sqrt(y->getLb());
     }
     if (updatePBounds_(x, lb, ub, rel, mod_rel, changed, p_mods, r_mods)<0) {
       return true; // infeasible
     }
-  } else if (x->getUb()<-eTol_) {
+  } else if (x->getUb()<-aTol_) {
     return true; // infeasible
   } else {
     if (updatePBounds_(x, 0.0, 0.0, rel, mod_rel, changed, p_mods, r_mods)<0) {
@@ -830,8 +801,8 @@ void QuadHandler::relax_(RelaxationPtr rel, bool *)
     (*it)->setCons(cons[0], cons[1], cons[2], cons[3]);
   }
 
-  std::cout << "Writing the relaxation after quadratic relaxation:\n";
-  rel->write(std::cout);
+  //std::cout << "Writing the relaxation after quadratic relaxation:\n";
+  //rel->write(std::cout);
   assert(0 == rel->checkConVars());
   return;
 }
@@ -859,88 +830,6 @@ void QuadHandler::relaxNodeFull(NodePtr, RelaxationPtr, bool *)
 void QuadHandler::relaxNodeInc(NodePtr, RelaxationPtr, bool *)
 {
   // do nothing. Presolve will take care of tightening bounds
-}
-
-
-void QuadHandler::removeFixed_()
-{
-  ObjectivePtr oPtr = p_->getObjective();
-  LinearFunctionPtr lf = (LinearFunctionPtr) new LinearFunction();
-  FunctionPtr f;
-  ConstraintConstIterator c_iter;
-  double c;
-
-  if (oPtr && oPtr->getFunctionType() == Quadratic) {
-    c = 0.;
-    f = oPtr->getFunction();
-    removeFixedFun_(f, lf, &c);
-    if (lf->getNumTerms()>0) {
-      lf = (LinearFunctionPtr) new LinearFunction();
-    }
-    if (fabs(c)>eTol_) {
-      p_->addToObj(c);
-    }
-  }
-
-  for (c_iter=p_->consBegin(); c_iter!=p_->consEnd(); ++c_iter) {
-    f = (*c_iter)->getFunction();
-    c = 0.;
-    if (f->getType()==Quadratic) {
-      removeFixedFun_(f, lf, &c);
-      if (lf->getNumTerms()>0) {
-        lf = (LinearFunctionPtr) new LinearFunction();
-      }
-      if (fabs(c)>eTol_) {
-        p_->addToCons(*c_iter, c);
-      }
-    }
-  }
-}
-
-
-void QuadHandler::removeFixedFun_(FunctionPtr f, LinearFunctionPtr lf2, 
-                                  double *c)
-{
-  QuadraticFunctionPtr qf,qf2;
-  LinearFunctionPtr lf;
-  bool new_lf = false;
-  ConstVariablePtr v1, v2;
-  double l1, l2, u1, u2;
-
-  qf = f->getQuadraticFunction();
-  lf = f->getLinearFunction();
-  if (!lf) {
-    new_lf = true;
-    lf = lf2;
-  }
-  qf2 = (QuadraticFunctionPtr) new QuadraticFunction();
-  *c  = 0;
-  for (VariablePairGroupConstIterator it=qf->begin(); it!=qf->end(); 
-      ++it) {
-    v1 = it->first.first;
-    v2 = it->first.second;
-    l1 = v1->getLb();
-    l2 = v2->getLb();
-    u1 = v1->getUb();
-    u2 = v2->getUb();
-    if (u1-l1 < eTol_ && u2-l2 < eTol_) {
-      // remove
-      *c += l1*l2*it->second;
-      qf2->addTerm(v1, v2, -1.*(it->second));
-    } else if (u1-l1 < eTol_) {
-      // remove and add linear term
-      lf->incTerm(v2, l1*(it->second));
-      qf2->addTerm(v1, v2, -1.*(it->second));
-    } else if (u2-l2 < eTol_) {
-      // remove and add linear term
-      lf->incTerm(v1, l2*(it->second));
-      qf2->addTerm(v1, v2, -1.*(it->second));
-    }
-  }
-  (*qf) += qf2;
-  if (new_lf==true && lf->getNumTerms()>0) {
-    f->add(lf); // lf is cloned and added.
-  }
 }
 
 
@@ -979,15 +868,15 @@ void QuadHandler::separate(ConstSolutionPtr sol, NodePtr , RelaxationPtr rel,
 int QuadHandler::updatePBounds_(VariablePtr v, double lb, double ub,
                                 bool *changed)
 {
-  if (ub < v->getLb() - eTol_ || lb > v->getUb() + eTol_) { 
+  if (ub < v->getLb() - aTol_ || lb > v->getUb() + aTol_) { 
     return -1;
   }
   
-  if (ub < v->getUb() - eTol_) {
+  if (ub < v->getUb() - aTol_) {
     p_->changeBound(v, Upper, ub);
     *changed = true;
   }
-  if (lb > v->getLb() + eTol_) {
+  if (lb > v->getLb() + aTol_) {
     p_->changeBound(v, Lower, lb);
     *changed = true;
   }
@@ -1004,11 +893,11 @@ int QuadHandler::updatePBounds_(VariablePtr v, double lb, double ub,
   VarBoundMod2Ptr b2mod;
   VarBoundModPtr bmod;
 
-  if (lb > v->getUb()+eTol_ || ub < v->getLb()-eTol_) {
+  if (lb > v->getUb()+aTol_ || ub < v->getLb()-aTol_) {
     return -1;
   }
 
-  if (lb > v->getLb()+eTol_ && ub < v->getUb()-eTol_) {
+  if (lb > v->getLb()+aTol_ && ub < v->getUb()-aTol_) {
     *changed = true;
     b2mod  = (VarBoundMod2Ptr) new VarBoundMod2(v, lb, ub);
     b2mod->applyToProblem(p_);
@@ -1020,7 +909,7 @@ int QuadHandler::updatePBounds_(VariablePtr v, double lb, double ub,
       b2mod->applyToProblem(rel);
       r_mods.push_back(b2mod);
     }
-  } else if (lb > v->getLb()+eTol_) {
+  } else if (lb > v->getLb()+aTol_) {
     *changed = true;
     bmod  = (VarBoundModPtr) new VarBoundMod(v, Lower, lb);
     bmod->applyToProblem(p_);
@@ -1032,7 +921,7 @@ int QuadHandler::updatePBounds_(VariablePtr v, double lb, double ub,
       bmod->applyToProblem(rel);
       r_mods.push_back(bmod);
     }
-  } else if (ub < v->getUb()-eTol_) {
+  } else if (ub < v->getUb()-aTol_) {
     bmod  = (VarBoundModPtr) new VarBoundMod(v, Upper, ub);
     bmod->applyToProblem(p_);
     p_mods.push_back(bmod);
@@ -1051,7 +940,6 @@ int QuadHandler::updatePBounds_(VariablePtr v, double lb, double ub,
 int QuadHandler::upBilCon_(LinBilPtr lx0x1, RelaxationPtr rel, ModVector
                            &r_mods)
 {
-  const double uptol = 1e-5;
   LinModsPtr   lmods;
   LinConModPtr lmod;
   LinearFunctionPtr lf;
@@ -1072,9 +960,9 @@ int QuadHandler::upBilCon_(LinBilPtr lx0x1, RelaxationPtr rel, ModVector
   lf = con->getLinearFunction();
   a0 = lf->getWeight(x0);
   a1 = lf->getWeight(x1);
-  if (a0*l0 + a1*l1 - l0*l1 < con->getUb() - uptol ||
-      a0*l0 + a1*u1 - l0*u1 < con->getUb() - uptol || 
-      a0*u0 + a1*l1 - u0*l1 < con->getUb() - uptol) {
+  if (a0*l0 + a1*l1 - l0*l1 < con->getUb() - aTol_ ||
+      a0*l0 + a1*u1 - l0*u1 < con->getUb() - aTol_ || 
+      a0*u0 + a1*l1 - u0*l1 < con->getUb() - aTol_) {
     lf = getNewBilLf_(x0, l0, u0, x1, l1, u1, y, 0, rhs);
     lmod = (LinConModPtr) new LinConMod(con, lf, -INFINITY, rhs);
     lmod->applyToProblem(rel);
@@ -1086,9 +974,9 @@ int QuadHandler::upBilCon_(LinBilPtr lx0x1, RelaxationPtr rel, ModVector
   lf = con->getLinearFunction();
   a0 = lf->getWeight(x0);
   a1 = lf->getWeight(x1);
-  if (a0*l0 + a1*u1 - l0*u1 < con->getUb() - uptol ||
-      a0*u0 + a1*l1 - u0*l1 < con->getUb() - uptol || 
-      a0*u0 + a1*u1 - u0*u1 < con->getUb() - uptol) {
+  if (a0*l0 + a1*u1 - l0*u1 < con->getUb() - aTol_ ||
+      a0*u0 + a1*l1 - u0*l1 < con->getUb() - aTol_ || 
+      a0*u0 + a1*u1 - u0*u1 < con->getUb() - aTol_) {
     lf = getNewBilLf_(x0, l0, u0, x1, l1, u1, y, 1, rhs);
     lmod = (LinConModPtr) new LinConMod(con, lf, -INFINITY, rhs);
     lmod->applyToProblem(rel);
@@ -1101,9 +989,9 @@ int QuadHandler::upBilCon_(LinBilPtr lx0x1, RelaxationPtr rel, ModVector
   lf = con->getLinearFunction();
   a0 = lf->getWeight(x0);
   a1 = lf->getWeight(x1);
-  if (a0*l0 + a1*l1 + l0*l1 < con->getUb() - uptol ||
-      a0*l0 + a1*u1 + l0*u1 < con->getUb() - uptol || 
-      a0*u0 + a1*u1 + u0*l1 < con->getUb() - uptol) {
+  if (a0*l0 + a1*l1 + l0*l1 < con->getUb() - aTol_ ||
+      a0*l0 + a1*u1 + l0*u1 < con->getUb() - aTol_ || 
+      a0*u0 + a1*u1 + u0*l1 < con->getUb() - aTol_) {
     lf = getNewBilLf_(x0, l0, u0, x1, l1, u1, y, 2, rhs);
     lmod = (LinConModPtr) new LinConMod(con, lf, -INFINITY, rhs);
     lmod->applyToProblem(rel);
@@ -1115,9 +1003,9 @@ int QuadHandler::upBilCon_(LinBilPtr lx0x1, RelaxationPtr rel, ModVector
   lf = con->getLinearFunction();
   a0 = lf->getWeight(x0);
   a1 = lf->getWeight(x1);
-  if (a0*l0 + a1*l1 + l0*l1 < con->getUb() - uptol ||
-      a0*u0 + a1*l1 + u0*l1 < con->getUb() - uptol || 
-      a0*u0 + a1*u1 + u0*u1 < con->getUb() - uptol) {
+  if (a0*l0 + a1*l1 + l0*l1 < con->getUb() - aTol_ ||
+      a0*u0 + a1*l1 + u0*l1 < con->getUb() - aTol_ || 
+      a0*u0 + a1*u1 + u0*u1 < con->getUb() - aTol_) {
     lf = getNewBilLf_(x0, l0, u0, x1, l1, u1, y, 3, rhs);
     lmod = (LinConModPtr) new LinConMod(con, lf, -INFINITY, rhs);
     lmod->applyToProblem(rel);
@@ -1130,7 +1018,6 @@ int QuadHandler::upBilCon_(LinBilPtr lx0x1, RelaxationPtr rel, ModVector
 int QuadHandler::upSqCon_(ConstraintPtr con, VariablePtr x, VariablePtr y, 
                           RelaxationPtr rel, ModVector &r_mods)
 {
-  const double uptol = 1e-5;
   LinearFunctionPtr lf = con->getLinearFunction();
   double a_x = lf->getWeight(x);
   double a_y = lf->getWeight(y);
@@ -1141,8 +1028,8 @@ int QuadHandler::upSqCon_(ConstraintPtr con, VariablePtr x, VariablePtr y,
 
   assert(fabs(a_y - 1.0) <= 1e-8);
   // y - (lb+ub)x <= -ub*lb
-  if ((lb*lb + a_x*lb < con->getUb() - uptol) ||
-      (ub*ub + a_x*ub < con->getUb() - uptol)) {
+  if ((lb*lb + a_x*lb < con->getUb() - aTol_) ||
+      (ub*ub + a_x*ub < con->getUb() - aTol_)) {
     lf = getNewSqLf_(x, y, x->getLb(), x->getUb(), rhs);
     lmod = (LinConModPtr) new LinConMod(con, lf, -INFINITY, rhs);
     lmod->applyToProblem(rel);
@@ -1175,7 +1062,9 @@ bool QuadHandler::varBndsFromCons_(bool *changed)
 // --------------------------------------------------------------------------
 
 LinBil::LinBil(VariablePtr x0, VariablePtr x1, VariablePtr y)
- : y_(y)
+ : aTol_(1e-5),
+   rTol_(1e-4),
+   y_(y)
 {
   if (x0->getIndex()>x1->getIndex()) {
     x0_ = x1;
@@ -1215,12 +1104,12 @@ bool Minotaur::CompareLinBil::operator()(LinBilPtr b0, LinBilPtr b1) const
 }
 
 
-bool LinBil::isViolated(const double *x, const double &tol) const
+bool LinBil::isViolated(const double *x) const
 {
 
   double xval = x[x0_->getIndex()] * x[x1_->getIndex()];
   double yval = x[y_->getIndex()];
-  if (fabs(xval - yval) > tol) {
+  if (fabs(xval - yval) > aTol_ && fabs(xval - yval) > fabs(yval)*rTol_) {
     return true;
   }
   return false;
@@ -1228,10 +1117,10 @@ bool LinBil::isViolated(const double *x, const double &tol) const
 
 
 bool LinBil::isViolated(const double x0val, const double x1val, 
-                        const double yval, const double tol) const
+                        const double yval) const
 {
   double xval = x1val*x0val;
-  if (fabs(xval - yval) > tol) {
+  if (fabs(xval - yval) > aTol_ && fabs(xval - yval) > fabs(yval)*rTol_) {
     return true;
   }
   return false;

@@ -77,6 +77,12 @@ public:
    */
   virtual void setDir(BranchDirection d) {prefDir_ = d;};
 
+  /**
+   * \brief Set the distance of the current solution from the down branch and
+   * the up branch.
+   */
+  void setDist(double ddist, double udist);
+
   /// Set the handler that created this candidate.
   virtual void setHandler(HandlerPtr h) { h_ = h; };
 
