@@ -256,7 +256,7 @@ void QuadHandler::getBranchingCandidates(RelaxationPtr rel,
       br_can = (BrVarCandPtr) new BrVarCand(x0, x0->getIndex(), ddist,
                                             udist);
       ret = cands.insert(br_can);
-      if (false == ret.second) { // does not already exist.
+      if (false == ret.second) { // already exists.
         br_can = *(ret.first);
         br_can->setDist(ddist+br_can->getDDist(), udist+br_can->getDDist());
       }
@@ -292,6 +292,7 @@ void QuadHandler::getBranchingCandidates(RelaxationPtr rel,
                                               udist); 
         ret = cands.insert(br_can);
         if (false == ret.second) { // already exists.
+          br_can = *(ret.first);
           br_can->setDist(ddist+br_can->getDDist(), udist+br_can->getUDist());
         }
       }
@@ -313,6 +314,7 @@ void QuadHandler::getBranchingCandidates(RelaxationPtr rel,
                                               udist); 
         ret = cands.insert(br_can);
         if (false == ret.second) { // already exists.
+          br_can = *(ret.first);
           br_can->setDist(ddist+br_can->getDDist(), udist+br_can->getUDist());
         }
 #if SPEW

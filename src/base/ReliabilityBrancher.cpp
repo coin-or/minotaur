@@ -74,11 +74,11 @@ ReliabilityBrancher::~ReliabilityBrancher()
 }
 
 
-BrCandPtr ReliabilityBrancher::findBestCandidate_(const Double objval, 
-                                                  Double cutoff, NodePtr node)
+BrCandPtr ReliabilityBrancher::findBestCandidate_(const double objval, 
+                                                  double cutoff, NodePtr node)
 {
-  Double best_score = -INFINITY;
-  Double score, change_up, change_down, maxchange;
+  double best_score = -INFINITY;
+  double score, change_up, change_down, maxchange;
   UInt cnt, maxcnt;
   EngineStatus status_up, status_down;
   BrCandPtr cand, best_cand;
@@ -163,7 +163,7 @@ Branches ReliabilityBrancher::findBranches(RelaxationPtr rel, NodePtr node,
 {
   Branches branches;
   BrCandPtr br_can = BrCandPtr(); //NULL
-  const Double *x = sol->getPrimal();
+  const double *x = sol->getPrimal();
 
   ++(stats_->calls);
   if (!init_) {
@@ -233,15 +233,16 @@ void ReliabilityBrancher::findCandidates_()
   VariablePtr v_ptr;
   VariableIterator v_iter, v_iter2, best_iter;
   VariableConstIterator cv_iter;
-  Int index;
+  int index;
   Bool is_inf = false;   // if true, then node can be pruned.
 
   BrVarCandSet cands;       // candidates from which to choose one.
   BrVarCandSet cands2;      // Temporary set.
   BrCandVector gencands;
-  Double s_wt = 1e-5;
-  Double i_wt = 1e-6;
-  Double score;
+  BrCandVector gencands2;   // Temporary vector.
+  double s_wt = 1e-5;
+  double i_wt = 1e-6;
+  double score;
 
   // first clear the list of candidates
   relCands_.clear();
@@ -249,16 +250,22 @@ void ReliabilityBrancher::findCandidates_()
 
   for (HandlerIterator h = handlers_.begin(); h != handlers_.end(); ++h) {
     // ask each handler to give some candidates
-    (*h)->getBranchingCandidates(rel_, x_, mods_, cands2, gencands, is_inf);
+    (*h)->getBranchingCandidates(rel_, x_, mods_, cands2, gencands2, is_inf);
     for (BrVarCandIter it = cands2.begin(); it != cands2.end(); ++it) {
       (*it)->setHandler(*h);
     }
+    for (BrCandVIter it = gencands2.begin(); it != gencands2.end(); ++it) {
+      (*it)->setHandler(*h);
+    }
     cands.insert(cands2.begin(), cands2.end());
+    gencands.insert(gencands.end(), gencands2.begin(), gencands2.end());
     if (is_inf) {
       relCands_.clear();
       unrelCands_.clear();
       cands2.clear();
       cands.clear();
+      gencands2.clear();
+      gencands.clear();
       status_ = PrunedByBrancher;
       return;
     } else if (mods_.size()>0) {
@@ -267,17 +274,18 @@ void ReliabilityBrancher::findCandidates_()
       unrelCands_.clear();
       cands2.clear();
       cands.clear();
+      gencands2.clear();
+      gencands.clear();
       return;
     }
     cands2.clear();
+    gencands2.clear();
   }
 
   // visit each candidate in and check if it has reliable pseudo costs.
   for (BrVarCandIter it=cands.begin(); it!=cands.end(); ++it) {
     index = (*it)->getPCostIndex();
-    if (index<0) {
-      relCands_.push_back(*it);
-    } else if ((minNodeDist_ > fabs(stats_->calls-lastStrBranched_[index])) ||
+    if ((minNodeDist_ > fabs(stats_->calls-lastStrBranched_[index])) ||
         (timesUp_[index] >= thresh_ && timesDown_[index] >= thresh_)) {
       relCands_.push_back(*it);
     } else {
@@ -287,6 +295,11 @@ void ReliabilityBrancher::findCandidates_()
       (*it)->setScore(score);
       unrelCands_.push_back(*it);
     }
+  }
+  // push all general candidates (that are not variables) as reliable
+  // candidates
+  for (BrCandVIter it=gencands.begin(); it!=gencands.end(); ++it) {
+    relCands_.push_back(*it);
   }
 
   // sort unreliable candidates in the increasing order of their reliability.
@@ -327,10 +340,10 @@ std::string ReliabilityBrancher::getName() const
 }
 
 
-void ReliabilityBrancher::getPCScore_(BrCandPtr cand, Double *ch_down, 
-                                      Double *ch_up, Double *score) 
+void ReliabilityBrancher::getPCScore_(BrCandPtr cand, double *ch_down, 
+                                      double *ch_up, double *score) 
 {
-  Int index = cand->getPCostIndex();
+  int index = cand->getPCostIndex();
   if (index>-1) {
     *ch_down   = cand->getDDist()*pseudoDown_[index];
     *ch_up     = cand->getUDist()*pseudoUp_[index];
@@ -343,8 +356,8 @@ void ReliabilityBrancher::getPCScore_(BrCandPtr cand, Double *ch_down,
 }
 
 
-Double ReliabilityBrancher::getScore_(const Double & up_score, 
-    const Double & down_score)
+double ReliabilityBrancher::getScore_(const double & up_score, 
+                                      const double & down_score)
 {
   if (up_score>down_score) {
     return down_score*0.8 + up_score*0.2;
@@ -363,10 +376,10 @@ UInt ReliabilityBrancher::getThresh() const
 
 void ReliabilityBrancher::initialize(RelaxationPtr rel)
 {
-  Int n = rel->getNumVars();
+  int n = rel->getNumVars();
   // initialize to zero.
-  pseudoUp_ = std::vector<Double>(n,0.); 
-  pseudoDown_ = std::vector<Double>(n,0.); 
+  pseudoUp_ = DoubleVector(n,0.); 
+  pseudoDown_ = DoubleVector(n,0.); 
   lastStrBranched_ = UIntVector(n,20000);
   timesUp_ = std::vector<UInt>(n,0); 
   timesDown_ = std::vector<UInt>(n,0); 
@@ -414,8 +427,8 @@ void ReliabilityBrancher::setThresh(UInt k)
 }
 
 
-Bool ReliabilityBrancher::shouldPrune_(const Double &chcutoff, 
-                                       const Double &change,
+Bool ReliabilityBrancher::shouldPrune_(const double &chcutoff, 
+                                       const double &change,
                                        const EngineStatus & status,
                                        Bool *is_rel)
 {
@@ -455,8 +468,8 @@ Bool ReliabilityBrancher::shouldPrune_(const Double &chcutoff,
 }
 
 
-void ReliabilityBrancher::strongBranch_(BrCandPtr cand, Double & obj_up, 
-                                        Double & obj_down, 
+void ReliabilityBrancher::strongBranch_(BrCandPtr cand, double & obj_up, 
+                                        double & obj_down, 
                                         EngineStatus & status_up, 
                                         EngineStatus & status_down)
 {
@@ -495,15 +508,15 @@ void ReliabilityBrancher::strongBranch_(BrCandPtr cand, Double & obj_up,
 
 void ReliabilityBrancher::updateAfterLP(NodePtr node, ConstSolutionPtr sol)
 {
-  const Double *x = sol->getPrimal();
+  const double *x = sol->getPrimal();
   NodePtr parent = node->getParent();
   if (parent) {
     BrCandPtr cand = node->getBranch()->getBrCand();
-    Int index = cand->getPCostIndex();
+    int index = cand->getPCostIndex();
     if (index>-1) {
-      Double oldval = node->getBranch()->getActivity();
-      Double newval = x[index];
-      Double cost = (node->getLb()-parent->getLb()) / 
+      double oldval = node->getBranch()->getActivity();
+      double newval = x[index];
+      double cost = (node->getLb()-parent->getLb()) / 
         (fabs(newval - oldval)+eTol_);
       if (cost < 0. || std::isinf(cost) || std::isnan(cost)) {
         cost = 0.;
@@ -518,18 +531,18 @@ void ReliabilityBrancher::updateAfterLP(NodePtr node, ConstSolutionPtr sol)
 }
 
 
-void ReliabilityBrancher::updatePCost_(const Int & i, const Double & newCost, 
-    DoubleVector & cost, UIntVector & count)
+void ReliabilityBrancher::updatePCost_(const int & i, const double & new_cost, 
+                                       DoubleVector & cost, UIntVector & count)
 {
-  cost[i]   = (cost[i]*count[i] + newCost)/(count[i]+1);
+  cost[i]   = (cost[i]*count[i] + new_cost)/(count[i]+1);
   count[i] += 1;
 }
 
 
 void ReliabilityBrancher::useStrongBranchInfo_(BrCandPtr cand, 
-                                               const Double &chcutoff, 
-                                               Double &change_up, 
-                                               Double &change_down,
+                                               const double &chcutoff, 
+                                               double &change_up, 
+                                               double &change_down,
                                                const EngineStatus & status_up,
                                                const EngineStatus & status_down)
 {
@@ -537,7 +550,7 @@ void ReliabilityBrancher::useStrongBranchInfo_(BrCandPtr cand,
   Bool should_prune_up    = false;
   Bool should_prune_down  = false;
   Bool is_rel = true;
-  Double cost;
+  double cost;
 
   should_prune_down = shouldPrune_(chcutoff, change_down, status_down, &is_rel);
   should_prune_up   = shouldPrune_(chcutoff, change_up, status_up, &is_rel);
@@ -566,8 +579,8 @@ void ReliabilityBrancher::useStrongBranchInfo_(BrCandPtr cand,
 }
 
 
-void ReliabilityBrancher::writeScore_(BrCandPtr cand, Double score, 
-    Double change_up, Double change_down)
+void ReliabilityBrancher::writeScore_(BrCandPtr cand, double score, 
+                                      double change_up, double change_down)
 {
   logger_->MsgStream(LogDebug2) << me_ << "candidate: " << cand->getName() 
                                 << " down change = " << change_down

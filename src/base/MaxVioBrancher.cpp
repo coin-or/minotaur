@@ -28,15 +28,16 @@
 #include "Solution.h"
 #include "Timer.h"
 
-#define SPEW 1
+// #define SPEW 1
 
 using namespace Minotaur;
 
 const std::string MaxVioBrancher::me_ = "MaxVio brancher: "; 
 
 MaxVioBrancher::MaxVioBrancher(EnvPtr env, HandlerVector & handlers) 
-: rel_(RelaxationPtr()),  // NULL
-  handlers_(handlers)     // Create a copy, the vector is not too big
+: handlers_(handlers),    // Create a copy, the vector is not too big
+  rel_(RelaxationPtr())   // NULL
+  
 {
   timer_ = env->getNewTimer();
   logger_ = (LoggerPtr) new Logger((LogLevel) env->getOptions()->
@@ -59,11 +60,12 @@ Branches MaxVioBrancher::findBranches(RelaxationPtr rel, NodePtr ,
                                       ConstSolutionPtr sol,
                                       SolutionPoolPtr s_pool, 
                                       BrancherStatus & br_status,
-                                      ModVector &) 
+                                      ModVector &mods) 
 {
   Branches branches;
   BrCandPtr br_can = BrCandPtr(); //NULL
   const double *x = sol->getPrimal();
+  bool should_prune = false;
 
   timer_->start();
   x_.resize(rel->getNumVars());
@@ -75,11 +77,16 @@ Branches MaxVioBrancher::findBranches(RelaxationPtr rel, NodePtr ,
   rel_ = rel;
   br_status = NotModifiedByBrancher;
 
-  findCandidates_();
-  br_can = findBestCandidate_();
+  findCandidates_(mods, should_prune);
+  if (true==should_prune) {
+    br_status = PrunedByBrancher;
+  } else {
+    br_can = findBestCandidate_();
+  }
 
-  if (br_can) {
-
+  if (mods.size()>0) {
+    br_status = ModifiedByBrancher;
+  } else if (br_can) {
     branches = br_can->getHandler()->getBranches(br_can, x_, rel_, s_pool); 
     for (BranchConstIterator br_iter=branches->begin(); 
          br_iter!=branches->end(); ++br_iter) {
@@ -91,7 +98,7 @@ Branches MaxVioBrancher::findBranches(RelaxationPtr rel, NodePtr ,
                                << " Handler: "
                                << br_can->getHandler()->getName() << std::endl;
 #endif
-  } else {
+  } else if (br_status != PrunedByBrancher) {
     assert(!"problem finding candidate in MaxVioBrancher");
   }
   stats_->time += timer_->query();
@@ -100,22 +107,34 @@ Branches MaxVioBrancher::findBranches(RelaxationPtr rel, NodePtr ,
 }
 
 
-void MaxVioBrancher::findCandidates_()
+void MaxVioBrancher::findCandidates_(ModVector &mods, bool &should_prune)
 {
-  BrVarCandSet cands2;   // Temporary set.
-  BrCandVector gencands;
-  ModVector mods;        // handlers may ask to modify the problem.
-  bool is_inf = false;
+  BrVarCandSet cands2;    // Temporary set.
+  BrCandVector gencands2; // Temporary set.
+  BrCandPtr br_can;
+  std::pair<BrVarCandIter, bool> ret;
 
+  should_prune = false;
   cands_.clear();
+  gencands_.clear();
   for (HandlerIterator h = handlers_.begin(); h != handlers_.end(); ++h) {
     // ask each handler to give some candidates
-    (*h)->getBranchingCandidates(rel_, x_, mods, cands2, gencands, is_inf);
+    (*h)->getBranchingCandidates(rel_, x_, mods, cands2, gencands2, should_prune);
+    if (should_prune) {
+      break;
+    }
     for (BrVarCandIter it = cands2.begin(); it != cands2.end(); ++it) {
       (*it)->setHandler(*h);
+      ret = cands_.insert(*it);
+      if (false == ret.second) { // already exists.
+        br_can = *(ret.first);
+        br_can->setDist((*it)->getDDist()+br_can->getDDist(),
+                        (*it)->getDDist()+br_can->getUDist());
+      }
     }
-    cands_.insert(cands2.begin(), cands2.end());
+    gencands_.insert(gencands_.end(), gencands2.begin(), gencands2.end());
     cands2.clear();
+    gencands2.clear();
   }
 
 #if SPEW
@@ -138,6 +157,14 @@ BrCandPtr MaxVioBrancher::findBestCandidate_()
   double cand_score;
 
   for (BrVarCandIter it = cands_.begin(); it != cands_.end(); ++it) {
+    cand_score = std::min((*it)->getDDist(),(*it)->getUDist());
+    if (cand_score > best_score) {
+      best_score = cand_score;
+      best_cand = (*it);
+    }
+  }
+
+  for (BrCandVIter it = gencands_.begin(); it != gencands_.end(); ++it) {
     cand_score = std::min((*it)->getDDist(),(*it)->getUDist());
     if (cand_score > best_score) {
       best_score = cand_score;

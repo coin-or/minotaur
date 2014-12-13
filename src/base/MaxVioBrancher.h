@@ -50,37 +50,36 @@ namespace Minotaur {
       std::string getName() const;
 
     private:
+      /// Set of candidates (variables for branching).
+      BrVarCandSet cands_; 
+
+      /// Vector of candidates (general candidates for branching).
+      BrCandVector gencands_;
+
+      /**
+       * \brief Handlers that will be used to find candidates and also the
+       * relaxations after branching.
+       */
+      HandlerVector handlers_;
+
       /// Name
       const static std::string me_; 
 
       /// The problem that is being solved at this node.
       RelaxationPtr rel_;
 
-      DoubleVector x_;
-
-      /**
-       * Handlers that will be used to find candidates and the relaxations
-       * after branching.
-       */
-      HandlerVector handlers_;
+      /// Statistics.
+      MaxVioBrStats * stats_;
 
       /// Timer
       Timer *timer_;
 
-      /// Statistics.
-      MaxVioBrStats * stats_;
+      DoubleVector x_;
 
-      /// Set of candidates.
-      BrVarCandSet cands_; 
+      /// Fills up the set of candidates in the cands_ array. 
+      void findCandidates_(ModVector &mods, bool &should_prune);
 
-      /**
-       * Fills up the set of candidates in the cands_ array. 
-       */
-      void findCandidates_();
-
-      /**
-       * Returns the candidate that was violated maximally.
-       */
+      /// Returns the candidate that was violated maximally.
       BrCandPtr findBestCandidate_();
 
   };
