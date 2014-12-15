@@ -25,13 +25,14 @@
 using namespace Minotaur;
 
 
-LinConMod::LinConMod(ConstraintPtr con, LinearFunctionPtr new_lf, Double new_lb, Double new_ub)
+LinConMod::LinConMod(ConstraintPtr con, LinearFunctionPtr new_lf,
+                     double new_lb, double new_ub)
   : con_(con),       // NULL
     newLf_(new_lf),   // NULL
     newLb_(new_lb),
     newUb_(new_ub)
 {
-  oldLf_  = con->getLinearFunction();
+  oldLf_ = con->getLinearFunction();
   oldUb_ = con->getUb();
   oldLb_ = con->getLb();
 }

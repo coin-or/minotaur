@@ -1011,7 +1011,7 @@ int QuadHandler::upBilCon_(LinBilPtr lx0x1, RelaxationPtr rel, ModVector
   a1 = lf->getWeight(x1);
   if (a0*l0 + a1*l1 + l0*l1 < con->getUb() - aTol_ ||
       a0*l0 + a1*u1 + l0*u1 < con->getUb() - aTol_ || 
-      a0*u0 + a1*u1 + u0*l1 < con->getUb() - aTol_) {
+      a0*u0 + a1*u1 + u0*u1 < con->getUb() - aTol_) {
     lf = getNewBilLf_(x0, l0, u0, x1, l1, u1, y, 2, rhs);
     lmod = (LinConModPtr) new LinConMod(con, lf, -INFINITY, rhs);
     lmod->applyToProblem(rel);

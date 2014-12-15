@@ -37,7 +37,8 @@ typedef boost::shared_ptr<LinearFunction> LinearFunctionPtr;
 class LinConMod : public Modification {
 public:
   /// Constructor.
-  LinConMod(ConstraintPtr con, LinearFunctionPtr new_lf, Double new_ub, Double new_lb);
+  LinConMod(ConstraintPtr con, LinearFunctionPtr new_lf, double new_ub,
+            double new_lb);
 
   /// Destroy.
   ~LinConMod();
@@ -67,19 +68,19 @@ private:
   LinearFunctionPtr newLf_;
 
   /// New constraint lower bound
-  Double newLb_;
+  double newLb_;
 
   /// New constraint upper bound.
-  Double newUb_;
+  double newUb_;
 
   /// Old linear function.
   LinearFunctionPtr oldLf_;
 
   /// Old constraint lower bound
-  Double oldLb_;
+  double oldLb_;
 
   /// Old constraint upper bound.
-  Double oldUb_;
+  double oldUb_;
 
 };   
 }
