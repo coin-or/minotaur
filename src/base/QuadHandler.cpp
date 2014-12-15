@@ -332,6 +332,7 @@ void QuadHandler::getBranchingCandidates(RelaxationPtr rel,
          << " = " << x0val << " " << x1->getName() 
          << " = " << x1val << " " << bil->getY()->getName() 
          << " = " << yval  << " product = " << x0val*x1val << std::endl;
+        rel->write(std::cout);
       }
     }
   }
@@ -1022,13 +1023,12 @@ int QuadHandler::upSqCon_(ConstraintPtr con, VariablePtr x, VariablePtr y,
 {
   LinearFunctionPtr lf = con->getLinearFunction();
   double a_x = lf->getWeight(x);
-  double a_y = lf->getWeight(y);
   double lb = x->getLb();
   double ub = x->getUb();
   LinConModPtr lmod;
   double rhs;
 
-  assert(fabs(a_y - 1.0) <= 1e-8);
+  assert(fabs(lf->getWeight(y) - 1.0) <= 1e-8);
   // y - (lb+ub)x <= -ub*lb
   if ((lb*lb + a_x*lb < con->getUb() - aTol_) ||
       (ub*ub + a_x*ub < con->getUb() - aTol_)) {

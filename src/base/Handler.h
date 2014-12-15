@@ -150,7 +150,7 @@ public:
    * associated variable in the original problem.   
    * 
    */
-  virtual Bool findOriginalVariable(ConstVariablePtr, ConstVariablePtr &) const
+  virtual bool findOriginalVariable(ConstVariablePtr, ConstVariablePtr &) const
   {return false;}
 
   /**
@@ -164,13 +164,13 @@ public:
    * \param[in] sol The solution of the relaxation whose feasibility we
    * want to test.
    * \param[in] rel The relaxation.
-   * \param[out] isInfeasible True if the relaxation is infeasible and we
+   * \param[out] is_inf True if the relaxation is infeasible and we
    * can prune the node associated.
    * \return True if sol is feasible for constraints/objective asociated
    * with this handler. False if sol is not feasible.
    */
-  virtual Bool isFeasible(ConstSolutionPtr sol, RelaxationPtr rel,
-                          Bool & isInfeasible) = 0;
+  virtual bool isFeasible(ConstSolutionPtr sol, RelaxationPtr rel,
+                          bool &is_inf) = 0;
 
   /**
    * \brief Return true if this handler is needed for the problem.
@@ -178,7 +178,7 @@ public:
    * It is useful to know if a handler is required or not. For example, a
    * handler may be deleted if it is not needed.
    */
-  virtual Bool isNeeded() { return ! cons_.empty(); }
+  virtual bool isNeeded() { return ! cons_.empty(); }
 
   /**
    * \brief Initial presolve.
@@ -194,7 +194,7 @@ public:
    * \param[out] changed True if the presolve modified the problem.
    * \return status of presolve.
    */
-  virtual SolveStatus presolve(PreModQ *pre_mods, Bool *changed) = 0;
+  virtual SolveStatus presolve(PreModQ *pre_mods, bool *changed) = 0;
 
   /**
    * \brief Presolve the problem and its relaxation at a node.
@@ -217,7 +217,7 @@ public:
    * certain algorithms.
    * \return true if Node can be pruned because infeasibility is detected.
    */
-  virtual Bool presolveNode(RelaxationPtr rel, NodePtr node,
+  virtual bool presolveNode(RelaxationPtr rel, NodePtr node,
                             SolutionPoolPtr s_pool, ModVector &p_mods,
                             ModVector &r_mods) = 0;
       
@@ -232,7 +232,7 @@ public:
    * \param[out] is_inf is true if the handler finds that the
    * problem is infeasible.
    */
-  virtual void relaxInitFull(RelaxationPtr rel, Bool *is_inf) = 0 ;
+  virtual void relaxInitFull(RelaxationPtr rel, bool *is_inf) = 0 ;
 
   /**
    * \brief Create root relaxation if doing incremental node relaxations.
@@ -245,7 +245,7 @@ public:
    * \param[out] isInfeasible is true if the handler finds that the
    * problem is infeasible.
    */
-  virtual void relaxInitInc(RelaxationPtr rel, Bool *is_inf) = 0 ;
+  virtual void relaxInitInc(RelaxationPtr rel, bool *is_inf) = 0 ;
 
   /**
    * \brief Create a relaxation for a node, building from scratch.
@@ -259,9 +259,9 @@ public:
    * \param[in] RelaxationPtr rel is the relaxation that is being
    * constructed. Do not allocate or re-allocate space for it. Just add
    * new variables or constraints to it.
-   * \param[out] Bool is_inf is true if the node can be pruned.
+   * \param[out] bool is_inf is true if the node can be pruned.
    */
-  virtual void relaxNodeFull(NodePtr node, RelaxationPtr rel, Bool *is_inf) = 0;
+  virtual void relaxNodeFull(NodePtr node, RelaxationPtr rel, bool *is_inf) = 0;
 
    /**
     * \brief Create an incremental relaxation for a node.
@@ -274,9 +274,9 @@ public:
     * \param[in] RelaxationPtr rel is the relaxation that is being
     * constructed. Do not allocate or re-allocate space for it. Just add
     * new variables or constraints to it.
-    * \param[out] Bool isInf is true if the node can be pruned.
+    * \param[out] bool isInf is true if the node can be pruned.
     */
-  virtual void relaxNodeInc(NodePtr node, RelaxationPtr rel, Bool *is_inf) = 0;
+  virtual void relaxNodeInc(NodePtr node, RelaxationPtr rel, bool *is_inf) = 0;
 
   /**
    * \brief add cuts to separate a given point.
@@ -293,7 +293,7 @@ public:
    */
   virtual void separate(ConstSolutionPtr sol, NodePtr node, 
                         RelaxationPtr rel, CutManager *cutman,
-                        SolutionPoolPtr s_pool, Bool *sol_found,
+                        SolutionPoolPtr s_pool, bool *sol_found,
                         SeparationStatus *status) = 0;
 
   /**

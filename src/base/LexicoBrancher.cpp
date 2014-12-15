@@ -77,11 +77,13 @@ Branches LexicoBrancher::findBranches(RelaxationPtr rel, NodePtr ,
 {
   Branches branches;
   DoubleVector x(rel->getNumVars());
-  BrVarCandSet cands;      // Temporary set.
-  BrCandVector gencands;      // Temporary set.
+  BrVarCandSet cands;
+  BrCandVector gencands;
+  BrVarCandSet cands2;         // Temporary set.
+  BrCandVector gencands2;      // Temporary set.
   BrCandPtr best_can = BrCandPtr(); // NULL
   ModVector mods;        // handlers may ask to modify the problem.
-  Bool is_inf = false;
+  bool is_inf = false;
 
   timer_->start();
   std::copy(sol->getPrimal(), sol->getPrimal()+rel->getNumVars(), x.begin());
@@ -92,16 +94,40 @@ Branches LexicoBrancher::findBranches(RelaxationPtr rel, NodePtr ,
 
   for (HandlerIterator h = handlers_.begin(); h != handlers_.end(); ++h) {
     // ask each handler to give some candidates
-    (*h)->getBranchingCandidates(rel, x, mods, cands, gencands, is_inf);
-    if (cands.size()>0) {
-      best_can = *(cands.begin());
-      best_can->setHandler(*h);
-      best_can->setDir(DownBranch);
-      break;
+    (*h)->getBranchingCandidates(rel, x, mods, cands2, gencands2, is_inf);
+    for (BrVarCandIter it = cands2.begin(); it != cands2.end(); ++it) {
+      (*it)->setHandler(*h);
     }
+    for (BrCandVIter it = gencands2.begin(); it != gencands2.end(); ++it) {
+      (*it)->setHandler(*h);
+    }
+    cands.insert(cands2.begin(), cands2.end());
+    gencands.insert(gencands.end(), gencands2.begin(), gencands2.end());
+    cands2.clear();
+    gencands2.clear();
+    if (is_inf) {
+      cands.clear();
+      gencands.clear();
+      br_status = PrunedByBrancher;
+      return branches;
+    } 
+  }
+
+  if (mods.size()>0) {
+      cands.clear();
+      gencands.clear();
+      br_status = ModifiedByBrancher;
+      return branches;
+  }
+
+  if (cands.size()>0) {
+    best_can = *(cands.begin());
+  } else if (gencands.size()>0) {
+    best_can = *(cands.begin());
   }
 
   if (best_can) {
+    best_can->setDir(DownBranch);
     branches = best_can->getHandler()->getBranches(best_can, x, rel, s_pool); 
 #if SPEW
     logger_->MsgStream(LogDebug) << me_ << "best candidate = "

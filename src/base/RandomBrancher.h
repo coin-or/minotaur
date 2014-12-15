@@ -68,9 +68,6 @@ namespace Minotaur {
       /// Statistics.
       RandomBrStats *stats_;
 
-      /// Status of problem after using this brancher
-      BrancherStatus status_;
-
       /// Seed to random number generator
       UInt seed_;
 
