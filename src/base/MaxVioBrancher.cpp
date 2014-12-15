@@ -155,9 +155,12 @@ BrCandPtr MaxVioBrancher::findBestCandidate_()
   BrCandPtr best_cand = BrCandPtr(); // NULL
   double best_score = -INFINITY;
   double cand_score;
+  double lmin = 0.8;
+  double lmax = 0.2;
 
   for (BrVarCandIter it = cands_.begin(); it != cands_.end(); ++it) {
-    cand_score = std::min((*it)->getDDist(),(*it)->getUDist());
+    cand_score = lmin*std::min((*it)->getDDist(),(*it)->getUDist()) + 
+                 lmax*std::max((*it)->getDDist(),(*it)->getUDist());
     if (cand_score > best_score) {
       best_score = cand_score;
       best_cand = (*it);
@@ -165,7 +168,8 @@ BrCandPtr MaxVioBrancher::findBestCandidate_()
   }
 
   for (BrCandVIter it = gencands_.begin(); it != gencands_.end(); ++it) {
-    cand_score = std::min((*it)->getDDist(),(*it)->getUDist());
+    cand_score = lmin*std::min((*it)->getDDist(),(*it)->getUDist()) + 
+                 lmax*std::max((*it)->getDDist(),(*it)->getUDist());
     if (cand_score > best_score) {
       best_score = cand_score;
       best_cand = (*it);

@@ -542,6 +542,9 @@ OsiSolverInterface* OsiLPEngine::newSolver_(OsiLPEngineName ename)
     si = new OsiClpSolverInterface();
     si->setHintParam(OsiDoReducePrint);
     si->messageHandler()->setLogLevel(0); 
+#else
+    logger_->ErrStream()
+      << "Minotaur is not compiled with OsiClp!" << std::endl;
 #endif
     break;
   case (OsiCpxEngine):

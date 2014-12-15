@@ -80,7 +80,7 @@ Branches RandomBrancher::findBranches(RelaxationPtr rel, NodePtr ,
                                       ConstSolutionPtr sol,
                                       SolutionPoolPtr s_pool,
                                       BrancherStatus & br_status,
-                                      ModVector &) 
+                                      ModVector &mods) 
 {
   Branches branches;
   DoubleVector x(rel->getNumVars());
@@ -89,8 +89,7 @@ Branches RandomBrancher::findBranches(RelaxationPtr rel, NodePtr ,
   BrCandVector gencands;
   BrCandVector gencands2;  // temporary set.
   BrCandPtr best_can = BrCandPtr(); // NULL
-  ModVector mods;        // handlers may ask to modify the problem.
-  Bool is_inf = false;
+  bool is_inf = false;
 
   timer_->start();
   std::copy(sol->getPrimal(), sol->getPrimal()+rel->getNumVars(), x.begin());

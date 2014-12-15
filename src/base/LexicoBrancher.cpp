@@ -73,16 +73,16 @@ LexicoBrancher::~LexicoBrancher()
 Branches LexicoBrancher::findBranches(RelaxationPtr rel, NodePtr , 
                                       ConstSolutionPtr sol,
                                       SolutionPoolPtr s_pool,
-                                      BrancherStatus & br_status, ModVector &) 
+                                      BrancherStatus &br_status,
+                                      ModVector &mods) 
 {
   Branches branches;
   DoubleVector x(rel->getNumVars());
   BrVarCandSet cands;
   BrCandVector gencands;
-  BrVarCandSet cands2;         // Temporary set.
-  BrCandVector gencands2;      // Temporary set.
+  BrVarCandSet cands2;              // Temporary set.
+  BrCandVector gencands2;           // Temporary set.
   BrCandPtr best_can = BrCandPtr(); // NULL
-  ModVector mods;        // handlers may ask to modify the problem.
   bool is_inf = false;
 
   timer_->start();

@@ -326,13 +326,21 @@ void QuadHandler::getBranchingCandidates(RelaxationPtr rel,
 #endif
       }
       if (false==check) {
-        logger_->MsgStream(LogError) << std::setprecision(9) << me_ 
+        int err;
+        logger_->MsgStream(LogError) << std::setprecision(15) << me_ 
          << "both variables are at bounds, but we still want to branch on "
          << "a bilinear constraint. " << x0->getName() 
          << " = " << x0val << " " << x1->getName() 
          << " = " << x1val << " " << bil->getY()->getName() 
          << " = " << yval  << " product = " << x0val*x1val << std::endl;
-        rel->write(std::cout);
+        std::cout << bil->getC0()->getActivity(&(x[0]), &err) << " " ;
+        bil->getC0()->write(std::cout); 
+        std::cout << bil->getC1()->getActivity(&(x[0]), &err) << " " ;
+        bil->getC1()->write(std::cout);
+        std::cout << bil->getC2()->getActivity(&(x[0]), &err) << " " ;
+        bil->getC2()->write(std::cout);
+        std::cout << bil->getC3()->getActivity(&(x[0]), &err) << " " ;
+        bil->getC3()->write(std::cout);
       }
     }
   }
