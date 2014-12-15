@@ -8,6 +8,7 @@
  * \file NLPMultiStart.h
  * \brief Define a derived class from class Heuristic for multistart heuristic.
  * \author Jayash Koshal, Argonne National Laboratory
+ * \author A. Mahajan, IIT Bombay
  * 
  * Defines the base class Heuristic. 
  */
@@ -31,9 +32,9 @@ namespace Minotaur {
     UInt numInfeas;
     UInt numImprove;
     UInt numBadstatus;
-    Double time;
+    double time;
     UInt iterations;
-    Double bestObjValue;
+    double bestObjValue;
   };
 
 
@@ -67,7 +68,7 @@ namespace Minotaur {
       /** bound on the distance. If radius of the ball is less than this
        * number then radius = distBound_
        */
-      Double distBound_;
+      double distBound_;
 
       /// Engine being used to solve problem.
       EnginePtr e_;
@@ -82,10 +83,10 @@ namespace Minotaur {
       ProblemPtr p_;
 
       /// random search direction 
-      Double *random_;
+      double *random_;
 
       /// Statistics for Multistart heuristic
-      MSHeurStats* stats_;
+      MSHeurStats stats_;
 
       /** 
        * \brief New starting point construction.
@@ -99,8 +100,7 @@ namespace Minotaur {
        * \param[in] rho The amplification factor
        * \param]in] vars Number of variables
        */
-      void constructInitial_(Double* Pointa, const Double* Pointb, 
-          Double rho, UInt vars);
+      void constructInitial_(double* a, const double* b, double rho, UInt vars);
       
   };
 

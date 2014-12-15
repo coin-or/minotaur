@@ -68,7 +68,7 @@ FeasibilityPump::FeasibilityPump(EnvPtr env, ProblemPtr p, EnginePtr e)
     
   // initialize the logger pointer
   logger_ = (LoggerPtr) new Logger((LogLevel) env_->getOptions()->
-     findInt("FPump_log_level")->getValue());
+     findInt("heur_log_level")->getValue());
   
   // statistics for Feasibilty Pump heuristic
   stats_                    = new FeasPumpStats();

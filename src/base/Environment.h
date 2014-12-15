@@ -50,7 +50,7 @@ namespace Minotaur {
        * \param[out] err 0 if no error occured, positive otherwise.
        * \return The time used so far.
        */
-      Double getTime(Int &err);
+      double getTime(int &err);
 
       /**
        * Get the global timer.
@@ -64,7 +64,7 @@ namespace Minotaur {
       std::string getVersion();
 
       /// Read the options using a char array that has 'argc' words in it.
-      void readOptions(Int argc, char **argv);
+      void readOptions(int argc, char **argv);
 
       /// Read options from a string.
       void readOptions(const std::string &str);
@@ -75,14 +75,14 @@ namespace Minotaur {
        *
        * \param[out] err 0 if no error occured, positive otherwise.
        */
-      void startTimer(Int &err);
+      void startTimer(int &err);
       
       /**
        * \brief Stop the 'global' timer.
        *
        * \param[out] err 0 if no error occured, positive otherwise.
        */
-      void stopTimer(Int &err);
+      void stopTimer(int &err);
 
       /** 
        * Write the full information about the version number and how Minotaur
@@ -128,7 +128,7 @@ namespace Minotaur {
        * "Y", "YES", "1", or their lower case equivalents). Returns false
        * otherwise.
        */
-      Bool getBoolValue_(const std::string & str);
+      bool getBoolValue_(const std::string & str);
 
       /**
        * Reach options from config file and increment the number of

@@ -26,6 +26,7 @@
 #include "MaxVioBrancher.h"
 #include "NodeIncRelaxer.h"
 #include "NLPEngine.h"
+#include "NLPMultiStart.h"
 #include "NlPresHandler.h"
 #include "Objective.h"
 #include "Option.h"
@@ -49,6 +50,7 @@ BranchAndBound *createBab (EnvPtr env, ProblemPtr p, EnginePtr e,
 PresolverPtr createPres(EnvPtr env, ProblemPtr p, Size_t ndefs, 
                         HandlerVector &handlers);
 EnginePtr getEngine(EnvPtr env);
+NLPEnginePtr getNLPEngine(EnvPtr env);
 void show_help();
 int transform(EnvPtr env, ProblemPtr p, ProblemPtr &newp,
               HandlerVector &handlers);
@@ -95,6 +97,7 @@ int main(int argc, char** argv)
   options->findBool("presolve")->setValue(true);
   options->findBool("nl_presolve")->setValue(true);
   options->findBool("lin_presolve")->setValue(true);
+  options->findBool("msheur")->setValue(true);
   options->findString("brancher")->setValue("maxvio");
   env->readOptions(argc, argv);
 
@@ -236,12 +239,25 @@ EnginePtr getEngine(EnvPtr env)
   EngineFactory *efac = new EngineFactory(env);
   EnginePtr e = EnginePtr(); // NULL
   e = efac->getLPEngine();
-  if (e) {
-    delete efac;
-    return e;
+  if (!e) {
+    std::cout << "Cannot find an LP engine. Cannot proceed!" << std::endl;
   } 
 
-  std::cout << "Cannot find an LP engine. Cannot proceed!" << std::endl;
+  delete efac;
+  return e;
+}
+
+
+NLPEnginePtr getNLPEngine(EnvPtr env)
+{
+  EngineFactory *efac = new EngineFactory(env);
+  NLPEnginePtr e = NLPEnginePtr(); // NULL
+  e = efac->getNLPEngine();
+  if (!e) {
+    std::cout << "Cannot find an NLP engine. Cannot proceed!" << std::endl;
+  } 
+
+  delete efac;
   return e;
 }
 
@@ -315,6 +331,13 @@ BranchAndBound * createBab (EnvPtr env, ProblemPtr p, EnginePtr e,
   nr->setEngine(e);
   bab->setNodeRelaxer(nr);
   bab->shouldCreateRoot(true);
+
+  if (env->getOptions()->findBool("msheur")->getValue() == true) {
+    EnginePtr nlp_e = getNLPEngine(env);
+    p->setNativeDer();
+    NLPMSPtr ms_heur = (NLPMSPtr) new NLPMultiStart(env, p, nlp_e);
+    bab->addPreRootHeur(ms_heur); 
+  }
 
   return bab;
 }

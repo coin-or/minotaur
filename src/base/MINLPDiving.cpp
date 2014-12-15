@@ -60,7 +60,7 @@ MINLPDiving::MINLPDiving(EnvPtr env, ProblemPtr p, EnginePtr e)
   gradientObj_              = new Double[p_->getNumVars()];
 
   logger_ = (LoggerPtr) new Logger((LogLevel) env_->getOptions()->
-      findInt("Divheur_log_level")->getValue());
+      findInt("heur_log_level")->getValue());
 
   //DivingheurStats stats_
   stats_                    = new DivingheurStats();

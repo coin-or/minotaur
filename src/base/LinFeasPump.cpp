@@ -59,7 +59,7 @@ LinFeasPump::LinFeasPump(EnvPtr env, ProblemPtr p, EnginePtr e1,
   gradientObj_               = new double[p_->getNumVars()];
 
   logger_ = (LoggerPtr) new Logger((LogLevel) env_->getOptions()->
-     findInt("LinFPump_log_level")->getValue());
+     findInt("heur_log_level")->getValue());
 
   // initialize the statistics
   statsLFP_                  = new LinFeasStats();

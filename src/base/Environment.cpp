@@ -53,140 +53,145 @@ void Environment::createDefaultOptions_()
   FlagOptionPtr f_option;
 
   // bool options
-  b_option = (BoolOptionPtr) new Option<Bool>("show_version", 
+  b_option = (BoolOptionPtr) new Option<bool>("show_version", 
       "Write version number of Minotaur: <0/1>",
       true, false);
   options_->insert(b_option);
 
-  b_option = (BoolOptionPtr) new Option<Bool>("show_options", 
+  b_option = (BoolOptionPtr) new Option<bool>("show_options", 
       "Write all options and their default values: <0/1>",
       true, false);
   options_->insert(b_option);
 
-  b_option = (BoolOptionPtr) new Option<Bool>("show_help", 
+  b_option = (BoolOptionPtr) new Option<bool>("show_help", 
       "Show usage and exit: <0/1>",
       true, false);
   options_->insert(b_option);
 
-  b_option = (BoolOptionPtr) new Option<Bool>("use_internal_quad", 
+  b_option = (BoolOptionPtr) new Option<bool>("use_internal_quad", 
       "Should quadratic functions be treated natively: <0/1>",
       true, false);
   options_->insert(b_option);
 
-  b_option = (BoolOptionPtr) new Option<Bool>("use_warmstart", 
+  b_option = (BoolOptionPtr) new Option<bool>("use_warmstart", 
       "Should warm starts be used to solve relaxations: <0/1>",
       true, true);
   options_->insert(b_option);
 
-  b_option = (BoolOptionPtr) new Option<Bool>("presolve", 
+  b_option = (BoolOptionPtr) new Option<bool>("presolve", 
       "Should presolve be used: <0/1>", true, false);
   options_->insert(b_option);
 
-  b_option = (BoolOptionPtr) new Option<Bool>("persp_ref", 
+  b_option = (BoolOptionPtr) new Option<bool>("persp_ref", 
       "Should prespective reformulation be used: <0/1>", true, false);
   options_->insert(b_option);
 
-  b_option = (BoolOptionPtr) new Option<Bool>("quad_cone_ref", 
+  b_option = (BoolOptionPtr) new Option<bool>("quad_cone_ref", 
       "tighten quadratic constraints with linear binary variables <0/1>",
       true, true);
   options_->insert(b_option);
 
-  b_option = (BoolOptionPtr) new Option<Bool>("display_problem", 
+  b_option = (BoolOptionPtr) new Option<bool>("display_problem", 
       "Should display problem before solving: <0/1>", true, false);
   options_->insert(b_option);
 
-  b_option = (BoolOptionPtr) new Option<Bool>("display_presolved_problem", 
+  b_option = (BoolOptionPtr) new Option<bool>("display_presolved_problem", 
       "Should display problem after presolving: <0/1>", true, false);
   options_->insert(b_option);
 
-  b_option = (BoolOptionPtr) new Option<Bool>("display_size", 
+  b_option = (BoolOptionPtr) new Option<bool>("display_size", 
       "Should display problem size before solving: <0/1>", true, false);
   options_->insert(b_option);
 
-  b_option = (BoolOptionPtr) new Option<Bool>("display_presolved_size", 
+  b_option = (BoolOptionPtr) new Option<bool>("display_presolved_size", 
       "Should display problem size after presolving: <0/1>", true, false);
   options_->insert(b_option);
 
-  b_option = (BoolOptionPtr) new Option<Bool>("guided_dive", 
+  b_option = (BoolOptionPtr) new Option<bool>("guided_dive", 
       "Should perform guided dives after branching: <0/1>", true, true);
   options_->insert(b_option);
 
-  b_option = (BoolOptionPtr) new Option<Bool>("solve", 
+  b_option = (BoolOptionPtr) new Option<bool>("solve", 
       "Should solve the problem: <0/1>", true, true);
   options_->insert(b_option);
 
-  b_option = (BoolOptionPtr) new Option<Bool>("lin_presolve", 
+  b_option = (BoolOptionPtr) new Option<bool>("lin_presolve", 
       "Should presolve using linear handler: <0/1>", true, true);
   options_->insert(b_option);
 
-  b_option = (BoolOptionPtr) new Option<Bool>("quad_presolve", 
+  b_option = (BoolOptionPtr) new Option<bool>("quad_presolve", 
       "Should presolve using quadratic handler: <0/1>", true, false);
   options_->insert(b_option);
 
-  b_option = (BoolOptionPtr) new Option<Bool>("ignore_SOS1", 
+  b_option = (BoolOptionPtr) new Option<bool>("ignore_SOS1", 
       "Ignore all SOS1 constraints: <0/1>", true, false);
   options_->insert(b_option);
 
-  b_option = (BoolOptionPtr) new Option<Bool>("ignore_SOS2", 
+  b_option = (BoolOptionPtr) new Option<bool>("ignore_SOS2", 
       "Ignore all SOS2 constraints: <0/1>", true, false);
   options_->insert(b_option);
 
-  b_option = (BoolOptionPtr) new Option<Bool>("nl_presolve", 
+  b_option = (BoolOptionPtr) new Option<bool>("nl_presolve", 
       "Should presolve using nonlinear presolver: <0/1>", true, true);
   options_->insert(b_option);
 
-  b_option = (BoolOptionPtr) new Option<Bool>("lin_show_stats", 
+  b_option = (BoolOptionPtr) new Option<bool>("lin_show_stats", 
       "Should show statistics of linear handler: <0/1>", true, 
       true);
   options_->insert(b_option);
 
-  b_option = (BoolOptionPtr) new Option<Bool>("MSheur", 
+  b_option = (BoolOptionPtr) new Option<bool>("MSheur", 
       "Use multi-start heuristic for continuous nonlinear problem: <0/1>", 
       true, false);
   options_->insert(b_option);
   
-  b_option = (BoolOptionPtr) new Option<Bool>("FPump", 
+  b_option = (BoolOptionPtr) new Option<bool>("FPump", 
       "Use feasibility pump heuristic for MINLP: <0/1>", true, false);
   options_->insert(b_option);
 
-  b_option = (BoolOptionPtr) new Option<Bool>("modify_rel_only", 
+  b_option = (BoolOptionPtr) new Option<bool>("modify_rel_only", 
       "If true, apply all modifications to relaxation only  <0/1>",
       true, true);
   options_->insert(b_option);
 
-  b_option = (BoolOptionPtr) new Option<Bool>("convexity_type",
+  b_option = (BoolOptionPtr) new Option<bool>("convexity_type",
       "Is the problem convex or quasiconvex: convexity <=> 0 and quasiconvexity <=> 1", 
       true, false);
   options_->insert(b_option);
 
-  b_option = (BoolOptionPtr) new Option<Bool>("qg_accpm",
+  b_option = (BoolOptionPtr) new Option<bool>("qg_accpm",
       "Do analytic center cutting plane cuts in qg algorithm: <0/1>", 
       true, false);
   options_->insert(b_option);
 
-  b_option = (BoolOptionPtr) new Option<Bool>("partial_BB",
+  b_option = (BoolOptionPtr) new Option<bool>("partial_BB",
       "Fix the bounds partially in QGHandler: <0/1>",
       true, false);
   options_->insert(b_option);
 
-  b_option = (BoolOptionPtr) new Option<Bool>("expand_poly", 
+  b_option = (BoolOptionPtr) new Option<bool>("expand_poly", 
       "Fully expand and save polynomials in objective and constraints: <0/1>",
       true, false);
   options_->insert(b_option);
 
-  b_option = (BoolOptionPtr) new Option<Bool>("expand_quad", 
+  b_option = (BoolOptionPtr) new Option<bool>("expand_quad", 
       "Fully expand and save quadratic objective and constraints: <0/1>",
       true, true);
   options_->insert(b_option);
-  b_option = (BoolOptionPtr) new Option<Minotaur::Bool> ("use_native_cgraph", 
+
+  b_option = (BoolOptionPtr) new Option<bool> ("use_native_cgraph", 
      "If true, use Minotaur's computational graph to evaluate nonlinear functions and their derivatives. <0/1>", true, false);
+  options_->insert(b_option);
+
+  b_option = (BoolOptionPtr) new Option<bool>("msheur", 
+      "Enable multi-start initial heuristic: <0/1>", true, false);
   options_->insert(b_option);
 
   // reset, so that we don't accidently add it again.
   b_option.reset();
 
   // // flags (options without values)
-  //f_option = (FlagOptionPtr) new Option<Bool>("AMPL", 
+  //f_option = (FlagOptionPtr) new Option<bool>("AMPL", 
   //    "-AMPL option tells us to write .sol file for ampl", 
   //    true, false);
   //options_->insert(f_option, true);
@@ -196,106 +201,90 @@ void Environment::createDefaultOptions_()
 
 
   // int options
-  i_option = (IntOptionPtr) new Option<Int>("bnb_node_limit", 
+  i_option = (IntOptionPtr) new Option<int>("bnb_node_limit", 
       "Limit on number of nodes created in branch-and-bound: >0",
       true, 1000000000);
   options_->insert(i_option);
 
-  i_option = (IntOptionPtr) new Option<Int>("bnb_sol_limit", 
+  i_option = (IntOptionPtr) new Option<int>("bnb_sol_limit", 
       "Limit on the number of solutions found: >0", true, 
       1000000000);
   options_->insert(i_option);
 
-  i_option = (IntOptionPtr) new Option<Int>("ampl_log_level", 
+  i_option = (IntOptionPtr) new Option<int>("ampl_log_level", 
       "Verbosity of ampl interface: 0-6", true, LogInfo);
   options_->insert(i_option);
 
-  i_option = (IntOptionPtr) new Option<Int>("bqpd_log_level", 
+  i_option = (IntOptionPtr) new Option<int>("bqpd_log_level", 
       "Verbosity of bqpd engine: 0-6", true, LogInfo);
   options_->insert(i_option);
 
-  i_option = (IntOptionPtr) new Option<Int>("filter_sqp_log_level", 
+  i_option = (IntOptionPtr) new Option<int>("filter_sqp_log_level", 
       "Verbosity of Filter-SQP engine: 0-6", true, LogInfo);
   options_->insert(i_option);
 
-  i_option = (IntOptionPtr) new Option<Int>("osilp_log_level", 
+  i_option = (IntOptionPtr) new Option<int>("osilp_log_level", 
       "Verbosity of OsiLP engine: 0-6", true, LogInfo);
   options_->insert(i_option);
 
-  i_option = (IntOptionPtr) new Option<Int>("ipopt_log_level", 
+  i_option = (IntOptionPtr) new Option<int>("ipopt_log_level", 
       "Verbosity of Ipopt engine: 0-6", true, LogInfo);
   options_->insert(i_option);
 
-  i_option = (IntOptionPtr) new Option<Int>("bqpd_ws_mode", 
+  i_option = (IntOptionPtr) new Option<int>("bqpd_ws_mode", 
       "Warm starting mode for bqpd: 0-6", true, 6);
   options_->insert(i_option);
 
-  i_option = (IntOptionPtr) new Option<Int>("br_log_level", 
+  i_option = (IntOptionPtr) new Option<int>("br_log_level", 
       "Verbosity of brancher: 0-6", true, LogInfo);
   options_->insert(i_option);
 
-  i_option = (IntOptionPtr) new Option<Int>("bnb_log_level", 
+  i_option = (IntOptionPtr) new Option<int>("bnb_log_level", 
       "Verbosity of branch-and-bound: 0-6", true, LogInfo);
   options_->insert(i_option);
 
-  i_option = (IntOptionPtr) new Option<Int>("node_processor_log_level", 
+  i_option = (IntOptionPtr) new Option<int>("node_processor_log_level", 
       "Verbosity of node processor: 0-6", true, LogInfo);
   options_->insert(i_option);
 
-  i_option = (IntOptionPtr) new Option<Int>("presolve_log_level", 
+  i_option = (IntOptionPtr) new Option<int>("presolve_log_level", 
       "Verbosity of presolver: 0-6", true, LogInfo);
   options_->insert(i_option);
 
-  i_option = (IntOptionPtr) new Option<Int>("handler_log_level", 
+  i_option = (IntOptionPtr) new Option<int>("handler_log_level", 
       "Verbosity of handlers: 0-6", true, LogInfo);
   options_->insert(i_option);
 
-  i_option = (IntOptionPtr) new Option<Int>("MSheur_log_level", 
+  i_option = (IntOptionPtr) new Option<int>("heur_log_level", 
       "Verbosity of Multi Start Heuristic: 0-6", true, LogInfo);
   options_->insert(i_option);
   
-  i_option = (IntOptionPtr) new Option<Int>("Divheur_log_level", 
-      "Verbosity of MINLP Diving Heuristic ", true, LogInfo);
-  options_->insert(i_option);
-
-  i_option = (IntOptionPtr) new Option<Int>("FPump_log_level", 
-      "Verbosity of Feasibility Pump Heuristic ", true, LogInfo);
-  options_->insert(i_option);
-
-  i_option = (IntOptionPtr) new Option<Int>("LinFPump", 
-      "Use Linear feasibility pump heuristic for MINLP: <-1/0/1>", true, -1);
-  options_->insert(i_option);
-
-  i_option = (IntOptionPtr) new Option<Int>("LinFPump_log_level", 
-      "Verbosity of Linear Feasibility Pump Heuristic ", true, LogInfo);
-  options_->insert(i_option);
-
-  i_option = (IntOptionPtr) new Option<Int>("Divheur", 
+  i_option = (IntOptionPtr) new Option<int>("Divheur", 
       "Use diving heuristic for MINLP: <-1/0/1>", 
       true, -1);
   options_->insert(i_option);
 
-   i_option = (IntOptionPtr) new Option<Int>("strbr_pivot_limit",
+   i_option = (IntOptionPtr) new Option<int>("strbr_pivot_limit",
       "Limit on number of QP pivots allowed during strong branching: >0",
       true, 25);
   options_->insert(i_option);
  
-  i_option = (IntOptionPtr) new Option<Int>("trans_log_level", 
+  i_option = (IntOptionPtr) new Option<int>("trans_log_level", 
       "Verbosity of Transformer ", true, LogInfo);
   options_->insert(i_option);
 
   // Serdar added these options for MultilinearTermsHandler class
-  i_option = (IntOptionPtr) new Option<Int>("ml_log_level", 
+  i_option = (IntOptionPtr) new Option<int>("ml_log_level", 
       "MultilinearTermsHandler log level.", true, 0);
   options_->insert(i_option);
 
-  i_option = (IntOptionPtr) new Option<Int>("ml_max_group_size",
+  i_option = (IntOptionPtr) new Option<int>("ml_max_group_size",
        "Maximum size of individual element in grouping: >= 2, <= 20", true, 6);
   options_->insert(i_option);
 
   // Serdar ended.
 
-  i_option = (IntOptionPtr) new Option<Int>("rand_seed", 
+  i_option = (IntOptionPtr) new Option<int>("rand_seed", 
       "Seed to random number generator: >=0 (0 = time(NULL))", true, 0);
   options_->insert(i_option);
 
@@ -405,12 +394,12 @@ void Environment::convertAndAddOneOption_(BoolOptionPtr &b_option,
   std::string off = "  ";
   // now add the option.
   if (b_option) {
-    Bool b_value = getBoolValue_(value);
+    bool b_value = getBoolValue_(value);
     b_option->setValue(b_value);
     logger_->MsgStream(LogInfo) << off << b_option->getName() << " = " <<
       b_option->getValue() << std::endl; 
   } else if (i_option) {
-    Int i_value;
+    int i_value;
     mystream << std::flush;
     mystream << value;
     mystream >> i_value;
@@ -439,7 +428,7 @@ void Environment::convertAndAddOneOption_(BoolOptionPtr &b_option,
     if (value == "") {
       logger_->MsgStream(LogInfo) << "Added as a flag." 
         << std::endl;
-      f_option = (FlagOptionPtr) new Option<Bool>(name, 
+      f_option = (FlagOptionPtr) new Option<bool>(name, 
           "Flag added by user", false, true);
       options_->insert(f_option, true);
     } else {
@@ -487,7 +476,7 @@ void Environment::findOption_(const std::string &name, BoolOptionPtr &b_option,
 }
 
 
-Bool Environment::getBoolValue_(const std::string & str)
+bool Environment::getBoolValue_(const std::string & str)
 {
   if (str=="") {
     return false;
@@ -520,7 +509,7 @@ OptionDBPtr Environment::getOptions()
 }
 
 
-Double Environment::getTime(Int &err)
+Double Environment::getTime(int &err)
 {
   if (timer_) {
     err = 0;
@@ -608,10 +597,10 @@ void Environment::readConfigFile_(std::string fname, UInt &num_p)
 }
 
 
-void Environment::readOptions(Int argc, char **argv)
+void Environment::readOptions(int argc, char **argv)
 {
   std::string name, s_value;
-  Int leading_dashes;
+  int leading_dashes;
   UInt num_p = 0; // number of filenames provided for solve.
   BoolOptionPtr b_option;
   IntOptionPtr i_option;
@@ -627,7 +616,7 @@ void Environment::readOptions(Int argc, char **argv)
     logger_->MsgStream(LogInfo) << me_ 
       << "User provided options:" << std::endl;
   }
-  for (Int i=1; i<argc; ++i) {
+  for (int i=1; i<argc; ++i) {
     name = argv[i];
 
     // removing leading dashes
@@ -748,7 +737,7 @@ std::string Environment::separateEqualToArg_(std::string &name)
 }
 
 
-void Environment::startTimer(Int &err)
+void Environment::startTimer(int &err)
 {
   if (timer_) {
     err = 0;
@@ -759,7 +748,7 @@ void Environment::startTimer(Int &err)
 }
 
 
-void Environment::stopTimer(Int &err)
+void Environment::stopTimer(int &err)
 {
   if (timer_) {
     err = 0;
