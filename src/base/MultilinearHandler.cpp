@@ -100,10 +100,10 @@ MultilinearHandler::MultilinearHandler(EnvPtr env, ProblemPtr problem)
 
 }
 
-Bool MultilinearHandler::findOriginalVariable(ConstVariablePtr rv, 
+bool MultilinearHandler::findOriginalVariable(ConstVariablePtr rv, 
                                               ConstVariablePtr & ov) const
 {
-  Bool retval = false;
+  bool retval = false;
   std::map<ConstVariablePtr, ConstVariablePtr>::const_iterator it;
   it = rev_oVars_.find(rv);
   if (it != rev_oVars_.end()) {
@@ -134,7 +134,7 @@ Branches MultilinearHandler::getBranches(BrCandPtr cand, DoubleVector & x,
   // x is a *relaxation* solution, while we have put the *original* (or
   // working) problem variables into the BrCandPtr, so we need to
   // update our value appropriately...
-  Double value = x[oVars_[v]->getId()];
+  double value = x[oVars_[v]->getId()];
   BranchPtr branch;
   Branches branches = (Branches) new BranchPtrVector();
 
@@ -174,13 +174,13 @@ Branches MultilinearHandler::getBranches(BrCandPtr cand, DoubleVector & x,
 
 void MultilinearHandler::getBranchingCandidates(RelaxationPtr, 
                                                 const DoubleVector &x, ModVector &, 
-                                                BrCandSet &cands, Bool &isInf )
+                                                BrCandSet &cands, bool &isInf )
 {
 
   // We use this just to check if we have already added a variable
   UIntSet cand_inds;
 
-  std::pair<UIntSet::iterator, Bool> ret;
+  std::pair<UIntSet::iterator, bool> ret;
 
   for(std::map<ConstVariablePtr, ConstVariablePair>::iterator iter = blterms_.begin();
       iter != blterms_.end(); ++iter) {
@@ -257,12 +257,12 @@ ModificationPtr MultilinearHandler::getBrMod(BrCandPtr , DoubleVector &,
 
 bool
 MultilinearHandler::isFeasible(ConstSolutionPtr sol, RelaxationPtr,
-                               Bool &isInfeasible)
+                               bool &should_prune)
 {
 
-  isInfeasible = false;
+  should_prune = false;
 
-  const Double *x = sol->getPrimal();
+  const double *x = sol->getPrimal();
 
   bool feas = true;
   for(std::map<ConstVariablePtr, ConstVariablePair>::iterator iter = blterms_.begin();
@@ -299,7 +299,7 @@ MultilinearHandler::isFeasible(ConstSolutionPtr sol, RelaxationPtr,
 }
 
 void
-MultilinearHandler::relax(RelaxationPtr relaxation, bool & isInfeasible)
+MultilinearHandler::relax(RelaxationPtr relaxation, bool & should_prune)
 {
 
   // Since this relaxation builds from scratch every time, we need to clear *everything* 
@@ -375,13 +375,13 @@ MultilinearHandler::relax(RelaxationPtr relaxation, bool & isInfeasible)
 
   std::string s = env_->getOptions()->findString("ml_group_strategy")->getValue();
   if("ALL" == s) {
-    makeGroupedConvexHull(relaxation, isInfeasible, 4, objModified_);
+    makeGroupedConvexHull(relaxation, should_prune, 4, objModified_);
   }
   else if ("TT" == s) {
-    makeGroupedConvexHull(relaxation, isInfeasible, 5, objModified_);
+    makeGroupedConvexHull(relaxation, should_prune, 5, objModified_);
   }
   else if ("MC" == s) {
-    makeMcCormick(relaxation, isInfeasible);
+    makeMcCormick(relaxation, should_prune);
   }
   else {
     assert (!"ml_group_stretgy must be one of 'ALL', 'TT', 'MC'");
@@ -391,7 +391,7 @@ MultilinearHandler::relax(RelaxationPtr relaxation, bool & isInfeasible)
 
 void
 MultilinearHandler::relaxNode(NodePtr node,
-                              RelaxationPtr relaxation, bool & isInfeasible)
+                              RelaxationPtr relaxation, bool & should_prune)
 {
 
 
@@ -407,8 +407,8 @@ MultilinearHandler::relaxNode(NodePtr node,
   for(VariableConstIterator it = problem_->varsBegin(); it != problem_->varsEnd(); ++it) {
     ConstVariablePtr v = *it;
     UInt id = v->getId();
-    Double lb = v->getLb();
-    Double ub = v->getUb();
+    double lb = v->getLb();
+    double ub = v->getUb();
     workingProblem_->changeBound(id, lb, ub);
   }
          
@@ -456,7 +456,7 @@ MultilinearHandler::relaxNode(NodePtr node,
 #endif
 
   // Now you need to relax the problem into relaxation
-  relax(relaxation, isInfeasible);
+  relax(relaxation, should_prune);
 
 }
 
@@ -509,7 +509,7 @@ MultilinearHandler::clearAllContainers()
 }
 
 void
-MultilinearHandler::makeGroupedConvexHull(RelaxationPtr relaxation, bool &isInfeasible,
+MultilinearHandler::makeGroupedConvexHull(RelaxationPtr relaxation, bool &should_prune,
                                           int groupStrategy, bool objModified)
                                           
 {
@@ -1363,14 +1363,14 @@ MultilinearHandler::makeGroupedConvexHull(RelaxationPtr relaxation, bool &isInfe
       cntr++;
     }
   }
-  isInfeasible = false;
+  should_prune = false;
   
 }
 
 
 
 void
-MultilinearHandler::makeMcCormick(RelaxationPtr relaxation, bool &isInfeasible)
+MultilinearHandler::makeMcCormick(RelaxationPtr relaxation, bool &should_prune)
 {
   // New try to initialize oVars_
   for(ConstraintConstIterator it = workingProblem_->consBegin(); it != workingProblem_->consEnd(); ++it) {
@@ -1882,7 +1882,7 @@ MultilinearHandler::makeMcCormick(RelaxationPtr relaxation, bool &isInfeasible)
     ConstraintPtr mlterm_c = relaxation->newConstraint(mlterm_f, 0.0, 0.0);
   }
 
-  isInfeasible = false;
+  should_prune = false;
 }
 
 void
@@ -2669,7 +2669,7 @@ MultilinearHandler::makeGroups(std::map <ConstVariablePtr, ConstVariablePair> bl
 
   if(groupStrategy == 4) {
     groupUsingDensest(gs, blterms_coef, mlterms_coef, vars, groups);
-    Double aug_factor = env_->getOptions()->findDouble("ml_cover_augmentation_factor")->getValue();
+    double aug_factor = env_->getOptions()->findDouble("ml_cover_augmentation_factor")->getValue();
     UInt maxGroupsCnt = (UInt) (groups.size()*aug_factor);
 
 #if defined DEBUG_MULTILINEAR_HANDLER
@@ -2823,9 +2823,9 @@ MultilinearHandler::groupUsingIntersection(UInt gs, double rho,
 {
   for(std::vector<std::vector<ConstVariablePtr> >::iterator allTermsIt = terms.begin(); allTermsIt != terms.end(); ++allTermsIt) {
     UInt termSize = (*allTermsIt).size();
-    Bool termInCurrGroups = 0;
+    bool termInCurrGroups = 0;
     UInt initialGroupsSize = groups.size();
-    Bool *isGroupActive = new Bool [groups.size()];
+    bool *isGroupActive = new bool [groups.size()];
     UInt *allIntersections = new UInt [groups.size()];
     UInt maxIntersection = 0;
     int maxIntersectionInd = -1;          
@@ -2932,8 +2932,8 @@ MultilinearHandler::groupUsingIntersection2(UInt gs,
   int thrshd = 3;//int(gs/2);
   for(UInt termsIt = 0; termsIt < terms.size(); termsIt++) {
     UInt termSize = 2;
-    Bool termInCurrGroups = 0;
-    Bool *isGroupActive = new Bool [groups.size()];
+    bool termInCurrGroups = 0;
+    bool *isGroupActive = new bool [groups.size()];
     UInt *allIntersections = new UInt [groups.size()];
     UInt maxIntersection = 0;
     int maxIntersectionInd = -1;        

@@ -109,7 +109,7 @@ public:
   VariablePtr getOtherX(ConstVariablePtr x) const;
 
   /// Check if a bilinear constraint is violated at the current point x.
-  bool isViolated(const double *x) const;
+  bool isViolated(const double *x, double &vio) const;
 
   /**
    * \brief Check if a bilinear constraint is violated for the given values of
@@ -176,7 +176,7 @@ public:
 
   // base class method.
   bool isFeasible(ConstSolutionPtr sol, RelaxationPtr relaxation, 
-                  bool &is_inf);
+                  bool &should_prune, double &inf_meas);
 
   // presolve.
   SolveStatus presolve(PreModQ *pre_mods, bool *changed);

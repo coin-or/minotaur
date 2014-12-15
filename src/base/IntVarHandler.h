@@ -59,7 +59,7 @@ public:
 
   // Check if solution is feasible.
   bool isFeasible(ConstSolutionPtr sol, RelaxationPtr relaxation, 
-                  bool & isInfeasible);
+                  bool & should_prune, double &inf_meas);
 
   bool isNeeded();
 

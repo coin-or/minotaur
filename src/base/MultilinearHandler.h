@@ -40,7 +40,7 @@ public:
   virtual ~MultilinearHandler() {};
 
     
-  Bool findOriginalVariable(ConstVariablePtr rv, ConstVariablePtr &ov) const;
+  bool findOriginalVariable(ConstVariablePtr rv, ConstVariablePtr &ov) const;
 
   /**
    * Both \f$x_0, x_1\f$ are branching candidates. The McCormick
@@ -55,23 +55,24 @@ public:
    * Check if each multilinear constraint is satisfied. Stops on the first
    * violated constraint.
    */
-  Bool isFeasible(ConstSolutionPtr, RelaxationPtr, Bool & );
+  bool isFeasible(ConstSolutionPtr, RelaxationPtr, bool &should_prune,
+                  double &inf_meas);
     
   void relax(RelaxationPtr relaxation, bool & isInfeasible);
 
   // Does nothing.
-  void relaxInitFull(RelaxationPtr, Bool *) {} ;
+  void relaxInitFull(RelaxationPtr, bool *) {} ;
 
   // Does nothing.
-  void relaxInitInc(RelaxationPtr, Bool *) {};
+  void relaxInitInc(RelaxationPtr, bool *) {};
 
   // Does nothing.
-  void relaxNodeFull(NodePtr, RelaxationPtr, Bool *)  {};
+  void relaxNodeFull(NodePtr, RelaxationPtr, bool *)  {};
 
   // Does nothing.
-  void relaxNodeInc(NodePtr, RelaxationPtr, Bool *) {};
+  void relaxNodeInc(NodePtr, RelaxationPtr, bool *) {};
 
-  void relaxNode(NodePtr node, RelaxationPtr relaxation, Bool & isInfeasible);
+  void relaxNode(NodePtr node, RelaxationPtr relaxation, bool & isInfeasible);
 
     
   /**
@@ -158,7 +159,7 @@ public:
 
   /// Can not return any cuts for this case.
   void separate(ConstSolutionPtr, NodePtr , RelaxationPtr , CutManager *,  
-                SolutionPoolPtr, Bool *, SeparationStatus *) {};
+                SolutionPoolPtr, bool *, SeparationStatus *) {};
     
   virtual ModificationPtr getBrMod(BrCandPtr , DoubleVector &, 
                                    RelaxationPtr , BranchDirection );
@@ -167,10 +168,10 @@ public:
                                RelaxationPtr rel, SolutionPoolPtr s_pool);
 
   // presolve.
-  virtual SolveStatus presolve(PreModQ *, Bool *changed) {return Finished;};
+  virtual SolveStatus presolve(PreModQ *, bool *changed) {return Finished;};
     
   // Implement Handler::presolveNode()
-  virtual Bool presolveNode(RelaxationPtr, NodePtr, SolutionPoolPtr, ModVector &,
+  virtual bool presolveNode(RelaxationPtr, NodePtr, SolutionPoolPtr, ModVector &,
                     ModVector &)
   {return false;};
 

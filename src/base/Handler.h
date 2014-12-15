@@ -157,20 +157,23 @@ public:
    * \brief Check if a solution is feasible.
    *
    * Check if a given solution is feasible for the constraints that are
-   * handled by this handler. isInfeasible is true if the handler finds that
+   * handled by this handler. should_prune is true if the handler finds that
    * the problem itself is infeasible and the current node can be pruned
    * (which is different from a solution not being feasible).
    *
    * \param[in] sol The solution of the relaxation whose feasibility we
    * want to test.
    * \param[in] rel The relaxation.
-   * \param[out] is_inf True if the relaxation is infeasible and we
+   * \param[out] should_prune True if the relaxation is infeasible and we
    * can prune the node associated.
+   * \param[out] inf_meas A measure of infeasibility. It may be used by
+   * heuristics and other code to make the tree-search faster. Computing this
+   * value is optional.
    * \return True if sol is feasible for constraints/objective asociated
    * with this handler. False if sol is not feasible.
    */
   virtual bool isFeasible(ConstSolutionPtr sol, RelaxationPtr rel,
-                          bool &is_inf) = 0;
+                          bool &should_prune, double &inf_meas) = 0;
 
   /**
    * \brief Return true if this handler is needed for the problem.
@@ -242,7 +245,7 @@ public:
    * relaxed. The relaxation is already created, it should not be
    * freed or re-allocated.
    * \param[in,out] The relaxation that is being constructed.
-   * \param[out] isInfeasible is true if the handler finds that the
+   * \param[out] is_inf is true if the handler finds that the
    * problem is infeasible.
    */
   virtual void relaxInitInc(RelaxationPtr rel, bool *is_inf) = 0 ;

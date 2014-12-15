@@ -55,7 +55,7 @@ IntVarHandler::~IntVarHandler()
 
 
 bool IntVarHandler::isFeasible(ConstSolutionPtr sol, RelaxationPtr relaxation, 
-                               bool &)
+                               bool &, double &inf_meas)
 {
   VariableConstIterator v_iter, v_iter2;
   VariableType v_type;
@@ -63,6 +63,7 @@ bool IntVarHandler::isFeasible(ConstSolutionPtr sol, RelaxationPtr relaxation,
   const double *x = sol->getPrimal();
   bool is_feas = true;
 
+  inf_meas = 0.0;
   for (v_iter=relaxation->varsBegin(); v_iter!=relaxation->varsEnd(); 
        ++v_iter) {
     v_type = (*v_iter)->getType();
@@ -75,7 +76,7 @@ bool IntVarHandler::isFeasible(ConstSolutionPtr sol, RelaxationPtr relaxation,
           (*v_iter)->getName() << " has fractional value = " << value <<
           std::endl;
 #endif
-        break;
+        inf_meas += fabs(value-floor(value+0.5));
       }
     }
   }

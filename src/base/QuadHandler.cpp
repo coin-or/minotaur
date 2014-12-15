@@ -333,14 +333,19 @@ void QuadHandler::getBranchingCandidates(RelaxationPtr rel,
          << " = " << x0val << " " << x1->getName() 
          << " = " << x1val << " " << bil->getY()->getName() 
          << " = " << yval  << " product = " << x0val*x1val << std::endl;
-        std::cout << bil->getC0()->getActivity(&(x[0]), &err) << " " ;
-        bil->getC0()->write(std::cout); 
-        std::cout << bil->getC1()->getActivity(&(x[0]), &err) << " " ;
-        bil->getC1()->write(std::cout);
-        std::cout << bil->getC2()->getActivity(&(x[0]), &err) << " " ;
-        bil->getC2()->write(std::cout);
-        std::cout << bil->getC3()->getActivity(&(x[0]), &err) << " " ;
-        bil->getC3()->write(std::cout);
+        logger_->MsgStream(LogDebug) << bil->getC0()->getActivity(&(x[0]),
+                                                                  &err) << " ";
+        bil->getC0()->write(logger_->MsgStream(LogDebug)); 
+
+        logger_->MsgStream(LogDebug) << bil->getC1()->getActivity(&(x[0]),
+                                                                  &err) << " " ;
+        bil->getC1()->write(logger_->MsgStream(LogDebug));
+        logger_->MsgStream(LogDebug) << bil->getC2()->getActivity(&(x[0]),
+                                                                  &err) << " " ;
+        bil->getC2()->write(logger_->MsgStream(LogDebug));
+        logger_->MsgStream(LogDebug) << bil->getC3()->getActivity(&(x[0]),
+                                                                  &err) << " " ;
+        bil->getC3()->write(logger_->MsgStream(LogDebug));
       }
     }
   }
@@ -547,18 +552,21 @@ bool QuadHandler::isAtBnds_(ConstVariablePtr x, double xval)
 }
 
 
-bool QuadHandler::isFeasible(ConstSolutionPtr sol, RelaxationPtr , bool & )
+bool QuadHandler::isFeasible(ConstSolutionPtr sol, RelaxationPtr , bool &,
+                             double &inf_meas)
 {
-  double yval, xval;
+  double yval, xval, vio;
   const double *x = sol->getPrimal();
+  bool is_feas = true;
 
   for (LinSqrMapIter it=x2Funs_.begin(); it != x2Funs_.end(); ++it) {
     // check if y <= x^2
     xval  = x[it->first->getIndex()];
     yval = x[it->second->y->getIndex()];
-    if (fabs(yval - xval*xval)/(fabs(yval) + 1e-6) > 1e-4 &&
-        fabs(yval-xval*xval) > 1e-5) {
-      return false;
+    vio = fabs(yval - xval*xval);
+    if (vio/(fabs(yval) + 1e-6) > 1e-4 && vio > 1e-5) {
+      is_feas = false;
+      inf_meas += vio;
     }
   }
 #if SPEW
@@ -567,8 +575,9 @@ bool QuadHandler::isFeasible(ConstSolutionPtr sol, RelaxationPtr , bool & )
 #endif
 
   for (LinBilSetIter it=x0x1Funs_.begin(); it != x0x1Funs_.end(); ++it) {
-    if ((*it)->isViolated(x)) {
-      return false;
+    if ((*it)->isViolated(x, vio)) {
+      is_feas = false;
+      inf_meas += vio;
     }
   }
 
@@ -576,7 +585,7 @@ bool QuadHandler::isFeasible(ConstSolutionPtr sol, RelaxationPtr , bool & )
   logger_->MsgStream(LogDebug2) << me_ << "no branching candidates for y=x1x2" 
                                 << std::endl;
 #endif
-  return true;
+  return is_feas;
 }
 
 
@@ -1114,12 +1123,14 @@ bool Minotaur::CompareLinBil::operator()(LinBilPtr b0, LinBilPtr b1) const
 }
 
 
-bool LinBil::isViolated(const double *x) const
+bool LinBil::isViolated(const double *x, double &vio) const
 {
 
   double xval = x[x0_->getIndex()] * x[x1_->getIndex()];
   double yval = x[y_->getIndex()];
-  if (fabs(xval - yval) > aTol_ && fabs(xval - yval) > fabs(yval)*rTol_) {
+
+  vio = fabs(xval - yval);
+  if (vio > aTol_ && vio > fabs(yval)*rTol_) {
     return true;
   }
   return false;

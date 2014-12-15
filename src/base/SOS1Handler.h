@@ -37,24 +37,24 @@ public:
   ~SOS1Handler();
 
   // Does nothing.
-  void relaxInitFull(RelaxationPtr rel, Bool *is_inf);
+  void relaxInitFull(RelaxationPtr rel, bool *is_inf);
 
   // Does nothing.
-  void relaxInitInc(RelaxationPtr rel, Bool *is_inf);
+  void relaxInitInc(RelaxationPtr rel, bool *is_inf);
 
   // Does nothing.
-  void relaxNodeFull(NodePtr node, RelaxationPtr rel, Bool *is_inf);
+  void relaxNodeFull(NodePtr node, RelaxationPtr rel, bool *is_inf);
 
   // Does nothing.
-  void relaxNodeInc(NodePtr node, RelaxationPtr rel, Bool *is_inf);
+  void relaxNodeInc(NodePtr node, RelaxationPtr rel, bool *is_inf);
 
   // Check if solution is feasible.
-  Bool isFeasible(ConstSolutionPtr sol, RelaxationPtr relaxation, 
-                  Bool & isInfeasible);
+  bool isFeasible(ConstSolutionPtr sol, RelaxationPtr relaxation, 
+                  bool &should_prune, double &inf_meas);
 
   /// Empty method as we do not do any separation in SOS1.
   void separate(ConstSolutionPtr, NodePtr , RelaxationPtr, CutManager *,
-                SolutionPoolPtr, Bool *, SeparationStatus *);
+                SolutionPoolPtr, bool *, SeparationStatus *);
 
   // Base class method.
   void getBranchingCandidates(RelaxationPtr rel, const DoubleVector &x,
@@ -69,17 +69,17 @@ public:
   Branches getBranches(BrCandPtr cand, DoubleVector & x,
                        RelaxationPtr rel, SolutionPoolPtr s_pool);
       
-  Bool isGUB(SOS *sos);
-  Bool isNeeded();
+  bool isGUB(SOS *sos);
+  bool isNeeded();
 
   /// Presolve. Do not do any presolving.
-  SolveStatus presolve(PreModQ *, Bool *) {return Finished;};
+  SolveStatus presolve(PreModQ *, bool *) {return Finished;};
 
   /// Does nothing.
-  void postsolveGetX(const Double *, UInt, DoubleVector *);
+  void postsolveGetX(const double *, UInt, DoubleVector *);
 
   /// Does nothing.
-  Bool presolveNode(RelaxationPtr, NodePtr, SolutionPoolPtr, ModVector &,
+  bool presolveNode(RelaxationPtr, NodePtr, SolutionPoolPtr, ModVector &,
                     ModVector &)
   {return false;};
 
@@ -93,10 +93,10 @@ public:
   void writePreStats(std::ostream &) const {};
 
   /// Return the integer tolerance.
-  Double getTol() const;
+  double getTol() const;
 
   /// Set the integer tolerance.
-  void setTol(Double tol);
+  void setTol(double tol);
 
 private:
   /// Environment.
@@ -116,7 +116,7 @@ private:
    *
    * If abs(x) < zTol_, then it is considered to be zero.
    */
-  Double zTol_;
+  double zTol_;
 };
 typedef boost::shared_ptr<SOS1Handler> SOS1HandlerPtr;
 typedef boost::shared_ptr<const SOS1Handler> ConstSOS1HandlerPtr;

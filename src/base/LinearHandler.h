@@ -89,7 +89,7 @@ public:
    * We assume that linear constraints and bound constraints are always
    * satisfied. Always return true.
    */
-  bool isFeasible(ConstSolutionPtr, RelaxationPtr, bool &)
+  bool isFeasible(ConstSolutionPtr, RelaxationPtr, bool &, double &)
   {return true;}
 
   bool isNeeded() { return true; }

@@ -173,7 +173,7 @@ ModificationPtr MultilinearTermsHandler::getBrMod(BrCandPtr cand, DoubleVector &
 {
   LinModsPtr linmods;
 
-  //XXX Put (Bool init) back in handle{x,z}def...
+  //XXX Put (bool init) back in handle{x,z}def...
 
   BrVarCandPtr  vcand = boost::dynamic_pointer_cast <BrVarCand> (cand);
   VariablePtr v = vcand->getVar();
@@ -215,8 +215,8 @@ ModificationPtr MultilinearTermsHandler::getBrMod(BrCandPtr cand, DoubleVector &
         VariablePtr lam = lambdavars_[gix][pix];
         Double val = -INFINITY;
 
-        Bool atLower = varIsAtLowerBoundAtPoint_(v, *it2);
-        Bool atUpper = !atLower;
+        bool atLower = varIsAtLowerBoundAtPoint_(v, *it2);
+        bool atUpper = !atLower;
         
         if (lu == Upper && atUpper) val = branching_value;
         else if (lu == Lower && atLower) val = branching_value;
@@ -282,8 +282,8 @@ ModificationPtr MultilinearTermsHandler::getBrMod(BrCandPtr cand, DoubleVector &
         for(SetOfVars::const_iterator jt_it = jt.begin(); jt_it != jt.end(); ++jt_it) {
           ConstVariablePtr xvar = *jt_it;
           Double val = 0.0;
-          Bool atLower = varIsAtLowerBoundAtPoint_(xvar, *it2);
-          Bool atUpper = !atLower;
+          bool atLower = varIsAtLowerBoundAtPoint_(xvar, *it2);
+          bool atUpper = !atLower;
             
           if (xvar == v) {
             if (lu == Upper && atUpper) val = branching_value;
@@ -318,12 +318,12 @@ ModificationPtr MultilinearTermsHandler::getBrMod(BrCandPtr cand, DoubleVector &
 }
 
 
-Bool
+bool
 MultilinearTermsHandler::isFeasible(ConstSolutionPtr sol, RelaxationPtr ,
-                                    Bool &)
+                                    bool &, double &)
 {
   const Double *x = sol->getPrimal();
-  Bool is_feas = true;
+  bool is_feas = true;
 
 #if defined(DEBUG_MULTILINEARTERMS_HANDLER)
   std::cout << "Checking feasibility: " << std::endl;
@@ -355,7 +355,7 @@ MultilinearTermsHandler::isFeasible(ConstSolutionPtr sol, RelaxationPtr ,
 }
 
 void
-MultilinearTermsHandler::relaxInitInc(RelaxationPtr relaxation, Bool *)
+MultilinearTermsHandler::relaxInitInc(RelaxationPtr relaxation, bool *)
 {
 
   //  General notes...
@@ -469,7 +469,7 @@ MultilinearTermsHandler::relaxInitInc(RelaxationPtr relaxation, Bool *)
 
 void
 MultilinearTermsHandler::relaxNodeInc(NodePtr node,
-                                      RelaxationPtr relaxation, Bool *isInfeasible)
+                                      RelaxationPtr relaxation, bool *isInfeasible)
 {
   *isInfeasible = false;
 
@@ -609,10 +609,9 @@ MultilinearTermsHandler::handleZDefConstraints_(RelaxationPtr relaxation, Handle
 
 }
 
-Bool
-MultilinearTermsHandler::allVarsBinary_(SetOfVars const &s) const
+bool MultilinearTermsHandler::allVarsBinary_(SetOfVars const &s) const
 {
-  Bool allbinary = true;
+  bool allbinary = true;
   for(SetOfVars::const_iterator it = s.begin(); it != s.end(); ++it) {
     VariableType vt = (*it)->getType();
     if ( vt == Continuous || vt == Integer || vt == ImplInt) {
@@ -660,8 +659,8 @@ MultilinearTermsHandler::doBranch_(BranchDirection UpOrDown, ConstVariablePtr v,
 
 }
 
-Bool
-MultilinearTermsHandler::varIsAtLowerBoundAtPoint_(ConstVariablePtr &x, SetOfVars const &p)
+bool MultilinearTermsHandler::varIsAtLowerBoundAtPoint_(ConstVariablePtr &x,
+                                                        SetOfVars const &p)
 {
   SetOfVars::iterator it = p.find(x);
   return(it == p.end());
@@ -769,12 +768,12 @@ MultilinearTermsHandler::makeGroups_()
 }
 
 void
-MultilinearTermsHandler::addEdgeToGroups_(const SetOfVars &e, Bool phaseOne)
+MultilinearTermsHandler::addEdgeToGroups_(const SetOfVars &e, bool phaseOne)
 {
 
   // In 'Phase 1', we do not create a new group if the edge is implied?
-  Bool room_for_edge = false;
-  Bool need_to_add_edge = true;
+  bool room_for_edge = false;
+  bool need_to_add_edge = true;
   Int gixadd = -1;
   Int ending_ix = phaseOne ? 0 : initialTermCoverSize_;
   Int gix = 0;
@@ -782,7 +781,7 @@ MultilinearTermsHandler::addEdgeToGroups_(const SetOfVars &e, Bool phaseOne)
   for(gix = ((Int) groups_.size()) - 1; gix >= ending_ix; gix--) {
 
     const SetOfVars &g = groups_[gix];
-    Bool e_subsetof_g = edgeIsContainedInGroup_(e,g);
+    bool e_subsetof_g = edgeIsContainedInGroup_(e,g);
     if (phaseOne && e_subsetof_g) {
       need_to_add_edge = false;
       break;
@@ -809,14 +808,14 @@ MultilinearTermsHandler::addEdgeToGroups_(const SetOfVars &e, Bool phaseOne)
   }
 }
 
-Bool 
-MultilinearTermsHandler::edgeIsContainedInGroup_(const SetOfVars &e, const SetOfVars &g) const
+bool MultilinearTermsHandler::edgeIsContainedInGroup_(const SetOfVars &e,
+                                                      const SetOfVars &g) const
 {
   return (std::includes(g.begin(), g.end(), e.begin(), e.end()));
 }
 
-Bool 
-MultilinearTermsHandler::edgeWillFitInGroup_(const SetOfVars &e, const SetOfVars &g) const
+bool MultilinearTermsHandler::edgeWillFitInGroup_(const SetOfVars &e,
+                                                  const SetOfVars &g) const
 {
   UInt nUnique = 0;
   for(SetOfVars::const_iterator it = e.begin(); it != e.end(); ++it) {
@@ -824,7 +823,7 @@ MultilinearTermsHandler::edgeWillFitInGroup_(const SetOfVars &e, const SetOfVars
     if (pos == g.end()) nUnique++;
   }
 
-  Bool fit = (g.size() + nUnique <= maxGroupSize_);
+  bool fit = (g.size() + nUnique <= maxGroupSize_);
   return fit;
 
 }
@@ -848,10 +847,10 @@ MultilinearTermsHandler::findMaxWeight_()
 #endif
 
 
-Bool
+bool
 MultilinearTermsHandler::varsAreGrouped_(SetOfVars const &termvars) const
 {
-  Bool retval = false;
+  bool retval = false;
   for(UInt i = 0; i < groups_.size(); ++i) {
     if (std::includes(groups_[i].begin(), groups_[i].end(), termvars.begin(), termvars.end())) {
       retval = true;
@@ -869,7 +868,7 @@ MultilinearTermsHandler::removeSubsetsFromGroups_()
   while(it != groups_.end()) {
 
     set<ConstVariablePtr> s1 = *it;
-    Bool removed = false;
+    bool removed = false;
 
     for(ConstGroupIterator it2 = groups_.begin(); it2 != groups_.end(); ++it2) {
       if (it == it2) continue;
@@ -891,7 +890,7 @@ MultilinearTermsHandler::removeSubsetsFromGroups_()
 void 
 MultilinearTermsHandler::randomCoverHeuristic_()
 {
-  Bool positiveWeight = false;    
+  bool positiveWeight = false;    
   SetOfVars e = H_->randomEdge(positiveWeight);
   while(positiveWeight) {
     Double we = H_->getWeight(e);
@@ -927,7 +926,7 @@ MultilinearTermsHandler::greedyDenseHeuristic_()
 {
 
   // phase 1
-  Bool positiveWeight = false;    
+  bool positiveWeight = false;    
   SetOfVars e = H_->heaviestEdge(positiveWeight);
   while(positiveWeight) {
 
@@ -937,7 +936,7 @@ MultilinearTermsHandler::greedyDenseHeuristic_()
 
     // Add vertices to group (greedy).  If no incident vertex, we go to next group
     Int gix = groups_.size()-1;
-    Bool incident_vertex = true;
+    bool incident_vertex = true;
     while(groups_[gix].size() < maxGroupSize_ && incident_vertex) {
       SetOfVars &g = groups_[gix];
       VariablePtr v = H_->heaviestIncidentVertex(g);
@@ -983,7 +982,7 @@ MultilinearTermsHandler::greedyDenseHeuristic_()
     SetOfVars working_group;
     working_group.insert(e.begin(), e.end());
 
-    Bool incident_vertex = true;
+    bool incident_vertex = true;
     while( (working_group.size() < maxGroupSize_) && incident_vertex) {
       VariablePtr v = H_->heaviestIncidentVertex(working_group);
       if (v == 0) {
@@ -997,7 +996,7 @@ MultilinearTermsHandler::greedyDenseHeuristic_()
 
 
     // Now see if it is a duplicate
-    Bool duplicate = false;
+    bool duplicate = false;
     for(UInt i = 0; i < groups_.size(); i++) {
       const SetOfVars &g = groups_[i];
       if (std::includes(g.begin(), g.end(), working_group.begin(), working_group.end())) {
@@ -1035,7 +1034,7 @@ void
 MultilinearTermsHandler::weightedDegreeHeuristic_()
 {
   // Cover all terms at least once
-  Bool positiveWeight = false;    
+  bool positiveWeight = false;    
   do {
     VariablePtr heavyVar = H_->maxWeightedDegreeVertex(positiveWeight);      
     
@@ -1123,7 +1122,7 @@ MultilinearTermsHandler::setupWeights_()
 
 void 
 Hypergraph::adjustEdgeWeightsBetween(const VariablePtr v, const SetOfVars &g, 
-                                     Bool phaseOne)
+                                     bool phaseOne)
 {
   AdjListType::const_iterator pos = adjList_.find(v);
   assert(pos != adjList_.end());
@@ -1204,7 +1203,7 @@ Hypergraph::create(std::map<ConstVariablePtr, SetOfVars > const &terms)
 }
 
 SetOfVars 
-Hypergraph::heaviestEdge(Bool &positiveWeight) const
+Hypergraph::heaviestEdge(bool &positiveWeight) const
 {
   positiveWeight = false;
   SetOfVarsDoubleMap::const_iterator max_pos;
@@ -1256,7 +1255,7 @@ Hypergraph::heaviestIncidentVertex(const SetOfVars &g)
 }
 
 VariablePtr
-Hypergraph::maxWeightedDegreeVertex(Bool &positiveWeight) const
+Hypergraph::maxWeightedDegreeVertex(bool &positiveWeight) const
 {
   VariablePtr heavyV;
   Double max_deg = 0.0;
@@ -1274,7 +1273,7 @@ Hypergraph::maxWeightedDegreeVertex(Bool &positiveWeight) const
 }
 
 SetOfVars 
-Hypergraph::randomEdge(Bool &positiveWeight)
+Hypergraph::randomEdge(bool &positiveWeight)
 {
   positiveWeight = false;
   SetOfSetOfVars::iterator first_it = E_.begin();  

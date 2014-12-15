@@ -559,7 +559,8 @@ LinearFunctionPtr CxQuadHandler::getMcLf_(VariablePtr x0, double lb0, double ub0
 }
 
 
-bool CxQuadHandler::isFeasible(ConstSolutionPtr sol, RelaxationPtr , bool & )
+bool CxQuadHandler::isFeasible(ConstSolutionPtr sol, RelaxationPtr, bool &,
+                               double &)
 {
   double yval, xval;
   const double *x = sol->getPrimal();

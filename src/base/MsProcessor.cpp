@@ -80,7 +80,7 @@ MsProcessor::~MsProcessor()
 }
 
 
-Bool MsProcessor::foundNewSolution()
+bool MsProcessor::foundNewSolution()
 {
   return (numSolutions_ > 0);
 }
@@ -99,16 +99,18 @@ WarmStartPtr MsProcessor::getWarmStart()
 }
 
 
-Bool MsProcessor::isFeasible_(NodePtr node, ConstSolutionPtr sol, 
-                              SolutionPoolPtr s_pool, Bool &should_prune)
+bool MsProcessor::isFeasible_(NodePtr node, ConstSolutionPtr sol, 
+                              SolutionPoolPtr s_pool, bool &should_prune)
 {
   should_prune = false;
-  Bool is_feas = true;
+  bool is_feas = true;
   HandlerIterator h;
+  double inf_meas;
+
   // visit each handler and check feasibility. Stop on the first
   // infeasibility.
   for (h = handlers_.begin(); h != handlers_.end(); ++h) {
-    is_feas = (*h)->isFeasible(sol, relaxation_, should_prune);
+    is_feas = (*h)->isFeasible(sol, relaxation_, should_prune, inf_meas);
     if (is_feas == false || should_prune == true) {
       break;
     }
@@ -128,8 +130,8 @@ Bool MsProcessor::isFeasible_(NodePtr node, ConstSolutionPtr sol,
 void MsProcessor::process(NodePtr node, RelaxationPtr rel,
                           SolutionPoolPtr s_pool)
 {
-  Bool should_prune = true;
-  Bool should_resolve;
+  bool should_prune = true;
+  bool should_resolve;
   BrancherStatus br_status;
   ConstSolutionPtr sol;
   ModVector mods;
@@ -139,8 +141,8 @@ void MsProcessor::process(NodePtr node, RelaxationPtr rel,
   relaxation_ = rel;
 
 #if 0
-  Double *svar = new Double[20];
-  Bool xfeas = true;
+  double *svar = new double[20];
+  bool xfeas = true;
   svar[1-1]   = 0.000000000  ;
   svar[2-1]   = 0.000000000  ;
   svar[3-1]   = 1.042899924  ;
@@ -247,10 +249,10 @@ void MsProcessor::process(NodePtr node, RelaxationPtr rel,
 }
 
 
-Bool MsProcessor::shouldPrune_(NodePtr node, Double solval, 
+bool MsProcessor::shouldPrune_(NodePtr node, double solval, 
                                SolutionPoolPtr s_pool)
 {
-  Bool should_prune = false;
+  bool should_prune = false;
 #if SPEW
   logger_->MsgStream(LogDebug2) << me_ << "solution value = " << solval
                                 << std::endl; 

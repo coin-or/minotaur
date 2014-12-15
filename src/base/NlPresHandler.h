@@ -81,7 +81,7 @@ public:
    * We assume that nonlinear presolve handler is never called for checking
    * feasibility. Always return true.
    */
-  bool isFeasible(ConstSolutionPtr, RelaxationPtr, bool &)
+  bool isFeasible(ConstSolutionPtr, RelaxationPtr, bool &, double &)
   {return true;}
 
   /**

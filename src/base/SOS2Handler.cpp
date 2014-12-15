@@ -59,12 +59,12 @@ SOS2Handler::~SOS2Handler()
 }
 
 
-Bool SOS2Handler::isFeasible(ConstSolutionPtr sol, RelaxationPtr rel,
-                             Bool &)
+bool SOS2Handler::isFeasible(ConstSolutionPtr sol, RelaxationPtr rel,
+                             bool &, double &)
 {
   SOSPtr sos;
   bool is_feas = true;
-  const Double* x = sol->getPrimal();
+  const double* x = sol->getPrimal();
 
   for (SOSConstIterator siter=rel->sos2Begin(); siter!=rel->sos2End();
        ++siter) {
@@ -84,7 +84,7 @@ Bool SOS2Handler::isFeasible(ConstSolutionPtr sol, RelaxationPtr rel,
 }
 
 
-Bool SOS2Handler::isXFeasible_(const Double *x, SOSPtr sos)
+bool SOS2Handler::isXFeasible_(const double *x, SOSPtr sos)
 {
   bool new_nz_allowed = true;
   bool is_feas = true;
@@ -471,13 +471,13 @@ void SOS2Handler::getSumN_(SOSPtr sos, const DoubleVector &x, double *sum,
 }
 
 
-Double SOS2Handler::getTol() const
+double SOS2Handler::getTol() const
 {
   return zTol_;
 }
 
 
-Bool SOS2Handler::isNeeded()
+bool SOS2Handler::isNeeded()
 {
   if (problem_ &&
       false == env_->getOptions()->findBool("ignore_SOS2")->getValue()) {
@@ -494,39 +494,39 @@ Bool SOS2Handler::isNeeded()
 }
 
 
-void SOS2Handler::relaxInitFull(RelaxationPtr, Bool *is_inf)
+void SOS2Handler::relaxInitFull(RelaxationPtr, bool *is_inf)
 {
   *is_inf = false;
 }
 
 
-void SOS2Handler::relaxInitInc(RelaxationPtr , Bool *is_inf)
+void SOS2Handler::relaxInitInc(RelaxationPtr , bool *is_inf)
 {
   *is_inf = false;
 }
 
 
-void SOS2Handler::relaxNodeFull(NodePtr , RelaxationPtr, Bool *is_inf)
+void SOS2Handler::relaxNodeFull(NodePtr , RelaxationPtr, bool *is_inf)
 {
   *is_inf = false;
 }
 
 
-void SOS2Handler::relaxNodeInc(NodePtr , RelaxationPtr , Bool *is_inf)
+void SOS2Handler::relaxNodeInc(NodePtr , RelaxationPtr , bool *is_inf)
 {
   *is_inf = false;
 }
 
 
 void SOS2Handler::separate(ConstSolutionPtr, NodePtr , RelaxationPtr,
-                           CutManager *, SolutionPoolPtr, Bool *,
+                           CutManager *, SolutionPoolPtr, bool *,
                            SeparationStatus *status)
 {
   *status = SepaNone;
 }
 
 
-void SOS2Handler::setTol(Double tol)
+void SOS2Handler::setTol(double tol)
 {
   zTol_ = tol;
 }

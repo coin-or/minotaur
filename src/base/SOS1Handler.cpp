@@ -60,10 +60,11 @@ SOS1Handler::~SOS1Handler()
 }
 
 
-Bool SOS1Handler::isFeasible(ConstSolutionPtr sol, RelaxationPtr rel, Bool &)
+bool SOS1Handler::isFeasible(ConstSolutionPtr sol, RelaxationPtr rel, bool &,
+                             double &)
 {
   SOSPtr sos;
-  Bool isfeas = true;
+  bool isfeas = true;
   int nz;
   const Double* x = sol->getPrimal();
 
@@ -297,14 +298,14 @@ Double SOS1Handler::getTol() const
 }
 
 
-Bool SOS1Handler::isGUB(SOS *sos)
+bool SOS1Handler::isGUB(SOS *sos)
 {
   VariablePtr var;
   Int nz = sos->getNz();
   ConstConstraintPtr c;
   FunctionPtr f;
   LinearFunctionPtr lf;
-  Bool isgub = false;
+  bool isgub = false;
 
 
   for (VariableConstIterator viter = sos->varsBegin(); viter!=sos->varsEnd();
@@ -345,9 +346,9 @@ Bool SOS1Handler::isGUB(SOS *sos)
 }
 
 
-Bool SOS1Handler::isNeeded()
+bool SOS1Handler::isNeeded()
 {
-  Bool is_needed = false;
+  bool is_needed = false;
   if (problem_ &&
       false == env_->getOptions()->findBool("ignore_SOS1")->getValue()) {
     problem_->calculateSize();
@@ -365,32 +366,32 @@ Bool SOS1Handler::isNeeded()
 }
 
 
-void SOS1Handler::relaxInitFull(RelaxationPtr, Bool *is_inf)
+void SOS1Handler::relaxInitFull(RelaxationPtr, bool *is_inf)
 {
   *is_inf = false;
 }
 
 
-void SOS1Handler::relaxInitInc(RelaxationPtr , Bool *is_inf)
+void SOS1Handler::relaxInitInc(RelaxationPtr , bool *is_inf)
 {
   *is_inf = false;
 }
 
 
-void SOS1Handler::relaxNodeFull(NodePtr , RelaxationPtr, Bool *is_inf)
+void SOS1Handler::relaxNodeFull(NodePtr , RelaxationPtr, bool *is_inf)
 {
   *is_inf = false;
 }
 
 
-void SOS1Handler::relaxNodeInc(NodePtr , RelaxationPtr , Bool *is_inf)
+void SOS1Handler::relaxNodeInc(NodePtr , RelaxationPtr , bool *is_inf)
 {
   *is_inf = false;
 }
 
 
 void SOS1Handler::separate(ConstSolutionPtr, NodePtr , RelaxationPtr,
-                           CutManager *, SolutionPoolPtr, Bool *,
+                           CutManager *, SolutionPoolPtr, bool *,
                            SeparationStatus *status)
 {
   *status = SepaNone;

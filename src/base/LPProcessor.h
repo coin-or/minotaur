@@ -55,7 +55,7 @@ namespace Minotaur {
       void addHeur(HeurPtr h);
 
       // True if a new solution was found while processing this node.
-      Bool foundNewSolution(); 
+      bool foundNewSolution(); 
 
       // Find branches that will be used to branch at this node.
       Branches getBranches();
@@ -75,7 +75,7 @@ namespace Minotaur {
       // write statistics. Base class method.
       void writeStats() const; 
 
-    protected:
+    private:
       /// Branches found by this processor for this node
       Branches branches_;
 
@@ -83,13 +83,13 @@ namespace Minotaur {
        * If true, we continue to search, if engine reports error. If false,
        * we assume that the relaxation is infeasible when engine returns error.
        */
-      Bool contOnErr_;
+      bool contOnErr_;
 
       /// The cut manager.
       CutManager *cutMan_;
 
       /// If lb is greater than cutOff_, we can prune this node.
-      Double cutOff_;
+      double cutOff_;
 
       /// Engine used to process the relaxation
       EnginePtr engine_;
@@ -115,6 +115,12 @@ namespace Minotaur {
       /// How many new solutions were found by the processor.
       UInt numSolutions_;
 
+      /// Absolute tolerance for pruning a node on basis of bounds.
+      double oATol_;
+
+      /// Relative tolerance for pruning a node on basis of bounds.
+      double oRTol_;
+
       /// Pointer to original problem
       ConstProblemPtr problem_;
 
@@ -133,11 +139,11 @@ namespace Minotaur {
        * upper bound. Additionally, if the solution is optimal for the
        * current node, then the node can be pruned.
        */
-      virtual Bool isFeasible_(NodePtr node, ConstSolutionPtr sol, 
-                               SolutionPoolPtr s_pool, Bool &should_prune);
+      virtual bool isFeasible_(NodePtr node, ConstSolutionPtr sol, 
+                               SolutionPoolPtr s_pool, bool &should_prune);
 
       /// Presolve a node.
-      virtual Bool presolveNode_(NodePtr node, SolutionPoolPtr s_pool);
+      virtual bool presolveNode_(NodePtr node, SolutionPoolPtr s_pool);
 
       /// Solve the relaxation.
       virtual void solveRelaxation_();
@@ -146,7 +152,7 @@ namespace Minotaur {
        * Check if a node can be pruned either because the relaxation is
        * infeasible or because the cost is too high.
        */
-      virtual Bool shouldPrune_(NodePtr node, Double solval, 
+      virtual bool shouldPrune_(NodePtr node, double solval, 
                                 SolutionPoolPtr s_pool);
 
 

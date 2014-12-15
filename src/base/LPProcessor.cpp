@@ -37,7 +37,9 @@ const std::string LPProcessor::me_ = "LPProcessor: ";
 LPProcessor::LPProcessor (EnvPtr env, EnginePtr engine, HandlerVector handlers)
   : contOnErr_(false),
     cutMan_(0),
-    numSolutions_(0)
+    numSolutions_(0),
+    oATol_(1e-5),
+    oRTol_(1e-5)
 {
   cutOff_ = env->getOptions()->findDouble("obj_cut_off")->getValue();
   engine_ = engine;
@@ -68,7 +70,7 @@ void LPProcessor::addHeur(HeurPtr h)
 }
 
 
-Bool LPProcessor::foundNewSolution()
+bool LPProcessor::foundNewSolution()
 {
   return (numSolutions_ > 0);
 }
@@ -87,16 +89,18 @@ WarmStartPtr LPProcessor::getWarmStart()
 }
 
 
-Bool LPProcessor::isFeasible_(NodePtr node, ConstSolutionPtr sol, 
-                              SolutionPoolPtr s_pool, Bool &should_prune)
+bool LPProcessor::isFeasible_(NodePtr node, ConstSolutionPtr sol, 
+                              SolutionPoolPtr s_pool, bool &should_prune)
 {
   should_prune = false;
-  Bool is_feas = true;
+  bool is_feas = true;
   HandlerIterator h;
+  double inf_meas = 0.0;
+
   // visit each handler and check feasibility. Stop on the first
   // infeasibility.
   for (h = handlers_.begin(); h != handlers_.end(); ++h) {
-    is_feas = (*h)->isFeasible(sol, relaxation_, should_prune);
+    is_feas = (*h)->isFeasible(sol, relaxation_, should_prune, inf_meas);
     if (is_feas == false || should_prune == true) {
       break;
     }
@@ -113,11 +117,11 @@ Bool LPProcessor::isFeasible_(NodePtr node, ConstSolutionPtr sol,
 }
 
 
-Bool LPProcessor::presolveNode_(NodePtr node, SolutionPoolPtr s_pool) 
+bool LPProcessor::presolveNode_(NodePtr node, SolutionPoolPtr s_pool) 
 {
   ModVector p_mods;      // Mods that are applied to the problem
   ModVector r_mods;      // Mods that are applied to the relaxation.
-  Bool is_inf = false;
+  bool is_inf = false;
 
   // TODO: make this more sophisticated: loop several times until no more
   // changes are possible.
@@ -150,13 +154,13 @@ Bool LPProcessor::presolveNode_(NodePtr node, SolutionPoolPtr s_pool)
 void LPProcessor::process(NodePtr node, RelaxationPtr rel,
                           SolutionPoolPtr s_pool)
 {
-  Bool should_prune = true;
-  Bool should_resolve;
+  bool should_prune = true;
+  bool should_resolve;
   BrancherStatus br_status;
   ConstSolutionPtr sol;
   ModVector mods;
   SeparationStatus sep_status = SepaContinue;
-  Int iter = 0;
+  int iter = 0;
 
   ++stats_.proc;
   relaxation_ = rel;
@@ -168,8 +172,8 @@ void LPProcessor::process(NodePtr node, RelaxationPtr rel,
 
 
 #if 0
-  Double *svar = new Double[20];
-  Bool xfeas = true;
+  double *svar = new double[20];
+  bool xfeas = true;
   svar[1-1]   = 0.000000000  ;
   svar[2-1]   = 0.000000000  ;
   svar[3-1]   = 1.042899924  ;
@@ -231,7 +235,7 @@ void LPProcessor::process(NodePtr node, RelaxationPtr rel,
 #if defined(JTL_DEBUG)
     NodePtr parentNode = node->getParent();
     if (parentNode) {
-      Double zparent = parentNode->getLb();
+      double zparent = parentNode->getLb();
       std:: cout << " z(parent): " << zparent << " z(child): " << sol->getObjValue() << std::endl;      
       assert(zparent <= sol->getObjValue());
     }
@@ -331,7 +335,7 @@ void LPProcessor::separate_(ConstSolutionPtr sol, NodePtr node,
   HandlerIterator h;
   ModificationConstIterator m_iter;
   SeparationStatus st = SepaContinue;
-  Bool sol_found;
+  bool sol_found;
 
   *status = SepaContinue;
   sol_found = false;
@@ -356,10 +360,11 @@ void LPProcessor::setCutManager(CutManager* cutman)
 }
 
 
-Bool LPProcessor::shouldPrune_(NodePtr node, Double solval, 
+bool LPProcessor::shouldPrune_(NodePtr node, double solval, 
                                SolutionPoolPtr s_pool)
 {
-  Bool should_prune = false;
+  bool should_prune = false;
+  double best_cutoff;
 #if SPEW
   logger_->MsgStream(LogDebug2) <<  "lp processor: solution value = "
                                 << solval << std::endl; 
@@ -426,7 +431,9 @@ Bool LPProcessor::shouldPrune_(NodePtr node, Double solval,
    case (ProvenLocalOptimal):
    case (ProvenOptimal):
      node->setLb(solval);
-     if (solval >= s_pool->getBestSolutionValue() || solval >= cutOff_) {
+     best_cutoff = s_pool->getBestSolutionValue();
+     if (solval >= best_cutoff-oATol_ ||
+         solval >= best_cutoff-fabs(best_cutoff)*oRTol_ || solval >= cutOff_) {
        node->setStatus(NodeHitUb);
        should_prune = true;
        ++stats_.ub;

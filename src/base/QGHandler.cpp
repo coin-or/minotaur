@@ -308,7 +308,7 @@ void QGHandler::linearizeObj_(RelaxationPtr rel)
 
 
 bool QGHandler::isFeasible(ConstSolutionPtr sol, RelaxationPtr rel, 
-                           bool &)
+                           bool &, double &)
 {
 
   FunctionPtr f;

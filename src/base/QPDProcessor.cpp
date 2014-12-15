@@ -131,12 +131,12 @@ QPDProcessor::~QPDProcessor()
 }
 
 
-Bool QPDProcessor::boundTooFar_(ConstSolutionPtr sol, NodePtr node,
-                                Double best) 
+bool QPDProcessor::boundTooFar_(ConstSolutionPtr sol, NodePtr node,
+                                double best) 
 {
   Int err = 0;
-  Double d;
-  Bool large = false;
+  double d;
+  bool large = false;
 
   d = p_->getObjective()->eval(sol->getPrimal(), &err);
   assert(0==err);
@@ -166,16 +166,16 @@ Bool QPDProcessor::boundTooFar_(ConstSolutionPtr sol, NodePtr node,
 }
 
 
-void QPDProcessor::getLin_(FunctionPtr f, const Double *x,
+void QPDProcessor::getLin_(FunctionPtr f, const double *x,
                            UInt n, VariableConstIterator vbeg,
                            VariableConstIterator vend, 
-                           LinearFunctionPtr &lf, Double &val)
+                           LinearFunctionPtr &lf, double &val)
 { 
-  Double *grad = new Double[n+1]; 
+  double *grad = new double[n+1]; 
   Int err=0;
 
   val = 0.0;
-  memset(grad, 0, (n+1) * sizeof(Double));
+  memset(grad, 0, (n+1) * sizeof(double));
   val = f->eval(x, &err); assert(0==err);
   f->evalGradient(x, grad, &err); assert(0==err);
   val -= InnerProduct(grad, x, n);
@@ -186,18 +186,18 @@ void QPDProcessor::getLin_(FunctionPtr f, const Double *x,
 }
 
 
-void QPDProcessor::getObjLin_(NonlinearFunctionPtr nlf, const Double *x,
+void QPDProcessor::getObjLin_(NonlinearFunctionPtr nlf, const double *x,
                               UInt n, VariableConstIterator vbeg,
                               VariableConstIterator vend, 
-                              LinearFunctionPtr &lf, Double &val)
+                              LinearFunctionPtr &lf, double &val)
 { 
-  Double *grad = new Double[n]; // n = no. of vars in qp.
+  double *grad = new double[n]; // n = no. of vars in qp.
   Int err=0;
 
   // not a linearization at (x,eta)!. it is a linearization at (x, f(x)).
 
   val = 0.0;
-  memset(grad, 0, n * sizeof(Double));
+  memset(grad, 0, n * sizeof(double));
   val = nlf->eval(x, &err); assert(0==err);
   nlf->evalGradient(x, grad, &err); assert(0==err);
   val -= InnerProduct(grad, x, n-1);
@@ -244,11 +244,11 @@ void QPDProcessor::getObjLin_(NonlinearFunctionPtr nlf, const Double *x,
 #endif
 
 
-void QPDProcessor::fixInts_(const Double *x,
+void QPDProcessor::fixInts_(const double *x,
                             std::stack<Modification *> *nlp_mods)
 {
   VariablePtr v;
-  Double xval;
+  double xval;
   VarBoundMod2 *m = 0;
   for (VariableConstIterator vit=p_->varsBegin(); vit!=p_->varsEnd(); ++vit) {
     v = *vit;
@@ -263,7 +263,7 @@ void QPDProcessor::fixInts_(const Double *x,
 }
 
 
-Bool QPDProcessor::foundNewSolution()
+bool QPDProcessor::foundNewSolution()
 {
   return numSolutions_>0;
 } 
@@ -282,14 +282,15 @@ WarmStartPtr QPDProcessor::getWarmStart()
 }
 
 
-Bool QPDProcessor::isHFeasible_(ConstSolutionPtr sol, Bool &should_prune)
+bool QPDProcessor::isHFeasible_(ConstSolutionPtr sol, bool &should_prune)
 {
-  Bool is_feas = true;
+  bool is_feas = true;
   HandlerIterator h;
+  double inf_meas = 0.0;
 
   should_prune = false;
   for (h = handlers_.begin(); h != handlers_.end(); ++h) {
-    is_feas = (*h)->isFeasible(sol, qp_, should_prune);
+    is_feas = (*h)->isFeasible(sol, qp_, should_prune, inf_meas);
     if (is_feas == false || should_prune == true) {
       break;
     }
@@ -304,13 +305,13 @@ Bool QPDProcessor::isHFeasible_(ConstSolutionPtr sol, Bool &should_prune)
 }
 
 
-Bool QPDProcessor::isNLPFeasible_(ConstSolutionPtr sol, Double *vio)
+bool QPDProcessor::isNLPFeasible_(ConstSolutionPtr sol, double *vio)
 {
-  const Double* x = sol->getPrimal();
-  Double act, vl, vu;
+  const double* x = sol->getPrimal();
+  double act, vl, vu;
   Int err = 0;
   ConstConstraintPtr c;
-  Bool is_feas = true;
+  bool is_feas = true;
   UInt i = 0;
 
   for (std::vector<ConstConstraintPtr>::const_iterator it=nlCons_.begin();
@@ -366,12 +367,12 @@ Bool QPDProcessor::isNLPFeasible_(ConstSolutionPtr sol, Double *vio)
 
 SolutionPtr QPDProcessor::nlpSol2Qp_(ConstSolutionPtr sol)
 {
-  Double *x = new Double[qp_->getNumVars()];
+  double *x = new double[qp_->getNumVars()];
   SolutionPtr sol2;
-  Double objval = 0.0;
+  double objval = 0.0;
   Int err = 0;
 
-  memcpy(x, sol->getPrimal(), p_->getNumVars()*sizeof(Double));
+  memcpy(x, sol->getPrimal(), p_->getNumVars()*sizeof(double));
   if (eta_) {
     objval =  p_->getObjective()->getFunction()->getNonlinearFunction()
                 ->eval(x, &err);
@@ -386,13 +387,13 @@ SolutionPtr QPDProcessor::nlpSol2Qp_(ConstSolutionPtr sol)
 }
 
 
-Bool QPDProcessor::presolveNode_(NodePtr node, SolutionPoolPtr s_pool) 
+bool QPDProcessor::presolveNode_(NodePtr node, SolutionPoolPtr s_pool) 
 {
   ModVector n_mods;      // Mods that are applied in this node.
   ModVector t_mods;      // Mods that need to be saved for subsequent nodes 
                          // as well. It is a subset of n_mods;
   ModificationPtr mod2;
-  Bool is_inf = false;
+  bool is_inf = false;
 
   // TODO: make this more sophisticated: loop several times until no more
   // changes are possible.
@@ -428,10 +429,10 @@ Bool QPDProcessor::presolveNode_(NodePtr node, SolutionPoolPtr s_pool)
 
 void QPDProcessor::processNLP_(NodePtr node, ConstSolutionPtr &sol,
                                ConstSolutionPtr qpsol,
-                               SolutionPoolPtr s_pool, Bool &should_prune)
+                               SolutionPoolPtr s_pool, bool &should_prune)
 {
   EngineStatus nlp_status;
-  Bool int_feas = false;
+  bool int_feas = false;
 
   should_prune = false;
   if (node->getDepth()>0 && qpsol) {
@@ -468,21 +469,21 @@ void QPDProcessor::processNLP_(NodePtr node, ConstSolutionPtr &sol,
 
 
 void QPDProcessor::processQP_(UInt iter, NodePtr node, ConstSolutionPtr &sol,
-                              SolutionPoolPtr s_pool, Bool &should_prune,
-                              Bool &should_resolve)
+                              SolutionPoolPtr s_pool, bool &should_prune,
+                              bool &should_resolve)
 {
   EngineStatus qp_status;
   SolutionPtr sol2;
-  Bool nlp_feas = false;
-  Bool int_feas = false;
-  Double *vio = 0;
-  Double tvio, maxvio;
+  bool nlp_feas = false;
+  bool int_feas = false;
+  double *vio = 0;
+  double tvio, maxvio;
   SeparationStatus status = SepaNone;
   ConstSolutionPtr nlp_sol = SolutionPtr();
-  Bool large_vio = false;
-  Bool large_objvio = false;
+  bool large_vio = false;
+  bool large_objvio = false;
   ConstSolutionPtr qpsol = SolutionPtr();
-  //Bool do_obj = false;
+  //bool do_obj = false;
 
   should_resolve = false;
 
@@ -615,21 +616,21 @@ void QPDProcessor::processQP_(UInt iter, NodePtr node, ConstSolutionPtr &sol,
 
 
 void QPDProcessor::processQP2_(UInt iter, NodePtr node, ConstSolutionPtr &sol,
-                              SolutionPoolPtr s_pool, Bool &should_prune,
-                              Bool &should_resolve)
+                              SolutionPoolPtr s_pool, bool &should_prune,
+                              bool &should_resolve)
 {
   EngineStatus qp_status = EngineUnknownStatus;
-  Bool hiobjd = false;
-  Bool hifrac = false;
-  Bool hicvio = false;
-  Bool hietavio = false;
-  Bool nlp_feas = false;
-  Bool int_feas = false;
-  const Double *qpx = 0;
+  bool hiobjd = false;
+  bool hifrac = false;
+  bool hicvio = false;
+  bool hietavio = false;
+  bool nlp_feas = false;
+  bool int_feas = false;
+  const double *qpx = 0;
   ConstSolutionPtr nlp_sol = ConstSolutionPtr();
   ConstSolutionPtr sol2 = ConstSolutionPtr();
   SeparationStatus status = SepaNone;
-  Double *vio = new Double[nlCons_.size()+1];
+  double *vio = new double[nlCons_.size()+1];
 
   should_resolve = false;
   solveQP_(sol, qp_status);
@@ -780,14 +781,14 @@ CLEANUP:
 }
 
 
-void QPDProcessor::chkObjVio_(Double vio, Double etaval, Bool &large_vio)
+void QPDProcessor::chkObjVio_(double vio, double etaval, bool &large_vio)
 {
-  Double obj_large_thresh = 0.05; // important parameter.
+  double obj_large_thresh = 0.05; // important parameter.
 
   large_vio = false;
 
   if (eta_) {
-    Double d = vio;
+    double d = vio;
     if (d<0.0) {
       d = 0.0;
     } else {
@@ -805,12 +806,12 @@ void QPDProcessor::chkObjVio_(Double vio, Double etaval, Bool &large_vio)
 }
 
 
-void QPDProcessor::chkVio_(NodePtr node, Double *vio, Double &tvio,
-                           Double &maxvio, Bool &large_vio)
+void QPDProcessor::chkVio_(NodePtr node, double *vio, double &tvio,
+                           double &maxvio, bool &large_vio)
 {
-  Double d;
+  double d;
   ConstConstraintPtr c;
-  Double large_thresh = (node->getDepth()<5)?0.05:0.2;
+  double large_thresh = (node->getDepth()<5)?0.05:0.2;
   UInt i = 0;
 
   large_vio = false;
@@ -851,11 +852,11 @@ void QPDProcessor::processRootNode(NodePtr node, RelaxationPtr rel,
   // solve NLP first.
   ConstSolutionPtr sol;
   ConstSolutionPtr qpsol = SolutionPtr(); // NULL
-  Bool should_prune = false;
+  bool should_prune = false;
   BrancherStatus br_status;
   ModVector mods;
   UInt iter = 0;
-  Bool should_resolve = false;
+  bool should_resolve = false;
 
 #if SPEW
   logger_->MsgStream(LogDebug2) << me_ << "processing root node." << std::endl;
@@ -936,8 +937,8 @@ void QPDProcessor::processRootNode(NodePtr node, RelaxationPtr rel,
 void QPDProcessor::process(NodePtr node, RelaxationPtr rel, 
                            SolutionPoolPtr s_pool)
 {
-  Bool should_prune = true;
-  Bool should_resolve;
+  bool should_prune = true;
+  bool should_resolve;
   BrancherStatus br_status;
   ConstSolutionPtr sol;
   ModVector mods;
@@ -1069,21 +1070,21 @@ void QPDProcessor::saveQPSol_(ConstSolutionPtr sol, SolutionPoolPtr s_pool,
 #endif
 
 
-void QPDProcessor::separate_(Bool is_nec, ConstSolutionPtr sol,
-                             const Double *vio,
+void QPDProcessor::separate_(bool is_nec, ConstSolutionPtr sol,
+                             const double *vio,
                              ConstSolutionPtr nlp_sol,
                              NodePtr , SolutionPoolPtr ,
                              SeparationStatus *status) 
 {
-  Double val;
+  double val;
   ConstConstraintPtr c;
   FunctionPtr f;
   UInt i = 0;
   UInt n = qp_->getNumVars();
   VariableConstIterator vbeg, vend;
   LinearFunctionPtr lf;
-  Double lfvio;
-  Double minlfvio = 1e-4;
+  double lfvio;
+  double minlfvio = 1e-4;
   ConstraintPtr cnew;
 
   *status = SepaContinue;
@@ -1172,19 +1173,19 @@ void QPDProcessor::separate_(Bool is_nec, ConstSolutionPtr sol,
 
 
 void QPDProcessor::separateECP_(ConstSolutionPtr sol,
-                                const Double *vio,
+                                const double *vio,
                                 NodePtr , SolutionPoolPtr ,
                                 SeparationStatus *status) 
 {
-  Double val;
+  double val;
   ConstConstraintPtr c;
   FunctionPtr f;
   UInt i = 0;
   UInt n = qp_->getNumVars();
   VariableConstIterator vbeg, vend;
   LinearFunctionPtr lf;
-  Double lfvio;
-  Double minlfvio = 1e-1;
+  double lfvio;
+  double minlfvio = 1e-1;
   ConstraintPtr cnew;
 
   *status = SepaContinue;
@@ -1241,14 +1242,14 @@ void QPDProcessor::separateECP_(ConstSolutionPtr sol,
 
 
 void QPDProcessor::separateObj_(ConstSolutionPtr sol, ConstSolutionPtr nlp_sol,
-                                Double vio, SeparationStatus *status) 
+                                double vio, SeparationStatus *status) 
 {
-  Double val;
+  double val;
   FunctionPtr f;
   UInt n = qp_->getNumVars();
   VariableConstIterator vbeg, vend;
   LinearFunctionPtr lf;
-  Double lfvio;
+  double lfvio;
   ConstraintPtr cnew;
 
   *status = SepaContinue;
@@ -1289,20 +1290,20 @@ void QPDProcessor::setupQP_(ConstSolutionPtr sol)
   ObjectivePtr obj = ObjectivePtr();
   Int err = 0;
   UInt n = p_->getNumVars();
-  Double *grad = new Double[n+1];
-  Double *hess = 0;
-  Double *hdotx = 0;
+  double *grad = new double[n+1];
+  double *hess = 0;
+  double *hdotx = 0;
   UInt *jcol = 0;
   UInt *irow = 0;
   QuadraticFunctionPtr qf;
   UInt hess_nz = 0;
-  Double pred = 0; // for debug.
-  Double obj_const = 0;
+  double pred = 0; // for debug.
+  double obj_const = 0;
   UInt zduals = 0;
   NonlinearFunctionPtr nlf;
-  Double val;
+  double val;
   SolutionPtr qpsol;
-  Double *ddd = new Double[p_->getNumCons()];
+  double *ddd = new double[p_->getNumCons()];
 
   //sol->write(std::cout);
 #if SPEW
@@ -1347,15 +1348,15 @@ void QPDProcessor::setupQP_(ConstSolutionPtr sol)
       } 
 
       hess_nz = p_->getHessian()->getNumNz();
-      hess = new Double[hess_nz];
-      hdotx = new Double[n];
+      hess = new double[hess_nz];
+      hdotx = new double[n];
       jcol = new UInt[hess_nz];
       irow = new UInt[hess_nz];
-      memset(hess, 0, hess_nz * sizeof(Double));
-      memset(hdotx, 0, n * sizeof(Double));
+      memset(hess, 0, hess_nz * sizeof(double));
+      memset(hdotx, 0, n * sizeof(double));
       p_->getHessian()->fillRowColIndices(irow, jcol) ;
 
-      memcpy(ddd, sol->getDualOfCons(), p_->getNumCons()*sizeof(Double));
+      memcpy(ddd, sol->getDualOfCons(), p_->getNumCons()*sizeof(double));
       for (UInt iii=0; iii<p_->getNumCons(); ++iii) {
         if (negDuals_) {
           ddd[iii] *= -1.0;
@@ -1425,7 +1426,7 @@ void QPDProcessor::setupQP_(ConstSolutionPtr sol)
 
   if (eta_) {
     val = 0;
-    memset(grad, 0, (n+1) * sizeof(Double));
+    memset(grad, 0, (n+1) * sizeof(double));
     p_->getObjective()->getFunction()->getNonlinearFunction()->
       evalGradient(sol->getPrimal(), grad, &err);
     assert(0==err);
@@ -1460,10 +1461,10 @@ void QPDProcessor::setupQP_(ConstSolutionPtr sol)
 }
 
 
-Bool QPDProcessor::shouldPrune_(NodePtr node, EngineStatus status, 
+bool QPDProcessor::shouldPrune_(NodePtr node, EngineStatus status, 
                                 ConstSolutionPtr sol, SolutionPoolPtr s_pool)
 {
-  Bool should_prune = false;
+  bool should_prune = false;
   switch (status) {
    case (FailedInfeas):
    case (ProvenFailedCQInfeas):
@@ -1539,10 +1540,10 @@ Bool QPDProcessor::shouldPrune_(NodePtr node, EngineStatus status,
 }
 
 
-Bool QPDProcessor::shouldPruneQP_(NodePtr node, EngineStatus status, 
+bool QPDProcessor::shouldPruneQP_(NodePtr node, EngineStatus status, 
                                   ConstSolutionPtr sol, SolutionPoolPtr )
 {
-  Bool should_prune = false;
+  bool should_prune = false;
   Int err=0;
 
   switch (status) {
@@ -1611,12 +1612,12 @@ Bool QPDProcessor::shouldPruneQP_(NodePtr node, EngineStatus status,
 }
 
 
-Bool QPDProcessor::shouldSep_(Bool is_nec, Double vio, ConstConstraintPtr c)
+bool QPDProcessor::shouldSep_(bool is_nec, double vio, ConstConstraintPtr c)
 {
   if (is_nec) {
     return vio > 1e-5;
   } else {
-    Double d = (c->getUb() < INFINITY) ? c->getUb() : c->getLb();
+    double d = (c->getUb() < INFINITY) ? c->getUb() : c->getLb();
     assert(c->getUb() >= INFINITY || c->getLb() <= INFINITY);
     d = (fabs(d)>1.0) ? fabs(d) : 1.0;
     return vio/d > 2e-2;
@@ -1624,12 +1625,12 @@ Bool QPDProcessor::shouldSep_(Bool is_nec, Double vio, ConstConstraintPtr c)
 }
 
 
-Bool QPDProcessor::shouldSepObj_(Bool is_nec, Double vio, Double etaval)
+bool QPDProcessor::shouldSepObj_(bool is_nec, double vio, double etaval)
 {
   if (is_nec) {
     return vio > 1e-5;
   } else {
-    Double d = vio/fabs(vio+etaval);
+    double d = vio/fabs(vio+etaval);
     return vio/d > 0.2;
   }
 }
@@ -1732,14 +1733,16 @@ void QPDProcessor::updateObjCons_(ConstSolutionPtr sol)
 }
 
 
-Bool QPDProcessor::isHFeasible2_(ConstSolutionPtr sol, Bool &ishigh, Bool &should_prune)
+bool QPDProcessor::isHFeasible2_(ConstSolutionPtr sol, bool &ishigh,
+                                 bool &should_prune)
 {
-  Bool is_feas = true;
+  bool is_feas = true;
   HandlerIterator h;
+  double inf_meas = 0.0;
 
   should_prune = false;
   for (h = handlers_.begin(); h != handlers_.end(); ++h) {
-    is_feas = (*h)->isFeasible(sol, qp_, should_prune);
+    is_feas = (*h)->isFeasible(sol, qp_, should_prune, inf_meas);
     if (is_feas == false || should_prune == true) {
       break;
     }
@@ -1754,13 +1757,14 @@ Bool QPDProcessor::isHFeasible2_(ConstSolutionPtr sol, Bool &ishigh, Bool &shoul
 }
 
 
-void QPDProcessor::chkObjVio2_(const Double *qpx, NodePtr node, Double best, Bool &hiobjd, Bool &hietavio)
+void QPDProcessor::chkObjVio2_(const double *qpx, NodePtr node, double best,
+                               bool &hiobjd, bool &hietavio)
 {
   Int err = 0;
-  Double d = 0.0;
-  Double etaval = 0.0;
-  Double vio = 0.0;
-  Double large_thresh = (node->getDepth()<5)?0.05:0.1;
+  double d = 0.0;
+  double etaval = 0.0;
+  double vio = 0.0;
+  double large_thresh = (node->getDepth()<5)?0.05:0.1;
 
   hiobjd = false;
   hietavio = false;
@@ -1818,13 +1822,13 @@ void QPDProcessor::chkObjVio2_(const Double *qpx, NodePtr node, Double best, Boo
 }
 
 
-Bool QPDProcessor::isNLPFeasible2_(const Double *qpx, Double *vio, NodePtr
-                                   node, Bool &hicvio)
+bool QPDProcessor::isNLPFeasible2_(const double *qpx, double *vio,
+                                   NodePtr node, bool &hicvio)
 {
-  Double act, vl, vu;
+  double act, vl, vu;
   Int err = 0;
   ConstConstraintPtr c;
-  Bool is_feas = true;
+  bool is_feas = true;
   UInt i = 0;
   UInt depth = node->getDepth();
 
@@ -1865,10 +1869,10 @@ Bool QPDProcessor::isNLPFeasible2_(const Double *qpx, Double *vio, NodePtr
 }
 
 
-Bool QPDProcessor::isLargeCVio_(ConstConstraintPtr c, Double vio, UInt depth)
+bool QPDProcessor::isLargeCVio_(ConstConstraintPtr c, double vio, UInt depth)
 {
-  Double large_thresh = (depth<5)?0.05:0.1;
-  Double d;
+  double large_thresh = (depth<5)?0.05:0.1;
+  double d;
 
   if (c->getUb()<INFINITY) {
     d = (fabs(c->getUb())>1) ? vio/fabs(c->getUb()) : vio;
@@ -1883,7 +1887,7 @@ Bool QPDProcessor::isLargeCVio_(ConstConstraintPtr c, Double vio, UInt depth)
 
 
 void QPDProcessor::separateB_(ConstSolutionPtr sol, ConstSolutionPtr nlp_sol,
-                              Double *vio, NodePtr node, SolutionPoolPtr s_pool,
+                              double *vio, NodePtr node, SolutionPoolPtr s_pool,
                               SeparationStatus *status)
 {
   SeparationStatus s = SepaContinue;
@@ -1909,7 +1913,7 @@ void QPDProcessor::separateB_(ConstSolutionPtr sol, ConstSolutionPtr nlp_sol,
 
 
 void QPDProcessor::separateC_(ConstSolutionPtr sol, ConstSolutionPtr nlp_sol,
-                              Double *vio, NodePtr node, SolutionPoolPtr ,
+                              double *vio, NodePtr node, SolutionPoolPtr ,
                               SeparationStatus *status)
 {
   UInt depth = node->getDepth();
@@ -1918,10 +1922,10 @@ void QPDProcessor::separateC_(ConstSolutionPtr sol, ConstSolutionPtr nlp_sol,
   UInt i = 0;
   UInt n = qp_->getNumVars();
   LinearFunctionPtr lf;
-  Double lfvio;
-  Double minlfvio = 0.01;
+  double lfvio;
+  double minlfvio = 0.01;
   FunctionPtr f;
-  Double val;
+  double val;
   ConstraintPtr cnew;
 
   *status = SepaContinue;
@@ -2010,17 +2014,17 @@ void QPDProcessor::separateC_(ConstSolutionPtr sol, ConstSolutionPtr nlp_sol,
 
 
 void QPDProcessor::separateO_(ConstSolutionPtr sol, ConstSolutionPtr nlp_sol,
-                              Double *, NodePtr , SolutionPoolPtr ,
+                              double *, NodePtr , SolutionPoolPtr ,
                               SeparationStatus *status)
 {
-  Double val;
+  double val;
   FunctionPtr f;
   UInt n = qp_->getNumVars();
   VariableConstIterator vbeg, vend;
   LinearFunctionPtr lf;
-  Double lfvio;
+  double lfvio;
   ConstraintPtr cnew;
-  Double minlfvio = 0.1;
+  double minlfvio = 0.1;
 
   *status = SepaContinue;
   vbeg = qp_->varsBegin();

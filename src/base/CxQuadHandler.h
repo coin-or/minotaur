@@ -296,7 +296,7 @@ public:
    * at the first infeasible one.
    */
   bool isFeasible(ConstSolutionPtr sol, RelaxationPtr relaxation, 
-                  bool &is_inf);
+                  bool &is_inf, double &inf_meas);
 
   /**
    * Not implemented yet.

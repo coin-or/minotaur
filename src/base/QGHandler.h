@@ -75,7 +75,7 @@ public:
   // Base class method. Check if x is feasible. x has to satisfy integrality
   // and also nonlinear constraints.
   bool isFeasible(ConstSolutionPtr sol, RelaxationPtr relaxation, 
-                  bool & is_inf);
+                  bool &is_inf, double &should_prune);
 
   // Base class method. Find cuts.
   void separate(ConstSolutionPtr sol, NodePtr node, RelaxationPtr rel, 

@@ -646,7 +646,7 @@ void SimpleTransformer::reformulate(ProblemPtr &newp, HandlerVector &handlers,
   clearUnusedHandlers_(handlers);
   status = 0;
   newp = newp_;
-  newp->write(std::cout);
+  // newp->write(std::cout);
 }
 
 

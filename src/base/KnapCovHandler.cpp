@@ -74,17 +74,18 @@ KnapCovHandler::~KnapCovHandler()
   
 }
 
-Bool KnapCovHandler::isFeasible(ConstSolutionPtr sol, RelaxationPtr ,
-				Bool &)
+bool KnapCovHandler::isFeasible(ConstSolutionPtr sol, RelaxationPtr ,
+				bool &, double &)
 {
   // Get the primal solution.
-  const Double *x = sol->getPrimal();
+  const double *x = sol->getPrimal();
   // Evaluation of constraint for a given solution. 
-  Double activity = 0.0;
+  double activity = 0.0;
   Int error = 0;
   
   // Here I assume that the cons_ data element includes the knapsacks cuts
-  // that has to be checked for feasibility. Ask Ashu if this is correct or not.!!!
+  // that has to be checked for feasibility. Ask Ashu if this is correct or
+  // not.!!!
 
   // Iterators for knapsack constraints.
   CCIter it;
@@ -109,15 +110,15 @@ Bool KnapCovHandler::isFeasible(ConstSolutionPtr sol, RelaxationPtr ,
 
 void KnapCovHandler::separate(ConstSolutionPtr sol, NodePtr,
                               RelaxationPtr rel, CutManager * cmanager,
-                              SolutionPoolPtr , Bool * ,
+                              SolutionPoolPtr , bool * ,
                               SeparationStatus * status)
 {
   // Check integer feasibility of sol, must add cuts if it is not integral.
   numvars_ = minlp_->getNumVars();
   VariableType type;
-  const Double * x = sol->getPrimal();
+  const double * x = sol->getPrimal();
   // Is the relaxation solution is integer feasible.
-  Bool isintfeas = true;
+  bool isintfeas = true;
   // Iterators for variables.
   VariableConstIterator it;
   VariableConstIterator begin = rel->varsBegin();
@@ -125,7 +126,7 @@ void KnapCovHandler::separate(ConstSolutionPtr sol, NodePtr,
   // Temporary variable holder.
   ConstVariablePtr var; 
   // Value of variable.
-  Double value;
+  double value;
 
   // Check if integrality is satisfied for each integer variable. 
   for (it=begin; it!=end; ++it) {

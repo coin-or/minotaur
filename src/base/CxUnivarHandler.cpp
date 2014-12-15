@@ -42,8 +42,8 @@
 using namespace Minotaur;
 
 
-CxUnivarConstraintData::CxUnivarConstraintData(Double eTol,
-					       Double vTol,
+CxUnivarConstraintData::CxUnivarConstraintData(double eTol,
+					       double vTol,
 					       ConstraintPtr newcon,
                                                ConstVariablePtr ivar,
                                                ConstVariablePtr ovar,
@@ -102,14 +102,14 @@ void CxUnivarConstraintData::updateRelax(RelaxationPtr  rel , DoubleVector&  tmp
 
 }
 
-Double CxUnivarConstraintData::getViol(const std::vector< Double > & x) {
+double CxUnivarConstraintData::getViol(const DoubleVector &x) {
 
      Int error;
-     Double fval = con_->getFunction()->eval(x,&error); 
+     double fval = con_->getFunction()->eval(x,&error); 
       
       // TODO: Put in a better (scaled) feasibility check here
-     Double absViol = 0.0;
-     Double relViol = 0.0;
+     double absViol = 0.0;
+     double relViol = 0.0;
      if (fval < con_->getLb() - eTol_) {
 	absViol = con_->getLb() - fval;
      }
@@ -124,11 +124,11 @@ Double CxUnivarConstraintData::getViol(const std::vector< Double > & x) {
      return relViol;
 }
 
-Bool CxUnivarConstraintData::isFeasible(const Double* x) {
+bool CxUnivarConstraintData::isFeasible(const double* x) {
   
-     Bool isfeas = true;
+     bool isfeas = true;
      Int error;
-     Double fval = con_->getFunction()->eval(x,&error); 
+     double fval = con_->getFunction()->eval(x,&error); 
       // TODO: Put in a better (scaled) feasibility check here
      if ((fval < con_->getLb() - eTol_ || fval > con_->getUb() + eTol_) && 
 	      riv_->getUb() - riv_->getLb() > vTol_) {
@@ -160,7 +160,7 @@ CxUnivarHandler::~CxUnivarHandler()
 
 }
 
-void CxUnivarHandler::relaxInitInc(RelaxationPtr rel, Bool *) 
+void CxUnivarHandler::relaxInitInc(RelaxationPtr rel, bool *) 
 {
 
   if (tmpX_.size() != problem_->getNumVars()) {
@@ -210,16 +210,16 @@ void CxUnivarHandler::relaxNodeInc(NodePtr , RelaxationPtr rel, bool *is_inf)
 
 void CxUnivarConstraintData::addLin(RelaxationPtr rel, ConstVariablePtr riv,
 				    ConstVariablePtr rov, FunctionPtr fn,
-				    DoubleVector& tmpX, DoubleVector& grad, Bool init,
+				    DoubleVector& tmpX, DoubleVector& grad, bool init,
 				    ModVector &mods)
 {
  
   Int error;
   ConstraintPtr cons; 
-  Double xlb = riv->getLb();
-  Double xub = riv->getUb();
-  Double fxlbval=0, fxubval=0, dfxlbval=0, dfxubval=0;
-  Double tmpxval, fxval, dfxval; 
+  double xlb = riv->getLb();
+  double xub = riv->getUb();
+  double fxlbval=0, fxubval=0, dfxlbval=0, dfxubval=0;
+  double tmpxval, fxval, dfxval; 
   LinearFunctionPtr lf; 
   FunctionPtr f;
 
@@ -308,11 +308,11 @@ void CxUnivarConstraintData::addLin(RelaxationPtr rel, ConstVariablePtr riv,
 
 
 void CxUnivarConstraintData::addSecant(RelaxationPtr rel, ConstVariablePtr riv,
-	ConstVariablePtr rov, FunctionPtr fn, DoubleVector& tmpX, Bool init, ModVector &mods) 
+	ConstVariablePtr rov, FunctionPtr fn, DoubleVector& tmpX, bool init, ModVector &mods) 
 {
 
   Int error;
-  Double xlb, xub, fxlb, fxub, m, intercept;
+  double xlb, xub, fxlb, fxub, m, intercept;
   LinearFunctionPtr lf; 
   FunctionPtr f;
 
@@ -377,9 +377,10 @@ void CxUnivarHandler::addConstraint(ConstraintPtr newcon, ConstVariablePtr ivar,
 }
 
 
-Bool CxUnivarHandler::isFeasible(ConstSolutionPtr sol, RelaxationPtr , Bool & )
+bool CxUnivarHandler::isFeasible(ConstSolutionPtr sol, RelaxationPtr , bool &,
+                                 double &)
 {
-  Bool isfeas = true;
+  bool isfeas = true;
   CxUnivarConstraintIterator dit; 
   
   for (dit = cons_data_.begin(); dit != cons_data_.end(); ++dit) {
@@ -397,7 +398,7 @@ Bool CxUnivarHandler::isFeasible(ConstSolutionPtr sol, RelaxationPtr , Bool & )
 // Eventually, could add additional linearization inequalities for the convex
 // side here... but not absolutely necessary
 void CxUnivarHandler::separate(ConstSolutionPtr , NodePtr , RelaxationPtr ,
-                               CutManager *, SolutionPoolPtr , Bool *,
+                               CutManager *, SolutionPoolPtr , bool *,
                                SeparationStatus *)
 {
 }
@@ -413,9 +414,9 @@ void CxUnivarHandler::getBranchingCandidates(RelaxationPtr,
   CxUnivarConstraintIterator dit; 
   // Create a map of variables to their weights
   // Weights will be sum of scaled violation of constraints they are argument for
-  std::map<ConstVariablePtr, Double> allCands;
-  std::map<ConstVariablePtr, Double>::iterator curc_it;
-  Double curviol = 0.0;
+  std::map<ConstVariablePtr, double> allCands;
+  std::map<ConstVariablePtr, double>::iterator curc_it;
+  double curviol = 0.0;
   
   for (dit = cons_data_.begin(); dit != cons_data_.end(); ++dit) {
       curviol =(*dit)->getViol(x);   
@@ -456,7 +457,7 @@ ModificationPtr CxUnivarHandler::getBrMod(BrCandPtr cand, DoubleVector &x,
   LinModsPtr lmods;
   lmods = (LinModsPtr) new LinMods();
 
-  Double minFromBds = 0.1;
+  double minFromBds = 0.1;
   BrVarCandPtr vcand = boost::dynamic_pointer_cast <BrVarCand> (cand);
   VariablePtr v = vcand->getVar();
 
@@ -469,9 +470,9 @@ ModificationPtr CxUnivarHandler::getBrMod(BrCandPtr cand, DoubleVector &x,
   // working) problem variables into the BrCandPtr, so we need to
   // update our value appropriately...
   
-  Double xval = x[v->getIndex()];
-  Double value = xval;  // Make sure branch value is not too close to an end point
-  Double len = v->getUb() - v->getLb();
+  double xval = x[v->getIndex()];
+  double value = xval;  // Make sure branch value is not too close to an end point
+  double len = v->getUb() - v->getLb();
   if (value < v->getLb() + minFromBds*len) value = v->getLb() + minFromBds*len;
   else if (value > v->getUb() - minFromBds*len) value = v->getUb() - minFromBds*len; 
 
@@ -502,13 +503,13 @@ ModificationPtr CxUnivarHandler::getBrMod(BrCandPtr cand, DoubleVector &x,
 Branches CxUnivarHandler::getBranches(BrCandPtr cand, DoubleVector &x,
                                       RelaxationPtr , SolutionPoolPtr )
 {
-  Double minFromBds = 0.1;
+  double minFromBds = 0.1;
   BrVarCandPtr vcand = boost::dynamic_pointer_cast <BrVarCand> (cand);
   VariablePtr v = vcand->getVar();
 
-  Double xval = x[v->getIndex()];
-  Double value = xval;  // Make sure branch value is not too close to an end point
-  Double len = v->getUb() - v->getLb();
+  double xval = x[v->getIndex()];
+  double value = xval;  // Make sure branch value is not too close to an end point
+  double len = v->getUb() - v->getLb();
   if (value < v->getLb() + minFromBds*len) value = v->getLb() + minFromBds*len;
   else if (value > v->getUb() - minFromBds*len) value = v->getUb() - minFromBds*len; 
 
@@ -553,7 +554,7 @@ Branches CxUnivarHandler::getBranches(BrCandPtr cand, DoubleVector &x,
 
 BranchPtr
 CxUnivarHandler::doBranch_(BranchDirection UpOrDown, ConstVariablePtr v, 
-			   Double bvalue)
+			   double bvalue)
 {
   BranchPtr branch;
   LinModsPtr linmods;
@@ -595,22 +596,22 @@ CxUnivarHandler::doBranch_(BranchDirection UpOrDown, ConstVariablePtr v,
 	LinearFunctionPtr lf; 
 	FunctionPtr f;
 
-	Double xlb = v->getLb();
-	Double xub = bvalue;
+	double xlb = v->getLb();
+	double xub = bvalue;
 
 	// TODO: Check the error value!
 	tmpX_[v->getIndex()] = xlb;
-	Double fxlb =  fn->eval(tmpX_, &error);
+	double fxlb =  fn->eval(tmpX_, &error);
 	tmpX_[v->getIndex()] = xub;
-	Double fxub =  fn->eval(tmpX_, &error);
+	double fxub =  fn->eval(tmpX_, &error);
 	tmpX_[v->getIndex()] = 0.0;
 
 	// TODO: check/remedy numerical issues in this division
-	Double m = 0.0;
+	double m = 0.0;
 	if (xub - xlb > 10e-7) {
 	  m = (fxub - fxlb)/(xub - xlb);
 	}
-	Double intercept = fxlb - m*xlb;
+	double intercept = fxlb - m*xlb;
 	lf = (LinearFunctionPtr) new LinearFunction();
 	lf->addTerm(rov, 1.0);
 	lf->addTerm(v, -m);
@@ -646,14 +647,14 @@ CxUnivarHandler::doBranch_(BranchDirection UpOrDown, ConstVariablePtr v,
 
 
 // presolve.
-SolveStatus CxUnivarHandler::presolve(PreModQ *, Bool *)
+SolveStatus CxUnivarHandler::presolve(PreModQ *, bool *)
 {
   return Finished;
 }
 
 
 // Implement Handler::presolveNode().
-Bool CxUnivarHandler::presolveNode(RelaxationPtr, NodePtr, SolutionPoolPtr,
+bool CxUnivarHandler::presolveNode(RelaxationPtr, NodePtr, SolutionPoolPtr,
                                    ModVector &, ModVector &)
 {
   return false;

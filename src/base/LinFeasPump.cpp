@@ -56,7 +56,7 @@ LinFeasPump::LinFeasPump(EnvPtr env, ProblemPtr p, EnginePtr e1,
     r_(RelaxationPtr())
 {
   // allocate space for gradient of objective function
-  gradientObj_               = new Double[p_->getNumVars()];
+  gradientObj_               = new double[p_->getNumVars()];
 
   logger_ = (LoggerPtr) new Logger((LogLevel) env_->getOptions()->
      findInt("LinFPump_log_level")->getValue());
@@ -80,12 +80,12 @@ LinFeasPump::~LinFeasPump()
 
 void LinFeasPump::constructObj_(ProblemPtr, ConstSolutionPtr)
 {
-  Double value, lb, ub;
+  double value, lb, ub;
   VariablePtr variable;
   UInt i;
-  //Double obj_relaxation;
-  Double obj_weight;
-  Double constant;
+  //double obj_relaxation;
+  double obj_weight;
+  double constant;
   FunctionPtr f;
   LinearFunctionPtr olf_mod;
 
@@ -121,25 +121,26 @@ void LinFeasPump::constructObj_(ProblemPtr, ConstSolutionPtr)
 }
 
 
-void LinFeasPump::implementFP_(const Double*, SolutionPoolPtr s_pool)
+void LinFeasPump::implementFP_(const double*, SolutionPoolPtr s_pool)
 {
   ConstSolutionPtr sol;
-  const Double* x_lp;
-  Double hash_val, f_nlp;
+  const double* x_lp;
+  double hash_val, f_nlp;
   UInt n_to_flip, k;
   SeparationStatus sep_status = SepaContinue;
   EngineStatus lp_status      = EngineUnknownStatus;
   NodePtr node                = NodePtr();
-  Bool to_continue            = true;
-  Bool is_feasible            = false;
-  Bool sol_found              = false;
-  Bool is_prob_infeasible     = prepareLP_();
-  Bool should_separate        = true;
+  bool to_continue            = true;
+  bool is_feasible            = false;
+  bool sol_found              = false;
+  bool is_prob_infeasible     = prepareLP_();
+  bool should_separate        = true;
   UInt max_NLP                = 10;
   UInt max_LP                 = 2000;
   UInt max_cycle              = 1000;
   UInt min_flip               = 2;
   UInt max_non_zero_obj       = 500;
+  double inf_meas             = 0.0;
   Int err;
   
   e_->setOptionsForSingleSolve();
@@ -169,7 +170,7 @@ void LinFeasPump::implementFP_(const Double*, SolutionPoolPtr s_pool)
       n_to_flip   = std::min(k, p_->getSize()->bins);
 
       if (!to_continue) {
-        is_feasible = qh_->isFeasible(sol, r_, is_prob_infeasible);
+        is_feasible = qh_->isFeasible(sol, r_, is_prob_infeasible, inf_meas);
         if (is_feasible) {
 #if SPEW
           logger_->MsgStream(LogDebug) << me_ << "LP soln is feasible "
@@ -230,16 +231,16 @@ void LinFeasPump::implementFP_(const Double*, SolutionPoolPtr s_pool)
 }
 
 
-Double LinFeasPump::getSolGap_(Double f_nlp, Double f_feas)
+double LinFeasPump::getSolGap_(double f_nlp, double f_feas)
 {
   return (f_feas - f_nlp)/(fabs(f_feas) + 1e-6)*100;
 }
 
 
-Bool LinFeasPump::prepareLP_()
+bool LinFeasPump::prepareLP_()
 {
-  Bool is_inf = false;
- //  std::vector<Bool> c_list(p_->getNumCons(), false);
+  bool is_inf = false;
+ //  std::vector<bool> c_list(p_->getNumCons(), false);
   
   r_  = (RelaxationPtr) new Relaxation();
   lh_ = (LinearHandlerPtr) new LinearHandler(env_, p_);
@@ -270,13 +271,13 @@ Bool LinFeasPump::prepareLP_()
 }
 
 
-void LinFeasPump::separatingCut_(Double f_nlp, SolutionPoolPtr s_pool)
+void LinFeasPump::separatingCut_(double f_nlp, SolutionPoolPtr s_pool)
 {
-  Double new_bnd;
+  double new_bnd;
   LinearFunctionPtr lf;
   FunctionPtr obj_f;
-  Double obj_weight          = 0.6; // increase(<1) to get better improvement
-  Double f_feas              = s_pool->getBestSolutionValue();
+  double obj_weight          = 0.6; // increase(<1) to get better improvement
+  double f_feas              = s_pool->getBestSolutionValue();
 
   new_bnd = obj_weight*f_nlp + (1-obj_weight)*f_feas; 
   if (objVar_) {
@@ -301,7 +302,7 @@ void LinFeasPump::separatingCut_(Double f_nlp, SolutionPoolPtr s_pool)
 }
 
 
-Bool LinFeasPump::shouldFP_()
+bool LinFeasPump::shouldFP_()
 {
   ConstConstraintPtr c;
 
@@ -338,7 +339,7 @@ Bool LinFeasPump::shouldFP_()
 
 void LinFeasPump::solve(NodePtr, RelaxationPtr, SolutionPoolPtr s_pool)
 {
-  const Double* x = 0;
+  const double* x = 0;
   if (!shouldFP_()) {
     return;
   }

@@ -47,21 +47,21 @@ public:
   ~PerspCutHandler();
 
   /// Does nothing.
-  void relaxInitFull(RelaxationPtr, Bool * ) {};
+  void relaxInitFull(RelaxationPtr, bool * ) {};
   
   /// Does nothing.
-  void relaxInitInc(RelaxationPtr, Bool * ) {};
+  void relaxInitInc(RelaxationPtr, bool * ) {};
   
   /// Does nothing.
-  void relaxNodeFull(NodePtr, RelaxationPtr, Bool * ) {};
+  void relaxNodeFull(NodePtr, RelaxationPtr, bool * ) {};
 
   /// Does nothing.
-  void relaxNodeInc(NodePtr, RelaxationPtr, Bool * ) {};
+  void relaxNodeInc(NodePtr, RelaxationPtr, bool * ) {};
 
   /// Check if solution is feasible.
   /// Checks all the constraints if they are satisfied by the given solution.
-  Bool isFeasible(ConstSolutionPtr sol, RelaxationPtr relaxation,
-                  Bool & isInfeasible);
+  bool isFeasible(ConstSolutionPtr sol, RelaxationPtr relaxation,
+                  bool &should_prune, double &inf_meas);
 
   /**
    * We need separation for this handler to generate the knapsack cover
@@ -69,7 +69,7 @@ public:
    * A set of perspective cuts will be generated.
    */
   void separate(ConstSolutionPtr, NodePtr, RelaxationPtr, CutManager *cutman,
-                SolutionPoolPtr, Bool *, SeparationStatus * status);
+                SolutionPoolPtr, bool *, SeparationStatus * status);
 
   // Does nothing.
   virtual void getBranchingCandidates(RelaxationPtr,
@@ -88,10 +88,10 @@ public:
     {return Branches();};
 
   /// Does nothing.
-  SolveStatus presolve(PreModQ *, Bool *) {return Finished;};
+  SolveStatus presolve(PreModQ *, bool *) {return Finished;};
 
   /// Does nothing.
-  virtual Bool presolveNode(RelaxationPtr, NodePtr,
+  virtual bool presolveNode(RelaxationPtr, NodePtr,
                             SolutionPoolPtr, ModVector &,
                             ModVector &) {return false;};
   
@@ -117,7 +117,7 @@ private:
   /**
    * This is false if the current solution violates any perspective cuts.
    */
-  Bool isFeas_;
+  bool isFeas_;
   /// Tolerance for accepting a new solution value: absolute threshold.
   const Double solAbsTol_;
   /// Number of variables in MINLP.

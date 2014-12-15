@@ -98,7 +98,7 @@ public:
   // Returns a vector of constraints that were added
   void addLin(RelaxationPtr rel, ConstVariablePtr iv,
 	    ConstVariablePtr ov, FunctionPtr fn,
-	    DoubleVector& tmpX, DoubleVector& grad, Bool init, ModVector &mods);
+	    DoubleVector& tmpX, DoubleVector& grad, bool init, ModVector &mods);
 
   ConstraintPtr getOriginalCon() const { return con_; }
   ConstraintPtr getSecantCon() const { return secCon_; }
@@ -189,7 +189,7 @@ public:
    *  For this handler, nothing is different at root or any node when doing full
    *  relax
    */
-  void relaxInitFull(RelaxationPtr /*rel*/, Bool* /* is_inf */) {};
+  void relaxInitFull(RelaxationPtr /*rel*/, bool* /* is_inf */) {};
 
   void relaxInitInc(RelaxationPtr rel, bool* is_inf);  
 
@@ -197,7 +197,7 @@ public:
    * Check feasibility.
    */
   bool isFeasible(ConstSolutionPtr sol, RelaxationPtr relaxation, 
-                  bool & isInfeasible);
+                  bool &should_prune, double &inf_meas);
 
   /**
    * Not implemented yet. Eventually, could add violated linearization
@@ -213,7 +213,8 @@ public:
    * and some number of linearization inequalities, at a minimum from the end
    * points
    */
-  virtual void relaxNodeFull(NodePtr /* node */, RelaxationPtr /* rel */, bool* /* isInfeasible */) {} ; 
+  virtual void relaxNodeFull(NodePtr /* node */, RelaxationPtr /* rel */,
+                             bool* /* should_prune */) {} ; 
 
   /** 
    * Create a relaxation by updating the secant inequality for the upper

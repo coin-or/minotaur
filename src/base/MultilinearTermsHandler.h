@@ -47,7 +47,7 @@ public:
     }
 };
   
-  typedef std::map<SetOfVars, Double, CompareSetsOfVars> SetOfVarsDoubleMap;
+  typedef std::map<SetOfVars, double, CompareSetsOfVars> SetOfVarsDoubleMap;
   typedef std::list<SetOfVars> ListOfSetOfVars;
   typedef std::map<ConstVariablePtr, ListOfSetOfVars> AdjListType;
   
@@ -56,21 +56,21 @@ public:
   virtual ~Hypergraph () {};
 
   void adjustEdgeWeightsBetween(const VariablePtr v, const SetOfVars &g, 
-                                Bool phaseOne);
+                                bool phaseOne);
   void create(std::map<ConstVariablePtr, SetOfVars > const &terms);
-  Double getWeight(const SetOfVars &e);
-  SetOfVars heaviestEdge(Bool &maxWeightPositive) const;
+  double getWeight(const SetOfVars &e);
+  SetOfVars heaviestEdge(bool &maxWeightPositive) const;
   VariablePtr heaviestIncidentVertex(const SetOfVars &g);
   ListOfSetOfVars incidentEdges(ConstVariablePtr v) const;
 
-  VariablePtr maxWeightedDegreeVertex(Bool &maxWeightPositive) const;
+  VariablePtr maxWeightedDegreeVertex(bool &maxWeightPositive) const;
   Int numEdges() const { return E_.size(); }
   Int numVertices() const { return V_.size(); }
 
-  SetOfVars randomEdge(Bool &maxWeightPositive);
+  SetOfVars randomEdge(bool &maxWeightPositive);
   void resetWeights();
-  void setWeight(const SetOfVars &e, Double w);
-  Double weightedDegree(ConstVariablePtr v) const;
+  void setWeight(const SetOfVars &e, double w);
+  double weightedDegree(ConstVariablePtr v) const;
   void write(std::ostream &out) const;
 
 private:
@@ -132,24 +132,25 @@ public:
    * Check if each multilinear term is satisfied. Stops on the first
    * violated constraint.
    */
-  Bool isFeasible(ConstSolutionPtr, RelaxationPtr, Bool & );
+  bool isFeasible(ConstSolutionPtr, RelaxationPtr, bool &should_prune,
+                  double &inf_meas );
     
   // Does nothing.
-  void relaxInitFull(RelaxationPtr, Bool *) { assert(0); } ;
+  void relaxInitFull(RelaxationPtr, bool *) { assert(0); } ;
 
   // Build initial relaxation
-  void relaxInitInc(RelaxationPtr, Bool *);
+  void relaxInitInc(RelaxationPtr, bool *);
 
   // Does nothing.
-  void relaxNodeFull(NodePtr, RelaxationPtr, Bool *) {assert(0); };
+  void relaxNodeFull(NodePtr, RelaxationPtr, bool *) {assert(0); };
 
   // All changes are in the branches to the relaxation, so this need not do anything
-  void relaxNodeInc(NodePtr n, RelaxationPtr r , Bool *is_inf);
+  void relaxNodeInc(NodePtr n, RelaxationPtr r , bool *is_inf);
 
     
   /// Can not return any cuts for this case.
   void separate(ConstSolutionPtr, NodePtr , RelaxationPtr , CutManager *, 
-                SolutionPoolPtr, Bool *, SeparationStatus *) {};
+                SolutionPoolPtr, bool *, SeparationStatus *) {};
     
   virtual ModificationPtr getBrMod(BrCandPtr , DoubleVector &, 
                                    RelaxationPtr , BranchDirection );
@@ -158,10 +159,10 @@ public:
                                RelaxationPtr rel, SolutionPoolPtr s_pool);
 
   // presolve.
-  virtual SolveStatus presolve(PreModQ *, Bool *) {return Finished;};
+  virtual SolveStatus presolve(PreModQ *, bool *) {return Finished;};
     
   // Implement Handler::presolveNode()
-  virtual Bool presolveNode(RelaxationPtr, NodePtr, SolutionPoolPtr, ModVector &,
+  virtual bool presolveNode(RelaxationPtr, NodePtr, SolutionPoolPtr, ModVector &,
                     ModVector &)
   {return false;};
 
@@ -187,7 +188,7 @@ private:
 
   // Parameters for term cover
   UInt maxGroupSize_;
-  Double augmentCoverFactor_;
+  double augmentCoverFactor_;
   Int initialTermCoverSize_;
 
 private:
@@ -248,14 +249,14 @@ public:
 private:
 
   // A bunch of helper functions
-  void addEdgeToGroups_(const SetOfVars &e, Bool phaseOne);
-  Bool allVarsBinary_(const SetOfVars &v) const;
-  Bool edgeIsContainedInGroup_(const SetOfVars &e, const SetOfVars &g) const;
-  Bool edgeWillFitInGroup_(const SetOfVars &e, const SetOfVars &g) const;
+  void addEdgeToGroups_(const SetOfVars &e, bool phaseOne);
+  bool allVarsBinary_(const SetOfVars &v) const;
+  bool edgeIsContainedInGroup_(const SetOfVars &e, const SetOfVars &g) const;
+  bool edgeWillFitInGroup_(const SetOfVars &e, const SetOfVars &g) const;
 
   // Helper function to do branch
   BranchPtr doBranch_(BranchDirection UpOrDown, ConstVariablePtr v, 
-                      Double bvalue);
+                      double bvalue);
 
   // A greedy dense term covering heuristic
   void greedyDenseHeuristic_();
@@ -283,12 +284,12 @@ private:
   // Setup the (initial) weights for weighted term cover approach
   //void setupWeights_();
 
-  Bool varsAreGrouped_(SetOfVars const &termvars) const;
+  bool varsAreGrouped_(SetOfVars const &termvars) const;
 
   //WeightContainer::iterator findMaxWeight_();
 
-  Bool varIsAtLowerBoundAtPoint_(ConstVariablePtr &x, SetOfVars const &p);
-  Bool varIsAtUpperBoundAtPoint_(ConstVariablePtr &x, SetOfVars const &p) {
+  bool varIsAtLowerBoundAtPoint_(ConstVariablePtr &x, SetOfVars const &p);
+  bool varIsAtUpperBoundAtPoint_(ConstVariablePtr &x, SetOfVars const &p) {
     return !(varIsAtLowerBoundAtPoint_(x, p));
   }
 
