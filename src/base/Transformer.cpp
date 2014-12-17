@@ -84,7 +84,7 @@ Transformer::~Transformer()
 }
 
 
-Bool Transformer::allConsAssigned_(ProblemPtr p, HandlerVector &handlers)
+bool Transformer::allConsAssigned_(ProblemPtr p, HandlerVector &handlers)
 {
   BoolVector asgn(p->getNumCons(), false);
   for (HandlerVector::const_iterator it=handlers.begin(); it!=handlers.end();
@@ -248,7 +248,7 @@ void Transformer::makeObjLin_()
 }
 
     
-VariablePtr Transformer::newVar_(VariablePtr iv, Double d, ProblemPtr newp)
+VariablePtr Transformer::newVar_(VariablePtr iv, double d, ProblemPtr newp)
 {
   if (fabs(d)<zTol_) {
     return iv;
@@ -278,7 +278,7 @@ VariablePtr Transformer::newVar_(VariablePtr iv, Double d, ProblemPtr newp)
 }
 
 
-VariablePtr Transformer::newVar_(LinearFunctionPtr lf, Double d,
+VariablePtr Transformer::newVar_(LinearFunctionPtr lf, double d,
                                  ProblemPtr newp)
 {
   VariablePtr ov;

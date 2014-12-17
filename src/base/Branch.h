@@ -40,20 +40,20 @@ public:
   /**
    * \brief Add a problem modification to the current vector of modifications
    * associated with this branch.
-   * \param [in] mod The modification that must be added to the child node.
+   * \param[in] mod The modification that must be added to the child node.
    */
   void addPMod(ModificationPtr mod);
 
   /**
    * \brief Add a relaxation modification to the current vector of modifications
    * associated with this branch.
-   * \param [in] mod The modification that must be added to the child node.
+   * \param[in] mod The modification that must be added to the child node.
    */
   void addRMod(ModificationPtr mod);
 
   /** 
    * \brief Set the candidate that was used to generate this branch.
-   * \param [in] cand The branching candidate that was used to create this
+   * \param[in] cand The branching candidate that was used to create this
    * branch.
    */
   void setBrCand(BrCandPtr cand) {brCand_ = cand;};
@@ -111,7 +111,7 @@ public:
   /**
    * \brief Set the activity or the value of the branching expression
    * before we branched.
-   * \param [in] value The value of activity.
+   * \param[in] value The value of activity.
    */
   void setActivity(Double value);
 

@@ -78,21 +78,22 @@ namespace Minotaur {
        * constructor.
        *
        * Create a constraint with 
-       * \param [in] id The unique id of the constraint (determined by
+       * \param [in] id the unique id of the constraint (determined by
        * Problem object), 
+       * \param [in] index the index of the constraint in the problem,
        * \param [in] f the function in the body of the constraint,
        * \param [in] lb the lower bound, can be -INFINITY,
        * \param [in] ub the upper bound, can be  INFINITY,
        * \param [in] name The string name of the constraint.
        */
-      Constraint(UInt id, UInt index, FunctionPtr f, Double lb, Double ub, 
-          std::string name);
+      Constraint(UInt id, UInt index, FunctionPtr f, double lb, double ub, 
+                 std::string name);
 
       /// Destroy
       virtual ~Constraint();
 
       /// Get the value or activity at a given point.
-      Double getActivity(const Double *x, Int *error) const;
+      double getActivity(const double *x, int *error) const;
 
       /// Return a pointer to the function.
       const FunctionPtr getFunction() const { return f_; }
@@ -107,7 +108,7 @@ namespace Minotaur {
       UInt getIndex() const { return index_; }
 
       /// Get the 'l' value. or the lower bound constraint on 'f'.
-      Double getLb() const { return lb_; }
+      double getLb() const { return lb_; }
 
       /// Get the linear part of the constraint function 'f'.
       const LinearFunctionPtr getLinearFunction() const;
@@ -125,14 +126,14 @@ namespace Minotaur {
       ConsState getState() const { return state_; }
 
       /// Get the 'u' value. or the upper bound constraint on 'f'.
-      Double getUb() const { return ub_; }
+      double getUb() const { return ub_; }
 
       /// display the constraint
       void write(std::ostream &out) const;
 
     protected:
       /// Add a constant to the constraint function. lb - c <= f <= ub - c.
-      void add_(Double cb);
+      void add_(double cb);
 
       /// Change the linear part of constraint.
       void changeLf_(LinearFunctionPtr lf);
@@ -141,7 +142,7 @@ namespace Minotaur {
       void changeNlf_(NonlinearFunctionPtr nlf);
 
       /// Delete variables fixed at value val.
-      void delFixedVar_(VariablePtr v, Double val);
+      void delFixedVar_(VariablePtr v, double val);
 
       /**
        * \brief Negate the constraint.
@@ -162,7 +163,7 @@ namespace Minotaur {
        * The new lower bound can be -INFINITY. It can change the state of
        * the constraint.
        */
-      void setLb_(Double newLb) { lb_ = newLb; }
+      void setLb_(double newlb) { lb_ = newlb; }
 
       /// Set name of the constraint
       void setName_(std::string name);
@@ -176,10 +177,10 @@ namespace Minotaur {
        * The new bound can be INFINITY. It can affect the state of the
        * constraint.
        */
-      void setUb_(Double newUb) { ub_ = newUb; }
+      void setUb_(double newub) { ub_ = newub; }
 
       /// \brief Substitute a variable \f$x_1\f$ by \f$rx_2\f$.
-      void subst_(VariablePtr out, VariablePtr in, Double rat, Bool *instay);
+      void subst_(VariablePtr out, VariablePtr in, double rat, bool *instay);
 
     private:
       /// The function 'f' in l <= f(x) <= u.
@@ -192,7 +193,7 @@ namespace Minotaur {
       UInt index_;         
 
       /// 'l' [-infinity, infinity).
-      Double lb_;
+      double lb_;
 
       /// name of the constraint. could be NULL.
       std::string name_;
@@ -201,7 +202,7 @@ namespace Minotaur {
       ConsState state_;
 
       /// 'u' (-infinity, infinity].
-      Double ub_;
+      double ub_;
   };
 }
 #endif

@@ -51,7 +51,7 @@ namespace Minotaur {
        * \param[in] sol The solution at the current node.
        * \param[in] s_pool Solution pool containing known feasible solutions.
        * \param[out] br_status Status returned by this brancher.
-       * \param[out] mod Modification returned by this brancher. NULL if none
+       * \param[out] mods Modification returned by this brancher. NULL if none
        * found.
        */
       virtual Branches findBranches(RelaxationPtr rel, NodePtr node, 

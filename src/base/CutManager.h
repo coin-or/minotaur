@@ -60,7 +60,21 @@ public:
    * \param [in] c Cut pointer to be added. Do not change a cut after it is
    * added.
    */
-  virtual void addCut(CutPtr) = 0;
+  virtual void addCut(CutPtr c) = 0;
+
+  /**
+   * \brief Add a cut
+   * \param [in] p Problem to add a cut to
+   * \param [in] f Function of the cut
+   * \param [in] lb Lower bound
+   * \param [in] ub Upper bound
+   * \param [in] direct_to_rel Whether add the cut directly to rel
+   * \param [in] never_del Whether the cut should always remain in the pool
+   * \return A pointer to the constraint added to rel
+   */
+  virtual ConstraintPtr addCut(ProblemPtr p, FunctionPtr f, double lb,
+                               double ub, bool direct_to_rel, bool never_del)
+    = 0;
 
   /**
    * \brief Add a cut to be managed by the cut manager. The cut is not added
@@ -70,20 +84,6 @@ public:
    * \param [in] cend 'End' iterator of the vector of cuts to be added.
    */
   virtual void addCuts(CutVectorIter cbeg, CutVectorIter cend) = 0;
-
-  /**
-   * \brief Add a cut
-   * \param [in] p Problem to add a cut to
-   * \param [in] f Function of the cut
-   * \param [in] lb Lower bound
-   * \param [in] ub Upper bound
-   * \param [in] directToRel Whether add the cut directly to rel
-   * \param [in] neverDelete Whether the cut should always remain in the pool
-   * \param [out] A pointer to the constraint added to rel
-   */
-  virtual ConstraintPtr addCut(ProblemPtr p, FunctionPtr f, Double lb,
-                               Double ub, Bool directToRel, Bool neverDelete)
-    = 0;
 
   /// Get the total number of cuts available to the manager.
   virtual UInt getNumCuts() const = 0;
@@ -107,33 +107,33 @@ public:
    * \brief Update information on a node which is branched.
    * \param[in] NodePtr branched node.
    * \param[in] ConstSolutionPtr solution of the lp solve in the node.
-   * \param[in] Int number of children
+   * \param[in] int number of children
    */
-  virtual void NodeIsBranched(NodePtr, ConstSolutionPtr, Int) { };
+  virtual void nodeIsBranched(NodePtr, ConstSolutionPtr, int) { };
 
   /**
    * \brief Update information when a node is processed.
    * \param[in] NodePtr node which has already been processed
    */
-  virtual void NodeIsProcessed(NodePtr) { };
+  virtual void nodeIsProcessed(NodePtr) { };
 
   /**
    * Updates information about the cuts after problem is solved.
    * Also removes cuts from relaxation and/or the storage.
-   * \param [in] sol Solution from previous solve.
-   * \param [in] eng_status Status of the engine
+   * \param[in] sol Solution from previous solve.
+   * \param[in] e_status Status of the engine
    */
-  virtual void postSolveUpdate(ConstSolutionPtr, EngineStatus) = 0;
+  virtual void postSolveUpdate(ConstSolutionPtr sol, EngineStatus e_status) = 0;
 
   /**
    * \brief Separate a given point using the cuts in the storage.
-   * \param [in] sol Solution that needs to be separated.
-   * \param [out] separated True if solution is separated by cuts. False
+   * \param[in] sol Solution that needs to be separated.
+   * \param[out] separated True if solution is separated by cuts. False
    * otherwise.
-   * \param [out] n_added The number of cuts added by this routine to the
+   * \param[out] n_added The number of cuts added by this routine to the
    * problem.
    */
-  virtual void separate(ConstSolutionPtr sol, Bool* separated,
+  virtual void separate(ConstSolutionPtr sol, bool* separated,
                         UInt* n_added) = 0;
 
   /**

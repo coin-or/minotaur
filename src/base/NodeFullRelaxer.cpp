@@ -69,7 +69,7 @@ NodeFullRelaxer::~NodeFullRelaxer ()
 
 
 RelaxationPtr NodeFullRelaxer::createRootRelaxation(NodePtr rootNode,
-                                                    Bool &prune)
+                                                    bool &prune)
 {
 
   prune = false;
@@ -86,7 +86,7 @@ RelaxationPtr NodeFullRelaxer::createRootRelaxation(NodePtr rootNode,
 
   //Here we do strong pre-processing, and make changes to rootNode
   if (!prune) {
-    Bool changedNode = strongBoundsTighten_(rootNode);
+    bool changedNode = strongBoundsTighten_(rootNode);
     if (changedNode) {
       // Delete relaxation: Not sure how.  Or will smart pointer do it for you?
       //delete(rel_);
@@ -113,8 +113,8 @@ void NodeFullRelaxer::setEngine(EnginePtr e)
 }
 
 
-RelaxationPtr NodeFullRelaxer::createNodeRelaxation(NodePtr node, Bool, 
-    Bool &prune)
+RelaxationPtr NodeFullRelaxer::createNodeRelaxation(NodePtr node, bool, 
+                                                    bool &prune)
 {
 
 #if defined(DEBUG_NODEFULLRELAXER)
@@ -134,7 +134,7 @@ RelaxationPtr NodeFullRelaxer::createNodeRelaxation(NodePtr node, Bool,
     engine_->clear();
     engine_->load(rel_);
 
-    Bool changedNode = strongBoundsTighten_(node);
+    bool changedNode = strongBoundsTighten_(node);
     if (changedNode) {
       // Delete relaxation: Not sure how.  Or will smart pointer do it for you?
       //delete(rel_);
@@ -164,7 +164,7 @@ RelaxationPtr NodeFullRelaxer::createNodeRelaxation(NodePtr node, Bool,
 }
 
 
-void NodeFullRelaxer::reset(NodePtr , Bool )
+void NodeFullRelaxer::reset(NodePtr , bool )
 {
 }
 
@@ -179,34 +179,38 @@ void NodeFullRelaxer::setRelaxation(RelaxationPtr rel)
   rel_ = rel;
 }
 
-Bool NodeFullRelaxer::isOriginalVariable_(ConstVariablePtr rv, ConstVariablePtr &ov)
+bool NodeFullRelaxer::isOriginalVariable_(ConstVariablePtr /* rv */,
+                                          ConstVariablePtr &/* ov */)
 {
-  Bool retval = false;
+  bool retval = false;
 
   for (HandlerIterator h = handlers_.begin(); h != handlers_.end(); ++h) {
+    assert(!"Need to implement findOriginalVariable in Relaxation class");
+    /*
     if ((*h)->findOriginalVariable(rv,ov)) {
       retval = true;
       break;
     }      
+    */
   }
 
   return retval;
 }
 
 
-Bool NodeFullRelaxer::strongBoundsTighten_(NodePtr node)
+bool NodeFullRelaxer::strongBoundsTighten_(NodePtr node)
 {
-  Bool retval = false;
+  bool retval = false;
   VariableConstIterator v_iter;
   VariablePtr rv, ov;
-  Double z = 0.0;
+  double z = 0.0;
   VarBoundModPtr m;
   ObjectivePtr originalObj = rel_->getObjective();
   
   // Solve each problem
   for (v_iter = rel_->varsBegin(); v_iter != rel_->varsEnd(); ++v_iter) {
     rv = (*v_iter);
-    Bool isOriginal = isOriginalVariable_(rv, ov);
+    bool isOriginal = isOriginalVariable_(rv, ov);
 
     if (isOriginal) {
 

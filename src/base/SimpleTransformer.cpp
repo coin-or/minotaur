@@ -23,6 +23,7 @@
 #include "CxUnivarHandler.h"
 #include "Function.h"
 #include "IntVarHandler.h"
+#include "LinBil.h"
 #include "LinearFunction.h"
 #include "LinearHandler.h"
 #include "Logger.h"
@@ -532,9 +533,7 @@ void SimpleTransformer::refNonlinCons_(ConstProblemPtr oldp)
           cnew = newp_->newConstraint(f2, c->getLb()-d, c->getUb()-d);
           lHandler_->addConstraint(cnew);
       } 
-    } else {
-      assert(!"empty constraint?");
-    }
+    } // other case already dealt with in copyLinear_() 
   }
 }
 

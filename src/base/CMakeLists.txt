@@ -50,6 +50,7 @@ set (MINOTAUR_SOURCES
      LPProcessor.cpp 
      LPRelaxation.cpp 
      LexicoBrancher.cpp 
+     LinBil.cpp 
      LinConMod.cpp 
      LinMods.cpp 
      LinearCut.cpp 
@@ -153,6 +154,7 @@ set (MINOTAUR_HEADERS
      LinearFunction.h
      LinearHandler.h
      LinFeasPump.h 
+     LinBil.h
      LinConMod.h
      LinMods.h
      LGCIGenerator.h # Serdar

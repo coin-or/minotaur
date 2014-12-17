@@ -294,38 +294,38 @@ void Environment::createDefaultOptions_()
   // double options
   
   // Serdar added these options for MultilinearTermsHandler class
-  d_option = (DoubleOptionPtr) new Option<Double>("ml_feastol", 
+  d_option = (DoubleOptionPtr) new Option<double>("ml_feastol", 
       "MultilinearTermsHandler feasibility tolerance.", true, 0.00001);
   options_->insert(d_option);
 
   // Serdar added these options for MultilinearTermsHandler class
-  d_option = (DoubleOptionPtr) new Option<Double>("ml_cover_augmentation_factor", 
+  d_option = (DoubleOptionPtr) new Option<double>("ml_cover_augmentation_factor", 
       "Covering augmentation factor for ml grouping: >= 1", true, 2.0);
   options_->insert(d_option);
 
   // Serdar ended.
 
-  d_option = (DoubleOptionPtr) new Option<Double>("bnb_time_limit", 
+  d_option = (DoubleOptionPtr) new Option<double>("bnb_time_limit", 
       "Limit on time in branch-and-bound in seconds: >0",
       true, 1e20);
   options_->insert(d_option);
   
-  d_option = (DoubleOptionPtr) new Option<Double>("bnb_log_interval", 
+  d_option = (DoubleOptionPtr) new Option<double>("bnb_log_interval", 
       "Display interval in seconds for branch-and-bound status: >0", true, 
       5.);
   options_->insert(d_option);
 
-  d_option = (DoubleOptionPtr) new Option<Double>("obj_cut_off", 
+  d_option = (DoubleOptionPtr) new Option<double>("obj_cut_off", 
       "Nodes with objective value above obj_cut_off are assumed infeasible",
       true, INFINITY);
   options_->insert(d_option);
 
-  d_option = (DoubleOptionPtr) new Option<Double>("obj_gap_percent", 
+  d_option = (DoubleOptionPtr) new Option<double>("obj_gap_percent", 
       "Prune nodes with obj. value greater than (1-obj_gap/100)*best_value.",
       true, 0.0);
   options_->insert(d_option);
 
-  d_option = (DoubleOptionPtr) new Option<Double>("int_tol", 
+  d_option = (DoubleOptionPtr) new Option<double>("int_tol", 
       "Tolerance for checking integrality",
       true, 0.000001);
   options_->insert(d_option);
@@ -407,7 +407,7 @@ void Environment::convertAndAddOneOption_(BoolOptionPtr &b_option,
     logger_->MsgStream(LogInfo) << off << i_option->getName() << " = " <<
       i_option->getValue() << std::endl; 
   } else if (d_option) {
-    Double d_value;
+    double d_value;
     mystream << std::flush;
     mystream << value;
     mystream >> d_value;
@@ -509,7 +509,7 @@ OptionDBPtr Environment::getOptions()
 }
 
 
-Double Environment::getTime(int &err)
+double Environment::getTime(int &err)
 {
   if (timer_) {
     err = 0;

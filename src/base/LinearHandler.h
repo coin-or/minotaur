@@ -24,19 +24,18 @@ typedef boost::shared_ptr<LinearFunction> LinearFunctionPtr;
 /// Store statistics of presolving.
 struct LinPresolveStats 
 {
-  int iters;   /// Number of iterations (main cycle).
-  double time; /// Total time used in initial presolve.
-  double timeN;/// Total time used in presolveNode.
-  int varDel;  /// Number of variables marked for deletion.
-  int conDel;  /// Number of constraints marked for deletion.
-  int var2Bin; /// Number of variables converted to binary.
-  int var2Int; /// Number of variables converted to integers.
-  int vBnd;    /// Number of times variable-bounds were tightened.
-  int cBnd;    /// Number of times constraint-bounds were tightened.
-  int cImp;    /// Number of times coefficient in a constraint was improved.
-  int bImpl;   /// Number of times a binary variable was converted to 
-  /// implied binary.
-  int nMods;   /// Number of changes made in all nodes.
+  int iters;   ///> Number of iterations (main cycle).
+  double time; ///> Total time used in initial presolve.
+  double timeN;///> Total time used in presolveNode.
+  int varDel;  ///> Number of variables marked for deletion.
+  int conDel;  ///> Number of constraints marked for deletion.
+  int var2Bin; ///> Number of variables converted to binary.
+  int var2Int; ///> Number of variables converted to integers.
+  int vBnd;    ///> Number of times variable-bounds were tightened.
+  int cBnd;    ///> Number of times constraint-bounds were tightened.
+  int cImp;    ///> Number of times coefficient in a constraint was improved.
+  int bImpl;   ///> No. of times a binary var. was changed to implied binary.
+  int nMods;   ///> Number of changes made in all nodes.
 };
 
 /// Options for presolve.
@@ -230,7 +229,7 @@ protected:
    * constraints and variable-bounds from a given problem.
    * 
    * \param[in] p The problem whose relaxation we want to create.
-   * \param[in/out] rel The relaxation in which we want to add new variables
+   * \param[in] rel The relaxation in which we want to add new variables
    * and constraints.
    * \param [out] is_inf True if problem p is found to be infeasible, false
    * otherwise.

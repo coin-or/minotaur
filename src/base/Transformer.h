@@ -135,7 +135,7 @@ protected:
   YEqVars *yVars_;
 
   /// Tolerance for checking if a value is zero.
-  const Double zTol_;
+  const double zTol_;
 
   /**
    * \brief Check if all constraints in a problem have been assigned to a
@@ -144,7 +144,7 @@ protected:
    * \param[in] p Problem whose constraints need to be checked.
    * \returns True if all constraints have been assigned. False otherwise.
    */
-  Bool allConsAssigned_(ProblemPtr p, HandlerVector &handlers);
+  bool allConsAssigned_(ProblemPtr p, HandlerVector &handlers);
 
   /**
    * \brief Assign an appropriate handler to a nonlinear constraint of the
@@ -204,7 +204,7 @@ protected:
    * variable found in it, otherwise it addes a new variable to the problem
    * and returns it.
    */
-  VariablePtr newVar_(VariablePtr iv, Double d, ProblemPtr newp);
+  VariablePtr newVar_(VariablePtr iv, double d, ProblemPtr newp);
 
   /**
    * \brief Find the auxiliary variable associated with \f$y_i = c^Tx+d\f$ or
@@ -219,7 +219,7 @@ protected:
    * variable found in it, otherwise it addes a new variable to the problem
    * and returns it.
    */
-  VariablePtr newVar_(LinearFunctionPtr lf, Double d, ProblemPtr newp);
+  VariablePtr newVar_(LinearFunctionPtr lf, double d, ProblemPtr newp);
 
   /**
    * \brief Find the auxiliary variable associated with \f$y_i = f(x)+d\f$ or

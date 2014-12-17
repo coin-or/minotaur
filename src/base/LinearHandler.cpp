@@ -1510,7 +1510,6 @@ void LinearHandler::simplePresolve(ProblemPtr p, SolutionPoolPtr spool,
   UInt nintmods;
   Timer *timer = 0;
 
-  // do only every 10th node below depth 3.
   timer = env_->getNewTimer();
   timer->start();
   while (true==changed && iters<=max_iters && 

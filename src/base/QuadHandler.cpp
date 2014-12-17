@@ -24,19 +24,21 @@
 #include "Constraint.h"
 #include "Environment.h"
 #include "Function.h"
+#include "LinBil.h"
+#include "LinearFunction.h"
 #include "LinMods.h"
 #include "Logger.h"
-#include "SecantMod.h"
 #include "Node.h"
 #include "NonlinearFunction.h"
 #include "Objective.h"
 #include "Operations.h"
 #include "Option.h"
+#include "ProblemSize.h"
 #include "QuadHandler.h"
 #include "QuadraticFunction.h"
-#include "ProblemSize.h"
 #include "Relaxation.h"
 #include "SolutionPool.h"
+#include "Timer.h"
 #include "Variable.h"
 
 // #define SPEW 1
@@ -58,7 +60,10 @@ QuadHandler::QuadHandler(EnvPtr env, ProblemPtr problem)
   modProb_ = true;
   modRel_ = true;
   logger_  = (LoggerPtr) new Logger((LogLevel) 
-      env->getOptions()->findInt("handler_log_level")->getValue());
+                                    env->getOptions()->
+                                    findInt("handler_log_level")->getValue());
+  resetStats_();
+  timer_ = env->getTimer();
 }
 
 
@@ -84,7 +89,7 @@ void QuadHandler::addConstraint(ConstraintPtr newcon)
   VariablePtr y, x0, x1;
   FunctionPtr f;
   LinSqrPtr lx2;
-  LinBilPtr linbil;
+  LinBil* linbil;
   LinBilSetIter biter;
 
   cons_.push_back(newcon);
@@ -266,7 +271,7 @@ void QuadHandler::getBranchingCandidates(RelaxationPtr rel,
   // Now check if there is a violated constraint of the form y = x0.x1.
   // If so, add both x0 and x1 to the candidate set.
   for (LinBilSetIter s_it=x0x1Funs_.begin(); s_it!=x0x1Funs_.end(); ++s_it) {
-    LinBilPtr bil = (*s_it);
+    LinBil* bil = (*s_it);
     x0 = rel->getRelaxationVar(bil->getX0());
     x1 = rel->getRelaxationVar(bil->getX1());
     x0val = x[x0->getIndex()];
@@ -352,88 +357,10 @@ void QuadHandler::getBranchingCandidates(RelaxationPtr rel,
 }
 
 
-ModificationPtr QuadHandler::getBrMod(BrCandPtr cand, DoubleVector &xval, 
-                                      RelaxationPtr , BranchDirection dir)
+ModificationPtr QuadHandler::getBrMod(BrCandPtr , DoubleVector &, 
+                                      RelaxationPtr , BranchDirection )
 {
-  double            lb, ub, lb1, ub1, b2, rhs=0;
-  BoundType         lu;
-  ConstraintPtr     cons;
-  BrVarCandPtr      vcand = boost::dynamic_pointer_cast <BrVarCand> (cand);
-  VariablePtr       x0, x1, v, y;
-  LinSqrMapIter     s_it;
-  LinearFunctionPtr lf;
-  LinBilPtr         mcc;
-  SecantModPtr      smod;
   LinModsPtr        lmods;
-  LinConModPtr      lmod;
-  VarBoundModPtr    bmod;
-  VarBoundMod2Ptr   b2mod;
-
-  x0 = vcand->getVar();
-
-  if (dir == DownBranch ) {
-    lb    = x0->getLb();
-    ub    = xval[x0->getIndex()];
-    b2    = ub;
-    lu    = Upper;
-  } else {
-    lb    = xval[x0->getIndex()];
-    ub    = x0->getUb();
-    b2    = lb;
-    lu    = Lower;
-  }
-
-  // first find if we have secants associated with x0
-  s_it = x2Funs_.find(x0);
-  if (s_it!=x2Funs_.end()) {
-    y = s_it->second->y;
-    cons = s_it->second->oeCon;
-    //lf    = getNewSecantLf_(x0, y, lb, ub, rhs);
-    smod = (SecantModPtr) new SecantMod(cons, lf, rhs, x0, lu, b2, y);
-    return smod;
-  } 
-
-  // also try to find any LinBil inequalities associated with x0
-  lmods = (LinModsPtr) new LinMods();
-  for (LinBilSetIter it=x0x1Funs_.begin(); it != x0x1Funs_.end(); ++it) {
-    mcc = (*it);
-    x1 = mcc->getOtherX(x0);
-    if (x1) {
-      // This term contains x0 and x1. 
-      y = mcc->getY();
-      lmods = (LinModsPtr) new LinMods();
-      //if (mcc->getSense() == LinBil::LT || 
-      //    mcc->getSense() == LinBil::EQ) {
-      //  // y >= l0x1 + l1x0 - l1l0
-      //  lf = getMcLf_(x0, lb, ub, x1, x1->getLb(), x1->getUb(), y, rhs, 0);
-      //  lmod = (LinConModPtr) new LinConMod(mcc->getC0(), lf, -INFINITY, rhs);
-      //  lmods->insert(lmod);
-
-      //  // y >= u0x1 + u1x0 - u1u0
-      //  lf = getMcLf_(x0, lb, ub, x1, x1->getLb(), x1->getUb(), y, rhs, 1);
-      //  lmod = (LinConModPtr) new LinConMod(mcc->getC1(), lf, -INFINITY, rhs);
-      //  lmods->insert(lmod);
-      //}
-
-      //if (mcc->getSense() == LinBil::GT || 
-      //    mcc->getSense() == LinBil::EQ) {
-      //  // y <= u1x0 + l0x1 - l0u1
-      //  lf = getMcLf_(x0, lb, ub, x1, x1->getLb(), x1->getUb(), y, rhs, 2);
-      //  lmod = (LinConModPtr) new LinConMod(mcc->getC2(), lf, -INFINITY, rhs);
-      //  lmods->insert(lmod);
-
-      //  // y <= l1x0 + u0x1 - u0l1
-      //  lf = getMcLf_(x0, lb, ub, x1, x1->getLb(), x1->getUb(), y, rhs, 3);
-      //  lmod = (LinConModPtr) new LinConMod(mcc->getC3(), lf, -INFINITY, rhs);
-      //  lmods->insert(lmod);
-      //}
-      BoundsOnProduct(lb, ub, x1->getLb(), x1->getUb(), lb1, ub1);
-      b2mod  = (VarBoundMod2Ptr) new VarBoundMod2(y, lb1, ub1);
-      lmods->insert(b2mod);
-    }
-  }
-  bmod = (VarBoundModPtr) new VarBoundMod(x0, lu, b2);
-  lmods->insert(bmod);
   return lmods;
 }
 
@@ -529,6 +456,7 @@ void QuadHandler::addCut_(VariablePtr x, VariablePtr y,
     f = (FunctionPtr) new Function(lf);
     c = rel->newConstraint(f, -INFINITY, xl*xl);
     ifcuts = true;
+    ++sStats_.cuts;
 #if SPEW
     logger_->MsgStream(LogDebug2) << me_ << "new cut added" << std::endl;
     c->write(logger_->MsgStream(LogDebug2));
@@ -541,6 +469,7 @@ void QuadHandler::addCut_(VariablePtr x, VariablePtr y,
 #endif
   }
 }
+
 
 bool QuadHandler::isAtBnds_(ConstVariablePtr x, double xval)
 {
@@ -614,16 +543,19 @@ bool QuadHandler::presolveNode(RelaxationPtr rel, NodePtr, SolutionPoolPtr,
                                ModVector &p_mods, ModVector &r_mods)
 {
   bool lchanged = true;
-  bool changed = false;
+  bool changed = true;
   bool is_inf = false;
-  // visit each quadratic constraint and see if bounds can be improved.
+  double stime = timer_->query();
 
+  // visit each quadratic constraint and see if bounds can be improved.
   while (true==changed) {
-    lchanged = false;
+    ++pStats_.iters;
+    changed = false;
     for (LinSqrMapIter it=x2Funs_.begin(); it != x2Funs_.end(); ++it) {
       is_inf = propSqrBnds_(it, rel, modRel_, &lchanged, p_mods, r_mods);
       if (true==lchanged) {
         changed = true;
+        lchanged = false;
       }
       if (is_inf) {
         return true;
@@ -633,6 +565,7 @@ bool QuadHandler::presolveNode(RelaxationPtr rel, NodePtr, SolutionPoolPtr,
       is_inf = propBilBnds_(*it, rel, modRel_, &lchanged, p_mods, r_mods);
       if (true==lchanged) {
         changed = true;
+        lchanged = false;
       }
       if (is_inf) {
         return true;
@@ -648,13 +581,19 @@ bool QuadHandler::presolveNode(RelaxationPtr rel, NodePtr, SolutionPoolPtr,
     upBilCon_(*it, rel, r_mods);
   }
 
+  if (modRel_) {
+    pStats_.nMods += r_mods.size();
+  } else {
+    pStats_.nMods += p_mods.size();
+  }
   //rel->write(std::cout);
 
+  pStats_.timeN += timer_->query()-stime;
   return false;
 }
 
 
-bool QuadHandler::propBilBnds_(LinBilPtr lx0x1, RelaxationPtr rel,
+bool QuadHandler::propBilBnds_(LinBil* lx0x1, RelaxationPtr rel,
                                bool mod_rel, bool *changed, ModVector &p_mods,
                                ModVector &r_mods)
 {
@@ -688,7 +627,7 @@ bool QuadHandler::propBilBnds_(LinBilPtr lx0x1, RelaxationPtr rel,
   return false;
 }
 
-bool QuadHandler::propBilBnds_(LinBilPtr lx0x1, bool *changed)
+bool QuadHandler::propBilBnds_(LinBil* lx0x1, bool *changed)
 {
   double lb, ub;
   VariablePtr x0   = lx0x1->getX0();     // x0 and x1 are variables in p_
@@ -853,6 +792,20 @@ void QuadHandler::relaxNodeInc(NodePtr, RelaxationPtr, bool *)
 }
 
 
+void QuadHandler::resetStats_()
+{
+  pStats_.iters  = 0;
+  pStats_.time   = 0.0;
+  pStats_.timeN  = 0.0;
+  pStats_.vBnd   = 0;
+  pStats_.nMods  = 0;
+  
+  sStats_.iters  = 0;
+  sStats_.cuts   = 0;
+  sStats_.time   = 0.0;
+}
+
+
 void QuadHandler::separate(ConstSolutionPtr sol, NodePtr , RelaxationPtr rel,
                            CutManager *, SolutionPoolPtr , bool *,
                            SeparationStatus *status)
@@ -862,6 +815,7 @@ void QuadHandler::separate(ConstSolutionPtr sol, NodePtr , RelaxationPtr rel,
   const double *x = sol->getPrimal();
   bool ifcuts;
 
+  ++sStats_.iters;
   for (LinSqrMapIter it=x2Funs_.begin(); it != x2Funs_.end(); ++it) {
     xval = x[it->first->getIndex()];
     yval = x[it->second->y->getIndex()];
@@ -895,10 +849,12 @@ int QuadHandler::updatePBounds_(VariablePtr v, double lb, double ub,
   if (ub < v->getUb() - aTol_) {
     p_->changeBound(v, Upper, ub);
     *changed = true;
+    ++pStats_.vBnd;
   }
   if (lb > v->getLb() + aTol_) {
     p_->changeBound(v, Lower, lb);
     *changed = true;
+    ++pStats_.vBnd;
   }
 
   return 0;
@@ -919,6 +875,7 @@ int QuadHandler::updatePBounds_(VariablePtr v, double lb, double ub,
 
   if (lb > v->getLb()+aTol_ && ub < v->getUb()-aTol_) {
     *changed = true;
+    ++pStats_.vBnd;
     b2mod  = (VarBoundMod2Ptr) new VarBoundMod2(v, lb, ub);
     b2mod->applyToProblem(p_);
     p_mods.push_back(b2mod);
@@ -930,6 +887,7 @@ int QuadHandler::updatePBounds_(VariablePtr v, double lb, double ub,
       r_mods.push_back(b2mod);
     }
   } else if (lb > v->getLb()+aTol_) {
+    ++pStats_.vBnd;
     *changed = true;
     bmod  = (VarBoundModPtr) new VarBoundMod(v, Lower, lb);
     bmod->applyToProblem(p_);
@@ -942,6 +900,8 @@ int QuadHandler::updatePBounds_(VariablePtr v, double lb, double ub,
       r_mods.push_back(bmod);
     }
   } else if (ub < v->getUb()-aTol_) {
+    ++pStats_.vBnd;
+    *changed = true;
     bmod  = (VarBoundModPtr) new VarBoundMod(v, Upper, ub);
     bmod->applyToProblem(p_);
     p_mods.push_back(bmod);
@@ -957,8 +917,8 @@ int QuadHandler::updatePBounds_(VariablePtr v, double lb, double ub,
 }
 
 
-int QuadHandler::upBilCon_(LinBilPtr lx0x1, RelaxationPtr rel, ModVector
-                           &r_mods)
+void QuadHandler::upBilCon_(LinBil* lx0x1, RelaxationPtr rel, ModVector
+                            &r_mods)
 {
   LinModsPtr   lmods;
   LinConModPtr lmod;
@@ -1031,12 +991,11 @@ int QuadHandler::upBilCon_(LinBilPtr lx0x1, RelaxationPtr rel, ModVector
     lmod->applyToProblem(rel);
     r_mods.push_back(lmod);
   }
-  return 0;
 }
 
 
-int QuadHandler::upSqCon_(ConstraintPtr con, VariablePtr x, VariablePtr y, 
-                          RelaxationPtr rel, ModVector &r_mods)
+void QuadHandler::upSqCon_(ConstraintPtr con, VariablePtr x, VariablePtr y, 
+                           RelaxationPtr rel, ModVector &r_mods)
 {
   LinearFunctionPtr lf = con->getLinearFunction();
   double a_x = lf->getWeight(x);
@@ -1054,7 +1013,6 @@ int QuadHandler::upSqCon_(ConstraintPtr con, VariablePtr x, VariablePtr y,
     lmod->applyToProblem(rel);
     r_mods.push_back(lmod);
   }
-  return 0;
 }
 
 
@@ -1077,99 +1035,22 @@ bool QuadHandler::varBndsFromCons_(bool *changed)
 }
 
 
-// --------------------------------------------------------------------------
-// --------------------------------------------------------------------------
-
-LinBil::LinBil(VariablePtr x0, VariablePtr x1, VariablePtr y)
- : aTol_(1e-5),
-   rTol_(1e-4),
-   y_(y)
+void QuadHandler::writeStats(std::ostream &out) const
 {
-  if (x0->getIndex()>x1->getIndex()) {
-    x0_ = x1;
-    x1_ = x0;
-  } else {
-    x0_ = x0;
-    x1_ = x1;
-  }
-  c0_ = c1_ = c2_ = c3_ = ConstraintPtr(); // NULL
+  out << me_ << "Statistics for presolve by QuadHandler:"        << std::endl
+    << me_ << "Number of iterations           = "<< pStats_.iters  << std::endl
+    << me_ << "Time taken in initial presolve = "<< pStats_.time   << std::endl
+    << me_ << "Time taken in node presolves   = "<< pStats_.timeN  << std::endl
+    << me_ << "Times variables tightened      = "<< pStats_.vBnd   << std::endl
+    << me_ << "Changes in nodes               = "<< pStats_.nMods  << std::endl
+    ;
+
+  out << me_ << "Statistics for separation by QuadHandler:"        << std::endl
+    << me_ << "Number of calls to separate    = "<< sStats_.iters  << std::endl
+    << me_ << "Number of cuts added           = "<< sStats_.cuts   << std::endl
+    << me_ << "Time taken in separation       = "<< sStats_.time   << std::endl
+    ;
 }
-
-
-LinBil::~LinBil() 
-{
-  x0_.reset();
-  x1_.reset();
-  y_.reset();
-  c0_.reset();
-  c1_.reset();
-  c2_.reset();
-  c3_.reset();
-}
-
-
-bool Minotaur::CompareLinBil::operator()(LinBilPtr b0, LinBilPtr b1) const
-{
-  UInt b0x0 = b0->getX0()->getId();
-  UInt b0x1 = b0->getX1()->getId();
-
-  UInt b1x0 = b1->getX0()->getId();
-  UInt b1x1 = b1->getX1()->getId();
-
-  if (b0x0 == b1x0) {
-    return (b0x1 < b1x1);
-  }
-  return (b0x0 < b1x0);
-}
-
-
-bool LinBil::isViolated(const double *x, double &vio) const
-{
-
-  double xval = x[x0_->getIndex()] * x[x1_->getIndex()];
-  double yval = x[y_->getIndex()];
-
-  vio = fabs(xval - yval);
-  if (vio > aTol_ && vio > fabs(yval)*rTol_) {
-    return true;
-  }
-  return false;
-}
-
-
-bool LinBil::isViolated(const double x0val, const double x1val, 
-                        const double yval) const
-{
-  double xval = x1val*x0val;
-  if (fabs(xval - yval) > aTol_ && fabs(xval - yval) > fabs(yval)*rTol_) {
-    return true;
-  }
-  return false;
-}
-
-
-VariablePtr LinBil::getOtherX(ConstVariablePtr x) const
-{
-  if (x0_==x) {
-   return x1_;
-  } else if (x1_==x) {
-    return x0_;
-  } else {
-    VariablePtr v = VariablePtr(); // NULL
-    return v;
-  }
-}
-
-
-void LinBil::setCons(ConstraintPtr c0, ConstraintPtr c1, ConstraintPtr c2,
-                     ConstraintPtr c3)
-{
-  c0_ = c0;
-  c1_ = c1;
-  c2_ = c2;
-  c3_ = c3;
-}
-
 
 // Local Variables: 
 // mode: c++ 

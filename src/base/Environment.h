@@ -53,7 +53,7 @@ namespace Minotaur {
       double getTime(int &err);
 
       /**
-       * Get the global timer.
+       * \brief Get the global timer.
        *
        * \return The timer used to query the time elapsed since the solver
        * started.

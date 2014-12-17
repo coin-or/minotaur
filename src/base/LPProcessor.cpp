@@ -135,6 +135,7 @@ bool LPProcessor::presolveNode_(NodePtr node, SolutionPoolPtr s_pool)
     for (ModificationConstIterator m_iter=r_mods.begin(); m_iter!=r_mods.end(); 
         ++m_iter) {
       node->addRMod(*m_iter);
+      // (*m_iter)->write(std::cout);
     }
     p_mods.clear();
     r_mods.clear();
@@ -304,7 +305,7 @@ void LPProcessor::process(NodePtr node, RelaxationPtr rel,
         }
         should_resolve = true;
       } else if (cutMan_){
-        cutMan_->NodeIsBranched(node,sol,branches_->size());
+        cutMan_->nodeIsBranched(node,sol,branches_->size());
       }
     }
     if (should_resolve == false) {

@@ -38,7 +38,7 @@ Constraint::Constraint()
 }
 
 
-Constraint::Constraint(UInt id, UInt index, FunctionPtr f, Double lb, Double
+Constraint::Constraint(UInt id, UInt index, FunctionPtr f, double lb, double
                        ub, std::string name)
   :f_(f),
    id_(id),
@@ -57,7 +57,7 @@ Constraint::~Constraint()
 }
 
 
-void Constraint::add_(Double cb)
+void Constraint::add_(double cb)
 {
   lb_-=cb;
   ub_-=cb;
@@ -76,10 +76,10 @@ void Constraint::changeNlf_(NonlinearFunctionPtr nlf)
 }
 
 
-void Constraint::delFixedVar_(VariablePtr v, Double val)
+void Constraint::delFixedVar_(VariablePtr v, double val)
 {
   if (f_ && f_->hasVar(v)) {
-    Double offset = f_->getFixVarOffset(v, val);
+    double offset = f_->getFixVarOffset(v, val);
     lb_ -= offset;
     ub_ -= offset;
     f_->removeVar(v, val);
@@ -87,7 +87,7 @@ void Constraint::delFixedVar_(VariablePtr v, Double val)
 }
 
 
-Double Constraint::getActivity(const Double *x, Int *error) const
+double Constraint::getActivity(const double *x, int *error) const
 {
   return f_->eval(x, error);
 }
@@ -125,7 +125,7 @@ const QuadraticFunctionPtr Constraint::getQuadraticFunction() const
 
 void Constraint::reverseSense_()
 {
-  Double tmp = lb_;
+  double tmp = lb_;
   (*f_) *= -1;
   lb_    = -1*ub_;
   ub_    = -1*tmp;
@@ -138,8 +138,8 @@ void Constraint::setName_(std::string name)
 }
 
 
-void Constraint::subst_(VariablePtr out, VariablePtr in, Double rat,
-                        Bool *instay)
+void Constraint::subst_(VariablePtr out, VariablePtr in, double rat,
+                        bool *instay)
 {
   *instay = false;
   if (f_ && f_->hasVar(out)) {

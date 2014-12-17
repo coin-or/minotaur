@@ -104,7 +104,7 @@ public:
    * \param[out] gencands The vector of general branching candidates. All
    * candidates that do not want to branch on a variable dichotomy must be
    * added in this vector.
-   * \param[out] isInf true if the handler finds that the problem 
+   * \param[out] is_inf true if the handler finds that the problem 
    * is infeasible and the node can be pruned.
    */
   virtual void getBranchingCandidates(RelaxationPtr rel, 
@@ -135,23 +135,6 @@ public:
 
   /// Return the name of the handler.
   virtual std::string getName() const = 0;
-
-  /**
-   * \brief Find (pointer) to original problem variable from a relaxed variable
-   * 
-   * \param[in] First argument is relaxation variable
-   * \param[out] Second argument is the original variable
-   * \return True if the handler created relaxationVar from originalVar
-   * 
-   * Handlers are responsible for relaxing a given problem.
-   * Handlers often create additional variables to relax a problem, or clone/copy
-   * variables from the original problem into the relaxed problem.  
-   * Given a variable in the relaxed problem, this method returns the
-   * associated variable in the original problem.   
-   * 
-   */
-  virtual bool findOriginalVariable(ConstVariablePtr, ConstVariablePtr &) const
-  {return false;}
 
   /**
    * \brief Check if a solution is feasible.
@@ -231,7 +214,7 @@ public:
    * by this handler, with the understanding that nodes will also be fully
    * rebuilt. The relaxation is already created, it should not be
    * freed or re-allocated.
-   * \param[in,out] The relaxation that is being constructed.
+   * \param[in,out] rel The relaxation that is being constructed.
    * \param[out] is_inf is true if the handler finds that the
    * problem is infeasible.
    */
@@ -244,7 +227,7 @@ public:
    * by this handler, with the understanding that nodes will incrementally
    * relaxed. The relaxation is already created, it should not be
    * freed or re-allocated.
-   * \param[in,out] The relaxation that is being constructed.
+   * \param[in,out] rel The relaxation that is being constructed.
    * \param[out] is_inf is true if the handler finds that the
    * problem is infeasible.
    */
@@ -257,12 +240,11 @@ public:
    * relaxNodeInc should be called at each node. Here, we only make minor
    * modifications to the same relaxation.
    *
-   * \param[in] NodePtr node is the node for which relaxation is to be
-   * created.
-   * \param[in] RelaxationPtr rel is the relaxation that is being
+   * \param[in] node is the node for which relaxation is to be created.
+   * \param[in] rel is the relaxation that is being
    * constructed. Do not allocate or re-allocate space for it. Just add
    * new variables or constraints to it.
-   * \param[out] bool is_inf is true if the node can be pruned.
+   * \param[out] is_inf is true if the node can be pruned.
    */
   virtual void relaxNodeFull(NodePtr node, RelaxationPtr rel, bool *is_inf) = 0;
 
@@ -272,12 +254,11 @@ public:
     * Create a relaxation of the constraints.  Either this method, or
     * nodeRelaxFull relax should be called at root node. 
     * Usually we only make minor modifications to the same relaxation.
-    * \param[in] NodePtr node is the node for which relaxation is to be
-    * created.
-    * \param[in] RelaxationPtr rel is the relaxation that is being
-    * constructed. Do not allocate or re-allocate space for it. Just add
-    * new variables or constraints to it.
-    * \param[out] bool isInf is true if the node can be pruned.
+    * \param[in] node is the node for which relaxation is to be created.
+    * \param[in] rel is the relaxation that is being constructed. Do not
+    * allocate or re-allocate space for it. Just add new variables or
+    * constraints to it.
+    * \param[out] is_inf is true if the node can be pruned.
     */
   virtual void relaxNodeInc(NodePtr node, RelaxationPtr rel, bool *is_inf) = 0;
 
@@ -292,6 +273,8 @@ public:
    * \param[in] rel The relaxation at this node.
    * \param[in] cutman The CutManager where cuts should be sent.
    * \param[in] s_pool The SolutionPool containing solutions found so far.
+   * \param[out] sol_found True if a new solution has been found while
+   * separating
    * \param[out] status SeparationStatus returned by this routine.
    */
   virtual void separate(ConstSolutionPtr sol, NodePtr node, 
