@@ -79,12 +79,20 @@ namespace Minotaur {
 
   /// Different types of variables.
   typedef enum {
-    Binary,     /// Variable is constrained to be binary.
-    Integer,    /// Variable is constrained to be integer.
-    ImplBin,    /// Variable is continuous, but will take binary values only.
-    ImplInt,    /// Variable is continuous, but will take integer values only.
-    Continuous  /// Variable is continuous.
+    Binary,     ///> Variable is constrained to be binary.
+    Integer,    ///> Variable is constrained to be integer.
+    ImplBin,    ///> Variable is continuous, but will take binary values only.
+    ImplInt,    ///> Variable is continuous, but will take integer values only.
+    Continuous  ///> Variable is continuous.
   } VariableType;
+
+  /// Where did the variable originate from?
+  typedef enum {
+    VarOrig,    ///> Variable was part of the original problem
+    VarTran,    ///> Variable created by Transformer
+    VarHand,    ///> Variable created by Handler
+    VarOtherSrc ///> Variable created by some other source
+  } VarSrcType;
 
   /// Different types of variable-bounds.
   typedef enum {

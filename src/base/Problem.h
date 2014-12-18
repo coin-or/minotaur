@@ -70,36 +70,36 @@ public:
   virtual ~Problem();
 
   /// Add 'c' to both lb and ub of a constraint.
-  virtual void addToCons(ConstraintPtr cons, Double c);
+  virtual void addToCons(ConstraintPtr cons, double c);
 
   /// Add a linear function to the objective.
   virtual void addToObj(LinearFunctionPtr lf);
 
   /// Add a constant term to the objective.
-  virtual void addToObj(Double cb);
+  virtual void addToObj(double cb);
 
   /// Fill up the statistics about the size of the problem into size_.
-  virtual void calculateSize(Bool shouldRedo=false);
+  virtual void calculateSize(bool shouldRedo=false);
 
   /// Change a bound (lower or upper) on a variable with ID=id.
-  virtual void changeBound(UInt id, BoundType lu, Double new_val);
+  virtual void changeBound(UInt id, BoundType lu, double new_val);
 
   /// Change both bounds (lower and upper) on a variable with ID=id
-  virtual void changeBound(UInt id, Double new_lb, Double new_ub);
+  virtual void changeBound(UInt id, double new_lb, double new_ub);
 
   /// Change a bound (lower or upper) on a variable 'var'. 
-  virtual void changeBound(VariablePtr var, BoundType lu, Double new_val);
+  virtual void changeBound(VariablePtr var, BoundType lu, double new_val);
 
   /// Change lower and upper bounds on the variable 'var'
-  virtual void changeBound(VariablePtr var, Double new_lb, 
-                           Double new_ub); 
+  virtual void changeBound(VariablePtr var, double new_lb, 
+                           double new_ub); 
 
   /// Change a bound (lower or upper) on a constraint 'con'. 
-  virtual void changeBound(ConstraintPtr con, BoundType lu, Double new_val);
+  virtual void changeBound(ConstraintPtr con, BoundType lu, double new_val);
 
   /// Change lower and upper bounds on the constraint 'con'
-  virtual void changeBound(ConstraintPtr con, Double new_lb, 
-                           Double new_ub); 
+  virtual void changeBound(ConstraintPtr con, double new_lb, 
+                           double new_ub); 
 
   /**
    * \brief Change the linear function, and the bounds of a constraint.
@@ -109,7 +109,7 @@ public:
    * \param [in] ub The new upper bound.
    */
   virtual void changeConstraint(ConstraintPtr con, LinearFunctionPtr lf, 
-                                Double lb, Double ub);
+                                double lb, double ub);
 
   /**
    * \brief Change the nonlinear function and bounds of a constraint.
@@ -126,7 +126,7 @@ public:
    * after this call, it won't affect the objective.
    * \param[in] cb The new objective constant.
    */
-  virtual void changeObj(FunctionPtr f, Double cb);
+  virtual void changeObj(FunctionPtr f, double cb);
 
   /**
    * \brief Check whether variables used in the constraints belong to the
@@ -185,7 +185,7 @@ public:
    * \brief Get the initial point. Used by some engines like IpoptEngine. The
    * pointer returned from this function should not be changed or deleted.
    */
-  virtual const Double * getInitialPoint() const { return initialPt_; }
+  virtual const double * getInitialPoint() const { return initialPt_; }
 
   /// Return the jacobian. Could be NULL.
   virtual JacobianPtr getJacobian() const;
@@ -235,7 +235,7 @@ public:
   virtual ObjectivePtr getObjective() const;
 
   /// Return the value of objective function at given point x.
-  Double getObjValue(const Double *x, Int *err) const;
+  double getObjValue(const double *x, int *err) const;
 
   /// Fill up the statistics about the size of the problem into size_.
   ConstProblemSizePtr getSize() const;
@@ -247,33 +247,33 @@ public:
    * \brief Return true if the derivative is available through Minotaur's own
    * routines for storing nonlinear functions.
    */
-  virtual Bool hasNativeDer() const;
+  virtual bool hasNativeDer() const;
 
   /**
    * \brief Returns true if the problem has only linear constraints and linear
    * objectives.
    */
-  virtual Bool isLinear();
+  virtual bool isLinear();
 
   /// Return true if a constraint is marked deleted.
-  virtual Bool isMarkedDel(ConstConstraintPtr con);
+  virtual bool isMarkedDel(ConstConstraintPtr con);
 
   /// Return true if a constraint is marked deleted.
-  virtual Bool isMarkedDel(ConstVariablePtr var);
+  virtual bool isMarkedDel(ConstVariablePtr var);
 
   /**
    * \brief Returns true if the problem has 
    * (1) linear or quadratic objective, and
    * (2) linear constraints only.
    */
-  virtual Bool isQP();
+  virtual bool isQP();
 
   /**
    * \brief Returns true if the problem has only linear or quadratic constraints
    * and linear or quadratic objectives.  Returns false if a problem is
    * linear. Returns false if problem is nonlinear.
    */
-  virtual Bool isQuadratic();
+  virtual bool isQuadratic();
 
   /**
    * \brief Mark a constraint for deleting.
@@ -318,7 +318,7 @@ public:
    * \param[in] lb The lower bound of the constraint. May be -INFINITY.
    * \param[in] ub The upper bound of the constraint. May be +INFINITY.
    */
-  virtual ConstraintPtr newConstraint(FunctionPtr f, Double lb, Double ub);
+  virtual ConstraintPtr newConstraint(FunctionPtr f, double lb, double ub);
 
   /**
    * \brief Add a new constraint and return a pointer to it.
@@ -329,7 +329,7 @@ public:
    * \param[in] ub The upper bound of the constraint. May be +INFINITY.
    * \param[in] name The name for the constraint.
    */
-  virtual ConstraintPtr newConstraint(FunctionPtr f, Double lb, Double ub, 
+  virtual ConstraintPtr newConstraint(FunctionPtr f, double lb, double ub, 
                                       std::string name);
 
   /**
@@ -341,7 +341,7 @@ public:
    * \param[in] cb The constant term in the objective function.
    * \param[in] otyp Whether the objective is to Minimize or Maximize.
    */
-  virtual ObjectivePtr newObjective(FunctionPtr f, Double cb, 
+  virtual ObjectivePtr newObjective(FunctionPtr f, double cb, 
                                     ObjectiveType otyp);
 
   /** 
@@ -355,7 +355,7 @@ public:
    *
    * \returns Pointer to the newly added objective function.
    */
-  virtual ObjectivePtr newObjective(FunctionPtr f, Double cb, 
+  virtual ObjectivePtr newObjective(FunctionPtr f, double cb, 
                                     ObjectiveType otyp, std::string name);
 
   /** 
@@ -373,8 +373,8 @@ public:
    *
    * \returns Pointer to the newly added SOS data.
    */
-  virtual SOSPtr newSOS(Int n, SOSType type, const Double *weights,
-                        const VarVector &vars, Int priority, std::string name);
+  virtual SOSPtr newSOS(int n, SOSType type, const double *weights,
+                        const VarVector &vars, int priority, std::string name);
 
   /** 
    * \brief Add a new SOS constraint (name generated automatically). 
@@ -389,12 +389,15 @@ public:
    *
    * \returns Pointer to the newly added SOS data.
    */
-  virtual SOSPtr newSOS(Int n, SOSType type, const Double *weights,
-                        const VarVector &vars, Int priority);
+  virtual SOSPtr newSOS(int n, SOSType type, const double *weights,
+                        const VarVector &vars, int priority);
 
   
-  /// Add a new continuous, unbounded variable to the Problem. 
-  virtual VariablePtr newVariable(); 
+  /**
+   * \brief Add a new continuous, unbounded variable to the Problem. 
+   * \param[in] stype The source of the variable
+   */
+  virtual VariablePtr newVariable(VarSrcType stype=VarOrig); 
 
   /**
    * \brief Add a new variable with bounds, type. A name is automatically
@@ -403,8 +406,10 @@ public:
    * \param[in] lb The lower bound on the variable. May be -INFINITY.
    * \param[in] ub The upper bound on the variable. May be +INFINITY.
    * \param[in] vtype Type of the variable: Integer, Continuous, Binary.
+   * \param[in] stype The source of the variable
    */
-  virtual VariablePtr newVariable(Double lb, Double ub, VariableType vtype); 
+  virtual VariablePtr newVariable(double lb, double ub, VariableType vtype,
+                                  VarSrcType=VarOrig); 
                                             
   /**
    * \brief Add a new variable.
@@ -413,9 +418,10 @@ public:
    * \param[in] ub The upper bound on the variable. May be +INFINITY.
    * \param[in] vtype Type of the variable: Integer, Continuous, Binary.
    * \param[in] name Name of the variable.
+   * \param[in] stype The source of the variable
    */
-  virtual VariablePtr newVariable(Double lb, Double ub, VariableType vtype,
-                                  std::string name); 
+  virtual VariablePtr newVariable(double lb, double ub, VariableType vtype,
+                                  std::string name, VarSrcType=VarOrig); 
 
   /**
    * \brief Clone the variables pointed by the iterators and add them.
@@ -425,9 +431,11 @@ public:
    * constraints or objectives. The IDs are not copied.
    * \param[in] v_begin The 'begin' iterator of the variable vector.
    * \param[in] v_end The 'end' iterator of the variable vector.
+   * \param[in] stype The source of the variables
    */
   virtual void newVariables(VariableConstIterator v_begin, 
-                            VariableConstIterator v_end);
+                            VariableConstIterator v_end,
+                            VarSrcType stype=VarOrig);
                                             
   /**
    * \brief Setup problem data-structures for solving it.
@@ -476,7 +484,7 @@ public:
    * \param[in] x An array of double values containing the coordinates of the
    * initial point.
    */
-  virtual void setInitialPoint(const Double *x);
+  virtual void setInitialPoint(const double *x);
 
   /** 
    * \brief Set an initial point.
@@ -487,7 +495,7 @@ public:
    * initial point.
    * \param[in] k The first 'k' variables will be initialized.
    */
-  virtual void setInitialPoint(const Double *x, Size_t k);
+  virtual void setInitialPoint(const double *x, Size_t k);
 
   /**
    * \brief Add a pointer to the hessian of the Lagrangean. 
@@ -538,7 +546,7 @@ public:
    * \param[in] rat The ratio of substitution.
    * \f$v_{in} = rat \times v_{out}\f$.
    */
-  virtual void subst(VariablePtr out, VariablePtr in, Double rat=1.0);
+  virtual void subst(VariablePtr out, VariablePtr in, double rat=1.0);
 
   /// Should be called in the Engine's destructor
   virtual void unsetEngine();
@@ -568,7 +576,7 @@ protected:
    * This variable is true if constraints have changed since the last
    * time all changes were applied.
    */
-  Bool consModed_;
+  bool consModed_;
       
   /// Engine that must be updated if problem is loaded to it, could be null 
   Engine* engine_;
@@ -577,7 +585,7 @@ protected:
   HessianOfLagPtr hessian_;
 
   /// Initial point. Can be NULL.
-  Double * initialPt_;
+  double * initialPt_;
 
   /// Pointer to the jacobian of constraints. Can be NULL.
   JacobianPtr jacobian_;
@@ -589,13 +597,13 @@ protected:
   static const std::string me_;
 
   /// If true, set up our own Hessian and Jacobian.
-  Bool nativeDer_;
+  bool nativeDer_;
 
   /// ID of the next constraint.
   UInt nextCId_;
 
   /// ID of the next SOS constraint.
-  Int nextSId_;
+  int nextSId_;
 
   /// ID of the next variable.
   UInt nextVId_;
@@ -622,7 +630,7 @@ protected:
   VarVector vars_;
 
   /// True if variables delete, added or their bounds changed.
-  Bool varsModed_;
+  bool varsModed_;
 
   /// Count the types of constraints and fill the values in size_.
   virtual void countConsTypes_();
@@ -640,7 +648,7 @@ protected:
    */
   virtual void findVarFunTypes_();
 
-  Bool isPolyp_();
+  bool isPolyp_();
 
   void setIndex_(VariablePtr v, UInt i);
       

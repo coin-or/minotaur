@@ -215,7 +215,7 @@ void Transformer::makeObjLin_()
   }
   
   if (obj->getFunctionType() != Linear && obj->getFunctionType() != Constant) {
-    VariablePtr eta = newp_->newVariable(-INFINITY, INFINITY, Continuous);
+    VariablePtr eta = newp_->newVariable(VarTran);
     FunctionPtr etaf;
     FunctionPtr f = obj->getFunction();
     LinearFunctionPtr lz = LinearFunctionPtr(new LinearFunction());
@@ -260,7 +260,7 @@ VariablePtr Transformer::newVar_(VariablePtr iv, double d, ProblemPtr newp)
 
     ov = yVars_->findY(iv, d);
     if (!ov) {
-      ov = newp->newVariable();
+      ov = newp->newVariable(VarTran);
       yVars_->insert(ov, iv, d);
       lf->addTerm(iv, 1.0);
       lf->addTerm(ov, -1.0);
@@ -288,7 +288,7 @@ VariablePtr Transformer::newVar_(LinearFunctionPtr lf, double d,
   ov = yLfs_->findY(lf, d);
   if (!ov) {
     LinearFunctionPtr lf2 = lf->clone();
-    ov = newp->newVariable();
+    ov = newp->newVariable(VarTran);
     yLfs_->insert(ov, lf2, d);
     lf->addTerm(ov, -1.0);
     f = (FunctionPtr) new Function(lf);
@@ -319,7 +319,7 @@ VariablePtr Transformer::newVar_(CGraphPtr cg, ProblemPtr newp)
   } 
 
   if (!ov) {
-    ov = newp->newVariable();
+    ov = newp->newVariable(VarTran);
     lf = (LinearFunctionPtr) new LinearFunction();
     lf->addTerm(ov, -1.0);
     f = (FunctionPtr) new Function(lf, cg);

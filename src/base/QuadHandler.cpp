@@ -357,10 +357,76 @@ void QuadHandler::getBranchingCandidates(RelaxationPtr rel,
 }
 
 
-ModificationPtr QuadHandler::getBrMod(BrCandPtr , DoubleVector &, 
-                                      RelaxationPtr , BranchDirection )
+ModificationPtr QuadHandler::getBrMod(BrCandPtr cand, DoubleVector &x, 
+                                      RelaxationPtr rel, BranchDirection dir)
 {
-  LinModsPtr        lmods;
+  LinModsPtr lmods = (LinModsPtr) new LinMods();
+  LinearFunctionPtr lf;
+  LinConModPtr lmod;
+  BrVarCandPtr vcand = boost::dynamic_pointer_cast <BrVarCand> (cand);
+  VariablePtr v = vcand->getVar();
+  VariablePtr x0, x1, y;
+  double x0val, x1val, yval, vio, rhs;
+  UInt vind = v->getIndex();
+  bool found = false;
+ 
+  for (LinSqrMapIter it=x2Funs_.begin(); it != x2Funs_.end(); ++it) {
+    if (vind==it->first->getIndex()) {
+      x0val  = x[it->first->getIndex()];
+      yval = x[it->second->y->getIndex()];
+      vio = x0val*x0val-yval;
+      if (vio > aTol_) {
+        x0 = rel->getRelaxationVar(it->first);
+        y = rel->getRelaxationVar(it->second->y);
+        if (dir==DownBranch) {
+          lf = getNewSqLf_(x0, y, x0->getLb(), x0val, rhs);
+        } else {
+          lf = getNewSqLf_(x0, y, x0val, x0->getUb(), rhs);
+        }
+        lmod = (LinConModPtr) new LinConMod(it->second->oeCon, lf,
+                                            -INFINITY, rhs);
+        lmods->insert(lmod);
+      }
+    }
+  }
+  for (LinBilSetIter it=x0x1Funs_.begin(); it != x0x1Funs_.end(); ++it) {
+    if (vind==(*it)->getX0()->getIndex()) {
+      if ((*it)->isViolated(&(x[0]), vio)) {
+        x0 = rel->getRelaxationVar((*it)->getX0());
+        x1 = rel->getRelaxationVar((*it)->getX1());
+        found = true;
+      }
+    } else if (vind==(*it)->getX1()->getIndex()) {
+      if ((*it)->isViolated(&(x[0]), vio)) {
+        x0 = rel->getRelaxationVar((*it)->getX1());
+        x1 = rel->getRelaxationVar((*it)->getX0());
+        found = true;
+      }
+    }
+    if (true==found) {
+      y = rel->getRelaxationVar((*it)->getY());
+      if (dir==DownBranch) {
+        lf = getNewBilLf_(x0, x0->getLb(), x0val,
+                          x1, x1->getLb(), x1->getUb(), y, 1, rhs);
+        lmod = (LinConModPtr) new LinConMod((*it)->getC1(), lf, -INFINITY, rhs);
+        lmods->insert(lmod);
+        lf = getNewBilLf_(x0, x0->getLb(), x0val,
+                          x1, x1->getLb(), x1->getUb(), y, 3, rhs);
+        lmod = (LinConModPtr) new LinConMod((*it)->getC3(), lf, -INFINITY, rhs);
+        lmods->insert(lmod);
+      } else {
+        lf = getNewBilLf_(x0, x0val, x0->getUb(),
+                          x1, x1->getLb(), x1->getUb(), y, 0, rhs);
+        lmod = (LinConModPtr) new LinConMod((*it)->getC0(), lf, -INFINITY, rhs);
+        lmods->insert(lmod);
+        lf = getNewBilLf_(x0, x0val, x0->getUb(),
+                          x1, x1->getLb(), x1->getUb(), y, 2, rhs);
+        lmod = (LinConModPtr) new LinConMod((*it)->getC2(), lf, -INFINITY, rhs);
+        lmods->insert(lmod);
+      }
+      found = false;
+    }
+  }
   return lmods;
 }
 

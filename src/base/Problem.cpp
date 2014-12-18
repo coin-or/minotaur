@@ -84,7 +84,7 @@ void Problem::addToObj(LinearFunctionPtr lf)
 }
 
 
-void Problem::addToObj(Double c)
+void Problem::addToObj(double c)
 {
   assert(engine_ == 0 ||
       (!"Cannot change objective after loading problem to engine\n")); 
@@ -97,7 +97,7 @@ void Problem::addToObj(Double c)
 }
 
 
-void Problem::addToCons(ConstraintPtr cons, Double c) 
+void Problem::addToCons(ConstraintPtr cons, double c) 
 {
   cons->add_(c);
 }
@@ -129,7 +129,7 @@ void Problem::calculateSize(Bool shouldRedo)
 }
 
 
-void Problem::changeBound(UInt index, BoundType lu, Double new_val)
+void Problem::changeBound(UInt index, BoundType lu, double new_val)
 {
 
   assert(index < vars_.size() || 
@@ -146,7 +146,7 @@ void Problem::changeBound(UInt index, BoundType lu, Double new_val)
 }
 
 
-void Problem::changeBound(UInt index, Double new_lb, Double new_ub)
+void Problem::changeBound(UInt index, double new_lb, double new_ub)
 {
 
   assert(index < vars_.size() || 
@@ -160,7 +160,7 @@ void Problem::changeBound(UInt index, Double new_lb, Double new_ub)
 }
 
 
-void Problem::changeBound(VariablePtr var, BoundType lu, Double new_val)
+void Problem::changeBound(VariablePtr var, BoundType lu, double new_val)
 {
 
   assert(var == vars_[var->getIndex()] || 
@@ -177,7 +177,7 @@ void Problem::changeBound(VariablePtr var, BoundType lu, Double new_val)
 }
 
 
-void Problem::changeBound(VariablePtr var, Double new_lb, Double new_ub)
+void Problem::changeBound(VariablePtr var, double new_lb, double new_ub)
 {
 
   assert(var == vars_[var->getIndex()] || 
@@ -191,7 +191,7 @@ void Problem::changeBound(VariablePtr var, Double new_lb, Double new_ub)
 }
 
 
-void Problem::changeBound(ConstraintPtr con, Double new_lb, Double new_ub)
+void Problem::changeBound(ConstraintPtr con, double new_lb, double new_ub)
 {
 
   assert(con == cons_[con->getIndex()] || 
@@ -205,7 +205,7 @@ void Problem::changeBound(ConstraintPtr con, Double new_lb, Double new_ub)
 }
 
 
-void Problem::changeBound(ConstraintPtr con, BoundType lu, Double new_val)
+void Problem::changeBound(ConstraintPtr con, BoundType lu, double new_val)
 {
 
   assert(con == cons_[con->getIndex()] || 
@@ -255,7 +255,7 @@ void Problem::changeConstraint(ConstraintPtr con, NonlinearFunctionPtr nlf)
 
 
 void Problem::changeConstraint(ConstraintPtr con, LinearFunctionPtr lf, 
-                               Double lb, Double ub)
+                               double lb, double ub)
 {
   // simply replacing lf is sufficient to take care of jacobian and hessian as
   // well.
@@ -288,9 +288,9 @@ void Problem::changeConstraint(ConstraintPtr con, LinearFunctionPtr lf,
 }
 
 
-void Problem::changeObj(FunctionPtr f, Double cb)
+void Problem::changeObj(FunctionPtr f, double cb)
 {
-  Int err = 0;
+  int err = 0;
   FunctionPtr f2 = f ? f->cloneWithVars(vars_.begin(), &err) : 
     (FunctionPtr) new Function();
   std::string name = (obj_) ? obj_->getName() : "obj";
@@ -371,7 +371,7 @@ ProblemPtr Problem::clone() const
   FunctionPtr f;
   ObjectivePtr oPtr;
   VariableConstIterator vit0;
-  Int err = 0;
+  int err = 0;
   VarVector vvec;
 
   ProblemPtr clonePtr = (ProblemPtr) new Problem();
@@ -412,7 +412,7 @@ ProblemPtr Problem::clone() const
 
   // Now clone everything else...
   if (initialPt_) {
-    clonePtr->initialPt_= new Double[vars_.size()];
+    clonePtr->initialPt_= new double[vars_.size()];
     std::copy(initialPt_, initialPt_+vars_.size(), clonePtr->initialPt_);
   }
 
@@ -836,7 +836,7 @@ ObjectivePtr Problem::getObjective() const
 
 // evaluate the objective at a given x. x must be of dimension 'n', the
 // number of variables in the problem
-Double Problem::getObjValue(const Double *x, Int *err) const
+double Problem::getObjValue(const double *x, int *err) const
 {
   if (obj_) {
     return obj_->eval(x, err);
@@ -991,7 +991,7 @@ VariablePtr Problem::newBinaryVariable(std::string name)
 }
 
 
-ConstraintPtr Problem::newConstraint(FunctionPtr f, Double lb, Double ub,
+ConstraintPtr Problem::newConstraint(FunctionPtr f, double lb, double ub,
                                      std::string name)
 {
   ConstraintPtr c = (ConstraintPtr) new Constraint(nextCId_, cons_.size(), f,
@@ -1011,7 +1011,7 @@ ConstraintPtr Problem::newConstraint(FunctionPtr f, Double lb, Double ub,
 }
 
 
-ConstraintPtr Problem::newConstraint(FunctionPtr funPtr, Double lb, Double ub)
+ConstraintPtr Problem::newConstraint(FunctionPtr funPtr, double lb, double ub)
 {
   // set a name and call newConstraint above.
   std::stringstream name_stream;
@@ -1032,7 +1032,7 @@ ConstraintPtr Problem::newConstraint(FunctionPtr funPtr, Double lb, Double ub)
 }
 
 
-ObjectivePtr Problem::newObjective(FunctionPtr f, Double cb, 
+ObjectivePtr Problem::newObjective(FunctionPtr f, double cb, 
                                    ObjectiveType otyp)
 {
   assert(engine_ == 0 ||
@@ -1049,7 +1049,7 @@ ObjectivePtr Problem::newObjective(FunctionPtr f, Double cb,
 }
 
 
-ObjectivePtr Problem::newObjective(FunctionPtr f, Double cb, 
+ObjectivePtr Problem::newObjective(FunctionPtr f, double cb, 
                                    ObjectiveType otyp, std::string name)
 {
   assert(engine_ == 0 ||
@@ -1061,8 +1061,8 @@ ObjectivePtr Problem::newObjective(FunctionPtr f, Double cb,
 }
 
 
-SOSPtr Problem::newSOS(Int n, SOSType type, const Double *weights,
-                       const VarVector &vars, Int priority, std::string name)
+SOSPtr Problem::newSOS(int n, SOSType type, const double *weights,
+                       const VarVector &vars, int priority, std::string name)
 {
   SOSPtr sos = new SOS(n, type, weights, vars, nextSId_, priority, name);
   ++nextSId_;
@@ -1075,8 +1075,8 @@ SOSPtr Problem::newSOS(Int n, SOSType type, const Double *weights,
 }
 
 
-SOSPtr Problem::newSOS(Int n, SOSType type, const Double *weights,
-                       const VarVector &vars, Int priority)
+SOSPtr Problem::newSOS(int n, SOSType type, const double *weights,
+                       const VarVector &vars, int priority)
 {
   std::string name;
   std::stringstream name_stream;
@@ -1093,7 +1093,7 @@ SOSPtr Problem::newSOS(Int n, SOSType type, const Double *weights,
 }
 
 
-VariablePtr Problem::newVariable()
+VariablePtr Problem::newVariable(VarSrcType stype)
 {
   assert(engine_ == 0 ||
       (!"Cannot add variables after loading problem to engine\n")); 
@@ -1102,12 +1102,13 @@ VariablePtr Problem::newVariable()
   std::stringstream name_stream;
   name_stream <<  "var" << vars_.size();
   name = name_stream.str();
-  v = newVariable(-INFINITY, INFINITY, Continuous, name);
+  v = newVariable(-INFINITY, INFINITY, Continuous, name, stype);
   return v;
 }
 
 
-VariablePtr Problem::newVariable(Double lb, Double ub, VariableType vtype)
+VariablePtr Problem::newVariable(double lb, double ub, VariableType vtype,
+                                 VarSrcType stype)
 {
   assert(engine_ == 0 || 
       (!"Cannot add variables after loading problem to engine\n")); 
@@ -1116,19 +1117,20 @@ VariablePtr Problem::newVariable(Double lb, Double ub, VariableType vtype)
   std::stringstream name_stream;
   name_stream <<  "var" << vars_.size();
   name = name_stream.str();
-  v = newVariable(lb, ub, vtype, name);
+  v = newVariable(lb, ub, vtype, name, stype);
   return v;
 } 
 
 
 
-VariablePtr Problem::newVariable(Double lb, Double ub, VariableType vtype,
-                                 std::string name)
+VariablePtr Problem::newVariable(double lb, double ub, VariableType vtype,
+                                 std::string name, VarSrcType stype)
 {
   assert(engine_ == 0 ||
       (!"Cannot add variables after loading problem to engine\n")); 
   VariablePtr v;
   v = (VariablePtr) new Variable(nextVId_, vars_.size(), lb, ub, vtype, name);
+  v->setSrcType(stype);
   ++nextVId_;
   vars_.push_back(v);
   varsModed_ = true;
@@ -1137,7 +1139,7 @@ VariablePtr Problem::newVariable(Double lb, Double ub, VariableType vtype,
 
 
 void Problem::newVariables(VariableConstIterator v_begin, 
-                           VariableConstIterator v_end)
+                           VariableConstIterator v_end, VarSrcType stype)
 {
   assert(engine_ == 0 ||
       (!"Cannot add variables after loading problem to engine\n")); 
@@ -1146,7 +1148,7 @@ void Problem::newVariables(VariableConstIterator v_begin,
 
   for (v_iter=v_begin; v_iter!=v_end; v_iter++) {
     v = newVariable((*v_iter)->getLb(), (*v_iter)->getUb(),
-        (*v_iter)->getType(), (*v_iter)->getName());
+        (*v_iter)->getType(), (*v_iter)->getName(), stype);
   }
 }
 
@@ -1222,7 +1224,7 @@ void Problem::setIndex_(VariablePtr v, UInt i)
 }
 
 
-void Problem::setInitialPoint(const Double *x) 
+void Problem::setInitialPoint(const double *x) 
 {
   // if x is null or if there are no variables, do nothing.
   if (!x || vars_.size() == 0) {
@@ -1232,7 +1234,7 @@ void Problem::setInitialPoint(const Double *x)
   // if initial point hasnt been set before, allocate memory. otherwise just
   // use the old space.
   if (!initialPt_) {
-    initialPt_ = new Double[vars_.size()];
+    initialPt_ = new double[vars_.size()];
   }
 
   // copy
@@ -1240,7 +1242,7 @@ void Problem::setInitialPoint(const Double *x)
 }
 
 
-void Problem::setInitialPoint(const Double *x, Size_t k) 
+void Problem::setInitialPoint(const double *x, Size_t k) 
 {
   // if x is null or if there are no variables, do nothing.
   if (!x || vars_.size() == 0) {
@@ -1250,7 +1252,7 @@ void Problem::setInitialPoint(const Double *x, Size_t k)
   // if initial point hasnt been set before, allocate memory. otherwise just
   // use the old space.
   if (!initialPt_) {
-    initialPt_ = new Double[vars_.size()];
+    initialPt_ = new double[vars_.size()];
   }
 
   // copy
@@ -1317,7 +1319,7 @@ void Problem::setVarType(VariablePtr var, VariableType type)
 }
 
 
-void Problem::subst(VariablePtr out, VariablePtr in, Double rat)
+void Problem::subst(VariablePtr out, VariablePtr in, double rat)
 {
   Bool stayin;
   assert(engine_ == 0 ||

@@ -27,13 +27,13 @@
 using namespace Minotaur;
 
 Relaxation::Relaxation()
-  : origPr_(ProblemPtr()) // NULL
+  : p_(ProblemPtr()) // NULL
 {
 }
 
 
 Relaxation::Relaxation(ProblemPtr problem)
-  : origPr_(problem)
+  : p_(problem)
 {
   VariablePtr vcopy, v0, v1;
   VariableGroupConstIterator vit;
@@ -55,7 +55,7 @@ Relaxation::Relaxation(ProblemPtr problem)
 
   // add variables
   i = 0;
-  for (VariableConstIterator it=origPr_->varsBegin(); it!=origPr_->varsEnd(); 
+  for (VariableConstIterator it=p_->varsBegin(); it!=p_->varsEnd(); 
       ++it, ++i) {
     vcopy = (*it)->clone(i);
     setIndex_(vcopy, i);
@@ -64,9 +64,8 @@ Relaxation::Relaxation(ProblemPtr problem)
   
   vbeg = vars_.begin();
   // add constraints
-  i = 0;
-  for (ConstraintConstIterator cit=origPr_->consBegin(); 
-      cit!=origPr_->consEnd(); ++cit, ++i) {
+  for (ConstraintConstIterator cit=p_->consBegin(); cit!=p_->consEnd();
+       ++cit) {
     cconstr = *cit;
 
     // linear part
@@ -110,7 +109,7 @@ Relaxation::Relaxation(ProblemPtr problem)
 
   // add SOS1 constraints
   vvec.clear();
-  for (SOSConstIterator it=origPr_->sos1Begin(); it!=origPr_->sos1End();
+  for (SOSConstIterator it=p_->sos1Begin(); it!=p_->sos1End();
        ++it) {
     for (VariableConstIterator it2 = (*it)->varsBegin();
          it2!=(*it)->varsEnd(); ++it2) {
@@ -123,7 +122,7 @@ Relaxation::Relaxation(ProblemPtr problem)
 
   // add SOS2 constraints
   vvec.clear();
-  for (SOSConstIterator it=origPr_->sos2Begin(); it!=origPr_->sos2End();
+  for (SOSConstIterator it=p_->sos2Begin(); it!=p_->sos2End();
        ++it) {
     for (VariableConstIterator it2 = (*it)->varsBegin();
          it2!=(*it)->varsEnd(); ++it2) {
@@ -135,7 +134,7 @@ Relaxation::Relaxation(ProblemPtr problem)
   }
 
   // add objective
-  obj = origPr_->getObjective();
+  obj = p_->getObjective();
   lf = obj->getLinearFunction();
   if (lf) {
     lf2 = (LinearFunctionPtr) new LinearFunction();
@@ -172,29 +171,32 @@ Relaxation::Relaxation(ProblemPtr problem)
 
   fun = (FunctionPtr) new Function(lf2, qf2, nl);
   obj_ = (ObjectivePtr) new Objective(fun, obj->getConstant(), Minimize, 
-      obj->getName()); 
+                                      obj->getName()); 
 
   nextCId_ = cons_.size();
   nextVId_ = vars_.size();
-  nativeDer_ = origPr_->hasNativeDer();
+  nativeDer_ = p_->hasNativeDer();
 }
 
 
-VariablePtr Relaxation::getOriginalVar(VariablePtr relaxation_var)
+VariablePtr Relaxation::getOriginalVar(VariablePtr r_var)
 {
-  return origPr_->getVariable(relaxation_var->getIndex());
+  if (p_->getNumVars() > r_var->getIndex()) {
+    return p_->getVariable(r_var->getIndex());
+  } 
+  return VariablePtr();
 }
 
 
-VariablePtr Relaxation::getRelaxationVar(VariablePtr original_var)
+VariablePtr Relaxation::getRelaxationVar(VariablePtr p_var)
 {
-  return vars_[original_var->getIndex()];
+  return vars_[p_var->getIndex()];
 }
 
 
 void Relaxation::setProblem(ProblemPtr p)
 {
-  origPr_ = p;
+  p_ = p;
 }
 
 // Local Variables: 

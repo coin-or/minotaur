@@ -1269,7 +1269,7 @@ void LinearHandler::relax_(ProblemPtr p, RelaxationPtr rel, bool *is_inf)
   for (v_iter=p->varsBegin(); v_iter!=p->varsEnd(); ++v_iter) {
     v2 = (*v_iter);
     v = rel->newVariable(v2->getLb(), v2->getUb(), v2->getType(), 
-                         v2->getName());
+                         v2->getName(), v2->getSrcType());
   }
 
   // If the objective function is linear, add it.

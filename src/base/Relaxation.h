@@ -70,15 +70,15 @@ public:
   /// Destructor. No need yet. Use ~Problem().
   ~Relaxation() {};
 
-  VariablePtr getOriginalVar(VariablePtr relaxation_var);
+  VariablePtr getOriginalVar(VariablePtr r_var);
   
-  VariablePtr getRelaxationVar(VariablePtr original_var);
+  VariablePtr getRelaxationVar(VariablePtr p_var);
 
   void setProblem(ProblemPtr p);
 
 protected:
   /// Pointer to the original problem.
-  ConstProblemPtr origPr_;
+  ConstProblemPtr p_;
 };
 
 typedef boost::shared_ptr<Relaxation> RelaxationPtr;

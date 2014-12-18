@@ -96,13 +96,13 @@ void BranchAndBound::addPreRootHeur(HeurPtr h)
 }
 
 
-Double BranchAndBound::getGap() 
+double BranchAndBound::getGap() 
 { 
   return tm_->getGap(); 
 }
 
 
-Double BranchAndBound::getLb() 
+double BranchAndBound::getLb() 
 {
   return tm_->getLb();
 }
@@ -138,7 +138,7 @@ TreeManagerPtr BranchAndBound::getTreeManager()
 }
 
 
-Double BranchAndBound::getUb() 
+double BranchAndBound::getUb() 
 {
   return tm_->getUb();
 }
@@ -150,12 +150,12 @@ UInt BranchAndBound::numProcNodes()
 }
 
 
-NodePtr BranchAndBound::processRoot_(Bool *should_prune, Bool *should_dive)
+NodePtr BranchAndBound::processRoot_(bool *should_prune, bool *should_dive)
 {
   NodePtr current_node = (NodePtr) new Node ();
   NodePtr new_node = NodePtr(); // NULL
   RelaxationPtr rel;
-  Bool prune = *should_prune;
+  bool prune = *should_prune;
   Branches branches;
   WarmStartPtr ws;
 #if SPEW
@@ -232,15 +232,15 @@ void BranchAndBound::setNodeRelaxer(NodeRelaxerPtr nr)
 }
 
 
-void BranchAndBound::shouldCreateRoot(Bool b)
+void BranchAndBound::shouldCreateRoot(bool b)
 {
   options_->createRoot = b;
 }
 
 
-Bool BranchAndBound::shouldPrune_(NodePtr node)
+bool BranchAndBound::shouldPrune_(NodePtr node)
 {
-  Bool should_prune = false;
+  bool should_prune = false;
   switch (node->getStatus()) {
    case (NodeOptimal):
      should_prune = true;
@@ -268,9 +268,9 @@ Bool BranchAndBound::shouldPrune_(NodePtr node)
 }
 
 
-Bool BranchAndBound::shouldStop_()
+bool BranchAndBound::shouldStop_()
 {
-  Bool stop_bnb = false;
+  bool stop_bnb = false;
   // double lb = tm_->getLb();
   // ++lb;
 
@@ -297,7 +297,7 @@ Bool BranchAndBound::shouldStop_()
 }
 
 
-void BranchAndBound::showStatus_(Bool current_uncounted)
+void BranchAndBound::showStatus_(bool current_uncounted)
 {
   UInt off=0;
   if (current_uncounted) {
@@ -320,14 +320,14 @@ void BranchAndBound::showStatus_(Bool current_uncounted)
 
 void BranchAndBound::solve()
 {
-  Bool should_dive = false, dived_prev = false;
-  Bool should_prune = false;
+  bool should_dive = false, dived_prev = false;
+  bool should_prune = false;
   NodePtr current_node = NodePtr();
   NodePtr new_node = NodePtr();
   Branches branches;
   WarmStartPtr ws;
   RelaxationPtr rel = RelaxationPtr();
-  Bool should_stop = false;
+  bool should_stop = false;
 
   // initialize timer
   timer_->start();
@@ -497,7 +497,7 @@ void BranchAndBound::writeStats()
 }
 
 
-Double BranchAndBound::totalTime()
+double BranchAndBound::totalTime()
 {
   return stats_->timeUsed;
 }

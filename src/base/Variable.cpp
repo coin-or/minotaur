@@ -25,8 +25,8 @@ Variable::Variable()
 }
 
 
-Variable::Variable(UInt id, UInt index, Double lb, Double ub, VariableType vtype, 
-    std::string name)
+Variable::Variable(UInt id, UInt index, double lb, double ub, VariableType vtype, 
+                   std::string name)
   : id_(id), 
     index_(index),
     lb_(lb), 
@@ -34,6 +34,7 @@ Variable::Variable(UInt id, UInt index, Double lb, Double ub, VariableType vtype
     vtype_(vtype), 
     ftype_(Constant),
     state_(NormalVar), 
+    stype_(VarOrig),
     name_(name) 
 {
   cons_.clear();
@@ -43,9 +44,10 @@ Variable::Variable(UInt id, UInt index, Double lb, Double ub, VariableType vtype
 VariablePtr Variable::clone(UInt id) const
 {
   // id_ is not copied. id is used instead.
-  VariablePtr clonePtr = (VariablePtr) new Variable(id, index_, lb_, ub_, vtype_, 
-      name_);
-  return clonePtr;
+  VariablePtr newvar = (VariablePtr) new Variable(id, index_, lb_, ub_, vtype_, 
+                                                  name_);
+  newvar->stype_ = stype_;
+  return newvar;
 }
 
 Variable::~Variable()
@@ -54,17 +56,45 @@ Variable::~Variable()
 }
 
 
-void Variable::writeConstraintMap(std::ostream &out) const
+void Variable::clearConstraints_()
 {
-  ConstrSet::const_iterator cIter;
-  ConstraintPtr cPtr;
-  out << std::endl << "in constraint set for variable " << getName();
-  out << ", number of constraints = " << cons_.size() << ": " << std::endl;
+  cons_.clear();
+}
 
-  for (cIter=cons_.begin(); cIter!=cons_.end(); ++cIter) {
-    out <<  (*cIter)->getName();
-    out << std::endl;
-  }
+
+ConstrSet::iterator Variable::consBegin()
+{
+  return cons_.begin();
+}
+
+
+ConstrSet::iterator Variable::consEnd()
+{
+  return cons_.end();
+}
+
+
+const std::string Variable::getName() const 
+{
+    return name_;
+}
+
+
+UInt Variable::getNumCons() const
+{
+  return cons_.size();
+}
+
+
+void Variable::inConstraint_(ConstraintPtr cPtr)
+{
+  cons_.insert(cPtr);
+}
+
+
+void Variable::outOfConstraint_(ConstraintPtr cPtr)
+{
+  cons_.erase(cPtr);
 }
 
 
@@ -102,45 +132,17 @@ void Variable::write(std::ostream &out) const
 }
 
 
-const std::string Variable::getName() const 
+void Variable::writeConstraintMap(std::ostream &out) const
 {
-    return name_;
-}
+  ConstrSet::const_iterator cIter;
+  ConstraintPtr cPtr;
+  out << std::endl << "in constraint set for variable " << getName();
+  out << ", number of constraints = " << cons_.size() << ": " << std::endl;
 
-
-void Variable::outOfConstraint_(ConstraintPtr cPtr)
-{
-  cons_.erase(cPtr);
-}
-
-
-void Variable::inConstraint_(ConstraintPtr cPtr)
-{
-  cons_.insert(cPtr);
-}
-
-
-UInt Variable::getNumCons() const
-{
-  return cons_.size();
-}
-
-
-ConstrSet::iterator Variable::consBegin()
-{
-  return cons_.begin();
-}
-
-
-ConstrSet::iterator Variable::consEnd()
-{
-  return cons_.end();
-}
-
-
-void Variable::clearConstraints_()
-{
-  cons_.clear();
+  for (cIter=cons_.begin(); cIter!=cons_.end(); ++cIter) {
+    out <<  (*cIter)->getName();
+    out << std::endl;
+  }
 }
 
 

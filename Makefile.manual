@@ -157,12 +157,13 @@ BASE_SRCS = \
 	$(BASE_DIR)/LPProcessor.cpp \
 	$(BASE_DIR)/LPRelaxation.cpp \
 	$(BASE_DIR)/LexicoBrancher.cpp \
+	$(BASE_DIR)/LinBil.cpp \
 	$(BASE_DIR)/LinConMod.cpp \
-	$(BASE_DIR)/LinMods.cpp \
 	$(BASE_DIR)/LinearCut.cpp \
 	$(BASE_DIR)/LinearFunction.cpp \
 	$(BASE_DIR)/LinearHandler.cpp\
 	$(BASE_DIR)/LinFeasPump.cpp \
+	$(BASE_DIR)/LinMods.cpp \
 	$(BASE_DIR)/Logger.cpp \
 	$(BASE_DIR)/MaxFreqBrancher.cpp\
 	$(BASE_DIR)/MaxVioBrancher.cpp \
@@ -248,11 +249,12 @@ ALL_HEADERS = \
 	$(BASE_DIR)/IntVarHandler.h \
 	$(BASE_DIR)/Jacobian.h \
 	$(BASE_DIR)/LexicoBrancher.h \
+	$(BASE_DIR)/LinBil.cpp \
+	$(BASE_DIR)/LinConMod.h \
 	$(BASE_DIR)/LinearCut.h \
 	$(BASE_DIR)/LinearFunction.h \
 	$(BASE_DIR)/LinearHandler.h \
 	$(BASE_DIR)/LinFeasPump.h  \
-	$(BASE_DIR)/LinConMod.h \
 	$(BASE_DIR)/LinMods.h \
 	$(BASE_DIR)/Logger.h \
 	$(BASE_DIR)/LPEngine.h \

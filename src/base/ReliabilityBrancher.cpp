@@ -517,7 +517,7 @@ void ReliabilityBrancher::updateAfterLP(NodePtr node, ConstSolutionPtr sol)
       double oldval = node->getBranch()->getActivity();
       double newval = x[index];
       double cost = (node->getLb()-parent->getLb()) / 
-        (fabs(newval - oldval)+eTol_);
+                    (fabs(newval - oldval)+eTol_);
       if (cost < 0. || std::isinf(cost) || std::isnan(cost)) {
         cost = 0.;
       }
