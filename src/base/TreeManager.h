@@ -182,9 +182,6 @@ namespace Minotaur {
     /// Tolerance for pruning nodes on the basis of bounds.
     const Double etol_;
 
-    /// Set of nodes in the tree that have not been deleted yet.
-    std::vector<NodePtr> nodes_;
-
     /// The acceptable gap between final lb and final ub of the instance.
     const Double reqGap_;
 

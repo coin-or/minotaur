@@ -84,12 +84,6 @@ TreeManager::~TreeManager()
 {
   NodePtrIterator node_i;
   NodePtr node;
-  for (node_i=nodes_.begin(); node_i!=nodes_.end(); ++node_i) {
-    node = *node_i;
-    node->removeParent();
-    node->removeChildren();
-  }
-  nodes_.clear();
   active_nodes_.reset();
   if (doVbc_) {
     vbcFile_.close();
@@ -155,12 +149,6 @@ UInt TreeManager::getActiveNodes() const
 NodePtr TreeManager::getCandidate()
 {
   NodePtr node;
-  //if (nodes_.size()%100000 < 2) {
-  //  Double lb = updateLb();
-  //  std::cout << "lb = " << lb << " ub = " << bestUpperBound_ << " gap = " 
-  //    << getGap() << " left = " << active_nodes_.getSize() << " total = " <<
-  //    nodes_.size() << std::endl;
-  //}
   while (active_nodes_->getSize() > 0) {
     node = active_nodes_->top();
     // std::cout << "tm: node lb = " << node->getLb() << std::endl;
@@ -229,8 +217,6 @@ void TreeManager::insertCandidate_(NodePtr node, Bool pop_now)
   node->setId(size_);
   node->setDepth(node->getParent()->getDepth()+1);
 
-  // add node to the vector of all nodes.
-  nodes_.push_back(node);
   ++size_;
 
   // add node to the heap/stack of active nodes. If pop_now is true, the node
@@ -254,7 +240,6 @@ void TreeManager::insertRoot(NodePtr node)
 
   node->setId(0);
   node->setDepth(0);
-  nodes_.push_back(node);
   active_nodes_->push(node);
   ++size_;
   if (doVbc_) {
@@ -298,7 +283,7 @@ void TreeManager::removeNode_(NodePtr node)
 
   //std::cout << "removing node " << node->getId() << std::endl;
 
-  if (node != nodes_[0]) {
+  if (node->getId()>0) {
     NodePtr cNode, tNode;
     // check if the parent of this node has this node as its child. this check
     // is only for debugging purposes. may be removed if confident that
@@ -331,14 +316,6 @@ void TreeManager::removeNode_(NodePtr node)
       if (parent->getNumChildren() < 1) {
         removeNode_(parent);
       }
-      // remove from nodes_ expensive
-      // for (node_i=nodes_.begin(); node_i!=nodes_.end(); ++node_i) {
-      //   tNode = *node_i;
-      //   if (node == tNode) {
-      //     nodes_.erase(node_i);
-      //     break;
-      //   }
-      // }
 
     } else {
       assert (!"Current node is not in its parent's list of children!");
