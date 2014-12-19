@@ -38,16 +38,17 @@ namespace Minotaur {
       virtual ~NodeStack();
 
       /** 
-       *  Return true if there are no active nodes in the heap, otherwise
-       *  return false.
+       * \brief Return true if there are no active nodes in the heap,
+       * otherwise return false.
        */
-      virtual Bool isEmpty() const;
+      virtual bool isEmpty() const;
 
       /**
-       * Find the minimum lower bound of all the active nodes in the stack.
-       * This function is expensive and must be avoided for large trees.
+       * \brief Find the minimum lower bound of all the active nodes in the
+       * stack.  This function is expensive and must be avoided for large
+       * trees.
        */
-      virtual Double getBestLB() const;
+      virtual double getBestLB() const;
 
       /// The maximum depth is the depth of the topmost node in the stack.
       virtual UInt getDeepestLevel() const;

@@ -28,22 +28,22 @@ NodeStack::NodeStack()
 
 NodeStack::~NodeStack()
 {
-  // nodes_ is cleared automatically.
+  nodes_.clear();
 }
   
 
-Bool NodeStack::isEmpty() const
+bool NodeStack::isEmpty() const
 { 
   return nodes_.empty(); 
 }
 
 
 // This function is expensive and must be avoided for large trees.
-Double NodeStack::getBestLB() const
+double NodeStack::getBestLB() const
 {
   NodeStackConstIter iter;
-  Double node_lb;
-  Double best_lb = INFINITY;
+  double node_lb;
+  double best_lb = INFINITY;
 
   for (iter = nodes_.begin(); iter != nodes_.end(); ++iter) {
     node_lb = (*iter)->getLb();

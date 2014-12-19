@@ -50,7 +50,7 @@ namespace Minotaur {
     ~TreeManager();
 
     /// Return true if any active nodes remain in the tree. False otherwise.
-    Bool anyActiveNodesLeft();
+    bool anyActiveNodesLeft();
 
     /**
      * \brief Branch and create new nodes.
@@ -65,19 +65,19 @@ namespace Minotaur {
     NodePtr branch(Branches branches, NodePtr node, WarmStartPtr ws);
 
     /**
-     * \brief Return the number of active nodes, i.e. nodes that have been created,
-     * but not processed yet.
+     * \brief Return the number of active nodes, i.e. nodes that have been
+     * created, but not processed yet.
      */
     UInt getActiveNodes() const;
 
     /// Return the cut off value. It is INFINITY if it is not set.
-    Double getCutOff();
+    double getCutOff();
 
     /**
      * \brief Return the gap between the lower and upper bound as a percentage. It
      * is calculated as \f$\frac{ub-lb}{\left|ub\right|+\epsilon}\times 100\f$.
      */
-    Double getGap();
+    double getGap();
 
     /**
      * \brief Return the value of the highest lower bound evaluated in the
@@ -88,10 +88,10 @@ namespace Minotaur {
      * returned here may be lower than the actual lower bound of
      * the tree. Also see updateLb().
      */
-    Double getLb();
+    double getLb();
 
     /// Return the best known upper bound.
-    Double getUb();
+    double getUb();
 
     /**
      * \brief Return the size of the tree, including both active and processed
@@ -137,7 +137,7 @@ namespace Minotaur {
      * Nodes with lower bound \f$ lb \geq value-\epsilon\f$ can be pruned.
      * \param[in] value The cut off value. It can be INFINITY.
      */
-    void setCutOff(Double value);
+    void setCutOff(double value);
 
     /** 
      * \brief Set the best known objective function value.
@@ -147,10 +147,10 @@ namespace Minotaur {
      * also updates the cutoff value that is used to prune nodes.
      * \param[in] value The best known upper bound.
      */
-    void setUb(Double value);
+    void setUb(double value);
 
     /// Return true if the tree-manager recommends diving. False otherwise.
-    Bool shouldDive();
+    bool shouldDive();
 
     /** 
      * \brief Recalculate and return the lower bound of the tree.
@@ -161,32 +161,39 @@ namespace Minotaur {
      * bestLowerBound_.
      * \return the updated lower bound.
      */
-    Double updateLb();
+    double updateLb();
 
   private:
     /// Set of nodes that are still active (those who need to be processed).
     ActiveNodeStorePtr active_nodes_; 
 
+    /// An active node that is not in the ActiveNodeStore. One such node may
+    /// exist. When we are diving. It must be deleted in the end.
+    NodePtr aNode_;
+
     /// \brief Best known lower bound based on the last update.
-    Double bestLowerBound_;
+    double bestLowerBound_;
 
     /// \brief Best known upper bound.
-    Double bestUpperBound_;
+    double bestUpperBound_;
+
+    /// Delete all nodes, active and inactive.
+    void clearAll();
 
     /// The cutoff value above which nodes are assumed infeasible.
-    Double cutOff_;
+    double cutOff_;
 
     /// Whether we should store tree information for vbc.
-    Bool doVbc_;
+    bool doVbc_;
 
     /// Tolerance for pruning nodes on the basis of bounds.
-    const Double etol_;
+    const double etol_;
 
     /// The acceptable gap between final lb and final ub of the instance.
-    const Double reqGap_;
+    const double reqGap_;
 
     /// The acceptable gap percentage between final lb and ub of the instance.
-    Double reqRelGap_;
+    double reqRelGap_;
 
     /// The search order: depth first, best first or something else.
     TreeSearchOrder searchType_;
@@ -204,7 +211,7 @@ namespace Minotaur {
     std::ofstream vbcFile_;
 
     /// Check if the node can be pruned because of its bound.
-    Bool shouldPrune_(NodePtr node);
+    bool shouldPrune_(NodePtr node);
 
     /**
      * \brief Insert a candidate (that is not root) into the tree.
@@ -212,7 +219,7 @@ namespace Minotaur {
      * \param[in] node The node that is to be inserted.
      * \param[in] pop_now True if  ...
      */
-    void insertCandidate_(NodePtr node, Bool pop_now = false);
+    void insertCandidate_(NodePtr node, bool pop_now = false);
 
     /**
      * \brief Remove a node from the tree.

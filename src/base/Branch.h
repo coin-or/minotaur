@@ -37,6 +37,9 @@ public:
   /// Constructor
   Branch();
 
+  /// Destroy
+  ~Branch();
+
   /**
    * \brief Add a problem modification to the current vector of modifications
    * associated with this branch.
@@ -106,14 +109,14 @@ public:
    * \brief Return the activity or the value of the branching expression
    * before we branched. Used for updating pseudo-costs.
    */
-  Double getActivity() const;
+  double getActivity() const;
 
   /**
    * \brief Set the activity or the value of the branching expression
    * before we branched.
    * \param[in] value The value of activity.
    */
-  void setActivity(Double value);
+  void setActivity(double value);
 
   /// Return the branching candidate that was used to create this branch.
   BrCandPtr getBrCand() {return brCand_;};
@@ -149,7 +152,7 @@ protected:
    * If an integer variable has value 1.3 before branching, and we
    * branch on it, the value is set at 1.3
    */
-  Double activity_;
+  double activity_;
 
   /// Branching candidate that is used to create this branch. 
   BrCandPtr brCand_;

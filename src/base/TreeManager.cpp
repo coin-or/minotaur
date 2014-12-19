@@ -59,6 +59,7 @@ TreeManager::TreeManager(EnvPtr env)
      assert (!"search strategy must be defined!");
   }
 
+  aNode_ = NodePtr();
   cutOff_ = env->getOptions()->findDouble("obj_cut_off")->getValue();
   reqRelGap_ = env->getOptions()->findDouble("obj_gap_percent")->getValue();
   s = env->getOptions()->findString("vbc_file")->getValue();
@@ -82,8 +83,7 @@ TreeManager::TreeManager(EnvPtr env)
 
 TreeManager::~TreeManager()
 {
-  NodePtrIterator node_i;
-  NodePtr node;
+  clearAll();
   active_nodes_.reset();
   if (doVbc_) {
     vbcFile_.close();
@@ -92,7 +92,7 @@ TreeManager::~TreeManager()
 }
 
 
-Bool TreeManager::anyActiveNodesLeft()
+bool TreeManager::anyActiveNodesLeft()
 {
   return !active_nodes_->isEmpty();
 }
@@ -103,7 +103,7 @@ NodePtr TreeManager::branch(Branches branches, NodePtr node, WarmStartPtr ws)
   BranchPtr branch_p;
   NodePtr new_cand = NodePtr(); // NULL
   NodePtr child;
-  Bool is_first = false;
+  bool is_first = false;
 
   if (searchType_ == DepthFirst || searchType_ == BestThenDive) {
     is_first = true;
@@ -136,7 +136,24 @@ NodePtr TreeManager::branch(Branches branches, NodePtr node, WarmStartPtr ws)
                << new_cand->getId()+1 << " " << VbcSolving << std::endl;
     }
   }
+  aNode_ = new_cand; // can be NULL
   return new_cand;
+}
+
+
+void TreeManager::clearAll()
+{
+  NodePtr n, par, c_node;
+  NodePtrIterator node_i;
+
+  if (aNode_) {
+    removeNode_(aNode_);
+  }
+  while (false==active_nodes_->isEmpty()) {
+    n = active_nodes_->top();
+    removeNode_(n);
+    active_nodes_->pop();
+  }
 }
 
 
@@ -148,7 +165,8 @@ UInt TreeManager::getActiveNodes() const
 
 NodePtr TreeManager::getCandidate()
 {
-  NodePtr node;
+  NodePtr node = NodePtr(); // NULL
+  aNode_.reset();
   while (active_nodes_->getSize() > 0) {
     node = active_nodes_->top();
     // std::cout << "tm: node lb = " << node->getLb() << std::endl;
@@ -161,21 +179,21 @@ NodePtr TreeManager::getCandidate()
         vbcFile_ << toClockTime(timer_->query()) << " P " << node->getId()+1
                  << " " << VbcSolving << std::endl;
       }
-      return node;
+      break;
     }
   } 
-  return NodePtr(); // return NULL
+  return node; // can be NULL
   // do not pop the head until the candidate has been processed.
 }
 
 
-Double TreeManager::getCutOff()
+double TreeManager::getCutOff()
 {
   return cutOff_;
 }
 
 
-Double TreeManager::getGap()
+double TreeManager::getGap()
 {
   // for minimization problems, gap = (ub - lb)/(ub) * 100
   // so that if one has a ub, she can say that the solution can not be more
@@ -191,7 +209,7 @@ Double TreeManager::getGap()
 }
 
 
-Double TreeManager::getLb()
+double TreeManager::getLb()
 {
   return bestLowerBound_;
 }
@@ -203,13 +221,13 @@ UInt TreeManager::getSize() const
 }
 
 
-Double TreeManager::getUb()
+double TreeManager::getUb()
 {
   return bestUpperBound_;
 }
 
 
-void TreeManager::insertCandidate_(NodePtr node, Bool pop_now)
+void TreeManager::insertCandidate_(NodePtr node, bool pop_now)
 {
   assert(size_>0);
 
@@ -281,7 +299,7 @@ void TreeManager::removeNode_(NodePtr node)
   NodePtr parent = node->getParent();
   NodePtrIterator node_i;
 
-  //std::cout << "removing node " << node->getId() << std::endl;
+  // std::cout << "removing node xx " << node->getId() << std::endl;
 
   if (node->getId()>0) {
     NodePtr cNode, tNode;
@@ -321,19 +339,19 @@ void TreeManager::removeNode_(NodePtr node)
       assert (!"Current node is not in its parent's list of children!");
     }
   }
-  //std::cout << "node " << node->getId() << " use count = " << node.use_count() 
-  //  << std::endl;
+  // std::cout << "node " << node->getId() << " use count = " <<
+  // node.use_count() << std::endl;
   node.reset();
 }
 
 
-void TreeManager::setCutOff(Double value)
+void TreeManager::setCutOff(double value)
 {
   cutOff_ = value;
 }
 
 
-void TreeManager::setUb(Double value)
+void TreeManager::setUb(double value)
 {
   bestUpperBound_ = value;
   if (value < cutOff_) {
@@ -342,7 +360,7 @@ void TreeManager::setUb(Double value)
 }
 
 
-Bool TreeManager::shouldDive()
+bool TreeManager::shouldDive()
 {
   if (searchType_ == DepthFirst || searchType_ == BestThenDive) {
     return true;
@@ -351,9 +369,9 @@ Bool TreeManager::shouldDive()
 }
 
 
-Bool TreeManager::shouldPrune_(NodePtr node)
+bool TreeManager::shouldPrune_(NodePtr node)
 {
-  Double lb = node->getLb();
+  double lb = node->getLb();
   if (lb > cutOff_ - reqGap_ || 
       fabs(bestUpperBound_-lb)/(fabs(bestUpperBound_)+etol_)*100 < reqRelGap_) {
     node->setStatus(NodeHitUb);
@@ -363,7 +381,7 @@ Bool TreeManager::shouldPrune_(NodePtr node)
 }
 
 
-Double TreeManager::updateLb()
+double TreeManager::updateLb()
 {
   // XXX: this could be an expensive operation. Try to avoid it.
   bestLowerBound_ = active_nodes_->getBestLB();

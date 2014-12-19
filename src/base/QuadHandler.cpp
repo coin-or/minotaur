@@ -366,7 +366,7 @@ ModificationPtr QuadHandler::getBrMod(BrCandPtr cand, DoubleVector &x,
   BrVarCandPtr vcand = boost::dynamic_pointer_cast <BrVarCand> (cand);
   VariablePtr v = vcand->getVar();
   VariablePtr x0, x1, y;
-  double x0val, x1val, yval, vio, rhs;
+  double x0val, yval, vio, rhs;
   UInt vind = v->getIndex();
   bool found = false;
  
@@ -405,6 +405,8 @@ ModificationPtr QuadHandler::getBrMod(BrCandPtr cand, DoubleVector &x,
     }
     if (true==found) {
       y = rel->getRelaxationVar((*it)->getY());
+      x0val  = x[x0->getIndex()];
+      yval   = x[y->getIndex()];
       if (dir==DownBranch) {
         lf = getNewBilLf_(x0, x0->getLb(), x0val,
                           x1, x1->getLb(), x1->getUb(), y, 1, rhs);

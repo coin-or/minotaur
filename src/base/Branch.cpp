@@ -34,6 +34,13 @@ Branch::Branch()
 }
 
 
+Branch::~Branch()
+{
+  pMods_.clear();
+  rMods_.clear();
+}
+
+
 void Branch::addPMod(ModificationPtr mod) 
 {
   pMods_.push_back(mod);
@@ -46,13 +53,13 @@ void Branch::addRMod(ModificationPtr mod)
 }
 
 
-Double Branch::getActivity() const
+double Branch::getActivity() const
 {
   return activity_;
 }
 
 
-void Branch::setActivity(Double value) 
+void Branch::setActivity(double value) 
 {
   activity_ = value;
 }

@@ -132,7 +132,7 @@ BranchAndBound* createBab(EnvPtr env, ProblemPtr p, EnginePtr e,
     div_heur = (MINLPDivingPtr) new MINLPDiving(env, p, e2);
     bab->addPreRootHeur(div_heur);
   }
-  if (0 <= options->findInt("LinFPump")->getValue()) {
+  if (true == options->findBool("FPump")->getValue()) {
     EngineFactory efac(env);
     EnginePtr lpe = efac.getLPEngine();
     EnginePtr nlpe = e->emptyCopy();

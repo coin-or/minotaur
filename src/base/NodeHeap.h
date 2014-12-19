@@ -55,7 +55,7 @@ namespace Minotaur {
          * If the heap is ordered by best bound, then the root has the
          * minimum value.
          */
-        virtual Double getBestLB() const;
+        virtual double getBestLB() const;
 
         /// Find the maximum depth of all active nodes.
         virtual UInt getDeepestLevel() const;

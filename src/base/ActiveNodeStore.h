@@ -39,7 +39,7 @@ namespace Minotaur {
        virtual ~ActiveNodeStore() {}
 
        /// Find the minimum lower bound of all the active nodes.
-       virtual Double getBestLB() const = 0;
+       virtual double getBestLB() const = 0;
 
        /// Find the maximum depth of all active nodes.
        virtual UInt getDeepestLevel() const = 0;
@@ -53,7 +53,7 @@ namespace Minotaur {
         * \return true if there are no active nodes in the heap, otherwise
         * return false.
         */
-       virtual Bool isEmpty() const = 0;
+       virtual bool isEmpty() const = 0;
 
        /// Remove the best node from the store.
        virtual void pop() = 0;

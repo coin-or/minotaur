@@ -18,7 +18,7 @@
 #include "NodeHeap.h"
 
 namespace Minotaur {
-   Bool valueGreaterThan(ConstNodePtr n1, ConstNodePtr n2) 
+   bool valueGreaterThan(ConstNodePtr n1, ConstNodePtr n2) 
    {
       if (n1->getLb() > n2->getLb() + 1e-6) { 
         return true;
@@ -41,7 +41,7 @@ namespace Minotaur {
       return (n1->getId() < n2->getId());
    }
 
-   Bool depthGreaterThan(ConstNodePtr n1, ConstNodePtr n2)
+   bool depthGreaterThan(ConstNodePtr n1, ConstNodePtr n2)
    {
       return (n1->getDepth() > n2->getDepth());
    }
@@ -72,9 +72,9 @@ void NodeHeap::pop()
 }
 
 
-Double NodeHeap::getBestLB() const
+double NodeHeap::getBestLB() const
 {
-   Double retval = INFINITY;
+   double retval = INFINITY;
    if (nodes_.size() > 0) {
       if (type_ == Value) {
          retval = nodes_.front()->getLb();
