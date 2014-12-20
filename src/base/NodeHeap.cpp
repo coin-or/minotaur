@@ -58,17 +58,18 @@ NodeHeap::~NodeHeap()
 
 void NodeHeap::pop()
 {
-   switch(type_) {
-      case (Value):
-	 pop_heap(nodes_.begin(), nodes_.end(), valueGreaterThan);
-	 break;
-      case (Depth):
-         pop_heap(nodes_.begin(), nodes_.end(), depthGreaterThan);
-         break;
-      default:
-	 assert(0);
-   }
-   nodes_.pop_back();
+  // std::cout << "popping out node " << nodes_.front()->getId() << std::endl;
+  switch(type_) {
+  case (Value):
+    pop_heap(nodes_.begin(), nodes_.end(), valueGreaterThan);
+    break;
+  case (Depth):
+    pop_heap(nodes_.begin(), nodes_.end(), depthGreaterThan);
+    break;
+  default:
+    assert(0);
+  }
+  nodes_.pop_back();
 }
 
 
@@ -118,36 +119,36 @@ void NodeHeap::write(std::ostream &) const
 
 void NodeHeap::push(NodePtr n)
 {
-   nodes_.push_back(n);
-   switch(type_) {
-      case (Value):
-	 push_heap(nodes_.begin(), nodes_.end(), valueGreaterThan);
-	 break;
-      case (Depth):
-         push_heap(nodes_.begin(), nodes_.end(), depthGreaterThan);
-         break;
-      default:
-	 assert(0);
-   }
-
+  // std::cout << "inserting node " << n->getId() << std::endl;
+  nodes_.push_back(n);
+  switch(type_) {
+  case (Value):
+    push_heap(nodes_.begin(), nodes_.end(), valueGreaterThan);
+    break;
+  case (Depth):
+    push_heap(nodes_.begin(), nodes_.end(), depthGreaterThan);
+    break;
+  default:
+    assert(0);
+  }
 }
 
 
 void NodeHeap::setType(Type type)
 {
-   if (type == type_) return;
-   //XXX Could probably do this fancier
-   
-   switch(type_) {
-      case (Value):
-	 make_heap(nodes_.begin(), nodes_.end(), valueGreaterThan);
-	 break;
-      case (Depth):
-         make_heap(nodes_.begin(), nodes_.end(), depthGreaterThan);
-         break;
-      default:
-	 assert(0);
-   }
+  if (type == type_) return;
+  //XXX Could probably do this fancier
+
+  switch(type_) {
+  case (Value):
+    make_heap(nodes_.begin(), nodes_.end(), valueGreaterThan);
+    break;
+  case (Depth):
+    make_heap(nodes_.begin(), nodes_.end(), depthGreaterThan);
+    break;
+  default:
+    assert(0);
+  }
 }
 
 

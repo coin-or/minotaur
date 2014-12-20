@@ -174,6 +174,7 @@ NodePtr TreeManager::getCandidate()
       // std::cout << "tm: node pruned." << std::endl;
       removeActiveNode(node);
       pruneNode(node);
+      node.reset(); // NULL
     } else {
       if (doVbc_) {
         vbcFile_ << toClockTime(timer_->query()) << " P " << node->getId()+1
