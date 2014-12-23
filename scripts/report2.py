@@ -270,6 +270,14 @@ def find_int(arr0,st0,in0):
 			return 1,in0
 	return -1,in0
 
+def getInstList(fname):
+	ins_list = []
+	f = open(fname,'r')
+	for line in f:
+		ins_list.append(line.split(None, 1)[0])
+	f.close()
+	return ins_list
+
 def print_usage():
 	print "usage: python report.py -l <file containing instance names>", 
 	print "-d <path to dir> [-b <file containing best upper bound>]"
@@ -330,16 +338,13 @@ if (INST_LIST==""):
 	sys.exit(0)
 
 
-instCol=Col("######### instance", 18, "%18s")
+instCol=Col("######### instance", 24, "%24s")
 
 othercols=[]
 errors=[]
 unsolved=[]
 
-ins_list=[]
-flist=open(INST_LIST,'r')
-ins_list=flist.read().split()
-flist.close()
+ins_list=getInstList(INST_LIST)
 
 #############################################################################
 # Mandatory columns #########################################################
