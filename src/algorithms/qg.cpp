@@ -152,6 +152,7 @@ int main(int argc, char* argv[])
   MINOTAUR_AMPL::AMPLInterfacePtr iface = MINOTAUR_AMPL::AMPLInterfacePtr();  
   ProblemPtr inst;
   SolutionPtr sol, sol2;
+  double obj_sense =1.0;
 
   // jacobian is read from AMPL interface and passed on to branch-and-bound
   JacobianPtr jPtr;
@@ -239,6 +240,10 @@ int main(int argc, char* argv[])
     inst->writeSize(std::cout);
   }
 
+ if(inst->getObjective() &&
+     inst->getObjective()->getObjectiveType()==Maximize){
+    obj_sense=-1.0;
+  }
   // Initialize engines
   nlp_e = getNLPEngine(env, inst); //Engine for Original problem
 
@@ -278,6 +283,7 @@ int main(int argc, char* argv[])
     inst->setNativeDer();
   }
 
+
   // Initialize the handlers
   l_hand = (LinearHandlerPtr) new LinearHandler(env, inst);
   l_hand->setModFlags(false, true);
@@ -285,7 +291,7 @@ int main(int argc, char* argv[])
   assert(l_hand);
 
   v_hand = (IntVarHandlerPtr) new IntVarHandler(env, inst);
-  v_hand->setModFlags(false, true);
+  v_hand->setModFlags(false, true);//MS: Modify problem=false rel=true 
   handlers.push_back(v_hand);
   assert(v_hand);
 
@@ -375,10 +381,10 @@ int main(int argc, char* argv[])
     //std::cout << "nodes processed in branch-and-bound 1= " <<
     //  bab->getTreeManager()->getActiveNodes() << std::endl;
     std::cout << me << std::fixed << std::setprecision(4) << 
-      "best bound estimate for remaining nodes = " <<  bab->getLb() 
+      "best bound estimate for remaining nodes = " << obj_sense*bab->getLb() 
       << std::endl;
     std::cout << me << std::fixed << std::setprecision(4) << 
-      "best solution value = " <<  bab->getUb() << std::endl;
+      "best solution value = " << obj_sense*bab->getUb() << std::endl;
   }
 
   std::cout << me << "time used = " << std::fixed << std::setprecision(2) 
