@@ -26,14 +26,14 @@
 //#endif
 namespace Minotaur {
 
-  // Standard types.
+  /// Standard types.
   typedef bool         Bool;
   typedef double       Double;
   typedef int          Int;
   typedef unsigned int UInt;
   typedef size_t       Size_t;
 
-  // Containers for standard types
+  /// Containers for standard types
   typedef std::deque  < UInt >   UIntQ;
   typedef std::vector < Bool >   BoolVector;
   typedef std::vector < Double > DoubleVector;
@@ -79,11 +79,11 @@ namespace Minotaur {
 
   /// Different types of variables.
   typedef enum {
-    Binary,     ///> Variable is constrained to be binary.
-    Integer,    ///> Variable is constrained to be integer.
-    ImplBin,    ///> Variable is continuous, but will take binary values only.
-    ImplInt,    ///> Variable is continuous, but will take integer values only.
-    Continuous  ///> Variable is continuous.
+    Binary,     ///< Variable is constrained to be binary.
+    Integer,    ///< Variable is constrained to be integer.
+    ImplBin,    ///< Variable is continuous, but will take binary values only.
+    ImplInt,    ///< Variable is continuous, but will take integer values only.
+    Continuous  ///< Variable is continuous.
   } VariableType;
 
   /// Where did the variable originate from?
@@ -93,7 +93,7 @@ namespace Minotaur {
     VarHand,    ///> Variable created by Handler
     VarOtherSrc ///> Variable created by some other source
   } VarSrcType;
-
+  
   /// Different types of variable-bounds.
   typedef enum {
     Lower,
@@ -108,23 +108,23 @@ namespace Minotaur {
 
   /// Different states a variable can be in.
   typedef enum {
-    DeletedVar, /// Marked for deletion.
-    FixedVar,   /// Fixed to a value.
-    FreeVar,    /// Doesn't have bounds. Same as superbasic in LP
-    NormalVar   /// Not in any other category
+    DeletedVar, ///< Marked for deletion.
+    FixedVar,   ///< Fixed to a value.
+    FreeVar,    ///< Doesn't have bounds. Same as superbasic in LP
+    NormalVar   ///< Not in any other category
   } VarState;
 
   /// Different states a constraint can be in.
   typedef enum {
-    DeletedCons,  /// Marked for deletion.
-    FreeCons,     /// Doesn't have bounds. Implies redundant.
-    NormalCons    /// Not in any other category
+    DeletedCons,  ///< Marked for deletion.
+    FreeCons,     ///< Doesn't have bounds. Implies redundant.
+    NormalCons    ///< Not in any other category
   } ConsState;
 
   /// Different states an objective can be in.
   typedef enum {
-    DeletedObj,  /// Marked for deletion.
-    NormalObj    /// Not in any other category
+    DeletedObj,  ///< Marked for deletion.
+    NormalObj    ///< Not in any other category
   } ObjState;
 
   /// Different states an algorithm like branch-and-bound can be in.
@@ -150,7 +150,7 @@ namespace Minotaur {
     ProvenOptimal,
     ProvenLocalOptimal,
     ProvenInfeasible,
-    ProvenLocalInfeasible, // can happen with NLPs
+    ProvenLocalInfeasible, 
     ProvenUnbounded,
     ProvenObjectiveCutOff,
     EngineIterationLimit,
@@ -177,17 +177,17 @@ namespace Minotaur {
 
   /// Status of a node in branch-and-bound.
   typedef enum {
-    NodeNotProcessed, // has been created but not yet been processed.
-    NodeInfeasible,   // can be pruned
-    NodeHitUb,        // can be pruned
-    NodeDominated,    // can be pruned
-    NodeOptimal,      // The solution obtained is integral, feasible and optimal 
-                      // for the subtree. can prune.
-    NodeContinue,     // solution is neither optimal, nor the relaxation 
-                      // provably infeasible.
-    //NodeFrac,       // fractional solution but optimal for the relaxation
-    //NodeInt,        // integer solution found at this node,
-                      // but may not be feasible/optimal. branch more.
+    NodeNotProcessed, //< has been created but not yet been processed.
+    NodeInfeasible,   //< can be pruned
+    NodeHitUb,        //< can be pruned
+    NodeDominated,    //< can be pruned
+    NodeOptimal,      //< The solution obtained is integral, feasible and optimal 
+                      //< for the subtree. can prune.
+    NodeContinue,     //< solution is neither optimal, nor the relaxation 
+                      //< provably infeasible.
+    //NodeFrac,       //< fractional solution but optimal for the relaxation
+    //NodeInt,        //< integer solution found at this node,
+                      //< but may not be feasible/optimal. branch more.
     NodeStopped 
   } NodeStatus;     
 
@@ -204,13 +204,13 @@ namespace Minotaur {
 
   /// Levels of verbosity.
   typedef enum {
-    LogNone,          // absolutely no messages
-    LogError,         // only error messages, if any
-    LogInfo,          // errors, timed status, final solution
-    LogExtraInfo,     // some extra info, stats etc
-    LogDebug,         // more verbose
-    LogDebug1,        // more verbose
-    LogDebug2         // more verbose
+    LogNone,          //< absolutely no messages
+    LogError,         //< only error messages, if any
+    LogInfo,          //< errors, timed status, final solution
+    LogExtraInfo,     //< some extra info, stats etc
+    LogDebug,         //< more verbose
+    LogDebug1,        //< more verbose
+    LogDebug2         //< more verbose
   } LogLevel;
 
   /// Order of tree search.
@@ -342,11 +342,11 @@ namespace Minotaur {
 
   class   BrVarCand;
   typedef boost::shared_ptr<BrVarCand> BrVarCandPtr;
-  typedef boost::shared_ptr<const BrVarCand> ConstBrVarCandPtr;  
+  typedef boost::shared_ptr<const BrVarCand> ConstBrVarCandPtr; 
   struct CompareVarBrCand {
     bool operator()(ConstBrVarCandPtr c1, ConstBrVarCandPtr c2) const;
   };
-  typedef std::set<BrVarCandPtr, CompareVarBrCand> BrVarCandSet;  
+  typedef std::set<BrVarCandPtr, CompareVarBrCand> BrVarCandSet;
   typedef BrVarCandSet::iterator BrVarCandIter;
   typedef std::vector< BrVarCandPtr >::iterator BrVarCandVIter;
 
