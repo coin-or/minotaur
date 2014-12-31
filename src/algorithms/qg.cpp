@@ -291,7 +291,7 @@ int main(int argc, char* argv[])
   assert(l_hand);
 
   v_hand = (IntVarHandlerPtr) new IntVarHandler(env, inst);
-  v_hand->setModFlags(false, true);//MS: Modify problem=false rel=true 
+  v_hand->setModFlags(false, true); 
   handlers.push_back(v_hand);
   assert(v_hand);
 
@@ -309,6 +309,7 @@ int main(int argc, char* argv[])
 
   // Stuff needed in branch and bound
   nr = (NodeIncRelaxerPtr) new NodeIncRelaxer(env, handlers);
+  nr->setModFlag(false);
   
   // find the type of relaxation.
   if (!prune) {
