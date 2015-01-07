@@ -132,6 +132,9 @@ void MaxVioBrancher::findCandidates_(ModVector &mods, bool &should_prune)
                         (*it)->getDDist()+br_can->getUDist());
       }
     }
+    for (BrCandVIter it = gencands2.begin(); it != gencands2.end(); ++it) {
+      (*it)->setHandler(*h);
+    }
     gencands_.insert(gencands_.end(), gencands2.begin(), gencands2.end());
     cands2.clear();
     gencands2.clear();
