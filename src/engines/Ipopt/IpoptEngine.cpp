@@ -361,14 +361,7 @@ void IpoptEngine::load(ProblemPtr problem)
   bndChanged_ = true;
   consChanged_ = true;
   problem->calculateSize();
-  if (problem->isQP() || problem->isLinear()) {
-    myapp_->Options()->SetStringValue("hessian_constant","yes", true, true);
-    myapp_->Options()->SetStringValue("jac_c_constant","yes", true, true);
-    myapp_->Options()->SetStringValue("jac_d_constant","yes", true, true);
-  } else if (problem->getSize()->cons == problem->getSize()->linCons) {
-    myapp_->Options()->SetStringValue("jac_c_constant","yes", true, true);
-    myapp_->Options()->SetStringValue("jac_d_constant","yes", true, true);
-  }
+  setOptionsForProb_();
   problem->setEngine(this);
 
 }
@@ -456,17 +449,30 @@ void IpoptEngine::removeCons(std::vector<ConstraintPtr> &)
 }
 
 
+void IpoptEngine::setOptionsForProb_()
+{
+  if (problem_->isQP() || problem_->isLinear()) {
+    myapp_->Options()->SetStringValue("hessian_constant","yes", true, true);
+    myapp_->Options()->SetStringValue("jac_c_constant","yes", true, true);
+    myapp_->Options()->SetStringValue("jac_d_constant","yes", true, true);
+  } else if (problem_->getSize()->cons == problem_->getSize()->linCons) {
+    myapp_->Options()->SetStringValue("jac_c_constant","yes", true, true);
+    myapp_->Options()->SetStringValue("jac_d_constant","yes", true, true);
+  }
+}
+
+
 void IpoptEngine::setOptionsForSingleSolve()
 {
   if (myapp_) {
     myapp_->Options()->SetIntegerValue("print_level", 0);
-    myapp_->Options()->SetNumericValue("required_infeasibility_reduction", 0.3, 
-                                       true, true);
     myapp_->Options()->SetStringValue("expect_infeasible_problem","yes", true, 
                                       true);
     myapp_->Options()->SetStringValue("mu_strategy", "adaptive", true, true);
     myapp_->Options()->SetStringValue("mu_oracle","probing", true, 
                                       true);
+    //myapp_->Options()->SetNumericValue("required_infeasibility_reduction",
+    //0.3, true, true);
   }
 }
 
@@ -487,8 +493,8 @@ void IpoptEngine::setOptionsForRepeatedSolve()
     //myapp_->Options()->SetNumericValue("compl_inf_tol", 1e-12);
     //myapp_->Options()->SetNumericValue("gamma_phi", 1e-8, true, true);
     //myapp_->Options()->SetNumericValue("gamma_theta", 1e-4, true, true);
-    myapp_->Options()->SetNumericValue("required_infeasibility_reduction", 0.3, 
-                                       true, true);
+    // myapp_->Options()->SetNumericValue("required_infeasibility_reduction",
+    // 0.3, true, true);
     myapp_->Options()->SetStringValue("expect_infeasible_problem","yes", true, 
                                       true);
     //myapp_->Options()->SetNumericValue("expect_infeasible_problem_ctol",
@@ -524,7 +530,7 @@ EngineStatus IpoptEngine::solve()
 
   if (consChanged_) {
     problem_->prepareForSolve(); // reset hessian and jacobian structures.
-    // no need to free, its a smart ptr.
+    setOptionsForProb_();
   }
   // Ask Ipopt to solve the problem. In order to do that, one should convert
   // mynlp_ from the derived class IpoptFunInterface (that we define) to

@@ -320,6 +320,8 @@ namespace Minotaur {
       /// Problem that is loaded, if any.
       ProblemPtr problem_;
 
+      /// Set problem specific options to make IPOPT faster
+      void setOptionsForProb_();
   };
 }
 
