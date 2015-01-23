@@ -458,6 +458,10 @@ void IpoptEngine::setOptionsForProb_()
   } else if (problem_->getSize()->cons == problem_->getSize()->linCons) {
     myapp_->Options()->SetStringValue("jac_c_constant","yes", true, true);
     myapp_->Options()->SetStringValue("jac_d_constant","yes", true, true);
+  } else {
+    myapp_->Options()->SetStringValue("hessian_constant","no", true, true);
+    myapp_->Options()->SetStringValue("jac_c_constant","no", true, true);
+    myapp_->Options()->SetStringValue("jac_d_constant","no", true, true);
   }
 }
 
