@@ -1494,7 +1494,9 @@ bool LinearHandler::presolveNode(RelaxationPtr rel, NodePtr node,
   }
 
   simplePresolve(rel, spool, r_mods, status);
-  copyBndsFromRel_(rel, p_mods);
+  if (true==modProb_) {
+    copyBndsFromRel_(rel, p_mods);
+  }
   return (status==SolvedInfeasible);
 }
 
