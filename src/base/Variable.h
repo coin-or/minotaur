@@ -97,6 +97,9 @@ public:
   void writeConstraintMap(std::ostream & out) const;
 
 protected:
+  /// Change the id to a new value.
+  void setId_(UInt n) { id_ = n; }
+
   /// Change the state to a new value.
   void setState_(VarState state) { state_ = state; return; }
 

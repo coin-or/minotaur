@@ -367,7 +367,10 @@ void Problem::clear()
 // Does not clone Jacobian and Hessian yet.
 ProblemPtr Problem::clone() const
 {
-  ConstConstraintPtr constCPtr;
+  ConstraintPtr c;
+  ConstConstraintPtr cc;
+  VariablePtr v;
+  ConstVariablePtr cv;
   FunctionPtr f;
   ObjectivePtr oPtr;
   VariableConstIterator vit0;
@@ -377,17 +380,26 @@ ProblemPtr Problem::clone() const
   ProblemPtr clonePtr = (ProblemPtr) new Problem();
 
   // Copy the variables.
-  clonePtr->newVariables(vars_.begin(),vars_.end());
+  for (VariableConstIterator it=vars_.begin(); it!=vars_.end(); ++it) {
+    cv = *it;
+    v = clonePtr->newVariable(cv->getLb(), cv->getUb(), cv->getType(),
+                              cv->getName(), cv->getSrcType());
+    v->setState_(cv->getState());
+    v->setSrcType(cv->getSrcType());
+    v->setFunType_(cv->getFunType());
+    v->setId_(cv->getId());
+  }
   
   vit0 = clonePtr->varsBegin();
   // add constraints
   for (ConstraintConstIterator it=cons_.begin(); it!=cons_.end(); ++it) {
-    constCPtr = *it;
+    cc = *it;
     // clone the function.
-    f = constCPtr->getFunction()->cloneWithVars(vit0, &err);
+    f = cc->getFunction()->cloneWithVars(vit0, &err);
     assert(err==0);
-    clonePtr->newConstraint(f, constCPtr->getLb(), constCPtr->getUb(),
-                            constCPtr->getName());
+    c = clonePtr->newConstraint(f, cc->getLb(), cc->getUb(), cc->getName());
+    c->setId_(cc->getId());
+    c->setState_(cc->getState());
   }    
 
   // copy SOS1 constraints
@@ -397,7 +409,8 @@ ProblemPtr Problem::clone() const
          it2!=(*it)->varsEnd(); ++it2) {
       vvec.push_back(*it2);
     }
-    clonePtr->newSOS((*it)->getNz(), (*it)->getType(), (*it)->getWeights(), vvec, (*it)->getPriority());
+    clonePtr->newSOS((*it)->getNz(), (*it)->getType(), (*it)->getWeights(),
+                     vvec, (*it)->getPriority());
     vvec.clear();
   }
 

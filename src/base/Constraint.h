@@ -154,6 +154,9 @@ namespace Minotaur {
        */
       void reverseSense_();
 
+      /// Set the id. 
+      void setId_(UInt n) { id_ = n; }
+
       /// Set the index. 
       void setIndex_(UInt n) { index_ = n; }
 
