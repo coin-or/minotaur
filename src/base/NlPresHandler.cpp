@@ -69,7 +69,8 @@ NlPresHandler::NlPresHandler(EnvPtr env, ProblemPtr p)
     zTol_(1e-6)
 {
   logger_ = (LoggerPtr) new Logger((LogLevel)(env->getOptions()->
-      findInt("handler_log_level")->getValue()));
+                                              findInt("handler_log_level")->
+                                              getValue()));
   doPersp_ = env->getOptions()->findBool("persp_ref")->getValue();
   doQuadCone_ = env->getOptions()->findBool("quad_cone_ref")->getValue();
   stats_.cBnd = 0;
@@ -898,14 +899,20 @@ SolveStatus NlPresHandler::varBndsFromCons_(bool *changed)
       lb = c->getLb()-lfu;
       nlf->varBoundMods(lb, ub, mods, &status);
       if (SolvedInfeasible == status) {
+        mods.clear();
         break;
       } else if (SolveError == status) {
+        mods.clear();
         break;
       }
       if (false==mods.empty()) {
         for (VarBoundModVector::iterator it=mods.begin(); it!=mods.end(); ++it) {
           (*it)->applyToProblem(p_);
           ++stats_.vBnd;
+#if SPEW
+          logger_->MsgStream(LogDebug2) << me_ << " ";
+          (*it)->write(logger_->MsgStream(LogDebug2));
+#endif
         }
         mods.clear();
         *changed = true;
@@ -923,7 +930,7 @@ void NlPresHandler::writePreStats(std::ostream &out) const
     << me_ << "Time taken in initial presolve = " << stats_.time   << std::endl
     << me_ << "Number of variables deleted    = " << stats_.varDel << std::endl
     << me_ << "Number of constraints deleted  = " << stats_.conDel << std::endl
-    << me_ << "Number of perspective reform.  = " << stats_.pRefs << std::endl
+    << me_ << "Number of perspective reform.  = " << stats_.pRefs  << std::endl
     << me_ << "Times variables tightened      = " << stats_.vBnd   << std::endl
     << me_ << "Times constraints tightened    = " << stats_.cBnd   << std::endl
     << me_ << "Times coefficients improved    = " << stats_.cImp   << std::endl

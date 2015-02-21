@@ -22,6 +22,8 @@
 #include "Variable.h"
 
 #define PI 3.141592653589793
+#define MINFTY 1e25
+
 
 using namespace Minotaur;
 
@@ -1487,6 +1489,13 @@ void CNode::propBounds_(double lb, double ub, bool *is_inf)
   double etol = 1e-7;
   assert(false==std::isnan(lb));
   assert(false==std::isnan(ub));
+
+  if (lb<-MINFTY) {
+    lb = -INFINITY;
+  }
+  if (ub>MINFTY) {
+    ub = INFINITY;
+  }
   if (lb > ub + etol || ub < lb_- etol || lb > ub_ + etol) {
     *is_inf = true;
   } else {
@@ -1864,6 +1873,12 @@ void CNode::updateBnd(int *error)
   }
   if (errno!=0) {
     *error = errno;
+  }
+  if (lb_<-MINFTY) {
+    lb_ = -INFINITY;
+  }
+  if (ub_>MINFTY) {
+    ub_ = INFINITY;
   }
 }
 

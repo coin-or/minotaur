@@ -39,7 +39,7 @@
 #include "Variable.h"
 #include "QuadraticFunction.h"
 
-#define SPEW 1
+// #define SPEW 1
 
 using namespace Minotaur;
 

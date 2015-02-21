@@ -955,6 +955,7 @@ SolveStatus LinearHandler::linBndTighten_(ProblemPtr p, bool apply_to_prob,
     }
   }
 
+  // c_ptr->write(std::cout);
   if (ub < infty_) {
     if (ll > -infty_) {
       updateLfBoundsFromUb_(p, apply_to_prob, lf, ub, ll, false, changed, 
@@ -1247,7 +1248,8 @@ void LinearHandler::delFixedVars_(bool *changed)
       *changed = true;
 #if SPEW
       logger_->MsgStream(LogDebug) << me_ << "fixed variable " 
-                                   << v->getName() << std::endl; 
+                                   << v->getName() << " at value "
+                                   << v->getLb() << std::endl; 
 #endif
     }
   }

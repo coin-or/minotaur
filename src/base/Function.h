@@ -64,7 +64,7 @@ namespace Minotaur {
        * function and a nonlinear function.
        */
       Function(LinearFunctionPtr lf, QuadraticFunctionPtr qf,
-          NonlinearFunctionPtr nlf);
+               NonlinearFunctionPtr nlf);
 
       /// Construct a function using only a nonlinear function.
       Function(NonlinearFunctionPtr nlf);
