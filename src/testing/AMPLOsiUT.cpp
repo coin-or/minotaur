@@ -130,6 +130,8 @@ void AMPLOsiUT::testOsiBnB()
   LinearHandlerPtr l_hand = (LinearHandlerPtr) new LinearHandler(env, p);
   handlers.push_back(v_hand);
   handlers.push_back(l_hand);
+  v_hand->setModFlags(false, true);
+  l_hand->setModFlags(false, true);
 
   EngineFactory efac(env);
   e = efac.getLPEngine();
