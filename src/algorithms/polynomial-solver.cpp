@@ -24,6 +24,7 @@
 #include "LinearHandler.h"
 #include "LPEngine.h"
 #include "LPProcessor.h"
+#include "Logger.h"
 #include "MaxVioBrancher.h"
 #include "NLPEngine.h"
 #include "NLPMultiStart.h"
@@ -76,10 +77,6 @@ void add_options(OptionDBPtr options)
 
   i_option = (IntOptionPtr) new Option<Int>("ml_max_group_size",
      "Maximum size of individual element in grouping: >= 1, <= 20", true, 6);
-  options->insert(i_option);
-
-  i_option = (IntOptionPtr) new Option<Int>("ml_log_level",
-     "Multilinear Logging Level", true, 2);
   options->insert(i_option);
 
   d_option = (DoubleOptionPtr) new Option<Double>(
@@ -223,7 +220,7 @@ int main(int argc, char* argv[])
     pres->solve();
     std::cout << me << "Finished presolving." << std::endl;
     for (HandlerVector::iterator it=handlers.begin(); it!=handlers.end(); ++it) {
-      (*it)->writeStats(std::cout);
+      (*it)->writeStats(env->getLogger()->msgStream(LogExtraInfo));
     }
   }
   handlers.clear();
@@ -350,8 +347,8 @@ int main(int argc, char* argv[])
   std::cout << me << "time used = " << std::fixed << std::setprecision(2) 
             << timer->query() << std::endl;
   
-  e->writeStats();
-  bab->getNodeProcessor()->getBrancher()->writeStats();
+  bab->writeStats(env->getLogger()->msgStream(LogExtraInfo));
+  e->writeStats(env->getLogger()->msgStream(LogExtraInfo));
 
   //XXX Clean up memory
 

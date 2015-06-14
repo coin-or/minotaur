@@ -116,7 +116,7 @@ public:
   void updateAfterLP(NodePtr node, ConstSolutionPtr sol);
 
   /// Write statistics.
-  void writeStats();
+  void writeStats(std::ostream &out) const;
 
 private:
 

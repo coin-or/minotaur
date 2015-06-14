@@ -224,7 +224,7 @@ void LPProcessor::process(NodePtr node, RelaxationPtr rel,
     should_resolve = false;
 
 #if SPEW
-  logger_->MsgStream(LogDebug) <<  "lp processor: iteration " << iter 
+  logger_->msgStream(LogDebug) <<  "lp processor: iteration " << iter 
                                << std::endl;
 #endif
 
@@ -367,12 +367,12 @@ bool LPProcessor::shouldPrune_(NodePtr node, double solval,
   bool should_prune = false;
   double best_cutoff;
 #if SPEW
-  logger_->MsgStream(LogDebug2) <<  "lp processor: solution value = "
+  logger_->msgStream(LogDebug2) <<  "lp processor: solution value = "
                                 << solval << std::endl; 
 #endif
   switch (engineStatus_) {
    case (FailedInfeas):
-     logger_->MsgStream(LogInfo) << "LPProcessor: failed to converge "
+     logger_->msgStream(LogInfo) << "LPProcessor: failed to converge "
      << "(infeasible) in node " << node->getId() << std::endl;
      node->setStatus(NodeInfeasible);
      should_prune = true;
@@ -380,7 +380,7 @@ bool LPProcessor::shouldPrune_(NodePtr node, double solval,
      ++stats_.prob;
      break;
    case (ProvenFailedCQInfeas):
-     logger_->MsgStream(LogInfo) << "LPProcessor: constraint qualification "
+     logger_->msgStream(LogInfo) << "LPProcessor: constraint qualification "
      << "violated in node " << node->getId() << std::endl;
      ++stats_.prob;
    case (ProvenInfeasible):
@@ -398,12 +398,12 @@ bool LPProcessor::shouldPrune_(NodePtr node, double solval,
 
    case (ProvenUnbounded):
      should_prune = false;
-     logger_->MsgStream(LogDebug2) << "LPProcessor: problem relaxation is "
+     logger_->msgStream(LogDebug2) << "LPProcessor: problem relaxation is "
                                    << "unbounded!" << std::endl;
      break;
 
    case (FailedFeas):
-     logger_->MsgStream(LogInfo) << "LPProcessor: Failed to converge " 
+     logger_->msgStream(LogInfo) << "LPProcessor: Failed to converge " 
      << "(feasible) in node " << node->getId() << std::endl;
      if (node->getParent()) {
        node->setLb(node->getParent()->getLb());
@@ -414,7 +414,7 @@ bool LPProcessor::shouldPrune_(NodePtr node, double solval,
      ++stats_.prob;
      break;
    case (ProvenFailedCQFeas):
-     logger_->MsgStream(LogInfo) << "LPProcessor: constraint qualification "
+     logger_->msgStream(LogInfo) << "LPProcessor: constraint qualification "
      << "violated in node " << node->getId() << std::endl;
      if (node->getParent()) {
        node->setLb(node->getParent()->getLb());
@@ -426,7 +426,7 @@ bool LPProcessor::shouldPrune_(NodePtr node, double solval,
      break;
    case (EngineIterationLimit):
      ++stats_.prob;
-     logger_->MsgStream(LogInfo) << "LPProcessor: engine hit iteration limit, "
+     logger_->msgStream(LogInfo) << "LPProcessor: engine hit iteration limit, "
        " continuing in node " << node->getId() << std::endl;
      // continue with this node by following ProvenLocalOptimal case.
    case (ProvenLocalOptimal):
@@ -445,7 +445,7 @@ bool LPProcessor::shouldPrune_(NodePtr node, double solval,
      break;
    case (EngineError):
      if (contOnErr_) {
-       logger_->MsgStream(LogError) << "LPProcessor: engine reports error, "
+       logger_->msgStream(LogError) << "LPProcessor: engine reports error, "
          " continuing in node " << node->getId() << std::endl;
        node->setStatus(NodeContinue);
        if (node->getParent()) {
@@ -454,7 +454,7 @@ bool LPProcessor::shouldPrune_(NodePtr node, double solval,
          node->setLb(-INFINITY);
        }
      } else {
-       logger_->MsgStream(LogError) << "LPProcessor: engine reports error, "
+       logger_->msgStream(LogError) << "LPProcessor: engine reports error, "
          " pruning node " << node->getId() << std::endl;
        should_prune = true;
        node->setStatus(NodeInfeasible);
@@ -476,7 +476,7 @@ void LPProcessor::solveRelaxation_()
   engine_->solve();
   engineStatus_ = engine_->getStatus();
 #if SPEW
-  logger_->MsgStream(LogDebug2) <<  "lp processor: solving relaxation" 
+  logger_->msgStream(LogDebug2) <<  "lp processor: solving relaxation" 
                                 << std::endl
                                 <<  "lp processor: engine status = " 
                                 << engine_->getStatusString() << std::endl;
@@ -504,7 +504,7 @@ void LPProcessor::writeStats(std::ostream &out) const
 
 void LPProcessor::writeStats() const
 {
-  writeStats(logger_->MsgStream(LogNone));
+  writeStats(logger_->msgStream(LogNone));
 }
 
 

@@ -88,7 +88,7 @@ bool SOS1Handler::isFeasible(ConstSolutionPtr sol, RelaxationPtr rel, bool &,
   }
 
 #if SPEW
-  logger_->MsgStream(LogDebug) << me_ << "isFeasible = " << isfeas
+  logger_->msgStream(LogDebug) << me_ << "isFeasible = " << isfeas
                                << std::endl;
 #endif
   return isfeas;
@@ -216,27 +216,27 @@ void SOS1Handler::getBranchingCandidates(RelaxationPtr rel,
       gencands.push_back(br_can);
 
 #if SPEW
-      logger_->MsgStream(LogDebug) << me_ << sos->getName() << " is a "
+      logger_->msgStream(LogDebug) << me_ << sos->getName() << " is a "
         << " branching candidate." << std::endl
         << me_ << "left branch has variables ";
       for (viter = lvars.begin(); viter!=lvars.end(); ++viter) {
-        logger_->MsgStream(LogDebug) << (*viter)->getName() << " ";
+        logger_->msgStream(LogDebug) << (*viter)->getName() << " ";
       }
-      logger_->MsgStream(LogDebug) << std::endl
+      logger_->msgStream(LogDebug) << std::endl
                                    << me_ << "left sum = " << parsum
                                    << std::endl
                                    << me_ << "right branch has variables ";
       for (viter = rvars.begin(); viter!=rvars.end(); ++viter) {
-        logger_->MsgStream(LogDebug) << (*viter)->getName() << " ";
+        logger_->msgStream(LogDebug) << (*viter)->getName() << " ";
       }
-      logger_->MsgStream(LogDebug) << std::endl
+      logger_->msgStream(LogDebug) << std::endl
                                    << me_ << "right sum = " << nzsum - parsum
                                    << std::endl;
 #endif
 
     } else {
 #if SPEW
-      logger_->MsgStream(LogDebug) << me_ << sos->getName() << " is not a "
+      logger_->msgStream(LogDebug) << me_ << sos->getName() << " is not a "
                                    << " branching candidate." << std::endl;
 #endif
     }

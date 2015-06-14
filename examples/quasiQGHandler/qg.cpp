@@ -429,10 +429,10 @@ int main(int argc, char* argv[])
 
   
   // report name
-  logger_->MsgStream(LogInfo) << me << "handlers used:" << std::endl;
+  logger_->msgStream(LogInfo) << me << "handlers used:" << std::endl;
   
   for (HandlerIterator h = handlers.begin(); h != handlers.end(); ++h) {
-    logger_->MsgStream(LogInfo) << me << (*h)->getName() << std::endl;
+    logger_->msgStream(LogInfo) << me << (*h)->getName() << std::endl;
   }
 
   // Stuff needed in branch and bound

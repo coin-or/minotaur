@@ -494,7 +494,7 @@ quasiQGHandler::quasiQGHandler(EnvPtr env, ProblemPtr minlp, ProblemPtr proj_ins
 quasiQGHandler::~quasiQGHandler()
 {
   if (stats_) {
-    writeStats(logger_->MsgStream(LogInfo));
+    writeStats(logger_->msgStream(LogInfo));
     delete stats_;
   }
 //  delete [] rootSol_;
@@ -532,18 +532,18 @@ void quasiQGHandler::relax_(RelaxationPtr rel, Bool *is_inf)
   }
 
 #if SPEW
-  logger_->MsgStream(LogDebug) << me_ << "Number of nonlinear constraints "
+  logger_->msgStream(LogDebug) << me_ << "Number of nonlinear constraints "
     " = " << nlCons_.size() << std::endl;
-  logger_->MsgStream(LogDebug) << me_ << "Nonlinear solver used = "
+  logger_->msgStream(LogDebug) << me_ << "Nonlinear solver used = "
     " = " << nlpe_->getName() << std::endl;
 #endif
 //  if (!partialFix_)
   initLinear_(is_inf);
 //  else *is_inf = false;
 #if SPEW
-  logger_->MsgStream(LogDebug2) << me_ << "Initial relaxation:" 
+  logger_->msgStream(LogDebug2) << me_ << "Initial relaxation:" 
                                 << std::endl;
-  rel_->write(logger_->MsgStream(LogDebug2));
+  rel_->write(logger_->msgStream(LogDebug2));
 #endif
  
   //doACCPM_=false;
@@ -625,7 +625,7 @@ void quasiQGHandler::initLinear_(Bool *isInf)
   case (EngineError):
   case (EngineUnknownStatus):
   default:
-    logger_->MsgStream(LogError) << me_ << "NLP engine status = " 
+    logger_->msgStream(LogError) << me_ << "NLP engine status = " 
                                  << nlpStatus_ << std::endl;
     assert(!"quasiQGHandler: Cannot proceed further");
   }
@@ -716,8 +716,8 @@ void quasiQGHandler::addInitLinearX_(const Double *x)
 
         ++(stats_->cuts);
  #if SPEW
-    logger_->MsgStream(LogDebug) << me_ << "initial constr. cut: ";
-    newcon->write(logger_->MsgStream(LogDebug));
+    logger_->msgStream(LogDebug) << me_ << "initial constr. cut: ";
+    newcon->write(logger_->msgStream(LogDebug));
 #endif
      } else {
         if (con->getLb() - act > -solAbsTol_) {
@@ -729,8 +729,8 @@ void quasiQGHandler::addInitLinearX_(const Double *x)
 
 #if SPEW
 	  ++(stats_->cuts);
-    logger_->MsgStream(LogDebug) << me_ << "initial constr. cut: ";
-    newcon->write(logger_->MsgStream(LogDebug));
+    logger_->msgStream(LogDebug) << me_ << "initial constr. cut: ";
+    newcon->write(logger_->msgStream(LogDebug));
 #endif
        }
       }
@@ -754,12 +754,12 @@ void quasiQGHandler::addInitLinearX_(const Double *x)
     //ObjId_ = newcon->getId();
     ++(stats_->cuts);
 #if SPEW
-    logger_->MsgStream(LogDebug) << me_ << "initial obj cut: " << std::endl
+    logger_->msgStream(LogDebug) << me_ << "initial obj cut: " << std::endl
                                  << std::setprecision(9);
-    newcon->write(logger_->MsgStream(LogDebug));
+    newcon->write(logger_->msgStream(LogDebug));
 #endif
   } else {
-    logger_->MsgStream(LogDebug) << "QG Handler: Problem does not have a " 
+    logger_->msgStream(LogDebug) << "QG Handler: Problem does not have a " 
 	 			<< "nonlinear objective." << std::endl;
   }
 }
@@ -832,11 +832,11 @@ Bool quasiQGHandler::isFeasible(ConstSolutionPtr sol, RelaxationPtr rel,
     if (act > c->getUb() + solAbsTol_ || act < c->getLb() - solAbsTol_) {
       if ( act > c->getUb() + fabs(c->getUb())*solRelTol_ || act < c->getLb() - fabs(c->getLb())*solRelTol_ ){
 #if SPEW
-        logger_->MsgStream(LogDebug) 
+        logger_->msgStream(LogDebug) 
           << me_ << "constraint not feasible" << std::endl
           << me_;
-        c->write(logger_->MsgStream(LogDebug2));
-        logger_->MsgStream(LogDebug) 
+        c->write(logger_->msgStream(LogDebug2));
+        logger_->msgStream(LogDebug) 
           << me_ << "activity = " << act << std::endl;  
 #endif
         isFeas_ = false;
@@ -846,7 +846,7 @@ Bool quasiQGHandler::isFeasible(ConstSolutionPtr sol, RelaxationPtr rel,
     }
   }
 #if SPEW
-  logger_->MsgStream(LogDebug) 
+  logger_->msgStream(LogDebug) 
     << me_ << "all nonlinear constraints feasible." << std::endl;
 #endif
   objCutOff = false;
@@ -863,7 +863,7 @@ Bool quasiQGHandler::isFeasible(ConstSolutionPtr sol, RelaxationPtr rel,
 //                               << std::endl;
 
 #if SPEW
-    logger_->MsgStream(LogDebug) << me_ << "LP value = " << alpha 
+    logger_->msgStream(LogDebug) << me_ << "LP value = " << alpha 
                                  << std::endl
                                  << me_ << "NLP activity = " << act 
                                  << std::endl;
@@ -872,7 +872,7 @@ Bool quasiQGHandler::isFeasible(ConstSolutionPtr sol, RelaxationPtr rel,
     if (alpha < act - solAbsTol_) {
       //std::cout << " **************** objective not feasible" << std::endl;
 #if SPEW
-      logger_->MsgStream(LogDebug) << me_ << "objective not feasible" 
+      logger_->msgStream(LogDebug) << me_ << "objective not feasible" 
                                    << std::endl;
 #endif
       isFeas_ = false;
@@ -962,7 +962,7 @@ void quasiQGHandler::separate(ConstSolutionPtr sol, NodePtr node_1, RelaxationPt
       }
     }
     else {
-//      logger_->MsgStream(LogError) << me_ << "NLP engine status = " 
+//      logger_->msgStream(LogError) << me_ << "NLP engine status = " 
 //                                   << nlpe_->getStatusString() << std::endl;
 //      assert(!"quasiQGHandler: Cannot proceed further");
     }
@@ -1002,7 +1002,7 @@ void quasiQGHandler::separate(ConstSolutionPtr sol, NodePtr node_1, RelaxationPt
   if (is_int_feas) {
     //std::cout << "  integer feasible  ";
 #if SPEW
-     logger_->MsgStream(LogDebug) 
+     logger_->msgStream(LogDebug) 
         << me_ << "solution is integer feasible, may need to add cuts" << std::endl;	  
 #endif
     if (!partialFix_) {
@@ -1021,7 +1021,7 @@ void quasiQGHandler::separate(ConstSolutionPtr sol, NodePtr node_1, RelaxationPt
     if (last_node_ != nodeid)
     {
 #if SPEW
-      logger_->MsgStream(LogDebug) 
+      logger_->msgStream(LogDebug) 
           << me_ << "accpm is on" << std::endl;
 #endif
 	 // TODO: Add call to accpm cut method here
@@ -1173,7 +1173,7 @@ void quasiQGHandler::cutIntSol_(ConstSolutionPtr sol, SolutionPoolPtr s_pool,
     }
 #endif
 #if SPEW
-     logger_->MsgStream(LogDebug) 
+     logger_->msgStream(LogDebug) 
         << me_ << "solved fixed NLP to optimality, "
 		  << "lp_obj = " << lp_obj 
 		  << ", nlpval = " << nlpval << std::endl;
@@ -1346,7 +1346,7 @@ void quasiQGHandler::cutIntSol_(ConstSolutionPtr sol, SolutionPoolPtr s_pool,
   case (EngineError):
   case (EngineUnknownStatus):
   default:
-    logger_->MsgStream(LogError) << me_ << "NLP engine status = " 
+    logger_->msgStream(LogError) << me_ << "NLP engine status = " 
                                  << nlpe_->getStatusString() << std::endl
                                  << me_ << "No cut generated, may cycle!"
                                  << std::endl;
@@ -1538,7 +1538,7 @@ void quasiQGHandler::solvePartialNLP_(ConstSolutionPtr sol, SolutionPoolPtr s_po
   case (EngineError):
   case (EngineUnknownStatus):
   default:
-    logger_->MsgStream(LogError) << me_ << "NLP engine status = " 
+    logger_->msgStream(LogError) << me_ << "NLP engine status = " 
                                  << nlpe_->getStatusString() << std::endl;
     assert(!"quasiQGHandler: Cannot proceed further");
 //    ++(stats_->nlpI);
@@ -1637,9 +1637,9 @@ Int quasiQGHandler::OAFromPoint_(const Double *x, const Double *inf_x,
   Int ncut = 0;
   *status=SepaContinue;
 #if SPEW
-    logger_->MsgStream(LogDebug) 
+    logger_->msgStream(LogDebug) 
         << me_ << "Adding linearizations, inf_x = " << inf_x << std::endl;
-    logger_->MsgStream(LogDebug)
+    logger_->msgStream(LogDebug)
         << me_ << "number of cuts so far = " << stats_->cuts << std::endl;
 #endif
 
@@ -1799,10 +1799,10 @@ Int quasiQGHandler::OAFromPoint_(const Double *x, const Double *inf_x,
       }
 
 #if SPEW
-      logger_->MsgStream(LogDebug) << me_ << "New inequality:" << std::endl;
-      newcon->write(logger_->MsgStream(LogDebug));
-      logger_->MsgStream(LogDebug) << std::endl;
-      logger_->MsgStream(LogDebug) << me_ << "obj violation = " 
+      logger_->msgStream(LogDebug) << me_ << "New inequality:" << std::endl;
+      newcon->write(logger_->msgStream(LogDebug));
+      logger_->msgStream(LogDebug) << std::endl;
+      logger_->msgStream(LogDebug) << me_ << "obj violation = " 
                                    << vio << std::endl;
 #endif
       ++num_cuts;
@@ -1850,10 +1850,10 @@ Int quasiQGHandler::OAFromPoint_(const Double *x, const Double *inf_x,
       }
 
 #if SPEW
-      logger_->MsgStream(LogDebug) << me_ << "New inequality:" << std::endl;
-      newcon->write(logger_->MsgStream(LogDebug));
-      logger_->MsgStream(LogDebug) << std::endl;
-      logger_->MsgStream(LogDebug) << me_ << "obj violation = " 
+      logger_->msgStream(LogDebug) << me_ << "New inequality:" << std::endl;
+      newcon->write(logger_->msgStream(LogDebug));
+      logger_->msgStream(LogDebug) << std::endl;
+      logger_->msgStream(LogDebug) << me_ << "obj violation = " 
                                    << vio << std::endl;
 #endif
       ++num_cuts;
@@ -1907,7 +1907,7 @@ Int quasiQGHandler::OAFromPoint_(const Double *x, const Double *inf_x,
 
 
 #if SPEW
-  logger_->MsgStream(LogDebug) << "Number of cuts = " << num_cuts << std::endl;
+  logger_->msgStream(LogDebug) << "Number of cuts = " << num_cuts << std::endl;
 #endif
   //stats_->cuts += num_cuts;
 //  if (num_cuts != 0)
@@ -2676,7 +2676,7 @@ Int quasiQGHandler::ProjCutFromPoint_(ConstSolutionPtr sol, SolutionPoolPtr s_po
   Double act;
   Bool isfeas=true;
 #if SPEW
-     logger_->MsgStream(LogDebug) 
+     logger_->msgStream(LogDebug) 
         << me_ << "solved projection" << std::endl;
 #endif
 
@@ -2741,7 +2741,7 @@ Int quasiQGHandler::ProjCutFromPoint_(ConstSolutionPtr sol, SolutionPoolPtr s_po
         updateUb_new_(s_pool, &nlpval, xhat, sol_found);
       }
 #if SPEW
-    logger_->MsgStream(LogDebug2) << me_ << "projection objective = " << proj_nlpe_->getSolutionValue() + .5 * constantTerm << std::endl;
+    logger_->msgStream(LogDebug2) << me_ << "projection objective = " << proj_nlpe_->getSolutionValue() + .5 * constantTerm << std::endl;
 #endif
     //std::cout << std::setprecision(9) << "projection objective = " << proj_nlpe_->getSolutionValue() + .5 * constantTerm << std::endl;
 //      if (proj_nlpe_->getSolutionValue() + .5 * constantTerm > solAbsTol_)
@@ -2788,7 +2788,7 @@ Int quasiQGHandler::ProjCutFromPoint_(ConstSolutionPtr sol, SolutionPoolPtr s_po
   case (EngineError):
   case (EngineUnknownStatus):
   default:
-    logger_->MsgStream(LogError) << me_ << "projNLP engine status = " 
+    logger_->msgStream(LogError) << me_ << "projNLP engine status = " 
                                  << proj_nlpe_->getStatusString() << std::endl;
     assert(!"quasiQGHandler: Cannot proceed further");
   }
@@ -2820,17 +2820,17 @@ Int quasiQGHandler::ProjCutFromPoint_(ConstSolutionPtr sol, SolutionPoolPtr s_po
 //    delete [] gr;
 #endif
 #if SPEW  
-    logger_->MsgStream(LogDebug) << me_ << "optimal solutions:" << std::endl;
+    logger_->msgStream(LogDebug) << me_ << "optimal solutions:" << std::endl;
     for (Int i = 0; i < numvars_; i++)
       if (proj_minlp_->getVariable(i)->getType() == Binary || proj_minlp_->getVariable(i)->getType() == Integer)
-        logger_->MsgStream(LogDebug) << "(" << i+1 << "," << x_OA_[i] << "," << x_pr_[i] << ") "; 
-    logger_->MsgStream(LogDebug) << std::endl;
+        logger_->msgStream(LogDebug) << "(" << i+1 << "," << x_OA_[i] << "," << x_pr_[i] << ") "; 
+    logger_->msgStream(LogDebug) << std::endl;
 #endif
     //c = InnerProduct(a_, x_pr_, n);
 //    std::cout << "f2(x) = " << lf->eval(x_OA_) << " c = " << c << std::endl;
 #if SPEW
     std::cout.precision(8);
-    logger_->MsgStream(LogDebug) << me_ << "projection objective value = " << proj_minlp_->getObjValue(x_pr_, &error) + 0.5*constantTerm << std::endl;
+    logger_->msgStream(LogDebug) << me_ << "projection objective value = " << proj_minlp_->getObjValue(x_pr_, &error) + 0.5*constantTerm << std::endl;
     std::cout.precision(4);
 #endif
 ///*
@@ -2868,16 +2868,16 @@ Int quasiQGHandler::ProjCutFromPoint_(ConstSolutionPtr sol, SolutionPoolPtr s_po
 
   //write_point(x_OA_,x_pr_, minlp_->getNumVars());
 #if SPEW
- logger_->MsgStream(LogDebug2) << me_ << "Function evals: \n";
+ logger_->msgStream(LogDebug2) << me_ << "Function evals: \n";
   for (UInt i = 0; i < minlp_->getNumCons(); i++){
     funeval = minlp_->getConstraint(i)->getFunction()->eval(x_OA_, &error);
     consact = funeval - minlp_->getConstraint(i)->getUb();
     if (consact > solAbsTol_){
-      logger_->MsgStream(LogDebug2) << "Uconst[" << i << "] = " << consact << "\n";
+      logger_->msgStream(LogDebug2) << "Uconst[" << i << "] = " << consact << "\n";
     }  
     consact = funeval - minlp_->getConstraint(i)->getLb();
     if (consact < -1.0 * solAbsTol_){
-      logger_->MsgStream(LogDebug2) << "Bconst[" << i << "] = " << consact << "\n";
+      logger_->msgStream(LogDebug2) << "Bconst[" << i << "] = " << consact << "\n";
     }
   }
 #endif
@@ -3806,7 +3806,7 @@ UInt quasiQGHandler::fixFrac(ConstSolutionPtr sol)
   case (EngineError):
   case (EngineUnknownStatus):
   default:
-    logger_->MsgStream(LogError) << me_ << "NLP engine status = " 
+    logger_->msgStream(LogError) << me_ << "NLP engine status = " 
                                  << nlpe_->getStatusString() << std::endl
                                  << me_ << "No cut generated, may cycle!"
                                  << std::endl;
@@ -4150,7 +4150,7 @@ UInt quasiQGHandler::QuasiECP_ContProj(ConstSolutionPtr sol)
   case (EngineError):
   case (EngineUnknownStatus):
   default:
-    logger_->MsgStream(LogError) << me_ << "Projection did not help" << std::endl;
+    logger_->msgStream(LogError) << me_ << "Projection did not help" << std::endl;
 
   }
   proj_nlpe_->clear();  
@@ -4193,7 +4193,7 @@ UInt quasiQGHandler::QuasiECP_ContNLP(ConstSolutionPtr sol)
   case (EngineError):
   case (EngineUnknownStatus):
   default:
-    logger_->MsgStream(LogError) << me_ << "NLP engine status = " 
+    logger_->msgStream(LogError) << me_ << "NLP engine status = " 
 				 << nlpe_->getStatusString() 
 				 << std::endl;
     //assert(!"NLP engine failes");
@@ -5885,7 +5885,7 @@ Int quasiQGHandler::pure_project_(const Double *x_OA, SeparationStatus *status)
   case (EngineError):
   case (EngineUnknownStatus):
   default:
-    logger_->MsgStream(LogError) << me_ << "projNLP engine status = " 
+    logger_->msgStream(LogError) << me_ << "projNLP engine status = " 
                                  << nlpStatus_ << std::endl;
     assert(!"quasiQGHandler: Cannot proceed further");
   }
@@ -5968,14 +5968,14 @@ void quasiQGHandler::updateUb_(SolutionPoolPtr s_pool, Double *nlpval,
   if (val <= bestval) { // - solAbsTol_) {
     const Double *x = nlpe_->getSolution()->getPrimal();
 #if SPEW
-    logger_->MsgStream(LogDebug) 
+    logger_->msgStream(LogDebug) 
       << me_ << "new solution found, value = " << val << std::endl;
 #endif
     s_pool->addSolution(x, val);
     *sol_found = true;
   } else {
 #if SPEW
-    logger_->MsgStream(LogDebug) 
+    logger_->msgStream(LogDebug) 
       << std::setprecision(10)
       << me_ << "new solution is suboptimal, value = " << val 
       << " best value = " << bestval << std::endl;
@@ -6001,7 +6001,7 @@ void quasiQGHandler::updateUb_new_(SolutionPoolPtr s_pool, Double *nlpval,
     *sol_found = true;
   } else {
 #if SPEW
-    logger_->MsgStream(LogDebug) 
+    logger_->msgStream(LogDebug) 
       << std::setprecision(10)
       << me_ << "new solution is suboptimal, value = " << val 
       << " best value = " << bestval << std::endl;
@@ -6023,16 +6023,16 @@ void quasiQGHandler::ProjObjUpdate(const Double * x1, Double& CTerm)
 //  Double consact;
 //  Int error;
 #if SPEW
-  logger_->MsgStream(LogDebug) << me_ << "Function evals: \n";
+  logger_->msgStream(LogDebug) << me_ << "Function evals: \n";
   for (UInt i = 0; i < minlp_->getNumCons(); i++){
     funeval = minlp_->getConstraint(i)->getFunction()->eval(x_OA_, &error);
     consact = funeval - minlp_->getConstraint(i)->getUb();
     if (consact > solAbsTol_){
-      logger_->MsgStream(LogDebug) << "Uconst[" << i << "] = " << consact << "\n";
+      logger_->msgStream(LogDebug) << "Uconst[" << i << "] = " << consact << "\n";
     }  
     consact = funeval - minlp_->getConstraint(i)->getLb();
     if (consact < -1.0 * solAbsTol_){
-      logger_->MsgStream(LogDebug) << "Bconst[" << i << "] = " << consact << "\n";
+      logger_->msgStream(LogDebug) << "Bconst[" << i << "] = " << consact << "\n";
     }
   }
 #endif
@@ -6130,7 +6130,7 @@ void quasiQGHandler::no_good(const Double *x)
   Int lhs = 1;
 
 #if SPEW
-  logger_->MsgStream(LogDebug) << me_ << "Adding no-good cut\n";
+  logger_->msgStream(LogDebug) << me_ << "Adding no-good cut\n";
 #endif
   std::cout << " **********************   Adding no-good cut  ************************** \n";
   std::cout << "numvars = " << numvars << "\n";
@@ -6191,8 +6191,8 @@ quasiACProblem::quasiACProblem(EnvPtr env, EnginePtr ACnlpe, RelaxationPtr ACrel
                                    findInt("qgAC_log_level")->getValue());
 
 #if SPEW
-  logger_->MsgStream(LogDebug) << me_ << " Relaxation problem passed to ACCPM\n";
-//  ACrel_->write(logger_->MsgStream(LogDebug));
+  logger_->msgStream(LogDebug) << me_ << " Relaxation problem passed to ACCPM\n";
+//  ACrel_->write(logger_->msgStream(LogDebug));
 #endif
   quasiACProblem_ = (ProblemPtr) new Problem();
   quasiACProblem_->newVariables(ACrel_->varsBegin(), ACrel_->varsEnd());
@@ -6252,7 +6252,7 @@ void quasiACProblem::createLogBarrier_()
   VariablePtr v;
 
 #if SPEW
-  logger_->MsgStream(LogDebug) << me_ << "ACCPM is creating Log Barrier function\n"; 
+  logger_->msgStream(LogDebug) << me_ << "ACCPM is creating Log Barrier function\n"; 
 #endif
 //  for (v_iter = quasiACProblem_->varsBegin(); v_iter != quasiACProblem_->varsEnd(); v_iter++)
   for (UInt i = 0; i < nlNewVars_.size(); i++)
@@ -6296,7 +6296,7 @@ void quasiACProblem::createLogBarrier_()
   if (AC_Nodes_logs_.size() < 2)
   {
 #if SPEW 
-    logger_->MsgStream(LogDebug) << me_ << "log vector has only one node\n";
+    logger_->msgStream(LogDebug) << me_ << "log vector has only one node\n";
 #endif    
     finalNode_ = AC_Nodes_logs_[0];
     ACLogBar_->setOut(finalNode_);
@@ -6313,8 +6313,8 @@ void quasiACProblem::createLogBarrier_()
 
   ACObjFunc_ = (FunctionPtr) new Function(ACLogBar_);
 #if SPEW
-  logger_->MsgStream(LogDebug) << me_ << " Log Barrier function\n";
-  ACObjFunc_->write(logger_->MsgStream(LogDebug)); 
+  logger_->msgStream(LogDebug) << me_ << " Log Barrier function\n";
+  ACObjFunc_->write(logger_->msgStream(LogDebug)); 
 #endif
   
   quasiACProblem_->newObjective(ACObjFunc_, 0.0, Minimize, "ACObj");
@@ -6326,7 +6326,7 @@ void quasiACProblem::ACUpdate_(const Double *x)
 {
 
 #if SPEW
-  logger_->MsgStream(LogDebug) << me_ << " update AC problem\n";
+  logger_->msgStream(LogDebug) << me_ << " update AC problem\n";
 #endif
   ConstraintPtr c;
   Double act = - INFINITY;
@@ -6472,7 +6472,7 @@ void quasiACProblem::ACUpdate_(const Double *x)
 void quasiACProblem::updateLogBar_(VariablePtr v)
 { 
 #if SPEW
-  logger_->MsgStream(LogDebug) << me_ << " updating Log Barrier\n";
+  logger_->msgStream(LogDebug) << me_ << " updating Log Barrier\n";
 #endif
 
   CNode *cnode0, *cnode1, *cnode2, *cnode3, *cnode4;
@@ -6512,7 +6512,7 @@ void quasiACProblem::updateLogBar_(VariablePtr v)
   
 
 #if SPEW
-  logger_->MsgStream(LogDebug) << me_ << "number of log terms = " << AC_Nodes_logs_.size() << "\n";
+  logger_->msgStream(LogDebug) << me_ << "number of log terms = " << AC_Nodes_logs_.size() << "\n";
 #endif
 //  finalNode_ = ACLogBar_->newNode(OpSumList, &AC_Nodes_logs_[0], AC_Nodes_logs_.size());  
   finalNode_ = ACLogBar_->newNode(OpPlus, finalNode_, cnode4);
@@ -6551,7 +6551,7 @@ void quasiACProblem::addCut(Double *coef, Double ub, Bool IneDir)
 {
 
 #if SPEW
-  logger_->MsgStream(LogDebug) << me_ << " adding cuts to ACP\n";
+  logger_->msgStream(LogDebug) << me_ << " adding cuts to ACP\n";
 #endif
 
   VariableConstIterator vbeg = ACrel_->varsBegin();
@@ -6576,7 +6576,7 @@ void quasiACProblem::addCut(Double *coef, Double ub, Bool IneDir)
 void quasiACProblem::updateObjConst(Double ub)
 {
 #if SPEW
-  logger_->MsgStream(LogDebug) << me_ << " updating upper bound of objective\n";
+  logger_->msgStream(LogDebug) << me_ << " updating upper bound of objective\n";
 #endif
 
   ConstraintPtr cons;
@@ -6588,7 +6588,7 @@ void quasiACProblem::updateObjConst(Double ub)
 void quasiACProblem::solvequasiACProblem_()
 {
 #if SPEW
-  logger_->MsgStream(LogDebug) << me_ << " solving ACP\n";
+  logger_->msgStream(LogDebug) << me_ << " solving ACP\n";
 #endif
 
   ObjectivePtr o;
@@ -6619,7 +6619,7 @@ void quasiACProblem::solvequasiACProblem_()
 QGNewCut quasiACProblem::ACCPM_()
 {
 #if SPEW
-  logger_->MsgStream(LogDebug) << me_ << " passing cuts to relaxation\n";
+  logger_->msgStream(LogDebug) << me_ << " passing cuts to relaxation\n";
 #endif
   const Double *solAC;  
   numACCPMSolve_ = 2; 
@@ -6650,7 +6650,7 @@ void quasiACProblem::linearAt_(FunctionPtr f, Double fval, const Double *x,
                           Double *c, LinearFunctionPtr *lf)
 {
 #if SPEW
-  logger_->MsgStream(LogDebug) << me_ << "linearizing over points\n";
+  logger_->msgStream(LogDebug) << me_ << "linearizing over points\n";
 #endif
 
   Int n = ACrel_->getNumVars();

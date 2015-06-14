@@ -52,6 +52,7 @@ void TransformerUT::setUp()
 {
   env_ = (EnvPtr) new Environment();
   env_->getOptions()->findInt("ampl_log_level")->setValue(Minotaur::LogNone);
+  env_->setLogLevel(LogError);
   iface_ = (MINOTAUR_AMPL::AMPLInterfacePtr)
     new MINOTAUR_AMPL::AMPLInterface(env_);
   env_->getOptions()->findBool("use_native_cgraph")->setValue(true);

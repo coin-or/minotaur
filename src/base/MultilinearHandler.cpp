@@ -48,7 +48,7 @@ MultilinearHandler::MultilinearHandler(EnvPtr env, ProblemPtr problem)
   : env_(env), problem_(problem)
 {
   logger_  = (LoggerPtr) new Logger((LogLevel) 
-                                    env->getOptions()->findInt("ml_log_level")->getValue());
+                                    env->getOptions()->findInt("handler_log_level")->getValue());
   workingProblem_ = problem_->clone();
 
   linearizationCnt_ = 5;
@@ -159,8 +159,8 @@ Branches MultilinearHandler::getBranches(BrCandPtr cand, DoubleVector & x,
   branch->setActivity(0.5); // TODO: set this correctly
   branches->push_back(branch);
 
-  logger_->MsgStream(LogDebug2) << "branching on " << v->getName();
-  logger_->MsgStream(LogDebug2) << " <= " << value << " or " 
+  logger_->msgStream(LogDebug2) << "branching on " << v->getName();
+  logger_->msgStream(LogDebug2) << " <= " << value << " or " 
     << " >= " << value << std::endl;
 
 #if defined(DEBUG_MULTILINEAR_HANDLER)  

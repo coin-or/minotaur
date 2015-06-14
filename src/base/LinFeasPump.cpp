@@ -159,7 +159,7 @@ void LinFeasPump::implementFP_(const double*, SolutionPoolPtr s_pool)
       lp_status = lpE_->solve();
       ++(statsLFP_->numLPs);
       if (!(lp_status == ProvenOptimal || lp_status == ProvenLocalOptimal)) {
-        logger_->MsgStream(LogDebug) << me_ << "LP relaxation is infeasible." 
+        logger_->msgStream(LogDebug) << me_ << "LP relaxation is infeasible." 
           << std::endl;
         return;
       }
@@ -173,7 +173,7 @@ void LinFeasPump::implementFP_(const double*, SolutionPoolPtr s_pool)
         is_feasible = qh_->isFeasible(sol, r_, is_prob_infeasible, inf_meas);
         if (is_feasible) {
 #if SPEW
-          logger_->MsgStream(LogDebug) << me_ << "LP soln is feasible "
+          logger_->msgStream(LogDebug) << me_ << "LP soln is feasible "
             << "to NLP" << std::endl;
 #endif
           err = 0;
@@ -182,7 +182,7 @@ void LinFeasPump::implementFP_(const double*, SolutionPoolPtr s_pool)
           sol_found = true;
         } else {
 #if SPEW
-          logger_->MsgStream(LogDebug) << me_ << "LP soln is not feasible "
+          logger_->msgStream(LogDebug) << me_ << "LP soln is not feasible "
             << "to NLP." << std::endl;
 #endif
         }
@@ -199,10 +199,10 @@ void LinFeasPump::implementFP_(const double*, SolutionPoolPtr s_pool)
         qh_->separate(sol, node, r_, 0, s_pool, &sol_found, &sep_status);
         to_continue = true; //reset to continue after separating
 #if SPEW
-        logger_->MsgStream(LogDebug) << me_ << "separation status = " 
+        logger_->msgStream(LogDebug) << me_ << "separation status = " 
           << sep_status << std::endl;
-        //r_->write(logger_->MsgStream(LogDebug));
-        logger_->MsgStream(LogDebug) << me_ << 
+        //r_->write(logger_->msgStream(LogDebug));
+        logger_->msgStream(LogDebug) << me_ << 
           "sol_found = " << sol_found << std::endl;
 #endif
         if (SepaError==sep_status) {
@@ -215,7 +215,7 @@ void LinFeasPump::implementFP_(const double*, SolutionPoolPtr s_pool)
     }
     if (is_feasible) {
 #if SPEW
-      logger_->MsgStream(LogInfo) << me_ << "best solution value = " 
+      logger_->msgStream(LogInfo) << me_ << "best solution value = " 
         << s_pool->getBestSolutionValue() << std::endl;
 #endif
       if (getSolGap_(f_nlp, s_pool->getBestSolutionValue()) > 10 && 
@@ -282,7 +282,7 @@ void LinFeasPump::separatingCut_(double f_nlp, SolutionPoolPtr s_pool)
   new_bnd = obj_weight*f_nlp + (1-obj_weight)*f_feas; 
   if (objVar_) {
     r_->changeBound(objVar_, Upper, new_bnd);
-    logger_->MsgStream(LogDebug) << me_ << "upper bound on objective value is "
+    logger_->msgStream(LogDebug) << me_ << "upper bound on objective value is "
                                  << new_bnd << std::endl;
   } else {
     if (!objConstraint_) {
@@ -294,7 +294,7 @@ void LinFeasPump::separatingCut_(double f_nlp, SolutionPoolPtr s_pool)
       r_->changeBound(objConstraint_, Upper, new_bnd);
     }
 #if SPEW
-  logger_->MsgStream(LogDebug) << me_ << "upper bound on objective value is "
+  logger_->msgStream(LogDebug) << me_ << "upper bound on objective value is "
    << new_bnd << std::endl;
 #endif
   }
@@ -310,13 +310,13 @@ bool LinFeasPump::shouldFP_()
     return false;
   }
   if (p_->getSize()->ints > 0) {
-    logger_->MsgStream(LogInfo) << me_ << "skipping because of integer "
+    logger_->msgStream(LogInfo) << me_ << "skipping because of integer "
       "variables" << std::endl;
     return false;
   }
   if (p_->getSize()->bins < 31 && 
       0==env_->getOptions()->findInt("LinFPump")->getValue()) {
-    logger_->MsgStream(LogInfo) << me_ << "skipping because of too few binary "
+    logger_->msgStream(LogInfo) << me_ << "skipping because of too few binary "
       "variables" << std::endl;
     return false;
   }
@@ -326,7 +326,7 @@ bool LinFeasPump::shouldFP_()
     c = *c_it;
     if (c->getFunctionType() != Linear) {
       if (c->getLb() > -INFINITY && c->getUb() < INFINITY) {
-        logger_->MsgStream(LogInfo) << me_ << "skipping because of nonlinear "
+        logger_->msgStream(LogInfo) << me_ << "skipping because of nonlinear "
           << "equality or range constraint" << std::endl;
         return false;
       } 
@@ -344,23 +344,23 @@ void LinFeasPump::solve(NodePtr, RelaxationPtr, SolutionPoolPtr s_pool)
     return;
   }
 
-  logger_->MsgStream(LogInfo) << me_ << "starting" << std::endl;
+  logger_->msgStream(LogInfo) << me_ << "starting" << std::endl;
   timer_->start();
   implementFP_(x, s_pool); 
-  logger_->MsgStream(LogInfo) << me_ << "over" << std::endl;
+  logger_->msgStream(LogInfo) << me_ << "over" << std::endl;
   stats_->time = timer_->query();
   timer_->stop();
 }
 
 
-void LinFeasPump::writeStats()
+void LinFeasPump::writeStats(std::ostream &out) const
 {
-  FeasibilityPump::writeStats();
-  logger_->MsgStream(LogInfo) 
+  FeasibilityPump::writeStats(out);
+  logger_->msgStream(LogInfo) 
     << me_ << "number of LPs solved          = " << statsLFP_->numLPs
     << std::endl;
   if (statsLFP_->bestObjValue < INFINITY) {
-    logger_->MsgStream(LogInfo) 
+    logger_->msgStream(LogInfo) 
       << me_ << "Best objective value          = " << statsLFP_->bestObjValue
       << std::endl;
   }

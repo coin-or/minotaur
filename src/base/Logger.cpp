@@ -24,7 +24,7 @@ Logger::~Logger()
 }
 
 
-std::ostream& Logger::MsgStream(LogLevel level) const 
+std::ostream& Logger::msgStream(LogLevel level) const 
 {
   if (level <= maxLevel_) { 
     return std::cout; 
@@ -33,7 +33,7 @@ std::ostream& Logger::MsgStream(LogLevel level) const
 }
 
 
-std::ostream& Logger::ErrStream() const 
+std::ostream& Logger::errStream() const 
 { 
   if (maxLevel_ > LogNone) { 
     return std::cerr; 

@@ -374,7 +374,7 @@ LinearFunctionPtr CxQuadHandler::getNewSecantLf_(VariablePtr x, VariablePtr y,
     lf = (LinearFunctionPtr) new LinearFunction();
     lf->addTerm(y, 1.);
 #if SPEW
-    logger_->MsgStream(LogDebug) << me_ << 
+    logger_->msgStream(LogDebug) << me_ << 
       "warning: generating a bound as a secant constraint." << std::endl;
 #endif
   }
@@ -574,7 +574,7 @@ bool CxQuadHandler::isFeasible(ConstSolutionPtr sol, RelaxationPtr, bool &,
     }
   }
 #if SPEW
-  logger_->MsgStream(LogDebug2) << me_ << "relaxation is secant feasible." 
+  logger_->msgStream(LogDebug2) << me_ << "relaxation is secant feasible." 
     << std::endl;
 #endif
 
@@ -585,7 +585,7 @@ bool CxQuadHandler::isFeasible(ConstSolutionPtr sol, RelaxationPtr, bool &,
   }
 
 #if SPEW
-  logger_->MsgStream(LogDebug2) << me_ << "relaxation is McCormick feasible." 
+  logger_->msgStream(LogDebug2) << me_ << "relaxation is McCormick feasible." 
     << std::endl;
 #endif
   return true;
@@ -614,7 +614,7 @@ void CxQuadHandler::getBranchingCandidates(RelaxationPtr,
     yval = x[s_it->second->auxVar->getIndex()];
     if (yval > x0val*x0val+eTol_) {
 #if SPEW
-      logger_->MsgStream(LogDebug2) << std::setprecision(9) << me_ 
+      logger_->msgStream(LogDebug2) << std::setprecision(9) << me_ 
         << "branching candidate for secant: " << s_it->first->getName()
         << " value = " << x0val << " aux var: " 
         << s_it->second->auxVar->getName() 
@@ -812,7 +812,7 @@ Branches CxQuadHandler::getBranches(BrCandPtr cand, DoubleVector & x,
   branches->push_back(branch);
 
 #if SPEW
-  logger_->MsgStream(LogDebug2) << me_ << "branching on " << v->getName()
+  logger_->msgStream(LogDebug2) << me_ << "branching on " << v->getName()
                                        << " <= " << value << " or " 
                                        << " >= " << value << std::endl;
 #endif

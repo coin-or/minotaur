@@ -317,12 +317,12 @@ int Problem::checkConVars() const
       v = *vit;
       if (v != vars_[v->getIndex()]) {
         err = 1;
-        logger_->MsgStream(LogError) << me_ << "variable " << v->getName()
+        logger_->msgStream(LogError) << me_ << "variable " << v->getName()
                                      << " in constraint " << c->getName()
                                      << " is not a variable of this problem."
                                      << std::endl;
-        c->write(logger_->MsgStream(LogError));
-        logger_->MsgStream(LogError) << std::endl;
+        c->write(logger_->msgStream(LogError));
+        logger_->msgStream(LogError) << std::endl;
       }
     }
   }
@@ -434,7 +434,7 @@ ProblemPtr Problem::clone() const
   clonePtr->nextSId_   = nextSId_;
   clonePtr->nextVId_   = nextVId_;
   clonePtr->hessian_   = HessianOfLagPtr(); // NULL.
-  clonePtr->logger_    = (LoggerPtr) new Logger(logger_->GetMaxLevel());
+  clonePtr->logger_    = (LoggerPtr) new Logger(logger_->getMaxLevel());
   clonePtr->numDVars_  = numDVars_;	
   clonePtr->numDCons_  = numDCons_;	
   clonePtr->engine_    = 0;

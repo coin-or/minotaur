@@ -23,6 +23,7 @@
 #include "LexicoBrancher.h"
 #include "LinearHandler.h"
 #include "LinFeasPump.h"
+#include "Logger.h"
 #include "LPEngine.h"
 #include "LPProcessor.h"
 #include "MaxFreqBrancher.h"
@@ -122,7 +123,7 @@ BranchAndBound* createBab(EnvPtr env, ProblemPtr p, EnginePtr e,
   bab->setNodeRelaxer(nr);
   bab->shouldCreateRoot(false);
 
-  if (0 <= options->findInt("Divheur")->getValue()) {
+  if (0 <= options->findInt("divheur")->getValue()) {
     MINLPDivingPtr div_heur;
     EnginePtr e2 = e->emptyCopy();
     if (true==options->findBool("use_native_cgraph")->getValue() ||
@@ -159,16 +160,19 @@ BrancherPtr createBrancher(EnvPtr env, ProblemPtr p, HandlerVector handlers,
     t = std::max(t, (UInt) 2);
     t = std::min(t, (UInt) 4);
     rel_br->setThresh(t);
-    std::cout << me << "setting reliability threshhold to " << t << std::endl;
+    env->getLogger()->msgStream(LogExtraInfo) << me <<
+      "setting reliability threshhold to " << t << std::endl;
     t = (UInt) p->getSize()->ints + p->getSize()->bins/20+2;
     t = std::min(t, (UInt) 10);
     rel_br->setMaxDepth(t);
-    std::cout << me << "setting reliability maxdepth to " << t << std::endl;
+    env->getLogger()->msgStream(LogExtraInfo) << me <<
+      "setting reliability maxdepth to " << t << std::endl;
     if (e->getName()=="Filter-SQP") {
       rel_br->setIterLim(5);
     }
-    std::cout << me << "reliability branching iteration limit = " 
-              << rel_br->getIterLim() << std::endl;
+    env->getLogger()->msgStream(LogExtraInfo) << me <<
+      "reliability branching iteration limit = " <<
+      rel_br->getIterLim() << std::endl;
     br = rel_br;
   } else if (env->getOptions()->findString("brancher")->getValue() ==
              "maxvio") {
@@ -177,15 +181,17 @@ BrancherPtr createBrancher(EnvPtr env, ProblemPtr p, HandlerVector handlers,
     br = (LexicoBrancherPtr) new LexicoBrancher(env, handlers);
   } else if (env->getOptions()->findString("brancher")->getValue() == "rand") {
     br = (RandomBrancherPtr) new RandomBrancher(env, handlers);
-  } else if (env->getOptions()->findString("brancher")->getValue() == "maxfreq") {
+  } else if (env->getOptions()->findString("brancher")->getValue() ==
+             "maxfreq") {
     br = (MaxFreqBrancherPtr) new MaxFreqBrancher(env, handlers);
   }
-  std::cout << me << "brancher used = " << br->getName() << std::endl;
+  env->getLogger()->msgStream(LogExtraInfo) << me <<
+    "brancher used = " << br->getName() << std::endl;
   return br;
 }
 
 
-EnginePtr getEngine(EnvPtr env, ProblemPtr p, Int &err)
+EnginePtr getEngine(EnvPtr env, ProblemPtr p, int &err)
 {
   EngineFactory *efac = new EngineFactory(env);
   EnginePtr e = EnginePtr(); // NULL
@@ -213,10 +219,11 @@ EnginePtr getEngine(EnvPtr env, ProblemPtr p, Int &err)
   }
 
   if (!e) {
-    std::cout << me << "No engine available for this problem.";
+    env->getLogger()->errStream() <<  "No engine available for this problem.";
     err = 1;
   } else {
-    std::cout << me << "engine used = " << e->getName() << std::endl;
+    env->getLogger()->msgStream(LogExtraInfo) << me <<
+      "engine used = " << e->getName() << std::endl;
   }
   delete efac;
   return e;
@@ -234,16 +241,17 @@ void loadProblem(EnvPtr env, MINOTAUR_AMPL::AMPLInterface* iface,
 
   timer->start();
   oinst = iface->readInstance(options->findString("problem_file")->getValue());
-  std::cout << me << "time used in reading instance = " << std::fixed 
+  env->getLogger()->msgStream(LogInfo) << me 
+    << "time used in reading instance = " << std::fixed 
     << std::setprecision(2) << timer->query() << std::endl;
 
   // display the problem
   oinst->calculateSize();
   if (options->findBool("display_problem")->getValue()==true) {
-    oinst->write(std::cout, 12);
+    oinst->write(env->getLogger()->msgStream(LogNone), 12);
   }
   if (options->findBool("display_size")->getValue()==true) {
-    oinst->writeSize(std::cout);
+    oinst->writeSize(env->getLogger()->msgStream(LogNone));
   }
   // create the jacobian
   if (false==options->findBool("use_native_cgraph")->getValue()) {
@@ -306,10 +314,12 @@ PresolverPtr presolve(EnvPtr env, ProblemPtr p, Size_t ndefs,
     }
 
     // write the names.
-    std::cout << me << "handlers used in presolve:" << std::endl;
+    env->getLogger()->msgStream(LogExtraInfo) << me 
+      << "handlers used in presolve:" << std::endl;
     for (HandlerIterator h = handlers.begin(); h != handlers.end(); 
         ++h) {
-      std::cout<<(*h)->getName()<<std::endl;
+      env->getLogger()->msgStream(LogExtraInfo) << me 
+        << (*h)->getName() << std::endl;
     }
   }
 
@@ -341,7 +351,7 @@ void showHelp()
 }
 
 
-Int showInfo(EnvPtr env)
+int showInfo(EnvPtr env)
 {
   OptionDBPtr options = env->getOptions();
   const std::string me("bnb main: ");
@@ -360,11 +370,12 @@ Int showInfo(EnvPtr env)
 
   if (options->findBool("show_version")->getValue() ||
       options->findFlag("v")->getValue()) {
-    std::cout << me << "Minotaur version " << env->getVersion() << std::endl;
+    env->getLogger()->msgStream(LogNone) << me <<
+      "Minotaur version " << env->getVersion() << std::endl;
 #if DEBUG
-    std::cout << me; 
-    env->writeFullVersion(std::cout);
-    std::cout << std::endl;
+    env->getLogger()->msgStream(LogInfo) << me;
+    env->writeFullVersion(env->getLogger()->msgStream(LogInfo));
+    env->getLogger()->msgStream(LogInfo) << std::endl;
 #endif
     return 1;
   }
@@ -374,7 +385,8 @@ Int showInfo(EnvPtr env)
     return 1;
   }
 
-  std::cout << me << "Minotaur version " << env->getVersion() << std::endl;
+  env->getLogger()->msgStream(LogInfo) << me
+    << "Minotaur version " << env->getVersion() << std::endl;
   return 0;
 }
 
@@ -389,8 +401,8 @@ void writeSol(EnvPtr env, VarVector *orig_v,
 
   if (env->getOptions()->findFlag("AMPL")->getValue()) {
     iface->writeSolution(sol, status);
-  } else if (sol) {
-    sol->writePrimal(std::cout, orig_v);
+  } else if (sol && env->getLogger()->getMaxLevel()>=LogExtraInfo) {
+    sol->writePrimal(env->getLogger()->msgStream(LogExtraInfo), orig_v);
   }
 }
 
@@ -403,26 +415,32 @@ void writeBnbStatus(EnvPtr env, BranchAndBound *bab, double obj_sense)
   int err = 0;
 
   if (bab) {
-    std::cout << me << std::fixed << std::setprecision(4) << 
-      "best solution value = " << obj_sense*bab->getUb() << std::endl;
-    std::cout << me << std::fixed << std::setprecision(4) << 
-      "best bound estimate from remaining nodes = "
-      <<  obj_sense*bab->getLb() << std::endl;
-    std::cout << me << "time used = " << std::fixed << std::setprecision(2) 
-      << env->getTime(err) << std::endl; assert(0==err);
-    env->stopTimer(err); assert(0==err);
-    std::cout << me << "status of branch-and-bound: " 
+    env->getLogger()->msgStream(LogInfo)
+      << me << std::fixed << std::setprecision(4) 
+      << "best solution value = " << obj_sense*bab->getUb() << std::endl
+      << me << std::fixed << std::setprecision(4)
+      << "best bound estimate from remaining nodes = "
+      <<  obj_sense*bab->getLb() << std::endl
+      << me << "gap = " << bab->getUb() - bab->getLb() << std::endl
+      << me << "gap percentage = " << bab->getGap() << std::endl
+      << me << "time used = " << std::fixed << std::setprecision(2) 
+      << env->getTime(err) << std::endl
+      << me << "status of branch-and-bound: " 
       << getSolveStatusString(bab->getStatus()) << std::endl;
-  } else {
-    std::cout << me << std::fixed << std::setprecision(4) << 
-      "best solution value = " << INFINITY << std::endl;
-    std::cout << me << std::fixed << std::setprecision(4) << 
-      "best bound estimate from remaining nodes = " <<  INFINITY << std::endl;
-    std::cout << me << "time used = " << std::fixed << std::setprecision(2) 
-      << env->getTime(err) << std::endl; assert(0==err);
     env->stopTimer(err); assert(0==err);
-    std::cout << me << "status of branch-and-bound: " 
+  } else {
+    env->getLogger()->msgStream(LogInfo)
+      << me << std::fixed << std::setprecision(4)
+      << "best solution value = " << INFINITY << std::endl
+      << me << std::fixed << std::setprecision(4)
+      << "best bound estimate from remaining nodes = " << INFINITY << std::endl
+      << me << "gap = " << INFINITY << std::endl
+      << me << "gap percentage = " << INFINITY << std::endl
+      << me << "time used = " << std::fixed << std::setprecision(2) 
+      << env->getTime(err) << std::endl 
+      << me << "status of branch-and-bound: " 
       << getSolveStatusString(NotStarted) << std::endl;
+    env->stopTimer(err); assert(0==err);
   }
 }
 
@@ -467,14 +485,21 @@ int main(int argc, char** argv)
   if (oinst->getObjective() &&
       oinst->getObjective()->getObjectiveType()==Maximize) {
     obj_sense = -1.0;
+    env->getLogger()->msgStream(LogInfo) << me 
+      << "Objective sense: Maximize (will be converted to Minimize)"
+      << std::endl;
+  } else {
+    env->getLogger()->msgStream(LogInfo) << me 
+      << "Objective sense: Minimize" << std::endl;
   }
 
   orig_v = new VarVector(oinst->varsBegin(), oinst->varsEnd());
   pres = presolve(env, oinst, iface->getNumDefs(), handlers);
   handlers.clear();
   if (Finished != pres->getStatus() && NotStarted != pres->getStatus()) {
-    std::cout << me << "status of presolve: " 
-              << getSolveStatusString(pres->getStatus()) << std::endl;
+    env->getLogger()->msgStream(LogInfo) << me 
+      << "status of presolve: " 
+      << getSolveStatusString(pres->getStatus()) << std::endl;
     writeSol(env, orig_v, pres, SolutionPtr(), pres->getStatus(), iface);
     writeBnbStatus(env, bab, obj_sense);
     goto CLEANUP;
@@ -491,10 +516,10 @@ int main(int argc, char** argv)
 
   bab = createBab(env, oinst, engine, handlers);
   bab->solve();
-  bab->writeStats();
-  engine->writeStats();
+  bab->writeStats(env->getLogger()->msgStream(LogExtraInfo));
+  engine->writeStats(env->getLogger()->msgStream(LogExtraInfo));
   for (HandlerVector::iterator it=handlers.begin(); it!=handlers.end(); ++it) {
-    (*it)->writeStats(std::cout);
+    (*it)->writeStats(env->getLogger()->msgStream(LogExtraInfo));
   }
   
   writeSol(env, orig_v, pres, bab->getSolution(), bab->getStatus(), iface);

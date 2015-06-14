@@ -18,23 +18,23 @@ void LoggerUT::testMsgStream()
 {
   // should not appear in output
   LoggerPtr lPtr = (LoggerPtr) new Logger(LogInfo);
-  lPtr->MsgStream(LogDebug) << ":\n error in logger MsgStream! debug messages "
+  lPtr->msgStream(LogDebug) << ":\n error in logger msgStream! debug messages "
     << "should not appear at info level.\n";
 
   // should appear in output
   lPtr = (LoggerPtr) new Logger(LogDebug);
-  lPtr->MsgStream(LogError) << ": logger ok! ";
+  lPtr->msgStream(LogError) << ": logger ok! ";
 }
 
 void LoggerUT::testErrStream()
 {
   // should appear in error
   LoggerPtr lPtr = (LoggerPtr) new Logger(LogError);
-  lPtr->ErrStream() << ": logger ok! ";
+  lPtr->errStream() << ": logger ok! ";
 
   // should not appear in error
   lPtr = (LoggerPtr) new Logger(LogNone);
-  lPtr->ErrStream() << ":\n error in logger ErrStream! error messages "
+  lPtr->errStream() << ":\n error in logger errStream! error messages "
     " should not appear at LogNone level! \n";
 }
 

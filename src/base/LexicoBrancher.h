@@ -50,7 +50,7 @@ namespace Minotaur {
                             BrancherStatus & br_status, ModVector &mods);
 
       /// Write the statistics.
-      void writeStats();
+      void writeStats(std::ostream &out) const;
 
       /// Return name.
       std::string getName() const;

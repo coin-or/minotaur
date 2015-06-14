@@ -139,7 +139,7 @@ Branches RandomBrancher::findBranches(RelaxationPtr rel, NodePtr ,
 
     branches = best_can->getHandler()->getBranches(best_can, x, rel, s_pool); 
 #if SPEW
-    logger_->MsgStream(LogDebug) << me_ << "best candidate = "
+    logger_->msgStream(LogDebug) << me_ << "best candidate = "
                                  << best_can->getName() << std::endl;
 #endif
   } else {
@@ -152,11 +152,10 @@ Branches RandomBrancher::findBranches(RelaxationPtr rel, NodePtr ,
 }
 
 
-void RandomBrancher::writeStats() 
+void RandomBrancher::writeStats(std::ostream &out) const 
 {
   if (stats_) {
-    logger_->MsgStream(LogInfo) 
-      << me_ << "times called = " << stats_->calls << std::endl
+    out << me_ << "times called = " << stats_->calls << std::endl
       << me_ << "time in brancher = " << stats_->time << std::endl;
   }
 }

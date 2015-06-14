@@ -134,7 +134,7 @@ namespace Minotaur {
       void removeCons(std::vector<ConstraintPtr> &delcons);
 
       // Write statistics.
-      void writeStats();
+      void writeStats(std::ostream &out) const;
 
       // get name.
       std::string getName() const;

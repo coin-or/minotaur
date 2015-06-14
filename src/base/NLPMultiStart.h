@@ -59,7 +59,7 @@ namespace Minotaur {
       void solve(NodePtr node, RelaxationPtr rel, SolutionPoolPtr s_pool);
 
       // Write statistics to logger
-      void writeStats();
+      void writeStats(std::ostream &out) const;
  
       const static std::string me_; 
           

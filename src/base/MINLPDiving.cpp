@@ -160,7 +160,7 @@ UInt MINLPDiving::FracBounds_(UInt numfrac, const Double* x,
   // sort the vector of index according to the fractional part of the variables
   sort_(0,violated_.size()-1);
 #if SPEW
-  logger_->MsgStream(LogDebug) << me_ << "Changing bound of " << change_wan 
+  logger_->msgStream(LogDebug) << me_ << "Changing bound of " << change_wan 
     << " variables" << std::endl;
 #endif 
 
@@ -183,9 +183,9 @@ UInt MINLPDiving::FracBounds_(UInt numfrac, const Double* x,
     value = x[id];
     new_bound = rounding_(value, d); // get the new bound with direction
 #if SPEW
-    logger_->MsgStream(LogDebug) << me_ << "value of variable " 
+    logger_->msgStream(LogDebug) << me_ << "value of variable " 
       << variable->getName() << " " << value << std::endl;
-    logger_->MsgStream(LogDebug) << me_ << "value of new bound " 
+    logger_->msgStream(LogDebug) << me_ << "value of new bound " 
       << d << "\t" << new_bound << std::endl;
 #endif
     // fix the variable by changing the lower or upper bound to new_bound
@@ -206,9 +206,9 @@ UInt MINLPDiving::FracBounds_(UInt numfrac, const Double* x,
     lh_->simplePresolve(p_, SolutionPoolPtr(), lastNodeMods_, status);
 
 #if SPEW
-    logger_->MsgStream(LogDebug) << me_ << "changed bound for variable "; 
-    variable->write(logger_->MsgStream(LogDebug));
-    logger_->MsgStream(LogDebug) << me_ << "changed bound for index " 
+    logger_->msgStream(LogDebug) << me_ << "changed bound for variable "; 
+    variable->write(logger_->msgStream(LogDebug));
+    logger_->msgStream(LogDebug) << me_ << "changed bound for index " 
       << id << std::endl << std::endl;
 #endif
     ++changes;
@@ -242,7 +242,7 @@ void MINLPDiving::getScore_(const Double* x, Scoretype s)
        }
      }
 #if SPEW
-     logger_->MsgStream(LogDebug) << " Lexicographic Scoring " << std::endl;
+     logger_->msgStream(LogDebug) << " Lexicographic Scoring " << std::endl;
 #endif
      break;
 
@@ -259,7 +259,7 @@ void MINLPDiving::getScore_(const Double* x, Scoretype s)
        }
      }
 #if SPEW
-     logger_->MsgStream(LogDebug)  << " Fractional Scoring " << std::endl;
+     logger_->msgStream(LogDebug)  << " Fractional Scoring " << std::endl;
 #endif
      break;
 
@@ -282,7 +282,7 @@ void MINLPDiving::getScore_(const Double* x, Scoretype s)
        }
      }
 #if SPEW
-     logger_->MsgStream(LogDebug) << " Vector Length Scoring " << std::endl;
+     logger_->msgStream(LogDebug) << " Vector Length Scoring " << std::endl;
 #endif
      break;
 
@@ -290,7 +290,7 @@ void MINLPDiving::getScore_(const Double* x, Scoretype s)
      score_.resize(p_->getNumVars());
      std::copy(avgDual_.begin(), avgDual_.end(), score_.begin());
 #if SPEW
-     logger_->MsgStream(LogDebug) << " Reduced Cost Scoring " << std::endl;
+     logger_->msgStream(LogDebug) << " Reduced Cost Scoring " << std::endl;
 #endif
      break;
 
@@ -334,7 +334,7 @@ void MINLPDiving::implementDive_(Int i, const Double* x, SolutionPoolPtr s_pool)
       ++(stats_->numLocal);
       if (stats_->best_obj_value - 1e-6 < sol->getObjValue()) {
 #if SPEW
-        logger_->MsgStream(LogDebug) << me_ 
+        logger_->msgStream(LogDebug) << me_ 
           << "current solution worse than ub. Returning." << std::endl; 
 #endif
         return;
@@ -344,10 +344,10 @@ void MINLPDiving::implementDive_(Int i, const Double* x, SolutionPoolPtr s_pool)
       numfrac = isFrac_(x); // number of fractional vars in current solution
       if (0==numfrac) {  
 #if SPEW
-        logger_->MsgStream(LogDebug) << me_ << "Feasible Solution" << std::endl;
-        sol->write(logger_->MsgStream(LogDebug2));
+        logger_->msgStream(LogDebug) << me_ << "Feasible Solution" << std::endl;
+        sol->write(logger_->msgStream(LogDebug2));
 #endif
-        logger_->MsgStream(LogInfo) << me_ << "Updating the solution value to " 
+        logger_->msgStream(LogInfo) << me_ << "Updating the solution value to " 
           << sol->getObjValue() << std::endl;
         stats_->best_obj_value = sol->getObjValue();
         s_pool->addSolution(sol);
@@ -366,7 +366,7 @@ void MINLPDiving::implementDive_(Int i, const Double* x, SolutionPoolPtr s_pool)
     } else {
       // backtrack to the other child of the parent
 #if SPEW
-      logger_->MsgStream(LogDebug) << me_ << "Backtracking " << std::endl;
+      logger_->msgStream(LogDebug) << me_ << "Backtracking " << std::endl;
 #endif
       ++backtrack;
       backtrack_(n_moded);
@@ -420,7 +420,7 @@ UInt MINLPDiving::LexBounds_(UInt numfrac, const Double* x,
   getScore_(x, LexBound);
   sort_(0, violated_.size()-1);
 #if SPEW
-  logger_->MsgStream(LogDebug) << me_ << "Changing bound of " << change_wan 
+  logger_->msgStream(LogDebug) << me_ << "Changing bound of " << change_wan 
     << " variables" << std::endl;
 #endif 
   // set up begin and end for the selection of variable
@@ -447,9 +447,9 @@ UInt MINLPDiving::LexBounds_(UInt numfrac, const Double* x,
     }
     new_bound = rounding_(value, d); // get the new bound with direction
 #if SPEW
-    logger_->MsgStream(LogDebug) << me_ << "value of variable " << 
+    logger_->msgStream(LogDebug) << me_ << "value of variable " << 
       variable->getName() << " " << value << std::endl;
-    logger_->MsgStream(LogDebug) << me_ << "value of new bound " 
+    logger_->msgStream(LogDebug) << me_ << "value of new bound " 
       << d << "\t" << new_bound << std::endl;
 #endif
     // fix the variable by changing the lower or upper bound to new_bound
@@ -470,10 +470,10 @@ UInt MINLPDiving::LexBounds_(UInt numfrac, const Double* x,
     lh_->simplePresolve(p_, SolutionPoolPtr(), lastNodeMods_, status);
 
 #if SPEW
-    logger_->MsgStream(LogDebug) << me_ << "changed bound for variable "; 
-    variable->write(logger_->MsgStream(LogDebug));
-    logger_->MsgStream(LogDebug) << std::endl;
-    logger_->MsgStream(LogDebug) << me_ << "changed bound for index " 
+    logger_->msgStream(LogDebug) << me_ << "changed bound for variable "; 
+    variable->write(logger_->msgStream(LogDebug));
+    logger_->msgStream(LogDebug) << std::endl;
+    logger_->msgStream(LogDebug) << me_ << "changed bound for index " 
       << id << std::endl << std::endl;
 #endif
     ++changes;
@@ -505,7 +505,7 @@ UInt MINLPDiving::ReducedCost_(UInt numfrac, const Double* x,
   std::setprecision(8);
   sort_(0,violated_.size()-1);
 #if SPEW
-  logger_->MsgStream(LogDebug) << me_ << "Changing bound of " << change_wan 
+  logger_->msgStream(LogDebug) << me_ << "Changing bound of " << change_wan 
     << " variables" << std::endl;
 #endif 
   // set up begin and end for the selection of variable
@@ -529,9 +529,9 @@ UInt MINLPDiving::ReducedCost_(UInt numfrac, const Double* x,
     value      = x[id];
     new_bound = rounding_(value, d); // get the new bound with direction
 #if SPEW
-    logger_->MsgStream(LogDebug) << me_ << "value of variable " 
+    logger_->msgStream(LogDebug) << me_ << "value of variable " 
       << variable->getName() << " " << value << std::endl;
-    logger_->MsgStream(LogDebug) << me_ << "value of new bound " 
+    logger_->msgStream(LogDebug) << me_ << "value of new bound " 
       << d << "\t" << new_bound << std::endl;
 #endif
     // fix the variable by changing the lower or upper bound to new_bound
@@ -552,10 +552,10 @@ UInt MINLPDiving::ReducedCost_(UInt numfrac, const Double* x,
     lh_->simplePresolve(p_, SolutionPoolPtr(), lastNodeMods_, status);
 
 #if SPEW
-    logger_->MsgStream(LogDebug) << me_ << "changed bound for variable "; 
-    variable->write(logger_->MsgStream(LogDebug));
-    logger_->MsgStream(LogDebug) << std::endl;
-    logger_->MsgStream(LogDebug) << me_ << "changed bound for index " 
+    logger_->msgStream(LogDebug) << me_ << "changed bound for variable "; 
+    variable->write(logger_->msgStream(LogDebug));
+    logger_->msgStream(LogDebug) << std::endl;
+    logger_->msgStream(LogDebug) << me_ << "changed bound for index " 
       << id << std::endl << std::endl;
 #endif
     ++changes;
@@ -656,7 +656,7 @@ Bool MINLPDiving::shouldDive_()
   UInt min_num_bint             = 5;
   ConstProblemSizePtr prob_size = p_->getSize();
   UInt num_bin_int              = prob_size->bins + prob_size->ints;
-  Int option = env_->getOptions()->findInt("Divheur")->getValue();
+  Int option = env_->getOptions()->findInt("divheur")->getValue();
   
   switch (option) {
 
@@ -691,10 +691,10 @@ void MINLPDiving::solve(NodePtr, RelaxationPtr, SolutionPoolPtr s_pool)
   Double* root_copy;
   Double* LB_copy;
   Double* UB_copy;
-  logger_->MsgStream(LogInfo) << me_ << "Starting" << std::endl;
+  logger_->msgStream(LogInfo) << me_ << "Starting" << std::endl;
   timer_->start();
   if (!shouldDive_()) {
-    logger_->MsgStream(LogInfo) << me_ << "Skipping" << std::endl;
+    logger_->msgStream(LogInfo) << me_ << "Skipping" << std::endl;
     timer_->stop();
     return;
   }
@@ -713,10 +713,10 @@ void MINLPDiving::solve(NodePtr, RelaxationPtr, SolutionPoolPtr s_pool)
   updateAvgDual_(sol);
   e_->setIterationLimit(200);
   if (status == ProvenLocalInfeasible) {
-    logger_->MsgStream(LogInfo) << me_ << "Root Infeasible" << std::endl;
+    logger_->msgStream(LogInfo) << me_ << "Root Infeasible" << std::endl;
   } else if (isFrac_(root_x) == 0) {
     stats_->best_obj_value = sol->getObjValue();
-    logger_->MsgStream(LogInfo) << me_ << "solution value is " 
+    logger_->msgStream(LogInfo) << me_ << "solution value is " 
       << stats_->best_obj_value << std::endl;
     s_pool->addSolution(sol);
   } else {
@@ -724,7 +724,7 @@ void MINLPDiving::solve(NodePtr, RelaxationPtr, SolutionPoolPtr s_pool)
     saveBounds_(LB_copy, UB_copy, numvars);
     // loop over the methods starts here
     for (Int i=0; i<num_method && stats_->totalSol < maxSol_; ++i) {
-      logger_->MsgStream(LogDebug) << me_<< "diving method "
+      logger_->msgStream(LogDebug) << me_<< "diving method "
         << i << std::endl;
       std::copy(root_x, root_x + numvars, root_copy); 
       x = root_copy;
@@ -742,7 +742,7 @@ void MINLPDiving::solve(NodePtr, RelaxationPtr, SolutionPoolPtr s_pool)
     } // loop over methods ends here
   }
   e_->resetIterationLimit();
-  logger_->MsgStream(LogInfo) << me_ << "Over" << std::endl;
+  logger_->msgStream(LogInfo) << me_ << "Over" << std::endl;
   if (root_x){
     delete [] root_x;
   }
@@ -823,7 +823,7 @@ UInt MINLPDiving::VectorLength_(UInt numfrac, const Double* x,
   getScore_(x, VectorLength);
   sort_(0, score_.size()-1);
 #if SPEW
-  logger_->MsgStream(LogDebug) << me_ << "Changing bound of " << change_wan 
+  logger_->msgStream(LogDebug) << me_ << "Changing bound of " << change_wan 
     << " variables" << std::endl;
 #endif 
   // set up begin and end for the selection of variable
@@ -847,9 +847,9 @@ UInt MINLPDiving::VectorLength_(UInt numfrac, const Double* x,
     value = x[id];
     new_bound = rounding_(value, d); // get the new bound with direction
 #if SPEW
-    logger_->MsgStream(LogDebug) << me_ << "value of variable " 
+    logger_->msgStream(LogDebug) << me_ << "value of variable " 
       << variable->getName() << " " << value << std::endl;
-    logger_->MsgStream(LogDebug) << me_ << "value of new bound " 
+    logger_->msgStream(LogDebug) << me_ << "value of new bound " 
       << d << "\t" << new_bound << std::endl;
 #endif
     // fix the variable by changing the lower or upper bound to new_bound
@@ -870,10 +870,10 @@ UInt MINLPDiving::VectorLength_(UInt numfrac, const Double* x,
     lh_->simplePresolve(p_, SolutionPoolPtr(), lastNodeMods_, status);
 
 #if SPEW
-    logger_->MsgStream(LogDebug) << me_ << "changed bound for variable "; 
-    variable->write(logger_->MsgStream(LogDebug));
-    logger_->MsgStream(LogDebug) << std::endl;
-    logger_->MsgStream(LogDebug) << me_ << "changed bound for index " 
+    logger_->msgStream(LogDebug) << me_ << "changed bound for variable "; 
+    variable->write(logger_->msgStream(LogDebug));
+    logger_->msgStream(LogDebug) << std::endl;
+    logger_->msgStream(LogDebug) << me_ << "changed bound for index " 
       << id << std::endl << std::endl;
 #endif
     ++changes;
@@ -907,12 +907,11 @@ Bool MINLPDiving::vectorFlag_(UInt min_vlength)
 }
 
 
-void MINLPDiving::writeStats()
+void MINLPDiving::writeStats(std::ostream &out) const
 {
 // write the statistics for MINLP heuristic
   for (UInt i=0; i<nSelector_; ++i) {
-    logger_->MsgStream(LogInfo)
-      << me_ << "number of nlps solved      = " << stats_->numNLPs[i] 
+    out << me_ << "number of nlps solved      = " << stats_->numNLPs[i] 
       << std::endl
       << me_ << "time taken                 = " << stats_->time[i] 
       << std::endl
@@ -927,10 +926,10 @@ void MINLPDiving::writeStats()
     stats_->totalTime += stats_->time[i];
   }
   if (stats_->best_obj_value < INFINITY) {
-    logger_->MsgStream(LogInfo) << me_ << "Best feasible sol value    = "
+    logger_->msgStream(LogInfo) << me_ << "Best feasible sol value    = "
       << stats_->best_obj_value << std::endl;
   }
-  logger_->MsgStream(LogInfo) << me_ << "Total time taken           = " 
+  logger_->msgStream(LogInfo) << me_ << "Total time taken           = " 
     << stats_->totalTime << std::endl
     << me_ << "Total NLPs solved          = " << stats_->totalNLPs
     << std::endl;

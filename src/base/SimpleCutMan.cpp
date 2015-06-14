@@ -131,12 +131,12 @@ void SimpleCutMan::separate(ConstSolutionPtr sol, Bool *, UInt *)
   for (CLIter it=pool_.begin(); it!=pool_.end();) {
     cut = *it;
 #if SPEW
-    cut->write(logger_->MsgStream(LogInfo));
+    cut->write(logger_->msgStream(LogInfo));
 #endif
     err = 0;
     act = cut->eval(x, &err);
     if (!err) {
-      logger_->MsgStream(LogInfo) << me_ << "Error evaluating activity of cut. "
+      logger_->msgStream(LogInfo) << me_ << "Error evaluating activity of cut. "
                                   << "Not adding to relaxation. Cut is: "
                                   << std::endl;
       ++it;
@@ -145,7 +145,7 @@ void SimpleCutMan::separate(ConstSolutionPtr sol, Bool *, UInt *)
     viol = std::max(act-cut->getLb(), cut->getUb()-act);
     if (viol > violAbs_ + violRel_*fabs(act)) {
 #if SPEW
-      logger_->MsgStream(LogInfo) << me_ << "Solution violates cut, "
+      logger_->msgStream(LogInfo) << me_ << "Solution violates cut, "
                                   << "adding cut to relaxation. Cut is: "
                                   << std::endl;
 #endif
@@ -154,7 +154,7 @@ void SimpleCutMan::separate(ConstSolutionPtr sol, Bool *, UInt *)
       it = pool_.erase(it);
     } else {
 #if SPEW
-      logger_->MsgStream(LogInfo) << me_ << "Solution does not violate cut. "
+      logger_->msgStream(LogInfo) << me_ << "Solution does not violate cut. "
                                   << "Cut is: " << std::endl;
 #endif
       ++it;

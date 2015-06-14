@@ -445,7 +445,7 @@ void OsiLPEngine::clear() {
 void OsiLPEngine::disableStrBrSetup() 
 {
 #if SPEW
-  logger_->MsgStream(LogDebug) << "OsiLP: disabling strong branching." 
+  logger_->msgStream(LogDebug) << "OsiLP: disabling strong branching." 
                                << std::endl;
 #endif
   strBr_ = false;
@@ -455,7 +455,7 @@ void OsiLPEngine::disableStrBrSetup()
 void OsiLPEngine::enableStrBrSetup() 
 {
 #if SPEW
-  logger_->MsgStream(LogDebug) << "OsiLP: enabling strong branching."
+  logger_->msgStream(LogDebug) << "OsiLP: enabling strong branching."
                                << std::endl;
 #endif
   strBr_ = true;
@@ -543,7 +543,7 @@ OsiSolverInterface* OsiLPEngine::newSolver_(OsiLPEngineName ename)
     si->setHintParam(OsiDoReducePrint);
     si->messageHandler()->setLogLevel(0); 
 #else
-    logger_->ErrStream()
+    logger_->errStream()
       << "Minotaur is not compiled with OsiClp!" << std::endl;
 #endif
     break;
@@ -553,7 +553,7 @@ OsiSolverInterface* OsiLPEngine::newSolver_(OsiLPEngineName ename)
     si->setHintParam(OsiDoReducePrint);
     si->messageHandler()->setLogLevel(0); 
 #else
-    logger_->ErrStream()
+    logger_->errStream()
       << "Minotaur is not compiled with OsiCpx!" << std::endl;
 #endif
     break;
@@ -561,7 +561,7 @@ OsiSolverInterface* OsiLPEngine::newSolver_(OsiLPEngineName ename)
 #if MNTROSIGRB
     si = new OsiGrbSolverInterface();
 #else
-    logger_->ErrStream()
+    logger_->errStream()
       << "Minotaur is not compiled with OsiGrb!" << std::endl;
 #endif
     break;
@@ -658,7 +658,7 @@ EngineStatus OsiLPEngine::solve()
   } 
 
 #if SPEW
-  logger_->MsgStream(LogDebug) << "OsiLP: in call number " << stats_->calls
+  logger_->msgStream(LogDebug) << "OsiLP: in call number " << stats_->calls
                                << std::endl
                                << "OsiLP: status = " << status_ << std::endl
                                << "OsiLP: solution value = " 
@@ -684,12 +684,11 @@ void OsiLPEngine::writeLP(const char *filename) const
 }
 
 
-void OsiLPEngine::writeStats()
+void OsiLPEngine::writeStats(std::ostream &out) const
 {
   if (stats_) {
     std::string me = "OsiLP: ";
-    logger_->MsgStream(LogInfo) 
-      << me << "total calls            = " << stats_->calls << std::endl
+    out << me << "total calls            = " << stats_->calls << std::endl
       << me << "strong branching calls = " << stats_->strCalls << std::endl
       << me << "total time in solving  = " << stats_->time  << std::endl
       << me << "time in str branching  = " << stats_->strTime << std::endl

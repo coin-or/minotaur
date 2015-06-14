@@ -45,7 +45,7 @@ namespace Minotaur {
       virtual void updateAfterLP(NodePtr, ConstSolutionPtr);
 
       // write statistics.
-      void writeStats();
+      void writeStats(std::ostream &out) const;
 
       // Return name.
       std::string getName() const;

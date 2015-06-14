@@ -198,7 +198,7 @@ Branches ReliabilityBrancher::findBranches(RelaxationPtr rel, NodePtr node,
       (*br_iter)->setBrCand(br_can);
     }
 #if SPEW
-    logger_->MsgStream(LogDebug) << me_ << "best candidate = "
+    logger_->msgStream(LogDebug) << me_ << "best candidate = "
       << br_can->getName() << std::endl;
 #endif
   } else {
@@ -209,17 +209,17 @@ Branches ReliabilityBrancher::findBranches(RelaxationPtr rel, NodePtr node,
     }
     br_status = status_;
 #if SPEW
-    logger_->MsgStream(LogDebug) << me_ << "found modifications"
+    logger_->msgStream(LogDebug) << me_ << "found modifications"
                                  << std::endl;
     if (mods_.size()>0) {
       for (ModificationConstIterator miter=mods_.begin(); miter!=mods_.end();
            ++miter) {
-        (*miter)->write(logger_->MsgStream(LogDebug));
+        (*miter)->write(logger_->msgStream(LogDebug));
       }
     } else if (status_==PrunedByBrancher) {
-      logger_->MsgStream(LogDebug) << me_ << "Pruned." << std::endl;
+      logger_->msgStream(LogDebug) << me_ << "Pruned." << std::endl;
     } else {
-      logger_->MsgStream(LogDebug) << me_ << "unexpected status = "
+      logger_->msgStream(LogDebug) << me_ << "unexpected status = "
                                    << status_ << std::endl;
     }
 #endif
@@ -306,14 +306,14 @@ void ReliabilityBrancher::findCandidates_()
   std::sort(unrelCands_.begin(), unrelCands_.end(), CompareScore);
 
 #if SPEW
-  logger_->MsgStream(LogDebug) << me_
+  logger_->msgStream(LogDebug) << me_
                                << "number of reliable candidates = " 
                                << relCands_.size() << std::endl 
                                << me_
                                << "number of unreliable candidates = " 
                                << unrelCands_.size() << std::endl;
-  if (logger_->GetMaxLevel() == LogDebug2) {
-    writeScores_(logger_->MsgStream(LogDebug2));
+  if (logger_->getMaxLevel() == LogDebug2) {
+    writeScores_(logger_->msgStream(LogDebug2));
   }
 #endif
 
@@ -453,12 +453,12 @@ Bool ReliabilityBrancher::shouldPrune_(const double &chcutoff,
      break;
    case (ProvenFailedCQFeas):
    case (ProvenFailedCQInfeas):
-     logger_->MsgStream(LogInfo) << me_ << "Failed CQ." <<
+     logger_->msgStream(LogInfo) << me_ << "Failed CQ." <<
      " Continuing." << std::endl;
      *is_rel = false;
      break;
    default:
-     logger_->ErrStream() << me_ << "unexpected engine status. " 
+     logger_->errStream() << me_ << "unexpected engine status. " 
                           << "status = " << status << std::endl;
      *is_rel = false;
      stats_->engProbs += 1;
@@ -582,7 +582,7 @@ void ReliabilityBrancher::useStrongBranchInfo_(BrCandPtr cand,
 void ReliabilityBrancher::writeScore_(BrCandPtr cand, double score, 
                                       double change_up, double change_down)
 {
-  logger_->MsgStream(LogDebug2) << me_ << "candidate: " << cand->getName() 
+  logger_->msgStream(LogDebug2) << me_ << "candidate: " << cand->getName() 
                                 << " down change = " << change_down
                                 << " up change = " << change_up
                                 << " score = " << score
@@ -640,11 +640,10 @@ void ReliabilityBrancher::writeScores_(std::ostream &out)
 }
 
 
-void ReliabilityBrancher::writeStats()
+void ReliabilityBrancher::writeStats(std::ostream &out) const
 {
   if (stats_) {
-    logger_->MsgStream(LogInfo) 
-      << me_ << "times called                = " << stats_->calls 
+    out << me_ << "times called                = " << stats_->calls 
       << std::endl
       << me_ << "no. of problems in engine   = " << stats_->engProbs
       << std::endl

@@ -94,7 +94,7 @@
             void solve(NodePtr node, RelaxationPtr rel, SolutionPoolPtr s_pool); 
 
             /// writing the statistics to the logger
-            void writeStats();
+            void writeStats(std::ostream &out) const;
 
           protected:
 	

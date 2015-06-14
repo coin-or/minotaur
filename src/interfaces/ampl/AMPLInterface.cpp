@@ -240,17 +240,17 @@ void AMPLInterface::addQuadraticConstraint_(Minotaur::Int i,
     assert (constraint_cde);
     getPoly_(lfPtr, qfPtr, pfPtr, c, constraint_cde->e);
     addLinearTermsFromConstr_(lfPtr, i);
-    if (logger_->GetMaxLevel() >= Minotaur::LogDebug2) {
+    if (logger_->getMaxLevel() >= Minotaur::LogDebug2) {
       if (lfPtr) {
-        lfPtr->write(logger_->MsgStream(Minotaur::LogDebug2));
+        lfPtr->write(logger_->msgStream(Minotaur::LogDebug2));
       } 
       if (qfPtr) {
-        qfPtr->write(logger_->MsgStream(Minotaur::LogDebug2));
+        qfPtr->write(logger_->msgStream(Minotaur::LogDebug2));
       }
       if (pfPtr) {
-        pfPtr->write(logger_->MsgStream(Minotaur::LogDebug2));
+        pfPtr->write(logger_->msgStream(Minotaur::LogDebug2));
       }
-      logger_->MsgStream(Minotaur::LogDebug2) << c << std::endl;
+      logger_->msgStream(Minotaur::LogDebug2) << c << std::endl;
     }
 
     // we are ready to add the constraint now.
@@ -597,13 +597,13 @@ void AMPLInterface::addSOS_(Minotaur::ProblemPtr instance)
   Minotaur::SOSType sostypem = Minotaur::SOS1;
   Minotaur::VarVector vars;
 
-  logger_->MsgStream(Minotaur::LogDebug2) << "Checking SOS information "
+  logger_->msgStream(Minotaur::LogDebug2) << "Checking SOS information "
                                           << std::endl;
   copri[0] = 0;
   copri[1] = 0;
   nsos = suf_sos_ASL(myAsl_, flags, &nsosnz, &sostype, &sospri, copri, &sosbeg,
                      &sosind, &sosref);
-  logger_->MsgStream(Minotaur::LogDebug)  << "Number of SOS constraints = "
+  logger_->msgStream(Minotaur::LogDebug)  << "Number of SOS constraints = "
                                           << nsos << std::endl
                                           << "Number of SOS nonzeros = "
                                           << nsosnz << std::endl;
@@ -614,7 +614,7 @@ void AMPLInterface::addSOS_(Minotaur::ProblemPtr instance)
     } else if (sostype[i]=='2') {
       sostypem = Minotaur::SOS2;
     } else {
-      logger_->ErrStream() << "bad SOS type." << std::endl;
+      logger_->errStream() << "bad SOS type." << std::endl;
     }
     vars.clear();
 
@@ -837,7 +837,7 @@ Minotaur::ProblemType AMPLInterface::findProblemType_()
 
   // Check if we can declare it a MINLP on the basis of objective function
   // alone and stop
-  logger_->MsgStream(Minotaur::LogDebug) << "Objective is " <<
+  logger_->msgStream(Minotaur::LogDebug) << "Objective is " <<
     getFunctionTypeString(obj_type) << std::endl;
   if (obj_type == Minotaur::Nonlinear) {
     if (has_integers) {
@@ -960,7 +960,7 @@ void AMPLInterface::findVars_(expr *e_ptr, std::set<int> & vars)
    case (OPNOTATLEAST):                    case (OPNOTATMOST): 
    case (OPNOTEXACTLY):                    case (ANDLIST):     case (ORLIST):
    case (OPIMPELSE):   case (OP_IFF):      case (OPALLDIFF):   case (OPFUNCALL):
-       logger_->ErrStream() << "Operation code " << opcode
+       logger_->errStream() << "Operation code " << opcode
          << " Minotaur cannot handle this operation code."
          << std::endl;
      assert(!"cannot solve!");
@@ -1106,7 +1106,7 @@ Minotaur::CNode *AMPLInterface::getCGraph_(expr *e_ptr,
     break;
   case (OPSUMLIST):
     {
-    //logger_->MsgStream(Minotaur::LogNone) << " ++ " << std::endl;
+    //logger_->msgStream(Minotaur::LogNone) << " ++ " << std::endl;
     expr **ep, **epe;
     int i;
     ep = e_ptr->L.ep;
@@ -1158,7 +1158,7 @@ Minotaur::CNode *AMPLInterface::getCGraph_(expr *e_ptr,
   case (OPVARVAL): //  single variable
     {
     int var_index = (expr_v *)e_ptr - ((ASL_fg *)myAsl_)->I.var_e_;
-    //logger_->MsgStream(Minotaur::LogNone) <<  "x" << var_index << std::endl;
+    //logger_->msgStream(Minotaur::LogNone) <<  "x" << var_index << std::endl;
     assert(var_index < nVars_+nDefVars_);
     n = cgraph->newNode(instance->getVariable(var_index));
     }
@@ -1182,7 +1182,7 @@ Minotaur::FunctionType AMPLInterface::getConstraintsType_()
   // check if all are Quadratic. 
   for (int i=0; i<myAsl_->i.nlc_ - myAsl_->i.nlnc_; ++i) {
     function_type = getConstraintType_(i);
-    logger_->MsgStream(Minotaur::LogDebug) << "Constraint (nonlin) is " <<
+    logger_->msgStream(Minotaur::LogDebug) << "Constraint (nonlin) is " <<
       getFunctionTypeString(function_type) << std::endl;
     overall_type = Minotaur::funcTypesAdd(overall_type, function_type);
   }
@@ -1192,7 +1192,7 @@ Minotaur::FunctionType AMPLInterface::getConstraintsType_()
   for (Minotaur::Int i=0; i<nDefVarsBco_; ++i) {
     function_type = getDefConstraintType_(i);
 #if DEBUG
-    logger_->MsgStream(Minotaur::LogDebug) << "Constraint (def) " << i << 
+    logger_->msgStream(Minotaur::LogDebug) << "Constraint (def) " << i << 
       " is " << getFunctionTypeString(function_type) << std::endl;
 #endif
     overall_type = Minotaur::funcTypesAdd(overall_type, function_type);
@@ -1203,7 +1203,7 @@ Minotaur::FunctionType AMPLInterface::getConstraintsType_()
   for (Minotaur::Int i=0; i<nDefVarsCo1_; ++i) {
     function_type = getDef1ConstraintType_(i);
 #if DEBUG
-    logger_->MsgStream(Minotaur::LogDebug) << "Constraint (def1) " << i 
+    logger_->msgStream(Minotaur::LogDebug) << "Constraint (def1) " << i 
       << " is " << getFunctionTypeString(function_type) << std::endl;
 #endif
     overall_type = Minotaur::funcTypesAdd(overall_type, function_type);
@@ -1346,7 +1346,7 @@ Minotaur::FunctionType AMPLInterface::getExpressionType_(expr *e_ptr)
    case (OPNOTATLEAST):                    case (OPNOTATMOST): 
    case (OPNOTEXACTLY):                    case (ANDLIST):     case (ORLIST):
    case (OPIMPELSE):   case (OP_IFF):      case (OPALLDIFF):   case (OPFUNCALL):
-     logger_->ErrStream() << "Operation code " << opcode
+     logger_->errStream() << "Operation code " << opcode
                           << " Minotaur cannot handle this operation code."
                           << std::endl;
      return Minotaur::Nonlinear;
@@ -1621,7 +1621,7 @@ void AMPLInterface::getPoly_(Minotaur::LinearFunctionPtr & lfPtr,
   opcode = functionMap_[e_ptr->op];
   switch (opcode) {
    case (OPPLUS):   // expr1 + expr2
-     //logger_->MsgStream(Minotaur::LogNone) << " + " << std::endl;
+     //logger_->msgStream(Minotaur::LogNone) << " + " << std::endl;
      getPoly_(lfPtr1, qfPtr1, pfPtr1, c1, e_ptr->L.e);
      getPoly_(lfPtr2, qfPtr2, pfPtr2, c2, e_ptr->R.e);
      c = c1 + c2;
@@ -1635,7 +1635,7 @@ void AMPLInterface::getPoly_(Minotaur::LinearFunctionPtr & lfPtr,
      }
      break;
    case (OPMINUS):  // expr1 - expr2
-     //logger_->MsgStream(Minotaur::LogNone) << " - " << std::endl;
+     //logger_->msgStream(Minotaur::LogNone) << " - " << std::endl;
      getPoly_(lfPtr1, qfPtr1, pfPtr1, c1, e_ptr->L.e);
      getPoly_(lfPtr2, qfPtr2, pfPtr2, c2, e_ptr->R.e);
      c = c1 - c2;
@@ -1650,7 +1650,7 @@ void AMPLInterface::getPoly_(Minotaur::LinearFunctionPtr & lfPtr,
      }
      break;
    case (OPMULT): // expr1*expr2
-     // logger_->MsgStream(Minotaur::LogNone) << " * " << std::endl;
+     // logger_->msgStream(Minotaur::LogNone) << " * " << std::endl;
      getPoly_(lfPtr1, qfPtr1, pfPtr1, c1, e_ptr->L.e);
      getPoly_(lfPtr2, qfPtr2, pfPtr2, c2, e_ptr->R.e);
      c = c1*c2;
@@ -1661,7 +1661,7 @@ void AMPLInterface::getPoly_(Minotaur::LinearFunctionPtr & lfPtr,
         pfPtr1*qfPtr2 + pfPtr1*pfPtr2;
      break;
    case (OPDIV): // expr1/expr2
-     //logger_->MsgStream(Minotaur::LogNone) << " / " << std::endl;
+     //logger_->msgStream(Minotaur::LogNone) << " / " << std::endl;
      getPoly_(lfPtr1, qfPtr1, pfPtr1, c1, e_ptr->L.e);
      c2 = ((expr_n *)e_ptr->R.e)->v;
      assert (fabs(c2)>zTol_);
@@ -1691,7 +1691,7 @@ void AMPLInterface::getPoly_(Minotaur::LinearFunctionPtr & lfPtr,
      c = -1.0*c1;
      break;
    case (OPSUMLIST):
-     //logger_->MsgStream(Minotaur::LogNone) << " ++ " << std::endl;
+     //logger_->msgStream(Minotaur::LogNone) << " ++ " << std::endl;
      expr **ep, **epe;
      ep = e_ptr->L.ep;
      epe = e_ptr->R.ep;
@@ -1737,7 +1737,7 @@ void AMPLInterface::getPoly_(Minotaur::LinearFunctionPtr & lfPtr,
 
      assert(!"OP1POW not implemented yet!");
    case (OP2POW): //  expr^2
-     //logger_->MsgStream(Minotaur::LogNone) <<  "^2" << std::endl;
+     //logger_->msgStream(Minotaur::LogNone) <<  "^2" << std::endl;
      getPoly_(lfPtr1, qfPtr1, pfPtr1, c1, e_ptr->L.e);
 
      c = c1*c1;
@@ -1750,18 +1750,18 @@ void AMPLInterface::getPoly_(Minotaur::LinearFunctionPtr & lfPtr,
      assert(!"OPCPOW not implemented yet!");
    case (OPNUM): //  numeric constant
      c = ((expr_n *)e_ptr)->v;
-     //logger_->MsgStream(Minotaur::LogNone) << "constant = " <<  c  << std::endl;
+     //logger_->msgStream(Minotaur::LogNone) << "constant = " <<  c  << std::endl;
      break;
    case (OPVARVAL): //  single variable
      // not sure if this var_index is correct. no documentation available!
      var_index = (expr_v *)e_ptr - ((ASL_fg *)myAsl_)->I.var_e_;
-     //logger_->MsgStream(Minotaur::LogNone) <<  "x" << var_index << std::endl;
+     //logger_->msgStream(Minotaur::LogNone) <<  "x" << var_index << std::endl;
      assert(var_index < nVars_+nDefVars_);
      lfPtr = (Minotaur::LinearFunctionPtr) new Minotaur::LinearFunction();
      lfPtr->addTerm(vars_[var_index], 1.0);
      break;
    default:
-     logger_->MsgStream(Minotaur::LogError) << "ASL opcode " << opcode 
+     logger_->msgStream(Minotaur::LogError) << "ASL opcode " << opcode 
        << std::endl;
      assert(!"can not recover function from ASL!");
      break;
@@ -1938,7 +1938,7 @@ Minotaur::ProblemPtr AMPLInterface::readInstanceASL_(std::string fname)
   createFunctionMap_();
 
   if (env_->getOptions()->findBool("display_ampl_model")->getValue()) {
-    writeProblem(logger_->MsgStream(Minotaur::LogNone));
+    writeProblem(logger_->msgStream(Minotaur::LogNone));
   }
 
   problem_type = findProblemType_();
@@ -1946,43 +1946,43 @@ Minotaur::ProblemPtr AMPLInterface::readInstanceASL_(std::string fname)
   // create a new instance 
   switch (problem_type) {
    case (Minotaur::LP):
-     logger_->MsgStream(Minotaur::LogInfo) << me_ 
+     logger_->msgStream(Minotaur::LogInfo) << me_ 
      << "Problem identified as LP" << std::endl;
      break;
    case (Minotaur::MILP):
-     logger_->MsgStream(Minotaur::LogInfo) << me_ 
+     logger_->msgStream(Minotaur::LogInfo) << me_ 
      << "Problem identified as MILP" << std::endl;
      break;
    case (Minotaur::QP):
-     logger_->MsgStream(Minotaur::LogInfo) << me_ 
+     logger_->msgStream(Minotaur::LogInfo) << me_ 
      << "Problem identified as QP" << std::endl;
      break;
    case (Minotaur::MIQP):
-     logger_->MsgStream(Minotaur::LogInfo) << me_ 
+     logger_->msgStream(Minotaur::LogInfo) << me_ 
      << "Problem identified as MIQP" << std::endl;
      break;
    case (Minotaur::QCQP):
-     logger_->MsgStream(Minotaur::LogInfo) << me_ 
+     logger_->msgStream(Minotaur::LogInfo) << me_ 
      << "Problem identified as QCQP" << std::endl;
      break;
    case (Minotaur::MIQCQP):
-     logger_->MsgStream(Minotaur::LogInfo) << me_ 
+     logger_->msgStream(Minotaur::LogInfo) << me_ 
      << "Problem identified as MIQCQP" << std::endl;
      break;
    case (Minotaur::POLYP):
-     logger_->MsgStream(Minotaur::LogInfo) << me_ 
+     logger_->msgStream(Minotaur::LogInfo) << me_ 
      << "Problem identified as POLYNOMIAL Program" << std::endl;
      break;
    case (Minotaur::MIPOLYP):
-     logger_->MsgStream(Minotaur::LogInfo) << me_ 
+     logger_->msgStream(Minotaur::LogInfo) << me_ 
      << "Problem identified as MI " << "POLYNOMIAL Program" << std::endl;
      break;
    case (Minotaur::NLP):
-     logger_->MsgStream(Minotaur::LogInfo) << me_ 
+     logger_->msgStream(Minotaur::LogInfo) << me_ 
      << "Problem identified as NLP" << std::endl;
      break;
    case (Minotaur::MINLP):
-     logger_->MsgStream(Minotaur::LogInfo) << me_ 
+     logger_->msgStream(Minotaur::LogInfo) << me_ 
      << "Problem identified as MINLP" << std::endl;
      break;
    case (Minotaur::UnknownProblem):
@@ -2029,8 +2029,8 @@ Minotaur::ProblemPtr AMPLInterface::readInstanceCG_(std::string fname)
 
   instance = copyInstanceFromASL2_();
 
-  logger_->MsgStream(Minotaur::LogInfo) << me_ << "problem type is " <<
-    getProblemTypeString(instance->findType()) << std::endl;
+  env_->getLogger()->msgStream(Minotaur::LogInfo) << me_ << "problem type is "
+    << getProblemTypeString(instance->findType()) << std::endl;
   //instance->write(std::cout);
   return instance;
 }
@@ -2065,106 +2065,106 @@ void AMPLInterface::unsupportedOp_(int opcode)
 {
   switch(opcode) {
   case (OPREM):
-    logger_->ErrStream() << "opcode OPREM is unsupported!" << std::endl;
+    logger_->errStream() << "opcode OPREM is unsupported!" << std::endl;
     break;
   case (OPLESS):
-    logger_->ErrStream() << "opcode OPLESS is unsupported!" << std::endl;
+    logger_->errStream() << "opcode OPLESS is unsupported!" << std::endl;
     break;
   case (MINLIST):
-    logger_->ErrStream() << "opcode OPMINLIST is unsupported!" << std::endl;
+    logger_->errStream() << "opcode OPMINLIST is unsupported!" << std::endl;
     break;
   case (MAXLIST):
-    logger_->ErrStream() << "opcode OPMAXLIST is unsupported!" << std::endl;
+    logger_->errStream() << "opcode OPMAXLIST is unsupported!" << std::endl;
     break;
   case (OPOR):
-    logger_->ErrStream() << "opcode OPOR is unsupported!" << std::endl;
+    logger_->errStream() << "opcode OPOR is unsupported!" << std::endl;
     break;
   case (OPAND):
-    logger_->ErrStream() << "opcode OPAND is unsupported!" << std::endl;
+    logger_->errStream() << "opcode OPAND is unsupported!" << std::endl;
     break;
   case (LT):
-    logger_->ErrStream() << "opcode OPLT is unsupported!" << std::endl;
+    logger_->errStream() << "opcode OPLT is unsupported!" << std::endl;
     break;
   case (LE):
-    logger_->ErrStream() << "opcode OPLE is unsupported!" << std::endl;
+    logger_->errStream() << "opcode OPLE is unsupported!" << std::endl;
     break;
   case (EQ):
-    logger_->ErrStream() << "opcode OPEQ is unsupported!" << std::endl;
+    logger_->errStream() << "opcode OPEQ is unsupported!" << std::endl;
     break;
   case (GE):
-    logger_->ErrStream() << "opcode OPGE is unsupported!" << std::endl;
+    logger_->errStream() << "opcode OPGE is unsupported!" << std::endl;
     break;
   case (GT):
-    logger_->ErrStream() << "opcode OPGT is unsupported!" << std::endl;
+    logger_->errStream() << "opcode OPGT is unsupported!" << std::endl;
     break;
   case (NE):
-    logger_->ErrStream() << "opcode OPNE is unsupported!" << std::endl;
+    logger_->errStream() << "opcode OPNE is unsupported!" << std::endl;
     break;
   case (OPNOT):
-    logger_->ErrStream() << "opcode OPNOT is unsupported!" << std::endl;
+    logger_->errStream() << "opcode OPNOT is unsupported!" << std::endl;
     break;
   case (OPIFnl):
-    logger_->ErrStream() << "opcode OPIFnl is unsupported!" << std::endl;
+    logger_->errStream() << "opcode OPIFnl is unsupported!" << std::endl;
     break;
   case (OPprecision):
-    logger_->ErrStream() << "opcode OPprecision is unsupported!" << std::endl;
+    logger_->errStream() << "opcode OPprecision is unsupported!" << std::endl;
     break;
   case (OPround):
-    logger_->ErrStream() << "opcode OPround is unsupported!" << std::endl;
+    logger_->errStream() << "opcode OPround is unsupported!" << std::endl;
     break;
   case (OPtrunc):
-    logger_->ErrStream() << "opcode OPtrunc is unsupported!" << std::endl;
+    logger_->errStream() << "opcode OPtrunc is unsupported!" << std::endl;
     break;
   case (OPCOUNT):
-    logger_->ErrStream() << "opcode OPCOUNT is unsupported!" << std::endl;
+    logger_->errStream() << "opcode OPCOUNT is unsupported!" << std::endl;
     break;
   case (OPNUMBEROFs):
-    logger_->ErrStream() << "opcode OPNIMBEROFs is unsupported!" << std::endl;
+    logger_->errStream() << "opcode OPNIMBEROFs is unsupported!" << std::endl;
     break;
   case (OPATLEAST):
-    logger_->ErrStream() << "opcode OPATLEAST is unsupported!" << std::endl;
+    logger_->errStream() << "opcode OPATLEAST is unsupported!" << std::endl;
     break;
   case (OPATMOST):
-    logger_->ErrStream() << "opcode OPATMOST is unsupported!" << std::endl;
+    logger_->errStream() << "opcode OPATMOST is unsupported!" << std::endl;
     break;
   case (OPPLTERM):
-    logger_->ErrStream() << "opcode OPLTERM is unsupported!" << std::endl;
+    logger_->errStream() << "opcode OPLTERM is unsupported!" << std::endl;
     break;
   case (OPIFSYM):
-    logger_->ErrStream() << "opcode OPIFSYM is unsupported!" << std::endl;
+    logger_->errStream() << "opcode OPIFSYM is unsupported!" << std::endl;
     break;
   case (OPEXACTLY):
-    logger_->ErrStream() << "opcode OPEXACTLY is unsupported!" << std::endl;
+    logger_->errStream() << "opcode OPEXACTLY is unsupported!" << std::endl;
     break;
   case (OPNOTATLEAST):
-    logger_->ErrStream() << "opcode OPNOTATLEAST is unsupported!" << std::endl;
+    logger_->errStream() << "opcode OPNOTATLEAST is unsupported!" << std::endl;
     break;
   case (OPNOTATMOST):
-    logger_->ErrStream() << "opcode OPNOTATMOST is unsupported!" << std::endl;
+    logger_->errStream() << "opcode OPNOTATMOST is unsupported!" << std::endl;
     break;
   case (OPNOTEXACTLY):
-    logger_->ErrStream() << "opcode OPNOTEXACTLY is unsupported!" << std::endl;
+    logger_->errStream() << "opcode OPNOTEXACTLY is unsupported!" << std::endl;
     break;
   case (ANDLIST):
-    logger_->ErrStream() << "opcode OPANDLIST is unsupported!" << std::endl;
+    logger_->errStream() << "opcode OPANDLIST is unsupported!" << std::endl;
     break;
   case (ORLIST):
-    logger_->ErrStream() << "opcode OPLIST is unsupported!" << std::endl;
+    logger_->errStream() << "opcode OPLIST is unsupported!" << std::endl;
     break;
   case (OPIMPELSE):
-    logger_->ErrStream() << "opcode OPIMPELSE is unsupported!" << std::endl;
+    logger_->errStream() << "opcode OPIMPELSE is unsupported!" << std::endl;
     break;
   case (OP_IFF):
-    logger_->ErrStream() << "opcode OP_IFF is unsupported!" << std::endl;
+    logger_->errStream() << "opcode OP_IFF is unsupported!" << std::endl;
     break;
   case (OPALLDIFF):
-    logger_->ErrStream() << "opcode OPALLDIFF is unsupported!" << std::endl;
+    logger_->errStream() << "opcode OPALLDIFF is unsupported!" << std::endl;
     break;
   case (OPHOL):
-    logger_->ErrStream() << "opcode OPHOL is unsupported!" << std::endl;
+    logger_->errStream() << "opcode OPHOL is unsupported!" << std::endl;
     break;
   default: 
-    logger_->ErrStream() << "opcode " << opcode << " is unknown!" << std::endl;
+    logger_->errStream() << "opcode " << opcode << " is unknown!" << std::endl;
   }
   assert(!"unsupported opcode!");
 }

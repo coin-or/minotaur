@@ -23,6 +23,7 @@
 #include <Engine.h>
 #include <QPEngine.h>
 #include <LPEngine.h>
+#include <Logger.h>
 #include <NLPEngine.h>
 #include "NlPresHandler.h"
 #include <NodeRelaxer.h>
@@ -47,31 +48,12 @@
 
 using namespace Minotaur;
 
-struct qgStat {
-  UInt proc_nodes;
-  UInt total_size;
-  Double total_time;
-  Double ObjVal;
-  Double LowerB;
-  Size_t nlpS;
-  Size_t nlpP;
-  Size_t nlpI;
-  Size_t nlpF;
-  Size_t looseCut;
-  Bool QC;
-  Bool partialFix;  
-  Bool accpm;
-  Size_t nlpP1;
-  Size_t infCuts;
-  Size_t nlpPC;
-  Size_t p2Cuts;
-  Size_t p1Cuts;
-  Size_t CoCuts;
-};
-
 EnginePtr getNLPEngine(EnvPtr env, ProblemPtr p);
 void show_help();
-void writeSolutionToFile(const Double * x, UInt n);
+void writeBnbStatus(EnvPtr env, BranchAndBound *bab, double obj_sense);
+void writeSol(EnvPtr env, VarVector *orig_v, PresolverPtr pres,
+              SolutionPtr sol, SolveStatus status,
+              MINOTAUR_AMPL::AMPLInterface* iface);
 
 
 void setInitialOptions(EnvPtr env)
@@ -127,10 +109,12 @@ PresolverPtr presolve(EnvPtr env, ProblemPtr p, Size_t ndefs,
     }
 
     // write the names.
-    std::cout << me << "handlers used in presolve:" << std::endl;
+    env->getLogger()->msgStream(LogExtraInfo) << me 
+      << "handlers used in presolve:" << std::endl;
     for (HandlerIterator h = handlers.begin(); h != handlers.end(); 
         ++h) {
-      std::cout<<(*h)->getName()<<std::endl;
+      env->getLogger()->msgStream(LogExtraInfo) << me 
+        << (*h)->getName() << std::endl;
     }
   }
 
@@ -160,7 +144,7 @@ int main(int argc, char* argv[])
   MINOTAUR_AMPL::AMPLHessianPtr hPtr;
 
   // the branch-and-bound
-  BranchAndBoundPtr bab;
+  BranchAndBound *bab;
   PresolverPtr pres;
   EngineFactory *efac;
   const std::string me("qg: ");
@@ -213,7 +197,8 @@ int main(int argc, char* argv[])
 
   if (options->findBool("show_version")->getValue() ||
       options->findFlag("v")->getValue()) {
-    std::cout << me << "Minotaur version " << env->getVersion() << std::endl;
+    env->getLogger()->msgStream(LogNone) << me <<
+      "Minotaur version " << env->getVersion() << std::endl;
     goto CLEANUP;
   }
 
@@ -222,27 +207,36 @@ int main(int argc, char* argv[])
     goto CLEANUP;
   }
 
-  std::cout << me << "Minotaur version " << env->getVersion() << std::endl;
+  env->getLogger()->msgStream(LogInfo) << me
+    << "Minotaur version " << env->getVersion() << std::endl;
   // load the problem.
   timer->start();
   inst = iface->readInstance(options->findString("problem_file")->getValue());
-  std::cout << me << "time used in reading instance = " << std::fixed 
+  env->getLogger()->msgStream(LogInfo) << me 
+    << "time used in reading instance = " << std::fixed 
     << std::setprecision(2) << timer->query() << std::endl;
+
 
   inst->calculateSize();
   // display the problem
   if (options->findBool("display_problem")->getValue()==true) {
-    inst->write(std::cout);
+    inst->write(env->getLogger()->msgStream(LogNone));
   }
 
   if (options->findBool("display_size")->getValue()==true) {
     inst->calculateSize();
-    inst->writeSize(std::cout);
+    inst->writeSize(env->getLogger()->msgStream(LogNone));
   }
 
  if(inst->getObjective() &&
      inst->getObjective()->getObjectiveType()==Maximize){
     obj_sense=-1.0;
+    env->getLogger()->msgStream(LogInfo) << me 
+      << "Objective sense: Maximize (will be converted to Minimize)"
+      << std::endl;
+  } else {
+    env->getLogger()->msgStream(LogInfo) << me 
+      << "Objective sense: Minimize" << std::endl;
   }
   // Initialize engines
   nlp_e = getNLPEngine(env, inst); //Engine for Original problem
@@ -301,10 +295,12 @@ int main(int argc, char* argv[])
 
   
   // report name
-  logger_->MsgStream(LogInfo) << me << "handlers used:" << std::endl;
+  env->getLogger()->msgStream(LogExtraInfo) << me << "handlers used:"
+    << std::endl;
   
   for (HandlerIterator h = handlers.begin(); h != handlers.end(); ++h) {
-    logger_->MsgStream(LogInfo) << me << (*h)->getName() << std::endl;
+    env->getLogger()->msgStream(LogExtraInfo) << me << (*h)->getName()
+      << std::endl;
   }
 
   // Stuff needed in branch and bound
@@ -335,16 +331,17 @@ int main(int argc, char* argv[])
       br = lbr;
     }
     nproc->setBrancher(br);
-    std::cout << me << "brancher used = " << br->getName() << std::endl;
+    env->getLogger()->msgStream(LogExtraInfo) << me <<
+      "brancher used = " << br->getName() << std::endl;
     
-    bab = (BranchAndBoundPtr) new BranchAndBound(env, inst);
+    bab = new BranchAndBound(env, inst);
     bab->setNodeRelaxer(nr);
     bab->setNodeProcessor(nproc);
     bab->shouldCreateRoot(true);
-  }
-  else {
-    std::cout << "Problem declared infeasible at initial relaxation step." <<
-      std::endl;
+  } else {
+    env->getLogger()->msgStream(LogInfo) << me 
+      << "Problem declared infeasible at initial relaxation step."
+      << std::endl;
     goto CLEANUP;
   }
 
@@ -353,43 +350,18 @@ int main(int argc, char* argv[])
   if (options->findBool("solve")->getValue()==true) {
     // start solving
     bab->solve();
-    std::cout << me << "status of branch-and-bound: " 
-              << getSolveStatusString(bab->getStatus()) << std::endl;
-
-    bab->writeStats();
-    nlp_e->writeStats();
-    lin_e->writeStats();
+    bab->writeStats(env->getLogger()->msgStream(LogExtraInfo));
+    nlp_e->writeStats(env->getLogger()->msgStream(LogExtraInfo));
+    lin_e->writeStats(env->getLogger()->msgStream(LogExtraInfo));
 
     for (HandlerVector::iterator it=handlers.begin(); it!=handlers.end();
          ++it) {
-      (*it)->writeStats(std::cout);
+      (*it)->writeStats(env->getLogger()->msgStream(LogExtraInfo));
     }
 
-    // write solution
-    sol = bab->getSolution(); // presolved solution needs translation.
-    if (sol) {
-      sol2 = pres->getPostSol(sol);
-      sol = sol2;
-    }
-    if (options->findFlag("AMPL")->getValue()) {
-      iface->writeSolution(sol, bab->getStatus());
-    } else if (sol) {
-      sol->writePrimal(std::cout,orig_v);
-    }
-    std::cout << me << "nodes created in branch-and-bound = " << 
-      bab->getTreeManager()->getSize() << std::endl;
-    // commented out by ashu
-    //std::cout << "nodes processed in branch-and-bound 1= " <<
-    //  bab->getTreeManager()->getActiveNodes() << std::endl;
-    std::cout << me << std::fixed << std::setprecision(4) << 
-      "best bound estimate for remaining nodes = " << obj_sense*bab->getLb() 
-      << std::endl;
-    std::cout << me << std::fixed << std::setprecision(4) << 
-      "best solution value = " << obj_sense*bab->getUb() << std::endl;
+    writeSol(env, orig_v, pres, bab->getSolution(), bab->getStatus(), iface);
+    writeBnbStatus(env, bab, obj_sense);
   }
-
-  std::cout << me << "time used = " << std::fixed << std::setprecision(2) 
-            << timer->query() << std::endl;
 
 CLEANUP:
   if (iface) {
@@ -439,6 +411,62 @@ EnginePtr getNLPEngine(EnvPtr env, ProblemPtr p)
   delete efac;
   return e;
 }
+
+
+void writeBnbStatus(EnvPtr env, BranchAndBound *bab, double obj_sense)
+{
+
+  const std::string me("qg: ");
+  int err = 0;
+
+  if (bab) {
+    env->getLogger()->msgStream(LogInfo)
+      << me << std::fixed << std::setprecision(4) 
+      << "best solution value = " << obj_sense*bab->getUb() << std::endl
+      << me << std::fixed << std::setprecision(4)
+      << "best bound estimate from remaining nodes = "
+      << obj_sense*bab->getLb() << std::endl
+      << me << "gap = " << bab->getUb() - bab->getLb() << std::endl
+      << me << "gap percentage = " << bab->getGap() << std::endl
+      << me << "time used (s) = " << std::fixed << std::setprecision(2) 
+      << env->getTime(err) << std::endl
+      << me << "status of branch-and-bound: " 
+      << getSolveStatusString(bab->getStatus()) << std::endl;
+    env->stopTimer(err); assert(0==err);
+  } else {
+    env->getLogger()->msgStream(LogInfo)
+      << me << std::fixed << std::setprecision(4)
+      << "best solution value = " << INFINITY << std::endl
+      << me << std::fixed << std::setprecision(4)
+      << "best bound estimate from remaining nodes = " << INFINITY << std::endl
+      << me << "gap = " << INFINITY << std::endl
+      << me << "gap percentage = " << INFINITY << std::endl
+      << me << "time used (s) = " << std::fixed << std::setprecision(2) 
+      << env->getTime(err) << std::endl 
+      << me << "status of branch-and-bound: " 
+      << getSolveStatusString(NotStarted) << std::endl;
+    env->stopTimer(err); assert(0==err);
+  }
+}
+
+
+void writeSol(EnvPtr env, VarVector *orig_v,
+              PresolverPtr pres, SolutionPtr sol, SolveStatus status,
+              MINOTAUR_AMPL::AMPLInterface* iface)
+{
+  if (sol) {
+    sol = pres->getPostSol(sol);
+  }
+
+  if (env->getOptions()->findFlag("AMPL")->getValue()) {
+    iface->writeSolution(sol, status);
+  } else if (sol && env->getLogger()->getMaxLevel()>=LogExtraInfo) {
+    sol->writePrimal(env->getLogger()->msgStream(LogExtraInfo), orig_v);
+  }
+}
+
+
+
 
 
 // Local Variables: 

@@ -50,7 +50,6 @@ void Environment::createDefaultOptions_()
   IntOptionPtr i_option;
   DoubleOptionPtr d_option;
   StringOptionPtr s_option;
-  FlagOptionPtr f_option;
 
   // bool options
   b_option = (BoolOptionPtr) new Option<bool>("show_version", 
@@ -190,15 +189,6 @@ void Environment::createDefaultOptions_()
   // reset, so that we don't accidently add it again.
   b_option.reset();
 
-  // // flags (options without values)
-  //f_option = (FlagOptionPtr) new Option<bool>("AMPL", 
-  //    "-AMPL option tells us to write .sol file for ampl", 
-  //    true, false);
-  //options_->insert(f_option, true);
-
-  // reset, so that we don't accidently add it again.
-  f_option.reset();
-
 
   // int options
   i_option = (IntOptionPtr) new Option<int>("bnb_node_limit", 
@@ -219,18 +209,6 @@ void Environment::createDefaultOptions_()
       "Verbosity of bqpd engine: 0-6", true, LogInfo);
   options_->insert(i_option);
 
-  i_option = (IntOptionPtr) new Option<int>("filter_sqp_log_level", 
-      "Verbosity of Filter-SQP engine: 0-6", true, LogInfo);
-  options_->insert(i_option);
-
-  i_option = (IntOptionPtr) new Option<int>("osilp_log_level", 
-      "Verbosity of OsiLP engine: 0-6", true, LogInfo);
-  options_->insert(i_option);
-
-  i_option = (IntOptionPtr) new Option<int>("ipopt_log_level", 
-      "Verbosity of Ipopt engine: 0-6", true, LogInfo);
-  options_->insert(i_option);
-
   i_option = (IntOptionPtr) new Option<int>("bqpd_ws_mode", 
       "Warm starting mode for bqpd: 0-6", true, 6);
   options_->insert(i_option);
@@ -239,16 +217,17 @@ void Environment::createDefaultOptions_()
       "Verbosity of brancher: 0-6", true, LogInfo);
   options_->insert(i_option);
 
-  i_option = (IntOptionPtr) new Option<int>("bnb_log_level", 
-      "Verbosity of branch-and-bound: 0-6", true, LogInfo);
+  i_option = (IntOptionPtr) new Option<int>("log_level", 
+      "Verbosity of the main solving process: 0-6", true, LogInfo);
   options_->insert(i_option);
 
-  i_option = (IntOptionPtr) new Option<int>("node_processor_log_level", 
-      "Verbosity of node processor: 0-6", true, LogInfo);
+  i_option = (IntOptionPtr) new Option<int>("divheur", 
+      "Use diving heuristic for MINLP: <-1/0/1>", 
+      true, -1);
   options_->insert(i_option);
 
-  i_option = (IntOptionPtr) new Option<int>("presolve_log_level", 
-      "Verbosity of presolver: 0-6", true, LogInfo);
+  i_option = (IntOptionPtr) new Option<int>("filter_sqp_log_level", 
+      "Verbosity of Filter-SQP engine: 0-6", true, LogInfo);
   options_->insert(i_option);
 
   i_option = (IntOptionPtr) new Option<int>("handler_log_level", 
@@ -259,33 +238,39 @@ void Environment::createDefaultOptions_()
       "Verbosity of Multi Start Heuristic: 0-6", true, LogInfo);
   options_->insert(i_option);
   
-  i_option = (IntOptionPtr) new Option<int>("Divheur", 
-      "Use diving heuristic for MINLP: <-1/0/1>", 
-      true, -1);
+  i_option = (IntOptionPtr) new Option<int>("ipopt_log_level", 
+      "Verbosity of Ipopt engine: 0-6", true, LogInfo);
+  options_->insert(i_option);
+
+  // Serdar added these options for MultilinearTermsHandler class
+  i_option = (IntOptionPtr) new Option<int>("ml_max_group_size",
+       "Maximum size of individual element in grouping: >= 2, <= 20", true, 6);
+  options_->insert(i_option);
+  // Serdar ended.
+
+  i_option = (IntOptionPtr) new Option<int>("node_processor_log_level", 
+      "Verbosity of node processor: 0-6", true, LogInfo);
+  options_->insert(i_option);
+
+  i_option = (IntOptionPtr) new Option<int>("osilp_log_level", 
+      "Verbosity of OsiLP engine: 0-6", true, LogInfo);
+  options_->insert(i_option);
+
+  i_option = (IntOptionPtr) new Option<int>("presolve_log_level", 
+      "Verbosity of presolver: 0-6", true, LogInfo);
+  options_->insert(i_option);
+
+  i_option = (IntOptionPtr) new Option<int>("rand_seed", 
+      "Seed to random number generator: >=0 (0 = time(NULL))", true, 0);
   options_->insert(i_option);
 
    i_option = (IntOptionPtr) new Option<int>("strbr_pivot_limit",
-      "Limit on number of QP pivots allowed during strong branching: >0",
+      "Limit on number of iterations allowed during strong branching: >0",
       true, 25);
   options_->insert(i_option);
  
   i_option = (IntOptionPtr) new Option<int>("trans_log_level", 
       "Verbosity of Transformer ", true, LogInfo);
-  options_->insert(i_option);
-
-  // Serdar added these options for MultilinearTermsHandler class
-  i_option = (IntOptionPtr) new Option<int>("ml_log_level", 
-      "MultilinearTermsHandler log level.", true, 0);
-  options_->insert(i_option);
-
-  i_option = (IntOptionPtr) new Option<int>("ml_max_group_size",
-       "Maximum size of individual element in grouping: >= 2, <= 20", true, 6);
-  options_->insert(i_option);
-
-  // Serdar ended.
-
-  i_option = (IntOptionPtr) new Option<int>("rand_seed", 
-      "Seed to random number generator: >=0 (0 = time(NULL))", true, 0);
   options_->insert(i_option);
 
   i_option.reset();
@@ -298,13 +283,6 @@ void Environment::createDefaultOptions_()
       "MultilinearTermsHandler feasibility tolerance.", true, 0.00001);
   options_->insert(d_option);
 
-  // Serdar added these options for MultilinearTermsHandler class
-  d_option = (DoubleOptionPtr) new Option<double>("ml_cover_augmentation_factor", 
-      "Covering augmentation factor for ml grouping: >= 1", true, 2.0);
-  options_->insert(d_option);
-
-  // Serdar ended.
-
   d_option = (DoubleOptionPtr) new Option<double>("bnb_time_limit", 
       "Limit on time in branch-and-bound in seconds: >0",
       true, 1e20);
@@ -314,6 +292,17 @@ void Environment::createDefaultOptions_()
       "Display interval in seconds for branch-and-bound status: >0", true, 
       5.);
   options_->insert(d_option);
+
+  d_option = (DoubleOptionPtr) new Option<double>("int_tol", 
+      "Tolerance for checking integrality",
+      true, 0.000001);
+  options_->insert(d_option);
+
+  // Serdar added these options for MultilinearTermsHandler class
+  d_option = (DoubleOptionPtr) new Option<double>("ml_cover_augmentation_factor", 
+      "Covering augmentation factor for ml grouping: >= 1", true, 2.0);
+  options_->insert(d_option);
+  // Serdar ended.
 
   d_option = (DoubleOptionPtr) new Option<double>("obj_cut_off", 
       "Nodes with objective value above obj_cut_off are assumed infeasible",
@@ -325,20 +314,18 @@ void Environment::createDefaultOptions_()
       true, 0.0);
   options_->insert(d_option);
 
-  d_option = (DoubleOptionPtr) new Option<double>("int_tol", 
-      "Tolerance for checking integrality",
-      true, 0.000001);
-  options_->insert(d_option);
-
   d_option.reset();
  
-  // Serdar added default options for MultilinearTermsHandler.
-  s_option = (StringOptionPtr) new Option<std::string>("ml_group_strategy",
-      "Group strategy", true, "TC");
-  options_->insert(s_option);
-  // Serdar ended
-
   // string options
+  s_option = (StringOptionPtr) new Option<std::string>("brancher", 
+      "Name of brancher: rel, maxvio, lex, rand, maxfreq", 
+      true, "rel");
+  options_->insert(s_option);
+
+  s_option = (StringOptionPtr) new Option<std::string>("config_file", 
+      "Name of file that contains parameters or options", true, "");
+  options_->insert(s_option);
+
   s_option = (StringOptionPtr) new Option<std::string>("interface_type", 
       "What interface is this environment being used with: AMPL or C++",
       true, "C++");
@@ -349,19 +336,25 @@ void Environment::createDefaultOptions_()
       true, "OsiClp");
   options_->insert(s_option);
 
+  // Serdar added default options for MultilinearTermsHandler.
+  s_option = (StringOptionPtr) new Option<std::string>("ml_group_strategy",
+      "Group strategy", true, "TC");
+  options_->insert(s_option);
+  // Serdar ended
+
   s_option = (StringOptionPtr) new Option<std::string>("nlp_engine", 
       "Engine for solving nonlinear relaxations: Filter-SQP, IPOPT, None", 
       true, "Filter-SQP");
   options_->insert(s_option);
 
+  s_option = (StringOptionPtr) new Option<std::string>("problem_file", 
+      "Name of file that contains the instance to be solved", 
+      true, "");
+  options_->insert(s_option);
+
   s_option = (StringOptionPtr) new Option<std::string>("qp_engine", 
       "Engine for solving QP relaxations: bqpd, None", 
       true, "bqpd");
-  options_->insert(s_option);
-
-  s_option = (StringOptionPtr) new Option<std::string>("brancher", 
-      "Name of brancher: rel, maxvio, lex, rand, maxfreq", 
-      true, "rel");
   options_->insert(s_option);
 
   s_option = (StringOptionPtr) new Option<std::string>("tree_search", 
@@ -372,23 +365,18 @@ void Environment::createDefaultOptions_()
       "File name for storing tree information for Vbctool", true, "");
   options_->insert(s_option);
 
-  s_option = (StringOptionPtr) new Option<std::string>("config_file", 
-      "Name of file that contains parameters or options", true, "");
-  options_->insert(s_option);
-
-  s_option = (StringOptionPtr) new Option<std::string>("problem_file", 
-      "Name of file that contains the instance to be solved", 
-      true, "");
-  options_->insert(s_option);
-
   s_option.reset();
 }
 
 
 void Environment::convertAndAddOneOption_(BoolOptionPtr &b_option, 
-    IntOptionPtr &i_option, DoubleOptionPtr &d_option, 
-    StringOptionPtr &s_option, FlagOptionPtr &f_option, std::string &name,
-    std::string &value)
+                                          IntOptionPtr &i_option,
+                                          DoubleOptionPtr &d_option, 
+                                          StringOptionPtr &s_option,
+                                          FlagOptionPtr &f_option,
+                                          std::string &name,
+                                          std::string &value,
+                                          std::ostringstream &logstr)
 {
   std::stringstream mystream; // to convert string to int, bool, double.
   std::string off = "  ";
@@ -396,7 +384,7 @@ void Environment::convertAndAddOneOption_(BoolOptionPtr &b_option,
   if (b_option) {
     bool b_value = getBoolValue_(value);
     b_option->setValue(b_value);
-    logger_->MsgStream(LogInfo) << off << b_option->getName() << " = " <<
+    logstr << off << b_option->getName() << " = " <<
       b_option->getValue() << std::endl; 
   } else if (i_option) {
     int i_value;
@@ -404,7 +392,7 @@ void Environment::convertAndAddOneOption_(BoolOptionPtr &b_option,
     mystream << value;
     mystream >> i_value;
     i_option->setValue(i_value);
-    logger_->MsgStream(LogInfo) << off << i_option->getName() << " = " <<
+    logstr << off << i_option->getName() << " = " <<
       i_option->getValue() << std::endl; 
   } else if (d_option) {
     double d_value;
@@ -412,11 +400,11 @@ void Environment::convertAndAddOneOption_(BoolOptionPtr &b_option,
     mystream << value;
     mystream >> d_value;
     d_option->setValue(d_value);
-    logger_->MsgStream(LogInfo) << off << d_option->getName() << " = " <<
+    logstr << off << d_option->getName() << " = " <<
       d_option->getValue() << std::endl; 
   } else if (s_option) {
     s_option->setValue(value);
-    logger_->MsgStream(LogInfo) << off << s_option->getName() << " = " <<
+    logstr << off << s_option->getName() << " = " <<
       s_option->getValue() << std::endl; 
   } else {
     // option is unknown. We will add this option with the following
@@ -424,15 +412,14 @@ void Environment::convertAndAddOneOption_(BoolOptionPtr &b_option,
     // then it is a string
     // option, otherwise it is a 'flag' option. We can not have 'int' or
     // 'double' option here.
-    logger_->MsgStream(LogInfo) << off << name << " is not a known option. ";
+    logstr << off << name << " is not a known option. ";
     if (value == "") {
-      logger_->MsgStream(LogInfo) << "Added as a flag." 
-        << std::endl;
+      logstr << "Added as a flag." << std::endl;
       f_option = (FlagOptionPtr) new Option<bool>(name, 
           "Flag added by user", false, true);
       options_->insert(f_option, true);
     } else {
-      logger_->MsgStream(LogInfo) << "Added as a string option with value \"" 
+      logstr << "Added as a string option with value \"" 
         << value << "\"" << std::endl;
       s_option = (StringOptionPtr) new Option<std::string>(name, 
           "Option added by user", false, value);
@@ -442,9 +429,12 @@ void Environment::convertAndAddOneOption_(BoolOptionPtr &b_option,
 }
 
 
-void Environment::findOption_(const std::string &name, BoolOptionPtr &b_option,
-    IntOptionPtr &i_option, DoubleOptionPtr &d_option, 
-    StringOptionPtr &s_option, FlagOptionPtr &f_option)
+void Environment::findOption_(const std::string &name,
+                              BoolOptionPtr &b_option,
+                              IntOptionPtr &i_option,
+                              DoubleOptionPtr &d_option,
+                              StringOptionPtr &s_option,
+                              FlagOptionPtr &f_option)
 {
   b_option = BoolOptionPtr();   // NULL
   i_option = IntOptionPtr();    // NULL
@@ -497,6 +487,12 @@ LoggerPtr Environment::getLogger() const
 }
 
 
+LogLevel Environment::getLogLevel() const
+{
+  return logger_->getMaxLevel();
+}
+
+
 Timer* Environment::getNewTimer() 
 {
   return timerFac_->getTimer();
@@ -516,7 +512,7 @@ double Environment::getTime(int &err)
     return timer_->query();
   } 
 #if SPEW
-  logger_->MsgStream(LogError) << me_ <<
+  logger_->msgStream(LogError) << me_ <<
     "timer queried before it is started." << std::endl;
 #endif
   err = 1;
@@ -550,9 +546,10 @@ void Environment::readConfigFile_(std::string fname, UInt &num_p)
   DoubleOptionPtr d_option;
   StringOptionPtr s_option;
   FlagOptionPtr f_option;
+  std::ostringstream logstr;
 
   if (!istr.is_open()) {
-    logger_->ErrStream() << me_ << "cannot open file " << fname << std::endl; 
+    logger_->errStream() << me_ << "cannot open file " << fname << std::endl; 
     return;
   }
 
@@ -581,7 +578,7 @@ void Environment::readConfigFile_(std::string fname, UInt &num_p)
       continue;
     } 
     if (w2.empty()) {
-      logger_->ErrStream() << me_ << "parameter " << w1 << " in configuration file " 
+      logger_->errStream() << me_ << "parameter " << w1 << " in configuration file " 
         << fname << " has no value. Ignored this parameter." << std::endl;
       continue;
     }
@@ -591,7 +588,7 @@ void Environment::readConfigFile_(std::string fname, UInt &num_p)
     // add the option.
     findOption_(w1, b_option, i_option, d_option, s_option, f_option);
     convertAndAddOneOption_(b_option, i_option, d_option, s_option,
-        f_option, w1, w2);
+        f_option, w1, w2, logstr);
   }
   istr.close();
 }
@@ -608,13 +605,13 @@ void Environment::readOptions(int argc, char **argv)
   StringOptionPtr s_option;
   FlagOptionPtr f_option;
   std::string offset = "  ";
+  std::ostringstream ostr;
 
   if (argc<2) {
-    logger_->MsgStream(LogInfo) << me_ 
+    logger_->msgStream(LogInfo) << me_ 
       << "User provided no options." << std::endl;
   } else {
-    logger_->MsgStream(LogInfo) << me_ 
-      << "User provided options:" << std::endl;
+    ostr << me_ << "User provided options:" << std::endl;
   }
   for (int i=1; i<argc; ++i) {
     name = argv[i];
@@ -629,7 +626,7 @@ void Environment::readOptions(int argc, char **argv)
       s_option = options_->findString("problem_file");
       s_option->setValue(name);
       ++num_p;
-      logger_->MsgStream(LogInfo) << offset << s_option->getName() << " = " <<
+      ostr << offset << s_option->getName() << " = " <<
         s_option->getValue() << std::endl; 
     } else {
       // looks like an option. remove leading minotaur dot, if any.
@@ -648,7 +645,7 @@ void Environment::readOptions(int argc, char **argv)
         } else {
           f_option->setValue(getBoolValue_(s_value));
         }
-        logger_->MsgStream(LogInfo) << offset << f_option->getName() << " = " <<
+        ostr << offset << f_option->getName() << " = " <<
           f_option->getValue() << std::endl; 
       } else {
         if (s_value=="" && (b_option || i_option || d_option || s_option)) {
@@ -658,7 +655,7 @@ void Environment::readOptions(int argc, char **argv)
           s_value = argv[i];
         }
         convertAndAddOneOption_(b_option, i_option, d_option, s_option,
-            f_option, name, s_value);
+            f_option, name, s_value, ostr);
         if (s_option && "config_file"==s_option->getName()) {
           readConfigFile_(s_option->getValue(), num_p);
         }
@@ -666,21 +663,30 @@ void Environment::readOptions(int argc, char **argv)
     }
   }
   if (argc>1) {
-    logger_->MsgStream(LogInfo) << me_ 
-      << "End of user provided options." << std::endl << std::endl; 
+    ostr << me_ << "End of user provided options." << std::endl << std::endl; 
   }
 
+
+  // update the log level if set by the user
+  logger_->setMaxLevel((LogLevel)getOptions()->findInt("log_level")
+                       ->getValue());
+  // display all the new options set.
+  logger_->msgStream(LogInfo) << ostr.str();
+
   if (num_p>1) {
-    logger_->MsgStream(LogInfo) << me_ 
+    logger_->msgStream(LogInfo) << me_ 
       << "more than one filename given as input."
       << std::endl
       << me_ << "Only file \"" 
       << options_->findString("problem_file")->getValue()
       << "\" will be read." << std::endl << std::endl;
-  } else if (num_p==0) {
-    logger_->MsgStream(LogDebug) << me_ 
+  } 
+#if SPEW
+  if (num_p==0) {
+    logger_->msgStream(LogInfo) << me_ 
       << "No filename provided as input." << std::endl;
   }
+#endif
 }
 
 
@@ -734,6 +740,12 @@ std::string Environment::separateEqualToArg_(std::string &name)
     }
   }
   return "";
+}
+
+
+void Environment::setLogLevel(LogLevel l) 
+{
+  logger_->setMaxLevel(l);
 }
 
 

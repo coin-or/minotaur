@@ -189,7 +189,7 @@ void BqpdEngine::load_()
   int mxiwk   = 0;
   Int kk0, ll0;           // For setwsc routine.
   UInt maxa   = n + problem_->getSize()->linTerms;
-  logger_->MsgStream(LogDebug1) << "Bqpd: Loaded problem." << std::endl;
+  logger_->msgStream(LogDebug1) << "Bqpd: Loaded problem." << std::endl;
 
   // set storage map for bqpd
   kk0 = problem_->getHessian()->getNumNz() + 2;
@@ -223,7 +223,7 @@ void BqpdEngine::load_()
   fStart_ = new BqpdData(n, m, kmax, maxa, lh1, problem_->getNumJacNnzs());
 
 #if SPEW
-  logger_->MsgStream(LogDebug2) << "Bqpd: " << "maxa = " << maxa << std::endl;
+  logger_->msgStream(LogDebug2) << "Bqpd: " << "maxa = " << maxa << std::endl;
 #endif 
 }
 
@@ -429,7 +429,7 @@ EngineStatus BqpdEngine::solve()
 
   solve_(mode, f);
   if (EngineError == status_ && resolveError_) {
-    logger_->MsgStream(LogInfo) 
+    logger_->msgStream(LogInfo) 
       << "Bqpd: failure in solving in mode " << mode << std::endl;
     switch(mode) {
     case 0:
@@ -441,11 +441,11 @@ EngineStatus BqpdEngine::solve()
     default:
       mode = 1;
     }
-    logger_->MsgStream(LogInfo) 
+    logger_->msgStream(LogInfo) 
       << "Bqpd: solving in mode " << mode << std::endl;
     solve_(mode,f);
     if (EngineError == status_) {
-      logger_->MsgStream(LogInfo) 
+      logger_->msgStream(LogInfo) 
         << "Bqpd: failure in mode " << mode << " as well." << std::endl;
       //for (UInt i=0; i<problem_->getNumVars(); ++i) {
       //  problem_->changeBound(i,fStart_->bl[i],fStart_->bu[i]);
@@ -492,7 +492,7 @@ void BqpdEngine::solve_(Int mode, Double &f)
   f       = 1.E20;   
 
 #if SPEW
-  logger_->MsgStream(LogDebug2) 
+  logger_->msgStream(LogDebug2) 
     << "Bqpd:    n = " << n << std::endl
     << "Bqpd:    m = " << m << std::endl
     << "Bqpd: mode = " << mode << std::endl
@@ -510,7 +510,7 @@ void BqpdEngine::solve_(Int mode, Double &f)
         &ifail, fStart_->info, &iprint, &nout);
 
 #if SPEW
-  logger_->MsgStream(LogDebug2) 
+  logger_->msgStream(LogDebug2) 
     << "Bqpd:    iters = " << fStart_->info[0] << std::endl;
 #endif
   
@@ -527,7 +527,7 @@ void BqpdEngine::solve_(Int mode, Double &f)
   //writewsc();
 
 #if SPEW
-  logger_->MsgStream(LogDebug) << "Bqpd: ifail = " << ifail << std::endl;
+  logger_->msgStream(LogDebug) << "Bqpd: ifail = " << ifail << std::endl;
 #endif
 
   // set return status from Bqpd
@@ -558,9 +558,9 @@ void BqpdEngine::solve_(Int mode, Double &f)
     status_ = EngineError;
   }
 #if SPEW
-  logger_->MsgStream(LogDebug) << "Bqpd: status = " << getStatusString() 
+  logger_->msgStream(LogDebug) << "Bqpd: status = " << getStatusString() 
     << std::endl;
-  logger_->MsgStream(LogDebug) << "Bqpd: value = " << f << std::endl;
+  logger_->msgStream(LogDebug) << "Bqpd: value = " << f << std::endl;
 #endif
 }
 
@@ -824,12 +824,11 @@ void BqpdEngine::resetIterationLimit()
 }
 
 
-void BqpdEngine::writeStats()
+void BqpdEngine::writeStats(std::ostream &out) const
 {
   if (stats_) {
     std::string me = "Bqpd:  ";
-    logger_->MsgStream(LogInfo) 
-      << me << "total calls            = " << stats_->calls << std::endl
+    out << me << "total calls            = " << stats_->calls << std::endl
       << me << "strong branching calls = " << stats_->strCalls << std::endl
       << me << "total time in solving  = " << stats_->time  << std::endl
       << me << "time in str branching  = " << stats_->strTime << std::endl

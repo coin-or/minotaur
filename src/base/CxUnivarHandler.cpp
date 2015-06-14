@@ -538,8 +538,8 @@ Branches CxUnivarHandler::getBranches(BrCandPtr cand, DoubleVector &x,
   branches->push_back(branch);
 
 
-  logger_->MsgStream(LogDebug2) << "branching on " << v->getName();
-  logger_->MsgStream(LogDebug2) << " <= " << value << " or " 
+  logger_->msgStream(LogDebug2) << "branching on " << v->getName();
+  logger_->msgStream(LogDebug2) << " <= " << value << " or " 
     << " >= " << value << std::endl;
 
 #if defined(DEBUG_CXUNIVARHANDLER)  

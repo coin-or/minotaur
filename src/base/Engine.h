@@ -177,7 +177,7 @@ public:
    * Write statistics to the logger. If the log level is too low, no
    * statistics may be written.
    */
-  virtual void writeStats() {};
+  virtual void writeStats(std::ostream &) const {};
 
 protected:
   /// Status of the last solve.

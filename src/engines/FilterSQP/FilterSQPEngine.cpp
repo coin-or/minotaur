@@ -671,7 +671,7 @@ EngineStatus FilterSQPEngine::solve()
   iuser = convertPtrToInt(u);
 
 #if SPEW
-  logger_->MsgStream(LogDebug2) << "Filter-SQP: " << std::endl
+  logger_->msgStream(LogDebug2) << "Filter-SQP: " << std::endl
     << "  call = " << stats_->calls+1 << std::endl
     << "  n = " << n << std::endl
     << "  m = " << m << std::endl
@@ -690,8 +690,8 @@ EngineStatus FilterSQPEngine::solve()
   consChanged_ = false;
 
 #if SPEW
-  logger_->MsgStream(LogDebug) << "Filter-SQP: ifail = " << ifail << std::endl;
-  logger_->MsgStream(LogDebug) << "Filter-SQP: rho = " << rho << std::endl;
+  logger_->msgStream(LogDebug) << "Filter-SQP: ifail = " << ifail << std::endl;
+  logger_->msgStream(LogDebug) << "Filter-SQP: rho = " << rho << std::endl;
 #endif
 
   // set return status from filter
@@ -730,14 +730,14 @@ EngineStatus FilterSQPEngine::solve()
   }
 
 #if SPEW
-  logger_->MsgStream(LogDebug) << "Filter-SQP: status = " << getStatusString() 
+  logger_->msgStream(LogDebug) << "Filter-SQP: status = " << getStatusString() 
     << std::endl;
-  logger_->MsgStream(LogDebug) << "Filter-SQP: obj = " << f << std::endl;
-  logger_->MsgStream(LogDebug) << "Filter-SQP: time taken = " << timer_->query() 
+  logger_->msgStream(LogDebug) << "Filter-SQP: obj = " << f << std::endl;
+  logger_->msgStream(LogDebug) << "Filter-SQP: time taken = " << timer_->query() 
     << std::endl;
-  logger_->MsgStream(LogDebug) << "Filter-SQP: iterations = " << istat_[1]
+  logger_->msgStream(LogDebug) << "Filter-SQP: iterations = " << istat_[1]
     << std::endl;
-  //logger_->MsgStream(LogNone) << "Filter-SQP: number of iterations = " 
+  //logger_->msgStream(LogNone) << "Filter-SQP: number of iterations = " 
   //<< istat_[0] << " " << istat_[1] << " " << istat_[2] << " " << istat_[3] 
   //<< " " << istat_[4] << " " << istat_[5] << " " << istat_[6] << " " 
   //<< istat_[7] << " " << istat_[8] << " " << istat_[9] << std::endl;
@@ -788,7 +788,7 @@ Double FilterSQPEngine::evalObjValue(const Double *x, Int *err)
 {
   Double objval = problem_->getObjValue(x, err);
 #if SPEW
-  logger_->MsgStream(LogDebug2) << "Filter-SQP: " 
+  logger_->msgStream(LogDebug2) << "Filter-SQP: " 
     << "  objective value = " << objval << " error = " << *err << std::endl;
 #endif
   return objval;
@@ -813,23 +813,23 @@ void FilterSQPEngine::evalCons(const Double *x, Double *c, Int *error)
     ++i;
   }
 #if SPEW
-  if (logger_->GetMaxLevel() > LogDebug) {
+  if (logger_->getMaxLevel() > LogDebug) {
     VariableConstIterator vIter;
     i=0;
-    logger_->MsgStream(LogDebug2) << "Filter-SQP:" << std::endl;
+    logger_->msgStream(LogDebug2) << "Filter-SQP:" << std::endl;
     for (vIter=problem_->varsBegin(); vIter!=problem_->varsEnd(); ++vIter) {
-      logger_->MsgStream(LogDebug2) << (*vIter)->getName() 
+      logger_->msgStream(LogDebug2) << (*vIter)->getName() 
         << " = " << x[i] << std::endl;
       ++i;
     }
     i=0;
     for (cIter=problem_->consBegin(); cIter!=problem_->consEnd(); ++cIter) {
-      logger_->MsgStream(LogDebug2) << (*cIter)->getName() 
+      logger_->msgStream(LogDebug2) << (*cIter)->getName() 
         << " = " << c[i] << std::endl;
       ++i;
     }
   }
-  logger_->MsgStream(LogDebug2) << "Filter-SQP: error in evalCons = " 
+  logger_->msgStream(LogDebug2) << "Filter-SQP: error in evalCons = " 
     << *error << std::endl;
 #endif
 }
@@ -854,10 +854,10 @@ void FilterSQPEngine::evalGrad(const Double *x, Double *a, Int *error)
     o->evalGradient(x, a, &e2);
   }
 #if SPEW
-  if (logger_->GetMaxLevel() > LogDebug) {
-    logger_->MsgStream(LogDebug2) << "Filter-SQP: obj gradient" << std::endl;
+  if (logger_->getMaxLevel() > LogDebug) {
+    logger_->msgStream(LogDebug2) << "Filter-SQP: obj gradient" << std::endl;
     for (UInt i=0; i<n; ++i) {
-      logger_->MsgStream(LogDebug2) << "  f'[" << i << "] = " << a[i] 
+      logger_->msgStream(LogDebug2) << "  f'[" << i << "] = " << a[i] 
         << std::endl;
     }
   }
@@ -871,12 +871,12 @@ void FilterSQPEngine::evalGrad(const Double *x, Double *a, Int *error)
     *error = e2;
   }
 #if SPEW
-  logger_->MsgStream(LogDebug2) << "Filter-SQP: error in evalGrad = " 
+  logger_->msgStream(LogDebug2) << "Filter-SQP: error in evalGrad = " 
     << *error << std::endl;
-  if (logger_->GetMaxLevel() > LogDebug2) {
-    logger_->MsgStream(LogDebug2) << "Filter-SQP: obj gradient" << std::endl;
+  if (logger_->getMaxLevel() > LogDebug2) {
+    logger_->msgStream(LogDebug2) << "Filter-SQP: obj gradient" << std::endl;
     for (UInt i=0; i<n+jac_nnz; ++i) {
-      logger_->MsgStream(LogDebug2) << std::setprecision(15)
+      logger_->msgStream(LogDebug2) << std::setprecision(15)
         << "  jac[" << i << "] = " << a[i] << std::endl;
     }
   }
@@ -909,26 +909,26 @@ void FilterSQPEngine::evalHessian(const Double *x, Double *lam,
   std::copy(lws_, lws_+*li_hess, lws);
   problem_->getHessian()->fillRowColValues(x, obj_mult, mlam_, values, error);
 #if SPEW
-  logger_->MsgStream(LogDebug2) << "Filter-SQP: l_hess = " << *l_hess 
+  logger_->msgStream(LogDebug2) << "Filter-SQP: l_hess = " << *l_hess 
     << std::endl;
-  logger_->MsgStream(LogDebug2) << "Filter-SQP: obj lam = " << obj_mult
+  logger_->msgStream(LogDebug2) << "Filter-SQP: obj lam = " << obj_mult
     << std::endl;
   for (UInt i=0; i<problem_->getNumCons(); ++i) {
-    logger_->MsgStream(LogDebug2) << "Filter-SQP: lam[" << i << "] = "
+    logger_->msgStream(LogDebug2) << "Filter-SQP: lam[" << i << "] = "
                                   << lam[i] << std::endl;
   }
   for (UInt i=0; i<problem_->getNumVars(); ++i) {
-    logger_->MsgStream(LogDebug2) << std::setprecision(8)
+    logger_->msgStream(LogDebug2) << std::setprecision(8)
                                   << "Filter-SQP: " 
                                   << problem_->getVariable(i)->getName()
                                   << " = " << x[i] << std::endl;
   }
   for (Int i=0; i<*l_hess; ++i) {
-    logger_->MsgStream(LogDebug2) << std::setprecision(8) 
+    logger_->msgStream(LogDebug2) << std::setprecision(8) 
                                   << "Filter-SQP: hess[" << i << "] = "
                                   << values[i] << std::endl;
   }
-  logger_->MsgStream(LogDebug2) << "Filter-SQP: error in evalHessian = " 
+  logger_->msgStream(LogDebug2) << "Filter-SQP: error in evalHessian = " 
     << *error << std::endl;
 #endif
 }
@@ -1024,7 +1024,7 @@ void FilterSQPEngine::loadFromWarmStart(const WarmStartPtr warm_st)
     // now create a full copy.
     warmSt_ = (FilterWSPtr) new FilterSQPWarmStart(warm_st2);
     if (!useWs_) {
-      logger_->MsgStream(LogInfo) << "setWarmStart() method is called but"
+      logger_->msgStream(LogInfo) << "setWarmStart() method is called but"
         " warm-start is not enabled." << std::endl;
     }
   } else {
@@ -1062,12 +1062,11 @@ void FilterSQPEngine::enableStrBrSetup()
 }
 
 
-void FilterSQPEngine::writeStats() 
+void FilterSQPEngine::writeStats(std::ostream &out) const
 {
   if (stats_) {
     std::string me = "Filter-SQP: ";
-    logger_->MsgStream(LogInfo) 
-      << me << "total calls            = " << stats_->calls << std::endl
+    out << me << "total calls            = " << stats_->calls << std::endl
       << me << "strong branching calls = " << stats_->strCalls << std::endl
       << me << "total time in solving  = " << stats_->time  << std::endl
       << me << "time in str branching  = " << stats_->strTime << std::endl

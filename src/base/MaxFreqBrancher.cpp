@@ -92,9 +92,9 @@ Branches MaxFreqBrancher::findBranches(RelaxationPtr rel, NodePtr ,
   updateUnfixedCount_();
 
 #if SPEW
-  logger_->MsgStream(LogDebug) << me_ << "candidates: " << std::endl;
+  logger_->msgStream(LogDebug) << me_ << "candidates: " << std::endl;
   for (BrVarCandIter it=cands_.begin(); it!=cands_.end(); ++it) {
-    logger_->MsgStream(LogDebug)
+    logger_->msgStream(LogDebug)
         << std::setprecision(6) << (*it)->getName() << "\t" 
         << x_[(*it)->getPCostIndex()] << "\t"
         << fracCount_[(*it)->getPCostIndex()] << "\t"
@@ -112,7 +112,7 @@ Branches MaxFreqBrancher::findBranches(RelaxationPtr rel, NodePtr ,
       (*br_iter)->setBrCand(br_can);
     }
 #if SPEW
-  logger_->MsgStream(LogDebug) << me_ << "best candidate = "
+  logger_->msgStream(LogDebug) << me_ << "best candidate = "
                                << br_can->getName() 
                                << " Handler: "
                                << br_can->getHandler()->getName()
@@ -173,14 +173,14 @@ BrCandPtr MaxFreqBrancher::findBestCandidate_()
   UInt index;
 
 #if SPEW
- logger_->MsgStream(LogDebug) << me_ << "candidate score from BestCand Fn: "
+ logger_->msgStream(LogDebug) << me_ << "candidate score from BestCand Fn: "
                                      << std::endl;
 #endif
  for (BrVarCandIter it = cands_.begin(); it != cands_.end(); ++it) {
     index = (*it)->getPCostIndex();
     cand_score = (double) fracCount_[index]/((double) unfixedCount_[index]);
 #if SPEW
-   logger_->MsgStream(LogDebug)
+   logger_->msgStream(LogDebug)
        << std::setprecision(6) << (*it)->getName() << "\t"
        << cand_score << "\t"
        << std::endl;
@@ -232,11 +232,10 @@ void MaxFreqBrancher::updateAfterLP(NodePtr , ConstSolutionPtr )
 }
 
 
-void MaxFreqBrancher::writeStats()
+void MaxFreqBrancher::writeStats(std::ostream &out) const
 {
   if (stats_) {
-    logger_->MsgStream(LogInfo) 
-      << me_ << "times called = " << stats_->calls << std::endl
+    out << me_ << "times called = " << stats_->calls << std::endl
       << me_ << "time in brancher = " << stats_->time << std::endl;
   }
 }

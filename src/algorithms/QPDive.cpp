@@ -22,6 +22,7 @@
 #include "LexicoBrancher.h"
 #include "LinearHandler.h"
 #include "LPEngine.h"
+#include "Logger.h"
 #include "MaxVioBrancher.h"
 #include "NLPEngine.h"
 #include "NlPresHandler.h"
@@ -213,11 +214,11 @@ int main(int argc, char** argv)
   }
   // start solving
   bab->solve();
-  bab->writeStats();
-  engine->writeStats();
-  qe->writeStats();
+  bab->writeStats(env->getLogger()->msgStream(LogExtraInfo));
+  engine->writeStats(env->getLogger()->msgStream(LogExtraInfo));
+  qe->writeStats(env->getLogger()->msgStream(LogExtraInfo));
   for (HandlerVector::iterator it=handlers.begin(); it!=handlers.end(); ++it) {
-    (*it)->writeStats(std::cout);
+    (*it)->writeStats(env->getLogger()->msgStream(LogExtraInfo));
   }
 
   writeSol(env, orig_v, obj_sense, bab, pres, iface);

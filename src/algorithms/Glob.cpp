@@ -21,6 +21,7 @@
 #include "Environment.h"
 #include "LexicoBrancher.h"
 #include "LinearHandler.h"
+#include "Logger.h"
 #include "LPEngine.h"
 #include "LPProcessor.h"
 #include "MaxVioBrancher.h"
@@ -210,14 +211,15 @@ int main(int argc, char** argv)
       "best solution value = " << obj_sense*bab->getUb() << std::endl;
     // bit->writeStats();
     for (HandlerVector::iterator it=handlers.begin(); it!=handlers.end(); ++it) {
-      (*it)->writeStats(std::cout);
+      (*it)->writeStats(env->getLogger()->msgStream(LogExtraInfo));
     }
   }
   std::cout << me << "time used = " << std::fixed << std::setprecision(2) 
     << env->getTime(err) << std::endl; assert(0==err);
 
-  engine->writeStats();
-  bab->getNodeProcessor()->getBrancher()->writeStats();
+  engine->writeStats(env->getLogger()->msgStream(LogExtraInfo));
+  bab->getNodeProcessor()->getBrancher()->
+    writeStats(env->getLogger()->msgStream(LogExtraInfo));
 
 CLEANUP:
   if (iface) {

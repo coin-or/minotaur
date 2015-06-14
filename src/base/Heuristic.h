@@ -43,7 +43,7 @@ namespace Minotaur {
           SolutionPoolPtr s_pool) = 0;
 
       /// Write statistics to the logger.
-      virtual void writeStats() = 0;
+      virtual void writeStats(std::ostream &out) const = 0;
   };
 
 }

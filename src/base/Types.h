@@ -205,7 +205,7 @@ namespace Minotaur {
   /// Levels of verbosity.
   typedef enum {
     LogNone,          //< absolutely no messages
-    LogError,         //< only error messages, if any
+    LogError,         //< only error messages and warnings if any
     LogInfo,          //< errors, timed status, final solution
     LogExtraInfo,     //< some extra info, stats etc
     LogDebug,         //< more verbose

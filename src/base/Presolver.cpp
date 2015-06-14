@@ -98,7 +98,8 @@ SolveStatus Presolver::solve()
   Int n_hand = handlers_.size();
   Int last_ch_subiter = -10000;
 
-  logger_->MsgStream(LogInfo) << me_ << "Presolving ... " << std::endl;
+  env_->getLogger()->msgStream(LogInfo) << me_ << "Presolving ... "
+    << std::endl;
   // call all handlers.
   while (true==changed && false==stop && iters<5) {
     for (HandlerIterator h = handlers_.begin(); h != handlers_.end(); ++h) {
@@ -126,19 +127,20 @@ SolveStatus Presolver::solve()
   }
 
   // wrap up.
-  logger_->MsgStream(LogInfo) << me_ << "Finished presolving." << std::endl;
+  env_->getLogger()->msgStream(LogInfo) << me_ << "Finished presolving."
+    << std::endl;
   for (HandlerVector::iterator it=handlers_.begin(); it!=handlers_.end();
        ++it) {
-    (*it)->writeStats(logger_->MsgStream(LogInfo));
+    (*it)->writeStats(logger_->msgStream(LogExtraInfo));
   }
   problem_->calculateSize(true);
   if (true == env_->getOptions()->findBool("display_presolved_size")->
       getValue()) {
-    problem_->writeSize(logger_->MsgStream(LogNone));
+    problem_->writeSize(logger_->msgStream(LogNone));
   }
   if (true == env_->getOptions()->findBool("display_presolved_problem")->
       getValue()) {
-    problem_->write(logger_->MsgStream(LogNone));
+    problem_->write(logger_->msgStream(LogNone));
   }
 
   return status_;

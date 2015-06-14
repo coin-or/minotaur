@@ -43,16 +43,16 @@ namespace Minotaur {
       virtual ~Logger();
 
       /// Do not write messages that are above maxLevel
-      inline void SetMaxLevel(LogLevel maxLevel) { maxLevel_ = maxLevel; }
+      inline void setMaxLevel(LogLevel maxLevel) { maxLevel_ = maxLevel; }
 
       /// Get the maxLevel
-      inline LogLevel GetMaxLevel() const { return maxLevel_; }
+      inline LogLevel getMaxLevel() const { return maxLevel_; }
 
       /// Get the stream where one can write messages.
-      virtual std::ostream& MsgStream(LogLevel level) const;
+      virtual std::ostream& msgStream(LogLevel level) const;
 
       /// Get the stream where one can write errors.
-      std::ostream& ErrStream() const;
+      std::ostream& errStream() const;
 
     protected:
       // Maximum output level

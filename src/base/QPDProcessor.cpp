@@ -110,7 +110,7 @@ QPDProcessor::QPDProcessor(EnvPtr env, ProblemPtr p, EnginePtr e, EnginePtr qe,
                    == "Filter-SQP");
   negDuals_ = solveQPafNLP_;
 #if SPEW
-  logger_->MsgStream(LogDebug2) << me_ << "initialized." << std::endl;
+  logger_->msgStream(LogDebug2) << me_ << "initialized." << std::endl;
 #endif 
 }
 
@@ -155,7 +155,7 @@ bool QPDProcessor::boundTooFar_(ConstSolutionPtr sol, NodePtr node,
     large = (d > node->getLb() + 0.2*fabs(node->getLb())); 
   }
 #if SPEW
-  logger_->MsgStream(LogDebug2) << std::setprecision(6) << me_ 
+  logger_->msgStream(LogDebug2) << std::setprecision(6) << me_ 
                                 << " obj at QPSOL = " << d
                                 << " best known = " << best
                                 << " node lb = " << node->getLb()
@@ -213,14 +213,14 @@ void QPDProcessor::getObjLin_(NonlinearFunctionPtr nlf, const double *x,
   newact = lf->eval(x);
   if (newact < c->getUb()-fval+minvio && newact > c->getLb()-fval-minvio) {
 #if SPEW
-    logger_->MsgStream(LogDebug2) << me_ << "linearization inequality is "
+    logger_->msgStream(LogDebug2) << me_ << "linearization inequality is "
       << "not sufficiently violated " << newact << " bounds "
       << c->getLb()-fval << " " << c->getUb()-fval << std::endl;
 #endif 
     return newc;
   } else {
 #if SPEW
-    logger_->MsgStream(LogDebug2) << me_ << "inequality activity = "
+    logger_->msgStream(LogDebug2) << me_ << "inequality activity = "
       << newact << " bounds = " << c->getLb()-fval << " " << c->getUb()-fval
       << std::endl;
 #endif 
@@ -235,8 +235,8 @@ void QPDProcessor::getObjLin_(NonlinearFunctionPtr nlf, const double *x,
     newc = rel->newConstraint(f2, -INFINITY, c->getUb()-fval, c->getName());
   }
 #if SPEW
-  logger_->MsgStream(LogDebug2) << me_ << "added inequality ";
-  newc->write(logger_->MsgStream(LogDebug2));
+  logger_->msgStream(LogDebug2) << me_ << "added inequality ";
+  newc->write(logger_->msgStream(LogDebug2));
 #endif 
 
   assert(0==err);
@@ -296,7 +296,7 @@ bool QPDProcessor::isHFeasible_(ConstSolutionPtr sol, bool &should_prune)
     }
   }
 #if SPEW
-  logger_->MsgStream(LogDebug2) << me_ << "is integer = " << is_feas
+  logger_->msgStream(LogDebug2) << me_ << "is integer = " << is_feas
     << std::endl;
 #endif 
 
@@ -325,14 +325,14 @@ bool QPDProcessor::isNLPFeasible_(ConstSolutionPtr sol, double *vio)
     if (vio[i]>1e-5) {
       is_feas = false;
 #if SPEW
-      logger_->MsgStream(LogDebug2) << me_ << std::setprecision(6) 
+      logger_->msgStream(LogDebug2) << me_ << std::setprecision(6) 
         << "constraint " << c->getName()
         << " is violated, activity = " << act << " bounds = " << c->getLb() << " " << 
        c->getUb() << std::endl;
 #endif 
     }
 #if SPEW
-  logger_->MsgStream(LogDebug2) << me_ << "vio[" << i << "] = " << vio[i]
+  logger_->msgStream(LogDebug2) << me_ << "vio[" << i << "] = " << vio[i]
     << std::endl;
 #endif 
   }
@@ -347,7 +347,7 @@ bool QPDProcessor::isNLPFeasible_(ConstSolutionPtr sol, double *vio)
     vio[i] = 0.0;
   }
 #if SPEW
-  logger_->MsgStream(LogDebug) << me_ << "nonlinear constraints satisfied? = "
+  logger_->msgStream(LogDebug) << me_ << "nonlinear constraints satisfied? = "
                                << is_feas << std::endl
                                << me_ << "obj vio = " << vio[i] 
                                << " " << qp_->getConstraint(qp_->getNumCons()-1)->getFunction()->eval(x, &err)
@@ -491,7 +491,7 @@ void QPDProcessor::processQP_(UInt iter, NodePtr node, ConstSolutionPtr &sol,
   sol = qpe_->getSolution();
 #if SPEW
   if (0==node->getId()) {
-    logger_->MsgStream(LogDebug2) << me_ << "actual value of QP = " 
+    logger_->msgStream(LogDebug2) << me_ << "actual value of QP = " 
                                 << sol->getObjValue() << std::endl;
   }
 #endif
@@ -504,7 +504,7 @@ void QPDProcessor::processQP_(UInt iter, NodePtr node, ConstSolutionPtr &sol,
 
 #if SPEW
   Int err = 0;
-  logger_->MsgStream(LogDebug2) << me_ << "obj value of NLP at QP sol = " 
+  logger_->msgStream(LogDebug2) << me_ << "obj value of NLP at QP sol = " 
                               << p_->getObjective()->
                                  eval(sol->getPrimal(), &err) 
                               << std::endl;
@@ -638,7 +638,7 @@ void QPDProcessor::processQP2_(UInt iter, NodePtr node, ConstSolutionPtr &sol,
 
 #if SPEW
   if (0==node->getId()) {
-    logger_->MsgStream(LogDebug2) << me_ << "solution value of QP = " 
+    logger_->msgStream(LogDebug2) << me_ << "solution value of QP = " 
                                 << sol->getObjValue() << std::endl;
   }
 #endif
@@ -658,7 +658,7 @@ void QPDProcessor::processQP2_(UInt iter, NodePtr node, ConstSolutionPtr &sol,
   chkObjVio2_(qpx, node, s_pool->getBestSolutionValue(), hiobjd, hietavio);
   nlp_feas = isNLPFeasible2_(qpx, vio, node, hicvio);
 #if SPEW
-  logger_->MsgStream(LogDebug2) << me_ << std::endl 
+  logger_->msgStream(LogDebug2) << me_ << std::endl 
                                 << " hifrac = " << hifrac << std::endl
                                 << " hicvio = " << hicvio << std::endl
                                 << " hietavio = " << hietavio << std::endl
@@ -799,7 +799,7 @@ void QPDProcessor::chkObjVio_(double vio, double etaval, bool &large_vio)
     }
   }
 #if SPEW
-  logger_->MsgStream(LogDebug) << me_ << "etaval " << etaval
+  logger_->msgStream(LogDebug) << me_ << "etaval " << etaval
                               << " obj vio = " << vio
                               << " large_vio = " << large_vio << std::endl;
 #endif 
@@ -837,7 +837,7 @@ void QPDProcessor::chkVio_(NodePtr node, double *vio, double &tvio,
   }
 
 #if SPEW
-  logger_->MsgStream(LogDebug) << me_ << "id " << node->getId()
+  logger_->msgStream(LogDebug) << me_ << "id " << node->getId()
                               << " depth " << node->getDepth()
                               << " tvio " << tvio 
                               << " max vio = " << maxvio
@@ -859,7 +859,7 @@ void QPDProcessor::processRootNode(NodePtr node, RelaxationPtr rel,
   bool should_resolve = false;
 
 #if SPEW
-  logger_->MsgStream(LogDebug2) << me_ << "processing root node." << std::endl;
+  logger_->msgStream(LogDebug2) << me_ << "processing root node." << std::endl;
 #endif 
 
   ++stats_.proc;
@@ -875,7 +875,7 @@ void QPDProcessor::processRootNode(NodePtr node, RelaxationPtr rel,
   }
 
 #if SPEW
-  logger_->MsgStream(LogDebug2) << me_ << "branching in root node." << std::endl;
+  logger_->msgStream(LogDebug2) << me_ << "branching in root node." << std::endl;
 #endif 
   // get QP approx. for branching.
   setupQP_(sol);
@@ -885,7 +885,7 @@ void QPDProcessor::processRootNode(NodePtr node, RelaxationPtr rel,
     ++iter;
 
 #if SPEW
-  logger_->MsgStream(LogDebug) <<  me_ << "iteration " << iter 
+  logger_->msgStream(LogDebug) <<  me_ << "iteration " << iter 
                                << std::endl;
 #endif
 
@@ -918,7 +918,7 @@ void QPDProcessor::processRootNode(NodePtr node, RelaxationPtr rel,
         }
         should_resolve = true;
 #if SPEW
-        logger_->MsgStream(LogDebug2) << me_ << "brancher returned a mod" 
+        logger_->msgStream(LogDebug2) << me_ << "brancher returned a mod" 
                                       << std::endl;
 #endif
       }
@@ -945,7 +945,7 @@ void QPDProcessor::process(NodePtr node, RelaxationPtr rel,
   Int iter = 0;
 
 #if SPEW
-  logger_->MsgStream(LogDebug2) << me_ << "processing node " << node->getId()
+  logger_->msgStream(LogDebug2) << me_ << "processing node " << node->getId()
     << std::endl;
 #endif 
 
@@ -967,7 +967,7 @@ void QPDProcessor::process(NodePtr node, RelaxationPtr rel,
     ++iter;
 
 #if SPEW
-  logger_->MsgStream(LogDebug) <<  me_ << "iteration " << iter 
+  logger_->msgStream(LogDebug) <<  me_ << "iteration " << iter 
                                << std::endl;
 #endif
 
@@ -1000,7 +1000,7 @@ void QPDProcessor::process(NodePtr node, RelaxationPtr rel,
         }
         should_resolve = true;
 #if SPEW
-        logger_->MsgStream(LogDebug2) << me_ << "brancher returned a mod" 
+        logger_->msgStream(LogDebug2) << me_ << "brancher returned a mod" 
                                       << std::endl;
 #endif
       }
@@ -1030,7 +1030,7 @@ void QPDProcessor::saveSol_(ConstSolutionPtr sol, SolutionPoolPtr s_pool,
   s_pool->addSolution(sol);
   ++numSolutions_;
 #if SPEW
-  logger_->MsgStream(LogDebug2) << me_
+  logger_->msgStream(LogDebug2) << me_
     << "found solution with value " << sol->getObjValue()
     << std::endl;
 #endif 
@@ -1048,7 +1048,7 @@ void QPDProcessor::saveQPSol_(ConstSolutionPtr sol, SolutionPoolPtr s_pool,
     node->setStatus(NodeHitUb);
     ++stats_.ub;
 #if SPEW
-    logger_->MsgStream(LogDebug2) << me_ << "found solution with value " <<
+    logger_->msgStream(LogDebug2) << me_ << "found solution with value " <<
       sol2->getObjValue() << " sub-optimal!" << std::endl;
 #endif 
     updateObjCons_(sol2);
@@ -1058,13 +1058,13 @@ void QPDProcessor::saveQPSol_(ConstSolutionPtr sol, SolutionPoolPtr s_pool,
     node->setStatus(NodeOptimal);
     ++stats_.opt;
 #if SPEW
-    logger_->MsgStream(LogDebug2) << me_ << "found solution with value " <<
+    logger_->msgStream(LogDebug2) << me_ << "found solution with value " <<
       sol2->getObjValue() << std::endl;
 #endif 
     updateObjCons_(sol2);
   }
 #if SPEW
-  logger_->MsgStream(LogDebug2) << me_ << "pruning node " << std::endl;
+  logger_->msgStream(LogDebug2) << me_ << "pruning node " << std::endl;
 #endif 
 }
 #endif
@@ -1118,13 +1118,13 @@ void QPDProcessor::separate_(bool is_nec, ConstSolutionPtr sol,
       ++stats_.cuts;
       *status = SepaResolve;
 #if SPEW
-      logger_->MsgStream(LogDebug2) << me_ << "new inequality: ";
-      cnew->write(logger_->MsgStream(LogDebug2));
-      logger_->MsgStream(LogDebug2) << me_ << "lfvio = " << lfvio << std::endl;
+      logger_->msgStream(LogDebug2) << me_ << "new inequality: ";
+      cnew->write(logger_->msgStream(LogDebug2));
+      logger_->msgStream(LogDebug2) << me_ << "lfvio = " << lfvio << std::endl;
 #endif 
     } else {
 #if SPEW
-      //logger_->MsgStream(LogDebug2) << me_ << "linear inequality not violated"
+      //logger_->msgStream(LogDebug2) << me_ << "linear inequality not violated"
       //  << " activity = " << lf->eval(sol->getPrimal()) << " " 
       //  << c->getLb()-val << " " << c->getUb()-val << std::endl;
       //lf->write(std::cout);
@@ -1156,13 +1156,13 @@ void QPDProcessor::separate_(bool is_nec, ConstSolutionPtr sol,
       ++stats_.cuts;
       *status = SepaResolve;
 #if SPEW
-      logger_->MsgStream(LogDebug2) << me_ << "new obj inequality: ";
-      cnew->write(logger_->MsgStream(LogDebug2));
-      logger_->MsgStream(LogDebug2) << me_ << "lfvio = " << lfvio << std::endl;
+      logger_->msgStream(LogDebug2) << me_ << "new obj inequality: ";
+      cnew->write(logger_->msgStream(LogDebug2));
+      logger_->msgStream(LogDebug2) << me_ << "lfvio = " << lfvio << std::endl;
 #endif 
     } else {
 #if SPEW
-      logger_->MsgStream(LogDebug2) << me_ << "obj linear inequality not violated"
+      logger_->msgStream(LogDebug2) << me_ << "obj linear inequality not violated"
         << " activity = " << lf->eval(sol->getPrimal())
         << " val = " << val << std::endl;
 #endif 
@@ -1217,21 +1217,21 @@ void QPDProcessor::separateECP_(ConstSolutionPtr sol,
       ++stats_.cuts;
       *status = SepaResolve;
 #if SPEW
-      logger_->MsgStream(LogDebug2) << me_ << "new ECP inequality: ";
-      cnew->write(logger_->MsgStream(LogDebug2));
-      logger_->MsgStream(LogDebug2) << me_ << "lfvio = " << lfvio << std::endl;
+      logger_->msgStream(LogDebug2) << me_ << "new ECP inequality: ";
+      cnew->write(logger_->msgStream(LogDebug2));
+      logger_->msgStream(LogDebug2) << me_ << "lfvio = " << lfvio << std::endl;
 #endif 
     } else {
 #if SPEW
-      logger_->MsgStream(LogDebug2) << me_ << "ECP linear inequality not "
+      logger_->msgStream(LogDebug2) << me_ << "ECP linear inequality not "
         << "violated. activity = " << lf->eval(sol->getPrimal()) << " " 
         << c->getLb()-val << " " << c->getUb()-val << std::endl;
-      lf->write(logger_->MsgStream(LogDebug2));
-      logger_->MsgStream(LogDebug2) << "val = " << val << std::endl;
-      c->write(logger_->MsgStream(LogDebug2));
+      lf->write(logger_->msgStream(LogDebug2));
+      logger_->msgStream(LogDebug2) << "val = " << val << std::endl;
+      c->write(logger_->msgStream(LogDebug2));
       for (VarSetConstIterator vit=c->getFunction()->varsBegin();
            vit!=c->getFunction()->varsEnd(); ++vit) {
-        logger_->MsgStream(LogDebug2) << (*vit)->getName() << " " 
+        logger_->msgStream(LogDebug2) << (*vit)->getName() << " " 
           << sol->getPrimal()[(*vit)->getIndex()] << " rhs = " 
           << c->getUb() - val << std::endl;
       }
@@ -1266,13 +1266,13 @@ void QPDProcessor::separateObj_(ConstSolutionPtr sol, ConstSolutionPtr nlp_sol,
       ++stats_.cuts;
       *status = SepaResolve;
 #if SPEW
-      logger_->MsgStream(LogDebug2) << me_ << "new obj inequality: ";
-      cnew->write(logger_->MsgStream(LogDebug2));
-      logger_->MsgStream(LogDebug2) << me_ << "lfvio = " << lfvio << std::endl;
+      logger_->msgStream(LogDebug2) << me_ << "new obj inequality: ";
+      cnew->write(logger_->msgStream(LogDebug2));
+      logger_->msgStream(LogDebug2) << me_ << "lfvio = " << lfvio << std::endl;
 #endif 
     } else {
 #if SPEW
-      logger_->MsgStream(LogDebug2) << me_ << "obj linear inequality not violated"
+      logger_->msgStream(LogDebug2) << me_ << "obj linear inequality not violated"
         << " activity = " << lf->eval(sol->getPrimal())
         << " val = " << val << std::endl;
 #endif 
@@ -1307,14 +1307,14 @@ void QPDProcessor::setupQP_(ConstSolutionPtr sol)
 
   //sol->write(std::cout);
 #if SPEW
-  logger_->MsgStream(LogInfo) << me_ << "nlp optimal value = " 
+  logger_->msgStream(LogInfo) << me_ << "nlp optimal value = " 
                               << sol->getObjValue() << std::endl;
   for (ConstraintConstIterator it=p_->consBegin(); it!=p_->consEnd(); ++it) {
     c = *it;
     if (Linear == c->getFunction()->getType() || 
         Constant == c->getFunction()->getType()) {
     } else {
-      logger_->MsgStream(LogDebug2) << c->getName() << " " << c->getActivity(sol->getPrimal(), &err) << std::endl
+      logger_->msgStream(LogDebug2) << c->getName() << " " << c->getActivity(sol->getPrimal(), &err) << std::endl
        << c->getName() << " " << c->getFunction()->getNonlinearFunction()->eval(sol->getPrimal(), &err) << std::endl;
     }
   }
@@ -1377,7 +1377,7 @@ void QPDProcessor::setupQP_(ConstSolutionPtr sol)
       if (qf->getNumTerms()==0) {
         qf.reset();
 #if SPEW
-        logger_->MsgStream(LogInfo) << me_ << "qf is empty!" << std::endl; 
+        logger_->msgStream(LogInfo) << me_ << "qf is empty!" << std::endl; 
 #endif
       }
       symMatDotV(hess_nz, hess, irow, jcol, sol->getPrimal(), hdotx);
@@ -1408,7 +1408,7 @@ void QPDProcessor::setupQP_(ConstSolutionPtr sol)
       cnew = qp_->newConstraint(f, c->getLb(), c->getUb(), c->getName());
     } else {
 #if SPEW
-      logger_->MsgStream(LogDebug2) << me_ << "dual multiplier for constraint "
+      logger_->msgStream(LogDebug2) << me_ << "dual multiplier for constraint "
                                     << c->getName() << " = " 
                                     << sol->getDualOfCons()[c->getIndex()]
                                     << std::endl;
@@ -1446,7 +1446,7 @@ void QPDProcessor::setupQP_(ConstSolutionPtr sol)
   qp_->setNativeDer();
 
 #if SPEW
-  logger_->MsgStream(LogInfo) << me_ << "predicted value of f(qp) = " 
+  logger_->msgStream(LogInfo) << me_ << "predicted value of f(qp) = " 
                               << pred << std::endl
                               << "obj_const = " << obj_const << std::endl
                               << "zduals = " << zduals << std::endl;
@@ -1486,7 +1486,7 @@ bool QPDProcessor::shouldPrune_(NodePtr node, EngineStatus status,
 
    case (ProvenUnbounded):
      should_prune = false;
-     logger_->MsgStream(LogDebug2) << me_ << "relaxation is unbounded!" 
+     logger_->msgStream(LogDebug2) << me_ << "relaxation is unbounded!" 
                                    << std::endl;
      break;
 
@@ -1566,7 +1566,7 @@ bool QPDProcessor::shouldPruneQP_(NodePtr node, EngineStatus status,
 
    case (ProvenUnbounded):
      should_prune = false;
-     logger_->MsgStream(LogDebug2) << me_ << "relaxation is unbounded!" 
+     logger_->msgStream(LogDebug2) << me_ << "relaxation is unbounded!" 
                                    << std::endl;
      break;
 
@@ -1644,7 +1644,7 @@ void QPDProcessor::solveNLP_(ConstSolutionPtr &sol,
   sol = e_->getSolution();
   ++(stats_.nlp);
 #if SPEW
-  logger_->MsgStream(LogDebug) 
+  logger_->msgStream(LogDebug) 
     << me_ << "NLP status = " << e_->getStatusString() << std::endl 
     << me_ << "solution value = " << sol->getObjValue() << std::endl; 
 #endif 
@@ -1656,7 +1656,7 @@ void QPDProcessor::solveQP_(ConstSolutionPtr &sol, EngineStatus &qp_status)
   qp_status = qpe_->solve();
   sol = qpe_->getSolution();
 #if SPEW
-  logger_->MsgStream(LogDebug) 
+  logger_->msgStream(LogDebug) 
     << me_ << "QP status = " << qpe_->getStatusString() << std::endl 
     << me_ << "solution value = " << sol->getObjValue() << std::endl; 
 #endif 
@@ -1695,8 +1695,8 @@ void QPDProcessor::updateObjCons_(ConstSolutionPtr sol)
     if (sol->getObjValue() < ubCon_->getUb()-1e-5) {
       qp_->changeBound(ubCon_, Upper, sol->getObjValue()-1e-5);
 #if SPEW
-      logger_->MsgStream(LogDebug2) << me_ << "updated ub constraint: ";
-      ubCon_->write(logger_->MsgStream(LogDebug2));
+      logger_->msgStream(LogDebug2) << me_ << "updated ub constraint: ";
+      ubCon_->write(logger_->msgStream(LogDebug2));
 #endif 
     }
   } else {
@@ -1719,14 +1719,14 @@ void QPDProcessor::updateObjCons_(ConstSolutionPtr sol)
       f = (FunctionPtr) new Function(lf);
       ubCon_ = qp_->newConstraint(f, -INFINITY, sol->getObjValue()-1e-5, "ub_cons");
 #if SPEW
-      logger_->MsgStream(LogDebug2) << me_ << "new ub constraint: ";
-      ubCon_->write(logger_->MsgStream(LogDebug2));
+      logger_->msgStream(LogDebug2) << me_ << "new ub constraint: ";
+      ubCon_->write(logger_->msgStream(LogDebug2));
 #endif 
     } else {
       qp_->changeBound(eta_, Upper, sol->getObjValue()-1e-5);
 #if SPEW
-      logger_->MsgStream(LogDebug2) << me_ << "new ub constraint: ";
-      eta_->write(logger_->MsgStream(LogDebug2));
+      logger_->msgStream(LogDebug2) << me_ << "new ub constraint: ";
+      eta_->write(logger_->msgStream(LogDebug2));
 #endif 
     }
   }
@@ -1748,7 +1748,7 @@ bool QPDProcessor::isHFeasible2_(ConstSolutionPtr sol, bool &ishigh,
     }
   }
 #if SPEW
-  logger_->MsgStream(LogDebug2) << me_ << "is integer = " << is_feas
+  logger_->msgStream(LogDebug2) << me_ << "is integer = " << is_feas
     << std::endl;
 #endif 
 
@@ -1788,7 +1788,7 @@ void QPDProcessor::chkObjVio2_(const double *qpx, NodePtr node, double best,
   }
 
 #if SPEW
-  logger_->MsgStream(LogDebug2) << std::setprecision(6) << me_ 
+  logger_->msgStream(LogDebug2) << std::setprecision(6) << me_ 
                                 << " NLP obj at QPSOL = " << d
                                 << " best known = " << best
                                 << " node lb = " << node->getLb()
@@ -1812,7 +1812,7 @@ void QPDProcessor::chkObjVio2_(const double *qpx, NodePtr node, double best,
     }
   }
 #if SPEW
-  logger_->MsgStream(LogDebug2) << std::setprecision(6) << me_ 
+  logger_->msgStream(LogDebug2) << std::setprecision(6) << me_ 
                                 << " obj nlf value at QPSOL = " << d
                                 << " eta value at QPSOL = " << etaval
                                 << " vio = " << vio
@@ -1845,14 +1845,14 @@ bool QPDProcessor::isNLPFeasible2_(const double *qpx, double *vio,
     if (vio[i]>1e-5) {
       is_feas = false;
 #if SPEW
-      logger_->MsgStream(LogDebug2) << me_ << std::setprecision(6) 
+      logger_->msgStream(LogDebug2) << me_ << std::setprecision(6) 
         << "constraint " << c->getName()
         << " is violated, activity = " << act << " bounds = " << c->getLb() << " " << 
        c->getUb() << std::endl;
 #endif 
     }
 #if SPEW
-    logger_->MsgStream(LogDebug2) << me_ << "vio[" << i << "] = " << vio[i]
+    logger_->msgStream(LogDebug2) << me_ << "vio[" << i << "] = " << vio[i]
       << std::endl;
 #endif 
     if (isLargeCVio_(c, vio[i], depth)) {
@@ -1861,7 +1861,7 @@ bool QPDProcessor::isNLPFeasible2_(const double *qpx, double *vio,
   }
 
 #if SPEW
-  logger_->MsgStream(LogDebug) << me_ << "nonlinear constraints satisfied? = "
+  logger_->msgStream(LogDebug) << me_ << "nonlinear constraints satisfied? = "
                                << is_feas << std::endl
                                << me_ << "hicvio = " << hicvio << std::endl;
 #endif 
@@ -1956,13 +1956,13 @@ void QPDProcessor::separateC_(ConstSolutionPtr sol, ConstSolutionPtr nlp_sol,
       ++stats_.cuts;
       *status = SepaResolve;
 #if SPEW
-      logger_->MsgStream(LogDebug2) << me_ << "new ECP inequality: ";
-      cnew->write(logger_->MsgStream(LogDebug2));
-      logger_->MsgStream(LogDebug2) << me_ << "lfvio = " << lfvio << std::endl;
+      logger_->msgStream(LogDebug2) << me_ << "new ECP inequality: ";
+      cnew->write(logger_->msgStream(LogDebug2));
+      logger_->msgStream(LogDebug2) << me_ << "lfvio = " << lfvio << std::endl;
 #endif 
     } else {
 #if SPEW
-      logger_->MsgStream(LogDebug2) << me_ << "ECP linear inequality not "
+      logger_->msgStream(LogDebug2) << me_ << "ECP linear inequality not "
         << "violated. activity = " << lf->eval(sol->getPrimal()) << " " 
         << c->getLb()-val << " " << c->getUb()-val << std::endl;
 #endif 
@@ -1998,13 +1998,13 @@ void QPDProcessor::separateC_(ConstSolutionPtr sol, ConstSolutionPtr nlp_sol,
       ++stats_.cuts;
       *status = SepaResolve;
 #if SPEW
-      logger_->MsgStream(LogDebug2) << me_ << "new OA inequality: ";
-      cnew->write(logger_->MsgStream(LogDebug2));
-      logger_->MsgStream(LogDebug2) << me_ << "lfvio = " << lfvio << std::endl;
+      logger_->msgStream(LogDebug2) << me_ << "new OA inequality: ";
+      cnew->write(logger_->msgStream(LogDebug2));
+      logger_->msgStream(LogDebug2) << me_ << "lfvio = " << lfvio << std::endl;
 #endif 
     } else {
 #if SPEW
-      logger_->MsgStream(LogDebug2) << me_ << "OA linear inequality not "
+      logger_->msgStream(LogDebug2) << me_ << "OA linear inequality not "
         << "violated. activity = " << lf->eval(sol->getPrimal()) << " " 
         << c->getLb()-val << " " << c->getUb()-val << std::endl;
 #endif 
@@ -2041,13 +2041,13 @@ void QPDProcessor::separateO_(ConstSolutionPtr sol, ConstSolutionPtr nlp_sol,
     ++stats_.cuts;
     *status = SepaResolve;
 #if SPEW
-    logger_->MsgStream(LogDebug2) << me_ << "new ECP obj inequality: ";
-    cnew->write(logger_->MsgStream(LogDebug2));
-    logger_->MsgStream(LogDebug2) << me_ << "lfvio = " << lfvio << std::endl;
+    logger_->msgStream(LogDebug2) << me_ << "new ECP obj inequality: ";
+    cnew->write(logger_->msgStream(LogDebug2));
+    logger_->msgStream(LogDebug2) << me_ << "lfvio = " << lfvio << std::endl;
 #endif 
   } else {
 #if SPEW
-    logger_->MsgStream(LogDebug2) << me_ << "obj ECP linear inequality not violated"
+    logger_->msgStream(LogDebug2) << me_ << "obj ECP linear inequality not violated"
       << " activity = " << lf->eval(sol->getPrimal())
       << " val = " << val << std::endl;
 #endif 
@@ -2066,13 +2066,13 @@ void QPDProcessor::separateO_(ConstSolutionPtr sol, ConstSolutionPtr nlp_sol,
     ++stats_.cuts;
     *status = SepaResolve;
 #if SPEW
-    logger_->MsgStream(LogDebug2) << me_ << "new OA obj inequality: ";
-    cnew->write(logger_->MsgStream(LogDebug2));
-    logger_->MsgStream(LogDebug2) << me_ << "lfvio = " << lfvio << std::endl;
+    logger_->msgStream(LogDebug2) << me_ << "new OA obj inequality: ";
+    cnew->write(logger_->msgStream(LogDebug2));
+    logger_->msgStream(LogDebug2) << me_ << "lfvio = " << lfvio << std::endl;
 #endif 
   } else {
 #if SPEW
-    logger_->MsgStream(LogDebug2) << me_ << "obj OA linear inequality not violated"
+    logger_->msgStream(LogDebug2) << me_ << "obj OA linear inequality not violated"
       << " activity = " << lf->eval(sol->getPrimal())
       << " val = " << val << std::endl;
 #endif 

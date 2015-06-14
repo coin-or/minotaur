@@ -93,7 +93,7 @@ Branches MaxVioBrancher::findBranches(RelaxationPtr rel, NodePtr ,
       (*br_iter)->setBrCand(br_can);
     }
 #if SPEW
-  logger_->MsgStream(LogDebug) << me_ << "best candidate = "
+  logger_->msgStream(LogDebug) << me_ << "best candidate = "
                                << br_can->getName() 
                                << " Handler: "
                                << br_can->getHandler()->getName() << std::endl;
@@ -141,9 +141,9 @@ void MaxVioBrancher::findCandidates_(ModVector &mods, bool &should_prune)
   }
 
 #if SPEW
-  logger_->MsgStream(LogDebug) << me_ << "candidates: " << std::endl;
+  logger_->msgStream(LogDebug) << me_ << "candidates: " << std::endl;
   for (BrVarCandIter it=cands_.begin(); it!=cands_.end(); ++it) {
-    logger_->MsgStream(LogDebug)
+    logger_->msgStream(LogDebug)
         << std::setprecision(6) << (*it)->getName() << "\t" 
         << (*it)->getDDist() << "\t" << (*it)->getUDist()
         << std::endl;
@@ -199,11 +199,10 @@ void MaxVioBrancher::updateAfterLP(NodePtr , ConstSolutionPtr )
 }
 
 
-void MaxVioBrancher::writeStats()
+void MaxVioBrancher::writeStats(std::ostream &out) const
 {
   if (stats_) {
-    logger_->MsgStream(LogInfo) 
-      << me_ << "times called = " << stats_->calls << std::endl
+    out << me_ << "times called = " << stats_->calls << std::endl
       << me_ << "time in brancher = " << stats_->time << std::endl;
   }
 }

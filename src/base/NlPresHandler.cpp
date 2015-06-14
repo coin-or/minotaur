@@ -910,8 +910,8 @@ SolveStatus NlPresHandler::varBndsFromCons_(bool *changed)
           (*it)->applyToProblem(p_);
           ++stats_.vBnd;
 #if SPEW
-          logger_->MsgStream(LogDebug2) << me_ << " ";
-          (*it)->write(logger_->MsgStream(LogDebug2));
+          logger_->msgStream(LogDebug2) << me_ << " ";
+          (*it)->write(logger_->msgStream(LogDebug2));
 #endif
         }
         mods.clear();

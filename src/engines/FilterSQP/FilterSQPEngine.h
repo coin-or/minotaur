@@ -176,7 +176,7 @@ namespace Minotaur {
       void disableStrBrSetup();
 
       // Write statistics.
-      void writeStats();
+      void writeStats(std::ostream &out) const;
 
       // Get name.
       std::string getName() const;

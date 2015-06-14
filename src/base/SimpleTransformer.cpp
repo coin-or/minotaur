@@ -199,9 +199,9 @@ VariablePtr SimpleTransformer::newBilVar_(VariablePtr vl, VariablePtr vr)
       f = (FunctionPtr) new Function(lf, cg);
       cnew = newp_->newConstraint(f, 0.0, 0.0);
 #if SPEW
-      logger_->MsgStream(LogDebug) << me_ << "added new constraint"
+      logger_->msgStream(LogDebug) << me_ << "added new constraint"
                                    << std::endl;
-      cnew->write(logger_->MsgStream(LogDebug));
+      cnew->write(logger_->msgStream(LogDebug));
 #endif 
       qHandler_->addConstraint(cnew);
       yBiVars_->insert(ov, cg);
@@ -222,7 +222,7 @@ void SimpleTransformer::powKRef_(LinearFunctionPtr lfl,
   } else if (k<-zTol_) {
    assert(!"negative powers can not be handled yet!");
   } else if (fabs(k/2 - floor(k/2+0.5))>zTol_) {
-   logger_->ErrStream() << "odd powers can not be handled yet!" << std::endl;
+   logger_->errStream() << "odd powers can not be handled yet!" << std::endl;
   }
 
   if (lfl) {
@@ -289,9 +289,9 @@ void SimpleTransformer::recursRef_(const CNode *node, LinearFunctionPtr &lf,
     recursRef_(node->getR(), lfr, vr, dr);
 
     if (!lfl && !vl && !lfr && !vr && fabs(dl)<zTol_ && fabs(dr)<zTol_) {
-      logger_->MsgStream(LogDebug) << "seeing zero by zero" << std::endl;
+      logger_->msgStream(LogDebug) << "seeing zero by zero" << std::endl;
     } else if (!lfr && !vr && fabs(dr)<zTol_) {
-      logger_->MsgStream(LogDebug) << "seeing division by zero" << std::endl;
+      logger_->msgStream(LogDebug) << "seeing division by zero" << std::endl;
     } else if (!lfl && !vl && fabs(dl)<zTol_) {
       d = 0.0;
     } else if (!lfr && !vr && fabs(dr-1.0)<zTol_) {
@@ -490,9 +490,9 @@ void SimpleTransformer::refNonlinCons_(ConstProblemPtr oldp)
       cg = boost::dynamic_pointer_cast <CGraph> (f->getNonlinearFunction());
       assert(cg);
 #if SPEW
-      logger_->MsgStream(LogDebug) << me_ << "reformulating the constraint"
+      logger_->msgStream(LogDebug) << me_ << "reformulating the constraint"
                                    << std::endl;
-      c->write(logger_->MsgStream(LogDebug));
+      c->write(logger_->msgStream(LogDebug));
 #endif
       recursRef_(cg->getOut(), lf, v, d);
       if (lf) {
@@ -518,14 +518,14 @@ void SimpleTransformer::refNonlinCons_(ConstProblemPtr oldp)
             newp_->changeBound(v, Upper, ub);
           }
 #if SPEW
-          logger_->MsgStream(LogDebug) << me_ << "new bounds on variable "
+          logger_->msgStream(LogDebug) << me_ << "new bounds on variable "
                                        << std::endl;
-          v->write(logger_->MsgStream(LogDebug));
+          v->write(logger_->msgStream(LogDebug));
 #endif 
         } else if ((lf2->getNumTerms()==0) &&
                    (d > c->getUb()+zTol_ ||
                     d < c->getLb()-zTol_)) {
-            logger_->MsgStream(LogInfo) << me_ << "problem infeasible." << std::endl;
+            logger_->msgStream(LogInfo) << me_ << "problem infeasible." << std::endl;
           }
       } else if (v) {
           lf2->incTerm(v, 1.0);
@@ -571,9 +571,9 @@ void SimpleTransformer::refNonlinObj_(ConstProblemPtr oldp)
     }
     cg = boost::dynamic_pointer_cast <CGraph> (f->getNonlinearFunction());
 #if SPEW
-    logger_->MsgStream(LogDebug) << me_ << "reformulating the objective"
+    logger_->msgStream(LogDebug) << me_ << "reformulating the objective"
       << std::endl;
-    obj->write(logger_->MsgStream(LogDebug));
+    obj->write(logger_->msgStream(LogDebug));
 #endif
     recursRef_(cg->getOut(), lf, v, d);
     if (lf) {
@@ -595,7 +595,7 @@ void SimpleTransformer::refNonlinObj_(ConstProblemPtr oldp)
     } else {
       f2.reset();
       obj = newp_->newObjective(f2, d, Minimize);
-      logger_->MsgStream(LogDebug)
+      logger_->msgStream(LogDebug)
         << "Problem objective reduced to a constant" << std::endl;
     }
   } // else the other case is already handled in copyLinear_()

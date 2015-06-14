@@ -83,7 +83,7 @@ void NLPMultiStart::constructInitial_(double* a, const double* b, double rho,
   }
 
 #if SPEW
-    logger_->MsgStream(LogDebug) << me_ << "rho = " << rho << std::endl;
+    logger_->msgStream(LogDebug) << me_ << "rho = " << rho << std::endl;
 #endif
 
   // find how far we need to go.
@@ -104,7 +104,7 @@ void NLPMultiStart::constructInitial_(double* a, const double* b, double rho,
   random_ -= n;
 
 #if SPEW
-  logger_->MsgStream(LogDebug2)
+  logger_->msgStream(LogDebug2)
     << me_ << "distance to new point = " 
     <<  getDistance(a-n, b-n, n)
     << std::endl;
@@ -151,7 +151,7 @@ void NLPMultiStart::solve(NodePtr, RelaxationPtr, SolutionPoolPtr s_pool)
       std::copy(sol->getPrimal(), sol->getPrimal() + n, prev_feasible); 
       ++(stats_.numImprove);
 #if SPEW
-      logger_->MsgStream(LogDebug) << me_ << "Better solution " 
+      logger_->msgStream(LogDebug) << me_ << "Better solution " 
         << stats_.bestObjValue << std::endl;
 #endif
     } else if ((ProvenInfeasible==status || ProvenLocalInfeasible==status ||
@@ -165,7 +165,7 @@ void NLPMultiStart::solve(NodePtr, RelaxationPtr, SolutionPoolPtr s_pool)
       constructInitial_(initial_point, prev_feasible, rho, n);
       ++(stats_.numInfeas);
 #if SPEW
-      logger_->MsgStream(LogDebug) << me_ 
+      logger_->msgStream(LogDebug) << me_ 
         << "Engine status = " << status << std::endl
         << me_
         << "Optimal solution no better than best known " << sol->getObjValue()  
@@ -178,11 +178,11 @@ void NLPMultiStart::solve(NodePtr, RelaxationPtr, SolutionPoolPtr s_pool)
       // use previously found feasible solution
       constructInitial_(initial_point, prev_feasible, rho, n);       
 #if SPEW
-      logger_->MsgStream(LogDebug) << me_ << "Unbounded." << std::endl;
+      logger_->msgStream(LogDebug) << me_ << "Unbounded." << std::endl;
 #endif
     } else { 
 #if SPEW
-      logger_->MsgStream(LogDebug) << me_ << "Solution found is not optimal" 
+      logger_->msgStream(LogDebug) << me_ << "Solution found is not optimal" 
         << " solution value = " <<  sol->getObjValue() << std::endl; 
 #endif
     }
@@ -200,10 +200,9 @@ void NLPMultiStart::solve(NodePtr, RelaxationPtr, SolutionPoolPtr s_pool)
 }
 
 
-void NLPMultiStart::writeStats()
+void NLPMultiStart::writeStats(std::ostream &out) const
 {
-  logger_->MsgStream(LogInfo)
-    << me_ << " number of nlps solved                 = " 
+  out << me_ << " number of nlps solved                 = " 
     << stats_.numNLPs << std::endl
     << me_ << " number of Infeasible solves           = " 
     << stats_.numInfeas << std::endl

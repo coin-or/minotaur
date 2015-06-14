@@ -558,9 +558,9 @@ EngineStatus IpoptEngine::solve()
   }
 
 #if SPEW
-  logger_->MsgStream(LogDebug) << "Ipopt: time taken = " << timer_->query() 
+  logger_->msgStream(LogDebug) << "Ipopt: time taken = " << timer_->query() 
     << std::endl;
-  logger_->MsgStream(LogDebug) << "Ipopt: Ipopt's status = " << status 
+  logger_->msgStream(LogDebug) << "Ipopt: Ipopt's status = " << status 
     << std::endl;
 #endif
   //exit(0);
@@ -585,7 +585,7 @@ EngineStatus IpoptEngine::solve()
      status_ = EngineIterationLimit;
      break;
    case Ipopt::Restoration_Failed :  // don't know what else to do.
-     logger_->MsgStream(LogInfo) << "Ipopt: restoration failed, "
+     logger_->msgStream(LogInfo) << "Ipopt: restoration failed, "
        << "assuming local infeasible." << std::endl;
      status_ = ProvenLocalInfeasible;
      sol_ = mynlp_->getSolution();
@@ -612,7 +612,7 @@ EngineStatus IpoptEngine::solve()
    case Ipopt::Insufficient_Memory:
    case Ipopt::Internal_Error:
    default:
-     logger_->MsgStream(LogNone) << "Ipopt: error reported." << std::endl;
+     logger_->msgStream(LogNone) << "Ipopt: error reported." << std::endl;
      status_ = EngineError;
   }
   if (prepareWs_) {
@@ -625,17 +625,17 @@ EngineStatus IpoptEngine::solve()
   // anything returns an empty Statistics object.
   UInt iters = (Ipopt::IsValid(stats)) ? stats->IterationCount() : 0;
 #if SPEW
-  logger_->MsgStream(LogDebug) << "Ipopt: solve number = " << stats_->calls
+  logger_->msgStream(LogDebug) << "Ipopt: solve number = " << stats_->calls
     << std::endl;
-  logger_->MsgStream(LogDebug) << "Ipopt: number of iterations = " << iters 
+  logger_->msgStream(LogDebug) << "Ipopt: number of iterations = " << iters 
     << std::endl;
-  logger_->MsgStream(LogDebug) << "Ipopt: status = " << getStatusString() 
+  logger_->msgStream(LogDebug) << "Ipopt: status = " << getStatusString() 
     << std::endl;
-  logger_->MsgStream(LogDebug) << "Ipopt: obj = ";
+  logger_->msgStream(LogDebug) << "Ipopt: obj = ";
   if (sol_) {
-    logger_->MsgStream(LogDebug) << mynlp_->getSolutionValue() << std::endl;
+    logger_->msgStream(LogDebug) << mynlp_->getSolutionValue() << std::endl;
   } else {
-    logger_->MsgStream(LogDebug) << 1e40 << std::endl;
+    logger_->msgStream(LogDebug) << 1e40 << std::endl;
   }
 #endif 
   if (true == strBr_) {
@@ -747,7 +747,7 @@ void IpoptEngine::loadFromWarmStart(const WarmStartPtr ws)
     // now create a full copy.
     ws_ = (IpoptWarmStartPtr) new IpoptWarmStart(ws2);
     if (!useWs_) {
-      logger_->MsgStream(LogInfo) << "setWarmStart() method is called but"
+      logger_->msgStream(LogInfo) << "setWarmStart() method is called but"
         " warm-start is not enabled." << std::endl;
     }
   } else {
@@ -794,12 +794,11 @@ std::string IpoptEngine::getName() const
 }
 
 
-void IpoptEngine::writeStats() 
+void IpoptEngine::writeStats(std::ostream &out) const 
 {
   if (stats_) {
     std::string me = "Ipopt: ";
-    logger_->MsgStream(LogInfo) 
-      << me << "total calls            = " << stats_->calls << std::endl
+    out << me << "total calls            = " << stats_->calls << std::endl
       << me << "strong branching calls = " << stats_->strCalls << std::endl
       << me << "total time in solving  = " << stats_->time  << std::endl
       << me << "total time in presolve = " << stats_->ptime  << std::endl

@@ -37,6 +37,9 @@ namespace Minotaur {
       /// Get the logger that is setup for the whole environment.
       LoggerPtr getLogger() const;
 
+      /// Get the current log level
+      LogLevel getLogLevel() const;
+
       /// Get a new timer. The calling function has to free this timer.
       Timer *getNewTimer();
 
@@ -68,6 +71,9 @@ namespace Minotaur {
 
       /// Read options from a string.
       void readOptions(const std::string &str);
+
+      /// Set the log level of the default logger
+      void setLogLevel(LogLevel l);
 
       /**
        * \brief Start a 'global' timer that can be queried for the total time used
@@ -107,10 +113,14 @@ namespace Minotaur {
       TimerFactory *timerFac_;
 
       /// Add an option to the database.
-      void convertAndAddOneOption_(BoolOptionPtr &b_option, 
-          IntOptionPtr &i_option, DoubleOptionPtr &d_option, 
-          StringOptionPtr &s_option, FlagOptionPtr &f_option, std::string &name,
-          std::string &value);
+      void convertAndAddOneOption_(BoolOptionPtr &b_option,
+                                   IntOptionPtr &i_option,
+                                   DoubleOptionPtr &d_option,
+                                   StringOptionPtr &s_option,
+                                   FlagOptionPtr &f_option,
+                                   std::string &name,
+                                   std::string &value,
+                                   std::ostringstream &logstr);
         
       /// Create default set of options
       void createDefaultOptions_();

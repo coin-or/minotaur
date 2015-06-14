@@ -159,7 +159,7 @@ NodePtr BranchAndBound::processRoot_(bool *should_prune, bool *should_dive)
   Branches branches;
   WarmStartPtr ws;
 #if SPEW
-  logger_->MsgStream(LogDebug) << me_ << "creating root node" << 
+  logger_->msgStream(LogDebug) << me_ << "creating root node" << 
     std::endl;
 #endif
   tm_->insertRoot(current_node);
@@ -173,7 +173,7 @@ NodePtr BranchAndBound::processRoot_(bool *should_prune, bool *should_dive)
 
   // solve the root node
 #if SPEW
-  logger_->MsgStream(LogDebug) << me_ << "processing root node" << 
+  logger_->msgStream(LogDebug) << me_ << "processing root node" << 
     std::endl;
 #endif
   nodePrcssr_->processRootNode(current_node, rel, solPool_);
@@ -188,7 +188,7 @@ NodePtr BranchAndBound::processRoot_(bool *should_prune, bool *should_dive)
     tm_->pruneNode(current_node);
   } else {
 #if SPEW
-    logger_->MsgStream(LogDebug1) << me_ << "branching in root" << 
+    logger_->msgStream(LogDebug1) << me_ << "branching in root" << 
       std::endl;
 #endif
     // branch.
@@ -216,7 +216,7 @@ NodePtr BranchAndBound::processRoot_(bool *should_prune, bool *should_dive)
 
 void BranchAndBound::setLogLevel(LogLevel level) 
 {
-  logger_->SetMaxLevel(level);
+  logger_->setMaxLevel(level);
 }
 
 
@@ -277,7 +277,7 @@ bool BranchAndBound::shouldStop_()
   if (tm_->getGap() < 0.0) {
     stop_bnb = true;
     status_ = SolvedOptimal;
-    logger_->MsgStream(LogInfo)
+    logger_->msgStream(LogInfo)
       << me_ << "threshold gap has been achieved" << std::endl
       << me_ << "gap = " << tm_->getGap() << std::endl;
   } else if (false) {//TODO: stuck in some wiered position
@@ -304,14 +304,15 @@ void BranchAndBound::showStatus_(bool current_uncounted)
     off=1;
   }
   if (timer_->query()-stats_->updateTime > options_->logInterval) {
-    logger_->MsgStream(LogInfo) 
+    logger_->msgStream(LogInfo) 
       << me_ 
       << std::fixed
-      << std::setprecision(2)  << "time = "            << timer_->query()
+      << std::setprecision(1)  << "time = "            << timer_->query()
       << std::setprecision(4)  << " lb = "             << tm_->updateLb()
       << std::setprecision(4)  << " ub = "             << tm_->getUb()
+      << std::setprecision(2)  << " gap% = "           << tm_->getGap()
       << " nodes processed = " << tm_->getSize()-tm_->getActiveNodes()-off 
-      << " nodes left = "      << tm_->getActiveNodes()+off
+      << " left = "            << tm_->getActiveNodes()+off
       << std::endl;
     stats_->updateTime = timer_->query();
   }
@@ -331,11 +332,13 @@ void BranchAndBound::solve()
 
   // initialize timer
   timer_->start();
+  logger_->msgStream(LogInfo) << me_ << "starting branch-and-bound"
+    << std::endl;
 
   // get problem size and statistics to detect problem type.
   problem_->calculateSize();
 #if SPEW
-  problem_->writeSize(logger_->MsgStream(LogInfo));
+  problem_->writeSize(logger_->msgStream(LogExtraInfo));
 #endif
 
   // initialize statistics
@@ -368,7 +371,7 @@ void BranchAndBound::solve()
       status_ = SolvedInfeasible; 
     }
 #if SPEW
-    logger_->MsgStream(LogDebug) << me_ << "stopping after root node "
+    logger_->msgStream(LogDebug) << me_ << "stopping after root node "
       << std::endl;
 #endif
     should_stop = true;
@@ -377,7 +380,7 @@ void BranchAndBound::solve()
     should_stop = true;
   } else {
 #if SPEW
-    logger_->MsgStream(LogDebug) << std::setprecision(8)
+    logger_->msgStream(LogDebug) << std::setprecision(8)
       << me_ << "lb = " << tm_->updateLb() << std::endl
       << me_ << "ub = " << tm_->getUb() << std::endl;
 #endif
@@ -387,7 +390,7 @@ void BranchAndBound::solve()
   // solve root outside the loop. save the useful information.
   while(should_stop == false) {
 #if SPEW
-    logger_->MsgStream(LogDebug1) << me_ << "processing node "
+    logger_->msgStream(LogDebug1) << me_ << "processing node "
       << current_node->getId() << std::endl
       << me_ << "depth = " << current_node->getDepth() << std::endl
       << me_ << "did we dive = " << dived_prev << std::endl;
@@ -400,7 +403,7 @@ void BranchAndBound::solve()
 
     ++stats_->nodesProc;
 #if SPEW
-    logger_->MsgStream(LogDebug1) << me_ << "node lower bound = " << 
+    logger_->msgStream(LogDebug1) << me_ << "node lower bound = " << 
       current_node->getLb() << std::endl;
 #endif
 
@@ -411,7 +414,7 @@ void BranchAndBound::solve()
     should_prune = shouldPrune_(current_node);
     if (should_prune) {
 #if SPEW
-      logger_->MsgStream(LogDebug1) << me_ << "node pruned" << 
+      logger_->msgStream(LogDebug1) << me_ << "node pruned" << 
         std::endl;
 #endif
       nodeRlxr_->reset(current_node, false);
@@ -423,7 +426,7 @@ void BranchAndBound::solve()
       dived_prev = false;
     } else {
 #if SPEW
-      logger_->MsgStream(LogDebug1) << me_ << "branching" << 
+      logger_->msgStream(LogDebug1) << me_ << "branching" << 
         std::endl;
 #endif
       branches = nodePrcssr_->getBranches();
@@ -461,7 +464,7 @@ void BranchAndBound::solve()
         status_ = SolvedInfeasible; // TODO: get the right status
       }
 #if SPEW
-      logger_->MsgStream(LogDebug) << me_ << "all nodes have "
+      logger_->msgStream(LogDebug) << me_ << "all nodes have "
         << "been processed" << std::endl;
 #endif
       break;
@@ -470,30 +473,31 @@ void BranchAndBound::solve()
       break;
     } else {
 #if SPEW
-      logger_->MsgStream(LogDebug) << std::setprecision(8)
+      logger_->msgStream(LogDebug) << std::setprecision(8)
         << me_ << "lb = " << tm_->updateLb() << std::endl 
         << me_ << "ub = " << tm_->getUb() << std::endl;
 #endif
     }
   } 
+  logger_->msgStream(LogInfo) << me_ << "stopping branch-and-bound"
+    << std::endl;
   stats_->timeUsed = timer_->query();
   timer_->stop();
 }
 
 
-void BranchAndBound::writeStats()
+void BranchAndBound::writeStats(std::ostream &out)
 {
-  logger_->MsgStream(LogInfo)
-    << me_ << "time taken      = " << std::fixed << std::setprecision(2)
+  out << me_ << "time taken      = " << std::fixed << std::setprecision(2)
     << stats_->timeUsed << std::endl
     << me_ << "nodes processed = " << stats_->nodesProc << std::endl
     << me_ << "nodes created   = " << tm_->getSize() << std::endl;
-  nodePrcssr_->writeStats();
-  nodePrcssr_->getBrancher()->writeStats();
+  nodePrcssr_->writeStats(out);
+  nodePrcssr_->getBrancher()->writeStats(out);
   for (HeurVector::iterator it=preHeurs_.begin(); it!=preHeurs_.end(); ++it) {
-    (*it)->writeStats();
+    (*it)->writeStats(out);
   }
-  solPool_->writeStats(logger_->MsgStream(LogInfo));
+  solPool_->writeStats(out);
 }
 
 
@@ -532,7 +536,7 @@ BabOptions::BabOptions(EnvPtr env)
   OptionDBPtr options = env->getOptions();
 
   logInterval = options->findDouble("bnb_log_interval")->getValue();
-  logLevel    = (LogLevel) options->findInt("bnb_log_level")->getValue();
+  logLevel    = (LogLevel) options->findInt("log_level")->getValue();
   nodeLimit   = options->findInt("bnb_node_limit")->getValue();
   solLimit    = options->findInt("bnb_sol_limit")->getValue();
   timeLimit   = options->findDouble("bnb_time_limit")->getValue();

@@ -72,7 +72,7 @@ bool IntVarHandler::isFeasible(ConstSolutionPtr sol, RelaxationPtr relaxation,
       if (fabs(value - floor(value+0.5)) > intTol_) {
         is_feas = false;
 #if SPEW
-        logger_->MsgStream(LogDebug) << me_ << "variable " <<
+        logger_->msgStream(LogDebug) << me_ << "variable " <<
           (*v_iter)->getName() << " has fractional value = " << value <<
           std::endl;
 #endif
@@ -81,7 +81,7 @@ bool IntVarHandler::isFeasible(ConstSolutionPtr sol, RelaxationPtr relaxation,
     }
   }
 #if SPEW
-  logger_->MsgStream(LogDebug) << me_ << "is_feas = " << is_feas << std::endl;
+  logger_->msgStream(LogDebug) << me_ << "is_feas = " << is_feas << std::endl;
 #endif
   return is_feas;
 }

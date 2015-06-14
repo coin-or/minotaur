@@ -267,9 +267,9 @@ VariablePtr Transformer::newVar_(VariablePtr iv, double d, ProblemPtr newp)
       f = (FunctionPtr) new Function(lf);
       cnew = newp->newConstraint(f, -d, -d);
 #if SPEW
-      logger_->MsgStream(LogDebug) << me_ << "added new constraint "
+      logger_->msgStream(LogDebug) << me_ << "added new constraint "
                                    << std::endl;
-      cnew->write(logger_->MsgStream(LogDebug));
+      cnew->write(logger_->msgStream(LogDebug));
 #endif 
       lHandler_->addConstraint(cnew);
     }
@@ -294,9 +294,9 @@ VariablePtr Transformer::newVar_(LinearFunctionPtr lf, double d,
     f = (FunctionPtr) new Function(lf);
     cnew = newp->newConstraint(f, -d, -d);
 #if SPEW
-    logger_->MsgStream(LogDebug) << me_ << "added new constraint "
+    logger_->msgStream(LogDebug) << me_ << "added new constraint "
                                  << std::endl;
-    cnew->write(logger_->MsgStream(LogDebug));
+    cnew->write(logger_->msgStream(LogDebug));
 #endif 
 
     lHandler_->addConstraint(cnew);
@@ -325,9 +325,9 @@ VariablePtr Transformer::newVar_(CGraphPtr cg, ProblemPtr newp)
     f = (FunctionPtr) new Function(lf, cg);
     cnew = newp->newConstraint(f, 0.0, 0.0);
 #if SPEW
-      logger_->MsgStream(LogDebug) << me_ << "added new constraint "
+      logger_->msgStream(LogDebug) << me_ << "added new constraint "
                                    << std::endl;
-      cnew->write(logger_->MsgStream(LogDebug));
+      cnew->write(logger_->msgStream(LogDebug));
 #endif 
     assignHandler_(cg, cnew);
 

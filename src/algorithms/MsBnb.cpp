@@ -23,6 +23,7 @@
 #include "LexicoBrancher.h"
 #include "LinearHandler.h"
 #include "LinFeasPump.h"
+#include "Logger.h"
 #include "LPEngine.h"
 #include "LPProcessor.h"
 #include "MaxFreqBrancher.h"
@@ -130,7 +131,7 @@ BranchAndBound* createBab(EnvPtr env, ProblemPtr p, EnginePtr e,
   bab->setNodeRelaxer(nr);
   bab->shouldCreateRoot(false);
 
-  if (0 <= options->findInt("Divheur")->getValue()) {
+  if (0 <= options->findInt("divheur")->getValue()) {
     MINLPDivingPtr div_heur;
     EnginePtr e2 = e->emptyCopy();
     if (true==options->findBool("use_native_cgraph")->getValue() ||
@@ -499,10 +500,10 @@ int main(int argc, char** argv)
 
   bab = createBab(env, oinst, engine, handlers);
   bab->solve();
-  bab->writeStats();
-  engine->writeStats();
+  bab->writeStats(env->getLogger()->msgStream(LogExtraInfo));
+  engine->writeStats(env->getLogger()->msgStream(LogExtraInfo));
   for (HandlerVector::iterator it=handlers.begin(); it!=handlers.end(); ++it) {
-    (*it)->writeStats(std::cout);
+    (*it)->writeStats(env->getLogger()->msgStream(LogExtraInfo));
   }
   
   writeSol(env, orig_v, pres, bab->getSolution(), bab->getStatus(), iface);

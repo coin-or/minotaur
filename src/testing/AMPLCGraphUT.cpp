@@ -56,6 +56,7 @@ void AMPLCGraphUT::setUp()
 {
   Minotaur::EnvPtr env = (Minotaur::EnvPtr) new Minotaur::Environment();
   env->getOptions()->findInt("ampl_log_level")->setValue(Minotaur::LogNone);
+  env->setLogLevel(Minotaur::LogError);
   iface_ = (AMPLInterfacePtr) new AMPLInterface(env);
   env->getOptions()->findBool("use_native_cgraph")->setValue(true);
 }
@@ -479,6 +480,7 @@ void AMPLCGraphUT::testNl()
 {
   Minotaur::EnvPtr env = (Minotaur::EnvPtr) new Minotaur::Environment();
   env->getOptions()->findBool("use_native_cgraph")->setValue(true);
+  env->setLogLevel(Minotaur::LogError);
   AMPLInterface iface(env);
   Minotaur::Double x[5] = {1.0,5,1.0,5,1.0};
   Minotaur::Double h[4] = {0.0,0.0,0.0,0.0};

@@ -73,8 +73,8 @@ namespace Minotaur {
        */
       virtual void updateAfterLP(NodePtr node, ConstSolutionPtr sol);
 
-      /// Write statistics to the logger.
-      virtual void writeStats() = 0;
+      /// Write statistics to the given out stream.
+      virtual void writeStats(std::ostream &) const {};
 
     protected:
       /// Log manager.

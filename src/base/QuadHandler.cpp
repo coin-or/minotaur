@@ -219,7 +219,7 @@ Branches QuadHandler::getBranches(BrCandPtr cand, DoubleVector &x,
   branches->push_back(branch);
 
 #if SPEW
-  logger_->MsgStream(LogDebug2) << me_ << "branching on " << v->getName()
+  logger_->msgStream(LogDebug2) << me_ << "branching on " << v->getName()
                                        << " <= " << value << " or " 
                                        << " >= " << value << std::endl;
 #endif
@@ -248,7 +248,7 @@ void QuadHandler::getBranchingCandidates(RelaxationPtr rel,
     yval = x[x1->getIndex()];
     if ((yval - x0val*x0val)/(fabs(yval)+1e-6)>1e-4) {
 #if SPEW
-      logger_->MsgStream(LogDebug2) << std::setprecision(9) << me_ 
+      logger_->msgStream(LogDebug2) << std::setprecision(9) << me_ 
         << "branching candidate for x^2: " << s_it->first->getName()
         << " value = " << x0val << " aux var: " 
         << s_it->second->y->getName() 
@@ -323,7 +323,7 @@ void QuadHandler::getBranchingCandidates(RelaxationPtr rel,
           br_can->setDist(ddist+br_can->getDDist(), udist+br_can->getUDist());
         }
 #if SPEW
-      logger_->MsgStream(LogDebug2) << std::setprecision(9) << me_ 
+      logger_->msgStream(LogDebug2) << std::setprecision(9) << me_ 
         << "branching candidate for x0x1: " << x0->getName()
         << " = " << x0val << " " << x1->getName() << " = " << x1val 
         << " " << bil->getY()->getName() << " = " << yval << " vio = " 
@@ -332,25 +332,25 @@ void QuadHandler::getBranchingCandidates(RelaxationPtr rel,
       }
       if (false==check) {
         int err;
-        logger_->MsgStream(LogError) << std::setprecision(15) << me_ 
+        logger_->msgStream(LogError) << std::setprecision(15) << me_ 
          << "both variables are at bounds, but we still want to branch on "
          << "a bilinear constraint. " << x0->getName() 
          << " = " << x0val << " " << x1->getName() 
          << " = " << x1val << " " << bil->getY()->getName() 
          << " = " << yval  << " product = " << x0val*x1val << std::endl;
-        logger_->MsgStream(LogDebug) << bil->getC0()->getActivity(&(x[0]),
+        logger_->msgStream(LogDebug) << bil->getC0()->getActivity(&(x[0]),
                                                                   &err) << " ";
-        bil->getC0()->write(logger_->MsgStream(LogDebug)); 
+        bil->getC0()->write(logger_->msgStream(LogDebug)); 
 
-        logger_->MsgStream(LogDebug) << bil->getC1()->getActivity(&(x[0]),
+        logger_->msgStream(LogDebug) << bil->getC1()->getActivity(&(x[0]),
                                                                   &err) << " " ;
-        bil->getC1()->write(logger_->MsgStream(LogDebug));
-        logger_->MsgStream(LogDebug) << bil->getC2()->getActivity(&(x[0]),
+        bil->getC1()->write(logger_->msgStream(LogDebug));
+        logger_->msgStream(LogDebug) << bil->getC2()->getActivity(&(x[0]),
                                                                   &err) << " " ;
-        bil->getC2()->write(logger_->MsgStream(LogDebug));
-        logger_->MsgStream(LogDebug) << bil->getC3()->getActivity(&(x[0]),
+        bil->getC2()->write(logger_->msgStream(LogDebug));
+        logger_->msgStream(LogDebug) << bil->getC3()->getActivity(&(x[0]),
                                                                   &err) << " " ;
-        bil->getC3()->write(logger_->MsgStream(LogDebug));
+        bil->getC3()->write(logger_->msgStream(LogDebug));
       }
     }
   }
@@ -499,7 +499,7 @@ LinearFunctionPtr QuadHandler::getNewSqLf_(VariablePtr x, VariablePtr y,
     lf = (LinearFunctionPtr) new LinearFunction();
     lf->addTerm(y, 1.);
 #if SPEW
-    logger_->MsgStream(LogDebug) << me_ << 
+    logger_->msgStream(LogDebug) << me_ << 
       "warning: generating a bound as a secant constraint." << std::endl;
 #endif
   }
@@ -526,12 +526,12 @@ void QuadHandler::addCut_(VariablePtr x, VariablePtr y,
     ifcuts = true;
     ++sStats_.cuts;
 #if SPEW
-    logger_->MsgStream(LogDebug2) << me_ << "new cut added" << std::endl;
-    c->write(logger_->MsgStream(LogDebug2));
+    logger_->msgStream(LogDebug2) << me_ << "new cut added" << std::endl;
+    c->write(logger_->msgStream(LogDebug2));
 #endif
   } else {
 #if SPEW
-    logger_->MsgStream(LogDebug2) << me_ << "Not adding cut because of "
+    logger_->msgStream(LogDebug2) << me_ << "Not adding cut because of "
                                   << "insufficient violation "
                                   << 2*xl*xval - yval - xl*xl << std::endl;
 #endif
@@ -567,7 +567,7 @@ bool QuadHandler::isFeasible(ConstSolutionPtr sol, RelaxationPtr , bool &,
     }
   }
 #if SPEW
-  logger_->MsgStream(LogDebug2) << me_ << "no branching candidates for y=x^2" 
+  logger_->msgStream(LogDebug2) << me_ << "no branching candidates for y=x^2" 
                                 << std::endl;
 #endif
 
@@ -579,7 +579,7 @@ bool QuadHandler::isFeasible(ConstSolutionPtr sol, RelaxationPtr , bool &,
   }
 
 #if SPEW
-  logger_->MsgStream(LogDebug2) << me_ << "no branching candidates for y=x1x2" 
+  logger_->msgStream(LogDebug2) << me_ << "no branching candidates for y=x1x2" 
                                 << std::endl;
 #endif
   return is_feas;
@@ -890,7 +890,7 @@ void QuadHandler::separate(ConstSolutionPtr sol, NodePtr , RelaxationPtr rel,
     if (xval*xval > (1.0+1e-4)*fabs(yval) &&
        fabs(xval*xval-yval) > 1e-5) {
 #if SPEW
-      logger_->MsgStream(LogDebug2) << me_ << "xval = " << xval
+      logger_->msgStream(LogDebug2) << me_ << "xval = " << xval
                                     << " yval = " << yval << " violation = "
                                     << xval*xval-yval << std::endl;
 #endif

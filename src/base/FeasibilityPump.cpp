@@ -152,26 +152,26 @@ void FeasibilityPump::constructObj_(ProblemPtr prob, ConstSolutionPtr)
         lf->addTerm(variable, -1.0);
         constant += ub;
 #if SPEW
-        logger_->MsgStream(LogDebug2) << me_ << "Including variable for UB"
+        logger_->msgStream(LogDebug2) << me_ << "Including variable for UB"
           << std::endl;
-        variable->write(logger_->MsgStream(LogDebug2));
+        variable->write(logger_->msgStream(LogDebug2));
 #endif
       } else if (fabs(value - ub) > intTol_) {
         lf->addTerm(variable, 1.0);
         constant -= lb;
 #if SPEW
-        logger_->MsgStream(LogDebug2) << me_ << "Including variable for LB"
+        logger_->msgStream(LogDebug2) << me_ << "Including variable for LB"
           << std::endl;
-        variable->write(logger_->MsgStream(LogDebug2));
+        variable->write(logger_->msgStream(LogDebug2));
 #endif
       } else {
         // add a new variable with coeff 1
         // add two constraints for absolute value
         lf->addTerm(variable, 0);
 #if SPEW
-        logger_->MsgStream(LogDebug2) << me_ << "Including absolute value"
+        logger_->msgStream(LogDebug2) << me_ << "Including absolute value"
           << std::endl;
-        variable->write(logger_->MsgStream(LogDebug2));
+        variable->write(logger_->msgStream(LogDebug2));
 #endif
       }      
     }
@@ -208,13 +208,13 @@ void FeasibilityPump::convertSol_(SolutionPoolPtr s_pool, ConstSolutionPtr sol)
   ConstSolutionPtr original_sol  = 
     (ConstSolutionPtr) new Solution(stats_->bestObjValue, x, p_);
   s_pool->addSolution(original_sol);
-  logger_->MsgStream(LogInfo) << me_ << "Adding solution to original sol pool"
+  logger_->msgStream(LogInfo) << me_ << "Adding solution to original sol pool"
     << std::endl; 
 #if SPEW
-  logger_->MsgStream(LogDebug) << me_ << "Solution value is = " 
+  logger_->msgStream(LogDebug) << me_ << "Solution value is = " 
       << stats_->bestObjValue << std::endl
       << me_ << "Feasible solution is" << std::endl;
-  original_sol->write(logger_->MsgStream(LogDebug2));
+  original_sol->write(logger_->msgStream(LogDebug2));
 #endif
 
   restoreBounds_(LB_copy, UB_copy, numvars);
@@ -238,7 +238,7 @@ Bool FeasibilityPump::cycle_(Double find_value)
     if (fabs(find_value - hashVal_[i]) < intTol_) {
       ++(stats_->numCycles); 
 #if SPEW
-      logger_->MsgStream(LogDebug2) << me_ << "Cycling detected" << std::endl;
+      logger_->msgStream(LogDebug2) << me_ << "Cycling detected" << std::endl;
 #endif
       return true;
     }
@@ -256,7 +256,7 @@ Double FeasibilityPump::hash_()
     hash_value += (*it_rand) * (*it_sol);
   }
 #if SPEW
-  logger_->MsgStream(LogDebug2) << me_ << "Hash value for rounded solution  = "
+  logger_->msgStream(LogDebug2) << me_ << "Hash value for rounded solution  = "
     << hash_value << std::endl;
 #endif
   hashVal_.push_back(hash_value);
@@ -285,8 +285,8 @@ void FeasibilityPump::implementFP_(const Double* x, SolutionPoolPtr s_pool)
     ++(stats_->numNLPs);
     sol = e_->getSolution();
 #if SPEW
-    prob->write(logger_->MsgStream(LogDebug2));
-    sol->write(logger_->MsgStream(LogDebug2));
+    prob->write(logger_->msgStream(LogDebug2));
+    sol->write(logger_->msgStream(LogDebug2));
 #endif
     x          =  sol->getPrimal();
     cont_FP    = isFrac_(x);
@@ -295,7 +295,7 @@ void FeasibilityPump::implementFP_(const Double* x, SolutionPoolPtr s_pool)
     n_to_flip  = std::min(k, p_->getSize()->bins);
     if (cycle_(hash_val)) {
 #if SPEW
-      logger_->MsgStream(LogDebug2) << me_ << "Cycling detected" << std::endl;
+      logger_->msgStream(LogDebug2) << me_ << "Cycling detected" << std::endl;
 #endif
       perturb_(hash_val, n_to_flip);
     }
@@ -325,8 +325,8 @@ Bool FeasibilityPump::isFrac_(const Double* x)
     if (variable->getType() == Binary || variable->getType() == Integer) {
       fractional = fabs(floor(value + 0.5)-value);
 #if SPEW
-        variable->write(logger_->MsgStream(LogDebug2));
-        logger_->MsgStream(LogDebug2) << me_  << "value of variable " 
+        variable->write(logger_->msgStream(LogDebug2));
+        logger_->msgStream(LogDebug2) << me_  << "value of variable " 
           << i << " is "<< value << std::endl;
 #endif
       if (fractional > intTol_) {
@@ -341,7 +341,7 @@ Bool FeasibilityPump::isFrac_(const Double* x)
     }
   }
 #if SPEW
-  logger_->MsgStream(LogDebug) << me_ << "Number of fractionals = " 
+  logger_->msgStream(LogDebug) << me_ << "Number of fractionals = " 
     << num_frac << std::endl;
 #endif
   return is_frac;
@@ -369,7 +369,7 @@ void FeasibilityPump::perturb_(Double hash_val, UInt n_to_flip)
     }
     hash_val = hash_();
 #if SPEW
-    logger_->MsgStream(LogDebug) << me_ << "Number of variables flipped "
+    logger_->msgStream(LogDebug) << me_ << "Number of variables flipped "
       << n_to_flip << std::endl;
 #endif
   } while(cycle_(hash_val));
@@ -409,8 +409,8 @@ VarVector FeasibilityPump::selectToFlip_(UInt n_to_flip)
       ++t;
     } else {
 #if SPEW
-      logger_->MsgStream(LogDebug2) << me_ << "Will flip variable" << std::endl;
-      bins_[t]->write(logger_->MsgStream(LogDebug2));
+      logger_->msgStream(LogDebug2) << me_ << "Will flip variable" << std::endl;
+      bins_[t]->write(logger_->msgStream(LogDebug2));
 #endif
       bin_to_flip.push_back(bins_[t]);
       ++t, ++m;
@@ -439,7 +439,7 @@ void FeasibilityPump::solve(NodePtr, RelaxationPtr, SolutionPoolPtr s_pool)
   ConstSolutionPtr sol;
   const Double* x;
   if(!shouldFP_()) {
-    logger_->MsgStream(LogInfo) << me_ << "Skipping" << std::endl;
+    logger_->msgStream(LogInfo) << me_ << "Skipping" << std::endl;
     return;
   }
   e_->load(p_);
@@ -454,34 +454,33 @@ void FeasibilityPump::solve(NodePtr, RelaxationPtr, SolutionPoolPtr s_pool)
   sol = e_->getSolution();
   x   = sol->getPrimal();
 #if SPEW
-  p_->write(logger_->MsgStream(LogDebug2));
-  sol->write(logger_->MsgStream(LogDebug2));
+  p_->write(logger_->msgStream(LogDebug2));
+  sol->write(logger_->msgStream(LogDebug2));
 #endif
   e_->clear();
-  logger_->MsgStream(LogInfo) << me_ << "Starting" << std::endl;
+  logger_->msgStream(LogInfo) << me_ << "Starting" << std::endl;
   // now implement the FP heuristic
   if (isFrac_(x)) {
     implementFP_(x, s_pool);
   } else {
-  logger_->MsgStream(LogInfo) << me_ << "Adding solution to original sol pool"
+  logger_->msgStream(LogInfo) << me_ << "Adding solution to original sol pool"
     << std::endl; 
 #if SPEW
-    logger_->MsgStream(LogDebug) << me_ << "Feasible Solution found" 
+    logger_->msgStream(LogDebug) << me_ << "Feasible Solution found" 
       << std::endl << me_ << "Solution value is "
       << sol->getObjValue() << std::endl;
 #endif
     s_pool->addSolution(sol);
   }
 
-  logger_->MsgStream(LogInfo) << me_ << "Over" << std::endl;
+  logger_->msgStream(LogInfo) << me_ << "Over" << std::endl;
   stats_->time = timer_->query();
 }
 
 
-void FeasibilityPump::writeStats()
+void FeasibilityPump::writeStats(std::ostream &out) const
 {
-  logger_->MsgStream(LogInfo) 
-    << me_ << "number of nlps solved         = " << stats_->numNLPs
+  out << me_ << "number of nlps solved         = " << stats_->numNLPs
     << std::endl
     << me_ << "number of cycles              = " << stats_->numCycles
     << std::endl
@@ -490,7 +489,7 @@ void FeasibilityPump::writeStats()
     << me_ << "total time taken              = " << stats_->time
     << std::endl;
   if (stats_->bestObjValue < INFINITY) {
-    logger_->MsgStream(LogInfo)<< me_ << "best objective value          = " 
+    out << me_ << "best objective value          = " 
       << stats_->bestObjValue << std::endl;
   }
 }

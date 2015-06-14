@@ -42,7 +42,7 @@ MultilinearTermsHandler::MultilinearTermsHandler(EnvPtr env, ProblemPtr problem)
   : env_(env), problem_(problem)
 {
   logger_  = (LoggerPtr) new Logger((LogLevel) 
-                                    env->getOptions()->findInt("ml_log_level")->getValue());
+                                    env->getOptions()->findInt("handler_log_level")->getValue());
   eTol_ = env->getOptions()->findDouble("ml_feastol")->getValue();
   maxGroupSize_ = (UInt) env_->getOptions()->findInt("ml_max_group_size")->getValue();
   augmentCoverFactor_ = env_->getOptions()->findDouble("ml_cover_augmentation_factor")->getValue();
@@ -83,8 +83,8 @@ Branches MultilinearTermsHandler::getBranches(BrCandPtr cand, DoubleVector & x,
   branches->push_back(branch);
 
 
-  logger_->MsgStream(LogDebug2) << "branching on " << v->getName();
-  logger_->MsgStream(LogDebug2) << " <= " << value << " or " 
+  logger_->msgStream(LogDebug2) << "branching on " << v->getName();
+  logger_->msgStream(LogDebug2) << " <= " << value << " or " 
     << " >= " << value << endl;
 
 #if defined(DEBUG_MULTILINEARTERMS_HANDLER)  

@@ -127,8 +127,8 @@ void QGHandler::addInitLinearX_(const double *x)
 							"lnrztn_cut");
 					++(stats_->cuts);
 #if SPEW
-					logger_->MsgStream(LogDebug) << me_ << "initial constr. cut: ";
-					newcon->write(logger_->MsgStream(LogDebug));
+					logger_->msgStream(LogDebug) << me_ << "initial constr. cut: ";
+					newcon->write(logger_->msgStream(LogDebug));
 #endif
 				}
 
@@ -137,12 +137,12 @@ void QGHandler::addInitLinearX_(const double *x)
 					++(stats_->cuts);  
 
 #if SPEW
-					logger_->MsgStream(LogDebug) << me_ << "initial constr. cut: ";
-					newcon->write(logger_->MsgStream(LogDebug));
+					logger_->msgStream(LogDebug) << me_ << "initial constr. cut: ";
+					newcon->write(logger_->msgStream(LogDebug));
 #endif
 				}
 			}	else {
-				logger_->MsgStream(LogError) << me_ 
+				logger_->msgStream(LogError) << me_ 
          << "Constraint is not defined at this point" << std::endl;
 			} 
 		}
@@ -158,16 +158,16 @@ void QGHandler::addInitLinearX_(const double *x)
 				newcon = rel_->newConstraint(f2, -INFINITY, -1.0*c, "objlnrztn_cut");
 				++(stats_->cuts);
 #if SPEW
-				logger_->MsgStream(LogDebug) << me_ << "initial obj cut: " << std::endl
+				logger_->msgStream(LogDebug) << me_ << "initial obj cut: " << std::endl
 					<< std::setprecision(9);
-				newcon->write(logger_->MsgStream(LogDebug));
+				newcon->write(logger_->msgStream(LogDebug));
 #endif
 			}	else {
-				logger_->MsgStream(LogError) << me_ <<"Objective not defined at this point"
+				logger_->msgStream(LogError) << me_ <<"Objective not defined at this point"
                 << std::endl;
 			}
 		}	else {
-			logger_->MsgStream(LogDebug) << "QG Handler: Problem does not have a " 
+			logger_->msgStream(LogDebug) << "QG Handler: Problem does not have a " 
 				<< "nonlinear objective." << std::endl;
 		}
 }
@@ -191,7 +191,7 @@ numCuts_=0;
 				++(stats_->nlpF);
 				updateUb_(s_pool, &nlpval, sol_found); 
 #if SPEW
-				logger_->MsgStream(LogDebug) 
+				logger_->msgStream(LogDebug) 
 					<< me_ << "solved fixed NLP to optimality, "
 					<< "lp_obj = " << lp_obj 
 					<< ", nlpval = " << nlpval << std::endl;
@@ -200,7 +200,7 @@ numCuts_=0;
 						lp_obj > nlpval-(fabs(nlpval))*solRelTol_){
                 
  #if SPEW
-				logger_->MsgStream(LogDebug) 
+				logger_->msgStream(LogDebug) 
 					<< me_ << "Pruned" << std::endl;
 #endif         
 					*status = SepaPrune;
@@ -209,12 +209,12 @@ numCuts_=0;
           relobj_=sol->getObjValue();
 					nlp_x = nlpe_->getSolution()->getPrimal();
 					 #if SPEW
-				logger_->MsgStream(LogDebug) 
+				logger_->msgStream(LogDebug) 
 					<< me_ << "Not Pruned in OA" << std::endl;
 #endif
           numCuts_=OAFromPoint_(nlp_x, sol->getPrimal(), status);
  #if SPEW
-				logger_->MsgStream(LogDebug) 
+				logger_->msgStream(LogDebug) 
 					<< me_ << "number of cuts from cutInt" << std::endl;
 #endif 
 					break;
@@ -236,7 +236,7 @@ numCuts_=0;
 			case (EngineError):
 			case (EngineUnknownStatus):
 			default:
-				logger_->MsgStream(LogError) << me_ << "NLP engine status = " 
+				logger_->msgStream(LogError) << me_ << "NLP engine status = " 
 			<< nlpe_->getStatusString() << std::endl
 			<< me_ << "No cut generated, may cycle!"
 			<< std::endl;
@@ -247,7 +247,7 @@ numCuts_=0;
 			*status = SepaResolve;
 		}else{
  #if SPEW
-				logger_->MsgStream(LogDebug) 
+				logger_->msgStream(LogDebug) 
 					<< me_ << "number of cuts from OAFromPoint_ is 0" << std::endl;
 #endif 
       *status = SepaPrune;
@@ -304,7 +304,7 @@ void QGHandler::initLinear_(bool *isInf)
 		case (EngineError):
 		case (EngineUnknownStatus):
 		default:
-			logger_->MsgStream(LogError) << me_ << "NLP engine status = " 
+			logger_->msgStream(LogError) << me_ << "NLP engine status = " 
 		<< nlpStatus_ << std::endl;
 			assert(!"QGHandler: Cannot proceed further");
 	}
@@ -331,23 +331,23 @@ bool QGHandler::isFeasible(ConstSolutionPtr sol, RelaxationPtr rel,
            ( act < c->getLb() - solAbsTol_ && 
              act < c->getLb() - (fabs(c->getLb())*solRelTol_)) ) {
 #if SPEW
-					logger_->MsgStream(LogDebug) 
+					logger_->msgStream(LogDebug) 
 						<< me_ << "constraint not feasible" << std::endl
 						<< me_;
-					c->write(logger_->MsgStream(LogDebug2));
-					logger_->MsgStream(LogDebug) 
+					c->write(logger_->msgStream(LogDebug2));
+					logger_->msgStream(LogDebug) 
 						<< me_ << "activity = " << act << std::endl;  
 #endif
 					return false;
 				}
 			}	else {
-				logger_->MsgStream(LogError) << me_ 
+				logger_->msgStream(LogError) << me_ 
           << "Constraint not defined at this point"<< std::endl;
 				return false;
 			}
 		}
 #if SPEW
-		logger_->MsgStream(LogDebug) 
+		logger_->msgStream(LogDebug) 
 			<< me_ << "all nonlinear constraints feasible." << std::endl;
 #endif
 		error=0;
@@ -359,18 +359,18 @@ bool QGHandler::isFeasible(ConstSolutionPtr sol, RelaxationPtr rel,
 
       if (alpha < act - solAbsTol_ && alpha < act -(fabs(act)*solRelTol_) ) {
 #if SPEW
-					logger_->MsgStream(LogDebug) << me_ << "objective not feasible" 
+					logger_->msgStream(LogDebug) << me_ << "objective not feasible" 
 						<< std::endl;
 #endif
 					return false;
 				}
 			}	else {
-				logger_->MsgStream(LogError) << me_ 
+				logger_->msgStream(LogError) << me_ 
          <<" Objective not defined at this point"<< std::endl;
 				return false;
 			}
 		}
-		logger_->MsgStream(LogDebug) << me_ << "Looks feasible" 
+		logger_->msgStream(LogDebug) << me_ << "Looks feasible" 
 						<< std::endl;
 		return true;
 }
@@ -392,7 +392,7 @@ void QGHandler::linearAt_(FunctionPtr f, double fval, const double *x,
 			*c  = fval - InnerProduct(x, a, numvars_);
 			delete [] a;
 		}	else {
-			logger_->MsgStream(LogError) << me_ <<" Gradient not defined at this point "
+			logger_->msgStream(LogError) << me_ <<" Gradient not defined at this point "
               <<  std::endl;
 		}
 }
@@ -462,13 +462,13 @@ int QGHandler::OAFromPoint_(const double *x, const double *inf_x,
 							++num_cuts;
 							*status = SepaResolve;
 #if SPEW
-							logger_->MsgStream(LogDebug) << me_ <<" OA cut: " << std::endl
+							logger_->msgStream(LogDebug) << me_ <<" OA cut: " << std::endl
 								<< std::setprecision(9);
-							newcon->write(logger_->MsgStream(LogDebug));
+							newcon->write(logger_->msgStream(LogDebug));
 #endif
 						} else{
 #if SPEW
-							logger_->MsgStream(LogDebug) << me_ <<" no OA cut added " << std::endl;
+							logger_->msgStream(LogDebug) << me_ <<" no OA cut added " << std::endl;
 #endif
               }
 					}
@@ -489,15 +489,15 @@ int QGHandler::OAFromPoint_(const double *x, const double *inf_x,
 							++num_cuts; 
 							*status = SepaResolve;
 #if SPEW
-							logger_->MsgStream(LogDebug) << me_ << "OA cut: " << std::endl
+							logger_->msgStream(LogDebug) << me_ << "OA cut: " << std::endl
 								<< std::setprecision(9);
-							newcon->write(logger_->MsgStream(LogDebug));
+							newcon->write(logger_->msgStream(LogDebug));
 #endif
 						}
 					}
 				}
 			}	else {
-				logger_->MsgStream(LogError) << me_ << "Constraint not defined at" <<
+				logger_->msgStream(LogError) << me_ << "Constraint not defined at" <<
                " at least one of the two points: "<<  std::endl;
 			}
 		}
@@ -522,19 +522,19 @@ int QGHandler::OAFromPoint_(const double *x, const double *inf_x,
 				    	++num_cuts;
 					    *status = SepaResolve;
 #if SPEW
-					    logger_->MsgStream(LogDebug) << me_ << "OA cut: " << std::endl
+					    logger_->msgStream(LogDebug) << me_ << "OA cut: " << std::endl
 						    << std::setprecision(9);
-					    newcon->write(logger_->MsgStream(LogDebug));
+					    newcon->write(logger_->msgStream(LogDebug));
 #endif
 						} else{
             #if SPEW
-					logger_->MsgStream(LogDebug) << me_ << "No objective OA cut: " << std::endl;
+					logger_->msgStream(LogDebug) << me_ << "No objective OA cut: " << std::endl;
 #endif
 
             }
 					}
 			}	else {
-				logger_->MsgStream(LogError) << me_ << "Objective not defined at this point" 
+				logger_->msgStream(LogError) << me_ << "Objective not defined at this point" 
                 <<  std::endl;
 			}
 		}
@@ -574,9 +574,9 @@ int QGHandler::OAFromPointInf_(const double *x, const double *inf_x,
 						++ncuts;
 						*status = SepaResolve;
 #if SPEW
-						logger_->MsgStream(LogDebug) << me_ << "OA cut: " << std::endl
+						logger_->msgStream(LogDebug) << me_ << "OA cut: " << std::endl
 							<< std::setprecision(9);
-						newcon->write(logger_->MsgStream(LogDebug));
+						newcon->write(logger_->msgStream(LogDebug));
 #endif
 					}
 				}
@@ -592,15 +592,15 @@ int QGHandler::OAFromPointInf_(const double *x, const double *inf_x,
 						++ncuts; 
 						*status = SepaResolve;
 #if SPEW
-						logger_->MsgStream(LogDebug) << me_ << "OA cut: " << std::endl
+						logger_->msgStream(LogDebug) << me_ << "OA cut: " << std::endl
 							<< std::setprecision(9);
-						newcon->write(logger_->MsgStream(LogDebug));
+						newcon->write(logger_->msgStream(LogDebug));
 #endif
 					}
 				}
 			}
 			else {
-				logger_->MsgStream(LogError) << me_ 
+				logger_->msgStream(LogError) << me_ 
           << "Objective not defined at this point"<<  std::endl;
 			}
 		}
@@ -646,17 +646,17 @@ void QGHandler::relax_(RelaxationPtr rel, bool *is_inf)
 	}
 
 #if SPEW
-	logger_->MsgStream(LogDebug) << me_ << "Number of nonlinear constraints "
+	logger_->msgStream(LogDebug) << me_ << "Number of nonlinear constraints "
 		" = " << nlCons_.size() << std::endl;
-	logger_->MsgStream(LogDebug) << me_ << "Nonlinear solver used = "
+	logger_->msgStream(LogDebug) << me_ << "Nonlinear solver used = "
 		" = " << nlpe_->getName() << std::endl;
 #endif
 	initLinear_(is_inf);
 
 #if SPEW
-	logger_->MsgStream(LogDebug2) << me_ << "Initial relaxation:" 
+	logger_->msgStream(LogDebug2) << me_ << "Initial relaxation:" 
 		<< std::endl;
-	rel_->write(logger_->MsgStream(LogDebug2));
+	rel_->write(logger_->msgStream(LogDebug2));
 #endif
 }
 
@@ -687,13 +687,13 @@ void QGHandler::separate(ConstSolutionPtr sol, NodePtr , RelaxationPtr rel,
 
 		if (is_int_feas) {
 #if SPEW
-			logger_->MsgStream(LogDebug)<< me_ 
+			logger_->msgStream(LogDebug)<< me_ 
         << "solution is integer feasible, may need to add cuts" << std::endl;	  
 #endif
 			cutIntSol_(sol, s_pool, sol_found, status);
 		} else{
 #if SPEW
-			logger_->MsgStream(LogDebug) 
+			logger_->msgStream(LogDebug) 
 				<< me_ << "solution is not integer feasible" << std::endl;	  
 #endif
 		}
@@ -715,7 +715,7 @@ void QGHandler::updateUb_(SolutionPoolPtr s_pool, double *nlpval,
 		if (val <= bestval) {
 			const double *x = nlpe_->getSolution()->getPrimal();
 #if SPEW
-			logger_->MsgStream(LogDebug) 
+			logger_->msgStream(LogDebug) 
 				<< me_ << "new solution found, value = " << val << std::endl;
 #endif
 			s_pool->addSolution(x, val);

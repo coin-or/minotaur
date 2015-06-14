@@ -184,7 +184,7 @@ void BndProcessor::process(NodePtr node, RelaxationPtr rel,
     should_resolve = false;
 
 #if SPEW
-  logger_->MsgStream(LogDebug) << me_ << "iteration " << iter << std::endl;
+  logger_->msgStream(LogDebug) << me_ << "iteration " << iter << std::endl;
 #endif
 
     //relaxation_->write(std::cout);
@@ -253,12 +253,12 @@ bool BndProcessor::shouldPrune_(NodePtr node, Double solval,
 {
   bool should_prune = false;
 #if SPEW
-  logger_->MsgStream(LogDebug2) << me_ << "solution value = " << solval
+  logger_->msgStream(LogDebug2) << me_ << "solution value = " << solval
                                 << std::endl; 
 #endif
   switch (engineStatus_) {
    case (FailedInfeas):
-     logger_->MsgStream(LogInfo) << me_ << "failed to converge "
+     logger_->msgStream(LogInfo) << me_ << "failed to converge "
                                  << "(infeasible) in node " << node->getId()
                                  << std::endl;
      node->setStatus(NodeInfeasible);
@@ -267,7 +267,7 @@ bool BndProcessor::shouldPrune_(NodePtr node, Double solval,
      ++stats_.prob;
      break;
    case (ProvenFailedCQInfeas):
-     logger_->MsgStream(LogInfo) << me_ << "constraint qualification "
+     logger_->msgStream(LogInfo) << me_ << "constraint qualification "
                                  << "violated in node " << node->getId()
                                  << std::endl;
      ++stats_.prob;
@@ -286,12 +286,12 @@ bool BndProcessor::shouldPrune_(NodePtr node, Double solval,
 
    case (ProvenUnbounded):
      should_prune = false;
-     logger_->MsgStream(LogDebug2) << me_ << "problem relaxation is "
+     logger_->msgStream(LogDebug2) << me_ << "problem relaxation is "
                                    << "unbounded!" << std::endl;
      break;
 
    case (FailedFeas):
-     logger_->MsgStream(LogInfo) << me_ << "Failed to converge " 
+     logger_->msgStream(LogInfo) << me_ << "Failed to converge " 
                                  << "(feasible) in node " << node->getId()
                                  << std::endl;
      if (node->getParent()) {
@@ -303,7 +303,7 @@ bool BndProcessor::shouldPrune_(NodePtr node, Double solval,
      ++stats_.prob;
      break;
    case (ProvenFailedCQFeas):
-     logger_->MsgStream(LogInfo) << me_ << "constraint qualification "
+     logger_->msgStream(LogInfo) << me_ << "constraint qualification "
                                  << "violated in node " << node->getId()
                                  << std::endl;
      if (node->getParent()) {
@@ -316,7 +316,7 @@ bool BndProcessor::shouldPrune_(NodePtr node, Double solval,
      break;
    case (EngineIterationLimit):
      ++stats_.prob;
-     logger_->MsgStream(LogInfo) << me_ << "engine hit iteration limit, "
+     logger_->msgStream(LogInfo) << me_ << "engine hit iteration limit, "
                                  << "continuing in node " << node->getId()
                                  << std::endl;
      // continue with this node by following ProvenLocalOptimal case.
@@ -334,7 +334,7 @@ bool BndProcessor::shouldPrune_(NodePtr node, Double solval,
      break;
    case (EngineError):
      if (contOnErr_) {
-       logger_->MsgStream(LogError) << me_ << "engine reports error, "
+       logger_->msgStream(LogError) << me_ << "engine reports error, "
                                     << " continuing in node " << node->getId()
                                     << std::endl;
        node->setStatus(NodeContinue);
@@ -344,7 +344,7 @@ bool BndProcessor::shouldPrune_(NodePtr node, Double solval,
          node->setLb(-INFINITY);
        }
      } else {
-       logger_->MsgStream(LogError) << me_ << "engine reports error, "
+       logger_->msgStream(LogError) << me_ << "engine reports error, "
                                     << "pruning node " << node->getId()
                                     << std::endl;
        should_prune = true;
@@ -367,7 +367,7 @@ void BndProcessor::solveRelaxation_()
   engine_->solve();
   engineStatus_ = engine_->getStatus();
 #if SPEW
-  logger_->MsgStream(LogDebug2) << me_ << "solving relaxation" << std::endl
+  logger_->msgStream(LogDebug2) << me_ << "solving relaxation" << std::endl
                                 << me_ << "engine status = " 
                                 << engine_->getStatusString() << std::endl;
 #endif
@@ -388,7 +388,7 @@ void BndProcessor::writeStats(std::ostream &out) const
 
 void BndProcessor::writeStats() const
 {
-  writeStats(logger_->MsgStream(LogNone));
+  writeStats(logger_->msgStream(LogNone));
 }
 
 
