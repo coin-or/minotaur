@@ -232,11 +232,11 @@ int main(int argc, char* argv[])
      inst->getObjective()->getObjectiveType()==Maximize){
     obj_sense=-1.0;
     env->getLogger()->msgStream(LogInfo) << me 
-      << "Objective sense: Maximize (will be converted to Minimize)"
+      << "objective sense: maximize (will be converted to Minimize)"
       << std::endl;
   } else {
     env->getLogger()->msgStream(LogInfo) << me 
-      << "Objective sense: Minimize" << std::endl;
+      << "objective sense: minimize" << std::endl;
   }
   // Initialize engines
   nlp_e = getNLPEngine(env, inst); //Engine for Original problem

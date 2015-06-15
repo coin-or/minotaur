@@ -487,11 +487,11 @@ int main(int argc, char** argv)
       oinst->getObjective()->getObjectiveType()==Maximize) {
     obj_sense = -1.0;
     env->getLogger()->msgStream(LogInfo) << me 
-      << "Objective sense: Maximize (will be converted to Minimize)"
+      << "objective sense: maximize (will be converted to Minimize)"
       << std::endl;
   } else {
     env->getLogger()->msgStream(LogInfo) << me 
-      << "Objective sense: Minimize" << std::endl;
+      << "objective sense: minimize" << std::endl;
   }
 
   orig_v = new VarVector(oinst->varsBegin(), oinst->varsEnd());
