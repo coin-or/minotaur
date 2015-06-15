@@ -144,7 +144,7 @@ int main(int argc, char* argv[])
   MINOTAUR_AMPL::AMPLHessianPtr hPtr;
 
   // the branch-and-bound
-  BranchAndBound *bab;
+  BranchAndBound *bab = 0;
   PresolverPtr pres;
   EngineFactory *efac;
   const std::string me("qg: ");
