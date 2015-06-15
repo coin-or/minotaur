@@ -421,8 +421,9 @@ void writeBnbStatus(EnvPtr env, BranchAndBound *bab, double obj_sense)
       << me << std::fixed << std::setprecision(4)
       << "best bound estimate from remaining nodes = "
       <<  obj_sense*bab->getLb() << std::endl
-      << me << "gap = " << bab->getUb() - bab->getLb() << std::endl
-      << me << "gap percentage = " << bab->getGap() << std::endl
+      << me << "gap = " << std::max(0.0,bab->getUb() - bab->getLb())
+      << std::endl
+      << me << "gap percentage = " << bab->getPerGap() << std::endl
       << me << "time used = " << std::fixed << std::setprecision(2) 
       << env->getTime(err) << std::endl
       << me << "status of branch-and-bound: " 

@@ -74,10 +74,11 @@ namespace Minotaur {
     double getCutOff();
 
     /**
-     * \brief Return the gap between the lower and upper bound as a percentage. It
-     * is calculated as \f$\frac{ub-lb}{\left|ub\right|+\epsilon}\times 100\f$.
+     * \brief Return the gap between the lower and upper bound as a
+     * percentage. It is calculated as
+     * \f$\frac{ub-lb}{\left|ub\right|+\epsilon}\times 100\f$.
      */
-    double getGap();
+    double getPerGap();
 
     /**
      * \brief Return the value of the highest lower bound evaluated in the

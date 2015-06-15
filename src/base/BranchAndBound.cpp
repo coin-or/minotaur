@@ -96,9 +96,9 @@ void BranchAndBound::addPreRootHeur(HeurPtr h)
 }
 
 
-double BranchAndBound::getGap() 
+double BranchAndBound::getPerGap() 
 { 
-  return tm_->getGap(); 
+  return tm_->getPerGap(); 
 }
 
 
@@ -271,17 +271,13 @@ bool BranchAndBound::shouldPrune_(NodePtr node)
 bool BranchAndBound::shouldStop_()
 {
   bool stop_bnb = false;
-  // double lb = tm_->getLb();
-  // ++lb;
 
-  if (tm_->getGap() < 0.0) {
+  if (tm_->getPerGap() <= 0.0) {
     stop_bnb = true;
     status_ = SolvedOptimal;
-    logger_->msgStream(LogInfo)
-      << me_ << "threshold gap has been achieved" << std::endl
-      << me_ << "gap = " << tm_->getGap() << std::endl;
-  } else if (false) {//TODO: stuck in some wiered position
+  } else if ( tm_->getPerGap() <= options_->perGapLimit) {
     stop_bnb = true;
+    status_ = SolvedGapLimit;
   } else if (timer_->query() > options_->timeLimit) {
     stop_bnb = true;
     status_ = TimeLimitReached;
@@ -310,7 +306,7 @@ void BranchAndBound::showStatus_(bool current_uncounted)
       << std::setprecision(1)  << "time = "            << timer_->query()
       << std::setprecision(4)  << " lb = "             << tm_->updateLb()
       << std::setprecision(4)  << " ub = "             << tm_->getUb()
-      << std::setprecision(2)  << " gap% = "           << tm_->getGap()
+      << std::setprecision(2)  << " gap% = "           << tm_->getPerGap()
       << " nodes processed = " << tm_->getSize()-tm_->getActiveNodes()-off 
       << " left = "            << tm_->getActiveNodes()+off
       << std::endl;
@@ -524,6 +520,7 @@ BabOptions::BabOptions()
   : createRoot(true),
     logLevel(LogInfo),
     nodeLimit(0),
+    perGapLimit(0.),
     solLimit(0),
     timeLimit(0.)
     
@@ -538,6 +535,7 @@ BabOptions::BabOptions(EnvPtr env)
   logInterval = options->findDouble("bnb_log_interval")->getValue();
   logLevel    = (LogLevel) options->findInt("log_level")->getValue();
   nodeLimit   = options->findInt("bnb_node_limit")->getValue();
+  perGapLimit = options->findDouble("obj_gap_percent")->getValue();
   solLimit    = options->findInt("bnb_sol_limit")->getValue();
   timeLimit   = options->findDouble("bnb_time_limit")->getValue();
   createRoot  = true;

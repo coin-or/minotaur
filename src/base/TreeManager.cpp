@@ -194,19 +194,24 @@ double TreeManager::getCutOff()
 }
 
 
-double TreeManager::getGap()
+double TreeManager::getPerGap()
 {
   // for minimization problems, gap = (ub - lb)/(ub) * 100
   // so that if one has a ub, she can say that the solution can not be more
   // than gap% away from the current ub.
+  double gap = 0.0;
   if (bestUpperBound_ >= INFINITY) {
-    return INFINITY;
+    gap = INFINITY;
   } else if (fabs(bestLowerBound_) < etol_) {
-    return 100.0;
+    gap = 100.0;
   } else {
-    return (bestUpperBound_ - bestLowerBound_)/(fabs(bestUpperBound_)+etol_) 
+    gap = (bestUpperBound_ - bestLowerBound_)/(fabs(bestUpperBound_)+etol_) 
       * 100.0;
+    if (gap<0.0) {
+      gap = 0.0;
+    }
   }
+  return gap;
 }
 
 
@@ -373,8 +378,8 @@ bool TreeManager::shouldDive()
 bool TreeManager::shouldPrune_(NodePtr node)
 {
   double lb = node->getLb();
-  if (lb > cutOff_ - reqGap_ || 
-      fabs(bestUpperBound_-lb)/(fabs(bestUpperBound_)+etol_)*100 < reqRelGap_) {
+  if (lb > cutOff_ - etol_ || 
+      fabs(bestUpperBound_-lb)/(fabs(bestUpperBound_)+etol_)*100 < etol_) {
     node->setStatus(NodeHitUb);
     return true;
   }
@@ -384,7 +389,7 @@ bool TreeManager::shouldPrune_(NodePtr node)
 
 double TreeManager::updateLb()
 {
-  // XXX: this could be an expensive operation. Try to avoid it.
+  // this could be an expensive operation. Try to avoid it.
   bestLowerBound_ = active_nodes_->getBestLB();
 
   return bestLowerBound_;

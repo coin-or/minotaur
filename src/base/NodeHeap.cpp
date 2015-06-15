@@ -79,8 +79,7 @@ double NodeHeap::getBestLB() const
    if (nodes_.size() > 0) {
       if (type_ == Value) {
          retval = nodes_.front()->getLb();
-      }
-      else {
+      } else {
         std::vector<NodePtr>::const_iterator it = min_element(nodes_.begin(), 
              nodes_.end(), valueGreaterThan);
          retval = (*it)->getLb();

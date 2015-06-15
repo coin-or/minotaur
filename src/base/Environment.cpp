@@ -310,7 +310,7 @@ void Environment::createDefaultOptions_()
   options_->insert(d_option);
 
   d_option = (DoubleOptionPtr) new Option<double>("obj_gap_percent", 
-      "Prune nodes with obj. value greater than (1-obj_gap/100)*best_value.",
+      "Stop if the objective gap percent falls below this level",
       true, 0.0);
   options_->insert(d_option);
 

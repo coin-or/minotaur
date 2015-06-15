@@ -671,7 +671,6 @@ MultilinearTermsHandler::powerset_(SetOfVars const &s)
 {
   typedef SetOfVars::const_iterator set_iter;
   typedef std::vector<set_iter> vec;
-  typedef vec::iterator vec_iter;  
 
   struct local
   {

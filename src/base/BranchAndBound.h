@@ -65,7 +65,7 @@ namespace Minotaur {
      * is the upper bound, \f$l\f$ is the lower bound and \f$\epsilon\f$ is a
      * small constant to avoid division by zero.
      */
-    Double getGap();
+    double getPerGap();
 
     /**
      * \brief Return the lower bound from the search tree.
@@ -73,7 +73,7 @@ namespace Minotaur {
      * This bound is defined as the minimum of the bounds from all active
      * nodes. It may not be a bound on the optimal solution value.
      */
-    Double getLb();
+    double getLb();
 
     /// Return a pointer to NodeProcessor used in branch-and-bound.
     NodeProcessorPtr getNodeProcessor();
@@ -103,7 +103,7 @@ namespace Minotaur {
      * problem. It may be obtained from a feasible solution of a relaxation of 
      * the problem.
      */
-    Double getUb();
+    double getUb();
 
     /// Return number of nodes processed while solving.
     UInt numProcNodes();
@@ -136,13 +136,13 @@ namespace Minotaur {
      * may not want the default root node.
      * \param [in] b True if root node should be created, false otherwise.
      */
-    void shouldCreateRoot(Bool b);
+    void shouldCreateRoot(bool b);
 
     /// Start solving the Problem using branch-and-bound
     void solve();
 
     /// Return total time taken
-    Double totalTime();
+    double totalTime();
 
     /// Write statistics to the ostream out
     void writeStats(std::ostream & out);
@@ -208,16 +208,16 @@ namespace Minotaur {
      * \param [out] should_prune True if the root node can be pruned.
      * \param [out] should_dive True if we should dive to a child node.
      */
-    NodePtr processRoot_(Bool *should_prune, Bool *should_dive);
+    NodePtr processRoot_(bool *should_prune, bool *should_dive);
 
     /// Return True if a node can be pruned.
-    Bool shouldPrune_(NodePtr node);
+    bool shouldPrune_(NodePtr node);
 
     /**
      * \brief Check whether the branch-and-bound can stop because of time
      * limit, or node limit or if solved?
      */
-    Bool shouldStop_();
+    bool shouldStop_();
 
     /**
      * \brief Display status: number of nodes, bounds, time etc.
@@ -226,7 +226,7 @@ namespace Minotaur {
      * log-message is incremented by one. This may happen when diving: the
      * node being processed is not in the list of active nodes in the tree.
      */
-    void showStatus_(Bool current_uncounted);
+    void showStatus_(bool current_uncounted);
   };
 
   /// Statistics about the branch-and-bound.
@@ -239,10 +239,10 @@ namespace Minotaur {
     UInt nodesProc;
 
     /// Total time used in branch-and-bound.
-    Double timeUsed;
+    double timeUsed;
 
     /// Time of the last log display.
-    Double updateTime;
+    double updateTime;
   };
 
 
@@ -256,13 +256,13 @@ namespace Minotaur {
     BabOptions(EnvPtr env);
 
     /**
-     * \brief Should the root be created in branch-and-bound (yes), or the user calls
-     * branch-and-bound after creating the root (no)?
+     * \brief Should the root be created in branch-and-bound (yes), or the
+     * user calls branch-and-bound after creating the root (no)?
      */
-    Bool createRoot;
+    bool createRoot;
 
     /// Time in seconds between status updates of the progress.
-    Double logInterval;
+    double logInterval;
 
     /// Verbosity of log.
     LogLevel logLevel;
@@ -270,11 +270,17 @@ namespace Minotaur {
     /// Limit on number of nodes processed.
     UInt nodeLimit;
 
+    /**
+     * \brief Stop if the percent gap between lower and upper bounds of the
+     * objective function falls below this level.
+     */
+    double perGapLimit;
+
     /// Limit on number of nodes processed.
     UInt solLimit;
 
     /// Time limit in seconds for the branch-and-bound.
-    Double timeLimit;
+    double timeLimit;
   };
 
   typedef boost::shared_ptr<BranchAndBound> BranchAndBoundPtr;
