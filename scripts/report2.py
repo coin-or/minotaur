@@ -68,7 +68,7 @@ class Cuts(Col):
 
 # ---------------------------------------------------------------------------
 # ---------------------------------------------------------------------------
-class BBound(Col):
+class BKnown(Col):
 
 	val = INFTY
 	def extract(self):
@@ -92,22 +92,22 @@ class EChk(Col):
 		if (claims_opt.val=="ERR"):
 			self.val = "NO-OUT"
 			errors.append(instance)
-		elif (BEST_FILE != "" and 'lb' in globals() and 'ub' in globals()):
-			if (claims_opt.val=="INF" and bb.val<INFTY):
+		elif (BEST_FILE != "" and 'bnd' in globals() and 'sol' in globals()):
+			if (claims_opt.val=="INF" and bknown.val<INFTY):
 				self.val = "W-FEAS"
 				errors.append(instance)
-			elif (claims_opt.val=="UNB" and bb.val<INFTY):
+			elif (claims_opt.val=="UNB" and abs(bknown.val)<INFTY):
 				self.val = "W-UNB"
 				errors.append(instance)
-			elif (lb.val-bb.val > ABSTOL and
-					(lb.val-bb.val)/(abs(bb.val)+1e-6) > RELTOL):
-				self.val = "W-LB"
+			elif (osen.val*(bnd.val-bknown.val) > ABSTOL and
+					osen.val*(bnd.val-bknown.val)/(abs(bknown.val)+1e-6) > RELTOL):
+				self.val = "W-BND"
 				errors.append(instance)
-			elif (bb.val-ub.val > ABSTOL and
-					(bb.val-ub.val)/(abs(bb.val)+1e-6) > RELTOL):
+			elif (osen.val*(bknown.val-sol.val) > ABSTOL and
+					osen.val*(bknown.val-sol.val)/(abs(bknown.val)+1e-6) > RELTOL):
 				self.val = "NEWSOL"
 				errors.append(instance)
-			elif (bb.val >= INFTY and ub.val < INFTY):
+			elif (abs(bknown.val) >= INFTY and abs(sol.val) < INFTY):
 				self.val = "NEWSOL"
 				errors.append(instance)
 			else:
@@ -119,13 +119,13 @@ class EChk(Col):
 
 # ---------------------------------------------------------------------------
 # ---------------------------------------------------------------------------
-class LBound(Col):
+class Bnd(Col):
 
 	val = INFTY
 	def extract(self):
 		self.val = INFTY
 		if (claims_opt.val=="OPT"):
-			self.val = ub.val
+			self.val = sol.val
 			if (self.val==INFTY):
 				self.writeFail()
 			else:
@@ -158,6 +158,24 @@ class Nodes(Col):
 			self.val = val
 			self.write(self.val)
 
+# ---------------------------------------------------------------------------
+# ---------------------------------------------------------------------------
+class ObjSen(Col):
+	val = 0
+	def extract(self):
+		val = 0
+		find = find_str(outfile,'objective sense: maximize')
+		if (find>=0):
+			self.val = -1
+			return
+
+		find = find_str(outfile,'objective sense: minimize')
+		if (find>=0):
+			self.val = 1
+		return
+
+	def writeTitle(self):
+		s = ""
 
 # ---------------------------------------------------------------------------
 # ---------------------------------------------------------------------------
@@ -187,7 +205,7 @@ class Status(Col):
 
 # ---------------------------------------------------------------------------
 # ---------------------------------------------------------------------------
-class UBound(Col):
+class Sol(Col):
 
 	val = INFTY
 	def extract(self):
@@ -338,7 +356,7 @@ if (INST_LIST==""):
 	sys.exit(0)
 
 
-instCol=Col("######### instance", 24, "%24s")
+instCol=Col("############### instance", 24, "%24s")
 
 othercols=[]
 errors=[]
@@ -353,6 +371,7 @@ ins_list=getInstList(INST_LIST)
 othercols.append(WallTime("time", 10, "%10.2f"))
 claims_opt = Status("opt", 4, "%4s")
 othercols.append(claims_opt)
+osen = ObjSen("sen", 3, "%3s")
 
 
 #############################################################################
@@ -360,15 +379,15 @@ othercols.append(claims_opt)
 #############################################################################
 
 #othercols.append(Cuts("cuts", 8, "%8d"))
-othercols.append(Nodes("nodes", 8, "%8d"))
-ub = UBound("ub", 18, "%18.4f")
-othercols.append(ub)
-lb = LBound("lb", 18, "%18.4f")
-othercols.append(lb)
+#othercols.append(Nodes("nodes", 8, "%8d"))
+sol = Sol("sol", 18, "%18.4f")
+othercols.append(sol)
+bnd = Bnd("bnd", 18, "%18.4f")
+othercols.append(bnd)
 
 if (BEST_FILE is not ""):
-	bb = BBound("best-ub", 18, "%18.4f")
-	othercols.append(bb)
+	bknown = BKnown("best-known", 18, "%18.4f")
+	othercols.append(bknown)
 
 
 othercols.append(EChk("err", 8, "%8s"))
