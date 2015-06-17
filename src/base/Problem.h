@@ -175,8 +175,8 @@ public:
    */
   virtual ProblemType findType();
 
-  /// Return a pointer to the constraint with ID=id.
-  virtual ConstraintPtr getConstraint(UInt id) const;
+  /// Return a pointer to the constraint with a given index
+  virtual ConstraintPtr getConstraint(UInt index) const;
 
   /// Return the hessian of the lagrangean. Could be NULL.
   virtual HessianOfLagPtr getHessian() const;
@@ -240,8 +240,8 @@ public:
   /// Fill up the statistics about the size of the problem into size_.
   ConstProblemSizePtr getSize() const;
 
-  /// Return a pointer to the variable with ID=id.
-  virtual VariablePtr getVariable(UInt id) const;
+  /// Return a pointer to the variable with a given index
+  virtual VariablePtr getVariable(UInt index) const;
 
   /**
    * \brief Return true if the derivative is available through Minotaur's own
