@@ -226,7 +226,7 @@ class WallTime(Col):
 
 	def extract(self):
 		val = INFTY
-		find,val=find_float(outfile,'time used =',val)
+		find,val=find_float(outfile,'time used \(s\)',val)
 		if (find<0 or val >= INFTY):
 			val = -1.0
 		self.write(val)
