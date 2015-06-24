@@ -65,9 +65,6 @@ namespace Minotaur {
       /// Name
       const static std::string me_; 
 
-      /// Status of problem after using this brancher
-      BrancherStatus status_;
-
       /// The problem that is being solved at this node.
       RelaxationPtr rel_;
 
