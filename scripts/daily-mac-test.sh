@@ -15,7 +15,7 @@ ssh petsc-mini-nightly-test
 
 rm -rf ${WEB_DIR}
 mkdir ${WEB_DIR}
-rsync -a petsc-mini-rsync:src/minotaur-test/*.{log,err} ${WEB_DIR}/
+rsync -a petsc-mini-rsync:src/minotaur-test/ ${WEB_DIR}/
 cat ${WEB_DIR}/build-*err > ${WEB_DIR}/minotaur.err
 
 echo ""

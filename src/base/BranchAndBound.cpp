@@ -154,10 +154,10 @@ NodePtr BranchAndBound::processRoot_(bool *should_prune, bool *should_dive)
 {
   NodePtr current_node = (NodePtr) new Node ();
   NodePtr new_node = NodePtr(); // NULL
-  RelaxationPtr rel;
+  RelaxationPtr rel = RelaxationPtr();
   bool prune = *should_prune;
   Branches branches;
-  WarmStartPtr ws;
+  WarmStartPtr ws = WarmStartPtr();
 #if SPEW
   logger_->msgStream(LogDebug) << me_ << "creating root node" << 
     std::endl;
@@ -322,7 +322,7 @@ void BranchAndBound::solve()
   NodePtr current_node = NodePtr();
   NodePtr new_node = NodePtr();
   Branches branches;
-  WarmStartPtr ws;
+  WarmStartPtr ws = WarmStartPtr();
   RelaxationPtr rel = RelaxationPtr();
   bool should_stop = false;
 

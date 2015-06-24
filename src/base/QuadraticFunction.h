@@ -17,7 +17,7 @@
 
 namespace Minotaur {
   class LinearFunction;
-  struct LTHessStor;
+  class LTHessStor;
   class QuadraticFunction;
   class PolynomialFunction;
   class Variable;

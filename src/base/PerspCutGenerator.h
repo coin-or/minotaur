@@ -61,7 +61,7 @@ struct PerspGenStats
 // Typedefs
 class PerspCutGenerator;
 typedef boost::shared_ptr<PerspCutGenerator> PerspCutGeneratorPtr;
-typedef boost::shared_ptr<const PerspCutGenerator> ConstPerspCutGneeratorPtr;
+typedef boost::shared_ptr<const PerspCutGenerator> ConstPerspCutGeneratorPtr;
 typedef PerspGenStats * PerspGenStatsPtr;
 typedef PerspGenStats const * ConstPerspGenStatsPtr;
 

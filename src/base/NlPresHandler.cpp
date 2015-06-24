@@ -592,13 +592,13 @@ void NlPresHandler::perspRef_(ProblemPtr p, PreModQ *, bool *changed)
   VarSet candvars;
   VariablePtr v, z;
 
-  p->calculateSize();
+  p->calculateSize();//MS: use?
 
   // first find all binary variables
   for (VariableConstIterator vit=p->varsBegin(); vit!=p->varsEnd(); ++vit) {
     v = *vit;
     if (Binary==v->getType() || ImplBin==v->getType()) {
-      indvars0.insert(v);
+      indvars0.insert(v);//MS: this set has variables that are binary or take binary values
     }
   }
 
@@ -607,45 +607,45 @@ void NlPresHandler::perspRef_(ProblemPtr p, PreModQ *, bool *changed)
        ++cit) {
     c = *cit;
     f = c->getFunction(); 
-    if (!f) {
+    if (!f) {//MS: when will f be null?
       continue;
     }
-    if (Quadratic!=f->getType() && Nonlinear!=f->getType()) {
+    if (Quadratic!=f->getType() && Nonlinear!=f->getType()) { //MS: check for other function types.
       continue;
     }
 
     nlvars.clear();
     candvars.clear();
-    indvars = indvars0;
+    indvars = indvars0;//MS: this set has all variables taking binary variables.
 
-    nlf = f->getNonlinearFunction();
-    nlvars.insert(nlf->varsBegin(), nlf->varsEnd());
+    nlf = f->getNonlinearFunction();//MS: nonlinear function found
+    nlvars.insert(nlf->varsBegin(), nlf->varsEnd());//MS: store its variables into this set
 
     // search for an indicator variable: We really need an implication graph
     // here.
-    for (VarSetIter it=nlvars.begin(); it!=nlvars.end(); ++it) {
+    for (VarSetIter it=nlvars.begin(); it!=nlvars.end(); ++it) {//MS: iterate over the variables in the nl constraint
       v = *it;
-      candvars = indvars;
-      indvars.clear();
-      for (ConstrSet::iterator cit2=v->consBegin(); cit2!=v->consEnd();
+      candvars = indvars;//MS:this has all binary variables now
+      indvars.clear();//MS: this set of binary variables is cleared
+      for (ConstrSet::iterator cit2=v->consBegin(); cit2!=v->consEnd();//MS: iterate over constraints where this var has appeared
            ++cit2) {
         c2 = *cit2;
-        if (c2->getFunctionType()!=Linear) {
+        if (c2->getFunctionType()!=Linear) {//MS: other function types
           continue;
         }
-        lf = c2->getLinearFunction();
-        if (lf->getNumTerms()==2) {
+        lf = c2->getLinearFunction();//MS: get linear part of the nonlinear function
+        if (lf->getNumTerms()==2) {//MS: why 2?
           alpha = beta = 0.0;
-          alpha = lf->getWeight(v);
+          alpha = lf->getWeight(v);//MS: coeff. of variable v in linear part
           for (VariableGroupConstIterator it2 = lf->termsBegin();
-               it2!=lf->termsEnd(); ++it2) {
+               it2!=lf->termsEnd(); ++it2) {//MS: look in each of the terms of linear part
             z = (it2)->first;
             if (z->getId() != v->getId()) {
-              beta = (it2)->second;
+              beta = (it2)->second;//MS???
               break;
             }
           } 
-          if (candvars.end() == candvars.find(z)) {
+          if (candvars.end() == candvars.find(z)) {//MS: this condition mean if alpha.v+beta.z where z is binary is found search again.
             continue;
           }
           // check if z turns v off.
@@ -666,19 +666,11 @@ void NlPresHandler::perspRef_(ProblemPtr p, PreModQ *, bool *changed)
           if (fabs(lb)<zTol_ && fabs(ub)<zTol_) {
             indvars.insert(z);
           }
-        }
-      }
-    }
+        }//MS:if number of linear terms is two 
+      }//MS: for each constraints that variable appear
+    }//MS: for variables in each constraint
     if (false == indvars.empty()) {
-      // std::cout << "Found it!\n";
-      // c->write(std::cout);
-      // std::cout << "Indicator Variables:\n";
-
-      // for (VarSet::const_iterator vit=indvars.begin(); vit!=indvars.end();
-      //      ++vit) {
-      //   (*vit)->write(std::cout);
-      // }
-      // doing the reformulation now.
+     // doing the reformulation now.
       z = *(indvars.begin());
       nlf = c->getFunction()->getNonlinearFunction();
       if (false==nlf->hasVar(z)) {
@@ -694,7 +686,7 @@ void NlPresHandler::perspRef_(ProblemPtr p, PreModQ *, bool *changed)
       //std::cout << "Did not find it!\n";
       //c->write(std::cout);
     }
-  }
+  }//MS: for constraints
 }
 
 

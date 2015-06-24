@@ -21,7 +21,7 @@ namespace Minotaur {
   class LinearFunction;
   class QuadraticFunction;
   class NonlinearFunction;
-  struct LTHessStor;
+  class LTHessStor;
   typedef boost::shared_ptr<Function> FunctionPtr;
   typedef boost::shared_ptr<const Function> ConstFunctionPtr;  
   typedef boost::shared_ptr<LinearFunction> LinearFunctionPtr;

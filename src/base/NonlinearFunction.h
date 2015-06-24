@@ -17,8 +17,8 @@
 
 namespace Minotaur {
 
-struct LTHessStor;
 class NonlinearFunction;
+class LTHessStor;
 class VarBoundMod;
 typedef boost::shared_ptr<NonlinearFunction> NonlinearFunctionPtr;
 typedef boost::shared_ptr<VarBoundMod> VarBoundModPtr;
