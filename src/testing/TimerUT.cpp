@@ -39,14 +39,15 @@ void TimerUT::testSleep()
   while (timer->query() < 1) {
   }
   time_used = timer->query();
-  CPPUNIT_ASSERT(time_used >= 1);
+  CPPUNIT_ASSERT(time_used >= 1.0);
+  CPPUNIT_ASSERT(time_used <= 2.0);
   timer->stop();
 
   // finally sleep test
   timer->start();
-  sleep(1);
+  sleep(2);
   time_used = timer->query();
-  CPPUNIT_ASSERT(time_used <= 0.05);
+  CPPUNIT_ASSERT(time_used <= 1.5);
   delete timer;
 }
 
