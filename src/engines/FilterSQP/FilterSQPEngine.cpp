@@ -36,23 +36,25 @@
 
 using namespace Minotaur;
 
-Int * convertPtrToInt(uintptr_t u)
+const std::string FilterSQPEngine::me_ = "FilterSQPEngine: ";
+
+int * convertPtrToInt(uintptr_t u)
 {
-  const Int MAX_SIZE_PER_INT=4;
+  const int MAX_SIZE_PER_INT=4;
   const uintptr_t AND_MASK=0x7FFF;
-  const Int SHIFT_WIDTH=15;
+  const int SHIFT_WIDTH=15;
 
   // *2.0 because its unsigned. +1 because first element stores the number of
   // integer-blocks.
-  Int size = (Int) ceil(((double)sizeof(uintptr_t)/MAX_SIZE_PER_INT*2.0))+1; 
-  Int *iarray = new Int[size]; 
-  Int r = 1;
+  int size = (int) ceil(((double)sizeof(uintptr_t)/MAX_SIZE_PER_INT*2.0))+1; 
+  int *iarray = new int[size]; 
+  int r = 1;
   uintptr_t lsbs; // # SHIFT_WIDTH least significant bits.
 
   while (u>0) {
     lsbs = (u & AND_MASK);
     u = u>>SHIFT_WIDTH;
-    iarray[r] = (Int) lsbs;
+    iarray[r] = (int) lsbs;
     ++r;
   }
   iarray[0] = r;
@@ -60,12 +62,12 @@ Int * convertPtrToInt(uintptr_t u)
 }
 
 
-uintptr_t convertIntToPtr(Int *iarray)
+uintptr_t convertIntToPtr(int *iarray)
 {
-  const Int SHIFT_WIDTH=15;
+  const int SHIFT_WIDTH=15;
   uintptr_t u = 0;
-  Int size = iarray[0];
-  for (Int r=size-1; r>0; --r) {
+  int size = iarray[0];
+  for (int r=size-1; r>0; --r) {
     u = u<<SHIFT_WIDTH;
     u = (u | (uintptr_t) iarray[r]);
   }
@@ -160,12 +162,24 @@ FilterSQPWarmStart::FilterSQPWarmStart(ConstFilterWSPtr warmSt)
 }
  
 
-Bool FilterSQPWarmStart::hasInfo()
+SolutionPtr FilterSQPWarmStart::getPoint()
+{
+  return sol_;
+}
+
+
+bool FilterSQPWarmStart::hasInfo()
 {
   if (sol_ && sol_->getPrimal()) {
     return true;
   }
   return false;
+}
+
+
+void FilterSQPWarmStart::setPoint(SolutionPtr sol)
+{
+  sol_ = sol;
 }
 
 
@@ -176,47 +190,35 @@ void FilterSQPWarmStart::write(std::ostream &out) const
 }
 
 
-void FilterSQPWarmStart::setPoint(SolutionPtr sol)
-{
-  sol_ = sol;
-}
-
-
-SolutionPtr FilterSQPWarmStart::getPoint()
-{
-  return sol_;
-}
-
-
 FilterSQPEngine::FilterSQPEngine()
-  : env_(EnvPtr()),
-    la_(0),                 // NULL
-    ws_(0),
-    lws_(0),                // NULL
-    lws2_(0),
-    c_(0),
-    s_(0),
-    a_(0),
-    x_(0),
-    lam_(0),
-    mlam_(0),
-    bl_(0),
-    bu_(0),
-    cstype_(0),
-    rstat_(0),
-    istat_(0),
-    sol_(SolutionPtr()),    // NULL
-    maxIterLimit_(1000),
-    feasTol_(1e-6),
-    bTol_(1e-9),
-    warmSt_(FilterWSPtr()),
-    prepareWs_(false),
-    useWs_(false),
-    saveSol_(true),
-    strBr_(false),
-    consChanged_(true),
-    timer_(0),
-    stats_(0)
+: a_(0),
+  bl_(0),
+  bTol_(1e-9),
+  bu_(0),
+  c_(0),
+  consChanged_(true),
+  cstype_(0),
+  env_(EnvPtr()),
+  feasTol_(1e-6),
+  istat_(0),
+  la_(0),                 // NULL
+  lam_(0),
+  lws_(0),                // NULL
+  lws2_(0),
+  maxIterLimit_(1000),
+  mlam_(0),
+  prepareWs_(false),
+  rstat_(0),
+  s_(0),
+  saveSol_(true),
+  sol_(SolutionPtr()),    // NULL
+  stats_(0),
+  strBr_(false),
+  timer_(0),
+  useWs_(false),
+  warmSt_(FilterWSPtr()),
+  ws_(0),
+  x_(0)
 {
 #ifndef USE_FILTERSQP 
 #error Need to set USE_FILTERSQP
@@ -228,35 +230,35 @@ FilterSQPEngine::FilterSQPEngine()
 
 
 FilterSQPEngine::FilterSQPEngine(EnvPtr env)
-  : env_(env),
-    la_(0),
-    ws_(0),
-    lws_(0),
-    lws2_(0),
-    c_(0),
-    s_(0),
-    a_(0),
-    x_(0),
-    lam_(0),
-    mlam_(0),
-    bl_(0),
-    bu_(0),
-    cstype_(0),
-    rstat_(0),
-    istat_(0),
-    sol_(SolutionPtr()),
-    maxIterLimit_(1000),
-    feasTol_(1e-6),
-    bTol_(1e-9),
-    warmSt_(FilterWSPtr()),
-    saveSol_(true),
-    strBr_(false),
-    consChanged_(true)
+: a_(0),
+  bl_(0),
+  bTol_(1e-9),
+  bu_(0),
+  c_(0),
+  consChanged_(true),
+  cstype_(0),
+  env_(env),
+  feasTol_(1e-6),
+  istat_(0),
+  la_(0),
+  lam_(0),
+  lws_(0),
+  lws2_(0),
+  maxIterLimit_(1000),
+  mlam_(0),
+  rstat_(0),
+  s_(0),
+  saveSol_(true),
+  sol_(SolutionPtr()),
+  strBr_(false),
+  warmSt_(FilterWSPtr()),
+  ws_(0),
+  x_(0)
 {
   problem_ = ProblemPtr(); // NULL
   status_ = EngineUnknownStatus;
   logger_ = (LoggerPtr) new Logger((LogLevel) (env->getOptions()
-        ->findInt("filter_sqp_log_level")->getValue()));
+        ->findInt("engine_log_level")->getValue()));
   iterLimit_ = maxIterLimit_;
   if (env->getOptions()->findBool("use_warmstart")->getValue()==true) {
     prepareWs_ = true;
@@ -275,21 +277,6 @@ FilterSQPEngine::FilterSQPEngine(EnvPtr env)
   stats_->strTime  = 0;
   stats_->iters    = 0;
   stats_->strIters = 0;
-}
-
-
-void FilterSQPEngine::addConstraint(ConstraintPtr)
-{
-  consChanged_ = true;
-}
-
-
-EnginePtr FilterSQPEngine::emptyCopy()
-{
-  if (env_) {
-    return (FilterSQPEnginePtr) new FilterSQPEngine(env_);
-  }
-  return (FilterSQPEnginePtr) new FilterSQPEngine();
 }
 
 
@@ -316,10 +303,64 @@ FilterSQPEngine::~FilterSQPEngine()
 }
 
 
-void FilterSQPEngine::load(ProblemPtr problem)
+void FilterSQPEngine::addConstraint(ConstraintPtr)
 {
-  problem_ = problem;
-  problem->setEngine(this);
+  consChanged_ = true;
+}
+
+
+void FilterSQPEngine::changeBound(ConstraintPtr cons, BoundType lu, 
+                                  double new_val)
+{
+  if (bl_) {
+    if (Lower == lu) {
+      bl_[problem_->getNumVars()+cons->getIndex()] = new_val;
+    } else {
+      bu_[problem_->getNumVars()+cons->getIndex()] = new_val;
+    }
+  }
+}
+
+
+void FilterSQPEngine::changeBound(VariablePtr v, BoundType lu, double val)
+{
+  if (bl_) {
+    if (Lower == lu) {
+      bl_[v->getIndex()] = val;
+    } else {
+      bu_[v->getIndex()] = val;
+    }
+  }
+}
+
+
+void FilterSQPEngine::changeBound(VariablePtr v, double lb, double ub)
+{
+  if (bl_) {
+    bl_[v->getIndex()] = lb;
+    bu_[v->getIndex()] = ub;
+  }
+}
+
+
+void FilterSQPEngine::changeConstraint(ConstraintPtr, LinearFunctionPtr, 
+                                       double , double)
+{
+  // no need to do anything because the 'solve' function reloads constraints
+  // from problem.
+  consChanged_ = true;
+}
+
+
+void FilterSQPEngine::changeConstraint(ConstraintPtr, NonlinearFunctionPtr)
+{
+  consChanged_ = true;
+}
+
+
+void FilterSQPEngine::changeObj(FunctionPtr, double)
+{
+  consChanged_ = true;
 }
 
 
@@ -344,13 +385,324 @@ void FilterSQPEngine::clear()
 }
 
 
+void FilterSQPEngine::disableStrBrSetup()
+{
+  saveSol_ = true;
+  strBr_   = false;
+}
+
+
+EnginePtr FilterSQPEngine::emptyCopy()
+{
+  if (env_) {
+    return (FilterSQPEnginePtr) new FilterSQPEngine(env_);
+  }
+  return (FilterSQPEnginePtr) new FilterSQPEngine();
+}
+
+
+void FilterSQPEngine::enableStrBrSetup()
+{
+  saveSol_ = false;
+  strBr_   = true;
+}
+
+
+void FilterSQPEngine::evalCons(const double *x, double *c, int *error) 
+{
+  ConstraintConstIterator cIter;
+  ConstraintPtr cPtr;
+  UInt i=0;
+  int e;
+  *error = 0;
+  //problem_->write(std::cout);
+  for (cIter=problem_->consBegin(); cIter!=problem_->consEnd(); ++cIter) {
+    e = 0;
+    cPtr = *cIter;
+    c[i] = cPtr->getActivity(x, &e);
+    if (e!=0) {
+      *error = 1;
+    }
+    ++i;
+  }
+#if SPEW
+  if (logger_->getMaxLevel() > LogDebug) {
+    VariableConstIterator vIter;
+    i=0;
+    logger_->msgStream(LogDebug2) << me_ << std::endl;
+    for (vIter=problem_->varsBegin(); vIter!=problem_->varsEnd(); ++vIter) {
+      logger_->msgStream(LogDebug2) << (*vIter)->getName() 
+        << " = " << x[i] << std::endl;
+      ++i;
+    }
+    i=0;
+    for (cIter=problem_->consBegin(); cIter!=problem_->consEnd(); ++cIter) {
+      logger_->msgStream(LogDebug2) << (*cIter)->getName() 
+        << " = " << c[i] << std::endl;
+      ++i;
+    }
+  }
+  logger_->msgStream(LogDebug2) << me_ << "error in evalCons = " 
+    << *error << std::endl;
+#endif
+}
+
+
+void FilterSQPEngine::evalGrad(const double *x, double *a, int *error) 
+{
+  UInt n         = problem_->getNumVars();
+  UInt jac_nnz   = problem_->getJacobian()->getNumNz();
+  double *values = NULL;
+  ObjectivePtr o = problem_->getObjective();
+  int e2         = 0;
+
+  *error = 0;
+  // first zero out all values of 'a'
+  std::fill(a, a+n+jac_nnz, 0);
+
+
+  // compute the gradient of the objective function f(x)
+  // dense, it fills up a[0,1,2 ..., (n-1)]
+  if (o) {
+    o->evalGradient(x, a, &e2);
+  }
+#if SPEW
+  if (logger_->getMaxLevel() > LogDebug) {
+    logger_->msgStream(LogDebug2) << me_ << "obj gradient" << std::endl;
+    for (UInt i=0; i<n; ++i) {
+      logger_->msgStream(LogDebug2) << "  f'[" << i << "] = " << a[i] 
+        << std::endl;
+    }
+  }
+#endif
+
+  // Gradient of each constraint function sits together in 'a'. First get the
+  // starting position where such a gradient should go.
+  values = a+n;
+  problem_->getJacobian()->fillRowColValues(x, values, error);
+  if (e2>0) {
+    *error = e2;
+  }
+#if SPEW
+  logger_->msgStream(LogDebug2) << me_ << "error in evalGrad = " 
+    << *error << std::endl;
+  if (logger_->getMaxLevel() > LogDebug2) {
+    logger_->msgStream(LogDebug2) << me_ << "obj gradient" << std::endl;
+    for (UInt i=0; i<n+jac_nnz; ++i) {
+      logger_->msgStream(LogDebug2) << std::setprecision(15)
+        << "  jac[" << i << "] = " << a[i] << std::endl;
+    }
+  }
+#endif
+}
+
+
+void FilterSQPEngine::evalHessian(const double *x, double *lam, 
+                                  const int phase, double *ws, int *lws, 
+                                  int *l_hess, int *li_hess, int *error)
+{
+  double obj_mult = 0;
+  double *values = ws;
+  *error = 0;
+
+  // don't know why im using these values.
+  *l_hess  = problem_->getHessian()->getNumNz();
+  *li_hess = 3+problem_->getHessian()->getNumNz()+problem_->getNumVars();
+
+  if (phase==2) {
+    obj_mult = 1.0;
+  }
+
+  // first 'n' multipliers are for variable bounds. skip them.
+  lam += problem_->getNumVars();
+  // need to negate the rest of the multipliers. I don't know why.
+  for (UInt i=0; i<problem_->getNumCons(); ++i) {
+    mlam_[i] = -1.0*lam[i];
+  }
+  std::copy(lws_, lws_+*li_hess, lws);
+  problem_->getHessian()->fillRowColValues(x, obj_mult, mlam_, values, error);
+#if SPEW
+  logger_->msgStream(LogDebug2) << me_ << "l_hess = " << *l_hess 
+    << std::endl;
+  logger_->msgStream(LogDebug2) << me_ << "obj lam = " << obj_mult
+    << std::endl;
+  for (UInt i=0; i<problem_->getNumCons(); ++i) {
+    logger_->msgStream(LogDebug2) << me_ << "lam[" << i << "] = "
+                                  << lam[i] << std::endl;
+  }
+  for (UInt i=0; i<problem_->getNumVars(); ++i) {
+    logger_->msgStream(LogDebug2) << std::setprecision(8)
+                                  << me_ << problem_->getVariable(i)->getName()
+                                  << " = " << x[i] << std::endl;
+  }
+  for (int i=0; i<*l_hess; ++i) {
+    logger_->msgStream(LogDebug2) << std::setprecision(8) 
+                                  << me_ << "hess[" << i << "] = "
+                                  << values[i] << std::endl;
+  }
+  logger_->msgStream(LogDebug2) << me_ << "error in evalHessian = " 
+    << *error << std::endl;
+#endif
+}
+
+
+double FilterSQPEngine::evalObjValue(const double *x, int *err)
+{
+  double objval = problem_->getObjValue(x, err);
+#if SPEW
+  logger_->msgStream(LogDebug2) << me_
+    << "  objective value = " << objval << " error = " << *err << std::endl;
+#endif
+  return objval;
+}
+
+
+void FilterSQPEngine::freeStorage_()
+{
+  delete [] c_;
+  delete [] ws_;
+  delete [] lws2_;
+  delete [] s_;
+  delete [] x_;
+  delete [] lam_;
+  delete [] mlam_;
+  delete [] a_;
+  delete [] rstat_;
+  delete [] istat_;
+  delete [] bl_;
+  delete [] bu_;
+  delete [] cstype_;
+  delete [] lws_;
+  delete [] la_;
+}
+
+
+std::string FilterSQPEngine::getName() const
+{
+  return "Filter-SQP";
+}
+
+
+ConstSolutionPtr FilterSQPEngine::getSolution() 
+{
+  return sol_;
+}
+
+
+double FilterSQPEngine::getSolutionValue() 
+{
+  return sol_->getObjValue();
+}
+
+
+EngineStatus FilterSQPEngine::getStatus() 
+{
+  return status_;
+}
+  
+
+ConstWarmStartPtr FilterSQPEngine::getWarmStart()
+{
+  return warmSt_;
+}
+
+
+WarmStartPtr FilterSQPEngine::getWarmStartCopy()
+{
+  FilterWSPtr warm_st;
+  if (warmSt_) {
+    warm_st = (FilterWSPtr) new FilterSQPWarmStart(warmSt_); // copy
+  } else {
+    warm_st = FilterWSPtr(); // NULL
+  }
+  return warm_st;
+}
+
+
+void FilterSQPEngine::load(ProblemPtr problem)
+{
+  problem_ = problem;
+  problem->setEngine(this);
+}
+
+
+void FilterSQPEngine::loadFromWarmStart(const WarmStartPtr warm_st)
+{
+  if (warm_st) {
+    // Two important points:
+    // 1. dynamic cast can't seem to be avoided.
+    // 2. we need to use boost::dynamic_pointer_cast instead of dynamic_cast.
+    ConstFilterWSPtr warm_st2 = 
+      boost::dynamic_pointer_cast <const FilterSQPWarmStart> (warm_st);
+
+    // now create a full copy.
+    warmSt_ = (FilterWSPtr) new FilterSQPWarmStart(warm_st2);
+    if (!useWs_) {
+      logger_->msgStream(LogInfo) << "setWarmStart() method is called but"
+        " warm-start is not enabled." << std::endl;
+    }
+  } else {
+    warmSt_ = FilterWSPtr(); //NULL
+  }
+}
+
+
+void FilterSQPEngine::negateObj()
+{
+  consChanged_ = true;
+}
+
+
 void FilterSQPEngine::removeCons(std::vector<ConstraintPtr> &)
 {
   consChanged_ = true;
 }
 
 
-void FilterSQPEngine::setStorage_(Int mxwk, Int maxa)
+void FilterSQPEngine::resetIterationLimit()
+{
+  iterLimit_ = maxIterLimit_;
+}
+
+
+void FilterSQPEngine::setBounds_()
+{
+  VariablePtr vPtr;
+  VariableConstIterator vIter;
+  UInt i=0;
+  UInt n=problem_->getNumVars();
+  double l,u;
+  for (vIter=problem_->varsBegin(); vIter!=problem_->varsEnd(); ++vIter) {
+    vPtr = *vIter;
+    l = vPtr->getLb();
+    u = vPtr->getUb();
+    if (l>u && l<u+bTol_) {u=l;}
+    bl_[i] = l;
+    bu_[i] = u;
+    ++i;
+  }
+  ConstraintPtr cPtr;
+  ConstraintConstIterator cIter;
+  i=0;
+  for (cIter=problem_->consBegin(); cIter!=problem_->consEnd(); ++cIter) {
+    cPtr = *cIter;
+    bl_[n+i] = cPtr->getLb();
+    bu_[n+i] = cPtr->getUb();
+    ++i;
+  }
+}
+
+
+void FilterSQPEngine::setIterationLimit(int limit)
+{
+  if (limit<1) {
+    limit = maxIterLimit_;
+  }
+  iterLimit_ = limit;
+}
+
+
+void FilterSQPEngine::setStorage_(int mxwk, int maxa)
 {
   UInt n = problem_->getNumVars();
   UInt m = problem_->getNumCons();
@@ -383,7 +735,7 @@ void FilterSQPEngine::setStorage_(Int mxwk, Int maxa)
     bu_    = new real[n+m]; // upper bounds for variables and constraints.
     cstype_= new char[m];   // is constraint ('L')linear or ('N')nonlinear
     lws_   = new fint[n+problem_->getHessian()->getNumNz()+3];
-    la_    = new Int[n + problem_->getJacobian()->getNumNz() + m + 3];
+    la_    = new int[n + problem_->getJacobian()->getNumNz() + m + 3];
     std::fill(c_, c_+m, 0.);
     std::fill(ws_, ws_+mxwk, 0.);
     std::fill(lws2_, lws2_+mxwk, 0);
@@ -406,54 +758,6 @@ void FilterSQPEngine::setStorage_(Int mxwk, Int maxa)
       }
     }
   }
-}
-
-
-void FilterSQPEngine::setBounds_()
-{
-  VariablePtr vPtr;
-  VariableConstIterator vIter;
-  UInt i=0;
-  UInt n=problem_->getNumVars();
-  Double l,u;
-  for (vIter=problem_->varsBegin(); vIter!=problem_->varsEnd(); ++vIter) {
-    vPtr = *vIter;
-    l = vPtr->getLb();
-    u = vPtr->getUb();
-    if (l>u && l<u+bTol_) {u=l;}
-    bl_[i] = l;
-    bu_[i] = u;
-    ++i;
-  }
-  ConstraintPtr cPtr;
-  ConstraintConstIterator cIter;
-  i=0;
-  for (cIter=problem_->consBegin(); cIter!=problem_->consEnd(); ++cIter) {
-    cPtr = *cIter;
-    bl_[n+i] = cPtr->getLb();
-    bu_[n+i] = cPtr->getUb();
-    ++i;
-  }
-}
-
-
-void FilterSQPEngine::freeStorage_()
-{
-  delete [] c_;
-  delete [] ws_;
-  delete [] lws2_;
-  delete [] s_;
-  delete [] x_;
-  delete [] lam_;
-  delete [] mlam_;
-  delete [] a_;
-  delete [] rstat_;
-  delete [] istat_;
-  delete [] bl_;
-  delete [] bu_;
-  delete [] cstype_;
-  delete [] lws_;
-  delete [] la_;
 }
 
 
@@ -625,7 +929,7 @@ EngineStatus FilterSQPEngine::solve()
   real user;           // not used.
   fint *iuser;         // used to store pointer back to this class.
   long cstype_len = m;
-  const Double *initial_point = 0;
+  const double *initial_point = 0;
 
   setStorage_(mxwk, maxa);
   setStructure_();
@@ -671,7 +975,7 @@ EngineStatus FilterSQPEngine::solve()
   iuser = convertPtrToInt(u);
 
 #if SPEW
-  logger_->msgStream(LogDebug2) << "Filter-SQP: " << std::endl
+  logger_->msgStream(LogDebug2) << me_ << std::endl
     << "  call = " << stats_->calls+1 << std::endl
     << "  n = " << n << std::endl
     << "  m = " << m << std::endl
@@ -690,8 +994,8 @@ EngineStatus FilterSQPEngine::solve()
   consChanged_ = false;
 
 #if SPEW
-  logger_->msgStream(LogDebug) << "Filter-SQP: ifail = " << ifail << std::endl;
-  logger_->msgStream(LogDebug) << "Filter-SQP: rho = " << rho << std::endl;
+  logger_->msgStream(LogDebug) << me_ << "fail = " << ifail << std::endl;
+  logger_->msgStream(LogDebug) << me_ << "rho = " << rho << std::endl;
 #endif
 
   // set return status from filter
@@ -730,14 +1034,14 @@ EngineStatus FilterSQPEngine::solve()
   }
 
 #if SPEW
-  logger_->msgStream(LogDebug) << "Filter-SQP: status = " << getStatusString() 
+  logger_->msgStream(LogDebug) << me_ << "status = " << getStatusString() 
     << std::endl;
-  logger_->msgStream(LogDebug) << "Filter-SQP: obj = " << f << std::endl;
-  logger_->msgStream(LogDebug) << "Filter-SQP: time taken = " << timer_->query() 
+  logger_->msgStream(LogDebug) << me_ << "obj = " << f << std::endl;
+  logger_->msgStream(LogDebug) << me_ << "time taken = " << timer_->query() 
     << std::endl;
-  logger_->msgStream(LogDebug) << "Filter-SQP: iterations = " << istat_[1]
+  logger_->msgStream(LogDebug) << me_ << "iterations = " << istat_[1]
     << std::endl;
-  //logger_->msgStream(LogNone) << "Filter-SQP: number of iterations = " 
+  //logger_->msgStream(LogNone) << me_ << "number of iterations = " 
   //<< istat_[0] << " " << istat_[1] << " " << istat_[2] << " " << istat_[3] 
   //<< " " << istat_[4] << " " << istat_[5] << " " << istat_[6] << " " 
   //<< istat_[7] << " " << istat_[8] << " " << istat_[9] << std::endl;
@@ -766,325 +1070,18 @@ EngineStatus FilterSQPEngine::solve()
 }
 
 
-Double FilterSQPEngine::getSolutionValue() 
-{
-  return sol_->getObjValue();
-}
-
-
-ConstSolutionPtr FilterSQPEngine::getSolution() 
-{
-  return sol_;
-}
-
-
-EngineStatus FilterSQPEngine::getStatus() 
-{
-  return status_;
-}
-  
-
-Double FilterSQPEngine::evalObjValue(const Double *x, Int *err)
-{
-  Double objval = problem_->getObjValue(x, err);
-#if SPEW
-  logger_->msgStream(LogDebug2) << "Filter-SQP: " 
-    << "  objective value = " << objval << " error = " << *err << std::endl;
-#endif
-  return objval;
-}
-
-
-void FilterSQPEngine::evalCons(const Double *x, Double *c, Int *error) 
-{
-  ConstraintConstIterator cIter;
-  ConstraintPtr cPtr;
-  UInt i=0;
-  Int e;
-  *error = 0;
-  //problem_->write(std::cout);
-  for (cIter=problem_->consBegin(); cIter!=problem_->consEnd(); ++cIter) {
-    e = 0;
-    cPtr = *cIter;
-    c[i] = cPtr->getActivity(x, &e);
-    if (e!=0) {
-      *error = 1;
-    }
-    ++i;
-  }
-#if SPEW
-  if (logger_->getMaxLevel() > LogDebug) {
-    VariableConstIterator vIter;
-    i=0;
-    logger_->msgStream(LogDebug2) << "Filter-SQP:" << std::endl;
-    for (vIter=problem_->varsBegin(); vIter!=problem_->varsEnd(); ++vIter) {
-      logger_->msgStream(LogDebug2) << (*vIter)->getName() 
-        << " = " << x[i] << std::endl;
-      ++i;
-    }
-    i=0;
-    for (cIter=problem_->consBegin(); cIter!=problem_->consEnd(); ++cIter) {
-      logger_->msgStream(LogDebug2) << (*cIter)->getName() 
-        << " = " << c[i] << std::endl;
-      ++i;
-    }
-  }
-  logger_->msgStream(LogDebug2) << "Filter-SQP: error in evalCons = " 
-    << *error << std::endl;
-#endif
-}
-
-
-void FilterSQPEngine::evalGrad(const Double *x, Double *a, Int *error) 
-{
-  UInt n         = problem_->getNumVars();
-  UInt jac_nnz   = problem_->getJacobian()->getNumNz();
-  Double *values = NULL;
-  ObjectivePtr o = problem_->getObjective();
-  Int e2         = 0;
-
-  *error = 0;
-  // first zero out all values of 'a'
-  std::fill(a, a+n+jac_nnz, 0);
-
-
-  // compute the gradient of the objective function f(x)
-  // dense, it fills up a[0,1,2 ..., (n-1)]
-  if (o) {
-    o->evalGradient(x, a, &e2);
-  }
-#if SPEW
-  if (logger_->getMaxLevel() > LogDebug) {
-    logger_->msgStream(LogDebug2) << "Filter-SQP: obj gradient" << std::endl;
-    for (UInt i=0; i<n; ++i) {
-      logger_->msgStream(LogDebug2) << "  f'[" << i << "] = " << a[i] 
-        << std::endl;
-    }
-  }
-#endif
-
-  // Gradient of each constraint function sits together in 'a'. First get the
-  // starting position where such a gradient should go.
-  values = a+n;
-  problem_->getJacobian()->fillRowColValues(x, values, error);
-  if (e2>0) {
-    *error = e2;
-  }
-#if SPEW
-  logger_->msgStream(LogDebug2) << "Filter-SQP: error in evalGrad = " 
-    << *error << std::endl;
-  if (logger_->getMaxLevel() > LogDebug2) {
-    logger_->msgStream(LogDebug2) << "Filter-SQP: obj gradient" << std::endl;
-    for (UInt i=0; i<n+jac_nnz; ++i) {
-      logger_->msgStream(LogDebug2) << std::setprecision(15)
-        << "  jac[" << i << "] = " << a[i] << std::endl;
-    }
-  }
-#endif
-}
-
-
-void FilterSQPEngine::evalHessian(const Double *x, Double *lam, 
-                                  const Int phase, Double *ws, Int *lws, 
-                                  Int *l_hess, Int *li_hess, Int *error)
-{
-  Double obj_mult = 0;
-  Double *values = ws;
-  *error = 0;
-
-  // don't know why im using these values.
-  *l_hess  = problem_->getHessian()->getNumNz();
-  *li_hess = 3+problem_->getHessian()->getNumNz()+problem_->getNumVars();
-
-  if (phase==2) {
-    obj_mult = 1.0;
-  }
-
-  // first 'n' multipliers are for variable bounds. skip them.
-  lam += problem_->getNumVars();
-  // need to negate the rest of the multipliers. I don't know why.
-  for (UInt i=0; i<problem_->getNumCons(); ++i) {
-    mlam_[i] = -1.0*lam[i];
-  }
-  std::copy(lws_, lws_+*li_hess, lws);
-  problem_->getHessian()->fillRowColValues(x, obj_mult, mlam_, values, error);
-#if SPEW
-  logger_->msgStream(LogDebug2) << "Filter-SQP: l_hess = " << *l_hess 
-    << std::endl;
-  logger_->msgStream(LogDebug2) << "Filter-SQP: obj lam = " << obj_mult
-    << std::endl;
-  for (UInt i=0; i<problem_->getNumCons(); ++i) {
-    logger_->msgStream(LogDebug2) << "Filter-SQP: lam[" << i << "] = "
-                                  << lam[i] << std::endl;
-  }
-  for (UInt i=0; i<problem_->getNumVars(); ++i) {
-    logger_->msgStream(LogDebug2) << std::setprecision(8)
-                                  << "Filter-SQP: " 
-                                  << problem_->getVariable(i)->getName()
-                                  << " = " << x[i] << std::endl;
-  }
-  for (Int i=0; i<*l_hess; ++i) {
-    logger_->msgStream(LogDebug2) << std::setprecision(8) 
-                                  << "Filter-SQP: hess[" << i << "] = "
-                                  << values[i] << std::endl;
-  }
-  logger_->msgStream(LogDebug2) << "Filter-SQP: error in evalHessian = " 
-    << *error << std::endl;
-#endif
-}
-
-
-void FilterSQPEngine::changeBound(ConstraintPtr cons, BoundType lu, 
-                                  Double new_val)
-{
-  if (bl_) {
-    if (Lower == lu) {
-      bl_[problem_->getNumVars()+cons->getIndex()] = new_val;
-    } else {
-      bu_[problem_->getNumVars()+cons->getIndex()] = new_val;
-    }
-  }
-}
-
-
-void FilterSQPEngine::changeBound(VariablePtr v, BoundType lu, Double val)
-{
-  if (bl_) {
-    if (Lower == lu) {
-      bl_[v->getIndex()] = val;
-    } else {
-      bu_[v->getIndex()] = val;
-    }
-  }
-}
-
-
-void FilterSQPEngine::changeBound(VariablePtr v, Double lb, Double ub)
-{
-  if (bl_) {
-    bl_[v->getIndex()] = lb;
-    bu_[v->getIndex()] = ub;
-  }
-}
-
-
-void FilterSQPEngine::changeObj(FunctionPtr, Double)
-{
-  consChanged_ = true;
-}
-
-
-void FilterSQPEngine::negateObj()
-{
-  consChanged_ = true;
-}
-
-
-void FilterSQPEngine::changeConstraint(ConstraintPtr, LinearFunctionPtr, 
-                                       Double , Double)
-{
-  // no need to do anything because the 'solve' function reloads constraints
-  // from problem.
-  consChanged_ = true;
-}
-
-
-void FilterSQPEngine::changeConstraint(ConstraintPtr, NonlinearFunctionPtr)
-{
-  consChanged_ = true;
-}
-
-ConstWarmStartPtr FilterSQPEngine::getWarmStart()
-{
-  return warmSt_;
-}
-
-
-WarmStartPtr FilterSQPEngine::getWarmStartCopy()
-{
-  FilterWSPtr warm_st;
-  if (warmSt_) {
-    warm_st = (FilterWSPtr) new FilterSQPWarmStart(warmSt_); // copy
-  } else {
-    warm_st = FilterWSPtr(); // NULL
-  }
-  return warm_st;
-}
-
-
-void FilterSQPEngine::loadFromWarmStart(const WarmStartPtr warm_st)
-{
-  if (warm_st) {
-    // Two important points:
-    // 1. dynamic cast can't seem to be avoided.
-    // 2. we need to use boost::dynamic_pointer_cast instead of dynamic_cast.
-    ConstFilterWSPtr warm_st2 = 
-      boost::dynamic_pointer_cast <const FilterSQPWarmStart> (warm_st);
-
-    // now create a full copy.
-    warmSt_ = (FilterWSPtr) new FilterSQPWarmStart(warm_st2);
-    if (!useWs_) {
-      logger_->msgStream(LogInfo) << "setWarmStart() method is called but"
-        " warm-start is not enabled." << std::endl;
-    }
-  } else {
-    warmSt_ = FilterWSPtr(); //NULL
-  }
-}
-
-
-void FilterSQPEngine::setIterationLimit(Int limit)
-{
-  if (limit<1) {
-    limit = maxIterLimit_;
-  }
-  iterLimit_ = limit;
-}
-
-
-void FilterSQPEngine::resetIterationLimit()
-{
-  iterLimit_ = maxIterLimit_;
-}
-
-
-void FilterSQPEngine::disableStrBrSetup()
-{
-  saveSol_ = true;
-  strBr_   = false;
-}
-
-
-void FilterSQPEngine::enableStrBrSetup()
-{
-  saveSol_ = false;
-  strBr_   = true;
-}
-
-
 void FilterSQPEngine::writeStats(std::ostream &out) const
 {
   if (stats_) {
-    std::string me = "Filter-SQP: ";
-    out << me << "total calls            = " << stats_->calls << std::endl
-      << me << "strong branching calls = " << stats_->strCalls << std::endl
-      << me << "total time in solving  = " << stats_->time  << std::endl
-      << me << "time in str branching  = " << stats_->strTime << std::endl
-      << me << "total iterations       = " << stats_->iters << std::endl
-      << me << "strong br iterations   = " << stats_->strIters << std::endl;
+    out << me_ << "total calls            = " << stats_->calls << std::endl
+      << me_ << "strong branching calls = " << stats_->strCalls << std::endl
+      << me_ << "total time in solving  = " << stats_->time  << std::endl
+      << me_ << "time in str branching  = " << stats_->strTime << std::endl
+      << me_ << "total iterations       = " << stats_->iters << std::endl
+      << me_ << "strong br iterations   = " << stats_->strIters << std::endl;
   }
 }
 
-
-std::string FilterSQPEngine::getName() const
-{
-  return "Filter-SQP";
-}
-
-
-// ----------------------------------------------------------------------- //
-// End of FilterSQPEngine Class.
-// ----------------------------------------------------------------------- //
 
 // Local Variables: 
 // mode: c++ 

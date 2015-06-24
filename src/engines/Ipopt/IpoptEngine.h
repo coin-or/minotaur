@@ -22,8 +22,8 @@
 
 
 namespace Ipopt {
-  class IpoptFunInterface;
   class IpoptApplication;
+  class IpoptFunInterface;
   class TNLP;
 }
 
@@ -39,13 +39,13 @@ namespace Minotaur {
   typedef boost::shared_ptr<Problem> ProblemPtr;
 
   struct IpoptStats {
-    UInt calls;     /// Total number of calls to solve.
-    UInt strCalls;  /// Calls to solve while strong branching.
-    Double time;    /// Sum of time taken in all calls to solve.
-    Double ptime;   /// Sum of time taken in all calls to presolve.
-    Double strTime; /// time taken in strong branching alone.
-    UInt iters;     /// Sum of number of iterations in all calls. 
-    UInt strIters;  /// Number of iterations in strong branching alone.
+    UInt calls;     ///< Total number of calls to solve.
+    UInt iters;     ///< Sum of number of iterations in all calls. 
+    double ptime;   ///< Sum of time taken in all calls to presolve.
+    UInt strCalls;  ///< Calls to solve while strong branching.
+    UInt strIters;  ///< Number of iterations in strong branching alone.
+    double strTime; ///< time taken in strong branching alone.
+    double time;    ///< Sum of time taken in all calls to solve.
   };
 
 
@@ -55,53 +55,53 @@ namespace Minotaur {
   typedef boost::shared_ptr<const IpoptSolution> ConstIpoptSolPtr;
 
   class IpoptSolution : public Solution {
-    public:
+  public:
 
-      /// Default constructor
-      IpoptSolution();
+    /// Default constructor
+    IpoptSolution();
 
-      /// Construct a solution for a problem from an array of doubles.
-      IpoptSolution(const Double *x, ProblemPtr problem); 
+    /// Construct a solution for a problem from an array of doubles.
+    IpoptSolution(const double *x, ProblemPtr problem); 
 
-      /**
-       * Construct a solution for a problem from an array of doubles and
-       * objective value.
-       */
-      IpoptSolution(const Double *x, Double objval, ProblemPtr problem);
+    /**
+     * Construct a solution for a problem from an array of doubles and
+     * objective value.
+     */
+    IpoptSolution(const double *x, double objval, ProblemPtr problem);
 
-      /// Copy constructor
-      IpoptSolution(ConstIpoptSolPtr);
+    /// Copy constructor
+    IpoptSolution(ConstIpoptSolPtr);
 
-      /// Destroy.
-      ~IpoptSolution();
+    /// Destroy.
+    ~IpoptSolution();
 
-      // base class
-      void setDualOfVars(const Double *) { assert(!"implemenr me!"); };
+    /**
+     * Return a pointer to the dual associated with the lower bound on
+     * variables.
+     */
+    const double * getLowerDualOfVars() const {return dualXLow_;};
 
-      /// Set duals of variable-bounds: both the lower and upper.
-      void setDualOfVars(const Double *lower, const Double *upper);
+    /**
+     * Return a pointer to the dual associated with the upper bound on
+     * variables.
+     */
+    const double * getUpperDualOfVars() const {return dualXUp_;};
 
-      /**
-       * Return a pointer to the dual associated with the lower bound on
-       * variables.
-       */
-      const Double * getLowerDualOfVars() const {return dualXLow_;};
+    // base class
+    void setDualOfVars(const double *) { assert(!"implement me!"); };
 
-      /**
-       * Return a pointer to the dual associated with the upper bound on
-       * variables.
-       */
-      const Double * getUpperDualOfVars() const {return dualXUp_;};
+    /// Set duals of variable-bounds: both the lower and upper.
+    void setDualOfVars(const double *lower, const double *upper);
 
-      /// Write to an output.
-      void write(std::ostream &out) const;
+    /// Write to an output.
+    void write(std::ostream &out) const;
 
-    private:
-      /// dual of lower bounds.
-      Double *dualXLow_;
+  private:
+    /// dual of lower bounds.
+    double *dualXLow_;
 
-      /// dual of upper bounds.
-      Double *dualXUp_;
+    /// dual of upper bounds.
+    double *dualXUp_;
   };
 
 
@@ -111,38 +111,38 @@ namespace Minotaur {
 
   /// Class for saving and using Warm-start information in Ipopt.
   class IpoptWarmStart : public WarmStart {
-    public:
-      /// Default constructor
-      IpoptWarmStart();
+  public:
+    /// Default constructor
+    IpoptWarmStart();
 
-      /// Copy constructor. Creates a full copy, not just copies pointers.
-      IpoptWarmStart(ConstIpoptWarmStartPtr ws);
+    /// Copy constructor. Creates a full copy, not just copies pointers.
+    IpoptWarmStart(ConstIpoptWarmStartPtr ws);
 
-      /// Destroy
-      ~IpoptWarmStart();
-      
-      // Implement WarmStart::hasInfo().
-      bool hasInfo();
+    /// Destroy
+    ~IpoptWarmStart();
 
-      // Implement WarmStart::write().
-      void write(std::ostream &out) const;
+    /// Return the soluton that can be used as starting point.
+    IpoptSolPtr getPoint();
 
-      /**
-       * Overwrite the primal and dual values of warm-start. Sometimes, the
-       * warm-start data is initialized and needs to be updated. This
-       * should be called in place of deleting and creating a new warm-start
-       * object.
-       */
-      void setPoint(IpoptSolPtr sol);
+    // Implement WarmStart::hasInfo().
+    bool hasInfo();
 
-      void makeCopy();
+    void makeCopy();
 
-      /// Return the soluton that can be used as starting point.
-      IpoptSolPtr getPoint();
+    /**
+     * Overwrite the primal and dual values of warm-start. Sometimes, the
+     * warm-start data is initialized and needs to be updated. This
+     * should be called in place of deleting and creating a new warm-start
+     * object.
+     */
+    void setPoint(IpoptSolPtr sol);
 
-    private:
-      /// The starting solution that is used to warm-start.
-      IpoptSolPtr sol_;
+    // Implement WarmStart::write().
+    void write(std::ostream &out) const;
+
+  private:
+    /// The starting solution that is used to warm-start.
+    IpoptSolPtr sol_;
   };
 
 
@@ -150,178 +150,181 @@ namespace Minotaur {
 // ----------------------------------------------------------------------- //
 
   class IpoptEngine : public NLPEngine {
-    public:
+  public:
 
-      friend class Problem;
+    friend class Problem;
 
-      /// Default constructor
-      IpoptEngine();
+    /// Default constructor
+    IpoptEngine();
 
-      /// Default constructor
-      IpoptEngine(EnvPtr env);
+    /// Default constructor
+    IpoptEngine(EnvPtr env);
 
-      /// Destroy
-      ~IpoptEngine();
+    /// Destroy
+    ~IpoptEngine();
 
-      /// Return an empty IpoptEngine pointer.
-      EnginePtr emptyCopy();
+    // Base class method
+    void addConstraint(ConstraintPtr c);
 
-      /// Load the problem into IPOPT. We create the TNLP interface to IPOPT.
-      void load(ProblemPtr problem);
+    void changeBound(ConstraintPtr cons, BoundType lu, double new_val);
 
-      /// Clear the loaded problem, if any, from the engine.
-      void clear();
+    // Implement Engine::changeBound(VariablePtr, BoundType, double).
+    void changeBound(VariablePtr var, BoundType lu, double new_val);
 
+    // Implement Engine::changeBound(VariablePtr, double, double).
+    void changeBound(VariablePtr var, double new_lb, double new_ub);
 
-      /**
-       * Solve the problem that was loaded. Uses the TNLP interface to IPOPT
-       * for solving the NLP.
-       */
-      EngineStatus solve();
+    // Implement Engine::changeConstraint().
+    void changeConstraint(ConstraintPtr con, LinearFunctionPtr lf, 
+                          double lb, double ub);
 
-      // Implement Engine::getSolutionValue().
-      Double getSolutionValue();
+    // Implement Engine::changeConstraint().
+    void changeConstraint(ConstraintPtr, NonlinearFunctionPtr);
 
-      // Implement Engine::getSolution().
-      ConstSolutionPtr getSolution();
+    // change objective.
+    void changeObj(FunctionPtr f, double cb);
 
-      // Implement Engine::getStatus().
-      EngineStatus getStatus();
+    /// Clear the loaded problem, if any, from the engine.
+    void clear();
 
-      void changeBound(ConstraintPtr cons, BoundType lu, Double new_val);
+    /// Restore settings after strong branching.
+    void disableStrBrSetup();
 
-      // Implement Engine::changeBound(VariablePtr, BoundType, Double).
-      void changeBound(VariablePtr var, BoundType lu, Double new_val);
+    /// Return an empty IpoptEngine pointer.
+    EnginePtr emptyCopy();
 
-      // Implement Engine::changeBound(VariablePtr, Double, Double).
-      void changeBound(VariablePtr var, Double new_lb, Double new_ub);
+    /// Make settings for strong branching.
+    void enableStrBrSetup();
 
-      // Implement Engine::getWarmStart().
-      ConstWarmStartPtr getWarmStart();
+    // get name.
+    std::string getName() const;
 
-      // Implement Engine::getWarmStartCopy().
-      WarmStartPtr getWarmStartCopy();
+    // Implement Engine::getSolution().
+    ConstSolutionPtr getSolution();
 
-      // Implement Engine::loadFromWarmStart().
-      void loadFromWarmStart(const WarmStartPtr ws);
+    // Implement Engine::getSolutionValue().
+    double getSolutionValue();
 
-      // base class method.
-      void removeCons(std::vector<ConstraintPtr> &delcons);
+    // Implement Engine::getStatus().
+    EngineStatus getStatus();
 
-      // change objective.
-      void changeObj(FunctionPtr f, Double cb);
+    // Implement Engine::getWarmStart().
+    ConstWarmStartPtr getWarmStart();
 
-      // Convert 'min f' to 'min -f'.
-      void negateObj();
+    // Implement Engine::getWarmStartCopy().
+    WarmStartPtr getWarmStartCopy();
 
-      // Base class method
-      void addConstraint(ConstraintPtr c);
+    /// Load the problem into IPOPT. We create the TNLP interface to IPOPT.
+    void load(ProblemPtr problem);
 
-      // Implement Engine::changeConstraint().
-      void changeConstraint(ConstraintPtr con, LinearFunctionPtr lf, 
-                            Double lb, Double ub);
+    // Implement Engine::loadFromWarmStart().
+    void loadFromWarmStart(const WarmStartPtr ws);
 
-      // Implement Engine::changeConstraint().
-      void changeConstraint(ConstraintPtr, NonlinearFunctionPtr);
+    // Convert 'min f' to 'min -f'.
+    void negateObj();
 
-      // Implement Engine::setIterationLimit().
-      void setIterationLimit(Int limit);
+    // base class method.
+    void removeCons(std::vector<ConstraintPtr> &delcons);
 
-      void setOptionsForSingleSolve();
-      void setOptionsForRepeatedSolve();
+    // Implement Engine::resetIterationLimit().
+    void resetIterationLimit();
 
-      // Implement Engine::resetIterationLimit().
-      void resetIterationLimit();
+    // Implement Engine::setIterationLimit().
+    void setIterationLimit(int limit);
 
-      /// Make settings for strong branching.
-      void enableStrBrSetup();
+    void setOptionsForSingleSolve();
 
-      /// Restore settings after strong branching.
-      void disableStrBrSetup();
+    void setOptionsForRepeatedSolve();
 
-      /// Write statistics.
-      void writeStats(std::ostream &out) const;
+    /**
+     * Solve the problem that was loaded. Uses the TNLP interface to IPOPT
+     * for solving the NLP.
+     */
+    EngineStatus solve();
 
-      // get name.
-      std::string getName() const;
+    /// Write statistics.
+    void writeStats(std::ostream &out) const;
 
-    private:
-      /// Environment.
-      EnvPtr env_;
+  private:
+    /// True if a bound on variable has been modified since last change. 
+    bool bndChanged_;
 
-      Ipopt::IpoptFunInterface *mynlp_;
-      Ipopt::IpoptApplication  *myapp_; 
+    /// True if a constraint has been modified since last change. 
+    bool consChanged_;
 
-      /// True if a bound on variable has been modified since last change. 
-      Bool bndChanged_;
+    /// Optimal dual values associated with x >= l.
+    double *dual_x_l_;
 
-      /// True if a constraint has been modified since last change. 
-      Bool consChanged_;
+    /// Optimal dual values associated with x <= u.
+    double *dual_x_u_;
 
-      /**
-       * The solution obtained from last solve. The solution_ in 
-       * IpoptFunInterface points to the same array as this one. So the
-       * solution from Ipopt is copied to this array only once. This array
-       * does not get freed in IpoptFunInterface and so must be freed here.
-       */ 
-      IpoptSolPtr sol_;
+    /// Optimal dual values associated with l <= g(x) <= u.
+    double *dual_g_;
 
-      /// Optimal dual values associated with x >= l.
-      Double *dual_x_l_;
+    /// Environment.
+    EnvPtr env_;
 
-      /// Optimal dual values associated with x <= u.
-      Double *dual_x_u_;
+    /// If lb>ub+etol_, declare infeasible.
+    const double etol_;
 
-      /// Optimal dual values associated with l <= g(x) <= u.
-      Double *dual_g_;
+    /// Where to put logs.
+    LoggerPtr logger_;
 
+    /// The maximum limit that can be set on Ipopt. 
+    static const int maxIterLimit_ = 3000;
 
-      /// Private copy of the warm start information.
-      IpoptWarmStartPtr ws_;
+    /// String name used in log messages.
+    static const std::string me_;
 
-      /**
-       * True if we want to save warm start information of the current
-       * solution for the next solve. False, if no information needs to be
-       * saved. Saving information does not mean that it will be used.
-       * useWs_ flag must be on to use the warm-start information.
-       */
-      Bool prepareWs_;
+    Ipopt::IpoptApplication  *myapp_; 
 
-      /**
-       * True if we want to use warm-start information, either from a
-       * previous solve or from a user provided structure.
-       */
-      Bool useWs_;
+    Ipopt::IpoptFunInterface *mynlp_;
 
-      /// Where to put logs.
-      LoggerPtr logger_;
+    /**
+     * True if we want to save warm start information of the current
+     * solution for the next solve. False, if no information needs to be
+     * saved. Saving information does not mean that it will be used.
+     * useWs_ flag must be on to use the warm-start information.
+     */
+    bool prepareWs_;
 
-      /// The maximum limit that can be set on Ipopt. 
-      static const Int maxIterLimit_ = 3000;
+    /// Try to solve without calling ipopt.
+    bool presolve_();
 
-      /// If lb>ub+etol_, declare infeasible.
-      const Double etol_;
+    /// Problem that is loaded, if any.
+    ProblemPtr problem_;
 
-      /**
-       * Timer for Ipopt solves. Includes time spent in call-backs:
-       * evaluating functions and derivatives.
-       */
-      Timer *timer_;
+    /**
+     * The solution obtained from last solve. The solution_ in 
+     * IpoptFunInterface points to the same array as this one. So the
+     * solution from Ipopt is copied to this array only once. This array
+     * does not get freed in IpoptFunInterface and so must be freed here.
+     */ 
+    IpoptSolPtr sol_;
 
-      /// Statistics.
-      IpoptStats *stats_;
+    /// Statistics.
+    IpoptStats *stats_;
 
-      /// True if strong branching. False otherwise.
-      Bool strBr_;
+    /// True if strong branching. False otherwise.
+    bool strBr_;
 
-      /// Try to solve without calling ipopt.
-      Bool presolve_();
+    /**
+     * Timer for Ipopt solves. Includes time spent in call-backs:
+     * evaluating functions and derivatives.
+     */
+    Timer *timer_;
 
-      /// Problem that is loaded, if any.
-      ProblemPtr problem_;
+    /**
+     * True if we want to use warm-start information, either from a
+     * previous solve or from a user provided structure.
+     */
+    bool useWs_;
 
-      /// Set problem specific options to make IPOPT faster
-      void setOptionsForProb_();
+    /// Private copy of the warm start information.
+    IpoptWarmStartPtr ws_;
+
+    /// Set problem specific options to make IPOPT faster
+    void setOptionsForProb_();
   };
 }
 

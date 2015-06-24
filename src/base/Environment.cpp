@@ -226,8 +226,8 @@ void Environment::createDefaultOptions_()
       true, -1);
   options_->insert(i_option);
 
-  i_option = (IntOptionPtr) new Option<int>("filter_sqp_log_level", 
-      "Verbosity of Filter-SQP engine: 0-6", true, LogInfo);
+  i_option = (IntOptionPtr) new Option<int>("engine_log_level", 
+      "Verbosity of engine: 0-6", true, LogInfo);
   options_->insert(i_option);
 
   i_option = (IntOptionPtr) new Option<int>("handler_log_level", 
@@ -238,10 +238,6 @@ void Environment::createDefaultOptions_()
       "Verbosity of Multi Start Heuristic: 0-6", true, LogInfo);
   options_->insert(i_option);
   
-  i_option = (IntOptionPtr) new Option<int>("ipopt_log_level", 
-      "Verbosity of Ipopt engine: 0-6", true, LogInfo);
-  options_->insert(i_option);
-
   // Serdar added these options for MultilinearTermsHandler class
   i_option = (IntOptionPtr) new Option<int>("ml_max_group_size",
        "Maximum size of individual element in grouping: >= 2, <= 20", true, 6);
@@ -250,10 +246,6 @@ void Environment::createDefaultOptions_()
 
   i_option = (IntOptionPtr) new Option<int>("node_processor_log_level", 
       "Verbosity of node processor: 0-6", true, LogInfo);
-  options_->insert(i_option);
-
-  i_option = (IntOptionPtr) new Option<int>("osilp_log_level", 
-      "Verbosity of OsiLP engine: 0-6", true, LogInfo);
   options_->insert(i_option);
 
   i_option = (IntOptionPtr) new Option<int>("presolve_log_level", 

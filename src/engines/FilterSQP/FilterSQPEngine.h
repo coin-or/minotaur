@@ -30,303 +30,305 @@ namespace Minotaur {
   typedef boost::shared_ptr<Solution> SolutionPtr;
 
   struct FilterSQPStats {
-    UInt calls;     /// Total number of calls to solve.
-    UInt strCalls;  /// Calls to solve while strong branching.
-    Double time;    /// Sum of time taken in all calls to solve.
-    Double strTime; /// time taken in strong branching alone.
-    UInt iters;     /// Sum of number of iterations in all calls. 
-    UInt strIters;  /// Number of iterations in strong branching alone.
+    UInt calls;     ///<  Total number of calls to solve.
+    UInt iters;     ///<  Sum of number of iterations in all calls. 
+    UInt strCalls;  ///<  Calls to solve while strong branching.
+    UInt strIters;  ///<  Number of iterations in strong branching alone.
+    double strTime; ///<  time taken in strong branching alone.
+    double time;    ///<  Sum of time taken in all calls to solve.
   };
 
   class FilterSQPWarmStart : public WarmStart {
-    public:
+  public:
 
-      /// Default constructor
-      FilterSQPWarmStart();
+    /// Default constructor
+    FilterSQPWarmStart(); 
 
-      /// Copy constructor. Creates a full copy, not just copies pointers.
-      FilterSQPWarmStart(ConstFilterWSPtr warm_st);
+    /// Copy constructor. Creates a full copy, not just copies pointers.
+    FilterSQPWarmStart(ConstFilterWSPtr warm_st);
 
-      /// Destroy
-      ~FilterSQPWarmStart();
-      
-      // Implement WarmStart::hasInfo().
-      Bool hasInfo();
+    /// Destroy
+    ~FilterSQPWarmStart();
 
-      // Implement WarmStart::write().
-      void write(std::ostream &out) const;
+    /// Get solution.
+    SolutionPtr getPoint();
 
-      /**
-       * Overwrite the primal and dual values of warm-start. Sometimes, the
-       * warm-start data is initialized and needs to be updated. This
-       * should be called in place of deleting and creating a new warm-start
-       * object.
-       */
-      void setPoint(SolutionPtr sol);
+    // Implement WarmStart::hasInfo().
+    bool hasInfo();
 
-      /// Get solution.
-      SolutionPtr getPoint();
+    /**
+     * Overwrite the primal and dual values of warm-start. Sometimes, the
+     * warm-start data is initialized and needs to be updated. This
+     * should be called in place of deleting and creating a new warm-start
+     * object.
+     */
+    void setPoint(SolutionPtr sol);
 
-    private:
-      /// The starting solution that is used to warm-start.
-      SolutionPtr sol_;
+    // Implement WarmStart::write().
+    void write(std::ostream &out) const;
+
+  private:
+    /// The starting solution that is used to warm-start.
+    SolutionPtr sol_;
   };
 
   /**
    * FilterSQPEngine is the class that is used to solve NLP problems using
-   * the FilterSQP. FilterSQP can be used to solve problems completely to
+   * the FilterSQP solver. FilterSQP can be used to solve problems completely to
    * optimality or approximately.
    */
   class FilterSQPEngine : public NLPEngine {
 
-    public:
-      friend class Problem;
+  public:
+    friend class Problem;
 
-      /// Default constructor.
-      FilterSQPEngine();    
+    /// Default constructor.
+    FilterSQPEngine();    
 
-      /// Constructor using given environment options.
-      FilterSQPEngine(EnvPtr env);    
+    /// Constructor using given environment options.
+    FilterSQPEngine(EnvPtr env);    
 
-      /// Return an empty FilterSQPEngine pointer.
-      EnginePtr emptyCopy();
+    /// Destroy.
+    ~FilterSQPEngine();
 
-      /// Method to read the problem and initialize FilterSQP.
-      void load(ProblemPtr problem);
+    // Base class method
+    void addConstraint(ConstraintPtr c);
 
-      /// Solve the problem that was loaded and report the status.
-      EngineStatus solve();
+    // Change bound on a constraint.
+    void changeBound(ConstraintPtr cons, BoundType lu, double new_val);
 
-      /// Report the solution value from the last solve.
-      Double evalObjValue(const Double *x, Int *err);
+    // Change bound on a variable.
+    void changeBound(VariablePtr var, BoundType lu, double new_val);
 
-      /**
-       * Evaluate the activity of constraints and fill the values in 'c'.
-       * This is a callback function that is called by filter. 
-       */
-      void evalCons(const Double *x, Double *c, Int *error);
+    // Implement Engine::changeBound(VariablePtr, double, double).
+    void changeBound(VariablePtr var, double new_lb, double new_ub);
 
-      /**
-       * Evaluate the gradient of objective and fill in 'a'. 
-       * This is a callback function that is called by filter. 
-       */
-      void evalGrad(const Double *x, Double *a, Int *error);
+    // Implement Engine::changeConstraint().
+    void changeConstraint(ConstraintPtr con, LinearFunctionPtr lf, 
+                          double lb, double ub);
 
-      /**
-       * Evaluate the hessian of lagrangian at point x and fill in. 
-       * This is a callback function that is called by filter. 
-       */
-      void evalHessian(const Double *x, Double *lam, 
-          const Int phase, Double *ws, Int *lws, Int *l_hess, Int *li_hess, 
-          Int *error);
+    // Implement Engine::changeConstraint().
+    void changeConstraint(ConstraintPtr c, NonlinearFunctionPtr nlf);
 
-      /// Report the solution value from the last solve. 
-      Double getSolutionValue();
+    // change objective.
+    void changeObj(FunctionPtr f, double cb);
 
-      /// Report the solution.
-      ConstSolutionPtr getSolution();
+    void clear();
 
-      /// Report the status of the last solve.
-      EngineStatus getStatus();
+    /// Restore settings after strong branching.
+    void disableStrBrSetup();
 
-      // Change bound on a constraint.
-      void changeBound(ConstraintPtr cons, BoundType lu, Double new_val);
+    /// Return an empty FilterSQPEngine pointer.
+    EnginePtr emptyCopy();
 
-      // Change bound on a variable.
-      void changeBound(VariablePtr var, BoundType lu, Double new_val);
+    /// Make settings for strong branching.
+    void enableStrBrSetup();
 
-      // Implement Engine::changeBound(VariablePtr, Double, Double).
-      void changeBound(VariablePtr var, Double new_lb, Double new_ub);
+    /**
+     * Evaluate the activity of constraints and fill the values in 'c'.
+     * This is a callback function that is called by filter. 
+     */
+    void evalCons(const double *x, double *c, int *error);
 
-      // change objective.
-      void changeObj(FunctionPtr f, Double cb);
+    /**
+     * Evaluate the gradient of objective and fill in 'a'. 
+     * This is a callback function that is called by filter. 
+     */
+    void evalGrad(const double *x, double *a, int *error);
 
-      // Convert 'min f' to 'min -f'.
-      void negateObj();
+    /**
+     * Evaluate the hessian of lagrangian at point x and fill in. 
+     * This is a callback function that is called by filter. 
+     */
+    void evalHessian(const double *x, double *lam, 
+                     const int phase, double *ws, int *lws, int *l_hess,
+                     int *li_hess, int *error);
 
-      // Base class method
-      void addConstraint(ConstraintPtr c);
+    /// Report the solution value from the last solve.
+    double evalObjValue(const double *x, int *err);
 
-      // Implement Engine::changeConstraint().
-      void changeConstraint(ConstraintPtr con, LinearFunctionPtr lf, 
-                            Double lb, Double ub);
+    // Get name.
+    std::string getName() const;
 
-      // Implement Engine::changeConstraint().
-      void changeConstraint(ConstraintPtr c, NonlinearFunctionPtr nlf);
+    /// Report the solution value from the last solve. 
+    double getSolutionValue();
 
-      // Implement Engine::getWarmStart(). // NULL for now.
-      virtual ConstWarmStartPtr getWarmStart();
+    /// Report the solution.
+    ConstSolutionPtr getSolution();
 
-      // Implement Engine::getWarmStartCopy(). // NULL for now.
-      virtual WarmStartPtr getWarmStartCopy();
+    /// Report the status of the last solve.
+    EngineStatus getStatus();
 
-      // Implement Engine::loadFromWarmStart().
-      virtual void loadFromWarmStart(WarmStartPtr ws);
+    // Implement Engine::getWarmStart(). // NULL for now.
+    ConstWarmStartPtr getWarmStart();
 
-      // Implement Engine::setIterationLimit().
-      void setIterationLimit(Int limit);
+    // Implement Engine::getWarmStartCopy(). // NULL for now.
+    WarmStartPtr getWarmStartCopy();
 
-      // Implement Engine::resetIterationLimit().
-      void resetIterationLimit();
+    /// Method to read the problem and initialize FilterSQP.
+    void load(ProblemPtr problem);
 
-      /// Make settings for strong branching.
-      void enableStrBrSetup();
+    // Implement Engine::loadFromWarmStart().
+    void loadFromWarmStart(WarmStartPtr ws);
 
-      /// Restore settings after strong branching.
-      void disableStrBrSetup();
+    // Convert 'min f' to 'min -f'.
+    void negateObj();
 
-      // Write statistics.
-      void writeStats(std::ostream &out) const;
+    // base class method.
+    void removeCons(std::vector<ConstraintPtr> &delcons);
 
-      // Get name.
-      std::string getName() const;
+    // Implement Engine::resetIterationLimit().
+    void resetIterationLimit();
 
-      void clear();
+    // Implement Engine::setIterationLimit().
+    void setIterationLimit(int limit);
 
-      // base class method.
-      void removeCons(std::vector<ConstraintPtr> &delcons);
+    /// Solve the problem that was loaded and report the status.
+    EngineStatus solve();
 
-      /// Destroy.
-      ~FilterSQPEngine();
+    // Write statistics.
+    void writeStats(std::ostream &out) const;
+
+  private:
 
-    private:
-     
-      /// Environment.
-      EnvPtr env_;
+    /// Jacobian storage.
+    double *a_;
 
-      /**
-       * la_ stores the sparsity pattern of jacobian. It needs to be
-       * evaluated only once.
-       */
-      Int *la_;
+    /// Lower bounds.
+    double *bl_;
 
-      Double *ws_;
+    /// if lb > ub and lb < ub+bTol_, we make ub = lb.
+    double bTol_;
 
-      /**
-       * lws_ stores the sparsity pattern of hessian of lagrangian. It needs
-       * to be evaluated only once. In our implementation:
-       * lws_[0]    = number of entries in the hessian of lagrangian.
-       * We set phl = 0 (phl is a common block in filter-sqp),
-       * phr        = 1,
-       * lws_[phr]  = lws_[1] = row index of the first entry in the
-       *              hessian,
-       * lws_[phr+i]= lws_[1+i] = row index of the i-th entry in the
-       *              hessian,
-       * phc        = hess_nz + 1,
-       * lws_[phc]  = lws_[1+hess_nz] = column index of the first entry 
-       *              in the hessian,
-       * lws_[phc+i]= lws_[1+hess_nz+i] = column index of the i-th entry 
-       *              in the hessian.
-       */
-      Int *lws_;
+    /// Upper bounds.
+    double *bu_;
 
-      /// Copy of lws_;
-      Int *lws2_;
+    /// values of constraint functions
+    double *c_;
 
-      /// values of constraint functions
-      Double *c_;
+    /**
+     * If true, reallocate space in the next solve. Important, if
+     * constraints or objectives have changed.
+     */
+    bool consChanged_;
 
-      /// scale factors.
-      Double *s_;
+    /// Linear (L) or Nonlinear (N).
+    char *cstype_;
 
-      /// Jacobian storage.
-      Double *a_;
+    /// Environment.
+    EnvPtr env_;
 
-      /// Solution.
-      Double *x_;
+    /// if rstat_[4]<feasTol_, then the solution is considered feasible.
+    const double feasTol_;
 
-      /// Lagrange multipliers.
-      Double *lam_;
+    /// Statistics.
+    int *istat_;
 
-      /// Need to multiply lagrange multipliers by -1 in callback. Storage.
-      Double *mlam_;
+    /// Number of iterations that can be performed during solve
+    int iterLimit_; 
 
-      /// Lower bounds.
-      Double *bl_;
+    /**
+     * la_ stores the sparsity pattern of jacobian. It needs to be
+     * evaluated only once.
+     */
+    int *la_;
 
-      /// Upper bounds.
-      Double *bu_;
+    /// Lagrange multipliers.
+    double *lam_;
 
-      /// Linear (L) or Nonlinear (N).
-      char *cstype_;
+    /**
+     * lws_ stores the sparsity pattern of hessian of lagrangian. It needs
+     * to be evaluated only once. In our implementation:
+     * lws_[0]    = number of entries in the hessian of lagrangian.
+     * We set phl = 0 (phl is a common block in filter-sqp),
+     * phr        = 1,
+     * lws_[phr]  = lws_[1] = row index of the first entry in the
+     *              hessian,
+     * lws_[phr+i]= lws_[1+i] = row index of the i-th entry in the
+     *              hessian,
+     * phc        = hess_nz + 1,
+     * lws_[phc]  = lws_[1+hess_nz] = column index of the first entry 
+     *              in the hessian,
+     * lws_[phc+i]= lws_[1+hess_nz+i] = column index of the i-th entry 
+     *              in the hessian.
+     */
+    int *lws_;
 
-      /// Statistics.
-      Double *rstat_; 
+    /// Copy of lws_;
+    int *lws2_;
 
-      /// Statistics.
-      Int *istat_;
+    /// Max value of iterLimit_, when solving a relaxation
+    const int maxIterLimit_;
 
+    /// String name used in log messages.
+    static const std::string me_;
 
-      /// Solution found by the engine. 
-      SolutionPtr sol_;
+    /// Need to multiply lagrange multipliers by -1 in callback. Storage.
+    double *mlam_;
 
-      /// Number of iterations that can be performed during solve
-      Int iterLimit_; 
+    /**
+     * True if we want to save warm start information of the current
+     * solution for the next solve. False, if no information needs to be
+     * saved. Saving information does not mean that it will be used.
+     * useWs_ flag must be on to use the warm-start information.
+     */
+    bool prepareWs_;
 
-      /// Max value of iterLimit_, when solving a relaxation
-      const Int maxIterLimit_;
+    /// Problem that is loaded, if any.
+    ProblemPtr problem_;
 
-      /// if rstat_[4]<feasTol_, then the solution is considered feasible.
-      const Double feasTol_;
+    /// Statistics.
+    double *rstat_; 
 
-      /// if lb > ub and lb < ub+bTol_, we make ub = lb.
-      Double bTol_;
+    /// scale factors.
+    double *s_;
 
-      /// warm start information.
-      FilterWSPtr warmSt_;
+    /**
+     * If true, then copy the solution from the last solve. Otherwise,
+     * don't copy it.
+     */
+    bool saveSol_;
 
-      /**
-       * True if we want to save warm start information of the current
-       * solution for the next solve. False, if no information needs to be
-       * saved. Saving information does not mean that it will be used.
-       * useWs_ flag must be on to use the warm-start information.
-       */
-      Bool prepareWs_;
+    /// Solution found by the engine. 
+    SolutionPtr sol_;
 
-      /**
-       * True if we want to use warm-start information, either from a
-       * previous solve or from a user provided structure.
-       */
-      Bool useWs_;
+    /// Statistics.
+    FilterSQPStats *stats_;
 
-      /**
-       * If true, then copy the solution from the last solve. Otherwise,
-       * don't copy it.
-       */
-      Bool saveSol_;
+    /// If true, we are currently in strong-branching mode. False otherwise.
+    bool strBr_;
 
-      /// If true, we are currently in strong-branching mode. False otherwise.
-      Bool strBr_;
+    /// Timer
+    Timer *timer_;
 
-      /**
-       * If true, reallocate space in the next solve. Important, if
-       * constraints or objectives have changed.
-       */
-      Bool consChanged_;
+    /**
+     * True if we want to use warm-start information, either from a
+     * previous solve or from a user provided structure.
+     */
+    bool useWs_;
 
-      /// Timer
-      Timer *timer_;
+    /// warm start information.
+    FilterWSPtr warmSt_;
 
-      /// Statistics.
-      FilterSQPStats *stats_;
+    double *ws_;
 
-      /// Problem that is loaded, if any.
-      ProblemPtr problem_;
+    /// Solution.
+    double *x_;
 
-      /// Allocate storage space for filter-sqp.
-      void setStorage_(Int mxwk, Int maxa);
+    /// Free arrays used by filter-sqp.
+    void freeStorage_();
 
-      /// Copy bounds from problem into filter-sqp's arrays.
-      void setBounds_();
+    /// Copy bounds from problem into filter-sqp's arrays.
+    void setBounds_();
 
-      /// Free arrays used by filter-sqp.
-      void freeStorage_();
+    /// Allocate storage space for filter-sqp.
+    void setStorage_(int mxwk, int maxa);
 
-      /// Allocate space and fill sparsity pattern of the Jacobian and Hessian.
-      void setStructure_();
+    /// Allocate space and fill sparsity pattern of the Jacobian and Hessian.
+    void setStructure_();
 
   };
-  
+
   typedef boost::shared_ptr<FilterSQPEngine> FilterSQPEnginePtr;
 } // end namespace Minotaur 
 

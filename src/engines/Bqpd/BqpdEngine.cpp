@@ -41,9 +41,11 @@
 
 using namespace Minotaur;
 
+const std::string BqpdEngine::me_ = "BqpdEngine: ";
+
 BqpdEngine::BqpdEngine()
-  : bndRelaxed_(false),
-    bndChanges_(0),
+  : bndChanges_(0),
+    bndRelaxed_(false),
     bTol_(1e-9),
     chkPt_(0),
     consModed_(false),
@@ -72,8 +74,8 @@ BqpdEngine::BqpdEngine()
 
 
 BqpdEngine::BqpdEngine(EnvPtr env)
-  : bndRelaxed_(false),
-    bndChanges_(0),
+  : bndChanges_(0),
+    bndRelaxed_(false),
     bTol_(1e-9),
     chkPt_(0),
     consModed_(false),
@@ -92,7 +94,7 @@ BqpdEngine::BqpdEngine(EnvPtr env)
   wsMode_ = env->getOptions()->findInt("bqpd_ws_mode")->getValue();
   status_ = EngineError;
   logger_ = (LoggerPtr) new Logger((LogLevel) (env->getOptions()
-        ->findInt("bqpd_log_level")->getValue()));
+        ->findInt("engine_log_level")->getValue()));
   iterLimit_ = maxIterLimit_;
   timer_ = env->getNewTimer();
   stats_ = new BqpdStats();
@@ -177,19 +179,19 @@ void BqpdEngine::clear() {
 // constraints that are active)). set kmax= 0 iff LP. 
 void BqpdEngine::load_()
 {
-  Int n       = problem_->getNumVars();
-  Int m       = problem_->getNumCons();
-  Int mlp     = 1000;      // Max level of degeneracy. 
+  int n       = problem_->getNumVars();
+  int m       = problem_->getNumCons();
+  int mlp     = 1000;      // Max level of degeneracy. 
   problem_->prepareForSolve(); // important before calling getNumJacNnzs.
-  Int mxwk0   = 50000+10*(problem_->getNumJacNnzs()+n+m);
-  Int mxiwk0  = 500000;    // Initial workspace
-  Int lh1     = problem_->getNumHessNnzs() + 8 + 2*n + m;
+  int mxwk0   = 50000+10*(problem_->getNumJacNnzs()+n+m);
+  int mxiwk0  = 500000;    // Initial workspace
+  int lh1     = problem_->getNumHessNnzs() + 8 + 2*n + m;
   int kmax    = 0;
   int mxwk    = 0;
   int mxiwk   = 0;
-  Int kk0, ll0;           // For setwsc routine.
+  int kk0, ll0;           // For setwsc routine.
   UInt maxa   = n + problem_->getSize()->linTerms;
-  logger_->msgStream(LogDebug1) << "Bqpd: Loaded problem." << std::endl;
+  logger_->msgStream(LogDebug1) << me_ << "Loaded problem." << std::endl;
 
   // set storage map for bqpd
   kk0 = problem_->getHessian()->getNumNz() + 2;
@@ -218,12 +220,12 @@ void BqpdEngine::load_()
     delete [] dualX_;
     delete [] dualCons_;
   }
-  dualX_ = new Double[n];
-  dualCons_ = new Double[m];
+  dualX_ = new double[n];
+  dualCons_ = new double[m];
   fStart_ = new BqpdData(n, m, kmax, maxa, lh1, problem_->getNumJacNnzs());
 
 #if SPEW
-  logger_->msgStream(LogDebug2) << "Bqpd: " << "maxa = " << maxa << std::endl;
+  logger_->msgStream(LogDebug2) << me_ << "maxa = " << maxa << std::endl;
 #endif 
 }
 
@@ -244,11 +246,11 @@ void BqpdEngine::setGradient_()
   UInt maxa = n + problem_->getSize()->linTerms;
   UInt cnt = 1, ptr_pos = maxa+1;
   UInt m = problem_->getNumCons();
-  Double *values;       // gradient values.
-  Double *x;
-  Int *la = fStart_->la;
-  Double *a  = fStart_->a;
-  Int error = 0;
+  double *values;       // gradient values.
+  double *x;
+  int *la = fStart_->la;
+  double *a  = fStart_->a;
+  int error = 0;
   //a[0] = 0;
   
   ObjectivePtr oPtr = problem_->getObjective();
@@ -260,10 +262,10 @@ void BqpdEngine::setGradient_()
   ++ptr_pos;
 
   // first do objective
-  values = new Double[n];
-  x = new Double[n];
-  memset(values, 0, n*sizeof(Double));
-  memset(x, 0, n*sizeof(Double));
+  values = new double[n];
+  x = new double[n];
+  memset(values, 0, n*sizeof(double));
+  memset(x, 0, n*sizeof(double));
 
   objOff_ = oPtr->eval(x, &error);
   if (oPtr) {
@@ -305,13 +307,13 @@ void BqpdEngine::setHessian_()
   UInt n        = 0;    // Number of variables in problem.
   UInt m        = 0;    // Number of constraints in problem.
   UInt *iRow, *jCol;    // Indices of nonzeros in Hessian of objective.
-  Double *values;       // Hessian values.
+  double *values;       // Hessian values.
   UInt hess_nnzs = 0;   // Number of nonzeros in Hessian of objective.
-  Double *con_mult, *x;
-  Double obj_mult = 1.;
-  Int *lws = fStart_->lws;
-  Double *ws = fStart_->ws;
-  Int error = 0;
+  double *con_mult, *x;
+  double obj_mult = 1.;
+  int *lws = fStart_->lws;
+  double *ws = fStart_->ws;
+  int error = 0;
   
   n = problem_->getNumVars();
   m = problem_->getNumCons();
@@ -327,11 +329,11 @@ void BqpdEngine::setHessian_()
   // BqpdAux.f wants! yay! Hence we switch iRow and jCol, but only in the next
   // statement and nowhere else.
   problem_->getHessian()->fillRowColIndices(jCol, iRow) ;
-  con_mult =  new Double[m];
-  x =  new Double[n];
-  memset(x, 0, n*sizeof(Double));
-  memset(con_mult, 0, m*sizeof(Double));
-  values = new Double[hess_nnzs];
+  con_mult =  new double[m];
+  x =  new double[n];
+  memset(x, 0, n*sizeof(double));
+  memset(con_mult, 0, m*sizeof(double));
+  values = new double[hess_nnzs];
   problem_->getHessian()->fillRowColValues(x, obj_mult, con_mult, values, 
       &error);
   assert(0==error);
@@ -391,7 +393,7 @@ void BqpdEngine::setHessian_()
 EngineStatus BqpdEngine::solve()
 {
   real f        = 1.E20;   // Solution value.
-  Int mode      = 0;
+  int mode      = 0;
 
   if (consModed_ == true) {
     // redo from scratch
@@ -430,7 +432,7 @@ EngineStatus BqpdEngine::solve()
   solve_(mode, f);
   if (EngineError == status_ && resolveError_) {
     logger_->msgStream(LogInfo) 
-      << "Bqpd: failure in solving in mode " << mode << std::endl;
+      << me_ << "failure in solving in mode " << mode << std::endl;
     switch(mode) {
     case 0:
       mode = 1;
@@ -441,12 +443,12 @@ EngineStatus BqpdEngine::solve()
     default:
       mode = 1;
     }
-    logger_->msgStream(LogInfo) 
-      << "Bqpd: solving in mode " << mode << std::endl;
+    logger_->msgStream(LogInfo) << me_ << "solving in mode " << mode <<
+      std::endl;
     solve_(mode,f);
     if (EngineError == status_) {
-      logger_->msgStream(LogInfo) 
-        << "Bqpd: failure in mode " << mode << " as well." << std::endl;
+      logger_->msgStream(LogInfo) << me_ << "failure in mode " << mode
+        << " as well." << std::endl;
       //for (UInt i=0; i<problem_->getNumVars(); ++i) {
       //  problem_->changeBound(i,fStart_->bl[i],fStart_->bu[i]);
       //}
@@ -477,7 +479,7 @@ EngineStatus BqpdEngine::solve()
 }
 
 
-void BqpdEngine::solve_(Int mode, Double &f)
+void BqpdEngine::solve_(int mode, double &f)
 {
   fint n        = problem_->getNumVars();  // numbver of variables
   fint m        = problem_->getNumCons();  // number of constraints
@@ -493,11 +495,11 @@ void BqpdEngine::solve_(Int mode, Double &f)
 
 #if SPEW
   logger_->msgStream(LogDebug2) 
-    << "Bqpd:    n = " << n << std::endl
-    << "Bqpd:    m = " << m << std::endl
-    << "Bqpd: mode = " << mode << std::endl
-    << "Bqpd: kmax = " << fStart_->kmax << std::endl
-    << "Bqpd: solve no. = " << stats_->calls+1 << std::endl;
+    << me_ << "   n = " << n << std::endl
+    << me_ << "   m = " << m << std::endl
+    << me_ << "mode = " << mode << std::endl
+    << me_ << "kmax = " << fStart_->kmax << std::endl
+    << me_ << "solve no. = " << stats_->calls+1 << std::endl;
 #endif
 
   // solve QP by calling bqpd. x contains the final solution. f contains
@@ -511,7 +513,7 @@ void BqpdEngine::solve_(Int mode, Double &f)
 
 #if SPEW
   logger_->msgStream(LogDebug2) 
-    << "Bqpd:    iters = " << fStart_->info[0] << std::endl;
+    << me_ << "  iters = " << fStart_->info[0] << std::endl;
 #endif
   
   if (true == strBr_) {
@@ -527,7 +529,7 @@ void BqpdEngine::solve_(Int mode, Double &f)
   //writewsc();
 
 #if SPEW
-  logger_->msgStream(LogDebug) << "Bqpd: ifail = " << ifail << std::endl;
+  logger_->msgStream(LogDebug) << me_ << "ifail = " << ifail << std::endl;
 #endif
 
   // set return status from Bqpd
@@ -558,21 +560,21 @@ void BqpdEngine::solve_(Int mode, Double &f)
     status_ = EngineError;
   }
 #if SPEW
-  logger_->msgStream(LogDebug) << "Bqpd: status = " << getStatusString() 
+  logger_->msgStream(LogDebug) << me_ << "status = " << getStatusString() 
     << std::endl;
-  logger_->msgStream(LogDebug) << "Bqpd: value = " << f << std::endl;
+  logger_->msgStream(LogDebug) << me_ << "value = " << f << std::endl;
 #endif
 }
 
 
-void BqpdEngine::storeSol_(Double f)
+void BqpdEngine::storeSol_(double f)
 {
   UInt index;
   UInt n = fStart_->n;
   UInt m = fStart_->m;
-  Int  k = fStart_->k;
-  Int sign = 0;
-  const Double *r = fStart_->r;
+  int  k = fStart_->k;
+  int sign = 0;
+  const double *r = fStart_->r;
 
   sol_->setPrimal(fStart_->x);
   sol_->setObjValue(f+objOff_);
@@ -595,8 +597,8 @@ void BqpdEngine::storeSol_(Double f)
   //  are indices of any pseudo-bounds (active constraints which are not
   //  at their bound). If mode>=2, the first n-k elements of ls must be set
   //  on entry
-  memset(dualX_, 0, n * sizeof(Double));
-  memset(dualCons_, 0, m * sizeof(Double));
+  memset(dualX_, 0, n * sizeof(double));
+  memset(dualCons_, 0, m * sizeof(double));
   if (status_ != ProvenInfeasible && status_ != EngineError) {
     for (UInt i=0; i<n-k; ++i) {
       index = (UInt) fabs(fStart_->ls[i]);
@@ -621,12 +623,12 @@ void BqpdEngine::storeSol_(Double f)
 
 void BqpdEngine::setInitialPoint_()
 {
-  const Double *initial_point = problem_->getInitialPoint();
+  const double *initial_point = problem_->getInitialPoint();
   if (initial_point) {
     std::copy(initial_point, initial_point + problem_->getNumVars(), fStart_->x);
   } else {
     // start with zero.
-    memset(fStart_->x, 0, problem_->getNumVars() * sizeof(Double));
+    memset(fStart_->x, 0, problem_->getNumVars() * sizeof(double));
   }
 }
 
@@ -635,9 +637,9 @@ void BqpdEngine::setVarBounds_()
 {
   VariablePtr vPtr;
   VariableConstIterator vIter;
-  Double l, u;
-  Double *bl = fStart_->bl;
-  Double *bu = fStart_->bu;
+  double l, u;
+  double *bl = fStart_->bl;
+  double *bu = fStart_->bu;
 
   for (vIter=problem_->varsBegin(); vIter!=problem_->varsEnd(); 
       ++vIter, ++bl, ++bu) {
@@ -657,10 +659,10 @@ void BqpdEngine::setConsBounds_()
 {
   ConstraintPtr cPtr;
   ConstraintConstIterator cIter;
-  Int i= problem_->getNumVars();
-  Double *bl = fStart_->bl+i;
-  Double *bu = fStart_->bu+i;
-  Double l, u;
+  int i= problem_->getNumVars();
+  double *bl = fStart_->bl+i;
+  double *bu = fStart_->bu+i;
+  double l, u;
 
   for (cIter=problem_->consBegin(); cIter!=problem_->consEnd(); 
       ++cIter, ++bl, ++bu) {
@@ -676,7 +678,7 @@ void BqpdEngine::setConsBounds_()
 }
 
 
-Double BqpdEngine::getSolutionValue() 
+double BqpdEngine::getSolutionValue() 
 {
   if (sol_) {
     return sol_->getObjValue();
@@ -701,13 +703,13 @@ EngineStatus BqpdEngine::getStatus()
 }
   
 
-void BqpdEngine::changeBound(ConstraintPtr, BoundType, Double)
+void BqpdEngine::changeBound(ConstraintPtr, BoundType, double)
 {
   consModed_ = true;
 }
 
 
-void BqpdEngine::changeBound(VariablePtr var, BoundType lu, Double new_val)
+void BqpdEngine::changeBound(VariablePtr var, BoundType lu, double new_val)
 {
   // no need to do anything because the 'solve' function reloads bounds from
   // problem.
@@ -725,8 +727,8 @@ void BqpdEngine::changeBound(VariablePtr var, BoundType lu, Double new_val)
 }
 
 
-void BqpdEngine::changeBound(VariablePtr var, Double new_lb, 
-    Double new_ub)
+void BqpdEngine::changeBound(VariablePtr var, double new_lb, 
+                             double new_ub)
 {
   // no need to do anything because the 'solve' function reloads bounds from
   // problem.
@@ -744,7 +746,7 @@ void BqpdEngine::changeBound(VariablePtr var, Double new_lb,
 }
 
 
-void BqpdEngine::changeObj(FunctionPtr, Double)
+void BqpdEngine::changeObj(FunctionPtr, double)
 {
   consModed_ = true;
   if (true==strBr_ && chkPt_) {
@@ -765,7 +767,7 @@ void BqpdEngine::negateObj()
 
 
 void BqpdEngine::changeConstraint(ConstraintPtr, LinearFunctionPtr, 
-                                  Double , Double)
+                                  double , double)
 {
   consModed_ = true;
   if (true==strBr_ && chkPt_) {
@@ -808,7 +810,7 @@ void BqpdEngine::disableStrBrSetup()
 }
 
 
-void BqpdEngine::setIterationLimit(Int limit)
+void BqpdEngine::setIterationLimit(int limit)
 {
   // TODO: this limit is never passed to bqpd. Fix it.
   if (limit<1) {
@@ -849,7 +851,7 @@ std::string BqpdEngine::getName() const
 // End of BqpdEngine Class.
 // ----------------------------------------------------------------------- //
 BqpdData::BqpdData(UInt n_t, UInt m_t, int kmax_t, UInt maxa_t, UInt lh1_t, 
-                   UInt nJac_t, Bool zero)
+                   UInt nJac_t, bool zero)
  : n(n_t),
    m(m_t),
    kmax(kmax_t),
@@ -889,7 +891,7 @@ BqpdData::BqpdData(UInt n_t, UInt m_t, int kmax_t, UInt maxa_t, UInt lh1_t,
   la    = new fint[maxa+m+3];
 
   if (true==zero) {
-    memset(info, 0, 10 * sizeof(Int));
+    memset(info, 0, 10 * sizeof(int));
     memset(ws, 0, mxwk*sizeof(real));
     memset(lws, 0, mxiwk*sizeof(fint));
   }

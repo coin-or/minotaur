@@ -29,9 +29,9 @@ namespace Minotaur {
   struct BqpdStats {
     UInt calls;     /// Total number of calls to solve.
     UInt strCalls;  /// Calls to solve while strong branching.
-    Double time;    /// Sum of time taken in all calls to solve.
-    Double strTime; /// Time taken in strong branching alone.
-    Double cTime;   /// Time taken in copying data for strong-branching.
+    double time;    /// Sum of time taken in all calls to solve.
+    double strTime; /// Time taken in strong branching alone.
+    double cTime;   /// Time taken in copying data for strong-branching.
     UInt iters;     /// Sum of number of iterations in all calls. 
     UInt strIters;  /// Number of iterations in strong branching alone.
   };
@@ -53,284 +53,286 @@ namespace Minotaur {
    */
 
   class BqpdEngine : public QPEngine {
+  public:
+    friend class Problem;
 
-    public:
-      friend class Problem;
+    /// Default constructor.
+    BqpdEngine();    
 
-      /// Default constructor.
-      BqpdEngine();    
+    /// Constructor using given environment options.
+    BqpdEngine(EnvPtr env);    
 
-      /// Constructor using given environment options.
-      BqpdEngine(EnvPtr env);    
+    /// Destroy.
+    ~BqpdEngine();
 
-      /// Return an empty BqpdEngine pointer.
-      EnginePtr emptyCopy();
+    // Implement Engine::addConstraint() */
+    void addConstraint(ConstraintPtr);
 
-      /// Method to read the problem and initialize bqpd.
-      void load(ProblemPtr problem);
+    // Change bound on a constraint.
+    void changeBound(ConstraintPtr cons, BoundType lu, double new_val);
 
-      /// Method to unload the current problem
-      void clear();
+    // Change bound on a variable.
+    void changeBound(VariablePtr var, BoundType lu, double new_val);
 
-      /// Solve the problem that was loaded and report the status.
-      EngineStatus solve();
+    // Implement Engine::changeBound(VariablePtr, double, double).
+    void changeBound(VariablePtr var, double new_lb, double new_ub);
 
-      /// Report the solution value from the last solve. 
-      Double getSolutionValue();
+    // Implement Engine::changeConstraint().
+    void changeConstraint(ConstraintPtr con, LinearFunctionPtr lf, 
+                          double lb, double ub);
 
-      /// Report the solution.
-      ConstSolutionPtr getSolution();
+    // base class method
+    void changeConstraint(ConstraintPtr con, NonlinearFunctionPtr nlf);
 
-      /// Report the status of the last solve.
-      EngineStatus getStatus();
+    // change objective.
+    void changeObj(FunctionPtr f, double cb);
 
-      // Change bound on a constraint.
-      void changeBound(ConstraintPtr cons, BoundType lu, Double new_val);
+    /// Method to unload the current problem
+    void clear();
 
-      // Change bound on a variable.
-      void changeBound(VariablePtr var, BoundType lu, Double new_val);
+    // Implement Engine::disableStrBrSetup()
+    void disableStrBrSetup();
 
-      // Implement Engine::changeBound(VariablePtr, Double, Double).
-      void changeBound(VariablePtr var, Double new_lb, Double new_ub);
+    /// Return an empty BqpdEngine pointer.
+    EnginePtr emptyCopy();
 
-      // Implement Engine::addConstraint() */
-      void addConstraint(ConstraintPtr);
+    // Implement Engine::enableStrBrSetup()
+    void enableStrBrSetup();
 
-      // change objective.
-      void changeObj(FunctionPtr f, Double cb);
+    // get name.
+    std::string getName() const;
 
-      // Convert 'min f' to 'min -f'.
-      void negateObj();
+    /// Report the solution.
+    ConstSolutionPtr getSolution();
 
-      // Implement Engine::changeConstraint().
-      void changeConstraint(ConstraintPtr con, LinearFunctionPtr lf, 
-                            Double lb, Double ub);
+    /// Report the solution value from the last solve. 
+    double getSolutionValue();
 
-      // base class method
-      void changeConstraint(ConstraintPtr con, NonlinearFunctionPtr nlf);
+    /// Report the status of the last solve.
+    EngineStatus getStatus();
 
-      // Implement Engine::getWarmStart(). // NULL for now.
-      ConstWarmStartPtr getWarmStart() {return WarmStartPtr(); }; 
+    // Implement Engine::getWarmStart(). // NULL for now.
+    ConstWarmStartPtr getWarmStart() {return WarmStartPtr(); }; 
 
-      // Implement Engine::getWarmStartCopy(). // NULL for now.
-      WarmStartPtr getWarmStartCopy() {return WarmStartPtr(); };
+    // Implement Engine::getWarmStartCopy(). // NULL for now.
+    WarmStartPtr getWarmStartCopy() {return WarmStartPtr(); };
 
-      // Implement Engine::loadFromWarmStart().
-      void loadFromWarmStart(WarmStartPtr ) {};
+    /// Method to read the problem and initialize bqpd.
+    void load(ProblemPtr problem);
 
-      // Implement Engine::setIterationLimit().
-      void setIterationLimit(Int limit);
+    // Implement Engine::loadFromWarmStart().
+    void loadFromWarmStart(WarmStartPtr ) {};
 
-      // Implement Engine::resetIterationLimit().
-      void resetIterationLimit();
+    // Convert 'min f' to 'min -f'.
+    void negateObj();
 
-      // Implement Engine::enableStrBrSetup()
-      void enableStrBrSetup();
+    // delete constraints.
+    void removeCons(std::vector<ConstraintPtr> &delcons);
 
-      // Implement Engine::disableStrBrSetup()
-      void disableStrBrSetup();
+    // Implement Engine::resetIterationLimit().
+    void resetIterationLimit();
 
-      // delete constraints.
-      void removeCons(std::vector<ConstraintPtr> &delcons);
+    // Implement Engine::setIterationLimit().
+    void setIterationLimit(int limit);
 
-      // Write statistics.
-      void writeStats(std::ostream &out) const;
+    /// Solve the problem that was loaded and report the status.
+    EngineStatus solve();
 
-      // get name.
-      std::string getName() const;
+    // Write statistics.
+    void writeStats(std::ostream &out) const;
 
-      /// Destroy.
-      ~BqpdEngine();
+  private:
+    /// Number of bound changes since last solve.
+    UInt bndChanges_;
 
-    private:
+    /**
+     * \brief True if some variable bounds are relaxed. Bqpd has difficulty
+     * hot-strating in this case.
+     */
+    bool bndRelaxed_;
 
-      /**
-       * True is some variable bounds are relaxed. BQPD has difficulty
-       * hot-strating in this case.
-       */
-      Bool bndRelaxed_;
+    const double bTol_;
 
-      /// No. of bound changes since last solve.
-      UInt bndChanges_;
+    /// Checkpoint copy of fStart_.
+    BqpdData *chkPt_;
 
-      const Double bTol_;
+    /// If a constraint is modified, this is set to true. 
+    bool consModed_;
 
-      /// Checkpoint copy of fStart_.
-      BqpdData *chkPt_;
+    /// Array to calculate dual solution for constraints.
+    double *dualCons_;
 
-      /// If a constraint is modified, this is set to true. 
-      Bool consModed_;
+    /// Array to calculate dual solution for variables.
+    double *dualX_;
 
-      /// Array to calculate dual solution for constraints.
-      Double *dualCons_;
+    /// Environment.
+    EnvPtr env_;
 
-      /// Array to calculate dual solution for variables.
-      Double *dualX_;
+    /// Information for full start
+    BqpdData *fStart_;
 
-      /// Environment.
-      EnvPtr env_;
+    /// Bounds are considered infinite if their value goes beyond this value.
+    const double infty_;
 
-      /// Information for full start
-      BqpdData *fStart_;
+    /// Number of iterations that can be performed during solve
+    int iterLimit_; 
 
-      /// Bounds are considered infinite if their value goes beyond this value.
-      const Double infty_;
+    /// Max value of iterLimit_, when solving a relaxation
+    const int maxIterLimit_;
 
-      /// Number of iterations that can be performed during solve
-      Int iterLimit_; 
+    /// String name used in log messages.
+    static const std::string me_;
 
-      /// Max value of iterLimit_, when solving a relaxation
-      const Int maxIterLimit_;
+    /// Constant part of the obj.
+    double objOff_;
 
-      /// Constant part of the obj.
-      Double objOff_;
+    /// If the previous call was a strong-branching call.
+    bool prevStrBr_;
 
-      /// If the previous call was a strong-branching call.
-      Bool prevStrBr_;
+    /// Problem that is loaded, if any.
+    ProblemPtr problem_;
 
-      /// Problem that is loaded, if any.
-      ProblemPtr problem_;
+    /**
+     * If true, we should try to resolve in a different mode when error is
+     * reported.
+     */
+    bool resolveError_;
 
-      /**
-       * If true, we should try to resolve in a different mode when error is
-       * reported.
-       */
-      Bool resolveError_;
+    /// Solution found by the engine. 
+    SolutionPtr sol_;
 
-      /// Solution found by the engine. 
-      SolutionPtr sol_;
+    /// Statistics.
+    BqpdStats *stats_;
 
-      /// Statistics.
-      BqpdStats *stats_;
+    /// True if currently doing strong-branching iterations. False otherwise.
+    bool strBr_;
 
-      /// True if currently doing strong-branching iterations. False otherwise.
-      Bool strBr_;
+    /// Timer for bqpd solves.
+    Timer *timer_;
 
-      /// Timer for bqpd solves.
-      Timer *timer_;
+    /// Mode used for warm starting: 1-6
+    int wsMode_;
 
-      /// Mode used for warm starting: 1-6
-      Int wsMode_;
+    /// Free the memory allocated
+    void freeProb_();
 
-      /// Allocate the data structures for Bqpd.
-      void load_();
+    /// Allocate the data structures for Bqpd.
+    void load_();
 
-      /**
-       * Actually call bqpd to solve a QP using a specific mode. It is called
-       * after all data has been set.
-       */
-      void solve_(Int mode, Double &f);
+    /// Copy constraint bounds from the problem.
+    void setConsBounds_();
 
-      /// Fill sparsity pattern and values of the gradients.
-      void setGradient_();
+    /// Fill sparsity pattern and values of the gradients.
+    void setGradient_();
 
-      /// Fill sparsity pattern and values of the Hessian.
-      void setHessian_();
+    /// Fill sparsity pattern and values of the Hessian.
+    void setHessian_();
 
-      /// Copy primal and dual values of the solution from bqpd.
-      void storeSol_(Double f);
+    /// Set the intial point for solving the QP.
+    void setInitialPoint_();
 
-      /// Set the intial point for solving the QP.
-      void setInitialPoint_();
+    /// Copy variable bounds from the problem.
+    void setVarBounds_();
 
-      /// Copy variable bounds from the problem.
-      void setVarBounds_();
+    /**
+     * Actually call bqpd to solve a QP using a specific mode. It is called
+     * after all data has been set.
+     */
+    void solve_(int mode, double &f);
 
-      /// Copy constraint bounds from the problem.
-      void setConsBounds_();
+    /// Copy primal and dual values of the solution from bqpd.
+    void storeSol_(double f);
 
-      /// Free the memory allocated
-      void freeProb_();
   };
 
 
   /// Information for restarting from the previous optimal solution.
   class BqpdData {
-    public: 
-      /// Constructor.
-      BqpdData(UInt n_t, UInt m_t, int kmax_t, UInt maxa_t, UInt lh1_t,
-               UInt nJac, Bool zero=true);
+  public: 
+    /// Constructor.
+    BqpdData(UInt n_t, UInt m_t, int kmax_t, UInt maxa_t, UInt lh1_t,
+             UInt nJac, bool zero=true);
 
-      /// Allocate space and copy.
-      BqpdData *clone();
+    /// Destroy.
+    ~BqpdData();
 
-      /// Only copy. No space allocation.
-      void copyFrom(const BqpdData* rhs);
+    /// Allocate space and copy.
+    BqpdData *clone();
 
-      /// Display all data.
-      void write(std::ostream &out) const;
+    /// Only copy. No space allocation.
+    void copyFrom(const BqpdData* rhs);
 
-      /// Destroy.
-      ~BqpdData();
+    /// Display all data.
+    void write(std::ostream &out) const;
 
-      /// Number of variables.
-      UInt n;
+    /// Number of variables.
+    UInt n;
 
-      /// Number of constraints.
-      UInt m;
+    /// Number of constraints.
+    UInt m;
 
-      /// kmax given to bqpd
-      int kmax;
+    /// kmax given to bqpd
+    int kmax;
 
-      /// Number of nonzeros in Hessian.
-      UInt lh1;
+    /// Number of nonzeros in Hessian.
+    UInt lh1;
 
-      /// Number of nonzeros in Jacobian.
-      UInt nJac;
+    /// Number of nonzeros in Jacobian.
+    UInt nJac;
 
-      /// Size of a
-      UInt maxa;
+    /// Size of a
+    UInt maxa;
 
-      /// Initial point for solving QP.
-      Double *x;
+    /// Initial point for solving QP.
+    double *x;
 
-      /// Residuals/multipliers.
-      Double *r;
+    /// Residuals/multipliers.
+    double *r;
 
-      /// Steepest-edge normalization coefficients .
-      Double *e;
+    /// Steepest-edge normalization coefficients .
+    double *e;
 
-      /// Denominators for ratio tests.
-      Double *w;
+    /// Denominators for ratio tests.
+    double *w;
 
-      /// Gradient vector of f(x).
-      Double *g;
+    /// Gradient vector of f(x).
+    double *g;
 
-      /// Indices of the active constraints .
-      Int *ls;
+    /// Indices of the active constraints .
+    int *ls;
 
-      /// Workspace associated with recursion.
-      Double *alp;
+    /// Workspace associated with recursion.
+    double *alp;
 
-      /// Workspace associated with recursion.
-      Int *lp;
+    /// Workspace associated with recursion.
+    int *lp;
 
-      /// Information on return from bqpd.
-      Int *info;
+    /// Information on return from bqpd.
+    int *info;
 
-      /// Lower bounds for variables and constraints.
-      Double *bl;
+    /// Lower bounds for variables and constraints.
+    double *bl;
 
-      /// Upper bounds for variables and constraints.
-      Double *bu;
+    /// Upper bounds for variables and constraints.
+    double *bu;
 
-      /// Storage for jacobian.
-      Double *a;
+    /// Storage for jacobian.
+    double *a;
 
-      /// Storage for jacobian.
-      Int *la;
+    /// Storage for jacobian.
+    int *la;
 
-      /// Storage for hessian values and other things.
-      Double *ws;
+    /// Storage for hessian values and other things.
+    double *ws;
 
-      /// Storage for hessian indices and other things.
-      Int *lws;
+    /// Storage for hessian indices and other things.
+    int *lws;
 
-      /// Pointer to equality constraints, used by bqpd.
-      Int peq;
+    /// Pointer to equality constraints, used by bqpd.
+    int peq;
 
-      // Dimension of reduced-space, set only when mode>=0.
-      Int k;
+    // Dimension of reduced-space, set only when mode>=0.
+    int k;
   };
 
   

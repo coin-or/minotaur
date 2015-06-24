@@ -41,21 +41,22 @@
 
 namespace Minotaur {
 
+const std::string IpoptEngine::me_ = "IpoptEngine: ";
       
 // ----------------------------------------------------------------------- //
 // ----------------------------------------------------------------------- //
 IpoptSolution::IpoptSolution()
-  : dualXLow_(0),
-    dualXUp_(0)
+: dualXLow_(0),
+  dualXUp_(0)
 {
 }
 
 
-IpoptSolution::IpoptSolution(const Double *x, Double objval, 
-    ProblemPtr problem)
-  : Solution(objval, x, problem),
-    dualXLow_(0),
-    dualXUp_(0)
+IpoptSolution::IpoptSolution(const double *x, double objval, 
+                             ProblemPtr problem)
+: Solution(objval, x, problem),
+  dualXLow_(0),
+  dualXUp_(0)
 {
 
 }
@@ -67,35 +68,35 @@ IpoptSolution::IpoptSolution(ConstIpoptSolPtr sol)
   m_ = sol->m_;
 
   if (sol->x_) {
-    x_ = new Double[n_];
+    x_ = new double[n_];
     std::copy(sol->x_, sol->x_+n_, x_);
   } else {
     x_ = 0;
   }
 
   if (sol->dualCons_) {
-    dualCons_ = new Double[m_];
+    dualCons_ = new double[m_];
     std::copy(sol->dualCons_, sol->dualCons_+m_, dualCons_);
   } else {
     dualCons_ = 0;
   }
 
   if (sol->dualX_) {
-    dualX_ = new Double[n_];
+    dualX_ = new double[n_];
     std::copy(sol->dualX_, sol->dualX_+n_, dualX_);
   } else {
     dualX_ = 0;
   }
 
   if (sol->dualXLow_) {
-    dualXLow_ = new Double[n_];
+    dualXLow_ = new double[n_];
     std::copy(sol->dualXLow_, sol->dualXLow_+n_, dualXLow_);
   } else {
     dualXLow_ = 0;
   }
 
   if (sol->dualXUp_) {
-    dualXUp_ = new Double[n_];
+    dualXUp_ = new double[n_];
     std::copy(sol->dualXUp_, sol->dualXUp_+n_, dualXUp_);
   } else {
     dualXUp_ = 0;
@@ -118,9 +119,32 @@ IpoptSolution::~IpoptSolution()
 }
 
 
+void IpoptSolution::setDualOfVars(const double *lower, const double *upper)
+{
+  if (lower && upper) {
+    double *l, *u, *d;
+    if (!dualXLow_) {
+      dualXLow_ = new double[n_];
+      dualXUp_ = new double[n_];
+    }
+    std::copy(lower, lower+n_, dualXLow_);
+    std::copy(upper, upper+n_, dualXUp_);
+    if (!dualX_) {
+      dualX_ = new double[n_];
+    }
+    d = dualX_; 
+    l = dualXLow_;
+    u = dualXUp_;
+    for (UInt i=0; i<n_; ++i, ++d, ++l, ++u) {
+      *d = *l + *u;
+    }
+  }
+}
+
+
 void IpoptSolution::write(std::ostream &out) const
 {
-  const Double *d;
+  const double *d;
   out << "Number of variables = "   << n_ << std::endl
       << "Number of constraints = " << m_ << std::endl
       << "Primal values:"           << std::endl;
@@ -155,29 +179,6 @@ void IpoptSolution::write(std::ostream &out) const
   }
 }
 
-
-void IpoptSolution::setDualOfVars(const Double *lower, const Double *upper)
-{
-  if (lower && upper) {
-    Double *l, *u, *d;
-    if (!dualXLow_) {
-      dualXLow_ = new Double[n_];
-      dualXUp_ = new Double[n_];
-    }
-    std::copy(lower, lower+n_, dualXLow_);
-    std::copy(upper, upper+n_, dualXUp_);
-    if (!dualX_) {
-      dualX_ = new Double[n_];
-    }
-    d = dualX_; 
-    l = dualXLow_;
-    u = dualXUp_;
-    for (UInt i=0; i<n_; ++i, ++d, ++l, ++u) {
-      *d = *l + *u;
-    }
-  }
-}
-
 // ----------------------------------------------------------------------- //
 // ----------------------------------------------------------------------- //
 
@@ -204,7 +205,13 @@ IpoptWarmStart::~IpoptWarmStart()
 }
 
 
-Bool IpoptWarmStart::hasInfo()
+IpoptSolPtr IpoptWarmStart::getPoint()
+{
+  return sol_;
+}
+
+
+bool IpoptWarmStart::hasInfo()
 {
   // return true if warm start carries a starting solution
   if (sol_ && sol_->getPrimal()) {
@@ -212,19 +219,6 @@ Bool IpoptWarmStart::hasInfo()
   } else {
     return false;
   }
-}
-
-
-void IpoptWarmStart::write(std::ostream &out) const
-{
-  out << "Ipopt warm start information:"  << std::endl;
-  sol_->write(out);
-}
-
-
-void IpoptWarmStart::setPoint(IpoptSolPtr sol)
-{
-  sol_ = sol;
 }
 
 
@@ -238,9 +232,16 @@ void IpoptWarmStart::makeCopy()
 }
 
 
-IpoptSolPtr IpoptWarmStart::getPoint()
+void IpoptWarmStart::setPoint(IpoptSolPtr sol)
 {
-  return sol_;
+  sol_ = sol;
+}
+
+
+void IpoptWarmStart::write(std::ostream &out) const
+{
+  out << "Ipopt warm start information:"  << std::endl;
+  sol_->write(out);
 }
 
 
@@ -248,19 +249,19 @@ IpoptSolPtr IpoptWarmStart::getPoint()
 // ----------------------------------------------------------------------- //
 
 IpoptEngine::IpoptEngine()
-  : env_(EnvPtr()),
-    mynlp_(0),
-    myapp_(0),
-    bndChanged_(false),
-    consChanged_(false),
-    sol_(IpoptSolPtr()),      // NULL
-    ws_(IpoptWarmStartPtr()), // NULL
-    prepareWs_(false),
-    useWs_(false),
-    etol_(1e-7),
-    timer_(0),
-    stats_(0),
-    strBr_(false)
+: bndChanged_(false),
+  consChanged_(false),
+  env_(EnvPtr()),
+  etol_(1e-7),
+  myapp_(0),
+  mynlp_(0),
+  prepareWs_(false),
+  sol_(IpoptSolPtr()),      // NULL
+  stats_(0),
+  strBr_(false),
+  timer_(0),
+  useWs_(false),
+  ws_(IpoptWarmStartPtr()) // NULL
 {
 #if defined(USE_IPOPT)  
   problem_ = ProblemPtr();   // NULL
@@ -281,21 +282,21 @@ IpoptEngine::IpoptEngine()
 
 
 IpoptEngine::IpoptEngine(EnvPtr env)
-  : env_(env),
-    mynlp_(0),
-    myapp_(0),
-    bndChanged_(false),
-    consChanged_(false),
-    sol_(IpoptSolPtr()),      // NULL
-    ws_(IpoptWarmStartPtr()), // NULL
-    etol_(1e-7),
-    timer_(0),
-    strBr_(false)
+: bndChanged_(false),
+  consChanged_(false),
+  env_(env),
+  etol_(1e-7),
+  myapp_(0),
+  mynlp_(0),
+  sol_(IpoptSolPtr()),      // NULL
+  strBr_(false),
+  timer_(0),
+  ws_(IpoptWarmStartPtr()) // NULL
 {
 #if defined(USE_IPOPT)  
   problem_ = ProblemPtr();   // NULL
   logger_ = (LoggerPtr) new Logger((LogLevel) env->getOptions()->
-      findInt("ipopt_log_level")->getValue());
+      findInt("engine_log_level")->getValue());
   myapp_ = new Ipopt::IpoptApplication();
   setOptionsForRepeatedSolve();
 
@@ -324,9 +325,86 @@ IpoptEngine::IpoptEngine(EnvPtr env)
 }
 
 
+IpoptEngine::~IpoptEngine()
+{
+  ws_.reset();
+  sol_.reset();
+  if (timer_) {
+    delete timer_;
+  }
+  if (stats_) {
+    delete stats_;
+  }
+  if (myapp_) {
+    delete myapp_;
+  }
+  if (problem_) {
+  	 problem_->unsetEngine();
+	 problem_.reset();
+  }
+  return;
+}
+
+
 void IpoptEngine::addConstraint(ConstraintPtr)
 {
   consChanged_ = true;
+}
+
+
+void IpoptEngine::changeBound(ConstraintPtr, BoundType, double)
+{
+  bndChanged_ = true;
+}
+
+
+void IpoptEngine::changeBound(VariablePtr, BoundType, double)
+{
+  bndChanged_ = true;
+}
+
+
+void IpoptEngine::changeBound(VariablePtr, double, double)
+{
+  bndChanged_ = true;
+}
+
+
+void IpoptEngine::changeConstraint(ConstraintPtr, LinearFunctionPtr, 
+                                   double , double)
+{
+  consChanged_ = true;
+}
+
+
+void IpoptEngine::changeConstraint(ConstraintPtr, NonlinearFunctionPtr)
+{
+  consChanged_ = true;
+}
+
+
+void IpoptEngine::changeObj(FunctionPtr, double)
+{
+  consChanged_ = true;
+}
+
+
+void IpoptEngine::clear() 
+{
+
+  ws_.reset();
+  sol_.reset();
+  if (problem_) {
+    problem_->unsetEngine();
+    problem_.reset();
+  }
+}
+
+
+void IpoptEngine::disableStrBrSetup()
+{
+  prepareWs_ = useWs_;
+  strBr_      = false;
 }
 
 
@@ -336,6 +414,61 @@ EnginePtr IpoptEngine::emptyCopy()
     return (IpoptEnginePtr) new IpoptEngine(env_);
   }
   return (IpoptEnginePtr) new IpoptEngine();
+}
+
+
+void IpoptEngine::enableStrBrSetup()
+{
+  if (ws_) {
+    ws_->makeCopy();
+  }
+  prepareWs_ = false;
+  strBr_      = true;
+}
+
+
+std::string IpoptEngine::getName() const
+{
+  return "IPOPT";
+}
+
+
+ConstSolutionPtr IpoptEngine::getSolution()
+{
+  if (sol_) {
+    return sol_;
+  } 
+  return SolutionPtr(); // NULL
+}
+
+
+ConstWarmStartPtr IpoptEngine::getWarmStart()
+{
+  return ws_;
+}
+
+
+WarmStartPtr IpoptEngine::getWarmStartCopy()
+{
+  IpoptWarmStartPtr ws;
+  if (ws_) {
+    ws = (IpoptWarmStartPtr) new IpoptWarmStart(ws_); // copy
+  } else {
+    ws = IpoptWarmStartPtr(); // NULL
+  }
+  return ws;
+}
+
+
+double IpoptEngine::getSolutionValue() 
+{
+  return mynlp_->getSolutionValue();
+}
+
+
+EngineStatus IpoptEngine::getStatus()
+{
+  return status_;
 }
 
 
@@ -367,25 +500,40 @@ void IpoptEngine::load(ProblemPtr problem)
 }
 
 
-void IpoptEngine::clear() 
+void IpoptEngine::loadFromWarmStart(const WarmStartPtr ws)
 {
+  if (ws) {
+    // Two important points:
+    // 1. dynamic cast can't seem to be avoided.
+    // 2. we need to use boost::dynamic_pointer_cast instead of dynamic_cast.
+    ConstIpoptWarmStartPtr ws2 = 
+      boost::dynamic_pointer_cast <const IpoptWarmStart> (ws);
 
-  ws_.reset();
-  sol_.reset();
-  if (problem_) {
-    problem_->unsetEngine();
-    problem_.reset();
+    // now create a full copy.
+    ws_ = (IpoptWarmStartPtr) new IpoptWarmStart(ws2);
+    if (!useWs_) {
+      logger_->msgStream(LogInfo) << me_ << "setWarmStart() method is called "
+        << "but warm-start is not enabled." << std::endl;
+    }
+  } else {
+    ws_ = IpoptWarmStartPtr(); //NULL
   }
 }
 
 
-Bool IpoptEngine::presolve_()
+void IpoptEngine::negateObj()
 {
-  Bool should_stop = false;
+  consChanged_ = true;
+}
+
+
+bool IpoptEngine::presolve_()
+{
+  bool should_stop = false;
   VariablePtr v;
-  Double diff;
-  Bool all_fixed = true;
-  Int e=0;
+  double diff;
+  bool all_fixed = true;
+  int e=0;
 
   status_ = EngineUnknownStatus;
   // visit each variable and check bounds. Stop if bad bounds are found or if
@@ -404,12 +552,12 @@ Bool IpoptEngine::presolve_()
   }
 
   if (all_fixed == true) {
-    Double obj_value;
-    Double *x;
-    Double vio = -INFINITY;
-    Double act;
+    double obj_value;
+    double *x;
+    double vio = -INFINITY;
+    double act;
 
-    x = new Double[problem_->getNumVars()];
+    x = new double[problem_->getNumVars()];
     should_stop = true;
     for (VariableConstIterator it=problem_->varsBegin();
         it!=problem_->varsEnd(); ++it) {
@@ -449,6 +597,21 @@ void IpoptEngine::removeCons(std::vector<ConstraintPtr> &)
 }
 
 
+void IpoptEngine::resetIterationLimit()
+{
+  myapp_->Options()->SetIntegerValue("max_iter", maxIterLimit_);
+}
+
+
+void IpoptEngine::setIterationLimit(int limit)
+{
+  if (limit<1) {
+    limit = maxIterLimit_;
+  }
+  myapp_->Options()->SetIntegerValue("max_iter", limit);
+}
+
+
 void IpoptEngine::setOptionsForProb_()
 {
   if (problem_->isQP() || problem_->isLinear()) {
@@ -462,21 +625,6 @@ void IpoptEngine::setOptionsForProb_()
     myapp_->Options()->SetStringValue("hessian_constant","no", true, true);
     myapp_->Options()->SetStringValue("jac_c_constant","no", true, true);
     myapp_->Options()->SetStringValue("jac_d_constant","no", true, true);
-  }
-}
-
-
-void IpoptEngine::setOptionsForSingleSolve()
-{
-  if (myapp_) {
-    myapp_->Options()->SetIntegerValue("print_level", 0);
-    myapp_->Options()->SetStringValue("expect_infeasible_problem","yes", true, 
-                                      true);
-    myapp_->Options()->SetStringValue("mu_strategy", "adaptive", true, true);
-    myapp_->Options()->SetStringValue("mu_oracle","probing", true, 
-                                      true);
-    //myapp_->Options()->SetNumericValue("required_infeasibility_reduction",
-    //0.3, true, true);
   }
 }
 
@@ -514,10 +662,25 @@ void IpoptEngine::setOptionsForRepeatedSolve()
 }
 
 
+void IpoptEngine::setOptionsForSingleSolve()
+{
+  if (myapp_) {
+    myapp_->Options()->SetIntegerValue("print_level", 0);
+    myapp_->Options()->SetStringValue("expect_infeasible_problem","yes", true, 
+                                      true);
+    myapp_->Options()->SetStringValue("mu_strategy", "adaptive", true, true);
+    myapp_->Options()->SetStringValue("mu_oracle","probing", true, 
+                                      true);
+    //myapp_->Options()->SetNumericValue("required_infeasibility_reduction",
+    //0.3, true, true);
+  }
+}
+
+
 EngineStatus IpoptEngine::solve()
 {
   Ipopt::ApplicationReturnStatus status = Ipopt::Internal_Error; 
-  Bool should_stop;
+  bool should_stop;
 
   stats_->calls += 1;
   if (!(bndChanged_ || consChanged_)) {
@@ -558,9 +721,9 @@ EngineStatus IpoptEngine::solve()
   }
 
 #if SPEW
-  logger_->msgStream(LogDebug) << "Ipopt: time taken = " << timer_->query() 
+  logger_->msgStream(LogDebug) << me_ << "time taken = " << timer_->query() 
     << std::endl;
-  logger_->msgStream(LogDebug) << "Ipopt: Ipopt's status = " << status 
+  logger_->msgStream(LogDebug) << me_ << "Ipopt's status = " << status 
     << std::endl;
 #endif
   //exit(0);
@@ -585,7 +748,7 @@ EngineStatus IpoptEngine::solve()
      status_ = EngineIterationLimit;
      break;
    case Ipopt::Restoration_Failed :  // don't know what else to do.
-     logger_->msgStream(LogInfo) << "Ipopt: restoration failed, "
+     logger_->msgStream(LogInfo) << me_ << "restoration failed, "
        << "assuming local infeasible." << std::endl;
      status_ = ProvenLocalInfeasible;
      sol_ = mynlp_->getSolution();
@@ -612,7 +775,7 @@ EngineStatus IpoptEngine::solve()
    case Ipopt::Insufficient_Memory:
    case Ipopt::Internal_Error:
    default:
-     logger_->msgStream(LogNone) << "Ipopt: error reported." << std::endl;
+     logger_->msgStream(LogNone) << me_ << "error reported." << std::endl;
      status_ = EngineError;
   }
   if (prepareWs_) {
@@ -625,13 +788,13 @@ EngineStatus IpoptEngine::solve()
   // anything returns an empty Statistics object.
   UInt iters = (Ipopt::IsValid(stats)) ? stats->IterationCount() : 0;
 #if SPEW
-  logger_->msgStream(LogDebug) << "Ipopt: solve number = " << stats_->calls
+  logger_->msgStream(LogDebug) << me_ << "solve number = " << stats_->calls
     << std::endl;
-  logger_->msgStream(LogDebug) << "Ipopt: number of iterations = " << iters 
+  logger_->msgStream(LogDebug) << me_ << "number of iterations = " << iters 
     << std::endl;
-  logger_->msgStream(LogDebug) << "Ipopt: status = " << getStatusString() 
+  logger_->msgStream(LogDebug) << me_ << "status = " << getStatusString() 
     << std::endl;
-  logger_->msgStream(LogDebug) << "Ipopt: obj = ";
+  logger_->msgStream(LogDebug) << me_ << "obj = ";
   if (sol_) {
     logger_->msgStream(LogDebug) << mynlp_->getSolutionValue() << std::endl;
   } else {
@@ -653,147 +816,6 @@ EngineStatus IpoptEngine::solve()
 }
 	  
 
-Double IpoptEngine::getSolutionValue() 
-{
-  return mynlp_->getSolutionValue();
-}
-
-
-ConstSolutionPtr IpoptEngine::getSolution()
-{
-  if (sol_) {
-    return sol_;
-  } 
-  return SolutionPtr(); // NULL
-}
-
-
-EngineStatus IpoptEngine::getStatus()
-{
-  return status_;
-}
-
-
-void IpoptEngine::changeBound(ConstraintPtr, BoundType, Double)
-{
-  bndChanged_ = true;
-}
-
-
-void IpoptEngine::changeBound(VariablePtr, BoundType, Double)
-{
-  bndChanged_ = true;
-}
-
-
-void IpoptEngine::changeBound(VariablePtr, Double, Double)
-{
-  bndChanged_ = true;
-}
-
-
-void IpoptEngine::changeObj(FunctionPtr, Double)
-{
-  consChanged_ = true;
-}
-
-
-void IpoptEngine::negateObj()
-{
-  consChanged_ = true;
-}
-
-
-void IpoptEngine::changeConstraint(ConstraintPtr, LinearFunctionPtr, 
-                                   Double , Double)
-{
-  consChanged_ = true;
-}
-
-
-void IpoptEngine::changeConstraint(ConstraintPtr, NonlinearFunctionPtr)
-{
-  consChanged_ = true;
-}
-
-
-ConstWarmStartPtr IpoptEngine::getWarmStart()
-{
-  return ws_;
-}
-
-
-WarmStartPtr IpoptEngine::getWarmStartCopy()
-{
-  IpoptWarmStartPtr ws;
-  if (ws_) {
-    ws = (IpoptWarmStartPtr) new IpoptWarmStart(ws_); // copy
-  } else {
-    ws = IpoptWarmStartPtr(); // NULL
-  }
-  return ws;
-}
-
-
-void IpoptEngine::loadFromWarmStart(const WarmStartPtr ws)
-{
-  if (ws) {
-    // Two important points:
-    // 1. dynamic cast can't seem to be avoided.
-    // 2. we need to use boost::dynamic_pointer_cast instead of dynamic_cast.
-    ConstIpoptWarmStartPtr ws2 = 
-      boost::dynamic_pointer_cast <const IpoptWarmStart> (ws);
-
-    // now create a full copy.
-    ws_ = (IpoptWarmStartPtr) new IpoptWarmStart(ws2);
-    if (!useWs_) {
-      logger_->msgStream(LogInfo) << "setWarmStart() method is called but"
-        " warm-start is not enabled." << std::endl;
-    }
-  } else {
-    ws_ = IpoptWarmStartPtr(); //NULL
-  }
-}
-
-
-void IpoptEngine::setIterationLimit(Int limit)
-{
-  if (limit<1) {
-    limit = maxIterLimit_;
-  }
-  myapp_->Options()->SetIntegerValue("max_iter", limit);
-}
-
-
-void IpoptEngine::resetIterationLimit()
-{
-  myapp_->Options()->SetIntegerValue("max_iter", maxIterLimit_);
-}
-
-
-void IpoptEngine::disableStrBrSetup()
-{
-  prepareWs_ = useWs_;
-  strBr_      = false;
-}
-
-
-void IpoptEngine::enableStrBrSetup()
-{
-  if (ws_) {
-    ws_->makeCopy();
-  }
-  prepareWs_ = false;
-  strBr_      = true;
-}
-
-
-std::string IpoptEngine::getName() const
-{
-  return "IPOPT";
-}
-
-
 void IpoptEngine::writeStats(std::ostream &out) const 
 {
   if (stats_) {
@@ -808,28 +830,6 @@ void IpoptEngine::writeStats(std::ostream &out) const
   }
 }
 
-
-IpoptEngine::~IpoptEngine()
-{
-  ws_.reset();
-  sol_.reset();
-  if (timer_) {
-    delete timer_;
-  }
-  if (stats_) {
-    delete stats_;
-  }
-  if (myapp_) {
-    delete myapp_;
-  }
-  if (problem_) {
-  	 problem_->unsetEngine();
-	 problem_.reset();
-  }
-  return;
-}
-
-
 } // namespace Minotaur
 
 // 
@@ -839,42 +839,24 @@ IpoptEngine::~IpoptEngine()
 /* Constructor. */
 namespace Ipopt{
 
-
 IpoptFunInterface::IpoptFunInterface(Minotaur::ProblemPtr problem, 
-    Minotaur::IpoptSolPtr sol)
-  : problem_(problem),
-    sol_(sol),
-    bTol_(1e-6),
-    bOff_(1e-9)
+                                     Minotaur::IpoptSolPtr sol)
+: bOff_(1e-9),
+  bTol_(1e-6),
+  problem_(problem),
+  sol_(sol)
 {
 }
 
 
-bool IpoptFunInterface::get_nlp_info(Index& n, Index& m, Index& nnz_jac_g,
-                                     Index& nnz_h_lag, 
-                                     IndexStyleEnum& index_style)
+IpoptFunInterface::~IpoptFunInterface()
 {
-  Minotaur::ConstVariablePtr vPtr;
-  Minotaur::ConstraintConstIterator cIter;
-  Minotaur::ConstraintPtr cPtr;
-  Minotaur::FunctionPtr fPtr;
-  Minotaur::NonlinearFunctionPtr nlfPtr;
-  Minotaur::VariableIterator vIter;
-
-  n = problem_->getNumVars();
-  m = problem_->getNumCons();
-
-  // nonzeros in jacobian. 
-  nnz_jac_g = problem_->getNumJacNnzs();
-
-  // ... and in hessian. 
-  //nnz_h_lag = problem_->getNumHessNnzs();
-  nnz_h_lag = problem_->getNumHessNnzs(); 
-
-  // We use the standard c index style for row/col entries
-  index_style = TNLP::C_STYLE;
-
-  return true; 
+  if (sol_) {
+    sol_.reset();
+  }
+  if (problem_) {
+    problem_.reset();
+  }
 }
 
 
@@ -888,7 +870,7 @@ bool IpoptFunInterface::get_bounds_info(Index n, Number* x_l, Number* x_u,
 {
   // here, the n and m we gave IPOPT in get_nlp_info are passed back to us.
   // If desired, we could assert to make sure they are what we think they are.
-  Minotaur::Double u,l;
+  double u,l;
   assert(n == (int) problem_->getNumVars());
   assert(m == (int) problem_->getNumCons());
 
@@ -922,6 +904,34 @@ bool IpoptFunInterface::get_bounds_info(Index n, Number* x_l, Number* x_u,
 }
 
 
+bool IpoptFunInterface::get_nlp_info(Index& n, Index& m, Index& nnz_jac_g,
+                                     Index& nnz_h_lag, 
+                                     IndexStyleEnum& index_style)
+{
+  Minotaur::ConstVariablePtr vPtr;
+  Minotaur::ConstraintConstIterator cIter;
+  Minotaur::ConstraintPtr cPtr;
+  Minotaur::FunctionPtr fPtr;
+  Minotaur::NonlinearFunctionPtr nlfPtr;
+  Minotaur::VariableIterator vIter;
+
+  n = problem_->getNumVars();
+  m = problem_->getNumCons();
+
+  // nonzeros in jacobian. 
+  nnz_jac_g = problem_->getNumJacNnzs();
+
+  // ... and in hessian. 
+  //nnz_h_lag = problem_->getNumHessNnzs();
+  nnz_h_lag = problem_->getNumHessNnzs(); 
+
+  // We use the standard c index style for row/col entries
+  index_style = TNLP::C_STYLE;
+
+  return true; 
+}
+
+
 #ifdef NDEBUG
 bool IpoptFunInterface::get_starting_point(Index n, bool , Number* x,
                                            bool init_z, Number* z_L, 
@@ -938,7 +948,7 @@ bool IpoptFunInterface::get_starting_point(Index n, bool init_x, Number* x,
   // your own NLP, you can provide starting values for the others if
   // you wish.
 
-  const Minotaur::Double *initial_point;
+  const double *initial_point;
   assert(init_x == true);
 
   if (init_z == false || init_lambda == false) {
@@ -988,31 +998,10 @@ bool IpoptFunInterface::get_starting_point(Index n, bool init_x, Number* x,
 
 bool IpoptFunInterface::eval_f(Index, const Number* x, bool, Number& obj_value)
 {
-  Minotaur::Int error = 0;
+  int error = 0;
   // return the value of the objective function
-  obj_value = problem_->getObjValue((Minotaur::Double *)x, &error);
+  obj_value = problem_->getObjValue((double *)x, &error);
   //std::cout << "obj = " << obj_value << std::endl;
-  return (0==error);
-}
-
-
-bool IpoptFunInterface::eval_grad_f(Index n, const Number* x, bool, 
-                                    Number* grad_f)
-{
-  // return the gradient of the objective function grad_{x} f(x)
-
-  Minotaur::Int error = 0;
-  Minotaur::ObjectivePtr o;
-  std::fill(grad_f, grad_f+n, 0);
-  o = problem_->getObjective();
-  if (o) {
-    o->evalGradient((const Minotaur::Double *) x, 
-        (Minotaur::Double *)grad_f, &error);
-  }
-  //for (int i=0; i<n; ++i) {
-  //  std::cout << "grad obj [" << i << "] = " << grad_f[i] << std::endl;
-  //}
-
   return (0==error);
 }
 
@@ -1023,11 +1012,11 @@ bool IpoptFunInterface::eval_g(Index, const Number* x, bool, Index, Number* g)
   Minotaur::ConstraintConstIterator cIter;
   Minotaur::ConstraintPtr cPtr;
   Minotaur::UInt i=0;
-  Minotaur::Int error = 0, e = 0;
+  int error = 0, e = 0;
   for (cIter=problem_->consBegin(); cIter!=problem_->consEnd(); ++cIter) {
     cPtr = *cIter;
     e = 0;
-    g[i] = cPtr->getActivity((Minotaur::Double *)x, &e);
+    g[i] = cPtr->getActivity((double *)x, &e);
     if (e!=0) {
       error=1;
     }
@@ -1039,37 +1028,38 @@ bool IpoptFunInterface::eval_g(Index, const Number* x, bool, Index, Number* g)
 }
 
 
-bool IpoptFunInterface::eval_jac_g(Index, const Number* x, bool, Index, 
-                                   Index, Index* iRow, Index *jCol, 
-                                   Number* values)
+bool IpoptFunInterface::eval_grad_f(Index n, const Number* x, bool, 
+                                    Number* grad_f)
 {
-  Minotaur::Int error = 0;
-  if (values == 0) {
-    // return the structure of the jacobian of the constraints
-    problem_->getJacobian()->fillRowColIndices((Minotaur::UInt *) iRow,
-        (Minotaur::UInt *) jCol);
+  // return the gradient of the objective function grad_{x} f(x)
+
+  int error = 0;
+  Minotaur::ObjectivePtr o;
+  std::fill(grad_f, grad_f+n, 0);
+  o = problem_->getObjective();
+  if (o) {
+    o->evalGradient((const double *) x, (double *)grad_f, &error);
   }
-  else {
-    // return the values of the jacobian of the constraints
-    problem_->getJacobian()->fillRowColValues((Minotaur::Double *) x, 
-        (Minotaur::Double *) values, &error);
-  }
+  //for (int i=0; i<n; ++i) {
+  //  std::cout << "grad obj [" << i << "] = " << grad_f[i] << std::endl;
+  //}
+
   return (0==error);
 }
 
 
 bool IpoptFunInterface::eval_h(Index, const Number* x, bool, Number obj_factor, 
-    Index, const Number* lambda, bool, Index, Index* iRow, Index* jCol,
-    Number* values)
+                               Index, const Number* lambda, bool, Index,
+                               Index* iRow, Index* jCol, Number* values)
 {
-  Minotaur::Int error = 0;
+  int error = 0;
   if (x==0 && lambda==0 && values==0) {
     problem_->getHessian()->fillRowColIndices((Minotaur::UInt *)iRow,
         (Minotaur::UInt *)jCol);
   } else if (x!=0 && lambda!=0 && values!=0) {
-    problem_->getHessian()->fillRowColValues((Minotaur::Double *)x, 
-        (Minotaur::Double) obj_factor, (Minotaur::Double *) lambda, 
-        (Minotaur::Double *)values, &error);
+    problem_->getHessian()->fillRowColValues((double *)x, 
+        (double) obj_factor, (double *) lambda, 
+        (double *)values, &error);
     //std::cout << "error = " << error << std::endl;
     //for (int i=0; i<problem_->getNumVars(); ++i) {
     //  std::cout << std::setprecision(8) << "x["<<i<<"] = "<<x[i] << std::endl;
@@ -1084,10 +1074,31 @@ bool IpoptFunInterface::eval_h(Index, const Number* x, bool, Number obj_factor,
 }
 
 
+bool IpoptFunInterface::eval_jac_g(Index, const Number* x, bool, Index, 
+                                   Index, Index* iRow, Index *jCol, 
+                                   Number* values)
+{
+  int error = 0;
+  if (values == 0) {
+    // return the structure of the jacobian of the constraints
+    problem_->getJacobian()->fillRowColIndices((Minotaur::UInt *) iRow,
+        (Minotaur::UInt *) jCol);
+  }
+  else {
+    // return the values of the jacobian of the constraints
+    problem_->getJacobian()->fillRowColValues((double *) x, 
+        (double *) values, &error);
+  }
+  return (0==error);
+}
+
+
 void IpoptFunInterface::finalize_solution(SolverReturn, Index, const Number* x, 
-    const Number* z_L, const Number* z_U, Index, const Number*, 
-    const Number* lambda, Number obj_value, const IpoptData*, 
-    IpoptCalculatedQuantities* /* q */)
+                                          const Number* z_L, const Number* z_U,
+                                          Index, const Number*,
+                                          const Number* lambda,
+                                          Number obj_value, const IpoptData*, 
+                                          IpoptCalculatedQuantities* /* q */)
 {
   sol_->setPrimal(x);
   sol_->setObjValue(obj_value);
@@ -1097,21 +1108,11 @@ void IpoptFunInterface::finalize_solution(SolverReturn, Index, const Number* x,
 }
 
 
-Minotaur::Double IpoptFunInterface::getSolutionValue() const
+double IpoptFunInterface::getSolutionValue() const
 {
   return sol_->getObjValue();
 }
 
-
-IpoptFunInterface::~IpoptFunInterface()
-{
-  if (sol_) {
-    sol_.reset();
-  }
-  if (problem_) {
-    problem_.reset();
-  }
-}
 
 } // namespace Ipopt
 
