@@ -10,7 +10,7 @@
 #include <cppunit/TestCase.h>
 #include <cppunit/TestCaller.h>
 #include <cppunit/TestSuite.h>
-#include <cppunit/TextTestResult.h>
+#include <cppunit/TestResult.h>
 #include <cppunit/extensions/HelperMacros.h>
 
 #include "Types.h"

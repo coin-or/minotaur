@@ -22,6 +22,7 @@ using namespace std;
 void AMPLBqpdUT::testNLP()
 {
   Minotaur::EnvPtr env = (Minotaur::EnvPtr) new Minotaur::Environment();
+  double solval = 0.0;
   env->getOptions()->findInt("ampl_log_level")->setValue(Minotaur::LogNone);
   iface_ = (AMPLInterfacePtr) new AMPLInterface(env);
 
@@ -60,8 +61,8 @@ void AMPLBqpdUT::testNLP()
   CPPUNIT_ASSERT(status==Minotaur::ProvenLocalOptimal);
 
   // get objvalue
-  Minotaur::Double value = bqpd_e->getSolutionValue();
-  CPPUNIT_ASSERT(fabs(value+99.96) < 1e-7);
+  solval = bqpd_e->getSolutionValue();
+  CPPUNIT_ASSERT(fabs(solval+99.96) < 1e-7);
 
   inst->clear();
   delete iface_;
