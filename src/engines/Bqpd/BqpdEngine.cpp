@@ -878,7 +878,7 @@ BqpdData::BqpdData(UInt n_t, UInt m_t, int kmax_t, UInt maxa_t, UInt lh1_t,
   ls    = new fint[nm];  // indices of the active constraints 
   alp   = new real[mlp]; // workspace associated with recursion
   lp    = new fint[mlp]; // workspace associated with recursion
-  info  = new fint[10];  // information on return from bqpd
+  info  = new fint[100]; // information on return from bqpd
   bl    = new real[nm];  // lower bounds for variables and constraints
   bu    = new real[nm];  // upper bounds for variables and constraints
 
@@ -891,7 +891,7 @@ BqpdData::BqpdData(UInt n_t, UInt m_t, int kmax_t, UInt maxa_t, UInt lh1_t,
   la    = new fint[maxa+m+3];
 
   if (true==zero) {
-    memset(info, 0, 10 * sizeof(int));
+    memset(info, 0, 100 * sizeof(int));
     memset(ws, 0, mxwk*sizeof(real));
     memset(lws, 0, mxiwk*sizeof(fint));
   }
@@ -920,8 +920,8 @@ BqpdData* BqpdData::clone()
   std::copy(ls,   ls   +  nm,       lhs->ls);
   std::copy(alp,  alp  +  mlp,      lhs->alp);
   std::copy(lp,   lp   +  mlp,      lhs->lp);
-  std::copy(info, info +  10,       lhs->info);
-  memset(info, 0, 10*sizeof(fint));
+  std::copy(info, info +  100,      lhs->info);
+  memset(info, 0, 100*sizeof(fint));
   std::copy(bl,   bl   +  nm,       lhs->bl);
   std::copy(bu,   bu   +  nm,       lhs->bu);
   //std::copy(ws,   ws   +  mxwk,     lhs->ws);
@@ -958,7 +958,7 @@ void BqpdData::copyFrom(const BqpdData* rhs)
   std::copy(rhs->ls,   rhs->ls   +  nm,       ls);
   std::copy(rhs->alp,  rhs->alp  +  mlp,      alp);
   std::copy(rhs->lp,   rhs->lp   +  mlp,      lp);
-  memset(rhs->info, 0, 10*sizeof(fint));
+  memset(rhs->info, 0, 100*sizeof(fint));
   std::copy(rhs->bl,   rhs->bl   +  nm,       bl);
   std::copy(rhs->bu,   rhs->bu   +  nm,       bu);
   std::copy(rhs->ws,   rhs->ws   +  mxwk,     ws);
@@ -1125,7 +1125,7 @@ void BqpdData::write(std::ostream &out) const
 
   out << "info = ";
   if (info) {
-    for (UInt i=0; i<10; ++i) {
+    for (UInt i=0; i<100; ++i) {
       out << std::fixed
           << std::setprecision(6) 
           << info[i] << " ";
