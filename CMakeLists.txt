@@ -191,7 +191,7 @@ set (LINK_BQPD)         ## NULL
 message(STATUS ${MSG_HEAD} "Searching for bqpd ...")
 
 set (BQPD_LIB_DIR "" CACHE PATH 
-  "Full path to libbqpd.a library, e.g. /home/path/to/third-party/lib/libbqpd.a")
+  "Full path to libbqpd.a library directory, e.g. /home/path/to/third-party/lib")
 set (BQPD_LIB_DIR_F ${BQPD_LIB_DIR})
 
 if (("${BQPD_LIB_DIR_F}" STREQUAL "") AND 

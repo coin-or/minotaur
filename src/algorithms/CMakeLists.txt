@@ -16,11 +16,13 @@ set (GFORTRAN_COMPILER)
 if (LINK_BQPD)
   add_definitions(-DUSE_BQPD)
   include_directories("${PROJECT_SOURCE_DIR}/src/engines/Bqpd")
+  link_directories(${BQPD_LIB_DIR_F})
 endif()
 
 if (LINK_FILTER_SQP)
   add_definitions(-DUSE_FilterSQP)
   include_directories("${PROJECT_SOURCE_DIR}/src/engines/FilterSQP")
+  link_directories(${FILTER_LIB_DIR_F})
 endif()
 
 if (LINK_IPOPT)

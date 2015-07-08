@@ -49,7 +49,7 @@ USE_OSI=1
 USE_CURL=0
 USE_MAC=0
 
-ASL="asl-20150607"
+ASL="asl-20150602"
 CPPUNIT="cppunit-1.13.2"
 OSI="clp-1.16.6"
 IPOPT="ipopt-3.12.3"
@@ -208,15 +208,16 @@ then
 
   if (( ${USE_ASL}==1 ))
   then
-    CARGS+=" -DASL_DIR:PATH=${EDEST}/${ASL}" 
+    CARGS+=" -DASL_LIB_DIR:PATH=${EDEST}/${ASL}" 
+    CARGS+=" -DASL_INC_DIR:PATH=${EDEST}/${ASL}" 
   fi
   if (( ${USE_BQPD}==1 ))
   then
-    CARGS+=" -DBQPD_LIB_DIR:PATH=${EDEST}/${BQPD}/libbqpd.a"  
+    CARGS+=" -DBQPD_LIB_DIR:PATH=${EDEST}/${BQPD}"  
   fi
   if (( ${USE_FILTERSQP}==1 ))
   then
-    CARGS+=" -DFILTER_LIB_DIR:PATH=${EDEST}/${FILTERSQP}/src/libfilter.a"  
+    CARGS+=" -DFILTER_LIB_DIR:PATH=${EDEST}/${FILTERSQP}/src"  
   fi
   if (( ${USE_IPOPT}==1 ))
   then

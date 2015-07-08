@@ -49,7 +49,7 @@ fi
                                -j ${CPUS} -l ${NAME}.log -r ${NAME}.err   \
 			       ${OPTIONS}
 cd ${NAME}
-make test >> ../${NAME}.log 2>> ../${NAME}.err
+make utest >> ../${NAME}.log 2>> ../${NAME}.err
 make install >> ../${NAME}.log 2>> ../${NAME}.err
 cd - >> /dev/null
 
@@ -60,9 +60,9 @@ okMatch=
 okMatch=`grep -E -o "OK (.*)" ${NAME}.err`
 if [[ x${okMatch} == "x" ]]
 then
-  echo make test output for ${NAME}: ERROR >> ${SUMMARY}
+  echo make utest output for ${NAME}: ERROR >> ${SUMMARY}
 else
-  echo make test output for ${NAME}: ${okMatch} >> ${SUMMARY}
+  echo make utest output for ${NAME}: ${okMatch} >> ${SUMMARY}
 fi
 }
 
