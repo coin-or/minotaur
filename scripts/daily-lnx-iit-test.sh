@@ -7,7 +7,7 @@ TEST_DIR=/home/amahajan/tmp/minotaur-test
 ## svn info
 USERNAME=ashu
 SVN_REPOS="https://repo.anl-external.org/repos/minotaur"
-EXT_URL="http://10.105.27.47/~amahajan/minotaur/restricted/minotaur-externals.tar.gz"
+EXT_URL="http://10.105.27.47/~amahajan/minotaur/restricted/minotaur-externals-0.2.tar.gz"
 
 ## Local LOGS
 WEB_DIR=/home/amahajan/misc/web/minotaur/nightly/origin

@@ -6,58 +6,59 @@ include_directories("${PROJECT_BINARY_DIR}/src/base")
 include_directories("${PROJECT_SOURCE_DIR}/src/base")
 include_directories("${PROJECT_SOURCE_DIR}/src/engines")
 include_directories("${PROJECT_SOURCE_DIR}/src/interfaces/ampl")
-include_directories("${ASL_DIR_F}")
+include_directories("${ASL_INC_DIR_F}")
 
-set (FILTER_SQP_LIBS)
 set (QPOASES_LIBS)
 set (GFORTRAN_COMPILER)
 
 ## define where to search for external libraries. This path must be defined
 ## before add_executable is called.
-if (LINK_FILTER_SQP)
+if (LINK_BQPD)
   add_definitions(-DUSE_BQPD)
-  add_definitions(-DUSE_FilterSQP)
   include_directories("${PROJECT_SOURCE_DIR}/src/engines/Bqpd")
+endif()
+
+if (LINK_FILTER_SQP)
+  add_definitions(-DUSE_FilterSQP)
   include_directories("${PROJECT_SOURCE_DIR}/src/engines/FilterSQP")
-  set (FILTER_SQP_LIBS mntrbqpd mntrfiltersqp ${FILTER_SQP_LIB_F})
-endif (LINK_FILTER_SQP)
+endif()
 
 if (LINK_IPOPT)
   add_definitions(-DUSE_IPOPT)
   include_directories("${PROJECT_SOURCE_DIR}/src/engines/Ipopt")
   include_directories("${IPOPT_INC_DIR_F}")
   link_directories(${IPOPT_LIB_DIR_F})
-endif (LINK_IPOPT)
+endif()
 
 if (LINK_OSI)
   add_definitions(-DUSE_OSILP)
   include_directories("${PROJECT_SOURCE_DIR}/src/engines/OsiLP")
   if (OSI_INC_DIR_F)
     include_directories("${OSI_INC_DIR_F}")
-  endif (OSI_INC_DIR_F)
+  endif()
   if (OSI_LIB_DIR_F)
     link_directories(${OSI_LIB_DIR_F})
-  endif (OSI_LIB_DIR_F)
+  endif()
   if (LINK_CLP)
     link_directories(${CLP_LIB_DIR_F})
-  endif (LINK_CLP)
+  endif()
   if (LINK_CPX)
     link_directories(${CPX_LIB_DIR})
-  endif (LINK_CPX)
-endif (LINK_OSI)
+  endif()
+endif()
 
 if (LINK_QPOASES)
   add_definitions(-DUSE_QPOASES)
   include_directories("${PROJECT_SOURCE_DIR}/src/engines/qpOASES")
   include_directories("${QPOASES_INC_DIR}")
   set (QPOASES_LIBS mntrqpoases)
-endif (LINK_QPOASES)
+endif()
   
 if (Fortran_COMPILER_NAME STREQUAL "gfortran")
-  if (LINK_IPOPT OR LINK_FILTER_SQP)
+  if (LINK_IPOPT OR LINK_FILTER_SQP OR LINK_BQPD)
     set (GFORTRAN_COMPILER gfortran)
-  endif (LINK_IPOPT OR LINK_FILTER_SQP)
-endif (Fortran_COMPILER_NAME STREQUAL "gfortran")
+  endif()
+endif()
 
 set (ALL_EXEC_LIBS 
 	"mntrampl" 
@@ -65,6 +66,7 @@ set (ALL_EXEC_LIBS
 	"${IPOPT_LIBS}"
         "${OSI_LIBS}"
         "${FILTER_SQP_LIBS}"
+	"${BQPD_LIBS}"
         "${QPOASES_LIBS}"
         "minotaur"
 	"${ASL_LIBS}"
@@ -98,15 +100,15 @@ install(TARGETS bnb RUNTIME DESTINATION bin)
 ## Add lines specific to your binaries in this section.
 ## Use the lines meant for bnb as a template.
 ##############################################################################
-set (BNB_SOURCES
-  MsBnb.cpp
-)
-
-add_executable(msbnb ${BNB_SOURCES})
-target_link_libraries(msbnb ${ALL_EXEC_LIBS})
-
-# This will install the binary in bin directory.
-install(TARGETS msbnb RUNTIME DESTINATION bin)
+#set (MSBNB_SOURCES
+#  MsBnb.cpp
+#)
+#
+#add_executable(msbnb ${MSBNB_SOURCES})
+#target_link_libraries(msbnb ${ALL_EXEC_LIBS})
+#
+## This will install the binary in bin directory.
+#install(TARGETS msbnb RUNTIME DESTINATION bin)
 
 
 ##############################################################################
@@ -143,15 +145,15 @@ install(TARGETS qg RUNTIME DESTINATION bin)
 ## Add lines specific to your binaries in this section. 
 ## Use the lines meant for bnb as a template.
 ##############################################################################
-set (POLYNOMIAL_SOURCES
-  polynomial-solver.cpp 
-)
-
-add_executable(polly ${POLYNOMIAL_SOURCES})
-target_link_libraries(polly ${ALL_EXEC_LIBS})
-
-# This will install the binary in bin directory.
-install(TARGETS polly RUNTIME DESTINATION bin)
+#set (POLYNOMIAL_SOURCES
+#  polynomial-solver.cpp 
+#)
+#
+#add_executable(polly ${POLYNOMIAL_SOURCES})
+#target_link_libraries(polly ${ALL_EXEC_LIBS})
+#
+## This will install the binary in bin directory.
+#install(TARGETS polly RUNTIME DESTINATION bin)
 
 
 ##############################################################################
@@ -173,12 +175,12 @@ install(TARGETS glob RUNTIME DESTINATION bin)
 ## Add lines specific to your binaries in this section. 
 ## Use the lines meant for bnb as a template.
 ##############################################################################
-set (BNC_SOURCES
-  Bnc.cpp 
-)
-
-add_executable(bnc ${BNC_SOURCES})
-target_link_libraries(bnc ${ALL_EXEC_LIBS})
-
-# This will install the binary in bin directory.
-install(TARGETS bnc RUNTIME DESTINATION bin)
+#set (BNC_SOURCES
+#  Bnc.cpp 
+#)
+#
+#add_executable(bnc ${BNC_SOURCES})
+#target_link_libraries(bnc ${ALL_EXEC_LIBS})
+#
+## This will install the binary in bin directory.
+#install(TARGETS bnc RUNTIME DESTINATION bin)

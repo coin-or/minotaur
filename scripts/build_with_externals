@@ -22,7 +22,7 @@ usage ()
     If this option is not specified, the externals will be built in the
     directory \"minotaur-externals\" inside the build-directory provided with
     \"-d\" option. "
-   echo "-f: Do not use filtersqp while building. Disabled by default."
+   echo "-f: Do not use filtersqp and bqpd while building. Disabled by default."
    echo "-i: Do not use ipopt while building. Disabled by default."
    echo "-j: Number of CPUs to use for compiling."
    echo "-l: Full path to log file. Default is /dev/null"
@@ -43,16 +43,18 @@ usage ()
 USE_ASL=1
 USE_CPPUNIT=1
 USE_FILTERSQP=1
+USE_BQPD=1
 USE_IPOPT=1
 USE_OSI=1
 USE_CURL=0
 USE_MAC=0
 
-ASL="asl-20120126"
-CPPUNIT="cppunit-1.12.1"
-OSI="clp-1.14.6"
-IPOPT="ipopt-3.10.2"
-FILTERSQP="filter-87"
+ASL="asl-20150607"
+CPPUNIT="cppunit-1.13.2"
+OSI="clp-1.16.6"
+IPOPT="ipopt-3.12.3"
+FILTERSQP="filter-102"
+BQPD="bqpd-3"
 
 LOG=
 ERR=
@@ -89,6 +91,9 @@ do
     *) echo "invalid option ${flag}"; usage; exit 1;;
   esac
 done
+
+## TODO: make this work for bqpd alone.
+USE_BQPD=$USE_FILTERSQP
 
 ## set log
 if [ "x${LOG}" != "x" ]
@@ -199,37 +204,35 @@ fi
 if (( ${CONFIG_MINO}==1 ))
 then
   ## prepare the configure arguments
-  ##CARGS=" --with-boost=${EDEST}"
   CARGS="-DBOOST_INC_DIR:PATH=${EDEST} "
 
   if (( ${USE_ASL}==1 ))
   then
     CARGS+=" -DASL_DIR:PATH=${EDEST}/${ASL}" 
-    ##CARGS+=" --with-ampl=${EDEST}/${ASL}"
+  fi
+  if (( ${USE_BQPD}==1 ))
+  then
+    CARGS+=" -DBQPD_LIB_DIR:PATH=${EDEST}/${BQPD}/libbqpd.a"  
   fi
   if (( ${USE_FILTERSQP}==1 ))
   then
-    CARGS+=" -DFILTER_SQP_LIB:PATH=${EDEST}/${FILTERSQP}/src/filterlib.a"  
-    ##CARGS+=" --with-filtersqp-lib=${EDEST}/${FILTERSQP}/src/filterlib.a"
+    CARGS+=" -DFILTER_LIB_DIR:PATH=${EDEST}/${FILTERSQP}/src/libfilter.a"  
   fi
   if (( ${USE_IPOPT}==1 ))
   then
     CARGS+=" -DIPOPT_INC_DIR:PATH=${EDEST}/${IPOPT}/build/include/"
     CARGS+=" -DIPOPT_LIB_DIR:PATH=${EDEST}/${IPOPT}/build/lib/"
-    ##CARGS+=" --with-ipopt=${EDEST}/${IPOPT}/build"
   fi
   if (( ${USE_OSI}==1 ))
   then
     CARGS+=" -DOSI_INC_DIR:PATH=${EDEST}/${OSI}/build/include/"
     CARGS+=" -DOSI_LIB_DIR:PATH=${EDEST}/${OSI}/build/lib/"
     CARGS+=" -DOSICLP:BOOL=ON"
-    ##CARGS+=" --with-osilp=${EDEST}/${OSI}/build"
   fi
   if (( ${USE_CPPUNIT}==1 ))
   then
     CARGS+=" -DCPPUNIT_INC_DIR:PATH=${EDEST}/${CPPUNIT}/build/include/"
     CARGS+=" -DCPPUNIT_LIB_DIR:PATH=${EDEST}/${CPPUNIT}/build/lib" 
-    ##CARGS+=" --with-cppunit=${EDEST}/${CPPUNIT}/build"
   fi
   if (( ${ENABLE_DEBUG}==1 ))
   then 
@@ -260,7 +263,7 @@ then
 else
   cd ${DEST}
   cp ${MINOTAUR}/Makefile.manual Makefile
-  make -j ${CPUS} FILTERSQP_LIB=${EDEST}/${FILTERSQP}/src/filterlib.a IPOPT_INST=${EDEST}/${IPOPT}/build OSI_INST=${EDEST}/${OSI}/build AMPL_INST=${EDEST}/${ASL} BOOST_INC=${EDEST} MINOTAUR=${MINOTAUR} EXTRA_LIBS="-lcoinhsl -lcoinmetis -lz -lbz2"
+  make -j ${CPUS} BQPD_LIB=${EDEST}/${BQDP}/libbqpd.a FILTERSQP_LIB=${EDEST}/${FILTERSQP}/src/libfilter.a IPOPT_INST=${EDEST}/${IPOPT}/build OSI_INST=${EDEST}/${OSI}/build AMPL_INST=${EDEST}/${ASL} BOOST_INC=${EDEST} MINOTAUR=${MINOTAUR} EXTRA_LIBS="-lcoinhsl -lcoinmetis -lz -lbz2"
   if [ -e bin/bnb ]
   then
     echo "Minotaur built in ${DEST}"

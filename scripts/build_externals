@@ -28,13 +28,14 @@ usage ()
    echo ""
 }
 
-TARNAME="minotaur-externals"
+TARNAME="minotaur-externals-0.2"
 TARURL=http://www.mcs.anl.gov/~mahajan/minotaur/restricted/${TARNAME}.tar.gz
-ASL="asl-20120126"
-OSI="clp-1.14.6"
-CPPUNIT="cppunit-1.12.1"
-FILTERSQP="filter-87"
-IPOPT="ipopt-3.10.2"
+ASL="asl-20150602"
+OSI="clp-1.16.6"
+CPPUNIT="cppunit-1.13.2"
+FILTERSQP="filter-102"
+BQPD="bqpd-3"
+IPOPT="ipopt-3.12.3"
 LOG=
 ERR=
 CPUS=1
@@ -138,6 +139,16 @@ else
 fi
 cd ${DEST}
 
+echo "compiling BQPD"
+cd minotaur-externals/${BQPD}
+if [ "x${STATIC_ARGS}" == "x" ]
+then
+  make -j ${CPUS} FFLAGS="-O3 -fPIC"
+else
+  make -j ${CPUS} 
+fi
+cd ${DEST}
+
 echo "compiling Filter-SQP"
 cd minotaur-externals/${FILTERSQP}/src
 if [ "x${STATIC_ARGS}" == "x" ]
@@ -177,6 +188,11 @@ then
   echo "cleaning unused files in IPOPT"
   cd minotaur-externals/${IPOPT}/build
   make distclean
+  cd ${DEST}
+
+  echo "cleaning unused files in BQPD"
+  cd minotaur-externals/${BQPD}
+  rm -fv *.o src/*.o
   cd ${DEST}
 
   echo "cleaning unused files in Filter-SQP"

@@ -1,8 +1,4 @@
-## TODO: 
-## * Check MINOTAUR_RUSAGE in timer.
-## * make engine-factory more intuitive.
-## * Print full version, including svn version.
-## * Test on petsc-mini.
+## Minotaur CMake file
 
 project(MINOTAUR CXX C Fortran)
 CMAKE_MINIMUM_REQUIRED(VERSION 2.8 FATAL_ERROR) 
@@ -19,17 +15,16 @@ INCLUDE(FindSubversion)
 INCLUDE(FindPkgConfig OPTIONAL RESULT_VARIABLE MNTR_PKGCON)
 
 set (MINOTAUR_VERSION_MAJOR 0)
-set (MINOTAUR_VERSION_MINOR 1)
+set (MINOTAUR_VERSION_MINOR 2)
 
 set (MSG_HEAD "Minotaur config: ")  ## must preceed every message.
 
 ## Stop if we are compiling in the minotaur-root directory.
 if ((EXISTS "${PROJECT_BINARY_DIR}/src/base/Types.h") OR 
-    ("${PROJECT_SOURCE_DIR}" STREQUAL "${PROJECT_BINARY_DIR}"))
+  ("${PROJECT_SOURCE_DIR}" STREQUAL "${PROJECT_BINARY_DIR}"))
   message(FATAL_ERROR
   ${MSG_HEAD} "In-source builds are not allowed. Please create a build directory and compile there.")
-endif ((EXISTS "${PROJECT_BINARY_DIR}/src/base/Types.h") OR 
-       ("${PROJECT_SOURCE_DIR}" STREQUAL "${PROJECT_BINARY_DIR}"))
+endif()
 
 ## Enable compiler warnings
 OPTION(COMPILER_WARN "Turn compiler warnings on/off " ON)
@@ -38,7 +33,7 @@ if (${COMPILER_WARN})
   set (CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wextra -Wundef -Wshadow")
   set (CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wredundant-decls")
   set (CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Woverloaded-virtual")
-endif (${COMPILER_WARN})
+endif()
 
 ###########################################################################
 ## Don't install in /usr/local
@@ -52,7 +47,7 @@ set(CMAKE_INSTALL_PREFIX ${MNTR_INSTALL_PREFIX} CACHE INTERNAL
 ###########################################################################
 ## check if all externals available at one place
 ###########################################################################
-set (ALL_EXTERNS_PATH "" CACHE PATH "Path to the directory where all minotaur externals are available (/path/to/mntr-ext-XXXX)")
+set (ALL_EXTERNS_PATH "" CACHE PATH "Path to the directory where all minotaur external libraries and headers are available (/path/to/third-party)")
 
 ###########################################################################
 ## Shared or static libraries.
@@ -70,11 +65,11 @@ if (${BUILD_SHARED_LIBS})
     if (IS_ABSOLUTE ${CMAKE_INSTALL_PREFIX})
       set(CMAKE_INSTALL_RPATH 
         ${CMAKE_INSTALL_RPATH}:${CMAKE_INSTALL_PREFIX}/lib)
-    else (IS_ABSOLUTE ${CMAKE_INSTALL_PREFIX})
+    else()
       set(CMAKE_INSTALL_RPATH ${CMAKE_INSTALL_RPATH}:${PROJECT_BINARY_DIR}/${CMAKE_INSTALL_PREFIX}/lib)
-    endif (IS_ABSOLUTE ${CMAKE_INSTALL_PREFIX})
-  endif("${isSystemDir}" STREQUAL "-1")
-endif (${BUILD_SHARED_LIBS})
+    endif()
+  endif()
+endif()
 
 ###########################################################################
 ## getrusage
@@ -94,8 +89,8 @@ if (EXISTS "${MNTR_ABS_PATH}/.svn")
     # extract working copy information for SOURCE_DIR into TMP_SVN_XXX variables
     Subversion_WC_INFO(${MNTR_ABS_PATH} TMP_SVN)
     set (MINOTAUR_SVN_VERSION ${TMP_SVN_WC_REVISION})
-  endif (Subversion_FOUND)
-endif (EXISTS "${MNTR_ABS_PATH}/.svn")
+  endif()
+endif()
 message (STATUS ${MSG_HEAD} "svn version = ${MINOTAUR_SVN_VERSION}")
 
 
@@ -107,11 +102,9 @@ if (("${MNTR_PKGCON}" STREQUAL "NOTFOUND") OR (NOT PKG_CONFIG_FOUND) OR
     (NOT ${USE_PKGCON_BOOL}))
   set (MNTR_HAVE_PKGCON 0)
   message(STATUS ${MSG_HEAD} "pkg-config not called.")
-else (("${MNTR_PKGCON}" STREQUAL "NOTFOUND") OR (NOT PKG_CONFIG_FOUND) OR 
-      (NOT ${USE_PKGCON_BOOL}))
+else()
   message(STATUS ${MSG_HEAD} "pkg-config found.")
-endif (("${MNTR_PKGCON}" STREQUAL "NOTFOUND") OR (NOT PKG_CONFIG_FOUND) OR 
-       (NOT ${USE_PKGCON_BOOL}))
+endif()
 
 
 ###########################################################################
@@ -129,9 +122,9 @@ FortranCInterface_HEADER(src/base/MinotaurCFortran.h
 OPTION (SPEW_FLAG "Turn verbosity on/off." OFF) 
 if (${SPEW_FLAG})
   add_definitions(-DSPEW=1)
-else (${SPEW_FLAG})
+else()
   add_definitions(-DSPEW=0)
-endif (${SPEW_FLAG})
+endif()
 message(STATUS ${MSG_HEAD} "SPEW flag is " ${SPEW_FLAG})
 
 
@@ -140,11 +133,11 @@ message(STATUS ${MSG_HEAD} "SPEW flag is " ${SPEW_FLAG})
 ###########################################################################
 if ("${CMAKE_BUILD_TYPE}" STREQUAL "Debug")
   add_definitions(-DDEBUG=1)
-else ("${CMAKE_BUILD_TYPE}" STREQUAL "Debug")
+else()
   set (CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -O3")
   set (CMAKE_FORTRAN_FLAGS "${CMAKE_FORTRAN_FLAGS} -O3")
   add_definitions(-DDEBUG=0 -DNDEBUG)
-endif ("${CMAKE_BUILD_TYPE}" STREQUAL "Debug")
+endif()
 
 
 ###########################################################################
@@ -155,9 +148,10 @@ set (BOOST_INC_DIR "" CACHE PATH
 "Path to boost headers. The path must contain 'boost/shared_ptr.hpp' file.") 
 
 set (BOOST_INC_DIR_F ${BOOST_INC_DIR}) 
-if ("${BOOST_INC_DIR_F}" STREQUAL "")
-  set (BOOST_INC_DIR_F ${ALL_EXTERNS_PATH})
-endif ("${BOOST_INC_DIR_F}" STREQUAL "")
+if ("${BOOST_INC_DIR_F}" STREQUAL "" AND 
+  (NOT ("${ALL_EXTERNS_PATH}" STREQUAL "")))
+  set (BOOST_INC_DIR_F ${ALL_EXTERNS_PATH}/include)
+endif()
 
 if (NOT BOOST_INC_DIR_F)
   message(STATUS ${MSG_HEAD} "User did not specify any boost path."
@@ -172,17 +166,17 @@ if (NOT BOOST_INC_DIR_F)
     message(FATAL_ERROR " ${MSG_HEAD}" 
       "Cannot find Boost headers in the system. "
       "Please specify a location of boost directory.")
-  endif (NOT BOOST_DIR_BOOL)
+  endif()
 
 elseif (EXISTS ${BOOST_INC_DIR_F}/boost/shared_ptr.hpp)
   message(STATUS ${MSG_HEAD} "Using boost headers from ${BOOST_INC_DIR_F}")
   include_directories(${BOOST_INC_DIR_F})
 
-else (NOT BOOST_INC_DIR_F)
+else()
   message(FATAL_ERROR " ${MSG_HEAD}"
     "${BOOST_INC_DIR_F}/boost/shared_ptr.hpp not found in BOOST_INC_DIR_F")
 
-endif (NOT BOOST_INC_DIR_F)
+endif()
 
 ###########################################################################
 ## base
@@ -190,41 +184,77 @@ endif (NOT BOOST_INC_DIR_F)
 add_subdirectory(src/base)
 
 ###########################################################################
-## Bqpd and Filter
+## Bqpd
 ###########################################################################
-set (FILTER_SQP_LIB)          ## NULL
+set (BQPD_LIB_DIR)          ## NULL
+set (LINK_BQPD)         ## NULL
+message(STATUS ${MSG_HEAD} "Searching for bqpd ...")
+
+set (BQPD_LIB_DIR "" CACHE PATH 
+  "Full path to libbqpd.a library, e.g. /home/path/to/third-party/lib/libbqpd.a")
+set (BQPD_LIB_DIR_F ${BQPD_LIB_DIR})
+
+if (("${BQPD_LIB_DIR_F}" STREQUAL "") AND 
+  (NOT ("${ALL_EXTERNS_PATH}" STREQUAL "")))
+  set (BQPD_LIB_DIR_F ${ALL_EXTERNS_PATH}/lib)
+endif()
+message(STATUS ${MSG_HEAD} "BQPD_LIB_DIR_F is set to = ${BQPD_LIB_DIR_F}")
+if (BQPD_LIB_DIR_F)
+  if (EXISTS "${BQPD_LIB_DIR_F}")
+    message(STATUS ${MSG_HEAD} "BQPD library directory exists.")
+    add_subdirectory(src/engines/Bqpd)
+    set (LINK_BQPD 1)
+    set (BQPD_LIBS "mntrbqpd" "bqpd")
+  else()
+    message(FATAL_ERROR " ${MSG_HEAD} BQPD_LIB_DIR_F ${BQPD_LIB_DIR_F} not found.")
+  endif()
+endif()
+
+if (LINK_BQPD)
+  message(STATUS ${MSG_HEAD} "Link BQPD? Yes.")
+else()
+  set (BQPD_LIB_DIR_F)
+  message(STATUS ${MSG_HEAD} "Link BQPD? No.")
+endif()
+
+
+###########################################################################
+## Filter-SQP 
+###########################################################################
+set (FILTER_LIB_DIR)          ## NULL
 set (LINK_FILTER_SQP)         ## NULL
 
-message(STATUS ${MSG_HEAD} "Searching for Filter-SQP and bqpd ...")
-set (FILTER_SQP_LIB "" CACHE PATH 
-  "Full path to filter/bqpd library, e.g. /home/foo/src/filterlib.a") 
-set (FILTER_SQP_LIB_F ${FILTER_SQP_LIB})
+message(STATUS ${MSG_HEAD} "Searching for Filter-SQP ...")
+set (FILTER_LIB_DIR "" CACHE PATH 
+  "Path to Filter-SQP library. This directory must have a libfilter file.") 
+set (FILTER_LIB_DIR_F ${FILTER_LIB_DIR})
 
-if (("${FILTER_SQP_LIB_F}" STREQUAL "") AND 
+if (("${FILTER_LIB_DIR_F}" STREQUAL "") AND 
     (NOT ("${ALL_EXTERNS_PATH}" STREQUAL "")))
-  set (FILTER_SQP_LIB_F ${ALL_EXTERNS_PATH}/filter-87/filterlib.a)
-endif (("${FILTER_SQP_LIB_F}" STREQUAL "") AND 
-       (NOT ("${ALL_EXTERNS_PATH}" STREQUAL "")))
+    set (FILTER_LIB_DIR_F ${ALL_EXTERNS_PATH}/lib)
+endif()
 
-message(STATUS ${MSG_HEAD} "FILTER_SQP_LIB_F is set to = ${FILTER_SQP_LIB_F}")
-if (FILTER_SQP_LIB_F)
-  if (EXISTS "${FILTER_SQP_LIB_F}")
-    message(STATUS ${MSG_HEAD} "Filter-SQP library exists.")
-    add_subdirectory(src/engines/Bqpd)
+message(STATUS ${MSG_HEAD} "FILTER_LIB_DIR_F is set to = ${FILTER_LIB_DIR_F}")
+if (FILTER_LIB_DIR_F)
+  if (EXISTS "${FILTER_LIB_DIR_F}")
+    message(STATUS ${MSG_HEAD} "Filter-SQP library directory exists.")
     add_subdirectory(src/engines/FilterSQP)
     set (LINK_FILTER_SQP 1)
-  else (EXISTS "${FILTER_SQP_LIB_F}")
-    message(FATAL_ERROR " ${MSG_HEAD} FILTER_SQP_LIB_F "
-            "${FILTER_SQP_LIB_F} not found.")
-  endif (EXISTS "${FILTER_SQP_LIB_F}")
-endif (FILTER_SQP_LIB_F)
+    set (FILTER_SQP_LIBS "mntrfiltersqp" "filtersqp")
+  else()
+    message(FATAL_ERROR " ${MSG_HEAD} FILTER_LIB_DIR_F "
+    "${FILTER_LIB_DIR_F} not found.")
+  endif()
+endif()
 
 if (LINK_FILTER_SQP)
   message(STATUS ${MSG_HEAD} "Link Filter-SQP? Yes.")
-else (LINK_FILTER_SQP)
-  set (FILTER_SQP_LIB_F)
+else()
+  set (FILTER_LIB_DIR_F)
   message(STATUS ${MSG_HEAD} "Link Filter-SQP? No.")
-endif (LINK_FILTER_SQP)
+endif()
+
+###########################################################################
 
 set (USE_PKGCON_BOOL TRUE CACHE BOOL 
 "If true, try to use pkg-config to find library flags.") 
@@ -243,9 +273,8 @@ set (IPOPT_INC_DIR "" CACHE PATH
 set (IPOPT_INC_DIR_F ${IPOPT_INC_DIR})
 if (("${IPOPT_INC_DIR_F}" STREQUAL "") AND
     (NOT ("${ALL_EXTERNS_PATH}" STREQUAL "")))
-  set (IPOPT_INC_DIR_F "${ALL_EXTERNS_PATH}/ipopt-3.10.2/include")
-endif (("${IPOPT_INC_DIR_F}" STREQUAL "") AND
-       (NOT ("${ALL_EXTERNS_PATH}" STREQUAL "")))
+  set (IPOPT_INC_DIR_F "${ALL_EXTERNS_PATH}/include")
+endif()
 
 
 set (IPOPT_LIB_DIR "" CACHE PATH 
@@ -253,9 +282,8 @@ set (IPOPT_LIB_DIR "" CACHE PATH
 set (IPOPT_LIB_DIR_F ${IPOPT_LIB_DIR})
 if (("${IPOPT_LIB_DIR_F}" STREQUAL "") AND
        (NOT ("${ALL_EXTERNS_PATH}" STREQUAL "")))
-  set (IPOPT_LIB_DIR_F "${ALL_EXTERNS_PATH}/ipopt-3.10.2/lib")
-endif (("${IPOPT_LIB_DIR_F}" STREQUAL "") AND
-       (NOT ("${ALL_EXTERNS_PATH}" STREQUAL "")))
+  set (IPOPT_LIB_DIR_F "${ALL_EXTERNS_PATH}/lib")
+endif()
 
 message(STATUS ${MSG_HEAD} "IPOPT_INC_DIR_F is set to ${IPOPT_INC_DIR_F}")
 message(STATUS ${MSG_HEAD} "IPOPT_LIB_DIR_F is set to ${IPOPT_LIB_DIR_F}")
@@ -265,13 +293,13 @@ if (IPOPT_INC_DIR_F)
   if (NOT EXISTS "${IPOPT_INC_DIR_F}/coin/IpIpoptApplication.hpp")
     message(FATAL_ERROR " ${MSG_HEAD}" 
             "${IPOPT_INC_DIR_F}/coin/IpIpoptApplication.hpp not found.")
-  endif (NOT EXISTS "${IPOPT_INC_DIR_F}/coin/IpIpoptApplication.hpp")
+  endif()
 
   ## complain if library not specified
   if (NOT IPOPT_LIB_DIR_F)
     message(FATAL_ERROR " ${MSG_HEAD}" 
             "IPOPT_LIB_DIR must be set along with IPOPT_INC_DIR")
-  endif (NOT IPOPT_LIB_DIR_F)
+  endif()
 
   ## check if library found
   if (EXISTS ${IPOPT_LIB_DIR_F})
@@ -280,7 +308,7 @@ if (IPOPT_INC_DIR_F)
     set (LINK_IPOPT 1)
     if (${BUILD_SHARED_LIBS})
       set (CMAKE_INSTALL_RPATH ${CMAKE_INSTALL_RPATH}:${IPOPT_LIB_DIR_F})
-    endif (${BUILD_SHARED_LIBS})
+    endif()
 
     set (MNTR_IPOPT_PC_LIBRARIES)
     if (MNTR_HAVE_PKGCON)
@@ -290,30 +318,29 @@ if (IPOPT_INC_DIR_F)
        message(STATUS ${MSG_HEAD} "Ipopt libraries: "
 	       "${MNTR_IPOPT_PC_LIBRARIES}")
        set (IPOPT_LIBS "mntripopt" ${MNTR_IPOPT_PC_LIBRARIES})
-    endif (MNTR_HAVE_PKGCON)
+    endif()
 
     if ((NOT (MNTR_HAVE_PKGCON)) OR
 	("${MNTR_IPOPT_PC_LIBRARIES}" STREQUAL ""))
        set (IPOPT_LIBS "mntripopt" "ipopt")
-    endif ((NOT (MNTR_HAVE_PKGCON)) OR
-           ("${MNTR_IPOPT_PC_LIBRARIES}" STREQUAL ""))
+    endif()
 
-  else (EXISTS ${IPOPT_LIB_DIR_F})
+  else()
     message(FATAL_ERROR " ${MSG_HEAD} "
             "IPOPT_LIB_DIR_F ${IPOPT_LIB_DIR_F} not found.")
-  endif (EXISTS ${IPOPT_LIB_DIR_F})
+  endif()
 elseif (IPOPT_LIB_DIR_F)
     message(FATAL_ERROR " ${MSG_HEAD}" 
             "IPOPT_INC_DIR must be set along with IPOPT_LIB_DIR")
-endif (IPOPT_INC_DIR_F)
+endif()
 
 if (LINK_IPOPT)
   message(STATUS ${MSG_HEAD} "Link IPOPT? Yes.")
-else (LINK_IPOPT)
+else()
   set (IPOPT_INC_DIR_F)
   set (IPOPT_LIB_DIR_F)
   message(STATUS ${MSG_HEAD} "Link IPOPT? No.")
-endif (LINK_IPOPT)
+endif()
 
 ###########################################################################
 ## OSI-LP 
@@ -335,9 +362,8 @@ set (OSI_INC_DIR "" CACHE PATH
 set (OSI_INC_DIR_F ${OSI_INC_DIR})
 if (("${OSI_INC_DIR_F}" STREQUAL "") AND
     (NOT ("${ALL_EXTERNS_PATH}" STREQUAL "")))
-  set (OSI_INC_DIR_F "${ALL_EXTERNS_PATH}/clp-1.14.6/include")
-endif (("${OSI_INC_DIR_F}" STREQUAL "") AND
-      (NOT ("${ALL_EXTERNS_PATH}" STREQUAL "")))
+  set (OSI_INC_DIR_F "${ALL_EXTERNS_PATH}/include")
+endif()
 
 
 set (OSI_LIB_DIR "" CACHE PATH 
@@ -346,9 +372,8 @@ set (OSI_LIB_DIR "" CACHE PATH
 set (OSI_LIB_DIR_F ${OSI_LIB_DIR})
 if (("${OSI_LIB_DIR_F}" STREQUAL "") AND
     (NOT ("${ALL_EXTERNS_PATH}" STREQUAL "")))
-  set (OSI_LIB_DIR_F "${ALL_EXTERNS_PATH}/clp-1.14.6/lib")
-endif (("${OSI_LIB_DIR_F}" STREQUAL "") AND
-      (NOT ("${ALL_EXTERNS_PATH}" STREQUAL "")))
+  set (OSI_LIB_DIR_F "${ALL_EXTERNS_PATH}/lib")
+endif()
 
 message(STATUS ${MSG_HEAD} "OSI_LIB_DIR_F is set to ${OSI_LIB_DIR_F}")
 message(STATUS ${MSG_HEAD} "OSI_INC_DIR_F is set to ${OSI_INC_DIR_F}")
@@ -358,41 +383,41 @@ if (OSI_INC_DIR_F)
   if (NOT EXISTS "${OSI_INC_DIR_F}/coin/OsiSolverInterface.hpp")
     message(FATAL_ERROR " ${MSG_HEAD}" 
             "${OSI_INC_DIR_F}/coin/OsiSolverInterface.hpp not found.")
-  endif (NOT EXISTS "${OSI_INC_DIR_F}/coin/OsiSolverInterface.hpp")
+  endif()
 
   ## complain if library not specified
   if (NOT OSI_LIB_DIR_F)
     message(FATAL_ERROR " ${MSG_HEAD}" 
             "OSI_LIB_DIR must be set along with OSI_INC_DIR")
-  endif (NOT OSI_LIB_DIR_F)
+  endif()
 
   ## complain if library not specified
   if (NOT (EXISTS ${OSI_LIB_DIR_F}))
     message(FATAL_ERROR " ${MSG_HEAD} "
             "OSI_LIB_DIR_F ${OSI_LIB_DIR_F} not found.")
-  endif (NOT (EXISTS ${OSI_LIB_DIR_F}))
+  endif()
 
   message(STATUS ${MSG_HEAD} "OSI library directory exists.")
   set (LINK_OSI 1)
 
   if (${BUILD_SHARED_LIBS})
     set (CMAKE_INSTALL_RPATH ${CMAKE_INSTALL_RPATH}:${OSI_LIB_DIR_F})
-  endif (${BUILD_SHARED_LIBS})
+  endif()
 
   set (OSI_LIBS mntrosilp)
 
 elseif (OSI_LIB_DIR_F)
     message(FATAL_ERROR " ${MSG_HEAD}" 
             "OSI_INC_DIR must be set along with OSI_LIB_DIR")
-endif (OSI_INC_DIR_F)
+endif()
 
 if (LINK_OSI)
   message(STATUS ${MSG_HEAD} "Link OSI? Yes.")
-else (LINK_OSI)
+else()
   set (OSI_INC_DIR_F)
   set (OSI_LIB_DIR_F)
   message(STATUS ${MSG_HEAD} "Link OSI? No.")
-endif (LINK_OSI)
+endif()
 
 
 ###########################################################################
@@ -408,17 +433,17 @@ set (CLP_INC_DIR_F)
 set (OSICLP_F ${OSICLP})
 if (NOT ("${ALL_EXTERNS_PATH}" STREQUAL ""))
   set (OSICLP_F ON)
-endif (NOT ("${ALL_EXTERNS_PATH}" STREQUAL ""))
+endif()
 
 set (CLP_INC_DIR "" CACHE PATH 
      "Path to CLP headers. It must have coin/ClpModel.hpp file. Defaults to OSI_INC_DIR") 
 
 if (OSICLP_F)
   set (CLP_INC_DIR_F ${OSI_INC_DIR_F})
-endif (OSICLP_F)
+endif()
 if ((NOT ("${CLP_INC_DIR}" STREQUAL "")))
   set (CLP_INC_DIR_F ${CLP_INC_DIR})
-endif ((NOT ("${CLP_INC_DIR}" STREQUAL "")))
+endif()
 
 
 set (CLP_LIB_DIR "" CACHE PATH 
@@ -426,10 +451,10 @@ set (CLP_LIB_DIR "" CACHE PATH
 set (CLP_LIB_DIR_F)
 if (OSICLP_F)
   set (CLP_LIB_DIR_F ${OSI_LIB_DIR_F})
-endif (OSICLP_F)
+endif()
 if ((NOT ("${CLP_LIB_DIR}" STREQUAL "")))
   set (CLP_LIB_DIR_F ${CLP_LIB_DIR})
-endif ((NOT ("${CLP_LIB_DIR}" STREQUAL "")))
+endif()
 
 message(STATUS ${MSG_HEAD} "CLP_LIB_DIR_F is set to ${CLP_LIB_DIR_F}")
 message(STATUS ${MSG_HEAD} "CLP_INC_DIR_F is set to ${CLP_INC_DIR_F}")
@@ -439,19 +464,19 @@ if (NOT ("${CLP_INC_DIR_F}" STREQUAL ""))
   if (NOT EXISTS "${CLP_INC_DIR_F}/coin/ClpModel.hpp")
     message(FATAL_ERROR " ${MSG_HEAD}" 
             "${CLP_INC_DIR_F}/coin/ClpModel.hpp not found.")
-  endif (NOT EXISTS "${CLP_INC_DIR_F}/coin/ClpModel.hpp")
+  endif()
 
   ## complain if library not specified
   if (NOT CLP_LIB_DIR_F)
     message(FATAL_ERROR " ${MSG_HEAD}" 
             "CLP_LIB_DIR must be set along with CLP_INC_DIR")
-  endif (NOT CLP_LIB_DIR_F)
+  endif()
 
   ## complain if library not specified
   if (NOT (EXISTS ${CLP_LIB_DIR_F}))
     message(FATAL_ERROR " ${MSG_HEAD} "
             "CLP_LIB_DIR_F ${CLP_LIB_DIR_F} not found.")
-  endif (NOT (EXISTS ${CLP_LIB_DIR_F}))
+  endif()
 
   message(STATUS ${MSG_HEAD} "CLP library directory exists.")
   set (LINK_CLP 1)
@@ -459,7 +484,7 @@ if (NOT ("${CLP_INC_DIR_F}" STREQUAL ""))
 
   if (${BUILD_SHARED_LIBS})
     set (CMAKE_INSTALL_RPATH ${CMAKE_INSTALL_RPATH}:${CLP_LIB_DIR_F})
-  endif (${BUILD_SHARED_LIBS})
+  endif()
 
   set (MNTR_OSI_PC_LIBRARIES)
   if (MNTR_HAVE_PKGCON)
@@ -469,24 +494,24 @@ if (NOT ("${CLP_INC_DIR_F}" STREQUAL ""))
     message(STATUS ${MSG_HEAD} "Osi CLP libraries: "
       "${MNTR_OSI_PC_LIBRARIES}")
     set (OSI_LIBS mntrosilp ${OSI_LIBS} ${MNTR_OSI_PC_LIBRARIES})
-  endif (MNTR_HAVE_PKGCON)
+  endif()
 
   if ((NOT (MNTR_HAVE_PKGCON)) OR ("${MNTR_OSI_PC_LIBRARIES}" STREQUAL ""))
     set (OSI_LIBS mntrosilp ${OSI_LIBS} OsiClp Osi Clp CoinUtils)
-  endif ((NOT (MNTR_HAVE_PKGCON)) OR ("${MNTR_OSI_PC_LIBRARIES}" STREQUAL ""))
+  endif()
 
 elseif (CLP_LIB_DIR_F)
     message(FATAL_ERROR " ${MSG_HEAD}" 
             "CLP_INC_DIR must be set along with CLP_LIB_DIR")
-endif (NOT ("${CLP_INC_DIR_F}" STREQUAL ""))
+endif()
 
 if (LINK_CLP)
   message(STATUS ${MSG_HEAD} "Link CLP? Yes.")
   add_definitions("-DMNTROSICLP=1")
-else (LINK_CLP)
+else()
   message(STATUS ${MSG_HEAD} "Link CLP? No.")
   add_definitions("-DMNTROSICLP=0")
-endif (LINK_CLP)
+endif()
 
 ###########################################################################
 ## CPLEX
@@ -501,7 +526,7 @@ if (CPX_INC_DIR)
   if (NOT EXISTS "${CPX_INC_DIR}/cplex.h")
     message(FATAL_ERROR " ${MSG_HEAD} "
             "cplex.h not found at ${CPX_INC_DIR} not found.")
-  endif (NOT EXISTS "${CPX_INC_DIR}/cplex.h")
+  endif()
   set (LINK_CPX 1)
   set (MNTR_OSI_PC2_LIBRARIES)
   if (MNTR_HAVE_PKGCON)
@@ -511,12 +536,12 @@ if (CPX_INC_DIR)
     message(STATUS ${MSG_HEAD} "Osi Cplex libraries: "
       "${MNTR_OSI_PC2_LIBRARIES}")
     set (OSI_LIBS ${OSI_LIBS} ${MNTR_OSI_PC2_LIBRARIES})
-  endif (MNTR_HAVE_PKGCON)
+  endif()
 
   if ((NOT (MNTR_HAVE_PKGCON)) OR ("${MNTR_OSI_PC2_LIBRARIES}" STREQUAL ""))
     set (OSI_LIBS ${OSI_LIBS} OsiCpx Osi CoinUtils)
-  endif ((NOT (MNTR_HAVE_PKGCON)) OR ("${MNTR_OSI_PC2_LIBRARIES}" STREQUAL ""))
-endif (CPX_INC_DIR)
+  endif()
+endif()
 
 message(STATUS ${MSG_HEAD} "CPX_INC_DIR is set to ${CPX_INC_DIR}")
 
@@ -524,10 +549,10 @@ message(STATUS ${MSG_HEAD} "CPX_INC_DIR is set to ${CPX_INC_DIR}")
 if (LINK_CPX)
   message(STATUS ${MSG_HEAD} "Link Cplex? Yes.")
   add_definitions("-DMNTROSICPX=1")
-else (LINK_CPX)
+else()
   message(STATUS ${MSG_HEAD} "Link Cplex? No.")
   add_definitions("-DMNTROSICPX=0")
-endif (LINK_CPX)
+endif()
 
 
 ###########################################################################
@@ -543,7 +568,7 @@ if (GRB_INC_DIR)
   if (NOT EXISTS "${GRB_INC_DIR}/gurobi_c.h")
     message(FATAL_ERROR " ${MSG_HEAD} "
             "gurobi_c.h not found at ${GRB_INC_DIR} not found.")
-  endif (NOT EXISTS "${GRB_INC_DIR}/gurobi_c.h")
+  endif()
   set (LINK_GRB 1)
   set (MNTR_OSI_PC3_LIBRARIES)
   if (MNTR_HAVE_PKGCON)
@@ -554,12 +579,12 @@ if (GRB_INC_DIR)
     message(STATUS ${MSG_HEAD} "Osi Gurobi libraries: "
       "${MNTR_OSI_PC3_LIBRARIES}")
     set (OSI_LIBS ${OSI_LIBS} ${MNTR_OSI_PC3_LIBRARIES})
-  endif (MNTR_HAVE_PKGCON)
+  endif()
 
   if ((NOT (MNTR_HAVE_PKGCON)) OR ("${MNTR_OSI_PC3_LIBRARIES}" STREQUAL ""))
     set (OSI_LIBS ${OSI_LIBS} OsiGrb Osi CoinUtils)
-  endif ((NOT (MNTR_HAVE_PKGCON)) OR ("${MNTR_OSI_PC3_LIBRARIES}" STREQUAL ""))
-endif (GRB_INC_DIR)
+  endif()
+endif()
 
 message(STATUS ${MSG_HEAD} "GRB_INC_DIR is set to ${GRB_INC_DIR}")
 
@@ -567,10 +592,10 @@ message(STATUS ${MSG_HEAD} "GRB_INC_DIR is set to ${GRB_INC_DIR}")
 if (LINK_GRB)
   message(STATUS ${MSG_HEAD} "Link Gurobi? Yes.")
   add_definitions("-DMNTROSIGRB=1")
-else (LINK_GRB)
+else()
   message(STATUS ${MSG_HEAD} "Link Gurobi? No.")
   add_definitions("-DMNTROSIGRB=0")
-endif (LINK_GRB)
+endif()
 
 
 ###########################################################################
@@ -578,7 +603,7 @@ endif (LINK_GRB)
 ###########################################################################
 if (LINK_OSI)
   add_subdirectory(src/engines/OsiLP)
-endif (LINK_OSI)
+endif()
 
 
 
@@ -600,34 +625,34 @@ if (QPOASES_INC_DIR)
   if (NOT EXISTS "${QPOASES_INC_DIR}/qpOASES/QProblem.hpp")
     message(FATAL_ERROR " ${MSG_HEAD}"
             "${QPOASES_INC_DIR}/qpOASES/QProblem.hpp not found.")
-  endif (NOT EXISTS "${QPOASES_INC_DIR}/qpOASES/QProblem.hpp")
+  endif()
   if (NOT QPOASES_LIB_DIR)
     message(FATAL_ERROR " ${MSG_HEAD}"
             "QPOASES_LIB_DIR must be set along with QPOASES_INC_DIR")
-  endif (NOT QPOASES_LIB_DIR)
+  endif()
   if (EXISTS ${QPOASES_LIB_DIR})
     message(STATUS ${MSG_HEAD} "qpOASES library directory exists.")
     add_subdirectory(src/engines/qpOASES)
     set(CMAKE_INSTALL_RPATH ${CMAKE_INSTALL_RPATH}:${QPOASES_LIB_DIR})
     set (LINK_QPOASES 1)
-  else (EXISTS ${QPOASES_LIB_DIR})
+  else()
     message(FATAL_ERROR " ${MSG_HEAD} "
             "QPOASES_LIB_DIR ${QPOASES_LIB_DIR} not found.")
-  endif (EXISTS ${QPOASES_LIB_DIR})
+  endif()
 elseif (QPOASES_INC_DIR)
   if (QPOASES_LIB_DIR)
     message(FATAL_ERROR " ${MSG_HEAD}"
             "QPOASES_INC_DIR must be set along with QPOASES_LIB_DIR")
-  endif (QPOASES_LIB_DIR)
-endif (QPOASES_INC_DIR)
+  endif()
+endif()
 
 if (LINK_QPOASES)
   message(STATUS ${MSG_HEAD} "Link qpOASES? Yes.")
-else (LINK_QPOASES)
+else()
   set (QPOASES_INC_DIR)
   set (QPOASES_LIB_DIR)
   message(STATUS ${MSG_HEAD} "Link qpOASES? No.")
-endif (LINK_QPOASES)
+endif()
 
 ###########################################################################
 ## Engine Factory
@@ -638,40 +663,49 @@ add_subdirectory(src/engines)
 ###########################################################################
 ## ASL
 ###########################################################################
-set(ASL_DIR)        ## NULL
+set(ASL_INC_DIR)        ## NULL
+set(ASL_LIB_DIR)        ## NULL
 set(LINK_ASL)       ## NULL
 set(ASL_LIBS)       ## NULL
 
 message(STATUS ${MSG_HEAD} "Searching for ASL ...")
-set(ASL_DIR "" CACHE PATH 
-  "Path to ASL headers and library. It must have asl.h and amplsolver.a") 
-set (ASL_DIR_F ${ASL_DIR})
-if (("${ASL_DIR_F}" STREQUAL "") AND
+set(ASL_INC_DIR "" CACHE PATH 
+  "Path to ASL headers. It must have asl.h") 
+set(ASL_LIB_DIR "" CACHE PATH 
+  "Path to ASL library. It must have amplsolver.a") 
+
+set (ASL_INC_DIR_F ${ASL_INC_DIR})
+set (ASL_LIB_DIR_F ${ASL_LIB_DIR})
+
+if (("${ASL_INC_DIR_F}" STREQUAL "") AND
     (NOT ("${ALL_EXTERNS_PATH}" STREQUAL "")))
-  set (ASL_DIR_F "${ALL_EXTERNS_PATH}/asl-20120126")
-endif (("${ASL_DIR_F}" STREQUAL "") AND
-       (NOT ("${ALL_EXTERNS_PATH}" STREQUAL "")))
+  set (ASL_INC_DIR_F "${ALL_EXTERNS_PATH}/include")
+  set (ASL_LIB_DIR_F "${ALL_EXTERNS_PATH}/lib")
+endif()
 
-
-if (ASL_DIR_F)
-  if (EXISTS "${ASL_DIR_F}/asl.h")
-    set(LINK_ASL 1)
-    set(ASL_LIBS ${ASL_LIBS} "${ASL_DIR_F}/amplsolver.a" "dl")
-    message(STATUS ${MSG_HEAD} "Using AMPL solver interface at"
-      ${ASL_DIR_F})
-    message(STATUS ${MSG_HEAD} "ASL_LIBS =  ${ASL_LIBS}")
-  else (EXISTS "${ASL_DIR_F}/asl.h")
-    message(FATAL_ERROR " ${MSG_HEAD} ${ASL_DIR_F}/asl.h not found.")
-  endif (EXISTS "${ASL_DIR_F}/asl.h")
-endif(ASL_DIR_F)
+if (ASL_INC_DIR_F)
+  set(LINK_ASL 1)
+  if (NOT EXISTS "${ASL_INC_DIR_F}/asl.h")
+    message(FATAL_ERROR " ${MSG_HEAD} ${ASL_INC_DIR_F}/asl.h not found.")
+    set(LINK_ASL 0)
+  endif()
+  if (NOT EXISTS "${ASL_LIB_DIR_F}/amplsolver.a")
+    message(FATAL_ERROR " ${MSG_HEAD} ${ASL_LIB_DIR_F}/amplsolver.a not found.")
+    set(LINK_ASL 0)
+  endif()
+endif()
 
 if (LINK_ASL)
+  set(ASL_LIBS ${ASL_LIBS} "${ASL_INC_DIR_F}/amplsolver.a" "dl")
+  message(STATUS ${MSG_HEAD} "Using AMPL solver interface at"
+    ${ASL_INC_DIR_F})
+  message(STATUS ${MSG_HEAD} "ASL_LIBS =  ${ASL_LIBS}")
   message(STATUS ${MSG_HEAD} "Link AMPL-ASL? Yes.")
   add_subdirectory(src/interfaces/ampl)
   add_subdirectory(src/algorithms)
-else (LINK_ASL)
+else()
   message(STATUS ${MSG_HEAD} "Link AMPL-ASL? No.")
-endif(LINK_ASL)
+endif()
 
 ###########################################################################
 ## Testing
@@ -685,9 +719,8 @@ set(CPPUNIT_INC_DIR "" CACHE PATH
 set (CPPUNIT_INC_DIR_F ${CPPUNIT_INC_DIR})
 if (("${CPPUNIT_INC_DIR_F}" STREQUAL "") AND
     (NOT ("${ALL_EXTERNS_PATH}" STREQUAL "")))
-  set (CPPUNIT_INC_DIR_F "${ALL_EXTERNS_PATH}/cppunit-1.12.1/include")
-endif (("${CPPUNIT_INC_DIR_F}" STREQUAL "") AND
-       (NOT ("${ALL_EXTERNS_PATH}" STREQUAL "")))
+  set (CPPUNIT_INC_DIR_F "${ALL_EXTERNS_PATH}/include")
+endif()
 
 
 set(CPPUNIT_LIB_DIR "" CACHE PATH 
@@ -695,9 +728,8 @@ set(CPPUNIT_LIB_DIR "" CACHE PATH
 set (CPPUNIT_LIB_DIR_F ${CPPUNIT_LIB_DIR})
 if (("${CPPUNIT_LIB_DIR_F}" STREQUAL "") AND
     (NOT ("${ALL_EXTERNS_PATH}" STREQUAL "")))
-  set (CPPUNIT_LIB_DIR_F "${ALL_EXTERNS_PATH}/cppunit-1.12.1/lib")
-endif (("${CPPUNIT_LIB_DIR_F}" STREQUAL "") AND
-      (NOT ("${ALL_EXTERNS_PATH}" STREQUAL "")))
+  set (CPPUNIT_LIB_DIR_F "${ALL_EXTERNS_PATH}/lib")
+endif()
 
 
 message(STATUS ${MSG_HEAD} "Searching for cppunit ...")
@@ -705,36 +737,39 @@ if (CPPUNIT_INC_DIR_F)
   if (NOT EXISTS "${CPPUNIT_INC_DIR_F}/cppunit/TestCase.h")
     message(FATAL_ERROR 
             " ${MSG_HEAD} ${CPPUNIT_INC_DIR_F}/cppunit/TestCase.h not found.")
-  endif (NOT EXISTS "${CPPUNIT_INC_DIR_F}/cppunit/TestCase.h")
+  endif()
   if (NOT CPPUNIT_LIB_DIR_F)
     message(FATAL_ERROR " ${MSG_HEAD} "
             "CPPUNIT_LIB_DIR must be set along with CPPUNIT_INC_DIR")
-  endif (NOT CPPUNIT_LIB_DIR_F)
+  endif()
   if (EXISTS ${CPPUNIT_LIB_DIR_F})
+    add_definitions("-DCPPUNIT_STD_NEED_ALLOCATOR=0")
     message(STATUS ${MSG_HEAD} "found CPPUNIT library directory.")
     add_subdirectory(src/testing)
     set (LINK_CPPUNIT 1)
-  else (EXISTS ${CPPUNIT_LIB_DIR_F})
+  else()
     message(FATAL_ERROR " ${MSG_HEAD} "
             "CPPUNIT_LIB_DIR ${CPPUNIT_LIB_DIR_F} not found.")
-  endif (EXISTS ${CPPUNIT_LIB_DIR_F})
+  endif()
 elseif (CPPUNIT_LIB_DIR_F)
     message(FATAL_ERROR " ${MSG_HEAD}" 
             "CPPUNIT_INC_DIR must be set along with CPPUNIT_LIB_DIR")
-endif (CPPUNIT_INC_DIR_F)
+endif()
 
 
 if (LINK_CPPUNIT)
   message(STATUS ${MSG_HEAD} "Link CppUnit? Yes.")
-else (LINK_CPPUNIT)
+  # I don't know what this flag does, but if not set, compiling CPPUNIT gets
+  # many warnings. -Ashu
+else()
   set (CPPUNIT_INC_DIR_F)
   set (CPPUNIT_LIB_DIR_F)
   message(STATUS ${MSG_HEAD} "Link CppUnit? No.")
-endif (LINK_CPPUNIT)
+endif()
 
 
 ## for make test, copy instances, cd to src testing, and run unittest
-add_custom_target(test 
+add_custom_target(utest 
   ${CMAKE_COMMAND} -E remove_directory ./src/testing/instances
   COMMAND ${CMAKE_COMMAND} -E copy_directory 
   ${PROJECT_SOURCE_DIR}/src/testing/instances ./instances 
