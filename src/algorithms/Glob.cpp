@@ -131,7 +131,8 @@ int main(int argc, char** argv)
     goto CLEANUP;
   }
 
-  std::cout << me << "Minotaur version " << env->getVersion() << std::endl;
+  std::cout << me << "Minotaur version " << env->getVersion() << std::endl
+            << me << "global optimization for general QCQP" << std::endl;
   if (options->findBool("use_native_cgraph")->getValue()==false) {
     options->findBool("use_native_cgraph")->setValue(true); 
     std::cout << me << "Setting value of 'use_native_cgraph option' to True" <<

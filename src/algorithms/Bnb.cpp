@@ -385,8 +385,9 @@ int showInfo(EnvPtr env)
     return 1;
   }
 
-  env->getLogger()->msgStream(LogInfo) << me
-    << "Minotaur version " << env->getVersion() << std::endl;
+  env->getLogger()->msgStream(LogInfo)
+    << me << "Minotaur version " << env->getVersion() << std::endl
+    << me << "NLP-based branch-and-bound for convex MINLP" << std::endl;
   return 0;
 }
 

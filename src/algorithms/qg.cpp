@@ -207,8 +207,10 @@ int main(int argc, char* argv[])
     goto CLEANUP;
   }
 
-  env->getLogger()->msgStream(LogInfo) << me
-    << "Minotaur version " << env->getVersion() << std::endl;
+  env->getLogger()->msgStream(LogInfo)
+    << me << "Minotaur version " << env->getVersion() << std::endl
+    << me << "Quesada-Grossmann (LP/NLP) algorithm for convex MINLP"
+    << std::endl;
   // load the problem.
   timer->start();
   inst = iface->readInstance(options->findString("problem_file")->getValue());
