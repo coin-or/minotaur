@@ -32,7 +32,7 @@ namespace Minotaur {
   class VarBoundMod : public Modification {
     public:
       /// Construct.
-      VarBoundMod(VariablePtr var, BoundType lu, Double new_val);
+      VarBoundMod(VariablePtr var, BoundType lu, double new_val);
 
       /// Destroy.
       ~VarBoundMod();
@@ -50,7 +50,7 @@ namespace Minotaur {
       BoundType getLU() const;
 
       /// Get new value of the bound.
-      Double getNewVal() const;
+      double getNewVal() const;
 
       // Implement Modification::applyToProblem().
       void applyToProblem(ProblemPtr problem);
@@ -66,10 +66,10 @@ namespace Minotaur {
       BoundType lu_;
 
       /// The new value of the bound.
-      Double newVal_;
+      double newVal_;
 
       /// The old value of the bound.
-      Double oldVal_;
+      double oldVal_;
 
       /// The variable whose bounds are modified.
       VariablePtr var_;
@@ -86,7 +86,7 @@ namespace Minotaur {
   class VarBoundMod2 : public Modification {
     public:
       /// Construct.
-      VarBoundMod2(VariablePtr var, Double new_lb, Double new_ub);
+      VarBoundMod2(VariablePtr var, double new_lb, double new_ub);
 
       /// Destroy.
       ~VarBoundMod2();
@@ -101,10 +101,10 @@ namespace Minotaur {
       VariablePtr getVar() const;
 
       /// Get new value of the bound.
-      Double getNewLb() const;
+      double getNewLb() const;
 
       /// Get new value of the bound.
-      Double getNewUb() const;
+      double getNewUb() const;
 
       // base class method.
       ModificationPtr toRel(ProblemPtr, RelaxationPtr) const;
@@ -117,16 +117,16 @@ namespace Minotaur {
 
     private:
       /// The new lower bound.
-      Double newLb_;
+      double newLb_;
 
       /// The new upper bound.
-      Double newUb_;
+      double newUb_;
 
       /// Old lower bound.
-      Double oldLb_;
+      double oldLb_;
 
       /// Old upper bound.
-      Double oldUb_;
+      double oldUb_;
 
       /// The variable whose bounds are modified.
       VariablePtr var_;

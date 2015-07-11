@@ -22,7 +22,7 @@ namespace Minotaur {
 struct PreSubstVarData {
   VariablePtr vout; /// Number of nlps solved.
   UInt vinInd;      /// Number of nlps feasible.
-  Double rat;       /// Number of nlps infeasible.
+  double rat;       /// Number of nlps infeasible.
 }; 
 
 class PreSubstVars : public PreMod {
@@ -34,7 +34,7 @@ public:
   ~PreSubstVars();
 
   /// Substitute variable 'vin' by variable 'vout'.
-  void insert(VariablePtr vout, VariablePtr vin, Double rat = 1.0);
+  void insert(VariablePtr vout, VariablePtr vin, double rat = 1.0);
 
   /// Restore x.
   void postsolveGetX(const DoubleVector &x, DoubleVector *newx);

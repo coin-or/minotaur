@@ -36,7 +36,7 @@ LinearCut::LinearCut()
 }
 
 
-LinearCut::LinearCut(LinearFunctionPtr lf, Double lb, Double ub)
+LinearCut::LinearCut(LinearFunctionPtr lf, double lb, double ub)
   : cons_(ConstraintPtr()),
     lb_(lb),
     lf_(lf),

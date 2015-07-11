@@ -20,56 +20,54 @@ namespace Minotaur {
 
   struct RandomBrStats {
     UInt calls;      /// Number of times called, to find a branching candidate.
-    Double time;     /// Total time spent in branching.
+    double time;     /// Total time spent in branching.
   };
 
   class Timer;
 
-  /**
-   * A class to select random branching candidate from the available ones.
-   */
+  /// A class to select random branching candidate from the available ones.
   class RandomBrancher : public Brancher {
     
-    public:
-      /// Default constructor.
-      RandomBrancher();
+  public:
+    /// Default constructor.
+    RandomBrancher();
 
-      /// Construct with an environment.
-      RandomBrancher(EnvPtr env, HandlerVector handlers);
+    /// Construct with an environment.
+    RandomBrancher(EnvPtr env, HandlerVector handlers);
 
-      /// Destroy.
-      ~RandomBrancher();
+    /// Destroy.
+    ~RandomBrancher();
 
-      // Find a branching candidate. Returns NULL if x does not have any
-      // thing to branch on or if no branching candidates are needed. 
-      Branches findBranches(RelaxationPtr rel, NodePtr node, 
-                            ConstSolutionPtr sol, SolutionPoolPtr s_pool, 
-                            BrancherStatus & br_status, ModVector &mods);
+    // Find a branching candidate. Returns NULL if x does not have any
+    // thing to branch on or if no branching candidates are needed. 
+    Branches findBranches(RelaxationPtr rel, NodePtr node, 
+                          ConstSolutionPtr sol, SolutionPoolPtr s_pool, 
+                          BrancherStatus & br_status, ModVector &mods);
 
-      // Write the statistics.
-      void writeStats(std::ostream &out) const;
+    // Write the statistics.
+    void writeStats(std::ostream &out) const;
 
-      // Return name.
-      std::string getName() const;
+    // Return name.
+    std::string getName() const;
 
-    private:
-      /// Name
-      const static std::string me_; 
+  private:
+    /// Name
+    const static std::string me_; 
 
-      /// Log manager.
-      Logger* logger_;
+    /// Log manager.
+    Logger* logger_;
 
-      /// Handlers that provide branching candidates.
-      HandlerVector handlers_;
+    /// Handlers that provide branching candidates.
+    HandlerVector handlers_;
 
-      /// Timer
-      Timer *timer_;
+    /// Timer
+    Timer *timer_;
 
-      /// Statistics.
-      RandomBrStats *stats_;
+    /// Statistics.
+    RandomBrStats *stats_;
 
-      /// Seed to random number generator
-      UInt seed_;
+    /// Seed to random number generator
+    UInt seed_;
 
   };
   typedef boost::shared_ptr<RandomBrancher> RandomBrancherPtr;

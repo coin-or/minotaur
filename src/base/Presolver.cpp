@@ -203,7 +203,7 @@ void Presolver::linearizeObjective_()
 void Presolver::ifIntsAreBins_()
 {
   VariablePtr v_ptr;
-  Double lb, ub;
+  double lb, ub;
   for (VariableConstIterator v_iter=problem_->varsBegin(); 
       v_iter!=problem_->varsEnd(); ++v_iter) {
     v_ptr = *v_iter;
@@ -231,7 +231,7 @@ void Presolver::standardizeConstraints_()
 }
 
 
-void Presolver::getX(const Double *x, DoubleVector *newx)
+void Presolver::getX(const double *x, DoubleVector *newx)
 {
   assert(newx);
 

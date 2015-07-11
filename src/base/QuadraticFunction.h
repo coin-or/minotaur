@@ -30,7 +30,7 @@ namespace Minotaur {
 
   //class EigenVector;
   //typedef boost::shared_ptr<const EigenVector> EigenVectorPtr;
-  //typedef std::pair<Double, EigenVectorPtr> EigenPair;
+  //typedef std::pair<double, EigenVectorPtr> EigenPair;
 
   class QuadraticFunction {
     public:
@@ -38,7 +38,7 @@ namespace Minotaur {
       QuadraticFunction();
 
       /// Constructor for a matrix.
-      QuadraticFunction(UInt nz, Double *vals, UInt *irow, UInt *jcol,
+      QuadraticFunction(UInt nz, double *vals, UInt *irow, UInt *jcol,
                         VariableConstIterator vbeg );
 
       /// Destroy
@@ -56,42 +56,42 @@ namespace Minotaur {
        * Add a term of the form a*x_i*x_j to the expression. We do not check
        * if a similar term does not exist. 
        */
-      void addTerm(VariablePair vp, const Double weight); 
+      void addTerm(VariablePair vp, const double weight); 
 
       /**
        * Add a term of the form a*x_i*x_j to the expression. We do not check
        * if a similar term does not exist. 
        */
-      void addTerm(ConstVariablePtr v1, ConstVariablePtr v2, Double weight);
+      void addTerm(ConstVariablePtr v1, ConstVariablePtr v2, double weight);
 
-      Double getFixVarOffset(VariablePtr v, Double val);
-
-      /**
-       * Add a term of the form a*x_i*x_j to the expression. If a similar term
-       * exists, it is incremented. If the new coefficient becomes zero, the
-       * term is dropped.
-       */
-      void incTerm(ConstVariablePair vp, const Double weight);
+      double getFixVarOffset(VariablePtr v, double val);
 
       /**
        * Add a term of the form a*x_i*x_j to the expression. If a similar term
        * exists, it is incremented. If the new coefficient becomes zero, the
        * term is dropped.
        */
-      void incTerm(ConstVariablePtr v1, ConstVariablePtr v2, const Double weight);
+      void incTerm(ConstVariablePair vp, const double weight);
+
+      /**
+       * Add a term of the form a*x_i*x_j to the expression. If a similar term
+       * exists, it is incremented. If the new coefficient becomes zero, the
+       * term is dropped.
+       */
+      void incTerm(ConstVariablePtr v1, ConstVariablePtr v2, const double weight);
 
       /*
        * Multiply by a constant. If constant is zero, all terms are removed.
        */
-      void mult(Double c);
+      void mult(double c);
 
       /**
        * Remove a variable v from the function. Add to lf any linear terms
        * obtained by fixing the variable to the value 'val'.
        */
-      void removeVar(VariablePtr v, Double val, LinearFunctionPtr lf);
+      void removeVar(VariablePtr v, double val, LinearFunctionPtr lf);
 
-      void subst(VariablePtr out, VariablePtr in, Double rat);
+      void subst(VariablePtr out, VariablePtr in, double rat);
 
       /**
        * Add a quadratic function to this quadratic function. Terms that become 
@@ -108,7 +108,7 @@ namespace Minotaur {
           ConstQuadraticFunctionPtr q2);
 
       /// Multiply a quadratic function with a constant.
-      friend QuadraticFunctionPtr operator*(const Double c, 
+      friend QuadraticFunctionPtr operator*(const double c, 
           ConstQuadraticFunctionPtr q2);
 
       /// Multiply a linear function and quadratic function.
@@ -145,7 +145,7 @@ namespace Minotaur {
        * better for the calling routine to check if c is zero, if so, just
        * delete the quadratic.
        */
-      void operator*=(const Double c);
+      void operator*=(const double c);
 
       /// Get the list of variables and how many times they occur
       VarCountConstMap * getVarMap() const;
@@ -160,16 +160,16 @@ namespace Minotaur {
        * Get the coefficient of a term. Returns 0 if the term does not exist
        * in the function.
        */
-      Double getWeight(ConstVariablePair & vp) ;
+      double getWeight(ConstVariablePair & vp) ;
 
       /**
        * Get the coefficient of a term. Returns 0 if the term does not exist
        * in the function.
        */
-      Double getWeight(ConstVariablePtr v1, ConstVariablePtr v2) ;
+      double getWeight(ConstVariablePtr v1, ConstVariablePtr v2) ;
 
       /// Get the number of times variable v1 occurs in quadratic terms.
-      Int getFreq(ConstVariablePtr v1);
+      int getFreq(ConstVariablePtr v1);
 
       /**
        * \brief Check if function contains a variable.
@@ -177,44 +177,44 @@ namespace Minotaur {
        * \param[in] v The variable that we want to test.
        * \return True if this function is has v. False if it doesn't use it. 
        */
-      Bool hasVar(ConstVariablePtr v) const;
+      bool hasVar(ConstVariablePtr v) const;
 
       /**
        * Evaluate the value of this quadratic expression for a given point x.
        * It is assumed that x[i] is the value of the variable whose
        * var->getIndex() returns i.
        */
-      Double eval(const std::vector<Double> &x) const;
+      double eval(const std::vector<double> &x) const;
 
       /**
        * Evaluate the value of this quadratic expression for a given point x.
        * It is assumed that x[i] is the value of the variable whose
        * var->getIndex() returns i.
        */
-      Double eval(const Double *x) const;
+      double eval(const double *x) const;
 
       /**
        * Evaluate the values of the gradient of the quadratic expression at a
        * given point x.  It is assumed that x[i] is the value of the variable
        * whose var->getIndex() returns i.
        */
-      void evalGradient(const Double *x, Double *grad_f); 
+      void evalGradient(const double *x, double *grad_f); 
 
       /**
        * Evaluate the values of the gradient of the quadratic expression at a
        * given point x.  It is assumed that x[i] is the value of the variable
        * whose var->getIndex() returns i.
        */
-      void evalGradient(const std::vector<Double> &x,
-          std::vector<Double> &grad_f); 
-      void evalHessian(const Double mult, const Double *x, 
-                       const LTHessStor *stor, Double *values , Int *error);
+      void evalGradient(const std::vector<double> &x,
+                        std::vector<double> &grad_f); 
+      void evalHessian(const double mult, const double *x, 
+                       const LTHessStor *stor, double *values , int *error);
 
       void prepJac(VarSetConstIter vbeg, VarSetConstIter vend);
       void prepHess();
 
       void fillHessStor(LTHessStor *hess);
-      void fillJac(const Double *x, Double *values, Int *error);
+      void fillJac(const double *x, double *values, int *error);
       void finalHessStor(const LTHessStor *hess);
 
       /// Get the number of terms in this expression
@@ -229,7 +229,7 @@ namespace Minotaur {
        * Return true if the quadratic expression always returns zero on
        * evaluation.
        */
-      Bool isZero() const { return (getNumTerms() == 0); }
+      bool isZero() const { return (getNumTerms() == 0); }
 
       /// Iterate over the variables in the quadratic function: begin.
       VarIntMapConstIterator varsBegin() const;
@@ -242,9 +242,9 @@ namespace Minotaur {
 
     private:
       /// Tolerance below which a coefficient is deemed zero
-      const Double etol_;
+      const double etol_;
 
-      Double *hCoeffs_;
+      double *hCoeffs_;
       UInt *hFirst_;
       UInt *hOff_;
       UInt *hSecond_;
@@ -266,7 +266,7 @@ namespace Minotaur {
        */
       VarIntMap varFreq_;
 
-      void sortLT_(UInt n, UInt *f, UInt *s, Double *c);
+      void sortLT_(UInt n, UInt *f, UInt *s, double *c);
   };
 
 }

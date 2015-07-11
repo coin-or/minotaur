@@ -57,7 +57,7 @@ FeasibilityPump::FeasibilityPump(EnvPtr env, ProblemPtr p, EnginePtr e)
     variable = *v_iter;
     if (variable->getType() == Binary) {
       bins_.push_back(variable);
-      random_.push_back(((Double) rand()/(RAND_MAX)));
+      random_.push_back(((double) rand()/(RAND_MAX)));
     } else {
       random_.push_back(0.0);
     }
@@ -100,7 +100,7 @@ FeasibilityPump::FeasibilityPump(EnvPtr env, ProblemPtr p, EnginePtr nlpe,
     variable = *v_iter;
     if (variable->getType() == Binary) {
       bins_.push_back(variable);
-      random_.push_back(((Double) rand()/(RAND_MAX)));
+      random_.push_back(((double) rand()/(RAND_MAX)));
     } else {
       random_.push_back(0.0);
     }
@@ -133,11 +133,11 @@ FeasibilityPump::~FeasibilityPump()
 
 void FeasibilityPump::constructObj_(ProblemPtr prob, ConstSolutionPtr)
 {
-  Double value, lb, ub;
+  double value, lb, ub;
   VariablePtr variable;
 
   UInt i                  = 0;
-  Double constant         = 0;
+  double constant         = 0;
   LinearFunctionPtr lf    = (LinearFunctionPtr) new LinearFunction();
   FunctionPtr f           = (FunctionPtr) new Function(lf);
 
@@ -184,9 +184,9 @@ void FeasibilityPump::convertSol_(SolutionPoolPtr s_pool, ConstSolutionPtr sol)
 {
   UInt i            = 0;
   UInt numvars      = p_->getNumVars();
-  const Double* x   = sol->getPrimal();
-  Double* LB_copy   = new Double[numvars];
-  Double* UB_copy   = new Double[numvars];
+  const double* x   = sol->getPrimal();
+  double* LB_copy   = new double[numvars];
+  double* UB_copy   = new double[numvars];
   Int err           = 0;
 
   saveBounds_(LB_copy, UB_copy, numvars);
@@ -230,7 +230,7 @@ void FeasibilityPump::convertSol_(SolutionPoolPtr s_pool, ConstSolutionPtr sol)
 
 
 
-Bool FeasibilityPump::cycle_(Double find_value)
+bool FeasibilityPump::cycle_(double find_value)
 {
   // search for the hash value in the previously visited solution's hash value
   assert(!hashVal_.empty());
@@ -247,9 +247,9 @@ Bool FeasibilityPump::cycle_(Double find_value)
 }
 
 
-Double FeasibilityPump::hash_()
+double FeasibilityPump::hash_()
 {
-  Double hash_value = 0;
+  double hash_value = 0;
   DoubleVector::iterator it_rand, it_sol;
   for (it_rand=random_.begin(), it_sol=roundedSol_.begin(); 
           it_rand!=random_.end(); ++it_rand, ++it_sol) {
@@ -264,14 +264,14 @@ Double FeasibilityPump::hash_()
 } 
 
 
-void FeasibilityPump::implementFP_(const Double* x, SolutionPoolPtr s_pool)
+void FeasibilityPump::implementFP_(const double* x, SolutionPoolPtr s_pool)
 {
   ConstSolutionPtr sol; 
-  Double hash_val;
+  double hash_val;
   UInt n_to_flip;
   UInt k;
   
-  Bool cont_FP         = true;
+  bool cont_FP         = true;
   UInt max_iter        = 100;
   UInt max_cycle       = 300;
   UInt min_flip        = 3;
@@ -309,12 +309,12 @@ void FeasibilityPump::implementFP_(const Double* x, SolutionPoolPtr s_pool)
 }
 
 
-Bool FeasibilityPump::isFrac_(const Double* x)
+bool FeasibilityPump::isFrac_(const double* x)
 {
   VariablePtr variable;
-  Double value;
-  Double fractional;
-  Bool is_frac = false; 
+  double value;
+  double fractional;
+  bool is_frac = false; 
   UInt i = 0;
   UInt num_frac = 0;
   // remove the violated variables from previous solution
@@ -348,7 +348,7 @@ Bool FeasibilityPump::isFrac_(const Double* x)
 }
 
 
-void FeasibilityPump::perturb_(Double hash_val, UInt n_to_flip)
+void FeasibilityPump::perturb_(double hash_val, UInt n_to_flip)
 {
   VariablePtr variable;
 
@@ -376,7 +376,7 @@ void FeasibilityPump::perturb_(Double hash_val, UInt n_to_flip)
 }
 
 
-void FeasibilityPump::restoreBounds_(Double* LB_copy, Double* UB_copy, UInt vars)
+void FeasibilityPump::restoreBounds_(double* LB_copy, double* UB_copy, UInt vars)
 {
   for (UInt i=0; i<vars; ++i, ++LB_copy, ++UB_copy) {
     p_->changeBound(i, Lower, *LB_copy);
@@ -385,7 +385,7 @@ void FeasibilityPump::restoreBounds_(Double* LB_copy, Double* UB_copy, UInt vars
 }
 
 
-void FeasibilityPump::saveBounds_(Double* LB_copy, Double* UB_copy, UInt vars)
+void FeasibilityPump::saveBounds_(double* LB_copy, double* UB_copy, UInt vars)
 {
   VariablePtr variable;
   for (UInt i=0; i<vars; ++i, ++LB_copy, ++UB_copy) {
@@ -398,7 +398,7 @@ void FeasibilityPump::saveBounds_(Double* LB_copy, Double* UB_copy, UInt vars)
 
 VarVector FeasibilityPump::selectToFlip_(UInt n_to_flip)
 {
-  Double U;
+  double U;
   VarVector bin_to_flip;
   UInt t = 0, m = 0;
   UInt num_bins = bins_.size();
@@ -420,7 +420,7 @@ VarVector FeasibilityPump::selectToFlip_(UInt n_to_flip)
 }
 
 
-Bool FeasibilityPump::shouldFP_()
+bool FeasibilityPump::shouldFP_()
 {
   ConstProblemSizePtr p_size = p_->getSize();
   FunctionType f_type = p_size->objType;
@@ -437,7 +437,7 @@ void FeasibilityPump::solve(NodePtr, RelaxationPtr, SolutionPoolPtr s_pool)
 {
   EngineStatus status;
   ConstSolutionPtr sol;
-  const Double* x;
+  const double* x;
   if(!shouldFP_()) {
     logger_->msgStream(LogInfo) << me_ << "Skipping" << std::endl;
     return;

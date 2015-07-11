@@ -28,7 +28,7 @@ struct RelBrStats {
   UInt engProbs;   /// Number of times called to find a branching candidate.
   UInt iters;      /// Number of iterations in strong-branching.
   UInt strBrCalls; /// Number of times strong branching on a variable.
-  Double strTime;  /// Total time spent in strong-branching.
+  double strTime;  /// Total time spent in strong-branching.
 };
 
 
@@ -130,7 +130,7 @@ private:
    * bound).
    * \param[in] node The node at which we are branching.
    */
-  BrCandPtr findBestCandidate_(const Double objval, Double cutoff, 
+  BrCandPtr findBestCandidate_(const double objval, double cutoff, 
                                NodePtr node);
 
   /**
@@ -152,8 +152,8 @@ private:
    * \param[in] ch_up The up score.
    * \param[out] score The total score returned by this function.
    */
-  void getPCScore_(BrCandPtr cand, Double *ch_down, Double *ch_up, 
-                   Double *score);
+  void getPCScore_(BrCandPtr cand, double *ch_down, double *ch_up, 
+                   double *score);
 
   /**
    * \brief Calculate score from the up score and down score.
@@ -161,7 +161,7 @@ private:
    * \param[in] up_score Up score.
    * \param[in] down_score Down score.
    */
-  Double getScore_(const Double & up_score, const Double & down_score);
+  double getScore_(const double & up_score, const double & down_score);
 
   /**
    * \brief Check if branch can be pruned on the basis of engine status and
@@ -177,7 +177,7 @@ private:
    * \param[out] is_rel True if the engine status is reliable enough to use
    * the solution value as a reliable bound.
    */
-  Bool shouldPrune_(const Double &chcutoff, const Double &change, 
+  Bool shouldPrune_(const double &chcutoff, const double &change, 
                     const EngineStatus & status, Bool *is_rel);
 
   /** 
@@ -188,7 +188,7 @@ private:
    * \param[out] status_up engine status in up branch.
    * \param[out] status_down engine status in down branch.
    */
-  void strongBranch_(BrCandPtr cand, Double & obj_up, Double & obj_down, 
+  void strongBranch_(BrCandPtr cand, double & obj_up, double & obj_down, 
                      EngineStatus & status_up, EngineStatus & status_down);
 
   /**
@@ -201,7 +201,7 @@ private:
    * \param[in] count The vector that keeps a cound of how many times cost
    * has been updated for each candidate.
    */
-  void updatePCost_(const Int & i, const Double & new_cost, 
+  void updatePCost_(const Int & i, const double & new_cost, 
                     DoubleVector & cost, UIntVector & count);
 
   /**
@@ -219,8 +219,8 @@ private:
    * \param[in] status_up The engine status in up branch. 
    * \param[in] status_down The engine status in up branch.
    */
-  void useStrongBranchInfo_(BrCandPtr cand, const Double & chcutoff,
-                            Double & change_up, Double & change_down, 
+  void useStrongBranchInfo_(BrCandPtr cand, const double & chcutoff,
+                            double & change_up, double & change_down, 
                             const EngineStatus & status_up,
                             const EngineStatus & status_down);
 
@@ -232,8 +232,8 @@ private:
    * \param[in] change_up Up change.
    * \param[in] change_down Down change.
    */
-  void writeScore_(BrCandPtr cand, Double score, Double change_up, 
-                   Double change_down);
+  void writeScore_(BrCandPtr cand, double score, double change_up, 
+                   double change_down);
 
   /**
    * \brief Display scores of unreliable candidates and pseudo-costs of reliable
@@ -247,7 +247,7 @@ private:
   EnginePtr engine_;
 
   /// Tolerance for avoiding division by zero.
-  const Double eTol_;
+  const double eTol_;
 
   /**
    * \brief Handlers that will be used to find candidates and the relaxations

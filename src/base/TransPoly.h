@@ -107,14 +107,14 @@ private:
    * \param [in] lf The input linear function. It may be NULL.
    * \param [in] v The input variable. We want to have a constraint
    * \f$y = kv\f$ in this case. mf, lf, v should be all NULL except one.
-   * \param [in] d Double value that must be added to the mf or lf or the
+   * \param [in] d double value that must be added to the mf or lf or the
    * variable.
    * \param [in] k The multiplier of v.
    * \return The new auxiliary variable.
    */
   VariablePtr newPolyVar_(const CNode *cnode, MonomialFunPtr mf,
                           LinearFunctionPtr lf, VariablePtr v,
-                          Double d, Double k);
+                          double d, double k);
 
   /**
    * \brief Traverse the computational graph recursively and transform the
@@ -124,12 +124,12 @@ private:
    * \param [out] mf The monomial function representing this node.
    * \param [out] v The variable representing this node.
    * mf, lf, v should be all NULL except one.
-   * \param [in] d Double value that is added to the mf, lf, or v at this node.
+   * \param [in] d double value that is added to the mf, lf, or v at this node.
    * \param [in] k The multiplier of v.
    */
   void recursPolyRef_(const CNode *node, 
                       MonomialFunPtr &mf, LinearFunctionPtr &lf,
-                      VariablePtr &v, Double &d, Double &k);
+                      VariablePtr &v, double &d, double &k);
 
   /**
    * \brief Reformulate the node with OpMinus operation in the computational
@@ -143,8 +143,8 @@ private:
    * \param [in] lfr Linear function from the right child. It may be NULL
    * \param [in] vl Variable from the left child.
    * \param [in] vr Variable from the right child.
-   * \param [in] dl Double value from the left child.
-   * \param [in] dr Double value from the right child.
+   * \param [in] dl double value from the left child.
+   * \param [in] dr double value from the right child.
    * \param [in] kl The multiplier of vl.
    * \param [in] kr The multiplier of vr.
    * \param [out] mf The new monomial function. It may be NULL.
@@ -156,10 +156,10 @@ private:
   void refMinus_(MonomialFunPtr mfl, MonomialFunPtr mfr,
                  LinearFunctionPtr lfl, LinearFunctionPtr lfr,
                  VariablePtr vl, VariablePtr vr,
-                 Double dl, Double dr,
-                 Double kl, Double kr,
+                 double dl, double dr,
+                 double kl, double kr,
                  MonomialFunPtr &mf, LinearFunctionPtr &lf,
-                 VariablePtr &v, Double &d, Double &k);
+                 VariablePtr &v, double &d, double &k);
 
   /**
    * \brief Reformulate the node with OpMult operation in the computational
@@ -173,8 +173,8 @@ private:
    * \param [in] lfr Linear function from the right child. It may be NULL
    * \param [in] vl Variable from the left child.
    * \param [in] vr Variable from the right child.
-   * \param [in] dl Double value from the left child.
-   * \param [in] dr Double value from the right child.
+   * \param [in] dl double value from the left child.
+   * \param [in] dr double value from the right child.
    * \param [in] kl The multiplier of vl.
    * \param [in] kr The multiplier of vr.
    * \param [out] mf The new monomial function. It may be NULL.
@@ -186,10 +186,10 @@ private:
   void refMult_(MonomialFunPtr mfl, MonomialFunPtr mfr,
                 LinearFunctionPtr lfl, LinearFunctionPtr lfr,
                 VariablePtr vl, VariablePtr vr,
-                Double dl, Double dr,
-                Double kl, Double kr,
+                double dl, double dr,
+                double kl, double kr,
                 MonomialFunPtr &mf, LinearFunctionPtr &lf,
-                VariablePtr &v, Double &d, Double &k);
+                VariablePtr &v, double &d, double &k);
 
   
   /*
@@ -216,8 +216,8 @@ private:
    * \param [in] lfr Linear function from the right child. It may be NULL
    * \param [in] vl Variable from the left child.
    * \param [in] vr Variable from the right child.
-   * \param [in] dl Double value from the left child.
-   * \param [in] dr Double value from the right child.
+   * \param [in] dl double value from the left child.
+   * \param [in] dr double value from the right child.
    * \param [in] kl The multiplier of vl.
    * \param [in] kr The multiplier of vr.
    * \param [out] mf The new monomial function. It may be NULL.
@@ -229,10 +229,10 @@ private:
   void refPlus_(MonomialFunPtr mfl, MonomialFunPtr mfr,
                 LinearFunctionPtr lfl, LinearFunctionPtr lfr,
                 VariablePtr vl, VariablePtr vr,
-                Double dl, Double dr,
-                Double kl, Double kr,
+                double dl, double dr,
+                double kl, double kr,
                 MonomialFunPtr &mf, LinearFunctionPtr &lf,
-                VariablePtr &v, Double &d, Double &k);
+                VariablePtr &v, double &d, double &k);
 
   /**
    * \brief Reformulate univariate nonlinear functions like square-root,
@@ -252,9 +252,9 @@ private:
    * \param [out] k Multiplier of auxiliary variable v.
    */
   void refUnivarOpPoly_(const CNode *node, MonomialFunPtr mfl,
-                        LinearFunctionPtr lfl, VariablePtr vl, Double dl,
-                        Double kl, VariablePtr &v, Double &d,
-                        Double &k);
+                        LinearFunctionPtr lfl, VariablePtr vl, double dl,
+                        double kl, VariablePtr &v, double &d,
+                        double &k);
 };
 }
 

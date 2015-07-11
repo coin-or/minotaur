@@ -36,102 +36,102 @@ namespace Minotaur {
     * solver.
     */
   class Presolver {
-    public:
-      /// Default constructor.
-      Presolver ();
+  public:
+    /// Default constructor.
+    Presolver ();
 
-      /// Constructor for a given problem.
-      Presolver (ProblemPtr problem, EnvPtr env, HandlerVector handlers);
+    /// Constructor for a given problem.
+    Presolver (ProblemPtr problem, EnvPtr env, HandlerVector handlers);
 
-      /// Destroy.
-      virtual ~Presolver();
+    /// Destroy.
+    virtual ~Presolver();
 
-      /// Default presolve.
-      virtual void presolve() {};
+    /// Default presolve.
+    virtual void presolve() {};
 
-      virtual SolveStatus getStatus();
-      /**
-       * standardize is called before solving any problem even when
-       * presolve is disabled. This method is necessary to standardize the
-       * problem:
-       * convert maximize to minimize, 
-       * add a new variable for the objective function,
-       * ...
-       */
-      virtual void standardize();
+    virtual SolveStatus getStatus();
+    /**
+     * standardize is called before solving any problem even when
+     * presolve is disabled. This method is necessary to standardize the
+     * problem:
+     * convert maximize to minimize, 
+     * add a new variable for the objective function,
+     * ...
+     */
+    virtual void standardize();
 
-      virtual SolveStatus solve();
+    virtual SolveStatus solve();
 
-      /// Search and remove any duplicate rows and columns from the problem.
-      virtual void removeDuplicates() {};
+    /// Search and remove any duplicate rows and columns from the problem.
+    virtual void removeDuplicates() {};
 
-      /**
-       * Translate a given x into solution of the original problem.
-       * The space for newx needs to be allocated.
-       */
-      virtual void getX(const Double *x, DoubleVector *newx);
+    /**
+     * Translate a given x into solution of the original problem.
+     * The space for newx needs to be allocated.
+     */
+    virtual void getX(const double *x, DoubleVector *newx);
 
-      /** 
-       * Construct a solution for the original problem from that of the
-       * presolved problem. 
-       */
-      SolutionPtr getPostSol(SolutionPtr s);
+    /** 
+     * Construct a solution for the original problem from that of the
+     * presolved problem. 
+     */
+    SolutionPtr getPostSol(SolutionPtr s);
 
-    protected:
-      /*
-       * The problem being presolved. Only one problem may be presolved by one
-       * Presolver.
-       */
-      ProblemPtr problem_;
+  protected:
+    /*
+     * The problem being presolved. Only one problem may be presolved by one
+     * Presolver.
+     */
+    ProblemPtr problem_;
 
-      /// Handlers used to presolve the problem.
-      HandlerVector handlers_;
+    /// Handlers used to presolve the problem.
+    HandlerVector handlers_;
 
-      /// A queue of presolve-modifications required for post-solve.
-      PreModQ mods_;
+    /// A queue of presolve-modifications required for post-solve.
+    PreModQ mods_;
 
-      /// A value in [z-intTol_, z+intTol_], z integer, will be treated as z.
-      Double intTol_;
+    /// A value in [z-intTol_, z+intTol_], z integer, will be treated as z.
+    double intTol_;
 
-      /// Tolerance for checking feasibility.
-      Double eTol_;
+    /// Tolerance for checking feasibility.
+    double eTol_;
 
-      /// Log manager.
-      LoggerPtr logger_;
+    /// Log manager.
+    LoggerPtr logger_;
 
-      /// For logging
-      static const std::string me_;
+    /// For logging
+    static const std::string me_;
 
-      /// Environment.
-      EnvPtr env_;
+    /// Environment.
+    EnvPtr env_;
 
-      /// Status.
-      SolveStatus status_;
+    /// Status.
+    SolveStatus status_;
 
-      /// Remove objective function, if it is zero or constant.
-      void removeEmptyObj_();
+    /// Remove objective function, if it is zero or constant.
+    void removeEmptyObj_();
 
-      /// convert to minimization problem.
-      void minimizify_();
+    /// convert to minimization problem.
+    void minimizify_();
 
-       /**
-        * Replace the objective with a linear function. The problem remains
-        * equivalent to the one before the function is called.
-        */
-      void linearizeObjective_();
+    /**
+     * Replace the objective with a linear function. The problem remains
+     * equivalent to the one before the function is called.
+     */
+    void linearizeObjective_();
 
-      /**
-       * Some interfaces (like AMPL) and the users may specify binary
-       * variables as integer variables. This function converts such variables
-       * to binary.
-       */
-      void ifIntsAreBins_();
+    /**
+     * Some interfaces (like AMPL) and the users may specify binary
+     * variables as integer variables. This function converts such variables
+     * to binary.
+     */
+    void ifIntsAreBins_();
 
-      /*
-       * Convert constraints of the form g(x) >= c to -g(x) <= -c. Do not
-       * change equality or range constraints.
-       */
-      void standardizeConstraints_();
+    /*
+     * Convert constraints of the form g(x) >= c to -g(x) <= -c. Do not
+     * change equality or range constraints.
+     */
+    void standardizeConstraints_();
 
   };
 

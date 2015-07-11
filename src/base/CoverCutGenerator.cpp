@@ -45,7 +45,7 @@ CoverCutGenerator::CoverCutGenerator(ProblemPtr , SolutionPtr , EnvPtr )
 // : stats_(0)
 {
   // Check if initialization is successful.
-  //Bool successinit = false;
+  //bool successinit = false;
   //successinit = initialize(p,s, env);
   //if (successinit) {
   //  generateAllCuts();
@@ -58,7 +58,7 @@ CoverCutGenerator::CoverCutGenerator(RelaxationPtr rel, ConstSolutionPtr sol, En
   //ProblemPtr p;
   //p = rel;
   //ProblemPtr p = boost::static_pointer_cast<Problem>(rel);
-  Bool successinit = false;
+  bool successinit = false;
   successinit = initialize(rel,sol, env);
   if (successinit) {
     generateAllCuts();
@@ -73,7 +73,7 @@ CoverCutGenerator::~CoverCutGenerator()
   }
 }
 
-Bool CoverCutGenerator::initialize(RelaxationPtr p, ConstSolutionPtr s, EnvPtr env)
+bool CoverCutGenerator::initialize(RelaxationPtr p, ConstSolutionPtr s, EnvPtr env)
 {
   // Environment is obtained for parameters.
   env_ = env;
@@ -92,7 +92,7 @@ Bool CoverCutGenerator::initialize(RelaxationPtr p, ConstSolutionPtr s, EnvPtr e
    
   // Check if the solution is non-integer. If the given solution is an integer
   // feasible solution then there is no need to generate cuts.   
-  Bool integral = false;
+  bool integral = false;
   integral = checkIntegral(p, s);
   // If the solution is not integral, then generate cuts.
   if (integral == false) {
@@ -162,13 +162,13 @@ void CoverCutGenerator::generateAllCuts()
       }
       
       // Check if constraint is GUB.
-      Bool isGUB = GUB(it); 
+      bool isGUB = GUB(it); 
       if (isGUB == true) {
         continue;
       }
       
       // Check if constraint has a cover.
-      Bool has = hasCover(it);
+      bool has = hasCover(it);
       if (has) {
         numCons_ += 1;
         generateCuts(*it);
@@ -184,11 +184,11 @@ void CoverCutGenerator::generateAllCuts()
 // Check if it is a GUB. If it is a GUB, we do not generate any cover cuts
 // by using it. May be we should eliminate such constraints as well.
 // x_1 + x_2 + x_3 <= 5
-Bool CoverCutGenerator::GUB(ConstraintIterator itcons)
+bool CoverCutGenerator::GUB(ConstraintIterator itcons)
 {
   // Constraint considered.
   ConstraintPtr cons = *itcons;
-  Double b = cons->getUb();
+  double b = cons->getUb();
   // Iterators for variables in function.
   LinearFunctionPtr lf = cons->getLinearFunction();
   VariableGroupConstIterator it;
@@ -196,9 +196,9 @@ Bool CoverCutGenerator::GUB(ConstraintIterator itcons)
   VariableGroupConstIterator end   = lf->termsEnd();
   // Check if all the coefficients divided by rhs is one.
   // Iterate through all variables in linear function.
-  Double division = 0.0;
-  Double gendivision = 0.0;
-  Bool first = true;
+  double division = 0.0;
+  double gendivision = 0.0;
+  bool first = true;
   for (it=begin; it!=end; ++it) {
     division = (it->second) / b; 
     if (first == true){
@@ -216,20 +216,20 @@ Bool CoverCutGenerator::GUB(ConstraintIterator itcons)
   return true;
 }
 
-Bool CoverCutGenerator::hasCover(ConstraintIterator itcons)
+bool CoverCutGenerator::hasCover(ConstraintIterator itcons)
 {
   // Variable that shows if the constraint has a cover.
-  Bool has = false;
+  bool has = false;
   // Constraint considered.
   ConstraintPtr cons = *itcons;
-  Double b = cons->getUb();
+  double b = cons->getUb();
   // Iterators for variables in function.
   LinearFunctionPtr lf = cons->getLinearFunction();
   VariableGroupConstIterator it;
   VariableGroupConstIterator begin = lf->termsBegin();
   VariableGroupConstIterator end   = lf->termsEnd(); 
   // Sum of coefficients of the variables. 
-  Double sum = 0.0;
+  double sum = 0.0;
   // Iterate through all the variables in the linear function.
   for (it=begin; it!=end; ++it) {
     // Check if the sum is greater than rhs, i.e. \sum a_j > b.
@@ -258,7 +258,7 @@ void CoverCutGenerator::nonzeroVars(LinearFunctionPtr lf,
     // Index of variable in solution.
     UInt varindex = (it->first)->getIndex();
     // Variable value in solution.
-    Double varvalue = s_->getPrimal()[varindex];
+    double varvalue = s_->getPrimal()[varindex];
     // Serdar check this, this should take value of variable as second element.!!!!
     VariableValuePair currentvar(it->first,varvalue);
     if (varvalue != 0) { // add a tolerance value here, if needed.
@@ -289,11 +289,11 @@ void CoverCutGenerator::sortReducedCosts(CoverSetPtr & vars)
     // First construct an array of index-reduced cost pair.
     std::vector<id> ordered;
     // An array of reduced costs of variables. 
-    const Double * reducedcosts = s_->getDualOfVars();
+    const double * reducedcosts = s_->getDualOfVars();
     // The index of variable.
     UInt index = 0;
     // Reduced cost of variable.
-    Double reducedcost = 0.0;
+    double reducedcost = 0.0;
     // Index of variable in vars vector.
     UInt varsindex = 0;
     for (it=begin; it!=end; ++it) {
@@ -360,9 +360,9 @@ CoverSetPtr CoverCutGenerator::coverSetGeneratorDefault(ConstConstraintPtr cons)
   CoverSetIterator it;
   CoverSetIterator begin = vars->begin();
   CoverSetIterator end   = vars->end();
-  Double b = cons->getUb();
+  double b = cons->getUb();
   // Add variables until sum > b.
-  Double sum = 0;
+  double sum = 0;
   for (it=begin; it!=end; ++it) {
     // Check if cover obtained.
     if (sum > b) {
@@ -382,7 +382,7 @@ CoverSetPtr CoverCutGenerator::coverSetGeneratorDefault(ConstConstraintPtr cons)
 /** Assumption the cover set is empty at the beginning.
  * Initial cpver will be generated from scratch.
  */
-Bool CoverCutGenerator::coverSetGeneratorGNS(ConstConstraintPtr cons,
+bool CoverCutGenerator::coverSetGeneratorGNS(ConstConstraintPtr cons,
                                                     CoverSetPtr cover)
 {
   // This is the knapsack constraint to be covered.
@@ -400,14 +400,14 @@ Bool CoverCutGenerator::coverSetGeneratorGNS(ConstConstraintPtr cons,
   CoverSetIterator begin = nonzerovars->begin();
   CoverSetIterator end   = nonzerovars->end();
   // The partial summation of variable coefficients in knapsack constraint.
-  Double sum = 0; 
+  double sum = 0; 
   // right hand side "b"
-  Double b = cons->getUb();
+  double b = cons->getUb();
   // Assumption is that ub is positive. Let's add an assert later.
   for (it=begin; it!=end; ++it) {
     // Add variables until sum exceeds right hand side "b".
     if (sum <= b) {
-      Double weight = lf->getWeight(it->first);
+      double weight = lf->getWeight(it->first);
       VariableValuePair newpair(it->first, weight);
       cover->push_back(newpair);
       sum += lf->getWeight(it->first);
@@ -458,15 +458,15 @@ CoverSetPtr CoverCutGenerator::coverSetGenGNSModified(ConstConstraintPtr cons)
   VariableValuePairVectorConstIterator begin = nonzerovars->begin();
   VariableValuePairVectorConstIterator end   = nonzerovars->end();
   // The summation of variable coefficients in knapsack constraint.
-  Int sum = 0; 
+  int sum = 0; 
   // right hand side "b
-  Int b = (Int) cons->getUb();
+  int b = (int) cons->getUb();
   // Assumption is that ub is positive. Let's add an assert later.
   for (it=begin; it!=end; ++it) {
     // Check if the right hand side of knapsack is exceeded.
     if (sum <= b) {
       coverset->push_back(*it);
-      sum += (Int) lf->getWeight(it->first);
+      sum += (int) lf->getWeight(it->first);
     }
     else
       break;
@@ -482,7 +482,7 @@ CoverSetPtr CoverCutGenerator::coverSetGenGNSModified(ConstConstraintPtr cons)
       // Check if cover set obtained.
       if (sum <= b) {
         coverset->push_back(*it);
-        sum += (Int) lf->getWeight(it->first);
+        sum += (int) lf->getWeight(it->first);
       }
     }
   }
@@ -492,14 +492,14 @@ CoverSetPtr CoverCutGenerator::coverSetGenGNSModified(ConstConstraintPtr cons)
 }
 
 
-Double CoverCutGenerator::sumCoeffs(CoverSetPtr cover)
+double CoverCutGenerator::sumCoeffs(CoverSetPtr cover)
 {
   // Iterators for the vector considered.
   CoverSetIterator it;
   CoverSetIterator begin = cover->begin();
   CoverSetIterator end   = cover->end();
   // Summation of coefficients in the vector.
-  Double sum = 0.0;
+  double sum = 0.0;
   for (it=begin; it!=end; ++it) {
     sum+=it->second;
   }
@@ -513,15 +513,15 @@ void CoverCutGenerator::minimalCover(CoverSetPtr cover,
   sortNonIncreasing(cover);  
   // Initialization of minimizer loop. 
   // variable that holds the summation of coefficients.
-  Double sum = 0.0; 
+  double sum = 0.0; 
   // rhs of the knapsack constraint. 
-  Double b = cons->getUb();
+  double b = cons->getUb();
   // difference between sum and b.
-  Double difference = 0.0;
+  double difference = 0.0;
   // Reverse iterator used to get the minimum coefficient of variable from
   // the end of nonincreasing ordered vector.
   CoverSet::reverse_iterator minpair;
-  Double min = 0.0; // minimum coefficient value.
+  double min = 0.0; // minimum coefficient value.
   // Loop that removes the variables until the minimal cover is obtained.
   sum = sumCoeffs(cover);
   // Loop that reamoves the variables until minimal cover is obtained.
@@ -555,7 +555,7 @@ void CoverCutGenerator::coverPartitionGNS(const ConstConstraintPtr cons,
   CoverSetConstIterator begin = cover->begin();
   CoverSetConstIterator end   = cover->end();
   // Get the primal solution.
-  const Double * x = s_->getPrimal();
+  const double * x = s_->getPrimal();
   // Since |C1| >= 1, we change it as |C1| >= 2. 
   // Serdar explain this, if only one then trivial liftings!
   // This is the number of remaining variables in cover for C1.
@@ -626,7 +626,7 @@ void CoverCutGenerator::cBar(const ConstCoverSetPtr cover,
   // Delete the variables in the cover set.
   // This part can be made much more efficient. 
   for (it=begin; it!=end; ++it) {
-    Bool in = false;
+    bool in = false;
     for (itcov=begincov; itcov != endcov; ++itcov) {
       if (it->first == itcov->first) {
         in = true;
@@ -649,12 +649,12 @@ void CoverCutGenerator::cBar(const ConstCoverSetPtr cover,
 /* This function prepares the problem data for lifting problem solver.
    It updates the rhs of lifting problem, rhs of lifting inequality, 
  */
-Double CoverCutGenerator::lift(const ConstCoverSetPtr obj,
+double CoverCutGenerator::lift(const ConstCoverSetPtr obj,
                                const ConstCoverSetPtr constraint,
                                const CoverSetConstIterator variable,
-                               Double & rhs,
-                               Double & initialb,
-                               Bool uplift)
+                               double & rhs,
+                               double & initialb,
+                               bool uplift)
 {
   // Increment number of knapsacks solved.
   stats_->knaps += 1;
@@ -662,7 +662,7 @@ Double CoverCutGenerator::lift(const ConstCoverSetPtr obj,
   // Number of variables.
   UInt n = obj->size();
   // Objective functions coefficients.
-  Double * c = new Double[n];
+  double * c = new double[n];
   CoverSetConstIterator it;
   CoverSetConstIterator begin = obj->begin();
   CoverSetConstIterator end   = obj->end();
@@ -673,7 +673,7 @@ Double CoverCutGenerator::lift(const ConstCoverSetPtr obj,
   }
   
   // Constraint Coefficients.
-  Double * a = new Double[n];
+  double * a = new double[n];
   CoverSetConstIterator itCoef;
   CoverSetConstIterator beginCoef = constraint->begin();
   CoverSetConstIterator endCoef   = constraint->end();
@@ -684,7 +684,7 @@ Double CoverCutGenerator::lift(const ConstCoverSetPtr obj,
   }
   
   // First I have to order variables suitable for knapsack solver!!!.
-  Double * temp = new Double[n];
+  double * temp = new double[n];
   for(i = 0; i < n; ++i) {
     if (a[i] != 0) {
       temp[i] = c[i]/a[i];
@@ -701,8 +701,8 @@ Double CoverCutGenerator::lift(const ConstCoverSetPtr obj,
   // This can be made more efficient.
   CompareIntDouble compare;
   sort(ordered.begin(), ordered.end(), compare);
-  Double * tempa = new Double[n];
-  Double * tempc = new Double[n];
+  double * tempa = new double[n];
+  double * tempc = new double[n];
 
   for (i = 0; i<n; ++i) {
     // The index of variable in initial a and c vectors.
@@ -717,18 +717,18 @@ Double CoverCutGenerator::lift(const ConstCoverSetPtr obj,
   c = tempc;
 
   // Solution.
-  Double gamma = 0.0;
+  double gamma = 0.0;
 
   // Solution vector.
-  Int * x = new Int[n];
+  int * x = new int[n];
 
   // Rhs value of constraint (b-a_i) where a_i is the variable to lift up.
   if (uplift == true) {
-    Double b = initialb - variable->second;
+    double b = initialb - variable->second;
     // Solve binary knapsack solver.
     binaryKnapsackSolver(n,b,c,a,gamma,x);    
     // Alpha is obtained.
-    Double alpha = rhs-gamma;   
+    double alpha = rhs-gamma;   
     // No need to update rhs of inequality for up-ifting.
     
     // If debug is activated write the lifting problem to output file.
@@ -748,11 +748,11 @@ Double CoverCutGenerator::lift(const ConstCoverSetPtr obj,
     // Order of these statements are important.
 
     // Rhs value of constraint b.
-    Double  b = initialb + variable->second;
+    double  b = initialb + variable->second;
     // Solve binary knapsack solver.
     binaryKnapsackSolver(n,b,c,a,gamma,x);
     // ksi is obtained.
-    Double ksi = gamma-rhs;
+    double ksi = gamma-rhs;
     // Update rhs of inequality.
     rhs = rhs + ksi;
     // If debug is activated write the lifting problem to output file.
@@ -780,11 +780,11 @@ void CoverCutGenerator::simple(const ConstCoverSetPtr cover,
 {
     // that is the upper bound of constraint.
     if ((cbar->empty() == false)) {
-      Double initialb = cons->getUb();
+      double initialb = cons->getUb();
       CoverSetPtr consknap = (CoverSetPtr) new CoverSet(*cover);
       CoverSetPtr coverineq = (CoverSetPtr) new CoverSet();
       initCoverIneq(cover, coverineq);
-      Double rhs = coverineq->size() -1;
+      double rhs = coverineq->size() -1;
       CoverSetPtr obj = (CoverSetPtr) new CoverSet(*coverineq);
       liftSet(obj,consknap, cbar, coverineq, rhs, initialb, true);      
       addCut(coverineq, rhs, Simple);
@@ -833,8 +833,8 @@ void CoverCutGenerator::allCTwo(const ConstCoverSetPtr cover,
       }
     }
     
-    Double initialb = cons->getUb() - it->second;
-    Double rhs = lifted->size() -1;
+    double initialb = cons->getUb() - it->second;
+    double rhs = lifted->size() -1;
     CoverSetPtr obj = (CoverSetPtr) new CoverSet(*lifted);
     if (cbar->empty() == false) {
       // conein have to be updated.
@@ -848,7 +848,7 @@ void CoverCutGenerator::allCTwo(const ConstCoverSetPtr cover,
   }
 }
 
-CutPtr CoverCutGenerator::generateCut(const ConstCoverSetPtr constraint, const Double ub)
+CutPtr CoverCutGenerator::generateCut(const ConstCoverSetPtr constraint, const double ub)
 {
   // generate linear function from the cut.
   LinearFunctionPtr lf = (LinearFunctionPtr) new LinearFunction();
@@ -866,7 +866,7 @@ CutPtr CoverCutGenerator::generateCut(const ConstCoverSetPtr constraint, const D
   // generate function.
   FunctionPtr f = (FunctionPtr) new Function(lf);
   // Since coefficients are positive lower bound is zero.
-  Double lb = 0.0;
+  double lb = 0.0;
 
   // Generate cover cut.
   CutPtr cut = (CutPtr) new Cut(p_->getNumVars(), f, lb, ub, false, false);
@@ -880,7 +880,7 @@ void CoverCutGenerator::addCut(CutPtr cut)
   // Add the cut to cut list.
   cutVec_.push_back(cut);
   // Calculate the violation
-  Double viol = violation(cut);
+  double viol = violation(cut);
   // If cut is violated by solution of current relaxation, then increment
   // number of violated cuts.
   if (viol > objtol_) {
@@ -895,7 +895,7 @@ void CoverCutGenerator::addCut(CutPtr cut)
   // violList_.push_back(viol);
 }
 
-Bool CoverCutGenerator::addCut(CoverSetPtr cov, Double rhs, UInt cuttype)
+bool CoverCutGenerator::addCut(CoverSetPtr cov, double rhs, UInt cuttype)
 {
   // In debug mode we write all cuts generated.
   if (DEBUG_LEVEL >= 9) {
@@ -924,7 +924,7 @@ Bool CoverCutGenerator::addCut(CoverSetPtr cov, Double rhs, UInt cuttype)
   // Total number of cuts generated increased by one.
   stats_->totalcuts += 1;
   // I have to check violation and check integrality of coefficients as well.
-  Bool cutexists = checkExists(cov, rhs);
+  bool cutexists = checkExists(cov, rhs);
   if (DEBUG_LEVEL >= 10){
     cerr << "EXISTS = " << cutexists << endl; 
   }
@@ -960,7 +960,7 @@ Bool CoverCutGenerator::addCut(CoverSetPtr cov, Double rhs, UInt cuttype)
 
 // Careful! It checks values according to indices of variable not to ID's.
 // This may cause a problem at the higher level when we check duplicacy in Cut manager.
-Bool CoverCutGenerator::checkExists(CoverSetPtr cov, Double rhs)
+bool CoverCutGenerator::checkExists(CoverSetPtr cov, double rhs)
 {
   // Iterators for variables in cut.
   CoverSetIterator it;
@@ -969,13 +969,13 @@ Bool CoverCutGenerator::checkExists(CoverSetPtr cov, Double rhs)
   // Number of variables in the linear function.
   UInt numvars = p_->getNumVars();
   // Vector to include the coefficients.
-  std::vector<Double> coeffs(numvars,0);
+  std::vector<double> coeffs(numvars,0);
   // Index of the variable in the problem.
   UInt index;
   // Current variable considered.
   VariablePtr var;
   // Coefficient divided by rhs of cover inequality.
-  Double dividedcoeff;
+  double dividedcoeff;
   // Add the coefficients to coefficient vector one by one.
   if (DEBUG_LEVEL >= 10) {
     cerr << "Coeffs: ";
@@ -983,8 +983,8 @@ Bool CoverCutGenerator::checkExists(CoverSetPtr cov, Double rhs)
   for (it=begin; it!=end; ++it) {
     var = it->first;
     index  = var->getIndex();
-    // Serdar check this Int, what it does, probably it should not be here.
-    dividedcoeff = Double(it->second) / rhs;
+    // Serdar check this int, what it does, probably it should not be here.
+    dividedcoeff = double(it->second) / rhs;
     coeffs[index] = dividedcoeff;
     if (DEBUG_LEVEL >=  10) {
       cerr << dividedcoeff << " ";
@@ -995,10 +995,10 @@ Bool CoverCutGenerator::checkExists(CoverSetPtr cov, Double rhs)
   }
 
   // Check if the cut already exists.
-  std::map< std::vector<Double>, UInt>::iterator found = cutmap.find(coeffs);
-  std::map< std::vector<Double>, UInt>::iterator endmap = cutmap.end();
+  std::map< std::vector<double>, UInt>::iterator found = cutmap.find(coeffs);
+  std::map< std::vector<double>, UInt>::iterator endmap = cutmap.end();
   if (found == endmap) {
-    cutmap.insert(std::pair< std::vector<Double>, UInt > (coeffs,stats_->totalcuts));
+    cutmap.insert(std::pair< std::vector<double>, UInt > (coeffs,stats_->totalcuts));
     return false;
   } else {
     return true;
@@ -1017,7 +1017,7 @@ void CoverCutGenerator::generateCuts(ConstConstraintPtr cons)
   // If it is needed minimal cover cut is added.
   CoverSetPtr basiccoverineq = (CoverSetPtr) new CoverSet();
   initCoverIneq(cover, basiccoverineq);
-  Double ub = cover->size() - 1;
+  double ub = cover->size() - 1;
   addCut(basiccoverineq, ub, Basic);
   // Drop some of the variables so that the cover set becomes minimal.
   minimalCover(cover, cons);
@@ -1064,13 +1064,13 @@ void CoverCutGenerator::initCoverIneq(const ConstCoverSetPtr coverset,
 // Assumption sets F, R, C1, and C2 are given. 
 // They are already constructed as described in paper.
 // However, vectors are not sorted or anything else.
-Bool CoverCutGenerator::liftingGNS(const ConstCoverSetPtr cone,
+bool CoverCutGenerator::liftingGNS(const ConstCoverSetPtr cone,
                                    const ConstCoverSetPtr ctwo,
                                    const ConstCoverSetPtr fset,
                                    const ConstCoverSetPtr rset,
                                    CoverSetPtr constraint,
                                    const ConstConstraintPtr cons,
-                                   Double & rhs)
+                                   double & rhs)
   
 {
   // Initialize the needed data elements.
@@ -1086,7 +1086,7 @@ Bool CoverCutGenerator::liftingGNS(const ConstCoverSetPtr cone,
   CoverSetPtr obj = (CoverSetPtr) new CoverSet(*constraint);
 
   // Calculate the initial b.
-  Double initialb = cons->getUb();
+  double initialb = cons->getUb();
   // Iterators for C2.
   CoverSetConstIterator it;
   CoverSetConstIterator begin = ctwo->begin();
@@ -1096,7 +1096,7 @@ Bool CoverCutGenerator::liftingGNS(const ConstCoverSetPtr cone,
     initialb -= it->second;
   }
 
-  Bool liftup = true;
+  bool liftup = true;
   // We are going to up-lift variables in set F. 
   if (fset->size() >= 1) { 
     liftup = true;
@@ -1108,7 +1108,7 @@ Bool CoverCutGenerator::liftingGNS(const ConstCoverSetPtr cone,
   // is the current half lifted cut is valid for the problem?
   // Check if there is violation or not.
   CutPtr tempcut = generateCut(constraint,rhs);
-  Double viol = violation(tempcut);
+  double viol = violation(tempcut);
   // If there is no violation stop the algorithm.
   if (viol == 0) {
     stats_->noviol += 1;
@@ -1153,9 +1153,9 @@ void CoverCutGenerator::liftSet(CoverSetPtr obj,
                                      CoverSetPtr consknap,
                                      const ConstCoverSetPtr varset,
                                      CoverSetPtr constraint,
-                                     Double & rhs,
-                                     Double & initialb,
-                                     Bool liftup)
+                                     double & rhs,
+                                     double & initialb,
+                                     bool liftup)
 {
   // Check if the set being liftes is empty or not.
   if (varset->empty() == false) {
@@ -1165,7 +1165,7 @@ void CoverCutGenerator::liftSet(CoverSetPtr obj,
     CoverSetConstIterator end   = varset->end();
 
     // Initialize the coefficient of variable to be lifted.
-    Double alpha = 0.0; 
+    double alpha = 0.0; 
     // Lift the variables one by one in the given order.
     for (it = begin; it!=end; ++it) {
       // Lift the variable.
@@ -1199,16 +1199,16 @@ void CoverCutGenerator::liftSetF(CoverSetPtr obj,
                                  CoverSetPtr consknap, 
                                  const ConstCoverSetPtr setf,
                                  CoverSetPtr coverineq,
-                                 Double & rhs,
-                                 Double & initialb,
-                                 const Bool liftup)
+                                 double & rhs,
+                                 double & initialb,
+                                 const bool liftup)
 {
   // If set F is empty, no need for lifting.
   if (setf->empty() ==  false) {
     // Get a copy of set F.
     CoverSetPtr fin = (CoverSetPtr) new CoverSet(*setf);
     // Get primal solution x^*.
-    const Double * x = s_->getPrimal();
+    const double * x = s_->getPrimal();
 
     // Lift up the variables in the given set in a greedy way.
     while (fin->empty() == false) {
@@ -1219,23 +1219,23 @@ void CoverCutGenerator::liftSetF(CoverSetPtr obj,
     
       // Initialize the best variable to be uplifted.
       CoverSetIterator bestvar = begin;
-      Double bestalpha = 0.0;
-      Double bestcontribution = 0.0;
+      double bestalpha = 0.0;
+      double bestcontribution = 0.0;
       // At each iteration calculate the alpha for each element in F.
       for (it=begin; it!=end; ++it) {
         // Prepare parameters. 
         CoverSetPtr objlocal = (CoverSetPtr) new CoverSet(*obj);
         CoverSetPtr constknaplocal = (CoverSetPtr) new CoverSet(*consknap);
         CoverSetIterator varlocal = it;
-        Double initblocal = initialb;
-        Double rhslocal = rhs;
+        double initblocal = initialb;
+        double rhslocal = rhs;
         // Check if lift changes anything in the problem that should not be
         // changed!!!.
-        Double alpha = lift(objlocal, constknaplocal, varlocal, rhslocal, initblocal, liftup);
+        double alpha = lift(objlocal, constknaplocal, varlocal, rhslocal, initblocal, liftup);
         // Get x_j^* from current solution.
         UInt index = it->first->getIndex();
-        Double xjvalue = x[index]; 
-        Double contribution = alpha * xjvalue;
+        double xjvalue = x[index]; 
+        double contribution = alpha * xjvalue;
         // Check if the best variable changed.      
         // Select the variable in F with largest alpha_j*x_j.  
         if (contribution > bestcontribution) {
@@ -1265,11 +1265,11 @@ void CoverCutGenerator::liftSetF(CoverSetPtr obj,
 }
 
 
-Bool CoverCutGenerator::GNS(const ConstConstraintPtr cons)  
+bool CoverCutGenerator::GNS(const ConstConstraintPtr cons)  
 {
   // Initial cover is empty and filled later.
   CoverSetPtr cover = (CoverSetPtr) new CoverSet();
-  Bool covgenerated = coverSetGeneratorGNS(cons, cover);
+  bool covgenerated = coverSetGeneratorGNS(cons, cover);
   // Check if cover generated.
   if(covgenerated == false) {
     return false;
@@ -1287,10 +1287,10 @@ Bool CoverCutGenerator::GNS(const ConstConstraintPtr cons)
 
   // Cover inequality is initialized as empty.
   CoverSetPtr ineq = (CoverSetPtr) new CoverSet();
-  Double ub = 0.0;
-  Bool generated = liftingGNS(cone, ctwo, fset, rset, ineq, cons, ub);
+  double ub = 0.0;
+  bool generated = liftingGNS(cone, ctwo, fset, rset, ineq, cons, ub);
   if (generated == true) {
-    Bool cutgen = addCut(ineq, ub, Gns);
+    bool cutgen = addCut(ineq, ub, Gns);
     return cutgen;
   } else {
     stats_->noinitcov += 1;
@@ -1323,9 +1323,9 @@ void CoverCutGenerator::extendedCover(CoverSetPtr cover, ConstConstraintPtr cons
   CoverSetIterator endvars   = vars->end();
   // Here, we add the variables according to nonincreasing order of coefficients.
   // We can use CBAR, by this way it may work faster.
-  Double maxcoeff = maxincover->second;
+  double maxcoeff = maxincover->second;
   for (it=beginvars; it!=endvars; ++it) {
-    Double currcoeff = it->second;
+    double currcoeff = it->second;
     if (currcoeff > maxcoeff) {
       extended->push_back(*it);
     } else if (currcoeff == maxcoeff) {
@@ -1347,21 +1347,21 @@ void CoverCutGenerator::extendedCover(CoverSetPtr cover, ConstConstraintPtr cons
 
 // This code is based on CglKnapsackCover Inequalities.
 // Assumption: Items are sorted in the order of c_1/a_1 >= c_2/a_2 >= ... c_n/a_n  
-UInt CoverCutGenerator::binaryKnapsackSolver(UInt n, Double b, 
-                                             Double const * c, Double const * a, 
-                                             Double & z, Int * x)
+UInt CoverCutGenerator::binaryKnapsackSolver(UInt n, double b, 
+                                             double const * c, double const * a, 
+                                             double & z, int * x)
 {
   // Set the solution as a vector of zeros. // change this to memset.
-  memset(x, 0, (n)*sizeof(Int));
+  memset(x, 0, (n)*sizeof(int));
   // Current solution vector.
   UInt * xhat = new UInt[n+1];
   // Set the solution as a vector of zeros.
-  memset(xhat,0,(n+1)*sizeof(Int));
+  memset(xhat,0,(n+1)*sizeof(int));
   UInt j = 0;
  
   // set up: adding extra elements
-  Double * cIn = new Double[n+2];
-  Double * aIn = new Double[n+2];
+  double * cIn = new double[n+2];
+  double * aIn = new double[n+2];
   UInt ii = 0;
   for (ii=1; ii<n+1; ii++) {
     cIn[ii]=c[ii-1];
@@ -1369,19 +1369,19 @@ UInt CoverCutGenerator::binaryKnapsackSolver(UInt n, Double b,
   }
 
   // 1. initialize
-  Double zhat = 0.0;
+  double zhat = 0.0;
   z = 0.0;
-  Double bhat = b+0.000001;
+  double bhat = b+0.000001;
   cIn[n+1] = 0.0;
-  aIn[n+1] = numeric_limits<Double>::infinity(); // put infinity here
+  aIn[n+1] = numeric_limits<double>::infinity(); // put infinity here
   j = 1;
 
   while(1) {
     // 2. compute upper bound u
     // "find r = min {i:sum k=j, i a_k>bhat};"
     ii=j;
-    Double aSemiSum = aIn[j];
-    Double cSemiSum = cIn[j];
+    double aSemiSum = aIn[j];
+    double cSemiSum = cIn[j];
     while (aSemiSum <= bhat && ii<n+2) {
       ii++;
       aSemiSum += aIn[ii];
@@ -1395,7 +1395,7 @@ UInt CoverCutGenerator::binaryKnapsackSolver(UInt n, Double b,
     // r = ii at this point
     aSemiSum -= aIn[ii];
     cSemiSum -= cIn[ii];
-    Double u = cSemiSum + floor((bhat - aSemiSum)*cIn[ii]/aIn[ii]);
+    double u = cSemiSum + floor((bhat - aSemiSum)*cIn[ii]/aIn[ii]);
     // "if (z >= zhat + u) goto 5: backtrack;"
     if (!(z >= zhat + u)) {
       do {
@@ -1461,19 +1461,19 @@ UInt CoverCutGenerator::binaryKnapsackSolver(UInt n, Double b,
  * This violation measure is different form GNS, since they only consider
  * upper bound violation of cut.
  */
-Double CoverCutGenerator::violation(CutPtr cut)
+double CoverCutGenerator::violation(CutPtr cut)
 {
   FunctionPtr f = cut->getFunction();
-  const Double * x = s_->getPrimal();
-  Int error = 0;
-  Double evaluation = f->eval(x, &error);
-  Double violub = max(0.0, evaluation - cut->getUb());
-  Double viollb = max (0.0, cut->getLb() - evaluation); 
-  Double viol = max(violub, viollb);
+  const double * x = s_->getPrimal();
+  int error = 0;
+  double evaluation = f->eval(x, &error);
+  double violub = max(0.0, evaluation - cut->getUb());
+  double viollb = max (0.0, cut->getLb() - evaluation); 
+  double viol = max(violub, viollb);
   return viol;
 }
 
-Bool CoverCutGenerator::checkIntegral(RelaxationPtr p, ConstSolutionPtr s)
+bool CoverCutGenerator::checkIntegral(RelaxationPtr p, ConstSolutionPtr s)
 {
   // Iterators for variables in problem.
   VariableConstIterator it;
@@ -1481,15 +1481,15 @@ Bool CoverCutGenerator::checkIntegral(RelaxationPtr p, ConstSolutionPtr s)
   VariableConstIterator end   = p->varsEnd();
 
   // Primal solution.
-  const Double * x = s->getPrimal(); 
+  const double * x = s->getPrimal(); 
   // Current variable.
   ConstVariablePtr var;
   // Index of variable.
   UInt index = 0;
   // Value of variable.
-  Double value = 0.0;
+  double value = 0.0;
   // Absolute of fractional part of variable value.
-  Double fraction = 0.0;
+  double fraction = 0.0;
   // Type of variable.
   VariableType type;
   // Iterate through all variables in the problem.
@@ -1512,7 +1512,7 @@ Bool CoverCutGenerator::checkIntegral(RelaxationPtr p, ConstSolutionPtr s)
 }
 
 
-void CoverCutGenerator::printIneq(const ConstCoverSetPtr cover, Double rhs, PrintType type, string message)
+void CoverCutGenerator::printIneq(const ConstCoverSetPtr cover, double rhs, PrintType type, string message)
 {
   // Iterators for variables.
   CoverSetConstIterator it;
@@ -1522,7 +1522,7 @@ void CoverCutGenerator::printIneq(const ConstCoverSetPtr cover, Double rhs, Prin
   // Current variable.
   ConstVariablePtr var;
   // Coefficient of variable.
-  Double coeff;
+  double coeff;
   // Name of variable.
   string name;
   output_->close();
@@ -1552,7 +1552,7 @@ void CoverCutGenerator::printIneq(const ConstCoverSetPtr cover, Double rhs, Prin
     }  
   } else {
     // Iterate through all variables in the inequality.
-    Bool first = true;
+    bool first = true;
     if (type == Obj) {
       (*output_) << "max " << std::flush;
     }
@@ -1603,12 +1603,12 @@ void CoverCutGenerator::printIneq(const ConstCoverSetPtr cover, Double rhs, Prin
 void CoverCutGenerator::printLiftProb(const ConstCoverSetPtr obj,
                                       const ConstCoverSetPtr consknap,
                                       const CoverSetConstIterator variable,
-                                      Double rhs,
-                                      Double ,
-                                      Bool uplift,
-                                      Double b,
-                                      Double gamma,
-                                      Double alpha)
+                                      double rhs,
+                                      double ,
+                                      bool uplift,
+                                      double b,
+                                      double gamma,
+                                      double alpha)
 {
   output_->close();
   output_->open(outfile_.c_str(), std::ios_base::app);

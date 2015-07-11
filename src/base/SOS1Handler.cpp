@@ -66,7 +66,7 @@ bool SOS1Handler::isFeasible(ConstSolutionPtr sol, RelaxationPtr rel, bool &,
   SOSPtr sos;
   bool isfeas = true;
   int nz;
-  const Double* x = sol->getPrimal();
+  const double* x = sol->getPrimal();
 
   for (SOSConstIterator siter=rel->sos1Begin(); siter!=rel->sos1End();
        ++siter) {
@@ -170,11 +170,11 @@ void SOS1Handler::getBranchingCandidates(RelaxationPtr rel,
   VariableConstIterator viter;
   VariablePtr var;
   SOSPtr sos;
-  Double parsum;
+  double parsum;
   VarVector lvars, rvars;
   int nz;
-  Double nzsum;
-  Double nzval;
+  double nzsum;
+  double nzval;
   SOSBrCandPtr br_can;
 
   for (siter=rel->sos1Begin(); siter!=rel->sos1End(); ++siter) {
@@ -278,7 +278,7 @@ std::string SOS1Handler::getName() const
 void SOS1Handler::getNzNumSum_(SOSPtr sos, const DoubleVector x, int *nz,
                                double *nzsum)
 {
-  Double xval;
+  double xval;
   *nz = 0;
   *nzsum = 0.0;
   for (VariableConstIterator viter = sos->varsBegin(); viter!=sos->varsEnd();
@@ -292,7 +292,7 @@ void SOS1Handler::getNzNumSum_(SOSPtr sos, const DoubleVector x, int *nz,
 }
 
 
-Double SOS1Handler::getTol() const
+double SOS1Handler::getTol() const
 {
   return zTol_;
 }
@@ -398,7 +398,7 @@ void SOS1Handler::separate(ConstSolutionPtr, NodePtr , RelaxationPtr,
 }
 
 
-void SOS1Handler::setTol(Double tol)
+void SOS1Handler::setTol(double tol)
 {
   zTol_ = tol;
 }

@@ -41,10 +41,10 @@ KnapsackList::~KnapsackList()
 // We identify if the constraint is a knapsack constraint with specified properties.
 void KnapsackList::evalConstraint(ConstraintConstIterator itCons)
 {
-  Bool add = true;
+  bool add = true;
   // Check the values coefficients to be suitable for Gu, Nemhauser,
   // and Savelsbergh. 
-  Double ub = (*itCons)->getUb();
+  double ub = (*itCons)->getUb();
   // Check if the right hand side is positive.
   if (ub < 0) {
     add = false;

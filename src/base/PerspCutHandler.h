@@ -31,7 +31,7 @@ struct PCStats
 {
   UInt perspcons;
   UInt cuts;
-  Double time;
+  double time;
 };
 
 class PerspCutHandler : public Handler {
@@ -103,7 +103,7 @@ public:
 
   /// Return specific statistics.
   UInt PC_cuts() {return stats_->cuts;}
-  Double PC_time() {return stats_->time;}
+  double PC_time() {return stats_->time;}
   
 private:
   /// Environment.
@@ -119,11 +119,11 @@ private:
    */
   bool isFeas_;
   /// Tolerance for accepting a new solution value: absolute threshold.
-  const Double solAbsTol_;
+  const double solAbsTol_;
   /// Number of variables in MINLP.
   UInt numvars_;
   /// Tolerance for checking integrality.
-  Double intTol_;
+  double intTol_;
   /// For log:
   static const std::string me_;
 

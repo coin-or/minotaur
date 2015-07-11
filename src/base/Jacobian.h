@@ -85,15 +85,15 @@ namespace Minotaur {
        * of each non-zero in the jacobian. For the above example, when \f$x =
        * (-1, 1, 1, 1, 0)\f$, then values = [3 -1 1 1 1].  
        */
-      virtual void fillRowColValues(const Double *x, Double *values, 
-          Int *error);
+      virtual void fillRowColValues(const double *x, double *values, 
+          int *error);
 
       /// Fill indices, column wise.
       virtual void fillColRowIndices(UInt *, UInt *)
       { assert(!"implement me!");}
          
       /// Fill values, column wise.
-      virtual void fillColRowValues(const Double *, Double *, Int *)
+      virtual void fillColRowValues(const double *, double *, int *)
       { assert(!"implement me!");}
          
       void write(std::ostream &out) const;

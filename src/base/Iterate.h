@@ -20,12 +20,12 @@
 namespace Minotaur {
   class Iterate {
   public:
-    Iterate(std::vector<Double> &x, std::vector<Double> &l);
+    Iterate(std::vector<double> &x, std::vector<double> &l);
     ~Iterate() { };
 
   private:
-    std::vector<Double> x_;
-    std::vector<Double> l_;
+    std::vector<double> x_;
+    std::vector<double> l_;
   };
 }
 

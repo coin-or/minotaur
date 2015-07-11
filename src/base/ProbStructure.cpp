@@ -85,7 +85,7 @@ Bool ProbStructure::evalConstraint(ConstConstraintPtr cons)
   // If function is linear then evaluate.
   if (type == Linear) {
     // Get upper bound of constraint.
-    Double b = cons->getUb();
+    double b = cons->getUb();
     // If right hand side is negative, then it is not GUB.
     if (b < 0) { // Serdar add tolerance.
       // Do something for that
@@ -103,9 +103,9 @@ Bool ProbStructure::evalConstraint(ConstConstraintPtr cons)
       // Current variable.
       ConstVariablePtr var;
       // Coefficient of current variable.
-      Double coeff = 0.0;
+      double coeff = 0.0;
       // Ratio of a_i/b.
-      Double ratio = 0.0; 
+      double ratio = 0.0; 
       for (it=begin; it!=end; ++it) {
         var = it->first;
         // If coefficient is not binary, then it is not GUB.
@@ -133,11 +133,11 @@ Bool ProbStructure::evalConstraint(ConstConstraintPtr cons)
     // Function is not linear so not GUB.
     return false;
   }
-  
+
   // Constraint is GUB.
   return true;
 }
-  
+
 void ProbStructure::addConstraint(ConstConstraintPtr cons)
 {
   // Add the constraint to general list.

@@ -24,7 +24,7 @@
 using namespace Minotaur;
 
 
-VarBoundMod::VarBoundMod(VariablePtr var, BoundType lu, Double new_val)
+VarBoundMod::VarBoundMod(VariablePtr var, BoundType lu, double new_val)
   : lu_(lu),
     newVal_(new_val),
     var_(var)
@@ -71,7 +71,7 @@ BoundType VarBoundMod::getLU() const
 }
 
 
-Double VarBoundMod::getNewVal() const
+double VarBoundMod::getNewVal() const
 {
   return newVal_;
 }
@@ -116,7 +116,7 @@ void VarBoundMod::write(std::ostream &out) const
 // --------------------------------------------------------------------------
 // --------------------------------------------------------------------------
 
-VarBoundMod2::VarBoundMod2(VariablePtr var, Double new_lb, Double new_ub) 
+VarBoundMod2::VarBoundMod2(VariablePtr var, double new_lb, double new_ub) 
   : newLb_(new_lb),
     newUb_(new_ub),
     var_(var)
@@ -150,13 +150,13 @@ VariablePtr VarBoundMod2::getVar() const
 }
 
 
-Double VarBoundMod2::getNewLb() const
+double VarBoundMod2::getNewLb() const
 {
   return newLb_;
 }
 
 
-Double VarBoundMod2::getNewUb() const
+double VarBoundMod2::getNewUb() const
 {
   return newUb_;
 }

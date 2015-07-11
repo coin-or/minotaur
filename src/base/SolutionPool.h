@@ -54,7 +54,7 @@ namespace Minotaur {
     SolutionIterator solsEnd() { return sols_.end(); }
 
     /// Create a solution from a double array and add Solution to the pool.
-    void addSolution(const Double *x, Double obj_value);
+    void addSolution(const double *x, double obj_value);
 
     /**
      * Get a solution with the best objective function value. Return NULL if
@@ -63,7 +63,7 @@ namespace Minotaur {
     SolutionPtr getBestSolution();
 
     /// Get the best objective function value
-    Double getBestSolutionValue() const;
+    double getBestSolutionValue() const;
 
     /// Write statistics to the outstream.
     void writeStats(std::ostream &out) const; 
@@ -91,10 +91,10 @@ namespace Minotaur {
     UInt sizeLimit_;
 
     /// Time when the best solution is found.
-    Double timeBest_;
+    double timeBest_;
 
     /// Time when the first solution is found.
-    Double timeFirst_;
+    double timeFirst_;
 
     /// Global timer.
     const Timer* timer_;

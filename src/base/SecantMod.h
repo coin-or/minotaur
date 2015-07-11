@@ -35,43 +35,43 @@ namespace Minotaur {
   /// nlf + qf + new_lf <= new_ub 
   ///   
   class SecantMod : public Modification {
-    public:
-      /// Construct.
-      SecantMod(ConstraintPtr con, LinearFunctionPtr new_lf, Double new_rhs, 
-                VariablePtr x, BoundType lu, Double new_b, VariablePtr y);
+  public:
+    /// Construct.
+    SecantMod(ConstraintPtr con, LinearFunctionPtr new_lf, double new_rhs, 
+              VariablePtr x, BoundType lu, double new_b, VariablePtr y);
 
-      /// Destroy.
-      ~SecantMod();
+    /// Destroy.
+    ~SecantMod();
 
-      // Implement Modification::applyToProblem()
-      void applyToProblem(ProblemPtr problem);
+    // Implement Modification::applyToProblem()
+    void applyToProblem(ProblemPtr problem);
 
-      // base class method.
-      ModificationPtr toRel(ProblemPtr, RelaxationPtr) const
-      {return SecantModPtr();};
+    // base class method.
+    ModificationPtr toRel(ProblemPtr, RelaxationPtr) const
+    {return SecantModPtr();};
 
-      // base class method.
-      ModificationPtr fromRel(RelaxationPtr, ProblemPtr) const
-      {return SecantModPtr();};
+    // base class method.
+    ModificationPtr fromRel(RelaxationPtr, ProblemPtr) const
+    {return SecantModPtr();};
 
-      // Implement Modification::undoToProblem()
-      void undoToProblem(ProblemPtr problem);
+    // Implement Modification::undoToProblem()
+    void undoToProblem(ProblemPtr problem);
 
-      /// Get the auxiliary variable or variable y where \f$y <= x^2\f$.
-      VariablePtr getY();
+    /// Get the auxiliary variable or variable y where \f$y <= x^2\f$.
+    VariablePtr getY();
 
-      // Implement Modification::write()
-      void write(std::ostream &) const {};
+    // Implement Modification::write()
+    void write(std::ostream &) const {};
 
-    private:
-      /// Changes in linear function in con_
-      LinConModPtr lmod_;
+  private:
+    /// Changes in linear function in con_
+    LinConModPtr lmod_;
 
-      /// Bound changes on x.
-      VarBoundModPtr xmod_;
+    /// Bound changes on x.
+    VarBoundModPtr xmod_;
 
-      /// Bound changes on y.
-      VarBoundMod2Ptr ymod_;
+    /// Bound changes on y.
+    VarBoundMod2Ptr ymod_;
   };
 }
 #endif

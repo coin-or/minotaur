@@ -66,7 +66,7 @@ Branches MultilinearTermsHandler::getBranches(BrCandPtr cand, DoubleVector & x,
 {
   BrVarCandPtr vcand = boost::dynamic_pointer_cast <BrVarCand> (cand);
   VariablePtr v = vcand->getVar();
-  Double value = x[v->getIndex()];
+  double value = x[v->getIndex()];
 
   // can't branch on something that is at its bounds.
   if (!(value > v->getLb()+1e-8 && value < v->getUb()-1e-8)) {
@@ -115,7 +115,7 @@ void MultilinearTermsHandler::getBranchingCandidates(RelaxationPtr,
 
     if (allVarsBinary_(jt)) continue;
 
-    Double zval = x[zt->getIndex()];
+    double zval = x[zt->getIndex()];
 
 #if defined(DEBUG_MULTILINEARTERMS_HANDLER)
       std::cout << "Relaxation term variable: ";
@@ -123,8 +123,8 @@ void MultilinearTermsHandler::getBranchingCandidates(RelaxationPtr,
       std::cout << " Has LP value: " << zval << std::endl;
 #endif
 
-    Double termval = 1.0;
-    Double largest_score = eTol_;
+    double termval = 1.0;
+    double largest_score = eTol_;
     ConstVariablePtr largest_score_var;
     for(SetOfVars::const_iterator jt_it = jt.begin(); jt_it != jt.end(); ++jt_it) {
       ConstVariablePtr termvar = *jt_it;
@@ -135,7 +135,7 @@ void MultilinearTermsHandler::getBranchingCandidates(RelaxationPtr,
       std::cout <<  "  has value: " << x[termvar->getIndex()] << std::endl;
 #endif
 
-      Double score = (termvar->getUb() - x[termvar->getIndex()])*
+      double score = (termvar->getUb() - x[termvar->getIndex()])*
         (x[termvar->getIndex()] - termvar->getLb());
 
       if (score > largest_score) {
@@ -178,7 +178,7 @@ ModificationPtr MultilinearTermsHandler::getBrMod(BrCandPtr cand, DoubleVector &
   BrVarCandPtr  vcand = boost::dynamic_pointer_cast <BrVarCand> (cand);
   VariablePtr v = vcand->getVar();
   
-  Double branching_value = xval[v->getIndex()];
+  double branching_value = xval[v->getIndex()];
   BoundType lu;
   VariableType vtype = v->getType();
 
@@ -213,7 +213,7 @@ ModificationPtr MultilinearTermsHandler::getBrMod(BrCandPtr cand, DoubleVector &
       UInt pix = 0;
       for (std::set<SetOfVars>::iterator it2 = points_[gix].begin(); it2 != points_[gix].end(); ++it2) {
         VariablePtr lam = lambdavars_[gix][pix];
-        Double val = -INFINITY;
+        double val = -INFINITY;
 
         bool atLower = varIsAtLowerBoundAtPoint_(v, *it2);
         bool atUpper = !atLower;
@@ -275,13 +275,13 @@ ModificationPtr MultilinearTermsHandler::getBrMod(BrCandPtr cand, DoubleVector &
       for (std::set<SetOfVars>::iterator it2 = points_[gix].begin(); 
            it2 != points_[gix].end(); ++it2) {
 
-        Double prodval = 1.0;
+        double prodval = 1.0;
         VariablePtr lam = lambdavars_[gix][pix];
 
         // Compute new extreme point value for this lambda
         for(SetOfVars::const_iterator jt_it = jt.begin(); jt_it != jt.end(); ++jt_it) {
           ConstVariablePtr xvar = *jt_it;
-          Double val = 0.0;
+          double val = 0.0;
           bool atLower = varIsAtLowerBoundAtPoint_(xvar, *it2);
           bool atUpper = !atLower;
             
@@ -322,7 +322,7 @@ bool
 MultilinearTermsHandler::isFeasible(ConstSolutionPtr sol, RelaxationPtr ,
                                     bool &, double &)
 {
-  const Double *x = sol->getPrimal();
+  const double *x = sol->getPrimal();
   bool is_feas = true;
 
 #if defined(DEBUG_MULTILINEARTERMS_HANDLER)
@@ -335,8 +335,8 @@ MultilinearTermsHandler::isFeasible(ConstSolutionPtr sol, RelaxationPtr ,
 
     if (allVarsBinary_(jt)) continue;
 
-    Double zval = x[zt->getIndex()];
-    Double xval = 1.0;
+    double zval = x[zt->getIndex()];
+    double xval = 1.0;
     for(SetOfVars::const_iterator jt_it = jt.begin(); jt_it != jt.end(); ++jt_it) {
       xval *= x[(*jt_it)->getIndex()];
     }
@@ -509,7 +509,7 @@ MultilinearTermsHandler::handleXDefConstraints_(RelaxationPtr relaxation, Handle
       int pix = 0;
       for (std::set<SetOfVars>::iterator it2 = points_[gix].begin(); it2 != points_[gix].end(); ++it2) {
         VariablePtr lam = lambdavars_[gix][pix];
-        Double val = varIsAtLowerBoundAtPoint_(xvar, *it2) ? xvar->getLb() : xvar->getUb();
+        double val = varIsAtLowerBoundAtPoint_(xvar, *it2) ? xvar->getLb() : xvar->getUb();
         lf->addTerm(lam, val);
 #if defined(DEBUG_MULTILINEARTERMS_HANDLER)
         std::cout << xvar->getName() << ", lam: " << gix << "," << pix << " value is: " 
@@ -568,12 +568,12 @@ MultilinearTermsHandler::handleZDefConstraints_(RelaxationPtr relaxation, Handle
 
         for (std::set<SetOfVars>::iterator it2 = points_[gix].begin(); 
              it2 != points_[gix].end(); ++it2) {
-          Double prodval = 1.0;
+          double prodval = 1.0;
           VariablePtr lam = lambdavars_[gix][pix];
 
           for(SetOfVars::const_iterator jt_it = jt.begin(); jt_it != jt.end(); ++jt_it) {
             ConstVariablePtr xvar = *jt_it;
-            Double tmp = varIsAtLowerBoundAtPoint_(xvar, *it2) ? xvar->getLb() : xvar->getUb();
+            double tmp = varIsAtLowerBoundAtPoint_(xvar, *it2) ? xvar->getLb() : xvar->getUb();
             prodval *= tmp;
           }
 
@@ -624,7 +624,7 @@ bool MultilinearTermsHandler::allVarsBinary_(SetOfVars const &s) const
 
 BranchPtr
 MultilinearTermsHandler::doBranch_(BranchDirection UpOrDown, ConstVariablePtr v, 
-                                   Double bvalue)
+                                   double bvalue)
 {
   BranchPtr branch;
   BoundType lu;
@@ -638,7 +638,7 @@ MultilinearTermsHandler::doBranch_(BranchDirection UpOrDown, ConstVariablePtr v,
 
   branch = (BranchPtr) new Branch();
 
-  Double branching_value = bvalue;
+  double branching_value = bvalue;
 
   // Change bounds on the x var (called v here)
   if (UpOrDown == DownBranch) { 
@@ -773,11 +773,11 @@ MultilinearTermsHandler::addEdgeToGroups_(const SetOfVars &e, bool phaseOne)
   // In 'Phase 1', we do not create a new group if the edge is implied?
   bool room_for_edge = false;
   bool need_to_add_edge = true;
-  Int gixadd = -1;
-  Int ending_ix = phaseOne ? 0 : initialTermCoverSize_;
-  Int gix = 0;
+  int gixadd = -1;
+  int ending_ix = phaseOne ? 0 : initialTermCoverSize_;
+  int gix = 0;
 
-  for(gix = ((Int) groups_.size()) - 1; gix >= ending_ix; gix--) {
+  for(gix = ((int) groups_.size()) - 1; gix >= ending_ix; gix--) {
 
     const SetOfVars &g = groups_[gix];
     bool e_subsetof_g = edgeIsContainedInGroup_(e,g);
@@ -832,10 +832,10 @@ MultilinearTermsHandler::WeightContainer::iterator
 MultilinearTermsHandler::findMaxWeight_()
 {
   WeightContainer::iterator max_it = weights_.begin();
-  Double maxVal = -INFINITY;
+  double maxVal = -INFINITY;
   
   for(WeightContainer::iterator it = weights_.begin(); it != weights_.end(); ++it) {
-    Double val = it->second;
+    double val = it->second;
     if (val > maxVal) {
       maxVal = val;
       max_it = it;
@@ -892,7 +892,7 @@ MultilinearTermsHandler::randomCoverHeuristic_()
   bool positiveWeight = false;    
   SetOfVars e = H_->randomEdge(positiveWeight);
   while(positiveWeight) {
-    Double we = H_->getWeight(e);
+    double we = H_->getWeight(e);
     if (we <= 0.0) continue;  // If weight is not positive, we skip the edge
         
     addEdgeToGroups_(e, true);
@@ -934,7 +934,7 @@ MultilinearTermsHandler::greedyDenseHeuristic_()
     H_->setWeight(e, 0.0);
 
     // Add vertices to group (greedy).  If no incident vertex, we go to next group
-    Int gix = groups_.size()-1;
+    int gix = groups_.size()-1;
     bool incident_vertex = true;
     while(groups_[gix].size() < maxGroupSize_ && incident_vertex) {
       SetOfVars &g = groups_[gix];
@@ -975,7 +975,7 @@ MultilinearTermsHandler::greedyDenseHeuristic_()
 
   while((groups_.size() <= final_cover_size) && positiveWeight) {
     e = H_->heaviestEdge(positiveWeight);
-    Double w = H_->getWeight(e);
+    double w = H_->getWeight(e);
     H_->setWeight(e, w/2.0);
 
     SetOfVars working_group;
@@ -1048,7 +1048,7 @@ MultilinearTermsHandler::weightedDegreeHeuristic_()
       Hypergraph::ListOfSetOfVars edges = H_->incidentEdges(heavyVar);
       for(Hypergraph::ListOfSetOfVars::const_iterator e_it = edges.begin(); e_it != edges.end(); ++e_it) {
         const SetOfVars &e = *e_it;        
-        Double we = H_->getWeight(e);
+        double we = H_->getWeight(e);
         if (we <= 0.0) continue;  // If weight is not positive, we skip the edge
         
         addEdgeToGroups_(e, true);
@@ -1082,7 +1082,7 @@ MultilinearTermsHandler::weightedDegreeHeuristic_()
       Hypergraph::ListOfSetOfVars edges = H_->incidentEdges(heavyVar);
       for(Hypergraph::ListOfSetOfVars::const_iterator e_it = edges.begin(); e_it != edges.end(); ++e_it) {
         const SetOfVars &e = *e_it;        
-        Double we = H_->getWeight(e);
+        double we = H_->getWeight(e);
         if (we <= 0.0) continue;  // If weight is not positive, we skip the edge
         
         addEdgeToGroups_(e, false);
@@ -1102,10 +1102,10 @@ MultilinearTermsHandler::setupWeights_()
 {
   for(ConstTermIterator it = termsR_.begin(); it != termsR_.end(); ++it) {
     ConstVariablePtr zvar = it->first;
-    Double zweight = 0.0;
+    double zweight = 0.0;
     for (ConstrSet::iterator it2 = zvar->consBegin(); it2 != zvar->consEnd(); ++it2) {
       const LinearFunctionPtr lf = (*it2)->getLinearFunction();
-      Double w = lf->getWeight(zvar);
+      double w = lf->getWeight(zvar);
 #if defined(DEBUG_MULTILINEARTERMS_HANDLER)
       zvar->write(std::cout);
       std::cout << "  has weight: " << w << " in constraint: ";
@@ -1136,7 +1136,7 @@ Hypergraph::adjustEdgeWeightsBetween(const VariablePtr v, const SetOfVars &g,
         setWeight(*e_it, 0);
       }
       else {
-        Double w = getWeight(*e_it);
+        double w = getWeight(*e_it);
         setWeight(*e_it, w/2.0);        
       }
     }
@@ -1177,10 +1177,10 @@ Hypergraph::create(std::map<ConstVariablePtr, SetOfVars > const &terms)
     
     // Determine weight
     ConstVariablePtr zvar = terms_it->first;
-    Double zweight = 0.0;
+    double zweight = 0.0;
     for (ConstrSet::iterator it2 = zvar->consBegin(); it2 != zvar->consEnd(); ++it2) {
       const LinearFunctionPtr lf = (*it2)->getLinearFunction();
-      Double w = lf->getWeight(zvar);
+      double w = lf->getWeight(zvar);
 #if defined(DEBUG_MULTILINEARTERMS_HANDLER)
       zvar->write(std::cout);
       std::cout << "  has weight: " << w << " in constraint: ";
@@ -1192,7 +1192,7 @@ Hypergraph::create(std::map<ConstVariablePtr, SetOfVars > const &terms)
     // Add objective weight
     const LinearFunctionPtr obj = problem_->getObjective()->getLinearFunction();
     if (obj != 0) {
-      Double w = obj->getWeight(zvar);
+      double w = obj->getWeight(zvar);
       zweight += fabs(w);
     }
 
@@ -1206,9 +1206,9 @@ Hypergraph::heaviestEdge(bool &positiveWeight) const
 {
   positiveWeight = false;
   SetOfVarsDoubleMap::const_iterator max_pos;
-  Double maxWeight = 0.0;
+  double maxWeight = 0.0;
   for (SetOfVarsDoubleMap::const_iterator it = weights_.begin(); it != weights_.end(); ++it) {
-    Double w = it->second;
+    double w = it->second;
     if (w > maxWeight) {
       positiveWeight = true;
       max_pos = it;
@@ -1227,13 +1227,13 @@ Hypergraph::heaviestIncidentVertex(const SetOfVars &g)
 {
 
   VariablePtr bestv;
-  Double max_weight = 0.0;
+  double max_weight = 0.0;
 
   for(AdjListType::const_iterator it = adjList_.begin(); it != adjList_.end(); ++it) {
     VariablePtr v = it->first;    
     if (g.find(v) != g.end()) continue; // Skip it if in g
 
-    Double weight = 0.0;
+    double weight = 0.0;
     for (ListOfSetOfVars::const_iterator e_it = it->second.begin(); e_it != it->second.end(); ++e_it) {
       SetOfVars new_e;
       new_e.insert(e_it->begin(), e_it->end());
@@ -1257,11 +1257,11 @@ VariablePtr
 Hypergraph::maxWeightedDegreeVertex(bool &positiveWeight) const
 {
   VariablePtr heavyV;
-  Double max_deg = 0.0;
+  double max_deg = 0.0;
   positiveWeight = false;
 
   for(SetOfVars::iterator it = V_.begin(); it != V_.end(); ++it) {
-    Double w = weightedDegree(*it);    
+    double w = weightedDegree(*it);    
     if (w > max_deg) {
       max_deg = w;
       positiveWeight = true;
@@ -1283,7 +1283,7 @@ Hypergraph::randomEdge(bool &positiveWeight)
   do {
     const SetOfVars &e = *e_it;
 
-    Double w = getWeight(e);
+    double w = getWeight(e);
 
     if (w > 0.0) {
       positiveWeight = true;
@@ -1308,7 +1308,7 @@ Hypergraph::resetWeights()
   }
 
 #if defined(DEBUG_MULTILINEARTERMS_HANDLER)
-  Int ix = 0;
+  int ix = 0;
   for(SetOfVarsDoubleMap::iterator it = originalWeights_.begin(); it != originalWeights_.end(); ++it) {
     std::cout << "Resetting weight of edge " << (ix++) << " to: " << it->second << std::endl;
   }
@@ -1317,8 +1317,7 @@ Hypergraph::resetWeights()
 
 
 
-Double
-Hypergraph::getWeight(const SetOfVars &e) 
+double Hypergraph::getWeight(const SetOfVars &e) 
 {
 #if DEBUG
   // Just check that it exists (debugging)
@@ -1343,8 +1342,7 @@ Hypergraph::incidentEdges(ConstVariablePtr v) const
 }
 
 
-void
-Hypergraph::setWeight(const SetOfVars &e, Double w)
+void Hypergraph::setWeight(const SetOfVars &e, double w)
 {
 #if DEBUG
   // Just check that it exists (debugging)
@@ -1365,10 +1363,9 @@ Hypergraph::setWeight(const SetOfVars &e, Double w)
 
 }
 
-Double
-Hypergraph::weightedDegree(ConstVariablePtr v) const
+double Hypergraph::weightedDegree(ConstVariablePtr v) const
 {
-  Double val = 0.0;
+  double val = 0.0;
   AdjListType::const_iterator pos = adjList_.find(v);
 
   if (pos != adjList_.end()) {

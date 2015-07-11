@@ -25,7 +25,7 @@ LinearFunction::LinearFunction()
 }
 
 
-LinearFunction::LinearFunction(const Double tol)
+LinearFunction::LinearFunction(const double tol)
   : hasChanged_(true),
     tol_(tol)
 {
@@ -33,8 +33,8 @@ LinearFunction::LinearFunction(const Double tol)
 }
 
 
-LinearFunction::LinearFunction(Double *a, VariableConstIterator vbeg, 
-    VariableConstIterator vend, Double tol)
+LinearFunction::LinearFunction(double *a, VariableConstIterator vbeg, 
+    VariableConstIterator vend, double tol)
   : hasChanged_(true),
     tol_(tol)
 {
@@ -65,7 +65,7 @@ void LinearFunction::add(LinearFunctionPtr lf)
 }
 
 
-void LinearFunction::addTerm(ConstVariablePtr var, const Double a) 
+void LinearFunction::addTerm(ConstVariablePtr var, const double a) 
 {
   if (fabs(a) > tol_) {
     terms_.insert(std::make_pair(var, a));
@@ -97,10 +97,10 @@ LinearFunctionPtr LinearFunction::cloneWithVars(VariableConstIterator vbeg)
 }
 
 
-void LinearFunction::incTerm(ConstVariablePtr var, const Double a)
+void LinearFunction::incTerm(ConstVariablePtr var, const double a)
 {
   if (fabs(a) > tol_) {
-    Double nv = (terms_[var] += a);
+    double nv = (terms_[var] += a);
     if (fabs(nv) < tol_) {
       terms_.erase(var);
     } 
@@ -109,15 +109,15 @@ void LinearFunction::incTerm(ConstVariablePtr var, const Double a)
 }
 
 
-Double LinearFunction::eval(const std::vector<Double> &x) const
+double LinearFunction::eval(const std::vector<double> &x) const
 {
    return(InnerProduct(x, terms_));
 }
 
 
-Double LinearFunction::eval(const Double *x) const
+double LinearFunction::eval(const double *x) const
 {
-  Double value = 0;
+  double value = 0;
   for (VariableGroupConstIterator it=terms_.begin(); it!=terms_.end(); ++it) {
     value += x[it->first->getIndex()] * it->second;
   }
@@ -125,7 +125,7 @@ Double LinearFunction::eval(const Double *x) const
 }
 
 
-void LinearFunction::evalGradient(Double *grad_f) const
+void LinearFunction::evalGradient(double *grad_f) const
 {
   for (VariableGroupConstIterator it=terms_.begin(); it!=terms_.end(); ++it) {
     grad_f[it->first->getIndex()] += it->second;
@@ -133,20 +133,20 @@ void LinearFunction::evalGradient(Double *grad_f) const
 }
 
 
-void LinearFunction::fillJac(Double *values, Int *) 
+void LinearFunction::fillJac(double *values, Int *) 
 {
-  Double *v = values;
+  double *v = values;
   for (UInt i=0; i<off_.size(); ++i, ++v) {
     *v += off_[i];
   }
 }
 
 
-void LinearFunction::computeBounds(Double *l, Double *u)
+void LinearFunction::computeBounds(double *l, double *u)
 {
-  Double lb = 0.0;
-  Double ub = 0.0;
-  Double a;
+  double lb = 0.0;
+  double ub = 0.0;
+  double a;
 
   for (VariableGroupConstIterator it=terms_.begin(); it!=terms_.end(); ++it) {
     a = it->second;
@@ -171,7 +171,7 @@ void LinearFunction::getVars(VariableSet *vars)
 }
 
 
-Double LinearFunction::getWeight(ConstVariablePtr var) const
+double LinearFunction::getWeight(ConstVariablePtr var) const
 {
    VariableGroupConstIterator it = terms_.find(var);
    if (it == terms_.end()) {
@@ -181,13 +181,13 @@ Double LinearFunction::getWeight(ConstVariablePtr var) const
 }
 
 
-Bool LinearFunction::hasVar(ConstVariablePtr v) const
+bool LinearFunction::hasVar(ConstVariablePtr v) const
 {
   return (terms_.find(v) != terms_.end());
 }
 
 
-void LinearFunction::multiply(Double d)
+void LinearFunction::multiply(double d)
 { 
   if (fabs(d) < 1e-7) {
     terms_.clear();
@@ -216,7 +216,7 @@ VariableGroupConstIterator LinearFunction::termsEnd() const
 QuadraticFunctionPtr LinearFunction::square()
 {
   QuadraticFunctionPtr qf = (QuadraticFunctionPtr) new QuadraticFunction();
-  Double d, dd;
+  double d, dd;
   ConstVariablePtr v1;
   VariableGroupConstIterator it1, it2;
 
@@ -236,7 +236,7 @@ QuadraticFunctionPtr LinearFunction::square()
 }
 
 
-void LinearFunction::removeVar(VariablePtr v, Double )
+void LinearFunction::removeVar(VariablePtr v, double )
 {
   terms_.erase(v);
   hasChanged_ = true;
@@ -250,7 +250,7 @@ void LinearFunction::clearAll()
 }
 
 
-Double LinearFunction::getFixVarOffset(VariablePtr v, Double val)
+double LinearFunction::getFixVarOffset(VariablePtr v, double val)
 {
   return val*getWeight(v);
 }
@@ -299,7 +299,7 @@ void LinearFunction::operator-=(ConstLinearFunctionPtr l2)
 }
 
 
-void LinearFunction::operator*=(const Double c)
+void LinearFunction::operator*=(const double c)
 {
   if (fabs(c) < 1e-7) {
     terms_.clear();
@@ -371,7 +371,7 @@ LinearFunctionPtr operator+(ConstLinearFunctionPtr l1,
 }
 
 
-LinearFunctionPtr operator*(const Double c, ConstLinearFunctionPtr l2)
+LinearFunctionPtr operator*(const double c, ConstLinearFunctionPtr l2)
 {
   // creates a linear function even when c = 0.
   // Returns NULL if l2 is NULL.

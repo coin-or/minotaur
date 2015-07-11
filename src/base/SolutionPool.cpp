@@ -53,7 +53,7 @@ void SolutionPool::addSolution(ConstSolutionPtr solution)
 }
 
 
-void SolutionPool::addSolution(const Double *x, Double obj_value)
+void SolutionPool::addSolution(const double *x, double obj_value)
 {
   SolutionPtr solution = (SolutionPtr) new Solution(obj_value, x, problem_);
   addSolution(solution);
@@ -66,7 +66,7 @@ SolutionPtr SolutionPool::getBestSolution()
 }
 
 
-Double SolutionPool::getBestSolutionValue() const
+double SolutionPool::getBestSolutionValue() const
 {
   if (bestSolution_) {
     return bestSolution_->getObjValue();

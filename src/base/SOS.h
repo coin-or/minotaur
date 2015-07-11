@@ -25,7 +25,7 @@ public:
   /// Default constructor
   SOS();
 
-  SOS(Int n, SOSType type, const Double *weights, const VarVector &vars,
+  SOS(Int n, SOSType type, const double *weights, const VarVector &vars,
       Int priority, Int id, std::string name);
 
   /// Destroy
@@ -37,7 +37,7 @@ public:
   Int getPriority() const;
 
   std::string getName() const;
-  const Double* getWeights();
+  const double* getWeights();
 
   VariableConstIterator varsBegin() const;
   VariableConstIterator varsEnd() const;
@@ -56,7 +56,7 @@ private:
   SOSType type_;
       
   /// Values
-  Double * weights_;
+  double * weights_;
 
   /// Vector of variables.
   VarVector vars_;

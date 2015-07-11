@@ -32,7 +32,7 @@ YEqVars::YEqVars(UInt n)
 }
 
 
-VariablePtr YEqVars::findY(VariablePtr x, Double k)
+VariablePtr YEqVars::findY(VariablePtr x, double k)
 {
   UInt key = x->getId();
   for (UInt i=0; i<x_.size(); ++i){
@@ -44,7 +44,7 @@ VariablePtr YEqVars::findY(VariablePtr x, Double k)
 }
 
 
-void YEqVars::insert(VariablePtr auxvar, VariablePtr x, Double k)
+void YEqVars::insert(VariablePtr auxvar, VariablePtr x, double k)
 {
   UInt ind = x->getId()%n_;
   k_.push_back(k);

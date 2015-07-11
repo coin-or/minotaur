@@ -22,11 +22,11 @@
 
 using namespace Minotaur;
 
-SecantMod::SecantMod(ConstraintPtr con, LinearFunctionPtr new_lf, 
-                     Double new_rhs, VariablePtr x, BoundType lu, Double new_b,
+SecantMod::SecantMod(ConstraintPtr con, LinearFunctionPtr new_lf,
+                     double new_rhs, VariablePtr x, BoundType lu, double new_b,
                      VariablePtr y)
 {
-  Double y_lb, y_ub, b2;
+  double y_lb, y_ub, b2;
   if (lu==Lower) {
     b2 = x->getUb();
     BoundsOnSquare(new_b, b2, y_lb, y_ub);

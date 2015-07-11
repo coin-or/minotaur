@@ -167,16 +167,16 @@ Bool LGCIGenerator::hasCover(ConstraintConstIterator itcons)
   Bool has = false;
   // The constraint considered.
   ConstraintPtr cons= *itcons; 
-  Double b = cons->getUb();
+  double b = cons->getUb();
   // Iterators for variables in function.
   LinearFunctionPtr lf = cons->getLinearFunction();
   VariableGroupConstIterator it;
   VariableGroupConstIterator begin = lf->termsBegin();
   VariableGroupConstIterator end   = lf->termsEnd();
   // Sum of coefficients of the variables.
-  Double sum = 0.0;
-  // Double coefficient of current variable.
-  Double coeff = 0.0;
+  double sum = 0.0;
+  // double coefficient of current variable.
+  double coeff = 0.0;
   // Iterate through all the variables in the linear function.
   for (it=begin; it!=end; ++it) {
     coeff = it->second;
@@ -210,17 +210,17 @@ bool LGCIGenerator::hasGubCover(ConstraintConstIterator itcons,
   VariableGroupConstIterator begin = lf->termsBegin();
   VariableGroupConstIterator end   = lf->termsEnd();
   // Primal solution.
-  const Double * x = s_->getPrimal();
+  const double * x = s_->getPrimal();
   // Current variable.
   ConstVariablePtr var;
   // Index of current variable.
   UInt index = 0;
   // fractional solution of current variable.
-  Double value = 0.0;
+  double value = 0.0;
   // how many times current variable is uncovered.
-  Double curnumuncov = 0.0;
+  double curnumuncov = 0.0;
   // Fractional value of current variable.
-  Double fraction = 0.0;
+  double fraction = 0.0;
   // Initialize the vectors that shows the degree of uncoveredness of the variable,
   // is it covered or not, what is the fractional part of solution value of variable.
   // Iterate through all variables.
@@ -294,9 +294,9 @@ bool LGCIGenerator::hasGubCover(ConstraintConstIterator itcons,
     // total uncoveredness of all elements it include is selected.
     ConstConstraintVectorPtr vargubs = probstruct_->getVarGUBs(vartocover);
     ConstConstraintPtr maxgub;
-    Double maxtotaluncovered = -10000000000; // Serdar Change this to infinity.
+    double maxtotaluncovered = -10000000000; // Serdar Change this to infinity.
     for (ConstConstraintVector::iterator it = vargubs->begin(); it!=vargubs->end(); ++it) {
-      Double totaluncovered = 0.0;
+      double totaluncovered = 0.0;
       for (VariableGroupConstIterator it2=(*it)->getLinearFunction()->termsBegin();
            it2!=(*it)->getLinearFunction()->termsEnd(); ++it2) {
         for (CoverSetIterator it3=numuncovered->begin(); it3!=numuncovered->end(); ++it3) {
@@ -389,7 +389,7 @@ Bool LGCIGenerator::GNS(ConstConstraintPtr cons, ConstConstraintVectorPtr gublis
 
   // Cover inequality is initialized as empty.
   CoverSetPtr ineq = (CoverSetPtr) new CoverSet();
-  Double b = 0.0;
+  double b = 0.0;
   Bool generated = liftingGNS(cone,ctwo,fset,rset,ineq,cons,gublist,b);
   if (generated == true) {
     CutFail failtype;
@@ -424,15 +424,15 @@ Bool LGCIGenerator::coverSetGeneratorGNS(ConstConstraintPtr cons,
   CoverSetConstIterator begin = nonzerovars->begin();
   CoverSetConstIterator end   = nonzerovars->end(); 
   // The partial summation of variable coefficients in knapsack constraint. 
-  Double sum = 0;
+  double sum = 0;
   // right hnad side "b"
-  Double b = cons->getUb();
+  double b = cons->getUb();
   // Current pair.
   VariableValuePair pair;
   // Current variable.
   VariablePtr variable; 
   // Coefficient of current variable.
-  Double coeff = 0.0;
+  double coeff = 0.0;
   // Assumption is that "b" is positive. Let's add an assert later.
   for (it=begin; it!=end; ++it) {
     // Add variables until sum exceeds right hand side "b".
@@ -480,9 +480,9 @@ void LGCIGenerator::nonzeroVars(const ConstLinearFunctionPtr lf,
   // Index of variable in solution.
   UInt varindex = 0;
   // Variable value in solution.
-  Double varvalue = 0.0;
+  double varvalue = 0.0;
   // Solution vector.
-  const Double * const x = s_->getPrimal();
+  const double * const x = s_->getPrimal();
   // Fill in nonzeros and zeros vectors.
   // Iterate through all the variables in knapsack constraint.
   for (it=begin; it!=end; ++it) {
@@ -527,13 +527,13 @@ void LGCIGenerator::coverPartitionGNS(const ConstConstraintPtr cons,
   CoverSetConstIterator begin = cover->begin();
   CoverSetConstIterator end   = cover->end();
   // Get the primal solution.
-  const Double * x = s_->getPrimal();
+  const double * x = s_->getPrimal();
   // Current variable.
   ConstVariablePtr variable;
   // Index of variable. 
   UInt varindex = 0;
   // Variable value in solution.
-  Double value = 0.0;
+  double value = 0.0;
   // Since |C1| >= 1, we change it as |C1| >= 2. 
   // Serdar explain this, if only one then trivial liftings!
   // This is the number of remaining variables in cover for C1.
@@ -569,7 +569,7 @@ void LGCIGenerator::coverPartitionGNS(const ConstConstraintPtr cons,
   // Index of variable.
   UInt varcbarind = 0;
   // Variable value in solution.
-  Double valuecbar = 0.0;
+  double valuecbar = 0.0;
   // Iterate through elements of C-N.
   for (itcbar=begincbar; itcbar!=endcbar; ++itcbar) {
     varcbar    = itcbar->first;
@@ -615,7 +615,7 @@ Bool LGCIGenerator::liftingGNS(const ConstCoverSetPtr cone,
                                CoverSetPtr ineq,
                                const ConstConstraintPtr cons,
                                ConstConstraintVectorPtr gublist,
-                               Double & rhs)
+                               double & rhs)
 {
   // Generate cover set version of GUBs from constraint type.
   // This is exactly the same as GUB constraints but in cover set data ype.
@@ -648,9 +648,9 @@ Bool LGCIGenerator::liftingGNS(const ConstCoverSetPtr cone,
   
   // Construct rhs of lifting problem, i.e. for knapsack it is b, 
   // and initialize rhs of GUB inequalities as ones.
-  Double initialbknap = cons->getUb();
+  double initialbknap = cons->getUb();
   UInt numgubcons = gubcons->size();
-  Double * initialbgub = new Double[numgubcons];
+  double * initialbgub = new double[numgubcons];
   std::fill_n(initialbgub, numgubcons, 1.0);
   // Change the rhs according to downlifted variables.
   if (ctwo->size() >= 1) {
@@ -741,9 +741,9 @@ void LGCIGenerator::liftSet(CoverSetPtr obj,
                             boost::shared_ptr<std::vector<CoverSetPtr> > gubcons,
                             const ConstCoverSetPtr varset,
                             CoverSetPtr coverineq,
-                            Double & rhs,
-                            Double & initialbknap,
-                            Double * initialbgub,
+                            double & rhs,
+                            double & initialbknap,
+                            double * initialbgub,
                             Bool liftup)
 {
   // Check if the set being lifted is empty.
@@ -753,7 +753,7 @@ void LGCIGenerator::liftSet(CoverSetPtr obj,
       CoverSetConstIterator begin = varset->begin();
       CoverSetConstIterator end   = varset->end();
       // Initialize coefficient of variable to be lifted.
-      Double alpha = 0.0;
+      double alpha = 0.0;
       // Lift the variables one by one in the given order.
       for (it=begin; it!=end; ++it) {
         // Lift the variable.
@@ -815,13 +815,13 @@ void LGCIGenerator::liftSet(CoverSetPtr obj,
  * This function prepares the problem data for lifting problem solver.
  * Updates rhs of lifting problem and rhs of cover inequality.
  */
-// Double LGCIGenerator::lift(CoverSetPtr obj,
+// double LGCIGenerator::lift(CoverSetPtr obj,
 //                          CoverSetPtr consknap,
 //                          boost::shared_ptr<std::vector<CoverSetPtr> > gubcons,
 //                          const CoverSetConstIterator variable,
-//                          Double & rhs,
-//                          Double & initialbknap,
-//                          Double * initialbgub,
+//                          double & rhs,
+//                          double & initialbknap,
+//                          double * initialbgub,
 //                          Bool liftup)
 // {
   // // Increment number of relaxations solved.
@@ -831,9 +831,9 @@ void LGCIGenerator::liftSet(CoverSetPtr obj,
   // OsiClpSolverInterface * si = new OsiClpSolverInterface();
   // // Number of variables.
   // UInt n_cols = p_->getNumVars(); // number of variables.
-  // Double * objective = new Double[n_cols]; // objective coefficients
-  // Double * col_lb    = new Double[n_cols]; // variable lower bounds
-  // Double * col_ub    = new Double[n_cols]; // variable upper bounds
+  // double * objective = new double[n_cols]; // objective coefficients
+  // double * col_lb    = new double[n_cols]; // variable lower bounds
+  // double * col_ub    = new double[n_cols]; // variable upper bounds
   // // Define objective coefficients.
   // // Iterators for objective function.
   // CoverSetConstIterator it;
@@ -851,8 +851,8 @@ void LGCIGenerator::liftSet(CoverSetPtr obj,
 
   // // Number of constraints , i.e. 1(knapsack)+nuumber of GUB constraints.
   // UInt n_rows = 1 + gubcons->size(); // number of constraints.
-  // Double * row_lb = new Double[n_rows]; // constraint lower bounds.
-  // Double * row_ub = new Double[n_rows]; // constraint upper bounds.
+  // double * row_lb = new double[n_rows]; // constraint lower bounds.
+  // double * row_ub = new double[n_rows]; // constraint upper bounds.
   
   // // Define constraint matrix.
   // CoinPackedMatrix matrix(false,0,0);
@@ -912,7 +912,7 @@ void LGCIGenerator::liftSet(CoverSetPtr obj,
   // // solve the linear program.
   // si->initialSolve();
 
-  // Double alpha = roundHeur(si);
+  // double alpha = roundHeur(si);
 
   // // To be continued, change rhs etc, update for uplift and downlift.
 
@@ -926,15 +926,15 @@ void LGCIGenerator::liftSet(CoverSetPtr obj,
 
 void LGCIGenerator::addCons(CoverSetPtr obj,
                             CoverSetPtr consknap,
-                            Double bknap,
+                            double bknap,
                             boost::shared_ptr< std::vector<CoverSetPtr> > gubcons,
-                            Double * bgubs,
+                            double * bgubs,
                             OrigLiftVarsPtr varmap,
                             ProblemPtr liftprob)
 {
   LinearFunctionPtr lfobj = (LinearFunctionPtr) new LinearFunction();
   ObjectiveType otype     = Maximize;
-  Double cb = 0;
+  double cb = 0;
   // Construct objective and its variables.
   CoverSetIterator it;
   CoverSetIterator begin = obj->begin();
@@ -945,7 +945,7 @@ void LGCIGenerator::addCons(CoverSetPtr obj,
     // check if variable exits in the map
     VariablePtr liftvar;
     liftvar = addVar(origvar, varmap, liftprob);
-    Double coeff = it->second;
+    double coeff = it->second;
     if (coeff != 0) {
       lfobj->addTerm(liftvar, coeff);
     }
@@ -958,7 +958,7 @@ void LGCIGenerator::addCons(CoverSetPtr obj,
 
 
   // Add knapsack constraint.
-  Double ub = bknap;
+  double ub = bknap;
   LinearFunctionPtr lfknap = (LinearFunctionPtr) new LinearFunction();
   // Iterators for elements of knapsack.
   CoverSetIterator itknap;
@@ -967,7 +967,7 @@ void LGCIGenerator::addCons(CoverSetPtr obj,
   // Iterate through elements of knapsack constraint.
   for (itknap=beginknap; itknap!=endknap; ++itknap) {
     VariablePtr origknapvar = itknap->first;
-    Double coeff = itknap->second;
+    double coeff = itknap->second;
     VariablePtr liftknapvar = addVar(origknapvar, varmap, liftprob);
     if (coeff != 0) {
       lfknap->addTerm(liftknapvar, coeff);
@@ -975,7 +975,7 @@ void LGCIGenerator::addCons(CoverSetPtr obj,
   } // end of for.
   // Generate knapsack function.
   FunctionPtr funknap = (FunctionPtr) new Function(lfknap);
-  Double lb = 0.0;
+  double lb = 0.0;
   liftprob->newConstraint(funknap, lb, ub);
 
   // Add the gub constraints.
@@ -985,7 +985,7 @@ void LGCIGenerator::addCons(CoverSetPtr obj,
   std::vector<CoverSetPtr>::iterator endgubs   = gubcons->end();
   UInt index = 0;
   for (itgubs=begingubs; itgubs!=endgubs; ++itgubs) {
-    Double ubgub = bgubs[index];
+    double ubgub = bgubs[index];
     LinearFunctionPtr lfgub = (LinearFunctionPtr) new LinearFunction();
     // Iterators for elements of GUB.
     CoverSetIterator itel;
@@ -993,7 +993,7 @@ void LGCIGenerator::addCons(CoverSetPtr obj,
     CoverSetIterator endel   = (*itgubs)->end();
     for (itel=beginel; itel!=endel; ++itel) {
       VariablePtr origgubvar = itel->first;
-      Double coeff = itel->second;
+      double coeff = itel->second;
       VariablePtr liftgubvar = addVar(origgubvar, varmap, liftprob);
       if (coeff != 0) {
         lfgub->addTerm(liftgubvar, coeff);
@@ -1002,7 +1002,7 @@ void LGCIGenerator::addCons(CoverSetPtr obj,
     // Generate gub function.
     FunctionPtr fungub = (FunctionPtr) new Function(lfgub);
     // We assume every coefficient is non-negative.
-    Double lbgub = 0.0;
+    double lbgub = 0.0;
     liftprob->newConstraint(fungub, lbgub, ubgub); 
 
     index += 1;
@@ -1029,8 +1029,8 @@ VariablePtr LGCIGenerator::addVar(VariablePtr var, OrigLiftVarsPtr varmap,
   } else {
     // Variable does not exist.
     // Create a new variable.
-    Double lb = 0.0;
-    Double ub = 1.0;
+    double lb = 0.0;
+    double ub = 1.0;
     VariableType vtype = Continuous;
     // Add new variable to lifting problem.
     VariablePtr newvar = liftprob->newVariable(lb, ub, vtype);
@@ -1041,14 +1041,14 @@ VariablePtr LGCIGenerator::addVar(VariablePtr var, OrigLiftVarsPtr varmap,
   
 }
 
-Double LGCIGenerator::lift(CoverSetPtr obj,
+double LGCIGenerator::lift(CoverSetPtr obj,
                            boost::shared_ptr<std::vector<CoverSetPtr> > origgubs,
                            CoverSetPtr consknap,
                            boost::shared_ptr<std::vector<CoverSetPtr> > gubcons,
                            const CoverSetConstIterator variable,
-                           Double & rhs,
-                           Double & initialbknap,
-                           Double * initialbgub,
+                           double & rhs,
+                           double & initialbknap,
+                           double * initialbgub,
                            Bool liftup)
 {
   if (DEBUG_LEVEL >= 9) {
@@ -1067,7 +1067,7 @@ Double LGCIGenerator::lift(CoverSetPtr obj,
   lpengine_->clear();
   OrigLiftVarsPtr varmap = (OrigLiftVarsPtr) new OrigLiftVars();
 
-  Double knapb = 0.0;
+  double knapb = 0.0;
   // Uplift specific adjustment.
   if (liftup == true) {
     knapb = initialbknap - variable->second;
@@ -1082,8 +1082,8 @@ Double LGCIGenerator::lift(CoverSetPtr obj,
   std::vector<CoverSetPtr>::iterator begin = origgubs->begin();
   std::vector<CoverSetPtr>::iterator end   = origgubs->end();
   UInt index = 0;
-  Double * bgub;
-  Double * copybgub = 0;
+  double * bgub;
+  double * copybgub = 0;
   if (liftup == false) {
     for (it=begin ; it!=end; ++it) {
       // Iterators for variables of GUB.
@@ -1104,8 +1104,8 @@ Double LGCIGenerator::lift(CoverSetPtr obj,
     } // end of for.
     bgub = initialbgub;
   } else {
-    copybgub = new Double[gubcons->size()];
-    std::memcpy(copybgub, initialbgub, sizeof(Double)*(gubcons->size()));
+    copybgub = new double[gubcons->size()];
+    std::memcpy(copybgub, initialbgub, sizeof(double)*(gubcons->size()));
     // Uplifting case.
     for (it=begin ; it!=end; ++it) {
       // Iterators for variables of GUB.
@@ -1147,10 +1147,10 @@ Double LGCIGenerator::lift(CoverSetPtr obj,
   lpengine_->solve();
 
   // Solution of lifting problem is obtained.
-  Double gamma = roundHeur(liftprob);
+  double gamma = roundHeur(liftprob);
   
-  Double alpha = 0.0;
-  Double ksi   = 0.0;
+  double alpha = 0.0;
+  double ksi   = 0.0;
   if (liftup == true) {
     // If uplifting.
     alpha = rhs - gamma;
@@ -1176,18 +1176,18 @@ Double LGCIGenerator::lift(CoverSetPtr obj,
 }
 
 // Assumes that lifting problem is solved already.
-Double LGCIGenerator::roundHeur(ProblemPtr prob)
+double LGCIGenerator::roundHeur(ProblemPtr prob)
 {
   std::vector<UInt> indices;
-  std::vector<Double> values;
+  std::vector<double> values;
   EngineStatus status = lpengine_->getStatus();
   // Check if problem is solved optimally or else.
   if ((status == ProvenOptimal) || (status == FailedFeas)) { // Here check if we have a feasible solution.  
-    Double gamma = 0.0;
+    double gamma = 0.0;
     // Serdar check that, since it considers minimize it gives negative result.
-    Double gammainitial = -lpengine_->getSolutionValue();
+    double gammainitial = -lpengine_->getSolutionValue();
     ConstSolutionPtr sol = lpengine_->getSolution();
-    const Double * solution = sol->getPrimal();
+    const double * solution = sol->getPrimal();
     UInt n_cols = prob->getNumVars();
     
     if (DEBUG_LEVEL >= 9) {
@@ -1211,12 +1211,12 @@ Double LGCIGenerator::roundHeur(ProblemPtr prob)
     }
     
     std::vector<UInt> fracindices;
-    std::vector<Double> fracvalues;
+    std::vector<double> fracvalues;
     // Check how many fractionals do we have.
     // Iterators for nonzero values.
-    std::vector<Double>::iterator it;
-    std::vector<Double>::iterator begin = values.begin();
-    std::vector<Double>::iterator end   = values.end();
+    std::vector<double>::iterator it;
+    std::vector<double>::iterator begin = values.begin();
+    std::vector<double>::iterator end   = values.end();
     UInt index = 0;
     for (it=begin; it!=end; ++it) {
       if ((0.00 != *it) && (*it != 1.0)) {
@@ -1248,7 +1248,7 @@ Double LGCIGenerator::roundHeur(ProblemPtr prob)
         rowindex1 = cons1->getIndex();
       }
       LinearFunctionPtr lf = cons1->getLinearFunction(); 
-      //Double coeff1 = lf->getWeight(var1);
+      //double coeff1 = lf->getWeight(var1);
      
  
       // Row index of second fractional.
@@ -1261,17 +1261,17 @@ Double LGCIGenerator::roundHeur(ProblemPtr prob)
         rowindex2 = cons2->getIndex();
       }
       LinearFunctionPtr lf2 = cons2->getLinearFunction();
-      // Double coeff2 = lf->getWeight(var2);
+      // double coeff2 = lf->getWeight(var2);
       
       if (rowindex1 != rowindex2) {
         cerr << "LGCIGenerator.cpp:roundHeur. Two fractional values are not in the same constraint. " << endl;
       } 
 
       // Serdar this is wrong check again.
-      //Double kfirstcoeff = (*prob->consBegin())->getLinearFunction()->getWeight(var1);
-      //Double ksecondcoeff =(*prob->consBegin())->getLinearFunction()->getWeight(var2);
-      Double kfirstcoeff = 1.0;
-      Double ksecondcoeff = 1.0;
+      //double kfirstcoeff = (*prob->consBegin())->getLinearFunction()->getWeight(var1);
+      //double ksecondcoeff =(*prob->consBegin())->getLinearFunction()->getWeight(var2);
+      double kfirstcoeff = 1.0;
+      double ksecondcoeff = 1.0;
 
       if (kfirstcoeff <= ksecondcoeff) {
         return (gammainitial - (ksecondcoeff*fracvalues[0]) + (kfirstcoeff*(1-fracvalues[0])) ); 
@@ -1532,16 +1532,16 @@ void LGCIGenerator::minimalCover(CoverSetPtr cover, ConstConstraintPtr cons)
   sortNonIncreasing(cover);
   // Initialize loop to make cover minimal (Take out elements).
   // The partial summation of coefficients.
-  Double sum = 0.0;
+  double sum = 0.0;
   // Right hand side of knapsack constraint considered.
-  Double b = cons->getUb();
+  double b = cons->getUb();
   // Difference between the sum and b.
-  Double difference = 0.0;
+  double difference = 0.0;
   // Reverse iterartor used to get the minimum coefficient variable from the
   // end of coverset vector.
   CoverSet::reverse_iterator minpair;
   // minimum coefficient value.
-  Double min = 0.0;
+  double min = 0.0;
   // Current sum is the summation of coefficients of all variables in cover.
   sum = sumCoeffs(cover);
   // Loop that removes the variables until minimal cover is obtained.
@@ -1563,16 +1563,16 @@ void LGCIGenerator::minimalCover(CoverSetPtr cover, ConstConstraintPtr cons)
   } 
 }
 
-Double LGCIGenerator::sumCoeffs(CoverSetPtr cover)
+double LGCIGenerator::sumCoeffs(CoverSetPtr cover)
 {
   // Iterators for the vector considered.
   CoverSetConstIterator it;
   CoverSetConstIterator begin = cover->begin();
   CoverSetConstIterator end   = cover->end();
   // Coefficient of current variable.
-  Double coeff = 0.0;
+  double coeff = 0.0;
   // Summation of coefficients in the vector.
-  Double sum = 0.0;
+  double sum = 0.0;
   for (it=begin; it!=end; ++it) {
     coeff = it->second;
     sum += coeff;
@@ -1606,7 +1606,7 @@ void LGCIGenerator::addCut(CutPtr cut)
   // Add cut to the cut list.
   cutVec_.push_back(cut);
   // Calculate violation.
-  Double viol = violation(cut);
+  double viol = violation(cut);
   // If cut is violated by current relaxation solution, increment the number
   // of violated cuts.
   if (viol > 0) {
@@ -1633,7 +1633,7 @@ void LGCIGenerator::addCut(CutPtr cut)
   violList_.push_back(viol);
 }
 
-Bool LGCIGenerator::addCut(CoverSetPtr cov, Double rhs, UInt cuttype, CutFail&)
+Bool LGCIGenerator::addCut(CoverSetPtr cov, double rhs, UInt cuttype, CutFail&)
 {
   // In debug mode we write all cuts generated.
   if (DEBUG_LEVEL >= 9) {
@@ -1681,7 +1681,7 @@ Bool LGCIGenerator::addCut(CoverSetPtr cov, Double rhs, UInt cuttype, CutFail&)
 }
 
 // Assumption a cut pointer is given and the cut will be returned by this pointer.
-void LGCIGenerator::generateCut(const ConstCoverSetPtr inequality, Double rhs, CutPtr cut)
+void LGCIGenerator::generateCut(const ConstCoverSetPtr inequality, double rhs, CutPtr cut)
 {
   // Generate linear function for cut.
   LinearFunctionPtr lf = (LinearFunctionPtr) new LinearFunction();
@@ -1700,7 +1700,7 @@ void LGCIGenerator::generateCut(const ConstCoverSetPtr inequality, Double rhs, C
   // generate function.
   FunctionPtr f = (FunctionPtr) new Function(lf);
   // Assumption: coefficients are positive lower bound is zero.
-  Double lb = 0.0;
+  double lb = 0.0;
   // Generate cover cut.
   cut = (CutPtr) new Cut(p_->getNumVars(), f, lb, rhs, false, false);
 }
@@ -1708,7 +1708,7 @@ void LGCIGenerator::generateCut(const ConstCoverSetPtr inequality, Double rhs, C
 /** TODO: Create a new index for variables in the knapsack only.
  * Do not consider all variables for coefficients.
  */
-Bool LGCIGenerator::checkExists(CoverSetPtr inequality, Double rhs)
+Bool LGCIGenerator::checkExists(CoverSetPtr inequality, double rhs)
 {
   // Iterators for variables in cut.
   CoverSetConstIterator it;
@@ -1718,13 +1718,13 @@ Bool LGCIGenerator::checkExists(CoverSetPtr inequality, Double rhs)
   // Later change this to number of variables in the linear function.
   UInt numvars = p_->getNumVars();
   // Vector to include coefficients.
-  std::vector<Double> coeffs(numvars,0);
+  std::vector<double> coeffs(numvars,0);
   // Index of the variable in the problem.
   UInt index = 0;
   // Current variable considered.
   VariablePtr var;
   // Coefficient divided by rhs of cover inequality.
-  Double dividedcoeff;
+  double dividedcoeff;
   // Add coefficients to coefficient vector one by one.
   for (it=begin; it!=end; ++it) {
     var           = it->first;
@@ -1734,31 +1734,31 @@ Bool LGCIGenerator::checkExists(CoverSetPtr inequality, Double rhs)
   }
   
   // Check if the cut already exists.
-  std::map< std::vector<Double>, UInt>::iterator found  = cutmap_.find(coeffs);
-  std::map< std::vector<Double>, UInt>::iterator endmap = cutmap_.end();
+  std::map< std::vector<double>, UInt>::iterator found  = cutmap_.find(coeffs);
+  std::map< std::vector<double>, UInt>::iterator endmap = cutmap_.end();
   if (found == endmap) {
-    cutmap_.insert(std::pair< std::vector<Double>, UInt > (coeffs,stats_->totalcuts));
+    cutmap_.insert(std::pair< std::vector<double>, UInt > (coeffs,stats_->totalcuts));
     return false; 
   } else {    
     return true;
   }
 }
 
-Double LGCIGenerator::violation(CutPtr cut)
+double LGCIGenerator::violation(CutPtr cut)
 {
   FunctionPtr f = cut->getFunction();
-  const Double * x = s_->getPrimal();
+  const double * x = s_->getPrimal();
   Int error = 0;
-  Double evaluation = f->eval(x, &error);
-  Double violub     = max(0.0, evaluation - cut->getUb());
-  Double viollb     = max(0.0, cut->getLb() - evaluation);
-  Double viol       = max(violub, viollb);
+  double evaluation = f->eval(x, &error);
+  double violub     = max(0.0, evaluation - cut->getUb());
+  double viollb     = max(0.0, cut->getLb() - evaluation);
+  double viol       = max(violub, viollb);
 
   return viol;
 }
 
 
-void LGCIGenerator::printIneq(const ConstCoverSetPtr cover, Double rhs, 
+void LGCIGenerator::printIneq(const ConstCoverSetPtr cover, double rhs, 
                                   PrintType type, string message)
 {
   // Iterators for variables.
@@ -1769,7 +1769,7 @@ void LGCIGenerator::printIneq(const ConstCoverSetPtr cover, Double rhs,
   // Current variable.
   ConstVariablePtr var;
   // Coefficient of variable.
-  Double coeff;
+  double coeff;
   // Name of variable.
   string name;
   // Close the file in any case it is open.

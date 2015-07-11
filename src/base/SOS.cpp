@@ -31,7 +31,7 @@ SOS::SOS()
 }
 
 
-SOS::SOS(Int n, SOSType type, const Double *weights, const VarVector &vars,
+SOS::SOS(Int n, SOSType type, const double *weights, const VarVector &vars,
          Int priority, Int id, std::string name) 
 : id_(id),
   n_(n),
@@ -39,8 +39,8 @@ SOS::SOS(Int n, SOSType type, const Double *weights, const VarVector &vars,
   type_(type),
   name_(name)
 {
-  weights_ = new Double[n];
-  memcpy(weights_, weights, sizeof(Double)*n);
+  weights_ = new double[n];
+  memcpy(weights_, weights, sizeof(double)*n);
   vars_ = vars;
   sort(vars_, weights_, -1);
 }
@@ -84,7 +84,7 @@ std::string SOS::getName() const
 
 
 
-const Double* SOS::getWeights()
+const double* SOS::getWeights()
 {
   return weights_;
 }

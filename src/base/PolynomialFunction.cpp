@@ -25,27 +25,27 @@
 using namespace Minotaur;
 
 MonomialFunction::MonomialFunction()
-  : coeff_(0),
-    deg_(0),
-    eTol_(1e-10)
+: coeff_(0),
+  deg_(0),
+  eTol_(1e-10)
 {
   terms_.clear();
 }
 
 
-MonomialFunction::MonomialFunction(Double c)
-  : coeff_(c),
-    deg_(0),
-    eTol_(1e-10)
+MonomialFunction::MonomialFunction(double c)
+: coeff_(c),
+  deg_(0),
+  eTol_(1e-10)
 {
   terms_.clear();
 }
 
 
-MonomialFunction::MonomialFunction(Double c, ConstVariablePtr v, UInt p)
-  : coeff_(c),
-    deg_(p),
-    eTol_(1e-10)
+MonomialFunction::MonomialFunction(double c, ConstVariablePtr v, UInt p)
+: coeff_(c),
+  deg_(p),
+  eTol_(1e-10)
 {
   if (p>0) {
     terms_[v] = p;
@@ -116,7 +116,7 @@ CNode* MonomialFunction::fillCG(CGraphPtr cg)
 }
 
 
-Double MonomialFunction::getCoeff() const
+double MonomialFunction::getCoeff() const
 {
   return coeff_;
 }
@@ -146,7 +146,7 @@ const VarIntMap* MonomialFunction::getTerms() const
 }
 
 
-void MonomialFunction::multiply(Double coeff, ConstVariablePtr v, Int p)
+void MonomialFunction::multiply(double coeff, ConstVariablePtr v, Int p)
 {
   if (fabs(coeff) < eTol_) {
     terms_.clear();
@@ -181,7 +181,7 @@ void MonomialFunction::multiply(ConstMonomialFunPtr m2)
 }
 
 
-void MonomialFunction::multiply(Double c)
+void MonomialFunction::multiply(double c)
 {
   coeff_ *= c;
   if (fabs(coeff_)<eTol_) {
@@ -192,7 +192,7 @@ void MonomialFunction::multiply(Double c)
 }
 
 
-void MonomialFunction::operator*=(Double c)
+void MonomialFunction::operator*=(double c)
 {
   multiply(c);
 }
@@ -204,9 +204,9 @@ void MonomialFunction::operator*=(ConstMonomialFunPtr m2)
 }
 
 
-Double MonomialFunction::eval(const Double *x, Int *error)
+double MonomialFunction::eval(const double *x, Int *error)
 {
-  Double prod = 1.;
+  double prod = 1.;
   *error = 0;
   for (VarIntMapConstIterator it=terms_.begin(); it!=terms_.end(); ++it) {
     prod *= pow(x[it->first->getIndex()],it->second);
@@ -215,16 +215,16 @@ Double MonomialFunction::eval(const Double *x, Int *error)
 }
 
 
-Double MonomialFunction::eval(const DoubleVector &x, Int *error)
+double MonomialFunction::eval(const DoubleVector &x, Int *error)
 {
   return eval(&x[0], error);
 }
 
 
-void MonomialFunction::evalGradient(const Double *x, Double *grad_f, 
+void MonomialFunction::evalGradient(const double *x, double *grad_f, 
     Int *error) 
 {
-  Double prod;
+  double prod;
   VariablePtr v;
 
   *error = 0;
@@ -382,12 +382,12 @@ void PolynomialFunction::createCG()
 }
 
 
-Double PolynomialFunction::eval(const Double *x, Int *error)
+double PolynomialFunction::eval(const double *x, Int *error)
 {
   if (cg_) {
     return (cg_->eval(x, error));
   } else {
-    Double sum = cb_;
+    double sum = cb_;
     *error = 0;
     for (MonomialConstIter it=terms_.begin(); it!=terms_.end(); ++it) {
       sum += (*it)->eval(x, error);
@@ -398,7 +398,7 @@ Double PolynomialFunction::eval(const Double *x, Int *error)
 }
 
 
-void PolynomialFunction::evalGradient(const Double *x, Double *grad_f, 
+void PolynomialFunction::evalGradient(const double *x, double *grad_f, 
     Int *error)
 {
   *error = 0;
@@ -409,8 +409,8 @@ void PolynomialFunction::evalGradient(const Double *x, Double *grad_f,
 }
 
 
-void PolynomialFunction::evalHessian(const Double mult, const Double *x, 
-                                     const LTHessStor *stor, Double *values, 
+void PolynomialFunction::evalHessian(const double mult, const double *x, 
+                                     const LTHessStor *stor, double *values, 
                                      Int *error) 
 {
   if (cg_) {
@@ -431,7 +431,7 @@ void  PolynomialFunction::fillHessStor(LTHessStor *stor)
 }
 
 
-void PolynomialFunction::fillJac(const Double *x, Double *values, Int *error)
+void PolynomialFunction::fillJac(const double *x, double *values, Int *error)
 {
   if (cg_) {
     cg_->fillJac(x, values, error);
@@ -471,7 +471,7 @@ Bool PolynomialFunction::isEmpty() const
 }
 
 
-void PolynomialFunction::multiply(ConstLinearFunctionPtr lf, Double c)
+void PolynomialFunction::multiply(ConstLinearFunctionPtr lf, double c)
 {
   MonomialFunPtr m;
   MonomialVector terms2 = terms_;
@@ -505,7 +505,7 @@ void PolynomialFunction::multiply(ConstLinearFunctionPtr lf, Double c)
 }
 
 
-void PolynomialFunction::multiply(Double c)
+void PolynomialFunction::multiply(double c)
 {
   if (fabs(c)>eTol_) {
     cb_ *= c;
@@ -528,12 +528,12 @@ void PolynomialFunction::prepJac(VarSetConstIter vb, VarSetConstIter ve)
 }
 
 
-void PolynomialFunction::recCG_(const CNode* cnode, Double *c,
+void PolynomialFunction::recCG_(const CNode* cnode, double *c,
                                 MonomialVector *terms)
 {
   MonomialVector t1, t2;
-  Double c1 = 0;
-  Double c2 = 0;
+  double c1 = 0;
+  double c2 = 0;
   MonomialFunPtr m;
 
   switch (cnode->getOp()) {
@@ -618,8 +618,8 @@ void PolynomialFunction::recCG_(const CNode* cnode, Double *c,
 
 
 void PolynomialFunction::recCGMult_(MonomialVector *t1, MonomialVector *t2,
-                                    Double c1, Double c2,
-                                    MonomialVector *terms, Double *c)
+                                    double c1, double c2,
+                                    MonomialVector *terms, double *c)
 {
   MonomialFunPtr m;
   *c = c1*c2;
@@ -647,9 +647,9 @@ void PolynomialFunction::recCGMult_(MonomialVector *t1, MonomialVector *t2,
 }
 
 
-Double PolynomialFunction::removeConstant()
+double PolynomialFunction::removeConstant()
 {
-  Double c = cb_;
+  double c = cb_;
   cb_ = 0.;
   return c;
 }
@@ -732,13 +732,13 @@ void PolynomialFunction::operator+=(ConstPolyFunPtr p)
 }
 
 
-void PolynomialFunction::operator*=(Double c)
+void PolynomialFunction::operator*=(double c)
 {
   multiply(c);
 }
 
 
-void PolynomialFunction::operator+=(Double c)
+void PolynomialFunction::operator+=(double c)
 {
   cb_ += c;
 }
@@ -842,7 +842,7 @@ void PolynomialFunction::operator*=(ConstQuadraticFunctionPtr qf)
 void PolynomialFunction::operator*=(ConstPolyFunPtr p2)
 {
   if (p2) {
-    Double c2 = p2->cb_;
+    double c2 = p2->cb_;
     MonomialVector oldterms = terms_;
     MonomialFunPtr m;
 
@@ -917,7 +917,7 @@ PolyFunPtr operator-(ConstPolyFunPtr p1, ConstPolyFunPtr p2)
 }
 
 
-PolyFunPtr operator*(Double c, ConstPolyFunPtr p2)
+PolyFunPtr operator*(double c, ConstPolyFunPtr p2)
 {
   PolyFunPtr p = PolyFunPtr(); // NULL
   if (p2 && fabs(c)>p2->eTol_) {
@@ -933,7 +933,7 @@ PolyFunPtr operator*(ConstQuadraticFunctionPtr q2, ConstLinearFunctionPtr l1)
 {
   PolyFunPtr p = PolyFunPtr(); // NULL
   if (l1 && q2) {
-    Double c=0.;
+    double c=0.;
     p = (PolyFunPtr) new PolynomialFunction();
     (*p) += 1.;
     (*p) *= q2;

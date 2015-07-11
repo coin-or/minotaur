@@ -35,7 +35,7 @@ SOSBrCand::SOSBrCand()
 
 
 SOSBrCand::SOSBrCand(const SOS* sos, VarVector &left, VarVector &right,
-                     Double lsum, Double rsum)
+                     double lsum, double rsum)
 {
   lvars_ = left;
   rvars_ = right;
@@ -43,7 +43,7 @@ SOSBrCand::SOSBrCand(const SOS* sos, VarVector &left, VarVector &right,
   rsum_ = rsum;
   sos_ = sos;
   pCostIndex_ = -1*sos->getId()-1;
-  score_      = (Double) sos->getPriority();
+  score_      = (double) sos->getPriority();
 }
 
 
@@ -54,13 +54,13 @@ SOSBrCand::~SOSBrCand()
 }
 
 
-Double SOSBrCand::getDDist()
+double SOSBrCand::getDDist()
 {
   return lsum_;
 }
 
 
-Double SOSBrCand::getLSum() const
+double SOSBrCand::getLSum() const
 {
   return rsum_;
 }
@@ -72,13 +72,13 @@ std::string SOSBrCand::getName() const
 }
 
 
-Double SOSBrCand::getRSum() const
+double SOSBrCand::getRSum() const
 {
   return rsum_;
 }
 
 
-Double SOSBrCand::getUDist()
+double SOSBrCand::getUDist()
 {
   return rsum_;
 }

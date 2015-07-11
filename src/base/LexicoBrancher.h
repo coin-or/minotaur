@@ -20,7 +20,7 @@ namespace Minotaur {
 
   struct LexicoBrStats {
     UInt calls;      /// Number of times called to find a branching candidate.
-    Double time;     /// Total time spent in branching.
+    double time;     /// Total time spent in branching.
   };
 
   class Timer;

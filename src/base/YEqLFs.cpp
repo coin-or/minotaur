@@ -29,14 +29,14 @@ YEqLFs::YEqLFs(UInt n)
   :n_(n)
 {
   for (UInt i=0; i<n; ++i) {
-    rand_.push_back((Double) rand()/(RAND_MAX)*10.0);
+    rand_.push_back((double) rand()/(RAND_MAX)*10.0);
   }
 }
 
 
-Double YEqLFs::evalHash_(LinearFunctionPtr lf)
+double YEqLFs::evalHash_(LinearFunctionPtr lf)
 {
-  Double hash = 0.0;
+  double hash = 0.0;
   for (VariableGroupConstIterator it=lf->termsBegin(); it!=lf->termsEnd();
        ++it) {
     hash += it->second*rand_[it->first->getId()%n_];
@@ -45,11 +45,11 @@ Double YEqLFs::evalHash_(LinearFunctionPtr lf)
 }
 
 
-VariablePtr YEqLFs::findY(LinearFunctionPtr lf, Double k)
+VariablePtr YEqLFs::findY(LinearFunctionPtr lf, double k)
 {
   Bool found;
   VariableGroupConstIterator it, it2;
-  Double hash = evalHash_(lf);
+  double hash = evalHash_(lf);
   for (UInt i=0; i<y_.size(); ++i) {
     if (fabs(k-k_[i])<1e-12 && lf->getNumTerms()==lf_[i]->getNumTerms() && 
         fabs(hash-hash_[i])<1e-12) {
@@ -71,7 +71,7 @@ VariablePtr YEqLFs::findY(LinearFunctionPtr lf, Double k)
 }
 
 
-void YEqLFs::insert(VariablePtr auxvar, LinearFunctionPtr lf, Double k)
+void YEqLFs::insert(VariablePtr auxvar, LinearFunctionPtr lf, double k)
 {
   hash_.push_back(evalHash_(lf));
   lf_.push_back(lf);

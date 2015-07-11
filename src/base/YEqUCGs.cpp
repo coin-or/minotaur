@@ -29,7 +29,7 @@ YEqUCGs::YEqUCGs()
 {
   UInt numops = 35;
   for (UInt i=0; i<numops; ++i) {
-    rand_.push_back((Double) rand()/(RAND_MAX));
+    rand_.push_back((double) rand()/(RAND_MAX));
   }
 }
 
@@ -45,10 +45,10 @@ YEqUCGs::~YEqUCGs()
 }
 
 
-Double YEqUCGs::evalHash_(const CNode* node, UInt rank)
+double YEqUCGs::evalHash_(const CNode* node, UInt rank)
 {
   OpCode op = node->getOp();
-  Double hash = rand_[op]*rank;
+  double hash = rand_[op]*rank;
   if (OpVar==op) {
     hash *= node->getV()->getId();
   } else if (OpInt==op || OpNum==op) {
@@ -74,7 +74,7 @@ Double YEqUCGs::evalHash_(const CNode* node, UInt rank)
 
 VariablePtr YEqUCGs::findY(CGraphPtr cg)
 {
-  Double hash = evalHash_(cg->getOut(), 1);
+  double hash = evalHash_(cg->getOut(), 1);
   OpCode op = cg->getOut()->getOp();
   VariablePtr x = *(cg->varsBegin());
   for (UInt i=0; i<y_.size(); ++i) {

@@ -24,8 +24,8 @@ class YEqVars
 {
 public:
   YEqVars(UInt n);
-  VariablePtr findY(VariablePtr x, Double k);
-  void insert(VariablePtr auxvar, VariablePtr x, Double k);
+  VariablePtr findY(VariablePtr x, double k);
+  void insert(VariablePtr auxvar, VariablePtr x, double k);
 
 private:
   DoubleVector k_;

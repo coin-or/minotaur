@@ -22,7 +22,7 @@
 using namespace Minotaur;
 
 template <class T> Option<T>::Option(const std::string &name, 
-    const std::string &desc, Bool is_known, T val)
+    const std::string &desc, bool is_known, T val)
   : everUsed_(false),
     isKnown_(is_known)
 {
@@ -68,9 +68,9 @@ template <class T> void Option<T>::write(std::ostream &out) const
 // leave these lines here. They should come after the definition of all
 // Option.functions(). See, for example, 
 // http://www.parashift.com/c++-faq-lite/templates.html#faq-35.15
-template class Option<Int>;
-template class Option<Bool>;
-template class Option<Double>;
+template class Option<int>;
+template class Option<bool>;
+template class Option<double>;
 template class Option<std::string>;
 
 
@@ -91,7 +91,7 @@ OptionDB::~OptionDB()
 }
 
 
-void OptionDB::insert(BoolOptionPtr option, Bool is_flag)
+void OptionDB::insert(BoolOptionPtr option, bool is_flag)
 {
   if (is_flag) {
     flag_ops_.insert(option);
@@ -252,7 +252,7 @@ FlagOptionSetIter OptionDB::flagEnd()
 
 void OptionDB::write(std::ostream &out) const
 {
-  out << "## Boolean options:" << std::endl;
+  out << "## boolean options:" << std::endl;
   //out.flush();
   for (BoolOptionSetIter iter=bool_ops_.begin(); iter!=bool_ops_.end(); 
       ++iter) {
@@ -261,7 +261,7 @@ void OptionDB::write(std::ostream &out) const
   }
   out << std::endl;
 
-  out << "## Int options:" << std::endl;
+  out << "## int options:" << std::endl;
   //out.flush();
   for (IntOptionSetIter iter=int_ops_.begin(); iter!=int_ops_.end(); 
       ++iter) {
@@ -270,7 +270,7 @@ void OptionDB::write(std::ostream &out) const
   }
   out << std::endl;
 
-  out << "## Double options:" << std::endl;
+  out << "## double options:" << std::endl;
   //out.flush();
   for (DoubleOptionSetIter iter=double_ops_.begin(); iter!=double_ops_.end(); 
       ++iter) {

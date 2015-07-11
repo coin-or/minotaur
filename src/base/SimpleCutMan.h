@@ -20,98 +20,99 @@
 
 namespace Minotaur {
 
-/**
- * \brief Derived class for managing cuts. Adds all violated cuts from the
- * storage to the relaxation and never removes any. If a new cut is reported
- * but not violated by the current solution then it is added to storage. This
- * manager does not check for duplicacy or any other numerical problems in cuts.
- */
-class SimpleCutMan : public CutManager {
-
-public:
-  /// Empty constructor.
-  SimpleCutMan();
-
   /**
-   * \brief Default constructor.
-   *
-   * \param [in] env Minotaur Environment pointer.
-   * \param [in] p Problem pointer to which cuts will be added or deleted.
+   * \brief Derived class for managing cuts. Adds all violated cuts from the
+   * storage to the relaxation and never removes any. If a new cut is reported
+   * but not violated by the current solution then it is added to storage.
+   * This manager does not check for duplicacy or any other numerical problems
+   * in cuts.
    */
-  SimpleCutMan(EnvPtr env, ProblemPtr p);
+  class SimpleCutMan : public CutManager {
 
-  /// Destroy.
-  ~SimpleCutMan();
+  public:
+    /// Empty constructor.
+    SimpleCutMan();
 
-  // Base class method.
-  void addCut(CutPtr c);
+    /**
+     * \brief Default constructor.
+     *
+     * \param [in] env Minotaur Environment pointer.
+     * \param [in] p Problem pointer to which cuts will be added or deleted.
+     */
+    SimpleCutMan(EnvPtr env, ProblemPtr p);
 
-  // Base class method.
-  ConstraintPtr addCut(ProblemPtr p, FunctionPtr f, Double lb,
-                       Double ub, Bool directToRel, Bool neverDelete);
+    /// Destroy.
+    ~SimpleCutMan();
 
-  // Base class method.
-  void addCuts(CutVectorIter cbeg, CutVectorIter cend);
+    // Base class method.
+    void addCut(CutPtr c);
 
-  // Base class method.
-  UInt getNumCuts() const;
+    // Base class method.
+    ConstraintPtr addCut(ProblemPtr p, FunctionPtr f, double lb,
+                         double ub, Bool directToRel, Bool neverDelete);
 
-  // Base class method.
-  UInt getNumEnabledCuts() const;
+    // Base class method.
+    void addCuts(CutVectorIter cbeg, CutVectorIter cend);
 
-  // Base class method.
-  UInt getNumDisabledCuts() const;
+    // Base class method.
+    UInt getNumCuts() const;
 
-  // Base class method.
-  UInt getNumNewCuts() const;
+    // Base class method.
+    UInt getNumEnabledCuts() const;
 
-  // Base class method.
-  void postSolveUpdate(ConstSolutionPtr sol, EngineStatus eng_status);
+    // Base class method.
+    UInt getNumDisabledCuts() const;
 
-  // Base class method.
-  void separate(ConstSolutionPtr sol, Bool *separated, UInt *added);
+    // Base class method.
+    UInt getNumNewCuts() const;
 
-  // Base class method.
-  void write(std::ostream &out) const;
+    // Base class method.
+    void postSolveUpdate(ConstSolutionPtr sol, EngineStatus eng_status);
 
-  // Base class method.
-  void writeStats(std::ostream &out) const;
+    // Base class method.
+    void separate(ConstSolutionPtr sol, Bool *separated, UInt *added);
 
-private:
-  /// Cuts already in the relaxation. 
-  UInt enCuts_;
+    // Base class method.
+    void write(std::ostream &out) const;
 
-  /// Environment.
-  EnvPtr env_;
+    // Base class method.
+    void writeStats(std::ostream &out) const;
 
-  /// For logging.
-  LoggerPtr logger_;
+  private:
+    /// Cuts already in the relaxation. 
+    UInt enCuts_;
 
-  /// For logging.
-  const static std::string me_;
+    /// Environment.
+    EnvPtr env_;
 
-  /**
-   * Cut storage for new cuts, i.e. those sent to pool after previous
-   * separate or postSolveUpdate().
-   */
-  CutList newCuts_;
+    /// For logging.
+    LoggerPtr logger_;
 
-  /// The relaxation problem that cuts are added to and deleted from.
-  ProblemPtr p_;
+    /// For logging.
+    const static std::string me_;
 
-  /// Pool of cuts that were left unviolated. They may be added in the future.
-  CutList pool_;
+    /**
+     * Cut storage for new cuts, i.e. those sent to pool after previous
+     * separate or postSolveUpdate().
+     */
+    CutList newCuts_;
 
-  /// A cut will be added only if the violation exceeds violAbs_.
-  Double violAbs_;
+    /// The relaxation problem that cuts are added to and deleted from.
+    ProblemPtr p_;
 
-  /// A cut will be added only if the violation exceeds absolute
-  /// value of the the activity times the violRel_.
-  Double violRel_;
+    /// Pool of cuts that were left unviolated. They may be added in the future.
+    CutList pool_;
 
-  /// Append the newCuts_ to pool_ and clear newCuts_.
-  void mvNewToPool_();
-};
+    /// A cut will be added only if the violation exceeds violAbs_.
+    double violAbs_;
+
+    /// A cut will be added only if the violation exceeds absolute
+    /// value of the the activity times the violRel_.
+    double violRel_;
+
+    /// Append the newCuts_ to pool_ and clear newCuts_.
+    void mvNewToPool_();
+  };
 
 //typedef boost::shared_ptr<CutManager> CutManagerPtr;
 }

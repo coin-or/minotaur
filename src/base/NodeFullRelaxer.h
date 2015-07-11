@@ -20,89 +20,90 @@
 
 namespace Minotaur {
 
-/**
- * The root relaxation is stored as rel_. In each node, we apply all
- * modifications stored in each ancestor of the node. When we are done
- * processing the node, we undo all these changes. 
- *
- * If we dive after processing a node, we do not need to undo all changes
- * and apply them again. We just apply the modifications of the parent.
- */
-class NodeFullRelaxer : public NodeRelaxer {
-public:
-
-  /// 
-  NodeFullRelaxer();
-
-  /// Default constructor
-  NodeFullRelaxer(EnvPtr env, HandlerVector handlers);
-
-  /// If you know the engine, you can initialize it here
-  NodeFullRelaxer(EnvPtr env, EnginePtr e, HandlerVector handlers);
-
-  /// Destroy
-  ~NodeFullRelaxer();
-
-  // Implement NodeRelaxer::CreateRootRelaxation()
-  RelaxationPtr createRootRelaxation(NodePtr rootNode, Bool &prune);
-
-  // Implement NodeRelaxer::CreateNodeRelaxation()
-  RelaxationPtr createNodeRelaxation(NodePtr node, Bool dived, Bool &prune);
-
-  // Implement NodeRelaxer::reset()
-  void reset(NodePtr node, Bool diving);
-
   /**
-   * Set the engine that is used to solve the relaxations. We need to set
-   * it in order to be able to load warm-starts at a node.
-   */
-  void setEngine(EnginePtr e);
-
-  // get the relaxation pointer, rel_.
-  RelaxationPtr getRelaxation();
-
-  /// Set your own relaxation pointer.
-  void setRelaxation(RelaxationPtr rel);
-
-private:
-  /// Environment
-  EnvPtr env_;
-
-  /**
-   * According to NodeRelaxer base class, we must keep the last relaxation created
-   */
-  RelaxationPtr rel_;
-
-  /// Pointer engine used to solve the relaxation.
-  EnginePtr engine_;
-
-  /// Vector of handlers that will make the relaxation.
-  HandlerVector handlers_;
-
-  /**
-   * We don't update the Node bounds unless improve by at leat this (absolute)
-   * amount     
-   */
-  Double updateBoundsTol_;
-
-  /**
-   */
-  Bool isOriginalVariable_(ConstVariablePtr rv, ConstVariablePtr &ov);
-
-  /**
-   * \brief Tighten bounds using relaxation loaded to engine.
+   * The root relaxation is stored as rel_. In each node, we apply all
+   * modifications stored in each ancestor of the node. When we are done
+   * processing the node, we undo all these changes. 
    *
-   * \param[in,out] Modified node
-   * \return true if node has been modified
-   * 
-   * Method assumes that relaxation rel_ is created and loaded to engine
-   *
+   * If we dive after processing a node, we do not need to undo all changes
+   * and apply them again. We just apply the modifications of the parent.
    */
-  Bool strongBoundsTighten_(NodePtr node);
+  class NodeFullRelaxer : public NodeRelaxer {
+  public:
 
-};
+    /// 
+    NodeFullRelaxer();
 
-typedef boost::shared_ptr <NodeFullRelaxer> NodeFullRelaxerPtr;
+    /// Default constructor
+    NodeFullRelaxer(EnvPtr env, HandlerVector handlers);
+
+    /// If you know the engine, you can initialize it here
+    NodeFullRelaxer(EnvPtr env, EnginePtr e, HandlerVector handlers);
+
+    /// Destroy
+    ~NodeFullRelaxer();
+
+    // Implement NodeRelaxer::CreateRootRelaxation()
+    RelaxationPtr createRootRelaxation(NodePtr rootNode, bool &prune);
+
+    // Implement NodeRelaxer::CreateNodeRelaxation()
+    RelaxationPtr createNodeRelaxation(NodePtr node, bool dived, bool &prune);
+
+    // Implement NodeRelaxer::reset()
+    void reset(NodePtr node, bool diving);
+
+    /**
+     * Set the engine that is used to solve the relaxations. We need to set
+     * it in order to be able to load warm-starts at a node.
+     */
+    void setEngine(EnginePtr e);
+
+    // get the relaxation pointer, rel_.
+    RelaxationPtr getRelaxation();
+
+    /// Set your own relaxation pointer.
+    void setRelaxation(RelaxationPtr rel);
+
+  private:
+    /// Environment
+    EnvPtr env_;
+
+    /**
+     * According to NodeRelaxer base class, we must keep the last relaxation
+     * created
+     */
+    RelaxationPtr rel_;
+
+    /// Pointer engine used to solve the relaxation.
+    EnginePtr engine_;
+
+    /// Vector of handlers that will make the relaxation.
+    HandlerVector handlers_;
+
+    /**
+     * We don't update the Node bounds unless improve by at leat this (absolute)
+     * amount     
+     */
+    double updateBoundsTol_;
+
+    /**
+    */
+    bool isOriginalVariable_(ConstVariablePtr rv, ConstVariablePtr &ov);
+
+    /**
+     * \brief Tighten bounds using relaxation loaded to engine.
+     *
+     * \param[in,out] Modified node
+     * \return true if node has been modified
+     * 
+     * Method assumes that relaxation rel_ is created and loaded to engine
+     *
+     */
+    bool strongBoundsTighten_(NodePtr node);
+
+  };
+
+  typedef boost::shared_ptr <NodeFullRelaxer> NodeFullRelaxerPtr;
 }
 #endif
 

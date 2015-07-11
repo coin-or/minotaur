@@ -84,7 +84,7 @@ namespace Minotaur {
       Bool contOnErr_;
 
       /// If lb is greater than cutOff_, we can prune this node.
-      Double cutOff_;
+      double cutOff_;
 
       /// Engine used to process the relaxation
       EnginePtr engine_;
@@ -129,7 +129,7 @@ namespace Minotaur {
        * Check if a node can be pruned either because the relaxation is
        * infeasible or because the cost is too high.
        */
-      virtual Bool shouldPrune_(NodePtr node, Double solval, 
+      virtual Bool shouldPrune_(NodePtr node, double solval, 
                                 SolutionPoolPtr s_pool);
 
   };

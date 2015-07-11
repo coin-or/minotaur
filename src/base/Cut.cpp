@@ -44,7 +44,7 @@ Cut::Cut()
 }
 
 
-Cut::Cut(UInt n, FunctionPtr f, Double lb, Double ub,
+Cut::Cut(UInt n, FunctionPtr f, double lb, double ub,
          Bool never_delete, Bool never_disable)
   : cons_(ConstraintPtr()),
     f_(f),
@@ -56,7 +56,7 @@ Cut::Cut(UInt n, FunctionPtr f, Double lb, Double ub,
   initInfo_(never_delete, never_disable);
 }
 
-Cut::Cut(ProblemPtr p, FunctionPtr f, Double lb, Double ub,
+Cut::Cut(ProblemPtr p, FunctionPtr f, double lb, double ub,
 	 Bool never_delete, Bool never_disable)
   : cons_(ConstraintPtr()),
     f_(f),
@@ -79,17 +79,17 @@ void Cut::applyToProblem(ProblemPtr p)
   cons_ = p->newConstraint(f_,lb_,ub_);
 }
 
-Double Cut::eval(const Double *x, Int *err)
+double Cut::eval(const double *x, int *err)
 {
   return f_->eval(x, err);
 }
 
-void Cut::evalScore(const Double *x, Double *vio, Double *score)
+void Cut::evalScore(const double *x, double *vio, double *score)
 {
-  Int error = 0;
+  int error = 0;
   *vio = 0.0;
   *score = 0.0;
-  Double act = eval(x, &error);		
+  double act = eval(x, &error);		
   if ( ub_ < INFINITY) 
     *vio = act - ub_;  
   else if (lb_ > -INFINITY) 
@@ -99,7 +99,7 @@ void Cut::evalScore(const Double *x, Double *vio, Double *score)
 
 void Cut::evalFixedScore_()
 {
-  Double *gr = new Double[n_];
+  double *gr = new double[n_];
   
   std::fill(gr,gr+n_,0.0);
   f_->getLinearFunction()->evalGradient(gr);

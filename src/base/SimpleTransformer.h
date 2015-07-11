@@ -17,112 +17,111 @@
 #include "Transformer.h"
 
 namespace Minotaur {
-class CxUnivarHandler;
-class CGraph;
-class CNode;
-class Environment;
-class LinearHandler;
-class Problem;
-class QuadHandler;
-class Solution;
-class YEqCGs;
-class YEqLFs;
-class YEqVars;
-typedef boost::shared_ptr<CxUnivarHandler> CxUnivarHandlerPtr;
-typedef boost::shared_ptr<CGraph> CGraphPtr;
-typedef boost::shared_ptr<Environment> EnvPtr;
-typedef boost::shared_ptr<LinearHandler> LinearHandlerPtr;
-typedef boost::shared_ptr<Problem> ProblemPtr;
-typedef boost::shared_ptr<QuadHandler> QuadHandlerPtr;
-typedef boost::shared_ptr<Solution> SolutionPtr;
-typedef boost::shared_ptr<const Solution> ConstSolutionPtr;
+  class CxUnivarHandler;
+  class CGraph;
+  class CNode;
+  class Environment;
+  class LinearHandler;
+  class Problem;
+  class QuadHandler;
+  class Solution;
+  class YEqCGs;
+  class YEqLFs;
+  class YEqVars;
+  typedef boost::shared_ptr<CxUnivarHandler> CxUnivarHandlerPtr;
+  typedef boost::shared_ptr<CGraph> CGraphPtr;
+  typedef boost::shared_ptr<Environment> EnvPtr;
+  typedef boost::shared_ptr<LinearHandler> LinearHandlerPtr;
+  typedef boost::shared_ptr<Problem> ProblemPtr;
+  typedef boost::shared_ptr<QuadHandler> QuadHandlerPtr;
+  typedef boost::shared_ptr<Solution> SolutionPtr;
+  typedef boost::shared_ptr<const Solution> ConstSolutionPtr;
 
-
-/**
- * \brief Class for reformulating a problem using simple rules so that
- * handlers can be applied to it.
- *
- * No multilinear terms are created. QuadHandler is used only for terms
- * \f$y=x_1x_2\f$. Squares etc. are handled by PowerHandler. ExpHandler takes
- * care of exponential functions, and LogHandler handles logarithms.
- * TrigHandler is used for trigonometric functions. Mainly used to teach Ashu
- * some global optimization.
- */
-class SimpleTransformer : public Transformer {
-public:
-
-  /// Default Constructor.
-  SimpleTransformer();
-
-  /// Constructor.
-  SimpleTransformer(EnvPtr env, ConstProblemPtr p);
-
-  /// Destroy.
-  ~SimpleTransformer();
-
-  // base class method.
-  std::string getName() const;
-
-  // base class method.
-  SolutionPtr getSolOrig(ConstSolutionPtr sol, Int &err);
-
-  // base class method.
-  SolutionPtr getSolTrans(ConstSolutionPtr sol, Int &err);
-
-  // base class method.
-  void reformulate(ProblemPtr &newp, HandlerVector &handlers, Int &status);
-
-
-private:
-  static const std::string me_;
-
-  YEqCGs *yBiVars_;
-
-  void absRef_(LinearFunctionPtr lfl, VariablePtr vl, Double dl,
-               VariablePtr &v, Double &d);
-
-  void bilRef_(LinearFunctionPtr lfl, VariablePtr vl, Double dl,
-               LinearFunctionPtr lfr, VariablePtr vr, Double dr,
-               LinearFunctionPtr &lf, VariablePtr &v, Double &d);
-
-  VariablePtr newBilVar_(VariablePtr vl, VariablePtr vr);
-
-  void powKRef_(LinearFunctionPtr lfl,
-                VariablePtr vl, Double dl, Double k,
-                LinearFunctionPtr &lf, VariablePtr &v,
-                Double &d);
 
   /**
-   * \brief Reformulate the nonlinear constraints of the problem.
+   * \brief Class for reformulating a problem using simple rules so that
+   * handlers can be applied to it.
    *
-   * \param [in] oldp Original problem.
+   * No multilinear terms are created. QuadHandler is used only for terms
+   * \f$y=x_1x_2\f$. Squares etc. are handled by PowerHandler. ExpHandler
+   * takes care of exponential functions, and LogHandler handles logarithms.
+   * TrigHandler is used for trigonometric functions. Mainly used to teach
+   * Ashu some global optimization.
    */
-  void refNonlinCons_(ConstProblemPtr oldp);
-    
-  /**
-   * \brief Reformulate the nonlinear objective of the problem.
-   *
-   * \param [in] oldp Original problem.
-   */
-  void refNonlinObj_(ConstProblemPtr oldp);
-    
-  /**
-   * TODO
-   */
-  void recursRef_(const CNode *node, LinearFunctionPtr &lf, VariablePtr &v,
-                  Double &d);
+  class SimpleTransformer : public Transformer {
+  public:
 
-  void trigRef_(OpCode op, LinearFunctionPtr lfl, VariablePtr vl,
-                Double dl, VariablePtr &v, Double &d);
+    /// Default Constructor.
+    SimpleTransformer();
 
-  void uniVarRef_(const CNode *n0, LinearFunctionPtr lfl, 
-                  VariablePtr vl, Double dl, 
-                  LinearFunctionPtr &lf, VariablePtr &v, Double &d);
+    /// Constructor.
+    SimpleTransformer(EnvPtr env, ConstProblemPtr p);
 
-};
+    /// Destroy.
+    ~SimpleTransformer();
 
-typedef boost::shared_ptr<SimpleTransformer> SimpTranPtr;
-typedef boost::shared_ptr<const SimpleTransformer> ConstSimpTranPtr;
+    // base class method.
+    std::string getName() const;
+
+    // base class method.
+    SolutionPtr getSolOrig(ConstSolutionPtr sol, Int &err);
+
+    // base class method.
+    SolutionPtr getSolTrans(ConstSolutionPtr sol, Int &err);
+
+    // base class method.
+    void reformulate(ProblemPtr &newp, HandlerVector &handlers, Int &status);
+
+
+  private:
+    static const std::string me_;
+
+    YEqCGs *yBiVars_;
+
+    void absRef_(LinearFunctionPtr lfl, VariablePtr vl, double dl,
+                 VariablePtr &v, double &d);
+
+    void bilRef_(LinearFunctionPtr lfl, VariablePtr vl, double dl,
+                 LinearFunctionPtr lfr, VariablePtr vr, double dr,
+                 LinearFunctionPtr &lf, VariablePtr &v, double &d);
+
+    VariablePtr newBilVar_(VariablePtr vl, VariablePtr vr);
+
+    void powKRef_(LinearFunctionPtr lfl,
+                  VariablePtr vl, double dl, double k,
+                  LinearFunctionPtr &lf, VariablePtr &v,
+                  double &d);
+
+    /**
+     * \brief Reformulate the nonlinear constraints of the problem.
+     *
+     * \param [in] oldp Original problem.
+     */
+    void refNonlinCons_(ConstProblemPtr oldp);
+
+    /**
+     * \brief Reformulate the nonlinear objective of the problem.
+     *
+     * \param [in] oldp Original problem.
+     */
+    void refNonlinObj_(ConstProblemPtr oldp);
+
+    /**
+     * TODO
+     */
+    void recursRef_(const CNode *node, LinearFunctionPtr &lf, VariablePtr &v,
+                    double &d);
+
+    void trigRef_(OpCode op, LinearFunctionPtr lfl, VariablePtr vl,
+                  double dl, VariablePtr &v, double &d);
+
+    void uniVarRef_(const CNode *n0, LinearFunctionPtr lfl, 
+                    VariablePtr vl, double dl, 
+                    LinearFunctionPtr &lf, VariablePtr &v, double &d);
+
+  };
+  typedef boost::shared_ptr<SimpleTransformer> SimpTranPtr;
+  typedef boost::shared_ptr<const SimpleTransformer> ConstSimpTranPtr;
 
 }
 

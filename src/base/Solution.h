@@ -30,88 +30,88 @@ namespace Minotaur {
 
   class Solution {    
 
-    public:
-      /// Default constructor. 
-      Solution();
+  public:
+    /// Default constructor. 
+    Solution();
 
-      /// Construct a solution for a problem from an array of doubles.
-      Solution(Double objval, const Double *x, ProblemPtr problem);
+    /// Construct a solution for a problem from an array of doubles.
+    Solution(double objval, const double *x, ProblemPtr problem);
 
-      /// Construct a solution for a problem from a vector of doubles.
-      Solution(Double objvalue, const DoubleVector &newx, 
-               ProblemPtr problem); 
+    /// Construct a solution for a problem from a vector of doubles.
+    Solution(double objvalue, const DoubleVector &newx, 
+             ProblemPtr problem); 
 
-      /// Copy.
-      Solution(ConstSolutionPtr sol);
+    /// Copy.
+    Solution(ConstSolutionPtr sol);
 
-      /// Destroy.
-      virtual ~Solution();
+    /// Destroy.
+    virtual ~Solution();
 
-      /// Copy values of variables.
-      virtual void setPrimal(const Double *x);
+    /// Copy values of variables.
+    virtual void setPrimal(const double *x);
 
-      /// Copy values of dual variables of constraints.
-      virtual void setDualOfCons(const Double *vals);
+    /// Copy values of dual variables of constraints.
+    virtual void setDualOfCons(const double *vals);
 
-      /// Copy values of dual variables of variables.
-      virtual void setDualOfVars(const Double *vals);
+    /// Copy values of dual variables of variables.
+    virtual void setDualOfVars(const double *vals);
 
-      /// Set a new solution value.
-      virtual void setObjValue(Double new_val) {objValue_ = new_val;};
+    /// Set a new solution value.
+    virtual void setObjValue(double new_val) {objValue_ = new_val;};
 
-      /// Return solution value.
-      virtual Double getObjValue() const {return objValue_;};
+    /// Return solution value.
+    virtual double getObjValue() const {return objValue_;};
 
-      /// Return the 2nd norm of constraint violations.
-      virtual Double getConstraintViolation() {return consViol_;};
+    /// Return the 2nd norm of constraint violations.
+    virtual double getConstraintViolation() {return consViol_;};
 
-      /// Return a pointer to the solution.
-      virtual const Double * getPrimal() const {return x_;};
+    /// Return a pointer to the solution.
+    virtual const double * getPrimal() const {return x_;};
 
-      /// Return a pointer to the solution.
-      virtual const Double * getDualOfCons() const {return dualCons_;};
+    /// Return a pointer to the solution.
+    virtual const double * getDualOfCons() const {return dualCons_;};
 
-      /// Return a pointer to the solution.
-      virtual const Double * getDualOfVars() const {return dualX_;};
+    /// Return a pointer to the solution.
+    virtual const double * getDualOfVars() const {return dualX_;};
 
-      /// Write to a stream.
-      virtual void write(std::ostream &out) const;
+    /// Write to a stream.
+    virtual void write(std::ostream &out) const;
 
-      /// Write primal values to a stream.
-      virtual void writePrimal(std::ostream &out, const VarVector *v=0) const;
+    /// Write primal values to a stream.
+    virtual void writePrimal(std::ostream &out, const VarVector *v=0) const;
 
-      /// Write dual values to a stream.
-      virtual void writeDual(std::ostream &out) const;
+    /// Write dual values to a stream.
+    virtual void writeDual(std::ostream &out) const;
 
-    protected:
-      /// Number of variables.
-      UInt n_;
+  protected:
+    /// Number of variables.
+    UInt n_;
 
-      /// Number of constraints.
-      UInt m_;
+    /// Number of constraints.
+    UInt m_;
 
-      /// Original problem (For accessing variable names).
-      ProblemPtr problem_;
+    /// Original problem (For accessing variable names).
+    ProblemPtr problem_;
 
-      /// Store values of the variables in an array.
-      Double *x_;
+    /// Store values of the variables in an array.
+    double *x_;
 
-      /// Store values of the dual variables associated with constraints 
-      /// in an array.
-      Double *dualCons_;
+    /// Store values of the dual variables associated with constraints 
+    /// in an array.
+    double *dualCons_;
 
-      /// Store values of the dual variables associated with bounds on variables 
-      /// in an array.
-      Double *dualX_;
+    /// Store values of the dual variables associated with bounds on variables 
+    /// in an array.
+    double *dualX_;
 
-      /// Violation.
-      Double consViol_;
+    /// Violation.
+    double consViol_;
 
-      /// The objective value of this solution.
-      Double objValue_;
+    /// The objective value of this solution.
+    double objValue_;
 
-      /// Complementarity.
-      Double comple_;
+    /// Complementarity.
+    double comple_;
   };
 }
 #endif

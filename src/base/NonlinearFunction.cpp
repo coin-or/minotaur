@@ -37,7 +37,7 @@ void NonlinearFunction::addConst(const double, int &err)
 }
 
 
-void NonlinearFunction::computeBounds(Double *lb, Double *ub, Int *error)
+void NonlinearFunction::computeBounds(double *lb, double *ub, int *error)
 {
   *lb = -INFINITY;
   *ub =  INFINITY;

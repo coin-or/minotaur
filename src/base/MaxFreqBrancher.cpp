@@ -67,7 +67,7 @@ Branches MaxFreqBrancher::findBranches(RelaxationPtr rel, NodePtr ,
 {
   Branches branches;
   BrCandPtr br_can = BrCandPtr(); //NULL
-  const Double *x = sol->getPrimal();
+  const double *x = sol->getPrimal();
 
   timer_->start();
   x_.resize(rel->getNumVars());
@@ -141,7 +141,7 @@ void MaxFreqBrancher::findCandidates_()
   BrVarCandSet cands2;      // Temporary set.
   BrCandVector gencands;
   ModVector mods;        // handlers may ask to modify the problem.
-  Bool is_inf = false;
+  bool is_inf = false;
   std::string handlerName;
 
   cands_.clear();
@@ -168,8 +168,8 @@ void MaxFreqBrancher::findCandidates_()
 BrCandPtr MaxFreqBrancher::findBestCandidate_()
 {
   BrCandPtr best_cand = BrCandPtr(); // NULL
-  Double best_score = -1;
-  Double cand_score;
+  double best_score = -1;
+  double cand_score;
   UInt index;
 
 #if SPEW

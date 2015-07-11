@@ -29,11 +29,12 @@ namespace Minotaur {
     UInt cntSinceActive;     /// Updated for cuts enabled in problem.
     UInt cntSinceViol;	     /// Updated for cuts disabled in pool.
     UInt numActive;	     /// Updated only for cuts in problem.
-    Int parent_active_cnts;  /// No. of cuts active in a node with un-processed children
+    int parent_active_cnts;  /// No. of cuts active in a node with
+                             /// un-processed children
 
-    Double hash;             /// Hash value of this cut.
-    Double varScore;         /// Variable score (changes every iteration.)
-    Double fixedScore;       /// Fixed score (does not change.)
+    double hash;             /// Hash value of this cut.
+    double varScore;         /// Variable score (changes every iteration.)
+    double fixedScore;       /// Fixed score (does not change.)
 
     Bool neverDelete;        /// If true, never delete cut from pool.
     Bool neverDisable;       /// If true, never remove cut from problem.
@@ -51,115 +52,115 @@ namespace Minotaur {
    */
   class Cut { 
 
-    public:
-      /// Empty Constructor.
-      Cut();
- 
-      /**
-       * \brief Default constructor.
-       *
-       * \param [in] n Number of variables in the problem to which this cut is
-       * applied. Used for evaluating a hash value.
-       * \param [in] f  Function \f$f\f$ in the cut \f$l \leq f() \leq u\f$.
-       * \param [in] lb Lower bound \f$l\f$ in the above cut.
-       * \param [in] ub Upper bound \f$u\f$ in the above cut.
-       * \param [in] never_delete If true, this cut is never deleted from the
-       * pool.
-       * \param [in] never_disable If true, this cut is never removed from the
-       * problem.
-       */
-      Cut(UInt n, FunctionPtr f, Double lb, Double ub, Bool never_delete,
-          Bool never_disable);
+  public:
+    /// Empty Constructor.
+    Cut();
+
+    /**
+     * \brief Default constructor.
+     *
+     * \param [in] n Number of variables in the problem to which this cut is
+     * applied. Used for evaluating a hash value.
+     * \param [in] f  Function \f$f\f$ in the cut \f$l \leq f() \leq u\f$.
+     * \param [in] lb Lower bound \f$l\f$ in the above cut.
+     * \param [in] ub Upper bound \f$u\f$ in the above cut.
+     * \param [in] never_delete If true, this cut is never deleted from the
+     * pool.
+     * \param [in] never_disable If true, this cut is never removed from the
+     * problem.
+     */
+    Cut(UInt n, FunctionPtr f, double lb, double ub, Bool never_delete,
+        Bool never_disable);
 
 
-      Cut(ProblemPtr p, FunctionPtr f, Double lb, Double ub, Bool never_delete,
-	  Bool never_disable);
-      /// Destroy.
-      ~Cut();
+    Cut(ProblemPtr p, FunctionPtr f, double lb, double ub, Bool never_delete,
+        Bool never_disable);
+    /// Destroy.
+    ~Cut();
 
-      /**
-       * \brief Add a cut to the problem.
-       * \param [in] p The given problem.
-       */
-      void applyToProblem(ProblemPtr p);
+    /**
+     * \brief Add a cut to the problem.
+     * \param [in] p The given problem.
+     */
+    void applyToProblem(ProblemPtr p);
 
-      /**
-       * \brief Evaluate the activity of this cut at a given point.
-       * \param [in] x The given point.
-       * \param [out] err Zero if no error ocurred in evaluation.
-       * \return The activity at the given point.
-       */
-      Double eval(const Double *x, Int *err);
+    /**
+     * \brief Evaluate the activity of this cut at a given point.
+     * \param [in] x The given point.
+     * \param [out] err Zero if no error ocurred in evaluation.
+     * \return The activity at the given point.
+     */
+    double eval(const double *x, int *err);
 
-      /**
-       * \brief Evaluate score of this cut at a given point
-       * \param [in] x The given point.
-       * \param [out] vio Violation of this cut.
-       * \param [out] score Score if this cut.
-       */
-      void evalScore(const Double *x, Double *vio, Double *score);
+    /**
+     * \brief Evaluate score of this cut at a given point
+     * \param [in] x The given point.
+     * \param [out] vio Violation of this cut.
+     * \param [out] score Score if this cut.
+     */
+    void evalScore(const double *x, double *vio, double *score);
 
-      /**
-       * \brief Get Constraint pointer if this cut is in the problem. Null
-       * otherwise.
-       */
-      ConstraintPtr getConstraint() {return cons_;}
+    /**
+     * \brief Get Constraint pointer if this cut is in the problem. Null
+     * otherwise.
+     */
+    ConstraintPtr getConstraint() {return cons_;}
 
-      /// Get Function Pointer of the cut.
-      FunctionPtr getFunction() { return f_; }
+    /// Get Function Pointer of the cut.
+    FunctionPtr getFunction() { return f_; }
 
-      /// Get pointer to the cut info data structure.
-      CutInfo * getInfo() {return &info_;}
+    /// Get pointer to the cut info data structure.
+    CutInfo * getInfo() {return &info_;}
 
-      /// Get lb of the inequality.
-      Double getLb() { return lb_; }
+    /// Get lb of the inequality.
+    double getLb() { return lb_; }
 
-      /// Get ub of the inequality.
-      Double getUb() { return ub_; }
+    /// Get ub of the inequality.
+    double getUb() { return ub_; }
 
-      /// Display.
-      void write(std::ostream &out) const;
+    /// Display.
+    void write(std::ostream &out) const;
 
-      /// Display statistics and information.
-      void writeStats(std::ostream &out) const;
+    /// Display statistics and information.
+    void writeStats(std::ostream &out) const;
 
-    protected:
-      /// Pointer to the constraint. Null if it is disabled.
-      ConstraintPtr cons_;
+  protected:
+    /// Pointer to the constraint. Null if it is disabled.
+    ConstraintPtr cons_;
 
-      /// Pointer to the function of a cut.
-      FunctionPtr f_;
+    /// Pointer to the function of a cut.
+    FunctionPtr f_;
 
-      /// Information about the cut
-      CutInfo info_;
-      
-      /// Lower bound.
-      Double lb_;
+    /// Information about the cut
+    CutInfo info_;
 
-      /// Logger for display.
-      LoggerPtr logger_;
+    /// Lower bound.
+    double lb_;
 
-      /// Number of variables in the problem. Used to calculate hash.
-      UInt n_;
+    /// Logger for display.
+    LoggerPtr logger_;
 
-      /// Upper bound
-      Double ub_;
+    /// Number of variables in the problem. Used to calculate hash.
+    UInt n_;
 
-      /// fixed score of each cut
-      Double fixedScore_;
+    /// Upper bound
+    double ub_;
 
-      /**
-       * \brief Initialize the values in info_ data structure.
-       * \param [in] never_delete True if cut should never leave the pool.
-       * \param [in] never_disable True if cut should never be removed from
-       * the problem.
-       */
-      void initInfo_(Bool never_delete, Bool never_disable);
+    /// fixed score of each cut
+    double fixedScore_;
 
-     /**
-      * \brief Assign a fixed score to the cut
-      */
-      void evalFixedScore_();
+    /**
+     * \brief Initialize the values in info_ data structure.
+     * \param [in] never_delete True if cut should never leave the pool.
+     * \param [in] never_disable True if cut should never be removed from
+     * the problem.
+     */
+    void initInfo_(Bool never_delete, Bool never_disable);
+
+    /**
+     * \brief Assign a fixed score to the cut
+     */
+    void evalFixedScore_();
   };
 
   typedef std::vector< CutPtr > CutVector;

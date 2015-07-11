@@ -30,24 +30,24 @@ class SOSBrCand : public BrCand {
 public:
   /// Constructor.
   SOSBrCand();
-  SOSBrCand(const SOS* sos, VarVector &left, VarVector &right, Double lsum,
-            Double rsum);
+  SOSBrCand(const SOS* sos, VarVector &left, VarVector &right, double lsum,
+            double rsum);
 
   /// Destroy.
   ~SOSBrCand();
 
   // base class method.
-  Double getDDist();
+  double getDDist();
 
-  Double getLSum() const;
+  double getLSum() const;
 
   // base class method.
   std::string getName() const;
 
-  Double getRSum() const;
+  double getRSum() const;
 
   // base class method.
-  Double getUDist();
+  double getUDist();
 
   VariableConstIterator lVarsBegin() const;
 
@@ -65,8 +65,8 @@ private:
   /// Right branch
   VarVector rvars_;
 
-  Double lsum_;
-  Double rsum_;
+  double lsum_;
+  double rsum_;
 
   const SOS* sos_;
 };

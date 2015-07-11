@@ -32,7 +32,7 @@ CutInfo::CutInfo()
 {
 }
 
-CutInfo::CutInfo(ConstraintPtr cons, const Double* hashval)
+CutInfo::CutInfo(ConstraintPtr cons, const double* hashval)
   : cons_(cons),
     cntSinceActive_(0),
     cntSinceViol_(0),
@@ -65,13 +65,13 @@ void CutInfo::evalFixedScore() {
   fixedScore_ = 1.0;
 }
 
-void CutInfo::evalScore(const Double *x, Double &vio, Double &score) 
+void CutInfo::evalScore(const double *x, double &vio, double &score) 
 {
-  Int error;
+  int error;
   vio = 0.0;
   score = 0.0;
   if (cons_) {
-    Double act = cons_->getActivity(x, &error);		
+    double act = cons_->getActivity(x, &error);		
     if (cons_->getUb() < INFINITY) vio = std::max(0.0,act - cons_->getUb());  
     if (cons_->getLb() > -INFINITY) vio = std::max(vio, cons_->getLb() - act);
     score = fixedScore_ + vio;

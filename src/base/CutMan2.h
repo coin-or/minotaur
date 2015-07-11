@@ -33,14 +33,14 @@ typedef std::list<CutPtr> cutList;
  */
 
 struct CutStat {
-  Int numAddedCuts;
-  Int numDeletedCuts;
-  Int numPoolToRel;
-  Int numRelToPool;
-  Int callNums;
-  Int PoolSize;
-  Int RelSize;
-  Int numCuts;
+  int numAddedCuts;
+  int numDeletedCuts;
+  int numPoolToRel;
+  int numRelToPool;
+  int callNums;
+  int PoolSize;
+  int RelSize;
+  int numCuts;
   };
 
 class CutMan2 : public CutManager {
@@ -70,11 +70,11 @@ public:
   UInt getNumNewCuts() const { return 0;};
 
   // base class method
-  ConstraintPtr addCut(ProblemPtr rel,FunctionPtr fn, Double lb, Double ub, 
+  ConstraintPtr addCut(ProblemPtr rel,FunctionPtr fn, double lb, double ub, 
 		Bool directToRel, Bool neverDelete);
 
   // base class method
-  void NodeIsBranched(NodePtr node, ConstSolutionPtr sol, Int num);//, ConstSolutionPtr sol);
+  void NodeIsBranched(NodePtr node, ConstSolutionPtr sol, int num);
 
   // base class method
   void NodeIsProcessed(NodePtr node);
@@ -100,16 +100,16 @@ public:
   void writeStat();
 
   struct ctMngrInfo{
-    Double t;
-    Int RelSize;
-    Int PoolSize;
-    Int RelToPool;
-    Int PoolToRel;
-    Double RelAve;
-    Double PoolAve;
-    Int RelTr;
-    Int PoolTr;
-    Int PrntActCnt;
+    double t;
+    int RelSize;
+    int PoolSize;
+    int RelToPool;
+    int PoolToRel;
+    double RelAve;
+    double PoolAve;
+    int RelTr;
+    int PoolTr;
+    int PrntActCnt;
   };
 
   ctMngrInfo getInfo() {return ctmngrInfo_;}
@@ -125,13 +125,13 @@ private:
   std::map< NodePtr , cutList > NodeCutsMap_;
 
   /// Map of number of children to a node
-  std::map< NodePtr , Int > ChildNum_;
+  std::map< NodePtr , int > ChildNum_;
 
   /// Environment.
   EnvPtr env_;
 
   /// Random vector to check for duplicacy.
-  Double* hashVec_;
+  double* hashVec_;
 
   /// For logging.
   LoggerPtr logger_;
@@ -152,7 +152,7 @@ private:
   void addToPool_(CutPtr cut);
 
   /// Absolute tolerance
-  Double absTol_;
+  double absTol_;
 
   /**
    * \brief Maximum number of iterations before which an inactive cut is moved out
@@ -171,24 +171,24 @@ private:
   Timer *timer_;
 
   /// Total time spent in cut manager
-  Double ctMngrtime_;
+  double ctMngrtime_;
 
   /// Time spent in updateCuts
-  Double updateTime_;
+  double updateTime_;
 
   /// Time spent in checkCuts
-  Double checkTime_;
+  double checkTime_;
 
   /// Time spent in NodeIsProcessed
-  Double processedTime_;
+  double processedTime_;
 
   /// Time spent in NodeIsBranched
-  Double branchedTime_;
+  double branchedTime_;
 
   ctMngrInfo ctmngrInfo_;
 
   /// Maximum number of active children for a node to removing its active cuts
-  Int PrntCntThrsh_;
+  int PrntCntThrsh_;
 
   UInt numCuts_;
 

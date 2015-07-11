@@ -66,7 +66,7 @@ void PerspList::generateList()
   // Current constraint being checked.
   ConstConstraintPtr cons;
   // Shows if it is a perspective constraint.
-  Bool ispersp =  false;
+  bool ispersp =  false;
   // Iterate through each constraint.
   for (it=begin; it!=end; ++it) {
     cons = *it;
@@ -96,7 +96,8 @@ void PerspList::addConstraint(ConstConstraintPtr cons, VarUbLbPtr boundcons, Var
 }
 
 
-Bool PerspList::evalConstraint(ConstConstraintPtr cons, VarUbLbPtr boundcons,  VariablePtr& binvar)
+bool PerspList::evalConstraint(ConstConstraintPtr cons, VarUbLbPtr boundcons,
+                               VariablePtr& binvar)
 {
   // Type of function considered.
   FunctionType type;
@@ -112,7 +113,7 @@ Bool PerspList::evalConstraint(ConstConstraintPtr cons, VarUbLbPtr boundcons,  V
   // Binary variable in constraint.
   //ConstVariablePtr binvar;
   // add one more parameter that stores the binary variable.
-  Bool vartypeok = checkVarTypes(f, binvar);
+  bool vartypeok = checkVarTypes(f, binvar);
   // If all the variables are not continuos or at most one of them is binary
   // do not consider constraint for perspective cut generation.
   if (vartypeok ==  false) {
@@ -121,7 +122,7 @@ Bool PerspList::evalConstraint(ConstConstraintPtr cons, VarUbLbPtr boundcons,  V
  
   // Check if we can consider the constraint further.
   // We have to check if the constraint is separable.
-  Bool isseparable = false;
+  bool isseparable = false;
   if (binvar == NULL) {
     isseparable = true;
   } else {
@@ -132,7 +133,7 @@ Bool PerspList::evalConstraint(ConstConstraintPtr cons, VarUbLbPtr boundcons,  V
   }
   
   // Shows if all variables are bounded by binary.
-  Bool boundsok = false;
+  bool boundsok = false;
   if (binvar == NULL){
     VarSetPtr binaries = (VarSetPtr) new VarSet();
     // Take the first element of constraint for initial binary search.
@@ -167,7 +168,7 @@ Bool PerspList::evalConstraint(ConstConstraintPtr cons, VarUbLbPtr boundcons,  V
   return true;
 }
 
-Bool PerspList::separable(ConstConstraintPtr cons, ConstVariablePtr binvar)
+bool PerspList::separable(ConstConstraintPtr cons, ConstVariablePtr binvar)
 {
   // Quadratic part should not include the binary variable u.
   QuadraticFunctionPtr qf = cons->getQuadraticFunction();
@@ -187,7 +188,7 @@ Bool PerspList::separable(ConstConstraintPtr cons, ConstVariablePtr binvar)
   return true;
 }
 
-Bool PerspList::checkVarsBounds(const FunctionPtr f, ConstVariablePtr binvar, 
+bool PerspList::checkVarsBounds(const FunctionPtr f, ConstVariablePtr binvar, 
                                 VarUbLbPtr boundcons)
 {
   // Check if all variables are bounded by binary variable.
@@ -202,7 +203,7 @@ Bool PerspList::checkVarsBounds(const FunctionPtr f, ConstVariablePtr binvar,
   for (it=begin; (it!=end) && (*it!=binvar); ++it) {
     var = *it;
     // Construct map for variable bound constraints.
-    Bool varbounded = checkVarBounds(var, binvar, boundcons);
+    bool varbounded = checkVarBounds(var, binvar, boundcons);
     // If variable is not bounded, then constraint is not a perspective constraint.
     if (varbounded == false) {
       return false;
@@ -211,20 +212,20 @@ Bool PerspList::checkVarsBounds(const FunctionPtr f, ConstVariablePtr binvar,
   return true;
 }
 
-Bool PerspList::checkVarBounds(ConstVariablePtr var, ConstVariablePtr binvar,
+bool PerspList::checkVarBounds(ConstVariablePtr var, ConstVariablePtr binvar,
 			       VarUbLbPtr boundcons)
 {
   // Shows if variable is upper bounded.
-  Bool ubbounded = false;
+  bool ubbounded = false;
   // Shows if variable is lower bounded.
-  Bool lbbounded = false;
+  bool lbbounded = false;
 
   // First, check if variable is lower bounded or upper bounded by 0.
-  Double varlb = var->getLb();
+  double varlb = var->getLb();
   if (varlb == 0) {
     lbbounded = true;
   }
-  Double varub = var->getUb();
+  double varub = var->getUb();
   if (varub == 0) {
     ubbounded = true;
   }
@@ -264,12 +265,12 @@ Bool PerspList::checkVarBounds(ConstVariablePtr var, ConstVariablePtr binvar,
     }
 
     // Coefficient of variable.
-    Double coeffvar = lf->getWeight(var);
+    double coeffvar = lf->getWeight(var);
     // Coefficient of binary variable.
-    Double coeffbin = lf->getWeight(binvar);
+    double coeffbin = lf->getWeight(binvar);
     // Bounds of constraint.
-    Double lb = cons->getLb();
-    Double ub = cons->getUb();
+    double lb = cons->getLb();
+    double ub = cons->getUb();
     // Check upper and lower bounds.
     if (ub == 0) {
       if (lbbounded == false) {
@@ -326,7 +327,7 @@ Bool PerspList::checkVarBounds(ConstVariablePtr var, ConstVariablePtr binvar,
 }
 
 
-Bool PerspList::checkVarTypes(const FunctionPtr f, ConstVariablePtr& binvar)
+bool PerspList::checkVarTypes(const FunctionPtr f, ConstVariablePtr& binvar)
 {
   // Check if all variables are binary or only one of them is binary.
   // Iterator for variables.
@@ -385,7 +386,7 @@ Bool PerspList::checkVarTypes(const FunctionPtr f, ConstVariablePtr& binvar)
   return true;
 }
 
-Bool PerspList::initialBinary(ConstVariablePtr var, VarSetPtr binaries)
+bool PerspList::initialBinary(ConstVariablePtr var, VarSetPtr binaries)
 {
   // List of constraints that has variable considered.
   ConstrSet::const_iterator it;
@@ -418,8 +419,8 @@ Bool PerspList::initialBinary(ConstVariablePtr var, VarSetPtr binaries)
     VariableGroupConstIterator endvar   = lf->termsEnd();
     ConstVariablePtr curvar;
     VariableType vartype;
-    Double varlb;
-    Double varub;
+    double varlb;
+    double varub;
     for (itvar=beginvar; itvar!=endvar; ++itvar) {
       curvar = itvar->first;
       vartype = curvar->getType();

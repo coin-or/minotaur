@@ -35,7 +35,7 @@ namespace Minotaur {
 
       // evaluate gradient at x
       virtual LinearAlgebra::ConstDoubleVectorPtr 
-        eval(const std::vector<Double> &x) const { assert(!"implement me!"); }
+        eval(const std::vector<double> &x) const { assert(!"implement me!"); }
 
       // evaluate gradient at x
       virtual LinearAlgebra::ConstDoubleVectorPtr 

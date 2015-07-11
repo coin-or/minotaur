@@ -19,8 +19,8 @@ using namespace Minotaur;
 extern "C"
 {
   void F77_FUNC(dsyevr, DSYEVR)(char *jobz, char *range, char *uplo, Int *n,
-      Double *a, Int *lda, Int *vl, Int *vu, Int *il, Int *iu, Double *abstol,
-      Int *m, Double *w, Double *z, Int *ldz, Int *isuppz, Double *work, Int
+      double *a, Int *lda, Int *vl, Int *vu, Int *il, Int *iu, double *abstol,
+      Int *m, double *w, double *z, Int *ldz, Int *isuppz, double *work, Int
       *lwork, Int *iwork, Int *liwork, Int *info );
 }
 
@@ -40,7 +40,7 @@ EigenPtr EigenCalculator::findValues(ConstQuadraticFunctionPtr qf)
     qf_ = qf;
     fillA_();
     findVectors_ = 'N'; // N for eigen values only, V for values and vectors.
-    w_ = new Double[n_];
+    w_ = new double[n_];
     z_ = 0; 
     isuppz_ = 0;
 
@@ -62,8 +62,8 @@ EigenPtr EigenCalculator::findVectors(ConstQuadraticFunctionPtr qf)
     qf_ = qf;
     fillA_();
     findVectors_ = 'V'; // N for eigen values only, V for values and vectors.
-    w_ = new Double[n_];
-    z_ = new Double [n_*n_];
+    w_ = new double[n_];
+    z_ = new double [n_*n_];
     isuppz_ = new Int [2*n_];
 
     // fill z_ with 0. necessary because of a bug in lapack for n_ = 2
@@ -97,7 +97,7 @@ void EigenCalculator::fillA_()
 
   // allocate space and create a map of what row/column corresponds to each
   // variable in qf.
-  A_ = new Double [n_*n_];
+  A_ = new double [n_*n_];
   std::fill(A_, A_+(n_*n_), 0);
   i=0;
   indices_.clear();
@@ -122,9 +122,9 @@ void EigenCalculator::fillA_()
 void EigenCalculator::getSumOfSquares (
     std::vector<LinearFunctionPtr> & p_terms, 
     std::vector<LinearFunctionPtr> & n_terms,
-    std::vector<Double> & p_const,
-    std::vector<Double> & n_const,
-    LinearFunctionPtr & lin_terms, Double & c,
+    std::vector<double> & p_const,
+    std::vector<double> & n_const,
+    LinearFunctionPtr & lin_terms, double & c,
     ConstQuadraticFunctionPtr qf, ConstLinearFunctionPtr lf)
 {
   EigenPtr ePtr;
@@ -132,7 +132,7 @@ void EigenCalculator::getSumOfSquares (
   ConstVariablePtr v_ptr;
   VarCountConstMap * qf_map;
   VarCountConstMap::const_iterator qf_it;
-  Double evalue, coeff;
+  double evalue, coeff;
   LinearFunctionPtr evector;
 
   assert(qf);
@@ -205,11 +205,11 @@ void EigenCalculator::getSumOfSquares (
 }
 
 
-Double EigenCalculator::getDotProduct_(ConstLinearFunctionPtr lf1, 
+double EigenCalculator::getDotProduct_(ConstLinearFunctionPtr lf1, 
     ConstLinearFunctionPtr lf2)
 {
   ConstLinearFunctionPtr tmp; // for exchange
-  Double d_product = 0;   // the dot product of coefficients of lf1 and lf2.
+  double d_product = 0;   // the dot product of coefficients of lf1 and lf2.
   ConstVariablePtr v_ptr;
 
   if (!lf1 || !lf2) {
@@ -243,7 +243,7 @@ void EigenCalculator::calculate_()
   Int il=0, iu=0;   // Not used when ='A'
   Int n=n_;
   Int ldz = 1;      // The leading dimension of the array z_.
-  Double *work;     // Work space.
+  double *work;     // Work space.
   Int lwork;        // length of the array 'work'
   Int *iwork;       // Work space.
   Int liwork;       // length of the array 'iwork'
@@ -261,7 +261,7 @@ void EigenCalculator::calculate_()
 
   // get the required size.
   liwork = lwork = -1;
-  work = new Double[1];
+  work = new double[1];
   iwork = new Int[1];
   work[0] = 0.0;
   iwork[0] = 0;
@@ -276,7 +276,7 @@ void EigenCalculator::calculate_()
   liwork = iwork[0];
   delete [] work; 
   delete [] iwork;
-  work = new Double[lwork];
+  work = new double[lwork];
   iwork = new Int[liwork];
   std::fill(work, work+lwork, 0.0);
   std::fill(iwork, iwork+liwork, 0);
@@ -348,7 +348,7 @@ Eigen::Eigen()
 }
 
 
-void Eigen::add(Double value, LinearFunctionPtr e_vector)
+void Eigen::add(double value, LinearFunctionPtr e_vector)
 {
   evPairs_.push_back(std::make_pair(value, e_vector));
   if (fabs(value) < 1e-7) {

@@ -188,9 +188,9 @@ Function::~Function()
 }
 
 
-void Function::subst(VariablePtr out, VariablePtr in, Double rat)
+void Function::subst(VariablePtr out, VariablePtr in, double rat)
 {
-  Double w;
+  double w;
   VariablePtr v1, v2, v3, v4;
 
   if (lf_) {
@@ -235,7 +235,7 @@ void Function::subst(VariablePtr out, VariablePtr in, Double rat)
 }
 
 
-void Function::operator*=(const Double c)
+void Function::operator*=(const double c)
 {
   if (fabs(c) < 1e-7) {
     lf_  = LinearFunctionPtr();
@@ -298,8 +298,8 @@ void Function::fillHessOffset(Size_t *offset, Size_t &pos,
 }
 
 
-void Function::evalHessian(Double mult, const Double *, 
-    const Size_t *offset, Double *values, Int *error)
+void Function::evalHessian(double mult, const double *, 
+    const Size_t *offset, double *values, Int *error)
 {
   *error = 0;
   if (nlf_) {
@@ -321,8 +321,8 @@ void Function::evalHessian(Double mult, const Double *,
 }
 
 
-void Function::evalHessian(const Double mult, const Double *x, 
-                           const LTHessStor *stor, Double *values , Int *error)
+void Function::evalHessian(const double mult, const double *x, 
+                           const LTHessStor *stor, double *values , Int *error)
 {
   *error = 0;
   if (qf_) {
@@ -384,15 +384,15 @@ NonlinearFunctionPtr Function::removeNonlinear()
 }
 
 
-Double Function::eval(const DoubleVector &x, Int *error) const
+double Function::eval(const DoubleVector &x, Int *error) const
 {
   return eval(&(x[0]), error);
 }
 
 
-Double Function::eval(const Double *x, Int *error) const
+double Function::eval(const double *x, Int *error) const
 {
-  Double val = 0.0;
+  double val = 0.0;
   *error = 0;
   if (lf_) {
     val += lf_->eval(x);
@@ -407,7 +407,7 @@ Double Function::eval(const Double *x, Int *error) const
 }
 
 
-void Function::evalGradient(const Double *x, Double *grad_f, Int *error) const
+void Function::evalGradient(const double *x, double *grad_f, Int *error) const
 {
   *error = 0;
   if (lf_) {
@@ -459,7 +459,7 @@ void Function::finalHessStor(const LTHessStor *stor)
 }
 
 
-void Function::fillJac(const Double *x, Double *values, Int *error) 
+void Function::fillJac(const double *x, double *values, Int *error) 
 {
   *error = 0;
   if (lf_) {
@@ -564,7 +564,7 @@ VarSetConstIterator Function::varsEnd()
 }
 
 
-void Function::removeVar(VariablePtr v, Double val)
+void Function::removeVar(VariablePtr v, double val)
 {
   if (lf_) {
     lf_->removeVar(v, val);
@@ -595,9 +595,9 @@ void Function::removeVar(VariablePtr v, Double val)
 }
 
 
-Double Function::getFixVarOffset(VariablePtr v, Double val)
+double Function::getFixVarOffset(VariablePtr v, double val)
 {
-  Double offset = 0.;
+  double offset = 0.;
   if (lf_) {
     offset += lf_->getFixVarOffset(v, val);
   }

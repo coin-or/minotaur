@@ -141,7 +141,7 @@ void Node::setId(UInt id)
 }
 
 
-void Node::setLb(Double value)
+void Node::setLb(double value)
 {
   lb_ = value;
 }

@@ -70,7 +70,7 @@ struct LGCIGenStats
   UInt noviol;  /// Number cuts that does not violate current relaxation
                 /// solution.
   UInt noinitcov; /// GNS procedure terminated since no inital GNS cover constructed.
-  Double time; /// Total time used by generator.
+  double time; /// Total time used by generator.
 };
 
 // Typedefs for ease of coding.
@@ -115,14 +115,14 @@ public:
   void initStats();
 
   // Checks if the constraint has a cover set.
-  Bool hasCover(ConstraintConstIterator it);
+  bool hasCover(ConstraintConstIterator it);
 
   // Checks if there is a set of GUBs that covers the knapsack inequality.
-  Bool hasGubCover(ConstraintConstIterator it,
+  bool hasGubCover(ConstraintConstIterator it,
                    ConstConstraintVectorPtr gublist);
 
   // Generates initial cover by using GNS algorithm.
-  Bool coverSetGeneratorGNS(ConstConstraintPtr cons, 
+  bool coverSetGeneratorGNS(ConstConstraintPtr cons, 
                             CoverSetPtr cover);
 
   /* Modified GNS cover set generator such that it always generates a cover.
@@ -132,7 +132,7 @@ public:
    * elements in solution vector given is not enough for cover set generation 
    * s.t sum(a_i) <= b for i s.t. x^*_i != 0.
    */
-  Bool coverSetGenGNSModified(ConstConstraintPtr cons);
+  bool coverSetGenGNSModified(ConstConstraintPtr cons);
 
   /** Constructs the variable-value pair vector from a given vector and a
    * linear function that inclued coefficients.
@@ -142,7 +142,7 @@ public:
   /** Calculates the sum of coefficients of a given vector of
    * variable-coefficient pairs
    */
-  Double sumCoeffs(CoverSetPtr cover);
+  double sumCoeffs(CoverSetPtr cover);
     
   /** Drops some of the variables and obtains a minimal cover form a given
    * cover.
@@ -161,12 +161,12 @@ public:
                          CoverSetPtr rset);
 
   // Lifts a variable up or down as it is specified by uplift.
-  Double lift(const ConstCoverSetPtr obj,
+  double lift(const ConstCoverSetPtr obj,
               const ConstCoverSetPtr inequality,
               const CoverSetConstIterator variable,
-              Double & rhs,
-              Double & initialb,
-              Bool uplift);
+              double & rhs,
+              double & initialb,
+              bool uplift);
 
   // Initialize cover inequality by changing the coefficients of cover set
   // by ones.
@@ -176,49 +176,49 @@ public:
    * cover genereator.
    * Generates Gu, Nemhauser, Savelsbergh LGCI generation algorithm.
    */
-  Bool liftingGNS(const ConstCoverSetPtr cone,
+  bool liftingGNS(const ConstCoverSetPtr cone,
                   const ConstCoverSetPtr ctwo,
                   const ConstCoverSetPtr fset,
                   const ConstCoverSetPtr rset,
                   CoverSetPtr constraint,
                   const ConstConstraintPtr cons,
                   ConstConstraintVectorPtr gublist,
-                  Double & ub);
+                  double & ub);
 
 
   /** This lifts the variables in a given set in the given order
    */
-  Bool liftSet(CoverSetPtr obj,
+  bool liftSet(CoverSetPtr obj,
                CoverSetPtr constraintset,
                const ConstCoverSetPtr varset,
                CoverSetPtr inequality,
-               Double & ub,
-               Double & initialb,
-               Bool liftup);
+               double & ub,
+               double & initialb,
+               bool liftup);
 
   // Generates all the cover cuts from a given knapsack constraint.
   void generateCuts(ConstConstraintPtr cons, ConstConstraintVectorPtr gublist);
 
   // Generate a cut from a given variable set and rhs.
-  void generateCut(const ConstCoverSetPtr inequality, Double ub, CutPtr cut);
+  void generateCut(const ConstCoverSetPtr inequality, double ub, CutPtr cut);
 
   // Generates a GNS LGCI cut.
-  Bool GNS(const ConstConstraintPtr cons, ConstConstraintVectorPtr gublist);
+  bool GNS(const ConstConstraintPtr cons, ConstConstraintVectorPtr gublist);
 
   // Add the cut to the list and insert corresponding violation to violation
   // list.
   void addCut(CutPtr cut);
   
-  Bool addCut(CoverSetPtr cov, Double rhs, UInt cuttype, CutFail& failtype);
+  bool addCut(CoverSetPtr cov, double rhs, UInt cuttype, CutFail& failtype);
 
   // Check if the same cut is already included in the list.
-  Bool checkExists(CoverSetPtr inequality, Double rhs);
+  bool checkExists(CoverSetPtr inequality, double rhs);
 
   // Solves the lifting problem.
-  Double liftingProbsolver();
+  double liftingProbsolver();
 
   // Calculates the violation for the given cut.
-  Double violation(CutPtr cut);
+  double violation(CutPtr cut);
 
   // Constructs a vector of nonzero variables in the given solution.
   void nonzeroVars(const ConstLinearFunctionPtr lf,
@@ -253,21 +253,21 @@ public:
                boost::shared_ptr<std::vector<CoverSetPtr> > gubcons,
                const ConstCoverSetPtr varset,
                CoverSetPtr coverineq,
-               Double & rhs,
-               Double & initialknap,
-               Double * initialgub,
-               Bool liftup);
+               double & rhs,
+               double & initialknap,
+               double * initialgub,
+               bool liftup);
 
   // Lift the current variable.
-  Double lift(CoverSetPtr obj,
+  double lift(CoverSetPtr obj,
               boost::shared_ptr<std::vector<CoverSetPtr> > origgubs,
             CoverSetPtr consknap,
             boost::shared_ptr<std::vector<CoverSetPtr> > gubcons,
             const CoverSetConstIterator variable,
-            Double & rhs,
-            Double & initialbknap,
-            Double * initialgub,
-            Bool liftup);
+            double & rhs,
+            double & initialbknap,
+            double * initialgub,
+            bool liftup);
 
   // Return const GUB identifier.
   ConstProbStructPtr getProbStruct() const
@@ -282,22 +282,22 @@ public:
     {return ConstLGCIGenStatsPtr(stats_);}
 
   // Print inequality.
-  void printIneq(const ConstCoverSetPtr cov, Double rhs, 
+  void printIneq(const ConstCoverSetPtr cov, double rhs, 
                  PrintType type, string message);
 
 
   void addCons(CoverSetPtr obj,
                CoverSetPtr consknap,
-               Double bknap,
+               double bknap,
                boost::shared_ptr< std::vector<CoverSetPtr> > gubcons,
-               Double * bgubs,
+               double * bgubs,
                OrigLiftVarsPtr varmap,
                ProblemPtr liftprob);
 
   VariablePtr addVar(VariablePtr var, OrigLiftVarsPtr varmap, ProblemPtr liftprob);
   
 
-  Double roundHeur(ProblemPtr prob);
+  double roundHeur(ProblemPtr prob);
 
   // Return const pointer for problem.
 
@@ -326,9 +326,9 @@ private:
   // Statistics for LGCI generator.
   LGCIGenStatsPtr stats_;
   // Hash map that is used to check if a cut is already created or not.
-  std::map< std::vector<Double>, UInt> cutmap_;
+  std::map< std::vector<double>, UInt> cutmap_;
   // Integer tolerance.
-  Double intTol_;
+  double intTol_;
 
   // Output file
   ofstream output_;

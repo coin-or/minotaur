@@ -70,7 +70,7 @@ void Jacobian::fillRowColIndices(UInt *iRow, UInt *jCol)
 }
 
 
-void Jacobian::fillRowColValues(const Double *x, Double *values, Int *error)
+void Jacobian::fillRowColValues(const double *x, double *values, int *error)
 {
   ConstraintConstIterator c_iter;
   UInt nz_cnt = 0;

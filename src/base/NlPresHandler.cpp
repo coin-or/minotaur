@@ -97,8 +97,8 @@ void  NlPresHandler::chkRed_(bool *changed)
   ConstraintPtr c;
   LinearFunctionPtr lf;
   NonlinearFunctionPtr nlf;
-  Double lfu, lfl;
-  Double nlfu, nlfl;
+  double lfu, lfl;
+  double nlfu, nlfl;
   int error = 0;
 
   for (ConstraintConstIterator cit=p_->consBegin(); cit!=p_->consEnd();
@@ -139,9 +139,9 @@ void  NlPresHandler::coeffImpr_(bool *changed)
   ConstraintPtr c;
   LinearFunctionPtr lf;
   NonlinearFunctionPtr nlf;
-  Double ll, uu;
-  Double cu, cl;
-  Double a0;
+  double ll, uu;
+  double cu, cl;
+  double a0;
   VariablePtr z;
 
   if (p_->getSize()->bins<1) {
@@ -216,12 +216,12 @@ void  NlPresHandler::coeffImpr_(bool *changed)
 void NlPresHandler::bin2LinF_(ProblemPtr p, LinearFunctionPtr lf,
                               UInt nz, const UInt *irow,
                               const UInt *jcol,
-                              const Double *values, PreAuxVarsPtr mod)
+                              const double *values, PreAuxVarsPtr mod)
 {
   VariablePtr v1, v2, v3;
   LinearFunctionPtr lf3;
   FunctionPtr f;
-  Double lb, ub;
+  double lb, ub;
 
   for (UInt i=0; i<nz; ++i) {
     if (fabs(values[i])>1e-12) {
@@ -306,7 +306,7 @@ void  NlPresHandler::bin2Lin_(ProblemPtr p, PreModQ *mods, bool *changed)
   LinearFunctionPtr lf;
   FunctionPtr f;
   HessianOfLagPtr hess;
-  Double *mult = 0;
+  double *mult = 0;
   int err = 0;
   double *x = 0;
   double *values = 0;
@@ -325,17 +325,17 @@ void  NlPresHandler::bin2Lin_(ProblemPtr p, PreModQ *mods, bool *changed)
   p->setNativeDer(); // TODO: avoid setting it up repeatedly.
   hess = p->getHessian();
   nz = hess->getNumNz();
-  mult = new Double[p->getNumCons()];
-  values = new Double[nz];
+  mult = new double[p->getNumCons()];
+  values = new double[nz];
   irow = new UInt[nz];
   jcol = new UInt[nz];
-  x = new Double[p->getNumVars()];
-  grad = new Double[p->getNumVars()];
-  memset(mult, 0, p->getNumCons()*sizeof(Double));
+  x = new double[p->getNumVars()];
+  grad = new double[p->getNumVars()];
+  memset(mult, 0, p->getNumCons()*sizeof(double));
   memset(values, 0, nz*sizeof(UInt));
   memset(irow, 0, nz*sizeof(UInt));
   memset(jcol, 0, nz*sizeof(UInt));
-  memset(x, 0, p->getNumVars()*sizeof(Double));
+  memset(x, 0, p->getNumVars()*sizeof(double));
 
   hess->fillRowColIndices(irow, jcol);
 
@@ -345,7 +345,7 @@ void  NlPresHandler::bin2Lin_(ProblemPtr p, PreModQ *mods, bool *changed)
     if (Quadratic==f->getType()) {
       hess->fillRowColValues(x, 1.0, mult, values, &err); assert(0==err);
       if (canBin2Lin_(p, nz, irow, jcol, values)) {
-        memset(grad, 0, p->getNumVars()*sizeof(Double));
+        memset(grad, 0, p->getNumVars()*sizeof(double));
         f->evalGradient(x, grad, &err); assert(0==err);
         nlconst = f->eval(x, &err); assert(0==err);
         lf = (LinearFunctionPtr) new LinearFunction(grad, p->varsBegin(),
@@ -399,7 +399,7 @@ void  NlPresHandler::bin2Lin_(ProblemPtr p, PreModQ *mods, bool *changed)
 
 
 bool NlPresHandler::canBin2Lin_(ProblemPtr p, UInt nz, const UInt *irow,
-                                const UInt *jcol, const Double *values)
+                                const UInt *jcol, const double *values)
 {
   VariablePtr v1, v2;
 
@@ -491,12 +491,12 @@ bool  NlPresHandler::canLin_(FunctionPtr f)
 
 
 void  NlPresHandler::computeImpBounds_(ConstraintPtr c, VariablePtr z,
-                                       Double zval, Double *lb, Double *ub)
+                                       double zval, double *lb, double *ub)
 {
   VariablePtr v;
-  Double ll = 0.;
-  Double uu = 0.;
-  Double l1, u1, a2, b2;
+  double ll = 0.;
+  double uu = 0.;
+  double l1, u1, a2, b2;
   ConstraintPtr c2;
   LinearFunctionPtr lf, lf2;
   ModStack mods;
@@ -740,13 +740,13 @@ bool NlPresHandler::presolveNode(RelaxationPtr rel, NodePtr, SolutionPoolPtr s_p
   FunctionPtr f = rel->getObjective()->getFunction();
   NonlinearFunctionPtr nlf;
   LinearFunctionPtr lf;
-  Double nlfl, nlfu;
-  Double lfl, lfu;
-  Double olb;
+  double nlfl, nlfu;
+  double lfl, lfu;
+  double olb;
   int error = 0;
-  Double a0;
+  double a0;
   VariablePtr z;
-  Double ub = (s_pool)?s_pool->getBestSolutionValue():INFINITY;
+  double ub = (s_pool)?s_pool->getBestSolutionValue():INFINITY;
   VarBoundModPtr mod;
 
   if (f && ub<INFINITY) {
@@ -881,7 +881,7 @@ SolveStatus NlPresHandler::varBndsFromCons_(bool *changed)
   ConstraintPtr c;
   LinearFunctionPtr lf;
   NonlinearFunctionPtr nlf;
-  Double lfu, lfl, ub, lb;
+  double lfu, lfl, ub, lb;
   VarBoundModVector mods;
   SolveStatus status = Started;
 

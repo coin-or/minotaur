@@ -24,8 +24,8 @@ class YEqLFs
 {
 public:
   YEqLFs(UInt n);
-  VariablePtr findY(LinearFunctionPtr lf, Double k);
-  void insert(VariablePtr auxvar, LinearFunctionPtr lf, Double k);
+  VariablePtr findY(LinearFunctionPtr lf, double k);
+  void insert(VariablePtr auxvar, LinearFunctionPtr lf, double k);
 
 private:
   DoubleVector k_;
@@ -34,7 +34,7 @@ private:
   DoubleVector rand_;
   DoubleVector hash_;
   VarVector y_;
-  Double evalHash_(LinearFunctionPtr lf);
+  double evalHash_(LinearFunctionPtr lf);
 };
 }
 #endif

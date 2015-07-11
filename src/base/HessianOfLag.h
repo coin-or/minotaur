@@ -88,9 +88,9 @@ namespace Minotaur {
        * above example, 
        * values = [2, 6x1x2, 3x1^2]
        */
-      virtual void fillRowColValues(const Double *x, Double obj_mult,
-                                    const Double *con_mult, Double *values, 
-                                    Int *error);
+      virtual void fillRowColValues(const double *x, double obj_mult,
+                                    const double *con_mult, double *values, 
+                                    int *error);
 
       /// Ugly hack to solve maximization problem. TODO: delete it.
       virtual void negateObj() {};
@@ -104,7 +104,7 @@ namespace Minotaur {
        * If a lagrange multiplier is less than etol_, then it is considered
        * zero.
        */
-      Double etol_;
+      double etol_;
 
       FunctionPtr obj_;
 

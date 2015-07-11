@@ -36,15 +36,15 @@ QuadraticFunction::QuadraticFunction()
 }
 
 
-QuadraticFunction::QuadraticFunction(UInt nz, Double *vals, UInt *irow, UInt *jcol,
-                                     VariableConstIterator vbeg )
-  : etol_(1e-8),
-    hCoeffs_(0),
-    hFirst_(0),
-    hOff_(0),
-    hSecond_(0),
-    terms_(), 
-    varFreq_()
+QuadraticFunction::QuadraticFunction(UInt nz, double *vals, UInt *irow,
+                                     UInt *jcol, VariableConstIterator vbeg)
+: etol_(1e-8),
+  hCoeffs_(0),
+  hFirst_(0),
+  hOff_(0),
+  hSecond_(0),
+  terms_(), 
+  varFreq_()
 {
   VariablePtr v1, v2;
   for (UInt i=0; i<nz; ++i) {
@@ -93,9 +93,9 @@ QuadraticFunctionPtr QuadraticFunction::cloneWithVars(VariableConstIterator vbeg
 }
 
 
-Double QuadraticFunction::eval(const std::vector<Double> &x) const
+double QuadraticFunction::eval(const std::vector<double> &x) const
 {
-   Double sum = 0.0;
+   double sum = 0.0;
    for(VariablePairGroupConstIterator it = begin(); it != end(); ++it) {
       sum += it->second * x[it->first.first->getIndex()] * 
         x[it->first.second->getIndex()];
@@ -104,9 +104,9 @@ Double QuadraticFunction::eval(const std::vector<Double> &x) const
 }
 
 
-Double QuadraticFunction::eval(const Double *x) const
+double QuadraticFunction::eval(const double *x) const
 {
-   Double sum = 0.0;
+   double sum = 0.0;
    for(VariablePairGroupConstIterator it = begin(); it != end(); ++it) {
       sum += it->second * x[it->first.first->getIndex()] * 
         x[it->first.second->getIndex()];
@@ -115,7 +115,7 @@ Double QuadraticFunction::eval(const Double *x) const
 }
 
 
-void QuadraticFunction::evalGradient(const Double *x, Double *grad_f)
+void QuadraticFunction::evalGradient(const double *x, double *grad_f)
 {
   assert (grad_f);
   if (x) {
@@ -130,8 +130,8 @@ void QuadraticFunction::evalGradient(const Double *x, Double *grad_f)
 }
 
 
-void QuadraticFunction::evalGradient(const std::vector<Double> & x, 
-    std::vector<Double> & grad_f)
+void QuadraticFunction::evalGradient(const std::vector<double> & x, 
+    std::vector<double> & grad_f)
 {
   for(VariablePairGroupConstIterator it = terms_.begin(); it != terms_.end(); ++it) {
     grad_f[it->first.first->getIndex()] +=  it->second * 
@@ -142,8 +142,8 @@ void QuadraticFunction::evalGradient(const std::vector<Double> & x,
 }
 
 
-void QuadraticFunction::evalHessian(const Double mul, const Double *, 
-                                    const LTHessStor *, Double *values, Int *)
+void QuadraticFunction::evalHessian(const double mul, const double *, 
+                                    const LTHessStor *, double *values, int *)
 {
   for (UInt i=0; i<terms_.size(); ++i) {
     values[hOff_[i]] += mul*hCoeffs_[i];
@@ -216,7 +216,7 @@ void QuadraticFunction::finalHessStor(const LTHessStor *stor)
 }
 
 
-void QuadraticFunction::fillJac(const Double *x, Double *values, Int *) 
+void QuadraticFunction::fillJac(const double *x, double *values, int *) 
 {
   UInt i=0;
   for (VariablePairGroupConstIterator it = terms_.begin(); it != terms_.end(); 
@@ -238,7 +238,7 @@ void QuadraticFunction::getVars(VariableSet *vars)
 }
 
 
-void QuadraticFunction::mult(Double c) {
+void QuadraticFunction::mult(double c) {
   if (fabs(c) < 1e-7) {
     terms_.clear();
     varFreq_.clear();
@@ -251,7 +251,7 @@ void QuadraticFunction::mult(Double c) {
 }
 
 
-void QuadraticFunction::addTerm(VariablePair vp, const Double weight)
+void QuadraticFunction::addTerm(VariablePair vp, const double weight)
 {
   assert (vp.first->getId() <= vp.second->getId());
   if (fabs(weight) >= etol_) {
@@ -263,7 +263,7 @@ void QuadraticFunction::addTerm(VariablePair vp, const Double weight)
 
 
 void QuadraticFunction::addTerm(ConstVariablePtr v1, ConstVariablePtr v2, 
-    const Double weight)
+    const double weight)
 {
   VariablePair vp = (v1->getId() < v2->getId()) ? std::make_pair(v1, v2) :
     std::make_pair(v2, v1);
@@ -271,7 +271,7 @@ void QuadraticFunction::addTerm(ConstVariablePtr v1, ConstVariablePtr v2,
 }
 
 
-void QuadraticFunction::incTerm(ConstVariablePair vp, const Double a)
+void QuadraticFunction::incTerm(ConstVariablePair vp, const double a)
 {
   if (fabs(a) > etol_) {
     VariablePairGroupIterator it = terms_.find(vp);
@@ -280,7 +280,7 @@ void QuadraticFunction::incTerm(ConstVariablePair vp, const Double a)
       varFreq_[vp.second] += 1;
       terms_.insert(std::make_pair(vp, a));
     } else {
-      Double nv = (it->second + a);
+      double nv = (it->second + a);
       if (fabs(nv) < etol_) {
         terms_.erase(vp);
         std::map<ConstVariablePtr, UInt>::iterator vit;
@@ -303,7 +303,7 @@ void QuadraticFunction::incTerm(ConstVariablePair vp, const Double a)
 
 
 void QuadraticFunction::incTerm(ConstVariablePtr v1, ConstVariablePtr v2,
-    const Double a)
+    const double a)
 {
   VariablePair vp = (v1->getId() < v2->getId()) ? std::make_pair(v1, v2)
     : std::make_pair(v2, v1);
@@ -329,7 +329,7 @@ VarCountConstMap * QuadraticFunction::getVarMap() const
 }
 
 
-Double QuadraticFunction::getWeight(ConstVariablePair & vp) 
+double QuadraticFunction::getWeight(ConstVariablePair & vp) 
 { 
   VariablePairGroupConstIterator it = terms_.find(vp);
   if (it == terms_.end()) {
@@ -339,7 +339,7 @@ Double QuadraticFunction::getWeight(ConstVariablePair & vp)
 }
 
 
-Double QuadraticFunction::getWeight(ConstVariablePtr v1, ConstVariablePtr v2) 
+double QuadraticFunction::getWeight(ConstVariablePtr v1, ConstVariablePtr v2) 
 { 
   ConstVariablePair vp = (v1->getId() < v2->getId()) ? std::make_pair(v1, v2)
     : std::make_pair(v2, v1);
@@ -347,19 +347,19 @@ Double QuadraticFunction::getWeight(ConstVariablePtr v1, ConstVariablePtr v2)
 }
 
 
-Int QuadraticFunction::getFreq(ConstVariablePtr v1)
+int QuadraticFunction::getFreq(ConstVariablePtr v1)
 {
   return varFreq_[v1];
 }
 
 
-Bool QuadraticFunction::hasVar(ConstVariablePtr v) const
+bool QuadraticFunction::hasVar(ConstVariablePtr v) const
 {
   return (varFreq_.find(v) != varFreq_.end());
 }
 
 
-void QuadraticFunction::removeVar(VariablePtr v, Double val, 
+void QuadraticFunction::removeVar(VariablePtr v, double val, 
     LinearFunctionPtr lf) 
 {
   for (VariablePairGroupIterator it = terms_.begin(); it != terms_.end();) {
@@ -414,8 +414,8 @@ void QuadraticFunction::prepHess()
   UInt *f        = first;
   UInt *second   = new UInt[nterms];
   UInt *s        = second;
-  Double *coeffs = new Double[nterms];
-  Double *c      = coeffs;
+  double *coeffs = new double[nterms];
+  double *c      = coeffs;
   UInt prev;
 
   if (hFirst_) {
@@ -474,13 +474,13 @@ void QuadraticFunction::prepHess()
 }
 
 
-void QuadraticFunction::sortLT_(UInt n, UInt *f, UInt *s, Double *c)
+void QuadraticFunction::sortLT_(UInt n, UInt *f, UInt *s, double *c)
 {
   UInt l = 0;
   UInt r = n-1;
   UInt pivot = r/2;
   UInt sp, fp;
-  Double dtmp;
+  double dtmp;
   UInt itmp;
 
   if (n<2) {
@@ -532,10 +532,10 @@ void QuadraticFunction::sortLT_(UInt n, UInt *f, UInt *s, Double *c)
 }
 
 
-void QuadraticFunction::subst(VariablePtr out, VariablePtr in, Double rat)
+void QuadraticFunction::subst(VariablePtr out, VariablePtr in, double rat)
 {
-  std::queue <std::pair<VariablePair, Double> > newterms;
-  std::pair <VariablePair, Double> vpg;
+  std::queue <std::pair<VariablePair, double> > newterms;
+  std::pair <VariablePair, double> vpg;
   std::map<ConstVariablePtr, UInt>::iterator vit;
 
   vit = varFreq_.find(out);
@@ -571,7 +571,7 @@ void QuadraticFunction::subst(VariablePtr out, VariablePtr in, Double rat)
 }
 
 
-Double QuadraticFunction::getFixVarOffset(VariablePtr v, Double val)
+double QuadraticFunction::getFixVarOffset(VariablePtr v, double val)
 {
   if (fabs(val)>1e-7) {
     ConstVariablePair vp = std::make_pair(v, v);
@@ -605,7 +605,7 @@ void QuadraticFunction::operator+=(ConstQuadraticFunctionPtr q2)
 }
 
 
-void QuadraticFunction::operator*=(const Double c)
+void QuadraticFunction::operator*=(const double c)
 {
   mult(c);
 }
@@ -670,7 +670,7 @@ QuadraticFunctionPtr operator+(ConstQuadraticFunctionPtr q1,
 }
 
 
-QuadraticFunctionPtr operator*(const Double c, ConstQuadraticFunctionPtr q2)
+QuadraticFunctionPtr operator*(const double c, ConstQuadraticFunctionPtr q2)
 {
   // creates a linear function even when c = 0.
   // Returns NULL if q2 is NULL.

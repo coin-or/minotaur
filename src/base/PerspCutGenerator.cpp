@@ -45,7 +45,7 @@ PerspCutGenerator::PerspCutGenerator(RelaxationPtr rel, ConstSolutionPtr sol,
 Bool PerspCutGenerator::generateAllCuts()
 {
   if (persplist_->getNumPersp() >= 1) {
-    const Double * x = s_->getPrimal();
+    const double * x = s_->getPrimal();
     ConstPerspConsPtr perspcons = persplist_->getPerspCons();
     // Iterators for perpsepective constraints.
     PerspCons::const_iterator it;
@@ -56,7 +56,7 @@ Bool PerspCutGenerator::generateAllCuts()
       ConstConstraintPtr cons = it->first.first;
       ConstVariablePtr binvar = it->first.second;
       UInt binindex = binvar->getIndex();
-      Double binsol = x[binindex];
+      double binsol = x[binindex];
       // Check if binary variable has an integral value.
       Bool binint = IsInt(binsol, intTol_);
       if (binint) {
@@ -86,28 +86,28 @@ Bool PerspCutGenerator::generateCut(ConstConstraintPtr cons,ConstVariablePtr bin
 {
   FunctionPtr f = cons->getFunction();
   LinearFunctionPtr lf = cons->getLinearFunction();
-  Double coeffbin = lf->getWeight(binvar);
+  double coeffbin = lf->getWeight(binvar);
   // Number of variables in problem.
   UInt numvars = rel_->getNumVars();
   // Get primal solution.
-  const Double * x = s_->getPrimal();
+  const double * x = s_->getPrimal();
   // Get index of binary variable.
   UInt binindex = binvar->getIndex();
   // Generate the solution (p/u,u)
-  Double * y = new Double[numvars];
+  double * y = new double[numvars];
   std::fill(y, y + numvars, 0);
   UInt indexvar = 0;
   ConstVariablePtr curvar;
-  Double solbin = x[binindex];
+  double solbin = x[binindex];
   // If binary variable slution is too small, or if the value is very close to
   // one, then do not proceed.
-  Double tolerance = 1e-3;
+  double tolerance = 1e-3;
   if (solbin <= tolerance || solbin >=(1-tolerance)) {
     // clean up.
     delete [] y;
     return false;
   }
-  Double varcursol = 0.0;
+  double varcursol = 0.0;
   for (VarSetConstIterator it=f->varsBegin(); it!=f->varsEnd(); ++it) {
     curvar = *it;
     indexvar = curvar->getIndex();
@@ -123,10 +123,10 @@ Bool PerspCutGenerator::generateCut(ConstConstraintPtr cons,ConstVariablePtr bin
   y[binindex] = solbin;
   // Evaluate function at given soution (p*/u*, u*).
   Int error = 0;
-  Double conseval = f->eval(y, &error);
+  double conseval = f->eval(y, &error);
   // Evaluate gradient at given solution (p*/u*, u*).
   Int errorgr = 0;
-  Double * consgradient = new Double[numvars];
+  double * consgradient = new double[numvars];
   std::fill(consgradient, consgradient + numvars, 0);
   f->evalGradient(y, consgradient, &errorgr);
 
@@ -137,16 +137,16 @@ Bool PerspCutGenerator::generateCut(ConstConstraintPtr cons,ConstVariablePtr bin
   // Linear function of perspective cut.
   LinearFunctionPtr lfpersp = (LinearFunctionPtr) new LinearFunction();
   // Constant term of perspective cut.
-  Double feval = conseval - coeffbin*solbin;
-  Double constpersp = solbin*feval +coeffbin*solbin;
+  double feval = conseval - coeffbin*solbin;
+  double constpersp = solbin*feval +coeffbin*solbin;
   // Gradient of binary variable.
-  Double gradu = feval + coeffbin;
+  double gradu = feval + coeffbin;
   // Gradient of continuous variables in the constraint.
-  Double gradfi = 0.0;
+  double gradfi = 0.0;
   // Index of current variable considered.
   UInt varindex = 0;
   // Soluion of variable at vector y.
-  Double ysolvar = 0.0;
+  double ysolvar = 0.0;
   for (it=begin; it!=end; ++it) {
     ConstVariablePtr var = *it; 
     varindex = var->getIndex();
@@ -167,7 +167,7 @@ Bool PerspCutGenerator::generateCut(ConstConstraintPtr cons,ConstVariablePtr bin
   lfpersp->addTerm(binvar, gradu);
   
   FunctionPtr fpersp = (FunctionPtr) new Function(lfpersp);
-  Double infin = std::numeric_limits<Double>::infinity();
+  double infin = std::numeric_limits<double>::infinity();
   CutPtr cut = (CutPtr) new Cut(rel_, fpersp, -infin, -constpersp, false, false);
   
   // add cut to the lists.
@@ -206,7 +206,7 @@ Bool PerspCutGenerator::addCut(CutPtr cut)
     stats_->cuts += 1;
     // Add to the cut list.
     cutList_.push_back(cut);
-    Double viol = violation(cut);
+    double viol = violation(cut);
     if (viol > objtol_) {
       viollist_.push_back(cut);
       viols_.push_back(viol);
@@ -216,26 +216,26 @@ Bool PerspCutGenerator::addCut(CutPtr cut)
   return false;
 }
 
-Double PerspCutGenerator::violation(CutPtr cut)
+double PerspCutGenerator::violation(CutPtr cut)
 {
   FunctionPtr f= cut->getFunction();
-  const Double * x = s_->getPrimal();
+  const double * x = s_->getPrimal();
   Int error = 0;
-  Double evaluation = f->eval(x, &error);
-  Double violub = std::max(0.0, evaluation - cut->getUb());
+  double evaluation = f->eval(x, &error);
+  double violub = std::max(0.0, evaluation - cut->getUb());
   
   return violub;
 }
 
 Bool PerspCutGenerator::checkExists(CutPtr cut)
 {
-  Double rhs = cut->getUb();
+  double rhs = cut->getUb();
   UInt numvars = rel_->getNumVars();
-  std::vector<Double> coeffs(numvars, 0);
+  std::vector<double> coeffs(numvars, 0);
   UInt varindex = 0;
   ConstVariablePtr curvar;
-  Double coeff = 0.0;
-  Double dividedcoeff;
+  double coeff = 0.0;
+  double dividedcoeff;
   FunctionPtr f = cut->getFunction();
   LinearFunctionPtr lf = f->getLinearFunction();
   // Iterators for variables
@@ -247,7 +247,7 @@ Bool PerspCutGenerator::checkExists(CutPtr cut)
     varindex = curvar->getIndex();
     coeff = it->second;
     if (rhs >= eTol_) {
-      dividedcoeff = coeff / Double(rhs);
+      dividedcoeff = coeff / double(rhs);
     } else {
       dividedcoeff = coeff;
     }
@@ -255,10 +255,10 @@ Bool PerspCutGenerator::checkExists(CutPtr cut)
   }
     
   // Check if the cut already exists.
-  std::map< std::vector<Double>, UInt >::const_iterator found = cutmap_.find(coeffs);
-  std::map< std::vector<Double>, UInt >::const_iterator endmap = cutmap_.end();
+  std::map< std::vector<double>, UInt >::const_iterator found = cutmap_.find(coeffs);
+  std::map< std::vector<double>, UInt >::const_iterator endmap = cutmap_.end();
   if (found == endmap) {
-    cutmap_.insert(std::pair< std::vector<Double>, UInt >(coeffs,stats_->totalcuts));
+    cutmap_.insert(std::pair< std::vector<double>, UInt >(coeffs,stats_->totalcuts));
   return false; 
 } else
     return true;
@@ -318,15 +318,15 @@ Bool PerspCutGenerator::checkIntegral(RelaxationPtr p, ConstSolutionPtr s)
   VariableConstIterator end   = p->varsEnd();
   
   // Primal solution.
-  const Double * x = s->getPrimal();
+  const double * x = s->getPrimal();
   // Current variable.
   ConstVariablePtr var;
   // Index of variable.
   UInt index = 0;
   // Value of variable.
-  Double value = 0.0;
+  double value = 0.0;
   // Absolute of fractional part of variable value.
-  Double fraction = 0.0;
+  double fraction = 0.0;
   // Type of variable.
   VariableType type;
   // Iterate through all variables in the problem.

@@ -28,9 +28,9 @@
 using namespace Minotaur;
 
 HessianOfLag::HessianOfLag()
-  : etol_(1e-12),
-    obj_(FunctionPtr()),
-    p_(0)  // NULL
+: etol_(1e-12),
+  obj_(FunctionPtr()),
+  p_(0)  // NULL
 {
   stor_.nz = 0;
   stor_.nlVars = 0;
@@ -42,9 +42,9 @@ HessianOfLag::HessianOfLag()
 
 
 HessianOfLag::HessianOfLag(Problem *p)
-  : etol_(1e-12),
-    obj_(FunctionPtr()),
-    p_(p) // NULL
+: etol_(1e-12),
+  obj_(FunctionPtr()),
+  p_(p) // NULL
 {
   if (p_->getObjective()) {
     obj_ = p_->getObjective()->getFunction();
@@ -93,9 +93,9 @@ void HessianOfLag::fillRowColIndices(UInt *irow, UInt *jcol)
 }
 
 
-void HessianOfLag::fillRowColValues(const Double *x, Double obj_mult, 
-                                    const Double *con_mult, Double *values,
-                                    Int *error)
+void HessianOfLag::fillRowColValues(const double *x, double obj_mult, 
+                                    const double *con_mult, double *values,
+                                    int *error)
 {
   UInt i=0;
   FunctionPtr f;

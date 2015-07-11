@@ -36,7 +36,7 @@ private:
   DoubleVector rand_;
   VarVector x_;
   VarVector y_;
-  Double evalHash_(const CNode* node, UInt rank);
+  double evalHash_(const CNode* node, UInt rank);
 };
 }
 #endif

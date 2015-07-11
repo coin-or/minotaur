@@ -39,7 +39,7 @@ private:
   UInt n_;
   DoubleVector rand_;
   VarVector y_;
-  Double evalHash_(MonomialFunPtr mf_);
+  double evalHash_(MonomialFunPtr mf_);
 };
 }
 

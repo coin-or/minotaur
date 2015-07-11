@@ -33,13 +33,13 @@ namespace Minotaur {
       CutInfo();
 
       /// Create a cut using a constraint.
-      CutInfo(ConstraintPtr c, const Double* hashval);
+      CutInfo(ConstraintPtr c, const double* hashval);
 
       /// Destroy.
       ~CutInfo();
 
       /// By how much does a given point x violate this cut.
-      void evalScore(const Double *x, Double &vio, Double &score);
+      void evalScore(const double *x, double &vio, double &score);
 
 		/// Write to out.
       void write(std::ostream &out) const;
@@ -66,7 +66,7 @@ namespace Minotaur {
 		UInt getCntSinceActive() { return cntSinceActive_;}
 		UInt getCntSinceViol() { return cntSinceViol_;}
 		UInt getNumActive() { return numActive_;}
-		Double getHashVal() { return hashVal_;}
+		double getHashVal() { return hashVal_;}
 
     protected:
 
@@ -88,10 +88,10 @@ namespace Minotaur {
 		UInt numActive_;
 
 		/// Score.
-      Double fixedScore_;
+      double fixedScore_;
 
 		/// To check duplicacy
-      Double hashVal_;
+      double hashVal_;
 
 
   };

@@ -31,7 +31,7 @@ PreSubstVars::~PreSubstVars()
 }
 
 
-void PreSubstVars::insert(VariablePtr vout, VariablePtr vin, Double rat)
+void PreSubstVars::insert(VariablePtr vout, VariablePtr vin, double rat)
 {
   PreSubstVarData *data = new PreSubstVarData();
   data->vout = vout;

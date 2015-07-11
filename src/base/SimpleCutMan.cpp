@@ -65,8 +65,8 @@ void SimpleCutMan::addCut(CutPtr c)
 }
 
 
-ConstraintPtr SimpleCutMan::addCut(ProblemPtr p, FunctionPtr f, Double lb,
-                                   Double ub, Bool, Bool)
+ConstraintPtr SimpleCutMan::addCut(ProblemPtr p, FunctionPtr f, double lb,
+                                   double ub, Bool, Bool)
 {
   CutPtr c = (CutPtr) new Cut(p->getNumVars(), f, lb, ub, true, true);
   addCut(c);
@@ -121,9 +121,9 @@ void SimpleCutMan::postSolveUpdate(ConstSolutionPtr, EngineStatus)
 
 void SimpleCutMan::separate(ConstSolutionPtr sol, Bool *, UInt *)
 {
-  const Double *x = sol->getPrimal();
+  const double *x = sol->getPrimal();
   CutPtr cut;
-  Double viol, act;
+  double viol, act;
   Int err;
 
   mvNewToPool_();

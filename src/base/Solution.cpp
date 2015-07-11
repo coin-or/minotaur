@@ -25,30 +25,30 @@
 using namespace Minotaur;
 
 Solution::Solution()
-  : n_(0),
-    m_(0),
-    problem_(ProblemPtr()),
-    x_(0),
-    dualCons_(0),
-    dualX_(0),
-    consViol_(INFINITY),
-    objValue_(INFINITY),
-    comple_(INFINITY)
+: n_(0),
+  m_(0),
+  problem_(ProblemPtr()),
+  x_(0),
+  dualCons_(0),
+  dualX_(0),
+  consViol_(INFINITY),
+  objValue_(INFINITY),
+  comple_(INFINITY)
 {
 }
 
 
-Solution::Solution(Double obj_value, const Double *x, ProblemPtr problem)
-  : n_(problem->getNumVars()),
-    m_(problem->getNumCons()),
-    problem_(problem),
-    dualCons_(0),
-    dualX_(0),
-    consViol_(INFINITY),
-    objValue_(obj_value)
+Solution::Solution(double obj_value, const double *x, ProblemPtr problem)
+: n_(problem->getNumVars()),
+  m_(problem->getNumCons()),
+  problem_(problem),
+  dualCons_(0),
+  dualX_(0),
+  consViol_(INFINITY),
+  objValue_(obj_value)
 {
   if (x) {
-    x_ = new Double[n_];
+    x_ = new double[n_];
     std::copy(x, x+n_, x_);
   } else {
     x_ = 0;
@@ -56,17 +56,17 @@ Solution::Solution(Double obj_value, const Double *x, ProblemPtr problem)
 }
 
 
-Solution::Solution(Double objval, const DoubleVector &x, ProblemPtr p)
-  : n_(x.size()),
-    m_(p->getNumCons()),
-    problem_(p),
-    dualCons_(0),
-    dualX_(0),
-    consViol_(INFINITY),
-    objValue_(objval)
+Solution::Solution(double objval, const DoubleVector &x, ProblemPtr p)
+: n_(x.size()),
+  m_(p->getNumCons()),
+  problem_(p),
+  dualCons_(0),
+  dualX_(0),
+  consViol_(INFINITY),
+  objValue_(objval)
 {
   if (x.size() > 0) {
-    x_ = new Double[n_];
+    x_ = new double[n_];
     std::copy(x.begin(), x.end(), x_);
   } else {
     x_ = 0;
@@ -94,21 +94,21 @@ Solution::Solution(ConstSolutionPtr sol)
   m_ = sol->m_;
 
   if (sol->x_) {
-    x_ = new Double[n_];
+    x_ = new double[n_];
     std::copy(sol->x_, sol->x_+n_, x_);
   } else {
     x_ = 0;
   }
 
   if (sol->dualCons_) {
-    dualCons_ = new Double[m_];
+    dualCons_ = new double[m_];
     std::copy(sol->dualCons_, sol->dualCons_+m_, dualCons_);
   } else {
     dualCons_ = 0;
   }
 
   if (sol->dualX_) {
-    dualX_ = new Double[n_];
+    dualX_ = new double[n_];
     std::copy(sol->dualX_, sol->dualX_+n_, dualX_);
   } else {
     dualX_ = 0;
@@ -119,27 +119,27 @@ Solution::Solution(ConstSolutionPtr sol)
 }
 
 
-void Solution::setPrimal(const Double *x)
+void Solution::setPrimal(const double *x)
 {
   if (!x_) {
-    x_ = new Double[n_];
+    x_ = new double[n_];
   }
   std::copy(x, x+n_, x_);
 }
 
-void Solution::setDualOfCons(const Double *dualCons)
+void Solution::setDualOfCons(const double *dualCons)
 {
   if (!dualCons_) {
-    dualCons_ = new Double[m_];
+    dualCons_ = new double[m_];
   }
   std::copy(dualCons, dualCons+m_, dualCons_);
 }
 
 
-void Solution::setDualOfVars(const Double *dualX)
+void Solution::setDualOfVars(const double *dualX)
 {
   if (!dualX_) {
-    dualX_ = new Double[n_];
+    dualX_ = new double[n_];
   }
   std::copy(dualX, dualX+n_, dualX_);
 }

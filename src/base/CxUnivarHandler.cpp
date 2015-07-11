@@ -41,6 +41,7 @@
 
 using namespace Minotaur;
 
+const std::string CxUnivarHandler::me_ = "CxUnivarHandler: ";
 
 CxUnivarConstraintData::CxUnivarConstraintData(double eTol,
 					       double vTol,
@@ -48,101 +49,100 @@ CxUnivarConstraintData::CxUnivarConstraintData(double eTol,
                                                ConstVariablePtr ivar,
                                                ConstVariablePtr ovar,
                                                char sense)
-  : eTol_(eTol), vTol_(vTol), con_(newcon),
-    iv_(ivar),
-    riv_(VariablePtr()),
-    ov_(ovar),
-    rov_(VariablePtr()),
-    sense_(sense),
-    secCon_(ConstraintPtr()),
-    linCons_(ConstraintVector())
+: eTol_(eTol), vTol_(vTol), con_(newcon),
+  iv_(ivar),
+  riv_(VariablePtr()),
+  ov_(ovar),
+  rov_(VariablePtr()),
+  sense_(sense),
+  secCon_(ConstraintPtr()),
+  linCons_(ConstraintVector())
 {
 
 }
 
 
 /// Creates initial relaxations   
-void CxUnivarConstraintData::initRelax(RelaxationPtr rel, DoubleVector& tmpX, DoubleVector& grad) {
+void CxUnivarConstraintData::initRelax(RelaxationPtr rel, DoubleVector& tmpX,
+                                       DoubleVector& grad)
+{
+  // get and set the relaxation relaxation variables that match the original
+  // problem variables
+  riv_ = rel->getVariable(iv_->getIndex());
+  rov_ = rel->getVariable(ov_->getIndex());
 
-    // get and set the relaxation relaxation variables that match the original problem variables
-    riv_ = rel->getVariable(iv_->getIndex());
-    rov_ = rel->getVariable(ov_->getIndex());
+  // This isn't used
+  ModVector mods;
 
-    // This isn't used
-    ModVector mods;
+  // Add secant
+  if (sense_ == 'E' || sense_ == 'L') {
+    addSecant(rel, riv_, rov_, con_->getFunction(), tmpX, true, mods);
+  }
 
-    // Add secant
-    if (sense_ == 'E' || sense_ == 'L') {
-      addSecant(rel, riv_, rov_, con_->getFunction(), tmpX, true, mods);
-    }
-
-    // Add linearizations 
-    // TODO: Make strategy a parameter
-    if (sense_ == 'E' || sense_ == 'G') {
-      addLin(rel, iv_, ov_, con_->getFunction(), tmpX, grad, true, mods); 
-    }
+  // Add linearizations 
+  // TODO: Make strategy a parameter
+  if (sense_ == 'E' || sense_ == 'G') {
+    addLin(rel, iv_, ov_, con_->getFunction(), tmpX, grad, true, mods); 
+  }
 
 }
 
 /// Update the current relaxation based on current variable bounds
-void CxUnivarConstraintData::updateRelax(RelaxationPtr  rel , DoubleVector&  tmpX , DoubleVector& grad,
+void CxUnivarConstraintData::updateRelax(RelaxationPtr  rel , DoubleVector&
+                                         tmpX , DoubleVector& grad,
 					 ModVector &mods) 
 {
-  
-    // Add secant
-    if (sense_ == 'E' || sense_ == 'L') {
-      addSecant(rel, riv_, rov_, con_->getFunction(), tmpX, false, mods);
-    }
+  // Add secant
+  if (sense_ == 'E' || sense_ == 'L') {
+    addSecant(rel, riv_, rov_, con_->getFunction(), tmpX, false, mods);
+  }
 
-    // Add linearizations 
-    // TODO: Make strategy a parameter
-    if (sense_ == 'E' || sense_ == 'G') {
-      addLin(rel, riv_, rov_, con_->getFunction(), tmpX, grad, false, mods); 
-    }
-
+  // Add linearizations 
+  // TODO: Make strategy a parameter
+  if (sense_ == 'E' || sense_ == 'G') {
+    addLin(rel, riv_, rov_, con_->getFunction(), tmpX, grad, false, mods); 
+  }
 }
 
-double CxUnivarConstraintData::getViol(const DoubleVector &x) {
+double CxUnivarConstraintData::getViol(const DoubleVector &x)
+{
+  int error;
+  double fval = con_->getFunction()->eval(x,&error); 
 
-     Int error;
-     double fval = con_->getFunction()->eval(x,&error); 
-      
-      // TODO: Put in a better (scaled) feasibility check here
-     double absViol = 0.0;
-     double relViol = 0.0;
-     if (fval < con_->getLb() - eTol_) {
-	absViol = con_->getLb() - fval;
-     }
-     if (fval > con_->getUb() + eTol_ && fval - con_->getUb() > absViol) {
-	absViol = fval - con_->getUb(); 
-     }
-     relViol = absViol;
-     if (fabs(fval) + absViol > 1.0) {
-         relViol = absViol/(fabs(fval) + absViol);
-     }
+  // TODO: Put in a better (scaled) feasibility check here
+  double absViol = 0.0;
+  double relViol = 0.0;
+  if (fval < con_->getLb() - eTol_) {
+    absViol = con_->getLb() - fval;
+  }
+  if (fval > con_->getUb() + eTol_ && fval - con_->getUb() > absViol) {
+    absViol = fval - con_->getUb(); 
+  }
+  relViol = absViol;
+  if (fabs(fval) + absViol > 1.0) {
+    relViol = absViol/(fabs(fval) + absViol);
+  }
 
-     return relViol;
+  return relViol;
 }
 
-bool CxUnivarConstraintData::isFeasible(const double* x) {
-  
-     bool isfeas = true;
-     Int error;
-     double fval = con_->getFunction()->eval(x,&error); 
-      // TODO: Put in a better (scaled) feasibility check here
-     if ((fval < con_->getLb() - eTol_ || fval > con_->getUb() + eTol_) && 
-	      riv_->getUb() - riv_->getLb() > vTol_) {
- 	    isfeas = false;
-     }
-     return isfeas;
+bool CxUnivarConstraintData::isFeasible(const double* x)
+{
+  bool isfeas = true;
+  int error;
+  double fval = con_->getFunction()->eval(x,&error); 
+  // TODO: Put in a better (scaled) feasibility check here
+  if ((fval < con_->getLb() - eTol_ || fval > con_->getUb() + eTol_) && 
+      riv_->getUb() - riv_->getLb() > vTol_) {
+    isfeas = false;
+  }
+  return isfeas;
 }
 
-
-const std::string CxUnivarHandler::me_ = "CxUnivarHandler: ";
 
 CxUnivarHandler::CxUnivarHandler(EnvPtr , ProblemPtr problem)
-  : eTol_(1e-6),
-    vTol_(1e-5)
+: eTol_(1e-6),
+  vTol_(1e-5)
 {
   problem_ = problem; 
   //logger_  = (LoggerPtr) new Logger((LogLevel) 
@@ -181,7 +181,8 @@ void CxUnivarHandler::relaxNodeInc(NodePtr , RelaxationPtr rel, bool *is_inf)
 {
 
 #if defined(DEBUG_CXUNIVARHANDLER)
-  std::cout << "CxUnivarHandler::relaxNodeInc.  Current relaxation: " << std::endl;
+  std::cout << "CxUnivarHandler::relaxNodeInc.  Current relaxation: "
+            << std::endl;
   rel->write(std::cout);
   std::cout << "Current node: " << std::endl;
   node->write(std::cout);
@@ -196,7 +197,7 @@ void CxUnivarHandler::relaxNodeInc(NodePtr , RelaxationPtr rel, bool *is_inf)
   ModVector mods;
   CxUnivarConstraintIterator dit;   
   for (dit = cons_data_.begin(); dit != cons_data_.end(); ++dit) {
-	(*dit)->updateRelax(rel, tmpX_, grad_, mods);
+    (*dit)->updateRelax(rel, tmpX_, grad_, mods);
   }
 
   ModificationConstIterator it;
@@ -210,11 +211,11 @@ void CxUnivarHandler::relaxNodeInc(NodePtr , RelaxationPtr rel, bool *is_inf)
 
 void CxUnivarConstraintData::addLin(RelaxationPtr rel, ConstVariablePtr riv,
 				    ConstVariablePtr rov, FunctionPtr fn,
-				    DoubleVector& tmpX, DoubleVector& grad, bool init,
-				    ModVector &mods)
+                                    DoubleVector& tmpX, DoubleVector& grad,
+                                    bool init, ModVector &mods)
 {
  
-  Int error;
+  int error;
   ConstraintPtr cons; 
   double xlb = riv->getLb();
   double xub = riv->getUb();
@@ -244,21 +245,22 @@ void CxUnivarConstraintData::addLin(RelaxationPtr rel, ConstVariablePtr riv,
     }
     
     if (i == 2) {
-	// Third linearization point taken to be where first two intersect:
-  	// x3 = (f'(xub)*xub - f'(xlb)*xlb + f(xlb) - f(xub))/(f'(xub) - f'(xlb))
-	// Unless this would put it too close to one of the end points
-       if (dfxubval - dfxlbval > 0.0001 || dfxubval - dfxlbval < -0.0001) {
-       	 tmpxval = (dfxubval*xub - dfxlbval*xlb + fxlbval - fxubval)/(dfxubval - dfxlbval);
-         if (tmpxval < xlb + (xub-xlb)*0.05) {
-	    xvals[2] = xlb + (xub-xlb)*0.05;
-         }
-         else if (tmpxval > xub - (xub-xlb)*0.05) {
-            xvals[2] = xub - (xub-xlb)*0.05;
-         }
-         else {
-	    xvals[2] = tmpxval;
-         }
-       }
+      // Third linearization point taken to be where first two intersect:
+      // x3 = (f'(xub)*xub - f'(xlb)*xlb + f(xlb) - f(xub))/(f'(xub) - f'(xlb))
+      // Unless this would put it too close to one of the end points
+      if (dfxubval - dfxlbval > 0.0001 || dfxubval - dfxlbval < -0.0001) {
+        tmpxval = (dfxubval*xub - dfxlbval*xlb + fxlbval - fxubval)/
+                  (dfxubval - dfxlbval);
+        if (tmpxval < xlb + (xub-xlb)*0.05) {
+          xvals[2] = xlb + (xub-xlb)*0.05;
+        }
+        else if (tmpxval > xub - (xub-xlb)*0.05) {
+          xvals[2] = xub - (xub-xlb)*0.05;
+        }
+        else {
+          xvals[2] = tmpxval;
+        }
+      }
     }
     tmpX[riv->getIndex()] = xvals[i];
     error = 0;
@@ -266,7 +268,8 @@ void CxUnivarConstraintData::addLin(RelaxationPtr rel, ConstVariablePtr riv,
     fn->evalGradient(&tmpX[0], &grad[0], &error);
 #if defined(DEBUG_CXUNIVARHANDLER2)
     for (UInt j = 0; j < tmpX.size(); ++j) {
-      std::cout << "x[" << j << "] = " << tmpX[j] << " dfdx[" << j << "] = " << grad[j] << std::endl;
+      std::cout << "x[" << j << "] = " << tmpX[j] << " dfdx[" << j << "] = "
+                << grad[j] << std::endl;
     }
 #endif
     dfxval = grad[riv->getIndex()];
@@ -290,14 +293,17 @@ void CxUnivarConstraintData::addLin(RelaxationPtr rel, ConstVariablePtr riv,
     }
     else {
 #if defined(DEBUG_CXUNIVARHANDLER)
-       std::cout << "Will change 'linearization  ' constraint to have linear function: ";
+       std::cout << "Will change 'linearization  ' constraint to have "
+                 << "linear function: ";
        lf->write(std::cout);  
        std::cout << std::endl;
 #endif
 
        rel->changeConstraint(linCons_[i], lf, fxval - dfxval*xvals[i], INFINITY); 
        LinConModPtr lcmod = (LinConModPtr) new LinConMod(linCons_[i], lf, 
-							 fxval - dfxval*xvals[i], INFINITY); 
+                                                         fxval -
+                                                         dfxval*xvals[i],
+                                                         INFINITY); 
        mods.push_back(lcmod);
     }
   }
@@ -307,11 +313,14 @@ void CxUnivarConstraintData::addLin(RelaxationPtr rel, ConstVariablePtr riv,
 }
 
 
-void CxUnivarConstraintData::addSecant(RelaxationPtr rel, ConstVariablePtr riv,
-	ConstVariablePtr rov, FunctionPtr fn, DoubleVector& tmpX, bool init, ModVector &mods) 
+void CxUnivarConstraintData::addSecant(RelaxationPtr rel,
+                                       ConstVariablePtr riv,
+                                       ConstVariablePtr rov,
+                                       FunctionPtr fn, DoubleVector& tmpX,
+                                       bool init, ModVector &mods) 
 {
 
-  Int error;
+  int error;
   double xlb, xub, fxlb, fxub, m, intercept;
   LinearFunctionPtr lf; 
   FunctionPtr f;
@@ -358,7 +367,8 @@ void CxUnivarConstraintData::addSecant(RelaxationPtr rel, ConstVariablePtr riv,
   }
   else {
     rel->changeConstraint(secCon_, lf, -INFINITY, intercept);
-    LinConModPtr lcmod = (LinConModPtr) new LinConMod(secCon_, lf, -INFINITY, intercept);
+    LinConModPtr lcmod = (LinConModPtr) new LinConMod(secCon_, lf, -INFINITY,
+                                                      intercept);
     mods.push_back(lcmod);
   }
 
@@ -368,12 +378,13 @@ void CxUnivarConstraintData::addSecant(RelaxationPtr rel, ConstVariablePtr riv,
  
   
 void CxUnivarHandler::addConstraint(ConstraintPtr newcon, ConstVariablePtr ivar,
-	ConstVariablePtr ovar, char sense)
+                                    ConstVariablePtr ovar, char sense)
 {
 
   Handler::addConstraint(newcon);
   cons_data_.push_back(CxUnivarConstraintDataPtr(new CxUnivarConstraintData
-                                                 (eTol_, vTol_, newcon, ivar, ovar, sense)));
+                                                 (eTol_, vTol_, newcon, ivar,
+                                                  ovar, sense)));
 }
 
 
@@ -419,17 +430,17 @@ void CxUnivarHandler::getBranchingCandidates(RelaxationPtr,
   double curviol = 0.0;
   
   for (dit = cons_data_.begin(); dit != cons_data_.end(); ++dit) {
-      curviol =(*dit)->getViol(x);   
-      if (curviol > eTol_) {
-         is_inf = false;
-         curc_it = allCands.find((*dit)->getRInputVar());
-         if (curc_it == allCands.end()) {
-	    allCands[(*dit)->getRInputVar()] = curviol;
-         }
-         else {
-            (*curc_it).second = (*curc_it).second + curviol;
-         }
-      }	
+    curviol =(*dit)->getViol(x);   
+    if (curviol > eTol_) {
+      is_inf = false;
+      curc_it = allCands.find((*dit)->getRInputVar());
+      if (curc_it == allCands.end()) {
+        allCands[(*dit)->getRInputVar()] = curviol;
+      }
+      else {
+        (*curc_it).second = (*curc_it).second + curviol;
+      }
+    }	
   }
  
   // TODO: For now putting in all candidates, eventually probably want to choose a reasonable subset 
@@ -447,7 +458,8 @@ void CxUnivarHandler::getBranchingCandidates(RelaxationPtr,
 
 // Implement Handler::getBrMod().
 ModificationPtr CxUnivarHandler::getBrMod(BrCandPtr cand, DoubleVector &x, 
-                                   RelaxationPtr , BranchDirection brdir) 
+                                          RelaxationPtr ,
+                                          BranchDirection brdir) 
 {
 
   // This method is used in Reliability branching.
@@ -473,8 +485,11 @@ ModificationPtr CxUnivarHandler::getBrMod(BrCandPtr cand, DoubleVector &x,
   double xval = x[v->getIndex()];
   double value = xval;  // Make sure branch value is not too close to an end point
   double len = v->getUb() - v->getLb();
-  if (value < v->getLb() + minFromBds*len) value = v->getLb() + minFromBds*len;
-  else if (value > v->getUb() - minFromBds*len) value = v->getUb() - minFromBds*len; 
+  if (value < v->getLb() + minFromBds*len) {
+    value = v->getLb() + minFromBds*len;
+  } else if (value > v->getUb() - minFromBds*len) {
+    value = v->getUb() - minFromBds*len; 
+  }
 
   // can't branch on something that is at its bounds.
   if (!(value > v->getLb()+1e-8 && value < v->getUb()-1e-8)) {
@@ -487,8 +502,7 @@ ModificationPtr CxUnivarHandler::getBrMod(BrCandPtr cand, DoubleVector &x,
     // down branch
     VarBoundModPtr mod = (VarBoundModPtr) new VarBoundMod(v, Upper, value);
     lmods->insert(mod);
-  }
-  else if (brdir ==  UpBranch) {
+  } else if (brdir ==  UpBranch) {
   // up branch
     VarBoundModPtr mod    = (VarBoundModPtr) new VarBoundMod(v, Lower, value);
     lmods->insert(mod);
@@ -510,9 +524,11 @@ Branches CxUnivarHandler::getBranches(BrCandPtr cand, DoubleVector &x,
   double xval = x[v->getIndex()];
   double value = xval;  // Make sure branch value is not too close to an end point
   double len = v->getUb() - v->getLb();
-  if (value < v->getLb() + minFromBds*len) value = v->getLb() + minFromBds*len;
-  else if (value > v->getUb() - minFromBds*len) value = v->getUb() - minFromBds*len; 
-
+  if (value < v->getLb() + minFromBds*len) {
+    value = v->getLb() + minFromBds*len;
+  } else if (value > v->getUb() - minFromBds*len) {
+    value = v->getUb() - minFromBds*len; 
+  }
 
   // can't branch on something that is at its bounds.
   if (!(value > v->getLb()+1e-8 && value < v->getUb()-1e-8)) {
@@ -552,9 +568,8 @@ Branches CxUnivarHandler::getBranches(BrCandPtr cand, DoubleVector &x,
 }
 
 
-BranchPtr
-CxUnivarHandler::doBranch_(BranchDirection UpOrDown, ConstVariablePtr v, 
-			   double bvalue)
+BranchPtr CxUnivarHandler::doBranch_(BranchDirection UpOrDown,
+                                     ConstVariablePtr v, double bvalue)
 {
   BranchPtr branch;
   LinModsPtr linmods;
@@ -588,7 +603,7 @@ CxUnivarHandler::doBranch_(BranchDirection UpOrDown, ConstVariablePtr v,
 
 	ConstVariablePtr rov = (*dit)->getROutVar();
 	FunctionPtr fn = (*dit)->getOriginalCon()->getFunction();
-	Int error;
+	int error;
 
 	// Change the secant constraint
 	ConstraintPtr secCon = (*dit)->getSecantCon();
@@ -616,28 +631,23 @@ CxUnivarHandler::doBranch_(BranchDirection UpOrDown, ConstVariablePtr v,
 	lf->addTerm(rov, 1.0);
 	lf->addTerm(v, -m);
 
-	LinConModPtr lcmod = (LinConModPtr) new LinConMod(secCon, lf, -INFINITY, intercept);
+        LinConModPtr lcmod = (LinConModPtr) new LinConMod(secCon, lf,
+                                                          -INFINITY,
+                                                          intercept);
 	linmods->insert(lcmod);
 
 	// Change all linearization constraints
 	ConstraintVector::iterator lin_it;
-	for(lin_it = (*dit)->linConsBegin(); lin_it != (*dit)->linConsEnd(); ++lin_it) {
+        for(lin_it = (*dit)->linConsBegin(); lin_it != (*dit)->linConsEnd();
+            ++lin_it) {
 	  ConstraintPtr c = *lin_it;
-	  
 	}
-
       }
     }
-
-
-  }
-  else {
-
+  } else {
     VarBoundModPtr mod = (VarBoundModPtr) new VarBoundMod(v, Lower, bvalue);
     linmods->insert(mod);
-
   }
-
 
   assert(!"add Mod correctly here.");
   branch->addPMod(linmods);
@@ -667,4 +677,13 @@ std::string CxUnivarHandler::getName() const
   return "CxUnivarHandler (Handling univariate convex/concave terms).";
 }
 
-
+// Local Variables: 
+// mode: c++ 
+// eval: (c-set-style "k&r") 
+// eval: (c-set-offset 'innamespace 0) 
+// eval: (setq c-basic-offset 2) 
+// eval: (setq fill-column 78) 
+// eval: (auto-fill-mode 1) 
+// eval: (setq column-number-mode 1) 
+// eval: (setq indent-tabs-mode nil) 
+// End:

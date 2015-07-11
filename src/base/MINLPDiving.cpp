@@ -57,7 +57,7 @@ MINLPDiving::MINLPDiving(EnvPtr env, ProblemPtr p, EnginePtr e)
   }
     
   // allocate space for gradient of objective function
-  gradientObj_              = new Double[p_->getNumVars()];
+  gradientObj_              = new double[p_->getNumVars()];
 
   logger_ = (LoggerPtr) new Logger((LogLevel) env_->getOptions()->
       findInt("heur_log_level")->getValue());
@@ -103,7 +103,7 @@ void MINLPDiving::backtrack_(UInt n_moded)
   VarBoundModPtr varmod;
   VarBoundModPtr temp_varmod;
   VariablePtr variable;
-  Double old_bound_val;
+  double old_bound_val;
 
   for (ModVector::reverse_iterator m_iter=lastNodeMods_.rbegin(); 
        m_iter!=lastNodeMods_.rend(); ++m_iter) {
@@ -138,14 +138,14 @@ void MINLPDiving::backtrack_(UInt n_moded)
 }
 
 
-UInt MINLPDiving::FracBounds_(UInt numfrac, const Double* x, 
+UInt MINLPDiving::FracBounds_(UInt numfrac, const double* x, 
                               Direction d, Order o)
 {
   VariablePtr variable;
   VarBoundModPtr varmod;
   UInt id;
-  Double value;
-  Double new_bound;
+  double value;
+  double new_bound;
   UInt begin      = 0;
   UInt end        = 0;
   UInt change_wan = (UInt) ceil( (double) numfrac/4);
@@ -217,15 +217,15 @@ UInt MINLPDiving::FracBounds_(UInt numfrac, const Double* x,
 }
 
 
-void MINLPDiving::getScore_(const Double* x, Scoretype s)
+void MINLPDiving::getScore_(const double* x, Scoretype s)
 {
   VariablePtr variable;
-  Double value;
+  double value;
   UInt i = 0;
-  Double fractional;
+  double fractional;
   ObjectivePtr obj;
   UInt numcons;
-  Double vl_score;
+  double vl_score;
   Int error;
   score_.clear(); // remove the score of violated variables from prev sol
   switch (s) {
@@ -299,7 +299,7 @@ void MINLPDiving::getScore_(const Double* x, Scoretype s)
 }
 
 
-void MINLPDiving::implementDive_(Int i, const Double* x, SolutionPoolPtr s_pool)
+void MINLPDiving::implementDive_(Int i, const double* x, SolutionPoolPtr s_pool)
 {
   ConstSolutionPtr sol;
   Direction d;
@@ -376,12 +376,12 @@ void MINLPDiving::implementDive_(Int i, const Double* x, SolutionPoolPtr s_pool)
 }
 
 
-UInt MINLPDiving::isFrac_(const Double* x)
+UInt MINLPDiving::isFrac_(const double* x)
 {
   VariablePtr variable;
-  Double value;
+  double value;
   UInt i = 0;
-  Double fractional;
+  double fractional;
   // remove the violated variables from previous solution
   violated_.clear();
   for (VariableConstIterator v_iter=p_->varsBegin(); 
@@ -400,14 +400,14 @@ UInt MINLPDiving::isFrac_(const Double* x)
 }
 
 
-UInt MINLPDiving::LexBounds_(UInt numfrac, const Double* x,
+UInt MINLPDiving::LexBounds_(UInt numfrac, const double* x,
     Direction d, Order o)
 {
   VariablePtr variable;
   VarBoundModPtr varmod;
   UInt id;
-  Double new_bound;
-  Double value;
+  double new_bound;
+  double value;
   UInt begin      = 0;
   UInt end        = 0;
   UInt change_wan = (UInt) ceil( (double) numfrac/4);
@@ -484,14 +484,14 @@ UInt MINLPDiving::LexBounds_(UInt numfrac, const Double* x,
 
 
 
-UInt MINLPDiving::ReducedCost_(UInt numfrac, const Double* x, 
+UInt MINLPDiving::ReducedCost_(UInt numfrac, const double* x, 
     Direction d, Order o)
 {
   VariablePtr variable;
   VarBoundModPtr varmod;
   UInt id;
-  Double new_bound;
-  Double value;
+  double new_bound;
+  double value;
   UInt begin      = 0;
   UInt end        = 0;
   UInt change_wan = (UInt) ceil( (double) numfrac/4);
@@ -565,7 +565,7 @@ UInt MINLPDiving::ReducedCost_(UInt numfrac, const Double* x,
 }
 
 
-void MINLPDiving::restoreBounds_(Double* LB_copy, Double* UB_copy, UInt vars)
+void MINLPDiving::restoreBounds_(double* LB_copy, double* UB_copy, UInt vars)
 {
   for (UInt i=0; i<vars; ++i, ++LB_copy, ++UB_copy) {
     p_->changeBound(i, Lower, *LB_copy);
@@ -574,7 +574,7 @@ void MINLPDiving::restoreBounds_(Double* LB_copy, Double* UB_copy, UInt vars)
 }
 
 
-Double MINLPDiving::rounding_(Double value, Direction d)
+double MINLPDiving::rounding_(double value, Direction d)
 {
   switch (d) {
        case (Floor)    : return floor(value); 
@@ -601,7 +601,7 @@ Double MINLPDiving::rounding_(Double value, Direction d)
 }
 
 
-void MINLPDiving::saveBounds_(Double* LB_copy, Double* UB_copy, UInt vars)
+void MINLPDiving::saveBounds_(double* LB_copy, double* UB_copy, UInt vars)
 {
   VariablePtr variable;
   for (UInt i=0; i<vars; ++i, ++LB_copy, ++UB_copy) {
@@ -683,14 +683,14 @@ void MINLPDiving::solve(NodePtr, RelaxationPtr, SolutionPoolPtr s_pool)
 {
   ConstSolutionPtr sol;
   EngineStatus status;
-  const Double* x;
+  const double* x;
   
   Int num_method         = 32;
   UInt numvars           = p_->getNumVars();
-  Double* root_x;
-  Double* root_copy;
-  Double* LB_copy;
-  Double* UB_copy;
+  double* root_x;
+  double* root_copy;
+  double* LB_copy;
+  double* UB_copy;
   logger_->msgStream(LogInfo) << me_ << "Starting" << std::endl;
   timer_->start();
   if (!shouldDive_()) {
@@ -698,10 +698,10 @@ void MINLPDiving::solve(NodePtr, RelaxationPtr, SolutionPoolPtr s_pool)
     timer_->stop();
     return;
   }
-  root_x             = new Double[numvars];
-  root_copy          = new Double[numvars];
-  LB_copy            = new Double[numvars];
-  UB_copy            = new Double[numvars];
+  root_x             = new double[numvars];
+  root_copy          = new double[numvars];
+  LB_copy            = new double[numvars];
+  UB_copy            = new double[numvars];
   e_->clear();
   e_->load(p_);
   e_->setIterationLimit(7000); // try to run for a loooong time.
@@ -763,7 +763,7 @@ void MINLPDiving::sort_(UInt left, UInt right)
 {
   UInt i = left;
   UInt j = right;
-  Double pivot = score_[(left + right)/2];
+  double pivot = score_[(left + right)/2];
 
   while (i <= j) {
     while (score_[i] < pivot) {
@@ -796,21 +796,21 @@ void MINLPDiving::updateAvgDual_(ConstSolutionPtr sol)
 {
   DoubleVector::iterator it;
   UInt iter         = stats_->numLocal;
-  const Double* d   = sol->getDualOfVars();
+  const double* d   = sol->getDualOfVars();
   for (it=avgDual_.begin(); it!=avgDual_.end(); ++it, ++d) {
     *it = ((*it)*(iter - 1) + *d)/iter;
   }
 }
 
 
-UInt MINLPDiving::VectorLength_(UInt numfrac, const Double* x, 
-    Direction d, Order o)
+UInt MINLPDiving::VectorLength_(UInt numfrac, const double* x, 
+                                Direction d, Order o)
 {
   VariablePtr variable;
   VarBoundModPtr varmod;
   UInt id;
-  Double new_bound;
-  Double value;
+  double new_bound;
+  double value;
   UInt begin      = 0;
   UInt end        = 0;
   UInt change_wan = (UInt) ceil( (double) numfrac/4);

@@ -25,16 +25,16 @@ YEqMonomial::YEqMonomial(UInt n)
 {
   n_ = n;
   for (UInt i=0; i<n_; ++i) {
-    rand_.push_back((Double) rand()/(RAND_MAX));
+    rand_.push_back((double) rand()/(RAND_MAX));
   }
 }
 
 
-Double YEqMonomial::evalHash_(MonomialFunPtr mf)
+double YEqMonomial::evalHash_(MonomialFunPtr mf)
 {
-  Double hash = 0.0;
+  double hash = 0.0;
   for (VarIntMapConstIterator it=mf->termsBegin(); it!=mf->termsEnd(); ++it) {
-    hash += ((Double) it->second)/(1.0+it->first->getId());
+    hash += ((double) it->second)/(1.0+it->first->getId());
   }
   return hash;
 }
@@ -42,7 +42,7 @@ Double YEqMonomial::evalHash_(MonomialFunPtr mf)
 
 VariablePtr YEqMonomial::findY(MonomialFunPtr mf)
 {
-  Double hash = evalHash_(mf);
+  double hash = evalHash_(mf);
   VarIntMapConstIterator it, it2;
   Bool found;
 

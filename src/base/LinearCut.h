@@ -31,19 +31,19 @@ namespace Minotaur {
       LinearCut();
 
       /// Construct a cut of the form: \f$ax \leq b \f$
-      LinearCut(LinearFunctionPtr lf, Double lb, Double ub);
+      LinearCut(LinearFunctionPtr lf, double lb, double ub);
 
       /// Destroy
       ~LinearCut();
 
       /// By how much does a given point x violate this cut.
-      Double getViolation(const Double *){ return 0.; };
+      double getViolation(const double *){ return 0.; };
 
       /// Get ub of the inequality.
-      Double getUb(){ return ub_; };
+      double getUb(){ return ub_; };
 
       /// Get lb of the inequality.
-      Double getLb(){ return lb_; };
+      double getLb(){ return lb_; };
 
       /// Add this cut to problem.
       void applyToProblem(ProblemPtr);
@@ -63,13 +63,13 @@ namespace Minotaur {
       FunctionPtr f_;
 
       /// lb.
-      Double lb_;
+      double lb_;
 
       /// Linear function or the lhs.
       LinearFunctionPtr lf_;
 
       /// ub.
-      Double ub_;
+      double ub_;
   };
   typedef boost::shared_ptr<LinearCut> LinearCutPtr;
   typedef std::vector< LinearCutPtr > LinearCutVector;

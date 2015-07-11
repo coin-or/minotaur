@@ -48,215 +48,219 @@ namespace Minotaur {
    */
   class QPDProcessor : public NodeProcessor {
 
-    public:
-      /// Default constructor
-      QPDProcessor();
+  public:
+    /// Default constructor
+    QPDProcessor();
 
-      /// Create the processor using options from an environment.
-      QPDProcessor(EnvPtr env, ProblemPtr p, EnginePtr e, EnginePtr qe,
-                   HandlerVector &handlers);
+    /// Create the processor using options from an environment.
+    QPDProcessor(EnvPtr env, ProblemPtr p, EnginePtr e, EnginePtr qe,
+                 HandlerVector &handlers);
 
-      /// Destroy
-      ~QPDProcessor();
-      
-      // Add a heuristic.
-      void addHeur(HeurPtr h);
+    /// Destroy
+    ~QPDProcessor();
 
-      // True if a new solution was found while processing this node.
-      Bool foundNewSolution();
+    // Add a heuristic.
+    void addHeur(HeurPtr h);
 
-      // Find branches that will be used to branch at this node.
-      Branches getBranches();
+    // True if a new solution was found while processing this node.
+    bool foundNewSolution();
 
-      // Get warm-start information.
-      WarmStartPtr getWarmStart();
+    // Find branches that will be used to branch at this node.
+    Branches getBranches();
 
-      // Implement NodeProcessor::process().
-      void process(NodePtr node, RelaxationPtr rel, 
-                   SolutionPoolPtr s_pool);
+    // Get warm-start information.
+    WarmStartPtr getWarmStart();
 
-      // Process root node.
-      void processRootNode(NodePtr node, RelaxationPtr rel, 
-                           SolutionPoolPtr s_pool);
+    // Implement NodeProcessor::process().
+    void process(NodePtr node, RelaxationPtr rel, 
+                 SolutionPoolPtr s_pool);
 
-      // write statistics. Base class method.
-      void writeStats(std::ostream &out) const; 
+    // Process root node.
+    void processRootNode(NodePtr node, RelaxationPtr rel, 
+                         SolutionPoolPtr s_pool);
 
-      // write statistics to logger. Base class method.
-      void writeStats() const {}; 
+    // write statistics. Base class method.
+    void writeStats(std::ostream &out) const; 
 
-    private:
-      /// Branches found by this processor for this node.
-      Branches branches_;
+    // write statistics to logger. Base class method.
+    void writeStats() const {}; 
 
-      /// Engine used to process the NLP relaxation.
-      EnginePtr e_;
+  private:
+    /// Branches found by this processor for this node.
+    Branches branches_;
 
-      /// Pointer to environment.
-      EnvPtr env_;
+    /// Engine used to process the NLP relaxation.
+    EnginePtr e_;
 
-      VariablePtr eta_;
+    /// Pointer to environment.
+    EnvPtr env_;
 
-      VariablePtr etaL_;
+    VariablePtr eta_;
 
-      /// Vector of all handlers.
-      HandlerVector handlers_;
+    VariablePtr etaL_;
 
-      /// Log
-      Logger *logger_;
+    /// Vector of all handlers.
+    HandlerVector handlers_;
 
-      /* 
-       * If Filter-SQP is used, the duals are negative of what QP from Hessian
-       * evaluation expects. If this flag is on, the duals are negated before
-       * creating QP.
-       */
-      Bool negDuals_;
+    /// Log
+    Logger *logger_;
 
-      /// Name. For logging.
-      static const std::string me_;
+    /* 
+     * If Filter-SQP is used, the duals are negative of what QP from Hessian
+     * evaluation expects. If this flag is on, the duals are negated before
+     * creating QP.
+     */
+    bool negDuals_;
 
-      /// Vector of nonlinear constraints.
-      std::vector<ConstConstraintPtr> nlCons_;
+    /// Name. For logging.
+    static const std::string me_;
 
-      /// No. of solutions found while processing this node.
-      UInt numSolutions_;
+    /// Vector of nonlinear constraints.
+    std::vector<ConstConstraintPtr> nlCons_;
 
-      /// Pointer to original problem.
-      ProblemPtr p_;
+    /// No. of solutions found while processing this node.
+    UInt numSolutions_;
 
-      /// Relaxation that is processed by this processor.
-      RelaxationPtr qp_;
+    /// Pointer to original problem.
+    ProblemPtr p_;
 
-      /// Engine used to process the QP. 
-      EnginePtr qpe_;
+    /// Relaxation that is processed by this processor.
+    RelaxationPtr qp_;
 
-      const Double solAbsTol_;
+    /// Engine used to process the QP. 
+    EnginePtr qpe_;
 
-      const Double solRelTol_;
+    const double solAbsTol_;
 
-      /**
-       * If QP-diving is used with Filter-SQP as nlp-engine, then we need to
-       * resolve QP after each call to nlp solve. Otherwise, bqpd gets in
-       * trouble.
-       */
-      Bool solveQPafNLP_;
+    const double solRelTol_;
 
-      /// Statistics
-      QPDStats stats_;
+    /**
+     * If QP-diving is used with Filter-SQP as nlp-engine, then we need to
+     * resolve QP after each call to nlp solve. Otherwise, bqpd gets in
+     * trouble.
+     */
+    bool solveQPafNLP_;
 
-      /// To impose upper bound.
-      ConstraintPtr ubCon_;
+    /// Statistics
+    QPDStats stats_;
 
-      /// Warm-start information for start processing the children.
-      WarmStartPtr ws_;
+    /// To impose upper bound.
+    ConstraintPtr ubCon_;
 
-      Bool boundTooFar_(ConstSolutionPtr sol, NodePtr node,
-                        Double best) ;
+    /// Warm-start information for start processing the children.
+    WarmStartPtr ws_;
 
-      void getLin_(FunctionPtr f, const Double *x, UInt n,
-                   VariableConstIterator vbeg, VariableConstIterator vend, 
-                   LinearFunctionPtr &lf, Double &val);
+    bool boundTooFar_(ConstSolutionPtr sol, NodePtr node,
+                      double best) ;
 
-      void getObjLin_(NonlinearFunctionPtr nlf, const Double *x,
-                      UInt n, VariableConstIterator vbeg,
-                      VariableConstIterator vend, 
-                      LinearFunctionPtr &lf, Double &val);
+    void getLin_(FunctionPtr f, const double *x, UInt n,
+                 VariableConstIterator vbeg, VariableConstIterator vend, 
+                 LinearFunctionPtr &lf, double &val);
 
-      void fixInts_(const Double *x, std::stack<Modification *> *nlp_mods);
+    void getObjLin_(NonlinearFunctionPtr nlf, const double *x,
+                    UInt n, VariableConstIterator vbeg,
+                    VariableConstIterator vend, 
+                    LinearFunctionPtr &lf, double &val);
 
-      void chkObjVio_(Double vio, Double etaval, Bool &large_vio);
+    void fixInts_(const double *x, std::stack<Modification *> *nlp_mods);
 
-      void chkVio_(NodePtr node, Double *vio, Double &tvio, Double &maxvio,
-                   Bool &large_vio);
+    void chkObjVio_(double vio, double etaval, bool &large_vio);
 
-      Bool isHFeasible_(ConstSolutionPtr sol, Bool &should_prune);
-      Bool isHFeasible2_(ConstSolutionPtr sol, Bool &ishigh, Bool &should_prune);
-      void chkObjVio2_(const Double *qpx, NodePtr node, Double best, Bool &hiobjd, Bool &hietavio);
-      Bool isNLPFeasible2_(const Double *qpx, Double *vio, NodePtr node, Bool &hicvio);
-      Bool isLargeCVio_(ConstConstraintPtr c, Double vio, UInt depth);
+    void chkVio_(NodePtr node, double *vio, double &tvio, double &maxvio,
+                 bool &large_vio);
 
-      //Bool isQPFeasible_(NodePtr node, ConstSolutionPtr sol, 
-      //                  SolutionPoolPtr s_pool, Bool &should_prune);
+    bool isHFeasible_(ConstSolutionPtr sol, bool &should_prune);
+    bool isHFeasible2_(ConstSolutionPtr sol, bool &ishigh,
+                       bool &should_prune);
+    void chkObjVio2_(const double *qpx, NodePtr node, double best,
+                     bool &hiobjd, bool &hietavio);
 
-      Bool isNLPFeasible_(ConstSolutionPtr sol, Double *vio);
+    bool isNLPFeasible2_(const double *qpx, double *vio, NodePtr node, bool
+                         &hicvio);
+    bool isLargeCVio_(ConstConstraintPtr c, double vio, UInt depth);
 
-      SolutionPtr nlpSol2Qp_(ConstSolutionPtr sol);
+    //bool isQPFeasible_(NodePtr node, ConstSolutionPtr sol, 
+    //                  SolutionPoolPtr s_pool, bool &should_prune);
 
-      void OAFromPoint_(const Double *x, ConstSolutionPtr sol,
-                        SeparationStatus *status); 
-      
-      Bool presolveNode_(NodePtr node, SolutionPoolPtr s_pool);
+    bool isNLPFeasible_(ConstSolutionPtr sol, double *vio);
 
-      void processNLP_(NodePtr node, ConstSolutionPtr &sol,
-                       ConstSolutionPtr qpsol,
-                       SolutionPoolPtr s_pool, Bool &should_prune);
+    SolutionPtr nlpSol2Qp_(ConstSolutionPtr sol);
 
-      void processQP_(UInt iter, NodePtr node, ConstSolutionPtr &sol,
-                      SolutionPoolPtr s_pool, Bool &should_prune,
-                      Bool &should_resolve);
+    void OAFromPoint_(const double *x, ConstSolutionPtr sol,
+                      SeparationStatus *status); 
 
-      void processQP2_(UInt iter, NodePtr node, ConstSolutionPtr &sol,
-                       SolutionPoolPtr s_pool, Bool &should_prune,
-                       Bool &should_resolve);
+    bool presolveNode_(NodePtr node, SolutionPoolPtr s_pool);
 
-      void saveSol_(ConstSolutionPtr sol, SolutionPoolPtr s_pool,
+    void processNLP_(NodePtr node, ConstSolutionPtr &sol,
+                     ConstSolutionPtr qpsol,
+                     SolutionPoolPtr s_pool, bool &should_prune);
+
+    void processQP_(UInt iter, NodePtr node, ConstSolutionPtr &sol,
+                    SolutionPoolPtr s_pool, bool &should_prune,
+                    bool &should_resolve);
+
+    void processQP2_(UInt iter, NodePtr node, ConstSolutionPtr &sol,
+                     SolutionPoolPtr s_pool, bool &should_prune,
+                     bool &should_resolve);
+
+    void saveSol_(ConstSolutionPtr sol, SolutionPoolPtr s_pool,
+                  NodePtr node);
+    void saveQPSol_(ConstSolutionPtr sol, SolutionPoolPtr s_pool,
                     NodePtr node);
-      void saveQPSol_(ConstSolutionPtr sol, SolutionPoolPtr s_pool,
-                      NodePtr node);
 
-      void separate_(Bool is_nec, ConstSolutionPtr sol, const Double *vio,
-                     ConstSolutionPtr nlp_sol, NodePtr node,
-                     SolutionPoolPtr s_pool, SeparationStatus *status);
+    void separate_(bool is_nec, ConstSolutionPtr sol, const double *vio,
+                   ConstSolutionPtr nlp_sol, NodePtr node,
+                   SolutionPoolPtr s_pool, SeparationStatus *status);
 
-      void separateB_(ConstSolutionPtr sol, ConstSolutionPtr nlp_sol,
-                      Double *vio, NodePtr node, SolutionPoolPtr s_pool,
+    void separateB_(ConstSolutionPtr sol, ConstSolutionPtr nlp_sol,
+                    double *vio, NodePtr node, SolutionPoolPtr s_pool,
+                    SeparationStatus *status);
+
+    void separateC_(ConstSolutionPtr sol, ConstSolutionPtr nlp_sol,
+                    double *vio, NodePtr node, SolutionPoolPtr s_pool,
+                    SeparationStatus *status);
+
+    void separateO_(ConstSolutionPtr sol, ConstSolutionPtr nlp_sol,
+                    double *vio, NodePtr node, SolutionPoolPtr s_pool,
+                    SeparationStatus *status);
+
+    void separateECP_(ConstSolutionPtr sol, const double *vio,
+                      NodePtr node, SolutionPoolPtr ,
                       SeparationStatus *status);
 
-      void separateC_(ConstSolutionPtr sol, ConstSolutionPtr nlp_sol,
-                      Double *vio, NodePtr node, SolutionPoolPtr s_pool,
-                      SeparationStatus *status);
+    void separateObj_(ConstSolutionPtr sol, ConstSolutionPtr nlp_sol,
+                      double vio, SeparationStatus *status);
 
-      void separateO_(ConstSolutionPtr sol, ConstSolutionPtr nlp_sol,
-                      Double *vio, NodePtr node, SolutionPoolPtr s_pool,
-                      SeparationStatus *status);
+    void setupQP_(ConstSolutionPtr sol);
 
-      void separateECP_(ConstSolutionPtr sol, const Double *vio,
-                        NodePtr node, SolutionPoolPtr ,
-                        SeparationStatus *status);
+    /**
+     * Check if a node can be pruned either because the relaxation is
+     * infeasible or because the cost is too high.
+     */
+    bool shouldPrune_(NodePtr node, EngineStatus nlp_status, 
+                      ConstSolutionPtr sol, SolutionPoolPtr s_pool);
 
-      void separateObj_(ConstSolutionPtr sol, ConstSolutionPtr nlp_sol,
-                        Double vio, SeparationStatus *status);
-
-      void setupQP_(ConstSolutionPtr sol);
-
-      /**
-       * Check if a node can be pruned either because the relaxation is
-       * infeasible or because the cost is too high.
-       */
-      Bool shouldPrune_(NodePtr node, EngineStatus nlp_status, 
+    /**
+     * Check if a node can be pruned after solving QP.
+     */
+    bool shouldPruneQP_(NodePtr node, EngineStatus nlp_status, 
                         ConstSolutionPtr sol, SolutionPoolPtr s_pool);
 
-      /**
-       * Check if a node can be pruned after solving QP.
-       */
-      Bool shouldPruneQP_(NodePtr node, EngineStatus nlp_status, 
-                          ConstSolutionPtr sol, SolutionPoolPtr s_pool);
+    bool shouldSep_(bool is_nec, double vio, ConstConstraintPtr c);
+    bool shouldSepObj_(bool is_nec, double vio, double etaval);
 
-      Bool shouldSep_(Bool is_nec, Double vio, ConstConstraintPtr c);
-      Bool shouldSepObj_(Bool is_nec, Double vio, Double etaval);
+    /// Solve original nlp.
+    void solveNLP_(ConstSolutionPtr &sol, EngineStatus &nlp_status);
 
-      /// Solve original nlp.
-      void solveNLP_(ConstSolutionPtr &sol, EngineStatus &nlp_status);
+    void solveQP_(ConstSolutionPtr &sol, EngineStatus &qp_status);
 
-      void solveQP_(ConstSolutionPtr &sol, EngineStatus &qp_status);
+    SolutionPtr translateSol_(ConstSolutionPtr sol);
 
-      SolutionPtr translateSol_(ConstSolutionPtr sol);
+    void unfixInts_(std::stack<Modification *> *nlp_mods);
 
-      void unfixInts_(std::stack<Modification *> *nlp_mods);
+    void updateObjCons_(ConstSolutionPtr sol);
 
-      void updateObjCons_(ConstSolutionPtr sol);
-
-      void updateUb_(SolutionPoolPtr s_pool, Double *nlpval);
+    void updateUb_(SolutionPoolPtr s_pool, double *nlpval);
   };
 
   typedef boost::shared_ptr <QPDProcessor> QPDProcessorPtr;

@@ -22,7 +22,7 @@ namespace Minotaur {
 
   struct MaxFreqBrStats {
     UInt calls;      /// Number of times called to find a branching candidate.
-    Double time;     /// Total time spent in branching.
+    double time;     /// Total time spent in branching.
   };
 
   /// A class to select a variable for branching using maximum-frequency branching.
@@ -62,7 +62,7 @@ namespace Minotaur {
       const static std::string me_; 
 
       /// Tolerance for checking if a variable is fixed or not.
-      Double zTol_;
+      double zTol_;
 
       /// Status of problem after using this brancher
       BrancherStatus status_;
@@ -88,17 +88,17 @@ namespace Minotaur {
       BrVarCandSet cands_; 
 
       /// True if data structures are initialized. False otherwise.
-      Bool init_;
+      bool init_;
 
       /** 
-       * \brief The vector that keeps a count of how many times a candidate has been
-       * fraction, for each candidate.
+       * \brief The vector that keeps a count of how many times a candidate
+       * has been fraction, for each candidate.
        */
       UIntVector fracCount_;
 
       /** 
-       * \brief The vector that keeps a count of how many times a candidate has been
-       * not fixed, for each candidate.
+       * \brief The vector that keeps a count of how many times a candidate
+       * has been not fixed, for each candidate.
        */
       UIntVector unfixedCount_;
 
