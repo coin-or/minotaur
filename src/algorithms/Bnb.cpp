@@ -342,7 +342,8 @@ void setInitialOptions(EnvPtr env)
 
 void showHelp()
 {
-  std::cout << "Usage:" << std::endl
+  std::cout << "NLP-based branch-and-bound solver for convex MINLP" << std::endl
+            << "Usage:" << std::endl
             << "To show version: bnb -v (or --show_version yes) " << std::endl
             << "To show all options: bnb -= (or --show_options yes)" 
             << std::endl
@@ -387,7 +388,7 @@ int showInfo(EnvPtr env)
 
   env->getLogger()->msgStream(LogInfo)
     << me << "Minotaur version " << env->getVersion() << std::endl
-    << me << "NLP-based branch-and-bound for convex MINLP" << std::endl;
+    << me << "NLP-based branch-and-bound solver for convex MINLP" << std::endl;
   return 0;
 }
 

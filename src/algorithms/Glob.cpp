@@ -60,7 +60,8 @@ int transform(EnvPtr env, ProblemPtr p, ProblemPtr &newp,
 
 void show_help()
 {
-  std::cout << "Usage:" << std::endl
+  std::cout << "Global optimization for general QCQP" << std::endl
+            << "Usage:" << std::endl
             << "To show version: glob -v (or --show_version yes) " << std::endl
             << "To show all options: glob -= (or --show_options yes)" 
             << std::endl
@@ -132,7 +133,7 @@ int main(int argc, char** argv)
   }
 
   std::cout << me << "Minotaur version " << env->getVersion() << std::endl
-            << me << "global optimization for general QCQP" << std::endl;
+            << me << "Global optimization for general QCQP" << std::endl;
   if (options->findBool("use_native_cgraph")->getValue()==false) {
     options->findBool("use_native_cgraph")->setValue(true); 
     std::cout << me << "Setting value of 'use_native_cgraph option' to True" <<

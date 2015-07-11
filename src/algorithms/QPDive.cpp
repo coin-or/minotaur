@@ -53,7 +53,8 @@ void show_help();
 
 void show_help()
 {
-  std::cout << "Usage:" << std::endl
+  std::cout << "QP-Diving algorithm for convex MINLP" << std::endl
+            << "Usage:" << std::endl
             << "To show version: qpd -v (or --show_version yes) " << std::endl
             << "To show all options: qpd -= (or --show_options yes)" 
             << std::endl
@@ -159,7 +160,9 @@ int main(int argc, char** argv)
     goto CLEANUP;
   }
 
-  std::cout << me << "Minotaur version " << env->getVersion() << std::endl;
+  std::cout << me << "Minotaur version " << env->getVersion() << std::endl
+            << me << "QP-Diving algorithm for convex MINLP" << std::endl;
+
   // load the problem.
   inst = iface->readInstance(options->findString("problem_file")->getValue());
   std::cout << "time used in reading instance = " << std::fixed 

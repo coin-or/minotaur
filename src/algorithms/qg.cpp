@@ -66,7 +66,9 @@ void setInitialOptions(EnvPtr env)
 
 void show_help()
 {
-  std::cout << "Usage:" << std::endl
+  std::cout << "Quesada-Grossmann (LP/NLP) algorithm for convex MINLP"
+            << std::endl
+            << "Usage:" << std::endl
             << "To show version: qg -v (or --show_version yes) " << std::endl
             << "To show all options: qg -= (or --show_options yes)" 
             << std::endl
