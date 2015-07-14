@@ -23,13 +23,13 @@ void PolyUT::monomial()
   VariablePtr x1 = (VariablePtr) new Variable(0, 0, 0., 1., Continuous, "x1");
   VariablePtr x2 = (VariablePtr) new Variable(1, 1, 0., 1., Continuous, "x2");
   MonomialFunPtr m = (MonomialFunPtr) new MonomialFunction(2., x1, 4); 
-  Int error=0;
+  int error=0;
   m->multiply( 5., x2, 2);
   m->multiply(-5., x2, 1);
   //m->write(std::cout);
 
   // -50 * x1^4 * x2^3
-  Double x[2];
+  double x[2];
   x[0] = 0.;
   x[1] = 1.;
   CPPUNIT_ASSERT(0 == m->eval(x, &error));
@@ -52,7 +52,7 @@ void PolyUT::monomial()
 
 
   // gradient
-  Double g[2];
+  double g[2];
   g[0] = g[1] = 0.;
   x[0] = 0.;
   x[1] = 1.;
@@ -88,7 +88,7 @@ void PolyUT::polynomial()
   NonlinearFunctionPtr nlf;
   QuadraticFunctionPtr qf = QuadraticFunctionPtr();
   FunctionPtr f;
-  Int error = 0;
+  int error = 0;
 
   lf->addTerm(x1, 1.0);
 
@@ -101,7 +101,7 @@ void PolyUT::polynomial()
   (*p1) += m;
 
   //p1->write(std::cout);
-  Double x[2];
+  double x[2];
   x[0] = 0.;
   x[1] = 0.;
   CPPUNIT_ASSERT(0. == p1->eval(x, &error));
@@ -117,7 +117,7 @@ void PolyUT::polynomial()
   CPPUNIT_ASSERT(8. == p1->eval(x, &error));
   CPPUNIT_ASSERT(0==error);
 
-  Double g[2];
+  double g[2];
   x[0] = 0.;
   x[1] = 1.;
   g[0] = g[1] = 0.;

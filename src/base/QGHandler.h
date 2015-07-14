@@ -27,10 +27,10 @@ class WarmStart;
 typedef boost::shared_ptr<WarmStart> WarmStartPtr;
 
 struct QGStats {
-  Size_t nlpS;      /// Number of nlps solved.
-  Size_t nlpF;      /// Number of nlps feasible.
-  Size_t nlpI;      /// Number of nlps infeasible.
-  Size_t cuts;      /// Number of cuts added to the LP.
+  size_t nlpS;      /// Number of nlps solved.
+  size_t nlpF;      /// Number of nlps feasible.
+  size_t nlpI;      /// Number of nlps infeasible.
+  size_t cuts;      /// Number of cuts added to the LP.
 }; 
 
 

@@ -141,7 +141,7 @@ void LinFeasPump::implementFP_(const double*, SolutionPoolPtr s_pool)
   UInt min_flip               = 2;
   UInt max_non_zero_obj       = 500;
   double inf_meas             = 0.0;
-  Int err;
+  int err;
   
   e_->setOptionsForSingleSolve();
   lpE_->solve();

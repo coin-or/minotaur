@@ -219,7 +219,7 @@ void CGraph::evalHessian(double mult, const double *x,
   UInt vind;
   VariablePtr v;
   UInt nz = 0;
-  Bool use2 = true;
+  bool use2 = true;
   std::stack<CNode *> st2;
   double thresh = vq_.size();
 
@@ -414,7 +414,7 @@ void CGraph::fillHessStor(LTHessStor *stor)
   VariablePtr *stor_rows = stor->rows;
   UIntQ *st_inds = stor->colQs;
   UInt vind;
-  Bool use2 = true;
+  bool use2 = true;
 
   hInds_.clear();
   hOffs_.clear();
@@ -864,7 +864,7 @@ void CGraph::getVars(VariableSet *vars)
 }
 
 
-Bool CGraph::isIdenticalTo(CGraphPtr cg)
+bool CGraph::isIdenticalTo(CGraphPtr cg)
 {
   CNodeVector::iterator it1, it2;
   CNode *n1, *n2;
@@ -1122,7 +1122,7 @@ void CGraph::subst(VariablePtr out, VariablePtr in, double rat)
   CNode *nin = 0, *nout = 0, *nmult = 0;
   VarNodeMap::iterator it;
   UInt minid;
-  Bool btmp;
+  bool btmp;
 
   if (vars_.find(out)==vars_.end()) {
     return;

@@ -94,10 +94,10 @@ public:
   // Get variables that exist in this function.
   void getVars(VariableSet *vars);
 
-  Bool isIdenticalTo(CGraphPtr cg);
+  bool isIdenticalTo(CGraphPtr cg);
 
   // base class method
-  Bool isSumOfSquares() const;
+  bool isSumOfSquares() const;
 
   // multiply by a constant.
   void multiply(double c);
@@ -189,7 +189,7 @@ private:
   /// All nodes of the graph.
   CNodeVector aNodes_; 
 
-  Bool changed_;
+  bool changed_;
 
   /// All dependent nodes, i.e. nodes with OpCode different from OpVar, OpInt
   /// and OpNum.

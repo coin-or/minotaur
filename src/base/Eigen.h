@@ -128,7 +128,7 @@ namespace Minotaur {
     // /**
     // Number of eigen values found.
     // */
-    Int m_;
+    int m_;
 
     // /**
     // The absolute error tolerance for the eigenvalues.  An approximate
@@ -163,7 +163,7 @@ namespace Minotaur {
     // The i-th eigenvector is nonzero only in elements 
     // ISUPPZ( 2*i-1 ) through ISUPPZ( 2*i ).
     // */
-    Int *isuppz_;    
+    int *isuppz_;    
 
     // /**
     // A map of what is the  index in matrix A_ of a variable
@@ -201,7 +201,7 @@ namespace Minotaur {
     // /**
     // Construct a linear function based on the eigen vectors of A_.
     // */
-    LinearFunctionPtr getLinearFunction_(const Int i);
+    LinearFunctionPtr getLinearFunction_(const int i);
   };
 
   class Eigen {

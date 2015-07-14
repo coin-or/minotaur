@@ -84,7 +84,7 @@ public:
   ASL * getAsl();
 
   /// Get the initial point provided in the .nl file
-  const Minotaur::Double * getInitialPoint() const;
+  const double * getInitialPoint() const;
 
   /// Get the number of defined variables.
   Minotaur::UInt getNumDefs() const;
@@ -161,40 +161,34 @@ private:
   void addDefinedVars_(Minotaur::ProblemPtr instance);
 
   /// Add the i-th linear constraint from ASL.
-  void addLinearConstraint_(Minotaur::Int i, 
-                            Minotaur::ProblemPtr problemPtr);
+  void addLinearConstraint_(int i, Minotaur::ProblemPtr problemPtr);
 
   /// Add the i-th linear objective from ASL.
-  void addLinearObjective_(Minotaur::Int i, 
-                           Minotaur::ProblemPtr problemPtr);
+  void addLinearObjective_(int i, Minotaur::ProblemPtr problemPtr);
 
   /**
    * Get linear terms in the i-th constraint and put them into lf. If lf
    * is NULL, new space is allocated.
    */
-  void addLinearTermsFromConstr_(Minotaur::LinearFunctionPtr & lf, 
-                                 Minotaur::Int i);
+  void addLinearTermsFromConstr_(Minotaur::LinearFunctionPtr &lf, int i);
 
   /**
    * Get linear terms in the i-th objective and put them into lf. If lf
    * is NULL, new space is allocated.
    */
-  void addLinearTermsFromObj_(Minotaur::LinearFunctionPtr & lf, 
-                              Minotaur::Int i);
+  void addLinearTermsFromObj_(Minotaur::LinearFunctionPtr &lf, int i);
 
   /// Add ampl specific options to Minotaur options.
   void addOptions_();
 
   /// Add the i-th non-linear constraint from ASL as a quadratic constraint
-  void addQuadraticConstraint_(Minotaur::Int i, 
-                               Minotaur::ProblemPtr problemPtr);
+  void addQuadraticConstraint_(int i, Minotaur::ProblemPtr problemPtr);
 
   void addQuadraticDefCons_(Minotaur::ProblemPtr instance);
   void addQuadraticDefCons2_(Minotaur::ProblemPtr instance);
 
   /// Add the i-th non-linear objective from ASL as a quadratic objective
-  void addQuadraticObjective_(Minotaur::Int i, 
-                              Minotaur::ProblemPtr problemPtr);
+  void addQuadraticObjective_(int i, Minotaur::ProblemPtr problemPtr);
 
   /// Add variables in ASL to the instance 
   void addVariablesFromASL_(Minotaur::ProblemPtr problemPtr);
@@ -241,16 +235,16 @@ private:
   Minotaur::FunctionType getConstraintsType_();
 
   /// Get the function type of i-th constraint.
-  Minotaur::FunctionType getConstraintType_(Minotaur::Int i);
+  Minotaur::FunctionType getConstraintType_(int i);
 
   /**
    * Get the function type that describes the defined variable of type
    * '1'
    */
-  Minotaur::FunctionType getDef1ConstraintType_(Minotaur::Int i);
+  Minotaur::FunctionType getDef1ConstraintType_(int i);
 
   /// Get the function type that describes the defined variable 
-  Minotaur::FunctionType getDefConstraintType_(Minotaur::Int i);
+  Minotaur::FunctionType getDefConstraintType_(int i);
 
   /**
    * Return function type of the ASL expression e_ptr. This function is
@@ -293,7 +287,7 @@ private:
   void getPoly_(Minotaur::LinearFunctionPtr & lfPtr, 
                 Minotaur::QuadraticFunctionPtr & qfPtr, 
                 Minotaur::PolyFunPtr & pfPtr, 
-                Minotaur::Double & c, expr *e_ptr);
+                double & c, expr *e_ptr);
 
   /**
    * Return function type of the ASL sub-expresstion e_ptr when the root 

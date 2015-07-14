@@ -28,103 +28,103 @@ using std::string;
 
 namespace Minotaur {
 
-struct PerspListStats
-{
-  UInt totalcons; // Total number of constraints checked.
-  UInt totalpersp; // Total number of perspective constraints obtained.
-};
+  struct PerspListStats
+  {
+    UInt totalcons; // Total number of constraints checked.
+    UInt totalpersp; // Total number of perspective constraints obtained.
+  };
 
-class PerspList;
-typedef boost::shared_ptr<PerspList> PerspListPtr;
-typedef boost::shared_ptr<const PerspList> ConstPerspListPtr;
-typedef PerspListStats* PerspListStatsPtr;
-typedef PerspListStats const * ConstPerspListStatsPtr;
+  class PerspList;
+  typedef boost::shared_ptr<PerspList> PerspListPtr;
+  typedef boost::shared_ptr<const PerspList> ConstPerspListPtr;
+  typedef PerspListStats* PerspListStatsPtr;
+  typedef PerspListStats const * ConstPerspListStatsPtr;
 
-typedef std::map<VariablePtr, std::pair<ConstConstraintPtr, ConstConstraintPtr> > VarUbLb;
-typedef boost::shared_ptr<VarUbLb> VarUbLbPtr;
-typedef std::pair<ConstConstraintPtr, ConstVariablePtr> ConsVar;
-//typedef std::map<ConstConstraintPtr, VarUbLbPtr> PerspCons;
-typedef std::map<ConsVar, VarUbLbPtr> PerspCons;
-typedef boost::shared_ptr<PerspCons> PerspConsPtr;
-typedef boost::shared_ptr<const PerspCons> ConstPerspConsPtr;
+  typedef std::map<VariablePtr, std::pair<ConstConstraintPtr, ConstConstraintPtr> > VarUbLb;
+  typedef boost::shared_ptr<VarUbLb> VarUbLbPtr;
+  typedef std::pair<ConstConstraintPtr, ConstVariablePtr> ConsVar;
+  //typedef std::map<ConstConstraintPtr, VarUbLbPtr> PerspCons;
+  typedef std::map<ConsVar, VarUbLbPtr> PerspCons;
+  typedef boost::shared_ptr<PerspCons> PerspConsPtr;
+  typedef boost::shared_ptr<const PerspCons> ConstPerspConsPtr;
 
-/** 
- * This class identifies the constraints that can be used for 
- * perspective cut generation. 
- */
-class PerspList {
-public:
-  /// Default constructor.
-  PerspList();
+  /** 
+   * This class identifies the constraints that can be used for 
+   * perspective cut generation. 
+   */
+  class PerspList {
+  public:
+    /// Default constructor.
+    PerspList();
 
-  /// Constructs from a given relaxation.
-  PerspList(RelaxationPtr rel, EnvPtr env);
+    /// Constructs from a given relaxation.
+    PerspList(RelaxationPtr rel, EnvPtr env);
 
-  /// Destructor.
-  ~PerspList();
+    /// Destructor.
+    ~PerspList();
 
-  /// Checks if a constraint is a Perspective constraint.
-  Bool evalConstraint(ConstConstraintPtr cons, VarUbLbPtr boundcons,
-                      VariablePtr& binvar);
+    /// Checks if a constraint is a Perspective constraint.
+    bool evalConstraint(ConstConstraintPtr cons, VarUbLbPtr boundcons,
+                        VariablePtr& binvar);
 
-  /// Checks if the constraint does not have any multi-variable terms
-  /// that includes u and x together, i.e. constraint is separable 
-  /// such that f(x) + cu <= 0.
-  Bool separable(ConstConstraintPtr cons, ConstVariablePtr binvar);
+    /// Checks if the constraint does not have any multi-variable terms
+    /// that includes u and x together, i.e. constraint is separable 
+    /// such that f(x) + cu <= 0.
+    bool separable(ConstConstraintPtr cons, ConstVariablePtr binvar);
 
-  /// Checks if all the variables are continuous or at most one binary.
-  /// Otherwise, we cannot generate perspective cuts.
-  Bool checkVarTypes(const FunctionPtr f, ConstVariablePtr& binvar);
+    /// Checks if all the variables are continuous or at most one binary.
+    /// Otherwise, we cannot generate perspective cuts.
+    bool checkVarTypes(const FunctionPtr f, ConstVariablePtr& binvar);
 
-  /// Checks if the variables are bounded by only one binary variable.
-  Bool checkVarsBounds(const FunctionPtr f, ConstVariablePtr binvar,
-                       VarUbLbPtr boundcons);
+    /// Checks if the variables are bounded by only one binary variable.
+    bool checkVarsBounds(const FunctionPtr f, ConstVariablePtr binvar,
+                         VarUbLbPtr boundcons);
 
-  /// Checks if a given variable is bounded by binary variable.
-  Bool checkVarBounds(ConstVariablePtr var, ConstVariablePtr binvar,
-                      VarUbLbPtr varbounds);
+    /// Checks if a given variable is bounded by binary variable.
+    bool checkVarBounds(ConstVariablePtr var, ConstVariablePtr binvar,
+                        VarUbLbPtr varbounds);
 
-  /// Add a constraint to the lists.
-  void addConstraint(ConstConstraintPtr cons, VarUbLbPtr boundcons,
-                     VariablePtr binvar);
-  
-  /// Generate list of perspective constraints.
-  void generateList();
+    /// Add a constraint to the lists.
+    void addConstraint(ConstConstraintPtr cons, VarUbLbPtr boundcons,
+                       VariablePtr binvar);
 
-  /// Generate map of variables that are in the initial variable's constraint
-  /// set.
-  Bool initialBinary(ConstVariablePtr var, VarSetPtr binaries);
-  
-  /// Get total number of perspective constraints.
-  UInt getNumPersp() const {return list_->size();};
+    /// Generate list of perspective constraints.
+    void generateList();
 
-  /// Get total number of constraints checked.
-  UInt getNumConsChecked() const {return stats_->totalcons;};
+    /// Generate map of variables that are in the initial variable's constraint
+    /// set.
+    bool initialBinary(ConstVariablePtr var, VarSetPtr binaries);
 
-  /// Get the statistics aboud perspective identification.
-  ConstPerspListStatsPtr getStats() const {return stats_;};
+    /// Get total number of perspective constraints.
+    UInt getNumPersp() const {return list_->size();};
 
-  /// Get a pointer to the vector that constains perspective constraints.
-  ConstPerspConsPtr getPerspCons() const {return list_;};
-  
-  /// Print out the perspective structure.
-  void printPersp(ConstConstraintPtr cons, VarUbLbPtr boundcons, 
-                  ConstVariablePtr binvar);
+    /// Get total number of constraints checked.
+    UInt getNumConsChecked() const {return stats_->totalcons;};
 
-private:
-  /// Environment.
-  EnvPtr env_;
-  /// Relaxation that we identify perspective constraints.
-  RelaxationPtr rel_;
-  /// Perspective constraint list.
-  PerspConsPtr list_;
-  /// Statistics about perspective constraints.
-  PerspListStatsPtr stats_;
-  /// Output file.
-  ofstream output_;
-  /// Output file name.
-  string outfile_;
-}; // end of class PerspList.
+    /// Get the statistics aboud perspective identification.
+    ConstPerspListStatsPtr getStats() const {return stats_;};
+
+    /// Get a pointer to the vector that constains perspective constraints.
+    ConstPerspConsPtr getPerspCons() const {return list_;};
+
+    /// Print out the perspective structure.
+    void printPersp(ConstConstraintPtr cons, VarUbLbPtr boundcons, 
+                    ConstVariablePtr binvar);
+
+  private:
+    /// Environment.
+    EnvPtr env_;
+    /// Relaxation that we identify perspective constraints.
+    RelaxationPtr rel_;
+    /// Perspective constraint list.
+    PerspConsPtr list_;
+    /// Statistics about perspective constraints.
+    PerspListStatsPtr stats_;
+    /// Output file.
+    ofstream output_;
+    /// Output file name.
+    string outfile_;
+  }; // end of class PerspList.
 
 
 } // end of namespace.

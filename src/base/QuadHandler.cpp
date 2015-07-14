@@ -53,8 +53,8 @@ using namespace Minotaur;
 const std::string QuadHandler::me_ = "QuadHandler: ";
 
 QuadHandler::QuadHandler(EnvPtr env, ProblemPtr problem)
-  : aTol_(1e-5),
-    rTol_(1e-4)
+: aTol_(1e-5),
+  rTol_(1e-4)
 {
   p_ = problem; 
   modProb_ = true;

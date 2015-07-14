@@ -214,7 +214,7 @@ void LinearFunctionTest::testFix()
 {
   VariablePtr x0, x1, x2, x3;
   LinearFunctionPtr lf = (LinearFunctionPtr) new LinearFunction();
-  Double x[4] = {1.0, 5.0, -1.0, 11.0};
+  double x[4] = {1.0, 5.0, -1.0, 11.0};
 
   x0 = (VariablePtr) new Variable(0, 0, 0.0, 1.0, Integer, "x0");
 

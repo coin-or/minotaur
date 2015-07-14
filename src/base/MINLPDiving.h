@@ -81,7 +81,6 @@
     */
 
    class MINLPDiving : public Heuristic {
-
    public:
 
      /// default constructor
@@ -205,7 +204,7 @@
       * rouding are chosen for diving. Changes made to the problem are
       * stored in the stack of modification.
       */
-     void implementDive_(Int i, const double*x, SolutionPoolPtr s_pool);
+     void implementDive_(int i, const double*x, SolutionPoolPtr s_pool);
 
      /** 
       * \brief The number of fractional variables in current solution
@@ -277,7 +276,7 @@
       *
       * \return    FuncPtr Address of the selected Diving method
       */
-     FuncPtr selectHeur_(Int i, Direction &d, Order &o);
+     FuncPtr selectHeur_(int i, Direction &d, Order &o);
 
      /** 
       * \brief Function to decide on diving or not

@@ -95,7 +95,7 @@ void AMPLInterface::addDefinedVars_(Minotaur::ProblemPtr instance)
 {
   std::string name;
   Minotaur::VariablePtr v;
-  for (Minotaur::Int i=0; i<nDefVars_; ++i) {
+  for (int i=0; i<nDefVars_; ++i) {
     std::stringstream name_stream;
     name_stream << "defvar" << i;
     name = name_stream.str();
@@ -105,7 +105,7 @@ void AMPLInterface::addDefinedVars_(Minotaur::ProblemPtr instance)
 }
 
 
-void AMPLInterface::addLinearConstraint_(Minotaur::Int i, 
+void AMPLInterface::addLinearConstraint_(int i, 
                                          Minotaur::ProblemPtr instance)
 {
   std::string cName;
@@ -122,8 +122,7 @@ void AMPLInterface::addLinearConstraint_(Minotaur::Int i,
 }
 
 
-void AMPLInterface::addLinearObjective_(Minotaur::Int i, 
-                                        Minotaur::ProblemPtr instance)
+void AMPLInterface::addLinearObjective_(int i, Minotaur::ProblemPtr instance)
 {
   Minotaur::FunctionPtr fPtr;
   Minotaur::LinearFunctionPtr lfPtr = Minotaur::LinearFunctionPtr(); // null
@@ -151,7 +150,7 @@ void AMPLInterface::addLinearObjective_(Minotaur::Int i,
 // trusted for no repititions. Otherwise, there are some existing terms in lf
 // and we need to use lf->incTerm().
 void AMPLInterface::addLinearTermsFromConstr_(Minotaur::LinearFunctionPtr & lf,
-                                              Minotaur::Int i)
+                                              int i)
 {
   cgrad *cg; // for ampl
   if (lf) {
@@ -172,7 +171,7 @@ void AMPLInterface::addLinearTermsFromConstr_(Minotaur::LinearFunctionPtr & lf,
 
 // same as getLinearTermsFromConstr_() but for objective.
 void AMPLInterface::addLinearTermsFromObj_(Minotaur::LinearFunctionPtr & lf, 
-                                           Minotaur::Int i)
+                                           int i)
 {
   ograd *og; // for ampl
   if (lf) {
@@ -196,23 +195,23 @@ void AMPLInterface::addOptions_()
   Minotaur::FlagOptionPtr f_option; 
   Minotaur::BoolOptionPtr b_option; 
   Minotaur::OptionDBPtr options = env_->getOptions();
-  f_option = (Minotaur::FlagOptionPtr) new Minotaur::Option<Minotaur::Bool>
+  f_option = (Minotaur::FlagOptionPtr) new Minotaur::Option<bool>
     ("AMPL", "If given, then write .sol file for ampl.", true, false);
   options->insert(f_option, true);
 
-  f_option = (Minotaur::FlagOptionPtr) new Minotaur::Option<Minotaur::Bool>
+  f_option = (Minotaur::FlagOptionPtr) new Minotaur::Option<bool>
     ("v", "If given, then write version information.", true, false);
   options->insert(f_option, true);
 
-  f_option = (Minotaur::FlagOptionPtr) new Minotaur::Option<Minotaur::Bool>
+  f_option = (Minotaur::FlagOptionPtr) new Minotaur::Option<bool>
     ("=", "If given, then write all known options.", true, false);
   options->insert(f_option, true);
 
-  f_option = (Minotaur::FlagOptionPtr) new Minotaur::Option<Minotaur::Bool>
+  f_option = (Minotaur::FlagOptionPtr) new Minotaur::Option<bool>
     ("?", "If given, then write help message.", true, false);
   options->insert(f_option, true);
 
-  b_option = (Minotaur::BoolOptionPtr) new Minotaur::Option<Minotaur::Bool>
+  b_option = (Minotaur::BoolOptionPtr) new Minotaur::Option<bool>
     ("display_ampl_model", 
      "If true, write ampl model before creating the problem: <0/1>", 
      true, false);
@@ -221,17 +220,16 @@ void AMPLInterface::addOptions_()
 }
 
 
-void AMPLInterface::addQuadraticConstraint_(Minotaur::Int i, 
+void AMPLInterface::addQuadraticConstraint_(int i, 
                                             Minotaur::ProblemPtr instance)
 {
   {
-    using namespace Minotaur;
     std::string cName;
-    FunctionPtr fPtr = FunctionPtr();  //NULL
-    LinearFunctionPtr lfPtr = LinearFunctionPtr();  //NULL
-    QuadraticFunctionPtr qfPtr = QuadraticFunctionPtr();  //NULL
-    PolyFunPtr pfPtr = PolyFunPtr();  //NULL
-    Double c = 0;
+    Minotaur::FunctionPtr fPtr = Minotaur::FunctionPtr();  //NULL
+    Minotaur::LinearFunctionPtr lfPtr = Minotaur::LinearFunctionPtr();  //NULL
+    Minotaur::QuadraticFunctionPtr qfPtr = Minotaur::QuadraticFunctionPtr();
+    Minotaur::PolyFunPtr pfPtr = Minotaur::PolyFunPtr();  //NULL
+    double c = 0;
     cde *constraint_cde;
     // cast myAsl_ from ASL into ASL_fg
     ASL_fg *asl_fg = (ASL_fg *)myAsl_;
@@ -257,14 +255,14 @@ void AMPLInterface::addQuadraticConstraint_(Minotaur::Int i,
     fPtr = (Minotaur::FunctionPtr) new Minotaur::Function(lfPtr, qfPtr, pfPtr);
     cName = std::string(con_name_ASL(myAsl_, i));
     instance->newConstraint(fPtr, myAsl_->i.LUrhs_[2*i] - c, 
-        myAsl_->i.LUrhs_[2*i+1] - c, cName); 
+                            myAsl_->i.LUrhs_[2*i+1] - c, cName); 
   }
 }
 
 
 void AMPLInterface::addQuadraticDefCons_(Minotaur::ProblemPtr instance)
 {
-  Minotaur::Double c;
+  double c;
   Minotaur::QuadraticFunctionPtr qf;
   Minotaur::LinearFunctionPtr lf;
   Minotaur::FunctionPtr f;
@@ -277,7 +275,7 @@ void AMPLInterface::addQuadraticDefCons_(Minotaur::ProblemPtr instance)
   // visit each 'defined variable' and add the constraint that is used to
   // define it. The defintion could be linear
   // or nonlinear.
-  for (Minotaur::Int i=0; i<nDefVarsBco_; ++i) {
+  for (int i=0; i<nDefVarsBco_; ++i) {
     c = 0;
     qf = Minotaur::QuadraticFunctionPtr();  // NULL
     lf = Minotaur::LinearFunctionPtr();     // NULL
@@ -298,7 +296,7 @@ void AMPLInterface::addQuadraticDefCons_(Minotaur::ProblemPtr instance)
     f = (Minotaur::FunctionPtr) new Minotaur::Function(lf, qf, pf);
     instance->newConstraint(f, -c, -c);
   }
-  for (Minotaur::Int i=0; i<nDefVarsCo1_; ++i) {
+  for (int i=0; i<nDefVarsCo1_; ++i) {
     c = 0;
     qf = Minotaur::QuadraticFunctionPtr(); 
     lf = Minotaur::LinearFunctionPtr(); // NULL
@@ -324,7 +322,7 @@ void AMPLInterface::addQuadraticDefCons_(Minotaur::ProblemPtr instance)
 
 void AMPLInterface::addQuadraticDefCons2_(Minotaur::ProblemPtr instance)
 {
-  Minotaur::Double c;
+  double c;
   Minotaur::QuadraticFunctionPtr qf = Minotaur::QuadraticFunctionPtr();
   Minotaur::LinearFunctionPtr lf;
   Minotaur::FunctionPtr f;
@@ -334,12 +332,12 @@ void AMPLInterface::addQuadraticDefCons2_(Minotaur::ProblemPtr instance)
   cexp1 *cstruct1; // cexp1 is defined in nlp.h of asl
   int v_index;
   linpart *L;    // linpart is defined in asl.h
-  Minotaur::Int err = 0;
+  int err = 0;
 
   // visit each 'defined variable' and add the constraint that is used to
   // define it. The defintion could be linear
   // or nonlinear.
-  for (Minotaur::Int i=0; i<nDefVarsBco_; ++i) {
+  for (int i=0; i<nDefVarsBco_; ++i) {
     c = 0;
     cstruct = (((const ASL_fg *)myAsl_)->I.cexps_)+i;
     lf = (Minotaur::LinearFunctionPtr) new Minotaur::LinearFunction();
@@ -366,7 +364,7 @@ void AMPLInterface::addQuadraticDefCons2_(Minotaur::ProblemPtr instance)
   }
 
 
-  for (Minotaur::Int i=0; i<nDefVarsCo1_; ++i) {
+  for (int i=0; i<nDefVarsCo1_; ++i) {
     c = 0;
     cstruct1 = (((const ASL_fg *)myAsl_)->I.cexps1_)+i;
     L = cstruct1->L;
@@ -394,8 +392,8 @@ void AMPLInterface::addQuadraticDefCons2_(Minotaur::ProblemPtr instance)
 }
 
 
-void AMPLInterface::addQuadraticObjective_(Minotaur::Int i, 
-    Minotaur::ProblemPtr instance)
+void AMPLInterface::addQuadraticObjective_(int i, 
+                                           Minotaur::ProblemPtr instance)
 {
   cde *obj_cde;
   // cast myAsl_ from ASL into ASL_fg
@@ -415,7 +413,7 @@ void AMPLInterface::addQuadraticObjective_(Minotaur::Int i,
       Minotaur::QuadraticFunctionPtr qfPtr = Minotaur::QuadraticFunctionPtr();
       Minotaur::PolyFunPtr pfPtr = Minotaur::PolyFunPtr();
       Minotaur::FunctionPtr fPtr;
-      Minotaur::Double c = 0;
+      double c = 0;
 
       obj_cde = asl_fg->I.obj_de_+i;
       assert (obj_cde);
@@ -699,8 +697,8 @@ Minotaur::ProblemPtr AMPLInterface::copyInstanceFromASL2_()
   Minotaur::CNode *cnode = 0;
   std::string name;
   Minotaur::ObjectiveType obj_sense = Minotaur::Minimize;
-  Minotaur::Double *x = 0, *grad = 0;
-  Minotaur::Int err = 0;
+  double *x = 0, *grad = 0;
+  int err = 0;
 
   // new instance
   Minotaur::ProblemPtr instance = (Minotaur::ProblemPtr) 
@@ -708,10 +706,10 @@ Minotaur::ProblemPtr AMPLInterface::copyInstanceFromASL2_()
   addVariablesFromASL_(instance);
   addDefinedVars_(instance);
 
-  x = new Minotaur::Double[instance->getNumVars()];
-  grad = new Minotaur::Double[instance->getNumVars()];
-  memset(x, 0, instance->getNumVars()*sizeof(Minotaur::Double));
-  memset(grad, 0, instance->getNumVars()*sizeof(Minotaur::Double));
+  x = new double[instance->getNumVars()];
+  grad = new double[instance->getNumVars()];
+  memset(x, 0, instance->getNumVars()*sizeof(double));
+  memset(grad, 0, instance->getNumVars()*sizeof(double));
 
   // visit each constraint and copy the linear parts and nonlinear parts.
   start_index = 0;
@@ -736,7 +734,7 @@ Minotaur::ProblemPtr AMPLInterface::copyInstanceFromASL2_()
           lf->incTerm(instance->getVariable(j), grad[j]);
         }
       }
-      memset(grad, 0, instance->getNumVars()*sizeof(Minotaur::Double));
+      memset(grad, 0, instance->getNumVars()*sizeof(double));
       cgraph.reset();
     }
     f = (Minotaur::FunctionPtr) new Minotaur::Function(lf, qf, cgraph);
@@ -1189,7 +1187,7 @@ Minotaur::FunctionType AMPLInterface::getConstraintsType_()
 
 
   // check the constraints that define the 'defined variables'
-  for (Minotaur::Int i=0; i<nDefVarsBco_; ++i) {
+  for (int i=0; i<nDefVarsBco_; ++i) {
     function_type = getDefConstraintType_(i);
 #if DEBUG
     logger_->msgStream(Minotaur::LogDebug) << "Constraint (def) " << i << 
@@ -1200,7 +1198,7 @@ Minotaur::FunctionType AMPLInterface::getConstraintsType_()
 
 
   // check the constraints that define the 'defined variables' (only 1)
-  for (Minotaur::Int i=0; i<nDefVarsCo1_; ++i) {
+  for (int i=0; i<nDefVarsCo1_; ++i) {
     function_type = getDef1ConstraintType_(i);
 #if DEBUG
     logger_->msgStream(Minotaur::LogDebug) << "Constraint (def1) " << i 
@@ -1212,7 +1210,7 @@ Minotaur::FunctionType AMPLInterface::getConstraintsType_()
 }
 
 
-Minotaur::FunctionType AMPLInterface::getConstraintType_(Minotaur::Int i) 
+Minotaur::FunctionType AMPLInterface::getConstraintType_(int i) 
 {
   ASL_fg *asl_fg;
   cde *constraint_cde;
@@ -1233,7 +1231,7 @@ Minotaur::FunctionType AMPLInterface::getConstraintType_(Minotaur::Int i)
 }
 
 
-Minotaur::FunctionType AMPLInterface::getDef1ConstraintType_(Minotaur::Int i) 
+Minotaur::FunctionType AMPLInterface::getDef1ConstraintType_(int i) 
 {
   Minotaur::FunctionType ftype;
   cexp1  *cstruct1; // cexp is defined in nlp.h of asl
@@ -1244,7 +1242,7 @@ Minotaur::FunctionType AMPLInterface::getDef1ConstraintType_(Minotaur::Int i)
 }
 
 
-Minotaur::FunctionType AMPLInterface::getDefConstraintType_(Minotaur::Int i) 
+Minotaur::FunctionType AMPLInterface::getDefConstraintType_(int i) 
 {
   Minotaur::FunctionType ftype;
   cexp  *cstruct; // cexp is defined in nlp.h of asl
@@ -1357,7 +1355,7 @@ Minotaur::FunctionType AMPLInterface::getExpressionType_(expr *e_ptr)
 }
 
 
-const Minotaur::Double * AMPLInterface::getInitialPoint() const
+const double * AMPLInterface::getInitialPoint() const
 {
   if (myAsl_->i.X0_) {
     return myAsl_->i.X0_;
@@ -1603,7 +1601,7 @@ Minotaur::FunctionType AMPLInterface::getPMExpressionType_(expr *e_ptr)
 void AMPLInterface::getPoly_(Minotaur::LinearFunctionPtr & lfPtr, 
                              Minotaur::QuadraticFunctionPtr & qfPtr, 
                              Minotaur::PolyFunPtr & pfPtr, 
-                             Minotaur::Double & c, expr *e_ptr)
+                             double & c, expr *e_ptr)
 {
   int opcode;
   Minotaur::LinearFunctionPtr lfPtr1 = Minotaur::LinearFunctionPtr();
@@ -1614,7 +1612,7 @@ void AMPLInterface::getPoly_(Minotaur::LinearFunctionPtr & lfPtr,
   Minotaur::PolyFunPtr pfPtr2 = Minotaur::PolyFunPtr();
   lfPtr = Minotaur::LinearFunctionPtr();  //NULL
   qfPtr = Minotaur::QuadraticFunctionPtr();  //NULL
-  Minotaur::Double c1 = 0, c2 = 0;
+  double c1 = 0, c2 = 0;
   c = 0;
   int var_index;
 
@@ -2483,8 +2481,8 @@ void AMPLInterface::writeSolution(Minotaur::ConstSolutionPtr sol,
                                   Minotaur::SolveStatus status)
 {
   Option_Info *option_info = NULL;
-  Minotaur::Double *y = NULL;
-  Minotaur::Double *x = NULL;
+  double *y = NULL;
+  double *x = NULL;
   char *cstr = new char[2];
   cstr[0] = ' ';
   cstr[1] = '\0';
@@ -2559,8 +2557,8 @@ void AMPLInterface::writeSolution(Minotaur::ConstSolutionPtr sol,
   }
 
   if (sol) {
-    x = new Minotaur::Double[nVars_];
-    const Minotaur::Double *best_x = sol->getPrimal();
+    const double *best_x = sol->getPrimal();
+    x = new double[nVars_];
 
     // assume that sol has nVars_ variables.
     std::copy(best_x, best_x+nVars_, x);

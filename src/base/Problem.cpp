@@ -103,7 +103,7 @@ void Problem::addToCons(ConstraintPtr cons, double c)
 }
 
 
-void Problem::calculateSize(Bool shouldRedo)
+void Problem::calculateSize(bool shouldRedo)
 {
   if (!size_) {
     shouldRedo=true;
@@ -871,13 +871,13 @@ VariablePtr Problem::getVariable(UInt index) const
 }
 
 
-Bool Problem::hasNativeDer() const
+bool Problem::hasNativeDer() const
 {
   return nativeDer_;
 }
 
 
-Bool Problem::isLinear()
+bool Problem::isLinear()
 {
   if (size_) {
     if (size_->cons == size_->linCons && 
@@ -889,19 +889,19 @@ Bool Problem::isLinear()
 }
 
 
-Bool Problem::isMarkedDel(ConstConstraintPtr con)
+bool Problem::isMarkedDel(ConstConstraintPtr con)
 {
   return (con->getState() == DeletedCons);
 }
 
 
-Bool Problem::isMarkedDel(ConstVariablePtr var)
+bool Problem::isMarkedDel(ConstVariablePtr var)
 {
   return (var->getState() == DeletedVar);
 }
 
 
-Bool Problem::isPolyp_()
+bool Problem::isPolyp_()
 {
   // assume that we have already check for linear, quadratic ...
   FunctionPtr f;
@@ -920,7 +920,7 @@ Bool Problem::isPolyp_()
 }
 
 
-Bool Problem::isQP()
+bool Problem::isQP()
 {
   if (size_) {
     if (isLinear()) {
@@ -935,7 +935,7 @@ Bool Problem::isQP()
 }
 
 
-Bool Problem::isQuadratic()
+bool Problem::isQuadratic()
 {
   if (size_) {
     if (isLinear()) {
@@ -1168,7 +1168,7 @@ void Problem::newVariables(VariableConstIterator v_begin,
 
 void Problem::prepareForSolve()
 {
-  Bool reload = false;
+  bool reload = false;
 
   if (consModed_ || varsModed_) {
     reload = true;
@@ -1255,7 +1255,7 @@ void Problem::setInitialPoint(const double *x)
 }
 
 
-void Problem::setInitialPoint(const double *x, Size_t k) 
+void Problem::setInitialPoint(const double *x, size_t k) 
 {
   // if x is null or if there are no variables, do nothing.
   if (!x || vars_.size() == 0) {
@@ -1334,7 +1334,7 @@ void Problem::setVarType(VariablePtr var, VariableType type)
 
 void Problem::subst(VariablePtr out, VariablePtr in, double rat)
 {
-  Bool stayin;
+  bool stayin;
   assert(engine_ == 0 ||
       (!"Cannot substitute variables after loading problem to engine\n")); 
   for (ConstrSet::const_iterator it=out->consBegin(); it!=out->consEnd(); 

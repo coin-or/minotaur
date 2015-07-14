@@ -234,7 +234,7 @@ void ReliabilityBrancher::findCandidates_()
   VariableIterator v_iter, v_iter2, best_iter;
   VariableConstIterator cv_iter;
   int index;
-  Bool is_inf = false;   // if true, then node can be pruned.
+  bool is_inf = false;   // if true, then node can be pruned.
 
   BrVarCandSet cands;       // candidates from which to choose one.
   BrVarCandSet cands2;      // Temporary set.
@@ -322,7 +322,7 @@ void ReliabilityBrancher::findCandidates_()
 
 
 
-Bool ReliabilityBrancher::getTrustCutoff()
+bool ReliabilityBrancher::getTrustCutoff()
 {
   return trustCutoff_;
 }
@@ -391,7 +391,7 @@ void ReliabilityBrancher::initialize(RelaxationPtr rel)
 }
 
 
-void ReliabilityBrancher::setTrustCutoff(Bool val)
+void ReliabilityBrancher::setTrustCutoff(bool val)
 {
   trustCutoff_ = val;
 }
@@ -427,10 +427,10 @@ void ReliabilityBrancher::setThresh(UInt k)
 }
 
 
-Bool ReliabilityBrancher::shouldPrune_(const double &chcutoff, 
+bool ReliabilityBrancher::shouldPrune_(const double &chcutoff, 
                                        const double &change,
                                        const EngineStatus & status,
-                                       Bool *is_rel)
+                                       bool *is_rel)
 {
   switch (status) {
    case (ProvenLocalInfeasible):
@@ -547,9 +547,9 @@ void ReliabilityBrancher::useStrongBranchInfo_(BrCandPtr cand,
                                                const EngineStatus & status_down)
 {
   const UInt index        = cand->getPCostIndex();
-  Bool should_prune_up    = false;
-  Bool should_prune_down  = false;
-  Bool is_rel = true;
+  bool should_prune_up    = false;
+  bool should_prune_down  = false;
+  bool is_rel = true;
   double cost;
 
   should_prune_down = shouldPrune_(chcutoff, change_down, status_down, &is_rel);

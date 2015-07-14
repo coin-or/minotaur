@@ -54,7 +54,7 @@ void ProbStructure::generateLists()
   // Current constraint being checked.
   ConstConstraintPtr cons;
   // Shows if the constraint is GUB.
-  Bool isGub = false;
+  bool isGub = false;
   // Iterate through each constraint.
   for (it=begin; it!=end; ++it) {
     cons = *it;
@@ -76,7 +76,7 @@ void ProbStructure::generateLists()
  * May be we should do the same thing we do for b>0 case here. 
  * Furthermore, variables can be binary or integer with bounds [0,1].
  */
-Bool ProbStructure::evalConstraint(ConstConstraintPtr cons)
+bool ProbStructure::evalConstraint(ConstConstraintPtr cons)
 {
   // The type of the function considered.
   FunctionType type;

@@ -42,34 +42,34 @@ namespace Minotaur {
         void addCol(std::vector<const T > &col);
 
         /// Get major-size
-        Int getNumMajors() { return maj_size_; };
+        int getNumMajors() { return maj_size_; };
 
         /// Get minor-size
-        Int getNumMinors() { return min_size_; };
+        int getNumMinors() { return min_size_; };
 
         /// Get number of columns
-        Int getNumCols() 
+        int getNumCols() 
         { return (order_t_==ColumnOrdered) ? maj_size_ : min_size_; };
 
         /// Get number of rows
-        Int getNumRows() 
+        int getNumRows() 
         { return (order_t_==RowOrdered) ? maj_size_ : min_size_; };
 
         /// Get number of nonzeros
-        Int getNumNzs() { return nzs_; };
+        int getNumNzs() { return nzs_; };
 
         /// Get the type of ordering
         MatrixOrderType getOrderType() { return order_t_; };
 
       private:
         /// Size of the major ordering
-        Int maj_size_;
+        int maj_size_;
 
         /// Size of the minor ordering
-        Int min_size_;
+        int min_size_;
 
         /// Number of nonzeros
-        Int nzs_;
+        int nzs_;
 
         /// Type of ordering
         MatrixOrderType order_t_;

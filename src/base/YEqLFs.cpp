@@ -47,7 +47,7 @@ double YEqLFs::evalHash_(LinearFunctionPtr lf)
 
 VariablePtr YEqLFs::findY(LinearFunctionPtr lf, double k)
 {
-  Bool found;
+  bool found;
   VariableGroupConstIterator it, it2;
   double hash = evalHash_(lf);
   for (UInt i=0; i<y_.size(); ++i) {

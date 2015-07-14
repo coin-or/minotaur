@@ -86,8 +86,8 @@ void HessianOfLagUT::testLinearEval()
 void HessianOfLagUT::testQuadEval()
 {
   HessianOfLagPtr hess;
-  Int error = 0;
-  Double mults[] = {1.0, 1.0, 4.0, 7.0, -1.0};
+  int error = 0;
+  double mults[] = {1.0, 1.0, 4.0, 7.0, -1.0};
 
   // add quadratics to instance
   // x_2^2 + 2x_3^2 <= 10
@@ -150,8 +150,8 @@ void HessianOfLagUT::testQuadEval()
   // x_3^2 + 8x_3 + x_4_x_5 <= 10            (lambda[3] = 7)
   // x_5^2 + x_1x_5 + x_1x_2 + x_1 <= 10     (lambda[4] = -1)
   
-  Double values[6];
-  Double x[6];
+  double values[6];
+  double x[6];
   x[0] = 0.0;
   x[1] = 1.0;
   x[2] = 2.0;

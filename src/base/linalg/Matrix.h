@@ -35,7 +35,7 @@ namespace Minotaur {
         UInt ncols_;
         UInt nelements_;
     };
-    typedef boost::shared_ptr< Matrix<Double> > DoubleMatrixPtr;
+    typedef boost::shared_ptr< Matrix<double> > DoubleMatrixPtr;
   }
 }
 

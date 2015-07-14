@@ -45,7 +45,7 @@ Cut::Cut()
 
 
 Cut::Cut(UInt n, FunctionPtr f, double lb, double ub,
-         Bool never_delete, Bool never_disable)
+         bool never_delete, bool never_disable)
   : cons_(ConstraintPtr()),
     f_(f),
     lb_(lb),
@@ -57,7 +57,7 @@ Cut::Cut(UInt n, FunctionPtr f, double lb, double ub,
 }
 
 Cut::Cut(ProblemPtr p, FunctionPtr f, double lb, double ub,
-	 Bool never_delete, Bool never_disable)
+	 bool never_delete, bool never_disable)
   : cons_(ConstraintPtr()),
     f_(f),
     lb_(lb),
@@ -107,7 +107,7 @@ void Cut::evalFixedScore_()
   
 }
 
-void Cut::initInfo_(Bool never_delete, Bool never_disable)
+void Cut::initInfo_(bool never_delete, bool never_disable)
 {
   info_.timesEnabled = 0;
   info_.timesDisabled = 0;

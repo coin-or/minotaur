@@ -56,7 +56,7 @@ namespace Minotaur {
        * Return true if there are no modifications stored in this object.
        * False otherwise.
        */
-      Bool isEmpty() const;
+      bool isEmpty() const;
 
       // base class method.
       ModificationPtr toRel(ProblemPtr, RelaxationPtr) const

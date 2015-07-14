@@ -194,11 +194,11 @@ BrancherPtr createBrancher(EnvPtr env, ProblemPtr p, HandlerVector handlers,
 }
 
 
-EnginePtr getEngine(EnvPtr env, ProblemPtr p, Int &err)
+EnginePtr getEngine(EnvPtr env, ProblemPtr p, int &err)
 {
   EngineFactory *efac = new EngineFactory(env);
   EnginePtr e = EnginePtr(); // NULL
-  Bool cont=false;
+  bool cont=false;
   const std::string me("bnb main: ");
 
   err = 0;
@@ -280,7 +280,7 @@ void overrideOptions(EnvPtr env)
 }
 
 
-PresolverPtr presolve(EnvPtr env, ProblemPtr p, Size_t ndefs, 
+PresolverPtr presolve(EnvPtr env, ProblemPtr p, size_t ndefs, 
                         HandlerVector &handlers)
 {
   PresolverPtr pres = PresolverPtr(); // NULL
@@ -350,7 +350,7 @@ void showHelp()
 }
 
 
-Int showInfo(EnvPtr env)
+int showInfo(EnvPtr env)
 {
   OptionDBPtr options = env->getOptions();
   const std::string me("bnb main: ");

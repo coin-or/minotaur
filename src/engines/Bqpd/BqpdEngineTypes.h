@@ -23,8 +23,8 @@ using namespace Minotaur;
 
 #if 1 // on linux, with g77, this works.
 
-typedef Double real;
-typedef Int    fint;
+typedef double real;
+typedef int    fint;
 #define gdotx gdotx_
 #define setwsc setwsc_
 #define writewsc writewsc_
@@ -37,10 +37,10 @@ typedef Int    fint;
 #endif // end of if 1.
 
 /// \todo explain this
-Int * convertPtrToInt(uintptr_t u);
+int * convertPtrToInt(uintptr_t u);
 
 /// \todo explain this
-uintptr_t convertIntToPtr(Int *iarray);
+uintptr_t convertIntToPtr(int *iarray);
 
 extern "C" {
 

@@ -50,10 +50,10 @@ namespace Minotaur {
       // The square matrix is stored as a single array. The element A[i,j] can
       // be accessed at A_[i+j*n_]. And element A_[i] = A[i mod n_, i/n_].
       // */
-      Double *A_;
+      double *A_;
 
       ///
-      Double abstol_;
+      double abstol_;
 
   };
 

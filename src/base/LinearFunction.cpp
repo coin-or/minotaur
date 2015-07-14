@@ -133,7 +133,7 @@ void LinearFunction::evalGradient(double *grad_f) const
 }
 
 
-void LinearFunction::fillJac(double *values, Int *) 
+void LinearFunction::fillJac(double *values, int *) 
 {
   double *v = values;
   for (UInt i=0; i<off_.size(); ++i, ++v) {

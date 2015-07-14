@@ -36,9 +36,9 @@ namespace Minotaur {
     double varScore;         /// Variable score (changes every iteration.)
     double fixedScore;       /// Fixed score (does not change.)
 
-    Bool neverDelete;        /// If true, never delete cut from pool.
-    Bool neverDisable;       /// If true, never remove cut from problem.
-    Bool inRel;		     /// Whether the cut is in Rel or Pool
+    bool neverDelete;        /// If true, never delete cut from pool.
+    bool neverDisable;       /// If true, never remove cut from problem.
+    bool inRel;		     /// Whether the cut is in Rel or Pool
   };
 
 
@@ -69,12 +69,12 @@ namespace Minotaur {
      * \param [in] never_disable If true, this cut is never removed from the
      * problem.
      */
-    Cut(UInt n, FunctionPtr f, double lb, double ub, Bool never_delete,
-        Bool never_disable);
+    Cut(UInt n, FunctionPtr f, double lb, double ub, bool never_delete,
+        bool never_disable);
 
 
-    Cut(ProblemPtr p, FunctionPtr f, double lb, double ub, Bool never_delete,
-        Bool never_disable);
+    Cut(ProblemPtr p, FunctionPtr f, double lb, double ub, bool never_delete,
+        bool never_disable);
     /// Destroy.
     ~Cut();
 
@@ -155,7 +155,7 @@ namespace Minotaur {
      * \param [in] never_disable True if cut should never be removed from
      * the problem.
      */
-    void initInfo_(Bool never_delete, Bool never_disable);
+    void initInfo_(bool never_delete, bool never_disable);
 
     /**
      * \brief Assign a fixed score to the cut

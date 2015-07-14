@@ -24,20 +24,22 @@ extern "C"
     *y = -100;
   }
 
-  void F77_FUNC(dsyev,DSYEV)(char *jobz, char *uplo, Int *n,
-                             double *A, Int *ldA, double *W,
-                             double *WORK, Int *LWORK, Int *info);
+  void F77_FUNC(dsyev,DSYEV)(char *jobz, char *uplo, int *n,
+                             double *A, int *ldA, double *W,
+                             double *WORK, int *LWORK, int *info);
 
-  void F77_FUNC(dsyevr, DSYEVR)(char *jobz, char *range, char *uplo, Int *n,
-      Double *a, Int *lda, Int *vl, Int *vu, Int *il, Int *iu, Double *abstol,
-      Int *m, Double *w, Double **z, Int *ldz, Int *isuppz, Double *work, Int
-      *lwork, Int *iwork, Int *liwork, Int *info );
+  void F77_FUNC(dsyevr, DSYEVR)(char *jobz, char *range, char *uplo, int *n,
+                                double *a, int *lda, int *vl, int *vu,
+                                int *il, int *iu, double *abstol, int *m,
+                                double *w, double **z, int *ldz, int *isuppz,
+                                double *work, int *lwork, int *iwork,
+                                int *liwork, int *info );
 }
 
 
 void LapackTest::testWrapper()
 {
-  Double xx=0, yy=0;
+  double xx=0, yy=0;
   WRAPPER_TEST(&xx, &yy);
   CPPUNIT_ASSERT(xx==100);
   CPPUNIT_ASSERT(yy==-100);
@@ -52,24 +54,24 @@ void LapackTest::testEigenValues()
   char jobz = 'N';  // N for eigen values only, V for values and vectors.
   char uplo = 'L';  // L for storing only lower triangular part of the matrix,
                     // U for upper.
-  Int n = 2;        // order of matrix.
-  Double *A;        // On input, the original matrix, on output ...
-  Int lda = 2;      // The leading dimension of A, lda >= max(1,n)
-  Double *w=0;      // output array
-  Double *work;     // Work space.
-  Int lwork;        // length of the array 'work'
-  Int info = 0;     //  0 => successful exit
+  int n = 2;        // order of matrix.
+  double *A;        // On input, the original matrix, on output ...
+  int lda = 2;      // The leading dimension of A, lda >= max(1,n)
+  double *w=0;      // output array
+  double *work;     // Work space.
+  int lwork;        // length of the array 'work'
+  int info = 0;     //  0 => successful exit
                     // -i => i-th argument has some problems
                     //  i => i off-diagonal elements of an intermediate
                     //       tridiagonal form did not converge to zero.
 
-  A = new Double[4];
+  A = new double[4];
   A[0] = 0.0;
   A[1] = 1.0;
   A[2] = 1.0;
   A[3] = 0.0;
 
-  work = new Double[1];
+  work = new double[1];
   work[0] = -1;
   lwork = -1;
 
@@ -80,8 +82,8 @@ void LapackTest::testEigenValues()
   lwork = work[0];
   delete [] work;
 
-  work = new Double[lwork];
-  w = new Double[n];
+  work = new double[lwork];
+  w = new double[n];
   w[0] = w[1] = 0;
   F77_FUNC(dsyev,DSYEV)(&jobz, &uplo, &n, A, &lda, w,
       work, &lwork, &info);
@@ -105,19 +107,19 @@ void LapackTest::testEigenValues2()
                     // I for il-th through iu-th eigen value.
   char uplo = 'L';  // L for storing only lower triangular part of the matrix,
                     // U for upper.
-  Int n = 2;        // order of matrix.
-  Double *A;        // On input, the original matrix, on output ...
-  Int lda = 2;      // The leading dimension of A, lda >= max(1,n)
-  Int vl=0, vu=0;   // Not used when range='A'
-  Int il=0, iu=0;   // Not used when ='A'
-  Double abstol = 1e-6; // The absolute error tolerance for the eigenvalues.
+  int n = 2;        // order of matrix.
+  double *A;        // On input, the original matrix, on output ...
+  int lda = 2;      // The leading dimension of A, lda >= max(1,n)
+  int vl=0, vu=0;   // Not used when range='A'
+  int il=0, iu=0;   // Not used when ='A'
+  double abstol = 1e-6; // The absolute error tolerance for the eigenvalues.
                         // An approximate eigenvalue is accepted as converged
                         // when it is determined to lie in an interval [a,b]
                         // of width less than or equal to
                         //         ABSTOL + EPS *   max( |a|,|b| ) ,
-  Int m=0;          // number of eigen values that this routine found.
-  Double *w;        // output array of eigen values.
-  Double *z = NULL; // the first M columns of z
+  int m=0;          // number of eigen values that this routine found.
+  double *w;        // output array of eigen values.
+  double *z = NULL; // the first M columns of z
                     // contain the orthonormal eigenvectors of the matrix A
                     // corresponding to the selected eigenvalues, with the i-th
                     // column of Z holding the eigenvector associated with W(i).
@@ -126,22 +128,22 @@ void LapackTest::testEigenValues2()
                     // supplied in the array Z; if RANGE = 'V', the exact value of M
                     // is not known in advance and an upper bound must be used.
                     // Supplying N columns is always safe.
-  Int ldz = 1;      // The leading dimension of the array z.
-  Int *isuppz=NULL; // The i-th eigenvector is nonzero only in elements 
+  int ldz = 1;      // The leading dimension of the array z.
+  int *isuppz=NULL; // The i-th eigenvector is nonzero only in elements 
                     // ISUPPZ( 2*i-1 ) through ISUPPZ( 2*i ).
-  Double *work;     // Work space.
-  Int lwork;        // length of the array 'work'
-  Int *iwork;       // Work space.
-  Int liwork;       // length of the array 'iwork'
-  Int info = 0;     //  0 => successful exit
+  double *work;     // Work space.
+  int lwork;        // length of the array 'work'
+  int *iwork;       // Work space.
+  int liwork;       // length of the array 'iwork'
+  int info = 0;     //  0 => successful exit
                     // -i => i-th argument has some problems
                     //  i => i off-diagonal elements of an intermediate
                     //       tridiagonal form did not converge to zero.
 
-  A = new Double[4];
-  w = new Double[2];
-  work = new Double[1];
-  iwork = new Int[1];
+  A = new double[4];
+  w = new double[2];
+  work = new double[1];
+  iwork = new int[1];
   lwork = -1;
   liwork = -1;
   w[0] = w[1] = 0;
@@ -161,8 +163,8 @@ void LapackTest::testEigenValues2()
   liwork = iwork[0];
   delete [] work;
   delete [] iwork;
-  work = new Double[lwork];
-  iwork = new Int[liwork];
+  work = new double[lwork];
+  iwork = new int[liwork];
    F77_FUNC(dsyevr,DSYEVR)(&jobz, &range, &uplo, &n, A, &lda, &vl, &vu, &il, 
        &iu, &abstol, &m, w, &z, &ldz, isuppz, work, &lwork, iwork, &liwork, 
        &info);

@@ -44,7 +44,7 @@ NodeIncRelaxer::~NodeIncRelaxer ()
 }
 
 
-RelaxationPtr NodeIncRelaxer::createRootRelaxation(NodePtr, Bool &prune)
+RelaxationPtr NodeIncRelaxer::createRootRelaxation(NodePtr, bool &prune)
 {
   prune = false;
   rel_ = (RelaxationPtr) new Relaxation();
@@ -89,8 +89,8 @@ void NodeIncRelaxer::setModFlag(bool mod_prob)
 }
 
 
-RelaxationPtr NodeIncRelaxer::createNodeRelaxation(NodePtr node, Bool dived, 
-                                                   Bool &prune)
+RelaxationPtr NodeIncRelaxer::createNodeRelaxation(NodePtr node, bool dived, 
+                                                   bool &prune)
 {
   NodePtr t_node; // temporary
   WarmStartPtr ws;
@@ -153,7 +153,7 @@ RelaxationPtr NodeIncRelaxer::createNodeRelaxation(NodePtr node, Bool dived,
 }
 
 
-void NodeIncRelaxer::reset(NodePtr node, Bool diving)
+void NodeIncRelaxer::reset(NodePtr node, bool diving)
 {
   NodePtr t_node = node;
 

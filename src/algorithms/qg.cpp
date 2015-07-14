@@ -76,7 +76,7 @@ void show_help()
             << "--option2 [value] ... " << " .nl-file" << std::endl;
 }
 
-PresolverPtr presolve(EnvPtr env, ProblemPtr p, Size_t ndefs, 
+PresolverPtr presolve(EnvPtr env, ProblemPtr p, size_t ndefs, 
                         HandlerVector &handlers)
 {
   PresolverPtr pres = PresolverPtr(); // NULL
@@ -151,7 +151,7 @@ int main(int argc, char* argv[])
   EngineFactory *efac;
   const std::string me("qg: ");
 
-  Bool prune = false;
+  bool prune = false;
   BrancherPtr br = BrancherPtr(); // NULL
   LPProcessorPtr nproc;
 
@@ -389,7 +389,7 @@ EnginePtr getNLPEngine(EnvPtr env, ProblemPtr p)
 {
   EngineFactory *efac = new EngineFactory(env);
   EnginePtr e = EnginePtr(); // NULL
-  Bool cont=false;
+  bool cont=false;
 
   p->calculateSize();
   if (p->isLinear()) {

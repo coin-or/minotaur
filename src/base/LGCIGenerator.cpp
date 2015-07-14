@@ -125,9 +125,9 @@ void LGCIGenerator::generateAllCuts()
     ConstraintConstIterator begin = knapList_->getListBegin();
     ConstraintConstIterator end   = knapList_->getListEnd();
     // Shows if the knapsack constraint has a cover.
-    Bool hascover    = false;
+    bool hascover    = false;
     // Shows if there is a set of GUBs that cover knapsack inequality.
-    Bool hasgubcover = false;
+    bool hasgubcover = false;
     // Consider each of the knapsack inequalities for cut generation.
     for (it=begin; it!=end; ++it) {
       // If debug mode is active, constraint is written to an output file.
@@ -162,9 +162,9 @@ void LGCIGenerator::generateAllCuts()
   }
 }
 
-Bool LGCIGenerator::hasCover(ConstraintConstIterator itcons)
+bool LGCIGenerator::hasCover(ConstraintConstIterator itcons)
 {
-  Bool has = false;
+  bool has = false;
   // The constraint considered.
   ConstraintPtr cons= *itcons; 
   double b = cons->getUb();
@@ -261,7 +261,7 @@ bool LGCIGenerator::hasGubCover(ConstraintConstIterator itcons,
     }
     
     // Check if there exist an uncovered element and get the maximum uncovered one.
-    Bool uncovered = false;
+    bool uncovered = false;
     while (true) {      
       varpair = std::min_element(numuncovered->begin(), numuncovered->end(), compare);
       if (varpair->second == -1) {
@@ -366,11 +366,11 @@ void LGCIGenerator::generateCuts(ConstConstraintPtr cons,
   GNS(cons,gublist);
 }
 
-Bool LGCIGenerator::GNS(ConstConstraintPtr cons, ConstConstraintVectorPtr gublist)
+bool LGCIGenerator::GNS(ConstConstraintPtr cons, ConstConstraintVectorPtr gublist)
 {
   // Initial cover is empty and filled later.
   CoverSetPtr cover = (CoverSetPtr) new CoverSet();
-  Bool covgenerated = coverSetGeneratorGNS(cons,cover);
+  bool covgenerated = coverSetGeneratorGNS(cons,cover);
   // If no cover generated terminate.
   if (covgenerated == false) {
     return false;
@@ -390,10 +390,10 @@ Bool LGCIGenerator::GNS(ConstConstraintPtr cons, ConstConstraintVectorPtr gublis
   // Cover inequality is initialized as empty.
   CoverSetPtr ineq = (CoverSetPtr) new CoverSet();
   double b = 0.0;
-  Bool generated = liftingGNS(cone,ctwo,fset,rset,ineq,cons,gublist,b);
+  bool generated = liftingGNS(cone,ctwo,fset,rset,ineq,cons,gublist,b);
   if (generated == true) {
     CutFail failtype;
-    Bool cutgen = addCut(ineq, b, Gns, failtype);
+    bool cutgen = addCut(ineq, b, Gns, failtype);
     return cutgen;
   } else {
     stats_->noinitcov += 1;
@@ -406,7 +406,7 @@ Bool LGCIGenerator::GNS(ConstConstraintPtr cons, ConstConstraintVectorPtr gublis
 /** Assumption: An empty cover is given.
     Initial cover will be generated from scratch.
  */
-Bool LGCIGenerator::coverSetGeneratorGNS(ConstConstraintPtr cons, 
+bool LGCIGenerator::coverSetGeneratorGNS(ConstConstraintPtr cons, 
                                          CoverSetPtr cover)
 {
   // This is the knapsack constraint to be covered.
@@ -608,7 +608,7 @@ void LGCIGenerator::coverPartitionGNS(const ConstConstraintPtr cons,
  * Inequality is given as empty.
  * Vectors are not sorted or anything else.
  */
-Bool LGCIGenerator::liftingGNS(const ConstCoverSetPtr cone,
+bool LGCIGenerator::liftingGNS(const ConstCoverSetPtr cone,
                                const ConstCoverSetPtr ctwo,
                                const ConstCoverSetPtr fset,
                                const ConstCoverSetPtr rset,
@@ -693,7 +693,7 @@ Bool LGCIGenerator::liftingGNS(const ConstCoverSetPtr cone,
     printIneq(cone, initialbknap, Cons, "Initial knapsack constraint");
   }
 
-  Bool liftup = true;
+  bool liftup = true;
   // We are going to uplift variables in set F.
   if (fset->size() >= 1) {
     // Uplift if set F is nonempty.
@@ -744,7 +744,7 @@ void LGCIGenerator::liftSet(CoverSetPtr obj,
                             double & rhs,
                             double & initialbknap,
                             double * initialbgub,
-                            Bool liftup)
+                            bool liftup)
 {
   // Check if the set being lifted is empty.
     if (varset->empty() == false) {
@@ -822,7 +822,7 @@ void LGCIGenerator::liftSet(CoverSetPtr obj,
 //                          double & rhs,
 //                          double & initialbknap,
 //                          double * initialbgub,
-//                          Bool liftup)
+//                          bool liftup)
 // {
   // // Increment number of relaxations solved.
   // stats_->liftsubprobs += 1;
@@ -1049,7 +1049,7 @@ double LGCIGenerator::lift(CoverSetPtr obj,
                            double & rhs,
                            double & initialbknap,
                            double * initialbgub,
-                           Bool liftup)
+                           bool liftup)
 {
   if (DEBUG_LEVEL >= 9) {
     output_.close();
@@ -1344,7 +1344,7 @@ void LGCIGenerator::initGubCons(const ConstCoverSetPtr cone,
     std::vector<CoverSetPtr>::const_iterator begindebug = gubcons->begin();
     std::vector<CoverSetPtr>::const_iterator enddebug   = gubcons->end();
     // Iterate through all GUB constraints.
-    Bool first = true;
+    bool first = true;
     for (itdebug=begindebug; itdebug!=enddebug; ++itdebug) {
       if (first) {
         printIneq((*itdebug), 1, Cons, "GUB constrants for the initial problem.");
@@ -1496,7 +1496,7 @@ void LGCIGenerator::cBar(const ConstCoverSetPtr cover,
   // Current variable of cover set.
   ConstVariablePtr curcovvar;
   for (it=begin; it!=end; ++it) {
-    Bool in = false;
+    bool in = false;
     curlfvar = it->first;
     // Iterators for cover elements, this changes dynamically thus it is
     // inside the loop.
@@ -1633,7 +1633,7 @@ void LGCIGenerator::addCut(CutPtr cut)
   violList_.push_back(viol);
 }
 
-Bool LGCIGenerator::addCut(CoverSetPtr cov, double rhs, UInt cuttype, CutFail&)
+bool LGCIGenerator::addCut(CoverSetPtr cov, double rhs, UInt cuttype, CutFail&)
 {
   // In debug mode we write all cuts generated.
   if (DEBUG_LEVEL >= 9) {
@@ -1658,7 +1658,7 @@ Bool LGCIGenerator::addCut(CoverSetPtr cov, double rhs, UInt cuttype, CutFail&)
   // Total number of cuts generated is increased by one.
   stats_->totalcuts += 1;
   // Check violation of the coefficients.
-  Bool cutexists = checkExists(cov, rhs);
+  bool cutexists = checkExists(cov, rhs);
   if (cutexists == false){
     CutPtr cut;
     generateCut(cov, rhs, cut);
@@ -1705,10 +1705,11 @@ void LGCIGenerator::generateCut(const ConstCoverSetPtr inequality, double rhs, C
   cut = (CutPtr) new Cut(p_->getNumVars(), f, lb, rhs, false, false);
 }
 
-/** TODO: Create a new index for variables in the knapsack only.
+/**
+ * TODO: Create a new index for variables in the knapsack only.
  * Do not consider all variables for coefficients.
  */
-Bool LGCIGenerator::checkExists(CoverSetPtr inequality, double rhs)
+bool LGCIGenerator::checkExists(CoverSetPtr inequality, double rhs)
 {
   // Iterators for variables in cut.
   CoverSetConstIterator it;
@@ -1748,7 +1749,7 @@ double LGCIGenerator::violation(CutPtr cut)
 {
   FunctionPtr f = cut->getFunction();
   const double * x = s_->getPrimal();
-  Int error = 0;
+  int error = 0;
   double evaluation = f->eval(x, &error);
   double violub     = max(0.0, evaluation - cut->getUb());
   double viollb     = max(0.0, cut->getLb() - evaluation);
@@ -1799,7 +1800,7 @@ void LGCIGenerator::printIneq(const ConstCoverSetPtr cover, double rhs,
       output_ << "CoverCutGenerator.cpp::printIneq. Invalid print type." << endl;
     } // end of switch.
   } else { // end of if.
-    Bool first = true;
+    bool first = true;
     if (type == Obj) {
       output_ << "max " << std::flush;
     }

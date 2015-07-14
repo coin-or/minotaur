@@ -75,22 +75,22 @@ void add_options(OptionDBPtr options)
      str, true, "TC");
   options->insert(s_option);
 
-  i_option = (IntOptionPtr) new Option<Int>("ml_max_group_size",
+  i_option = (IntOptionPtr) new Option<int>("ml_max_group_size",
      "Maximum size of individual element in grouping: >= 1, <= 20", true, 6);
   options->insert(i_option);
 
-  d_option = (DoubleOptionPtr) new Option<Double>(
+  d_option = (DoubleOptionPtr) new Option<double>(
              "ml_cover_augmentation_factor", 
              "Covering augmentation factor for ml grouping: >= 1", true, 2.0);
   options->insert(d_option);
 
-  d_option = (DoubleOptionPtr) new Option<Double>("ml_feastol", 
+  d_option = (DoubleOptionPtr) new Option<double>("ml_feastol", 
      "Feasibility Tolerance for handling multlinear terms: > 0", true, 1.0e-6);
   options->insert(d_option);
 }
 
 
-PresolverPtr createPres(EnvPtr env, ProblemPtr p, Size_t ndefs, 
+PresolverPtr createPres(EnvPtr env, ProblemPtr p, size_t ndefs, 
                         HandlerVector &handlers)
 {
   // create handlers for presolve
@@ -144,7 +144,7 @@ int main(int argc, char* argv[])
   Timer       *timer      = env->getNewTimer();
   OptionDBPtr options     = env->getOptions();
   TransPoly*  transformer = 0;
-  Int         err         = 0;
+  int         err         = 0;
   const std::string me("polly main: ");
   ProblemPtr orig_prob, ref_prob;
   HandlerVector handlers; 

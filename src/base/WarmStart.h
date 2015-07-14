@@ -52,7 +52,7 @@ namespace Minotaur {
       
       /// Return true if warm start information is initialized, false
       /// otherwise.
-      virtual Bool hasInfo() = 0;
+      virtual bool hasInfo() = 0;
 
       /// Write to an output stream
       virtual void write(std::ostream &out) const = 0;

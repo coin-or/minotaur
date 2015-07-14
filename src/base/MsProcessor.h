@@ -42,95 +42,93 @@ namespace Minotaur {
    * node. Does not call any presolving, cutting, or heuristic search.
    */
   class MsProcessor : public NodeProcessor {
+  public:
+    /// Default constructor
+    MsProcessor();
 
-    public:
-      /// Default constructor
-      MsProcessor();
+    /// Constructor with a given engine.
+    MsProcessor(EnvPtr env, EnginePtr engine, HandlerVector handlers_);
 
-      /// Constructor with a given engine.
-      MsProcessor(EnvPtr env, EnginePtr engine, HandlerVector handlers_);
+    /// Destroy
+    ~MsProcessor();
 
-      /// Destroy
-      ~MsProcessor();
-      
-      // True if a new solution was found while processing this node.
-      Bool foundNewSolution(); 
+    // True if a new solution was found while processing this node.
+    bool foundNewSolution(); 
 
-      // Find branches that will be used to branch at this node.
-      Branches getBranches();
+    // Find branches that will be used to branch at this node.
+    Branches getBranches();
 
-      // Get warm-start information.
-      WarmStartPtr getWarmStart();
+    // Get warm-start information.
+    WarmStartPtr getWarmStart();
 
-      // Implement NodeProcessor::process().
-      void process(NodePtr node, RelaxationPtr rel, 
-                   SolutionPoolPtr s_pool);
+    // Implement NodeProcessor::process().
+    void process(NodePtr node, RelaxationPtr rel, 
+                 SolutionPoolPtr s_pool);
 
-      // write statistics. Base class method.
-      void writeStats(std::ostream &out) const; 
+    // write statistics. Base class method.
+    void writeStats(std::ostream &out) const; 
 
-      // write statistics. Base class method.
-      void writeStats() const; 
+    // write statistics. Base class method.
+    void writeStats() const; 
 
-    protected:
+  protected:
+    /// Branches found by this processor for this node
+    Branches branches_;
 
-      /// Branches found by this processor for this node
-      Branches branches_;
+    /**
+     * If true, we continue to search, if engine reports error. If false,
+     * we assume that the relaxation is infeasible when engine returns error.
+     */
+    bool contOnErr_;
 
-      /**
-       * If true, we continue to search, if engine reports error. If false,
-       * we assume that the relaxation is infeasible when engine returns error.
-       */
-      Bool contOnErr_;
+    /// If lb is greater than cutOff_, we can prune this node.
+    double cutOff_;
 
-      /// If lb is greater than cutOff_, we can prune this node.
-      double cutOff_;
+    /// Engine used to process the relaxation
+    EnginePtr engine_;
 
-      /// Engine used to process the relaxation
-      EnginePtr engine_;
+    /// Status of the engine
+    EngineStatus engineStatus_;
 
-      /// Status of the engine
-      EngineStatus engineStatus_;
+    /// All the handlers that are used for this processor
+    HandlerVector handlers_;
 
-      /// All the handlers that are used for this processor
-      HandlerVector handlers_;
+    /// Log
+    LoggerPtr logger_;
 
-      /// Log
-      LoggerPtr logger_;
+    /// For logging.
+    static const std::string me_;
 
-      /// For logging.
-      static const std::string me_;
+    /// How many new solutions were found by the processor.
+    UInt numSolutions_;
 
-      /// How many new solutions were found by the processor.
-      UInt numSolutions_;
+    /// Relaxation that is processed by this processor.
+    RelaxationPtr relaxation_;
 
-      /// Relaxation that is processed by this processor.
-      RelaxationPtr relaxation_;
+    /// Statistics
+    MBPStats stats_;
 
-      /// Statistics
-      MBPStats stats_;
+    /// Warm-start information for start processing the children
+    WarmStartPtr ws_;
 
-      /// Warm-start information for start processing the children
-      WarmStartPtr ws_;
+    /**
+     * Check if the solution is feasible to the original problem. 
+     * In case it is feasible, we can store the solution and update the
+     * upper bound. Additionally, if the solution is optimal for the
+     * current node, then the node can be pruned.
+     */
+    bool isFeasible_(NodePtr node, ConstSolutionPtr sol, 
+                             SolutionPoolPtr s_pool, bool &should_prune);
 
-      /**
-       * Check if the solution is feasible to the original problem. 
-       * In case it is feasible, we can store the solution and update the
-       * upper bound. Additionally, if the solution is optimal for the
-       * current node, then the node can be pruned.
-       */
-      virtual Bool isFeasible_(NodePtr node, ConstSolutionPtr sol, 
-                               SolutionPoolPtr s_pool, Bool &should_prune);
+    /// Solve the relaxation.
+    void solveRelaxation_();
 
-      /// Solve the relaxation.
-      virtual void solveRelaxation_();
-
-      /**
-       * Check if a node can be pruned either because the relaxation is
-       * infeasible or because the cost is too high.
-       */
-      virtual Bool shouldPrune_(NodePtr node, double solval, 
-                                SolutionPoolPtr s_pool);
+    /**
+     * Check if a node can be pruned either because the relaxation is
+     * infeasible or because the cost is too high.
+     */
+    bool shouldPrune_(NodePtr node, double solval, 
+                              SolutionPoolPtr s_pool);
 
   };
 

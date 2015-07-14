@@ -26,7 +26,7 @@ void TimerUT::tearDown()
 
 void TimerUT::testSleep()
 {
-  Double time_used;
+  double time_used;
   Timer *timer=tFactory_->getTimer();
 
   // start timer

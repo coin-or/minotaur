@@ -43,18 +43,17 @@ AMPLNonlinearFunction::AMPLNonlinearFunction(Minotaur::UInt i,
 
 Minotaur::NonlinearFunctionPtr 
 AMPLNonlinearFunction::cloneWithVars(Minotaur::VariableConstIterator, 
-                                     Minotaur::Int *err) const 
+                                     int *err) const 
 { 
   *err = 1;
   return Minotaur::NonlinearFunctionPtr(); 
 }
 
 
-Minotaur::Double AMPLNonlinearFunction::eval(const Minotaur::Double *x, 
-                                         Minotaur::Int *error) 
+double AMPLNonlinearFunction::eval(const double *x, int *error) 
 {
-  Minotaur::Double r;
-  Minotaur::Double *xx = const_cast<Minotaur::Double *>(x);
+  double r;
+  double *xx = const_cast<double *>(x);
   fint ferror = 0;
 
   if (true == isInObj_) {
@@ -71,10 +70,10 @@ Minotaur::Double AMPLNonlinearFunction::eval(const Minotaur::Double *x,
 }
 
 
-void AMPLNonlinearFunction::evalGradient (const Minotaur::Double *x, 
-    Minotaur::Double *grad_f, Minotaur::Int *error) 
+void AMPLNonlinearFunction::evalGradient (const double *x, double *grad_f,
+                                          int *error) 
 {
-  Minotaur::Double *xx = const_cast<Minotaur::Double *>(x);
+  double *xx = const_cast<double *>(x);
   fint ferror = 0;
 
   std::fill(grad_f, grad_f+nVars_, 0);
@@ -92,11 +91,9 @@ void AMPLNonlinearFunction::evalGradient (const Minotaur::Double *x,
 }
 
 
-void AMPLNonlinearFunction::evalHessian(const Minotaur::Double, 
-                                        const Minotaur::Double *, 
+void AMPLNonlinearFunction::evalHessian(const double, const double *, 
                                         const Minotaur::LTHessStor *,
-                                        Minotaur::Double *, 
-                                        Minotaur::Int *)
+                                        double *, int *)
 {
   assert(!"can't fill hessian in a AMPL nonlinear function.");
 }
@@ -114,8 +111,7 @@ void AMPLNonlinearFunction::finalHessStor(const Minotaur::LTHessStor *)
 }
 
 
-void AMPLNonlinearFunction::fillJac(const Minotaur::Double *, 
-                                    Minotaur::Double *, Minotaur::Int *) 
+void AMPLNonlinearFunction::fillJac(const double *, double *, int *) 
 {
   assert(!"can't fill jacobian in a ampl nonlinear function.");
 }
@@ -128,9 +124,9 @@ void AMPLNonlinearFunction::getVars(Minotaur::VariableSet *vars)
 
 
 #ifdef NDEBUG
-void AMPLNonlinearFunction::multiply(Minotaur::Double )
+void AMPLNonlinearFunction::multiply(double )
 #else
-void AMPLNonlinearFunction::multiply(Minotaur::Double c)
+void AMPLNonlinearFunction::multiply(double c)
 #endif
 {
   assert(fabs(c+1.0)<1e-9); // only allowed to multiply by -1.0

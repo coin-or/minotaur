@@ -76,8 +76,8 @@ public:
    * \param[out] error is set to a nonzero value if a problem is encountered,
    * otherwise it is left undisturbed.
    */
-  void fillColRowValues(const Minotaur::Double *x, 
-                        Minotaur::Double *values, Minotaur::Int *error);
+  void fillColRowValues(const double *x, 
+                        double *values, int *error);
 
   /** 
    * \brief Evaluate Jacobian at a given point x, row-wise.
@@ -87,8 +87,7 @@ public:
    * \param[out] error is set to a nonzero value if a problem is encountered, 
    * otherwise it is left undisturbed.
    */
-  void fillRowColValues(const Minotaur::Double *x, 
-                        Minotaur::Double *values, Minotaur::Int *error);
+  void fillRowColValues(const double *x, double *values, int *error);
 
   /// Return the number of non-zeros in the Jacobian.
   Minotaur::UInt getNumNz();
@@ -101,7 +100,7 @@ private:
   Minotaur::UInt nNz_;
 
   /// Temporary array used to save Jacobian in fillRowColValues() function.
-  Minotaur::Double *tmp_;
+  double *tmp_;
 
   /// Size of tmp_ array.
   Minotaur::UInt tmpSize_;

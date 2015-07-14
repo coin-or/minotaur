@@ -36,7 +36,7 @@ void PreDelVars::insert(VariablePtr v)
 void PreDelVars::postsolveGetX(const DoubleVector &x, DoubleVector *newx)
 {
   UInt n = x.size()+vars_.size();
-  Bool *filled = new Bool[n];
+  bool *filled = new bool[n];
   VariablePtr v;
   DoubleVector::const_iterator dit;
   DoubleVector::iterator dit2;
@@ -52,7 +52,7 @@ void PreDelVars::postsolveGetX(const DoubleVector &x, DoubleVector *newx)
 
   dit=x.begin();
   dit2=newx->begin();
-  for (Bool *it=filled; it!=filled+n; ++it, ++dit2) {
+  for (bool *it=filled; it!=filled+n; ++it, ++dit2) {
     if ((*it) == false) {
       *dit2 = *dit;
       ++dit;

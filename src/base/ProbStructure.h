@@ -62,7 +62,7 @@ public:
   ~ProbStructure();
 
   /// Checks if a variable is a GUB constraint.
-  Bool evalConstraint(ConstConstraintPtr cons);
+  bool evalConstraint(ConstConstraintPtr cons);
   
   /// Add a constraint to the lists.
   void addConstraint(ConstConstraintPtr cons);

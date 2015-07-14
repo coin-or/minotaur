@@ -37,16 +37,16 @@ public:
   ~NodeIncRelaxer();
 
   // Implement NodeRelaxer::CreateRootRelaxation()
-  RelaxationPtr createRootRelaxation(NodePtr rootNode, Bool &prune);
+  RelaxationPtr createRootRelaxation(NodePtr rootNode, bool &prune);
 
   // Implement NodeRelaxer::CreateNodeRelaxation()
-  RelaxationPtr createNodeRelaxation(NodePtr node, Bool dived, Bool &prune);
+  RelaxationPtr createNodeRelaxation(NodePtr node, bool dived, bool &prune);
 
   /// Get the current value of modProb_ flag.
   bool getModFlag();
 
   // Implement NodeRelaxer::reset()
-  void reset(NodePtr node, Bool diving);
+  void reset(NodePtr node, bool diving);
 
   /**
    * /brief Set the engine that is used to solve the relaxations. We need to set

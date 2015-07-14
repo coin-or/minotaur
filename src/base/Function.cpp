@@ -104,7 +104,7 @@ Function::Function(LinearFunctionPtr lf, QuadraticFunctionPtr qf,
   if (qf_) {
     // Jeff's stuff, needs cleanup.
     // Check if quadratic part is bilinear
-    Bool qib = true;
+    bool qib = true;
     for(VariablePairGroupConstIterator it = qf_->begin(); it != qf_->end(); ++it) {
       if (it->second != 0.0) {
         if (it->first.first->getId() == it->first.second->getId()) {
@@ -152,7 +152,7 @@ Function::Function(NonlinearFunctionPtr nlf)
 }
 
 
-FunctionPtr Function::cloneWithVars(VariableConstIterator vbeg, Int *err)
+FunctionPtr Function::cloneWithVars(VariableConstIterator vbeg, int *err)
   const
 {
   LinearFunctionPtr lf;
@@ -261,7 +261,7 @@ UInt Function::getNumVars() const
 }
 
 
-Bool Function::hasVar(VariablePtr var) const
+bool Function::hasVar(VariablePtr var) const
 {
   return (vars_.find(var) != vars_.end());
 }
@@ -279,7 +279,7 @@ UInt Function::getNumNzInHess()
 }
 
 
-void Function::fillHessOffset(Size_t *offset, Size_t &pos,
+void Function::fillHessOffset(size_t *offset, size_t &pos,
     std::set<ConstVariablePair, CompareVariablePair> & v_pairs)
 {
   if (nlf_) {
@@ -299,7 +299,7 @@ void Function::fillHessOffset(Size_t *offset, Size_t &pos,
 
 
 void Function::evalHessian(double mult, const double *, 
-    const Size_t *offset, double *values, Int *error)
+                           const size_t *offset, double *values, int *error)
 {
   *error = 0;
   if (nlf_) {
@@ -307,7 +307,7 @@ void Function::evalHessian(double mult, const double *,
   }
   if (qf_) {
     const VariablePair *vp;
-    const Size_t *o = offset;
+    const size_t *o = offset;
     for (VariablePairGroupConstIterator iter=qf_->begin(); iter!=qf_->end(); 
         ++iter, ++o) {
       vp = &(iter->first);
@@ -322,7 +322,7 @@ void Function::evalHessian(double mult, const double *,
 
 
 void Function::evalHessian(const double mult, const double *x, 
-                           const LTHessStor *stor, double *values , Int *error)
+                           const LTHessStor *stor, double *values , int *error)
 {
   *error = 0;
   if (qf_) {
@@ -384,13 +384,13 @@ NonlinearFunctionPtr Function::removeNonlinear()
 }
 
 
-double Function::eval(const DoubleVector &x, Int *error) const
+double Function::eval(const DoubleVector &x, int *error) const
 {
   return eval(&(x[0]), error);
 }
 
 
-double Function::eval(const double *x, Int *error) const
+double Function::eval(const double *x, int *error) const
 {
   double val = 0.0;
   *error = 0;
@@ -407,7 +407,7 @@ double Function::eval(const double *x, Int *error) const
 }
 
 
-void Function::evalGradient(const double *x, double *grad_f, Int *error) const
+void Function::evalGradient(const double *x, double *grad_f, int *error) const
 {
   *error = 0;
   if (lf_) {
@@ -459,7 +459,7 @@ void Function::finalHessStor(const LTHessStor *stor)
 }
 
 
-void Function::fillJac(const double *x, double *values, Int *error) 
+void Function::fillJac(const double *x, double *values, int *error) 
 {
   *error = 0;
   if (lf_) {
@@ -527,7 +527,7 @@ const NonlinearFunctionPtr Function::getNonlinearFunction() const
 }
 
 
-Bool Function::isLinearIn(ConstVariablePtr v)
+bool Function::isLinearIn(ConstVariablePtr v)
 {
   if (nlf_ && nlf_->hasVar(v)) {
     return false;

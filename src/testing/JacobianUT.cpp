@@ -56,7 +56,7 @@ void JacobianUT::tearDown()
 void JacobianUT::testLinearEval()
 {
   JacobianPtr jac;
-  Int error = 0;
+  int error = 0;
   instance_->setNativeDer();
 
   // test size
@@ -77,8 +77,8 @@ void JacobianUT::testLinearEval()
   CPPUNIT_ASSERT(jCol[3] == 2);
 
   // test values
-  Double values[4];
-  Double x[4];
+  double values[4];
+  double x[4];
   x[0] = 0.0;
   x[1] = 1.0;
   x[2] = 2.0;
@@ -96,7 +96,7 @@ void JacobianUT::testLinearEval()
 void JacobianUT::testQuadEval()
 {
   JacobianPtr jac;
-  Int error = 0;
+  int error = 0;
 
   // add quadratics to instance
   // x_2^2 + 2x_3^2 <= 10
@@ -158,8 +158,8 @@ void JacobianUT::testQuadEval()
   // x_2^2 + 2x_3^2 <= 10
   // x_3^2 + 8x_3 + x_4_x_5 <= 10
   // x_5^2 + x_5 + x_1x_2 + x_1 <= 10
-  Double values[12];
-  Double x[6];
+  double values[12];
+  double x[6];
   x[0] = 0.0;
   x[1] = 1.0;
   x[2] = 2.0;

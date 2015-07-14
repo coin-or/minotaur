@@ -64,13 +64,13 @@ namespace Minotaur {
     std::string getName() const;
 
     // base class method.
-    SolutionPtr getSolOrig(ConstSolutionPtr sol, Int &err);
+    SolutionPtr getSolOrig(ConstSolutionPtr sol, int &err);
 
     // base class method.
-    SolutionPtr getSolTrans(ConstSolutionPtr sol, Int &err);
+    SolutionPtr getSolTrans(ConstSolutionPtr sol, int &err);
 
     // base class method.
-    void reformulate(ProblemPtr &newp, HandlerVector &handlers, Int &status);
+    void reformulate(ProblemPtr &newp, HandlerVector &handlers, int &status);
 
 
   private:

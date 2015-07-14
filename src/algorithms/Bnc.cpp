@@ -160,11 +160,11 @@ BranchAndBound* createBab (EnvPtr env, ProblemPtr p, EnginePtr e,
 }
 
 
-EnginePtr getEngine(EnvPtr env, ProblemPtr p, Int &err)
+EnginePtr getEngine(EnvPtr env, ProblemPtr p, int &err)
 {
   EngineFactory *efac = new EngineFactory(env);
   EnginePtr e = EnginePtr(); // NULL
-  Bool cont=false;
+  bool cont=false;
   const std::string me("bnc main: ");
 
   err = 0;
@@ -243,7 +243,7 @@ void overrideOptions(EnvPtr env)
 }
 
 
-PresolverPtr presolve(EnvPtr env, ProblemPtr p, Size_t ndefs, 
+PresolverPtr presolve(EnvPtr env, ProblemPtr p, size_t ndefs, 
                       HandlerVector &handlers)
 {
   // create handlers for presolve
@@ -313,7 +313,7 @@ void showHelp()
 }
 
 
-Int showInfo(EnvPtr env)
+int showInfo(EnvPtr env)
 {
   OptionDBPtr options = env->getOptions();
   const std::string me("bnc main: ");
@@ -351,13 +351,13 @@ Int showInfo(EnvPtr env)
 }
 
 
-void writeSol(EnvPtr env, VarVector *orig_v, Double obj_sense,
+void writeSol(EnvPtr env, VarVector *orig_v, double obj_sense,
               BranchAndBound* bab, PresolverPtr pres,
               MINOTAUR_AMPL::AMPLInterface* iface)
 {
   const std::string me("bnc main: ");
   SolutionPtr sol = bab->getSolution(); 
-  Int err = 0;
+  int err = 0;
 
   if (sol) {
     sol = pres->getPostSol(sol);
@@ -389,8 +389,8 @@ int main(int argc, char** argv)
   const std::string me("bnc main: ");
   VarVector *orig_v=0;
   HandlerVector handlers;
-  Int err = 0;
-  Double obj_sense;
+  int err = 0;
+  double obj_sense;
 
   env->startTimer(err);
   if (err) {

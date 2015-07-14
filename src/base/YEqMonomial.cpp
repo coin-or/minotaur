@@ -44,7 +44,7 @@ VariablePtr YEqMonomial::findY(MonomialFunPtr mf)
 {
   double hash = evalHash_(mf);
   VarIntMapConstIterator it, it2;
-  Bool found;
+  bool found;
 
   for (UInt i=0; i<y_.size(); ++i) {
     if (fabs(hash-hash_[i])<1e-12 

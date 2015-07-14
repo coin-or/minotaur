@@ -2088,7 +2088,7 @@ void CNode::writeSubExp(std::ostream &out) const
 }
 
 
-Bool Minotaur::CompareCNodes::operator()(const CNode* n1, const CNode *n2) const
+bool Minotaur::CompareCNodes::operator()(const CNode* n1, const CNode *n2) const
 {
   // process lower ids first and lower variables first.
   if (n1->getId()==n2->getId() && n1->getId()==0) {
@@ -2098,7 +2098,7 @@ Bool Minotaur::CompareCNodes::operator()(const CNode* n1, const CNode *n2) const
 }
 
 
-Bool Minotaur::CompareCNodesR::operator()(const CNode* n1, const CNode *n2) const
+bool Minotaur::CompareCNodesR::operator()(const CNode* n1, const CNode *n2) const
 {
   // process higher ids first, but lower variables first.
   if (n1->getId()==n2->getId() && n1->getId()==0) {

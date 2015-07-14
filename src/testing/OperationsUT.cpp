@@ -41,7 +41,7 @@ void OperationsTest::testSortVarX()
 {
   ProblemPtr p = (ProblemPtr) new Problem();
   VarVector vvec;
-  Double *x = new Double[100];
+  double *x = new double[100];
 
   // test - 1
   for (int i=0; i<100; ++i) {

@@ -63,7 +63,7 @@ MonomialFunPtr MonomialFunction::clone() const
 
 
 NonlinearFunctionPtr 
-MonomialFunction::cloneWithVars(VariableConstIterator vbeg, Int *) const
+MonomialFunction::cloneWithVars(VariableConstIterator vbeg, int *) const
 {
   MonomialFunPtr m2 = (MonomialFunPtr) new MonomialFunction(coeff_);
   for (VarIntMapConstIterator it=terms_.begin(); it!=terms_.end(); ++it) {
@@ -93,7 +93,7 @@ CNode* MonomialFunction::fillCG(CGraphPtr cg)
       n1 = cg->newNode(it->first);
       if (it->second>1) {
         if (it->second>2) {
-          n2 = cg->newNode((Int) it->second);
+          n2 = cg->newNode((int) it->second);
           n1 = cg->newNode(OpPowK, n1, n2);
         } else {
           n1 = cg->newNode(OpSqr, n1, 0);
@@ -122,7 +122,7 @@ double MonomialFunction::getCoeff() const
 }
 
 
-Int MonomialFunction::getDegree() const
+int MonomialFunction::getDegree() const
 {
   return deg_;
 }
@@ -146,7 +146,7 @@ const VarIntMap* MonomialFunction::getTerms() const
 }
 
 
-void MonomialFunction::multiply(double coeff, ConstVariablePtr v, Int p)
+void MonomialFunction::multiply(double coeff, ConstVariablePtr v, int p)
 {
   if (fabs(coeff) < eTol_) {
     terms_.clear();
@@ -204,7 +204,7 @@ void MonomialFunction::operator*=(ConstMonomialFunPtr m2)
 }
 
 
-double MonomialFunction::eval(const double *x, Int *error)
+double MonomialFunction::eval(const double *x, int *error)
 {
   double prod = 1.;
   *error = 0;
@@ -215,14 +215,14 @@ double MonomialFunction::eval(const double *x, Int *error)
 }
 
 
-double MonomialFunction::eval(const DoubleVector &x, Int *error)
+double MonomialFunction::eval(const DoubleVector &x, int *error)
 {
   return eval(&x[0], error);
 }
 
 
 void MonomialFunction::evalGradient(const double *x, double *grad_f, 
-    Int *error) 
+                                    int *error) 
 {
   double prod;
   VariablePtr v;
@@ -240,7 +240,7 @@ void MonomialFunction::evalGradient(const double *x, double *grad_f,
 }
 
 
-void MonomialFunction::toPower(Int k)
+void MonomialFunction::toPower(int k)
 {
   assert(k>=0);
   if (0==k) {
@@ -327,7 +327,7 @@ PolyFunPtr PolynomialFunction::clone() const
 
 
 NonlinearFunctionPtr
-PolynomialFunction::cloneWithVars(VariableConstIterator vbeg, Int *err) const
+PolynomialFunction::cloneWithVars(VariableConstIterator vbeg, int *err) const
 {
   PolyFunPtr p = (PolyFunPtr) new PolynomialFunction();
   MonomialFunPtr m2;
@@ -382,7 +382,7 @@ void PolynomialFunction::createCG()
 }
 
 
-double PolynomialFunction::eval(const double *x, Int *error)
+double PolynomialFunction::eval(const double *x, int *error)
 {
   if (cg_) {
     return (cg_->eval(x, error));
@@ -399,7 +399,7 @@ double PolynomialFunction::eval(const double *x, Int *error)
 
 
 void PolynomialFunction::evalGradient(const double *x, double *grad_f, 
-    Int *error)
+                                      int *error)
 {
   *error = 0;
   for (MonomialConstIter it=terms_.begin(); it!=terms_.end(); ++it) {
@@ -411,7 +411,7 @@ void PolynomialFunction::evalGradient(const double *x, double *grad_f,
 
 void PolynomialFunction::evalHessian(const double mult, const double *x, 
                                      const LTHessStor *stor, double *values, 
-                                     Int *error) 
+                                     int *error) 
 {
   if (cg_) {
     cg_->evalHessian(mult, x, stor, values, error);
@@ -431,7 +431,7 @@ void  PolynomialFunction::fillHessStor(LTHessStor *stor)
 }
 
 
-void PolynomialFunction::fillJac(const double *x, double *values, Int *error)
+void PolynomialFunction::fillJac(const double *x, double *values, int *error)
 {
   if (cg_) {
     cg_->fillJac(x, values, error);
@@ -465,7 +465,7 @@ void PolynomialFunction::getVars(VariableSet *vars)
 }
 
 
-Bool PolynomialFunction::isEmpty() const 
+bool PolynomialFunction::isEmpty() const 
 {
   return (fabs(cb_)<eTol_ && terms_.empty());
 }

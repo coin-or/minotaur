@@ -187,7 +187,7 @@ void FeasibilityPump::convertSol_(SolutionPoolPtr s_pool, ConstSolutionPtr sol)
   const double* x   = sol->getPrimal();
   double* LB_copy   = new double[numvars];
   double* UB_copy   = new double[numvars];
-  Int err           = 0;
+  int err           = 0;
 
   saveBounds_(LB_copy, UB_copy, numvars);
   // fix bounds for binary variables

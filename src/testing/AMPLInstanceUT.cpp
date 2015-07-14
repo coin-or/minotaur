@@ -125,10 +125,10 @@ void AMPLInstanceUT::testConstraints()
   Minotaur::QuadraticFunctionPtr qfPtr;
   Minotaur::NonlinearFunctionPtr nlfPtr;
                        // x2,x0,x1,x3,x4   (remember ampl changes order)
-  Minotaur::Double x[5] = {0, 0, 0, 0, 0};
-  Minotaur::Double y[5] = {7, 0, 2, 9, 6};
-  Minotaur::Double z[5] = {1,-1, 2,-4, 5};
-  Minotaur::Int error = 0;
+  double x[5] = {0, 0, 0, 0, 0};
+  double y[5] = {7, 0, 2, 9, 6};
+  double z[5] = {1,-1, 2,-4, 5};
+  int error = 0;
 
   for (Minotaur::UInt i=0; i<inst_->getNumCons(); ++i) {
     cPtr = inst_->getConstraint(i);
@@ -257,18 +257,18 @@ void AMPLInstanceUT::testJacobian()
 
   Minotaur::UInt iRow[12];
   Minotaur::UInt jCol[12];
-  Minotaur::Double values[12];
-  Minotaur::Int error = 0;
+  double values[12];
+  int error = 0;
 
   // x2 appears in 3 rows, x0 in 4, x1 in 3, x3 in 1, x4 in 1.
   Minotaur::UInt correctCol[12] = {0, 0, 0, 1, 1, 1, 1, 2, 2, 2, 3, 4};
   Minotaur::UInt correctRow[12] = {0, 2, 3, 0, 1, 2, 3, 0, 2, 3, 4, 4};
 
-  Minotaur::Double x0[5] = {0, 0, 0, 0, 0};
-  Minotaur::Double x1[5] = {1, 2, 3, 4, 5};
+  double x0[5] = {0, 0, 0, 0, 0};
+  double x1[5] = {1, 2, 3, 4, 5};
 
-  Minotaur::Double correctValues0[12] = {0, -1, 1, 0, 0, 1, 1, 0, 1, 1, 1, 1};
-  Minotaur::Double correctValues1[12] = {2, -1, 1, 4, 16, 1, 1, 6, 1, 1, 1, 1};
+  double correctValues0[12] = {0, -1, 1, 0, 0, 1, 1, 0, 1, 1, 1, 1};
+  double correctValues1[12] = {2, -1, 1, 4, 16, 1, 1, 6, 1, 1, 1, 1};
 
   // set jacobian
   AMPLJacobianPtr jacPtr = (AMPLJacobianPtr) new AMPLJacobian(iface_);
@@ -307,11 +307,11 @@ void AMPLInstanceUT::testObjective()
   std::string oName;
   Minotaur::NonlinearFunctionPtr nlfPtr;
   Minotaur::QuadraticFunctionPtr qfPtr;
-  Minotaur::Int error;
+  int error;
 
                        // x2,x0,x1,x3,x4   (remember ampl changes order)
-  Minotaur::Double y[5] = {7, 0, 2, 9, 6};
-  Minotaur::Double z[5] = {1,-1, 2,-4, 5};
+  double y[5] = {7, 0, 2, 9, 6};
+  double z[5] = {1,-1, 2,-4, 5};
 
   oPtr = inst_->getObjective();
   if (!oPtr) {
@@ -333,27 +333,27 @@ void AMPLInstanceUT::testObjectiveGradient()
 {
   Minotaur::ObjectivePtr oPtr = inst_->getObjective();
   const Minotaur::QuadraticFunctionPtr qf = oPtr->getQuadraticFunction();
-  Minotaur::Int error;
+  int error;
 
   // test points
                        // x2,x0,x1,x3,x4   (remember ampl changes order)
-  Minotaur::Double x[5] = {0, 0, 0, 0, 0};
-  Minotaur::Double y[5] = {7, 0, 2, 9, 6};
-  Minotaur::Double z[5] = {1,-1, 2,-4, 5};
+  double x[5] = {0, 0, 0, 0, 0};
+  double y[5] = {7, 0, 2, 9, 6};
+  double z[5] = {1,-1, 2,-4, 5};
 
   // expected results for quadratic parts
-  Minotaur::Double qgx[5] = {0, 0, 0, 0, 0};
-  Minotaur::Double qgy[5] = {2, 9, 7, 0, 0};
-  Minotaur::Double qgz[5] = {2, -4, 1, -1, 0};
+  double qgx[5] = {0, 0, 0, 0, 0};
+  double qgy[5] = {2, 9, 7, 0, 0};
+  double qgz[5] = {2, -4, 1, -1, 0};
   
   // expected results for the whole function.
-  Minotaur::Double gx[5] = {0, 0, 0, 0, 1};
-  Minotaur::Double gy[5] = {2, 9, 7, 0, 1};
-  Minotaur::Double gz[5] = {2, -4, 1, -1, 1};
-  //Minotaur::Double gz[5] = {1, 2, 3, 4, 0};
+  double gx[5] = {0, 0, 0, 0, 1};
+  double gy[5] = {2, 9, 7, 0, 1};
+  double gz[5] = {2, -4, 1, -1, 1};
+  //double gz[5] = {1, 2, 3, 4, 0};
 
   // acually calculated values for just the quadratic parts
-  Minotaur::Double gradient[5] = {0, 0, 0, 0, 0};
+  double gradient[5] = {0, 0, 0, 0, 0};
 
   if (!oPtr) {
     CPPUNIT_ASSERT(!"objective is missing!");

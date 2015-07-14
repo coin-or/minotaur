@@ -25,16 +25,16 @@ public:
   /// Default constructor
   SOS();
 
-  SOS(Int n, SOSType type, const double *weights, const VarVector &vars,
-      Int priority, Int id, std::string name);
+  SOS(int n, SOSType type, const double *weights, const VarVector &vars,
+      int priority, int id, std::string name);
 
   /// Destroy
   virtual ~SOS();
 
-  Int getId() const;
-  Int getNz();
+  int getId() const;
+  int getNz();
   SOSType getType();
-  Int getPriority() const;
+  int getPriority() const;
 
   std::string getName() const;
   const double* getWeights();
@@ -44,13 +44,13 @@ public:
 
 private:
   /// Index within the problem.
-  Int id_;
+  int id_;
 
   /// Number of elements in the SOS
-  Int n_;
+  int n_;
 
   /// Priority of this SOS over others.
-  Int priority_;
+  int priority_;
 
   /// \brief Type of SOS
   SOSType type_;

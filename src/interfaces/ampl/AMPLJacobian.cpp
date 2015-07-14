@@ -66,10 +66,10 @@ void AMPLJacobian::fillColRowIndices(Minotaur::UInt *jcol, Minotaur::UInt *irow)
 }
 
 
-void AMPLJacobian::fillColRowValues(const Minotaur::Double *x, 
-    Minotaur::Double *values, Minotaur::Int *error)
+void AMPLJacobian::fillColRowValues(const double *x, 
+                                    double *values, int *error)
 {
-  Minotaur::Double *xx = const_cast<Minotaur::Double *>(x);
+  double *xx = const_cast<double *>(x);
   fint ferror = 0;
   (*(myAsl_)->p.Jacval)(myAsl_, xx, values, &ferror);
   if (ferror!=0) {
@@ -93,16 +93,16 @@ void AMPLJacobian::fillRowColIndices(Minotaur::UInt *irow, Minotaur::UInt *jcol)
   assert (cnt==nNz_);
   if (tmpSize_!=nNz_) {
     delete [] tmp_;
-    tmp_ = new Minotaur::Double[nNz_];
+    tmp_ = new double[nNz_];
     tmpSize_ = nNz_;
   }
 }
 
 
-void AMPLJacobian::fillRowColValues(const Minotaur::Double *x, 
-    Minotaur::Double *values, Minotaur::Int *error)
+void AMPLJacobian::fillRowColValues(const double *x, 
+                                    double *values, int *error)
 {
-  Minotaur::Double *xx = const_cast<Minotaur::Double *>(x);
+  double *xx = const_cast<double *>(x);
   cgrad *cg; 
   Minotaur::UInt cnt = 0;
   fint ferror = 0;

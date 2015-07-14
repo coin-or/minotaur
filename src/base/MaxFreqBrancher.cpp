@@ -129,7 +129,7 @@ Branches MaxFreqBrancher::findBranches(RelaxationPtr rel, NodePtr ,
 
 void MaxFreqBrancher::initialize(RelaxationPtr rel)
 {
-  Int n = rel->getNumVars();
+  int n = rel->getNumVars();
   // initialize following vectors to zero.
   fracCount_ = std::vector<UInt>(n,0); 
   unfixedCount_ = std::vector<UInt>(n,0); 

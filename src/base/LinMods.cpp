@@ -81,7 +81,7 @@ void LinMods::insert(LinConModPtr lmod)
 }
 
 
-Bool LinMods::isEmpty() const
+bool LinMods::isEmpty() const
 {
   return (lmods_.empty() && bmods2_.empty() && bmods_.empty());
 }

@@ -147,13 +147,13 @@ namespace Minotaur {
      * to the existing values in 'values'
      */
     virtual void evalHessian(const double mult, const double *x, 
-                             const Size_t *offset, double *values , int *error);
+                             const size_t *offset, double *values , int *error);
     virtual void evalHessian(double mult, const double *x, 
                              const LTHessStor *stor, double *values , int *error);
 
 
     /// Fill in the values of offset, starting from position pos. 
-    virtual void fillHessOffset(Size_t *offset, Size_t &pos, 
+    virtual void fillHessOffset(size_t *offset, size_t &pos, 
                                 std::set<ConstVariablePair, CompareVariablePair> & v_pairs);
 
     virtual void  fillHessStor(LTHessStor *stor);

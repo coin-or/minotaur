@@ -120,7 +120,7 @@ void AMPLOsiUT::testOsiBnB()
   HandlerVector handlers;
   ReliabilityBrancherPtr br;
   EnginePtr e;
-  Int err = 0;
+  int err = 0;
 
   env->startTimer(err);
   ProblemPtr p = iface_->readInstance(file_name);

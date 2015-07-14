@@ -42,7 +42,7 @@ PerspCutGenerator::PerspCutGenerator(RelaxationPtr rel, ConstSolutionPtr sol,
   generateAllCuts();
 }
 
-Bool PerspCutGenerator::generateAllCuts()
+bool PerspCutGenerator::generateAllCuts()
 {
   if (persplist_->getNumPersp() >= 1) {
     const double * x = s_->getPrimal();
@@ -58,7 +58,7 @@ Bool PerspCutGenerator::generateAllCuts()
       UInt binindex = binvar->getIndex();
       double binsol = x[binindex];
       // Check if binary variable has an integral value.
-      Bool binint = IsInt(binsol, intTol_);
+      bool binint = IsInt(binsol, intTol_);
       if (binint) {
         stats_->perspnotcons += 1;
         continue;
@@ -82,7 +82,7 @@ Bool PerspCutGenerator::generateAllCuts()
   return true;
 }
 
-Bool PerspCutGenerator::generateCut(ConstConstraintPtr cons,ConstVariablePtr binvar)
+bool PerspCutGenerator::generateCut(ConstConstraintPtr cons,ConstVariablePtr binvar)
 {
   FunctionPtr f = cons->getFunction();
   LinearFunctionPtr lf = cons->getLinearFunction();
@@ -122,10 +122,10 @@ Bool PerspCutGenerator::generateCut(ConstConstraintPtr cons,ConstVariablePtr bin
   // we save its solution value here, 
   y[binindex] = solbin;
   // Evaluate function at given soution (p*/u*, u*).
-  Int error = 0;
+  int error = 0;
   double conseval = f->eval(y, &error);
   // Evaluate gradient at given solution (p*/u*, u*).
-  Int errorgr = 0;
+  int errorgr = 0;
   double * consgradient = new double[numvars];
   std::fill(consgradient, consgradient + numvars, 0);
   f->evalGradient(y, consgradient, &errorgr);
@@ -181,7 +181,7 @@ Bool PerspCutGenerator::generateCut(ConstConstraintPtr cons,ConstVariablePtr bin
   return true;
 }
 
-Bool PerspCutGenerator::addCut(CutPtr cut)
+bool PerspCutGenerator::addCut(CutPtr cut)
 {
   // Total number of cuts increased by one.
   stats_->totalcuts += 1;
@@ -201,7 +201,7 @@ Bool PerspCutGenerator::addCut(CutPtr cut)
     output_.close();
   }
 
-  Bool cutexists = checkExists(cut);
+  bool cutexists = checkExists(cut);
   if(cutexists == false) {
     stats_->cuts += 1;
     // Add to the cut list.
@@ -220,14 +220,14 @@ double PerspCutGenerator::violation(CutPtr cut)
 {
   FunctionPtr f= cut->getFunction();
   const double * x = s_->getPrimal();
-  Int error = 0;
+  int error = 0;
   double evaluation = f->eval(x, &error);
   double violub = std::max(0.0, evaluation - cut->getUb());
   
   return violub;
 }
 
-Bool PerspCutGenerator::checkExists(CutPtr cut)
+bool PerspCutGenerator::checkExists(CutPtr cut)
 {
   double rhs = cut->getUb();
   UInt numvars = rel_->getNumVars();
@@ -310,7 +310,7 @@ void PerspCutGenerator::initialize()
   }// end of debug.
 }
 
-Bool PerspCutGenerator::checkIntegral(RelaxationPtr p, ConstSolutionPtr s)
+bool PerspCutGenerator::checkIntegral(RelaxationPtr p, ConstSolutionPtr s)
 {
   // Iterators for variables in problem.
   VariableConstIterator it;

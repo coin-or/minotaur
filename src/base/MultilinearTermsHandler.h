@@ -64,8 +64,8 @@ public:
   ListOfSetOfVars incidentEdges(ConstVariablePtr v) const;
 
   VariablePtr maxWeightedDegreeVertex(bool &maxWeightPositive) const;
-  Int numEdges() const { return E_.size(); }
-  Int numVertices() const { return V_.size(); }
+  int numEdges() const { return E_.size(); }
+  int numVertices() const { return V_.size(); }
 
   SetOfVars randomEdge(bool &maxWeightPositive);
   void resetWeights();
@@ -189,7 +189,7 @@ private:
   // Parameters for term cover
   UInt maxGroupSize_;
   double augmentCoverFactor_;
-  Int initialTermCoverSize_;
+  int initialTermCoverSize_;
 
 private:
   typedef std::set<ConstVariablePtr> SetOfVars;
@@ -228,7 +228,7 @@ private:
 #endif
 
   // We want (int, VarPtr) as key.  ConstraintPtr as value
-  typedef std::pair<Int, ConstVariablePtr> IntVarPtrPair;
+  typedef std::pair<int, ConstVariablePtr> IntVarPtrPair;
   typedef std::map<IntVarPtrPair, ConstraintPtr> IntVarPtrPairConstraintMap;
   
   IntVarPtrPairConstraintMap xConMap_;

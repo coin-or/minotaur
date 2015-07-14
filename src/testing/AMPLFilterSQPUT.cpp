@@ -59,7 +59,7 @@ void AMPLFilterSQPUT::testNLP()
   CPPUNIT_ASSERT(status==Minotaur::ProvenLocalOptimal);
 
   // get objvalue
-  Minotaur::Double value = filter_e->getSolutionValue();
+  double value = filter_e->getSolutionValue();
   CPPUNIT_ASSERT(fabs(value-1.7201185) < 1e-7);
 
   inst->clear();
@@ -83,7 +83,7 @@ void AMPLFilterSQPUT::testLP()
   filter_e->solve();
   Minotaur::EngineStatus status = filter_e->getStatus();
   CPPUNIT_ASSERT(status==Minotaur::ProvenLocalOptimal);
-  Minotaur::Double value = filter_e->getSolutionValue();
+  double value = filter_e->getSolutionValue();
   CPPUNIT_ASSERT(fabs(value+8.4286) < 1e-4);
   delete iface_;
 }

@@ -31,8 +31,8 @@ SOS::SOS()
 }
 
 
-SOS::SOS(Int n, SOSType type, const double *weights, const VarVector &vars,
-         Int priority, Int id, std::string name) 
+SOS::SOS(int n, SOSType type, const double *weights, const VarVector &vars,
+         int priority, int id, std::string name) 
 : id_(id),
   n_(n),
   priority_(priority),
@@ -53,19 +53,19 @@ SOS::~SOS()
 }
 
 
-Int SOS::getId() const
+int SOS::getId() const
 {
   return id_;
 }
 
 
-Int SOS::getNz()
+int SOS::getNz()
 {
   return n_;
 }
 
 
-Int SOS::getPriority() const
+int SOS::getPriority() const
 {
   return priority_;
 }

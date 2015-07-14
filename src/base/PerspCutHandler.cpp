@@ -66,7 +66,7 @@ bool PerspCutHandler::isFeasible(ConstSolutionPtr sol, RelaxationPtr, bool &,
   const double *x = sol->getPrimal();
   // Evaluation of constraint for a given solution.
   double activity = 0.0;
-  Int error = 0;
+  int error = 0;
 
   // Now, we check all perspective cut constraints if the current 
   // relaxation solution violates any of them.

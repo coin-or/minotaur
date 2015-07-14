@@ -149,10 +149,10 @@ void AMPLCGraphUT::testConstraints()
   Minotaur::QuadraticFunctionPtr qfPtr;
   Minotaur::NonlinearFunctionPtr nlfPtr;
                        // x2,x0,x1,x3,x4   (remember ampl changes order)
-  Minotaur::Double x[5] = {0, 0, 0, 0, 0};
-  Minotaur::Double y[5] = {7, 0, 2, 9, 6};
-  Minotaur::Double z[5] = {1,-1, 2,-4, 5};
-  Minotaur::Int error = 0;
+  double x[5] = {0, 0, 0, 0, 0};
+  double y[5] = {7, 0, 2, 9, 6};
+  double z[5] = {1,-1, 2,-4, 5};
+  int error = 0;
 
   inst_ = iface_->readInstance("instances/minlp_eg0");
   for (Minotaur::UInt i=0; i<inst_->getNumCons(); ++i) {
@@ -278,8 +278,8 @@ void AMPLCGraphUT::testJacobian()
 
   Minotaur::UInt iRow[12];
   Minotaur::UInt jCol[12];
-  Minotaur::Double values[12];
-  Minotaur::Int error = 0;
+  double values[12];
+  int error = 0;
 
   // x2 appears in 3 rows, x0 in 4, x1 in 3, x3 in 1, x4 in 1.
   //Minotaur::UInt correctCol[12] = {0, 0, 0, 1, 1, 1, 1, 2, 2, 2, 3, 4};
@@ -288,13 +288,13 @@ void AMPLCGraphUT::testJacobian()
   Minotaur::UInt correctCol[12] = {0, 1, 2, 1, 0, 1, 2, 0, 1, 2, 3, 4};
   Minotaur::UInt correctRow[12] = {0, 0, 0, 1, 2, 2, 2, 3, 3, 3, 4, 4};
 
-  Minotaur::Double x0[5] = {0, 0, 0, 0, 0};
-  Minotaur::Double x1[5] = {1, 2, 3, 4, 5};
+  double x0[5] = {0, 0, 0, 0, 0};
+  double x1[5] = {1, 2, 3, 4, 5};
 
   //Minotaur::UInt correctCol[12] = {0, 1, 2,  1,  0, 1, 2, 0, 1, 2, 3, 4};
   //Minotaur::UInt correctRow[12] = {0, 0, 0,  1,  2, 2, 2, 3, 3, 3, 4, 4};
-  Minotaur::Double correctValues0[12] = {0, 0, 0,  0, -1, 1, 1, 1, 1, 1, 1, 1};
-  Minotaur::Double correctValues1[12] = {2, 4, 6, 16, -1, 1, 1, 1, 1, 1, 1, 1};
+  double correctValues0[12] = {0, 0, 0,  0, -1, 1, 1, 1, 1, 1, 1, 1};
+  double correctValues1[12] = {2, 4, 6, 16, -1, 1, 1, 1, 1, 1, 1, 1};
 
   inst_ = iface_->readInstance("instances/minlp_eg0");
   // set jacobian
@@ -337,11 +337,11 @@ void AMPLCGraphUT::testHessian()
   Minotaur::UInt col[5];
   Minotaur::UInt rowexp[5] = {0, 1, 2, 2, 3};
   Minotaur::UInt colexp[5] = {0, 1, 0, 2, 1};
-  Minotaur::Double x[5] = {0.0, 0.0, 0.0, 0.0, 0.0};
-  Minotaur::Double hval[5] = {0.0, 0.0, 0.0, 0.0, 0.0};
-  Minotaur::Double con_mult[5] = {0.0, 0.0, 0.0, 0.0, 0.0};
-  Minotaur::Double exph[5];
-  Minotaur::Int error = 0;
+  double x[5] = {0.0, 0.0, 0.0, 0.0, 0.0};
+  double hval[5] = {0.0, 0.0, 0.0, 0.0, 0.0};
+  double con_mult[5] = {0.0, 0.0, 0.0, 0.0, 0.0};
+  double exph[5];
+  int error = 0;
 
   inst_ = iface_->readInstance("instances/minlp_eg0");
   inst_->setNativeDer();
@@ -360,7 +360,7 @@ void AMPLCGraphUT::testHessian()
     CPPUNIT_ASSERT(fabs(hval[i] - exph[i])<1e-10);
   }
 
-  memset(hval, 0, sizeof(Minotaur::Double));
+  memset(hval, 0, sizeof(double));
   con_mult[0] = -1.0;
   exph[0] = -2.0; exph[1] = -2.0; exph[2] =  0.0; exph[3] =-2.0; exph[4] = 0.0;
   h->fillRowColValues(x, 0.0, con_mult, hval, &error);
@@ -368,7 +368,7 @@ void AMPLCGraphUT::testHessian()
     CPPUNIT_ASSERT(fabs(hval[i] - exph[i])<1e-10);
   }
 
-  memset(hval, 0, sizeof(Minotaur::Double));
+  memset(hval, 0, sizeof(double));
   con_mult[0] =  0.0; con_mult[1] =  5.5;
   exph[0] =  0.0; exph[1] =  11.0; exph[2] =  0.0; exph[3] = 0.0; exph[4] = 0.0;
   h->fillRowColValues(x, 0.0, con_mult, hval, &error);
@@ -376,7 +376,7 @@ void AMPLCGraphUT::testHessian()
     CPPUNIT_ASSERT(fabs(hval[i] - exph[i])<1e-10);
   }
 
-  memset(hval, 0, sizeof(Minotaur::Double));
+  memset(hval, 0, sizeof(double));
   con_mult[0] =  1.0; con_mult[1] =  5.5;
   h->fillRowColValues(x, -3.0, con_mult, hval, &error);
   exph[0] =  2.0; exph[1] =  13.0; exph[2] =  -3.0; exph[3] = 2.0; exph[4] = -3.0;
@@ -385,7 +385,7 @@ void AMPLCGraphUT::testHessian()
   }
 
 
-  memset(hval, 0, sizeof(Minotaur::Double));
+  memset(hval, 0, sizeof(double));
   x[1] = 7.0;
   h->fillRowColValues(x, -3.0, con_mult, hval, &error);
   exph[0] =  2.0; exph[1] =  244.0; exph[2] =  -3.0; exph[3] = 2.0; exph[4] = -3.0;
@@ -404,9 +404,9 @@ void AMPLCGraphUT::testObjective()
   Minotaur::QuadraticFunctionPtr qfPtr;
 
                        // x2,x0,x1,x3,x4   (remember ampl changes order)
-  Minotaur::Double y[5] = {7, 0, 2, 9, 6};
-  Minotaur::Double z[5] = {1,-1, 2,-4, 5};
-  Minotaur::Int error = 0;
+  double y[5] = {7, 0, 2, 9, 6};
+  double z[5] = {1,-1, 2,-4, 5};
+  int error = 0;
   inst_ = iface_->readInstance("instances/minlp_eg0");
 
   oPtr = inst_->getObjective();
@@ -429,22 +429,22 @@ void AMPLCGraphUT::testObjective()
 void AMPLCGraphUT::testObjectiveGradient()
 {
   Minotaur::ObjectivePtr oPtr;
-  Minotaur::Int error;
+  int error;
 
   // test points
                        // x2,x0,x1,x3,x4   (remember ampl changes order)
-  Minotaur::Double x[5] = {0, 0, 0, 0, 0};
-  Minotaur::Double y[5] = {7, 0, 2, 9, 6};
-  Minotaur::Double z[5] = {1,-1, 2,-4, 5};
+  double x[5] = {0, 0, 0, 0, 0};
+  double y[5] = {7, 0, 2, 9, 6};
+  double z[5] = {1,-1, 2,-4, 5};
 
   // expected results for the whole function.
-  Minotaur::Double gx[5] = {0, 0, 0, 0, 1};
-  Minotaur::Double gy[5] = {2, 9, 7, 0, 1};
-  Minotaur::Double gz[5] = {2, -4, 1, -1, 1};
-  //Minotaur::Double gz[5] = {1, 2, 3, 4, 0};
+  double gx[5] = {0, 0, 0, 0, 1};
+  double gy[5] = {2, 9, 7, 0, 1};
+  double gz[5] = {2, -4, 1, -1, 1};
+  //double gz[5] = {1, 2, 3, 4, 0};
 
   // acually calculated values for just the quadratic parts
-  Minotaur::Double gradient[5] = {0, 0, 0, 0, 0};
+  double gradient[5] = {0, 0, 0, 0, 0};
   inst_ = iface_->readInstance("instances/minlp_eg0");
   oPtr = inst_->getObjective();
   if (!oPtr) {
@@ -482,12 +482,12 @@ void AMPLCGraphUT::testNl()
   env->getOptions()->findBool("use_native_cgraph")->setValue(true);
   env->setLogLevel(Minotaur::LogError);
   AMPLInterface iface(env);
-  Minotaur::Double x[5] = {1.0,5,1.0,5,1.0};
-  Minotaur::Double h[4] = {0.0,0.0,0.0,0.0};
+  double x[5] = {1.0,5,1.0,5,1.0};
+  double h[4] = {0.0,0.0,0.0,0.0};
   Minotaur::UInt rows[4] = {0,0,0,0};
   Minotaur::UInt cols[4] = {0,0,0,0};
-  Minotaur::Int err = 0;
-  Minotaur::Double m[2] = {1.0, 1.0};
+  int err = 0;
+  double m[2] = {1.0, 1.0};
 
 
   inst_ = iface.readInstance("instances/hess");

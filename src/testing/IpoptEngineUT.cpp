@@ -71,7 +71,7 @@ void IpoptEngineUT::createInstance_()
 void IpoptEngineUT::testGetObjVal()
 {
   EnvPtr env = (EnvPtr) new Environment();
-  Double initial_pt[2] = {1, -0};
+  double initial_pt[2] = {1, -0};
   createInstance_();
 
   //create a new engine
@@ -103,11 +103,11 @@ void IpoptEngineUT::testGetObjVal()
   CPPUNIT_ASSERT(status==ProvenLocalOptimal);
 
   // get objvalue
-  Double value = ipopt_e->getSolutionValue();
+  double value = ipopt_e->getSolutionValue();
   CPPUNIT_ASSERT(fabs(value+0.5) < 1e-7);
 
   // get solution
-  const Minotaur::Double *x = ipopt_e->getSolution()->getPrimal();
+  const double *x = ipopt_e->getSolution()->getPrimal();
   CPPUNIT_ASSERT(fabs(x[0]-0.7071067812) < 1e-6);
   CPPUNIT_ASSERT(fabs(x[1]+0.7071067812) < 1e-6);
 }
@@ -130,14 +130,14 @@ UInt myNLFun0::getHessianNzCount()
   return 1;
 }
 
-Double myNLFun0::eval(const Double *x, Int *error) 
+double myNLFun0::eval(const double *x, int *error) 
 {
   //std::cout << "\n\n obj = " << x[0]*x[1] << "\n\n";
   *error = 0;
   return x[0]*x[1];
 }
 
-void myNLFun0::evalGradient(const Double *x, Double *grad_f, Int *error)
+void myNLFun0::evalGradient(const double *x, double *grad_f, int *error)
 {
   *error = 0;
   grad_f[0] = x[1];
@@ -164,7 +164,7 @@ UInt myNLFun1::getHessianNzCount()
   return 2;
 }
 
-Double myNLFun1::eval(const Double *x, Int *error)
+double myNLFun1::eval(const double *x, int *error)
 {
   *error = 0;
   return x[0]*x[0] + x[1]*x[1];
@@ -200,7 +200,7 @@ void myJac::fillRowColIndices(UInt *iRow, UInt *jCol)
 }
 
 
-void myJac::fillRowColValues(const Double *x, Double *values, Int *error)
+void myJac::fillRowColValues(const double *x, double *values, int *error)
 {
   *error = 0;
   values[0] = 2*x[0];
@@ -232,8 +232,8 @@ void myHess::fillRowColIndices(UInt *iRow, UInt *jCol)
   jCol[1] = 1;
 }
 
-void myHess::fillRowColValues(const Double *, Double obj_mult,
-                              const Double *con_mult, Double *values, Int *error)
+void myHess::fillRowColValues(const double *, double obj_mult,
+                              const double *con_mult, double *values, int *error)
 {
   *error = 0;
   values[0] = 2*obj_mult;

@@ -49,7 +49,7 @@ namespace Minotaur {
      * \param [out] err must be nonzero if function wasn't cloned.
      */
     virtual NonlinearFunctionPtr cloneWithVars(VariableConstIterator vbeg,
-                                               Int *err) const = 0;
+                                               int *err) const = 0;
 
     /**
      * \brief Calculate upper and lower bounds on the function using bounds of
@@ -58,7 +58,7 @@ namespace Minotaur {
      * \param [out] lb Pointer that will contain the value of upper bound.
      * \param [out] error 0 if no error is encountered, nonzero otherwise.
      */
-    virtual void computeBounds(double *lb, double *ub, Int *error);
+    virtual void computeBounds(double *lb, double *ub, int *error);
 
     /**
      * \brief Evaluate the function at a given point x.
@@ -69,7 +69,7 @@ namespace Minotaur {
      * error encountered while evaluating. Leave undisturbed otherwise.
      * \return The value of function of x.
      */
-    virtual double eval(const double *x, Int *error) = 0;
+    virtual double eval(const double *x, int *error) = 0;
 
     /**
      * \brief Evaluate and add gradient at a given point.
@@ -81,7 +81,7 @@ namespace Minotaur {
      * \param [out] error It should be set a positive value if there is
      * error encountered while evaluating. Leave undisturbed otherwise.
      */
-    virtual void evalGradient(const double *x, double *grad_f, Int *error) 
+    virtual void evalGradient(const double *x, double *grad_f, int *error) 
       = 0;
 
     /**
@@ -97,7 +97,7 @@ namespace Minotaur {
      */
     virtual void evalHessian(const double mult, const double *x, 
                              const LTHessStor *stor, double *values, 
-                             Int *error) = 0;
+                             int *error) = 0;
 
     /**
      * \brief Fill sparsity of hessian into hessian storage.
@@ -119,7 +119,7 @@ namespace Minotaur {
      * \param [out] error It should be set a zero value if there is
      * error encountered while evaluating. Leave undisturbed otherwise.
      */
-    virtual void fillJac(const double *x, double *values, Int *error) = 0;
+    virtual void fillJac(const double *x, double *values, int *error) = 0;
 
     /**
      * \brief Finalize hessian preparation. 

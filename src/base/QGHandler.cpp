@@ -48,7 +48,7 @@ using namespace Minotaur;
 typedef std::vector<ConstraintPtr>::const_iterator CCIter;
 const std::string QGHandler::me_ = "QGHandler: ";
 
-  QGHandler::QGHandler()
+QGHandler::QGHandler()
 : env_(EnvPtr()),      
   intTol_(1e-6),
   linCoeffTol_(1e-6),
@@ -68,7 +68,7 @@ const std::string QGHandler::me_ = "QGHandler: ";
   logger_ = (LoggerPtr) new Logger(LogDebug2);
 }
 
-  QGHandler::QGHandler(EnvPtr env, ProblemPtr minlp, EnginePtr nlpe) 
+QGHandler::QGHandler(EnvPtr env, ProblemPtr minlp, EnginePtr nlpe) 
 : env_(env),
   intTol_(1e-6),
   linCoeffTol_(1e-6),

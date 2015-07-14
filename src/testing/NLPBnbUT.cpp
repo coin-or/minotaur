@@ -43,7 +43,7 @@ ProblemPtr NLPBnbUT::createInstance_()
   ObjectivePtr oPtr;
   myNLFun3Ptr obj_f;
   myNLFun4Ptr con0_f;
-  Double initial_pt[2] = {0.5, 0.0};
+  double initial_pt[2] = {0.5, 0.0};
 
   // create instance and add variables 
   instance = (ProblemPtr) new Problem();
@@ -121,13 +121,13 @@ UInt myNLFun3::getHessianNzCount()
   return 1;
 }
 
-Double myNLFun3::eval(const Double *x, Int *error) 
+double myNLFun3::eval(const double *x, int *error) 
 {
   *error = 0;
   return x[0]*x[1];
 }
 
-void myNLFun3::evalGradient(const Double *x, Double *grad_f, Int *error) 
+void myNLFun3::evalGradient(const double *x, double *grad_f, int *error) 
 {
   *error = 0;
   grad_f[0] = x[1];
@@ -154,7 +154,7 @@ UInt myNLFun4::getHessianNzCount()
   return 2;
 }
 
-Double myNLFun4::eval(const Double *x, Int *error) 
+double myNLFun4::eval(const double *x, int *error) 
 {
   *error = 0;
   return x[0]*x[0] + x[1]*x[1];
@@ -187,7 +187,7 @@ void myJac2::fillRowColIndices(UInt *iRow, UInt *jCol)
   jCol[1] = 1;
 }
 
-void myJac2::fillRowColValues(const Double *x, Double *values, Int *error)
+void myJac2::fillRowColValues(const double *x, double *values, int *error)
 {
   *error = 0;
   values[0] = 2*x[0];
@@ -222,8 +222,9 @@ void myHess2::fillRowColIndices(UInt *iRow, UInt *jCol)
   jCol[2] = 1;
 }
 
-void myHess2::fillRowColValues(const Double *, Double obj_mult, 
-                               const Double *con_mult, Double *values,  Int *error)
+void myHess2::fillRowColValues(const double *, double obj_mult, 
+                               const double *con_mult, double *values, 
+                               int *error)
 {
   *error = 0;
   values[0] = 2*con_mult[0];
@@ -251,7 +252,7 @@ ProblemPtr NLPBnbUT::createInstance1_()
   ObjectivePtr oPtr;
   myNLFun5Ptr obj_f;
   myNLFun6Ptr con0_f;
-  Double initial_pt[2] = {0.0, 0.0};
+  double initial_pt[2] = {0.0, 0.0};
 
   // create instance and add variables 
   instance = (ProblemPtr) new Problem();
@@ -297,7 +298,7 @@ void NLPBnbUT::testNLPBnb1()
   ReliabilityBrancherPtr br;
   RelaxationPtr rel;
   EnginePtr e;
-  Int err = 0;
+  int err = 0;
 
   env->startTimer(err);
   BranchAndBound *bab = new BranchAndBound(env, p);
@@ -356,13 +357,13 @@ UInt myNLFun5::getHessianNzCount()
   return 2;
 }
 
-Double myNLFun5::eval(const Double *x, Int *error) 
+double myNLFun5::eval(const double *x, int *error) 
 {
   *error = 0;
   return x[0]*x[0] + x[1]*x[1] - x[0] - 1.5*x[1];
 }
 
-void myNLFun5::evalGradient(const Double *x, Double *grad_f, Int *error) 
+void myNLFun5::evalGradient(const double *x, double *grad_f, int *error) 
 {
   *error = 0;
   grad_f[0] = 2*x[0] - 1;
@@ -389,7 +390,7 @@ UInt myNLFun6::getHessianNzCount()
   return 0;
 }
 
-Double myNLFun6::eval(const Double *x, Int *error) 
+double myNLFun6::eval(const double *x, int *error) 
 {
   *error = 0;
   return -2*x[0] + 2*x[1];
@@ -422,7 +423,7 @@ void myJac3::fillRowColIndices(UInt *iRow, UInt *jCol)
   jCol[1] = 1;
 }
 
-void myJac3::fillRowColValues(const Double *, Double *values, Int *error)
+void myJac3::fillRowColValues(const double *, double *values, int *error)
 {
   *error = 0;
   values[0] = -2;
@@ -452,8 +453,8 @@ void myHess3::fillRowColIndices(UInt *iRow, UInt *jCol)
   jCol[1] = 1;
 }
 
-void myHess3::fillRowColValues(const Double *, 
-    Double obj_mult, const Double *, Double *values, Int *error)
+void myHess3::fillRowColValues(const double *, 
+    double obj_mult, const double *, double *values, int *error)
 {
   *error = 0;
   values[0] = 2*obj_mult;

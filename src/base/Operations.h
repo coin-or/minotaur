@@ -23,7 +23,7 @@ namespace Minotaur {
   double InnerProduct(const std::vector<double> &x, const VariableGroup &g2);
 
   /// Inner product of two arrays, x and a, each of size n.
-  double InnerProduct(const double *x, const double *a, Int n);
+  double InnerProduct(const double *x, const double *a, int n);
 
   void symMatDotV(UInt nz, const double *mat, const UInt *irow, const UInt *jcol,
                   const double *v, double *prod);

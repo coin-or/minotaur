@@ -226,7 +226,7 @@ void MINLPDiving::getScore_(const double* x, Scoretype s)
   ObjectivePtr obj;
   UInt numcons;
   double vl_score;
-  Int error;
+  int error;
   score_.clear(); // remove the score of violated variables from prev sol
   switch (s) {
    case (LexBound)   :
@@ -299,7 +299,7 @@ void MINLPDiving::getScore_(const double* x, Scoretype s)
 }
 
 
-void MINLPDiving::implementDive_(Int i, const double* x, SolutionPoolPtr s_pool)
+void MINLPDiving::implementDive_(int i, const double* x, SolutionPoolPtr s_pool)
 {
   ConstSolutionPtr sol;
   Direction d;
@@ -612,7 +612,7 @@ void MINLPDiving::saveBounds_(double* LB_copy, double* UB_copy, UInt vars)
 }
 
 
-MINLPDiving::FuncPtr MINLPDiving::selectHeur_(Int i, Direction &d, Order &o)
+MINLPDiving::FuncPtr MINLPDiving::selectHeur_(int i, Direction &d, Order &o)
 {
   switch (i%4) {
    case 0 : d = Floor;
@@ -649,14 +649,14 @@ MINLPDiving::FuncPtr MINLPDiving::selectHeur_(Int i, Direction &d, Order &o)
 }
 
 
-Bool MINLPDiving::shouldDive_()
+bool MINLPDiving::shouldDive_()
 {
   VariablePtr variable;
   
   UInt min_num_bint             = 5;
   ConstProblemSizePtr prob_size = p_->getSize();
   UInt num_bin_int              = prob_size->bins + prob_size->ints;
-  Int option = env_->getOptions()->findInt("divheur")->getValue();
+  int option = env_->getOptions()->findInt("divheur")->getValue();
   
   switch (option) {
 
@@ -685,7 +685,7 @@ void MINLPDiving::solve(NodePtr, RelaxationPtr, SolutionPoolPtr s_pool)
   EngineStatus status;
   const double* x;
   
-  Int num_method         = 32;
+  int num_method         = 32;
   UInt numvars           = p_->getNumVars();
   double* root_x;
   double* root_copy;
@@ -723,7 +723,7 @@ void MINLPDiving::solve(NodePtr, RelaxationPtr, SolutionPoolPtr s_pool)
     lh_ = new LinearHandler(env_, p_);
     saveBounds_(LB_copy, UB_copy, numvars);
     // loop over the methods starts here
-    for (Int i=0; i<num_method && stats_->totalSol < maxSol_; ++i) {
+    for (int i=0; i<num_method && stats_->totalSol < maxSol_; ++i) {
       logger_->msgStream(LogDebug) << me_<< "diving method "
         << i << std::endl;
       std::copy(root_x, root_x + numvars, root_copy); 
@@ -883,7 +883,7 @@ UInt MINLPDiving::VectorLength_(UInt numfrac, const double* x,
 }
 
 
-Bool MINLPDiving::vectorFlag_(UInt min_vlength)
+bool MINLPDiving::vectorFlag_(UInt min_vlength)
 {
   UInt num_obj_int      = 0;
   FunctionPtr obj       = p_->getObjective()->getFunction();

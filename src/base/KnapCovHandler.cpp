@@ -81,7 +81,7 @@ bool KnapCovHandler::isFeasible(ConstSolutionPtr sol, RelaxationPtr ,
   const double *x = sol->getPrimal();
   // Evaluation of constraint for a given solution. 
   double activity = 0.0;
-  Int error = 0;
+  int error = 0;
   
   // Here I assume that the cons_ data element includes the knapsacks cuts
   // that has to be checked for feasibility. Ask Ashu if this is correct or

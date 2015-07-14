@@ -134,13 +134,13 @@ void BndProcessor::process(NodePtr node, RelaxationPtr rel,
   BrancherStatus br_status;
   ConstSolutionPtr sol;
   ModVector mods;
-  Int iter = 0;
+  int iter = 0;
 
   ++stats_.proc;
   relaxation_ = rel;
 
 #if 0
-  Double *svar = new Double[20];
+  double *svar = new double[20];
   bool xfeas = true;
   svar[1-1]   = 0.000000000  ;
   svar[2-1]   = 0.000000000  ;
@@ -248,7 +248,7 @@ void BndProcessor::process(NodePtr node, RelaxationPtr rel,
 }
 
 
-bool BndProcessor::shouldPrune_(NodePtr node, Double solval, 
+bool BndProcessor::shouldPrune_(NodePtr node, double solval, 
                                SolutionPoolPtr s_pool)
 {
   bool should_prune = false;

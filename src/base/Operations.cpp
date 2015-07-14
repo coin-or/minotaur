@@ -65,10 +65,10 @@ double Minotaur::InnerProduct(const std::vector<double> &x,
 }
 
 
-double Minotaur::InnerProduct(const double *x, const double *a, Int n) 
+double Minotaur::InnerProduct(const double *x, const double *a, int n) 
 {
   double sum = 0;
-  for (Int i=0; i<n; ++i) {
+  for (int i=0; i<n; ++i) {
     sum += (*x) * (*a);
     ++x;
     ++a;
@@ -293,7 +293,7 @@ void Minotaur::sort(VarVector &vvec, double *x, bool ascend)
   }
 
   if (ascend == false) {
-    for (Int i=vvec.size()-1; i>-1; --i) {
+    for (int i=vvec.size()-1; i>-1; --i) {
       x[i] *= -1;
     }
   }
@@ -301,7 +301,7 @@ void Minotaur::sort(VarVector &vvec, double *x, bool ascend)
   sortRec(vvec, x, 0, vvec.size()-1, vvec.size()/2);
 
   if (ascend == false) {
-    for (Int i=vvec.size()-1; i>-1; --i) {
+    for (int i=vvec.size()-1; i>-1; --i) {
       x[i] *= -1;
     }
   }
@@ -350,7 +350,7 @@ void Minotaur::sortRec(VarVector &vvec, double *x, int left, int right,
 
 void Minotaur::toLowerCase(std::string &str)
 {
-  Int diff = ('z'-'Z');
+  int diff = ('z'-'Z');
   for (UInt i=0; i<str.size(); ++i) {
     if (str[i] >= 'A' && str[i] <= 'Z') {
       str[i] += diff;
@@ -363,7 +363,7 @@ std::string Minotaur::toClockTime(double t)
 {
   std::string s;
   std::stringstream ss;
-  Int it = (int) (t*100);
+  int it = (int) (t*100);
   ss << std::setfill ('0') << std::setw(2) << (int)(it/360000);
   it = it%(360000);
   ss << ":" << std::setfill ('0') << std::setw(2) << (int)(it/6000);

@@ -54,7 +54,7 @@ public:
                         BrancherStatus & br_status, ModVector &mods);
 
   /// Return value of trustCutoff parameter.
-  Bool getTrustCutoff();
+  bool getTrustCutoff();
 
   /// Get iteration limit of engine.
   UInt getIterLim();
@@ -73,7 +73,7 @@ public:
   void initialize(RelaxationPtr rel);
 
   /// Set value of trustCutoff parameter.
-  void setTrustCutoff(Bool val);
+  void setTrustCutoff(bool val);
 
   /**
    * \brief Set engine.
@@ -177,8 +177,8 @@ private:
    * \param[out] is_rel True if the engine status is reliable enough to use
    * the solution value as a reliable bound.
    */
-  Bool shouldPrune_(const double &chcutoff, const double &change, 
-                    const EngineStatus & status, Bool *is_rel);
+  bool shouldPrune_(const double &chcutoff, const double &change, 
+                    const EngineStatus & status, bool *is_rel);
 
   /** 
    * \brief Do strong branching on candidate.
@@ -201,8 +201,8 @@ private:
    * \param[in] count The vector that keeps a cound of how many times cost
    * has been updated for each candidate.
    */
-  void updatePCost_(const Int & i, const double & new_cost, 
-                    DoubleVector & cost, UIntVector & count);
+  void updatePCost_(const int &i, const double &new_cost, 
+                    DoubleVector &cost, UIntVector &count);
 
   /**
    * \brief Analyze the strong-branching results.
@@ -256,7 +256,7 @@ private:
   HandlerVector handlers_;
 
   /// True if data structures initialized. False otherwise.
-  Bool init_;
+  bool init_;
 
   /// When did we last strong-branch on a candidate.
   UIntVector lastStrBranched_;
@@ -325,7 +325,7 @@ private:
   UInt thresh_;
 
   /// Should we use the objective value to deduce a modification.
-  Bool trustCutoff_;
+  bool trustCutoff_;
 
   /**
    * \brief A vector of candidates that will need strong branching. These

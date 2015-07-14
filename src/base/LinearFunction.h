@@ -101,7 +101,7 @@ namespace Minotaur {
      */
     void evalGradient(double *grad_f) const;
 
-    void fillJac(double *values, Int *error);
+    void fillJac(double *values, int *error);
 
     double getFixVarOffset(VariablePtr v, double val);
 

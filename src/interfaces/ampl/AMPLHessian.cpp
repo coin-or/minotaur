@@ -73,14 +73,14 @@ void AMPLHessian::fillRowColIndices(Minotaur::UInt *iRow, Minotaur::UInt *jCol)
 }
 
 
-void AMPLHessian::fillRowColValues(const Minotaur::Double *x, 
-    Minotaur::Double obj_mult, const Minotaur::Double *con_mult, 
-    Minotaur::Double *values, Minotaur::Int *error)
+void AMPLHessian::fillRowColValues(const double *x, double obj_mult,
+                                   const double *con_mult, double *values,
+                                   int *error)
 {
   // We don't need err_jmp flags, because error is always a valid pointer. Not
   // a null pointer.
-  Minotaur::Double *xx = const_cast<Minotaur::Double *>(x);
-  Minotaur::Double *mm = const_cast<Minotaur::Double *>(con_mult);
+  double *xx = const_cast<double *>(x);
+  double *mm = const_cast<double *>(con_mult);
   assert(error);
 
   if (negObj_) {

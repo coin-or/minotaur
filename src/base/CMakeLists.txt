@@ -25,7 +25,6 @@ set (MINOTAUR_SOURCES
      BrVarCand.cpp 
      Chol.cpp
      CGraph.cpp
-     CGraphPers.cpp
      CNode.cpp
      Constraint.cpp
      CoverCutGenerator.cpp # Serdar
@@ -126,7 +125,6 @@ set (MINOTAUR_HEADERS
      BrCand.h
      BrVarCand.h
      CGraph.h
-     CGraphPers.h
      CNode.h
      Constraint.h
      CoverCutGenerator.h # Serdar

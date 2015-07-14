@@ -61,7 +61,7 @@ void AMPLIpoptUT::testNLP()
   CPPUNIT_ASSERT(status==Minotaur::ProvenLocalOptimal);
 
   // get objvalue
-  Minotaur::Double value = ipopt_e->getSolutionValue();
+  double value = ipopt_e->getSolutionValue();
   CPPUNIT_ASSERT(fabs(value-1.7201185) < 1e-7);
 
   inst->clear();

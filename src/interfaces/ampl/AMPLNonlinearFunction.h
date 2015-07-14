@@ -49,18 +49,18 @@ public:
   // Not available.
   Minotaur::NonlinearFunctionPtr 
     cloneWithVars(Minotaur::VariableConstIterator vbeg, 
-                  Minotaur::Int *err) const;
+                  int *err) const;
 
   // Evaluate at a point. Base class function.
-  Minotaur::Double eval(const Minotaur::Double *x, Minotaur::Int *error);
+  double eval(const double *x, int *error);
 
   // Evaluate gradient at a point. Base class function.
-  void evalGradient(const Minotaur::Double *x, Minotaur::Double *grad_f,
-                    Minotaur::Int *error);
+  void evalGradient(const double *x, double *grad_f,
+                    int *error);
 
-  void evalHessian(const Minotaur::Double mult, const Minotaur::Double *x, 
-                   const Minotaur::LTHessStor *stor, Minotaur::Double *values, 
-                   Minotaur::Int *error);
+  void evalHessian(const double mult, const double *x, 
+                   const Minotaur::LTHessStor *stor, double *values, 
+                   int *error);
 
   // Not available.
   void  fillHessStor(Minotaur::LTHessStor *);
@@ -69,14 +69,13 @@ public:
   void  finalHessStor(const Minotaur::LTHessStor *);
 
   // Not available.
-  void fillJac(const Minotaur::Double *, 
-               Minotaur::Double *, Minotaur::Int *);
+  void fillJac(const double *, double *, int *);
 
   // Get variables used in this function. Base class method.
   void getVars(Minotaur::VariableSet *);
 
   // Multiply by a constant. Base class method.
-  void multiply(Minotaur::Double c);
+  void multiply(double c);
 
   // Not available.
   void prepJac(Minotaur::VarSetConstIter, Minotaur::VarSetConstIter);

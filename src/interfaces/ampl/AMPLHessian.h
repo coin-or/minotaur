@@ -64,9 +64,8 @@ public:
    * \param[out] error is set to a nonzero value if a problem is encountered, 
    * otherwise it is left undisturbed.
    */
-  void fillRowColValues(const Minotaur::Double *x, Minotaur::Double obj_mult, 
-                        const Minotaur::Double *con_mult,
-                        Minotaur::Double *values, Minotaur::Int *error);
+  void fillRowColValues(const double *x, double obj_mult, const double
+                        *con_mult, double *values, int *error);
 
   /// Ugly hack for maximization problems. 
   void negateObj();
@@ -79,7 +78,7 @@ private:
   Minotaur::UInt nNz_;
 
   /// Size of tmp_ array.
-  Minotaur::Bool negObj_; 
+  bool negObj_; 
 };
 typedef boost::shared_ptr<AMPLHessian> AMPLHessianPtr;
 }

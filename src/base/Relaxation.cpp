@@ -33,7 +33,7 @@ Relaxation::Relaxation()
 
 
 Relaxation::Relaxation(ProblemPtr problem)
-  : p_(problem)
+: p_(problem)
 {
   VariablePtr vcopy, v0, v1;
   VariableGroupConstIterator vit;
@@ -47,7 +47,7 @@ Relaxation::Relaxation(ProblemPtr problem)
   FunctionPtr fun;
   ObjectivePtr obj;
   UInt i;
-  Int err;
+  int err;
   VariableIterator vbeg;
   VarVector vvec;
 

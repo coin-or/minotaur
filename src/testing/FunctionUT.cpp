@@ -51,17 +51,17 @@ void FunctionTest::setUp()
 
 void FunctionTest::testEval()
 {
-  Int error = 0;
-  Double x[2] = {1.0, 1.0};
+  int error = 0;
+  double x[2] = {1.0, 1.0};
   FunctionPtr f = (FunctionPtr) new Function(lf1_);
   CPPUNIT_ASSERT(f->eval(&x[0], &error)==5.0);
   CPPUNIT_ASSERT(0==error);
 
-  Double y[2] = {0.0, 1.0};
+  double y[2] = {0.0, 1.0};
   CPPUNIT_ASSERT(f->eval(&y[0], &error)==-2.0);
   CPPUNIT_ASSERT(0==error);
 
-  Double z[4] = {1.0, 0.0, 0.0, 1.0};
+  double z[4] = {1.0, 0.0, 0.0, 1.0};
   CPPUNIT_ASSERT(f->eval(&z[0], &error)==7.0);
   CPPUNIT_ASSERT(0==error);
 
@@ -98,10 +98,10 @@ void FunctionTest::testGetFixVarOffset()
 
 void FunctionTest::testEvalGradient()
 {
-  Double y[] = {1.0, 1.0}; 
-  Double grad_f[] = {0.0, 0.0}; 
-  Double* x = &y[0];
-  Int error = 0;
+  double y[] = {1.0, 1.0}; 
+  double grad_f[] = {0.0, 0.0}; 
+  double* x = &y[0];
+  int error = 0;
 
   FunctionPtr f1 = FunctionPtr(new Function(lf1_)); 
   f1->evalGradient(x, grad_f, &error);

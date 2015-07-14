@@ -45,8 +45,8 @@ void ObjectiveUT::setUp()
 
 void ObjectiveUT::testGetVal()
 {
-  Double x[4] = {1.0, 1.0, 1.0, 1.0};
-  Int error = 0;
+  double x[4] = {1.0, 1.0, 1.0, 1.0};
+  int error = 0;
 
   CPPUNIT_ASSERT(objective_->getFunction()->eval(x, &error) == 19.0);
   CPPUNIT_ASSERT(0==error);
@@ -55,7 +55,7 @@ void ObjectiveUT::testGetVal()
 // ------------------------------------------------------------------------ //
 // ------------------------------------------------------------------------ //
 // our own nonlinear function
-Double myNLFun2::eval(const Double *x, Int *error) 
+double myNLFun2::eval(const double *x, int *error) 
 {
   *error = 0;
   return 6*x[0]*x[1]*x[2] + x[3]*x[3]*x[3];

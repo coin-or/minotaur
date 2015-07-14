@@ -87,23 +87,23 @@ class myNLFun3 : public NonlinearFunction {
   public:
     myNLFun3() {}
     NonlinearFunctionPtr cloneWithVars(VariableConstIterator,
-                                       Int *err) const 
+                                       int *err) const 
     {*err = 1; return NonlinearFunctionPtr();};
     
     
-    Double eval(const Double *x, Int *error) ;
-    void evalGradient(const Double *x, Double *grad_f, Int *error) ;
-    void evalHessian(const Double, const Double *, 
-                     const LTHessStor *, Double *, 
-                     Int *) {};
+    double eval(const double *x, int *error) ;
+    void evalGradient(const double *x, double *grad_f, int *error) ;
+    void evalHessian(const double, const double *, 
+                     const LTHessStor *, double *, 
+                     int *) {};
     void fillHessStor(LTHessStor *) {};
-    void fillJac(const Double*, Double *, Int*) {};
+    void fillJac(const double*, double *, int*) {};
     void finalHessStor(const LTHessStor *) {};
     UInt getGradientNzCount();
     UInt getHessianNzCount();
     void getVars(VariableSet *) {};
     bool isZero() const { return true; }
-    void multiply(const Double) {};
+    void multiply(const double) {};
     void prepJac(VarSetConstIter, VarSetConstIter) {};
 };
 
@@ -114,22 +114,22 @@ class myNLFun4 : public NonlinearFunction {
   public:
     myNLFun4() {}
     NonlinearFunctionPtr cloneWithVars(VariableConstIterator,
-                                       Int *err) const 
+                                       int *err) const 
     {*err = 1; return NonlinearFunctionPtr();};
     
-    Double eval(const Double *x, Int *error) ;
-    void evalGradient(const Double *, Double *, Int *) {}
-    void evalHessian(const Double, const Double *, 
-                     const LTHessStor *, Double *, 
-                     Int *) {};
+    double eval(const double *x, int *error) ;
+    void evalGradient(const double *, double *, int *) {}
+    void evalHessian(const double, const double *, 
+                     const LTHessStor *, double *, 
+                     int *) {};
     void fillHessStor(LTHessStor *) {};
-    void fillJac(const Double*, Double *, Int*) {};
+    void fillJac(const double*, double *, int*) {};
     void finalHessStor(const LTHessStor *) {};
     UInt getGradientNzCount();
     UInt getHessianNzCount();
     void getVars(VariableSet *) {};
     bool isZero() const { return true; }
-    void multiply(const Double) {};
+    void multiply(const double) {};
     void prepJac(VarSetConstIter, VarSetConstIter) {};
 };
 
@@ -141,7 +141,7 @@ class myJac2 : public Jacobian {
     myJac2();
     UInt getNumNz();
     void fillRowColIndices(UInt *iRow, UInt *jCol);
-    void fillRowColValues(const Double *x, Double *values, Int *error);
+    void fillRowColValues(const double *x, double *values, int *error);
 
 
   private:
@@ -158,8 +158,8 @@ class myHess2 : public HessianOfLag {
     myHess2();
     UInt getNumNz() const;
     void fillRowColIndices(UInt *iRow, UInt *jCol);
-    void fillRowColValues(const Double *x, Double obj_mult,
-                          const Double *con_mult, Double *values,  Int *error);
+    void fillRowColValues(const double *x, double obj_mult,
+                          const double *con_mult, double *values,  int *error);
 
 };
 
@@ -171,24 +171,24 @@ class myNLFun5 : public NonlinearFunction {
   public:
     myNLFun5() {}
     NonlinearFunctionPtr cloneWithVars(VariableConstIterator,
-                                       Int *err) const 
+                                       int *err) const 
     {*err = 1; return NonlinearFunctionPtr();};
     
     
-    Double eval(const Double *x, Int *error) ;
-    void evalGradient(const Double *x, Double *grad_f, Int *error) ;
-    void evalHessian(const Double, const Double *, 
-                     const LTHessStor *, Double *, 
-                     Int *) {};
+    double eval(const double *x, int *error) ;
+    void evalGradient(const double *x, double *grad_f, int *error) ;
+    void evalHessian(const double, const double *, 
+                     const LTHessStor *, double *, 
+                     int *) {};
     void fillHessStor(LTHessStor *) {};
-    void fillJac(const Double*, Double *, Int*) {};
+    void fillJac(const double*, double *, int*) {};
     void finalHessStor(const LTHessStor *) {};
     UInt getGradientNzCount();
     UInt getHessianNzCount();
     void getVars(VariableSet *) {};
     bool isZero() const { return true; }
     void prepJac(VarSetConstIter, VarSetConstIter) {};
-    void multiply(const Double) {};
+    void multiply(const double) {};
 };
 
 // ------------------------------------------------------------------------- //
@@ -198,22 +198,22 @@ class myNLFun6 : public NonlinearFunction {
   public:
     myNLFun6() {}
     NonlinearFunctionPtr cloneWithVars(VariableConstIterator,
-                                       Int *err) const 
+                                       int *err) const 
     {*err = 1; return NonlinearFunctionPtr();};
     
-    Double eval(const Double *x, Int *error) ;
-    void evalGradient(const Double *, Double *, Int *) {}
-    void evalHessian(const Double, const Double *, 
-                     const LTHessStor *, Double *, 
-                     Int *) {};
+    double eval(const double *x, int *error) ;
+    void evalGradient(const double *, double *, int *) {}
+    void evalHessian(const double, const double *, 
+                     const LTHessStor *, double *, 
+                     int *) {};
     void fillHessStor(LTHessStor *) {};
-    void fillJac(const Double*, Double *, Int*) {};
+    void fillJac(const double*, double *, int*) {};
     void finalHessStor(const LTHessStor *) {};
     UInt getGradientNzCount();
     UInt getHessianNzCount();
     void getVars(VariableSet *) {};
     bool isZero() const { return true; }
-    void multiply(const Double) {};
+    void multiply(const double) {};
     void prepJac(VarSetConstIter, VarSetConstIter) {};
 };
 
@@ -225,7 +225,7 @@ class myJac3 : public Jacobian {
     myJac3();
     UInt getNumNz();
     void fillRowColIndices(UInt *iRow, UInt *jCol);
-    void fillRowColValues(const Double *x, Double *values, Int *error);
+    void fillRowColValues(const double *x, double *values, int *error);
 
 
   private:
@@ -242,8 +242,8 @@ class myHess3 : public HessianOfLag {
     myHess3();
     UInt getNumNz() const;
     void fillRowColIndices(UInt *iRow, UInt *jCol);
-    void fillRowColValues(const Double *x, Double obj_mult, 
-                          const Double *con_mult,  Double *values, Int *error);
+    void fillRowColValues(const double *x, double obj_mult, 
+                          const double *con_mult,  double *values, int *error);
 
 };
 

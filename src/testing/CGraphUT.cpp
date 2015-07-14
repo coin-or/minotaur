@@ -73,16 +73,16 @@ void CGraphUT::testLin()
 {
   CNode *n0, *n1, *n2, *n3;
   CGraph cgraph;
-  Int error = 0;
+  int error = 0;
 
   VariablePtr v0 = (VariablePtr) new Variable(0, 0, 0.0, 10.0, Continuous, "x0");
   VariablePtr v1 = (VariablePtr) new Variable(1, 1, 0.0, 10.0, Continuous, "x1");
   VariablePtr v2 = (VariablePtr) new Variable(2, 2, 0.0, 10.0, Continuous, "x2");
   VariablePtr v3 = (VariablePtr) new Variable(3, 3, 0.0, 10.0, Continuous, "x3");
 
-  Double x[4] = {1.0, 2.0, 5.0, 7.0};
-  Double g[4] = {0.0, 0.0, 0.0, 0.0};
-  Double gexp[4] = {1.0, 1.0, 5.4, -1.0};
+  double x[4] = {1.0, 2.0, 5.0, 7.0};
+  double g[4] = {0.0, 0.0, 0.0, 0.0};
+  double gexp[4] = {1.0, 1.0, 5.4, -1.0};
 
 
   n0 = cgraph.newNode(v0);

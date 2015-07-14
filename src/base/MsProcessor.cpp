@@ -135,7 +135,7 @@ void MsProcessor::process(NodePtr node, RelaxationPtr rel,
   BrancherStatus br_status;
   ConstSolutionPtr sol;
   ModVector mods;
-  Int iter = 0;
+  int iter = 0;
 
   ++stats_.proc;
   relaxation_ = rel;

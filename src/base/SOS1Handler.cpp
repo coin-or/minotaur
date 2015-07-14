@@ -301,7 +301,7 @@ double SOS1Handler::getTol() const
 bool SOS1Handler::isGUB(SOS *sos)
 {
   VariablePtr var;
-  Int nz = sos->getNz();
+  int nz = sos->getNz();
   ConstConstraintPtr c;
   FunctionPtr f;
   LinearFunctionPtr lf;

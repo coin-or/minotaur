@@ -13,8 +13,8 @@ using namespace Minotaur;
 
 extern "C"
 {
-  void F77_FUNC(dpotrf, DPOTRF )(char *uplo, Int *n, Double *a, Int *lda, 
-                                 Int *info );
+  void F77_FUNC(dpotrf, DPOTRF )(char *uplo, int *n, double *a, int *lda, 
+                                 int *info );
 }
 
 

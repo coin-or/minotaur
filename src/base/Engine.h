@@ -161,7 +161,7 @@ namespace Minotaur {
      * Set a limit on number of iterations. For strong-branching, for
      * instance.
      */
-    virtual void setIterationLimit(Int limit) = 0;
+    virtual void setIterationLimit(int limit) = 0;
 
     /// Set a new log manager
     virtual void setLogger(LoggerPtr logger) { logger_ = logger; }

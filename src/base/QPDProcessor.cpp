@@ -134,7 +134,7 @@ QPDProcessor::~QPDProcessor()
 bool QPDProcessor::boundTooFar_(ConstSolutionPtr sol, NodePtr node,
                                 double best) 
 {
-  Int err = 0;
+  int err = 0;
   double d;
   bool large = false;
 
@@ -172,7 +172,7 @@ void QPDProcessor::getLin_(FunctionPtr f, const double *x,
                            LinearFunctionPtr &lf, double &val)
 { 
   double *grad = new double[n+1]; 
-  Int err=0;
+  int err=0;
 
   val = 0.0;
   memset(grad, 0, (n+1) * sizeof(double));
@@ -192,7 +192,7 @@ void QPDProcessor::getObjLin_(NonlinearFunctionPtr nlf, const double *x,
                               LinearFunctionPtr &lf, double &val)
 { 
   double *grad = new double[n]; // n = no. of vars in qp.
-  Int err=0;
+  int err=0;
 
   // not a linearization at (x,eta)!. it is a linearization at (x, f(x)).
 
@@ -309,7 +309,7 @@ bool QPDProcessor::isNLPFeasible_(ConstSolutionPtr sol, double *vio)
 {
   const double* x = sol->getPrimal();
   double act, vl, vu;
-  Int err = 0;
+  int err = 0;
   ConstConstraintPtr c;
   bool is_feas = true;
   UInt i = 0;
@@ -370,7 +370,7 @@ SolutionPtr QPDProcessor::nlpSol2Qp_(ConstSolutionPtr sol)
   double *x = new double[qp_->getNumVars()];
   SolutionPtr sol2;
   double objval = 0.0;
-  Int err = 0;
+  int err = 0;
 
   memcpy(x, sol->getPrimal(), p_->getNumVars()*sizeof(double));
   if (eta_) {
@@ -503,7 +503,7 @@ void QPDProcessor::processQP_(UInt iter, NodePtr node, ConstSolutionPtr &sol,
 
 
 #if SPEW
-  Int err = 0;
+  int err = 0;
   logger_->msgStream(LogDebug2) << me_ << "obj value of NLP at QP sol = " 
                               << p_->getObjective()->
                                  eval(sol->getPrimal(), &err) 
@@ -907,10 +907,9 @@ void QPDProcessor::processRootNode(NodePtr node, RelaxationPtr rel,
       } else if (br_status==ModifiedByBrancher) {
         for (ModificationConstIterator miter=mods.begin(); miter!=mods.end();
              ++miter) {
+          // modify the relaxation only
           (*miter)->applyToProblem(qp_);
-          (*miter)->fromRel(qp_, p_)->applyToProblem(p_);
-          assert(!"fix this");
-          node->addPMod((*miter)->fromRel(qp_, p_));
+          node->addRMod(*miter);
         }
         should_prune = presolveNode_(node, s_pool);
         if (should_prune) {
@@ -942,7 +941,7 @@ void QPDProcessor::process(NodePtr node, RelaxationPtr rel,
   BrancherStatus br_status;
   ConstSolutionPtr sol;
   ModVector mods;
-  Int iter = 0;
+  int iter = 0;
 
 #if SPEW
   logger_->msgStream(LogDebug2) << me_ << "processing node " << node->getId()
@@ -1288,7 +1287,7 @@ void QPDProcessor::setupQP_(ConstSolutionPtr sol)
   LinearFunctionPtr lf, lf2;
   VariableConstIterator vbeg, vend;
   ObjectivePtr obj = ObjectivePtr();
-  Int err = 0;
+  int err = 0;
   UInt n = p_->getNumVars();
   double *grad = new double[n+1];
   double *hess = 0;
@@ -1544,7 +1543,7 @@ bool QPDProcessor::shouldPruneQP_(NodePtr node, EngineStatus status,
                                   ConstSolutionPtr sol, SolutionPoolPtr )
 {
   bool should_prune = false;
-  Int err=0;
+  int err=0;
 
   switch (status) {
    case (FailedInfeas):
@@ -1668,7 +1667,7 @@ SolutionPtr QPDProcessor::translateSol_(ConstSolutionPtr sol)
 {
   // TODO: replace with a clone function.
   SolutionPtr sol2 = (SolutionPtr) new Solution(sol);
-  Int err = 0;
+  int err = 0;
 
   sol2->setObjValue(p_->getObjective()->eval(sol->getPrimal(), &err)); 
   assert(0==err);
@@ -1760,7 +1759,7 @@ bool QPDProcessor::isHFeasible2_(ConstSolutionPtr sol, bool &ishigh,
 void QPDProcessor::chkObjVio2_(const double *qpx, NodePtr node, double best,
                                bool &hiobjd, bool &hietavio)
 {
-  Int err = 0;
+  int err = 0;
   double d = 0.0;
   double etaval = 0.0;
   double vio = 0.0;
@@ -1826,7 +1825,7 @@ bool QPDProcessor::isNLPFeasible2_(const double *qpx, double *vio,
                                    NodePtr node, bool &hicvio)
 {
   double act, vl, vu;
-  Int err = 0;
+  int err = 0;
   ConstConstraintPtr c;
   bool is_feas = true;
   UInt i = 0;

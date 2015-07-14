@@ -22,8 +22,8 @@ using namespace Minotaur;
 
 #if 1 // on linux, with g77, this works.
 
-typedef Double real;
-typedef Int    fint;
+typedef double real;
+typedef int    fint;
 #define objfun objfun_
 #define confun confun_
 #define gradient gradient_
@@ -34,9 +34,9 @@ typedef Int    fint;
 
 #endif // end of if 1.
 
-Int * convertPtrToInt(uintptr_t u);
+int * convertPtrToInt(uintptr_t u);
 
-uintptr_t convertIntToPtr(Int *iarray);
+uintptr_t convertIntToPtr(int *iarray);
 
 extern "C" {
 void objfun(real *x, fint *n, real *f, real *user, fint *iuser, 

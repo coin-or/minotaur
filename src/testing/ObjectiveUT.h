@@ -43,20 +43,19 @@ class ObjectiveUT : public CppUnit::TestCase {
 class myNLFun2 : public NonlinearFunction {
   public:
     myNLFun2() {}
-    NonlinearFunctionPtr cloneWithVars(VariableConstIterator,
-                                       Int *err) const 
+    NonlinearFunctionPtr cloneWithVars(VariableConstIterator, int *err) const 
     {*err = 1; return NonlinearFunctionPtr();};
 
-    Double eval(const Double *x, Int *error) ;
-    void evalGradient(const Double *, Double *, Int *) {};
-    void evalHessian(const Double, const Double *, 
-                     const LTHessStor *, Double *, 
-                     Int *) {};
+    double eval(const double *x, int *error) ;
+    void evalGradient(const double *, double *, int *) {};
+    void evalHessian(const double, const double *, 
+                     const LTHessStor *, double *, 
+                     int *) {};
     void fillHessStor(LTHessStor *) {};
-    void fillJac(const Double*, Double *, Int*) {};
+    void fillJac(const double*, double *, int*) {};
     void finalHessStor(const LTHessStor *) {};
     void getVars(VariableSet *) {};
-    void multiply(const Double) {};
+    void multiply(const double) {};
     void prepJac(VarSetConstIter, VarSetConstIter) {};
 };
 typedef boost::shared_ptr<myNLFun2> myNLFun2Ptr;

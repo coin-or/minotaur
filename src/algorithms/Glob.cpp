@@ -48,7 +48,7 @@ using namespace Minotaur;
 
 BranchAndBound *createBab (EnvPtr env, ProblemPtr p, EnginePtr e, 
                            HandlerVector &handlers);
-PresolverPtr createPres(EnvPtr env, ProblemPtr p, Size_t ndefs, 
+PresolverPtr createPres(EnvPtr env, ProblemPtr p, size_t ndefs, 
                         HandlerVector &handlers);
 EnginePtr getEngine(EnvPtr env);
 NLPEnginePtr getNLPEngine(EnvPtr env);
@@ -347,7 +347,7 @@ BranchAndBound * createBab (EnvPtr env, ProblemPtr p, EnginePtr e,
 }
 
 
-PresolverPtr createPres(EnvPtr env, ProblemPtr p, Size_t ndefs, 
+PresolverPtr createPres(EnvPtr env, ProblemPtr p, size_t ndefs, 
                         HandlerVector &handlers)
 {
   // create handlers for presolve

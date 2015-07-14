@@ -27,17 +27,13 @@
 namespace Minotaur {
 
   /// Standard types.
-  typedef bool         Bool;
-  typedef double       Double;
-  typedef int          Int;
   typedef unsigned int UInt;
-  typedef size_t       Size_t;
 
   /// Containers for standard types
   typedef std::deque  < UInt >   UIntQ;
-  typedef std::vector < Bool >   BoolVector;
-  typedef std::vector < Double > DoubleVector;
-  typedef std::vector < Int >    IntVector;
+  typedef std::vector < bool >   BoolVector;
+  typedef std::vector < double > DoubleVector;
+  typedef std::vector < int >    IntVector;
   typedef std::vector < UInt >   UIntVector;
   typedef std::set    < UInt >   UIntSet;
 
@@ -352,23 +348,23 @@ namespace Minotaur {
 
   // Serdar added this block 
   // Compare some pairs.
-  typedef std::pair<Int,Double> id;
+  typedef std::pair<int,double> id;
   struct CompareIntDouble {
-    Bool operator() (id id1, id id2) const;
+    bool operator() (id id1, id id2) const;
   };
 
   // Compare rule to compare the value of the pair.
   typedef std::pair<ConstVariablePtr, double> VariableValuePair;
   typedef boost::shared_ptr<VariableValuePair> VariableValuePairPtr;
   struct CompareValueVariablePair {
-  Bool operator() (VariableValuePair v1,VariableValuePair v2) const;
+    bool operator() (VariableValuePair v1,VariableValuePair v2) const;
   };
 
   // Map to determine GUB cover.
   struct CompareValueVarInc{
-    Bool operator() (VariableValuePair v1, VariableValuePair v2) const;
+    bool operator() (VariableValuePair v1, VariableValuePair v2) const;
   };
-  typedef std::map<ConstVariablePtr, Double, CompareValueVarInc>
+  typedef std::map<ConstVariablePtr, double, CompareValueVarInc>
           VariableValueMap;
 
 
@@ -421,9 +417,9 @@ namespace Minotaur {
 
   // declare options
   template <class T> class Option;
-  typedef boost::shared_ptr< Option<Bool>        > BoolOptionPtr;
-  typedef boost::shared_ptr< Option<Int>         > IntOptionPtr;
-  typedef boost::shared_ptr< Option<Double>      > DoubleOptionPtr;
+  typedef boost::shared_ptr< Option<bool>        > BoolOptionPtr;
+  typedef boost::shared_ptr< Option<int>         > IntOptionPtr;
+  typedef boost::shared_ptr< Option<double>      > DoubleOptionPtr;
   typedef boost::shared_ptr< Option<std::string> > StringOptionPtr;
   typedef BoolOptionPtr FlagOptionPtr;
 
@@ -443,9 +439,9 @@ namespace Minotaur {
 
 
   /// Variables should always be constant within a group
-  typedef std::map<ConstVariablePtr, Double, CompareVariablePtr> VariableGroup;
-  typedef std::map<ConstVariablePtr, Double>::iterator VariableGroupIterator;
-  typedef std::map<ConstVariablePtr, Double>::const_iterator 
+  typedef std::map<ConstVariablePtr, double, CompareVariablePtr> VariableGroup;
+  typedef std::map<ConstVariablePtr, double>::iterator VariableGroupIterator;
+  typedef std::map<ConstVariablePtr, double>::const_iterator 
     VariableGroupConstIterator;
 
   /// Pairs of variables are used in quadratic functions.
@@ -457,11 +453,11 @@ namespace Minotaur {
   };
 
   /// Again, Variables should always be constant within a group
-  typedef std::map<ConstVariablePair, Double, CompareVariablePair> 
+  typedef std::map<ConstVariablePair, double, CompareVariablePair> 
     VariablePairGroup;
   typedef std::map<ConstVariablePair, UInt, CompareVariablePair> VarPairIntMap;
-  typedef std::map<VariablePair, Double>::iterator VariablePairGroupIterator;
-  typedef std::map<ConstVariablePair, Double>::const_iterator 
+  typedef std::map<VariablePair, double>::iterator VariablePairGroupIterator;
+  typedef std::map<ConstVariablePair, double>::const_iterator 
     VariablePairGroupConstIterator;
   typedef std::map<ConstVariablePtr, ConstVariablePtr, 
           CompareVariablePtr> VarVarMap;

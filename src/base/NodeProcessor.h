@@ -75,7 +75,7 @@ namespace Minotaur {
        * True if the node processor found at least one feasible solution while
        * processing this node.
        */
-      virtual Bool foundNewSolution() = 0;
+      virtual bool foundNewSolution() = 0;
 
       /**
        * Return the warm start information that will be used to start

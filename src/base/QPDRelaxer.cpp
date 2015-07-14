@@ -50,7 +50,7 @@ QPDRelaxer::~QPDRelaxer()
 }
 
 
-RelaxationPtr QPDRelaxer::createRootRelaxation(NodePtr, Bool &prune)
+RelaxationPtr QPDRelaxer::createRootRelaxation(NodePtr, bool &prune)
 {
   prune = false;
   qp_ = (RelaxationPtr) new Relaxation(); // empty, but not NULL
@@ -64,8 +64,8 @@ RelaxationPtr QPDRelaxer::createRootRelaxation(NodePtr, Bool &prune)
 }
 
 
-RelaxationPtr QPDRelaxer::createNodeRelaxation(NodePtr node, Bool dived, 
-    Bool &prune)
+RelaxationPtr QPDRelaxer::createNodeRelaxation(NodePtr node, bool dived, 
+                                               bool &prune)
 {
   NodePtr t_node; 
   WarmStartPtr ws;
@@ -111,7 +111,7 @@ RelaxationPtr QPDRelaxer::getRelaxation()
 }
 
 
-void QPDRelaxer::reset(NodePtr node, Bool diving)
+void QPDRelaxer::reset(NodePtr node, bool diving)
 {
   if (!diving) {
     NodePtr t_node = node;

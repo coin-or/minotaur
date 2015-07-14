@@ -24,8 +24,8 @@ namespace Minotaur {
     typedef boost::shared_ptr< Vector<UInt> > UIntVectorPtr;
     typedef boost::shared_ptr< Vector<const UInt> > ConstUIntVectorPtr;
 
-    typedef boost::shared_ptr< Vector<Double> > DoubleVectorPtr;
-    typedef boost::shared_ptr< Vector<const Double> > ConstDoubleVectorPtr;
+    typedef boost::shared_ptr< Vector<double> > DoubleVectorPtr;
+    typedef boost::shared_ptr< Vector<const double> > ConstDoubleVectorPtr;
   }
 }
 

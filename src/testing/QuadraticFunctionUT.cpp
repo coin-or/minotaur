@@ -75,8 +75,8 @@ void QuadraticFunctionTest::testGetCoeffs()
 
 void QuadraticFunctionTest::testEvaluate()
 {
-  std::vector<Double> x(2,0);
-  std::vector<Double> dq(2,0);
+  std::vector<double> x(2,0);
+  std::vector<double> dq(2,0);
   CPPUNIT_ASSERT(q_->eval(x) == 0);
   CPPUNIT_ASSERT(q1_->eval(x) == 0);
 
@@ -92,7 +92,7 @@ void QuadraticFunctionTest::testEvaluate()
   CPPUNIT_ASSERT(dq[0] == 24);
   CPPUNIT_ASSERT(dq[1] == 24);
 
-  dq = std::vector<Double>(2,0);
+  dq = std::vector<double>(2,0);
   q1_->evalGradient(x, dq);
   CPPUNIT_ASSERT(dq[0] == 0);
   CPPUNIT_ASSERT(dq[1] == -24);
@@ -101,12 +101,12 @@ void QuadraticFunctionTest::testEvaluate()
   CPPUNIT_ASSERT(q_->eval(x) == 121);
   CPPUNIT_ASSERT(q1_->eval(x) == 22);
 
-  dq = std::vector<Double>(2,0);
+  dq = std::vector<double>(2,0);
   q_->evalGradient(x, dq);
   CPPUNIT_ASSERT(dq[0] == 22);
   CPPUNIT_ASSERT(dq[1] == 22);
 
-  dq = std::vector<Double>(2,0);
+  dq = std::vector<double>(2,0);
   q1_->evalGradient(x, dq);
   CPPUNIT_ASSERT(dq[0] == 2);
   CPPUNIT_ASSERT(dq[1] == -20);

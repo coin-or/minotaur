@@ -49,7 +49,7 @@ namespace Minotaur {
 
     // Base class method.
     ConstraintPtr addCut(ProblemPtr p, FunctionPtr f, double lb,
-                         double ub, Bool directToRel, Bool neverDelete);
+                         double ub, bool directToRel, bool neverDelete);
 
     // Base class method.
     void addCuts(CutVectorIter cbeg, CutVectorIter cend);
@@ -70,7 +70,7 @@ namespace Minotaur {
     void postSolveUpdate(ConstSolutionPtr sol, EngineStatus eng_status);
 
     // Base class method.
-    void separate(ConstSolutionPtr sol, Bool *separated, UInt *added);
+    void separate(ConstSolutionPtr sol, bool *separated, UInt *added);
 
     // Base class method.
     void write(std::ostream &out) const;

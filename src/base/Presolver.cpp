@@ -90,13 +90,13 @@ void Presolver::standardize()
 SolveStatus Presolver::solve()
 {
   SolveStatus h_status;
-  Bool changed = true;
-  Bool stop = false;
+  bool changed = true;
+  bool stop = false;
   status_ = Started;
-  Int iters = 0;
-  Int subiters = 0;
-  Int n_hand = handlers_.size();
-  Int last_ch_subiter = -10000;
+  int iters = 0;
+  int subiters = 0;
+  int n_hand = handlers_.size();
+  int last_ch_subiter = -10000;
 
   env_->getLogger()->msgStream(LogInfo) << me_ << "Presolving ... "
     << std::endl;

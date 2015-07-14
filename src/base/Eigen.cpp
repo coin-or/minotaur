@@ -18,10 +18,12 @@ using namespace Minotaur;
 
 extern "C"
 {
-  void F77_FUNC(dsyevr, DSYEVR)(char *jobz, char *range, char *uplo, Int *n,
-      double *a, Int *lda, Int *vl, Int *vu, Int *il, Int *iu, double *abstol,
-      Int *m, double *w, double *z, Int *ldz, Int *isuppz, double *work, Int
-      *lwork, Int *iwork, Int *liwork, Int *info );
+  void F77_FUNC(dsyevr, DSYEVR)(char *jobz, char *range, char *uplo, int *n,
+                                double *a, int *lda, int *vl, int *vu,
+                                int *il, int *iu, double *abstol, int *m,
+                                double *w, double *z, int *ldz, int *isuppz,
+                                double *work, int *lwork, int *iwork,
+                                int *liwork, int *info );
 }
 
 
@@ -64,7 +66,7 @@ EigenPtr EigenCalculator::findVectors(ConstQuadraticFunctionPtr qf)
     findVectors_ = 'V'; // N for eigen values only, V for values and vectors.
     w_ = new double[n_];
     z_ = new double [n_*n_];
-    isuppz_ = new Int [2*n_];
+    isuppz_ = new int [2*n_];
 
     // fill z_ with 0. necessary because of a bug in lapack for n_ = 2
     // also bug in lapack for n_ = 1
@@ -238,16 +240,16 @@ void EigenCalculator::calculate_()
                     // I for il-th through iu-th eigen value.
   char uplo = 'L';  // L for storing only lower triangular part of the matrix,
                     // U for upper.
-  Int lda = n_;     // The leading dimension of A, lda >= max(1,n)
-  Int vl=0, vu=0;   // Not used when range='A'
-  Int il=0, iu=0;   // Not used when ='A'
-  Int n=n_;
-  Int ldz = 1;      // The leading dimension of the array z_.
+  int lda = n_;     // The leading dimension of A, lda >= max(1,n)
+  int vl=0, vu=0;   // Not used when range='A'
+  int il=0, iu=0;   // Not used when ='A'
+  int n=n_;
+  int ldz = 1;      // The leading dimension of the array z_.
   double *work;     // Work space.
-  Int lwork;        // length of the array 'work'
-  Int *iwork;       // Work space.
-  Int liwork;       // length of the array 'iwork'
-  Int info = 0;     //  0 => successful exit
+  int lwork;        // length of the array 'work'
+  int *iwork;       // Work space.
+  int liwork;       // length of the array 'iwork'
+  int info = 0;     //  0 => successful exit
                     // -i => i-th argument has some problems
                     //  i => i off-diagonal elements of an intermediate
                     //       tridiagonal form did not converge to zero.
@@ -262,7 +264,7 @@ void EigenCalculator::calculate_()
   // get the required size.
   liwork = lwork = -1;
   work = new double[1];
-  iwork = new Int[1];
+  iwork = new int[1];
   work[0] = 0.0;
   iwork[0] = 0;
 
@@ -272,12 +274,12 @@ void EigenCalculator::calculate_()
   assert(info==0);
 
   // allocate memory
-  lwork = (Int) work[0];
+  lwork = (int) work[0];
   liwork = iwork[0];
   delete [] work; 
   delete [] iwork;
   work = new double[lwork];
-  iwork = new Int[liwork];
+  iwork = new int[liwork];
   std::fill(work, work+lwork, 0.0);
   std::fill(iwork, iwork+liwork, 0);
 
@@ -300,7 +302,7 @@ EigenPtr EigenCalculator::getEigen_()
   LinearFunctionPtr lf;
   EigenPtr eigen = (EigenPtr) new Eigen();
   if (findVectors_=='V') {
-    for (Int i=0; i<m_; ++i) {
+    for (int i=0; i<m_; ++i) {
       lf = getLinearFunction_(i);
       if (fabs(w_[i]) < abstol_) {
         eigen->add(0, lf);
@@ -309,7 +311,7 @@ EigenPtr EigenCalculator::getEigen_()
       }
     }
   } else if (findVectors_=='N') {
-    for (Int i=0; i<m_; ++i) {
+    for (int i=0; i<m_; ++i) {
       if (fabs(w_[i]) < abstol_) {
         eigen->add(0, null_ptr);
       } else {
@@ -323,7 +325,7 @@ EigenPtr EigenCalculator::getEigen_()
 }
 
 
-LinearFunctionPtr EigenCalculator::getLinearFunction_(const Int i)
+LinearFunctionPtr EigenCalculator::getLinearFunction_(const int i)
 {
   LinearFunctionPtr lf = (LinearFunctionPtr) new LinearFunction();
   // lapack has a bug in dstemr for when n_ = 2.

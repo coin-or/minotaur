@@ -93,7 +93,7 @@ void CutMan1::postSolveUpdate(ConstSolutionPtr sol, EngineStatus)
   x = sol->getPrimal();
   CutPtr con;
   double viol = 0;
-  Bool del_const = false;
+  bool del_const = false;
   CutList cpyrel;
   CutInfo *cinfo;
 
@@ -132,7 +132,7 @@ void CutMan1::postSolveUpdate(ConstSolutionPtr sol, EngineStatus)
 }
 
 
-void CutMan1::separate(ConstSolutionPtr sol, Bool *, UInt *)
+void CutMan1::separate(ConstSolutionPtr sol, bool *, UInt *)
 {
   UInt n = p_->getNumVars();
   const double *x = new double[n];
@@ -180,7 +180,7 @@ void CutMan1::addCuts(CutVectorIter cbeg, CutVectorIter cend)
 }
 
 
-void CutMan1::addToRel_(CutPtr cut, Bool )
+void CutMan1::addToRel_(CutPtr cut, bool )
 {
   enCuts_.push_back(cut);
   ++(cut->getInfo()->numActive);

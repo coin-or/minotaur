@@ -54,7 +54,7 @@ public:
      done. 
   */
   virtual RelaxationPtr createRootRelaxation(NodePtr rootNode, 
-                                             Bool &prune) = 0; 
+                                             bool &prune) = 0; 
 
   /**
    * Set the brancher that will be used with this node processor. dived
@@ -62,15 +62,15 @@ public:
    * true if the node was found to be infeasible after creating the
    * relaxation.
    */
-  virtual RelaxationPtr createNodeRelaxation(NodePtr node, Bool dived, 
-                                             Bool &prune) = 0;
+  virtual RelaxationPtr createNodeRelaxation(NodePtr node, bool dived, 
+                                             bool &prune) = 0;
 
   /**
    * After processing the node, some node relaxers may like to make
    * changes. This function is the place to do it. diving is true if the
    * next node to be processed is a child node of the current node.
    */
-  virtual void reset(NodePtr node, Bool diving) = 0;
+  virtual void reset(NodePtr node, bool diving) = 0;
 
   /**
    * Return a pointer to the last relaxation that was created by this

@@ -27,281 +27,281 @@
 
 namespace Minotaur {
 
-	class   Timer;
-	class   Environment;
-	class   Problem;
-	class   Solution;
-	typedef boost::shared_ptr<Environment> EnvPtr;
-	typedef boost::shared_ptr<Problem> ProblemPtr;
-	typedef boost::shared_ptr<Solution> SolutionPtr;
-
-
-	/**
-	 * The qpOASES perspective of a QP in sparse row compressed format
-	 */
-	class qpOASESData {
-	public:
-		qpOASES::SQProblem       *qp;
-
-		qpOASES::SymSparseMat *H;
-		qpOASES::SparseMatrixRow    *A;
-
-		qpOASES::sparse_int_t *Hir;
-		qpOASES::sparse_int_t *Hjc;
-		qpOASES::real_t       *Hval;
-
-		qpOASES::sparse_int_t *Air;
-		qpOASES::sparse_int_t *Ajc;
-		qpOASES::real_t       *Aval;
-
-		Size_t  n;
-		Size_t  m;
-		Double *g;
-		Double *lb;
-		Double *ub;
-		Double *lbA;
-		Double *ubA;
-
-		qpOASESData (Int n_, Int m_, Int nnzh_, Int nnza_);
-		~qpOASESData ();
-	};
-
-
-	class qpOASESPoint {
-	public:
-		Double *x;
-		Double *y;
-		Double *lb;
-		Double *ub;
-		Double *lbA;
-		Double *ubA;
-		qpOASES::Bounds bounds;
-		qpOASES::Constraints constraints;
-	};
-
-
-	class qpOASESWarmStart : public WarmStart
-	{
-	public:
-      /// Return true if warm start information is initialized, false
-      /// otherwise.
-      virtual Bool hasInfo() { return 1; };
-
-      /// Write to an output stream
-      virtual void write(std::ostream &) const {};
-
-	public:
-		qpOASESPoint pt;
-	};
-	
-	/**
-	 * qpOASES call and timing statistics
-	 */
-	class qpOASESStats {
-	public:
-		UInt   calls;     /// Total number of calls to solve.
-		UInt   strCalls;  /// Calls to solve while strong branching.
-		Double time;      /// Sum of time taken in all calls to solve.
-		Double strTime;   /// Time taken in strong branching alone.
-		Double cTime;     /// Time taken in copying data for strong-branching.
-		UInt   iters;     /// Sum of number of iterations in all calls.
-		UInt   strIters;  /// Number of iterations in strong branching alone.
-
-		UInt n_total;
-		UInt n_cold;
-		UInt n_strbr;
-		UInt n_dive;
-		UInt n_warm;
-
-		UInt piv_total;
-		UInt piv_cold;
-		UInt piv_strbr;
-		UInt piv_dive;
-		UInt piv_warm;
-
-		Double time_total;
-		Double time_cold;
-		Double time_strbr;
-		Double time_dive;
-		Double time_warm;		
-	};
-
-
-	/**
-	 * qpOASESEngine is used to solve QP problems using the parametric
-	 * primal-dual active set code qpOASES.
-	 * qpOASES finds a KT point for the bounded QP problem
-	 *
-	 *      minimize    f(x) = x'Hx/2 + g'x
-	 *
-	 *      subject to  lb  <=   x <= ub
-	 *                  lbA <= A.x <= ubA
-	 *
-	 * where x and g are n-vectors, H is a symmetric n*n matrix, and A is an
-	 * m*n matrix. If H is also positive semi-definite then the KT point is a
-	 * global solution, else a stationary point.
-	 */
+  class   Timer;
+  class   Environment;
+  class   Problem;
+  class   Solution;
+  typedef boost::shared_ptr<Environment> EnvPtr;
+  typedef boost::shared_ptr<Problem> ProblemPtr;
+  typedef boost::shared_ptr<Solution> SolutionPtr;
+
+
+  /**
+   * The qpOASES perspective of a QP in sparse row compressed format
+   */
+  class qpOASESData {
+  public:
+    qpOASES::SQProblem       *qp;
+
+    qpOASES::SymSparseMat *H;
+    qpOASES::SparseMatrixRow    *A;
+
+    qpOASES::sparse_int_t *Hir;
+    qpOASES::sparse_int_t *Hjc;
+    qpOASES::real_t       *Hval;
+
+    qpOASES::sparse_int_t *Air;
+    qpOASES::sparse_int_t *Ajc;
+    qpOASES::real_t       *Aval;
+
+    size_t  n;
+    size_t  m;
+    double *g;
+    double *lb;
+    double *ub;
+    double *lbA;
+    double *ubA;
+
+    qpOASESData (int n_, int m_, int nnzh_, int nnza_);
+    ~qpOASESData ();
+  };
+
+
+  class qpOASESPoint {
+  public:
+    double *x;
+    double *y;
+    double *lb;
+    double *ub;
+    double *lbA;
+    double *ubA;
+    qpOASES::Bounds bounds;
+    qpOASES::Constraints constraints;
+  };
+
+
+  class qpOASESWarmStart : public WarmStart
+  {
+  public:
+    /// Return true if warm start information is initialized, false
+    /// otherwise.
+    virtual bool hasInfo() { return 1; };
+
+    /// Write to an output stream
+    virtual void write(std::ostream &) const {};
+
+  public:
+    qpOASESPoint pt;
+  };
+
+  /**
+   * qpOASES call and timing statistics
+   */
+  class qpOASESStats {
+  public:
+    UInt   calls;     /// Total number of calls to solve.
+    UInt   strCalls;  /// Calls to solve while strong branching.
+    double time;      /// Sum of time taken in all calls to solve.
+    double strTime;   /// Time taken in strong branching alone.
+    double cTime;     /// Time taken in copying data for strong-branching.
+    UInt   iters;     /// Sum of number of iterations in all calls.
+    UInt   strIters;  /// Number of iterations in strong branching alone.
+
+    UInt n_total;
+    UInt n_cold;
+    UInt n_strbr;
+    UInt n_dive;
+    UInt n_warm;
+
+    UInt piv_total;
+    UInt piv_cold;
+    UInt piv_strbr;
+    UInt piv_dive;
+    UInt piv_warm;
+
+    double time_total;
+    double time_cold;
+    double time_strbr;
+    double time_dive;
+    double time_warm;		
+  };
+
+
+  /**
+   * qpOASESEngine is used to solve QP problems using the parametric
+   * primal-dual active set code qpOASES.
+   * qpOASES finds a KT point for the bounded QP problem
+   *
+   *      minimize    f(x) = x'Hx/2 + g'x
+   *
+   *      subject to  lb  <=   x <= ub
+   *                  lbA <= A.x <= ubA
+   *
+   * where x and g are n-vectors, H is a symmetric n*n matrix, and A is an
+   * m*n matrix. If H is also positive semi-definite then the KT point is a
+   * global solution, else a stationary point.
+   */
 
-	class qpOASESEngine : public QPEngine {
+  class qpOASESEngine : public QPEngine {
 
-	public:
-		friend class Problem;
+  public:
+    friend class Problem;
 
-		/// Default constructor.
-		qpOASESEngine ();
+    /// Default constructor.
+    qpOASESEngine ();
 
-		/// Constructor using given environment options.
-		qpOASESEngine (EnvPtr env);
+    /// Constructor using given environment options.
+    qpOASESEngine (EnvPtr env);
 
-		/// Return an empty qpOASESEngine pointer.
-		EnginePtr emptyCopy();
+    /// Return an empty qpOASESEngine pointer.
+    EnginePtr emptyCopy();
 
-		/// Method to read the problem and initialize qpOASES.
-		void load(ProblemPtr problem);
+    /// Method to read the problem and initialize qpOASES.
+    void load(ProblemPtr problem);
 
-		/// Method to unload the current problem
-		void clear();
+    /// Method to unload the current problem
+    void clear();
 
-		/// Solve the problem that was loaded and report the status.
-		EngineStatus solve();
+    /// Solve the problem that was loaded and report the status.
+    EngineStatus solve();
 
-		/// Report the solution value from the last solve.
-		Double getSolutionValue();
+    /// Report the solution value from the last solve.
+    double getSolutionValue();
 
-		/// Report the solution.
-		ConstSolutionPtr getSolution();
+    /// Report the solution.
+    ConstSolutionPtr getSolution();
 
-		/// Report the status of the last solve.
-		EngineStatus getStatus();
+    /// Report the status of the last solve.
+    EngineStatus getStatus();
 
-		// Change bound on a constraint.
-		void changeBound(ConstraintPtr cons, BoundType lu, Double new_val);
+    // Change bound on a constraint.
+    void changeBound(ConstraintPtr cons, BoundType lu, double new_val);
 
-		// Change bound on a variable.
-		void changeBound(VariablePtr var, BoundType lu, Double new_val);
+    // Change bound on a variable.
+    void changeBound(VariablePtr var, BoundType lu, double new_val);
 
-		// Implement Engine::changeBound(VariablePtr, Double, Double).
-		void changeBound(VariablePtr var, Double new_lb, Double new_ub);
+    // Implement Engine::changeBound(VariablePtr, double, double).
+    void changeBound(VariablePtr var, double new_lb, double new_ub);
 
-		// Implement Engine::addConstraint() */
-		void addConstraint(ConstraintPtr) {};
+    // Implement Engine::addConstraint() */
+    void addConstraint(ConstraintPtr) {};
 
-		// change objective.
-		void changeObj(FunctionPtr f, Double cb);
+    // change objective.
+    void changeObj(FunctionPtr f, double cb);
 
-		// Convert 'min f' to 'min -f'.
-		void negateObj();
+    // Convert 'min f' to 'min -f'.
+    void negateObj();
 
-		// Implement Engine::changeConstraint().
-		void changeConstraint(ConstraintPtr con, LinearFunctionPtr lf,
-			const Double & ub);
+    // Implement Engine::changeConstraint().
+    void changeConstraint(ConstraintPtr con, LinearFunctionPtr lf,
+                          const double & ub);
 
-		// Implement Engine::getWarmStart(). // NULL for now.
-		ConstWarmStartPtr getWarmStart();
+    // Implement Engine::getWarmStart(). // NULL for now.
+    ConstWarmStartPtr getWarmStart();
 
-		// Implement Engine::getWarmStartCopy(). // NULL for now.
-		WarmStartPtr getWarmStartCopy();
+    // Implement Engine::getWarmStartCopy(). // NULL for now.
+    WarmStartPtr getWarmStartCopy();
 
-		// Implement Engine::loadFromWarmStart().
-		void loadFromWarmStart(WarmStartPtr );
+    // Implement Engine::loadFromWarmStart().
+    void loadFromWarmStart(WarmStartPtr );
 
-		// Implement Engine::setIterationLimit().
-		void setIterationLimit(Int limit);
+    // Implement Engine::setIterationLimit().
+    void setIterationLimit(int limit);
 
-		// Implement Engine::resetIterationLimit().
-		void resetIterationLimit();
+    // Implement Engine::resetIterationLimit().
+    void resetIterationLimit();
 
-		// Implement Engine::enableStrBrSetup()
-		void enableStrBrSetup();
+    // Implement Engine::enableStrBrSetup()
+    void enableStrBrSetup();
 
-		// Implement Engine::disableStrBrSetup()
-		void disableStrBrSetup();
+    // Implement Engine::disableStrBrSetup()
+    void disableStrBrSetup();
 
-		// Write statistics.
-		void writeStats();
+    // Write statistics.
+    void writeStats();
 
-		// get name.
-		std::string getName() const;
+    // get name.
+    std::string getName() const;
 
-		/// Destroy.
-		~qpOASESEngine();
+    /// Destroy.
+    ~qpOASESEngine();
 
-	private:
+  private:
 
-		/// Allocate the data structures for qpOASES.
-		void load_();
-	
-		/**
-		* Actually call bqpd to solve a QP using a specific mode. It is called
-		* after all data has been set.
-		*/
-		void solve_ (Int mode, Double *f);
+    /// Allocate the data structures for qpOASES.
+    void load_();
 
-		/// Copy primal and dual values of the solution from bqpd.
-		void storeSol_ (Double f);
+    /**
+     * Actually call bqpd to solve a QP using a specific mode. It is called
+     * after all data has been set.
+     */
+    void solve_ (int mode, double *f);
 
-		/// Fill sparsity pattern and values of the gradients.
-		void setGradient_ ();
+    /// Copy primal and dual values of the solution from bqpd.
+    void storeSol_ (double f);
 
-		/// Fill sparsity pattern and values of the Hessian.
-		void setHessian_ ();
+    /// Fill sparsity pattern and values of the gradients.
+    void setGradient_ ();
 
-		/// Set the intial point for solving the QP.
-		void setInitialPoint_ ();
+    /// Fill sparsity pattern and values of the Hessian.
+    void setHessian_ ();
 
-		/// Copy variable bounds from the problem.
-		void setVarBounds_ ();
+    /// Set the intial point for solving the QP.
+    void setInitialPoint_ ();
 
-		/// Copy constraint bounds from the problem.
-		void setConsBounds_ ();
+    /// Copy variable bounds from the problem.
+    void setVarBounds_ ();
 
-		/// Environment.
-		EnvPtr env_;
+    /// Copy constraint bounds from the problem.
+    void setConsBounds_ ();
 
-		/// Problem that is loaded, if any.
-		ProblemPtr problem_;
+    /// Environment.
+    EnvPtr env_;
 
-		/// Solution found by the engine.
-		SolutionPtr sol_;
+    /// Problem that is loaded, if any.
+    ProblemPtr problem_;
 
-		/// If a constraint is modified, this is set to true.
-		Bool consModed_;
-		Bool hessModed_;
+    /// Solution found by the engine.
+    SolutionPtr sol_;
 
-		/// Holds the qpOASES view of a QP
-		qpOASESData *data_;
+    /// If a constraint is modified, this is set to true.
+    bool consModed_;
+    bool hessModed_;
 
-		/// If true, we should try to resolve in a different mode when error is reported.
-		Bool resolveError_;
+    /// Holds the qpOASES view of a QP
+    qpOASESData *data_;
 
-		/// Number of iterations that can be performed during solve
-		Int iterLimit_;
+    /// If true, we should try to resolve in a different mode when error is reported.
+    bool resolveError_;
 
-		/// Maximum number of iterations that can be performed during solve
-		Int maxIterLimit_;
+    /// Number of iterations that can be performed during solve
+    int iterLimit_;
 
-		/// Bounds are considered infinite if their value goes beyond this value.
-		const Double infty_;
+    /// Maximum number of iterations that can be performed during solve
+    int maxIterLimit_;
 
-		/// Bounds are considered equalities if they are closer than this value.
-		const Double bTol_;
-		
-		/// Statistics
-		qpOASESStats stats_;
+    /// Bounds are considered infinite if their value goes beyond this value.
+    const double infty_;
 
-		/// True if currently doing strong-branching iterations. False otherwise.
-		Bool strBr_;
-		Bool ldWarm_;
-		UInt n_changed_;
-		qpOASESWarmStart ws;
-		Double objOff_;
-		
-	private:
-		void savePoint (qpOASESPoint *);
-		void restorePoint (qpOASESPoint *);
-	};
+    /// Bounds are considered equalities if they are closer than this value.
+    const double bTol_;
 
-	typedef boost::shared_ptr<qpOASESEngine> qpOASESEnginePtr;
+    /// Statistics
+    qpOASESStats stats_;
+
+    /// True if currently doing strong-branching iterations. False otherwise.
+    bool strBr_;
+    bool ldWarm_;
+    UInt n_changed_;
+    qpOASESWarmStart ws;
+    double objOff_;
+
+  private:
+    void savePoint (qpOASESPoint *);
+    void restorePoint (qpOASESPoint *);
+  };
+
+  typedef boost::shared_ptr<qpOASESEngine> qpOASESEnginePtr;
 } // end namespace Minotaur
 
 #endif

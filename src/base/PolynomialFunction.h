@@ -64,27 +64,27 @@ namespace Minotaur {
     /// Make a clone using new variables. vbeg points to the variable id 0.
     /// vbeg+k points to variable id k, where k>=0.
     NonlinearFunctionPtr cloneWithVars(VariableConstIterator vbeg, 
-                                       Int *err) const;
+                                       int *err) const;
 
     // Evaluate.
-    double eval(const double *x, Int *error);
+    double eval(const double *x, int *error);
 
     // Evaluate.
-    double eval(const DoubleVector &x, Int *error);
+    double eval(const DoubleVector &x, int *error);
 
     // Gradient.
-    void evalGradient(const double *x, double *grad_f, Int *error);
+    void evalGradient(const double *x, double *grad_f, int *error);
 
     void evalHessian(const double , const double *, 
                      const LTHessStor *, double *, 
-                     Int *) 
+                     int *) 
     {assert(!"can't fill hessian in a monomial function.");};
 
     /// Populate the cgraph with a subgraph representing this monomial and
     /// return the root node of this subgraph.
     CNode* fillCG(CGraphPtr cg);
 
-    void fillJac(const double *, double *, Int *) 
+    void fillJac(const double *, double *, int *) 
     {assert(!"can't fill jacobian in a monomial function.");};
 
     void  fillHessStor(LTHessStor *)
@@ -96,7 +96,7 @@ namespace Minotaur {
     double getCoeff() const;
 
     /// Get the degree, sum of all powers.
-    Int getDegree() const;
+    int getDegree() const;
 
     /// Monomial terms
     const VarIntMap* getTerms() const;
@@ -104,7 +104,7 @@ namespace Minotaur {
     void getVars(VariableSet *) {};
 
     /// Multiply with a variable raised to power.
-    void multiply(double coeff, ConstVariablePtr v, Int p);
+    void multiply(double coeff, ConstVariablePtr v, int p);
 
     /// Multiply with another monomial.
     void multiply(ConstMonomialFunPtr m2);
@@ -122,7 +122,7 @@ namespace Minotaur {
     VarIntMapConstIterator termsEnd();
 
     /// Raise the monomial to power k.
-    void toPower(Int k);
+    void toPower(int k);
 
     /// Display.
     void write(std::ostream &out) const;
@@ -138,7 +138,7 @@ namespace Minotaur {
     double coeff_;
 
     /// The degree of monomial.
-    Int deg_;
+    int deg_;
 
     /**
      * \brief If a coefficient's magnitude is lower than eTol_, it is considered
@@ -176,28 +176,28 @@ namespace Minotaur {
 
     // base class function.
     NonlinearFunctionPtr cloneWithVars(VariableConstIterator vbeg, 
-                                       Int *err) const;
+                                       int *err) const;
 
     /// Create a cgraph representing this polynomial and save it as a private
     /// member. Useful for solving using native derivatives.
     void createCG();
 
     // base class function.
-    double eval(const double *x, Int *error);
+    double eval(const double *x, int *error);
 
     // base class function.
-    void evalGradient(const double *x, double *grad_f, Int *error);
+    void evalGradient(const double *x, double *grad_f, int *error);
 
     // base class function.
     void evalHessian(const double mult, const double *x, 
                      const LTHessStor *stor, double *values, 
-                     Int *error);
+                     int *error);
 
     // base class function.
     void  fillHessStor(LTHessStor *stor);
 
     // base class function.
-    void fillJac(const double *x, double *values, Int *error);
+    void fillJac(const double *x, double *values, int *error);
 
     // base class function.
     void  finalHessStor(const LTHessStor *stor);
@@ -212,7 +212,7 @@ namespace Minotaur {
     FunctionType getType() const;
 
     /// Return true if the constant is 0 and there are no terms.
-    Bool isEmpty() const;
+    bool isEmpty() const;
 
     /// Multiply with (lf + c), where lf is a linear function.
     void multiply(ConstLinearFunctionPtr lf, double c);
