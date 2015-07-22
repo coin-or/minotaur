@@ -231,7 +231,7 @@ EnginePtr getEngine(EnvPtr env, ProblemPtr p, int &err)
 
 
 void loadProblem(EnvPtr env, MINOTAUR_AMPL::AMPLInterface* iface,
-                 ProblemPtr &oinst)
+                 ProblemPtr &oinst, double *obj_sense)
 {
   Timer *timer     = env->getNewTimer();
   OptionDBPtr options = env->getOptions();
@@ -269,6 +269,18 @@ void loadProblem(EnvPtr env, MINOTAUR_AMPL::AMPLInterface* iface,
   oinst->setInitialPoint(iface->getInitialPoint(), 
       oinst->getNumVars()-iface->getNumDefs());
 
+  if (oinst->getObjective() &&
+      oinst->getObjective()->getObjectiveType()==Maximize) {
+    *obj_sense = -1.0;
+    env->getLogger()->msgStream(LogInfo) << me 
+      << "objective sense: maximize (will be converted to Minimize)"
+      << std::endl;
+  } else {
+    *obj_sense = 1.0;
+    env->getLogger()->msgStream(LogInfo) << me 
+      << "objective sense: minimize" << std::endl;
+  }
+
   delete timer;
 }
 
@@ -280,7 +292,7 @@ void overrideOptions(EnvPtr env)
 
 
 PresolverPtr presolve(EnvPtr env, ProblemPtr p, size_t ndefs, 
-                        HandlerVector &handlers)
+                      HandlerVector &handlers)
 {
   PresolverPtr pres = PresolverPtr(); // NULL
   const std::string me("bnb main: ");
@@ -374,10 +386,12 @@ int showInfo(EnvPtr env)
     env->getLogger()->msgStream(LogNone) << me <<
       "Minotaur version " << env->getVersion() << std::endl;
 #if DEBUG
-    env->getLogger()->msgStream(LogInfo) << me;
-    env->writeFullVersion(env->getLogger()->msgStream(LogInfo));
-    env->getLogger()->msgStream(LogInfo) << std::endl;
+    env->getLogger()->msgStream(LogNone) << me;
+    env->writeFullVersion(env->getLogger()->msgStream(LogNone));
+    env->getLogger()->msgStream(LogNone) << std::endl;
 #endif
+    env->getLogger()->msgStream(LogNone) << me 
+      << "NLP-based branch-and-bound solver for convex MINLP" << std::endl;
     return 1;
   }
 
@@ -407,7 +421,6 @@ void writeSol(EnvPtr env, VarVector *orig_v,
     sol->writePrimal(env->getLogger()->msgStream(LogExtraInfo), orig_v);
   }
 }
-
 
 
 void writeBnbStatus(EnvPtr env, BranchAndBound *bab, double obj_sense)
@@ -484,18 +497,7 @@ int main(int argc, char** argv)
     goto CLEANUP;
   }
 
-  loadProblem(env, iface, oinst);
-  if (oinst->getObjective() &&
-      oinst->getObjective()->getObjectiveType()==Maximize) {
-    obj_sense = -1.0;
-    env->getLogger()->msgStream(LogInfo) << me 
-      << "objective sense: maximize (will be converted to Minimize)"
-      << std::endl;
-  } else {
-    env->getLogger()->msgStream(LogInfo) << me 
-      << "objective sense: minimize" << std::endl;
-  }
-
+  loadProblem(env, iface, oinst, &obj_sense);
   orig_v = new VarVector(oinst->varsBegin(), oinst->varsEnd());
   pres = presolve(env, oinst, iface->getNumDefs(), handlers);
   handlers.clear();

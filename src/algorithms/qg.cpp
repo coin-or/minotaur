@@ -49,11 +49,65 @@
 using namespace Minotaur;
 
 EnginePtr getNLPEngine(EnvPtr env, ProblemPtr p);
-void show_help();
 void writeBnbStatus(EnvPtr env, BranchAndBound *bab, double obj_sense);
 void writeSol(EnvPtr env, VarVector *orig_v, PresolverPtr pres,
               SolutionPtr sol, SolveStatus status,
               MINOTAUR_AMPL::AMPLInterface* iface);
+
+
+void loadProblem(EnvPtr env, MINOTAUR_AMPL::AMPLInterface* iface,
+                 ProblemPtr &oinst, double *obj_sense)
+{
+  Timer *timer     = env->getNewTimer();
+  OptionDBPtr options = env->getOptions();
+  JacobianPtr jac;
+  HessianOfLagPtr hess;
+  const std::string me("qg: ");
+
+  timer->start();
+  oinst = iface->readInstance(options->findString("problem_file")->getValue());
+  env->getLogger()->msgStream(LogInfo) << me 
+    << "time used in reading instance = " << std::fixed 
+    << std::setprecision(2) << timer->query() << std::endl;
+
+  // display the problem
+  oinst->calculateSize();
+  if (options->findBool("display_problem")->getValue()==true) {
+    oinst->write(env->getLogger()->msgStream(LogNone), 12);
+  }
+  if (options->findBool("display_size")->getValue()==true) {
+    oinst->writeSize(env->getLogger()->msgStream(LogNone));
+  }
+  // create the jacobian
+  if (false==options->findBool("use_native_cgraph")->getValue()) {
+    jac = (MINOTAUR_AMPL::AMPLJacobianPtr) 
+      new MINOTAUR_AMPL::AMPLJacobian(iface);
+    oinst->setJacobian(jac);
+
+    // create the hessian
+    hess = (MINOTAUR_AMPL::AMPLHessianPtr)
+      new MINOTAUR_AMPL::AMPLHessian(iface);
+    oinst->setHessian(hess);
+  }
+
+  // set initial point
+  oinst->setInitialPoint(iface->getInitialPoint(), 
+      oinst->getNumVars()-iface->getNumDefs());
+
+  if (oinst->getObjective() &&
+      oinst->getObjective()->getObjectiveType()==Maximize) {
+    *obj_sense = -1.0;
+    env->getLogger()->msgStream(LogInfo) << me 
+      << "objective sense: maximize (will be converted to Minimize)"
+      << std::endl;
+  } else {
+    *obj_sense = 1.0;
+    env->getLogger()->msgStream(LogInfo) << me 
+      << "objective sense: minimize" << std::endl;
+  }
+
+  delete timer;
+}
 
 
 void setInitialOptions(EnvPtr env)
@@ -64,7 +118,7 @@ void setInitialOptions(EnvPtr env)
 }
 
 
-void show_help()
+void showHelp()
 {
   std::cout << "Quesada-Grossmann (LP/NLP) algorithm for convex MINLP"
             << std::endl
@@ -75,6 +129,51 @@ void show_help()
             << "To solve an instance: qg --option1 [value] "
             << "--option2 [value] ... " << " .nl-file" << std::endl;
 }
+
+
+int showInfo(EnvPtr env)
+{
+  OptionDBPtr options = env->getOptions();
+  const std::string me("qg: ");
+
+  if (options->findBool("show_options")->getValue() ||
+      options->findFlag("=")->getValue()) {
+    options->write(std::cout);
+    return 1;
+  }
+
+  if (options->findBool("show_help")->getValue() ||
+      options->findFlag("?")->getValue()) {
+    showHelp();
+    return 1;
+  }
+
+  if (options->findBool("show_version")->getValue() ||
+      options->findFlag("v")->getValue()) {
+    env->getLogger()->msgStream(LogNone) << me <<
+      "Minotaur version " << env->getVersion() << std::endl;
+#if DEBUG
+    env->getLogger()->msgStream(LogInfo) << me;
+    env->writeFullVersion(env->getLogger()->msgStream(LogInfo));
+    env->getLogger()->msgStream(LogInfo) << std::endl;
+#endif
+    env->getLogger()->msgStream(LogNone) << me 
+      << "Quesada-Grossmann (LP/NLP) algorithm for convex MINLP" << std::endl;
+    return 1;
+  }
+
+  if (options->findString("problem_file")->getValue()=="") {
+    showHelp();
+    return 1;
+  }
+
+  env->getLogger()->msgStream(LogInfo)
+    << me << "Minotaur version " << env->getVersion() << std::endl
+    << me << "Quesada-Grossmann (LP/NLP) algorithm for convex MINLP"
+    << std::endl;
+  return 0;
+}
+
 
 PresolverPtr presolve(EnvPtr env, ProblemPtr p, size_t ndefs, 
                         HandlerVector &handlers)
@@ -132,7 +231,6 @@ PresolverPtr presolve(EnvPtr env, ProblemPtr p, size_t ndefs,
 int main(int argc, char* argv[])
 {
   EnvPtr env = (EnvPtr) new Environment();
-  Timer *timer    = env->getNewTimer();
   OptionDBPtr options;
 
   MINOTAUR_AMPL::AMPLInterfacePtr iface = MINOTAUR_AMPL::AMPLInterfacePtr();  
@@ -151,7 +249,6 @@ int main(int argc, char* argv[])
   EngineFactory *efac;
   const std::string me("qg: ");
 
-  bool prune = false;
   BrancherPtr br = BrancherPtr(); // NULL
   LPProcessorPtr nproc;
 
@@ -190,58 +287,12 @@ int main(int argc, char* argv[])
   options = env->getOptions();
   options->findString("interface_type")->setValue("AMPL");
 
-  // check if user needs help.
-  if (options->findBool("show_options")->getValue() ||
-      options->findFlag("=")->getValue()) {
-    options->write(std::cout);
+  if (0!=showInfo(env)) {
     goto CLEANUP;
   }
 
-  if (options->findBool("show_version")->getValue() ||
-      options->findFlag("v")->getValue()) {
-    env->getLogger()->msgStream(LogNone) << me <<
-      "Minotaur version " << env->getVersion() << std::endl;
-    goto CLEANUP;
-  }
+  loadProblem(env, iface, inst, &obj_sense);
 
-  if (options->findString("problem_file")->getValue()=="") {
-    show_help();
-    goto CLEANUP;
-  }
-
-  env->getLogger()->msgStream(LogInfo)
-    << me << "Minotaur version " << env->getVersion() << std::endl
-    << me << "Quesada-Grossmann (LP/NLP) algorithm for convex MINLP"
-    << std::endl;
-  // load the problem.
-  timer->start();
-  inst = iface->readInstance(options->findString("problem_file")->getValue());
-  env->getLogger()->msgStream(LogInfo) << me 
-    << "time used in reading instance = " << std::fixed 
-    << std::setprecision(2) << timer->query() << std::endl;
-
-
-  inst->calculateSize();
-  // display the problem
-  if (options->findBool("display_problem")->getValue()==true) {
-    inst->write(env->getLogger()->msgStream(LogNone));
-  }
-
-  if (options->findBool("display_size")->getValue()==true) {
-    inst->calculateSize();
-    inst->writeSize(env->getLogger()->msgStream(LogNone));
-  }
-
- if(inst->getObjective() &&
-     inst->getObjective()->getObjectiveType()==Maximize){
-    obj_sense=-1.0;
-    env->getLogger()->msgStream(LogInfo) << me 
-      << "objective sense: maximize (will be converted to Minimize)"
-      << std::endl;
-  } else {
-    env->getLogger()->msgStream(LogInfo) << me 
-      << "objective sense: minimize" << std::endl;
-  }
   // Initialize engines
   nlp_e = getNLPEngine(env, inst); //Engine for Original problem
 
@@ -249,70 +300,53 @@ int main(int argc, char* argv[])
   lin_e = efac->getLPEngine();   // lp engine 
   delete efac;
 
-
-  inst->setInitialPoint(iface->getInitialPoint(), 
-      inst->getNumVars()-iface->getNumDefs());
-
   // get presolver.
   orig_v = new VarVector(inst->varsBegin(), inst->varsEnd());
   pres = presolve(env, inst, iface->getNumDefs(), handlers);
   handlers.clear();
+  if (Finished != pres->getStatus() && NotStarted != pres->getStatus()) {
+    env->getLogger()->msgStream(LogInfo) << me 
+      << "status of presolve: " 
+      << getSolveStatusString(pres->getStatus()) << std::endl;
+    writeSol(env, orig_v, pres, SolutionPtr(), pres->getStatus(), iface);
+    writeBnbStatus(env, bab, obj_sense);
+    goto CLEANUP;
+  }
 
-  inst->calculateSize();
-
-  // create the jacobian
-  if (false==env->getOptions()->findBool("use_native_cgraph")->getValue()){
-
-    if (inst->isQP() || inst->isQuadratic()) {
+  // final preparations for solve
+  if (options->findBool("solve")->getValue()==true) {
+    if (true==options->findBool("use_native_cgraph")->getValue()) {
       inst->setNativeDer();
     }
-    else {
-      jPtr = (MINOTAUR_AMPL::AMPLJacobianPtr)
-             new MINOTAUR_AMPL::AMPLJacobian(iface);
-      inst->setJacobian(jPtr);
+    // Initialize the handlers for branch-and-cut
+    l_hand = (LinearHandlerPtr) new LinearHandler(env, inst);
+    l_hand->setModFlags(false, true);
+    handlers.push_back(l_hand);
+    assert(l_hand);
 
-      // create the hessian
-      hPtr = (MINOTAUR_AMPL::AMPLHessianPtr) new
-             MINOTAUR_AMPL::AMPLHessian(iface);
-      inst->setHessian(hPtr);
-    }
-  } 
-  else {
-    inst->setNativeDer();
-  }
+    v_hand = (IntVarHandlerPtr) new IntVarHandler(env, inst);
+    v_hand->setModFlags(false, true); 
+    handlers.push_back(v_hand);
+    assert(v_hand);
+
+    qghand = (QGHandlerPtr) new QGHandler(env, inst, nlp_e); 
+    qghand->setModFlags(false, true);
+    handlers.push_back(qghand);
 
 
-  // Initialize the handlers
-  l_hand = (LinearHandlerPtr) new LinearHandler(env, inst);
-  l_hand->setModFlags(false, true);
-  handlers.push_back(l_hand);
-  assert(l_hand);
-
-  v_hand = (IntVarHandlerPtr) new IntVarHandler(env, inst);
-  v_hand->setModFlags(false, true); 
-  handlers.push_back(v_hand);
-  assert(v_hand);
-
-  qghand = (QGHandlerPtr) new QGHandler(env, inst, nlp_e); 
-  qghand->setModFlags(false, true);
-  handlers.push_back(qghand);
-
-  
-  // report name
-  env->getLogger()->msgStream(LogExtraInfo) << me << "handlers used:"
-    << std::endl;
-  
-  for (HandlerIterator h = handlers.begin(); h != handlers.end(); ++h) {
-    env->getLogger()->msgStream(LogExtraInfo) << me << (*h)->getName()
+    // report name
+    env->getLogger()->msgStream(LogExtraInfo) << me << "handlers used:"
       << std::endl;
-  }
 
-  // Stuff needed in branch and bound
-  nr = (NodeIncRelaxerPtr) new NodeIncRelaxer(env, handlers);
-  nr->setModFlag(false);
-  
-  // find the type of relaxation.
-  if (!prune) {
+    for (HandlerIterator h = handlers.begin(); h != handlers.end(); ++h) {
+      env->getLogger()->msgStream(LogExtraInfo) << me << (*h)->getName()
+        << std::endl;
+    }
+
+    // Only store bound-changes of relaxation (not problem)
+    nr = (NodeIncRelaxerPtr) new NodeIncRelaxer(env, handlers);
+    nr->setModFlag(false);
+
     nr->setEngine(lin_e);
     nproc = (LPProcessorPtr) new LPProcessor(env, lin_e, handlers);
 
@@ -323,13 +357,13 @@ int main(int argc, char* argv[])
       nproc->setBrancher(rel_br);
       br = rel_br;
     } else if (env->getOptions()->findString("brancher")->getValue()
-      == "maxvio") {
+               == "maxvio") {
       MaxVioBrancherPtr mbr = (MaxVioBrancherPtr) 
         new MaxVioBrancher(env, handlers);
       nproc->setBrancher(mbr);
       br = mbr;
     } else if (env->getOptions()->findString("brancher")->getValue()
-      == "lex") {
+               == "lex") {
       LexicoBrancherPtr lbr = (LexicoBrancherPtr) 
         new LexicoBrancher(env, handlers);
       br = lbr;
@@ -337,21 +371,13 @@ int main(int argc, char* argv[])
     nproc->setBrancher(br);
     env->getLogger()->msgStream(LogExtraInfo) << me <<
       "brancher used = " << br->getName() << std::endl;
-    
+
     bab = new BranchAndBound(env, inst);
     bab->setNodeRelaxer(nr);
     bab->setNodeProcessor(nproc);
     bab->shouldCreateRoot(true);
-  } else {
-    env->getLogger()->msgStream(LogInfo) << me 
-      << "Problem declared infeasible at initial relaxation step."
-      << std::endl;
-    goto CLEANUP;
-  }
 
 
-  // solve
-  if (options->findBool("solve")->getValue()==true) {
     // start solving
     bab->solve();
     bab->writeStats(env->getLogger()->msgStream(LogExtraInfo));
@@ -373,9 +399,6 @@ CLEANUP:
   }
   if (orig_v) {
     delete orig_v;
-  }
-  if (timer) {
-    delete timer;
   }
   if (bab) {
     delete bab;

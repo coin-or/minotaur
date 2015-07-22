@@ -82,10 +82,13 @@ message (STATUS ${MSG_HEAD} "Is rusage available = ${MINOTAUR_RUSAGE}")
 ## svnversion
 ###########################################################################
 set (MINOTAUR_SVN_VERSION "0.0") 
-get_filename_component(MNTR_ABS_PATH "${PROJECT_SOURCE_DIR}/src" ABSOLUTE)
+get_filename_component(MNTR_ABS_PATH "${PROJECT_SOURCE_DIR}" ABSOLUTE)
+message (STATUS ${MSG_HEAD} "checking svn in = ${MNTR_ABS_PATH}")
 if (EXISTS "${MNTR_ABS_PATH}/.svn")
+  message (STATUS ${MSG_HEAD} "found .svn in ${MNTR_ABS_PATH}")
   FIND_PACKAGE(Subversion)
   if (Subversion_FOUND)
+    message (STATUS ${MSG_HEAD} "Package subversion found")
     # extract working copy information for SOURCE_DIR into TMP_SVN_XXX variables
     Subversion_WC_INFO(${MNTR_ABS_PATH} TMP_SVN)
     set (MINOTAUR_SVN_VERSION ${TMP_SVN_WC_REVISION})

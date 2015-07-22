@@ -399,18 +399,11 @@ bool QPDProcessor::presolveNode_(NodePtr node, SolutionPoolPtr s_pool)
   // changes are possible.
   for (HandlerIterator h = handlers_.begin(); h != handlers_.end() 
       && false==is_inf; ++h) {
-    assert(!"error here: We want to only modify p_, not qp_");
     is_inf = (*h)->presolveNode(qp_, node, s_pool, n_mods, t_mods);
-    //for (ModificationConstIterator m_iter=n_mods.begin(); m_iter!=n_mods.end(); 
-    //    ++m_iter) {
-    //  (*m_iter)->applyToProblem(relaxation_);
-    //}
     for (ModificationConstIterator m_iter=t_mods.begin(); m_iter!=t_mods.end(); 
         ++m_iter) {
-      assert(!"error here: think what is the right thing here");
-      node->addPMod(*m_iter);
-      mod2 = (*m_iter)->toRel(p_, qp_);
-      mod2->applyToProblem(qp_);
+      node->addRMod(*m_iter);
+      (*m_iter)->applyToProblem(qp_);
     }
     n_mods.clear();
     t_mods.clear();
@@ -951,10 +944,6 @@ void QPDProcessor::process(NodePtr node, RelaxationPtr rel,
   ++stats_.proc;
   qp_ = rel;
   numSolutions_ = 0;
-  should_prune = presolveNode_(node, s_pool);
-  if (should_prune) {
-    return;
-  }
 
   // TODO: is this check repeated?
   if (node->getParent()) {
@@ -966,9 +955,14 @@ void QPDProcessor::process(NodePtr node, RelaxationPtr rel,
     ++iter;
 
 #if SPEW
-  logger_->msgStream(LogDebug) <<  me_ << "iteration " << iter 
-                               << std::endl;
+    logger_->msgStream(LogDebug) <<  me_ << "iteration " << iter 
+                                 << std::endl;
 #endif
+
+    should_prune = presolveNode_(node, s_pool);
+    if (should_prune) {
+      break;
+    }
 
     processQP2_(iter, node, sol, s_pool, should_prune, should_resolve);
     if (should_prune) {
@@ -989,13 +983,6 @@ void QPDProcessor::process(NodePtr node, RelaxationPtr rel,
         for (ModificationConstIterator miter=mods.begin(); miter!=mods.end();
              ++miter) {
           (*miter)->applyToProblem(qp_);
-          assert(!"fix this");
-          (*miter)->fromRel(qp_, p_)->applyToProblem(p_);
-          node->addPMod((*miter)->fromRel(qp_, p_));
-        }
-        should_prune = presolveNode_(node, s_pool);
-        if (should_prune) {
-          break;
         }
         should_resolve = true;
 #if SPEW
@@ -1635,9 +1622,21 @@ bool QPDProcessor::shouldSepObj_(bool is_nec, double vio, double etaval)
 }
 
 
-void QPDProcessor::solveNLP_(ConstSolutionPtr &sol, 
-                             EngineStatus &nlp_status)
+void QPDProcessor::solveNLP_(ConstSolutionPtr &sol, EngineStatus &nlp_status)
 {
+  // first copy bounds from qp to nlp
+  Modification *m = 0;
+  std::stack<Modification *> nlpMods;
+  VariablePtr var, qpvar;
+
+  for (VariableConstIterator vit=p_->varsBegin(); vit!=p_->varsEnd(); 
+       ++vit) {
+    var = *vit;
+    qpvar = qp_->getVariable(var->getIndex());
+    m = new VarBoundMod2(var, qpvar->getLb(), qpvar->getUb());
+    m->applyToProblem(p_);
+    nlpMods.push(m);
+  }
 
   nlp_status = e_->solve();
   sol = e_->getSolution();
@@ -1647,6 +1646,14 @@ void QPDProcessor::solveNLP_(ConstSolutionPtr &sol,
     << me_ << "NLP status = " << e_->getStatusString() << std::endl 
     << me_ << "solution value = " << sol->getObjValue() << std::endl; 
 #endif 
+
+  // undo all bound changes. // can be made more efficient.
+  while(nlpMods.empty() == false) {
+    m = nlpMods.top();
+    m->undoToProblem(p_);
+    nlpMods.pop();
+    delete m;
+  }
 }
 
 

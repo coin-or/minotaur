@@ -300,11 +300,12 @@ void BranchAndBound::showStatus_(bool current_uncounted)
     off=1;
   }
   if (timer_->query()-stats_->updateTime > options_->logInterval) {
+    double lb = tm_->updateLb();
     logger_->msgStream(LogInfo) 
       << me_ 
       << std::fixed
       << std::setprecision(1)  << "time = "            << timer_->query()
-      << std::setprecision(4)  << " lb = "             << tm_->updateLb()
+      << std::setprecision(4)  << " lb = "             << lb
       << std::setprecision(4)  << " ub = "             << tm_->getUb()
       << std::setprecision(2)  << " gap% = "           << tm_->getPerGap()
       << " nodes processed = " << tm_->getSize()-tm_->getActiveNodes()-off 
