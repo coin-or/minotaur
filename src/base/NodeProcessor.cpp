@@ -5,7 +5,7 @@
 // 
 
 /**
- * \file NodeProcessor.h
+ * \file NodeProcessor.cpp
  * \brief Define two functions of NodeProcessor class. 
  * \author Ashutosh Mahajan, Argonne National Laboratory
  */
