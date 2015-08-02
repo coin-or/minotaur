@@ -219,7 +219,9 @@ EnginePtr getEngine(EnvPtr env, ProblemPtr p, int &err)
   }
 
   if (!e) {
-    env->getLogger()->errStream() <<  "No engine available for this problem.";
+    env->getLogger()->errStream() <<  "No engine available for this problem."
+                                  << std::endl << "exiting without solving"
+                                  << std::endl;
     err = 1;
   } else {
     env->getLogger()->msgStream(LogExtraInfo) << me <<

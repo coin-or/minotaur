@@ -122,23 +122,32 @@ bool LPProcessor::presolveNode_(NodePtr node, SolutionPoolPtr s_pool)
   ModVector p_mods;      // Mods that are applied to the problem
   ModVector r_mods;      // Mods that are applied to the relaxation.
   bool is_inf = false;
+  int it = 0;
+  int max_iter = 1;
+  bool cont = true;
 
   // TODO: make this more sophisticated: loop several times until no more
   // changes are possible.
-  for (HandlerIterator h = handlers_.begin(); h != handlers_.end() 
-       && false==is_inf; ++h) {
-    is_inf = (*h)->presolveNode(relaxation_, node, s_pool, p_mods, r_mods);
-    for (ModificationConstIterator m_iter=p_mods.begin(); m_iter!=p_mods.end(); 
-        ++m_iter) {
-      node->addPMod(*m_iter);
+  for (it=0; it<max_iter && true==cont; ++it) {
+    ++it;
+    for (HandlerIterator h = handlers_.begin(); h != handlers_.end() 
+         && false==is_inf; ++h) {
+      is_inf = (*h)->presolveNode(relaxation_, node, s_pool, p_mods, r_mods);
+      for (ModificationConstIterator m_iter=p_mods.begin(); m_iter!=p_mods.end(); 
+           ++m_iter) {
+        node->addPMod(*m_iter);
+      }
+      for (ModificationConstIterator m_iter=r_mods.begin(); m_iter!=r_mods.end(); 
+           ++m_iter) {
+        node->addRMod(*m_iter);
+        // (*m_iter)->write(std::cout);
+      }
+      if ((p_mods.size()==0 && r_mods.size()==0) || true==is_inf) {
+        cont = false;
+      }
+      p_mods.clear();
+      r_mods.clear();
     }
-    for (ModificationConstIterator m_iter=r_mods.begin(); m_iter!=r_mods.end(); 
-        ++m_iter) {
-      node->addRMod(*m_iter);
-      // (*m_iter)->write(std::cout);
-    }
-    p_mods.clear();
-    r_mods.clear();
   }
 
   if (is_inf) {
