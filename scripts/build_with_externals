@@ -264,7 +264,7 @@ then
 else
   cd ${DEST}
   cp ${MINOTAUR}/Makefile.manual Makefile
-  make -j ${CPUS} BQPD_LIB=${EDEST}/${BQPD}/libbqpd.a FILTERSQP_LIB=${EDEST}/${FILTERSQP}/src/libfiltersqp.a IPOPT_INST=${EDEST}/${IPOPT}/build OSI_INST=${EDEST}/${OSI}/build AMPL_INST=${EDEST}/${ASL} BOOST_INC=${EDEST} MINOTAUR=${MINOTAUR} EXTRA_LIBS="-lcoinhsl -lcoinmetis -lz -lbz2"
+  make -j ${CPUS} BQPD_LIB=${EDEST}/${BQPD}/libbqpd.a FILTERSQP_LIB=${EDEST}/${FILTERSQP}/src/libfiltersqp.a IPOPT_INST=${EDEST}/${IPOPT}/build OSI_INST=${EDEST}/${OSI}/build AMPL_INST=${EDEST}/${ASL} BOOST_INC=${EDEST} MINOTAUR=${MINOTAUR} EXTRA_LIBS="-lcoinmumps -lz -lbz2"
   if [ -e bin/bnb ]
   then
     echo "Minotaur built in ${DEST}"
