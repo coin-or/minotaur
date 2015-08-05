@@ -210,7 +210,7 @@ std::string Minotaur::getSolveStatusString(SolveStatus s)
   case (Restarted):
     return "Restarted";
   case (SolvedOptimal):
-    return "Solved to optimality";
+    return "Optimal solution found";
   case (SolvedInfeasible):
     return "Detected infeasibility";
   case (SolvedUnbounded):

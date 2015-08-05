@@ -441,7 +441,7 @@ void writeBnbStatus(EnvPtr env, BranchAndBound *bab, double obj_sense)
       << me << "gap = " << std::max(0.0,bab->getUb() - bab->getLb())
       << std::endl
       << me << "gap percentage = " << bab->getPerGap() << std::endl
-      << me << "time used = " << std::fixed << std::setprecision(2) 
+      << me << "time used (s) = " << std::fixed << std::setprecision(2) 
       << env->getTime(err) << std::endl
       << me << "status of branch-and-bound: " 
       << getSolveStatusString(bab->getStatus()) << std::endl;
@@ -454,7 +454,7 @@ void writeBnbStatus(EnvPtr env, BranchAndBound *bab, double obj_sense)
       << "best bound estimate from remaining nodes = " << INFINITY << std::endl
       << me << "gap = " << INFINITY << std::endl
       << me << "gap percentage = " << INFINITY << std::endl
-      << me << "time used = " << std::fixed << std::setprecision(2) 
+      << me << "time used (s) = " << std::fixed << std::setprecision(2) 
       << env->getTime(err) << std::endl 
       << me << "status of branch-and-bound: " 
       << getSolveStatusString(NotStarted) << std::endl;
