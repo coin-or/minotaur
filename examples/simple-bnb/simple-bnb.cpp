@@ -31,19 +31,18 @@
 
 using namespace Minotaur;
 
-int main()
+int main(int argc, char** argv)
 {
   EnvPtr env = (EnvPtr) new Environment();
   HandlerVector handlers;
   int err = 0;
 
-  env->startTimer(err);
-
-  // Read the problem
+  // Start timer and read the problem
+  env->startTimer(err); assert(err==0);
   env->getOptions()->findBool("use_native_cgraph")->setValue(true);
   MINOTAUR_AMPL::AMPLInterface* iface =
     new MINOTAUR_AMPL::AMPLInterface(env, "bnb");
-  ProblemPtr p = iface->readInstance("FLay02M.nl");
+  ProblemPtr p = iface->readInstance(argv[1]);
   p->setNativeDer();
 
   // create branch-and-bound object
@@ -75,7 +74,7 @@ int main()
 
   // start solving
   bab->solve();
-  bab->writeStats();
+  bab->writeStats(std::cout);
   bab->getSolution()->writePrimal(std::cout);
   std::cout << "best solution value = " << bab->getUb() << std::endl;
 

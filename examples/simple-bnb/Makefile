@@ -2,16 +2,16 @@
 
 CXX = g++
 CXXFLAGS = -ggdb
-LD_ADD = -llapack -ldl
+LD_ADD = -llapack -lgfortran -ldl
 
-MINOTAUR_INCDIR = ../../build-debug/include/minotaur
-MINOTAUR_LIBDIR = ../../build-debug/lib
+MINOTAUR_INCDIR = ../../build-n3/include/minotaur
+MINOTAUR_LIBDIR = ../../build-n3/lib
 
-BOOST_INCDIR = ../../minotaur-externals/minotaur-externals/
+BOOST_INCDIR = /home/amahajan/projects/minotaur-release/t1/third-party/include
 
-ASL_DIR = ../../minotaur-externals/minotaur-externals/asl-20120126
+ASL_DIR = /home/amahajan/projects/minotaur-release/t1/third-party/lib/
 ASL_LIB = $(ASL_DIR)/amplsolver.a
-FILTER_LIB = ../../minotaur-externals/minotaur-externals/filter-87/src/filterlib.a
+FILTER_LIB = /home/amahajan/projects/minotaur-release/t1/third-party/lib/libfiltersqp.a /home/amahajan/projects/minotaur-release/t1/third-party/lib/libbqpd.a
 
 RPATH_FLAGS = -Wl,-rpath=${MINOTAUR_LIBDIR}
 
