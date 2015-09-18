@@ -82,8 +82,6 @@ int main(int argc, char** argv)
   // node relaxer
   NodeIncRelaxerPtr nr = (NodeIncRelaxerPtr) new NodeIncRelaxer(env, handlers);
   RelaxationPtr rel = (RelaxationPtr) new Relaxation(p);
-  rel->setNativeDer();
-
 
   rel->calculateSize();
   rel->setJacobian(jac);
