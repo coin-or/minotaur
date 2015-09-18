@@ -57,7 +57,7 @@ QuadHandler::QuadHandler(EnvPtr env, ProblemPtr problem)
   rTol_(1e-4)
 {
   p_ = problem; 
-  modProb_ = true;
+  modProb_ = false;
   modRel_ = true;
   logger_  = (LoggerPtr) new Logger((LogLevel) 
                                     env->getOptions()->

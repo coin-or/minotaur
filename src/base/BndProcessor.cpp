@@ -226,7 +226,7 @@ void BndProcessor::process(NodePtr node, RelaxationPtr rel,
     } else if (br_status==ModifiedByBrancher) {
       for (ModificationConstIterator miter=mods.begin(); miter!=mods.end();
            ++miter) {
-        node->addPMod(*miter);
+        node->addRMod(*miter);
         (*miter)->applyToProblem(relaxation_);
       }
       should_resolve = true;
