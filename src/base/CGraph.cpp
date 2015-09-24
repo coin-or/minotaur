@@ -221,13 +221,14 @@ void CGraph::evalHessian(double mult, const double *x,
   UInt nz = 0;
   bool use2 = true;
   std::stack<CNode *> st2;
-  double thresh = vq_.size();
+  // double thresh = vq_.size();
 
-  thresh = thresh*(thresh-1.0)/2.0 * 0.75;
+  // thresh = thresh*(thresh-1.0)/2.0 * 0.75;
 
-  if (hNnz_>thresh) {
-    use2 = false;
-  }
+  // if (hNnz_>thresh) {
+  //   use2 = false;
+  // }
+  // use2 = true;
 
   // always eval. We do not assume that evaluations of x are already
   // available. It creates a big mess and doesn't save much.

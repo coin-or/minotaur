@@ -23,6 +23,7 @@
 
 #define PI 3.141592653589793
 #define MINFTY 1e25
+#define DIV_BY_ZERO_TOL 1e-12
 
 
 using namespace Minotaur;
@@ -437,7 +438,11 @@ void CNode::eval(const double *x, int *error)
     val_ = pow(l_->val_, r_->val_);
     break;
   case (OpDiv):
-    val_ = l_->val_/r_->val_;
+    if (fabs(r_->val_) > DIV_BY_ZERO_TOL) {
+      val_ = l_->val_/r_->val_;
+    } else {
+      *error = 1;
+    }
     break;
   case (OpExp):
     val_ = exp(l_->val_);
@@ -804,6 +809,7 @@ FunctionType CNode::findFType()
 
 void CNode::fwdGrad()
 {
+  // TODO: check for errors.
   switch (op_) {
   case (OpAbs):
     if (l_->val_>1e-10) {
@@ -985,8 +991,12 @@ void CNode::grad(int *error)
     r_->g_ += g_*log(l_->val_)*val_;
     break;
   case (OpDiv):
-    l_->g_ += g_/r_->val_;
-    r_->g_ -= g_*l_->val_/(r_->val_*r_->val_);
+    if (fabs(r_->val_) > DIV_BY_ZERO_TOL) {
+      l_->g_ += g_/r_->val_;
+      r_->g_ -= g_*l_->val_/(r_->val_*r_->val_);
+    } else {
+      *error = 1;
+    }
     break;
   case (OpExp):
     l_->g_ += g_*val_; // val_ = e^(l_val_)
@@ -1040,7 +1050,11 @@ void CNode::grad(int *error)
     l_->g_ += 2.0*g_*l_->val_; 
     break;
   case (OpSqrt):
-    l_->g_ += g_*0.5/val_; // same as l_->g += g_*0.5/sqrt(l_->val_).
+    if (fabs(val_) > DIV_BY_ZERO_TOL) {
+      l_->g_ += g_*0.5/val_; // same as l_->g += g_*0.5/sqrt(l_->val_).
+    } else {
+      *error = 1;
+    }
     break;
   case (OpSumList):
     if (g_!=0.0) {
@@ -1126,10 +1140,14 @@ void CNode::hess(int *error)
             + g_*r_->gi_*log(l_->val_)*log(l_->val_)*val_;
     break;
   case (OpDiv):
-    l_->h_ += h_/r_->val_ - g_ * r_->gi_ /(r_->val_*r_->val_);
-    r_->h_ += -h_*l_->val_/(r_->val_*r_->val_) 
-            - g_ * l_->gi_ /(r_->val_*r_->val_)
-            + g_ * r_->gi_ * l_->val_ * 2.0 /(r_->val_*r_->val_*r_->val_);
+    if (fabs(r_->val_) > DIV_BY_ZERO_TOL) {
+      l_->h_ += h_/r_->val_ - g_ * r_->gi_ /(r_->val_*r_->val_);
+      r_->h_ += -h_*l_->val_/(r_->val_*r_->val_) 
+              - g_ * l_->gi_ /(r_->val_*r_->val_)
+              + g_ * r_->gi_ * l_->val_ * 2.0 /(r_->val_*r_->val_*r_->val_);
+    } else {
+      *error = 1;
+    }
     break;
   case (OpExp):
     l_->h_ += h_*val_ + g_ * l_->gi_ * val_;
@@ -1184,8 +1202,12 @@ void CNode::hess(int *error)
     l_->h_ += 2.0*h_*l_->val_ + g_ * 2.0 * l_->gi_;
     break;
   case (OpSqrt):
-    l_->h_ += h_*0.5/val_ - g_ * l_->gi_ * 0.25 /(val_ * l_->val_); 
-    // -1/4/x^1.5
+    if (fabs(val_) > DIV_BY_ZERO_TOL) {
+      l_->h_ += h_*0.5/val_ - g_ * l_->gi_ * 0.25 /(val_ * l_->val_); 
+      // -1/4/x^1.5
+    } else {
+      *error = 1;
+    }
     break;
   case (OpSumList):
     if (h_!=0.0) {
