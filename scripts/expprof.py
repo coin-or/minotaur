@@ -120,7 +120,7 @@ def dispTable(ss, rat_only):
 		print ""
 
 
-def gnuplot(solvers, opts):
+def gnuplot(solvers, ratsolved, opts):
 	# first write data file
 	df = tempfile.NamedTemporaryFile(delete=False)
 	writeTable(solvers,df)
@@ -135,6 +135,9 @@ def gnuplot(solvers, opts):
 	proc.stdin.write("set logscale x %f\n"%opts.logbase)
 	proc.stdin.write("set yrange [0:1]\n")
 	proc.stdin.write("set ytics 0.1\n")
+	proc.stdin.write("set xtics font \", 18\"\n")    # font size
+	proc.stdin.write("set ytics font \", 18\"\n")    # font size
+	proc.stdin.write("set key font \", 16\"\n")      # font size
 	proc.stdin.write("set format x \"%d^{%%L}\"\n"%opts.logbase)
 	proc.stdin.write("set arrow from 1,0 to 1,1 nohead lc rgb \'black\'\n")
 	if (opts.xdown>1e-10):
@@ -150,6 +153,8 @@ def gnuplot(solvers, opts):
 		proc.stdin.write("\"%s\" using %d:1 with steps lw 4 title \"%s\""%(df.name,i,s.name))
 		i+=1
 
+	# draw best possible solver line
+	proc.stdin.write(", %f w lines lw 4 title \"Best possible\"\n"%ratsolved)
 	proc.stdin.write("\nexit\n")
 	proc.wait()
 
@@ -157,6 +162,16 @@ def sortRatios(ss):
 	for s in ss:
 		s.ratios.sort()
 
+
+def ratSolved(ss):
+	# for each instance, check if some solver is able to solve it
+	cnt = 0.0;
+	for i in range(len(ss[0].vals)):
+		for s in ss:
+			if (s.vals[i] >= 0.0):
+				cnt = cnt+1.0
+				break
+	return cnt/len(ss[0].ratios)
 
 def readArgs(s, opts):
 	if (len(s)<2):
@@ -293,7 +308,8 @@ calcRatios(solvers)
 changeMinus(solvers, opts)
 sortRatios(solvers)
 if (opts.gnuplot==True):
-	gnuplot(solvers, opts)
+	rs = ratSolved(solvers)
+	gnuplot(solvers, rs, opts)
 else:
 	dispTable(solvers, 0)
 
