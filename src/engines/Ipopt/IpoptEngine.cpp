@@ -577,10 +577,12 @@ bool IpoptEngine::presolve_()
       }
     }
 
+   // sol_ must be set even if the problem is infeasible because QG handler
+   // may need this point for cut generation etc.
+    sol_->setPrimal(x); 
     if (vio>etol_) {
       status_ = ProvenLocalInfeasible;
     } else {
-      sol_->setPrimal(x);
       sol_->setObjValue(obj_value);
       mynlp_->setSolution(sol_);
       status_ = ProvenLocalOptimal;
