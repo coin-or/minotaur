@@ -624,8 +624,10 @@ void SimpleTransformer::reformulate(ProblemPtr &newp, HandlerVector &handlers,
   lHandler_->setPreOptPurgeVars(false);
   lHandler_->setPreOptPurgeCons(false);
   lHandler_->setPreOptDualFix(false);
+  lHandler_->setModFlags(true, true);
   handlers.push_back(lHandler_);
   qHandler_ = (QuadHandlerPtr) new QuadHandler(env_, newp_);
+  qHandler_->setModFlags(true, true);
   handlers.push_back(qHandler_);
   uHandler_ = (CxUnivarHandlerPtr) new CxUnivarHandler(env_, newp_);
   handlers.push_back(uHandler_);

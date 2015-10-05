@@ -712,12 +712,12 @@ bool QuadHandler::propBilBnds_(LinBil* lx0x1, bool *changed)
   } 
 
   // reverse
-  BoundsOnDiv(y->getLb(), y->getUb(), x0->getLb(), x0->getLb(), lb, ub);
+  BoundsOnDiv(y->getLb(), y->getUb(), x0->getLb(), x0->getUb(), lb, ub);
   if (updatePBounds_(x1, lb, ub, changed) < 0) {
     return true;
   } 
 
-  BoundsOnDiv(y->getLb(), y->getUb(), x1->getLb(), x1->getLb(), lb, ub);
+  BoundsOnDiv(y->getLb(), y->getUb(), x1->getLb(), x1->getUb(), lb, ub);
   if (updatePBounds_(x0, lb, ub, changed) < 0) {
     return true;
   } 
@@ -914,6 +914,11 @@ int QuadHandler::updatePBounds_(VariablePtr v, double lb, double ub,
                                 bool *changed)
 {
   if (ub < v->getLb() - aTol_ || lb > v->getUb() + aTol_) { 
+#if SPEW
+      logger_->msgStream(LogDebug2) << me_ << "inconsistent bounds of"
+                                    << v->getName() << " " << v->getLb()
+                                    << " " << v->getUb() << std::endl;
+#endif
     return -1;
   }
   
@@ -921,11 +926,19 @@ int QuadHandler::updatePBounds_(VariablePtr v, double lb, double ub,
     p_->changeBound(v, Upper, ub);
     *changed = true;
     ++pStats_.vBnd;
+#if SPEW
+      logger_->msgStream(LogDebug2) << me_ << "new ub of " << v->getName()
+                                    << " = " << v->getUb() << std::endl;
+#endif
   }
   if (lb > v->getLb() + aTol_) {
     p_->changeBound(v, Lower, lb);
     *changed = true;
     ++pStats_.vBnd;
+#if SPEW
+      logger_->msgStream(LogDebug2) << me_ << "new lb of " << v->getName()
+                                    << " = " << v->getLb() << std::endl;
+#endif
   }
 
   return 0;

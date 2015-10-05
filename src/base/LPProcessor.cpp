@@ -133,12 +133,12 @@ bool LPProcessor::presolveNode_(NodePtr node, SolutionPoolPtr s_pool)
     for (HandlerIterator h = handlers_.begin(); h != handlers_.end() 
          && false==is_inf; ++h) {
       is_inf = (*h)->presolveNode(relaxation_, node, s_pool, p_mods, r_mods);
-      for (ModificationConstIterator m_iter=p_mods.begin(); m_iter!=p_mods.end(); 
-           ++m_iter) {
+      for (ModificationConstIterator m_iter=p_mods.begin();
+           m_iter!=p_mods.end(); ++m_iter) {
         node->addPMod(*m_iter);
       }
-      for (ModificationConstIterator m_iter=r_mods.begin(); m_iter!=r_mods.end(); 
-           ++m_iter) {
+      for (ModificationConstIterator m_iter=r_mods.begin();
+           m_iter!=r_mods.end(); ++m_iter) {
         node->addRMod(*m_iter);
         // (*m_iter)->write(std::cout);
       }
