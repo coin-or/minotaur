@@ -1310,7 +1310,7 @@ void CNode::propBounds(bool *is_inf, int *error)
     // TODO: Implement me
     break;
   case (OpDiv):
-    BoundsOnProduct(r_->lb_, r_->ub_, lb_, ub_, lb, ub);
+    BoundsOnProduct(false, r_->lb_, r_->ub_, lb_, ub_, lb, ub);
     l_->propBounds_(lb, ub, is_inf);
     BoundsOnDiv(l_->lb_, l_->ub_, lb_, ub_, lb, ub);
     r_->propBounds_(lb, ub, is_inf);
@@ -1815,7 +1815,7 @@ void CNode::updateBnd(int *error)
     ub_ = l_->ub_ - r_->lb_;
     break;
   case (OpMult):
-    BoundsOnProduct(l_->lb_, l_->ub_, r_->lb_, r_->ub_, lb_, ub_);
+    BoundsOnProduct(true, l_->lb_, l_->ub_, r_->lb_, r_->ub_, lb_, ub_);
     break;
   case (OpNone):
     break;

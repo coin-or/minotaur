@@ -435,7 +435,7 @@ ModificationPtr QuadHandler::getBrMod(BrCandPtr cand, DoubleVector &x,
 
 std::string QuadHandler::getName() const
 {
-   return "QuadHandler (Handling quadratic terms of the form y=x1*x2).";
+  return "QuadHandler (Handling quadratic terms of the form y=x1*x2).";
 }
 
 
@@ -450,36 +450,40 @@ LinearFunctionPtr QuadHandler::getNewBilLf_(VariablePtr x0, double lb0,
   switch (type) {
   case(0):
     // y >= l0x1 + l1x0 - l1l0
+    assert(lb0 > -1e21 && lb1 > -1e21);
     lf->addTerm(x1, lb0);
     lf->addTerm(x0, lb1);
     lf->addTerm(y, -1.);
     rhs = lb0*lb1;
     break;
   case(1):
-     // y >= u0x1 + u1x0 - u1u0
-     lf->addTerm(x1, ub0);
-     lf->addTerm(x0, ub1);
-     lf->addTerm(y, -1.);
-     rhs = ub0*ub1;
-     break;
+    // y >= u0x1 + u1x0 - u1u0
+    assert(ub0 < 1e21 && ub1 < 1e21);
+    lf->addTerm(x1, ub0);
+    lf->addTerm(x0, ub1);
+    lf->addTerm(y, -1.);
+    rhs = ub0*ub1;
+    break;
   case(2):
-     // y <= u1x0 + l0x1 - l0u1
-     lf->addTerm(x0, -1.0*ub1);
-     lf->addTerm(x1, -1.0*lb0);
-     lf->addTerm(y, 1.);
-     rhs = -lb0*ub1;
-     break;
+    // y <= u1x0 + l0x1 - l0u1
+    assert(lb0 > -1e21 && ub1 < 1e21);
+    lf->addTerm(x0, -1.0*ub1);
+    lf->addTerm(x1, -1.0*lb0);
+    lf->addTerm(y, 1.);
+    rhs = -lb0*ub1;
+    break;
   case(3):
-     // y <= l1x0 + u0x1 - u0l1
-     lf->addTerm(x0, -1.0*lb1);
-     lf->addTerm(x1, -1.0*ub0);
-     lf->addTerm(y, 1.);
-     rhs = -ub0*lb1;
-     break;
+    // y <= l1x0 + u0x1 - u0l1
+    assert(ub0 < 1e21 && lb1 > -1e21);
+    lf->addTerm(x0, -1.0*lb1);
+    lf->addTerm(x1, -1.0*ub0);
+    lf->addTerm(y, 1.);
+    rhs = -ub0*lb1;
+    break;
 
   default:
-     assert(!"getNewBilLf_ called with wrong value of i");
-     break;
+    assert(!"getNewBilLf_ called with wrong value of i");
+    break;
   }
   return lf;
 }
@@ -672,7 +676,7 @@ bool QuadHandler::propBilBnds_(LinBil* lx0x1, RelaxationPtr rel,
   VarBoundMod2Ptr b2mod;
   VarBoundModPtr bmod;
 
-  BoundsOnProduct(x0, x1, lb, ub);
+  BoundsOnProduct(true, x0, x1, lb, ub);
   //x0->write(std::cout);
   //x1->write(std::cout);
   // y->write(std::cout);
@@ -682,12 +686,12 @@ bool QuadHandler::propBilBnds_(LinBil* lx0x1, RelaxationPtr rel,
   }
 
   // other direction
-  BoundsOnDiv(y->getLb(), y->getUb(), x0->getLb(), x0->getLb(), lb, ub);
+  BoundsOnDiv(y->getLb(), y->getUb(), x0->getLb(), x0->getUb(), lb, ub);
   if (updatePBounds_(x1, lb, ub, rel, mod_rel, changed, p_mods, r_mods)<0) {
     return true; // infeasible
   }
 
-  BoundsOnDiv(y->getLb(), y->getUb(), x0->getLb(), x0->getLb(), lb, ub);
+  BoundsOnDiv(y->getLb(), y->getUb(), x1->getLb(), x1->getUb(), lb, ub);
   if (updatePBounds_(x0, lb, ub, rel, mod_rel, changed, p_mods, r_mods)<0) {
     return true; // infeasible
   }
@@ -702,7 +706,7 @@ bool QuadHandler::propBilBnds_(LinBil* lx0x1, bool *changed)
   VariablePtr x1   = lx0x1->getX1();
   VariablePtr y    = lx0x1->getY();
 
-  BoundsOnProduct(x0, x1, lb, ub);
+  BoundsOnProduct(true, x0, x1, lb, ub);
   if (updatePBounds_(y, lb, ub, changed) < 0) {
     return true;
   } 
@@ -828,9 +832,8 @@ void QuadHandler::relax_(RelaxationPtr rel, bool *)
     (*it)->setCons(cons[0], cons[1], cons[2], cons[3]);
   }
 
-  //std::cout << "Writing the relaxation after quadratic relaxation:\n";
-  //rel->write(std::cout);
   assert(0 == rel->checkConVars());
+
   return;
 }
 

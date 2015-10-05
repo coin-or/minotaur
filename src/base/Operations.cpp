@@ -100,34 +100,53 @@ void Minotaur::symMatDotV(UInt nz, const double *mat, const UInt *irow,
 void Minotaur::BoundsOnDiv(double l0, double u0, double l1, double u1, 
                            double &lb, double &ub)
 {
-  BoundsOnRecip(l1, u1, l1, u1);
-  BoundsOnProduct(l0, u0, l1, u1, lb, ub);
+  double tl, tu;
+  BoundsOnRecip(l1, u1, tl, tu);
+  BoundsOnProduct(false, l0, u0, tl, tu, lb, ub);
 }
 
 
-void Minotaur::BoundsOnProduct(ConstVariablePtr x0, ConstVariablePtr x1,
-                               double &lb, double &ub)
+void Minotaur::BoundsOnProduct(bool zero_x_inf_zero, ConstVariablePtr x0,
+                               ConstVariablePtr x1, double &lb, double &ub)
 {
-  BoundsOnProduct(x0->getLb(), x0->getUb(), x1->getLb(), x1->getUb(), lb, ub);
+  BoundsOnProduct(zero_x_inf_zero, x0->getLb(), x0->getUb(), x1->getLb(),
+                  x1->getUb(), lb, ub);
 }
 
 
-void Minotaur::BoundsOnProduct(double l0, double u0, double l1, double u1, 
-                               double &lb, double &ub)
+void Minotaur::BoundsOnProduct(bool zero_x_inf_zero, double l0, double u0,
+                               double l1, double u1, double &lb, double &ub)
 {
 
   double prod;
 
-  if ((l1==-INFINITY && u1==INFINITY) || 
-     (l0==-INFINITY && u0==INFINITY)) {
+  // If l1=u1=0; exchange values of l0,l1 and u0,u1
+  // Saves effort on several cases we have to consider
+  if (fabs(l1)<=1e-10 && fabs(u1)<=1e-10) {
+    prod = l1; l1 = l0; l0 = prod;
+    prod = u1; u1 = u0; u0 = prod;
+  }
+
+  if (fabs(l0)<=1e-10 && fabs(u0)<=1e-10) {
+    if (true==zero_x_inf_zero) {
+      lb = 0.0;
+      ub = 0.0;
+    } else {
+      if (l1==-INFINITY) {
+        lb = -INFINITY;
+      } else {
+        lb = 0.0;
+      }
+      if (u1==INFINITY) {
+        ub = INFINITY;
+      } else {
+        ub = 0.0;
+      }
+    }
+  } else if ((l1==-INFINITY && u1==INFINITY) || 
+             (l0==-INFINITY && u0==INFINITY)) {
     lb = -INFINITY;
     ub =  INFINITY;
-  } else if (fabs(l0)<=1e-10 && fabs(u0)<=1e-10) {
-    lb = 0.0;
-    ub = 0.0;
-  } else if (fabs(l1)<=1e-10 && fabs(u1)<=1e-10) {
-    lb = 0.0;
-    ub = 0.0;
   } else {
     prod = l0*l1;
     if (std::isnan(prod)) {

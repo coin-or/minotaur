@@ -414,7 +414,7 @@ VariablePtr CxQuadHandler::addMcCormickUpper_(VariablePtr x0, VariablePtr x1,
     y = mcc->getAux();
   } else {
     // add a new bilinear term in our list
-    BoundsOnProduct(x0, x1, lb, ub);
+    BoundsOnProduct(true, x0, x1, lb, ub);
     y = rel->newVariable(lb, ub, Continuous);
   }
 
@@ -474,7 +474,7 @@ VariablePtr CxQuadHandler::addMcCormickLower_(VariablePtr x0, VariablePtr x1,
     y = mcc->getAux();
   } else {
     // add a new bilinear term in our list
-    BoundsOnProduct(x0, x1, lb, ub);
+    BoundsOnProduct(true, x0, x1, lb, ub);
     y = rel->newVariable(lb, ub, Continuous);
   }
 
@@ -758,7 +758,7 @@ ModificationPtr CxQuadHandler::getBrMod(BrCandPtr cand, DoubleVector &xval,
         lmod = (LinConModPtr) new LinConMod(mcc->getC3(), lf, -INFINITY, rhs);
         lmods->insert(lmod);
       }
-      BoundsOnProduct(lb, ub, x1->getLb(), x1->getUb(), lb1, ub1);
+      BoundsOnProduct(true, lb, ub, x1->getLb(), x1->getUb(), lb1, ub1);
       b2mod  = (VarBoundMod2Ptr) new VarBoundMod2(y, lb1, ub1);
       lmods->insert(b2mod);
     }
@@ -889,7 +889,7 @@ bool CxQuadHandler::presolveNode(RelaxationPtr rel, NodePtr, SolutionPoolPtr,
     x0 = mcc->getX0();
     x1 = mcc->getX1();
      y = mcc->getAux();
-    BoundsOnProduct(x0, x1, lb, ub);
+    BoundsOnProduct(true, x0, x1, lb, ub);
     if (lb>y->getLb()+eTol_ && ub<y->getUb()-eTol_) {
       b2mod  = (VarBoundMod2Ptr) new VarBoundMod2(y, lb, ub);
       r_mods.push_back(b2mod);

@@ -696,7 +696,7 @@ MultilinearHandler::makeGroupedConvexHull(RelaxationPtr relaxation, bool &should
             double ub = 0;
             for(VarIntMapConstIterator tit = (*mit)->termsBegin(); tit != (*mit)->termsEnd(); ++tit) {
               for(UInt i = 1; i <= tit->second; i++) {
-                BoundsOnProduct((tit->first)->getLb(), (tit->first)->getUb(), lb1, ub1, lb, ub);
+                BoundsOnProduct(true, (tit->first)->getLb(), (tit->first)->getUb(), lb1, ub1, lb, ub);
                 lb1 = lb;
                 ub1 = ub;
               }
@@ -840,7 +840,7 @@ MultilinearHandler::makeGroupedConvexHull(RelaxationPtr relaxation, bool &should
             // Make a copy of the variable
             double lb = 0.0;
             double ub = 0.0;
-            BoundsOnProduct(x1,x_1,lb,ub);
+            BoundsOnProduct(true, x1,x_1,lb,ub);
             y = relaxation->newVariable(lb, ub, Continuous);
             /*
             blterms_.insert(make_pair(y,ConstVariablePair(x1,x_1)));
@@ -870,7 +870,7 @@ MultilinearHandler::makeGroupedConvexHull(RelaxationPtr relaxation, bool &should
           //Bounds on product depend on whether variable bounds are < 0, > 0
           double lb = 0.0;
           double ub = 0.0;
-          BoundsOnProduct(x1,x2,lb,ub);
+          BoundsOnProduct(true, x1,x2,lb,ub);
         
           // look to see if w var already exists...
           std::map <ConstVariablePair, ConstVariablePtr>::iterator pos ;
@@ -1008,7 +1008,7 @@ MultilinearHandler::makeGroupedConvexHull(RelaxationPtr relaxation, bool &should
             // Make a copy of the variable
             double lb = 0.0;
             double ub = 0.0;
-            BoundsOnProduct(x1,x_1,lb,ub);
+            BoundsOnProduct(true, x1,x_1,lb,ub);
             y = relaxation->newVariable(lb, ub, Continuous);
             /*
             blterms_.insert(make_pair(y,ConstVariablePair(x1,x_1)));
@@ -1038,7 +1038,7 @@ MultilinearHandler::makeGroupedConvexHull(RelaxationPtr relaxation, bool &should
           //Bounds on product depend on whether variable bounds are < 0, > 0
           double lb = 0.0;
           double ub = 0.0;
-          BoundsOnProduct(x1,x2,lb,ub);
+          BoundsOnProduct(true, x1,x2,lb,ub);
         
           // look to see if w var already exists...
           std::map <ConstVariablePair, ConstVariablePtr>::iterator pos ;
@@ -1531,7 +1531,7 @@ MultilinearHandler::makeMcCormick(RelaxationPtr relaxation, bool &should_prune)
             double ub = 0;
             for(VarIntMapConstIterator tit = (*mit)->termsBegin(); tit != (*mit)->termsEnd(); ++tit) {
               for(UInt i = 1; i <= tit->second; i++) {
-                BoundsOnProduct((tit->first)->getLb(), (tit->first)->getUb(), lb1, ub1, lb, ub);
+                BoundsOnProduct(true, (tit->first)->getLb(), (tit->first)->getUb(), lb1, ub1, lb, ub);
                 lb1 = lb;
                 ub1 = ub;
               }
@@ -1635,7 +1635,7 @@ MultilinearHandler::makeMcCormick(RelaxationPtr relaxation, bool &should_prune)
             // Make a copy of the variable
             double lb = 0.0;
             double ub = 0.0;
-            BoundsOnProduct(x1,x_1,lb,ub);
+            BoundsOnProduct(true, x1,x_1,lb,ub);
             y = relaxation->newVariable(lb, ub, Continuous);
             blterms_.insert(make_pair(y,ConstVariablePair(x1,x_1)));
             //            blterms_coef_.insert(make_pair(ConstVariablePair(x1,x_1), it->second));
@@ -1662,7 +1662,7 @@ MultilinearHandler::makeMcCormick(RelaxationPtr relaxation, bool &should_prune)
           //Bounds on product depend on whether variable bounds are < 0, > 0
           double lb = 0.0;
           double ub = 0.0;
-          BoundsOnProduct(x1,x2,lb,ub);
+          BoundsOnProduct(true, x1,x2,lb,ub);
           
           // look to see if w var already exists...
           std::map <ConstVariablePair, ConstVariablePtr>::iterator pos ;
@@ -1818,7 +1818,7 @@ MultilinearHandler::makeMcCormick(RelaxationPtr relaxation, bool &should_prune)
       ConstVariablePtr x2 = (mlterms_it_->second)[i];
       double wl;
       double wu;
-      BoundsOnProduct(x1, x2, wl, wu);
+      BoundsOnProduct(true, x1, x2, wl, wu);
       w = relaxation->newVariable(wl, wu, Continuous); 
 
       LinearFunctionPtr lf1 = LinearFunctionPtr(new LinearFunction());

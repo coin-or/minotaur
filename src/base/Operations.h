@@ -31,13 +31,15 @@ namespace Minotaur {
   void BoundsOnDiv(double l0, double u0, double l1, double u1, 
                    double &lb, double &ub);
 
-  /// Get bounds on y, where \f$ y = x_0x_1 \f$.
-  void BoundsOnProduct(ConstVariablePtr x0, ConstVariablePtr x1,
-                       double &lb, double &ub);
+  /// Get bounds on y, where \f$ y = x_0x_1 \f$. If zero_x_inf_zero is true,
+  /// then  product of 0 and infinity is taken as zero.
+  void BoundsOnProduct(bool zero_x_inf_zero, ConstVariablePtr x0,
+                       ConstVariablePtr x1, double &lb, double &ub);
 
-  /// Get bounds on y, where \f$ y = x_0x_1 \f$.
-  void BoundsOnProduct(double l0, double u0, double l1, double u1, double &lb,
-                       double &ub);
+  /// Get bounds on y, where \f$ y = x_0x_1 \f$. If zero_x_inf_zero is true,
+  /// then  product of 0 and infinity is taken as zero.
+  void BoundsOnProduct(bool zero_x_inf_zero, double l0, double u0, double l1,
+                       double u1, double &lb, double &ub);
 
   void BoundsOnRecip(double l0, double u0, double &lb, double &ub);
 

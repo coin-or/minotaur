@@ -611,6 +611,7 @@ void SimpleTransformer::reformulate(ProblemPtr &newp, HandlerVector &handlers,
   yLfs_ = new YEqLFs(2*p_->getNumVars());
   yUniExprs_ = new YEqUCGs();
   yBiVars_ = new YEqCGs();
+  yVars_ = new YEqVars(p_->getNumVars()+40);
   copyVars_(p_, newp_);
 
   // create handlers.
