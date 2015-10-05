@@ -17,15 +17,14 @@
 #include "BranchAndBound.h"
 #include "EngineFactory.h"
 #include "Environment.h"
-#include "FilterSQPEngine.h"
+#include "IpoptEngine.h"
 #include "LinearHandler.h"
 #include "Logger.h"
 #include "LPEngine.h"
 #include "LPProcessor.h"
 #include "OsiLPEngine.h"
 #include "NodeIncRelaxer.h"
-#include "NLPEngine.h"
-#include "NLPMultiStart.h"
+#include "Objective.h"
 #include "Option.h"
 #include "Problem.h"
 #include "Presolver.h"
@@ -45,23 +44,30 @@ int main(int argc, char** argv)
   EnvPtr env = (EnvPtr) new Environment();
   HandlerVector handlers;
   int err = 0;
+  double objsense = 1.0;
   ProblemPtr p, newp;
 
   // Start timer and read the problem
   env->startTimer(err); assert(err==0);
   env->getOptions()->findBool("use_native_cgraph")->setValue(true);
+  env->getOptions()->findDouble("bnb_time_limit")->setValue(60);
+
   MINOTAUR_AMPL::AMPLInterface* iface =
     new MINOTAUR_AMPL::AMPLInterface(env, "s-glob");
   p = iface->readInstance(argv[1]);
   p->setNativeDer();
-
-  // create branch-and-bound object
-  BranchAndBound *bab = new BranchAndBound(env, p);
-  EnginePtr nlp_e = (FilterSQPEnginePtr) new FilterSQPEngine(env);
-  EnginePtr e = (OsiLPEnginePtr) new OsiLPEngine(env);
+  if (Maximize == p->getObjective()->getObjectiveType()) {
+    p->negateObj();
+    objsense = -1.0;
+  }
 
   SimpTranPtr trans = (SimpTranPtr) new SimpleTransformer(env, p);
   trans->reformulate(newp, handlers, err); assert(0==err);
+
+  // create branch-and-bound object
+  BranchAndBound *bab = new BranchAndBound(env, newp);
+  EnginePtr nlp_e = (IpoptEnginePtr) new IpoptEngine(env);
+  EnginePtr e = (OsiLPEnginePtr) new OsiLPEngine(env);
 
   PresolverPtr pres = (PresolverPtr) new Presolver(newp, env, handlers);
   pres->solve();
@@ -79,15 +85,18 @@ int main(int argc, char** argv)
   // node relaxer
   NodeIncRelaxerPtr nr = (NodeIncRelaxerPtr) new NodeIncRelaxer(env, handlers);
   nr->setEngine(e);
-  nr->setModFlag(false);
+  nr->setModFlag(true);
+  nr->setProblem(newp);
   bab->setNodeRelaxer(nr);
   bab->shouldCreateRoot(true);
 
   // start solving
   bab->solve();
   bab->writeStats(std::cout);
-  bab->getSolution()->writePrimal(std::cout);
-  std::cout << "best solution value = " << bab->getUb() << std::endl;
+  e->writeStats(std::cout);
+  std::cout << "best solution value = " << objsense*bab->getUb() << std::endl
+    << "status of branch-and-bound: "
+    << getSolveStatusString(bab->getStatus()) << std::endl;
 
   //finish
   delete iface;
