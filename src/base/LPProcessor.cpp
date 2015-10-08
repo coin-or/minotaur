@@ -47,6 +47,7 @@ LPProcessor::LPProcessor (EnvPtr env, EnginePtr engine, HandlerVector handlers)
   logger_ = (LoggerPtr) new Logger((LogLevel)env->getOptions()->
                                    findInt("node_processor_log_level")->
                                    getValue());
+  presFreq_ = env->getOptions()-> findInt("pres_freq")->getValue();
   stats_.bra = 0;
   stats_.inf = 0;
   stats_.opt = 0;
@@ -126,6 +127,9 @@ bool LPProcessor::presolveNode_(NodePtr node, SolutionPoolPtr s_pool)
   int max_iter = 1;
   bool cont = true;
 
+  if (presFreq_<1 || node->getId()%presFreq_!=0) {
+    return false;
+  } 
   // TODO: make this more sophisticated: loop several times until no more
   // changes are possible.
   for (it=0; it<max_iter && true==cont; ++it) {
@@ -220,7 +224,6 @@ void LPProcessor::process(NodePtr node, RelaxationPtr rel,
 #endif 
 
   // presolve
-
   should_prune = presolveNode_(node, s_pool);
   if (should_prune) {
     return;

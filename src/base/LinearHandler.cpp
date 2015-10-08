@@ -1485,16 +1485,11 @@ void LinearHandler::purgeVars_(PreModQ *pre_mods)
 }
 
 
-bool LinearHandler::presolveNode(RelaxationPtr rel, NodePtr node,
+bool LinearHandler::presolveNode(RelaxationPtr rel, NodePtr,
                                  SolutionPoolPtr spool, ModVector &p_mods,
                                  ModVector &r_mods)
 {
   SolveStatus status = Started;
-  if (false == pOpts_->doPresolve || 
-      (node->getDepth()>3 && node->getId()%5!=0)) {
-    return false;
-  }
-
   simplePresolve(rel, spool, r_mods, status);
   if (true==modProb_) {
     copyBndsFromRel_(rel, p_mods);

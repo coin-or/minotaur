@@ -112,6 +112,10 @@ namespace Minotaur {
       /// For logging.
       static const std::string me_;
 
+      /// How frequently should node-presolve be called? If 1, then call at
+      /// all nodes. If 0, then never. If 4, then every fourth node, etc.
+      int presFreq_;
+
       /// How many new solutions were found by the processor.
       UInt numSolutions_;
 

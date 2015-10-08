@@ -51,6 +51,7 @@ int main(int argc, char** argv)
   env->startTimer(err); assert(err==0);
   env->getOptions()->findBool("use_native_cgraph")->setValue(true);
   env->getOptions()->findDouble("bnb_time_limit")->setValue(60);
+  env->getOptions()->findInt("pres_freq")->setValue(1);
 
   MINOTAUR_AMPL::AMPLInterface* iface =
     new MINOTAUR_AMPL::AMPLInterface(env, "s-glob");

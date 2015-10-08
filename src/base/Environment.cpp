@@ -201,6 +201,10 @@ void Environment::createDefaultOptions_()
       1000000000);
   options_->insert(i_option);
 
+  i_option = (IntOptionPtr) new Option<int>("pres_freq", 
+      "Frequency of node-presolves in branch-and-bound", true, 5);
+  options_->insert(i_option);
+  
   i_option = (IntOptionPtr) new Option<int>("ampl_log_level", 
       "Verbosity of ampl interface: 0-6", true, LogInfo);
   options_->insert(i_option);
