@@ -685,8 +685,12 @@ void SimpleTransformer::uniVarRef_(const CNode *n0, LinearFunctionPtr lfl,
   int err = 0;
   if (lfl) {
     vl = newVar_(lfl, dl, newp_);
+    dl = 0.0;
   }
   if (vl) {
+    if (fabs(dl)>zTol_) {
+      vl = newVar_(vl, dl, newp_);
+    }
     CGraphPtr cg = (CGraphPtr) new CGraph();
     n1 = cg->newNode(vl);
     n2 = 0;
