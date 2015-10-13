@@ -54,6 +54,7 @@ const std::string QuadHandler::me_ = "QuadHandler: ";
 
 QuadHandler::QuadHandler(EnvPtr env, ProblemPtr problem)
 : aTol_(1e-5),
+  bTol_(1e-8),
   rTol_(1e-4)
 {
   p_ = problem; 
@@ -62,6 +63,7 @@ QuadHandler::QuadHandler(EnvPtr env, ProblemPtr problem)
   logger_  = (LoggerPtr) new Logger((LogLevel) 
                                     env->getOptions()->
                                     findInt("handler_log_level")->getValue());
+  //logger_  = (LoggerPtr) new Logger(LogDebug2);
   resetStats_();
   timer_ = env->getTimer();
 }
@@ -246,7 +248,7 @@ void QuadHandler::getBranchingCandidates(RelaxationPtr rel,
     x0val = x[x0->getIndex()];
     x1 = rel->getRelaxationVar(s_it->second->y);
     yval = x[x1->getIndex()];
-    if ((yval - x0val*x0val)/(fabs(yval)+1e-6)>1e-4) {
+    if (yval - x0val*x0val > fabs(yval)*rTol_ && yval - x0val*x0val > aTol_) {
 #if SPEW
       logger_->msgStream(LogDebug2) << std::setprecision(9) << me_ 
         << "branching candidate for x^2: " << s_it->first->getName()
@@ -338,19 +340,27 @@ void QuadHandler::getBranchingCandidates(RelaxationPtr rel,
          << " = " << x0val << " " << x1->getName() 
          << " = " << x1val << " " << bil->getY()->getName() 
          << " = " << yval  << " product = " << x0val*x1val << std::endl;
-        logger_->msgStream(LogDebug) << bil->getC0()->getActivity(&(x[0]),
+        logger_->msgStream(LogDebug) << std::endl
+                                     << bil->getC0()->getActivity(&(x[0]),
                                                                   &err) << " ";
         bil->getC0()->write(logger_->msgStream(LogDebug)); 
 
-        logger_->msgStream(LogDebug) << bil->getC1()->getActivity(&(x[0]),
+        logger_->msgStream(LogDebug) << std::endl
+                                     << bil->getC1()->getActivity(&(x[0]),
                                                                   &err) << " " ;
         bil->getC1()->write(logger_->msgStream(LogDebug));
-        logger_->msgStream(LogDebug) << bil->getC2()->getActivity(&(x[0]),
+        logger_->msgStream(LogDebug) << std::endl
+                                     << bil->getC2()->getActivity(&(x[0]),
                                                                   &err) << " " ;
         bil->getC2()->write(logger_->msgStream(LogDebug));
-        logger_->msgStream(LogDebug) << bil->getC3()->getActivity(&(x[0]),
+        logger_->msgStream(LogDebug) << std::endl
+                                     << bil->getC3()->getActivity(&(x[0]),
                                                                   &err) << " " ;
         bil->getC3()->write(logger_->msgStream(LogDebug));
+        logger_->msgStream(LogDebug) << std::endl;
+        x0->write(logger_->msgStream(LogDebug));
+        x1->write(logger_->msgStream(LogDebug));
+        bil->getY()->write(logger_->msgStream(LogDebug));
       }
     }
   }
@@ -375,7 +385,7 @@ ModificationPtr QuadHandler::getBrMod(BrCandPtr cand, DoubleVector &x,
       x0val  = x[it->first->getIndex()];
       yval = x[it->second->y->getIndex()];
       vio = x0val*x0val-yval;
-      if (vio > aTol_) {
+      if (vio > aTol_ && vio > fabs(yval)*rTol_) {
         x0 = rel->getRelaxationVar(it->first);
         y = rel->getRelaxationVar(it->second->y);
         if (dir==DownBranch) {
@@ -493,9 +503,11 @@ LinearFunctionPtr QuadHandler::getNewSqLf_(VariablePtr x, VariablePtr y,
                                            double lb, double ub, double & r)
 {
   LinearFunctionPtr lf = LinearFunctionPtr(); // NULL
+  double eps = 1e-5; // we do not want a coefficient smaller than this in our LP.
+
   r = -ub*lb;
   assert (lb > -1e21 && ub < 1e21); // Can't approximate when unbounded
-  if (fabs(ub+lb) > aTol_) {
+  if (fabs(ub+lb) > eps) {
     lf = (LinearFunctionPtr) new LinearFunction();
     lf->addTerm(y, 1.);
     lf->addTerm(x, -1.*(ub+lb));
@@ -547,9 +559,7 @@ bool QuadHandler::isAtBnds_(ConstVariablePtr x, double xval)
 {
   double lb = x->getLb();
   double ub = x->getUb();
-  //double rtol = rTol_/10.0;
-  return(fabs(xval-lb) < aTol_ || fabs(xval-ub) < aTol_);
-         // fabs(xval-lb) < fabs(lb)*rtol || fabs(ub-xval) < fabs(ub)*rtol);
+  return(fabs(xval-lb) < bTol_ || fabs(xval-ub) < bTol_);
 }
 
 
@@ -565,7 +575,7 @@ bool QuadHandler::isFeasible(ConstSolutionPtr sol, RelaxationPtr , bool &,
     xval  = x[it->first->getIndex()];
     yval = x[it->second->y->getIndex()];
     vio = fabs(yval - xval*xval);
-    if (vio/(fabs(yval) + 1e-6) > 1e-4 && vio > 1e-5) {
+    if (vio > fabs(yval)*rTol_ && vio > aTol_) {
       is_feas = false;
       inf_meas += vio;
     }
@@ -738,17 +748,17 @@ bool QuadHandler::propSqrBnds_(LinSqrMapIter lx2, bool *changed)
   } 
 
   // other direction.
-  if (y->getUb()>aTol_) {
+  if (y->getUb()>bTol_) {
     ub = sqrt(y->getUb());
     lb = -ub;
     assert(y->getLb()>=0.0); // square of a number.
-    if (x->getLb() > -sqrt(y->getLb())+aTol_) {
+    if (x->getLb() > -sqrt(y->getLb())+bTol_) {
       lb = sqrt(y->getLb());
     }
     if (updatePBounds_(x, lb, ub, changed) < 0) {
       return true;
     } 
-  } else if (y->getUb()<-aTol_) {
+  } else if (y->getUb()<-bTol_) {
     return true;
   } else {
     if (updatePBounds_(x, 0.0, 0.0, changed) < 0) {
@@ -778,17 +788,17 @@ bool QuadHandler::propSqrBnds_(LinSqrMapIter lx2, RelaxationPtr rel,
   }
 
   // other direction.
-  if (y->getUb()>aTol_) {
+  if (y->getUb()>bTol_) {
     ub = sqrt(y->getUb());
     lb = -ub;
     assert(y->getLb()>=0.0);
-    if (x->getLb() > -sqrt(y->getLb())+aTol_ ) {
+    if (x->getLb() > -sqrt(y->getLb())+bTol_) {
       lb = sqrt(y->getLb());
     }
     if (updatePBounds_(x, lb, ub, rel, mod_rel, changed, p_mods, r_mods)<0) {
       return true; // infeasible
     }
-  } else if (x->getUb()<-aTol_) {
+  } else if (x->getUb()<-bTol_) {
     return true; // infeasible
   } else {
     if (updatePBounds_(x, 0.0, 0.0, rel, mod_rel, changed, p_mods, r_mods)<0) {
@@ -890,8 +900,8 @@ void QuadHandler::separate(ConstSolutionPtr sol, NodePtr , RelaxationPtr rel,
   for (LinSqrMapIter it=x2Funs_.begin(); it != x2Funs_.end(); ++it) {
     xval = x[it->first->getIndex()];
     yval = x[it->second->y->getIndex()];
-    if (xval*xval > (1.0+1e-4)*fabs(yval) &&
-       fabs(xval*xval-yval) > 1e-5) {
+    if (xval*xval - yval > rTol_*fabs(yval) &&
+       fabs(xval*xval-yval) > aTol_) {
 #if SPEW
       logger_->msgStream(LogDebug2) << me_ << "xval = " << xval
                                     << " yval = " << yval << " violation = "
@@ -913,7 +923,7 @@ void QuadHandler::separate(ConstSolutionPtr sol, NodePtr , RelaxationPtr rel,
 int QuadHandler::updatePBounds_(VariablePtr v, double lb, double ub,
                                 bool *changed)
 {
-  if (ub < v->getLb() - aTol_ || lb > v->getUb() + aTol_) { 
+  if (ub < v->getLb() - bTol_ || lb > v->getUb() + bTol_) { 
 #if SPEW
       logger_->msgStream(LogDebug2) << me_ << "inconsistent bounds of"
                                     << v->getName() << " " << v->getLb()
@@ -922,7 +932,8 @@ int QuadHandler::updatePBounds_(VariablePtr v, double lb, double ub,
     return -1;
   }
   
-  if (ub < v->getUb() - aTol_) {
+  if (ub < v->getUb() - bTol_ && (v->getUb() == INFINITY ||
+                                  ub < v->getUb()-fabs(v->getUb())*rTol_)) {
     p_->changeBound(v, Upper, ub);
     *changed = true;
     ++pStats_.vBnd;
@@ -931,7 +942,8 @@ int QuadHandler::updatePBounds_(VariablePtr v, double lb, double ub,
                                     << " = " << v->getUb() << std::endl;
 #endif
   }
-  if (lb > v->getLb() + aTol_) {
+  if (lb > v->getLb() + aTol_ && (v->getLb() == -INFINITY ||
+                                  lb > v->getLb()+fabs(v->getLb())*rTol_)) {
     p_->changeBound(v, Lower, lb);
     *changed = true;
     ++pStats_.vBnd;
@@ -953,11 +965,13 @@ int QuadHandler::updatePBounds_(VariablePtr v, double lb, double ub,
   VarBoundMod2Ptr b2mod;
   VarBoundModPtr bmod;
 
-  if (lb > v->getUb()+aTol_ || ub < v->getLb()-aTol_) {
+  if (lb > v->getUb()+bTol_ || ub < v->getLb()-bTol_) {
     return -1;
   }
 
-  if (lb > v->getLb()+aTol_ && ub < v->getUb()-aTol_) {
+  if (lb > v->getLb()+bTol_ && ub < v->getUb()-bTol_ &&
+      (v->getLb() == -INFINITY || lb > v->getLb()+rTol_*fabs(v->getLb())) &&
+      (v->getUb() ==  INFINITY || ub < v->getUb()-rTol_*fabs(v->getUb()))) {
     *changed = true;
     ++pStats_.vBnd;
     b2mod  = (VarBoundMod2Ptr) new VarBoundMod2(v, lb, ub);
@@ -970,7 +984,8 @@ int QuadHandler::updatePBounds_(VariablePtr v, double lb, double ub,
       b2mod->applyToProblem(rel);
       r_mods.push_back(b2mod);
     }
-  } else if (lb > v->getLb()+aTol_) {
+  } else if (lb > v->getLb()+bTol_ && 
+             (v->getLb()==-INFINITY || lb>v->getLb()+rTol_*fabs(v->getLb()))) {
     ++pStats_.vBnd;
     *changed = true;
     bmod  = (VarBoundModPtr) new VarBoundMod(v, Lower, lb);
@@ -983,7 +998,8 @@ int QuadHandler::updatePBounds_(VariablePtr v, double lb, double ub,
       bmod->applyToProblem(rel);
       r_mods.push_back(bmod);
     }
-  } else if (ub < v->getUb()-aTol_) {
+  } else if (ub < v->getUb()-bTol_ &&
+             (v->getUb()== INFINITY || ub<v->getUb()-rTol_*fabs(v->getUb()))) {
     ++pStats_.vBnd;
     *changed = true;
     bmod  = (VarBoundModPtr) new VarBoundMod(v, Upper, ub);
@@ -1016,31 +1032,32 @@ void QuadHandler::upBilCon_(LinBil* lx0x1, RelaxationPtr rel, ModVector
   double u1 = x1->getUb();
   double a0, a1;
   double rhs;
+  double eps = aTol_/10.0;
   ConstraintPtr con;
 
   // all constraints in the relaxation are of (<= rhs) type.
-  // y >= l1x0 + l0x1 - l1l0: binding at (l0, l1), (l0, u1), (u0,l1)
+  // y >= l1x0 + l0x1 - l1l0: binding at (l0, l1), (l0, u1), (u0, l1)
   con = lx0x1->getC0();
   lf = con->getLinearFunction();
   a0 = lf->getWeight(x0);
   a1 = lf->getWeight(x1);
-  if (a0*l0 + a1*l1 - l0*l1 < con->getUb() - aTol_ ||
-      a0*l0 + a1*u1 - l0*u1 < con->getUb() - aTol_ || 
-      a0*u0 + a1*l1 - u0*l1 < con->getUb() - aTol_) {
+  if (a0*l0 + a1*l1 - l0*l1 < con->getUb() - eps ||
+      a0*l0 + a1*u1 - l0*u1 < con->getUb() - eps || 
+      a0*u0 + a1*l1 - u0*l1 < con->getUb() - eps) {
     lf = getNewBilLf_(x0, l0, u0, x1, l1, u1, y, 0, rhs);
     lmod = (LinConModPtr) new LinConMod(con, lf, -INFINITY, rhs);
     lmod->applyToProblem(rel);
     r_mods.push_back(lmod);
   }
 
-  // y >= u0x1 + u1x0 - u1u0: binding at (l0, u1), (u0, l1), (u0, u1)
+  // y >= u1x0 + u0x1 - u1u0: binding at (l0, u1), (u0, l1), (u0, u1)
   con = lx0x1->getC1();
   lf = con->getLinearFunction();
   a0 = lf->getWeight(x0);
   a1 = lf->getWeight(x1);
-  if (a0*l0 + a1*u1 - l0*u1 < con->getUb() - aTol_ ||
-      a0*u0 + a1*l1 - u0*l1 < con->getUb() - aTol_ || 
-      a0*u0 + a1*u1 - u0*u1 < con->getUb() - aTol_) {
+  if (a0*l0 + a1*u1 - l0*u1 < con->getUb() - eps ||
+      a0*u0 + a1*l1 - u0*l1 < con->getUb() - eps || 
+      a0*u0 + a1*u1 - u0*u1 < con->getUb() - eps) {
     lf = getNewBilLf_(x0, l0, u0, x1, l1, u1, y, 1, rhs);
     lmod = (LinConModPtr) new LinConMod(con, lf, -INFINITY, rhs);
     lmod->applyToProblem(rel);
@@ -1048,14 +1065,14 @@ void QuadHandler::upBilCon_(LinBil* lx0x1, RelaxationPtr rel, ModVector
   }
 
 
-  // y <= u1x0 + l0x1 - l0u1: binding at (l0, 11), (l0, u1), (u0, u1)
+  // y <= u1x0 + l0x1 - l0u1: binding at (l0, l1), (l0, u1), (u0, u1)
   con = lx0x1->getC2();
   lf = con->getLinearFunction();
   a0 = lf->getWeight(x0);
   a1 = lf->getWeight(x1);
-  if (a0*l0 + a1*l1 + l0*l1 < con->getUb() - aTol_ ||
-      a0*l0 + a1*u1 + l0*u1 < con->getUb() - aTol_ || 
-      a0*u0 + a1*u1 + u0*u1 < con->getUb() - aTol_) {
+  if (a0*l0 + a1*l1 + l0*l1 < con->getUb() - eps ||
+      a0*l0 + a1*u1 + l0*u1 < con->getUb() - eps || 
+      a0*u0 + a1*u1 + u0*u1 < con->getUb() - eps) {
     lf = getNewBilLf_(x0, l0, u0, x1, l1, u1, y, 2, rhs);
     lmod = (LinConModPtr) new LinConMod(con, lf, -INFINITY, rhs);
     lmod->applyToProblem(rel);
@@ -1067,9 +1084,9 @@ void QuadHandler::upBilCon_(LinBil* lx0x1, RelaxationPtr rel, ModVector
   lf = con->getLinearFunction();
   a0 = lf->getWeight(x0);
   a1 = lf->getWeight(x1);
-  if (a0*l0 + a1*l1 + l0*l1 < con->getUb() - aTol_ ||
-      a0*u0 + a1*l1 + u0*l1 < con->getUb() - aTol_ || 
-      a0*u0 + a1*u1 + u0*u1 < con->getUb() - aTol_) {
+  if (a0*l0 + a1*l1 + l0*l1 < con->getUb() - eps ||
+      a0*u0 + a1*l1 + u0*l1 < con->getUb() - eps || 
+      a0*u0 + a1*u1 + u0*u1 < con->getUb() - eps) {
     lf = getNewBilLf_(x0, l0, u0, x1, l1, u1, y, 3, rhs);
     lmod = (LinConModPtr) new LinConMod(con, lf, -INFINITY, rhs);
     lmod->applyToProblem(rel);
@@ -1087,11 +1104,12 @@ void QuadHandler::upSqCon_(ConstraintPtr con, VariablePtr x, VariablePtr y,
   double ub = x->getUb();
   LinConModPtr lmod;
   double rhs;
+  double eps = aTol_/10.0;
 
   assert(fabs(lf->getWeight(y) - 1.0) <= 1e-8);
   // y - (lb+ub)x <= -ub*lb
-  if ((lb*lb + a_x*lb < con->getUb() - aTol_) ||
-      (ub*ub + a_x*ub < con->getUb() - aTol_)) {
+  if ((lb*lb + a_x*lb < con->getUb() - eps) ||
+      (ub*ub + a_x*ub < con->getUb() - eps)) {
     lf = getNewSqLf_(x, y, x->getLb(), x->getUb(), rhs);
     lmod = (LinConModPtr) new LinConMod(con, lf, -INFINITY, rhs);
     lmod->applyToProblem(rel);

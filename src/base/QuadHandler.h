@@ -131,6 +131,9 @@ private:
   /// Absolute feasibility tolerance
   double aTol_;
 
+  /// Update bounds if they can be improved by at least this quantity
+  double bTol_;
+
   /// Logger.
   LoggerPtr logger_;
       
