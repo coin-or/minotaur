@@ -23,6 +23,7 @@
 #include "LPEngine.h"
 #include "LPProcessor.h"
 #include "OsiLPEngine.h"
+#include "MaxVioBrancher.h"
 #include "NodeIncRelaxer.h"
 #include "Objective.h"
 #include "Option.h"
@@ -50,7 +51,7 @@ int main(int argc, char** argv)
   // Start timer and read the problem
   env->startTimer(err); assert(err==0);
   env->getOptions()->findBool("use_native_cgraph")->setValue(true);
-  env->getOptions()->findDouble("bnb_time_limit")->setValue(60);
+  env->getOptions()->findDouble("bnb_time_limit")->setValue(600);
   env->getOptions()->findInt("pres_freq")->setValue(1);
 
   MINOTAUR_AMPL::AMPLInterface* iface =
@@ -74,13 +75,13 @@ int main(int argc, char** argv)
   pres->solve();
   
   // brancher
-  ReliabilityBrancherPtr rel_br = (ReliabilityBrancherPtr) new
-                                  ReliabilityBrancher(env, handlers);
-  rel_br->setEngine(e);
+  MaxVioBrancherPtr m_br = (MaxVioBrancherPtr) new
+                                  MaxVioBrancher(env, handlers);
+  //rel_br->setEngine(e);
 
   // node processor
   NodeProcessorPtr nproc = (LPProcessorPtr) new LPProcessor(env, e, handlers);
-  nproc->setBrancher(rel_br);
+  nproc->setBrancher(m_br);
   bab->setNodeProcessor(nproc);
 
   // node relaxer
