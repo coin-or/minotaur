@@ -457,6 +457,14 @@ LinearFunctionPtr QuadHandler::getNewBilLf_(VariablePtr x0, double lb0,
 {
   LinearFunctionPtr lf = (LinearFunctionPtr) new LinearFunction();
 
+  if (lb0 < -1e12 || lb1 < -1e12 || ub0 > 1e12 || ub1 > 1e12) {
+    logger_->errStream() << "can not relax " << x0->getName() << "*"
+                         << x1->getName() << " = " << y->getName() 
+                         << "because the bounds on variables are too weak"
+                         << std::endl;
+    exit(500);
+  }
+
   switch (type) {
   case(0):
     // y >= l0x1 + l1x0 - l1l0
@@ -506,7 +514,13 @@ LinearFunctionPtr QuadHandler::getNewSqLf_(VariablePtr x, VariablePtr y,
   double eps = 1e-5; // we do not want a coefficient smaller than this in our LP.
 
   r = -ub*lb;
-  assert (lb > -1e21 && ub < 1e21); // Can't approximate when unbounded
+  if (lb < -1e12 || ub > 1e12) {
+    logger_->errStream() << "can not relax " << y->getName() << "="
+                         << x->getName() << "^2, "
+                         << "because the bounds on latter are too weak"
+                         << std::endl;
+    exit(500);
+  }
   if (fabs(ub+lb) > eps) {
     lf = (LinearFunctionPtr) new LinearFunction();
     lf->addTerm(y, 1.);
