@@ -144,11 +144,12 @@ int transform(EnvPtr env, ProblemPtr p, ProblemPtr &newp,
   trans = (SimpTranPtr) new SimpleTransformer(env, p);
   trans->reformulate(newp, handlers, status);
   
-  env->getLogger()->errStream() << me 
+  env->getLogger()->msgStream(LogInfo) << me 
     << "handlers used in transformer: " << std::endl;
   for (HandlerVector::iterator it=handlers.begin(); it!=handlers.end();
        ++it) {
-    env->getLogger()->errStream() << "  " << (*it)->getName() << std::endl;
+    env->getLogger()->msgStream(LogInfo) << "  " << (*it)->getName()
+                                         << std::endl;
   }
   return status;
 }
@@ -208,7 +209,8 @@ BranchAndBound * createBab (EnvPtr env, ProblemPtr p, EnginePtr e,
   bab->setNodeRelaxer(nr);
   bab->shouldCreateRoot(true);
 
-  if (env->getOptions()->findBool("msheur")->getValue() == true) {
+  if (env->getOptions()->findBool("msheur")->getValue() == true && 
+      (p->getSize()->bins == 0 && p->getSize()->ints == 0)) {
     EnginePtr nlp_e = getNLPEngine(env);
     p->setNativeDer();
     NLPMSPtr ms_heur = (NLPMSPtr) new NLPMultiStart(env, p, nlp_e);

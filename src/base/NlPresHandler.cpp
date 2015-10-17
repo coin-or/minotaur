@@ -281,15 +281,17 @@ void NlPresHandler::bin2LinF_(ProblemPtr p, LinearFunctionPtr lf,
         f = (FunctionPtr) new Function(lf3);
         p->newConstraint(f, -INFINITY, v1->getUb());
 
+        // v3 - ub*v2 <= 0
         lf3 = (LinearFunctionPtr) new LinearFunction();
         lf3->addTerm(v3, 1.0);
         lf3->addTerm(v2, -v1->getUb());
         f = (FunctionPtr) new Function(lf3);
         p->newConstraint(f, -INFINITY, 0);
 
+        // v3 - lb*v2 >= 0 ... -v3 + lb*v2 <= 0
         lf3 = (LinearFunctionPtr) new LinearFunction();
         lf3->addTerm(v3, -1.0);
-        lf3->addTerm(v2, v1->getUb());
+        lf3->addTerm(v2, v1->getLb());
         f = (FunctionPtr) new Function(lf3);
         p->newConstraint(f, -INFINITY, 0);
 
