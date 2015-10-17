@@ -376,9 +376,16 @@ void  NlPresHandler::bin2Lin_(ProblemPtr p, PreModQ *mods, bool *changed)
       mult[c->getIndex()] = 0.0;
       if (canBin2Lin_(p, nz, irow, jcol, values)) {
         lf = f->getLinearFunction();
+        if (!lf) {
+          lf = (LinearFunctionPtr) new LinearFunction();
+        }
         bin2LinF_(p, lf, nz, irow, jcol, values, mod);
-        f = (FunctionPtr) new Function(lf);
-        p->newConstraint(f, c->getLb(), c->getUb());
+        if (lf->getNumTerms()>0) {
+          f = (FunctionPtr) new Function(lf);
+          p->newConstraint(f, c->getLb(), c->getUb());
+        } else {
+          lf.reset();
+        }
         p->markDelete(c);
         *changed = true;
         cit = p->consBegin()+c->getIndex();

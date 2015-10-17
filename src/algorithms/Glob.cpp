@@ -419,6 +419,8 @@ int main(int argc, char** argv)
 
   // read user-specified options
   env->readOptions(argc, argv);
+  // any other value not allowed
+  env->getOptions()->findInt("pres_freq")->setValue(1); 
 
   if (0!=showInfo(env)) {
     goto CLEANUP;
