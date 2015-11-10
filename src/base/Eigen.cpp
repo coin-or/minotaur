@@ -4,6 +4,13 @@
 //     (C)opyright 2008 - 2014 The MINOTAUR Team.
 // 
 
+/**
+ * \file Eigen.cpp
+ * \brief Define class Eigen for computing eigen values and vectors of a
+ * matrix.
+ * \author Ashutosh Mahajan, IIT Bombay
+ */
+
 #include <cmath>
 #include <iostream>
 
@@ -53,6 +60,35 @@ EigenPtr EigenCalculator::findValues(ConstQuadraticFunctionPtr qf)
     vars_.clear();
     indices_.clear();
   }
+  return ePtr;
+}
+
+EigenPtr EigenCalculator::findValues(int n, double** H)
+{
+  EigenPtr ePtr = EigenPtr(); // NULL
+  n_ = n;
+  A_ = new double [n_*n_];
+  std::fill(A_, A_+(n_*n_), 0);
+  indices_.clear();
+  vars_.clear();
+
+  // visit each term in qf and populate A_
+  for (int row=0; row<n; ++row) {
+    for (int col=0; col<=row; ++col) {
+      A_[row+col*n_] += H[row][col];
+    }
+  }
+  findVectors_ = 'N'; // N for eigen values only, V for values and vectors.
+  w_ = new double[n_];
+  z_ = 0; 
+  isuppz_ = 0;
+
+  calculate_();
+  ePtr = getEigen_();
+  delete [] w_;
+  delete [] A_;
+  vars_.clear();
+  indices_.clear();
   return ePtr;
 }
 
@@ -242,7 +278,7 @@ void EigenCalculator::calculate_()
                     // U for upper.
   int lda = n_;     // The leading dimension of A, lda >= max(1,n)
   int vl=0, vu=0;   // Not used when range='A'
-  int il=0, iu=0;   // Not used when ='A'
+  int il=0, iu=0;   // Not used when range ='A'
   int n=n_;
   int ldz = 1;      // The leading dimension of the array z_.
   double *work;     // Work space.

@@ -4,6 +4,13 @@
 //     (C)opyright 2008 - 2014 The MINOTAUR Team.
 // 
 
+/**
+ * \file Eigen.h
+ * \brief Declare methods and data structures of Eigen class for computing
+ * eigen values and vectors of a matrix.
+ * \author Ashutosh Mahajan, IIT Bombay
+ */
+
 
 #ifndef MINOTAUREIGEN_H
 #define MINOTAUREIGEN_H
@@ -63,24 +70,20 @@ namespace Minotaur {
   class EigenCalculator {
   public:
 
-    // /**
-    // Construct using a quadratic function.
-    // */
+    /// Default constructor
     EigenCalculator();
 
-    // /**
-    // Destroy
-    // */
+    /// Destroy
     ~EigenCalculator() {};
 
-    // /**
-    // Calculate EigenValues only
-    // */
+    /// Calculate EigenValues only
     EigenPtr findValues(ConstQuadraticFunctionPtr qf);
 
-    // /**
-    // Calculate EigenVectors as well
-    // */
+    /// Calculate EigenValues for a full dense matrix. H is a square symmetric
+    /// array of arrays. Its size is nxn.
+    EigenPtr findValues(int n, double** H);
+
+    /// Calculate EigenVectors as well
     EigenPtr findVectors(ConstQuadraticFunctionPtr qf); 
 
     // /**
@@ -105,47 +108,41 @@ namespace Minotaur {
                           std::vector<double> & p_const,
                           std::vector<double> & n_const,
                           LinearFunctionPtr & lin_terms, double & c,
-                          ConstQuadraticFunctionPtr qf, ConstLinearFunctionPtr lf);
+                          ConstQuadraticFunctionPtr qf,
+                          ConstLinearFunctionPtr lf);
 
   private:
 
-    // /**
-    // The quadratic function for whose Hessian we wish to find the eigen values.
-    // */
+    /**
+    \brief The quadratic function for whose Hessian we wish to find the eigen
+    values.
+    */
     ConstQuadraticFunctionPtr qf_;
 
-    // /**
-    // Dimension of the square matrix
-    // */
+    /// Dimension of the square matrix
     UInt n_;
 
-    // /**
-    // The square matrix is stored as a single array. The element A[i,j] can
-    // be accessed at A_[i+j*n_]. And element A_[i] = A[i mod n_, i/n_].
-    // */
+    /**
+    \brief The square matrix is stored as a single array. The element A[i,j]
+    can be accessed at A_[i+j*n_]. And element A_[i] = A[i mod n_, i/n_].
+    */
     double *A_;
 
-    // /**
-    // Number of eigen values found.
-    // */
+    /// Number of eigen values found.
     int m_;
 
-    // /**
-    // The absolute error tolerance for the eigenvalues.  An approximate
-    // eigenvalue is accepted as converged when it is determined to lie in an
-    // interval [a,b] of width less than or equal to 
-    // ABSTOL + EPS *   max(|a|,|b|)
-    // */
+    /**
+    The absolute error tolerance for the eigenvalues.  An approximate
+    eigenvalue is accepted as converged when it is determined to lie in an
+    interval [a,b] of width less than or equal to 
+    ABSTOL + EPS *   max(|a|,|b|)
+    */
     double abstol_;
 
-    // /**
-    // N for eigen values only, V for values and vectors.
-    // */
+    /// N for eigen values only, V for values and vectors.
     char findVectors_; 
 
-    // /**
-    // Array where the eigen vectors are stored by LAPACK.
-    // */
+    /// Array where the eigen vectors are stored by LAPACK.
     double *w_;
 
     // /**
@@ -165,107 +162,75 @@ namespace Minotaur {
     // */
     int *isuppz_;    
 
-    // /**
-    // A map of what is the  index in matrix A_ of a variable
-    // */
+    /// A map of what is the  index in matrix A_ of a variable
     std::map<ConstVariablePtr, UInt, CompareVariablePtr> indices_;
 
-    // /**
-    // What variable does column 'i' of matrix A_ represent. 
-    // */
+    /// What variable does column 'i' of matrix A_ represent. 
     std::vector<ConstVariablePtr> vars_;
 
-    // /**
-    // Dot product of coefficients of two linear functions
-    // */
+    /// Dot product of coefficients of two linear functions
     double getDotProduct_(ConstLinearFunctionPtr lf1, 
                           ConstLinearFunctionPtr lf2);
 
-    // /**
-    // Call lapack routines to calculate the values.
-    // */
+    /// Call Lapack routines to calculate the values.
     void calculate_();
 
-    // /**
-    // Allocate the A_ matrix and fill in the values from the quadratic
-    // function qf.
-    // */
+    /**
+    \brief Allocate the A_ matrix and fill in the values from the quadratic
+    function qf.
+    */
     void fillA_();
 
-    // /**
-    // Get eigen values and (if calculated) eigen vectors from the
-    // calculator.
-    // */
+    /**
+    \brief Get eigen values and (if calculated) eigen vectors from the
+    calculator.
+    */
     EigenPtr getEigen_();
 
-    // /**
-    // Construct a linear function based on the eigen vectors of A_.
-    // */
+    /// Construct a linear function based on the eigen vectors of A_.
     LinearFunctionPtr getLinearFunction_(const int i);
   };
 
   class Eigen {
   public:
-    // /**
-    // Default constructor
-    // */
+    /// Default constructor
     Eigen();
 
-    // /**
-    // Add an eigen value and an eigen vector to the current list.
-    // */
+    /// Add an eigen value and an eigen vector to the current list.
     void add(double value, LinearFunctionPtr e_vector);
 
-    // /**
-    // Get the number of negative eigen values
-    // */
+    /// Get the number of negative eigen values
     UInt numNegative() const;
 
-    // /**
-    // Get the number of zero eigen values
-    // */
+    /// Get the number of zero eigen values
     UInt numZero() const;
 
-    // /**
-    // Get the number of positive eigen values
-    // */
+    /// Get the number of positive eigen values
     UInt numPositive() const;
 
-    // /**
-    // Get the first evPair
-    // */
+    /// Get the first evPair
     EigenPairConstIterator begin() const;
 
-    // /**
-    // Get the last evPair
-    // */
+    /// Get the last evPair
     EigenPairConstIterator end() const;
 
-    // /**
-    // Display the values and the vectors.
-    // */
+    /// Display the values and the vectors.
     void write(std::ostream &s) const;
 
   private:
-    // /**
-    // Each item in this vector is a pair of an eigen value and the
-    // corresponding vector.
-    // */
+    /**
+    \brief Each item in this vector is a pair of an eigen value and the
+    corresponding vector.
+    */
     std::vector<EigenPair> evPairs_;
 
-    // /**
-    // Number of negative eigen values.
-    // */
+    /// Number of negative eigen values.
     UInt neg_;
 
-    // /**
-    // Number of eigen values that are zero.
-    // */
+    /// Number of eigen values that are zero.
     UInt zero_;
 
-    // /**
-    // Number of positive eigen values.
-    // */
+    /// Number of positive eigen values.
     UInt pos_;
   };
 
