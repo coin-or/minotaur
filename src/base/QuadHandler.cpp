@@ -991,6 +991,9 @@ int QuadHandler::updatePBounds_(VariablePtr v, double lb, double ub,
     b2mod  = (VarBoundMod2Ptr) new VarBoundMod2(v, lb, ub);
     b2mod->applyToProblem(p_);
     p_mods.push_back(b2mod);
+#if SPEW
+    b2mod->write(logger_->msgStream(LogDebug2));
+#endif 
 
     if (true == mod_rel) {
       b2mod = (VarBoundMod2Ptr)
@@ -1005,6 +1008,9 @@ int QuadHandler::updatePBounds_(VariablePtr v, double lb, double ub,
     bmod  = (VarBoundModPtr) new VarBoundMod(v, Lower, lb);
     bmod->applyToProblem(p_);
     p_mods.push_back(bmod);
+#if SPEW
+    bmod->write(logger_->msgStream(LogDebug2));
+#endif 
 
     if (true == mod_rel) {
       bmod = (VarBoundModPtr)
@@ -1019,6 +1025,9 @@ int QuadHandler::updatePBounds_(VariablePtr v, double lb, double ub,
     bmod  = (VarBoundModPtr) new VarBoundMod(v, Upper, ub);
     bmod->applyToProblem(p_);
     p_mods.push_back(bmod);
+#if SPEW
+    bmod->write(logger_->msgStream(LogDebug2));
+#endif 
     
     if (true == mod_rel) {
       bmod  = (VarBoundModPtr)
