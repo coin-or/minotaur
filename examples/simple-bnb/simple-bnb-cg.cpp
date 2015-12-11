@@ -5,8 +5,9 @@
 //
 
 /**
- * \file simple-bnb.cpp
- * \brief Example of a very simple branch-and-bound.
+ * \file simple-bnb-cg.cpp
+ * \brief Example of a very simple branch-and-bound. CGraph class is used to
+ * store the nonlinear functions.
  * \author Ashutosh Mahajan, IIT Bombay
  */
 
@@ -30,7 +31,6 @@
 #include "ReliabilityBrancher.h"
 #include "Solution.h"
 #include "Timer.h"
-#include "TreeManager.h"
 
 using namespace Minotaur;
 

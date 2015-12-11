@@ -4,8 +4,8 @@ CXX = g++
 CXXFLAGS = -O3
 LD_ADD = -llapack -lblas -lgfortran -ldl
 
-MINOTAUR_INCDIR = ../../run-156/include/minotaur
-MINOTAUR_LIBDIR = ../../run-156/lib
+MINOTAUR_INCDIR = ../../run-162/include/minotaur
+MINOTAUR_LIBDIR = ../../run-162/lib
 
 BOOST_INCDIR = /home/amahajan/minotaur/third-party/include
 
@@ -18,7 +18,7 @@ RPATH_FLAGS = -Wl,-rpath=${MINOTAUR_LIBDIR}
 
 .PHONY: default
 
-default: simple-bnb-cg simple-bnb-nocg
+default: simple-bnb-cg simple-bnb-nocg simple-bnb-pres
 
 %: %.cpp
 	$(CXX) $(CXXFLAGS) -I$(MINOTAUR_INCDIR) -I$(BOOST_INCDIR) \

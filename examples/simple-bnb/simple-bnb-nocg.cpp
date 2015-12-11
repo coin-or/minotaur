@@ -5,8 +5,9 @@
 //
 
 /**
- * \file simple-bnb.cpp
- * \brief Example of a very simple branch-and-bound.
+ * \file simple-bnb-asl.cpp
+ * \brief Example of a simple branch-and-bound. AMPL is used to evaluate
+ * derivatives.
  * \author Ashutosh Mahajan, IIT Bombay
  */
 
@@ -28,9 +29,7 @@
 #include "Problem.h"
 #include "Relaxation.h"
 #include "ReliabilityBrancher.h"
-#include "Solution.h"
 #include "Timer.h"
-#include "TreeManager.h"
 
 using namespace Minotaur;
 
