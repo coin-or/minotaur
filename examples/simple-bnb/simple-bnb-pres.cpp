@@ -43,7 +43,7 @@ int main(int argc, char** argv)
   HandlerVector handlers;
   double objsense = 1.0;
   int err = 0;
-  LinHandlerPtr lhand;
+  LinearHandlerPtr lhand;
   NlPresHandlerPtr nlhand;
   PresolverPtr pres = PresolverPtr(); // NULL
 
@@ -57,8 +57,8 @@ int main(int argc, char** argv)
     new MINOTAUR_AMPL::AMPLInterface(env, "bnb");
   ProblemPtr p = iface->readInstance(argv[1]);
 
-  lhand = (LinHandlerPtr) new LinearHandler(env, p);
-  handlers.push_back(l_hand);
+  lhand = (LinearHandlerPtr) new LinearHandler(env, p);
+  handlers.push_back(lhand);
   nlhand = (NlPresHandlerPtr) new NlPresHandler(env, p);
   handlers.push_back(nlhand);
   pres = (PresolverPtr) new Presolver(p, env, handlers);
