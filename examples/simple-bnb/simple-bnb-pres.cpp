@@ -57,6 +57,10 @@ int main(int argc, char** argv)
     new MINOTAUR_AMPL::AMPLInterface(env, "bnb");
   ProblemPtr p = iface->readInstance(argv[1]);
 
+  if (Maximize == p->getObjective()->getObjectiveType()) {
+    objsense = -1.0;
+  }
+
   lhand = (LinearHandlerPtr) new LinearHandler(env, p);
   handlers.push_back(lhand);
   nlhand = (NlPresHandlerPtr) new NlPresHandler(env, p);
