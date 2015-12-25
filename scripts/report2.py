@@ -184,7 +184,7 @@ class Status(Col):
 	val = "ERR"
 	def extract(self):
 		self.val = "ERR"
-		find = find_str(outfile,'Solved to optimality')
+		find = find_str(outfile,'Optimal solution found')
 		if (find>0):
 			self.val = "OPT"
 		else:
