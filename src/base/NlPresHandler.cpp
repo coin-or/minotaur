@@ -595,7 +595,7 @@ void NlPresHandler::perspRef_(ProblemPtr p, PreModQ *, bool *changed)
   double dtmp;
   int err = 0;
 
-  VarSet indvars0;
+  VarSet indvars0; // all binary variables. This set does not change.
   VarSet nlvars;
   VarSet indvars;
   VarSet candvars;
@@ -612,8 +612,7 @@ void NlPresHandler::perspRef_(ProblemPtr p, PreModQ *, bool *changed)
   }
 
   // constraints
-  for (ConstraintConstIterator cit=p->consBegin(); cit!=p->consEnd();
-       ++cit) {
+  for (ConstraintConstIterator cit=p->consBegin(); cit!=p->consEnd(); ++cit) {
     c = *cit;
     f = c->getFunction(); 
     if (!f) {
@@ -624,7 +623,6 @@ void NlPresHandler::perspRef_(ProblemPtr p, PreModQ *, bool *changed)
     }
 
     nlvars.clear();
-    candvars.clear();
     indvars = indvars0;
 
     nlf = f->getNonlinearFunction();
@@ -636,8 +634,8 @@ void NlPresHandler::perspRef_(ProblemPtr p, PreModQ *, bool *changed)
       v = *it;
       candvars = indvars;
       indvars.clear();
-      for (ConstrSet::iterator cit2=v->consBegin(); cit2!=v->consEnd();
-           ++cit2) {
+      for (ConstrSet::iterator cit2=v->consBegin(); cit2!=v->consEnd() &&
+           candvars.size()>0; ++cit2) {
         c2 = *cit2;
         if (c2->getFunctionType()!=Linear) {
           continue;
@@ -679,30 +677,37 @@ void NlPresHandler::perspRef_(ProblemPtr p, PreModQ *, bool *changed)
       }
     }
     if (false == indvars.empty()) {
-      // std::cout << "Found it!\n";
-      // c->write(std::cout);
-      // std::cout << "Indicator Variables:\n";
+#if SPEW
+      logger_->msgStream(LogDebug2) << me_ << "found a candidate for "
+                                    << "nonlinear perspective reformulation"
+                                    << std::endl;
+      c->write(logger_->msgStream(LogDebug2));
+      logger_->msgStream(LogDebug2) << me_ << "Indicator Variables:"
+                                    << std::endl;
+      for (VarSet::const_iterator vit=indvars.begin(); vit!=indvars.end();
+           ++vit) {
+        (*vit)->write(logger_->msgStream(LogDebug2));
+      }
+      logger_->msgStream(LogDebug2) << std::endl;
+#endif
 
-      // for (VarSet::const_iterator vit=indvars.begin(); vit!=indvars.end();
-      //      ++vit) {
-      //   (*vit)->write(std::cout);
-      // }
       // doing the reformulation now.
       z = *(indvars.begin());
       nlf = c->getFunction()->getNonlinearFunction();
       if (false==nlf->hasVar(z)) {
         pnlf = nlf->getPersp(z, 1e-6, &err); assert(err==0);
-        //pnlf->write(std::cout);
         p->changeConstraint(c, pnlf);
-        //std::cout << "New constraint:\n";
-        //c->write(std::cout);
         *changed = true;
         ++stats_.pRefs;
+#if SPEW
+        c->write(logger_->msgStream(LogDebug2));
+#endif 
       }
-    } else {
-      //std::cout << "Did not find it!\n";
-      //c->write(std::cout);
-    }
+    } 
+    // else {
+    //   std::cout << "Did not find it!\n";
+    //   c->write(std::cout);
+    // }
   }
 }
 

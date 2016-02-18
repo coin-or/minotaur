@@ -735,8 +735,8 @@ NonlinearFunctionPtr CGraph::getPersp(VariablePtr z, double eps, int *err) const
   CNode *anode = 0;
   VarNodeMap::iterator mit;
   VariablePtr v;
-  CGraphPtr nlf = clone_(err);
   CQIter2 *cqit2;
+  CGraphPtr nlf = clone_(err);
 
   if (*err) {
     return NonlinearFunctionPtr();
@@ -747,7 +747,7 @@ NonlinearFunctionPtr CGraph::getPersp(VariablePtr z, double eps, int *err) const
     return NonlinearFunctionPtr();
   }
 
-  // remove all nodes that have a variable from aNodes_ 
+  // first remove all nodes that have a variable from aNodes_ 
   for (CNodeVector::iterator it2=nlf->aNodes_.begin();
        it2!=nlf->aNodes_.end();) {
     if (OpVar == (*it2)->getOp()) {
@@ -757,10 +757,13 @@ NonlinearFunctionPtr CGraph::getPersp(VariablePtr z, double eps, int *err) const
     }
   }
 
+  // create a node (z+eps)
   znode = nlf->newNode(z);
   if (eps>0.0) {
+    anode = nlf->newNode(1.0-eps);
+    znode = nlf->newNode(OpMult, anode, znode); // z*(1-eps)
     anode = nlf->newNode(eps);
-    znode = nlf->newNode(OpPlus, anode, znode);
+    znode = nlf->newNode(OpPlus, anode, znode); // eps + z*(1-eps)
   } 
 
   // visit all nodes that have variables in them
@@ -798,7 +801,6 @@ NonlinearFunctionPtr CGraph::getPersp(VariablePtr z, double eps, int *err) const
   nlf->oNode_ = nlf->newNode(OpMult, nlf->oNode_, znode);
   nlf->changed_ = true;
   nlf->finalize();
-  //nlf->write(std::cout);
 
   return nlf;
 }
