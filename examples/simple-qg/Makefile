@@ -4,8 +4,8 @@ CXX = g++
 CXXFLAGS = -O3
 LD_ADD = -llapack -lblas -lgfortran -ldl
 
-MINOTAUR_INCDIR = ../../run-164/include/minotaur
-MINOTAUR_LIBDIR = ../../run-164/lib
+MINOTAUR_INCDIR = ../../build-debug/include/minotaur
+MINOTAUR_LIBDIR = ../../build-debug/lib
 
 BOOST_INCDIR = /home/amahajan/minotaur/third-party/include
 

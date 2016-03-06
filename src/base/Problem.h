@@ -40,7 +40,6 @@ namespace Minotaur {
   typedef boost::shared_ptr<ProblemSize> ProblemSizePtr;
   typedef boost::shared_ptr<QuadraticFunction> QuadraticFunctionPtr;
   typedef boost::shared_ptr<const ProblemSize> ConstProblemSizePtr;
-  typedef SOS* SOSPtr;
 
   /**
    * \brief The Problem that needs to be solved.

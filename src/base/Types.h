@@ -252,6 +252,7 @@ namespace Minotaur {
   typedef std::vector<ConstraintPtr> ConstraintVector;
 
   class SOS;
+  typedef SOS* SOSPtr;
   typedef std::vector<SOS *> SOSVector;
   typedef SOSVector::iterator SOSIterator;
   typedef SOSVector::const_iterator SOSConstIterator;
