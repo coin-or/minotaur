@@ -133,7 +133,7 @@ public:
    * \param[out] n_added The number of cuts added by this routine to the
    * problem.
    */
-  virtual void separate(ConstSolutionPtr sol, bool* separated,
+  virtual void separate(ProblemPtr p, ConstSolutionPtr sol, bool* separated,
                         UInt* n_added) = 0;
 
   /**
