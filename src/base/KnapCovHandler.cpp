@@ -27,7 +27,7 @@ using namespace Minotaur;
 typedef std::vector<ConstraintPtr>::const_iterator CCIter;
 //const std::string KnapCovHandler::me_ = "KnapCovHandler: ";
 
-// Probably I will disable this function later.
+// probably I will disable this function later.
 KnapCovHandler::KnapCovHandler()
   : env_(EnvPtr()),
     minlp_(ProblemPtr()),
@@ -77,34 +77,8 @@ KnapCovHandler::~KnapCovHandler()
 bool KnapCovHandler::isFeasible(ConstSolutionPtr sol, RelaxationPtr ,
 				bool &, double &)
 {
-  // Get the primal solution.
-  const double *x = sol->getPrimal();
-  // Evaluation of constraint for a given solution. 
-  double activity = 0.0;
-  int error = 0;
-  
-  // Here I assume that the cons_ data element includes the knapsacks cuts
-  // that has to be checked for feasibility. Ask Ashu if this is correct or
-  // not.!!!
-
-  // Iterators for knapsack constraints.
-  CCIter it;
-  CCIter begin = cons_.begin();
-  CCIter end   = cons_.end();
-  // Temporary constraint holder.
-  ConstraintPtr cons;
-  // Check each knapsack cover constraint if it is violated or not by the solution of
-  // relaxation.
-  for (it=begin; it!=end; ++it) {
-    cons = *it;
-    activity = cons->getActivity(x, &error);
-    if (activity > cons->getUb() + solAbsTol_ ||
-        activity < cons->getLb() - solAbsTol_) {
-      isFeas_ = false;
-      return false;
-    }
-  }
-  // None of the knapsack cover cuts are violated.
+  // no need to check feasibility of knapsack constraints. It is automatically implied by
+  // linear handler and integer handler.
   return true;
 }
 
@@ -127,6 +101,8 @@ void KnapCovHandler::separate(ConstSolutionPtr sol, NodePtr,
   ConstVariablePtr var; 
   // Value of variable.
   double value;
+  bool separated = false;
+  UInt n_added = 0;
 
   // Check if integrality is satisfied for each integer variable. 
   for (it=begin; it!=end; ++it) {
@@ -156,6 +132,10 @@ void KnapCovHandler::separate(ConstSolutionPtr sol, NodePtr,
     // addCuts to the constraint vector of knapsack cover handler.
     // Currently CutMan2::addCuts does not add the cuts to the relaxation formulation.
     cmanager->addCuts(beginc, endc);
+    cmanager->separate(rel, sol, &separated, &n_added);
+    if (n_added>0) {
+      *status = SepaResolve;
+    }
     
     // Update statistics by using return from cover cut generator.
     ConstCovCutGenStatsPtr covstats = cover->getStats();
@@ -168,10 +148,6 @@ void KnapCovHandler::separate(ConstSolutionPtr sol, NodePtr,
     stats_->singlectwo += covstats->singlectwo;    
   }
 
-  // If any cut is added, the relaxation should be resolved.
-  if (stats_->cuts >= 1) {
-    *status = SepaResolve;
-  }
   
 }
 

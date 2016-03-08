@@ -119,7 +119,7 @@ void SimpleCutMan::postSolveUpdate(ConstSolutionPtr, EngineStatus)
 }
 
 
-void SimpleCutMan::separate(ConstSolutionPtr sol, bool *, UInt *)
+void SimpleCutMan::separate(ProblemPtr p, ConstSolutionPtr sol, bool *, UInt *)
 {
   const double *x = sol->getPrimal();
   CutPtr cut;
@@ -135,14 +135,14 @@ void SimpleCutMan::separate(ConstSolutionPtr sol, bool *, UInt *)
 #endif
     err = 0;
     act = cut->eval(x, &err);
-    if (!err) {
+    if (err!=0) {
       logger_->msgStream(LogInfo) << me_ << "Error evaluating activity of cut. "
                                   << "Not adding to relaxation. Cut is: "
                                   << std::endl;
       ++it;
       continue;
     }
-    viol = std::max(act-cut->getLb(), cut->getUb()-act);
+    viol = std::max(cut->getLb()-act, act-cut->getUb());
     if (viol > violAbs_ + violRel_*fabs(act)) {
 #if SPEW
       logger_->msgStream(LogInfo) << me_ << "Solution violates cut, "
@@ -150,7 +150,7 @@ void SimpleCutMan::separate(ConstSolutionPtr sol, bool *, UInt *)
                                   << std::endl;
 #endif
       ++enCuts_;
-      cut->applyToProblem(p_);
+      cut->applyToProblem(p);
       it = pool_.erase(it);
     } else {
 #if SPEW

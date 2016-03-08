@@ -82,6 +82,7 @@ UInt CutMan1::getNumDisabledCuts() const
 
 UInt CutMan1::getNumNewCuts() const
 {
+ 
   return newCuts_.size();
 }
 
@@ -132,9 +133,9 @@ void CutMan1::postSolveUpdate(ConstSolutionPtr sol, EngineStatus)
 }
 
 
-void CutMan1::separate(ConstSolutionPtr sol, bool *, UInt *)
+void CutMan1::separate(ProblemPtr p, ConstSolutionPtr sol, bool *, UInt *)
 {
-  UInt n = p_->getNumVars();
+  UInt n = p->getNumVars();
   const double *x = new double[n];
   x = sol->getPrimal();
   CutPtr con;

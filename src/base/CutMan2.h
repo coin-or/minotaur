@@ -83,7 +83,7 @@ namespace Minotaur {
     void postSolveUpdate(ConstSolutionPtr , EngineStatus ) {};
 
     // base class method
-    void separate(ConstSolutionPtr, bool*, UInt*) {};
+    void separate(ProblemPtr, ConstSolutionPtr, bool*, UInt*) {};
 
     // base class method
     void updatePool(ProblemPtr rel, ConstSolutionPtr sol);

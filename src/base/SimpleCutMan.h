@@ -70,7 +70,8 @@ namespace Minotaur {
     void postSolveUpdate(ConstSolutionPtr sol, EngineStatus eng_status);
 
     // Base class method.
-    void separate(ConstSolutionPtr sol, bool *separated, UInt *added);
+    void separate(ProblemPtr p, ConstSolutionPtr sol, bool *separated,
+                  UInt *added);
 
     // Base class method.
     void write(std::ostream &out) const;
