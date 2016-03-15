@@ -460,6 +460,7 @@ int QGHandler::OAFromPoint_(const double *x, const double *inf_x,
             f2 = (FunctionPtr) new Function(lf);
             newcon = rel_->newConstraint(f2, -INFINITY, con->getUb()-c,
                                          "lnrztn_cut");
+            ++(stats_->cuts);
             ++num_cuts;
             *status = SepaResolve;
 #if SPEW
@@ -487,6 +488,7 @@ int QGHandler::OAFromPoint_(const double *x, const double *inf_x,
 
             newcon = rel_->newConstraint(f2, con->getLb()-c, INFINITY,
                                          "lnrztn_cut");
+            ++(stats_->cuts);
             ++num_cuts; 
             *status = SepaResolve;
 #if SPEW
@@ -520,6 +522,7 @@ int QGHandler::OAFromPoint_(const double *x, const double *inf_x,
           lf->addTerm(objVar_, -1.0);
           f2 = (FunctionPtr) new Function(lf);
           newcon = rel_->newConstraint(f2, -INFINITY, -1.0*c, "objlnrztn_cut"); 
+          ++(stats_->cuts);
           ++num_cuts;
           *status = SepaResolve;
 #if SPEW
@@ -572,6 +575,7 @@ int QGHandler::OAFromPointInf_(const double *x, const double *inf_x,
             lpact - con->getUb() + c >(fabs(con->getUb()-c)*solRelTol_)) {
           newcon = rel_->newConstraint(f2, -INFINITY, con->getUb()-c,
                                        "lnrztn_cut");
+          ++(stats_->cuts);
           ++ncuts;
           *status = SepaResolve;
 #if SPEW
@@ -590,6 +594,7 @@ int QGHandler::OAFromPointInf_(const double *x, const double *inf_x,
             lpact - con->getLb() + c <-(fabs(con->getLb()-c)*solRelTol_)) {
           newcon = rel_->newConstraint(f2, con->getLb()-c, INFINITY,
                                        "lnrztn_cut");
+          ++(stats_->cuts);
           ++ncuts; 
           *status = SepaResolve;
 #if SPEW
