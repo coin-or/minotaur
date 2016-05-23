@@ -37,8 +37,23 @@ namespace Minotaur {
     /// Destroy.
     virtual ~NonlinearFunction();
 
-    virtual void addConst(const double eps, int &err); 
+    /**
+     * \brief Add a constant to the function
+     *
+     * Add a constant to the given nonlinear function. Adding a constant
+     * alone usually does not make sense. However, it is useful as a
+     * intermediate step. For instance, in writing the perspective:
+     * z*f(x/(z+e))
+     * \param [in] d The value of the constant.
+     * \param [out] err must be nonzero if the constant could not be added.
+    */
+    virtual void addConst(const double d, int &err); 
 
+    /**
+     * \brief Change the nonlinear function to its square-root.
+     *
+     * \param [out] err must be nonzero if the operation is unsuccessful
+    */
     virtual void sqrRoot(int &err); 
 
     /** 
@@ -55,7 +70,7 @@ namespace Minotaur {
      * \brief Calculate upper and lower bounds on the function using bounds of
      * the variables.
      * \param [out] lb Pointer that will contain the value of lower bound.
-     * \param [out] lb Pointer that will contain the value of upper bound.
+     * \param [out] ub Pointer that will contain the value of upper bound.
      * \param [out] error 0 if no error is encountered, nonzero otherwise.
      */
     virtual void computeBounds(double *lb, double *ub, int *error);
@@ -102,7 +117,7 @@ namespace Minotaur {
     /**
      * \brief Fill sparsity of hessian into hessian storage.
      *
-     * \param [in/out] stor We add variables into stor->cols
+     * \param [in,out] stor We add variables into stor->cols
      */
     virtual void  fillHessStor(LTHessStor *stor ) = 0;
 
@@ -134,8 +149,8 @@ namespace Minotaur {
      * \brief If a variable is fixed at a given value and removed, what is
      * the constant (offset) needed to be added.
      *
-     * \param [in] v The variable that is fixed.
-     * \param [in] val The value at which v is to be fixed.
+     * param [in] v The variable that is fixed. <BR>
+     * param [in] val The value at which v is to be fixed. <BR>
      * \return Return the value of the offset.
      */
     virtual double getFixVarOffset(VariablePtr /* v */, double /* val */) 
@@ -216,16 +231,38 @@ namespace Minotaur {
     virtual NonlinearFunctionPtr getPersp(VariablePtr z, double eps,
                                           int *err) const;
 
+    /**
+     * \brief Tighten variables based on function bounds
+     *
+     * Given a lower and upper bound on the allowed values of the function,
+     * deduce bounds of variables and return the modifications in bounds. The
+     * modifications are not applied to the variables.
+     *
+     * param  [in] lb A lower bound on function values <BR>
+     * param  [in] ub An upper bound on function values <BR>
+     * param  [out] mods A vector of modifications deduced by bound
+     * propagation/tightening <BR>
+     * param  [out] status Tells whether there was an error in executing this
+     * routine or if the problem is infeasible etc.
+     */
     virtual void varBoundMods(double /* lb */, double /* ub */,
                               VarBoundModVector & /* mods */,
                               SolveStatus * /* status */)
     {};
 
-    /// \return first iterator for the variables in this function.
+    /**
+     * \brief First iterator for variables
+     *
+     * \return first iterator for the variables in this function.
+     */
     virtual VariableSet::iterator varsBegin()
     {return vars_.begin();};
 
-    /// \return last iterator for the variables in this function.
+    /**
+     * \brief Last iterator for variables
+     *
+     * \return last iterator for the variables in this function.
+     */
     virtual VariableSet::iterator varsEnd()
     {return vars_.end();};
 
