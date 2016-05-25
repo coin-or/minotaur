@@ -269,6 +269,14 @@ void Environment::createDefaultOptions_()
       "Verbosity of Transformer ", true, LogInfo);
   options_->insert(i_option);
 
+  i_option = (IntOptionPtr) new Option<int>("threads", 
+      "Number of threads to be used ", true, 1);
+  options_->insert(i_option);
+
+  i_option = (IntOptionPtr) new Option<int>("msbnb_scheme_id", 
+      "Initial point generation scheme for MsProcessor: 1-5", true, 5);
+  options_->insert(i_option);
+
   i_option.reset();
 
   
