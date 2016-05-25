@@ -7,11 +7,11 @@
 /**
  * \file MsProcessor.h
  * \brief Define multi-start node-processor for branch-and-bound
- * \author Ashutosh Mahajan, IIT Bombay
+ * \author Prashant Palkar and Ashutosh Mahajan, IIT Bombay
  */
 
-#ifndef MINOTAURMSPROCESSOR_H	//renamed by pp
-#define MINOTAURMSPROCESSOR_H	//renamed by pp
+#ifndef MINOTAURMSPROCESSOR_H
+#define MINOTAURMSPROCESSOR_H
 
 #include "NodeProcessor.h"
 
@@ -24,7 +24,6 @@ namespace Minotaur {
   typedef boost::shared_ptr<const Problem> ConstProblemPtr;
   typedef boost::shared_ptr<const Solution> ConstSolutionPtr;
 
-//  renamed by pp
   struct MBPStats {
     UInt bra;    /// Number of times relaxation became infeasible
     UInt inf;    /// Number of times relaxation became infeasible
@@ -38,10 +37,12 @@ namespace Minotaur {
    * \brief Simple multi-start node-processor for branch-and-bound.
    *
    * MsProcessor is a derived class of NodeProcessor. It is meant to solve
-   * multiple relaxations at each node with different starting points. It performs only pruning and branching in a
-   * node. Does not call any presolving, cutting, or heuristic search.
+   * a relaxation multiple times at each node using different starting points.
+   * It performs only pruning and branching in a node. Does not call any
+   * presolving or cutting.
    */
   class MsProcessor : public NodeProcessor {
+
   public:
     /// Default constructor
     MsProcessor();
@@ -65,6 +66,69 @@ namespace Minotaur {
     void process(NodePtr node, RelaxationPtr rel, 
                  SolutionPoolPtr s_pool);
 
+    // Get a corner of the variable space box randomly
+    double* getBoxCorner(UInt n, RelaxationPtr rel1, 
+                         int threadid, int K);
+
+    // Get a corner of the variable space box randomly
+    double* getFarBoxCorner(UInt n, RelaxationPtr rel1, 
+                            int threadid, double* prev_opt, int K);
+
+
+    // Generate a random starting point within variable bounds (for relaxations)
+    double* getStartPointScheme1(UInt n, RelaxationPtr rel1);
+
+    /**
+     * Generate a (re)starting point preferably within variable bounds outside a
+     * radius (for relaxations)
+     */ 
+    double* getStartPointScheme2(UInt n, RelaxationPtr rel1, int threadid,
+                                 double radius, int numsols, 
+                                 double* prev_start_point);
+
+    /**
+     * Generate a (re)starting point preferably within variable bounds outside a
+     * radius (for relaxations) in a conjugate direction
+     */ 
+    double* getStartPointScheme4(UInt n, RelaxationPtr rel1, int threadid,
+                                 double radius, int numsols, 
+                                 double* prev_start_point, 
+                                 double* prev_opt, double costhetalim);
+
+    /**
+     * Generate a starting point as the convex combination of prev optimal
+     * and the farthest box corner from that point.
+     */ 
+    double* getStartPointScheme5(UInt n, RelaxationPtr rel1, int threadid, 
+                                 double radius, double* prev_start_point,
+                                 double* prev_opt, int K, double lambda);
+
+    /**
+     * Generate a starting point and take a direction as the linear
+     * combination of active constraint gradients at that point; choose step
+     * length based on the function decrease along this direction and
+     * average constraint violation.
+     */    
+    //double* getStartPointScheme6(UInt n, RelaxationPtr rel1, int threadid,
+                                 //double radius, int numsols, 
+                                 //double* prev_start_point,
+                                 //double* prev_opt, int K, double lambda);
+
+    // Generate initial point based on variable fixing
+    double* genInitialPoint(UInt n, RelaxationPtr rel);
+
+    // Calculating inner product of two vectors
+    double InnerProduct(double b[], double c[], UInt n);
+
+    // Calculating Euclidean norm
+    double ENorm(double b[], UInt n);
+
+    // Calculate the Euclidean distance between two vectors
+    double EDist(double b[], double c[], UInt n);
+
+    // Testing parallelism
+    void par(); 	      
+
     // write statistics. Base class method.
     void writeStats(std::ostream &out) const; 
 
@@ -72,6 +136,10 @@ namespace Minotaur {
     void writeStats() const; 
 
   protected:
+
+    /// Modifications done to NLP before solving it.
+    std::stack<Modification *> relMods_;
+
     /// Branches found by this processor for this node
     Branches branches_;
 
@@ -102,10 +170,16 @@ namespace Minotaur {
     /// How many new solutions were found by the processor.
     UInt numSolutions_;
 
+    /// Number of processing cores to be used by the processor
+    UInt numThreads_;
+
     /// Relaxation that is processed by this processor.
     RelaxationPtr relaxation_;
 
-    /// Statistics
+    /// Scheme id for generating initial point
+    UInt schemeId_;
+
+/// Statistics
     MBPStats stats_;
 
     /// Warm-start information for start processing the children
@@ -117,17 +191,21 @@ namespace Minotaur {
      * upper bound. Additionally, if the solution is optimal for the
      * current node, then the node can be pruned.
      */
-    bool isFeasible_(NodePtr node, ConstSolutionPtr sol, 
+    virtual bool isFeasible_(NodePtr node, ConstSolutionPtr sol, 
                              SolutionPoolPtr s_pool, bool &should_prune);
 
     /// Solve the relaxation.
-    void solveRelaxation_();
+    virtual void solveRelaxation_();
+
+    /// Solve the relaxation.
+    virtual void solveRelaxation_(EnginePtr e1);
+
 
     /**
      * Check if a node can be pruned either because the relaxation is
      * infeasible or because the cost is too high.
      */
-    bool shouldPrune_(NodePtr node, double solval, 
+    virtual bool shouldPrune_(NodePtr node, double solval, 
                               SolutionPoolPtr s_pool);
 
   };
