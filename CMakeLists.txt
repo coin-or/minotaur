@@ -35,6 +35,16 @@ if (${COMPILER_WARN})
   set (CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Woverloaded-virtual")
 endif()
 
+## Enable OpenMP support
+OPTION (USE_OpenMP "Use OpenMP" ON)
+if(${USE_OpenMP})
+  FIND_PACKAGE(OpenMP)
+  if(OPENMP_FOUND)
+    set (CMAKE_C_FLAGS "${CMAKE_C_FLAGS} ${OpenMP_C_FLAGS}")
+    set (CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} ${OpenMP_CXX_FLAGS}")
+  endif()
+endif()
+
 ###########################################################################
 ## Don't install in /usr/local
 ## see http://www.cmake.org/pipermail/cmake/2007-August/015814.html
