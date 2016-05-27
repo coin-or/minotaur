@@ -341,7 +341,7 @@ double* MsProcessor::getStartPointScheme2(UInt n, RelaxationPtr rel1,
   double* init_point = new double[n];
   srand(time(NULL));
   double lb,ub, lbdbindex,ubdbindex, norm, largestInterval = -INFINITY;
-  double a[n];
+  double *a = new double [n];
   int dbindex = -1; 
 
   for(UInt k=0; k < n; k++) {
@@ -436,6 +436,7 @@ double* MsProcessor::getStartPointScheme2(UInt n, RelaxationPtr rel1,
       }
     }
   }
+  delete[] a;
   return init_point;
 }
 
@@ -450,9 +451,10 @@ double * MsProcessor::getStartPointScheme4(UInt n, RelaxationPtr rel1,
   double* init_point = new double[n];
   srand(time(NULL));
   double lb,ub, lbdbindex,ubdbindex, norm, largestInterval = -INFINITY;
-  double a[n], prev_dir[n];      //random direction and prev iter. direction
-  int dbindex = -1;              //index of a doubly bounded variable
-  double costheta = 1;           //cos of angle between 'prev_dir' and 'a'
+  double* a = new double [n];        //random direction
+  double* prev_dir = new double [n]; //prev iter. direction
+  int dbindex = -1;                  //index of a doubly bounded variable
+  double costheta = 1;               //cos of angle between 'prev_dir' and 'a'
 
   for(UInt k=0; k < n; k++) {
     lb = rel1->getVariable(k)->getLb();
@@ -561,6 +563,8 @@ double * MsProcessor::getStartPointScheme4(UInt n, RelaxationPtr rel1,
       }
     }
   }
+  delete[] a;
+  delete[] prev_dir;
   return init_point;
 }
 
@@ -573,8 +577,9 @@ double * MsProcessor::getStartPointScheme5 (UInt n, RelaxationPtr rel1,
   double* init_point = new double[n];
   srand(time(NULL));
   double lb,ub, lbdbindex,ubdbindex, width, norm, largestInterval = -INFINITY;
-  double new_dir[n], tempcorner[n]; //random direction and new iter. direction
-  int dbindex = -1;                 //index of a doubly bounded variable
+  double* new_dir = new double [n];     //random direction
+  double* tempcorner = new double [n];  //new iteration direction
+  int dbindex = -1;                     //index of a doubly bounded variable
   double* farcorner;
 
   for(UInt k=0; k < n; k++) {
@@ -644,6 +649,8 @@ double * MsProcessor::getStartPointScheme5 (UInt n, RelaxationPtr rel1,
     init_point[i] = std::max(std::min(tempcorner[i]+(1-lambda)*
                                       (farcorner[i]-tempcorner[i]), ub), lb);
   }
+  delete[] new_dir;
+  delete[] tempcorner;
   return init_point;
 }
 
@@ -719,26 +726,23 @@ void MsProcessor::process(NodePtr node, RelaxationPtr rel,
 
   ++stats_.proc;
   relaxation_ = rel;
-  //int numThreads_ = omp_get_num_procs()-5;	  //number of threads to be created
   UInt numStarts = 1;      	                  //number of restarts per thread
   UInt numvars = rel->getNumVars();               //number of variables in the problem
-  RelaxationPtr relcopy[numThreads_];		  //array of ptrs of copies of relaxation
+  RelaxationPtr* relcopy = new RelaxationPtr[numThreads_];
+  EnginePtr* ecopy = new EnginePtr[numThreads_];  
+  EngineStatus* estatus = new EngineStatus[numThreads_];
+  int* solcnt = new int[numThreads_];   //#solutions obtained at each thread
 
-  EnginePtr ecopy[numThreads_];                    //array of ptrs of copies of engine
-  EngineStatus estatus[numThreads_];               //array of statuses of copies of engine
-  int solcnt[numThreads_];                         //array of count of solutions obtained
-
-  ConstSolutionPtr bestsolthd;                    //pointer for the thread-best solution
-  ConstSolutionPtr bestsol ;                      //pointer for best solution among all threads
+  ConstSolutionPtr bestsolthd;          //thread-best solution
+  ConstSolutionPtr bestsol ;            //best solution among all threads
 
   double threadbestval = INFINITY, bestval = INFINITY;
   double *start_point, *prev_start_point, *prev_opt; 
-  double radscal = 1.5;                           //scaling factor for radius      
-  double costhetalim = sqrt(3)/2;                 //angle more than 30 degree
-  int K = 1000;                                   //scale of number for generating a random number
-  double lambda = -1;                             //fixed value for taking convex combination
-  double prevsolval;                              //previous solution value
-  //UInt schemeId_ = 5;                            //scheme id for generating starting point
+  double radscal = 1.5;                 //factor for scaling radius
+  double costhetalim = sqrt(3)/2;       //threshold angle set to 30 degree
+  int K = 1000;                         //upper bound for rand. no. generated
+  double lambda = -1;                   //value for taking convex combination
+  double prevsolval;                    //previous solution value
 
 #pragma omp parallel for   
   for(UInt i=0; i < numThreads_; i++) {
@@ -890,17 +894,17 @@ void MsProcessor::process(NodePtr node, RelaxationPtr rel,
           prevsolval = sol1->getObjValue();
           solcnt[i]++;
         } 
-        else if(ProvenInfeasible==estatus[i] || ProvenLocalInfeasible==estatus[i] ||
-                ProvenObjectiveCutOff==estatus[i] || ProvenFailedCQInfeas==estatus[i] ||
-                FailedInfeas==estatus[i] || FailedFeas==estatus[i] ||
-                ProvenFailedCQFeas==estatus[i]) {
+        //else if(ProvenInfeasible==estatus[i] || ProvenLocalInfeasible==estatus[i] ||
+                //ProvenObjectiveCutOff==estatus[i] || ProvenFailedCQInfeas==estatus[i] ||
+                //FailedInfeas==estatus[i] || FailedFeas==estatus[i] ||
+                //ProvenFailedCQFeas==estatus[i]) {
           //std::cout<<"Relaxation infeasible from this starting point!"<<std::endl;
-        }
-        else if(ProvenUnbounded==estatus[i]) {
-          //std::cout<<"Relaxation unbounded from this starting point!"<<std::endl;
-        }
-        else {
-        }
+        //}
+        //else if(ProvenUnbounded==estatus[i]) {
+          ////std::cout<<"Relaxation unbounded from this starting point!"<<std::endl;
+        //}
+        //else {
+        //}
 
         prev_start_point = start_point;
       }
@@ -916,7 +920,6 @@ void MsProcessor::process(NodePtr node, RelaxationPtr rel,
           }
         }
         else {
-          //should_prune = true;
           should_prune = shouldPrune_(node, ecopy[i]->getSolution()->getObjValue(), s_pool);  // (Prune infeas.)
         }
       }
@@ -948,8 +951,6 @@ void MsProcessor::process(NodePtr node, RelaxationPtr rel,
       break;
     }
 
-    //relaxation_->write(std::cout);
-
     //save warm start information before branching. This step is expensive.
     ws_ = engine_->getWarmStartCopy();
     branches_ = brancher_->findBranches(relaxation_, node, sol, s_pool, 
@@ -972,7 +973,7 @@ void MsProcessor::process(NodePtr node, RelaxationPtr rel,
       break;
     }
   }
-#if 0										//for debugging
+#if 0
   if ((true==should_prune || node->getLb() >-4150) && true==xfeas) {
     std::cout << "problem here!\n";
     std::cout << node->getStatus() << "\n";
@@ -980,7 +981,10 @@ void MsProcessor::process(NodePtr node, RelaxationPtr rel,
     exit(0);
   }
 #endif
-
+  delete[] relcopy;
+  delete[] ecopy;
+  delete[] estatus;
+  delete[] solcnt;
   return;
 }
 

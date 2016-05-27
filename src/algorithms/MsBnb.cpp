@@ -363,7 +363,7 @@ void setInitialOptions(EnvPtr env)
   env->getOptions()->findBool("nl_presolve")->setValue(true);
   env->getOptions()->findString("nlp_engine")->setValue("IPOPT");
   env->getOptions()->findString("qp_engine")->setValue("None"); 
-  //env->getOptions()->findString("brancher")->setValue("maxvio");
+  env->getOptions()->findString("brancher")->setValue("maxvio");
 }
 
 
