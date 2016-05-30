@@ -476,17 +476,6 @@ void writeBnbStatus(EnvPtr env, BranchAndBound *bab, double obj_sense)
 }
 
 
-void par()
-{
-  std::cout<<"Total no. of procs: "<<omp_get_num_procs()<<std::endl;
-#pragma omp parallel for //num_threads(10)
-  for(int i=0; i < omp_get_num_procs(); i++){
-#pragma omp critical
-    std::cout<<"Hello from thread "<<omp_get_thread_num()<<std::endl;
-  }    
-}
-
-
 double getWallTime() {
   struct timeval time;
   if (gettimeofday(&time,NULL)){

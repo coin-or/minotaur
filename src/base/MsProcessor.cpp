@@ -131,13 +131,6 @@ bool MsProcessor::isFeasible_(NodePtr node, ConstSolutionPtr sol,
   return is_feas;
 }
 
-void MsProcessor::par()
-{
-#pragma omp parallel
-#pragma omp critical
-  std::cout<<"Hello from thread "<<omp_get_thread_num()<<", total threads = "<<omp_get_num_threads()<<std::endl;
-}
-
 double MsProcessor::InnerProduct(double b[], double c[], UInt n)
 {
   double dotprod = 0;

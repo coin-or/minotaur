@@ -27,7 +27,7 @@ set (MINOTAUR_SOURCES
      CGraph.cpp
      CNode.cpp
      Constraint.cpp
-     CoverCutGenerator.cpp # Serdar
+     CoverCutGenerator.cpp 
      Cut.cpp
      CutInfo.cpp
      CutMan1.cpp
@@ -43,9 +43,9 @@ set (MINOTAUR_SOURCES
      Interrupt.cpp 
      IntVarHandler.cpp 
      Jacobian.cpp
-     KnapsackList.cpp   # Serdar
-     KnapCovHandler.cpp # Serdar
-     LGCIGenerator.cpp  # Serdar
+     KnapsackList.cpp 
+     KnapCovHandler.cpp 
+     LGCIGenerator.cpp 
      LPProcessor.cpp 
      LPRelaxation.cpp 
      LexicoBrancher.cpp 
@@ -75,16 +75,16 @@ set (MINOTAUR_SOURCES
      Objective.cpp 
      Operations.cpp 
      Option.cpp 
-     PerspCutGenerator.cpp # Serdar
-     PerspCutHandler.cpp # Serdar
-     PerspList.cpp # Serdar
+     PerspCutGenerator.cpp 
+     PerspCutHandler.cpp 
+     PerspList.cpp 
      PolynomialFunction.cpp 
      PreAuxVars.cpp
      PreDelVars.cpp
      PreSubstVars.cpp
      Presolver.cpp 
      Problem.cpp
-     ProbStructure.cpp # Serdar
+     ProbStructure.cpp 
      QGHandler.cpp 
      QPDRelaxer.cpp 
      QPDProcessor.cpp 
