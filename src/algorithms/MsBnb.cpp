@@ -13,7 +13,6 @@
 
 #include <iomanip>
 #include <iostream>
-#include <omp.h>
 #include <sys/time.h>
 
 #include "MinotaurConfig.h"

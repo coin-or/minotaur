@@ -7,12 +7,13 @@
 /**
  * \file MsProcessor.cpp
  * \brief Implement simple multi-start node-processor for branch-and-bound
- * \author Ashutosh Mahajan, IIT Bombay
+ * \author Prashant Palkar and Ashutosh Mahajan, IIT Bombay
  */
 #include <cmath> // for INFINITY
+#if USE_OPENMP
 #include <omp.h>
+#endif
 #include <complex>
-
 #include "MinotaurConfig.h"
 #include "Brancher.h"
 #include "Engine.h"
