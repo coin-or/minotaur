@@ -5,14 +5,13 @@ SRC_DIR=/sandbox/mahajan/minotaur
 
 WEB_DIR=/mcs/web/research/projects/minotaur/dist/
 
-## svn info
-USERNAME=ashu
-SVN_REPOS="https://repo.anl-external.org/repos/minotaur"
+## git info
+GIT_REPOS="https://github.com/ashutoshmahajan/minotaur"
 
 ## delimitor
 LINE="--------------------------------------------------"
 
-SVN_VERSION="0"
+GIT_VERSION="0"
 
 
 echo "Creating Minotaur daily source tarball" 
@@ -22,27 +21,27 @@ date
 rm -rf ${SRC_DIR}
 
 # get latest version
-svn co ${SVN_REPOS} ${SRC_DIR} 
+git clone ${GIT_REPOS} ${SRC_DIR} &> git.log
 
 echo "" 
 if [ -d ${SRC_DIR}/src ]
 then
   echo "Minotaur src directory checked out."
 else
-  echo>&2 "Error checking out svn!"
+  echo>&2 "Error in cloning with git!"
   exit 1
 fi
 
 cd ${SRC_DIR}
-SVN_VERSION=`svnversion`
-echo svn version is ${SVN_VERSION}
+GIT_VERSION=`git rev-parse HEAD`
+echo current git version is ${GIT_VERSION}
 
-sed -i s/\#cmake.*/\#define\ MINOTAUR_SVN_VERSION\ ${SVN_VERSION}/g src/base/Version.h.cmake
+sed -i s/\#cmake.*/\#define\ MINOTAUR_GIT_VERSION\ ${GIT_VERSION}/g src/base/Version.h.cmake
 
-find -depth -type d -iname '.svn' -exec rm -rfv '{}' \;
+find -depth -type d -iname '.git' -exec rm -rfv '{}' \;
 
 cd ..
-tar -zcvf minotaur-nightly-src.tar.gz minotaur
+tar -zcf minotaur-nightly-src.tar.gz minotaur
 
 cp minotaur-nightly-src.tar.gz ${WEB_DIR}
 

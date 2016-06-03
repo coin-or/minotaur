@@ -4,9 +4,8 @@
 ## All builds will take place within ${TEST_DIR}
 TEST_DIR=/home/amahajan/tmp/minotaur-test
 
-## svn info
-USERNAME=ashu
-SVN_REPOS="https://repo.anl-external.org/repos/minotaur"
+## git info
+GIT_REPOS="https://github.com/ashutoshmahajan/minotaur"
 EXT_URL="http://ieor.iitb.ac.in/files/faculty/amahajan/minotaur/restricted/minotaur-externals-0.2.tar.gz"
 
 ## Local LOGS
@@ -128,18 +127,18 @@ addDoxygen
 addCmake
 
 # get latest version
-svn co ${SVN_REPOS} ${TEST_DIR} &> svn.log
+git clone ${GIT_REPOS} ${TEST_DIR} &> git.log
 
 echo ""
 if [ -d ${TEST_DIR}/src ]
 then
   echo "Minotaur src directory checked out."
 else
-  echo>&2 "Error checking out svn!"
+  echo>&2 "Error in cloning with git!"
   exit 1
 fi
 
-mv svn.log ${TEST_DIR}/
+mv git.log ${TEST_DIR}/
 cd ${TEST_DIR}
 NAME=
 OPTIONS=
