@@ -7,7 +7,7 @@
 usage () 
 {
    echo ""
-   echo "usage: ./build_externals -d /path/to/directory [-j {num-cpus}] [-l {log-file}] [-r {error-file}] [-COns]"
+   echo "usage: ./build_externals -d /path/to/directory [-j {num-cpus}] [-l {log-file}] [-r {error-file}] [-t {url}] [-COns]"
    echo ""
    echo "-C: Use curl instead of wget to fetch externals."
    echo "-d: Externals will be downloaded and built in this directory. If

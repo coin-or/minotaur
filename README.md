@@ -11,7 +11,7 @@ See the LICENSE file for details on license to use and distribute it.
   only)](https://wiki.mcs.anl.gov/minotaur/index.php/Minotaur_Download)
 * Download nightly builds (coming soon)
 * [How to install and use
-  MINOTAUR](https://wiki.mcs.anl.gov/minotaur/index.php/Minotaur_Download)
+  MINOTAUR](https://wiki.mcs.anl.gov/minotaur/index.php/Minotaur_Documentation)
 * [Join the mailing list](https://lists.mcs.anl.gov/mailman/listinfo/minotaur)
 * [See existing issues and file new
   ones](https://github.com/ashutoshmahajan/minotaur/issues)

@@ -9,7 +9,7 @@
  * \file CNode.h
  * \brief Declare class CNode to represent node of a computational graph of a
  * nonlinear function.
- * \author Ashutosh Mahajan, Argonne National Laboratory
+ * \author Ashutosh Mahajan, IIT Bombay
  */
 
 #ifndef MINOTAURCNODE_H
@@ -40,6 +40,11 @@ public:
   CQIter2 *prev;
 };
 
+/**
+ * \brief CNode denotes a node in the computational graph. It stores the
+ * op-code, children, parents and other auxiliary information to evaluate the
+ * function and its derivative, check its properties etc.
+ */
 class CNode {
 public:
 
@@ -47,23 +52,76 @@ public:
   CNode();
 
   /**
-   * Constructor with a specific opcode and children. Children can be
-   * NULL, and num_child can be zero.
+   * \brief: Construct a node from its children and an opcode
+   *
+   * Constructor with a specific opcode and children. 
+   * \param [in] op Opcode of the new CNode
+   * \param [in] children Pointer to an array of child nodes, can be null
+   * \param [in] Number of children, can be zero or more
    */
   CNode(OpCode op, CNode **children, UInt num_child);
+
+  /**
+   * \brief: Construct a node from two children, left and right, and an opcode
+   *
+   * Constructor with a specific opcode and two children. 
+   * \param [in] op Opcode of the new CNode
+   * \param [in] lchild Pointer to the left child node
+   * \param [in] rchild Pointer to the right child node
+   */
   CNode(OpCode op, CNode *lchild, CNode *rchild);
+
+  /// Destroy.
   ~CNode();
 
-
+  /// Clone the node. Does not copy pointers to parents, children, etc.
   CNode *clone() const;
+
+  /**
+   * \brief Add a parent to a given node (a parent depends on the child in
+   * function evaluation).
+   *
+   * \parm [in] Pointer to the parent node
+   */
   void addPar(CNode *node);
 
-  /// Replace one of the children of a given node by another node.
+  /**
+   * \brief Replace one of the children of a given node by another node.
+   *
+   * \param [in] out Pointer to the existing child node that will be replaced
+   * \param [in] in  Pointer to the new child node that will replace the
+   * existing child.
+   */
   void changeChild(CNode *out, CNode *in);
 
+  /**
+   * \brief Make copies of links pointing to parents and children to another
+   * node. Used in cloning the CGraph.
+   *
+   * \param [in,out] out The node to which the links must be copied. This is
+   * the clone.
+   * \param [nmap] in A map of nodes in of current CGraph to the nodes of new
+   * CGraph.
+   */
   void copyParChild(CNode *out, std::map<const CNode*, CNode*> *nmap) const;
+
+  /**
+   * \brief Evaluate the function at this node.
+   *
+   * \param [in] x The point at which the CGraph containing this CNode is
+   * being evaluated. x is used only for nodes that have opcode OpVar. For all
+   * other nodes, the values of the children are used in evaluating the
+   * function.
+   * \param [out] error Nonzero if some error occurs in evaluation e.g. log of
+   * a negative number, etc.
+   */
   void eval(const double *x, int *error);
+
+  /**
+   * \brief TODO: Unused.
+   */
   double eval(double x, int *error) const;
+
   FunctionType findFType();
   void fwdGrad();
   bool getB() const { return b_; };
@@ -112,30 +170,46 @@ public:
   void writeSubExp(std::ostream &out) const;
 
 protected:
-  bool b_;
-  CNode **child_; // array of size numChild_ + 1
-  double d_;
-  FunctionType fType_;
-  double g_;
-  double gi_;
-  double h_;
-  int i_;
-  UInt id_;
-  CNode *l_;
-  double lb_;
-  UInt numChild_;
-  UInt numPar_;
-  OpCode op_;
-  CQIter2 *parB_;
-  CQIter2 *parE_;
-  CNode *r_;
-  int ti_;
-  double ub_;
+  bool b_;        /// Boolean flag used in finding hessian sparsity
+  CNode **child_; /// array of size numChild_ + 1. The last pointer is a null
+  double d_;      /// Constant double value in OpNum and OpInt nodes
+  FunctionType fType_; /// Function type of the graph rooted at this node
+  double g_;      /// Value of the derivative of output w.r.t. this node
+                  /// (reverse mode)
+  double gi_;     /// Value of the derivative of this node w.r.t. to a given var
+                  /// (forward mode)
+  double h_;      /// Value of the hessian
+  int i_;         /// TODO: Is it unused?
+  UInt id_;       /// Unique ID of the node, used in the map
+  CNode *l_;      /// Left child
+  double lb_;     /// lower bound that a node can achieve
+  UInt numChild_; /// Number of children
+  UInt numPar_;   /// Number of parents
+  OpCode op_;     /// Operation code
+  CQIter2 *parB_; /// Pointer to the first parent (parents begin)
+  CQIter2 *parE_; /// Pointer to the last parent (parents end)
+  CNode *r_;      /// Right child
+  int ti_;        /// Temporary integer variable to find patterns of
+                  /// sparsity in the hessian.
+  double ub_;     /// upper bound that a node can achieve
 
-  /// Unique parent of this node. NULL if the node has multiple parents
-  CNode *uPar_;
-  const Variable* v_;
-  double val_;
+  
+  CNode *uPar_;   /// Unique parent of this node. NULL if the node has
+                  /// multiple parents
+  const Variable* v_; /// Pointer the variable in case it is OpVar
+  double val_;    /// Current value of the expression based on the value
+                  /// of the children
+
+  /**
+   * \brief Change the current bounds of the function value at this node to
+   * new bounds only if the new bounds are tighter. Also checks whether the
+   * new bounds are inconsistent.
+   *
+   * \param [in] lb New lower bound
+   * \param [in] ub New upper bound
+   * \param [out] is_inf Set to true if lb is more than ub after the update.
+   * Otherwise, remains unchanged.
+   */
   void propBounds_(double lb, double ub, bool *is_inf);
 
 };
