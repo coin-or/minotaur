@@ -7,7 +7,7 @@
 /**
  * \file MsProcessor.h
  * \brief Define multi-start node-processor for branch-and-bound
- * \author Prashant Palkar and Ashutosh Mahajan, IIT Bombay
+ * \author Prashant Palkar, IIT Bombay
  */
 
 #ifndef MINOTAURMSPROCESSOR_H
@@ -169,6 +169,9 @@ namespace Minotaur {
 
     /// How many new solutions were found by the processor.
     UInt numSolutions_;
+
+    /// Number of restarts to improve the first intial point
+    UInt numRestarts_;
 
     /// Number of processing cores to be used by the processor
     UInt numThreads_;

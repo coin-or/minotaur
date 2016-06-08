@@ -7,7 +7,7 @@
 /**
  * \file MsProcessor.cpp
  * \brief Implement simple multi-start node-processor for branch-and-bound
- * \author Prashant Palkar and Ashutosh Mahajan, IIT Bombay
+ * \author Prashant Palkar, IIT Bombay
  */
 #include <cmath> // for INFINITY
 #if USE_OPENMP
@@ -64,12 +64,13 @@ MsProcessor::MsProcessor (EnvPtr env, EnginePtr engine,
   ws_(WarmStartPtr())
 {
   cutOff_ = env->getOptions()->findDouble("obj_cut_off")->getValue();
-  numThreads_ = env->getOptions()->findInt("threads")->getValue();
-  schemeId_ = env->getOptions()->findInt("msbnb_scheme_id")->getValue();
   handlers_ = handlers;
   logger_ = (LoggerPtr) new Logger((LogLevel)env->getOptions()->
                                    findInt("node_processor_log_level")->
                                    getValue());
+  numRestarts_ = env->getOptions()->findInt("msbnb_restarts")->getValue();
+  numThreads_ = env->getOptions()->findInt("threads")->getValue();
+  schemeId_ = env->getOptions()->findInt("msbnb_scheme_id")->getValue();
   stats_.bra = 0;
   stats_.inf = 0;
   stats_.opt = 0;
@@ -122,7 +123,7 @@ bool MsProcessor::isFeasible_(NodePtr node, ConstSolutionPtr sol,
     }
   }
 
-  if (is_feas == true && h==handlers_.end()) {
+  if (is_feas == true && h == handlers_.end()) {
     s_pool->addSolution(sol);
     ++numSolutions_;
     node->setStatus(NodeOptimal);
@@ -134,17 +135,17 @@ bool MsProcessor::isFeasible_(NodePtr node, ConstSolutionPtr sol,
 
 double MsProcessor::InnerProduct(double b[], double c[], UInt n)
 {
-  double dotprod = 0;
-  for(UInt i=0; i < n; i++) {
-    dotprod += b[i]*c[i];        
+  double dotProd = 0;
+  for(UInt i = 0; i < n; i++) {
+    dotProd += b[i]*c[i];
   }
-  return dotprod;
+  return dotProd;
 }
 
 double EDist(double b[], double c[], UInt n)
 {
   double dist = 0;
-  for(UInt i=0; i < n; i++) {
+  for(UInt i = 0; i < n; i++) {
     dist += (b[i]-c[i])*(b[i]-c[i]);
   }
   return sqrt(dist);
@@ -153,437 +154,426 @@ double EDist(double b[], double c[], UInt n)
 double MsProcessor::ENorm(double b[], UInt n)
 {
   double norm = 0;
-  for(UInt i=0;i < n;i++) {
+  for(UInt i = 0; i < n; i++) {
     norm+= b[i]*b[i];        
   }
   return sqrt(norm);
 }
 
-double * MsProcessor::getBoxCorner(UInt n, RelaxationPtr rel1, int threadid,
+double * MsProcessor::getBoxCorner(UInt n, RelaxationPtr rel1, int threadId,
                                    int K)
 {
-  double* corner_point = new double[n];
+  double* cornerPoint = new double[n];
   srand(time(NULL));
-  double lb,ub, lbdbindex,ubdbindex, largestInterval = -INFINITY;
+  double lb, ub, lbdbVar, ubdbVar, largestInterval = -INFINITY;
   
-  int dbindex = -1;     //index of a doubly bounded variable
-  for(UInt k=0; k < n; k++) {
+  int dbVar = -1;     //index of a doubly bounded variable
+  for(UInt k = 0; k < n; k++) {
     lb = rel1->getVariable(k)->getLb();
     ub = rel1->getVariable(k)->getUb();
-    if(lb  > -INFINITY) {
-      if(ub < INFINITY) {
+    if (lb > -INFINITY) {
+      if (ub < INFINITY) {
         // doubly bdd variable with largest bound width
-        if( (ub - lb) > largestInterval) {
-          dbindex = k;
+        if ((ub - lb) > largestInterval) {
+          dbVar = k;
           largestInterval = ub - lb;
         }
       }
     }
   }
 
-  if(dbindex >= 0) {
-    lbdbindex = rel1->getVariable(dbindex)->getLb();
-    ubdbindex = rel1->getVariable(dbindex)->getUb();
-    double width = (ubdbindex - lbdbindex)/numThreads_;
+  if (dbVar >= 0) {
+    lbdbVar = rel1->getVariable(dbVar)->getLb();
+    ubdbVar = rel1->getVariable(dbVar)->getUb();
+    double width = (ubdbVar - lbdbVar)/numThreads_;
 
-    for(UInt j=0; j < n; j++) {
-      if((int)j!=dbindex) {
+    for(UInt j = 0; j < n; j++) {
+      if ((int)j != dbVar) {
         lb = rel1->getVariable(j)->getLb();
         ub = rel1->getVariable(j)->getUb();
-        if(lb  > -INFINITY) {
-          if(ub < INFINITY) {
-            if (rand()/2 ==0) {
-              corner_point[j] = lb;
+        if (lb > -INFINITY) {
+          if (ub < INFINITY) {
+            if (rand()/2 == 0) {
+              cornerPoint[j] = lb;
+            } else {
+              cornerPoint[j] = ub;
             }
-            else {
-              corner_point[j] = ub;
-            }
+          } else {
+            cornerPoint[j] = lb + rand()%K;
           }
-          else {
-            corner_point[j] = lb + rand()%K;
+        } else {
+          if (ub < INFINITY) {
+            cornerPoint[j] = ub - rand()%K;
+          } else {
+            cornerPoint[j] = rand()%K;
           }
         }
-        else {
-          if(ub < INFINITY) {
-            corner_point[j] = ub - rand()%K;
-          }
-          else {
-            corner_point[j] = rand()%K;
-          }
-        }
-      }
-      else {
-        lb = lbdbindex + (threadid)*width;
+      } else {
+        lb = lbdbVar + (threadId)*width;
         ub = lb + width;
-        if (rand()/2 ==0) {
-          corner_point[dbindex] = lb;
-        }
-        else {
-          corner_point[dbindex] = ub;
+        if (rand()/2 == 0) {
+          cornerPoint[dbVar] = lb;
+        } else {
+          cornerPoint[dbVar] = ub;
         }
       }
     }
+  } else {
+    cornerPoint = getStartPointScheme1(n, rel1);
   }
-  else {
-    corner_point = getStartPointScheme1(n, rel1);
-  }
-  return corner_point;
+  return cornerPoint;
 }
 
 
 double * MsProcessor::getFarBoxCorner(UInt n, RelaxationPtr rel1,
-                                      int threadid, double* prev_opt, int K)
+                                      int threadId, double* prevOpt, int K)
 {
 
-  double* corner_point = new double[n];
+  double* cornerPoint = new double[n];
   srand(time(NULL));
-  double lb,ub, lbdbindex,ubdbindex, largestInterval = -INFINITY;
-  int dbindex = -1;
-  for(UInt k=0; k < n; k++) {
+  double lb, ub, lbdbVar, ubdbVar, largestInterval = -INFINITY;
+  int dbVar = -1;
+  for(UInt k = 0; k < n; k++) {
     lb = rel1->getVariable(k)->getLb();
     ub = rel1->getVariable(k)->getUb();
-    if(lb  > -INFINITY) {
-      if(ub < INFINITY) {
+    if (lb > -INFINITY) {
+      if (ub < INFINITY) {
         // doubly bdd variable with largest bound width
-        if( (ub - lb) > largestInterval) {
-          dbindex = k;
+        if ((ub - lb) > largestInterval) {
+          dbVar = k;
           largestInterval = ub - lb;
         }
       }
     }
   }
 
-  if(dbindex >= 0) {
-    lbdbindex = rel1->getVariable(dbindex)->getLb();
-    ubdbindex = rel1->getVariable(dbindex)->getUb();
-    double width = (ubdbindex - lbdbindex)/numThreads_;
+  if (dbVar >= 0) {
+    lbdbVar = rel1->getVariable(dbVar)->getLb();
+    ubdbVar = rel1->getVariable(dbVar)->getUb();
+    double width = (ubdbVar - lbdbVar)/numThreads_;
 
-    for(UInt j=0; j < n; j++) {
-      if((int)j!=dbindex) {
+    for(UInt j = 0; j < n; j++) {
+      if ((int)j!=dbVar) {
         lb = rel1->getVariable(j)->getLb();
         ub = rel1->getVariable(j)->getUb();
-        if(lb  > -INFINITY) {
-          if(ub < INFINITY) {
-            if(abs(ub - prev_opt[j]) > abs(prev_opt[j] - lb)) {
-              corner_point[j] = ub;
+        if (lb > -INFINITY) {
+          if (ub < INFINITY) {
+            if (abs(ub - prevOpt[j]) > abs(prevOpt[j] - lb)) {
+              cornerPoint[j] = ub;
+            } else {
+              cornerPoint[j] = lb;
             }
-            else {
-              corner_point[j] = lb;
-            }
+          } else {
+            cornerPoint[j] = lb + rand()%K;
           }
-          else {
-            corner_point[j] = lb + rand()%K;
+        } else {
+          if (ub < INFINITY) {
+            cornerPoint[j] = ub - rand()%K;
+          } else {
+            cornerPoint[j] = rand()%K;
           }
         }
-        else {
-          if(ub < INFINITY) {
-            corner_point[j] = ub - rand()%K;
-          }
-          else {
-            corner_point[j] = rand()%K;
-          }
-        }
-      }
-      else {
-        lb = lbdbindex + (threadid)*width;
+      } else {
+        lb = lbdbVar + (threadId)*width;
         ub = lb + width;
-        if(abs(ub - prev_opt[j]) > abs(prev_opt[j] - lb)) {
-          corner_point[j] = ub;
-        }
-        else {
-          corner_point[j] = lb;
+        if (abs(ub - prevOpt[j]) > abs(prevOpt[j] - lb)) {
+          cornerPoint[j] = ub;
+        } else {
+          cornerPoint[j] = lb;
         }
       }
     }
+  } else {
+    cornerPoint = getStartPointScheme1(n, rel1);
   }
-  else {
-    corner_point = getStartPointScheme1(n, rel1);
-  }
-  return corner_point;
+  return cornerPoint;
 }
 
 double * MsProcessor::getStartPointScheme1(UInt n, RelaxationPtr rel1)
 {
-  double* init_point = new double[n];
+  double* initPoint = new double[n];
   srand(time(NULL));
-  double lb,ub;
-  for(UInt k=0; k < n; k++) {
+  double lb, ub;
+  for(UInt k = 0; k < n; k++) {
     lb = rel1->getVariable(k)->getLb();
     ub = rel1->getVariable(k)->getUb();
 
-    if(lb  > -INFINITY) {
-      if(ub < INFINITY) { 
-        init_point[k] = lb + ((double)(rand())/(double)(RAND_MAX))*(ub-lb);
+    if (lb > -INFINITY) {
+      if (ub < INFINITY) {
+        initPoint[k] = lb + ((double)(rand())/(double)(RAND_MAX))*(ub-lb);
       } else {
-        init_point[k] = lb + rand()%1000;
+        initPoint[k] = lb + rand()%1000;
       }	
     } else {
-      if(ub < INFINITY) {
-        init_point[k] = ub - rand()%1000;
+      if (ub < INFINITY) {
+        initPoint[k] = ub - rand()%1000;
       } else {
-        init_point[k] = rand()%1000;
+        initPoint[k] = rand()%1000;
       }
     }
   }
-  return init_point;
+  return initPoint;
 }
 
 double* MsProcessor::getStartPointScheme2(UInt n, RelaxationPtr rel1, 
-                                        int threadid, double radius, int numsols,
-                                        double* prev_start_point)
+                                        int threadId, double radius,
+                                        int numSols,
+                                        double* prevStartPoint)
 {
-  double* init_point = new double[n];
+  double* initPoint = new double[n];
   srand(time(NULL));
-  double lb,ub, lbdbindex,ubdbindex, norm, largestInterval = -INFINITY;
+  double lb, ub, lbdbVar, ubdbVar, norm, largestInterval = -INFINITY;
   double *a = new double [n];
-  int dbindex = -1; 
+  int dbVar = -1;
 
-  for(UInt k=0; k < n; k++) {
+  for(UInt k = 0; k < n; k++) {
     lb = rel1->getVariable(k)->getLb();
     ub = rel1->getVariable(k)->getUb();
-    if(lb  > -INFINITY) {
-      if(ub < INFINITY) {
+    if (lb > -INFINITY) {
+      if (ub < INFINITY) {
         //(first) doubly bdd variable found
-        if( (ub - lb) > largestInterval) {
-          dbindex = k;
+        if ((ub - lb) > largestInterval) {
+          dbVar = k;
           largestInterval = ub - lb;
         }
       }
     }
   }
 
-  if(dbindex >= 0) {
-    lbdbindex = rel1->getVariable(dbindex)->getLb();
-    ubdbindex = rel1->getVariable(dbindex)->getUb();
-    double width = (ubdbindex - lbdbindex)/numThreads_;
+  if (dbVar >= 0) {
+    lbdbVar = rel1->getVariable(dbVar)->getLb();
+    ubdbVar = rel1->getVariable(dbVar)->getUb();
+    double width = (ubdbVar - lbdbVar)/numThreads_;
 
-    if(numsols==0) {
+    if (numSols == 0) {
       //finding the initial point
-      for(UInt j=0; j < n; j++) {
-        if((int)j!=dbindex) {
+      for(UInt j = 0; j < n; j++) {
+        if ((int)j != dbVar) {
           lb = rel1->getVariable(j)->getLb();
           ub = rel1->getVariable(j)->getUb();
 
-          if(lb > -INFINITY) {
-            if(ub < INFINITY) {
-              init_point[j] = lb + ((double)(rand())/(double)(RAND_MAX))*(ub-lb);
+          if (lb > -INFINITY) {
+            if (ub < INFINITY) {
+              initPoint[j] = lb + ((double)(rand())/(double)(RAND_MAX))*(ub-lb);
             } else {
-              init_point[j] = lb + rand()%1000;
+              initPoint[j] = lb + rand()%1000;
             }	
           } else {
-            if(ub < INFINITY) {
-              init_point[j] = ub - rand()%1000;
+            if (ub < INFINITY) {
+              initPoint[j] = ub - rand()%1000;
             } else {
-              init_point[j] = rand()%1000;
+              initPoint[j] = rand()%1000;
             }
           }
         }
       }
-      //generating (dbindex)th coordinate within thread specific bound
-      lb = lbdbindex + (threadid)*width;
+      //generating (dbVar)th coordinate within thread specific bound
+      lb = lbdbVar + (threadId)*width;
       ub = lb + width;
-      init_point[dbindex] = lb + ((double)(rand())/(double)(RAND_MAX))*(ub-lb);
-      return init_point;
+      initPoint[dbVar] = lb + ((double)(rand())/(double)(RAND_MAX))*(ub-lb);
+      return initPoint;
     } 
     //else if there exists a previous starting point:
     //generate a random point outside a ball
     else {
-      for (UInt i=0; i < n; ++i) {
-        a[i] = ((double)rand())/((double)(RAND_MAX));        
+      for (UInt i = 0; i < n; ++i) {
+        a[i] = ((double)rand())/((double)(RAND_MAX));
       }
       norm = ENorm(a,n);
-      for (UInt i=0; i < n; ++i) {
+      for (UInt i = 0; i < n; ++i) {
         a[i] /= norm;
       }
-      for (UInt i=0; i < n; i++) {
-        if((int)i!=dbindex) {
+      for (UInt i = 0; i < n; i++) {
+        if ((int)i!=dbVar) {
           lb = rel1->getVariable(i)->getLb();
           ub = rel1->getVariable(i)->getUb();
-          init_point[i] = std::max( std::min(prev_start_point[i] + (a[i])*radius, ub), lb );  
+          initPoint[i] = std::max(std::min(prevStartPoint[i]
+                                           + (a[i])*radius, ub), lb);
         }
       }
-      lb = lbdbindex + (threadid)*width;
+      lb = lbdbVar + (threadId)*width;
       ub = lb + width;
-      init_point[dbindex] = std::max( std::min(prev_start_point[dbindex] + (a[dbindex])*radius, ub), lb );
+      initPoint[dbVar] = std::max(std::min(prevStartPoint[dbVar]
+                                           + (a[dbVar])*radius, ub), lb);
     }
-  }
-  else {
+  } else {
     //for singly bounded and unbdd variables
-    if(numsols==0) {
-      init_point = getStartPointScheme1(n, rel1);
-      return init_point;
-    }
-    else {
+    if (numSols == 0) {
+      initPoint = getStartPointScheme1(n, rel1);
+      delete[] a;
+      return initPoint;
+    } else {
       //generate a random point outside the radius
-      for (UInt i=0; i < n; ++i) {
+      for (UInt i = 0; i < n; ++i) {
         a[i] = ((double)rand())/((double)(RAND_MAX));        
       }
       norm = ENorm(a,n);
-      for (UInt i=0; i < n; ++i) {
+      for (UInt i = 0; i < n; ++i) {
         a[i] /= norm;
       }
-      for (UInt i=0; i < n; i++) {
+      for (UInt i = 0; i < n; i++) {
         lb = rel1->getVariable(i)->getLb();
         ub = rel1->getVariable(i)->getUb();
-        init_point[i] = std::max( std::min(prev_start_point[i] + (a[i])*radius,
-                                           ub), lb );
+        initPoint[i] = std::max( std::min(prevStartPoint[i] + (a[i])*radius,
+                                           ub), lb);
       }
     }
   }
   delete[] a;
-  return init_point;
+  return initPoint;
 }
 
 
 double * MsProcessor::getStartPointScheme4(UInt n, RelaxationPtr rel1,
-                                           int threadid, double radius,
-                                           int numsols,
-                                           double* prev_start_point,
-                                           double* prev_opt, 
-                                           double costhetalim)
+                                           int threadId, double radius,
+                                           int numSols,
+                                           double* prevStartPoint,
+                                           double* prevOpt,
+                                           double cosThrshldAngle)
 {
-  double* init_point = new double[n];
+  double* initPoint = new double[n];
   srand(time(NULL));
-  double lb,ub, lbdbindex,ubdbindex, norm, largestInterval = -INFINITY;
+  double lb, ub, lbdbVar, ubdbVar, norm, largestInterval = -INFINITY;
   double* a = new double [n];        //random direction
-  double* prev_dir = new double [n]; //prev iter. direction
-  int dbindex = -1;                  //index of a doubly bounded variable
-  double costheta = 1;               //cos of angle between 'prev_dir' and 'a'
+  double* prevDir = new double [n]; //prev iter. direction
+  int dbVar = -1;                    //index of a doubly bounded variable
+  double cosAngle = 1;               //cos of angle between 'prevDir' and 'a'
 
-  for(UInt k=0; k < n; k++) {
+  for(UInt k = 0; k < n; k++) {
     lb = rel1->getVariable(k)->getLb();
     ub = rel1->getVariable(k)->getUb();
-    if(lb  > -INFINITY) {
-      if(ub < INFINITY) {
+    if (lb > -INFINITY) {
+      if (ub < INFINITY) {
         // doubly bdd variable with largest bound width
-        if( (ub - lb) > largestInterval) {
-          dbindex = k;
+        if ((ub - lb) > largestInterval) {
+          dbVar = k;
           largestInterval = ub - lb;
         }
       }
     }
   }
-
-  if(dbindex >= 0 ) {
-    lbdbindex = rel1->getVariable(dbindex)->getLb();
-    ubdbindex = rel1->getVariable(dbindex)->getUb();
-    double width = (ubdbindex - lbdbindex)/numThreads_;
-
-    if(numsols==0) {
+  if (dbVar >= 0 ) {
+    lbdbVar = rel1->getVariable(dbVar)->getLb();
+    ubdbVar = rel1->getVariable(dbVar)->getUb();
+    double width = (ubdbVar - lbdbVar)/numThreads_;
+    if (numSols == 0) {
       //getting the initial point
-      for(UInt j=0; j < n; j++) {
-        if((int)j!=dbindex) {
+      for(UInt j = 0; j < n; j++) {
+        if ((int)j != dbVar) {
           lb = rel1->getVariable(j)->getLb();
           ub = rel1->getVariable(j)->getUb();
 
-          if(lb > -INFINITY) {
-            if(ub < INFINITY) {
-              init_point[j] = lb + ((double)(rand())/(double)(RAND_MAX))*(ub-lb);
+          if (lb > -INFINITY) {
+            if (ub < INFINITY) {
+              initPoint[j] = lb + ((double)(rand())/(double)(RAND_MAX))*(ub-lb);
             } else {
-              init_point[j] = lb + rand()%1000;
+              initPoint[j] = lb + rand()%1000;
             }	
           } else {
-            if(ub < INFINITY) {
-              init_point[j] = ub - rand()%1000;
+            if (ub < INFINITY) {
+              initPoint[j] = ub - rand()%1000;
             } else {
-              init_point[j] = rand()%1000;
+              initPoint[j] = rand()%1000;
             }
           }
         }
       }
-      //generating (dbindex)th coordinate within thread specific bound
-      lb = lbdbindex + (threadid)*width;
+      //generating (dbVar)th coordinate within thread specific bound
+      lb = lbdbVar + (threadId)*width;
       ub = lb + width;
-      init_point[dbindex] = lb + ((double)(rand())/(double)(RAND_MAX))*(ub-lb);
-      return init_point;
-    } 
+      initPoint[dbVar] = lb + ((double)(rand())/(double)(RAND_MAX))*(ub-lb);
+      delete[] a;
+      delete[] prevDir;
+      return initPoint;
+    } else {
     //else if there exists a previous starting point:
     //generate a random point outside the radius in conjugate direction
-    else {
-      while(costheta < costhetalim) {
-        for (UInt i=0; i < n; ++i) {
+      while(cosAngle < cosThrshldAngle) {
+        for (UInt i = 0; i < n; ++i) {
           a[i] = ((double)rand())/((double)(RAND_MAX));        
         }
         //find the angle between the two directions
-        for (UInt i=0; i < n; ++i) {
-          prev_dir[i] = prev_opt[i] - prev_start_point[i];
+        for (UInt i = 0; i < n; ++i) {
+          prevDir[i] = prevOpt[i] - prevStartPoint[i];
         }
-        costheta = InnerProduct(a, prev_dir, n)/((ENorm(a,n))*(ENorm(prev_dir,n)));
+        cosAngle = InnerProduct(a, prevDir,n)/((ENorm(a,n))*(ENorm(prevDir,n)));
       }
       norm = ENorm(a,n);
-      for (UInt i=0; i < n; ++i) {
+      for (UInt i = 0; i < n; ++i) {
         a[i] /= norm;
       }
-      for (UInt i=0; i < n; i++) {
-        if((int)i!=dbindex) {
+      for (UInt i = 0; i < n; i++) {
+        if ((int)i != dbVar) {
           lb = rel1->getVariable(i)->getLb();
           ub = rel1->getVariable(i)->getUb();
-          init_point[i] = std::max(std::min(prev_start_point[i]
-                                            +(a[i])*radius, ub), lb); //check pointers
+          initPoint[i] = std::max(std::min(prevStartPoint[i]
+                                            +(a[i])*radius, ub), lb);
         }
       }
-      lb = lbdbindex + (threadid)*width;
+      lb = lbdbVar + (threadId)*width;
       ub = lb + width;
-      init_point[dbindex] = std::max(std::min(prev_start_point[dbindex]
-                                              +(a[dbindex])*radius, ub),lb);
+      initPoint[dbVar] = std::max(std::min(prevStartPoint[dbVar]
+                                              +(a[dbVar])*radius, ub),lb);
     }
-  }
-  else {
+  } else {
     //for singly bounded and unbdd variables
-    if(numsols==0) {
-      init_point = getStartPointScheme1(n, rel1);
-      return init_point;
-    }
-    else {
+    if (numSols == 0) {
+      initPoint = getStartPointScheme1(n, rel1);
+      delete[] a;
+      delete[] prevDir;
+      return initPoint;
+    } else {
       //generate a random point outside the radius
-      while(costheta < costhetalim) {
-        for (UInt i=0; i < n; ++i) {
+      while(cosAngle < cosThrshldAngle) {
+        for (UInt i = 0; i < n; ++i) {
           a[i] = ((double)rand())/((double)(RAND_MAX));        
         }
         //find the angle between the two directions
-        for (UInt i=0; i < n; ++i) {
-          prev_dir[i] = prev_opt[i] - prev_start_point[i];
+        for (UInt i = 0; i < n; ++i) {
+          prevDir[i] = prevOpt[i] - prevStartPoint[i];
         }
-        costheta = InnerProduct(a, prev_dir, n)/((ENorm(a,n))*(ENorm(prev_dir,n)));
+        cosAngle = InnerProduct(a, prevDir,n)/((ENorm(a,n))*(ENorm(prevDir,n)));
       }
       norm = ENorm(a,n);
-      for (UInt i=0; i < n; ++i) {
+      for (UInt i = 0; i < n; ++i) {
         a[i] /= norm;
       }
-      for (UInt i=0; i < n; i++) {
+      for (UInt i = 0; i < n; i++) {
         lb = rel1->getVariable(i)->getLb();
         ub = rel1->getVariable(i)->getUb();
-        init_point[i] = std::max(std::min(prev_start_point[i]+(a[i])*radius,ub),lb);
+        initPoint[i] = std::max(std::min(prevStartPoint[i] + (a[i])*radius, ub)
+                                , lb);
       }
     }
   }
   delete[] a;
-  delete[] prev_dir;
-  return init_point;
+  delete[] prevDir;
+  return initPoint;
 }
 
 double * MsProcessor::getStartPointScheme5 (UInt n, RelaxationPtr rel1,
-                                            int threadid, double radius,
-                                            double* prev_start_point,
-                                            double* prev_opt, int K, 
+                                            int threadId, double radius,
+                                            double* prevStartPoint,
+                                            double* prevOpt, int K,
                                             double lambda)
 {
-  double* init_point = new double[n];
+  double* initPoint = new double[n];
   srand(time(NULL));
-  double lb,ub, lbdbindex,ubdbindex, width, norm, largestInterval = -INFINITY;
-  double* new_dir = new double [n];     //random direction
-  double* tempcorner = new double [n];  //new iteration direction
-  int dbindex = -1;                     //index of a doubly bounded variable
-  double* farcorner;
+  double lb, ub, lbdbVar = -INFINITY, ubdbVar = INFINITY;
+  double width = 0, norm, largestInterval = -INFINITY;
+  double* newDir = new double [n];     //random direction
+  double* tempCorner = new double [n];  //new iteration direction
+  int dbVar = -1;                       //index of a doubly bounded variable
+  double* farCorner;
 
-  for(UInt k=0; k < n; k++) {
+  for(UInt k = 0; k < n; k++) {
     lb = rel1->getVariable(k)->getLb();
     ub = rel1->getVariable(k)->getUb();
-    if(lb  > -INFINITY) {
-      if(ub < INFINITY) {
+    if (lb > -INFINITY) {
+      if (ub < INFINITY) {
         // doubly bdd variable with largest bound width
-        if( (ub - lb) > largestInterval) {
-          dbindex = k;
+        if ((ub - lb) > largestInterval) {
+          dbVar = k;
           largestInterval = ub - lb;
         }
       }
@@ -591,95 +581,60 @@ double * MsProcessor::getStartPointScheme5 (UInt n, RelaxationPtr rel1,
   }
 
   //get distance r of prev start from previous optimal
-  radius = getDistance(prev_start_point, prev_opt, n);
+  radius = getDistance(prevStartPoint, prevOpt, n);
 
   //get farthest box corner
-  farcorner = getFarBoxCorner(n, rel1, threadid, prev_opt, K);
+  farCorner = getFarBoxCorner(n, rel1, threadId, prevOpt, K);
 
   //get the direction unit vector of prev opt from farboxcorner
-  for (UInt i=0; i < n; i++) {
-    new_dir[i] = farcorner[i] - prev_opt[i];
+  for (UInt i = 0; i < n; i++) {
+    newDir[i] = farCorner[i] - prevOpt[i];
   }
-  norm = ENorm(new_dir, n);
-  for (UInt i=0; i < n; i++) {
-    new_dir[i] = new_dir[i]/norm;
+  norm = ENorm(newDir, n);
+  for (UInt i = 0; i < n; i++) {
+    newDir[i] = newDir[i]/norm;
   }
   //find a point at a distance = radius in this direction
-  for (UInt i=0; i < n; i++) {
-    if((int)i==dbindex)      //this considers dbindex>=0 also
-    {
-      lbdbindex = rel1->getVariable(dbindex)->getLb(); 
-      ubdbindex = rel1->getVariable(dbindex)->getUb();
-      width = (ubdbindex - lbdbindex)/numThreads_;
-      lb = lbdbindex + (threadid)*width;
+  for (UInt i = 0; i < n; i++) {
+    if ((int)i == dbVar) {    //this considers dbVar >= 0 also
+      lbdbVar = rel1->getVariable(dbVar)->getLb();
+      ubdbVar = rel1->getVariable(dbVar)->getUb();
+      width = (ubdbVar - lbdbVar)/numThreads_;
+      lb = lbdbVar + (threadId)*width;
       ub = lb + width;
-    }
-    else {
+    } else {
       lb = rel1->getVariable(i)->getLb();
       ub = rel1->getVariable(i)->getUb();
     }
-    tempcorner[i] = std::max(std::min(prev_opt[i] + radius*
-                                      new_dir[i], ub), lb);
+    tempCorner[i] = std::max(std::min(prevOpt[i] + radius*
+                                      newDir[i], ub), lb);
   }
 
   //take a convex combination of this point and farboxcorner as the start
   //point and bring it within variable bounds
-  if(lambda==-1) {
+  if (lambda == -1) {
     lambda = ((double)rand())/((double)(RAND_MAX));
   }
-  for (UInt i=0; i < n; i++) {
-    if((int)i==dbindex)     
-    {
-      //lbdbindex = rel1->getVariable(dbindex)->getLb(); 
-      //ubdbindex = rel1->getVariable(dbindex)->getUb();
-      //double width = (ubdbindex - lbdbindex)/numThreads_;
-      lb = lbdbindex + (threadid)*width;
+  for (UInt i = 0; i < n; i++) {
+    if ((int)i == dbVar) {
+      lb = lbdbVar + (threadId)*width;
       ub = lb + width;
-    }
-    else {
+    } else {
       lb = rel1->getVariable(i)->getLb();
       ub = rel1->getVariable(i)->getUb();
     }
-    init_point[i] = std::max(std::min(tempcorner[i]+(1-lambda)*
-                                      (farcorner[i]-tempcorner[i]), ub), lb);
+    initPoint[i] = std::max(std::min(tempCorner[i]+(1-lambda)*
+                                      (farCorner[i]-tempCorner[i]), ub), lb);
   }
-  delete[] new_dir;
-  delete[] tempcorner;
-  return init_point;
+  delete[] newDir;
+  delete[] tempCorner;
+  return initPoint;
 }
 
-//double * MsProcessor::getStartPointScheme6(UInt n, RelaxationPtr rel1, 
-                                           //int threadid, double radius,
-                                           //int numsols, 
-                                           //double* prev_start_point,
-                                           //double* prev_opt, int K, 
-                                           //double lambda)
-//{
-  //double* init_point = new double[n];
-  //srand(time(NULL));
-  //double lb,ub, lbdbindex,ubdbindex, width, norm, largestInterval = -INFINITY;
-  //double new_dir[n], tempcorner[n];      //random direction and new iter. direction
-  //int dbindex = -1;                      //index of maxspan doubly bounded variable
-
-//find active constraints at the prev optimal
-
-//take a random linear combination of the gradients of active constraints by
-//using appropriate signs depending upon <= or >=
-
-//while
-//the objective function is decreasing
-//
-//the average constraint violation
-//
-//increase the step length
-//
-
-
-//}
 
 double * MsProcessor::genInitialPoint(UInt n, RelaxationPtr rel1)
 {
-  double* init_point = new double[n];
+  double* initPoint = new double[n];
   EngineStatus status;
   RelaxationPtr relc = (RelaxationPtr) new Relaxation(rel1);
   EnginePtr ec = engine_->emptyCopy();
@@ -699,13 +654,13 @@ double * MsProcessor::genInitialPoint(UInt n, RelaxationPtr rel1)
 
   solveRelaxation_(ec);
   status = ec->getStatus();
-  if ( (ProvenInfeasible==status || ProvenLocalInfeasible==status ||
-        ProvenObjectiveCutOff==status || ProvenFailedCQInfeas==status || 
-        FailedInfeas==status) || ((FailedFeas==status || 
-                                   ProvenFailedCQFeas==status || ProvenLocalOptimal==status) )) 
-    init_point = (double*)ec->getSolution()->getPrimal();
-  return init_point;
-
+  if (ProvenInfeasible==status || ProvenLocalInfeasible==status
+       || ProvenObjectiveCutOff==status || ProvenFailedCQInfeas==status
+       || FailedInfeas==status || FailedFeas==status
+       || ProvenFailedCQFeas==status || ProvenLocalOptimal==status) {
+    initPoint = (double*)ec->getSolution()->getPrimal();
+  }
+  return initPoint;
 }
 
 void MsProcessor::process(NodePtr node, RelaxationPtr rel,
@@ -720,35 +675,35 @@ void MsProcessor::process(NodePtr node, RelaxationPtr rel,
 
   ++stats_.proc;
   relaxation_ = rel;
-  UInt numStarts = 1;      	                  //number of restarts per thread
-  UInt numvars = rel->getNumVars();               //number of variables in the problem
-  RelaxationPtr* relcopy = new RelaxationPtr[numThreads_];
-  EnginePtr* ecopy = new EnginePtr[numThreads_];  
-  EngineStatus* estatus = new EngineStatus[numThreads_];
-  int* solcnt = new int[numThreads_];   //#solutions obtained at each thread
+  UInt numVars = rel->getNumVars();     //number of variables in the problem
+  RelaxationPtr *relCopy = new RelaxationPtr[numThreads_];
+  EnginePtr* eCopy = new EnginePtr[numThreads_];
+  EngineStatus* eStatus = new EngineStatus[numThreads_];
+  int* solCount = new int[numThreads_]; //#solutions obtained at each thread
 
   ConstSolutionPtr bestsolthd;          //thread-best solution
   ConstSolutionPtr bestsol ;            //best solution among all threads
 
-  double threadbestval = INFINITY, bestval = INFINITY;
-  double *start_point, *prev_start_point, *prev_opt; 
-  double radscal = 1.5;                 //factor for scaling radius
-  double costhetalim = sqrt(3)/2;       //threshold angle set to 30 degree
+  double threadBestVal = INFINITY, bestVal = INFINITY;
+  double *startPoint = NULL;
+  double *prevStartPoint = NULL;
+  double *prevOpt = NULL;
+  double radScal = 1.5;                 //factor for scaling radius
+  double cosThrshldAngle = sqrt(3)/2;   //threshold angle set to 30 degree
   int K = 1000;                         //upper bound for rand. no. generated
   double lambda = -1;                   //value for taking convex combination
-  double prevsolval;                    //previous solution value
+  double prevSolVal = INFINITY;         //previous solution value
 
+#if USE_OPENMP
 #pragma omp parallel for   
-  for(UInt i=0; i < numThreads_; i++) {
-#pragma omp critical
-    {
-      relcopy[i] = (RelaxationPtr) new Relaxation(rel); 
-      ecopy[i] = engine_->emptyCopy();
-      ecopy[i]->clear();
-      relcopy[i]->prepareForSolve();
-      ecopy[i]->load(relcopy[i]);
-    }
-    solcnt[i] = 0;
+#endif
+  for(UInt i = 0; i < numThreads_; i++) {
+    relCopy[i] = (RelaxationPtr) new Relaxation(rel);
+    eCopy[i] = engine_->emptyCopy();
+    eCopy[i]->clear();
+    relCopy[i]->prepareForSolve();
+    eCopy[i]->load(relCopy[i]);
+    solCount[i] = 0;
   }
 
   // loop for branching and resolving if necessary.
@@ -760,170 +715,157 @@ void MsProcessor::process(NodePtr node, RelaxationPtr rel,
     logger_->msgStream(LogDebug) << me_ << "iteration " << iter << std::endl;
 #endif
 
-    //Solving multiple copies of relaxations (parallel region begin)
+    //Solving numThreads_ copies of relaxations (parallel region begin)
+#if USE_OPENMP
 #pragma omp parallel for 
-    for(UInt i=0; i < numThreads_; i++) {
+#endif
+    for(UInt i = 0; i < numThreads_; i++) {
       ConstSolutionPtr sol1;
       double radius = 0.8;                //initial radius of region
 
-      for(UInt j=0; j < numStarts; j++) {  
+      for(UInt j = 0; j < 1 + numRestarts_; j++) {
 
         //Initial point generation schemes
         switch(schemeId_) {
         case 1:
           //Scheme 1: generate random points within variable bounds
-          start_point = getStartPointScheme1(numvars, relcopy[i]);
+          startPoint = getStartPointScheme1(numVars, relCopy[i]);
           break;
 
         case 2:
           //Scheme 2: generate a random start point outside a radius from prev
           //start point; enlarge the region radius if no improvement
-          if(solcnt[i] > 1) {
-            if(sol1->getObjValue() == prevsolval) {
-              radius *= radscal;  //tbd: take the distance between start pt and optimal
+          if (solCount[i] > 1) {
+            if (sol1->getObjValue() == prevSolVal) {
+              radius *= radScal;
             }
           }
-          start_point = getStartPointScheme2(numvars, relcopy[i], i, radius,
-                                           solcnt[i], prev_start_point);
+          startPoint = getStartPointScheme2(numVars, relCopy[i], i, radius,
+                                           solCount[i], prevStartPoint);
           break;
 
         case 3:
           //Scheme 2: generate a random start point outside a radius from prev
           //optimal point; take the region radius > dist(startpt, optimal) 
-          if(solcnt[i] > 1) {
-            if(sol1->getObjValue() == prevsolval) {
-              radius = radscal*getDistance(prev_start_point, prev_opt, numvars);
+          if (solCount[i] > 1) {
+            if (sol1->getObjValue() == prevSolVal) {
+              radius = radScal*getDistance(prevStartPoint, prevOpt, numVars);
+            } else {
+              radius = getDistance(prevStartPoint, prevOpt, numVars);
             }
-            else {
-              radius = getDistance(prev_start_point, prev_opt, numvars);
-            }
-            start_point = getStartPointScheme2(numvars, relcopy[i], i, radius,
-                                             solcnt[i], prev_opt);
-          }
-          else {//pass the previous start point
-            start_point = getStartPointScheme2(numvars, relcopy[i], i, radius,
-                                             solcnt[i], prev_start_point);
+            startPoint = getStartPointScheme2(numVars, relCopy[i], i, radius,
+                                             solCount[i], prevOpt);
+          } else {//pass the previous start point
+            startPoint = getStartPointScheme2(numVars, relCopy[i], i, radius,
+                                             solCount[i], prevStartPoint);
           }
           break;
 
         case 4:
-          //Scheme 4: passing previous optimal to get a possibly conjugate direction
-          //from the previous starting point
-          if (solcnt[i] > 1) {
-            if(sol1->getObjValue() == prevsolval) {
-              radius = radscal*getDistance(prev_start_point, prev_opt, numvars);
-            }
-            else {
-              radius = getDistance(prev_start_point, prev_opt, numvars);
+          //Scheme 4: pass previous optimal to get a possibly conjugate
+          //direction from the previous starting point
+          if (solCount[i] > 1) {
+            if (sol1->getObjValue() == prevSolVal) {
+              radius = radScal*getDistance(prevStartPoint, prevOpt, numVars);
+            } else {
+              radius = getDistance(prevStartPoint, prevOpt, numVars);
             }
           }
-          start_point = getStartPointScheme4(numvars, relcopy[i], i, radius,
-                                             solcnt[i], prev_start_point,
-                                             prev_opt, costhetalim);
+          startPoint = getStartPointScheme4(numVars, relCopy[i], i, radius,
+                                             solCount[i], prevStartPoint,
+                                             prevOpt, cosThrshldAngle);
           break;
 
         case 5:
           //Scheme 5: take convex combination of prev optimal and the farthest
           //box corner point from the optimal
-          if(solcnt[i] > 1) {
-            if(sol1->getObjValue() == prevsolval) {
-              start_point = getStartPointScheme1(numvars, relcopy[i]);
+          if (solCount[i] > 1) {
+            if (sol1->getObjValue() == prevSolVal) {
+              startPoint = getStartPointScheme1(numVars, relCopy[i]);
+            } else {
+              startPoint = getStartPointScheme5(numVars, relCopy[i], i,
+                                                  radius, prevStartPoint,
+                                                  prevOpt, K, lambda);
             }
-            else {
-              start_point = getStartPointScheme5(numvars, relcopy[i], i,
-                                                  radius, prev_start_point,
-                                                  prev_opt, K, lambda);
-            }
-          }
-          else if (solcnt[i]==1) {
-            start_point = getStartPointScheme5(numvars, relcopy[i], i,
-                                               radius, prev_start_point,
-                                               prev_opt, K, lambda);
+          } else if (solCount[i] == 1) {
+            startPoint = getStartPointScheme5(numVars, relCopy[i], i,
+                                               radius, prevStartPoint,
+                                               prevOpt, K, lambda);
 
-          }
-          else {
-              start_point = getBoxCorner(numvars, relcopy[i], i, K);
+          } else {
+              startPoint = getBoxCorner(numVars, relCopy[i], i, K);
           }
           break;
-
-        //case 6:
-          //Scheme 6: take random linear combination of active constraint
-          //gradients at the previous optimal point
-          //if(solcnt[i] > 1) {
-            //start_point = getStartPointScheme6(numvars, relcopy[i], i,
-                                               //radius, solcnt[i],
-                                               //prev_start_point, 
-                                               //prev_opt, K, lambda);
-          //}
-          //else {
-            //start_point = getStartPointScheme1(numvars,relcopy[i]);
-          //}
-        //case 7:
-          //Scheme 7: randomly fix k vars and solve the NLP; take sol as start point
-          //start_point = genInitialPoint(numvars, relcopy[i]);
-          //break;
-
-          //case 8:
-          //Scheme 8: consider only linear constraints, take the soln as start pt.
-          //break;
 
         default:
-          start_point = getStartPointScheme1(numvars,relcopy[i]);
+          startPoint = getStartPointScheme1(numVars,relCopy[i]);
           break;
-
         }          
 
-        relcopy[i]->setInitialPoint(start_point);
-        solveRelaxation_(ecopy[i]);      
-        estatus[i] = ecopy[i]->getStatus();      
+        relCopy[i]->setInitialPoint(startPoint);
+        solveRelaxation_(eCopy[i]);
+        eStatus[i] = eCopy[i]->getStatus();
 
-        if (ProvenOptimal==estatus[i] || ProvenLocalOptimal==estatus[i]) {
-          sol1 = ecopy[i]->getSolution();
-          prev_opt = (double*)sol1->getPrimal();
+        if (ProvenOptimal == eStatus[i] || ProvenLocalOptimal == eStatus[i]) {
+          sol1 = eCopy[i]->getSolution();
+          prevOpt = (double*)sol1->getPrimal();
 
-          if(sol1->getObjValue() < threadbestval) {
+          if (sol1->getObjValue() < threadBestVal) {
             bestsolthd = (SolutionPtr) new Solution(sol1);
-            threadbestval = sol1->getObjValue();
+            threadBestVal = sol1->getObjValue();
           }
-          prevsolval = sol1->getObjValue();
-          solcnt[i]++;
+          prevSolVal = sol1->getObjValue();
+          solCount[i]++;
         } 
-        //else if(ProvenInfeasible==estatus[i] || ProvenLocalInfeasible==estatus[i] ||
-                //ProvenObjectiveCutOff==estatus[i] || ProvenFailedCQInfeas==estatus[i] ||
-                //FailedInfeas==estatus[i] || FailedFeas==estatus[i] ||
-                //ProvenFailedCQFeas==estatus[i]) {
-          //std::cout<<"Relaxation infeasible from this starting point!"<<std::endl;
-        //}
-        //else if(ProvenUnbounded==estatus[i]) {
-          ////std::cout<<"Relaxation unbounded from this starting point!"<<std::endl;
-        //}
-        //else {
-        //}
-
-        prev_start_point = start_point;
-      }
-#pragma omp critical
-      {
-        if(solcnt[i] > 0) {
-          //std::cout<<"Best value at thread "<<omp_get_thread_num()<<": "<<threadbestval<<std::endl;
-
-          //5. Compare with/obtain the best solution (thread critical region)
-          if(threadbestval < bestval) {
-            bestsol = (SolutionPtr) new Solution(bestsolthd);
-            bestval = threadbestval;
-          }
+#if SPEW
+        else if (ProvenInfeasible==eStatus[i]
+                || ProvenLocalInfeasible==eStatus[i]
+                || ProvenObjectiveCutOff==eStatus[i]
+                || ProvenFailedCQInfeas==eStatus[i]
+                || FailedInfeas==eStatus[i] || FailedFeas==eStatus[i]
+                || ProvenFailedCQFeas==eStatus[i]) {
+          logger_->msgStream(LogDebug2) << me_
+            <<"Relaxation infeasible from this starting point!" << std::endl;
+        } else if (ProvenUnbounded==eStatus[i]) {
+          logger_->msgStream(LogDebug2) << me_
+            <<"Relaxation unbounded from this starting point!" << std::endl;
+        } else {
+            <<"Unknown status" << std::endl;
         }
-        else {
-          should_prune = shouldPrune_(node, ecopy[i]->getSolution()->getObjValue(), s_pool);  // (Prune infeas.)
+#endif
+        prevStartPoint = startPoint;
+      }
+#if USE_OPENMP
+#pragma omp critical
+#endif
+      {
+        if (solCount[i] > 0) {
+#if SPEW
+          logger_->msgStream(LogDebug2) << me_ << " best value at thread "
+#if USE_OPENMP
+            << omp_get_thread_num()
+#endif
+            << "= threadBestVal"<<std::endl;
+#endif
+          //5. Compare with/obtain the best solution (thread critical region)
+          if (threadBestVal < bestVal) {
+            bestsol = (SolutionPtr) new Solution(bestsolthd);
+            bestVal = threadBestVal;
+          }
+        } else {
+          should_prune = shouldPrune_(node,
+                                      eCopy[i]->getSolution()->getObjValue(),
+                                      s_pool);
         }
       }
     }
-
     if (should_prune) {
       break;
     }
-    //std::cout<<std::endl<<"Best overall value at node: "<<bestval<<std::endl<<std::endl;
-
+#if SPEW
+    logger_->msgStream(LogDebug2) << me_ << " best overall value at node = "
+      << bestVal << std::endl;
+#endif
     //6. Update the best solution (if no bestsol is obtained, rel is inf)
     sol = (SolutionPtr) new Solution(bestsol);
 
@@ -967,18 +909,13 @@ void MsProcessor::process(NodePtr node, RelaxationPtr rel,
       break;
     }
   }
-#if 0
-  if ((true==should_prune || node->getLb() >-4150) && true==xfeas) {
-    std::cout << "problem here!\n";
-    std::cout << node->getStatus() << "\n";
-    rel->write(std::cout);
-    exit(0);
-  }
-#endif
-  delete[] relcopy;
-  delete[] ecopy;
-  delete[] estatus;
-  delete[] solcnt;
+  delete[] relCopy;
+  delete[] eCopy;
+  delete[] eStatus;
+  delete[] solCount;
+  delete[] startPoint;
+  //delete prevStartPoint;
+  //delete prevOpt;
   return;
 }
 
