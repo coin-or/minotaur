@@ -702,7 +702,7 @@ void SimpleTransformer::uniVarRef_(const CNode *n0, LinearFunctionPtr lfl,
     v = newVar_(cg, newp_);
     d = 0;
   } else {
-    d = n0->eval(dl, &err);
+    d = n0->evalSingle(dl, &err);
     assert(0==err);
   }
 }

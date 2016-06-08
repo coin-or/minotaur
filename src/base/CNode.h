@@ -118,55 +118,243 @@ public:
   void eval(const double *x, int *error);
 
   /**
-   * \brief TODO: Unused.
+   * \brief Evaluate the value of just this node based on the single value
+   * given as an input parameter. Ignores the values at the children nodes.
+   * Used by Transformer classes. Applicable only to nodes that require a
+   * single input (like OpUMinus, OpSqrt, etc) and not others (like OpSumList,
+   * OpPlus, OpMult, etc.)
+   *
+   * \param [in] x The input argument for the function.
+   * \param [out] error Nonzero if there is an error in evaluation like some
+   * IEEE exception.
+   * \return The value of the function evaluated.
    */
-  double eval(double x, int *error) const;
+  double evalSingle(double x, int *error) const;
 
+  /**
+   * \brief Find the type of the function (constant, linear, polynomial, etc.)
+   * based on the function type of children.
+   */
   FunctionType findFType();
+
+  /**
+   * \brief Calculate the derivative of the function at this node based on
+   * values and gradients of children nodes. Used in forward-mode gradient
+   * calculation.
+   */
   void fwdGrad();
+
+  /// \return The value of the boolean flag.
   bool getB() const { return b_; };
+
+  /// \return The value of the gradient value.
   double getG() const { return g_; };
+
+  /// \return The value of the hessian value at this node.
   double getH() const {return h_;};
+
+  /// \return The ID
   UInt getId() const {return id_;};
+
+  /// \return The pointer to left child
   CNode* getL() const { return l_; };
+
+  /// \return The lower bound
   double getLb() const { return lb_; };
+
+  /// \return Pointer to the beginning of array of pointers to children
   CNode** getListL() const { return child_; };
+
+  /// \return Pointer to the end of array of pointers to children
   CNode** getListR() const { return child_+numChild_; };
+
+  /// \return The opcode of this node.
   OpCode getOp() const { return op_; };
   CQIter2* getParB() const { return parB_; };
+
+  /// \return The pointer to right child
   CNode* getR() const { return r_; };
   int getTempI() const { return ti_; };
+
+  /// \return The stored function type (does not evaluate).
   FunctionType getType() const { return fType_; } ;
+
+  /// \return The upper bound
   double getUb() const { return ub_; };
+
+  /// \return The unique parent if any, otherwise return NULL
   CNode* getUPar() const { return uPar_; };
+
+  /// \return Pointer to the variable if the node is OpVar, otherwise NULL
   const Variable* getV() const { return v_; };
+
+  /// \return The value of function stored at this node (does not evaluate)
   double getVal() const { return val_; };
+
+  /**
+   * \brief Push gradient values to children for reverse mode gradient
+   * evaluation.
+   *
+   * \param [out] error Nonzero if there is an error in evaluation.
+   */
   void grad(int *error);
-  UInt numChild() const;
+
+  /// \return The number of children nodes.
+  UInt numChild() const { return numChild_; };
+
+  /// \return The number of parents
   UInt numPar() const { return numPar_; };
+
+  /**
+   * \brief Find whether child-nodes must participate in evaluation  of the
+   * current column of the hessian-matrix. Sets values of internal flags and
+   * variables.
+   */
   void propHessSpa();
+
+  /// A variant of propHessSpa()
   void propHessSpa2(CNodeRSet *nset);
+
+  /**
+   * \brief Deduce and push new bounds to child-nodes based on bounds of this
+   * node.
+   *
+   * \param [out] is_inf True if it detects inconsistency, i.e. infeasibility
+   * \param [out] error Nonzero if some error is encountered in evaluation.
+   */
   void propBounds(bool *is_inf, int *error);
+
+  /**
+   * \brief Reverse mode hessian evaluation. Hessian values are pushed to
+   * children nodes.
+   *
+   * \param [out] error Nonzero if some error is encountered in evaluation.
+   */
   void hess(int *error);
+
+  /**
+   * \brief Reverse mode hessian evaluation with sparsity detection. Hessian
+   * values are pushed to children nodes.
+   *
+   * \param [in, out] nset Children are added to nset if they participate in
+   * Hessian.
+   * \param [out] error Nonzero if some error is encountered in evaluation.
+   */
   void hess2(CNodeRSet *nset, int *error);
+
+  /**
+   * \brief Set the boolean flag.
+   *
+   * \param [in] b The flag.
+   */
   void setB(bool b) {b_ = b;};
+
+  /**
+   * \brief Set lower and upper bounds on the node.
+   *
+   * \param [in] lb Lower bound.
+   * \param [in] ub Upper bound.
+   */
   void setBounds(double lb, double ub) {lb_ = lb; ub_ = ub; };
+
+  /**
+   * \brief Set the constant double value (OpNum and OpInt).
+   *
+   * \param [in] d The value.
+   */
   void setDouble(double d) {d_ = d;};
+
+  /**
+   * \brief Set the value of the derivative (reverse mode gradient)
+   *
+   * \param [in] g The value.
+   */
   void setG(double g) {g_ = g;};
+
+  /**
+   * \brief Set the value of the derivative (forward mode gradient)
+   *
+   * \param [in] gi The value.
+   */
   void setGi(double gi) {gi_ = gi;};
+
+  /**
+   * \brief Set the value of the hessian.
+   *
+   * \param [in] h The value.
+   */
   void setH(double h) {h_ = h;};
+
+  /**
+   * \brief Set the value of the node ID.
+   *
+   * \param [in] i The value.
+   */
   void setId(UInt i) {id_ = i;};
-  void setInt(int i) {i_ = i;};
+
+  /**
+   * \brief Set the pointer to the left-most child
+   *
+   * \param [in] n The pointer.
+   */
   void setL(CNode *n) {l_ = n;};
+
+
+  /**
+   * \brief Set the OpCode.
+   *
+   * \param [in] op The OpCode value.
+   */
   void setOp(OpCode op) {op_ = op;};
+
+  /**
+   * \brief Set the pointer to the right-most child
+   *
+   * \param [in] n The pointer.
+   */
   void setR(CNode *n) {r_ = n;};
+
+  /**
+   * \brief Set the value of the temporary integer ti_
+   *
+   * \param [in] ti The pointer.
+   */
   void setTempI(int i) { ti_ = i; };
+
+  /**
+   * \brief Set the value of function type of the graph rooted at this node
+   *
+   * \param [in] t The type.
+   */
   void setType(FunctionType t);
+
+  /**
+   * \brief Set the value of function at this node
+   *
+   * \param [in] v The value.
+   */
   void setVal(double v);
+
+  /**
+   * \brief Set the Variable at this node (for OpVar nodes)
+   *
+   * \param [in] v The variable pointer.
+   */
   void setV(VariablePtr v) {v_ = v.get();};
+
+  /**
+   * \brief Find bounds deduced from the bounds of children nodes and update
+   * lb_ and ub_
+   *
+   * \param [out] error Nonzero if some error is encountered in evaluating the
+   * bounds.
+   */
   void updateBnd(int *error);
 
+  /// Print the function expression at current node only.
   void write(std::ostream &out) const;
+
+  /// Print the function expression at current node and the sub-tree.
   void writeSubExp(std::ostream &out) const;
 
 protected:
@@ -179,7 +367,6 @@ protected:
   double gi_;     /// Value of the derivative of this node w.r.t. to a given var
                   /// (forward mode)
   double h_;      /// Value of the hessian
-  int i_;         /// TODO: Is it unused?
   UInt id_;       /// Unique ID of the node, used in the map
   CNode *l_;      /// Left child
   double lb_;     /// lower bound that a node can achieve

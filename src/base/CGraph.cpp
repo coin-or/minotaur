@@ -976,7 +976,6 @@ CNode* CGraph::newNode(int i)
 {
   CNode *z = 0;
   CNode *node = new CNode(OpInt, z, z);
-  node->setInt(i);
   node->setVal(i);
   aNodes_.push_back(node);
   return node;

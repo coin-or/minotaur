@@ -36,7 +36,6 @@ CNode::CNode()
     g_(0),
     gi_(0),
     h_(0),
-    i_(0),
     id_(0),
     l_(0),
     lb_(-INFINITY),
@@ -63,7 +62,6 @@ CNode::CNode(OpCode op, CNode *lchild, CNode *rchild)
     g_(0),
     gi_(0),
     h_(0),
-    i_(0),
     id_(0),
     l_(lchild),
     lb_(-INFINITY),
@@ -100,7 +98,6 @@ CNode::CNode(OpCode op, CNode **children, UInt num_child)
     g_(0),
     gi_(0),
     h_(0),
-    i_(0),
     id_(0),
     l_(0),
     lb_(-INFINITY),
@@ -207,7 +204,6 @@ CNode* CNode::clone() const
   node->g_ = g_;
   node->gi_ = gi_;
   node->h_ = h_;
-  node->i_ = i_;
   node->id_ = id_;
   node->lb_ = lb_;
   node->numChild_ = numChild_;
@@ -304,7 +300,7 @@ void CNode::copyParChild(CNode *out,
 }
 
 
-double CNode::eval(double x, int *error) const
+double CNode::evalSingle(double x, int *error) const
 {
   errno = 0; //declared in cerrno
   double val = 0;
@@ -976,9 +972,9 @@ void CNode::grad(int *error)
     break;
   case (OpCeil):
     if (fabs(l_->val_ - floor(0.5+l_->val_))<1e-12) {
-      l_->gi_ += gi_;
+      l_->g_ += g_;
     } else {
-      l_->gi_ += 0.0;
+      l_->g_ += 0.0;
     }
     break;
   case (OpCos):
@@ -1252,12 +1248,6 @@ void CNode::hess2(CNodeRSet *nset, int *error)
 {
   propHessSpa2(nset);
   hess(error);
-}
-
-
-UInt CNode::numChild() const
-{
-  return numChild_;
 }
 
 
