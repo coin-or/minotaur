@@ -26,7 +26,6 @@
 #include "LinFeasPump.h"
 #include "Logger.h"
 #include "LPEngine.h"
-#include "LPProcessor.h"
 #include "MaxFreqBrancher.h"
 #include "MaxVioBrancher.h"
 #include "MINLPDiving.h"
@@ -36,6 +35,7 @@
 #include "NodeIncRelaxer.h"
 #include "Objective.h"
 #include "Option.h"
+#include "PCBProcessor.h"
 #include "Presolver.h"
 #include "ProblemSize.h"
 #include "QPEngine.h"
@@ -101,7 +101,7 @@ BranchAndBound* createBab(EnvPtr env, ProblemPtr p, EnginePtr e,
     handlers.push_back(nlhand);
   }
   //if (handlers.size()>1) {
-    //nproc = (LPProcessorPtr) new LPProcessor(env, e, handlers);
+    //nproc = (PCBProcessorPtr) new PCBProcessor(env, e, handlers);
   //} else {
     //nproc = (BndProcessorPtr) new BndProcessor(env, e, handlers);
   //}
