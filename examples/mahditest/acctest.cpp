@@ -36,7 +36,7 @@
 //#include <OsiLPEngine.h>
 #include <NodeRelaxer.h>
 #include <NodeIncRelaxer.h>
-#include <LPProcessor.h>
+#include <PCBProcessor.h>
 #include <MaxVioBrancher.h>
 #include <QGHandler.h>
 #include <ReliabilityBrancher.h>

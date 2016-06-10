@@ -12,7 +12,7 @@
 #include "IntVarHandler.h"
 #include "LinearFunction.h"
 #include "LinearHandler.h"
-#include "LPProcessor.h"
+#include "PCBProcessor.h"
 #include "NodeIncRelaxer.h"
 #include "Objective.h"
 #include "Problem.h"
@@ -35,14 +35,14 @@ BranchAndBound * createBab (EnvPtr env, ProblemPtr p, EnginePtr e,
   IntVarHandlerPtr v_hand = (IntVarHandlerPtr) new IntVarHandler(env,p);
   LinearHandlerPtr l_hand = (LinearHandlerPtr) new LinearHandler(env,p);
   ReliabilityBrancherPtr rel_br;
-  LPProcessorPtr nproc;
+  PCBProcessorPtr nproc;
   NodeIncRelaxerPtr = nr;
   RelaxationPtr rel;
   BranchAndBound *bab = new BranchAndBound(env,p);
 
   handlers.push_back(v_hand);
   handlers.push_back(l_hand);
-  nproc = (LPProcessorPtr) new LPProcessor(env,e,handlers);
+  nproc = (PCBProcessorPtr) new PCBProcessor(env,e,handlers);
 
   rel_br = (ReliabilityBrancherPtr) new ReliabilityBrancher(env,handler);
   rel_br->setEngine(e);

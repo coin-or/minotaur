@@ -28,12 +28,12 @@
 #include "NlPresHandler.h"
 #include <NodeRelaxer.h>
 #include <NodeIncRelaxer.h>
-#include <LPProcessor.h>
 #include <MaxVioBrancher.h>
 #include <QGHandler.h>
 #include <ReliabilityBrancher.h>
 #include <AMPLInterface.h>
 #include <BranchAndBound.h>
+#include <PCBProcessor.h>
 #include <Presolver.h>
 #include <Timer.h>
 #include <LexicoBrancher.h>
@@ -250,7 +250,7 @@ int main(int argc, char* argv[])
   const std::string me("qg: ");
 
   BrancherPtr br = BrancherPtr(); // NULL
-  LPProcessorPtr nproc;
+  PCBProcessorPtr nproc;
 
   NodeIncRelaxerPtr nr;
   
@@ -348,7 +348,7 @@ int main(int argc, char* argv[])
     nr->setModFlag(false);
 
     nr->setEngine(lin_e);
-    nproc = (LPProcessorPtr) new LPProcessor(env, lin_e, handlers);
+    nproc = (PCBProcessorPtr) new PCBProcessor(env, lin_e, handlers);
 
     if (env->getOptions()->findString("brancher")->getValue() == "rel") {
       ReliabilityBrancherPtr rel_br = 

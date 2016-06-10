@@ -14,7 +14,7 @@
 #include "IntVarHandler.h"
 #include "LinearHandler.h"
 #include "LPEngine.h"
-#include "LPProcessor.h"
+#include "PCBProcessor.h"
 #include "NLPBnbUT.h"
 #include "NLPEngine.h"
 #include "NodeIncRelaxer.h"
@@ -313,7 +313,7 @@ void NLPBnbUT::testNLPBnb1()
   EngineFactory efac(env);
   e = efac.getNLPEngine();
 
-  LPProcessorPtr nproc = (LPProcessorPtr) new LPProcessor(env, e, handlers);
+  PCBProcessorPtr nproc = (PCBProcessorPtr) new PCBProcessor(env, e, handlers);
   br= (ReliabilityBrancherPtr) new ReliabilityBrancher(env, handlers);
   br->setEngine(e);
   nproc->setBrancher(br);

@@ -31,7 +31,7 @@
 //#include <OsiLPEngine.h>
 #include <NodeRelaxer.h>
 #include <NodeIncRelaxer.h>
-#include <LPProcessor.h>
+#include <PCBProcessor.h>
 #include <MaxVioBrancher.h>
 #include "quasiQGHandler.h"
 #include <ReliabilityBrancher.h>
@@ -140,7 +140,7 @@ int main(int argc, char* argv[])
 
   Bool prune = false;
   BrancherPtr br = BrancherPtr(); // NULL
-  LPProcessorPtr nproc;
+  PCBProcessorPtr nproc;
 
   NodeIncRelaxerPtr nr;
   CutMan2Ptr ctMngr;
@@ -441,7 +441,7 @@ int main(int argc, char* argv[])
   // find the type of relaxation.
   if (!prune) {
     nr->setEngine(lin_e);
-    nproc = (LPProcessorPtr) new LPProcessor(env, lin_e, handlers);
+    nproc = (PCBProcessorPtr) new PCBProcessor(env, lin_e, handlers);
 
     if (env->getOptions()->findString("brancher")->getValue() == "rel") {
       ReliabilityBrancherPtr rel_br = 

@@ -11,7 +11,7 @@
 #include "Environment.h"
 #include "IntVarHandler.h"
 #include "LinearHandler.h"
-#include "LPProcessor.h"
+#include "PCBProcessor.h"
 #include "NodeIncRelaxer.h"
 #include "OsiLPEngine.h"
 #include "Option.h"
@@ -135,7 +135,7 @@ void AMPLOsiUT::testOsiBnB()
 
   EngineFactory efac(env);
   e = efac.getLPEngine();
-  LPProcessorPtr nproc = (LPProcessorPtr) new LPProcessor(env, e, handlers);
+  PCBProcessorPtr nproc = (PCBProcessorPtr) new PCBProcessor(env, e, handlers);
   br= (ReliabilityBrancherPtr) new ReliabilityBrancher(env, handlers);
   br->setEngine(e);
   nproc->setBrancher(br);

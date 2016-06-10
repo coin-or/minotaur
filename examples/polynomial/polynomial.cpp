@@ -31,7 +31,7 @@
 #include "LinearFunction.h"
 #include "LinearHandler.h"
 #include "LPEngine.h"
-#include "LPProcessor.h"
+#include "PCBProcessor.h"
 #include "NLPEngine.h"
 #include "NlPresHandler.h"
 #include "NodeIncRelaxer.h"
@@ -251,7 +251,7 @@ BranchAndBound * createBab (EnvPtr env, ProblemPtr p, EnginePtr e,
     HandlerVector &handlers)
 {
   BranchAndBound *bab = new BranchAndBound(env, p);
-  LPProcessorPtr nproc;
+  PCBProcessorPtr nproc;
   IntVarHandlerPtr v_hand = (IntVarHandlerPtr) new IntVarHandler(env, p);
   LinearHandlerPtr l_hand = (LinearHandlerPtr) new LinearHandler(env, p);
   NlPresHandlerPtr nlhand;
@@ -268,7 +268,7 @@ BranchAndBound * createBab (EnvPtr env, ProblemPtr p, EnginePtr e,
     nlhand = (NlPresHandlerPtr) new NlPresHandler(env, p);
     handlers.push_back(nlhand);
   }
-  nproc = (LPProcessorPtr) new LPProcessor(env, e, handlers);
+  nproc = (PCBProcessorPtr) new PCBProcessor(env, e, handlers);
   if (env->getOptions()->findString("brancher")->getValue() == "rel") {
     UInt t;
     ReliabilityBrancherPtr rel_br;

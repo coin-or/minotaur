@@ -5,14 +5,14 @@
 // 
 
 /**
- * \file LPProcessor.h
+ * \file PCBProcessor.h
  * \brief Define the derived class of NodeProcessor that solves LP
  * relaxations.
  * \author Ashutosh Mahajan, Argonne National Laboratory
  */
 
-#ifndef MINOTAURLPPROCESSOR_H
-#define MINOTAURLPPROCESSOR_H
+#ifndef MINOTAURPCBPROCESSOR_H
+#define MINOTAURPCBPROCESSOR_H
 
 #include "NodeProcessor.h"
 
@@ -34,22 +34,22 @@ namespace Minotaur {
   /**
    * \brief Default node processor used in solver for now.
    *
-   * LPProcessor is a derived class of NodeProcessor. It is meant to solve LPs
+   * PCBProcessor is a derived class of NodeProcessor. It is meant to solve LPs
    * at each node. It is used in a simple MILP branch-and-bound. 
    * As a stop-gap measure, it is being used for MINLP branch-and-bound as
    * well.
    */
-  class LPProcessor : public NodeProcessor {
+  class PCBProcessor : public NodeProcessor {
 
     public:
       /// Default constructor
-      LPProcessor() { }
+      PCBProcessor() { }
 
       /// Constructor with a given engine.
-      LPProcessor(EnvPtr env, EnginePtr engine, HandlerVector handlers_);
+      PCBProcessor(EnvPtr env, EnginePtr engine, HandlerVector handlers_);
 
       /// Destroy
-      ~LPProcessor();
+      ~PCBProcessor();
       
       // Add a heuristic.
       void addHeur(HeurPtr h);
@@ -176,7 +176,7 @@ namespace Minotaur {
 
   };
 
-  typedef boost::shared_ptr <LPProcessor> LPProcessorPtr;
+  typedef boost::shared_ptr <PCBProcessor> PCBProcessorPtr;
 
 }
 #endif

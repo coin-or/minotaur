@@ -23,7 +23,7 @@
 #include "IntVarHandler.h"
 #include "LinearHandler.h"
 #include "LPEngine.h"
-#include "LPProcessor.h"
+#include "PCBProcessor.h"
 #include "Logger.h"
 #include "MaxVioBrancher.h"
 #include "NLPEngine.h"
@@ -270,8 +270,8 @@ int main(int argc, char* argv[])
   EnginePtr e = efac->getLPEngine();
 
   // Need a node processor
-  LPProcessorPtr nproc;
-  nproc = (LPProcessorPtr) new LPProcessor(env, e, handlers);
+  PCBProcessorPtr nproc;
+  nproc = (PCBProcessorPtr) new PCBProcessor(env, e, handlers);
   bab->setNodeProcessor(nproc);
   
   // Need a (for now) simple brancher.

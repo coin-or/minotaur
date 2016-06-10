@@ -153,7 +153,6 @@ BASE_SRCS = \
 	$(BASE_DIR)/Interrupt.cpp \
 	$(BASE_DIR)/IntVarHandler.cpp \
 	$(BASE_DIR)/Jacobian.cpp \
-	$(BASE_DIR)/LPProcessor.cpp \
 	$(BASE_DIR)/LPRelaxation.cpp \
 	$(BASE_DIR)/LexicoBrancher.cpp \
 	$(BASE_DIR)/LinBil.cpp \
@@ -181,6 +180,7 @@ BASE_SRCS = \
 	$(BASE_DIR)/Objective.cpp \
 	$(BASE_DIR)/Operations.cpp \
 	$(BASE_DIR)/Option.cpp \
+	$(BASE_DIR)/PCBrocessor.cpp \
 	$(BASE_DIR)/PolynomialFunction.cpp \
 	$(BASE_DIR)/PreAuxVars.cpp \
 	$(BASE_DIR)/PreDelVars.cpp \
@@ -256,7 +256,6 @@ ALL_HEADERS = \
 	$(BASE_DIR)/LinMods.h \
 	$(BASE_DIR)/Logger.h \
 	$(BASE_DIR)/LPEngine.h \
-	$(BASE_DIR)/LPProcessor.h \
 	$(BASE_DIR)/LPRelaxation.h \
 	$(BASE_DIR)/MaxFreqBrancher.h\
 	$(BASE_DIR)/MaxVioBrancher.h \
@@ -278,6 +277,7 @@ ALL_HEADERS = \
 	$(BASE_DIR)/Objective.h \
 	$(BASE_DIR)/Option.h \
 	$(BASE_DIR)/OpCode.h \
+	$(BASE_DIR)/PCBProcessor.h \
 	$(BASE_DIR)/PolynomialFunction.h \
 	$(BASE_DIR)/PreAuxVars.h \
 	$(BASE_DIR)/PreDelVars.h \

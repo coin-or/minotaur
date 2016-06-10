@@ -24,7 +24,6 @@
 #include "LinFeasPump.h"
 #include "Logger.h"
 #include "LPEngine.h"
-#include "LPProcessor.h"
 #include "MaxVioBrancher.h"
 #include "MINLPDiving.h"
 #include "NLPEngine.h"
@@ -32,6 +31,7 @@
 #include "NodeIncRelaxer.h"
 #include "Objective.h"
 #include "Option.h"
+#include "PCBProcessor.h"
 #include "Presolver.h"
 #include "ProblemSize.h"
 #include "QPEngine.h"
@@ -92,7 +92,7 @@ BranchAndBound* createBab (EnvPtr env, ProblemPtr p, EnginePtr e,
                             HandlerVector &handlers)
 {
   BranchAndBound *bab = new BranchAndBound(env, p);
-  LPProcessorPtr nproc;
+  PCBProcessorPtr nproc;
   IntVarHandlerPtr v_hand = (IntVarHandlerPtr) new IntVarHandler(env, p);
   LinHandlerPtr l_hand = (LinHandlerPtr) new LinearHandler(env, p);
   NlPresHandlerPtr nlhand;
@@ -114,7 +114,7 @@ BranchAndBound* createBab (EnvPtr env, ProblemPtr p, EnginePtr e,
     handlers.push_back(nlhand);
   }
 
-  nproc = (LPProcessorPtr) new LPProcessor(env, e, handlers);
+  nproc = (PCBProcessorPtr) new PCBProcessor(env, e, handlers);
   br = createBrancher(env, p, handlers, e);
   nproc->setBrancher(br);
   bab->setNodeProcessor(nproc);

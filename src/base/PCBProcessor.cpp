@@ -5,7 +5,7 @@
 // 
 
 /**
- * \file LPProcessor.cpp
+ * \file PCBProcessor.cpp
  * \brief Define base class Node Processor.
  * \author Ashutosh Mahajan, Argonne National Laboratory
  */
@@ -18,7 +18,7 @@
 #include "Environment.h"
 #include "Handler.h"
 #include "Heuristic.h"
-#include "LPProcessor.h"
+#include "PCBProcessor.h"
 #include "Logger.h"
 #include "Node.h"
 #include "Option.h"
@@ -32,9 +32,9 @@ using namespace Minotaur;
 #undef JTL_DEBUG
 #undef PRINT_RELAXATION_SIZE
 
-const std::string LPProcessor::me_ = "LPProcessor: ";
+const std::string PCBProcessor::me_ = "PCBProcessor: ";
 
-LPProcessor::LPProcessor (EnvPtr env, EnginePtr engine, HandlerVector handlers)
+PCBProcessor::PCBProcessor (EnvPtr env, EnginePtr engine, HandlerVector handlers)
   : contOnErr_(false),
     cutMan_(0),
     numSolutions_(0),
@@ -57,7 +57,7 @@ LPProcessor::LPProcessor (EnvPtr env, EnginePtr engine, HandlerVector handlers)
 }
 
 
-LPProcessor::~LPProcessor()
+PCBProcessor::~PCBProcessor()
 {
   handlers_.clear();
   logger_.reset();
@@ -65,32 +65,32 @@ LPProcessor::~LPProcessor()
 }
 
 
-void LPProcessor::addHeur(HeurPtr h)
+void PCBProcessor::addHeur(HeurPtr h)
 {
   heurs_.push_back(h);
 }
 
 
-bool LPProcessor::foundNewSolution()
+bool PCBProcessor::foundNewSolution()
 {
   return (numSolutions_ > 0);
 }
 
 
-Branches LPProcessor::getBranches()
+Branches PCBProcessor::getBranches()
 {
   ++stats_.bra;
   return branches_;
 }
 
 
-WarmStartPtr LPProcessor::getWarmStart()
+WarmStartPtr PCBProcessor::getWarmStart()
 {
   return ws_;
 }
 
 
-bool LPProcessor::isFeasible_(NodePtr node, ConstSolutionPtr sol, 
+bool PCBProcessor::isFeasible_(NodePtr node, ConstSolutionPtr sol, 
                               SolutionPoolPtr s_pool, bool &should_prune)
 {
   should_prune = false;
@@ -118,7 +118,7 @@ bool LPProcessor::isFeasible_(NodePtr node, ConstSolutionPtr sol,
 }
 
 
-bool LPProcessor::presolveNode_(NodePtr node, SolutionPoolPtr s_pool) 
+bool PCBProcessor::presolveNode_(NodePtr node, SolutionPoolPtr s_pool) 
 {
   ModVector p_mods;      // Mods that are applied to the problem
   ModVector r_mods;      // Mods that are applied to the relaxation.
@@ -165,7 +165,7 @@ bool LPProcessor::presolveNode_(NodePtr node, SolutionPoolPtr s_pool)
 }
 
 
-void LPProcessor::process(NodePtr node, RelaxationPtr rel,
+void PCBProcessor::process(NodePtr node, RelaxationPtr rel,
                           SolutionPoolPtr s_pool)
 {
   bool should_prune = true;
@@ -341,7 +341,7 @@ void LPProcessor::process(NodePtr node, RelaxationPtr rel,
 }
 
 
-void LPProcessor::separate_(ConstSolutionPtr sol, NodePtr node, 
+void PCBProcessor::separate_(ConstSolutionPtr sol, NodePtr node, 
                             SolutionPoolPtr s_pool, SeparationStatus *status) 
 {
   ModVector mods;
@@ -367,13 +367,13 @@ void LPProcessor::separate_(ConstSolutionPtr sol, NodePtr node,
 }
 
 
-void LPProcessor::setCutManager(CutManager* cutman)
+void PCBProcessor::setCutManager(CutManager* cutman)
 {
   cutMan_ = cutman;
 }
 
 
-bool LPProcessor::shouldPrune_(NodePtr node, double solval, 
+bool PCBProcessor::shouldPrune_(NodePtr node, double solval, 
                                SolutionPoolPtr s_pool)
 {
   bool should_prune = false;
@@ -384,7 +384,7 @@ bool LPProcessor::shouldPrune_(NodePtr node, double solval,
 #endif
   switch (engineStatus_) {
    case (FailedInfeas):
-     logger_->msgStream(LogInfo) << "LPProcessor: failed to converge "
+     logger_->msgStream(LogInfo) << "PCBProcessor: failed to converge "
      << "(infeasible) in node " << node->getId() << std::endl;
      node->setStatus(NodeInfeasible);
      should_prune = true;
@@ -392,7 +392,7 @@ bool LPProcessor::shouldPrune_(NodePtr node, double solval,
      ++stats_.prob;
      break;
    case (ProvenFailedCQInfeas):
-     logger_->msgStream(LogInfo) << "LPProcessor: constraint qualification "
+     logger_->msgStream(LogInfo) << "PCBProcessor: constraint qualification "
      << "violated in node " << node->getId() << std::endl;
      ++stats_.prob;
    case (ProvenInfeasible):
@@ -410,12 +410,12 @@ bool LPProcessor::shouldPrune_(NodePtr node, double solval,
 
    case (ProvenUnbounded):
      should_prune = false;
-     logger_->msgStream(LogDebug2) << "LPProcessor: problem relaxation is "
+     logger_->msgStream(LogDebug2) << "PCBProcessor: problem relaxation is "
                                    << "unbounded!" << std::endl;
      break;
 
    case (FailedFeas):
-     logger_->msgStream(LogInfo) << "LPProcessor: Failed to converge " 
+     logger_->msgStream(LogInfo) << "PCBProcessor: Failed to converge " 
      << "(feasible) in node " << node->getId() << std::endl;
      if (node->getParent()) {
        node->setLb(node->getParent()->getLb());
@@ -426,7 +426,7 @@ bool LPProcessor::shouldPrune_(NodePtr node, double solval,
      ++stats_.prob;
      break;
    case (ProvenFailedCQFeas):
-     logger_->msgStream(LogInfo) << "LPProcessor: constraint qualification "
+     logger_->msgStream(LogInfo) << "PCBProcessor: constraint qualification "
      << "violated in node " << node->getId() << std::endl;
      if (node->getParent()) {
        node->setLb(node->getParent()->getLb());
@@ -438,7 +438,7 @@ bool LPProcessor::shouldPrune_(NodePtr node, double solval,
      break;
    case (EngineIterationLimit):
      ++stats_.prob;
-     logger_->msgStream(LogInfo) << "LPProcessor: engine hit iteration limit, "
+     logger_->msgStream(LogInfo) << "PCBProcessor: engine hit iteration limit, "
        " continuing in node " << node->getId() << std::endl;
      // continue with this node by following ProvenLocalOptimal case.
    case (ProvenLocalOptimal):
@@ -457,7 +457,7 @@ bool LPProcessor::shouldPrune_(NodePtr node, double solval,
      break;
    case (EngineError):
      if (contOnErr_) {
-       logger_->msgStream(LogError) << "LPProcessor: engine reports error, "
+       logger_->msgStream(LogError) << "PCBProcessor: engine reports error, "
          " continuing in node " << node->getId() << std::endl;
        node->setStatus(NodeContinue);
        if (node->getParent()) {
@@ -466,7 +466,7 @@ bool LPProcessor::shouldPrune_(NodePtr node, double solval,
          node->setLb(-INFINITY);
        }
      } else {
-       logger_->msgStream(LogError) << "LPProcessor: engine reports error, "
+       logger_->msgStream(LogError) << "PCBProcessor: engine reports error, "
          " pruning node " << node->getId() << std::endl;
        should_prune = true;
        node->setStatus(NodeInfeasible);
@@ -482,7 +482,7 @@ bool LPProcessor::shouldPrune_(NodePtr node, double solval,
 }
 
 
-void LPProcessor::solveRelaxation_() 
+void PCBProcessor::solveRelaxation_() 
 {
   engineStatus_ = EngineError;
   engine_->solve();
@@ -496,13 +496,13 @@ void LPProcessor::solveRelaxation_()
 }
 
 
-void LPProcessor::tightenBounds_() 
+void PCBProcessor::tightenBounds_() 
 {
 
 }
 
 
-void LPProcessor::writeStats(std::ostream &out) const
+void PCBProcessor::writeStats(std::ostream &out) const
 {
   out << me_ << "nodes processed     = " << stats_.proc << std::endl 
       << me_ << "nodes branched      = " << stats_.bra << std::endl 
@@ -514,14 +514,14 @@ void LPProcessor::writeStats(std::ostream &out) const
 }
 
 
-void LPProcessor::writeStats() const
+void PCBProcessor::writeStats() const
 {
   writeStats(logger_->msgStream(LogNone));
 }
 
 
 #if 0
-void LPProcessor::reset(NodePtr node)
+void PCBProcessor::reset(NodePtr node)
 {
   NodePtr t_node = node;
 

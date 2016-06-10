@@ -21,7 +21,7 @@
 #include "LinearHandler.h"
 #include "Logger.h"
 #include "LPEngine.h"
-#include "LPProcessor.h"
+#include "PCBProcessor.h"
 #include "OsiLPEngine.h"
 #include "MaxVioBrancher.h"
 #include "NodeIncRelaxer.h"
@@ -80,7 +80,7 @@ int main(int argc, char** argv)
   //rel_br->setEngine(e);
 
   // node processor
-  NodeProcessorPtr nproc = (LPProcessorPtr) new LPProcessor(env, e, handlers);
+  NodeProcessorPtr nproc = (PCBProcessorPtr) new PCBProcessor(env, e, handlers);
   nproc->setBrancher(m_br);
   bab->setNodeProcessor(nproc);
 

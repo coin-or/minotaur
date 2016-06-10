@@ -23,7 +23,6 @@
 #include "LinearHandler.h"
 #include "Logger.h"
 #include "LPEngine.h"
-#include "LPProcessor.h"
 #include "MaxVioBrancher.h"
 #include "NodeIncRelaxer.h"
 #include "NLPEngine.h"
@@ -31,6 +30,7 @@
 #include "NlPresHandler.h"
 #include "Objective.h"
 #include "Option.h"
+#include "PCBProcessor.h"
 #include "Presolver.h"
 #include "ProblemSize.h"
 #include "Problem.h"
@@ -159,7 +159,7 @@ BranchAndBound * createBab (EnvPtr env, ProblemPtr p, EnginePtr e,
                             HandlerVector &handlers)
 {
   BranchAndBound *bab = new BranchAndBound(env, p);
-  LPProcessorPtr nproc;
+  PCBProcessorPtr nproc;
   NodeIncRelaxerPtr nr;
   RelaxationPtr rel;
   BrancherPtr br;
@@ -198,7 +198,7 @@ BranchAndBound * createBab (EnvPtr env, ProblemPtr p, EnginePtr e,
   }
   env->getLogger()->msgStream(LogExtraInfo) << me 
     << "brancher used = " << br->getName() << std::endl;
-  nproc = (LPProcessorPtr) new LPProcessor(env, e, handlers);
+  nproc = (PCBProcessorPtr) new PCBProcessor(env, e, handlers);
   nproc->setBrancher(br);
   bab->setNodeProcessor(nproc);
 

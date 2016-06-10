@@ -46,7 +46,6 @@ set (MINOTAUR_SOURCES
      KnapsackList.cpp 
      KnapCovHandler.cpp 
      LGCIGenerator.cpp 
-     LPProcessor.cpp 
      LPRelaxation.cpp 
      LexicoBrancher.cpp 
      LinBil.cpp 
@@ -75,6 +74,7 @@ set (MINOTAUR_SOURCES
      Objective.cpp 
      Operations.cpp 
      Option.cpp 
+     PCBProcessor.cpp 
      PerspCutGenerator.cpp 
      PerspCutHandler.cpp 
      PerspList.cpp 
@@ -158,7 +158,6 @@ set (MINOTAUR_HEADERS
      LGCIGenerator.h # Serdar
      Logger.h
      LPEngine.h
-     LPProcessor.h
      LPRelaxation.h
      MaxFreqBrancher.h
      MaxVioBrancher.h
@@ -181,6 +180,7 @@ set (MINOTAUR_HEADERS
      Objective.h
      Option.h
      OpCode.h
+     PCBProcessor.h
      PerspCutGenerator.h # Serdar
      PerspCutHandler.h
      PerspList.h # Serdar

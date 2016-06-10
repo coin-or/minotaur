@@ -19,7 +19,7 @@
 #include "IntVarHandler.h"
 #include "IpoptEngine.h"
 #include "LinearHandler.h"
-#include "LPProcessor.h"
+#include "PCBProcessor.h"
 #include "NodeIncRelaxer.h"
 #include "Objective.h"
 #include "Option.h"
@@ -77,7 +77,7 @@ int main(int argc, char** argv)
   rel_br->setEngine(e);
 
   // node processor
-  NodeProcessorPtr nproc = (LPProcessorPtr) new LPProcessor(env, e, handlers);
+  NodeProcessorPtr nproc = (PCBProcessorPtr) new PCBProcessor(env, e, handlers);
   nproc->setBrancher(rel_br);
   bab->setNodeProcessor(nproc);
 
