@@ -8,7 +8,7 @@
  * \file MsBnb.cpp
  * \brief The main function for solving instances in ampl format (.nl) by
  * using multistart Branch-and-estimate heuristic.
- * \author Prashant Palkar and Ashutosh Mahajan, IIT Bombay 
+ * \author Prashant Palkar, IIT Bombay 
  */
 
 #include <iomanip>
@@ -368,7 +368,10 @@ void setInitialOptions(EnvPtr env)
 
 void showHelp()
 {
-  std::cout << "NLP-based branch-and-estimate heuristic for MINLP" << std::endl
+  std::cout << "NLP-based branch-and-estimate heuristic for nonconvex MINLP."
+    << std::endl
+    << "**Works in parallel with a thread-safe NLP solver only "
+    << "(e.g. IPOPT with MA97)**" << std::endl
     << "Usage:" << std::endl
     << "To show version: msbnb -v (or --show_version yes) " << std::endl
     << "To show all options: msbnb -= (or --show_options yes)" 
@@ -546,6 +549,11 @@ int main(int argc, char** argv)
   }
 
   bab = createBab(env, oinst, engine, handlers);
+  if (env->getOptions()->findInt("threads")->getValue() > 1) {
+   env->getLogger()->msgStream(LogInfo) 
+     << "**Works in parallel with a thread-safe "
+     << "NLP solver only (e.g. IPOPT with MA97)**" << std::endl;
+  }
   bab->solve();
   bab->writeStats(env->getLogger()->msgStream(LogExtraInfo));
   engine->writeStats(env->getLogger()->msgStream(LogExtraInfo));

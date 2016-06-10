@@ -277,6 +277,10 @@ void Environment::createDefaultOptions_()
       "Initial point generation scheme for MsProcessor: 1-5", true, 5);
   options_->insert(i_option);
 
+  i_option = (IntOptionPtr) new Option<int>("msbnb_restarts",
+      "Number of restarts to improve the initial point in MsProcessor: >=0", true, 3);
+  options_->insert(i_option);
+
   i_option.reset();
 
   
