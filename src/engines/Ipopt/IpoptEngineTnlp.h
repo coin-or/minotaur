@@ -27,6 +27,9 @@ namespace Ipopt {
     /// default destructor.
     ~IpoptFunInterface();
 
+    /// Copy the solution explicitly (without sharing pointers).
+    void copySolution(Minotaur::IpoptSolPtr sol);
+
     /// Method to return the objective value.
     bool eval_f(Index n, const Number* x, bool new_x, 
                 Number& obj_value);
