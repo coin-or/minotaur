@@ -830,6 +830,7 @@ void MsProcessor::process(NodePtr node, RelaxationPtr rel,
           logger_->msgStream(LogDebug2) << me_
             <<"Relaxation unbounded from this starting point!" << std::endl;
         } else {
+          logger_->msgStream(LogDebug2) << me_
             <<"Unknown status" << std::endl;
         }
 #endif

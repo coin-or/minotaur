@@ -362,7 +362,8 @@ void writeSol(EnvPtr env, VarVector *orig_v, double obj_sense,
   if (sol) {
     sol = pres->getPostSol(sol);
   }
-  if (env->getOptions()->findFlag("AMPL")->getValue()) {
+  if (env->getOptions()->findFlag("AMPL")->getValue() ||
+      true == env->getOptions()->findBool("write_sol_file")->getValue()) {
     iface->writeSolution(sol, bab->getStatus());
   } else if (sol) {
     sol->writePrimal(std::cout, orig_v);

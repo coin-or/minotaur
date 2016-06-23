@@ -432,7 +432,8 @@ void writeSol(EnvPtr env, VarVector *orig_v,
     sol = pres->getPostSol(sol);
   }
 
-  if (env->getOptions()->findFlag("AMPL")->getValue()) {
+  if (env->getOptions()->findFlag("AMPL")->getValue() ||
+      true == env->getOptions()->findBool("write_sol_file")->getValue()) {
     iface->writeSolution(sol, status);
   } else if (sol && env->getLogger()->getMaxLevel()>=LogExtraInfo) {
     sol->writePrimal(env->getLogger()->msgStream(LogExtraInfo), orig_v);
