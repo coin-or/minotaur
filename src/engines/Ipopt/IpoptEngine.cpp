@@ -496,7 +496,6 @@ void IpoptEngine::load(ProblemPtr problem)
   problem->calculateSize();
   setOptionsForProb_();
   problem->setEngine(this);
-
 }
 
 
@@ -692,7 +691,11 @@ EngineStatus IpoptEngine::solve()
   // resolve. Otherwise solve from scratch.
   if (useWs_ && ws_ && ws_->hasInfo()) {
     myapp_->Options()->SetStringValue("warm_start_init_point", "yes");
-    mynlp_->setSolution(ws_->getPoint());
+    if (true == strBr_) {
+      mynlp_->copySolution(ws_->getPoint());
+    } else {
+      mynlp_->setSolution(ws_->getPoint());
+    }
   } else {
     myapp_->Options()->SetStringValue("warm_start_init_point", "no");
   }
@@ -716,7 +719,7 @@ EngineStatus IpoptEngine::solve()
     } else if (status_ == ProvenLocalInfeasible) {
       status = Ipopt::Infeasible_Problem_Detected;
     }
-  } else if (ws_ && ws_->hasInfo()) {
+  } else if (ws_ && ws_->hasInfo() && stats_->calls > 1) {
     status = myapp_->ReOptimizeTNLP(mynlp_);
   } else {
     status = myapp_->OptimizeTNLP(mynlp_);
@@ -861,6 +864,10 @@ IpoptFunInterface::~IpoptFunInterface()
   }
 }
 
+void IpoptFunInterface::copySolution(Minotaur::IpoptSolPtr sol)
+{
+  sol_->setPrimal(sol->getPrimal());
+}
 
 #ifdef NDEBUG
 bool IpoptFunInterface::get_bounds_info(Index , Number* x_l, Number* x_u, 

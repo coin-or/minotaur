@@ -180,7 +180,7 @@ BASE_SRCS = \
 	$(BASE_DIR)/Objective.cpp \
 	$(BASE_DIR)/Operations.cpp \
 	$(BASE_DIR)/Option.cpp \
-	$(BASE_DIR)/PCBrocessor.cpp \
+	$(BASE_DIR)/PCBProcessor.cpp \
 	$(BASE_DIR)/PolynomialFunction.cpp \
 	$(BASE_DIR)/PreAuxVars.cpp \
 	$(BASE_DIR)/PreDelVars.cpp \
