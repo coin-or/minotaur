@@ -46,7 +46,7 @@ namespace Minotaur {
    * The above scheme makes it easy to fill nonzeros in Constraint-Ordered
    * manner, but more expensive to fill in Variable-Ordered manner. So we also
    * use another 2-d matrix as above, but the matrix now looks like:
-   * 0 0 1 1 2
+   * 0 0 1 1 
    * 1 2   2
    *       3
    */
