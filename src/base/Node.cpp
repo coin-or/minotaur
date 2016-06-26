@@ -104,6 +104,34 @@ void Node::applyRMods(RelaxationPtr rel)
 }
 
 
+void Node::applyRModsTrans(RelaxationPtr rel)
+{
+  ModificationConstIterator mod_iter;
+  ModificationPtr mod;
+  ModificationPtr pmod1, mod2;
+  ProblemPtr p;   //not used, just passed
+
+  // first apply the mods that created this node from its parent
+  if (branch_) {
+    for (mod_iter=branch_->rModsBegin(); mod_iter!=branch_->rModsEnd();
+        ++mod_iter) {
+      mod = *mod_iter;
+      //convert modifications applicable for other relaxation to this one
+      pmod1 = mod->fromRel(rel, p);
+      mod2 = pmod1->toRel(p, rel);
+      mod2->applyToProblem(rel);
+    }
+  }
+  // now apply any other mods that were added while processing it.
+  for (mod_iter=rMods_.begin(); mod_iter!=rMods_.end(); ++mod_iter) {
+    mod = *mod_iter;
+    pmod1 = mod->fromRel(rel, p);
+    mod2 = pmod1->toRel(p, rel);
+    mod2->applyToProblem(rel);
+  }
+}
+
+
 void Node::applyMods(RelaxationPtr rel, ProblemPtr p)
 {
   applyPMods(p);
@@ -204,6 +232,40 @@ void Node::undoRMods(RelaxationPtr rel)
         ++mod_iter) {
       mod = *mod_iter;
       mod->undoToProblem(rel);
+    }
+  }
+}
+
+
+void Node::undoRModsTrans(RelaxationPtr rel)
+{
+  ModificationRConstIterator mod_iter;
+  ModificationPtr mod;
+  ProblemPtr p;
+
+  // explicitely request the const_reverse_iterator for rend():
+  // for bug in STL C++ standard
+  // http://stackoverflow.com/questions/2135094/gcc-reverse-iterator-comparison-operators-missing
+  ModificationRConstIterator rend = rMods_.rend();
+  ModificationPtr pmod1, mod2;
+
+  // first undo the mods that were added while processing the node.
+  for (mod_iter=rMods_.rbegin(); mod_iter!= rend; ++mod_iter) {
+    mod = *mod_iter;
+    //converting modifications applicable for one relaxation to another
+    pmod1 = mod->fromRel(rel, p);
+    mod2 = pmod1->toRel(p, rel);
+    mod2->undoToProblem(rel);
+  }
+
+  // now undo the mods that were used to create this node from its parent.
+  if (branch_) {
+    for (mod_iter=branch_->rModsRBegin(); mod_iter!=branch_->rModsREnd();
+        ++mod_iter) {
+      mod = *mod_iter;
+      pmod1 = mod->fromRel(rel, p);
+      mod2 = pmod1->toRel(p, rel);
+      mod2->undoToProblem(rel);
     }
   }
 }

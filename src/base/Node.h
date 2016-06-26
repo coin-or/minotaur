@@ -99,6 +99,13 @@ namespace Minotaur {
     void applyRMods(RelaxationPtr rel);
 
     /**
+     * Apply the modifications including the branching that were made
+     * at this node to the problem. First, each modification is translated
+     * appropriately so that it becomes applicable for this relaxation.
+     */
+    void applyRModsTrans(RelaxationPtr rel);
+
+    /**
      * Apply the modifications to problem and relaxation.
      */
     void applyMods(RelaxationPtr rel, ProblemPtr p);
@@ -201,13 +208,20 @@ namespace Minotaur {
     void undoPMods(ProblemPtr p);
 
     /**
-     * Undo the modifications including the branching that were made 
+     * Undo the modifications including the branching that were made
      * at this node to the problem.
      */
     void undoRMods(RelaxationPtr r);
 
     /**
-     * Undo the modifications including the branching that were made 
+     * Undo the modifications including the branching that were made
+     * at this node to the problem. First, each modification is translated
+     * appropriately so that it becomes applicable for this relaxation.
+     */
+    void undoRModsTrans(RelaxationPtr r);
+
+    /**
+     * Undo the modifications including the branching that were made
      * at this node to the problem and the relaxation.
      */
     void undoMods(RelaxationPtr rel, ProblemPtr p);
