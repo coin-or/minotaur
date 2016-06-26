@@ -399,8 +399,8 @@ void ParBranchAndBound::parsolve(ParNodeIncRelaxerPtr parNodeRlxr[],
   logger_->msgStream(LogInfo) << me_ << "starting branch-and-bound ";
   if(numThreads > 1) {
 #if USE_OPENMP
-  logger_->msgStream(LogInfo) << me_ << "using " << numThreads 
-    << " out of " << omp_get_num_procs() << " processors";
+  logger_->msgStream(LogInfo) << "using " << numThreads << " out of "
+    << omp_get_num_procs() << " processors";
 #endif
   }
   logger_->msgStream(LogInfo) << std::endl;
