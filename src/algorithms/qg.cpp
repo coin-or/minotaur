@@ -4,7 +4,7 @@
 //     (C)opyright 2008 - 2014 The MINOTAUR Team.
 // 
 
-/*! \brief Algorithm for solving (nonconvex) quadratic programs
+/*! \brief Quesada-Grossmann(QG) algorithm for solving convex MINLP
  *
  * \author Jeff Linderoth, MINOTAUR Team
  */
@@ -45,6 +45,7 @@
 #include <EngineFactory.h>
 #include <CxQuadHandler.h>
 #include <Objective.h>
+#include <TransSep.h>
 
 using namespace Minotaur;
 
@@ -92,7 +93,7 @@ void loadProblem(EnvPtr env, MINOTAUR_AMPL::AMPLInterface* iface,
 
   // set initial point
   oinst->setInitialPoint(iface->getInitialPoint(), 
-      oinst->getNumVars()-iface->getNumDefs());
+                         oinst->getNumVars()-iface->getNumDefs());
 
   if (oinst->getObjective() &&
       oinst->getObjective()->getObjectiveType()==Maximize) {
@@ -121,13 +122,13 @@ void setInitialOptions(EnvPtr env)
 void showHelp()
 {
   std::cout << "Quesada-Grossmann (LP/NLP) algorithm for convex MINLP"
-            << std::endl
-            << "Usage:" << std::endl
-            << "To show version: qg -v (or --show_version yes) " << std::endl
-            << "To show all options: qg -= (or --show_options yes)" 
-            << std::endl
-            << "To solve an instance: qg --option1 [value] "
-            << "--option2 [value] ... " << " .nl-file" << std::endl;
+    << std::endl
+    << "Usage:" << std::endl
+    << "To show version: qg -v (or --show_version yes) " << std::endl
+    << "To show all options: qg -= (or --show_options yes)" 
+    << std::endl
+    << "To solve an instance: qg --option1 [value] "
+    << "--option2 [value] ... " << " .nl-file" << std::endl;
 }
 
 
@@ -176,7 +177,7 @@ int showInfo(EnvPtr env)
 
 
 PresolverPtr presolve(EnvPtr env, ProblemPtr p, size_t ndefs, 
-                        HandlerVector &handlers)
+                      HandlerVector &handlers)
 {
   PresolverPtr pres = PresolverPtr(); // NULL
   const std::string me("qg: ");
@@ -202,9 +203,9 @@ PresolverPtr presolve(EnvPtr env, ProblemPtr p, size_t ndefs,
     }
 
     if (!p->isLinear() && 
-         true==env->getOptions()->findBool("use_native_cgraph")->getValue() && 
-         true==env->getOptions()->findBool("nl_presolve")->getValue() 
-         ) {
+        true==env->getOptions()->findBool("use_native_cgraph")->getValue() && 
+        true==env->getOptions()->findBool("nl_presolve")->getValue() 
+       ) {
       NlPresHandlerPtr nlhand = (NlPresHandlerPtr) new NlPresHandler(env, p);
       handlers.push_back(nlhand);
     }
@@ -213,7 +214,7 @@ PresolverPtr presolve(EnvPtr env, ProblemPtr p, size_t ndefs,
     env->getLogger()->msgStream(LogExtraInfo) << me 
       << "handlers used in presolve:" << std::endl;
     for (HandlerIterator h = handlers.begin(); h != handlers.end(); 
-        ++h) {
+         ++h) {
       env->getLogger()->msgStream(LogExtraInfo) << me 
         << (*h)->getName() << std::endl;
     }
@@ -227,6 +228,25 @@ PresolverPtr presolve(EnvPtr env, ProblemPtr p, size_t ndefs,
   return pres;
 }
 
+//For separability detection: Check separability if problem is not linear.
+TransSepPtr sepDetection(EnvPtr env, ProblemPtr p)
+{
+  TransSepPtr sep = TransSepPtr();
+  const std::string me("qg: ");
+
+  if (env->getOptions()->findBool("separability")->getValue() == true) {
+    if (p -> isLinear()) {
+      env ->getLogger()->msgStream(LogExtraInfo) << me
+        << "Problem is linear. Separability detection not
+        required." << std::endl;
+      return sep;
+    } else {
+      sep = (TransSepPtr) new
+        TransSep(env, p);
+      return sep;
+    }
+  }
+}
 
 int main(int argc, char* argv[])
 {
@@ -237,8 +257,11 @@ int main(int argc, char* argv[])
   ProblemPtr inst;
   SolutionPtr sol, sol2;
   double obj_sense =1.0;
-
-  // jacobian is read from AMPL interface and passed on to branch-and-bound
+  
+  //Separability detection
+   TransSepPtr sep; 
+  
+   // jacobian is read from AMPL interface and passed on to branch-and-bound
   JacobianPtr jPtr;
   // hessian is read from AMPL interface and passed on to branch-and-bound
   MINOTAUR_AMPL::AMPLHessianPtr hPtr;
@@ -253,7 +276,7 @@ int main(int argc, char* argv[])
   PCBProcessorPtr nproc;
 
   NodeIncRelaxerPtr nr;
-  
+
   //handlers
   HandlerVector handlers;
   QGHandlerPtr qghand;
@@ -312,9 +335,11 @@ int main(int argc, char* argv[])
     writeBnbStatus(env, bab, obj_sense);
     goto CLEANUP;
   }
-
-  // final preparations for solve
-  if (options->findBool("solve")->getValue()==true) {
+ 
+  // Separability detection
+   sep = sepDetection(env, inst);
+  
+   if (options->findBool("solve")->getValue()==true) {
     if (true==options->findBool("use_native_cgraph")->getValue()) {
       inst->setNativeDer();
     }
