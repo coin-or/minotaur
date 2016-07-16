@@ -1812,11 +1812,11 @@ void CNode::updateBnd(int *error)
     break;
   case (OpNone):
     break;
-   case (OpInt):
+  case (OpInt):
     lb_ = d_;
     ub_ = d_;
     break;
- case (OpNum):
+  case (OpNum):
     lb_ = d_;
     ub_ = d_;
     break;

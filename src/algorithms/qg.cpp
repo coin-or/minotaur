@@ -93,7 +93,7 @@ void loadProblem(EnvPtr env, MINOTAUR_AMPL::AMPLInterface* iface,
 
   // set initial point
   oinst->setInitialPoint(iface->getInitialPoint(), 
-                         oinst->getNumVars()-iface->getNumDefs());
+      oinst->getNumVars()-iface->getNumDefs());
 
   if (oinst->getObjective() &&
       oinst->getObjective()->getObjectiveType()==Maximize) {
@@ -122,13 +122,13 @@ void setInitialOptions(EnvPtr env)
 void showHelp()
 {
   std::cout << "Quesada-Grossmann (LP/NLP) algorithm for convex MINLP"
-    << std::endl
-    << "Usage:" << std::endl
-    << "To show version: qg -v (or --show_version yes) " << std::endl
-    << "To show all options: qg -= (or --show_options yes)" 
-    << std::endl
-    << "To solve an instance: qg --option1 [value] "
-    << "--option2 [value] ... " << " .nl-file" << std::endl;
+            << std::endl
+            << "Usage:" << std::endl
+            << "To show version: qg -v (or --show_version yes) " << std::endl
+            << "To show all options: qg -= (or --show_options yes)" 
+            << std::endl
+            << "To solve an instance: qg --option1 [value] "
+            << "--option2 [value] ... " << " .nl-file" << std::endl;
 }
 
 
@@ -214,7 +214,7 @@ PresolverPtr presolve(EnvPtr env, ProblemPtr p, size_t ndefs,
     env->getLogger()->msgStream(LogExtraInfo) << me 
       << "handlers used in presolve:" << std::endl;
     for (HandlerIterator h = handlers.begin(); h != handlers.end(); 
-         ++h) {
+        ++h) {
       env->getLogger()->msgStream(LogExtraInfo) << me 
         << (*h)->getName() << std::endl;
     }
@@ -261,7 +261,7 @@ int main(int argc, char* argv[])
   //Separability detection
    TransSepPtr sep; 
   
-   // jacobian is read from AMPL interface and passed on to branch-and-bound
+  // jacobian is read from AMPL interface and passed on to branch-and-bound
   JacobianPtr jPtr;
   // hessian is read from AMPL interface and passed on to branch-and-bound
   MINOTAUR_AMPL::AMPLHessianPtr hPtr;

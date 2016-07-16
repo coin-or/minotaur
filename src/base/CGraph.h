@@ -188,7 +188,6 @@ public:
   // method to return all the dependent nodes of the cgraph.
   CNodeQ dNodes() {return dq_ ;} ;
 
-
   // display.
   void write(std::ostream &out) const;
 

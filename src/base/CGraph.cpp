@@ -570,11 +570,7 @@ void CGraph::finalize()
 
   for (UInt i=0; i<aNodes_.size(); ++i) {
     aNodes_[i]->setTempI(aNodes_[i]->numChild()+1);
-    //setting unique index of the nodes in the cgraph
-    //aNodes_[i]->setIndex(index);
-    //index++;
-  //Setting index of nodes with opcode OpNum or OpInt
-   if (aNodes_[i]->getOp() == OpNum || aNodes_[i]->getOp() == OpInt ) {
+    if (aNodes_[i]->getOp() == OpNum || aNodes_[i]->getOp() == OpInt ) {
       aNodes_[i]->setIndex(index);
       index++;
     }
@@ -636,23 +632,10 @@ void CGraph::finalize()
       }
     }
   }
-  //std::cout << std::endl
-  //          << "dq_ has " << dq_.size() << " elements." << std::endl
-  //          << "vq_ has " << vq_.size() << " elements." << std::endl
-  //          << "aNodes_ has " << aNodes_.size() << " elements." << std::endl;
-  //std::cout << std::endl << "dq_:" << std::endl;
-  //for (CNodeQ::iterator it=dq_.begin(); it!=dq_.end(); ++it) {
-  //  (*it)->writeSubExp(std::cout);
-  //  std::cout << std::endl;
-  //}
-
-
- //Setting unique index of nodes with opcode OpVar
   for (UInt i=0; i<vq_.size(); i++) {
     vq_[i]->setIndex(index);
     index++;
   }
-  //Setting unique index of dependent nodes
   for (UInt i=0; i<dq_.size(); i++) {
     dq_[i]->setIndex(index);
     index++;
@@ -1075,21 +1058,17 @@ void CGraph::revHess_(int *error)
 
 void CGraph::resetNodeIndex()
 {
-  //MS: To be modified further after discussing with sir.
   UInt index =0;
-  //Setting index of nodes with opcode OpNum or OpInt
   for (UInt i=0; i<aNodes_.size(); i++) {
     if (aNodes_[i]->getOp() == OpNum || aNodes_[i]->getOp() == OpInt ) {
       aNodes_[i]->setIndex(index);
       index++;
     }
   }
- //Setting index of independent/leaf nodes
   for (UInt i=0; i<vq_.size(); i++) {
     vq_[i]->setIndex(index);
     index++;
   }
-  //Setting index of dependent nodes
   for (UInt i=0; i<dq_.size(); i++) {
     dq_[i]->setIndex(index);
     index++;

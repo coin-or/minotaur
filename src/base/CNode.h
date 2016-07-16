@@ -188,7 +188,7 @@ public:
   /// \return The unique parent if any, otherwise return NULL
   CNode* getUPar() const { return uPar_; };
 
-  // \return Pointer to the variable if the node is OpVar, otherwise NULL
+  /// \return Pointer to the variable if the node is OpVar, otherwise NULL
   const Variable* getV() const { return v_; };
 
   /// \return The value of function stored at this node (does not evaluate)
@@ -310,7 +310,6 @@ public:
    */
   void setL(CNode *n) {l_ = n;};
 
-
   /**
    * \brief Set the OpCode.
    *
@@ -346,7 +345,7 @@ public:
    */
   void setVal(double v);
 
-   /**
+  /**
    * \brief Set the Variable at this node (for OpVar nodes)
    *
    * \param [in] v The variable pointer.
