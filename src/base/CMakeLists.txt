@@ -108,6 +108,7 @@ set (MINOTAUR_SOURCES
      SOSBrCand.cpp
      Transformer.cpp 
      TransPoly.cpp 
+     TransSep.cpp 
      TreeManager.cpp 
      Types.cpp 
      VarBoundMod.cpp 
@@ -222,6 +223,7 @@ set (MINOTAUR_HEADERS
      Timer.h
      Transformer.h 
      TransPoly.h 
+     TransSep.h 
      TreeManager.h
      Types.h
      WarmStart.h

@@ -555,7 +555,7 @@ void CGraph::finalize()
   std::stack<CNode *>st;
   CNode *n1, *lchild, *rchild;
   CNode **p1, **p2;
-  UInt id = 0;
+  UInt id = 0, index = 0;
   assert(oNode_);
   st.push(oNode_);
 
@@ -570,6 +570,15 @@ void CGraph::finalize()
 
   for (UInt i=0; i<aNodes_.size(); ++i) {
     aNodes_[i]->setTempI(aNodes_[i]->numChild()+1);
+    //setting unique index of the nodes in the cgraph
+    //aNodes_[i]->setIndex(index);
+    //index++;
+  //Setting index of nodes with opcode OpNum or OpInt
+   if (aNodes_[i]->getOp() == OpNum || aNodes_[i]->getOp() == OpInt ) {
+      aNodes_[i]->setIndex(index);
+      index++;
+    }
+
   }
 
   id = 1;
@@ -637,6 +646,17 @@ void CGraph::finalize()
   //  std::cout << std::endl;
   //}
 
+
+ //Setting unique index of nodes with opcode OpVar
+  for (UInt i=0; i<vq_.size(); i++) {
+    vq_[i]->setIndex(index);
+    index++;
+  }
+  //Setting unique index of dependent nodes
+  for (UInt i=0; i<dq_.size(); i++) {
+    dq_[i]->setIndex(index);
+    index++;
+  }
 }
 
 
@@ -981,7 +1001,6 @@ CNode* CGraph::newNode(int i)
   return node;
 }
 
-
 CNode* CGraph::newNode(VariablePtr v)
 {
   CNode *z = 0;
@@ -1054,6 +1073,28 @@ void CGraph::revHess_(int *error)
   }
 }
 
+void CGraph::resetNodeIndex()
+{
+  //MS: To be modified further after discussing with sir.
+  UInt index =0;
+  //Setting index of nodes with opcode OpNum or OpInt
+  for (UInt i=0; i<aNodes_.size(); i++) {
+    if (aNodes_[i]->getOp() == OpNum || aNodes_[i]->getOp() == OpInt ) {
+      aNodes_[i]->setIndex(index);
+      index++;
+    }
+  }
+ //Setting index of independent/leaf nodes
+  for (UInt i=0; i<vq_.size(); i++) {
+    vq_[i]->setIndex(index);
+    index++;
+  }
+  //Setting index of dependent nodes
+  for (UInt i=0; i<dq_.size(); i++) {
+    dq_[i]->setIndex(index);
+    index++;
+  } 
+}
 
 void CGraph::revHess2_(std::stack<CNode *> *st2, double mult, UInt vind,
                        double *values, UInt *nz, int *error)

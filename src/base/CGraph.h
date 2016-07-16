@@ -86,6 +86,9 @@ public:
 
   UInt getHessNz();
 
+  //reset node index every time a node is added or deleted 
+  void resetNodeIndex();
+
   /// Get the output node.
   const CNode* getOut() const;
 
@@ -181,6 +184,10 @@ public:
   // base class method.
   void varBoundMods(double lb, double ub, VarBoundModVector &mods,
                     SolveStatus *status);
+
+  // method to return all the dependent nodes of the cgraph.
+  CNodeQ dNodes() {return dq_ ;} ;
+
 
   // display.
   void write(std::ostream &out) const;

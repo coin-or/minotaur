@@ -156,6 +156,9 @@ public:
   /// \return The ID
   UInt getId() const {return id_;};
 
+  /// \return index of the node
+  UInt getIndex() const {return index_;};
+
   /// \return The pointer to left child
   CNode* getL() const { return l_; };
 
@@ -185,7 +188,7 @@ public:
   /// \return The unique parent if any, otherwise return NULL
   CNode* getUPar() const { return uPar_; };
 
-  /// \return Pointer to the variable if the node is OpVar, otherwise NULL
+  // \return Pointer to the variable if the node is OpVar, otherwise NULL
   const Variable* getV() const { return v_; };
 
   /// \return The value of function stored at this node (does not evaluate)
@@ -292,6 +295,14 @@ public:
    */
   void setId(UInt i) {id_ = i;};
 
+/**
+   * \brief Set the value of the node index.
+   *
+   * \param [in] i The value.
+   */
+  void setIndex(UInt i) {index_ = i;};
+
+
   /**
    * \brief Set the pointer to the left-most child
    *
@@ -335,11 +346,12 @@ public:
    */
   void setVal(double v);
 
-  /**
+   /**
    * \brief Set the Variable at this node (for OpVar nodes)
    *
    * \param [in] v The variable pointer.
    */
+  
   void setV(VariablePtr v) {v_ = v.get();};
 
   /**
@@ -368,6 +380,7 @@ protected:
                   /// (forward mode)
   double h_;      /// Value of the hessian
   UInt id_;       /// Unique ID of the node, used in the map
+  UInt index_;    /// Unique index of the node
   CNode *l_;      /// Left child
   double lb_;     /// lower bound that a node can achieve
   UInt numChild_; /// Number of children
