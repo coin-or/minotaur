@@ -229,7 +229,8 @@ PresolverPtr presolve(EnvPtr env, ProblemPtr p, size_t ndefs,
 }
 
 //For separability detection: Check separability if problem is not linear.
-TransSepPtr sepDetection(EnvPtr env, ProblemPtr p)
+//TransSepPtr sepDetection(EnvPtr env, ProblemPtr p)
+void sepDetection(EnvPtr env, ProblemPtr p)
 {
   TransSepPtr sep = TransSepPtr();
   const std::string me("qg: ");
@@ -237,13 +238,16 @@ TransSepPtr sepDetection(EnvPtr env, ProblemPtr p)
   if (env->getOptions()->findBool("separability")->getValue() == true) {
     if (p -> isLinear()) {
       env ->getLogger()->msgStream(LogExtraInfo) << me
-        << "Problem is linear. Separability detection not
-        required." << std::endl;
-      return sep;
+        << "Problem is linear. Separability detection not required." 
+        << std::endl;
+      //return sep;
     } else {
       sep = (TransSepPtr) new
-        TransSep(env, p);
-      return sep;
+      TransSep(env, p);
+      env ->getLogger()->msgStream(LogExtraInfo) << me
+        << "Problem separability status: "<< sep->getStatus() 
+        << std::endl;
+     //return sep;
     }
   }
 }
@@ -259,7 +263,7 @@ int main(int argc, char* argv[])
   double obj_sense =1.0;
   
   //Separability detection
-   TransSepPtr sep; 
+   //TransSepPtr sep; 
   
   // jacobian is read from AMPL interface and passed on to branch-and-bound
   JacobianPtr jPtr;
@@ -337,7 +341,7 @@ int main(int argc, char* argv[])
   }
  
   // Separability detection
-   sep = sepDetection(env, inst);
+   sepDetection(env, inst);
   
    if (options->findBool("solve")->getValue()==true) {
     if (true==options->findBool("use_native_cgraph")->getValue()) {
