@@ -112,8 +112,8 @@ namespace Minotaur {
     void createCG(std::vector<CGraphPtr> * cg, CNodeQ * dq);
     void finalCG(std::vector<CGraphPtr> * cg);
 
-    CNode* getLchild(CNode * n1) {return tempN_[n1->getL()->getIndex()];} ; 
-    CNode* getRchild(CNode * n1) {return tempN_[n1->getR()->getIndex()];} ; 
+    CNode* getLchild(CNode * n1) {return tempN_[n1->getL()->getIndex()];}; 
+    CNode* getRchild(CNode * n1) {return tempN_[n1->getR()->getIndex()];}; 
 
     //Mark nodes visited
     void MarkVis(UInt i);
@@ -125,6 +125,8 @@ namespace Minotaur {
 
     //Objective separability check
     void objSepCheck();
+
+    bool getStatus();
 
   private:
     /// Environment.
@@ -139,29 +141,12 @@ namespace Minotaur {
     /// Problem whose constraints are to be checked for separability detection.
     ProblemPtr problem_;
 
-    //LinearFunctionPtr lf_;
-
-    //double lb_;
-    //double ub_;
-
-    //bool lfmod_;
-
     double coeff_;
+   
     bool bcoeff_;
-    ///Separability status
-    //bool sepStatus_;
-
-    /// Store whether constraints in the problem are separable (1) 
-
-    ///Stack of open nodes and opcode of their parents
-    //std::stack<CNode *>  oN_;
-    //std::stack<int>  oNop_;
-
+  
     ///iteration number at which a node of the cgraph is visited first
     std::vector<int> itnum_;
-
-    //Variable for merge operation
-    //std::vector<UInt> m_;
 
     //Vector of vectors for storing separable parts
     std::vector< CNodeQ > SepNodes_;
@@ -175,10 +160,6 @@ namespace Minotaur {
     //Vector of vectors for storing constant nodes in separable parts
     std::vector< std::vector< CNode *> > SepConst_;
 
-
-    // Total iterations
-    //UInt j_;
-
     // No. of separable constraints in problem 
     UInt sepC_;
 
@@ -190,15 +171,12 @@ namespace Minotaur {
 
     std::vector<CNode *> tempN_;
 
-    //Is problem separable
-    //bool sep_
- 
     //Is objective separable
     bool objSep_;
-        
-    //No. of separable constraints function
-    //UInt spCon_;
 
+    //Problem separability status
+    bool sepStatus_;
+        
   };
   typedef boost::shared_ptr<TransSep> TransSepPtr;
   typedef boost::shared_ptr<const TransSep> ConstTransSepPtr;

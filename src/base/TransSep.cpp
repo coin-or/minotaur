@@ -40,7 +40,8 @@ const std::string TransSep::me_ = "TransSep: ";
 
   TransSep::TransSep()
 : env_(EnvPtr()), problem_(ProblemPtr()), coeff_(0.0), bcoeff_(false), 
-  itnum_(0), SepNodes_(0), SepOps_(0), SepVars_(0), SepConst_(0), sepC_(0), newCons_(0), newVars_(0), objSep_(false)
+  itnum_(0), SepNodes_(0), SepOps_(0), SepVars_(0), SepConst_(0), sepC_(0),
+  newCons_(0), newVars_(0), objSep_(false), sepStatus_(false)
   //SepOps_(0), SepVars_(0), SepConst_(0), sepC_(0), newCons_(0), newVars_(0), Osep_(0)
   //SepOps_(0), SepVars_(0), SepConst_(0), sepC_(0), newCons_(0), newVars_(0), objSep_(false)
 {
@@ -49,8 +50,9 @@ const std::string TransSep::me_ = "TransSep: ";
 
 
   TransSep::TransSep(EnvPtr env, ProblemPtr problem)
-: env_(env), problem_(problem), coeff_(0.0), bcoeff_(false),
-  itnum_(0), SepNodes_(0), SepOps_(0), SepVars_(0), SepConst_(0), sepC_(0), newCons_(0), newVars_(0), objSep_(false)
+: env_(env), problem_(problem), coeff_(0.0), bcoeff_(false), itnum_(0),
+  SepNodes_(0), SepOps_(0), SepVars_(0), SepConst_(0), sepC_(0), newCons_(0),
+  newVars_(0), objSep_(false), sepStatus_(false)
   //SepOps_(0), SepVars_(0), SepConst_(0), sepC_(0), newCons_(0), newVars_(0), sep_(0)
   //SepOps_(0), SepVars_(0), SepConst_(0), sepC_(0), newCons_(0), newVars_(0), objSep_(false)
 {
@@ -1518,6 +1520,16 @@ void TransSep::TempPop(CNode *n1, std::stack<CNode *> * tempNodes)
   default:
     assert(!"cannot evaluate!");
   }
+}
+
+bool TransSep::getStatus() 
+{
+  if (sepC_ > 0 || objSep_ == true) {
+    sepStatus_ = true;  
+  } else {
+    sepStatus_ = false;  
+  }
+  return sepStatus_;
 }
 
 void TransSep::disProb()
