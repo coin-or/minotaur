@@ -128,6 +128,8 @@ namespace Minotaur {
 
     bool getStatus();
 
+    void findSep();
+
   private:
     /// Environment.
     EnvPtr env_;
@@ -176,7 +178,18 @@ namespace Minotaur {
 
     //Problem separability status
     bool sepStatus_;
-        
+
+    LinearFunctionPtr lf_;
+
+    double  ub_;
+    double  lb_;
+
+
+    //inicate whether function under consideration is of constraint or
+    //objective. 1 if constraint, 0 if objective
+    UInt f_; 
+
+            
   };
   typedef boost::shared_ptr<TransSep> TransSepPtr;
   typedef boost::shared_ptr<const TransSep> ConstTransSepPtr;

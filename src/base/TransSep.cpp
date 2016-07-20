@@ -5,11 +5,10 @@
 
 /**
  * \file TransSep.cpp
- * \brief Declare the SeparabilityDectector class for detecting nonlinear
- * function separability. It checks whether the given nonlinear function
- * is separable. If separable, then it reformulates the original problem.
- * It also gives separable parts and computational graph of each separable
- * part.
+ * \brief Declare the TransSep class for detecting nonlinear function 
+ * separability. It checks whether the given nonlinear objective and
+ * constraint functions are separable. If separable, then it reformulates
+ *  the original problem.
  * \author Meenarli Sharma, Indian Institute of Technology Bombay. 
  */
 
@@ -39,33 +38,21 @@ using namespace Minotaur;
 const std::string TransSep::me_ = "TransSep: ";
 
   TransSep::TransSep()
-: env_(EnvPtr()), problem_(ProblemPtr()), coeff_(0.0), bcoeff_(false), 
-  itnum_(0), SepNodes_(0), SepOps_(0), SepVars_(0), SepConst_(0), sepC_(0),
-  newCons_(0), newVars_(0), objSep_(false), sepStatus_(false)
-  //SepOps_(0), SepVars_(0), SepConst_(0), sepC_(0), newCons_(0), newVars_(0), Osep_(0)
-  //SepOps_(0), SepVars_(0), SepConst_(0), sepC_(0), newCons_(0), newVars_(0), objSep_(false)
+:env_(EnvPtr()), problem_(ProblemPtr()), coeff_(0.0), bcoeff_(false), itnum_(0),
+  SepNodes_(0), SepOps_(0), SepVars_(0), SepConst_(0), sepC_(0), newCons_(0),
+  newVars_(0), objSep_(false), sepStatus_(false), lf_(LinearFunctionPtr()), ub_(0), lb_(0), f_(0)
 {
   logger_ = (LoggerPtr) new Logger(LogDebug2);
 }
 
 
   TransSep::TransSep(EnvPtr env, ProblemPtr problem)
-: env_(env), problem_(problem), coeff_(0.0), bcoeff_(false), itnum_(0),
+:env_(env), problem_(problem), coeff_(0.0), bcoeff_(false), itnum_(0),
   SepNodes_(0), SepOps_(0), SepVars_(0), SepConst_(0), sepC_(0), newCons_(0),
-  newVars_(0), objSep_(false), sepStatus_(false)
-  //SepOps_(0), SepVars_(0), SepConst_(0), sepC_(0), newCons_(0), newVars_(0), sep_(0)
-  //SepOps_(0), SepVars_(0), SepConst_(0), sepC_(0), newCons_(0), newVars_(0), objSep_(false)
+  newVars_(0), objSep_(false), sepStatus_(false), lf_(LinearFunctionPtr()), ub_(0), lb_(0), f_(0)
 {
   logger_   = (LoggerPtr) new Logger((LogLevel) env_->getOptions()->
                                      findInt("separability_log_level")->getValue());
-
-  //Check constraints separability
-  candCons();
-  //checking objective separability
-  objSepCheck();
-  disProb();
-  std::cout << "No. of separable constraints: "<< sepC_ << std::endl;
-  std::cout << "Is objective seperable:  "<< objSep_ << std::endl;
 }
 
 
@@ -74,6 +61,33 @@ TransSep::~TransSep()
   problem_.reset();
   env_.reset();
   logger_.reset();
+}
+
+
+void TransSep::findSep() 
+{
+  //Check constraints separability
+  candCons();
+  //checking objective separability
+  objSepCheck();
+  //double *x = new double[problem_->getNumVars()];
+  //for (UInt i=0; i<problem_->getNumVars(); ++i) {
+  //x[i] = 0;
+  //}
+  //problem_->setInitialPoint(x);
+  //delete [] x;
+  problem_->resetInitialPoint(newVars_);
+  disProb();
+  //std::cout << "No. of separable constraints: "<< sepC_ << std::endl;
+  //std::cout << "Is objective seperable:  "<< objSep_ << std::endl;
+
+#if SPEW
+  logger_->msgStream(LogDebug) << me_ <<"No. of separable constraints: "<< sepC_
+    << std::endl;
+
+  logger_->msgStream(LogDebug) << me_ <<"Is objective seperable: "<<objSep_
+    << std::endl;
+#endif
 }
 
 //Check constraints of the problem one by one. If cgraph exists, check for
@@ -85,10 +99,8 @@ void TransSep::candCons()
   ConstraintPtr c_ptr;
   FunctionPtr f;
   NonlinearFunctionPtr nlf;
-  LinearFunctionPtr lf, lf1;
-  //LinearFunctionPtr lf0, lf, lf1;
+  LinearFunctionPtr lf1;
   CGraphPtr cgp;
-  //CNode  *n1=0;
 
   UInt nvar=0, nnode=0;
 
@@ -100,7 +112,6 @@ void TransSep::candCons()
   std::vector<CGraphPtr > nlfnew; //Linear function of new linear constraints
   std::vector<double > ubMlf; //ub of modified linear constraints
   std::vector<double > lbMlf; //lb of modified linear constraints
-  //std::vector<VariablePtr > newVar; //new variables added for new separable constraints
 
   for(ConstraintConstIterator c_iter=problem_->consBegin();
       c_iter!=problem_->consEnd(); ++c_iter) {
@@ -124,13 +135,21 @@ void TransSep::candCons()
 #endif
 
     } else {
+      f_ = 1;
       coeff_ = 1.0;
       bcoeff_ = false;
       //if ( c_ptr->getLinearFunction()) {
-        //lf = c_ptr->getLinearFunction()->clone(); 
+      //lf = c_ptr->getLinearFunction()->clone(); 
       //} else {
-        //lf = (LinearFunctionPtr) new LinearFunction();
+      //lf = (LinearFunctionPtr) new LinearFunction();
       //}
+      if ( c_ptr->getLinearFunction()) {
+        lf_ = c_ptr->getLinearFunction()->clone(); 
+      } else {
+        lf_ = (LinearFunctionPtr) new LinearFunction();
+      }
+      ub_ = c_ptr->getUb();
+      lb_ = c_ptr->getLb();
 
       nvar = f->getNonlinearFunction()->numVars();
       nnode = cgp->getNumNodes();
@@ -161,11 +180,11 @@ void TransSep::candCons()
       //This vector contains cgraph of separable parts.
       cg = SepCGraph(nnode, &dq);
 
-      if ( c_ptr->getLinearFunction()) {
-        lf = c_ptr->getLinearFunction()->clone(); 
-      } else {
-        lf = (LinearFunctionPtr) new LinearFunction();
-      }
+      //if ( c_ptr->getLinearFunction()) {
+      //lf = c_ptr->getLinearFunction()->clone(); 
+      //} else {
+      //lf = (LinearFunctionPtr) new LinearFunction();
+      //}
 
 
       //std::cout << std::endl;
@@ -175,9 +194,13 @@ void TransSep::candCons()
 
       //lfmod[sepC_] = (LinearFunctionPtr) new LinearFunction();
       //check if bounds are copied.
-      //lfmod[sepC_] = c_ptr->getLinearFunction(); 
-      ubMlf.push_back(c_ptr->getUb());
-      lbMlf.push_back(c_ptr->getLb());
+      //lfmod[sepC_] = c_ptr->getLinearFunction();
+
+      ubMlf.push_back(ub_);
+      lbMlf.push_back(lb_);
+      //ubMlf.push_back(c_ptr->getUb());
+      //lbMlf.push_back(c_ptr->getLb());
+
 
 
       v = (VariablePtr) new Variable();
@@ -188,9 +211,9 @@ void TransSep::candCons()
           for (UInt j=0; j< SepVars_[i].size(); j++) {
             v = problem_->getVariable(SepVars_[i][j]->getV()->getId());
 
-            if (lf->hasVar(v)) {
-              const double d2 = lf->getWeight(v);
-              lf->removeVar(v, lf->getWeight(v));
+            if (lf_->hasVar(v)) {
+              const double d2 = lf_->getWeight(v);
+              lf->removeVar(v, lf_->getWeight(v));
               lf1->addTerm(v, d2);
             }
           }
@@ -198,7 +221,7 @@ void TransSep::candCons()
 
         v = problem_->newVariable(VarTran);
         newVars_++;
-        lf->addTerm(v, 1);
+        lf_->addTerm(v, 1);
         lf1->addTerm(v, -1);
         lfnew.push_back(lf1);
         //std::cout << std::endl << "New constraint ***: ";
@@ -210,7 +233,7 @@ void TransSep::candCons()
         lf1.reset();
       }
 
-      lfmod.push_back(lf);
+      lfmod.push_back(lf_);
       SepVars_.clear();
       cg.clear();
 
@@ -222,7 +245,7 @@ void TransSep::candCons()
     }
   } 
 
-  lf.reset();
+  lf_.reset();
   //Remove constraints marked as delete
   problem_->delMarkedCons();
   //std::cout << "After delMarkedCons ***: " << std::endl;
@@ -270,7 +293,7 @@ void TransSep::objSepCheck()
   ConstraintPtr c_ptr;
   FunctionPtr f;
   NonlinearFunctionPtr nlf;
-  LinearFunctionPtr lf, lf1;
+  LinearFunctionPtr lf1;
   CGraphPtr cgp;
   //CNode  *n1=0;
 
@@ -302,14 +325,21 @@ void TransSep::objSepCheck()
     std::cout << " Objective does not have cgraph.\n";
 #endif    
   } else {
-
+    f_ = 0;
     coeff_ = 1.0;
     bcoeff_ = false;
+    ub_ = 0.0;
+    lb_ = 0.0;
     //if ( obj->getLinearFunction()) {
-      //lf = obj->getLinearFunction(); 
+    //lf = obj->getLinearFunction(); 
     //} else {
-      //lf = (LinearFunctionPtr) new LinearFunction();
+    //lf = (LinearFunctionPtr) new LinearFunction();
     //}
+    if ( obj->getLinearFunction()) {
+      lf_ = obj->getLinearFunction(); 
+    } else {
+      lf_ = (LinearFunctionPtr) new LinearFunction();
+    }
 
     nvar = f->getNonlinearFunction()->numVars();
     nnode = cgp->getNumNodes();
@@ -337,11 +367,11 @@ void TransSep::objSepCheck()
     //This vector contains cgraph of separable parts.
     cg = SepCGraph(nnode, &dq);
 
-    if ( obj->getLinearFunction()) {
-      lf = obj->getLinearFunction(); 
-    } else {
-      lf = (LinearFunctionPtr) new LinearFunction();
-    }
+    //if ( obj->getLinearFunction()) {
+    //lf = obj->getLinearFunction(); 
+    //} else {
+    //lf = (LinearFunctionPtr) new LinearFunction();
+    //}
     //std::cout << "Separable constraints from obj " << std::endl;
     v = (VariablePtr) new Variable();
     for(UInt i=0; i < cg.size(); i++) {
@@ -351,9 +381,9 @@ void TransSep::objSepCheck()
         for (UInt j=0; j< SepVars_[i].size(); j++) {
           v = problem_->getVariable(SepVars_[i][j]->getV()->getId());
 
-          if (lf->hasVar(v)) {
-            const double d2 = lf->getWeight(v);
-            lf->removeVar(v, lf->getWeight(v));
+          if (lf_->hasVar(v)) {
+            const double d2 = lf_->getWeight(v);
+            lf_->removeVar(v, lf_->getWeight(v));
             lf1->addTerm(v, d2);
           }
         }
@@ -361,7 +391,7 @@ void TransSep::objSepCheck()
 
       v = problem_->newVariable(VarTran);
       newVars_++;
-      lf->addTerm(v, 1);
+      lf_->addTerm(v, 1);
       lf1->addTerm(v, -1);
       f = (FunctionPtr) new Function(lf1, cg[i]);
       //f->write(std::cout);    
@@ -379,10 +409,10 @@ void TransSep::objSepCheck()
 
     //Remove old objective and add a new one
     problem_->removeObjective();
-    f = (FunctionPtr) new Function(lf);
-    problem_->newObjective(f, obj->getConstant(), obj->getObjectiveType());
+    f = (FunctionPtr) new Function(lf_);
+    problem_->newObjective(f, (obj->getConstant()+ub_), obj->getObjectiveType());
 
-    lf.reset();
+    lf_.reset();
     //std::cout << "New linear obj " << std::endl;
     //ObjectivePtr obp;
     //obp = problem_->newObjective(f, obj->getConstant(), obj->getObjectiveType());
@@ -719,12 +749,12 @@ void TransSep::createCG(std::vector<CGraphPtr > * cg, CNodeQ * dq)
         nr = getRchild(n1);
         tempN_[n1->getIndex()]=(*cg)[k-1]->newNode(Minotaur::OpDiv, nl, nr);          
         break;
-       case (OpPowK):
+      case (OpPowK):
         nl = getLchild(n1);
         nr = getRchild(n1);
         tempN_[n1->getIndex()]=(*cg)[k-1]->newNode(Minotaur::OpPowK, nl, nr);          
         break;  
-       case (OpIntDiv):
+      case (OpIntDiv):
         nl = getLchild(n1);
         nr = getRchild(n1); 
         tempN_[n1->getIndex()]=(*cg)[k-1]->newNode(Minotaur::OpIntDiv, nl, nr);
@@ -846,11 +876,11 @@ void TransSep::finalCG(std::vector<CGraphPtr > * cg)
       n1 = (*cg)[i]->newNode(Minotaur::OpSumList, childr, f1);          
       delete []childr;
     }
-   if (bcoeff_ == true) {
-     nl = (*cg)[i]->newNode(coeff_);          
-     nr = n1;
-     n1 = (*cg)[i]->newNode(Minotaur::OpMult, nl, nr);          
-   } 
+    if (bcoeff_ == true) {
+      nl = (*cg)[i]->newNode(coeff_);          
+      nr = n1;
+      n1 = (*cg)[i]->newNode(Minotaur::OpMult, nl, nr);          
+    } 
     (*cg)[i]->setOut(n1);
     (*cg)[i]->finalize();
 
@@ -928,7 +958,7 @@ void TransSep::MarkVis(UInt i)
         if (itnum_[n1->getL()->getIndex()] == 0) { 
           ts.push(n1->getL());
         }
-          ts.push(n1->getR());
+        ts.push(n1->getR());
         break;
       case (OpNone):
         assert(!"warning: encountered node with opcode OpNone");
@@ -980,23 +1010,35 @@ bool TransSep::sepCheck(UInt  nnode, CNodeQ * snodes,
     switch (n1->getOp()){ 
     case (OpNum):
     case (OpInt):
-      (*snodes).push_back(n1);
-      (*sops).push_back(opc);    
-      (*sconst).push_back(n1);
+      //(*snodes).push_back(n1);
+      //(*sops).push_back(opc);    
+      //(*sconst).push_back(n1);
+      if (f_ == 1) {
+        if (n1->getVal() > 0) {
+          ub_ =ub_ + (n1->getVal());
+          lb_ =lb_ + (n1->getVal()); 
+        } else {
+          ub_ =ub_ + (n1->getVal());
+          lb_ =lb_ + (n1->getVal());     
+        }
+      } else {
+        ub_ = ub_ + n1->getVal();
+      }
+
       (*on).pop();
       (*onop).pop();
-      SepNodes_.push_back((*snodes)) ;
-        SepOps_.push_back((*sops)) ;
-        SepVars_.push_back((*svars)) ;
-        SepConst_.push_back((*sconst)) ;
+      //SepNodes_.push_back((*snodes)) ;
+      //SepOps_.push_back((*sops)) ;
+      //SepVars_.push_back((*svars)) ;
+      //SepConst_.push_back((*sconst)) ;
 
-        (*snodes).clear();
-        (*sops).clear();
-        (*svars).clear();
-        (*sconst).clear();
+      //(*snodes).clear();
+      //(*sops).clear();
+      //(*svars).clear();
+      //(*sconst).clear();
 
-      j++;
-      m.push_back(0);
+      //j++;
+      //m.push_back(0);
       break;
     case (OpVar):
       if (itnum_[n1->getIndex()]==0) {
@@ -1006,7 +1048,7 @@ bool TransSep::sepCheck(UInt  nnode, CNodeQ * snodes,
         itnum_[n1->getIndex()]=j+1;
         (*on).pop();
         (*onop).pop();
-      SepNodes_.push_back((*snodes)) ;
+        SepNodes_.push_back((*snodes)) ;
         SepOps_.push_back((*sops)) ;
         SepVars_.push_back((*svars)) ;
         SepConst_.push_back((*sconst)) ;
