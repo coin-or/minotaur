@@ -1208,6 +1208,22 @@ void Problem::resetDer()
   hessian_   = HessianOfLagPtr(); // NULL.
 }
 
+void Problem::resetInitialPoint(UInt newvar) 
+{
+  if (newvar != 0) {
+   double *x = new double[vars_.size()];
+   UInt ov = vars_.size()- newvar;
+   std::copy(initialPt_, initialPt_+ov, x);
+   for (UInt i = ov; i<vars_.size(); ++i){
+      x[i] = 0; 
+   }
+  delete [] initialPt_;
+  initialPt_ = 0; 
+  setInitialPoint(x);
+  delete [] x;
+  }  
+}
+
 
 void Problem::reverseSense(ConstraintPtr cons) 
 {
@@ -1252,7 +1268,7 @@ void Problem::setInitialPoint(const double *x)
 
   // copy
   std::copy(x, x+vars_.size(), initialPt_);
-}
+ }
 
 
 void Problem::setInitialPoint(const double *x, size_t k) 

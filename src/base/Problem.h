@@ -458,6 +458,17 @@ namespace Minotaur {
     virtual void resetDer();
 
     /**
+     * \brief Reset an initial point.
+     *
+     * Initial point is used by some engines like IpoptEngine. If new
+     * variables are added, then set their initial values to zero and keep the
+     * initial values of the other variables as before.
+     * \param[in] newvar is number of new variables added to the problem.
+     */
+    virtual void resetInitialPoint(UInt newvar);
+
+
+    /**
      * \brief Reverse the sense of a constraint.
      * 
      * \param[in] cons The constraint whose sense has to be reversed.
