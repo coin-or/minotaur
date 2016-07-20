@@ -242,8 +242,8 @@ void sepDetection(EnvPtr env, ProblemPtr p)
         << std::endl;
       //return sep;
     } else {
-      sep = (TransSepPtr) new
-      TransSep(env, p);
+      sep = (TransSepPtr) new TransSep(env, p);
+      sep->findSep();
       env ->getLogger()->msgStream(LogExtraInfo) << me
         << "Problem separability status: "<< sep->getStatus() 
         << std::endl;
@@ -320,6 +320,9 @@ int main(int argc, char* argv[])
 
   loadProblem(env, iface, inst, &obj_sense);
 
+  // Separability detection
+   sepDetection(env, inst);
+
   // Initialize engines
   nlp_e = getNLPEngine(env, inst); //Engine for Original problem
 
@@ -341,7 +344,7 @@ int main(int argc, char* argv[])
   }
  
   // Separability detection
-   sepDetection(env, inst);
+   //sepDetection(env, inst);
   
    if (options->findBool("solve")->getValue()==true) {
     if (true==options->findBool("use_native_cgraph")->getValue()) {
