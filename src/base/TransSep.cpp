@@ -213,7 +213,7 @@ void TransSep::candCons()
 
             if (lf_->hasVar(v)) {
               const double d2 = lf_->getWeight(v);
-              lf->removeVar(v, lf_->getWeight(v));
+              lf_->removeVar(v, lf_->getWeight(v));
               lf1->addTerm(v, d2);
             }
           }
