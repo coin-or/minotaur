@@ -329,7 +329,7 @@ void TransSep::objSepCheck()
     coeff_ = 1.0;
     bcoeff_ = false;
     ub_ = 0.0;
-    lb_ = 0.0;
+    //lb_ = 0.0;
     //if ( obj->getLinearFunction()) {
     //lf = obj->getLinearFunction(); 
     //} else {
@@ -341,6 +341,9 @@ void TransSep::objSepCheck()
       lf_ = (LinearFunctionPtr) new LinearFunction();
     }
 
+    //std::cout << "lf of obj in transSep" << std::endl;
+    //lf_->write(std::cout);
+    //std::cout << std::endl;
     nvar = f->getNonlinearFunction()->numVars();
     nnode = cgp->getNumNodes();
     const CNode *o = cgp->getOut();
@@ -411,7 +414,9 @@ void TransSep::objSepCheck()
     problem_->removeObjective();
     f = (FunctionPtr) new Function(lf_);
     problem_->newObjective(f, (obj->getConstant()+ub_), obj->getObjectiveType());
-
+    //std::cout << "new obj in transSep" << std::endl;
+    //(problem_->newObjective(f, (obj->getConstant()+ub_), obj->getObjectiveType()))->write(std::cout);
+    //std::cout << std::endl;
     lf_.reset();
     //std::cout << "New linear obj " << std::endl;
     //ObjectivePtr obp;
@@ -1015,14 +1020,14 @@ bool TransSep::sepCheck(UInt  nnode, CNodeQ * snodes,
       //(*sconst).push_back(n1);
       if (f_ == 1) {
         if (n1->getVal() > 0) {
-          ub_ =ub_ + (n1->getVal());
-          lb_ =lb_ + (n1->getVal()); 
+          ub_ = ub_ - coeff_ * (n1->getVal());
+          lb_ = lb_ - coeff_ * (n1->getVal()); 
         } else {
-          ub_ =ub_ + (n1->getVal());
-          lb_ =lb_ + (n1->getVal());     
+          ub_ = ub_ + coeff_ * (n1->getVal());
+          lb_ = lb_ + coeff_ * (n1->getVal());     
         }
       } else {
-        ub_ = ub_ + n1->getVal();
+        ub_ = ub_ + coeff_ * n1->getVal();
       }
 
       (*on).pop();
