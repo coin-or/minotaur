@@ -367,7 +367,7 @@ protected:
   double gi_;     /// Value of the derivative of this node w.r.t. to a given var
                   /// (forward mode)
   double h_;      /// Value of the hessian
-  UInt id_;       /// Unique ID of the node, used in the map
+  UInt id_;       /// Unique ID of a dependent node. 0 for independent nodes. 
   CNode *l_;      /// Left child
   double lb_;     /// lower bound that a node can achieve
   UInt numChild_; /// Number of children
