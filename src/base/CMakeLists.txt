@@ -74,6 +74,10 @@ set (MINOTAUR_SOURCES
      Objective.cpp 
      Operations.cpp 
      Option.cpp 
+     ParBndProcessor.cpp
+     ParBranchAndBound.cpp
+     ParNodeIncRelaxer.cpp
+     ParTreeManager.cpp
      PCBProcessor.cpp 
      PerspCutGenerator.cpp 
      PerspCutHandler.cpp 
@@ -104,6 +108,7 @@ set (MINOTAUR_SOURCES
      SOSBrCand.cpp
      Transformer.cpp 
      TransPoly.cpp 
+     TransSep.cpp 
      TreeManager.cpp 
      Types.cpp 
      VarBoundMod.cpp 
@@ -180,6 +185,10 @@ set (MINOTAUR_HEADERS
      Objective.h
      Option.h
      OpCode.h
+     ParBndProcessor.h
+     ParBranchAndBound.h
+     ParNodeIncRelaxer.h
+     ParTreeManager.h
      PCBProcessor.h
      PerspCutGenerator.h # Serdar
      PerspCutHandler.h
@@ -214,6 +223,7 @@ set (MINOTAUR_HEADERS
      Timer.h
      Transformer.h 
      TransPoly.h 
+     TransSep.h 
      TreeManager.h
      Types.h
      WarmStart.h

@@ -244,6 +244,8 @@ void QGHandler::cutIntSol_(ConstSolutionPtr sol, SolutionPoolPtr s_pool,
     *status = SepaError;
 
   }
+
+  //MS: check if this the only way to do this.
   if (numCuts_ != 0) {
     *status = SepaResolve;
   }else{
@@ -500,8 +502,8 @@ int QGHandler::OAFromPoint_(const double *x, const double *inf_x,
         }
       }
     }	else {
-      logger_->msgStream(LogError) << me_ << "Constraint not defined at" <<
-        " at least one of the two points: "<<  std::endl;
+      logger_->msgStream(LogError) << me_ << "Constraint not defined at"
+        << " at least one of the points: "<<  std::endl;
     }
   }
   o = minlp_->getObjective();
@@ -538,8 +540,8 @@ int QGHandler::OAFromPoint_(const double *x, const double *inf_x,
         }
       }
     }	else {
-      logger_->msgStream(LogError) << me_ << "Objective not defined at this point" 
-        <<  std::endl;
+      logger_->msgStream(LogError) << me_
+                    << "Objective not defined at this solution point"<<  std::endl;
     }
   }
 
@@ -606,8 +608,8 @@ int QGHandler::OAFromPointInf_(const double *x, const double *inf_x,
       }
     }
     else {
-      logger_->msgStream(LogError) << me_ 
-        << "Objective not defined at this point"<<  std::endl;
+       logger_->msgStream(LogError) << me_ << "Constraint not defined at" <<
+        " at least one of the points: "<<  std::endl;;
     }
   }
 

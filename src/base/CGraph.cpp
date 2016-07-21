@@ -555,7 +555,7 @@ void CGraph::finalize()
   std::stack<CNode *>st;
   CNode *n1, *lchild, *rchild;
   CNode **p1, **p2;
-  UInt id = 0;
+  UInt id = 0, index = 0;
   assert(oNode_);
   st.push(oNode_);
 
@@ -570,6 +570,11 @@ void CGraph::finalize()
 
   for (UInt i=0; i<aNodes_.size(); ++i) {
     aNodes_[i]->setTempI(aNodes_[i]->numChild()+1);
+    if (aNodes_[i]->getOp() == OpNum || aNodes_[i]->getOp() == OpInt ) {
+      aNodes_[i]->setIndex(index);
+      index++;
+    }
+
   }
 
   id = 1;
@@ -627,16 +632,14 @@ void CGraph::finalize()
       }
     }
   }
-  //std::cout << std::endl
-  //          << "dq_ has " << dq_.size() << " elements." << std::endl
-  //          << "vq_ has " << vq_.size() << " elements." << std::endl
-  //          << "aNodes_ has " << aNodes_.size() << " elements." << std::endl;
-  //std::cout << std::endl << "dq_:" << std::endl;
-  //for (CNodeQ::iterator it=dq_.begin(); it!=dq_.end(); ++it) {
-  //  (*it)->writeSubExp(std::cout);
-  //  std::cout << std::endl;
-  //}
-
+  for (UInt i=0; i<vq_.size(); i++) {
+    vq_[i]->setIndex(index);
+    index++;
+  }
+  for (UInt i=0; i<dq_.size(); i++) {
+    dq_[i]->setIndex(index);
+    index++;
+  }
 }
 
 
@@ -981,7 +984,6 @@ CNode* CGraph::newNode(int i)
   return node;
 }
 
-
 CNode* CGraph::newNode(VariablePtr v)
 {
   CNode *z = 0;
@@ -1054,6 +1056,24 @@ void CGraph::revHess_(int *error)
   }
 }
 
+void CGraph::resetNodeIndex()
+{
+  UInt index =0;
+  for (UInt i=0; i<aNodes_.size(); i++) {
+    if (aNodes_[i]->getOp() == OpNum || aNodes_[i]->getOp() == OpInt ) {
+      aNodes_[i]->setIndex(index);
+      index++;
+    }
+  }
+  for (UInt i=0; i<vq_.size(); i++) {
+    vq_[i]->setIndex(index);
+    index++;
+  }
+  for (UInt i=0; i<dq_.size(); i++) {
+    dq_[i]->setIndex(index);
+    index++;
+  } 
+}
 
 void CGraph::revHess2_(std::stack<CNode *> *st2, double mult, UInt vind,
                        double *values, UInt *nz, int *error)

@@ -4,7 +4,7 @@
 //     (C)opyright 2008 - 2014 The MINOTAUR Team.
 // 
 
-/*! \brief Algorithm for solving (nonconvex) quadratic programs
+/*! \brief Quesada-Grossmann(QG) algorithm for solving convex MINLP
  *
  * \author Jeff Linderoth, MINOTAUR Team
  */
@@ -45,6 +45,7 @@
 #include <EngineFactory.h>
 #include <CxQuadHandler.h>
 #include <Objective.h>
+#include <TransSep.h>
 
 using namespace Minotaur;
 
@@ -176,7 +177,7 @@ int showInfo(EnvPtr env)
 
 
 PresolverPtr presolve(EnvPtr env, ProblemPtr p, size_t ndefs, 
-                        HandlerVector &handlers)
+                      HandlerVector &handlers)
 {
   PresolverPtr pres = PresolverPtr(); // NULL
   const std::string me("qg: ");
@@ -202,9 +203,9 @@ PresolverPtr presolve(EnvPtr env, ProblemPtr p, size_t ndefs,
     }
 
     if (!p->isLinear() && 
-         true==env->getOptions()->findBool("use_native_cgraph")->getValue() && 
-         true==env->getOptions()->findBool("nl_presolve")->getValue() 
-         ) {
+        true==env->getOptions()->findBool("use_native_cgraph")->getValue() && 
+        true==env->getOptions()->findBool("nl_presolve")->getValue() 
+       ) {
       NlPresHandlerPtr nlhand = (NlPresHandlerPtr) new NlPresHandler(env, p);
       handlers.push_back(nlhand);
     }
@@ -227,6 +228,29 @@ PresolverPtr presolve(EnvPtr env, ProblemPtr p, size_t ndefs,
   return pres;
 }
 
+//For separability detection: Check separability if problem is not linear.
+//TransSepPtr sepDetection(EnvPtr env, ProblemPtr p)
+void sepDetection(EnvPtr env, ProblemPtr p)
+{
+  TransSepPtr sep = TransSepPtr();
+  const std::string me("qg: ");
+
+  if (env->getOptions()->findBool("separability")->getValue() == true) {
+    if (p -> isLinear()) {
+      env ->getLogger()->msgStream(LogExtraInfo) << me
+        << "Problem is linear. Separability detection not required." 
+        << std::endl;
+      //return sep;
+    } else {
+      sep = (TransSepPtr) new TransSep(env, p);
+      sep->findSep();
+      env ->getLogger()->msgStream(LogExtraInfo) << me
+        << "Problem separability status: "<< sep->getStatus() 
+        << std::endl;
+     //return sep;
+    }
+  }
+}
 
 int main(int argc, char* argv[])
 {
@@ -237,7 +261,10 @@ int main(int argc, char* argv[])
   ProblemPtr inst;
   SolutionPtr sol, sol2;
   double obj_sense =1.0;
-
+  
+  //Separability detection
+   //TransSepPtr sep; 
+  
   // jacobian is read from AMPL interface and passed on to branch-and-bound
   JacobianPtr jPtr;
   // hessian is read from AMPL interface and passed on to branch-and-bound
@@ -253,7 +280,7 @@ int main(int argc, char* argv[])
   PCBProcessorPtr nproc;
 
   NodeIncRelaxerPtr nr;
-  
+
   //handlers
   HandlerVector handlers;
   QGHandlerPtr qghand;
@@ -293,6 +320,9 @@ int main(int argc, char* argv[])
 
   loadProblem(env, iface, inst, &obj_sense);
 
+  // Separability detection
+   sepDetection(env, inst);
+
   // Initialize engines
   nlp_e = getNLPEngine(env, inst); //Engine for Original problem
 
@@ -312,9 +342,11 @@ int main(int argc, char* argv[])
     writeBnbStatus(env, bab, obj_sense);
     goto CLEANUP;
   }
-
-  // final preparations for solve
-  if (options->findBool("solve")->getValue()==true) {
+ 
+  // Separability detection
+   //sepDetection(env, inst);
+  
+   if (options->findBool("solve")->getValue()==true) {
     if (true==options->findBool("use_native_cgraph")->getValue()) {
       inst->setNativeDer();
     }

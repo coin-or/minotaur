@@ -81,6 +81,10 @@ void Environment::createDefaultOptions_()
       "Should presolve be used: <0/1>", true, false);
   options_->insert(b_option);
 
+  b_option = (BoolOptionPtr) new Option<bool>("separability",
+      "Should separability be used: <0/1>", true, false);
+  options_->insert(b_option);
+
   b_option = (BoolOptionPtr) new Option<bool>("persp_ref", 
       "Should prespective reformulation be used: <0/1>", true, false);
   options_->insert(b_option);
@@ -98,12 +102,20 @@ void Environment::createDefaultOptions_()
       "Should display problem after presolving: <0/1>", true, false);
   options_->insert(b_option);
 
+  b_option = (BoolOptionPtr) new Option<bool>("display_separable_problem", 
+      "Should display problem after seprability detection: <0/1>", true, false);
+  options_->insert(b_option);
+
   b_option = (BoolOptionPtr) new Option<bool>("display_size", 
       "Should display problem size before solving: <0/1>", true, false);
   options_->insert(b_option);
 
   b_option = (BoolOptionPtr) new Option<bool>("display_presolved_size", 
       "Should display problem size after presolving: <0/1>", true, false);
+  options_->insert(b_option);
+
+  b_option = (BoolOptionPtr) new Option<bool>("display_separable_size", 
+      "Should display problem size after separability detection: <0/1>", true, false);
   options_->insert(b_option);
 
   b_option = (BoolOptionPtr) new Option<bool>("guided_dive", 
@@ -258,6 +270,10 @@ void Environment::createDefaultOptions_()
 
   i_option = (IntOptionPtr) new Option<int>("presolve_log_level", 
       "Verbosity of presolver: 0-6", true, LogInfo);
+  options_->insert(i_option);
+
+  i_option = (IntOptionPtr) new Option<int>("separability_log_level",
+      "Verbosity of separability detection: 0-6", true, LogInfo);
   options_->insert(i_option);
 
   i_option = (IntOptionPtr) new Option<int>("rand_seed", 

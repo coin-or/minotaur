@@ -156,6 +156,9 @@ public:
   /// \return The ID
   UInt getId() const {return id_;};
 
+  /// \return index of the node
+  UInt getIndex() const {return index_;};
+
   /// \return The pointer to left child
   CNode* getL() const { return l_; };
 
@@ -293,12 +296,19 @@ public:
   void setId(UInt i) {id_ = i;};
 
   /**
+   * \brief Set the value of the node index.
+   *
+   * \param [in] i The value.
+   */
+  void setIndex(UInt i) {index_ = i;};
+
+
+  /**
    * \brief Set the pointer to the left-most child
    *
    * \param [in] n The pointer.
    */
   void setL(CNode *n) {l_ = n;};
-
 
   /**
    * \brief Set the OpCode.
@@ -340,6 +350,7 @@ public:
    *
    * \param [in] v The variable pointer.
    */
+  
   void setV(VariablePtr v) {v_ = v.get();};
 
   /**
@@ -368,6 +379,7 @@ protected:
                   /// (forward mode)
   double h_;      /// Value of the hessian
   UInt id_;       /// Unique ID of a dependent node. 0 for independent nodes. 
+  UInt index_;    /// Unique index of the node
   CNode *l_;      /// Left child
   double lb_;     /// lower bound that a node can achieve
   UInt numChild_; /// Number of children

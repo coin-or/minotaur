@@ -37,6 +37,7 @@ CNode::CNode()
     gi_(0),
     h_(0),
     id_(0),
+    index_(0),
     l_(0),
     lb_(-INFINITY),
     numChild_(0),
@@ -63,6 +64,7 @@ CNode::CNode(OpCode op, CNode *lchild, CNode *rchild)
     gi_(0),
     h_(0),
     id_(0),
+    index_(0),
     l_(lchild),
     lb_(-INFINITY),
     numChild_(2),
@@ -99,6 +101,7 @@ CNode::CNode(OpCode op, CNode **children, UInt num_child)
     gi_(0),
     h_(0),
     id_(0),
+    index_(0),
     l_(0),
     lb_(-INFINITY),
     numChild_(num_child),
@@ -205,6 +208,7 @@ CNode* CNode::clone() const
   node->gi_ = gi_;
   node->h_ = h_;
   node->id_ = id_;
+  node->index_ = index_;
   node->lb_ = lb_;
   node->numChild_ = numChild_;
   node->numPar_ = numPar_;
@@ -1693,7 +1697,6 @@ void CNode::setVal(double v)
   }
 }
 
-
 void CNode::updateBnd(int *error)
 {
   errno = 0; //declared in cerrno
@@ -1808,6 +1811,10 @@ void CNode::updateBnd(int *error)
     BoundsOnProduct(true, l_->lb_, l_->ub_, r_->lb_, r_->ub_, lb_, ub_);
     break;
   case (OpNone):
+    break;
+  case (OpInt):
+    lb_ = d_;
+    ub_ = d_;
     break;
   case (OpNum):
     lb_ = d_;

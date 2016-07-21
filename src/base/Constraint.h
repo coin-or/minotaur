@@ -68,6 +68,7 @@ namespace Minotaur {
       /// Only Problem class can modify a Constraint. All modification methods
       /// are private.
       friend class Problem;
+      friend class TransSep;
 
 
       /// Default constructor.
