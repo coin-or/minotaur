@@ -6,10 +6,13 @@
 
 /**
  * \file TransSep.h
- * \brief Declare the SeparabilityDectector class for detecting nonlinear
- * function separability. It checks whether the given nonlinear function
- * is separable. If separable, then it reformulates the original problem.
- * It also gives separable parts and computational graph of each separable part.
+ * \brief Declare TransSep class for detecting nonlinear
+ * function separability. It considers nonlinear constraints of a problem and
+ * checks whether it is separable. If separable, then it reformulates the
+ * original problem by introducing extra variables. Original nonlinear
+ * constraint becomes linear and each separable part constitutes a nonlinear
+ * constraint. This class also gives computational graph of each nonlinear
+ * constraint corresponding to each separable part.
  * \author Meenarli Sharma, Indian Institute of Technology Bombay. 
  */
 
@@ -34,101 +37,111 @@ namespace Minotaur {
   typedef boost::shared_ptr<Problem> ProblemPtr;
   typedef std::deque<CNode *> CNodeQ;
 
-  //MS: do we want these statistics? 
-  //struct SepStats {                                     i
-    //size_t sCons;      /// Number of separable constraints.                            
-    //std::cout vector<int >  sParts;  /// Number of separable parts
-                                    ///// in each separable constraint.                  
-    //size_t newNlC;    /// Number of new nonlinear constraints added to the problem.
-    //size_t newLC;     /// Number of new linear constraints added to the problem. 
-                      /////This is equal to sCons.
-    //size_t delC;      /// Number of constraints deleted from the problem.
-                      ///// This must be equal to sCons and newLC.                              
-  //};  
-  /**
-   * TransSep class considers nonlinear constraints of a problem and 
-   * checks whether it is separable. If separable, then it reformulates the
-   * original problem by introducing extra variables. Original nonlinear
-   * constraint becomes linear and each separable part constitutes a nonlinear
-   * constraint. This class also gives computational graph of each nonlinear
-   * constraint corresponding to each separable part.
-   */
   class TransSep {
   public:
 
     /// Default constructor.
     TransSep();
 
-    /// Constructor.
+    /** 
+    * \brief Default Constructor.
+    * \param [in] env Environment pointer.
+    * \param [in] minlp The minlp for which separability is to detected 
+    */
     TransSep(EnvPtr env, ProblemPtr problem);
 
     /// Destroy.
     ~TransSep();
 
     /**
-     * Consider constraints of the given problem one by one and if it is
-     * nonlinear make it a candidate for separability detection
-     * it is separable.
+     * Check constraints of the given problem for separability.
      */
     void candCons();
 
     /**
-     *Check is the nonlinear constraint is separable
+     * Check if the nonlinear constraint is separable. 1 if separable
+     * 0 if not separable
      */
-    bool sepCheck(UInt nnode, CNodeQ * snodes, 
-                  std::deque<int > * sops, std::vector<CNode *> *svars,
-                  std::vector<CNode *> *sconst, UInt nvar,
-                  std::stack<CNode *> *oN, std::stack<int > *oNop);
+    bool sepCheck();
 
-    //bool SepCheck(const CNode *node, UInt nnode, CNodeQ * snodes, 
-                  //std::deque<int > * sops, std::vector<CNode *> *svars,
-                  //std::vector<CNode *> *sconst, UInt nvar,
-                  //std::stack<CNode *> *oN, std::stack<int > *oNop);
+ 
+     // Perform Depth first search rooted at node n1 at iteration number j
+    void depthFS(int j, CNode *n1, std::vector<UInt > * m);
 
-    /**
-     *Depth first search rooted at node n1 at iteration number j
-     */
-    void DepthFS(int j, CNode *n1, CNodeQ * snodes, std::deque<int > * sops,
-                 std::vector<CNode *> * svars, std::vector<CNode *> *sconst,
-                 std::vector<UInt > * m);
-
-    /**
-     *To populate initial list for depth first search rooted at node n1
-     */
-    void TempPop(CNode *n1, std::stack<CNode *> * tempNodes);
-
-    /**
-     *Merge operations
-     */
-    int MergeIt(int j, int a, std::vector<UInt > * m);
-
-    void Merge(int mNum, CNodeQ * snodes, std::deque<int > * sops, 
-               std::vector<CNode *> *svars, std::vector<CNode *> *sconst);
+   // Explore further from  node n1 at iteration number j
+    void explore(int j, CNode *n1, std::vector<UInt > * m, int opc);
 
 
-    //cgraph of separable parts
-    std::vector<CGraphPtr> SepCGraph(UInt nnode, CNodeQ * dq);
+    // Populate initial list for depth first search rooted at node n1
+    void tempPop(CNode *n1, std::stack<CNode *> * tempNodes);
+
+     // Find iteration to merge the current iteration to
+    int mergeIt(int j, int a, std::vector<UInt > * m);
+
+    // Merge current iteration with iteration mNum
+    void merge(int mNum);
+
+    // Computation graph of separable parts
+    std::vector<CGraphPtr> sepCGraph(CNodeQ * dq);
     
+    // Generate computation graph 
     void createCG(std::vector<CGraphPtr> * cg, CNodeQ * dq);
+
+    // Final computation graph
     void finalCG(std::vector<CGraphPtr> * cg);
 
+    // Get left child of node n1 
     CNode* getLchild(CNode * n1) {return tempN_[n1->getL()->getIndex()];}; 
+    
+    // Get right child of node n1 
     CNode* getRchild(CNode * n1) {return tempN_[n1->getR()->getIndex()];}; 
 
-    //Mark nodes visited
-    void MarkVis(UInt i);
+    // Mark nodes visited. Used in generating computation graph of separable
+    // parts
+    void markVis(UInt i);
 
-    bool outCheck(const CNode * o, UInt nnode, UInt nvar);
+    // Check whether constraint is separable
+    bool outCheck(const CNode * o);
 
     //For problem display
     void disProb();
 
-    //Objective separability check
+    // Check separability of objective function
     void objSepCheck();
 
+    // Return Ids of separable constraints in original problem
+    std::vector<UInt > getSepConId() {return sepConId_;}
+
+    // Return whether the original problem is separable
     bool getStatus();
 
+    // Find separability of given problem
     void findSep();
+
+   //Clear containers if constraint not separable
+    void clearCont();
+
+    //Populate information about separable part
+    void populate();
+
+    //Populate nodes list
+    void popuon(CNode * n1, int opc, int t);
+
+   // Add information of the node already visited
+    bool visited(UInt *j, std::vector<UInt > * m, CNode * n1,
+                 int opc);
+
+
+   // Clear and populate informatio
+    bool clearpopu(UInt *j, std::vector<UInt > * m);
+
+    //void updateBounds(int opc, double d1);
+
+    // Updating linear part of the constraint function
+    void updateLin(VariablePtr v, double d);
+
+    // populating tempN_ with one and two children
+    void popuTempN(CGraphPtr c, CNode *n1, OpCode op, bool k);
 
   private:
     /// Environment.
@@ -137,59 +150,70 @@ namespace Minotaur {
     /// Log
     LoggerPtr logger_;
 
-    /// For log:
+    // For log:
     static const std::string me_;
 
-    /// Problem whose constraints are to be checked for separability detection.
+    // Problem whose constraints are to be checked for separability detection.
     ProblemPtr problem_;
 
     double coeff_;
-   
-    bool bcoeff_;
   
-    ///iteration number at which a node of the cgraph is visited first
+    /// Iteration number at which a node of the cgraph is visited first
     std::vector<int> itnum_;
 
-    //Vector of vectors for storing separable parts
-    std::vector< CNodeQ > SepNodes_;
+    // Separable parts
+    std::vector<CNodeQ > sepNodes_;
 
-    //Vector of vectors for storing opcodes of nodes in separable parts
-    std::vector< std::deque< int> > SepOps_;
+    // Opcodes of nodes in separable parts
+    std::vector< std::deque< int> > sepOps_;
 
-    //Vector of vectors for storing variables separable parts
-    std::vector< std::vector< CNode *> > SepVars_;
+    // Variables in separable parts
+    std::vector< std::vector< CNode *> > sepVars_;
 
-    //Vector of vectors for storing constant nodes in separable parts
-    std::vector< std::vector< CNode *> > SepConst_;
+    // Constant nodes in separable parts
+    std::vector< std::vector< CNode *> > sepConst_;
 
-    // No. of separable constraints in problem 
-    UInt sepC_;
+    // Ids of the Constraint that are separable
+    std::vector<UInt > sepConId_;
 
-    //No. of new separable constraints added to the problems
+    // No. of new constraints added to the original problem after sep detection
     UInt newCons_;
     
-    //No. of new variable added to the problem
+    // No. of new variable added to the origina problem after sep detection
     UInt newVars_;
 
+    /// Used in generating computational graph of separable parts
     std::vector<CNode *> tempN_;
 
-    //Is objective separable
+    // True if objective is separable
     bool objSep_;
 
-    //Problem separability status
+    // True if problem is separable 
     bool sepStatus_;
 
     LinearFunctionPtr lf_;
-
     double  ub_;
     double  lb_;
 
+    // Indicates whether the function under consideration belongs to
+    // consrtaint or objective. True for constraint, false for objective 
+    bool f_; 
+ 
+    CNodeQ snodes_;
 
-    //inicate whether function under consideration is of constraint or
-    //objective. 1 if constraint, 0 if objective
-    UInt f_; 
+    std::deque<int > sops_;
 
-            
+    std::vector<CNode *> svars_;
+
+    std::vector<CNode *> sconst_;
+
+    std::stack<CNode *> on_;
+
+    std::stack<int > onop_;
+
+    UInt nnode_;
+    UInt nvar_;
+
   };
   typedef boost::shared_ptr<TransSep> TransSepPtr;
   typedef boost::shared_ptr<const TransSep> ConstTransSepPtr;
