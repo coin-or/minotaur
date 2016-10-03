@@ -218,7 +218,7 @@ double ParTreeManager::getPerGapPar(double treeLb)
   // for minimization problems, gap = (ub - lb)/(ub) * 100
   // so that if one has a ub, she can say that the solution can not be more
   // than gap% away from the current ub.
-  assert(bestLowerBound_ >= treeLb);
+  assert(bestLowerBound_ >= treeLb - etol_);
   double gap = 0.0;
   if (bestUpperBound_ >= INFINITY) {
     gap = INFINITY;

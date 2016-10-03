@@ -723,6 +723,12 @@ Minotaur::ProblemPtr AMPLInterface::copyInstanceFromASL2_()
     cgraph->setOut(cnode);
     cgraph->finalize();
     assert(Minotaur::Constant!=cgraph->getType());
+
+    // If a constraint has a 'defined variable (AMPL specific)' then even if
+    // the constraint is linear, AMPL may still give a cgraph. We convert such
+    // a cgraph into a linear function, and add a linear constraint. The
+    // 'defined variable' is separately added as a nonlinear constraint later
+    // on.
     if (Minotaur::Linear==cgraph->getType()) {
       if (!lf) {
         lf = (Minotaur::LinearFunctionPtr) new Minotaur::LinearFunction();
@@ -737,6 +743,7 @@ Minotaur::ProblemPtr AMPLInterface::copyInstanceFromASL2_()
       memset(grad, 0, instance->getNumVars()*sizeof(double));
       cgraph.reset();
     }
+
     f = (Minotaur::FunctionPtr) new Minotaur::Function(lf, qf, cgraph);
     name = std::string(con_name_ASL(myAsl_, i));
     instance->newConstraint(f, myAsl_->i.LUrhs_[2*i], myAsl_->i.LUrhs_[2*i+1],
