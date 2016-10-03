@@ -6,7 +6,7 @@
 
 
 /**
- * \file CGraph.cpp
+ * \file CNode.cpp
  * \brief Define class CNode for representing a node of computational graph 
  * of a nonlinear function.
  * \author Ashutosh Mahajan, Argonne National Laboratory

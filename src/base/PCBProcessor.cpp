@@ -412,6 +412,7 @@ bool PCBProcessor::shouldPrune_(NodePtr node, double solval,
      should_prune = false;
      logger_->msgStream(LogDebug2) << "PCBProcessor: problem relaxation is "
                                    << "unbounded!" << std::endl;
+     assert(!"Relaxation unbounded."); 
      break;
 
    case (FailedFeas):

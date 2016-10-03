@@ -57,11 +57,13 @@ RelaxationPtr NodeIncRelaxer::createRootRelaxation(NodePtr, bool &prune)
   }
   if (!prune) {
     rel_->calculateSize();
+ 
+    if (engine_) {
+      engine_->load(rel_);
+    }
   }
 
-  if (engine_) {
-    engine_->load(rel_);
-  }
+ 
 
   return rel_;
 }

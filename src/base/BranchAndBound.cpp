@@ -171,18 +171,22 @@ NodePtr BranchAndBound::processRoot_(bool *should_prune, bool *should_dive)
     rel = nodeRlxr_->getRelaxation();
   }
 
-  // solve the root node
+  if (!prune) {
+  // solve the root node only if the initial root relaxation is not pruned
+  // because of the unboundedness or infeasibility
 #if SPEW
   logger_->msgStream(LogDebug) << me_ << "processing root node" << 
     std::endl;
 #endif
-  nodePrcssr_->processRootNode(current_node, rel, solPool_);
-  ++stats_->nodesProc;
-  if (nodePrcssr_->foundNewSolution()) {
-    tm_->setUb(solPool_->getBestSolutionValue());
-  }
   
-  prune = shouldPrune_(current_node);
+    nodePrcssr_->processRootNode(current_node, rel, solPool_);
+    ++stats_->nodesProc;
+    if (nodePrcssr_->foundNewSolution()) {
+      tm_->setUb(solPool_->getBestSolutionValue());
+    }
+    
+    prune = shouldPrune_(current_node);
+  }
   if (prune) {
     nodeRlxr_->reset(current_node, false);
     tm_->pruneNode(current_node);
