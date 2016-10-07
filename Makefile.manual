@@ -206,6 +206,7 @@ BASE_SRCS = \
 	$(BASE_DIR)/SOSBrCand.cpp \
 	$(BASE_DIR)/Transformer.cpp \
 	$(BASE_DIR)/TransPoly.cpp \
+	$(BASE_DIR)/TransSep.cpp \
 	$(BASE_DIR)/TreeManager.cpp \
 	$(BASE_DIR)/Types.cpp \
 	$(BASE_DIR)/VarBoundMod.cpp \
@@ -307,6 +308,7 @@ ALL_HEADERS = \
 	$(BASE_DIR)/Timer.h \
 	$(BASE_DIR)/Transformer.h  \
 	$(BASE_DIR)/TransPoly.h  \
+	$(BASE_DIR)/TransSep.h  \
 	$(BASE_DIR)/TreeManager.h \
 	$(BASE_DIR)/Types.h \
 	$(BASE_DIR)/WarmStart.h \
