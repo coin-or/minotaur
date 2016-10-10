@@ -298,7 +298,7 @@ void TransSep::objSepCheck()
   if (cgp == NULL) {
     sepStatus = false;
 #if SPEW
-    logger_->msgStream(LogDebug) << me_ << "Objective: "<< obj->getName() i
+    logger_->msgStream(LogDebug) << me_ << "Objective: "<< obj->getName()
       << " does not have cgraph."<< std::endl;
 #endif
   } else {
