@@ -32,7 +32,7 @@
 #include "OpCode.h"
 #include "Objective.h"
 
-//#define SPEW 1
+///#define SPEW 1
 
 using namespace Minotaur;
 const std::string TransSep::me_ = "TransSep: ";
