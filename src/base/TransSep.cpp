@@ -32,7 +32,7 @@
 #include "OpCode.h"
 #include "Objective.h"
 
-//#define SPEW 1
+///#define SPEW 1
 
 using namespace Minotaur;
 const std::string TransSep::me_ = "TransSep: ";
@@ -298,7 +298,7 @@ void TransSep::objSepCheck()
   if (cgp == NULL) {
     sepStatus = false;
 #if SPEW
-    logger_->msgStream(LogDebug) << me_ << "Objective: "<< obj->getName() i
+    logger_->msgStream(LogDebug) << me_ << "Objective: "<< obj->getName()
       << " does not have cgraph."<< std::endl;
 #endif
   } else {
