@@ -42,7 +42,7 @@ KnapCovHandler::KnapCovHandler()
 KnapCovHandler::KnapCovHandler(EnvPtr env, ProblemPtr minlp)
   : env_(env),
     minlp_(minlp),
-    stats_(0),
+    stats_(0)
 {
   intTol_ = env_->getOptions()->findDouble("int_tol")->getValue();
   // Initialize logger.
