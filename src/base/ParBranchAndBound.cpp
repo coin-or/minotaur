@@ -37,7 +37,7 @@
 
 
 //#define SPEW 1
-#define PRINT 1
+#define PRINT 0
 
 using namespace Minotaur;
 
