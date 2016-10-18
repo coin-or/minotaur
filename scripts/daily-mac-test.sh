@@ -7,8 +7,6 @@ LINE="--------------------------------------------------"
 
 echo "Minotaur daily mac test report"
 date
-hostname -f
-uname -a
 echo "Detailed log available at " \
      "http://www.mcs.anl.gov/minotaur/nightly/build-log/petsc-mini"
 
