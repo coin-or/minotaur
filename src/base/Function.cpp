@@ -355,6 +355,7 @@ QuadraticFunctionPtr Function::removeQuadratic()
 
   // change the type of the function.
   if (nlf_) {
+    // TODO: Fix this. nlf_ may be a constant expression.
     // do nothing
   } else if (lf_) {
     type_ = Linear;
@@ -582,15 +583,17 @@ void Function::removeVar(VariablePtr v, double val)
     nlf_->removeVar(v, val);
   }
   vars_.erase(v);
+
   // type may change after removal
+  type_ = Constant;
   if (nlf_) {
     type_ = nlf_->getType();
-  } else if (qf_) {
-    type_ = Quadratic;
-  } else if (lf_) {
-    type_ = Linear;
-  } else {
-    type_ = Constant;
+  }
+  if (qf_) {
+    type_ = funcTypesAdd(type_, Quadratic);
+  } 
+  if (lf_) {
+    type_ = funcTypesAdd(type_, Linear);
   }
 }
 
