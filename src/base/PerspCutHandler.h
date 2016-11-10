@@ -5,10 +5,10 @@
 //
 
 /**
- * \file KnapCovHandler.h
- * \brief Declare the KnapCovHandler class for handling knapsack cover 
+ * \file PerspCutHandler.h
+ * \brief Declare the PerspCutHandler class for handling perspective cut 
  * constraints. It generates the cuts whenever they are needed. 
- * \author Serdar Yildiz, Argonne National Laboratory
+ * \author Meenarli Sharma, Indian Institute of Technology
  */
 
 #ifndef MINOTAURPERSPCUTHANDLER_H
@@ -24,15 +24,15 @@ class PerspCutHandler;
 typedef boost::shared_ptr<PerspCutHandler> PerspCutHandlerPtr;
 typedef boost::shared_ptr<const PerspCutHandler> ConstPerspCutHandlerPtr;
 
-class Logger;
-typedef boost::shared_ptr<Logger> LoggerPtr;
+//class Logger;
+//typedef boost::shared_ptr<Logger> LoggerPtr;
 
-struct PCStats
-{
-  UInt perspcons;
-  UInt cuts;
-  double time;
-};
+//struct PCStats
+//{
+  //UInt perspcons;
+  //UInt cuts;
+  //double time;
+//};
 
 class PerspCutHandler : public Handler {
 public:
@@ -99,43 +99,62 @@ public:
   std::string getName() const;
 
   /// Show statistics.
-  void writeStats(std::ostream &) const;
+  void writeStats(std::ostream &out) const;
 
   /// Return specific statistics.
-  UInt PC_cuts() {return stats_->cuts;}
-  double PC_time() {return stats_->time;}
+  //UInt PC_cuts() {return stats_->cuts;}
+  //double PC_time() {return stats_->time;}
   
 private:
+  
   /// Environment.
   EnvPtr env_;
+  
   /// The problem for which the handler is created.
   ProblemPtr minlp_;
+  
   /// Log.
   LoggerPtr logger_;
+  
   /// Statistics.
-  PCStats * stats_;
+  //PCStats * stats_;
+
   /**
    * This is false if the current solution violates any perspective cuts.
    */
   bool isFeas_;
+  
   /// Tolerance for accepting a new solution value: absolute threshold.
   const double solAbsTol_;
+  
+  const double solRelTol_;
+  
   /// Number of variables in MINLP.
-  UInt numvars_;
+  //UInt numvars_;
+  
   /// Tolerance for checking integrality.
   double intTol_;
+
+  // Number of PC generated
+  UInt numCuts_;
+  
   /// For log:
   static const std::string me_;
+  
+  ///vector of pointers to perspective constraint
+  std::vector<ConstConstraintPtr> cons_;
+  
+  ///vector of pointers to perspective constraint
+  std::vector<ConstVariablePtr> binvar_;
+
+  // Pointer to Perspective constraints detailed information
+  PerspConPtr persplist_;
 
 };
 
 }
 
 #endif // MINOTAURPERSPCUTHANDLER_H
-
-
-
-
 
 // Local Variables: 
 // mode: c++ 

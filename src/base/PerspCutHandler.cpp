@@ -5,161 +5,233 @@
 //
 
 /**
- * \file KnapCovHandler.h
+ * \file PerspCutHandler.cpp
  * \brief Declare the KnapCovHandler class for handling knapsack cover 
  * constraints. It generates the cuts whenever they are needed. 
- * \author Serdar Yildiz, Argonne National Laboratory
+ * \author Meenarli Sharma, Indian Institute of Technology
  */
 
 #include <cmath>
+#include <iostream>
 
 #include "PerspCutHandler.h"
 #include "Option.h"
+#include "Node.h"
 #include "CutManager.h"
+#include "Logger.h"
+#include "Function.h"
+#include "LinearFunction.h"
+#include "PerspCon.h"
 
 using namespace Minotaur;
 
 typedef std::vector<ConstraintPtr>::const_iterator CCIter;
-// const std::string PerspCutHandler::me_ = "PerspCutHandler: ";
+const std::string PerspCutHandler::me_ = "PerspCutHandler: ";
 
 PerspCutHandler::PerspCutHandler()
   : env_(EnvPtr()),
     minlp_(ProblemPtr()),
-    stats_(0),
+    //stats_(0),
     isFeas_(true),
-    solAbsTol_(1e-5)
+    solAbsTol_(1e-5),
+    solRelTol_(1e-5)
 {
-  // Logger is na abstract class, find a way to make this work.
+  // Logger is an abstract class, find a way to make this work.
   // looger_ = (LoggerPtr) new Logger();
   intTol_ = env_->getOptions()->findDouble("int_tol")->getValue();
+  numCuts_ = 0;
+  logger_ = (LoggerPtr) new Logger(LogDebug2);
 }
 
 PerspCutHandler::PerspCutHandler(EnvPtr env, ProblemPtr minlp)
   : env_(env),
     minlp_(minlp),
-    stats_(0),
+    //stats_(0),
     isFeas_(true),
-    solAbsTol_(1e-5)
+    solAbsTol_(1e-5),
+    solRelTol_(1e-5)
 {
   intTol_ = env_->getOptions()->findDouble("int_tol")->getValue();
+  numCuts_ = 0;
   // Initialize logger.
+  logger_ = (LoggerPtr) new Logger((LogLevel)env->getOptions()->
+                                   findInt("handler_log_level")->getValue());
   // Initialize statistics.
-  stats_ = new PCStats();
-  stats_->cuts = 0;
-  stats_->time = 0.0;
+  //stats_ = new PCStats();
+  //stats_->cuts = 0;
+  //stats_->time = 0.0;
+  //Identifying constraints amenable to perspective reformulation in 
+  //the problem
+  persplist_ = (PerspConPtr) new PerspCon(minlp_, env_); 
+  persplist_ ->generateList();; 
+  cons_ = persplist_->getPerspCons();
+  binvar_ = persplist_->getConsBinVar();
 }
 
 PerspCutHandler::~PerspCutHandler()
 {
-  if (stats_) {
-    //writeStats(logger_->MsgStream(LogInfo));
-    delete stats_;
-  }
-  //env_.reset();
-  //minlp_.reset();
+  //if (stats_) {
+    ////writeStats(logger_->MsgStream(LogInfo));
+    //delete stats_;
+  //}
+  env_.reset();
+  minlp_.reset();
 }
 
 bool PerspCutHandler::isFeasible(ConstSolutionPtr sol, RelaxationPtr, bool &, 
                                  double &)
 {
-  // Get primal solution.
-  const double *x = sol->getPrimal();
-  // Evaluation of constraint for a given solution.
-  double activity = 0.0;
-  int error = 0;
+  isFeas_=true;
+  if (cons_.size()>=1) {
+    // Get primal solution.
+    const double *x = sol->getPrimal();
+    // Evaluation of constraint for a given solution.
+    double act = 0.0;
+    int error = 0;
+    // Now, we check all perspective cut constraints if the current 
+    // relaxation solution violates any of them.
+    // Vector of perspective constraints.
+    // Temporary constraint holder.
+    ConstConstraintPtr c;
+    for (UInt it=0; it!=cons_.size(); ++it) {
+      c = cons_[it];
+      act = c->getActivity(x, &error);
+      if(error==0) {
+        if( (act > c->getUb() + solAbsTol_ &&  
+             act > c->getUb() + (fabs(c->getUb())*solRelTol_))  ||  
+            ( act < c->getLb() - solAbsTol_ &&  
+              act < c->getLb() - (fabs(c->getLb())*solRelTol_)) ) { 
+#if SPEW
 
-  // Now, we check all perspective cut constraints if the current 
-  // relaxation solution violates any of them.
-  // Iterators for perspective constraints.
-  CCIter it;
-  CCIter begin = cons_.begin();
-  CCIter end   = cons_.end();
-  // Temporary constraint holder.
-  ConstraintPtr cons;
-  for (it=begin; it!=end; ++it) {
-    cons = *it;
-    activity = cons->getActivity(x, &error);
-    if (activity > cons->getUb() + solAbsTol_ ||
-        activity < cons->getLb() - solAbsTol_) {
-      isFeas_ = false;
-      return false;
+          logger_->msgStream(LogDebug)
+            << me_ << "constraint not feasible" << std::endl
+            << me_;
+          c->write(logger_->msgStream(LogDebug2));
+          logger_->msgStream(LogDebug)<< me_ << "activity = " << act << std::endl;
+#endif
+          isFeas_ = false;
+          return false;
+        }   
+      }   else {
+        logger_->msgStream(LogError) << me_ 
+          << "Constraint not defined at this point"<< std::endl;
+        isFeas_ = false;
+        return false;
+      }   
     }
   }
-  
-  // None of the perspective cut constraints is violated.
   return true;
 }
 
-void PerspCutHandler::separate(ConstSolutionPtr sol, NodePtr,
-                               RelaxationPtr rel, CutManager * cmanager,
+void PerspCutHandler::separate(ConstSolutionPtr sol, NodePtr n,
+                               RelaxationPtr rel, CutManager * ,
                                SolutionPoolPtr, bool *,
                                SeparationStatus * status)
 {
-  // Check integer feasibility of sol, must add cuts if it is not integral.
-  numvars_ = minlp_->getNumVars();
-  VariableType type;
+  //MS:These two variables are created for the sake of isFeasible funtion
+
+  //generating perspective cuts only for root node
+  if (n->getId() == 0) {
+  bool binint;
+  double binsol, act, lpvio;
+  ConstConstraintPtr c;
+  ConstraintPtr newc;
+  UInt binindex, cutcount = 0;
   const double * x = sol->getPrimal();
-  // Is the relaxation solution is integer feasible.
-  bool isintfeas = true;
-  // Iterators for variables.
-  VariableConstIterator it;
-  VariableConstIterator begin = rel->varsBegin();
-  VariableConstIterator end   = rel->varsEnd();
-  // Temporary variable holder.
-  ConstVariablePtr var;
-  // Value of variable.
-  double value;
-  // Index of variable.
-  UInt varindex = 0;
+  int error = 0;
+  LinearFunctionPtr lf = (LinearFunctionPtr) new LinearFunction();
+  FunctionPtr f;
 
-  // Check if integrality is satisfied for each integer variable.
-  for (it=begin; it!=end; ++it) {
-    var = *it;
-    type = var->getType();
-    if (type==Binary || type==Integer) {
-      varindex = var->getIndex();
-      value = x[varindex];
-      if (fabs(value - floor(value+0.5)) > intTol_) {
-        isintfeas = false;
-        break;
-      }
+  PerspCutGeneratorPtr pcg; 
+  for (UInt it=0; it!=cons_.size(); ++it) {
+    c = cons_[it];
+    binindex = binvar_[it]->getIndex();
+    binsol = x[binindex];
+    //PC is not generated if binary variable of the
+    // constraint has value 0 or 1
+      
+    binint = fabs(floor(binsol+0.5)-binsol);
+    if (binint < intTol_) {
+      continue;
     }
-  } // end of for loop.
+    act = c->getActivity(x, &error);
+    if(error==0) {
+      if( (act > c->getUb() + solAbsTol_ &&  
+           act > c->getUb() + (fabs(c->getUb())*solRelTol_))  ||  
+          ( act < c->getLb() - solAbsTol_ &&  
+            act < c->getLb() - (fabs(c->getLb())*solRelTol_)) ) { 
+#if SPEW
+        logger_->msgStream(LogDebug) << me_ 
+          << "constraint not feasible" << std::endl
+          << me_;
+        c->write(logger_->msgStream(LogDebug2));
+        logger_->msgStream(LogDebug)<< me_ << "activity = " << act << std::endl;
+#endif
 
-  if (isintfeas == false) {
-    // It is more efficient to do integrality check here.
-    // Generate perspective cuts from current relaxation.
-    PerspCutGeneratorPtr persp = 
-      (PerspCutGeneratorPtr) new PerspCutGenerator(rel, sol, env_);
-    // Add cuts to relaxation by using cut manager.
-    CutVector violatedcuts = persp->getViolatedCutList();
-    CutIterator itc;
-    CutIterator beginc = violatedcuts.begin();
-    CutIterator endc   = violatedcuts.end();
-    
-    cmanager->addCuts(beginc, endc);
-    
-    // Update statistics by using return from cover cut generator.
-    ConstPerspGenStatsPtr perspstats = persp->getStats();
-    stats_->cuts += perspstats->cuts;
+        pcg = (PerspCutGeneratorPtr) new PerspCutGenerator(rel->getNumVars(), 
+                                                       sol, c, binvar_[it]);
+        pcg->generateCut();
+        lf = pcg->getPFunction();
+        lpvio = std::max(lf->eval(x), 0.0);
+        if (lpvio>solAbsTol_) {
+          f = (FunctionPtr) new Function(lf);
+          newc = rel->newConstraint(f, -INFINITY, 0.0, "perspective_cut");
+          numCuts_++;
+          cutcount++;
+          f.reset();
+        }
+#if SPEW
+        logger_->msgStream(LogDebug) << me_ <<" Perspective cut: " << std::endl
+          << std::setprecision(9);
+        newc->write(logger_->msgStream(LogDebug));
+#endif
+        pcg.reset();  
+        newc.reset();
+      } else {
+#if SPEW
+        logger_->msgStream(LogDebug) << me_ 
+          << "constraint is feasible so not considered for perspective cut" << std::endl
+          << me_;
+        c->write(logger_->msgStream(LogDebug2));
+        logger_->msgStream(LogDebug)<< me_ << "activity = " << act << std::endl;
+#endif       
+        continue;
+      }
+    }   else {
+      logger_->msgStream(LogError) << me_ 
+        << "Constraint not defined at this point"<< std::endl;
+      continue;
+    }   
   }
-
-  // If any cut is added, relaxation should be resolved.
-  if (stats_->cuts >= 1) {
+  
+  if (cutcount >= 1) {
     *status = SepaResolve;
   }
-}
 
+
+ }
+  return;
+}
 
 std::string PerspCutHandler::getName() const
 {
   return "PerspCutHandler (Perspective cuts)";
 }
 
-void PerspCutHandler::writeStats(std::ostream &) const
+void PerspCutHandler::writeStats(std::ostream &out) const
 {
+  if (cons_.size() > 0) {
+    // Problem not amenable to perspective reformulation
+    out << me_ << "Is problem amenable to perspective reformulation: 1" << std::endl;
+    out << me_ << "number of perspective cuts added = " << numCuts_ << std::endl;
+  return;
+  } else {
+    // Problem amenable to perspective reformulation
+    out << me_ << "Is problem amenable to perspective reformulation: 0" << std::endl;
+    return;
+  
+  }
 }
-
 
 
 

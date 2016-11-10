@@ -4,11 +4,10 @@
 //    (C)opyright 2008 - 2014 The MINOTAUR Team.
 //
 
-
 /**
  * \file PerspCutGenerator.h 
- * \brief Declare PerspCutGenerator class . 
- * \author Serdar Yildiz, Argonne National Laboratory 
+ * \Declare PerspCutGenerator class . 
+ * \author Meenarli Sharma, Indian Institute of Technology Bombay 
  */
 
 #ifndef MINOTAURPERSPCUTGENERATOR_H
@@ -26,44 +25,44 @@ using std::string;
 #include "Cut.h"
 #include "Relaxation.h"
 #include "Environment.h"
-#include "PerspList.h"
+#include "PerspCon.h"
+#include "Logger.h"
 
 namespace Minotaur {
 
-  typedef enum {
-    Cons = 0
-  } PrintType;
+  //typedef enum {
+    //Cons = 0
+  //} PrintType;
 
-  typedef enum {
-    Totalcuts = 0,
-    Cuts,
-    Violated,
-    Noviol
-  } PerspType;
+  //typedef enum {
+    //Totalcuts = 0,
+    //Cuts,
+    //Violated,
+    //Noviol
+  //} PerspType;
 
-  typedef enum {
-    Duplicate = 0,
-    Notviolated
-  } CutFail;
+  //typedef enum {
+    //Duplicate = 0,
+    //Notviolated
+  //} CutFail;
 
-  struct PerspGenStats
-  {
-    UInt totalcuts;
-    UInt cuts;
-    UInt violated;
-    UInt noviol;
-    UInt perspcons;
-    UInt perspnotcons;
-    UInt perspconsidered;
-    double time;
-  };
+  //struct PerspGenStats
+  //{
+    //UInt totalcuts;
+    //UInt violated;
+    //UInt noviol;
+    //UInt perspcons;
+    //UInt perspnotcons;
+    //UInt perspconsidered;
+    //double time;
+  //};
 
   // Typedefs
   class PerspCutGenerator;
   typedef boost::shared_ptr<PerspCutGenerator> PerspCutGeneratorPtr;
-  typedef boost::shared_ptr<const PerspCutGenerator> ConstPerspCutGneeratorPtr;
-  typedef PerspGenStats * PerspGenStatsPtr;
-  typedef PerspGenStats const * ConstPerspGenStatsPtr;
+  typedef boost::shared_ptr<const PerspCutGenerator> ConstPerspCutGeneratorPtr;
+  //typedef PerspGenStats * PerspGenStatsPtr;
+  //typedef PerspGenStats const * ConstPerspGenStatsPtr;
 
   /**
    * PerpsCutGenerator class generates perspective cuts from constraints.
@@ -77,89 +76,124 @@ namespace Minotaur {
     /// Default constructor.
     PerspCutGenerator();
 
-    /// Constructor that uses a relaxation and a solution given.
-    PerspCutGenerator(RelaxationPtr rel, ConstSolutionPtr sol, EnvPtr env);
 
+    /// Constructor that uses a relaxation and a solution given.
+    //MS: do we need both rel and p here?
+    PerspCutGenerator(UInt relvars, ConstSolutionPtr sol, ConstConstraintPtr c,
+                      ConstVariablePtr v);
     /// Destructor.
     ~PerspCutGenerator();
 
     /// Initialize data elements.
-    void initialize();
+    //void initialize();
 
     /// Generate all perspective cuts.
-    bool generateAllCuts();
+    //bool generateAllCuts();
 
     /// Generate perspective cut.
-    bool generateCut(ConstConstraintPtr cons, ConstVariablePtr binvar);
+    void generateCut();
+    //ConstraintPtr generateCut();
+    
+    void gPCut(FunctionPtr f, double * y);
+    //ConstraintPtr gPCut(FunctionPtr f, double * y);
 
+    // Return function pointer of PC
+    LinearFunctionPtr getPFunction() {return lf_;}
+
+    // Return constant term of PC
+    //double getConst();
     /// Add cut to the corresponding lists.
-    bool addCut(CutPtr cut);
+    //bool addCut(CutPtr cut);
 
     /// Check if the same cut is already included in the list.
-    bool checkExists(CutPtr cut);
+    //bool checkExists(CutPtr cut);
 
     /// Calculates the violation for a given cut.
-    double violation(CutPtr cut);
+    //double violation(CutPtr cut);
+
+    ///True if a new perspective cut violating current solution is found
+    //bool newVioPC() const
+    //{return newVioCut_;}
 
     /// Return const cut list.
-    CutVector getCutList() const
-    {return cutList_;}
+    //CutVector getCutList() const
+    //{return cutList_;}
 
     /// Return cuts that violates relaxation solution.
-    CutVector getViolatedCutList() const
-    {return viollist_;}
+    //CutVector getViolatedCutList() const
+    //{return viollist_;}
 
     /// Return violation list.
-    DoubleVector getViolList() const
-    {return viols_;}
+    //DoubleVector getViolList() const
+    //{return viols_;}
 
     /// Return statistics of cut generator.
-    ConstPerspGenStatsPtr getStats() const
-    {return ConstPerspGenStatsPtr(stats_);}
+    //ConstPerspGenStatsPtr getStats() const
+    //{return ConstPerspGenStatsPtr(stats_);}
 
     /// Check  if given solution satisfies integrality for given relaxation.
-    bool checkIntegral(RelaxationPtr p, ConstSolutionPtr s);
+    //bool checkIntegral(RelaxationPtr p, ConstSolutionPtr s);
 
   private:
     // Environment.
-    EnvPtr env_;
+    //EnvPtr env_;
+
+    // Problem that cover cuts will be generated for.
+    //ProblemPtr p_;
 
     // Relaxation that cover cuts will be generated for.
     RelaxationPtr rel_;
 
+    // For log
+    LoggerPtr logger_;
+
+    // For log
+    static const std::string me_;
+
     // List of cuts generated.
-    CutVector cutList_;
+    //CutVector cutList_;
 
     // List of violated cuts.
-    CutVector viollist_;
+    //CutVector viollist_;
 
     // List of violations for cuts corresponding in cut list.
-    DoubleVector viols_;
+    //DoubleVector viols_;
+
+    //This is true is a new cut violating the current solution is added
+     //bool newVioCut_;
 
     // List of constraints that we can obtain perspective cuts.
     // We call them perspective constraints.
-    // PerspListPtr persplist_;
+    // PerspConPtr persplist_;
 
     /** Given (possibly fractional) solution.
      *  Cut will be designed to violate this solution.
      */
     ConstSolutionPtr s_;
 
+    // Perspective constraints.
+    //PerspConPtr conslist_;
+    
+    ConstConstraintPtr cp_;
+    ConstVariablePtr bp_;
+
     // Violation tolerance.
     double objtol_;
 
-    // Perspective constraints.
-    PerspListPtr persplist_;
 
     // Statistics for perspective cut generator.
-    PerspGenStatsPtr stats_;
+    //PerspGenStatsPtr stats_;
 
     // Hash map that is used to check if a cut is already created or not.
-    std::map< DoubleVector, UInt > cutmap_;
+    //std::map< DoubleVector, UInt > cutmap_;
 
     // Integer tolerance.
     double intTol_;
 
+    /// Tolerance for accepting a new solution value: absolute threshold.
+    double solAbsTol_;
+    double solRelTol_;
+    
     // General tolerance.
     double eTol_;
 
@@ -168,9 +202,16 @@ namespace Minotaur {
 
     // Output file name
     string outfile_;
+
+    // Function of pc
+    LinearFunctionPtr lf_;
+
+    // Constant term of pc
+    //double cnst_;
+
+    // Number of variable in relaxation
+    UInt rnv_;
   };
-
-
 }
 
 #endif // MINOTAURPERSPCUTGENERATOR_H
