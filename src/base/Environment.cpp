@@ -77,6 +77,10 @@ void Environment::createDefaultOptions_()
       true, true);
   options_->insert(b_option);
 
+  b_option = (BoolOptionPtr) new Option<bool>("perspective",
+      "Should perspective reformulation be used: <0/1>", true, false);
+  options_->insert(b_option);
+
   b_option = (BoolOptionPtr) new Option<bool>("presolve", 
       "Should presolve be used: <0/1>", true, false);
   options_->insert(b_option);
@@ -274,6 +278,10 @@ void Environment::createDefaultOptions_()
 
   i_option = (IntOptionPtr) new Option<int>("separability_log_level",
       "Verbosity of separability detection: 0-6", true, LogInfo);
+  options_->insert(i_option);
+
+  i_option = (IntOptionPtr) new Option<int>("perspective_reform_log_level",
+      "Verbosity of perspective cut generation: 0-6", true, LogInfo);
   options_->insert(i_option);
 
   i_option = (IntOptionPtr) new Option<int>("rand_seed", 
