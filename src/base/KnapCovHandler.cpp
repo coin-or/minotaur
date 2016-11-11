@@ -31,9 +31,7 @@ typedef std::vector<ConstraintPtr>::const_iterator CCIter;
 KnapCovHandler::KnapCovHandler()
   : env_(EnvPtr()),
     minlp_(ProblemPtr()),
-    stats_(0),
-    isFeas_(true),
-    solAbsTol_(1e-5)
+    stats_(0)
 {
   // This is an abstract class, find a way to make this work such as Logger(log1).
   //logger_ = (LoggerPtr) new Logger();
@@ -44,9 +42,7 @@ KnapCovHandler::KnapCovHandler()
 KnapCovHandler::KnapCovHandler(EnvPtr env, ProblemPtr minlp)
   : env_(env),
     minlp_(minlp),
-    stats_(0),
-    isFeas_(true),
-    solAbsTol_(1e-5)
+    stats_(0)
 {
   intTol_ = env_->getOptions()->findDouble("int_tol")->getValue();
   // Initialize logger.
@@ -74,7 +70,7 @@ KnapCovHandler::~KnapCovHandler()
   
 }
 
-bool KnapCovHandler::isFeasible(ConstSolutionPtr sol, RelaxationPtr ,
+bool KnapCovHandler::isFeasible(ConstSolutionPtr , RelaxationPtr ,
 				bool &, double &)
 {
   // no need to check feasibility of knapsack constraints. It is automatically implied by

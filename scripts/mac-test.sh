@@ -107,6 +107,9 @@ fi
 # Main
 ##########################################################################
 
+hostname -f
+uname -a
+
 # remove previous files
 rm -rf ${TEST_DIR}
 

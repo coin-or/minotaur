@@ -114,6 +114,8 @@ fi
 
 echo "Minotaur daily test report"
 date
+hostname -f
+uname -a
 echo "Detailed log available at " \
      "${URL}"
 

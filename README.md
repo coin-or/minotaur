@@ -12,7 +12,8 @@ See the LICENSE file for details on license to use and distribute it.
 * Download nightly builds (coming soon)
 * [How to install and use
   MINOTAUR](https://wiki.mcs.anl.gov/minotaur/index.php/Minotaur_Documentation)
-* [Join the mailing list](https://lists.mcs.anl.gov/mailman/listinfo/minotaur)
+* [Join the users mailing list](https://lists.mcs.anl.gov/mailman/listinfo/minotaur)
 * [See existing issues and file new
   ones](https://github.com/ashutoshmahajan/minotaur/issues)
+* [Mailing list for developers](https://lists.mcs.anl.gov/mailman/listinfo/minotaur-dev)
 

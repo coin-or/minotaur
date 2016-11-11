@@ -147,16 +147,6 @@ private:
   /// Statistics.
   KCStats * stats_;
 
-  /**
-   * This is false if the current solution violates one of the knapsack
-   * cover cuts.
-   * We generate the cuts only if we checked the feasibility and it is false.
-   */
-  bool isFeas_;
-
-  /// Tolerance for accepting a new a solution value: absolute threshold.
-  const double solAbsTol_;
-
   // Number of variables in the MINLP.
   UInt numvars_;
 
