@@ -12,7 +12,7 @@ set (BQPD_HEADERS
 )
 
 
-add_library(mntrbqpd ${BQPD_SOURCES})
+add_library(mntrbqpd STATIC ${BQPD_SOURCES})
 
 # Build only static library as BqpdAux*.f files have common blocks that access
 # data in bqpd's static library. We see alignment warnings if shared library
