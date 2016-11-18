@@ -32,7 +32,6 @@ TreeManager::TreeManager(EnvPtr env)
   cutOff_(INFINITY),
   doVbc_(false),
   etol_(1e-6),
-  reqGap_(1e-6),
   size_(0),
   timer_(0)
 {
@@ -61,7 +60,6 @@ TreeManager::TreeManager(EnvPtr env)
 
   aNode_ = NodePtr();
   cutOff_ = env->getOptions()->findDouble("obj_cut_off")->getValue();
-  reqRelGap_ = env->getOptions()->findDouble("obj_gap_percent")->getValue();
   s = env->getOptions()->findString("vbc_file")->getValue();
   if (s!="") {
     vbcFile_.open(s.c_str());

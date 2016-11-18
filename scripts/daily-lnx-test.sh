@@ -177,7 +177,7 @@ doTest; testFiles; checkTest
 ##########################################################################
 NAME=build-filter
 OPTIONS=-ioa
-FILES="lib/libminotaur.so lib/libmntrbqpd.so lib/libmntrfiltersqp.so"
+FILES="lib/libminotaur.so lib/libmntrbqpd.a lib/libmntrfiltersqp.so"
 doTest; testFiles; checkTest
 
 ## debug
@@ -257,7 +257,7 @@ doTest; listBins; testFiles; checkTest
 ##########################################################################
 NAME=build-all
 OPTIONS=
-FILES="lib/libminotaur.so lib/libmntrbqpd.so lib/libmntrampl.so lib/libmntrfiltersqp.so lib/libmntripopt.so lib/libmntrosilp.so"
+FILES="lib/libminotaur.so lib/libmntrbqpd.a lib/libmntrampl.so lib/libmntrfiltersqp.so lib/libmntripopt.so lib/libmntrosilp.so"
 doTest; listBins; testFiles; checkTest
 
 ## debug
