@@ -200,9 +200,6 @@ namespace Minotaur {
     /// Tolerance for pruning nodes on the basis of bounds.
     const double etol_;
 
-    /// The acceptable gap between final lb and final ub of the instance.
-    const double reqGap_;
-
     /// The acceptable gap percentage between final lb and ub of the instance.
     double reqRelGap_;
 

@@ -31,7 +31,6 @@ ParTreeManager::ParTreeManager(EnvPtr env)
   cutOff_(INFINITY),
   doVbc_(false),
   etol_(1e-6),
-  reqGap_(1e-6),
   size_(0),
   timer_(0)
 {
