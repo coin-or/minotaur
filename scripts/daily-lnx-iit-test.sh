@@ -12,7 +12,7 @@ EXT_URL="http://ieor.iitb.ac.in/files/faculty/amahajan/minotaur/restricted/minot
 WEB_DIR=/home/amahajan/misc/web/minotaur/nightly/origin
 
 ## Logs on webserver
-REM_WEB_DIR=powai:/home/amahajan/webpage/minotaur/nightly/origin
+REM_WEB_DIR=powai:/home/amahajan/webpage/minotaur/nightly
 
 ## parallel flag
 CPUS="8"

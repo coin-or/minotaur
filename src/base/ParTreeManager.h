@@ -200,9 +200,6 @@ namespace Minotaur {
     /// Tolerance for pruning nodes on the basis of bounds.
     const double etol_;
 
-    /// The acceptable gap percentage between final lb and ub of the instance.
-    double reqRelGap_;
-
     /// The search order: depth first, best first or something else.
     TreeSearchOrder searchType_;
 
