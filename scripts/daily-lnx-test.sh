@@ -142,6 +142,7 @@ fi
 
 mv git.log ${TEST_DIR}/
 cd ${TEST_DIR}
+echo "Minotaur version: `git describe`"
 NAME=
 OPTIONS=
 ##########################################################################

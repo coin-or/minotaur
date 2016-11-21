@@ -79,22 +79,24 @@ CHECK_FUNCTION_EXISTS(getrusage MINOTAUR_RUSAGE)
 message (STATUS ${MSG_HEAD} "Is rusage available = ${MINOTAUR_RUSAGE}")
 
 ###########################################################################
-## svnversion
+## git revision number as returned by git describe
 ###########################################################################
-set (MINOTAUR_SVN_VERSION "0.0") 
+set (MINOTAUR_GIT_VERSION "") 
 get_filename_component(MNTR_ABS_PATH "${PROJECT_SOURCE_DIR}" ABSOLUTE)
-message (STATUS ${MSG_HEAD} "checking svn in = ${MNTR_ABS_PATH}")
-if (EXISTS "${MNTR_ABS_PATH}/.svn")
-  message (STATUS ${MSG_HEAD} "found .svn in ${MNTR_ABS_PATH}")
-  FIND_PACKAGE(Subversion)
-  if (Subversion_FOUND)
-    message (STATUS ${MSG_HEAD} "Package subversion found")
-    # extract working copy information for SOURCE_DIR into TMP_SVN_XXX variables
-    Subversion_WC_INFO(${MNTR_ABS_PATH} TMP_SVN)
-    set (MINOTAUR_SVN_VERSION ${TMP_SVN_WC_REVISION})
+message (STATUS ${MSG_HEAD} "checking git in = ${MNTR_ABS_PATH}")
+if (EXISTS "${MNTR_ABS_PATH}/.git")
+  message (STATUS ${MSG_HEAD} "found .git in ${MNTR_ABS_PATH}")
+  FIND_PACKAGE(Git)
+  if (GIT_FOUND)
+    execute_process( COMMAND ${GIT_EXECUTABLE} describe 
+	    OUTPUT_VARIABLE MINOTAUR_GIT_VERSION
+            OUTPUT_STRIP_TRAILING_WHITESPACE)
   endif()
 endif()
-message (STATUS ${MSG_HEAD} "svn version = ${MINOTAUR_SVN_VERSION}")
+if ("${MINOTAUR_GIT_VERSION}" STREQUAL "")
+  set (MINOTAUR_GIT_VERSION "v0.0-unknown")
+endif()
+message (STATUS ${MSG_HEAD} "git version = ${MINOTAUR_GIT_VERSION}")
 
 
 ###########################################################################

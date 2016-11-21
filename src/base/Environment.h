@@ -90,12 +90,6 @@ namespace Minotaur {
        */
       void stopTimer(int &err);
 
-      /** 
-       * Write the full information about the version number and how Minotaur
-       * was compiled. TODO: Fix it.
-       */
-      void writeFullVersion(std::ostream &out);
-
     private:
       /// Logger that is used for the whole environment.
       LoggerPtr logger_;

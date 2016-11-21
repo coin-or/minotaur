@@ -7,8 +7,8 @@
 #ifndef MINOTAURVERSION_H
 #define MINOTAURVERSION_H
 
-/* Define MINOTAUR_SVN_VERSION to whatever the output of svnversion is. */
-#cmakedefine MINOTAUR_SVN_VERSION ${MINOTAUR_SVN_VERSION}
+/* Define MINOTAUR_GIT_VERSION to whatever the output of git describe is. */
+#cmakedefine MINOTAUR_GIT_VERSION "${MINOTAUR_GIT_VERSION}"
 
 /*
  * Version is defined as MINOTAUR_MAJOR_VERSION.MINOTAUR_MINOR_VERSION

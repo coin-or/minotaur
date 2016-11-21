@@ -558,7 +558,8 @@ std::string Environment::getVersion()
 {
   std::stringstream name_stream;
   name_stream << MINOTAUR_MAJOR_VERSION <<  '.' <<  MINOTAUR_MINOR_VERSION
-              << " patch " <<  MINOTAUR_PATCH_VERSION;
+              << " patch " <<  MINOTAUR_PATCH_VERSION << " git revision "
+              << MINOTAUR_GIT_VERSION;
   return name_stream.str();
 }
 
@@ -796,13 +797,6 @@ void Environment::stopTimer(int &err)
   } else {
     err = 1;
   }
-}
-
-
-void Environment::writeFullVersion(std::ostream &out)
-{
-  out << "Minotaur full version " << getVersion() << " svn version "
-      << MINOTAUR_SVN_VERSION;
 }
 
 
