@@ -400,15 +400,10 @@ int showInfo(EnvPtr env)
 
   if (options->findBool("show_version")->getValue() ||
       options->findFlag("v")->getValue()) {
-    env->getLogger()->msgStream(LogNone) << me <<
-      "Minotaur version " << env->getVersion() << std::endl;
-#if DEBUG
-    env->getLogger()->msgStream(LogNone) << me;
-    env->writeFullVersion(env->getLogger()->msgStream(LogNone));
-    env->getLogger()->msgStream(LogNone) << std::endl;
-#endif
-    env->getLogger()->msgStream(LogNone) << me 
-      << "NLP-based branch-and-bound solver for convex MINLP" << std::endl;
+    env->getLogger()->msgStream(LogNone) << me << "Minotaur version "
+      << env->getVersion() << std::endl << me 
+      << "Multistart NLP-based branch-and-bound solver for nonconvex MINLP"
+      << std::endl;
     return 1;
   }
 
@@ -419,7 +414,8 @@ int showInfo(EnvPtr env)
 
   env->getLogger()->msgStream(LogInfo)
     << me << "Minotaur version " << env->getVersion() << std::endl
-    << me << "NLP-based branch-and-bound solver for convex MINLP" << std::endl;
+    << me << "Multistart NLP-based branch-and-bound solver for nonconvex MINLP"
+    << std::endl;
   return 0;
 }
 

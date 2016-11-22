@@ -12,7 +12,7 @@ EXT_URL="http://ieor.iitb.ac.in/files/faculty/amahajan/minotaur/restricted/minot
 WEB_DIR=/home/amahajan/misc/web/minotaur/nightly/origin
 
 ## Logs on webserver
-REM_WEB_DIR=powai:/home/amahajan/webpage/minotaur/nightly/origin
+REM_WEB_DIR=powai:/home/amahajan/webpage/minotaur/nightly
 
 ## parallel flag
 CPUS="8"
@@ -142,6 +142,8 @@ fi
 
 mv git.log ${TEST_DIR}/
 cd ${TEST_DIR}
+echo "Minotaur version: `git describe`"
+
 NAME=
 OPTIONS=
 ##########################################################################
@@ -178,7 +180,7 @@ doTest; testFiles; checkTest
 ##########################################################################
 NAME=build-filter
 OPTIONS=-ioa
-FILES="lib/libminotaur.so lib/libmntrbqpd.so lib/libmntrfiltersqp.so"
+FILES="lib/libminotaur.so lib/libmntrbqpd.a lib/libmntrfiltersqp.so"
 doTest; testFiles; checkTest
 
 ## debug
@@ -258,7 +260,7 @@ doTest; listBins; testFiles; checkTest
 ##########################################################################
 NAME=build-all
 OPTIONS=
-FILES="lib/libminotaur.so lib/libmntrbqpd.so lib/libmntrampl.so lib/libmntrfiltersqp.so lib/libmntripopt.so lib/libmntrosilp.so"
+FILES="lib/libminotaur.so lib/libmntrbqpd.a lib/libmntrampl.so lib/libmntrfiltersqp.so lib/libmntripopt.so lib/libmntrosilp.so"
 doTest; listBins; testFiles; checkTest
 
 ## debug

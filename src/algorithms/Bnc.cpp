@@ -332,12 +332,9 @@ int showInfo(EnvPtr env)
 
   if (options->findBool("show_version")->getValue() ||
       options->findFlag("v")->getValue()) {
-    std::cout << me << "Minotaur version " << env->getVersion() << std::endl;
-#if DEBUG
-    std::cout << me; 
-    env->writeFullVersion(std::cout);
-    std::cout << std::endl;
-#endif
+    env->getLogger()->msgStream(LogNone) << me << "Minotaur version "
+      << env->getVersion() << std::endl << me 
+      << "Branch-and-cut for convex MINLP" << std::endl;
     return 1;
   }
 

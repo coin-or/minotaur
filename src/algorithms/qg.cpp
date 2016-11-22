@@ -151,14 +151,8 @@ int showInfo(EnvPtr env)
 
   if (options->findBool("show_version")->getValue() ||
       options->findFlag("v")->getValue()) {
-    env->getLogger()->msgStream(LogNone) << me <<
-      "Minotaur version " << env->getVersion() << std::endl;
-#if DEBUG
-    env->getLogger()->msgStream(LogInfo) << me;
-    env->writeFullVersion(env->getLogger()->msgStream(LogInfo));
-    env->getLogger()->msgStream(LogInfo) << std::endl;
-#endif
-    env->getLogger()->msgStream(LogNone) << me 
+    env->getLogger()->msgStream(LogNone) << me << "Minotaur version "
+      << env->getVersion() << std::endl << me 
       << "Quesada-Grossmann (LP/NLP) algorithm for convex MINLP" << std::endl;
     return 1;
   }

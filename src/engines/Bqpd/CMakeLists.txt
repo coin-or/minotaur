@@ -12,13 +12,12 @@ set (BQPD_HEADERS
 )
 
 
-add_library(mntrbqpd ${BQPD_SOURCES})
+add_library(mntrbqpd STATIC ${BQPD_SOURCES})
 
-if (BUILD_SHARED_LIBS)
-install(TARGETS mntrbqpd LIBRARY DESTINATION lib)
-else (BUILD_SHARED_LIBS)
+# Build only static library as BqpdAux*.f files have common blocks that access
+# data in bqpd's static library. We see alignment warnings if shared library
+# is used.
 install(TARGETS mntrbqpd ARCHIVE DESTINATION lib)
-endif (BUILD_SHARED_LIBS)
 
 install(FILES ${BQPD_HEADERS} DESTINATION include/minotaur)
 

@@ -191,13 +191,10 @@ int main(int argc, char* argv[])
 
   if (options->findBool("show_version")->getValue() ||
       options->findFlag("v")->getValue()) {
-    std::cout << "Minotaur version " << env->getVersion() << std::endl;
-#if DEBUG
-    std::cout << me; 
-    env->writeFullVersion(std::cout);
-    std::cout << std::endl;
-#endif
-    exit(0);
+    env->getLogger()->msgStream(LogNone) << me << "Minotaur version "
+      << env->getVersion() << std::endl << me << "A polynomial solver"
+      << std::endl;
+    return 1;
   }
 
   if (options->findString("problem_file")->getValue()=="") {
