@@ -79,9 +79,9 @@ set (MINOTAUR_SOURCES
      ParNodeIncRelaxer.cpp
      ParTreeManager.cpp
      PCBProcessor.cpp 
+     PerspCon.cpp
      PerspCutGenerator.cpp 
      PerspCutHandler.cpp 
-     PerspList.cpp 
      PolynomialFunction.cpp 
      PreAuxVars.cpp
      PreDelVars.cpp
@@ -190,9 +190,9 @@ set (MINOTAUR_HEADERS
      ParNodeIncRelaxer.h
      ParTreeManager.h
      PCBProcessor.h
-     PerspCutGenerator.h # Serdar
+     PerspCon.h
+     PerspCutGenerator.h 
      PerspCutHandler.h
-     PerspList.h # Serdar
      PolynomialFunction.h
      PreAuxVars.h
      PreDelVars.h

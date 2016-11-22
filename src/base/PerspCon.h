@@ -142,7 +142,7 @@ public:
   bool checkLVars(ConstConstraintPtr cons, ConstVariablePtr binvar);
 
   /// Checks if the lower bound of any of the variables is positive
-  bool checkVarsLBounds(const FunctionPtr f);
+  //bool checkVarsLBounds(const FunctionPtr f);
 
   /// Checks if a given variable is bounded by binary variable.
   bool checkVarBounds(ConstVariablePtr var, ConstVariablePtr binvar);
@@ -152,7 +152,7 @@ public:
 
   /// Generate map of variables that are in the initial variable's constraint
   /// set.
-  bool initialBinary(ConstVariablePtr var, VarSetPtr binaries);
+  void initialBinary(ConstVariablePtr var, VarSetPtr binaries);
   
   /// Get total number of perspective constraints.
   UInt getNumPersp() const {return cList_.size();}

@@ -123,6 +123,7 @@ void PerspCutGenerator::gPCut(FunctionPtr f, double * y)
       //}
     }
     // In perspective reformulated constraint coefficient of binary variable is
+    // included in conseval
     // its coefficient in original constraint minus the upper bound of the constraint
     gradu-=(cp_->getUb());
     gradu+=conseval;

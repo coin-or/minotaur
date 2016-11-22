@@ -62,10 +62,15 @@ PerspCutHandler::PerspCutHandler(EnvPtr env, ProblemPtr minlp)
   //stats_->time = 0.0;
   //Identifying constraints amenable to perspective reformulation in 
   //the problem
+}
+
+void PerspCutHandler::perspList()
+{
   persplist_ = (PerspConPtr) new PerspCon(minlp_, env_); 
   persplist_ ->generateList();; 
   cons_ = persplist_->getPerspCons();
   binvar_ = persplist_->getConsBinVar();
+  return;
 }
 
 PerspCutHandler::~PerspCutHandler()
@@ -161,9 +166,8 @@ void PerspCutHandler::separate(ConstSolutionPtr sol, NodePtr n,
           ( act < c->getLb() - solAbsTol_ &&  
             act < c->getLb() - (fabs(c->getLb())*solRelTol_)) ) { 
 #if SPEW
-        logger_->msgStream(LogDebug) << me_ 
-          << "constraint not feasible" << std::endl
-          << me_;
+        logger_->msgStream(LogDebug) << me_ << "constraint not feasible" 
+          << std::endl<< me_;
         c->write(logger_->msgStream(LogDebug2));
         logger_->msgStream(LogDebug)<< me_ << "activity = " << act << std::endl;
 #endif
@@ -173,7 +177,8 @@ void PerspCutHandler::separate(ConstSolutionPtr sol, NodePtr n,
         pcg->generateCut();
         lf = pcg->getPFunction();
         lpvio = std::max(lf->eval(x), 0.0);
-        if (lpvio>solAbsTol_) {
+        // Adding cut only if violates existing solution
+        if (lpvio > solAbsTol_) {
           f = (FunctionPtr) new Function(lf);
           newc = rel->newConstraint(f, -INFINITY, 0.0, "perspective_cut");
           numCuts_++;
@@ -207,8 +212,6 @@ void PerspCutHandler::separate(ConstSolutionPtr sol, NodePtr n,
   if (cutcount >= 1) {
     *status = SepaResolve;
   }
-
-
  }
   return;
 }
@@ -223,6 +226,7 @@ void PerspCutHandler::writeStats(std::ostream &out) const
   if (cons_.size() > 0) {
     // Problem not amenable to perspective reformulation
     out << me_ << "Is problem amenable to perspective reformulation: 1" << std::endl;
+    out << me_ << "No. of perspective amenable constraints: "<< cons_.size() << std::endl;
     out << me_ << "number of perspective cuts added = " << numCuts_ << std::endl;
   return;
   } else {

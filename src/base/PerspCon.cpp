@@ -21,7 +21,7 @@ using std::flush;
 #include "NonlinearFunction.h"
 #include "Logger.h"
 
-# define SPEW 0
+# define SPEW 1
 
 using namespace Minotaur;
 
@@ -47,16 +47,14 @@ using namespace Minotaur;
   //stats_->totalpersp = 0;
   // Debug preparation.
 
+  // Print number of perspective amenable constraints from handler in log
+  // messages
 }
 
 /// Findng contraints suitable for perspective reformulation
 //from the original problem
 void PerspCon::generateList()
 {
- 
-#if SPEW
-  std::cout << "SPEW IS ON" << std::endl;
-#endif
   // Pointer to current constraint being checked.
   ConstConstraintPtr cons;
   // Shows if the constraint is a perspective constraint.
@@ -68,12 +66,13 @@ void PerspCon::generateList()
     // Binary variable 
     VariablePtr binvar; 
     // If binary variable is included 
-    // Check if constraint perspective.
-    if (cons->getUb() >= 0) {
-      ispersp = evalConstraint(cons, binvar);
-    } else {
-      continue;    
-    }
+    // Check if f(0) <= b. 
+    //if (cons->getUb() >= 0) {
+      //ispersp = evalConstraint(cons, binvar);
+    //} else {
+      //continue;    
+    //}
+    ispersp = evalConstraint(cons, binvar);
     if (ispersp) {
       // If it is a perpsective constraint, then add it to vector.
       //cInfo_->prCons(cons);
@@ -127,36 +126,32 @@ bool PerspCon::evalConstraint(ConstConstraintPtr cons, VariablePtr& binvar)
   const FunctionPtr f = cons->getFunction(); 
   const NonlinearFunctionPtr nlf = cons->getNonlinearFunction(); 
   // add one more parameter that stores the binary variable.
+  // vartypeok = true, if no. of binary variable in constraint is 
+  // less than or equal to 1
   bool vartypeok = checkVarTypes(f, binvar);
-  //If the constraint has more than one binary variables then
-  // consider it for separability check.
   if (vartypeok ==  false) {
-    //CASE 3
     return false;
   }
   // Check if the constraint is separable.
-  bool isseparable = false;
+  bool issep = false;
   if (binvar == NULL) {
-    //CASE 1
-    //overloaded separable 
-    //here
-    //isseparable = separable(cons); 
-    isseparable = true;
+    issep = true;
   } else {
-    //CASE 2
-    isseparable = separable(cons, binvar);
+    //issep = true, if constraint function is separable in
+    // cont. and bin variables
+    issep = separable(cons, binvar);
   }
-  if (isseparable == false) {
+  if (issep == false) {
     return false;
   }
   //Check if any of the continuous variables of the constraint has lower bound
-  // greater than zero. In this case perspective is not possible 
-  bool lbp=false;
-  lbp=checkVarsLBounds(f);
-  if (lbp==true) {
-    return false;
-  } 
-  // Shows if all variables are bounded by binary.
+  // greater than zero. In this case PR is not applicable 
+  //bool lbp=false;
+  //lbp=checkVarsLBounds(f);
+  //if (lbp==true) {
+    //return false;
+  //} 
+  // Check which cont. variables of the function are bounded by binary.
   bool boundsok = false;
   if (binvar == NULL) {
     VarSetPtr binaries = (VarSetPtr) new VarSet();
@@ -165,9 +160,6 @@ bool PerspCon::evalConstraint(ConstConstraintPtr cons, VariablePtr& binvar)
     ConstVariablePtr initvar = *(nlf->varsBegin());
     //ConstVariablePtr initvar = *(f->varsBegin());
     initialBinary(initvar, binaries);
-    //MS: directly add the following 
-    //return initialBinary(initvar, binaries);
-    //Below if is not needed then.
 
     // If there is no binary controlling the select variable
     // then stop.
@@ -176,6 +168,9 @@ bool PerspCon::evalConstraint(ConstConstraintPtr cons, VariablePtr& binvar)
     }
     for (VarSetConstIterator it= binaries->begin(); it!=binaries->end(); ++it) {
       binvar = *it;
+      // Check at least one binary varible that is controlling initvar is
+      // controlling rest of the variables in the nonlinear part of the
+      // constriant function
       boundsok = checkNVars(nlf, binvar);
       if (boundsok == true) {
         boundsok = checkLVars(cons, binvar);
@@ -183,6 +178,8 @@ bool PerspCon::evalConstraint(ConstConstraintPtr cons, VariablePtr& binvar)
           return true;
         }
       }
+      l_.clear();
+      u_.clear();
     }
   } else {
     // For each variable check if it is bounded by a binary variable.
@@ -262,13 +259,12 @@ bool PerspCon::separable(ConstConstraintPtr cons, ConstVariablePtr binvar)
 //}
 
 bool PerspCon::checkNVars(const NonlinearFunctionPtr nlf, ConstVariablePtr binvar)
-{
-  // Current variable considered.
+{  
   ConstVariablePtr var;
   bool varbounded;
-  // For each variable check the bounds from these constraints.
-  // Do not consider binvar in this loop, it should not be bounded.
-  for (VarSetConstIterator it=nlf->varsBegin(); it!=nlf->varsEnd(); ++it) {
+  // Check if remaining variable of the nonlinear constraint is controlled by
+  // binvar
+  for (VarSetConstIterator it=nlf->varsBegin(); it!=nlf->varsEnd(); ++it ) {
     var = *it;
     varbounded = checkVarBounds(var, binvar);
     // If variable is not bounded, then constraint is not a perspective constraint.
@@ -281,62 +277,83 @@ bool PerspCon::checkNVars(const NonlinearFunctionPtr nlf, ConstVariablePtr binva
 
 bool PerspCon::checkLVars(ConstConstraintPtr cons, ConstVariablePtr binvar)
 {
-  // Current variable considered.
   ConstVariablePtr var;
-  bool varbounded, r = false;
-  double coeffvar;
+  bool varbounded;
+  //bool varbounded, r = false;
+  //double coeffvar;
   const LinearFunctionPtr lf = cons->getLinearFunction();
   // For each variable check the bounds from these constraints.
   // Do not consider binvar in this loop, it should not be bounded.
 
-  UInt c =0; // For counting number of variables not controlled by binvar
+  //UInt c =0; // For counting number of variables not controlled by binvar
   if (lf) {
-    for (VariableGroupConstIterator it=lf->termsBegin();
-         (it!=lf->termsEnd()) && (it->first != binvar); ++it) {
+    for (VariableGroupConstIterator it=lf->termsBegin();it!=lf->termsEnd();
+         ++it) {
       var = it->first;
-      c =0; // For counting number of variables not controlled by binvar
+      if (it->first == binvar) {
+        continue;
+      }
+      // For counting number of variables not controlled by binvar
+      //c =0;
+      // Check if a variable of linear function is controlled by binvar
       varbounded = checkVarBounds(var, binvar);
       // If variable is not bounded, then constraint is not a perspective constraint.
-      if (varbounded == false) {
-        c++;
-        if (c > 1) {
-          return false;
-        } else {
-          coeffvar = lf->getWeight(var);
-          if (cons->getUb() == 0 and coeffvar < 0){
-            r = true;
-          }
-        }
+      if (varbounded == false && cons->getUb()<=0) {
+        //c = 1;
+        return true;
+        //if (c > 1) {
+          //return false;
+        //} else {
+          //coeffvar = lf->getWeight(var);
+          //if (cons->getUb() == 0 and coeffvar < 0){
+            //r = true;
+          //}
+        //}
       }
+      if (varbounded == false && cons->getUb() > 0) {
+        //c = 1;
+        return false;
+        //if (c > 1) {
+          //return false;
+        //} else {
+          //coeffvar = lf->getWeight(var);
+          //if (cons->getUb() == 0 and coeffvar < 0){
+            //r = true;
+          //}
+        //}
+      }
+      //else {
+        //return false;
+      //}
     }
 
-    if ( r == false && c == 1){
-      return false;
-    } else {
+    if ( cons->getUb() >= 0){
       return true;
+    } else {
+      return false;
     }
   } else {
     return true;
   }
 }
 
-bool PerspCon::checkVarsLBounds(const FunctionPtr f)
-{
-  // Current variable considered.
-  ConstVariablePtr var;
-  // For each variable check the bounds from these constraints.
-  // Do not consider binvar in this loop, it should not be bounded.
-  double lb;
-  for (VarSetConstIterator it=f->varsBegin(); it!=f->varsEnd(); ++it) {
-    var = *it;
-    lb=0.0;
-    lb=var->getLb();
-    if (lb > 0) {
-      return true;
-    }
-  }
-  return false;
-}
+//bool PerspCon::checkVarsLBounds(const FunctionPtr f)
+//{
+  //// Current variable considered.
+  //ConstVariablePtr var;
+  //// For each variable check the bounds from these constraints.
+  //// Do not consider binvar in this loop, it should not be bounded.
+  //double lb;
+  //for (VarSetConstIterator it=f->varsBegin(); it!=f->varsEnd(); ++it) {
+    //var = *it;
+    //lb=0.0;
+    //lb=var->getLb();
+    //if (lb > 0) {
+      //return true;
+    //}
+  //}
+  //return false;
+//}
 
 bool PerspCon::checkVarBounds(ConstVariablePtr var, ConstVariablePtr binvar)
 {
@@ -351,19 +368,19 @@ bool PerspCon::checkVarBounds(ConstVariablePtr var, ConstVariablePtr binvar)
   ConstConstraintPtr lbcons = (ConstConstraintPtr) new Constraint();
   // Ub bounding constraint.
   ConstConstraintPtr ubcons = (ConstConstraintPtr) new Constraint();
-  // Current constraint considered.
   ConstConstraintPtr c;
   FunctionType type;
   double coeffvar;
   double coeffbin;
   UInt numvars;
+  // Iterate through each constraint in which variable var is appearing
   for (ConstrSet::iterator it= var->consBegin(); it!= var->consEnd(); ++it) {
     c = *it;
     // Function of constraint.
     const FunctionPtr f = c->getFunction();
     // Type of constraint.
     type = c->getFunctionType();
-    // Only consider linear constraints.
+    // Consider only linear constraints.
     if (type != Linear) {
       continue;
     } 
@@ -373,7 +390,7 @@ bool PerspCon::checkVarBounds(ConstVariablePtr var, ConstVariablePtr binvar)
     if (numvars != 2) {
       continue;
     }
-
+    
     // Get linear function.
     const LinearFunctionPtr lf = c->getLinearFunction();
 
@@ -422,47 +439,48 @@ bool PerspCon::checkVarBounds(ConstVariablePtr var, ConstVariablePtr binvar)
       //break;
     //}
    if (vlb == false) {
-     if (coeffvar < 0 && coeffbin >0 && c->getUb() == 0) {
-       vlb = true;
-       lbcons = c;
-     } 
-     if (coeffvar < 0 && coeffbin < 0 && c->getUb() == 0) {
+     //if (coeffvar < 0 && coeffbin >0 && c->getUb() == 0) {
+       //vlb = true;
+       //lbcons = c;
+     //} 
+     if (coeffvar < 0 && c->getUb() == 0) {
        vlb = true;
        lbcons = c;
      }         
-     if (coeffvar > 0 && coeffbin < 0 && c->getLb() == 0) {
-       vlb = true;
-       lbcons = c;
-     }    
-     if (coeffvar > 0 && coeffbin >  0 && c->getLb() == 0) {
+     //if (coeffvar > 0 && coeffbin < 0 && c->getLb() == 0) {
+       //vlb = true;
+       //lbcons = c;
+     //}    
+     if (coeffvar > 0 && c->getLb() == 0) {
        vlb = true;
        lbcons = c;
      } 
    }
 
    if (vub == false) {
-     if (coeffvar < 0 && coeffbin >0 && c->getLb() == 0) {
+     if (coeffvar < 0 && c->getLb() == 0) {
        vub = true;
        ubcons = c;
      } 
-     if (coeffvar > 0 && coeffbin < 0 && c->getUb() == 0) {
+     if (coeffvar > 0 && c->getUb() == 0) {
        vub = true;
        ubcons = c;
      }
    }
    
-   if (vlb == 0 && var->getLb() == 0){
-     vlb = true;
-   }
-   
+  
    if (vlb ==true && vub == true) {
      break;
    }  
   } // end of for loop to consider all constraints that has the variable.
 
+  if (vlb == 0 && var->getLb() == 0){
+     vlb = true;
+   }
+ 
   // If variable is both bounded from up and down from binary variable, then
   // it is bounded by the binary variable.
-  if ( (vlb == true) && (vub == true) ) {
+  if ( (vub == true) && (vlb == true) ) {
     l_.push_back(lbcons->getName());
     u_.push_back(ubcons->getName());
     //cInfo_->ubCons(ubcons->getName());
@@ -536,7 +554,7 @@ bool PerspCon::checkVarTypes(const FunctionPtr f, ConstVariablePtr& binvar)
   return true;
 }
 
-bool PerspCon::initialBinary(ConstVariablePtr var, VarSetPtr binaries)
+void PerspCon::initialBinary(ConstVariablePtr var, VarSetPtr binaries)
 {
   // Current constraint considered.
   ConstConstraintPtr cons;
@@ -570,6 +588,9 @@ bool PerspCon::initialBinary(ConstVariablePtr var, VarSetPtr binaries)
     for (VariableGroupConstIterator itvar=lf->termsBegin(); itvar!=lf->termsEnd(); ++itvar) {
       curvar = itvar->first;
       vartype = curvar->getType();
+      if (vartype == Continuous) {
+        continue;
+      }
       if (vartype == Binary) {
         binaries->insert(curvar);
       }
@@ -587,11 +608,11 @@ bool PerspCon::initialBinary(ConstVariablePtr var, VarSetPtr binaries)
 
   } // end of for loop.
 
-  if (binaries->size() >= 1) {
-    return true;
-  } else {
-    return false;
-  }
+  //if (binaries->size() >= 1) {
+    //return true;
+  //} else {
+    //return false;
+  //}
 }
 
 bool PerspCon::getStatus()

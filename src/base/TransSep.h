@@ -112,7 +112,7 @@ namespace Minotaur {
     // Return Ids of separable constraints in original problem
     std::vector<UInt > getSepConId() {return sepConId_;}
 
-    // Return whether the original problem is separable
+    // 1 if problem is separable, 0 otherwise
     bool getStatus();
 
     // Find separability of given problem
