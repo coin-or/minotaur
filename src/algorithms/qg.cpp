@@ -6,7 +6,7 @@
 
 /*! \brief Quesada-Grossmann(QG) algorithm for solving convex MINLP
  *
- * \author Jeff Linderoth, MINOTAUR Team
+ * \authors Jeff Linderoth, MINOTAUR Team, and Meenarli Sharma, IIT Bombay
  */
 
 #include <iomanip>
@@ -46,6 +46,7 @@
 #include <CxQuadHandler.h>
 #include <Objective.h>
 #include <TransSep.h>
+#include <PerspCutHandler.h>
 
 using namespace Minotaur;
 
@@ -151,8 +152,14 @@ int showInfo(EnvPtr env)
 
   if (options->findBool("show_version")->getValue() ||
       options->findFlag("v")->getValue()) {
-    env->getLogger()->msgStream(LogNone) << me << "Minotaur version "
-      << env->getVersion() << std::endl << me 
+    env->getLogger()->msgStream(LogNone) << me <<
+      "Minotaur version " << env->getVersion() << std::endl;
+#if DEBUG
+    env->getLogger()->msgStream(LogInfo) << me;
+    env->writeFullVersion(env->getLogger()->msgStream(LogInfo));
+    env->getLogger()->msgStream(LogInfo) << std::endl;
+#endif
+    env->getLogger()->msgStream(LogNone) << me 
       << "Quesada-Grossmann (LP/NLP) algorithm for convex MINLP" << std::endl;
     return 1;
   }
@@ -231,17 +238,15 @@ void sepDetection(EnvPtr env, ProblemPtr p)
 
   if (env->getOptions()->findBool("separability")->getValue() == true) {
     if (p -> isLinear()) {
-      env ->getLogger()->msgStream(LogExtraInfo) << me
+      env ->getLogger()->msgStream(LogInfo) << me
         << "Problem is linear. Separability detection not required." 
         << std::endl;
-      //return sep;
     } else {
       sep = (TransSepPtr) new TransSep(env, p);
       sep->findSep();
-      env ->getLogger()->msgStream(LogExtraInfo) << me
-        << "Problem separability status: "<< sep->getStatus() 
+      env ->getLogger()->msgStream(LogInfo) << me
+        << "Is Problem separable: "<< sep->getStatus() 
         << std::endl;
-     //return sep;
     }
   }
 }
@@ -255,9 +260,6 @@ int main(int argc, char* argv[])
   ProblemPtr inst;
   SolutionPtr sol, sol2;
   double obj_sense =1.0;
-  
-  //Separability detection
-   //TransSepPtr sep; 
   
   // jacobian is read from AMPL interface and passed on to branch-and-bound
   JacobianPtr jPtr;
@@ -277,9 +279,9 @@ int main(int argc, char* argv[])
 
   //handlers
   HandlerVector handlers;
-  QGHandlerPtr qghand;
-  LinearHandlerPtr l_hand;
   IntVarHandlerPtr v_hand;
+  LinearHandlerPtr l_hand;
+  QGHandlerPtr qg_hand;
 
   //engines
   EnginePtr nlp_e;
@@ -315,7 +317,7 @@ int main(int argc, char* argv[])
   loadProblem(env, iface, inst, &obj_sense);
 
   // Separability detection
-   sepDetection(env, inst);
+  sepDetection(env, inst);
 
   // Initialize engines
   nlp_e = getNLPEngine(env, inst); //Engine for Original problem
@@ -337,9 +339,6 @@ int main(int argc, char* argv[])
     goto CLEANUP;
   }
  
-  // Separability detection
-   //sepDetection(env, inst);
-  
    if (options->findBool("solve")->getValue()==true) {
     if (true==options->findBool("use_native_cgraph")->getValue()) {
       inst->setNativeDer();
@@ -355,10 +354,20 @@ int main(int argc, char* argv[])
     handlers.push_back(v_hand);
     assert(v_hand);
 
-    qghand = (QGHandlerPtr) new QGHandler(env, inst, nlp_e); 
-    qghand->setModFlags(false, true);
-    handlers.push_back(qghand);
+    qg_hand = (QGHandlerPtr) new QGHandler(env, inst, nlp_e); 
+    qg_hand->setModFlags(false, true);
+    handlers.push_back(qg_hand);
 
+    // Use of perspective handler is user choice
+    if (env->getOptions()->findBool("perspective")->getValue() == true) {
+      PerspCutHandlerPtr pc_hand;
+      pc_hand = (PerspCutHandlerPtr) new PerspCutHandler(env, inst); 
+      pc_hand->setModFlags(false, true);
+      // Generate constraints amenable to PR
+      pc_hand->perspList();
+      handlers.push_back(pc_hand);
+      assert(pc_hand);
+    }
 
     // report name
     env->getLogger()->msgStream(LogExtraInfo) << me << "handlers used:"
@@ -407,11 +416,13 @@ int main(int argc, char* argv[])
     // start solving
     bab->solve();
     bab->writeStats(env->getLogger()->msgStream(LogExtraInfo));
+    //bab->writeStats(std::cout);
     nlp_e->writeStats(env->getLogger()->msgStream(LogExtraInfo));
     lin_e->writeStats(env->getLogger()->msgStream(LogExtraInfo));
 
     for (HandlerVector::iterator it=handlers.begin(); it!=handlers.end();
          ++it) {
+      //(*it)->writeStats(std::cout);
       (*it)->writeStats(env->getLogger()->msgStream(LogExtraInfo));
     }
 
