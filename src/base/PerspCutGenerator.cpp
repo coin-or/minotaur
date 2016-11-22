@@ -28,7 +28,7 @@ using std::ostringstream;
 #include "Operations.h"
 #include "Option.h"
 
-# define SPEW 0
+//# define SPEW 0
 
 using namespace Minotaur;
 const std::string PerspCutGenerator::me_ = "Perspective cut generator: ";

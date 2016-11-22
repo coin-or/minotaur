@@ -21,7 +21,7 @@ using std::flush;
 #include "NonlinearFunction.h"
 #include "Logger.h"
 
-# define SPEW 0
+//# define SPEW 0
 
 using namespace Minotaur;
 
@@ -144,13 +144,7 @@ bool PerspCon::evalConstraint(ConstConstraintPtr cons, VariablePtr& binvar)
   if (issep == false) {
     return false;
   }
-  //Check if any of the continuous variables of the constraint has lower bound
-  // greater than zero. In this case PR is not applicable 
-  //bool lbp=false;
-  //lbp=checkVarsLBounds(f);
-  //if (lbp==true) {
-    //return false;
-  //} 
+ 
   // Check which cont. variables of the function are bounded by binary.
   bool boundsok = false;
   if (binvar == NULL) {
