@@ -21,7 +21,7 @@ using std::flush;
 #include "NonlinearFunction.h"
 #include "Logger.h"
 
-# define SPEW 1
+# define SPEW 0
 
 using namespace Minotaur;
 
