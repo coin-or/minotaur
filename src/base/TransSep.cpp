@@ -136,7 +136,7 @@ void TransSep::candCons()
         if (c_ptr->getLinearFunction()) {
           lf_ = c_ptr->getLinearFunction()->clone();
           //lf_->write(std::cout);
-          std::cout << std::endl;
+          //std::cout << std::endl;
         } else {
           lf_ = (LinearFunctionPtr) new LinearFunction();
         }
@@ -160,7 +160,7 @@ void TransSep::candCons()
         if (c_ptr->getLinearFunction()) {
           lf_ = c_ptr->getLinearFunction()->clone();
           //lf_->write(std::cout);
-          std::cout << std::endl;
+          //std::cout << std::endl;
         } else {
           lf_ = (LinearFunctionPtr) new LinearFunction();
         }
