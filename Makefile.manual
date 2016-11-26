@@ -181,6 +181,9 @@ BASE_SRCS = \
 	$(BASE_DIR)/Operations.cpp \
 	$(BASE_DIR)/Option.cpp \
 	$(BASE_DIR)/PCBProcessor.cpp \
+	$(BASE_DIR)/PerspCon.cpp \
+	$(BASE_DIR)/PerspCutGenerator.cpp \
+	$(BASE_DIR)/PerspCutHandler.cpp \
 	$(BASE_DIR)/PolynomialFunction.cpp \
 	$(BASE_DIR)/PreAuxVars.cpp \
 	$(BASE_DIR)/PreDelVars.cpp \
@@ -279,6 +282,9 @@ ALL_HEADERS = \
 	$(BASE_DIR)/Option.h \
 	$(BASE_DIR)/OpCode.h \
 	$(BASE_DIR)/PCBProcessor.h \
+	$(BASE_DIR)/PerspCon.h \
+	$(BASE_DIR)/PerspCutGenerator.h \
+	$(BASE_DIR)/PerspCutHandler.h \
 	$(BASE_DIR)/PolynomialFunction.h \
 	$(BASE_DIR)/PreAuxVars.h \
 	$(BASE_DIR)/PreDelVars.h \
