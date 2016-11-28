@@ -140,6 +140,7 @@ BASE_SRCS = \
 	$(BASE_DIR)/CGraph.cpp \
 	$(BASE_DIR)/CNode.cpp \
 	$(BASE_DIR)/Constraint.cpp  \
+	$(BASE_DIR)/Cut.cpp \
 	$(BASE_DIR)/CutInfo.cpp \
 	$(BASE_DIR)/CutMan1.cpp \
 	$(BASE_DIR)/CxQuadHandler.cpp  \
@@ -232,6 +233,7 @@ ALL_HEADERS = \
 	$(BASE_DIR)/CGraph.h \
 	$(BASE_DIR)/CNode.h \
 	$(BASE_DIR)/Constraint.h \
+	$(BASE_DIR)/Cut.h \
 	$(BASE_DIR)/CutInfo.h \
 	$(BASE_DIR)/CutMan1.h \
 	$(BASE_DIR)/CutManager.h \
