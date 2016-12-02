@@ -59,85 +59,88 @@ namespace Minotaur {
      */
     void candCons();
 
+    /// Clear data structures if constraint is not separable
+    void clearCont();
+
+    /// Clear and populates information
+    bool clearpopu(UInt *j, std::vector<UInt > * m);
+
+    /// Generate computation graph 
+    void createCG(std::vector<CGraphPtr> * cg, CNodeQ * dq);
+
+ 
+    /// Perform Depth first search rooted at node n1 at iteration number j
+    void depthFS(int j, CNode *n1, std::vector<UInt > * m);
+   
+    /// Explore further from  node n1 at iteration number j
+    void explore(int j, CNode *n1, std::vector<UInt > * m, int opc);
+
+    /// Generate final computation graph
+    void finalCG(std::vector<CGraphPtr> * cg);
+
+    /// Find separability of given problem
+    void findSep();
+
+    /// Get left child of node n1 
+    CNode* getLchild(CNode * n1) {return tempN_[n1->getL()->getIndex()];}; 
+    
+    /// Get right child of node n1 
+    CNode* getRchild(CNode * n1) {return tempN_[n1->getR()->getIndex()];}; 
+
+    /// Return Ids of separable constraints in original problem
+    std::vector<UInt > getSepConId() {return sepConId_;}
+
+    /// Give separable status of problem. 
+    /// 1 if problem is separable, 0 otherwise
+    bool getStatus();
+
+    /// Mark nodes visited. Used in generating computation graph of separable
+    /// parts
+    void markVis(UInt i);
+
+    /// Merge current iteration with iteration mNum
+    void merge(int mNum);
+
+    /// Find iteration to merge the current iteration to
+    int mergeIt(int j, int a, std::vector<UInt > * m);
+
+    /// Check separability of objective function
+    void objSepCheck();
+
+    /// Check whether constraint is separable
+    bool outCheck(const CNode * o);
+
+
+    /// Populate information about separable part
+    void populate();
+
+    /// Populate nodes list
+    void popuon(CNode * n1, int opc, int t);
+
+    /// Populate tempN_ 
+    void popuTempN(CGraphPtr c, CNode *n1, OpCode op, bool k);
+
+    /// Generate computational graph of separable parts
+    std::vector<CGraphPtr> sepCGraph(CNodeQ * dq);
+
     /**
      * Check if the nonlinear constraint is separable. 1 if separable
      * 0 if not separable
      */
     bool sepCheck();
- 
-    // Perform Depth first search rooted at node n1 at iteration number j
-    void depthFS(int j, CNode *n1, std::vector<UInt > * m);
-   
-    // Explore further from  node n1 at iteration number j
-    void explore(int j, CNode *n1, std::vector<UInt > * m, int opc);
 
-    // Populate initial list for depth first search rooted at node n1
+    /// Populate initial list for depth first search rooted at node n1
     void tempPop(CNode *n1, std::stack<CNode *> * tempNodes);
 
-    // Find iteration to merge the current iteration to
-    int mergeIt(int j, int a, std::vector<UInt > * m);
+    /// Update linear part of the constraint function
+    void updateLin(VariablePtr v, double d);
 
-    // Merge current iteration with iteration mNum
-    void merge(int mNum);
-
-    // Computation graph of separable parts
-    std::vector<CGraphPtr> sepCGraph(CNodeQ * dq);
-    
-    // Generates computation graph 
-    void createCG(std::vector<CGraphPtr> * cg, CNodeQ * dq);
-
-    // Final computation graph
-    void finalCG(std::vector<CGraphPtr> * cg);
-
-    // Get left child of node n1 
-    CNode* getLchild(CNode * n1) {return tempN_[n1->getL()->getIndex()];}; 
-    
-    // Get right child of node n1 
-    CNode* getRchild(CNode * n1) {return tempN_[n1->getR()->getIndex()];}; 
-
-    // Mark nodes visited. Used in generating computation graph of separable
-    // parts
-    void markVis(UInt i);
-
-    // Check whether constraint is separable
-    bool outCheck(const CNode * o);
-
-    //For problem display
-    void disProb();
-
-    // Check separability of objective function
-    void objSepCheck();
-
-    // Return Ids of separable constraints in original problem
-    std::vector<UInt > getSepConId() {return sepConId_;}
-
-    // 1 if problem is separable, 0 otherwise
-    bool getStatus();
-
-    // Find separability of given problem
-    void findSep();
-
-    //Clear containers if constraint not separable
-    void clearCont();
-
-    //Populate information about separable part
-    void populate();
-
-    //Populate nodes list
-    void popuon(CNode * n1, int opc, int t);
- 
-    // Add information of the node already visited
+    /// Add information of the node already visited
     bool visited(UInt *j, std::vector<UInt > * m, CNode * n1,
                  int opc);
 
-    // Clear and populate informatio
-    bool clearpopu(UInt *j, std::vector<UInt > * m);
-
-    // Updating linear part of the constraint function
-    void updateLin(VariablePtr v, double d);
-
-    // populating tempN_ with one and two children
-    void popuTempN(CGraphPtr c, CNode *n1, OpCode op, bool k);
+   /// Write reformulated problem after separability detection 
+    void writeProb();
 
   private:
     /// Environment.
