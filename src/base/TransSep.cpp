@@ -16,7 +16,6 @@
 #include <iostream>
 
 #include "MinotaurConfig.h"
-
 #include "Environment.h"
 #include "CNode.h"
 #include "Logger.h"
@@ -32,23 +31,22 @@
 #include "OpCode.h"
 #include "Objective.h"
 
-///#define SPEW 1
+//#define SPEW 1
 
 using namespace Minotaur;
 const std::string TransSep::me_ = "TransSep: ";
 
-  TransSep::TransSep()
+TransSep::TransSep()
 :env_(EnvPtr()), problem_(ProblemPtr()), coeff_(0.0), itnum_(0), sepNodes_(0),
   sepOps_(0), sepVars_(0), sepConst_(0), sepConId_(0), newCons_(0), newVars_(0),
   objSep_(false), sepStatus_(false),lf_(LinearFunctionPtr()), ub_(0), lb_(0),
   f_(0), snodes_(0), sops_(0), svars_(0), sconst_(0), on_(), onop_(),
   nnode_(0), nvar_(0)
 {
-  logger_ = (LoggerPtr) new Logger(LogDebug2);
 }
 
 
-  TransSep::TransSep(EnvPtr env, ProblemPtr problem)
+TransSep::TransSep(EnvPtr env, ProblemPtr problem)
 :env_(env), problem_(problem), coeff_(0.0), itnum_(0), sepNodes_(0),
   sepOps_(0), sepVars_(0), sepConst_(0), sepConId_(0),newCons_(0), newVars_(0),
   objSep_(false), sepStatus_(false), lf_(LinearFunctionPtr()), ub_(0), lb_(0),
@@ -83,7 +81,6 @@ void TransSep::findSep()
 #if SPEW
   logger_->msgStream(LogDebug) << me_ <<"No. of separable constraints: "
     << sepConId_.size() << std::endl;
-
   logger_->msgStream(LogDebug) << me_ <<"Is objective seperable: "<<objSep_
     << std::endl;
 #endif
@@ -97,18 +94,14 @@ void TransSep::candCons()
   FunctionPtr f;
   LinearFunctionPtr lf1;
   CGraphPtr cgp;
-
   std::vector<CGraphPtr > cg;
-  std::vector<UInt > nsp; // No. of separable parts in separable constraints
-
-  // eqs is 0 if cons is of form lb <= f(x), 1 if f(x) <= ub
-  std::vector<UInt > eqs;
-
+  std::vector<UInt > nsp; //No. of separable parts in separable constraints
+  std::vector<UInt > eqs;// eqs=0 if cons is lb <= f(x), 1 if f(x) <= ub
   CNodeQ dq; 
   ConstVariablePtr v;
   std::vector<LinearFunctionPtr > lfnew; //Linear functions of separable cons
   std::vector<LinearFunctionPtr > lfmod; //modified linear fun of cons
-  std::vector<CGraphPtr > nlfnew; //Linear function of new linear cons
+  std::vector<CGraphPtr > nlfnew; //Nonlinear function of separable cons
   std::vector<double > ubMlf; //ub of modified linear cons
   std::vector<double > lbMlf; //lb of modified linear cons
 
@@ -121,7 +114,7 @@ void TransSep::candCons()
     if (cgp == NULL) {
       sepStatus = false;
 #if SPEW
-      logger_->msgStream(LogDebug2) << me_ << "Constraint: "<< c_ptr->getName() 
+      logger_->msgStream(LogDebug) << me_ << "Constraint: "<< c_ptr->getName() 
         << " does not have cgraph."<< std::endl;
 #endif
     } else {
@@ -135,45 +128,20 @@ void TransSep::candCons()
         eqs.push_back(0);
         if (c_ptr->getLinearFunction()) {
           lf_ = c_ptr->getLinearFunction()->clone();
-          //lf_->write(std::cout);
-          //std::cout << std::endl;
         } else {
           lf_ = (LinearFunctionPtr) new LinearFunction();
         }
-        //std::cout << std::endl;
-        //std::cout << "**********Constraint:*********** " <<
-        //std::endl;
-        //c_ptr->write(std::cout); 
-        //std::cout << std::endl;
-
-        //std::cout << "---has cgraph---" <<
-        //std::endl;
-        //cgp->write(std::cout);
-        //std::cout << std::endl;
         nvar_ = f->getNonlinearFunction()->numVars();
         nnode_ = cgp->getNumNodes();
         const CNode *o = cgp->getOut();
         sepStatus = outCheck(o);
-
       } else if (ub_ != INFINITY && lb_ == -INFINITY) { 
         eqs.push_back(1);
         if (c_ptr->getLinearFunction()) {
           lf_ = c_ptr->getLinearFunction()->clone();
-          //lf_->write(std::cout);
-          //std::cout << std::endl;
         } else {
           lf_ = (LinearFunctionPtr) new LinearFunction();
         }
-        //std::cout << std::endl;
-        //std::cout << "**********Constraint:*********** " <<
-        //std::endl;
-        //c_ptr->write(std::cout); 
-        //std::cout << std::endl;
-
-        //std::cout << "---has cgraph---" <<
-        //std::endl;
-        //cgp->write(std::cout);
-        //std::cout << std::endl;
         nvar_ = f->getNonlinearFunction()->numVars();
         nnode_ = cgp->getNumNodes();
         const CNode *o = cgp->getOut();
@@ -184,25 +152,21 @@ void TransSep::candCons()
     }
     //If constraint is separable mark it for deletion from the original
     //problem. Add a linear constraint corresponding the nonlinear
-    //constraints 
-    //and add constraints corresponding to the separable parts.
+    //constraints and add constraints corresponding to the separable parts.
 
     if (sepStatus == true ) {
       if(sepNodes_.size()>1)  {
         v = (VariablePtr) new Variable();
         //Generating cgraph of separable parts
-        //dq contains all the dependent nodes
-        //of the cgp
+        //dq contains all the dependent nodes of the cgp
         dq = cgp->dNodes(); 
         //vector cg contains cgraph of separable parts.
         cg = sepCGraph(&dq);
-        //no. of separable parts in the constraint  
         nsp.push_back(cg.size());
 #if SPEW
-        logger_->msgStream(LogDebug2) << me_
-          <<"No. of separable parts in constraint:"
-          << c_ptr->getName() << " is:"<< cg.size()
-          << std::endl;
+        logger_->msgStream(LogDebug) << me_
+          <<"No. of separable parts in constraint:" << c_ptr->getName() 
+          << " is:"<< cg.size()<< std::endl;
 #endif
         for(UInt i=0; i < cg.size(); i++) {
           v = problem_->newVariable(VarTran);
@@ -222,37 +186,37 @@ void TransSep::candCons()
         lbMlf.push_back(lb_);
         lfmod.push_back(lf_);
         lf_.reset();
-        //Marking the original nonlinear constraint for deletion
+        //Mark the original nonlinear constraint for deletion
         problem_->markDelete(c_ptr);
       } else {
 #if SPEW
-        logger_->msgStream(LogDebug2) << me_ <<"Constraint: "<< c_ptr->getName()
+        logger_->msgStream(LogDebug) << me_ <<"Constraint: "<< c_ptr->getName()
           << " has become linear"<< std::endl;
 #endif     
         ubMlf.push_back(ub_);
         lbMlf.push_back(lb_);
         lfmod.push_back(lf_);
         lf_.reset();
-        //Marking the original nonlinear constraint for deletion
+        //Mark the original nonlinear constraint for deletion
         problem_->markDelete(c_ptr);
       }
     } else {
-      logger_->msgStream(LogDebug2) << me_ << "Constraint: "<< c_ptr->getName() 
+      logger_->msgStream(LogDebug) << me_ << "Constraint: "<< c_ptr->getName() 
         << " is not separable."<< std::endl;
     }
   } 
 
   if (sepConId_.size() >0 || lfmod.size() >0) {
-    //Removing constraints marked as delete from problem
+    //Remove constraints marked as delete from problem
     problem_->delMarkedCons();
 
-    //Adding the modified linear constraints to the problem
+    //Add the modified linear constraints to the problem
     for(UInt i=0; i < lfmod.size(); i++) {
       f = (FunctionPtr) new Function(lfmod[i]);
       problem_->newConstraint(f, lbMlf[i], ubMlf[i]);
       f.reset();
     }
-    //Adding new constraints corresponding to separable parts
+    //Add new constraints corresponding to separable parts
     nvar_ = 0; //reusing nvar for counting
     nnode_ = 0;
     for (UInt j=0; j < sepConId_.size() ; j++) {
@@ -263,7 +227,7 @@ void TransSep::candCons()
           problem_->newConstraint(f, 0.0, INFINITY);
           f.reset();
           nvar_++;
-        } else { //(eqs[j] == 1) 
+        } else {  
           f = (FunctionPtr) new Function(lfnew[i], nlfnew[i] );
           problem_->newConstraint(f, -INFINITY, 0.0);
           f.reset();
@@ -280,6 +244,7 @@ void TransSep::candCons()
   }
 }
 
+
 void TransSep::objSepCheck()
 {
   bool sepStatus;
@@ -295,6 +260,7 @@ void TransSep::objSepCheck()
   obj = problem_->getObjective();
   f = obj->getFunction();
   cgp = boost::dynamic_pointer_cast <CGraph> (f->getNonlinearFunction());
+
   if (cgp == NULL) {
     sepStatus = false;
 #if SPEW
@@ -315,16 +281,14 @@ void TransSep::objSepCheck()
     const CNode *o = cgp->getOut();
     sepStatus = outCheck(o);
   }
+  
   if (sepStatus == true ) {
     if(sepNodes_.size()>1)  {
       objSep_=true;
-      //Generating cgraph of separable parts
-      //dq contains all the dependent nodes of the cgp
-      dq = cgp->dNodes(); 
-      //cg contains cgraph of separable parts.
-      cg = sepCGraph(&dq);
+      //Generate cgraph of separable parts
+      dq = cgp->dNodes(); //dq contains all the dependent nodes of the cgp
+      cg = sepCGraph(&dq); //cg contains cgraph of separable parts
       nsp.push_back(cg.size());
-
       v = (VariablePtr) new Variable();
       for(UInt i=0; i < cg.size(); i++) {
         v = problem_->newVariable(VarTran);
@@ -333,7 +297,7 @@ void TransSep::objSepCheck()
         lf_->addTerm(v,1);
         lf1->addTerm(v, -1);
         f = (FunctionPtr) new Function(lf1, cg[i]);
-        //Adding separable constraints to the problem
+        //Add separable constraints to the problem
         problem_->newConstraint(f, -INFINITY, 0.0);
         newCons_++;
         v.reset();
@@ -341,30 +305,30 @@ void TransSep::objSepCheck()
         f.reset();
       }
       cg.clear();
-      //Removing old objective and adding a new one
+      //Remove old objective and adding a new one
       problem_->removeObjective();
       f = (FunctionPtr) new Function(lf_);
       problem_->newObjective(f,(obj->getConstant()+ub_),obj->getObjectiveType());
       lf_.reset();
     }  else {
 #if SPEW
-      logger_->msgStream(LogDebug2) << me_ << "Objective "<< obj->getName() 
+      logger_->msgStream(LogDebug) << me_ << "Objective "<< obj->getName() 
         << " has become linear."<< std::endl;
 #endif  
-      //Removing old objective and adding a new one
+      //Remove old objective and adding a new one
       problem_->removeObjective();
       f = (FunctionPtr) new Function(lf_);
       problem_->newObjective(f,(obj->getConstant()+ub_),obj->getObjectiveType());
       lf_.reset();
     } 
-
   } else {
 #if SPEW
-    logger_->msgStream(LogDebug2) << me_ << "Objective is not separable."
+    logger_->msgStream(LogDebug) << me_ << "Objective is not separable."
       << std::endl;
 #endif 
   }
 } 
+
 
 bool TransSep::outCheck(const CNode * o)
 {
@@ -472,7 +436,7 @@ bool TransSep::outCheck(const CNode * o)
     break;
   default:
 #if SPEW
-    logger_->msgStream(LogDebug2) << me_ << "Opcode not is not known."
+    logger_->msgStream(LogError) << me_ << "Opcode not is not known."
       << std::endl;
 #endif
     assert(!"cannot evaluate!");
@@ -493,6 +457,7 @@ std::vector<CGraphPtr> TransSep::sepCGraph(CNodeQ * dq)
   CNode * n1;
   std::vector<CGraphPtr> cg;
   UInt k=0;
+ 
   for(UInt i=0; i < sepNodes_.size(); ) {
     CGraphPtr t =(CGraphPtr) new CGraph();
     for (UInt j=0; j < sepVars_[i].size(); j++) {
@@ -501,14 +466,14 @@ std::vector<CGraphPtr> TransSep::sepCGraph(CNodeQ * dq)
                              getVariable(sepVars_[i][j]->getV()->getId()));
       itnum_[k]= i+1; //n1 is in separable part i+1
     }
-    //Adding constant nodes to the cgraph directly
+    //Add constant nodes to the cgraph directly
     for (UInt j=0; j < sepConst_[i].size(); j++) {
       n1 = sepConst_[i][j];
       k = n1->getIndex();
       tempN_[k] = t->newNode(n1->getLb());
       itnum_[k]= i+1; 
     } 
-    //Marking the dependent nodes as to which separable part they belong.
+    //Mark the dependent nodes as to which separable part they belong.
     markVis(i);
     cg.push_back(t);
     t.reset();
@@ -520,12 +485,14 @@ std::vector<CGraphPtr> TransSep::sepCGraph(CNodeQ * dq)
   return cg;
 }
 
+
 void TransSep::createCG(std::vector<CGraphPtr > * cg, CNodeQ * dq)
 {
-  //generating cgraph of separable parts
+  //Generate cgraph of separable parts
   CNode **childr = 0;
   UInt k=0, c2=0, f1;
   CNode *n1, *nl =0;
+
   for (UInt i=0; i < (*dq).size(); i++) {
     n1 = (*dq)[i];
     k = itnum_[n1->getIndex()] ;
@@ -565,6 +532,10 @@ void TransSep::createCG(std::vector<CGraphPtr > * cg, CNodeQ * dq)
         popuTempN((*cg)[k-1], n1, n1->getOp(),1);
         break;
       case (OpNone):
+#if SPEW
+    logger_->msgStream(LogDebug2) << me_ << "Opcode OpNone is found."
+      << std::endl;
+#endif
         assert(!"warning: encountered node with opcode OpNode.");
         break; 
       case (OpNum):
@@ -572,6 +543,10 @@ void TransSep::createCG(std::vector<CGraphPtr > * cg, CNodeQ * dq)
       case (OpVar):
         break;
       case (OpPow):
+#if SPEW
+    logger_->msgStream(LogDebug2) << me_ << "Opcode OpPow is not implemented."
+      << std::endl;
+#endif 
         assert(!"not implemented!");
         break;
       case (OpSumList):
@@ -588,6 +563,10 @@ void TransSep::createCG(std::vector<CGraphPtr > * cg, CNodeQ * dq)
         delete []childr;
         break;
       default:
+#if SPEW
+    logger_->msgStream(LogError) << me_ << "Opcode not is not known."
+      << std::endl;
+#endif
         assert(!"cannot evaluate!");
       }
     }
@@ -617,6 +596,7 @@ void TransSep::finalCG(std::vector<CGraphPtr > * cg)
   UInt c2=0, c3=0, f1;
   CNode **childr = 0;
   CNode * n1=0, *nl =0, *n2=0, *nr=0;
+
   for (UInt i=0; i < sepNodes_.size(); i++) {
     f1 = sepNodes_[i].size();
     if (f1 == 1) {
@@ -658,7 +638,7 @@ void TransSep::finalCG(std::vector<CGraphPtr > * cg)
         nl = tempN_[c2];
         n1 = (*cg)[i]->newNode(Minotaur::OpMinus, nl, nr);       
       }
-    } else { // (f1 > 2) 
+    } else {  
       childr = new Minotaur::CNode *[f1];
       c2=0;
       for(UInt j=0; j<sepNodes_[i].size(); j++) {
@@ -690,10 +670,12 @@ void TransSep::finalCG(std::vector<CGraphPtr > * cg)
   tempN_.clear();
 }
 
+
 void TransSep::markVis(UInt i)
 {
   CNode *n1=0, *n2=0;
   std::stack<CNode * > ts;
+
   for(UInt j=0; j<sepNodes_[i].size(); j++) {
     n1 = sepNodes_[i][j];
     ts.push(n1);
@@ -752,6 +734,10 @@ void TransSep::markVis(UInt i)
         ts.push(n1->getR());
         break;
       case (OpNone):
+#if SPEW
+        logger_->msgStream(LogDebug2) << me_ << "Opcode OpNone is found."
+          << std::endl;
+#endif
         assert(!"warning: encountered node with opcode OpNone");
         break; 
       case (OpNum):
@@ -760,6 +746,10 @@ void TransSep::markVis(UInt i)
         ts.pop();
         break;
       case (OpPow):
+#if SPEW
+        logger_->msgStream(LogDebug2) << me_ 
+          << "Opcode OpPow is not implemented." << std::endl;
+#endif 
         assert(!"not implemented!");
         break;
       case (OpSumList):
@@ -773,11 +763,16 @@ void TransSep::markVis(UInt i)
         }           
         break;
       default:
+#if SPEW
+        logger_->msgStream(LogError) << me_ << "Opcode not is not known."
+          << std::endl;
+#endif
         assert(!"cannot evaluate!");
       }
     }
   }
 }
+
 
 void TransSep::clearCont()
 {
@@ -793,6 +788,7 @@ void TransSep::clearCont()
   on_=  std::stack<CNode *> ();
   onop_ = std::stack<int > (); 
 }
+
 
 void TransSep::populate()
 {
@@ -821,15 +817,15 @@ void TransSep::updateLin(VariablePtr v, double d)
 
 
 void TransSep::popuon(CNode * n1, int opc, int t)
-  //t for taking into account opcode sign
 {
   on_.pop();
   onop_.pop();
   on_.push(n1->getL());
   onop_.push(opc);
   on_.push(n1->getR());
-  onop_.push(opc*t);
+  onop_.push(opc*t); //t takes into account opcode sign
 }
+
 
 bool TransSep::sepCheck()
 {
@@ -838,9 +834,11 @@ bool TransSep::sepCheck()
   UInt  j=0; //j is iteration counter
   std::vector<UInt > m;  //Variable m is used in merge operation
   m.push_back(0);
+
   for(UInt i=0; i < nnode_; i++) {
     itnum_.push_back(0);
   }
+
   while (on_.size() != 0) {
     n1=on_.top();
     opc=onop_.top();
@@ -1005,12 +1003,24 @@ bool TransSep::sepCheck()
       clearpopu(&j, &m);
       break;
     case (OpNone):
+#if SPEW
+      logger_->msgStream(LogDebug2) << me_ << "Opcode OpNone is found."
+        << std::endl;
+#endif
       assert(!"warning: encountered a node with opcode OpNone");
       break;
     case (OpPow):
+#if SPEW
+      logger_->msgStream(LogDebug2) << me_ 
+        << "Opcode OpPow is not implemented."<< std::endl;
+#endif 
       assert(!"warning: not implemented node with opcode OpPow");
       break;
     default:
+#if SPEW
+      logger_->msgStream(LogError) << me_ << "Opcode not is not known."
+        << std::endl;
+#endif 
       assert(!"cannot evaluate!");
       break;
     }
@@ -1018,7 +1028,7 @@ bool TransSep::sepCheck()
   itnum_.clear();
   m.clear();
 
-  //Cleaning of sepNodes_ by removing zero entries formed during
+  //Clear sepNodes_ by removing zero entries formed during
   //merge operation
   for(UInt i=0; i < sepNodes_.size(); ) {
     if (sepNodes_[i].size() == 0) {
@@ -1041,7 +1051,7 @@ bool TransSep::sepCheck()
     return true;
 }
 
-// Adding the information of the node which is already visited
+
 bool TransSep::visited(UInt* j, std::vector<UInt >*m, CNode *n1,
                        int opc)
 {
@@ -1055,6 +1065,7 @@ bool TransSep::visited(UInt* j, std::vector<UInt >*m, CNode *n1,
   return clearpopu(j, m);
 }
 
+
 bool TransSep::clearpopu(UInt *j, std::vector<UInt >*m)
 {
   if (svars_.size() == nvar_) {
@@ -1065,8 +1076,8 @@ bool TransSep::clearpopu(UInt *j, std::vector<UInt >*m)
   (*j)++;
   (*m).push_back(0);
   return true;
-
 }
+
 
 void TransSep::explore (int j, CNode *n1, std::vector<UInt > *m, int opc)
 {
@@ -1133,7 +1144,6 @@ void TransSep::merge(int mNum)
     sconst_.push_back(sepConst_[mNum][i]);
   }
   sepConst_[mNum].clear();
-
 }
 
 
@@ -1143,6 +1153,7 @@ void TransSep::depthFS(int j, CNode *n1, std::vector<UInt > *m)
   CNode *n=0, *n2=0;
   int mNum;
   tempPop(n1, &tempNodes);
+
   while (tempNodes.size() != 0) {
     n=tempNodes.top();
     if (itnum_[n->getIndex()] == 0) {
@@ -1196,9 +1207,18 @@ void TransSep::depthFS(int j, CNode *n1, std::vector<UInt > *m)
         itnum_[n->getIndex()]=j+1;
         break;
       case (OpPow):
+#if SPEW
+        logger_->msgStream(LogDebug2) << me_ 
+          << "Opcode OpPow is not implemented."<< std::endl;
+#endif
         assert(!"not implemented!");
         break;
       case (OpNone):
+#if SPEW
+      
+        logger_->msgStream(LogDebug2) << me_ << "Opcode OpNone is found."
+          << std::endl;
+#endif 
         assert(!"warning: encountered node with opcode OpNode.");
         break;
       case (OpSumList):
@@ -1209,15 +1229,19 @@ void TransSep::depthFS(int j, CNode *n1, std::vector<UInt > *m)
         }
         break;
       default:
+#if SPEW
+      
+        logger_->msgStream(LogError) << me_ << "Opcode not is not known."
+          << std::endl;
+#endif
         assert(!"cannot evaluate!");
       }
-
     } else {
       if (itnum_[n->getIndex()] == j+1) {
         tempNodes.pop();      
       } else {
         mNum=mergeIt(j, itnum_[n->getIndex()], m);
-        if (mNum > -1) {
+        if (mNum > -1) { 
           //mNum = -1 if a node is encountered twice in an iteration
           merge(mNum);
         }
@@ -1271,9 +1295,17 @@ void TransSep::tempPop(CNode *n1, std::stack<CNode *> * tempNodes)
   case (OpVar):
     break;
   case (OpPow):
+#if SPEW
+    logger_->msgStream(LogDebug2) << me_ << "Opcode OpPow is not implemented."
+      << std::endl;
+#endif
     assert(!"not implemented!");
     break;
   case (OpNone): 
+#if SPEW
+    logger_->msgStream(LogDebug2) << me_ << "Opcode OpNone is found."
+      << std::endl;
+#endif
     assert(!"warning: encountered node with opcode OpNode.");
     break;
   case (OpSumList):
@@ -1283,9 +1315,14 @@ void TransSep::tempPop(CNode *n1, std::stack<CNode *> * tempNodes)
     }
     break;
   default:
+#if SPEW
+    logger_->msgStream(LogError) << me_ << "Opcode not is not known."
+      << std::endl;
+#endif
     assert(!"cannot evaluate!");
   }
 }
+
 
 bool TransSep::getStatus() 
 {
@@ -1312,13 +1349,13 @@ void TransSep::disProb()
       getValue()) {
     problem_->write(logger_->msgStream(LogNone));
   }
-  env_->getLogger()->msgStream(LogExtraInfo) << me_ 
+  env_->getLogger()->msgStream(LogDebug) << me_ 
     << "Is objective seperable: " 
     <<objSep_  << std::endl;
-  env_->getLogger()->msgStream(LogExtraInfo) << me_ 
+  env_->getLogger()->msgStream(LogDebug) << me_ 
     <<"No. of separable constraints: "
     << sepConId_.size() << std::endl;
-  env_->getLogger()->msgStream(LogExtraInfo)<< me_ 
+  env_->getLogger()->msgStream(LogDebug)<< me_ 
     << "Index of separable constraints:" 
     << std::endl ;
   for(UInt i =0; i < sepConId_.size(); i++) {

@@ -6,14 +6,15 @@
 
 /**
  * \file TransSep.h
- * \brief Declare TransSep class for detecting nonlinear
- * function separability. It considers nonlinear constraints of a problem and
- * checks whether it is separable. If separable, then it reformulates the
- * original problem by introducing extra variables. Original nonlinear
- * constraint becomes linear and each separable part constitutes a nonlinear
- * constraint. This class also gives computational graph of each nonlinear
- * constraint corresponding to each separable part.
- * \author Meenarli Sharma, Indian Institute of Technology Bombay. 
+ * \brief Declare TransSep class for detecting separable nonlinear
+ * constraints in the problem. It considers nonlinear constraints of a problem
+ * and checks whether they are separable. If a nonlinear constraint is 
+ * separable, then it reformulates original problem by introducing extra 
+ * variables. Original nonlinear constraint becomes linear and each separable
+ * part constitutes a nonlinear constraint. This class also gives computational
+ * graphs of nonlinear constraints corresponding separable parts of separable
+ * constraints.
+ * \Author Meenarli Sharma, Indian Institute of Technology Bombay. 
  */
 
 #ifndef MINOTAURTRANSSEP_H
@@ -63,19 +64,17 @@ namespace Minotaur {
      * 0 if not separable
      */
     bool sepCheck();
-
  
-     // Perform Depth first search rooted at node n1 at iteration number j
+    // Perform Depth first search rooted at node n1 at iteration number j
     void depthFS(int j, CNode *n1, std::vector<UInt > * m);
-
-   // Explore further from  node n1 at iteration number j
+   
+    // Explore further from  node n1 at iteration number j
     void explore(int j, CNode *n1, std::vector<UInt > * m, int opc);
-
 
     // Populate initial list for depth first search rooted at node n1
     void tempPop(CNode *n1, std::stack<CNode *> * tempNodes);
 
-     // Find iteration to merge the current iteration to
+    // Find iteration to merge the current iteration to
     int mergeIt(int j, int a, std::vector<UInt > * m);
 
     // Merge current iteration with iteration mNum
@@ -84,7 +83,7 @@ namespace Minotaur {
     // Computation graph of separable parts
     std::vector<CGraphPtr> sepCGraph(CNodeQ * dq);
     
-    // Generate computation graph 
+    // Generates computation graph 
     void createCG(std::vector<CGraphPtr> * cg, CNodeQ * dq);
 
     // Final computation graph
@@ -118,7 +117,7 @@ namespace Minotaur {
     // Find separability of given problem
     void findSep();
 
-   //Clear containers if constraint not separable
+    //Clear containers if constraint not separable
     void clearCont();
 
     //Populate information about separable part
@@ -126,16 +125,13 @@ namespace Minotaur {
 
     //Populate nodes list
     void popuon(CNode * n1, int opc, int t);
-
-   // Add information of the node already visited
+ 
+    // Add information of the node already visited
     bool visited(UInt *j, std::vector<UInt > * m, CNode * n1,
                  int opc);
 
-
-   // Clear and populate informatio
+    // Clear and populate informatio
     bool clearpopu(UInt *j, std::vector<UInt > * m);
-
-    //void updateBounds(int opc, double d1);
 
     // Updating linear part of the constraint function
     void updateLin(VariablePtr v, double d);
@@ -212,13 +208,15 @@ namespace Minotaur {
     std::stack<int > onop_;
 
     UInt nnode_;
+ 
     UInt nvar_;
 
   };
   typedef boost::shared_ptr<TransSep> TransSepPtr;
   typedef boost::shared_ptr<const TransSep> ConstTransSepPtr;
 }
-#endif
+
+#endif // MINOTAURTRANSSEP_H
 
 // Local Variables: 
 // mode: c++ 
