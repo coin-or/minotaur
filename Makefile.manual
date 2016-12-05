@@ -140,6 +140,7 @@ BASE_SRCS = \
 	$(BASE_DIR)/CGraph.cpp \
 	$(BASE_DIR)/CNode.cpp \
 	$(BASE_DIR)/Constraint.cpp  \
+	$(BASE_DIR)/Cut.cpp \
 	$(BASE_DIR)/CutInfo.cpp \
 	$(BASE_DIR)/CutMan1.cpp \
 	$(BASE_DIR)/CxQuadHandler.cpp  \
@@ -181,6 +182,9 @@ BASE_SRCS = \
 	$(BASE_DIR)/Operations.cpp \
 	$(BASE_DIR)/Option.cpp \
 	$(BASE_DIR)/PCBProcessor.cpp \
+	$(BASE_DIR)/PerspCon.cpp \
+	$(BASE_DIR)/PerspCutGenerator.cpp \
+	$(BASE_DIR)/PerspCutHandler.cpp \
 	$(BASE_DIR)/PolynomialFunction.cpp \
 	$(BASE_DIR)/PreAuxVars.cpp \
 	$(BASE_DIR)/PreDelVars.cpp \
@@ -229,6 +233,7 @@ ALL_HEADERS = \
 	$(BASE_DIR)/CGraph.h \
 	$(BASE_DIR)/CNode.h \
 	$(BASE_DIR)/Constraint.h \
+	$(BASE_DIR)/Cut.h \
 	$(BASE_DIR)/CutInfo.h \
 	$(BASE_DIR)/CutMan1.h \
 	$(BASE_DIR)/CutManager.h \
@@ -279,6 +284,9 @@ ALL_HEADERS = \
 	$(BASE_DIR)/Option.h \
 	$(BASE_DIR)/OpCode.h \
 	$(BASE_DIR)/PCBProcessor.h \
+	$(BASE_DIR)/PerspCon.h \
+	$(BASE_DIR)/PerspCutGenerator.h \
+	$(BASE_DIR)/PerspCutHandler.h \
 	$(BASE_DIR)/PolynomialFunction.h \
 	$(BASE_DIR)/PreAuxVars.h \
 	$(BASE_DIR)/PreDelVars.h \

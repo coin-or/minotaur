@@ -34,16 +34,16 @@ using namespace Minotaur;
 const std::string PerspCutGenerator::me_ = "Perspective cut generator: ";
 
 PerspCutGenerator::PerspCutGenerator() 
- : s_(SolutionPtr()), cp_(ConstraintPtr()), bp_(VariablePtr()), objtol_(1e-6),solAbsTol_(1e-5),
-  solRelTol_(1e-5), eTol_(1e-6), lf_(LinearFunctionPtr()), rnv_(0)
+ : s_(SolutionPtr()), cp_(ConstraintPtr()), bp_(VariablePtr()),/* objtol_(1e-6),solAbsTol_(1e-5),
+  solRelTol_(1e-5), eTol_(1e-6),*/ lf_(LinearFunctionPtr()), rnv_(0)
 {
   logger_ = (LoggerPtr) new Logger(LogDebug2);
 }
 
 PerspCutGenerator::PerspCutGenerator(UInt relvars, ConstSolutionPtr sol,
                                      ConstConstraintPtr c, ConstVariablePtr v)
-  : s_(sol), cp_(c), bp_(v), objtol_(1e-6),solAbsTol_(1e-5),
-  solRelTol_(1e-5), eTol_(1e-6), lf_(LinearFunctionPtr()), rnv_(relvars)
+  : s_(sol), cp_(c), bp_(v),/* objtol_(1e-6),solAbsTol_(1e-5),
+  solRelTol_(1e-5), eTol_(1e-6),*/ lf_(LinearFunctionPtr()), rnv_(relvars)
 
 {
   logger_ = (LoggerPtr) new Logger(LogDebug2);

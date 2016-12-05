@@ -178,7 +178,7 @@ namespace Minotaur {
     ConstVariablePtr bp_;
 
     // Violation tolerance.
-    double objtol_;
+    //double objtol_;
 
 
     // Statistics for perspective cut generator.
@@ -188,14 +188,14 @@ namespace Minotaur {
     //std::map< DoubleVector, UInt > cutmap_;
 
     // Integer tolerance.
-    double intTol_;
+    //double intTol_;
 
     /// Tolerance for accepting a new solution value: absolute threshold.
-    double solAbsTol_;
-    double solRelTol_;
+    //double solAbsTol_;
+    //double solRelTol_;
     
     // General tolerance.
-    double eTol_;
+    //double eTol_;
 
     // Output file
     ofstream output_;
