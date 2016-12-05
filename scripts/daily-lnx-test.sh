@@ -17,14 +17,14 @@ CPUS="8"
 SUMMARY="summary.log"
 
 ## where is doxygen, leave empty if it is already in PATH
-DOXYGEN="/home/mahajan/install/doxygen-1.7.1/bin"
+DOXYGEN=""
 
 ## where should doxygen-docs be copied after generation. Last '/' is
 ## important.
 DOXY_DIR="/mcs/web/research/projects/minotaur/nightly/doxygen/"
 
 ## where is cmake, leave empty if it is already in PATH
-CMAKE="/home/mahajan/install/cmake-2.8.1/bin"
+CMAKE=""
 
 ## url where logs are accessible.
 URL="http://www.mcs.anl.gov/research/projects/minotaur/nightly/build-log/petsc"
