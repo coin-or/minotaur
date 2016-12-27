@@ -27,19 +27,21 @@ using std::flush;
 using namespace Minotaur;
 
 /*********************************************************************************/
-// Functionality for identifying structure f(x) <=b or f(x,z) <=b or 
-// f(x,z)+g(y) <= b or f(x)+g(y) <=b and  lz<=x<=uz, z is binary variable and 
+// Functionality for identifying structure (3) f(x) <=b or f(x,z) <=b (4)or 
+// f(x,z)+g(y) <= b (8)or f(x)+g(y) <=b (7) and  lz<=x<=uz, z is binary variable and 
 // x, y are continuous variables.
 /*********************************************************************************/
 
 PerspCon::PerspCon()
-:env_(EnvPtr()),p_(ProblemPtr()), cList_(0), binVar_(0), lbc_(0), ubc_(0), l_(0), u_(0)
+:env_(EnvPtr()),p_(ProblemPtr()), cList_(0), binVar_(0), lbc_(0), ubc_(0), 
+  l_(0), u_(0) /*, sType_(0)*/
 {
 }
 
 
 PerspCon::PerspCon(ProblemPtr p, EnvPtr env)
 : env_(env),p_(p), cList_(0), binVar_(0), lbc_(0), ubc_(0), l_(0), u_(0)
+/*  , sType_(0)*/
 {
   logger_=(LoggerPtr) new Logger(LogDebug2);
 }
@@ -62,6 +64,7 @@ bool PerspCon::checkLVars(ConstConstraintPtr cons, ConstVariablePtr binvar)
       varbounded = checkVarBounds(var, binvar);
       // If variable is not bounded, then constraint is not a perspective constraint.
       if (varbounded == false && cons->getUb()<=0) {
+        //s_ += 7;
         return true;
       }
       if (varbounded == false && cons->getUb() > 0) {
@@ -70,6 +73,7 @@ bool PerspCon::checkLVars(ConstConstraintPtr cons, ConstVariablePtr binvar)
     }
 
     if ( cons->getUb() >= 0){
+      //s_ += 3;
       return true;
     } else {
       return false;
@@ -146,18 +150,10 @@ bool PerspCon::checkVarBounds(ConstVariablePtr var, ConstVariablePtr binvar)
     }
   
    if (vlb == false) {
-     //if (coeffvar < 0 && coeffbin >0 && c->getUb() == 0) {
-       //vlb = true;
-       //lbcons = c;
-     //} 
      if (coeffvar < 0 && c->getUb() == 0) {
        vlb = true;
        lbcons = c;
      }         
-     //if (coeffvar > 0 && coeffbin < 0 && c->getLb() == 0) {
-       //vlb = true;
-       //lbcons = c;
-     //}    
      if (coeffvar > 0 && c->getLb() == 0) {
        vlb = true;
        lbcons = c;
@@ -191,13 +187,12 @@ bool PerspCon::checkVarBounds(ConstVariablePtr var, ConstVariablePtr binvar)
     u_.push_back(ubcons->getName());
     return true;
   }
-
   // If it comes here, variable is not bounded by binary variable.
   return false;
 }
 
 
-bool PerspCon::checkVarTypes(const FunctionPtr f, ConstVariablePtr& binvar)
+bool PerspCon::checkVarTypes(ConstConstraintPtr cons, ConstVariablePtr& binvar)
 {
   // Current variable considered.
   ConstVariablePtr var;
@@ -205,8 +200,12 @@ bool PerspCon::checkVarTypes(const FunctionPtr f, ConstVariablePtr& binvar)
   VariableType type;
   // Number of binary variables.
   UInt numbins = 0;
-  // Number of integer binary variables.
-  UInt numintbins = 0;
+  // Get function of constraint.
+  const FunctionPtr f = cons->getFunction();
+  const NonlinearFunctionPtr nlf = cons->getNonlinearFunction();
+  const LinearFunctionPtr lf = cons->getLinearFunction();
+  QuadraticFunctionPtr qf = cons->getQuadraticFunction();
+
   // Iterate through all variables.
   for (VarSetConstIterator it=f->varsBegin(); it!=f->varsEnd(); ++it) {
     var = *it;
@@ -214,30 +213,72 @@ bool PerspCon::checkVarTypes(const FunctionPtr f, ConstVariablePtr& binvar)
     // Check the type of variable.
     switch (type) {
     case Binary:
-      binvar = var;
-      numbins += 1; 
+      if (lf != NULL) {
+        if (lf->hasVar(var)) {
+          if (lf->getWeight(var)!=0) {
+            binvar = var;
+            numbins += 1; 
+          }
+          if (numbins >= 2) {
+            return false;
+          } 
+        }
+      } else if (qf != NULL) {
+        if (qf->hasVar(var)) {
+          return false;
+        } 
+      } else if (nlf != NULL) {
+          if (nlf->hasVar(var)) {
+            return false;
+          } 
+      }
       // If number of binary variables is more than one
       // Do not consider constraint for perspective cuts generation.
-      if (numbins + numintbins >= 2) {
-        return false;
-      }
       break;
     case ImplBin:
-      binvar = var;
-      numbins += 1; 
+      if (lf != NULL) {
+        if (lf->hasVar(var)) {
+          if (lf->getWeight(var)!=0) {
+            binvar = var;
+            numbins += 1; 
+          }
+          if (numbins >= 2) {
+            return false;
+          } 
+        }
+      } else if (qf != NULL) {
+        if (qf->hasVar(var)) {
+          return false;
+        } 
+      } else if (nlf != NULL) {
+          if (nlf->hasVar(var)) {
+            return false;
+          } 
+      }
       // If number of binary variables is more than one
       // Do not consider constraint for perspective cuts generation.
-      if (numbins + numintbins >= 2) {
-        return false;
-      }
       break;
     case Integer:
       if ( (var->getLb() == 0) && (var->getUb() == 1) ) {
-        binvar = var;
-        numintbins += 1;
-        if (numbins + numintbins >= 2) {
-          return false;
-        } 
+        if (lf != NULL) {
+          if (lf->hasVar(var)) {
+            if (lf->getWeight(var)!=0) {
+              binvar = var;
+              numbins += 1; 
+            }
+            if (numbins >= 2) {
+              return false;
+            } 
+          }
+        } else if (qf != NULL) {
+          if (qf->hasVar(var)) {
+            return false;
+          } 
+        } else if (nlf != NULL) {
+          if (nlf->hasVar(var)) {
+            return false;
+          } 
+        }
       } else {
         // It is a general variable
         // Do not consider constraint.
@@ -252,7 +293,6 @@ bool PerspCon::checkVarTypes(const FunctionPtr f, ConstVariablePtr& binvar)
       return false;
     }
   }
-
   // If it comes here, it means all variables are continuous 
   // or there exists only one binary variable. 
   return true;
@@ -274,10 +314,12 @@ void PerspCon::displayInfo()
     for (UInt j=0; j < ubc_[i].size(); ++j) {
       output_ << ubc_[i][j] << ", ";
     }
+    //output_ << "\nStructure of the constraint: " << sType_[i];
+    //std::cout << "\nStructure of the constraint: " << sType_[i]<< std::endl;
     output_ << "\n------------------------------" << endl;
   }
-  output_ << "Total no. of constraints amenable to PR " << cList_.size()
-    <<  endl;
+  output_ << "Total no. of constraints amenable to PR " << cList_.size()<< endl;
+  std::cout << "Total no. of constraints amenable to PR " << cList_.size()<< std::endl;
 }
 
 
@@ -290,32 +332,22 @@ bool PerspCon::evalConstraint(ConstConstraintPtr cons, VariablePtr& binvar)
   if (type == Linear) {
     return false;
   }
-  // Get function of constraint.
-  const FunctionPtr f = cons->getFunction(); 
+  //Get function of constraint.
+  //const FunctionPtr f = cons->getFunction(); 
   const NonlinearFunctionPtr nlf = cons->getNonlinearFunction(); 
   // Add one more parameter that stores the binary variable.
   // vartypeok = true, if no. of binary variable in constraint is 
-  // less than or equal to 1
-  bool vartypeok = checkVarTypes(f, binvar);
+  // less than or equal to 1, and that binary variable is in the linear part
+  // of the constranit cons
+  bool vartypeok = checkVarTypes(cons, binvar);
   if (vartypeok ==  false) {
-    return false;
-  }
-  // Check if the constraint is separable.
-  bool issep = false;
-  if (binvar == NULL) {
-    issep = true;
-  } else {
-    //issep = true, if constraint function is separable in
-    // cont. and bin variables
-    issep = separable(cons, binvar);
-  }
-  if (issep == false) {
     return false;
   }
  
   // Check which cont. variables of the function are bounded by binary.
   bool boundsok = false;
   if (binvar == NULL) {
+    //s_ = 0;
     VarSetPtr binaries = (VarSetPtr) new VarSet();
     // Select first variable of the nonlinear part of the
     // constraint for initial binary search.
@@ -337,29 +369,28 @@ bool PerspCon::evalConstraint(ConstConstraintPtr cons, VariablePtr& binvar)
         boundsok = checkLVars(cons, binvar);
         if (boundsok == true) {
           return true;
+        } else {
+          return false;
         }
+      } else {
+        return false;
       }
-      l_.clear();
-      u_.clear();
     }
   } else {
     // Check if each variable in the nonlinear part of the constraint 
     // is bounded by binary variable binvar.
+    //s_ = 1; 
     boundsok = checkNVars(nlf, binvar);
     if (boundsok == true) {
       boundsok = checkLVars(cons, binvar);
       if (boundsok == true) {
         return true;
+       } else {
+         return false;       
        }
+    }  else {
+      return false;    
     }
-  }
-  // If any variable is not bounded by binary variable, 
-  // constraint is not amenable to PR.
-  if (boundsok ==  false) {
-    return false;
-  } else {
-  // to be continued.  
-    return true;
   }
 }
 
@@ -382,6 +413,7 @@ void PerspCon::generateList()
       binVar_.push_back(binvar);
       lbc_.push_back(l_);
       ubc_.push_back(u_);
+      //sType_.push_back(s_);
     }
     l_.clear();
     u_.clear();
@@ -436,7 +468,6 @@ void PerspCon::initialBinary(ConstVariablePtr var, VarSetPtr binaries)
     if (lf->getWeight(var) == 0) {
       continue;    
     }
-
     // Check if the other variable is binary.
     ConstVariablePtr curvar;
     VariableType vartype;
@@ -465,49 +496,11 @@ void PerspCon::initialBinary(ConstVariablePtr var, VarSetPtr binaries)
 }
 
 
-bool PerspCon::separable(ConstConstraintPtr cons, ConstVariablePtr binvar)
-{
-
-  //Quadratic part should not include the binary variable.
-  QuadraticFunctionPtr qf = cons->getQuadraticFunction();
-  if ((qf != NULL)) {
-    if (qf->hasVar(binvar) == true) {
-      return false;
-    }
-    else {
-      //Quadratic function is separable if not bilinear
-      for(VariablePairGroupConstIterator it = qf->begin(); it != qf->end(); 
-            ++it) {
-        if (it->second != 0.0) {    
-          if (it->first.first->getId() != it->first.second->getId()) {
-            //function is bilinear which means not separable
-            return false;
-          }   
-        }   
-      }
-      return true;
-    }
-  }
- // Nonlinear part should not include the binary variable.
-  NonlinearFunctionPtr nlf = cons->getNonlinearFunction();
-  if ((nlf != NULL)) {
-    if (nlf->hasVar(binvar) == true) {
-      return false;
-    } else {
-      //isSep=separable(nlf);
-      //return isSep;
-      return true;
-    }
-  }
-  return false;
-}
-
 PerspCon::~PerspCon()
 {
   env_.reset();
   p_.reset();
 }
-
 
 
 // Local Variables: 

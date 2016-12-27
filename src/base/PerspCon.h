@@ -58,7 +58,7 @@ public:
 
   /// Checks if all the variables are continuous or at most one binary.
   /// Otherwise, we cannot generate perspective cuts.
-  bool checkVarTypes(const FunctionPtr f, ConstVariablePtr& binvar);
+  bool checkVarTypes(ConstConstraintPtr cons, ConstVariablePtr& binvar);
 
   ///Print out information related to the perspective constraints in a file
   void displayInfo();
@@ -86,11 +86,6 @@ public:
   // terms) with variable var
   void initialBinary(ConstVariablePtr var, VarSetPtr binaries);
   
-  /// Checks if the constraint does not have any multi-variable terms
-  /// that includes u and x together, i.e. constraint is separable 
-  /// such that f(x) + cu <= 0.
-  bool separable(ConstConstraintPtr cons, ConstVariablePtr binvar);
-
   private:
   /// Environment.
   EnvPtr env_;
@@ -121,6 +116,13 @@ public:
 
   std::vector<std::string > l_;
   std::vector<std::string > u_;
+
+/*
+  // Uncomment to determine structure of the constraints amenable to PR
+   // Vector of structure info of constraints amenable to PR
+  std::vector<UInt > sType_;
+  UInt s_;
+*/
  
 }; // end of class PerspCon.
 
