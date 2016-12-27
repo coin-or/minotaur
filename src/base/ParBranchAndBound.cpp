@@ -540,6 +540,7 @@ void ParBranchAndBound::parsolve(ParNodeIncRelaxerPtr parNodeRlxr[],
   double *minNodeLbTh = new double[numThreads];
   bool *shouldRunTh = new bool[numThreads];
   UInt *nodeCountTh = new UInt[numThreads];
+  bool iterMode = env_->getOptions()->findBool("mcbnb_iter_mode")->getValue();
 #if 0
   UInt timeCount = 0;
 #endif
@@ -646,6 +647,7 @@ void ParBranchAndBound::parsolve(ParNodeIncRelaxerPtr parNodeRlxr[],
 #pragma omp for
 #endif
       for(UInt i = 0; i < numThreads; i++) {
+        if(iterMode == true) shouldRunTh[i] = true;
         while(nodeCountTh[i] > 0 && shouldRunTh[i])
         {
           if(!current_node[i]) {
@@ -846,7 +848,6 @@ void ParBranchAndBound::parsolve(ParNodeIncRelaxerPtr parNodeRlxr[],
             if (shouldStopPar_(wallTimeStart, treeLbTh[i])) {
               tm_->updateLb();
               shouldRunTh[i] = false;
-              shouldRunTh[i] = false;
             }
           }
 #if USE_OPENMP
@@ -861,6 +862,7 @@ void ParBranchAndBound::parsolve(ParNodeIncRelaxerPtr parNodeRlxr[],
             }
 #endif
           }
+          if(iterMode == true) shouldRunTh[i] = false;
         } //internal while ends
       } //parallel for end
 #if USE_OPENMP

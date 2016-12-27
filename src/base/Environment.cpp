@@ -198,6 +198,11 @@ void Environment::createDefaultOptions_()
      "If true, use Minotaur's computational graph to evaluate nonlinear functions and their derivatives. <0/1>", true, false);
   options_->insert(b_option);
 
+  b_option = (BoolOptionPtr) new Option<bool>("mcbnb_iter_mode",
+      "If true, threads in parallel branch-and-bound would synchronize the
+      start-time of processing various nodes in each round: <0/1>", true, false);
+  options_->insert(b_option);
+
   b_option = (BoolOptionPtr) new Option<bool>("msheur", 
       "Enable multi-start initial heuristic: <0/1>", true, false);
   options_->insert(b_option);
