@@ -13,6 +13,7 @@
 #include <cmath>
 #include <iomanip>
 #include <sstream>
+#include <string>
 #if USE_OPENMP
 #include <omp.h>
 #endif
@@ -34,6 +35,9 @@
 #include "Solution.h"
 #include "SolutionPool.h"
 #include "Timer.h"
+#include "Branch.h"
+#include "BrCand.h"
+#include "BrVarCand.h"
 
 
 //#define SPEW 1
@@ -149,9 +153,109 @@ double ParBranchAndBound::getUb()
 }
 
 
+std::vector<std::vector<double> > ParBranchAndBound::mapSerialOutput (
+  std::vector<std::vector<double> >serVec,
+  std::vector<std::vector<double> >parVec)
+
+{
+  for (std::vector<int>::size_type p = 0; p < parVec.size(); p++) {
+    if (parVec[p][0] == 1 || parVec[p][0] == 2)
+      parVec[p].push_back(parVec[p][0]); //nodes 1 and 2 are children of node 0
+    else
+      parVec[p].push_back(-1);
+  }
+  std::vector<std::vector<int> >serNotAsg;
+  std::vector<int>sertemp;
+  bool assigned = false;
+  int serMaxNode = 0;
+  for (std::vector<int>::size_type i = 0; i < serVec.size(); i++) {
+    if (serMaxNode < serVec[i][0])
+      serMaxNode = serVec[i][0];
+  }
+  for (std::vector<int>::size_type s = 1; s < serVec.size() - 1; s++) {
+    for (std::vector<int>::size_type p = 0; p < parVec.size(); p++) {
+      if (serVec[s][0] == 2 || serVec[s][0] == 1) {
+        assigned = true;
+        break;
+      }
+      //locate parent node in new list
+      if(serVec[s][1] == parVec[p][parVec[p].size()-1]) {
+        for (std::vector<int>::size_type q = 0; q < parVec.size(); q++) {
+          if(parVec[p][0] == parVec[q][1]) {
+            if(serVec[s][2] == parVec[q][2]) { //if branching var is the same
+              if(serVec[s][0] == parVec[q][0]  //if ids are the same
+                 //or if children are even
+                 || ( (int)serVec[s][0]%2 == 0 && (int)parVec[q][0]%2 == 0 )
+                 //or if children are odd, assign id
+                 || ( (int)serVec[s][0]%2 == 1 && (int)parVec[q][0]%2 == 1) ) {
+                parVec[q][parVec[q].size()-1] = serVec[s][0];
+                assigned = true;
+                break;
+              }
+            }
+          }
+        }
+        if (assigned) break;
+      }
+    }
+    if(!assigned) {
+      sertemp.push_back(serVec[s][0]);
+      sertemp.push_back(serVec[s][2]);
+      serNotAsg.push_back(sertemp);
+      sertemp.clear();
+    } else assigned = false;
+  }
+  std::cout<<std::endl;
+  if(serNotAsg.size()>0) {
+    std::cout <<"\nSerial nodes not mapped\n" << "id  brVar\n";
+    print2dvec(serNotAsg);
+  }
+  std::cout <<"\nParallel nodes not mapped\n" << "id  brVar thread\n";
+  for (std::vector<int>::size_type p = 0; p < parVec.size(); p++) {
+    if(parVec[p][parVec[p].size()-1] == -1)
+      std::cout << parVec[p][0] << " " << parVec[p][2] << " "<< parVec[p][4]
+        << std::endl;
+  }
+  std::cout<<std::endl;
+  return parVec;
+}
+
+
 UInt ParBranchAndBound::numProcNodes()
 {
   return stats_->nodesProc;
+}
+
+
+void ParBranchAndBound::print2dvec(std::vector<std::vector<double> > output)
+{
+   std::cout << std::endl;
+   for (std::vector<std::vector<int> >::size_type i=0; i<output.size(); i++) {
+      for (std::vector<int>::size_type j = 0; j < output[i].size(); j++) {
+        if (j<3 || j==4 || j ==7)
+          std::cout << (int)output[i][j] << ' ';
+        else
+          std::cout << output[i][j] << ' ';
+      }
+      std::cout << std::endl;
+   }
+   std::cout << std::endl;
+}
+
+
+void ParBranchAndBound::print2dvec(std::vector<std::vector<int> > output)
+{
+   std::cout << std::endl;
+   for (std::vector<std::vector<int> >::size_type i=0; i<output.size(); i++) {
+      for (std::vector<int>::size_type j = 0; j < output[i].size(); j++) {
+        if (j<3 || j==4 || j ==7)
+          std::cout << (int)output[i][j] << ' ';
+        else
+          std::cout << output[i][j] << ' ';
+      }
+      std::cout << std::endl;
+   }
+   std::cout << std::endl;
 }
 
 
@@ -219,6 +323,28 @@ NodePtr ParBranchAndBound::processRoot_(bool *should_prune, bool *should_dive,
   *should_prune = prune;
   return current_node;
 }
+
+std::vector<std::vector<double> > ParBranchAndBound::
+readSerialOutput(const char* myFile)
+{
+  int numFields = 9;
+  std::vector<std::vector<double> > data;
+  std::ifstream myReadFile;
+  myReadFile.open(myFile);
+  while (!myReadFile.eof()) {
+    for(int i = 0; i < 1; i++) {
+      std::vector<double> tmpVec;
+      double temp;
+      for (int j = 0; j < numFields; j++) {
+        myReadFile >> temp;
+        tmpVec.push_back(temp);
+      }
+      data.push_back(tmpVec);
+    }
+  }
+  return data;
+}
+
 
 void ParBranchAndBound::setLogLevel(LogLevel level) 
 {
@@ -367,6 +493,32 @@ void ParBranchAndBound::showParStatus_(UInt off, double treeLb,
 }
 
 
+int ParBranchAndBound::strToInt(std::string str)
+{
+    std::string temp;
+    int number=0;
+    for (unsigned int i=0; i < str.size(); i++)
+    {
+        //iterate the string to find the first "number" character
+        //if found create another loop to extract it
+        //and then break the current one
+        //thus extracting the FIRST encountered numeric block
+        if (isdigit(str[i]))
+        {
+            for (unsigned int a=i; a<str.size(); a++)
+            {
+                temp += str[a];
+            }
+          //the first numeric block is extracted
+          break;
+        }
+    }
+    std::istringstream stream(temp);
+    stream >> number;
+    return number;
+}
+
+
 void ParBranchAndBound::parsolve(ParNodeIncRelaxerPtr parNodeRlxr[],
                                  ParBndProcessorPtr nodePrcssr[],
                                  UInt numThreads)
@@ -387,16 +539,17 @@ void ParBranchAndBound::parsolve(ParNodeIncRelaxerPtr parNodeRlxr[],
   double *nodeLbTh = new double[numThreads];
   double *minNodeLbTh = new double[numThreads];
   bool *shouldRunTh = new bool[numThreads];
-  //std::ofstream threadFile[numThreads];
   UInt *nodeCountTh = new UInt[numThreads];
 #if 0
   UInt timeCount = 0;
 #endif
 #if PRINT
-  std::ofstream *threadFile = new std::ofstream[numThreads];
-  std::string *fname =new std::string[numThreads];
-  std::stringstream *ss = new std::stringstream[numThreads];
+  const char* inputFile = "1alan";      //serial bnb tree input filename
+  std::vector<std::vector<double> > serialOutput = readSerialOutput(inputFile);
+  std::vector<std::vector<double> > parallelOutput;
+  std::vector<double> *tmp = new std::vector<double> [numThreads];
 #endif
+
 #if USE_OPENMP
 #pragma omp parallel for
 #endif
@@ -407,10 +560,6 @@ void ParBranchAndBound::parsolve(ParNodeIncRelaxerPtr parNodeRlxr[],
     initialized[i] = false;
     shouldRunTh[i] = true;
     nodeCountTh[i] = 1;
-#if PRINT
-    ss[i] << i;
-    fname[i] = "Th" + ss[i].str();
-#endif
   }
 
   // initialize timer
@@ -497,14 +646,6 @@ void ParBranchAndBound::parsolve(ParNodeIncRelaxerPtr parNodeRlxr[],
 #pragma omp for
 #endif
       for(UInt i = 0; i < numThreads; i++) {
-#if PRINT
-        threadFile[i].open(fname[i].c_str());
-        if (!threadFile[i].is_open()) {
-          std::cerr << "cannot open file " << fname[i] << " for writing tree information.\n";
-        } else {
-          threadFile[i] << "I AM THREAD "<<i;
-        }
-#endif
         while(nodeCountTh[i] > 0 && shouldRunTh[i])
         {
           if(!current_node[i]) {
@@ -533,11 +674,12 @@ void ParBranchAndBound::parsolve(ParNodeIncRelaxerPtr parNodeRlxr[],
 #if PRINT
 #pragma omp critical
             {
-              threadFile[i]<<"\nProcessed node "<< current_node[i]->getId()
-                <<" <- " << current_node[i]->getParent()->getId()
-                << " lb " << std::setprecision(8) << current_node[i]->getLb()
-                << " at thread " << omp_get_thread_num()
-                << " from time " << std::setprecision(4) << getWallTime() - wallTimeStart;
+              tmp[i].push_back(current_node[i]->getId());
+              tmp[i].push_back(current_node[i]->getParent()->getId());
+              tmp[i].push_back(strToInt(current_node[i]->getBranch()->getBrCand()->getName()));
+              tmp[i].push_back(current_node[i]->getLb());
+              tmp[i].push_back(i);
+              tmp[i].push_back(getWallTime() - wallTimeStart);
             }
 #endif
             nodePrcssr[i]->process(current_node[i], rel[i], solPool_, initialized[i]);
@@ -546,7 +688,7 @@ void ParBranchAndBound::parsolve(ParNodeIncRelaxerPtr parNodeRlxr[],
 #pragma omp critical
 #endif
             {
-              threadFile[i]<< " to "<< std::setprecision(4) << getWallTime() - wallTimeStart;
+              tmp[i].push_back(getWallTime() - wallTimeStart);
             }
 #endif
 #if USE_OPENMP
@@ -582,11 +724,13 @@ void ParBranchAndBound::parsolve(ParNodeIncRelaxerPtr parNodeRlxr[],
 #endif
               {
 #if PRINT
-                threadFile[i] << " pruned " << current_node[i]->getStatus();
+                tmp[i].push_back(current_node[i]->getStatus());
                 if(current_node[i]->getStatus()==NodeOptimal)
                 {
-                  threadFile[i] << " ub "<< std::setprecision(8) << tm_->getUb();
+                  tmp[i].push_back(tm_->getUb());
                 }
+                else
+                  tmp[i].push_back(-1);
 #endif
                 tm_->pruneNode(current_node[i]);
               }
@@ -600,7 +744,12 @@ void ParBranchAndBound::parsolve(ParNodeIncRelaxerPtr parNodeRlxr[],
                 }
               }
               dived_prev[i] = false;
+
             } else {
+#if PRINT
+              tmp[i].push_back(-1);     //prune status
+              tmp[i].push_back(-1);     //feasible solution/ub
+#endif
               initialized[i] = true;
 #if SPEW
               logger_->msgStream(LogDebug1) << me_ << "branching" << 
@@ -609,7 +758,8 @@ void ParBranchAndBound::parsolve(ParNodeIncRelaxerPtr parNodeRlxr[],
 #if USE_OPENMP
 #pragma omp critical
 #endif
-              branches = nodePrcssr[i]->getBranches(); 
+              branches = nodePrcssr[i]->getBranches();
+
               ws[i] = nodePrcssr[i]->getWarmStart();
               //if (!dived_prev[i]) {
               //tm_->removeActiveNode(current_node[i]);
@@ -699,10 +849,19 @@ void ParBranchAndBound::parsolve(ParNodeIncRelaxerPtr parNodeRlxr[],
               shouldRunTh[i] = false;
             }
           }
-        } //internal while ends
-#if PRINT
-        threadFile[i].close();
+#if USE_OPENMP
+#pragma omp critical
 #endif
+          {
+#if PRINT
+            if(!tmp[i].empty())
+            {
+              parallelOutput.push_back(tmp[i]);
+              tmp[i].clear();
+            }
+#endif
+          }
+        } //internal while ends
       } //parallel for end
 #if USE_OPENMP
 #pragma omp single
@@ -764,6 +923,12 @@ void ParBranchAndBound::parsolve(ParNodeIncRelaxerPtr parNodeRlxr[],
       } //omp master/single ended
     }   //parallel region ends
   }     //while ends
+#if PRINT
+  print2dvec(serialOutput);
+  print2dvec(parallelOutput);
+  std::vector<std::vector<double> > finalParOutput = mapSerialOutput(serialOutput, parallelOutput);
+  print2dvec(finalParOutput);
+#endif
   logger_->msgStream(LogInfo) << me_ << "stopping branch-and-bound"
     << std::endl
     << me_ << "nodes processed = " << stats_->nodesProc << std::endl
@@ -785,9 +950,7 @@ void ParBranchAndBound::parsolve(ParNodeIncRelaxerPtr parNodeRlxr[],
   delete[] ws;
   delete[] rel;
 #if PRINT
-  delete[] ss;
-  delete[] threadFile;
-  delete[] fname;  
+  delete[] tmp;
 #endif
 }
 
