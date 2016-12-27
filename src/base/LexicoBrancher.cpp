@@ -129,6 +129,10 @@ Branches LexicoBrancher::findBranches(RelaxationPtr rel, NodePtr ,
   if (best_can) {
     best_can->setDir(DownBranch);
     branches = best_can->getHandler()->getBranches(best_can, x, rel, s_pool); 
+    for (BranchConstIterator br_iter=branches->begin();
+         br_iter!=branches->end(); ++br_iter) {
+      (*br_iter)->setBrCand(best_can);
+    }
 #if SPEW
     logger_->msgStream(LogDebug) << me_ << "best candidate = "
       << best_can->getName() << std::endl;
