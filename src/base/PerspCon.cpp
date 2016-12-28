@@ -392,6 +392,9 @@ bool PerspCon::evalConstraint(ConstConstraintPtr cons, VariablePtr& binvar)
       return false;    
     }
   }
+
+  // Control never comes here.
+  return true;
 }
 
 
