@@ -232,7 +232,7 @@ void ParBranchAndBound::print2dvec(std::vector<std::vector<double> > output)
    std::cout << std::endl;
    for (std::vector<std::vector<int> >::size_type i=0; i<output.size(); i++) {
       for (std::vector<int>::size_type j = 0; j < output[i].size(); j++) {
-        if (j<3 || j==4 || j ==7)
+        if (j<3 || j==4 || j ==7 || j == 8)
           std::cout << (int)output[i][j] << ' ';
         else
           std::cout << output[i][j] << ' ';
@@ -307,6 +307,9 @@ NodePtr ParBranchAndBound::processRoot_(bool *should_prune, bool *should_dive,
     ws0 = nodePrcssr0->getWarmStart();
     tm_->removeActiveNode(current_node);
     *should_dive = tm_->shouldDive();
+    if (env_->getOptions()->findString("tb_rule")->getValue() == "twoChild") {
+      current_node->setTbScore(1);
+    }
     new_node = tm_->branch(branches, current_node, ws0);
     assert((*should_dive && new_node) || (!(*should_dive) && !new_node));
     if (!(*should_dive)) {
@@ -674,13 +677,15 @@ void ParBranchAndBound::parsolve(ParNodeIncRelaxerPtr parNodeRlxr[],
                                                           dived_prev[i],
                                                           should_prune[i]);
 #if PRINT
+            tmp[i].push_back(current_node[i]->getId());
+            tmp[i].push_back(current_node[i]->getParent()->getId());
+            tmp[i].push_back(strToInt(current_node[i]->getBranch()->getBrCand()->getName()));
+            tmp[i].push_back(current_node[i]->getLb());
+            tmp[i].push_back(i);
+#if USE_OPENMP
 #pragma omp critical
+#endif
             {
-              tmp[i].push_back(current_node[i]->getId());
-              tmp[i].push_back(current_node[i]->getParent()->getId());
-              tmp[i].push_back(strToInt(current_node[i]->getBranch()->getBrCand()->getName()));
-              tmp[i].push_back(current_node[i]->getLb());
-              tmp[i].push_back(i);
               tmp[i].push_back(getWallTime() - wallTimeStart);
             }
 #endif
@@ -692,6 +697,7 @@ void ParBranchAndBound::parsolve(ParNodeIncRelaxerPtr parNodeRlxr[],
             {
               tmp[i].push_back(getWallTime() - wallTimeStart);
             }
+            tmp[i].push_back(current_node[i]->getTbScore());
 #endif
 #if USE_OPENMP
 #pragma omp critical

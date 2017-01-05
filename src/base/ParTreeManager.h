@@ -212,6 +212,9 @@ namespace Minotaur {
     /// Timer is used only for vbc tree emulation.
     Timer *timer_;
 
+    /// Tie breaking rule (second priority) for node selection.
+    std::string tbRule_;
+
     /// File name to store tree information for vbc.
     std::ofstream vbcFile_;
 

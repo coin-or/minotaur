@@ -397,6 +397,10 @@ void Environment::createDefaultOptions_()
       true, "bqpd");
   options_->insert(s_option);
 
+  s_option = (StringOptionPtr) new Option<std::string>("tb_rule",
+      "Tie breaking rule for node selection in branch-and-bound: twoChild, FIFO", true, "");
+  options_->insert(s_option);
+
   s_option = (StringOptionPtr) new Option<std::string>("tree_search", 
       "Strategy for tree search: dfs, bfs, BthenD", true, "BthenD");
   options_->insert(s_option);

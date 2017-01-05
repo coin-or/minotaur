@@ -59,6 +59,7 @@ ParTreeManager::ParTreeManager(EnvPtr env)
 
   aNode_ = NodePtr();
   cutOff_ = env->getOptions()->findDouble("obj_cut_off")->getValue();
+  tbRule_ = env->getOptions()->findString("tb_rule")->getValue();
   s = env->getOptions()->findString("vbc_file")->getValue();
   if (s!="") {
     vbcFile_.open(s.c_str());
@@ -101,16 +102,16 @@ NodePtr ParTreeManager::branch(Branches branches, NodePtr node, WarmStartPtr ws)
   NodePtr new_cand = NodePtr(); // NULL
   NodePtr child;
   bool is_first = false;
-
+  bool tb_is_first = true;
   if (searchType_ == DepthFirst || searchType_ == BestThenDive) {
     is_first = true;
   }
+
   for (BranchConstIterator br_iter=branches->begin(); br_iter!=branches->end();
       ++br_iter) {
     branch_p = *br_iter;
     child = (NodePtr) new Node(node, branch_p);
     child->setLb(node->getLb());
-    child->setTbScore(node->getTbScore());
     child->setDepth(node->getDepth()+1);
     node->addChild(child);
     if (is_first) {
@@ -122,6 +123,18 @@ NodePtr ParTreeManager::branch(Branches branches, NodePtr node, WarmStartPtr ws)
       // warm-start.
       child->setWarmStart(ws);
       insertCandidate_(child);
+    }
+    if (tbRule_ == "twoChild") {
+        if (tb_is_first) {
+          child->setTbScore(2*(node->getTbScore()));
+          tb_is_first = false;
+        } else {
+          child->setTbScore(2*(node->getTbScore())+1);
+        }
+    } else if (tbRule_ == "FIFO") {
+        child->setTbScore(child->getId());
+    } else {
+      child->setTbScore(node->getTbScore());
     }
     //std::cout << "inserting candidate\n";
   }
