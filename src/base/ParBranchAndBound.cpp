@@ -544,6 +544,7 @@ void ParBranchAndBound::parsolve(ParNodeIncRelaxerPtr parNodeRlxr[],
   bool *shouldRunTh = new bool[numThreads];
   UInt *nodeCountTh = new UInt[numThreads];
   bool iterMode = env_->getOptions()->findBool("mcbnb_iter_mode")->getValue();
+  UInt iterCount = 1;
 #if 0
   UInt timeCount = 0;
 #endif
@@ -882,6 +883,7 @@ void ParBranchAndBound::parsolve(ParNodeIncRelaxerPtr parNodeRlxr[],
             << " at time " << getWallTime() - wallTimeStart<<"\n";
         }
 #endif
+        iterCount++;
         nodeCount = 0;
         treeLb = tm_->updateLb();
         minNodeLb = INFINITY;
@@ -941,6 +943,11 @@ void ParBranchAndBound::parsolve(ParNodeIncRelaxerPtr parNodeRlxr[],
     << std::endl
     << me_ << "nodes processed = " << stats_->nodesProc << std::endl
     << me_ << "nodes created   = " << tm_->getSize() << std::endl;
+  if (iterMode) {
+    logger_->msgStream(LogInfo) << me_ << "iterations = " << iterCount
+      << std::endl;
+  }
+
   stats_->timeUsed = timer_->query();
   timer_->stop();
 
