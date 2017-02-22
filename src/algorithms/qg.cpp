@@ -117,6 +117,8 @@ void setInitialOptions(EnvPtr env)
   env->getOptions()->findBool("presolve")->setValue(true);
   env->getOptions()->findBool("use_native_cgraph")->setValue(true);
   env->getOptions()->findBool("nl_presolve")->setValue(true);
+  env->getOptions()->findBool("separability")->setValue(true);
+  env->getOptions()->findBool("perspective")->setValue(true);
 }
 
 
@@ -234,13 +236,13 @@ void sepDetection(EnvPtr env, ProblemPtr p)
   if (env->getOptions()->findBool("separability")->getValue() == true) {
     if (p -> isLinear()) {
       env ->getLogger()->msgStream(LogInfo) << me
-        << "Problem is linear. Separability detection not required." 
+        << "Problem is linear, skipping separability detection" 
         << std::endl;
     } else {
       sep = (TransSepPtr) new TransSep(env, p);
       sep->findSep();
-      env ->getLogger()->msgStream(LogInfo) << me
-        << "Is Problem separable: "<< sep->getStatus() 
+      env ->getLogger()->msgStream(LogDebug) << me
+        << "Is problem separable? - "<< sep->getStatus() 
         << std::endl;
     }
   }

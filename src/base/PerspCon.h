@@ -60,9 +60,6 @@ public:
   /// Otherwise, we cannot generate perspective cuts.
   bool checkVarTypes(ConstConstraintPtr cons, ConstVariablePtr& binvar);
 
-  ///Print out information related to the perspective constraints in a file
-  void displayInfo();
-
   /// Checks if a constraint is a Perspective constraint.
   bool evalConstraint(ConstConstraintPtr cons,VariablePtr& binvar);
 
@@ -90,17 +87,14 @@ public:
   /// Environment.
   EnvPtr env_;
   
+  /// For log:
+  static const std::string me_;
+
   ///Pointer to original problem
   ProblemPtr p_;
 
   ///Log
   LoggerPtr logger_;
-
-  /// Output file.
-  ofstream output_;
-
-  /// Output file name.
-  string outfile_;
 
   ///Vector of perspective constraint pointers
   std::vector<ConstConstraintPtr> cList_;
@@ -116,6 +110,9 @@ public:
 
   std::vector<std::string > l_;
   std::vector<std::string > u_;
+
+  /// Print out information related to the perspective constraints 
+  void displayInfo_();
 
 /*
   // Uncomment to determine structure of the constraints amenable to PR

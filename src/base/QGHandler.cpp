@@ -8,7 +8,7 @@
  * \file QGHandler.cpp
  * \Briefly define a handler for the textbook type Quesada-Grossmann
  * Algorithm.
- * \Authors Ashutosh Mahajan and Meenarli Sharma,Indian Institute of
+ * \Authors Ashutosh Mahajan and Meenarli Sharma, Indian Institute of
  * Technology Bombay 
  */
 

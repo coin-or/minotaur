@@ -13,18 +13,20 @@
 
 #include <iostream>
 using std::endl;
-using std::flush;
 
 #include "PerspCon.h"
+
 #include "Function.h"
 #include "LinearFunction.h"
-#include "QuadraticFunction.h"
-#include "NonlinearFunction.h"
 #include "Logger.h"
+#include "NonlinearFunction.h"
+#include "Option.h"
+#include "QuadraticFunction.h"
 
 //# define SPEW 0
 
 using namespace Minotaur;
+const std::string PerspCon::me_ = "QGHandler: ";
 
 /*********************************************************************************/
 // Functionality for identifying structure (3) f(x) <=b or f(x,z) <=b (4)or 
@@ -43,7 +45,8 @@ PerspCon::PerspCon(ProblemPtr p, EnvPtr env)
 : env_(env),p_(p), cList_(0), binVar_(0), lbc_(0), ubc_(0), l_(0), u_(0)
 /*  , sType_(0)*/
 {
-  logger_=(LoggerPtr) new Logger(LogDebug2);
+  logger_ = (LoggerPtr) new Logger((LogLevel) 
+      env->getOptions()->findInt("handler_log_level")->getValue());
 }
 
 
@@ -299,27 +302,27 @@ bool PerspCon::checkVarTypes(ConstConstraintPtr cons, ConstVariablePtr& binvar)
 }
 
 
-void PerspCon::displayInfo()
+void PerspCon::displayInfo_()
 {
+  std::ostream& out = logger_->msgStream(LogDebug);
   for (UInt i= 0; i < cList_.size() ; ++i) {
-    output_ << "Perspective constraint is: " << endl;
-    cList_[i]->write(output_);
-    output_ << "Binary variable is: " << binVar_[i]->getName() << endl;
-    output_ << "Name of Lower bounding constraint: " ;
+    out << me_ << "Perspective constraint is: " << std::endl;
+    cList_[i]->write(out);
+    out << me_ << "Binary variable is: " << binVar_[i]->getName() << std::endl;
+    out << me_ << "Name of Lower bounding constraint: " ;
     for (UInt j=0; j < lbc_[i].size(); ++j) {
-      output_ << lbc_[i][j] << ", ";
+      out << lbc_[i][j] << ", ";
     }
 
-    output_ << "\nName of Upper bounding constraint: ";
+    out << me_ << "\nName of Upper bounding constraint: ";
     for (UInt j=0; j < ubc_[i].size(); ++j) {
-      output_ << ubc_[i][j] << ", ";
+      out << ubc_[i][j] << ", ";
     }
-    //output_ << "\nStructure of the constraint: " << sType_[i];
-    //std::cout << "\nStructure of the constraint: " << sType_[i]<< std::endl;
-    output_ << "\n------------------------------" << endl;
+    //out << me_ << "\nStructure of the constraint: " << sType_[i];
+    out << std::endl << "------------------------------" << std::endl;
   }
-  output_ << "Total no. of constraints amenable to PR " << cList_.size()<< endl;
-  std::cout << "Total no. of constraints amenable to PR " << cList_.size()<< std::endl;
+  out << me_ << "Total no. of constraints amenable to PR " << cList_.size()
+      << std::endl;
 }
 
 
@@ -422,11 +425,7 @@ void PerspCon::generateList()
     u_.clear();
   }
 #if SPEW 
-  outfile_ = "PerspConDebug.txt";
-  // Clean the output debug file.
-  output_.open(outfile_.c_str());
-  displayInfo();
-  output_.close(); 
+  displayInfo_();
 #endif
 }
 

@@ -1333,7 +1333,7 @@ bool TransSep::visited(UInt* j, std::vector<UInt >*m, CNode *n1,
 
 void TransSep::writeProb()
 {
-  env_->getLogger()->msgStream(LogInfo) << me_ 
+  env_->getLogger()->msgStream(LogDebug) << me_ 
     << "Finished separability detection"
     << std::endl;
   problem_->calculateSize(true);

@@ -224,18 +224,9 @@ std::string PerspCutHandler::getName() const
 
 void PerspCutHandler::writeStats(std::ostream &out) const
 {
-  if (cons_.size() > 0) {
-    // Problem not amenable to perspective reformulation
-    out << me_ << "Is problem amenable to perspective reformulation: 1" << std::endl;
-    out << me_ << "No. of perspective amenable constraints: "<< cons_.size() << std::endl;
-    out << me_ << "number of perspective cuts added = " << numCuts_ << std::endl;
+  out << me_ << "constraints detected = "<< cons_.size() << std::endl;
+  out << me_ << "cuts added = " << numCuts_ << std::endl;
   return;
-  } else {
-    // Problem amenable to perspective reformulation
-    out << me_ << "Is problem amenable to perspective reformulation: 0" << std::endl;
-    return;
-  
-  }
 }
 
 
