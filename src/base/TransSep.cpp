@@ -239,6 +239,8 @@ void TransSep::clearCont()
   on_=  std::stack<CNode *> ();
   onop_ = std::stack<int > (); 
 }
+
+
 bool TransSep::clearpopu(UInt *j, std::vector<UInt >*m)
 {
   if (svars_.size() == nvar_) {
@@ -422,6 +424,7 @@ void TransSep::depthFS(int j, CNode *n1, std::vector<UInt > *m)
           n2 = *it;
           tempNodes.push(n2);
         }
+        itnum_[n->getIndex()]=j+1;
         break;
       default:
 #if SPEW
@@ -562,7 +565,7 @@ void TransSep::findSep()
 #if SPEW
   logger_->msgStream(LogDebug) << me_ <<"No. of separable constraints: "
     << sepConId_.size() << std::endl;
-  logger_->msgStream(LogDebug) << me_ <<"Is objective seperable: "<<objSep_
+  logger_->msgStream(LogDebug) << me_ <<"Is objective separable: "<<objSep_
     << std::endl;
 #endif
 }
@@ -1122,7 +1125,10 @@ bool TransSep::sepCheck()
     case (OpTanh):
     case (OpSqrt):
       explore(j, n1, &m, opc);
-      clearpopu(&j, &m);
+      if (clearpopu(&j, &m) == false ){
+        return false;      
+      }
+      //clearpopu(&j, &m);
       break;
     case (OpMult):
       if (n1->getL()->getOp() == OpNum || n1->getL()->getOp() == OpInt) {
@@ -1146,7 +1152,10 @@ bool TransSep::sepCheck()
       } else {
         explore(j, n1, &m, opc);
       }
-      clearpopu(&j, &m);
+      if (clearpopu(&j, &m) == false ){
+        return false;      
+      }
+      //clearpopu(&j, &m);
       break;
     case (OpDiv):
       if (n1->getR()->getOp() == OpNum || n1->getR()->getOp() == OpInt){
@@ -1161,7 +1170,10 @@ bool TransSep::sepCheck()
       } else {
         explore(j, n1, &m, opc);
       }
-      clearpopu(&j, &m);
+      if (clearpopu(&j, &m) == false ){
+        return false;      
+      }
+      //clearpopu(&j, &m);
       break;
     case (OpPowK):
       if (n1->getR()->getVal() == 1.0 || n1->getL()->getOp() == OpVar) {
@@ -1172,7 +1184,10 @@ bool TransSep::sepCheck()
       } else {
         explore(j, n1, &m, opc);
       }
-      clearpopu(&j, &m);
+      if (clearpopu(&j, &m) == false ){
+        return false;      
+      }
+      //clearpopu(&j, &m);
       break;
     case (OpIntDiv):
       if (n1->getL()->getOp() == OpVar){
@@ -1183,7 +1198,11 @@ bool TransSep::sepCheck()
       } else {
         explore(j, n1, &m, opc);
       }
-      clearpopu(&j, &m);
+      
+      if (clearpopu(&j, &m) == false ){
+        return false;      
+      }
+      //clearpopu(&j, &m);
       break;
     case (OpNone):
 #if SPEW
@@ -1346,7 +1365,7 @@ void TransSep::writeProb()
     problem_->write(logger_->msgStream(LogNone));
   }
   env_->getLogger()->msgStream(LogDebug) << me_ 
-    << "Is objective seperable: " 
+    << "Is objective separable: " 
     <<objSep_  << std::endl;
   env_->getLogger()->msgStream(LogDebug) << me_ 
     <<"No. of separable constraints: "
