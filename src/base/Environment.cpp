@@ -324,12 +324,14 @@ void Environment::createDefaultOptions_()
   i_option.reset();
 
   // Initial workspace option for FilterSQP engine
-  i_option = (IntOptionPtr) new Option<int>("mxws", 
-      "Initial workspace ", true, 0);
+  i_option = (IntOptionPtr) new Option<int>("filter_mxws", 
+                                            "Extra workspace for Filter-SQP",
+                                            true, 0);
   options_->insert(i_option);
   
-  i_option = (IntOptionPtr) new Option<int>("mxiws", 
-      "Initial workspace ", true, 0);
+  i_option = (IntOptionPtr) new Option<int>("filter_mxiws", 
+                                            "Extra workspace for Filter-SQP",
+                                            true, 0);
   options_->insert(i_option);
   // double options
   
