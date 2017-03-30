@@ -241,6 +241,14 @@ void Environment::createDefaultOptions_()
       "Warm starting mode for bqpd: 0-6", true, 6);
   options_->insert(i_option);
 
+  i_option = (IntOptionPtr) new Option<int>("bqpd_mxwk", 
+      "Override value of mxwk used by Bqpd", true, 0);
+  options_->insert(i_option);
+
+  i_option = (IntOptionPtr) new Option<int>("bqpd_mxiwk", 
+      "Override value of mxiwk used by Bqpd", true, 0);
+  options_->insert(i_option);
+
   i_option = (IntOptionPtr) new Option<int>("br_log_level", 
       "Verbosity of brancher: 0-6", true, LogInfo);
   options_->insert(i_option);
