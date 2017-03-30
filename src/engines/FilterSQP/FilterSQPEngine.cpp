@@ -917,8 +917,8 @@ EngineStatus FilterSQPEngine::solve()
   fint Lhess   = problem_->getNumHessNnzs();    // nnz(Hessian).
   fint lh1     = Lhess + 8 + 2*n + m;           // Hessian storage space.
   // User provided initial workspace
-  fint umxws   = env_->getOptions()->findInt("mxws")->getValue();
-  fint umxiws   = env_->getOptions()->findInt("mxiws")->getValue();
+  fint umxws   = env_->getOptions()->findInt("filter_mxws")->getValue();
+  fint umxiws   = env_->getOptions()->findInt("filter_mxiws")->getValue();
   fint mxwk0   = 2000000;                       // Initial workspace.
   fint mxiwk0  = 500000;                        // 
   fint mxwk    = 21*n + 8*m + mlp + 8*maxf + lh1 + kmax*(kmax+9)/2 + mxwk0 + umxws;
