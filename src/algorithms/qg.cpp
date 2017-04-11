@@ -117,8 +117,8 @@ void setInitialOptions(EnvPtr env)
   env->getOptions()->findBool("presolve")->setValue(true);
   env->getOptions()->findBool("use_native_cgraph")->setValue(true);
   env->getOptions()->findBool("nl_presolve")->setValue(true);
-  env->getOptions()->findBool("separability")->setValue(true);
-  env->getOptions()->findBool("perspective")->setValue(true);
+  env->getOptions()->findBool("separability")->setValue(false);
+  env->getOptions()->findBool("perspective")->setValue(false);
 }
 
 
