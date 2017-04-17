@@ -30,12 +30,12 @@ usage ()
 
 TARNAME="minotaur-externals-0.2"
 TARURL=http://www.mcs.anl.gov/~mahajan/minotaur/restricted/${TARNAME}.tar.gz
-ASL="asl-20150602"
-OSI="clp-1.16.6"
+ASL="asl-20161228"
+OSI="clp-1.16.9"
 CPPUNIT="cppunit-1.13.2"
 FILTERSQP="filter-102"
 BQPD="bqpd-3"
-IPOPT="ipopt-3.12.3"
+IPOPT="ipopt-3.12.7"
 LOG=
 ERR=
 CPUS=1
