@@ -34,8 +34,8 @@ PerspCutHandler::PerspCutHandler()
     minlp_(ProblemPtr()),
     //stats_(0),
     isFeas_(true),
-    solAbsTol_(1e-5),
-    solRelTol_(1e-5)
+    solAbsTol_(1e-4),
+    solRelTol_(1e-4)
 {
   // Logger is an abstract class, find a way to make this work.
   // looger_ = (LoggerPtr) new Logger();
@@ -49,8 +49,8 @@ PerspCutHandler::PerspCutHandler(EnvPtr env, ProblemPtr minlp)
     minlp_(minlp),
     //stats_(0),
     isFeas_(true),
-    solAbsTol_(1e-5),
-    solRelTol_(1e-5)
+    solAbsTol_(1e-4),
+    solRelTol_(1e-4)
 {
   intTol_ = env_->getOptions()->findDouble("int_tol")->getValue();
   numCuts_ = 0;
@@ -65,13 +65,25 @@ PerspCutHandler::PerspCutHandler(EnvPtr env, ProblemPtr minlp)
   //the problem
 }
 
-void PerspCutHandler::perspList()
+bool PerspCutHandler::perspList()
 {
   persplist_ = (PerspConPtr) new PerspCon(minlp_, env_); 
-  persplist_ ->generateList();; 
-  cons_ = persplist_->getPerspCons();
-  binvar_ = persplist_->getConsBinVar();
-  return;
+  persplist_ ->generateList(); 
+
+  if(persplist_->getStatus() == true){
+    cons_ = persplist_->getPerspCons();
+    binvar_ = persplist_->getConsBinVar();
+    persplist_->displayInfo(me_);
+    std::cout << me_ 
+      << "Problem has constraints amenable to perspective reformulation" 
+      << std::endl;
+    return true;
+  } else {
+    std::cout << me_ 
+          << "Problem does not have constraints amenable to perspective reformulation" 
+          << std::endl;
+    return false;
+  }
 }
 
 PerspCutHandler::~PerspCutHandler()
@@ -153,6 +165,8 @@ void PerspCutHandler::separate(ConstSolutionPtr sol, NodePtr n,
     c = cons_[it];
     binindex = binvar_[it]->getIndex();
     binsol = x[binindex];
+    const double cu = c->getUb();
+    const double cl = c->getLb();
     //PC is not generated if binary variable of the
     // constraint has value 0 or 1
       
@@ -162,10 +176,10 @@ void PerspCutHandler::separate(ConstSolutionPtr sol, NodePtr n,
     }
     act = c->getActivity(x, &error);
     if(error==0) {
-      if( (act > c->getUb() + solAbsTol_ &&  
-           act > c->getUb() + (fabs(c->getUb())*solRelTol_))  ||  
-          ( act < c->getLb() - solAbsTol_ &&  
-            act < c->getLb() - (fabs(c->getLb())*solRelTol_)) ) { 
+      if( (act > cu + solAbsTol_ &&  
+           act > cu + (fabs(cu)*solRelTol_))  ||  
+          ( act < cl - solAbsTol_ &&  
+            act < cl - (fabs(cl)*solRelTol_)) ) { 
 #if SPEW
         logger_->msgStream(LogDebug) << me_ << "constraint not feasible" 
           << std::endl<< me_;
@@ -181,7 +195,11 @@ void PerspCutHandler::separate(ConstSolutionPtr sol, NodePtr n,
         // Adding cut only if violates existing solution
         if (lpvio > solAbsTol_) {
           f = (FunctionPtr) new Function(lf);
-          newc = rel->newConstraint(f, -INFINITY, 0.0, "perspective_cut");
+          if(cu != +INFINITY) {
+            newc = rel->newConstraint(f, -INFINITY, 0.0, "perspective_cut");
+          } else {
+            newc = rel->newConstraint(f, 0.0, +INFINITY, "perspective_cut");
+          }
           numCuts_++;
           cutcount++;
           f.reset();

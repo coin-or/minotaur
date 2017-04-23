@@ -82,7 +82,10 @@ public:
   /// Find binary variables that appear in a linear constraint (involving two
   // terms) with variable var
   void initialBinary(ConstVariablePtr var, VarSetPtr binaries);
-  
+
+  /// Print out information related to the perspective constraints 
+  void displayInfo(const std::string);
+
   private:
   /// Environment.
   EnvPtr env_;
@@ -110,9 +113,6 @@ public:
 
   std::vector<std::string > l_;
   std::vector<std::string > u_;
-
-  /// Print out information related to the perspective constraints 
-  void displayInfo_();
 
 /*
   // Uncomment to determine structure of the constraints amenable to PR

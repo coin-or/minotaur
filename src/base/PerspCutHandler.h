@@ -47,7 +47,7 @@ public:
   ~PerspCutHandler();
 
   /// Generate list of constraints amenable to PR.
-  void perspList();
+  bool perspList();
 
   /// Does nothing.
   void relaxInitFull(RelaxationPtr, bool * ) {};

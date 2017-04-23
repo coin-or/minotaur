@@ -12,6 +12,7 @@
  */
 
 #include <iostream>
+#include <cmath>
 using std::endl;
 
 #include "PerspCon.h"
@@ -23,10 +24,10 @@ using std::endl;
 #include "Option.h"
 #include "QuadraticFunction.h"
 
-//# define SPEW 0
+# define SPEW 0
 
 using namespace Minotaur;
-const std::string PerspCon::me_ = "QGHandler: ";
+const std::string PerspCon::me_ = "PerspCon: ";
 
 /*********************************************************************************/
 // Functionality for identifying structure (3) f(x) <=b or f(x,z) <=b (4)or 
@@ -302,27 +303,30 @@ bool PerspCon::checkVarTypes(ConstConstraintPtr cons, ConstVariablePtr& binvar)
 }
 
 
-void PerspCon::displayInfo_()
+void PerspCon::displayInfo(const std::string m)
 {
-  std::ostream& out = logger_->msgStream(LogDebug);
-  for (UInt i= 0; i < cList_.size() ; ++i) {
-    out << me_ << "Perspective constraint is: " << std::endl;
-    cList_[i]->write(out);
-    out << me_ << "Binary variable is: " << binVar_[i]->getName() << std::endl;
-    out << me_ << "Name of Lower bounding constraint: " ;
-    for (UInt j=0; j < lbc_[i].size(); ++j) {
-      out << lbc_[i][j] << ", ";
-    }
+  std::ostream &out = logger_->msgStream(LogDebug);
+  UInt s = cList_.size();
 
-    out << me_ << "\nName of Upper bounding constraint: ";
-    for (UInt j=0; j < ubc_[i].size(); ++j) {
-      out << ubc_[i][j] << ", ";
+  out << m <<"Total no. of constraints amenable to PR " << s << std::endl;
+  if (s >0) {
+    out << m << "Deatils of constraints amenable to perspective reformulation: " 
+      << std::endl;   out << "------------------------------" << std::endl;
+    for (UInt i= 0; i < cList_.size() ; ++i) {
+      out << i+1 << ". ";
+      cList_[i]->write(out);
+      out << "Binary variable is: " << binVar_[i]->getName() << std::endl;
+      out << "Name of Lower bounding constraint: " ;
+      for (UInt j=0; j < lbc_[i].size(); ++j) {
+        out << lbc_[i][j] << ", ";
+      }
+      out << "\nName of Upper bounding constraint: ";
+      for (UInt j=0; j < ubc_[i].size(); ++j) {
+        out << ubc_[i][j] << ", ";
+      }
+      out << std::endl << "------------------------------" << std::endl;
     }
-    //out << me_ << "\nStructure of the constraint: " << sType_[i];
-    out << std::endl << "------------------------------" << std::endl;
   }
-  out << me_ << "Total no. of constraints amenable to PR " << cList_.size()
-      << std::endl;
 }
 
 
@@ -331,6 +335,17 @@ bool PerspCon::evalConstraint(ConstConstraintPtr cons, VariablePtr& binvar)
   FunctionType type;
   // Function type of constraint.
   type = cons->getFunctionType();
+
+  double cl = cons->getLb();
+  double cu = cons->getUb();
+  // Consider the constraint only if its upper bound is nonnegative or 
+  // lower bound nonpositive
+  if (cl == -INFINITY && cu < 0) {
+    return false;
+  } 
+  if (cu == +INFINITY  && cl > 0) {
+    return false;
+  } 
   // Do not consider linear constraints.
   if (type == Linear) {
     return false;
@@ -338,10 +353,10 @@ bool PerspCon::evalConstraint(ConstConstraintPtr cons, VariablePtr& binvar)
   //Get function of constraint.
   //const FunctionPtr f = cons->getFunction(); 
   const NonlinearFunctionPtr nlf = cons->getNonlinearFunction(); 
-  // Add one more parameter that stores the binary variable.
-  // vartypeok = true, if no. of binary variable in constraint is 
-  // less than or equal to 1, and that binary variable is in the linear part
-  // of the constranit cons
+  // vartypeok = false, if no. of binary variable in constraint is 
+  // greater than 1, or binary variable is in the nonlinear part
+  // of the constraint. binvar stores the binary variable in the 
+  // constraint.
   bool vartypeok = checkVarTypes(cons, binvar);
   if (vartypeok ==  false) {
     return false;
@@ -350,7 +365,6 @@ bool PerspCon::evalConstraint(ConstConstraintPtr cons, VariablePtr& binvar)
   // Check which cont. variables of the function are bounded by binary.
   bool boundsok = false;
   if (binvar == NULL) {
-    //s_ = 0;
     VarSetPtr binaries = (VarSetPtr) new VarSet();
     // Select first variable of the nonlinear part of the
     // constraint for initial binary search.
@@ -365,37 +379,47 @@ bool PerspCon::evalConstraint(ConstConstraintPtr cons, VariablePtr& binvar)
     for (VarSetConstIterator it= binaries->begin(); it!=binaries->end(); ++it) {
       binvar = *it;
       // Check at least one binary varible that is controlling initvar is
-      // controlling rest of the variables in the nonlinear part of the
-      // constriant function
+      // controlling rest of the continuous variables in the nonlinear part of the
+      // constraint
       boundsok = checkNVars(nlf, binvar);
+      //if (boundsok == true) {
+        //return true;
+      //} else {
+        //return false;
+      //}
       if (boundsok == true) {
+        if (cons->getLinearFunction()->getNumTerms() > 1 && 
+            ((cu > 0 && cu != +INFINITY ) || (cl < 0 && cl != -INFINITY))) {
+          boundsok = checkLVars(cons, binvar);
+          if (boundsok == true) {
+            return true;
+          }  
+        } else {
+          return true;
+        }
+      }
+    }
+    return false;
+  } else {
+    // Check if each variable in the nonlinear part of the constraint 
+    // is bounded by binary variable binvar.
+    boundsok = checkNVars(nlf, binvar);
+    if (boundsok == true) {
+      if (cons->getLinearFunction()->getNumTerms() > 1 && 
+          ((cu > 0 && cu != +INFINITY ) || (cl < 0 && cl != -INFINITY))) {
         boundsok = checkLVars(cons, binvar);
         if (boundsok == true) {
           return true;
         } else {
           return false;
-        }
+        }  
       } else {
-        return false;
-      }
-    }
-  } else {
-    // Check if each variable in the nonlinear part of the constraint 
-    // is bounded by binary variable binvar.
-    //s_ = 1; 
-    boundsok = checkNVars(nlf, binvar);
-    if (boundsok == true) {
-      boundsok = checkLVars(cons, binvar);
-      if (boundsok == true) {
         return true;
-       } else {
-         return false;       
-       }
-    }  else {
-      return false;    
+      }
+    } else {
+      return false;
     }
-  }
-
+ }
   // Control never comes here.
   return true;
 }
@@ -424,9 +448,6 @@ void PerspCon::generateList()
     l_.clear();
     u_.clear();
   }
-#if SPEW 
-  displayInfo_();
-#endif
 }
 
 

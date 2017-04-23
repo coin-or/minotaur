@@ -3,8 +3,6 @@
 //
 //    (C)opyright 2008 - 2014 The MINOTAUR Team.
 //
-
-
 /**
  * \file PerspCutGenerator.cpp 
  * \brief Declare PerspCutGenerator class. 
@@ -125,7 +123,11 @@ void PerspCutGenerator::gPCut(FunctionPtr f, double * y)
     // In perspective reformulated constraint coefficient of binary variable is
     // included in conseval
     // its coefficient in original constraint minus the upper bound of the constraint
-    gradu-=(cp_->getUb());
+    if(cp_->getUb() != +INFINITY){
+      gradu-=(cp_->getUb());
+    } else {
+      gradu+=(cp_->getLb());
+    }
     gradu+=conseval;
     // We can add binary variable to linearization, when we considered all
     // variables except the binary variable so that the linearization
