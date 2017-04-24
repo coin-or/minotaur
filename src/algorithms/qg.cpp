@@ -361,15 +361,14 @@ int main(int argc, char* argv[])
       pc_hand = (PerspCutHandlerPtr) new PerspCutHandler(env, inst); 
       pc_hand->setModFlags(false, true);
       // Generate constraints amenable to PR
-      pc_hand->perspList();
-      handlers.push_back(pc_hand);
-      assert(pc_hand);
+      if(pc_hand->perspList()) {
+        handlers.push_back(pc_hand);
+        assert(pc_hand);
+      }
     }
-
     // report name
     env->getLogger()->msgStream(LogExtraInfo) << me << "handlers used:"
       << std::endl;
-
     for (HandlerIterator h = handlers.begin(); h != handlers.end(); ++h) {
       env->getLogger()->msgStream(LogExtraInfo) << me << (*h)->getName()
         << std::endl;
