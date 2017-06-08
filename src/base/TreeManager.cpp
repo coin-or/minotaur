@@ -200,7 +200,7 @@ double TreeManager::getPerGap()
   double gap = 0.0;
   if (bestUpperBound_ >= INFINITY) {
     gap = INFINITY;
-  } else if (fabs(bestLowerBound_) < etol_) {
+  } else if ((bestUpperBound_ > etol_) && (fabs(bestLowerBound_) < etol_)) {
     gap = 100.0;
   } else {
     gap = (bestUpperBound_ - bestLowerBound_)/(fabs(bestUpperBound_)+etol_) 
