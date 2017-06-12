@@ -1,10 +1,10 @@
-##MINOTAUR
+## MINOTAUR
 
 MINOTAUR is a framework for developing algorithms for mixed-integer nonlinear
 optimization problems. It includes a few solvers. It is free and open-source.
 See the LICENSE file for details on license to use and distribute it.
 
-###Important Links
+### Important Links
 * [MINOTAUR home page at the Argonne National
   Laboratory](https://wiki.mcs.anl.gov/minotaur)
 * [Download current release-version with third-party libraries (open-source
