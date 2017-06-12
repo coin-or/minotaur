@@ -5,7 +5,7 @@
 TEST_DIR=/sandbox/mahajan/minotaur-test
 
 ## git info
-GIT_REPOS="https://github.com/ashutoshmahajan/minotaur"
+GIT_REPOS="https://github.com/minotaur-solver/minotaur"
 
 ## LOGS
 WEB_DIR=/mcs/web/research/projects/minotaur/nightly/build-log/petsc
@@ -44,12 +44,12 @@ then
 fi
 
 # empty OPTIONS is allowed
-./scripts/build_without_externals -M . -d ./${NAME} -e ./ \
+./scripts/build_with_externals -M . -d ./${NAME} -e ./minotaur-externals \
                                -j ${CPUS} -l ${NAME}.log -r ${NAME}.err   \
 			       ${OPTIONS}
 cd ${NAME}
-make utest -j ${CPUS} >> ../${NAME}.log 2>> ../${NAME}.err
-make install -j ${CPUS} >> ../${NAME}.log 2>> ../${NAME}.err
+make utest >> ../${NAME}.log 2>> ../${NAME}.err
+make install >> ../${NAME}.log 2>> ../${NAME}.err
 cd - >> /dev/null
 
 }
@@ -146,8 +146,11 @@ echo "Minotaur version: `git describe`"
 NAME=
 OPTIONS=
 ##########################################################################
-## TEST 1 Deleted
+## TEST 1
+## Build all externals
 ##########################################################################
+NAME=all_externals
+./scripts/build_externals -d . -j 8 -l ${NAME}.log -r ${NAME}.err
 
 ##########################################################################
 ## TEST 2
@@ -281,7 +284,7 @@ doTest; listBins; testFiles; checkTest
 ## we build with -j 1, otherwise it doesn't build sometimes.
 NAME=build-all-manual
 OPTIONS=-x
-./scripts/build_without_externals -M . -d ./${NAME} -e ./ \
+./scripts/build_with_externals -M . -d ./${NAME} -e ./minotaur-externals \
                                -j 1 -l ${NAME}.log -r ${NAME}.err  \
 			       ${OPTIONS}
 ls -lt ${NAME} >> ${NAME}.log
