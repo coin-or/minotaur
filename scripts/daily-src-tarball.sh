@@ -6,7 +6,7 @@ SRC_DIR=/sandbox/mahajan/minotaur
 WEB_DIR=/mcs/web/research/projects/minotaur/dist/
 
 ## git info
-GIT_REPOS="https://github.com/ashutoshmahajan/minotaur"
+GIT_REPOS="https://github.com/minotaur-solver/minotaur"
 
 ## delimitor
 LINE="--------------------------------------------------"

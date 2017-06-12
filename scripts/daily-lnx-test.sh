@@ -5,7 +5,7 @@
 TEST_DIR=/sandbox/mahajan/minotaur-test
 
 ## git info
-GIT_REPOS="https://github.com/ashutoshmahajan/minotaur"
+GIT_REPOS="https://github.com/minotaur-solver/minotaur"
 
 ## LOGS
 WEB_DIR=/mcs/web/research/projects/minotaur/nightly/build-log/petsc

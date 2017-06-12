@@ -5,7 +5,7 @@
 TEST_DIR=/home/amahajan/tmp/minotaur-test
 
 ## git info
-GIT_REPOS="https://github.com/ashutoshmahajan/minotaur"
+GIT_REPOS="https://github.com/minotaur-solver/minotaur"
 EXT_URL="http://ieor.iitb.ac.in/files/faculty/amahajan/minotaur/restricted/minotaur-externals-0.2.tar.gz"
 
 ## Local LOGS

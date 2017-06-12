@@ -5,7 +5,7 @@
 TEST_DIR=/Users/mahajan/src/minotaur-test
 
 ## git info
-GIT_REPOS="https://github.com/ashutoshmahajan/minotaur"
+GIT_REPOS="https://github.com/minotaur-solver/minotaur"
 
 ## LOGS
 WEB_HOST=login.mcs.anl.gov
