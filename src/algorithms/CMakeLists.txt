@@ -127,6 +127,20 @@ target_link_libraries(mcbnb ${ALL_EXEC_LIBS})
 install(TARGETS mcbnb RUNTIME DESTINATION bin)
 
 ##############################################################################
+## Add lines specific to your binaries in this section.
+## Use the lines meant for bnb as a template.
+##############################################################################
+set (MIDFO_SOURCES
+ MiDfo.cpp
+)
+
+add_executable(midfo ${MIDFO_SOURCES})
+target_link_libraries(midfo ${ALL_EXEC_LIBS})
+
+# This will install the binary in bin directory.
+install(TARGETS midfo RUNTIME DESTINATION bin)
+
+##############################################################################
 ## Add lines specific to your binaries in this section. 
 ## Use the lines meant for bnb as a template.
 ##############################################################################
@@ -158,15 +172,15 @@ install(TARGETS qg RUNTIME DESTINATION bin)
 ## Add lines specific to your binaries in this section. 
 ## Use the lines meant for bnb as a template.
 ##############################################################################
-#set (POLYNOMIAL_SOURCES
-#  polynomial-solver.cpp 
-#)
-#
-#add_executable(polly ${POLYNOMIAL_SOURCES})
-#target_link_libraries(polly ${ALL_EXEC_LIBS})
-#
-## This will install the binary in bin directory.
-#install(TARGETS polly RUNTIME DESTINATION bin)
+set (POLYNOMIAL_SOURCES
+  mipdecoqg.cpp 
+)
+
+add_executable(mipdecoqg ${POLYNOMIAL_SOURCES})
+target_link_libraries(mipdecoqg ${ALL_EXEC_LIBS})
+
+# This will install the binary in bin directory.
+install(TARGETS mipdecoqg RUNTIME DESTINATION bin)
 
 
 ##############################################################################
