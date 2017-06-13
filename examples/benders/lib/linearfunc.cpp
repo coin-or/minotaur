@@ -31,9 +31,9 @@ ostream& operator<<(ostream& os, const linearfunc& lf)
   return os;
 }
 
-Double linearfunc::value()const
+double linearfunc::value()const
 {
-  Double v = 0.0;
+  double v = 0.0;
   
   vector<size_t> idx;
   vector<double> val;
@@ -47,7 +47,7 @@ Double linearfunc::value()const
   return v;
 }
 
-// linearfunc& linearfunc::operator *=(const Double &c)
+// linearfunc& linearfunc::operator *=(const double &c)
 // {
 //   size_t n = this->size();
 //   for(size_t i=0;i<n;i++) coef_[i] *= c;
@@ -59,7 +59,7 @@ Double linearfunc::value()const
 // {
 //   size_t n = this->size();
 //   assert(n == lfb.size());
-//   vector<Double> bc = lfb.coef();
+//   vector<double> bc = lfb.coef();
 //   for(size_t i=0;i<n;i++){
 //     coef_[i] += bc[i];
 //   }
@@ -70,7 +70,7 @@ Double linearfunc::value()const
 // {
 //   size_t n = this->size();
 //   assert(n == lfb.size());
-//   vector<Double> bc = lfb.coef();
+//   vector<double> bc = lfb.coef();
 //   for(size_t i=0;i<n;i++){
 //     coef_[i] -= bc[i];
 //   }
@@ -104,7 +104,7 @@ Double linearfunc::value()const
 // 
 // void linearfunc::prune()
 // {
-//   vector<Double>    coef;
+//   vector<double>    coef;
 //   vector<variable*> vars;
 //   size_t n = vars_.size();
 //   

@@ -8,7 +8,7 @@ void variable::defaultInit()
   ub_     =  INF;
 }
 
-bool variable::check(const Double& v, const short p)
+bool variable::check(const double& v, const short p)
 {
   bool stat = true;
   switch(p){
@@ -32,7 +32,7 @@ variable::variable()
   defaultInit();
 }
 
-variable::variable(const Double &lb, const Double &ub)
+variable::variable(const double &lb, const double &ub)
   :genobj(0,"var")
 {
   assert(ub >= lb);
@@ -40,7 +40,7 @@ variable::variable(const Double &lb, const Double &ub)
   ub_ = ub;
 }
 
-bool variable::value(const Double& val, const bool force)
+bool variable::value(const double& val, const bool force)
 {
   bool stat=check(val); 	// whether it is within the bounds
   
@@ -51,19 +51,19 @@ bool variable::value(const Double& val, const bool force)
   return stat;
 }
 
-void variable::lb(const Double& b)
+void variable::lb(const double& b)
 {
   assert(b <= ub_);
   lb_ = b;
 }
 
-void variable::ub(const Double& b)
+void variable::ub(const double& b)
 {
   assert(b >= lb_);
   ub_ = b;
 }
 
-void variable::bounds(const Double &lb, const Double &ub)
+void variable::bounds(const double &lb, const double &ub)
 {
   assert(ub >= lb);
   lb_ = lb;

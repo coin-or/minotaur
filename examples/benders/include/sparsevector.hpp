@@ -16,7 +16,7 @@
 #include "type.hpp"
 
 using namespace std;
-using Type::Double;
+using Type::double;
 using Type::EPSILON;
 class sparseVector{
 private:

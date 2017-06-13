@@ -172,7 +172,7 @@ int main()
 
     /********************************************************************/
     // Solution time of relaxation.
-    Double timeinit = timer.query();
+    double timeinit = timer.query();
     timer.stop();
     
     /********************************************************************/
@@ -180,7 +180,7 @@ int main()
     
     /********************************************************************/
     // Solution objective value
-    Double initobj = e.getSolutionValue();
+    double initobj = e.getSolutionValue();
     /********************************************************************/
 
     std::cout << "Relaxation objective value = " << initobj << std::endl; 
@@ -199,7 +199,7 @@ int main()
       (CoverCutGeneratorPtr) new CoverCutGenerator(rel, sol, env);
 
     /*******************************************************************/
-    Double timecut = timer2.query();
+    double timecut = timer2.query();
     timer2.stop();
     /*******************************************************************/
 
@@ -239,7 +239,7 @@ int main()
     // Violation list.
     DoubleVector knapviols = knapgen->getViolList();
     UInt curknap = 0;
-    Double maxviol = 0.0;
+    double maxviol = 0.0;
     for (it=begin; it!=end; ++it) {
       std::cout << "Violation obtained from this constraint is: "
 		<< knapviols[curknap] << std::endl;
@@ -255,11 +255,11 @@ int main()
 
     /*******************************************************************/
     // Solution time of knapsack cover cuts added problem.
-    Double timemod = 0.0;
+    double timemod = 0.0;
     // Objective value after adding knapsack cover cuts.
-    Double endobj = 0.0;
+    double endobj = 0.0;
       // Gap closed by using knapsack cover cuts.
-    Double gapknap = 0.0;
+    double gapknap = 0.0;
     /*******************************************************************/
 
     if (violknapcuts >= 1) {
@@ -360,10 +360,10 @@ Bool logobj(LinearFunctionPtr lf, CGraphPtr nlf)
   UInt index = 0;
   for(it=begin; it!=end; ++it) {
     VariablePtr var = it->first;
-    Double varlb = var->getLb();
+    double varlb = var->getLb();
     if (varlb >= 0) {
       UInt varid = var->getId();
-      Double coeff = it->second;
+      double coeff = it->second;
       // Create variable node and add it to a set.
       tempnode = nlf->newNode(var);
       varnodes.insert(std::pair<UInt,CNode*>(varid,tempnode));

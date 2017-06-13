@@ -60,14 +60,14 @@ void add_ampl_flags(OptionDBPtr options)
 
 ////////////////////////////////////////////////////////////////////////////
 //! linearize a function at a point x
-void linearAt(ProblemPtr minlp, FunctionPtr f, Double fval, const Double *x, 
-    Double *c, LinearFunctionPtr *lf)
+void linearAt(ProblemPtr minlp, FunctionPtr f, double fval, const double *x, 
+    double *c, LinearFunctionPtr *lf)
 {
-  Int n = minlp->getNumVars();
-  Double *a = new Double[n];
+  int n = minlp->getNumVars();
+  double *a = new double[n];
   VariableConstIterator vbeg = minlp->varsBegin();
   VariableConstIterator vend = minlp->varsEnd();
-  Double tol = 1E-9;
+  double tol = 1E-9;
 
   std::fill(a, a+n, 0.);
   f->evalGradient(x, a);
@@ -78,7 +78,7 @@ void linearAt(ProblemPtr minlp, FunctionPtr f, Double fval, const Double *x,
 
 ////////////////////////////////////////////////////////////////////////////
 //! check if user needs help
-Int checkUserOK(OptionDBPtr options, EnvPtr env)
+int checkUserOK(OptionDBPtr options, EnvPtr env)
 {
   options->findString("interface_type")->setValue("AMPL");
   if (options->findBool("show_options")->getValue() ||
@@ -104,7 +104,7 @@ Int checkUserOK(OptionDBPtr options, EnvPtr env)
 ////////////////////////////////////////////////////////////////////////////
 //! initialize the master problem
 void initMaster(ProblemPtr minlp, ProblemPtr milp, VariablePtr &objVar, 
-		ObjectivePtr objFun, const Double *x, VectorVariablePtr &intVars,
+		ObjectivePtr objFun, const double *x, VectorVariablePtr &intVars,
 		VectorVariablePtr &orgVars) 
 {
   //! Declaration of Internal Variables ===================================
@@ -114,7 +114,7 @@ void initMaster(ProblemPtr minlp, ProblemPtr milp, VariablePtr &objVar,
   LinearFunctionPtr lf = LinearFunctionPtr(); //! linear function ptr = NULL
   FunctionPtr f, fnew;                        //! function pointer
 
-  Double act, cval;
+  double act, cval;
   // ======================================================================
 
   //! Benders master has only integer variables
@@ -147,7 +147,7 @@ void initMaster(ProblemPtr minlp, ProblemPtr milp, VariablePtr &objVar,
 ////////////////////////////////////////////////////////////////////////////
 //! add a set of linearizations to the master problem
 void updateMaster(ProblemPtr minlp, ProblemPtr milp, VariablePtr objVar, 
-		  ObjectivePtr objFun, Double objfUp, const Double *x, Int n) 
+		  ObjectivePtr objFun, double objfUp, const double *x, int n) 
 {
   //! Declaration of Internal Variables ===================================
   //! pointers to manipulate variables & constraints
@@ -156,7 +156,7 @@ void updateMaster(ProblemPtr minlp, ProblemPtr milp, VariablePtr objVar,
   LinearFunctionPtr lf = LinearFunctionPtr(); //! linear function ptr = NULL
   FunctionPtr f, fnew;                        //! function pointer
 
-  Double act, cval;
+  double act, cval;
   // ======================================================================
 
 
@@ -208,14 +208,14 @@ void updateMaster(ProblemPtr minlp, ProblemPtr milp, VariablePtr objVar,
 
   std::cout << "MILP Master" << std::endl << "===========" << std::endl;
   std::cout << "New x values" << std::endl << "============" << std::endl;
-  for (Int j=0; j<n; j++) std::cout << "x(" << j << ") = " << x[j] << std::endl;
+  for (int j=0; j<n; j++) std::cout << "x(" << j << ") = " << x[j] << std::endl;
   milp->write(std::cout);
 }
 
 ////////////////////////////////////////////////////////////////////////////
 //! set-up and solve NLP(y) for fixed integer variables
-void solveNLP(ProblemPtr minlp, FilterSQPEngine &e, Double *x, Double *z, 
-	      Double &objfNLP, Int &feasibleNLP, Int n)
+void solveNLP(ProblemPtr minlp, FilterSQPEngine &e, double *x, double *z, 
+	      double &objfNLP, int &feasibleNLP, int n)
 {
   EngineStatus status;
   VariablePtr v;                              //! variable pointer
@@ -240,7 +240,7 @@ void solveNLP(ProblemPtr minlp, FilterSQPEngine &e, Double *x, Double *z,
 	    << " obj. value = " << objfNLP << std::endl;
   std::cout << "Solution values & multipliers" << std::endl 
 	    << "=============================" << std::endl;
-  for (Int j=0; j<n; j++) 
+  for (int j=0; j<n; j++) 
     std::cout << "x(" << j << ") = " << x[j] 
 	      << "\tz(" << j << ") = " << z[j] << std::endl;
 
@@ -248,8 +248,8 @@ void solveNLP(ProblemPtr minlp, FilterSQPEngine &e, Double *x, Double *z,
 
 ////////////////////////////////////////////////////////////////////////////
 //! solve MILP master problem  
-void solveMaster(EnvPtr env, ProblemPtr milp, Double *x, Double *objfMIP, 
-		 Int n)
+void solveMaster(EnvPtr env, ProblemPtr milp, double *x, double *objfMIP, 
+		 int n)
 {
   //! Declaration of Internal Variables ===================================
   LPEnginePtr lp_e;                           //! LP engine 
@@ -276,6 +276,6 @@ void solveMaster(EnvPtr env, ProblemPtr milp, Double *x, Double *objfMIP,
   std::cout << "MILP master  " << bstatus << "  lower bound = " << bab->getLb() 
 	    << "  upper bound = " << *objfMIP << std::endl;
   std::cout << "Solution values" << std::endl << "===============" << std::endl;
-  for (Int j=0; j<n; j++) std::cout << "x(" << j << ") = " << x[j] << std::endl;  
+  for (int j=0; j<n; j++) std::cout << "x(" << j << ") = " << x[j] << std::endl;  
   
 }

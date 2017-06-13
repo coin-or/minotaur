@@ -1,9 +1,9 @@
 #include <iostream>
 
-#include "minotaur/Environment.h"
-#include "minotaur/FilterSQPEngine.h"
-#include "minotaur/Problem.h"
-#include "minotaur/AMPLInterface.h"
+#include "Environment.h"
+#include "FilterSQPEngine.h"
+#include "Problem.h"
+#include "AMPLInterface.h"
 
 using namespace Minotaur;
 
@@ -30,12 +30,13 @@ int main()
   p->write(std::cout);
 
   // solve it.
+  p->setNativeDer();
   p->prepareForSolve();
   e.load(p);
   status = e.solve();
 
   // status, value and filter-sqp statistics.
-  e.writeStats();
+  e.writeStats(std::cout);
   std::cout << "solution status code = " << status << std::endl;
   std::cout << "solution status = " << e.getStatusString() << std::endl;
   std::cout << "solution value = " << e.getSolutionValue() << std::endl;

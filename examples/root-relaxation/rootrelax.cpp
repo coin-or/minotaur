@@ -65,7 +65,7 @@ int main(int argc, char** argv)
   status = e.solve();
   
   // Solution objective value
-  Double obj = e.getSolutionValue();
+  double obj = e.getSolutionValue();
 
   std::cout << "Relaxation objective value = " << obj << std::endl; 
   

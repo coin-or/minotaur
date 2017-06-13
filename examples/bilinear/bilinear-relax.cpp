@@ -155,7 +155,7 @@ time_start();
   cout << " , " << lpr->getNumVars();
   cout << " , " << lpr->getNumCons();
   cout << " , " << lpE->getSolutionValue() << endl;
-  Const Double *sol = lpE->getSolution();
+  Const double *sol = lpE->getSolution();
   for(int i=0; i<nv; i++)
     cout << " , " << sol[i];
     //    cout <<"var["<<i<<"] = " << sol[i]<<endl;

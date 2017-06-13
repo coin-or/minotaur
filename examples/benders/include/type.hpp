@@ -9,10 +9,10 @@
 #include <limits>
 
 namespace Type{
-  typedef double Double;
+  typedef double double;
   // static const int NMAX = std::numeric_limits<int>::max();
   // static const int NMIN = std::numeric_limits<int>::min();
-  static const Double INF = std::numeric_limits<double>::infinity();
+  static const double INF = std::numeric_limits<double>::infinity();
   static const double EPSILON = 1.0E-8;
 }
 #endif

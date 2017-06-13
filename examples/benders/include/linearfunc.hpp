@@ -21,7 +21,7 @@
 #include "variablehandler.hpp"
 
 using namespace std;
-using Type::Double;
+using Type::double;
 using Type::EPSILON;
 class linearfunc : public genobj{
 private:
@@ -40,7 +40,7 @@ public:
   
   linearfunc(const variableHandler* const pvar,
 	     const vector<size_t>    &indx,
-	     const vector<Double>    &coef)
+	     const vector<double>    &coef)
     :genobj(0,"slf"), pvar_(pvar), coef_(pvar->size(), indx, coef){};
   
   size_t   size()const{return pvar_->size();}; // number of total vars
@@ -54,14 +54,14 @@ public:
   
   friend ostream& operator<<(ostream& os, const linearfunc& lf);
   
-  Double value()const;
+  double value()const;
   // ========================================
   // compute the value of the linear function
   // for the active variables only
   
-  linearfunc  operator  *(const Double &c)      
+  linearfunc  operator  *(const double &c)      
   {linearfunc lf(*this); lf*= c; return lf;};
-  linearfunc& operator *=(const Double &c)      {coef_ *= c;        return *this;};
+  linearfunc& operator *=(const double &c)      {coef_ *= c;        return *this;};
   linearfunc& operator +=(const linearfunc& lfb){coef_ += lfb.coef_;return *this;};
   linearfunc& operator -=(const linearfunc& lfb){coef_ -= lfb.coef_;return *this;};
   

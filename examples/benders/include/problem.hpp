@@ -38,7 +38,7 @@
 using namespace std;
 using boost::shared_ptr;
 using boost::scoped_ptr;
-using Type::Double;
+using Type::double;
 using UUID::uuid;
 using Type::INF;
 
@@ -88,24 +88,24 @@ public:
   objective*  newObj(scoped_ptr<uuid>     &uid, 
 		     const short          &relation, 
 		     const linearfunc     &lf, 
-		     const Double         &shift=0.0);
+		     const double         &shift=0.0);
   
   objective*  newObj(scoped_ptr<uuid>     &uid, 
 		     const short          &relation,
 		     const vector<size_t> &indx,
-		     const vector<Double> &coef,
-		     const Double         &shift=0.0);  
+		     const vector<double> &coef,
+		     const double         &shift=0.0);  
   
   constraint* newCon(scoped_ptr<uuid>     &uid, 
 		     const linearfunc     &lf, 
-		     const Double         &lb = -INF,
-		     const Double         &ub =  INF);
+		     const double         &lb = -INF,
+		     const double         &ub =  INF);
   
   constraint* newCon(scoped_ptr<uuid>     &uid, 
 		     const vector<size_t> &indx,
-		     const vector<Double> &coef,
-		     const Double         &lb = -INF,
-		     const Double         &ub =  INF);
+		     const vector<double> &coef,
+		     const double         &lb = -INF,
+		     const double         &ub =  INF);
   
   // update the bounds for only one constraints
   void updateVarLb(const size_t i,const double val);

@@ -50,7 +50,7 @@ int main(int argc, char** argv)
   Timer *timer=tFactory->GetTimer();
 
   timer->Start();
-  Double best_value = INFINITY;
+  double best_value = INFINITY;
 
   if (argc < 2) {
     usage();
@@ -78,8 +78,8 @@ int main(int argc, char** argv)
 
   UInt finalbit = 1 << numSOCs;
   UInt mybit = 0;
-  Double obj, best_obj=INFINITY;
-  //Double ix[] = {-1.0, -1.0};
+  double obj, best_obj=INFINITY;
+  //double ix[] = {-1.0, -1.0};
   // 2^(numSOCs) branches.
   while (mybit < finalbit) {
     //std::cout << "my bit = " << mybit << std::endl;
@@ -142,13 +142,13 @@ void countEigenValues(ProblemPtr inst, UInt & numSOCs)
   UInt eq1   = 0; // no. of equalities that have both positive and negative 
                   // but at least one of the groups has only one member.
   UInt eq1q  = 0; // same as eq1 but the constraint has no linear terms.
-  Double c;
+  double c;
   // we will express each quadratic constraint of the form x'Ax + bx + c as
   // \sum_i (l_i x + b_i)^2 + lx + c'. 
   // We will do this transformation only if the constraint has 1 negative
   // eigen value.
   std::vector <LinearFunctionPtr> p_terms, n_terms;
-  std::vector <Double> p_const, n_const;
+  std::vector <double> p_const, n_const;
   LinearFunctionPtr lin_terms;
 
   ConstraintConstIterator cIter;
@@ -338,9 +338,9 @@ ProblemPtr createProblem(UInt mybit, ProblemPtr inst)
     if (constCPtr->getQuadraticFunction()) {
       //std::cout << "found quadratic my bit = " << mybit << std::endl;
       EigenCalculator *eCalc = new EigenCalculator();
-      Double c = 0;
+      double c = 0;
       std::vector <LinearFunctionPtr> p_terms, n_terms;
-      std::vector <Double> p_const, n_const;
+      std::vector <double> p_const, n_const;
       LinearFunctionPtr lin_terms;
       eCalc->getSumOfSquares (p_terms, n_terms, p_const, n_const,
           lin_terms, c, constCPtr->getQuadraticFunction(), 
@@ -361,7 +361,7 @@ ProblemPtr createProblem(UInt mybit, ProblemPtr inst)
         // sum li^2 + K - l0^2 <= rhs
         //std::cout << "doing negative = " << mybit%2 << "\n";
         LinearFunctionPtr neg_n_term = -1*n_terms[0];
-        Double n_neg_const = -1*n_const[0];
+        double n_neg_const = -1*n_const[0];
         soc = (LSOCPtr) new LSOC(p_terms, neg_n_term,
             p_const, n_neg_const, -constCPtr->getUb()+c);
         newP->newConstraint(soc, -INFINITY, n_neg_const);

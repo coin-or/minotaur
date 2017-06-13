@@ -26,7 +26,7 @@
 #include "type.hpp"
 
 using namespace std;
-using Type::Double;
+using Type::double;
 using Type::EPSILON;
 
 class objective :public genobj{
@@ -39,13 +39,13 @@ public:
   
   objective(const short             &relation,
 	    const linearfunc        &lf,
-	    const Double            &shift = 0.0);
+	    const double            &shift = 0.0);
   
   objective(const short             &relation,
 	    const variableHandler* const pvar,
 	    const vector<size_t>    &indx,
-	    const vector<Double>    &coef, 
-	    const Double            &shift = 0.0);
+	    const vector<double>    &coef, 
+	    const double            &shift = 0.0);
   
   bool   active()const{return active_;};
   void   on() {active_ = true;};
@@ -53,15 +53,15 @@ public:
   
   void   reset(){on();};
   
-  Double lb()const{return cons_.lb();};
-  Double ub()const{return cons_.ub();};
+  double lb()const{return cons_.lb();};
+  double ub()const{return cons_.ub();};
   
   linearfunc sub(const size_t k, const variableHandler* const pv)
   {return cons_.sub(k, pv);};
   
-  void   extract(vector<size_t> &idx, vector<Double> &val)const;
+  void   extract(vector<size_t> &idx, vector<double> &val)const;
   
-  // Double value(const short rule = 1)const
+  // double value(const short rule = 1)const
   // {return cons_.value();}
   // compute the value of the objective function
   // ========================================

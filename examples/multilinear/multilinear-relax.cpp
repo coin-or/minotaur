@@ -159,7 +159,7 @@ main(int argc, char** argv)
   time_finish();
   double t = time_taken();
   ConstSolutionPtr lpSol = lpE->getSolution();
-  const Double * sol;
+  const double * sol;
   cout << t << endl;
   sol = lpSol->getPrimal();
   /*
@@ -195,7 +195,7 @@ main(int argc, char** argv)
   cout << " , " << lpr->getNumVars();
   cout << " , " << lpr->getNumCons();
   cout << " , " << lpE->getSolutionValue() << endl;
-  Const Double *sol = lpE->getSolution();
+  Const double *sol = lpE->getSolution();
   for(int i=0; i<nv; i++)
     cout << " , " << sol[i];
   cout << endl;

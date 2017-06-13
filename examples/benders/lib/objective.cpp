@@ -2,10 +2,10 @@
 
 objective::objective(const short             &relation,
 		     const linearfunc        &lf,
-		     const Double            &shift)
+		     const double            &shift)
   :genobj(0,"obj"), active_(true), cons_(lf)
 {
-  Double lb = -INF, ub = INF;
+  double lb = -INF, ub = INF;
   if(relation > 0){
     ub = -shift;
   }else if(relation < 0){
@@ -21,11 +21,11 @@ objective::objective(const short             &relation,
 objective::objective(const short             &relation,
 		     const variableHandler* const pvar,
 		     const vector<size_t>    &indx,
-		     const vector<Double>    &coef, 
-		     const Double            &shift)
+		     const vector<double>    &coef, 
+		     const double            &shift)
   :genobj(0,"obj"), active_(true), cons_(pvar, indx, coef)
 {
-  Double lb = -INF, ub = INF;
+  double lb = -INF, ub = INF;
   if(relation > 0){
     ub = -shift;
   }else if(relation < 0){
@@ -36,7 +36,7 @@ objective::objective(const short             &relation,
   cons_.bounds(lb, ub);
 }
 
-void objective::extract(vector<size_t> &idx, vector<Double> &val)const
+void objective::extract(vector<size_t> &idx, vector<double> &val)const
 {
   cons_.extract(idx, val);
   

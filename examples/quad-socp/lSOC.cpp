@@ -21,7 +21,7 @@ LSOC::LSOC()
 
 
 LSOC::LSOC(std::vector<LinearFunctionPtr> & p_terms, LinearFunctionPtr n_term, 
-    std::vector<Double> & p_const, Double & n_const, Double sqrtK)
+    std::vector<double> & p_const, double & n_const, double sqrtK)
   : l0_(n_term),
     sqrtK_(sqrtK),
     K_(n_const)
@@ -36,9 +36,9 @@ LSOC::LSOC(std::vector<LinearFunctionPtr> & p_terms, LinearFunctionPtr n_term,
 }
 
 
-Double LSOC::eval(const Double *x) const
+double LSOC::eval(const double *x) const
 {
-  Double sqrtVal = 0;
+  double sqrtVal = 0;
   UInt i=0;
   for (i=0; i<sqrtKs_.size(); i++) {
     sqrtVal += pow(sqrtTerms_[i]->eval(x) + sqrtKs_[i], 2.0);
@@ -59,10 +59,10 @@ FunctionType LSOC::getType()
 }
 
 
-void LSOC::evalGradient(const Double *x, Double *grad_f) const
+void LSOC::evalGradient(const double *x, double *grad_f) const
 {
-  Double sqrtVal = 0;
-  Double lval = 0;
+  double sqrtVal = 0;
+  double lval = 0;
   UInt i=0;
   for (i=0; i<sqrtKs_.size(); i++) {
     sqrtVal += pow(sqrtTerms_[i]->eval(x) + sqrtKs_[i], 2.0);
@@ -114,10 +114,10 @@ void LSOC::getHessVarPairs( VarPairIntMap & vp_inds)
 }
 
 
-void LSOC::evalHessian(const Double mult, const Double *x, 
-    VarPairIntMap &vp_inds, Double *values)
+void LSOC::evalHessian(const double mult, const double *x, 
+    VarPairIntMap &vp_inds, double *values)
 {
-  Double sumOfSq = 0;
+  double sumOfSq = 0;
   for (UInt i=0; i<sqrtKs_.size(); i++) {
     sumOfSq += pow(sqrtTerms_[i]->eval(x) + sqrtKs_[i], 2.0);
   }
@@ -127,7 +127,7 @@ void LSOC::evalHessian(const Double mult, const Double *x,
   for (VarSetConstIterator iter=vars_.begin(); iter!=vars_.end(); 
       iter++) {
 
-    Double di = 0;
+    double di = 0;
     for (UInt l=0; l<sqrtKs_.size(); l++) {
       ConstLinearFunctionPtr lPtr = sqrtTerms_[l];
       di += lPtr->getWeight(*iter)*lPtr->eval(x);
@@ -136,8 +136,8 @@ void LSOC::evalHessian(const Double mult, const Double *x,
     // visit each variable again
     for (VarSetConstIterator iter2=iter; iter2!=vars_.end(); iter2++) {
       // caculate H_{ij} for these 2 variables
-      Double hij = 0;
-      Double dj = 0;
+      double hij = 0;
+      double dj = 0;
       // visit each linear term and search for variables i,j
       for (UInt l=0; l<sqrtKs_.size(); l++) {
         ConstLinearFunctionPtr lPtr = sqrtTerms_[l];

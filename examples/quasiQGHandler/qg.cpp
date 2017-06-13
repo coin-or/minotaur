@@ -56,9 +56,9 @@ using namespace Minotaur;
 struct qgStat {
   UInt proc_nodes;
   UInt total_size;
-  Double total_time;
-  Double ObjVal;
-  Double LowerB;
+  double total_time;
+  double ObjVal;
+  double LowerB;
   Size_t nlpS;
   Size_t nlpP;
   Size_t nlpI;
@@ -84,23 +84,23 @@ EnginePtr getNLPEngine(EnvPtr env);
 PresolverPtr createPres(EnvPtr env, ProblemPtr p, Size_t ndefs);
 void writeStats(BrancherPtr brancher_, LPEnginePtr lpE_);
 void writeStats(std::string fname, UInt proc_nodes, UInt total_size, 
-		Double total_time, Double ObjVal , Double LowerB, 
+		double total_time, double ObjVal , double LowerB, 
 		UInt quasi,Size_t nlpS, Size_t nlpP, Size_t nlpI, Size_t nlpF);
 
 void writeStats(std::string fname,std::string methodname, qgStat *myStat, LPEnginePtr lpEng, 
-		Double RelTr, Int PoolTr, Double mngrTime, Int RelSize, Int PoolSize, 
-		Int RelToPool, Int PoolToRel, Double RelAve, Double PoolAve, 
+		double RelTr, int PoolTr, double mngrTime, int RelSize, int PoolSize, 
+		int RelToPool, int PoolToRel, double RelAve, double PoolAve, 
 		quasiQGHandlerPtr qghand);
 
-//void writeStats(std::string fname, qgStat *myStat, LPEnginePtr lpEng, Int RelTr, 
-//		Int PoolTr, Double mngrTime, Int RelSize, Int PoolSize, 
-//		Int RelToPool, Int PoolToRel, Double RelAve, Double PoolAve, quasiQGHandlerPtr qghand);
+//void writeStats(std::string fname, qgStat *myStat, LPEnginePtr lpEng, int RelTr, 
+//		int PoolTr, double mngrTime, int RelSize, int PoolSize, 
+//		int RelToPool, int PoolToRel, double RelAve, double PoolAve, quasiQGHandlerPtr qghand);
 
 
 void writeStats(std::string fname, qgStat *myStat, OptionDBPtr options, LPEnginePtr lpEngine , quasiQGHandlerPtr qgPtr, Bool ecp);
 
 void show_help();
-void writeSolutionToFile(const Double * x, UInt n);
+void writeSolutionToFile(const double * x, UInt n);
 
 
 void show_help()
@@ -174,8 +174,8 @@ int main(int argc, char* argv[])
 
 
   Bool ECP_CUT = false;
-  //Double beta_ecp;
-  //Double tol_ecp;
+  //double beta_ecp;
+  //double tol_ecp;
   std::string myoption;
   //std::string mymethod;
   myoption = argv[argc-1];
@@ -205,7 +205,7 @@ int main(int argc, char* argv[])
   }else std::cout << "no option found\n";
 */
 /*
-  for (Int i = 0; i < argc; ++i)
+  for (int i = 0; i < argc; ++i)
   {
     std::cout << "option[" << i << "]=" << argv[i] << "\n";
   }
@@ -230,7 +230,7 @@ int main(int argc, char* argv[])
   }else std::cout << "no option found\n";
 */
 /*
-  for (Int i = 0; i < argc; ++i)
+  for (int i = 0; i < argc; ++i)
   {
     std::cout << "option[" << i << "]=" << argv[i] << "\n";
   }
@@ -517,9 +517,9 @@ int main(int argc, char* argv[])
   std::cout << "number of processed nodes is = " << bab->numProcNodes() << std::endl;
 
   std::cout << "problem name is " << options->findString("problem_file")->getValue() << std::endl;
-//std::string fname, UInt proc_nodes, UInt total_size, Double total_time, UInt quasi)
-///void writeStats(std::string fname, UInt proc_nodes, UInt total_size, Double total_time, UInt quasi)
-///void writeStats(std::string fname, UInt proc_nodes, UInt total_size, Double total_time, Double ObjVal, UInt quasi)
+//std::string fname, UInt proc_nodes, UInt total_size, double total_time, UInt quasi)
+///void writeStats(std::string fname, UInt proc_nodes, UInt total_size, double total_time, UInt quasi)
+///void writeStats(std::string fname, UInt proc_nodes, UInt total_size, double total_time, double ObjVal, UInt quasi)
 
   myStat->proc_nodes = bab->numProcNodes();
   myStat->total_size = bab->getTreeManager()->getSize();
@@ -733,7 +733,7 @@ void writeStats(BrancherPtr brancher_, LPEnginePtr lpE_ )
 }
 
 
-void writeStats(std::string fname, UInt proc_nodes, UInt total_size, Double total_time, Double ObjVal, Double LowerB, UInt quasi,
+void writeStats(std::string fname, UInt proc_nodes, UInt total_size, double total_time, double ObjVal, double LowerB, UInt quasi,
      Size_t nlpS, Size_t nlpP, Size_t nlpI, Size_t nlpF)
 {
   std::ofstream myfile ("Convex_Results.txt", std::ios::app);
@@ -747,9 +747,9 @@ void writeStats(std::string fname, UInt proc_nodes, UInt total_size, Double tota
   myfile.close();
 }
 
-void writeStats(std::string fname, std::string methodname, qgStat *myStat, LPEnginePtr lpEng, Double RelTr, 
-		Int PoolTr, Double mngrTime, Int RelSize, Int PoolSize, 
-		Int RelToPool, Int PoolToRel, Double RelAve, Double PoolAve, quasiQGHandlerPtr qgPtr)
+void writeStats(std::string fname, std::string methodname, qgStat *myStat, LPEnginePtr lpEng, double RelTr, 
+		int PoolTr, double mngrTime, int RelSize, int PoolSize, 
+		int RelToPool, int PoolToRel, double RelAve, double PoolAve, quasiQGHandlerPtr qgPtr)
 {
   std::stringstream name;
   const char* file_name;
@@ -892,9 +892,9 @@ void writeStats(std::string fname, qgStat *myStat, OptionDBPtr options,
 struct qgStat {
   UInt proc_nodes;
   UInt total_size;
-  Double total_time;
-  Double ObjVal;
-  Double LowerB;
+  double total_time;
+  double ObjVal;
+  double LowerB;
   Size_t nlpS;
   Size_t nlpP;
   Size_t nlpI;
@@ -904,7 +904,7 @@ struct qgStat {
   Bool accpm;
 };
 */
-void writeSolutionToFile(const Double * x, UInt n)
+void writeSolutionToFile(const double * x, UInt n)
 { 
   std::ofstream myfile("solution.txt", std::ios::out);
   for (UInt i = 0; i < n; i++)

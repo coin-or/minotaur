@@ -38,26 +38,26 @@ void show_help();
 void add_ampl_flags(OptionDBPtr options);
 
 //! linearize a function at a point x
-void linearAt(ProblemPtr minlp, FunctionPtr f, Double fval, Double *x, 
-	      Double *c, LinearFunctionPtr *lf);
+void linearAt(ProblemPtr minlp, FunctionPtr f, double fval, double *x, 
+	      double *c, LinearFunctionPtr *lf);
 
 //! check if user needs help
-Int checkUserOK(OptionDBPtr options, EnvPtr env);
+int checkUserOK(OptionDBPtr options, EnvPtr env);
 
 //! initialize the master problem
 void initMaster(ProblemPtr minlp, ProblemPtr milp, VariablePtr &objVar, 
-		ObjectivePtr objFun, const Double *x, VectorVariablePtr &intVars,
+		ObjectivePtr objFun, const double *x, VectorVariablePtr &intVars,
 		VectorVariablePtr &orgVars);
 
 //! add a set of linearizations to the master problem
 void updateMaster(ProblemPtr minlp, ProblemPtr milp, VariablePtr objVar, 
-		  ObjectivePtr objFun, Double objfUp, const Double *x, Int n);
+		  ObjectivePtr objFun, double objfUp, const double *x, int n);
 
 //! set-up and solve NLP(y) for fixed integer variables
-void solveNLP(ProblemPtr minlp, FilterSQPEngine &e, Double *x, 
-	      Double* z, Double &objfNLP, Int &feasibleNLP, Int n);
+void solveNLP(ProblemPtr minlp, FilterSQPEngine &e, double *x, 
+	      double* z, double &objfNLP, int &feasibleNLP, int n);
 
 //! solve MILP master problem  
-void solveMaster(EnvPtr env, ProblemPtr milp, Double *x, 
-		 Double *objfMIP, Int n);
+void solveMaster(EnvPtr env, ProblemPtr milp, double *x, 
+		 double *objfMIP, int n);
 

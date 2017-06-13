@@ -71,13 +71,13 @@ typedef std::vector<ConstraintPtr>::const_iterator CCIter;
 const std::string quasiQGHandler::me_ = "quasiQGHandler: ";
 //const std::string quasiACProblem::me_ = "quasiACProblem: ";
 
-void write_cut(Double *gr, Double rhs, Double gap, Int numvars);
-void write_point(const Double *xo, const Double *xp, Int numvars0);
-void write_point(const Double *xo, const Double *xp, Int numvars0, Int numvars1);
-void write_array(Double *x, Int num, std::string str1)
+void write_cut(double *gr, double rhs, double gap, int numvars);
+void write_point(const double *xo, const double *xp, int numvars0);
+void write_point(const double *xo, const double *xp, int numvars0, int numvars1);
+void write_array(double *x, int num, std::string str1)
 {
   std::cout << "********************  " << str1 << "  ********************\n";
-  for (Int i = 0; i < num; i++)
+  for (int i = 0; i < num; i++)
     {
       if (fabs(x[i]) > 1e-5)
       {
@@ -87,9 +87,9 @@ void write_array(Double *x, Int num, std::string str1)
   std::cout <<"\n";
 }
 
-void write_array(const Double *x, Int num, std::string str1)
+void write_array(const double *x, int num, std::string str1)
 {
-  for (Int i = 0; i < num; i++)
+  for (int i = 0; i < num; i++)
     std::cout << str1 << "[" << i+1 << "]=" << x[i] << ", ";
   std::cout <<"\n";
 }
@@ -180,7 +180,7 @@ quasiQGHandler::quasiQGHandler(EnvPtr env, ProblemPtr minlp, EnginePtr nlpe)
   handleQuasiConvex_ = env_->getOptions()->findBool("convexity_type")->getValue();
   timer_ = env_->getNewTimer();
 
-  last_sol_ = new Double[minlp_->getNumVars()];
+  last_sol_ = new double[minlp_->getNumVars()];
   stats_       = new QGStats();
   stats_->nlpS = 0;
   stats_->nlpP = 0;
@@ -201,9 +201,9 @@ quasiQGHandler::quasiQGHandler(EnvPtr env, ProblemPtr minlp, EnginePtr nlpe)
 //  mylogfile_ << env_->getOptions()->findString("problem_file")->getValue() << "\n";
 
 /*
-  rootSol_ = new Double [nvars];
-  incSol_ = new Double [nvars];
-  LPrelSol_ = new Double [nvars];
+  rootSol_ = new double [nvars];
+  incSol_ = new double [nvars];
+  LPrelSol_ = new double [nvars];
   BrootSol_ = false;
   BincSol_ = false;
   BLPrelSol_ = false;
@@ -254,7 +254,7 @@ quasiQGHandler::quasiQGHandler(EnvPtr env, ProblemPtr minlp, EnginePtr nlpe, Eng
   intTol_   = env_->getOptions()->findDouble("int_tol")->getValue();
   doACCPM_ = env_->getOptions()->findBool("qg_accpm")->getValue(); 
   partialFix_ = env_->getOptions()->findBool("partial_bb")->getValue();
-  last_sol_ = new Double[minlp_->getNumVars()];
+  last_sol_ = new double[minlp_->getNumVars()];
   handleQuasiConvex_ = env_->getOptions()->findBool("convexity_type")->getValue();
   timer_ = env_->getNewTimer();
 
@@ -278,9 +278,9 @@ quasiQGHandler::quasiQGHandler(EnvPtr env, ProblemPtr minlp, EnginePtr nlpe, Eng
 //  mylogfile_ << env_->getOptions()->findString("problem_file")->getValue() << "\n";
 
 /*
-  rootSol_ = new Double [nvars];
-  incSol_ = new Double [nvars];
-  LPrelSol_ = new Double [nvars];
+  rootSol_ = new double [nvars];
+  incSol_ = new double [nvars];
+  LPrelSol_ = new double [nvars];
   BrootSol_ = false;
   BincSol_ = false;
   BLPrelSol_ = false;
@@ -367,12 +367,12 @@ quasiQGHandler::quasiQGHandler(EnvPtr env, ProblemPtr minlp, ProblemPtr proj_ins
   stats_->ecpCalls = 0;
 
   numvars_ = proj_minlp_->getNumVars();
-  last_sol_ = new Double[numvars_];
+  last_sol_ = new double[numvars_];
   if (numvars_ - proj_minlp_->getSize()->conts - proj_minlp_->getSize()->bins ==0)
     onlyBinary_=true;
 
 
-  xnlp_ = new Double[numvars_];
+  xnlp_ = new double[numvars_];
 
   FunctionPtr proj_fn;
   VariablePtr v; 
@@ -394,7 +394,7 @@ quasiQGHandler::quasiQGHandler(EnvPtr env, ProblemPtr minlp, ProblemPtr proj_ins
 //  std::cout << "11**************l1proj_minlp_ **********\n";
 //  l1proj_minlp_->write(std::cout);
 
-  for (Int i = 0; i <numvars_ ; ++i)
+  for (int i = 0; i <numvars_ ; ++i)
   {
     l1_lf = (LinearFunctionPtr) new LinearFunction();
 //    l1_fn = (FunctionPtr) new Function();
@@ -471,22 +471,22 @@ quasiQGHandler::quasiQGHandler(EnvPtr env, ProblemPtr minlp, ProblemPtr proj_ins
 
   proj_nlpe_->load(proj_minlp_);
 
-  x_star = new Double [numvars_];
-  a_ = new Double [numvars_];
-  x_pr_ = new Double [numvars_];
-  x_OA_ = new Double [numvars_];
+  x_star = new double [numvars_];
+  a_ = new double [numvars_];
+  x_pr_ = new double [numvars_];
+  x_OA_ = new double [numvars_];
   
 //  proj_minlp_->write(std::cout);
 
 /*
-  rootSol_ = new Double [nvars];
-  incSol_ = new Double [nvars];
-  LPrelSol_ = new Double [nvars];
+  rootSol_ = new double [nvars];
+  incSol_ = new double [nvars];
+  LPrelSol_ = new double [nvars];
   BrootSol_ = false;
   BincSol_ = false;
   BLPrelSol_ = false;
 */
-//  gr_ = new Double [nvars];
+//  gr_ = new double [nvars];
 
 //  readSol_();
 }
@@ -583,7 +583,7 @@ void quasiQGHandler::relaxNodeInc(NodePtr , RelaxationPtr , Bool *)
 
 void quasiQGHandler::initLinear_(Bool *isInf)
 {
-  const Double *x;
+  const double *x;
 
   *isInf = false;
   /*
@@ -651,18 +651,18 @@ void quasiQGHandler::setECP(Bool ecp){
   }
 }
 
-void quasiQGHandler::addInitLinearX_(const Double *x)
+void quasiQGHandler::addInitLinearX_(const double *x)
 {
   ConstraintPtr con;
   ConstraintPtr newcon;
-  Double act, c;
+  double act, c;
   FunctionPtr f, f2;
   LinearFunctionPtr lf = LinearFunctionPtr();
   ObjectivePtr o;
-  Int error;
+  int error;
 
 //  numvars_ = minlp_->getNumVars();
-//  Double *gr = new Double[numvars_];
+//  double *gr = new double[numvars_];
 
   for (CCIter it=nlCons_.begin(); it!=nlCons_.end(); ++it) {
     con = *it;
@@ -691,7 +691,7 @@ void quasiQGHandler::addInitLinearX_(const Double *x)
 //        f->evalGradient(x,gr,&error);
         if (act - con->getUb() > -solAbsTol_){
 //          std::cout << "add <= quasiconvex initLinear for const = " << con->getId() << "\n";
-//          Double rhs0 = InnerProduct(gr, x, numvars_);
+//          double rhs0 = InnerProduct(gr, x, numvars_);
 //          std::cout << "rhs0 = " << rhs0 << ", rhs1 = " << act-c;
 //          newcon = rel_->newConstraint(f2,-INFINITY, InnerProduct(gr, x, numvars_), "lnrztn_cut");
 //          newcon->write(std::cout); 
@@ -811,14 +811,14 @@ Bool quasiQGHandler::isFeasible(ConstSolutionPtr sol, RelaxationPtr rel,
 //  std::cout << " isfeasible ";
   FunctionPtr f;
   ConstraintPtr c;
-  Double act;
-  const Double *x = sol->getPrimal();
-  Int error;
+  double act;
+  const double *x = sol->getPrimal();
+  int error;
 
   rel_ = rel;
 
 /*
-  for (Int i = 0; i < rel_->getNumVars();i++)
+  for (int i = 0; i < rel_->getNumVars();i++)
     std::cout << " x1[" << i+1 << "] = " << x[i]; 
   std::cout << "\n";
 */
@@ -851,10 +851,10 @@ Bool quasiQGHandler::isFeasible(ConstSolutionPtr sol, RelaxationPtr rel,
 #endif
   objCutOff = false;
   if (true == oNl_ ) {
-    //Double alpha = sol->getObjValue();
+    //double alpha = sol->getObjValue();
     // It is important to check against x[.] value and not against
     // sol->getObjValue(). [See e.g. Feasibility Pump]
-    Double alpha = x[objVar_->getIndex()]; 
+    double alpha = x[objVar_->getIndex()]; 
     relobj_ = alpha;
     act = minlp_->getObjValue(x, &error);
 
@@ -907,19 +907,19 @@ void quasiQGHandler::separate(ConstSolutionPtr sol, NodePtr node_1, RelaxationPt
   numvars_ = minlp_->getNumVars();
   VariableConstIterator v_iter;
   VariableType v_type;
-  Double value;
-  const Double *x = sol->getPrimal();
+  double value;
+  const double *x = sol->getPrimal();
   Bool is_int_feas = true; //, isNLPfeas = false, dummy = false;
   Bool is_feas = true;
   Bool repeat_sol=true;
-  Int i;
-  Int last_node1_ = last_node_;
-  Double lastOptVal1 = lastOptVal_;
+  int i;
+  int last_node1_ = last_node_;
+  double lastOptVal1 = lastOptVal_;
   SeparationStatus *status1;
   UInt addCuts = 0;
-  Int depth = node_1->getDepth();
+  int depth = node_1->getDepth();
   ConstraintPtr con;
-  Int error;
+  int error;
 
 /*
   std:: cout << "11  ";
@@ -933,7 +933,7 @@ void quasiQGHandler::separate(ConstSolutionPtr sol, NodePtr node_1, RelaxationPt
     std::cout << "Other  ";
 */
 
-  Double rand_ecp = (Double) rand() / ((Double) RAND_MAX + 1 );
+  double rand_ecp = (double) rand() / ((double) RAND_MAX + 1 );
 //  std::cout << "last node number = " << last_node_ << "\n";
 //  std::cout << "node number = " << node_1->getId() << "\n";
   if (node_1->getId() == 0 || last_node_ != node_1->getId()) {
@@ -1127,16 +1127,16 @@ void quasiQGHandler::separate(ConstSolutionPtr sol, NodePtr node_1, RelaxationPt
 void quasiQGHandler::cutIntSol_(ConstSolutionPtr sol, SolutionPoolPtr s_pool, 
                            Bool *sol_found, SeparationStatus *status)
 {
-  const Double *nlp_x;
-  Double nlpval = INFINITY;
-  const Double *x = sol->getPrimal();
-  Double lp_obj = (sol) ? sol->getObjValue() : -INFINITY;
-  Int ncut_inf=0;
-  Int ncut_pure=0;
-  Int ncut_int=0;
-  Int ncut_alpha=0;
-  Int num_l1proj=0;
-  Int ncut_cvx = 0;
+  const double *nlp_x;
+  double nlpval = INFINITY;
+  const double *x = sol->getPrimal();
+  double lp_obj = (sol) ? sol->getObjValue() : -INFINITY;
+  int ncut_inf=0;
+  int ncut_pure=0;
+  int ncut_int=0;
+  int ncut_alpha=0;
+  int num_l1proj=0;
+  int ncut_cvx = 0;
 
   fixInts_(x);
 #ifdef DEBUG2
@@ -1373,10 +1373,10 @@ void quasiQGHandler::cutIntSol_(ConstSolutionPtr sol, SolutionPoolPtr s_pool,
 }
 
 
-void quasiQGHandler::fixInts_(const Double *x)
+void quasiQGHandler::fixInts_(const double *x)
 {
   VariablePtr v;
-  Double xval;
+  double xval;
   VarBoundMod2 *m = 0;
   for (VariableConstIterator vit=minlp_->varsBegin(); vit!=minlp_->varsEnd(); 
        ++vit) {
@@ -1407,7 +1407,7 @@ void quasiQGHandler::copyLPBounds_(std::stack<Modification *> *mods)
 {
   VariablePtr v, lpvar;
   VarBoundMod2 *m = 0;
-  Int i=0;
+  int i=0;
 
   for (VariableConstIterator vit=minlp_->varsBegin(); vit!=minlp_->varsEnd(); 
        ++vit, ++i) {
@@ -1436,22 +1436,22 @@ void quasiQGHandler::solvePartialNLP_(ConstSolutionPtr sol, SolutionPoolPtr s_po
 {
   std::stack<Modification *> mods;
   numvars_ = minlp_->getNumVars();
-  const Double *x = new Double[numvars_];
+  const double *x = new double[numvars_];
   VariableConstIterator v_iter;
   VariableType v_type;
   VariablePtr v;
-  Double value;
+  double value;
   Bool is_int_feas = true;
-  Double nlpval;
-  Double lp_obj = (sol) ? sol->getObjValue() : -INFINITY;
+  double nlpval;
+  double lp_obj = (sol) ? sol->getObjValue() : -INFINITY;
 
-  Int alphaCut = 0;
-  Int ncut_int = 0;
+  int alphaCut = 0;
+  int ncut_int = 0;
   
 
 /*
   std::cout << std::endl;
-    for (Int i=0; i < numvars_; i++)
+    for (int i=0; i < numvars_; i++)
     {
 //      v = minlp_->getVariable(i);
 //      if (v->getType()==Binary || v->getType()==Integer)
@@ -1489,7 +1489,7 @@ void quasiQGHandler::solvePartialNLP_(ConstSolutionPtr sol, SolutionPoolPtr s_po
     }
 //    std::cout << "\n";
 /*
-    for (Int i=0; i < rel_->getNumVars(); i++)
+    for (int i=0; i < rel_->getNumVars(); i++)
     {
 //      v = minlp_->getVariable(i);
 //      if (v->getType()==Binary || v->getType()==Integer)
@@ -1603,15 +1603,15 @@ void quasiQGHandler::solveProjection_()
   ++(stats_->nlpP);
 
 }
-Int quasiQGHandler::OAFromPoint_(const Double *x, ConstSolutionPtr sol,
+int quasiQGHandler::OAFromPoint_(const double *x, ConstSolutionPtr sol,
                              SeparationStatus *status)
 {
-  Int ncut = OAFromPoint_(x, sol->getPrimal(), status);
+  int ncut = OAFromPoint_(x, sol->getPrimal(), status);
   relobj_ = sol->getObjValue();
   return ncut;
 }
 
-Int quasiQGHandler::OAFromPoint_(const Double *x, const Double *inf_x,
+int quasiQGHandler::OAFromPoint_(const double *x, const double *inf_x,
                              SeparationStatus *status)
 {
   //SeparationStatus *dummy_status = SepaContinue;
@@ -1621,20 +1621,20 @@ Int quasiQGHandler::OAFromPoint_(const Double *x, const Double *inf_x,
    * sol is the pointer to the solution of relaxation
    */
 
-  Double act=-INFINITY, nlpact = -INFINITY; //lpvio = -INFINITY,lpact=-INFINITY, cuteval = -INFINITY  
-  Double nlpvio = -INFINITY;
+  double act=-INFINITY, nlpact = -INFINITY; //lpvio = -INFINITY,lpact=-INFINITY, cuteval = -INFINITY  
+  double nlpvio = -INFINITY;
   ConstraintPtr con, newcon;
-  Double c;
+  double c;
   LinearFunctionPtr lf = LinearFunctionPtr(); // NULL
   FunctionPtr f, f2;
-  Double *gr = new Double[numvars_];
+  double *gr = new double[numvars_];
   //LinearCutPtr cut;
   ObjectivePtr o;
   UInt num_cuts = 0;
-  Int error;
-  Double lpact=0.0;
-  Double slack=0.0;
-  Int ncut = 0;
+  int error;
+  double lpact=0.0;
+  double slack=0.0;
+  int ncut = 0;
   *status=SepaContinue;
 #if SPEW
     logger_->msgStream(LogDebug) 
@@ -1644,7 +1644,7 @@ Int quasiQGHandler::OAFromPoint_(const Double *x, const Double *inf_x,
 #endif
 
   std::vector<ConstraintPtr> conVect;
-  Int n = 0;
+  int n = 0;
   for (CCIter it=nlCons_.begin(); it!=nlCons_.end(); ++it) {
     con = *it; 
     f = con->getFunction();
@@ -1769,7 +1769,7 @@ Int quasiQGHandler::OAFromPoint_(const Double *x, const Double *inf_x,
   o = minlp_->getObjective();
   if (oNl_ && o) {
     f = o->getFunction();
-    Double vio;
+    double vio;
     if (inf_x) {
       act = o->eval(inf_x, &error);
       vio = std::max(act-relobj_, 0.);
@@ -1865,8 +1865,8 @@ Int quasiQGHandler::OAFromPoint_(const Double *x, const Double *inf_x,
 
   }
 */
-  Double nlpact1;
-  Int numvio = 0;
+  double nlpact1;
+  int numvio = 0;
   for ( UInt i=0; i < conVect.size(); i++){
     nlpact1 =  conVect[i]->getActivity(inf_x, &error);
     if ( (nlpact1 - conVect[i]->getUb() > solAbsTol_) || (conVect[i]->getLb() - nlpact1 > solAbsTol_ ) )
@@ -1878,7 +1878,7 @@ Int quasiQGHandler::OAFromPoint_(const Double *x, const Double *inf_x,
     num_cuts=0;
   if (num_cuts == 0 && cuttingPoint_ == true)
   {
-    Double *x_alpha = new Double[numvars_];
+    double *x_alpha = new double[numvars_];
     cuttingPoint_ = false;
     for (CCIter it=nlCons_.begin(); it!=nlCons_.end(); ++it)
     { 
@@ -1950,24 +1950,24 @@ Int quasiQGHandler::OAFromPoint_(const Double *x, const Double *inf_x,
   return ncut;
 }
 
-Int quasiQGHandler::OAFromPointInf_(const Double *x, const Double *inf_x, 
+int quasiQGHandler::OAFromPointInf_(const double *x, const double *inf_x, 
                             SeparationStatus *status)
 {
-  //Int a=0;
-  Int ncuts = 0;
+  //int a=0;
+  int ncuts = 0;
 
-  Double act=-INFINITY, nlpact = -INFINITY; //lpvio = -INFINITY,lpact=-INFINITY, cuteval = -INFINITY  
-  Double lpact;
-  Double nlpvio = -INFINITY;
+  double act=-INFINITY, nlpact = -INFINITY; //lpvio = -INFINITY,lpact=-INFINITY, cuteval = -INFINITY  
+  double lpact;
+  double nlpvio = -INFINITY;
   ConstraintPtr con, newcon;
-  Double c;
+  double c;
   LinearFunctionPtr lf = LinearFunctionPtr(); // NULL
   FunctionPtr f, f2;
-  Double *gr = new Double[numvars_];
+  double *gr = new double[numvars_];
   //LinearCutPtr cut;
   ObjectivePtr o;
-  Int error;
-//  const Double *inf_x = sol->getPrimal();
+  int error;
+//  const double *inf_x = sol->getPrimal();
   
 
   *status=SepaContinue;
@@ -2099,37 +2099,37 @@ Int quasiQGHandler::OAFromPointInf_(const Double *x, const Double *inf_x,
 
 }
 
-void quasiQGHandler::cutXLP_(const Double *x_nlp, const Double *x_lp,
-                        Double *x_alpha, ConstraintPtr con, Bool dir)
+void quasiQGHandler::cutXLP_(const double *x_nlp, const double *x_lp,
+                        double *x_alpha, ConstraintPtr con, Bool dir)
 {
   cutXLP_(x_nlp, x_lp, x_alpha, con->getFunction(), con->getUb(), con->getLb(), dir);
 }
 
-void quasiQGHandler::cutXLP_(const Double *x_nlp, const Double *x_lp,
-                        Double *x_alpha, FunctionPtr fn, Double ub, Double lb, Bool dir)
+void quasiQGHandler::cutXLP_(const double *x_nlp, const double *x_lp,
+                        double *x_alpha, FunctionPtr fn, double ub, double lb, Bool dir)
 {
   numvars_ = minlp_->getNumVars();
-  Double *gr = new Double[numvars_];
+  double *gr = new double[numvars_];
 
 //  FunctionPtr fn = con->getFunction();
   FunctionPtr fn2;
   LinearFunctionPtr lf;
   ConstraintPtr newcon;
 
-  Double alpha_l = 0.0;
-  Double alpha_u = 1.0;
+  double alpha_l = 0.0;
+  double alpha_u = 1.0;
   Bool stop = false;
-  Double alpha;
-  Int error = 0.0;
-  Double innProd = 0.0;
-  Double eval_x_alpha = 0.0;
-  Double eval_x_lp;
+  double alpha;
+  int error = 0.0;
+  double innProd = 0.0;
+  double eval_x_alpha = 0.0;
+  double eval_x_lp;
   
-  Double inn_gr_xlp;
-  Double inn_gr_xalpha;
+  double inn_gr_xlp;
+  double inn_gr_xalpha;
 
-  Double *xdiff = new Double[numvars_];
-  for (Int i = 0; i < numvars_; i++) {
+  double *xdiff = new double[numvars_];
+  for (int i = 0; i < numvars_; i++) {
     xdiff[i] = x_lp[i] - x_nlp[i];
   }
 
@@ -2140,7 +2140,7 @@ void quasiQGHandler::cutXLP_(const Double *x_nlp, const Double *x_lp,
       alpha = 0.5 * (alpha_l + alpha_u);
       //std::cout << " alpha = " << alpha;
       std::fill(gr, gr+numvars_, 0.0);
-      for (Int i = 0; i < numvars_; i++) {
+      for (int i = 0; i < numvars_; i++) {
         x_alpha[i] = (1-alpha) * x_lp[i]+alpha * x_nlp[i];
       }
       fn->evalGradient(x_alpha, gr, &error);
@@ -2172,7 +2172,7 @@ void quasiQGHandler::cutXLP_(const Double *x_nlp, const Double *x_lp,
     while (!stop){
       alpha = 0.5 * (alpha_l + alpha_u);
       std::fill(gr, gr+numvars_, 0.0);
-      for (Int i = 0; i < numvars_; i++)
+      for (int i = 0; i < numvars_; i++)
       {
         x_alpha[i] = (1-alpha) * x_lp[i] + alpha * x_nlp[i];
       } 
@@ -2200,31 +2200,31 @@ void quasiQGHandler::cutXLP_(const Double *x_nlp, const Double *x_lp,
   delete [] xdiff;
 }
 
-void quasiQGHandler::cutXLP_(const Double *x_nlp, const Double *x_lp,
+void quasiQGHandler::cutXLP_(const double *x_nlp, const double *x_lp,
                          ConstraintPtr con, SeparationStatus *status, Bool dir)
 {
-  Double *x_alpha = new Double[numvars_];
+  double *x_alpha = new double[numvars_];
   numvars_ = minlp_->getNumVars();
-  Double *gr = new Double[numvars_];
-//  Double *x_diff = new Double[numvars_];
+  double *gr = new double[numvars_];
+//  double *x_diff = new double[numvars_];
 
   FunctionPtr fn = con->getFunction();
   FunctionPtr fn2;
   LinearFunctionPtr lf;// = LinearFunctionPtr();
   ConstraintPtr newcon;
 
-  Double alpha_l = 0.0;
-  Double alpha_u = 1.0;
+  double alpha_l = 0.0;
+  double alpha_u = 1.0;
   Bool stop = false;
-  Double alpha;
-  Int error = 0.0;
-  Double innProd = 0.0;
-  Double eval_x_alpha;
-  Double eval_x_lp;
+  double alpha;
+  int error = 0.0;
+  double innProd = 0.0;
+  double eval_x_alpha;
+  double eval_x_lp;
 
-  Double inn_gr_xlp;
-  Double inn_gr_xalpha;
-  Double c;
+  double inn_gr_xlp;
+  double inn_gr_xalpha;
+  double c;
 #ifdef DEBUG5
   std::cout << "cutXLP_\n";
   std::cout << "x_lp ******\n";
@@ -2237,7 +2237,7 @@ void quasiQGHandler::cutXLP_(const Double *x_nlp, const Double *x_lp,
   {
     eval_x_lp= con->getActivity(x_lp,&error)-con->getUb();
 #ifdef DEBUG5
-    Int n = 0;
+    int n = 0;
 #endif
 
     while (!stop)
@@ -2251,7 +2251,7 @@ void quasiQGHandler::cutXLP_(const Double *x_nlp, const Double *x_lp,
       std::cout << ", alpha = " << alpha << "\n";
 #endif
       std::fill(gr, gr+numvars_, 0.0);
-      for (Int i = 0; i < numvars_; i++)
+      for (int i = 0; i < numvars_; i++)
       {
         x_alpha[i] = (1-alpha) * x_lp[i] + alpha * x_nlp[i];
 //        std::cout << "x_a[" << i << "]=" << x_alpha[i] << ", ";
@@ -2355,7 +2355,7 @@ void quasiQGHandler::cutXLP_(const Double *x_nlp, const Double *x_lp,
     {
       alpha = 0.5 * (alpha_l + alpha_u);
       std::fill(gr, gr+numvars_, 0.0);
-      for (Int i = 0; i < numvars_; i++)
+      for (int i = 0; i < numvars_; i++)
       {
         x_alpha[i] = (1-alpha) * x_lp[i] + alpha * x_nlp[i];
 //        x_diff[i] = x_lp[i] - x_alpha[i];
@@ -2402,17 +2402,17 @@ void quasiQGHandler::cutXLP_(const Double *x_nlp, const Double *x_lp,
 //  delete [] x_alpha;
 }
 
-void quasiQGHandler::cutXLPObj_(const Double *x_nlp, const Double *x_lp,
-                           Double *x_alpha, FunctionPtr fn)
+void quasiQGHandler::cutXLPObj_(const double *x_nlp, const double *x_lp,
+                           double *x_alpha, FunctionPtr fn)
 {
 
   FunctionPtr fn2;
   LinearFunctionPtr lf = LinearFunctionPtr();
   ConstraintPtr newcon;
-  Double c;
-  Int error = 0;
+  double c;
+  int error = 0;
 
-  Double eval_x_lp = fn->eval(x_lp, &error);
+  double eval_x_lp = fn->eval(x_lp, &error);
 
 /*
   linearAt_(fn, eval_x_lp, x_lp, &c, &lf);
@@ -2420,7 +2420,7 @@ void quasiQGHandler::cutXLPObj_(const Double *x_nlp, const Double *x_lp,
   fn2 = (FunctionPtr) new Function(lf);
   newcon = rel_->newConstraint(fn2, -INFINITY, -1.0 * c, "objlnrztn_cut");
   
-  Double act = newcon->getActivity(x_lp, &error);
+  double act = newcon->getActivity(x_lp, &error);
   std::cout << "nlpact lp= " << eval_x_lp << "\n";
   std::cout << "nlpact nlp= " << fn->eval(x_nlp, &error) << "\n";
   std::cout << "eta = " << x_lp[objVar_->getIndex()] << "\n";
@@ -2430,23 +2430,23 @@ void quasiQGHandler::cutXLPObj_(const Double *x_nlp, const Double *x_lp,
 ///*
   numvars_ = minlp_->getNumVars();
 /*
-  Double *gr = new Double[numvars_];
-  Double eta =  x_lp[objVar_->getIndex()];
+  double *gr = new double[numvars_];
+  double eta =  x_lp[objVar_->getIndex()];
 
-  Double alpha_l = 0.0;
-  Double alpha_u = 1.0;
+  double alpha_l = 0.0;
+  double alpha_u = 1.0;
   Bool stop = false;
-  Double alpha;
-  Double innProd = 0.0;
-  Double eval_x_alpha;
-  Double inn_gr_xalpha;
-  Double inn_gr_xlp;
+  double alpha;
+  double innProd = 0.0;
+  double eval_x_alpha;
+  double inn_gr_xalpha;
+  double inn_gr_xlp;
 
   while (!stop)
   {
     alpha = 0.5 * (alpha_l + alpha_u);
     std::fill(gr, gr+numvars_, 0.0);
-    for (Int i = 0; i < numvars_; i++)
+    for (int i = 0; i < numvars_; i++)
     {
       x_alpha[i] = (1-alpha) * x_lp[i] + alpha * x_nlp[i];
     }
@@ -2487,18 +2487,18 @@ void quasiQGHandler::cutXLPObj_(const Double *x_nlp, const Double *x_lp,
 //*/
 }
 
-Int quasiQGHandler::l1_project_(const Double *x_OA, SeparationStatus *status)
+int quasiQGHandler::l1_project_(const double *x_OA, SeparationStatus *status)
 {
   ConstraintPtr c,newcon;
   FunctionPtr fn;
   LinearFunctionPtr lf = (LinearFunctionPtr) new LinearFunction();
-  const Double *x = new Double [l1proj_minlp_->getNumVars()]; 
+  const double *x = new double [l1proj_minlp_->getNumVars()]; 
   VariablePtr v;
-  Int i=0;
-  Double lhs = 0.0;
-  Double lpact = 0.0;
-  Int error;
-  Int ncut = 0;
+  int i=0;
+  double lhs = 0.0;
+  double lpact = 0.0;
+  int error;
+  int ncut = 0;
 
 //  mylogfile_ << "before change\n";
 //  l1proj_minlp_->write(mylogfile_);
@@ -2538,7 +2538,7 @@ Int quasiQGHandler::l1_project_(const Double *x_OA, SeparationStatus *status)
   x = l1proj_nlpe_->getSolution()->getPrimal();
   x_pr_ = l1proj_nlpe_->getSolution()->getPrimal();
   //l1proj_minlp_->write(std::cout);
-//  for (Int k=0; k < l1proj_minlp_->getNumVars(); ++k)
+//  for (int k=0; k < l1proj_minlp_->getNumVars(); ++k)
 //  {
 //    std::cout << " x[" << k+1 << "]=" << x[k] << ",";
 //  }
@@ -2553,8 +2553,8 @@ Int quasiQGHandler::l1_project_(const Double *x_OA, SeparationStatus *status)
 //  VariableConstIterator vbeg = minlp_->varsBegin();
  
   
-  Double a1=1.0;
-  Double epsi=1e-16;
+  double a1=1.0;
+  double epsi=1e-16;
   i=0;
   for (VariableConstIterator it = minlp_->varsBegin(); it!=minlp_->varsEnd(); ++it)
   {
@@ -2642,12 +2642,12 @@ Int quasiQGHandler::l1_project_(const Double *x_OA, SeparationStatus *status)
 //  ncut=1;
   return ncut; 
 }
-Int quasiQGHandler::ProjCutFromPoint_(ConstSolutionPtr sol, SolutionPoolPtr s_pool, Bool *sol_found,
+int quasiQGHandler::ProjCutFromPoint_(ConstSolutionPtr sol, SolutionPoolPtr s_pool, Bool *sol_found,
                                   SeparationStatus *status)
 {
-  Double c = 0.0;
-  Double constantTerm = 0.0;
-  Int error = 0;
+  double c = 0.0;
+  double constantTerm = 0.0;
+  int error = 0;
   num_cuts_ = 0;
 
   LinearFunctionPtr lf = LinearFunctionPtr(); //Null
@@ -2661,19 +2661,19 @@ Int quasiQGHandler::ProjCutFromPoint_(ConstSolutionPtr sol, SolutionPoolPtr s_po
   VariableConstIterator v_iter;
   Bool int_feas = false;
   VariableType v_type;
-  Double value; 
-  Double nlpval;
-  Double lpval;
-  Double varUb;
-  Double beta = 0.0;
-  Int ncut=0;
+  double value; 
+  double nlpval;
+  double lpval;
+  double varUb;
+  double beta = 0.0;
+  int ncut=0;
 
   x_OA_ = sol->getPrimal();
   ProjObjUpdate(x_OA_, constantTerm);
   solveProjection_();
-  Double *xhat = new Double[numvars_];
+  double *xhat = new double[numvars_];
   ConstraintPtr cons;
-  Double act;
+  double act;
   Bool isfeas=true;
 #if SPEW
      logger_->msgStream(LogDebug) 
@@ -2707,7 +2707,7 @@ Int quasiQGHandler::ProjCutFromPoint_(ConstSolutionPtr sol, SolutionPoolPtr s_po
     if (env_->getOptions()->findBool("GradLin")->getValue()==false)
     {
       //std::cout << "no gradient *********************\n";
-      for (Int i =0; i < numvars_; i++)
+      for (int i =0; i < numvars_; i++)
       {
         v = proj_minlp_->getVariable(i);
         if ( v->getType() == Binary || v->getType() == Integer )
@@ -2797,12 +2797,12 @@ Int quasiQGHandler::ProjCutFromPoint_(ConstSolutionPtr sol, SolutionPoolPtr s_po
 
 
 #if SPEW1    
-    Double * gr = new Double [numvars_];
-    for (Int i = 0; i < n; i++)
+    double * gr = new double [numvars_];
+    for (int i = 0; i < n; i++)
       gr[i] = 0.0;
     proj_minlp_->getObjective()->evalGradient(x_pr_, gr, &error);
 
-    for (Int i = 0; i < numvars_; i++)
+    for (int i = 0; i < numvars_; i++)
     {
       v = proj_minlp_->getVariable(i);
       if (v->getType() == Binary || v->getType() == Integer) {
@@ -2821,7 +2821,7 @@ Int quasiQGHandler::ProjCutFromPoint_(ConstSolutionPtr sol, SolutionPoolPtr s_po
 #endif
 #if SPEW  
     logger_->msgStream(LogDebug) << me_ << "optimal solutions:" << std::endl;
-    for (Int i = 0; i < numvars_; i++)
+    for (int i = 0; i < numvars_; i++)
       if (proj_minlp_->getVariable(i)->getType() == Binary || proj_minlp_->getVariable(i)->getType() == Integer)
         logger_->msgStream(LogDebug) << "(" << i+1 << "," << x_OA_[i] << "," << x_pr_[i] << ") "; 
     logger_->msgStream(LogDebug) << std::endl;
@@ -2847,8 +2847,8 @@ Int quasiQGHandler::ProjCutFromPoint_(ConstSolutionPtr sol, SolutionPoolPtr s_po
   }
   else
   {
-  Double funeval; 
-  Double consact;
+  double funeval; 
+  double consact;
 /*
   std::cout << "Function evals: \n";
   for (UInt i = 0; i < minlp_->getNumCons(); i++){
@@ -2898,35 +2898,35 @@ Int quasiQGHandler::ProjCutFromPoint_(ConstSolutionPtr sol, SolutionPoolPtr s_po
 //  std::cout << "arrays deleted" << std::endl;
 }
 
-void quasiQGHandler::strCutsCvx_(ConstSolutionPtr sol, const Double *xnlp)
+void quasiQGHandler::strCutsCvx_(ConstSolutionPtr sol, const double *xnlp)
 {
   ConstraintPtr con, newcon;
-  Int numvars = minlp_->getNumVars();
-  const Double *x = sol->getPrimal();
-  Double *xalpha = new Double[numvars];
-  Double *gr = new Double[numvars];
+  int numvars = minlp_->getNumVars();
+  const double *x = sol->getPrimal();
+  double *xalpha = new double[numvars];
+  double *gr = new double[numvars];
 
-  Double nlpact0 = 0.0;
-  Double nlpact1 = 0.0;
-  Double nlpact2 = 0.0;
-  Double cnst = 0.0;
+  double nlpact0 = 0.0;
+  double nlpact1 = 0.0;
+  double nlpact2 = 0.0;
+  double cnst = 0.0;
   LinearFunctionPtr lf;
   FunctionPtr f,f2;
 
-  Double alphal = 0.0;
-  Double alphau = 1.0;
-  Double alpha = 0.0;
-  Double alphaC = 0.0;
-  Double adAlpha = 0.0;
+  double alphal = 0.0;
+  double alphau = 1.0;
+  double alpha = 0.0;
+  double alphaC = 0.0;
+  double adAlpha = 0.0;
   Bool stop = false;
   Bool stop1 = false;
-  Int error = 0;
-  Double gnorm = 0.0;
-  Double *dir = new Double[numvars];
-  Int ncut = 0;
-//  Int n1 = 0;
-//  Int iter = 0;
-//  for (Int i=0; i < numvars; i++)
+  int error = 0;
+  double gnorm = 0.0;
+  double *dir = new double[numvars];
+  int ncut = 0;
+//  int n1 = 0;
+//  int iter = 0;
+//  for (int i=0; i < numvars; i++)
 //  {
 //    gr[i] = xnlp[i] - x[i];
 //  }
@@ -2938,18 +2938,18 @@ void quasiQGHandler::strCutsCvx_(ConstSolutionPtr sol, const Double *xnlp)
     nlpact1 = con->getActivity(x,&error);
     if (nlpact1 > solAbsTol_ + con->getUb()){
       gnorm = 0.0;
-      for (Int i=0; i < numvars; i++)
+      for (int i=0; i < numvars; i++)
         gnorm = gnorm + gr[i]*gr[i];
 
-      for (Int i=0; i < numvars; i++)
+      for (int i=0; i < numvars; i++)
         dir[i] = dir[i] + gr[i]/gnorm;
     }
     if (nlpact1 < con->getLb()-solAbsTol_){
       gnorm = 0.0;
-      for (Int i=0; i < numvars; i++)
+      for (int i=0; i < numvars; i++)
         gnorm = gnorm + gr[i]*gr[i];
 
-      for (Int i=0; i < numvars; i++)
+      for (int i=0; i < numvars; i++)
         dir[i] = dir[i] - gr[i]/gnorm;
     }  
   }
@@ -2972,7 +2972,7 @@ void quasiQGHandler::strCutsCvx_(ConstSolutionPtr sol, const Double *xnlp)
       {
 //	iter++;
 	alpha = alphau;
-	for (Int i = 0; i < numvars; ++i)
+	for (int i = 0; i < numvars; ++i)
           xalpha[i] = x[i] - alpha * dir[i];	
 	nlpact0 = con->getActivity(xalpha,&error);
 	if (nlpact0 > con->getUb() + solAbsTol_)
@@ -2983,7 +2983,7 @@ void quasiQGHandler::strCutsCvx_(ConstSolutionPtr sol, const Double *xnlp)
       alphal = alphau - 1.0;
 */
       adAlpha = INFINITY;
-	for (Int i = 0; i < numvars; ++i)
+	for (int i = 0; i < numvars; ++i)
           xalpha[i] = x[i] - alphau * dir[i];
 	
         nlpact0 = con->getActivity(xalpha,&error);
@@ -2991,7 +2991,7 @@ void quasiQGHandler::strCutsCvx_(ConstSolutionPtr sol, const Double *xnlp)
       while (stop == false && (alphau - alphal) > 1e-3)
       {
 	alpha = (alphal + alphau) * 0.5;
-	for (Int i = 0; i < numvars; ++i)
+	for (int i = 0; i < numvars; ++i)
           xalpha[i] = x[i] - alpha * dir[i];
 	
         nlpact0 = con->getActivity(xalpha,&error);
@@ -3009,7 +3009,7 @@ void quasiQGHandler::strCutsCvx_(ConstSolutionPtr sol, const Double *xnlp)
 //      std::cout << "end while loop 2\n";
       if (stop == true){
 	alpha = adAlpha;
-	for (Int i = 0; i < numvars; ++i)
+	for (int i = 0; i < numvars; ++i)
           xalpha[i] = x[i] - alpha * dir[i];
       }
       if (adAlpha < INFINITY){
@@ -3044,7 +3044,7 @@ void quasiQGHandler::strCutsCvx_(ConstSolutionPtr sol, const Double *xnlp)
       while (stop1 == false)
       {
         alpha = alphau;
-	for (Int i = 0; i < numvars; ++i)
+	for (int i = 0; i < numvars; ++i)
           xalpha[i] = x[i] + alpha * gr[i];	
         nlpact0 = con->getActivity(xalpha,&error);
         if (nlpact0 < con->getLb() - solAbsTol_){
@@ -3058,7 +3058,7 @@ void quasiQGHandler::strCutsCvx_(ConstSolutionPtr sol, const Double *xnlp)
       while (stop == false && (alphau - alphal) > 1e-3)
       {
 	alpha = (alphal + alphau) * 0.5;
-	for (Int i = 0; i < numvars; ++i)
+	for (int i = 0; i < numvars; ++i)
           xalpha[i] = x[i] + alpha * gr[i];	
         nlpact0 = con->getActivity(xalpha,&error);
         if (nlpact0 < con->getLb() - solAbsTol_ && nlpact0 > nlpact1 + solAbsTol_){
@@ -3075,7 +3075,7 @@ void quasiQGHandler::strCutsCvx_(ConstSolutionPtr sol, const Double *xnlp)
       }
       if (stop == true) {
 	alpha = adAlpha;
-	for (Int i = 0; i < numvars; ++i)
+	for (int i = 0; i < numvars; ++i)
           xalpha[i] = x[i] + alpha * dir[i];
       }
       if (adAlpha < INFINITY){
@@ -3104,38 +3104,38 @@ void quasiQGHandler::strCutsCvx_(ConstSolutionPtr sol, const Double *xnlp)
   delete [] dir;
 }
 
-Int quasiQGHandler::strCutsQuasi_(ConstSolutionPtr sol, const Double *xnlp)
+int quasiQGHandler::strCutsQuasi_(ConstSolutionPtr sol, const double *xnlp)
 {
   timer_->start();
   ConstraintPtr con, newcon;
-  Int numvars = minlp_->getNumVars();
-  const Double *x = sol->getPrimal();
-  Double *xalpha = new Double[numvars];
-  Double *gr = new Double[numvars];
+  int numvars = minlp_->getNumVars();
+  const double *x = sol->getPrimal();
+  double *xalpha = new double[numvars];
+  double *gr = new double[numvars];
 
-  Double nlpact0 = 0.0;
-  Double nlpact1 = 0.0;
-  Double nlpact2 = 0.0;
-  Double nlpactm = 0.0;
-  Double cnst = 0.0;
+  double nlpact0 = 0.0;
+  double nlpact1 = 0.0;
+  double nlpact2 = 0.0;
+  double nlpactm = 0.0;
+  double cnst = 0.0;
   LinearFunctionPtr lf;
   FunctionPtr f,f2;
 
-  Double alphal = 0.0;
-  Double alphau = 1.0;
-  Double alpha = 0.0;
-  Double alphaC = 0.0;
-  Double adAlpha = 0.0;
+  double alphal = 0.0;
+  double alphau = 1.0;
+  double alpha = 0.0;
+  double alphaC = 0.0;
+  double adAlpha = 0.0;
   Bool stop = false;
   Bool stop1 = false;
-  Int error = 0;
-  Double gnorm = 0.0;
-  Double *dir = new Double[numvars];
-  Int ncut = 0;
+  int error = 0;
+  double gnorm = 0.0;
+  double *dir = new double[numvars];
+  int ncut = 0;
 
-//  Int n1 = 0;
-//  Int iter = 0;
-//  for (Int i=0; i < numvars; i++)
+//  int n1 = 0;
+//  int iter = 0;
+//  for (int i=0; i < numvars; i++)
 //  {
 //    dir[i] = xnlp[i] - x[i];
 //  }
@@ -3150,19 +3150,19 @@ Int quasiQGHandler::strCutsQuasi_(ConstSolutionPtr sol, const Double *xnlp)
     nlpact1 = con->getActivity(x,&error);
     if (nlpact1 > solAbsTol_ + con->getUb()){
       gnorm = 0.0;
-      for (Int i=0; i < numvars; i++)
+      for (int i=0; i < numvars; i++)
         gnorm = gnorm + gr[i]*gr[i];
 
       gnorm = sqrt(gnorm);
-      for (Int i=0; i < numvars; i++)
+      for (int i=0; i < numvars; i++)
         dir[i] = dir[i] + gr[i]/gnorm;
     }
     if (nlpact1 < con->getLb()-solAbsTol_){
       gnorm = 0.0;
-      for (Int i=0; i < numvars; i++)
+      for (int i=0; i < numvars; i++)
         gnorm = gnorm + gr[i]*gr[i];
 
-      for (Int i=0; i < numvars; i++)
+      for (int i=0; i < numvars; i++)
         dir[i] = dir[i] - gr[i]/gnorm;
     }  
   }
@@ -3171,7 +3171,7 @@ Int quasiQGHandler::strCutsQuasi_(ConstSolutionPtr sol, const Double *xnlp)
 
 
 
-  for (Int i=0; i < numvars; i++)
+  for (int i=0; i < numvars; i++)
     std::cout << "dir[" << i << "]=" << dir[i] << ", ";
   std::cout << "\n\n\n";
 
@@ -3182,7 +3182,7 @@ Int quasiQGHandler::strCutsQuasi_(ConstSolutionPtr sol, const Double *xnlp)
 //    std::fill(dir,dir+numvars,0.0);
 //    con->getFunction()->evalGradient(x,dir,&error);
 
-//    for (Int i=0; i < numvars; i++)
+//    for (int i=0; i < numvars; i++)
 //      std::cout << "dir[" << i << "]=" << dir[i] << ", ";
 //    std::cout << "\n\n\n";
    
@@ -3202,7 +3202,7 @@ Int quasiQGHandler::strCutsQuasi_(ConstSolutionPtr sol, const Double *xnlp)
       {
 //	iter++;
 	alpha = alphau;
-	for (Int i = 0; i < numvars; ++i)
+	for (int i = 0; i < numvars; ++i)
           xalpha[i] = x[i] - alpha * dir[i];	
 	nlpact0 = con->getActivity(xalpha,&error);
 	if (nlpact0 > con->getUb() + solAbsTol_)
@@ -3219,7 +3219,7 @@ Int quasiQGHandler::strCutsQuasi_(ConstSolutionPtr sol, const Double *xnlp)
       {
 //	alpha = (alphal + alphau) * 0.5;
 //	std::fill(xalpha,xalpha+numvars,0.0);
-	for (Int i = 0; i < numvars; ++i){
+	for (int i = 0; i < numvars; ++i){
           xalpha[i] = x[i] - alpha * dir[i];
 //	  std::cout << "xa[" << i << "]=" << xalpha[i] << " ";
 	}
@@ -3252,7 +3252,7 @@ Int quasiQGHandler::strCutsQuasi_(ConstSolutionPtr sol, const Double *xnlp)
       if (stop == true){
 	std::cout << "inside if\n";
 	alpha = adAlpha;
-	for (Int i = 0; i < numvars; ++i)
+	for (int i = 0; i < numvars; ++i)
           xalpha[i] = x[i] - alpha * dir[i];
       }
 	std::cout << "adAlpha = " << adAlpha << "\n";
@@ -3288,7 +3288,7 @@ Int quasiQGHandler::strCutsQuasi_(ConstSolutionPtr sol, const Double *xnlp)
       while (stop1 == false)
       {
         alpha = alphau;
-	for (Int i = 0; i < numvars; ++i)
+	for (int i = 0; i < numvars; ++i)
           xalpha[i] = x[i] + alpha * gr[i];	
         nlpact0 = con->getActivity(xalpha,&error);
         if (nlpact0 < con->getLb() - solAbsTol_){
@@ -3302,7 +3302,7 @@ Int quasiQGHandler::strCutsQuasi_(ConstSolutionPtr sol, const Double *xnlp)
       {
 	
 	alpha = (alphal + alphau) * 0.5;
-	for (Int i = 0; i < numvars; ++i)
+	for (int i = 0; i < numvars; ++i)
           xalpha[i] = x[i] + alpha * gr[i];	
         nlpact0 = con->getActivity(xalpha,&error);
         if (nlpact0 < con->getLb() - solAbsTol_ && nlpact0 > nlpact1 + solAbsTol_){
@@ -3319,7 +3319,7 @@ Int quasiQGHandler::strCutsQuasi_(ConstSolutionPtr sol, const Double *xnlp)
       }
       if (stop == true) {
 	alpha = adAlpha;
-	for (Int i = 0; i < numvars; ++i)
+	for (int i = 0; i < numvars; ++i)
           xalpha[i] = x[i] + alpha * dir[i];
       }
 	std::cout << "adAlpha = " << adAlpha << "\n";
@@ -3353,40 +3353,40 @@ Int quasiQGHandler::strCutsQuasi_(ConstSolutionPtr sol, const Double *xnlp)
   return ncut;
 }
 
-Int quasiQGHandler::strCutsQuasi2_(ConstSolutionPtr sol, const Double *xnlp)
+int quasiQGHandler::strCutsQuasi2_(ConstSolutionPtr sol, const double *xnlp)
 {
   ConstraintPtr con, newcon;
-  Int numvars = minlp_->getNumVars();
-  const Double *x = sol->getPrimal();
-  Double *xalpha = new Double[numvars];
-  Double *gr = new Double[numvars];
+  int numvars = minlp_->getNumVars();
+  const double *x = sol->getPrimal();
+  double *xalpha = new double[numvars];
+  double *gr = new double[numvars];
 
-  Double nlpact0 = 0.0;
-  Double nlpact1 = 0.0;
-  Double nlpactm = 0.0;
-  Double cnst = 0.0;
+  double nlpact0 = 0.0;
+  double nlpact1 = 0.0;
+  double nlpactm = 0.0;
+  double cnst = 0.0;
   LinearFunctionPtr lf;
   FunctionPtr f,f2;
 
-  Double alphal = 0.0;
-  Double alphau = 1.0;
-  Double alpha = 0.0;
-  Double adAlpha = 0.0;
+  double alphal = 0.0;
+  double alphau = 1.0;
+  double alpha = 0.0;
+  double adAlpha = 0.0;
   Bool stop = false;
-  Int error = 0;
-  Double gnorm = 0.0;
-  Double *dir  = new Double[numvars];
-  Double *dir1 = new Double[numvars];
-  Int ncut = 0;
+  int error = 0;
+  double gnorm = 0.0;
+  double *dir  = new double[numvars];
+  double *dir1 = new double[numvars];
+  int ncut = 0;
 
 
-  Double e = 0.1;
-  Double beta1 = 1.0-e;
-  Double beta2 = 1.0+e;
-  Double n1;
-  Double Tol = 0.25;
-  Double gap = 0.0;
-  //Double gnorm;
+  double e = 0.1;
+  double beta1 = 1.0-e;
+  double beta2 = 1.0+e;
+  double n1;
+  double Tol = 0.25;
+  double gap = 0.0;
+  //double gnorm;
 
   for (CCIter it = nlCons_.begin(); it!=nlCons_.end(); ++it)
   {
@@ -3445,7 +3445,7 @@ Int quasiQGHandler::strCutsQuasi2_(ConstSolutionPtr sol, const Double *xnlp)
       while (stop1 == false)
       {
         alpha = alphau;
-	for (Int i = 0; i < numvars; ++i)
+	for (int i = 0; i < numvars; ++i)
           xalpha[i] = x[i] + alpha * gr[i];	
         nlpact0 = con->getActivity(xalpha,&error);
         if (nlpact0 < con->getLb() - solAbsTol_){
@@ -3459,7 +3459,7 @@ Int quasiQGHandler::strCutsQuasi2_(ConstSolutionPtr sol, const Double *xnlp)
       {
 	
 	alpha = (alphal + alphau) * 0.5;
-	for (Int i = 0; i < numvars; ++i)
+	for (int i = 0; i < numvars; ++i)
           xalpha[i] = x[i] + alpha * gr[i];	
         nlpact0 = con->getActivity(xalpha,&error);
         if (nlpact0 < con->getLb() - solAbsTol_ && nlpact0 > nlpact1 + solAbsTol_){
@@ -3476,7 +3476,7 @@ Int quasiQGHandler::strCutsQuasi2_(ConstSolutionPtr sol, const Double *xnlp)
       }
       if (stop == true) {
 	alpha = adAlpha;
-	for (Int i = 0; i < numvars; ++i)
+	for (int i = 0; i < numvars; ++i)
           xalpha[i] = x[i] + alpha * dir[i];
       }
 	std::cout << "adAlpha = " << adAlpha << "\n";
@@ -3510,42 +3510,42 @@ Int quasiQGHandler::strCutsQuasi2_(ConstSolutionPtr sol, const Double *xnlp)
   return ncut;
 }
 
-Int quasiQGHandler::strCutsQuasi1_(ConstSolutionPtr sol, const Double *xnlp)
+int quasiQGHandler::strCutsQuasi1_(ConstSolutionPtr sol, const double *xnlp)
 {
   timer_->start();
   ConstraintPtr con, newcon;
-  Int numvars = minlp_->getNumVars();
-  const Double *x = sol->getPrimal();
-  Double *xalpha = new Double[numvars];
-  Double *gr = new Double[numvars];
+  int numvars = minlp_->getNumVars();
+  const double *x = sol->getPrimal();
+  double *xalpha = new double[numvars];
+  double *gr = new double[numvars];
 
-  Double nlpact0 = 0.0;
-  Double nlpact1 = 0.0;
-  Double nlpactm = 0.0;
-  Double cnst = 0.0;
+  double nlpact0 = 0.0;
+  double nlpact1 = 0.0;
+  double nlpactm = 0.0;
+  double cnst = 0.0;
   LinearFunctionPtr lf;
   FunctionPtr f,f2;
 
-  Double alphal = 0.0;
-  Double alphau = 1.0;
-  Double alpha = 0.0;
-  Double adAlpha = 0.0;
+  double alphal = 0.0;
+  double alphau = 1.0;
+  double alpha = 0.0;
+  double adAlpha = 0.0;
   Bool stop = false;
-  Int error = 0;
-  Double gnorm = 0.0;
-  Double *dir  = new Double[numvars];
-  Double *dir1 = new Double[numvars];
-  Int ncut = 0;
+  int error = 0;
+  double gnorm = 0.0;
+  double *dir  = new double[numvars];
+  double *dir1 = new double[numvars];
+  int ncut = 0;
 
 
-  Double e = 0.1;
-  Double beta1 = 1.0-e;
-  Double beta2 = 1.0+e;
-  Double n1;
-  Double Tol = 0.19;
-//  Int n1 = 0;
-//  Int iter = 0;
-//  for (Int i=0; i < numvars; i++)
+  double e = 0.1;
+  double beta1 = 1.0-e;
+  double beta2 = 1.0+e;
+  double n1;
+  double Tol = 0.19;
+//  int n1 = 0;
+//  int iter = 0;
+//  for (int i=0; i < numvars; i++)
 //  {
 //    dir[i] = xnlp[i] - x[i];
 //  }
@@ -3561,19 +3561,19 @@ Int quasiQGHandler::strCutsQuasi1_(ConstSolutionPtr sol, const Double *xnlp)
     nlpact1 = con->getActivity(x,&error);
     if (nlpact1 > solAbsTol_ + con->getUb()){
       gnorm = 0.0;
-      for (Int i=0; i < numvars; i++)
+      for (int i=0; i < numvars; i++)
         gnorm = gnorm + gr[i]*gr[i];
 
       gnorm = sqrt(gnorm);
-      for (Int i=0; i < numvars; i++)
+      for (int i=0; i < numvars; i++)
         dir[i] = dir[i] + gr[i]/gnorm;
     }
     if (nlpact1 < con->getLb()-solAbsTol_){
       gnorm = 0.0;
-      for (Int i=0; i < numvars; i++)
+      for (int i=0; i < numvars; i++)
         gnorm = gnorm + gr[i]*gr[i];
 
-      for (Int i=0; i < numvars; i++)
+      for (int i=0; i < numvars; i++)
         dir[i] = dir[i] - gr[i]/gnorm;
     }  
   }
@@ -3582,7 +3582,7 @@ Int quasiQGHandler::strCutsQuasi1_(ConstSolutionPtr sol, const Double *xnlp)
 
 
 
-//  for (Int i=0; i < numvars; i++)
+//  for (int i=0; i < numvars; i++)
 //    std::cout << "dir[" << i << "]=" << dir[i] << ", ";
 //  std::cout << "\n\n\n";
 
@@ -3593,7 +3593,7 @@ Int quasiQGHandler::strCutsQuasi1_(ConstSolutionPtr sol, const Double *xnlp)
     std::fill(dir,dir+numvars,0.0);
     con->getFunction()->evalGradient(x,dir,&error);
 
-//    for (Int i=0; i < numvars; i++)
+//    for (int i=0; i < numvars; i++)
 //      std::cout << "dir[" << i << "]=" << dir[i] << ", ";
 //    std::cout << "\n\n\n";
    
@@ -3613,7 +3613,7 @@ Int quasiQGHandler::strCutsQuasi1_(ConstSolutionPtr sol, const Double *xnlp)
       {
 //	iter++;
 	alpha = alphau;
-	for (Int i = 0; i < numvars; ++i)
+	for (int i = 0; i < numvars; ++i)
           xalpha[i] = x[i] - alpha * dir[i];	
 	nlpact0 = con->getActivity(xalpha,&error);
 	if (nlpact0 > con->getUb() + solAbsTol_)
@@ -3631,7 +3631,7 @@ Int quasiQGHandler::strCutsQuasi1_(ConstSolutionPtr sol, const Double *xnlp)
       {
 //	alpha = (alphal + alphau) * 0.5;
 //	std::fill(xalpha,xalpha+numvars,0.0);
-	for (Int i = 0; i < numvars; ++i){
+	for (int i = 0; i < numvars; ++i){
           xalpha[i] = x[i] - alpha * dir[i];
 	}
 	nlpact0 = con->getFunction()->eval(xalpha, &error);
@@ -3641,7 +3641,7 @@ Int quasiQGHandler::strCutsQuasi1_(ConstSolutionPtr sol, const Double *xnlp)
 //	  std::cout << "1 ";
 	  std::fill(gr,gr+numvars,0.0);
 	  con->getFunction()->evalGradient(xalpha,gr,&error);
-	  for (Int i = 0; i < numvars; ++i)
+	  for (int i = 0; i < numvars; ++i)
 	    dir1[i] = x[i] - xalpha[i];
 
 	  if (InnerProduct(dir,gr,numvars) > -solAbsTol_){
@@ -3672,7 +3672,7 @@ Int quasiQGHandler::strCutsQuasi1_(ConstSolutionPtr sol, const Double *xnlp)
 //      if (stop == true){
 //	std::cout << "inside if\n";
 	alpha = adAlpha;
-	for (Int i = 0; i < numvars; ++i)
+	for (int i = 0; i < numvars; ++i)
           xalpha[i] = x[i] - alpha * dir[i];
 //      }
 
@@ -3711,7 +3711,7 @@ Int quasiQGHandler::strCutsQuasi1_(ConstSolutionPtr sol, const Double *xnlp)
       while (stop1 == false)
       {
         alpha = alphau;
-	for (Int i = 0; i < numvars; ++i)
+	for (int i = 0; i < numvars; ++i)
           xalpha[i] = x[i] + alpha * gr[i];	
         nlpact0 = con->getActivity(xalpha,&error);
         if (nlpact0 < con->getLb() - solAbsTol_){
@@ -3725,7 +3725,7 @@ Int quasiQGHandler::strCutsQuasi1_(ConstSolutionPtr sol, const Double *xnlp)
       {
 	
 	alpha = (alphal + alphau) * 0.5;
-	for (Int i = 0; i < numvars; ++i)
+	for (int i = 0; i < numvars; ++i)
           xalpha[i] = x[i] + alpha * gr[i];	
         nlpact0 = con->getActivity(xalpha,&error);
         if (nlpact0 < con->getLb() - solAbsTol_ && nlpact0 > nlpact1 + solAbsTol_){
@@ -3742,7 +3742,7 @@ Int quasiQGHandler::strCutsQuasi1_(ConstSolutionPtr sol, const Double *xnlp)
       }
       if (stop == true) {
 	alpha = adAlpha;
-	for (Int i = 0; i < numvars; ++i)
+	for (int i = 0; i < numvars; ++i)
           xalpha[i] = x[i] + alpha * dir[i];
       }
 	std::cout << "adAlpha = " << adAlpha << "\n";
@@ -3781,8 +3781,8 @@ Int quasiQGHandler::strCutsQuasi1_(ConstSolutionPtr sol, const Double *xnlp)
 
 UInt quasiQGHandler::fixFrac(ConstSolutionPtr sol)
 {
-  const Double *x = sol->getPrimal();
-  const Double *nlpx;
+  const double *x = sol->getPrimal();
+  const double *nlpx;
   UInt ncut = 0;
   fixInts_(x);
   solveNLP_();
@@ -3820,11 +3820,11 @@ void quasiQGHandler::createPointProb_()
   LinearFunctionPtr lf1= (LinearFunctionPtr) new LinearFunction();
   //QuadraticFunctionPtr qfPoint_ = (QuadraticFunctionPtr) new QuadraticFunction();
   FunctionPtr f;
-  Double a = 0.0;
+  double a = 0.0;
   numvars_ = minlp_->getNumVars();
 
   quasiSolutionPtr quasiSol = *(quasiSol_->quasiSolsBegin());
-  Double *x = quasiSol->getSolution();
+  double *x = quasiSol->getSolution();
   //PointProbPtr = (ProblemPtr) new Problem(lbs,ubs);
   PointProb_ = (ProblemPtr) new Problem();
   VariablePtr v = PointProb_->newVariable(0.0,INFINITY,Continuous);
@@ -3841,15 +3841,15 @@ void quasiQGHandler::createPointProb_()
 //  PointProb_->write(std::cout);
 }
 
-void quasiQGHandler::addPointToProb_(const Double *x)
+void quasiQGHandler::addPointToProb_(const double *x)
 {
   quasiSolutionPtr quasiSol;
-  Double a;
+  double a;
   VariablePtr v1 = PointProb_->newVariable(0.0,INFINITY,Continuous);
   VariablePtr v2;
   LinearFunctionPtr lf= PointProb_->getConstraint(0)->getFunction()->getLinearFunction();
-  Double *x1;
-  Int i = 0;
+  double *x1;
+  int i = 0;
   for (quasiSolutionIterator it=quasiSol_->quasiSolsBegin(); 
 	it!=quasiSol_->quasiSolsEnd();++it)
   {
@@ -3870,14 +3870,14 @@ void quasiQGHandler::addPointToProb_(const Double *x)
 //  PointProb_->write(std::cout);
 }
 
-void quasiQGHandler::updatePointProb_(const Double *x)
+void quasiQGHandler::updatePointProb_(const double *x)
 {
   LinearFunctionPtr lf = PointProb_->getObjective()->getFunction()->getLinearFunction();//(LinearFunctionPtr) new LinearFunction();
   LinearFunctionPtr lf1 = (LinearFunctionPtr) new LinearFunction();
-  Int i = 0;
+  int i = 0;
   VariablePtr v;
-  Double a = 0.0;
-  Double *x1;
+  double a = 0.0;
+  double *x1;
   FunctionPtr f;
   quasiSolutionIterator it1 = quasiSol_->quasiSolsBegin();
 //  std::cout << "num of sols = " << quasiSol_->getNum() << "\n";
@@ -3897,31 +3897,31 @@ void quasiQGHandler::updatePointProb_(const Double *x)
   PointProb_->newObjective(f,0.0,Minimize);
 }
 
-UInt quasiQGHandler::bisectAddCut_(const Double *xlp, const Double *xnlp)
+UInt quasiQGHandler::bisectAddCut_(const double *xlp, const double *xnlp)
 {
   UInt ncut = 0;
-  Int error = 0;
-  Double lpact;
+  int error = 0;
+  double lpact;
   ConstraintPtr newcon;
   FunctionPtr f = rel_->getObjective()->getFunction();
 
-  Double act = f->eval(xlp,&error);
-  Double nlpact = f->eval(xnlp,&error);
+  double act = f->eval(xlp,&error);
+  double nlpact = f->eval(xnlp,&error);
   LinearFunctionPtr lf;
   FunctionPtr f2;
-  Double c;
-  Double nlpvalmid,nlpval1,nlpval2;
-  Double *xmid = new Double[numvars_];
-  Double *x1 = new Double[numvars_];
-  Double *x2 = new Double[numvars_];
-  Double ub = relobj_;
-  Int n1 = 0;
-  Double gap;
+  double c;
+  double nlpvalmid,nlpval1,nlpval2;
+  double *xmid = new double[numvars_];
+  double *x1 = new double[numvars_];
+  double *x2 = new double[numvars_];
+  double ub = relobj_;
+  int n1 = 0;
+  double gap;
 
   if (act - ub < solAbsTol_)
     return 0;
 
-  for (Int i = 0; i < numvars_; ++i){
+  for (int i = 0; i < numvars_; ++i){
     x1[i] = xlp[i];
     x2[i] = xnlp[i];
     xmid[i] = 0.5 * x1[i] + 0.5 * x2[i];
@@ -3931,10 +3931,10 @@ UInt quasiQGHandler::bisectAddCut_(const Double *xlp, const Double *xnlp)
     //nlpval1 = f->eval(x1,&error);
     //nlpval2 = f->eval(x2,&error);
     if (nlpvalmid < ub - solAbsTol_){
-      for (Int i = 0; i < numvars_; ++i)
+      for (int i = 0; i < numvars_; ++i)
         x2[i] = xmid[i];	
     } else if (nlpvalmid > ub + solAbsTol_){
-        for (Int i = 0; i < numvars_; ++i)
+        for (int i = 0; i < numvars_; ++i)
           x1[i] = xmid[i];
     } else break;
     nlpvalmid = f->eval(xmid,&error);
@@ -3960,30 +3960,30 @@ UInt quasiQGHandler::bisectAddCut_(const Double *xlp, const Double *xnlp)
   return ncut;
 }
 
-UInt quasiQGHandler::bisectAddCut_(ConstraintPtr con,const Double *xlp, const Double *xnlp)
+UInt quasiQGHandler::bisectAddCut_(ConstraintPtr con,const double *xlp, const double *xnlp)
 {
   UInt ncut = 0;
   FunctionPtr f = con->getFunction();
   LinearFunctionPtr lf;
   FunctionPtr f2;
-  Double c;
-  Double nlpvalmid,nlpval1,nlpval2;
-  Double *xmid = new Double[numvars_];
-  Double *x1 = new Double[numvars_];
-  Double *x2 = new Double[numvars_];
-  Int error = 0;
-  Double ub,lb; 
-  Int n1 = 0;
+  double c;
+  double nlpvalmid,nlpval1,nlpval2;
+  double *xmid = new double[numvars_];
+  double *x1 = new double[numvars_];
+  double *x2 = new double[numvars_];
+  int error = 0;
+  double ub,lb; 
+  int n1 = 0;
   ub = con->getUb();
   lb = con->getLb();
   ConstraintPtr newcon;
-  Double gap;
+  double gap;
 
   nlpval1 = con->getActivity(xlp,&error);
   if (nlpval1 < ub + solAbsTol_ && nlpval1 > lb - solAbsTol_)
     return 0;
 
-  for (Int i = 0; i < numvars_; ++i){
+  for (int i = 0; i < numvars_; ++i){
     x1[i] = xlp[i];
     x2[i] = xnlp[i];
     xmid[i] = 0.5 * x1[i] + 0.5 * x2[i];
@@ -3995,10 +3995,10 @@ UInt quasiQGHandler::bisectAddCut_(ConstraintPtr con,const Double *xlp, const Do
       //nlpval1 = f->eval(x1,&error);
       //nlpval2 = f->eval(x2,&error);
       if (nlpvalmid < ub - solAbsTol_){
-        for (Int i = 0; i < numvars_; ++i)
+        for (int i = 0; i < numvars_; ++i)
 	  x2[i] = xmid[i];	
       } else if (nlpvalmid > ub + solAbsTol_){
-	  for (Int i = 0; i < numvars_; ++i)
+	  for (int i = 0; i < numvars_; ++i)
 	    x1[i] = xmid[i];
       }
       nlpvalmid = f->eval(xmid,&error);
@@ -4022,10 +4022,10 @@ UInt quasiQGHandler::bisectAddCut_(ConstraintPtr con,const Double *xlp, const Do
   {
     while (fabs(nlpvalmid - lb) > solAbsTol_ && n1 < 1000){
       if (nlpvalmid > ub + solAbsTol_){
-        for (Int i = 0; i < numvars_; ++i)
+        for (int i = 0; i < numvars_; ++i)
 	  x2[i] = xmid[i];	
       } else if (nlpvalmid < lb - solAbsTol_){
-	  for (Int i = 0; i < numvars_; ++i)
+	  for (int i = 0; i < numvars_; ++i)
 	    x1[i] = xmid[i];
       }
       nlpvalmid = f->eval(xmid,&error);
@@ -4047,11 +4047,11 @@ UInt quasiQGHandler::bisectAddCut_(ConstraintPtr con,const Double *xlp, const Do
   return ncut;
 }
 
-UInt quasiQGHandler::solvePointProb_(const Double *xlp)
+UInt quasiQGHandler::solvePointProb_(const double *xlp)
 {
   UInt ncut = 0;
   UInt ncut1;
-  const Double *x;
+  const double *x;
   ConstraintPtr con;
   std::cout << "P1 \n";
   updatePointProb_(xlp);
@@ -4087,9 +4087,9 @@ UInt quasiQGHandler::QuasiECP_ContNLPLimited(ConstSolutionPtr sol)
 {
   UInt num_cut = 0;
   numvars_ = minlp_->getNumVars();
-  Double nlpval;
-  const Double *x = sol->getPrimal();
-  const Double *xnlp;//= new Double[numvars_];
+  double nlpval;
+  const double *x = sol->getPrimal();
+  const double *xnlp;//= new double[numvars_];
   std::stack<Modification *> mods;
 
   copyLPBounds_(&mods);
@@ -4110,14 +4110,14 @@ UInt quasiQGHandler::QuasiECP_ContNLPLimited(ConstSolutionPtr sol)
 UInt quasiQGHandler::QuasiECP_ContProj(ConstSolutionPtr sol)
 {
   UInt num_cut = 0;
-  const Double *x = sol->getPrimal();
-  const Double *xproj; 
+  const double *x = sol->getPrimal();
+  const double *xproj; 
   VariablePtr v;
   FunctionPtr f;
   FunctionPtr orjProjObj = proj_minlp_->getObjective()->getFunction();
  
   lf_pure_->clearAll();
-  Int i = 0;
+  int i = 0;
   for (VariableConstIterator it=proj_minlp_->varsBegin(); it!=proj_minlp_->varsEnd();++it){
     v = *it;
     lf_pure_->addTerm(v,-1.0*x[i]);
@@ -4165,9 +4165,9 @@ UInt quasiQGHandler::QuasiECP_ContNLP(ConstSolutionPtr sol)
 {
   UInt num_cut = 0;
   numvars_ = minlp_->getNumVars();
-  Double nlpval;
-  const Double *x = sol->getPrimal();
-  const Double *xnlp;//= new Double[numvars_];
+  double nlpval;
+  const double *x = sol->getPrimal();
+  const double *xnlp;//= new double[numvars_];
   std::stack<Modification *> mods;
 
   copyLPBounds_(&mods);
@@ -4203,12 +4203,12 @@ UInt quasiQGHandler::QuasiECP_ContNLP(ConstSolutionPtr sol)
   return num_cut;
 }
 
-UInt quasiQGHandler::allLinearAt_(const Double *x,const Double *xlp)
+UInt quasiQGHandler::allLinearAt_(const double *x,const double *xlp)
 {
-  Double act,lpact,nlpact,c;
+  double act,lpact,nlpact,c;
   ConstraintPtr con,newcon;
   FunctionPtr f,f2;
-  Int error;
+  int error;
   UInt ncut = 0;
   LinearFunctionPtr lf = LinearFunctionPtr();
   ObjectivePtr o = minlp_->getObjective();
@@ -4258,7 +4258,7 @@ UInt quasiQGHandler::allLinearAt_(const Double *x,const Double *xlp)
   }
 
   if (oNl_ && o){
-    Double viol;
+    double viol;
     f = o->getFunction();
     //act = f->eval(xlp,&error);
     act = o->eval(xlp,&error);
@@ -4282,25 +4282,25 @@ UInt quasiQGHandler::allLinearAt_(const Double *x,const Double *xlp)
   return ncut;
 }
 
-Int quasiQGHandler::ECPCuts_(ConstSolutionPtr sol)
+int quasiQGHandler::ECPCuts_(ConstSolutionPtr sol)
 {
   ConstraintPtr con, newcon;
-  Int numvars = minlp_->getNumVars();
-  Double nlpact1 = 0.0;
-  Int error;
-  Double cnst;
-  //Double cnst1;
-  Double gap=0.0;
-  const Double *x = sol->getPrimal();
-  Double *gr = new Double[numvars];
-  Double gnorm = 0.0;
+  int numvars = minlp_->getNumVars();
+  double nlpact1 = 0.0;
+  int error;
+  double cnst;
+  //double cnst1;
+  double gap=0.0;
+  const double *x = sol->getPrimal();
+  double *gr = new double[numvars];
+  double gnorm = 0.0;
 
   LinearFunctionPtr lf;
   FunctionPtr f,f2;
   ObjectivePtr o = minlp_->getObjective();
   relobj_ = sol->getObjValue();
-  Int ncut = 0;
-  Double Tol = tolECP_;
+  int ncut = 0;
+  double Tol = tolECP_;
   
   for (CCIter it = nlCons_.begin(); it != nlCons_.end(); ++it)
   {
@@ -4310,7 +4310,7 @@ Int quasiQGHandler::ECPCuts_(ConstSolutionPtr sol)
     if (nlpact1 > con->getUb() + solAbsTol_){
 //      std::cout << "violation = " << nlpact1 - con->getUb() << "\n";
       linearAt_(f, nlpact1, x, &cnst, &lf, gr);//, &cnst1);
-//      for (Int i = 0; i < numvars; ++i)
+//      for (int i = 0; i < numvars; ++i)
 //	if (abs(gr[i]) > 1e-6)
 // 	  std::cout << " gr[" << i << "]=" << gr[i];
 //      std::cout << "\n";
@@ -4394,7 +4394,7 @@ Int quasiQGHandler::ECPCuts_(ConstSolutionPtr sol)
   return ncut;
 }
 
-Int quasiQGHandler::strECPCuts_(ConstSolutionPtr sol)
+int quasiQGHandler::strECPCuts_(ConstSolutionPtr sol)
 {
 
 #ifdef TimerLS
@@ -4402,36 +4402,36 @@ Int quasiQGHandler::strECPCuts_(ConstSolutionPtr sol)
   timer_->start();
 #endif
   ConstraintPtr con, newcon;
-  Int numvars = minlp_->getNumVars();
-  Double nlpact1 = 0.0;
-  Int error;
-  Double cnst;
-  Double gap=0.0;
-  Double gnorm;
-  Double nlpact0 = 0.0;
-  Double nlpactm = 0.0;
+  int numvars = minlp_->getNumVars();
+  double nlpact1 = 0.0;
+  int error;
+  double cnst;
+  double gap=0.0;
+  double gnorm;
+  double nlpact0 = 0.0;
+  double nlpactm = 0.0;
 
-  const Double *x = sol->getPrimal();
-  Double *xalpha = new Double[numvars];
-  Double *gr = new Double[numvars];
-  Double *dir  = new Double[numvars];
-  Double *dir1 = new Double[numvars];
+  const double *x = sol->getPrimal();
+  double *xalpha = new double[numvars];
+  double *gr = new double[numvars];
+  double *dir  = new double[numvars];
+  double *dir1 = new double[numvars];
 
   LinearFunctionPtr lf;
   FunctionPtr f,f2;
   ObjectivePtr o = minlp_->getObjective();
   relobj_ = sol->getObjValue();
-  Int ncut = 0;
+  int ncut = 0;
 
-  Double alphau = 1.0;
-  Double alpha = 0.0;
-  Double adAlpha = 0.0;
+  double alphau = 1.0;
+  double alpha = 0.0;
+  double adAlpha = 0.0;
   Bool stop = false;  
-  Double n1;
-  Double e = 0.1;
-  Double beta1 = 1.0-e;
-  Double beta2 = 1.0+e;
-  Double Tol = 0.01;
+  double n1;
+  double e = 0.1;
+  double beta1 = 1.0-e;
+  double beta2 = 1.0+e;
+  double Tol = 0.01;
   Bool admit = false;
 /*
   for (CCIter it = nlCons_.begin(); it!=nlCons_.end(); ++it){
@@ -4441,19 +4441,19 @@ Int quasiQGHandler::strECPCuts_(ConstSolutionPtr sol)
     nlpact1 = con->getActivity(x,&error);
     if (nlpact1 > solAbsTol_ + con->getUb()){
       gnorm = 0.0;
-      for (Int i=0; i < numvars; i++)
+      for (int i=0; i < numvars; i++)
         gnorm = gnorm + gr[i]*gr[i];
 
       gnorm = sqrt(gnorm);
-      for (Int i=0; i < numvars; i++)
+      for (int i=0; i < numvars; i++)
         dir[i] = dir[i] + gr[i]/gnorm;
     }
     if (nlpact1 < con->getLb()-solAbsTol_){
       gnorm = 0.0;
-      for (Int i=0; i < numvars; i++)
+      for (int i=0; i < numvars; i++)
         gnorm = gnorm + gr[i]*gr[i];
 
-      for (Int i=0; i < numvars; i++)
+      for (int i=0; i < numvars; i++)
         dir[i] = dir[i] - gr[i]/gnorm;
     }  
   }
@@ -4476,14 +4476,14 @@ Int quasiQGHandler::strECPCuts_(ConstSolutionPtr sol)
       alpha = alphau;
       n1 = 0;
       while (stop = false && n1 <= 1000){
-	for (Int i = 0; i < numvars; ++i){
+	for (int i = 0; i < numvars; ++i){
           xalpha[i] = x[i] - alpha * dir[i];
 	}
         nlpact0 = f->eval(xalpha,&error);
         if (nlpact0 > con->getUb() + solAbsTol_){
 	  std::fill(gr,gr+numvars,0.0);
 	  con->getFunction()->evalGradient(xalpha,gr,&error);
-	  for (Int i = 0; i < numvars; ++i)
+	  for (int i = 0; i < numvars; ++i)
 	    dir1[i] = x[i] - xalpha[i];
 
 	  if (InnerProduct(dir1,gr,numvars) > -solAbsTol_){
@@ -4504,7 +4504,7 @@ Int quasiQGHandler::strECPCuts_(ConstSolutionPtr sol)
         }
       }
       alpha = adAlpha;
-      for (Int i = 0; i < numvars; ++i)
+      for (int i = 0; i < numvars; ++i)
         xalpha[i] = x[i] - alpha * dir[i];
 */
 //      std::cout << " ************** gnorm = " << gnorm << "\n";
@@ -4601,38 +4601,38 @@ Int quasiQGHandler::strECPCuts_(ConstSolutionPtr sol)
   return ncut;
 }
 
-void quasiQGHandler::ExtraCutsCvx_(const Double *x, const Double *xnlp)
+void quasiQGHandler::ExtraCutsCvx_(const double *x, const double *xnlp)
 {
   ConstraintPtr con, newcon;
-  Int numvars = minlp_->getNumVars();
-  Double *xalpha = new Double[numvars];
-  Double *gr = new Double[numvars];
-  Double *dir = new Double[numvars];
+  int numvars = minlp_->getNumVars();
+  double *xalpha = new double[numvars];
+  double *gr = new double[numvars];
+  double *dir = new double[numvars];
 
 
-  Double nlpact0 = 0.0;
-  Double nlpact1 = 0.0;
-  Double nlpact2 = 0.0;
-  Int error;
-  Double cnst;
+  double nlpact0 = 0.0;
+  double nlpact1 = 0.0;
+  double nlpact2 = 0.0;
+  int error;
+  double cnst;
 
   LinearFunctionPtr lf;
   FunctionPtr f,f2;
 
-  Double alphal = 0.0;
-  Double alphau = 1.0;
-  Double alpha = 0.0;
-  Double alphaC = 0.0;
+  double alphal = 0.0;
+  double alphau = 1.0;
+  double alpha = 0.0;
+  double alphaC = 0.0;
   Bool stop = false;
   Bool stop1 = false;
-  Double adAlpha = 0.0;
+  double adAlpha = 0.0;
 
-  Double alpha0 = 0.05;
-  Double beta   = 0.1;
-  Double gnorm = 0.0;
+  double alpha0 = 0.05;
+  double beta   = 0.1;
+  double gnorm = 0.0;
 
-  Int ncut = 0;
-//  Int n1 = 0;
+  int ncut = 0;
+//  int n1 = 0;
   for (CCIter it = nlCons_.begin(); it!=nlCons_.end(); ++it)
   {
 //    std::cout << "n1 = " << n1++ << "\n";
@@ -4645,11 +4645,11 @@ void quasiQGHandler::ExtraCutsCvx_(const Double *x, const Double *xnlp)
       std::fill(gr, gr+numvars, 0.0);
       con->getFunction()->evalGradient(x,gr,&error);
       gnorm = 0.0;
-      for (Int i = 0; i < numvars; i++)
+      for (int i = 0; i < numvars; i++)
 	gnorm = gnorm + gr[i] * gr[i];
 
       gnorm = sqrt(gnorm);
-      for (Int i = 0; i < numvars; i++)
+      for (int i = 0; i < numvars; i++)
 	dir[i] = dir[i] + gr[i]/gnorm;
     }
 
@@ -4658,11 +4658,11 @@ void quasiQGHandler::ExtraCutsCvx_(const Double *x, const Double *xnlp)
       std::fill(gr, gr+numvars, 0.0);
       con->getFunction()->evalGradient(x,gr,&error);
       gnorm = 0.0;
-      for (Int i = 0; i < numvars; i++)
+      for (int i = 0; i < numvars; i++)
 	gnorm = gnorm + gr[i] * gr[i];
 
       gnorm = sqrt(gnorm);
-      for (Int i = 0; i < numvars; i++)
+      for (int i = 0; i < numvars; i++)
 	dir[i] = dir[i] - gr[i]/gnorm;
 
     }
@@ -4692,7 +4692,7 @@ void quasiQGHandler::ExtraCutsCvx_(const Double *x, const Double *xnlp)
       {
 	alpha  = (alphal+alphau)*0.5;
         alphac = 1-alpha;
-        for (Int i = 0; i < numvars; ++i)
+        for (int i = 0; i < numvars; ++i)
           xalpha[i] = alphac * x[i] + alpha * xnlp[i];
       
         alphau = alpha;
@@ -4704,7 +4704,7 @@ void quasiQGHandler::ExtraCutsCvx_(const Double *x, const Double *xnlp)
       {
         alpha = (alphal + alphau) * 0.5;
 	alphac = 1.0 - alphac;
-        for (Int i = 0; i < numvars; ++i)
+        for (int i = 0; i < numvars; ++i)
           xalpha[i] = alphac * x[i] + alpha * xnlp[i];
 
         nlpact0 = con->getActivity(xalpha,&error);
@@ -4719,7 +4719,7 @@ void quasiQGHandler::ExtraCutsCvx_(const Double *x, const Double *xnlp)
       if (stop = false){
 	alpha = adAlpha;
 	alphac = 1.0 - alpha;
-        for (Int i = 0; i < numvars; ++i)
+        for (int i = 0; i < numvars; ++i)
           xalpha[i] = alphac * x[i] + alpha * xnlp[i];	
       }
 */
@@ -4730,7 +4730,7 @@ void quasiQGHandler::ExtraCutsCvx_(const Double *x, const Double *xnlp)
 	alpha0 = alpha;
 	alpha = (alphal + alphau)*0.5;
 	alphac = 1.0 - alpha;
-	for (Int i = 0; i < numvars; ++i)
+	for (int i = 0; i < numvars; ++i)
           xalpha[i] = alphac * x[i] + alpha * xnlp[i];
 
 	alphau = alpha;
@@ -4738,7 +4738,7 @@ void quasiQGHandler::ExtraCutsCvx_(const Double *x, const Double *xnlp)
       }
       std::cout << "alpha0 = " << alpha0 << "\n";
       alphac = 1-alpha0;
-      for (Int i = 0; i < numvars; ++i)
+      for (int i = 0; i < numvars; ++i)
         xalpha[i] = alphac * x[i] + alpha0 * xnlp[i];
 
 */
@@ -4754,7 +4754,7 @@ void quasiQGHandler::ExtraCutsCvx_(const Double *x, const Double *xnlp)
       while (stop1 == false)
       {
         alpha = alphau; 
-	for (Int i = 0; i < numvars; ++i)
+	for (int i = 0; i < numvars; ++i)
           xalpha[i] = x[i] - alpha * dir[i];	
         nlpact0 = con->getActivity(xalpha,&error);	  
 
@@ -4768,7 +4768,7 @@ void quasiQGHandler::ExtraCutsCvx_(const Double *x, const Double *xnlp)
       while (stop == false && (alphau - alphal) > 1e-3)
       {
 	alpha = (alphal + alphau) * 0.5;
-	for (Int i = 0; i < numvars; ++i)
+	for (int i = 0; i < numvars; ++i)
           xalpha[i] = x[i] - alpha * dir[i];
         nlpact0 = con->getActivity(xalpha,&error);
 	if (nlpact0 > con->getUb() + solAbsTol_) {
@@ -4790,7 +4790,7 @@ void quasiQGHandler::ExtraCutsCvx_(const Double *x, const Double *xnlp)
 
       if (stop == false && stop1 == true){
 	alpha = adAlpha;
-	for (Int i = 0; i < numvars; ++i)
+	for (int i = 0; i < numvars; ++i)
           xalpha[i] = x[i] - alpha * dir[i];
       }
       
@@ -4825,7 +4825,7 @@ void quasiQGHandler::ExtraCutsCvx_(const Double *x, const Double *xnlp)
 	alpha0 = alpha;
 	alpha  = (alphal+alphau)*0.5;
         alphac = 1-alpha;
-        for (Int i = 0; i < numvars; ++i)
+        for (int i = 0; i < numvars; ++i)
           xalpha[i] = alphac * x[i] + alpha * xnlp[i];
       
 	alphau = alpha;
@@ -4843,7 +4843,7 @@ void quasiQGHandler::ExtraCutsCvx_(const Double *x, const Double *xnlp)
       {
         alpha = (alphal + alphau) * 0.5;
 	alphac = 1.0 - alphac;
-        for (Int i = 0; i < numvars; ++i)
+        for (int i = 0; i < numvars; ++i)
           xalpha[i] = alphac * x[i] + alpha * xnlp[i];
 
         nlpact0 = con->getActivity(xalpha,&error);
@@ -4859,14 +4859,14 @@ void quasiQGHandler::ExtraCutsCvx_(const Double *x, const Double *xnlp)
       if (stop = false){
 	alpha = adAlpha;
   	alphac = 1.0 - alpha;
-        for (Int i = 0; i < numvars; ++i)
+        for (int i = 0; i < numvars; ++i)
           xalpha[i] = alphac * x[i] + alpha * xnlp[i];	
       }
 */
 /*
       std::cout << "alpha0 = " << alpha0 << "\n";
       alphac = 1-alpha0;
-      for (Int i = 0; i < numvars; ++i)
+      for (int i = 0; i < numvars; ++i)
         xalpha[i] = alphac * x[i] + alpha0 * xnlp[i];
 */
 ///////////////////////////////////
@@ -4881,7 +4881,7 @@ void quasiQGHandler::ExtraCutsCvx_(const Double *x, const Double *xnlp)
       while (stop1 == false)
       {
         alpha = alphau; 
-	for (Int i = 0; i < numvars; ++i)
+	for (int i = 0; i < numvars; ++i)
           xalpha[i] = x[i] + alpha * dir[i];	
         nlpact0 = con->getActivity(xalpha,&error);	  
 
@@ -4894,7 +4894,7 @@ void quasiQGHandler::ExtraCutsCvx_(const Double *x, const Double *xnlp)
       while (stop == false && (alphau - alphal) > 1e-3)
       {
 	alpha = (alphal + alphau) * 0.5;
-	for (Int i = 0; i < numvars; ++i)
+	for (int i = 0; i < numvars; ++i)
           xalpha[i] = x[i] + alpha * dir[i];
 
         nlpact0 = con->getActivity(xalpha,&error);
@@ -4917,7 +4917,7 @@ void quasiQGHandler::ExtraCutsCvx_(const Double *x, const Double *xnlp)
 
       if (stop == false && stop1 == true){
 	alpha = adAlpha;
-	for (Int i = 0; i < numvars; ++i)
+	for (int i = 0; i < numvars; ++i)
           xalpha[i] = x[i] + alpha * dir[i];
       }
 
@@ -4946,38 +4946,38 @@ void quasiQGHandler::ExtraCutsCvx_(const Double *x, const Double *xnlp)
   delete [] xalpha; 
 }
 
-void quasiQGHandler::ExtraCuts_(const Double *x, const Double *xnlp)
+void quasiQGHandler::ExtraCuts_(const double *x, const double *xnlp)
 {
 
   std::cout << "begin extracuts\n";
   ConstraintPtr con,newcon;
-  Int numvars = minlp_->getNumVars();
-  Double *xalpha = new Double[numvars];
-  Double *gr = new Double[numvars];
-  Double *dir = new Double[numvars];
+  int numvars = minlp_->getNumVars();
+  double *xalpha = new double[numvars];
+  double *gr = new double[numvars];
+  double *dir = new double[numvars];
 
-  Double nlpact1 = 0.0; 
-  Double nlpact2 = 0.0;
-  Double nlpact0 = 0.0;
-  Int error;
-  Double cnst;
+  double nlpact1 = 0.0; 
+  double nlpact2 = 0.0;
+  double nlpact0 = 0.0;
+  int error;
+  double cnst;
 
   LinearFunctionPtr lf;
   FunctionPtr f;
   FunctionPtr f2;
 
-  Double alphal = 0.0;
-  Double alphau = 1.0;
-  Double alpha  = 0.0;
-  Double alphac = 0.0;
-  Double adAlpha = 0.0;
+  double alphal = 0.0;
+  double alphau = 1.0;
+  double alpha  = 0.0;
+  double alphac = 0.0;
+  double adAlpha = 0.0;
   Bool stop = false;
   Bool stop1 = false;
 
-  Double alpha0 = 0.05;
-  Double beta   = 0.1;
-  Double gnorm = 0.0;
-  Int ncut = 0;
+  double alpha0 = 0.05;
+  double beta   = 0.1;
+  double gnorm = 0.0;
+  int ncut = 0;
 
   for (CCIter it = nlCons_.begin(); it!=nlCons_.end(); ++it)
   {
@@ -4989,11 +4989,11 @@ void quasiQGHandler::ExtraCuts_(const Double *x, const Double *xnlp)
       std::fill(gr, gr+numvars, 0.0);
       con->getFunction()->evalGradient(x,gr,&error);
       gnorm = 0.0;
-      for (Int i = 0; i < numvars; i++)
+      for (int i = 0; i < numvars; i++)
 	gnorm = gnorm + gr[i] * gr[i];
 
       gnorm = sqrt(gnorm);
-      for (Int i = 0; i < numvars; i++)
+      for (int i = 0; i < numvars; i++)
 	dir[i] = dir[i] + gr[i]/gnorm;
     }
 
@@ -5002,15 +5002,15 @@ void quasiQGHandler::ExtraCuts_(const Double *x, const Double *xnlp)
       std::fill(gr, gr+numvars, 0.0);
       con->getFunction()->evalGradient(x,gr,&error);
       gnorm = 0.0;
-      for (Int i = 0; i < numvars; i++)
+      for (int i = 0; i < numvars; i++)
 	gnorm = gnorm + gr[i] * gr[i];
       gnorm = sqrt(gnorm);
-      for (Int i = 0; i < numvars; i++)
+      for (int i = 0; i < numvars; i++)
 	dir[i] = dir[i] - gr[i]/gnorm;
     }
   }
 
-  Int n1 = 0;
+  int n1 = 0;
   for (CCIter it = nlCons_.begin(); it!=nlCons_.end(); ++it)
   {
     std::cout << "n1 = " << n1++ << "\n";
@@ -5030,7 +5030,7 @@ void quasiQGHandler::ExtraCuts_(const Double *x, const Double *xnlp)
       {
 	alpha  = (alphal+alphau)*0.5;
         alphac = 1-alpha;
-        for (Int i = 0; i < numvars; ++i)
+        for (int i = 0; i < numvars; ++i)
           xalpha[i] = alphac * x[i] + alpha * xnlp[i];
       
         alphau = alpha;
@@ -5042,7 +5042,7 @@ void quasiQGHandler::ExtraCuts_(const Double *x, const Double *xnlp)
       {
         alpha = (alphal + alphau) * 0.5;
 	alphac = 1.0 - alphac;
-        for (Int i = 0; i < numvars; ++i)
+        for (int i = 0; i < numvars; ++i)
           xalpha[i] = alphac * x[i] + alpha * xnlp[i];
 
         nlpact0 = con->getActivity(xalpha,&error);
@@ -5057,7 +5057,7 @@ void quasiQGHandler::ExtraCuts_(const Double *x, const Double *xnlp)
       if (stop = false){
 	alpha = adAlpha;
 	alphac = 1.0 - alpha;
-        for (Int i = 0; i < numvars; ++i)
+        for (int i = 0; i < numvars; ++i)
           xalpha[i] = alphac * x[i] + alpha * xnlp[i];	
       }
 */
@@ -5068,7 +5068,7 @@ void quasiQGHandler::ExtraCuts_(const Double *x, const Double *xnlp)
 	alpha0 = alpha;
 	alpha = (alphal + alphau)*0.5;
 	alphac = 1.0 - alpha;
-	for (Int i = 0; i < numvars; ++i)
+	for (int i = 0; i < numvars; ++i)
           xalpha[i] = alphac * x[i] + alpha * xnlp[i];
 
 	alphau = alpha;
@@ -5076,7 +5076,7 @@ void quasiQGHandler::ExtraCuts_(const Double *x, const Double *xnlp)
       }
       std::cout << "alpha0 = " << alpha0 << "\n";
       alphac = 1-alpha0;
-      for (Int i = 0; i < numvars; ++i)
+      for (int i = 0; i < numvars; ++i)
         xalpha[i] = alphac * x[i] + alpha0 * xnlp[i];
 
 */
@@ -5092,7 +5092,7 @@ void quasiQGHandler::ExtraCuts_(const Double *x, const Double *xnlp)
       while (stop1 == false)
       {
         alpha = alphau; 
-	for (Int i = 0; i < numvars; ++i)
+	for (int i = 0; i < numvars; ++i)
           xalpha[i] = x[i] - alpha * dir[i];	
         nlpact0 = con->getActivity(xalpha,&error);	  
 
@@ -5108,7 +5108,7 @@ void quasiQGHandler::ExtraCuts_(const Double *x, const Double *xnlp)
       {
 	alpha = (alphal + alphau) * 0.5;
 //	std::cout << "alpha = " << alpha << "\n";
-	for (Int i = 0; i < numvars; ++i)
+	for (int i = 0; i < numvars; ++i)
           xalpha[i] = x[i] - alpha * dir[i];
 
         nlpact0 = con->getActivity(xalpha,&error);
@@ -5135,7 +5135,7 @@ void quasiQGHandler::ExtraCuts_(const Double *x, const Double *xnlp)
       if (stop == false && stop1 == true){
 //	std::cout << "2222\n";
 	alpha = adAlpha;
-	for (Int i = 0; i < numvars; ++i)
+	for (int i = 0; i < numvars; ++i)
           xalpha[i] = x[i] - alpha * dir[i];
       } 
       
@@ -5175,7 +5175,7 @@ void quasiQGHandler::ExtraCuts_(const Double *x, const Double *xnlp)
 	alpha0 = alpha;
 	alpha  = (alphal+alphau)*0.5;
         alphac = 1-alpha;
-        for (Int i = 0; i < numvars; ++i)
+        for (int i = 0; i < numvars; ++i)
           xalpha[i] = alphac * x[i] + alpha * xnlp[i];
       
 	alphau = alpha;
@@ -5193,7 +5193,7 @@ void quasiQGHandler::ExtraCuts_(const Double *x, const Double *xnlp)
       {
         alpha = (alphal + alphau) * 0.5;
 	alphac = 1.0 - alphac;
-        for (Int i = 0; i < numvars; ++i)
+        for (int i = 0; i < numvars; ++i)
           xalpha[i] = alphac * x[i] + alpha * xnlp[i];
 
         nlpact0 = con->getActivity(xalpha,&error);
@@ -5209,14 +5209,14 @@ void quasiQGHandler::ExtraCuts_(const Double *x, const Double *xnlp)
       if (stop = false){
 	alpha = adAlpha;
   	alphac = 1.0 - alpha;
-        for (Int i = 0; i < numvars; ++i)
+        for (int i = 0; i < numvars; ++i)
           xalpha[i] = alphac * x[i] + alpha * xnlp[i];	
       }
 */
 /*
       std::cout << "alpha0 = " << alpha0 << "\n";
       alphac = 1-alpha0;
-      for (Int i = 0; i < numvars; ++i)
+      for (int i = 0; i < numvars; ++i)
         xalpha[i] = alphac * x[i] + alpha0 * xnlp[i];
 */
 ///////////////////////////////////
@@ -5231,7 +5231,7 @@ void quasiQGHandler::ExtraCuts_(const Double *x, const Double *xnlp)
       while (stop1 == false)
       {
         alpha = alphau; 
-	for (Int i = 0; i < numvars; ++i)
+	for (int i = 0; i < numvars; ++i)
           xalpha[i] = x[i] + alpha * dir[i];	
         nlpact0 = con->getActivity(xalpha,&error);	  
 
@@ -5244,7 +5244,7 @@ void quasiQGHandler::ExtraCuts_(const Double *x, const Double *xnlp)
       while (stop == false && (alphau - alphal) > 1e-3)
       {
 	alpha = (alphal + alphau) * 0.5;
-	for (Int i = 0; i < numvars; ++i)
+	for (int i = 0; i < numvars; ++i)
           xalpha[i] = x[i] + alpha * dir[i];
         nlpact0 = con->getActivity(xalpha,&error);
 	if (nlpact0 < con->getLb() - solAbsTol_) {
@@ -5266,7 +5266,7 @@ void quasiQGHandler::ExtraCuts_(const Double *x, const Double *xnlp)
 
       if (stop == false && stop1 == true){
 	alpha = adAlpha;
-	for (Int i = 0; i < numvars; ++i)
+	for (int i = 0; i < numvars; ++i)
           xalpha[i] = x[i] + alpha * dir[i];
       }
 
@@ -5293,48 +5293,48 @@ void quasiQGHandler::ExtraCuts_(const Double *x, const Double *xnlp)
   delete [] xalpha;
 }
 
-void quasiQGHandler::LineSearch2_(ConstraintPtr con, const Double *x,
-				    Double *xalpha, Double *gr, Bool *admit)
+void quasiQGHandler::LineSearch2_(ConstraintPtr con, const double *x,
+				    double *xalpha, double *gr, Bool *admit)
 {
-  Int error = 0;
-  Int numvars = minlp_->getNumVars();
+  int error = 0;
+  int numvars = minlp_->getNumVars();
   FunctionPtr f = con->getFunction();
-  Double ub = con->getUb();
-  Double act0 = f->eval(x,&error) - ub;
-  Double *gr1 = new Double[numvars];
+  double ub = con->getUb();
+  double act0 = f->eval(x,&error) - ub;
+  double *gr1 = new double[numvars];
   //f->evalGradient(x,gr,&error);
-  Double gnorm = InnerProduct(gr,gr,numvars);
-  Double alpha = act0 / sqrt(gnorm);
-  Double viol = 0.0;
+  double gnorm = InnerProduct(gr,gr,numvars);
+  double alpha = act0 / sqrt(gnorm);
+  double viol = 0.0;
   
-  Double alpham;
-  Double alphau;
-  Double alphal = 0.0;
+  double alpham;
+  double alphau;
+  double alphal = 0.0;
 
-  Double act1;
-  Double act2;
-  Double actm;
-  Double *x1 = new Double[numvars];
-  Double *x2 = new Double[numvars];
-  Double *xm = new Double[numvars];
+  double act1;
+  double act2;
+  double actm;
+  double *x1 = new double[numvars];
+  double *x2 = new double[numvars];
+  double *xm = new double[numvars];
   Bool repeat = true;
-  Double beta1 = 0.95;
-  Double beta2 = 1.05;
-  Double K;
-  Int n1 = 0;
+  double beta1 = 0.95;
+  double beta2 = 1.05;
+  double K;
+  int n1 = 0;
 #ifdef PrEXCUT
   std::cout << "\n**********************\n";
 #endif
 
 //  std::cout << "\n**********************\n";
   gnorm = sqrt(InnerProduct(gr,gr,numvars));
-  Double sgnorm = 1.0; //sqrt(gnorm);
+  double sgnorm = 1.0; //sqrt(gnorm);
 //  std::cout << " ************** gnorm = " << gnorm << "\n";
   n1 = 0;
   while (repeat == true && n1 < 1000){
     n1++;
 //    std::cout << "1\n";
-    for (Int i = 0; i < numvars; ++i)
+    for (int i = 0; i < numvars; ++i)
       xalpha[i] = x[i] - alpha * gr[i];
 //    std::cout << "2\n";
     act1 = f->eval(xalpha, &error) - ub;
@@ -5377,7 +5377,7 @@ void quasiQGHandler::LineSearch2_(ConstraintPtr con, const Double *x,
   if (repeat == true && act1 > -solAbsTol_){
 //    std::cout << "22222222222\n";
     *admit = true;
-    for (Int i = 0; i < numvars; ++i)
+    for (int i = 0; i < numvars; ++i)
       gr[i] = gr1[i];
     delete [] gr1;
     delete [] x1;
@@ -5400,7 +5400,7 @@ void quasiQGHandler::LineSearch2_(ConstraintPtr con, const Double *x,
 //  std::cout << "8\n";
   if (act1 > -solAbsTol_){
 //    std::cout << "9\n";
-//    for (Int i = 0; i < numvars; ++i)
+//    for (int i = 0; i < numvars; ++i)
 //      xalpha[i] = x[i] - alpha * gr[i];
 #ifdef TimerLS
     timer_->start();
@@ -5422,7 +5422,7 @@ void quasiQGHandler::LineSearch2_(ConstraintPtr con, const Double *x,
 //    std::cout << "10\n";
     alphau = alpha;
     repeat = true;
-    for (Int i = 0; i < numvars; ++i){
+    for (int i = 0; i < numvars; ++i){
       x1[i] = x[i];
       x2[i] = x[i] - alphau * gr[i];
     }
@@ -5437,25 +5437,25 @@ void quasiQGHandler::LineSearch2_(ConstraintPtr con, const Double *x,
       K = (act2 - act1)/(alphau - alphal);
       alpham = - act1 / K + alphal;
 //      std::cout << " alpham = " << alpham << " ";
-      for (Int i = 0; i < numvars; ++i)
+      for (int i = 0; i < numvars; ++i)
         xm[i] = x[i] - alpham * gr[i];
 
       actm = f->eval(xm,&error) - ub;
 //      std::cout << " actm = " << actm << "\n";
       if (actm < -solAbsTol_){
         alphau = alpham;
-        for (Int i = 0; i < numvars; ++i)
+        for (int i = 0; i < numvars; ++i)
           x2[i] = x[i] - alphau * gr[i];
 
         act2 = actm;
       } else if (actm > solAbsTol_) {
         alphal = alpham;
-        for (Int i = 0; i < numvars; ++i)
+        for (int i = 0; i < numvars; ++i)
           x1[i] = x[i] - alphal * gr[i];
         act1 = actm;
       } else {
         repeat = false;
-        for (Int i = 0; i < numvars; ++i)
+        for (int i = 0; i < numvars; ++i)
           xalpha[i] = x[i] - alpham * gr[i];
       }
 #ifdef PrEXCUT
@@ -5465,7 +5465,7 @@ void quasiQGHandler::LineSearch2_(ConstraintPtr con, const Double *x,
     }
     if (repeat == true && actm > -solAbsTol_){
       *admit = true;
-      for (Int i = 0; i < numvars; ++i)
+      for (int i = 0; i < numvars; ++i)
 	gr[i] = gr1[i];
 
 //      std::cout << "5555555555555\n";
@@ -5491,7 +5491,7 @@ void quasiQGHandler::LineSearch2_(ConstraintPtr con, const Double *x,
 #ifdef TimerLS
   timer_->stop();
 #endif
-  for (Int i = 0; i < numvars; ++i)
+  for (int i = 0; i < numvars; ++i)
     gr[i] = gr1[i];
 
   delete [] gr1;
@@ -5501,40 +5501,40 @@ void quasiQGHandler::LineSearch2_(ConstraintPtr con, const Double *x,
 
 }
 
-Double quasiQGHandler::LineSearch1_(ConstraintPtr con, const Double *x,
-				    Double *xalpha, Double *gr)
+double quasiQGHandler::LineSearch1_(ConstraintPtr con, const double *x,
+				    double *xalpha, double *gr)
 {
-  Int error = 0;
-  Int numvars = minlp_->getNumVars();
+  int error = 0;
+  int numvars = minlp_->getNumVars();
   FunctionPtr f = con->getFunction();
-  Double ub = con->getUb();
-  Double act0 = f->eval(x,&error) - ub;
-//  Double *gr  = new Double[numvars];
-  Double *gr1 = new Double[numvars];
+  double ub = con->getUb();
+  double act0 = f->eval(x,&error) - ub;
+//  double *gr  = new double[numvars];
+  double *gr1 = new double[numvars];
   f->evalGradient(x,gr,&error);
-  Double gnorm = InnerProduct(gr,gr,numvars);
-  Double alphal = 0.0;
-  Double alphau;
-  //Double alpha = act0 / sqrt(gnorm);
-  Double alpha = 10.0;
-  Double alpham;
+  double gnorm = InnerProduct(gr,gr,numvars);
+  double alphal = 0.0;
+  double alphau;
+  //double alpha = act0 / sqrt(gnorm);
+  double alpha = 10.0;
+  double alpham;
 
-  Double act1;
-  Double act2;
-  Double actm;
-  Double *x1 = new Double[numvars];
-  Double *x2 = new Double[numvars];
-  Double *xm = new Double[numvars];
+  double act1;
+  double act2;
+  double actm;
+  double *x1 = new double[numvars];
+  double *x2 = new double[numvars];
+  double *xm = new double[numvars];
 
-//  Double xalpha = new Double[numvars];
+//  double xalpha = new double[numvars];
   
   Bool repeat = true;
-  Double beta1 = 0.9;
-  Double beta2 = 1.1;
-  Double K;
+  double beta1 = 0.9;
+  double beta2 = 1.1;
+  double K;
   
   while (repeat == true){
-    for (Int i = 0; i < numvars; ++i)
+    for (int i = 0; i < numvars; ++i)
       xalpha[i] = x[i] - alpha * gr[i];
     act1 = f->eval(xalpha, &error) - ub;
     if (act1 < solAbsTol_){
@@ -5548,7 +5548,7 @@ Double quasiQGHandler::LineSearch1_(ConstraintPtr con, const Double *x,
   alphau = alpha;
   alphal = 0.0;
   if (act1 > -solAbsTol_){
-//    for (Int i = 0; i < numvars; ++i)
+//    for (int i = 0; i < numvars; ++i)
 //      xalpha[i] = x[i] - alpha * gr[i];
     std::fill(gr,gr+numvars,0.0);
     f->evalGradient(xalpha,gr,&error); 
@@ -5556,7 +5556,7 @@ Double quasiQGHandler::LineSearch1_(ConstraintPtr con, const Double *x,
     return alpha;
   } 
   repeat = true;
-  for (Int i = 0; i < numvars; ++i){
+  for (int i = 0; i < numvars; ++i){
     x1[i] = x[i];
     x2[i] = x[i] - alphau * gr[i];
   }
@@ -5565,54 +5565,54 @@ Double quasiQGHandler::LineSearch1_(ConstraintPtr con, const Double *x,
     act2 = f->eval(x2,&error) - ub;
     K = (act1 - act2)/(alphal - alphau);
     alpham = (K*alphal - act1)/K;
-    for (Int i = 0; i < numvars; ++i)
+    for (int i = 0; i < numvars; ++i)
       xm[i] = x[i] - alpham * gr[i];
 
     actm = f->eval(xm,&error) - ub;
     if (actm < -solAbsTol_){
       alphau = alpham;
-      for (Int i = 0; i < numvars; ++i)
+      for (int i = 0; i < numvars; ++i)
         x2[i] = x[i] - alphau * gr[i];
     } else if (actm > solAbsTol_) {
       alphal = alpham;
-      for (Int i = 0; i < numvars; ++i)
+      for (int i = 0; i < numvars; ++i)
         x1[i] = x[i] - alphal * gr[i];
     } else {
       repeat = false;
-      for (Int i = 0; i < numvars; ++i)
+      for (int i = 0; i < numvars; ++i)
         xalpha[i] = x[i] - alpham * gr[i];
       return alpham;
     }
   }
 }
 
-Double quasiQGHandler::LineSearch_(ConstraintPtr con, const Double *x, 
-				   Double *xalpha, Double *gr)
+double quasiQGHandler::LineSearch_(ConstraintPtr con, const double *x, 
+				   double *xalpha, double *gr)
 {
-  Double alpha0 = 0.0;
-  Double alpham = 100.0;
-  Double alpha = 100.0;
-  Double alphai = 100.0;
+  double alpha0 = 0.0;
+  double alpham = 100.0;
+  double alpha = 100.0;
+  double alphai = 100.0;
   Bool repeat = true;
-  Double alpha2 = alpha0;
-  Double alpha1 = alphai;
+  double alpha2 = alpha0;
+  double alpha1 = alphai;
   
-  Double c1 = 1e-4;
-  Double c2 = 0.9;
-  Int numvars = minlp_->getNumVars();
-  Int error= 0.0;
+  double c1 = 1e-4;
+  double c2 = 0.9;
+  int numvars = minlp_->getNumVars();
+  int error= 0.0;
   FunctionPtr f = con->getFunction();
-  Double ub = con->getUb();
-  Double act = 0.0;
-  Double act1= 0.0;
-  Double act0 = f->eval(x,&error) - ub;
-  Double gnorm = InnerProduct(gr,gr,numvars);
-  Double *gr1 = new Double[numvars];
-  Double phi_p_i = 0.0;
+  double ub = con->getUb();
+  double act = 0.0;
+  double act1= 0.0;
+  double act0 = f->eval(x,&error) - ub;
+  double gnorm = InnerProduct(gr,gr,numvars);
+  double *gr1 = new double[numvars];
+  double phi_p_i = 0.0;
 
   std::cout << "beginning of LineSearch_\n";
   while (repeat==true) {
-    for (Int i = 0; i < numvars; ++i) 
+    for (int i = 0; i < numvars; ++i) 
       xalpha[i] = x[i] - alphai * gr[i];
     act = f->eval(xalpha, &error) - ub;
 //    std::cout << "act = " << act << " ";
@@ -5649,45 +5649,45 @@ Double quasiQGHandler::LineSearch_(ConstraintPtr con, const Double *x,
   return alpha;
 }
 
-Double quasiQGHandler::zoom_(ConstraintPtr con, Double alpha1, Double alpha2, Double fval, Double gnorm,
-			     const Double *x, Double *gr)
+double quasiQGHandler::zoom_(ConstraintPtr con, double alpha1, double alpha2, double fval, double gnorm,
+			     const double *x, double *gr)
 {
 
 
-  Int numvars = minlp_->getNumVars();
-  Double *xalpha1 = new Double[numvars];
-  Double *xalpha2 = new Double[numvars];
-  Double *xalphaj = new Double[numvars];
-  Double *grj = new Double[numvars];
-  Double *xalpha = new Double[numvars];
-  Double actj = 0.0;
+  int numvars = minlp_->getNumVars();
+  double *xalpha1 = new double[numvars];
+  double *xalpha2 = new double[numvars];
+  double *xalphaj = new double[numvars];
+  double *grj = new double[numvars];
+  double *xalpha = new double[numvars];
+  double actj = 0.0;
   FunctionPtr f = con->getFunction();
-  Double ub = con->getUb();
-  Int error = 0.0;
-  Double c1 = 1e-4;
-  Double c2 = 0.9;
+  double ub = con->getUb();
+  int error = 0.0;
+  double c1 = 1e-4;
+  double c2 = 0.9;
   
 
-  for (Int i = 0; i < numvars; ++i){
+  for (int i = 0; i < numvars; ++i){
     xalpha2[i] = x[i] - alpha2 * gr[i];
     xalpha1[i] = x[i] - alpha1 * gr[i];
   }
 
-  Double act2 = f->eval(xalpha2,&error) - ub;
-  Double act1 = f->eval(xalpha1,&error) - ub;
-  Double phi_p_j;
+  double act2 = f->eval(xalpha2,&error) - ub;
+  double act1 = f->eval(xalpha1,&error) - ub;
+  double phi_p_j;
 
   Bool repeat = true;
-  Double alpha;
+  double alpha;
  
   while (repeat == true){
-    Double alphaj = (alpha1 + alpha2)/2;
-    for (Int i = 0; i < numvars; ++i)
+    double alphaj = (alpha1 + alpha2)/2;
+    for (int i = 0; i < numvars; ++i)
       xalpha[i] = x[i] - alphaj * gr[i];
     actj = f->eval(xalpha,&error) - ub;
     if (actj > fval - c1 * alphaj * gnorm + solAbsTol_ || actj > act2){
       alpha1 = alphaj;
-      for (Int i = 0; i < numvars; ++i){
+      for (int i = 0; i < numvars; ++i){
         xalpha1[i] = x[i] - alpha1 * gr[i];
       }
     } else {
@@ -5700,12 +5700,12 @@ Double quasiQGHandler::zoom_(ConstraintPtr con, Double alpha1, Double alpha2, Do
       } 
       if (phi_p_j*(alpha1-alpha2) > -solAbsTol_){
 	alpha1 = alpha2;
-        for (Int i = 0; i < numvars; ++i){
+        for (int i = 0; i < numvars; ++i){
           xalpha1[i] = x[i] - alpha1 * gr[i]; 
          }
       }
       alpha2 = alphaj;
-      for (Int i = 0; i < numvars; ++i){
+      for (int i = 0; i < numvars; ++i){
         xalpha2[i] = x[i] - alpha2 * gr[i];
       }
     }
@@ -5713,21 +5713,21 @@ Double quasiQGHandler::zoom_(ConstraintPtr con, Double alpha1, Double alpha2, Do
 
 }
 
-Int quasiQGHandler::alphaCutProj_(const Double *x_OA, const Double *x_pr, SeparationStatus *status)
+int quasiQGHandler::alphaCutProj_(const double *x_OA, const double *x_pr, SeparationStatus *status)
 {
   
   ConstraintPtr con;
-  Double act;
-  Int error;
+  double act;
+  int error;
   numvars_=minlp_->getNumVars();
-  Double *x_alpha = new Double[numvars_];
-  Int ncut = 0;
+  double *x_alpha = new double[numvars_];
+  int ncut = 0;
   LinearFunctionPtr lf;
   FunctionPtr f;
   FunctionPtr f2;
-  Double lpact, nlpact, c;
+  double lpact, nlpact, c;
   ConstraintPtr newcon;
-  Double lpeval;
+  double lpeval;
   std::cout << "alphaCut begins\n";
   for (CCIter it=nlCons_.begin(); it!=nlCons_.end(); ++it)
   {
@@ -5789,7 +5789,7 @@ Int quasiQGHandler::alphaCutProj_(const Double *x_OA, const Double *x_pr, Separa
   return ncut;
 }
 
-Int quasiQGHandler::pure_project_(const Double *x_OA, SeparationStatus *status)
+int quasiQGHandler::pure_project_(const double *x_OA, SeparationStatus *status)
 {
 
 //  std::cout << "start doing pure project\n";
@@ -5800,17 +5800,17 @@ Int quasiQGHandler::pure_project_(const Double *x_OA, SeparationStatus *status)
 
   VariableConstIterator vbeg = minlp_->varsBegin();
   VariableConstIterator vend = minlp_->varsEnd();
-  Double optval;
+  double optval;
  
   lf_pure_->clearAll();
   FunctionPtr f;
   VariablePtr v;
-  Int error;
-  Double c;
-  Int ncut=0;
-  Double lpact;
+  int error;
+  double c;
+  int ncut=0;
+  double lpact;
 
-  for (Int i = 0; i <numvars_ ; i++)
+  for (int i = 0; i <numvars_ ; i++)
   {
     v = proj_minlp_->getVariable(i); 
     lf_pure_->addTerm(v, -1.0 * x_OA[i]);
@@ -5838,7 +5838,7 @@ Int quasiQGHandler::pure_project_(const Double *x_OA, SeparationStatus *status)
 
     if (optval > solAbsTol_)
     {
-      for (Int i = 0; i < numvars_; i++){
+      for (int i = 0; i < numvars_; i++){
         if (fabs(a_[i]) < solAbsTol_){
           a_[i] = 0;
         }
@@ -5903,14 +5903,14 @@ Int quasiQGHandler::pure_project_(const Double *x_OA, SeparationStatus *status)
 
 }
 
-void quasiQGHandler::linearAt_(FunctionPtr f, Double fval, const Double *x, 
-                          Double *c, LinearFunctionPtr *lf, Double *a, Double *k)
+void quasiQGHandler::linearAt_(FunctionPtr f, double fval, const double *x, 
+                          double *c, LinearFunctionPtr *lf, double *a, double *k)
 {
-  Int n = minlp_->getNumVars();
-//  Double *a = new Double[n];
+  int n = minlp_->getNumVars();
+//  double *a = new double[n];
   VariableConstIterator vbeg = minlp_->varsBegin();
   VariableConstIterator vend = minlp_->varsEnd();
-  Int error=0;
+  int error=0;
 
   std::fill(a, a+n, 0.);
   f->evalGradient(x, a, &error);
@@ -5921,14 +5921,14 @@ void quasiQGHandler::linearAt_(FunctionPtr f, Double fval, const Double *x,
 }
 
 
-void quasiQGHandler::linearAt_(FunctionPtr f, Double fval, const Double *x, 
-                          Double *c, LinearFunctionPtr *lf, Double *a)
+void quasiQGHandler::linearAt_(FunctionPtr f, double fval, const double *x, 
+                          double *c, LinearFunctionPtr *lf, double *a)
 {
-  Int n = minlp_->getNumVars();
-//  Double *a = new Double[n];
+  int n = minlp_->getNumVars();
+//  double *a = new double[n];
   VariableConstIterator vbeg = minlp_->varsBegin();
   VariableConstIterator vend = minlp_->varsEnd();
-  Int error=0;
+  int error=0;
 
   std::fill(a, a+n, 0.);
   f->evalGradient(x, a, &error);
@@ -5938,14 +5938,14 @@ void quasiQGHandler::linearAt_(FunctionPtr f, Double fval, const Double *x,
 }
 
 
-void quasiQGHandler::linearAt_(FunctionPtr f, Double fval, const Double *x, 
-                          Double *c, LinearFunctionPtr *lf)
+void quasiQGHandler::linearAt_(FunctionPtr f, double fval, const double *x, 
+                          double *c, LinearFunctionPtr *lf)
 {
-  Int n = minlp_->getNumVars();
-  Double *a = new Double[n];
+  int n = minlp_->getNumVars();
+  double *a = new double[n];
   VariableConstIterator vbeg = minlp_->varsBegin();
   VariableConstIterator vend = minlp_->varsEnd();
-  Int error=0;
+  int error=0;
 
   std::fill(a, a+n, 0.);
   f->evalGradient(x, a, &error);
@@ -5955,18 +5955,18 @@ void quasiQGHandler::linearAt_(FunctionPtr f, Double fval, const Double *x,
 }
 
 
-void quasiQGHandler::updateUb_(SolutionPoolPtr s_pool, Double *nlpval, 
+void quasiQGHandler::updateUb_(SolutionPoolPtr s_pool, double *nlpval, 
                           Bool *sol_found)
 {
-  Double     val = nlpe_->getSolutionValue();
-  Double bestval = s_pool->getBestSolutionValue();
+  double     val = nlpe_->getSolutionValue();
+  double bestval = s_pool->getBestSolutionValue();
 
   //incSol_ = s_pool->getBestSolution()->getPrimal();
   //BincSol_ = true;
   
 
   if (val <= bestval) { // - solAbsTol_) {
-    const Double *x = nlpe_->getSolution()->getPrimal();
+    const double *x = nlpe_->getSolution()->getPrimal();
 #if SPEW
     logger_->msgStream(LogDebug) 
       << me_ << "new solution found, value = " << val << std::endl;
@@ -5984,19 +5984,19 @@ void quasiQGHandler::updateUb_(SolutionPoolPtr s_pool, Double *nlpval,
   *nlpval = val;
 }
 
-void quasiQGHandler::updateUb_new_(SolutionPoolPtr s_pool, Double *nlpval,
-                              Double *xhat, Bool *sol_found)
+void quasiQGHandler::updateUb_new_(SolutionPoolPtr s_pool, double *nlpval,
+                              double *xhat, Bool *sol_found)
 {
-//  Double val = e->getSolutionValue();
-  //const Double *x1 = new Double[numvars_];
+//  double val = e->getSolutionValue();
+  //const double *x1 = new double[numvars_];
   std::cout << "proj_nlpe_= " << proj_nlpe_->getStatusString() << "\n";
-  Int error = 0;
-  Double val = minlp_->getObjValue(xhat, &error);
+  int error = 0;
+  double val = minlp_->getObjValue(xhat, &error);
   std::cout << "val = " << val << "\n";
-  Double bestval = s_pool->getBestSolutionValue();
+  double bestval = s_pool->getBestSolutionValue();
 
   if (val <= bestval){ 
-    //const Double *x1 = proj_nlpe_->getSolution()->getPrimal();
+    //const double *x1 = proj_nlpe_->getSolution()->getPrimal();
     s_pool->addSolution(xhat, val);
     *sol_found = true;
   } else {
@@ -6010,7 +6010,7 @@ void quasiQGHandler::updateUb_new_(SolutionPoolPtr s_pool, Double *nlpval,
   *nlpval = val;
 }
 
-void quasiQGHandler::ProjObjUpdate(const Double * x1, Double& CTerm)
+void quasiQGHandler::ProjObjUpdate(const double * x1, double& CTerm)
 {
   VariablePtr v;
   CTerm = 0.0;
@@ -6019,9 +6019,9 @@ void quasiQGHandler::ProjObjUpdate(const Double * x1, Double& CTerm)
   proj_qf_ = proj_minlp_->getObjective()->getFunction()->getQuadraticFunction();
   LinearFunctionPtr lf_ = (LinearFunctionPtr) new LinearFunction();
 
-//  Double funeval; 
-//  Double consact;
-//  Int error;
+//  double funeval; 
+//  double consact;
+//  int error;
 #if SPEW
   logger_->msgStream(LogDebug) << me_ << "Function evals: \n";
   for (UInt i = 0; i < minlp_->getNumCons(); i++){
@@ -6042,10 +6042,10 @@ void quasiQGHandler::ProjObjUpdate(const Double * x1, Double& CTerm)
 //  for (UInt j = 0; j < proj_minlp_->getNumVars(); j++)
 //    std::cout << "(" << j+1 << "," << x1[j] << ") ";
 
-  Double xval;
+  double xval;
   //proj_lf_->clearAll();
 //  proj_minlp_->write(std::cout);
-  Int i=0;
+  int i=0;
   for (i = 0; i < numvars_; i++)
   {
     v = proj_minlp_->getVariable(i);
@@ -6088,15 +6088,15 @@ void quasiQGHandler::readSol_()
 
 void quasiQGHandler::ACCutsToRelax_(QGNewCut qgnewcut)
 {
-  std::vector<Double*> gr = qgnewcut.coef;
-  std::vector<Double> c = qgnewcut.rhs;
+  std::vector<double*> gr = qgnewcut.coef;
+  std::vector<double> c = qgnewcut.rhs;
   ConstraintPtr newcon;
-  //Int n = qgnewcut.n;
-  Int n1 = rel_->getNumVars();
+  //int n = qgnewcut.n;
+  int n1 = rel_->getNumVars();
  
   VariableConstIterator vbeg = rel_->varsBegin();
   VariableConstIterator vend = rel_->varsEnd();
-  Double *a = new Double[n1];
+  double *a = new double[n1];
 
   LinearFunctionPtr lf;
   FunctionPtr f;
@@ -6120,21 +6120,21 @@ void quasiQGHandler::ACCutsToRelax_(QGNewCut qgnewcut)
   
 }
 
-void quasiQGHandler::no_good(const Double *x)
+void quasiQGHandler::no_good(const double *x)
 {
-  Int numvars = proj_minlp_->getNumVars();
+  int numvars = proj_minlp_->getNumVars();
   LinearFunctionPtr lf = (LinearFunctionPtr) new LinearFunction();
   FunctionPtr f;
   VariablePtr v;
   ConstraintPtr c;
-  Int lhs = 1;
+  int lhs = 1;
 
 #if SPEW
   logger_->msgStream(LogDebug) << me_ << "Adding no-good cut\n";
 #endif
   std::cout << " **********************   Adding no-good cut  ************************** \n";
   std::cout << "numvars = " << numvars << "\n";
-  for (Int i = 0; i < numvars; i++)
+  for (int i = 0; i < numvars; i++)
   {
     v = minlp_->getVariable(i);
     if (v->getType() == Binary || v->getType()==Integer)
@@ -6245,8 +6245,8 @@ void quasiACProblem::createLogBarrier_()
 //  FunctionPtr f;
 //  FunctionPtr fobj;
 
-  Double lb;
-  Double ub;
+  double lb;
+  double ub;
 
   //VariableConstIterator v_iter;
   VariablePtr v;
@@ -6322,29 +6322,29 @@ void quasiACProblem::createLogBarrier_()
   quasiACProblem_->calculateSize();  
 }
 
-void quasiACProblem::ACUpdate_(const Double *x)
+void quasiACProblem::ACUpdate_(const double *x)
 {
 
 #if SPEW
   logger_->msgStream(LogDebug) << me_ << " update AC problem\n";
 #endif
   ConstraintPtr c;
-  Double act = - INFINITY;
-  Int error;
-  Int numvars = ACrel_->getNumVars();
+  double act = - INFINITY;
+  int error;
+  int numvars = ACrel_->getNumVars();
   LinearFunctionPtr lf = LinearFunctionPtr();
   FunctionPtr f, f2;
   ConstraintPtr newcon;
   VariablePtr v;
-  Double rhs;
-//  Double *a = new Double[numvars];
+  double rhs;
+//  double *a = new double[numvars];
 
-  Double *x1 = new Double[numvars];
-  Double *grd = new Double[numvars];
+  double *x1 = new double[numvars];
+  double *grd = new double[numvars];
 
-  Double objvalue = ACrel_->getObjValue(x, &error);
+  double objvalue = ACrel_->getObjValue(x, &error);
   AC_Engine_->clear();
-  for (Int i = 0; i < numvars; i++)
+  for (int i = 0; i < numvars; i++)
     x1[i] = x[i];
   
   for (CCIter it = nlCons_.begin(); it != nlCons_.end(); ++it)
@@ -6476,7 +6476,7 @@ void quasiACProblem::updateLogBar_(VariablePtr v)
 #endif
 
   CNode *cnode0, *cnode1, *cnode2, *cnode3, *cnode4;
-  Double lb, ub;
+  double lb, ub;
   FunctionPtr fobj;
   LinearFunctionPtr lf1;
   QuadraticFunctionPtr qf1;
@@ -6547,7 +6547,7 @@ void quasiACProblem::createACP_()
 */
 
 /*
-void quasiACProblem::addCut(Double *coef, Double ub, Bool IneDir)
+void quasiACProblem::addCut(double *coef, double ub, Bool IneDir)
 {
 
 #if SPEW
@@ -6573,7 +6573,7 @@ void quasiACProblem::addCut(Double *coef, Double ub, Bool IneDir)
   updateLogBar_(v);
 }
 
-void quasiACProblem::updateObjConst(Double ub)
+void quasiACProblem::updateObjConst(double ub)
 {
 #if SPEW
   logger_->msgStream(LogDebug) << me_ << " updating upper bound of objective\n";
@@ -6621,14 +6621,14 @@ QGNewCut quasiACProblem::ACCPM_()
 #if SPEW
   logger_->msgStream(LogDebug) << me_ << " passing cuts to relaxation\n";
 #endif
-  const Double *solAC;  
+  const double *solAC;  
   numACCPMSolve_ = 2; 
   QGNewCut qgnewcut;
 
-  for (Int i = 0; i < numACCPMSolve_; i++)
+  for (int i = 0; i < numACCPMSolve_; i++)
   {
     solvequasiACProblem_();
-    solAC = new Double[quasiACProblem_->getNumVars()];
+    solAC = new double[quasiACProblem_->getNumVars()];
     AC_Engine_->getSolution()->getPrimal();
     ACUpdate_(solAC);
     
@@ -6646,18 +6646,18 @@ QGNewCut quasiACProblem::ACCPM_()
 */
 
 /*
-void quasiACProblem::linearAt_(FunctionPtr f, Double fval, const Double *x, 
-                          Double *c, LinearFunctionPtr *lf)
+void quasiACProblem::linearAt_(FunctionPtr f, double fval, const double *x, 
+                          double *c, LinearFunctionPtr *lf)
 {
 #if SPEW
   logger_->msgStream(LogDebug) << me_ << "linearizing over points\n";
 #endif
 
-  Int n = ACrel_->getNumVars();
-  Double *a = new Double[n];
+  int n = ACrel_->getNumVars();
+  double *a = new double[n];
   VariableConstIterator vbeg = ACrel_->varsBegin();
   VariableConstIterator vend = ACrel_->varsEnd();
-  Int error=0;
+  int error=0;
 
   std::fill(a, a+n, 0.);
   f->evalGradient(x, a, &error);
@@ -6677,11 +6677,11 @@ quasiSolution::quasiSolution()
 {
 }
 
-quasiSolution::quasiSolution(Int num, const Double *x)
+quasiSolution::quasiSolution(int num, const double *x)
   : size_(num)
 {
-  x_ = new Double[num];
-  for (Int i = 0; i < num; ++i)
+  x_ = new double[num];
+  for (int i = 0; i < num; ++i)
     x_[i] = x[i];
 }
 
@@ -6690,9 +6690,9 @@ quasiSolution::~quasiSolution()
   delete [] x_;
 }
 
-Double * quasiSolution::getSolution()
+double * quasiSolution::getSolution()
 {
-//  for (Int i = 0; i < size_;++i)
+//  for (int i = 0; i < size_;++i)
 //    std::cout << "x[" << i << "]=" << x_[i] << ",";
 //  std::cout << "\n";
   return x_;
@@ -6703,7 +6703,7 @@ quasiSolutionPool::quasiSolutionPool()
 {
 }
 
-quasiSolutionPool::quasiSolutionPool(Int size)
+quasiSolutionPool::quasiSolutionPool(int size)
   : size_(size)
 {
 }
@@ -6711,7 +6711,7 @@ quasiSolutionPool::quasiSolutionPool(Int size)
 quasiSolutionPool::~quasiSolutionPool()
 {
 }
-void quasiSolutionPool::addSol(const Double *x)
+void quasiSolutionPool::addSol(const double *x)
 {
   quasiSolutionPtr quasiSol = (quasiSolutionPtr) new 
 		quasiSolution(size_,x);
@@ -6760,17 +6760,17 @@ std::string quasiQGHandler::getName() const
   return "quasiQG Handler (quasi Quesada-Grossmann)";
 }
 
-void write_cut(Double *gr, Double rhs, Double gap, Int numvars)
+void write_cut(double *gr, double rhs, double gap, int numvars)
 {
   std::ofstream myfile;
   myfile.open ("Gradients.txt",std::ios::app);
-  for (Int i = 0; i < numvars; i++)
+  for (int i = 0; i < numvars; i++)
     myfile << gr[i] << ",";
   myfile << rhs << "," << gap << std::endl;
 
   myfile.close();
 }
-void write_point(const Double *xo, const Double *xp, Int numvars)
+void write_point(const double *xo, const double *xp, int numvars)
 {
   std::ofstream myfile0;
   std::ofstream myfile1;
@@ -6778,11 +6778,11 @@ void write_point(const Double *xo, const Double *xp, Int numvars)
   myfile0.open ("xOA.txt",std::ios::app);
 //  if (a==1)
 //  {
-    for (Int i = 0; i < numvars; i++)
+    for (int i = 0; i < numvars; i++)
       myfile1 << xp[i] << ",";
     myfile1 << std::endl;
 //  } else if (a==0) {
-    for (Int i = 0; i < numvars; i++)
+    for (int i = 0; i < numvars; i++)
       myfile0 << xo[i] << ",";
     myfile0 << std::endl;
 //  }
@@ -6790,7 +6790,7 @@ void write_point(const Double *xo, const Double *xp, Int numvars)
   myfile1.close();
 }
 
-void write_point(const Double *xo, const Double *xp, Int numvars0, Int numvars1)
+void write_point(const double *xo, const double *xp, int numvars0, int numvars1)
 {
   std::ofstream myfile0;
   std::ofstream myfile1;
@@ -6798,11 +6798,11 @@ void write_point(const Double *xo, const Double *xp, Int numvars0, Int numvars1)
   myfile0.open ("xOA1.txt",std::ios::app);
 //  if (a==1)
 //  {
-    for (Int i = 0; i < numvars1; i++)
+    for (int i = 0; i < numvars1; i++)
       myfile1  << i+1 << "," << std::setprecision(10) << xp[i] << "\n";
     myfile1 << std::endl;
 //  } else if (a==0) {
-    for (Int i = 0; i < numvars0; i++)
+    for (int i = 0; i < numvars0; i++)
       myfile0 << i+1 << "," << std::setprecision(10)<< xo[i] << "\n";
     myfile0 << std::endl;
 //  }

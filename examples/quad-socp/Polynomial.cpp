@@ -53,11 +53,11 @@ Polynomial::Polynomial(ConstVariablePtr vPtr)
 }
 
 
-Polynomial::Polynomial(const std::vector<Double> & coeffs, 
+Polynomial::Polynomial(const std::vector<double> & coeffs, 
     const std::vector<UInt > & powers, 
     const std::vector<ConstVariablePtr> & vars, 
     const std::vector<UInt > & starts,
-    const Double & c)
+    const double & c)
 {
   coeffs_.insert(coeffs_.begin(), coeffs.begin(), coeffs.end());
   powers_.insert(powers_.begin(), powers.begin(), powers.end());
@@ -92,7 +92,7 @@ UInt Polynomial::getNumTerms() const
   }
 }
 
-void Polynomial::raiseTo(const Double p)
+void Polynomial::raiseTo(const double p)
 {
   UInt n = getNumTerms();
   if (n > 1) {
@@ -124,10 +124,10 @@ void Polynomial::factorize()
 {
   //std::cout << "ring r = 0, (";
   UInt i=0;
-  Int numFactors;
+  int numFactors;
   LinearFunctionPtr lf;
   UInt power = 0;
-  Double lf_const;
+  double lf_const;
   //for (VarSetConstIterator iter=var_set_.begin(); iter!=var_set_.end(); iter++, i++) {
   //  std::cout << (*iter)->getName() << ", ";
   //}
@@ -206,13 +206,13 @@ void Polynomial::factorize()
 }
 
 
-LinearFunctionPtr Polynomial::getLf_(std::string line, Double & cb)
+LinearFunctionPtr Polynomial::getLf_(std::string line, double & cb)
 {
   LinearFunctionPtr lf;
-  Int pos = 0;
-  Int len = 0;
+  int pos = 0;
+  int len = 0;
   std::string varName;
-  Double varCoeff;
+  double varCoeff;
   cb = 0;
 
   // find the first multiplier/variable in string.
@@ -229,15 +229,15 @@ LinearFunctionPtr Polynomial::getLf_(std::string line, Double & cb)
   return lf;
 }
 
-void Polynomial::getNextTerm_(std::string line, Int pos, std::string & varName, Double & varCoeff, Int & len)
+void Polynomial::getNextTerm_(std::string line, int pos, std::string & varName, double & varCoeff, int & len)
 {
   varName = "";
   varCoeff = 0.0;
   len = 0;
   // get the first char
   varCoeff = 1.0;
-  Double mult = 1.0;
-  Int pos1, pos2;
+  double mult = 1.0;
+  int pos1, pos2;
   std::string tstr;
 
   pos2 = pos;
@@ -326,7 +326,7 @@ void Polynomial::operator*=(ConstPolynomialPtr p2)
   }
 }
 
-void Polynomial::operator*=(const Double c)
+void Polynomial::operator*=(const double c)
 {
   for (UInt j=0; j<coeffs_.size(); j++) {
     coeffs_[j] *= c;
@@ -364,7 +364,7 @@ PolynomialPtr operator+(ConstPolynomialPtr p1,
 }
 
 
-PolynomialPtr operator*(const Double c, 
+PolynomialPtr operator*(const double c, 
     ConstPolynomialPtr p2)
 {
   PolynomialPtr p = p2->clone();

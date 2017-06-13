@@ -26,17 +26,17 @@ namespace Minotaur {
       LSOC();
 
       LSOC(std::vector<LinearFunctionPtr> & p_terms, LinearFunctionPtr n_term, 
-          std::vector<Double> & p_const, Double & n_const, Double sqrtK);
+          std::vector<double> & p_const, double & n_const, double sqrtK);
 
       /// Destroy
       ~LSOC() {};
 
-      Double eval(const Double *x) const;
-      void evalGradient(const Double *x, Double *grad_f) const;
+      double eval(const double *x) const;
+      void evalGradient(const double *x, double *grad_f) const;
       // UInt getNumNzInHess();
       void getHessVarPairs( VarPairIntMap & vp_inds);
-      void evalHessian(const Double mult, const Double *x, 
-          VarPairIntMap &vp_inds, Double *values);
+      void evalHessian(const double mult, const double *x, 
+          VarPairIntMap &vp_inds, double *values);
       FunctionType getType();
       void write(std::ostream &out) const;
 
@@ -44,13 +44,13 @@ namespace Minotaur {
       LinearFunctionPtr l0_;
 
       std::vector< LinearFunctionPtr > sqrtTerms_;
-      std::vector< Double > sqrtKs_;
+      std::vector< double > sqrtKs_;
 
-      Double sqrtK_;
+      double sqrtK_;
 
-      Double K_;
+      double K_;
 
-      Double sqrtVal_;
+      double sqrtVal_;
   };
   typedef boost::shared_ptr<LSOC> LSOCPtr;
 }

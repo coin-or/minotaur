@@ -55,11 +55,11 @@ int main(int argc, char** argv)
   ObjectivePtr objFun;                        //! remember objective function pt.
 
   //! local variables
-  Double *x, *xsoln;
-  Double *lobnd, *upbnd;
-  Double objfLo = -INFINITY, objfUp = INFINITY, objfNLP, objfMIP;
-  Double tol = 1E-2;
-  Int    feasibleNLP = 0, iterOA = 1, n;
+  double *x, *xsoln;
+  double *lobnd, *upbnd;
+  double objfLo = -INFINITY, objfUp = INFINITY, objfNLP, objfMIP;
+  double tol = 1E-2;
+  int    feasibleNLP = 0, iterOA = 1, n;
   // ======================================================================
 
   //! start the timer
@@ -97,10 +97,10 @@ int main(int argc, char** argv)
   e.load(minlp);
 
   //! get initial point & save original bounds
-  x     = new Double[n];
-  xsoln = new Double[n];
-  lobnd = new Double[n];
-  upbnd = new Double[n];
+  x     = new double[n];
+  xsoln = new double[n];
+  lobnd = new double[n];
+  upbnd = new double[n];
   std::copy(iface->getInitialPoint(),iface->getInitialPoint()+n,x);
   for (VariableConstIterator i=minlp->varsBegin(); i!=minlp->varsEnd(); ++i) {
     v = *i;

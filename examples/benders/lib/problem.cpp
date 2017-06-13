@@ -203,8 +203,8 @@ void problem::updateConUb(const size_t n, const double* const val)
 objective* problem::newObj(scoped_ptr<uuid>     &uid,
 			   const short          &relation, 
 			   const vector<size_t> &indx,
-			   const vector<Double> &coef, 
-			   const Double         &shift)
+			   const vector<double> &coef, 
+			   const double         &shift)
 {
   objective obj(relation, pvar_, indx, coef, shift);
   objective *pp = paObj_->add(obj); pp->id(uid->next()); 
@@ -216,7 +216,7 @@ objective* problem::newObj(scoped_ptr<uuid>     &uid,
 objective* problem::newObj(scoped_ptr<uuid>     &uid,
 			   const short          &relation, 
 			   const linearfunc     &lf, 
-			   const Double         &shift)
+			   const double         &shift)
 {
   objective obj(relation, lf, shift);
   objective *pp = paObj_->add(obj); pp->id(uid->next()); 
@@ -227,8 +227,8 @@ objective* problem::newObj(scoped_ptr<uuid>     &uid,
 
 constraint* problem::newCon(scoped_ptr<uuid>     &uid,
 			    const linearfunc     &lf, 
-			    const Double         &lb, 
-			    const Double         &ub)
+			    const double         &lb, 
+			    const double         &ub)
 {
   constraint con(lf, lb, ub);
   constraint *pp = paCon_->add(con); pp->id(uid->next()); 
@@ -239,9 +239,9 @@ constraint* problem::newCon(scoped_ptr<uuid>     &uid,
 
 constraint* problem::newCon(scoped_ptr<uuid>     &uid,
 			    const vector<size_t> &indx,
-			    const vector<Double> &coef, 
-			    const Double         &lb, 
-			    const Double         &ub)
+			    const vector<double> &coef, 
+			    const double         &lb, 
+			    const double         &ub)
 {
   constraint con(pvar_, indx, coef, lb, ub);
   constraint *pp = paCon_->add(con); pp->id(uid->next()); 

@@ -37,19 +37,19 @@
 using namespace Minotaur;
 
 ProblemPtr build_instance(char *fname, VariableSet & pvars_, PolyVector & pVec);
-void addLinearConstraint_(Int i, ProblemPtr instance, ASL *myAsl_, std::vector<VariablePtr> & vars_);
-void addLinearObjective_(Int i, ProblemPtr instance, ASL *myAsl_, std::vector<VariablePtr> & vars_);
-void addLinearTermsFromConstr_(LinearFunctionPtr & lf, Int i, ASL *myAsl_, std::vector<VariablePtr> & vars_);
-void addPolynomialConstraint_(Int i, ProblemPtr instance,
+void addLinearConstraint_(int i, ProblemPtr instance, ASL *myAsl_, std::vector<VariablePtr> & vars_);
+void addLinearObjective_(int i, ProblemPtr instance, ASL *myAsl_, std::vector<VariablePtr> & vars_);
+void addLinearTermsFromConstr_(LinearFunctionPtr & lf, int i, ASL *myAsl_, std::vector<VariablePtr> & vars_);
+void addPolynomialConstraint_(int i, ProblemPtr instance,
     ASL *myAsl_, std::vector<VariablePtr> & vars_, VariableSet & pvars_, 
     PolyVector & pVec);
-void getPolynomial_(PolynomialPtr & pPtr, Double & c, expr *e_ptr, ASL *myAsl_, std::vector<VariablePtr> & vars_);
+void getPolynomial_(PolynomialPtr & pPtr, double & c, expr *e_ptr, ASL *myAsl_, std::vector<VariablePtr> & vars_);
 bool should_solve(UInt mybit, PolyVector & pVec);
-Double solve_nlp(UInt mybit, ProblemPtr inst, PolyVector & pVec);
+double solve_nlp(UInt mybit, ProblemPtr inst, PolyVector & pVec);
 ProblemPtr createProblem(UInt mybit, ProblemPtr inst, PolyVector & pVec);
-void addLinearTermsFromObj_(LinearFunctionPtr & lf, Int i, ASL *myAsl_, std::vector<VariablePtr> & vars_);
+void addLinearTermsFromObj_(LinearFunctionPtr & lf, int i, ASL *myAsl_, std::vector<VariablePtr> & vars_);
 void make_pairs(UInt &mybit2, ConstPolynomialPtr pPtr, ProblemPtr newP, std::vector<ConstVariablePair> & pPairs, std::vector<ConstVariablePair> & nPairs);
-void add_socs(std::vector<ConstVariablePair> & pPairs, std::vector<ConstVariablePair> & nPairs, ProblemPtr newP, Double rhs);
+void add_socs(std::vector<ConstVariablePair> & pPairs, std::vector<ConstVariablePair> & nPairs, ProblemPtr newP, double rhs);
 
 void usage()
 {
@@ -70,7 +70,7 @@ int main(int argc, char** argv)
   std::vector<ConstVariablePtr> aux_vars;
 
   timer->Start();
-  Double best_value = INFINITY;
+  double best_value = INFINITY;
 
   if (argc < 2) {
     usage();
@@ -94,7 +94,7 @@ int main(int argc, char** argv)
   // add a new variable, one for each factor in a polynomial
   UInt newvars = 0;
   for (PolyVectorIterator iter=pVec.begin(); iter!=pVec.end(); iter++) {
-    std::vector<Double>::const_iterator citer = (*iter)->lfsCBegin();
+    std::vector<double>::const_iterator citer = (*iter)->lfsCBegin();
     bool check_neg = true;
     for (std::vector<ConstLinearFunctionPtr>::const_iterator liter=(*iter)->lfsBegin(); liter!=(*iter)->lfsEnd();
         liter++, citer++) {
@@ -134,7 +134,7 @@ int main(int argc, char** argv)
   // start branch and bound
   UInt mybit = 0;
   UInt ignored = 0;
-  Double obj, best_obj=INFINITY;
+  double obj, best_obj=INFINITY;
   while (mybit < finalbit) {
     if (should_solve(mybit, pVec)) {
       obj = solve_nlp(mybit, inst, pVec);
@@ -302,7 +302,7 @@ ProblemPtr build_instance(char *fname2, VariableSet & pvars_, PolyVector & pVec)
   return instance;
 }
 
-void addLinearConstraint_(Int i, ProblemPtr instance, ASL *myAsl_, std::vector<VariablePtr> & vars_)
+void addLinearConstraint_(int i, ProblemPtr instance, ASL *myAsl_, std::vector<VariablePtr> & vars_)
 {
   std::string cName;
   LinearFunctionPtr lfPtr = LinearFunctionPtr(); // NULL
@@ -317,7 +317,7 @@ void addLinearConstraint_(Int i, ProblemPtr instance, ASL *myAsl_, std::vector<V
       myAsl_->i.LUrhs_[2*i+1], cName); 
 }
 
-void addLinearObjective_(Int i, ProblemPtr instance, ASL *myAsl_, std::vector<VariablePtr> & vars_)
+void addLinearObjective_(int i, ProblemPtr instance, ASL *myAsl_, std::vector<VariablePtr> & vars_)
 {
   FunctionPtr fPtr;
   LinearFunctionPtr lfPtr = LinearFunctionPtr(); // null
@@ -341,7 +341,7 @@ void addLinearObjective_(Int i, ProblemPtr instance, ASL *myAsl_, std::vector<Va
 }
 
 
-void addLinearTermsFromConstr_(LinearFunctionPtr & lf, Int i, ASL *myAsl_, std::vector<VariablePtr> & vars_)
+void addLinearTermsFromConstr_(LinearFunctionPtr & lf, int i, ASL *myAsl_, std::vector<VariablePtr> & vars_)
 {
   cgrad *cg; // for ampl
   if (lf) {
@@ -359,7 +359,7 @@ void addLinearTermsFromConstr_(LinearFunctionPtr & lf, Int i, ASL *myAsl_, std::
   }
 }
 
-void addLinearTermsFromObj_(LinearFunctionPtr & lf, Int i, ASL *myAsl_, std::vector<VariablePtr> & vars_)
+void addLinearTermsFromObj_(LinearFunctionPtr & lf, int i, ASL *myAsl_, std::vector<VariablePtr> & vars_)
 {
   ograd *og; // for ampl
   if (lf) {
@@ -377,11 +377,11 @@ void addLinearTermsFromObj_(LinearFunctionPtr & lf, Int i, ASL *myAsl_, std::vec
   }
 }
 
-void addPolynomialConstraint_(Int i, ProblemPtr instance,
+void addPolynomialConstraint_(int i, ProblemPtr instance,
     ASL *myAsl_, std::vector<VariablePtr> & vars_, VariableSet & pvars_, 
     PolyVector & pVec) 
 {
-    Double c = 0;
+    double c = 0;
     FunctionPtr fPtr = FunctionPtr();  //NULL
     LinearFunctionPtr lfPtr = LinearFunctionPtr();  //NULL
     PolynomialPtr pPtr = PolynomialPtr();  //NULL
@@ -419,7 +419,7 @@ void addPolynomialConstraint_(Int i, ProblemPtr instance,
     assert(!lfPtr);
 }
 
-void getPolynomial_(PolynomialPtr & pPtr, Double & c, expr *e_ptr, ASL *myAsl_, std::vector<VariablePtr> & vars_)
+void getPolynomial_(PolynomialPtr & pPtr, double & c, expr *e_ptr, ASL *myAsl_, std::vector<VariablePtr> & vars_)
 {
   int opcode;
   c = 0;
@@ -427,7 +427,7 @@ void getPolynomial_(PolynomialPtr & pPtr, Double & c, expr *e_ptr, ASL *myAsl_, 
   std::map <efunc*, int> functionMap_;
   PolynomialPtr pPtr1 = PolynomialPtr();  //NULL 
   PolynomialPtr pPtr2 = PolynomialPtr();  //NULL
-  Double c1=0, c2=0;
+  double c1=0, c2=0;
 
   for (int i=0; i<N_OPS; i++) {
     functionMap_[r_ops_ASL[i]] = i;
@@ -533,9 +533,9 @@ bool should_solve(UInt mybit, PolyVector & pVec)
   return true;
 }
 
-Double solve_nlp(UInt mybit, ProblemPtr inst, PolyVector & pVec)
+double solve_nlp(UInt mybit, ProblemPtr inst, PolyVector & pVec)
 {
-  Double obj = INFINITY;
+  double obj = INFINITY;
   ProblemPtr new_inst = createProblem(mybit, inst, pVec);
 
   //new_inst->write(std::cout);
@@ -555,7 +555,7 @@ Double solve_nlp(UInt mybit, ProblemPtr inst, PolyVector & pVec)
   if (ipopt_e->getStatus() == ProvenLocalOptimal) {
     obj = ipopt_e->getSolutionValue();
     //std::cout << "obj =  " << obj << std::endl;
-    //const Double *x = ipopt_e->getSolution();
+    //const double *x = ipopt_e->getSolution();
     //for (UInt i=0; i<inst->getNumVars(); i++) {
     //  std::cout << x[i] << std::endl;
     //}
@@ -711,15 +711,15 @@ void make_pairs(UInt & mybit2, ConstPolynomialPtr pPtr, ProblemPtr newP,
   //std::cout << "negative pairs = " << nPairs.size() << nvec.size() << std::endl;
 }
 
-void add_socs(std::vector<ConstVariablePair> & pPairs, std::vector<ConstVariablePair> & nPairs, ProblemPtr newP, Double rhs)
+void add_socs(std::vector<ConstVariablePair> & pPairs, std::vector<ConstVariablePair> & nPairs, ProblemPtr newP, double rhs)
 {
   //std::cout << "size = " << nPairs.size() + pPairs.size() << std::endl;
   assert(nPairs.size() + pPairs.size() > 0);
   // for each pair, add a new variable and a new SOC constraint
   VariablePtr v;
   std::vector<ConstVariablePtr> new_aux_vars;
-  std::vector<Double> p_const;
-  Double n_const = 0;
+  std::vector<double> p_const;
+  double n_const = 0;
   std::vector<LinearFunctionPtr> p_terms;
   LinearFunctionPtr lf, n_term;
   p_const.push_back(0.0);

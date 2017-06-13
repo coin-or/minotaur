@@ -86,14 +86,14 @@ struct QGStats {
   Size_t p1Cuts;    /// Number of l1-cuts added
   Size_t CoCuts;    /// Number of continuous-cuts added
   Size_t adCuts;
-  Double strTime;
+  double strTime;
   Size_t ecpCalls;
 }; 
 
 struct QGNewCut {
-  std::vector<Double*> coef;
-  std::vector<Double> rhs;
-  Double    newUb;
+  std::vector<double*> coef;
+  std::vector<double> rhs;
+  double    newUb;
 };
 
 /**
@@ -142,7 +142,7 @@ public:
 
   /// Does nothing.
   virtual void getBranchingCandidates(RelaxationPtr , 
-                                      const std::vector< Double > &, ModVector &, BrCandSet &, Bool &)
+                                      const std::vector< double > &, ModVector &, BrCandSet &, Bool &)
     {};
 
   /// Does nothing.
@@ -159,7 +159,7 @@ public:
   SolveStatus presolve(PreModQ *, Bool *) {return Finished;};
 
   /// Does nothing.
-  void postsolveGetX(const Double *, UInt, DoubleVector *) {};
+  void postsolveGetX(const double *, UInt, DoubleVector *) {};
 
   /// Does nothing.
   Bool presolveNode(ProblemPtr, NodePtr, SolutionPoolPtr, ModVector &,
@@ -186,14 +186,14 @@ public:
   Size_t QG_p1Cuts(){return stats_->p1Cuts;};
   Size_t QG_CoCuts(){return stats_->CoCuts;};
   Size_t QG_adCuts(){return stats_->adCuts;};
-  Double QG_strTime(){return grdTime_;};
+  double QG_strTime(){return grdTime_;};
   Size_t QG_Cuts() {return stats_->cuts;}
   Size_t QG_ecpCalls(){return stats_->ecpCalls;}
 
   void setCutManager(CutMan2Ptr ctMngr){ctMngr_ = ctMngr;}
   void setECP(Bool ecp);//{ECP_ = ecp;}
-  void setBetaECP(Double beta){betaECP_ = beta;}
-  void setTolECP(Double tol){tolECP_ = tol;}
+  void setBetaECP(double beta){betaECP_ = beta;}
+  void setTolECP(double tol){tolECP_ = tol;}
 
   void setPointProbEngine(EnginePtr pntE) { pntE_ = pntE; }
 
@@ -221,7 +221,7 @@ private:
 
   ///vector to ConstraintPtr to l1-project linearization
   std::vector<ConstraintPtr>l1_linConst_;
-  std::vector<Int>IntVarID_;
+  std::vector<int>IntVarID_;
   /// Pointer to original problem.
   RelaxationPtr rel_;
 
@@ -279,25 +279,25 @@ private:
    * For any linearization constraint that we generate, all 
    * coefficients with absolute value less than it are assumed zero.
    */
-  const Double linCoeffTol_;
+  const double linCoeffTol_;
 
   /// Statistics.
   QGStats *stats_;
 
   /// Tolerance for accepting a new solution value: absolute threshold.
-  const Double solAbsTol_;
+  const double solAbsTol_;
 
   /// Tolerance for accepting a new solution value: relative threshold.
-  const Double solRelTol_;
+  const double solRelTol_;
 
   /// Tolerance for checking constraint violation.
-  Double eTol_;
+  double eTol_;
 
   /// Tolerance for checking linear cut violation.
-  Double eLinTol_;
+  double eLinTol_;
  
   /// Tolerance for checking integrality (should be obtained from env).
-  Double intTol_;
+  double intTol_;
 
   /// For log:
   static const std::string me_;
@@ -313,7 +313,7 @@ private:
    * Find the linearization of nonlinear functions at point x* and add
    * them to the relaxation only (not to the lp engine)
    */
-  void addInitLinearX_(const Double *x);
+  void addInitLinearX_(const double *x);
 
   /** 
    * When the objective function is nonlinear, we need to replace it with
@@ -332,7 +332,7 @@ private:
    * Fix integer constrained variables to integer values in x. Called
    * before solving NLP.
    */
-  void fixInts_(const Double *x);
+  void fixInts_(const double *x);
 
   /// Undo the changes done in fixInts_().
   void unfixInts_();
@@ -351,7 +351,7 @@ private:
 
 
   /// Update the coefficients of the linear part of the ProjObjective
-  void ProjObjUpdate(const Double * x, Double& constantTerm);
+  void ProjObjUpdate(const double * x, double& constantTerm);
 
   /**
    * Make a copy of the bounds on variables. Called before bounds on NLP
@@ -366,54 +366,54 @@ private:
    * Update the upper bound. XXX: Needs proper integration with
    * Minotaur's Handler design. 
    */
-  void updateUb_(SolutionPoolPtr s_pool, Double *nlp_val, 
+  void updateUb_(SolutionPoolPtr s_pool, double *nlp_val, 
                  Bool *sol_found);
 
 
-  void updateUb_new_(SolutionPoolPtr s_pool, Double *nlp_val, 
-                     Double *xhat, Bool *sol_found);
+  void updateUb_new_(SolutionPoolPtr s_pool, double *nlp_val, 
+                     double *xhat, Bool *sol_found);
 
 
   /// Add all linearizations at point x that violate inf_x.
-  Int OAFromPoint_(const Double *x, ConstSolutionPtr sol, 
+  int OAFromPoint_(const double *x, ConstSolutionPtr sol, 
                     SeparationStatus *status);
 
-  Int OAFromPoint_(const Double *x, const Double *inf_x,
+  int OAFromPoint_(const double *x, const double *inf_x,
                              SeparationStatus *status);
 
-  Int OAFromPointInf_(const Double *x, const Double *inf_x, 
+  int OAFromPointInf_(const double *x, const double *inf_x, 
                     SeparationStatus *status);
 
   /// Add projection cut at point x
-  Int ProjCutFromPoint_(ConstSolutionPtr sol, SolutionPoolPtr s_pool, Bool *sol_found,
+  int ProjCutFromPoint_(ConstSolutionPtr sol, SolutionPoolPtr s_pool, Bool *sol_found,
                          SeparationStatus *status);
   /**
    * Obtain the linear function (lf) and constant (c) from the
    * linearization of function f at point x.
    */
-  void linearAt_(FunctionPtr f, Double fval, const Double *x, 
-                 Double *c, LinearFunctionPtr *lf);
+  void linearAt_(FunctionPtr f, double fval, const double *x, 
+                 double *c, LinearFunctionPtr *lf);
 
-  void linearAt_(FunctionPtr f, Double fval, const Double *x, 
-                 Double *c, LinearFunctionPtr *lf, Double *a);
+  void linearAt_(FunctionPtr f, double fval, const double *x, 
+                 double *c, LinearFunctionPtr *lf, double *a);
 
-  void linearAt_(FunctionPtr f, Double fval, const Double *x, 
-                 Double *c, LinearFunctionPtr *lf, Double *a,
-		 Double *k);
+  void linearAt_(FunctionPtr f, double fval, const double *x, 
+                 double *c, LinearFunctionPtr *lf, double *a,
+		 double *k);
 
   void readSol_();
 
-  Double * x_star;
+  double * x_star;
 
   Bool handleQuasiConvex_;
 
   UInt num_cuts_;
 
-  Double * a_;
+  double * a_;
 
-  const Double * x_pr_;
+  const double * x_pr_;
 
-  const Double * x_OA_;
+  const double * x_OA_;
 
   quasiACProblemPtr qgACP_;
 
@@ -422,29 +422,29 @@ private:
 
   void ACCutsToRelax_(QGNewCut qgnewcut);
 
-  Int ObjId_;
+  int ObjId_;
  
   UInt last_node_;
-  Double *last_sol_;
-  Double lastOptVal_;
+  double *last_sol_;
+  double lastOptVal_;
   Bool BrootSol_;
   Bool BincSol_;
   Bool BLPrelSol_;
   
-  const Double *rootSol_;  // The solution to the NLP relaxation at root node
-  const Double *incSol_;
-  const Double *LPrelSol_;
+  const double *rootSol_;  // The solution to the NLP relaxation at root node
+  const double *incSol_;
+  const double *LPrelSol_;
 
-  Double constCoef_;
+  double constCoef_;
 
   Bool onlyBinary_;  //true if the discrete variables are only binary to add no-good cuts
 
-  void no_good(const Double *x);
+  void no_good(const double *x);
 
 
-  Int numvars_;
+  int numvars_;
   Bool partialFix_;
-  Double cuttingPoint_;
+  double cuttingPoint_;
 
   LinearFunctionPtr lf_pure_;
   QuadraticFunctionPtr qf_pure_;
@@ -453,67 +453,67 @@ private:
                         Bool *sol_found, SeparationStatus *status);
 
   // Either dir = 0 if Ub < INFINITY and violated or dir = 1 if Lb > -INFINIT and violated
-  void cutXLP_(const Double *x_nlp, const Double *x_lp,
+  void cutXLP_(const double *x_nlp, const double *x_lp,
                              ConstraintPtr con, SeparationStatus *status, Bool dir);
 
-  void cutXLP_(const Double *x_nlp, const Double *x_lp,
-		Double *x_alpha, ConstraintPtr con, Bool dir);
+  void cutXLP_(const double *x_nlp, const double *x_lp,
+		double *x_alpha, ConstraintPtr con, Bool dir);
 
-  void cutXLP_(const Double *x_nlp, const Double *x_lp,
-                          Double *x_alpha, FunctionPtr fn, Double ub, Double lb, Bool dir);
+  void cutXLP_(const double *x_nlp, const double *x_lp,
+                          double *x_alpha, FunctionPtr fn, double ub, double lb, Bool dir);
 
-  void cutXLPObj_(const Double *x_nlp, const Double *x_inf,
-                  Double *x_alpha, FunctionPtr funobj);
+  void cutXLPObj_(const double *x_nlp, const double *x_inf,
+                  double *x_alpha, FunctionPtr funobj);
 
-  Int alphaCutProj_(const Double *x_OA, const Double *x_pr, SeparationStatus *status);
+  int alphaCutProj_(const double *x_OA, const double *x_pr, SeparationStatus *status);
 
-  Int pure_project_(const Double *x_OA, SeparationStatus *status);
+  int pure_project_(const double *x_OA, SeparationStatus *status);
  
-  Int l1_project_(const Double *x_OA, SeparationStatus *status);
+  int l1_project_(const double *x_OA, SeparationStatus *status);
   
-  Double relobj_;  
+  double relobj_;  
   Bool objCutOff;
 
-  Int numExLin_;	//Number of calls to extra linearizations
+  int numExLin_;	//Number of calls to extra linearizations
 
-  Int ExtLinFr_; //Frequency by which extra linearizations are added
-  const Double *xnlp_;
+  int ExtLinFr_; //Frequency by which extra linearizations are added
+  const double *xnlp_;
 
-  void ExtraCuts_(const Double *x, const Double *xnlp);
+  void ExtraCuts_(const double *x, const double *xnlp);
 
-  void ExtraCutsCvx_(const Double *x, const Double *xnlp);
+  void ExtraCutsCvx_(const double *x, const double *xnlp);
 
-  void strCutsCvx_(ConstSolutionPtr sol, const Double *xnlp);
+  void strCutsCvx_(ConstSolutionPtr sol, const double *xnlp);
 
-  Int ECPCuts_(ConstSolutionPtr sol);
+  int ECPCuts_(ConstSolutionPtr sol);
 
-  Int strECPCuts_(ConstSolutionPtr sol);
+  int strECPCuts_(ConstSolutionPtr sol);
  
-  Int strCutsQuasi_(ConstSolutionPtr sol, const Double *xnlp);
+  int strCutsQuasi_(ConstSolutionPtr sol, const double *xnlp);
 
-  Int strCutsQuasi1_(ConstSolutionPtr sol, const Double *xnlp);
-  Int strCutsQuasi2_(ConstSolutionPtr sol, const Double *xnlp);
+  int strCutsQuasi1_(ConstSolutionPtr sol, const double *xnlp);
+  int strCutsQuasi2_(ConstSolutionPtr sol, const double *xnlp);
   
-  Double zoom_(ConstraintPtr con, Double alpha1, Double alpha2, Double fval, Double gnorm,
-		const Double *x, Double *gr);
+  double zoom_(ConstraintPtr con, double alpha1, double alpha2, double fval, double gnorm,
+		const double *x, double *gr);
 
-  Double LineSearch_(ConstraintPtr con, const Double *x, Double *xalpha, Double *gr);
-  Double LineSearch1_(ConstraintPtr con, const Double *x, Double *xalpha, Double *gr);
-  void LineSearch2_(ConstraintPtr con, const Double *x, Double *xalpha, 
-		    Double *gr, Bool *admit);
+  double LineSearch_(ConstraintPtr con, const double *x, double *xalpha, double *gr);
+  double LineSearch1_(ConstraintPtr con, const double *x, double *xalpha, double *gr);
+  void LineSearch2_(ConstraintPtr con, const double *x, double *xalpha, 
+		    double *gr, Bool *admit);
 
 
 //  std::string fname_;
 //  std::ofstream mylogfile_;
   std::ofstream mylogfile_;
 
-  Double grdTime_;
-  Double ctmngrTime_;
+  double grdTime_;
+  double ctmngrTime_;
   Timer *timer_;
 
   Bool ECP_;
-  Double betaECP_;
-  Double tolECP_;
+  double betaECP_;
+  double tolECP_;
 
   /// solve continuous relaxation in each node to find 
   /// a point at which ECP cuts is derived
@@ -522,24 +522,24 @@ private:
   /// similar to ContNLP, but NLP engine only does some iterations
   UInt QuasiECP_ContNLPLimited(ConstSolutionPtr sol);
 
-  UInt allLinearAt_(const Double *x,const Double *xlp);
+  UInt allLinearAt_(const double *x,const double *xlp);
 
   ProblemPtr PointProb_;
   QuadraticFunctionPtr qfPoint_;
   /// update the problem of finding a feasible solution
-  void updatePointProb_(const Double *x);
+  void updatePointProb_(const double *x);
 
-  void addPointToProb_(const Double *x);
+  void addPointToProb_(const double *x);
 
   /// create the problem 
   void createPointProb_();
  
   quasiSolutionPoolPtr quasiSol_;
 
-  UInt solvePointProb_(const Double *xlp);
+  UInt solvePointProb_(const double *xlp);
 
-  UInt bisectAddCut_(const Double *xlp, const Double *xnlp);
-  UInt bisectAddCut_(ConstraintPtr con,const Double *xlp, const Double *xnlp);
+  UInt bisectAddCut_(const double *xlp, const double *xnlp);
+  UInt bisectAddCut_(ConstraintPtr con,const double *xlp, const double *xnlp);
 
   UInt QuasiECP_ContProj(ConstSolutionPtr sol);
 
@@ -553,26 +553,26 @@ class quasiSolution {
 public:
   quasiSolution();
 
-  quasiSolution(Int num,const Double *x);
+  quasiSolution(int num,const double *x);
 
   ~quasiSolution();
 
-  Int getSize() {return size_;}
+  int getSize() {return size_;}
 
-  Double * getSolution();// {return x_;}
+  double * getSolution();// {return x_;}
 
 private:
 
-  Double *x_;
+  double *x_;
 
-  Int size_;
+  int size_;
 };
 
 class quasiSolutionPool {
 public:
   quasiSolutionPool();
 
-  quasiSolutionPool(Int size);
+  quasiSolutionPool(int size);
 
   ~quasiSolutionPool();
 
@@ -580,15 +580,15 @@ public:
 
   quasiSolutionIterator quasiSolsEnd() {return quasiSol_.end(); }
 
-  void addSol(const Double *x);
+  void addSol(const double *x);
 
-  Int getNum() {return quasiSol_.size();}
+  int getNum() {return quasiSol_.size();}
 
 private:
 
   std::vector<quasiSolutionPtr> quasiSol_;
 
-  Int size_;
+  int size_;
 };
 
 /*
@@ -605,11 +605,11 @@ public:
   QGNewCut ACCPM_();
 
 
-  std::vector<ConstraintPtr> ACCuts(Double *x, Bool *objcut, Double *rhs);
+  std::vector<ConstraintPtr> ACCuts(double *x, Bool *objcut, double *rhs);
 
-  void addCut(Double *coef, Double rhs, Bool IneDir); //IneDir is the direction of the inequality, IneDir = true if <=, false otherwise.
+  void addCut(double *coef, double rhs, Bool IneDir); //IneDir is the direction of the inequality, IneDir = true if <=, false otherwise.
 
-  void updateObjConst(Double ub);
+  void updateObjConst(double ub);
 
 private:
    /// Log.
@@ -618,9 +618,9 @@ private:
    /// For log:
    static const std::string me_;
 
-   std::vector <Double*> gr_;
+   std::vector <double*> gr_;
 
-   std::vector <Double*> rhs_;
+   std::vector <double*> rhs_;
 
    UInt ObjID_;
 
@@ -643,12 +643,12 @@ private:
   std::vector<VariablePtr> nlNewVars_;
 
   /// Tolerance for checking constraint violation.
-  Double eTol_;
+  double eTol_;
 
 //   * For any linearization constraint that we generate, all 
 //   * coefficients with absolute value less than it are assumed zero.
 
-  const Double linCoeffTol_;
+  const double linCoeffTol_;
 
   /// Pointer to the Analytic Center Problem
   ProblemPtr quasiACProblem_;
@@ -672,15 +672,15 @@ private:
   CGraphPtr ACLogBar_;
 
 
-  void linearAt_(FunctionPtr f, Double fval, const Double *x, 
-                 Double *c, LinearFunctionPtr *lf);
+  void linearAt_(FunctionPtr f, double fval, const double *x, 
+                 double *c, LinearFunctionPtr *lf);
 
 
   void createLogBarrier_();
 
   //void createACP_();
 
-  void ACUpdate_(const Double *x);
+  void ACUpdate_(const double *x);
 
 
   void updateLogBar_(VariablePtr v);
@@ -690,9 +690,9 @@ private:
   std::vector<ConstraintPtr> consAC_;
 
 
-  Int numACCPMSolve_;
+  int numACCPMSolve_;
  
-  Double newObjBound;
+  double newObjBound;
 };
 */
   typedef boost::shared_ptr <quasiQGHandler> quasiQGHandlerPtr;

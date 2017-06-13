@@ -207,10 +207,10 @@ int main()
 
     /****************************************************************************/
     // Solution time of relaxation.
-    Double timeinit = timer->query();
+    double timeinit = timer->query();
     timer->stop();
     // Solution objective value.
-    Double initobj = e.getSolutionValue();
+    double initobj = e.getSolutionValue();
     /****************************************************************************/
     
     std:: cout << "Relaxation objective value = " << initobj << endl;
@@ -219,11 +219,11 @@ int main()
     ConstSolutionPtr sol = e.getSolution();
 
     // Serdar!!! Change solution values temporarily just to test all functions completeley.
-    // Double * tempsolvalues = new Double[numvars];
+    // double * tempsolvalues = new double[numvars];
     // for (UInt i=0; i<numvars; ++i) {
-    //   tempsolvalues[i] = (i+0.2) * (i%3 + 0.3) / Double(i*(i+1)+1.2) + (i+0.1) * (i%2+0.2) / Double(i*(i+1)+1.4);
+    //   tempsolvalues[i] = (i+0.2) * (i%3 + 0.3) / double(i*(i+1)+1.2) + (i+0.1) * (i%2+0.2) / double(i*(i+1)+1.4);
     // }
-    // const Double * consttempsolvalues = tempsolvalues;
+    // const double * consttempsolvalues = tempsolvalues;
     // sol = (SolutionPtr) new Solution(initobj, consttempsolvalues, minlp);
     
     
@@ -237,7 +237,7 @@ int main()
       (PerspCutGeneratorPtr) new PerspCutGenerator(rel, sol, env);
     
     /****************************************************************************/
-    Double timecut = timer->query();
+    double timecut = timer->query();
     timer->stop();
     /****************************************************************************/
     
@@ -271,13 +271,13 @@ int main()
     // Violation list.
     DoubleVector perspviols = perspgen->getViolList();
     UInt curpersp = 0;
-    Double maxviol = 0.0;
+    double maxviol = 0.0;
     ConstConstraintPtr newcons;
     CutPtr perspcut;
     FunctionPtr cutf;
-    Double cutlb = 0.0;
-    Double cutub = 0.0;
-    Double curviol = 0.0;
+    double cutlb = 0.0;
+    double cutub = 0.0;
+    double curviol = 0.0;
     for (it=begin; it!=end; ++it) {
       curviol = perspviols[curpersp];
       cout << "Violation obtained from constraint " << curpersp << " is: " << curviol << endl;
@@ -294,18 +294,18 @@ int main()
     
     /****************************************************************************/
     // Solution time of persp cuts added problem.
-    Double timemod = 0.0;
+    double timemod = 0.0;
     // Objective value after adding persp cuts.
-    Double endobj = 0.0;
+    double endobj = 0.0;
     // Gap closed by adding persp cuts.
-    Double gappersp = 0.0;
+    double gappersp = 0.0;
     /****************************************************************************/
 
     // If any violated cuts added.
     if (numperspcons >= 1) {
       // Reload problem  to engine.
       e.clear();
-      const Double * xupdated;
+      const double * xupdated;
       if (WARMSTART == 1) {
 	// Warmstart starts.
 	// Set initial point as the solution of previous solution.
@@ -319,15 +319,15 @@ int main()
 	// Serdar! Before resolve, we set the initial primal and dual solutions.
 	SolutionPtr solupdated = (SolutionPtr) new Solution(initobj, xupdated, rel);
 	// Create new dual solution.
-	const Double * dualofvars = sol->getDualOfVars();
+	const double * dualofvars = sol->getDualOfVars();
 	solupdated->setDualOfVars(dualofvars);
-	const Double * initdualofcons = sol->getDualOfCons();
+	const double * initdualofcons = sol->getDualOfCons();
 	// UInt numconsupdated = numcons + violperspcuts;
 	UInt numconsupdated = rel->getNumCons();
-	Double * dualofcons = new Double[numconsupdated];
-	memcpy(dualofcons, initdualofcons, numcons*sizeof(Double));
-	//std::fill(dualofcons+sizeof(Double)*numcons, dualofcons 
-	//	+ sizeof(Double)*numconsupdated, 0);
+	double * dualofcons = new double[numconsupdated];
+	memcpy(dualofcons, initdualofcons, numcons*sizeof(double));
+	//std::fill(dualofcons+sizeof(double)*numcons, dualofcons 
+	//	+ sizeof(double)*numconsupdated, 0);
 	for (UInt indexx = numcons; indexx <numconsupdated; ++indexx) {
 	  dualofcons[indexx] = 0.0;
 	}

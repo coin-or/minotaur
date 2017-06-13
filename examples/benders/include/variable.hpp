@@ -7,7 +7,7 @@
 #include "type.hpp"
 
 using namespace std;
-using Type::Double;
+using Type::double;
 using Type::INF;
 using Type::EPSILON;
 
@@ -18,37 +18,37 @@ protected:
   bool   active_;
   short  status_;  // -1: undefined, 0, fixed, 1, normal
   
-  Double value_, lb_, ub_, margin_;
+  double value_, lb_, ub_, margin_;
   
-  bool   check(const Double &v, const short p=0);
+  bool   check(const double &v, const short p=0);
   void   defaultInit();
 public:
   variable();
-  variable(const Double &lb, const Double &ub);
+  variable(const double &lb, const double &ub);
   
   void   on() {active_ = true;};
   void   off(){active_ = false;};
   bool   active()const{return active_;};
   
   void   fix(){status_ = 0; lb_ = ub_ = value_;};
-  void   fix(const Double &val){status_ = 0; lb_ = ub_ = value_ = val;};
+  void   fix(const double &val){status_ = 0; lb_ = ub_ = value_ = val;};
   bool   fixed()const{return status_ == 0 ? true : false;};
   void   free(){status_ = 1; lb_ = -INF; ub_ = INF;};
-  void   free(const Double lb, const Double ub){status_ = 1; lb_ = lb; ub_ = ub;};
+  void   free(const double lb, const double ub){status_ = 1; lb_ = lb; ub_ = ub;};
   
   void   reset(){on(); free();};
-  Double value()const{assert(status_ !=-1); return value_;};
-  bool   value(const Double& val, const bool force = false);
+  double value()const{assert(status_ !=-1); return value_;};
+  bool   value(const double& val, const bool force = false);
   
-  Double margin()const{return margin_;};
-  void   margin(const Double v){margin_ = v;};
+  double margin()const{return margin_;};
+  void   margin(const double v){margin_ = v;};
   
-  Double lb()const{return lb_;};
-  Double ub()const{return ub_;};
-  void   lb(const Double& b);
-  void   ub(const Double& b);
+  double lb()const{return lb_;};
+  double ub()const{return ub_;};
+  void   lb(const double& b);
+  void   ub(const double& b);
   
-  void   bounds(const Double& lb, const Double& ub);
+  void   bounds(const double& lb, const double& ub);
 };
 
 #endif

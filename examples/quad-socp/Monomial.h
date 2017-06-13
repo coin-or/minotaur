@@ -25,22 +25,22 @@ namespace Minotaur {
       Monomial();
 
       Monomial(std::vector<LinearFunctionPtr> & p_terms, LinearFunctionPtr n_term, 
-          std::vector<Double> & p_const, Double & n_const, Double sqrtK);
+          std::vector<double> & p_const, double & n_const, double sqrtK);
 
       /// Destroy
       ~Monomial() {};
 
-      Double eval(const Double *x) const;
-      void evalGradient(const Double *x, Double *grad_f) const;
+      double eval(const double *x) const;
+      void evalGradient(const double *x, double *grad_f) const;
       // UInt getNumNzInHess();
       void getHessVarPairs( VarPairIntMap & vp_inds);
-      void evalHessian(const Double mult, const Double *x, 
-          VarPairIntMap &vp_inds, Double *values);
+      void evalHessian(const double mult, const double *x, 
+          VarPairIntMap &vp_inds, double *values);
       FunctionType getType();
       void write(std::ostream &out) const;
 
     private:
-      Double coeff_;
+      double coeff_;
       std::vector<VariablePtr> vars_;
       std::vector<UInt> powers_;
   };
