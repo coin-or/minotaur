@@ -49,10 +49,10 @@ USE_OSI=1
 USE_CURL=0
 USE_MAC=0
 
-ASL="asl-20161228"
+ASL="asl-20150602"
 CPPUNIT="cppunit-1.13.2"
-OSI="clp-1.16.9"
-IPOPT="ipopt-3.12.7"
+OSI="clp-1.16.6"
+IPOPT="ipopt-3.12.3"
 FILTERSQP="filter-102"
 BQPD="bqpd-3"
 
