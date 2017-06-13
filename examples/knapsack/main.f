@@ -1,10 +1,10 @@
       program knapsack
 c  UInt N = 64;
 c  UInt f = 9;
-c  Double a[] = {1.0, 2.0, 3.0, 4.0, 5.0, 6.0, 7.0, 8.0, 9.0};
-c  Double b[] = {-1.0, -2.0, -1.5, -1.7, -1.2, -1.7, -1.4, -1.2, -1.5};
-c  Double objval;
-c  Double sol[f];
+c  double a[] = {1.0, 2.0, 3.0, 4.0, 5.0, 6.0, 7.0, 8.0, 9.0};
+c  double b[] = {-1.0, -2.0, -1.5, -1.7, -1.2, -1.7, -1.4, -1.2, -1.5};
+c  double objval;
+c  double sol[f];
 
       integer N, f
       double precision a(9),b(9),objval,sol(9)

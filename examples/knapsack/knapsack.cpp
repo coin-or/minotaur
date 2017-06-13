@@ -1,7 +1,7 @@
 #include <cmath>
 #include <iostream>
 #include <iomanip>
-#include <sting.h>
+#include <string.h>
 
 #include "BranchAndBound.h"
 #include "CGraph.h"
@@ -36,7 +36,7 @@ BranchAndBound * createBab (EnvPtr env, ProblemPtr p, EnginePtr e,
   LinearHandlerPtr l_hand = (LinearHandlerPtr) new LinearHandler(env,p);
   ReliabilityBrancherPtr rel_br;
   PCBProcessorPtr nproc;
-  NodeIncRelaxerPtr = nr;
+  NodeIncRelaxerPtr nr;
   RelaxationPtr rel;
   BranchAndBound *bab = new BranchAndBound(env,p);
 
@@ -44,9 +44,9 @@ BranchAndBound * createBab (EnvPtr env, ProblemPtr p, EnginePtr e,
   handlers.push_back(l_hand);
   nproc = (PCBProcessorPtr) new PCBProcessor(env,e,handlers);
 
-  rel_br = (ReliabilityBrancherPtr) new ReliabilityBrancher(env,handler);
+  rel_br = (ReliabilityBrancherPtr) new ReliabilityBrancher(env,handlers);
   rel_br->setEngine(e);
-  rel_br->setTresh(4);
+  rel_br->setThresh(4);
   rel_br->setMaxDepth(10);
   rel_br->setIterLim(5);
   nproc->setBrancher(rel_br);
@@ -57,6 +57,7 @@ BranchAndBound * createBab (EnvPtr env, ProblemPtr p, EnginePtr e,
   rel->setNativeDer();
   nr->setRelaxation(rel);
   nr->setEngine(e);
+  nr->setModFlag(false);
   bab->setNodeRelaxer(nr);
   bab->shouldCreateRoot(false);
   
@@ -64,11 +65,11 @@ BranchAndBound * createBab (EnvPtr env, ProblemPtr p, EnginePtr e,
 }
 
 
-ProblemPtr createProblem (UInt N, UInt f, Double *a, Double *b)
+ProblemPtr createProblem (UInt N, UInt f, double *a, double *b)
 {
   VarVector vars;
   ProblemPtr p = (ProblemPtr) new Problem();
-  std::strig s;
+  std::string s;
   LinearFunctionPtr lf;
   FunctionPtr fun;
   ObjectivePtr o;
@@ -80,7 +81,7 @@ ProblemPtr createProblem (UInt N, UInt f, Double *a, Double *b)
 
   // create variables
   for (UInt i = 0; i < f; ++i) {
-    vars.push_back(p->newVariable(1.0, (Double) N, Integer));
+    vars.push_back(p->newVariable(1.0, (double) N, Integer));
   }
   
   // add constraint
@@ -96,7 +97,7 @@ ProblemPtr createProblem (UInt N, UInt f, Double *a, Double *b)
   for (UInt i=0; i<f; ++i) {
     vnode = cg->newNode(vars[i]);
     pnode = cg->newNode(b[i]);
-    cnode = cg->newNode[a[i]];
+    cnode = cg->newNode(a[i]);
     vnode = cg->newNode(OpPowK, vnode, pnode);
     vnode = cg->newNode(OpMult, cnode, vnode);
     nodes[i] = vnode;
@@ -113,18 +114,21 @@ ProblemPtr createProblem (UInt N, UInt f, Double *a, Double *b)
 }
 
 
-void solve(ProblemPtr p, Double *sol, Double *objval)
+void solve(ProblemPtr p, double *sol, double *objval)
 {
   EnvPtr env = (EnvPtr) new Environment();
   FilterSQPEnginePtr e = (FilterSQPEnginePtr) new FilterSQPEngine (env);
   BranchAndBound * bab = 0;
   HandlerVector handlers;
+  int err = 0;
 
+  env->startTimer(err); assert(err==0);
   // get branch-and-bound
   bab = createBab(env, p, e, handlers);
   bab->solve();
   *objval = bab->getUb();
-  memcpy(sol, bab->getSolution()->getPrimal(), p->getNumVars()*sizeof(Double));
+  memcpy(sol, bab->getSolution()->getPrimal(), p->getNumVars()*sizeof(double));
+  env->stopTimer(err); assert(err==0);
   delete bab;
 }
 

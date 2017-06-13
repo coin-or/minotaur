@@ -4,12 +4,13 @@ CXXFLAGS = -ggdb
 FORTRAN = gfortran
 OUT = knapsack
 
-MINOTAUR_INCDIR = ../../build-k/include/minotaur
-MINOTAUR_LIBDIR = ../../build-k/lib
+THIRDPARTY = ../../release/third-party-0.2.1-linux-x86_64
+MINOTAUR_INCDIR = ../../build-debug/include/minotaur
+MINOTAUR_LIBDIR = ../../build-debug/lib
 
-BOOST_INCDIR = ../../build-debug/minotaur-externals
+BOOST_INCDIR = $(THIRDPARTY)
 
-FILTER_LIB = ../../build-debug/minotaur-externals/filter-87/src/filterlib.a
+FILTER_LIB = $(THIRDPARTY)/lib/libfiltersqp.a $(THIRDPARTY)/lib/libbqpd.a
 
 .PHONY: default
 
@@ -17,7 +18,7 @@ default: knapsack
 
 knapsack: knapsack.o main.o
 	$(FORTRAN) knapsack.o main.o -L$(MINOTAUR_LIBDIR) -lmntrfiltersqp \
-	-lminotaur $(FILTER_LIB) -lstdc++ -o $(OUT)
+	-lminotaur $(FILTER_LIB) -lstdc++ -llapack -lblas -o $(OUT)
 
 knapsack.o: knapsack.cpp
 	$(CXX) -c $(CXXFLAGS) -I$(MINOTAUR_INCDIR) -I$(BOOST_INCDIR) \
