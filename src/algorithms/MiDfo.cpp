@@ -5,10 +5,12 @@
 //
 
 /**
- * \file Bnb.cpp
- * \brief The main function for solving mixed-integer derivative free problems
- * in ampl format (.nl) using a piecewise linear underestimator MILP model.
- * The MILP is solved using branch-and-bound.
+ * \file MiDfo.cpp
+ * \brief The main function for solving mixed-integer derivative-free
+ * optimization problems, by solving a sequence of piecewise linear
+ * underestimator mixed-integer linear programs (MILPs). The initial
+ * master model can be read from an ampl format (.nl). The MILPs are solved
+ * using branch-and-bound implemented within MINOTAUR.
  * \author Prashant Palkar, IIT Bombay
  */
 
