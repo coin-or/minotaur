@@ -1,4 +1,6 @@
-// A simple file that solves a nonlinear relaxation of a given problem.
+// A simple file that solves a nonlinear relaxation of a given problem using
+// FilterSQP.
+
 #include <iostream>
 #include "MinotaurConfig.h"
 #include "Environment.h"
@@ -38,6 +40,7 @@ int main(int argc, char** argv)
   env->getOptions()->findBool("presolve")->setValue(false);
   env->getOptions()->findBool("use_native_cgraph")->setValue(true);
   env->getOptions()->findBool("nl_presolve")->setValue(false);
+
   // parse options
   env->readOptions(argc, argv);
   options = env->getOptions();
@@ -68,7 +71,6 @@ int main(int argc, char** argv)
   double obj = e.getSolutionValue();
 
   std::cout << "Relaxation objective value = " << obj << std::endl; 
-  
   
   return 0;
 }
