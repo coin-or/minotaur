@@ -20,6 +20,8 @@
 #include "Types.h"
 #include "NonlinearFunction.h"
 #include "OpCode.h"
+#include "LinearFunction.h"
+#include "QuadraticFunction.h"
 
 namespace Minotaur {
 
@@ -43,6 +45,10 @@ public:
   NonlinearFunctionPtr clone(int *err) const;
 
   NonlinearFunctionPtr cloneWithVars(VariableConstIterator, int *) const;
+
+  CNode* addLinearFunction(LinearFunctionPtr lf);
+
+  CNode* addQuadraticFunction(QuadraticFunctionPtr qf);
 
   // base class method.
   NonlinearFunctionPtr getPersp(VariablePtr z, double eps, int *err) const;
