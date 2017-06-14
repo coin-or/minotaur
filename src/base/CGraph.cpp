@@ -22,6 +22,8 @@
 #include "HessianOfLag.h"
 #include "VarBoundMod.h"
 #include "Variable.h"
+#include "LinearFunction.h"
+#include "QuadraticFunction.h"
 
 using namespace Minotaur;
 
@@ -163,6 +165,66 @@ NonlinearFunctionPtr CGraph::cloneWithVars(VariableConstIterator vbeg,
   cg->gOffs_ = gOffs_;
 
   return cg;
+}
+
+
+CNode* CGraph::addLinearFunction(LinearFunctionPtr lf)
+{
+  ConstVariablePtr v;
+  CNode* node_v;
+  CNode* node_c;
+  UInt i = 0, N = lf->getNumTerms();
+  CNode** sum_nodes = new CNode*[N];
+
+  // Get LF
+  for (VariableGroupConstIterator it = lf->termsBegin(); it != lf->termsEnd(); ++it, ++i)
+  {
+    // Get Variable
+    v = it->first;
+    node_v = newNode(v);
+
+    // Get Coefficient
+    node_c = newNode(lf->getWeight(v));
+
+    // Get Term
+    sum_nodes[i] = newNode(OpMult, node_c, node_v);
+  }
+
+  return newNode(OpSumList, sum_nodes, N);
+}
+
+
+CNode* CGraph::addQuadraticFunction(QuadraticFunctionPtr qf)
+{
+  ConstVariablePair vp;
+  ConstVariablePtr v1, v2;
+  CNode* node_v;
+  CNode* node_c;
+  UInt i = 0, N = qf->getNumTerms();
+  CNode** sum_nodes = new CNode*[N];
+
+  // Get QF
+  for (VariablePairGroupConstIterator it = qf->begin(); it != qf->end(); ++it, ++i)
+  {
+    // Get Variable Pair
+    vp = it->first;
+
+    // Get Var 1
+    v1 = vp.first;
+    node_v = newNode(v1);
+
+    // Get Var 2
+    v2 = vp.second;
+    node_v = (v2 == v1) ? newNode(OpSqr, node_v, NULL) : newNode(OpMult, node_v, newNode(v2));
+
+    // Get Coefficient
+    node_c = newNode(qf->getWeight(vp));
+
+    // Get Term
+    sum_nodes[i] = newNode(OpMult, node_c, node_v);
+  }
+
+  return newNode(OpSumList, sum_nodes, N);
 }
 
 
