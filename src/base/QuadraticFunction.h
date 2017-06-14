@@ -37,9 +37,16 @@ namespace Minotaur {
       /// Default constructor
       QuadraticFunction();
 
-      /// Constructor for a matrix.
+      /// Constructor for an array of values
       QuadraticFunction(UInt nz, double *vals, UInt *irow, UInt *jcol,
                         VariableConstIterator vbeg );
+
+      /**
+       * Construct a quadratic function from a row major coefficient array
+       * representing symmetric matrix of size n x n and n variables.
+       */
+      QuadraticFunction(double* vals, VariableConstIterator vbeg,
+                        VariableConstIterator vend);
 
       /// Destroy
       ~QuadraticFunction();

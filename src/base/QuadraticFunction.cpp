@@ -51,9 +51,37 @@ QuadraticFunction::QuadraticFunction(UInt nz, double *vals, UInt *irow,
     v1 = *(vbeg+irow[i]); 
     v2 = *(vbeg+jcol[i]); 
     if (v1==v2) {
-      addTerm(v1, v2, 0.5*vals[i]);
+      incTerm(v1, v2, 0.5*vals[i]);
     } else {
-      addTerm(v1, v2, vals[i]);
+      incTerm(v1, v2, vals[i]);
+    }
+  }
+}
+
+
+QuadraticFunction::QuadraticFunction(double* vals, VariableConstIterator vbeg,
+                                    VariableConstIterator vend)
+: etol_(1e-8),
+  hCoeffs_(0),
+  hFirst_(0),
+  hOff_(0),
+  hSecond_(0),
+  terms_(), 
+  varFreq_()
+{
+  UInt i = 0;
+  for(VariableConstIterator it = vbeg; it != vend; ++it)
+  {
+    for(VariableConstIterator it2 = vbeg; it2 != vend; ++it2)
+    {
+      if(*it == *it2)
+      {
+        incTerm(*it, *it2, 0.5 * vals[i++]);
+      }
+      else
+      {
+        incTerm(*it, *it2, vals[i++]);
+      }
     }
   }
 }
