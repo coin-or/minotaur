@@ -578,27 +578,119 @@ void findCombs(UInt N, UInt K, std::vector<std::vector<UInt> >&combs)
 }
 
 
-int main(int argc, char** argv)
+SolutionPtr bnbMain(int argc, char** argv, ProblemPtr &oinst, MINOTAUR_AMPL::AMPLInterface* &iface, double* lb)
 {
+  SolutionPtr msol;
   EnvPtr env      = (EnvPtr) new Environment();
   OptionDBPtr options;
-  MINOTAUR_AMPL::AMPLInterface* iface = 0;
-  ProblemPtr oinst;    // instance that needs to be solved.
+  //MINOTAUR_AMPL::AMPLInterface* iface = 0;
+  //ProblemPtr oinst;    // instance that needs to be solved.
   EnginePtr engine;    // engine for solving relaxations. 
   SolutionPtr sol, sol2;
   JacobianPtr jPtr;
   HessianOfLagPtr hPtr;
   BranchAndBound * bab = 0;
   PresolverPtr pres;
-  const std::string me("midfo main: ");
+  const std::string me("bnb main: ");
   VarVector *orig_v=0;
   HandlerVector handlers;
   int err = 0;
   double obj_sense = 1.0;
 
+  env->startTimer(err);
+  if (err) {
+    goto CLEANUP;
+  }
+
+  setInitialOptions(env);
+
+  // Important to setup AMPL Interface first as it adds several options.
+  iface = new MINOTAUR_AMPL::AMPLInterface(env, "bnb");
+
+  // Parse command line for options set by the user.
+  env->readOptions(argc, argv);
+
+  overrideOptions(env);
+  if (0!=showInfo(env)) {
+    goto CLEANUP;
+  }
+
+  if (!oinst) {
+  loadProblem(env, iface, oinst, &obj_sense);
+  }
+  orig_v = new VarVector(oinst->varsBegin(), oinst->varsEnd());
+  pres = presolve(env, oinst, iface->getNumDefs(), handlers);
+  handlers.clear();
+  if (Finished != pres->getStatus() && NotStarted != pres->getStatus()) {
+    env->getLogger()->msgStream(LogInfo) << me
+      << "status of presolve: "
+      << getSolveStatusString(pres->getStatus()) << std::endl;
+    writeSol(env, orig_v, pres, SolutionPtr(), pres->getStatus(), iface);
+    writeBnbStatus(env, bab, obj_sense);
+    goto CLEANUP;
+  }
+
+  if (false==env->getOptions()->findBool("solve")->getValue()) {
+    goto CLEANUP;
+  }
+
+  engine = getEngine(env, oinst, err);
+  if (err) {
+    goto CLEANUP;
+  }
+
+  bab = createBab(env, oinst, engine, handlers);
+  bab->solve();
+  bab->writeStats(env->getLogger()->msgStream(LogExtraInfo));
+  engine->writeStats(env->getLogger()->msgStream(LogExtraInfo));
+  for (HandlerVector::iterator it=handlers.begin(); it!=handlers.end(); ++it) {
+    (*it)->writeStats(env->getLogger()->msgStream(LogExtraInfo));
+  }
+
+  writeSol(env, orig_v, pres, bab->getSolution(), bab->getStatus(), iface);
+  writeBnbStatus(env, bab, obj_sense);
+
+  msol = (SolutionPtr) new Solution(bab->getSolution());
+  *lb = obj_sense*bab->getUb();
+
+CLEANUP:
+  //if (iface) {
+    //delete iface;
+  //}
+  if (bab) {
+    delete bab;
+  }
+  if (orig_v) {
+    delete orig_v;
+  }
+
+  //return 0;
+  return msol;
+}
+
+
+int main(int argc, char** argv)
+{
+  EnvPtr menv      = (EnvPtr) new Environment();
+  //OptionDBPtr options;
+  MINOTAUR_AMPL::AMPLInterface* iface = 0;
+  ProblemPtr oinst;    // instance that needs to be solved.
+  //EnginePtr engine;    // engine for solving relaxations.
+  SolutionPtr msol;
+  //JacobianPtr jPtr;
+  //HessianOfLagPtr hPtr;
+  //BranchAndBound * bab = 0;
+  //PresolverPtr pres;
+  //const std::string me("midfo main: ");
+  //VarVector *orig_v=0;
+  //HandlerVector handlers;
+  int merr = 0;
+  //double obj_sense = 1.0;
+
   //MIDFO RELATED PARAMETERS
   bool shouldStop = false;
-  UInt maxIter = 2, iter = 0, Mlambda = 10000;
+  UInt maxIter = 2, iter = 0;
+  int Mlambda = 10000;
   std::vector<UInt>bigM;
   double lb = -INFINITY, ub = INFINITY, etol=1e-5, epsLambda = 1e-5;
   
@@ -638,9 +730,7 @@ int main(int argc, char** argv)
   }
   const double *b = new double[n+1];
   double *c = new double[n+1];
-  //std::vector<double *> a = new double[n+1];            //coefficients array for cut-generating subproblem 
   VariableConstIterator vbeg,vend;
-
   std::stringstream sstm;
 
   //env->startTimer(err);
@@ -648,21 +738,21 @@ int main(int argc, char** argv)
     //goto CLEANUP;
   //}
 
-  setInitialOptions(env);
+  //setInitialOptions(env);
 
   // Important to setup AMPL Interface first as it adds several options.
-  iface = new MINOTAUR_AMPL::AMPLInterface(env, "midfo");
+  //iface = new MINOTAUR_AMPL::AMPLInterface(env, "midfo");
 
   // Parse command line for options set by the user.
-  env->readOptions(argc, argv);
+  //env->readOptions(argc, argv);
   
-  overrideOptions(env);
-  if (0!=showInfo(env)) {
-    goto CLEANUP;
-  }
+  //overrideOptions(env);
+  //if (0!=showInfo(env)) {
+    //goto CLEANUP;
+  //}
 
-  loadProblem(env, iface, oinst, &obj_sense);
-  orig_v = new VarVector(oinst->varsBegin(), oinst->varsEnd());
+  //loadProblem(env, iface, oinst, &obj_sense);
+  //orig_v = new VarVector(oinst->varsBegin(), oinst->varsEnd());
   //oinst->write(std::cout);
   
   //READ FROM .nl file (for now)
@@ -678,33 +768,20 @@ int main(int argc, char** argv)
   }
 
   minAt = std::min_element(funcVals.begin(), funcVals.end());
-  std::cout << "min element at: " << std::distance(funcVals.begin(), minAt);
+  //std::cout << "min element at: " << std::distance(funcVals.begin(), minAt);
   ub = *minAt;
 
-  //for (vit=oinst->varsBegin(); 
-     //vit!=oinst->varsEnd(); ++vit, ++i) {
-    //if (((*vit)->getName()).find("x")!= std::string::npos) {
-      //vxbeg = vit;
-      //break;
-    //}
-  //}
-  //for (vit=oinst->varsBegin(); 
-     //vit!=oinst->varsEnd(); ++vit, ++i) {
-    //if (((*vit)->getName()).find("eta")!= std::string::npos) {
-      //veta = *vit;
-      //break;
-    //}
+  //if (false==env->getOptions()->findBool("solve")->getValue()) {
+    //goto CLEANUP;
   //}
 
-  if (false==env->getOptions()->findBool("solve")->getValue()) {
-    goto CLEANUP;
-  }
+  //engine = getEngine(env, oinst, err);
+  //if (err) {
+    //goto CLEANUP;
+  //}
+ 
+  //bab = createBab(env, oinst, engine, handlers);
 
-  engine = getEngine(env, oinst, err);
-  if (err) {
-    goto CLEANUP;
-  }
-  
   //ITERATIONS BEGIN
   while (shouldStop == false) {
     iter++;
@@ -722,28 +799,29 @@ int main(int argc, char** argv)
     //}
 
     //SOLVE THE MASTER MIP
-    //---------------can we warmstarted outside the loop!!--------
-    //engine = getEngine(env, oinst, err);
-    //engine->clear();
-    env->startTimer(err);
-    if (err) {
-      goto CLEANUP;
-    }
-    bab = createBab(env, oinst, engine, handlers);
-    //----------------------------------------------------------
-    
-    bab->solve();
-    bab->writeStats(env->getLogger()->msgStream(LogExtraInfo));
-    engine->writeStats(env->getLogger()->msgStream(LogExtraInfo));
-    for (HandlerVector::iterator it=handlers.begin(); it!=handlers.end(); ++it) {
-      (*it)->writeStats(env->getLogger()->msgStream(LogExtraInfo));
-    }
+    //-------------MIP resolves can be warmstarted!??!----------
+    //env->startTimer(err);
+    //if (err) {
+      //goto CLEANUP;
+    //}
    
-    writeBnbStatus(env, bab, obj_sense);
+    msol = bnbMain(argc, argv, oinst, iface, &lb);
+    //bab->solve();
+    //bab->writeStats(env->getLogger()->msgStream(LogExtraInfo));
+    //engine->writeStats(env->getLogger()->msgStream(LogExtraInfo));
+    if (!msol) {
+      std::cout<<"\n Master MIP NOT SOLVED..ABORTING\n";
+      break;
+    }
+    //for (HandlerVector::iterator it=handlers.begin(); it!=handlers.end(); ++it) {
+      //(*it)->writeStats(env->getLogger()->msgStream(LogExtraInfo));
+    //}
+
+    //writeBnbStatus(env, bab, obj_sense);
     //bab->getSolution()->writePrimal(std::cout);
     
     //Update lower bound
-    lb = obj_sense*bab->getUb();
+    //lb = obj_sense*bab->getUb();
 
     //CHECK STOPPING CRITERION
     if (fabs(lb - ub) < -etol) {
@@ -756,19 +834,20 @@ int main(int argc, char** argv)
       std::cout<<"\nITERATION LIMIT REACHED..\n"<<std::endl;
     } else {
       //EVALUATE FUNCTION AT NEW POINT
-      mipSol = bab->getSolution()->getPrimal();
-      bab->getSolution()->writePrimal(std::cout);
+      //mipSol = bab->getSolution()->getPrimal();
+      mipSol = msol->getPrimal();
+      //bab->getSolution()->writePrimal(std::cout);
       if (temp.size()) { temp.clear();}
       i=0;
       for (vit=oinst->varsBegin(); 
          vit!=oinst->varsEnd(); ++vit, ++i) {
         if (((*vit)->getName()).find("x")!= std::string::npos) {
           temp.push_back(mipSol[i]);
-          std::cout<<mipSol[i]<<"\n";
+          std::cout<<(*vit)->getName() << " = " << mipSol[i]<<"\n";
         }
       }
       
-      //Get iterator for x variables (NOT WORKING)
+      //Get iterator for x variables (NOT WORKING AS EXPECTED)
       for (vit=oinst->varsBegin(); vit!=oinst->varsEnd(); ++vit) {
         if (((*vit)->getName()).find("x")!= std::string::npos) {
           vxbeg = vit;
@@ -784,11 +863,6 @@ int main(int argc, char** argv)
         }
       }
 
-      //i = 0;
-      //if (temp.size()) { temp.clear();}
-      //for (vit=vxbeg; vit!=vxbeg+n; ++vit, ++i) {
-        //temp.push_back(mipSol[i]);
-      //}
       interpPoints.push_back(temp);
       std::cout<<"\nNEW SET OF INTERPOLATION POINTS\n";
       print2dVec(interpPoints);             
@@ -796,14 +870,14 @@ int main(int argc, char** argv)
       minAt = std::min_element(funcVals.begin(), funcVals.end());
 
       //Update upper bound and best solution
-      if (obj_sense*bab->getUb() < ub) {
-        ub = obj_sense*bab->getUb();
+      if (lb < ub) {
+        ub = lb;
       }
 
       //FIND ALL NEW CUT COMBINATIONS
       UInt m = interpPoints.size();
-      findCombs(m-1,n,combs);
-      std::cout<<"\nSETS OF CUT COMBINATIONS\n";
+      findCombs(m-1, n, combs);
+      std::cout<<"\nNEW SET OF CUT COMBINATIONS\n";
       print2dVec(combs);
 
       //FIND CUTS USING THE NEW POINT
@@ -850,14 +924,12 @@ int main(int argc, char** argv)
             sstm.str("");
           }
           
-          cutGenEngine = getEngine(env, cutGen, err);
-          if (err) {
+          cutGenEngine = getEngine(menv, cutGen, merr);
+          if (merr) {
             std::cout<<"Error in getting engine for cut-generating subproblem.\n";
-            goto CLEANUP;
+            //goto CLEANUP;
           }
         } else {
-          //Find increment to terms in linear functions of constraints 
-          //(new value - old value)
           cutGenEngine->clear();    
           
           for (i=0; i<n+1; i++) {
@@ -866,7 +938,6 @@ int main(int argc, char** argv)
             }
             a[i][n] = 1;
             lf = (LinearFunctionPtr) new LinearFunction(a[i], vbeg, vend, etol);
-            //std::cout<<"\nlf "; lf->write(std::cout);
             //std::cout<<"\ncon before "; cutGenCon[i]->write(std::cout);
             cutGenCon[i]->clearAll();
             cutGenCon[i]->add(lf);
@@ -882,14 +953,21 @@ int main(int argc, char** argv)
         cutGenEngine->solve();
         engineStatus = cutGenEngine->getStatus();
         std::cout << "engine status = " 
-                  << cutGenEngine->getStatus() << std::endl;
+                  << engineStatus << std::endl;
         if(engineStatus == ProvenOptimal || engineStatus == ProvenLocalOptimal) {
           cutGenEngine->getSolution()->writePrimal(std::cout);
         
           //Add cuts to master problem
           b = cutGenEngine->getSolution()->getPrimal();
-          UInt M = 0;
-          for (i=0; i<n; i++) {
+          UInt M = 0; vit = vxbeg;
+          //Get iterator for x variables (NOT WORKING AS EXPECTED)
+          for (vit=oinst->varsBegin(); vit!=oinst->varsEnd(); ++vit) {
+            if (((*vit)->getName()).find("x")!= std::string::npos) {
+              vxbeg = vit;
+              break;
+            }
+          }
+          for (i=0; i<n; i++, vit++) {
             c[i] = b[i];
             if (c[i] > 0) {
               M += (*(vxbeg+i))->getUb()*c[i];
@@ -905,7 +983,6 @@ int main(int argc, char** argv)
           //(1) Ccut1
           std::cout<<"\n";
           std::vector<VariablePtr>zvar;
-          ConstraintPtr con;
           cuts.push_back((LinearFunctionPtr) new LinearFunction(c, vxbeg, vxbeg + n, etol));
           for (i=0; i < n+1; i++) { 
             sstm.str(""); sstm << "z_" << cuts.size() << "_" << i;      //variable name
@@ -915,10 +992,7 @@ int main(int argc, char** argv)
           cuts.back()->addTerm(veta, -1);
           sstm.str(""); sstm << "Ccut1_" << cuts.size();                //cut name (includes id)
           fm.push_back((FunctionPtr) new Function(cuts.back()));
-          //fm.back()->write(std::cout);
-          con = oinst->newConstraint(fm.back(), -INFINITY, bigM.back()-b[n], sstm.str());
-          con->write(std::cout);
-
+          (oinst->newConstraint(fm.back(), -INFINITY, bigM.back()-b[n], sstm.str()))->write(std::cout);
           //(2) Ccut2
           std::cout<<"\n";
           LinearFunctionPtr lcut = cuts.back()->clone();
@@ -928,37 +1002,39 @@ int main(int argc, char** argv)
           lcut->addTerm(veCut, -1);
           sstm.str(""); sstm << "Ccut2_" << cuts.size();              //cut name (includes id)
           FunctionPtr feCut = (FunctionPtr) new Function(lcut);
-          //fm.back()->write(std::cout);
           (oinst->newConstraint(feCut, bigM.back()-b[n], bigM.back()-b[n], sstm.str()))->write(std::cout);
-
           //(3) ConeDef1
           std::cout<<"\n";
           std::vector<std::vector<VariablePtr> >lambda;
           for (UInt p=0; p < n+1; p++) {
             lambda.resize(p+1);
             for (UInt r=0; r < n; r++) {
-              sstm.str(""); sstm << "lambda_" << cuts.size() << "_" << p << "_" << i; 
+              sstm.str(""); sstm << "lambda_" << cuts.size() << "_" << p << "_" << r;
               lambda[p].push_back(oinst->newVariable(-INFINITY, INFINITY, Continuous, sstm.str()));
             }
           } 
           for (UInt p=0; p < n+1; p++) {
             for (i=0; i < n; i++) {
               LinearFunctionPtr coneDef1 = (LinearFunctionPtr) new LinearFunction();
-              UInt r=0; double norm = 0;
+              UInt r=0;
               for (UInt q=0; q<n+1; q++) {
+                double norm = 0;
                 if (q!=p) {
                   for (UInt s=0; s < n; s++) {
                     norm += pow(interpPoints[combs[k][p]][s] - interpPoints[combs[k][q]][s], 2);
                   }
                   norm = sqrt(norm);
-                  coneDef1->addTerm(lambda[p][r], (interpPoints[combs[k][p]][i] - interpPoints[combs[k][q]][i])/norm);
+                  coneDef1->addTerm(lambda[p][r], (interpPoints[combs[k][p]][i] 
+                                                   - interpPoints[combs[k][q]][i])/norm);
                   r++;
                 }
               }
               coneDef1->addTerm((*(vxbeg+i)),-1);
               sstm.str(""); sstm << "CconeDef1_" << cuts.size() << "_" << p << "_" << i; 
               FunctionPtr fconeDef1 = (FunctionPtr) new Function(coneDef1);
-              (oinst->newConstraint(fconeDef1, - interpPoints[combs[k][p]][i], - interpPoints[combs[k][p]][i], sstm.str()))->write(std::cout);
+              (oinst->newConstraint(fconeDef1, - interpPoints[combs[k][p]][i],
+                                    - interpPoints[combs[k][p]][i],
+                                    sstm.str()))->write(std::cout);
             }
           }
           //(4) ConeDef2
@@ -966,23 +1042,22 @@ int main(int argc, char** argv)
           for (UInt p=0; p < n+1; p++) {
             for (UInt r=0; r < n; r++) {
               LinearFunctionPtr coneDef2 = (LinearFunctionPtr) new LinearFunction();
-              coneDef2->addTerm(lambda[p][r], 1);
-              coneDef2->addTerm(zvar[p], -Mlambda);
+              coneDef2->addTerm(lambda[p][r], -1);
+              coneDef2->addTerm(zvar[p], Mlambda);
               sstm.str(""); sstm << "CconeDef2_" << cuts.size() << "_" << p << "_" << r; 
               FunctionPtr fconeDef2 = (FunctionPtr) new Function(coneDef2);
-              (oinst->newConstraint(fconeDef2, -Mlambda, INFINITY, sstm.str()))->write(std::cout);
+              (oinst->newConstraint(fconeDef2, -INFINITY, Mlambda, sstm.str()))->write(std::cout);
  
             }
           } 
-
           //(5) CuLambda1
           std::cout<<"\n";
           std::vector<std::vector<VariablePtr> >wvar;
           for (UInt p=0; p < n+1; p++) {
             wvar.resize(p+1);
             for (UInt r=0; r < n; r++) {
-              sstm.str(""); sstm << "w_" << cuts.size() << "_" << p << r;  //variable name
-              wvar[p].push_back(oinst->newBinaryVariable(sstm.str()));        //n+1 z variables                        
+              sstm.str(""); sstm << "w_" << cuts.size() << "_" << p << "_" <<r;  //variable name
+              wvar[p].push_back(oinst->newBinaryVariable(sstm.str()));           //w variables
               LinearFunctionPtr wLambda1 = (LinearFunctionPtr) new LinearFunction();
               wLambda1->addTerm(lambda[p][r], 1);
               wLambda1->addTerm(wvar[p][r], -Mlambda);
@@ -991,7 +1066,6 @@ int main(int argc, char** argv)
               (oinst->newConstraint(fwLambda1, -INFINITY, -epsLambda, sstm.str()))->write(std::cout);
             }
           } 
-          
           //(6) CuLambda2
           std::cout<<"\n";
           for (UInt p=0; p < n+1; p++) {
@@ -1004,17 +1078,17 @@ int main(int argc, char** argv)
             FunctionPtr fwLambda2 = (FunctionPtr) new Function(wLambda2);
             (oinst->newConstraint(fwLambda2, -INFINITY, n - 1, sstm.str()))->write(std::cout);
           } 
-           //(7) CuLambda3
+          //(7) CuLambda3
           std::cout<<"\n";
           for (UInt p=0; p < n+1; p++) {
             LinearFunctionPtr wLambda3 = (LinearFunctionPtr) new LinearFunction();
             for (UInt r=0; r < n; r++) {
-              wLambda3->addTerm(wvar[p][r], 1);
+              wLambda3->addTerm(wvar[p][r], -1);
             }
-            wLambda3->addTerm(zvar[p], -n);
+            wLambda3->addTerm(zvar[p], n);
             sstm.str(""); sstm << "CuLambda3_" << cuts.size() << "_" << p; 
             FunctionPtr fwLambda3 = (FunctionPtr) new Function(wLambda3);
-            (oinst->newConstraint(fwLambda3, 0, INFINITY, sstm.str()))->write(std::cout);
+            (oinst->newConstraint(fwLambda3, -INFINITY, 0, sstm.str()))->write(std::cout);
           } 
           //break;
 
@@ -1030,13 +1104,17 @@ int main(int argc, char** argv)
   //writeBnbStatus(env, bab, obj_sense);
 
   //Write optimal solution
-  mipSol = bab->getSolution()->getPrimal();
   //numVars = oinst->getNumVars();
-  i=0;
-  for (vit=oinst->varsBegin(); 
-      vit!=oinst->varsEnd(); ++vit, ++i) {
-    if (((*vit)->getName()).find("x")!= std::string::npos) {
-      std::cout << ((*vit)->getName()) << "   " << mipSol[i] << std::endl;
+  //if (bab->getSolution())
+  if (msol) {
+    //mipSol = bab->getSolution()->getPrimal();
+    mipSol = msol->getPrimal();
+    i=0;
+    for (vit=oinst->varsBegin();
+        vit!=oinst->varsEnd(); ++vit, ++i) {
+      if (((*vit)->getName()).find("x")!= std::string::npos) {
+        std::cout << ((*vit)->getName()) << "   " << mipSol[i] << std::endl;
+      }
     }
   }
   //bab->getSolution()->writePrimal(std::cout);
@@ -1047,18 +1125,18 @@ int main(int argc, char** argv)
     std::cout<<"x["<<j+1<<"]="
       <<(int)interpPoints[std::distance(funcVals.begin(), minAt)][j]<<std::endl;
   }
-  oinst->write(std::cout);
+  //oinst->write(std::cout);
 
-CLEANUP:
-  if (iface) {
-    delete iface;
-  }
-  if (bab) {
-    delete bab;
-  }
-  if (orig_v) {
-    delete orig_v;
-  }
+//CLEANUP:
+  //if (iface) {
+    //delete iface;
+  //}
+  //if (bab) {
+    //delete bab;
+  //}
+  //if (orig_v) {
+    //delete orig_v;
+  //}
 
   for(i = 0; i < n+1; ++i) {
         delete [] a[i];
