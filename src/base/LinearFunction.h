@@ -45,7 +45,7 @@ namespace Minotaur {
      * variables.
      */
     LinearFunction(double *a, VariableConstIterator vbeg, 
-                   VariableConstIterator vend, double tol = 1e-9); 
+                   VariableConstIterator vend, double tol); 
 
 
     /// Destroy
