@@ -163,7 +163,11 @@ void QGHandlerPDE::cutIntSol_(ConstSolutionPtr sol, SolutionPoolPtr s_pool,
       alpha = x[objVar_->getIndex()];
       // Updating upper bound and adding solution to solution pool if required
       // conditions satisfy 
+
       double bestval = s_pool->getBestSolutionValue();
+      std::cout <<"bestval " << bestval << std::endl;
+      std::cout <<"act " << act << std::endl;
+      std::cout <<"alpha " << alpha << std::endl;
       if (act <= bestval ){
         s_pool->addSolution(x, act);
         *sol_found = true;
@@ -304,7 +308,7 @@ int QGHandlerPDE::OAFromPoint_(const double *x, SeparationStatus *status)
   ObjectivePtr o;
   UInt num_cuts = 0;
   int error=0;
-  double vio, lpvio;
+  double lpvio;
   *status=SepaContinue;
   o = minlp_->getObjective();
   f = o->getFunction();
