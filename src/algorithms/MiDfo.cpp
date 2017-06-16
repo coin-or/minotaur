@@ -616,8 +616,9 @@ SolutionPtr bnbMain(int argc, char** argv, ProblemPtr &oinst, MINOTAUR_AMPL::AMP
   }
 
   if (!oinst) {
-  loadProblem(env, iface, oinst, &obj_sense);
+    loadProblem(env, iface, oinst, &obj_sense);
   }
+
   orig_v = new VarVector(oinst->varsBegin(), oinst->varsEnd());
   pres = presolve(env, oinst, iface->getNumDefs(), handlers);
   handlers.clear();
@@ -650,7 +651,7 @@ SolutionPtr bnbMain(int argc, char** argv, ProblemPtr &oinst, MINOTAUR_AMPL::AMP
   writeSol(env, orig_v, pres, bab->getSolution(), bab->getStatus(), iface);
   writeBnbStatus(env, bab, obj_sense);
 
-  msol = (SolutionPtr) new Solution(bab->getSolution());
+  msol = (SolutionPtr) new Solution(pres->getPostSol(bab->getSolution()));
   *lb = obj_sense*bab->getUb();
 
 CLEANUP:
@@ -689,22 +690,20 @@ int main(int argc, char** argv)
 
   //MIDFO RELATED PARAMETERS
   bool shouldStop = false;
-  UInt maxIter = 2, iter = 0;
-  int Mlambda = 10000;
+  UInt maxIter = 10, iter = 0;
+  int Mlambda = 1000;
   std::vector<UInt>bigM;
-  double lb = -INFINITY, ub = INFINITY, etol=1e-5, epsLambda = 1e-5;
+  double lb = -INFINITY, ub = INFINITY, etol=1e-6, epsLambda = 5e-4;
   
-  const char* inputFile = "MIDFOInputcp2dEx1.txt";      //initial interpolation points
+  const char* inputFile = "MIDFOInputcp2dEx0.txt";      //initial interpolation points
   UInt n = getn(inputFile);
   std::vector<std::vector<double> > interpPoints = readInput(inputFile, n);     //interpolation points
-  std::cout<<"\nINITIAL INTERPOLATION POINTS (read from MIDFOInput.txt)\n";
+  std::cout<<"\nINITIAL INTERPOLATION POINTS: read from file " << *inputFile << "\n";
   print2dVec(interpPoints);             
   std::vector<double>funcVals;                  //function values of interpolation points
   std::vector<double>temp;
   std::vector<double>::iterator minAt;
   const double* mipSol;
-  //double * x;
-  //UInt numVars;
   UInt i=0;
   VariableConstIterator vit;
   VariableConstIterator vxbeg;
@@ -722,7 +721,6 @@ int main(int argc, char** argv)
 
   std::vector<std::vector<UInt> >combs;
   std::vector<std::vector<UInt> >combsN;
-  //std::vector<UInt>tempN(n);
 
   double **a = new double*[n+1];
   for(i = 0; i < n+1; ++i) {
@@ -733,29 +731,7 @@ int main(int argc, char** argv)
   VariableConstIterator vbeg,vend;
   std::stringstream sstm;
 
-  //env->startTimer(err);
-  //if (err) {
-    //goto CLEANUP;
-  //}
-
-  //setInitialOptions(env);
-
-  // Important to setup AMPL Interface first as it adds several options.
-  //iface = new MINOTAUR_AMPL::AMPLInterface(env, "midfo");
-
-  // Parse command line for options set by the user.
-  //env->readOptions(argc, argv);
-  
-  //overrideOptions(env);
-  //if (0!=showInfo(env)) {
-    //goto CLEANUP;
-  //}
-
-  //loadProblem(env, iface, oinst, &obj_sense);
-  //orig_v = new VarVector(oinst->varsBegin(), oinst->varsEnd());
-  //oinst->write(std::cout);
-  
-  //READ FROM .nl file (for now)
+  //READING THE MASTER MIP FROM .nl file (for now)
   //------------------------------
   //Generate initial cuts
   //Initialize data
@@ -771,60 +747,23 @@ int main(int argc, char** argv)
   //std::cout << "min element at: " << std::distance(funcVals.begin(), minAt);
   ub = *minAt;
 
-  //if (false==env->getOptions()->findBool("solve")->getValue()) {
-    //goto CLEANUP;
-  //}
-
-  //engine = getEngine(env, oinst, err);
-  //if (err) {
-    //goto CLEANUP;
-  //}
- 
-  //bab = createBab(env, oinst, engine, handlers);
-
   //ITERATIONS BEGIN
   while (shouldStop == false) {
     iter++;
     std::cout<<"\n    ITERATION "<< iter <<"   "<<std::endl;
-    // Presolve the master MIP (x vars are eliminated!)
-    //pres = presolve(env, oinst, iface->getNumDefs(), handlers);
-    //handlers.clear();
-    //if (Finished != pres->getStatus() && NotStarted != pres->getStatus()) {
-      //env->getLogger()->msgStream(LogInfo) << me 
-        //<< "status of presolve: " 
-        //<< getSolveStatusString(pres->getStatus()) << std::endl;
-      //writeSol(env, orig_v, pres, SolutionPtr(), pres->getStatus(), iface);
-      //writeBnbStatus(env, bab, obj_sense);
-      //goto CLEANUP;
-    //}
+    std::cout<<"\n lb = "<<lb;
+    std::cout<<"\n ub = "<<ub;
 
-    //SOLVE THE MASTER MIP
-    //-------------MIP resolves can be warmstarted!??!----------
-    //env->startTimer(err);
-    //if (err) {
-      //goto CLEANUP;
-    //}
-   
+    //SOLVE THE MASTER (MILP)---------------------
     msol = bnbMain(argc, argv, oinst, iface, &lb);
-    //bab->solve();
-    //bab->writeStats(env->getLogger()->msgStream(LogExtraInfo));
-    //engine->writeStats(env->getLogger()->msgStream(LogExtraInfo));
+    //--------------------------------------------
     if (!msol) {
       std::cout<<"\n Master MIP NOT SOLVED..ABORTING\n";
       break;
     }
-    //for (HandlerVector::iterator it=handlers.begin(); it!=handlers.end(); ++it) {
-      //(*it)->writeStats(env->getLogger()->msgStream(LogExtraInfo));
-    //}
-
-    //writeBnbStatus(env, bab, obj_sense);
-    //bab->getSolution()->writePrimal(std::cout);
-    
-    //Update lower bound
-    //lb = obj_sense*bab->getUb();
 
     //CHECK STOPPING CRITERION
-    if (fabs(lb - ub) < -etol) {
+    if (fabs(lb - ub) < etol) {
       //Include epsilon checks later!
       //bool shouldStop = checkEpsilon();
       shouldStop = true;
@@ -833,10 +772,9 @@ int main(int argc, char** argv)
       shouldStop = true;
       std::cout<<"\nITERATION LIMIT REACHED..\n"<<std::endl;
     } else {
+ 
       //EVALUATE FUNCTION AT NEW POINT
-      //mipSol = bab->getSolution()->getPrimal();
       mipSol = msol->getPrimal();
-      //bab->getSolution()->writePrimal(std::cout);
       if (temp.size()) { temp.clear();}
       i=0;
       for (vit=oinst->varsBegin(); 
@@ -847,22 +785,18 @@ int main(int argc, char** argv)
         }
       }
       
-      //Get iterator for x variables (NOT WORKING AS EXPECTED)
-      for (vit=oinst->varsBegin(); vit!=oinst->varsEnd(); ++vit) {
-        if (((*vit)->getName()).find("x")!= std::string::npos) {
-          vxbeg = vit;
-          break;
-        }
-      }
-      //Get iterator for eta variable
-      for (vit=oinst->varsBegin(); 
-         vit!=oinst->varsEnd(); ++vit, ++i) {
-        if (((*vit)->getName()).find("eta")!= std::string::npos) {
-          veta = *vit;
-          break;
-        }
-      }
+      //Get iterator for x variables (CAN BE NULL LATER IN THE CODE)
+      //for (vit=oinst->varsBegin(); vit!=oinst->varsEnd(); ++vit) {
+        //if (((*vit)->getName()).find("x")!= std::string::npos) {
+          //vxbeg = vit;
+          //break;
+        //}
+      //}
 
+      if (!temp.size()) {
+        std::cout << "\n VARIABLES X NOT FOUND IN SOLUTION! ABORTING...\n"; 
+        break;
+      }
       interpPoints.push_back(temp);
       std::cout<<"\nNEW SET OF INTERPOLATION POINTS\n";
       print2dVec(interpPoints);             
@@ -870,9 +804,7 @@ int main(int argc, char** argv)
       minAt = std::min_element(funcVals.begin(), funcVals.end());
 
       //Update upper bound and best solution
-      if (lb < ub) {
-        ub = lb;
-      }
+      ub = *minAt;
 
       //FIND ALL NEW CUT COMBINATIONS
       UInt m = interpPoints.size();
@@ -927,7 +859,6 @@ int main(int argc, char** argv)
           cutGenEngine = getEngine(menv, cutGen, merr);
           if (merr) {
             std::cout<<"Error in getting engine for cut-generating subproblem.\n";
-            //goto CLEANUP;
           }
         } else {
           cutGenEngine->clear();    
@@ -947,26 +878,27 @@ int main(int argc, char** argv)
           }
         }
 
-        cutGen->write(std::cout);
+        //cutGen->write(std::cout);
         cutGenEngine->load(cutGen);    
         std::cout<<"SOLVING CUT GENERATING SUBPROBLEM.." << std::endl;
         cutGenEngine->solve();
         engineStatus = cutGenEngine->getStatus();
         std::cout << "engine status = " 
-                  << engineStatus << std::endl;
+                  << cutGenEngine->getStatusString() << std::endl;
         if(engineStatus == ProvenOptimal || engineStatus == ProvenLocalOptimal) {
           cutGenEngine->getSolution()->writePrimal(std::cout);
         
-          //Add cuts to master problem
+          //ADD CUTS TO MASTER PROBLEM
           b = cutGenEngine->getSolution()->getPrimal();
-          UInt M = 0; vit = vxbeg;
-          //Get iterator for x variables (NOT WORKING AS EXPECTED)
+          UInt M = 0; 
+          //Get iterator for x variables
           for (vit=oinst->varsBegin(); vit!=oinst->varsEnd(); ++vit) {
             if (((*vit)->getName()).find("x")!= std::string::npos) {
               vxbeg = vit;
               break;
             }
           }
+          //Calculate bigM for new cuts
           for (i=0; i<n; i++, vit++) {
             c[i] = b[i];
             if (c[i] > 0) {
@@ -979,9 +911,18 @@ int main(int argc, char** argv)
           bigM.push_back(M);
           std::cout<<"M   "<<M<<"\n";
           
-          //ADD CONSTRAINTS TO MASTER
+          //Add constraints to master
           //(1) Ccut1
           std::cout<<"\n";
+          //Get iterator for eta variable
+          for (vit=oinst->varsBegin(); 
+             vit!=oinst->varsEnd(); ++vit, ++i) {
+            if (((*vit)->getName()).find("eta")!= std::string::npos) {
+              veta = *vit;
+              break;
+            }
+          }
+
           std::vector<VariablePtr>zvar;
           cuts.push_back((LinearFunctionPtr) new LinearFunction(c, vxbeg, vxbeg + n, etol));
           for (i=0; i < n+1; i++) { 
@@ -992,7 +933,7 @@ int main(int argc, char** argv)
           cuts.back()->addTerm(veta, -1);
           sstm.str(""); sstm << "Ccut1_" << cuts.size();                //cut name (includes id)
           fm.push_back((FunctionPtr) new Function(cuts.back()));
-          (oinst->newConstraint(fm.back(), -INFINITY, bigM.back()-b[n], sstm.str()))->write(std::cout);
+          (oinst->newConstraint(fm.back(), -INFINITY, bigM.back()-b[n], sstm.str()));
           //(2) Ccut2
           std::cout<<"\n";
           LinearFunctionPtr lcut = cuts.back()->clone();
@@ -1002,9 +943,21 @@ int main(int argc, char** argv)
           lcut->addTerm(veCut, -1);
           sstm.str(""); sstm << "Ccut2_" << cuts.size();              //cut name (includes id)
           FunctionPtr feCut = (FunctionPtr) new Function(lcut);
-          (oinst->newConstraint(feCut, bigM.back()-b[n], bigM.back()-b[n], sstm.str()))->write(std::cout);
+          (oinst->newConstraint(feCut, bigM.back()-b[n], bigM.back()-b[n], sstm.str()));
           //(3) ConeDef1
           std::cout<<"\n";
+          for (vit=oinst->varsBegin(); vit!=oinst->varsEnd(); ++vit) {
+            if (((*vit)->getName()).find("x")!= std::string::npos) {
+              vxbeg = vit;
+              //std::cout<<"\nPtr to x[1]: "<<(*vxbeg)<<" "<<(*vxbeg)->getName();
+              //if (*(vxbeg+1)) {
+                //std::cout<<"\nPtr to x[2]: "<<(*(vxbeg+1))<<(*(vxbeg+1))->getName();
+              //} else {
+                //std::cout<< "Pointer error at x[2]\n";
+              //}
+              break;
+            }
+          }
           std::vector<std::vector<VariablePtr> >lambda;
           for (UInt p=0; p < n+1; p++) {
             lambda.resize(p+1);
@@ -1024,17 +977,29 @@ int main(int argc, char** argv)
                     norm += pow(interpPoints[combs[k][p]][s] - interpPoints[combs[k][q]][s], 2);
                   }
                   norm = sqrt(norm);
-                  coneDef1->addTerm(lambda[p][r], (interpPoints[combs[k][p]][i] 
-                                                   - interpPoints[combs[k][q]][i])/norm);
+                  //coneDef1->addTerm(lambda[p][r], (interpPoints[combs[k][p]][i] 
+                                                   //- interpPoints[combs[k][q]][i])/norm);
+                  coneDef1->addTerm(lambda[p][r], (interpPoints[combs[k][p]][i] - interpPoints[combs[k][q]][i]));
                   r++;
+                }
+              }
+              for (vit=oinst->varsBegin(); vit!=oinst->varsEnd(); ++vit) {
+                if (((*vit)->getName()).find("x")!= std::string::npos) {
+                  vxbeg = vit;
+                  //std::cout<<"\nPtr to x[1]: "<<(*vxbeg)<<" "<<(*vxbeg)->getName();
+                  //if (*(vxbeg+1)) {
+                    //std::cout<<"\nPtr to x[2]: "<<(*(vxbeg+1))<<(*(vxbeg+1))->getName();
+                  //} else {
+                    //std::cout<< "Pointer error at x[2]\n";
+                  //}
+                  break;
                 }
               }
               coneDef1->addTerm((*(vxbeg+i)),-1);
               sstm.str(""); sstm << "CconeDef1_" << cuts.size() << "_" << p << "_" << i; 
               FunctionPtr fconeDef1 = (FunctionPtr) new Function(coneDef1);
               (oinst->newConstraint(fconeDef1, - interpPoints[combs[k][p]][i],
-                                    - interpPoints[combs[k][p]][i],
-                                    sstm.str()))->write(std::cout);
+                                    - interpPoints[combs[k][p]][i], sstm.str()));
             }
           }
           //(4) ConeDef2
@@ -1047,7 +1012,6 @@ int main(int argc, char** argv)
               sstm.str(""); sstm << "CconeDef2_" << cuts.size() << "_" << p << "_" << r; 
               FunctionPtr fconeDef2 = (FunctionPtr) new Function(coneDef2);
               (oinst->newConstraint(fconeDef2, -INFINITY, Mlambda, sstm.str()))->write(std::cout);
- 
             }
           } 
           //(5) CuLambda1
@@ -1063,7 +1027,7 @@ int main(int argc, char** argv)
               wLambda1->addTerm(wvar[p][r], -Mlambda);
               sstm.str(""); sstm << "CuLambda1_" << cuts.size() << "_" << p << "_" << r; 
               FunctionPtr fwLambda1 = (FunctionPtr) new Function(wLambda1);
-              (oinst->newConstraint(fwLambda1, -INFINITY, -epsLambda, sstm.str()))->write(std::cout);
+              (oinst->newConstraint(fwLambda1, -INFINITY, -epsLambda, sstm.str()));
             }
           } 
           //(6) CuLambda2
@@ -1076,7 +1040,7 @@ int main(int argc, char** argv)
             wLambda2->addTerm(zvar[p], -1);
             sstm.str(""); sstm << "CuLambda2_" << cuts.size() << "_" << p; 
             FunctionPtr fwLambda2 = (FunctionPtr) new Function(wLambda2);
-            (oinst->newConstraint(fwLambda2, -INFINITY, n - 1, sstm.str()))->write(std::cout);
+            (oinst->newConstraint(fwLambda2, -INFINITY, n - 1, sstm.str()));
           } 
           //(7) CuLambda3
           std::cout<<"\n";
@@ -1088,7 +1052,7 @@ int main(int argc, char** argv)
             wLambda3->addTerm(zvar[p], n);
             sstm.str(""); sstm << "CuLambda3_" << cuts.size() << "_" << p; 
             FunctionPtr fwLambda3 = (FunctionPtr) new Function(wLambda3);
-            (oinst->newConstraint(fwLambda3, -INFINITY, 0, sstm.str()))->write(std::cout);
+            (oinst->newConstraint(fwLambda3, -INFINITY, 0, sstm.str()));
           } 
           //break;
 
@@ -1097,17 +1061,10 @@ int main(int argc, char** argv)
         }
       } //for ends for new cuts
     } //else for stopping conditions ends
-    //oinst->write(std::cout);
-  } //while shouldStop ends
+  } //while ends
   
-  //writeSol(env, orig_v, pres, bab->getSolution(), bab->getStatus(), iface);
-  //writeBnbStatus(env, bab, obj_sense);
-
   //Write optimal solution
-  //numVars = oinst->getNumVars();
-  //if (bab->getSolution())
   if (msol) {
-    //mipSol = bab->getSolution()->getPrimal();
     mipSol = msol->getPrimal();
     i=0;
     for (vit=oinst->varsBegin();
@@ -1117,12 +1074,12 @@ int main(int argc, char** argv)
       }
     }
   }
-  //bab->getSolution()->writePrimal(std::cout);
   std::cout<<"\nFinal set of interpolation points\n";
   print2dVec(interpPoints);             
+  minAt = std::min_element(funcVals.begin(), funcVals.end());
   std::cout<<"BEST SOLUTION:\n";
   for (UInt j=0; j < n; j++) {
-    std::cout<<"x["<<j+1<<"]="
+    std::cout<<"x["<<j+1<<"] = "
       <<(int)interpPoints[std::distance(funcVals.begin(), minAt)][j]<<std::endl;
   }
   //oinst->write(std::cout);
