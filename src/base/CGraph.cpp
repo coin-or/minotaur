@@ -22,6 +22,8 @@
 #include "HessianOfLag.h"
 #include "VarBoundMod.h"
 #include "Variable.h"
+#include "LinearFunction.h"
+#include "QuadraticFunction.h"
 
 using namespace Minotaur;
 
@@ -38,6 +40,74 @@ CGraph::CGraph()
   dq_.clear();
   varNode_.clear();
   vq_.clear();
+}
+
+
+CGraph::CGraph(QuadraticFunctionPtr qf, LinearFunctionPtr lf)
+  : aNodes_(0),
+    changed_(false),
+    hInds_(0),
+    hNnz_(0),
+    hOffs_(0),
+    hStarts_(0),
+    gOffs_(0),
+    oNode_(0)
+{
+  // Cleanup
+  dq_.clear();
+  varNode_.clear();
+  vq_.clear();
+
+  // Init Vars
+  UInt N = qf->getNumTerms() + lf->getNumTerms();
+  if(!N)
+    return;
+  UInt i = 0;
+  ConstVariablePair vp;
+  ConstVariablePtr v1, v2;
+  CNode* nodes[N];
+  CNode* node_v;
+  CNode* node_c;
+  CNode* node_out;
+
+  // Quadratic Function
+  for (VariablePairGroupConstIterator it = qf->begin(); it != qf->end() && i < N; ++it, ++i)
+  {
+    // Get Variable Pair
+    vp = it->first;
+
+    // Get Var 1
+    v1 = vp.first;
+    node_v = newNode(v1);
+
+    // Get Var 2
+    v2 = vp.second;
+    node_v = (v2 == v1) ? newNode(OpSqr, node_v, NULL) : newNode(OpMult, node_v, newNode(v2));
+
+    // Get Coefficient
+    node_c = newNode(qf->getWeight(vp));
+
+    // Get Term
+    nodes[i] = newNode(OpMult, node_c, node_v);
+  }
+
+  // Linear Function
+  for (VariableGroupConstIterator it = lf->termsBegin(); it != lf->termsEnd() && i < N; ++it, ++i)
+  {
+    // Get Var
+    v1 = it->first;
+    node_v = newNode(v1);
+
+    // Get Coefficient
+    node_c = newNode(lf->getWeight(v1));
+
+    // Get Term
+    nodes[i] = newNode(OpMult, node_c, node_v);
+  }
+
+  // Set Out
+  node_out = newNode(OpSumList, nodes, N);
+  setOut(node_out);
 }
 
 
