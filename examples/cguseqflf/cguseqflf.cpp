@@ -48,16 +48,8 @@ int main()
 	VariableConstIterator vend = p->varsEnd();
 
 	QuadraticFunctionPtr qf = (QuadraticFunctionPtr) new QuadraticFunction(H, vbeg, vend);
-	LinearFunctionPtr lf = (LinearFunctionPtr) new LinearFunction(f, vbeg, vend);
-
-	CGraphPtr cg = (CGraphPtr) new CGraph();
-	
-	CNode* lf_out = cg->addLinearFunction(lf);
-	CNode* qf_out = cg->addQuadraticFunction(qf);
-	
-	CNode* out = cg->newNode(OpPlus, qf_out, lf_out);
-	cg->setOut(out);
-	
+	LinearFunctionPtr lf = (LinearFunctionPtr) new LinearFunction(f, vbeg, vend, 1e-9);
+	CGraphPtr cg = (CGraphPtr) new CGraph(qf, lf);
 	cg->finalize();
 
 	cg->write(std::cout);
