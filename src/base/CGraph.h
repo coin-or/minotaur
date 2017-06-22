@@ -62,9 +62,9 @@ public:
   void evalGradient(const double *x, double *grad_f, int *error);
 
   // Evaluate hessian of at a given vector.
-  void evalHessian(double mult, const double *x, 
-                   const LTHessStor *stor, double *values, 
-                   int *error);
+  void evalHessian(const double mult, const double *x,
+				  const LTHessStor *stor, double *values,
+				  int *error);
 
   // Fill hessian sparsity.
   void fillHessStor(LTHessStor *stor);

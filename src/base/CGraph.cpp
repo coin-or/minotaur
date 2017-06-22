@@ -65,7 +65,7 @@ CGraph::CGraph(QuadraticFunctionPtr qf, LinearFunctionPtr lf)
   UInt i = 0;
   ConstVariablePair vp;
   ConstVariablePtr v1, v2;
-  CNode* nodes[N];
+  CNode** nodes = new CNode*[N];
   CNode* node_v;
   CNode* node_c;
   CNode* node_out;
@@ -282,8 +282,9 @@ void CGraph::evalGradient(const double *x, double *grad_f, int *error)
 }
 
 
-void CGraph::evalHessian(double mult, const double *x, 
-                         const LTHessStor *, double *values, int *error)
+void CGraph::evalHessian(const double mult, const double *x,
+						const LTHessStor *stor, double *values,
+						int *error)
 {
   UInt i = 0;
   UInt vind;
