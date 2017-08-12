@@ -423,8 +423,6 @@ void QGHandlerPDE::relax_(RelaxationPtr rel, bool *is_inf)
   }
 
 #if SPEW
-  logger_->msgStream(LogDebug) << me_ << "Number of nonlinear constraints "
-    " = " << nlCons_.size() << std::endl;
   logger_->msgStream(LogDebug) << me_ << "Nonlinear solver used = "
     " = " << lpe_->getName() << std::endl;
 #endif
