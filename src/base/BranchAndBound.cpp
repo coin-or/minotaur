@@ -475,7 +475,7 @@ void BranchAndBound::solve()
     } else {
 #if SPEW
       logger_->msgStream(LogDebug) << std::setprecision(8)
-        << me_ << "lb = " << tm_->updateLb() << std::endl 
+        << me_ << "lb = " << tm_->getLb() << std::endl 
         << me_ << "ub = " << tm_->getUb() << std::endl;
 #endif
     }
