@@ -7,7 +7,7 @@
 #ifndef MINOTAURVERSION_H
 #define MINOTAURVERSION_H
 
-/* Define MINOTAUR_SVN_VERSION to whatever the output of svnversion is. */
+/* Define MINOTAUR_GIT_VERSION to whatever the output of git describe is. */
 #define MINOTAUR_GIT_VERSION "v0.0-unknown"
 
 /*
@@ -16,7 +16,7 @@
  */
 #define MINOTAUR_MAJOR_VERSION 0
 #define MINOTAUR_MINOR_VERSION 2
-#define MINOTAUR_PATCH_VERSION 0
+#define MINOTAUR_PATCH_VERSION 1
 
 #endif
 

@@ -116,29 +116,29 @@ install(TARGETS msbnb RUNTIME DESTINATION bin)
 ## Add lines specific to your binaries in this section.
 ## Use the lines meant for bnb as a template.
 ##############################################################################
-set (MCBNB_SOURCES
- McBnb.cpp
-)
-
-add_executable(mcbnb ${MCBNB_SOURCES})
-target_link_libraries(mcbnb ${ALL_EXEC_LIBS})
-
-# This will install the binary in bin directory.
-install(TARGETS mcbnb RUNTIME DESTINATION bin)
+#set (MCBNB_SOURCES
+# McBnb.cpp
+#)
+#
+#add_executable(mcbnb ${MCBNB_SOURCES})
+#target_link_libraries(mcbnb ${ALL_EXEC_LIBS})
+#
+## This will install the binary in bin directory.
+#install(TARGETS mcbnb RUNTIME DESTINATION bin)
 
 ##############################################################################
 ## Add lines specific to your binaries in this section.
 ## Use the lines meant for bnb as a template.
 ##############################################################################
-set (MIDFO_SOURCES
- MiDfo.cpp
-)
-
-add_executable(midfo ${MIDFO_SOURCES})
-target_link_libraries(midfo ${ALL_EXEC_LIBS})
-
-# This will install the binary in bin directory.
-install(TARGETS midfo RUNTIME DESTINATION bin)
+#set (MIDFO_SOURCES
+# MiDfo.cpp
+#)
+#
+#add_executable(midfo ${MIDFO_SOURCES})
+#target_link_libraries(midfo ${ALL_EXEC_LIBS})
+#
+## This will install the binary in bin directory.
+#install(TARGETS midfo RUNTIME DESTINATION bin)
 
 ##############################################################################
 ## Add lines specific to your binaries in this section. 
@@ -172,15 +172,15 @@ install(TARGETS qg RUNTIME DESTINATION bin)
 ## Add lines specific to your binaries in this section. 
 ## Use the lines meant for bnb as a template.
 ##############################################################################
-set (POLYNOMIAL_SOURCES
-  mipdecoqg.cpp 
-)
-
-add_executable(mipdecoqg ${POLYNOMIAL_SOURCES})
-target_link_libraries(mipdecoqg ${ALL_EXEC_LIBS})
-
-# This will install the binary in bin directory.
-install(TARGETS mipdecoqg RUNTIME DESTINATION bin)
+#set (POLYNOMIAL_SOURCES
+#  mipdecoqg.cpp 
+#)
+#
+#add_executable(mipdecoqg ${POLYNOMIAL_SOURCES})
+#target_link_libraries(mipdecoqg ${ALL_EXEC_LIBS})
+#
+## This will install the binary in bin directory.
+#install(TARGETS mipdecoqg RUNTIME DESTINATION bin)
 
 
 ##############################################################################

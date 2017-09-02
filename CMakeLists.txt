@@ -697,7 +697,7 @@ set(ASL_LIBS)       ## NULL
 
 message(STATUS ${MSG_HEAD} "Searching for ASL ...")
 set(ASL_INC_DIR "" CACHE PATH 
-  "Path to ASL headers. It must have asl.h") 
+  "Path to ASL headers. It must have asl/asl.h") 
 set(ASL_LIB_DIR "" CACHE PATH 
   "Path to ASL library. It must have amplsolver.a") 
 
@@ -706,7 +706,7 @@ set (ASL_LIB_DIR_F ${ASL_LIB_DIR})
 
 if (("${ASL_INC_DIR_F}" STREQUAL "") AND
     (NOT ("${ALL_EXTERNS_PATH}" STREQUAL "")))
-  set (ASL_INC_DIR_F "${ALL_EXTERNS_PATH}/include")
+  set (ASL_INC_DIR_F "${ALL_EXTERNS_PATH}/include/asl")
   set (ASL_LIB_DIR_F "${ALL_EXTERNS_PATH}/lib")
 endif()
 
@@ -833,4 +833,15 @@ message (STATUS ${MSG_HEAD}
 ###########################################################################
 set(EXECUTABLE_OUTPUT_PATH "${EXECUTABLE_OUTPUT_PATH}" CACHE INTERNAL "")
 set(LIBRARY_OUTPUT_PATH "${LIBRARY_OUTPUT_PATH}" CACHE INTERNAL "")
+
+###########################################################################
+## make uninstall
+###########################################################################
+configure_file(
+    "${CMAKE_CURRENT_SOURCE_DIR}/cmake_uninstall.cmake.in"
+    "${CMAKE_CURRENT_BINARY_DIR}/cmake_uninstall.cmake"
+    IMMEDIATE @ONLY)
+
+add_custom_target(uninstall
+    COMMAND ${CMAKE_COMMAND} -P ${CMAKE_CURRENT_BINARY_DIR}/cmake_uninstall.cmake)
 
