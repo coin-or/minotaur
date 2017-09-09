@@ -18,6 +18,7 @@ set (MINOTAUR_SOURCES
      LoggerUT.cpp
      ObjectiveUT.cpp
      OperationsUT.cpp
+     PerspRefUT.cpp
      PolyUT.cpp
      QuadraticFunctionUT.cpp
      TimerUT.cpp 
