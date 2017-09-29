@@ -1,14 +1,14 @@
 //
 //     MINOTAUR -- It's only 1/2 bull
 //
-//     (C)opyright 2008 -- 2015 The MINOTAUR Team.
+//     (C)opyright 2008 -- 2017 The MINOTAUR Team.
 //
 
 #ifndef MINOTAURVERSION_H
 #define MINOTAURVERSION_H
 
 /* Define MINOTAUR_GIT_VERSION to whatever the output of git describe is. */
-#define MINOTAUR_GIT_VERSION "v0.0-unknown"
+#define MINOTAUR_GIT_VERSION "v0.2-182-gc80398c"
 
 /*
  * Version is defined as MINOTAUR_MAJOR_VERSION.MINOTAUR_MINOR_VERSION
