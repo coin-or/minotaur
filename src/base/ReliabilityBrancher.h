@@ -25,7 +25,7 @@ typedef boost::shared_ptr<Engine> EnginePtr;
 struct RelBrStats {
   UInt bndChange;  /// Number of times variable bounds were changed.
   UInt calls;      /// Number of times called to find a branching candidate.
-  UInt engProbs;   /// Number of times called to find a branching candidate.
+  UInt engProbs;   /// Number of times an unexpected engine status was met.
   UInt iters;      /// Number of iterations in strong-branching.
   UInt strBrCalls; /// Number of times strong branching on a variable.
   double strTime;  /// Total time spent in strong-branching.
