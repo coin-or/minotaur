@@ -907,12 +907,12 @@ bool Problem::isPolyp_()
   FunctionPtr f;
   if (obj_ && obj_->getFunction() && 
       (obj_->getFunction()->getType() == Nonlinear ||
-       obj_->getFunction()->getType() == UnknownFunction)) {
+       obj_->getFunction()->getType() == OtherFunctionType)) {
     return false;
   }
   for (ConstraintIterator it=cons_.begin(); it!=cons_.end(); ++it) {
     f = (*it)->getFunction();
-    if (f && (f->getType()==Nonlinear || f->getType()==UnknownFunction)) {
+    if (f && (f->getType()==Nonlinear || f->getType()==OtherFunctionType)) {
       return false;
     }
   }

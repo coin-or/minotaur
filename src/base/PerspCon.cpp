@@ -24,7 +24,7 @@ using std::endl;
 #include "Option.h"
 #include "QuadraticFunction.h"
 
-# define SPEW 0
+// # define SPEW 0
 
 using namespace Minotaur;
 const std::string PerspCon::me_ = "PerspCon: ";

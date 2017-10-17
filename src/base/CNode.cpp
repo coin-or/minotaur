@@ -32,7 +32,7 @@ CNode::CNode()
   : b_(false),
     child_(0),
     d_(0),
-    fType_(UnknownFunction),
+    fType_(OtherFunctionType),
     g_(0),
     gi_(0),
     h_(0),
@@ -59,7 +59,7 @@ CNode::CNode(OpCode op, CNode *lchild, CNode *rchild)
   : b_(false),
     child_(0),
     d_(0),
-    fType_(UnknownFunction),
+    fType_(OtherFunctionType),
     g_(0),
     gi_(0),
     h_(0),
@@ -96,7 +96,7 @@ CNode::CNode(OpCode op, CNode *lchild, CNode *rchild)
 CNode::CNode(OpCode op, CNode **children, UInt num_child)
   : child_(0),
     d_(0),
-    fType_(UnknownFunction),
+    fType_(OtherFunctionType),
     g_(0),
     gi_(0),
     h_(0),
@@ -536,7 +536,7 @@ FunctionType CNode::findFType()
 {
   errno = 0; // declared in cerrno
   FunctionType f0;
-  fType_ = UnknownFunction;
+  fType_ = OtherFunctionType;
   switch (op_) {
   case (OpAbs):
     if (Constant==l_->fType_) {
@@ -800,7 +800,7 @@ FunctionType CNode::findFType()
     fType_ = Linear;
     break;
   default:
-    fType_ = UnknownFunction;
+    fType_ = OtherFunctionType;
   }
   assert(errno==0);
   return fType_;

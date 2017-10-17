@@ -812,10 +812,10 @@ void AMPLInterface::createFunctionMap_()
 
 Minotaur::ProblemType AMPLInterface::findProblemType_()
 {
-  Minotaur::ProblemType problem_type = Minotaur::UnknownProblem;
-  Minotaur::FunctionType obj_type  = Minotaur::UnknownFunction,
-                         con_type  = Minotaur::UnknownFunction,
-                         full_type = Minotaur::UnknownFunction;
+  Minotaur::ProblemType problem_type = Minotaur::OtherProblemType;
+  Minotaur::FunctionType obj_type  = Minotaur::OtherFunctionType,
+                         con_type  = Minotaur::OtherFunctionType,
+                         full_type = Minotaur::OtherFunctionType;
   bool has_integers = false;
 
   // first check if it has integer constrained variables.
@@ -1925,7 +1925,7 @@ Minotaur::ProblemPtr AMPLInterface::readInstance(std::string fname)
 // read the file and build the instance 
 Minotaur::ProblemPtr AMPLInterface::readInstanceASL_(std::string fname) 
 {
-  Minotaur::ProblemType problem_type = Minotaur::UnknownProblem;
+  Minotaur::ProblemType problem_type = Minotaur::OtherProblemType;
   Minotaur::ProblemPtr instance;
   std::vector<std::set<int> > vars;
   bool do_poly = env_->getOptions()->findBool("expand_poly")->getValue();
@@ -1990,7 +1990,7 @@ Minotaur::ProblemPtr AMPLInterface::readInstanceASL_(std::string fname)
      logger_->msgStream(Minotaur::LogInfo) << me_ 
      << "Problem identified as MINLP" << std::endl;
      break;
-   case (Minotaur::UnknownProblem):
+   case (Minotaur::OtherProblemType):
     break;
   }
 

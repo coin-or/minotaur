@@ -14,9 +14,6 @@ INCLUDE(FortranCInterface)
 INCLUDE(FindSubversion)
 INCLUDE(FindPkgConfig OPTIONAL RESULT_VARIABLE MNTR_PKGCON)
 
-set (MINOTAUR_VERSION_MAJOR 0)
-set (MINOTAUR_VERSION_MINOR 2)
-
 set (MSG_HEAD "Minotaur config: ")  ## must preceed every message.
 
 ## Stop if we are compiling in the minotaur-root directory.
