@@ -217,7 +217,7 @@ private:
    * value in the down branch. It is modified if the engine status is error or
    * unknown.
    * \param[in] status_up The engine status in up branch. 
-   * \param[in] status_down The engine status in up branch.
+   * \param[in] status_down The engine status in down branch.
    */
   void useStrongBranchInfo_(BrCandPtr cand, const double & chcutoff,
                             double & change_up, double & change_down, 
