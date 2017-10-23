@@ -879,7 +879,7 @@ void MsProcessor::process(NodePtr node, RelaxationPtr rel,
 
     // update pseudo-cost from last branching.
     if (iter == 1) {
-      brancher_->updateAfterLP(node, sol);
+      brancher_->updateAfterSolve(node, sol);
     }
 
     // check feasibility. if it is feasible, we can still prune this node.

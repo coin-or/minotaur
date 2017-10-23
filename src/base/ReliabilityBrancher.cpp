@@ -506,7 +506,7 @@ void ReliabilityBrancher::strongBranch_(BrCandPtr cand, double & obj_up,
 }
 
 
-void ReliabilityBrancher::updateAfterLP(NodePtr node, ConstSolutionPtr sol)
+void ReliabilityBrancher::updateAfterSolve(NodePtr node, ConstSolutionPtr sol)
 {
   const double *x = sol->getPrimal();
   NodePtr parent = node->getParent();

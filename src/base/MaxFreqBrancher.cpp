@@ -227,7 +227,7 @@ void MaxFreqBrancher::updateUnfixedCount_()
   }
 }
 
-void MaxFreqBrancher::updateAfterLP(NodePtr , ConstSolutionPtr )
+void MaxFreqBrancher::updateAfterSolve(NodePtr , ConstSolutionPtr )
 {
 }
 

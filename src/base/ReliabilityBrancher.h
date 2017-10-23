@@ -113,7 +113,7 @@ public:
   void setThresh(UInt k);
 
   // base class function.
-  void updateAfterLP(NodePtr node, ConstSolutionPtr sol);
+  void updateAfterSolve(NodePtr node, ConstSolutionPtr sol);
 
   /// Write statistics.
   void writeStats(std::ostream &out) const;

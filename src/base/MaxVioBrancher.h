@@ -41,7 +41,7 @@ namespace Minotaur {
                             BrancherStatus & br_status, ModVector &mods);
 
       /// Update pseudo-cost/other information after branching.
-      virtual void updateAfterLP(NodePtr , ConstSolutionPtr );
+      virtual void updateAfterSolve(NodePtr , ConstSolutionPtr );
 
       // write statistics.
       void writeStats(std::ostream &out) const;

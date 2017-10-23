@@ -194,7 +194,7 @@ BrCandPtr MaxVioBrancher::findBestCandidate_()
 }
 
 
-void MaxVioBrancher::updateAfterLP(NodePtr , ConstSolutionPtr )
+void MaxVioBrancher::updateAfterSolve(NodePtr , ConstSolutionPtr )
 {
 }
 

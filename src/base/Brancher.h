@@ -71,7 +71,7 @@ namespace Minotaur {
        * \param[in] sol The solution of the relaxation at this node (not the
        * parent).
        */
-      virtual void updateAfterLP(NodePtr node, ConstSolutionPtr sol);
+      virtual void updateAfterSolve(NodePtr node, ConstSolutionPtr sol);
 
       /// Write statistics to the given out stream.
       virtual void writeStats(std::ostream &) const {};

@@ -491,7 +491,7 @@ void QPDProcessor::processQP_(UInt iter, NodePtr node, ConstSolutionPtr &sol,
 
   // update pseudo-cost from last branching.
   if (1==iter) {
-    brancher_->updateAfterLP(node, sol);
+    brancher_->updateAfterSolve(node, sol);
   }
 
 
@@ -644,7 +644,7 @@ void QPDProcessor::processQP2_(UInt iter, NodePtr node, ConstSolutionPtr &sol,
 
   // update pseudo-cost from last branching.
   if (1==iter) {
-    brancher_->updateAfterLP(node, sol);
+    brancher_->updateAfterSolve(node, sol);
   }
 
   int_feas = isHFeasible2_(sol, hifrac, should_prune);

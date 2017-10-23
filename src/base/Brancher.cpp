@@ -27,7 +27,7 @@ Brancher::~Brancher()
 }
 
 
-void Brancher::updateAfterLP(NodePtr , ConstSolutionPtr )
+void Brancher::updateAfterSolve(NodePtr , ConstSolutionPtr )
 {
 }
 
