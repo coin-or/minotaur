@@ -46,7 +46,7 @@ typedef enum {
   MIPOLYP,
   NLP,
   MINLP,
-  OtherProblemType,
+  OtherProblemType
 } ProblemType;
 
 /**
