@@ -67,7 +67,7 @@ typedef enum {
   Quadratic,
   Nonlinear,
   Polynomial,
-  OtherFunctionType,
+  OtherFunctionType
 } FunctionType;
 
 /// Different types of variables.

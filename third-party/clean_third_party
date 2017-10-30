@@ -1,0 +1,108 @@
+#!/bin/bash
+
+#
+# Removes libraries and/or source of third-party
+#
+
+usage () 
+{
+   echo ""
+   echo -n "This is a script to remove installed or object or source-code of"
+   echo -n "all third-party libraries in this folder"
+   echo ""
+   echo "usage: ./clean_third_party [-abos]"
+   echo ""
+   echo "-a: remove everything: binaries, object files, source code"
+   echo "-b: remove binaries, libraries and headers"
+   echo "-o: remove object files"
+   echo "-s: remove source and object files"
+   echo -n "typical usage: ./clean_third_party -b -o"
+   echo ""
+}
+
+MYNAME=clean_third_party
+
+SRCDIR="minotaur-0.2.1-third-party-src"
+CPPDIR=${SRCDIR}/cppunit-1.13.2/build
+ASLDIR=${SRCDIR}/asl-20170731
+IPOPTDIR=${SRCDIR}/ipopt-3.12.8/build
+LAPACKDIR=${SRCDIR}/lapack-3.7.1/build
+CLPDIR=${SRCDIR}/clp-1.16.9/build
+
+if [[ ! -f `pwd`/${MYNAME} ]]
+then
+   echo "Can run this script only from the third-party directory"
+   echo "Please first cd to the third-party directory"
+   exit 9
+fi
+
+
+## read arguments
+## we use getopts instead of getopt because the former is portable. Latter
+## supports long options but is not portable.
+
+ALL=0
+BIN=0
+OBJ=0
+SRC=0
+while getopts "abos" flag
+do
+  case ${flag} in
+    a) ALL=1 ;;
+    b) BIN=1 ;;
+    o) OBJ=1 ;;
+    s) SRC=1 ;;
+    *) echo>&2 "invalid option ${flag}"; usage; exit 1;;
+  esac
+done
+
+if (( ${ALL}==1 ))
+then
+  BIN=1
+  OBJ=1
+  SRC=1
+fi
+
+if (( ${BIN}==0 && ${OBJ}==0 && ${SRC}==0 ))
+then
+  usage
+  exit 0
+fi
+
+if (( ${SRC}==1 ))
+then
+  read -p "All third-party source files will be removed. Continue (y/n)? " userkey
+  if [ "yy" == "y${userkey}" ]
+  then
+	  echo "${SRCDIR} will be removed" 
+  else
+	  echo "Not removing src. Aborting."
+	  exit 0
+  fi
+fi
+
+if (( ${BIN}==1 ))
+then
+  echo "removing include/ lib/ share/"  
+  rm -rfv bin include lib share  
+fi
+
+if (( ${SRC}==1 ))
+then
+  rm -rf ${SRCDIR}
+  exit 0
+fi
+
+if (( ${OBJ}==1 ))
+then
+  echo "running make clean in ${ASLDIR}"
+  cd ${ASLDIR} && make clean
+  cd -
+  for i in $CLPDIR $CPPDIR $IPOPTDIR $LAPACKDIR
+  do
+    echo "removing ${i}"
+    rm -rfv ${i}
+  done
+  exit 0
+fi
+
