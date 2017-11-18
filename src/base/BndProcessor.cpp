@@ -36,6 +36,8 @@ BndProcessor::BndProcessor()
     engine_(EnginePtr()),
     engineStatus_(EngineUnknownStatus),
     numSolutions_(0),
+    oATol_(1e-5),
+    oRTol_(1e-5),
     relaxation_(RelaxationPtr()),
     ws_(WarmStartPtr())
 {
@@ -55,6 +57,8 @@ BndProcessor::BndProcessor (EnvPtr env, EnginePtr engine,
     engine_(engine),
     engineStatus_(EngineUnknownStatus),
     numSolutions_(0),
+    oATol_(1e-5),
+    oRTol_(1e-5),
     relaxation_(RelaxationPtr()),
     ws_(WarmStartPtr())
 {
@@ -252,6 +256,7 @@ bool BndProcessor::shouldPrune_(NodePtr node, double solval,
                                SolutionPoolPtr s_pool)
 {
   bool should_prune = false;
+  double best_cutoff;
 #if SPEW
   logger_->msgStream(LogDebug2) << me_ << "solution value = " << solval
                                 << std::endl; 
@@ -271,6 +276,7 @@ bool BndProcessor::shouldPrune_(NodePtr node, double solval,
                                  << "violated in node " << node->getId()
                                  << std::endl;
      ++stats_.prob;
+     // continue to next case
    case (ProvenInfeasible):
    case (ProvenLocalInfeasible):
      node->setStatus(NodeInfeasible);
@@ -323,7 +329,15 @@ bool BndProcessor::shouldPrune_(NodePtr node, double solval,
    case (ProvenLocalOptimal):
    case (ProvenOptimal):
      node->setLb(solval);
-     if (solval >= s_pool->getBestSolutionValue() || solval >= cutOff_) {
+     if (node->getParent() && node->getParent()->getLb() > solval+oATol_) {
+       logger_->msgStream(LogError) << me_ << "node lb lower than parent's lb. "
+                                    << "Relaxation may not be convex or "
+                                    << "engine has an issue."
+                                    << std::endl;
+     }
+     best_cutoff = s_pool->getBestSolutionValue();
+     if (solval >= best_cutoff-oATol_ ||
+         solval >= best_cutoff-fabs(best_cutoff)*oRTol_ || solval >= cutOff_) {
        node->setStatus(NodeHitUb);
        should_prune = true;
        ++stats_.ub;
