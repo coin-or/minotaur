@@ -44,7 +44,15 @@ set(CMAKE_INSTALL_PREFIX ${MNTR_INSTALL_PREFIX} CACHE INTERNAL
 ###########################################################################
 ## check if all externals available at one place
 ###########################################################################
-set (ALL_EXTERNS_PATH "" CACHE PATH "Path to the directory where all minotaur external libraries and headers are available (/path/to/third-party)")
+set (THIRD_PARTY_PATH "" CACHE PATH "Path to the directory where all minotaur external libraries and headers are available (/path/to/third-party)")
+
+# convert it to absolute path
+set(TP_ABS_PATH)
+if(NOT IS_ABSOLUTE ${THIRD_PARTY_PATH})
+  set(TP_ABS_PATH "${CMAKE_CURRENT_BINARY_DIR}/${THIRD_PARTY_PATH}")
+endif()
+
+message (STATUS ${MSG_HEAD} "Path to third-party = ${TP_ABS_PATH}")
 
 ###########################################################################
 ## Shared or static libraries.
@@ -178,8 +186,8 @@ set (BOOST_INC_DIR "" CACHE PATH
 
 set (BOOST_INC_DIR_F ${BOOST_INC_DIR}) 
 if ("${BOOST_INC_DIR_F}" STREQUAL "" AND 
-  (NOT ("${ALL_EXTERNS_PATH}" STREQUAL "")))
-  set (BOOST_INC_DIR_F ${ALL_EXTERNS_PATH}/include)
+  (NOT ("${TP_ABS_PATH}" STREQUAL "")))
+  set (BOOST_INC_DIR_F ${TP_ABS_PATH}/include)
 endif()
 
 if (NOT BOOST_INC_DIR_F)
@@ -224,8 +232,8 @@ set (BQPD_LIB_DIR "" CACHE PATH
 set (BQPD_LIB_DIR_F ${BQPD_LIB_DIR})
 
 if (("${BQPD_LIB_DIR_F}" STREQUAL "") AND 
-  (NOT ("${ALL_EXTERNS_PATH}" STREQUAL "")))
-  set (BQPD_LIB_DIR_F ${ALL_EXTERNS_PATH}/lib)
+  (NOT ("${TP_ABS_PATH}" STREQUAL "")))
+  set (BQPD_LIB_DIR_F ${TP_ABS_PATH}/lib)
 endif()
 message(STATUS ${MSG_HEAD} "BQPD_LIB_DIR_F is set to ${BQPD_LIB_DIR_F}")
 if (BQPD_LIB_DIR_F)
@@ -259,8 +267,8 @@ set (FILTER_LIB_DIR "" CACHE PATH
 set (FILTER_LIB_DIR_F ${FILTER_LIB_DIR})
 
 if (("${FILTER_LIB_DIR_F}" STREQUAL "") AND 
-    (NOT ("${ALL_EXTERNS_PATH}" STREQUAL "")))
-    set (FILTER_LIB_DIR_F ${ALL_EXTERNS_PATH}/lib)
+    (NOT ("${TP_ABS_PATH}" STREQUAL "")))
+    set (FILTER_LIB_DIR_F ${TP_ABS_PATH}/lib)
 endif()
 
 message(STATUS ${MSG_HEAD} "FILTER_LIB_DIR_F is set to ${FILTER_LIB_DIR_F}")
@@ -301,8 +309,8 @@ set (IPOPT_INC_DIR "" CACHE PATH
   "Path to Ipopt headers. It must have coin/IpIpoptApplication.hpp file.") 
 set (IPOPT_INC_DIR_F ${IPOPT_INC_DIR})
 if (("${IPOPT_INC_DIR_F}" STREQUAL "") AND
-    (NOT ("${ALL_EXTERNS_PATH}" STREQUAL "")))
-  set (IPOPT_INC_DIR_F "${ALL_EXTERNS_PATH}/include")
+    (NOT ("${TP_ABS_PATH}" STREQUAL "")))
+  set (IPOPT_INC_DIR_F "${TP_ABS_PATH}/include")
 endif()
 
 
@@ -310,8 +318,8 @@ set (IPOPT_LIB_DIR "" CACHE PATH
   "Path to Ipopt library. It must have a libipopt file.") 
 set (IPOPT_LIB_DIR_F ${IPOPT_LIB_DIR})
 if (("${IPOPT_LIB_DIR_F}" STREQUAL "") AND
-       (NOT ("${ALL_EXTERNS_PATH}" STREQUAL "")))
-  set (IPOPT_LIB_DIR_F "${ALL_EXTERNS_PATH}/lib")
+       (NOT ("${TP_ABS_PATH}" STREQUAL "")))
+  set (IPOPT_LIB_DIR_F "${TP_ABS_PATH}/lib")
 endif()
 
 message(STATUS ${MSG_HEAD} "IPOPT_INC_DIR_F is set to ${IPOPT_INC_DIR_F}")
@@ -390,8 +398,8 @@ set (OSI_INC_DIR "" CACHE PATH
 
 set (OSI_INC_DIR_F ${OSI_INC_DIR})
 if (("${OSI_INC_DIR_F}" STREQUAL "") AND
-    (NOT ("${ALL_EXTERNS_PATH}" STREQUAL "")))
-  set (OSI_INC_DIR_F "${ALL_EXTERNS_PATH}/include")
+    (NOT ("${TP_ABS_PATH}" STREQUAL "")))
+  set (OSI_INC_DIR_F "${TP_ABS_PATH}/include")
 endif()
 
 
@@ -400,8 +408,8 @@ set (OSI_LIB_DIR "" CACHE PATH
 
 set (OSI_LIB_DIR_F ${OSI_LIB_DIR})
 if (("${OSI_LIB_DIR_F}" STREQUAL "") AND
-    (NOT ("${ALL_EXTERNS_PATH}" STREQUAL "")))
-  set (OSI_LIB_DIR_F "${ALL_EXTERNS_PATH}/lib")
+    (NOT ("${TP_ABS_PATH}" STREQUAL "")))
+  set (OSI_LIB_DIR_F "${TP_ABS_PATH}/lib")
 endif()
 
 message(STATUS ${MSG_HEAD} "OSI_LIB_DIR_F is set to ${OSI_LIB_DIR_F}")
@@ -460,7 +468,7 @@ set (OSICLP_F)
 set (CLP_INC_DIR_F)
 
 set (OSICLP_F ${OSICLP})
-if (NOT ("${ALL_EXTERNS_PATH}" STREQUAL ""))
+if (NOT ("${TP_ABS_PATH}" STREQUAL ""))
   set (OSICLP_F ON)
 endif()
 
@@ -707,9 +715,9 @@ set (ASL_INC_DIR_F ${ASL_INC_DIR})
 set (ASL_LIB_DIR_F ${ASL_LIB_DIR})
 
 if (("${ASL_INC_DIR_F}" STREQUAL "") AND
-    (NOT ("${ALL_EXTERNS_PATH}" STREQUAL "")))
-  set (ASL_INC_DIR_F "${ALL_EXTERNS_PATH}/include/asl")
-  set (ASL_LIB_DIR_F "${ALL_EXTERNS_PATH}/lib")
+    (NOT ("${TP_ABS_PATH}" STREQUAL "")))
+  set (ASL_INC_DIR_F "${TP_ABS_PATH}/include/asl")
+  set (ASL_LIB_DIR_F "${TP_ABS_PATH}/lib")
 endif()
 
 if (ASL_INC_DIR_F)
@@ -747,8 +755,8 @@ set(CPPUNIT_INC_DIR "" CACHE PATH
   "Path to CppUnit headers. It must have cppunit/TestCase.h") 
 set (CPPUNIT_INC_DIR_F ${CPPUNIT_INC_DIR})
 if (("${CPPUNIT_INC_DIR_F}" STREQUAL "") AND
-    (NOT ("${ALL_EXTERNS_PATH}" STREQUAL "")))
-  set (CPPUNIT_INC_DIR_F "${ALL_EXTERNS_PATH}/include")
+    (NOT ("${TP_ABS_PATH}" STREQUAL "")))
+  set (CPPUNIT_INC_DIR_F "${TP_ABS_PATH}/include")
 endif()
 
 
@@ -756,8 +764,8 @@ set(CPPUNIT_LIB_DIR "" CACHE PATH
   "Path to CppUnit library. It must have cppunit library file.") 
 set (CPPUNIT_LIB_DIR_F ${CPPUNIT_LIB_DIR})
 if (("${CPPUNIT_LIB_DIR_F}" STREQUAL "") AND
-    (NOT ("${ALL_EXTERNS_PATH}" STREQUAL "")))
-  set (CPPUNIT_LIB_DIR_F "${ALL_EXTERNS_PATH}/lib")
+    (NOT ("${TP_ABS_PATH}" STREQUAL "")))
+  set (CPPUNIT_LIB_DIR_F "${TP_ABS_PATH}/lib")
 endif()
 
 
