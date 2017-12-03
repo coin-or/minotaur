@@ -443,7 +443,7 @@ bool PCBProcessor::shouldPrune_(NodePtr node, double solval,
    case (EngineIterationLimit):
      ++stats_.prob;
      logger_->msgStream(LogInfo) << me_ << "engine hit iteration limit, "
-                                 << " continuing in node " << node->getId()
+                                 << "continuing in node " << node->getId()
                                  << std::endl;
      // continue with this node by following ProvenLocalOptimal case.
    case (ProvenLocalOptimal):

@@ -103,6 +103,12 @@ namespace Minotaur {
       /// How many new solutions were found by the processor.
       UInt numSolutions_;
 
+      /// Absolute tolerance for pruning a node on basis of bounds.
+      double oATol_;
+
+      /// Relative tolerance for pruning a node on basis of bounds.
+      double oRTol_;
+
       /// Relaxation that is processed by this processor.
       RelaxationPtr relaxation_;
 
