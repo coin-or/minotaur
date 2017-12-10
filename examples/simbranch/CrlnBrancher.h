@@ -211,6 +211,12 @@ private:
    */
    
 std::vector<unsigned int> mostSimilarNode(int* minIndexNode);
+ /**
+ *index of the matched variable
+ *
+ */
+
+bool evalIndx(std::vector<unsigned int>tempVctr, UInt bstscrIndex,int* indx);
 
   /**
    * check whether the masterStrngNdList_ has an entry with indices node nodeid  and varindx

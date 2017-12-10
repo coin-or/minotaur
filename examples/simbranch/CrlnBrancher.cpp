@@ -31,6 +31,7 @@
 #include "SolutionPool.h"
 #include "Timer.h"
 #include "Variable.h"
+#include <algorithm>    // std::find_if
 #define SPEW 0
 
 using namespace Minotaur;
@@ -102,10 +103,10 @@ BrCandPtr RBrDev::findBestCandidate_(const double objval,
       canBstscr =*it;
       bstscrIndex = canBstscr->getPCostIndex();
       // store scores per node, maximum 2*maxStrongCands can be stored_
-      scoreMatd_[crntClmns_*maxStrongCands_ + bstscrIndex] = change_down;
-      scoreMatu_[crntClmns_*maxStrongCands_ + bstscrIndex] = change_up;
+      scoreMatd_[crntClmns_*maxStrongCands_ + scrcnt] = change_down;
+      scoreMatu_[crntClmns_*maxStrongCands_ + scrcnt] = change_up;
       scoreIndxMat_[crntClmns_*maxStrongCands_ + scrcnt] = bstscrIndex;
-      masterStrngNdList_[crntClmns_*maxStrongCands_ + scrcnt] = crntClmns_;
+     // masterStrngNdList_[crntClmns_*maxStrongCands_ + scrcnt] = crntClmns_;
       scrcnt = scrcnt+1;
       lastStrBranched_[cand->getPCostIndex()] = stats_->calls;
 #if SPEW
@@ -395,6 +396,14 @@ void RBrDev::UpdateTable(const double & objVl)
   }
 }
 
+bool RBrDev::evalIndx(std::vector<unsigned int>tempVctr, UInt bstscrIndex,int* indx)
+{
+  for(UInt i=0;i<tempVctr.size();i++)
+   {
+   if(tempVctr[i]==bstscrIndex){*indx = i; return true;} 
+   }  
+  return false;
+}
 
 std::vector<unsigned int> RBrDev::mostSimilarNode(int* minIndexNode)
 {
@@ -402,7 +411,7 @@ std::vector<unsigned int> RBrDev::mostSimilarNode(int* minIndexNode)
   double MinScoreforNode=INFINITY;
   std::vector<UInt> bin[hash_], binrslt;
   std::vector<double> normVal;
-  double thrshld = 0.95;
+  double thrshld = 0.35;
   std::vector<UInt> occurNodeId(crntClmns_,0);
 for(unsigned int j=0;j<hash_; j++){
     for(unsigned int i=0;i<crntClmns_;i++) {
@@ -465,7 +474,6 @@ BrCandPtr RBrDev::SimNodeHash(double objVl)
    //Compute similar nodes to the current node 
   
   binrslt_ = mostSimilarNode(&minIndexNode);
-  std::cout<<"bin size contains column ids of similar nodes to column "<<crntClmns_ <<"is" <<binrslt_.size()<<"\n";
   // if within a given similarity threshold, do not find any similar nodes
   // do strong branching
   if(binrslt_.size()==0 ){
@@ -479,23 +487,27 @@ BrCandPtr RBrDev::SimNodeHash(double objVl)
     bstscrIndex = canBstscr->getPCostIndex();
     double scr_wt=0.85 ;
     bool foundflag = false;
-    std::vector<unsigned int>::iterator itr;
-    std::vector<unsigned int> tempVctr;
+    bool foundindx = false;
+    int varindx = 0;
     for(unsigned int i=0;i<binrslt_.size();i++){
-      //check whether the similar node's score is evauated from strong branch
-      //calls or copied from binrslt nodes
+
+       std::vector<unsigned int>::iterator itr;
+       std::vector<unsigned int> tempVctr;
+
       clmnindx = binrslt_.at(i);
-      if(!subsetfromStrongList(clmnindx, bstscrIndex)){
-        continue;
-      }
-      std::copy(scoreIndxMat_.begin() + clmnindx*maxStrongCands_, scoreIndxMat_.begin() + (clmnindx+1)*maxStrongCands_, std::back_inserter(tempVctr));
-      itr =std::find(tempVctr.begin(), tempVctr.end(),bstscrIndex);
-      if (itr!= tempVctr.end()){
-        sumScored = sumScored + scoreMatd_[clmnindx*maxStrongCands_ + bstscrIndex ];
-        sumScoreu = sumScoreu + scoreMatu_[clmnindx*maxStrongCands_ + bstscrIndex ];
+      std::copy(scoreIndxMat_.begin() + clmnindx*maxStrongCands_, scoreIndxMat_.begin() +
+		 (clmnindx+1)*maxStrongCands_, std::back_inserter(tempVctr));
+
+      if(evalIndx(tempVctr, bstscrIndex,&varindx))
+     { 
+     // itr =std::find(tempVctr.begin(), tempVctr.end(),bstscrIndex);
+     // if (itr!= tempVctr.end()){
+        sumScored = sumScored + scoreMatd_[clmnindx*maxStrongCands_ + varindx ];
+        sumScoreu = sumScoreu + scoreMatu_[clmnindx*maxStrongCands_ + varindx];
         foundflag = true;
-      }
-    } 
+     // }
+     } 
+    }
     //there might be some variables  which is not available in similar nodes, do
     //strong branching
     if(foundflag==false){
@@ -505,7 +517,7 @@ BrCandPtr RBrDev::SimNodeHash(double objVl)
     else{
       sumScored = sumScored/binrslt_.size();
       sumScoreu = sumScoreu/binrslt_.size();
-      masterStrngNdList_[crntClmns_*maxStrongCands_ + bstscrIndex ] = minIndexNode;
+     // masterStrngNdList_[crntClmns_*maxStrongCands_ + bstscrIndex  ] = minIndexNode;
     }
 
     getPCScore_(*it, &change_down, &change_up, &score1);
@@ -574,12 +586,7 @@ void RBrDev::initialize(RelaxationPtr rel)
 {
   int n = rel->getNumVars();
   // find number of binaries
-  featureFlag_ =0;
-  for(int i=0;i<n;i++){
-    if(rel->getVariable(i)->getType()==Binary){
-      featureFlag_++;
-    }
-  }
+  featureFlag_ = rel->getSize()->bins;
   // initialize to zero.
   pseudoUp_ = DoubleVector(n,0.); 
   pseudoDown_ = DoubleVector(n,0.); 
@@ -587,15 +594,14 @@ void RBrDev::initialize(RelaxationPtr rel)
   timesUp_ = std::vector<UInt>(n,0); 
   timesDown_ = std::vector<UInt>(n,0); 
   clmn_= 1500; //change made from 150 to 100 see SimpledevCrln_16_2_reduced_limit_threshold
-  binrslt_ = std::vector<UInt>(10,0); //currently maximum 10 similar nodes are allowable
+  UInt maxsimclmn = std::max(50,int(featureFlag_/20));
+  binrslt_ = std::vector<UInt>(maxsimclmn,0); //currently minimum 50 similar nodes are allowable
   relCands_.reserve(n);
   brnchngCands_.reserve(n);
   x_.reserve(n);
   varlen_ =n;
   crntClmns_=0;
-  //indxAndRVal_= std::vector<double>(2*n,0.);
   hash_ = 6;
- // featureMat_.resize(2*varlen_+10);
   randVal_= std::vector<double>(featureFlag_,0.);
   indxBin_= std::vector<int>(featureFlag_,0);
   featureFlag_ =0;
