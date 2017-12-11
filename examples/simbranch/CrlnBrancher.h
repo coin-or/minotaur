@@ -5,8 +5,8 @@
 // 
 
 /**
- * \file RBrDev.h
- * \brief Declare methods and data structures for reliability branching.
+ * \file CrlnBrancher.h
+ * \brief Declare methods and data structures for  Similarity based branching.
  * \author Devanand, IIT Bombay
  */
 
@@ -15,7 +15,6 @@
 #define MINOTAURRBRDEV_H
 
 #include "Brancher.h"
-#include <armadillo>
 
 namespace Minotaur {
 
@@ -30,6 +29,9 @@ struct RBrDevStats {
   UInt iters;      /// Number of iterations in strong-branching.
   UInt strBrCalls; /// Number of times strong branching on a variable.
   double strTime;  /// Total time spent in strong-branching.
+  double hashTime;  /// Total time spent in evaluating the hashes.
+  double searchSNodeTime;  /// Total time spent in searching for the similar node.
+  UInt simCanBr; //"no. of times best cand is selected by sim explored nodes (not from strng brnchng) 
 };
 
 
@@ -132,7 +134,7 @@ private:
    * \param[in] node The node at which we are branching.
    */
   BrCandPtr findBestCandidate_(const double objval, double cutoff, 
-                               NodePtr node);
+                               NodePtr node, bool* flagsumzero, double* upscr, double* dwnscr, double* wtdscr,BrCandPtr* wtdcand);
 
   /**
    * \brief Find and sort candidates for branching.
@@ -190,13 +192,13 @@ private:
 /**
  *\brief Update the Signature matrix table
  */
-  void UpdateTable(const double & objVl); 
+  void updateTable(const double & objVl); 
   
   /**  
    * Find the collection of Nodes those are similar to current Node
    * using LSH method
    */
-  BrCandPtr SimNodeHash(double objVl);
+  BrCandPtr SimNodeHash(double objVl, bool* flagsumzero, double* upscr, double* dwnscr, double* wtdscr,BrCandPtr* wtdcand);
 
   /**
    *Update the score of branching variable of a node into its similar nodes
@@ -210,7 +212,7 @@ private:
    *
    */
    
-std::vector<unsigned int> mostSimilarNode(int* minIndexNode);
+std::vector<unsigned int> mostSimilarNode();
  /**
  *index of the matched variable
  *
@@ -348,7 +350,7 @@ bool subsetfromStrongList(const int & nodeid, const int & varindx);
   RelaxationPtr rel_;
 
   /// A vector of candidates that have reliable pseudocosts.
-  std::vector<BrCandPtr> relCands_;
+  std::vector<BrCandPtr> nvarCands_;
 
   /// Statistics.
   RBrDevStats * stats_;
@@ -374,14 +376,10 @@ bool subsetfromStrongList(const int & nodeid, const int & varindx);
  * A vector for random numbers  
  *
  */
-  std::vector<double> randVal_;
-
-/**
- * An armadillo matrix for storing hash values   
- *
- */
-
+  std::vector<double> randVal1_;
+  std::vector<double> randVal2_;
   std::vector<double> hashValue_;
+
  /**
  * A one d matrix keeps up and down scores of every node: stores 2D(score by
  * nodes) info 
