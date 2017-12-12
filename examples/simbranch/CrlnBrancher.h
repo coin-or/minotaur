@@ -117,7 +117,7 @@ public:
   void setThresh(UInt k);
 
   // base class function.
-  void updateAfterLP(NodePtr node, ConstSolutionPtr sol);
+  void updateAfterSolve(NodePtr node, ConstSolutionPtr sol);
 
   /// Write statistics.
   void writeStats(std::ostream &out) const;
@@ -167,12 +167,6 @@ private:
    */
   double getScore_(const double & up_score, const double & down_score);
 
-  /**
-   * \brief It evaluates the Upper Confidence bound (UCB1) score. UCB1
-   * is the popular bandit algorithm use to evaluate the UCB score in 
-   * Multi-armed bandit problems
-   */
-   double getUCBScore(int index_, double score_);
  /**
    * \brief Check if branch can be pruned on the basis of engine status and
    * objective value.
@@ -193,7 +187,7 @@ private:
 /**
  *\brief Update the Signature matrix table
  */
-  void updateTable(const double & objVl); 
+  void updateTable_(const double & objVl); 
   
   /**  
    * Find the collection of Nodes those are similar to current Node
@@ -205,7 +199,7 @@ private:
    *Update the score of branching variable of a node into its similar nodes
    *
    */
-  void bestScoreUpdate(const double & change_up1, const double & change_down1, const int & indx );
+  void bestScoreUpdate(const double & change_up1, const double & change_down1, const int & indx, UIntVector &count);
 
   /**
    *
@@ -363,6 +357,11 @@ bool subsetfromStrongList(const int & nodeid, const int & varindx);
   Timer *timer_;
 
   /**
+   * \brief Number of times we have branched down and noted the effect on using simbranching 
+   * objective improvement.
+   */
+  UIntVector simtimesDown_;
+  /**
    * \brief Number of times we have branched down and noted the effect on 
    * objective improvement.
    */
@@ -408,6 +407,13 @@ bool subsetfromStrongList(const int & nodeid, const int & varindx);
    * improvement.
    */
   UIntVector timesUp_;
+
+  /**
+   * \brief Number of times we have branched up using simbranch and noted the effect on objective
+   * improvement.
+   */
+  UIntVector simtimesUp_;
+
 
 /**
  *store similar column number of a given column

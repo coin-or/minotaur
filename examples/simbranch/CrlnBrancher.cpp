@@ -10,7 +10,6 @@
  * \edited by Devanand, IIT Bombay
  */
 
-
 #include <cmath>
 #include <iomanip>
 #include "MinotaurConfig.h"
@@ -52,7 +51,6 @@ RBrDev::RBrDev(EnvPtr env, HandlerVector & handlers)
   trustCutoff_(true),
   x_(0)
 {
-
   timer_ = env->getNewTimer();
   logger_ = (LoggerPtr) new Logger((LogDebug2)); 
   stats_ = new RBrDevStats();
@@ -147,17 +145,17 @@ BrCandPtr RBrDev::findBestCandidate_(const double objval, double cutoff, NodePtr
         }
       }
     }
-    if(*flagsumzero==true && score < *wtdscr)
+    if(*flagsumzero==true && best_score < *wtdscr)
     {
       best_cand = *wtdcand;
+      best_score = *wtdscr;
       ++(stats_->simCanBr);
     }
-
   }
+
   // Update score to the similar nodes 
   return best_cand;
 }
-
 
 Branches RBrDev::findBranches(RelaxationPtr rel, NodePtr node, 
                                            ConstSolutionPtr sol,
@@ -380,7 +378,7 @@ double RBrDev::getScore_(const double & up_score,
   return 0.;
 }
 
-void RBrDev::updateTable(const double & objVl)
+void RBrDev::updateTable_(const double & objVl)
     
 {
   double bndwt=.5;
@@ -423,7 +421,7 @@ bool RBrDev::evalIndx(std::vector<unsigned int>tempVctr, UInt bstscrIndex,int* i
 std::vector<unsigned int> RBrDev::mostSimilarNode()
 {
   std::vector<UInt> bin[hash_], binrslt;
-  double thrshld = 0.2;
+  double thrshld = 0.20;
   std::vector<UInt> occurNodeId(crntClmns_,0);
   for(unsigned int j=0;j<hash_; j++){
     for(unsigned int i=0;i<crntClmns_;i++) {
@@ -466,7 +464,7 @@ BrCandPtr RBrDev::simNodeHash(double objVl, bool* flagsumzero, double* wtdscr,Br
   binrslt_.clear();
 // Update table by computing  hash values
   timer_->start();
-  updateTable(objVl);
+  updateTable_(objVl);
   stats_->hashTime += timer_->query();
   timer_->stop();
 
@@ -547,26 +545,29 @@ BrCandPtr RBrDev::simNodeHash(double objVl, bool* flagsumzero, double* wtdscr,Br
     *wtdcand = matched_cand;
     return matchbreak;
    }
-   else{
+   else if(binrslt_.size()>0){
      ++(stats_->simCanBr); // increasing counter to ensure that branching decision is based on similarity
    }
  return matched_cand;
 }
 
-void RBrDev::bestScoreUpdate(const double & change_up1,const double & change_down1, const int & indx ){
+void RBrDev::bestScoreUpdate(const double & change_up1,const double & change_down1, const int & indx, UIntVector & count){
 
     std::vector<unsigned int>::iterator it;
     std::vector<unsigned int> tempVctr;
     double wtdavg=0.5;
     int varindx = 0;
     for(unsigned int i=0;i<binrslt_.size();i++){
-      std::copy(scoreIndxMat_.begin() +i*maxStrongCands_, scoreIndxMat_.begin() + (i+1)*maxStrongCands_, std::back_inserter(tempVctr) );
-      //tempVctr(scoreIndxMat_.begin() +i*maxStrongCands_, scoreIndxMat_.end()-(crntClmns_-i)*maxStrongCands_); 
+      std::copy(scoreIndxMat_.begin() +i*maxStrongCands_, scoreIndxMat_.begin() + 
+                          (i+1)*maxStrongCands_, std::back_inserter(tempVctr) );
       if (evalIndx(tempVctr, indx, &varindx)){
-        scoreMatd_[crntClmns_*maxStrongCands_ + varindx]= wtdavg*scoreMatd_[crntClmns_*maxStrongCands_ + varindx] + (1-wtdavg)*change_down1;
-        scoreMatu_[crntClmns_*maxStrongCands_ + varindx]= wtdavg*scoreMatu_[crntClmns_*maxStrongCands_ + varindx] + (1-wtdavg)*change_up1;
+        scoreMatd_[crntClmns_*maxStrongCands_ + varindx] = (count[indx]*scoreMatd_[crntClmns_*maxStrongCands_
+                                  + varindx] + change_down1)/count[indx]+1;
+        scoreMatu_[crntClmns_*maxStrongCands_ + varindx]= (count[indx]*scoreMatu_[crntClmns_*maxStrongCands_ 
+                                  + indx] + change_up1)/count[indx]+1;
       } 
     }
+   count[indx] = count[indx]+1;
 }    
     
 bool RBrDev::subsetfromStrongList(const int & nodeid, const int & varindx){
@@ -598,6 +599,8 @@ void RBrDev::initialize(RelaxationPtr rel)
   pseudoDown_ = DoubleVector(n,0.); 
   lastStrBranched_ = UIntVector(n,20000);
   timesUp_ = std::vector<UInt>(n,0); 
+  simtimesUp_ = std::vector<UInt>(n,0); 
+  simtimesDown_ = std::vector<UInt>(n,0);
   timesDown_ = std::vector<UInt>(n,0); 
   clmn_= 1000; //change made from 150 to 100 see SimpledevCrln_16_2_reduced_limit_threshold
   UInt maxsimclmn = std::max(100,int(featureFlag_/20));
@@ -743,7 +746,7 @@ void RBrDev::strongBranch_(BrCandPtr cand, double & obj_up,
 }
 
 
-void RBrDev::updateAfterLP(NodePtr node, ConstSolutionPtr sol)
+void RBrDev::updateAfterSolve(NodePtr node, ConstSolutionPtr sol)
 {
   const double *x = sol->getPrimal();
   NodePtr parent = node->getParent();
@@ -760,10 +763,10 @@ void RBrDev::updateAfterLP(NodePtr node, ConstSolutionPtr sol)
       }
       if (newval < oldval) {
         updatePCost_(index, cost, pseudoDown_, timesDown_);
-        bestScoreUpdate(0.0, cost, index);
+        bestScoreUpdate(0.0, cost, index, simtimesDown_);
       } else {
         updatePCost_(index, cost, pseudoUp_, timesUp_);
-        bestScoreUpdate(cost, 0.0, index);
+        bestScoreUpdate(cost, 0.0, index, simtimesUp_);
       }
     } 
   }
@@ -773,12 +776,7 @@ void RBrDev::updateAfterLP(NodePtr node, ConstSolutionPtr sol)
 void RBrDev::updatePCost_(const int & i, const double & new_cost, 
                                        DoubleVector & cost, UIntVector & count)
 {
- // if(i<=DecayParam_[i]){
   cost[i]   = (cost[i]*count[i]+new_cost)/(count[i]+1);
-  //  }
-//  else{
- //   cost[i] = (DecayParam_[i]*cost[i]-((i-DecayParam_[i])*cost[i-DecayParam_[i]]-(i-DecayParam_[i]-1)*cost[i-DecayParam_[i]-1]))/(DecayParam_[i]*1.0);
- // }
   count[i] += 1;
 }
 
