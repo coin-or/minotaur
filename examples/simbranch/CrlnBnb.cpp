@@ -166,10 +166,9 @@ BrancherPtr createBrancher(EnvPtr env, ProblemPtr p, HandlerVector handlers,
     rbrrel_br ->setMaxDepth(t);
     env->getLogger()->msgStream(LogExtraInfo) << me <<
       "setting reliability maxdepth to " << t << std::endl;
-   // if (e->getName()=="Filter-SQP") {
-     // rel_br->setIterLim(5);
-     // rbrrel_br->setIterLim(5);
-   // }
+    if (e->getName()=="Filter-SQP") {
+      rbrrel_br->setIterLim(5);
+    }
     env->getLogger()->msgStream(LogExtraInfo) << me <<
       "reliability branching iteration limit = " <<
       rbrrel_br->getIterLim() << std::endl;

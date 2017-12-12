@@ -32,6 +32,7 @@ struct RBrDevStats {
   double hashTime;  /// Total time spent in evaluating the hashes.
   double searchSNodeTime;  /// Total time spent in searching for the similar node.
   UInt simCanBr; //"no. of times best cand is selected by sim explored nodes (not from strng brnchng) 
+
 };
 
 
@@ -134,7 +135,7 @@ private:
    * \param[in] node The node at which we are branching.
    */
   BrCandPtr findBestCandidate_(const double objval, double cutoff, 
-                               NodePtr node, bool* flagsumzero, double* upscr, double* dwnscr, double* wtdscr,BrCandPtr* wtdcand);
+                               NodePtr node, bool* flagsumzero, double* wtdscr,BrCandPtr* wtdcand);
 
   /**
    * \brief Find and sort candidates for branching.
@@ -198,7 +199,7 @@ private:
    * Find the collection of Nodes those are similar to current Node
    * using LSH method
    */
-  BrCandPtr SimNodeHash(double objVl, bool* flagsumzero, double* upscr, double* dwnscr, double* wtdscr,BrCandPtr* wtdcand);
+  BrCandPtr simNodeHash(double objVl, bool* flagsumzero, double* wtdscr,BrCandPtr* wtdcand);
 
   /**
    *Update the score of branching variable of a node into its similar nodes
@@ -393,14 +394,14 @@ bool subsetfromStrongList(const int & nodeid, const int & varindx);
  * nodes) info 
  *
  */
-  std::vector<unsigned int> scoreIndxMat_;
+  std::vector<int> scoreIndxMat_;
 
  /**
  * A one dimensional array that stores the node ids 
  *
  */
 
-  std::vector<unsigned int> masterStrngNdList_;
+  std::vector<int> masterStrngNdList_;
  // int *featureMat_[n];
   /**
    * \brief Number of times we have branched up and noted the effect on objective
