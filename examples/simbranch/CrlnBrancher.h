@@ -199,7 +199,7 @@ private:
    *Update the score of branching variable of a node into its similar nodes
    *
    */
-  void bestScoreUpdate(const double & change_up1, const double & change_down1, const int & indx, UIntVector &count);
+  void bestScoreUpdate(const double & change_up1, const double & change_down1, const int & indx);
 
   /**
    *
@@ -394,6 +394,12 @@ bool subsetfromStrongList(const int & nodeid, const int & varindx);
  *
  */
   std::vector<int> scoreIndxMat_;
+
+ /**
+ * A one d matrix that stores the counter of score update in every node after LP 
+ *
+ */
+  std::vector<int> lpUpdateCnt_;
 
  /**
  * A one dimensional array that stores the node ids 

@@ -31,7 +31,7 @@
 #include "Timer.h"
 #include "Variable.h"
 #include <algorithm>    // std::find_if
-#define SPEW 0
+#define SPEW 1
 
 using namespace Minotaur;
 const std::string RBrDev::me_ = "rbrdev: "; 
@@ -79,7 +79,7 @@ BrCandPtr RBrDev::findBestCandidate_(const double objval, double cutoff, NodePtr
     
   double best_score = -INFINITY;
   double score, change_up, change_down, maxchange; 
-  UInt cnt, maxcnt,scrcnt;
+  UInt cnt, maxcnt,scrcnt,reducedindx;
   EngineStatus status_up, status_down;
   BrCandPtr cand, best_cand,canBstscr;
   best_cand = BrCandPtr(); // NULL
@@ -105,9 +105,10 @@ BrCandPtr RBrDev::findBestCandidate_(const double objval, double cutoff, NodePtr
       canBstscr =*it;
       bstscrIndex = canBstscr->getPCostIndex();
       // store scores per node 
-      scoreMatd_[crntClmns_*maxStrongCands_ + scrcnt] = change_down;
-      scoreMatu_[crntClmns_*maxStrongCands_ + scrcnt] = change_up;
-      scoreIndxMat_[crntClmns_*maxStrongCands_ + scrcnt] = bstscrIndex;
+      reducedindx = crntClmns_*maxStrongCands_ + scrcnt;
+      scoreMatd_[reducedindx] = change_down;
+      scoreMatu_[reducedindx] = change_up;
+      scoreIndxMat_[reducedindx] = bstscrIndex;
       scrcnt = scrcnt+1;
       lastStrBranched_[cand->getPCostIndex()] = stats_->calls;
 #if SPEW
@@ -149,7 +150,7 @@ BrCandPtr RBrDev::findBestCandidate_(const double objval, double cutoff, NodePtr
     {
       best_cand = *wtdcand;
       best_score = *wtdscr;
-      ++(stats_->simCanBr); // AM: wrong
+      ++(stats_->simCanBr); 
     }
   }
 
@@ -188,6 +189,7 @@ Branches RBrDev::findBranches(RelaxationPtr rel, NodePtr node,
      return branches;
   }
   if(status_ == NotModifiedByBrancher ){
+
  // Call Similarity hashing function to find the best candidate using similar nodes 
     br_can = simNodeHash(sol->getObjValue(),&flagsumzero, &wtdscr,&wtdcand);
     if (br_can==NULL){
@@ -416,31 +418,32 @@ bool RBrDev::evalIndx(std::vector<unsigned int>tempVctr, UInt bstscrIndex,int* i
 // AM: Needs simplification and verbose output. Should not return anything.
 void RBrDev::mostSimilarNode()
 {
-  std::vector<UInt> bin[hash_];
+  double hvalprev,hvalcur;
   double thrshld = 0.10;
   std::vector<UInt> occurNodeId(crntClmns_,0);
-  for(unsigned int j=0;j<hash_; j++){
-    for(unsigned int i=0;i<crntClmns_;i++) {
-      if(hashValue_[hash_*i + j] >= hashValue_[hash_*crntClmns_ + j]*(1-thrshld) && hashValue_[hash_*i + j] <= hashValue_[hash_*crntClmns_ + j]*(1+thrshld))
-      {
-          bin[j].push_back(i);
-      } 
-    }
-   }
+#if SPEW
+  logger_->msgStream(LogDebug) << me_ <<" current column = " 
+                               << crntClmns_ << " and similar columns: "<<"\t";
+#endif
+
   //if a node is available in every bin then it is similar 
   for(unsigned int j=0;j<crntClmns_;j++){
     for(unsigned int h=0;h<hash_;h++){
-      if (std::find(bin[h].begin(), bin[h].end(), j) != bin[h].end()){
+      hvalcur =hashValue_[hash_*crntClmns_+ h] ;
+      hvalprev = hashValue_[hash_*j + h];
+      if(hvalprev >= hvalcur*(1-thrshld) && hvalprev <= hvalcur*(1+thrshld))
         occurNodeId.at(j)++;
-      }
     }
   if(occurNodeId.at(j)>hash_-1){
     binrslt_.push_back(j);
+ #if SPEW
+  logger_->msgStream(LogDebug) << j <<"\t";
+#endif
     }
   }
 
 #if SPEW
-  logger_->msgStream(LogDebug) << me_ << "number of similar nodes = " 
+  logger_->msgStream(LogDebug) << me_ << std::cout<< "Number of similar nodes = " 
                                << binrslt_.size() << std::endl;
 #endif
 
@@ -544,10 +547,7 @@ BrCandPtr RBrDev::simNodeHash(double objVl, bool* flagsumzero,
     *wtdscr = topScore;
     *wtdcand = matched_cand;
     return null_cand;
-   } else if(binrslt_.size()>0){
-     // AM: wrong
-     ++(stats_->simCanBr); // increasing counter to ensure that branching decision is based on similarity
-   }
+   } 
  return matched_cand;
 }
 
@@ -555,23 +555,25 @@ BrCandPtr RBrDev::simNodeHash(double objVl, bool* flagsumzero,
 // AM: Major flaw here -- division
 void RBrDev::bestScoreUpdate(const double & change_up1,
                              const double & change_down1,
-                             const int & indx, UIntVector & count) {
+                             const int & indx) {
 
   std::vector<unsigned int>::iterator it;
   std::vector<unsigned int> tempVctr;
   double wtdavg=0.5;
   int varindx = 0;
+  UInt reducedindx, counter;
   for(unsigned int i=0;i<binrslt_.size();i++){
     std::copy(scoreIndxMat_.begin() +i*maxStrongCands_, scoreIndxMat_.begin() + 
               (i+1)*maxStrongCands_, std::back_inserter(tempVctr) );
+
     if (evalIndx(tempVctr, indx, &varindx)){
-      scoreMatd_[crntClmns_*maxStrongCands_ + varindx] = (count[indx]*scoreMatd_[crntClmns_*maxStrongCands_
-                                                          + varindx] + change_down1)/count[indx]+1;
-      scoreMatu_[crntClmns_*maxStrongCands_ + varindx]= (count[indx]*scoreMatu_[crntClmns_*maxStrongCands_ 
-                                                         + indx] + change_up1)/count[indx]+1;
+      reducedindx = crntClmns_*maxStrongCands_ + varindx;
+      ;
+      scoreMatd_[reducedindx] = (lpUpdateCnt_[reducedindx]*scoreMatd_[reducedindx]+ change_down1)/(lpUpdateCnt_[reducedindx]+1);
+      scoreMatu_[reducedindx] = (lpUpdateCnt_[reducedindx]*scoreMatu_[reducedindx] + change_up1)/(lpUpdateCnt_[reducedindx]+1);
+      lpUpdateCnt_[reducedindx]++;
     } 
   }
-  count[indx] = count[indx]+1;
 }    
     
 
@@ -635,8 +637,8 @@ void RBrDev::initialize(RelaxationPtr rel)
   scoreMatu_= DoubleVector(maxStrongCands_*clmn_,0.);
   scoreMatd_= DoubleVector(maxStrongCands_*clmn_,0.);
   scoreIndxMat_= IntVector(maxStrongCands_*clmn_,-1);
+  lpUpdateCnt_= IntVector(maxStrongCands_*clmn_,0);
   masterStrngNdList_= IntVector(maxStrongCands_*clmn_,-1);
- // masterStrngNdList_.resize(varlen_);
 }
 
 void RBrDev::setTrustCutoff(bool val)
@@ -768,10 +770,10 @@ void RBrDev::updateAfterSolve(NodePtr node, ConstSolutionPtr sol)
       }
       if (newval < oldval) {
         updatePCost_(index, cost, pseudoDown_, timesDown_);
-        bestScoreUpdate(0.0, cost, index, simtimesDown_); // AM: why pass simtimesDown_?
+        bestScoreUpdate(0.0, cost, index); // AM: why pass simtimesDown_?
       } else {
         updatePCost_(index, cost, pseudoUp_, timesUp_);   
-        bestScoreUpdate(cost, 0.0, index, simtimesUp_);   // AM: why pass simtimesUp_?
+        bestScoreUpdate(cost, 0.0, index);   // AM: why pass simtimesUp_?
       }
     } 
   }
