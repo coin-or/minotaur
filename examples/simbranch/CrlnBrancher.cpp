@@ -149,7 +149,7 @@ BrCandPtr RBrDev::findBestCandidate_(const double objval, double cutoff, NodePtr
     {
       best_cand = *wtdcand;
       best_score = *wtdscr;
-      ++(stats_->simCanBr);
+      ++(stats_->simCanBr); // AM: wrong
     }
   }
 
@@ -192,15 +192,11 @@ Branches RBrDev::findBranches(RelaxationPtr rel, NodePtr node,
  // Call Similarity hashing function to find the best candidate using similar nodes 
     br_can = simNodeHash(sol->getObjValue(),&flagsumzero, &wtdscr,&wtdcand);
     if (br_can==NULL){
-       br_can = findBestCandidate_(sol->getObjValue(),s_pool->getBestSolutionValue(),
-		 node, &flagsumzero,&wtdscr,&wtdcand);
-       crntClmns_++; //increment the column as strong br info has been stored
+       br_can = findBestCandidate_(sol->getObjValue(),
+                                   s_pool->getBestSolutionValue(),
+                                   node, &flagsumzero,&wtdscr,&wtdcand);
+       crntClmns_++; //increment the column as strong br info has to be stored
     }
-#if SPEW
-        logger_->msgStream(LogDebug) << me_ << "number of similar nodes = "
-        << binrslt_.size() << std::endl;
-#endif
-
   }
    if(status_ == NotModifiedByBrancher ){
        branches = br_can->getHandler()->getBranches(br_can, x_, rel_, s_pool); 
@@ -418,6 +414,7 @@ bool RBrDev::evalIndx(std::vector<unsigned int>tempVctr, UInt bstscrIndex,int* i
   return false;
 }
 
+// AM: Needs simplification and verbose output. Should not return anything.
 std::vector<unsigned int> RBrDev::mostSimilarNode()
 {
   std::vector<UInt> bin[hash_], binrslt;
@@ -442,11 +439,16 @@ std::vector<unsigned int> RBrDev::mostSimilarNode()
     binrslt.push_back(j);
     }
   }
- // out of similar all similar nodes which is most similar, store it to
+
+#if SPEW
+  logger_->msgStream(LogDebug) << me_ << "number of similar nodes = " 
+                               << binrslt.size() << std::endl;
+#endif
   return binrslt;
 }
 
-BrCandPtr RBrDev::simNodeHash(double objVl, bool* flagsumzero, double* wtdscr,BrCandPtr* wtdcand)
+BrCandPtr RBrDev::simNodeHash(double objVl, bool* flagsumzero,
+                              double* wtdscr,BrCandPtr* wtdcand)
 {   
 
   std::vector<BrCandPtr> brnchngCandstemp;
@@ -459,55 +461,54 @@ BrCandPtr RBrDev::simNodeHash(double objVl, bool* flagsumzero, double* wtdscr,Br
   double topScore =-INFINITY;
   double topScored =-INFINITY;
   double topScoreu =-INFINITY;
-  BrCandPtr matched_cand, canBstscr, matchbreak; 
+  BrCandPtr matched_cand = BrCandPtr();  // NULL
+  BrCandPtr canBstscr = BrCandPtr();     // NULL
+  BrCandPtr null_cand = BrCandPtr();     // NULL
+
   // clear the binrslt_ 
   binrslt_.clear();
-// Update table by computing  hash values
+  // Update table by computing  hash values
   timer_->start();
   updateTable_(objVl);
   stats_->hashTime += timer_->query();
   timer_->stop();
 
- // if branching call is on root node, do strong branch 
-  if(crntClmns_==0){
-     return matchbreak;
+  // if branching call is on root node, do strong branch 
+  if (crntClmns_==0) {
+     return null_cand;
   }
-   //Compute similar nodes to the current node 
-  
+
+  //Compute similar nodes to the current node 
   timer_->start();
   binrslt_ = mostSimilarNode();
   stats_->searchSNodeTime += timer_->query();
   timer_->stop();
 
-  // if within a given similarity threshold, do not find any similar nodes
+  // if within a given similarity threshold, we do not find any similar nodes
   // do strong branching
   if(binrslt_.size()==0 ){
-   return matchbreak;
+   return null_cand;
   }
   
   //Else, use the similar information 
-  for(BrCandVIter it=brnchngCands_.begin(); it!=brnchngCands_.end(); ++it)
-  {
+  for(BrCandVIter it=brnchngCands_.begin(); it!=brnchngCands_.end(); ++it) {
     canBstscr = *it;
     bstscrIndex = canBstscr->getPCostIndex();
     double scr_wt=0.85 ;
     bool foundflag = false;
     int varindx = 0;
-    for(unsigned int i=0;i<binrslt_.size();i++){
-
-      std::vector<unsigned int>::iterator itr;
+    for (unsigned int i=0;i<binrslt_.size();i++) {
       std::vector<unsigned int> tempVctr;
       clmnindx = binrslt_.at(i);
-      if(clmnindx == -1){continue;}
+      if (clmnindx == -1) {continue;}
       std::copy(scoreIndxMat_.begin() + clmnindx*maxStrongCands_, scoreIndxMat_.begin() +
 		 (clmnindx+1)*maxStrongCands_, std::back_inserter(tempVctr));
 
-      if(evalIndx(tempVctr, bstscrIndex,&varindx))
-     {
+      if (evalIndx(tempVctr, bstscrIndex,&varindx)) {
         sumScored = sumScored + scoreMatd_[clmnindx*maxStrongCands_ + varindx ];
         sumScoreu = sumScoreu + scoreMatu_[clmnindx*maxStrongCands_ + varindx];
         foundflag = true;
-     } 
+      } 
     }
     //there might be some variables  which is not available in similar nodes, do
     //strong branching
@@ -521,7 +522,7 @@ BrCandPtr RBrDev::simNodeHash(double objVl, bool* flagsumzero, double* wtdscr,Br
     }
 
     getPCScore_(*it, &change_down, &change_up, &score1);
-    //Comute the weighted average
+    //Compute the weighted average
     sumScore= scr_wt*(getScore_(sumScoreu, sumScored))+(1-scr_wt)*score1;
     // find the variable with highest score
     if(topScore<sumScore){
@@ -537,41 +538,47 @@ BrCandPtr RBrDev::simNodeHash(double objVl, bool* flagsumzero, double* wtdscr,Br
     }
     sumScore=0.0;sumScored =0.0;sumScoreu=0.0;
   }
-  if(*flagsumzero==true){
+  if (*flagsumzero==true) {
     brnchngCands_.clear();
     brnchngCands_ = brnchngCandstemp;
     brnchngCandstemp.clear();
     *wtdscr = topScore;
     *wtdcand = matched_cand;
-    return matchbreak;
-   }
-   else if(binrslt_.size()>0){
+    return null_cand;
+   } else if(binrslt_.size()>0) {
+     // AM: wrong
      ++(stats_->simCanBr); // increasing counter to ensure that branching decision is based on similarity
    }
  return matched_cand;
 }
 
-void RBrDev::bestScoreUpdate(const double & change_up1,const double & change_down1, const int & indx, UIntVector & count){
 
-    std::vector<unsigned int>::iterator it;
-    std::vector<unsigned int> tempVctr;
-    double wtdavg=0.5;
-    int varindx = 0;
-    for(unsigned int i=0;i<binrslt_.size();i++){
-      std::copy(scoreIndxMat_.begin() +i*maxStrongCands_, scoreIndxMat_.begin() + 
-                          (i+1)*maxStrongCands_, std::back_inserter(tempVctr) );
-      if (evalIndx(tempVctr, indx, &varindx)){
-        scoreMatd_[crntClmns_*maxStrongCands_ + varindx] = (count[indx]*scoreMatd_[crntClmns_*maxStrongCands_
-                                  + varindx] + change_down1)/count[indx]+1;
-        scoreMatu_[crntClmns_*maxStrongCands_ + varindx]= (count[indx]*scoreMatu_[crntClmns_*maxStrongCands_ 
-                                  + indx] + change_up1)/count[indx]+1;
-      } 
-    }
-   count[indx] = count[indx]+1;
+// AM: Major flaw here -- division
+void RBrDev::bestScoreUpdate(const double & change_up1,
+                             const double & change_down1,
+                             const int & indx, UIntVector & count) {
+
+  std::vector<unsigned int>::iterator it;
+  std::vector<unsigned int> tempVctr;
+  double wtdavg=0.5;
+  int varindx = 0;
+  for(unsigned int i=0;i<binrslt_.size();i++){
+    std::copy(scoreIndxMat_.begin() +i*maxStrongCands_, scoreIndxMat_.begin() + 
+              (i+1)*maxStrongCands_, std::back_inserter(tempVctr) );
+    if (evalIndx(tempVctr, indx, &varindx)){
+      scoreMatd_[crntClmns_*maxStrongCands_ + varindx] = (count[indx]*scoreMatd_[crntClmns_*maxStrongCands_
+                                                          + varindx] + change_down1)/count[indx]+1;
+      scoreMatu_[crntClmns_*maxStrongCands_ + varindx]= (count[indx]*scoreMatu_[crntClmns_*maxStrongCands_ 
+                                                         + indx] + change_up1)/count[indx]+1;
+    } 
+  }
+  count[indx] = count[indx]+1;
 }    
     
-bool RBrDev::subsetfromStrongList(const int & nodeid, const int & varindx){
-    
+
+// AM: remove this
+bool RBrDev::subsetfromStrongList(const int & nodeid, const int & varindx)
+{
    std::vector<unsigned int> tempVctr;
    std::vector<unsigned int>::iterator it;
    if(binrslt_.size()>0){
@@ -582,6 +589,8 @@ bool RBrDev::subsetfromStrongList(const int & nodeid, const int & varindx){
    }
    return false;
 }
+
+
 UInt RBrDev::getThresh() const
 {
   return thresh_;
@@ -667,10 +676,8 @@ void RBrDev::setThresh(UInt k)
 }
 
 
-bool RBrDev::shouldPrune_(const double &chcutoff, 
-                                       const double &change,
-                                       const EngineStatus & status,
-                                       bool *is_rel)
+bool RBrDev::shouldPrune_(const double &chcutoff, const double &change,
+                          const EngineStatus & status, bool *is_rel)
 {
   switch (status) {
    case (ProvenLocalInfeasible):
@@ -693,8 +700,8 @@ bool RBrDev::shouldPrune_(const double &chcutoff,
      break;
    case (ProvenFailedCQFeas):
    case (ProvenFailedCQInfeas):
-     logger_->msgStream(LogInfo) << me_ << "Failed CQ." <<
-     " Continuing." << std::endl;
+     logger_->msgStream(LogInfo) << me_ << "Failed CQ. Continuing."
+                                 << std::endl;
      *is_rel = false;
      break;
    default:
@@ -708,10 +715,9 @@ bool RBrDev::shouldPrune_(const double &chcutoff,
 }
 
 
-void RBrDev::strongBranch_(BrCandPtr cand, double & obj_up, 
-                                        double & obj_down, 
-                                        EngineStatus & status_up, 
-                                        EngineStatus & status_down)
+void RBrDev::strongBranch_(BrCandPtr cand, double & obj_up, double & obj_down, 
+                           EngineStatus & status_up, 
+                           EngineStatus & status_down)
 {
   HandlerPtr h = cand->getHandler();
   ModificationPtr mod;
@@ -763,10 +769,10 @@ void RBrDev::updateAfterSolve(NodePtr node, ConstSolutionPtr sol)
       }
       if (newval < oldval) {
         updatePCost_(index, cost, pseudoDown_, timesDown_);
-        bestScoreUpdate(0.0, cost, index, simtimesDown_);
+        bestScoreUpdate(0.0, cost, index, simtimesDown_); // AM: why pass simtimesDown_?
       } else {
-        updatePCost_(index, cost, pseudoUp_, timesUp_);
-        bestScoreUpdate(cost, 0.0, index, simtimesUp_);
+        updatePCost_(index, cost, pseudoUp_, timesUp_);   
+        bestScoreUpdate(cost, 0.0, index, simtimesUp_);   // AM: why pass simtimesUp_?
       }
     } 
   }
@@ -781,12 +787,10 @@ void RBrDev::updatePCost_(const int & i, const double & new_cost,
 }
 
 
-void RBrDev::useStrongBranchInfo_(BrCandPtr cand, 
-                                               const double &chcutoff, 
-                                               double &change_up, 
-                                               double &change_down,
-                                               const EngineStatus & status_up,
-                                               const EngineStatus & status_down)
+void RBrDev::useStrongBranchInfo_(BrCandPtr cand, const double &chcutoff, 
+                                  double &change_up, double &change_down,
+                                  const EngineStatus & status_up,
+                                  const EngineStatus & status_down)
 {
   const UInt index        = cand->getPCostIndex();
   bool should_prune_up    = false;
