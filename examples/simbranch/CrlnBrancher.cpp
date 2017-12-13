@@ -421,7 +421,7 @@ bool RBrDev::evalIndx(std::vector<unsigned int>tempVctr, UInt bstscrIndex,int* i
 std::vector<unsigned int> RBrDev::mostSimilarNode()
 {
   std::vector<UInt> bin[hash_], binrslt;
-  double thrshld = 0.20;
+  double thrshld = 0.10;
   std::vector<UInt> occurNodeId(crntClmns_,0);
   for(unsigned int j=0;j<hash_; j++){
     for(unsigned int i=0;i<crntClmns_;i++) {
@@ -545,9 +545,9 @@ BrCandPtr RBrDev::simNodeHash(double objVl, bool* flagsumzero, double* wtdscr,Br
     *wtdcand = matched_cand;
     return matchbreak;
    }
-   else if(binrslt_.size()>0){
-     ++(stats_->simCanBr); // increasing counter to ensure that branching decision is based on similarity
-   }
+ //  else if(binrslt_.size()>0 and matched_cand!=NULL){
+ //    ++(stats_->simCanBr); // increasing counter to ensure that branching decision is based on similarity
+//   }
  return matched_cand;
 }
 
