@@ -242,7 +242,6 @@ void loadProblem(EnvPtr env, MINOTAUR_AMPL::AMPLInterface* iface,
   env->getLogger()->msgStream(LogInfo) << me 
     << "time used in reading instance = " << std::fixed 
     << std::setprecision(2) << timer->query() << std::endl;
-   env->getOptions()->findDouble("bnb_time_limit")->setValue(3600);
   // display the problem
   oinst->calculateSize();
   if (options->findBool("display_problem")->getValue()==true) {

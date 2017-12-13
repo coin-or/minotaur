@@ -207,7 +207,7 @@ private:
    *
    */
    
-std::vector<unsigned int> mostSimilarNode();
+ void mostSimilarNode();
  /**
  *index of the matched variable
  *
