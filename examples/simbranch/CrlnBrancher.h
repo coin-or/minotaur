@@ -393,7 +393,8 @@ bool evalIndx(std::vector<unsigned int>tempVctr, UInt bstscrIndex,int* indx);
  * A one d matrix that stores the counter of score update in every node after LP 
  *
  */
-  std::vector<int> lbUpdateCnt_;
+  std::vector<int> lbUpdateCntd_;
+  std::vector<int> lbUpdateCntu_;
  // int *featureMat_[n];
   /**
    * \brief Number of times we have branched up and noted the effect on objective
