@@ -197,7 +197,7 @@ Branches RBrDev::findBranches(RelaxationPtr rel, NodePtr node,
   if(status_ == NotModifiedByBrancher ){
 
    // call this to eval hash, do hash comparison and return the cand using similar nodes concept
-    br_can = simNodeHash(sol->getObjValue(),node->getId(), &flagsumzero, &wtdscr,&wtdcand);
+    br_can = simNodeHash_(sol->getObjValue(),node->getId(), &flagsumzero, &wtdscr,&wtdcand);
     if (br_can==NULL){
        br_can = findBestCandidate_(sol->getObjValue(),
                                    s_pool->getBestSolutionValue(),
@@ -413,7 +413,7 @@ void RBrDev::updateTable_(const double & objVl)
 #endif
 }
 // return postion(indx) of index of candidate(cndindx) in scoreIndxMat_
-bool RBrDev::evalIndx(UInt clmnindx1, UInt cndindx,int* indx)
+bool RBrDev::evalIndx_(UInt clmnindx1, UInt cndindx,int* indx)
 {
   UInt start = clmnindx1*maxStrongCands_; 
   UInt end = start + maxStrongCands_; 
@@ -429,7 +429,7 @@ bool RBrDev::evalIndx(UInt clmnindx1, UInt cndindx,int* indx)
 }
 
 // AM: Needs simplification and verbose output. Should not return anything.
-void RBrDev::mostSimilarNode()
+void RBrDev::mostSimilarNode_()
 {
   double hvalprev,hvalcur;
   double thrshld = std::min(0.15,(20./numBinary_));
@@ -464,7 +464,7 @@ void RBrDev::mostSimilarNode()
 
 }
 
-BrCandPtr RBrDev::simNodeHash(double objVl,UInt nodeId, bool* flagsumzero,
+BrCandPtr RBrDev::simNodeHash_(double objVl,UInt nodeId, bool* flagsumzero,
                               double* wtdscr,BrCandPtr* wtdcand)
 {   
 
@@ -505,7 +505,7 @@ BrCandPtr RBrDev::simNodeHash(double objVl,UInt nodeId, bool* flagsumzero,
 
   //Compute similar nodes to the current node 
   timer_->start();
-  mostSimilarNode();
+  mostSimilarNode_();
   stats_->searchSNodeTime += timer_->query();
   timer_->stop();
 
@@ -529,7 +529,7 @@ BrCandPtr RBrDev::simNodeHash(double objVl,UInt nodeId, bool* flagsumzero,
      // std::copy(scoreIndxMat_.begin() + clmnindx*maxStrongCands_, scoreIndxMat_.begin() +
 //		 (clmnindx+1)*maxStrongCands_, std::back_inserter(tempVctr));
 
-      if (evalIndx(clmnindx, cndindx, &varindx)) {
+      if (evalIndx_(clmnindx, cndindx, &varindx)) {
 //	std::cout<<"indexing "<<varindx<<" prev clmn number "<<clmnindx << "current clmn number "<< crntClmns_<<std::endl;
         sumScored = sumScored + scoreMatd_[clmnindx*maxStrongCands_ + varindx];
         sumScoreu = sumScoreu + scoreMatu_[clmnindx*maxStrongCands_ + varindx];
@@ -573,7 +573,7 @@ BrCandPtr RBrDev::simNodeHash(double objVl,UInt nodeId, bool* flagsumzero,
  return matched_cand;
 }
 
-void RBrDev::bestScoreUpdate(const double & change_up1,
+void RBrDev::bestScoreUpdate_(const double & change_up1,
                              const double & change_down1,
                              const int & indx) {
 
@@ -587,7 +587,7 @@ void RBrDev::bestScoreUpdate(const double & change_up1,
      // std::copy(scoreIndxMat_.begin() +i*maxStrongCands_, scoreIndxMat_.begin() + 
      //           (i+1)*maxStrongCands_, std::back_inserter(tempVctr) );
 
-      if(evalIndx(i, indx, &varindx)){
+      if(evalIndx_(i, indx, &varindx)){
         tmpindx = crntClmns_*maxStrongCands_ + varindx;
         if(change_up1 < change_down1){
           scoreMatd_[tmpindx] = (lbUpdateCntd_[tmpindx]*scoreMatd_[tmpindx] 
@@ -629,7 +629,6 @@ void RBrDev::initialize(RelaxationPtr rel)
   nvarCands_.reserve(n);
   brnchngCands_.reserve(n);
   x_.reserve(n);
-  varlen_ = n;
   crntClmns_= 0;
   hash_ = 2;
   randVal1_= DoubleVector(numBinary_,0.);
@@ -783,10 +782,10 @@ void RBrDev::updateAfterSolve(NodePtr node, ConstSolutionPtr sol)
       }
       if (newval < oldval) {
         updatePCost_(index, cost, pseudoDown_, timesDown_);
-        bestScoreUpdate(0.0, cost, index); // AM: why pass simtimesDown_?
+        bestScoreUpdate_(0.0, cost, index); 
       } else {
         updatePCost_(index, cost, pseudoUp_, timesUp_);   
-        bestScoreUpdate(cost, 0.0, index);   // AM: why pass simtimesUp_?
+        bestScoreUpdate_(cost, 0.0, index); 
       }
     } 
   }

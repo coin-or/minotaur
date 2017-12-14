@@ -193,13 +193,13 @@ private:
    * Find the collection of Nodes those are similar to current Node
    * using LSH method
    */
-  BrCandPtr simNodeHash(double objVl,UInt nodeId, bool* flagsumzero, double* wtdscr,BrCandPtr* wtdcand);
+  BrCandPtr simNodeHash_(double objVl,UInt nodeId, bool* flagsumzero, double* wtdscr,BrCandPtr* wtdcand);
 
   /**
    *Update the score of branching variable of a node into its similar nodes
    *
    */
-  void bestScoreUpdate(const double & change_up1, const double & change_down1, const int & indx);
+  void bestScoreUpdate_(const double & change_up1, const double & change_down1, const int & indx);
 
   /**
    *
@@ -207,13 +207,13 @@ private:
    *
    */
    
- void mostSimilarNode();
+ void mostSimilarNode_();
  /**
  *index of the matched variable
  *
  */
 
-bool evalIndx(UInt clmnindx,UInt bstscrIndex,int* indx);
+bool evalIndx_(UInt clmnindx,UInt bstscrIndex,int* indx);
     
   /** 
    * \brief Do strong branching on candidate.
@@ -299,7 +299,6 @@ bool evalIndx(UInt clmnindx,UInt bstscrIndex,int* indx);
   UInt maxDepth_;
 /*Declaration for featureMat_ 
  */
-  UInt varlen_;
   UInt clmn_;
   UInt crntClmns_;
   UInt numBinary_;
@@ -349,11 +348,6 @@ bool evalIndx(UInt clmnindx,UInt bstscrIndex,int* indx);
   Timer *timer_;
 
   /**
-   * \brief Number of times we have branched down and noted the effect on using simbranching 
-   * objective improvement.
-   */
-  UIntVector simtimesDown_;
-  /**
    * \brief Number of times we have branched down and noted the effect on 
    * objective improvement.
    */
@@ -401,13 +395,6 @@ bool evalIndx(UInt clmnindx,UInt bstscrIndex,int* indx);
    * improvement.
    */
   UIntVector timesUp_;
-
-  /**
-   * \brief Number of times we have branched up using simbranch and noted the effect on objective
-   * improvement.
-   */
-  UIntVector simtimesUp_;
-
 
 /**
  *store similar column number of a given column
