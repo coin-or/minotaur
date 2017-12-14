@@ -213,7 +213,7 @@ private:
  *
  */
 
-bool evalIndx(std::vector<unsigned int>tempVctr, UInt bstscrIndex,int* indx);
+bool evalIndx(UInt clmnindx,UInt bstscrIndex,int* indx);
     
   /** 
    * \brief Do strong branching on candidate.

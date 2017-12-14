@@ -412,12 +412,18 @@ void RBrDev::updateTable_(const double & objVl)
         << hashValue_[hash_*crntClmns_] <<"\t"<< hashValue_[hash_*crntClmns_+1] << std::endl;
 #endif
 }
-
-bool RBrDev::evalIndx(std::vector<unsigned int>tempVctr, UInt cndindx,int* indx)
+// return postion(indx) of index of candidate(cndindx) in scoreIndxMat_
+bool RBrDev::evalIndx(UInt clmnindx1, UInt cndindx,int* indx)
 {
-  for(UInt i=0;i<tempVctr.size();i++)
+  UInt start = clmnindx1*maxStrongCands_; 
+  UInt end = start + maxStrongCands_; 
+  UInt i= 0;
+  while(start < end)
    {
-   if(tempVctr[i]== cndindx){*indx = i; return true;} 
+   if(scoreIndxMat_[start]== cndindx){*indx = i; return true;} 
+   start = start+1;
+   i++;
+
    }  
   return false;
 }
@@ -520,11 +526,12 @@ BrCandPtr RBrDev::simNodeHash(double objVl,UInt nodeId, bool* flagsumzero,
       std::vector<unsigned int> tempVctr;
       clmnindx = binrslt_.at(i);
       if (clmnindx == -1) {continue;}
-      std::copy(scoreIndxMat_.begin() + clmnindx*maxStrongCands_, scoreIndxMat_.begin() +
-		 (clmnindx+1)*maxStrongCands_, std::back_inserter(tempVctr));
+     // std::copy(scoreIndxMat_.begin() + clmnindx*maxStrongCands_, scoreIndxMat_.begin() +
+//		 (clmnindx+1)*maxStrongCands_, std::back_inserter(tempVctr));
 
-      if (evalIndx(tempVctr, cndindx,&varindx)) {
-        sumScored = sumScored + scoreMatd_[clmnindx*maxStrongCands_ + varindx ];
+      if (evalIndx(clmnindx, cndindx, &varindx)) {
+//	std::cout<<"indexing "<<varindx<<" prev clmn number "<<clmnindx << "current clmn number "<< crntClmns_<<std::endl;
+        sumScored = sumScored + scoreMatd_[clmnindx*maxStrongCands_ + varindx];
         sumScoreu = sumScoreu + scoreMatu_[clmnindx*maxStrongCands_ + varindx];
         foundflag = true;
       } 
@@ -577,10 +584,10 @@ void RBrDev::bestScoreUpdate(const double & change_up1,
   UInt tmpindx;
   if(binrslt_.size()>0){
     for(unsigned int i=0;i<binrslt_.size();i++){
-      std::copy(scoreIndxMat_.begin() +i*maxStrongCands_, scoreIndxMat_.begin() + 
-                (i+1)*maxStrongCands_, std::back_inserter(tempVctr) );
+     // std::copy(scoreIndxMat_.begin() +i*maxStrongCands_, scoreIndxMat_.begin() + 
+     //           (i+1)*maxStrongCands_, std::back_inserter(tempVctr) );
 
-      if(evalIndx(tempVctr, indx, &varindx)){
+      if(evalIndx(i, indx, &varindx)){
         tmpindx = crntClmns_*maxStrongCands_ + varindx;
         if(change_up1 < change_down1){
           scoreMatd_[tmpindx] = (lbUpdateCntd_[tmpindx]*scoreMatd_[tmpindx] 
