@@ -193,13 +193,13 @@ private:
    * Find the collection of Nodes those are similar to current Node
    * using LSH method
    */
-  BrCandPtr simNodeHash(double objVl, bool* flagsumzero, double* wtdscr,BrCandPtr* wtdcand);
+  BrCandPtr simNodeHash(double objVl,UInt nodeId, bool* flagsumzero, double* wtdscr,BrCandPtr* wtdcand);
 
   /**
    *Update the score of branching variable of a node into its similar nodes
    *
    */
-  void bestScoreUpdate(const double & change_up1, const double & change_down1, const int & indx, UIntVector &count);
+  void bestScoreUpdate(const double & change_up1, const double & change_down1, const int & indx);
 
   /**
    *
@@ -207,21 +207,13 @@ private:
    *
    */
    
-std::vector<unsigned int> mostSimilarNode();
+ void mostSimilarNode();
  /**
  *index of the matched variable
  *
  */
 
 bool evalIndx(std::vector<unsigned int>tempVctr, UInt bstscrIndex,int* indx);
-
-  /**
-   * check whether the masterStrngNdList_ has an entry with indices node nodeid  and varindx
-   *
-   */
-   
-bool subsetfromStrongList(const int & nodeid, const int & varindx);
-
     
   /** 
    * \brief Do strong branching on candidate.
@@ -310,7 +302,7 @@ bool subsetfromStrongList(const int & nodeid, const int & varindx);
   UInt varlen_;
   UInt clmn_;
   UInt crntClmns_;
-  UInt featureFlag_;
+  UInt numBinary_;
   UInt hash_;
   /**
    * \brief Maximum number of iterations to be performed in each call to the
@@ -373,12 +365,14 @@ bool subsetfromStrongList(const int & nodeid, const int & varindx);
   std::vector<int> indxBin_;
 
 /**
- * A vector for random numbers  
+ * A vector for random numbers, hash storage, node Id and  LB storage 
  *
  */
   std::vector<double> randVal1_;
   std::vector<double> randVal2_;
   std::vector<double> hashValue_;
+  std::vector<double> LbValCollect_;
+  std::vector<UInt> NodeIdCollect_;
 
  /**
  * A one d matrix keeps up and down scores of every node: stores 2D(score by
@@ -396,11 +390,10 @@ bool subsetfromStrongList(const int & nodeid, const int & varindx);
   std::vector<int> scoreIndxMat_;
 
  /**
- * A one dimensional array that stores the node ids 
+ * A one d matrix that stores the counter of score update in every node after LP 
  *
  */
-
-  std::vector<int> masterStrngNdList_;
+  std::vector<int> lbUpdateCnt_;
  // int *featureMat_[n];
   /**
    * \brief Number of times we have branched up and noted the effect on objective
