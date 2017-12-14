@@ -52,7 +52,8 @@ RBrDev::RBrDev(EnvPtr env, HandlerVector & handlers)
   x_(0)
 {
   timer_ = env->getNewTimer();
-  logger_ = (LoggerPtr) new Logger((LogDebug2)); 
+  logger_ = (LoggerPtr) new Logger((LogLevel) 
+      env->getOptions()->findInt("br_log_level")->getValue());
   stats_ = new RBrDevStats();
   stats_->calls = 0;
   stats_->engProbs = 0;
