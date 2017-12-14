@@ -50,6 +50,8 @@ set (THIRD_PARTY_PATH "" CACHE PATH "Path to the directory where all minotaur ex
 set(TP_ABS_PATH)
 if(NOT IS_ABSOLUTE ${THIRD_PARTY_PATH})
   set(TP_ABS_PATH "${CMAKE_CURRENT_BINARY_DIR}/${THIRD_PARTY_PATH}")
+else()
+  set(TP_ABS_PATH ${THIRD_PARTY_PATH})
 endif()
 
 message (STATUS ${MSG_HEAD} "Path to third-party = ${TP_ABS_PATH}")
