@@ -46,12 +46,14 @@ set(CMAKE_INSTALL_PREFIX ${MNTR_INSTALL_PREFIX} CACHE INTERNAL
 ###########################################################################
 set (THIRD_PARTY_PATH "" CACHE PATH "Path to the directory where all minotaur external libraries and headers are available (/path/to/third-party)")
 
-# convert it to absolute path
-set(TP_ABS_PATH)
-if(NOT IS_ABSOLUTE ${THIRD_PARTY_PATH})
-  set(TP_ABS_PATH "${CMAKE_CURRENT_BINARY_DIR}/${THIRD_PARTY_PATH}")
-else()
-  set(TP_ABS_PATH ${THIRD_PARTY_PATH})
+# if THIRD_PARTY_PATH is entered, convert it to absolute path
+set(TP_ABS_PATH)   ## NULL
+if (NOT ("${THIRD_PARTY_PATH}" STREQUAL ""))
+  if(NOT IS_ABSOLUTE ${THIRD_PARTY_PATH})
+    set(TP_ABS_PATH "${CMAKE_CURRENT_BINARY_DIR}/${THIRD_PARTY_PATH}")
+  else()
+    set(TP_ABS_PATH ${THIRD_PARTY_PATH})
+  endif()
 endif()
 
 message (STATUS ${MSG_HEAD} "Path to third-party = ${TP_ABS_PATH}")
@@ -225,7 +227,7 @@ add_subdirectory(src/base)
 ###########################################################################
 ## Bqpd
 ###########################################################################
-set (BQPD_LIB_DIR)          ## NULL
+set (BQPD_LIB_DIR)      ## NULL
 set (LINK_BQPD)         ## NULL
 message(STATUS ${MSG_HEAD} "Searching for bqpd ...")
 
