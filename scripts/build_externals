@@ -7,6 +7,13 @@
 usage () 
 {
    echo ""
+   echo -n "This is a script to download source-code of all open-source libraries and "
+   echo -n "build them. Filter and BQPD libraries (without source code are "
+   echo    "also downloaded."
+   echo ""
+   echo -n "System requirements:"
+   echo "pkgconfig, c++ compiler, gfortran must be available for this to work."
+   echo ""
    echo "usage: ./build_externals -d /path/to/directory [-j {num-cpus}] [-l {log-file}] [-r {error-file}] [-t {url}] [-COns]"
    echo ""
    echo "-C: Use curl instead of wget to fetch externals."
