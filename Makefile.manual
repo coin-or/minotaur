@@ -172,6 +172,7 @@ BASE_SRCS = \
 	$(BASE_DIR)/NLPRelaxation.cpp \
 	$(BASE_DIR)/NlPresHandler.cpp \
 	$(BASE_DIR)/NLPMultiStart.cpp \
+	$(BASE_DIR)/NlWriter.cpp \
 	$(BASE_DIR)/Node.cpp \
 	$(BASE_DIR)/NodeFullRelaxer.cpp \
 	$(BASE_DIR)/NodeHeap.cpp \
@@ -273,6 +274,7 @@ ALL_HEADERS = \
 	$(BASE_DIR)/NLPRelaxation.h \
 	$(BASE_DIR)/NlPresHandler.h \
 	$(BASE_DIR)/NLPMultiStart.h \
+	$(BASE_DIR)/NlWriter.h \
 	$(BASE_DIR)/Node.h \
 	$(BASE_DIR)/NodeHeap.h \
 	$(BASE_DIR)/NodeRelaxer.h \

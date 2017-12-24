@@ -64,6 +64,7 @@ set (MINOTAUR_SOURCES
      NLPRelaxation.cpp 
      NlPresHandler.cpp
      NLPMultiStart.cpp
+     NlWriter.cpp
      Node.cpp 
      NodeFullRelaxer.cpp
      NodeHeap.cpp 
@@ -175,6 +176,7 @@ set (MINOTAUR_HEADERS
      NLPRelaxation.h
      NlPresHandler.h
      NLPMultiStart.h
+     NlWriter.h
      Node.h
      NodeHeap.h
      NodeRelaxer.h
