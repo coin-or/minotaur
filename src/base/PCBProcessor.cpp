@@ -449,7 +449,9 @@ bool PCBProcessor::shouldPrune_(NodePtr node, double solval,
    case (ProvenLocalOptimal):
    case (ProvenOptimal):
      node->setLb(solval);
-     if (node->getParent() && node->getParent()->getLb() > solval+oATol_) {
+     if (node->getParent() &&
+         node->getParent()->getLb() > solval+oATol_ &&
+         node->getParent()->getLb() > solval+fabs(solval)*oRTol_ ) {
        logger_->msgStream(LogError) << me_ << "node lb lower than parent's lb. "
                                     << "Relaxation may not be convex or "
                                     << "engine has an issue."
