@@ -156,13 +156,13 @@ BrancherPtr createBrancher(EnvPtr env, ProblemPtr p, HandlerVector handlers,
     t = (p->getSize()->ints + p->getSize()->bins)/10;
     t = std::max(t, (UInt) 2);
     t = std::min(t, (UInt) 4);
-    t = 80000;
+    t = 800000;
     rbrrel_br->setThresh(t);
     env->getLogger()->msgStream(LogExtraInfo) << me <<
       "setting reliability threshhold to " << t << std::endl;
     t = (UInt) p->getSize()->ints + p->getSize()->bins/20+2;
     t = std::min(t, (UInt) 10);
-    t =100000;
+    t =1000000;
     rbrrel_br ->setMaxDepth(t);
     env->getLogger()->msgStream(LogExtraInfo) << me <<
       "setting reliability maxdepth to " << t << std::endl;
