@@ -77,7 +77,7 @@ QGHandler::QGHandler(EnvPtr env, ProblemPtr minlp, EnginePtr nlpe)
   numCuts_(0),
   objVar_(VariablePtr()),
   oNl_(false),
-  rel_(RelaxationPtr()),
+  rel_(RelaxationPtr())
 {
   intTol_ = env_->getOptions()->findDouble("int_tol")->getValue();
   solAbsTol_ = env_->getOptions()->findDouble("solAbs_tol")->getValue();
