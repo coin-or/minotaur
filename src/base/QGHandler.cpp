@@ -50,8 +50,6 @@ const std::string QGHandler::me_ = "QGHandler: ";
 
 QGHandler::QGHandler()
 : env_(EnvPtr()),      
-  intTol_(1e-6),
-  linCoeffTol_(1e-6),
   minlp_(ProblemPtr()),
   nlCons_(0),
   nlpe_(EnginePtr()),
@@ -61,17 +59,16 @@ QGHandler::QGHandler()
   objVar_(VariablePtr()),
   oNl_(false),
   rel_(RelaxationPtr()),
-  solAbsTol_(1e-5),
-  solRelTol_(1e-5),
   stats_(0)
 {
+  intTol_ = env_->getOptions()->findDouble("int_tol")->getValue();
+  solAbsTol_ = env_->getOptions()->findDouble("solAbs_tol")->getValue();
+  solRelTol_ = env_->getOptions()->findDouble("solRel_tol")->getValue();
   logger_ = (LoggerPtr) new Logger(LogDebug2);
 }
 
 QGHandler::QGHandler(EnvPtr env, ProblemPtr minlp, EnginePtr nlpe) 
 : env_(env),
-  intTol_(1e-6),
-  linCoeffTol_(1e-6),
   minlp_(minlp),
   nlCons_(0),
   nlpe_(nlpe),
@@ -81,9 +78,10 @@ QGHandler::QGHandler(EnvPtr env, ProblemPtr minlp, EnginePtr nlpe)
   objVar_(VariablePtr()),
   oNl_(false),
   rel_(RelaxationPtr()),
-  solAbsTol_(1e-5),
-  solRelTol_(1e-5)
 {
+  intTol_ = env_->getOptions()->findDouble("int_tol")->getValue();
+  solAbsTol_ = env_->getOptions()->findDouble("solAbs_tol")->getValue();
+  solRelTol_ = env_->getOptions()->findDouble("solRel_tol")->getValue();
   logger_ = (LoggerPtr) new Logger((LogLevel)env->getOptions()->
                                    findInt("handler_log_level")->getValue());
 
@@ -337,7 +335,7 @@ bool QGHandler::isFeasible(ConstSolutionPtr sol, RelaxationPtr rel,
         logger_->msgStream(LogDebug) 
           << me_ << "constraint not feasible" << std::endl
           << me_;
-        c->write(logger_->msgStream(LogDebug2));
+        c->write(logger_->msgStream(LogDebug));
         logger_->msgStream(LogDebug) 
           << me_ << "activity = " << act << std::endl;  
 #endif
@@ -382,16 +380,16 @@ void QGHandler::linearAt_(FunctionPtr f, double fval, const double *x,
                           double *c, LinearFunctionPtr *lf)
 {
 
-  int n = rel_->getNumVars();
+  int error=0, n = rel_->getNumVars();
   double *a = new double[n];
+  const double linCoeffTol = 1e-6;
   VariableConstIterator vbeg = rel_->varsBegin();
   VariableConstIterator vend = rel_->varsEnd();
-  int error=0;
 
   std::fill(a, a+n, 0.);
   f->evalGradient(x, a, &error);
   if(error==0){
-    *lf = (LinearFunctionPtr) new LinearFunction(a, vbeg, vend, linCoeffTol_); 
+    *lf = (LinearFunctionPtr) new LinearFunction(a, vbeg, vend, linCoeffTol); 
     *c  = fval - InnerProduct(x, a, numvars_);
     delete [] a;
   }	else {
@@ -458,7 +456,7 @@ int QGHandler::OAFromPoint_(const double *x, const double *inf_x,
 
           lpvio = std::max(lf->eval(inf_x)-con->getUb()+c, 0.0);
 
-          if (lpvio>1e-4 && lpvio > (fabs(con->getUb()-c)*solRelTol_) ) {
+          if (lpvio>solAbsTol_ && lpvio > (fabs(con->getUb()-c)*solRelTol_) ) {
             f2 = (FunctionPtr) new Function(lf);
             newcon = rel_->newConstraint(f2, -INFINITY, con->getUb()-c,
                                          "lnrztn_cut");
@@ -476,9 +474,7 @@ int QGHandler::OAFromPoint_(const double *x, const double *inf_x,
 #endif
           }
         }
-      }
-
-      if(con->getLb() > -INFINITY) {
+      } else if(con->getLb() > -INFINITY) {
         vio = std::max(con->getLb()-nlpact, 0.0);
 
         if (vio>solAbsTol_ && vio > (fabs(con->getLb())*solRelTol_) ) {
@@ -500,10 +496,15 @@ int QGHandler::OAFromPoint_(const double *x, const double *inf_x,
 #endif
           }
         }
+      } else {
+ #if SPEW
+            logger_->msgStream(LogDebug) << me_ <<" Constraint do not have"
+             << " either lower or upper bound" << std::endl;
+#endif     
       }
     }	else {
       logger_->msgStream(LogError) << me_ << "Constraint not defined at"
-        << " at least one of the points: "<<  std::endl;
+        << " at least one of the points. "<<  std::endl;
     }
   }
   o = minlp_->getObjective();
@@ -520,7 +521,7 @@ int QGHandler::OAFromPoint_(const double *x, const double *inf_x,
         linearAt_(f, act, x, &c, &lf);
         lpvio = std::max(c+lf->eval(inf_x)-relobj_, 0.0);
 
-        if (lpvio>1e-4 && lpvio >(fabs(relobj_+c)*solRelTol_)) {
+        if (lpvio>solAbsTol_ && lpvio >(fabs(relobj_+c)*solRelTol_)) {
           lf->addTerm(objVar_, -1.0);
           f2 = (FunctionPtr) new Function(lf);
           newcon = rel_->newConstraint(f2, -INFINITY, -1.0*c, "objlnrztn_cut"); 
@@ -672,7 +673,6 @@ void QGHandler::separate(ConstSolutionPtr sol, NodePtr , RelaxationPtr rel,
                          CutManager *, SolutionPoolPtr s_pool,
                          bool *sol_found, SeparationStatus *status)
 {      
-  numvars_ = minlp_->getNumVars();
   VariableConstIterator v_iter;
   VariableType v_type;
   double value;
