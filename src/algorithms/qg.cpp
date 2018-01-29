@@ -360,8 +360,7 @@ int main(int argc, char* argv[])
       PerspCutHandlerPtr pc_hand;
       pc_hand = (PerspCutHandlerPtr) new PerspCutHandler(env, inst); 
       pc_hand->setModFlags(false, true);
-      // Generate constraints amenable to PR
-      if(pc_hand->perspList()) {
+      if(pc_hand->perspList()){
         handlers.push_back(pc_hand);
         assert(pc_hand);
       }
