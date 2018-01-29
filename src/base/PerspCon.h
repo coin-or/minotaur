@@ -18,11 +18,11 @@ using std::ofstream;
 #include <string>
 using std::string;
 
+#include "Types.h"
 #include "Problem.h"
+#include "Variable.h"
 #include "Relaxation.h"
 #include "Constraint.h"
-#include "Variable.h"
-#include "Types.h"
 #include "Environment.h"
 
 namespace Minotaur {
@@ -48,42 +48,44 @@ public:
   ~PerspCon();
 
   /// Checks if the variables are bounded by only one binary variable.
-  bool checkLVars(ConstConstraintPtr cons, ConstVariablePtr binvar);
+  bool checkAllVars(ConstConstraintPtr cons, ConstVariablePtr binvar);
 
   /// Checks if the variables of nonlinear part are bounded by only one binary variable.
-  bool checkNVars(const NonlinearFunctionPtr nlf, ConstVariablePtr binvar);
+  bool checkNVars(ConstConstraintPtr cons, ConstVariablePtr binvar,
+                  bool initvar = false);
 
-  /// Checks if a given variable is bounded by binary variable.
-  bool checkVarBounds(ConstVariablePtr var, ConstVariablePtr binvar);
-
+  /// Checks and provide details if a given variable is bounded by binary variable.
+  bool checkVarBounds(ConstVariablePtr var, ConstVariablePtr binvar, bool pi=1);
+  
   /// Checks if all the variables are continuous or at most one binary.
-  /// Otherwise, we cannot generate perspective cuts.
+  /// Otherwise, cannot generate perspective cuts.
   bool checkVarTypes(ConstConstraintPtr cons, ConstVariablePtr& binvar);
 
   /// Checks if a constraint is a Perspective constraint.
   bool evalConstraint(ConstConstraintPtr cons,VariablePtr& binvar);
 
-  /// Generate list of perspective constraints for the original problem.
+  /// Generates list of perspective constraints for the original problem.
   void generateList();
 
-  /// Get a pointer to the vector that contains binary variable of perspective constraints.
+  /// Returns a pointer to the vector that contains binary variable of
+  /// perspective constraints.
   std::vector<ConstVariablePtr> getConsBinVar() const {return binVar_;}
 
-  /// Get total number of perspective constraints.
+  /// Returns total number of perspective constraints.
   UInt getNumPersp() const {return cList_.size();}
 
-  /// Get a pointer to the vector that contains perspective constraints.
+  /// Returns a pointer to the vector that contains perspective constraints.
   std::vector<ConstConstraintPtr> getPerspCons() const {return cList_;}
   
-  /// Status of perspective reformulation
+  /// Returns status of perspective reformulation
   // 1 is PR is carried out, 0 otherwise
   bool getStatus();
 
-  /// Find binary variables that appear in a linear constraint (involving two
+  /// Finds binary variables that appear in a linear constraint (involving two
   // terms) with variable var
   void initialBinary(ConstVariablePtr var, VarSetPtr binaries);
 
-  /// Print out information related to the perspective constraints 
+  /// Writes out information related to perspective constraints 
   void displayInfo(const std::string);
 
   private:
@@ -111,20 +113,14 @@ public:
   ///Returns upper bounding constraints of continuous variables
   std::vector<std::vector<std::string > > ubc_;
 
+  std::vector<std::string > initl_;
   std::vector<std::string > l_;
   std::vector<std::string > u_;
-
-/*
-  // Uncomment to determine structure of the constraints amenable to PR
-   // Vector of structure info of constraints amenable to PR
-  std::vector<UInt > sType_;
-  UInt s_;
-*/
+  std::vector<std::string > initu_;
  
-}; // end of class PerspCon.
+}; 
 
-
-} // end of namespace.
+}
 
 #endif // MINOTAURPERSPCON_H
 

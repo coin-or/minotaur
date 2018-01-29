@@ -6,8 +6,9 @@
 
 /**
  * \file PerspCutHandler.h
- * \brief Declare the PerspCutHandler class for handling perspective cut 
- * constraints. It generates the cuts whenever they are needed. 
+ * \brief Declare PerspCutHandler class for perspective reformulation (PR).
+ * It detects constraints amenable to perspective reformulation and generates
+ * perspective cuts whenever needed. 
  * \author Meenarli Sharma, Indian Institute of Technology
  */
 
@@ -15,27 +16,19 @@
 #define MINOTAURPERSPCUTHANDLER_H
 
 #include "Handler.h"
-#include "PerspCutGenerator.h"
+#include "Problem.h"
+#include "Function.h"
+#include "PerspCon.h"
+#include "LinearFunction.h"
 
 namespace Minotaur {
 
-// Pointers for handler.
-class PerspCutHandler;
-typedef boost::shared_ptr<PerspCutHandler> PerspCutHandlerPtr;
-typedef boost::shared_ptr<const PerspCutHandler> ConstPerspCutHandlerPtr;
-
-//class Logger;
-//typedef boost::shared_ptr<Logger> LoggerPtr;
-
-//struct PCStats
-//{
-  //UInt perspcons;
-  //UInt cuts;
-  //double time;
-//};
-
-class PerspCutHandler : public Handler {
-public:
+  class PerspCutHandler;
+  typedef boost::shared_ptr<PerspCutHandler> PerspCutHandlerPtr;
+  typedef boost::shared_ptr<const PerspCutHandler> ConstPerspCutHandlerPtr;
+  
+  class PerspCutHandler : public Handler {
+  public:
 
   /// Default constructor.
   PerspCutHandler();
@@ -43,11 +36,50 @@ public:
   /// Constructor.
   PerspCutHandler(EnvPtr env, ProblemPtr problem);
 
-  /// Destroy.
+  /// Destructor.
   ~PerspCutHandler();
 
-  /// Generate list of constraints amenable to PR.
+  /// Generates perspective cuts.
+  LinearFunctionPtr generateCut(UInt relvars, ConstSolutionPtr sol,
+                                    ConstConstraintPtr c, ConstVariablePtr v); 
+ 
+  /// Does nothing.
+  virtual Branches getBranches(BrCandPtr, DoubleVector &,
+                               RelaxationPtr, SolutionPoolPtr)
+    {return Branches();}; 
+
+  // Does nothing.
+  virtual void getBranchingCandidates(RelaxationPtr,
+                                      const DoubleVector &, ModVector &,
+                                      BrVarCandSet &, BrCandVector &,
+                                      bool &) {};
+
+  /// Does nothing.
+  virtual ModificationPtr getBrMod(BrCandPtr, DoubleVector &,
+                                   RelaxationPtr, BranchDirection)
+    {return ModificationPtr();};
+
+  /// Returns name of the handler.
+  std::string getName() const;
+
+  /// Generates Perspective cuts
+  LinearFunctionPtr gPCut(UInt relvars, ConstConstraintPtr c,
+                          ConstVariablePtr v, double *y);
+
+  /// Checks feasibility of constraints amenable to PR at the given solution.
+  bool isFeasible(ConstSolutionPtr sol, RelaxationPtr relaxation,
+                  bool &should_prune, double &inf_meas);
+
+  /// Generates a list of constraints amenable to PR.
   bool perspList();
+ 
+  /// Does nothing.
+  SolveStatus presolve(PreModQ *, bool *) {return Finished;};
+
+  /// Does nothing.
+  virtual bool presolveNode(RelaxationPtr, NodePtr,
+                            SolutionPoolPtr, ModVector &,
+                            ModVector &) {return false;};
 
   /// Does nothing.
   void relaxInitFull(RelaxationPtr, bool * ) {};
@@ -61,99 +93,53 @@ public:
   /// Does nothing.
   void relaxNodeInc(NodePtr, RelaxationPtr, bool * ) {};
 
-  /// Check if solution is feasible.
-  /// Checks all the constraints if they are satisfied by the given solution.
-  bool isFeasible(ConstSolutionPtr sol, RelaxationPtr relaxation,
-                  bool &should_prune, double &inf_meas);
-
-  /**
-   * We need separation for this handler to generate the knapsack cover
-   * cuts.
-   * A set of perspective cuts will be generated.
-   */
+  /// Separates current solution. 
   void separate(ConstSolutionPtr, NodePtr, RelaxationPtr, CutManager *cutman,
                 SolutionPoolPtr, bool *, SeparationStatus * status);
-
-  // Does nothing.
-  virtual void getBranchingCandidates(RelaxationPtr,
-                                      const DoubleVector &, ModVector &,
-                                      BrVarCandSet &, BrCandVector &,
-                                      bool &) {};
-
-  /// Does nothing.
-  virtual ModificationPtr getBrMod(BrCandPtr, DoubleVector &,
-                                   RelaxationPtr, BranchDirection)
-    {return ModificationPtr();};
-
-  /// Does nothing.
-  virtual Branches getBranches(BrCandPtr, DoubleVector &,
-                               RelaxationPtr, SolutionPoolPtr)
-    {return Branches();};
-
-  /// Does nothing.
-  SolveStatus presolve(PreModQ *, bool *) {return Finished;};
-
-  /// Does nothing.
-  virtual bool presolveNode(RelaxationPtr, NodePtr,
-                            SolutionPoolPtr, ModVector &,
-                            ModVector &) {return false;};
-  
-  /// Write name.
-  std::string getName() const;
-
-  /// Show statistics.
+ 
+  /// Writes statistics.
   void writeStats(std::ostream &out) const;
-
-  /// Return specific statistics.
-  //UInt PC_cuts() {return stats_->cuts;}
-  //double PC_time() {return stats_->time;}
   
 private:
   
   /// Environment.
   EnvPtr env_;
   
-  /// The problem for which the handler is created.
+  /// Problem for which the handler is created.
   ProblemPtr minlp_;
   
   /// Log.
   LoggerPtr logger_;
-  
-  /// Statistics.
-  //PCStats * stats_;
-
-  /**
-   * This is false if the current solution violates any perspective cuts.
-   */
+ 
+  /// True if all constraints amenable to PR are satisfied at current solution
+  /// else false.
   bool isFeas_;
   
   /// Tolerance for accepting a new solution value: absolute threshold.
-  const double solAbsTol_;
+  double solAbsTol_;
   
-  const double solRelTol_;
-  
-  /// Number of variables in MINLP.
-  //UInt numvars_;
+  /// Tolerance for accepting a new solution value: relative threshold.
+  double solRelTol_;
   
   /// Tolerance for checking integrality.
   double intTol_;
 
-  // Number of PC generated
+  // Number of perspective cuts generated.
   UInt numCuts_;
   
   /// For log:
   static const std::string me_;
   
-  ///vector of pointers to perspective constraint
+  /// Vector of pointers to perspective constraint.
   std::vector<ConstConstraintPtr> cons_;
   
-  ///vector of pointers to perspective constraint
+  /// Vector of pointers to binary variables controlling constraints amenable
+  /// to PR.
   std::vector<ConstVariablePtr> binvar_;
 
-  // Pointer to Perspective constraints detailed information
+  /// Pointer to constraint amenable to PR.
   PerspConPtr persplist_;
-
-};
+  };
 
 }
 
