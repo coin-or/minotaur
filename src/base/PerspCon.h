@@ -16,7 +16,6 @@
 #include <fstream>
 using std::ofstream;
 #include <string>
-using std::string;
 
 #include "Types.h"
 #include "Problem.h"
@@ -48,18 +47,20 @@ public:
   ~PerspCon();
 
   /// Checks if the variables are bounded by only one binary variable.
-  bool checkAllVars(ConstConstraintPtr cons, ConstVariablePtr binvar);
+  bool checkAllVars(ConstConstraintPtr cons, ConstVariablePtr binvar,
+                    ConstVariablePtr initvar = VariablePtr(), UInt index = 0);
 
   /// Checks if the variables of nonlinear part are bounded by only one binary variable.
-  bool checkNVars(ConstConstraintPtr cons, ConstVariablePtr binvar,
-                  bool initvar = false);
+  bool checkNVars(ConstConstraintPtr cons, ConstVariablePtr binvar);
+  bool checkLVars(ConstConstraintPtr cons, ConstVariablePtr binvar);
 
   /// Checks and provide details if a given variable is bounded by binary variable.
   bool checkVarBounds(ConstVariablePtr var, ConstVariablePtr binvar, bool pi=1);
   
   /// Checks if all the variables are continuous or at most one binary.
   /// Otherwise, cannot generate perspective cuts.
-  bool checkVarTypes(ConstConstraintPtr cons, ConstVariablePtr& binvar);
+  bool checkVarTypes(ConstConstraintPtr cons, ConstVariablePtr& binvar, bool indi = 0);
+  bool checkVarTypes(ConstConstraintPtr cons);
 
   /// Checks if a constraint is a Perspective constraint.
   bool evalConstraint(ConstConstraintPtr cons,VariablePtr& binvar);
@@ -106,6 +107,8 @@ public:
   
   //Vector of pointers to binary variables of perspective constraint
   std::vector<ConstVariablePtr> binVar_;
+  
+  std::vector<std::string> sType_;
 
   ///Returns lower bounding constraints of continuous variables
   std::vector<std::vector<std::string > > lbc_;
@@ -117,6 +120,7 @@ public:
   std::vector<std::string > l_;
   std::vector<std::string > u_;
   std::vector<std::string > initu_;
+  std::string st_;
  
 }; 
 
