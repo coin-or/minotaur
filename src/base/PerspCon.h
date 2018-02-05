@@ -102,13 +102,14 @@ public:
   ///Log
   LoggerPtr logger_;
 
+
   ///Vector of perspective constraint pointers
   std::vector<ConstConstraintPtr> cList_;
   
   //Vector of pointers to binary variables of perspective constraint
   std::vector<ConstVariablePtr> binVar_;
   
-  std::vector<std::string> sType_;
+  std::vector<UInt> sType_;
 
   ///Returns lower bounding constraints of continuous variables
   std::vector<std::vector<std::string > > lbc_;
@@ -120,7 +121,7 @@ public:
   std::vector<std::string > l_;
   std::vector<std::string > u_;
   std::vector<std::string > initu_;
-  std::string st_;
+  UInt st_;
  
 }; 
 

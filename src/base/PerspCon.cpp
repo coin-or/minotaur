@@ -26,14 +26,14 @@ using std::endl;
 using namespace Minotaur;
 
 PerspCon::PerspCon()
-:env_(EnvPtr()),p_(ProblemPtr()), cList_(0), binVar_(0), sType_(0), lbc_(0),
+:env_(EnvPtr()),p_(ProblemPtr()), cList_(0), binVar_(0), lbc_(0),
   ubc_(0), l_(0), u_(0), st_(0) 
 {
 }
 
 
 PerspCon::PerspCon(ProblemPtr p, EnvPtr env)
-: env_(env),p_(p), cList_(0), binVar_(0), sType_(0), lbc_(0), ubc_(0), l_(0),
+: env_(env),p_(p), cList_(0), binVar_(0), lbc_(0), ubc_(0), l_(0),
   u_(0), st_(0)
 {
   logger_ = (LoggerPtr) new Logger((LogLevel) 
@@ -48,23 +48,39 @@ bool PerspCon::checkAllVars(ConstConstraintPtr cons, ConstVariablePtr binvar,
   ConstVariablePtr var;
   const FunctionPtr f = cons->getFunction();
   
-  for (VarSetConstIterator it=f->varsBegin();it!=f->varsEnd(); ++it) {
-    var = *it;
-    if (var->getIndex() == initvar->getIndex()){
-      l_.push_back(initl_[index]);
-      u_.push_back(initl_[index]);
-    } else if (var->getIndex() == binvar->getIndex()){
-      continue;
-    } else {
-      varbounded = checkVarBounds(var, binvar);
-      if (!varbounded) {
-        l_.clear();
-        u_.clear();
-        return false;
+   if(initvar){   
+    for (VarSetConstIterator it=f->varsBegin();it!=f->varsEnd(); ++it) {
+      var = *it;
+      if (var->getIndex() == initvar->getIndex()){
+         l_.push_back(initl_[index]);
+         u_.push_back(initu_[index]);
+       } else if (var->getIndex() == binvar->getIndex()){
+         continue;
+       } else {
+         varbounded = checkVarBounds(var, binvar);
+         if (!varbounded) {
+           l_.clear();
+           u_.clear();
+           return false;
+         }
+       }
+    }
+   } else {
+     for (VarSetConstIterator it=f->varsBegin();it!=f->varsEnd(); ++it) {
+       var = *it;
+        if (var->getIndex() == binvar->getIndex()){
+          continue;
+        } else {
+          varbounded = checkVarBounds(var, binvar);
+          if (!varbounded) {
+            l_.clear();
+            u_.clear();
+            return false;
+          }
+        }
       }
-    } 
-  }
-  return true; 
+   } 
+   return true;
 }
 
 
@@ -93,19 +109,18 @@ bool PerspCon::checkLVars(ConstConstraintPtr cons, ConstVariablePtr binvar)
   bool varbounded;
   ConstVariablePtr var;
   const LinearFunctionPtr lf = cons->getLinearFunction();
-  
-  for (VariableGroupConstIterator it=lf->termsBegin(); it!=lf->termsEnd(); ++it) {
-    var = it->first;
-    if(var->getIndex() != binvar->getIndex()){
-      varbounded = checkVarBounds(var, binvar);
-      if (!varbounded) {
-        l_.clear();
-        u_.clear();
-        return false;
+  if(lf){
+    for (VariableGroupConstIterator it=lf->termsBegin(); it!=lf->termsEnd(); ++it) {
+      var = it->first;
+      if(var->getIndex() != binvar->getIndex()){
+        varbounded = checkVarBounds(var, binvar);
+        if (!varbounded) {
+          return false;
+        }
       }
     }
-  }
-  return true;
+  } 
+    return true;
 }
 
 
@@ -159,35 +174,27 @@ bool PerspCon::checkVarBounds(ConstVariablePtr var, ConstVariablePtr binvar, boo
       } else {
         continue;
       }
-    } 
-    
-    coeffbin = lf->getWeight(binvar);
-    if (coeffbin==0) {
-      continue;
+    } else {
+      coeffbin = lf->getWeight(binvar);
+      if (coeffbin==0) {
+        continue;
+      }
+      
+      if (vlb == false) {
+        if ((coeffvar < 0 && c->getUb() == 0) ||
+            (coeffvar > 0 && c->getLb() == 0)) {
+          vlb = true;
+          lbc = c;
+        }         
+      }
+      if (vub == false) {
+        if ((coeffvar < 0 && c->getLb() == 0) ||
+            (coeffvar > 0 && c->getUb() == 0)) {         
+          vub = true;
+          ubc = c;
+        } 
+      }
     }
-  
-   if (vlb == false) {
-     if (coeffvar < 0 && c->getUb() == 0) {
-       vlb = true;
-       lbc = c;
-     }         
-     if (coeffvar > 0 && c->getLb() == 0) {
-       vlb = true;
-       lbc = c;
-     } 
-   }
-
-   if (vub == false) {
-     if (coeffvar < 0 && c->getLb() == 0) {
-       vub = true;
-       ubc = c;
-     } 
-     if (coeffvar > 0 && c->getUb() == 0) {
-       vub = true;
-       ubc = c;
-     }
-   }
- 
    if ((vub == true) && (vlb == true)) {
      if (pi) {
        l_.push_back(lbc->getName());
@@ -198,7 +205,6 @@ bool PerspCon::checkVarBounds(ConstVariablePtr var, ConstVariablePtr binvar, boo
      } 
      return true;
    } 
-
   }
   return false;
 }
@@ -300,10 +306,12 @@ void PerspCon::displayInfo(const std::string m)
     for (UInt i= 0; i < cList_.size() ; ++i) {
       out1 << i+1 << ". ";
       cList_[i]->write(out1);
-      out1 << "Binary variable is: " << binVar_[i]->getName() << std::endl;
-      out1 << "Structure type present is: " << sType_[i] << std::endl;
+      out1 << "Associated binary variable: " << binVar_[i]->getName() << std::endl;
+      out1 << "Structure type: S" << sType_[i] << std::endl;
       out1 << "Name of Lower bounding constraint: " ;
 
+
+      // Take care of the multiple commas when entry is not there
       for (UInt j=0; j < lbc_[i].size(); ++j) {
         if (j < lbc_[i].size()-1){
           out1 << lbc_[i][j] << ", ";
@@ -323,8 +331,8 @@ void PerspCon::displayInfo(const std::string m)
       }
      out1 << std::endl << "------------------------------" << std::endl;
     }
-    out1 << "\nNotes (1) Absence of lower/upper bounding constraint name for any "
-      <<"means non-negativity/non-positivility constraint on that variable.";
+    out1 << "\nNotes (1) Absence of lower/upper bounding constraint name for any variable"
+      <<" means non-negativity/non-positivility constraint on that variable.";
     out1 << "\n (2) Description of S1 and S2 are in paper......";
  
   } else {
@@ -344,6 +352,13 @@ bool PerspCon::evalConstraint(ConstConstraintPtr cons, VariablePtr& binvar)
     return false;
   } 
 
+  //act = f->eval(x, &error);
+  //if (act > cu){
+    //assert(!"PerspCutHandler: problem is infeasible");
+    //// Add more information to this ifeasibility in printing
+    //return false;
+  //}
+
   if (cu <= 0){
     // vartypeok = false, if a binary variable is in the nonlinear part of the 
     // constraint.
@@ -361,6 +376,7 @@ bool PerspCon::evalConstraint(ConstConstraintPtr cons, VariablePtr& binvar)
       return false;
     }
   }
+
   bool boundsok = false, lboundsok = false;
   if (binvar == NULL) {
     const NonlinearFunctionPtr nlf = cons->getNonlinearFunction();
@@ -378,33 +394,44 @@ bool PerspCon::evalConstraint(ConstConstraintPtr cons, VariablePtr& binvar)
 
     UInt index = 0;
 
+    int error = 0;
+    double act =0;
+    double initsol [p_->getNumVars()] = {0}; 
+    const double *x = initsol;
+    FunctionPtr f = cons->getFunction();
+
     for (VarSetConstIterator it= binaries->begin(); it!=binaries->end(); ++it, index++) {
       binvar = *it;
       //if(cu==0 || cl==0)
       if(cu <=0){
         l_.push_back(initl_[index]);
-        u_.push_back(initl_[index]);
+        u_.push_back(initu_[index]);
         boundsok = checkNVars(cons, binvar);
         lboundsok = checkLVars(cons, binvar);
-        if(cu < 0){
-          if (boundsok == true && lboundsok == true){
+        if(boundsok == true && lboundsok == true){
+          act = f->eval(x, &error);
+          if (act > cu){
             assert(!"PerspCutHandler: problem is infeasible");
-          }
-        }
-        if(boundsok == true){
-          if(lboundsok == true){
-            st_ = "S1";
-            return true;
+            return false;
           } else {
-            st_ = "S2";
+            st_ = 1;
             return true;
           }
+        } else if(boundsok){
+          st_ = 2;
+          return true;
         }
       } else {
           boundsok = checkAllVars(cons, binvar, initvar, index);
           if(boundsok){
-            st_ = "S1";
-            return true;
+            act = f->eval(x, &error);
+            if (act > cu){
+              assert(!"PerspCutHandler: problem is infeasible");
+              return false;
+            } else {
+              st_ = 1;
+              return true;
+            }
           }
       }
     }
@@ -412,7 +439,8 @@ bool PerspCon::evalConstraint(ConstConstraintPtr cons, VariablePtr& binvar)
   } else {
     boundsok = checkAllVars(cons, binvar, VariablePtr());
     if(boundsok){
-      st_ = "S1";
+      st_ = 1;
+      // Make st_ char
     }
     return boundsok;
   }
