@@ -292,7 +292,7 @@ void Environment::createDefaultOptions_()
       "Verbosity of separability detection: 0-6", true, LogInfo);
   options_->insert(i_option);
 
-  i_option = (IntOptionPtr) new Option<int>("perspective_reform_log_level",
+  i_option = (IntOptionPtr) new Option<int>("perspective_log_level",
       "Verbosity of perspective cut generation: 0-6", true, LogInfo);
   options_->insert(i_option);
 
@@ -352,6 +352,16 @@ void Environment::createDefaultOptions_()
 
   d_option = (DoubleOptionPtr) new Option<double>("int_tol", 
       "Tolerance for checking integrality",
+      true, 0.000001);
+  options_->insert(d_option);
+
+  d_option = (DoubleOptionPtr) new Option<double>("solAbs_tol", 
+      "Absolute tolerance value for checking feasibility",
+      true, 0.000001);
+  options_->insert(d_option);
+
+  d_option = (DoubleOptionPtr) new Option<double>("solRel_tol", 
+      "Relative tolerance value for checking feasibility",
       true, 0.000001);
   options_->insert(d_option);
 

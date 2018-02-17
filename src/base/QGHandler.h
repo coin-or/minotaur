@@ -60,7 +60,7 @@ private:
    * For any linearization constraint that we generate, all 
    * coefficients with absolute value less than it are assumed zero.
    */
-  const double linCoeffTol_;
+  //const double linCoeffTol_;
 
 	/// Log.
   LoggerPtr logger_;
@@ -88,7 +88,7 @@ private:
 
   UInt numCuts_;
 
-	int numvars_;
+  int numvars_;
 
   /**
    * When the objective function is nonlinear, we need to save it, so
@@ -111,11 +111,11 @@ private:
  
   double relobj_; 
 
-	/// Tolerance for accepting a new solution value: absolute threshold.
-  const double solAbsTol_;
+  /// Tolerance for accepting a new solution value: absolute threshold.
+  double solAbsTol_;
 
   /// Tolerance for accepting a new solution value: relative threshold.
-  const double solRelTol_;
+  double solRelTol_;
 
   /// Tolerance for checking constraint violation.
  // double eTol_;

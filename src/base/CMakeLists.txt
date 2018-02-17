@@ -81,7 +81,7 @@ set (MINOTAUR_SOURCES
      ParTreeManager.cpp
      PCBProcessor.cpp 
      PerspCon.cpp
-     PerspCutGenerator.cpp 
+     # PerspCutGenerator.cpp 
      PerspCutHandler.cpp 
      PolynomialFunction.cpp 
      PreAuxVars.cpp
@@ -194,7 +194,7 @@ set (MINOTAUR_HEADERS
      ParTreeManager.h
      PCBProcessor.h
      PerspCon.h
-     PerspCutGenerator.h 
+     #PerspCutGenerator.h 
      PerspCutHandler.h
      PolynomialFunction.h
      PreAuxVars.h

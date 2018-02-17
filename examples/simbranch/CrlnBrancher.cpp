@@ -44,10 +44,11 @@ RBrDev::RBrDev(EnvPtr env, HandlerVector & handlers)
   maxDepth_(100000),
   maxIterations_(25),
   minNodeDist_(0),
-  maxStrongCands_(20),
+  maxStrongCands_(100),
+  clmn_(1000),
   rel_(RelaxationPtr()),            // NULL
   status_(NotModifiedByBrancher),
-  thresh_(10000),
+  thresh_(100000),
   trustCutoff_(true),
   x_(0)
 {
@@ -192,123 +193,129 @@ Branches RBrDev::findBranches(RelaxationPtr rel, NodePtr node,
   findCandidates_();
   if (status_ == PrunedByBrancher) {
     br_status = status_;
-     return branches;
+    return branches;
   }
   if(status_ == NotModifiedByBrancher ){
 
    // call this to eval hash, do hash comparison and return the cand using similar nodes concept
     br_can = simNodeHash_(sol->getObjValue(),node->getId(), &flagsumzero, &wtdscr,&wtdcand);
     if (br_can==NULL){
-       br_can = findBestCandidate_(sol->getObjValue(),
+      br_can = findBestCandidate_(sol->getObjValue(),
                                    s_pool->getBestSolutionValue(),
                                    node, &flagsumzero,&wtdscr,&wtdcand);
        
-       crntClmns_++; //increment the column as the current node is not getting sufficient info, so record new info
+      crntClmns_++; //increment the column as the current node is not getting sufficient info, so record new info
     }
   }
-   if(status_ == NotModifiedByBrancher ){
-       branches = br_can->getHandler()->getBranches(br_can, x_, rel_, s_pool); 
-       for (BranchConstIterator br_iter=branches->begin(); 
-           br_iter!=branches->end(); ++br_iter) {
-         (*br_iter)->setBrCand(br_can);
-       }
-    #if SPEW
-        logger_->msgStream(LogDebug) << me_ << "best candidate = "
+  if(status_ == NotModifiedByBrancher ){
+    branches = br_can->getHandler()->getBranches(br_can, x_, rel_, s_pool); 
+      for (BranchConstIterator br_iter=branches->begin(); 
+        br_iter!=branches->end(); ++br_iter) {
+        (*br_iter)->setBrCand(br_can);
+      }
+#if SPEW
+    logger_->msgStream(LogDebug) << me_ << "best candidate = "
         << br_can->getName() << std::endl;
-    #endif
-    } else {
+#endif
+  }else {
         // we found some modifications that can be done to the node. Send these
         // back to the processor.
-        if (mods_.size()>0) {
-        mods.insert(mods.end(),mods_.begin(),mods_.end());
-        }
-        br_status = status_;
-    #if SPEW
-        logger_->msgStream(LogDebug) << me_ << "found modifications"
-                                     << std::endl;
-        if (mods_.size()>0) {
-        for (ModificationConstIterator miter=mods_.begin(); miter!=mods_.end();
-               ++miter) {
-            (*miter)->write(logger_->msgStream(LogDebug));
-        }
-        } else if (status_==PrunedByBrancher) {
-        logger_->msgStream(LogDebug) << me_ << "Pruned." << std::endl;
-        } else {
-        logger_->msgStream(LogDebug) << me_ << "unexpected status = "
-                                     << status_ << std::endl;
-        }
-    #endif
+    if (mods_.size()>0) {
+      mods.insert(mods.end(),mods_.begin(),mods_.end());
     }
+    br_status = status_;
+#if SPEW
+    logger_->msgStream(LogDebug) << me_ << "found modifications"
+                                     << std::endl;
+    if (mods_.size()>0) {
+      for (ModificationConstIterator miter=mods_.begin(); miter!=mods_.end();
+               ++miter)  {
+        (*miter)->write(logger_->msgStream(LogDebug));
+      }
+    } else if (status_==PrunedByBrancher) {
+        logger_->msgStream(LogDebug) << me_ << "Pruned." << std::endl;
+    } else {
+      logger_->msgStream(LogDebug) << me_ << "unexpected status = "
+                                     << status_ << std::endl;
+    }
+#endif
+  }
     return branches;
+}
+
+
+void RBrDev::findCandidates_()
+
+{
+  VariablePtr v_ptr;
+  VariableIterator v_iter, v_iter2, best_iter;
+  VariableConstIterator cv_iter;
+  int index;
+  bool is_inf = false;   // if true, then node can be pruned.
+
+  BrVarCandSet cands;       // candidates from which to choose one.
+  BrVarCandSet cands2;      // Temporary set.
+  BrCandVector gencands;
+  BrCandVector gencands2;   // Temporary vector.
+  double s_wt = 1e-5;
+  double i_wt = 1e-6;
+  double score;
+
+ // first clear the list of candidates
+  nvarCands_.clear();
+  brnchngCands_.clear();
+
+  for (HandlerIterator h = handlers_.begin(); h != handlers_.end(); ++h) {
+    // ask each handler to give some candidates
+    (*h)->getBranchingCandidates(rel_, x_, mods_, cands2, gencands2, is_inf);
+
+    for (BrVarCandIter it = cands2.begin(); it != cands2.end(); ++it) {
+      (*it)->setHandler(*h);
+    }
+
+    for (BrCandVIter it = gencands2.begin(); it != gencands2.end(); ++it) {
+      (*it)->setHandler(*h);
+    }
+
+    cands.insert(cands2.begin(), cands2.end());
+    gencands.insert(gencands.end(), gencands2.begin(), gencands2.end());
+
+    if (is_inf) {
+      nvarCands_.clear();
+      brnchngCands_.clear();
+      cands2.clear();
+      cands.clear();
+      gencands2.clear();
+      gencands.clear();
+      status_ = PrunedByBrancher;
+      return;
+    } else if (mods_.size()>0) {
+      status_ = ModifiedByBrancher;
+      nvarCands_.clear();
+      brnchngCands_.clear();
+      cands2.clear();
+      cands.clear();
+      gencands2.clear();
+      gencands.clear();
+      return;
+    }
+    cands2.clear();
+    gencands2.clear();
   }
 
-    void RBrDev::findCandidates_()
-    {
-    VariablePtr v_ptr;
-    VariableIterator v_iter, v_iter2, best_iter;
-    VariableConstIterator cv_iter;
-    int index;
-    bool is_inf = false;   // if true, then node can be pruned.
-
-    BrVarCandSet cands;       // candidates from which to choose one.
-    BrVarCandSet cands2;      // Temporary set.
-    BrCandVector gencands;
-    BrCandVector gencands2;   // Temporary vector.
-    double s_wt = 1e-5;
-    double i_wt = 1e-6;
-    double score;
-
-    // first clear the list of candidates
-    nvarCands_.clear();
-    brnchngCands_.clear();
-
-    for (HandlerIterator h = handlers_.begin(); h != handlers_.end(); ++h) {
-        // ask each handler to give some candidates
-        (*h)->getBranchingCandidates(rel_, x_, mods_, cands2, gencands2, is_inf);
-        for (BrVarCandIter it = cands2.begin(); it != cands2.end(); ++it) {
-        (*it)->setHandler(*h);
-        }
-        for (BrCandVIter it = gencands2.begin(); it != gencands2.end(); ++it) {
-        (*it)->setHandler(*h);
-        }
-        cands.insert(cands2.begin(), cands2.end());
-        gencands.insert(gencands.end(), gencands2.begin(), gencands2.end());
-        if (is_inf) {
-        nvarCands_.clear();
-        brnchngCands_.clear();
-        cands2.clear();
-        cands.clear();
-        gencands2.clear();
-        gencands.clear();
-        status_ = PrunedByBrancher;
-        return;
-        } else if (mods_.size()>0) {
-        status_ = ModifiedByBrancher;
-        nvarCands_.clear();
-        brnchngCands_.clear();
-        cands2.clear();
-        cands.clear();
-        gencands2.clear();
-        gencands.clear();
-        return;
-        }
-        cands2.clear();
-        gencands2.clear();
-    }
-
-    // visit each candidate in and check if it has reliable pseudo costs.
-    for (BrVarCandIter it=cands.begin(); it!=cands.end(); ++it) {
-        index = (*it)->getPCostIndex();
-     if ((minNodeDist_ > fabs(stats_->calls-lastStrBranched_[index])) &&
-        timesUp_[index] >= thresh_ && timesDown_[index] >= thresh_){
-            nvarCands_.push_back(*it);
-        } else {
-        score = timesUp_[index] + timesDown_[index]
-            -s_wt*(pseudoUp_[index]+pseudoDown_[index])
-            -i_wt*std::max((*it)->getDDist(), (*it)->getUDist());
-        (*it)->setScore(score);
-        brnchngCands_.push_back(*it);
-    }
+ // visit each candidate in and check if it has reliable pseudo costs.
+  for (BrVarCandIter it=cands.begin(); it!=cands.end(); ++it) {
+    index = (*it)->getPCostIndex();
+    if ((minNodeDist_ > fabs(stats_->calls-lastStrBranched_[index])) &&
+      timesUp_[index] >= thresh_ && timesDown_[index] >= thresh_){
+         nvarCands_.push_back(*it);
+    } else {
+      score = timesUp_[index] + timesDown_[index]
+         -s_wt*(pseudoUp_[index]+pseudoDown_[index])
+         -i_wt*std::max((*it)->getDDist(), (*it)->getUDist());
+      (*it)->setScore(score);
+      brnchngCands_.push_back(*it);
+    } 
 
   }
   // push all general candidates (that are not variables) as reliable
@@ -350,7 +357,7 @@ UInt RBrDev::getIterLim()
 
 std::string RBrDev::getName() const
 {
-  return "RBrDev";
+  return "SimBranch";
 }
 
 void RBrDev::getPCScore_(BrCandPtr cand, double *ch_down, 
@@ -392,18 +399,16 @@ void RBrDev::updateTable_(const double & objVl)
   if((crntClmns_+1)%clmn_==0){
     crntClmns_ = 0;   
   }    
-  //featureMat_[0][crntClmns_] =objVl;
-  // Compute band size
-   
    // flush before storing it   
-   hashValue_[hash_*crntClmns_] =0.0;
-   hashValue_[hash_*crntClmns_+1] =0.0;
+  hashValue_[hash_*crntClmns_] =0.0;
+  hashValue_[hash_*crntClmns_+1] =0.0;
 
 
   for(int i=0; i<numBinary_; i++)
   {
     tempFeature = bndwt*(rel_->getVariable(indxBin_[i])->getLb()) +
         (1-bndwt)*rel_->getVariable(indxBin_[i])->getUb();
+    
     hashValue_[hash_*crntClmns_] = hashValue_[hash_*crntClmns_] + (randVal1_[i])*tempFeature;
     hashValue_[hash_*crntClmns_+1] = hashValue_[hash_*crntClmns_+1] + (randVal2_[i])*tempFeature;
   }
@@ -419,12 +424,12 @@ bool RBrDev::evalIndx_(UInt clmnindx1, UInt cndindx,int* indx)
   UInt end = start + maxStrongCands_; 
   UInt i= 0;
   while(start < end)
-   {
-   if(scoreIndxMat_[start]== cndindx){*indx = i; return true;} 
-   start = start+1;
-   i++;
+  {
+    if(scoreIndxMat_[start]== cndindx){*indx = i; return true;} 
+    start = start+1;
+    i++;
 
-   }  
+  }  
   return false;
 }
 
@@ -432,7 +437,6 @@ bool RBrDev::evalIndx_(UInt clmnindx1, UInt cndindx,int* indx)
 void RBrDev::mostSimilarNode_()
 {
   double hvalprev,hvalcur;
-  double thrshld = std::min(0.15,(20./numBinary_));
   //std::vector<UInt> occurNodeId(crntClmns_,0);
   UInt counter;
 #if SPEW
@@ -446,7 +450,7 @@ void RBrDev::mostSimilarNode_()
     for(unsigned int h=0;h<hash_;h++){
       hvalcur =hashValue_[hash_*crntClmns_+ h] ;
       hvalprev = hashValue_[hash_*j + h];
-      if(hvalprev >= hvalcur*(1-thrshld) && hvalprev <= hvalcur*(1+thrshld))
+      if(hvalprev >= hvalcur*(1-thrshldSim_) && hvalprev <= hvalcur*(1+thrshldSim_))
         counter++;
     }
   if(counter>hash_-1){
@@ -485,6 +489,7 @@ BrCandPtr RBrDev::simNodeHash_(double objVl,UInt nodeId, bool* flagsumzero,
 
   // clear the binrslt_ 
   binrslt_.clear();
+
   // Update table by computing  hash values
   timer_->start();
   updateTable_(objVl);
@@ -496,11 +501,11 @@ BrCandPtr RBrDev::simNodeHash_(double objVl,UInt nodeId, bool* flagsumzero,
      return null_cand;
   }
 #if SPEW
-    logger_->msgStream(LogDebug) << me_ << "objVal at the current node "
-       <<NodeIdCollect_[crntClmns_] <<" is "<< LbValCollect_[crntClmns_]<<std::endl;
+  logger_->msgStream(LogDebug) << me_ << "objVal at the current node "
+     <<NodeIdCollect_[crntClmns_] <<" is "<< LbValCollect_[crntClmns_]<<std::endl;
 
-    logger_->msgStream(LogDebug) << me_ << "objVal at the node "
-       <<NodeIdCollect_[crntClmns_-1] <<" is "<< LbValCollect_[crntClmns_-1]<<std::endl;
+  logger_->msgStream(LogDebug) << me_ << "objVal at the node "
+     <<NodeIdCollect_[crntClmns_-1] <<" is "<< LbValCollect_[crntClmns_-1]<<std::endl;
 #endif
 
   //Compute similar nodes to the current node 
@@ -526,11 +531,8 @@ BrCandPtr RBrDev::simNodeHash_(double objVl,UInt nodeId, bool* flagsumzero,
       std::vector<unsigned int> tempVctr;
       clmnindx = binrslt_.at(i);
       if (clmnindx == -1) {continue;}
-     // std::copy(scoreIndxMat_.begin() + clmnindx*maxStrongCands_, scoreIndxMat_.begin() +
-//		 (clmnindx+1)*maxStrongCands_, std::back_inserter(tempVctr));
 
       if (evalIndx_(clmnindx, cndindx, &varindx)) {
-//	std::cout<<"indexing "<<varindx<<" prev clmn number "<<clmnindx << "current clmn number "<< crntClmns_<<std::endl;
         sumScored = sumScored + scoreMatd_[clmnindx*maxStrongCands_ + varindx];
         sumScoreu = sumScoreu + scoreMatu_[clmnindx*maxStrongCands_ + varindx];
         foundflag = true;
@@ -623,8 +625,9 @@ void RBrDev::initialize(RelaxationPtr rel)
   lastStrBranched_ = UIntVector(n,20000);
   timesUp_ = std::vector<UInt>(n,0); 
   timesDown_ = std::vector<UInt>(n,0); 
-  clmn_= 1000; //change made from 150 to 100 see SimpledevCrln_16_2_reduced_limit_threshold
   UInt maxsimclmn = std::max(100,int(numBinary_/20));
+  //thrshldSim_ = std::min(0.15,(10./numBinary_));
+  thrshldSim_ = 5.75/numBinary_;
   binrslt_ = UIntVector(maxsimclmn,-1); //currently minimum 50 similar nodes are allowable
   nvarCands_.reserve(n);
   brnchngCands_.reserve(n);

@@ -299,7 +299,6 @@ bool evalIndx_(UInt clmnindx,UInt bstscrIndex,int* indx);
   UInt maxDepth_;
 /*Declaration for featureMat_ 
  */
-  UInt clmn_;
   UInt crntClmns_;
   UInt numBinary_;
   UInt hash_;
@@ -407,10 +406,14 @@ bool evalIndx_(UInt clmnindx,UInt bstscrIndex,int* indx);
   DoubleVector DecayParam_;
   /// How many times before we assume that the pseudo costs are reliable.
   UInt thresh_;
+ /// maximum number of nodes allowed to store in the similarity matrix: column of the matrix table
+  UInt clmn_;
 
   /// Should we use the objective value to deduce a modification.
   bool trustCutoff_;
 
+
+  double thrshldSim_;
   /**
    * \brief A vector of candidates that will need strong branching. These
    * candidates will be arranged in some order of preferance.
