@@ -37,6 +37,7 @@ namespace Minotaur {
     /// For logging
     static const std::string me_;
 
+    int writeCO_(ProblemPtr p, std::ofstream &of);
     int writeHeader_(ProblemPtr p, std::ofstream &of);
   };
 }

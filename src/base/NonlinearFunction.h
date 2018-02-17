@@ -146,6 +146,15 @@ namespace Minotaur {
     virtual void  finalHessStor(const LTHessStor *stor) = 0;
 
     /**
+     * \brief Return a string in AMPL's .nl format (postfix notation) of this
+     * nonlinear function.
+     *
+     * param [out] err 0 if no errors were encountered. <BR>
+     * \return Return the string.
+     */
+    virtual std::string getNlString(int *err);
+
+    /**
      * \brief If a variable is fixed at a given value and removed, what is
      * the constant (offset) needed to be added.
      *

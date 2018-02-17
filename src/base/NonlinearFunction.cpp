@@ -45,6 +45,12 @@ void NonlinearFunction::computeBounds(double *lb, double *ub, int *error)
 }
 
 
+std::string NonlinearFunction::getNlString(int *)
+{
+  return "";
+}
+
+
 FunctionType NonlinearFunction::getType() const
 {
   return Nonlinear;

@@ -14,6 +14,7 @@
 
 #include <cmath>
 #include <iostream>
+#include <sstream>
 #include <stack>
 
 #include "MinotaurConfig.h"
@@ -727,6 +728,17 @@ double CGraph::getFixVarOffset(VariablePtr, double)
 UInt CGraph::getNumNodes()
 {
   return aNodes_.size();
+}
+
+
+std::string CGraph::getNlString(int *err)
+{
+  std::stringstream s;
+  s << "helloworld" << std::endl;
+  // if (oNode_) {
+  //   oNode_->writeSubNl(s, err);
+  // }
+  return s.str();
 }
 
 

@@ -368,6 +368,8 @@ public:
   /// Print the function expression at current node and the sub-tree.
   void writeSubExp(std::ostream &out) const;
 
+  void writeSubNl(std::stringstream &s, int *err) const;
+
 protected:
   bool b_;        /// Boolean flag used in finding hessian sparsity
   CNode **child_; /// array of size numChild_ + 1. The last pointer is a null

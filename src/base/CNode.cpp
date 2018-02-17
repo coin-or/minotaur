@@ -15,6 +15,7 @@
 #include <cerrno>
 #include <cmath>
 #include <iostream>
+#include <sstream>
 
 #include "MinotaurConfig.h"
 #include "CNode.h"
@@ -1914,6 +1915,196 @@ void CNode::write(std::ostream &out) const
     << "opcode = " << op_ << std::endl
     << "value = " << val_ << std::endl
     << "\n";
+}
+
+
+void CNode::writeSubNl(std::stringstream &s, int *err) const
+{
+  switch (op_) {
+  case (OpAbs):
+    s << "abs(";
+    l_->writeSubNl(s, err);
+    s << ")";
+    break;
+  case (OpAcos):
+    s << "acos(";
+    l_->writeSubNl(s, err);
+    s << ")";
+    break;
+  case (OpAcosh):
+    s << "acosh(";
+    l_->writeSubNl(s, err);
+    s << ")";
+    break;
+  case (OpAsin):
+    s << "asin(";
+    l_->writeSubNl(s, err);
+    s << ")";
+    break;
+  case (OpAsinh):
+    s << "asinh(";
+    l_->writeSubNl(s, err);
+    s << ")";
+    break;
+  case (OpAtan):
+    s << "atan(";
+    l_->writeSubNl(s, err);
+    s << ")";
+    break;
+  case (OpAtanh):
+    s << "atanh(";
+    l_->writeSubNl(s, err);
+    s << ")";
+    break;
+  case (OpCeil):
+    s << "ceil(";
+    l_->writeSubNl(s, err);
+    s << ")";
+    break;
+  case (OpCos):
+    s << "cos(";
+    l_->writeSubNl(s, err);
+    s << ")";
+    break;
+  case (OpCosh):
+    s << "cosh(";
+    l_->writeSubNl(s, err);
+    s << ")";
+    break;
+  case (OpCPow):
+    s << l_->val_ << "^(";
+    r_->writeSubNl(s, err);
+    s << ")";
+    break;
+  case (OpDiv):
+    s << "(";
+    l_->writeSubNl(s, err);
+    s << "/";
+    r_->writeSubNl(s, err);
+    s << ")";
+    break;
+  case (OpExp):
+    s << "exp(";
+    l_->writeSubNl(s, err);
+    s << ")";
+    break;
+  case (OpFloor):
+    s << "floor(";
+    l_->writeSubNl(s, err);
+    s << ")";
+    break;
+  case (OpIntDiv):
+    s << "intdiv(";
+    l_->writeSubNl(s, err);
+    r_->writeSubNl(s, err);
+    s << ")";
+    break;
+  case (OpLog):
+    s << "log(";
+    l_->writeSubNl(s, err);
+    s << ")";
+    break;
+  case (OpLog10):
+    s << "log10(";
+    l_->writeSubNl(s, err);
+    s << ")";
+    break;
+  case (OpMinus):
+    s << "(";
+    l_->writeSubNl(s, err);
+    s << " - ";
+    r_->writeSubNl(s, err);
+    s << ")";
+    break;
+  case (OpMult):
+    s << "(";
+    l_->writeSubNl(s, err);
+    s << " * ";
+    r_->writeSubNl(s, err);
+    s << ")";
+    break;
+  case (OpNone):
+    s << "OpNone()";
+    break;
+  case (OpNum):
+    s << d_;
+    break;
+  case (OpPlus):
+    s << "(";
+    l_->writeSubNl(s, err);
+    s << " + ";
+    r_->writeSubNl(s, err);
+    s << ")";
+    break;
+  case (OpPow):
+    s << "(";
+    l_->writeSubNl(s, err);
+    s << ")^(";
+    r_->writeSubNl(s, err);
+    s << ")";
+    break;
+  case (OpPowK):
+    s << "(";
+    l_->writeSubNl(s, err);
+    s << ")^" << r_->val_;
+    break;
+  case (OpRound):
+    s << "round(";
+    l_->writeSubNl(s, err);
+    s << ")";
+    break;
+  case (OpSin):
+    s << "sin(";
+    l_->writeSubNl(s, err);
+    s << ")";
+    break;
+  case (OpSinh):
+    s << "sinh(";
+    l_->writeSubNl(s, err);
+    s << ")";
+    break;
+  case (OpSqr):
+    s << "(";
+    l_->writeSubNl(s, err);
+    s << ")^2";
+    break;
+  case (OpSqrt):
+    s << "sqrt(";
+    l_->writeSubNl(s, err);
+    s << ")";
+    break;
+  case (OpSumList):
+    s << "(";
+    for (UInt i=0; i<numChild_; ++i) {
+      child_[i]->writeSubNl(s, err);
+      if (i<numChild_-1) {
+        s << " + ";
+      }
+    }
+    s << ")";
+    break;
+  case (OpTan):
+    s << "tan(";
+    l_->writeSubNl(s, err);
+    s << ")";
+    break;
+  case (OpTanh):
+    s << "tanh(";
+    l_->writeSubNl(s, err);
+    s << ")";
+    break;
+  case (OpUMinus):
+    s << "-";
+    s << "(";
+    l_->writeSubNl(s, err);
+    s << ")";
+    break;
+  case (OpVar):
+    s << v_->getName();
+    break;
+  default:
+    break;
+  }
 }
 
 
