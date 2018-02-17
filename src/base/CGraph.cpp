@@ -734,10 +734,9 @@ UInt CGraph::getNumNodes()
 std::string CGraph::getNlString(int *err)
 {
   std::stringstream s;
-  s << "helloworld" << std::endl;
-  // if (oNode_) {
-  //   oNode_->writeSubNl(s, err);
-  // }
+  if (oNode_) {
+    oNode_->writeSubNl(s, err);
+  }
   return s.str();
 }
 

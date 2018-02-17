@@ -1083,7 +1083,7 @@ Minotaur::CNode *AMPLInterface::getCGraph_(expr *e_ptr,
     break;
   case (OP_atanh):
     lchild = getCGraph_(e_ptr->L.e, cgraph, instance);
-    n = cgraph->newNode(Minotaur::OpTanh, lchild, 0);
+    n = cgraph->newNode(Minotaur::OpAtanh, lchild, 0);
     break;
   case (OP_atan2):
     lchild = getCGraph_(e_ptr->L.e, cgraph, instance);

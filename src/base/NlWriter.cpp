@@ -20,24 +20,27 @@
 #include "Environment.h"
 #include "Function.h"
 #include "Jacobian.h"
+#include "LinearFunction.h"
 #include "Logger.h"
 #include "NlWriter.h"
 #include "NonlinearFunction.h"
+#include "Objective.h"
 #include "Option.h"
 #include "Problem.h"
-#include "Objective.h"
 #include "ProblemSize.h"
 #include "Variable.h"
 
 #define SPEW 1
 
 // TODO: Implement obj/constraint writing when both nlf and qf are available.
+// TODO: Test linear objective with constant
 
 using namespace Minotaur;
 
 const std::string NlWriter::me_ = "NlWriter: "; 
 
-NlWriter::NlWriter() 
+NlWriter::NlWriter(EnvPtr env) 
+: env_(env)
 {
 }
 
@@ -52,15 +55,17 @@ int NlWriter::write(ProblemPtr p, const std::string fname)
   std::ofstream of;
 
   p->prepareForSolve();
-  p->write(std::cout);
   of.open(fname.c_str());
   if (!of.is_open()) {
-    std::cerr << "cannot open nl file " << fname << " for writing";
+    env_->getLogger()->errStream() << me_ << "could not open file " << fname
+                                   << " for writing" << std::endl;
     return 1;
   } 
 
-  writeHeader_(p, of);
-  writeCO_(p, of); // sections C, O of constraints and objective
+  header_(p, of);
+  co_(p, of); // sections C, O for constraints and objective
+  rb_(p, of); // sections r, b for bounds
+  kjg_(p,of); // sections k, G, J for sparsity and linear part
 
   of.close();
 
@@ -68,9 +73,32 @@ int NlWriter::write(ProblemPtr p, const std::string fname)
 }
 
 
-int NlWriter::writeCO_(ProblemPtr p, std::ofstream &of)
+int NlWriter::exp_(std::ofstream &of, QuadraticFunctionPtr qf, NonlinearFunctionPtr nlf)
+{
+  int err = 0;
+  std::string str;
+  if (nlf && qf) {
+    env_->getLogger()->errStream() << me_ << "writing qf not implemented yet!"
+                                   << std::endl;
+  } else if (nlf) {
+    str = nlf->getNlString(&err);
+    if (0 == err) {
+      of << str;
+    } 
+  } else if (qf) {
+    env_->getLogger()->errStream() << me_ << "writing qf not implemented yet!"
+                                   << std::endl;
+  } else {
+    of << "n0" << std::endl;
+  }
+  return err;
+}
+
+
+int NlWriter::co_(ProblemPtr p, std::ofstream &of)
 {
   ConstConstraintPtr c;
+  ObjectivePtr obj;
   ConstVariablePtr v;
   int cnt;
   QuadraticFunctionPtr qf;
@@ -87,22 +115,33 @@ int NlWriter::writeCO_(ProblemPtr p, std::ofstream &of)
     of << "C" << cnt << std::endl;
     qf = c->getQuadraticFunction();
     nlf = c->getNonlinearFunction();
-    if (nlf && qf) {
-      assert(!"not implemented yet!");
-    } else if (nlf) {
-      str = nlf->getNlString(&err);
-      of << str;
-    } else if (qf) {
-    } else {
-      of << "n0" << std::endl;
+    err = exp_(of, qf, nlf);
+    if (0!=err) {
+      env_->getLogger()->errStream() << me_ << "error in writing constraint "
+                                     << c->getName() << std::endl;
+      return err;
     }
   }
 
-  return 0;
+  // objective
+  obj = p->getObjective();
+  if (obj) {
+    int sense = (obj->getObjectiveType() == Minimize)? 0 : 1;
+    of << "O0 " << sense << std::endl;
+    qf = obj->getQuadraticFunction();
+    nlf = obj->getNonlinearFunction();
+    err = exp_(of, qf, nlf);
+    if (0!=err) {
+      env_->getLogger()->errStream() << me_ << "error in writing objective"
+                                     << std::endl;
+    }
+  }
+
+  return err;
 }
 
 
-int NlWriter::writeHeader_(ProblemPtr p, std::ofstream &of)
+int NlWriter::header_(ProblemPtr p, std::ofstream &of)
 {
 // g3 0 1 0        # problem Convex_MINLP
 //  80 111 1 0 40  # vars, constraints, objectives, ranges, eqns
@@ -249,6 +288,132 @@ int NlWriter::writeHeader_(ProblemPtr p, std::ofstream &of)
   return 0;
 }
 
+
+int NlWriter::kjg_(ProblemPtr p, std::ofstream &of)
+{
+  ConstConstraintPtr c;
+  FunctionPtr f;
+  LinearFunctionPtr lf;
+  int nz = p->getJacobian()->getNumNz();
+  UInt *rinds = new UInt[nz];
+  UInt *cinds = new UInt[nz];
+  UInt *ccnt  = new UInt[p->getNumVars()];
+  int tnz;
+  ObjectivePtr obj;
+
+
+  of << "k" << p->getNumVars()-1 << std::endl;
+  // we need to count appearance of each variable. 
+  for (UInt i=0; i<p->getNumVars(); ++i) {
+    ccnt[i] = 0;
+  }
+
+  if (nz>0) {
+    p->getJacobian()->fillRowColIndices(rinds, cinds);
+
+    for (int i=0; i<nz; ++i) {
+      ++ccnt[cinds[i]];
+    }
+  }
+
+  tnz = 0;
+  for (UInt i=0; i<p->getNumVars()-1; ++i) {
+    of << ccnt[i]+tnz << std::endl;
+    tnz = tnz+ccnt[i];
+  }
+
+  // Now write J
+  tnz = 0;
+  for (ConstraintConstIterator citer=p->consBegin(); citer != p->consEnd();
+       ++citer) {
+    c = *citer;
+    f = c->getFunction();
+    if (!f) {
+      continue;
+    }
+    of << "J" << c->getIndex() << " " << f->getNumVars() << std::endl;
+    lf = c->getLinearFunction();
+    if (lf) {
+      for (VarSetConstIter it=f->varsBegin(); it!=f->varsEnd(); ++it) {
+        of << (*it)->getIndex() << " " << lf->getWeight(*it) << std::endl;
+      }
+    } else {
+      for (VarSetConstIter it=f->varsBegin(); it!=f->varsEnd(); ++it) {
+        of << (*it)->getIndex() << " " << 0 << std::endl;
+      }
+    }
+  }
+
+  // write G
+  obj = p->getObjective();
+  if (obj && obj->getFunction()) {
+    f = obj->getFunction();
+    of << "G0" << " " << f->getNumVars() << std::endl;
+    lf = obj->getLinearFunction();
+    if (lf) {
+      for (VarSetConstIter it=f->varsBegin(); it!=f->varsEnd(); ++it) {
+        of << (*it)->getIndex() << " " << lf->getWeight(*it) << std::endl;
+      }
+    } else {
+      for (VarSetConstIter it=f->varsBegin(); it!=f->varsEnd(); ++it) {
+        of << (*it)->getIndex() << " " << 0 << std::endl;
+      }
+    }
+  }
+
+  delete [] rinds;
+  delete [] cinds;
+  delete [] ccnt;
+  return 0;
+}
+
+
+int NlWriter::rb_(ProblemPtr p, std::ofstream &of)
+{
+  ConstConstraintPtr c;
+  ConstVariablePtr v;
+  double lb, ub;
+
+  if (p->getNumCons()>0) { 
+    of << "r" << std::endl;
+  }
+
+  for (ConstraintConstIterator citer=p->consBegin(); citer != p->consEnd();
+       ++citer) {
+    c = *citer;
+    lb = c->getLb();
+    ub = c->getUb();
+    if (lb > -INFINITY && ub < INFINITY && lb==ub) {
+      of << 4 << " " << lb << std::endl;
+    } else if (lb > -INFINITY && ub < INFINITY) {
+      of << 0 << " " << lb << " " << ub << std::endl;
+    } else if (ub < INFINITY) {
+      of << 1 << " " << ub << std::endl;
+    } else if (lb > -INFINITY) {
+      of << 2 << " " << lb << std::endl;
+    } else {
+      of << 3 << std::endl;
+    }
+  }
+
+  of << "b" << std::endl;
+  for (VariableConstIterator viter=p->varsBegin(); viter != p->varsEnd();
+       ++viter) {
+    v = *viter;
+    lb = v->getLb();
+    ub = v->getUb();
+    if (lb > -INFINITY && ub < INFINITY) {
+      of << 0 << " " << lb << " " << ub << std::endl;
+    } else if (ub < INFINITY) {
+      of << 1 << " " << ub << std::endl;
+    } else if (lb > -INFINITY) {
+      of << 2 << " " << lb << std::endl;
+    } else {
+      of << 3 << std::endl;
+    }
+  }
+  return 0;
+}
 
 // Local Variables: 
 // mode: c++ 
