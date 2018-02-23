@@ -19,8 +19,8 @@
 namespace Minotaur {
 
   /**
-   * The MILPEengine class is an abstract class for interfacing MILP solvers (like
-   * CBC). A derived class must implement calls to the MILP solver for 
+   * The MILPEengine class is an abstract class for interfacing MILP solvers
+   * (like CBC). A derived class must implement calls to the MILP solver for 
    * the methods described here.
    * 
    */
@@ -36,7 +36,7 @@ namespace Minotaur {
       /// Destructor must be implemented if memory needs to be freed
       virtual ~MILPEngine() {};
   };
-  typedef boost::shared_ptr<LPEngine> MILPEnginePtr;
+  typedef boost::shared_ptr<MILPEngine> MILPEnginePtr;
 }
 
 #endif

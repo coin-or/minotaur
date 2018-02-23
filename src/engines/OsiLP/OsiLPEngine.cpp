@@ -121,16 +121,14 @@ OsiLPEngine::OsiLPEngine()
 {
   logger_ = (LoggerPtr) new Logger(LogInfo);
 #if USE_OSILP 
+#if MNTROSICLP
+  // since env is not set, assume clp as the solver
   osilp_ = newSolver_(OsiClpEngine);
-#else 
-#error Need to set USE_OSILP
-#endif
   osilp_->setHintParam(OsiDoReducePrint);
   osilp_->messageHandler()->setLogLevel(0); 
-#if MNTROSICLP
-  OsiClpSolverInterface *osiclp = (OsiClpSolverInterface *)
-    (dynamic_cast<OsiClpSolverInterface*>(osilp_));
-  osiclp->setupForRepeatedUse();
+#endif
+#else 
+#error Need to set USE_OSILP
 #endif
 }
 
@@ -172,9 +170,11 @@ OsiLPEngine::OsiLPEngine(EnvPtr env)
   timer_ = env->getNewTimer();
 
 #if MNTROSICLP
-  OsiClpSolverInterface *osiclp = (OsiClpSolverInterface *)
-    (dynamic_cast<OsiClpSolverInterface*>(osilp_));
-  osiclp->setupForRepeatedUse();
+  if (OsiClpEngine == eName_) {
+    OsiClpSolverInterface *osiclp = (OsiClpSolverInterface *)
+      (dynamic_cast<OsiClpSolverInterface*>(osilp_));
+    osiclp->setupForRepeatedUse();
+  }
 #endif
 }
 

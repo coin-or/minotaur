@@ -20,10 +20,12 @@ namespace Minotaur {
 
   class Engine;
   class LPEngine;
+  class MILPEngine;
   class NLPEngine;
   class QPEngine;
   typedef boost::shared_ptr<Engine> EnginePtr;
   typedef boost::shared_ptr<LPEngine> LPEnginePtr;
+  typedef boost::shared_ptr<MILPEngine> MILPEnginePtr;
   typedef boost::shared_ptr<NLPEngine> NLPEnginePtr;
   typedef boost::shared_ptr<QPEngine> QPEnginePtr;
 
@@ -43,6 +45,9 @@ namespace Minotaur {
 
       /// Get an LP Engine
       LPEnginePtr getLPEngine();
+
+      /// Get an MILP Engine
+      MILPEnginePtr getMILPEngine();
 
       /// Get a QP Engine. Returns NULL if none available.
       QPEnginePtr getQPEngine();
