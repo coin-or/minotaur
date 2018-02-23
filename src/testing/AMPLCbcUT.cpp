@@ -59,7 +59,7 @@ void AMPLCbcUT::testCbc()
   status = e_->solve();
   CPPUNIT_ASSERT(status == ProvenOptimal);
   CPPUNIT_ASSERT(e_->getStatus() == ProvenOptimal);
-  CPPUNIT_ASSERT(fabs(e_->getSolutionValue()-1.0) < 1e-5);
+  CPPUNIT_ASSERT(fabs(e_->getSolutionValue()+1.0) < 1e-5);
 
   inst->clear();
 }

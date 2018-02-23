@@ -292,7 +292,7 @@ void CbcEngine::setIterationLimit(int limit)
 EngineStatus CbcEngine::solve()
 {
   CbcModel *model = 0;
-  const char * cbcargs[]={"driver3","-solve","-quit"};
+  const char * cbcargs[]={"driver3", "-logLevel", "0", "-solve", "-quit"};
 
   timer_->start();
   if (true==objChanged_ || true==bndChanged_ || true==consChanged_) {
