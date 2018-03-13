@@ -30,8 +30,6 @@
 #include "ProblemSize.h"
 #include "Variable.h"
 
-#define SPEW 1
-
 // TODO: Implement obj/constraint writing when both nlf and qf are available.
 // TODO: Test linear objective with constant
 

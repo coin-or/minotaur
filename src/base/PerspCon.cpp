@@ -396,9 +396,12 @@ bool PerspCon::evalConstraint(ConstConstraintPtr cons, VariablePtr& binvar)
 
     int error = 0;
     double act =0;
-    double initsol [p_->getNumVars()] = {0}; 
-    const double *x = initsol;
+    double *x = new double[p_->getNumVars()]; 
     FunctionPtr f = cons->getFunction();
+
+    for (UInt i=0; i<p_->getNumVars(); ++i) {
+      x[i] = 0;
+    }
 
     for (VarSetConstIterator it= binaries->begin(); it!=binaries->end(); ++it, index++) {
       binvar = *it;
@@ -412,13 +415,16 @@ bool PerspCon::evalConstraint(ConstConstraintPtr cons, VariablePtr& binvar)
           act = f->eval(x, &error);
           if (act > cu){
             assert(!"PerspCutHandler: problem is infeasible");
+            delete [] x;
             return false;
           } else {
             st_ = 1;
+            delete [] x;
             return true;
           }
         } else if(boundsok){
           st_ = 2;
+          delete [] x;
           return true;
         }
       } else {
@@ -427,14 +433,17 @@ bool PerspCon::evalConstraint(ConstConstraintPtr cons, VariablePtr& binvar)
             act = f->eval(x, &error);
             if (act > cu){
               assert(!"PerspCutHandler: problem is infeasible");
+              delete [] x;
               return false;
             } else {
               st_ = 1;
+              delete [] x;
               return true;
             }
           }
       }
     }
+    delete [] x;
     return false;
   } else {
     boundsok = checkAllVars(cons, binvar, VariablePtr());

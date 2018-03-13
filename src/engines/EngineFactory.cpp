@@ -19,6 +19,10 @@
 #include "Option.h"
 #include "QPEngine.h"
 
+#ifdef USE_CBC
+#include "CbcEngine.h"
+#endif
+
 #ifdef USE_IPOPT
 #include "IpoptEngine.h"
 #endif
@@ -69,6 +73,17 @@ LPEnginePtr EngineFactory::getLPEngine()
   }
 #endif
   return (LPEnginePtr());
+}
+
+
+MILPEnginePtr EngineFactory::getMILPEngine()
+{
+#ifdef USE_CBC
+  if (env_->getOptions()->findString("milp_engine")->getValue()=="Cbc") {
+    return ((CbcEnginePtr) new CbcEngine(env_));
+  }
+#endif
+  return (MILPEnginePtr());
 }
 
 
