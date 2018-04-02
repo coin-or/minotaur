@@ -8,7 +8,8 @@
  * \file QGHandler.h
  * \Briefly declare a derived class of Handler that handles convex nonlinear constraints
  * of a problem by using Quesada-Grossmann algorithm.
- * \Author Ashutosh Mahajan, Argonne National Laboratory
+ * \Authors Ashutosh Mahajan and Meenarli Sharma, Indian Institute of
+ * Techonology Bombay.
  */
 
 #ifndef MINOTAURQGHANDLER_H
@@ -50,19 +51,7 @@ private:
   /// Tolerance for checking integrality (should be obtained from env).
   double intTol_;
 
- 	/**
-   * Was this handler used to check the feasibility. We generate cuts
-   * only if we checked the feasibility and it is false.
-   */
-//  bool isFeas_; //MS: removed
-
- 	/**
-   * For any linearization constraint that we generate, all 
-   * coefficients with absolute value less than it are assumed zero.
-   */
-  //const double linCoeffTol_;
-
-	/// Log.
+  /// Log.
   LoggerPtr logger_;
 
   /// For log:
@@ -71,7 +60,7 @@ private:
   /// Pointer to original problem.
   ProblemPtr minlp_;
 
-	/// Vector of constraints.
+  /// Vector of constraints.
   std::vector<ConstraintPtr> nlCons_;
 
   /// NLP/QP Engine used to solve the NLP/QP relaxations.
@@ -79,16 +68,15 @@ private:
 
   /// Modifications done to NLP before solving it.
   std::stack<Modification *> nlpMods_;
+  
+  /// Modifications done to perspective amenable constraints.
+  std::stack<Modification *> prMods_;
 
-	/// Status of the NLP/QP engine.
+  /// Status of the NLP/QP engine.
   EngineStatus nlpStatus_;
 
-	  /// Warm-start information for solving NLPs.
+  /// Warm-start information for solving NLPs.
   WarmStartPtr nlpWs_;
-
-  UInt numCuts_;
-
-  int numvars_;
 
   /**
    * When the objective function is nonlinear, we need to save it, so
@@ -103,7 +91,7 @@ private:
    */
   VariablePtr objVar_;
 
-	/// Is the objective function nonlinear?
+  /// Is the objective function nonlinear?
   bool oNl_;
 
   /// Pointer to original problem.
@@ -117,16 +105,19 @@ private:
   /// Tolerance for accepting a new solution value: relative threshold.
   double solRelTol_;
 
-  /// Tolerance for checking constraint violation.
- // double eTol_;
-
-  /// Tolerance for checking linear cut violation.
- // double eLinTol_;
-
   /// Statistics.
   QGStats *stats_;
 
-
+  /// Vector of perspective constraint pointers
+  std::vector<ConstConstraintPtr> cpr_;
+  
+  /* Vector of pointers to binary variables associated with constraints
+   * amenable to PR.
+   */
+  std::vector<ConstVariablePtr> bpr_;
+  
+  /// Vector of struture types of constraints amenable to PR.
+  std::vector<char> spr_;
   
 public:
   /// Empty constructor.
@@ -141,14 +132,18 @@ public:
    * \param [in] nlpe The engine to solve nonlinear continuous problem.
    */
   QGHandler(EnvPtr env, ProblemPtr minlp, EnginePtr nlpe); 
-
+  
+  QGHandler(EnvPtr env, ProblemPtr minlp, EnginePtr nlpe,
+            std::vector<ConstConstraintPtr> conpr, 
+            std::vector<ConstVariablePtr> bpr, std::vector<char> spr);
+  
   /// Destroy.
   ~QGHandler();
    
  /// Does nothing.
   Branches getBranches(BrCandPtr, DoubleVector &, RelaxationPtr,
                        SolutionPoolPtr)
-  {return Branches();}; // NULL
+  {return Branches();};
 
   /// Does nothing.
   void getBranchingCandidates(RelaxationPtr, 
@@ -158,7 +153,7 @@ public:
   /// Does nothing.
   ModificationPtr getBrMod(BrCandPtr, DoubleVector &, RelaxationPtr,
                            BranchDirection)
-  {return ModificationPtr();}; // NULL
+  {return ModificationPtr();};
 
        
   // Base class method. 
@@ -202,13 +197,13 @@ public:
   void writeStats(std::ostream &out) const;
 
 private:
-	/**
+  /**
    * Find the linearization of nonlinear functions at point x* and add
    * them to the relaxation only (not to the lp engine)
    */
   void addInitLinearX_(const double *x);
 
-	/**
+  /**
    * Add cuts to cut out an integer point not satisfied by nonlinear
    * constraints or objective.
    */
@@ -220,6 +215,12 @@ private:
    * before solving NLP.
    */
   void fixInts_(const double *x);
+  
+   /**
+   * Modify, before solving NLP, constraints amenable to perspective 
+   * reformulation if the associated binary variable takes zero value.
+   */ 
+  void fixCons_(ConstConstraintPtr c);
 
  /**
    * Solve the NLP relaxation of the MINLP and add linearizations about
@@ -232,16 +233,17 @@ private:
    * Obtain the linear function (lf) and constant (c) from the
    * linearization of function f at point x.
    */
-	void linearAt_(FunctionPtr f, double fval, const double *x, 
+  void linearAt_(FunctionPtr f, double fval, const double *x, 
                  double *c, LinearFunctionPtr *lf);
 
   /** 
    * When the objective function is nonlinear, we need to replace it with
    * a single variable.
    */
-  void linearizeObj_(RelaxationPtr rel);
+  void linearizeObj_();
+ 
 
-	/// Add all linearizations at point x that violate inf_x.
+  /// Add all linearizations at point x that violate inf_x.
   int OAFromPoint_(const double *x, const double *inf_x,
                              SeparationStatus *status);
 
@@ -252,20 +254,23 @@ private:
    * Create the initial relaxation. It is called from relaxInitFull and
    * relaxInitInc functions.
    */
-  void relax_(RelaxationPtr rel, bool *is_inf);
+  void relax_(bool *is_inf);
 
   /// Solve the nlp.
   void solveNLP_();
 
-	/// Undo the changes done in fixInts_().
+
+  /// Undo the changes done in fixInts_().
   void unfixInts_();
+
+  /// Undo the changes done in fixCons_().
+  void unfixCons_();
 
   /**
    * Update the upper bound. XXX: Needs proper integration with
    * Minotaur's Handler design. 
    */
-  void updateUb_(SolutionPoolPtr s_pool, double *nlp_val, 
-                 bool *sol_found);
+  void updateUb_(SolutionPoolPtr s_pool, double *nlp_val, bool *sol_found);
 
   };
 

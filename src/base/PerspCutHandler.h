@@ -34,14 +34,16 @@ namespace Minotaur {
   PerspCutHandler();
   
   /// Constructor.
-  PerspCutHandler(EnvPtr env, ProblemPtr problem);
+  PerspCutHandler(EnvPtr env, ProblemPtr problem, std::vector<ConstConstraintPtr> cpr, 
+            std::vector<ConstVariablePtr> bpr, std::vector<char> spr,
+            std::vector<std::vector<double> > nviv,
+            std::vector<std::vector<double> > lviv);
 
   /// Destructor.
   ~PerspCutHandler();
 
   /// Generates perspective cuts.
-  LinearFunctionPtr generateCut(UInt relvars, ConstSolutionPtr sol,
-                                    ConstConstraintPtr c, ConstVariablePtr v); 
+  bool generateCut(RelaxationPtr rel, ConstSolutionPtr sol, UInt it); 
  
   /// Does nothing.
   virtual Branches getBranches(BrCandPtr, DoubleVector &,
@@ -62,24 +64,29 @@ namespace Minotaur {
   /// Returns name of the handler.
   std::string getName() const;
 
-  /// Generates Perspective cuts
-  LinearFunctionPtr gPCut(UInt relvars, ConstConstraintPtr c,
-                          ConstVariablePtr v, double *y);
+  /// Returns vector of perspective constraint pointers
+  std::vector<ConstConstraintPtr> getPRCons() {return cons_;};
+  
+  /// Returns vector of pointers to binary variables of perspective constraint
+  std::vector<ConstVariablePtr> getPRBinVar() {return binvar_;};
 
-  /// Checks feasibility of constraints amenable to PR at the given solution.
-  bool isFeasible(ConstSolutionPtr sol, RelaxationPtr relaxation,
-                  bool &should_prune, double &inf_meas);
-
-  /// Generates a list of constraints amenable to PR.
-  bool perspList();
+  std::vector<char> getPRStruct() {return sType_;};
  
-  /// Does nothing.
+  /// Checks feasibility of constraints amenable to PR at the given solution.
+  bool isFeasible(ConstSolutionPtr, RelaxationPtr, bool &, double &);
+  //{return true;};
+
+    /// Does nothing.
   SolveStatus presolve(PreModQ *, bool *) {return Finished;};
 
   /// Does nothing.
   virtual bool presolveNode(RelaxationPtr, NodePtr,
                             SolutionPoolPtr, ModVector &,
                             ModVector &) {return false;};
+
+  /// Generates variables for PR reformulation
+  double * prVars(ConstSolutionPtr sol, UInt rnv, UInt itn);
+
 
   /// Does nothing.
   void relaxInitFull(RelaxationPtr, bool * ) {};
@@ -111,10 +118,6 @@ private:
   /// Log.
   LoggerPtr logger_;
  
-  /// True if all constraints amenable to PR are satisfied at current solution
-  /// else false.
-  bool isFeas_;
-  
   /// Tolerance for accepting a new solution value: absolute threshold.
   double solAbsTol_;
   
@@ -130,15 +133,23 @@ private:
   /// For log:
   static const std::string me_;
   
-  /// Vector of pointers to perspective constraint.
+  ///Vector of perspective constraint pointers
   std::vector<ConstConstraintPtr> cons_;
   
-  /// Vector of pointers to binary variables controlling constraints amenable
-  /// to PR.
+  //Vector of pointers to binary variables of perspective constraints
   std::vector<ConstVariablePtr> binvar_;
 
-  /// Pointer to constraint amenable to PR.
-  PerspConPtr persplist_;
+  //Vector of pointers to structure type of perspective constraints
+  std::vector<char> sType_;
+  
+  //Vector of pointers to values to which variables in the nonlinear part of
+  //the constraints amenable to PR are fixed to
+  std::vector<std::vector<double> > nviv_;
+ 
+ //Vector of pointers to values to which variables in the linear part of
+ //the constraints amenable to PR are fixed to 
+  std::vector<std::vector<double> > lviv_;
+  
   };
 
 }

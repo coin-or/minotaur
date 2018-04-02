@@ -5,7 +5,8 @@
 //
 /**
  * \file PerspCon.h
- * \Declare base class PerspCon. 
+ * \brief Declare a base class PerspCon for identifying structures amenable 
+ * to perspective reformulation (PR) (mention the paper) 
  * \author Meenarli Sharma, Indian Institute of Technology Bombay 
 */
 
@@ -30,99 +31,129 @@ class PerspCon;
 typedef boost::shared_ptr<PerspCon> PerspConPtr;
 typedef boost::shared_ptr<const PerspCon> ConstPerspConPtr;
 
-/** 
- * This class identifies structure of type f(x,z) <= b, lz <= x <= uz, z={0,1} or
- *  f(x) <= b, lz <= x <= uz, z={0,1}, for perspective cut generation. 
- **/
 
 class PerspCon {
 public:
   /// Default constructor.
   PerspCon();
   
-  ///Constructs from the given problem
+  ///Constructs from the given problem.
   PerspCon(ProblemPtr p, EnvPtr env);
 
   /// Destructor.
   ~PerspCon();
 
-  /// Checks if the variables are bounded by only one binary variable.
-  bool checkAllVars(ConstConstraintPtr cons, ConstVariablePtr binvar,
-                    ConstVariablePtr initvar = VariablePtr(), UInt index = 0);
+  /*
+   * Checks if the variables in a constraint are bounded by given binary
+   * variable binvar.
+   */ 
+  bool boundBinVar(ConstConstraintPtr cons, VariablePtr& binvar);
 
-  /// Checks if the variables of nonlinear part are bounded by only one binary variable.
-  bool checkNVars(ConstConstraintPtr cons, ConstVariablePtr binvar);
-  bool checkLVars(ConstConstraintPtr cons, ConstVariablePtr binvar);
+  /*
+   * Checks if variables in the linear part of a constraint are bounded by
+   * the given binary variable.
+   */ 
+  std::vector<double> checkLVars(ConstConstraintPtr cons,
+                                 ConstVariablePtr binvar,
+                                 bool* lboundsok);
 
-  /// Checks and provide details if a given variable is bounded by binary variable.
-  bool checkVarBounds(ConstVariablePtr var, ConstVariablePtr binvar, bool pi=1);
+  /*
+   * Checks if variables in the nonlinear part of a constraint are bounded by 
+   * a given binary variable.
+   */ 
+  std::vector<double> checkNVars(ConstConstraintPtr cons,
+                                 ConstVariablePtr binvar,
+                                 bool* boundsok);
+
+
+  /// Checks if a variable is bounded by a given binary variable.
+  double checkVarBounds(ConstVariablePtr var, ConstVariablePtr binvar,
+                        bool* varbounded);
   
-  /// Checks if all the variables are continuous or at most one binary.
-  /// Otherwise, cannot generate perspective cuts.
-  bool checkVarTypes(ConstConstraintPtr cons, ConstVariablePtr& binvar, bool indi = 0);
-  bool checkVarTypes(ConstConstraintPtr cons);
+  /*
+   * Checks if a binary variable is present in the nonlinear part of the
+   * given constraint. 
+   */
+  bool checkVarTypes(ConstConstraintPtr cons, VarSetPtr binaries);
+  
+  /// Writes information related to perspective amenable constraints. 
+  void displayInfo();
 
-  /// Checks if a constraint is a Perspective constraint.
-  bool evalConstraint(ConstConstraintPtr cons,VariablePtr& binvar);
+  /// Checks if a constraint is amenable to PR.
+  void evalConstraint(ConstConstraintPtr cons,VariablePtr& binvar);
 
-  /// Generates list of perspective constraints for the original problem.
+  /// Generates list of constraints amenable to PR.
   void generateList();
 
-  /// Returns a pointer to the vector that contains binary variable of
-  /// perspective constraints.
-  std::vector<ConstVariablePtr> getConsBinVar() const {return binVar_;}
 
-  /// Returns total number of perspective constraints.
-  UInt getNumPersp() const {return cList_.size();}
+  /// Returns total number of PR.
+  UInt getNumPersp() const {return cons_.size();}
 
-  /// Returns a pointer to the vector that contains perspective constraints.
-  std::vector<ConstConstraintPtr> getPerspCons() const {return cList_;}
+  /* 
+   * Returns vector containing binary variables associated with constraints 
+   * amenable to PR.
+   */ 
+  std::vector<ConstVariablePtr> getPRBinVar() const {return binvar_;}
+
+  /// Returns a vector containing constraints amenable to PR.
+  std::vector<ConstConstraintPtr> getPRCons() const {return cons_;}
   
-  /// Returns status of perspective reformulation
-  // 1 is PR is carried out, 0 otherwise
+  /// Returns vector containing structure types of constraints amenable to PR.
+  std::vector<char> getPRStruct() const {return sType_;}
+   
+  /*
+   * Returns 1 if problem has at least one constraint amenable to PR,
+   * otherwise 0.
+   */  
   bool getStatus();
 
-  /// Finds binary variables that appear in a linear constraint (involving two
-  // terms) with variable var
-  void initialBinary(ConstVariablePtr var, VarSetPtr binaries);
-
-  /// Writes out information related to perspective constraints 
-  void displayInfo(const std::string);
+  /* Returns a vector containing values to which variables in the 
+   * linear part of the constraints amenable to PR are fixed to.
+   */
+  std::vector<std::vector<double> > getXLV() const {return lviv_;}
+ 
+  /* Returns a vector containing values to which variables in the 
+   * nonlinear part of the constraints amenable to PR are fixed to.
+   */
+  std::vector<std::vector<double> > getXNV() const {return nviv_;}
 
   private:
+  
   /// Environment.
   EnvPtr env_;
   
-  /// For log:
-  static const std::string me_;
-
-  ///Pointer to original problem
+  /// Pointer to original problem.
   ProblemPtr p_;
 
-  ///Log
+  /// Log
   LoggerPtr logger_;
 
+  /// For log.
+  static const std::string me_;
 
-  ///Vector of perspective constraint pointers
-  std::vector<ConstConstraintPtr> cList_;
+  /// Vector of struture types of constraints amenable to PR.
+  std::vector<char> sType_;
+
+  /// Vector of perspective constraint pointers
+  std::vector<ConstConstraintPtr> cons_;
   
-  //Vector of pointers to binary variables of perspective constraint
-  std::vector<ConstVariablePtr> binVar_;
-  
-  std::vector<UInt> sType_;
+  /* Vector of pointers to binary variables associated with constraints
+   * amenable to PR.
+   */
+  std::vector<ConstVariablePtr> binvar_;
 
-  ///Returns lower bounding constraints of continuous variables
-  std::vector<std::vector<std::string > > lbc_;
-
-  ///Returns upper bounding constraints of continuous variables
-  std::vector<std::vector<std::string > > ubc_;
-
-  std::vector<std::string > initl_;
-  std::vector<std::string > l_;
-  std::vector<std::string > u_;
-  std::vector<std::string > initu_;
-  UInt st_;
+  /// Vector of pointers to binary variable that are fixed to 1
+  std::vector<VariablePtr> fixbvar_;
  
+  /* Vector containing values to which variables in the 
+   * nonlinear part of a constraint amenable to PR are fixed to.
+   */ 
+  std::vector<std::vector<double> > nviv_;
+
+  /* Returns a vector containing values to which variables in the 
+   * linear part of a constraint amenable to PR are fixed to.
+   */
+  std::vector<std::vector<double> > lviv_;
 }; 
 
 }

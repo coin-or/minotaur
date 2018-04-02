@@ -6,10 +6,8 @@
 
 /**
  * \file PerspCutHandler.cpp
- * \brief declare PerspCutHandler class for handling constraints
- * amenable to perspective reformulation and generating perspective cuts
- *  whenever needed. 
- * \author Meenarli Sharma, Indian Institute of Technology
+ * \brief Declare PerspCutHandler class to generate perspective cuts.
+ * \author Meenarli Sharma, Indian Institute of Technology Bombay
  */
 
 #include <cmath>
@@ -19,39 +17,41 @@
 #include "PerspCutHandler.h"
 #include "LinearFunction.h"
 #include "CutManager.h"
+#include "Environment.h"
+#include "NonlinearFunction.h"
+#include "QuadraticFunction.h"
+#include "Relaxation.h"
+#include "Constraint.h"
 #include "Function.h"
 #include "Solution.h"
-#include "PerspCon.h"
 #include "Option.h"
 #include "Logger.h"
 #include "Node.h"
 
-# define SPEW 0
 using namespace Minotaur;
 
 typedef std::vector<ConstraintPtr>::const_iterator CCIter;
 const std::string PerspCutHandler::me_ = "PerspCutHandler: ";
 
-
 PerspCutHandler::PerspCutHandler()
-  : env_(EnvPtr()),
-    minlp_(ProblemPtr()),
-    isFeas_(true),
-    numCuts_(0)
-
+  : env_(EnvPtr()),  minlp_(ProblemPtr()), numCuts_(0), cons_(0), binvar_(0),
+  sType_(0), nviv_(0), lviv_(0)
 {
+  logger_ = (LoggerPtr) new Logger(LogDebug2);
   intTol_ = env_->getOptions()->findDouble("int_tol")->getValue();
   solAbsTol_ = env_->getOptions()->findDouble("solAbs_tol")->getValue();
   solRelTol_ = env_->getOptions()->findDouble("solRel_tol")->getValue();
-  logger_ = (LoggerPtr) new Logger(LogDebug2);
 }
 
 
-PerspCutHandler::PerspCutHandler(EnvPtr env, ProblemPtr minlp)
-  : env_(env),
-    minlp_(minlp),
-    isFeas_(true),
-    numCuts_(0)
+PerspCutHandler::PerspCutHandler(EnvPtr env, ProblemPtr minlp,
+                                 std::vector<ConstConstraintPtr> cpr,
+                                 std::vector<ConstVariablePtr> bpr,
+                                 std::vector<char> spr,
+                                 std::vector<std::vector<double> > nviv,
+                                 std::vector<std::vector<double> > lviv)
+  : env_(env), minlp_(minlp), numCuts_(0), cons_(cpr), binvar_(bpr),
+  sType_(spr), nviv_(nviv), lviv_(lviv)
 {
   intTol_ = env_->getOptions()->findDouble("int_tol")->getValue();
   solAbsTol_ = env_->getOptions()->findDouble("solAbs_tol")->getValue();
@@ -61,32 +61,122 @@ PerspCutHandler::PerspCutHandler(EnvPtr env, ProblemPtr minlp)
 }
 
 
-LinearFunctionPtr PerspCutHandler::generateCut(UInt rnv, ConstSolutionPtr s,
-                                     ConstConstraintPtr cp, ConstVariablePtr bp)
+bool PerspCutHandler::generateCut(RelaxationPtr rel, ConstSolutionPtr s,
+                                  UInt itn)
 {
- ConstVariablePtr cvp;
- const double * x = s->getPrimal();
- UInt binindex = bp->getIndex(), indexvar = 0;
- double sb = x[binindex], vsol = 0.0;
+  int  error = 0, errorgr = 0;
+  const double * x = s->getPrimal();
+  ConstVariablePtr bp = rel->getRelaxationVar(binvar_[itn]);
+  UInt i, binindex = bp->getIndex(), nvars = minlp_->getNumVars();
+ 
+  ConstConstraintPtr cp = cons_[itn];
+  FunctionPtr f = cp->getFunction();
+  double * cgrad = new double[nvars], * y = new double[nvars];
+ 
+  // Generate solution y=(x/z,1), x are continuous and z is binary variable
+  std::fill(y, y + nvars, 0);
+  y = prVars(s, nvars, itn);
+ 
+  std::fill(cgrad, cgrad + nvars, 0);
+  f->evalGradient(y, cgrad, &errorgr);
+ 
+  if (errorgr == 0 && error ==0) {
+    UInt varindex = 0;
+    FunctionPtr fnew;
+    ConstraintPtr newc;
+    ConstVariablePtr v;
+    double newBound = 0;
+    double conseval, lpvio;
+    const LinearFunctionPtr lfn = cp->getLinearFunction();
+    const QuadraticFunctionPtr qfn = cp->getQuadraticFunction();
+    const NonlinearFunctionPtr nlfn = cp->getNonlinearFunction();
+    LinearFunctionPtr lf = (LinearFunctionPtr) new LinearFunction();
 
- FunctionPtr f = cp->getFunction();
-  LinearFunctionPtr lf = (LinearFunctionPtr) new LinearFunction();
+    if (sType_[itn] == '2') {
+      for (VariableGroupConstIterator vt=lfn->termsBegin(); vt!=lfn->termsEnd();
+           ++vt) {
+        v = rel->getRelaxationVar(vt->first);
+        lf->addTerm(v, vt->second);
+      }
+      conseval = nlfn->eval(y, &error);
+    } else {
+      conseval = f->eval(y, &error);
+    }
 
- // Generate solution y=(x/z,1), x are continuous and z is binary variable
- binindex = bp->getIndex();
- double * y = new double[rnv];
- std::fill(y, y + rnv, 0);
- for (VarSetConstIterator it=f->varsBegin(); it!=f->varsEnd(); ++it) {
-   cvp = *it;
-   indexvar = cvp->getIndex();
-     vsol = x[indexvar];
-     y[indexvar] = vsol/sb;
- }
+    if (nlfn) {
+      i = 0;
+      for (VarSetConstIterator vt=nlfn->varsBegin(); vt!=nlfn->varsEnd();
+           ++vt) {
+        v = rel->getRelaxationVar(*vt);
+        varindex = v->getIndex();
+        lf->addTerm(v, cgrad[varindex]);
+        conseval += (cgrad[varindex] *((nviv_[itn][i]-x[varindex])/x[binindex])); 
+        newBound += (cgrad[varindex] *nviv_[itn][i]); 
+        i++;
+      }
+    } else if (qfn) {
+      for (VarIntMapConstIterator vt=qfn->varsBegin(); vt!=qfn->varsEnd(); ++vt) {
+        v = rel->getRelaxationVar(vt->first);
+        varindex = v->getIndex();
+        lf->addTerm(v, cgrad[varindex]);
+        conseval += (cgrad[varindex] 
+                     *((nviv_[itn][i]-x[varindex])/x[binindex]));
+        newBound += (cgrad[varindex] *nviv_[itn][i]); 
+        i++;
+      }
+    }
 
- y[binindex] = 1;
- lf = gPCut(rnv, cp, bp, y);
- delete [] y;
- return lf;
+    if (lfn && (sType_[itn] == '1')) {
+      i = 0;
+      for (VariableGroupConstIterator vt=lfn->termsBegin(); vt!=lfn->termsEnd();
+           ++vt) {
+        v = rel->getRelaxationVar(vt->first);
+        varindex = v->getIndex();
+        if(varindex != binindex){
+          lf->addTerm(v, cgrad[varindex]);
+          conseval += (cgrad[varindex] 
+                       *((lviv_[itn][i]-x[varindex])/x[binindex]));
+          newBound += (cgrad[varindex] *lviv_[itn][i]); 
+          i++;
+        }
+      }
+    }   
+    
+    if (cp->getUb() != +INFINITY) {
+      conseval-=(cp->getUb());
+      lf->addTerm(bp, conseval);
+      lpvio = std::max(lf->eval(s->getPrimal()) - newBound, 0.0);
+    } else {
+      conseval-=(cp->getLb());
+      lf->addTerm(bp, conseval);
+      lpvio = std::max(newBound - lf->eval(s->getPrimal()), 0.0);
+    }
+ 
+    if (lpvio > solAbsTol_) {
+      fnew = (FunctionPtr) new Function(lf);
+      if(cp->getUb() != +INFINITY) {
+        newc = rel->newConstraint(fnew, -INFINITY, newBound, "perspective_cut");
+      } else {
+        newc = rel->newConstraint(fnew, newBound, +INFINITY, "perspective_cut");
+      }
+#if SPEW
+      logger_->msgStream(LogDebug) << me_ <<" Perspective cut: " << std::endl
+        << std::setprecision(9);
+      newc->write(logger_->msgStream(LogDebug));
+#endif
+      delete [] y;
+      delete [] cgrad;
+      return true;
+    }
+  } else {
+    logger_->msgStream(LogError) << me_ <<" Gradient or nonlinear part of the"
+      <<  " function is not defined at the current point" 
+      <<std::endl;
+  }
+  
+  delete [] y;
+  delete [] cgrad;
+  return false;
 }
 
 
@@ -96,109 +186,114 @@ std::string PerspCutHandler::getName() const
 }
 
 
-LinearFunctionPtr PerspCutHandler::gPCut(UInt rnv, ConstConstraintPtr cp,
-                                        ConstVariablePtr bp, double * y)
+bool PerspCutHandler::isFeasible(ConstSolutionPtr sol, RelaxationPtr, 
+                                 bool &, double & )
 {
-  int  error = 0, errorgr = 0;
-  double * cgrad = new double[rnv];
-  FunctionPtr f = cp->getFunction();
-  double conseval = f->eval(y, &error);
-  LinearFunctionPtr lf = (LinearFunctionPtr) new LinearFunction();
- 
-  std::fill(cgrad, cgrad + rnv, 0);
-  f->evalGradient(y, cgrad, &errorgr);
+  int error=0;
+  UInt binindex, nvars = minlp_->getNumVars();
+  FunctionPtr f;
+  double act, sb;
+  ConstConstraintPtr c;
+  const double *x = sol->getPrimal();
+  double * y = new double[nvars];
 
-  if (errorgr == 0 && error ==0) {
-    UInt varindex = 0;
-    ConstVariablePtr var ;
-    ConstraintPtr newc;
-    double gradu =0.0, gradfi = 0.0, ysolvar = 0.0;
-
-    for (VarSetConstIterator it = f->varsBegin(); it!= f->varsEnd(); ++it) {
-      var = *it; 
-      varindex = var->getIndex();
-      if(varindex!=bp->getIndex()){
-        gradfi =cgrad[varindex];
-        lf->addTerm(var, gradfi);
-        ysolvar = y[varindex];
-        gradu -= (gradfi * ysolvar); 
-      } 
+  for (UInt it= 0; it!=cons_.size(); ++it) { 
+    act = 0;
+    binindex = binvar_[it]->getIndex();
+    sb = x[binindex];
+    if (sb < intTol_) {
+      continue;
     }
-    // In perspective reformulated constraint coefficient of binary variable is
-    // included in conseval
-    // its coefficient in original constraint minus the upper bound of the constraint
-    if(cp->getUb() != +INFINITY){
-      gradu-=(cp->getUb());
-    } else {
-      gradu+=(cp->getLb());
-    }
-    gradu+=conseval;
-    // We can add binary variable to linearization, when we considered all
-    // variables except the binary variable so that the linearization
-    // coefficient of binary variable is calculated.
-    lf->addTerm(bp, gradu);
-  } else {
-    logger_->msgStream(LogError) << me_ <<" Gradient or nonlinear part of the"
-     <<  " function is not defined at the current point" 
-     <<std::endl;
-  }
-  return lf;
-}
-
-
-bool PerspCutHandler::isFeasible(ConstSolutionPtr sol, RelaxationPtr, bool &, 
-                                 double &)
-{
-  isFeas_=true;
-  if (cons_.size()>=1) {
-    int error = 0;
-    double act = 0.0;
-    ConstConstraintPtr c;
-    const double *x = sol->getPrimal();
+      
+    c = cons_[it];
+    f = c->getFunction();
+    std::fill(y, y + nvars, 0);
+    y = prVars(sol, nvars, it);
+    act = sb * (f->eval(y, &error));
     
-    for (UInt it=0; it!=cons_.size(); ++it) {
-      c = cons_[it];
-      act = c->getActivity(x, &error);
-      if(error==0) {
-        if( (act > c->getUb() + solAbsTol_ &&  
-             act > c->getUb() + (fabs(c->getUb())*solRelTol_))  ||  
-            ( act < c->getLb() - solAbsTol_ &&  
-              act < c->getLb() - (fabs(c->getLb())*solRelTol_)) ) { 
+    if (error==0) {
+      if ((act > (c->getUb())*sb + solAbsTol_ && 
+           act > (c->getUb()*sb) + (fabs((c->getUb())*sb)*solRelTol_))  ||
+          (act < (c->getLb())*sb - solAbsTol_ && 
+            act < (c->getLb())*sb - (fabs((c->getLb())*sb)*solRelTol_))) {
 #if SPEW
-
-          logger_->msgStream(LogDebug)
-            << me_ << "constraint not feasible" << std::endl
-            << std::endl;
-          c->write(logger_->msgStream(LogDebug));
-          logger_->msgStream(LogDebug)<< me_ << "activity = "<< act << std::endl;
+        logger_->msgStream(LogDebug) 
+          << me_ << "constraint not feasible" << std::endl
+          << me_;
+        c->write(logger_->msgStream(LogDebug));
+        logger_->msgStream(LogDebug) 
+          << me_ << "activity = " << act << std::endl;  
 #endif
-          isFeas_ = false;
-          return false;
-        }   
-      }   else {
-        logger_->msgStream(LogError) << me_ 
-          << "Constraint not defined at this point"<< std::endl;
-        isFeas_ = false;
+        delete [] y;
         return false;
-      }   
+      }
+    } else {
+      logger_->msgStream(LogError) << me_ 
+        << "Constraint not defined at this point"<< std::endl;
+      delete [] y;
+      return false;
     }
   }
-  return true;
+  delete [] y;
+#if SPEW
+  logger_->msgStream(LogDebug) << me_ 
+    << "All perspective amenable constraints looks feasible" << std::endl;
+#endif
+  return true; 
 }
 
-bool PerspCutHandler::perspList()
-{
-  persplist_ = (PerspConPtr) new PerspCon(minlp_, env_); 
-  persplist_ ->generateList(); 
 
-  if(persplist_->getStatus() == true){
-    cons_ = persplist_->getPerspCons();
-    binvar_ = persplist_->getConsBinVar();
-    persplist_->displayInfo(me_);
-    return true;
-  } else {
-    return false;
+double * PerspCutHandler::prVars(ConstSolutionPtr sol, UInt nvars, UInt itn)
+{
+  double sb;
+  VariablePtr v;
+  UInt i, binindex, indexvar;
+  ConstConstraintPtr c = cons_[itn];
+  const double *x = sol->getPrimal();
+  const LinearFunctionPtr lf = c->getLinearFunction();
+  const QuadraticFunctionPtr qf = c->getQuadraticFunction();
+  const NonlinearFunctionPtr nlf = c->getNonlinearFunction();
+  
+  // Generate solution y=(x/z,1), x are continuous and z is binary variable
+  double * y = new double[nvars];
+  std::fill(y, y + nvars, 0);
+  
+  binindex = binvar_[itn]->getIndex();
+  sb = x[binindex];
+  if (nlf) {
+    i = 0;
+    for (VarSetConstIterator vt=nlf->varsBegin(); vt!=nlf->varsEnd(); ++vt) {
+      v = *vt;
+      indexvar = v->getIndex();
+      y[indexvar] = (x[indexvar] - (1-sb)*nviv_[itn][i])/sb;
+      i++;
+    }
+  } else if (qf) {
+    for (VarIntMapConstIterator vt=qf->varsBegin(); vt!=qf->varsEnd(); ++vt) {
+      v = vt->first;
+      indexvar = v->getIndex();
+      y[indexvar] = (x[indexvar] - (1-sb)*nviv_[itn][i])/sb;
+      i++;
+    }
   }
+
+  if (lf) {
+    i = 0;
+    for (VariableGroupConstIterator vt=lf->termsBegin(); vt!=lf->termsEnd(); ++vt) {
+      v = vt->first;
+      indexvar = v->getIndex();
+      if(indexvar != binindex){
+        if (sType_[itn] == '1') {
+          y[indexvar] = (x[indexvar]- (1-sb)*lviv_[itn][i])/sb;
+        } else {
+          y[indexvar] = (x[indexvar])/sb;
+        }
+        i++;
+      }
+    }
+    y[binindex] = 1;
+  }   
+  return y; 
 }
 
 
@@ -206,94 +301,66 @@ void PerspCutHandler::separate(ConstSolutionPtr sol, NodePtr n,
                                RelaxationPtr rel, CutManager * ,
                                SolutionPoolPtr, bool *,
                                SeparationStatus * status)
+
 {
   // Generating perspective cuts only at root node
   if (n->getId() == 0) {
-    bool binint;
-    int error = 0;
-    double binsol, act, lpvio;
-    UInt binindex, cutCount = 0;
-    const double * x = sol->getPrimal();
-
+    int error=0;
+    bool newcut;
     FunctionPtr f;
+    double act, sb;
+    VariablePtr v, v1;
     ConstraintPtr newc;
     ConstConstraintPtr c;
-    LinearFunctionPtr lf = (LinearFunctionPtr) new LinearFunction();
-    
+    const double *x = sol->getPrimal();
+    UInt binindex, cutsCount = 0, nvars = minlp_->getNumVars();
+    double * y = new double[nvars];
+ 
+    //PC is not generated if binary variable of the
+    // constraint has value 0
     for (UInt it=0; it!=cons_.size(); ++it) {
-      c = cons_[it];
+      act = 0;
       binindex = binvar_[it]->getIndex();
-      binsol = x[binindex];
-      const double cu = c->getUb();
-      const double cl = c->getLb();
-      //PC is not generated if binary variable of the
-      // constraint has value 0 or 1
-      binint = fabs(floor(binsol+0.5)-binsol);
-      if (binint < intTol_) {
+      sb = x[binindex];
+      
+      if (sb < intTol_) {
         continue;
       }
+        
+      c = cons_[it];
+      f = c->getFunction();
+      std::fill(y, y + nvars, 0);
+      y = prVars(sol, nvars, it);
+      act = sb * (f->eval(y, &error));
       
-      act = c->getActivity(x, &error);
-      if(error==0) {
-        if( (act > cu + solAbsTol_ &&  
-             act > cu + (fabs(cu)*solRelTol_))  ||  
-            ( act < cl - solAbsTol_ &&  
-              act < cl - (fabs(cl)*solRelTol_)) ) { 
+      if (error==0) {
+        if ((act > (c->getUb())*sb + solAbsTol_ && 
+             act > (c->getUb()*sb) + (fabs((c->getUb())*sb)*solRelTol_))  ||
+            (act < (c->getLb())*sb - solAbsTol_ && 
+              act < (c->getLb())*sb - (fabs((c->getLb())*sb)*solRelTol_))) {
 #if SPEW
-          logger_->msgStream(LogDebug) << me_ << "Constraint not feasible" 
-            << std::endl<< std::endl;
+          logger_->msgStream(LogDebug) 
+            << me_ << "constraint not feasible" << std::endl << me_;
           c->write(logger_->msgStream(LogDebug));
-          logger_->msgStream(LogDebug)<< me_ << "activity = " << act << std::endl;
+          logger_->msgStream(LogDebug) << me_ << "activity = " << act 
+            << std::endl;  
 #endif
-          
-          lf = generateCut( rel->getNumVars(), sol, c, binvar_[it]);
-          
-          lpvio = std::max(lf->eval(x), 0.0);
-          //Cut is added if it violates current solution
-          if (lpvio > solAbsTol_) {
-            f = (FunctionPtr) new Function(lf);
-            if(cu != +INFINITY) {
-              newc = rel->newConstraint(f, -INFINITY, 0.0, "perspective_cut");
-            } else if(cl != -INFINITY) {
-              newc = rel->newConstraint(f, 0.0, +INFINITY, "perspective_cut");
-            } else {
-#if SPEW   
-              logger_->msgStream(LogDebug) << me_ <<" Constraint do not have"
-                << " either lower or upper bound" << std::endl;
-#endif
-            }
+          newcut = generateCut(rel, sol, it);
+          if (newcut) {
             numCuts_++;
-            cutCount++;
-            f.reset();
-            lf.reset();
-          }
-#if SPEW
-          logger_->msgStream(LogDebug) << me_ <<" Perspective cut: " << std::endl
-            << std::setprecision(9);
-          newc->write(logger_->msgStream(LogDebug));
-#endif
-          newc.reset();
-        } else {
-#if SPEW
-          logger_->msgStream(LogDebug) << me_ 
-            << "Constraint is feasible at the current point"
-            << " thus not considered for perspective cut generation."
-            << std::endl;
-          c->write(logger_->msgStream(LogDebug));
-          logger_->msgStream(LogDebug)<< me_ << "activity = " << act << std::endl;
-#endif       
-          continue;
+            cutsCount++;
+          }    
         }
-      }   else {
+      } else {
         logger_->msgStream(LogError) << me_ 
           << "Constraint not defined at this point"<< std::endl;
-        continue;
-      }   
-    }
-    
-    if (cutCount >= 1) {
+      }
+    }  
+   
+    if (cutsCount > 0) {
       *status = SepaResolve;
     }
+    delete [] y;
   }
   return;
 }
@@ -301,20 +368,18 @@ void PerspCutHandler::separate(ConstSolutionPtr sol, NodePtr n,
 
 void PerspCutHandler::writeStats(std::ostream &out) const
 {
-  out << me_ << "No. of constraints amenable to PR: = "<< cons_.size() 
-    << std::endl;
-  if(cons_.size() > 0){
-      out << me_ << "No. of perspective cuts added: = " << numCuts_ << std::endl;
+  if (cons_.size() > 0) {
+      out << me_ << "No. of perspective cuts added = " << numCuts_ << std::endl;
   }
   return;
 }
  
 
-
 PerspCutHandler::~PerspCutHandler()
 {
   env_.reset();
   minlp_.reset();
+  logger_.reset();
 }
 
 
