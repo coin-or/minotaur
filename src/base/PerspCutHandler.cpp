@@ -35,7 +35,7 @@ const std::string PerspCutHandler::me_ = "PerspCutHandler: ";
 
 PerspCutHandler::PerspCutHandler()
   : env_(EnvPtr()),  minlp_(ProblemPtr()), numCuts_(0), cons_(0), binvar_(0),
-  sType_(0), nviv_(0), lviv_(0)
+  sType_(0), nviv_(0), lviv_(0), indi_(1)
 {
   logger_ = (LoggerPtr) new Logger(LogDebug2);
   intTol_ = env_->getOptions()->findDouble("int_tol")->getValue();
@@ -49,9 +49,10 @@ PerspCutHandler::PerspCutHandler(EnvPtr env, ProblemPtr minlp,
                                  std::vector<ConstVariablePtr> bpr,
                                  std::vector<char> spr,
                                  std::vector<std::vector<double> > nviv,
-                                 std::vector<std::vector<double> > lviv)
+                                 std::vector<std::vector<double> > lviv,
+                                 bool indi)
   : env_(env), minlp_(minlp), numCuts_(0), cons_(cpr), binvar_(bpr),
-  sType_(spr), nviv_(nviv), lviv_(lviv)
+  sType_(spr), nviv_(nviv), lviv_(lviv), indi_(indi)
 {
   intTol_ = env_->getOptions()->findDouble("int_tol")->getValue();
   solAbsTol_ = env_->getOptions()->findDouble("solAbs_tol")->getValue();
@@ -323,7 +324,9 @@ void PerspCutHandler::separate(ConstSolutionPtr sol, NodePtr n,
       binindex = binvar_[it]->getIndex();
       sb = x[binindex];
       
-      if (sb < intTol_) {
+      if (fabs(sb) < intTol_) {
+        continue;
+      } else if ((fabs(1 - sb) < intTol_) && indi_ == 0) {
         continue;
       }
         

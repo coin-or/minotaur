@@ -37,7 +37,7 @@ namespace Minotaur {
   PerspCutHandler(EnvPtr env, ProblemPtr problem, std::vector<ConstConstraintPtr> cpr, 
             std::vector<ConstVariablePtr> bpr, std::vector<char> spr,
             std::vector<std::vector<double> > nviv,
-            std::vector<std::vector<double> > lviv);
+            std::vector<std::vector<double> > lviv, bool indi = true);
 
   /// Destructor.
   ~PerspCutHandler();
@@ -133,23 +133,28 @@ private:
   /// For log:
   static const std::string me_;
   
-  ///Vector of perspective constraint pointers
+  /// Vector of perspective constraint pointers
   std::vector<ConstConstraintPtr> cons_;
   
-  //Vector of pointers to binary variables of perspective constraints
+  /// Vector of pointers to binary variables of perspective constraints
   std::vector<ConstVariablePtr> binvar_;
 
-  //Vector of pointers to structure type of perspective constraints
+  /// Vector of pointers to structure type of perspective constraints
   std::vector<char> sType_;
   
-  //Vector of pointers to values to which variables in the nonlinear part of
-  //the constraints amenable to PR are fixed to
+  /// Vector of pointers to values to which variables in the nonlinear part of
+  /// the constraints amenable to PR are fixed to
   std::vector<std::vector<double> > nviv_;
  
- //Vector of pointers to values to which variables in the linear part of
- //the constraints amenable to PR are fixed to 
+ /// Vector of pointers to values to which variables in the linear part of
+ // the constraints amenable to PR are fixed to 
   std::vector<std::vector<double> > lviv_;
-  
+
+ 
+  /// indi_ = 1, if perspective cuts rae to be added at binary variable taking
+  /// value 1
+  bool indi_;
+
   };
 
 }
