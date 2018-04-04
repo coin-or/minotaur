@@ -47,6 +47,7 @@
 #include <Objective.h>
 #include <TransSep.h>
 #include <PerspCutHandler.h>
+#include <PerspCon.h>
 
 using namespace Minotaur;
 
@@ -351,25 +352,40 @@ int main(int argc, char* argv[])
     handlers.push_back(v_hand);
     assert(v_hand);
 
-    qg_hand = (QGHandlerPtr) new QGHandler(env, inst, nlp_e); 
-    qg_hand->setModFlags(false, true);
-    handlers.push_back(qg_hand);
-
-    // Use of perspective handler is user choice
+    ///Use of perspective handler is user choice
     if (env->getOptions()->findBool("perspective")->getValue() == true) {
-      PerspCutHandlerPtr pc_hand;
-      pc_hand = (PerspCutHandlerPtr) new PerspCutHandler(env, inst); 
-      pc_hand->setModFlags(false, true);
-      if(pc_hand->perspList()){
+      PerspConPtr prc = (PerspConPtr) new PerspCon(inst, env);
+      prc->generateList();
+      if(prc->getStatus()){
+        PerspCutHandlerPtr pc_hand;
+        pc_hand = (PerspCutHandlerPtr) new PerspCutHandler(env, inst,
+                                                           prc->getPRCons(),
+                                                           prc->getPRBinVar(),
+                                                           prc->getPRStruct(), 
+                                                           prc->getXNV(), 
+                                                           prc->getXLV(), 0); 
+        pc_hand->setModFlags(false, true);
         handlers.push_back(pc_hand);
         assert(pc_hand);
+        qg_hand = (QGHandlerPtr) new QGHandler(env, inst, nlp_e,
+                                               prc->getPRCons(),
+                                               prc->getPRBinVar(),
+                                               prc->getPRStruct());
+      } else {
+        qg_hand = (QGHandlerPtr) new QGHandler(env, inst, nlp_e); 
       }
+    } else {
+        qg_hand = (QGHandlerPtr) new QGHandler(env, inst, nlp_e); 
     }
+    qg_hand->setModFlags(false, true);
+    handlers.push_back(qg_hand);
+    assert(qg_hand);
+
     // report name
     env->getLogger()->msgStream(LogExtraInfo) << me << "handlers used:"
       << std::endl;
     for (HandlerIterator h = handlers.begin(); h != handlers.end(); ++h) {
-      env->getLogger()->msgStream(LogExtraInfo) << me << (*h)->getName()
+        env->getLogger()->msgStream(LogExtraInfo) << me << (*h)->getName()
         << std::endl;
     }
 
