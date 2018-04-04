@@ -229,23 +229,23 @@ void QGHandler::cutIntSol_(ConstSolutionPtr sol, SolutionPoolPtr s_pool,
 
   ///MS: Modifying the PR amenable constraint when associated
   // binary variable takes value 0
-  //if (cpr_.size() > 0) {
-    //VariablePtr v;
-    //UInt binindex;
+  if (cpr_.size() > 0) {
+    VariablePtr v;
+    UInt binindex;
     
-    //for (UInt i= 0; i < cpr_.size() ; ++i) {
-      //binindex = bpr_[i]->getIndex();
-      //if ((x[binindex] < intTol_) && (spr_[i] == '1')) {
-        //fixCons_(cpr_[i]);
-      //}
-    //} 
-    //solveNLP_();
-    //unfixCons_();
-  //} else {
-    //solveNLP_();
-  //}
+    for (UInt i= 0; i < cpr_.size() ; ++i) {
+      binindex = bpr_[i]->getIndex();
+      if ((x[binindex] < intTol_) && (spr_[i] == '1')) {
+        fixCons_(cpr_[i]);
+      }
+    } 
+    solveNLP_();
+    unfixCons_();
+  } else {
+    solveNLP_();
+  }
 
-  solveNLP_();
+  //solveNLP_();
   
   unfixInts_();
   switch(nlpStatus_) {
@@ -323,22 +323,21 @@ void QGHandler::cutIntSol_(ConstSolutionPtr sol, SolutionPoolPtr s_pool,
 void QGHandler::fixCons_(ConstConstraintPtr cp)
 {
   double cu = cp->getUb(), cl = cp->getLb();
-  if (cu != INFINITY) {  
+  ConstraintPtr c = minlp_->getConstraint(cp->getIndex());
+  ConBoundMod *m1 = 0;
+  if ((cu != INFINITY) || (cl != -INFINITY)) {  
     if (cu == 0) {
-      ConstraintPtr c = minlp_->getConstraint(cp->getIndex());
-      ConBoundMod *m1 = 0;
       m1 = new ConBoundMod(c, Upper, (cu + 0.1));
-      m1->applyToProblem(minlp_);
-      prMods_.push(m1);
-    }
-  } else {
-     if (cl == 0) {
-      ConstraintPtr c = minlp_->getConstraint(cp->getIndex());
-      ConBoundMod *m1 = 0;
+    } else if (cl == 0) {
       m1 = new ConBoundMod(c, Lower,(cl - 0.1));
-      m1->applyToProblem(minlp_);
-      prMods_.push(m1);
     } 
+    m1->applyToProblem(minlp_);
+    prMods_.push(m1);
+  } else {
+ #if SPEW
+    logger_->msgStream(LogDebug) 
+      << me_ << "Constraint does not have any bounds" << std::endl;
+#endif  
   }
   return;  
 }
