@@ -368,6 +368,15 @@ public:
   /// Print the function expression at current node and the sub-tree.
   void writeSubExp(std::ostream &out) const;
 
+  /**
+   * \brief Write the function expression in ASL's text format (reverse polish
+   * notation) for the current node and the sub-tree.
+   *
+   * \param [in] s stream to which the expression is appended
+   * \param [out] err Nonzero if some error is encountered
+   */
+  void writeSubNl(std::stringstream &s, int *err) const;
+
 protected:
   bool b_;        /// Boolean flag used in finding hessian sparsity
   CNode **child_; /// array of size numChild_ + 1. The last pointer is a null

@@ -460,6 +460,117 @@ void PerspCon::evalConstraint(ConstConstraintPtr cons,
         return;      
       }
     }
+  bool boundsok = false, lboundsok = false;
+  if (binvar == NULL) {
+    const NonlinearFunctionPtr nlf = cons->getNonlinearFunction();
+    VarSetPtr binaries = (VarSetPtr) new VarSet();
+    // We select first variable of the nonlinear part of the constraint for
+    // generating a list of binary variables that may control other
+    // variables in the constraint.
+    ConstVariablePtr initvar = *(nlf->varsBegin());
+    // Set binaries contains binary variables controling initvar
+    initialBinary(initvar, binaries);
+
+    if (binaries->size() == 0) {
+      return false;
+    }
+
+    UInt index = 0;
+
+    int error = 0;
+    double act =0;
+    double *x = new double[p_->getNumVars()]; 
+    FunctionPtr f = cons->getFunction();
+
+    for (UInt i=0; i<p_->getNumVars(); ++i) {
+      x[i] = 0;
+    }
+
+    for (VarSetConstIterator it= binaries->begin(); it!=binaries->end(); ++it, index++) {
+      binvar = *it;
+      //if(cu==0 || cl==0)
+      if(cu <=0){
+        l_.push_back(initl_[index]);
+        u_.push_back(initu_[index]);
+        boundsok = checkNVars(cons, binvar);
+        lboundsok = checkLVars(cons, binvar);
+        if(boundsok == true && lboundsok == true){
+          act = f->eval(x, &error);
+          if (act > cu){
+            assert(!"PerspCutHandler: problem is infeasible");
+            delete [] x;
+            return false;
+          } else {
+            st_ = 1;
+            delete [] x;
+            return true;
+          }
+        } else if(boundsok){
+          st_ = 2;
+          delete [] x;
+          return true;
+        }
+      } else {
+          boundsok = checkAllVars(cons, binvar, initvar, index);
+          if(boundsok){
+            act = f->eval(x, &error);
+            if (act > cu){
+              assert(!"PerspCutHandler: problem is infeasible");
+              delete [] x;
+              return false;
+            } else {
+              st_ = 1;
+              delete [] x;
+              return true;
+            }
+          }
+      }
+    }
+    delete [] x;
+    return false;
+  } else {
+    boundsok = checkAllVars(cons, binvar, VariablePtr());
+    if(boundsok){
+      st_ = 1;
+      // Make st_ char
+    }
+    return boundsok;
+  }
+  return true;
+}
+
+
+void PerspCon::generateList()
+{
+  ConstConstraintPtr cons;
+  bool isPR =  false;
+
+  for (ConstraintConstIterator it= p_->consBegin(); it!= p_->consEnd(); ++it) {
+    cons = *it;
+    VariablePtr binvar; 
+    isPR = evalConstraint(cons, binvar);
+
+    if (isPR) {
+      cList_.push_back(cons);
+      binVar_.push_back(binvar);
+      lbc_.push_back(l_);
+      ubc_.push_back(u_);
+      sType_.push_back(st_);
+    }
+    l_.clear();
+    initl_.clear();
+    u_.clear();
+    initu_.clear();
+  }
+}
+
+
+bool PerspCon::getStatus()
+{
+  if (cList_.size() > 0){
+    return true; 
+  } else {
+    return false;
   }
 
   bool newvar;

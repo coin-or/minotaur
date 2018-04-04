@@ -202,18 +202,24 @@ private:
   void bestScoreUpdate_(const double & change_up1, const double & change_down1, const int & indx);
 
   /**
+   * count the number of features in the feature vector
+   */
+void countFeatureTypes(double *wf1, double *wf2, int *wtd, double feature, int i);
+ 
+  /**
    *
    * find most similar node/nodes of the current node
    *
    */
-   
+  
  void mostSimilarNode_();
+
  /**
  *index of the matched variable
  *
  */
 
-bool evalIndx_(UInt clmnindx,UInt bstscrIndex,int* indx);
+ bool evalIndx_(UInt clmnindx,UInt bstscrIndex,int* indx);
     
   /** 
    * \brief Do strong branching on candidate.
@@ -363,6 +369,7 @@ bool evalIndx_(UInt clmnindx,UInt bstscrIndex,int* indx);
  */
   std::vector<double> randVal1_;
   std::vector<double> randVal2_;
+  std::vector<double> randVal3_;
   std::vector<double> hashValue_;
   std::vector<double> LbValCollect_;
   std::vector<UInt> NodeIdCollect_;

@@ -649,6 +649,93 @@ endif()
 
 
 ###########################################################################
+## Cbc
+###########################################################################
+set (CBC_INC_DIR)          ## NULL
+set (CBC_LIB_DIR)          ## NULL
+set (LINK_CBC)             ## NULL
+set (CBC_LIBS)             ## NULL
+
+message(STATUS ${MSG_HEAD} "Searching for Cbc ...")
+set (CBC_INC_DIR "" CACHE PATH 
+  "Path to Cbc headers. It must have coin/CbcModel.hpp file.") 
+set (CBC_INC_DIR_F ${CBC_INC_DIR})
+
+# uncomment when Cbc is a default part of engines
+#if (("${CBC_INC_DIR_F}" STREQUAL "") AND
+#    (NOT ("${TP_ABS_PATH}" STREQUAL "")))
+#  set (CBC_INC_DIR_F "${TP_ABS_PATH}/include")
+#endif()
+
+
+set (CBC_LIB_DIR "" CACHE PATH 
+  "Path to Cbc library. It must have a Cbc library file.") 
+set (CBC_LIB_DIR_F ${CBC_LIB_DIR})
+
+# uncomment when Cbc is a default part of engines
+#if (("${CBC_LIB_DIR_F}" STREQUAL "") AND
+#       (NOT ("${TP_ABS_PATH}" STREQUAL "")))
+#  set (CBC_LIB_DIR_F "${TP_ABS_PATH}/lib")
+#endif()
+
+message(STATUS ${MSG_HEAD} "CBC_INC_DIR_F is set to ${CBC_INC_DIR_F}")
+message(STATUS ${MSG_HEAD} "CBC_LIB_DIR_F is set to ${CBC_LIB_DIR_F}")
+
+if (CBC_INC_DIR_F)
+  ## complain if header not found
+  if (NOT EXISTS "${CBC_INC_DIR_F}/coin/CbcModel.hpp")
+    message(FATAL_ERROR " ${MSG_HEAD}" 
+	    "${CBC_INC_DIR_F}/coin/CbcModel.hpp not found.")
+  endif()
+
+  ## complain if library not specified
+  if (NOT CBC_LIB_DIR_F)
+    message(FATAL_ERROR " ${MSG_HEAD}" 
+	    "CBC_LIB_DIR must be set along with CBC_INC_DIR")
+  endif()
+
+  ## check if library found
+  if (EXISTS ${CBC_LIB_DIR_F})
+    message(STATUS ${MSG_HEAD} "Cbc library directory exists.")
+    add_subdirectory(src/engines/Cbc)
+    set (LINK_CBC 1)
+    if (${BUILD_SHARED_LIBS})
+      set (CMAKE_INSTALL_RPATH ${CMAKE_INSTALL_RPATH}:${CBC_LIB_DIR_F})
+    endif()
+
+    set (MNTR_CBC_PC_LIBRARIES)
+    if (MNTR_HAVE_PKGCON)
+       set (ENV{PKG_CONFIG_PATH}
+	       "${CBC_LIB_DIR_F}/pkgconfig:$ENV{PKG_CONFIG_PATH}")
+       pkg_check_modules(MNTR_CBC_PC cbc)
+       message(STATUS ${MSG_HEAD} "Cbc libraries: "
+	       "${MNTR_CBC_PC_LIBRARIES}")
+       set (CBC_LIBS "mntrcbc" ${MNTR_CBC_PC_LIBRARIES})
+    endif()
+
+    if ((NOT (MNTR_HAVE_PKGCON)) OR
+	    ("${MNTR_CBC_PC_LIBRARIES}" STREQUAL ""))
+      set (CBC_LIBS "mntrcbc" "cbc")
+    endif()
+
+  else()
+    message(FATAL_ERROR " ${MSG_HEAD} "
+	    "CBC_LIB_DIR_F ${CBC_LIB_DIR_F} not found.")
+  endif()
+elseif (CBC_LIB_DIR_F)
+  message(FATAL_ERROR " ${MSG_HEAD}" 
+	  "CBC_INC_DIR must be set along with CBC_LIB_DIR")
+endif()
+
+if (LINK_CBC)
+  message(STATUS ${MSG_HEAD} "Link Cbc? Yes.")
+else()
+  set (CBC_INC_DIR_F)
+  set (CBC_LIB_DIR_F)
+  message(STATUS ${MSG_HEAD} "Link Cbc? No.")
+endif()
+
+###########################################################################
 ## qpOASES
 ###########################################################################
 set (QPOASES_LIB)          ## NULL

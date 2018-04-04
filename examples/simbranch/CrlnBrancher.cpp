@@ -44,7 +44,7 @@ RBrDev::RBrDev(EnvPtr env, HandlerVector & handlers)
   maxDepth_(100000),
   maxIterations_(25),
   minNodeDist_(0),
-  maxStrongCands_(100),
+  maxStrongCands_(20),
   clmn_(1000),
   rel_(RelaxationPtr()),            // NULL
   status_(NotModifiedByBrancher),
@@ -89,7 +89,6 @@ BrCandPtr RBrDev::findBestCandidate_(const double objval, double cutoff, NodePtr
 
   maxchange = cutoff-objval;
   // do strong branching on branching candidates
-
   if (brnchngCands_.size()>0) {
     BrCandVIter it;
     engine_->enableStrBrSetup();
@@ -131,6 +130,7 @@ BrCandPtr RBrDev::findBestCandidate_(const double objval, double cutoff, NodePtr
     }
     engine_->resetIterationLimit(); 
     engine_->disableStrBrSetup();
+    
     if (NotModifiedByBrancher == status_) {
       // get score of remaining candidates as well.
       for (;it!=brnchngCands_.end(); ++it) {
@@ -197,7 +197,7 @@ Branches RBrDev::findBranches(RelaxationPtr rel, NodePtr node,
   }
   if(status_ == NotModifiedByBrancher ){
 
-   // call this to eval hash, do hash comparison and return the cand using similar nodes concept
+   // call this to evaluate hash, do hash comparison and return the cand using similar nodes concept
     br_can = simNodeHash_(sol->getObjValue(),node->getId(), &flagsumzero, &wtdscr,&wtdcand);
     if (br_can==NULL){
       br_can = findBestCandidate_(sol->getObjValue(),
@@ -394,6 +394,9 @@ void RBrDev::updateTable_(const double & objVl)
 {
   double bndwt=.5;
   int bandsize;
+  //int wtd[3] ={0,0,0};
+  //double wf1[3]={0.0,0.0,0.0};
+  //double wf2[3]={0.0,0.0,0.0};
   double tempFeature=0.0;
   //if the column of the Matrix increased to clmn_,flush the Matrix  
   if((crntClmns_+1)%clmn_==0){
@@ -403,20 +406,51 @@ void RBrDev::updateTable_(const double & objVl)
   hashValue_[hash_*crntClmns_] =0.0;
   hashValue_[hash_*crntClmns_+1] =0.0;
 
-
   for(int i=0; i<numBinary_; i++)
   {
     tempFeature = bndwt*(rel_->getVariable(indxBin_[i])->getLb()) +
         (1-bndwt)*rel_->getVariable(indxBin_[i])->getUb();
-    
+
+    //countFeatureTypes(wf1, wf2, wtd, tempFeature,i);
+    // End of nested section
     hashValue_[hash_*crntClmns_] = hashValue_[hash_*crntClmns_] + (randVal1_[i])*tempFeature;
     hashValue_[hash_*crntClmns_+1] = hashValue_[hash_*crntClmns_+1] + (randVal2_[i])*tempFeature;
   }
+  // per unit wf1,wf2,wf3 for both hashes
+ 
+  //for(int i=0;i<3;i++){
+  //  if(wtd[i]>=1){wf1[i] = wf1[i]/wtd[i]; wf2[i] = wf2[i]/wtd[i];}
+  //  else{wf1[i]=1;wf2[i]=1;}
+ // }
+  //thrshldSim_ = 15*(.4*(.5*wf1[0]) +.3*(.5*wf1[2]) + .3*(1*wf1[1]))/hashValue_[hash_*crntClmns_];
+  thrshldSim_ = 13.0/hashValue_[hash_*crntClmns_];
 #if SPEW
         logger_->msgStream(LogDebug) << me_ << "hash value1 and hash value2 = "
         << hashValue_[hash_*crntClmns_] <<"\t"<< hashValue_[hash_*crntClmns_+1] << std::endl;
 #endif
 }
+
+void RBrDev::countFeatureTypes(double *wf1, double *wf2, int *wtd, double feature, int i)
+{
+
+  if(feature==1){
+    wf1[1] = wf1[1] +  randVal1_[i]*feature;
+    wf2[1] = wf2[1] +  randVal2_[i]*feature;
+    wtd[1]++;
+  } 
+  else if(feature==0){
+    wf1[0] = wf1[0] +  randVal1_[i]*feature;
+    wf2[0] = wf2[0] +  randVal2_[i]*feature;
+    wtd[0]++;
+  }
+  else{
+    wf1[2] = wf1[2] +  randVal1_[i]*feature;
+    wf2[2] = wf2[2] +  randVal2_[i]*feature;
+    wtd[2]++;
+  }
+}
+
+
 // return postion(indx) of index of candidate(cndindx) in scoreIndxMat_
 bool RBrDev::evalIndx_(UInt clmnindx1, UInt cndindx,int* indx)
 {
@@ -524,7 +558,7 @@ BrCandPtr RBrDev::simNodeHash_(double objVl,UInt nodeId, bool* flagsumzero,
   for(BrCandVIter it=brnchngCands_.begin(); it!=brnchngCands_.end(); ++it) {
     canBstscr = *it;
     cndindx = canBstscr->getPCostIndex();
-    double scr_wt=0.85 ;
+    double scr_wt=0.55;
     bool foundflag = false;
     int varindx = 0;
     for (unsigned int i=0;i<binrslt_.size();i++) {
@@ -552,6 +586,8 @@ BrCandPtr RBrDev::simNodeHash_(double objVl,UInt nodeId, bool* flagsumzero,
     getPCScore_(*it, &change_down, &change_up, &score1);
     //Compute the weighted average
     sumScore= scr_wt*(getScore_(sumScoreu, sumScored))+(1-scr_wt)*score1;
+    //sumScoreu = scr_wt*sumScoreu + (1-scr_wt)*change_up; // require updated score 
+    //sumScored = scr_wt*sumScored + (1-scr_wt)*change_down;// require updated score
     // find the variable with highest score
     if(topScore<sumScore){
       topScore = sumScore;
@@ -626,9 +662,8 @@ void RBrDev::initialize(RelaxationPtr rel)
   timesUp_ = std::vector<UInt>(n,0); 
   timesDown_ = std::vector<UInt>(n,0); 
   UInt maxsimclmn = std::max(100,int(numBinary_/20));
-  //thrshldSim_ = std::min(0.15,(10./numBinary_));
-  thrshldSim_ = 5.75/numBinary_;
   binrslt_ = UIntVector(maxsimclmn,-1); //currently minimum 50 similar nodes are allowable
+  binrslt_ = UIntVector(500,-1); //currently minimum 50 similar nodes are allowable
   nvarCands_.reserve(n);
   brnchngCands_.reserve(n);
   x_.reserve(n);
@@ -646,7 +681,10 @@ void RBrDev::initialize(RelaxationPtr rel)
       numBinary_++;
     }
   }
-  hashValue_= DoubleVector(2*clmn_,0.);//it containts two hashes per node
+  double max = *max_element(randVal1_.begin(),randVal1_.end());
+  //thrshldSim_ = std::min(0.6,(55*max/numBinary_));
+  //thrshldSim_ = 100.0/numBinary_;
+  hashValue_= DoubleVector(hash_*clmn_,0.);//it containts two hashes per node
   NodeIdCollect_= UIntVector(clmn_,0);
   LbValCollect_= DoubleVector(clmn_,0.);
   scoreIndxMat_= IntVector(maxStrongCands_*clmn_,-1);

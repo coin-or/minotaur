@@ -15,6 +15,7 @@
 #include <cerrno>
 #include <cmath>
 #include <iostream>
+#include <sstream>
 
 #include "MinotaurConfig.h"
 #include "CNode.h"
@@ -1914,6 +1915,167 @@ void CNode::write(std::ostream &out) const
     << "opcode = " << op_ << std::endl
     << "value = " << val_ << std::endl
     << "\n";
+}
+
+
+void CNode::writeSubNl(std::stringstream &s, int *err) const
+{
+  // Important: As of asl version 20170731, OpCPow, OpPowK and OpSqr are
+  // written to nl file as OpPow. asl converts OpPow into these specific types
+  // based on arguments. These specific operators cannot be written to .nl
+  // files. asl readers do not recognize them. Therefore we write them as the
+  // generic operator OpPow
+  switch (op_) {
+  case (OpAbs):
+    s << "o15" << std::endl;
+    l_->writeSubNl(s, err);
+    break;
+  case (OpAcos):
+    s << "o53" << std::endl;
+    l_->writeSubNl(s, err);
+    break;
+  case (OpAcosh):
+    s << "o52" << std::endl;
+    l_->writeSubNl(s, err);
+    break;
+  case (OpAsin):
+    s << "o51" << std::endl;
+    l_->writeSubNl(s, err);
+    break;
+  case (OpAsinh):
+    s << "o50" << std::endl;
+    l_->writeSubNl(s, err);
+    break;
+  case (OpAtan):
+    s << "o49" << std::endl;
+    l_->writeSubNl(s, err);
+    break;
+  case (OpAtanh):
+    s << "o47" << std::endl;
+    l_->writeSubNl(s, err);
+    break;
+  case (OpCeil):
+    s << "o14" << std::endl;
+    l_->writeSubNl(s, err);
+    break;
+  case (OpCos):
+    s << "o46" << std::endl;
+    l_->writeSubNl(s, err);
+    break;
+  case (OpCosh):
+    s << "o45" << std::endl;
+    l_->writeSubNl(s, err);
+    break;
+  case (OpCPow):
+    // see comment at the beginning of the function
+    s << "o5" << std::endl;
+    l_->writeSubNl(s, err);
+    r_->writeSubNl(s, err);
+    break;
+  case (OpDiv):
+    s << "o3" << std::endl;
+    l_->writeSubNl(s, err);
+    r_->writeSubNl(s, err);
+    break;
+  case (OpExp):
+    s << "o44" << std::endl;
+    l_->writeSubNl(s, err);
+    break;
+  case (OpFloor):
+    s << "o13" << std::endl;
+    l_->writeSubNl(s, err);
+    break;
+  case (OpIntDiv):
+    s << "o55" << std::endl;
+    l_->writeSubNl(s, err);
+    r_->writeSubNl(s, err);
+    break;
+  case (OpLog):
+    s << "o43" << std::endl;
+    l_->writeSubNl(s, err);
+    break;
+  case (OpLog10):
+    s << "o42" << std::endl;
+    l_->writeSubNl(s, err);
+    break;
+  case (OpMinus):
+    s << "o1" << std::endl;
+    l_->writeSubNl(s, err);
+    r_->writeSubNl(s, err);
+    break;
+  case (OpMult):
+    s << "o2" << std::endl;
+    l_->writeSubNl(s, err);
+    r_->writeSubNl(s, err);
+    break;
+  case (OpNone):
+    *err = 1;
+    break;
+  case (OpNum):
+    s << "n" << d_ << std::endl;
+    break;
+  case (OpPlus):
+    s << "o0" << std::endl;
+    l_->writeSubNl(s, err);
+    r_->writeSubNl(s, err);
+    break;
+  case (OpPow):
+    s << "o5" << std::endl;
+    l_->writeSubNl(s, err);
+    r_->writeSubNl(s, err);
+    break;
+  case (OpPowK):
+    // see comment at the beginning of the function
+    s << "o5" << std::endl;
+    l_->writeSubNl(s, err);
+    r_->writeSubNl(s, err);
+    break;
+  case (OpRound):
+    s << "o57" << std::endl;
+    l_->writeSubNl(s, err);
+    break;
+  case (OpSin):
+    s << "o41" << std::endl;
+    l_->writeSubNl(s, err);
+    break;
+  case (OpSinh):
+    s << "o40" << std::endl;
+    l_->writeSubNl(s, err);
+    break;
+  case (OpSqr):
+    // see comment at the beginning of the function
+    s << "o5" << std::endl;
+    l_->writeSubNl(s, err);
+    s << "n2" << std::endl;
+    break;
+  case (OpSqrt):
+    s << "o39" << std::endl;
+    l_->writeSubNl(s, err);
+    break;
+  case (OpSumList):
+    s << "o54" << std::endl << numChild_ << std::endl;
+    for (UInt i=0; i<numChild_; ++i) {
+      child_[i]->writeSubNl(s, err);
+    }
+    break;
+  case (OpTan):
+    s << "o38" << std::endl;
+    l_->writeSubNl(s, err);
+    break;
+  case (OpTanh):
+    s << "o37" << std::endl;
+    l_->writeSubNl(s, err);
+    break;
+  case (OpUMinus):
+    s << "o16" << std::endl;
+    l_->writeSubNl(s, err);
+    break;
+  case (OpVar):
+    s << "v" << v_->getIndex() << std::endl;
+    break;
+  default:
+    break;
+  }
 }
 
 

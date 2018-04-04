@@ -403,6 +403,11 @@ void Environment::createDefaultOptions_()
       true, "OsiClp");
   options_->insert(s_option);
 
+  s_option = (StringOptionPtr) new Option<std::string>("milp_engine", 
+      "Engine for solving milp: Cbc, None", 
+      true, "Cbc");
+  options_->insert(s_option);
+
   // Serdar added default options for MultilinearTermsHandler.
   s_option = (StringOptionPtr) new Option<std::string>("ml_group_strategy",
       "Group strategy", true, "TC");

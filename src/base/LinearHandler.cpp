@@ -484,7 +484,7 @@ SolveStatus LinearHandler::varBndsFromCons_(ProblemPtr p, bool apply_to_prob,
                && apply_to_prob 
                && pOpts_->purgeCons) {
 #if SPEW
-      logger_->msgStream(LogDebug) << "constraint " << c_ptr->getName() 
+      logger_->msgStream(LogDebug) << me_ << "constraint " << c_ptr->getName() 
                                    << " is redundant\n";
 #endif
       //assert(!"check activity!");
@@ -902,7 +902,7 @@ SolveStatus LinearHandler::linBndTighten_(ProblemPtr p, bool apply_to_prob,
 
   if (apply_to_prob && ll >= lb - eTol_ && uu <= ub + eTol_) {
 #if SPEW
-    logger_->msgStream(LogDebug) << "constraint " << c_ptr->getName() 
+    logger_->msgStream(LogDebug) << me_ << "constraint " << c_ptr->getName() 
                                  << " is redundant\n";
 #endif
     if (pOpts_->purgeCons == true) {
@@ -1000,9 +1000,8 @@ void LinearHandler::updateLfBoundsFromLb_(ProblemPtr p, bool apply_to_prob,
         mod = (VarBoundModPtr) new VarBoundMod(var, Lower, nlb);
         mod->applyToProblem(p);
 #if SPEW
-        logger_->msgStream(LogDebug2) << "mod 1: ";
+        logger_->msgStream(LogDebug2) << me_ << "mod 1: ";
         mod->write(logger_->msgStream(LogDebug2));
-        logger_->msgStream(LogDebug2) << std::endl;
 #endif
         if (apply_to_prob) {
           //mod->write(std::cout);
@@ -1034,9 +1033,8 @@ void LinearHandler::updateLfBoundsFromLb_(ProblemPtr p, bool apply_to_prob,
         mod = (VarBoundModPtr) new VarBoundMod(var, Upper, nub);
         mod->applyToProblem(p);
 #if SPEW
-        logger_->msgStream(LogDebug2) << "mod 2: ";
+        logger_->msgStream(LogDebug2) << me_ << "mod 2: ";
         mod->write(logger_->msgStream(LogDebug2));
-        logger_->msgStream(LogDebug2) << std::endl;
 #endif
         if (apply_to_prob) {
           //mod->write(std::cout);
@@ -1089,9 +1087,8 @@ void LinearHandler::updateLfBoundsFromUb_(ProblemPtr p, bool apply_to_prob,
         mod = (VarBoundModPtr) new VarBoundMod(var, Upper, nub);
         mod->applyToProblem(p);
 #if SPEW
-        logger_->msgStream(LogDebug2) << "mod 3: ";
+        logger_->msgStream(LogDebug2) << me_ << "mod 3: ";
         mod->write(logger_->msgStream(LogDebug2));
-        logger_->msgStream(LogDebug2) << std::endl;
 #endif
         if (apply_to_prob) {
           //mod->write(std::cout);
@@ -1122,9 +1119,8 @@ void LinearHandler::updateLfBoundsFromUb_(ProblemPtr p, bool apply_to_prob,
         mod = (VarBoundModPtr) new VarBoundMod(var, Lower, nlb);
         mod->applyToProblem(p);
 #if SPEW
-        logger_->msgStream(LogDebug2) << "mod 4: ";
+        logger_->msgStream(LogDebug2) << me_ << "mod 4: ";
         mod->write(logger_->msgStream(LogDebug2));
-        logger_->msgStream(LogDebug2) << std::endl;
 #endif
         if (apply_to_prob) {
           //mod->write(std::cout);

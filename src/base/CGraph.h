@@ -82,6 +82,9 @@ public:
   // get type of function
   FunctionType getType() const;
 
+  // base method
+  std::string getNlString(int *err);
+
   UInt getNumNodes();
 
   UInt getHessNz();

@@ -14,6 +14,7 @@
 
 #include <cmath>
 #include <iostream>
+#include <sstream>
 #include <stack>
 
 #include "MinotaurConfig.h"
@@ -730,6 +731,16 @@ UInt CGraph::getNumNodes()
 }
 
 
+std::string CGraph::getNlString(int *err)
+{
+  std::stringstream s;
+  if (oNode_) {
+    oNode_->writeSubNl(s, err);
+  }
+  return s.str();
+}
+
+
 NonlinearFunctionPtr CGraph::getPersp(VariablePtr z, double eps, int *err) const
 {
   CNode *znode = 0;
@@ -1308,6 +1319,8 @@ void CGraph::varBoundMods(double lb, double ub, VarBoundModVector &mods,
   double ub2 = INFINITY;
   int error = 0;
   bool is_inf = false;
+  const double bslack = 1e-5;
+  const double bslack10 = 1e-4;
 
   computeBounds(&lb2, &ub2, &error);
   if (error>0) {
@@ -1327,14 +1340,15 @@ void CGraph::varBoundMods(double lb, double ub, VarBoundModVector &mods,
       return;
     }
   }
+
   for (CNodeQ::iterator it=vq_.begin(); it!=vq_.end(); ++it) {
-    if ((*it)->getLb()>(*it)->getV()->getLb()+1e-5) {
+    if ((*it)->getLb()>(*it)->getV()->getLb()+bslack10) {
       mods.push_back((VarBoundModPtr) new VarBoundMod(getVar(*it), Lower,
-                                                      (*it)->getLb()));
+                                                      (*it)->getLb()-bslack));
     }
-    if ((*it)->getUb()<(*it)->getV()->getUb()-1e-5) {
+    if ((*it)->getUb()<(*it)->getV()->getUb()-bslack10) {
       mods.push_back((VarBoundModPtr) new VarBoundMod(getVar(*it), Upper,
-                                                      (*it)->getUb()));
+                                                      (*it)->getUb()+bslack));
     }
   }
 }

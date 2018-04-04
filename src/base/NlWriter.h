@@ -19,26 +19,39 @@
 
 namespace Minotaur {
 
-  /**
-   * \brief Writes a problem to a .nl file
-   */
-  class NlWriter {
-  public:
-    /// Default constructor
-    NlWriter();
+class NonlinearFunction;
+class QuadraticFunction;
+typedef boost::shared_ptr<NonlinearFunction> NonlinearFunctionPtr;
+typedef boost::shared_ptr<QuadraticFunction> QuadraticFunctionPtr;
 
-    /// Destroy
-    virtual ~NlWriter();
+/**
+ * \brief Writes a problem to a .nl file. The nonlinear functions must be
+ * stored in using native cgraphs for this class to work.
+ */
+class NlWriter {
+public:
+  /// Default constructor
+  NlWriter(EnvPtr env);
 
-    /// write the nl file
-    int write(ProblemPtr p, const std::string fname);
+  /// Destroy
+  virtual ~NlWriter();
 
-  private:
-    /// For logging
-    static const std::string me_;
+  /// write the nl file
+  int write(ProblemPtr p, const std::string fname);
 
-    int writeHeader_(ProblemPtr p, std::ofstream &of);
-  };
+private:
+  /// Environment.
+  EnvPtr env_;
+
+  /// For logging
+  static const std::string me_;
+
+  int co_(ProblemPtr p, std::ofstream &of);
+  int exp_(std::ofstream &of, QuadraticFunctionPtr qf, NonlinearFunctionPtr nlf);
+  int header_(ProblemPtr p, std::ofstream &of);
+  int kjg_(ProblemPtr p, std::ofstream &of);
+  int rb_(ProblemPtr p, std::ofstream &of);
+};
 }
 #endif
 

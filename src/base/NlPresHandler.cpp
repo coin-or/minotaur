@@ -118,15 +118,22 @@ void  NlPresHandler::chkRed_(bool *changed)
       if (c->getLb()>-INFINITY && nlfl+lfl-eTol_ > c->getLb()) {
         p_->changeBound(c, Lower, -INFINITY);
         *changed = true;
+        logger_->msgStream(LogDebug2) << me_ << " removed lb of constraint "
+                                      << c->getName() << std::endl;
       }
       if (c->getUb()<INFINITY && nlfu+lfu+eTol_ < c->getUb()) {
         p_->changeBound(c, Upper, INFINITY);
         *changed = true;
+        logger_->msgStream(LogDebug2) << me_ << " removed ub of constraint "
+                                      << c->getName() << std::endl;
       }
       if (c->getUb()>=nlfu+lfu-eTol_ && c->getLb()<=nlfl+lfl+eTol_) {
         p_->markDelete(c);
         *changed = true;
         ++stats_.conDel;
+        logger_->msgStream(LogDebug2) << me_ << " marked of constraint "
+                                      << c->getName() << " for deleting."
+                                      << std::endl;
       }
     }
   }
@@ -411,9 +418,11 @@ bool NlPresHandler::canBin2Lin_(ProblemPtr p, UInt nz, const UInt *irow,
                                 const UInt *jcol, const double *values)
 {
   VariablePtr v1, v2;
+  bool all_zeros = true;
 
   for (UInt i=0; i<nz; ++i) {
     if (fabs(values[i])>1e-12) {
+      all_zeros = false;
       v1 = p->getVariable(jcol[i]);
       v2 = p->getVariable(irow[i]);
       // if neither binary, return false
@@ -427,6 +436,11 @@ bool NlPresHandler::canBin2Lin_(ProblemPtr p, UInt nz, const UInt *irow,
         return false;
       }
     }
+  }
+
+  if (all_zeros) {
+    return false; // all values are zero. it is really a linear function
+                  // but minotaur thinks it is quadratic.
   }
   return true;
 }
@@ -720,6 +734,8 @@ SolveStatus NlPresHandler::presolve(PreModQ *mods, bool *changed0)
 
   tim->start();
   while(changed==true && stats_.iters < 5) {
+    logger_->msgStream(LogDebug2) << me_ << "starting presolve iter "
+                                  << stats_.iters << std::endl;
     changed = false;
     chkRed_(&changed);
     p_->delMarkedCons();
@@ -731,10 +747,10 @@ SolveStatus NlPresHandler::presolve(PreModQ *mods, bool *changed0)
     }
     coeffImpr_(&changed);
     bin2Lin_(p_, mods, &changed);
-    if (doPersp_) {
+    if (doPersp_ && false ) {
       perspRef_(p_, mods, &changed);
     }
-    if (doQuadCone_) {
+    if (doQuadCone_ && false ) {
       quadConeRef_(p_, mods, &changed);
     }
     ++stats_.iters;
