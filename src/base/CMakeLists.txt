@@ -100,7 +100,6 @@ set (MINOTAUR_SOURCES
      RandomBrancher.cpp
      Relaxation.cpp 
      ReliabilityBrancher.cpp 
-     PRReliabilityBrancher.cpp 
      SecantMod.cpp 
      SimpleCutMan.cpp 
      SimpleTransformer.cpp 
@@ -218,7 +217,6 @@ set (MINOTAUR_HEADERS
      RandomBrancher.h
      Relaxation.h
      ReliabilityBrancher.h
-     PRReliabilityBrancher.h
      SecantMod.h
      SimpleCutMan.h 
      SimpleTransformer.h 
