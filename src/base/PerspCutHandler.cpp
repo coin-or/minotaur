@@ -104,8 +104,8 @@ bool PerspCutHandler::generateCut(RelaxationPtr rel, ConstSolutionPtr s,
       conseval = f->eval(y, &error);
     }
 
+    i = 0;
     if (nlfn) {
-      i = 0;
       for (VarSetConstIterator vt=nlfn->varsBegin(); vt!=nlfn->varsEnd();
            ++vt) {
         v = rel->getRelaxationVar(*vt);
@@ -261,8 +261,8 @@ double * PerspCutHandler::prVars(ConstSolutionPtr sol, UInt nvars, UInt itn)
   
   binindex = binvar_[itn]->getIndex();
   sb = x[binindex];
+  i = 0;
   if (nlf) {
-    i = 0;
     for (VarSetConstIterator vt=nlf->varsBegin(); vt!=nlf->varsEnd(); ++vt) {
       v = *vt;
       indexvar = v->getIndex();
@@ -305,7 +305,7 @@ void PerspCutHandler::separate(ConstSolutionPtr sol, NodePtr n,
 
 {
   // Generating perspective cuts only at root node
-  if (n->getId() == 0) {
+  //if (n->getId() == 0) {
     int error=0;
     bool newcut;
     FunctionPtr f;
@@ -364,7 +364,7 @@ void PerspCutHandler::separate(ConstSolutionPtr sol, NodePtr n,
       *status = SepaResolve;
     }
     delete [] y;
-  }
+  //}
   return;
 }
 
