@@ -305,7 +305,7 @@ void PerspCutHandler::separate(ConstSolutionPtr sol, NodePtr n,
 
 {
   // Generating perspective cuts only at root node
-  //if (n->getId() == 0) {
+  if (n->getId() == 0) {
     int error=0;
     bool newcut;
     FunctionPtr f;
@@ -364,7 +364,7 @@ void PerspCutHandler::separate(ConstSolutionPtr sol, NodePtr n,
       *status = SepaResolve;
     }
     delete [] y;
-  //}
+  }
   return;
 }
 
