@@ -16,15 +16,16 @@ usage ()
    echo ""
    echo "usage: ./build_third_party [-j {num-cpus}] [-l {log-file}] [-r {error-file}] [-t {url}] [-COns]"
    echo ""
+   echo "-b: Do not install blas and lapack"
+   echo "-c: cplex options"
    echo "-C: Use curl instead of wget to fetch externals."
    echo "-d: Do not download the tar file and use previously downloaded one."
    echo "-f: Do not install FilterSQP and BQPD."
+   echo "-g: gurobi options"
    echo "-h: Show help."
    echo "-i: Do not install ipopt."
    echo "-j: Number of CPUs to use for compiling."
    echo "-l: Full path to log file. Default is stdout."
-   echo "-n: Do not clean object files etc. after compiling the
-    externals."
    echo "-O: Use Mac-OS specific compile flags."
    echo "-r: Full path to error file. Default is stderr."
    echo "-s: Build static libraries."
@@ -52,6 +53,7 @@ CPPUNIT="cppunit-1.13.2"
 FILTER="filter-102"
 IPOPT="ipopt-3.12.8"
 LAPACK="lapack-3.7.1"
+OSI="osi-0.107.9"
 SNAME=${TARNAME}
 
 LOG=
@@ -68,12 +70,15 @@ STATIC_ARGS=
 USE_CURL=0
 USE_MAC=0
 MAC_ARGS=
-while getopts "Cdfhij:l:Or:st:" flag
+while getopts "bc:Cdfg:hij:l:Or:st:" flag
 do
   case ${flag} in
+    b) LAPACK= ;;
+    c) CPX_OPT=${OPTARG} ;;
     C) USE_CURL=1 ;;
     d) DL_TAR=0 ;;
     f) FILTER= ;;
+    g) GRB_OPT=${OPTARG} ;;
     h) usage; exit 1;;
     i) IPOPT= ;;
     j) CPUS=${OPTARG} ;;
@@ -186,12 +191,46 @@ else
 fi
 cd ${TPROOT}
 
-echo "compiling LAPACK"
-cd ${TPROOT}/${SNAME}/${LAPACK}
-rm -rf build
-mkdir -p build  
-cd build
-cmake -DCMAKE_INSTALL_PREFIX:PATH=${TPROOT} -DBUILD_TESTING:BOOL=OFF ..
-make -j ${CPUS} && make -j ${CPUS} install
+if [ "x${LAPACK}" == "x" ]
+then
+  echo "not compiling LAPACK"
+else
+  echo "compiling LAPACK"
+  cd ${TPROOT}/${SNAME}/${LAPACK}
+  rm -rf build
+  mkdir -p build  
+  cd build
+  cmake -DCMAKE_INSTALL_PREFIX:PATH=${TPROOT} -DBUILD_TESTING:BOOL=OFF ..
+  make -j ${CPUS} && make -j ${CPUS} install
+fi
+cd ${TPROOT}
+
+
+if [ "x${CPX_OPT}${GRB_OPT}" == "x" ]
+then
+  echo "not compiling OsiCpx and OsiGrb"
+else
+  if [ "x${CPX_OPT}" == "x" ]
+  then
+    echo "not compiling OsiCpx"
+  else
+    echo "compiling OsiCpx"
+  fi
+
+  if [ "x${GRB_OPT}" == "x" ]
+  then
+    echo "not compiling OsiGrb"
+  else
+    echo "compiling OsiGrb"
+  fi
+
+  echo CPX_OPT ${CPX_OPT}
+  cd ${TPROOT}/${SNAME}/${OSI}
+  rm -rf build
+  mkdir -p build  
+  cd build
+  echo ${CPX_OPT} ${GRB_OPT} --prefix ${TPROOT} | xargs ../configure 
+  make -j ${CPUS} install
+fi
 cd ${TPROOT}
 
