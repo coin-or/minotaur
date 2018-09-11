@@ -195,6 +195,16 @@ Branches RBrDev::findBranches(RelaxationPtr rel, NodePtr node,
   mods_.clear();
   x_.resize(rel->getNumVars());
   std::copy(x, x+rel->getNumVars(), x_.begin());
+
+
+  // Update table by computing  hash values
+  timer_->start();
+  updateTable_();
+  stats_->hashTime += timer_->query();
+  timer_->stop();
+
+
+  //Find candidates
   findCandidates_();
   if (status_ == PrunedByBrancher) {
     br_status = status_;
@@ -394,7 +404,7 @@ double RBrDev::getScore_(const double & up_score,
   return 0.;
 }
 
-void RBrDev::updateTable_(const double & objVl)
+void RBrDev::updateTable_()
     
 {
   double tempLb=0.0;
@@ -491,12 +501,6 @@ BrCandPtr RBrDev::simNodeHash_(double objVl,UInt nodeId, bool* flagsumzero,
   LbValCollect_[crntClmns_] = objVl;
   // clear the binrslt_ 
   binrslt_.clear();
-
-  // Update table by computing  hash values
-  timer_->start();
-  updateTable_(objVl);
-  stats_->hashTime += timer_->query();
-  timer_->stop();
 
   // if branching call is at root node, do strong branch 
   if (crntClmns_==0) {
