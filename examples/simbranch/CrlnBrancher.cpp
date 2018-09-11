@@ -31,7 +31,7 @@
 #include "Timer.h"
 #include "Variable.h"
 #include <algorithm>    // std::find_if
-#define SPEW 0
+#define SPEW 1
 
 using namespace Minotaur;
 const std::string RBrDev::me_ = "rbrdev: "; 
@@ -42,14 +42,15 @@ RBrDev::RBrDev(EnvPtr env, HandlerVector & handlers)
   handlers_(handlers),              // Create a copy, the vector is not too big
   init_(false),
   maxDepth_(100000),
-  maxIterations_(25),
+  maxIterations_(5),
   minNodeDist_(0),
-  maxStrongCands_(20),
-  clmn_(1000),
+  maxStrongCands_(100),
+  clmn_(5000),
   rel_(RelaxationPtr()),            // NULL
   status_(NotModifiedByBrancher),
   thresh_(100000),
   trustCutoff_(true),
+  maxlookahead_(9),
   x_(0)
 {
   timer_ = env->getNewTimer();
@@ -81,36 +82,38 @@ BrCandPtr RBrDev::findBestCandidate_(const double objval, double cutoff, NodePtr
     
   double best_score = -INFINITY;
   double score, change_up, change_down, maxchange; 
-  UInt cnt, maxcnt,tmpindx;
+  UInt cnt, maxcnt,tmpindx,dgrdscr;
   EngineStatus status_up, status_down;
-  BrCandPtr cand, best_cand,canBstscr;
+  BrCandPtr cand, best_cand;
   best_cand = BrCandPtr(); // NULL
   int cndindx;
 
   maxchange = cutoff-objval;
   // do strong branching on branching candidates
+  BrCandVIter it;
   if (brnchngCands_.size()>0) {
     BrCandVIter it;
     engine_->enableStrBrSetup();
     engine_->setIterationLimit(maxIterations_); // TODO: make limit dynamic.
     cnt = 0;
+    dgrdscr = 0;
     maxcnt = (node->getDepth()>maxDepth_) ? 0 : maxStrongCands_;
 
-    for (it=brnchngCands_.begin(); it!=brnchngCands_.end() && cnt < maxcnt ; ++it, ++cnt) {
+    for (it=brnchngCands_.begin(); it!=brnchngCands_.end() && (cnt < maxcnt) && (dgrdscr < maxlookahead_); ++it, ++cnt) {
+
       cand = *it;
       strongBranch_(cand, change_up, change_down, status_up, status_down);
       change_up    = std::max((change_up - objval), 0.0);
       change_down  = std::max(change_down - objval, 0.0);
       useStrongBranchInfo_(cand, maxchange, change_up, change_down,status_up, status_down);
       score = getScore_(change_up, change_down);
-      canBstscr =*it;
-      cndindx = canBstscr->getPCostIndex();
+      cndindx = cand->getPCostIndex();
       // store scores per node 
       tmpindx = crntClmns_*maxStrongCands_ + cnt;
       scoreIndxMat_[tmpindx] = cndindx;
       scoreMatd_[tmpindx] = change_down;
       scoreMatu_[tmpindx] = change_up;
-      lastStrBranched_[cand->getPCostIndex()] = stats_->calls;
+      lastStrBranched_[cndindx] = stats_->calls;
 #if SPEW
       writeScore_(cand, score, change_up, change_down);
 #endif
@@ -118,6 +121,7 @@ BrCandPtr RBrDev::findBestCandidate_(const double objval, double cutoff, NodePtr
         break;
       }
       if (score > best_score) {
+    	dgrdscr = 0;
         best_score = score;
         best_cand = cand;
         if (change_up > change_down) {
@@ -126,7 +130,9 @@ BrCandPtr RBrDev::findBestCandidate_(const double objval, double cutoff, NodePtr
           best_cand->setDir(UpBranch);
         }
       }
-
+      else{
+	dgrdscr++;
+      }
     }
     engine_->resetIterationLimit(); 
     engine_->disableStrBrSetup();
@@ -183,7 +189,6 @@ Branches RBrDev::findBranches(RelaxationPtr rel, NodePtr node,
     init_ = true;
     initialize(rel);
   }
-
   rel_ = rel;
   br_status = NotModifiedByBrancher;
   status_ = NotModifiedByBrancher;
@@ -204,7 +209,7 @@ Branches RBrDev::findBranches(RelaxationPtr rel, NodePtr node,
                                    s_pool->getBestSolutionValue(),
                                    node, &flagsumzero,&wtdscr,&wtdcand);
        
-      crntClmns_++; //increment the column as the current node is not getting sufficient info, so record new info
+      crntClmns_++; //increment the column to record a new info
     }
   }
   if(status_ == NotModifiedByBrancher ){
@@ -382,9 +387,9 @@ double RBrDev::getScore_(const double & up_score,
 {
 
   if (up_score>down_score) {
-    return down_score*0.8 + up_score*0.2;
+    return down_score*0.6 + up_score*0.4;
   } else {
-     return up_score*0.8 + down_score*0.2;
+     return up_score*0.6 + down_score*0.4;
   }
   return 0.;
 }
@@ -392,64 +397,31 @@ double RBrDev::getScore_(const double & up_score,
 void RBrDev::updateTable_(const double & objVl)
     
 {
-  double bndwt=.5;
-  int bandsize;
-  //int wtd[3] ={0,0,0};
-  //double wf1[3]={0.0,0.0,0.0};
-  //double wf2[3]={0.0,0.0,0.0};
-  double tempFeature=0.0;
-  //if the column of the Matrix increased to clmn_,flush the Matrix  
+  double tempLb=0.0;
+  double tempUb=0.0;
+  double sum;
+  //if the column of the Matrix reaches clmn_,flush the Matrix  
   if((crntClmns_+1)%clmn_==0){
     crntClmns_ = 0;   
   }    
    // flush before storing it   
-  hashValue_[hash_*crntClmns_] =0.0;
-  hashValue_[hash_*crntClmns_+1] =0.0;
-
-  for(int i=0; i<numBinary_; i++)
-  {
-    tempFeature = bndwt*(rel_->getVariable(indxBin_[i])->getLb()) +
-        (1-bndwt)*rel_->getVariable(indxBin_[i])->getUb();
-
-    //countFeatureTypes(wf1, wf2, wtd, tempFeature,i);
-    // End of nested section
-    hashValue_[hash_*crntClmns_] = hashValue_[hash_*crntClmns_] + (randVal1_[i])*tempFeature;
-    hashValue_[hash_*crntClmns_+1] = hashValue_[hash_*crntClmns_+1] + (randVal2_[i])*tempFeature;
+  //Eval Hash
+  for(int h= 0; h <hash_;h++){
+    sum = 0.0;
+    for(int i=0; i<numBinary_; i++)
+    {
+      tempLb = rel_->getVariable(indxBin_[i])->getLb();
+      tempUb = rel_->getVariable(indxBin_[i])->getUb();
+      sum = sum + (randVal_[h][2*i])*tempLb + (randVal_[h][2*i+1])*tempUb; 
+    }
+    hashValue_[hash_*crntClmns_+ h] = sum;
   }
-  // per unit wf1,wf2,wf3 for both hashes
- 
-  //for(int i=0;i<3;i++){
-  //  if(wtd[i]>=1){wf1[i] = wf1[i]/wtd[i]; wf2[i] = wf2[i]/wtd[i];}
-  //  else{wf1[i]=1;wf2[i]=1;}
- // }
-  //thrshldSim_ = 15*(.4*(.5*wf1[0]) +.3*(.5*wf1[2]) + .3*(1*wf1[1]))/hashValue_[hash_*crntClmns_];
-  thrshldSim_ = 13.0/hashValue_[hash_*crntClmns_];
 #if SPEW
-        logger_->msgStream(LogDebug) << me_ << "hash value1 and hash value2 = "
-        << hashValue_[hash_*crntClmns_] <<"\t"<< hashValue_[hash_*crntClmns_+1] << std::endl;
+        logger_->msgStream(LogDebug) << me_ << "hash value1, hash value2 and hash value2 = "
+        << hashValue_[hash_*crntClmns_] <<"\t"<< hashValue_[hash_*crntClmns_+1]<<
+		"\t"<< hashValue_[hash_*crntClmns_+2] << std::endl;
 #endif
 }
-
-void RBrDev::countFeatureTypes(double *wf1, double *wf2, int *wtd, double feature, int i)
-{
-
-  if(feature==1){
-    wf1[1] = wf1[1] +  randVal1_[i]*feature;
-    wf2[1] = wf2[1] +  randVal2_[i]*feature;
-    wtd[1]++;
-  } 
-  else if(feature==0){
-    wf1[0] = wf1[0] +  randVal1_[i]*feature;
-    wf2[0] = wf2[0] +  randVal2_[i]*feature;
-    wtd[0]++;
-  }
-  else{
-    wf1[2] = wf1[2] +  randVal1_[i]*feature;
-    wf2[2] = wf2[2] +  randVal2_[i]*feature;
-    wtd[2]++;
-  }
-}
-
 
 // return postion(indx) of index of candidate(cndindx) in scoreIndxMat_
 bool RBrDev::evalIndx_(UInt clmnindx1, UInt cndindx,int* indx)
@@ -460,9 +432,8 @@ bool RBrDev::evalIndx_(UInt clmnindx1, UInt cndindx,int* indx)
   while(start < end)
   {
     if(scoreIndxMat_[start]== cndindx){*indx = i; return true;} 
-    start = start+1;
-    i++;
-
+      start = start+1;
+      i++;
   }  
   return false;
 }
@@ -475,19 +446,19 @@ void RBrDev::mostSimilarNode_()
   UInt counter;
 #if SPEW
   logger_->msgStream(LogDebug) << me_ <<" current nodeid= " 
-                               << NodeIdCollect_[crntClmns_] << " and ids of the similar noded: "<<"\t";
+                               << NodeIdCollect_[crntClmns_] << " and ids of the similar nodes: "<<"\t";
 #endif
-
-  //if a node is available in every bin then it is similar 
   for(unsigned int j=0;j<crntClmns_;j++){
     counter = 0;
     for(unsigned int h=0;h<hash_;h++){
       hvalcur =hashValue_[hash_*crntClmns_+ h] ;
       hvalprev = hashValue_[hash_*j + h];
-      if(hvalprev >= hvalcur*(1-thrshldSim_) && hvalprev <= hvalcur*(1+thrshldSim_))
+      //std::cout<<hvalcur<<"\t"<<hvalprev<<"\n";
+      //if(hvalprev >= hvalcur*(1-thrshldSim_[0]) && hvalprev <= hvalcur*(1+thrshldSim_[0]))
+      if(abs(hvalprev - hvalcur) <=thrshldSim_[h])
         counter++;
     }
-  if(counter>hash_-1){
+  if(counter==hash_){
     binrslt_.push_back(j);
  #if SPEW
   logger_->msgStream(LogDebug) << NodeIdCollect_[j] <<"\t";
@@ -508,9 +479,7 @@ BrCandPtr RBrDev::simNodeHash_(double objVl,UInt nodeId, bool* flagsumzero,
 
   std::vector<BrCandPtr> brnchngCandstemp;
   UInt cndindx,clmnindx;
-  double sumScored = 0.0; 
-  double sumScoreu = 0.0;
-  double sumScore = 0.0;
+  double sumScored,sumScoreu,sumScore; 
   double change_up, change_down,score1;
   double topScore =-INFINITY;
   BrCandPtr matched_cand = BrCandPtr();  // NULL
@@ -520,7 +489,6 @@ BrCandPtr RBrDev::simNodeHash_(double objVl,UInt nodeId, bool* flagsumzero,
   // Update node id and the LB of the current node
   NodeIdCollect_[crntClmns_] = nodeId;
   LbValCollect_[crntClmns_] = objVl;
-
   // clear the binrslt_ 
   binrslt_.clear();
 
@@ -538,7 +506,7 @@ BrCandPtr RBrDev::simNodeHash_(double objVl,UInt nodeId, bool* flagsumzero,
   logger_->msgStream(LogDebug) << me_ << "objVal at the current node "
      <<NodeIdCollect_[crntClmns_] <<" is "<< LbValCollect_[crntClmns_]<<std::endl;
 
-  logger_->msgStream(LogDebug) << me_ << "objVal at the node "
+  logger_->msgStream(LogDebug) << me_ << "objVal at the parent node "
      <<NodeIdCollect_[crntClmns_-1] <<" is "<< LbValCollect_[crntClmns_-1]<<std::endl;
 #endif
 
@@ -547,7 +515,7 @@ BrCandPtr RBrDev::simNodeHash_(double objVl,UInt nodeId, bool* flagsumzero,
   mostSimilarNode_();
   stats_->searchSNodeTime += timer_->query();
   timer_->stop();
-
+  
   // if within a given similarity threshold, we do not find any similar nodes
   // do strong branching
   if(binrslt_.size()==0 ){
@@ -558,17 +526,23 @@ BrCandPtr RBrDev::simNodeHash_(double objVl,UInt nodeId, bool* flagsumzero,
   for(BrCandVIter it=brnchngCands_.begin(); it!=brnchngCands_.end(); ++it) {
     canBstscr = *it;
     cndindx = canBstscr->getPCostIndex();
-    double scr_wt=0.55;
+    double scr_wt=0.65;
     bool foundflag = false;
     int varindx = 0;
+    int simcounter = 0;
+    sumScore=0.0;sumScored =0.0;sumScoreu=0.0;
+
     for (unsigned int i=0;i<binrslt_.size();i++) {
       std::vector<unsigned int> tempVctr;
       clmnindx = binrslt_.at(i);
-      if (clmnindx == -1) {continue;}
+      if (clmnindx == -1) {
+	continue;
+      }
 
       if (evalIndx_(clmnindx, cndindx, &varindx)) {
         sumScored = sumScored + scoreMatd_[clmnindx*maxStrongCands_ + varindx];
         sumScoreu = sumScoreu + scoreMatu_[clmnindx*maxStrongCands_ + varindx];
+	simcounter++;
         foundflag = true;
       } 
     }
@@ -579,15 +553,27 @@ BrCandPtr RBrDev::simNodeHash_(double objVl,UInt nodeId, bool* flagsumzero,
       *flagsumzero = true;
     }
     else{
-      sumScored = sumScored/binrslt_.size();
-      sumScoreu = sumScoreu/binrslt_.size();
+      //sumScored = sumScored/binrslt_.size(); // Should not divide by binrslt_.size()
+      sumScored = sumScored/simcounter; // 
+      //sumScoreu = sumScoreu/binrslt_.size(); // Should not divide by binrslt_.size()
+      sumScoreu = sumScoreu/simcounter;
+
     }
 
     getPCScore_(*it, &change_down, &change_up, &score1);
     //Compute the weighted average
-    sumScore= scr_wt*(getScore_(sumScoreu, sumScored))+(1-scr_wt)*score1;
-    //sumScoreu = scr_wt*sumScoreu + (1-scr_wt)*change_up; // require updated score 
-    //sumScored = scr_wt*sumScored + (1-scr_wt)*change_down;// require updated score
+    //if(sumScoreu ==0. && sumScored ==0.){// There is no erquirement of this if statement 
+     //  sumScore = score1;
+     //  sumScoreu = change_up;
+     //  sumScored = change_down;
+   // }
+    //else{
+    if(true){
+      sumScore= scr_wt*(getScore_(std::max(0.,sumScoreu), 
+			    std::max(0.,sumScored)))+(1-scr_wt)*score1;
+      sumScoreu = scr_wt*sumScoreu + (1-scr_wt)*change_up; // require updated score 
+      sumScored = scr_wt*sumScored + (1-scr_wt)*change_down;// require updated score
+    }
     // find the variable with highest score
     if(topScore<sumScore){
       topScore = sumScore;
@@ -598,7 +584,6 @@ BrCandPtr RBrDev::simNodeHash_(double objVl,UInt nodeId, bool* flagsumzero,
         matched_cand->setDir(UpBranch);
       }
     }
-    sumScore=0.0;sumScored =0.0;sumScoreu=0.0;
   }
   if (*flagsumzero==true) {
     brnchngCands_.clear();
@@ -653,6 +638,7 @@ void RBrDev::initialize(RelaxationPtr rel)
 
 {
   int n = rel->getNumVars();
+  std::cout<<"total variable"<<n<<std::endl;
   // find number of binaries
   numBinary_ = rel->getSize()->bins;
   // initialize to zero.
@@ -663,27 +649,55 @@ void RBrDev::initialize(RelaxationPtr rel)
   timesDown_ = std::vector<UInt>(n,0); 
   UInt maxsimclmn = std::max(100,int(numBinary_/20));
   binrslt_ = UIntVector(maxsimclmn,-1); //currently minimum 50 similar nodes are allowable
-  binrslt_ = UIntVector(500,-1); //currently minimum 50 similar nodes are allowable
+  binrslt_ = UIntVector(1000,-1); //currently minimum 50 similar nodes are allowable
   nvarCands_.reserve(n);
   brnchngCands_.reserve(n);
   x_.reserve(n);
   crntClmns_= 0;
-  hash_ = 2;
-  randVal1_= DoubleVector(numBinary_,0.);
-  randVal2_= DoubleVector(numBinary_,0.);
+  hash_ = 3;
+  // randVal_ should be the size of numBinary_
+  randVal_.resize(hash_);
+  for (int i = 0; i < hash_; ++i)
+    randVal_[i].resize(2*numBinary_,0.);
+  //for(int h = 0; h<hash_;h++){randVal_[h]= DoubleVector(2*numBinary_,0.);}
+  thrshldSim_= DoubleVector(hash_,0.); 
+  
   indxBin_= IntVector(numBinary_,0);
   numBinary_ =0;
+  // Eval Weight vectors
   for(int i=0;i<n;i++){
     if(rel->getVariable(i)->getType()==Binary){
       indxBin_[numBinary_] = i;
-      randVal1_[numBinary_] = rand()/(RAND_MAX + 1.);  
-      randVal2_[numBinary_] = rand()/(RAND_MAX + 1.);  
+      for(int j =0; j <hash_; j++)
+      {
+	randVal_[j][2*numBinary_] = rand()/(RAND_MAX + 1.);// Lb
+        randVal_[j][2*numBinary_+1] = rand()/(RAND_MAX + 1.);//Ub
+      }
       numBinary_++;
     }
   }
-  double max = *max_element(randVal1_.begin(),randVal1_.end());
-  //thrshldSim_ = std::min(0.6,(55*max/numBinary_));
-  //thrshldSim_ = 100.0/numBinary_;
+  //sort the copies of randVals for finding first k elements
+  std::vector<double> r[hash_];
+  // Copying  and sorting 
+  for(int i = 0; i < hash_; i++)
+  {
+     r[i] = randVal_[i];
+     std::sort(r[i].begin(), r[i].end(), std::greater<double>());
+  }
+  // set the hamming distance 
+  int hd = 18; 
+  //if(numBinary_<=200){hd = 15;}
+  //if(numBinary_>200 && numBinary_ <=350){hd = 20;}
+  //if(numBinary_>350 && numBinary_ <=500){hd = 30;}
+  //if(numBinary_>400 && numBinary_ <=800){hd = 40;}
+  //if(numBinary_>500){hd = 40;}
+  // sum first k elements
+  for(int j = 0; j < hash_; j++){
+    for(int i = 0; i < hd; i++){thrshldSim_[j] += r[j][i];}
+  }
+  std::cout<<"total binary"<<numBinary_<<"random legth"<<randVal_[1].size()<<"\n";
+  std::cout<<"threshold values"<<thrshldSim_[0]<<"\t"<<thrshldSim_[1]<<"\t"<<thrshldSim_[2]<<std::endl; 
+
   hashValue_= DoubleVector(hash_*clmn_,0.);//it containts two hashes per node
   NodeIdCollect_= UIntVector(clmn_,0);
   LbValCollect_= DoubleVector(clmn_,0.);
