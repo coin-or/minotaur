@@ -187,7 +187,7 @@ private:
 /**
  *\brief Update the Signature matrix table
  */
-  void updateTable_(const double & objVl); 
+  void computeHashValues_(); 
   
   /**  
    * Find the collection of Nodes those are similar to current Node
@@ -296,6 +296,8 @@ void countFeatureTypes(double *wf1, double *wf2, int *wtd, double feature, int i
 
   /// True if data structures initialized. False otherwise.
   bool init_;
+  /// True if one wants to store strng scores and bnd info in a file. False otherwise.
+  bool flag_my_file_;
 
   /// When did we last strong-branch on a candidate.
   UIntVector lastStrBranched_;
@@ -313,6 +315,13 @@ void countFeatureTypes(double *wf1, double *wf2, int *wtd, double feature, int i
    * engine.
    */
   UInt maxIterations_;
+
+  /**
+   *\brief maximal number of further variables evaluated without better score
+   *
+   */
+  UInt maxlookahead_;
+
 
   /**
    * \brief Do not strong-branch on more than these many candidates
@@ -367,15 +376,16 @@ void countFeatureTypes(double *wf1, double *wf2, int *wtd, double feature, int i
  * A vector for random numbers, hash storage, node Id and  LB storage 
  *
  */
-  std::vector<double> randVal1_;
-  std::vector<double> randVal2_;
-  std::vector<double> randVal3_;
+  //std::vector<double> randVal_[3];
+  std::vector<std::vector<double> > randVal_;
   std::vector<double> hashValue_;
   std::vector<double> LbValCollect_;
+
   std::vector<UInt> NodeIdCollect_;
 
+
  /**
- * A one d matrix keeps up and down scores of every node: stores 2D(score by
+ * An array keeps up and down scores of every node: stores 1D(score by
  * nodes) info 
  *
  */
@@ -383,7 +393,7 @@ void countFeatureTypes(double *wf1, double *wf2, int *wtd, double feature, int i
   std::vector<double> scoreMatu_;
 
  /**
- * A one d matrix keeps the indices of variables of up and down scores of every node: stores 2D(score by
+ * An array keeps the indices of variables of up and down scores of every node: stores 2D(score by
  * nodes) info 
  *
  */
@@ -406,7 +416,7 @@ void countFeatureTypes(double *wf1, double *wf2, int *wtd, double feature, int i
  *store similar column number of a given column
  */
 
-  std::vector<unsigned int> binrslt_;
+  std::vector<unsigned int> binOfSimNodes_;
 
   
  
@@ -419,8 +429,8 @@ void countFeatureTypes(double *wf1, double *wf2, int *wtd, double feature, int i
   /// Should we use the objective value to deduce a modification.
   bool trustCutoff_;
 
-
-  double thrshldSim_;
+  /// there are 3 hash values
+  DoubleVector thrshldSim_;
   /**
    * \brief A vector of candidates that will need strong branching. These
    * candidates will be arranged in some order of preferance.
