@@ -187,8 +187,12 @@ private:
 /**
  *\brief Update the Signature matrix table
  */
-  void computeHashValues_(); 
+  void updateTable_(); 
   
+  /**
+   * resize vectors if the intialial allocation is full
+   */
+  void resizeNodeInfoDs_();
   /**  
    * Find the collection of Nodes those are similar to current Node
    * using LSH method
@@ -305,11 +309,12 @@ void countFeatureTypes(double *wf1, double *wf2, int *wtd, double feature, int i
   /// If the depth of a node is greater than maxDepth_, then don't do any
   /// strong brancing.
   UInt maxDepth_;
+
 /*Declaration for featureMat_ 
  */
   UInt crntClmns_;
   UInt numBinary_;
-  UInt hash_;
+  UInt kappa_;
   /**
    * \brief Maximum number of iterations to be performed in each call to the
    * engine.
@@ -383,21 +388,20 @@ void countFeatureTypes(double *wf1, double *wf2, int *wtd, double feature, int i
 
   std::vector<UInt> NodeIdCollect_;
 
-
  /**
- * An array keeps up and down scores of every node: stores 1D(score by
+ * A one d matrix keeps up and down scores of every node: stores 2D(score by
  * nodes) info 
  *
  */
-  std::vector<double> scoreMatd_;
-  std::vector<double> scoreMatu_;
+  std::vector<double> strongInfoDown_;
+  std::vector<double> strongInfoUp_;
 
  /**
- * An array keeps the indices of variables of up and down scores of every node: stores 2D(score by
+ * A one d matrix keeps the indices of variables of up and down scores of every node: stores 2D(score by
  * nodes) info 
  *
  */
-  std::vector<int> scoreIndxMat_;
+  std::vector<int> strongVarIndices_;
 
  /**
  * A one d matrix that stores the counter of score update in every node after LP 
@@ -430,7 +434,7 @@ void countFeatureTypes(double *wf1, double *wf2, int *wtd, double feature, int i
   bool trustCutoff_;
 
   /// there are 3 hash values
-  DoubleVector thrshldSim_;
+  DoubleVector theta_;
   /**
    * \brief A vector of candidates that will need strong branching. These
    * candidates will be arranged in some order of preferance.
