@@ -47,7 +47,7 @@ void RCHandler::separate(ConstSolutionPtr sol, NodePtr node,
   //double xval;
   VariableConstIterator v_iter;
   VariableType v_type;
-  VarBoundMod *m = 0;
+  VarBoundModPtr m;
   const double *x = sol->getPrimal();
   const double *p = sol->getDualOfVars();  //reduced cost
   // Current LP relaxation objective value (in my view )   
@@ -73,8 +73,9 @@ void RCHandler::separate(ConstSolutionPtr sol, NodePtr node,
        double new_ub  = lb +  (bestFeasible_objval-current_objval)/ r;
        //std::cout<<"old Bound UB for x" << (*v_iter)->getIndex()<<": " <<(*v_iter)->getUb()<< " new bound: "<< new_ub<<std::endl;
        if (new_ub < (*v_iter)->getUb() - tolerance*10 ){
-        m = new VarBoundMod(*v_iter, Upper, new_ub);
+        m = (VarBoundModPtr) new VarBoundMod(*v_iter, Upper, new_ub);
         m->applyToProblem(rel); 
+        r_mods.push_back(m);
         //std::cout<<"Changed Bound UB for x" << (*v_iter)->getIndex()<< ": " <<(*v_iter)->getUb()<<std::endl;
        } 
        
@@ -84,8 +85,9 @@ void RCHandler::separate(ConstSolutionPtr sol, NodePtr node,
        double new_lb  = ub +  (bestFeasible_objval-current_objval) / r;
        //std::cout<<"old Bound LB for x" << (*v_iter)->getIndex()<<":  "<<(*v_iter)->getLb()<< " new bound: "<< new_lb<<std::endl;
        if (new_lb > (*v_iter)->getLb() + tolerance*10 ){
-       m = new VarBoundMod(*v_iter, Lower, new_lb);
+       m = (VarBoundModPtr) new VarBoundMod(*v_iter, Lower, new_lb);
        m->applyToProblem(rel);
+       r_mods.push_back(m);
        //std::cout<<"Changed Bound LB for x" << (*v_iter)->getIndex() <<": " <<(*v_iter)->getLb()<<std::endl;
        }
      }

@@ -518,9 +518,9 @@ void SOS2Handler::relaxNodeInc(NodePtr , RelaxationPtr , bool *is_inf)
 }
 
 
-void SOS2Handler::separate(ConstSolutionPtr sol, NodePtr , RelaxationPtr rel, 
-                         CutManager *, SolutionPoolPtr s_pool, ModVector & ,
-                         ModVector &, bool *sol_found, SeparationStatus *status)
+void SOS2Handler::separate(ConstSolutionPtr , NodePtr , RelaxationPtr , 
+                         CutManager *, SolutionPoolPtr , ModVector & ,
+                         ModVector &, bool *, SeparationStatus *status)
 {
   *status = SepaNone;
 }

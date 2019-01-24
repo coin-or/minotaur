@@ -346,7 +346,6 @@ void PCBProcessor::separate_(ConstSolutionPtr sol, NodePtr node,
 {
   ModVector mods;
   HandlerIterator h;
-  ModificationConstIterator m_iter;
   SeparationStatus st = SepaContinue;
   bool sol_found;
   ModVector p_mods;      // Mods that are applied to the problem
@@ -362,6 +361,15 @@ void PCBProcessor::separate_(ConstSolutionPtr sol, NodePtr node,
       break;
     } else if (st == SepaResolve) {
       *status = SepaResolve;
+    }
+    for (ModificationConstIterator m_iter=p_mods.begin();
+         m_iter!=p_mods.end(); ++m_iter) {
+      node->addPMod(*m_iter);
+    }
+    for (ModificationConstIterator m_iter=r_mods.begin();
+         m_iter!=r_mods.end(); ++m_iter) {
+      node->addRMod(*m_iter);
+      // (*m_iter)->write(std::cout);
     }
   }
   if (true == sol_found) {
