@@ -355,8 +355,8 @@ void PCBProcessor::separate_(ConstSolutionPtr sol, NodePtr node,
   *status = SepaContinue;
   sol_found = false;
   for (h = handlers_.begin(); h != handlers_.end(); ++h) {
-    (*h)->separate(sol, node, relaxation_, cutMan_, s_pool, &sol_found,
-                   p_mods, r_mods, &st);
+    (*h)->separate(sol, node, relaxation_, cutMan_, s_pool, p_mods, r_mods,
+                   &sol_found, &st);
     if (st == SepaPrune) {
       *status = SepaPrune;
       break;

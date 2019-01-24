@@ -80,8 +80,8 @@ bool KnapCovHandler::isFeasible(ConstSolutionPtr , RelaxationPtr ,
 
 void KnapCovHandler::separate(ConstSolutionPtr sol, NodePtr,
                               RelaxationPtr rel, CutManager * cmanager,
-                              SolutionPoolPtr , bool * ,
-                              SeparationStatus * status)
+                              SolutionPoolPtr , ModVector & ,
+                              ModVector & , bool * , SeparationStatus * status)
 {
   // Check integer feasibility of sol, must add cuts if it is not integral.
   numvars_ = minlp_->getNumVars();

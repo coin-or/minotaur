@@ -300,8 +300,8 @@ double * PerspCutHandler::prVars(ConstSolutionPtr sol, UInt nvars, UInt itn)
 
 void PerspCutHandler::separate(ConstSolutionPtr sol, NodePtr n,
                                RelaxationPtr rel, CutManager * ,
-                               SolutionPoolPtr, bool *,
-                               SeparationStatus * status)
+                               SolutionPoolPtr, ModVector &, ModVector &,
+                               bool *, SeparationStatus * status)
 
 {
   // Generating perspective cuts only at root node

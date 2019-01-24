@@ -150,7 +150,8 @@ public:
     
   /// Can not return any cuts for this case.
   void separate(ConstSolutionPtr, NodePtr , RelaxationPtr , CutManager *, 
-                SolutionPoolPtr, bool *, SeparationStatus *) {};
+                SolutionPoolPtr, ModVector &, ModVector &, bool *,
+                SeparationStatus *) {};
     
   virtual ModificationPtr getBrMod(BrCandPtr , DoubleVector &, 
                                    RelaxationPtr , BranchDirection );

@@ -88,7 +88,8 @@ public:
    * Generate valid cuts using linear constraints.
    */
   void separate(ConstSolutionPtr , NodePtr , RelaxationPtr , CutManager *,
-                SolutionPoolPtr , bool *, SeparationStatus *) {};
+                SolutionPoolPtr , ModVector &, ModVector &, bool *,
+                SeparationStatus *) {};
 
   /// Does nothing.
   void getBranchingCandidates(RelaxationPtr, const DoubleVector &,

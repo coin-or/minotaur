@@ -98,7 +98,8 @@ public:
    */
   void separate(ConstSolutionPtr sol, NodePtr node, 
                 RelaxationPtr rel, CutManager *cutman, SolutionPoolPtr s_pool, 
-                bool *sol_found, SeparationStatus *status);
+                ModVector &p_mods, ModVector &r_mods, bool *sol_found,
+                SeparationStatus *status);
 
   /// Does nothing.
   virtual void getBranchingCandidates(RelaxationPtr , 

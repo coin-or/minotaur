@@ -216,8 +216,8 @@ void LinearHandler::fixToCont_()
 
 
 void LinearHandler::separate(ConstSolutionPtr, NodePtr , RelaxationPtr , 
-                             CutManager *, SolutionPoolPtr , bool *,
-                             SeparationStatus *)
+                             CutManager *, SolutionPoolPtr , ModVector & ,
+                             ModVector & , bool *, SeparationStatus *)
 {
   // do nothing.
 }

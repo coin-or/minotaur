@@ -90,8 +90,8 @@ public:
  
   // Base class method. Used for tightening upper and lower bound of variables.
   void separate(ConstSolutionPtr sol, NodePtr node, RelaxationPtr rel, 
-                CutManager *cutman, SolutionPoolPtr s_pool, bool *sol_found,
-                SeparationStatus *status);
+                CutManager *cutman, SolutionPoolPtr s_pool, ModVector &p_mods,
+                ModVector &q_mods, bool *sol_found, SeparationStatus *status);
  
   // Show statistics.
   void writeStats(std::ostream &out) const{}

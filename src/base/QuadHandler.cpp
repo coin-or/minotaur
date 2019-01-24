@@ -902,8 +902,8 @@ void QuadHandler::resetStats_()
 
 
 void QuadHandler::separate(ConstSolutionPtr sol, NodePtr , RelaxationPtr rel,
-                           CutManager *, SolutionPoolPtr , bool *,
-                           SeparationStatus *status)
+                           CutManager *, SolutionPoolPtr , ModVector &,
+                           ModVector &,  bool *, SeparationStatus *status)
 {
   double yval, xval;
   double yl, xl;

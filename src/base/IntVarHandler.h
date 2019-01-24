@@ -91,7 +91,8 @@ public:
    * doing anything.
    */
   void separate(ConstSolutionPtr, NodePtr , RelaxationPtr, CutManager *,
-                SolutionPoolPtr, bool *, SeparationStatus *) {};
+                SolutionPoolPtr, ModVector &, ModVector &, bool *,
+                SeparationStatus *) {};
 
   /// Set the integer tolerance.
   void setTol(double tol);

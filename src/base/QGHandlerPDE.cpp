@@ -435,8 +435,8 @@ void QGHandlerPDE::relax_(RelaxationPtr rel, bool *is_inf)
 }
 
 void QGHandlerPDE::separate(ConstSolutionPtr sol, NodePtr , RelaxationPtr rel, 
-                         CutManager *, SolutionPoolPtr s_pool,
-                         bool *sol_found, SeparationStatus *status)
+                         CutManager *, SolutionPoolPtr s_pool, ModVector &,
+                         ModVector &, bool *sol_found, SeparationStatus *status)
 {      
   VariableConstIterator v_iter;
   VariableType v_type;

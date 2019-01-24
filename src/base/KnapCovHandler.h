@@ -86,7 +86,8 @@ public:
    * A set of knapsack cover cuts will be generated.
    */
   void separate(ConstSolutionPtr, NodePtr, RelaxationPtr, CutManager *cutman,
-                SolutionPoolPtr, bool *, SeparationStatus * status);
+                SolutionPoolPtr, ModVector &p_mods, ModVector &r_mods,
+                bool *, SeparationStatus * status);
 
   /// Does nothing. 
   virtual void getBranchingCandidates(RelaxationPtr,

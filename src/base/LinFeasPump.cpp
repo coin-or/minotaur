@@ -142,6 +142,7 @@ void LinFeasPump::implementFP_(const double*, SolutionPoolPtr s_pool)
   UInt max_non_zero_obj       = 500;
   double inf_meas             = 0.0;
   int err;
+  ModVector p_mods, r_mods; 
   
   e_->setOptionsForSingleSolve();
   lpE_->solve();
@@ -196,7 +197,8 @@ void LinFeasPump::implementFP_(const double*, SolutionPoolPtr s_pool)
     if (!to_continue) {
       if (false==sol_found) {
         ++(stats_->numNLPs);
-        qh_->separate(sol, node, r_, 0, s_pool, &sol_found, &sep_status);
+        qh_->separate(sol, node, r_, 0, s_pool, p_mods, r_mods, &sol_found,
+                      &sep_status);
         to_continue = true; //reset to continue after separating
 #if SPEW
         logger_->msgStream(LogDebug) << me_ << "separation status = " 
