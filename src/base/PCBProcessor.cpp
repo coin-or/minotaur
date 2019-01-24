@@ -349,11 +349,14 @@ void PCBProcessor::separate_(ConstSolutionPtr sol, NodePtr node,
   ModificationConstIterator m_iter;
   SeparationStatus st = SepaContinue;
   bool sol_found;
+  ModVector p_mods;      // Mods that are applied to the problem
+  ModVector r_mods;      // Mods that are applied to the relaxation.
 
   *status = SepaContinue;
   sol_found = false;
   for (h = handlers_.begin(); h != handlers_.end(); ++h) {
-    (*h)->separate(sol, node, relaxation_, cutMan_, s_pool, &sol_found, &st);
+    (*h)->separate(sol, node, relaxation_, cutMan_, s_pool, &sol_found,
+                   p_mods, r_mods, &st);
     if (st == SepaPrune) {
       *status = SepaPrune;
       break;

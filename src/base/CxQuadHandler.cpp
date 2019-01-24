@@ -821,8 +821,8 @@ Branches CxQuadHandler::getBranches(BrCandPtr cand, DoubleVector & x,
 
 
 void CxQuadHandler::separate(ConstSolutionPtr, NodePtr , RelaxationPtr ,
-                             CutManager *, SolutionPoolPtr , bool *,
-                             SeparationStatus *)
+                             CutManager *, SolutionPoolPtr , ModVector & ,
+                             ModVector & , bool *, SeparationStatus *)
 {
 
 }

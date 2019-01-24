@@ -409,8 +409,8 @@ bool CxUnivarHandler::isFeasible(ConstSolutionPtr sol, RelaxationPtr , bool &,
 // Eventually, could add additional linearization inequalities for the convex
 // side here... but not absolutely necessary
 void CxUnivarHandler::separate(ConstSolutionPtr , NodePtr , RelaxationPtr ,
-                               CutManager *, SolutionPoolPtr , bool *,
-                               SeparationStatus *)
+                               CutManager *, SolutionPoolPtr , ModVector & ,
+                               ModVector & , bool *, SeparationStatus *)
 {
 }
 

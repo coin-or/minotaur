@@ -302,7 +302,8 @@ public:
    * Not implemented yet.
    */
   void separate(ConstSolutionPtr sol, NodePtr node, RelaxationPtr rel, 
-                CutManager *cutman, SolutionPoolPtr s_pool, bool *sol_found,
+                CutManager *cutman, SolutionPoolPtr s_pool, ModVector &p_mods,
+                ModVector &r_mods, bool *sol_found,
                 SeparationStatus *status);
 
 

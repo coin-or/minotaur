@@ -279,8 +279,9 @@ namespace Minotaur {
      */
     virtual void separate(ConstSolutionPtr sol, NodePtr node, 
                           RelaxationPtr rel, CutManager *cutman,
-                          SolutionPoolPtr s_pool, bool *sol_found,
-                          SeparationStatus *status) = 0;
+                          SolutionPoolPtr s_pool,
+                          ModVector &p_mods, ModVector &r_mods,
+                          bool *sol_found, SeparationStatus *status) = 0;
 
     /**
      * \brief Tell the handler whether the problem will be modified or the
