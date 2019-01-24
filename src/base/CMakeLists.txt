@@ -98,6 +98,7 @@ set (MINOTAUR_SOURCES
      QuadHandler.cpp 
      QuadraticFunction.cpp 
      RandomBrancher.cpp
+     RCHandler.cpp
      Relaxation.cpp 
      ReliabilityBrancher.cpp 
      SecantMod.cpp 
@@ -215,6 +216,7 @@ set (MINOTAUR_HEADERS
      QPDRelaxer.h 
      QuadraticFunction.h
      RandomBrancher.h
+     RCHandler.h
      Relaxation.h
      ReliabilityBrancher.h
      SecantMod.h

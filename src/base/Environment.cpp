@@ -210,6 +210,11 @@ void Environment::createDefaultOptions_()
       "Write solution files: <0/1>", true, false);
   options_->insert(b_option);
 
+  b_option = (BoolOptionPtr) new Option<bool>("rc_fix",
+          "If true, tighten bounds on variables using reduce costs: <0/1>",
+          true, true);
+  options_->insert(b_option);
+
   // reset, so that we don't accidently add it again.
   b_option.reset();
 

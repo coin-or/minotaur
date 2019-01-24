@@ -48,6 +48,7 @@
 #include <TransSep.h>
 #include <PerspCutHandler.h>
 #include <PerspCon.h>
+#include "RCHandler.h"
 
 using namespace Minotaur;
 
@@ -120,6 +121,7 @@ void setInitialOptions(EnvPtr env)
   env->getOptions()->findBool("nl_presolve")->setValue(true);
   env->getOptions()->findBool("separability")->setValue(false);
   env->getOptions()->findBool("perspective")->setValue(false);
+  env->getOptions()->findBool("rc_fix")->setValue(true);
 }
 
 
@@ -280,6 +282,7 @@ int main(int argc, char* argv[])
   IntVarHandlerPtr v_hand;
   LinearHandlerPtr l_hand;
   QGHandlerPtr qg_hand;
+  RCHandlerPtr rc_hand;
 
   //engines
   EnginePtr nlp_e;
@@ -380,6 +383,14 @@ int main(int argc, char* argv[])
     qg_hand->setModFlags(false, true);
     handlers.push_back(qg_hand);
     assert(qg_hand);
+    if (options->findBool("rc_fix")->getValue())
+    {
+      rc_hand = (RCHandlerPtr) new RCHandler();
+      rc_hand->setModFlags(false, true); 
+      handlers.push_back(rc_hand);
+      assert(rc_hand);
+    }  
+
 
     // report name
     env->getLogger()->msgStream(LogExtraInfo) << me << "handlers used:"
