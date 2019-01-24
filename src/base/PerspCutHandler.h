@@ -102,7 +102,7 @@ namespace Minotaur {
 
   /// Separates current solution. 
   void separate(ConstSolutionPtr, NodePtr, RelaxationPtr, CutManager *cutman,
-                SolutionPoolPtr, bool *, SeparationStatus * status);
+                SolutionPoolPtr, bool *, ModVector &p_mods,ModVector &r_mods, SeparationStatus * status);
  
   /// Writes statistics.
   void writeStats(std::ostream &out) const;

@@ -53,9 +53,9 @@ public:
                   bool &should_prune, double &inf_meas);
 
   /// Empty method as we do not do any separation in SOS1.
-  void separate(ConstSolutionPtr, NodePtr , RelaxationPtr, CutManager *,
-                SolutionPoolPtr, bool *, SeparationStatus *);
-
+  void separate(ConstSolutionPtr sol, NodePtr node, RelaxationPtr rel, 
+                CutManager *cutman, SolutionPoolPtr s_pool, ModVector &p_mods,
+                ModVector &r_mods, bool *sol_found, SeparationStatus *status);
   // Base class method.
   void getBranchingCandidates(RelaxationPtr rel, const DoubleVector &x,
                               ModVector & mods, BrVarCandSet &cands,

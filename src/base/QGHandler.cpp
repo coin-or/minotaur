@@ -753,8 +753,8 @@ void QGHandler::relax_(bool *is_inf)
 
 
 void QGHandler::separate(ConstSolutionPtr sol, NodePtr , RelaxationPtr rel, 
-                         CutManager *, SolutionPoolPtr s_pool, ModVector ,
-                         ModVector , bool *sol_found, SeparationStatus *status)
+                         CutManager *, SolutionPoolPtr s_pool, ModVector &,
+                         ModVector &, bool *sol_found, SeparationStatus *status)
 {      
   double value;
   VariableType v_type;
