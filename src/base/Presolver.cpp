@@ -50,9 +50,8 @@ Presolver::Presolver(ProblemPtr problem, EnvPtr env, HandlerVector handlers)
     eTol_(1e-8),
     status_(NotStarted)
 {
-  logger_ = (LoggerPtr) new Logger((LogLevel) (env->getOptions()
-        ->findInt("presolve_log_level")->getValue()));
-   env_ = env;
+  env_ = env;
+  logger_ = env->getLogger();
 }
 
 
@@ -60,9 +59,6 @@ Presolver::~Presolver()
 {
   handlers_.clear();
   mods_.clear();
-  env_.reset();
-  problem_.reset();
-  logger_.reset();
 }
 
 

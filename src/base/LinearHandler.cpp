@@ -68,13 +68,10 @@ LinearHandler::LinearHandler(EnvPtr env, ProblemPtr problem)
     pStats_(0),
     pOpts_(0)
 {
-  logger_ = (LoggerPtr) new Logger((LogLevel)(env->getOptions()->
-      findInt("handler_log_level")->getValue()));
+  logger_ = env->getLogger();
   pStats_ = new LinPresolveStats();
   pOpts_  = new LinPresolveOpts();
   pOpts_->doPresolve = env->getOptions()->findBool("lin_presolve")->getValue();
-  pOpts_->showStats  = env->getOptions()->findBool("lin_show_stats")
-    ->getValue();
   pOpts_->maxIters    = 15;
   pOpts_->purgeVars   = true;
   pOpts_->purgeCons   = true;
@@ -100,8 +97,6 @@ LinearHandler::~LinearHandler()
 {
   delete pStats_;
   delete pOpts_;
-  problem_.reset();
-  env_.reset();
   linVars_.clear();
 }
 

@@ -21,7 +21,7 @@ using namespace Minotaur;
 void AMPLCbcUT::setUp()
 {
   EnvPtr env = (EnvPtr) new Environment();
-  env->getOptions()->findInt("ampl_log_level")->setValue(LogNone);
+  env->setLogLevel(LogNone);
   iface_ = (MINOTAUR_AMPL::AMPLInterfacePtr) new AMPLInterface(env);
   e_ = (CbcEnginePtr) new CbcEngine(env);
 }

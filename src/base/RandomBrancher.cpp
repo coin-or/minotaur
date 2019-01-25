@@ -36,7 +36,7 @@ RandomBrancher::RandomBrancher()
   : handlers_(0),
     timer_(0)
 {
-  logger_ = new Logger(LogInfo);
+  logger_ = (LoggerPtr) new Logger(LogInfo);
   stats_ = new RandomBrStats();
   stats_->calls = 0;
   stats_->time = 0.0;
@@ -45,8 +45,7 @@ RandomBrancher::RandomBrancher()
 
 RandomBrancher::RandomBrancher(EnvPtr env, HandlerVector handlers)
 {
-  logger_ = new Logger((LogLevel) 
-                       env->getOptions()->findInt("br_log_level")->getValue());
+  logger_ = env->getLogger();
   timer_ = env->getNewTimer();
   stats_ = new RandomBrStats();
   stats_->calls = 0;
@@ -63,9 +62,6 @@ RandomBrancher::RandomBrancher(EnvPtr env, HandlerVector handlers)
 
 RandomBrancher::~RandomBrancher()
 {
-  if (logger_) {
-    delete logger_;
-  }
   if (timer_) {
     delete timer_;
   }

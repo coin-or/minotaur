@@ -37,12 +37,17 @@ PerspCon::PerspCon()
 
 
 PerspCon::PerspCon(ProblemPtr p, EnvPtr env)
-: env_(env), p_(p), sType_(0), cons_(0), binvar_(0), fixbvar_(0),
-  nviv_(0), lviv_(0) 
+: env_(env),
+  p_(p),
+  sType_(0),
+  cons_(0),
+  binvar_(0),
+  fixbvar_(0),
+  nviv_(0),
+  lviv_(0) 
 
 {
-  logger_ = (LoggerPtr) new Logger((LogLevel) 
-      env->getOptions()->findInt("handler_log_level")->getValue());
+  logger_ = env->getLogger();
 }
 
 
@@ -580,9 +585,6 @@ bool PerspCon::getStatus()
 
 PerspCon::~PerspCon()
 {
-  p_.reset();
-  env_.reset();
-  logger_.reset();
 }
 
 // Local Variables: 

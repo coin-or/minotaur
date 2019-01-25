@@ -55,7 +55,7 @@ namespace Minotaur {
     const static std::string me_; 
 
     /// Log manager.
-    Logger* logger_;
+    LoggerPtr logger_;
 
     /// Handlers that provide branching candidates.
     HandlerVector handlers_;

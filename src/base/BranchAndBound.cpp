@@ -67,14 +67,13 @@ BranchAndBound::BranchAndBound(EnvPtr env, ProblemPtr p)
 
   tm_ = (TreeManagerPtr) new TreeManager(env);
   options_ = (BabOptionsPtr) new BabOptions(env);
-  logger_ = (LoggerPtr) new Logger(options_->logLevel);
+  logger_ = env->getLogger();
 }
 
 
 BranchAndBound::~BranchAndBound()
 {
   options_.reset();
-  logger_.reset();
   nodePrcssr_.reset();
   nodeRlxr_.reset();
   tm_.reset();
@@ -523,7 +522,6 @@ BabStats::BabStats()
 // --------------------------------------------------------------------------
 BabOptions::BabOptions()
   : createRoot(true),
-    logLevel(LogInfo),
     nodeLimit(0),
     perGapLimit(0.),
     solLimit(0),
@@ -538,7 +536,6 @@ BabOptions::BabOptions(EnvPtr env)
   OptionDBPtr options = env->getOptions();
 
   logInterval = options->findDouble("bnb_log_interval")->getValue();
-  logLevel    = (LogLevel) options->findInt("log_level")->getValue();
   nodeLimit   = options->findInt("bnb_node_limit")->getValue();
   perGapLimit = options->findDouble("obj_gap_percent")->getValue();
   solLimit    = options->findInt("bnb_sol_limit")->getValue();

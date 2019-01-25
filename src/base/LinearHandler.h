@@ -132,9 +132,6 @@ public:
   /// Return a constant pointer to the presolve options.
   const LinPresolveOpts* getOpts() const;
 
-  /// If true show statistics.
-  void setPreOptShowStats(bool val) {pOpts_->showStats = val;}; 
-
   /// Maximum number of iterations.
   void setPreOptMaxIters(int val) {pOpts_->maxIters = val;}; 
 

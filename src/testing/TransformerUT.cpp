@@ -51,7 +51,7 @@ using namespace std;
 void TransformerUT::setUp()
 {
   env_ = (EnvPtr) new Environment();
-  env_->getOptions()->findInt("ampl_log_level")->setValue(Minotaur::LogNone);
+  env_->setLogLevel(Minotaur::LogNone);
   env_->setLogLevel(LogError);
   iface_ = (MINOTAUR_AMPL::AMPLInterfacePtr)
     new MINOTAUR_AMPL::AMPLInterface(env_);

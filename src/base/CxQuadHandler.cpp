@@ -55,8 +55,7 @@ CxQuadHandler::CxQuadHandler(EnvPtr env, ProblemPtr problem)
   : eTol_(1e-6)
 {
   problem_ = problem; 
-  logger_  = (LoggerPtr) new Logger((LogLevel) 
-      env->getOptions()->findInt("handler_log_level")->getValue());
+  logger_  = env->getLogger();
 }
 
 

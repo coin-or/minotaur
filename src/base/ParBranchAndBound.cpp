@@ -76,20 +76,12 @@ ParBranchAndBound::ParBranchAndBound(EnvPtr env, ProblemPtr p)
 
   tm_ = (ParTreeManagerPtr) new ParTreeManager(env);
   options_ = (ParBabOptionsPtr) new ParBabOptions(env);
-  logger_ = (LoggerPtr) new Logger(options_->logLevel);
+  logger_ = env->getLogger();
 }
 
 
 ParBranchAndBound::~ParBranchAndBound()
 {
-  options_.reset();
-  logger_.reset();
-  nodePrcssr_.reset();
-  nodeRlxr_.reset();
-  tm_.reset();
-  solPool_.reset();
-  problem_.reset();
-  env_.reset();
   if (timer_) {
     delete timer_;
   }
@@ -1019,7 +1011,6 @@ double ParBranchAndBound::totalTime()
 // --------------------------------------------------------------------------
   ParBabOptions::ParBabOptions()
 : createRoot(true),
-  logLevel(LogInfo),
   nodeLimit(0),
   perGapLimit(0.),
   solLimit(0),
@@ -1034,7 +1025,6 @@ ParBabOptions::ParBabOptions(EnvPtr env)
   OptionDBPtr options = env->getOptions();
 
   logInterval = options->findDouble("bnb_log_interval")->getValue();
-  logLevel    = (LogLevel) options->findInt("log_level")->getValue();
   nodeLimit   = options->findInt("bnb_node_limit")->getValue();
   perGapLimit = options->findDouble("obj_gap_percent")->getValue();
   solLimit    = options->findInt("bnb_sol_limit")->getValue();

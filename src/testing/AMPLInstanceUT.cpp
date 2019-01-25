@@ -53,7 +53,7 @@ using namespace std;
 void AMPLInstanceUT::setUp()
 {
   Minotaur::EnvPtr env = (Minotaur::EnvPtr) new Minotaur::Environment();
-  env->getOptions()->findInt("ampl_log_level")->setValue(Minotaur::LogNone);
+  env->setLogLevel(Minotaur::LogNone);
   env->getOptions()->findBool("expand_poly")->setValue(true);
   iface_ = (AMPLInterfacePtr) new AMPLInterface(env);
   inst_ = iface_->readInstance("instances/minlp_eg0");

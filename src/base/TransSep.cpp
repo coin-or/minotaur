@@ -47,23 +47,38 @@ TransSep::TransSep()
 
 
 TransSep::TransSep(EnvPtr env, ProblemPtr problem)
-:env_(env), problem_(problem), coeff_(0.0), itnum_(0), sepNodes_(0),
-  sepOps_(0), sepVars_(0), sepConst_(0), sepConId_(0),newCons_(0), newVars_(0),
-  objSep_(false), sepStatus_(false), lf_(LinearFunctionPtr()), ub_(0), lb_(0),
-  f_(0), snodes_(0), sops_(0), svars_(0), sconst_(0), on_(), onop_(),
-  nnode_(0), nvar_(0)
+: env_(env),
+  problem_(problem),
+  coeff_(0.0),
+  itnum_(0),
+  sepNodes_(0),
+  sepOps_(0),
+  sepVars_(0),
+  sepConst_(0),
+  sepConId_(0),
+  newCons_(0),
+  newVars_(0),
+  objSep_(false),
+  sepStatus_(false),
+  lf_(LinearFunctionPtr()),
+  ub_(0),
+  lb_(0),
+  f_(0),
+  snodes_(0),
+  sops_(0),
+  svars_(0),
+  sconst_(0),
+  on_(),
+  onop_(),
+  nnode_(0),
+  nvar_(0)
 {
-  logger_   = (LoggerPtr) new Logger((LogLevel) env_->getOptions()->
-                                     findInt("separability_log_level")->
-                                     getValue());
+  logger_   = env_->getLogger();
 }
 
 
 TransSep::~TransSep()
 {
-  problem_.reset();
-  env_.reset();
-  logger_.reset();
 }
 
 

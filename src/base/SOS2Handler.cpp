@@ -44,8 +44,7 @@ SOS2Handler::SOS2Handler(EnvPtr env, ProblemPtr problem)
 {
   modRel_  = true;
   modProb_ = true;
-  logger_  = (LoggerPtr) new Logger((LogLevel) env_->getOptions()->
-                                  findInt("handler_log_level")->getValue());
+  logger_  = env->getLogger();
   zTol_    = 1e-6;
   problem_ = problem;
 }
@@ -53,9 +52,6 @@ SOS2Handler::SOS2Handler(EnvPtr env, ProblemPtr problem)
 
 SOS2Handler::~SOS2Handler()
 {
-  problem_.reset();
-  env_.reset();
-  logger_.reset();
 }
 
 

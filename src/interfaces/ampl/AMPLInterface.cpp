@@ -76,8 +76,7 @@ AMPLInterface::AMPLInterface(Minotaur::EnvPtr env, std::string solver)
 #error need to define USE_MINOTAUR_AMPL_INTERFACE
 #endif
   std::string str="minotaurampl";
-  logger_ = (Minotaur::LoggerPtr) new Minotaur::Logger((Minotaur::LogLevel)
-      env_->getOptions()->findInt("ampl_log_level")->getValue());
+  logger_ = env->getLogger();
   getOptionsFromEnv_(solver);
   addOptions_();
 }

@@ -67,8 +67,7 @@ FeasibilityPump::FeasibilityPump(EnvPtr env, ProblemPtr p, EnginePtr e)
   std::fill(roundedSol_.begin(), roundedSol_.end(), 0);
     
   // initialize the logger pointer
-  logger_ = (LoggerPtr) new Logger((LogLevel) env_->getOptions()->
-     findInt("heur_log_level")->getValue());
+  logger_ = env->getLogger();
   
   // statistics for Feasibilty Pump heuristic
   stats_                    = new FeasPumpStats();

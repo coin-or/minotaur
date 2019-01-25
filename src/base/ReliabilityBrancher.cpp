@@ -54,8 +54,7 @@ ReliabilityBrancher::ReliabilityBrancher(EnvPtr env, HandlerVector & handlers)
   x_(0)
 {
   timer_ = env->getNewTimer();
-  logger_ = (LoggerPtr) new Logger((LogLevel) 
-      env->getOptions()->findInt("br_log_level")->getValue());
+  logger_ = env->getLogger();
   stats_ = new RelBrStats();
   stats_->calls = 0;
   stats_->engProbs = 0;
@@ -70,7 +69,6 @@ ReliabilityBrancher::~ReliabilityBrancher()
 {
   delete stats_;
   delete timer_;
-  logger_.reset();
 }
 
 

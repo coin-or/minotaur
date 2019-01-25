@@ -59,11 +59,8 @@ QuadHandler::QuadHandler(EnvPtr env, ProblemPtr problem)
 {
   p_ = problem; 
   modProb_ = false;
-  modRel_ = true;
-  logger_  = (LoggerPtr) new Logger((LogLevel) 
-                                    env->getOptions()->
-                                    findInt("handler_log_level")->getValue());
-  //logger_  = (LoggerPtr) new Logger(LogDebug2);
+  modRel_  = true;
+  logger_  = env->getLogger();
   resetStats_();
   timer_ = env->getTimer();
 }

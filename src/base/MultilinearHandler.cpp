@@ -47,8 +47,7 @@ using namespace Minotaur;
 MultilinearHandler::MultilinearHandler(EnvPtr env, ProblemPtr problem)
   : env_(env), problem_(problem)
 {
-  logger_  = (LoggerPtr) new Logger((LogLevel) 
-                                    env->getOptions()->findInt("handler_log_level")->getValue());
+  logger_ = env->getLogger();
   workingProblem_ = problem_->clone();
 
   linearizationCnt_ = 5;

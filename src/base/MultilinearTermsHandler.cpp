@@ -41,8 +41,7 @@ using namespace std;
 MultilinearTermsHandler::MultilinearTermsHandler(EnvPtr env, ProblemPtr problem)
   : env_(env), problem_(problem)
 {
-  logger_  = (LoggerPtr) new Logger((LogLevel) 
-                                    env->getOptions()->findInt("handler_log_level")->getValue());
+  logger_  = env->getLogger();
   eTol_ = env->getOptions()->findDouble("ml_feastol")->getValue();
   maxGroupSize_ = (UInt) env_->getOptions()->findInt("ml_max_group_size")->getValue();
   augmentCoverFactor_ = env_->getOptions()->findDouble("ml_cover_augmentation_factor")->getValue();

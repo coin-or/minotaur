@@ -55,7 +55,6 @@ using namespace std;
 void AMPLCGraphUT::setUp()
 {
   Minotaur::EnvPtr env = (Minotaur::EnvPtr) new Minotaur::Environment();
-  env->getOptions()->findInt("ampl_log_level")->setValue(Minotaur::LogNone);
   env->setLogLevel(Minotaur::LogError);
   iface_ = (AMPLInterfacePtr) new AMPLInterface(env);
   env->getOptions()->findBool("use_native_cgraph")->setValue(true);

@@ -366,9 +366,6 @@ namespace Minotaur {
     /// Time in seconds between status updates of the progress.
     double logInterval;
 
-    /// Verbosity of log.
-    LogLevel logLevel;
-
     /// Limit on number of nodes processed.
     UInt nodeLimit;
 

@@ -20,7 +20,6 @@ Engine::Engine()
 
 Engine::~Engine()
 {
-  logger_.reset();
 }
 
 

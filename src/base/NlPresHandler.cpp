@@ -68,9 +68,7 @@ NlPresHandler::NlPresHandler(EnvPtr env, ProblemPtr p)
     p_(p),
     zTol_(1e-6)
 {
-  logger_ = (LoggerPtr) new Logger((LogLevel)(env->getOptions()->
-                                              findInt("handler_log_level")->
-                                              getValue()));
+  logger_ = env->getLogger();
   doPersp_ = env->getOptions()->findBool("persp_ref")->getValue();
   doQuadCone_ = env->getOptions()->findBool("quad_cone_ref")->getValue();
   stats_.cBnd = 0;

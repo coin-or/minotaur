@@ -103,7 +103,7 @@ namespace Minotaur {
     HandlerVector handlers_;
 
     /// Log
-    Logger *logger_;
+    LoggerPtr logger_;
 
     /* 
      * If Filter-SQP is used, the duals are negative of what QP from Hessian

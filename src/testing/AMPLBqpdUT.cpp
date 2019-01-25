@@ -23,7 +23,7 @@ void AMPLBqpdUT::testNLP()
 {
   Minotaur::EnvPtr env = (Minotaur::EnvPtr) new Minotaur::Environment();
   double solval = 0.0;
-  env->getOptions()->findInt("ampl_log_level")->setValue(Minotaur::LogNone);
+  env->setLogLevel(Minotaur::LogNone);
   iface_ = (AMPLInterfacePtr) new AMPLInterface(env);
 
   // read an instance

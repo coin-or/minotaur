@@ -40,8 +40,7 @@ MaxVioBrancher::MaxVioBrancher(EnvPtr env, HandlerVector & handlers)
   
 {
   timer_ = env->getNewTimer();
-  logger_ = (LoggerPtr) new Logger((LogLevel) env->getOptions()->
-                                   findInt("br_log_level")->getValue());
+  logger_ = env->getLogger();
   stats_ = new MaxVioBrStats();
   stats_->calls = 0;
   stats_->time = 0.0;
@@ -52,7 +51,6 @@ MaxVioBrancher::~MaxVioBrancher()
 {
   delete stats_;
   delete timer_;
-  logger_.reset();
 }
 
 

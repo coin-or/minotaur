@@ -58,8 +58,7 @@ LinFeasPump::LinFeasPump(EnvPtr env, ProblemPtr p, EnginePtr e1,
   // allocate space for gradient of objective function
   gradientObj_               = new double[p_->getNumVars()];
 
-  logger_ = (LoggerPtr) new Logger((LogLevel) env_->getOptions()->
-     findInt("heur_log_level")->getValue());
+  logger_ = env->getLogger();
 
   // initialize the statistics
   statsLFP_                  = new LinFeasStats();

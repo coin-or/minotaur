@@ -44,9 +44,7 @@ PCBProcessor::PCBProcessor (EnvPtr env, EnginePtr engine, HandlerVector handlers
   cutOff_ = env->getOptions()->findDouble("obj_cut_off")->getValue();
   engine_ = engine;
   handlers_ = handlers;
-  logger_ = (LoggerPtr) new Logger((LogLevel)env->getOptions()->
-                                   findInt("node_processor_log_level")->
-                                   getValue());
+  logger_ = env->getLogger();
   presFreq_ = env->getOptions()-> findInt("pres_freq")->getValue();
   stats_.bra = 0;
   stats_.inf = 0;
@@ -60,7 +58,6 @@ PCBProcessor::PCBProcessor (EnvPtr env, EnginePtr engine, HandlerVector handlers
 PCBProcessor::~PCBProcessor()
 {
   handlers_.clear();
-  logger_.reset();
   engine_.reset();
 }
 

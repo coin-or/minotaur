@@ -66,7 +66,7 @@ QGHandler::QGHandler()
   intTol_ = env_->getOptions()->findDouble("int_tol")->getValue();
   solAbsTol_ = env_->getOptions()->findDouble("solAbs_tol")->getValue();
   solRelTol_ = env_->getOptions()->findDouble("solRel_tol")->getValue();
-  logger_ = (LoggerPtr) new Logger(LogDebug2);
+  logger_ = (LoggerPtr) new Logger(LogInfo);
 }
 
 QGHandler::QGHandler(EnvPtr env, ProblemPtr minlp, EnginePtr nlpe) 
@@ -88,8 +88,7 @@ QGHandler::QGHandler(EnvPtr env, ProblemPtr minlp, EnginePtr nlpe)
   intTol_ = env_->getOptions()->findDouble("int_tol")->getValue();
   solAbsTol_ = env_->getOptions()->findDouble("solAbs_tol")->getValue();
   solRelTol_ = env_->getOptions()->findDouble("solRel_tol")->getValue();
-  logger_ = (LoggerPtr) new Logger((LogLevel)env->getOptions()->
-                                   findInt("handler_log_level")->getValue());
+  logger_ = env->getLogger();
 
   stats_   = new QGStats();
   stats_->nlpS = 0;
@@ -120,8 +119,7 @@ QGHandler::QGHandler(EnvPtr env, ProblemPtr minlp, EnginePtr nlpe,
   intTol_ = env_->getOptions()->findDouble("int_tol")->getValue();
   solAbsTol_ = env_->getOptions()->findDouble("solAbs_tol")->getValue();
   solRelTol_ = env_->getOptions()->findDouble("solRel_tol")->getValue();
-  logger_ = (LoggerPtr) new Logger((LogLevel)env->getOptions()->
-                                   findInt("handler_log_level")->getValue());
+  logger_ = env->getLogger();
 
   stats_   = new QGStats();
   stats_->nlpS = 0;
@@ -143,7 +141,6 @@ QGHandler::~QGHandler()
   minlp_.reset();
   objFun_.reset();
   objVar_.reset();
-  logger_.reset();
 }
 
 

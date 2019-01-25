@@ -57,8 +57,7 @@ PerspCutHandler::PerspCutHandler(EnvPtr env, ProblemPtr minlp,
   intTol_ = env_->getOptions()->findDouble("int_tol")->getValue();
   solAbsTol_ = env_->getOptions()->findDouble("solAbs_tol")->getValue();
   solRelTol_ = env_->getOptions()->findDouble("solRel_tol")->getValue();
-  logger_ = (LoggerPtr) new Logger((LogLevel)env->getOptions()->
-                                   findInt("handler_log_level")->getValue());
+  logger_ = env->getLogger();
 }
 
 
@@ -380,9 +379,6 @@ void PerspCutHandler::writeStats(std::ostream &out) const
 
 PerspCutHandler::~PerspCutHandler()
 {
-  env_.reset();
-  minlp_.reset();
-  logger_.reset();
 }
 
 

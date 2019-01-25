@@ -59,8 +59,7 @@ MINLPDiving::MINLPDiving(EnvPtr env, ProblemPtr p, EnginePtr e)
   // allocate space for gradient of objective function
   gradientObj_              = new double[p_->getNumVars()];
 
-  logger_ = (LoggerPtr) new Logger((LogLevel) env_->getOptions()->
-      findInt("heur_log_level")->getValue());
+  logger_ = env->getLogger();
 
   //DivingheurStats stats_
   stats_                    = new DivingheurStats();

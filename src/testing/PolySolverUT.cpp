@@ -41,8 +41,8 @@ using namespace std;
 void PolySolverUT::setUp()
 {
   Minotaur::EnvPtr env = (Minotaur::EnvPtr) new Minotaur::Environment();
-  env->getOptions()->findInt("ampl_log_level")->setValue(Minotaur::LogNone);
   env->getOptions()->findBool("expand_poly")->setValue(true);
+  env->setLogLevel(Minotaur::LogNone);
   iface_ = (AMPLInterfacePtr) new AMPLInterface(env);
   inst_ = iface_->readInstance("instances/luedtke-1");
 }

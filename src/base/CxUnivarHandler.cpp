@@ -145,8 +145,6 @@ CxUnivarHandler::CxUnivarHandler(EnvPtr , ProblemPtr problem)
   vTol_(1e-5)
 {
   problem_ = problem; 
-  //logger_  = (LoggerPtr) new Logger((LogLevel) 
-  //    env->getOptions()->findInt("handler_log_level")->getValue());
   logger_  = (LoggerPtr) new Logger((LogLevel) 0 );
 
   tmpX_.resize(problem->getNumVars(), 0.0);

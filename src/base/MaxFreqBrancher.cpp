@@ -41,13 +41,12 @@ MaxFreqBrancher::MaxFreqBrancher(EnvPtr env, HandlerVector & handlers)
   handlers_(handlers),     // Create a copy, the vector is not too big
   init_(false)
 {
-  timer_ = env->getNewTimer();
-  logger_ = (LoggerPtr) new Logger((LogLevel) env->getOptions()->
-                                   findInt("br_log_level")->getValue());
-  zTol_ = 1e-6;
-  stats_ = new MaxFreqBrStats();
+  timer_  = env->getNewTimer();
+  logger_ = env->getLogger();
+  zTol_   = 1e-6;
+  stats_  = new MaxFreqBrStats();
   stats_->calls = 0;
-  stats_->time = 0.0;
+  stats_->time  = 0.0;
 }
 
 
@@ -55,7 +54,6 @@ MaxFreqBrancher::~MaxFreqBrancher()
 {
   delete stats_;
   delete timer_;
-  logger_.reset();
 }
 
 

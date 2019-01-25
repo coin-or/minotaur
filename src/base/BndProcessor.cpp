@@ -64,9 +64,7 @@ BndProcessor::BndProcessor (EnvPtr env, EnginePtr engine,
 {
   cutOff_ = env->getOptions()->findDouble("obj_cut_off")->getValue();
   handlers_ = handlers;
-  logger_ = (LoggerPtr) new Logger((LogLevel)env->getOptions()->
-                                   findInt("node_processor_log_level")->
-                                   getValue());
+  logger_ = env->getLogger();
   stats_.bra = 0;
   stats_.inf = 0;
   stats_.opt = 0;
@@ -79,7 +77,6 @@ BndProcessor::BndProcessor (EnvPtr env, EnginePtr engine,
 BndProcessor::~BndProcessor()
 {
   handlers_.clear();
-  logger_.reset();
   engine_.reset();
 }
 

@@ -28,7 +28,7 @@ using namespace Minotaur;
 void AMPLOsiUT::setUp()
 {
   EnvPtr env = (EnvPtr) new Environment();
-  env->getOptions()->findInt("ampl_log_level")->setValue(LogNone);
+  env->setLogLevel(LogNone);
   iface_ = (MINOTAUR_AMPL::AMPLInterfacePtr) new AMPLInterface(env);
   engine_ptr_ = (OsiLPEnginePtr) new OsiLPEngine(env);
 }

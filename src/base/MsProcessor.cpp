@@ -65,9 +65,7 @@ MsProcessor::MsProcessor (EnvPtr env, EnginePtr engine,
 {
   cutOff_ = env->getOptions()->findDouble("obj_cut_off")->getValue();
   handlers_ = handlers;
-  logger_ = (LoggerPtr) new Logger((LogLevel)env->getOptions()->
-                                   findInt("node_processor_log_level")->
-                                   getValue());
+  logger_ = env->getLogger();
   numRestarts_ = env->getOptions()->findInt("msbnb_restarts")->getValue();
   numThreads_ = env->getOptions()->findInt("threads")->getValue();
   schemeId_ = env->getOptions()->findInt("msbnb_scheme_id")->getValue();
@@ -83,7 +81,6 @@ MsProcessor::MsProcessor (EnvPtr env, EnginePtr engine,
 MsProcessor::~MsProcessor()
 {
   handlers_.clear();
-  logger_.reset();
   engine_.reset();
 }
 

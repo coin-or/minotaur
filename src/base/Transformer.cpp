@@ -64,9 +64,7 @@ Transformer::Transformer(EnvPtr env, ConstProblemPtr p)
     yVars_(0),
     zTol_(1e-12)
 {
-  logger_ = (LoggerPtr) new Logger((LogLevel)(env->getOptions()
-                                              ->findInt("trans_log_level")
-                                              ->getValue()));
+  logger_ = env->getLogger();
 }
 
 

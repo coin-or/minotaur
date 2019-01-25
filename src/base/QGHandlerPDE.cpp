@@ -84,9 +84,7 @@ QGHandlerPDE::QGHandlerPDE(EnvPtr env, ProblemPtr minlp, EnginePtr lpe)
   solAbsTol_(1e-5),
   solRelTol_(1e-5)
 {
-  logger_ = (LoggerPtr) new Logger((LogLevel)env->getOptions()->
-                                   findInt("handler_log_level")->getValue());
-
+  logger_ = env->getLogger();
   stats_   = new QGStats();
   stats_->nlpS = 0;
   stats_->nlpF = 0;
@@ -94,16 +92,14 @@ QGHandlerPDE::QGHandlerPDE(EnvPtr env, ProblemPtr minlp, EnginePtr lpe)
   stats_->cuts = 0;
 }
 
+
 QGHandlerPDE::~QGHandlerPDE()
 { 
   if (stats_) {
     delete stats_;
   }
-
-  env_.reset();
-  minlp_.reset();
-  lpe_.reset();
 }
+
 
 void QGHandlerPDE::addInitLinearX_(const double *x)
 { 

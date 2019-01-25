@@ -103,9 +103,7 @@ QPDProcessor::QPDProcessor(EnvPtr env, ProblemPtr p, EnginePtr e, EnginePtr qe,
   stats_.proc = 0;
   stats_.sep = 0;
   stats_.ub = 0;
-  logger_ = new Logger((LogLevel)
-                       env->getOptions()->findInt("node_processor_log_level")
-                       ->getValue());
+  logger_ = env->getLogger();
   solveQPafNLP_ = (env->getOptions()->findString("nlp_engine")->getValue()
                    == "Filter-SQP");
   negDuals_ = solveQPafNLP_;
@@ -124,10 +122,6 @@ QPDProcessor::~QPDProcessor()
   qpe_.reset();
   e_.reset();
   ws_.reset();
-  if (logger_) {
-    delete logger_;
-    logger_ = 0;
-  }
 }
 
 

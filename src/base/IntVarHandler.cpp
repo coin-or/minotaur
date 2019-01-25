@@ -36,8 +36,7 @@ const std::string IntVarHandler::me_ = "IntVarHandler: ";
 IntVarHandler::IntVarHandler(EnvPtr env, ProblemPtr problem)
   : env_(env)
 {
-  logger_   = (LoggerPtr) new Logger((LogLevel) env_->getOptions()->
-                                     findInt("handler_log_level")->getValue());
+  logger_   = env->getLogger();
   modProb_  = true;
   modRel_   = true;
   intTol_   = env_->getOptions()->findDouble("int_tol")->getValue();
@@ -48,9 +47,6 @@ IntVarHandler::IntVarHandler(EnvPtr env, ProblemPtr problem)
 
 IntVarHandler::~IntVarHandler()
 {
-  problem_.reset();
-  env_.reset();
-  logger_.reset();
 }
 
 

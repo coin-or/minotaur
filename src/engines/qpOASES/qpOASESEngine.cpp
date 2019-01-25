@@ -191,7 +191,7 @@ qpOASESEngine::qpOASESEngine(EnvPtr env)
 {
   status_ = EngineError;
   logger_ = (LoggerPtr) new Logger ((LogLevel) (env->getOptions ()->findInt
-                                                ("bqpd_log_level")->getValue
+                                                ("engine_log_level")->getValue
                                                 ()));
 
   memset (&stats_, 0, sizeof (stats_));

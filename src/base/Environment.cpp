@@ -52,17 +52,17 @@ void Environment::createDefaultOptions_()
   StringOptionPtr s_option;
 
   // bool options
-  b_option = (BoolOptionPtr) new Option<bool>("show_version", 
+  b_option = (BoolOptionPtr) new Option<bool>("display_version", 
       "Write version number of Minotaur: <0/1>",
       true, false);
   options_->insert(b_option);
 
-  b_option = (BoolOptionPtr) new Option<bool>("show_options", 
+  b_option = (BoolOptionPtr) new Option<bool>("display_options", 
       "Write all options and their default values: <0/1>",
       true, false);
   options_->insert(b_option);
 
-  b_option = (BoolOptionPtr) new Option<bool>("show_help", 
+  b_option = (BoolOptionPtr) new Option<bool>("display_help", 
       "Show usage and exit: <0/1>",
       true, false);
   options_->insert(b_option);
@@ -150,11 +150,6 @@ void Environment::createDefaultOptions_()
       "Should presolve using nonlinear presolver: <0/1>", true, true);
   options_->insert(b_option);
 
-  b_option = (BoolOptionPtr) new Option<bool>("lin_show_stats", 
-      "Should show statistics of linear handler: <0/1>", true, 
-      true);
-  options_->insert(b_option);
-
   b_option = (BoolOptionPtr) new Option<bool>("MSheur", 
       "Use multi-start heuristic for continuous nonlinear problem: <0/1>", 
       true, false);
@@ -167,21 +162,6 @@ void Environment::createDefaultOptions_()
   b_option = (BoolOptionPtr) new Option<bool>("modify_rel_only", 
       "If true, apply all modifications to relaxation only  <0/1>",
       true, true);
-  options_->insert(b_option);
-
-  b_option = (BoolOptionPtr) new Option<bool>("convexity_type",
-      "Is the problem convex or quasiconvex: convexity <=> 0 and quasiconvexity <=> 1", 
-      true, false);
-  options_->insert(b_option);
-
-  b_option = (BoolOptionPtr) new Option<bool>("qg_accpm",
-      "Do analytic center cutting plane cuts in qg algorithm: <0/1>", 
-      true, false);
-  options_->insert(b_option);
-
-  b_option = (BoolOptionPtr) new Option<bool>("partial_BB",
-      "Fix the bounds partially in QGHandler: <0/1>",
-      true, false);
   options_->insert(b_option);
 
   b_option = (BoolOptionPtr) new Option<bool>("expand_poly", 
@@ -234,14 +214,6 @@ void Environment::createDefaultOptions_()
       "Frequency of node-presolves in branch-and-bound", true, 5);
   options_->insert(i_option);
   
-  i_option = (IntOptionPtr) new Option<int>("ampl_log_level", 
-      "Verbosity of ampl interface: 0-6", true, LogInfo);
-  options_->insert(i_option);
-
-  i_option = (IntOptionPtr) new Option<int>("bqpd_log_level", 
-      "Verbosity of bqpd engine: 0-6", true, LogInfo);
-  options_->insert(i_option);
-
   i_option = (IntOptionPtr) new Option<int>("bqpd_ws_mode", 
       "Warm starting mode for bqpd: 0-6", true, 6);
   options_->insert(i_option);
@@ -252,10 +224,6 @@ void Environment::createDefaultOptions_()
 
   i_option = (IntOptionPtr) new Option<int>("bqpd_mxiwk", 
       "Override value of mxiwk used by Bqpd", true, 0);
-  options_->insert(i_option);
-
-  i_option = (IntOptionPtr) new Option<int>("br_log_level", 
-      "Verbosity of brancher: 0-6", true, LogInfo);
   options_->insert(i_option);
 
   i_option = (IntOptionPtr) new Option<int>("log_level", 
@@ -271,34 +239,8 @@ void Environment::createDefaultOptions_()
       "Verbosity of engine: 0-6", true, LogInfo);
   options_->insert(i_option);
 
-  i_option = (IntOptionPtr) new Option<int>("handler_log_level", 
-      "Verbosity of handlers: 0-6", true, LogInfo);
-  options_->insert(i_option);
-
-  i_option = (IntOptionPtr) new Option<int>("heur_log_level", 
-      "Verbosity of Multi Start Heuristic: 0-6", true, LogInfo);
-  options_->insert(i_option);
-  
-  // Serdar added these options for MultilinearTermsHandler class
   i_option = (IntOptionPtr) new Option<int>("ml_max_group_size",
        "Maximum size of individual element in grouping: >= 2, <= 20", true, 6);
-  options_->insert(i_option);
-  // Serdar ended.
-
-  i_option = (IntOptionPtr) new Option<int>("node_processor_log_level", 
-      "Verbosity of node processor: 0-6", true, LogInfo);
-  options_->insert(i_option);
-
-  i_option = (IntOptionPtr) new Option<int>("presolve_log_level", 
-      "Verbosity of presolver: 0-6", true, LogInfo);
-  options_->insert(i_option);
-
-  i_option = (IntOptionPtr) new Option<int>("separability_log_level",
-      "Verbosity of separability detection: 0-6", true, LogInfo);
-  options_->insert(i_option);
-
-  i_option = (IntOptionPtr) new Option<int>("perspective_log_level",
-      "Verbosity of perspective cut generation: 0-6", true, LogInfo);
   options_->insert(i_option);
 
   i_option = (IntOptionPtr) new Option<int>("rand_seed", 
@@ -310,10 +252,6 @@ void Environment::createDefaultOptions_()
       true, 25);
   options_->insert(i_option);
  
-  i_option = (IntOptionPtr) new Option<int>("trans_log_level", 
-      "Verbosity of Transformer ", true, LogInfo);
-  options_->insert(i_option);
-
   i_option = (IntOptionPtr) new Option<int>("threads", 
       "Number of threads to be used ", true, 1);
   options_->insert(i_option);
@@ -338,9 +276,8 @@ void Environment::createDefaultOptions_()
                                             "Extra workspace for Filter-SQP",
                                             true, 0);
   options_->insert(i_option);
+
   // double options
-  
-  // Serdar added these options for MultilinearTermsHandler class
   d_option = (DoubleOptionPtr) new Option<double>("ml_feastol", 
       "MultilinearTermsHandler feasibility tolerance.", true, 0.00001);
   options_->insert(d_option);

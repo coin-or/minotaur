@@ -45,9 +45,8 @@ NLPMultiStart::NLPMultiStart(EnvPtr env, ProblemPtr p, EnginePtr e)
     distBound_ += pow(variable->getUb()-variable->getLb(),2);
   }
   distBound_ = (distBound_ >= INFINITY) ? 10.0*sqrt(n) : sqrt(distBound_);
-  logger_ = (LoggerPtr) new Logger((LogLevel) env_->getOptions()->
-                                   findInt("heur_log_level")->getValue());
-  random_                   = new double[n];  
+  logger_ = env->getLogger();
+  random_                  = new double[n];  
 
   // statistics
   stats_.numNLPs           = 0;

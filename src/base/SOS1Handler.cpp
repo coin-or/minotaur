@@ -42,8 +42,7 @@ const std::string SOS1Handler::me_ = "SOS1Handler: ";
 SOS1Handler::SOS1Handler(EnvPtr env, ProblemPtr problem)
   : env_(env)
 {
-  logger_ = (LoggerPtr) new Logger((LogLevel) env_->getOptions()->
-                                   findInt("handler_log_level")->getValue());
+  logger_ = env->getLogger();
   modProb_ = true;
   modRel_ = true;
   zTol_   = 1e-6;
@@ -56,7 +55,6 @@ SOS1Handler::~SOS1Handler()
 {
   problem_.reset();
   env_.reset();
-  logger_.reset();
 }
 
 
