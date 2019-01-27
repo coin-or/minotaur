@@ -48,7 +48,7 @@ QPDProcessor::QPDProcessor()
     env_(EnvPtr()), 
     eta_(VariablePtr()),
     etaL_(VariablePtr()),
-    logger_(0),
+    logger_(LoggerPtr()),
     negDuals_(false),
     nlCons_(0),
     numSolutions_(0),
