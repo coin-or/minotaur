@@ -37,41 +37,34 @@ RCHandler::~RCHandler()
 
 
 
-void RCHandler::separate(ConstSolutionPtr sol, NodePtr node,
-                         RelaxationPtr rel, CutManager *cutman,
-                         SolutionPoolPtr s_pool, ModVector &p_mods, 
-                         ModVector &r_mods, bool *sol_found,
-                         SeparationStatus *status)
+void RCHandler::separate(ConstSolutionPtr sol, NodePtr,
+                         RelaxationPtr rel, CutManager *,
+                         SolutionPoolPtr s_pool, ModVector &, 
+                         ModVector &r_mods, bool *,
+                         SeparationStatus *)
 {
-  //std::cout<< "RCHandler: separate"<<std::endl;
-  //double xval;
   VariableConstIterator v_iter;
-  VariableType v_type;
+  //VariableType v_type;
   VarBoundModPtr m;
-  const double *x = sol->getPrimal();
-  const double *p = sol->getDualOfVars();  //reduced cost
-  // Current LP relaxation objective value (in my view )   
+  const double *p = sol->getDualOfVars();   
   const double current_objval = sol->getObjValue();  
-  // Best known solution
   double bestFeasible_objval = INFINITY;
-  //std::cout<<"Number of solutions: "<<s_pool->getNumSols()<<std::endl;
   if (s_pool->getNumSols() > 0) {
-      //double LastBest = bestFeasible_objval; 
       bestFeasible_objval = s_pool->getBestSolutionValue();
-      //std::cout<<"curernt Best Feasible: "<< bestFeasible_objval << "last Best"<< LastBest <<std::endl;
-  } else {
+  } 
+  else {
       return;
   } 
   double tolerance = (std::pow(10.0,-6));
-  //std::cout<<"Tolerance"<<tolerance<<std::endl;
-  for (v_iter=rel->varsBegin(); v_iter!=rel->varsEnd(); ++v_iter) {
-     //xval = x[(*v_iter)->getIndex()];
+  
+  for (v_iter=rel->varsBegin(); v_iter!=rel->varsEnd(); ++v_iter) 
+  {
      double r = p[(*v_iter)->getIndex()];
-     //std::cout<<"inside the loop"<< r <<std::endl;
      if (r > tolerance){
        double lb = (*v_iter)->getLb();
        double new_ub  = lb +  (bestFeasible_objval-current_objval)/ r;
        //std::cout<<"old Bound UB for x" << (*v_iter)->getIndex()<<": " <<(*v_iter)->getUb()<< " new bound: "<< new_ub<<std::endl;
+       //round 
        if (new_ub < (*v_iter)->getUb() - tolerance*10 ){
         m = (VarBoundModPtr) new VarBoundMod(*v_iter, Upper, new_ub);
         m->applyToProblem(rel); 
@@ -107,26 +100,17 @@ std::string RCHandler::getName() const
 }                    
 
 // Base class method.
-void RCHandler::relaxNodeInc(NodePtr node, RelaxationPtr rel, bool *is_inf){}
+void RCHandler::relaxNodeInc(NodePtr , RelaxationPtr , bool *){}
 // Base class method.
-void RCHandler::relaxNodeFull(NodePtr node, RelaxationPtr rel, bool *is_inf){}
+void RCHandler::relaxNodeFull(NodePtr , RelaxationPtr , bool *){}
 // Base class method. calls relax_().
-void RCHandler::relaxInitInc(RelaxationPtr rel, bool *is_inf){}
+void RCHandler::relaxInitInc(RelaxationPtr , bool *){}
 // Base class method. 
 //void relaxInitFull(RelaxationPtr rel, bool *is_inf){}
 
-bool RCHandler::isFeasible(ConstSolutionPtr sol, RelaxationPtr relaxation, 
-                  bool & should_prune, double &inf_meas){}
+bool RCHandler::isFeasible(ConstSolutionPtr , RelaxationPtr , 
+                  bool & , double &){return true;}
 /// Base class method
 SolveStatus RCHandler::presolve(PreModQ *, bool *) {return Finished;}
-
-/*
-bool RCHandler::presolveNode(RelaxationPtr, NodePtr, SolutionPoolPtr, ModVector &,
-                    ModVector &)
-{return false;}
-*/
-/// Base class method.
-//void RCHandler::postsolveGetX(const double *, UInt, DoubleVector *) {}
-// Base class method 
-void RCHandler::relaxInitFull(RelaxationPtr rel, bool *is_inf){}
-
+/// Base class method
+void RCHandler::relaxInitFull(RelaxationPtr , bool *){}

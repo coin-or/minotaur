@@ -94,7 +94,7 @@ public:
                 ModVector &q_mods, bool *sol_found, SeparationStatus *status);
  
   // Show statistics.
-  void writeStats(std::ostream &out) const{}
+  void writeStats(std::ostream &) const{}
 
 private:
   /**
