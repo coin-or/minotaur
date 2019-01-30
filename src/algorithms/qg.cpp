@@ -130,8 +130,8 @@ void showHelp()
   std::cout << "Quesada-Grossmann (LP/NLP) algorithm for convex MINLP"
             << std::endl
             << "Usage:" << std::endl
-            << "To show version: qg -v (or --show_version yes) " << std::endl
-            << "To show all options: qg -= (or --show_options yes)" 
+            << "To show version: qg -v (or --display_version yes) " << std::endl
+            << "To show all options: qg -= (or --display_options yes)" 
             << std::endl
             << "To solve an instance: qg --option1 [value] "
             << "--option2 [value] ... " << " .nl-file" << std::endl;
@@ -143,19 +143,19 @@ int showInfo(EnvPtr env)
   OptionDBPtr options = env->getOptions();
   const std::string me("qg: ");
 
-  if (options->findBool("show_options")->getValue() ||
+  if (options->findBool("display_options")->getValue() ||
       options->findFlag("=")->getValue()) {
     options->write(std::cout);
     return 1;
   }
 
-  if (options->findBool("show_help")->getValue() ||
+  if (options->findBool("display_help")->getValue() ||
       options->findFlag("?")->getValue()) {
     showHelp();
     return 1;
   }
 
-  if (options->findBool("show_version")->getValue() ||
+  if (options->findBool("display_version")->getValue() ||
       options->findFlag("v")->getValue()) {
     env->getLogger()->msgStream(LogNone) << me <<
       "Minotaur version " << env->getVersion() << std::endl;

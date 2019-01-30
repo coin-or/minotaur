@@ -48,9 +48,9 @@ using namespace Minotaur;
 void show_help()
 {
   std::cout << "Usage:" << std::endl
-            << "To show version: polly -v (or --show_version yes) " 
+            << "To show version: polly -v (or --display_version yes) " 
             << std::endl
-            << "To show all options: polly -= (or --show_options yes)" 
+            << "To show all options: polly -= (or --display_options yes)" 
             << std::endl
             << "To solve an instance: polly --option1 [value] "
             << "--option2 [value] ... " << " .nl-file" << std::endl;
@@ -177,19 +177,19 @@ int main(int argc, char* argv[])
 
 
   // check if user needs help.
-  if (options->findBool("show_options")->getValue() ||
+  if (options->findBool("display_options")->getValue() ||
       options->findFlag("=")->getValue()) {
     options->write(std::cout);
     exit(0);
   }
 
-  if (options->findBool("show_help")->getValue() ||
+  if (options->findBool("display_help")->getValue() ||
       options->findFlag("?")->getValue()) {
     show_help();
     exit(0);
   }
 
-  if (options->findBool("show_version")->getValue() ||
+  if (options->findBool("display_version")->getValue() ||
       options->findFlag("v")->getValue()) {
     env->getLogger()->msgStream(LogNone) << me << "Minotaur version "
       << env->getVersion() << std::endl << me << "A polynomial solver"
