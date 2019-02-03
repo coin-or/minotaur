@@ -42,6 +42,8 @@ namespace Minotaur {
    */
   class ParBndProcessor : public NodeProcessor {
 
+    friend class ParBranchAndBound;
+
   public:
     /// Default constructor
     ParBndProcessor();
@@ -57,6 +59,9 @@ namespace Minotaur {
 
     // Find branches that will be used to branch at this node.
     Branches getBranches();
+
+    // Get the recent solution from the engine.
+    ConstSolutionPtr getSolution();
 
     // Get warm-start information.
     WarmStartPtr getWarmStart();

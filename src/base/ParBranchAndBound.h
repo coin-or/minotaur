@@ -167,13 +167,24 @@ namespace Minotaur {
     int strToInt(std::string str);
 
     /**
-     * \brief Start solving the Problem using branch-and-bound
+     * \brief Start solving the Problem using branch-and-bound.
      *
      * \param [in] parNodeRelaxer is the array of node relaxers.
      * \param [in] parBndProcessor is the array of node processors.
      * \param [in] nThreads is the number of threads being used.
      */ 
     void parsolve(ParNodeIncRelaxerPtr parNodeRelaxer[],
+                  ParBndProcessorPtr parBndProcessor[],
+                  UInt nThreads);
+
+    /**
+     * \brief Start solving the Problem using branch-and-bound with reproducibility.
+     *
+     * \param [in] parNodeRelaxer is the array of node relaxers.
+     * \param [in] parBndProcessor is the array of node processors.
+     * \param [in] nThreads is the number of threads being used.
+     */
+    void parsolveSync(ParNodeIncRelaxerPtr parNodeRelaxer[],
                   ParBndProcessorPtr parBndProcessor[],
                   UInt nThreads);
 

@@ -588,7 +588,11 @@ int main(int argc, char** argv)
   }
   parbab = createParBab(env, oinst, engine, numThreads, relCopy,
                         nodePrcssr, parNodeRlxr);
-  parbab->parsolve(parNodeRlxr, nodePrcssr, numThreads);
+  if (true==env->getOptions()->findBool("mcbnb_deter_mode")->getValue()) {
+    parbab->parsolveSync(parNodeRlxr, nodePrcssr, numThreads);
+  } else {
+    parbab->parsolve(parNodeRlxr, nodePrcssr, numThreads);
+  }
   
   //Take care of important bnb statistics: to be done!!!
   //parbab->writeParStats(env->getLogger()->msgStream(LogExtraInfo), nodePrcssr);

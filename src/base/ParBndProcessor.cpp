@@ -91,6 +91,12 @@ Branches ParBndProcessor::getBranches()
 }
 
 
+ConstSolutionPtr ParBndProcessor::getSolution()
+{
+  return engine_->getSolution();
+}
+
+
 WarmStartPtr ParBndProcessor::getWarmStart()
 {
   return ws_;
@@ -194,7 +200,7 @@ void ParBndProcessor::process(NodePtr node, RelaxationPtr rel,
     solveRelaxation_();
 
     sol = engine_->getSolution();
-    
+
     // check if the relaxation is infeasible or if the cost is too high.
     // In either case we can prune. Also set lb of node.
     should_prune = shouldPrune_(node, sol->getObjValue(), s_pool);

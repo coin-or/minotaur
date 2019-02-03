@@ -178,8 +178,12 @@ void Environment::createDefaultOptions_()
      "If true, use Minotaur's computational graph to evaluate nonlinear functions and their derivatives. <0/1>", true, false);
   options_->insert(b_option);
 
+  b_option = (BoolOptionPtr) new Option<bool>("mcbnb_deter_mode",
+      "If true, synchronize all threads in determinisitic mode in parallel branch-and-bound: <0/1>", true, false);
+  options_->insert(b_option);
+
   b_option = (BoolOptionPtr) new Option<bool>("mcbnb_iter_mode",
-      "If true, synchronize node processing in each round across all threads in parallel branch-and-bound: <0/1>", true, false);
+      "If true, synchronize node processing in each iteration across all threads in parallel branch-and-bound: <0/1>", true, false);
   options_->insert(b_option);
 
   b_option = (BoolOptionPtr) new Option<bool>("msheur", 
