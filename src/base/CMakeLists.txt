@@ -81,7 +81,7 @@ set (MINOTAUR_SOURCES
      ParNodeIncRelaxer.cpp
      ParTreeManager.cpp
      PCBProcessor.cpp 
-     PerspCon.cpp
+     #PerspCon.cpp
      # PerspCutGenerator.cpp 
      PerspCutHandler.cpp 
      PolynomialFunction.cpp 
@@ -112,7 +112,7 @@ set (MINOTAUR_SOURCES
      SOSBrCand.cpp
      Transformer.cpp 
      TransPoly.cpp 
-     TransSep.cpp 
+     #TransSep.cpp
      TreeManager.cpp 
      Types.cpp 
      VarBoundMod.cpp 
@@ -196,7 +196,7 @@ set (MINOTAUR_HEADERS
      ParNodeIncRelaxer.h
      ParTreeManager.h
      PCBProcessor.h
-     PerspCon.h
+     #PerspCon.h
      #PerspCutGenerator.h 
      PerspCutHandler.h
      PolynomialFunction.h
@@ -231,7 +231,7 @@ set (MINOTAUR_HEADERS
      Timer.h
      Transformer.h 
      TransPoly.h 
-     TransSep.h 
+     #TransSep.h
      TreeManager.h
      Types.h
      WarmStart.h

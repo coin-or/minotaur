@@ -229,28 +229,6 @@ PresolverPtr presolve(EnvPtr env, ProblemPtr p, size_t ndefs,
   return pres;
 }
 
-//For separability detection: Check separability if problem is not linear.
-//TransSepPtr sepDetection(EnvPtr env, ProblemPtr p)
-void sepDetection(EnvPtr env, ProblemPtr p)
-{
-  TransSepPtr sep = TransSepPtr();
-  const std::string me("qg: ");
-
-  if (env->getOptions()->findBool("separability")->getValue() == true) {
-    if (p -> isLinear()) {
-      env ->getLogger()->msgStream(LogInfo) << me
-        << "Problem is linear, skipping separability detection" 
-        << std::endl;
-    } else {
-      sep = (TransSepPtr) new TransSep(env, p);
-      sep->findSep();
-      env ->getLogger()->msgStream(LogDebug) << me
-        << "Is problem separable? - "<< sep->getStatus() 
-        << std::endl;
-    }
-  }
-}
-
 int main(int argc, char* argv[])
 {
   EnvPtr env = (EnvPtr) new Environment();
@@ -317,9 +295,6 @@ int main(int argc, char* argv[])
 
   loadProblem(env, iface, inst, &obj_sense);
 
-  // Separability detection
-  sepDetection(env, inst);
-
   // Initialize engines
   nlp_e = getNLPEngine(env, inst); //Engine for Original problem
 
@@ -355,34 +330,11 @@ int main(int argc, char* argv[])
     handlers.push_back(v_hand);
     assert(v_hand);
 
-    ///Use of perspective handler is user choice
-    if (env->getOptions()->findBool("perspective")->getValue() == true) {
-      PerspConPtr prc = (PerspConPtr) new PerspCon(inst, env);
-      prc->generateList();
-      if(prc->getStatus()){
-        PerspCutHandlerPtr pc_hand;
-        pc_hand = (PerspCutHandlerPtr) new PerspCutHandler(env, inst,
-                                                           prc->getPRCons(),
-                                                           prc->getPRBinVar(),
-                                                           prc->getPRStruct(), 
-                                                           prc->getXNV(), 
-                                                           prc->getXLV(), 0); 
-        pc_hand->setModFlags(false, true);
-        handlers.push_back(pc_hand);
-        assert(pc_hand);
-        qg_hand = (QGHandlerPtr) new QGHandler(env, inst, nlp_e,
-                                               prc->getPRCons(),
-                                               prc->getPRBinVar(),
-                                               prc->getPRStruct());
-      } else {
-        qg_hand = (QGHandlerPtr) new QGHandler(env, inst, nlp_e); 
-      }
-    } else {
-        qg_hand = (QGHandlerPtr) new QGHandler(env, inst, nlp_e); 
-    }
+    qg_hand = (QGHandlerPtr) new QGHandler(env, inst, nlp_e); 
     qg_hand->setModFlags(false, true);
     handlers.push_back(qg_hand);
     assert(qg_hand);
+    
     if (options->findBool("rc_fix")->getValue())
     {
       rc_hand = (RCHandlerPtr) new RCHandler();
@@ -390,7 +342,6 @@ int main(int argc, char* argv[])
       handlers.push_back(rc_hand);
       assert(rc_hand);
     }  
-
 
     // report name
     env->getLogger()->msgStream(LogExtraInfo) << me << "handlers used:"
