@@ -118,6 +118,9 @@ namespace Minotaur {
     /// Get ub of the inequality.
     double getUb() { return ub_; }
 
+    /// Constraint associated with the cut
+    void setCons(ConstraintPtr c) { cons_ = c; }
+
     /// Display.
     void write(std::ostream &out) const;
 

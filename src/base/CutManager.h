@@ -63,6 +63,13 @@ public:
   virtual void addCut(CutPtr c) = 0;
 
   /**
+   * \brief Add a cut to the pool managed by the cut manager.
+   *
+   * \param [in] c Cut pointer to be added.
+   */
+  virtual void addCutToPool(CutPtr c) = 0;
+
+  /**
    * \brief Add a cut
    * \param [in] p Problem to add a cut to
    * \param [in] f Function of the cut
@@ -102,6 +109,8 @@ public:
    * before the last call to separate() or postSolveUpdate().
    */
   virtual UInt getNumNewCuts() const = 0;
+
+  virtual std::vector<ConstraintPtr> getPoolCons() = 0;
 
   /**
    * \brief Update information on a node which is branched.

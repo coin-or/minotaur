@@ -120,7 +120,9 @@ void ParQGHandler::addInitLinearX_(const double *x)
       linearAt_(f, act, x, &c, &lf, &error); 
       if (error == 0) {
         cUb = con->getUb();
+#if USE_OPENMP
         sstm << "Thr_" << omp_get_thread_num();
+#endif
         ++(stats_->cuts);  
         sstm << "_OAcut_";
         sstm << stats_->cuts;     
