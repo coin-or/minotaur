@@ -21,8 +21,6 @@
 #include "Engine.h"
 #include "Problem.h"
 #include "Function.h"
-#include "Timer.h"
-#include "PerspCut.h"
 
 namespace Minotaur {
 
