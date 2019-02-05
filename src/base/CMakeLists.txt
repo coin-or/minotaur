@@ -78,7 +78,12 @@ set (MINOTAUR_SOURCES
      Option.cpp 
      ParBndProcessor.cpp
      ParBranchAndBound.cpp
+     ParCutMan.cpp
      ParNodeIncRelaxer.cpp
+     ParQGBranchAndBound.cpp
+     ParQGHandler.cpp
+     ParPCBProcessor.cpp
+     ParReliabilityBrancher.cpp
      ParTreeManager.cpp
      PCBProcessor.cpp 
      #PerspCon.cpp
@@ -193,7 +198,12 @@ set (MINOTAUR_HEADERS
      OpCode.h
      ParBndProcessor.h
      ParBranchAndBound.h
+     ParCutMan.h
      ParNodeIncRelaxer.h
+     ParQGBranchAndBound.h
+     ParQGHandler.h
+     ParPCBProcessor.h
+     ParReliabilityBrancher.h
      ParTreeManager.h
      PCBProcessor.h
      #PerspCon.h
