@@ -116,6 +116,20 @@ install(TARGETS msbnb RUNTIME DESTINATION bin)
 ## Add lines specific to your binaries in this section.
 ## Use the lines meant for bnb as a template.
 ##############################################################################
+set (MCQG_SOURCES
+McQG.cpp
+)
+
+add_executable(mcqg ${MCQG_SOURCES})
+target_link_libraries(mcqg ${ALL_EXEC_LIBS})
+
+# This will install the binary in bin directory.
+install(TARGETS mcqg RUNTIME DESTINATION bin)
+
+##############################################################################
+## Add lines specific to your binaries in this section.
+## Use the lines meant for bnb as a template.
+##############################################################################
 #set (MCBNB_SOURCES
 # McBnb.cpp
 #)

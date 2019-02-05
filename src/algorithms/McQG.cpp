@@ -47,7 +47,6 @@
 #include "Relaxation.h"
 #include "ReliabilityBrancher.h"
 #include "ParReliabilityBrancher.h"
-#include "UnambRelBrancher.h"
 #include "Solution.h"
 #include "SOS1Handler.h"
 #include "SOS2Handler.h"
