@@ -33,6 +33,7 @@ public:
   /// Only Problem class can modify a Variable. All modification methods
   /// are private.
   friend class Problem;
+  friend class PerspCon;
 
   /// Default constructor.
   Variable();
