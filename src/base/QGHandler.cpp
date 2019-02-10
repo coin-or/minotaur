@@ -94,11 +94,7 @@ QGHandler::~QGHandler()
   if (stats_) {
     delete stats_;
   }
-  env_.reset();
-  rel_.reset();
-  nlpe_.reset();
-  minlp_.reset();
-  logger_.reset();
+  nlCons_.clear();
 }
 
 
@@ -169,7 +165,6 @@ void QGHandler::cutIntSol_(ConstSolutionPtr sol, CutManager *cutMan,
                            SolutionPoolPtr s_pool, bool *sol_found,
                            SeparationStatus *status)
 {
-  *status = SepaContinue;
   double nlpval = INFINITY;
   const double *lpx = sol->getPrimal(), *nlpx;
   relobj_ = (sol) ? sol->getObjValue() : -INFINITY;
@@ -608,6 +603,7 @@ void QGHandler::separate(ConstSolutionPtr sol, NodePtr , RelaxationPtr rel,
   VariableConstIterator v_iter;
   const double *x = sol->getPrimal();
 
+  *status = SepaContinue;
   for (v_iter = rel->varsBegin(); v_iter != rel->varsEnd(); ++v_iter) {
     v_type = (*v_iter)->getType();
     if (v_type == Binary || v_type == Integer || v_type == ImplBin ||

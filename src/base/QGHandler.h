@@ -24,9 +24,6 @@
 
 namespace Minotaur {
 
-class WarmStart;
-typedef boost::shared_ptr<WarmStart> WarmStartPtr;
-
 struct QGStats {
   size_t nlpS;      /// Number of nlps solved.
   size_t nlpF;      /// Number of nlps feasible.
