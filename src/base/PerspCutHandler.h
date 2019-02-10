@@ -22,11 +22,17 @@
 #include "LinearFunction.h"
 
 namespace Minotaur {
-
+//MS: constraint form expected is f(x) <= b
   class PerspCutHandler;
   typedef boost::shared_ptr<PerspCutHandler> PerspCutHandlerPtr;
   typedef boost::shared_ptr<const PerspCutHandler> ConstPerspCutHandlerPtr;
-  
+ 
+  struct PRStats {
+    size_t imprvPt;   /// Number of points feasible to original nonlinear constraint but not the PR constraint.
+    size_t infPt;   /// Number of points infeasible to original constraint.
+    size_t cuts;      /// Number of cuts added to the LP.
+  }; 
+
   class PerspCutHandler : public Handler {
   public:
 
@@ -34,17 +40,11 @@ namespace Minotaur {
   PerspCutHandler();
   
   /// Constructor.
-  PerspCutHandler(EnvPtr env, ProblemPtr problem, std::vector<ConstConstraintPtr> cpr, 
-            std::vector<ConstVariablePtr> bpr, std::vector<char> spr,
-            std::vector<std::vector<double> > nviv,
-            std::vector<std::vector<double> > lviv, bool indi = true);
+  PerspCutHandler(EnvPtr env, ProblemPtr problem);
 
   /// Destructor.
   ~PerspCutHandler();
 
-  /// Generates perspective cuts.
-  bool generateCut(RelaxationPtr rel, ConstSolutionPtr sol, UInt it); 
- 
   /// Does nothing.
   virtual Branches getBranches(BrCandPtr, DoubleVector &,
                                RelaxationPtr, SolutionPoolPtr)
@@ -64,18 +64,6 @@ namespace Minotaur {
   /// Returns name of the handler.
   std::string getName() const;
 
-  /// Returns vector of perspective constraint pointers
-  std::vector<ConstConstraintPtr> getPRCons() {return cons_;};
-  
-  /// Returns vector of pointers to binary variables of perspective constraint
-  std::vector<ConstVariablePtr> getPRBinVar() {return binvar_;};
-
-  std::vector<char> getPRStruct() {return sType_;};
- 
-  /// Checks feasibility of constraints amenable to PR at the given solution.
-  bool isFeasible(ConstSolutionPtr, RelaxationPtr, bool &, double &);
-  //{return true;};
-
     /// Does nothing.
   SolveStatus presolve(PreModQ *, bool *) {return Finished;};
 
@@ -83,10 +71,6 @@ namespace Minotaur {
   virtual bool presolveNode(RelaxationPtr, NodePtr,
                             SolutionPoolPtr, ModVector &,
                             ModVector &) {return false;};
-
-  /// Generates variables for PR reformulation
-  double * prVars(ConstSolutionPtr sol, UInt rnv, UInt itn);
-
 
   /// Does nothing.
   void relaxInitFull(RelaxationPtr, bool * ) {};
@@ -101,10 +85,117 @@ namespace Minotaur {
   void relaxNodeInc(NodePtr, RelaxationPtr, bool * ) {};
 
   /// Separates current solution. 
-  void separate(ConstSolutionPtr, NodePtr, RelaxationPtr, CutManager *cutman,
-                SolutionPoolPtr, ModVector &p_mods, ModVector &r_mods, bool *,
-                SeparationStatus * status);
+   void separate(ConstSolutionPtr sol, NodePtr node, 
+                RelaxationPtr rel, CutManager *cutman, SolutionPoolPtr s_pool, 
+                ModVector &p_mods, ModVector &r_mods, bool *sol_found,
+                SeparationStatus *status);
+
+
+  /**
+   * Add Perspective cut (PCut) to a violated PR amenable constraint whose associated
+   * binary variable in integer at the given point (nlpx). 
+   */
+  void addCut(RelaxationPtr rel, const double *nlpx, const double *lpx, UInt it,
+              SeparationStatus * pcStatus);
+
+  /**
+   * Add PCut to violated PR amenable constraints whose associated
+   * binary variable in integer at the given point (nlpx). 
+   */
+  void pcutAtInt(RelaxationPtr rel , const double * nlpx, 
+                 const double *lpx, SeparationStatus * pcStatus, CutManager *);
+  
+  /**
+   * Add OA cut to original constraint of a violated PR constraint whose
+   *  associated binary variable has value 0.
+   */
+  void linearAt(RelaxationPtr rel, FunctionPtr f, double fval,
+                const double *x, double *c, LinearFunctionPtr *lf,
+                int *error);
+  /**
+   * Add PCut to a PR amenable constraint whose associated
+   * binary variable in integer at the given point (nlpx). 
+   */
+  void intPCut(RelaxationPtr rel,LinearFunctionPtr *lf, UInt it, const double *x, 
+               double *c, int *error);
+
+  /// Add PCut torelaxation 
+  void addCutToRel(RelaxationPtr rel, LinearFunctionPtr lf, double c);
  
+  /**
+   * Add PCut to a PR amenable constraint. At point (x) original 
+   * constraint is known to be satisfied but not necessarily PR constraint. If PR
+   * constraint is satisfied at x then PCut is added at x.
+   * Otherwise, a feasible point to add PCut is obtained using bisection. 
+   */ 
+  void addCutOriFeas(RelaxationPtr rel , UInt it, const double *x);
+
+  /// Iterate over PR amenable constraints to add PCut;
+  void pcutAtPoint(RelaxationPtr rel , const double *x);
+
+  /**
+   * Add PCut to a PR amenable constraint. If both the original and
+   * PR amenable constraints are satisfied at x, PCut is added at x. If only
+   * former is satisfied, then a point feasible to latter is obtained using
+   * bisection at which PCut is then added. If both the constraints are not
+   * satisfied then first a point feasible to original constraint is obtained
+   * using which a point satisfying PR amneable constraint is obtained using
+   * bisection, at which PCut is added. 
+   */ 
+  void addPCut(RelaxationPtr rel , UInt it, const double *x);
+
+
+  /**
+   * Determine a point feasible to orginal constraint when the given point (x) 
+   * violates both original and PR reformulated constraints.
+   */
+  void feasBisecPt(const double *x, double *y, UInt it);
+
+  /**
+   * Give variable values when associated binary variable is 0 for a PR 
+   * amenable constraint.
+   */ 
+  void vertexPt(double * y, UInt it);
+
+  /**
+   * Find a point (w1) feasible to original constraint using bisection method 
+   * on points x and w, where former in feasible and latter is infeasible to
+   * the original constraint. 
+   */
+  void bisecPtOri(const double *x, double * w, double * w1, UInt it);
+
+
+  /**
+   * Given point x violating PR amenable constraint give a feasible point 
+   * using bisection. 
+   */
+  bool bisecPt(const double *x, double * cPt, UInt it);
+ 
+  /**
+   * Given outer-approximatio to a violated PR constraint
+   */
+  void linearAt(RelaxationPtr rel, const double *y, double *c, LinearFunctionPtr *lf, UInt itn, int *error);
+
+  /// Return vector of perspective amenable constraint
+  std::vector<ConstraintPtr> getPRCons() {return cons_;};
+  
+  ///// Return vector of binary variables of perspective amenable constraints
+  //std::vector<VariablePtr> getPRBinVar() {return binvar_;};
+
+  //std::vector<UInt> getPRStruct() {return sType_;};
+ 
+  /// Check feasibility of PR amenable constraints at the given solution.
+  bool isFeasible(ConstSolutionPtr, RelaxationPtr, bool &, double &);
+
+  /// Generate variables for PR reformulation
+  void prVars(const double *x, double *y,  UInt itn, int *error);
+
+  void findPRCons();
+
+  /// Return 1 if there are PR amenable constraints in the problem
+  bool getStatus();
+
+
   /// Writes statistics.
   void writeStats(std::ostream &out) const;
   
@@ -128,36 +219,32 @@ private:
   /// Tolerance for checking integrality.
   double intTol_;
 
-  // Number of perspective cuts generated.
-  UInt numCuts_;
-  
+  /// Statistics.
+  PRStats *stats_;
+
   /// For log:
   static const std::string me_;
   
   /// Vector of perspective constraint pointers
-  std::vector<ConstConstraintPtr> cons_;
+  std::vector<ConstraintPtr> cons_;
+   
+  /// Vector of reformulated perspective constraint pointers
+  std::vector<ConstraintPtr> prcons_;
   
   /// Vector of pointers to binary variables of perspective constraints
-  std::vector<ConstVariablePtr> binvar_;
+  std::vector<VariablePtr> binvar_;
 
   /// Vector of pointers to structure type of perspective constraints
-  std::vector<char> sType_;
+  std::vector<int> sType_;
   
   /// Vector of pointers to values to which variables in the nonlinear part of
   /// the constraints amenable to PR are fixed to
-  std::vector<std::vector<double> > nviv_;
+  std::vector<VariableGroup> nviv_;
  
  /// Vector of pointers to values to which variables in the linear part of
  // the constraints amenable to PR are fixed to 
-  std::vector<std::vector<double> > lviv_;
-
- 
-  /// indi_ = 1, if perspective cuts rae to be added at binary variable taking
-  /// value 1
-  bool indi_;
-
+  std::vector<VariableGroup> lviv_;
   };
-
 }
 
 #endif // MINOTAURPERSPCUTHANDLER_H

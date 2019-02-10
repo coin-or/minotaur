@@ -15,8 +15,6 @@
 #include <cmath>
 #include <algorithm>
 
-using std::endl;
-
 #include "Option.h"
 #include "Logger.h"
 #include "Function.h"
@@ -28,245 +26,266 @@ using std::endl;
 using namespace Minotaur;
 
 const std::string PerspCon::me_ = "PerspCon: ";
-
+//MS: assume constraint form considered is f(x)<=b
 PerspCon::PerspCon()
 :env_(EnvPtr()), p_(ProblemPtr()), sType_(0), cons_(0), binvar_(0),
-  fixbvar_(0), nviv_(0), lviv_(0) 
+  nlVarFixVal_(0), lVarFixVal_(0) 
 {
+
 }
 
 
 PerspCon::PerspCon(ProblemPtr p, EnvPtr env)
-: env_(env),
-  p_(p),
-  sType_(0),
-  cons_(0),
-  binvar_(0),
-  fixbvar_(0),
-  nviv_(0),
-  lviv_(0) 
-
+: env_(env), p_(p), sType_(0), cons_(0), binvar_(0), nlVarFixVal_(0),
+  lVarFixVal_(0) 
 {
   logger_ = env->getLogger();
 }
 
 
-bool PerspCon::boundBinVar(ConstConstraintPtr cons, VariablePtr& binvar)
+void PerspCon::populate (ConstraintPtr cons, VariablePtr binvar, 
+               VariableGroup nlVarFixVal, VariableGroup lVarFixVal)
+{
+  cons_.push_back(cons);
+  binvar_.push_back(binvar);
+  lVarFixVal_.push_back(lVarFixVal);
+  nlVarFixVal_.push_back(nlVarFixVal);
+  return;
+}
+
+
+bool PerspCon::boundBinVar(ConstraintPtr cons, VariablePtr& binvar)
 {
   int error = 0;
-  std::vector<double > nviv;
-  std::vector<double > lviv;
-  FunctionPtr cf = cons->getFunction();
-  bool boundsok = false, lboundsok = false;
-  double cu = cons->getUb(), cl = cons->getLb(), act;
+  double cu, act;
+  ConstVariablePtr var;
+  bool nboundsok = false, lboundsok;
+  VariableGroup lVarFixVal, nlVarFixVal;
   
-  double *y = new double[p_->getNumVars()];  
-  std::fill(y, y + p_->getNumVars(), 0);
-  
-  nviv = checkNVars(cons, binvar, &boundsok);
-  lviv = checkLVars(cons, binvar, &lboundsok);
-  
-  if (boundsok == true && lboundsok == true) {
-    UInt i = 0;
-    ConstVariablePtr var;
-    const QuadraticFunctionPtr qf = cons->getQuadraticFunction();
-    const NonlinearFunctionPtr nlf = cons->getNonlinearFunction();
-    if (nlf) {
-      for (VarSetConstIterator it=nlf->varsBegin(); it!=nlf->varsEnd(); ++it) {
-        var = *it;
-        y[var->getIndex()] = nviv[i];
-        i++;
-      }
-    } else if (qf) {
-      for (VarIntMapConstIterator it=qf->varsBegin(); it!=qf->varsEnd(); ++it) {
-        var = it->first;
-        y[var->getIndex()] = nviv[i];
-        i++;
-      }
-    }
-   const LinearFunctionPtr lf = cons->getLinearFunction();
-   if (lf) {
-     i =0;
-     for (VariableGroupConstIterator it=lf->termsBegin(); it!=lf->termsEnd();
-          ++it) {
-       var = it->first;
-       y[var->getIndex()] = lviv[i];
-       i++;
-     }
-   }
+  checkNVars(cons, binvar, &nboundsok, &nlVarFixVal);
+  if (nboundsok==false) {
+    nlVarFixVal.clear();
+    return false;
+  }
+  LinearFunctionPtr lf = cons->getLinearFunction();
+  if (lf) {
+    checkLVars(cons, binvar, &lboundsok, &lVarFixVal, &nlVarFixVal);
+  } else {
+    lboundsok = true;  
+  }
 
-  
-   act = cf->eval(y, &error);
-   double absTol = env_->getOptions()->findDouble("solAbs_tol")->getValue();
-   if (error == 0) {    
-     if (cu != INFINITY ) {
-       if (cu + absTol < act) {
-         fixbvar_.push_back(binvar);
-       } else {
-         cons_.push_back(cons);
-         sType_.push_back('1');  
-         nviv_.push_back(nviv);
-         lviv_.push_back(lviv);
-         binvar_.push_back(binvar);
-         delete [] y;
-         return true;
-       }
-     } else if (cl != -INFINITY) {
-       if (cl - absTol > act) {
-         fixbvar_.push_back(binvar);
-       } else {
-         cons_.push_back(cons);
-         sType_.push_back('1');  
-         nviv_.push_back(nviv);
-         lviv_.push_back(lviv);
-         binvar_.push_back(binvar);
-         delete [] y;
-         return true;
-       }
-     }
-   } else {
+  double *y = new double[p_->getNumVars()];  
+  const QuadraticFunctionPtr qf = cons->getQuadraticFunction();
+  const NonlinearFunctionPtr nlf = cons->getNonlinearFunction();
+  double absTol = env_->getOptions()->findDouble("solAbs_tol")->getValue();
+
+  std::fill(y, y + p_->getNumVars(), 0);
+  for (VariableGroupConstIterator it=nlVarFixVal.begin(); it!=nlVarFixVal.end();
+       ++it) {
+    y[it->first->getIndex()] = it->second;
+  }
+  cu = cons->getUb();
+  if (nboundsok == true && lboundsok == true) {
+    FunctionPtr cf = cons->getFunction();
+    for (VariableGroupConstIterator it=lVarFixVal.begin();
+         it!=lVarFixVal.end(); ++it) {
+      y[it->first->getIndex()] = it->second;
+    }
+    act = cf->eval(y, &error);
+    if (error == 0) {    
+      if (cu+absTol < act) {  
+        binvar->setLb_(1);
+      } else {
+        populate(cons, binvar, nlVarFixVal, lVarFixVal);
+        if (lf) {
+          if (lf->hasVar(binvar)) {
+            if (lf->getWeight(binvar) > 0) {          
+              if (act <= cu-lf->getWeight(binvar)) {
+                //MS: modify constraint here; Merge different types later
+                cons->setUb_(cu-lf->getWeight(binvar));
+                lf->removeVar(binvar,0);
+                binvar->outOfConstraint_(cons);
+                sType_.push_back(4);  
+              } else {
+                sType_.push_back(-2);  
+              }
+            } else {
+              sType_.push_back(3);  
+            }
+          } else {
+            sType_.push_back(4);  
+          }
+        } else {
+          sType_.push_back(4);  
+        }
+        delete [] y;
+        return true;
+      }
+    } else {
+      logger_->msgStream(LogError) << me_ 
+        << "Constraint is not defined at this point" << std::endl;
+      delete [] y;
+      return false;
+    }
+  } else if (nboundsok == true) {
+    if (nlf) {
+      act = nlf->eval(y, &error);
+    } else if (qf) {
+      act = qf->eval(y);
+    }
+    if (error == 0) {    
+      if (act >= cu) {
+        populate(cons, binvar, nlVarFixVal, lVarFixVal);
+        if (lf->hasVar(binvar) == false) {
+          sType_.push_back(1);  
+        } else {
+          if (lf->getWeight(binvar) > 0) {          
+            sType_.push_back(-1);  
+          } else {
+            sType_.push_back(0);  
+          } // MS: To be verified after writing.....
+        }       
+        delete [] y;
+        return true;
+      } 
+    } else {
      logger_->msgStream(LogError) << me_ 
        << "Constraint is not defined at this point" << std::endl;
-   }
-  } else if (boundsok == true) {
-    if ((cu == 0) || (cl == 0)) {
-      cons_.push_back(cons);
-      sType_.push_back('2');  
-      nviv_.push_back(nviv);
-      lviv_.push_back(lviv);
-      binvar_.push_back(binvar);
-      delete [] y;
-      return true;
+     delete [] y;
+     return false;
     }
   }
   delete [] y;
-  return false;
+  return false; 
 }
 
 
-std::vector<double > PerspCon::checkLVars(ConstConstraintPtr cons,
-                                         ConstVariablePtr binvar,
-                                         bool* lboundsok)
+void PerspCon::checkLVars(ConstraintPtr cons, VariablePtr binvar,
+                                         bool *lboundsok,
+                                         VariableGroup *lVarFixVal,
+                                         VariableGroup *nlVarFixVal)
 {  
-  double temp;
+  double val;
   ConstVariablePtr var;
-  std::vector<double > lviv;
   const LinearFunctionPtr lf = cons->getLinearFunction();
   
-  if (lf) {
-    for (VariableGroupConstIterator it=lf->termsBegin(); it!=lf->termsEnd();
-         ++it) {
-      var = it->first;
-      temp = 0.0;
-      if(var != binvar){
-        temp = checkVarBounds(var, binvar, lboundsok);
-        if (!lboundsok) {
-          lviv.clear();
-          return lviv;
-        } else {
-          lviv.push_back(temp);
-        }
-      } else {
-        temp = 0.0;
-        lviv.push_back(temp);
+  VariableGroupConstIterator mit;
+  for (VariableGroupConstIterator it=lf->termsBegin(); it!=lf->termsEnd();
+       ++it) {
+    var = it->first;
+    if (var != binvar) {
+      mit = (*nlVarFixVal).find(var);
+      if (mit!=(*nlVarFixVal).end()) {
+        (*lboundsok) = true;
+        continue;     
       }
+      val = checkVarBounds(var, binvar, lboundsok);
+      if (!*lboundsok) {
+        (*lVarFixVal).clear();
+        return;
+      } else {
+        (*lVarFixVal).insert(std::make_pair(var,val));
+      }
+    } else {
+      *lboundsok = true;
+      (*lVarFixVal).insert(std::make_pair(var,0.0));
     }
-  } 
-  return lviv;
+  }
+  return;
 }
 
 
-std::vector<double> PerspCon::checkNVars(ConstConstraintPtr cons,
-                                         ConstVariablePtr binvar,
-                                         bool* boundsok)
-{  
-  double temp;
+void PerspCon::checkNVars(ConstraintPtr cons, VariablePtr binvar,
+                                         bool* boundsok, 
+                                         VariableGroup *nlVarFixVal)
+{ 
+  double val; 
   ConstVariablePtr var;
-  std::vector<double > nviv;
   const QuadraticFunctionPtr qf = cons->getQuadraticFunction();
   const NonlinearFunctionPtr nlf = cons->getNonlinearFunction();
 
   if (nlf) {
     for (VarSetConstIterator it=nlf->varsBegin(); it!=nlf->varsEnd(); ++it) {
       var = *it;
-      temp = checkVarBounds(var, binvar, boundsok);
-      if (!boundsok) {
-        nviv.clear();
-        return nviv;
+      val = checkVarBounds(var, binvar, boundsok);
+      if (!*boundsok) {
+        return;
       } else {
-        nviv.push_back(temp);
+        (*nlVarFixVal).insert(std::make_pair(var,val));
       }
     }
   } else if (qf) {
+    //VariableGroupConstIterator mit;
     for (VarIntMapConstIterator it=qf->varsBegin(); it!=qf->varsEnd(); ++it) {
       var = it->first;
-      temp = checkVarBounds(var, binvar, boundsok);
-      if (!boundsok) {
-        nviv.clear();
-        return nviv;
+      //mit = (*nlVarFixVal).find(var);
+      //if (mit!=(*nlVarFixVal).end()) {
+        //continue;     
+      //}
+      val = checkVarBounds(var, binvar, boundsok);
+      if (!*boundsok) {
+        return;
       } else {
-        nviv.push_back(temp);
+        (*nlVarFixVal).insert(std::make_pair(var,val));
       }
     }
   }
-  return nviv;
+  return;
 }
 
 
-double PerspCon::checkVarBounds(ConstVariablePtr var, ConstVariablePtr binvar,
+double PerspCon::checkVarBounds(VariablePtr var, VariablePtr binvar,
                                 bool* varbounded)
 {
   UInt numvars;
+  FunctionPtr f;
+  ConstraintPtr c;
   FunctionType type;
-  ConstConstraintPtr c;
-  std::vector<double> xub;
-  std::vector<double> xlb;
-  bool vub = false, vlb = false;
+  LinearFunctionPtr lf;
+  std::vector<double> xlb, xub;
   double coeffvar, coeffbin, cub, clb;
 
   if (var->getLb() == 0) {
-    vlb = true;  
+    xlb.push_back(0); 
   }
-
   if (var->getUb() == 0) {
-    vub = true;  
+    if (xlb[0] == 0) {
+      *varbounded = true;
+      return 0;
+    } else {
+      xub.push_back(0); 
+    }
   }
-
-  for (ConstrSet::iterator it= var->consBegin(); it!= var->consEnd(); ++it) {
+  for (ConstrSet::iterator it=var->consBegin(); it!=var->consEnd(); ++it) {
     c = *it;
     type = c->getFunctionType();
-    const FunctionPtr f = c->getFunction();
-  
-    if (type != Linear) {
+    if (type!=Linear) {
       continue;
     } 
-    
+    f = c->getFunction();
     numvars = f->getNumVars();
-    const LinearFunctionPtr lf = c->getLinearFunction();
+    lf = c->getLinearFunction();
     coeffvar = lf->getWeight(var);
-  
-    if (numvars > 2 || coeffvar == 0) {
+    if (numvars>2 || coeffvar==0) {
       continue;
     }
-
     cub = c->getUb();
     clb = c->getLb();
-    
     if (numvars == 1) {
-      if ((coeffvar > 0 && cub == 0) ||
-        (coeffvar < 0 && clb == 0)) {
-        vub = true;
-        if (vlb == true) {
-          *varbounded = true;
-          return 0;   
-        }
-      } else if ((coeffvar > 0 && clb == 0) ||
-        (coeffvar < 0 && cub == 0)  ) {
-        vlb = true;      
-        if (vub == true) {
+      if ((coeffvar > 0 && cub == 0) || (coeffvar< 0 && clb == 0)) {
+        if (std::find(xlb.begin(), xlb.end(), 0) != xlb.end()) {
           *varbounded = true;
           return 0;
+        } else {
+          xub.push_back(0); 
         }
+      } else if ((coeffvar > 0 && clb == 0) || (coeffvar < 0 && cub == 0)) {
+         if (std::find(xub.begin(), xub.end(), 0) != xub.end()) {
+          *varbounded = true;
+          return 0;
+        } else {
+          xlb.push_back(0); 
+        }     
       } else {
         continue;
       }
@@ -276,72 +295,38 @@ double PerspCon::checkVarBounds(ConstVariablePtr var, ConstVariablePtr binvar,
         continue;
       }
      /* linear constraint with two terms, var and binvar */
-      if (cub != INFINITY) {
-        if (cub == 0) {
-          if (coeffvar < 0) {
-            vlb = true;
-            if (vub == true) {
-              *varbounded = true;
-              return 0;
-            }
+      if (cub < INFINITY) {
+        if (coeffvar < 0) {
+          if (std::find(xub.begin(), xub.end(), -cub)!=xub.end()) {
+            *varbounded = true;
+            return -cub;
           } else {
-            vub = true;
-            if (vlb == true) {
-              *varbounded = true;
-              return 0;
-            }    
+            xlb.push_back(-cub); 
           }
         } else {
-           if (coeffvar < 0) {
-             if ( std::find(xub.begin(), xub.end(), -cub) != xub.end() ) {
-               *varbounded = true;
-               return -cub;
-             } else {
-               xlb.push_back(-cub); 
-             }
-           } else {
-              if ( std::find(xlb.begin(), xlb.end(), cub) != xlb.end() ) {
-               *varbounded = true;
-               return cub;
-             } else {
-               xub.push_back(cub); 
-             }         
-          }       
-        }
-      }
-
-      if (clb != -INFINITY) {
-        if (clb == 0) {
-          if (coeffvar < 0) {
-            vub = true;
-            if (vlb == true) {
-              *varbounded = true;
-              return 0;
-            } 
+           if (std::find(xlb.begin(), xlb.end(), cub)!=xlb.end()) {
+            *varbounded = true;
+            return cub;
           } else {
-            vlb = true;
-            if (vub == true) {
-              *varbounded = true;
-              return 0;
-            }
+            xub.push_back(cub); 
+          }         
+        }       
+      } else if (clb > -INFINITY) {
+        if (coeffvar < 0) {
+          if (std::find(xlb.begin(), xlb.end(), -clb)!=xlb.end()) {
+            *varbounded = true;
+            return -clb;
+          } else {
+            xub.push_back(-clb); 
           }
         } else {
-           if (coeffvar < 0) {
-             if ( std::find(xlb.begin(), xlb.end(), -clb) != xlb.end() ) {
-               *varbounded = true;
-               return -clb;
-             } else {
-               xub.push_back(-clb); 
-             }
-           } else {
-              if ( std::find(xub.begin(), xub.end(), clb) != xub.end() ) {
-               *varbounded = true;
-               return clb;
-             } else {
-               xlb.push_back(clb); 
-             }         
-          }       
-        }
+           if (std::find(xub.begin(), xub.end(), clb)!=xub.end()) {
+            *varbounded = true;
+            return clb;
+          } else {
+            xlb.push_back(clb); 
+          }         
+        }       
       }
     }
   }
@@ -350,10 +335,10 @@ double PerspCon::checkVarBounds(ConstVariablePtr var, ConstVariablePtr binvar,
 }
 
 
-bool PerspCon::checkVarTypes(ConstConstraintPtr cons, VarSetPtr binaries)
+bool PerspCon::checkVarTypes(ConstraintPtr cons, VarSetPtr binaries)
 {
+  VariablePtr var;
   VariableType type;
-  ConstVariablePtr var;
   const FunctionPtr f = cons->getFunction();
   const LinearFunctionPtr lf = cons->getLinearFunction();
   QuadraticFunctionPtr qf = cons->getQuadraticFunction();
@@ -362,54 +347,39 @@ bool PerspCon::checkVarTypes(ConstConstraintPtr cons, VarSetPtr binaries)
   for (VarSetConstIterator it=f->varsBegin(); it!=f->varsEnd(); ++it) {
     var = *it;
     type = var->getType();
-  
     switch (type) {
     case Binary:
     case ImplBin:
+      if (nlf != NULL && nlf->hasVar(var)) {
+        return false;
+      } else if (qf != NULL && qf->hasVar(var)) {
+        return false;
+      }  
       if (lf != NULL) {
-        if (lf->hasVar(var)) {
-          if (lf->getWeight(var)!=0) {
-            binaries->insert(var);
-          }
+        if (lf->hasVar(var) && lf->getWeight(var) != 0) {
+          binaries->insert(var);
         }
-      }
-      if (qf != NULL) {
-        if (qf->hasVar(var)) {
-          return false;
-        } 
-      } 
-      if (nlf != NULL) {
-          if (nlf->hasVar(var)) {
-            return false;
-          } 
       }
       break;
     case Integer:
+    case ImplInt:
       if ((var->getLb() == 0) && (var->getUb() == 1)) {
-          if (lf != NULL) {
-            if (lf->hasVar(var)) {
-              if (lf->getWeight(var)!=0) {
-                binaries->insert(var);
-              }
-            }
+        if (nlf != NULL && nlf->hasVar(var)) {
+          return false;
+        } else if (qf != NULL && qf->hasVar(var)) {
+          return false;
+        }  
+        if (lf != NULL) {
+          if (lf->hasVar(var) && lf->getWeight(var) != 0) {
+            binaries->insert(var);
           }
-        if (qf != NULL) {
-          if (qf->hasVar(var)) {
-            return false;
-          } 
-        }
-        if (nlf != NULL) {
-          if (nlf->hasVar(var)) {
-            return false;
-          } 
         }
       } 
       break;
-    case Continuous: /* Do nothing.*/ 
+    case Continuous:  
       break;
     default:
-      // Unexpected variable.
-      return false;
+      return false; /* Unexpected variable */
       break;
     }
   }
@@ -419,156 +389,134 @@ bool PerspCon::checkVarTypes(ConstConstraintPtr cons, VarSetPtr binaries)
 
 void PerspCon::displayInfo()
 {
+  //MS: make display better. Keep limited information remove S1 and S2
   UInt s = cons_.size();
   std::ostream &out = logger_->msgStream(LogInfo);
-
   if (s > 0) {
+    out << me_ <<"Total nonlinear constraints in problem = " << p_->getNumCons()-p_->getNumLinCons() << std::endl; 
+    out << me_ <<"Number of constraints amenable to PR = " << cons_.size() << std::endl;
+
+
     out << "----------------------------------------------------"<< std::endl;
     out << me_ << "Details of constraints amenable to perspective reformulation:";
     for (UInt i = 0; i < cons_.size() ; ++i) {
       out << std::endl; 
       out << i+1 << ". ";
       cons_[i]->write(out);
-      out << "Structure type: S" << sType_[i] << std::endl;
+      out << "Structure type: " << sType_[i] << std::endl;
       out << "Associated binary variable: " << binvar_[i]->getName() << std::endl;
-      out << "Fixed values of variables (appear in nonlinear followed by linear terms) "
-        "when " << binvar_[i]->getName() << " takes 0: (";
-      for (UInt j= 0; j < nviv_[i].size(); ++j) {
-        out << nviv_[i][j] << " ";
+      out << "Value of variables when " <<
+        binvar_[i]->getName() << " = 0:" << std::endl;
+      for (VariableGroupConstIterator it=nlVarFixVal_[i].begin(); it!=nlVarFixVal_[i].end(); ++it) {
+        out << "var " << it->first->getName() << " value " << it->second << std::endl;
       }
-      for (UInt j= 0; j < lviv_[i].size(); ++j) {
-        out << lviv_[i][j] << " ";
+      for (VariableGroupConstIterator it=lVarFixVal_[i].begin(); it!=lVarFixVal_[i].end(); ++it) {
+        out << "var " << it->first->getName() << " value " << it->second << std::endl;
       }
-      out << ")" << std::endl;
     }
-    out << "\n Note: Description of S1 and S2 are in paper...... "<< std::endl;
+    out << "\nNote: Description of S1 and S2 are in paper...... "<< std::endl;
     out << "----------------------------------------------------"<< std::endl;
  
+  } else {
+    out << me_ <<"Number of constraints amenable to PR = 0" << std::endl;
   }
 }
 
 
-void PerspCon::evalConstraint(ConstConstraintPtr cons,
-                                     VariablePtr& binvar)
+void PerspCon::evalConstraint(ConstraintPtr cons)
 {
+  VariablePtr binvar;
   VarSetPtr binaries = (VarSetPtr) new VarSet();
   bool vartypeok = checkVarTypes(cons, binaries);
   if (!vartypeok) {
     return;
   }
-
   if (binaries->size() > 0) {
-    for (VarSetConstIterator it= binaries->begin(); it!=binaries->end();
-         ++it) {
+    for (VarSetConstIterator it=binaries->begin(); it!=binaries->end(); ++it) {
       binvar = *it;
       if (boundBinVar(cons, binvar)) {
         return;      
       }
     }
-    
   }
-
   bool newvar;
   UInt numvars;
-  VariablePtr bvar;
+  ConstraintPtr c;
+  VariablePtr var;
   FunctionType type; 
   VariableType vartype;
-  ConstConstraintPtr c;
   const NonlinearFunctionPtr nlf = cons->getNonlinearFunction();
-  ConstVariablePtr var = *(nlf->varsBegin());
+  
+  if (nlf) {
+    var = *(nlf->varsBegin());
+  } else {
+    const QuadraticFunctionPtr qf = cons->getQuadraticFunction();
+    if (qf) {
+      var = qf->varsBegin()->first;
+    }
+  }
   
   for (ConstrSet::const_iterator it= var->consBegin(); it!=var->consEnd();
        ++it) {
     c = *it;
     type = c->getFunctionType();
     const FunctionPtr f = c->getFunction();
-
     if (type != Linear) {
       continue;
     }
-
     numvars = f->getNumVars();
     const LinearFunctionPtr lf = c->getLinearFunction();
-
-    if( (numvars != 2) || (lf->getWeight(var) == 0) ){
+    if ((numvars != 2) || (lf->getWeight(var) == 0)) {
       continue;
     }
-    
     for (VariableGroupConstIterator itvar=lf->termsBegin();
          itvar!=lf->termsEnd(); ++itvar) {
       binvar = itvar->first;
       vartype = binvar->getType();
-    
       if (vartype == Continuous) {
         continue;
-      }
-      if (lf->getWeight(binvar) != 0) {
-        if ((vartype == Binary) || (vartype == ImplBin) ||
-            ((vartype = Integer) && (binvar->getLb() == 0) 
-             && (binvar->getUb()==1))) {
+      } else if (vartype==Binary || vartype==ImplBin ||
+          ((vartype==Integer || vartype==ImplInt) && (binvar->getLb()==0
+           && binvar->getUb()==1))) {
+        if (lf->getWeight(binvar) != 0) {
           newvar = true;
           if (binaries->size() > 0) {
-            for (VarSetConstIterator itv= binaries->begin(); 
-                 itv!=binaries->end(); ++itv) {
-              bvar = *itv;
-              if (binvar == bvar) { 
-                newvar = false;
-                break;
-              }
+            if ((*binaries).find(binvar)!=(*binaries).end()) {
+              binaries->insert(binvar);
+              newvar = false;
+              break;            
             }
           }  
           if (newvar) {
             if (boundBinVar(cons, binvar)) {
               return;
-            } else {
-              binaries->insert(binvar);
-            }
+            } 
           }
-        } else {
-          continue;
         }
       }
+      break;
     }    
   }
   return;
 }
 
 
-void PerspCon::generateList()
+void PerspCon::findPRCons()
 {
   FunctionType type;
-  VariablePtr binvar;
-  ConstConstraintPtr cons;
-
-  for (ConstraintConstIterator it= p_->consBegin(); it!= p_->consEnd(); ++it) {
+  ConstraintPtr cons;
+  for (ConstraintConstIterator it=p_->consBegin(); it!=p_->consEnd(); ++it) {
     cons = *it;
     type = cons->getFunctionType();
-    
     if (type == Linear) {
       continue;
     }
-    evalConstraint(cons, binvar);
+    evalConstraint(cons);
   }
-
- if (fixbvar_.size() > 0) {
-   FunctionPtr fnew;
-   LinearFunctionPtr lfnew;
-   for (UInt i= 0; i < fixbvar_.size() ; ++i) {
-     lfnew = (LinearFunctionPtr) new LinearFunction();
-     lfnew->addTerm(fixbvar_[i], 1);
-     fnew = (FunctionPtr) new Function(lfnew);
-     p_->newConstraint(fnew, 1.0, 1.0,
-                       "Perspective: fixing binary variable to 1");
-   }
-   fixbvar_.clear();
- }
-
- logger_->msgStream(LogInfo) << me_ 
-   <<"Total no. of constraints amenable to PR = " << cons_.size() << std::endl;
-
-#if SPEW 
+//#if SPEW 
   displayInfo();
-#endif  
+  exit(1);
+//#endif  
   return;
 }
 
@@ -585,7 +533,13 @@ bool PerspCon::getStatus()
 
 PerspCon::~PerspCon()
 {
+  cons_.clear();
+  sType_.clear();
+  binvar_.clear();
+  nlVarFixVal_.clear();
+  lVarFixVal_.clear();
 }
+
 
 // Local Variables: 
 // mode: c++ 

@@ -18,6 +18,7 @@
 using std::ofstream;
 #include <string>
 
+#include "Timer.h"
 #include "Types.h"
 #include "Problem.h"
 #include "Variable.h"
@@ -47,43 +48,45 @@ public:
    * Checks if the variables in a constraint are bounded by given binary
    * variable binvar.
    */ 
-  bool boundBinVar(ConstConstraintPtr cons, VariablePtr& binvar);
+  bool boundBinVar(ConstraintPtr cons, VariablePtr& binvar);
 
   /*
    * Checks if variables in the linear part of a constraint are bounded by
    * the given binary variable.
    */ 
-  std::vector<double> checkLVars(ConstConstraintPtr cons,
-                                 ConstVariablePtr binvar,
-                                 bool* lboundsok);
+
+ void checkLVars(ConstraintPtr cons, VariablePtr binvar,
+                                 bool* lboundsok,
+                                 VariableGroup *lVarFixVal,
+                                 VariableGroup *nlVarFixVal);
 
   /*
    * Checks if variables in the nonlinear part of a constraint are bounded by 
    * a given binary variable.
    */ 
-  std::vector<double> checkNVars(ConstConstraintPtr cons,
-                                 ConstVariablePtr binvar,
-                                 bool* boundsok);
+  void checkNVars(ConstraintPtr cons, VariablePtr binvar,
+                                 bool* boundsok,
+                                 VariableGroup *nlVarFixVal);
 
 
   /// Checks if a variable is bounded by a given binary variable.
-  double checkVarBounds(ConstVariablePtr var, ConstVariablePtr binvar,
+  double checkVarBounds(VariablePtr var, VariablePtr binvar,
                         bool* varbounded);
   
   /*
    * Checks if a binary variable is present in the nonlinear part of the
    * given constraint. 
    */
-  bool checkVarTypes(ConstConstraintPtr cons, VarSetPtr binaries);
+  bool checkVarTypes(ConstraintPtr cons, VarSetPtr binaries);
   
   /// Writes information related to perspective amenable constraints. 
   void displayInfo();
 
   /// Checks if a constraint is amenable to PR.
-  void evalConstraint(ConstConstraintPtr cons,VariablePtr& binvar);
+  void evalConstraint(ConstraintPtr cons);
 
   /// Generates list of constraints amenable to PR.
-  void generateList();
+  void findPRCons();
 
 
   /// Returns total number of PR.
@@ -93,13 +96,13 @@ public:
    * Returns vector containing binary variables associated with constraints 
    * amenable to PR.
    */ 
-  std::vector<ConstVariablePtr> getPRBinVar() const {return binvar_;}
+  std::vector<VariablePtr> getPRBinVar() const {return binvar_;}
 
   /// Returns a vector containing constraints amenable to PR.
-  std::vector<ConstConstraintPtr> getPRCons() const {return cons_;}
+  std::vector<ConstraintPtr> getPRCons() const {return cons_;}
   
   /// Returns vector containing structure types of constraints amenable to PR.
-  std::vector<char> getPRStruct() const {return sType_;}
+  std::vector<int> getPRStruct() const {return sType_;}
    
   /*
    * Returns 1 if problem has at least one constraint amenable to PR,
@@ -107,15 +110,18 @@ public:
    */  
   bool getStatus();
 
+
+  void populate (ConstraintPtr cons, VariablePtr binvar, VariableGroup nlVarFixVal,
+               VariableGroup lVarFixVal);
   /* Returns a vector containing values to which variables in the 
    * linear part of the constraints amenable to PR are fixed to.
    */
-  std::vector<std::vector<double> > getXLV() const {return lviv_;}
+  std::vector<VariableGroup > getXLV() const {return lVarFixVal_;}
  
   /* Returns a vector containing values to which variables in the 
    * nonlinear part of the constraints amenable to PR are fixed to.
    */
-  std::vector<std::vector<double> > getXNV() const {return nviv_;}
+  std::vector<VariableGroup > getXNV() const {return nlVarFixVal_;}
 
   private:
   
@@ -128,32 +134,35 @@ public:
   /// Log
   LoggerPtr logger_;
 
+  /// Timer
+  //Timer *timer_;
+
   /// For log.
   static const std::string me_;
 
   /// Vector of struture types of constraints amenable to PR.
-  std::vector<char> sType_;
+  std::vector<int> sType_;
 
   /// Vector of perspective constraint pointers
-  std::vector<ConstConstraintPtr> cons_;
+  std::vector<ConstraintPtr> cons_;
   
   /* Vector of pointers to binary variables associated with constraints
    * amenable to PR.
    */
-  std::vector<ConstVariablePtr> binvar_;
+  std::vector<VariablePtr> binvar_;
 
   /// Vector of pointers to binary variable that are fixed to 1
-  std::vector<VariablePtr> fixbvar_;
+  //std::vector<VariablePtr> fixbvar_;
  
   /* Vector containing values to which variables in the 
    * nonlinear part of a constraint amenable to PR are fixed to.
    */ 
-  std::vector<std::vector<double> > nviv_;
+  std::vector<VariableGroup> nlVarFixVal_;
 
   /* Returns a vector containing values to which variables in the 
-   * linear part of a constraint amenable to PR are fixed to.
+   * linear part (and not in nonlinear part) of a constraint amenable to PR are fixed to.
    */
-  std::vector<std::vector<double> > lviv_;
+  std::vector<VariableGroup> lVarFixVal_;
 }; 
 
 }
