@@ -65,7 +65,7 @@ ParPCBProcessor::ParPCBProcessor()
 
 
 ParPCBProcessor::ParPCBProcessor (EnvPtr env, EnginePtr engine,
-                            HandlerVector handlers, UInt numThreads)
+                            HandlerVector handlers)
   : contOnErr_(false),
     cutMan_(0),
     engine_(engine),

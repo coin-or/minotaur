@@ -54,7 +54,7 @@ namespace Minotaur {
     ParPCBProcessor();
 
     /// Constructor with a given engine.
-    ParPCBProcessor(EnvPtr env, EnginePtr engine, HandlerVector handlers_, UInt numThreads);
+    ParPCBProcessor(EnvPtr env, EnginePtr engine, HandlerVector handlers_);
 
     /// Destroy
     ~ParPCBProcessor();

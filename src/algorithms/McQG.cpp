@@ -120,7 +120,7 @@ ParQGBranchAndBound* createParBab(EnvPtr env, ProblemPtr p, EnginePtr e,
     EnginePtr lpeCopy = lin_e->emptyCopy();
     //br = createBrancher(env, p, handlersCopy[i], lpeCopy);
     br = createBrancher(env, cloneP, handlersCopy[i], lpeCopy);
-    nodePrcssr[i] = (ParPCBProcessorPtr) new ParPCBProcessor(env, lpeCopy, handlersCopy[i], numThreads);
+    nodePrcssr[i] = (ParPCBProcessorPtr) new ParPCBProcessor(env, lpeCopy, handlersCopy[i]);
     nodePrcssr[i]->setBrancher(br);
     parNodeRlxr[i] = (ParNodeIncRelaxerPtr) new ParNodeIncRelaxer(env, handlersCopy[i]);
     if (i==0) {
