@@ -332,8 +332,7 @@ int main(int argc, char* argv[])
     handlers.push_back(qg_hand);
     assert(qg_hand);
     
-    if (options->findBool("rc_fix")->getValue())
-    {
+    if (options->findBool("rc_fix")->getValue()) {
       rc_hand = (RCHandlerPtr) new RCHandler();
       rc_hand->setModFlags(false, true); 
       handlers.push_back(rc_hand);
@@ -505,9 +504,6 @@ void writeSol(EnvPtr env, VarVector *orig_v,
 }
 
 
-
-
-
 // Local Variables: 
 // mode: c++ 
 // eval: (c-set-style "k&r") 
@@ -518,4 +514,3 @@ void writeSol(EnvPtr env, VarVector *orig_v,
 // eval: (setq column-number-mode 1) 
 // eval: (setq indent-tabs-mode nil) 
 // End:
-//
