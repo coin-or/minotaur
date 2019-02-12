@@ -403,8 +403,8 @@ void ParQGBranchAndBound::parsolve(ParNodeIncRelaxerPtr parNodeRlxr[],
   std::vector<ParCutMan*> cutman(numThreads, new ParCutMan(env_, problem_));
   bool iterMode = env_->getOptions()->findBool("mcbnb_iter_mode")->getValue();
   UInt iterCount = 1;
-  UInt cutsIndex[numThreads][numThreads];
-  UInt numCuts[numThreads]  = {0};
+  UInt *cutsIndex = new UInt[numThreads*numThreads]();
+  UInt *numCuts = new UInt[numThreads]();
   UInt numVars = 0;
 
 #if USE_OPENMP
@@ -419,9 +419,6 @@ void ParQGBranchAndBound::parsolve(ParNodeIncRelaxerPtr parNodeRlxr[],
     initialized[i] = false;
     shouldRunTh[i] = true;
     nodeCountTh[i] = 1;
-    for (UInt j=0; j < numThreads; ++j) {
-      cutsIndex[i][j] = 0;
-    }
   }
 
   // initialize timer
@@ -570,26 +567,26 @@ void ParQGBranchAndBound::parsolve(ParNodeIncRelaxerPtr parNodeRlxr[],
               if (i!=j || numThreads==1) {
                 std::vector<ConstraintPtr > consVec = nodePrcssr[j]->getCutManager()->getPoolCons();
                 if (consVec.size() > 0) {
-                  for (UInt k=cutsIndex[i][j]; k < consVec.size(); ++k) {
+                  for (UInt k=cutsIndex[i*numThreads+j]; k < consVec.size(); ++k) {
                     lf = consVec[k]->getLinearFunction();
                     if (lf) {
                       lfnew = (LinearFunctionPtr) new LinearFunction();
                       for (VariableGroupConstIterator it=lf->termsBegin(); it!=lf->termsEnd();++it) {
                         v = it->first;
                         //transform the cut
-                        lfnew->addTerm(rel[i]->getRelaxationVar(rel[i]->getOriginalVar(v)),it->second);
+                        lfnew->addTerm(rel[i]->getRelaxationVar(rel[i]->getOriginalVar(v)),it->second); //rel[j] not needed
                       }
                       f = (FunctionPtr) new Function(lfnew);
                       rel[i]->newConstraint(f, consVec[k]->getLb(), 
                                             consVec[k]->getUb(), consVec[k]->getName());
                     }
                   }
-                  cutsIndex[i][j] = consVec.size();
+                  cutsIndex[i*numThreads+j] = consVec.size();
                   numCuts[j] = consVec.size();
                   consVec.clear();
                 }
                 if (isParRel) {
-                  parRelBr = boost::dynamic_pointer_cast <ParReliabilityBrancher> (nodePrcssr[i]->getBrancher());
+                  parRelBr = boost::dynamic_pointer_cast <ParReliabilityBrancher> (nodePrcssr[j]->getBrancher());
                   tmpTimesUp = parRelBr->getTimesUp();
                   tmpTimesDown = parRelBr->getTimesDown();
                   tmpPseudoUp = parRelBr->getPCUp();
@@ -786,7 +783,7 @@ void ParQGBranchAndBound::parsolve(ParNodeIncRelaxerPtr parNodeRlxr[],
   timer_->stop();
   
   for (UInt i=0; i<numThreads; ++i) {
-    std::cout << "Cuts added by thread " << i <<": "<<numCuts[i] <<"\n";
+    logger_->msgStream(LogInfo) << me_ << "cuts added by thread " << i <<": "<<numCuts[i] <<"\n";
   }
 
   delete[] should_dive;
@@ -803,6 +800,8 @@ void ParQGBranchAndBound::parsolve(ParNodeIncRelaxerPtr parNodeRlxr[],
   delete[] ws;
   delete[] rel;
   delete[] branches;
+  delete[] numCuts;
+  delete[] cutsIndex;
   //delete[] cutman;
 }
 
