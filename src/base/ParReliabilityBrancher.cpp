@@ -75,8 +75,6 @@ ParReliabilityBrancher::~ParReliabilityBrancher()
 
 BrCandPtr ParReliabilityBrancher::findBestCandidate_(const double objval, 
                                                   double cutoff, NodePtr node,
-                                                  UIntVector timesUp,
-                                                  UIntVector timesDown,
                                                   DoubleVector pseudoUp,
                                                   DoubleVector pseudoDown,
                                                   UInt nodesProc)
@@ -92,8 +90,7 @@ BrCandPtr ParReliabilityBrancher::findBestCandidate_(const double objval,
 
   // first evaluate candidates that have reliable pseudo costs
   for (BrCandVIter it=relCands_.begin(); it!=relCands_.end(); ++it) {
-    getPCScore_(*it, &change_down, &change_up, &score, timesUp, timesDown,
-                pseudoUp, pseudoDown);
+    getPCScore_(*it, &change_down, &change_up, &score, pseudoUp, pseudoDown);
     if (score > best_score) {
       best_score = score;
       best_cand = *it;
@@ -144,8 +141,7 @@ BrCandPtr ParReliabilityBrancher::findBestCandidate_(const double objval,
     if (NotModifiedByBrancher == status_) {
       // get score of remaining unreliable candidates as well.
       for (;it!=unrelCands_.end(); ++it) {
-        getPCScore_(*it, &change_down, &change_up, &score, timesUp, timesDown,
-                pseudoUp, pseudoDown);
+        getPCScore_(*it, &change_down, &change_up, &score, pseudoUp, pseudoDown);
         if (score > best_score) {
           best_score = score;
           best_cand = *it;
@@ -161,13 +157,13 @@ BrCandPtr ParReliabilityBrancher::findBestCandidate_(const double objval,
   return best_cand;
 }
 
- Branches ParReliabilityBrancher::findBranches(RelaxationPtr rel, NodePtr node, 
-                        ConstSolutionPtr sol, SolutionPoolPtr s_pool, 
-                        BrancherStatus & br_status, ModVector &mods)
-{
-  Branches br;
-  return br;
-}
+ //Branches ParReliabilityBrancher::findBranches(RelaxationPtr rel, NodePtr node, 
+                        //ConstSolutionPtr sol, SolutionPoolPtr s_pool, 
+                        //BrancherStatus & br_status, ModVector &mods)
+//{
+  //Branches br;
+  //return br;
+//}
 
 Branches ParReliabilityBrancher::findBranches(RelaxationPtr rel, NodePtr node, 
                         ConstSolutionPtr sol, SolutionPoolPtr s_pool, 
@@ -203,8 +199,7 @@ Branches ParReliabilityBrancher::findBranches(RelaxationPtr rel, NodePtr node,
   if (status_ == NotModifiedByBrancher) {
     br_can = findBestCandidate_(sol->getObjValue(), 
                                 s_pool->getBestSolutionValue(), node,
-                                timesUp, timesDown, pseudoUp, pseudoDown,
-                                nodesProc);
+                                pseudoUp, pseudoDown, nodesProc);
   }
 
   if (status_ == NotModifiedByBrancher) {
@@ -373,7 +368,6 @@ std::string ParReliabilityBrancher::getName() const
 
 void ParReliabilityBrancher::getPCScore_(BrCandPtr cand, double *ch_down, 
                                       double *ch_up, double *score,
-                                      UIntVector timesUp, UIntVector timesDown,
                                       DoubleVector pseudoUp, DoubleVector pseudoDown) 
 {
   int index = cand->getPCostIndex();

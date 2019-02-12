@@ -50,9 +50,9 @@ public:
   ~ParReliabilityBrancher();
 
   // base class function.
-  Branches findBranches(RelaxationPtr rel, NodePtr node, 
-                        ConstSolutionPtr sol, SolutionPoolPtr s_pool, 
-                        BrancherStatus & br_status, ModVector &mods);
+  Branches findBranches(RelaxationPtr, NodePtr, 
+                        ConstSolutionPtr, SolutionPoolPtr, 
+                        BrancherStatus &, ModVector &) {return Branches();};
 
   // Overloaded base class function.
   Branches findBranches(RelaxationPtr rel, NodePtr node, 
@@ -195,11 +195,8 @@ private:
    * \param[in] node The node at which we are branching.
    */
   BrCandPtr findBestCandidate_(const double objval, double cutoff,
-                               NodePtr node, UIntVector timesUp,
-                               UIntVector timesDown,
-                               DoubleVector pseudoUp,
-                               DoubleVector pseudoDown,
-                               UInt nodesProc);
+                               NodePtr node, DoubleVector pseudoUp,
+                               DoubleVector pseudoDown, UInt nodesProc);
 
   /**
    * \brief Find and sort candidates for branching.
@@ -223,8 +220,7 @@ private:
    * \param[out] score The total score returned by this function.
    */
   void getPCScore_(BrCandPtr cand, double *ch_down, double *ch_up, 
-                   double *score, UIntVector timesUp, UIntVector timesDown,
-                   DoubleVector pseudoUp, DoubleVector pseudoDown);
+                   double *score, DoubleVector pseudoUp, DoubleVector pseudoDown);
 
   /**
    * \brief Calculate score from the up score and down score.
