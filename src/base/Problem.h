@@ -445,6 +445,12 @@ namespace Minotaur {
      */
     virtual void prepareForSolve();
 
+    /**
+     *  Move the nonlinear part of the objective function to constraints
+     *  set using an auxiliary variable
+     */
+    virtual void objToCons();
+
     /// Remove objective from the Problem.
     virtual void removeObjective(); 
 

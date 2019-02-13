@@ -1167,6 +1167,43 @@ void Problem::newVariables(VariableConstIterator v_begin,
 }
 
 
+void Problem::objToCons()
+{
+  std::string name = "eta";
+  if (!obj_) {
+    assert(!"No objective function in the problem!");
+  } else if (obj_->getFunctionType() != Linear &&
+             obj_->getFunctionType() != Constant) {
+    FunctionPtr fold, fnew;
+    double objCons = obj_->getConstant();
+    ObjectiveType objType = obj_->getObjectiveType();
+    LinearFunctionPtr lf = obj_->getLinearFunction();
+    const QuadraticFunctionPtr qf  = obj_->getQuadraticFunction();
+    const NonlinearFunctionPtr nlf = obj_->getNonlinearFunction();
+    LinearFunctionPtr lfnew = (LinearFunctionPtr) new LinearFunction();
+    VariablePtr vPtr = newVariable(-INFINITY,INFINITY,Continuous,name);
+    lfnew->addTerm(vPtr, -1.0);
+    if (nlf!= NULL && qf!=NULL) {
+      fold = (FunctionPtr) new Function(lfnew, qf, nlf);
+    } else if (nlf) {
+      fold = (FunctionPtr) new Function(lfnew, nlf);
+    } else if (qf) {
+      fold = (FunctionPtr) new Function(lfnew, qf);
+    }
+    name = "objToCons";
+    newConstraint(fold, -INFINITY, 0.0, name);
+    if (!lf) {
+      lf = (LinearFunctionPtr) new LinearFunction();
+    }
+    lf->addTerm(vPtr, 1.0);
+    removeObjective();
+    fnew = (FunctionPtr) new Function(lf);
+    newObjective(fnew, objCons, objType);
+  }
+  return;
+}
+
+
 void Problem::prepareForSolve()
 {
   bool reload = false;
