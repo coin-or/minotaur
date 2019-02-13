@@ -435,7 +435,7 @@ EnginePtr getEngine(EnvPtr env, ProblemPtr p, int &err)
   return e;
 }
 
-
+//MS: Use this function in Problem class
 void linearizeObj(ProblemPtr problem)
 {
   ObjectivePtr obj;
@@ -446,11 +446,13 @@ void linearizeObj(ProblemPtr problem)
     assert(!"No objective function in the problem!");
   } else if (obj->getFunctionType() != Linear) {
     FunctionPtr fold, fnew;
-    LinearFunctionPtr lfold        = obj->getLinearFunction();
+    double objCons = obj->getConstant();
+    ObjectiveType objType = obj->getObjectiveType();
+    LinearFunctionPtr lfold = obj->getLinearFunction();
     const QuadraticFunctionPtr qf  = obj->getQuadraticFunction();
     const NonlinearFunctionPtr nlf = obj->getNonlinearFunction();
-    LinearFunctionPtr lfnew        = (LinearFunctionPtr) new LinearFunction();
-    VariablePtr vPtr               = problem->newVariable(-INFINITY,INFINITY,
+    LinearFunctionPtr lfnew = (LinearFunctionPtr) new LinearFunction();
+    VariablePtr vPtr = problem->newVariable(-INFINITY,INFINITY,
                                                            Continuous,name); 
     if (!lfold) {
       lfold = (LinearFunctionPtr) new LinearFunction();
@@ -467,7 +469,7 @@ void linearizeObj(ProblemPtr problem)
     problem->removeObjective();
     lfnew->addTerm(vPtr, 1.0);
     fnew = (FunctionPtr) new Function(lfnew);
-    problem->newObjective(fnew, obj->getConstant(), obj->getObjectiveType());
+    problem->newObjective(fnew, objCons, objType);
   }
 }
 
