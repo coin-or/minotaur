@@ -351,14 +351,16 @@ bool QGHandler::isFeasible(ConstSolutionPtr sol, RelaxationPtr, bool &,
 
 void QGHandler::linearizeObj_()
 {
+  FunctionType fType;
   ObjectivePtr o = minlp_->getObjective();
-  FunctionType fType = o->getFunctionType();
   if (!o) {
     assert(!"need objective in QG!");
-  } else if (fType != Linear && fType != Constant) {
+  } else if (o->getFunctionType() != Linear &&
+             o->getFunctionType() != Constant) {
     oNl_ = true;
     FunctionPtr f;
     std::string name = "eta";
+    ObjectiveType objType = o->getObjectiveType();
     LinearFunctionPtr lf = (LinearFunctionPtr) new LinearFunction();
     VariablePtr vPtr = rel_->newVariable(-INFINITY, INFINITY, Continuous,
                                          name, VarHand);
@@ -366,7 +368,7 @@ void QGHandler::linearizeObj_()
     rel_->removeObjective();
     lf->addTerm(vPtr, 1.0);
     f = (FunctionPtr) new Function(lf);
-    rel_->newObjective(f, 0.0, o->getObjectiveType());
+    rel_->newObjective(f, 0.0, objType);
     objVar_ = vPtr;
   }
   return;
