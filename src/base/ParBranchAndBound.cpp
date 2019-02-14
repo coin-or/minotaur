@@ -1116,7 +1116,9 @@ void ParBranchAndBound::parsolveSync(ParNodeIncRelaxerPtr parNodeRlxr[],
         }//for ends
 
         // UPPER BOUND UPDATE SYNCHRONIZATION
+#if USE_OPENMP
 #pragma omp single
+#endif
         for(UInt i = 0; i < numThreads; ++i) {
           if (current_node[i]) {
             double oldUb = tm_->getUb();
