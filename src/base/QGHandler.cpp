@@ -351,7 +351,6 @@ bool QGHandler::isFeasible(ConstSolutionPtr sol, RelaxationPtr, bool &,
 
 void QGHandler::linearizeObj_()
 {
-  FunctionType fType;
   ObjectivePtr o = minlp_->getObjective();
   if (!o) {
     assert(!"need objective in QG!");
