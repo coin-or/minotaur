@@ -560,7 +560,6 @@ void CGraph::finalize()
   assert(oNode_);
   st.push(oNode_);
 
-
   vq_.clear();
   dq_.clear();
 
@@ -575,9 +574,7 @@ void CGraph::finalize()
       aNodes_[i]->setIndex(index);
       index++;
     }
-
   }
-
   id = 1;
   while(!st.empty()) {
     n1 = st.top();
@@ -944,18 +941,39 @@ bool CGraph::isSOSRec_(CNode *node) const
   return false;
 }
 
+
 void CGraph::multiply(double c)
 {
-  if (fabs(c+1.0)<1e-12) {
-    CNode *node = new CNode(OpUMinus, oNode_, 0);
-    oNode_ = node;
-    aNodes_.push_back(node);
-    if (dq_.empty()==false) {
-      dq_.push_back(node);
-    }
-  } else {
-    assert(!"cannot multiply in cgraph!");
+  if (c == 1) {
+    return;
+  } else if (c == -INFINITY || c == INFINITY) {
+    assert(!"cannot multiply INFINITY in cgraph!");
+    return;
   }
+  CNode *node;
+  if (c == -1) {
+    node = new CNode(OpUMinus, oNode_, 0);
+  } else if (c == 0) {
+    dq_.clear();
+    vq_.clear();
+    varNode_.clear();
+    aNodes_.clear();
+    CNode *z = 0;
+    node = new CNode(OpNum, z, z);
+    node->setDouble(c);
+    node->setVal(c);
+  } else {
+    CNode *z = 0;
+    CNode *nodeConst = new CNode(OpNum, z, z);
+    nodeConst->setDouble(c);
+    nodeConst->setVal(c);
+    aNodes_.push_back(nodeConst);
+    node = new CNode(OpMult, nodeConst, oNode_);
+  }
+  oNode_ = node;
+  aNodes_.push_back(node);
+  finalize();
+  return;
 }
 
 

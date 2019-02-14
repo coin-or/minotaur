@@ -70,12 +70,8 @@ SolveStatus Presolver::getStatus()
 
 void Presolver::standardize()
 {
-  //removeEmptyObj_();
   minimizify_();
   if (problem_->isQuadratic() || problem_->isLinear()) {
-    //if (env_->getOptions()->findString("algorithm")->getValue() == "QG") {
-    //  linearizeObjective_();
-    //}
     ifIntsAreBins_();
     standardizeConstraints_();
     problem_->calculateSize(true);
