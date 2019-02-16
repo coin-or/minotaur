@@ -435,43 +435,6 @@ EnginePtr getEngine(EnvPtr env, ProblemPtr p, int &err)
   return e;
 }
 
-//MS: Use this function in Problem class
-void linearizeObj(ProblemPtr problem)
-{
-  ObjectivePtr obj;
-  std::string name = "obj_auxiliary_var";
-  obj              = problem->getObjective();
-
-  if (!obj) {
-    assert(!"No objective function in the problem!");
-  } else if (obj->getFunctionType() != Linear) {
-    FunctionPtr fold, fnew;
-    double objCons = obj->getConstant();
-    ObjectiveType objType = obj->getObjectiveType();
-    LinearFunctionPtr lfold = obj->getLinearFunction();
-    const QuadraticFunctionPtr qf  = obj->getQuadraticFunction();
-    const NonlinearFunctionPtr nlf = obj->getNonlinearFunction();
-    LinearFunctionPtr lfnew = (LinearFunctionPtr) new LinearFunction();
-    VariablePtr vPtr = problem->newVariable(-INFINITY,INFINITY,
-                                                           Continuous,name); 
-    if (!lfold) {
-      lfold = (LinearFunctionPtr) new LinearFunction();
-    }
-    lfold->addTerm(vPtr, -1.0);
-    if (nlf) {
-      fold = (FunctionPtr) new Function(lfold,nlf);
-      if (qf) {
-        fold = (FunctionPtr) new Function(lfold,qf,nlf);
-      }
-    }
-    name = "obj_Reform";
-    problem->newConstraint(fold, -INFINITY, 0.0,name);
-    problem->removeObjective();
-    lfnew->addTerm(vPtr, 1.0);
-    fnew = (FunctionPtr) new Function(lfnew);
-    problem->newObjective(fnew, objCons, objType);
-  }
-}
 
 void loadProblem(EnvPtr env, MINOTAUR_AMPL::AMPLInterface* iface,
                  ProblemPtr &oinst, double *obj_sense)
@@ -796,8 +759,8 @@ int main(int argc, char** argv)
   relCopy = new RelaxationPtr[numThreads]; 
   loadProblem(env, iface, oinst, &obj_sense);
  
- //Linearize objective if nonlinear
-  linearizeObj(oinst);
+ // Moving objective to constraint if objective is nonlinear
+  oinst->objToCons();
 
   orig_v = new VarVector(oinst->varsBegin(), oinst->varsEnd());
   pres = presolve(env, oinst, iface->getNumDefs(), handlers);
