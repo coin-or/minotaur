@@ -171,15 +171,15 @@ void QGHandler::cutIntSol_(ConstSolutionPtr sol, CutManager *cutMan,
 
   fixInts_(lpx);           // Fix integer variables
   solveNLP_();
-  unfixInts_();             // Unfix integer variables
+  unfixInts_();            // Unfix integer variables
   
   switch(nlpStatus_) {
   case (ProvenOptimal):
   case (ProvenLocalOptimal):
     ++(stats_->nlpF);
     updateUb_(s_pool, &nlpval, sol_found); 
-    if (relobj_ > nlpval+solAbsTol_) {
-      if (nlpval == 0 || relobj_ > nlpval+fabs(nlpval)*solRelTol_) {
+    if (relobj_ >= nlpval-solAbsTol_) {
+      if (nlpval == 0 || relobj_ >= nlpval-fabs(nlpval)*solRelTol_) {
         *status = SepaPrune;
         break;
       }
@@ -191,15 +191,14 @@ void QGHandler::cutIntSol_(ConstSolutionPtr sol, CutManager *cutMan,
     }
   case (ProvenInfeasible):
   case (ProvenLocalInfeasible): 
-  case (ProvenObjectiveCutOff): 
+  case (ProvenObjectiveCutOff):
     ++(stats_->nlpI);
     nlpx = nlpe_->getSolution()->getPrimal();
     oaCutToCons_(nlpx, lpx, cutMan, status);
     break;
-  case (EngineIterationLimit): 
+  case (EngineIterationLimit):
     ++(stats_->nlpIL);
-    nlpx = nlpe_->getSolution()->getPrimal();
-    oaCutToCons_(nlpx, lpx, cutMan, status);
+    oaCutEngLim_(lpx, cutMan, status);
     break;
   case (FailedFeas):
   case (EngineError):
@@ -410,7 +409,7 @@ void QGHandler::oaCutToCons_(const double *nlpx, const double *lpx,
   double nlpact, cUb;
 
   for (CCIter it = nlCons_.begin(); it != nlCons_.end(); ++it) {
-    con = *it; 
+    con = *it;
     nlpact =  con->getActivity(lpx, &error);
     if (error == 0) {
       cUb = con->getUb();
@@ -441,7 +440,49 @@ void QGHandler::oaCutToCons_(const double *nlpx, const double *lpx,
 }
 
 
-void QGHandler::addCut_(const double *nlpx, const double *lpx, 
+void QGHandler::oaCutEngLim_(const double *lpx, CutManager *,
+                             SeparationStatus *status)
+{
+  int error=0;
+  FunctionPtr f;
+  LinearFunctionPtr lf;
+  std::stringstream sstm;
+  ConstraintPtr con, newcon;
+  double c, lpvio, nlpact, cUb;
+
+  for (CCIter it = nlCons_.begin(); it != nlCons_.end(); ++it) {
+    con = *it;
+    f = con->getFunction();
+    lf = LinearFunctionPtr();
+    nlpact =  con->getActivity(lpx, &error);
+    if (error == 0) {
+      cUb = con->getUb();
+      if (nlpact > cUb + solAbsTol_ ||
+          (cUb != 0 && nlpact > (cUb+fabs(cUb)*solRelTol_))) {
+        linearAt_(f, nlpact, lpx, &c, &lf, &error);
+        if (error==0) {
+          lpvio = std::max(lf->eval(lpx)-cUb+c, 0.0);
+          if (lpvio>solAbsTol_ || ((cUb-c)!=0 &&
+                                   (lpvio>fabs(cUb-c)*solRelTol_))) {
+            ++(stats_->cuts);            sstm << "_OAcut_";
+            sstm << stats_->cuts;
+            *status = SepaResolve;
+            f = (FunctionPtr) new Function(lf);
+            newcon = rel_->newConstraint(f, -INFINITY, cUb-c, sstm.str());
+            return;
+          }
+        }
+      }
+    }	else {
+      logger_->msgStream(LogError) << me_ << " constraint not defined at" <<
+        " this point. "<<  std::endl;
+    }
+  }
+  return;
+}
+
+
+void QGHandler::addCut_(const double *nlpx, const double *lpx,
                         ConstraintPtr con, CutManager*,
                         SeparationStatus *status)
 {
@@ -594,7 +635,7 @@ void QGHandler::relax_(bool *isInf)
 }
 
 
-void QGHandler::separate(ConstSolutionPtr sol, NodePtr , RelaxationPtr rel,
+void QGHandler::separate(ConstSolutionPtr sol, NodePtr, RelaxationPtr rel,
                          CutManager *cutMan, SolutionPoolPtr s_pool,
                          ModVector &, ModVector &, bool *sol_found,
                          SeparationStatus *status)

@@ -161,8 +161,8 @@ void ParQGHandler::cutIntSol_(ConstSolutionPtr sol, CutManager *cutMan,
   case (ProvenLocalOptimal):
     ++(stats_->nlpF);
     updateUb_(s_pool, &nlpval, sol_found); 
-    if (relobj_ > nlpval+solAbsTol_) {
-      if (nlpval == 0 || relobj_ > nlpval+fabs(nlpval)*solRelTol_) {
+    if (relobj_ >= nlpval-solAbsTol_) {
+      if (nlpval == 0 || relobj_ >= nlpval-fabs(nlpval)*solRelTol_) {
         *status = SepaPrune;
         break;
       }
@@ -180,8 +180,7 @@ void ParQGHandler::cutIntSol_(ConstSolutionPtr sol, CutManager *cutMan,
     break;
   case (EngineIterationLimit):
     ++(stats_->nlpIL);
-    nlpx = nlpe_->getSolution()->getPrimal();
-    oaCutToCons_(nlpx, lpx, cutMan, status);
+    oaCutEngLim_(lpx, cutMan, status);
     break;
   case (FailedFeas):
   case (EngineError):
@@ -379,6 +378,51 @@ void ParQGHandler::oaCutToCons_(const double *nlpx, const double *lpx,
   }
   return;
 }
+
+
+void ParQGHandler::oaCutEngLim_(const double *lpx, CutManager *,
+                             SeparationStatus *status)
+{
+  int error=0;
+  FunctionPtr f;
+  LinearFunctionPtr lf;
+  std::stringstream sstm;
+  ConstraintPtr con, newcon;
+  double c, lpvio, nlpact, cUb;
+
+  for (CCIter it = nlCons_.begin(); it != nlCons_.end(); ++it) {
+    con = *it;
+    f = con->getFunction();
+    lf = LinearFunctionPtr();
+    nlpact =  con->getActivity(lpx, &error);
+    if (error == 0) {
+      cUb = con->getUb();
+      if (nlpact > cUb + solAbsTol_ ||
+          (cUb != 0 && nlpact > (cUb+fabs(cUb)*solRelTol_))) {
+        linearAt_(f, nlpact, lpx, &c, &lf, &error);
+        if (error==0) {
+          lpvio = std::max(lf->eval(lpx)-cUb+c, 0.0);
+          if (lpvio>solAbsTol_ || ((cUb-c)!=0 &&
+                                   (lpvio>fabs(cUb-c)*solRelTol_))) {
+            ++(stats_->cuts);
+            sstm << "_OAcut_";
+            sstm << stats_->cuts;
+            *status = SepaResolve;
+            f = (FunctionPtr) new Function(lf);
+            newcon = rel_->newConstraint(f, -INFINITY, cUb-c, sstm.str());
+            return;
+          }
+        }
+      }
+    }	else {
+      logger_->msgStream(LogError) << me_ << " constraint not defined at" <<
+        " this point. "<<  std::endl;
+    }
+  }
+  return;
+}
+
+
 
 
 void ParQGHandler::addCut_(const double *nlpx, const double *lpx, 

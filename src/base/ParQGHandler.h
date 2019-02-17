@@ -210,6 +210,9 @@ private:
   void addCut_(const double *nlpx, const double *lpx, ConstraintPtr con, 
                CutManager *cutman, SeparationStatus *status);
   
+  void oaCutEngLim_(const double *lpx, CutManager *cutman,
+                    SeparationStatus *status);
+
   /**
    * Create the initial relaxation. It is called from relaxInitFull and
    * relaxInitInc functions.

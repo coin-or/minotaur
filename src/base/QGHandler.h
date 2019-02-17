@@ -221,6 +221,10 @@ private:
   void addCut_(const double *nlpx, const double *lpx, ConstraintPtr con, 
                CutManager *cutman, SeparationStatus *status);
   
+
+  void oaCutEngLim_(const double *lpx, CutManager *cutman,
+                    SeparationStatus *status);
+
   /**
    * Check if objective is violated at the LP solution and
    * add OA cut.
