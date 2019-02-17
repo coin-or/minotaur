@@ -73,12 +73,23 @@ ParQGBranchAndBound* createParBab(EnvPtr env, ProblemPtr p, EnginePtr e,
   OptionDBPtr options = env->getOptions();
   //For ParQG
   bab->shouldCreateRoot(false);
+  LPEnginePtr lin_e;
   EngineFactory *efac;
   efac = new EngineFactory(env);
-  LPEnginePtr lin_e;   // lp engine 
   lin_e = efac->getLPEngine();   // lp engine 
  
   HandlerVector *handlersCopy = new HandlerVector[numThreads];
+
+  // If objective is nonlinear add an extra var name eta to move objective to
+  // constraint in ParQGHandler
+  ObjectivePtr oPtr = p->getObjective();
+  std::string name = "eta";
+  if (!oPtr) {
+    assert(!"No objective function in the problem!");
+  } else if (oPtr->getFunctionType() != Linear &&
+             oPtr->getFunctionType() != Constant) {
+    p->newVariable(-INFINITY,INFINITY,Continuous,name);
+  }
 
 //#if USE_OPENMP
   //#pragma omp parallel for
@@ -132,219 +143,18 @@ ParQGBranchAndBound* createParBab(EnvPtr env, ProblemPtr p, EnginePtr e,
       parNodeRlxr[i]->setRelaxation(relCopy[i]);
       qg_hand->setRelaxation(relCopy[i]);
     }
-    //relCopy[i]->setProblem(p);
     relCopy[i]->setProblem(cloneP);
     parNodeRlxr[i]->setModFlag(false);
     parNodeRlxr[i]->setEngine(lpeCopy);
   }
 
-  //BrancherPtr br0;
-  //EnginePtr lpeCopy0 = lin_e->emptyCopy();
-  //br0 = createBrancher(env, p, handlersCopy[0], lpeCopy0);
-  //nodePrcssr[0] = (ParPCBProcessorPtr) new ParPCBProcessor(env, lpeCopy0, handlersCopy[0]);
-  //nodePrcssr[0]->setBrancher(br0);
-  //parNodeRlxr[0] = (ParNodeIncRelaxerPtr) new ParNodeIncRelaxer(env, handlersCopy[0]);
-  //parNodeRlxr[0]->setEngine(lpeCopy0);
-  //NodePtr node = (NodePtr) new Node ();
-  //bool prune = false;
-  //relCopy[0] = parNodeRlxr[0]->createRootRelaxation(node, prune);
-  //relCopy[0]->setProblem(p);
-  ////relCopy[0]->setInitialPoint(p->getInitialPoint());
-  //parNodeRlxr[0]->setModFlag(false);
-
-////#if USE_OPENMP
-  ////#pragma omp parallel for
-////#endif
- //for(UInt i = 1; i < numThreads; ++i) {
-   //BrancherPtr br;
-   //EnginePtr lpeCopy = lin_e->emptyCopy();
-   //br = createBrancher(env, p, handlersCopy[i], lpeCopy);
-   //nodePrcssr[i] = (ParPCBProcessorPtr) new ParPCBProcessor(env, lpeCopy, handlersCopy[i]);
-   //nodePrcssr[i]->setBrancher(br);
-   //parNodeRlxr[i] = (ParNodeIncRelaxerPtr) new ParNodeIncRelaxer(env, handlersCopy[i]);
-   //relCopy[i] = (RelaxationPtr) new Relaxation(relCopy[0]);
-   //relCopy[i]->setProblem(p);
-   ////relCopy[i]->setInitialPoint(p->getInitialPoint());
-   //parNodeRlxr[i]->setRelaxation(relCopy[i]);
-   //parNodeRlxr[i]->setModFlag(false);
-   //parNodeRlxr[i]->setEngine(lpeCopy);
- //}
-
-  //if (0 <= options->findInt("divheur")->getValue()) {
-    //MINLPDivingPtr div_heur;
-    //EnginePtr e2 = e->emptyCopy();
-    //if (true==options->findBool("use_native_cgraph")->getValue() ||
-        //relCopy[0]->isQP() || relCopy[0]->isQuadratic()) {
-      //p->setNativeDer();
-    //}
-    //div_heur = (MINLPDivingPtr) new MINLPDiving(env, p, e2);
-    //bab->addPreRootHeur(div_heur);
-  //}
-  //if (true == options->findBool("FPump")->getValue()) {
-    //EngineFactory efac(env);
-    //EnginePtr lpe = efac.getLPEngine();
-    //EnginePtr nlpe = e->emptyCopy();
-    //LinFeasPumpPtr lin_feas_pump = (LinFeasPumpPtr) 
-      ////new LinFeasPump(env, p, nlpe, lpe);
-      //new LinFeasPump(env, p, e, lin_e);
-    //bab->addPreRootHeur(lin_feas_pump);
-  //}
   delete efac;
   delete [] handlersCopy;
   return bab;
 }
 
-//ParQGBranchAndBound* createParBab(EnvPtr env, ProblemPtr p, EnginePtr e,
-                                //UInt numThreads,
-                                //RelaxationPtr relCopy[],
-                                //ParPCBProcessorPtr nodePrcssr[],
-                                //ParNodeIncRelaxerPtr parNodeRlxr[])
-//{
-  //ParQGBranchAndBound *bab = new ParQGBranchAndBound(env, p);
-  //const std::string me("mcqg main: ");
-  //OptionDBPtr options = env->getOptions();
-  ////For ParQG
-  //bab->shouldCreateRoot(false);
-  //EngineFactory *efac;
-  //efac = new EngineFactory(env);
-  //LPEnginePtr lin_e;   // lp engine 
-  //lin_e = efac->getLPEngine();   // lp engine 
- 
-  //HandlerVector *handlersCopy = new HandlerVector[numThreads];
 
-////#if USE_OPENMP
-  ////#pragma omp parallel for
-////#endif
-  //for(UInt i = 0; i < numThreads; ++i) {
-    ////BrancherPtr br;
-    //EnginePtr eCopy = e->emptyCopy();
-    ////EnginePtr lpeCopy = lin_e->emptyCopy();
-    ////HandlerVector handlersCopy;
-    //LinHandlerPtr l_hand = (LinHandlerPtr) new LinearHandler(env, p);
-    //l_hand->setModFlags(false, true);
-    //handlersCopy[i].push_back(l_hand);
-    //assert(l_hand);
-
-    //IntVarHandlerPtr v_hand = (IntVarHandlerPtr) new IntVarHandler(env, p);
-    //v_hand->setModFlags(false, true);
-    //handlersCopy[i].push_back(v_hand);
-    //assert(v_hand);
-
-    ////NlPresHandlerPtr nlhand;
-    ////SOS1HandlerPtr s_hand = (SOS1HandlerPtr) new SOS1Handler(env, p);
-    ////SOS2HandlerPtr s2_hand;
-    //ParQGHandlerPtr qg_hand = (ParQGHandlerPtr) new ParQGHandler(env, p, eCopy); 
-    //qg_hand->setModFlags(false, true);
-    //qg_hand->loadProbToEngine();
-    //if (i>0) {
-      //qg_hand->nlCons();
-    //}
-    //handlersCopy[i].push_back(qg_hand);
-    //assert(qg_hand);
-    
-
-    ////if (s_hand->isNeeded()) {
-      ////s_hand->setModFlags(false, true);
-      ////handlersCopy[i].push_back(s_hand);
-    ////}
-
-    //// add SOS2 handler here.
-    ////s2_hand = (SOS2HandlerPtr) new SOS2Handler(env, p);
-    ////if (s2_hand->isNeeded()) {
-      ////s2_hand->setModFlags(false, true);
-      ////handlersCopy[i].push_back(s2_hand);
-    ////}
-
-    ////handlersCopy[i].push_back(v_hand);
-    ////if (true==options->findBool("presolve")->getValue()) {
-      ////l_hand->setModFlags(false, true);
-      ////handlersCopy[i].push_back(l_hand);
-    ////}
-    ////if (!p->isLinear() && 
-        ////true==options->findBool("presolve")->getValue() &&
-        ////true==options->findBool("use_native_cgraph")->getValue() &&
-        ////true==options->findBool("nl_presolve")->getValue()) {
-      ////nlhand = (NlPresHandlerPtr) new NlPresHandler(env, p);
-      ////nlhand->setModFlags(false, true);
-      ////handlersCopy[i].push_back(nlhand);
-    ////}
-        
-        ////br = createBrancher(env, p, handlersCopy, lpeCopy);
-    ////relCopy[i] = (RelaxationPtr) new Relaxation(p);
-    ////relCopy[i]->calculateSize();
-    ////if (options->findBool("use_native_cgraph")->getValue() ||
-        ////relCopy[i]->isQP() || relCopy[i]->isQuadratic()) {
-      ////relCopy[i]->setNativeDer();
-    ////} else {
-      ////relCopy[i]->setJacobian(p->getJacobian());
-      ////relCopy[i]->setHessian(p->getHessian());
-    ////}
-    ////relCopy[i]->setInitialPoint(p->getInitialPoint());
-    
-
-    ////nodePrcssr[i] = (ParPCBProcessorPtr) new ParPCBProcessor(env, lpeCopy, handlersCopy);
-    ////nodePrcssr[i]->setBrancher(br);
-
-    ////parNodeRlxr[i] = (ParNodeIncRelaxerPtr) new ParNodeIncRelaxer(env, handlersCopy);
-  //}
-
-  //BrancherPtr br0;
-  //EnginePtr lpeCopy0 = lin_e->emptyCopy();
-  //br0 = createBrancher(env, p, handlersCopy[0], lpeCopy0);
-  //nodePrcssr[0] = (ParPCBProcessorPtr) new ParPCBProcessor(env, lpeCopy0, handlersCopy[0]);
-  //nodePrcssr[0]->setBrancher(br0);
-  //parNodeRlxr[0] = (ParNodeIncRelaxerPtr) new ParNodeIncRelaxer(env, handlersCopy[0]);
-  //parNodeRlxr[0]->setEngine(lpeCopy0);
-  //NodePtr node = (NodePtr) new Node ();
-  //bool prune = false;
-  //relCopy[0] = parNodeRlxr[0]->createRootRelaxation(node, prune);
-  //relCopy[0]->setProblem(p);
-  ////relCopy[0]->setInitialPoint(p->getInitialPoint());
-  //parNodeRlxr[0]->setModFlag(false);
-
-////#if USE_OPENMP
-  ////#pragma omp parallel for
-////#endif
- //for(UInt i = 1; i < numThreads; ++i) {
-   //BrancherPtr br;
-   //EnginePtr lpeCopy = lin_e->emptyCopy();
-   //br = createBrancher(env, p, handlersCopy[i], lpeCopy);
-   //nodePrcssr[i] = (ParPCBProcessorPtr) new ParPCBProcessor(env, lpeCopy, handlersCopy[i]);
-   //nodePrcssr[i]->setBrancher(br);
-   //parNodeRlxr[i] = (ParNodeIncRelaxerPtr) new ParNodeIncRelaxer(env, handlersCopy[i]);
-   //relCopy[i] = (RelaxationPtr) new Relaxation(relCopy[0]);
-   //relCopy[i]->setProblem(p);
-   ////relCopy[i]->setInitialPoint(p->getInitialPoint());
-   //parNodeRlxr[i]->setRelaxation(relCopy[i]);
-   //parNodeRlxr[i]->setModFlag(false);
-   //parNodeRlxr[i]->setEngine(lpeCopy);
- //}
-
-  ////if (0 <= options->findInt("divheur")->getValue()) {
-    ////MINLPDivingPtr div_heur;
-    ////EnginePtr e2 = e->emptyCopy();
-    ////if (true==options->findBool("use_native_cgraph")->getValue() ||
-        ////relCopy[0]->isQP() || relCopy[0]->isQuadratic()) {
-      ////p->setNativeDer();
-    ////}
-    ////div_heur = (MINLPDivingPtr) new MINLPDiving(env, p, e2);
-    ////bab->addPreRootHeur(div_heur);
-  ////}
-  ////if (true == options->findBool("FPump")->getValue()) {
-    ////EngineFactory efac(env);
-    ////EnginePtr lpe = efac.getLPEngine();
-    ////EnginePtr nlpe = e->emptyCopy();
-    ////LinFeasPumpPtr lin_feas_pump = (LinFeasPumpPtr) 
-      //////new LinFeasPump(env, p, nlpe, lpe);
-      ////new LinFeasPump(env, p, e, lin_e);
-    ////bab->addPreRootHeur(lin_feas_pump);
-  ////}
-  //delete efac;
-  //delete [] handlersCopy;
-  //return bab;
-//}
-
-BrancherPtr createBrancher(EnvPtr env, ProblemPtr p, HandlerVector handlers,
+BrancherPtr createBrancher(EnvPtr env, ProblemPtr , HandlerVector handlers,
                            EnginePtr e)
 {
   BrancherPtr br;
@@ -758,9 +568,6 @@ int main(int argc, char** argv)
   parNodeRlxr = new ParNodeIncRelaxerPtr[numThreads];
   relCopy = new RelaxationPtr[numThreads]; 
   loadProblem(env, iface, oinst, &obj_sense);
- 
- // Moving objective to constraint if objective is nonlinear
-  oinst->objToCons();
 
   orig_v = new VarVector(oinst->varsBegin(), oinst->varsEnd());
   pres = presolve(env, oinst, iface->getNumDefs(), handlers);

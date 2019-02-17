@@ -71,6 +71,16 @@ private:
   /// Status of the NLP/QP engine.
   EngineStatus nlpStatus_;
 
+  /**
+   * The variable corresponding to the objective function. It is a part of
+   * all linearizations of the objective function and it appears in the
+   * objective.
+   */
+  VariablePtr objVar_;
+
+  /// Nonlinearity status of objective function. 1 if nonlinear 0 otherwise.
+  bool oNl_;
+
   /// Pointer to relaxation of the problem.
   RelaxationPtr rel_;
  
@@ -194,6 +204,12 @@ private:
   void initLinear_(bool *isInf);
 
   /**
+   * When the objective function is nonlinear, we need to replace it with
+   * a single variable.
+   */
+  void linearizeObj_();
+
+  /**
    * Obtain the linear function (lf) and constant (c) from the
    * linearization of function f at point x.
    */
@@ -212,6 +228,13 @@ private:
   
   void oaCutEngLim_(const double *lpx, CutManager *cutman,
                     SeparationStatus *status);
+
+  /**
+   * Check if objective is violated at the LP solution and
+   * add OA cut.
+   */
+  void oaCutToObj_(const double *nlpx, const double *lpx, CutManager *,
+                   SeparationStatus *status);
 
   /**
    * Create the initial relaxation. It is called from relaxInitFull and

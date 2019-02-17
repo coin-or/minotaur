@@ -57,6 +57,8 @@ ParQGHandler::ParQGHandler()
   nlCons_(0),
   nlpe_(EnginePtr()),
   nlpStatus_(EngineUnknownStatus),
+  objVar_(VariablePtr()),
+  oNl_(false),
   rel_(RelaxationPtr()),
   relobj_(0.0),
   stats_(0)
@@ -67,12 +69,15 @@ ParQGHandler::ParQGHandler()
   logger_ = (LoggerPtr) new Logger(LogInfo);
 }
 
+
 ParQGHandler::ParQGHandler(EnvPtr env, ProblemPtr minlp, EnginePtr nlpe)
 : env_(env),
   minlp_(minlp),
   nlCons_(0),
   nlpe_(nlpe),
   nlpStatus_(EngineUnknownStatus),
+  objVar_(VariablePtr()),
+  oNl_(false),
   rel_(RelaxationPtr()),
   relobj_(0.0)
 {
@@ -140,6 +145,31 @@ void ParQGHandler::addInitLinearX_(const double *x)
     } 
   }
 
+  if (oNl_) {
+    error = 0;
+    ObjectivePtr o = minlp_->getObjective();
+    act = o->eval(x, &error);
+    if (error==0) {
+      ++(stats_->cuts);
+      sstm << "_OAObjcut_";
+      sstm << stats_->cuts;
+      sstm << "_AtRoot";
+      f = o->getFunction();
+      linearAt_(f, act, x, &c, &lf, &error);
+      if (error == 0) {
+        lf->addTerm(objVar_, -1.0);
+        f = (FunctionPtr) new Function(lf);
+        newcon = rel_->newConstraint(f, -INFINITY, -1.0*c, sstm.str());
+      }
+    }	else {
+      logger_->msgStream(LogError) << me_ <<
+        "Objective not defined at this point." << std::endl;
+#if SPEW
+      logger_->msgStream(LogDebug) << me_ <<
+        "Objective not defined at this point." << std::endl;
+#endif
+    }
+  }
   return;
 }
 
@@ -169,6 +199,7 @@ void ParQGHandler::cutIntSol_(ConstSolutionPtr sol, CutManager *cutMan,
     } else {
       nlpx = nlpe_->getSolution()->getPrimal();
       oaCutToCons_(nlpx, lpx, cutMan, status);
+      oaCutToObj_(nlpx, lpx, cutMan, status);
       break;
     }
   case (ProvenInfeasible):
@@ -310,8 +341,59 @@ bool ParQGHandler::isFeasible(ConstSolutionPtr sol, RelaxationPtr, bool &,
       return false;
     }
   }
+
+  if (oNl_) {
+    error = 0;
+    relobj_ = x[objVar_->getIndex()];
+    act = minlp_->getObjValue(x, &error);
+    if (error == 0) {
+      if (act > relobj_ + solAbsTol_ ||
+          (relobj_ != 0 && (act > relobj_ + fabs(relobj_)*solRelTol_))) {
+#if SPEW
+        logger_->msgStream(LogDebug) << me_ << "objective violated with "
+          << "violation = " << act - relobj_ << std::endl;
+#endif
+        return false;
+      }
+    }	else {
+      logger_->msgStream(LogError) << me_
+        <<"objective not defined at this point."<< std::endl;
+      return false;
+    }
+  }
   return true;
 }
+
+
+void ParQGHandler::linearizeObj_()
+{
+  ObjectivePtr o = minlp_->getObjective();
+  if (!o) {
+    assert(!"need objective in QG!");
+  } else if (o->getFunctionType() != Linear &&
+             o->getFunctionType() != Constant) {
+    oNl_ = true;
+    FunctionPtr f;
+    VariablePtr vPtr;
+    ObjectiveType objType = o->getObjectiveType();
+    LinearFunctionPtr lf = (LinearFunctionPtr) new LinearFunction();
+    for (VariableConstIterator viter=rel_->varsBegin(); viter!=rel_->varsEnd();
+         ++viter) {
+      vPtr = *viter;
+      if (vPtr->getName() == "eta") {
+        assert(o->getObjectiveType()==Minimize);
+        rel_->removeObjective();
+        lf->addTerm(vPtr, 1.0);
+        f = (FunctionPtr) new Function(lf);
+        rel_->newObjective(f, 0.0, objType);
+        objVar_ = vPtr;
+        break;
+      }
+    }
+  }
+  return;
+}
+
 
 void ParQGHandler::linearAt_(FunctionPtr f, double fval, const double *x, 
                           double *c, LinearFunctionPtr *lf, int *error)
@@ -423,8 +505,6 @@ void ParQGHandler::oaCutEngLim_(const double *lpx, CutManager *,
 }
 
 
-
-
 void ParQGHandler::addCut_(const double *nlpx, const double *lpx, 
                         ConstraintPtr con, CutManager *cutman,
                         SeparationStatus *status)
@@ -471,7 +551,69 @@ void ParQGHandler::addCut_(const double *nlpx, const double *lpx,
   }
   return;
 }
-  
+ 
+
+void ParQGHandler::oaCutToObj_(const double *nlpx, const double *lpx,
+                            CutManager *, SeparationStatus *status)
+{
+  if (oNl_) {
+    int error=0;
+    FunctionPtr f;
+    double c, vio, act;
+    ConstraintPtr newcon;
+    std::stringstream sstm;
+    ObjectivePtr o = minlp_->getObjective();
+
+    act = o->eval(lpx, &error);
+    if (error == 0) {
+      vio = std::max(act-relobj_, 0.0);
+      if (vio > solAbsTol_ || (relobj_ != 0 && vio > fabs(relobj_)*solRelTol_)) {
+#if SPEW
+        logger_->msgStream(LogDebug) << me_ << " objective violated at LP "
+          << " solution with violation = " << vio << std::endl;
+#endif
+        act = o->eval(nlpx, &error);
+        if (error == 0) {
+          f = o->getFunction();
+          LinearFunctionPtr lf = LinearFunctionPtr();
+          linearAt_(f, act, nlpx, &c, &lf, &error);
+          if (error == 0) {
+            vio = std::max(c+lf->eval(lpx)-relobj_, 0.0);
+            if (vio > solAbsTol_ || ((relobj_-c)!=0
+                                     && vio > fabs(relobj_-c)*solRelTol_)) {
+#if SPEW
+              logger_->msgStream(LogDebug) << me_ << "linearization of "
+                "objective violated at LP solution with violation = " <<
+                vio << ". OA cut added." << std::endl;
+#endif
+              ++(stats_->cuts);
+              sstm << "_OAObjcut_";
+              sstm << stats_->cuts;
+              lf->addTerm(objVar_, -1.0);
+              *status = SepaResolve;
+              f = (FunctionPtr) new Function(lf);
+              newcon = rel_->newConstraint(f, -INFINITY, -1.0*c, sstm.str());
+            }
+          }
+        }
+      }  else {
+#if SPEW
+        logger_->msgStream(LogDebug) << me_ << " objective feasible at LP "
+          << " solution. No OA cut to be added." << std::endl;
+#endif
+      }
+    }	else {
+      logger_->msgStream(LogError) << me_
+        << " objective not defined at this solution point." << std::endl;
+#if SPEW
+      logger_->msgStream(LogDebug) << me_ << " objective not defined at this "
+        << " point." << std::endl;
+#endif
+    }
+  }
+  return;
+}
+
 
 void ParQGHandler::relaxInitFull(RelaxationPtr , bool *)
 {
@@ -498,6 +640,7 @@ void ParQGHandler::relaxNodeInc(NodePtr , RelaxationPtr , bool *)
   //Does nothing
 }
 
+
 void ParQGHandler::nlCons()
 {
   ConstraintPtr c;
@@ -523,6 +666,7 @@ void ParQGHandler::setRelaxation(RelaxationPtr rel)
 void ParQGHandler::relax_(bool *isInf)
 {
   nlCons(); 
+  linearizeObj_();
   initLinear_(isInf);
   return;
 }
