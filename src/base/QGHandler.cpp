@@ -40,7 +40,6 @@
 #include "SolutionPool.h"
 #include "VarBoundMod.h"
 #include "Variable.h"
-#include "QuadraticFunction.h"
 
 using namespace Minotaur;
 
@@ -127,7 +126,7 @@ void QGHandler::addInitLinearX_(const double *x)
         " is not defined at this point." << std::endl;
 #if SPEW
       logger_->msgStream(LogDebug) << me_ << "constraint " <<
-        c->getName() << " is not defined at this point." << std::endl;
+        con->getName() << " is not defined at this point." << std::endl;
 #endif
     } 
   }
@@ -316,7 +315,7 @@ bool QGHandler::isFeasible(ConstSolutionPtr sol, RelaxationPtr, bool &,
       }      
     }	else {
       logger_->msgStream(LogError) << me_ << c->getName() <<
-        "constraint not defined at this point."<< std::endl;
+        " constraint not defined at this point."<< std::endl;
 #if SPEW
       logger_->msgStream(LogDebug) << me_ << "constraint " << c->getName() <<
         " not defined at this point." << std::endl;
@@ -417,13 +416,13 @@ void QGHandler::oaCutToCons_(const double *nlpx, const double *lpx,
           (cUb != 0 && nlpact > (cUb+fabs(cUb)*solRelTol_))) {
 #if SPEW
         logger_->msgStream(LogDebug) << me_ << " constraint " <<
-          c->getName() << " violated at LP solution with violation = " <<
+          con->getName() << " violated at LP solution with violation = " <<
           nlpact - cUb << std::endl;
 #endif
         addCut_(nlpx, lpx, con, cutman, status);
       } else {
 #if SPEW
-        logger_->msgStream(LogDebug) << me_ << " constraint " << c->getName() <<
+        logger_->msgStream(LogDebug) << me_ << " constraint " << con->getName() <<
           " feasible at LP solution. No OA cut to be added." << std::endl;
 #endif
       }
@@ -431,7 +430,7 @@ void QGHandler::oaCutToCons_(const double *nlpx, const double *lpx,
       logger_->msgStream(LogError) << me_ << " constraint not defined at" <<
         " this point. "<<  std::endl;
 #if SPEW
-      logger_->msgStream(LogDebug) << me_ << " constraint " << c->getName() <<
+      logger_->msgStream(LogDebug) << me_ << " constraint " << con->getName() <<
         " not defined at this point." << std::endl;
 #endif
     }
@@ -502,7 +501,7 @@ void QGHandler::addCut_(const double *nlpx, const double *lpx,
       if (lpvio>solAbsTol_ || ((cUb-c)!=0 && (lpvio>fabs(cUb-c)*solRelTol_))) {
 #if SPEW
         logger_->msgStream(LogDebug) << me_ << "i linearization of constraint "
-          << c->getName() << " violated at LP solution with violation = " <<
+          << con->getName() << " violated at LP solution with violation = " <<
           lpvio << ". OA cut added." << std::endl;
 #endif
         ++(stats_->cuts);
@@ -519,7 +518,7 @@ void QGHandler::addCut_(const double *nlpx, const double *lpx,
       << " this point. "<<  std::endl;
 #if SPEW
           logger_->msgStream(LogDebug) << me_ << " constraint " <<
-            c->getName() << " not defined at this point." << std::endl;
+            con->getName() << " not defined at this point." << std::endl;
 #endif
   }
   return;
