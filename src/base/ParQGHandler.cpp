@@ -140,7 +140,7 @@ void ParQGHandler::addInitLinearX_(const double *x)
         " is not defined at this point." << std::endl;
 #if SPEW
       logger_->msgStream(LogDebug) << me_ << "constraint " <<
-        c->getName() << " is not defined at this point." << std::endl;
+        con->getName() << " is not defined at this point." << std::endl;
 #endif
     } 
   }
@@ -439,13 +439,13 @@ void ParQGHandler::oaCutToCons_(const double *nlpx, const double *lpx,
           (cUb != 0 && nlpact > (cUb+fabs(cUb)*solRelTol_))) {
 #if SPEW
         logger_->msgStream(LogDebug) << me_ << " constraint " <<
-          c->getName() << " violated at LP solution with violation = " <<
+          con->getName() << " violated at LP solution with violation = " <<
           nlpact - cUb << std::endl;
 #endif
         addCut_(nlpx, lpx, con, cutman, status);
       } else {
 #if SPEW
-        logger_->msgStream(LogDebug) << me_ << " constraint " << c->getName() <<
+        logger_->msgStream(LogDebug) << me_ << " constraint " << con->getName() <<
           " feasible at LP solution. No OA cut to be added." << std::endl;
 #endif
       }
@@ -454,7 +454,7 @@ void ParQGHandler::oaCutToCons_(const double *nlpx, const double *lpx,
         << " this point. "<<  std::endl;
 #if SPEW
           logger_->msgStream(LogDebug) << me_ << "constraint " <<
-            c->getName() << " not defined at this point." << std::endl;
+            con->getName() << " not defined at this point." << std::endl;
 #endif
     }
   }
@@ -525,7 +525,7 @@ void ParQGHandler::addCut_(const double *nlpx, const double *lpx,
       if (lpvio>solAbsTol_ || ((cUb-c)!=0 && (lpvio>fabs(cUb-c)*solRelTol_))) {
 #if SPEW
         logger_->msgStream(LogDebug) << me_ << " linearization of constraint "
-          << c->getName() << " violated at LP solution with violation = " <<
+          << con->getName() << " violated at LP solution with violation = " <<
           lpvio << ". OA cut added." << std::endl;
 #endif
         ++(stats_->cuts);
@@ -546,7 +546,7 @@ void ParQGHandler::addCut_(const double *nlpx, const double *lpx,
       << " this point. "<<  std::endl;
 #if SPEW
           logger_->msgStream(LogDebug) << me_ << "constraint " <<
-            c->getName() << " not defined at this point." << std::endl;
+            con->getName() << " not defined at this point." << std::endl;
 #endif
   }
   return;
