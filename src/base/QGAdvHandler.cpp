@@ -39,7 +39,6 @@
 #include "SolutionPool.h"
 #include "VarBoundMod.h"
 #include "Variable.h"
-#include "QuadraticFunction.h"
 
 using namespace Minotaur;
 
@@ -47,7 +46,7 @@ typedef std::vector<ConstraintPtr>::const_iterator CCIter;
 const std::string QGAdvHandler::me_ = "QGAdvHandler: ";
 
 QGAdvHandler::QGAdvHandler()
-: env_(EnvPtr()),      
+: env_(EnvPtr()),
   minlp_(ProblemPtr()),
   nlCons_(0),
   nlpe_(EnginePtr()),
@@ -66,7 +65,7 @@ QGAdvHandler::QGAdvHandler()
   logger_ = (LoggerPtr) new Logger(LogInfo);
 }
 
-QGAdvHandler::QGAdvHandler(EnvPtr env, ProblemPtr minlp, EnginePtr nlpe) 
+QGAdvHandler::QGAdvHandler(EnvPtr env, ProblemPtr minlp, EnginePtr nlpe)
 : env_(env),
   minlp_(minlp),
   nlCons_(0),
@@ -91,7 +90,7 @@ QGAdvHandler::QGAdvHandler(EnvPtr env, ProblemPtr minlp, EnginePtr nlpe)
   stats_->nlpIL = 0;
   stats_->cuts = 0;
 }
-  
+ 
 
 QGAdvHandler::QGAdvHandler(EnvPtr env, ProblemPtr minlp, EnginePtr nlpe,
                      PerspCutHandlerPtr pcPtr)
@@ -119,7 +118,7 @@ QGAdvHandler::QGAdvHandler(EnvPtr env, ProblemPtr minlp, EnginePtr nlpe,
   stats_->cuts = 0;
 }
 QGAdvHandler::~QGAdvHandler()
-{ 
+{
   if (stats_) {
     delete stats_;
   }
@@ -128,7 +127,7 @@ QGAdvHandler::~QGAdvHandler()
 
 
 void QGAdvHandler::addInitLinearX_(const double *x)
-{ 
+{
   int error=0;
   FunctionPtr f;
   double c, act, cUb;
@@ -136,16 +135,16 @@ void QGAdvHandler::addInitLinearX_(const double *x)
   ConstraintPtr con, newcon;
   LinearFunctionPtr lf = LinearFunctionPtr();
 
-  for (CCIter it=nlCons_.begin(); it!=nlCons_.end(); ++it) { 
+  for (CCIter it=nlCons_.begin(); it!=nlCons_.end(); ++it) {
     con = *it;
     act = con->getActivity(x, &error);
     if (error == 0) {
       f = con->getFunction();
-      linearAt_(f, act, x, &c, &lf, &error); 
+      linearAt_(f, act, x, &c, &lf, &error);
       if (error == 0) {
-        cUb = con->getUb(); 
-        ++(stats_->cuts);  
-        sstm << "_OAcut_" << stats_->cuts << "_AtRoot"; //MS: make this change in QGHandler.
+        cUb = con->getUb();
+        ++(stats_->cuts);
+        sstm << "_OAcut_" << stats_->cuts << "_AtRoot";
         f = (FunctionPtr) new Function(lf);
         newcon = rel_->newConstraint(f, -INFINITY, cUb-c, sstm.str());
       }
@@ -154,9 +153,9 @@ void QGAdvHandler::addInitLinearX_(const double *x)
         " is not defined at this point." << std::endl;
 #if SPEW
       logger_->msgStream(LogDebug) << me_ << "constraint " <<
-        c->getName() << " is not defined at this point." << std::endl;
+        con->getName() << " is not defined at this point." << std::endl;
 #endif
-    } 
+    }
   }
 
   if (prStatus_) {
@@ -164,11 +163,11 @@ void QGAdvHandler::addInitLinearX_(const double *x)
   }
 
   if (oNl_) {
-    error = 0;  
+    error = 0;
     ObjectivePtr o = minlp_->getObjective();
     act = o->eval(x, &error);
     if (error==0) {
-      ++(stats_->cuts);  
+      ++(stats_->cuts);
       sstm << "_OAObjcut_" << stats_->cuts << "_AtRoot";
       f = o->getFunction();
       linearAt_(f, act, x, &c, &lf, &error);
@@ -190,7 +189,7 @@ void QGAdvHandler::addInitLinearX_(const double *x)
 }
 
 
-void QGAdvHandler::cutIntSol_(ConstSolutionPtr sol, CutManager *cutMan, 
+void QGAdvHandler::cutIntSol_(ConstSolutionPtr sol, CutManager *cutMan,
                            SolutionPoolPtr s_pool, bool *sol_found,
                            SeparationStatus *status)
 {
@@ -201,15 +200,15 @@ void QGAdvHandler::cutIntSol_(ConstSolutionPtr sol, CutManager *cutMan,
 
   fixInts_(lpx);           // Fix integer variables
   solveNLP_();
-  unfixInts_();             // Unfix integer variables
+  unfixInts_();            // Unfix integer variables
   
   switch(nlpStatus_) {
   case (ProvenOptimal):
   case (ProvenLocalOptimal):
     ++(stats_->nlpF);
-    updateUb_(s_pool, &nlpval, sol_found); 
-    if (relobj_ > nlpval+solAbsTol_) {
-      if (nlpval == 0 || relobj_ > nlpval+fabs(nlpval)*solRelTol_) {
+    updateUb_(s_pool, &nlpval, sol_found);
+    if (relobj_ >= nlpval-solAbsTol_) {
+      if (nlpval == 0 || relobj_ >= nlpval-fabs(nlpval)*solRelTol_) {
         *status = SepaPrune;
         break;
       }
@@ -223,8 +222,8 @@ void QGAdvHandler::cutIntSol_(ConstSolutionPtr sol, CutManager *cutMan,
       break;
     }
   case (ProvenInfeasible):
-  case (ProvenLocalInfeasible): 
-  case (ProvenObjectiveCutOff): 
+  case (ProvenLocalInfeasible):
+  case (ProvenObjectiveCutOff):
     ++(stats_->nlpI);
     nlpx = nlpe_->getSolution()->getPrimal();
     oaCutToCons_(nlpx, lpx, cutMan, status);
@@ -232,10 +231,10 @@ void QGAdvHandler::cutIntSol_(ConstSolutionPtr sol, CutManager *cutMan,
       pcPtr_->pcutAtInt(rel_, nlpx, lpx, &pcStatus, cutMan);
     }
     break;
-  case (EngineIterationLimit): 
+  case (EngineIterationLimit):
     ++(stats_->nlpIL);
     nlpx = nlpe_->getSolution()->getPrimal();
-    oaCutToCons_(nlpx, lpx, cutMan, status);
+    oaCutEngLim_(lpx, cutMan, status);
     if (prStatus_) {
       pcPtr_->pcutAtInt(rel_, nlpx, lpx, &pcStatus, cutMan);
     }
@@ -248,9 +247,9 @@ void QGAdvHandler::cutIntSol_(ConstSolutionPtr sol, CutManager *cutMan,
   case (EngineUnknownStatus):
   case (ProvenFailedCQInfeas):
   default:
-    logger_->msgStream(LogError) << me_ << "NLP engine status = " 
-      << nlpe_->getStatusString() << std::endl; 
-    logger_->msgStream(LogError)<< me_ << "No cut generated, may cycle!" 
+    logger_->msgStream(LogError) << me_ << "NLP engine status = "
+      << nlpe_->getStatusString() << std::endl;
+    logger_->msgStream(LogError)<< me_ << "No cut generated, may cycle!"
       << std::endl;
     *status = SepaError;
   }
@@ -268,18 +267,60 @@ void QGAdvHandler::cutIntSol_(ConstSolutionPtr sol, CutManager *cutMan,
 }
 
 
+void QGAdvHandler::oaCutEngLim_(const double *lpx, CutManager *,
+                             SeparationStatus *status)
+{
+  int error=0;
+  FunctionPtr f;
+  LinearFunctionPtr lf;
+  std::stringstream sstm;
+  ConstraintPtr con, newcon;
+  double c, lpvio, nlpact, cUb;
+
+  for (CCIter it = nlCons_.begin(); it != nlCons_.end(); ++it) {
+    con = *it;
+    f = con->getFunction();
+    lf = LinearFunctionPtr();
+    nlpact =  con->getActivity(lpx, &error);
+    if (error == 0) {
+      cUb = con->getUb();
+      if (nlpact > cUb + solAbsTol_ ||
+          (cUb != 0 && nlpact > (cUb+fabs(cUb)*solRelTol_))) {
+        linearAt_(f, nlpact, lpx, &c, &lf, &error);
+        if (error==0) {
+          lpvio = std::max(lf->eval(lpx)-cUb+c, 0.0);
+          if (lpvio>solAbsTol_ || ((cUb-c)!=0 &&
+                                   (lpvio>fabs(cUb-c)*solRelTol_))) {
+            ++(stats_->cuts);            
+            sstm << "_OAcut_" << stats_->cuts;
+            *status = SepaResolve;
+            f = (FunctionPtr) new Function(lf);
+            newcon = rel_->newConstraint(f, -INFINITY, cUb-c, sstm.str());
+            return;
+          }
+        }
+      }
+    }	else {
+      logger_->msgStream(LogError) << me_ << " constraint not defined at" <<
+        " this point. "<<  std::endl;
+    }
+  }
+  return;
+}
+
+
 void QGAdvHandler::fixInts_(const double *x)
 {
   double xval;
   VariablePtr v;
   VarBoundMod2 *m = 0;
-  for (VariableConstIterator vit=minlp_->varsBegin(); vit!=minlp_->varsEnd(); 
+  for (VariableConstIterator vit=minlp_->varsBegin(); vit!=minlp_->varsEnd();
        ++vit) {
     v = *vit;
-    if (v->getType()==Binary || v->getType()==Integer || 
+    if (v->getType()==Binary || v->getType()==Integer ||
         v->getType()==ImplBin || v->getType()==ImplInt) {
       xval = x[v->getIndex()];
-      xval = floor(xval + 0.5); 
+      xval = floor(xval + 0.5);
       m = new VarBoundMod2(v, xval, xval);
       m->applyToProblem(minlp_);
       nlpMods_.push(m);
@@ -302,15 +343,15 @@ void QGAdvHandler::initLinear_(bool *isInf)
   case (ProvenLocalOptimal):
     ++(stats_->nlpF);
     x = nlpe_->getSolution()->getPrimal();
-    addInitLinearX_(x); 
+    addInitLinearX_(x);
     break;
   case (EngineIterationLimit):
     ++(stats_->nlpIL);
     x = nlpe_->getSolution()->getPrimal();
-    addInitLinearX_(x); 
+    addInitLinearX_(x);
     break;
   case (ProvenInfeasible):
-  case (ProvenLocalInfeasible): 
+  case (ProvenLocalInfeasible):
   case (ProvenObjectiveCutOff):
     ++(stats_->nlpI);
     *isInf = true;
@@ -323,12 +364,12 @@ void QGAdvHandler::initLinear_(bool *isInf)
   case (EngineUnknownStatus):
   case (ProvenFailedCQInfeas):
   default:
-    logger_->msgStream(LogError) << me_ << "NLP engine status at root= " 
+    logger_->msgStream(LogError) << me_ << "NLP engine status at root= "
       << nlpStatus_ << std::endl;
     assert(!"In QGAdvHandler: stopped at root. Check error log.");
   }
 #if SPEW
-  logger_->msgStream(LogDebug) << me_ << "root NLP solve status = " 
+  logger_->msgStream(LogDebug) << me_ << "root NLP solve status = "
     << nlpe_->getStatusString() << std::endl;
 #endif
   return;
@@ -341,40 +382,40 @@ bool QGAdvHandler::isFeasible(ConstSolutionPtr sol, RelaxationPtr, bool &,
   int error=0;
   FunctionPtr f;
   double act, cUb;
-  ConstraintPtr c;
+  ConstraintPtr con;
   const double *x = sol->getPrimal();
 
-  for (CCIter it=nlCons_.begin(); it!=nlCons_.end(); ++it) { 
-    c = *it;
-    act = c->getActivity(x, &error);
+  for (CCIter it=nlCons_.begin(); it!=nlCons_.end(); ++it) {
+    con = *it;
+    act = con->getActivity(x, &error);
     if (error == 0) {
-      cUb = c->getUb();
-      if (act > cUb + solAbsTol_ || 
+      cUb = con->getUb();
+      if (act > cUb + solAbsTol_ ||
           (cUb != 0 && act > cUb + fabs(cUb)*solRelTol_)) {
 #if SPEW
         logger_->msgStream(LogDebug) << me_ << "constraint " <<
-          c->getName() << " violated with violation = " << act - cUb <<
+          con->getName() << " violated with violation = " << act - cUb <<
           std::endl;
 #endif
-        return false;        
-      }      
+        return false;
+      }
     }	else {
-      logger_->msgStream(LogError) << me_ << c->getName() <<
-        "constraint not defined at this point."<< std::endl;
+      logger_->msgStream(LogError) << me_ << con->getName() <<
+        " constraint not defined at this point."<< std::endl;
 #if SPEW
-      logger_->msgStream(LogDebug) << me_ << "constraint " << c->getName() <<
-        " not defined at this point." << std::endl;
+      logger_->msgStream(LogDebug) << me_ << "constraint " << con->getName()
+        << " not defined at this point." << std::endl;
 #endif
       return false;
     }
   }
- 
+
   if (oNl_) {
     error = 0;
     relobj_ = x[objVar_->getIndex()];
     act = minlp_->getObjValue(x, &error);
     if (error == 0) {
-      if (act > relobj_ + solAbsTol_ || 
+      if (act > relobj_ + solAbsTol_ ||
           (relobj_ != 0 && (act > relobj_ + fabs(relobj_)*solRelTol_))) {
 #if SPEW
         logger_->msgStream(LogDebug) << me_ << "objective violated with "
@@ -383,13 +424,13 @@ bool QGAdvHandler::isFeasible(ConstSolutionPtr sol, RelaxationPtr, bool &,
         return false;
       }
     }	else {
-      logger_->msgStream(LogError) << me_ 
+      logger_->msgStream(LogError) << me_
         <<"objective not defined at this point."<< std::endl;
       return false;
     }
   }
 
-  if (prStatus_) { 
+  if (prStatus_) {
     double inf_meas = 0.0;
     bool should_prune = false;
     return pcPtr_->isFeasible(sol, rel_, should_prune, inf_meas);
@@ -408,21 +449,22 @@ void QGAdvHandler::linearizeObj_()
     oNl_ = true;
     FunctionPtr f;
     std::string name = "eta";
+    ObjectiveType objType = o->getObjectiveType();
     LinearFunctionPtr lf = (LinearFunctionPtr) new LinearFunction();
     VariablePtr vPtr = rel_->newVariable(-INFINITY, INFINITY, Continuous,
                                          name, VarHand);
-    assert(o->getObjectiveType()==Minimize);
+    assert(objType == Minimize);
     rel_->removeObjective();
     lf->addTerm(vPtr, 1.0);
     f = (FunctionPtr) new Function(lf);
-    rel_->newObjective(f, 0.0, o->getObjectiveType());
+    rel_->newObjective(f, 0.0, objType);
     objVar_ = vPtr;
   }
   return;
 }
 
 
-void QGAdvHandler::linearAt_(FunctionPtr f, double fval, const double *x, 
+void QGAdvHandler::linearAt_(FunctionPtr f, double fval, const double *x,
                           double *c, LinearFunctionPtr *lf, int *error)
 {
 
@@ -435,7 +477,7 @@ void QGAdvHandler::linearAt_(FunctionPtr f, double fval, const double *x,
   f->evalGradient(x, a, error);
   
   if (*error==0) {
-    *lf = (LinearFunctionPtr) new LinearFunction(a, vbeg, vend, linCoeffTol); 
+    *lf = (LinearFunctionPtr) new LinearFunction(a, vbeg, vend, linCoeffTol);
     *c  = fval - InnerProduct(x, a, minlp_->getNumVars());
   } else {
     logger_->msgStream(LogError) << me_ <<"gradient not defined at this point."
@@ -458,7 +500,7 @@ void QGAdvHandler::oaCutToCons_(const double *nlpx, const double *lpx,
   double nlpact, cUb;
 
   for (CCIter it = nlCons_.begin(); it != nlCons_.end(); ++it) {
-    con = *it; 
+    con = *it;
     nlpact =  con->getActivity(lpx, &error);
     if (error == 0) {
       cUb = con->getUb();
@@ -466,13 +508,13 @@ void QGAdvHandler::oaCutToCons_(const double *nlpx, const double *lpx,
           (cUb != 0 && nlpact > (cUb+fabs(cUb)*solRelTol_))) {
 #if SPEW
         logger_->msgStream(LogDebug) << me_ << " constraint " <<
-          c->getName() << " violated at LP solution with violation = " <<
+          con->getName() << " violated at LP solution with violation = " <<
           nlpact - cUb << std::endl;
 #endif
         addCut_(nlpx, lpx, con, cutman, status);
       } else {
 #if SPEW
-        logger_->msgStream(LogDebug) << me_ << " constraint " << c->getName() <<
+        logger_->msgStream(LogDebug) << me_ << " constraint " << con->getName() <<
           " feasible at LP solution. No OA cut to be added." << std::endl;
 #endif
       }
@@ -480,7 +522,7 @@ void QGAdvHandler::oaCutToCons_(const double *nlpx, const double *lpx,
       logger_->msgStream(LogError) << me_ << " constraint not defined at" <<
         " this point. "<<  std::endl;
 #if SPEW
-      logger_->msgStream(LogDebug) << me_ << " constraint " << c->getName() <<
+      logger_->msgStream(LogDebug) << me_ << " constraint " << con->getName() <<
         " not defined at this point." << std::endl;
 #endif
     }
@@ -489,7 +531,7 @@ void QGAdvHandler::oaCutToCons_(const double *nlpx, const double *lpx,
 }
 
 
-void QGAdvHandler::addCut_(const double *nlpx, const double *lpx, 
+void QGAdvHandler::addCut_(const double *nlpx, const double *lpx,
                         ConstraintPtr con, CutManager*,
                         SeparationStatus *status)
 {
@@ -498,22 +540,22 @@ void QGAdvHandler::addCut_(const double *nlpx, const double *lpx,
   std::stringstream sstm;
   double c, lpvio, act, cUb;
   FunctionPtr f = con->getFunction();
-  LinearFunctionPtr lf = LinearFunctionPtr(); 
+  LinearFunctionPtr lf = LinearFunctionPtr();
 
-  act = con->getActivity(nlpx, &error); 
-  if (error == 0) {    
+  act = con->getActivity(nlpx, &error);
+  if (error == 0) {
     linearAt_(f, act, nlpx, &c, &lf, &error);
-    if (error==0) { 
+    if (error==0) {
       cUb = con->getUb();
       lpvio = std::max(lf->eval(lpx)-cUb+c, 0.0);
       if (lpvio>solAbsTol_ || ((cUb-c)!=0 && (lpvio>fabs(cUb-c)*solRelTol_))) {
 #if SPEW
         logger_->msgStream(LogDebug) << me_ << "i linearization of constraint "
-          << c->getName() << " violated at LP solution with violation = " <<
+          << con->getName() << " violated at LP solution with violation = " <<
           lpvio << ". OA cut added." << std::endl;
 #endif
         ++(stats_->cuts);
-        sstm << "_OAcut_" << stats_->cuts;     
+        sstm << "_OAcut_" << stats_->cuts;
         *status = SepaResolve;
         f = (FunctionPtr) new Function(lf);
         newcon = rel_->newConstraint(f, -INFINITY, cUb-c, sstm.str());
@@ -525,12 +567,12 @@ void QGAdvHandler::addCut_(const double *nlpx, const double *lpx,
       << " this point. "<<  std::endl;
 #if SPEW
           logger_->msgStream(LogDebug) << me_ << " constraint " <<
-            c->getName() << " not defined at this point." << std::endl;
+            con->getName() << " not defined at this point." << std::endl;
 #endif
   }
   return;
 }
-  
+
 
 void QGAdvHandler::oaCutToObj_(const double *nlpx, const double *lpx,
                             CutManager *, SeparationStatus *status)
@@ -554,23 +596,23 @@ void QGAdvHandler::oaCutToObj_(const double *nlpx, const double *lpx,
         act = o->eval(nlpx, &error);
         if (error == 0) {
           f = o->getFunction();
-          LinearFunctionPtr lf = LinearFunctionPtr(); 
+          LinearFunctionPtr lf = LinearFunctionPtr();
           linearAt_(f, act, nlpx, &c, &lf, &error);
           if (error == 0) {
             vio = std::max(c+lf->eval(lpx)-relobj_, 0.0);
-            if (vio > solAbsTol_ || ((relobj_-c)!=0 
-                                     && vio > fabs(relobj_-c)*solRelTol_)) { 
+            if (vio > solAbsTol_ || ((relobj_-c)!=0
+                                     && vio > fabs(relobj_-c)*solRelTol_)) {
 #if SPEW
               logger_->msgStream(LogDebug) << me_ << "linearization of "
                 "objective violated at LP solution with violation = " <<
                 vio << ". OA cut added." << std::endl;
 #endif
-              ++(stats_->cuts);  
-              sstm << "_OAObjcut_"<< stats_->cuts;     
+              ++(stats_->cuts);
+              sstm << "_OAObjcut_" << stats_->cuts;
               lf->addTerm(objVar_, -1.0);
               *status = SepaResolve;
               f = (FunctionPtr) new Function(lf);
-              newcon = rel_->newConstraint(f, -INFINITY, -1.0*c, sstm.str()); 
+              newcon = rel_->newConstraint(f, -INFINITY, -1.0*c, sstm.str());
             }
           }
         }
@@ -587,7 +629,7 @@ void QGAdvHandler::oaCutToObj_(const double *nlpx, const double *lpx,
       logger_->msgStream(LogDebug) << me_ << " objective not defined at this "
         << " point." << std::endl;
 #endif
-    }  
+    }
   }
   return;
 }
@@ -646,17 +688,17 @@ void QGAdvHandler::relax_(bool *isInf)
     std::vector<UInt> prConsId;
     std::vector<ConstraintPtr> prCons = pcPtr_->getPRCons();
     for (UInt i=0; i<prCons.size(); ++i) {
-      prConsId.push_back(prCons[i]->getId());    
+      prConsId.push_back(prCons[i]->getId());
     }
     for (ConstraintConstIterator it=minlp_->consBegin(); it!=minlp_->consEnd();
          ++it) {
       c = *it;
       fType = c->getFunctionType();
       if (fType != Constant && fType != Linear) {
-        if (std::find(prConsId.begin(), prConsId.end(), 
+        if (std::find(prConsId.begin(), prConsId.end(),
                       c->getId()) == prConsId.end()) {
           nlCons_.push_back(c);
-        }     
+        }
       }
     }
   }
@@ -671,7 +713,7 @@ void QGAdvHandler::separate(ConstSolutionPtr sol, NodePtr , RelaxationPtr rel,
                          CutManager *cutMan, SolutionPoolPtr s_pool,
                          ModVector &, ModVector &, bool *sol_found,
                          SeparationStatus *status)
-{      
+{
   double val;
   VariableType v_type;
   VariableConstIterator v_iter;
@@ -719,7 +761,7 @@ void QGAdvHandler::unfixInts_()
 }
 
 
-void QGAdvHandler::updateUb_(SolutionPoolPtr s_pool, double *nlpval, 
+void QGAdvHandler::updateUb_(SolutionPoolPtr s_pool, double *nlpval,
                           bool *sol_found)
 {
   double val = nlpe_->getSolutionValue();
@@ -730,7 +772,7 @@ void QGAdvHandler::updateUb_(SolutionPoolPtr s_pool, double *nlpval,
     s_pool->addSolution(x, val);
     *sol_found = true;
 #if SPEW
-    logger_->msgStream(LogDebug) << me_ << "new solution found, value = " 
+    logger_->msgStream(LogDebug) << me_ << "new solution found, value = "
       << val << std::endl;
 #endif
   }
@@ -742,7 +784,7 @@ void QGAdvHandler::updateUb_(SolutionPoolPtr s_pool, double *nlpval,
 void QGAdvHandler::writeStats(std::ostream &out) const
 {
   out
-    << me_ << "number of nlps solved                          = " 
+    << me_ << "number of nlps solved                          = "
     << stats_->nlpS << std::endl
     << me_ << "number of infeasible nlps                      = " 
     << stats_->nlpI << std::endl
@@ -761,13 +803,13 @@ std::string QGAdvHandler::getName() const
   return "QG Handler (Quesada-Grossmann)";
 }
 
-// Local Variables: 
-// mode: c++ 
-// eval: (c-set-style "k&r") 
-// eval: (c-set-offset 'innamespace 0) 
-// eval: (setq c-basic-offset 2) 
-// eval: (setq fill-column 78) 
-// eval: (auto-fill-mode 1) 
-// eval: (setq column-number-mode 1) 
+// Local Variables:
+// mode: c++
+// eval: (c-set-style "k&r")
+// eval: (c-set-offset 'innamespace 0)
+// eval: (setq c-basic-offset 2)
+// eval: (setq fill-column 78)
+// eval: (auto-fill-mode 1)
+// eval: (setq column-number-mode 1)
 // eval: (setq indent-tabs-mode nil) 
 // End:

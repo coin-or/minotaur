@@ -114,10 +114,8 @@ void QGHandler::addInitLinearX_(const double *x)
       linearAt_(f, act, x, &c, &lf, &error); 
       if (error == 0) {
         cUb = con->getUb(); 
-        ++(stats_->cuts);  
-        sstm << "_OAcut_";
-        sstm << stats_->cuts;     
-        sstm << "_AtRoot";
+        ++(stats_->cuts);
+        sstm << "_OAcut_" << stats_->cuts << "_AtRoot";
         f = (FunctionPtr) new Function(lf);
         newcon = rel_->newConstraint(f, -INFINITY, cUb-c, sstm.str());
       }
@@ -136,10 +134,8 @@ void QGHandler::addInitLinearX_(const double *x)
     ObjectivePtr o = minlp_->getObjective();
     act = o->eval(x, &error);
     if (error==0) {
-      ++(stats_->cuts);  
-      sstm << "_OAObjcut_";
-      sstm << stats_->cuts;     
-      sstm << "_AtRoot";
+      ++(stats_->cuts);
+      sstm << "_OAObjcut_" << stats_->cuts << "_AtRoot";
       f = o->getFunction();
       linearAt_(f, act, x, &c, &lf, &error);
       if (error == 0) {
@@ -350,10 +346,10 @@ bool QGHandler::isFeasible(ConstSolutionPtr sol, RelaxationPtr, bool &,
 void QGHandler::linearizeObj_()
 {
   ObjectivePtr o = minlp_->getObjective();
+  FunctionType fType = o->getFunctionType();
   if (!o) {
     assert(!"need objective in QG!");
-  } else if (o->getFunctionType() != Linear &&
-             o->getFunctionType() != Constant) {
+  } else if (fType != Linear && fType != Constant) {
     oNl_ = true;
     FunctionPtr f;
     std::string name = "eta";
@@ -361,7 +357,7 @@ void QGHandler::linearizeObj_()
     LinearFunctionPtr lf = (LinearFunctionPtr) new LinearFunction();
     VariablePtr vPtr = rel_->newVariable(-INFINITY, INFINITY, Continuous,
                                          name, VarHand);
-    assert(o->getObjectiveType()==Minimize);
+    assert(objType == Minimize);
     rel_->removeObjective();
     lf->addTerm(vPtr, 1.0);
     f = (FunctionPtr) new Function(lf);
@@ -463,8 +459,8 @@ void QGHandler::oaCutEngLim_(const double *lpx, CutManager *,
           lpvio = std::max(lf->eval(lpx)-cUb+c, 0.0);
           if (lpvio>solAbsTol_ || ((cUb-c)!=0 &&
                                    (lpvio>fabs(cUb-c)*solRelTol_))) {
-            ++(stats_->cuts);            sstm << "_OAcut_";
-            sstm << stats_->cuts;
+            ++(stats_->cuts);
+            sstm << "_OAcut_" << stats_->cuts;
             *status = SepaResolve;
             f = (FunctionPtr) new Function(lf);
             newcon = rel_->newConstraint(f, -INFINITY, cUb-c, sstm.str());
@@ -505,8 +501,7 @@ void QGHandler::addCut_(const double *nlpx, const double *lpx,
           lpvio << ". OA cut added." << std::endl;
 #endif
         ++(stats_->cuts);
-        sstm << "_OAcut_";
-        sstm << stats_->cuts;     
+        sstm << "_OAcut_" << stats_->cuts;
         *status = SepaResolve;
         f = (FunctionPtr) new Function(lf);
         newcon = rel_->newConstraint(f, -INFINITY, cUb-c, sstm.str());
@@ -558,9 +553,8 @@ void QGHandler::oaCutToObj_(const double *nlpx, const double *lpx,
                 "objective violated at LP solution with violation = " <<
                 vio << ". OA cut added." << std::endl;
 #endif
-              ++(stats_->cuts);  
-              sstm << "_OAObjcut_";
-              sstm << stats_->cuts;     
+              ++(stats_->cuts);
+              sstm << "_OAObjcut_" << stats_->cuts;
               lf->addTerm(objVar_, -1.0);
               *status = SepaResolve;
               f = (FunctionPtr) new Function(lf);

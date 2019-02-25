@@ -368,10 +368,10 @@ bool ParQGHandler::isFeasible(ConstSolutionPtr sol, RelaxationPtr, bool &,
 void ParQGHandler::linearizeObj_()
 {
   ObjectivePtr o = minlp_->getObjective();
+  FunctionType fType = o->getFunctionType();
   if (!o) {
     assert(!"need objective in QG!");
-  } else if (o->getFunctionType() != Linear &&
-             o->getFunctionType() != Constant) {
+  } else if (fType != Linear && fType != Constant) {
     oNl_ = true;
     FunctionPtr f;
     VariablePtr vPtr;
