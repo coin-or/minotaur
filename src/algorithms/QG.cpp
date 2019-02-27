@@ -333,7 +333,7 @@ int main(int argc, char* argv[])
     assert(qg_hand);
     
     if (options->findBool("rc_fix")->getValue()) {
-      rc_hand = (RCHandlerPtr) new RCHandler();
+      rc_hand = (RCHandlerPtr) new RCHandler(env);
       rc_hand->setModFlags(false, true); 
       handlers.push_back(rc_hand);
       assert(rc_hand);
