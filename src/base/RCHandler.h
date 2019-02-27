@@ -24,8 +24,18 @@
 
 namespace Minotaur {
 
+
+struct RCStats {
+  size_t nlb;   /// Number of lower bound changed
+  size_t nub;   /// Number of Upper Bound Changed             
+  double time;
+}; 
+
 class CutManager;
+class Timer;
 class SimpleCutMan;
+class Environment;
+typedef boost::shared_ptr <Environment> EnvPtr;
 
 /**
  * \brief Handler for reduced cost strengthening 
@@ -36,7 +46,7 @@ class RCHandler : public Handler {
   
 public:
   /// Empty constructor.
-  RCHandler();
+  RCHandler(EnvPtr env);
 
   
   /// Destroy.
@@ -94,13 +104,16 @@ public:
                 ModVector &q_mods, bool *sol_found, SeparationStatus *status);
  
   // Show statistics.
-  void writeStats(std::ostream &) const{}
-
+  void writeStats(std::ostream &) const;
+  
 private:
-  /**
-   * Need to write 
-   * 
+  /** 
    */
+
+  RCStats *stats_;
+
+  LoggerPtr logger_;
+  const Timer* timer_;
 
   static const std::string me_;
 };
@@ -110,9 +123,6 @@ private:
 
 
 #endif
-
-
-
 
 // Local Variables: 
 // mode: c++ 
