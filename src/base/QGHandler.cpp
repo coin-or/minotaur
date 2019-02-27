@@ -180,8 +180,8 @@ void QGHandler::cutIntSol_(ConstSolutionPtr sol, CutManager *cutMan,
       }
     } else {
       nlpx = nlpe_->getSolution()->getPrimal();
-      oaCutToCons_(nlpx, lpx, cutMan, status);
-      oaCutToObj_(nlpx, lpx, cutMan, status);
+      cutToCons_(nlpx, lpx, cutMan, status);
+      cutToObj_(nlpx, lpx, cutMan, status);
       break;
     }
   case (ProvenInfeasible):
@@ -189,11 +189,12 @@ void QGHandler::cutIntSol_(ConstSolutionPtr sol, CutManager *cutMan,
   case (ProvenObjectiveCutOff):
     ++(stats_->nlpI);
     nlpx = nlpe_->getSolution()->getPrimal();
-    oaCutToCons_(nlpx, lpx, cutMan, status);
+    cutToCons_(nlpx, lpx, cutMan, status);
     break;
   case (EngineIterationLimit):
     ++(stats_->nlpIL);
-    oaCutEngLim_(lpx, cutMan, status);
+    consCutAtLpSol_(lpx, cutMan, status);
+    objCutAtLpSol_(lpx, cutMan, status);
     break;
   case (FailedFeas):
   case (EngineError):
@@ -209,7 +210,11 @@ void QGHandler::cutIntSol_(ConstSolutionPtr sol, CutManager *cutMan,
       << std::endl;
     *status = SepaError;
   }
- 
+
+ if (*status == SepaContinue) {
+   *status = SepaPrune;
+ }
+
 #if SPEW
   logger_->msgStream(LogDebug) << me_ << "NLP solve status = "
     << nlpe_->getStatusString() << " and separation status = " << *status <<
@@ -396,7 +401,7 @@ void QGHandler::linearAt_(FunctionPtr f, double fval, const double *x,
 }
 
 
-void QGHandler::oaCutToCons_(const double *nlpx, const double *lpx,
+void QGHandler::cutToCons_(const double *nlpx, const double *lpx,
                              CutManager *cutman, SeparationStatus *status)
 {
   int error=0;
@@ -433,9 +438,45 @@ void QGHandler::oaCutToCons_(const double *nlpx, const double *lpx,
   }
   return;
 }
+ 
+
+void QGHandler::objCutAtLpSol_(const double *lpx, CutManager *,
+                                  SeparationStatus *status)
+{
+  if (oNl_) {
+    int error = 0;
+    FunctionPtr f;
+    double c, vio, act;
+    ConstraintPtr newcon;
+    std::stringstream sstm;
+    ObjectivePtr o = minlp_->getObjective();
+
+    act = o->eval(lpx, &error);
+    if (error == 0) {
+      vio = std::max(act-relobj_, 0.0);
+      if (vio > solAbsTol_ || (relobj_ != 0 && vio > fabs(relobj_)*solRelTol_)) {
+          f = o->getFunction();
+          LinearFunctionPtr lf = LinearFunctionPtr();
+          linearAt_(f, act, lpx, &c, &lf, &error);
+          if (error == 0) {
+            ++(stats_->cuts);
+            sstm << "_OAObjcut_" << stats_->cuts;
+            lf->addTerm(objVar_, -1.0);
+            *status = SepaResolve;
+            f = (FunctionPtr) new Function(lf);
+            newcon = rel_->newConstraint(f, -INFINITY, -1.0*c, sstm.str());
+          }
+        }
+    }	else {
+      logger_->msgStream(LogError) << me_
+        << " objective not defined at this solution point." << std::endl;
+    }
+  }
+  return;
+}
 
 
-void QGHandler::oaCutEngLim_(const double *lpx, CutManager *,
+void QGHandler::consCutAtLpSol_(const double *lpx, CutManager *,
                              SeparationStatus *status)
 {
   int error=0;
@@ -520,7 +561,7 @@ void QGHandler::addCut_(const double *nlpx, const double *lpx,
 }
   
 
-void QGHandler::oaCutToObj_(const double *nlpx, const double *lpx,
+void QGHandler::cutToObj_(const double *nlpx, const double *lpx,
                             CutManager *, SeparationStatus *status)
 {
   if (oNl_) {
@@ -654,6 +695,7 @@ void QGHandler::separate(ConstSolutionPtr sol, NodePtr, RelaxationPtr rel,
       }
     }
   }
+
   cutIntSol_(sol, cutMan, s_pool, sol_found, status);
   return;
 }
