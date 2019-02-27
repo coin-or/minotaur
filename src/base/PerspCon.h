@@ -33,6 +33,10 @@ typedef boost::shared_ptr<PerspCon> PerspConPtr;
 typedef boost::shared_ptr<const PerspCon> ConstPerspConPtr;
 
 
+/**
+ * Handler for convex constraints amenable to perspective
+ * reformulation. It considers nonlinear constraints in the form f(x) <= b.
+ */
 class PerspCon {
 public:
   /// Default constructor.
@@ -82,18 +86,18 @@ public:
   /// Writes information related to perspective amenable constraints. 
   void displayInfo();
 
-  /// Checks if a constraint is amenable to PR.
+  /// Check if a constraint is amenable to PR.
   void evalConstraint(ConstraintPtr cons);
 
-  /// Generates list of constraints amenable to PR.
+  /// Generate list of constraints amenable to PR.
   void findPRCons();
 
 
-  /// Returns total number of PR.
+  /// Return total number of PR.
   UInt getNumPersp() const {return cons_.size();}
 
   /* 
-   * Returns vector containing binary variables associated with constraints 
+   * Return vector containing binary variables associated with constraints 
    * amenable to PR.
    */ 
   std::vector<VariablePtr> getPRBinVar() const {return binvar_;}
@@ -101,15 +105,20 @@ public:
   /// Returns a vector containing constraints amenable to PR.
   std::vector<ConstraintPtr> getPRCons() const {return cons_;}
   
-  /// Returns vector containing structure types of constraints amenable to PR.
+  /// Return vector containing structure types of constraints amenable to PR.
   std::vector<int> getPRStruct() const {return sType_;}
    
   /*
-   * Returns 1 if problem has at least one constraint amenable to PR,
+   * Return 1 if problem has at least one constraint amenable to PR,
    * otherwise 0.
    */  
   bool getStatus();
 
+  /*
+   * Return 1 and value to which variable is fixed for z=0, otherwise 0
+   */ 
+  bool ifFixed(double coeffV, double lb, double ub, double* rBnd, 
+                             std::vector<double>* xub, std::vector<double>* xlb);
 
   void populate (ConstraintPtr cons, VariablePtr binvar, VariableGroup nlVarFixVal,
                VariableGroup lVarFixVal);

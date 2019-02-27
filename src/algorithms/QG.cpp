@@ -291,7 +291,6 @@ int main(int argc, char* argv[])
   }
 
   loadProblem(env, iface, inst, &obj_sense);
-
   // Initialize engines
   nlp_e = getNLPEngine(env, inst); //Engine for Original problem
 
@@ -311,8 +310,7 @@ int main(int argc, char* argv[])
     writeBnbStatus(env, bab, obj_sense);
     goto CLEANUP;
   }
- 
-   if (options->findBool("solve")->getValue()==true) {
+  if (options->findBool("solve")->getValue()==true) {
     if (true==options->findBool("use_native_cgraph")->getValue()) {
       inst->setNativeDer();
     }
@@ -338,22 +336,19 @@ int main(int argc, char* argv[])
       handlers.push_back(rc_hand);
       assert(rc_hand);
     }  
-
     // report name
     env->getLogger()->msgStream(LogExtraInfo) << me << "handlers used:"
       << std::endl;
     for (HandlerIterator h = handlers.begin(); h != handlers.end(); ++h) {
-        env->getLogger()->msgStream(LogExtraInfo) << me << (*h)->getName()
+      env->getLogger()->msgStream(LogExtraInfo) << me << (*h)->getName()
         << std::endl;
     }
 
     // Only store bound-changes of relaxation (not problem)
     nr = (NodeIncRelaxerPtr) new NodeIncRelaxer(env, handlers);
     nr->setModFlag(false);
-
     nr->setEngine(lin_e);
     nproc = (PCBProcessorPtr) new PCBProcessor(env, lin_e, handlers);
-
     if (env->getOptions()->findString("brancher")->getValue() == "rel") {
       ReliabilityBrancherPtr rel_br = 
         (ReliabilityBrancherPtr) new ReliabilityBrancher(env, handlers);
@@ -381,11 +376,9 @@ int main(int argc, char* argv[])
     bab->setNodeProcessor(nproc);
     bab->shouldCreateRoot(true);
 
-
     // start solving
     bab->solve();
     bab->writeStats(env->getLogger()->msgStream(LogExtraInfo));
-    //bab->writeStats(std::cout);
     nlp_e->writeStats(env->getLogger()->msgStream(LogExtraInfo));
     lin_e->writeStats(env->getLogger()->msgStream(LogExtraInfo));
 
