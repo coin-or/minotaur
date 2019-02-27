@@ -178,7 +178,6 @@ void ParQGHandler::cutIntSol_(ConstSolutionPtr sol, CutManager *cutMan,
                            SolutionPoolPtr s_pool, bool *sol_found,
                            SeparationStatus *status)
 {
-  *status = SepaContinue;
   double nlpval = INFINITY;
   const double *lpx = sol->getPrimal(), *nlpx;
   relobj_ = (sol) ? sol->getObjValue() : -INFINITY;
@@ -398,7 +397,6 @@ void ParQGHandler::linearizeObj_()
 void ParQGHandler::linearAt_(FunctionPtr f, double fval, const double *x, 
                           double *c, LinearFunctionPtr *lf, int *error)
 {
-
   int n = rel_->getNumVars();
   double *a = new double[n];
   const double linCoeffTol = 1e-6;
