@@ -297,18 +297,32 @@ void Environment::createDefaultOptions_()
   options_->insert(d_option);
 
   d_option = (DoubleOptionPtr) new Option<double>("int_tol", 
-      "Tolerance for checking integrality",
-      true, 0.000001);
+      "Tolerance for checking integrality", true, 1e-6);
   options_->insert(d_option);
 
-  d_option = (DoubleOptionPtr) new Option<double>("solAbs_tol", 
-      "Absolute tolerance value for checking feasibility",
-      true, 0.000001);
+  d_option = (DoubleOptionPtr) new Option<double>("feasAbs_tol",
+      "Absolute tolerance value for checking constraint feasibility",
+      true, 1e-6);
   options_->insert(d_option);
 
-  d_option = (DoubleOptionPtr) new Option<double>("solRel_tol", 
-      "Relative tolerance value for checking feasibility",
-      true, 0.000001);
+  d_option = (DoubleOptionPtr) new Option<double>("feasRel_tol",
+      "Relative tolerance value for checking constraint feasibility",
+      true, 1e-6);
+  options_->insert(d_option);
+
+  d_option = (DoubleOptionPtr) new Option<double>("conCoeff_tol",
+      "Tolerance below which a coefficient is considered to be zero in a constraint",
+      true, 1e-6);
+  options_->insert(d_option);
+
+  d_option = (DoubleOptionPtr) new Option<double>("solAbs_tol",
+      "Absolute tolerance value for accepting solution or node pruning",
+      true, 1e-5);
+  options_->insert(d_option);
+
+  d_option = (DoubleOptionPtr) new Option<double>("solRel_tol",
+      "Relative tolerance value for accepting a solution or node pruning",
+      true, 1e-5);
   options_->insert(d_option);
 
   // Serdar added these options for MultilinearTermsHandler class

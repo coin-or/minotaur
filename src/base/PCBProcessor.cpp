@@ -37,10 +37,11 @@ const std::string PCBProcessor::me_ = "PCBProcessor: ";
 PCBProcessor::PCBProcessor (EnvPtr env, EnginePtr engine, HandlerVector handlers)
   : contOnErr_(false),
     cutMan_(0),
-    numSolutions_(0),
-    oATol_(1e-5),
-    oRTol_(1e-5)
+    numSolutions_(0)
+
 {
+  oATol_ = env_->getOptions()->findDouble("solAbs_tol")->getValue();
+  oRTol_ = env_->getOptions()->findDouble("solRel_tol")->getValue();
   cutOff_ = env->getOptions()->findDouble("obj_cut_off")->getValue();
   engine_ = engine;
   handlers_ = handlers;

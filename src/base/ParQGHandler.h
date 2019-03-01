@@ -93,6 +93,12 @@ private:
   /// Tolerance for accepting a new solution value: relative threshold.
   double solRelTol_;
 
+  /// Absolute tolerance for pruning a node.
+  double npATol_;
+
+  /// Relative tolerance for pruning a node.
+  double npRTol_;
+
   /// Statistics.
   ParQGStats *stats_;
 

@@ -64,8 +64,10 @@ ParQGHandler::ParQGHandler()
   stats_(0)
 {
   intTol_ = env_->getOptions()->findDouble("int_tol")->getValue();
-  solAbsTol_ = env_->getOptions()->findDouble("solAbs_tol")->getValue();
-  solRelTol_ = env_->getOptions()->findDouble("solRel_tol")->getValue();
+  solAbsTol_ = env_->getOptions()->findDouble("feasAbs_tol")->getValue();
+  solRelTol_ = env_->getOptions()->findDouble("feasRel_tol")->getValue();
+  npATol_ = env_->getOptions()->findDouble("solAbs_tol")->getValue();
+  npRTol_ = env_->getOptions()->findDouble("solRel_tol")->getValue();
   logger_ = (LoggerPtr) new Logger(LogInfo);
 }
 
@@ -82,8 +84,10 @@ ParQGHandler::ParQGHandler(EnvPtr env, ProblemPtr minlp, EnginePtr nlpe)
   relobj_(0.0)
 {
   intTol_ = env_->getOptions()->findDouble("int_tol")->getValue();
-  solAbsTol_ = env_->getOptions()->findDouble("solAbs_tol")->getValue();
-  solRelTol_ = env_->getOptions()->findDouble("solRel_tol")->getValue();
+  solAbsTol_ = env_->getOptions()->findDouble("feasAbs_tol")->getValue();
+  solRelTol_ = env_->getOptions()->findDouble("feasRel_tol")->getValue();
+  npATol_ = env_->getOptions()->findDouble("solAbs_tol")->getValue();
+  npRTol_ = env_->getOptions()->findDouble("solRel_tol")->getValue();
   logger_ = env->getLogger();
 
   stats_ = new ParQGStats();
@@ -190,11 +194,10 @@ void ParQGHandler::cutIntSol_(ConstSolutionPtr sol, CutManager *cutMan,
   case (ProvenLocalOptimal):
     ++(stats_->nlpF);
     updateUb_(s_pool, &nlpval, sol_found); 
-    if (relobj_ >= nlpval-solAbsTol_) {
-      if (nlpval == 0 || relobj_ >= nlpval-fabs(nlpval)*solRelTol_) {
+    if ((relobj_ >= nlpval-npATol_) ||
+        (nlpval != 0 && (relobj_ >= nlpval-fabs(nlpval)*npRTol_))) {
         *status = SepaPrune;
         break;
-      }
     } else {
       nlpx = nlpe_->getSolution()->getPrimal();
       oaCutToCons_(nlpx, lpx, cutMan, status);
@@ -399,8 +402,9 @@ void ParQGHandler::linearAt_(FunctionPtr f, double fval, const double *x,
 {
   int n = rel_->getNumVars();
   double *a = new double[n];
-  const double linCoeffTol = 1e-6;
   VariableConstIterator vbeg = rel_->varsBegin(), vend = rel_->varsEnd();
+  const double linCoeffTol =
+    env_->getOptions()->findDouble("conCoeff_tol")->getValue();
 
   std::fill(a, a+n, 0.);
   f->evalGradient(x, a, error);

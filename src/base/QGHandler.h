@@ -87,11 +87,17 @@ private:
   /// Value of objective in relaxation solution
   double relobj_; 
 
-  /// Tolerance for accepting a new solution value: absolute threshold.
+  /// Absolute tolerance for constraint feasibility.
   double solAbsTol_;
 
-  /// Tolerance for accepting a new solution value: relative threshold.
+  /// Relative tolerance for constraint feasibility.
   double solRelTol_;
+
+  /// Absolute tolerance for pruning a node.
+  double npATol_;
+
+  /// Relative tolerance for pruning a node.
+  double npRTol_;
 
   /// Statistics.
   QGStats *stats_;
