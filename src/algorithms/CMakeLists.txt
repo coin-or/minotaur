@@ -186,15 +186,15 @@ install(TARGETS qg RUNTIME DESTINATION bin)
 ## Add lines specific to your binaries in this section. 
 ## Use the lines meant for bnb as a template.
 ##############################################################################
-set (QGADV_SOURCES
-QGAdv.cpp 
-)
+#set (QGADV_SOURCES
+#QGAdv.cpp 
+#)
 
-add_executable(qgadv ${QGADV_SOURCES})
-target_link_libraries(qgadv ${ALL_EXEC_LIBS})
+#add_executable(qgadv ${QGADV_SOURCES})
+#target_link_libraries(qgadv ${ALL_EXEC_LIBS})
 
-# This will install the binary in bin directory.
-install(TARGETS qgadv RUNTIME DESTINATION bin)
+## This will install the binary in bin directory.
+#install(TARGETS qgadv RUNTIME DESTINATION bin)
 
 ##############################################################################
 ## Add lines specific to your binaries in this section. 
