@@ -1,16 +1,15 @@
-// 
+//
 //     MINOTAUR -- It's only 1/2 bull
-// 
+//
 //     (C)opyright 2009 - 2017 The MINOTAUR Team.
-// 
+//
 
-/** 
+/**
  * \file QGAdvHandler.cpp
  * \Briefly define a handler for the textbook type Quesada-Grossmann
  * Algorithm.
- * \Authors Meenarli Sharma, Indian Institute of Technology Bombay 
+ * \Authors Meenarli Sharma, Indian Institute of Technology Bombay
  */
-
 
 #include <cmath>
 #include <iomanip>
@@ -45,6 +44,7 @@ using namespace Minotaur;
 typedef std::vector<ConstraintPtr>::const_iterator CCIter;
 const std::string QGAdvHandler::me_ = "QGAdvHandler: ";
 
+
 QGAdvHandler::QGAdvHandler()
 : env_(EnvPtr()),
   minlp_(ProblemPtr()),
@@ -60,10 +60,13 @@ QGAdvHandler::QGAdvHandler()
   pcPtr_(PerspCutHandlerPtr())
 {
   intTol_ = env_->getOptions()->findDouble("int_tol")->getValue();
-  solAbsTol_ = env_->getOptions()->findDouble("solAbs_tol")->getValue();
-  solRelTol_ = env_->getOptions()->findDouble("solRel_tol")->getValue();
+  solAbsTol_ = env_->getOptions()->findDouble("feasAbs_tol")->getValue();
+  solRelTol_ = env_->getOptions()->findDouble("feasRel_tol")->getValue();
+  npATol_ = env_->getOptions()->findDouble("solAbs_tol")->getValue();
+  npRTol_ = env_->getOptions()->findDouble("solRel_tol")->getValue();
   logger_ = (LoggerPtr) new Logger(LogInfo);
 }
+
 
 QGAdvHandler::QGAdvHandler(EnvPtr env, ProblemPtr minlp, EnginePtr nlpe)
 : env_(env),
@@ -79,8 +82,10 @@ QGAdvHandler::QGAdvHandler(EnvPtr env, ProblemPtr minlp, EnginePtr nlpe)
   pcPtr_(PerspCutHandlerPtr())
 {
   intTol_ = env_->getOptions()->findDouble("int_tol")->getValue();
-  solAbsTol_ = env_->getOptions()->findDouble("solAbs_tol")->getValue();
-  solRelTol_ = env_->getOptions()->findDouble("solRel_tol")->getValue();
+  solAbsTol_ = env_->getOptions()->findDouble("feasAbs_tol")->getValue();
+  solRelTol_ = env_->getOptions()->findDouble("feasRel_tol")->getValue();
+  npATol_ = env_->getOptions()->findDouble("solAbs_tol")->getValue();
+  npRTol_ = env_->getOptions()->findDouble("solRel_tol")->getValue();
   logger_ = env->getLogger();
 
   stats_ = new QGStats();
@@ -117,6 +122,8 @@ QGAdvHandler::QGAdvHandler(EnvPtr env, ProblemPtr minlp, EnginePtr nlpe,
   stats_->nlpIL = 0;
   stats_->cuts = 0;
 }
+
+
 QGAdvHandler::~QGAdvHandler()
 {
   if (stats_) {
@@ -128,14 +135,14 @@ QGAdvHandler::~QGAdvHandler()
 
 void QGAdvHandler::addInitLinearX_(const double *x)
 {
-  int error=0;
+  int error = 0;
   FunctionPtr f;
   double c, act, cUb;
   std::stringstream sstm;
   ConstraintPtr con, newcon;
   LinearFunctionPtr lf = LinearFunctionPtr();
 
-  for (CCIter it=nlCons_.begin(); it!=nlCons_.end(); ++it) {
+  for (CCIter it = nlCons_.begin(); it != nlCons_.end(); ++it) {
     con = *it;
     act = con->getActivity(x, &error);
     if (error == 0) {
@@ -149,17 +156,17 @@ void QGAdvHandler::addInitLinearX_(const double *x)
         newcon = rel_->newConstraint(f, -INFINITY, cUb-c, sstm.str());
       }
     }	else {
-      logger_->msgStream(LogError) << me_ << "Constraint" <<  con->getName() <<
+      logger_->msgStream(LogError) << me_ << " constraint" <<  con->getName() <<
         " is not defined at this point." << std::endl;
 #if SPEW
-      logger_->msgStream(LogDebug) << me_ << "constraint " <<
+      logger_->msgStream(LogDebug) << me_ << " constraint " <<
         con->getName() << " is not defined at this point." << std::endl;
 #endif
     }
   }
 
   if (prStatus_) {
-    pcPtr_->pcutAtPoint(rel_, x);
+    pcPtr_->oriFeasPt(rel_, x);
   }
 
   if (oNl_) {
@@ -207,17 +214,16 @@ void QGAdvHandler::cutIntSol_(ConstSolutionPtr sol, CutManager *cutMan,
   case (ProvenLocalOptimal):
     ++(stats_->nlpF);
     updateUb_(s_pool, &nlpval, sol_found);
-    if (relobj_ >= nlpval-solAbsTol_) {
-      if (nlpval == 0 || relobj_ >= nlpval-fabs(nlpval)*solRelTol_) {
+    if ((relobj_ >= nlpval-npATol_) ||
+        (nlpval != 0 && (relobj_ >= nlpval-fabs(nlpval)*npRTol_))) {
         *status = SepaPrune;
         break;
-      }
     } else {
       nlpx = nlpe_->getSolution()->getPrimal();
       oaCutToCons_(nlpx, lpx, cutMan, status);
       oaCutToObj_(nlpx, lpx, cutMan, status);
       if (prStatus_) {
-        pcPtr_->pcutAtInt(rel_, nlpx, lpx, &pcStatus, cutMan);
+        pcPtr_->atIntPt(rel_, nlpx, lpx, &pcStatus, cutMan);
       }
       break;
     }
@@ -228,15 +234,16 @@ void QGAdvHandler::cutIntSol_(ConstSolutionPtr sol, CutManager *cutMan,
     nlpx = nlpe_->getSolution()->getPrimal();
     oaCutToCons_(nlpx, lpx, cutMan, status);
     if (prStatus_) {
-      pcPtr_->pcutAtInt(rel_, nlpx, lpx, &pcStatus, cutMan);
+      pcPtr_->atIntPt(rel_, nlpx, lpx, &pcStatus, cutMan);
     }
     break;
   case (EngineIterationLimit):
     ++(stats_->nlpIL);
     nlpx = nlpe_->getSolution()->getPrimal();
-    oaCutEngLim_(lpx, cutMan, status);
+    oaCutEngLim_(lpx, cutMan, status); //MS: how about taking a convex combination here?
     if (prStatus_) {
-      pcPtr_->pcutAtInt(rel_, nlpx, lpx, &pcStatus, cutMan);
+      //MS: add here to PR for a point not two points
+      //pcPtr_->pcutAtInt(rel_, nlpx, lpx, &pcStatus, cutMan);
     }
     break;
   case (FailedFeas):
@@ -255,11 +262,11 @@ void QGAdvHandler::cutIntSol_(ConstSolutionPtr sol, CutManager *cutMan,
   }
    
   if (pcStatus == SepaResolve) {
-    *status = SepaResolve;
+    *status = SepaResolve; //MS: error in PRCutHandler
   }
 
 #if SPEW
-  logger_->msgStream(LogDebug) << me_ << "NLP solve status = "
+  logger_->msgStream(LogDebug) << me_ << " NLP solve status = "
     << nlpe_->getStatusString() << " and separation status = " << *status <<
     std::endl;
 #endif
@@ -270,7 +277,7 @@ void QGAdvHandler::cutIntSol_(ConstSolutionPtr sol, CutManager *cutMan,
 void QGAdvHandler::oaCutEngLim_(const double *lpx, CutManager *,
                              SeparationStatus *status)
 {
-  int error=0;
+  int error = 0;
   FunctionPtr f;
   LinearFunctionPtr lf;
   std::stringstream sstm;
@@ -317,8 +324,8 @@ void QGAdvHandler::fixInts_(const double *x)
   for (VariableConstIterator vit=minlp_->varsBegin(); vit!=minlp_->varsEnd();
        ++vit) {
     v = *vit;
-    if (v->getType()==Binary || v->getType()==Integer ||
-        v->getType()==ImplBin || v->getType()==ImplInt) {
+    if (v->getType() == Binary || v->getType() == Integer ||
+        v->getType() == ImplBin || v->getType() == ImplInt) {
       xval = x[v->getIndex()];
       xval = floor(xval + 0.5);
       m = new VarBoundMod2(v, xval, xval);
@@ -379,13 +386,13 @@ void QGAdvHandler::initLinear_(bool *isInf)
 bool QGAdvHandler::isFeasible(ConstSolutionPtr sol, RelaxationPtr, bool &,
                            double &)
 {
-  int error=0;
+  int error = 0;
   FunctionPtr f;
   double act, cUb;
   ConstraintPtr con;
   const double *x = sol->getPrimal();
 
-  for (CCIter it=nlCons_.begin(); it!=nlCons_.end(); ++it) {
+  for (CCIter it = nlCons_.begin(); it != nlCons_.end(); ++it) {
     con = *it;
     act = con->getActivity(x, &error);
     if (error == 0) {
@@ -393,7 +400,7 @@ bool QGAdvHandler::isFeasible(ConstSolutionPtr sol, RelaxationPtr, bool &,
       if (act > cUb + solAbsTol_ ||
           (cUb != 0 && act > cUb + fabs(cUb)*solRelTol_)) {
 #if SPEW
-        logger_->msgStream(LogDebug) << me_ << "constraint " <<
+        logger_->msgStream(LogDebug) << me_ << " constraint " <<
           con->getName() << " violated with violation = " << act - cUb <<
           std::endl;
 #endif
@@ -403,7 +410,7 @@ bool QGAdvHandler::isFeasible(ConstSolutionPtr sol, RelaxationPtr, bool &,
       logger_->msgStream(LogError) << me_ << con->getName() <<
         " constraint not defined at this point."<< std::endl;
 #if SPEW
-      logger_->msgStream(LogDebug) << me_ << "constraint " << con->getName()
+      logger_->msgStream(LogDebug) << me_ << " constraint " << con->getName()
         << " not defined at this point." << std::endl;
 #endif
       return false;
@@ -418,7 +425,7 @@ bool QGAdvHandler::isFeasible(ConstSolutionPtr sol, RelaxationPtr, bool &,
       if (act > relobj_ + solAbsTol_ ||
           (relobj_ != 0 && (act > relobj_ + fabs(relobj_)*solRelTol_))) {
 #if SPEW
-        logger_->msgStream(LogDebug) << me_ << "objective violated with "
+        logger_->msgStream(LogDebug) << me_ << " objective violated with "
           << "violation = " << act - relobj_ << std::endl;
 #endif
         return false;
@@ -470,8 +477,9 @@ void QGAdvHandler::linearAt_(FunctionPtr f, double fval, const double *x,
 
   int n = rel_->getNumVars();
   double *a = new double[n];
-  const double linCoeffTol = 1e-6;
   VariableConstIterator vbeg = rel_->varsBegin(), vend = rel_->varsEnd();
+  const double linCoeffTol =
+    env_->getOptions()->findDouble("conCoeff_tol")->getValue();
 
   std::fill(a, a+n, 0.);
   f->evalGradient(x, a, error);
@@ -535,7 +543,7 @@ void QGAdvHandler::addCut_(const double *nlpx, const double *lpx,
                         ConstraintPtr con, CutManager*,
                         SeparationStatus *status)
 {
-  int error=0;
+  int error = 0;
   ConstraintPtr newcon;
   std::stringstream sstm;
   double c, lpvio, act, cUb;
@@ -687,7 +695,7 @@ void QGAdvHandler::relax_(bool *isInf)
   } else {
     std::vector<UInt> prConsId;
     std::vector<ConstraintPtr> prCons = pcPtr_->getPRCons();
-    for (UInt i=0; i<prCons.size(); ++i) {
+    for (UInt i = 0; i < prCons.size(); ++i) {
       prConsId.push_back(prCons[i]->getId());
     }
     for (ConstraintConstIterator it=minlp_->consBegin(); it!=minlp_->consEnd();
@@ -719,7 +727,6 @@ void QGAdvHandler::separate(ConstSolutionPtr sol, NodePtr , RelaxationPtr rel,
   VariableConstIterator v_iter;
   const double *x = sol->getPrimal();
 
-  *status = SepaContinue;
   for (v_iter = rel->varsBegin(); v_iter != rel->varsEnd(); ++v_iter) {
     v_type = (*v_iter)->getType();
     if (v_type == Binary || v_type == Integer || v_type == ImplBin ||
@@ -727,7 +734,7 @@ void QGAdvHandler::separate(ConstSolutionPtr sol, NodePtr , RelaxationPtr rel,
       val = x[(*v_iter)->getIndex()];
       if (fabs(val - floor(val+0.5)) > intTol_) {
 #if SPEW
-        logger_->msgStream(LogDebug) << me_ << "variable " <<
+        logger_->msgStream(LogDebug) << me_ << " variable " <<
           (*v_iter)->getName() << " has fractional value = " << val <<
           std::endl;
 #endif
@@ -735,6 +742,13 @@ void QGAdvHandler::separate(ConstSolutionPtr sol, NodePtr , RelaxationPtr rel,
       }
     }
   }
+
+  if (nlCons_.size() == 0) {
+    *status = SepaPrune; //ms: WHAT  ABOUT NONLINEAR OBJECTIVE
+  } else {
+    *status = SepaContinue;
+  }
+    
   cutIntSol_(sol, cutMan, s_pool, sol_found, status);
   return;
 }
