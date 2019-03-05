@@ -40,8 +40,8 @@ PCBProcessor::PCBProcessor (EnvPtr env, EnginePtr engine, HandlerVector handlers
     numSolutions_(0)
 
 {
-  oATol_ = env_->getOptions()->findDouble("solAbs_tol")->getValue();
-  oRTol_ = env_->getOptions()->findDouble("solRel_tol")->getValue();
+  oATol_ = env->getOptions()->findDouble("solAbs_tol")->getValue();
+  oRTol_ = env->getOptions()->findDouble("solRel_tol")->getValue();
   cutOff_ = env->getOptions()->findDouble("obj_cut_off")->getValue();
   engine_ = engine;
   handlers_ = handlers;
