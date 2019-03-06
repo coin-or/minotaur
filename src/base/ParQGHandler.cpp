@@ -138,6 +138,7 @@ void ParQGHandler::addInitLinearX_(const double *x)
         sstm << "_AtRoot";
         f = (FunctionPtr) new Function(lf);
         newcon = rel_->newConstraint(f, -INFINITY, cUb-c, sstm.str());
+        sstm.str("");
       }
     }	else {
       logger_->msgStream(LogError) << me_ << "Constraint" <<  con->getName() <<
