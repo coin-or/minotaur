@@ -142,6 +142,7 @@ ParQGBranchAndBound* createParBab(EnvPtr env, ProblemPtr p, EnginePtr e,
       relCopy[i] = (RelaxationPtr) new Relaxation(relCopy[0]);
       parNodeRlxr[i]->setRelaxation(relCopy[i]);
       qg_hand->setRelaxation(relCopy[i]);
+      qg_hand->setObjVar();
     }
     relCopy[i]->setProblem(cloneP);
     parNodeRlxr[i]->setModFlag(false);

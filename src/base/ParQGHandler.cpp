@@ -368,6 +368,29 @@ bool ParQGHandler::isFeasible(ConstSolutionPtr sol, RelaxationPtr, bool &,
 }
 
 
+void ParQGHandler::setObjVar()
+{
+  ObjectivePtr o = minlp_->getObjective();
+  FunctionType fType = o->getFunctionType();
+  if (!o) {
+    assert(!"need objective in QG!");
+  } else if (fType != Linear && fType != Constant) {
+    oNl_ = true;
+    VariablePtr vPtr;
+    for (VariableConstIterator viter=rel_->varsBegin(); viter!=rel_->varsEnd();
+         ++viter) {
+      vPtr = *viter;
+      if (vPtr->getName() == "eta") {
+        assert(o->getObjectiveType()==Minimize);
+        objVar_ = vPtr;
+        break;
+      }
+    }
+  }
+  return;
+}
+
+
 void ParQGHandler::linearizeObj_()
 {
   ObjectivePtr o = minlp_->getObjective();

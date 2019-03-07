@@ -172,12 +172,14 @@ public:
   /// Base class method. Does nothing.
   void relaxNodeInc(NodePtr node, RelaxationPtr rel, bool *is_inf);
 
- 
   /// Base class method. Find cuts.
   void separate(ConstSolutionPtr sol, NodePtr node, RelaxationPtr rel, 
                 CutManager *cutman, SolutionPoolPtr s_pool, ModVector &p_mods,
                 ModVector &r_mods, bool *sol_found, SeparationStatus *status);
  
+  /// Set oNl_ to true and objVar_ when problem objective is nonlinear
+  void setObjVar();
+
   /// Show statistics.
   void writeStats(std::ostream &out) const;
 
