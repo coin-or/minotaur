@@ -54,11 +54,13 @@ void RCHandler::separate(ConstSolutionPtr sol, NodePtr,
   VariableType v_type;
   VarBoundModPtr m;
   const double *p = sol->getDualOfVars();   
-  const double current_objval = sol->getObjValue();  
+  const double current_objval = sol->getObjValue(); 
+  const double* x = sol->getPrimal(); 
   double bestFeasible_objval = INFINITY;
   double start = timer_->query();
   double tolerance = (std::pow(10.0,-6));
   double r; //Reduced cost
+  double xval;
   double ub,new_ub,current_ub;
   double lb,new_lb,current_lb;
 
@@ -73,6 +75,7 @@ void RCHandler::separate(ConstSolutionPtr sol, NodePtr,
   for (v_iter=rel->varsBegin(); v_iter!=rel->varsEnd(); ++v_iter) 
   {
      r = p[(*v_iter)->getIndex()];
+     xval = x[(*v_iter)->getIndex()];
      lb = (*v_iter)->getLb();
      ub = (*v_iter)->getUb();
      if (ub - lb < tolerance) {
@@ -82,13 +85,12 @@ void RCHandler::separate(ConstSolutionPtr sol, NodePtr,
      if (r > tolerance)
      {
        v_type = (*v_iter)->getType();
-       new_ub  = lb +  (bestFeasible_objval-current_objval)/ r;
+       new_ub  = xval +  (bestFeasible_objval-current_objval)/ r;
        current_ub = (*v_iter)->getUb();
        
        if (v_type==Binary || v_type==Integer || v_type==ImplBin ||
            v_type==ImplInt)
        {
-         //std::cout << (*v_iter)->getName() << " bound type = ub new ub = " << new_ub << " old ub = " << current_ub << " lb = " << lb << " best-current " << bestFeasible_objval-current_objval << " " << bestFeasible_objval << " " << current_objval << " r = " << r << std::endl;
          new_ub = floor((new_ub+tolerance*100));
          if (new_ub < current_ub)
          {
@@ -120,13 +122,13 @@ void RCHandler::separate(ConstSolutionPtr sol, NodePtr,
        }
      } else if (r < -tolerance ) {
        v_type = (*v_iter)->getType();
-       new_lb  = ub +  (bestFeasible_objval-current_objval) / r;
+       new_lb  = xval +  (bestFeasible_objval-current_objval) / r;
        current_lb = (*v_iter)->getLb();
        if (v_type==Binary || v_type==Integer || v_type==ImplBin ||
            v_type==ImplInt)
          {
            new_lb =  ceil(new_lb - tolerance*100);
-           if (new_lb < current_lb){
+           if (new_lb > current_lb){
              m = (VarBoundModPtr) new VarBoundMod(*v_iter, Lower, new_lb);
              m->applyToProblem(rel);
              r_mods.push_back(m);

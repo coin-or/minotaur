@@ -39,6 +39,7 @@
 #include "QPEngine.h"
 #include "Problem.h"
 #include "RandomBrancher.h"
+#include "RCHandler.h"        //Rchand (new)
 #include "Relaxation.h"
 #include "ReliabilityBrancher.h"
 #include "Solution.h"
@@ -69,12 +70,22 @@ BranchAndBound* createBab(EnvPtr env, ProblemPtr p, EnginePtr e,
   const std::string me("bnb main: ");
   OptionDBPtr options = env->getOptions();
   SOS2HandlerPtr s2_hand;
+  RCHandlerPtr rc_hand;
 
   SOS1HandlerPtr s_hand = (SOS1HandlerPtr) new SOS1Handler(env, p);
   if (s_hand->isNeeded()) {
     s_hand->setModFlags(false, true);
     handlers.push_back(s_hand);
   }
+
+
+  //adding RCHandler
+  if (options->findBool("rc_fix")->getValue()) {
+      rc_hand = (RCHandlerPtr) new RCHandler(env);
+      rc_hand->setModFlags(false, true); 
+      handlers.push_back(rc_hand);
+      assert(rc_hand);
+    }
   
   // add SOS2 handler here.
   s2_hand = (SOS2HandlerPtr) new SOS2Handler(env, p);

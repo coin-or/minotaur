@@ -689,6 +689,9 @@ void ParQGBranchAndBound::parsolve(ParNodeIncRelaxerPtr parNodeRlxr[],
           } // if (current_node[i]) ends
           //stopping condition at each thread
           nodeCountTh[i] = 0;
+#if USE_OPENMP
+#pragma omp critical (treeManager)
+#endif
           treeLbTh[i] = tm_->updateLb();
           minNodeLbTh[i] = INFINITY;
 
