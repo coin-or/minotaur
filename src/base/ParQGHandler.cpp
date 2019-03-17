@@ -230,7 +230,12 @@ void ParQGHandler::cutIntSol_(ConstSolutionPtr sol, CutManager *cutMan,
       << std::endl;
     *status = SepaError;
   }
- 
+
+ if (*status==SepaContinue) {
+   // No linearizations are generated so prune the node
+   *status = SepaPrune;
+ }
+
 #if SPEW
   logger_->msgStream(LogDebug) << me_ << "NLP solve status = "
     << nlpe_->getStatusString() << " and separation status = " << *status <<
@@ -315,7 +320,6 @@ bool ParQGHandler::isFeasible(ConstSolutionPtr sol, RelaxationPtr, bool &,
                            double &)
 {
   int error=0;
-  FunctionPtr f;
   double act, cUb;
   ConstraintPtr c;
   const double *x = sol->getPrimal();
@@ -788,7 +792,7 @@ void ParQGHandler::writeStats(std::ostream &out) const
 
 std::string ParQGHandler::getName() const
 {
-  return "ParQG Handler (Quesada-Grossmann)";
+  return "ParQGHandler (Quesada-Grossmann)";
 }
 
 // Local Variables: 
