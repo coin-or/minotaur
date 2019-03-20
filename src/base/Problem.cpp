@@ -31,6 +31,7 @@
 #include "QuadraticFunction.h"
 #include "SOS.h"
 #include "Variable.h"
+#include <string.h>           // for memset
 
 using namespace Minotaur;
 const std::string Problem::me_ = "Problem: ";
@@ -476,6 +477,165 @@ ProblemPtr Problem::clone() const
   clonePtr->nativeDer_ = nativeDer_; // NULL
 
   return clonePtr;
+}
+
+
+void Problem::cg2qf()
+{
+  ConstraintPtr c;
+  FunctionPtr f;
+  
+  double *mult = 0;
+  int err = 0;
+  double *x = 0;
+  double *values = 0;
+  double *grad = 0;
+  int *qfindex = 0;
+  int qfi;
+  int qfi2;
+
+  UInt *irow = 0;
+  UInt *jcol = 0;
+  UInt nz = 0;
+
+  VariableConstIterator vit0;
+  vit0 = vars_.begin();
+
+  setNativeDer();
+  hessian_ = getHessian();
+  nz = hessian_->getNumNz();
+  mult = new double[getNumCons()];
+  values = new double[nz];
+  irow = new UInt[nz];
+  jcol = new UInt[nz];
+  x = new double[getNumVars()];
+
+  grad = new double[getNumVars()];
+
+
+  memset(mult, 0, getNumCons()*sizeof(double));
+  memset(values, 0, nz*sizeof(UInt));
+  memset(irow, 0, nz*sizeof(UInt));
+  memset(jcol, 0, nz*sizeof(UInt));
+  memset(x, 0, getNumVars()*sizeof(double));
+  memset(grad, 0, getNumVars()*sizeof(double));
+  
+  hessian_->fillRowColIndices(irow, jcol);
+
+  QuadraticFunctionPtr qfobj;
+  LinearFunctionPtr lfobj;
+  double nlconst = 0;
+
+  // objective
+  f = getObjective()->getFunction();
+  if (f) {
+    if (Quadratic==f->getType()) {
+      hessian_->fillRowColValues(x, 1.0, mult, values, &err); assert(0==err);
+      
+      qfobj = (QuadraticFunctionPtr) new QuadraticFunction(nz, values, irow, jcol, vit0);
+      memset(grad, 0, getNumVars()*sizeof(double));
+
+      f->evalGradient(x, grad, &err); assert(0==err);
+      lfobj = (LinearFunctionPtr) new  LinearFunction(grad, varsBegin(), varsEnd(), 1e-12);
+
+      nlconst = f->eval(x, &err); assert(0==err);
+
+      ObjectiveType newobjtype;
+      newobjtype = getObjective()->getObjectiveType();
+
+      FunctionPtr fobj = (FunctionPtr) new Function(lfobj, qfobj);
+      
+      ObjectivePtr newobj = (ObjectivePtr) new Objective(fobj, nlconst, newobjtype);
+
+      obj_ = newobj;
+    }
+  }
+
+  //constraint
+  qfindex = new int[getNumCons()];
+  memset(qfindex, -1, getNumCons()*sizeof(UInt));
+  qfi=0;
+  for (ConstraintConstIterator cit=consBegin(); cit!=consEnd();
+       ++cit) {
+    c = *cit;
+    f = c->getFunction(); 
+    if (!f) {
+      continue;
+      }
+    if (Quadratic==f->getType()) {
+      qfindex[c->getIndex()] = qfi;
+      qfi=qfi+1;
+        }
+    }
+    
+  QuadraticFunctionPtr *qfcons = new QuadraticFunctionPtr[qfi];
+  LinearFunctionPtr *lfcons = new LinearFunctionPtr[qfi];
+  double *nlconstcons = new double[qfi];
+
+  FunctionPtr *fcons = new FunctionPtr[qfi];
+  
+  qfi2 = 0;
+  
+  for (ConstraintConstIterator cit=consBegin(); cit!=consEnd();
+       ++cit) {
+    c = *cit;
+    f = c->getFunction();
+
+    if (!f) {
+      continue;
+    }
+    if (Quadratic==f->getType()) {
+      mult[c->getIndex()] = 1.0;
+      memset(values, 0, nz*sizeof(UInt));
+      hessian_->fillRowColValues(x, 0.0, mult, values, &err); assert(0==err);
+      qfcons[qfi2] = (QuadraticFunctionPtr) new QuadraticFunction(nz, values,
+                                                                  irow, jcol,
+                                                                  vit0);
+      mult[c->getIndex()] = 0.0;
+
+      memset(grad, 0, getNumVars()*sizeof(double));
+      f->evalGradient(x, grad, &err); assert(0==err);
+      lfcons[qfi2] = (LinearFunctionPtr) new LinearFunction(grad, varsBegin(),
+                                                            varsEnd(), 1e-12);
+      nlconstcons[qfi2] = f->eval(x, &err); assert(0==err);
+
+
+      //refine
+      FunctionPtr fc = (FunctionPtr) new Function(lfcons[qfi2], qfcons[qfi2]);
+      fcons[qfi2] = fc;
+      
+
+      markDelete(c);
+    
+      qfi2=qfi2+1;
+    }
+  }
+
+  for (int i = 0; i != qfi; ++i) {
+    if (qfindex[i] >= 0){
+      c = getConstraint(i); // constraint that is to be changed
+      f = c->getFunction();
+      if (!f) {
+        continue;
+      }
+      newConstraint(fcons[qfindex[i]], c->getLb()-nlconstcons[qfindex[i]],
+                    c->getUb()-nlconstcons[qfindex[i]]);
+    }
+  }
+  delMarkedCons();
+  setNativeDer();
+
+  delete [] qfindex;
+  delete [] nlconstcons;
+  delete [] lfcons;
+  delete [] qfcons;
+  delete [] fcons;
+  delete [] mult;
+  delete [] values;
+  delete [] irow;
+  delete [] jcol;
+  delete [] x;
+  delete [] grad;
 }
 
 

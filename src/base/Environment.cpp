@@ -199,6 +199,11 @@ void Environment::createDefaultOptions_()
           true, true);
   options_->insert(b_option);
 
+  b_option = (BoolOptionPtr) new Option<bool>("cgtoqf", 
+      "Convert all quadratic functions from cgraph to qf: <0/1>",
+      true, false);
+  options_->insert(b_option);
+
   // reset, so that we don't accidently add it again.
   b_option.reset();
 

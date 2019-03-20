@@ -155,6 +155,13 @@ namespace Minotaur {
      */
     ProblemPtr clone() const;
 
+    /**
+     * \brief Convert all quadratic forms that are stored as CGraph into
+     * QuadraticFunction. The order of constraints changes after this
+     * conversion.
+     */
+    void cg2qf ();
+
     /// Iterate over constraints. Returns the 'begin' iterator.
     virtual ConstraintConstIterator consBegin() const 
     { return cons_.begin(); }
