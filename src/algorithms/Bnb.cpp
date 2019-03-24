@@ -258,6 +258,10 @@ void loadProblem(EnvPtr env, MINOTAUR_AMPL::AMPLInterface* iface,
     << "time used in reading instance = " << std::fixed 
     << std::setprecision(2) << timer->query() << std::endl;
 
+  if (options->findBool("cgtoqf")->getValue()==1){
+    oinst->cg2qf();
+  }
+  
   // display the problem
   oinst->calculateSize();
   if (options->findBool("display_problem")->getValue()==true) {
