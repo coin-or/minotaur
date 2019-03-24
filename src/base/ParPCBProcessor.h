@@ -74,8 +74,8 @@ namespace Minotaur {
     // Find branches that will be used to branch at this node.
     Branches getBranches();
     
-    // Find branches that will be used to branch at this node.
-    ParCutMan* getCutManager(){return cutMan_;};
+    // Return the cut manager used with this processor.
+    CutManager* getCutManager(){return cutMan_;};
 
     // Get warm-start information.
     WarmStartPtr getWarmStart();
@@ -93,7 +93,8 @@ namespace Minotaur {
                  UIntVector timesDown, DoubleVector pseudoUp,
                  DoubleVector pseudoDown, UInt nodesProc);
 
-    void setCutManager(ParCutMan* cutman);
+    // set cut manager
+    void setCutManager(CutManager* cutman);
 
     // write statistics. Base class method.
     void writeStats(std::ostream &out) const; 
@@ -113,7 +114,7 @@ namespace Minotaur {
     bool contOnErr_;
 
      /// The cut manager.
-     ParCutMan *cutMan_;
+     CutManager *cutMan_;
 
     /// Index starting which cuts from the cut pool of other processors should be added.
      //std::vector<UInt> cutsIndex_;

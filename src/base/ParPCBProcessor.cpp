@@ -366,7 +366,7 @@ void ParPCBProcessor::separate_(ConstSolutionPtr sol, NodePtr node,
 }
 
 
-void ParPCBProcessor::setCutManager(ParCutMan* cutman)
+void ParPCBProcessor::setCutManager(CutManager* cutman)
 {
   cutMan_ = cutman;
 }
