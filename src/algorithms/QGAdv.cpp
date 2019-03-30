@@ -510,7 +510,8 @@ void writeSol(EnvPtr env, VarVector *orig_v,
   if (env->getOptions()->findFlag("AMPL")->getValue() ||
       true == env->getOptions()->findBool("write_sol_file")->getValue()) {
     iface->writeSolution(sol, status);
-  } else if (sol && env->getLogger()->getMaxLevel()>=LogExtraInfo) {
+  } else if (sol && env->getLogger()->getMaxLevel()>=LogExtraInfo &&
+             env->getOptions()->findBool("display_solution")->getValue()) {
     sol->writePrimal(env->getLogger()->msgStream(LogExtraInfo), orig_v);
   }
 }

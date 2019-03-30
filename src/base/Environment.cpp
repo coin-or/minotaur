@@ -63,8 +63,11 @@ void Environment::createDefaultOptions_()
   options_->insert(b_option);
 
   b_option = (BoolOptionPtr) new Option<bool>("display_help", 
-      "Show usage and exit: <0/1>",
-      true, false);
+      "Show usage and exit: <0/1>", true, false);
+  options_->insert(b_option);
+
+  b_option = (BoolOptionPtr) new Option<bool>("display_solution", 
+      "Display the best solution if one found: <0/1>", true, false);
   options_->insert(b_option);
 
   b_option = (BoolOptionPtr) new Option<bool>("use_internal_quad", 
