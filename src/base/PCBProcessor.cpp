@@ -234,7 +234,7 @@ void PCBProcessor::process(NodePtr node, RelaxationPtr rel,
     should_resolve = false;
 
 #if SPEW
-  logger_->msgStream(LogDebug) <<  "lp processor: iteration " << iter 
+  logger_->msgStream(LogDebug) <<  me_ << "iteration " << iter 
                                << std::endl;
 #endif
 
