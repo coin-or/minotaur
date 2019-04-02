@@ -148,6 +148,7 @@ void ParBndProcessor::process(NodePtr node, RelaxationPtr rel,
 
   ++stats_.proc;
   relaxation_ = rel;
+  numSolutions_ = 0;
 
 #if 0
   double *svar = new double[20];
