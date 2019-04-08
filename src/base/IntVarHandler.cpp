@@ -97,8 +97,7 @@ void IntVarHandler::getBranchingCandidates(RelaxationPtr rel,
     v = *it;
     v_type = v->getType();
     index = v->getIndex();
-    if ((v_type==Binary || v_type==Integer || v_type==ImplBin ||
-         v_type==ImplInt) && fabs(floor(x[index]+0.5) - x[index]) > intTol_) {
+    if ((v_type==Binary || v_type==Integer) && fabs(floor(x[index]+0.5) - x[index]) > intTol_) {
       // yes, it can be branched upon.
       br_can = (BrVarCandPtr) new BrVarCand(v, v->getIndex(), 
                                             x[index]-floor(x[index]),

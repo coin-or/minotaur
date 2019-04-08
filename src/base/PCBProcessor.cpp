@@ -176,6 +176,7 @@ void PCBProcessor::process(NodePtr node, RelaxationPtr rel,
 
   ++stats_.proc;
   relaxation_ = rel;
+  numSolutions_ = 0;
 
 #if defined(PRINT_RELAXATION_SIZE)
   std::cout << "Relaxation has : " << rel->getNumCons() << " constraints and "
