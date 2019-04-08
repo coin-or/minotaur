@@ -66,6 +66,7 @@ set (ALL_EXEC_LIBS
 	"mntrampl" 
 	"mntrengfac" 
 	"${IPOPT_LIBS}"
+	"${CBC_LIBS}"
         "${OSI_LIBS}"
         "${FILTER_SQP_LIBS}"
 	"${BQPD_LIBS}"

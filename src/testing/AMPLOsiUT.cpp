@@ -18,6 +18,7 @@
 #include "Problem.h"
 #include "ReliabilityBrancher.h"
 #include "AMPLInterface.h"
+#include <cmath>
 
 CPPUNIT_TEST_SUITE_REGISTRATION(AMPLOsiUT);
 CPPUNIT_TEST_SUITE_NAMED_REGISTRATION(AMPLOsiUT, "AMPLOsiUT");

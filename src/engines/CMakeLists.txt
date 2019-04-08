@@ -23,6 +23,11 @@ if (LINK_BQPD)
   include_directories("${PROJECT_SOURCE_DIR}/src/engines/Bqpd")
 endif()
 
+if (LINK_CBC)
+  add_definitions(-DUSE_CBC)
+  include_directories("${PROJECT_SOURCE_DIR}/src/engines/Cbc")
+endif()
+
 if (LINK_FILTER_SQP)
   add_definitions(-DUSE_FILTERSQP)
   include_directories("${PROJECT_SOURCE_DIR}/src/engines/FilterSQP")

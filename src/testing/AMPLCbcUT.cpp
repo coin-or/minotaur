@@ -4,13 +4,17 @@
 //     (C)opyright 2009 - 2017 The MINOTAUR Team.
 // 
 
-#include "MinotaurConfig.h"
+#include <cmath>
 #include "AMPLCbcUT.h"
 #include "EngineFactory.h"
 #include "Environment.h"
+#include "Function.h"
+#include "LinearFunction.h"
 #include "Option.h"
 #include "Problem.h"
+
 #include "AMPLInterface.h"
+
 
 CPPUNIT_TEST_SUITE_REGISTRATION(AMPLCbcUT);
 CPPUNIT_TEST_SUITE_NAMED_REGISTRATION(AMPLCbcUT, "AMPLCbcUT");
@@ -37,31 +41,28 @@ void AMPLCbcUT::tearDown()
 void AMPLCbcUT::testCbc()
 {
   char file_name[] = "instances/milp";
-  ProblemPtr inst = iface_->readInstance(file_name);
+  ProblemPtr p = iface_->readInstance(file_name);
   FunctionPtr f = FunctionPtr(); // NULL
-  // LPFormulationPtr lpForm = (LPFormulationPtr) 
-  //   new LPFormulation(inst);
+  EngineStatus status;
 
-  e_->load(inst);
-  EngineStatus status = e_->solve();
-
-  CPPUNIT_ASSERT(status == ProvenOptimal);
+  e_->load(p);
+  status =  e_->solve();
   CPPUNIT_ASSERT(e_->getStatus() == ProvenOptimal);
   CPPUNIT_ASSERT(fabs(e_->getSolutionValue()-1.00000) < 1e-5);
 
-  inst->changeObj(f, 2.0);
+  p->changeObj(f, 2.0);
   status = e_->solve();
   CPPUNIT_ASSERT(status == ProvenOptimal);
   CPPUNIT_ASSERT(e_->getStatus() == ProvenOptimal);
   CPPUNIT_ASSERT(fabs(e_->getSolutionValue()-3.0) < 1e-5);
 
-  inst->negateObj();
+  p->negateObj();
   status = e_->solve();
   CPPUNIT_ASSERT(status == ProvenOptimal);
   CPPUNIT_ASSERT(e_->getStatus() == ProvenOptimal);
   CPPUNIT_ASSERT(fabs(e_->getSolutionValue()+1.0) < 1e-5);
 
-  inst->clear();
+  p->clear();
 }
 
 

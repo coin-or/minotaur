@@ -32,6 +32,8 @@
 #include "Solution.h"
 #include "SOS.h"
 #include "Variable.h"
+#include "asl.h"
+#include "nlp.h"
 
 
 // 

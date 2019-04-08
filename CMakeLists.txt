@@ -239,6 +239,7 @@ if (("${BQPD_LIB_DIR_F}" STREQUAL "") AND
   (NOT ("${TP_ABS_PATH}" STREQUAL "")))
   set (BQPD_LIB_DIR_F ${TP_ABS_PATH}/lib)
 endif()
+
 message(STATUS ${MSG_HEAD} "BQPD_LIB_DIR_F is set to ${BQPD_LIB_DIR_F}")
 if (BQPD_LIB_DIR_F)
   if (EXISTS "${BQPD_LIB_DIR_F}")
@@ -662,10 +663,10 @@ set (CBC_INC_DIR "" CACHE PATH
 set (CBC_INC_DIR_F ${CBC_INC_DIR})
 
 # uncomment when Cbc is a default part of engines
-#if (("${CBC_INC_DIR_F}" STREQUAL "") AND
-#    (NOT ("${TP_ABS_PATH}" STREQUAL "")))
-#  set (CBC_INC_DIR_F "${TP_ABS_PATH}/include")
-#endif()
+if (("${CBC_INC_DIR_F}" STREQUAL "") AND
+    (NOT ("${TP_ABS_PATH}" STREQUAL "")))
+  set (CBC_INC_DIR_F "${TP_ABS_PATH}/include")
+endif()
 
 
 set (CBC_LIB_DIR "" CACHE PATH 
@@ -673,10 +674,10 @@ set (CBC_LIB_DIR "" CACHE PATH
 set (CBC_LIB_DIR_F ${CBC_LIB_DIR})
 
 # uncomment when Cbc is a default part of engines
-#if (("${CBC_LIB_DIR_F}" STREQUAL "") AND
-#       (NOT ("${TP_ABS_PATH}" STREQUAL "")))
-#  set (CBC_LIB_DIR_F "${TP_ABS_PATH}/lib")
-#endif()
+if (("${CBC_LIB_DIR_F}" STREQUAL "") AND
+       (NOT ("${TP_ABS_PATH}" STREQUAL "")))
+  set (CBC_LIB_DIR_F "${TP_ABS_PATH}/lib")
+endif()
 
 message(STATUS ${MSG_HEAD} "CBC_INC_DIR_F is set to ${CBC_INC_DIR_F}")
 message(STATUS ${MSG_HEAD} "CBC_LIB_DIR_F is set to ${CBC_LIB_DIR_F}")
