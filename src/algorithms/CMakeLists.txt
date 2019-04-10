@@ -102,29 +102,29 @@ install(TARGETS bnb RUNTIME DESTINATION bin)
 ## Add lines specific to your binaries in this section.
 ## Use the lines meant for bnb as a template.
 ##############################################################################
-set (MSBNB_SOURCES
- MsBnb.cpp
-)
+#set (MSBNB_SOURCES
+ #MsBnb.cpp
+#)
 
-add_executable(msbnb ${MSBNB_SOURCES})
-target_link_libraries(msbnb ${ALL_EXEC_LIBS})
+#add_executable(msbnb ${MSBNB_SOURCES})
+#target_link_libraries(msbnb ${ALL_EXEC_LIBS})
 
-# This will install the binary in bin directory.
-install(TARGETS msbnb RUNTIME DESTINATION bin)
+## This will install the binary in bin directory.
+#install(TARGETS msbnb RUNTIME DESTINATION bin)
 
 ##############################################################################
 ## Add lines specific to your binaries in this section.
 ## Use the lines meant for bnb as a template.
 ##############################################################################
-set (MCQG_SOURCES
-McQG.cpp
-)
+#set (MCQG_SOURCES
+#McQG.cpp
+#)
 
-add_executable(mcqg ${MCQG_SOURCES})
-target_link_libraries(mcqg ${ALL_EXEC_LIBS})
+#add_executable(mcqg ${MCQG_SOURCES})
+#target_link_libraries(mcqg ${ALL_EXEC_LIBS})
 
-# This will install the binary in bin directory.
-install(TARGETS mcqg RUNTIME DESTINATION bin)
+## This will install the binary in bin directory.
+#install(TARGETS mcqg RUNTIME DESTINATION bin)
 
 ##############################################################################
 ## Add lines specific to your binaries in this section.
@@ -200,16 +200,15 @@ install(TARGETS qg RUNTIME DESTINATION bin)
 ## Add lines specific to your binaries in this section. 
 ## Use the lines meant for bnb as a template.
 ##############################################################################
-#set (POLYNOMIAL_SOURCES
-#  mipdecoqg.cpp 
-#)
-#
-#add_executable(mipdecoqg ${POLYNOMIAL_SOURCES})
-#target_link_libraries(mipdecoqg ${ALL_EXEC_LIBS})
-#
-## This will install the binary in bin directory.
-#install(TARGETS mipdecoqg RUNTIME DESTINATION bin)
+set (OA_SOURCES
+  OA.cpp 
+)
 
+add_executable(oa ${OA_SOURCES})
+target_link_libraries(oa ${ALL_EXEC_LIBS})
+
+# This will install the binary in bin directory.
+install(TARGETS oa RUNTIME DESTINATION bin)
 
 ##############################################################################
 ## Add lines specific to your binaries in this section. 
