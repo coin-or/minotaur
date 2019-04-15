@@ -364,7 +364,7 @@ bool shouldStop(EnvironmentPtr env, SolveStatus &status, double gap, SolutionPoo
   //} else if (iterNum >= env->getOptions()->findInt("oa_iter_limit")->getValue()) {
     //stop_oa = true;
     //status = IterationLimitReached;
-  } else if (solPool->getNumSolsFound()>=env->getOptions()->findInt("bnb_sol_limit")->getValue()) { 
+  } else if (solPool->getNumSolsFound() >= (UInt) env->getOptions()->findInt("bnb_sol_limit")->getValue()) {
     stop_oa = true;
     status = SolLimitReached;
   }
