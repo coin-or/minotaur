@@ -73,6 +73,7 @@ set (MINOTAUR_SOURCES
      NodeProcessor.cpp 
      NodeStack.cpp 
      NonlinearFunction.cpp 
+     OAHandler.cpp
      Objective.cpp 
      Operations.cpp 
      Option.cpp 
@@ -194,8 +195,9 @@ set (MINOTAUR_HEADERS
      NodeProcessor.h
      NodeStack.h
      NonlinearFunction.h
-     Operations.h
+     OAHandler.h
      Objective.h
+     Operations.h
      Option.h
      OpCode.h
      ParBndProcessor.h
