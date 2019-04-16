@@ -27,7 +27,7 @@ namespace Minotaur {
   typedef boost::shared_ptr<Engine> EnginePtr;
   typedef boost::shared_ptr<Function> FunctionPtr;
   typedef boost::shared_ptr<LinearFunction> LinearFunctionPtr;
-  typedef boost::shared_ptr<Objective> ObjectivePtr;
+  typedef Objective* ObjectivePtr;
   typedef boost::shared_ptr<const Problem> ConstProblemPtr;
 
 

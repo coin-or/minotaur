@@ -58,6 +58,7 @@ NlPresHandler::NlPresHandler()
   stats_.nMods = 0;
   stats_.qCone = 0;
   stats_.time = 0;
+  stats_.timeN = 0;
   stats_.varDel = 0;
   stats_.vBnd = 0;
 }
@@ -80,6 +81,7 @@ NlPresHandler::NlPresHandler(EnvPtr env, ProblemPtr p)
   stats_.nMods = 0;
   stats_.qCone = 0;
   stats_.time = 0;
+  stats_.timeN = 0;
   stats_.varDel = 0;
   stats_.vBnd = 0;
 }

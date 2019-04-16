@@ -36,7 +36,7 @@ namespace Minotaur {
   typedef boost::shared_ptr<HessianOfLag> HessianOfLagPtr;
   typedef boost::shared_ptr<LinearFunction> LinearFunctionPtr;
   typedef boost::shared_ptr<NonlinearFunction> NonlinearFunctionPtr;
-  typedef boost::shared_ptr<Objective> ObjectivePtr;
+  typedef Objective* ObjectivePtr;
   typedef boost::shared_ptr<ProblemSize> ProblemSizePtr;
   typedef boost::shared_ptr<QuadraticFunction> QuadraticFunctionPtr;
   typedef boost::shared_ptr<const ProblemSize> ConstProblemSizePtr;

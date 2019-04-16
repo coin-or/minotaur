@@ -239,9 +239,10 @@ std::string getSolveStatusString(SolveStatus s);
 class Logger;
 typedef boost::shared_ptr<Logger> LoggerPtr;
 
+//changed boost shared pointer to simple pointer
 class Variable;
-typedef boost::shared_ptr<Variable> VariablePtr;
-typedef boost::shared_ptr<Variable> ConstVariablePtr;
+typedef Variable* VariablePtr;
+typedef Variable* ConstVariablePtr; 
 typedef std::vector<VariablePtr> VarVector;
 typedef std::deque<VariablePtr> VarQueue;
 typedef VarVector::const_iterator VariableConstIterator;
@@ -256,9 +257,10 @@ typedef std::set<ConstVariablePtr, CompareVariablePtr> VariableSet;
 typedef VariableSet::const_iterator VarSetConstIterator;
 typedef std::set<VariablePtr> VarSet;
 
+//Changed boost_shared pointer to simple pointer
 class Constraint;
-typedef boost::shared_ptr<Constraint> ConstraintPtr;
-typedef boost::shared_ptr<const Constraint> ConstConstraintPtr;
+typedef  Constraint*  ConstraintPtr;
+typedef const Constraint* ConstConstraintPtr;
 typedef std::vector<ConstraintPtr> ConstraintVector;
 typedef ConstraintVector::iterator ConstraintIterator;
 typedef ConstraintVector::const_iterator ConstraintConstIterator;

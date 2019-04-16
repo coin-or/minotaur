@@ -111,6 +111,11 @@ private:
    */
 
   RCStats *stats_;
+   double rootValue_;
+   double *rootDuals_;
+   double *rootPrimal_;
+
+  void copyRootDetails_(ConstSolutionPtr sol,  RelaxationPtr rel); 
 
   LoggerPtr logger_;
   const Timer* timer_;

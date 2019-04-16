@@ -135,7 +135,6 @@ void Variable::write(std::ostream &out) const
 void Variable::writeConstraintMap(std::ostream &out) const
 {
   ConstrSet::const_iterator cIter;
-  ConstraintPtr cPtr;
   out << std::endl << "in constraint set for variable " << getName();
   out << ", number of constraints = " << cons_.size() << ": " << std::endl;
 

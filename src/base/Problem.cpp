@@ -60,9 +60,10 @@ Problem::Problem()
 Problem::~Problem()
 {
   clear();
+  delete obj_;
+
   vars_.clear();
   cons_.clear();
-  obj_.reset();
   sos1_.clear();
   sos2_.clear();
 
@@ -343,11 +344,13 @@ void Problem::clear()
   for (viter=vars_.begin(); viter!=vars_.end(); viter++) {
     v = *viter;
     v->clearConstraints_();
+    delete v;
+    v = 0;
   }
 
   for (citer=cons_.begin(); citer!=cons_.end(); ++citer) {
-    c = *citer;
-    c.reset();
+    delete *citer;
+    *citer = 0;
   }
   for (siter=sos1_.begin(); siter!=sos1_.end(); siter++) {
     delete *siter;
@@ -792,6 +795,8 @@ void Problem::delMarkedCons()
            vit!=c->getFunction()->varsEnd(); ++vit) {
         (*vit)->outOfConstraint_(c);
       }
+      delete c;
+      c = 0;
     }
 
     i = 0;
@@ -813,7 +818,7 @@ void Problem::delMarkedVars()
   assert(engine_ == 0 ||
       (!"Cannot delete variables after loading problem to engine\n")); 
   if (numDVars_>0) {
-    VariablePtr v;
+    VariablePtr v = 0;
     UInt i=0;
     std::vector<VariablePtr> copyvars;
     for (VariableIterator it=vars_.begin(); it!=vars_.end(); ++it) {
@@ -828,6 +833,8 @@ void Problem::delMarkedVars()
         if (obj_) {
           obj_->delFixedVar_(v, v->getLb());
         }
+        delete v;
+        v = 0;
       } else {
         v->setIndex_(i);
         ++i;
@@ -1383,7 +1390,8 @@ void Problem::removeObjective()
   assert(engine_ == 0 ||
       (!"Cannot change objective after loading problem to engine\n")); 
   if (obj_) {
-    obj_.reset();
+    delete obj_;  
+    obj_=0;
   } 
   return;
 }
