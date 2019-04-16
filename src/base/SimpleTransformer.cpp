@@ -112,7 +112,7 @@ void SimpleTransformer::bilRef_(LinearFunctionPtr lfl, VariablePtr vl,
       lf = lfl;
       lf->multiply(dr);
       d = dl*dr;
-      v.reset();
+      v = 0;
     }
   } else if (vl) {
     vl = newVar_(vl, dl, newp_);
@@ -128,22 +128,22 @@ void SimpleTransformer::bilRef_(LinearFunctionPtr lfl, VariablePtr vl,
     } else {
       lf = (LinearFunctionPtr) new LinearFunction();
       lf->addTerm(vl, dr);
-      v.reset();
+      v = 0;
       d = 0;
     }
   } else if (lfr) {
     lf = lfr;
     lf->multiply(dl);
     d = dl*dr;
-    v.reset();
+    v = 0;
   } else if (vr) {
     lf = (LinearFunctionPtr) new LinearFunction();
     lf->addTerm(vr, dl);
-    v.reset();
+    v = 0;
     d = 0;
   } else {
     lf.reset();
-    v.reset();
+    v = 0;
     d = dl*dr;
   }
 }
@@ -235,7 +235,7 @@ void SimpleTransformer::powKRef_(LinearFunctionPtr lfl,
     n2 = cg->newNode(OpPowK, n1, n2);
     cg->setOut(n2);
     cg->finalize();
-    v.reset();
+    v = 0;
     lf.reset();
     v = newVar_(cg, newp_);
     d = 0;
@@ -361,7 +361,7 @@ void SimpleTransformer::recursRef_(const CNode *node, LinearFunctionPtr &lf,
       } else if (vr) {
         lf->incTerm(vr, -1.0);
       }
-      v.reset();
+      v = 0;
     }
     break;
   case (OpMult):
@@ -396,7 +396,7 @@ void SimpleTransformer::recursRef_(const CNode *node, LinearFunctionPtr &lf,
       } else if (vr) {
         lf->incTerm(vr, 1.0);
       }
-      v.reset();
+      v = 0;
     }
     break;
   case (OpPow):
@@ -422,7 +422,7 @@ void SimpleTransformer::recursRef_(const CNode *node, LinearFunctionPtr &lf,
     lf = (LinearFunctionPtr) new LinearFunction();
     for (CNode **it=node->getListL(); it!=node->getListR(); ++it) {
       n1 = *it;
-      lfl.reset(); vl.reset(); dl = 0;
+      lfl.reset(); vl = 0; dl = 0;
       recursRef_(n1, lfl, vl, dl);
       d += dl;
       if (lfl) {
@@ -486,7 +486,7 @@ void SimpleTransformer::refNonlinCons_(ConstProblemPtr oldp)
       } else {
         lf2 = (LinearFunctionPtr) new LinearFunction();
       }
-      lf.reset(); v.reset(); d = 0.0;
+      lf.reset(); v = 0; d = 0.0;
       cg = boost::dynamic_pointer_cast <CGraph> (f->getNonlinearFunction());
       assert(cg);
 #if SPEW
@@ -697,7 +697,7 @@ void SimpleTransformer::uniVarRef_(const CNode *n0, LinearFunctionPtr lfl,
     n2 = cg->newNode(n0->getOp(), n1, n2);
     cg->setOut(n2);
     cg->finalize();
-    v.reset();
+    v = 0;
     lf.reset();
     v = newVar_(cg, newp_);
     d = 0;

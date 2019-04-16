@@ -27,7 +27,7 @@ class QuadraticFunction;
 typedef boost::shared_ptr<Engine> EnginePtr;
 typedef boost::shared_ptr<Function> FunctionPtr;
 typedef boost::shared_ptr<LinearFunction> LinearFunctionPtr;
-typedef boost::shared_ptr<Objective> ObjectivePtr;
+typedef Objective*  ObjectivePtr;
 typedef boost::shared_ptr<const Problem> ConstProblemPtr;
 typedef boost::shared_ptr<QuadraticFunction> QuadraticFunctionPtr;
 

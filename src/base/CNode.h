@@ -20,7 +20,6 @@
 
 namespace Minotaur {
 
-class Variable;
 class CNode;
 
 struct CompareCNodes {
@@ -29,7 +28,6 @@ struct CompareCNodes {
 struct CompareCNodesR {
   bool operator()(const CNode* n1, const CNode *n2) const;
 };
-typedef boost::shared_ptr<Variable> VariablePtr;
 typedef std::set<CNode *, CompareCNodes> CNodeSet;
 typedef std::set<CNode *, CompareCNodesR> CNodeRSet;
 
@@ -351,7 +349,7 @@ public:
    * \param [in] v The variable pointer.
    */
   
-  void setV(VariablePtr v) {v_ = v.get();};
+  void setV(VariablePtr v) {v_ = v;}; // Changed (showing error while compiling)
 
   /**
    * \brief Find bounds deduced from the bounds of children nodes and update

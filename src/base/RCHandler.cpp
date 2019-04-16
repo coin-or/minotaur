@@ -21,6 +21,7 @@
 #include "Solution.h"
 #include "SolutionPool.h"
 #include "Logger.h"
+#include "Node.h"
 #include "Relaxation.h"
 #include "Timer.h"
 
@@ -33,6 +34,7 @@ RCHandler::RCHandler(EnvPtr env)
   stats_->nlb = 0;
   stats_->nub = 0;
   stats_->time = 0;
+  rootDuals_ = 0;
   logger_ = env->getLogger();
   timer_ = env->getTimer();
 }
@@ -40,11 +42,14 @@ RCHandler::RCHandler(EnvPtr env)
 RCHandler::~RCHandler()
 {
   if (stats_) {
-  delete stats_;
+    delete stats_;
+  }
+  if (rootDuals_) {
+    delete[] rootDuals_;
   }
 }
 
-void RCHandler::separate(ConstSolutionPtr sol, NodePtr,
+void RCHandler::separate(ConstSolutionPtr sol, NodePtr node,
                          RelaxationPtr rel, CutManager *,
                          SolutionPoolPtr s_pool, ModVector &, 
                          ModVector &r_mods, bool *,
@@ -64,17 +69,22 @@ void RCHandler::separate(ConstSolutionPtr sol, NodePtr,
   double ub,new_ub,current_ub;
   double lb,new_lb,current_lb;
 
+  if (node->getId() == 0 )
+  {
+    copyRootDetails_(sol,rel);
+  }
+
   if (s_pool->getNumSols() > 0) {
       bestFeasible_objval = s_pool->getBestSolutionValue();
-  } 
+  }
   else {
-      stats_->time += (timer_->query()-start);
-      return;
+    stats_->time += (timer_->query() - start);
+    return;
   } 
-  
   for (v_iter=rel->varsBegin(); v_iter!=rel->varsEnd(); ++v_iter) 
   {
-     r = p[(*v_iter)->getIndex()];
+     //r = p[(*v_iter)->getIndex()];
+     r = rootDuals_[(*v_iter)->getIndex()];
      xval = x[(*v_iter)->getIndex()];
      lb = (*v_iter)->getLb();
      ub = (*v_iter)->getUb();
@@ -173,6 +183,31 @@ std::string RCHandler::getName() const
 {
   return "RCHandler (Reduced Cost Strengthening)";
 }                    
+
+// extracting root node information
+void RCHandler::copyRootDetails_(ConstSolutionPtr sol, RelaxationPtr rel)
+{
+  rootValue_ = sol->getObjValue();
+
+  VariableConstIterator vIter;
+  const double *p1 = sol->getDualOfVars();
+  int n = rel->getNumVars();
+  if (!rootDuals_) {
+    rootDuals_ = new double[n];
+  }
+
+  //std::cout << n << std::endl;
+
+  for (vIter = rel->varsBegin(); vIter != rel->varsEnd(); ++vIter)
+  {
+    // std::cout << (*vIter)->getIndex() << std::endl;
+    rootDuals_[(*vIter)->getIndex()] = p1[(*vIter)->getIndex()];
+
+    //std::cout<<"RootDual ["<< (*vIter)->getIndex()<<"] = "<< rootDuals_[(*vIter)->getIndex()] <<std::endl;  
+  }
+  //std::cout<<"RootValue "<< rootValue_<<std::endl;
+  return;
+}
 
 // Base class method.
 void RCHandler::relaxNodeInc(NodePtr , RelaxationPtr , bool *){}

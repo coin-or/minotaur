@@ -45,7 +45,7 @@ ConBoundMod::ConBoundMod(ConstraintPtr con, BoundType lu, double new_val)
 
 ConBoundMod::~ConBoundMod()
 {
-  con_.reset();
+  //con_.reset(); need to check
 }
 
 /// TO DO
@@ -128,7 +128,7 @@ ConBoundMod2::ConBoundMod2(ConstraintPtr con, double new_lb, double new_ub)
 
 ConBoundMod2::~ConBoundMod2()
 {
-  con_.reset();
+  //con_.reset(); need to check
 }
 
 /// TO DO
@@ -198,7 +198,7 @@ ConMod::ConMod(ConstraintPtr con, NonlinearFunctionPtr new_nlf)
 
 ConMod::~ConMod()
 {
-  con_.reset();
+  //con_.reset(); need to check
 }
 
 ConstraintPtr ConMod::getCon() const
