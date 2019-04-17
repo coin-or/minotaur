@@ -42,9 +42,11 @@ const std::string CbcEngine::me_ = "CbcEngine: ";
 // ----------------------------------------------------------------------- //
 
 CbcEngine::CbcEngine()
-  : timer_(0)
+  : osilp_(0),
+    timer_(0)
 {
   logger_ = (LoggerPtr) new Logger(LogInfo);
+  stats_  = new CbcStats();
 }
 
   
@@ -63,6 +65,18 @@ CbcEngine::CbcEngine(EnvPtr env)
 
 CbcEngine::~CbcEngine()
 {
+  if (timer_) {
+    delete timer_;
+    timer_ = 0;
+  }
+  if (stats_) {
+    delete stats_;
+    stats_ = 0;
+  }
+  if (osilp_) {
+    delete osilp_;
+    osilp_ = 0;
+  }
 }
 
 

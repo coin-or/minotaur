@@ -19,7 +19,7 @@ using namespace Minotaur;
 
 void CGraphUT::testIdentical()
 {
-  VariablePtr v0 = (VariablePtr) new Variable(0, 0, 0.0, 10.0, Continuous, "x0");
+  VariablePtr v0 = new Variable(0, 0, 0.0, 10.0, Continuous, "x0");
 
   CNode *n0, *n1;
   CGraphPtr cg1 = (CGraphPtr) new CGraph();
@@ -66,6 +66,8 @@ void CGraphUT::testIdentical()
   cg1->setOut(n1);
   cg1->finalize();
   CPPUNIT_ASSERT(cg1->isIdenticalTo(cg2)); 
+
+  delete v0;
 }
 
 
@@ -75,10 +77,10 @@ void CGraphUT::testLin()
   CGraph cgraph;
   int error = 0;
 
-  VariablePtr v0 = (VariablePtr) new Variable(0, 0, 0.0, 10.0, Continuous, "x0");
-  VariablePtr v1 = (VariablePtr) new Variable(1, 1, 0.0, 10.0, Continuous, "x1");
-  VariablePtr v2 = (VariablePtr) new Variable(2, 2, 0.0, 10.0, Continuous, "x2");
-  VariablePtr v3 = (VariablePtr) new Variable(3, 3, 0.0, 10.0, Continuous, "x3");
+  VariablePtr v0 = new Variable(0, 0, 0.0, 10.0, Continuous, "x0");
+  VariablePtr v1 = new Variable(1, 1, 0.0, 10.0, Continuous, "x1");
+  VariablePtr v2 = new Variable(2, 2, 0.0, 10.0, Continuous, "x2");
+  VariablePtr v3 = new Variable(3, 3, 0.0, 10.0, Continuous, "x3");
 
   double x[4] = {1.0, 2.0, 5.0, 7.0};
   double g[4] = {0.0, 0.0, 0.0, 0.0};
@@ -125,6 +127,11 @@ void CGraphUT::testLin()
   CPPUNIT_ASSERT(0==error);
   CPPUNIT_ASSERT(fabs(n0->getVal()+5.0)<1e-10);
   CPPUNIT_ASSERT(fabs(cgraph.eval(x,&error)+5.0)<1e-10);
+
+  delete v0;
+  delete v1;
+  delete v2;
+  delete v3;
 }
 
 

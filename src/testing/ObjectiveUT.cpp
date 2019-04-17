@@ -43,6 +43,17 @@ void ObjectiveUT::setUp()
 }
 
 
+void ObjectiveUT::tearDown()
+{
+  delete v0_;
+  delete v1_;
+  delete v2_;
+  delete v3_;
+
+  delete objective_;
+}
+
+
 void ObjectiveUT::testGetVal()
 {
   double x[4] = {1.0, 1.0, 1.0, 1.0};

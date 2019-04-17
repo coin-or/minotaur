@@ -30,8 +30,6 @@ void LinearFunctionTest::setUp()
   //
 
   FunctionPtr f;
-  ConstraintPtr cPtr;
-  ObjectivePtr oPtr;
   LinearFunctionPtr lo, lf;
 
   instance_ = (ProblemPtr) new Problem();
@@ -46,7 +44,7 @@ void LinearFunctionTest::setUp()
   lf->addTerm(vars[1], -2.0);
 
   f = (FunctionPtr) new Function(lf);
-  cPtr = instance_->newConstraint(f, -INFINITY, 14.0, "cons0");
+  instance_->newConstraint(f, -INFINITY, 14.0, "cons0");
   
   // 2x1 - 2 x2
   lf = (LinearFunctionPtr) new LinearFunction();
@@ -54,7 +52,7 @@ void LinearFunctionTest::setUp()
   lf->addTerm(vars[1], -2.0);
 
   f = (FunctionPtr) new Function(lf);
-  cPtr = instance_->newConstraint(f, -INFINITY, 3.0, "cons1");
+  instance_->newConstraint(f, -INFINITY, 3.0, "cons1");
 
   // max 4x1 - x2
   lo = (LinearFunctionPtr) new LinearFunction();
@@ -63,13 +61,12 @@ void LinearFunctionTest::setUp()
   f = (FunctionPtr) new Function(lo);
 
 
-  oPtr = instance_->newObjective(f, 0.0, Maximize);
+  instance_->newObjective(f, 0.0, Maximize);
 }
 
 
 void LinearFunctionTest::tearDown()
 {
-  instance_->clear();
 }
 
 
@@ -140,24 +137,15 @@ void LinearFunctionTest::testGetObj()
 void LinearFunctionTest::testOperations()
 {
   std::vector<VariablePtr> vars;
-  VariablePtr var;
-  ConstVariablePtr vPtr;
   LinearFunctionPtr lf = (LinearFunctionPtr) new LinearFunction();
   LinearFunctionPtr lf1 = (LinearFunctionPtr) new LinearFunction();
   LinearFunctionPtr lf2;
   std::string vname = "common_var_name";
 
-  var = (VariablePtr) new Variable(0, 0, 0.0, 1.0, Integer, vname);
-  vars.push_back(var);
-
-  var = (VariablePtr) new Variable(1, 1, 9.0, 1.0, Integer, vname);
-  vars.push_back(var);
-
-  var = (VariablePtr) new Variable(2, 2, -1.0, 1.0, Integer, vname);
-  vars.push_back(var);
-
-  var = (VariablePtr) new Variable(3, 3, -100.0, 100.0, Integer, vname);
-  vars.push_back(var);
+  vars.push_back(new Variable(0, 0, 0.0, 1.0, Integer, vname));
+  vars.push_back(new Variable(1, 1, 9.0, 1.0, Integer, vname));
+  vars.push_back(new Variable(2, 2, -1.0, 1.0, Integer, vname));
+  vars.push_back(new Variable(3, 3, -100.0, 100.0, Integer, vname));
 
   // 2x0 - 6x1 + x2
   lf->addTerm(vars[0], 2.0);
@@ -207,6 +195,9 @@ void LinearFunctionTest::testOperations()
     CPPUNIT_ASSERT(lf6->getWeight(vars[3]) == 24.5);
   }
 
+  for (size_t i=0; i<vars.size(); ++i) {
+    delete vars[i];
+  }
 }
 
 
@@ -216,13 +207,10 @@ void LinearFunctionTest::testFix()
   LinearFunctionPtr lf = (LinearFunctionPtr) new LinearFunction();
   double x[4] = {1.0, 5.0, -1.0, 11.0};
 
-  x0 = (VariablePtr) new Variable(0, 0, 0.0, 1.0, Integer, "x0");
-
-  x1 = (VariablePtr) new Variable(1, 1, 9.0, 1.0, Integer, "x1");
-
-  x2 = (VariablePtr) new Variable(2, 2, -1.0, 1.0, Integer, "x2");
-
-  x3 = (VariablePtr) new Variable(3, 3, -100.0, 100.0, Integer, "x3");
+  x0 = new Variable(0, 0, 0.0, 1.0, Integer, "x0");
+  x1 = new Variable(1, 1, 9.0, 1.0, Integer, "x1");
+  x2 = new Variable(2, 2, -1.0, 1.0, Integer, "x2");
+  x3 = new Variable(3, 3, -100.0, 100.0, Integer, "x3");
 
   // 2x0 - 6x1 + x2 + 9x3
   lf->addTerm(x0, 2.0);
@@ -242,6 +230,11 @@ void LinearFunctionTest::testFix()
   CPPUNIT_ASSERT(lf->eval(x) ==  (2.0*1.0 - 6.0*5.0 + 9.0*11.0));
   lf->removeVar(x3, 0.0);
   CPPUNIT_ASSERT(lf->eval(x) ==  (2.0*1.0 - 6.0*5.0));
+
+  delete x0;
+  delete x1;
+  delete x2;
+  delete x3;
 
 }
 

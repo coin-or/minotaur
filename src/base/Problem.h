@@ -26,7 +26,6 @@ namespace Minotaur {
   class Jacobian;
   class LinearFunction;
   class NonlinearFunction;
-  class Objective;
   struct ProblemSize;
   class QuadraticFunction;
   class SOS;
@@ -36,7 +35,6 @@ namespace Minotaur {
   typedef boost::shared_ptr<HessianOfLag> HessianOfLagPtr;
   typedef boost::shared_ptr<LinearFunction> LinearFunctionPtr;
   typedef boost::shared_ptr<NonlinearFunction> NonlinearFunctionPtr;
-  typedef Objective* ObjectivePtr;
   typedef boost::shared_ptr<ProblemSize> ProblemSizePtr;
   typedef boost::shared_ptr<QuadraticFunction> QuadraticFunctionPtr;
   typedef boost::shared_ptr<const ProblemSize> ConstProblemSizePtr;
@@ -135,15 +133,6 @@ namespace Minotaur {
      * \returns 1 if the check failed, 0 if passed.
      */
     virtual int checkConVars() const;
-
-    /**
-     * \brief Delete the whole Problem.
-     *
-     * Variables and constraints are so interlinked that we just can not call
-     * the destructor. This function just deletes all the constraints. The
-     * variables and functions can still be used after this is called.
-     */
-    virtual void clear();
 
     /**
      * \brief Clone the given Problem class. Jacobian and Hessian in the cloned

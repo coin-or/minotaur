@@ -145,14 +145,14 @@ CNode* PerspRefUT::getPerspRec_(CGraph* p, const CNode *node, CNode *znode, CGra
 void PerspRefUT::setUp()
 {
   cg_ = new CGraph();
-  VariablePtr x = (VariablePtr) new Variable(0, 0, 0.0, 10.0, Continuous, "x");
-  VariablePtr y = (VariablePtr) new Variable(1, 1, 0.0, 10.0, Continuous, "y");
+  x_ = new Variable(0, 0, 0.0, 10.0, Continuous, "x");
+  y_ = new Variable(1, 1, 0.0, 10.0, Continuous, "y");
 
   CNode *n0, *n1;
-  n0 = cg_->newNode(x);
+  n0 = cg_->newNode(x_);
   n0 = cg_->newNode(OpSqr, n0, 0);
 
-  n1 = cg_->newNode(y);
+  n1 = cg_->newNode(y_);
   n1 = cg_->newNode(OpSqr, n1, 0);
 
   n0 = cg_->newNode(OpPlus, n0, n1);
@@ -167,6 +167,9 @@ void PerspRefUT::setUp()
 void PerspRefUT::tearDown()
 {
   delete cg_;
+  delete x_;
+  delete y_;
+  delete z_;
 }
 
 

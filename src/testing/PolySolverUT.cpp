@@ -50,7 +50,6 @@ void PolySolverUT::setUp()
 void PolySolverUT::tearDown()
 {
   delete iface_;
-  inst_->clear();
 }
 
 void PolySolverUT::testSize()

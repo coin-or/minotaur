@@ -257,6 +257,10 @@ typedef std::set<ConstVariablePtr, CompareVariablePtr> VariableSet;
 typedef VariableSet::const_iterator VarSetConstIterator;
 typedef std::set<VariablePtr> VarSet;
 
+class Objective;
+typedef Objective* ObjectivePtr;
+typedef const Objective* ConstObjPtr;
+
 //Changed boost_shared pointer to simple pointer
 class Constraint;
 typedef  Constraint*  ConstraintPtr;

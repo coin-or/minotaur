@@ -196,9 +196,6 @@ namespace Minotaur {
        */
       void negate_();
   };
-
-  typedef Objective* ObjectivePtr;
-  typedef const Objective* ConstObjPtr;
 }
 #endif
 

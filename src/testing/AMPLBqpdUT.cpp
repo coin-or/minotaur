@@ -64,7 +64,6 @@ void AMPLBqpdUT::testNLP()
   solval = bqpd_e->getSolutionValue();
   CPPUNIT_ASSERT(fabs(solval+99.96) < 1e-7);
 
-  inst->clear();
   delete iface_;
 }
 
