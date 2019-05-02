@@ -37,10 +37,7 @@ ProblemPtr NLPBnbUT::createInstance_()
   // 
 
   ProblemPtr instance;
-  VariablePtr x0, x1;
   FunctionPtr fPtr;
-  ConstraintPtr cPtr;
-  ObjectivePtr oPtr;
   myNLFun3Ptr obj_f;
   myNLFun4Ptr con0_f;
   double initial_pt[2] = {0.5, 0.0};
@@ -48,22 +45,21 @@ ProblemPtr NLPBnbUT::createInstance_()
   // create instance and add variables 
   instance = (ProblemPtr) new Problem();
 
-  // variable x0.
-  x0 = instance->newVariable(-1, 1, Integer);
+  instance->newVariable(-1, 1, Integer);
 
   /* x1 */
-  x1 = instance->newVariable(-1, 1, Integer);
+  instance->newVariable(-1, 1, Integer);
 
   /* objective */
   obj_f = (myNLFun3Ptr) new myNLFun3();
   fPtr = (FunctionPtr) new Function(obj_f);
-  oPtr = instance->newObjective(fPtr, 0.0, Minimize);
+  instance->newObjective(fPtr, 0.0, Minimize);
   
 
   /* constraint */
   con0_f = (myNLFun4Ptr) new myNLFun4();
   fPtr = (FunctionPtr) new Function(con0_f);
-  cPtr = instance->newConstraint(fPtr, 2.0, 2.0);
+  instance->newConstraint(fPtr, 2.0, 2.0);
 
   // create my own jacobian
   myJac2Ptr jPtr = (myJac2Ptr) new myJac2();
@@ -98,8 +94,6 @@ void NLPBnbUT::testNLPBnb()
   //bab->setLogLevel(LogDebug2);
   //bab->solve();
   //CPPUNIT_ASSERT(fabs(bab->getUb() + 1.0) < 1e-6);
-
-  instance->clear();
 
 }
 
@@ -246,10 +240,7 @@ ProblemPtr NLPBnbUT::createInstance1_()
   // x1 \in {0, 1}
 
   ProblemPtr instance;
-  VariablePtr x0, x1;
   FunctionPtr fPtr;
-  ConstraintPtr cPtr;
-  ObjectivePtr oPtr;
   myNLFun5Ptr obj_f;
   myNLFun6Ptr con0_f;
   double initial_pt[2] = {0.0, 0.0};
@@ -258,21 +249,21 @@ ProblemPtr NLPBnbUT::createInstance1_()
   instance = (ProblemPtr) new Problem();
 
   // variable x0.
-  x0 = instance->newBinaryVariable();
+  instance->newBinaryVariable();
 
   /* x1 */
-  x1 = instance->newBinaryVariable();
+  instance->newBinaryVariable();
 
   /* objective */
   obj_f = (myNLFun5Ptr) new myNLFun5();
   fPtr = (FunctionPtr) new Function(obj_f);
-  oPtr = instance->newObjective(fPtr, 0.0, Minimize);
+  instance->newObjective(fPtr, 0.0, Minimize);
   
 
   /* constraint */
   con0_f = (myNLFun6Ptr) new myNLFun6();
   fPtr = (FunctionPtr) new Function(con0_f);
-  cPtr = instance->newConstraint(fPtr, -INFINITY, 1.0);
+  instance->newConstraint(fPtr, -INFINITY, 1.0);
 
   // create my own jacobian
   myJac3Ptr jPtr = (myJac3Ptr) new myJac3();
@@ -335,7 +326,6 @@ void NLPBnbUT::testNLPBnb1()
   bab->solve();
   CPPUNIT_ASSERT(fabs(bab->getUb() + 0.5) < 1e-6);
 
-  p->clear();
   delete bab;
 
   //CPPUNIT_ASSERT(!"implement me!");

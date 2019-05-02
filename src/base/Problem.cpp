@@ -59,8 +59,32 @@ Problem::Problem()
 
 Problem::~Problem()
 {
-  clear();
+  VariableIterator viter;
+  ConstraintIterator citer;
+  SOSIterator siter;
+  VariablePtr v;
+
+  for (viter=vars_.begin(); viter!=vars_.end(); viter++) {
+    v = *viter;
+    v->clearConstraints_();
+    delete v;
+  }
+
+  for (citer=cons_.begin(); citer!=cons_.end(); ++citer) {
+    delete *citer;
+  }
+  for (siter=sos1_.begin(); siter!=sos1_.end(); siter++) {
+    delete *siter;
+  }
+  for (siter=sos2_.begin(); siter!=sos2_.end(); siter++) {
+    delete *siter;
+  }
+  if (engine_) {
+    engine_->clear();
+  }
+
   delete obj_;
+  obj_ = 0;
 
   vars_.clear();
   cons_.clear();
@@ -69,7 +93,6 @@ Problem::~Problem()
 
   if (initialPt_) {
     delete [] initialPt_;
-    initialPt_ = 0;
   }
 }
 
@@ -301,6 +324,10 @@ void Problem::changeObj(FunctionPtr f, double cb)
   if (engine_) {
     engine_->changeObj(f2, cb);
   }
+
+  if (obj_) {
+    delete obj_;
+  }
   obj_ = (ObjectivePtr) new Objective(f2, cb, Minimize, name);
   consModed_ = true;
 }
@@ -330,42 +357,6 @@ int Problem::checkConVars() const
     }
   }
   return err;
-}
-
-
-void Problem::clear() 
-{
-  VariableIterator viter;
-  ConstraintIterator citer;
-  SOSIterator siter;
-  VariablePtr v;
-  ConstraintPtr c;
-
-  for (viter=vars_.begin(); viter!=vars_.end(); viter++) {
-    v = *viter;
-    v->clearConstraints_();
-    delete v;
-    v = 0;
-  }
-
-  for (citer=cons_.begin(); citer!=cons_.end(); ++citer) {
-    delete *citer;
-    *citer = 0;
-  }
-  for (siter=sos1_.begin(); siter!=sos1_.end(); siter++) {
-    delete *siter;
-    *siter = 0;
-  }
-  for (siter=sos2_.begin(); siter!=sos2_.end(); siter++) {
-    delete *siter;
-    *siter = 0;
-  }
-  if (engine_) {
-    engine_->clear();
-    engine_ = 0;
-  }
-  consModed_ = true;
-  varsModed_ = true;
 }
 
 
@@ -1236,7 +1227,7 @@ ObjectivePtr Problem::newObjective(FunctionPtr f, double cb,
   assert(engine_ == 0 ||
       (!"Cannot add objective after loading problem to engine\n")); 
 
-  obj_ = (ObjectivePtr) new Objective(f, cb, otyp, name);
+  obj_ = new Objective(f, cb, otyp, name);
   consModed_ = true;
   return obj_;
 }
@@ -1325,11 +1316,10 @@ void Problem::newVariables(VariableConstIterator v_begin,
   assert(engine_ == 0 ||
       (!"Cannot add variables after loading problem to engine\n")); 
   VariableConstIterator v_iter;
-  VariablePtr v;
 
   for (v_iter=v_begin; v_iter!=v_end; v_iter++) {
-    v = newVariable((*v_iter)->getLb(), (*v_iter)->getUb(),
-        (*v_iter)->getType(), (*v_iter)->getName(), stype);
+    newVariable((*v_iter)->getLb(), (*v_iter)->getUb(),
+                (*v_iter)->getType(), (*v_iter)->getName(), stype);
   }
 }
 
@@ -1582,7 +1572,6 @@ void Problem::unsetEngine()
 void Problem::write(std::ostream &out, std::streamsize out_p) const 
 {
   ConstraintConstIterator citer;
-  ConstraintPtr cPtr;
   VariableConstIterator viter;
   std::streamsize old_p = out.precision();
 

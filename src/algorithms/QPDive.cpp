@@ -13,6 +13,7 @@
 
 #include <iomanip>
 #include <iostream>
+#include <cmath>
 
 #include "MinotaurConfig.h"
 #include "BranchAndBound.h"

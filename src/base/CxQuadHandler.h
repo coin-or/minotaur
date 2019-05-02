@@ -21,13 +21,11 @@ namespace Minotaur {
 class Engine;
 class Function;
 class LinearFunction;
-class Objective;
 class Problem;
 class QuadraticFunction;
 typedef Engine* EnginePtr;
 typedef boost::shared_ptr<Function> FunctionPtr;
 typedef boost::shared_ptr<LinearFunction> LinearFunctionPtr;
-typedef Objective*  ObjectivePtr;
 typedef boost::shared_ptr<const Problem> ConstProblemPtr;
 typedef boost::shared_ptr<QuadraticFunction> QuadraticFunctionPtr;
 

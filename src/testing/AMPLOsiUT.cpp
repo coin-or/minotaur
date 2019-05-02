@@ -18,6 +18,7 @@
 #include "Problem.h"
 #include "ReliabilityBrancher.h"
 #include "AMPLInterface.h"
+#include <cmath>
 
 CPPUNIT_TEST_SUITE_REGISTRATION(AMPLOsiUT);
 CPPUNIT_TEST_SUITE_NAMED_REGISTRATION(AMPLOsiUT, "AMPLOsiUT");
@@ -68,7 +69,6 @@ void AMPLOsiUT::testOsiLP()
   CPPUNIT_ASSERT(engine_ptr_->getStatus() == ProvenOptimal);
   CPPUNIT_ASSERT(fabs(engine_ptr_->getSolutionValue()+2.0) < 1e-5);
 
-  inst->clear();
 }
 
 
@@ -85,7 +85,6 @@ void AMPLOsiUT::testOsiLP2()
   CPPUNIT_ASSERT(status == ProvenInfeasible);
   CPPUNIT_ASSERT(engine_ptr_->getStatus() == ProvenInfeasible);
  
-  inst->clear();
 }
 
 
@@ -152,7 +151,6 @@ void AMPLOsiUT::testOsiBnB()
   bab->solve();
   CPPUNIT_ASSERT(bab->getUb() == 1.0);
 
-  p->clear();
   delete bab;
 }
 
