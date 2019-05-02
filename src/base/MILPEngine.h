@@ -36,7 +36,7 @@ namespace Minotaur {
       /// Destructor must be implemented if memory needs to be freed
       virtual ~MILPEngine() {};
   };
-  typedef boost::shared_ptr<MILPEngine> MILPEnginePtr;
+  typedef MILPEngine* MILPEnginePtr;
 }
 
 #endif

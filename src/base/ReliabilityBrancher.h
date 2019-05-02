@@ -20,7 +20,7 @@ namespace Minotaur {
 
 class Engine;
 class Timer;
-typedef boost::shared_ptr<Engine> EnginePtr;
+typedef Engine* EnginePtr;
 
 struct RelBrStats {
   UInt bndChange;  /// Number of times variable bounds were changed.

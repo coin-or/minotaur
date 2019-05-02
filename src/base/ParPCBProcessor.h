@@ -24,7 +24,7 @@ namespace Minotaur {
   class Engine;
   class Problem;
   class Solution;
-  typedef boost::shared_ptr<Engine> EnginePtr;
+  typedef Engine* EnginePtr;
   typedef boost::shared_ptr<const Problem> ConstProblemPtr;
   typedef boost::shared_ptr<const Solution> ConstSolutionPtr;
 

@@ -119,8 +119,6 @@ QPDProcessor::~QPDProcessor()
   qp_.reset();
   p_.reset();
   nlCons_.clear();
-  qpe_.reset();
-  e_.reset();
   ws_.reset();
 }
 

@@ -17,7 +17,7 @@
 namespace Minotaur {
   class Engine;
   class Problem;
-  typedef boost::shared_ptr<Engine> EnginePtr;
+  typedef Engine* EnginePtr;
   typedef boost::shared_ptr<Problem> ProblemPtr;
 
   /// statistics for Feasibility Pump heuristic

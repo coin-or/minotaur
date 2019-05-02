@@ -77,7 +77,6 @@ BndProcessor::BndProcessor (EnvPtr env, EnginePtr engine,
 BndProcessor::~BndProcessor()
 {
   handlers_.clear();
-  engine_.reset();
 }
 
 

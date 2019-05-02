@@ -28,7 +28,7 @@
    class Timer;
    class VarBoundMod;
    typedef boost::shared_ptr<const Solution> ConstSolutionPtr;
-   typedef boost::shared_ptr<Engine> EnginePtr;
+   typedef Engine* EnginePtr;
    typedef boost::shared_ptr<Problem> ProblemPtr;
    typedef boost::shared_ptr<VarBoundMod> VarBoundModPtr;
 

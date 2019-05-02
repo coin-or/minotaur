@@ -20,7 +20,7 @@ namespace Minotaur {
   class LinearHandler;
   class Problem;
   class QGHandler;
-  typedef boost::shared_ptr<Engine> EnginePtr;
+  typedef Engine* EnginePtr;
   typedef boost::shared_ptr<LinearFunction> LinearFunctionPtr;
   typedef boost::shared_ptr<LinearHandler> LinHandlerPtr;
   typedef boost::shared_ptr<Problem> ProblemPtr;

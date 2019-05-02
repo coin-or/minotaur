@@ -80,94 +80,113 @@ void RCHandler::separate(ConstSolutionPtr sol, NodePtr node,
   else {
     stats_->time += (timer_->query() - start);
     return;
-  } 
-  for (v_iter=rel->varsBegin(); v_iter!=rel->varsEnd(); ++v_iter) 
-  {
-     //r = p[(*v_iter)->getIndex()];
-     r = rootDuals_[(*v_iter)->getIndex()];
-     xval = x[(*v_iter)->getIndex()];
-     lb = (*v_iter)->getLb();
-     ub = (*v_iter)->getUb();
-     if (ub - lb < tolerance) {
-         continue;
-     }
+  }
+  for (int t=0;t<2;t++){
+    for (v_iter = rel->varsBegin(); v_iter != rel->varsEnd(); ++v_iter)
+    {
+      if (t == 0)
+      {
+        //node dual fixing
+        r = p[(*v_iter)->getIndex()];
+      }
+      else
+      {
+        //root dual fixing
+        r = rootDuals_[(*v_iter)->getIndex()];
+        //std::cout << "r at root dual: " << r << " and value of t " << t << std::endl;
+      }
+      xval = x[(*v_iter)->getIndex()];
+      lb = (*v_iter)->getLb();
+      ub = (*v_iter)->getUb();
+      if (ub - lb < tolerance)
+      {
+        continue;
+      }
 
-     if (r > tolerance)
-     {
-       v_type = (*v_iter)->getType();
-       new_ub  = xval +  (bestFeasible_objval-current_objval)/ r;
-       current_ub = (*v_iter)->getUb();
-       
-       if (v_type==Binary || v_type==Integer || v_type==ImplBin ||
-           v_type==ImplInt)
-       {
-         new_ub = floor((new_ub+tolerance*100));
-         if (new_ub < current_ub)
-         {
-           m = (VarBoundModPtr) new VarBoundMod(*v_iter, Upper, new_ub);
-           m->applyToProblem(rel); 
-           r_mods.push_back(m);
-#if SPEW
-           logger_->msgStream(LogDebug) << me_ << "Variable name = " 
-               << (*v_iter)->getName() << " bound type = ub"
-               << " old value = "<< current_ub  << " new value = "
-               << new_ub << " (type = Int)" << std::endl;
-#endif   
-           ++(stats_->nub);
-         }
-       }
-       else{
-         if (new_ub < current_ub*0.9)
-         {
-           m = (VarBoundModPtr) new VarBoundMod(*v_iter, Upper, new_ub);
-           m->applyToProblem(rel); 
-           r_mods.push_back(m);
-#if SPEW
-          logger_->msgStream(LogDebug) << me_ << "Variable name = "
-              << (*v_iter)->getName()<< " bound type =ub"<< " old value = "
-              << current_ub << " new value = " << new_ub<< std::endl;
-#endif   
-           ++(stats_->nub); 
-         } 
-       }
-     } else if (r < -tolerance ) {
-       v_type = (*v_iter)->getType();
-       new_lb  = xval +  (bestFeasible_objval-current_objval) / r;
-       current_lb = (*v_iter)->getLb();
-       if (v_type==Binary || v_type==Integer || v_type==ImplBin ||
-           v_type==ImplInt)
-         {
-           new_lb =  ceil(new_lb - tolerance*100);
-           if (new_lb > current_lb){
-             m = (VarBoundModPtr) new VarBoundMod(*v_iter, Lower, new_lb);
-             m->applyToProblem(rel);
-             r_mods.push_back(m);
+      if (r > tolerance)
+      {
+        v_type = (*v_iter)->getType();
+        new_ub = xval + (bestFeasible_objval - current_objval) / r;
+        current_ub = (*v_iter)->getUb();
 
-#if SPEW
-             logger_->msgStream(LogDebug) << me_ << "Variable name = " 
-                 << (*v_iter)->getName()<< " bound type = lb"
-                 << " old value = " << current_lb << " new value = " 
-                 << new_lb << " (type =Int)" <<std::endl;
-#endif
-            ++(stats_->nlb);
-           }
-         }
-        else{
-          if (new_lb > current_lb*1.1){
-            m = (VarBoundModPtr) new VarBoundMod(*v_iter, Lower, new_lb);
+        if (v_type == Binary || v_type == Integer || v_type == ImplBin ||
+            v_type == ImplInt)
+        {
+          new_ub = floor((new_ub + tolerance * 100));
+          if (new_ub < current_ub)
+          {
+            m = (VarBoundModPtr) new VarBoundMod(*v_iter, Upper, new_ub);
             m->applyToProblem(rel);
-            r_mods.push_back(m); 
+            r_mods.push_back(m);
 #if SPEW
             logger_->msgStream(LogDebug) << me_ << "Variable name = "
-                << (*v_iter)->getName()<< " bound type = lb"<< " old value = "
-                << current_lb << " new value = " << new_lb<< std::endl;
+                                         << (*v_iter)->getName() << " bound type = ub"
+                                         << " old value = " << current_ub << " new value = "
+                                         << new_ub << " (type = Int)" << std::endl;
+#endif
+            ++(stats_->nub);
+          }
+        }
+        else
+        {
+          if (new_ub < current_ub * 0.9)
+          {
+            m = (VarBoundModPtr) new VarBoundMod(*v_iter, Upper, new_ub);
+            m->applyToProblem(rel);
+            r_mods.push_back(m);
+#if SPEW
+            logger_->msgStream(LogDebug) << me_ << "Variable name = "
+                                         << (*v_iter)->getName() << " bound type = ub"
+                                         << " old value = "
+                                         << current_ub << " new value = " << new_ub << std::endl;
+#endif
+            ++(stats_->nub);
+          }
+        }
+      }
+      else if (r < -tolerance)
+      {
+        v_type = (*v_iter)->getType();
+        new_lb = xval + (bestFeasible_objval - current_objval) / r;
+        current_lb = (*v_iter)->getLb();
+        if (v_type == Binary || v_type == Integer || v_type == ImplBin ||
+            v_type == ImplInt)
+        {
+          new_lb = ceil(new_lb - tolerance * 100);
+          if (new_lb > current_lb)
+          {
+            m = (VarBoundModPtr) new VarBoundMod(*v_iter, Lower, new_lb);
+            m->applyToProblem(rel);
+            r_mods.push_back(m);
+
+#if SPEW
+            logger_->msgStream(LogDebug) << me_ << "Variable name = "
+                                         << (*v_iter)->getName() << " bound type = lb"
+                                         << " old value = " << current_lb << " new value = "
+                                         << new_lb << " (type =Int)" << std::endl;
 #endif
             ++(stats_->nlb);
           }
         }
-     }
-  }
-   
+        else
+        {
+          if (new_lb > current_lb * 1.1)
+          {
+            m = (VarBoundModPtr) new VarBoundMod(*v_iter, Lower, new_lb);
+            m->applyToProblem(rel);
+            r_mods.push_back(m);
+#if SPEW
+            logger_->msgStream(LogDebug) << me_ << "Variable name = "
+                                         << (*v_iter)->getName() << " bound type = lb"
+                                         << " old value = "
+                                         << current_lb << " new value = " << new_lb << std::endl;
+#endif
+            ++(stats_->nlb);
+          }
+        }
+      }
+    }    
+  }    
   stats_->time += (timer_->query()-start);
   return;
   }

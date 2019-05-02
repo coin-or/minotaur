@@ -39,7 +39,6 @@ ParNodeIncRelaxer::~ParNodeIncRelaxer ()
   rel_.reset();
   handlers_.clear();
   env_.reset();
-  engine_.reset();
 }
 
 

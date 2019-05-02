@@ -336,7 +336,7 @@ namespace Minotaur {
   };
 
   
-  typedef boost::shared_ptr<BqpdEngine> BqpdEnginePtr;
+  typedef BqpdEngine* BqpdEnginePtr;
 } // end namespace Minotaur 
 
 #endif
