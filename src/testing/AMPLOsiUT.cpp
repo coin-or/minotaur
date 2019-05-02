@@ -37,7 +37,7 @@ void AMPLOsiUT::setUp()
 
 void AMPLOsiUT::tearDown()
 {
-  engine_ptr_.reset();
+  delete engine_ptr_;
   delete iface_;
 }
 

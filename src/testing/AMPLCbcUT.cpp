@@ -33,7 +33,7 @@ void AMPLCbcUT::setUp()
 
 void AMPLCbcUT::tearDown()
 {
-  e_.reset();
+  delete e_;
   delete iface_;
 }
 

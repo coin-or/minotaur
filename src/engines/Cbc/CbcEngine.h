@@ -170,7 +170,7 @@ namespace Minotaur {
     void load_();
   };
   
-  typedef boost::shared_ptr<CbcEngine> CbcEnginePtr;
+  typedef CbcEngine* CbcEnginePtr;
 }
 
 #endif
