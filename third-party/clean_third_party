@@ -22,12 +22,12 @@ usage ()
 
 MYNAME=clean_third_party
 
-SRCDIR="minotaur-0.2.1-third-party-src"
+SRCDIR="minotaur-0.2.2-third-party-src"
 CPPDIR=${SRCDIR}/cppunit-1.13.2/build
 ASLDIR=${SRCDIR}/asl-20170731
-IPOPTDIR=${SRCDIR}/ipopt-3.12.8/build
+IPOPTDIR=${SRCDIR}/ipopt-3.12.13/build
 LAPACKDIR=${SRCDIR}/lapack-3.7.1/build
-CLPDIR=${SRCDIR}/clp-1.16.9/build
+CBCDIR=${SRCDIR}/cbc-2.10.2/build
 
 if [[ ! -f `pwd`/${MYNAME} ]]
 then
@@ -98,7 +98,7 @@ then
   echo "running make clean in ${ASLDIR}"
   cd ${ASLDIR} && make clean
   cd -
-  for i in $CLPDIR $CPPDIR $IPOPTDIR $LAPACKDIR
+  for i in $CBCDIR $CPPDIR $IPOPTDIR $LAPACKDIR
   do
     echo "removing ${i}"
     rm -rfv ${i}
