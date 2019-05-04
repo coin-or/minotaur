@@ -815,8 +815,6 @@ void Problem::delMarkedVars()
     for (VariableIterator it=vars_.begin(); it!=vars_.end(); ++it) {
       v = *it;
       if (v->getState() == DeletedVar) {
-        // std::cout << "deleting variable: ";
-        // v->write(std::cout);
         for (ConstrSet::const_iterator cit=v->consBegin(); cit!=v->consEnd(); 
             ++cit) {
           (*cit)->delFixedVar_(v, v->getLb());
@@ -1549,6 +1547,8 @@ void Problem::subst(VariablePtr out, VariablePtr in, double rat)
   bool stayin;
   assert(engine_ == 0 ||
       (!"Cannot substitute variables after loading problem to engine\n")); 
+  ConstrQ q;
+
   for (ConstrSet::const_iterator it=out->consBegin(); it!=out->consEnd(); 
       ++it) {
     (*it)->subst_(out, in, rat, &stayin);
@@ -1557,7 +1557,14 @@ void Problem::subst(VariablePtr out, VariablePtr in, double rat)
     } else {
       in->outOfConstraint_(*it);
     }
+    q.push_back(*it);
   }
+
+  for (ConstrQ::iterator it=q.begin(); it!=q.end(); ++it) {
+    out->outOfConstraint_(*it);
+  }
+  q.clear();
+
   obj_->subst_(out, in, rat);
   consModed_ = varsModed_ = true;
 }

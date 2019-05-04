@@ -281,7 +281,7 @@ typedef std::vector<ConstConstraintPtr> ConstConstraintVector;
 typedef boost::shared_ptr<ConstConstraintVector> ConstConstraintVectorPtr;
 typedef ConstConstraintVector::iterator ConstConstraintIterator;
 typedef std::set<ConstraintPtr> ConstrSet;
-typedef std::deque<ConstConstraintPtr> ConstrQ;
+typedef std::deque<ConstraintPtr> ConstrQ;
 
 
 // Serdar added.
