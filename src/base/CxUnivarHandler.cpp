@@ -636,10 +636,10 @@ BranchPtr CxUnivarHandler::doBranch_(BranchDirection UpOrDown,
 
 	// Change all linearization constraints
 	ConstraintVector::iterator lin_it;
-        for(lin_it = (*dit)->linConsBegin(); lin_it != (*dit)->linConsEnd();
-            ++lin_it) {
-	  ConstraintPtr c = *lin_it;
-	}
+        //for(lin_it = (*dit)->linConsBegin(); lin_it != (*dit)->linConsEnd();
+        //    ++lin_it) {
+	//  ConstraintPtr c = *lin_it;
+	//}
       }
     }
   } else {

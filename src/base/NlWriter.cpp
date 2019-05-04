@@ -97,7 +97,6 @@ int NlWriter::co_(ProblemPtr p, std::ofstream &of)
 {
   ConstConstraintPtr c;
   ObjectivePtr obj;
-  ConstVariablePtr v;
   int cnt;
   QuadraticFunctionPtr qf;
   LinearFunctionPtr lf;

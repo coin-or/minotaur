@@ -325,7 +325,6 @@ bool LGCIGenerator::hasGubCover(ConstraintConstIterator itcons,
     VariableGroupConstIterator it3;
     VariableGroupConstIterator begin3 = maxgub->getLinearFunction()->termsBegin();
     VariableGroupConstIterator end3   = maxgub->getLinearFunction()->termsEnd();
-    VariablePtr curvarlf;
     VariablePtr curvargub;
     for (it3=begin3; it3!=end3; ++it3) {
       curvargub = it3->first;

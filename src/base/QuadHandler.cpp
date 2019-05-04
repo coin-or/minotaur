@@ -791,7 +791,6 @@ bool QuadHandler::propSqrBnds_(LinSqrMapIter lx2, RelaxationPtr rel,
 
   VariablePtr x = lx2->first;      // x and y are variables in p_
   VariablePtr y = lx2->second->y;
-  ConstraintPtr con = lx2->second->oeCon;
 
   BoundsOnSquare(x, lb, ub);
   if (updatePBounds_(y, lb, ub, rel, mod_rel, changed, p_mods, r_mods)<0) {
@@ -827,7 +826,6 @@ void QuadHandler::relax_(RelaxationPtr rel, bool *)
   LinearFunctionPtr lf;
   VariablePtr y, x0, x1;
   FunctionPtr f;
-  ConstraintPtr c;
   ConstraintVector cons(4);
 
 

@@ -1261,7 +1261,7 @@ void QPDProcessor::separateObj_(ConstSolutionPtr sol, ConstSolutionPtr nlp_sol,
 
 void QPDProcessor::setupQP_(ConstSolutionPtr sol)
 {
-  ConstConstraintPtr c, cnew;
+  ConstConstraintPtr c;
   FunctionPtr f;
   LinearFunctionPtr lf, lf2;
   VariableConstIterator vbeg, vend;
@@ -1383,7 +1383,7 @@ void QPDProcessor::setupQP_(ConstSolutionPtr sol)
         Constant == c->getFunction()->getType()) {
       f = c->getFunction()->cloneWithVars(vbeg, &err);
       assert(err==0);
-      cnew = qp_->newConstraint(f, c->getLb(), c->getUb(), c->getName());
+      qp_->newConstraint(f, c->getLb(), c->getUb(), c->getName());
     } else {
 #if SPEW
       logger_->msgStream(LogDebug2) << me_ << "dual multiplier for constraint "
@@ -1397,8 +1397,8 @@ void QPDProcessor::setupQP_(ConstSolutionPtr sol)
       nlCons_.push_back(c);
       getLin_(c->getFunction(), sol->getPrimal(), n, vbeg, vend, lf, val);
       f = (FunctionPtr) new Function(lf);
-      cnew = qp_->newConstraint(f, c->getLb()-val, c->getUb()-val,
-                                c->getName());
+      qp_->newConstraint(f, c->getLb()-val, c->getUb()-val,
+                         c->getName());
     }
   }
 

@@ -382,7 +382,6 @@ void LinearHandler::tightenInts_(ProblemPtr p, bool apply_to_prob,
   double lb, ub;
   VarBoundModPtr mod;
   LinearFunctionPtr lf;
-  ConstraintPtr c;
 
 #if SPEW
   logger_->msgStream(LogDebug) << me_ << "tightening bounds." << std::endl; 
@@ -1287,7 +1286,7 @@ void LinearHandler::relax_(ProblemPtr p, RelaxationPtr rel, bool *is_inf)
   ConstraintConstIterator c_iter;
   ObjectivePtr oPtr;
   VariableConstIterator v_iter;
-  VariablePtr v, v2;
+  VariablePtr v2;
   FunctionPtr f, newf;
   int err = 0;
 
@@ -1296,8 +1295,8 @@ void LinearHandler::relax_(ProblemPtr p, RelaxationPtr rel, bool *is_inf)
   // clone all the variables one by one.
   for (v_iter=p->varsBegin(); v_iter!=p->varsEnd(); ++v_iter) {
     v2 = (*v_iter);
-    v = rel->newVariable(v2->getLb(), v2->getUb(), v2->getType(), 
-                         v2->getName(), v2->getSrcType());
+    rel->newVariable(v2->getLb(), v2->getUb(), v2->getType(), 
+                     v2->getName(), v2->getSrcType());
   }
 
   // If the objective function is linear, add it.

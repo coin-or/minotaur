@@ -228,7 +228,6 @@ Branches ReliabilityBrancher::findBranches(RelaxationPtr rel, NodePtr node,
 
 void ReliabilityBrancher::findCandidates_()
 {
-  VariablePtr v_ptr;
   VariableIterator v_iter, v_iter2, best_iter;
   VariableConstIterator cv_iter;
   int index;
