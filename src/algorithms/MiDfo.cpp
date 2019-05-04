@@ -587,7 +587,7 @@ SolutionPtr bnbMain(int argc, char** argv, ProblemPtr &oinst, MINOTAUR_AMPL::AMP
   OptionDBPtr options;
   //MINOTAUR_AMPL::AMPLInterface* iface = 0;
   //ProblemPtr oinst;    // instance that needs to be solved.
-  EnginePtr engine;    // engine for solving relaxations. 
+  EnginePtr engine = 0;    // engine for solving relaxations. 
   SolutionPtr sol, sol2;
   JacobianPtr jPtr;
   HessianOfLagPtr hPtr;
@@ -657,6 +657,9 @@ SolutionPtr bnbMain(int argc, char** argv, ProblemPtr &oinst, MINOTAUR_AMPL::AMP
   *lb = obj_sense*bab->getUb();
 
 CLEANUP:
+  if (engine) {
+    delete engine;
+  }
   //if (iface) {
     //delete iface;
   //}
