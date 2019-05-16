@@ -567,8 +567,8 @@ UInt MINLPDiving::ReducedCost_(UInt numfrac, const double* x,
 void MINLPDiving::restoreBounds_(double* LB_copy, double* UB_copy, UInt vars)
 {
   for (UInt i=0; i<vars; ++i, ++LB_copy, ++UB_copy) {
-    p_->changeBound(i, Lower, *LB_copy);
-    p_->changeBound(i, Upper, *UB_copy);
+    p_->changeBoundByInd(i, Lower, *LB_copy);
+    p_->changeBoundByInd(i, Upper, *UB_copy);
   }
 }
 

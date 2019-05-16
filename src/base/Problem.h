@@ -79,10 +79,10 @@ namespace Minotaur {
     virtual void calculateSize(bool shouldRedo=false);
 
     /// Change a bound (lower or upper) on a variable with ID=id.
-    virtual void changeBound(UInt id, BoundType lu, double new_val);
+    virtual void changeBoundByInd(UInt ind, BoundType lu, double new_val);
 
     /// Change both bounds (lower and upper) on a variable with ID=id
-    virtual void changeBound(UInt id, double new_lb, double new_ub);
+    virtual void changeBoundByInd(UInt ind, double new_lb, double new_ub);
 
     /// Change a bound (lower or upper) on a variable 'var'. 
     virtual void changeBound(VariablePtr var, BoundType lu, double new_val);
