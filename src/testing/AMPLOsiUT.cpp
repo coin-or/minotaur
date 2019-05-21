@@ -101,14 +101,14 @@ void AMPLOsiUT::testOsiWarmStart()
   // get warm start
   WarmStartPtr ws = engine_ptr_->getWarmStartCopy();
   EnvPtr env = (EnvPtr) new Environment();
-  OsiLPEnginePtr engine2 = (OsiLPEnginePtr) new OsiLPEngine(env);
-  engine2->load(inst);
-  engine2->loadFromWarmStart(ws);
-  status = engine2->solve();
-  CPPUNIT_ASSERT(fabs(engine2->getSolutionValue()+8.42857) < 1e-5);
+  OsiLPEngine engine2(env);
+  engine2.load(inst);
+  engine2.loadFromWarmStart(ws);
+  status = engine2.solve();
+  CPPUNIT_ASSERT(fabs(engine2.getSolutionValue()+8.42857) < 1e-5);
   CPPUNIT_ASSERT(status == ProvenOptimal);
-  CPPUNIT_ASSERT(engine2->getStatus() == ProvenOptimal);
-  CPPUNIT_ASSERT(engine2->getIterationCount() == 0);
+  CPPUNIT_ASSERT(engine2.getStatus() == ProvenOptimal);
+  CPPUNIT_ASSERT(engine2.getIterationCount() == 0);
 }
 
 
@@ -151,6 +151,7 @@ void AMPLOsiUT::testOsiBnB()
   bab->solve();
   CPPUNIT_ASSERT(bab->getUb() == 1.0);
 
+  delete e;
   delete bab;
 }
 

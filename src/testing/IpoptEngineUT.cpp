@@ -72,7 +72,7 @@ void IpoptEngineUT::testGetObjVal()
   createInstance_();
 
   //create a new engine
-  IpoptEnginePtr ipopt_e = (IpoptEnginePtr) new IpoptEngine(env);
+  IpoptEngine ipopt_e(env);
 
   // create my own jacobian
   myJacPtr jPtr = (myJacPtr) new myJac();
@@ -90,21 +90,21 @@ void IpoptEngineUT::testGetObjVal()
   instance_->setLogger(logger);
 
   //load the problem
-  ipopt_e->load(instance_);
+  ipopt_e.load(instance_);
 
   //solve
-  ipopt_e->solve();
+  ipopt_e.solve();
 
   // get status
-  EngineStatus status = ipopt_e->getStatus();
+  EngineStatus status = ipopt_e.getStatus();
   CPPUNIT_ASSERT(status==ProvenLocalOptimal);
 
   // get objvalue
-  double value = ipopt_e->getSolutionValue();
+  double value = ipopt_e.getSolutionValue();
   CPPUNIT_ASSERT(fabs(value+0.5) < 1e-7);
 
   // get solution
-  const double *x = ipopt_e->getSolution()->getPrimal();
+  const double *x = ipopt_e.getSolution()->getPrimal();
   CPPUNIT_ASSERT(fabs(x[0]-0.7071067812) < 1e-6);
   CPPUNIT_ASSERT(fabs(x[1]+0.7071067812) < 1e-6);
 }
