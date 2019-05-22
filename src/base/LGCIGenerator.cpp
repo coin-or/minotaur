@@ -242,7 +242,7 @@ bool LGCIGenerator::hasGubCover(ConstraintConstIterator itcons,
   // While there is some variables uncovered add more GUB's.
   UInt mincovered = 0;
   // Variable to be covered.
-  ConstVariablePtr vartocover;
+  ConstVariablePtr vartocover = 0;
   // How to compare, use the decreasing order. Thus, thw minimum element is
   // the maximum element.
   CompareValueVariablePair compare;
