@@ -439,7 +439,7 @@ doTest; listBins; testFiles; checkTest
 
 ## static+spew
 NAME=build-all-static-spew
-CARGS+=" SPEW_FLAG:BOOL=ON"
+CARGS+=" -DSPEW_FLAG:BOOL=ON"
 doTest; listBins; testFiles; checkTest
 
 ##########################################################################
