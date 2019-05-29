@@ -181,7 +181,7 @@ Branches QuadHandler::getBranches(BrCandPtr cand, DoubleVector &x,
 {
   BrVarCandPtr vcand = boost::dynamic_pointer_cast <BrVarCand> (cand);
   VariablePtr v = vcand->getVar();
-  VariablePtr v2;
+  VariablePtr v2 = 0;
   double value = x[v->getIndex()];
   BranchPtr branch;
   VarBoundModPtr mod;

@@ -23,6 +23,7 @@ GIT_REPOS="https://github.com/minotaur-solver/minotaur"
 
 ## Local LOGS
 WEB_DIR=/home/amahajan/misc/web/minotaur/nightly/origin
+REM_WEB_DIR=powai:/home/amahajan/webpage/minotaur/nightly/origin
 
 ## parallel flag
 CPUS="8"
@@ -36,7 +37,7 @@ DOXYGEN=""
 ## where is cmake, leave empty if it is already in PATH
 CMAKE=""
 
-## url where logs will be posted.
+## url where logs can be viewed.
 URL="http://www.ieor.iitb.ac.in/files/faculty/amahajan/minotaur/nightly/origin/index.html"
 
 ## delimitor
@@ -66,7 +67,7 @@ function checkTest {
 ok_match=
 ok_match=`grep -E -o "OK (.*)" ${NAME}.err`
 err_cnt=`grep -c "error:" ${NAME}.err`
-war_cnt=`grep -c "warning:" ${NAME}.err`
+war_cnt=`grep "warning:" ${NAME}.err | grep -c -v third-party`
 if [[ x${ok_match} == "x" ]]
 then
   echo ${NAME}: utest ERROR >> ${SUMMARY}
@@ -462,8 +463,10 @@ rm -rf ${WEB_DIR}
 mkdir ${WEB_DIR}
 mkdir ${WEB_DIR}/build-log
 cp -t ${WEB_DIR}/build-log/ *.log *.err
+cd ${WEB_DIR}
+tar -zcf build-log.tar.gz build-log
 
-rsync -a ${WEB_DIR}/build-log/ ${REM_WEB_DIR}/build-log/
+rsync -a ${WEB_DIR}/build-log.tar.gz ${REM_WEB_DIR}/
 
 echo ""
 echo Summary
