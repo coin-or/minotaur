@@ -437,6 +437,11 @@ CARGS+=" -DFILTER_LIB_DIR:PATH=${TD_DIR}/lib"
 CARGS+=" -DBUILD_SHARED_LIBS:BOOL=0"
 doTest; listBins; testFiles; checkTest
 
+## static+spew
+NAME=build-all-static-spew
+CARGS+=" SPEW_FLAG:BOOL=ON"
+doTest; listBins; testFiles; checkTest
+
 ##########################################################################
 ## Test manual build without automake
 ##########################################################################
