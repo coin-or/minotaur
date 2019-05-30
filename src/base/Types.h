@@ -332,15 +332,16 @@ typedef std::vector<BranchPtr> BranchPtrVector;
 typedef boost::shared_ptr<BranchPtrVector> Branches;
 typedef std::vector<BranchPtr>::const_iterator BranchConstIterator;
 
+// BrCand boost pointer chnaged to regular pointer
 class   BrCand;
-typedef boost::shared_ptr<BrCand> BrCandPtr;
-typedef boost::shared_ptr<const BrCand> ConstBrCandPtr;  
+typedef BrCand*  BrCandPtr;
+typedef const BrCand* ConstBrCandPtr;  
 typedef std::vector< BrCandPtr > BrCandVector;
 typedef BrCandVector::iterator BrCandVIter;
 
 class   BrVarCand;
-typedef boost::shared_ptr<BrVarCand> BrVarCandPtr;
-typedef boost::shared_ptr<const BrVarCand> ConstBrVarCandPtr; 
+typedef BrVarCand* BrVarCandPtr;
+typedef const BrVarCand* ConstBrVarCandPtr; 
 struct CompareVarBrCand {
   bool operator()(ConstBrVarCandPtr c1, ConstBrVarCandPtr c2) const;
 };

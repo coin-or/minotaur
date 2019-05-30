@@ -179,7 +179,8 @@ void QuadHandler::findLinPt_(double xval, double yval, double &xl,
 Branches QuadHandler::getBranches(BrCandPtr cand, DoubleVector &x,
                                   RelaxationPtr rel, SolutionPoolPtr)
 {
-  BrVarCandPtr vcand = boost::dynamic_pointer_cast <BrVarCand> (cand);
+  //BrVarCandPtr vcand = boost::dynamic_pointer_cast <BrVarCand> (cand);
+  BrVarCandPtr vcand =dynamic_cast <BrVarCand*> (cand);
   VariablePtr v = vcand->getVar();
   VariablePtr v2;
   double value = x[v->getIndex()];
@@ -370,7 +371,8 @@ ModificationPtr QuadHandler::getBrMod(BrCandPtr cand, DoubleVector &x,
   LinModsPtr lmods = (LinModsPtr) new LinMods();
   LinearFunctionPtr lf;
   LinConModPtr lmod;
-  BrVarCandPtr vcand = boost::dynamic_pointer_cast <BrVarCand> (cand);
+  //BrVarCandPtr vcand = boost::dynamic_pointer_cast <BrVarCand> (cand);
+  BrVarCandPtr vcand = dynamic_cast <BrVarCand*> (cand);
   VariablePtr v = vcand->getVar();
   VariablePtr x0, x1, y;
   double x0val, yval, vio, rhs;

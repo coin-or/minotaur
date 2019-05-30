@@ -131,7 +131,8 @@ bool SOS2Handler::isXFeasible_(const double *x, SOSPtr sos)
 Branches SOS2Handler::getBranches(BrCandPtr cand, DoubleVector &, 
                                   RelaxationPtr rel, SolutionPoolPtr)
 {
-  SOSBrCandPtr scand = boost::dynamic_pointer_cast <SOSBrCand> (cand);
+  //SOSBrCandPtr scand = boost::dynamic_pointer_cast <SOSBrCand> (cand);
+  SOSBrCandPtr scand = dynamic_cast <SOSBrCand*> (cand);
   LinModsPtr mod;
   VarBoundModPtr bmod;
   VariablePtr v2;
@@ -411,7 +412,8 @@ ModificationPtr SOS2Handler::getBrMod(BrCandPtr cand, DoubleVector &,
                                       RelaxationPtr , BranchDirection dir) 
 {
   LinModsPtr mod = (LinModsPtr) new LinMods();
-  SOSBrCandPtr scand = boost::dynamic_pointer_cast <SOSBrCand> (cand);
+  //SOSBrCandPtr scand = boost::dynamic_pointer_cast <SOSBrCand> (cand);
+  SOSBrCandPtr scand = dynamic_cast <SOSBrCand*> (cand);
   VarBoundModPtr bmod;
 
   if (dir==DownBranch) {

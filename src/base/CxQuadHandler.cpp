@@ -687,7 +687,8 @@ ModificationPtr CxQuadHandler::getBrMod(BrCandPtr cand, DoubleVector &xval,
   double            lb, ub, lb1, ub1, b2, rhs=0;
   BoundType         lu;
   ConstraintPtr     cons;
-  BrVarCandPtr      vcand = boost::dynamic_pointer_cast <BrVarCand> (cand);
+  //BrVarCandPtr      vcand = boost::dynamic_pointer_cast <BrVarCand> (cand);
+  BrVarCandPtr      vcand = dynamic_cast <BrVarCand*> (cand);
   VariablePtr       x0, x1, y;
   VarSecantMapIter  s_it;
   LinearFunctionPtr lf;
@@ -770,7 +771,8 @@ ModificationPtr CxQuadHandler::getBrMod(BrCandPtr cand, DoubleVector &xval,
 Branches CxQuadHandler::getBranches(BrCandPtr cand, DoubleVector & x,
                                     RelaxationPtr rel, SolutionPoolPtr)
 {
-  BrVarCandPtr vcand = boost::dynamic_pointer_cast <BrVarCand> (cand);
+  //BrVarCandPtr vcand = boost::dynamic_pointer_cast <BrVarCand> (cand);
+  BrVarCandPtr vcand = dynamic_cast <BrVarCand*> (cand);
   VariablePtr v = vcand->getVar();
   VariablePtr v2;
   double value = x[v->getIndex()];

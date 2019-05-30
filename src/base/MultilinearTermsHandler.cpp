@@ -63,7 +63,8 @@ void MultilinearTermsHandler::addConstraint(ConstraintPtr newcon, ConstVariableP
 Branches MultilinearTermsHandler::getBranches(BrCandPtr cand, DoubleVector & x,
                                          RelaxationPtr, SolutionPoolPtr)
 {
-  BrVarCandPtr vcand = boost::dynamic_pointer_cast <BrVarCand> (cand);
+  //BrVarCandPtr vcand = boost::dynamic_pointer_cast <BrVarCand> (cand);
+  BrVarCandPtr vcand = dynamic_cast <BrVarCand*> (cand);
   VariablePtr v = vcand->getVar();
   double value = x[v->getIndex()];
 
@@ -174,7 +175,8 @@ ModificationPtr MultilinearTermsHandler::getBrMod(BrCandPtr cand, DoubleVector &
 
   //XXX Put (bool init) back in handle{x,z}def...
 
-  BrVarCandPtr  vcand = boost::dynamic_pointer_cast <BrVarCand> (cand);
+  //BrVarCandPtr  vcand = boost::dynamic_pointer_cast <BrVarCand> (cand);
+  BrVarCandPtr  vcand = dynamic_cast <BrVarCand*> (cand);
   VariablePtr v = vcand->getVar();
   
   double branching_value = xval[v->getIndex()];
