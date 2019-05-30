@@ -113,11 +113,11 @@ void
 ProblemTest::testChangeBound()
 {
   CPPUNIT_ASSERT(instance_->getVariable(0)->getLb() == 0.0); 
-  instance_->changeBound((int) 0, Lower, 0.5);
-  instance_->changeBound((int) 0, Upper, 0.8);  
+  instance_->changeBoundByInd(0, Lower, 0.5);
+  instance_->changeBoundByInd(0, Upper, 0.8);  
   CPPUNIT_ASSERT(instance_->getVariable(0)->getLb() == 0.5); 
   CPPUNIT_ASSERT(instance_->getVariable(0)->getUb() == 0.8);
-  instance_->changeBound((int) 1, 0.2, 5.0); 
+  instance_->changeBoundByInd(1, 0.2, 5.0); 
   CPPUNIT_ASSERT(instance_->getVariable(1)->getLb() == 0.2); 
   CPPUNIT_ASSERT(instance_->getVariable(1)->getUb() == 5.0);   
 }

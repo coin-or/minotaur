@@ -62,6 +62,7 @@ void AMPLFilterSQPUT::testNLP()
   double value = filter_e->getSolutionValue();
   CPPUNIT_ASSERT(fabs(value-1.7201185) < 1e-7);
 
+  delete filter_e;
   delete iface_;
 }
 
@@ -84,6 +85,7 @@ void AMPLFilterSQPUT::testLP()
   CPPUNIT_ASSERT(status==Minotaur::ProvenLocalOptimal);
   double value = filter_e->getSolutionValue();
   CPPUNIT_ASSERT(fabs(value+8.4286) < 1e-4);
+  delete filter_e;
   delete iface_;
 }
 

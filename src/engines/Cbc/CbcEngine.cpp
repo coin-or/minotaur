@@ -80,28 +80,28 @@ CbcEngine::~CbcEngine()
 }
 
 
-void CbcEngine::addConstraint(ConstraintPtr con)
+void CbcEngine::addConstraint(ConstraintPtr )
 {
 }
 
 
-void CbcEngine::changeBound(ConstraintPtr cons, BoundType lu, double new_val)
+void CbcEngine::changeBound(ConstraintPtr , BoundType , double )
 {
 }
 
 
-void CbcEngine::changeBound(VariablePtr var, BoundType lu, double new_val)
+void CbcEngine::changeBound(VariablePtr , BoundType , double )
 {
 }
 
 
-void CbcEngine::changeBound(VariablePtr var, double new_lb, double new_ub)
+void CbcEngine::changeBound(VariablePtr , double , double )
 {
 }
 
 
-void CbcEngine::changeConstraint(ConstraintPtr c, LinearFunctionPtr lf, 
-                                   double lb, double ub)
+void CbcEngine::changeConstraint(ConstraintPtr , LinearFunctionPtr , 
+                                   double , double )
 {
 }
 
@@ -112,7 +112,7 @@ void CbcEngine::changeConstraint(ConstraintPtr, NonlinearFunctionPtr)
 }
 
 
-void CbcEngine::changeObj(FunctionPtr f, double)
+void CbcEngine::changeObj(FunctionPtr , double)
 {
 }
 
@@ -124,6 +124,10 @@ void CbcEngine::clear()
 
 EnginePtr CbcEngine::emptyCopy()
 {
+  if (env_) {
+    return new CbcEngine(env_);
+  }
+  return new CbcEngine();
 }
 
 
@@ -287,7 +291,7 @@ void CbcEngine::negateObj()
 }
 
 
-void CbcEngine::removeCons(std::vector<ConstraintPtr> &delcons)
+void CbcEngine::removeCons(std::vector<ConstraintPtr> &)
 {
   consChanged_ = true;
 }
@@ -298,7 +302,7 @@ void CbcEngine::resetIterationLimit()
 }
 
 
-void CbcEngine::setIterationLimit(int limit)
+void CbcEngine::setIterationLimit(int )
 {
 }
   
@@ -367,7 +371,7 @@ EngineStatus CbcEngine::solve()
 }
 
 
-void CbcEngine::writeLP(const char *filename) const 
+void CbcEngine::writeLP(const char *) const 
 { 
 }
 

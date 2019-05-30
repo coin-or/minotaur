@@ -182,7 +182,7 @@ Branches QuadHandler::getBranches(BrCandPtr cand, DoubleVector &x,
   //BrVarCandPtr vcand = boost::dynamic_pointer_cast <BrVarCand> (cand);
   BrVarCandPtr vcand =dynamic_cast <BrVarCand*> (cand);
   VariablePtr v = vcand->getVar();
-  VariablePtr v2;
+  VariablePtr v2 = 0;
   double value = x[v->getIndex()];
   BranchPtr branch;
   VarBoundModPtr mod;
@@ -546,17 +546,20 @@ void QuadHandler::addCut_(VariablePtr x, VariablePtr y,
       2*xl*xval - yval > yl*(1+1e-4)) {
     LinearFunctionPtr lf = (LinearFunctionPtr) new LinearFunction();
     FunctionPtr f;
-    ConstraintPtr c;
 
     lf->addTerm(x, 2*xl);
     lf->addTerm(y, -1.0);
     f = (FunctionPtr) new Function(lf);
-    c = rel->newConstraint(f, -INFINITY, xl*xl);
     ifcuts = true;
     ++sStats_.cuts;
 #if SPEW
+    {
+    ConstraintPtr c = rel->newConstraint(f, -INFINITY, xl*xl);
     logger_->msgStream(LogDebug2) << me_ << "new cut added" << std::endl;
     c->write(logger_->msgStream(LogDebug2));
+    }
+#else
+    rel->newConstraint(f, -INFINITY, xl*xl);
 #endif
   } else {
 #if SPEW

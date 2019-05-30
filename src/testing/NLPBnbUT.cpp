@@ -84,7 +84,7 @@ void NLPBnbUT::testNLPBnb()
   ProblemPtr instance = createInstance_();
 
   // create a NULL LP engine.
-  LPEnginePtr lp_e = LPEnginePtr(); //NULL
+  //LPEnginePtr lp_e;
 
   // create an IpoptEnginePtr.
   //IpoptEnginePtr nlp_e = (IpoptEnginePtr) new IpoptEngine(env);
@@ -94,6 +94,8 @@ void NLPBnbUT::testNLPBnb()
   //bab->setLogLevel(LogDebug2);
   //bab->solve();
   //CPPUNIT_ASSERT(fabs(bab->getUb() + 1.0) < 1e-6);
+  
+  //delete lp_e;
 
 }
 
@@ -326,6 +328,7 @@ void NLPBnbUT::testNLPBnb1()
   bab->solve();
   CPPUNIT_ASSERT(fabs(bab->getUb() + 0.5) < 1e-6);
 
+  delete e;
   delete bab;
 
   //CPPUNIT_ASSERT(!"implement me!");

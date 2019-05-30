@@ -1063,7 +1063,6 @@ void QPDProcessor::separate_(bool is_nec, ConstSolutionPtr sol,
   LinearFunctionPtr lf;
   double lfvio;
   double minlfvio = 1e-4;
-  ConstraintPtr cnew;
 
   *status = SepaContinue;
   vbeg = qp_->varsBegin();
@@ -1091,15 +1090,19 @@ void QPDProcessor::separate_(bool is_nec, ConstSolutionPtr sol,
 
     if ((is_nec && lfvio > minlfvio) || (!is_nec && lfvio > 1e-4)) {
       f = (FunctionPtr) new Function(lf);
-      cnew = qp_->newConstraint(f, c->getLb()-val, c->getUb()-val,
-                                c->getName());
-      ++stats_.cuts;
-      *status = SepaResolve;
 #if SPEW
+      {
+      ConstraintPtr cnew = qp_->newConstraint(f, c->getLb()-val, c->getUb()-val,
+                                c->getName());
       logger_->msgStream(LogDebug2) << me_ << "new inequality: ";
       cnew->write(logger_->msgStream(LogDebug2));
       logger_->msgStream(LogDebug2) << me_ << "lfvio = " << lfvio << std::endl;
+      }
+#else
+      qp_->newConstraint(f, c->getLb()-val, c->getUb()-val, c->getName());
 #endif 
+      ++stats_.cuts;
+      *status = SepaResolve;
     } else {
 #if SPEW
       //logger_->msgStream(LogDebug2) << me_ << "linear inequality not violated"
@@ -1164,7 +1167,6 @@ void QPDProcessor::separateECP_(ConstSolutionPtr sol,
   LinearFunctionPtr lf;
   double lfvio;
   double minlfvio = 1e-1;
-  ConstraintPtr cnew;
 
   *status = SepaContinue;
   vbeg = qp_->varsBegin();
@@ -1190,15 +1192,19 @@ void QPDProcessor::separateECP_(ConstSolutionPtr sol,
     }
     if (lfvio > minlfvio) {
       f = (FunctionPtr) new Function(lf);
-      cnew = qp_->newConstraint(f, c->getLb()-val, c->getUb()-val,
-                                c->getName());
-      ++stats_.cuts;
-      *status = SepaResolve;
 #if SPEW
+      {
+      ConstraintPtr cnew = qp_->newConstraint(f, c->getLb()-val, c->getUb()-val,
+                                              c->getName());
       logger_->msgStream(LogDebug2) << me_ << "new ECP inequality: ";
       cnew->write(logger_->msgStream(LogDebug2));
       logger_->msgStream(LogDebug2) << me_ << "lfvio = " << lfvio << std::endl;
+      }
+#else
+      qp_->newConstraint(f, c->getLb()-val, c->getUb()-val, c->getName());
 #endif 
+      ++stats_.cuts;
+      *status = SepaResolve;
     } else {
 #if SPEW
       logger_->msgStream(LogDebug2) << me_ << "ECP linear inequality not "
@@ -1228,7 +1234,6 @@ void QPDProcessor::separateObj_(ConstSolutionPtr sol, ConstSolutionPtr nlp_sol,
   VariableConstIterator vbeg, vend;
   LinearFunctionPtr lf;
   double lfvio;
-  ConstraintPtr cnew;
 
   *status = SepaContinue;
   vbeg = qp_->varsBegin();
@@ -1240,14 +1245,18 @@ void QPDProcessor::separateObj_(ConstSolutionPtr sol, ConstSolutionPtr nlp_sol,
     lfvio = lf->eval(sol->getPrimal()) + val;
     if (lfvio > 1e-1) {
       f = (FunctionPtr) new Function(lf);
-      cnew = qp_->newConstraint(f, -INFINITY, -val, "obj_lnrztn");
-      ++stats_.cuts;
-      *status = SepaResolve;
 #if SPEW
+      {
+      ConstraintPtr cnew = qp_->newConstraint(f, -INFINITY, -val, "obj_lnrztn");
       logger_->msgStream(LogDebug2) << me_ << "new obj inequality: ";
       cnew->write(logger_->msgStream(LogDebug2));
       logger_->msgStream(LogDebug2) << me_ << "lfvio = " << lfvio << std::endl;
+      }
+#else
+      qp_->newConstraint(f, -INFINITY, -val, "obj_lnrztn");
 #endif 
+      ++stats_.cuts;
+      *status = SepaResolve;
     } else {
 #if SPEW
       logger_->msgStream(LogDebug2) << me_ << "obj linear inequality not violated"
@@ -1924,7 +1933,6 @@ void QPDProcessor::separateC_(ConstSolutionPtr sol, ConstSolutionPtr nlp_sol,
   double minlfvio = 0.01;
   FunctionPtr f;
   double val;
-  ConstraintPtr cnew;
 
   *status = SepaContinue;
   vbeg = qp_->varsBegin();
@@ -1949,15 +1957,19 @@ void QPDProcessor::separateC_(ConstSolutionPtr sol, ConstSolutionPtr nlp_sol,
     }
     if (lfvio > minlfvio) {
       f = (FunctionPtr) new Function(lf);
-      cnew = qp_->newConstraint(f, c->getLb()-val, c->getUb()-val,
-                                c->getName());
-      ++stats_.cuts;
-      *status = SepaResolve;
 #if SPEW
+      {
+      ConstraintPtr cnew = qp_->newConstraint(f, c->getLb()-val, c->getUb()-val,
+                                              c->getName());
       logger_->msgStream(LogDebug2) << me_ << "new ECP inequality: ";
       cnew->write(logger_->msgStream(LogDebug2));
       logger_->msgStream(LogDebug2) << me_ << "lfvio = " << lfvio << std::endl;
+      }
+#else
+      qp_->newConstraint(f, c->getLb()-val, c->getUb()-val, c->getName());
 #endif 
+      ++stats_.cuts;
+      *status = SepaResolve;
     } else {
 #if SPEW
       logger_->msgStream(LogDebug2) << me_ << "ECP linear inequality not "
@@ -1991,15 +2003,19 @@ void QPDProcessor::separateC_(ConstSolutionPtr sol, ConstSolutionPtr nlp_sol,
     }
     if (lfvio > minlfvio) {
       f = (FunctionPtr) new Function(lf);
-      cnew = qp_->newConstraint(f, c->getLb()-val, c->getUb()-val,
-                                c->getName());
-      ++stats_.cuts;
-      *status = SepaResolve;
 #if SPEW
+      {
+      ConstraintPtr cnew = qp_->newConstraint(f, c->getLb()-val, c->getUb()-val,
+                                              c->getName());
       logger_->msgStream(LogDebug2) << me_ << "new OA inequality: ";
       cnew->write(logger_->msgStream(LogDebug2));
       logger_->msgStream(LogDebug2) << me_ << "lfvio = " << lfvio << std::endl;
+      }
+#else
+      qp_->newConstraint(f, c->getLb()-val, c->getUb()-val, c->getName());
 #endif 
+      ++stats_.cuts;
+      *status = SepaResolve;
     } else {
 #if SPEW
       logger_->msgStream(LogDebug2) << me_ << "OA linear inequality not "
@@ -2021,7 +2037,6 @@ void QPDProcessor::separateO_(ConstSolutionPtr sol, ConstSolutionPtr nlp_sol,
   VariableConstIterator vbeg, vend;
   LinearFunctionPtr lf;
   double lfvio;
-  ConstraintPtr cnew;
   double minlfvio = 0.1;
 
   *status = SepaContinue;
@@ -2035,14 +2050,18 @@ void QPDProcessor::separateO_(ConstSolutionPtr sol, ConstSolutionPtr nlp_sol,
   lfvio = lf->eval(sol->getPrimal()) + val;
   if (lfvio > minlfvio) {
     f = (FunctionPtr) new Function(lf);
-    cnew = qp_->newConstraint(f, -INFINITY, -val, "obj_lnrztn");
-    ++stats_.cuts;
-    *status = SepaResolve;
 #if SPEW
+    {
+    ConstraintPtr cnew = qp_->newConstraint(f, -INFINITY, -val, "obj_lnrztn");
     logger_->msgStream(LogDebug2) << me_ << "new ECP obj inequality: ";
     cnew->write(logger_->msgStream(LogDebug2));
     logger_->msgStream(LogDebug2) << me_ << "lfvio = " << lfvio << std::endl;
+    }
+#else
+    qp_->newConstraint(f, -INFINITY, -val, "obj_lnrztn");
 #endif 
+    ++stats_.cuts;
+    *status = SepaResolve;
   } else {
 #if SPEW
     logger_->msgStream(LogDebug2) << me_ << "obj ECP linear inequality not violated"
@@ -2060,14 +2079,18 @@ void QPDProcessor::separateO_(ConstSolutionPtr sol, ConstSolutionPtr nlp_sol,
   lfvio = lf->eval(sol->getPrimal()) + val;
   if (lfvio > minlfvio) {
     f = (FunctionPtr) new Function(lf);
-    cnew = qp_->newConstraint(f, -INFINITY, -val, "obj_lnrztn");
-    ++stats_.cuts;
-    *status = SepaResolve;
 #if SPEW
+    {
+    ConstraintPtr cnew = qp_->newConstraint(f, -INFINITY, -val, "obj_lnrztn");
     logger_->msgStream(LogDebug2) << me_ << "new OA obj inequality: ";
     cnew->write(logger_->msgStream(LogDebug2));
     logger_->msgStream(LogDebug2) << me_ << "lfvio = " << lfvio << std::endl;
+    }
+#else
+    qp_->newConstraint(f, -INFINITY, -val, "obj_lnrztn");
 #endif 
+    ++stats_.cuts;
+    *status = SepaResolve;
   } else {
 #if SPEW
     logger_->msgStream(LogDebug2) << me_ << "obj OA linear inequality not violated"

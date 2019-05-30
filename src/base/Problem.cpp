@@ -155,33 +155,33 @@ void Problem::calculateSize(bool shouldRedo)
 }
 
 
-void Problem::changeBound(UInt index, BoundType lu, double new_val)
+void Problem::changeBoundByInd(UInt ind, BoundType lu, double new_val)
 {
 
-  assert(index < vars_.size() || 
+  assert(ind < vars_.size() || 
       !"Problem::changeBound: index of variable exceeds no. of variables.");
 
   if (lu == Lower) {
-    vars_[index]->setLb_(new_val);
+    vars_[ind]->setLb_(new_val);
   } else {
-    vars_[index]->setUb_(new_val);
+    vars_[ind]->setUb_(new_val);
   }
   if (engine_) {
-    engine_->changeBound(vars_[index], lu, new_val);
+    engine_->changeBound(vars_[ind], lu, new_val);
   }
 }
 
 
-void Problem::changeBound(UInt index, double new_lb, double new_ub)
+void Problem::changeBoundByInd(UInt ind, double new_lb, double new_ub)
 {
 
-  assert(index < vars_.size() || 
+  assert(ind < vars_.size() || 
       !"Problem::changeBound: index of variable exceeds no. of variables.");
 
-  vars_[index]->setLb_(new_lb);
-  vars_[index]->setUb_(new_ub);
+  vars_[ind]->setLb_(new_lb);
+  vars_[ind]->setUb_(new_ub);
   if (engine_) {
-    engine_->changeBound(vars_[index], new_lb, new_ub);
+    engine_->changeBound(vars_[ind], new_lb, new_ub);
   }
 }
 

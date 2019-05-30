@@ -122,7 +122,11 @@ if (LINK_ASL)
 endif()
 
 #add_custom_target(Name test unittest all)
-list(APPEND ALL_EXEC_LIBS  minotaur lapack blas dl ${MNTR_EXTRA_LIBS})
+list(APPEND ALL_EXEC_LIBS  minotaur lapack blas)
+if (Fortran_COMPILER_NAME STREQUAL "gfortran")
+  list(APPEND ALL_EXEC_LIBS gfortran)
+endif()
+list(APPEND ALL_EXEC_LIBS ${MNTR_EXTRA_LIBS} dl)
 
 list(REVERSE ALL_EXEC_LIBS)
 list(REMOVE_DUPLICATES ALL_EXEC_LIBS)

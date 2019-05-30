@@ -64,6 +64,7 @@ void AMPLIpoptUT::testNLP()
   double value = ipopt_e->getSolutionValue();
   CPPUNIT_ASSERT(fabs(value-1.7201185) < 1e-7);
 
+  delete ipopt_e;
   delete iface_;
 }
 
