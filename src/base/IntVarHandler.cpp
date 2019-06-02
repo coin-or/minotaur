@@ -168,6 +168,7 @@ Branches IntVarHandler::getBranches(BrCandPtr cand, DoubleVector & x,
     branch2->addRMod(mod);
   }
   branch2->setActivity(value);
+  vcand->setNumBranches(2);
 
   if (true==gDive_ && bestsol) {
     if (bestsol->getPrimal()[v->getIndex()] < x[v->getIndex()]) {

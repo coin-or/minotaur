@@ -145,6 +145,12 @@ private:
   void findCandidates_();
 
   /**
+   * Clean up reliable and unreliable candidates, except for the no_del
+   * candidate.
+   */
+  void freeCandidates_(BrCandPtr no_del);
+
+  /**
    * \brief Find the score of a candidate based on its pseudo costs.
    *
    * \param[in] cand The branching candidate for which score is needed.
