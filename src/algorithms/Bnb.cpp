@@ -479,31 +479,6 @@ void writeBnbStatus(EnvPtr env, BranchAndBound *bab, double obj_sense)
 }
 
 
-//double ENorm(double b[], UInt n)
-//{
-  //double norm = 0;
-  //for(UInt i = 0; i < n; i++) {
-    //norm+= b[i]*b[i];
-  //}
-  //return sqrt(norm);
-//}
-
-
-//double evalDiffDot(const double* Pointa, const double* Pointb, double* gradx, UInt n)
-//{
-  //double dist = 0;
-  //double *diffx = new double[n];
-
-  //for(UInt i=0; i<n; ++i, ++Pointa, ++Pointb){
-    //diffx[i] = *Pointb - *Pointa;
-    ////std::cout << "diffx " << diffx[i] << " gradx " << gradx[i] << std::endl;
-  //}
-  //dist = InnerProduct(diffx, gradx, n)/(ENorm(diffx, n)*ENorm(gradx, n));
-  //delete [] diffx;
-  //return dist;
-//}
-
-
 int main(int argc, char** argv)
 {
   EnvPtr env      = (EnvPtr) new Environment();
@@ -521,20 +496,6 @@ int main(int argc, char** argv)
   HandlerVector handlers;
   int err = 0;
   double obj_sense = 1.0;
-  //VariablePtr v_ptr;
-  //ConstrSet::const_iterator cIter;
-  //FunctionType fType;
-  //UInt lcnt, nlcnt, totcnt;
-
-  //double dist = 0, sizeEstimate = 0, dotMeas = 0;
-  //int n = 0;
-  //const double *rootx, *solx;
-  //ObjectivePtr o;
-  //ObjectiveType objType;
-  //FunctionPtr f;
-  //double *grad;
-  //std::string outputFile;
-  //std::ofstream rootFile, solFile;
  
   env->startTimer(err);
   if (err) {
@@ -554,11 +515,6 @@ int main(int argc, char** argv)
     goto CLEANUP;
   }
 
-  //outputFile = env->getOptions()->findString("problem_file")->getValue();
-  //solFile.open(outputFile.append(".sol"));
-  //outputFile.erase(outputFile.end()-4, outputFile.end());
-  //rootFile.open(outputFile.append(".nsol"));
-  
   loadProblem(env, iface, oinst, &obj_sense);
   orig_v = new VarVector(oinst->varsBegin(), oinst->varsEnd());
   pres = presolve(env, oinst, iface->getNumDefs(), handlers);
@@ -581,24 +537,6 @@ int main(int argc, char** argv)
     goto CLEANUP;
   }
 
-  //std::cout << " Variable name and no. of lin and nonlinear cons it appears in " << std::endl;
-  //for (VariableConstIterator v_iter=oinst->varsBegin(); v_iter!=oinst->varsEnd(); ++v_iter) {
-    //v_ptr = *v_iter;
-    //lcnt = 0;
-    //nlcnt = 0;
-    //totcnt = 0;
-    //for (cIter= v_ptr->consBegin(); cIter!= v_ptr->consEnd(); ++cIter) {
-      //totcnt++;
-      //fType = (*cIter)->getFunctionType();
-      //if (fType !=Constant && fType != Linear) {
-        //nlcnt++;
-      //} else {
-        //lcnt++;
-      //}
-    //}
-    //std::cout << v_ptr->getName() << " " << v_ptr->getType() << " " << lcnt << " " << nlcnt << " " << totcnt << std::endl;
-  //}
-  //exit(1);
   bab = createBab(env, oinst, engine, handlers);
   bab->solve();
   bab->writeStats(env->getLogger()->msgStream(LogExtraInfo));
@@ -607,44 +545,6 @@ int main(int argc, char** argv)
     (*it)->writeStats(env->getLogger()->msgStream(LogExtraInfo));
   }
   
-  //sol = bab->getSolution();
-  //sol2 = bab->getRootSolution();
-  //if (sol && sol2) {
-    //sol = pres->getPostSol(sol);
-    //sol2 = pres->getPostSol(sol2);
-  //}
-  //sol2->writePrimal(std::cout,orig_v);
-  //sol->writePrimal(std::cout,orig_v);
-  //sol->write(solFile);
-  //sol2->write(rootFile);
-
-  //solFile.close();
-  //rootFile.close();
-  
-  //rootx = bab->getRootSolution()->getPrimal();
-  //solx = bab->getSolution()->getPrimal();
-  //n = oinst->getNumVars();
-
-  //dist = getDistance(rootx, solx, n);
-  //sizeEstimate = dist/oinst->getSizeEstimate();
-  
-  //o = oinst->getObjective();
-  //objType = o->getObjectiveType();
-  //f = o->getFunction();
-  //grad = new double[n];
-  //f->evalGradient(rootx, grad, &err);
-  //if (err!=0) {
-    //std::cout <<"gradient not defined at this point." << std::endl;
-  //}
-
-  //if (objType == Maximize) {
-    //dotMeas = evalDiffDot(rootx, solx, grad, n);
-  //} else {
-    //dotMeas = evalDiffDot(solx, rootx, grad, n);
-  //}
-  
-  //std::cout << "Edist(root, optimum): "     << "size measure: " << "dot measure: " 
-    //<< dist << " : " << sizeEstimate <<  " : " << dotMeas << std::endl;
   writeSol(env, orig_v, pres, bab->getSolution(), bab->getStatus(), iface);
   writeBnbStatus(env, bab, obj_sense);
 
@@ -661,9 +561,6 @@ CLEANUP:
   if (orig_v) {
     delete orig_v;
   }
-  //delete [] rootx;
-  //delete [] solx;
-  //delete [] grad;
 
   return 0;
 }
