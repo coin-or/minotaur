@@ -123,7 +123,6 @@ void HessianOfLag::fillRowColValues(const double *x, double obj_mult,
 void HessianOfLag::setupRowCol()
 {
   UInt nz;
-  VariablePtr v;
   std::deque<UInt> *indq;
   UInt *cols;
   UInt i;

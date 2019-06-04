@@ -26,7 +26,7 @@ class ObjectiveUT : public CppUnit::TestCase {
 
     void testGetVal();
     void setUp();
-    void tearDown() { };
+    void tearDown();
 
     CPPUNIT_TEST_SUITE(ObjectiveUT);
     CPPUNIT_TEST(testGetVal);

@@ -26,7 +26,6 @@ namespace Minotaur {
   typedef boost::shared_ptr<PolynomialFunction> PolyFunPtr;
   typedef boost::shared_ptr<const LinearFunction> ConstLinearFunctionPtr;
   typedef boost::shared_ptr<LinearFunction> LinearFunctionPtr;
-  typedef boost::shared_ptr<Variable> VariablePtr;
 
   //class EigenVector;
   //typedef boost::shared_ptr<const EigenVector> EigenVectorPtr;

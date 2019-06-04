@@ -526,8 +526,8 @@ int main(int argc, char** argv)
   EnvPtr env      = (EnvPtr) new Environment();
   OptionDBPtr options;
   MINOTAUR_AMPL::AMPLInterface* iface = 0;
-  ProblemPtr oinst;    // instance that needs to be solved.
-  EnginePtr engine;    // engine for solving relaxations. 
+  ProblemPtr oinst;     // instance that needs to be solved.
+  EnginePtr engine = 0; // engine for solving relaxations. 
   SolutionPtr sol, sol2;
   JacobianPtr jPtr;
   HessianOfLagPtr hPtr;
@@ -620,6 +620,9 @@ int main(int argc, char** argv)
   writeParBnbStatus(env, parbab, obj_sense, WallTimeStart);
 
 CLEANUP:
+  if (engine) {
+    delete engine;
+  }
   if (iface) {
     delete iface;
   }

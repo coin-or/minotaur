@@ -209,6 +209,9 @@ protected:
   /// check if lb <= ub for all variables and constraints.
   SolveStatus checkBounds_(ProblemPtr p);
 
+  /// change constraints flag for presolve
+  void changeBFlag_(VariablePtr v);
+
   void findLinVars_();
 
   void findAllBinCons_();

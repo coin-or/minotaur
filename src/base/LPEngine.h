@@ -38,7 +38,7 @@ namespace Minotaur {
       /// Destructor must be implemented if memory needs to be freed
       virtual ~LPEngine() {};
   };
-  typedef boost::shared_ptr<LPEngine> LPEnginePtr;
+  typedef LPEngine* LPEnginePtr;
 }
 
 #endif

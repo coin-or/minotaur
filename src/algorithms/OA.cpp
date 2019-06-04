@@ -421,9 +421,9 @@ int main(int argc, char* argv[])
   ModVector pmod, rmod;
 
   //engines
-  EnginePtr nlp_e;
-  //LPEnginePtr lin_e;   // lp engine 
-  MILPEnginePtr milp_e;  // lp engine 
+  EnginePtr nlp_e = 0;
+  //LPEnginePtr lin_e;       // lp engine 
+  MILPEnginePtr milp_e = 0;  // milp engine 
   LoggerPtr logger_ = (LoggerPtr) new Logger(LogInfo);
   VarVector *orig_v=0;
   int err = 0;
@@ -586,6 +586,12 @@ int main(int argc, char* argv[])
    }
 
 CLEANUP:
+  if (nlp_e) {
+    delete nlp_e;
+  }
+  if (milp_e) {
+    delete milp_e;
+  }
   if (iface) {
     delete iface;
   }

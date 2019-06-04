@@ -7,9 +7,8 @@
 /**
  * \file RCHandler.h
  * \author Vinay Chourasiya, IIT Bombay
- * \Briefly Used for tightening lower and upper bound of variables using
+ * \brief Used for tightening lower and upper bound of variables using
  * reduced costs
- * 
  */
 
 #ifndef MINOTAURRCHANDLER_H
@@ -39,15 +38,16 @@ typedef boost::shared_ptr <Environment> EnvPtr;
 
 /**
  * \brief Handler for reduced cost strengthening 
- * 
  */
 class RCHandler : public Handler {
 
   
 public:
-  /// Empty constructor.
+  /**
+   * \brief Constructor
+   * \param [in] env Minotaur environment
+   */
   RCHandler(EnvPtr env);
-
   
   /// Destroy.
   ~RCHandler();
@@ -57,45 +57,47 @@ public:
                        SolutionPoolPtr)
   {return Branches();};
 
-  /// Base class method
+  // Base class method
   void getBranchingCandidates(RelaxationPtr, 
                               const DoubleVector &, ModVector &,
                               BrVarCandSet &, BrCandVector &, bool &) {};
 
-  /// Base class method
+  // Base class method
   ModificationPtr getBrMod(BrCandPtr, DoubleVector &, RelaxationPtr,
-                           BranchDirection);
+                           BranchDirection)
+  { return ModificationPtr(); };
 
        
   // Base class method. 
   std::string getName() const;
 
   // Base class method. 
-  bool isFeasible(ConstSolutionPtr sol, RelaxationPtr relaxation, 
-                  bool & should_prune, double &inf_meas);
+  bool isFeasible(ConstSolutionPtr, RelaxationPtr, bool &, double &) 
+  { return true; };
 
-  /// Base class method
-  SolveStatus presolve(PreModQ *, bool *);
+  // Base class method
+  SolveStatus presolve(PreModQ *, bool *) 
+  { return Finished; };
 
-  /// Base class method
+  // Base class method
   bool presolveNode(RelaxationPtr, NodePtr, SolutionPoolPtr, ModVector &,
                     ModVector &)
   {return false;};
 
-  /// Base class method.
+  // Base class method.
   void postsolveGetX(const double *, UInt, DoubleVector *) {};
 
   // Base class method 
-  void relaxInitFull(RelaxationPtr rel, bool *is_inf);
+  void relaxInitFull(RelaxationPtr, bool *) {};
 
   // Base class method. calls relax_().
-  void relaxInitInc(RelaxationPtr rel, bool *is_inf);
+  void relaxInitInc(RelaxationPtr, bool *) {};
 
   // Base class method.
-  void relaxNodeFull(NodePtr node, RelaxationPtr rel, bool *is_inf);
+  void relaxNodeFull(NodePtr, RelaxationPtr, bool *) {};
 
   // Base class method.
-  void relaxNodeInc(NodePtr node, RelaxationPtr rel, bool *is_inf);
+  void relaxNodeInc(NodePtr, RelaxationPtr, bool *) {};
 
  
   // Base class method. Used for tightening upper and lower bound of variables.
@@ -107,13 +109,19 @@ public:
   void writeStats(std::ostream &) const;
   
 private:
-  /** 
-   */
-
-  RCStats *stats_;
-
+  /// Pointer to environment's logger
   LoggerPtr logger_;
+
+  /// Vector of duals of variables of the root relaxation
+  double *rootDuals_;
+
+  // TODO: Document what these members are
+  double *rootPrimal_;
+  double rootValue_;
+  RCStats *stats_;
   const Timer* timer_;
+
+  void copyRootDetails_(ConstSolutionPtr sol,  RelaxationPtr rel); 
 
   static const std::string me_;
 };

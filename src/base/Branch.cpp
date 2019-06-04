@@ -28,7 +28,7 @@ Branch::Branch()
 : pMods_(0),
   rMods_(0),
   activity_(INFINITY),
-  brCand_(BrCandPtr()) // NULL
+  brCand_(0) // NULL
 {
 
 }
@@ -38,6 +38,15 @@ Branch::~Branch()
 {
   pMods_.clear();
   rMods_.clear();
+  if (brCand_) {
+    if (1==brCand_->numBranches()) {
+      delete brCand_;
+    } else {
+      // it may referred to in other branches.
+      assert (brCand_->numBranches()>1);
+      brCand_->decrBranches();
+    }
+  }
 }
 
 

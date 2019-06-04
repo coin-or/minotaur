@@ -81,7 +81,6 @@ MsProcessor::MsProcessor (EnvPtr env, EnginePtr engine,
 MsProcessor::~MsProcessor()
 {
   handlers_.clear();
-  engine_.reset();
 }
 
 

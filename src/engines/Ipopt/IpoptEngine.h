@@ -35,7 +35,7 @@ namespace Minotaur {
   class   Problem;
   class   Timer;
   typedef boost::shared_ptr<Environment> EnvPtr;
-  typedef boost::shared_ptr<IpoptEngine> IpoptEnginePtr;
+  typedef IpoptEngine* IpoptEnginePtr;
   typedef boost::shared_ptr<Problem> ProblemPtr;
 
   struct IpoptStats {

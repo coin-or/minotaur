@@ -31,7 +31,7 @@ namespace Minotaur {
   class   SolutionPool;
   class   WarmStart;
   class   Timer;
-  typedef boost::shared_ptr <Engine> EnginePtr;
+  typedef Engine* EnginePtr;
   typedef boost::shared_ptr <ParBabOptions> ParBabOptionsPtr;
   typedef boost::shared_ptr <NodeProcessor> NodeProcessorPtr;
   typedef boost::shared_ptr <NodeRelaxer> NodeRelaxerPtr;

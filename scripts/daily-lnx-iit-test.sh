@@ -1,18 +1,29 @@
 #!/bin/bash
 
+#
+# Script for testing compilation and unit tests of Minotaur libraries. Main
+# tasks:
+# 1. Third party compilation
+# 2. Minotaur compilation under various flags
+# 3. Unit tests
+# We assume that gfortran is installed on the system, but blas and lapack are
+# not. Blas and Lapack are compiled as third-party libs. Ipopt, Clp, etc are
+# linked to these third-party libs
+# 
+# Does not use build_with_externals script
+#
+
 ## The directory ${TEST_DIR} is deleted everyday and recreated.
 ## All builds will take place within ${TEST_DIR}
 TEST_DIR=/home/amahajan/tmp/minotaur-test
+TP_DIR=${TEST_DIR}/third-party
 
 ## git info
 GIT_REPOS="https://github.com/minotaur-solver/minotaur"
-EXT_URL="http://ieor.iitb.ac.in/files/faculty/amahajan/minotaur/restricted/minotaur-externals-0.2.tar.gz"
 
 ## Local LOGS
 WEB_DIR=/home/amahajan/misc/web/minotaur/nightly/origin
-
-## Logs on webserver
-REM_WEB_DIR=powai:/home/amahajan/webpage/minotaur/nightly
+REM_WEB_DIR=powai:/home/amahajan/webpage/minotaur/nightly/origin
 
 ## parallel flag
 CPUS="8"
@@ -26,7 +37,7 @@ DOXYGEN=""
 ## where is cmake, leave empty if it is already in PATH
 CMAKE=""
 
-## url where logs are accessible.
+## url where logs can be viewed.
 URL="http://www.ieor.iitb.ac.in/files/faculty/amahajan/minotaur/nightly/origin/index.html"
 
 ## delimitor
@@ -43,25 +54,26 @@ then
   exit 1
 fi
 
-# empty OPTIONS is allowed
-./scripts/build_with_externals -M . -d ./${NAME} -e ./minotaur-externals \
-                               -j ${CPUS} -l ${NAME}.log -r ${NAME}.err   \
-			       ${OPTIONS}
+mkdir ${NAME}
 cd ${NAME}
-make utest >> ../${NAME}.log 2>> ../${NAME}.err
-make install >> ../${NAME}.log 2>> ../${NAME}.err
-cd - >> /dev/null
+cmake ${CARGS} ${TEST_DIR} >> ../${NAME}.log 2>> ../${NAME}.err
+make -j $CPUS utest >> ../${NAME}.log 2>> ../${NAME}.err
+make -j $CPUS install >> ../${NAME}.log 2>> ../${NAME}.err
+cd ${TEST_DIR}
 
 }
 
 function checkTest {
-okMatch=
-okMatch=`grep -E -o "OK (.*)" ${NAME}.err`
-if [[ x${okMatch} == "x" ]]
+ok_match=
+ok_match=`grep -E -o "OK (.*)" ${NAME}.err`
+err_cnt=`grep -c "error:" ${NAME}.err`
+war_cnt=`grep "warning:" ${NAME}.err | grep -c -v third-party`
+if [[ x${ok_match} == "x" ]]
 then
-  echo make utest output for ${NAME}: ERROR >> ${SUMMARY}
+  echo ${NAME}: utest ERROR >> ${SUMMARY}
 else
-  echo make utest output for ${NAME}: ${okMatch} >> ${SUMMARY}
+  echo ${NAME}: ${err_cnt} errors and ${war_cnt} warnings in compiling, utest output: ${ok_match} >> ${SUMMARY}
+  echo "" >> ${SUMMARY}
 fi
 }
 
@@ -84,9 +96,9 @@ done
 
 if [ ${files_exist} -eq 1 ]
 then
-  echo "compiling ${NAME}: OK." >> ${SUMMARY}
+  echo "${NAME}: OK, all binaries compiled." >> ${SUMMARY}
 else
-  echo "compiling ${NAME}: ERROR. ${f} not built." >> ${SUMMARY}
+  echo "${NAME}: ERROR, binary ${f} not built." >> ${SUMMARY}
 fi
 }
 
@@ -145,13 +157,14 @@ cd ${TEST_DIR}
 echo "Minotaur version: `git describe`"
 
 NAME=
-OPTIONS=
 ##########################################################################
 ## TEST 1
-## Build all externals
+## Build third-party
 ##########################################################################
-NAME=all_externals
-./scripts/build_externals -d . -j 8 -l ${NAME}.log -r ${NAME}.err -t ${EXT_URL}
+NAME=third-party
+cd ${TP_DIR}
+./build_third_party -j 8 -l ${NAME}.log -r ${NAME}.err 
+cd ${TEST_DIR}
 
 
 ##########################################################################
@@ -159,19 +172,30 @@ NAME=all_externals
 ## Build Minotaur base alone
 ##########################################################################
 NAME=build-base
-OPTIONS="-fioa"
 FILES="lib/libminotaur.so"
+CARGS="-DBOOST_INC_DIR:PATH=${TP_DIR}/include "
+CARGS+=" -DCPPUNIT_INC_DIR:PATH=${TP_DIR}/include/"
+CARGS+=" -DCPPUNIT_LIB_DIR:PATH=${TP_DIR}/lib" 
 doTest; testFiles; checkTest
 
 ## debug
 NAME=build-base-debug
-OPTIONS=-fioab
+FILES="lib/libminotaur.so"
+CARGS+=" -DCMAKE_BUILD_TYPE:String=Debug"
+doTest; testFiles; checkTest
+
+## static+debug
+NAME=build-base-static-debug
+FILES="lib/libminotaur.a"
+CARGS+=" -DBUILD_SHARED_LIBS:BOOL=0"
 doTest; testFiles; checkTest
 
 ## static
 NAME=build-base-static
-OPTIONS=-fioas
-FILES="lib/libminotaur.a"
+CARGS="-DBOOST_INC_DIR:PATH=${TP_DIR}/include "
+CARGS+=" -DCPPUNIT_INC_DIR:PATH=${TP_DIR}/include/"
+CARGS+=" -DCPPUNIT_LIB_DIR:PATH=${TP_DIR}/lib" 
+CARGS+=" -DBUILD_SHARED_LIBS:BOOL=0"
 doTest; testFiles; checkTest
 
 ##########################################################################
@@ -179,19 +203,34 @@ doTest; testFiles; checkTest
 ## Build Minotaur with filter alone
 ##########################################################################
 NAME=build-filter
-OPTIONS=-ioa
 FILES="lib/libminotaur.so lib/libmntrbqpd.a lib/libmntrfiltersqp.so"
+CARGS="-DBOOST_INC_DIR:PATH=${TP_DIR}/include "
+CARGS+=" -DCPPUNIT_INC_DIR:PATH=${TP_DIR}/include/"
+CARGS+=" -DCPPUNIT_LIB_DIR:PATH=${TP_DIR}/lib" 
+CARGS+=" -DBQPD_LIB_DIR:PATH=${TD_DIR}/lib"  
+CARGS+=" -DFILTER_LIB_DIR:PATH=${TD_DIR}/lib"
 doTest; testFiles; checkTest
 
 ## debug
 NAME=build-filter-debug
-OPTIONS=-ioab
+FILES="lib/libminotaur.so lib/libmntrbqpd.a lib/libmntrfiltersqp.so"
+CARGS+=" -DCMAKE_BUILD_TYPE:String=Debug"
+doTest; testFiles; checkTest
+
+## static+debug
+NAME=build-filter-static-debug
+FILES="lib/libminotaur.a lib/libmntrbqpd.a lib/libmntrfiltersqp.a"
+CARGS+=" -DBUILD_SHARED_LIBS:BOOL=0"
 doTest; testFiles; checkTest
 
 ## static
 NAME=build-filter-static
-OPTIONS=-ioas
-FILES="lib/libminotaur.a lib/libmntrbqpd.a lib/libmntrfiltersqp.a"
+CARGS="-DBOOST_INC_DIR:PATH=${TP_DIR}/include "
+CARGS+=" -DCPPUNIT_INC_DIR:PATH=${TP_DIR}/include/"
+CARGS+=" -DCPPUNIT_LIB_DIR:PATH=${TP_DIR}/lib" 
+CARGS+=" -DBQPD_LIB_DIR:PATH=${TD_DIR}/lib"  
+CARGS+=" -DFILTER_LIB_DIR:PATH=${TD_DIR}/lib"
+CARGS+=" -DBUILD_SHARED_LIBS:BOOL=0"
 doTest; testFiles; checkTest
 
 ##########################################################################
@@ -199,19 +238,33 @@ doTest; testFiles; checkTest
 ## Build Minotaur with ipopt alone
 ##########################################################################
 NAME=build-ipopt
-OPTIONS=-foa
 FILES="lib/libminotaur.so lib/libmntripopt.so"
+CARGS="-DBOOST_INC_DIR:PATH=${TP_DIR}/include "
+CARGS+=" -DCPPUNIT_INC_DIR:PATH=${TP_DIR}/include/"
+CARGS+=" -DCPPUNIT_LIB_DIR:PATH=${TP_DIR}/lib" 
+CARGS+=" -DIPOPT_INC_DIR:PATH=${TP_DIR}/include" 
+CARGS+=" -DIPOPT_LIB_DIR:PATH=${TP_DIR}/lib" 
 doTest; testFiles; checkTest
 
 ## debug
 NAME=build-ipopt-debug
-OPTIONS=-foab
+CARGS+=" -DCMAKE_BUILD_TYPE:String=Debug"
+doTest; testFiles; checkTest
+
+## debug+static
+NAME=build-ipopt-static-debug
+FILES="lib/libminotaur.a lib/libmntripopt.a"
+CARGS+=" -DBUILD_SHARED_LIBS:BOOL=0"
 doTest; testFiles; checkTest
 
 ## static
 NAME=build-ipopt-static
-OPTIONS=-foas
-FILES="lib/libminotaur.a lib/libmntripopt.a"
+CARGS="-DBOOST_INC_DIR:PATH=${TP_DIR}/include "
+CARGS+=" -DCPPUNIT_INC_DIR:PATH=${TP_DIR}/include/"
+CARGS+=" -DCPPUNIT_LIB_DIR:PATH=${TP_DIR}/lib" 
+CARGS+=" -DIPOPT_INC_DIR:PATH=${TP_DIR}/include" 
+CARGS+=" -DIPOPT_LIB_DIR:PATH=${TP_DIR}/lib" 
+CARGS+=" -DBUILD_SHARED_LIBS:BOOL=0"
 doTest; testFiles; checkTest
 
 ##########################################################################
@@ -219,65 +272,174 @@ doTest; testFiles; checkTest
 ## Build Minotaur with osi alone
 ##########################################################################
 NAME=build-osi
-OPTIONS=-ifa
 FILES="lib/libminotaur.so lib/libmntrosilp.so"
+CARGS="-DBOOST_INC_DIR:PATH=${TP_DIR}/include "
+CARGS+=" -DCPPUNIT_INC_DIR:PATH=${TP_DIR}/include/"
+CARGS+=" -DCPPUNIT_LIB_DIR:PATH=${TP_DIR}/lib" 
+CARGS+=" -DOSI_INC_DIR:PATH=${TP_DIR}/include" 
+CARGS+=" -DOSI_LIB_DIR:PATH=${TP_DIR}/lib" 
+CARGS+=" -DOSICLP:BOOL=ON"
 doTest; testFiles; checkTest
 
 ## debug
 NAME=build-osi-debug
-OPTIONS=-ifab
+CARGS+=" -DCMAKE_BUILD_TYPE:String=Debug"
+doTest; testFiles; checkTest
+
+## static+debug
+NAME=build-osi-static-debug
+FILES="lib/libminotaur.a lib/libmntrosilp.a"
+CARGS+=" -DBUILD_SHARED_LIBS:BOOL=0"
 doTest; testFiles; checkTest
 
 ## static
 NAME=build-osi-static
-OPTIONS=-ifas
 FILES="lib/libminotaur.a lib/libmntrosilp.a"
+CARGS="-DBOOST_INC_DIR:PATH=${TP_DIR}/include "
+CARGS+=" -DCPPUNIT_INC_DIR:PATH=${TP_DIR}/include/"
+CARGS+=" -DCPPUNIT_LIB_DIR:PATH=${TP_DIR}/lib" 
+CARGS+=" -DOSI_INC_DIR:PATH=${TP_DIR}/include" 
+CARGS+=" -DOSI_LIB_DIR:PATH=${TP_DIR}/lib" 
+CARGS+=" -DOSICLP:BOOL=ON"
+CARGS+=" -DBUILD_SHARED_LIBS:BOOL=0"
 doTest; testFiles; checkTest
 
 ##########################################################################
 ## TEST 6
+## Build Minotaur with Osi+Cbc alone
+##########################################################################
+NAME=build-cbc
+FILES="lib/libminotaur.so lib/libmntrosilp.so lib/libmntrcbc.so"
+CARGS="-DBOOST_INC_DIR:PATH=${TP_DIR}/include "
+CARGS+=" -DCPPUNIT_INC_DIR:PATH=${TP_DIR}/include/"
+CARGS+=" -DCPPUNIT_LIB_DIR:PATH=${TP_DIR}/lib" 
+CARGS+=" -DOSI_INC_DIR:PATH=${TP_DIR}/include" 
+CARGS+=" -DOSI_LIB_DIR:PATH=${TP_DIR}/lib" 
+CARGS+=" -DOSICLP:BOOL=ON"
+CARGS+=" -DCBC_INC_DIR:PATH=${TP_DIR}/include" 
+CARGS+=" -DCBC_LIB_DIR:PATH=${TP_DIR}/lib" 
+doTest; testFiles; checkTest
+
+## debug
+NAME=build-cbc-debug
+FILES="lib/libminotaur.so lib/libmntrosilp.so lib/libmntrcbc.so"
+CARGS+=" -DCMAKE_BUILD_TYPE:String=Debug"
+doTest; testFiles; checkTest
+
+## static+debug
+NAME=build-cbc-static-debug
+FILES="lib/libminotaur.a lib/libmntrosilp.a lib/libmntrcbc.a"
+CARGS+=" -DBUILD_SHARED_LIBS:BOOL=0"
+doTest; testFiles; checkTest
+
+## static
+NAME=build-cbc-static
+CARGS="-DBOOST_INC_DIR:PATH=${TP_DIR}/include "
+CARGS+=" -DCPPUNIT_INC_DIR:PATH=${TP_DIR}/include/"
+CARGS+=" -DCPPUNIT_LIB_DIR:PATH=${TP_DIR}/lib" 
+CARGS+=" -DOSI_INC_DIR:PATH=${TP_DIR}/include" 
+CARGS+=" -DOSI_LIB_DIR:PATH=${TP_DIR}/lib" 
+CARGS+=" -DOSICLP:BOOL=ON"
+CARGS+=" -DCBC_INC_DIR:PATH=${TP_DIR}/include" 
+CARGS+=" -DCBC_LIB_DIR:PATH=${TP_DIR}/lib" 
+CARGS+=" -DBUILD_SHARED_LIBS:BOOL=0"
+doTest; testFiles; checkTest
+
+##########################################################################
+## TEST 7
 ## Build Minotaur with ampl alone
 ##########################################################################
 NAME=build-ampl
-OPTIONS=-ifo
 FILES="lib/libminotaur.so lib/libmntrampl.so"
+CARGS="-DBOOST_INC_DIR:PATH=${TP_DIR}/include "
+CARGS+=" -DCPPUNIT_INC_DIR:PATH=${TP_DIR}/include/"
+CARGS+=" -DCPPUNIT_LIB_DIR:PATH=${TP_DIR}/lib" 
+CARGS+=" -DASL_INC_DIR:PATH=${TP_DIR}/include/asl" 
+CARGS+=" -DASL_LIB_DIR:PATH=${TP_DIR}/lib" 
 doTest; listBins; testFiles; checkTest
 
 ## debug
 NAME=build-ampl-debug
-OPTIONS=-ifob
+CARGS+=" -DCMAKE_BUILD_TYPE:String=Debug"
+doTest; listBins; testFiles; checkTest
+
+## static+debug
+NAME=build-ampl-static-debug
+FILES="lib/libminotaur.a lib/libmntrampl.a"
+CARGS+=" -DBUILD_SHARED_LIBS:BOOL=0"
 doTest; listBins; testFiles; checkTest
 
 ## static
 NAME=build-ampl-static
-OPTIONS=-ifos
-FILES="lib/libminotaur.a lib/libmntrampl.a"
+CARGS="-DBOOST_INC_DIR:PATH=${TP_DIR}/include "
+CARGS+=" -DCPPUNIT_INC_DIR:PATH=${TP_DIR}/include/"
+CARGS+=" -DCPPUNIT_LIB_DIR:PATH=${TP_DIR}/lib" 
+CARGS+=" -DASL_INC_DIR:PATH=${TP_DIR}/include/asl" 
+CARGS+=" -DASL_LIB_DIR:PATH=${TP_DIR}/lib" 
+CARGS+=" -DBUILD_SHARED_LIBS:BOOL=0"
 doTest; listBins; testFiles; checkTest
 
 ##########################################################################
-## TEST 7
-## Build Minotaur with ampl + osi + ipopt + filter 
+## TEST 8
+## Build Minotaur with ampl + osi + cbc + ipopt + filter 
 ##########################################################################
 NAME=build-all
-OPTIONS=
-FILES="lib/libminotaur.so lib/libmntrbqpd.a lib/libmntrampl.so lib/libmntrfiltersqp.so lib/libmntripopt.so lib/libmntrosilp.so"
+FILES="lib/libminotaur.so lib/libmntrbqpd.a lib/libmntrampl.so lib/libmntrfiltersqp.so lib/libmntripopt.so lib/libmntrosilp.so lib/libmntrcbc.so bin/bnb bin/glob bin/qg bin/qpd"
+CARGS="-DBOOST_INC_DIR:PATH=${TP_DIR}/include "
+CARGS+=" -DCPPUNIT_INC_DIR:PATH=${TP_DIR}/include/"
+CARGS+=" -DCPPUNIT_LIB_DIR:PATH=${TP_DIR}/lib" 
+CARGS+=" -DASL_INC_DIR:PATH=${TP_DIR}/include/asl" 
+CARGS+=" -DASL_LIB_DIR:PATH=${TP_DIR}/lib" 
+CARGS+=" -DCBC_INC_DIR:PATH=${TP_DIR}/include" 
+CARGS+=" -DCBC_LIB_DIR:PATH=${TP_DIR}/lib" 
+CARGS+=" -DOSI_INC_DIR:PATH=${TP_DIR}/include" 
+CARGS+=" -DOSI_LIB_DIR:PATH=${TP_DIR}/lib" 
+CARGS+=" -DOSICLP:BOOL=ON"
+CARGS+=" -DIPOPT_INC_DIR:PATH=${TP_DIR}/include" 
+CARGS+=" -DIPOPT_LIB_DIR:PATH=${TP_DIR}/lib" 
+CARGS+=" -DBQPD_LIB_DIR:PATH=${TD_DIR}/lib"  
+CARGS+=" -DFILTER_LIB_DIR:PATH=${TD_DIR}/lib"
 doTest; listBins; testFiles; checkTest
 
 ## debug
 NAME=build-all-debug
-OPTIONS=-b
+CARGS+=" -DCMAKE_BUILD_TYPE:String=Debug"
 doTest; listBins; testFiles; checkTest
 
 ## valgrind
 cd ${NAME}/src/testing
 valgrind --leak-check=full --show-reachable=yes \
 ./unittest all >> ../../../${NAME}.out 2>> ../../../${NAME}.err
-cd - >> /dev/null
+cd ${TEST_DIR}
+
+## static+debug
+NAME=build-all-static-debug
+FILES="lib/libminotaur.a lib/libmntrbqpd.a lib/libmntrampl.a lib/libmntrfiltersqp.a lib/libmntripopt.a lib/libmntrosilp.a lib/libmntrcbc.a bin/bnb bin/glob bin/qg bin/qpd"
+CARGS+=" -DBUILD_SHARED_LIBS:BOOL=0"
+doTest; listBins; testFiles; checkTest
 
 ## static
 NAME=build-all-static
-OPTIONS=-s
-FILES="lib/libminotaur.a lib/libmntrampl.a lib/libmntrbqpd.a lib/libmntrfiltersqp.a lib/libmntripopt.a  lib/libmntrosilp.a"
+CARGS="-DBOOST_INC_DIR:PATH=${TP_DIR}/include "
+CARGS+=" -DCPPUNIT_INC_DIR:PATH=${TP_DIR}/include/"
+CARGS+=" -DCPPUNIT_LIB_DIR:PATH=${TP_DIR}/lib" 
+CARGS+=" -DASL_INC_DIR:PATH=${TP_DIR}/include/asl" 
+CARGS+=" -DASL_LIB_DIR:PATH=${TP_DIR}/lib" 
+CARGS+=" -DCBC_INC_DIR:PATH=${TP_DIR}/include" 
+CARGS+=" -DCBC_LIB_DIR:PATH=${TP_DIR}/lib" 
+CARGS+=" -DOSI_INC_DIR:PATH=${TP_DIR}/include" 
+CARGS+=" -DOSI_LIB_DIR:PATH=${TP_DIR}/lib" 
+CARGS+=" -DOSICLP:BOOL=ON"
+CARGS+=" -DIPOPT_INC_DIR:PATH=${TP_DIR}/include" 
+CARGS+=" -DIPOPT_LIB_DIR:PATH=${TP_DIR}/lib" 
+CARGS+=" -DBQPD_LIB_DIR:PATH=${TD_DIR}/lib"  
+CARGS+=" -DFILTER_LIB_DIR:PATH=${TD_DIR}/lib"
+CARGS+=" -DBUILD_SHARED_LIBS:BOOL=0"
+doTest; listBins; testFiles; checkTest
+
+## static+spew
+NAME=build-all-static-spew
+CARGS+=" -DSPEW_FLAG:BOOL=ON"
 doTest; listBins; testFiles; checkTest
 
 ##########################################################################
@@ -300,34 +462,23 @@ testFiles
 cd build-all
 make doc >> ../doc.log 2>> ../doc.err
 rsync -a --delete ${TEST_DIR}/build-all/doxygen/html/ ${REM_WEB_DIR}/html/
-cd - >> /dev/null
+cd ${TEST_DIR} 
 
 rm -rf ${WEB_DIR}
 mkdir ${WEB_DIR}
 mkdir ${WEB_DIR}/build-log
 cp -t ${WEB_DIR}/build-log/ *.log *.err
+cd ${WEB_DIR}
+tar -zcf build-log.tar.gz build-log
 
-rsync -a ${WEB_DIR}/build-log/ ${REM_WEB_DIR}/build-log/
+rsync -a ${WEB_DIR}/build-log.tar.gz ${REM_WEB_DIR}/
+cd ${TEST_DIR}
 
 echo ""
 echo Summary
 echo ${LINE}
 cat ${SUMMARY}
 
-echo ""
-echo "Errors:"
-echo ${LINE}
-
-for f in ${WEB_DIR}/build-log/build-*err
-do
-	echo " "
-	echo Errors in `basename ${f} .err`:
-	echo ${LINE}
-	cat ${f}
-done
-
-echo ""
-echo "End of tests"
 date
 echo ${LINE}
 

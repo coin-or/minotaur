@@ -22,7 +22,7 @@ namespace Minotaur {
 class Engine;
 class LinConMod;
 class LinearFunction;
-typedef boost::shared_ptr<Engine> EnginePtr;
+typedef Engine* EnginePtr;
 typedef boost::shared_ptr< LinConMod > LinConModPtr;
 typedef boost::shared_ptr< const LinConMod > ConstLinConModPtr;
 typedef std::vector < LinConModPtr > LinConModVector;

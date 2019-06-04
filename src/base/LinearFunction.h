@@ -25,7 +25,6 @@ namespace Minotaur {
   typedef boost::shared_ptr<const LinearFunction> ConstLinearFunctionPtr;
   typedef boost::shared_ptr<QuadraticFunction> QuadraticFunctionPtr;
   typedef boost::shared_ptr<const QuadraticFunction> ConstQuadraticFunctionPtr;
-  typedef boost::shared_ptr<Variable> VariablePtr;
 
 
   /// The base class linear function is of the form c'x.

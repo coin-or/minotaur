@@ -18,6 +18,7 @@
 #include "Problem.h"
 #include "ReliabilityBrancher.h"
 #include "AMPLInterface.h"
+#include <cmath>
 
 CPPUNIT_TEST_SUITE_REGISTRATION(AMPLOsiUT);
 CPPUNIT_TEST_SUITE_NAMED_REGISTRATION(AMPLOsiUT, "AMPLOsiUT");
@@ -36,7 +37,7 @@ void AMPLOsiUT::setUp()
 
 void AMPLOsiUT::tearDown()
 {
-  engine_ptr_.reset();
+  delete engine_ptr_;
   delete iface_;
 }
 
@@ -68,7 +69,6 @@ void AMPLOsiUT::testOsiLP()
   CPPUNIT_ASSERT(engine_ptr_->getStatus() == ProvenOptimal);
   CPPUNIT_ASSERT(fabs(engine_ptr_->getSolutionValue()+2.0) < 1e-5);
 
-  inst->clear();
 }
 
 
@@ -85,7 +85,6 @@ void AMPLOsiUT::testOsiLP2()
   CPPUNIT_ASSERT(status == ProvenInfeasible);
   CPPUNIT_ASSERT(engine_ptr_->getStatus() == ProvenInfeasible);
  
-  inst->clear();
 }
 
 
@@ -102,14 +101,14 @@ void AMPLOsiUT::testOsiWarmStart()
   // get warm start
   WarmStartPtr ws = engine_ptr_->getWarmStartCopy();
   EnvPtr env = (EnvPtr) new Environment();
-  OsiLPEnginePtr engine2 = (OsiLPEnginePtr) new OsiLPEngine(env);
-  engine2->load(inst);
-  engine2->loadFromWarmStart(ws);
-  status = engine2->solve();
-  CPPUNIT_ASSERT(fabs(engine2->getSolutionValue()+8.42857) < 1e-5);
+  OsiLPEngine engine2(env);
+  engine2.load(inst);
+  engine2.loadFromWarmStart(ws);
+  status = engine2.solve();
+  CPPUNIT_ASSERT(fabs(engine2.getSolutionValue()+8.42857) < 1e-5);
   CPPUNIT_ASSERT(status == ProvenOptimal);
-  CPPUNIT_ASSERT(engine2->getStatus() == ProvenOptimal);
-  CPPUNIT_ASSERT(engine2->getIterationCount() == 0);
+  CPPUNIT_ASSERT(engine2.getStatus() == ProvenOptimal);
+  CPPUNIT_ASSERT(engine2.getIterationCount() == 0);
 }
 
 
@@ -152,7 +151,7 @@ void AMPLOsiUT::testOsiBnB()
   bab->solve();
   CPPUNIT_ASSERT(bab->getUb() == 1.0);
 
-  p->clear();
+  delete e;
   delete bab;
 }
 

@@ -119,7 +119,6 @@ OAHandler::~OAHandler()
   }
   env_.reset();
   rel_.reset();
-  nlpe_.reset();
   minlp_.reset();
   logger_.reset();
 }

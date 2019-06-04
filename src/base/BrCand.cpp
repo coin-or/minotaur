@@ -36,6 +36,10 @@ bool Minotaur::CompareScore(BrCandPtr c1, BrCandPtr c2)
   }
 }
 
+BrCand::BrCand()
+ : branches_(0)
+{
+}
 
 void BrCand::setDist(double, double )
 {

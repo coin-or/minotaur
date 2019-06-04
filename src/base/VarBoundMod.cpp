@@ -45,7 +45,7 @@ VarBoundMod::VarBoundMod(VariablePtr var, BoundType lu, double new_val)
 
 VarBoundMod::~VarBoundMod()
 {
-  var_.reset();
+  var_= 0;
 }
 
 
@@ -128,7 +128,7 @@ VarBoundMod2::VarBoundMod2(VariablePtr var, double new_lb, double new_ub)
 
 VarBoundMod2::~VarBoundMod2()
 {
-  var_.reset();
+  var_ = 0;
 }
 
 

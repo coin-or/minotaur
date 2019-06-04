@@ -305,7 +305,6 @@ VariablePtr Transformer::newVar_(LinearFunctionPtr lf, double d,
 
 VariablePtr Transformer::newVar_(CGraphPtr cg, ProblemPtr newp)
 {
-  VariablePtr iv;
   VariablePtr ov = VariablePtr(); // NULL
   FunctionPtr f;
   LinearFunctionPtr lf;

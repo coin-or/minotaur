@@ -80,9 +80,7 @@ BrCandPtr ReliabilityBrancher::findBestCandidate_(const double objval,
   double score, change_up, change_down, maxchange;
   UInt cnt, maxcnt;
   EngineStatus status_up, status_down;
-  BrCandPtr cand, best_cand;
-
-  best_cand = BrCandPtr(); // NULL
+  BrCandPtr cand, best_cand = 0;
 
   // first evaluate candidates that have reliable pseudo costs
   for (BrCandVIter it=relCands_.begin(); it!=relCands_.end(); ++it) {
@@ -169,7 +167,7 @@ Branches ReliabilityBrancher::findBranches(RelaxationPtr rel, NodePtr node,
                                            ModVector &mods) 
 {
   Branches branches;
-  BrCandPtr br_can = BrCandPtr(); //NULL
+  BrCandPtr br_can = 0; 
   const double *x = sol->getPrimal();
 
   ++(stats_->calls);
@@ -197,6 +195,7 @@ Branches ReliabilityBrancher::findBranches(RelaxationPtr rel, NodePtr node,
                                 s_pool->getBestSolutionValue(), node);
   }
 
+  // status_ might have changed now. Check again.
   if (status_ == NotModifiedByBrancher) {
     // surrounded by br_can :-)
     branches = br_can->getHandler()->getBranches(br_can, x_, rel_, s_pool); 
@@ -206,7 +205,7 @@ Branches ReliabilityBrancher::findBranches(RelaxationPtr rel, NodePtr node,
     }
 #if SPEW
     logger_->msgStream(LogDebug) << me_ << "best candidate = "
-      << br_can->getName() << std::endl;
+                                 << br_can->getName() << std::endl;
 #endif
   } else {
     // we found some modifications that can be done to the node. Send these
@@ -231,13 +230,13 @@ Branches ReliabilityBrancher::findBranches(RelaxationPtr rel, NodePtr node,
     }
 #endif
   }
+  freeCandidates_(br_can);
   return branches;
 }
 
 
 void ReliabilityBrancher::findCandidates_()
 {
-  VariablePtr v_ptr;
   VariableIterator v_iter, v_iter2, best_iter;
   VariableConstIterator cv_iter;
   int index;
@@ -251,9 +250,8 @@ void ReliabilityBrancher::findCandidates_()
   double i_wt = 1e-6;
   double score;
 
-  // first clear the list of candidates
-  relCands_.clear();
-  unrelCands_.clear();
+  assert(relCands_.empty());
+  assert(unrelCands_.empty());
 
   for (HandlerIterator h = handlers_.begin(); h != handlers_.end(); ++h) {
     // ask each handler to give some candidates
@@ -266,27 +264,22 @@ void ReliabilityBrancher::findCandidates_()
     }
     cands.insert(cands2.begin(), cands2.end());
     gencands.insert(gencands.end(), gencands2.begin(), gencands2.end());
-    if (is_inf) {
-      relCands_.clear();
-      unrelCands_.clear();
-      cands2.clear();
-      cands.clear();
-      gencands2.clear();
-      gencands.clear();
-      status_ = PrunedByBrancher;
-      return;
-    } else if (mods_.size()>0) {
-      status_ = ModifiedByBrancher;
-      relCands_.clear();
-      unrelCands_.clear();
-      cands2.clear();
-      cands.clear();
-      gencands2.clear();
-      gencands.clear();
-      return;
-    }
     cands2.clear();
     gencands2.clear();
+    if (is_inf || mods_.size() > 0) {
+      for (BrVarCandIter it=cands.begin(); it!=cands.end(); ++it) {
+        delete *it;
+      }
+      for (BrCandVIter it=gencands.begin(); it!=gencands.end(); ++it) {
+        delete *it;
+      }
+      if (is_inf) {
+        status_ = PrunedByBrancher;
+      } else {
+        status_ = ModifiedByBrancher;
+      }
+      return;
+    } 
   }
 
   // visit each candidate in and check if it has reliable pseudo costs.
@@ -327,6 +320,22 @@ void ReliabilityBrancher::findCandidates_()
   return;
 }
 
+
+void ReliabilityBrancher::freeCandidates_(BrCandPtr no_del)
+{
+  for (BrCandVIter it=unrelCands_.begin(); it!=unrelCands_.end(); ++it) {
+    if (no_del != *it) {
+      delete *it;
+    }
+  }
+  for (BrCandVIter it=relCands_.begin(); it!=relCands_.end(); ++it) {
+    if (no_del != *it) {
+      delete *it;
+    }
+  }
+  relCands_.clear();
+  unrelCands_.clear();
+}
 
 
 bool ReliabilityBrancher::getTrustCutoff()

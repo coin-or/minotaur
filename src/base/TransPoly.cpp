@@ -390,7 +390,7 @@ void TransPoly::recursPolyRef_(const CNode *node,
     lf = (LinearFunctionPtr) new LinearFunction();
     for (CNode **it=node->getListL(); it!=node->getListR(); ++it) {
        n1 = *it;
-       mfl.reset(); lfl.reset(); vl.reset(); dl = 0; kl = 0;
+       mfl.reset(); lfl.reset(); vl = 0; dl = 0; kl = 0;
        recursPolyRef_(n1, mfl, lfl, vl, dl, kl);
        d += dl;
        if (mfl) {
@@ -497,7 +497,7 @@ void TransPoly::refMinus_(MonomialFunPtr mfl, MonomialFunPtr mfr,
     } else if (vr) {
       lf->incTerm(vr, -kr);
     }
-    v.reset();
+    v = 0;
     if (lf->getNumTerms()==1 && fabs(d)<zTol_) {
       v = lf->termsBegin()->first;
       k = lf->termsBegin()->second;
@@ -646,7 +646,7 @@ void TransPoly::refPlus_(MonomialFunPtr mfl, MonomialFunPtr mfr,
     } else {
       lf->incTerm(vr, kr);
     }
-    v.reset();
+    v = 0;
     if (lf->getNumTerms()==1 && fabs(d)<zTol_) {
       v = lf->termsBegin()->first;
       k = lf->termsBegin()->second;
@@ -679,7 +679,7 @@ void TransPoly::refNonlinCons_()
     f = c->getFunction();
     if (f->getType()!=Constant && f->getType()!=Linear) {
       cg = boost::dynamic_pointer_cast <CGraph> (f->getNonlinearFunction());
-      mf.reset(); lf.reset(); v.reset(); d = 0; k=0;
+      mf.reset(); lf.reset(); v = 0; d = 0; k=0;
       recursPolyRef_(cg->getOut(), mf, lf, v, d, k);
       if (mf) {
         lf = (LinearFunctionPtr) new LinearFunction();

@@ -180,6 +180,7 @@ set (MINOTAUR_HEADERS
      LPRelaxation.h
      MaxFreqBrancher.h
      MaxVioBrancher.h
+     MILPEngine.h
      MINLPDiving.h
      Modification.h
      MsProcessor.h

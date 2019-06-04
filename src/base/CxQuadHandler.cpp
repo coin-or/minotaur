@@ -74,14 +74,13 @@ void CxQuadHandler::relax_(RelaxationPtr rel, bool *)
 {
   ObjectivePtr oPtr;
   ConstraintConstIterator c_iter;
-  ConstraintPtr cons, sec_cons;
+  ConstraintPtr cons;
 
   LinearFunctionPtr lf0, lf1, lf;
   QuadraticFunctionPtr qf, cx_qf0, cx_qf1; 
   FunctionPtr f;
 
   std::vector< VariablePtr > psqVars, nsqVars;
-  VariablePtr v0, v1, v;
 
   //problem_->write(std::cout);
   // take care of objective.
@@ -688,8 +687,9 @@ ModificationPtr CxQuadHandler::getBrMod(BrCandPtr cand, DoubleVector &xval,
   double            lb, ub, lb1, ub1, b2, rhs=0;
   BoundType         lu;
   ConstraintPtr     cons;
-  BrVarCandPtr      vcand = boost::dynamic_pointer_cast <BrVarCand> (cand);
-  VariablePtr       x0, x1, v, y;
+  //BrVarCandPtr      vcand = boost::dynamic_pointer_cast <BrVarCand> (cand);
+  BrVarCandPtr      vcand = dynamic_cast <BrVarCand*> (cand);
+  VariablePtr       x0, x1, y;
   VarSecantMapIter  s_it;
   LinearFunctionPtr lf;
   McCormickPtr      mcc;
@@ -771,7 +771,8 @@ ModificationPtr CxQuadHandler::getBrMod(BrCandPtr cand, DoubleVector &xval,
 Branches CxQuadHandler::getBranches(BrCandPtr cand, DoubleVector & x,
                                     RelaxationPtr rel, SolutionPoolPtr)
 {
-  BrVarCandPtr vcand = boost::dynamic_pointer_cast <BrVarCand> (cand);
+  //BrVarCandPtr vcand = boost::dynamic_pointer_cast <BrVarCand> (cand);
+  BrVarCandPtr vcand = dynamic_cast <BrVarCand*> (cand);
   VariablePtr v = vcand->getVar();
   VariablePtr v2;
   double value = x[v->getIndex()];
@@ -1109,13 +1110,14 @@ McCormick::McCormick(VariablePtr x0, VariablePtr x1, McCormick::Sense sense)
 
 McCormick::~McCormick() 
 {
-  x0_.reset();
-  x1_.reset();
-  y_.reset();
-  c0_.reset();
-  c1_.reset();
-  c2_.reset();
-  c3_.reset();
+  // Changed: need to delete using different methods 
+  //x0_.reset();
+  //x1_.reset();
+  //y_.reset();
+  //c0_.reset();
+  //c1_.reset();
+  //c2_.reset();
+  //c3_.reset();
 }
 
 

@@ -239,9 +239,10 @@ std::string getSolveStatusString(SolveStatus s);
 class Logger;
 typedef boost::shared_ptr<Logger> LoggerPtr;
 
+//changed boost shared pointer to simple pointer
 class Variable;
-typedef boost::shared_ptr<Variable> VariablePtr;
-typedef boost::shared_ptr<Variable> ConstVariablePtr;
+typedef Variable* VariablePtr;
+typedef Variable* ConstVariablePtr; 
 typedef std::vector<VariablePtr> VarVector;
 typedef std::deque<VariablePtr> VarQueue;
 typedef VarVector::const_iterator VariableConstIterator;
@@ -256,9 +257,14 @@ typedef std::set<ConstVariablePtr, CompareVariablePtr> VariableSet;
 typedef VariableSet::const_iterator VarSetConstIterator;
 typedef std::set<VariablePtr> VarSet;
 
+class Objective;
+typedef Objective* ObjectivePtr;
+typedef const Objective* ConstObjPtr;
+
+//Changed boost_shared pointer to simple pointer
 class Constraint;
-typedef boost::shared_ptr<Constraint> ConstraintPtr;
-typedef boost::shared_ptr<const Constraint> ConstConstraintPtr;
+typedef  Constraint*  ConstraintPtr;
+typedef const Constraint* ConstConstraintPtr;
 typedef std::vector<ConstraintPtr> ConstraintVector;
 typedef ConstraintVector::iterator ConstraintIterator;
 typedef ConstraintVector::const_iterator ConstraintConstIterator;
@@ -275,7 +281,7 @@ typedef std::vector<ConstConstraintPtr> ConstConstraintVector;
 typedef boost::shared_ptr<ConstConstraintVector> ConstConstraintVectorPtr;
 typedef ConstConstraintVector::iterator ConstConstraintIterator;
 typedef std::set<ConstraintPtr> ConstrSet;
-typedef std::deque<ConstConstraintPtr> ConstrQ;
+typedef std::deque<ConstraintPtr> ConstrQ;
 
 
 // Serdar added.
@@ -326,15 +332,16 @@ typedef std::vector<BranchPtr> BranchPtrVector;
 typedef boost::shared_ptr<BranchPtrVector> Branches;
 typedef std::vector<BranchPtr>::const_iterator BranchConstIterator;
 
+// BrCand boost pointer chnaged to regular pointer
 class   BrCand;
-typedef boost::shared_ptr<BrCand> BrCandPtr;
-typedef boost::shared_ptr<const BrCand> ConstBrCandPtr;  
+typedef BrCand*  BrCandPtr;
+typedef const BrCand* ConstBrCandPtr;  
 typedef std::vector< BrCandPtr > BrCandVector;
 typedef BrCandVector::iterator BrCandVIter;
 
 class   BrVarCand;
-typedef boost::shared_ptr<BrVarCand> BrVarCandPtr;
-typedef boost::shared_ptr<const BrVarCand> ConstBrVarCandPtr; 
+typedef BrVarCand* BrVarCandPtr;
+typedef const BrVarCand* ConstBrVarCandPtr; 
 struct CompareVarBrCand {
   bool operator()(ConstBrVarCandPtr c1, ConstBrVarCandPtr c2) const;
 };

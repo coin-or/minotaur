@@ -23,7 +23,7 @@
 namespace Minotaur {
   class Engine;
   class ConBoundMod;
-  typedef boost::shared_ptr <Engine> EnginePtr;
+  typedef Engine* EnginePtr;
   typedef boost::shared_ptr<ConBoundMod> ConBoundModPtr;
   typedef std::vector <ConBoundModPtr> ConBoundModVector;
   typedef ConBoundModVector::iterator ConBoundModIter;

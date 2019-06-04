@@ -92,7 +92,6 @@ ParPCBProcessor::ParPCBProcessor (EnvPtr env, EnginePtr engine,
 ParPCBProcessor::~ParPCBProcessor()
 {
   handlers_.clear();
-  engine_.reset();
 }
 
 

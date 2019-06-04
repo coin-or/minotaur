@@ -39,7 +39,6 @@ Relaxation::Relaxation(ProblemPtr problem)
   VariableGroupConstIterator vit;
 
   ConstConstraintPtr cconstr;
-  ConstraintPtr cCopy;
 
   LinearFunctionPtr lf, lf2;
   NonlinearFunctionPtr nl;
@@ -103,8 +102,7 @@ Relaxation::Relaxation(ProblemPtr problem)
 
     // done.
     fun = (FunctionPtr) new Function(lf2, qf2, nl);
-    cCopy = newConstraint(fun, cconstr->getLb(), cconstr->getUb(), 
-                          cconstr->getName());
+    newConstraint(fun, cconstr->getLb(), cconstr->getUb(), cconstr->getName());
   }
 
   // add SOS1 constraints

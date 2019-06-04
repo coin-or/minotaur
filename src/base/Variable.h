@@ -47,7 +47,7 @@ public:
   virtual ~Variable();
 
   /// Create a copy.
-  boost::shared_ptr<Variable> clone(UInt id) const;
+  VariablePtr clone(UInt id) const;
 
   /// Get the unique id.
   UInt getId() const { return id_; }

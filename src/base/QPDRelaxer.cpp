@@ -36,9 +36,7 @@ QPDRelaxer::QPDRelaxer(EnvPtr env, ProblemPtr p, EnginePtr qe,
 
 QPDRelaxer::~QPDRelaxer()
 {
-  e_.reset();
   qp_.reset();
-  qpe_.reset();
   if (qp_) {
     qp_.reset();
   }
