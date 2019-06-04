@@ -199,7 +199,7 @@ namespace Minotaur {
     void load_();
   };
   
-  typedef boost::shared_ptr<CplexMILPEngine> CplexMILPEnginePtr;
+  typedef CplexMILPEngine* CplexMILPEnginePtr;
 }
 
 #endif
