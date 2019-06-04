@@ -4,10 +4,12 @@
 //     (C)opyright 2008 - 2017 The MINOTAUR Team.
 // 
 
-/*! \brief Outer-approximation algorithm for solving convex MINLP
+/*! \brief Single-tree Outer-approximation algorithm with Lazy callback for solving convex MINLP
  *
  * \authors Meenarli Sharma and Prashant Palkar, IIT Bombay
  */
+
+#include <CplexMILPEngine.h> //(why sequence matters?)
 
 #include <iomanip>
 #include <iostream>
@@ -32,7 +34,7 @@
 #include <NodeRelaxer.h>
 #include <NodeIncRelaxer.h>
 #include <MaxVioBrancher.h>
-#include <OAHandler.h>
+#include <STOAHandler.h>
 #include <ReliabilityBrancher.h>
 #include <AMPLInterface.h>
 #include <BranchAndBound.h>
@@ -50,10 +52,12 @@
 #include <CxQuadHandler.h>
 #include <Objective.h>
 
+#include <Relaxation.h> //(why needed to included here?)
+
+
 using namespace Minotaur;
 
 EnginePtr getNLPEngine(EnvPtr env, ProblemPtr p);
-//void writeBnbStatus(EnvPtr env, BranchAndBound *bab, double obj_sense);
 void writeSol(EnvPtr env, VarVector *orig_v, PresolverPtr pres,
               SolutionPtr sol, SolveStatus status,
               MINOTAUR_AMPL::AMPLInterface* iface);
@@ -112,43 +116,6 @@ void loadProblem(EnvPtr env, MINOTAUR_AMPL::AMPLInterface* iface,
 
   delete timer;
 }
-
-//void linearizeObj(ProblemPtr problem)
-//{
-  //ObjectivePtr obj;
-  //std::string name = "eta";
-  //obj = problem->getObjective();
-
-  //if (!obj) {
-    //assert(!"No objective function in the problem!");
-  //} else if (obj->getFunctionType() != Linear) {
-    //FunctionPtr fold, fnew;
-    //LinearFunctionPtr lfold        = obj->getLinearFunction();
-    //const QuadraticFunctionPtr qf  = obj->getQuadraticFunction();
-    //const NonlinearFunctionPtr nlf = obj->getNonlinearFunction();
-    //LinearFunctionPtr lfnew        = (LinearFunctionPtr) new LinearFunction();
-    //VariablePtr vPtr               = problem->newVariable(-INFINITY,INFINITY,
-                                                           //Continuous,name); 
-    //problem->resetInitialPoint(1);
-    //if (!lfold) {
-      //lfold = (LinearFunctionPtr) new LinearFunction();
-    //}
-    //lfold->addTerm(vPtr, -1.0);
-    //if (nlf) {
-      //fold = (FunctionPtr) new Function(lfold,nlf);
-      //if (qf) {
-        //fold = (FunctionPtr) new Function(lfold,qf,nlf);
-      //}
-    //}
-    //name = "obj_Reform";
-    //problem->newConstraint(fold, -INFINITY, 0.0,name);
-    //problem->removeObjective();
-    //lfnew->addTerm(vPtr, 1.0);
-    //fnew = (FunctionPtr) new Function(lfnew);
-    //problem->newObjective(fnew, obj->getConstant(), obj->getObjectiveType());
-  //}
-//}
-
 
 
 void setInitialOptions(EnvPtr env)
@@ -213,6 +180,17 @@ int showInfo(EnvPtr env)
 }
 
 
+/// Get wall clock time
+double getWallTime() {
+  struct timeval time;
+  if (gettimeofday(&time,NULL)) {
+    // Handle error
+    return 0;
+  }
+  return (double)time.tv_sec + (double)time.tv_usec * .000001;
+}
+
+
 PresolverPtr presolve(EnvPtr env, ProblemPtr p, size_t ndefs, 
                       HandlerVector &handlers)
 {
@@ -265,27 +243,6 @@ PresolverPtr presolve(EnvPtr env, ProblemPtr p, size_t ndefs,
   return pres;
 }
 
-//For separability detection: Check separability if problem is not linear.
-//TransSepPtr sepDetection(EnvPtr env, ProblemPtr p)
-//void sepDetection(EnvPtr env, ProblemPtr p)
-//{
-  //TransSepPtr sep = TransSepPtr();
-  //const std::string me("qg: ");
-
-  //if (env->getOptions()->findBool("separability")->getValue() == true) {
-    //if (p -> isLinear()) {
-      //env ->getLogger()->msgStream(LogInfo) << me
-        //<< "Problem is linear, skipping separability detection" 
-        //<< std::endl;
-    //} else {
-      //sep = (TransSepPtr) new TransSep(env, p);
-      //sep->findSep();
-      //env ->getLogger()->msgStream(LogDebug) << me
-        //<< "Is problem separable? - "<< sep->getStatus() 
-        //<< std::endl;
-    //}
-  //}
-//}
 
 
 double getPerGap(double objLb, double objUb)
@@ -309,9 +266,8 @@ double getPerGap(double objLb, double objUb)
 }
 
 
-void writeOAStatus(EnvPtr env, double gap, double objLb, double objUb, 
-                   double obj_sense, SolveStatus status, UInt iterNum,
-                   double time)
+void writeSTOAStatus(EnvPtr env, double gap, double objLb, double objUb, 
+                   double obj_sense, SolveStatus status, double wallTimeStart)
 {
 
   const std::string me("oa main: ");
@@ -326,48 +282,36 @@ void writeOAStatus(EnvPtr env, double gap, double objLb, double objUb,
     << me << "gap = " << std::max(0.0, objUb - objLb)
     << std::endl
     << me << "gap percentage = " << gap << std::endl
-    << me << "iterations = " << iterNum << std::endl
+    //<< me << "iterations = " << iterNum << std::endl
     << me << "time used (s) = " << std::fixed << std::setprecision(2) 
     //<< env->getTime(err) << std::endl
-    << time << std::endl
+    << getWallTime() - wallTimeStart << std::endl
     << me << "status of outer approximation: " << getSolveStatusString(status) << std::endl;
   env->stopTimer(err); assert(0==err);
 }
 
 
-void showStatus(EnvironmentPtr env, double objLb, double objUb, double gap, int iterNum)
+void showStatus(EnvironmentPtr env, double objLb, double objUb, double gap, double obj_sense)
 {
   int err = 0;
   env->getLogger()->msgStream(LogInfo)
-    << std::endl
     << "oa main: " 
     << std::fixed
     << std::setprecision(1)  << "time = "  << env->getTime(err)
     << std::setprecision(4)  << " lb = "   << objLb
     << std::setprecision(4)  << " ub = "   << objUb
     << std::setprecision(2)  << " gap% = " << gap
-    << " iterations = " << iterNum 
-    << std::endl
+    << std::setprecision(0)  << " obj_sense = " << obj_sense
+    //<< " iterations = " << iterNum 
     << std::endl;
 }
 
 
-/// Get wall clock time
-double getWallTime() {
-  struct timeval time;
-  if (gettimeofday(&time,NULL)) {
-    // Handle error
-    return 0;
-  }
-  return (double)time.tv_sec + (double)time.tv_usec * .000001;
-}
-
-
-bool shouldStop(EnvironmentPtr env, SolveStatus &status, double gap, int iterNum, SolutionPoolPtr solPool, double wallTimeStart)
+bool shouldStop(EnvironmentPtr env, SolveStatus &status, double gap, SolutionPoolPtr solPool)
 //bool shouldStop(EnvironmentPtr env, SolveStatus &status, double gap, SolutionPoolPtr solPool)
 {
   bool stop_oa = false;
-  //int err = 0;
+  int err = 0;
 
   if (gap <= 0.0) {
     stop_oa = true;
@@ -375,13 +319,12 @@ bool shouldStop(EnvironmentPtr env, SolveStatus &status, double gap, int iterNum
   } else if ( gap <= env->getOptions()->findDouble("obj_gap_percent")->getValue()) {
     stop_oa = true;
     status = SolvedGapLimit;
-  //} else if (env->getTime(err) > env->getOptions()->findDouble("bnb_time_limit")->getValue()) 
-  } else if (getWallTime() - wallTimeStart > env->getOptions()->findDouble("bnb_time_limit")->getValue()) {
+  } else if (env->getTime(err) > env->getOptions()->findDouble("bnb_time_limit")->getValue()) {
     stop_oa = true;
     status = TimeLimitReached;
-  } else if (iterNum >= env->getOptions()->findInt("oa_iter_limit")->getValue()) {
-    stop_oa = true;
-    status = IterationLimitReached;
+  //} else if (iterNum >= env->getOptions()->findInt("oa_iter_limit")->getValue()) {
+    //stop_oa = true;
+    //status = IterationLimitReached;
   } else if (solPool->getNumSolsFound() >= (UInt) env->getOptions()->findInt("bnb_sol_limit")->getValue()) {
     stop_oa = true;
     status = SolLimitReached;
@@ -400,7 +343,6 @@ int main(int argc, char* argv[])
   ProblemPtr inst;
   SolutionPtr sol2;
   double obj_sense =1.0, gap = INFINITY;
-  double wallTimeStart = getWallTime();
   
   // jacobian is read from AMPL interface and passed on to branch-and-bound
   JacobianPtr jPtr;
@@ -416,19 +358,22 @@ int main(int argc, char* argv[])
   HandlerVector handlers;
   IntVarHandlerPtr v_hand;
   LinearHandlerPtr l_hand;
-  OAHandlerPtr oa_hand;
-
+  STOAHandlerPtr stoa_hand;
+  EngineStatus engineStatus;
   ModVector pmod, rmod;
 
   //engines
   EnginePtr nlp_e;
-  //LPEnginePtr lin_e;   // lp engine 
-  MILPEnginePtr milp_e;  // lp engine 
+  
+  //MILPEnginePtr milp_e;  // lp engine 
+  CplexMILPEnginePtr milp_e = (CplexMILPEnginePtr) new CplexMILPEngine(env);
+  
   LoggerPtr logger_ = (LoggerPtr) new Logger(LogInfo);
   VarVector *orig_v=0;
   int err = 0;
   
   // start timing.
+  double wallTimeStart = getWallTime();
   env->startTimer(err);
   if (err) {
     goto CLEANUP;
@@ -462,7 +407,8 @@ int main(int argc, char* argv[])
 
   efac = new EngineFactory(env);
   //lp_e = efac->getLPEngine();   // lp engine 
-  milp_e = efac->getMILPEngine();   // milp engine
+  //milp_e = efac->getMILPEngine();   // milp engine
+  //milp_e = (CplexMILPEnginePtr) new CplexMILPEngine(env);
   
   delete efac;
 
@@ -488,19 +434,20 @@ int main(int argc, char* argv[])
     handlers.push_back(l_hand);
     assert(l_hand);
 
-    oa_hand = (OAHandlerPtr) new OAHandler(env, inst, nlp_e, milp_e);
-    oa_hand->setModFlags(false, true);
-    handlers.push_back(oa_hand);
-    assert(oa_hand);
-  
-    // Initialize the handlers for OA
-    CutManager *cutMan = NULL;
-    bool solFound, shouldPrune;
-    double inf_meas;
-    UInt iterNum = 0;
-    ConstSolutionPtr sol;
     SolutionPoolPtr solPool = (SolutionPoolPtr) new SolutionPool(env, inst, 1);
-    SeparationStatus sepStatus;
+    
+    stoa_hand = (STOAHandlerPtr) new STOAHandler(env, inst, nlp_e, milp_e, solPool);
+    stoa_hand->setModFlags(false, true);
+    handlers.push_back(stoa_hand);
+    assert(stoa_hand);
+  
+    // Initialize the handlers for STOA
+    //CutManager *cutMan = NULL;
+    //bool solFound, shouldPrune;
+    //double inf_meas;
+    //UInt iterNum = 0;
+    ConstSolutionPtr sol;
+    //SeparationStatus sepStatus;
     bool prune = false;
     RelaxationPtr milp = RelaxationPtr();
     // Only store bound-changes of relaxation (not problem)
@@ -509,71 +456,38 @@ int main(int argc, char* argv[])
     nr = (NodeIncRelaxerPtr) new NodeIncRelaxer(env, handlers);
     nr->setModFlag(false);
     milp = nr->createRootRelaxation(NodePtr(), prune);
-    //nr->setEngine(milp_e, true); //MS: Load MILP engine
     nr->setEngine(milp_e); 
  
-    double solAbsTol = env->getOptions()->findDouble("solAbs_tol")->getValue();
-    double solRelTol = env->getOptions()->findDouble("solRel_tol")->getValue();
+    //double solAbsTol = env->getOptions()->findDouble("solAbs_tol")->getValue();
+    //double solRelTol = env->getOptions()->findDouble("solRel_tol")->getValue();
     //! initialize the MILP master problem by copying variables & linear constraints and by 
     //linearizing nonlinear constraints at the solution of NLP relaxation of the problem
   
-    //ObjectivePtr objFun = milp->getObjective();
-    //double objLb = -INFINITY, objUb = INFINITY, objNLP, objMIP;
     double objLb = -INFINITY, objUb = INFINITY;
-    //SolveStatus solveStatus = Started;
+    status = Started;
 
-    //MS: also add iteration limit in termination condition
-    //MS: Also look relTol is UB =0
-    //MS: counter fornumber of solutions found
-    //while (objLb < objUb) 
-    //while (fabs(objLb-objUb) > solAbsTol && objLb < objUb + (fabs(objUb)*solRelTol)) 
-    double time = 0;
-    while (true) {
-      if (objUb-objLb <= solAbsTol || (objUb != 0 && (objUb - objLb < fabs(objUb)*solRelTol))) {
-        status = SolvedOptimal;
-        break;
-      }
-      time = wallTimeStart - getWallTime() + env->getOptions()->findDouble("bnb_time_limit")->getValue();
-      if (time > 0) {
-        oa_hand->getMILPEngine()->setTimeLimit(time); //set remaining time as limit for MILP solve
-      } else {
-        if (shouldStop(env, status, gap, iterNum, solPool, wallTimeStart) || sepStatus==SepaPrune) {
-          break;
-        }
-      }
-      //! solve MILP master problem
-      oa_hand->solveMILP(&objLb, &sol, solPool, cutMan);
-      iterNum++;
-//MS: different MILP engine status like unbounded, infeasible, and error to be handled
-      solFound  = oa_hand->isFeasible(sol, RelaxationPtr(), shouldPrune, inf_meas); 
-      if (solFound) {
-        const double *x = sol->getPrimal();
-        solPool->addSolution(x, sol->getObjValue());
-        objUb = solPool->getBestSolutionValue();
-        status = SolvedOptimal;
-        gap = 0;
-        showStatus(env, objLb, objUb, gap, iterNum);
-        break;
-      }
-      // Solve NLP and update MILP by adding OA cuts
-      oa_hand->separate(sol, NodePtr(), milp, cutMan, solPool, pmod, rmod, &solFound, &sepStatus);
-      objUb = solPool->getBestSolutionValue();
-      gap = getPerGap(objLb, objUb);
-      if (shouldStop(env, status, gap, iterNum, solPool, wallTimeStart)) {
-        break;
-      }
-      if (sepStatus==SepaPrune) {
-        const double *x = sol->getPrimal();
-        solPool->addSolution(x, sol->getObjValue());
-        objUb = solPool->getBestSolutionValue();
-        status = SolvedOptimal;
-        showStatus(env, objLb, objUb, gap, iterNum);
-        break;
-      }
-      showStatus(env, objLb, objUb, gap, iterNum);
-    } // end while (objLo <= objUp) or time limit 
-    time = -wallTimeStart + getWallTime();
-    writeOAStatus(env, gap, objLb, objUb, obj_sense, status, iterNum, time);
+    //MS: Also look relTol if UB =0
+    //milp_e->load(milp);
+    //stoa_hand->solveMILP(&objLb, &sol, solPool, cutMan);
+    engineStatus = milp_e->solveSTLazy(&objLb, &sol2, stoa_hand, &status);
+    env->getLogger()->msgStream(LogDebug) << "Engine status :" 
+      << engineStatus << std::endl;
+ 
+    //iterNum++;
+    //MS: different MILP engine status like unbounded, infeasible, and error to be handled
+    //solFound  = stoa_hand->isFeasible(sol, RelaxationPtr(), shouldPrune, inf_meas); 
+    //if (sol2) {
+      //const double *x = sol2->getPrimal();
+      //solPool->addSolution(x, sol2->getObjValue());
+      //objUb = solPool->getBestSolutionValue();
+      ////status = SolvedOptimal;
+      //gap = 0;
+      ////showStatus(env, objLb, objUb, gap);
+    //}
+    objUb = solPool->getBestSolutionValue();
+    gap = getPerGap(objLb, objUb);
+    showStatus(env, objLb, objUb, gap, obj_sense);
+    writeSTOAStatus(env, gap, objLb, objUb, obj_sense, status, wallTimeStart);
     nlp_e->writeStats(env->getLogger()->msgStream(LogExtraInfo));
     milp_e->writeStats(env->getLogger()->msgStream(LogExtraInfo));
 
@@ -582,7 +496,7 @@ int main(int argc, char* argv[])
       (*it)->writeStats(env->getLogger()->msgStream(LogExtraInfo));
     }
     //MS: Other solve status and right way of writing them
-    //writeSol(env, orig_v, pres, solPool->getBestSolution(), solveStatus, iface);
+    //writeSol(env, orig_v, pres, solPool->getBestSolution(), status, iface);
    }
 
 CLEANUP:

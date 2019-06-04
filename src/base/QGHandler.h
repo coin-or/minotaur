@@ -22,6 +22,8 @@
 #include "Problem.h"
 #include "Function.h"
 
+#include "Solution.h"
+
 namespace Minotaur {
 
 struct QGStats {
@@ -67,7 +69,7 @@ private:
 
   /// Modifications done to NLP before solving it.
   std::stack<Modification *> nlpMods_;
-  
+
   /// Status of the NLP/QP engine.
   EngineStatus nlpStatus_;
 
@@ -83,7 +85,7 @@ private:
 
   /// Pointer to relaxation of the problem.
   RelaxationPtr rel_;
- 
+
   /// Value of objective in relaxation solution
   double relobj_; 
 
@@ -94,13 +96,19 @@ private:
   double solRelTol_;
 
   /// Absolute tolerance for pruning a node.
-  double npATol_;
+  double objATol_;
 
   /// Relative tolerance for pruning a node.
-  double npRTol_;
+  double objRTol_;
 
   /// Statistics.
   QGStats *stats_;
+
+  /**
+   * The best solution in terms of objective function value. In case of tie,
+   * the most recently found one.
+   */
+   //SolutionPtr rootSolution_;
 
 public:
   /// Empty constructor.
@@ -174,6 +182,12 @@ public:
  
   /// Show statistics.
   void writeStats(std::ostream &out) const;
+
+  /**
+   * Get a solution with the best objective function value. Return NULL if
+   * the pool is empty.
+   */
+  //SolutionPtr getRootSolution() {return rootSolution_;}
 
 private:
   /**

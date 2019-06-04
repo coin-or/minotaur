@@ -335,7 +335,13 @@ void PCBProcessor::process(NodePtr node, RelaxationPtr rel,
     exit(0);
   }
 #endif
-
+  //if (node->getId()==0) {
+    ////sol->writePrimal(std::cout);
+    //s_pool->setRootSolution(sol);
+  //}
+  //if (env->getOptions()->findInt("threads")->getValue() > 1) {
+    //exit(0);
+  //}
   return;
 }
 

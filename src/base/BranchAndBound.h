@@ -87,6 +87,12 @@ namespace Minotaur {
      */
     SolutionPtr getSolution();
 
+    /*
+     * \brief Return solution from the root node solve. If no solution was found, return
+     * NULL.
+     */
+    //SolutionPtr getRootSolution();
+
     /// Return the final status.
     SolveStatus getStatus();
 

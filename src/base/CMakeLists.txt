@@ -80,6 +80,7 @@ set (MINOTAUR_SOURCES
      ParBndProcessor.cpp
      ParBranchAndBound.cpp
      ParCutMan.cpp
+     ParMINLPDiving.cpp
      ParNodeIncRelaxer.cpp
      ParQGBranchAndBound.cpp
      ParQGHandler.cpp
@@ -117,6 +118,7 @@ set (MINOTAUR_SOURCES
      SOS1Handler.cpp
      SOS2Handler.cpp
      SOSBrCand.cpp
+     STOAHandler.cpp
      Transformer.cpp 
      TransPoly.cpp 
      #TransSep.cpp
@@ -202,6 +204,7 @@ set (MINOTAUR_HEADERS
      ParBndProcessor.h
      ParBranchAndBound.h
      ParCutMan.h
+     ParMINLPDiving.h
      ParNodeIncRelaxer.h
      ParQGBranchAndBound.h
      ParQGHandler.h
@@ -242,6 +245,7 @@ set (MINOTAUR_HEADERS
      SOS1Handler.h
      SOS2Handler.h
      SOSBrCand.h
+     STOAHandler.h
      Timer.h
      Transformer.h 
      TransPoly.h 

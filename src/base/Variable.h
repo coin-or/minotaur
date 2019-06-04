@@ -34,6 +34,7 @@ public:
   /// are private.
   friend class Problem;
   friend class PerspCon;
+  friend class OAHandler;
 
   /// Default constructor.
   Variable();

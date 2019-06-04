@@ -125,6 +125,12 @@ SolutionPtr BranchAndBound::getSolution()
 }
 
 
+//SolutionPtr BranchAndBound::getRootSolution()
+//{
+  //return solPool_->getRootSolution();
+//}
+
+
 SolveStatus BranchAndBound::getStatus()
 {
   return status_;
@@ -357,6 +363,7 @@ void BranchAndBound::solve()
   }
   tm_->setUb(solPool_->getBestSolutionValue());
 
+  //exit(1);
   // do the root
   current_node = processRoot_(&should_prune, &dived_prev);
 
@@ -409,6 +416,7 @@ void BranchAndBound::solve()
 
     if (nodePrcssr_->foundNewSolution()) {
       tm_->setUb(solPool_->getBestSolutionValue());
+      std::cout << "ub = " << solPool_->getBestSolutionValue() << " time = " << timer_->query() << "\n";
     }
     
     should_prune = shouldPrune_(current_node);
@@ -480,7 +488,9 @@ void BranchAndBound::solve()
     }
   } 
   logger_->msgStream(LogInfo) << me_ << "stopping branch-and-bound"
-    << std::endl;
+    << std::endl
+    << me_ << "nodes processed = " << stats_->nodesProc << std::endl
+    << me_ << "nodes created   = " << tm_->getSize() << std::endl;
   stats_->timeUsed = timer_->query();
   timer_->stop();
 }

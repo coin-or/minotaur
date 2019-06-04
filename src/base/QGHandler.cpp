@@ -62,8 +62,8 @@ QGHandler::QGHandler()
   intTol_ = env_->getOptions()->findDouble("int_tol")->getValue();
   solAbsTol_ = env_->getOptions()->findDouble("feasAbs_tol")->getValue();
   solRelTol_ = env_->getOptions()->findDouble("feasRel_tol")->getValue();
-  npATol_ = env_->getOptions()->findDouble("solAbs_tol")->getValue();
-  npRTol_ = env_->getOptions()->findDouble("solRel_tol")->getValue();
+  objATol_ = env_->getOptions()->findDouble("solAbs_tol")->getValue();
+  objRTol_ = env_->getOptions()->findDouble("solRel_tol")->getValue();
   logger_ = (LoggerPtr) new Logger(LogInfo);
 }
 
@@ -82,8 +82,8 @@ QGHandler::QGHandler(EnvPtr env, ProblemPtr minlp, EnginePtr nlpe)
   intTol_ = env_->getOptions()->findDouble("int_tol")->getValue();
   solAbsTol_ = env_->getOptions()->findDouble("feasAbs_tol")->getValue();
   solRelTol_ = env_->getOptions()->findDouble("feasRel_tol")->getValue();
-  npATol_ = env_->getOptions()->findDouble("solAbs_tol")->getValue();
-  npRTol_ = env_->getOptions()->findDouble("solRel_tol")->getValue();
+  objATol_ = env_->getOptions()->findDouble("solAbs_tol")->getValue();
+  objRTol_ = env_->getOptions()->findDouble("solRel_tol")->getValue();
   logger_ = env->getLogger();
 
   stats_ = new QGStats();
@@ -181,8 +181,8 @@ void QGHandler::cutIntSol_(ConstSolutionPtr sol, CutManager *cutMan,
   case (ProvenLocalOptimal):
     ++(stats_->nlpF);
     updateUb_(s_pool, &nlpval, sol_found);
-    if ((relobj_ >= nlpval-npATol_) ||
-        (nlpval != 0 && (relobj_ >= nlpval-fabs(nlpval)*npRTol_))) {
+    if ((relobj_ >= nlpval-objATol_) ||
+        (nlpval != 0 && (relobj_ >= nlpval-fabs(nlpval)*objRTol_))) {
         *status = SepaPrune;
         break;
     } else {
@@ -201,7 +201,7 @@ void QGHandler::cutIntSol_(ConstSolutionPtr sol, CutManager *cutMan,
   case (EngineIterationLimit):
     ++(stats_->nlpIL);
     consCutAtLpSol_(lpx, cutMan, status);
-    objCutAtLpSol_(lpx, cutMan, status);
+    //objCutAtLpSol_(lpx, cutMan, status);
     break;
   case (FailedFeas):
   case (EngineError):
@@ -258,6 +258,9 @@ void QGHandler::initLinear_(bool *isInf)
   
   nlpe_->load(minlp_);
   solveNLP_();
+  
+  //SolutionPtr newsol = (SolutionPtr) new Solution(nlpe_->getSolution());
+  //rootSolution_ = newsol;
   
   switch (nlpStatus_) {
   case (ProvenOptimal):
@@ -490,7 +493,7 @@ void QGHandler::consCutAtLpSol_(const double *lpx, CutManager *,
   LinearFunctionPtr lf;
   std::stringstream sstm;
   ConstraintPtr con, newcon;
-  double c, lpvio, nlpact, cUb;
+  double c, nlpact, cUb;
 
   for (CCIter it = nlCons_.begin(); it != nlCons_.end(); ++it) {
     con = *it;
@@ -503,16 +506,12 @@ void QGHandler::consCutAtLpSol_(const double *lpx, CutManager *,
           (cUb == 0 || nlpact > cUb+fabs(cUb)*solRelTol_)) {
         linearAt_(f, nlpact, lpx, &c, &lf, &error);
         if (error==0) {
-          lpvio = std::max(lf->eval(lpx)-cUb+c, 0.0);
-          if ((lpvio > solAbsTol_) && ((cUb-c)==0 ||
-                                   (lpvio>fabs(cUb-c)*solRelTol_))) {
-            ++(stats_->cuts);
-            sstm << "_OAcut_" << stats_->cuts;
-            *status = SepaResolve;
-            f = (FunctionPtr) new Function(lf);
-            newcon = rel_->newConstraint(f, -INFINITY, cUb-c, sstm.str());
-            return;
-          }
+          ++(stats_->cuts);
+          sstm << "_OAcut_" << stats_->cuts;
+          *status = SepaResolve;
+          f = (FunctionPtr) new Function(lf);
+          newcon = rel_->newConstraint(f, -INFINITY, cUb-c, sstm.str());
+          return;
         }
       }
     }	else {
@@ -544,7 +543,7 @@ void QGHandler::addCut_(const double *nlpx, const double *lpx,
       if ((lpvio > solAbsTol_) &&
           ((cUb-c)==0 || (lpvio>fabs(cUb-c)*solRelTol_))) {
 #if SPEW
-        logger_->msgStream(LogDebug) << me_ << "i linearization of constraint "
+        logger_->msgStream(LogDebug) << me_ << "linearization of constraint "
           << con->getName() << " violated at LP solution with violation = " <<
           lpvio << ". OA cut added." << std::endl;
 #endif
@@ -734,12 +733,15 @@ void QGHandler::updateUb_(SolutionPoolPtr s_pool, double *nlpval,
   double val = nlpe_->getSolutionValue();
   double bestval = s_pool->getBestSolutionValue();
 
-  if (val <= bestval) {
+  if ((bestval >= val-objATol_) ||
+        (bestval != 0 && (bestval >= val-fabs(bestval)*objRTol_))) {
+  //if (val <= bestval) 
+    //MS: adding only better solution to pool
     const double *x = nlpe_->getSolution()->getPrimal();
     s_pool->addSolution(x, val);
     *sol_found = true;
 #if SPEW
-    logger_->msgStream(LogDebug) << me_ << "new solution found, value = "
+    logger_->msgStream(LogDebug) << me_ << "Better solution found, value = "
       << val << std::endl;
 #endif
   }

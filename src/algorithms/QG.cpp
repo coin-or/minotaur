@@ -17,6 +17,7 @@
 #include <AMPLHessian.h>
 #include <AMPLJacobian.h>
 #include <Environment.h>
+//#include <Constraint.h>
 #include <Handler.h>
 #include <Option.h>
 #include <Problem.h>
@@ -118,7 +119,7 @@ void setInitialOptions(EnvPtr env)
   env->getOptions()->findBool("nl_presolve")->setValue(true);
   env->getOptions()->findBool("separability")->setValue(false);
   env->getOptions()->findBool("perspective")->setValue(false);
-  env->getOptions()->findBool("rc_fix")->setValue(true);
+  env->getOptions()->findBool("rc_fix")->setValue(false);
 }
 
 
@@ -251,6 +252,7 @@ int main(int argc, char* argv[])
   PCBProcessorPtr nproc;
 
   NodeIncRelaxerPtr nr;
+  //bool isMINLP = false;
 
   //handlers
   HandlerVector handlers;
@@ -269,6 +271,9 @@ int main(int argc, char* argv[])
   VarVector *orig_v=0;
 
   int err = 0;
+ 
+  //ObjectivePtr o;
+  //FunctionType fType;
 
   // start timing.
   env->startTimer(err);
@@ -310,10 +315,41 @@ int main(int argc, char* argv[])
     writeBnbStatus(env, bab, obj_sense);
     goto CLEANUP;
   }
+
+  //o = inst->getObjective();
+  //fType = o->getFunctionType();
+  //if (o && (fType == Linear || fType == Constant)) {
+      //std::cout << "Lin obj "<< 1 << std::endl;
+  //} else {
+      //std::cout << "Lin obj "<< 0 << std::endl;
+  //}
+  //exit(1);
+  //for (ConstraintConstIterator it=inst->consBegin(); it!=inst->consEnd();
+       //++it) {
+    //if ((*it)->getFunctionType()!=Constant && (*it)->getFunctionType() != Linear) {
+      //isMINLP = true;
+      //break;
+    //}
+  //}
+  //if (!isMINLP) {
+    //if (inst->getObjective()->getFunctionType() != Linear && inst->getObjective()->getFunctionType()!= Constant) {
+      //isMINLP = true;
+    //}
+  //}
+  //std::cout << "Problem is MINLP = " << isMINLP << std::endl;
+  //exit(1);
+
   if (options->findBool("solve")->getValue()==true) {
     if (true==options->findBool("use_native_cgraph")->getValue()) {
       inst->setNativeDer();
     }
+    if (options->findBool("rc_fix")->getValue()) {
+      rc_hand = (RCHandlerPtr) new RCHandler(env);
+      rc_hand->setModFlags(false, true); 
+      handlers.push_back(rc_hand);
+      assert(rc_hand);
+    }
+   
     // Initialize the handlers for branch-and-cut
     l_hand = (LinearHandlerPtr) new LinearHandler(env, inst);
     l_hand->setModFlags(false, true);
@@ -329,13 +365,7 @@ int main(int argc, char* argv[])
     qg_hand->setModFlags(false, true);
     handlers.push_back(qg_hand);
     assert(qg_hand);
-    
-    if (options->findBool("rc_fix")->getValue()) {
-      rc_hand = (RCHandlerPtr) new RCHandler(env);
-      rc_hand->setModFlags(false, true); 
-      handlers.push_back(rc_hand);
-      assert(rc_hand);
-    }  
+     
     // report name
     env->getLogger()->msgStream(LogExtraInfo) << me << "handlers used:"
       << std::endl;
@@ -373,6 +403,7 @@ int main(int argc, char* argv[])
 
     bab = new BranchAndBound(env, inst);
     bab->setNodeRelaxer(nr);
+    //bab->setQGHandler(qg_hand);
     bab->setNodeProcessor(nproc);
     bab->shouldCreateRoot(true);
 
@@ -388,6 +419,7 @@ int main(int argc, char* argv[])
       (*it)->writeStats(env->getLogger()->msgStream(LogExtraInfo));
     }
 
+    //qg_hand->vioStats();
     writeSol(env, orig_v, pres, bab->getSolution(), bab->getStatus(), iface);
     writeBnbStatus(env, bab, obj_sense);
   }
@@ -460,7 +492,7 @@ void writeBnbStatus(EnvPtr env, BranchAndBound *bab, double obj_sense)
       << me << "gap percentage = " << bab->getPerGap() << std::endl
       << me << "time used (s) = " << std::fixed << std::setprecision(2) 
       << env->getTime(err) << std::endl
-      << me << "status of branch-and-bound: " 
+      << me << "status of branch-and-bound = " 
       << getSolveStatusString(bab->getStatus()) << std::endl;
     env->stopTimer(err); assert(0==err);
   } else {

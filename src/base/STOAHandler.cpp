@@ -5,7 +5,7 @@
 // 
 
 /** 
- * \file OAHandler.cpp
+ * \file STOAHandler.cpp
  * \Briefly define a handler for the textbook type Quesada-Grossmann
  * Algorithm.
  * \Authors Meenarli Sharma and Prashant Palkar, Indian Institute of
@@ -36,7 +36,7 @@
 #include "Operations.h"
 #include "Option.h"
 #include "ProblemSize.h"
-#include "OAHandler.h"
+#include "STOAHandler.h"
 #include "Relaxation.h"
 #include "Solution.h"
 #include "SolutionPool.h"
@@ -45,14 +45,16 @@
 #include "Variable.h"
 #include "QuadraticFunction.h"
 
-//#define SPEW 0
+#include<omp.h>
+//#define SPEW 1
+#define PRINT 0
 
 using namespace Minotaur;
 //MS: there is a tolerance move it to the main
 typedef std::vector<ConstraintPtr>::const_iterator CCIter;
-const std::string OAHandler::me_ = "OAHandler: ";
+const std::string STOAHandler::me_ = "STOAHandler: ";
 
-OAHandler::OAHandler()
+STOAHandler::STOAHandler()
 : env_(EnvPtr()),      
   minlp_(ProblemPtr()),
   timer_(0),                    // NULL
@@ -63,19 +65,21 @@ OAHandler::OAHandler()
   objVar_(VariablePtr()),
   oNl_(false),
   rel_(RelaxationPtr()),
+  solPool_(SolutionPoolPtr()),
   relobj_(0.0),
+  numCalls_(0),
   stats_(0)
 {
   intTol_ = env_->getOptions()->findDouble("int_tol")->getValue();
   solAbsTol_ = env_->getOptions()->findDouble("solAbs_tol")->getValue();
   solRelTol_ = env_->getOptions()->findDouble("solRel_tol")->getValue();
-  objATol_ = env_->getOptions()->findDouble("solAbs_tol")->getValue();
-  objRTol_ = env_->getOptions()->findDouble("solRel_tol")->getValue();
+  npATol_ = env_->getOptions()->findDouble("solAbs_tol")->getValue();
+  npRTol_ = env_->getOptions()->findDouble("solRel_tol")->getValue();
   logger_ = (LoggerPtr) new Logger(LogDebug2);
 }
 
 
-OAHandler::OAHandler(EnvPtr env, ProblemPtr minlp, EnginePtr nlpe, MILPEnginePtr milpe)
+STOAHandler::STOAHandler(EnvPtr env, ProblemPtr minlp, EnginePtr nlpe, MILPEnginePtr milpe, SolutionPoolPtr solPool)
 : env_(env),
   minlp_(minlp),
   nlCons_(0),
@@ -85,19 +89,21 @@ OAHandler::OAHandler(EnvPtr env, ProblemPtr minlp, EnginePtr nlpe, MILPEnginePtr
   objVar_(VariablePtr()),
   oNl_(false),
   rel_(RelaxationPtr()),
+  solPool_(solPool),
+  numCalls_(0),
   relobj_(0.0)
 {
   timer_ = env->getNewTimer();
   intTol_ = env_->getOptions()->findDouble("int_tol")->getValue();
   solAbsTol_ = env_->getOptions()->findDouble("solAbs_tol")->getValue();
   solRelTol_ = env_->getOptions()->findDouble("solRel_tol")->getValue();
-  objATol_ = env_->getOptions()->findDouble("solAbs_tol")->getValue();
-  objRTol_ = env_->getOptions()->findDouble("solRel_tol")->getValue();
+  npATol_ = env_->getOptions()->findDouble("solAbs_tol")->getValue();
+  npRTol_ = env_->getOptions()->findDouble("solRel_tol")->getValue();
   logger_ = env->getLogger();
   //logger_ = (LoggerPtr) new Logger((LogLevel)env->getOptions()->
                                    //findInt("handler_log_level")->getValue());
 
-  stats_   = new OAStats();
+  stats_   = new STOAStats();
   stats_->milpS = 0;
   stats_->nlpS = 0;
   stats_->nlpF = 0;
@@ -108,7 +114,7 @@ OAHandler::OAHandler(EnvPtr env, ProblemPtr minlp, EnginePtr nlpe, MILPEnginePtr
 }
 
 
-OAHandler::~OAHandler()
+STOAHandler::~STOAHandler()
 { 
   if (stats_) {
     delete stats_;
@@ -125,7 +131,21 @@ OAHandler::~OAHandler()
 }
 
 
-void OAHandler::addInitLinearX_(const double *x)
+void printx(double *x, UInt size) {
+  for (UInt i=0; i < size; i++) {
+    std::cout << i+1 << " " << x[i] << "\n";
+  }
+}
+
+
+void printx(const double *x, UInt size) {
+  for (UInt i=0; i < size; i++) {
+    std::cout << i+1 << " " << x[i] << "\n";
+  }
+}
+
+
+void STOAHandler::addInitLinearX_(const double *x)
 { 
   int error=0;
   FunctionPtr f;
@@ -143,7 +163,7 @@ void OAHandler::addInitLinearX_(const double *x)
       if (error == 0) {
         cUb = con->getUb(); 
         ++(stats_->cuts);
-        sstm << "_OAcut_" << stats_->cuts << "_AtRoot";
+        sstm << "_STOAcut_" << stats_->cuts << "_AtRoot";
         f = (FunctionPtr) new Function(lf);
         newcon = rel_->newConstraint(f, -INFINITY, cUb-c, sstm.str());
         sstm.str("");
@@ -155,7 +175,10 @@ void OAHandler::addInitLinearX_(const double *x)
       logger_->msgStream(LogDebug) << me_ << "constraint " <<
         con->getName() << " is not defined at this point." << std::endl;
 #endif
-    } 
+    }
+#if PRINT
+    newcon->write(std::cout);
+#endif
   }
 
   if (oNl_) {
@@ -164,7 +187,7 @@ void OAHandler::addInitLinearX_(const double *x)
     act = o->eval(x, &error);
     if (error==0) {
       ++(stats_->cuts);
-      sstm << "_OAObjcut_" << stats_->cuts << "_AtRoot";
+      sstm << "_STOAObjcut_" << stats_->cuts << "_AtRoot";
       f = o->getFunction();
       linearAt_(f, act, x, &c, &lf, &error);
       if (error == 0) {
@@ -185,49 +208,39 @@ void OAHandler::addInitLinearX_(const double *x)
 }
 
 
-void OAHandler::cutIntSol_(ConstSolutionPtr sol, CutManager *cutMan, 
-                           SolutionPoolPtr s_pool, bool *sol_found,
-                           SeparationStatus *status)
+bool STOAHandler::fixedNLP(const double *lpx, const double * nlpx)
 {
-  double nlpval = INFINITY;
-  const double *lpx = sol->getPrimal(), *nlpx;
-  relobj_ = (sol) ? sol->getObjValue() : -INFINITY;
+  numCalls_++;
+  newUb_ = INFINITY;
 
   fixInts_(lpx);           // Fix integer variables
-  //std::cout <<" NLP \n";
-  //minlp_->write(std::cout);
+#if PRINT
+  std::cout << "in STOA: incumb's fixNLP\n";
+  minlp_->write(std::cout);
+#endif
   solveNLP_();
+#if PRINT
+  nlpe_->getSolution()->writePrimal(std::cout);
+#endif
   unfixInts_();             // Unfix integer variables
-  //std::cout << "NLP status " <<nlpe_->getStatusString() << std::endl;
   switch(nlpStatus_) {
   case (ProvenOptimal):
   case (ProvenLocalOptimal):
     ++(stats_->nlpF);
-    updateUb_(s_pool, &nlpval, sol_found); 
-    if ((relobj_ >= nlpval-objATol_) ||
-        (nlpval != 0 && (relobj_ >= nlpval-fabs(nlpval)*objRTol_))) {
-        *status = SepaPrune;
-        break;
-    } else {
-      relobj_= sol->getObjValue();
-      //std::cout << " NLP solution and value " << nlpe_->getSolution()->getObjValue() << std::endl;
-      //nlpe_->getSolution()->writePrimal(std::cout);
-      nlpx = nlpe_->getSolution()->getPrimal();
-      cutToCons_(nlpx, lpx, cutMan, status);
-      cutToObj_(nlpx, lpx, cutMan, status);
-      break;
-    }
+    newUb_ = nlpe_->getSolutionValue();
+    solPool_->addSolution(nlpe_->getSolution());
+    nlpx = nlpe_->getSolution()->getPrimal();
+    return true;
+    break;
   case (ProvenInfeasible):
   case (ProvenLocalInfeasible): 
   case (ProvenObjectiveCutOff):
     ++(stats_->nlpI);
-    nlpx = nlpe_->getSolution()->getPrimal();
-    cutToCons_(nlpx, lpx, cutMan, status);
+    return false;
     break;
   case (EngineIterationLimit):
     ++(stats_->nlpIL);
-    consCutAtLpSol_(lpx, cutMan, status);
-    //objCutAtLpSol_(lpx, cutMan, status);
+    return false;
     break;
   case (FailedFeas):
   case (EngineError):
@@ -241,23 +254,111 @@ void OAHandler::cutIntSol_(ConstSolutionPtr sol, CutManager *cutMan,
       << nlpe_->getStatusString() << std::endl; 
     logger_->msgStream(LogError)<< me_ << "No cut generated, may cycle!" 
       << std::endl;
-    *status = SepaError;
+    return false;
   }
+  return true;
+}
 
- if (*status == SepaContinue) {
-   *status = SepaPrune;
- }
+bool STOAHandler::fixedNLP(const double *lpx)
+{
+  numCalls_++;
+  newUb_ = INFINITY;
 
-#if SPEW
-  logger_->msgStream(LogDebug) << me_ << "NLP solve status = " 
-    << nlpe_->getStatusString() << std::endl;
-  logger_->msgStream(LogDebug) << me_ << "separation status = " << *status << std::endl;
+  fixInts_(lpx);           // Fix integer variables
+#if PRINT
+  std::cout << "in STOA: lazyCb's fixNLP\n";
+  minlp_->write(std::cout);
 #endif
-  return;
+  solveNLP_();
+#if PRINT
+  nlpe_->getSolution()->writePrimal(std::cout);
+#endif
+  unfixInts_();             // Unfix integer variables
+  switch(nlpStatus_) {
+  case (ProvenOptimal):
+  case (ProvenLocalOptimal):
+    ++(stats_->nlpF);
+    newUb_ = nlpe_->getSolutionValue();
+    solPool_->addSolution(nlpe_->getSolution());
+    //return true;
+    break;
+  case (ProvenInfeasible):
+  case (ProvenLocalInfeasible): 
+  case (ProvenObjectiveCutOff):
+    ++(stats_->nlpI);
+    //return false;
+    break;
+  case (EngineIterationLimit):
+    ++(stats_->nlpIL);
+    //return false;
+    break;
+  case (FailedFeas):
+  case (EngineError):
+  case (FailedInfeas):
+  case (ProvenUnbounded):
+  case (ProvenFailedCQFeas):
+  case (EngineUnknownStatus):
+  case (ProvenFailedCQInfeas):
+  default:
+    logger_->msgStream(LogError) << me_ << "NLP engine status = " 
+      << nlpe_->getStatusString() << std::endl; 
+    logger_->msgStream(LogError)<< me_ << "No cut generated, may cycle!" 
+      << std::endl;
+    return false;
+  }
+  return true;
+}
+
+void STOAHandler::OACutToObj(const double *lpx, double* rhs,
+                             std::vector<UInt> *varIdx,
+                             std::vector<double>* varCoeff, double ub)
+{
+  relobj_ = ub;
+  const double *nlpx;
+  switch(nlpStatus_) {
+  case (ProvenOptimal):
+  case (ProvenLocalOptimal):
+    nlpx = nlpe_->getSolution()->getPrimal();
+    cutToObj_(nlpx, lpx, rhs, varIdx, varCoeff);
+    break;
+  case (EngineIterationLimit):
+    objCutAtLpSol_(lpx, rhs, varIdx, varCoeff);
+    break;
+  default:
+    break;
+  }
 }
 
 
-void OAHandler::fixInts_(const double *x)
+void STOAHandler::OACutToCons(const double *lpx, ConstraintPtr con,
+                              double* rhs, std::vector<UInt> *varIdx,
+                              std::vector<double>* varCoeff)
+{
+  const double *nlpx;
+#if SPEW
+  //printx(lpx, minlp_->getNumVars());
+  logger_->msgStream(LogDebug) << " nlp status " 
+    << nlpe_->getStatusString() << std::endl;
+#endif
+  switch(nlpStatus_) {
+  case (ProvenOptimal):
+  case (ProvenLocalOptimal):
+  case (ProvenInfeasible):
+  case (ProvenLocalInfeasible): 
+  case (ProvenObjectiveCutOff):
+    nlpx = nlpe_->getSolution()->getPrimal();
+    cutToCons_(con, nlpx, lpx, rhs, varIdx, varCoeff);
+    break;
+  case (EngineIterationLimit):
+    consCutAtLpSol_(con, lpx, rhs, varIdx, varCoeff);
+    break;
+  default:
+    logger_->msgStream(LogError) << me_ << "Unknown NLP engine statusi" << std::endl; 
+  }
+}
+
+
+void STOAHandler::fixInts_(const double *x)
 {
   double xval;
   VariablePtr v;
@@ -276,57 +377,30 @@ void OAHandler::fixInts_(const double *x)
   return;
 }
 
-//void OAHandler::solveMILP(double* objfLb, double* objfUb, 
-                          //SolutionPoolPtr solPool, CutManager* cutMan)
-
-void OAHandler::solveMILP(double* objfLb, ConstSolutionPtr* sol, 
+void STOAHandler::solveMILP(double* objfLb, ConstSolutionPtr* sol, 
                           SolutionPoolPtr, CutManager*)
 {
-
-  //MS: to delete
-  //int error = 0;
-  //double act;
-  ObjectivePtr o = minlp_->getObjective();
-  //MS: cross check the solveStatus here 
-  //lpe_->loadMIP(rel_);        //link to CPLEX with LP engine hack
-  milpe_->load(rel_);         //link directly to CPLEX (already loading in NodeRelaxer, remove double loading!)
-  //rel_->write(std::cout);
-  //OsiLPEnginePtr olpe = boost::dynamic_pointer_cast <OsiLPEngine> (lpe_); 
-  //olpe->loadMIP(rel_);
-  //ConstSolutionPtr sol;
-  //EngineStatus lpStatus = lpe_->solve();
-  //EngineStatus lpStatus = lpe_->solveMIP();     //method implemented with CPLEX LP hack
+ //MS: cross check the solveStatus here 
+  milpe_->load(rel_);         //link directly to CPLEX (already loading in NodeRelaxer, remove initial double loading!)
   EngineStatus lpStatus = milpe_->solve();
-  //EngineStatus lpStatus = olpe->solveMIP();
   ++(stats_->milpS);
   switch (lpStatus) {
   case (ProvenOptimal):
   case (ProvenLocalOptimal):
     *sol = milpe_->getSolution();
-    //(*sol)->writePrimal(std::cout);
     (*objfLb) = (*sol)->getObjValue();
-    //objVar_->setLb_(*objfLb +.0001);  
-    //act = o->eval((*sol)->getPrimal(), &error);
-    //std::cout << "Evaluated obj " << act << std::endl;
-    //rel_->write(std::cout,1);
-    //sol->writePrimal(std::cout);
-    //*milpStatus = SolvedOptimal;
     break;
-  case (EngineIterationLimit): // MS: take care of this here.
+  case (EngineIterationLimit): // MS: take care of this.
     ++(stats_->milpIL);
     *sol = milpe_->getSolution();
     (*objfLb) = (*sol)->getObjValue();
-    //rel_->write(std::cout,1);
-    //sol->writePrimal(std::cout);
-    //*milpStatus = SolvedOptimal;
     break;
   case (ProvenInfeasible):
   case (ProvenLocalInfeasible): 
   case (ProvenObjectiveCutOff):
-    //*milpStatus = SolvedInfeasible;
     logger_->msgStream(LogError) << me_ << "MILP engine status at root= " 
       << lpStatus << std::endl;
-    assert(!"In OAHandler: MILP infeasible. Check error log.");
+    assert(!"In STOAHandler: MILP infeasible. Check error log.");
     break;
   case (ProvenUnbounded):
   //case (EngineIterationLimit): // MS: take care of this here.
@@ -340,20 +414,19 @@ void OAHandler::solveMILP(double* objfLb, ConstSolutionPtr* sol,
     //*milpStatus = SolvedUnbounded;
     logger_->msgStream(LogError) << me_ << "MILP engine status= " 
       << lpStatus << std::endl;
-    assert(!"In OAHandler: stopped. Check error log.");
+    assert(!"In STOAHandler: stopped. Check error log.");
     break;
   }
   return;
 }
 
-void OAHandler::initLinear_(bool *isInf)
+void STOAHandler::initLinear_(bool *isInf)
 {
   *isInf = false;
   const double *x;
-  
   nlpe_->load(minlp_);
   solveNLP_();
-  
+ 
   switch (nlpStatus_) {
   case (ProvenOptimal):
   case (ProvenLocalOptimal):
@@ -382,33 +455,38 @@ void OAHandler::initLinear_(bool *isInf)
   default:
     logger_->msgStream(LogError) << me_ << "NLP engine status at root= " 
       << nlpStatus_ << std::endl;
-    assert(!"In OAHandler: stopped at root. Check error log.");
+    assert(!"In STOAHandler: stopped at root. Check error log.");
     break;
   }
 #if SPEW
   logger_->msgStream(LogDebug) << me_ << "root NLP solve status = " 
     << nlpe_->getStatusString() << std::endl;
 #endif
+#if PRINT
+  std::cout << "\nin lstoa: orig minlp\n";
+  minlp_->write(std::cout);
+  nlpe_->getSolution()->writePrimal(std::cout);
+  std::cout << "\nin lstoa: rel\n";
+  rel_->write(std::cout);
+#endif
+ 
   return;
 }
 
-
-bool OAHandler::isFeasible(ConstSolutionPtr sol, RelaxationPtr, bool &,
-                           double &)
+bool STOAHandler::isFeas(const double *x)
 {
   int error=0;
   FunctionPtr f;
   double act, cUb;
   ConstraintPtr c;
-  const double *x = sol->getPrimal();
 
   for (CCIter it=nlCons_.begin(); it!=nlCons_.end(); ++it) { 
     c = *it;
     act = c->getActivity(x, &error);
     if (error==0) {
       cUb = c->getUb();
-      if (act > cUb + solAbsTol_ && 
-          (cUb == 0 || act > cUb + fabs(cUb)*solRelTol_)) {
+      if (act > cUb + solAbsTol_ || 
+          (cUb != 0 && act > cUb + fabs(cUb)*solRelTol_)) {
 #if SPEW
         logger_->msgStream(LogDebug) << me_ << "constraint " <<
           c->getName() << " violated with violation = " << act - cUb <<
@@ -432,8 +510,8 @@ bool OAHandler::isFeasible(ConstSolutionPtr sol, RelaxationPtr, bool &,
     relobj_ = x[objVar_->getIndex()];
     act = minlp_->getObjValue(x, &error);
     if (error == 0) {
-      if (act > relobj_ + solAbsTol_ && 
-          (relobj_ == 0 || (act > relobj_ + fabs(relobj_)*solRelTol_))) {
+      if (act > relobj_ + solAbsTol_ || 
+          (relobj_ != 0 && (act > relobj_ + fabs(relobj_)*solRelTol_))) {
 #if SPEW
         logger_->msgStream(LogDebug) << me_ << "objective violated with "
           << "violation = " << act - relobj_ << std::endl;
@@ -446,14 +524,12 @@ bool OAHandler::isFeasible(ConstSolutionPtr sol, RelaxationPtr, bool &,
       return false;
     }
   }
-
   return true;
 }
 
 
-void OAHandler::linearizeObj_()
+void STOAHandler::linearizeObj_()
 {
-  //rel_->write(std::cout);
   ObjectivePtr o = minlp_->getObjective();
   FunctionType fType = o->getFunctionType();
   if (!o) {
@@ -472,33 +548,12 @@ void OAHandler::linearizeObj_()
     f = (FunctionPtr) new Function(lf);
     rel_->newObjective(f, 0.0, objType);
     objVar_ = vPtr;
-  } 
-  //else {
-    //FunctionPtr f;
-    //std::string name = "eta";
-    //ObjectiveType objType = o->getObjectiveType();
-    //LinearFunctionPtr lf = (LinearFunctionPtr) new LinearFunction();
-    //VariablePtr vPtr = rel_->newVariable(-INFINITY, INFINITY, Continuous,
-                                         //name, VarHand);
-    //assert(objType == Minimize);
-        
-    //lf = o->getLinearFunction();
-    //lf->addTerm(vPtr, -1.0);
-    //f = (FunctionPtr) new Function(o->getLinearFunction());
-    //rel_->newConstraint(f, -INFINITY, 0);
-    //rel_->removeObjective();
-    //lf = (LinearFunctionPtr) new LinearFunction();
-    //lf->addTerm(vPtr, 1.0);
-    //f = (FunctionPtr) new Function(lf);
-    //rel_->newObjective(f, 0.0, objType);
-    //objVar_ = vPtr;
-  //}
-  //rel_->write(std::cout);
+  }
   return;
 }
 
 
-void OAHandler::linearAt_(FunctionPtr f, double fval, const double *x, 
+void STOAHandler::linearAt_(FunctionPtr f, double fval, const double *x, 
                           double *c, LinearFunctionPtr *lf, int *error)
 {
 
@@ -508,15 +563,8 @@ void OAHandler::linearAt_(FunctionPtr f, double fval, const double *x,
   const double linCoeffTol =
     env_->getOptions()->findDouble("conCoeff_tol")->getValue();
 
-  //std::cout << "\nFunction for gradient\n";
-  //f->write(std::cout);
   std::fill(a, a+n, 0.);
   f->evalGradient(x, a, error);
-
-  //std::cout << "\nNLP point \n" ;
-  //for (int i=0; i < n; ++i) {
-    //std::cout << x[i] << " " << a[i] << std::endl;  
-  //}
   
   if (*error==0) {
     *lf = (LinearFunctionPtr) new LinearFunction(a, vbeg, vend, linCoeffTol); 
@@ -529,76 +577,75 @@ void OAHandler::linearAt_(FunctionPtr f, double fval, const double *x,
       << std::endl;
 #endif
   }
-  //std::cout << "\n Lin. constant val " << *c << std::endl;
   delete [] a;
   return;
 }
 
 
-void OAHandler::cutToCons_(const double *nlpx, const double *lpx,
-                             CutManager *cutman, SeparationStatus *status)
+void STOAHandler::cutToCons_(ConstraintPtr con, const double *nlpx,
+                             const double *lpx, double* rhs,
+                             std::vector<UInt> *varIdx,
+                            std::vector<double>* varCoeff)
 {
-  int error=0;
-  ConstraintPtr con;
+  int error = 0;
   double nlpact, cUb;
+  nlpact =  con->getActivity(lpx, &error);
 
-
-  for (CCIter it = nlCons_.begin(); it != nlCons_.end(); ++it) {
-    con = *it;
-    nlpact =  con->getActivity(lpx, &error);
-    //test =  con->getActivity(nlpx, &error);
-    if (error == 0) {
-      cUb = con->getUb();
-      //std::cout << std::endl;
-      //std::cout << "\n" << con->getName() << " nl cons at MILP and NLP sol " << nlpact << " " << test << " cons ub " << cUb;
-      if (nlpact > cUb + solAbsTol_ &&
-          (cUb == 0 || nlpact > (cUb+fabs(cUb)*solRelTol_))) {
-        addCut_(nlpx, lpx, con, cutman, status);
-      } else {
+  if (error == 0) {
+    cUb = con->getUb();
+    if (nlpact > cUb + solAbsTol_ ||
+        (cUb != 0 && nlpact > (cUb+fabs(cUb)*solRelTol_))) {
 #if SPEW
-        logger_->msgStream(LogDebug) << me_ << " constraint " << con->getName() << " feasible at LP solution. No OA cut to be added." << std::endl;
+      con->write(logger_->msgStream(LogDebug));
+      logger_->msgStream(LogDebug) << me_ << " constraint " <<
+        con->getName() << " violated at LP solution with violation = " <<
+        nlpact - cUb << std::endl;
 #endif
-      }
+      addCut_(nlpx, lpx, con, rhs, varIdx, varCoeff);
     } else {
-      logger_->msgStream(LogError) << me_ << " constraint not defined at" <<
-        " this point. "<<  std::endl;
 #if SPEW
-      logger_->msgStream(LogDebug) << me_ << " constraint " << con->getName() <<
-        " not defined at this point." << std::endl;
+      logger_->msgStream(LogDebug) << me_ << " constraint " << con->getName() << " feasible at LP solution. No OA cut to be added." << std::endl;
 #endif
     }
+  } else {
+    logger_->msgStream(LogError) << me_ << " constraint not defined at" <<
+      " this point. "<<  std::endl;
+#if SPEW
+    logger_->msgStream(LogDebug) << me_ << " constraint " << con->getName() <<
+      " not defined at this point." << std::endl;
+#endif
   }
   return;
 }
  
 
-void OAHandler::objCutAtLpSol_(const double *lpx, CutManager *,
-                                  SeparationStatus *status)
+void STOAHandler::objCutAtLpSol_(const double *lpx, double* rhs,
+                             std::vector<UInt> *varIdx,
+                            std::vector<double>* varCoeff)
 {
   if (oNl_) {
     int error = 0;
     FunctionPtr f;
     double c, vio, act;
-    ConstraintPtr newcon;
-    std::stringstream sstm;
     ObjectivePtr o = minlp_->getObjective();
 
     act = o->eval(lpx, &error);
     if (error == 0) {
       vio = std::max(act-relobj_, 0.0);
-      if (vio > solAbsTol_ && (relobj_ == 0 || vio > fabs(relobj_)*solRelTol_)) {
+      if (vio > solAbsTol_ || (relobj_ != 0 && vio > fabs(relobj_)*solRelTol_)) {
           f = o->getFunction();
           LinearFunctionPtr lf = LinearFunctionPtr();
           linearAt_(f, act, lpx, &c, &lf, &error);
           if (error == 0) {
             ++(stats_->cuts);
-            sstm << "_OAObjcut_" << stats_->cuts;
-            lf->addTerm(objVar_, -1.0);
-            *status = SepaResolve;
-            f = (FunctionPtr) new Function(lf);
-            newcon = rel_->newConstraint(f, -INFINITY, -1.0*c, sstm.str());
-            //std::cout << std::endl;
-            //newcon->write(std::cout);
+            *rhs = -1.0*c;
+            for (VariableGroupConstIterator it=lf->termsBegin(); it!=lf->termsEnd();
+                 ++it) {
+              (*varIdx).push_back(it->first->getIndex());
+              (*varCoeff).push_back(it->first->getIndex());
+            }
+            (*varIdx).push_back(objVar_->getIndex());
+            (*varCoeff).push_back(-1.0);
           }
         }
     }	else {
@@ -610,85 +657,90 @@ void OAHandler::objCutAtLpSol_(const double *lpx, CutManager *,
 }
 
 
-void OAHandler::consCutAtLpSol_(const double *lpx, CutManager *,
-                             SeparationStatus *status)
+void STOAHandler::consCutAtLpSol_(ConstraintPtr con, const double *lpx, double* rhs,
+                             std::vector<UInt> *varIdx,
+                            std::vector<double>* varCoeff)
 {
   int error=0;
   FunctionPtr f;
   LinearFunctionPtr lf;
-  std::stringstream sstm;
-  ConstraintPtr con, newcon;
-  double c, nlpact, cUb;
+  double c, lpvio, nlpact, cUb;
 
-  for (CCIter it = nlCons_.begin(); it != nlCons_.end(); ++it) {
-    con = *it;
-    f = con->getFunction();
-    lf = LinearFunctionPtr();
-    nlpact =  con->getActivity(lpx, &error);
-    if (error == 0) {
-      cUb = con->getUb();
-      if (nlpact > cUb + solAbsTol_ &&
-          (cUb == 0 || nlpact > (cUb+fabs(cUb)*solRelTol_))) {
-        linearAt_(f, nlpact, lpx, &c, &lf, &error);
-        if (error==0) {
-          //lpvio = std::max(lf->eval(lpx)-cUb+c, 0.0);
-          //if (lpvio>solAbsTol_ || ((cUb-c)!=0 &&
-                                   //(lpvio>fabs(cUb-c)*solRelTol_))) {
-            ++(stats_->cuts);
-            sstm << "_OAcut_" << stats_->cuts;
-            *status = SepaResolve;
-            f = (FunctionPtr) new Function(lf);
-            newcon = rel_->newConstraint(f, -INFINITY, cUb-c, sstm.str());
-            //std::cout << std::endl;
-            //newcon->write(std::cout);
-            return;
-          //}
+  f = con->getFunction();
+  lf = LinearFunctionPtr();
+  nlpact =  con->getActivity(lpx, &error);
+  if (error == 0) {
+    cUb = con->getUb();
+    if (nlpact > cUb + solAbsTol_ ||
+        (cUb != 0 && nlpact > (cUb+fabs(cUb)*solRelTol_))) {
+      linearAt_(f, nlpact, lpx, &c, &lf, &error);
+      if (error==0) {
+        lpvio = std::max(lf->eval(lpx)-cUb+c, 0.0);
+        if (lpvio>solAbsTol_ || ((cUb-c)!=0 &&
+                                 (lpvio>fabs(cUb-c)*solRelTol_))) {
+          ++(stats_->cuts);
+          *rhs = cUb-c;
+          for (VariableGroupConstIterator it=lf->termsBegin(); it!=lf->termsEnd();
+               ++it) {
+            (*varIdx).push_back(it->first->getIndex());
+            (*varCoeff).push_back(it->first->getIndex());
+          }
+          return;
         }
       }
-    }	else {
-      logger_->msgStream(LogError) << me_ << " constraint not defined at" <<
-        " this point. "<<  std::endl;
     }
+  }	else {
+    logger_->msgStream(LogError) << me_ << " constraint not defined at" <<
+      " this point. "<<  std::endl;
   }
   return;
 }
 
 
-void OAHandler::addCut_(const double *nlpx, const double *lpx,
-                        ConstraintPtr con, CutManager*,
-                        SeparationStatus *status)
+void STOAHandler::addCut_(const double *nlpx, const double *lpx,
+                        ConstraintPtr con, double* rhs,
+                             std::vector<UInt> *varIdx,
+                            std::vector<double>* varCoeff)
 {
   int error=0;
-  ConstraintPtr newcon;
-  std::stringstream sstm;
   double c, lpvio, act, cUb;
   FunctionPtr f = con->getFunction();
   LinearFunctionPtr lf = LinearFunctionPtr(); 
 
   act = con->getActivity(nlpx, &error); 
-  if (error == 0) {    
+  if (error == 0) {
     linearAt_(f, act, nlpx, &c, &lf, &error);
     if (error==0) { 
       cUb = con->getUb();
       lpvio = std::max(lf->eval(lpx)-cUb+c, 0.0);
-      //con->write(std::cout);
-      //std::cout << "\n\nLinear function val. at MILP sol and cons ub " << lf->eval(lpx)+c  << " " << cUb << std::endl;
-      //lf->write(std::cout); 
-      //std::cout << " linearization violation " << lpvio;
-      if (lpvio>solAbsTol_ && ((cUb-c)==0 || (lpvio>fabs(cUb-c)*solRelTol_))) {
+      if (lpvio>solAbsTol_ || ((cUb-c)!=0 && (lpvio>fabs(cUb-c)*solRelTol_))) {
 #if SPEW
-        logger_->msgStream(LogDebug) << me_ << "linearization of constraint "
+        logger_->msgStream(LogDebug) << " nlp sol " << std::endl;
+        //printx(nlpx,minlp_->getNumVars());
+        lf->write(logger_->msgStream(LogDebug));
+        logger_->msgStream(LogDebug) << " rhs " << cUb - c << std::endl;
+        logger_->msgStream(LogDebug) << me_ << " linearization of constraint "
           << con->getName() << " violated at LP solution with violation = " <<
           lpvio << ". OA cut added." << std::endl;
 #endif
         ++(stats_->cuts);
-        sstm << "_OAcut_" << stats_->cuts;
-        *status = SepaResolve;
-        f = (FunctionPtr) new Function(lf);
-        newcon = rel_->newConstraint(f, -INFINITY, cUb-c, sstm.str());
-            //std::cout << std::endl;
-        //newcon->write(std::cout);
+        *rhs = cUb-c;
+        for (VariableGroupConstIterator it=lf->termsBegin(); it!=lf->termsEnd();
+       ++it) {
+          (*varIdx).push_back(it->first->getIndex());
+          (*varCoeff).push_back(it->second);
+        }
         return;
+      } else {
+#if SPEW
+        logger_->msgStream(LogDebug) << " nlp sol " << std::endl;
+        //printx(nlpx,minlp_->getNumVars());
+        lf->write(logger_->msgStream(LogDebug));
+        logger_->msgStream(LogDebug) << " rhs " << cUb - c << std::endl;
+        logger_->msgStream(LogDebug) << me_ << " linearization of constraint "
+          << con->getName() << " NOT violated at LP solution with violation = " <<
+          lpvio << ". OA cut redundant." << std::endl;
+#endif
       }
     }
   }	else {
@@ -701,27 +753,48 @@ void OAHandler::addCut_(const double *nlpx, const double *lpx,
   }
   return;
 }
-  
+ 
 
-void OAHandler::cutToObj_(const double *nlpx, const double *lpx,
-                            CutManager *, SeparationStatus *status)
+double STOAHandler::newUb(std::vector<UInt> *varIdx,
+                        std::vector<double>* varVal)
+{  
+  int i =0;
+  double val = nlpe_->getSolutionValue();
+  const double *x = nlpe_->getSolution()->getPrimal();
+  for (VariableConstIterator v = minlp_->varsBegin(); v != minlp_->varsEnd();++v, ++i) {
+    //if (x[i] != 0)  {
+      (*varIdx).push_back((*v)->getIndex());
+      (*varVal).push_back(x[i]);
+    //}
+  }
+  if (oNl_) {
+    (*varIdx).push_back(objVar_->getIndex());
+    (*varVal).push_back(val);
+  }
+  //MS: check how the auxiliarly var is stored in x. At what position
+  return newUb_;
+
+}
+
+void STOAHandler::cutToObj_(const double *nlpx, const double *lpx, double* rhs,
+                             std::vector<UInt> *varIdx,
+                            std::vector<double>* varCoeff)
 {
   if (oNl_) {
     int error=0;
     FunctionPtr f;
     double c, vio, act;
+    ObjectivePtr o = minlp_->getObjective();
+    
+#if PRINT
     ConstraintPtr newcon;
     std::stringstream sstm;
-    ObjectivePtr o = minlp_->getObjective();
+#endif
     
     act = o->eval(lpx, &error);
     if (error == 0) {
       vio = std::max(act-relobj_, 0.0);
-      if (vio > solAbsTol_ && (relobj_ == 0 || vio > fabs(relobj_)*solRelTol_)) {
-#if SPEW
-        logger_->msgStream(LogDebug) << me_ << " objective violated at LP "
-          << " solution with violation = " << vio << std::endl;
-#endif
+      if (vio > solAbsTol_ || (relobj_ != 0 && vio > fabs(relobj_)*solRelTol_)) {
         act = o->eval(nlpx, &error);
         if (error == 0) {
           f = o->getFunction();
@@ -729,21 +802,23 @@ void OAHandler::cutToObj_(const double *nlpx, const double *lpx,
           linearAt_(f, act, nlpx, &c, &lf, &error);
           if (error == 0) {
             vio = std::max(c+lf->eval(lpx)-relobj_, 0.0);
-            if (vio > solAbsTol_ && ((relobj_-c)==0 
-                                     || vio > fabs(relobj_-c)*solRelTol_)) { 
-#if SPEW
-              logger_->msgStream(LogDebug) << me_ << "linearization of "
-                "objective violated at LP solution with violation = " <<
-                vio << ". OA cut added." << std::endl;
-#endif
+            if (vio > solAbsTol_ || ((relobj_-c)!=0 
+                                     && vio > fabs(relobj_-c)*solRelTol_)) { 
               ++(stats_->cuts);
+              *rhs = -1.0*c;
+              for (VariableGroupConstIterator it=lf->termsBegin(); it!=lf->termsEnd();
+                   ++it) {
+                (*varIdx).push_back(it->first->getIndex());
+                (*varCoeff).push_back(it->second);
+              }
+              (*varIdx).push_back(objVar_->getIndex());
+              (*varCoeff).push_back(-1.0);
+#if PRINT
               sstm << "_OAObjcut_" << stats_->cuts;
               lf->addTerm(objVar_, -1.0);
-              *status = SepaResolve;
               f = (FunctionPtr) new Function(lf);
-              newcon = rel_->newConstraint(f, -INFINITY, -1.0*c, sstm.str()); 
-            //std::cout << std::endl;
-              //newcon->write(std::cout);
+              newcon = rel_->newConstraint(f, -INFINITY, -1.0*c, sstm.str());
+#endif
             }
           }
         }
@@ -766,7 +841,7 @@ void OAHandler::cutToObj_(const double *nlpx, const double *lpx,
 }
 
 
-void OAHandler::relaxInitInc(RelaxationPtr rel, bool *isInf)
+void STOAHandler::relaxInitInc(RelaxationPtr rel, bool *isInf)
 {
   rel_ = rel;
   relax_(isInf);
@@ -774,7 +849,7 @@ void OAHandler::relaxInitInc(RelaxationPtr rel, bool *isInf)
 }
 
 
-void OAHandler::relax_(bool *isInf)
+void STOAHandler::relax_(bool *isInf)
 {
   ConstraintPtr c;
   FunctionType fType;
@@ -794,38 +869,7 @@ void OAHandler::relax_(bool *isInf)
 }
 
 
-void OAHandler::separate(ConstSolutionPtr sol, NodePtr, RelaxationPtr,
-                         CutManager *cutMan, SolutionPoolPtr s_pool,
-                         ModVector &, ModVector &, bool *sol_found,
-                         SeparationStatus *status)
-{      
-  //double val;
-  //VariableType v_type;
-  //VariableConstIterator v_iter;
-  //const double *x = sol->getPrimal();
-
-  //*status = SepaContinue;
-  //for (v_iter = rel->varsBegin(); v_iter != rel->varsEnd(); ++v_iter) {
-    //v_type = (*v_iter)->getType();
-    //if (v_type == Binary || v_type == Integer) {
-      //val = x[(*v_iter)->getIndex()];
-      //if (fabs(val - floor(val+0.5)) > intTol_) {
-//#if SPEW
-        //logger_->msgStream(LogDebug) << me_ << "variable " <<
-          //(*v_iter)->getName() << " has fractional value = " << val <<
-          //std::endl;
-//#endif
-        //return;
-      //}
-    //}
-  //}
-
-  cutIntSol_(sol, cutMan, s_pool, sol_found, status);
-  return;
-}
-
-
-void OAHandler::solveNLP_()
+void STOAHandler::solveNLP_()
 {
   nlpStatus_ = nlpe_->solve();
   ++(stats_->nlpS);
@@ -833,7 +877,7 @@ void OAHandler::solveNLP_()
 }
 
 
-void OAHandler::unfixInts_()
+void STOAHandler::unfixInts_()
 {
   Modification *m = 0;
   while(nlpMods_.empty() == false) {
@@ -846,30 +890,7 @@ void OAHandler::unfixInts_()
 }
 
 
-void OAHandler::updateUb_(SolutionPoolPtr s_pool, double *nlpval, 
-                          bool *sol_found)
-{
-  //MS: solution is added to the pool only if better than incumbent
-  double val = nlpe_->getSolutionValue();
-  double bestval = s_pool->getBestSolutionValue();
-
-  if ((bestval >= val-objATol_) ||
-      (bestval != 0 && (bestval >= val-fabs(bestval)*objRTol_))) {
-  //if (val <= bestval) 
-    const double *x = nlpe_->getSolution()->getPrimal();
-    s_pool->addSolution(x, val);
-    *sol_found = true;
-#if SPEW
-    logger_->msgStream(LogDebug) << me_ << "new solution found, value = " 
-      << val << std::endl;
-#endif
-  }
-  //objVar_->setUb_(bestval-objATol_);  
-  *nlpval = val;
-  return;
-}
-
-void OAHandler::writeStats(std::ostream &out) const
+void STOAHandler::writeStats(std::ostream &out) const
 {
   out
     << me_ << "number of nlps solved                          = " 
@@ -890,9 +911,9 @@ void OAHandler::writeStats(std::ostream &out) const
 }
 
 
-std::string OAHandler::getName() const
+std::string STOAHandler::getName() const
 {
-  return "OA Handler (Outer-approximation)";
+  return "STOA Handler (Single Tree Outer-approximation)";
 }
 
 // Local Variables: 
