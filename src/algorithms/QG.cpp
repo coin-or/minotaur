@@ -17,7 +17,6 @@
 #include <AMPLHessian.h>
 #include <AMPLJacobian.h>
 #include <Environment.h>
-//#include <Constraint.h>
 #include <Handler.h>
 #include <Option.h>
 #include <Problem.h>
@@ -252,7 +251,6 @@ int main(int argc, char* argv[])
   PCBProcessorPtr nproc;
 
   NodeIncRelaxerPtr nr;
-  //bool isMINLP = false;
 
   //handlers
   HandlerVector handlers;
@@ -272,9 +270,6 @@ int main(int argc, char* argv[])
 
   int err = 0;
  
-  //ObjectivePtr o;
-  //FunctionType fType;
-
   // start timing.
   env->startTimer(err);
   if (err) {
@@ -316,29 +311,6 @@ int main(int argc, char* argv[])
     goto CLEANUP;
   }
 
-  //o = inst->getObjective();
-  //fType = o->getFunctionType();
-  //if (o && (fType == Linear || fType == Constant)) {
-      //std::cout << "Lin obj "<< 1 << std::endl;
-  //} else {
-      //std::cout << "Lin obj "<< 0 << std::endl;
-  //}
-  //exit(1);
-  //for (ConstraintConstIterator it=inst->consBegin(); it!=inst->consEnd();
-       //++it) {
-    //if ((*it)->getFunctionType()!=Constant && (*it)->getFunctionType() != Linear) {
-      //isMINLP = true;
-      //break;
-    //}
-  //}
-  //if (!isMINLP) {
-    //if (inst->getObjective()->getFunctionType() != Linear && inst->getObjective()->getFunctionType()!= Constant) {
-      //isMINLP = true;
-    //}
-  //}
-  //std::cout << "Problem is MINLP = " << isMINLP << std::endl;
-  //exit(1);
-
   if (options->findBool("solve")->getValue()==true) {
     if (true==options->findBool("use_native_cgraph")->getValue()) {
       inst->setNativeDer();
@@ -349,7 +321,7 @@ int main(int argc, char* argv[])
       handlers.push_back(rc_hand);
       assert(rc_hand);
     }
-   
+
     // Initialize the handlers for branch-and-cut
     l_hand = (LinearHandlerPtr) new LinearHandler(env, inst);
     l_hand->setModFlags(false, true);
