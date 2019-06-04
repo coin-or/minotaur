@@ -363,7 +363,6 @@ void BranchAndBound::solve()
   }
   tm_->setUb(solPool_->getBestSolutionValue());
 
-  //exit(1);
   // do the root
   current_node = processRoot_(&should_prune, &dived_prev);
 
@@ -416,7 +415,6 @@ void BranchAndBound::solve()
 
     if (nodePrcssr_->foundNewSolution()) {
       tm_->setUb(solPool_->getBestSolutionValue());
-      std::cout << "ub = " << solPool_->getBestSolutionValue() << " time = " << timer_->query() << "\n";
     }
     
     should_prune = shouldPrune_(current_node);
