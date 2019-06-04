@@ -738,8 +738,8 @@ UInt ParMINLPDiving::ReducedCost_(UInt numfrac, const double* x, Direction d,
 void ParMINLPDiving::restoreBounds_(double* LB_copy, double* UB_copy, UInt vars, ProblemPtr p)
 {
   for (UInt i=0; i<vars; ++i, ++LB_copy, ++UB_copy) {
-    p->changeBound(i, Lower, *LB_copy);
-    p->changeBound(i, Upper, *UB_copy);
+    p->changeBoundByInd(i, Lower, *LB_copy);
+    p->changeBoundByInd(i, Upper, *UB_copy);
   }
 }
 
