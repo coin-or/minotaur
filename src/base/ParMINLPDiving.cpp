@@ -786,10 +786,10 @@ ParMINLPDiving::FuncPtr ParMINLPDiving::selectHeur_(int i, Direction &d, Order &
 {
 #if USE_OPENMP
 #pragma omp critical (log)
-#endif
   logger_->msgStream(LogInfo) << "Thread " << omp_get_thread_num() << " i = " << i << " : "
     << getScoreString(i) << " : " << getDirectionString(i) << " : "
     << getOrderString(i) << std::endl;
+#endif
 
   switch (i%4) {
    case 0 : d = Floor;
@@ -1226,7 +1226,9 @@ void ParMINLPDiving::writeParStats(std::ostream &out, DivingheurStats* stats,
                                    double wallTime) const
 {
 // write the statistics for ParMINLP heuristic per thread
+#if USE_OPENMP
   out << std::endl << me_ << "Thread " << omp_get_thread_num() << std::endl;
+#endif
   for (UInt i=0; i<nSelector_; ++i) {
     out << me_ << "heuristic method = " << i 
       << std::endl
