@@ -828,8 +828,6 @@ ParMINLPDiving::FuncPtr ParMINLPDiving::selectHeur_(int i, Direction &d, Order &
 
 bool ParMINLPDiving::shouldDive_()
 {
-  VariablePtr variable;
-  
   UInt min_num_bint             = 5;
   ConstProblemSizePtr prob_size = p_->getSize();
   UInt num_bin_int              = prob_size->bins + prob_size->ints;

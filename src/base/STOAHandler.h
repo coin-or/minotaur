@@ -117,7 +117,6 @@ private:
   /// Relative tolerance for pruning a node.
   double npRTol_;
 
-
   /// Callback calls
   UInt numCalls_;
 

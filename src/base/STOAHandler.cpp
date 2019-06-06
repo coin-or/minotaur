@@ -125,7 +125,7 @@ STOAHandler::~STOAHandler()
   }
   env_.reset();
   rel_.reset();
-  nlpe_.reset();
+  //nlpe_.reset();
   minlp_.reset();
   logger_.reset();
 }
@@ -166,6 +166,9 @@ void STOAHandler::addInitLinearX_(const double *x)
         sstm << "_STOAcut_" << stats_->cuts << "_AtRoot";
         f = (FunctionPtr) new Function(lf);
         newcon = rel_->newConstraint(f, -INFINITY, cUb-c, sstm.str());
+#if SPEW
+        newcon->write(std::cout);
+#endif
         sstm.str("");
       }
     }	else {
@@ -176,9 +179,6 @@ void STOAHandler::addInitLinearX_(const double *x)
         con->getName() << " is not defined at this point." << std::endl;
 #endif
     }
-#if PRINT
-    newcon->write(std::cout);
-#endif
   }
 
   if (oNl_) {
