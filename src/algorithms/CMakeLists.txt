@@ -111,20 +111,6 @@ install(TARGETS lstoa RUNTIME DESTINATION bin)
 ## Add lines specific to your binaries in this section.
 ## Use the lines meant for bnb as a template.
 ##############################################################################
-set (STOA_SOURCES
-	STOA.cpp
-)
-
-add_executable(stoa ${STOA_SOURCES})
-target_link_libraries(stoa ${ALL_EXEC_LIBS})
-
-# This will install the binary in bin directory.
-install(TARGETS stoa RUNTIME DESTINATION bin)
-
-##############################################################################
-## Add lines specific to your binaries in this section.
-## Use the lines meant for bnb as a template.
-##############################################################################
 set (OA_SOURCES
   OA.cpp
 )
