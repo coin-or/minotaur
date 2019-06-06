@@ -690,7 +690,6 @@ set (CBC_INC_DIR "" CACHE PATH
   "Path to Cbc headers. It must have coin/CbcModel.hpp file.") 
 set (CBC_INC_DIR_F ${CBC_INC_DIR})
 
-# uncomment when Cbc is a default part of engines
 if (("${CBC_INC_DIR_F}" STREQUAL "") AND
     (NOT ("${TP_ABS_PATH}" STREQUAL "")))
   set (CBC_INC_DIR_F "${TP_ABS_PATH}/include")
@@ -701,11 +700,6 @@ set (CBC_LIB_DIR "" CACHE PATH
   "Path to Cbc library. It must have a Cbc library file.") 
 set (CBC_LIB_DIR_F ${CBC_LIB_DIR})
 
-set (CBC_INC_DIR_F)
-set (CBC_LIB_DIR_F)
-
-
-# uncomment when Cbc is a default part of engines
 if (("${CBC_LIB_DIR_F}" STREQUAL "") AND
        (NOT ("${TP_ABS_PATH}" STREQUAL "")))
   set (CBC_LIB_DIR_F "${TP_ABS_PATH}/lib")

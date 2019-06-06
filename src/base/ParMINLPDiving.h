@@ -23,15 +23,11 @@
 
 
 namespace Minotaur {
-  class Engine;
   class LinearHandler;
-  class Problem;
   class Solution;
   class Timer;
   class VarBoundMod;
   typedef boost::shared_ptr<const Solution> ConstSolutionPtr;
-  typedef boost::shared_ptr<Engine> EnginePtr;
-  typedef boost::shared_ptr<Problem> ProblemPtr;
   typedef boost::shared_ptr<VarBoundMod> VarBoundModPtr;
 
   /// Direction of rounding
