@@ -317,8 +317,8 @@ void Environment::createDefaultOptions_()
                                             true, 0);
   options_->insert(i_option);
 
-  i_option = (IntOptionPtr) new Option<int>("cut_depth", 
-      "Depth upto which cuts to be added at fractional nodes ", true, 5);
+  i_option = (IntOptionPtr) new Option<int>("root_num_cuts", 
+      "Rounds of extra linearizations to be added at root node", true, 1);
   options_->insert(i_option);
 
 

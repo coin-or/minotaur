@@ -580,7 +580,7 @@ void writeSol(EnvPtr env, VarVector *orig_v,
               MINOTAUR_AMPL::AMPLInterface* iface)
 {
   if (sol) {
-    sol->writePrimal(std::cout);
+    //sol->writePrimal(std::cout);
     sol = pres->getPostSol(sol);
   }
 
