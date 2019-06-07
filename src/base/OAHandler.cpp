@@ -120,7 +120,10 @@ OAHandler::~OAHandler()
   env_.reset();
   rel_.reset();
   minlp_.reset();
-  logger_.reset();
+  //logger_.reset();
+  if (logger_){
+    delete logger_;
+  }
 }
 
 

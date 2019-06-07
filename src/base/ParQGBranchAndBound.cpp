@@ -88,7 +88,10 @@ ParQGBranchAndBound::ParQGBranchAndBound(EnvPtr env, ProblemPtr p)
 ParQGBranchAndBound::~ParQGBranchAndBound()
 {
   options_.reset();
-  logger_.reset();
+  //logger_.reset();
+  if (logger_){
+    delete logger_;
+  }
   nodePrcssr_.reset();
   nodeRlxr_.reset();
   tm_.reset();

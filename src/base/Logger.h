@@ -78,8 +78,8 @@ namespace Minotaur {
       mutable std::ostream nout_;
   };
 
-  typedef boost::shared_ptr<Logger> LoggerPtr;
-  typedef boost::shared_ptr<const Logger> ConstLoggerPtr;
+  //typedef boost::shared_ptr<Logger> LoggerPtr;
+  typedef const Logger* ConstLoggerPtr;
 }
 
 #endif
