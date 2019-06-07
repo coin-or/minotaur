@@ -188,6 +188,8 @@ namespace Minotaur {
       /// Remove the quadratic part of the function and return a pointer to it.
       QuadraticFunctionPtr removeQuadratic_();
 
+      NonlinearFunctionPtr removeNonlinear_();
+
       void subst_(VariablePtr out, VariablePtr in, double rat=1.0);
 
       /**

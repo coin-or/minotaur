@@ -69,6 +69,7 @@ namespace Minotaur {
       /// are private.
       friend class Problem;
       friend class PerspCon;
+      friend class QGHandler;
 
       /// Default constructor.
       Constraint();
@@ -128,6 +129,15 @@ namespace Minotaur {
       /// Get the 'u' value. or the upper bound constraint on 'f'.
       double getUb() const { return ub_; }
 
+      void setpId(UInt n) { pid_ = n; }
+      
+      int getpId() { return pid_; }
+
+      void setUB(double newub) { ub_ = newub; }
+      
+      void incrAct() { numAct_++;}
+      void minmaxDepth(UInt depth);
+      void consActStat(UInt &n, UInt &min, UInt &max);
       /// display the constraint
       void write(std::ostream &out) const;
 
@@ -189,8 +199,15 @@ namespace Minotaur {
       /// The function 'f' in l <= f(x) <= u.
       FunctionPtr f_;
 
+      UInt numAct_;
+      UInt minDepth_;
+      UInt maxDepth_;
       /// id that is unique for this constraint in the problem.
       UInt id_;         
+      
+      /// id of the constraint from which is it generated; used in qg for
+      //linearization (-1 for objective)
+      int pid_;         
 
       /// id that is unique for this constraint in the problem.
       UInt index_;         

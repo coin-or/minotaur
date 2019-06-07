@@ -463,6 +463,8 @@ namespace Minotaur {
 
     /// Remove the quadratic part of objective and return it.
     virtual QuadraticFunctionPtr removeQuadFromObj();
+    
+    virtual NonlinearFunctionPtr removeNonlinFromObj();
 
     /**
      * Remove the jacobian and hessian data structures. Useful when you want to

@@ -91,6 +91,11 @@ void Variable::inConstraint_(ConstraintPtr cPtr)
   cons_.insert(cPtr);
 }
 
+void Variable::INConstraint(ConstraintPtr cPtr)
+{
+  cons_.insert(cPtr);
+}
+
 
 void Variable::outOfConstraint_(ConstraintPtr cPtr)
 {

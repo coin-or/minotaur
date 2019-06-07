@@ -102,7 +102,7 @@ namespace Minotaur {
    * Add PCut to violated PR amenable constraints whose associated
    * binary variable in integer at the given point (nlpx). 
    */
-  void pcutAtInt(RelaxationPtr rel , const double * nlpx, 
+  void atIntPt(RelaxationPtr rel , const double * nlpx, 
                  const double *lpx, SeparationStatus * pcStatus, CutManager *);
   
   /**
@@ -116,7 +116,7 @@ namespace Minotaur {
    * Add PCut to a PR amenable constraint whose associated
    * binary variable in integer at the given point (nlpx). 
    */
-  void intPCut(RelaxationPtr rel,LinearFunctionPtr *lf, UInt it, const double *x, 
+  void getCutFun(RelaxationPtr rel,LinearFunctionPtr *lf, UInt it, const double *x, 
                double *c, int *error);
 
   /// Add PCut torelaxation 
@@ -128,10 +128,12 @@ namespace Minotaur {
    * constraint is satisfied at x then PCut is added at x.
    * Otherwise, a feasible point to add PCut is obtained using bisection. 
    */ 
-  void addCutOriFeas(RelaxationPtr rel , UInt it, const double *x);
+  //void addCutOriFeas(RelaxationPtr rel , UInt it, const double *x);
 
   /// Iterate over PR amenable constraints to add PCut;
-  void pcutAtPoint(RelaxationPtr rel , const double *x);
+  void oriFeasPt(RelaxationPtr rel , const double *x);
+
+  void oriInfeasPt(RelaxationPtr rel, const double *x);
 
   /**
    * Add PCut to a PR amenable constraint. If both the original and
@@ -142,35 +144,41 @@ namespace Minotaur {
    * using which a point satisfying PR amneable constraint is obtained using
    * bisection, at which PCut is added. 
    */ 
-  void addPCut(RelaxationPtr rel , UInt it, const double *x);
+  //void addPCut(RelaxationPtr rel , UInt it, const double *x);
 
-
+  void atPtx(RelaxationPtr rel, const double *x);
+  
+  void cutToCons(RelaxationPtr rel, const double *x, UInt it);
   /**
    * Determine a point feasible to orginal constraint when the given point (x) 
    * violates both original and PR reformulated constraints.
    */
-  void feasBisecPt(const double *x, double *y, UInt it);
+  //void feasBisecPt(const double *x, double *y, UInt it);
 
   /**
    * Give variable values when associated binary variable is 0 for a PR 
    * amenable constraint.
    */ 
-  void vertexPt(double * y, UInt it);
+  //void vertexPt(double * y, UInt it);
 
   /**
    * Find a point (w1) feasible to original constraint using bisection method 
    * on points x and w, where former in feasible and latter is infeasible to
    * the original constraint. 
    */
-  void bisecPtOri(const double *x, double * w, double * w1, UInt it);
+  //void bisecPtOri(const double *x, double * w, double * w1, UInt it);
 
 
   /**
    * Given point x violating PR amenable constraint give a feasible point 
    * using bisection. 
    */
-  bool bisecPt(const double *x, double * cPt, UInt it);
+  void bisecPt(const double *x, double * y, UInt it);
+  
+  void cvxCombPt(RelaxationPtr rel, const double * y, UInt it);
  
+  double changeVarForm(VariablePtr v, double xc, double xb, UInt itn,
+                       int *error);
   /**
    * Given outer-approximatio to a violated PR constraint
    */
@@ -218,6 +226,9 @@ private:
   
   /// Tolerance for checking integrality.
   double intTol_;
+
+  /// Convex combination of feasible point
+  double* cvxPt;
 
   /// Statistics.
   PRStats *stats_;

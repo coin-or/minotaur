@@ -31,6 +31,7 @@ Node::Node()
     rMods_(0), 
     parent_(boost::shared_ptr<Node>()),
     status_(NodeNotProcessed),
+    vioVal_(0),
     tbScore_(0)
 {
 }
@@ -44,6 +45,7 @@ Node::Node(NodePtr parentNode, BranchPtr branch)
     rMods_(0), 
     parent_(parentNode),
     status_(NodeNotProcessed),
+    vioVal_(0),
     tbScore_(0)
 {
   lb_ = parentNode->getLb();

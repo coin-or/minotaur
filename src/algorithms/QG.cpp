@@ -17,6 +17,10 @@
 #include <AMPLHessian.h>
 #include <AMPLJacobian.h>
 #include <Environment.h>
+//#include <Constraint.h>
+#include <Constraint.h>
+#include <Function.h>
+#include <LinearFunction.h>
 #include <Handler.h>
 #include <Option.h>
 #include <Problem.h>
@@ -25,8 +29,10 @@
 #include <LPEngine.h>
 #include <Logger.h>
 #include <NLPEngine.h>
+#include <NonlinearFunction.h>
 #include "NlPresHandler.h"
 #include <NodeRelaxer.h>
+#include <Relaxation.h>
 #include <NodeIncRelaxer.h>
 #include <MaxVioBrancher.h>
 #include <QGHandler.h>
@@ -56,6 +62,7 @@ void writeSol(EnvPtr env, VarVector *orig_v, PresolverPtr pres,
               MINOTAUR_AMPL::AMPLInterface* iface);
 
 
+void test(ProblemPtr p);
 void loadProblem(EnvPtr env, MINOTAUR_AMPL::AMPLInterface* iface,
                  ProblemPtr &oinst, double *obj_sense)
 {
@@ -118,7 +125,7 @@ void setInitialOptions(EnvPtr env)
   env->getOptions()->findBool("nl_presolve")->setValue(true);
   env->getOptions()->findBool("separability")->setValue(false);
   env->getOptions()->findBool("perspective")->setValue(false);
-  env->getOptions()->findBool("rc_fix")->setValue(true);
+  env->getOptions()->findBool("rc_fix")->setValue(false);
 }
 
 
@@ -217,19 +224,85 @@ PresolverPtr presolve(EnvPtr env, ProblemPtr p, size_t ndefs,
         << (*h)->getName() << std::endl;
     }
   }
-
   pres = (PresolverPtr) new Presolver(p, env, handlers);
   pres->standardize(); 
   if (env->getOptions()->findBool("presolve")->getValue() == true) {
     pres->solve();
   }
+  //std::cout << "After\n";
+  //p->write(std::cout);
+  //exit(1);
   return pres;
+}
+
+void test(ProblemPtr p)
+{
+//MS: delete header files that are not required
+  //testing 
+  bool isONl = false;
+  ObjectivePtr o = p->getObjective();
+  FunctionType fType = o->getFunctionType();
+  if (o && fType != Linear && fType != Constant) {
+    isONl = true;
+  }
+  
+  CGraphPtr cgp;
+  FunctionPtr f;
+  VariablePtr v;
+  ConstraintPtr c;
+  LinearFunctionPtr lf;
+  NonlinearFunctionPtr nlf;
+  UInt tnl = 0, nol = 0, ns = 0, tn, tl = 0, t;
+
+  for (ConstraintConstIterator it=p->consBegin(); it!=p->consEnd(); 
+       ++it) {
+    c = *it;
+    tl = 0;
+    f = c->getFunction();
+    fType = c->getFunctionType();
+    if (fType !=Constant && fType != Linear) {
+      tnl++;
+      nlf = f->getNonlinearFunction();
+      tn = nlf->numVars();
+      lf = c->getLinearFunction();
+      //t = f->getNumVars();
+      
+      if (lf) {
+        for(VariableGroupConstIterator vit = lf->termsBegin(); vit != lf->termsEnd(); ++vit) {
+          v   = vit->first;
+          if (fabs(vit->second) > 1e-6) {
+            tl++;          
+          }
+        }
+      }
+      t = tl + tn;
+      if (t == 2) {
+        ns++;      
+      }
+      //else {
+        //nol++;
+      //}
+      //if (isP) {
+        //ns++;
+      //}
+    } else {
+      nol++;    
+    }
+  }
+  
+  if (tnl > 0 && ns > 0) {
+    std::cout << "structure found \n" ;
+  }
+  //std::cout << "Is objective nonlinear (0 no, 1 yes), # of nonlinear and linear constraints, # of nlcons with exactly 2 vars" << std::endl;
+  std::cout << "output: " << isONl << " " << tnl << " " << nol << " " << ns << std::endl;
 }
 
 int main(int argc, char* argv[])
 {
   EnvPtr env = (EnvPtr) new Environment();
   OptionDBPtr options;
+
+  ConstSolutionPtr xc;
 
   MINOTAUR_AMPL::AMPLInterfacePtr iface = MINOTAUR_AMPL::AMPLInterfacePtr();  
   ProblemPtr inst;
@@ -251,6 +324,7 @@ int main(int argc, char* argv[])
   PCBProcessorPtr nproc;
 
   NodeIncRelaxerPtr nr;
+  //bool isMINLP = false;
 
   //handlers
   HandlerVector handlers;
@@ -261,6 +335,7 @@ int main(int argc, char* argv[])
 
   //engines
   EnginePtr nlp_e;
+  //EnginePtr nlp_e1;
   EnginePtr proj_nlp_e;
   EnginePtr l1proj_nlp_e;
 
@@ -269,6 +344,9 @@ int main(int argc, char* argv[])
   VarVector *orig_v=0;
 
   int err = 0;
+ 
+  //ObjectivePtr o;
+  //FunctionType fType;
 
   // start timing.
   env->startTimer(err);
@@ -310,10 +388,43 @@ int main(int argc, char* argv[])
     writeBnbStatus(env, bab, obj_sense);
     goto CLEANUP;
   }
+
+  test(inst);
+  exit(1);
+  //o = inst->getObjective();
+  //fType = o->getFunctionType();
+  //if (o && (fType == Linear || fType == Constant)) {
+      //std::cout << "Lin obj "<< 1 << std::endl;
+  //} else {
+      //std::cout << "Lin obj "<< 0 << std::endl;
+  //}
+  //exit(1);
+  //for (ConstraintConstIterator it=inst->consBegin(); it!=inst->consEnd();
+       //++it) {
+    //if ((*it)->getFunctionType()!=Constant && (*it)->getFunctionType() != Linear) {
+      //isMINLP = true;
+      //break;
+    //}
+  //}
+  //if (!isMINLP) {
+    //if (inst->getObjective()->getFunctionType() != Linear && inst->getObjective()->getFunctionType()!= Constant) {
+      //isMINLP = true;
+    //}
+  //}
+  //std::cout << "Problem is MINLP = " << isMINLP << std::endl;
+  //exit(1);
+
   if (options->findBool("solve")->getValue()==true) {
     if (true==options->findBool("use_native_cgraph")->getValue()) {
       inst->setNativeDer();
     }
+    if (options->findBool("rc_fix")->getValue()) {
+      rc_hand = (RCHandlerPtr) new RCHandler(env);
+      rc_hand->setModFlags(false, true); 
+      handlers.push_back(rc_hand);
+      assert(rc_hand);
+    }
+  
     // Initialize the handlers for branch-and-cut
     l_hand = (LinearHandlerPtr) new LinearHandler(env, inst);
     l_hand->setModFlags(false, true);
@@ -327,15 +438,10 @@ int main(int argc, char* argv[])
 
     qg_hand = (QGHandlerPtr) new QGHandler(env, inst, nlp_e); 
     qg_hand->setModFlags(false, true);
+    //MS: for root linearizations
+    //qg_hand->setLpEngine(lin_e);
     handlers.push_back(qg_hand);
     assert(qg_hand);
-    
-    if (options->findBool("rc_fix")->getValue()) {
-      rc_hand = (RCHandlerPtr) new RCHandler(env);
-      rc_hand->setModFlags(false, true); 
-      handlers.push_back(rc_hand);
-      assert(rc_hand);
-    }  
     // report name
     env->getLogger()->msgStream(LogExtraInfo) << me << "handlers used:"
       << std::endl;
@@ -388,6 +494,7 @@ int main(int argc, char* argv[])
       (*it)->writeStats(env->getLogger()->msgStream(LogExtraInfo));
     }
 
+    //qg_hand->vioStats();
     writeSol(env, orig_v, pres, bab->getSolution(), bab->getStatus(), iface);
     writeBnbStatus(env, bab, obj_sense);
   }
@@ -460,7 +567,7 @@ void writeBnbStatus(EnvPtr env, BranchAndBound *bab, double obj_sense)
       << me << "gap percentage = " << bab->getPerGap() << std::endl
       << me << "time used (s) = " << std::fixed << std::setprecision(2) 
       << env->getTime(err) << std::endl
-      << me << "status of branch-and-bound: " 
+      << me << "status of branch-and-bound = " 
       << getSolveStatusString(bab->getStatus()) << std::endl;
     env->stopTimer(err); assert(0==err);
   } else {

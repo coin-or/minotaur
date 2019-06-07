@@ -251,6 +251,10 @@ void Environment::createDefaultOptions_()
       "Verbosity of engine: 0-6", true, LogInfo);
   options_->insert(i_option);
 
+  //i_option = (IntOptionPtr) new Option<int>("vio_depth", 
+      //"Any number", true, INFINITY);
+  //options_->insert(i_option);
+
   i_option = (IntOptionPtr) new Option<int>("ml_max_group_size",
        "Maximum size of individual element in grouping: >= 2, <= 20", true, 6);
   options_->insert(i_option);
@@ -289,10 +293,19 @@ void Environment::createDefaultOptions_()
                                             true, 0);
   options_->insert(i_option);
 
+  i_option = (IntOptionPtr) new Option<int>("cut_depth", 
+      "Depth upto which cuts to be added at fractional nodes ", true, 5);
+  options_->insert(i_option);
+
+
   // double options
   d_option = (DoubleOptionPtr) new Option<double>("ml_feastol", 
       "MultilinearTermsHandler feasibility tolerance.", true, 0.00001);
   options_->insert(d_option);
+
+    //d_option = (DoubleOptionPtr) new Option<double>("max_vio", 
+      //"Max. violation threshold", true, 50);
+  //options_->insert(d_option);
 
   d_option = (DoubleOptionPtr) new Option<double>("bnb_time_limit", 
       "Limit on time in branch-and-bound in seconds: >0",

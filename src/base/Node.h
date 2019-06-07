@@ -142,6 +142,10 @@ namespace Minotaur {
 
     /// Get the tie-breaking score.
     double getTbScore() const { return tbScore_; }
+    
+    double setVioVal(double v) { return vioVal_ = v; }
+    
+    double getVioVal() { return vioVal_; }
 
     /// Get the warm start information.
     WarmStartPtr getWarmStart() { return ws_; }
@@ -155,9 +159,11 @@ namespace Minotaur {
      * that the vector starts with modifications that were used to branch.
      */
     ModificationConstIterator modsBegin() const { return pMods_.begin(); }
+    ModificationConstIterator modsrBegin() const { return rMods_.begin(); }
 
     /// End of modifications applied at this node.
     ModificationConstIterator modsEnd() const { return pMods_.end(); }
+    ModificationConstIterator modsrEnd() const { return rMods_.end(); }
 
     /// Reverse iterators.
     ModificationRConstIterator modsRBegin() const { return pMods_.rbegin(); }
@@ -269,6 +275,9 @@ namespace Minotaur {
     /// The status of this node.
     NodeStatus status_;   
 
+    /// Violation measure at the node.
+    double vioVal_;
+    
     /// Score to break tie-breaks.
     double tbScore_;
 

@@ -17,6 +17,7 @@
 #include "Engine.h"
 #include "Environment.h"
 #include "Handler.h"
+#include "QGHandler.h"
 #include "Heuristic.h"
 #include "PCBProcessor.h"
 #include "Logger.h"
@@ -167,7 +168,7 @@ void PCBProcessor::process(NodePtr node, RelaxationPtr rel,
                           SolutionPoolPtr s_pool)
 {
   bool should_prune = true;
-  bool should_resolve;
+  bool should_resolve, sol_found;
   BrancherStatus br_status;
   ConstSolutionPtr sol;
   ModVector mods;
@@ -221,7 +222,33 @@ void PCBProcessor::process(NodePtr node, RelaxationPtr rel,
     std::cout << "xsol NOT feasible in node " << node->getId() << std::endl;
   }
 #endif 
-
+  //MS: For root linearizations
+  //if (node->getId() == 0) {
+    //HandlerIterator h;
+    //for (h = handlers_.begin(); h != handlers_.end(); ++h) {
+      //if ((*h)->getName() =="QG Handler (Quesada-Grossmann)") {
+        //QGHandlerPtr qgh = boost::dynamic_pointer_cast <QGHandler> (*(h));
+       //should_prune = qgh->rootLinearizations(cutMan_, s_pool, &sol_found, &sep_status);
+       //if (should_prune) {
+         //return;
+       //} 
+       //break;
+      //}
+    //}
+  //}
+//Another 
+  if (node->getId() == 0) {
+    HandlerIterator h;
+    for (h = handlers_.begin(); h != handlers_.end(); ++h) {
+      if ((*h)->getName() =="QG Handler (Quesada-Grossmann)") {
+        QGHandlerPtr qgh = boost::dynamic_pointer_cast <QGHandler> (*(h));
+        qgh->rootLinearizations(cutMan_);
+       break;
+      }
+    }
+  }
+ 
+  
   // presolve
   should_prune = presolveNode_(node, s_pool);
   if (should_prune) {
@@ -239,10 +266,14 @@ void PCBProcessor::process(NodePtr node, RelaxationPtr rel,
                                << std::endl;
 #endif
 
+  //if (node->getId() == 1769 || node->getId() == 1771) {
+    ////rel->write(std::cout);
+  //}
     //relaxation_->write(std::cout);
     solveRelaxation_();
 
     sol = engine_->getSolution();
+      //std::cout << "In PCB: Node " << node->getId() << std::endl;
 
 #if defined(JTL_DEBUG)
     NodePtr parentNode = node->getParent();
@@ -257,6 +288,7 @@ void PCBProcessor::process(NodePtr node, RelaxationPtr rel,
     // In either case we can prune. Also set lb of node.
     should_prune = shouldPrune_(node, sol->getObjValue(), s_pool);
     if (should_prune) {
+      //std::cout << "In PCB: Node " << node->getId() << " prune - " << engine_->getStatusString() << std::endl;
       break;
     }
 
@@ -268,6 +300,7 @@ void PCBProcessor::process(NodePtr node, RelaxationPtr rel,
     // check feasibility. if it is feasible, we can still prune this node.
     isFeasible_(node, sol, s_pool, should_prune);
     if (should_prune) {
+      //std::cout << "In PCB: Node " << node->getId() << " int feasible - prune" << std::endl;
       break;
     }
 
@@ -296,6 +329,27 @@ void PCBProcessor::process(NodePtr node, RelaxationPtr rel,
     } else {
       // save warm start information before branching. This step is expensive.
       ws_ = engine_->getWarmStartCopy();
+      //MS: WarmStart information for root linearizations
+      //if (node->getId() == 0) {
+        //HandlerIterator h;
+        //ModVector t_pmods;      // Mods that are applied to the problem
+        //ModVector t_rmods;      // Mods that are applied to the relaxation.
+        //SeparationStatus st = SepaContinue;
+        //bool solFound;
+        //for (h = handlers_.begin(); h != handlers_.end(); ++h) {
+          //if ((*h)->getName() =="QG Handler (Quesada-Grossmann)") {
+            //QGHandlerPtr qgh = boost::dynamic_pointer_cast <QGHandler> (*(h));
+            //qgh->setLPWarmStart(ws_);
+            //qgh->separate(sol, node, relaxation_, cutMan_, s_pool, t_pmods, t_rmods,
+                   //&solFound, &st);
+           //break;
+          //}
+        //}
+        //if (st == SepaResolve) {
+          //should_resolve = true;
+          //continue;
+        //}
+      //}
       branches_ = brancher_->findBranches(relaxation_, node, sol, s_pool, 
                                           br_status, mods);
       if (br_status==PrunedByBrancher) {
@@ -335,7 +389,13 @@ void PCBProcessor::process(NodePtr node, RelaxationPtr rel,
     exit(0);
   }
 #endif
-
+  //if (node->getId()==0) {
+    ////sol->writePrimal(std::cout);
+    //s_pool->setRootSolution(sol);
+  //}
+  //if (env->getOptions()->findInt("threads")->getValue() > 1) {
+    //exit(0);
+  //}
   return;
 }
 

@@ -22,6 +22,8 @@
 #include "Problem.h"
 #include "Function.h"
 
+#include "Solution.h"
+
 namespace Minotaur {
 
 struct QGStats {
@@ -67,7 +69,7 @@ private:
 
   /// Modifications done to NLP before solving it.
   std::stack<Modification *> nlpMods_;
-  
+
   /// Status of the NLP/QP engine.
   EngineStatus nlpStatus_;
 
@@ -80,10 +82,14 @@ private:
 
   /// Nonlinearity status of objective function. 1 if nonlinear 0 otherwise.
   bool oNl_;
+  
+  UInt numCuts_;
+  
+  UInt numCutCount_;
 
   /// Pointer to relaxation of the problem.
   RelaxationPtr rel_;
- 
+
   /// Value of objective in relaxation solution
   double relobj_; 
 
@@ -94,15 +100,15 @@ private:
   double solRelTol_;
 
   /// Absolute tolerance for pruning a node.
-  double npATol_;
+  double objATol_;
 
   /// Relative tolerance for pruning a node.
-  double npRTol_;
+  double objRTol_;
 
   /// Statistics.
   QGStats *stats_;
 
-public:
+  public:
   /// Empty constructor.
   QGHandler();
 
@@ -134,7 +140,10 @@ public:
                            BranchDirection)
   {return ModificationPtr();};
 
-       
+  void markPoints_(UInt vnIdx, UInt vlIdx, double * b1, int & error, std::vector<double > xc, std::vector<double >yc, std::vector<char > linPtsLoc, std::vector<UInt > & ptScore, ConstraintPtr newcon);
+      
+  int findIntersectPt(std::vector<UInt > newConsId, VariablePtr vl, VariablePtr vnl, double * iP);
+ 
   // Base class method. 
   std::string getName() const;
 
@@ -154,6 +163,7 @@ public:
   /// Does nothing.
   void postsolveGetX(const double *, UInt, DoubleVector *) {};
 
+  void rootLinearizations(CutManager *cutMan);
   /// Base class method. calls relax_().
   void relaxInitFull(RelaxationPtr rel, bool *is_inf);
 
@@ -174,13 +184,15 @@ public:
  
   /// Show statistics.
   void writeStats(std::ostream &out) const;
-
 private:
   /**
    * Add linearization of nonlinear constraints and objective at point x* 
    * to the relaxation only (not to the lp engine)
    */
   void addInitLinearX_(const double *x);
+
+
+  UInt addCutAtRoot_(double *x, ConstraintPtr con, int & error);
 
   /**
    * Solve NLP by fixing integer variables at LP solution and add 
@@ -210,12 +222,30 @@ private:
   void linearAt_(FunctionPtr f, double fval, const double *x, 
                  double *c, LinearFunctionPtr *lf, int *error);
 
+
+  void findExtrmPts_(bool &addP1, bool &addP2, double * x, double c1, double * y, double c2, double lb, double ub, std::vector<UInt > newConsId, VariablePtr vl, VariablePtr vnl);
+
+  void addExtrmPtsBR_(bool addP1, bool addP2, double * x, double c1, double * y, double c2, std::vector< char > & linPtsLoc, std::vector<double > & xc, std::vector<double > & yc, char loc);
+
+  void addExtrmPtsTL_(bool addP1, bool addP2, double * x, double c1, double * y, double c2, std::vector< char > & linPtsLoc, std::vector<double > & xc, std::vector<double > & yc, char loc);
   /** 
    * When the objective function is nonlinear, we need to replace it with
    * a single variable.
    */
   void linearizeObj_();
 
+  void addNewBoundaryPt_(char linLoc, std::vector<double>& xNew, std::vector<double>& yNew,ConstraintPtr con, VariablePtr vl, VariablePtr vnl);
+  void insertNewPt_(double x1, double y1, double x2, double y2, std::vector<double >& xNew, std::vector<double >& yNew, ConstraintPtr newcon, VariablePtr vl, VariablePtr vnl);
+ 
+  void topEdgePts_(std::vector<UInt > newConsId, VariablePtr vl, VariablePtr vnl,std::vector<double > & xc, std::vector<double > & yc, std::vector<char> & linPtsLoc); 
+ 
+ void leftEdgePts_(std::vector<UInt > newConsId, VariablePtr vl, VariablePtr vnl,std::vector<double > & xc, std::vector<double > & yc, std::vector<char> & linPtsLoc); 
+ 
+ void rightEdgePts_(std::vector<UInt > newConsId, VariablePtr vl, VariablePtr vnl,std::vector<double > & xc, std::vector<double > & yc, std::vector<char> & linPtsLoc);
+
+  void bottomEdgePts_(std::vector<UInt > newConsId, VariablePtr vl, VariablePtr vnl,std::vector<double > & xc, std::vector<double > & yc, std::vector<char> & linPtsLoc);
+
+  double findLinVarVal_(double x, double a, double b, double c, double d);
   /**
    * Check which nonlinear constraints are violated at the LP solution and
    * add OA cuts. Return number of OA cuts added.
@@ -228,12 +258,15 @@ private:
                CutManager *cutman, SeparationStatus *status);
   
 
+  double getVio_(double *b1, double x, double y, ConstraintPtr con, UInt vlIdx, UInt vnIdx);
+
   void consCutAtLpSol_(const double *lpx, CutManager *cutman,
                     SeparationStatus *status);
 
   void objCutAtLpSol_(const double *lpx, CutManager *cutman,
                     SeparationStatus *status);
 
+  bool addNewCut_(double *b1, UInt vlIdx, ConstraintPtr con, double linTermCoeff, int &error, UInt &newConId, NonlinearFunctionPtr nlf);
   /**
    * Check if objective is violated at the LP solution and
    * add OA cut.

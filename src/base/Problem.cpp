@@ -1399,6 +1399,19 @@ QuadraticFunctionPtr Problem::removeQuadFromObj()
   return QuadraticFunctionPtr(); // NULL
 }
 
+NonlinearFunctionPtr Problem::removeNonlinFromObj()
+{
+  assert(engine_ == 0 ||
+      (!"Cannot change objective after loading problem to engine\n")); 
+  if (obj_) {
+    return obj_->removeNonlinear_();
+  }
+  consModed_ = true;
+  return NonlinearFunctionPtr(); // NULL
+}
+
+
+
 
 void Problem::resetDer()
 {
