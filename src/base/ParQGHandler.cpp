@@ -758,9 +758,8 @@ void ParQGHandler::updateUb_(SolutionPoolPtr s_pool, double *nlpval,
   double val = nlpe_->getSolutionValue();
   double bestval = s_pool->getBestSolutionValue();
 
-  if ((bestval >= val-objATol_) ||
-      (bestval != 0 && (bestval >= val-fabs(bestval)*objRTol_))) {
-  //if (val <= bestval) 
+  if ((bestval - objATol_ > val) ||
+        (bestval != 0 && (bestval - fabs(bestval)*objRTol_) > val)) {
     const double *x = nlpe_->getSolution()->getPrimal();
     s_pool->addSolution(x, val);
     *sol_found = true;
