@@ -13,6 +13,7 @@
 
 #include <iomanip>
 #include <iostream>
+#include <cmath>
 
 #include "MinotaurConfig.h"
 #include "BranchAndBound.h"
@@ -393,8 +394,8 @@ int main(int argc, char** argv)
   EnvPtr env      = (EnvPtr) new Environment();
   OptionDBPtr options;
   MINOTAUR_AMPL::AMPLInterfacePtr iface;
-  ProblemPtr inst;     // instance that needs to be solved.
-  EnginePtr engine;    // engine for solving relaxations. 
+  ProblemPtr inst;       // instance that needs to be solved.
+  EnginePtr engine = 0;  // engine for solving relaxations. 
   SolutionPtr sol, sol2;
   BranchAndBound *bab = 0;
   PresolverPtr pres, pres2;
@@ -469,6 +470,9 @@ int main(int argc, char** argv)
   writeStatus(env, bab, obj_sense);
 
 CLEANUP:
+  if (engine) {
+    delete engine;
+  }
   if (iface) {
     delete iface;
   }

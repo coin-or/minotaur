@@ -21,18 +21,10 @@ using namespace Minotaur;
 void QuadraticFunctionTest::setUp()
 {
   std::string vname = "common_var_name";
-  VariablePtr v;
-  v = (VariablePtr) new Variable(0, 0, 0.0, 1.0, Integer, vname);
-  vars_.push_back(v);
-
-  v = (VariablePtr) new Variable(1, 1, 9.0, 1.0, Integer, vname);
-  vars_.push_back(v);
-
-  v = (VariablePtr) new Variable(2, 2, -1.0, 1.0, Integer, vname);
-  vars_.push_back(v);
-
-  v = (VariablePtr) new Variable(3, 3, -100.0, 100.0, Integer, vname);
-  vars_.push_back(v);
+  vars_.push_back(new Variable(0, 0, 0.0, 1.0, Integer, vname));
+  vars_.push_back(new Variable(1, 1, 9.0, 1.0, Integer, vname));
+  vars_.push_back(new Variable(2, 2, -1.0, 1.0, Integer, vname));
+  vars_.push_back(new Variable(3, 3, -100.0, 100.0, Integer, vname));
 
   q_ = (QuadraticFunctionPtr) new QuadraticFunction();
   q1_ = (QuadraticFunctionPtr) new QuadraticFunction();
@@ -50,7 +42,9 @@ void QuadraticFunctionTest::setUp()
 
 void QuadraticFunctionTest::tearDown()
 {
-  vars_.clear();
+  for (size_t i=0; i<vars_.size(); ++i) {
+    delete vars_[i];
+  }
 }
 
 

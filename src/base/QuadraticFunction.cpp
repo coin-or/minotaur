@@ -181,7 +181,6 @@ void QuadraticFunction::evalHessian(const double mul, const double *,
 
 void  QuadraticFunction::fillHessStor(LTHessStor *stor)
 {
-  VariablePtr v;
   UInt vindex;
   UInt j;
   std::deque<UInt> *inds;

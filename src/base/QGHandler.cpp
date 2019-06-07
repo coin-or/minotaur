@@ -304,6 +304,9 @@ void QGHandler::initLinear_(bool *isInf)
   nlpe_->load(minlp_);
   solveNLP_();
   
+  //SolutionPtr newsol = (SolutionPtr) new Solution(nlpe_->getSolution());
+  //rootSolution_ = newsol;
+  
   switch (nlpStatus_) {
   case (ProvenOptimal):
   case (ProvenLocalOptimal):

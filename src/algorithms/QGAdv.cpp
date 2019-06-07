@@ -261,11 +261,11 @@ int main(int argc, char* argv[])
   RCHandlerPtr rcHand;
 
   //engines
-  EnginePtr nlp_e;
-  EnginePtr proj_nlp_e;
-  EnginePtr l1proj_nlp_e;
+  EnginePtr nlp_e = 0;
+  EnginePtr proj_nlp_e = 0;
+  EnginePtr l1proj_nlp_e = 0;
 
-  LPEnginePtr lin_e;   // lp engine 
+  LPEnginePtr lin_e = 0;   // lp engine 
   LoggerPtr logger_ = (LoggerPtr) new Logger(LogInfo);
   VarVector *orig_v=0;
 
@@ -412,6 +412,12 @@ int main(int argc, char* argv[])
   }
 
 CLEANUP:
+  if (lin_e) {
+    delete lin_e;
+  }
+  if (nlp_e) {
+    delete nlp_e;
+  }
   if (iface) {
     delete iface;
   }

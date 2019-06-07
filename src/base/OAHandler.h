@@ -7,7 +7,7 @@
 /**
  * \file OAHandler.h
  * \Briefly declare a derived class of Handler that handles convex nonlinear constraints
- * of a problem by using Quesada-Grossmann algorithm.
+ * of a problem for the Outer Approximation algorithm.
  * \Authors Meenarli Sharma and Prashant Palkar, Indian Institute of
  * Techonology Bombay.
  */
@@ -108,10 +108,10 @@ private:
   double solRelTol_;
 
   /// Absolute tolerance for pruning a node.
-  double npATol_;
+  double objATol_;
 
   /// Relative tolerance for pruning a node.
-  double npRTol_;
+  double objRTol_;
 
   /// Statistics.
   OAStats *stats_;
@@ -143,6 +143,9 @@ public:
   void getBranchingCandidates(RelaxationPtr, 
                               const DoubleVector &, ModVector &,
                               BrVarCandSet &, BrCandVector &, bool &) {};
+
+  /// Returns the MILP engine.
+  MILPEnginePtr getMILPEngine() {return milpe_;};
 
   /// Does nothing.
   ModificationPtr getBrMod(BrCandPtr, DoubleVector &, RelaxationPtr,

@@ -225,7 +225,6 @@ void MonomialFunction::evalGradient(const double *x, double *grad_f,
                                     int *error) 
 {
   double prod;
-  VariablePtr v;
 
   *error = 0;
   for (VarIntMapConstIterator it=terms_.begin(); it!=terms_.end(); ++it) {

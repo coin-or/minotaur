@@ -207,6 +207,16 @@ void Environment::createDefaultOptions_()
       true, false);
   options_->insert(b_option);
 
+  b_option = (BoolOptionPtr) new Option<bool>("pardivheur",
+      "Use parallel diving heuristic for MINLP: <0/1>",
+      true, false);
+  options_->insert(b_option);
+
+  b_option = (BoolOptionPtr) new Option<bool>("divheurLP",
+      "Use LP dives in parallel diving heuristic for MINLP: <0/1>",
+      true, false);
+  options_->insert(b_option);
+
   // reset, so that we don't accidently add it again.
   b_option.reset();
 
@@ -247,7 +257,17 @@ void Environment::createDefaultOptions_()
       true, -1);
   options_->insert(i_option);
 
-  i_option = (IntOptionPtr) new Option<int>("engine_log_level", 
+  i_option = (IntOptionPtr) new Option<int>("divheurLevel",
+      "Number of levels of variable fixings for diving heuristic: >0",
+      true, 4);
+  options_->insert(i_option);
+
+  i_option = (IntOptionPtr) new Option<int>("divheurMaxProbs",
+      "Maximum number of problems to be solved in the diving heuristic: >0",
+      true, 200);
+  options_->insert(i_option);
+
+  i_option = (IntOptionPtr) new Option<int>("engine_log_level",
       "Verbosity of engine: 0-6", true, LogInfo);
   options_->insert(i_option);
 
@@ -259,7 +279,7 @@ void Environment::createDefaultOptions_()
        "Maximum size of individual element in grouping: >= 2, <= 20", true, 6);
   options_->insert(i_option);
 
-  i_option = (IntOptionPtr) new Option<int>("rand_seed", 
+  i_option = (IntOptionPtr) new Option<int>("rand_seed",
       "Seed to random number generator: >=0 (0 = time(NULL))", true, 0);
   options_->insert(i_option);
 
@@ -268,16 +288,20 @@ void Environment::createDefaultOptions_()
       true, 25);
   options_->insert(i_option);
  
-  i_option = (IntOptionPtr) new Option<int>("threads", 
+  i_option = (IntOptionPtr) new Option<int>("threads",
       "Number of threads to be used ", true, 1);
   options_->insert(i_option);
 
-  i_option = (IntOptionPtr) new Option<int>("msbnb_scheme_id", 
+  i_option = (IntOptionPtr) new Option<int>("msbnb_scheme_id",
       "Initial point generation scheme for MsProcessor: 1-5", true, 5);
   options_->insert(i_option);
 
   i_option = (IntOptionPtr) new Option<int>("msbnb_restarts",
       "Number of restarts to improve the initial point in MsProcessor: >=0", true, 3);
+  options_->insert(i_option);
+
+  i_option = (IntOptionPtr) new Option<int>("oa_iter_limit",
+      "The maximum number of iterations for Outer approximation algorithm to run: >=1", true, 10000);
   options_->insert(i_option);
 
   i_option.reset();
@@ -310,6 +334,11 @@ void Environment::createDefaultOptions_()
   d_option = (DoubleOptionPtr) new Option<double>("bnb_time_limit", 
       "Limit on time in branch-and-bound in seconds: >0",
       true, 1e20);
+  options_->insert(d_option);
+  
+  d_option = (DoubleOptionPtr) new Option<double>("heur_time_limit", 
+      "Limit on time on each heuristic run in seconds: >0",
+      true, 10);
   options_->insert(d_option);
   
   d_option = (DoubleOptionPtr) new Option<double>("bnb_log_interval", 

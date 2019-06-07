@@ -13,6 +13,7 @@
 
 #include <iomanip>
 #include <iostream>
+#include <cmath>
 
 #include "MinotaurConfig.h"
 #include "BranchAndBound.h"
@@ -289,8 +290,8 @@ int main(int argc, char** argv)
   // interface to AMPL (NULL)
   MINOTAUR_AMPL::AMPLInterfacePtr iface = MINOTAUR_AMPL::AMPLInterfacePtr();  
   ProblemPtr inst;    // instance that needs to be solved
-  EnginePtr engine;    
-  EnginePtr qe = EnginePtr();
+  EnginePtr engine = 0;    
+  EnginePtr qe = 0;
   SolutionPtr sol, sol2;
   BranchAndBound * bab = 0; // the branch-and-bound
   PresolverPtr pres;
@@ -391,6 +392,12 @@ int main(int argc, char** argv)
   writeBnbStatus(env, bab, obj_sense);
 
 CLEANUP:
+  if (qe) {
+    delete qe;
+  }
+  if (engine) {
+    delete engine;
+  }
   if (iface) {
     delete iface;
   }

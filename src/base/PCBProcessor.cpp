@@ -60,7 +60,6 @@ PCBProcessor::PCBProcessor (EnvPtr env, EnginePtr engine, HandlerVector handlers
 PCBProcessor::~PCBProcessor()
 {
   handlers_.clear();
-  engine_.reset();
 }
 
 

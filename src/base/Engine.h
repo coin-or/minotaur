@@ -24,10 +24,10 @@ namespace Minotaur {
   class   Solution;
   class   WarmStart;
   class   Engine;
-  typedef boost::shared_ptr<Engine> EnginePtr;
-  typedef boost::shared_ptr<const Engine> ConstEnginePtr;  
+  typedef Engine* EnginePtr;
+  typedef const Engine* ConstEnginePtr;  
   typedef boost::shared_ptr<Function> FunctionPtr;
-  typedef boost::shared_ptr<Constraint> ConstraintPtr;
+  typedef Constraint* ConstraintPtr; //change boost -> simple
   typedef boost::shared_ptr<LinearFunction> LinearFunctionPtr;
   typedef boost::shared_ptr<NonlinearFunction> NonlinearFunctionPtr;
   typedef boost::shared_ptr<const Solution> ConstSolutionPtr;

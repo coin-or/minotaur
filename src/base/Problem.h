@@ -26,7 +26,6 @@ namespace Minotaur {
   class Jacobian;
   class LinearFunction;
   class NonlinearFunction;
-  class Objective;
   struct ProblemSize;
   class QuadraticFunction;
   class SOS;
@@ -36,7 +35,6 @@ namespace Minotaur {
   typedef boost::shared_ptr<HessianOfLag> HessianOfLagPtr;
   typedef boost::shared_ptr<LinearFunction> LinearFunctionPtr;
   typedef boost::shared_ptr<NonlinearFunction> NonlinearFunctionPtr;
-  typedef boost::shared_ptr<Objective> ObjectivePtr;
   typedef boost::shared_ptr<ProblemSize> ProblemSizePtr;
   typedef boost::shared_ptr<QuadraticFunction> QuadraticFunctionPtr;
   typedef boost::shared_ptr<const ProblemSize> ConstProblemSizePtr;
@@ -81,10 +79,10 @@ namespace Minotaur {
     virtual void calculateSize(bool shouldRedo=false);
 
     /// Change a bound (lower or upper) on a variable with ID=id.
-    virtual void changeBound(UInt id, BoundType lu, double new_val);
+    virtual void changeBoundByInd(UInt ind, BoundType lu, double new_val);
 
     /// Change both bounds (lower and upper) on a variable with ID=id
-    virtual void changeBound(UInt id, double new_lb, double new_ub);
+    virtual void changeBoundByInd(UInt ind, double new_lb, double new_ub);
 
     /// Change a bound (lower or upper) on a variable 'var'. 
     virtual void changeBound(VariablePtr var, BoundType lu, double new_val);
@@ -135,15 +133,6 @@ namespace Minotaur {
      * \returns 1 if the check failed, 0 if passed.
      */
     virtual int checkConVars() const;
-
-    /**
-     * \brief Delete the whole Problem.
-     *
-     * Variables and constraints are so interlinked that we just can not call
-     * the destructor. This function just deletes all the constraints. The
-     * variables and functions can still be used after this is called.
-     */
-    virtual void clear();
 
     /**
      * \brief Clone the given Problem class. Jacobian and Hessian in the cloned
@@ -245,6 +234,9 @@ namespace Minotaur {
 
     /// Fill up the statistics about the size of the problem into size_.
     ConstProblemSizePtr getSize() const;
+
+    /// Calculate and return a measure of the size of the problem.
+    double getSizeEstimate();
 
     /// Return a pointer to the variable with a given index
     virtual VariablePtr getVariable(UInt index) const;

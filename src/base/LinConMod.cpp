@@ -40,7 +40,7 @@ LinConMod::LinConMod(ConstraintPtr con, LinearFunctionPtr new_lf,
 
 LinConMod::~LinConMod()
 {
-  con_.reset();
+  //con_.reset(); //changed: need to delete using different methods
   newLf_.reset();
   oldLf_.reset();
 }

@@ -256,7 +256,7 @@ namespace Minotaur {
     OsiSolverInterface *newSolver_(OsiLPEngineName ename);
   };
   
-  typedef boost::shared_ptr<OsiLPEngine> OsiLPEnginePtr;
+  typedef OsiLPEngine* OsiLPEnginePtr;
 }
 
 #endif

@@ -242,7 +242,7 @@ bool LGCIGenerator::hasGubCover(ConstraintConstIterator itcons,
   // While there is some variables uncovered add more GUB's.
   UInt mincovered = 0;
   // Variable to be covered.
-  ConstVariablePtr vartocover;
+  ConstVariablePtr vartocover = 0;
   // How to compare, use the decreasing order. Thus, thw minimum element is
   // the maximum element.
   CompareValueVariablePair compare;
@@ -325,7 +325,6 @@ bool LGCIGenerator::hasGubCover(ConstraintConstIterator itcons,
     VariableGroupConstIterator it3;
     VariableGroupConstIterator begin3 = maxgub->getLinearFunction()->termsBegin();
     VariableGroupConstIterator end3   = maxgub->getLinearFunction()->termsEnd();
-    VariablePtr curvarlf;
     VariablePtr curvargub;
     for (it3=begin3; it3!=end3; ++it3) {
       curvargub = it3->first;

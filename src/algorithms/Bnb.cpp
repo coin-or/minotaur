@@ -16,6 +16,7 @@
 
 #include "MinotaurConfig.h"
 #include "BndProcessor.h"
+#include "Constraint.h"
 #include "BranchAndBound.h"
 #include "EngineFactory.h"
 #include "Environment.h"
@@ -52,6 +53,7 @@
 #include "AMPLInterface.h"
 #include "AMPLJacobian.h"
 
+//#include "Operations.h"
 using namespace Minotaur;
 BrancherPtr createBrancher(EnvPtr env, ProblemPtr p, HandlerVector handlers,
                            EnginePtr e);
@@ -482,8 +484,8 @@ int main(int argc, char** argv)
   EnvPtr env      = (EnvPtr) new Environment();
   OptionDBPtr options;
   MINOTAUR_AMPL::AMPLInterface* iface = 0;
-  ProblemPtr oinst;    // instance that needs to be solved.
-  EnginePtr engine;    // engine for solving relaxations. 
+  ProblemPtr oinst;         // instance that needs to be solved.
+  EnginePtr engine = 0;     // engine for solving relaxations. 
   SolutionPtr sol, sol2;
   JacobianPtr jPtr;
   HessianOfLagPtr hPtr;
@@ -494,7 +496,7 @@ int main(int argc, char** argv)
   HandlerVector handlers;
   int err = 0;
   double obj_sense = 1.0;
-
+ 
   env->startTimer(err);
   if (err) {
     goto CLEANUP;
@@ -547,6 +549,9 @@ int main(int argc, char** argv)
   writeBnbStatus(env, bab, obj_sense);
 
 CLEANUP:
+  if (engine) {
+    delete engine;
+  }
   if (iface) {
     delete iface;
   }

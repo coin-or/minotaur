@@ -64,7 +64,6 @@ void AMPLCGraphUT::setUp()
 void AMPLCGraphUT::tearDown()
 {
   delete iface_;
-  inst_->clear();
 }
 
 

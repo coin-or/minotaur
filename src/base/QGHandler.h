@@ -184,6 +184,7 @@ private:
  
   /// Show statistics.
   void writeStats(std::ostream &out) const;
+
 private:
   /**
    * Add linearization of nonlinear constraints and objective at point x* 

@@ -334,20 +334,16 @@ int main(int argc, char* argv[])
   RCHandlerPtr rc_hand;
 
   //engines
-  EnginePtr nlp_e;
-  //EnginePtr nlp_e1;
-  EnginePtr proj_nlp_e;
-  EnginePtr l1proj_nlp_e;
+  EnginePtr nlp_e = 0;
+  EnginePtr proj_nlp_e = 0;
+  EnginePtr l1proj_nlp_e = 0;
 
-  LPEnginePtr lin_e;   // lp engine 
+  LPEnginePtr lin_e = 0;   // lp engine 
   LoggerPtr logger_ = (LoggerPtr) new Logger(LogInfo);
   VarVector *orig_v=0;
 
   int err = 0;
  
-  //ObjectivePtr o;
-  //FunctionType fType;
-
   // start timing.
   env->startTimer(err);
   if (err) {
@@ -389,8 +385,7 @@ int main(int argc, char* argv[])
     goto CLEANUP;
   }
 
-  test(inst);
-  exit(1);
+  //test(inst);
   //o = inst->getObjective();
   //fType = o->getFunctionType();
   //if (o && (fType == Linear || fType == Constant)) {
@@ -424,7 +419,6 @@ int main(int argc, char* argv[])
       handlers.push_back(rc_hand);
       assert(rc_hand);
     }
-  
     // Initialize the handlers for branch-and-cut
     l_hand = (LinearHandlerPtr) new LinearHandler(env, inst);
     l_hand->setModFlags(false, true);
@@ -442,6 +436,7 @@ int main(int argc, char* argv[])
     //qg_hand->setLpEngine(lin_e);
     handlers.push_back(qg_hand);
     assert(qg_hand);
+     
     // report name
     env->getLogger()->msgStream(LogExtraInfo) << me << "handlers used:"
       << std::endl;
@@ -479,6 +474,7 @@ int main(int argc, char* argv[])
 
     bab = new BranchAndBound(env, inst);
     bab->setNodeRelaxer(nr);
+    //bab->setQGHandler(qg_hand);
     bab->setNodeProcessor(nproc);
     bab->shouldCreateRoot(true);
 
@@ -500,6 +496,12 @@ int main(int argc, char* argv[])
   }
 
 CLEANUP:
+  if (lin_e) {
+    delete lin_e;
+  }
+  if (nlp_e) {
+    delete nlp_e;
+  }
   if (iface) {
     delete iface;
   }

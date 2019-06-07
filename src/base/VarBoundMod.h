@@ -21,7 +21,7 @@
 namespace Minotaur {
   class Engine;
   class VarBoundMod;
-  typedef boost::shared_ptr <Engine> EnginePtr;
+  typedef Engine* EnginePtr;
   typedef boost::shared_ptr<VarBoundMod> VarBoundModPtr;
   typedef std::vector < VarBoundModPtr > VarBoundModVector;
   typedef VarBoundModVector::iterator VarBoundModIter;

@@ -23,7 +23,7 @@ namespace Minotaur {
 
   class Node;
   class Timer;
-  typedef boost::shared_ptr<Constraint> ConstraintPtr;
+  typedef Constraint* ConstraintPtr; //changed from boost-> simple
   typedef boost::shared_ptr<Node> NodePtr;
   typedef std::list<CutPtr> cutList;
 

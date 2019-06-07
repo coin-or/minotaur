@@ -113,7 +113,8 @@ ModificationPtr IntVarHandler::getBrMod(BrCandPtr cand, DoubleVector & x,
                                         RelaxationPtr , BranchDirection dir) 
 {
   // TODO: fix this dynamic cast
-  BrVarCandPtr vcand = boost::dynamic_pointer_cast <BrVarCand> (cand);
+  //BrVarCandPtr vcand = boost::dynamic_pointer_cast <BrVarCand> (cand);
+  BrVarCandPtr vcand =dynamic_cast <BrVarCand*> (cand);
   VariablePtr v = vcand->getVar();
   VarBoundModPtr mod;
   double bnd;
@@ -132,7 +133,8 @@ ModificationPtr IntVarHandler::getBrMod(BrCandPtr cand, DoubleVector & x,
 Branches IntVarHandler::getBranches(BrCandPtr cand, DoubleVector & x, 
                                     RelaxationPtr rel, SolutionPoolPtr s_pool)
 {
-  BrVarCandPtr vcand = boost::dynamic_pointer_cast <BrVarCand> (cand);
+  //BrVarCandPtr vcand = boost::dynamic_pointer_cast <BrVarCand> (cand);
+  BrVarCandPtr vcand = dynamic_cast <BrVarCand*> (cand);
   VariablePtr v = vcand->getVar();
   VariablePtr v2;
   double value = x[v->getIndex()];
@@ -166,6 +168,7 @@ Branches IntVarHandler::getBranches(BrCandPtr cand, DoubleVector & x,
     branch2->addRMod(mod);
   }
   branch2->setActivity(value);
+  vcand->setNumBranches(2);
 
   if (true==gDive_ && bestsol) {
     if (bestsol->getPrimal()[v->getIndex()] < x[v->getIndex()]) {

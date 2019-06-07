@@ -221,6 +221,7 @@ NodePtr ParQGBranchAndBound::processRoot_(bool *should_prune, bool *should_dive,
       parNodeRlxr0->reset(current_node, false);
       new_node = tm_->getCandidate();
       assert(new_node);
+      tm_->removeActiveNode(new_node);
     }
   }
   current_node = new_node;
@@ -634,6 +635,13 @@ void ParQGBranchAndBound::parsolve(ParNodeIncRelaxerPtr parNodeRlxr[],
               {
                 tm_->pruneNode(current_node[i]);
               }
+              //if (!dived_prev[i]) {
+//#if USE_OPENMP
+//#pragma omp critical (treeManager)
+//#endif
+                //tm_->removeActiveNode(current_node[i]);
+              //}
+
 #if USE_OPENMP
 #pragma omp critical (treeManager)
 #endif

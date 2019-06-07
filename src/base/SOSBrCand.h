@@ -71,7 +71,7 @@ private:
   const SOS* sos_;
 };
 
-typedef boost::shared_ptr<SOSBrCand> SOSBrCandPtr;
+typedef SOSBrCand* SOSBrCandPtr;
 }
 
 #endif

@@ -96,6 +96,9 @@ namespace Minotaur {
       /// Get the value or activity at a given point.
       double getActivity(const double *x, int *error) const;
 
+      /// Get the value of the bool flag.
+      bool getBFlag() const { return bTemp_; }
+
       /// Return a pointer to the function.
       const FunctionPtr getFunction() const { return f_; }
 
@@ -138,6 +141,10 @@ namespace Minotaur {
       void incrAct() { numAct_++;}
       void minmaxDepth(UInt depth);
       void consActStat(UInt &n, UInt &min, UInt &max);
+
+      /// Set the value of the bool flag.
+      void setBFlag(bool b) { bTemp_ = b; }
+
       /// display the constraint
       void write(std::ostream &out) const;
 
@@ -220,6 +227,9 @@ namespace Minotaur {
 
       /// free or fixed etc.
       ConsState state_;
+
+      /// Temporary boolean variable for misc processes
+      bool bTemp_;
 
       /// 'u' (-infinity, infinity].
       double ub_;

@@ -21,7 +21,7 @@ namespace Minotaur {
   class Engine;
   class Logger;
   class Problem;
-  typedef boost::shared_ptr<Engine> EnginePtr;
+  typedef Engine* EnginePtr;
   typedef boost::shared_ptr<const Problem> ConstProblemPtr;
 
 

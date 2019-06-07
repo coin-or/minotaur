@@ -120,7 +120,10 @@ void FunctionTest::testEvalGradient()
 
 void FunctionTest::tearDown()
 {
-  vars_.clear();
+  int n = vars_.size();
+  for (int i=0; i<n; ++i) {
+    delete vars_[i];
+  }
 }
 
 

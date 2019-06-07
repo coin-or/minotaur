@@ -63,7 +63,6 @@ void TransformerUT::setUp()
 void TransformerUT::tearDown()
 {
   delete iface_;
-  inst_->clear();
 }
 
 

@@ -125,6 +125,12 @@ SolutionPtr BranchAndBound::getSolution()
 }
 
 
+//SolutionPtr BranchAndBound::getRootSolution()
+//{
+  //return solPool_->getRootSolution();
+//}
+
+
 SolveStatus BranchAndBound::getStatus()
 {
   return status_;
@@ -480,7 +486,9 @@ void BranchAndBound::solve()
     }
   } 
   logger_->msgStream(LogInfo) << me_ << "stopping branch-and-bound"
-    << std::endl;
+    << std::endl
+    << me_ << "nodes processed = " << stats_->nodesProc << std::endl
+    << me_ << "nodes created   = " << tm_->getSize() << std::endl;
   stats_->timeUsed = timer_->query();
   timer_->stop();
 }

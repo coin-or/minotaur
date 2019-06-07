@@ -15,6 +15,9 @@
 #define MINOTAURMILPENGINE_H
 
 #include "Engine.h"
+//#include "SolutionPool.h"
+//#include "CutManager.h"
+//#include "Handler.h"
 
 namespace Minotaur {
 
@@ -35,8 +38,17 @@ namespace Minotaur {
 
       /// Destructor must be implemented if memory needs to be freed
       virtual ~MILPEngine() {};
+
+      /// Set time limit for an iteration
+      virtual void setTimeLimit(double) = 0;
+
+      /// Overloaded solve function for Single Tree Outer Approximation using
+      //CPLEX
+      //virtual EngineStatus solveST(double *, ConstSolutionPtr*, SolutionPoolPtr,
+                                 //CutManager*, HandlerPtr) = 0;
+      
   };
-  typedef boost::shared_ptr<MILPEngine> MILPEnginePtr;
+  typedef MILPEngine* MILPEnginePtr;
 }
 
 #endif

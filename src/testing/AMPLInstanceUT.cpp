@@ -62,7 +62,6 @@ void AMPLInstanceUT::setUp()
 void AMPLInstanceUT::tearDown()
 {
   delete iface_;
-  inst_->clear();
 }
 
 void AMPLInstanceUT::testSize()

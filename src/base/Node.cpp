@@ -12,6 +12,7 @@
 
 #include <cmath>
 #include <iostream>
+#include <omp.h>
 
 #include "MinotaurConfig.h"
 #include "Branch.h"
@@ -119,9 +120,16 @@ void Node::applyRModsTrans(RelaxationPtr rel)
         ++mod_iter) {
       mod = *mod_iter;
       //convert modifications applicable for other relaxation to this one
+//#pragma omp critical
+      //{
+      //std::cout << "Node " << id_ << " thread " << omp_get_thread_num() << " mod " << std::endl;
+      //mod->write(std::cout);
       pmod1 = mod->fromRel(rel, p);
       mod2 = pmod1->toRel(p, rel);
       mod2->applyToProblem(rel);
+      //std::cout << " mod2 " << std::endl;
+      //mod2->write(std::cout);
+      //}
     }
   }
   // now apply any other mods that were added while processing it.
@@ -277,6 +285,56 @@ void Node::undoMods(RelaxationPtr rel, ProblemPtr p)
 {
   undoPMods(p);
   undoRMods(rel);
+}
+
+
+void Node::updateBrCands(UInt index) {
+  brCands_.push_back(index);
+}
+
+
+void Node::updateLastStrBranched(UInt index, double value) {
+  if (index >= lastStrBranched_.size()) {
+    lastStrBranched_.push_back(value);
+  } else {
+    lastStrBranched_[index] = value;
+  }
+}
+
+
+void Node::updatePCDown(UInt index, double value) {
+  if (index >= pseudoDown_.size()) {
+    pseudoDown_.push_back(value);
+  } else {
+    pseudoDown_[index] = value;
+  }
+}
+
+
+void Node::updatePCUp(UInt index, double value) {
+  if (index >= pseudoUp_.size()) {
+    pseudoUp_.push_back(value);
+  } else {
+    pseudoUp_[index] = value;
+  }
+}
+
+
+void Node::updateTimesDown(UInt index, double value) {
+  if (index >= timesDown_.size()) {
+    timesDown_.push_back(value);
+  } else {
+    timesDown_[index] = value;
+  }
+}
+
+
+void Node::updateTimesUp(UInt index, double value) {
+  if (index >= timesUp_.size()) {
+    timesUp_.push_back(value);
+  } else {
+    timesUp_[index] = value;
+  }
 }
 
 

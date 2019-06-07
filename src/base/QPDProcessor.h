@@ -22,7 +22,7 @@ namespace Minotaur {
   class NonlinearFunction;
   class Problem;
   class Solution;
-  typedef boost::shared_ptr<Engine> EnginePtr;
+  typedef Engine* EnginePtr;
   typedef boost::shared_ptr<NonlinearFunction> NonlinearFunctionPtr;
   typedef boost::shared_ptr<Problem> ProblemPtr;
   typedef boost::shared_ptr<Solution> SolutionPtr;

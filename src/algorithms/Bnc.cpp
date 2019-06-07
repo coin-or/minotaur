@@ -380,8 +380,8 @@ int main(int argc, char** argv)
 {
   EnvPtr env = (EnvPtr) new Environment();
   MINOTAUR_AMPL::AMPLInterface* iface = 0;
-  ProblemPtr oinst;    // instance that needs to be solved.
-  EnginePtr engine;    // engine for solving relaxations. 
+  ProblemPtr oinst;     // instance that needs to be solved.
+  EnginePtr engine = 0; // engine for solving relaxations. 
   BranchAndBound * bab = 0;
   PresolverPtr pres;
   const std::string me("bnc main: ");
@@ -440,6 +440,9 @@ int main(int argc, char** argv)
   writeSol(env, orig_v, obj_sense, bab, pres, iface);
 
 CLEANUP:
+  if (engine) {
+    delete engine;
+  }
   if (iface) {
     delete iface;
   }

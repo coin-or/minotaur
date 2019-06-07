@@ -329,7 +329,7 @@ namespace Minotaur {
 
   };
 
-  typedef boost::shared_ptr<FilterSQPEngine> FilterSQPEnginePtr;
+  typedef FilterSQPEngine* FilterSQPEnginePtr;
 } // end namespace Minotaur 
 
 #endif

@@ -917,13 +917,6 @@ bool IpoptFunInterface::get_nlp_info(Index& n, Index& m, Index& nnz_jac_g,
                                      Index& nnz_h_lag, 
                                      IndexStyleEnum& index_style)
 {
-  Minotaur::ConstVariablePtr vPtr;
-  Minotaur::ConstraintConstIterator cIter;
-  Minotaur::ConstraintPtr cPtr;
-  Minotaur::FunctionPtr fPtr;
-  Minotaur::NonlinearFunctionPtr nlfPtr;
-  Minotaur::VariableIterator vIter;
-
   n = problem_->getNumVars();
   m = problem_->getNumCons();
 
@@ -931,7 +924,6 @@ bool IpoptFunInterface::get_nlp_info(Index& n, Index& m, Index& nnz_jac_g,
   nnz_jac_g = problem_->getNumJacNnzs();
 
   // ... and in hessian. 
-  //nnz_h_lag = problem_->getNumHessNnzs();
   nnz_h_lag = problem_->getNumHessNnzs(); 
 
   // We use the standard c index style for row/col entries

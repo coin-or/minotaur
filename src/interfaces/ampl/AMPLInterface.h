@@ -15,9 +15,12 @@
 
 #include "Types.h"
 
-#include "asl.h"
-#include "nlp.h"
+//#include "nlp.h"
 //#undef filename
+
+struct expr;
+typedef double efunc(expr*);
+struct ASL;
 
 namespace Minotaur {
 class   CGraph;

@@ -191,7 +191,6 @@ Function::~Function()
 void Function::subst(VariablePtr out, VariablePtr in, double rat)
 {
   double w;
-  VariablePtr v1, v2, v3, v4;
 
   if (lf_) {
     w = lf_->getWeight(out);

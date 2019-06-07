@@ -239,6 +239,7 @@ if (("${BQPD_LIB_DIR_F}" STREQUAL "") AND
   (NOT ("${TP_ABS_PATH}" STREQUAL "")))
   set (BQPD_LIB_DIR_F ${TP_ABS_PATH}/lib)
 endif()
+
 message(STATUS ${MSG_HEAD} "BQPD_LIB_DIR_F is set to ${BQPD_LIB_DIR_F}")
 if (BQPD_LIB_DIR_F)
   if (EXISTS "${BQPD_LIB_DIR_F}")
@@ -558,42 +559,70 @@ endif()
 ## CPLEX
 ###########################################################################
 message(STATUS ${MSG_HEAD} "Searching for Cplex ...")
+
+set (CPX_LIB_DIR)          ## NULL
+set (CPX_INC_DIR)          ## NULL
 set (LINK_CPX 0)
 set (CPX_INC_DIR "" CACHE PATH 
      "Path to Cplex headers. It must have cplex.h file.") 
+set (CPX_LIB_DIR "" CACHE PATH 
+     "Path to Cplex static library. It must have libcplex.a file.") 
+set (CPX_LIB_DIR_F ${CPX_LIB_DIR})
 
 if (CPX_INC_DIR)
   ## complain if header not found
-  if (NOT EXISTS "${CPX_INC_DIR}/cplex.h")
+  #if (NOT EXISTS "${CPX_INC_DIR}/cplex.h")
+  if (NOT EXISTS "${CPX_INC_DIR}/ilcplex/cplex.h")
     message(FATAL_ERROR " ${MSG_HEAD} "
-            "cplex.h not found at ${CPX_INC_DIR} not found.")
+            "ilcplex/cplex.h not found at ${CPX_INC_DIR} not found.")
   endif()
   set (LINK_CPX 1)
-  set (MNTR_OSI_PC2_LIBRARIES)
-  if (MNTR_HAVE_PKGCON)
-    set (ENV{PKG_CONFIG_PATH}
-      "${OSI_LIB_DIR_F}/pkgconfig:$ENV{PKG_CONFIG_PATH}")
-    pkg_check_modules(MNTR_OSI_PC2 osi-cplex)
-    message(STATUS ${MSG_HEAD} "Osi Cplex libraries: "
-      "${MNTR_OSI_PC2_LIBRARIES}")
-    set (OSI_LIBS ${OSI_LIBS} ${MNTR_OSI_PC2_LIBRARIES})
+  set (CPX_INC_DIR_F ${CPX_INC_DIR})
+
+  ## complain if library not specified
+  if (NOT CPX_LIB_DIR_F)
+    message(FATAL_ERROR " ${MSG_HEAD}" 
+	    "CPX_LIB_DIR must be set along with CPX_INC_DIR")
   endif()
 
-  if ((NOT (MNTR_HAVE_PKGCON)) OR ("${MNTR_OSI_PC2_LIBRARIES}" STREQUAL ""))
-    set (OSI_LIBS ${OSI_LIBS} OsiCpx Osi CoinUtils)
+  ## check if library found
+  if (EXISTS ${CPX_LIB_DIR_F})
+    message(STATUS ${MSG_HEAD} "Cplex library directory exists.")
+    add_subdirectory(src/engines/Cplex)
+    set (LINK_CPX 1)
+    if (${BUILD_SHARED_LIBS})
+       set (CMAKE_INSTALL_RPATH ${CMAKE_INSTALL_RPATH}:${CPX_LIB_DIR_F})
+    endif()
+
+    set (CPX_LIBS mntrcpx "${CPX_LIB_DIR_F}/libcplex.a")
+
+  else()
+    message(FATAL_ERROR " ${MSG_HEAD} "
+	    "CPX_LIB_DIR_F ${CPX_LIB_DIR_F} not found.")
   endif()
+elseif (CPX_LIB_DIR_F)
+  message(FATAL_ERROR " ${MSG_HEAD}" 
+	  "CPX_INC_DIR must be set along with CPX_LIB_DIR")
 endif()
 
 message(STATUS ${MSG_HEAD} "CPX_INC_DIR is set to ${CPX_INC_DIR}")
 
-
 if (LINK_CPX)
   message(STATUS ${MSG_HEAD} "Link Cplex? Yes.")
-  add_definitions("-DMNTROSICPX=1")
+  #add_definitions("-DIL_STD") # added to Cplex's CMakeList.txt
 else()
+  set (CPX_INC_DIR_F)
+  set (CPX_LIB_DIR_F)
   message(STATUS ${MSG_HEAD} "Link Cplex? No.")
-  add_definitions("-DMNTROSICPX=0")
 endif()
+
+#if (LINK_CPX)
+  #message(STATUS ${MSG_HEAD} "Link Cplex? Yes.")
+  #add_definitions("-DMNTROSICPX=1")
+#else()
+  #message(STATUS ${MSG_HEAD} "Link Cplex? No.")
+  #add_definitions("-DMNTROSICPX=0")
+#endif()
 
 
 ###########################################################################
@@ -661,22 +690,20 @@ set (CBC_INC_DIR "" CACHE PATH
   "Path to Cbc headers. It must have coin/CbcModel.hpp file.") 
 set (CBC_INC_DIR_F ${CBC_INC_DIR})
 
-# uncomment when Cbc is a default part of engines
-#if (("${CBC_INC_DIR_F}" STREQUAL "") AND
-#    (NOT ("${TP_ABS_PATH}" STREQUAL "")))
-#  set (CBC_INC_DIR_F "${TP_ABS_PATH}/include")
-#endif()
+if (("${CBC_INC_DIR_F}" STREQUAL "") AND
+    (NOT ("${TP_ABS_PATH}" STREQUAL "")))
+  set (CBC_INC_DIR_F "${TP_ABS_PATH}/include")
+endif()
 
 
 set (CBC_LIB_DIR "" CACHE PATH 
   "Path to Cbc library. It must have a Cbc library file.") 
 set (CBC_LIB_DIR_F ${CBC_LIB_DIR})
 
-# uncomment when Cbc is a default part of engines
-#if (("${CBC_LIB_DIR_F}" STREQUAL "") AND
-#       (NOT ("${TP_ABS_PATH}" STREQUAL "")))
-#  set (CBC_LIB_DIR_F "${TP_ABS_PATH}/lib")
-#endif()
+if (("${CBC_LIB_DIR_F}" STREQUAL "") AND
+       (NOT ("${TP_ABS_PATH}" STREQUAL "")))
+  set (CBC_LIB_DIR_F "${TP_ABS_PATH}/lib")
+endif()
 
 message(STATUS ${MSG_HEAD} "CBC_INC_DIR_F is set to ${CBC_INC_DIR_F}")
 message(STATUS ${MSG_HEAD} "CBC_LIB_DIR_F is set to ${CBC_LIB_DIR_F}")

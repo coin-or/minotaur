@@ -198,9 +198,6 @@ namespace Minotaur {
        */
       void negate_();
   };
-
-  typedef boost::shared_ptr<Objective> ObjectivePtr;
-  typedef boost::shared_ptr<const Objective> ConstObjPtr;
 }
 #endif
 

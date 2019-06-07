@@ -31,12 +31,13 @@
 #include "LPEngine.h"
 #include "MaxFreqBrancher.h"
 #include "MaxVioBrancher.h"
-#include "MINLPDiving.h"
+//#include "MINLPDiving.h"
 #include "NLPEngine.h"
 #include "NlPresHandler.h"
 #include "NodeIncRelaxer.h"
 #include "Objective.h"
 #include "Option.h"
+#include "ParMINLPDiving.h"
 #include "ParNodeIncRelaxer.h"
 #include "PCBProcessor.h"
 #include "Presolver.h"
@@ -129,17 +130,26 @@ ParBranchAndBound* createParBab(EnvPtr env, ProblemPtr p, EnginePtr e,
     parNodeRlxr[i]->setRelaxation(relCopy[i]);
     parNodeRlxr[i]->setEngine(eCopy);
   }
-
-  if (0 <= options->findInt("divheur")->getValue()) {
-    MINLPDivingPtr div_heur;
-    EnginePtr e2 = e->emptyCopy();
+  
+  if (options->findBool("pardivheur")->getValue()) {
+    ParMINLPDivingPtr div_heur;
     if (true==options->findBool("use_native_cgraph")->getValue() ||
         relCopy[0]->isQP() || relCopy[0]->isQuadratic()) {
       p->setNativeDer();
     }
-    div_heur = (MINLPDivingPtr) new MINLPDiving(env, p, e2);
+    div_heur = (ParMINLPDivingPtr) new ParMINLPDiving(env, p, e->emptyCopy());
     bab->addPreRootHeur(div_heur);
   }
+  //if (0 <= options->findInt("divheur")->getValue()) {
+    //MINLPDivingPtr div_heur;
+    //EnginePtr e2 = e->emptyCopy();
+    //if (true==options->findBool("use_native_cgraph")->getValue() ||
+        //relCopy[0]->isQP() || relCopy[0]->isQuadratic()) {
+      //p->setNativeDer();
+    //}
+    //div_heur = (MINLPDivingPtr) new MINLPDiving(env, p, e2);
+    //bab->addPreRootHeur(div_heur);
+  //}
   if (true == options->findBool("FPump")->getValue()) {
     EngineFactory efac(env);
     EnginePtr lpe = efac.getLPEngine();
@@ -516,8 +526,8 @@ int main(int argc, char** argv)
   EnvPtr env      = (EnvPtr) new Environment();
   OptionDBPtr options;
   MINOTAUR_AMPL::AMPLInterface* iface = 0;
-  ProblemPtr oinst;    // instance that needs to be solved.
-  EnginePtr engine;    // engine for solving relaxations. 
+  ProblemPtr oinst;     // instance that needs to be solved.
+  EnginePtr engine = 0; // engine for solving relaxations. 
   SolutionPtr sol, sol2;
   JacobianPtr jPtr;
   HessianOfLagPtr hPtr;
@@ -610,6 +620,9 @@ int main(int argc, char** argv)
   writeParBnbStatus(env, parbab, obj_sense, WallTimeStart);
 
 CLEANUP:
+  if (engine) {
+    delete engine;
+  }
   if (iface) {
     delete iface;
   }
