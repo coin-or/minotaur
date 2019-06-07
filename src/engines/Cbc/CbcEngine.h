@@ -116,6 +116,9 @@ namespace Minotaur {
     // Implement Engine::setIterationLimit().
     void setIterationLimit(int limit);
 
+    // base class method
+    void setTimeLimit(double t);
+
     /** 
      * Solve the problem that was loaded. Calls resolve() function of Osi.
      * The resolve() function ``smartly'' decides what method of clp should

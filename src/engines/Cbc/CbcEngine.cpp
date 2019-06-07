@@ -307,6 +307,11 @@ void CbcEngine::setIterationLimit(int )
 }
   
 
+void CbcEngine::setTimeLimit(double )
+{
+}
+
+
 EngineStatus CbcEngine::solve()
 {
   CbcModel *model = 0;

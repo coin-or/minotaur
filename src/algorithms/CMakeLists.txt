@@ -98,7 +98,7 @@ message(STATUS ${MSG_HEAD} "ALL_EXEC_LIBS after removing duplicates =  ${ALL_EXE
 ## Use the lines meant for bnb as a template.
 ##############################################################################
 set (LSTOA_SOURCES
-	LSTOA.cpp
+   LSTOA.cpp
 )
 
 add_executable(lstoa ${LSTOA_SOURCES})

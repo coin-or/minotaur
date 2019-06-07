@@ -9,7 +9,10 @@
  * \authors Meenarli Sharma and Prashant Palkar, IIT Bombay
  */
 
+
+#ifdef USE_CPX
 #include <CplexMILPEngine.h> //(why sequence matters?)
+#endif
 
 #include <iomanip>
 #include <iostream>
@@ -365,15 +368,20 @@ int main(int argc, char* argv[])
   //engines
   EnginePtr nlp_e;
   
-  //MILPEnginePtr milp_e;  // lp engine 
-  CplexMILPEnginePtr milp_e = (CplexMILPEnginePtr) new CplexMILPEngine(env);
+  MILPEnginePtr milp_e = 0;  
   
-  LoggerPtr logger_ = (LoggerPtr) new Logger(LogInfo);
   VarVector *orig_v=0;
   int err = 0;
-  
-  // start timing.
   double wallTimeStart = getWallTime();
+
+#ifdef USE_CPX
+  milp_e = new CplexMILPEngine(env);
+#else
+  env->getLogger()->errStream() << me << "CPLEX MILP Engine not found, exiting" << std::endl;
+  goto CLEANUP;
+#endif
+
+  // start timing.
   env->startTimer(err);
   if (err) {
     goto CLEANUP;
@@ -469,7 +477,12 @@ int main(int argc, char* argv[])
     //MS: Also look relTol if UB =0
     //milp_e->load(milp);
     //stoa_hand->solveMILP(&objLb, &sol, solPool, cutMan);
+#ifdef USE_CPX
     engineStatus = milp_e->solveSTLazy(&objLb, &sol2, stoa_hand, &status);
+#else
+    env->getLogger()->errStream() << me << "CPLEX MILP Engine not found, exiting" << std::endl;
+    goto CLEANUP;
+#endif
     env->getLogger()->msgStream(LogDebug) << "Engine status :" 
       << engineStatus << std::endl;
  
