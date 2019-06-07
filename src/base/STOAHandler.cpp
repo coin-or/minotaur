@@ -127,7 +127,7 @@ STOAHandler::~STOAHandler()
   rel_.reset();
   //nlpe_.reset();
   minlp_.reset();
-  logger_.reset();
+  //logger_.reset();
 }
 
 
