@@ -236,8 +236,9 @@ std::string getSolveStatusString(SolveStatus s);
 
 // Important class definitions
 /// Logging
+//Changed boost_shared pointer to simple pointer
 class Logger;
-typedef boost::shared_ptr<Logger> LoggerPtr;
+typedef Logger* LoggerPtr;
 
 //changed boost shared pointer to simple pointer
 class Variable;
@@ -276,17 +277,19 @@ typedef SOSVector::iterator SOSIterator;
 typedef SOSVector::const_iterator SOSConstIterator;
 
 // Serdar defined
-typedef boost::shared_ptr<ConstraintVector> ConstraintVectorPtr;
+// some chnaged boost:shared_ptr: vinay
+typedef ConstraintVector* ConstraintVectorPtr;
 typedef std::vector<ConstConstraintPtr> ConstConstraintVector;
-typedef boost::shared_ptr<ConstConstraintVector> ConstConstraintVectorPtr;
+typedef ConstConstraintVector* ConstConstraintVectorPtr;
 typedef ConstConstraintVector::iterator ConstConstraintIterator;
 typedef std::set<ConstraintPtr> ConstrSet;
 typedef std::deque<ConstraintPtr> ConstrQ;
 
 
 // Serdar added.
-typedef boost::shared_ptr<VarSet> VarSetPtr;
-typedef boost::shared_ptr<const VarSet> ConstVarSetPtr;
+// changed boost:shared_ptr: vinay
+typedef VarSet* VarSetPtr;
+typedef const VarSet* ConstVarSetPtr;
 typedef std::map<ConstVariablePtr, UInt, CompareVariablePtr> VarIntMap;
 typedef VarIntMap::const_iterator VarIntMapConstIterator;
 typedef VarIntMap::iterator VarIntMapIterator;

@@ -112,20 +112,39 @@ private:
   /// Pointer to environment's logger
   LoggerPtr logger_;
 
+  /// For logging
+  static const std::string me_;
+
   /// Vector of duals of variables of the root relaxation
   double *rootDuals_;
-
-  // TODO: Document what these members are
-  double *rootPrimal_;
+  
+  /// root node relaxtion objective value
   double rootValue_;
+  
+  /// For statistics.
   RCStats *stats_;
+  
+  /// for time calculation  
   const Timer* timer_;
 
+  // brief copy the root node dual information 
+  // \param[in] solution pointer
+  // \param[in] relaxation problem pointer  
   void copyRootDetails_(ConstSolutionPtr sol,  RelaxationPtr rel); 
 
-  static const std::string me_;
+  // brief reduced cost fixing using dual information of node
+  // \param[in] solution pointer
+  // \param[in] relaxation problem pointer
+  // \param[in] 
+  // \param[in] incumbent solution value 
+  // \param[in] relaxation object value
+  // \param[in] x[v->getIndex] value
+  // \param[in] reduced cost of variable
+  // \param[in] variable pointer
+  void rcfix_(RelaxationPtr rel, ModVector &r_mods,
+             double bestobj,  const double rel_obj, double xval, double r,
+             VariablePtr v);
 };
-
   typedef boost::shared_ptr <RCHandler> RCHandlerPtr;
 }
 
