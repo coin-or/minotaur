@@ -39,7 +39,7 @@
 
 using namespace Minotaur;
 
-#define SPEW 1
+//#define SPEW 1
 
 const std::string ParMINLPDiving::me_ = "ParMINLP Diving Heuristic: "; 
 
