@@ -23,6 +23,10 @@
 #include "CbcEngine.h"
 #endif
 
+#ifdef USE_CPX
+#include "CplexMILPEngine.h"
+#endif
+
 #ifdef USE_IPOPT
 #include "IpoptEngine.h"
 #endif
@@ -81,6 +85,11 @@ MILPEnginePtr EngineFactory::getMILPEngine()
 #ifdef USE_CBC
   if (env_->getOptions()->findString("milp_engine")->getValue()=="Cbc") {
     return ((CbcEnginePtr) new CbcEngine(env_));
+  }
+#endif
+#ifdef USE_CPX
+  if (env_->getOptions()->findString("milp_engine")->getValue()=="Cplex") {
+    return ((CplexMILPEnginePtr) new CplexMILPEngine(env_));
   }
 #endif
   return (MILPEnginePtr());

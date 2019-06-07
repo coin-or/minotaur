@@ -10,7 +10,7 @@
  * Algorithm.
  * \Authors Meenarli Sharma, Indian Institute of Technology Bombay
  */
-
+/////MS: lots of changes for tolerances and Impl bin
 #include <cmath>
 #include <iomanip>
 #include <iostream>
@@ -154,6 +154,7 @@ void QGAdvHandler::addInitLinearX_(const double *x)
         sstm << "_OAcut_" << stats_->cuts << "_AtRoot";
         f = (FunctionPtr) new Function(lf);
         newcon = rel_->newConstraint(f, -INFINITY, cUb-c, sstm.str());
+        sstm.str("");
       }
     }	else {
       logger_->msgStream(LogError) << me_ << " constraint" <<  con->getName() <<
@@ -814,7 +815,7 @@ void QGAdvHandler::writeStats(std::ostream &out) const
 
 std::string QGAdvHandler::getName() const
 {
-  return "QG Handler (Quesada-Grossmann)";
+  return "QGAdvHandler (Quesada-Grossmann)";
 }
 
 // Local Variables:

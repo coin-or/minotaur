@@ -11,6 +11,7 @@
  */
 
 #include <cmath>
+#include <omp.h>
 #include "MinotaurConfig.h"
 #include "Branch.h"
 #include "Environment.h"
@@ -21,7 +22,7 @@
 #include "Option.h"
 #include "Timer.h"
 #include "ParTreeManager.h"
-
+//#include <omp.h>
 using namespace Minotaur;
     
     
@@ -105,10 +106,13 @@ NodePtr ParTreeManager::branch(Branches branches, NodePtr node, WarmStartPtr ws)
   if (searchType_ == DepthFirst || searchType_ == BestThenDive) {
     is_first = true;
   }
+//#pragma omp critical
+  //std::cout << "in parTM branch: node " << node->getId() << " thread: " << omp_get_thread_num() << std::endl;
 
   for (BranchConstIterator br_iter=branches->begin(); br_iter!=branches->end();
       ++br_iter) {
     branch_p = *br_iter;
+    //branch_p->write(std::cout);
     child = (NodePtr) new Node(node, branch_p);
     child->setLb(node->getLb());
     child->setDepth(node->getDepth()+1);
@@ -229,6 +233,7 @@ double ParTreeManager::getPerGapPar(double treeLb)
       gap = 0.0;
     }
   }
+  //std::cout << "in parTM: gap " << gap << " treeLb " << treeLb << " ub " << bestUpperBound_ << "\n";
   return gap;
 }
 

@@ -66,8 +66,8 @@ ParQGHandler::ParQGHandler()
   intTol_ = env_->getOptions()->findDouble("int_tol")->getValue();
   solAbsTol_ = env_->getOptions()->findDouble("feasAbs_tol")->getValue();
   solRelTol_ = env_->getOptions()->findDouble("feasRel_tol")->getValue();
-  npATol_ = env_->getOptions()->findDouble("solAbs_tol")->getValue();
-  npRTol_ = env_->getOptions()->findDouble("solRel_tol")->getValue();
+  objATol_ = env_->getOptions()->findDouble("solAbs_tol")->getValue();
+  objRTol_ = env_->getOptions()->findDouble("solRel_tol")->getValue();
   logger_ = (LoggerPtr) new Logger(LogInfo);
 }
 
@@ -86,8 +86,8 @@ ParQGHandler::ParQGHandler(EnvPtr env, ProblemPtr minlp, EnginePtr nlpe)
   intTol_ = env_->getOptions()->findDouble("int_tol")->getValue();
   solAbsTol_ = env_->getOptions()->findDouble("feasAbs_tol")->getValue();
   solRelTol_ = env_->getOptions()->findDouble("feasRel_tol")->getValue();
-  npATol_ = env_->getOptions()->findDouble("solAbs_tol")->getValue();
-  npRTol_ = env_->getOptions()->findDouble("solRel_tol")->getValue();
+  objATol_ = env_->getOptions()->findDouble("solAbs_tol")->getValue();
+  objRTol_ = env_->getOptions()->findDouble("solRel_tol")->getValue();
   logger_ = env->getLogger();
 
   stats_ = new ParQGStats();
@@ -194,8 +194,8 @@ void ParQGHandler::cutIntSol_(ConstSolutionPtr sol, CutManager *cutMan,
   case (ProvenLocalOptimal):
     ++(stats_->nlpF);
     updateUb_(s_pool, &nlpval, sol_found);
-    if ((relobj_ >= nlpval-npATol_) ||
-        (nlpval != 0 && (relobj_ >= nlpval-fabs(nlpval)*npRTol_))) {
+    if ((relobj_ >= nlpval-objATol_) ||
+        (nlpval != 0 && (relobj_ >= nlpval-fabs(nlpval)*objRTol_))) {
         *status = SepaPrune;
         break;
     } else {
@@ -512,8 +512,8 @@ void ParQGHandler::oaCutEngLim_(const double *lpx, CutManager *,
         linearAt_(f, nlpact, lpx, &c, &lf, &error);
         if (error==0) {
           lpvio = std::max(lf->eval(lpx)-cUb+c, 0.0);
-          if ((lpvio>solAbsTol_) && ((cUb-c)==0 ||
-                                   (lpvio>fabs(cUb-c)*solRelTol_))) {
+          //if ((lpvio>solAbsTol_) && ((cUb-c)==0 ||
+                                   //(lpvio>fabs(cUb-c)*solRelTol_))) {
             ++(stats_->cuts);
             sstm << "_OAcut_";
             sstm << stats_->cuts;
@@ -521,7 +521,7 @@ void ParQGHandler::oaCutEngLim_(const double *lpx, CutManager *,
             f = (FunctionPtr) new Function(lf);
             newcon = rel_->newConstraint(f, -INFINITY, cUb-c, sstm.str());
             return;
-          }
+          //}
         }
       }
     }	else {
@@ -758,7 +758,9 @@ void ParQGHandler::updateUb_(SolutionPoolPtr s_pool, double *nlpval,
   double val = nlpe_->getSolutionValue();
   double bestval = s_pool->getBestSolutionValue();
 
-  if (val <= bestval) {
+  if ((bestval >= val-objATol_) ||
+      (bestval != 0 && (bestval >= val-fabs(bestval)*objRTol_))) {
+  //if (val <= bestval) 
     const double *x = nlpe_->getSolution()->getPrimal();
     s_pool->addSolution(x, val);
     *sol_found = true;

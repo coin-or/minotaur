@@ -179,6 +179,13 @@ namespace Minotaur {
      * quadratic part.
      */
     QuadraticFunctionPtr removeQuadratic();
+ 
+    /**
+     * Remove the linear part of the function and return a pointer to the
+     * linear part.
+     */   
+
+    LinearFunctionPtr removeLinear();
 
     /**
      * Remove the nonlinear part of the function and return a pointer to 

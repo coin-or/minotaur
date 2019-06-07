@@ -128,6 +128,9 @@ namespace Minotaur {
     /// Return the ID of this node.
     UInt getId() const { return id_; }
 
+    /// Return the vector of last strong branching information of candidates.
+    UIntVector getLastStrongBranched() {return lastStrBranched_;}
+
     /// Return the lower bound of the relaxation obtained at this node.
     double getLb() const { return lb_; }
 
@@ -137,11 +140,46 @@ namespace Minotaur {
     /// Return a pointer to the parent node.
     NodePtr getParent() const { return parent_; }
 
+    /**
+     * Return the vector of pseudocosts of down-branchings upto this node in
+     * the parental chain (direct ancestors only).
+     */
+    //DoubleVector getPCDown() const { return pseudoDown_; }
+    DoubleVector getPCDown() { return pseudoDown_; }
+
+    /**
+     * Return the vector of indices of the variables branched till this node.
+     * in the parental chain (direct ancestors only).
+     */
+    UIntVector getBrCands() const { return brCands_; }
+
+    /**
+     * Return the vector of pseudocosts of up-branchings upto this node in
+     * the parental chain (direct ancestors only).
+     */
+    DoubleVector getPCUp() const { return pseudoUp_; }
+
     /// Get the status of this node.
     NodeStatus getStatus() const { return status_; }
 
     /// Get the tie-breaking score.
     double getTbScore() const { return tbScore_; }
+    
+    double setVioVal(double v) { return vioVal_ = v; }
+    
+    double getVioVal() { return vioVal_; }
+
+    /**
+     * Return the vector of number of down-branchings of a variable upto this
+     * in the parental chain (direct ancestors only).
+     */
+    UIntVector getTimesDown() const { return timesDown_; }
+
+    /**
+     * Return the vector of number of up-branchings of a variable upto this
+     * node in the parental chain (direct ancestors only).
+     */
+    UIntVector getTimesUp() const { return timesUp_; }
 
     /// Get the warm start information.
     WarmStartPtr getWarmStart() { return ws_; }
@@ -155,21 +193,17 @@ namespace Minotaur {
      * that the vector starts with modifications that were used to branch.
      */
     ModificationConstIterator modsBegin() const { return pMods_.begin(); }
+    ModificationConstIterator modsrBegin() const { return rMods_.begin(); }
 
     /// End of modifications applied at this node.
     ModificationConstIterator modsEnd() const { return pMods_.end(); }
+    ModificationConstIterator modsrEnd() const { return rMods_.end(); }
 
     /// Reverse iterators.
     ModificationRConstIterator modsRBegin() const { return pMods_.rbegin(); }
 
     /// Reverse iterators.
     ModificationRConstIterator modsREnd() const { return pMods_.rend(); }
-
-    /// Set the status of this node.
-    void setStatus(NodeStatus status) { status_ = status; }
-
-    /// Get the tie-breaking score.
-    void setTbScore(double d) { tbScore_ = d; }
 
     /**
      * Remove a child node from the list of children. If the node is
@@ -186,17 +220,41 @@ namespace Minotaur {
     /// Remove warm start information associated with this node.
     void removeWarmStart() { ws_.reset(); }
 
+    /// Set the branching candidate information for this node.
+    void setBrCands(UIntVector brCands) { brCands_ = brCands; }
+
+    /// Set the depth of the node in the tree.
+    void setDepth(UInt depth);
+
     /**
      * Set the ID of this node. ID of a node is unique for the given tree.
      * The treemanager must ensure this.
      */
     void setId(UInt id);
 
-    /// Set the depth of the node in the tree.
-    void setDepth(UInt depth);
+    /// Set the vector of last strong branched information of candidates.
+    void setLastStrongBranched(UIntVector lstStrnBrnchd) {lastStrBranched_ = lstStrnBrnchd;}
 
     /// Set a lower bound for the relaxation at this node.
     void setLb(double value);
+
+    /// Set the down pseudocosts for this node.
+    void setPCDown(DoubleVector pcDown) { pseudoDown_ = pcDown; }
+
+    /// Set the up pseudocosts for this node.
+    void setPCUp(DoubleVector pcUp) { pseudoUp_ = pcUp; }
+
+    /// Set the status of this node.
+    void setStatus(NodeStatus status) { status_ = status; }
+
+    /// Get the tie-breaking score.
+    void setTbScore(double d) { tbScore_ = d; }
+
+    /// Set the times down for this node.
+    void setTimesDown(UIntVector timesDown) { timesDown_ = timesDown; }
+
+    /// Set the times up for this node.
+    void setTimesUp(UIntVector timesUp) { timesUp_ = timesUp; }
 
     /// Set warm start information
     void setWarmStart (WarmStartPtr ws);
@@ -226,6 +284,36 @@ namespace Minotaur {
      */
     void undoMods(RelaxationPtr rel, ProblemPtr p);
 
+    /**
+     * Update the branching candidate vector at this node.
+     */
+    void updateBrCands(UInt index);
+
+    /**
+     * Update the last strong branched statistic at this node.
+     */
+    void updateLastStrBranched(UInt index, double value);
+
+    /**
+     * Update the down-branching pseudocosts at this node.
+     */
+    void updatePCDown(UInt index, double value);
+
+    /**
+     * Update the up-branching pseudocosts at this node.
+     */
+    void updatePCUp(UInt index, double value);
+
+    /**
+     * Update the down-branching count of candidates at this node.
+     */
+    void updateTimesDown(UInt index, double value);
+
+    /**
+     * Update the up-branching count of candidates at this node.
+     */
+    void updateTimesUp(UInt index, double value);
+
     ///Write the node
     void write(std::ostream &o) const;
 
@@ -244,6 +332,9 @@ namespace Minotaur {
 
     /// Id of this node.
     UInt id_;
+
+    /// When did we last strong-branch on a candidate.
+    UIntVector lastStrBranched_;
 
     /**
      * Lower bound on the relaxation at this node (not to original
@@ -266,11 +357,38 @@ namespace Minotaur {
     /// The parent of this node. This is NULL if the node is a root node.
     NodePtr parent_;
 
+    /**
+     * Vector of indices of variables branched on till this node in the
+     * parental chain (direct ancestors only).
+     */
+    UIntVector brCands_;
+
+    /// Vector of pseudocosts for rounding down ().
+    DoubleVector pseudoDown_;
+
+    /// Vector of pseudocosts for rounding up.
+    DoubleVector pseudoUp_;
+
     /// The status of this node.
     NodeStatus status_;   
 
+    /// Violation measure at the node.
+    double vioVal_;
+    
     /// Score to break tie-breaks.
     double tbScore_;
+
+    /**
+     * \brief Number of times we have branched down and noted the effect on
+     * objective improvement.
+     */
+    UIntVector timesDown_;
+
+    /**
+     * \brief Number of times we have branched up and noted the effect on objective
+     * improvement.
+     */
+    UIntVector timesUp_;
 
     /// The warm start information saved for this node
     WarmStartPtr ws_;

@@ -59,7 +59,7 @@ cd ${NAME}
 cmake ${CARGS} ${TEST_DIR} >> ../${NAME}.log 2>> ../${NAME}.err
 make -j $CPUS utest >> ../${NAME}.log 2>> ../${NAME}.err
 make -j $CPUS install >> ../${NAME}.log 2>> ../${NAME}.err
-cd - >> /dev/null
+cd ${TEST_DIR}
 
 }
 
@@ -410,7 +410,7 @@ doTest; listBins; testFiles; checkTest
 cd ${NAME}/src/testing
 valgrind --leak-check=full --show-reachable=yes \
 ./unittest all >> ../../../${NAME}.out 2>> ../../../${NAME}.err
-cd - >> /dev/null
+cd ${TEST_DIR}
 
 ## static+debug
 NAME=build-all-static-debug
@@ -462,7 +462,7 @@ testFiles
 cd build-all
 make doc >> ../doc.log 2>> ../doc.err
 rsync -a --delete ${TEST_DIR}/build-all/doxygen/html/ ${REM_WEB_DIR}/html/
-cd - >> /dev/null
+cd ${TEST_DIR} 
 
 rm -rf ${WEB_DIR}
 mkdir ${WEB_DIR}
@@ -472,6 +472,7 @@ cd ${WEB_DIR}
 tar -zcf build-log.tar.gz build-log
 
 rsync -a ${WEB_DIR}/build-log.tar.gz ${REM_WEB_DIR}/
+cd ${TEST_DIR}
 
 echo ""
 echo Summary

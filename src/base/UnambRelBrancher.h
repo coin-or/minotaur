@@ -5,14 +5,14 @@
 // 
 
 /**
- * \file ReliabilityBrancher.h
- * \brief Declare methods and data structures for reliability branching.
- * \author Ashutosh Mahajan, Argonne National Laboratory
+ * \file UnambRelBrancher.h
+ * \brief Declare methods and data structures for unambiguous reliability branching.
+ * \author Prashant Palkar, IIT Bombay
  */
 
 
-#ifndef MINOTAURRELIABILITYBRANCHER_H
-#define MINOTAURRELIABILITYBRANCHER_H
+#ifndef MINOTAURUNAMBRELBRANCHER_H
+#define MINOTAURUNAMBRELBRANCHER_H
 
 #include "Brancher.h"
 
@@ -20,9 +20,9 @@ namespace Minotaur {
 
 class Engine;
 class Timer;
-typedef Engine* EnginePtr;
+typedef boost::shared_ptr<Engine> EnginePtr;
 
-struct RelBrStats {
+struct UnambRelBrStats {
   UInt bndChange;  /// Number of times variable bounds were changed.
   UInt calls;      /// Number of times called to find a branching candidate.
   UInt engProbs;   /// Number of times an unexpected engine status was met.
@@ -32,8 +32,8 @@ struct RelBrStats {
 };
 
 
-/// A class to select a variable for branching using reliability branching.
-class ReliabilityBrancher : public Brancher {
+/// A class to select a variable for branching using unambiguous reliability branching.
+class UnambRelBrancher : public Brancher {
 
 public:
   /**
@@ -43,10 +43,10 @@ public:
    * candidates and modifications. This array can not be changed while
    * branch-and-bound is running.
    */
-  ReliabilityBrancher(EnvPtr env, HandlerVector & handlers);
+  UnambRelBrancher(EnvPtr env, HandlerVector & handlers);
 
   /// Destroy.
-  ~ReliabilityBrancher();
+  ~UnambRelBrancher();
 
   // base class function.
   Branches findBranches(RelaxationPtr rel, NodePtr node, 
@@ -129,9 +129,14 @@ private:
    * \param[in] cutoff The cutoff value for objective function (an upper
    * bound).
    * \param[in] node The node at which we are branching.
+   * \param[in] candsPos Vector of branching variables' indices.
+   * \param[in] candsPos Vector of reliable branching variables' indices.
+   * \param[in] candsPos Vector of unreliable branching variables' indices.
    */
   BrCandPtr findBestCandidate_(const double objval, double cutoff, 
-                               NodePtr node);
+                               NodePtr node, IntVector candsPos,
+                               IntVector candsPosRel,
+                               IntVector candsPosUnRel);
 
   /**
    * \brief Find and sort candidates for branching.
@@ -142,13 +147,9 @@ private:
    * last_strong in the cands_ vector do not need any further strong 
    * branching.  
    */
-  void findCandidates_();
-
-  /**
-   * Clean up reliable and unreliable candidates, except for the no_del
-   * candidate.
-   */
-  void freeCandidates_(BrCandPtr no_del);
+  void findCandidates_(NodePtr node, IntVector & candPositions,
+                               IntVector & candsPosRel, 
+                               IntVector & candsPosUnRel);
 
   /**
    * \brief Find the score of a candidate based on its pseudo costs.
@@ -157,9 +158,11 @@ private:
    * \param[in] ch_down The down score
    * \param[in] ch_up The up score.
    * \param[out] score The total score returned by this function.
+   * \param[out] node The node from which the information is taken.
    */
   void getPCScore_(BrCandPtr cand, double *ch_down, double *ch_up, 
-                   double *score);
+                   double *score, NodePtr node, IntVector candsPos,
+                   UInt cnt);
 
   /**
    * \brief Calculate score from the up score and down score.
@@ -200,22 +203,29 @@ private:
   /**
    * \brief Update Pseudocost based on the new costs.
    *
-   * \param[in] i Index of the candidate.
+   * \param[in] index Index of the candidate.
+   * \param[in] i Position of the candidate in brCands array.
    * \param[in] new_cost The new cost estimate.
    * \param[in] cost The vector of costs of all candidates. cost[i] is to
    * be updated
    * \param[in] count The vector that keeps a cound of how many times cost
    * has been updated for each candidate.
+   * \param[in] newCand True if the branching candidate is new.
+   * \param[in] updateDown True if we have branched down.
+   * \param[in] strngBrnched True if we have strong branched.
+   * \param[in] Pointer of the current node.
    */
-  void updatePCost_(const int &i, const double &new_cost, 
-                    DoubleVector &cost, UIntVector &count);
+  void updatePCost_(const int &index, int i, const double &new_cost, 
+                    DoubleVector cost, UIntVector count,
+                    bool newCand, bool updateDown, bool strngBrnched, 
+                    NodePtr node);
 
   /**
    * \brief Analyze the strong-branching results.
    *
    * \param[in] cand Candidate for which we performed strong branching.
    * \param[in] chcutoff The minimum change in objective function value that
-   * will result in cutoff.
+  ,* will result in cutoff.
    * \param[in,out] change_up Change observed in the objective function value
    * in the up branch. It is modified if the engine status is error or
    * unknown.
@@ -223,12 +233,15 @@ private:
    * value in the down branch. It is modified if the engine status is error or
    * unknown.
    * \param[in] status_up The engine status in up branch. 
-   * \param[in] status_down The engine status in down branch.
+   * \param[in] status_down The engine status in up branch.
+   * \param[in] node The current node at which the info is update.
+   * \param[in] candPosition Position of the candidate in the pseudocost array.
    */
   void useStrongBranchInfo_(BrCandPtr cand, const double & chcutoff,
                             double & change_up, double & change_down, 
                             const EngineStatus & status_up,
-                            const EngineStatus & status_down);
+                            const EngineStatus & status_down,
+                            NodePtr node, int candPosition);
 
   /** 
    * \brief Display score details of the candidate.
@@ -248,6 +261,18 @@ private:
    * \param[in] out Outstream where scores are displayed.
    */
   void writeScores_(std::ostream &out);
+
+  /**
+   * \brief Display scores of unreliable candidates and pseudo-costs of reliable
+   * ones from the parent node.
+   *
+   * \param[in] out Outstream where scores are displayed.
+   * \param[in] node The current node.
+   * \param[in] candsPosRel Position of reliable candidates in the parent node vector.
+   * \param[in] candsPosUnrel Position of unreliable candidates in the parent node vector.
+   */
+  void writeScores_(std::ostream &out, NodePtr node, IntVector candsPosRel,
+                    IntVector candsPosUnrel);
 
   /// The engine used for strong branching.
   EnginePtr engine_;
@@ -307,7 +332,7 @@ private:
   std::vector<BrCandPtr> relCands_;
 
   /// Statistics.
-  RelBrStats * stats_;
+  UnambRelBrStats * stats_;
 
   /// Status of problem after using this brancher.
   BrancherStatus status_;
@@ -343,7 +368,7 @@ private:
   DoubleVector x_;
 
 };
-typedef boost::shared_ptr<ReliabilityBrancher> ReliabilityBrancherPtr;
+typedef boost::shared_ptr<UnambRelBrancher> UnambRelBrancherPtr;
 }
 #endif
 

@@ -5,17 +5,19 @@
 // 
 
 /**
- * \file CbcEngine.h 
- * \brief Define an interface to the Cbc solver.
- * \author Ashutosh Mahajan, IIT Bombay
+ * \file CplexMILPEngine.h 
+ * \brief Define an interface to the Cplex MILP solver.
+ * \author Prashant Palkar and Ashutosh Mahajan, IIT Bombay
  */
 
-#ifndef MINOTAURCBCENGINE_H
-#define MINOTAURCBCENGINE_H
-
+#ifndef MINOTAURCPLEXMILPENGINE_H
+#define MINOTAURCPLEXMILPENGINE_H
+//#include <ilcplex/ilocplex.h>
+#include <ilcplex/cplexx.h>
+#include <string.h>
 #include "MILPEngine.h"
+#include "STOAHandler.h"
 
-class OsiSolverInterface;
 
 namespace Minotaur {
 
@@ -30,22 +32,28 @@ namespace Minotaur {
   typedef boost::shared_ptr<WarmStart> WarmStartPtr;
 
   /// Statistics
-  struct CbcStats {
+  struct CplexMILPStats {
     UInt calls;     /// Total number of calls to solve.
     double time;    /// Sum of time taken in all calls to solve.
   };
 
-  /// The CbcEngine class can be called to solve MILP problems
-  class CbcEngine : public MILPEngine {
+  /// The CplexMILPEngine class can be called to solve MILP problems
+  class CplexMILPEngine : public MILPEngine {
   public:
+    
+    //static int lazycallback(CPXCENVptr env, void *cbdata, int wherefrom,
+             //void *cbhandle, int *useraction_p);
+    
+    void doNothing();
+    
     /// Default constructor.
-    CbcEngine();    
+    CplexMILPEngine();    
 
     /// Constructor with an environment.
-    CbcEngine(EnvPtr env);
+    CplexMILPEngine(EnvPtr env);
 
     /// Destroy. 
-    ~CbcEngine();
+    ~CplexMILPEngine();
 
     // Implement Engine::addConstraint().
     void addConstraint(ConstraintPtr);
@@ -74,7 +82,7 @@ namespace Minotaur {
 
     void disableStrBrSetup() {};
 
-    /// Return an empty CbcEngine pointer.
+    /// Return an empty CplexMILPEngine pointer.
     EnginePtr emptyCopy();
 
     void enableStrBrSetup() {};
@@ -114,17 +122,25 @@ namespace Minotaur {
     void resetIterationLimit();
 
     // Implement Engine::setIterationLimit().
-    void setIterationLimit(int limit);
+    void setIterationLimit(int);
 
-    // base class method
-    void setTimeLimit(double t);
-
-    /** 
-     * Solve the problem that was loaded. Calls resolve() function of Osi.
-     * The resolve() function ``smartly'' decides what method of clp should
-     * be called.
-     */
+    // Implement Engine::setIterationLimit().
+    void setTimeLimit(double);
+    
+    // Implement the solve() function of Cplex
     EngineStatus solve();
+
+    // Implement the solve() function for single tree OA with general
+    // callbacks
+    EngineStatus solveST(double* objLb, SolutionPtr* sol,
+                         STOAHandlerPtr stoa_hand,
+                         SolveStatus* solveStatus);
+
+    // Implement the solve() function for single tree OA with lazy cuts
+    // callback
+    EngineStatus solveSTLazy(double* objLb, SolutionPtr* sol,
+                         STOAHandlerPtr stoa_hand,
+                         SolveStatus* solveStatus);
 
     /// Writes an LP file of the loaded LP.
     void writeLP(const char *filename) const;
@@ -133,6 +149,21 @@ namespace Minotaur {
     void writeStats(std::ostream &out) const;
 
   private:
+    /* This simple (CPLEX) routine frees up the pointer *ptr, and sets *ptr to NULL */
+    void free_(char **ptr);
+
+    /// Cplex Environment
+    CPXENVptr cpxenv_;
+
+    /// Cplex Problem pointer
+    CPXLPptr cpxlp_;
+   
+    /// Cplex Status
+    int cpxstatus_;
+
+    /// Time limit for the iteration
+    double timeLimit_;
+
     /// True if any bound on variable on constraint was changed after 
     /// previous solve.
     bool bndChanged_;
@@ -143,7 +174,7 @@ namespace Minotaur {
     /// Environment.
     EnvPtr env_;
 
-    /// The maximum limit that can be set on Osi solver. 
+    /// The maximum limit that can be set on the solver. 
     int maxIterLimit_;
 
     /// String name used in log messages.
@@ -152,11 +183,6 @@ namespace Minotaur {
     /// True if objective was changed after previous solve.
     bool objChanged_;
 
-    /** 
-     * Pointer to the OSI solver interface that is required to call cbc.
-     */
-    OsiSolverInterface *osilp_;
-
     /// Problem that is loaded, if any.
     ProblemPtr problem_;
 
@@ -164,7 +190,7 @@ namespace Minotaur {
     SolutionPtr sol_;
 
     /// Statistics.
-    CbcStats *stats_;
+    CplexMILPStats *stats_;
 
     /// Timer for solves. 
     Timer *timer_;
@@ -173,7 +199,7 @@ namespace Minotaur {
     void load_();
   };
   
-  typedef CbcEngine* CbcEnginePtr;
+  typedef CplexMILPEngine* CplexMILPEnginePtr;
 }
 
 #endif

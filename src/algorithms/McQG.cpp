@@ -29,7 +29,7 @@
 #include "LPEngine.h"
 #include "MaxFreqBrancher.h"
 #include "MaxVioBrancher.h"
-#include "MINLPDiving.h"
+#include "ParMINLPDiving.h"
 #include "NLPEngine.h"
 #include "NlPresHandler.h"
 #include "Node.h"
@@ -147,6 +147,23 @@ ParQGBranchAndBound* createParBab(EnvPtr env, ProblemPtr p, EnginePtr e,
     relCopy[i]->setProblem(cloneP);
     parNodeRlxr[i]->setModFlag(false);
     parNodeRlxr[i]->setEngine(lpeCopy);
+  }
+  
+  if (options->findBool("pardivheur")->getValue()) {
+    ParMINLPDivingPtr div_heur;
+    if (options->findBool("divheurLP")->getValue()) {
+      RelaxationPtr lp = (RelaxationPtr) new Relaxation(relCopy[0]);
+      //if (true==options->findBool("use_native_cgraph")->getValue()) {
+        lp->setNativeDer();
+      //}
+      div_heur = (ParMINLPDivingPtr) new ParMINLPDiving(env, lp, lin_e->emptyCopy());
+      div_heur->setAltEngine(e->emptyCopy());
+      div_heur->setOrigProb(p);
+    }
+    else {
+      div_heur = (ParMINLPDivingPtr) new ParMINLPDiving(env, p, e->emptyCopy());
+    }
+    bab->addPreRootHeur(div_heur);
   }
 
   delete efac;

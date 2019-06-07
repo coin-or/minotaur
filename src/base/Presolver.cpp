@@ -71,11 +71,12 @@ SolveStatus Presolver::getStatus()
 void Presolver::standardize()
 {
   minimizify_();
-  if (problem_->isQuadratic() || problem_->isLinear()) {
+  //if (problem_->isQuadratic() || problem_->isLinear()) { //MS: needed to do
+  //even for a nonlinear problem
     ifIntsAreBins_();
     standardizeConstraints_();
     problem_->calculateSize(true);
-  }
+  //}
 }
 
 

@@ -347,6 +347,26 @@ void Function::add(ConstLinearFunctionPtr lPtr)
 }
 
 
+LinearFunctionPtr Function::removeLinear()
+{
+  LinearFunctionPtr lf = lf_;
+  lf_ = LinearFunctionPtr();
+
+  // change the type of the function.
+  if (nlf_) {
+    // TODO: Fix this. nlf_ may be a constant expression.
+    // do nothing
+  } else if (qf_) {
+    type_ = Quadratic;
+  } else {
+    type_ = Constant;
+  }
+  collectVars_();
+  return lf;
+}
+
+
+
 QuadraticFunctionPtr Function::removeQuadratic()
 {
   QuadraticFunctionPtr qf = qf_;

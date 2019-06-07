@@ -34,6 +34,7 @@ public:
   /// are private.
   friend class Problem;
   friend class PerspCon;
+  friend class OAHandler;
 
   /// Default constructor.
   Variable();
@@ -94,6 +95,7 @@ public:
    */
   void write(std::ostream &out) const;
 
+  void INConstraint(ConstraintPtr c);
   /// Write the list of constraints in which this variable occurs.
   void writeConstraintMap(std::ostream & out) const;
 

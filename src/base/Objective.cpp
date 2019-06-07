@@ -135,6 +135,17 @@ void Objective::add_(double cb)
 }
 
 
+NonlinearFunctionPtr Objective::removeNonlinear_()
+{
+  NonlinearFunctionPtr nlf = NonlinearFunctionPtr(); // NULL
+  if (f_) {
+    nlf = f_->removeNonlinear();
+  }
+  return nlf;
+}
+
+
+
 QuadraticFunctionPtr Objective::removeQuadratic_()
 {
   QuadraticFunctionPtr qf = QuadraticFunctionPtr(); // NULL

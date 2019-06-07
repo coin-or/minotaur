@@ -33,10 +33,15 @@ typedef boost::shared_ptr<Handler> HandlerPtr;
 class BrCand {
 public:    
   /// Constructor
-  BrCand() {};
+  BrCand();
 
   /// Destroy
   virtual ~BrCand() {};
+
+  /**
+   * \brief Decrement the number of branches currently associated with this candidate.
+   */
+  virtual void decrBranches() { --branches_; };
 
   /**
    * Return the distance of the current point from the branching constraint:
@@ -71,6 +76,11 @@ public:
   virtual double getUDist() = 0;
 
   /**
+   * \brief Return the number of branches currently associated with this candidate.
+   */
+  virtual int numBranches() { return branches_; };
+
+  /**
    * \brief Set the preferred direction that will be processed first in
    * the branch-and-bound tree.
    */
@@ -86,6 +96,11 @@ public:
   virtual void setHandler(HandlerPtr h) { h_ = h; };
 
   /**
+   * \brief Set the number of branches associated with this candidate.
+   */
+  virtual void setNumBranches(int n) { branches_ = n; };
+
+  /**
    * \brief Set score for this candidate.
    *
    * The score is used to compare two candidates. 
@@ -96,6 +111,9 @@ public:
 protected:
   /// Handler that created this candidate.
   HandlerPtr h_;
+
+  /// Number of branches still in the tree which were created by this candidate.
+  int branches_;
 
   /// Index of the this candidate in the pseudo-cost array.
   int pCostIndex_;

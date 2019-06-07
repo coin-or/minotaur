@@ -235,6 +235,9 @@ namespace Minotaur {
     /// Fill up the statistics about the size of the problem into size_.
     ConstProblemSizePtr getSize() const;
 
+    /// Calculate and return a measure of the size of the problem.
+    double getSizeEstimate();
+
     /// Return a pointer to the variable with a given index
     virtual VariablePtr getVariable(UInt index) const;
 
@@ -452,6 +455,8 @@ namespace Minotaur {
 
     /// Remove the quadratic part of objective and return it.
     virtual QuadraticFunctionPtr removeQuadFromObj();
+    
+    virtual NonlinearFunctionPtr removeNonlinFromObj();
 
     /**
      * Remove the jacobian and hessian data structures. Useful when you want to

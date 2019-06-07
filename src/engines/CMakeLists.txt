@@ -8,7 +8,6 @@ set (ENGFAC_HEADERS
   EngineFactory.h
 )
 
-
 link_directories(${IPOPT_LIB_DIR})
 link_directories(${OSI_LIB_DIR})
 add_library(mntrengfac ${ENGFAC_SOURCES})
@@ -26,6 +25,13 @@ endif()
 if (LINK_CBC)
   add_definitions(-DUSE_CBC)
   include_directories("${PROJECT_SOURCE_DIR}/src/engines/Cbc")
+endif()
+
+if (LINK_CPX)
+  add_definitions(-DUSE_CPX -DIL_STD)
+  include_directories("${PROJECT_SOURCE_DIR}/src/engines/Cplex")
+  include_directories("${CPX_INC_DIR_F}")
+  include_directories("${CPX_INC_DIR_F}/../../concert/include")
 endif()
 
 if (LINK_FILTER_SQP)

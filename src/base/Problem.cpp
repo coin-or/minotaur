@@ -1395,6 +1395,19 @@ QuadraticFunctionPtr Problem::removeQuadFromObj()
   return QuadraticFunctionPtr(); // NULL
 }
 
+NonlinearFunctionPtr Problem::removeNonlinFromObj()
+{
+  assert(engine_ == 0 ||
+      (!"Cannot change objective after loading problem to engine\n")); 
+  if (obj_) {
+    return obj_->removeNonlinear_();
+  }
+  consModed_ = true;
+  return NonlinearFunctionPtr(); // NULL
+}
+
+
+
 
 void Problem::resetDer()
 {
@@ -1584,7 +1597,7 @@ void Problem::write(std::ostream &out, std::streamsize out_p) const
 
   out.precision(out_p);
   if (size_) {
-    writeSize(out);
+    //writeSize(out);
   }
 
   for (viter = vars_.begin(); viter != vars_.end(); ++viter) {
@@ -1606,6 +1619,24 @@ void Problem::write(std::ostream &out, std::streamsize out_p) const
   //  (*citer)->displayFunctionMap();
   //}
 
+}
+
+
+double Problem::getSizeEstimate()
+{
+  double estimate = 0, lb, ub;
+  VariableConstIterator viter;
+
+  for (viter = vars_.begin(); viter != vars_.end(); ++viter) {
+    lb = (*viter)->getLb();
+    ub = (*viter)->getUb();
+    if (lb ==-INFINITY || ub == INFINITY) {
+      return -1;
+    } else {
+      estimate += pow(ub - lb, 2);
+    }
+  }
+  return pow(estimate, 0.5);
 }
 
 

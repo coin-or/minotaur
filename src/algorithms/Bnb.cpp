@@ -16,6 +16,7 @@
 
 #include "MinotaurConfig.h"
 #include "BndProcessor.h"
+#include "Constraint.h"
 #include "BranchAndBound.h"
 #include "EngineFactory.h"
 #include "Environment.h"
@@ -52,6 +53,7 @@
 #include "AMPLInterface.h"
 #include "AMPLJacobian.h"
 
+//#include "Operations.h"
 using namespace Minotaur;
 BrancherPtr createBrancher(EnvPtr env, ProblemPtr p, HandlerVector handlers,
                            EnginePtr e);
@@ -494,7 +496,7 @@ int main(int argc, char** argv)
   HandlerVector handlers;
   int err = 0;
   double obj_sense = 1.0;
-
+ 
   env->startTimer(err);
   if (err) {
     goto CLEANUP;

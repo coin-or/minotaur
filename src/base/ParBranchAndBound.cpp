@@ -308,6 +308,7 @@ NodePtr ParBranchAndBound::processRoot_(bool *should_prune, bool *should_dive,
       parNodeRlxr0->reset(current_node, false);
       new_node = tm_->getCandidate();
       assert(new_node);
+      tm_->removeActiveNode(new_node);
     }
   }
   current_node = new_node;
