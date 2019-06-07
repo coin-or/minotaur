@@ -52,7 +52,7 @@ namespace Minotaur {
   };
 
   /**
-   * The default timer when getruage() function is not defined. Uses clock()
+   * The default timer when getrusage() function is not defined. Uses clock()
    * to get time.
    */
   class ClockTimer : public Timer {
