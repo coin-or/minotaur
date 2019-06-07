@@ -229,9 +229,6 @@ PresolverPtr presolve(EnvPtr env, ProblemPtr p, size_t ndefs,
   if (env->getOptions()->findBool("presolve")->getValue() == true) {
     pres->solve();
   }
-  //std::cout << "After\n";
-  //p->write(std::cout);
-  //exit(1);
   return pres;
 }
 
@@ -248,7 +245,6 @@ void test(ProblemPtr p)
   
   CGraphPtr cgp;
   FunctionPtr f;
-  VariablePtr v;
   ConstraintPtr c;
   LinearFunctionPtr lf;
   NonlinearFunctionPtr nlf;
@@ -269,7 +265,6 @@ void test(ProblemPtr p)
       
       if (lf) {
         for(VariableGroupConstIterator vit = lf->termsBegin(); vit != lf->termsEnd(); ++vit) {
-          v   = vit->first;
           if (fabs(vit->second) > 1e-6) {
             tl++;          
           }
@@ -279,12 +274,6 @@ void test(ProblemPtr p)
       if (t == 2) {
         ns++;      
       }
-      //else {
-        //nol++;
-      //}
-      //if (isP) {
-        //ns++;
-      //}
     } else {
       nol++;    
     }
@@ -293,7 +282,6 @@ void test(ProblemPtr p)
   if (tnl > 0 && ns > 0) {
     std::cout << "structure found \n" ;
   }
-  //std::cout << "Is objective nonlinear (0 no, 1 yes), # of nonlinear and linear constraints, # of nlcons with exactly 2 vars" << std::endl;
   std::cout << "output: " << isONl << " " << tnl << " " << nol << " " << ns << std::endl;
 }
 
@@ -335,8 +323,6 @@ int main(int argc, char* argv[])
 
   //engines
   EnginePtr nlp_e = 0;
-  EnginePtr proj_nlp_e = 0;
-  EnginePtr l1proj_nlp_e = 0;
 
   LPEnginePtr lin_e = 0;   // lp engine 
   LoggerPtr logger_ = (LoggerPtr) new Logger(LogInfo);
@@ -594,6 +580,7 @@ void writeSol(EnvPtr env, VarVector *orig_v,
               MINOTAUR_AMPL::AMPLInterface* iface)
 {
   if (sol) {
+    sol->writePrimal(std::cout);
     sol = pres->getPostSol(sol);
   }
 
