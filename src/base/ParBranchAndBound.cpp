@@ -649,7 +649,7 @@ void ParBranchAndBound::parsolve(ParNodeIncRelaxerPtr parNodeRlxr[],
         while(nodeCountTh[i] > 0 && shouldRunTh[i]) {
           if(!current_node[i]) {
 #if USE_OPENMP
-#pragma omp critical
+#pragma omp critical (treeManager)
 #endif
             {
               current_node[i] = tm_->getCandidate();
@@ -676,12 +676,14 @@ void ParBranchAndBound::parsolve(ParNodeIncRelaxerPtr parNodeRlxr[],
             tmp[i].push_back(strToInt(current_node[i]->getBranch()->getBrCand()->getName()));
             tmp[i].push_back(current_node[i]->getLb());
             tmp[i].push_back(i);
+#if PRINT
 #if USE_OPENMP
 #pragma omp critical
 #endif
             {
               tmp[i].push_back(getWallTime() - wallTimeStart);
             }
+#endif
 #endif
             nodePrcssr[i]->process(current_node[i], rel[i], solPool_, initialized[i]);
 #if PRINT
@@ -694,7 +696,7 @@ void ParBranchAndBound::parsolve(ParNodeIncRelaxerPtr parNodeRlxr[],
             tmp[i].push_back(current_node[i]->getTbScore());
 #endif
 #if USE_OPENMP
-#pragma omp critical
+#pragma omp critical (stats)
 #endif
             ++stats_->nodesProc;
 
@@ -703,7 +705,7 @@ void ParBranchAndBound::parsolve(ParNodeIncRelaxerPtr parNodeRlxr[],
               current_node[i]->getLb() << std::endl;
 #endif
 #if USE_OPENMP
-#pragma omp critical
+#pragma omp critical (treeManager)
 #endif
             {
               if (nodePrcssr[i]->foundNewSolution()) { 
@@ -711,7 +713,7 @@ void ParBranchAndBound::parsolve(ParNodeIncRelaxerPtr parNodeRlxr[],
               }
             }
 #if USE_OPENMP
-#pragma omp critical
+#pragma omp critical (treeManager)
 #endif
             should_prune[i] = shouldPrune_(current_node[i]);
 
@@ -722,7 +724,7 @@ void ParBranchAndBound::parsolve(ParNodeIncRelaxerPtr parNodeRlxr[],
 #endif
               parNodeRlxr[i]->reset(current_node[i], false);
 #if USE_OPENMP
-#pragma omp critical
+#pragma omp critical (treeManager)
 #endif
               {
 #if PRINT
@@ -737,7 +739,7 @@ void ParBranchAndBound::parsolve(ParNodeIncRelaxerPtr parNodeRlxr[],
                 tm_->pruneNode(current_node[i]);
               }
 #if USE_OPENMP
-#pragma omp critical
+#pragma omp critical (treeManager)
 #endif
               {
                 new_node[i] = tm_->getCandidate();
@@ -771,7 +773,7 @@ void ParBranchAndBound::parsolve(ParNodeIncRelaxerPtr parNodeRlxr[],
                 std::cout<<" NO BRANCHES \n";
               }
 #if USE_OPENMP
-#pragma omp critical
+#pragma omp critical (treeManager)
 #endif
               {
                 new_node[i] = tm_->branch(branches, current_node[i], ws[i]);
@@ -783,7 +785,7 @@ void ParBranchAndBound::parsolve(ParNodeIncRelaxerPtr parNodeRlxr[],
               } else {
                 parNodeRlxr[i]->reset(current_node[i], false);
 #if USE_OPENMP
-#pragma omp critical
+#pragma omp critical (treeManager)
 #endif
                 {
                   new_node[i] = tm_->getCandidate(); // Can be NULL. The
@@ -800,6 +802,9 @@ void ParBranchAndBound::parsolve(ParNodeIncRelaxerPtr parNodeRlxr[],
           } // if (current_node[i]) ends
           //stopping condition at each thread
           nodeCountTh[i] = 0;
+#if USE_OPENMP
+#pragma omp critical (treeManager)
+#endif
           treeLbTh[i] = tm_->updateLb();
           minNodeLbTh[i] = INFINITY;
 #if 0
