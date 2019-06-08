@@ -1508,7 +1508,7 @@ void LinearHandler::purgeVars_(PreModQ *pre_mods)
       }
     }
     //std::cout << "**** " << //preDelVars_.size() << " ****\n";
-    problem_->delMarkedVars();
+    problem_->delMarkedVars(true);
     pre_mods->push_front(dmod);
   }
 }

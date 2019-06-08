@@ -70,6 +70,10 @@ Problem::~Problem()
     delete v;
   }
 
+  for (viter=varsRem_.begin(); viter!=varsRem_.end(); viter++) {
+    delete *viter;
+  }
+
   for (citer=cons_.begin(); citer!=cons_.end(); ++citer) {
     delete *citer;
   }
@@ -804,7 +808,7 @@ void Problem::delMarkedCons()
 }
 
 
-void Problem::delMarkedVars()
+void Problem::delMarkedVars(bool keep)
 {
   assert(engine_ == 0 ||
       (!"Cannot delete variables after loading problem to engine\n")); 
@@ -822,7 +826,11 @@ void Problem::delMarkedVars()
         if (obj_) {
           obj_->delFixedVar_(v, v->getLb());
         }
-        delete v;
+        if (keep) {
+          varsRem_.push_back(v);
+        } else {
+          delete v;
+        }
         v = 0;
       } else {
         v->setIndex_(i);
