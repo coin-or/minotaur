@@ -195,15 +195,15 @@ install(TARGETS mcbnb RUNTIME DESTINATION bin)
 ## Add lines specific to your binaries in this section. 
 ## Use the lines meant for bnb as a template.
 ##############################################################################
-#set (QPD_SOURCES
-  #QPDive.cpp 
-#)
+set (QPD_SOURCES
+   QPDive.cpp 
+)
 
-#add_executable(qpd ${QPD_SOURCES})
-#target_link_libraries(qpd ${ALL_EXEC_LIBS})
+add_executable(qpd ${QPD_SOURCES})
+target_link_libraries(qpd ${ALL_EXEC_LIBS})
 
-## This will install the binary in bin directory.
-#install(TARGETS qpd RUNTIME DESTINATION bin)
+# This will install the binary in bin directory.
+install(TARGETS qpd RUNTIME DESTINATION bin)
 
 ##############################################################################
 ## Add lines specific to your binaries in this section. 

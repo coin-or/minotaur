@@ -161,8 +161,14 @@ namespace Minotaur {
     /// Delete marked constraints.
     virtual void delMarkedCons();
 
-    /// Delete marked variables.
-    virtual void delMarkedVars();
+    /**
+     * Remove marked variables from the problem.
+     *
+     * \param[in] keep If false, the variable pointer is freed from memory.
+     * If true, then it is not deleted, and can possibly be revisited (e.g.
+     * for restoring variables in postsolve). Default is false.
+     */
+    virtual void delMarkedVars(bool keep=false);
 
     /**
      * \brief Return what type of problem it is. May result in re-calculation of
@@ -645,6 +651,12 @@ namespace Minotaur {
 
     /// Vector of variables.
     VarVector vars_;
+
+    /**
+     * \brief Vector of variables removed from the problem but not yet freed from
+     * memory.
+     */
+    VarVector varsRem_;
 
     /// True if variables delete, added or their bounds changed.
     bool varsModed_;
