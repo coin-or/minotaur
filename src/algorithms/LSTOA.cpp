@@ -368,15 +368,15 @@ int main(int argc, char* argv[])
   //engines
   EnginePtr nlp_e;
   
-  MILPEnginePtr milp_e = 0;  
   
   VarVector *orig_v=0;
   int err = 0;
   double wallTimeStart = getWallTime();
 
 #ifdef USE_CPX
-  milp_e = new CplexMILPEngine(env);
+  CplexMILPEnginePtr milp_e = new CplexMILPEngine(env);
 #else
+  MILPEnginePtr milp_e = 0;
   env->getLogger()->errStream() << me << "CPLEX MILP Engine not found, exiting" << std::endl;
   goto CLEANUP;
 #endif

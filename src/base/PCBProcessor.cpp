@@ -235,18 +235,6 @@ void PCBProcessor::process(NodePtr node, RelaxationPtr rel,
       //}
     //}
   //}
-//Another 
-  if (node->getId() == 0) {
-    HandlerIterator h;
-    for (h = handlers_.begin(); h != handlers_.end(); ++h) {
-      if ((*h)->getName() =="QG Handler (Quesada-Grossmann)") {
-        QGHandlerPtr qgh = boost::dynamic_pointer_cast <QGHandler> (*(h));
-        qgh->rootLinearizations(cutMan_);
-       break;
-      }
-    }
-  }
- 
   
   // presolve
   should_prune = presolveNode_(node, s_pool);
