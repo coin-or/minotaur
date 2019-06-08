@@ -509,7 +509,6 @@ int main(int argc, char* argv[])
     nr = (NodeIncRelaxerPtr) new NodeIncRelaxer(env, handlers);
     nr->setModFlag(false);
     milp = nr->createRootRelaxation(NodePtr(), prune);
-    //nr->setEngine(milp_e, true); //MS: Load MILP engine
     nr->setEngine(milp_e); 
  
     double solAbsTol = env->getOptions()->findDouble("solAbs_tol")->getValue();
@@ -517,16 +516,9 @@ int main(int argc, char* argv[])
     //! initialize the MILP master problem by copying variables & linear constraints and by 
     //linearizing nonlinear constraints at the solution of NLP relaxation of the problem
   
-    //ObjectivePtr objFun = milp->getObjective();
-    //double objLb = -INFINITY, objUb = INFINITY, objNLP, objMIP;
     double objLb = -INFINITY, objUb = INFINITY;
-    //SolveStatus solveStatus = Started;
 
     //MS: also add iteration limit in termination condition
-    //MS: Also look relTol is UB =0
-    //MS: counter fornumber of solutions found
-    //while (objLb < objUb) 
-    //while (fabs(objLb-objUb) > solAbsTol && objLb < objUb + (fabs(objUb)*solRelTol)) 
     double time = 0;
     while (true) {
       if (objUb-objLb <= solAbsTol || (objUb != 0 && (objUb - objLb < fabs(objUb)*solRelTol))) {
@@ -544,7 +536,7 @@ int main(int argc, char* argv[])
       //! solve MILP master problem
       oa_hand->solveMILP(&objLb, &sol, solPool, cutMan);
       iterNum++;
-//MS: different MILP engine status like unbounded, infeasible, and error to be handled
+      //MS: different MILP engine status like unbounded, infeasible, and error to be handled
       solFound  = oa_hand->isFeasible(sol, RelaxationPtr(), shouldPrune, inf_meas); 
       if (solFound) {
         const double *x = sol->getPrimal();

@@ -6,10 +6,8 @@
 
 /** 
  * \file OAHandler.cpp
- * \Briefly define a handler for the textbook type Quesada-Grossmann
- * Algorithm.
- * \Authors Meenarli Sharma and Prashant Palkar, Indian Institute of
- * Technology Bombay 
+ * \Briefly define a handler for Outer Approximation algorithm.
+ * \Authors Meenarli Sharma and Prashant Palkar, IIT Bombay
  */
 
 
@@ -25,7 +23,6 @@
 #include "CNode.h"
 #include "Constraint.h"
 #include "Engine.h"
-//#include "LPEngine.h"
 #include "MILPEngine.h"
 #include "Environment.h"
 #include "Function.h"
@@ -48,7 +45,7 @@
 //#define SPEW 0
 
 using namespace Minotaur;
-//MS: there is a tolerance move it to the main
+//MS: there is a tolerance move it to main()
 typedef std::vector<ConstraintPtr>::const_iterator CCIter;
 const std::string OAHandler::me_ = "OAHandler: ";
 
@@ -94,8 +91,6 @@ OAHandler::OAHandler(EnvPtr env, ProblemPtr minlp, EnginePtr nlpe, MILPEnginePtr
   objATol_ = env_->getOptions()->findDouble("solAbs_tol")->getValue();
   objRTol_ = env_->getOptions()->findDouble("solRel_tol")->getValue();
   logger_ = env->getLogger();
-  //logger_ = (LoggerPtr) new Logger((LogLevel)env->getOptions()->
-                                   //findInt("handler_log_level")->getValue());
 
   stats_   = new OAStats();
   stats_->milpS = 0;
@@ -120,7 +115,6 @@ OAHandler::~OAHandler()
   env_.reset();
   rel_.reset();
   minlp_.reset();
-  //logger_.reset();
   if (logger_){
     delete logger_;
   }
@@ -133,7 +127,7 @@ void OAHandler::addInitLinearX_(const double *x)
   FunctionPtr f;
   double c, act, cUb;
   std::stringstream sstm;
-  ConstraintPtr con, newcon;
+  ConstraintPtr con;
   LinearFunctionPtr lf = LinearFunctionPtr();
 
   for (CCIter it=nlCons_.begin(); it!=nlCons_.end(); ++it) { 
@@ -147,7 +141,7 @@ void OAHandler::addInitLinearX_(const double *x)
         ++(stats_->cuts);
         sstm << "_OAcut_" << stats_->cuts << "_AtRoot";
         f = (FunctionPtr) new Function(lf);
-        newcon = rel_->newConstraint(f, -INFINITY, cUb-c, sstm.str());
+        rel_->newConstraint(f, -INFINITY, cUb-c, sstm.str());
         sstm.str("");
       }
     }	else {
@@ -172,7 +166,7 @@ void OAHandler::addInitLinearX_(const double *x)
       if (error == 0) {
         lf->addTerm(objVar_, -1.0);
         f = (FunctionPtr) new Function(lf);
-        newcon = rel_->newConstraint(f, -INFINITY, -1.0*c, sstm.str());
+        rel_->newConstraint(f, -INFINITY, -1.0*c, sstm.str());
       }
     }	else {
       logger_->msgStream(LogError) << me_ <<
@@ -196,11 +190,8 @@ void OAHandler::cutIntSol_(ConstSolutionPtr sol, CutManager *cutMan,
   relobj_ = (sol) ? sol->getObjValue() : -INFINITY;
 
   fixInts_(lpx);           // Fix integer variables
-  //std::cout <<" NLP \n";
-  //minlp_->write(std::cout);
   solveNLP_();
-  unfixInts_();             // Unfix integer variables
-  //std::cout << "NLP status " <<nlpe_->getStatusString() << std::endl;
+  unfixInts_();            // Unfix integer variables
   switch(nlpStatus_) {
   case (ProvenOptimal):
   case (ProvenLocalOptimal):
@@ -212,8 +203,6 @@ void OAHandler::cutIntSol_(ConstSolutionPtr sol, CutManager *cutMan,
         break;
     } else {
       relobj_= sol->getObjValue();
-      //std::cout << " NLP solution and value " << nlpe_->getSolution()->getObjValue() << std::endl;
-      //nlpe_->getSolution()->writePrimal(std::cout);
       nlpx = nlpe_->getSolution()->getPrimal();
       cutToCons_(nlpx, lpx, cutMan, status);
       cutToObj_(nlpx, lpx, cutMan, status);
@@ -229,7 +218,6 @@ void OAHandler::cutIntSol_(ConstSolutionPtr sol, CutManager *cutMan,
   case (EngineIterationLimit):
     ++(stats_->nlpIL);
     consCutAtLpSol_(lpx, cutMan, status);
-    //objCutAtLpSol_(lpx, cutMan, status);
     break;
   case (FailedFeas):
   case (EngineError):
@@ -278,60 +266,33 @@ void OAHandler::fixInts_(const double *x)
   return;
 }
 
-//void OAHandler::solveMILP(double* objfLb, double* objfUb, 
-                          //SolutionPoolPtr solPool, CutManager* cutMan)
-
 void OAHandler::solveMILP(double* objfLb, ConstSolutionPtr* sol, 
                           SolutionPoolPtr, CutManager*)
 {
 
-  //MS: to delete
-  //int error = 0;
-  //double act;
-  ObjectivePtr o = minlp_->getObjective();
-  //MS: cross check the solveStatus here 
-  //lpe_->loadMIP(rel_);        //link to CPLEX with LP engine hack
-  milpe_->load(rel_);         //link directly to CPLEX (already loading in NodeRelaxer, remove double loading!)
-  //rel_->write(std::cout);
-  //OsiLPEnginePtr olpe = boost::dynamic_pointer_cast <OsiLPEngine> (lpe_); 
-  //olpe->loadMIP(rel_);
-  //ConstSolutionPtr sol;
-  //EngineStatus lpStatus = lpe_->solve();
-  //EngineStatus lpStatus = lpe_->solveMIP();     //method implemented with CPLEX LP hack
+  milpe_->load(rel_);         //remove double loading in iteration 1!
   EngineStatus lpStatus = milpe_->solve();
-  //EngineStatus lpStatus = olpe->solveMIP();
   ++(stats_->milpS);
   switch (lpStatus) {
   case (ProvenOptimal):
   case (ProvenLocalOptimal):
     *sol = milpe_->getSolution();
-    //(*sol)->writePrimal(std::cout);
     (*objfLb) = (*sol)->getObjValue();
-    //objVar_->setLb_(*objfLb +.0001);  
-    //act = o->eval((*sol)->getPrimal(), &error);
-    //std::cout << "Evaluated obj " << act << std::endl;
-    //rel_->write(std::cout,1);
-    //sol->writePrimal(std::cout);
-    //*milpStatus = SolvedOptimal;
     break;
   case (EngineIterationLimit): // MS: take care of this here.
     ++(stats_->milpIL);
     *sol = milpe_->getSolution();
     (*objfLb) = (*sol)->getObjValue();
-    //rel_->write(std::cout,1);
-    //sol->writePrimal(std::cout);
-    //*milpStatus = SolvedOptimal;
     break;
   case (ProvenInfeasible):
   case (ProvenLocalInfeasible): 
   case (ProvenObjectiveCutOff):
-    //*milpStatus = SolvedInfeasible;
     logger_->msgStream(LogError) << me_ << "MILP engine status at root= " 
       << lpStatus << std::endl;
     assert(!"In OAHandler: MILP infeasible. Check error log.");
     break;
   case (ProvenUnbounded):
-  //case (EngineIterationLimit): // MS: take care of this here.
+  //case (EngineIterationLimit): // MS: take care of this.
   case (ProvenFailedCQFeas):
   case (ProvenFailedCQInfeas):
   case (FailedFeas):
@@ -339,7 +300,6 @@ void OAHandler::solveMILP(double* objfLb, ConstSolutionPtr* sol,
   case (EngineError):
   case (EngineUnknownStatus):
   default:
-    //*milpStatus = SolvedUnbounded;
     logger_->msgStream(LogError) << me_ << "MILP engine status= " 
       << lpStatus << std::endl;
     assert(!"In OAHandler: stopped. Check error log.");
@@ -455,7 +415,6 @@ bool OAHandler::isFeasible(ConstSolutionPtr sol, RelaxationPtr, bool &,
 
 void OAHandler::linearizeObj_()
 {
-  //rel_->write(std::cout);
   ObjectivePtr o = minlp_->getObjective();
   FunctionType fType = o->getFunctionType();
   if (!o) {
@@ -475,27 +434,6 @@ void OAHandler::linearizeObj_()
     rel_->newObjective(f, 0.0, objType);
     objVar_ = vPtr;
   } 
-  //else {
-    //FunctionPtr f;
-    //std::string name = "eta";
-    //ObjectiveType objType = o->getObjectiveType();
-    //LinearFunctionPtr lf = (LinearFunctionPtr) new LinearFunction();
-    //VariablePtr vPtr = rel_->newVariable(-INFINITY, INFINITY, Continuous,
-                                         //name, VarHand);
-    //assert(objType == Minimize);
-        
-    //lf = o->getLinearFunction();
-    //lf->addTerm(vPtr, -1.0);
-    //f = (FunctionPtr) new Function(o->getLinearFunction());
-    //rel_->newConstraint(f, -INFINITY, 0);
-    //rel_->removeObjective();
-    //lf = (LinearFunctionPtr) new LinearFunction();
-    //lf->addTerm(vPtr, 1.0);
-    //f = (FunctionPtr) new Function(lf);
-    //rel_->newObjective(f, 0.0, objType);
-    //objVar_ = vPtr;
-  //}
-  //rel_->write(std::cout);
   return;
 }
 
@@ -510,16 +448,9 @@ void OAHandler::linearAt_(FunctionPtr f, double fval, const double *x,
   const double linCoeffTol =
     env_->getOptions()->findDouble("conCoeff_tol")->getValue();
 
-  //std::cout << "\nFunction for gradient\n";
-  //f->write(std::cout);
   std::fill(a, a+n, 0.);
   f->evalGradient(x, a, error);
 
-  //std::cout << "\nNLP point \n" ;
-  //for (int i=0; i < n; ++i) {
-    //std::cout << x[i] << " " << a[i] << std::endl;  
-  //}
-  
   if (*error==0) {
     *lf = (LinearFunctionPtr) new LinearFunction(a, vbeg, vend, linCoeffTol); 
     *c  = fval - InnerProduct(x, a, minlp_->getNumVars());
@@ -531,7 +462,6 @@ void OAHandler::linearAt_(FunctionPtr f, double fval, const double *x,
       << std::endl;
 #endif
   }
-  //std::cout << "\n Lin. constant val " << *c << std::endl;
   delete [] a;
   return;
 }
@@ -548,11 +478,8 @@ void OAHandler::cutToCons_(const double *nlpx, const double *lpx,
   for (CCIter it = nlCons_.begin(); it != nlCons_.end(); ++it) {
     con = *it;
     nlpact =  con->getActivity(lpx, &error);
-    //test =  con->getActivity(nlpx, &error);
     if (error == 0) {
       cUb = con->getUb();
-      //std::cout << std::endl;
-      //std::cout << "\n" << con->getName() << " nl cons at MILP and NLP sol " << nlpact << " " << test << " cons ub " << cUb;
       if (nlpact > cUb + solAbsTol_ &&
           (cUb == 0 || nlpact > (cUb+fabs(cUb)*solRelTol_))) {
         addCut_(nlpx, lpx, con, cutman, status);
@@ -581,7 +508,6 @@ void OAHandler::objCutAtLpSol_(const double *lpx, CutManager *,
     int error = 0;
     FunctionPtr f;
     double c, vio, act;
-    ConstraintPtr newcon;
     std::stringstream sstm;
     ObjectivePtr o = minlp_->getObjective();
 
@@ -598,9 +524,7 @@ void OAHandler::objCutAtLpSol_(const double *lpx, CutManager *,
             lf->addTerm(objVar_, -1.0);
             *status = SepaResolve;
             f = (FunctionPtr) new Function(lf);
-            newcon = rel_->newConstraint(f, -INFINITY, -1.0*c, sstm.str());
-            //std::cout << std::endl;
-            //newcon->write(std::cout);
+            rel_->newConstraint(f, -INFINITY, -1.0*c, sstm.str());
           }
         }
     }	else {
@@ -619,7 +543,7 @@ void OAHandler::consCutAtLpSol_(const double *lpx, CutManager *,
   FunctionPtr f;
   LinearFunctionPtr lf;
   std::stringstream sstm;
-  ConstraintPtr con, newcon;
+  ConstraintPtr con;
   double c, nlpact, cUb;
 
   for (CCIter it = nlCons_.begin(); it != nlCons_.end(); ++it) {
@@ -633,16 +557,11 @@ void OAHandler::consCutAtLpSol_(const double *lpx, CutManager *,
           (cUb == 0 || nlpact > (cUb+fabs(cUb)*solRelTol_))) {
         linearAt_(f, nlpact, lpx, &c, &lf, &error);
         if (error==0) {
-          //lpvio = std::max(lf->eval(lpx)-cUb+c, 0.0);
-          //if (lpvio>solAbsTol_ || ((cUb-c)!=0 &&
-                                   //(lpvio>fabs(cUb-c)*solRelTol_))) {
             ++(stats_->cuts);
             sstm << "_OAcut_" << stats_->cuts;
             *status = SepaResolve;
             f = (FunctionPtr) new Function(lf);
-            newcon = rel_->newConstraint(f, -INFINITY, cUb-c, sstm.str());
-            //std::cout << std::endl;
-            //newcon->write(std::cout);
+            rel_->newConstraint(f, -INFINITY, cUb-c, sstm.str());
             return;
           //}
         }
@@ -661,7 +580,6 @@ void OAHandler::addCut_(const double *nlpx, const double *lpx,
                         SeparationStatus *status)
 {
   int error=0;
-  ConstraintPtr newcon;
   std::stringstream sstm;
   double c, lpvio, act, cUb;
   FunctionPtr f = con->getFunction();
@@ -673,10 +591,6 @@ void OAHandler::addCut_(const double *nlpx, const double *lpx,
     if (error==0) { 
       cUb = con->getUb();
       lpvio = std::max(lf->eval(lpx)-cUb+c, 0.0);
-      //con->write(std::cout);
-      //std::cout << "\n\nLinear function val. at MILP sol and cons ub " << lf->eval(lpx)+c  << " " << cUb << std::endl;
-      //lf->write(std::cout); 
-      //std::cout << " linearization violation " << lpvio;
       if (lpvio>solAbsTol_ && ((cUb-c)==0 || (lpvio>fabs(cUb-c)*solRelTol_))) {
 #if SPEW
         logger_->msgStream(LogDebug) << me_ << "linearization of constraint "
@@ -687,9 +601,7 @@ void OAHandler::addCut_(const double *nlpx, const double *lpx,
         sstm << "_OAcut_" << stats_->cuts;
         *status = SepaResolve;
         f = (FunctionPtr) new Function(lf);
-        newcon = rel_->newConstraint(f, -INFINITY, cUb-c, sstm.str());
-            //std::cout << std::endl;
-        //newcon->write(std::cout);
+        rel_->newConstraint(f, -INFINITY, cUb-c, sstm.str());
         return;
       }
     }
@@ -712,7 +624,6 @@ void OAHandler::cutToObj_(const double *nlpx, const double *lpx,
     int error=0;
     FunctionPtr f;
     double c, vio, act;
-    ConstraintPtr newcon;
     std::stringstream sstm;
     ObjectivePtr o = minlp_->getObjective();
     
@@ -743,9 +654,7 @@ void OAHandler::cutToObj_(const double *nlpx, const double *lpx,
               lf->addTerm(objVar_, -1.0);
               *status = SepaResolve;
               f = (FunctionPtr) new Function(lf);
-              newcon = rel_->newConstraint(f, -INFINITY, -1.0*c, sstm.str()); 
-            //std::cout << std::endl;
-              //newcon->write(std::cout);
+              rel_->newConstraint(f, -INFINITY, -1.0*c, sstm.str());
             }
           }
         }
