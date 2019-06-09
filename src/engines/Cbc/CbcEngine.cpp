@@ -312,7 +312,7 @@ void CbcEngine::setTimeLimit(double )
 }
 
 
-void CbcEngine::setUpperCutOff(double);
+void CbcEngine::setUpperCutoff(double)
 {
 }
 

@@ -120,7 +120,7 @@ namespace Minotaur {
     void setTimeLimit(double);
 
     // base class method
-    void setUpperCutOff(double);
+    void setUpperCutoff(double);
 
     /** 
      * Solve the problem that was loaded. Calls resolve() function of Osi.
