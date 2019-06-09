@@ -42,11 +42,9 @@ namespace Minotaur {
       /// Set time limit for an iteration
       virtual void setTimeLimit(double) = 0;
 
-      /// Overloaded solve function for Single Tree Outer Approximation using
-      //CPLEX
-      //virtual EngineStatus solveST(double *, ConstSolutionPtr*, SolutionPoolPtr,
-                                 //CutManager*, HandlerPtr) = 0;
-      
+      /// Set upper cutoff for an iteration
+      virtual void setUpperCutoff(double) = 0;
+
   };
   typedef MILPEngine* MILPEnginePtr;
 }

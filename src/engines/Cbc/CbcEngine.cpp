@@ -312,6 +312,11 @@ void CbcEngine::setTimeLimit(double )
 }
 
 
+void CbcEngine::setUpperCutOff(double);
+{
+}
+
+
 EngineStatus CbcEngine::solve()
 {
   CbcModel *model = 0;

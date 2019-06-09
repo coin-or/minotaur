@@ -70,6 +70,8 @@ CplexMILPEngine::CplexMILPEngine(EnvPtr env)
   stats_->calls    = 0;
   stats_->time     = 0;
   logger_ = env->getLogger();
+  timeLimit_ = INFINITY;
+  upperCutoff_ = INFINITY;
 }
 
 
@@ -406,6 +408,12 @@ void CplexMILPEngine::setTimeLimit(double timelimit)
 {
   timeLimit_ = timelimit;
 }
+
+
+void CplexMILPEngine::setUpperCutoff(double cutoff)
+{
+  upperCutoff_ = cutoff;
+}
   
 
 EngineStatus CplexMILPEngine::solve()
@@ -430,6 +438,16 @@ EngineStatus CplexMILPEngine::solve()
      goto TERMINATE;
   }
   
+  /* Set upper cutoff (best solution value) for this iteration */
+  if (upperCutoff_ < INFINITY) {
+    cpxstatus_ = CPXXsetdblparam (cpxenv_, CPXPARAM_MIP_Tolerances_UpperCutoff, upperCutoff_);
+    if ( cpxstatus_ ) {
+       logger_->msgStream(LogInfo) << me_ << "Failure to set upper cutoff, error "
+         << cpxstatus_ << std::endl;
+       goto TERMINATE;
+    }
+  }
+
   /* Set number of threads (default 1) */
   cpxstatus_ = CPXXsetintparam (cpxenv_, CPXPARAM_Threads,
                                 env_->getOptions()->findInt("threads")->getValue());

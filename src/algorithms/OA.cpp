@@ -422,9 +422,7 @@ int main(int argc, char* argv[])
 
   //engines
   EnginePtr nlp_e = 0;
-  //LPEnginePtr lin_e;       // lp engine 
-  MILPEnginePtr milp_e = 0;  // milp engine 
-  LoggerPtr logger_ = (LoggerPtr) new Logger(LogInfo);
+  MILPEnginePtr milp_e = 0;
   VarVector *orig_v=0;
   int err = 0;
   
@@ -450,19 +448,11 @@ int main(int argc, char* argv[])
 
   loadProblem(env, iface, inst, &obj_sense);
 
-  // Separability detection
-  //sepDetection(env, inst);
-
-  //Linearize objective if nonlinear
-  //linearizeObj(inst);
-
-
   // Initialize engines
-  nlp_e = getNLPEngine(env, inst); //Engine for Original problem
+  nlp_e = getNLPEngine(env, inst);
 
   efac = new EngineFactory(env);
-  //lp_e = efac->getLPEngine();   // lp engine 
-  milp_e = efac->getMILPEngine();   // milp engine
+  milp_e = efac->getMILPEngine();
   
   delete efac;
 
@@ -503,7 +493,6 @@ int main(int argc, char* argv[])
     SeparationStatus sepStatus;
     bool prune = false;
     RelaxationPtr milp = RelaxationPtr();
-    // Only store bound-changes of relaxation (not problem)
   
     NodeIncRelaxerPtr nr;
     nr = (NodeIncRelaxerPtr) new NodeIncRelaxer(env, handlers);
@@ -518,13 +507,16 @@ int main(int argc, char* argv[])
   
     double objLb = -INFINITY, objUb = INFINITY;
 
-    //MS: also add iteration limit in termination condition
+    //MS: add iteration limit in termination condition
     double time = 0;
     while (true) {
       if (objUb-objLb <= solAbsTol || (objUb != 0 && (objUb - objLb < fabs(objUb)*solRelTol))) {
         status = SolvedOptimal;
         break;
       }
+      //set best ub as upper cutoff for MILP engine
+      oa_hand->getMILPEngine()->setUpperCutoff(objUb);
+
       time = wallTimeStart - getWallTime() + env->getOptions()->findDouble("bnb_time_limit")->getValue();
       if (time > 0) {
         oa_hand->getMILPEngine()->setTimeLimit(time); //set remaining time as limit for MILP solve

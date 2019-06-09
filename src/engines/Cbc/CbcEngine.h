@@ -117,7 +117,10 @@ namespace Minotaur {
     void setIterationLimit(int limit);
 
     // base class method
-    void setTimeLimit(double t);
+    void setTimeLimit(double);
+
+    // base class method
+    void setUpperCutOff(double);
 
     /** 
      * Solve the problem that was loaded. Calls resolve() function of Osi.
