@@ -491,14 +491,14 @@ void ParQGHandler::oaCutToCons_(const double *nlpx, const double *lpx,
 }
 
 
-void ParQGHandler::oaCutEngLim_(const double *lpx, CutManager *,
+void ParQGHandler::oaCutEngLim_(const double *lpx, CutManager *cutman,
                              SeparationStatus *status)
 {
   int error=0;
   FunctionPtr f;
   LinearFunctionPtr lf;
   std::stringstream sstm;
-  ConstraintPtr con;
+  ConstraintPtr con, newcon;
   double c, nlpact, cUb;
 
   for (CCIter it = nlCons_.begin(); it != nlCons_.end(); ++it) {
@@ -512,17 +512,17 @@ void ParQGHandler::oaCutEngLim_(const double *lpx, CutManager *,
           (cUb == 0 || nlpact > cUb+fabs(cUb)*solRelTol_)) {
         linearAt_(f, nlpact, lpx, &c, &lf, &error);
         if (error==0) {
-          std::max(lf->eval(lpx)-cUb+c, 0.0);
-          //if ((lpvio>solAbsTol_) && ((cUb-c)==0 ||
-                                   //(lpvio>fabs(cUb-c)*solRelTol_))) {
-            ++(stats_->cuts);
-            sstm << "_OAcut_";
-            sstm << stats_->cuts;
-            *status = SepaResolve;
-            f = (FunctionPtr) new Function(lf);
-            rel_->newConstraint(f, -INFINITY, cUb-c, sstm.str());
-            return;
-          //}
+          ++(stats_->cuts);
+          sstm << "_OAcut_";
+          sstm << stats_->cuts;
+          *status = SepaResolve;
+          f = (FunctionPtr) new Function(lf);
+          newcon = rel_->newConstraint(f, -INFINITY, cUb-c, sstm.str());
+          CutPtr cut = (CutPtr) new Cut(minlp_->getNumVars(),f, -INFINITY,
+                                        cUb-c, false,false);
+          cut->setCons(newcon);
+          cutman->addCutToPool(cut);
+          return;
         }
       }
     }	else {
@@ -584,12 +584,13 @@ void ParQGHandler::addCut_(const double *nlpx, const double *lpx,
  
 
 void ParQGHandler::oaCutToObj_(const double *nlpx, const double *lpx,
-                            CutManager *, SeparationStatus *status)
+                            CutManager *cutman, SeparationStatus *status)
 {
   if (oNl_) {
     int error=0;
     FunctionPtr f;
     double c, vio, act;
+    ConstraintPtr newcon;
     std::stringstream sstm;
     ObjectivePtr o = minlp_->getObjective();
 
@@ -622,7 +623,11 @@ void ParQGHandler::oaCutToObj_(const double *nlpx, const double *lpx,
               lf->addTerm(objVar_, -1.0);
               *status = SepaResolve;
               f = (FunctionPtr) new Function(lf);
-              rel_->newConstraint(f, -INFINITY, -1.0*c, sstm.str());
+              newcon = rel_->newConstraint(f, -INFINITY, -1.0*c, sstm.str());
+              CutPtr cut = (CutPtr) new Cut(rel_->getNumVars(),f, -INFINITY,
+                                            -1.0*c, false,false);
+              cut->setCons(newcon);
+              cutman->addCutToPool(cut);
             }
           }
         }

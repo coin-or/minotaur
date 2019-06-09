@@ -90,8 +90,8 @@ STOAHandler::STOAHandler(EnvPtr env, ProblemPtr minlp, EnginePtr nlpe, MILPEngin
   oNl_(false),
   rel_(RelaxationPtr()),
   solPool_(solPool),
-  numCalls_(0),
-  relobj_(0.0)
+  relobj_(0.0),
+  numCalls_(0)
 {
   timer_ = env->getNewTimer();
   intTol_ = env_->getOptions()->findDouble("int_tol")->getValue();
@@ -151,7 +151,7 @@ void STOAHandler::addInitLinearX_(const double *x)
   FunctionPtr f;
   double c, act, cUb;
   std::stringstream sstm;
-  ConstraintPtr con, newcon;
+  ConstraintPtr con;
   LinearFunctionPtr lf = LinearFunctionPtr();
 
   for (CCIter it=nlCons_.begin(); it!=nlCons_.end(); ++it) { 
@@ -165,10 +165,7 @@ void STOAHandler::addInitLinearX_(const double *x)
         ++(stats_->cuts);
         sstm << "_STOAcut_" << stats_->cuts << "_AtRoot";
         f = (FunctionPtr) new Function(lf);
-        newcon = rel_->newConstraint(f, -INFINITY, cUb-c, sstm.str());
-#if SPEW
-        newcon->write(std::cout);
-#endif
+        rel_->newConstraint(f, -INFINITY, cUb-c, sstm.str());
         sstm.str("");
       }
     }	else {
@@ -193,7 +190,7 @@ void STOAHandler::addInitLinearX_(const double *x)
       if (error == 0) {
         lf->addTerm(objVar_, -1.0);
         f = (FunctionPtr) new Function(lf);
-        newcon = rel_->newConstraint(f, -INFINITY, -1.0*c, sstm.str());
+        rel_->newConstraint(f, -INFINITY, -1.0*c, sstm.str());
       }
     }	else {
       logger_->msgStream(LogError) << me_ <<
@@ -214,14 +211,7 @@ bool STOAHandler::fixedNLP(const double *lpx, const double * nlpx)
   newUb_ = INFINITY;
 
   fixInts_(lpx);           // Fix integer variables
-#if PRINT
-  std::cout << "in STOA: incumb's fixNLP\n";
-  minlp_->write(std::cout);
-#endif
   solveNLP_();
-#if PRINT
-  nlpe_->getSolution()->writePrimal(std::cout);
-#endif
   unfixInts_();             // Unfix integer variables
   switch(nlpStatus_) {
   case (ProvenOptimal):
@@ -265,14 +255,7 @@ bool STOAHandler::fixedNLP(const double *lpx)
   newUb_ = INFINITY;
 
   fixInts_(lpx);           // Fix integer variables
-#if PRINT
-  std::cout << "in STOA: lazyCb's fixNLP\n";
-  minlp_->write(std::cout);
-#endif
   solveNLP_();
-#if PRINT
-  nlpe_->getSolution()->writePrimal(std::cout);
-#endif
   unfixInts_();             // Unfix integer variables
   switch(nlpStatus_) {
   case (ProvenOptimal):
@@ -280,17 +263,14 @@ bool STOAHandler::fixedNLP(const double *lpx)
     ++(stats_->nlpF);
     newUb_ = nlpe_->getSolutionValue();
     solPool_->addSolution(nlpe_->getSolution());
-    //return true;
     break;
   case (ProvenInfeasible):
   case (ProvenLocalInfeasible): 
   case (ProvenObjectiveCutOff):
     ++(stats_->nlpI);
-    //return false;
     break;
   case (EngineIterationLimit):
     ++(stats_->nlpIL);
-    //return false;
     break;
   case (FailedFeas):
   case (EngineError):
@@ -784,12 +764,8 @@ void STOAHandler::cutToObj_(const double *nlpx, const double *lpx, double* rhs,
     int error=0;
     FunctionPtr f;
     double c, vio, act;
-    ObjectivePtr o = minlp_->getObjective();
-    
-#if PRINT
-    ConstraintPtr newcon;
     std::stringstream sstm;
-#endif
+    ObjectivePtr o = minlp_->getObjective();
     
     act = o->eval(lpx, &error);
     if (error == 0) {
@@ -813,12 +789,10 @@ void STOAHandler::cutToObj_(const double *nlpx, const double *lpx, double* rhs,
               }
               (*varIdx).push_back(objVar_->getIndex());
               (*varCoeff).push_back(-1.0);
-#if PRINT
               sstm << "_OAObjcut_" << stats_->cuts;
               lf->addTerm(objVar_, -1.0);
               f = (FunctionPtr) new Function(lf);
-              newcon = rel_->newConstraint(f, -INFINITY, -1.0*c, sstm.str());
-#endif
+              rel_->newConstraint(f, -INFINITY, -1.0*c, sstm.str());
             }
           }
         }
