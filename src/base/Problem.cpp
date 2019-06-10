@@ -87,6 +87,10 @@ Problem::~Problem()
     engine_->clear();
   }
 
+  if (logger_) {
+    delete logger_;
+  }
+
   delete obj_;
   obj_ = 0;
 
@@ -1513,6 +1517,9 @@ void Problem::setJacobian(JacobianPtr jacobian)
 
 void  Problem::setLogger(LoggerPtr logger)
 { 
+  if (logger_) {
+    delete logger_;
+  }
   logger_ = logger;
 }
 

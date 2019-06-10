@@ -41,9 +41,11 @@ RCHandler::RCHandler(EnvPtr env)
 
 RCHandler::~RCHandler()
 {
-  if (stats_)
-  {
+  if (stats_) {
     delete stats_;
+  }
+  if (rootDuals_) {
+    delete [] rootDuals_;
   }
 }
 
