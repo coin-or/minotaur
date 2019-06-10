@@ -230,7 +230,11 @@ Branches ReliabilityBrancher::findBranches(RelaxationPtr rel, NodePtr node,
     }
 #endif
   }
+
   freeCandidates_(br_can);
+  if (status_ != NotModifiedByBrancher && br_can) {
+    delete br_can;
+  }
   return branches;
 }
 
