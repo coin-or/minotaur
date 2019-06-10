@@ -325,7 +325,7 @@ int main(int argc, char* argv[])
   EnginePtr nlp_e = 0;
 
   LPEnginePtr lin_e = 0;   // lp engine 
-  LoggerPtr logger_ = (LoggerPtr) new Logger(LogInfo);
+  //LoggerPtr logger_ = (LoggerPtr) new Logger(LogInfo);
   VarVector *orig_v=0;
 
   int err = 0;
@@ -418,8 +418,10 @@ int main(int argc, char* argv[])
 
     qg_hand = (QGHandlerPtr) new QGHandler(env, inst, nlp_e); 
     qg_hand->setModFlags(false, true);
-    //MS: for root linearizations
-    //qg_hand->setLpEngine(lin_e);
+    
+    //MS: for root linearizations, turn it on based on the scheme option 
+    qg_hand->setLpEngine(lin_e);
+
     handlers.push_back(qg_hand);
     assert(qg_hand);
      
@@ -477,7 +479,7 @@ int main(int argc, char* argv[])
     }
 
     //qg_hand->vioStats();
-    writeSol(env, orig_v, pres, bab->getSolution(), bab->getStatus(), iface);
+    //writeSol(env, orig_v, pres, bab->getSolution(), bab->getStatus(), iface);
     writeBnbStatus(env, bab, obj_sense);
   }
 
