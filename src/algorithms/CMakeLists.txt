@@ -252,15 +252,15 @@ install(TARGETS qg RUNTIME DESTINATION bin)
 ## Add lines specific to your binaries in this section. 
 ## Use the lines meant for bnb as a template.
 ##############################################################################
-#set (GLOB_SOURCES
-  #Glob.cpp 
-#)
+set (GLOB_SOURCES
+ Glob.cpp 
+)
 
-#add_executable(glob ${GLOB_SOURCES})
-#target_link_libraries(glob ${ALL_EXEC_LIBS})
+add_executable(glob ${GLOB_SOURCES})
+target_link_libraries(glob ${ALL_EXEC_LIBS})
 
-## This will install the binary in bin directory.
-#install(TARGETS glob RUNTIME DESTINATION bin)
+# This will install the binary in bin directory.
+install(TARGETS glob RUNTIME DESTINATION bin)
 
 # Serdar added for branch and cut method. 
 ##############################################################################
