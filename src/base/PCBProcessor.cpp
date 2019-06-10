@@ -167,7 +167,8 @@ void PCBProcessor::process(NodePtr node, RelaxationPtr rel,
                           SolutionPoolPtr s_pool)
 {
   bool should_prune = true;
-  bool should_resolve, sol_found;
+  bool should_resolve;
+  //bool sol_found;
   BrancherStatus br_status;
   ConstSolutionPtr sol;
   ModVector mods;

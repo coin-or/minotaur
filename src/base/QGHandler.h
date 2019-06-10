@@ -66,6 +66,8 @@ private:
 
   /// NLP/QP Engine used to solve the NLP/QP relaxations.
   EnginePtr nlpe_;
+  
+  EnginePtr lpe_;
 
   /// Modifications done to NLP before solving it.
   std::stack<Modification *> nlpMods_;
@@ -90,6 +92,8 @@ private:
 
   /// Value of objective in relaxation solution
   double relobj_; 
+  
+  const double * solC_; 
 
   /// Absolute tolerance for constraint feasibility.
   double solAbsTol_;
@@ -151,6 +155,8 @@ private:
 
   /// Does nothing.
   SolveStatus presolve(PreModQ *, bool *) {return Finished;};
+  
+  void setLpEngine(EnginePtr lpe);
 
   /// Does nothing.
   bool presolveNode(RelaxationPtr, NodePtr, SolutionPoolPtr, ModVector &,
@@ -160,7 +166,19 @@ private:
   /// Does nothing.
   void postsolveGetX(const double *, UInt, DoubleVector *) {};
 
+
+  bool diffFunVarVal_(const double *x, FunctionPtr f);
+
   void rootLinearizations_();
+
+  /* Add linerizations to constraints with exactly two variables. One var in
+   * linear and one in nonlinear part of the constraint.
+   */
+  void rootLinScheme1_();
+  /* Warm-start the NLP at the root LP solution and linearize at this NLP
+   * solution
+   */
+  void rootLinScheme2_();
   /// Base class method. calls relax_().
   void relaxInitFull(RelaxationPtr rel, bool *is_inf);
 
@@ -187,7 +205,7 @@ private:
    * Add linearization of nonlinear constraints and objective at point x* 
    * to the relaxation only (not to the lp engine)
    */
-  void addInitLinearX_(const double *x);
+  void addInitLinearX_(const double *x, bool isSecNLP);
 
 
   UInt addCutAtRoot_(double *x, ConstraintPtr con, int & error);
@@ -211,7 +229,7 @@ private:
    * the optimal point. isInf is set to true if the relaxation is found
    * infeasible. Throw an assert if the relaxation is unbounded.
    */
-  void initLinear_(bool *isInf);
+  void initLinear_(bool *isInf, bool isSecNLP);
 
   /**
    * Obtain the linear function (lf) and constant (c) from the
