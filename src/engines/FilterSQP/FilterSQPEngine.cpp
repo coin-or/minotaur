@@ -296,6 +296,9 @@ FilterSQPEngine::~FilterSQPEngine()
   if (stats_) {
     delete stats_;
   }
+  if (logger_) {
+    delete logger_;
+  }
   if (problem_) {
     problem_->unsetEngine();
     problem_.reset();
