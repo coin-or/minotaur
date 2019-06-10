@@ -248,39 +248,6 @@ void IpoptWarmStart::write(std::ostream &out) const
 // ----------------------------------------------------------------------- //
 // ----------------------------------------------------------------------- //
 
-IpoptEngine::IpoptEngine()
-: bndChanged_(false),
-  consChanged_(false),
-  env_(EnvPtr()),
-  etol_(1e-7),
-  myapp_(0),
-  mynlp_(0),
-  prepareWs_(false),
-  sol_(IpoptSolPtr()),      // NULL
-  stats_(0),
-  strBr_(false),
-  timer_(0),
-  useWs_(false),
-  ws_(IpoptWarmStartPtr()) // NULL
-{
-#if defined(USE_IPOPT)  
-  problem_ = ProblemPtr();   // NULL
-  logger_ = (LoggerPtr) new Logger(LogInfo);
-  myapp_ = new Ipopt::IpoptApplication();
-  myapp_->Options()->SetIntegerValue("print_level", 0);
-  //myapp_->Options()->SetNumericValue("tol", 1e-7);
-  //myapp_->Options()->SetIntegerValue("max_iter", 30);
-  //myapp_->Options()->SetStringValue("mu_strategy", "adaptive");
-  //myapp_->Options()->SetStringValue("output_file", "ipopt.out");
-  //myapp_->Options()->SetStringValue("hessian_approximation", "limited-memory");
-  //myapp_->Initialize("");
-  status_ = EngineError;
-#else 
-  assert(!"ipopt engine can only be called when compiled with ipopt!")
-#endif
-}
-
-
 IpoptEngine::IpoptEngine(EnvPtr env)
 : bndChanged_(false),
   consChanged_(false),
@@ -295,8 +262,7 @@ IpoptEngine::IpoptEngine(EnvPtr env)
 {
 #if defined(USE_IPOPT)  
   problem_ = ProblemPtr();   // NULL
-  logger_ = (LoggerPtr) new Logger((LogLevel) env->getOptions()->
-      findInt("engine_log_level")->getValue());
+  logger_ = env_->getLogger();
   myapp_ = new Ipopt::IpoptApplication();
   setOptionsForRepeatedSolve();
 
@@ -410,10 +376,7 @@ void IpoptEngine::disableStrBrSetup()
 
 EnginePtr IpoptEngine::emptyCopy()
 {
-  if (env_) {
-    return (IpoptEnginePtr) new IpoptEngine(env_);
-  }
-  return (IpoptEnginePtr) new IpoptEngine();
+  return (IpoptEnginePtr) new IpoptEngine(env_);
 }
 
 

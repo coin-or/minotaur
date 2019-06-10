@@ -46,9 +46,6 @@ namespace Minotaur {
     
     void doNothing();
     
-    /// Default constructor.
-    CplexMILPEngine();    
-
     /// Constructor with an environment.
     CplexMILPEngine(EnvPtr env);
 

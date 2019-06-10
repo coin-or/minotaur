@@ -43,36 +43,6 @@ using namespace Minotaur;
 
 const std::string BqpdEngine::me_ = "BqpdEngine: ";
 
-BqpdEngine::BqpdEngine()
-  : bndChanges_(0),
-    bndRelaxed_(false),
-    bTol_(1e-9),
-    chkPt_(0),
-    consModed_(false),
-    dualCons_(0),
-    dualX_(0),
-    env_(EnvPtr()),
-    fStart_(0),
-    infty_(1e20),
-    maxIterLimit_(1000),
-    prevStrBr_(false),
-    resolveError_(true),
-    sol_(SolutionPtr()),    // NULL
-    stats_(0),
-    strBr_(false),
-    timer_(0),
-    wsMode_(6)
-{
-#ifndef USE_BQPD 
-#error Need to set USE_BQPD
-#endif
-  status_ = EngineError;
-  logger_ = (LoggerPtr) new Logger(LogInfo);
-  iterLimit_ = maxIterLimit_;
-  problem_ = ProblemPtr(); // NULL
-}
-
-
 BqpdEngine::BqpdEngine(EnvPtr env)
   : bndChanges_(0),
     bndRelaxed_(false),
@@ -93,8 +63,7 @@ BqpdEngine::BqpdEngine(EnvPtr env)
 {
   wsMode_ = env->getOptions()->findInt("bqpd_ws_mode")->getValue();
   status_ = EngineError;
-  logger_ = (LoggerPtr) new Logger((LogLevel) (env->getOptions()
-        ->findInt("engine_log_level")->getValue()));
+  logger_ = env_->getLogger();
   iterLimit_ = maxIterLimit_;
   timer_ = env->getNewTimer();
   stats_ = new BqpdStats();
@@ -147,10 +116,7 @@ void BqpdEngine::addConstraint(ConstraintPtr)
 
 EnginePtr BqpdEngine::emptyCopy()
 {
-  if (env_) {
-    return (BqpdEnginePtr) new BqpdEngine(env_);
-  }
-  return (BqpdEnginePtr) new BqpdEngine();
+  return (BqpdEnginePtr) new BqpdEngine(env_);
 }
 
 

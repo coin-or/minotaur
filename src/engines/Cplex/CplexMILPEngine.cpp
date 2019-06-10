@@ -55,13 +55,6 @@ const std::string CplexMILPEngine::me_ = "CplexMILPEngine: ";
 // ----------------------------------------------------------------------- //
 // ----------------------------------------------------------------------- //
 
-CplexMILPEngine::CplexMILPEngine()
-  : timer_(0)
-{
-  //logger_ = (LoggerPtr) new Logger(LogInfo);
-}
-
-  
 CplexMILPEngine::CplexMILPEngine(EnvPtr env)
   : env_(env)
 {
@@ -124,7 +117,7 @@ void CplexMILPEngine::clear()
 
 EnginePtr CplexMILPEngine::emptyCopy()
 {
-  return EnginePtr();
+  return new CplexMILPEngine(env_);
 }
 
 

@@ -190,45 +190,6 @@ void FilterSQPWarmStart::write(std::ostream &out) const
 }
 
 
-FilterSQPEngine::FilterSQPEngine()
-: a_(0),
-  bl_(0),
-  bTol_(1e-9),
-  bu_(0),
-  c_(0),
-  consChanged_(true),
-  cstype_(0),
-  env_(EnvPtr()),
-  feasTol_(1e-6),
-  istat_(0),
-  la_(0),                 // NULL
-  lam_(0),
-  lws_(0),                // NULL
-  lws2_(0),
-  maxIterLimit_(1000),
-  mlam_(0),
-  prepareWs_(false),
-  rstat_(0),
-  s_(0),
-  saveSol_(true),
-  sol_(SolutionPtr()),    // NULL
-  stats_(0),
-  strBr_(false),
-  timer_(0),
-  useWs_(false),
-  warmSt_(FilterWSPtr()),
-  ws_(0),
-  x_(0)
-{
-#ifndef USE_FILTERSQP 
-#error Need to set USE_FILTERSQP
-#endif
-  problem_ = ProblemPtr(); // NULLstatus_ = EngineError;
-  logger_ = (LoggerPtr) new Logger(LogInfo);
-  iterLimit_ = maxIterLimit_;
-}
-
-
 FilterSQPEngine::FilterSQPEngine(EnvPtr env)
 : a_(0),
   bl_(0),
@@ -257,8 +218,7 @@ FilterSQPEngine::FilterSQPEngine(EnvPtr env)
 {
   problem_ = ProblemPtr(); // NULL
   status_ = EngineUnknownStatus;
-  logger_ = (LoggerPtr) new Logger((LogLevel) (env->getOptions()
-        ->findInt("engine_log_level")->getValue()));
+  logger_ = env->getLogger();
   iterLimit_ = maxIterLimit_;
   if (env->getOptions()->findBool("use_warmstart")->getValue()==true) {
     prepareWs_ = true;
@@ -295,9 +255,6 @@ FilterSQPEngine::~FilterSQPEngine()
   }
   if (stats_) {
     delete stats_;
-  }
-  if (logger_) {
-    delete logger_;
   }
   if (problem_) {
     problem_->unsetEngine();
@@ -397,10 +354,7 @@ void FilterSQPEngine::disableStrBrSetup()
 
 EnginePtr FilterSQPEngine::emptyCopy()
 {
-  if (env_) {
-    return (FilterSQPEnginePtr) new FilterSQPEngine(env_);
-  }
-  return (FilterSQPEnginePtr) new FilterSQPEngine();
+  return (FilterSQPEnginePtr) new FilterSQPEngine(env_);
 }
 
 

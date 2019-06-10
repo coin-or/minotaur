@@ -56,9 +56,6 @@ namespace Minotaur {
   public:
     friend class Problem;
 
-    /// Default constructor.
-    BqpdEngine();    
-
     /// Constructor using given environment options.
     BqpdEngine(EnvPtr env);    
 

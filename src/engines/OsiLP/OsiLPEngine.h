@@ -101,9 +101,6 @@ namespace Minotaur {
   /// The OsiLPEngine engine uses the OSI interface to CLP solver.
   class OsiLPEngine : public LPEngine {
   public:
-    /// Default constructor.
-    OsiLPEngine();    
-
     /// Constructor with an environment.
     OsiLPEngine(EnvPtr env);
 

@@ -38,9 +38,6 @@ namespace Minotaur {
   /// The CbcEngine class can be called to solve MILP problems
   class CbcEngine : public MILPEngine {
   public:
-    /// Default constructor.
-    CbcEngine();    
-
     /// Constructor with an environment.
     CbcEngine(EnvPtr env);
 

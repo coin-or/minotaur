@@ -41,20 +41,10 @@ const std::string CbcEngine::me_ = "CbcEngine: ";
 // ----------------------------------------------------------------------- //
 // ----------------------------------------------------------------------- //
 
-CbcEngine::CbcEngine()
-  : osilp_(0),
-    timer_(0)
-{
-  logger_ = (LoggerPtr) new Logger(LogInfo);
-  stats_  = new CbcStats();
-}
-
-  
 CbcEngine::CbcEngine(EnvPtr env)
   : env_(env)
 {
-  logger_ = (LoggerPtr) new Logger((LogLevel) env->getOptions()->
-                                   findInt("engine_log_level")->getValue());
+  logger_ = env_->getLogger();
   timer_  = env->getNewTimer();
   osilp_  = 0;
   stats_  = new CbcStats();
@@ -124,10 +114,7 @@ void CbcEngine::clear()
 
 EnginePtr CbcEngine::emptyCopy()
 {
-  if (env_) {
-    return new CbcEngine(env_);
-  }
-  return new CbcEngine();
+  return new CbcEngine(env_);
 }
 
 

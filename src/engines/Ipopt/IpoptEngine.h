@@ -155,9 +155,6 @@ namespace Minotaur {
     friend class Problem;
 
     /// Default constructor
-    IpoptEngine();
-
-    /// Default constructor
     IpoptEngine(EnvPtr env);
 
     /// Destroy

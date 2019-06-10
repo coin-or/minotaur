@@ -82,9 +82,6 @@ namespace Minotaur {
   public:
     friend class Problem;
 
-    /// Default constructor.
-    FilterSQPEngine();    
-
     /// Constructor using given environment options.
     FilterSQPEngine(EnvPtr env);    
 
