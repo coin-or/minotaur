@@ -219,7 +219,7 @@ void Environment::createDefaultOptions_()
   options_->insert(b_option);
 
   // reset, so that we don't accidently add it again.
-  b_option.reset();
+  b_option = 0;
 
 
   // int options
@@ -305,7 +305,7 @@ void Environment::createDefaultOptions_()
       "The maximum number of iterations for Outer approximation algorithm to run: >=1", true, 10000);
   options_->insert(i_option);
 
-  i_option.reset();
+  i_option = 0;
 
   // Initial workspace option for FilterSQP engine
   i_option = (IntOptionPtr) new Option<int>("filter_mxws", 
@@ -392,7 +392,7 @@ void Environment::createDefaultOptions_()
       true, 0.0);
   options_->insert(d_option);
 
-  d_option.reset();
+  d_option = 0;
  
   // string options
   s_option = (StringOptionPtr) new Option<std::string>("brancher", 
@@ -452,7 +452,7 @@ void Environment::createDefaultOptions_()
       "File name for storing tree information for Vbctool", true, "");
   options_->insert(s_option);
 
-  s_option.reset();
+  s_option = 0;
 }
 
 

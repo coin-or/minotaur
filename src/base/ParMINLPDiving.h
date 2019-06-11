@@ -413,7 +413,7 @@ namespace Minotaur {
 
   };
 
-  typedef boost::shared_ptr<ParMINLPDiving> ParMINLPDivingPtr;
+  typedef ParMINLPDiving* ParMINLPDivingPtr;
 }
 #endif
 
