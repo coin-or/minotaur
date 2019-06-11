@@ -66,6 +66,7 @@ private:
 
   /// NLP/QP Engine used to solve the NLP/QP relaxations.
   EnginePtr nlpe_;
+  EnginePtr nlpe1_;
   
   EnginePtr lpe_;
 
@@ -84,6 +85,7 @@ private:
 
   /// Nonlinearity status of objective function. 1 if nonlinear 0 otherwise.
   bool oNl_;
+  bool rootLinScheme3_;
   
   UInt cutNum_;
 
@@ -94,6 +96,7 @@ private:
   double relobj_; 
   
   const double * solC_; 
+  const double * solNLP_; 
 
   /// Absolute tolerance for constraint feasibility.
   double solAbsTol_;
@@ -167,8 +170,14 @@ private:
   void postsolveGetX(const double *, UInt, DoubleVector *) {};
 
 
+  void alphaSelect_(VariablePtr nVar, VariablePtr lVar, double d1, double d2, 
+                             const double * nlpx, double &minA, double &maxA);
+
   bool diffFunVarVal_(const double *x, FunctionPtr f);
 
+  void addExtraCuts_(const double *nlpx, ConstraintPtr con, LinearFunctionPtr lf);
+
+  bool twoVarsCon_(ConstraintPtr con);
   void rootLinearizations_();
 
   /* Add linerizations to constraints with exactly two variables. One var in
