@@ -318,10 +318,18 @@ void Environment::createDefaultOptions_()
                                             true, 0);
   options_->insert(i_option);
 
-  i_option = (IntOptionPtr) new Option<int>("root_num_cuts", 
-      "Rounds of extra linearizations to be added at root node", true, 1);
+  i_option = (IntOptionPtr) new Option<int>("root_LinScheme1", 
+      "Rounds of extra linearizations to be added at root node under scheme 1", true, 1);
   options_->insert(i_option);
 
+
+  i_option = (IntOptionPtr) new Option<int>("root_LinScheme3", 
+      "Rounds of extra linearizations to be added at root node under scheme 3", true, 1);
+  options_->insert(i_option);
+
+  i_option = (IntOptionPtr) new Option<int>("root_LinScheme4", 
+      "Rounds of extra linearizations to be added at root node under scheme 4", true, 1);
+  options_->insert(i_option);
 
   // double options
   d_option = (DoubleOptionPtr) new Option<double>("ml_feastol", 
