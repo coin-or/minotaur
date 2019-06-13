@@ -140,8 +140,6 @@ namespace Minotaur {
     void writeStats(std::ostream &out) const;
 
   private:
-    /* This simple (CPLEX) routine frees up the pointer *ptr, and sets *ptr to NULL */
-    void free_(char **ptr);
 
     /// Cplex Environment
     CPXENVptr cpxenv_;
