@@ -88,6 +88,7 @@ private:
   bool rootLinScheme3_;
   
   UInt rScheme1Para_;
+  UInt rScheme2Para_;
   UInt rScheme3Para_;
   UInt rScheme4Para_;
 
@@ -98,7 +99,7 @@ private:
   double relobj_; 
   
   const double * solC_; 
-  const double * solNLP_; 
+  double * solNLP_; 
 
   /// Absolute tolerance for constraint feasibility.
   double solAbsTol_;

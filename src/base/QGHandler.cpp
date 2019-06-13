@@ -65,9 +65,10 @@ QGHandler::QGHandler()
   solNLP_(NULL),
   stats_(0)
 {
-  rScheme1Para_ = env_->getOptions()->findInt("root_LinScheme1")->getValue();
-  rScheme3Para_ = env_->getOptions()->findInt("root_LinScheme3")->getValue();
-  rScheme4Para_ = env_->getOptions()->findInt("root_LinScheme4")->getValue();
+  rScheme1Para_ = env_->getOptions()->findInt("root_linScheme1")->getValue();
+  rScheme2Para_ = env_->getOptions()->findBool("root_linScheme2")->getValue();
+  rScheme3Para_ = env_->getOptions()->findInt("root_linScheme3")->getValue();
+  rScheme4Para_ = env_->getOptions()->findInt("root_linScheme4")->getValue();
   intTol_ = env_->getOptions()->findDouble("int_tol")->getValue();
   solAbsTol_ = env_->getOptions()->findDouble("feasAbs_tol")->getValue();
   solRelTol_ = env_->getOptions()->findDouble("feasRel_tol")->getValue();
@@ -93,9 +94,10 @@ QGHandler::QGHandler(EnvPtr env, ProblemPtr minlp, EnginePtr nlpe)
   solC_(NULL),
   solNLP_(NULL)
 {
-  rScheme1Para_ = env_->getOptions()->findInt("root_LinScheme1")->getValue();
-  rScheme3Para_ = env_->getOptions()->findInt("root_LinScheme3")->getValue();
-  rScheme4Para_ = env_->getOptions()->findInt("root_LinScheme4")->getValue();
+  rScheme1Para_ = env_->getOptions()->findInt("root_linScheme1")->getValue();
+  rScheme2Para_ = env_->getOptions()->findBool("root_linScheme2")->getValue();
+  rScheme3Para_ = env_->getOptions()->findInt("root_linScheme3")->getValue();
+  rScheme4Para_ = env_->getOptions()->findInt("root_linScheme4")->getValue();
   intTol_ = env_->getOptions()->findDouble("int_tol")->getValue();
   solAbsTol_ = env_->getOptions()->findDouble("feasAbs_tol")->getValue();
   solRelTol_ = env_->getOptions()->findDouble("feasRel_tol")->getValue();
@@ -166,6 +168,7 @@ bool QGHandler::diffFunVarVal_(const double *x, FunctionPtr f)
   UInt idx; 
   for(VariableSet::iterator vit=f->varsBegin(); vit!=f->varsEnd(); ++vit) {
     idx = (*vit)->getIndex();
+    //std::cout << (*vit)->getName() << " old val " << solNLP_[idx] << " new val " << x[idx] << std::endl; 
     if ((fabs(x[idx]-solNLP_[idx]) > solAbsTol_) &&
           (solNLP_[idx] != 0 || fabs(x[idx]-solNLP_[idx]) > fabs(solNLP_[idx])*solRelTol_)) {
       return true;
@@ -194,6 +197,7 @@ void QGHandler::addInitLinearX_(const double *x, bool isSecNLP)
     if (error == 0) {
       f = con->getFunction();
       if (isSecNLP) {
+        //con->write(std::cout);
         addCut = diffFunVarVal_(x, f);
         // Add cut only if the new point is different than the previous point
         if (addCut == false) {
@@ -267,6 +271,8 @@ void QGHandler::addInitLinearX_(const double *x, bool isSecNLP)
   }
         
   if (isSecNLP) {
+    rScheme2Para_ = false;
+    delete [] solNLP_;
     std::cout << "No. of warmstart cuts " << newcuts << std::endl;
   }
   return;
@@ -490,9 +496,6 @@ void QGHandler::initLinear_(bool *isInf, bool isSecNLP)
   //std::cout << "minlp_ \n";
   //minlp_->write(std::cout);
   
-  if (isSecNLP == false) {
-    solNLP_ =  nlpe_->getSolution()->getPrimal();  
-  }
   switch (nlpStatus_) {
   case (ProvenOptimal):
   case (ProvenLocalOptimal):
@@ -522,6 +525,13 @@ void QGHandler::initLinear_(bool *isInf, bool isSecNLP)
     logger_->msgStream(LogError) << me_ << "NLP engine status at root= "
       << nlpStatus_ << std::endl;
     assert(!"In QGHandler: stopped at root. Check error log.");
+  }
+
+  if (*isInf == false && rScheme2Para_) {
+    int n = minlp_->getNumVars();
+    solNLP_ = new double[n];
+    std::fill(solNLP_, solNLP_+n, 0.);
+    std::copy(x, x+n, solNLP_);  
   }
 #if SPEW
   logger_->msgStream(LogDebug) << me_ << "root NLP solve status = " 
@@ -580,12 +590,16 @@ void QGHandler::rootLinearizations_()
 
 void QGHandler::rootLinScheme2_()
 {
+  if (rScheme2Para_ == false) {
+    return;  
+  }
   bool isInf;
   lpe_->load(rel_);
   lpe_->solve();
-  //nlpe_->setWarmStartPt(NULL);
+  nlpe_->loadFromWarmStart(WarmStartPtr());
+  nlpe_->changeBound(*(minlp_->varsBegin()), Lower, (*(minlp_->varsBegin()))->getLb()); 
+
   minlp_->setInitialPoint(lpe_->getSolution()->getPrimal());
-  //nlpe_->loadFromWarmStart(lpe_->getWarmStartCopy());
   initLinear_(&isInf, 1);
 }
 
@@ -642,28 +656,8 @@ void QGHandler::rootLinScheme1_()
     shouldCont = twoVarsCon_(con); //MS: pass directly lf or nlf
     // constraints with extactly two vars, one in nonlinear and one in linear
     // part, is considered
-    //lf = con->getLinearFunction();
     nlf = con->getNonlinearFunction();
-    //vnIdx = nlf->numVars();
-    //if (vnIdx != 1) {
-      //continue;        
-    //}
-    //vlIdx = 0;
-    //if (lf) {
-      //for(VariableGroupConstIterator vit = lf->termsBegin(); vit != lf->termsEnd(); ++vit) {
-        //if (fabs(vit->second) > 1e-6) {
-          //++vlIdx;          
-        //}
-        //if (vlIdx > 1) {
-          //shouldCont = false;
-          //break;        
-        //}
-      //}
-    //}
-    //if (shouldCont == false || (vnIdx+vlIdx != 2) ) {
-      //continue;    
-    //}
-
+    
     if (shouldCont == false) {
       continue;    
     }
@@ -1220,7 +1214,9 @@ void QGHandler::relax_(bool *isInf)
   nlpe_->load(minlp_); // loading original problem to NLP engine
   //rootLinScheme3_ = true; // set from environment option: MS: for scheme  4???
   initLinear_(isInf, 0);
-  rootLinearizations_();
+  if (*isInf == false) {
+    rootLinearizations_();
+  }
   return;
 }
 
