@@ -87,7 +87,9 @@ private:
   bool oNl_;
   bool rootLinScheme3_;
   
-  UInt cutNum_;
+  UInt rScheme1Para_;
+  UInt rScheme3Para_;
+  UInt rScheme4Para_;
 
   /// Pointer to relaxation of the problem.
   RelaxationPtr rel_;
@@ -175,7 +177,8 @@ private:
 
   bool diffFunVarVal_(const double *x, FunctionPtr f);
 
-  void addExtraCuts_(const double *nlpx, ConstraintPtr con, LinearFunctionPtr lf);
+  void rootScheme3_(const double *nlpx, ConstraintPtr con, LinearFunctionPtr lf);
+  void rootScheme4_(const double *nlpx, ConstraintPtr con);
 
   bool twoVarsCon_(ConstraintPtr con);
   void rootLinearizations_();
