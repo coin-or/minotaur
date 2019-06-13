@@ -94,6 +94,7 @@ QGHandler::QGHandler(EnvPtr env, ProblemPtr minlp, EnginePtr nlpe)
   solC_(NULL),
   solNLP_(NULL)
 {
+  //MS: set the option for root_LinSchemes
   rScheme1Para_ = env_->getOptions()->findInt("root_linScheme1")->getValue();
   rScheme2Para_ = env_->getOptions()->findBool("root_linScheme2")->getValue();
   rScheme3Para_ = env_->getOptions()->findInt("root_linScheme3")->getValue();
@@ -1215,7 +1216,9 @@ void QGHandler::relax_(bool *isInf)
   //rootLinScheme3_ = true; // set from environment option: MS: for scheme  4???
   initLinear_(isInf, 0);
   if (*isInf == false) {
-    rootLinearizations_();
+    if ((rScheme1Para_+ rScheme3Para_ +rScheme4Para_) > 0 || rScheme2Para_) {
+      rootLinearizations_();
+    }
   }
   return;
 }
