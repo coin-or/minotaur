@@ -61,6 +61,12 @@ CplexLPEngine::CplexLPEngine(EnvPtr env)
 
 CplexLPEngine::~CplexLPEngine()
 {
+  delete stats_;
+  delete timer_;
+  if (problem_) {
+    problem_->unsetEngine();
+    problem_.reset();
+  }
 }
 
 

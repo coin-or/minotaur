@@ -70,6 +70,12 @@ CplexMILPEngine::CplexMILPEngine(EnvPtr env)
 
 CplexMILPEngine::~CplexMILPEngine()
 {
+  delete stats_;
+  delete timer_;
+  if (problem_) {
+    //problem_->unsetEngine();
+    problem_.reset();
+  }
 }
 
 
