@@ -73,8 +73,45 @@ CplexLPEngine::~CplexLPEngine()
 }
 
 
-void CplexLPEngine::addConstraint(ConstraintPtr)
+void CplexLPEngine::addConstraint(ConstraintPtr con)
 {
+  LinearFunctionPtr lf = con->getLinearFunction();
+  int nnz = lf->getNumTerms();
+  int *cols = new int[nnz];
+  double *elems = new double[nnz];
+  double *conrhs = new double;
+  *conrhs = con->getUb();
+  char **conname = new char*[1];
+  char* cstr;
+  cstr = new char[con->getName().length() + 1];
+  strcpy(cstr, con->getName().c_str());
+  conname[0] = cstr;
+  char* sense = new char;
+  *sense = 'L';
+  CPXNNZ *start = new CPXNNZ[1];
+  start[0] = CPXXgetnumnz (cpxenv_, cpxlp_);
+
+  VariableGroupConstIterator it;
+  int i=0;
+
+  for (it = lf->termsBegin(); it != lf->termsEnd(); ++it, ++i){
+    cols[i] = it->first->getIndex();
+    elems[i] = it->second;
+  }
+
+  //osilp_->addRow(nz, cols, elems, con->getLb(), con->getUb());
+  cpxstatus_ = CPXXaddrows (cpxenv_, cpxlp_, 0, 1, nnz, conrhs, sense, start,
+                       cols, elems, NULL, conname);
+  if (cpxstatus_) {
+    assert(!"unable to add constraint!");
+  }
+  delete [] cols;
+  delete [] elems;
+  delete conrhs;
+  delete [] cstr;
+  delete [] conname;
+  delete sense;
+  consChanged_ = true;
 }
 
 
@@ -389,7 +426,7 @@ TERMINATE:
   delete [] varname;
   delete [] conname;
   //delete [] sense;
-  //problem->setEngine(this);
+  problem->setEngine(this);
 
 }
 
