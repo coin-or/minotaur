@@ -5,17 +5,17 @@
 // 
 
 /**
- * \file CplexMILPEngine.h 
- * \brief Define an interface to the Cplex MILP solver.
+ * \file CplexLPEngine.h 
+ * \brief Define an interface to the Cplex LP solver.
  * \author Prashant Palkar and Ashutosh Mahajan, IIT Bombay
  */
 
-#ifndef MINOTAURCPLEXMILPENGINE_H
-#define MINOTAURCPLEXMILPENGINE_H
+#ifndef MINOTAURCPLEXLPENGINE_H
+#define MINOTAURCPLEXLPENGINE_H
 //#include <ilcplex/ilocplex.h>
 #include <ilcplex/cplexx.h>
 #include <string.h>
-#include "MILPEngine.h"
+#include "LPEngine.h"
 #include "STOAHandler.h"
 
 
@@ -32,13 +32,13 @@ namespace Minotaur {
   typedef boost::shared_ptr<WarmStart> WarmStartPtr;
 
   /// Statistics
-  struct CplexMILPStats {
+  struct CplexLPStats {
     UInt calls;     /// Total number of calls to solve.
     double time;    /// Sum of time taken in all calls to solve.
   };
 
-  /// The CplexMILPEngine class can be called to solve MILP problems
-  class CplexMILPEngine : public MILPEngine {
+  /// The CplexLPEngine class can be called to solve LP problems
+  class CplexLPEngine : public LPEngine {
   public:
     
     //static int lazycallback(CPXCENVptr env, void *cbdata, int wherefrom,
@@ -47,10 +47,10 @@ namespace Minotaur {
     void doNothing();
     
     /// Constructor with an environment.
-    CplexMILPEngine(EnvPtr env);
+    CplexLPEngine(EnvPtr env);
 
     /// Destroy. 
-    ~CplexMILPEngine();
+    ~CplexLPEngine();
 
     // Implement Engine::addConstraint().
     void addConstraint(ConstraintPtr);
@@ -79,7 +79,7 @@ namespace Minotaur {
 
     void disableStrBrSetup() {};
 
-    /// Return an empty CplexMILPEngine pointer.
+    /// Return an empty CplexLPEngine pointer.
     EnginePtr emptyCopy();
 
     void enableStrBrSetup() {};
@@ -113,8 +113,8 @@ namespace Minotaur {
     void negateObj();
 
     // Print a point x
-    void printx(double *x, UInt size);
-
+    void printx(double *, UInt );
+    
     // base class method.
     void removeCons(std::vector<ConstraintPtr> &delcons);
 
@@ -130,20 +130,8 @@ namespace Minotaur {
     // Implement Engine::setUpperCutoff().
     void setUpperCutoff(double);
     
-    // Implement the solve() function of Cplex
+    // Implement the LP solve() function of Cplex
     EngineStatus solve();
-
-    // Implement the solve() function for single tree OA with general
-    // callbacks
-    EngineStatus solveST(double* objLb, SolutionPtr* sol,
-                         STOAHandlerPtr stoa_hand,
-                         SolveStatus* solveStatus);
-
-    // Implement the solve() function for single tree OA with lazy cuts
-    // callback
-    EngineStatus solveSTLazy(double* objLb, SolutionPtr* sol,
-                         STOAHandlerPtr stoa_hand,
-                         SolveStatus* solveStatus);
 
     /// Writes an LP file of the loaded LP.
     void writeLP(const char *filename) const;
@@ -196,7 +184,7 @@ namespace Minotaur {
     SolutionPtr sol_;
 
     /// Statistics.
-    CplexMILPStats *stats_;
+    CplexLPStats *stats_;
 
     /// Timer for solves. 
     Timer *timer_;
@@ -205,7 +193,7 @@ namespace Minotaur {
     void load_();
   };
   
-  typedef CplexMILPEngine* CplexMILPEnginePtr;
+  typedef CplexLPEngine* CplexLPEnginePtr;
 }
 
 #endif

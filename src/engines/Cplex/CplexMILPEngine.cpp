@@ -144,9 +144,9 @@ EngineStatus CplexMILPEngine::getStatus()
   return status_;
 }
 
-void printx(double *x, UInt size) {
+void CplexMILPEngine::printx(double *x, UInt size) {
   for (UInt i=0; i < size; i++) {
-    std::cout << i+1 << " " << x[i] << "\n";
+    logger_->msgStream(LogInfo) << i+1 << " " << x[i] << "\n";
   }
 }
 
@@ -454,7 +454,7 @@ EngineStatus CplexMILPEngine::solve()
   /* Optimize the problem and obtain solution. */
   cpxstatus_ = CPXXmipopt (cpxenv_, cpxlp_);
   if ( cpxstatus_ ) {
-     logger_->msgStream(LogInfo) << me_ << "Failed to optimize MIP." << std::endl;
+     logger_->msgStream(LogInfo) << me_ << "Failed to optimize MILP." << std::endl;
      //goto TERMINATE;
   }
   solstat = CPXXgetstat (cpxenv_, cpxlp_);
@@ -466,7 +466,7 @@ EngineStatus CplexMILPEngine::solve()
   cpxstatus_ = CPXXgetobjval (cpxenv_, cpxlp_, &objval);
   if ( cpxstatus_ ) {
      logger_->msgStream(LogInfo) << me_ 
-       << "No MIP objective value available. Exiting..." << std::endl;
+       << "No MILP objective value available. Exiting..." << std::endl;
   }
   logger_->msgStream(LogInfo) << me_ << "Solution value = " << objval << std::endl;
 
@@ -873,7 +873,7 @@ EngineStatus CplexMILPEngine::solveST(double *objLb, SolutionPtr* sol,
   /* Optimize the problem and obtain solution. */
   cpxstatus_ = CPXXmipopt (cpxenv_, cpxlp_);
   if ( cpxstatus_ ) {
-     logger_->msgStream(LogInfo) << me_ << "Failed to optimize MIP." 
+     logger_->msgStream(LogInfo) << me_ << "Failed to optimize MILP."
        << CPXXgeterrorstring(cpxenv_, cpxstatus_, errbuf) << std::endl;
      goto TERMINATE;
   }
@@ -887,14 +887,14 @@ EngineStatus CplexMILPEngine::solveST(double *objLb, SolutionPtr* sol,
   cpxstatus_ = CPXXgetbestobjval(cpxenv_, cpxlp_, objLb);
   if ( cpxstatus_ ) {
      logger_->msgStream(LogInfo) << me_ 
-       << "No MIP objective value available. Exiting..." << std::endl;
+       << "No MILP objective value available. Exiting..." << std::endl;
   }
 
   /* Get the (primal) objective value. */
   cpxstatus_ = CPXXgetobjval (cpxenv_, cpxlp_, &objval);
   if ( cpxstatus_ ) {
      logger_->msgStream(LogInfo) << me_ 
-       << "No MIP objective value available. Exiting..." << std::endl;
+       << "No MILP objective value available. Exiting..." << std::endl;
   }
   //logger_->msgStream(LogInfo) << me_ << "Solution value = " << objval << std::endl;
 
@@ -1068,7 +1068,7 @@ EngineStatus CplexMILPEngine::solveSTLazy(double *objLb, SolutionPtr* sol,
   cpxstatus_ = CPXXsetintparam (cpxenv_, CPXPARAM_MIP_Interval, 1);
 
   if ( cpxstatus_ ) {
-     logger_->msgStream(LogInfo) << me_ << "Failure to set MIP log interval, error " 
+     logger_->msgStream(LogInfo) << me_ << "Failure to set MILP log interval, error "
        << cpxstatus_ << std::endl;
      goto TERMINATE;
   }
@@ -1076,7 +1076,7 @@ EngineStatus CplexMILPEngine::solveSTLazy(double *objLb, SolutionPtr* sol,
   cpxstatus_ = CPXXsetintparam (cpxenv_, CPXPARAM_MIP_Display, 4);
 
   if ( cpxstatus_ ) {
-     logger_->msgStream(LogInfo) << me_ << "Failure to set MIP display parameter, error " 
+     logger_->msgStream(LogInfo) << me_ << "Failure to set MILP display parameter, error "
        << cpxstatus_ << std::endl;
      goto TERMINATE;
   }
@@ -1103,7 +1103,7 @@ EngineStatus CplexMILPEngine::solveSTLazy(double *objLb, SolutionPtr* sol,
   /* Optimize the problem and obtain solution. */
   cpxstatus_ = CPXXmipopt (cpxenv_, cpxlp_);
   if ( cpxstatus_ ) {
-     logger_->msgStream(LogInfo) << me_ << "Failed to optimize MIP." 
+     logger_->msgStream(LogInfo) << me_ << "Failed to optimize MILP."
        << CPXXgeterrorstring(cpxenv_, cpxstatus_, errbuf) << std::endl;
      goto TERMINATE;
   }
@@ -1121,14 +1121,14 @@ EngineStatus CplexMILPEngine::solveSTLazy(double *objLb, SolutionPtr* sol,
   cpxstatus_ = CPXXgetbestobjval(cpxenv_, cpxlp_, objLb);
   if ( cpxstatus_ ) {
      logger_->msgStream(LogInfo) << me_ 
-       << "No MIP objective value available. Exiting..." << std::endl;
+       << "No MILP objective value available. Exiting..." << std::endl;
   }
 
   /* Get the (primal) objective value. */
   cpxstatus_ = CPXXgetobjval (cpxenv_, cpxlp_, &objval);
   if ( cpxstatus_ ) {
      logger_->msgStream(LogInfo) << me_ 
-       << "No MIP objective value available. Exiting..." << std::endl;
+       << "No MILP objective value available. Exiting..." << std::endl;
   }
   //logger_->msgStream(LogInfo) << me_ << "Solution value = " << objval << std::endl;
 

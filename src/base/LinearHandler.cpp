@@ -531,12 +531,15 @@ SolveStatus LinearHandler::varBndsFromObj_(ProblemPtr p, double ub, bool apply_t
       }
 
       if (ll > ub+eTol_) {
-        logger_->msgStream(LogDebug) << "Problem infeasible." << std::endl 
+#if SPEW
+        logger_->msgStream(LogDebug) << me_ << "Problem infeasible."
+                                     << std::endl 
                                      << "objective " << o_ptr->getName()
                                      << std::fixed    << std::setprecision(8) 
                                      << " lower = "   << ll 
                                      << " upper = "   << ub 
                                      << std::endl;
+#endif
         return SolvedInfeasible;
       }
       if (ll > -infty_) {
@@ -936,21 +939,25 @@ SolveStatus LinearHandler::linBndTighten_(ProblemPtr p, bool apply_to_prob,
   }
 
   if (ll > ub+eTol_) {
-    logger_->msgStream(LogDebug) << "Problem infeasible." << std::endl 
-                                << "constraint " << c_ptr->getName()
-                                << std::fixed    << std::setprecision(8) 
-                                << " lower = "   << ll 
-                                << " upper = "   << ub 
-                                << std::endl;
+#if SPEW
+    logger_->msgStream(LogDebug) << me_ << "Problem infeasible." << std::endl 
+                                 << "constraint " << c_ptr->getName()
+                                 << std::fixed    << std::setprecision(8) 
+                                 << " lower = "   << ll 
+                                 << " upper = "   << ub 
+                                 << std::endl;
+#endif 
     return SolvedInfeasible;
   }
   if (uu < lb-eTol_) {
-    logger_->msgStream(LogDebug) << "Problem infeasible." << std::endl 
-                                << "constraint " << c_ptr->getName()
-                                << std::fixed    << std::setprecision(8) 
-                                << " lower = "   << lb 
-                                << " upper = "   << uu 
-                                << std::endl;
+#if SPEW
+    logger_->msgStream(LogDebug) << me_ << "Problem infeasible." << std::endl 
+                                 << "constraint " << c_ptr->getName()
+                                 << std::fixed    << std::setprecision(8) 
+                                 << " lower = "   << lb 
+                                 << " upper = "   << uu 
+                                 << std::endl;
+#endif 
     return SolvedInfeasible;
   }
 

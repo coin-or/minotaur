@@ -164,7 +164,7 @@ namespace Minotaur {
 
   };
 
-  typedef boost::shared_ptr<LinFeasPump> LinFeasPumpPtr;
+  typedef LinFeasPump* LinFeasPumpPtr;
 }
 #endif
 

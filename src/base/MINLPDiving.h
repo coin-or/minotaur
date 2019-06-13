@@ -323,7 +323,7 @@
 
    };
 
-   typedef boost::shared_ptr<MINLPDiving> MINLPDivingPtr;
+   typedef MINLPDiving* MINLPDivingPtr;
 }
 #endif
 

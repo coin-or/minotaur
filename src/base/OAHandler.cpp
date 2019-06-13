@@ -49,29 +49,6 @@ using namespace Minotaur;
 typedef std::vector<ConstraintPtr>::const_iterator CCIter;
 const std::string OAHandler::me_ = "OAHandler: ";
 
-OAHandler::OAHandler()
-: env_(EnvPtr()),      
-  minlp_(ProblemPtr()),
-  timer_(0),                    // NULL
-  nlCons_(0),
-  nlpe_(EnginePtr()),
-  milpe_(MILPEnginePtr()),
-  nlpStatus_(EngineUnknownStatus),
-  objVar_(VariablePtr()),
-  oNl_(false),
-  rel_(RelaxationPtr()),
-  relobj_(0.0),
-  stats_(0)
-{
-  intTol_ = env_->getOptions()->findDouble("int_tol")->getValue();
-  solAbsTol_ = env_->getOptions()->findDouble("solAbs_tol")->getValue();
-  solRelTol_ = env_->getOptions()->findDouble("solRel_tol")->getValue();
-  objATol_ = env_->getOptions()->findDouble("solAbs_tol")->getValue();
-  objRTol_ = env_->getOptions()->findDouble("solRel_tol")->getValue();
-  logger_ = (LoggerPtr) new Logger(LogDebug2);
-}
-
-
 OAHandler::OAHandler(EnvPtr env, ProblemPtr minlp, EnginePtr nlpe, MILPEnginePtr milpe)
 : env_(env),
   minlp_(minlp),
@@ -115,9 +92,6 @@ OAHandler::~OAHandler()
   env_.reset();
   rel_.reset();
   minlp_.reset();
-  if (logger_){
-    delete logger_;
-  }
 }
 
 

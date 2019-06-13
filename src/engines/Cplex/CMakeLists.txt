@@ -5,9 +5,11 @@ include_directories("${CPX_INC_DIR_F}")
 include_directories("${CPX_INC_DIR_F}/../../concert/include")
 
 set (CPX_SOURCES
+  CplexLPEngine.cpp
   CplexMILPEngine.cpp
 )
 set (CPX_HEADERS
+  CplexLPEngine.h
   CplexMILPEngine.h
 )
 

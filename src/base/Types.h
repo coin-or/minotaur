@@ -423,10 +423,14 @@ typedef boost::shared_ptr <OptionDB> OptionDBPtr;
 
 // declare options
 template <class T> class Option;
-typedef boost::shared_ptr< Option<bool>        > BoolOptionPtr;
-typedef boost::shared_ptr< Option<int>         > IntOptionPtr;
-typedef boost::shared_ptr< Option<double>      > DoubleOptionPtr;
-typedef boost::shared_ptr< Option<std::string> > StringOptionPtr;
+typedef  Option<bool>         BoolOption;
+typedef Option<int>           IntOption;
+typedef Option<double>        DoubleOption;
+typedef  Option<std::string>   StringOption;
+typedef BoolOption*         BoolOptionPtr;
+typedef IntOption*           IntOptionPtr;
+typedef DoubleOption*        DoubleOptionPtr;
+typedef  StringOption*   StringOptionPtr;
 typedef BoolOptionPtr FlagOptionPtr;
 
 // define sets of pointers
@@ -473,7 +477,7 @@ typedef const std::map<ConstVariablePtr, UInt, CompareVariablePtr>
 VarCountConstMap;
 
 class   Heuristic;
-typedef boost::shared_ptr<Heuristic> HeurPtr;
+typedef Heuristic* HeurPtr;
 typedef std::vector<HeurPtr> HeurVector;
 }
 

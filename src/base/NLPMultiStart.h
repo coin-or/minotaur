@@ -104,7 +104,7 @@ namespace Minotaur {
       
   };
 
-  typedef boost::shared_ptr<NLPMultiStart> NLPMSPtr;
+  typedef NLPMultiStart* NLPMSPtr;
 }
 #endif
 

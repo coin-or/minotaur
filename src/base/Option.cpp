@@ -84,38 +84,59 @@ OptionDB::OptionDB()
 
 OptionDB::~OptionDB()
 {
-  bool_ops_.clear();
-  int_ops_.clear();
-  double_ops_.clear();
-  string_ops_.clear();
+  for (BoolOptionSetIter iter=boolOps_.begin(); iter!=boolOps_.end(); 
+      ++iter) {
+    delete (*iter);
+  }
+  for (IntOptionSetIter iter=intOps_.begin(); iter!=intOps_.end(); 
+      ++iter) {
+    delete (*iter);
+  }
+  for (DoubleOptionSetIter iter=doubleOps_.begin(); iter!=doubleOps_.end(); 
+      ++iter) {
+    delete (*iter);
+  }
+  for (StringOptionSetIter iter=stringOps_.begin(); iter!=stringOps_.end(); 
+      ++iter) {
+    delete (*iter);
+  }
+  for (FlagOptionSetIter iter=flagOps_.begin(); iter!=flagOps_.end(); 
+      ++iter) {
+    delete (*iter);
+  }
+  boolOps_.clear();
+  intOps_.clear();
+  doubleOps_.clear();
+  stringOps_.clear();
+  flagOps_.clear();
 }
 
 
 void OptionDB::insert(BoolOptionPtr option, bool is_flag)
 {
   if (is_flag) {
-    flag_ops_.insert(option);
+    flagOps_.insert(option);
   } else {
-    bool_ops_.insert(option);
+    boolOps_.insert(option);
   }
 }
 
 
 void OptionDB::insert(IntOptionPtr option)
 {
-  int_ops_.insert(option);
+  intOps_.insert(option);
 }
 
 
 void OptionDB::insert(DoubleOptionPtr option)
 {
-  double_ops_.insert(option);
+  doubleOps_.insert(option);
 }
 
 
 void OptionDB::insert(StringOptionPtr option)
 {
-  string_ops_.insert(option);
+  stringOps_.insert(option);
 }
 
 
@@ -124,7 +145,7 @@ BoolOptionPtr OptionDB::findBool(const std::string &cname)
   BoolOptionPtr option = BoolOptionPtr(); //NULL
   std::string name(cname);
   toLowerCase(name);
-  for (BoolOptionSetIter iter=bool_ops_.begin(); iter!=bool_ops_.end(); 
+  for (BoolOptionSetIter iter=boolOps_.begin(); iter!=boolOps_.end(); 
       ++iter) {
     if ((*iter)->getName()==name) {
       option = (*iter);
@@ -140,7 +161,7 @@ IntOptionPtr OptionDB::findInt(const std::string &cname)
   IntOptionPtr option = IntOptionPtr(); //NULL
   std::string name(cname);
   toLowerCase(name);
-  for (IntOptionSetIter iter=int_ops_.begin(); iter!=int_ops_.end(); 
+  for (IntOptionSetIter iter=intOps_.begin(); iter!=intOps_.end(); 
       ++iter) {
     if ((*iter)->getName()==name) {
       option = (*iter);
@@ -156,7 +177,7 @@ DoubleOptionPtr OptionDB::findDouble(const std::string &cname)
   DoubleOptionPtr option = DoubleOptionPtr(); //NULL
   std::string name(cname);
   toLowerCase(name);
-  for (DoubleOptionSetIter iter=double_ops_.begin(); iter!=double_ops_.end(); 
+  for (DoubleOptionSetIter iter=doubleOps_.begin(); iter!=doubleOps_.end(); 
       ++iter) {
     if ((*iter)->getName()==name) {
       option = (*iter);
@@ -172,7 +193,7 @@ StringOptionPtr OptionDB::findString(const std::string &cname)
   StringOptionPtr option = StringOptionPtr(); //NULL
   std::string name(cname);
   toLowerCase(name);
-  for (StringOptionSetIter iter=string_ops_.begin(); iter!=string_ops_.end(); 
+  for (StringOptionSetIter iter=stringOps_.begin(); iter!=stringOps_.end(); 
       ++iter) {
     if ((*iter)->getName()==name) {
       option = (*iter);
@@ -188,7 +209,7 @@ FlagOptionPtr OptionDB::findFlag(const std::string &cname)
   FlagOptionPtr option = FlagOptionPtr(); //NULL
   std::string name(cname);
   toLowerCase(name);
-  for (FlagOptionSetIter iter=flag_ops_.begin(); iter!=flag_ops_.end(); 
+  for (FlagOptionSetIter iter=flagOps_.begin(); iter!=flagOps_.end(); 
       ++iter) {
     if ((*iter)->getName()==name) {
       option = (*iter);
@@ -201,52 +222,52 @@ FlagOptionPtr OptionDB::findFlag(const std::string &cname)
 
 BoolOptionSetIter OptionDB::boolBegin()
 {
-  return bool_ops_.begin();
+  return boolOps_.begin();
 }
 
 BoolOptionSetIter OptionDB::boolEnd()
 {
-  return bool_ops_.end();
+  return boolOps_.end();
 }
 
 IntOptionSetIter OptionDB::intBegin()
 {
-  return int_ops_.begin();
+  return intOps_.begin();
 }
 
 IntOptionSetIter OptionDB::intEnd()
 {
-  return int_ops_.end();
+  return intOps_.end();
 }
 
 DoubleOptionSetIter OptionDB::dblBegin()
 {
-  return double_ops_.begin();
+  return doubleOps_.begin();
 }
 
 DoubleOptionSetIter OptionDB::dblEnd()
 {
-  return double_ops_.end();
+  return doubleOps_.end();
 }
 
 StringOptionSetIter OptionDB::strBegin()
 {
-  return string_ops_.begin();
+  return stringOps_.begin();
 }
 
 StringOptionSetIter OptionDB::strEnd()
 {
-  return string_ops_.end();
+  return stringOps_.end();
 }
 
 FlagOptionSetIter OptionDB::flagBegin()
 {
-  return flag_ops_.begin();
+  return flagOps_.begin();
 }
 
 FlagOptionSetIter OptionDB::flagEnd()
 {
-  return flag_ops_.end();
+  return flagOps_.end();
 }
 
 
@@ -254,7 +275,7 @@ void OptionDB::write(std::ostream &out) const
 {
   out << "## boolean options:" << std::endl;
   //out.flush();
-  for (BoolOptionSetIter iter=bool_ops_.begin(); iter!=bool_ops_.end(); 
+  for (BoolOptionSetIter iter=boolOps_.begin(); iter!=boolOps_.end(); 
       ++iter) {
     (*iter)->write(out);
     out << std::endl;
@@ -263,7 +284,7 @@ void OptionDB::write(std::ostream &out) const
 
   out << "## int options:" << std::endl;
   //out.flush();
-  for (IntOptionSetIter iter=int_ops_.begin(); iter!=int_ops_.end(); 
+  for (IntOptionSetIter iter=intOps_.begin(); iter!=intOps_.end(); 
       ++iter) {
     (*iter)->write(out);
     out << std::endl;
@@ -272,7 +293,7 @@ void OptionDB::write(std::ostream &out) const
 
   out << "## double options:" << std::endl;
   //out.flush();
-  for (DoubleOptionSetIter iter=double_ops_.begin(); iter!=double_ops_.end(); 
+  for (DoubleOptionSetIter iter=doubleOps_.begin(); iter!=doubleOps_.end(); 
       ++iter) {
     (*iter)->write(out);
     out << std::endl;
@@ -281,7 +302,7 @@ void OptionDB::write(std::ostream &out) const
 
   out << "## String options:" << std::endl;
   //out.flush();
-  for (StringOptionSetIter iter=string_ops_.begin(); iter!=string_ops_.end(); 
+  for (StringOptionSetIter iter=stringOps_.begin(); iter!=stringOps_.end(); 
       ++iter) {
     (*iter)->write(out);
     out << std::endl;
@@ -289,7 +310,7 @@ void OptionDB::write(std::ostream &out) const
   out << std::endl;
 
   out << "## Flags:" << std::endl;
-  for (FlagOptionSetIter iter=flag_ops_.begin(); iter!=flag_ops_.end(); 
+  for (FlagOptionSetIter iter=flagOps_.begin(); iter!=flagOps_.end(); 
       ++iter) {
     (*iter)->write(out);
     out << std::endl;
