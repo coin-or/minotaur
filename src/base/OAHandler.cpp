@@ -684,27 +684,7 @@ void OAHandler::separate(ConstSolutionPtr sol, NodePtr, RelaxationPtr,
                          ModVector &, ModVector &, bool *sol_found,
                          SeparationStatus *status)
 {      
-  //double val;
-  //VariableType v_type;
-  //VariableConstIterator v_iter;
-  //const double *x = sol->getPrimal();
-
-  //*status = SepaContinue;
-  //for (v_iter = rel->varsBegin(); v_iter != rel->varsEnd(); ++v_iter) {
-    //v_type = (*v_iter)->getType();
-    //if (v_type == Binary || v_type == Integer) {
-      //val = x[(*v_iter)->getIndex()];
-      //if (fabs(val - floor(val+0.5)) > intTol_) {
-//#if SPEW
-        //logger_->msgStream(LogDebug) << me_ << "variable " <<
-          //(*v_iter)->getName() << " has fractional value = " << val <<
-          //std::endl;
-//#endif
-        //return;
-      //}
-    //}
-  //}
-
+  *status = SepaContinue;
   cutIntSol_(sol, cutMan, s_pool, sol_found, status);
   return;
 }

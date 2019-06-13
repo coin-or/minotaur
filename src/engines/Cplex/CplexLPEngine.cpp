@@ -37,15 +37,6 @@
 #include "Timer.h"
 #include "Variable.h"
 
-#include<omp.h>
-#include <thread>
-#include <mutex>
-
-//std::mutex mtx;
-
-#define PRINT 0
-//#include <ilcplex/ilocplex.h>
-
 using namespace Minotaur;
 
 //#define SPEW 1
@@ -73,13 +64,53 @@ CplexLPEngine::~CplexLPEngine()
 }
 
 
-void CplexLPEngine::addConstraint(ConstraintPtr)
+void CplexLPEngine::addConstraint(ConstraintPtr con)
 {
+  LinearFunctionPtr lf = con->getLinearFunction();
+  int nnz = lf->getNumTerms();
+  int *cols = new int[nnz];
+  double *elems = new double[nnz];
+  double *conrhs = new double;
+  *conrhs = con->getUb();
+  char **conname = new char*[1];
+  char* cstr;
+  cstr = new char[con->getName().length() + 1];
+  strcpy(cstr, con->getName().c_str());
+  conname[0] = cstr;
+  char* sense = new char;
+  *sense = 'L';
+  CPXNNZ *start = new CPXNNZ[1];
+  //start[0] = CPXXgetnumnz (cpxenv_, cpxlp_);
+  start[0] = 0;
+
+  VariableGroupConstIterator it;
+  int i=0;
+
+  for (it = lf->termsBegin(); it != lf->termsEnd(); ++it, ++i){
+    cols[i] = it->first->getIndex();
+    elems[i] = it->second;
+  }
+
+  //osilp_->addRow(nz, cols, elems, con->getLb(), con->getUb());
+  cpxstatus_ = CPXXaddrows (cpxenv_, cpxlp_, 0, 1, nnz, conrhs, sense, start,
+                       cols, elems, NULL, conname);
+  if (cpxstatus_) {
+    assert(!"unable to add constraint!");
+  }
+  delete [] cols;
+  delete [] elems;
+  delete conrhs;
+  delete [] cstr;
+  delete [] conname;
+  delete sense;
+  consChanged_ = true;
+
 }
 
 
 void CplexLPEngine::changeBound(ConstraintPtr, BoundType, double)
 {
+  assert(!"implement me!");
 }
 
 
@@ -114,12 +145,14 @@ void CplexLPEngine::changeBound(VariablePtr var, BoundType lu, double new_val)
 
 void CplexLPEngine::changeBound(VariablePtr, double, double)
 {
+  assert(!"implement me!");
 }
 
 
 void CplexLPEngine::changeConstraint(ConstraintPtr, LinearFunctionPtr, 
                                    double, double)
 {
+  assert(!"implement me!");
 }
 
 
@@ -131,11 +164,13 @@ void CplexLPEngine::changeConstraint(ConstraintPtr, NonlinearFunctionPtr)
 
 void CplexLPEngine::changeObj(FunctionPtr, double)
 {
+  assert(!"implement me!");
 }
 
 
 void CplexLPEngine::clear()
 {
+  assert(!"implement me!");
 }
 
 
@@ -180,13 +215,8 @@ void CplexLPEngine::load(ProblemPtr problem)
   bndChanged_ = true;
   consChanged_ = true;
   problem_ = problem;
-#if PRINT
-  std::cout << "\nIn cpxengine load:\n";
-  problem->write(std::cout);
-#endif
   
   // Cplex objects
-  
   int numvars = problem->getNumVars();
   int numcons = problem->getNumCons();
   int i, j, rcnt;
@@ -244,6 +274,7 @@ void CplexLPEngine::load(ProblemPtr problem)
      goto TERMINATE;
   }
 
+#if SPEW
   /* Turn on output to the screen (use a file to read parameters LATER!) */
   cpxstatus_ = CPXXsetintparam (cpxenv_, CPXPARAM_ScreenOutput, CPX_ON);
   if ( cpxstatus_ ) {
@@ -251,6 +282,7 @@ void CplexLPEngine::load(ProblemPtr problem)
        << cpxstatus_ << std::endl;
      goto TERMINATE;
   }
+#endif
 
   /* Create the problem. */
   cpxlp_ = CPXXcreateprob (cpxenv_, &cpxstatus_, "minoCpxProb");
@@ -389,7 +421,7 @@ TERMINATE:
   delete [] varname;
   delete [] conname;
   //delete [] sense;
-  //problem->setEngine(this);
+  problem->setEngine(this);
 
 }
 
@@ -447,15 +479,18 @@ EngineStatus CplexLPEngine::solve()
   writeLP("minoCpx.lp"); 
 #endif
 
-  /* Set time limit (wallclock) for this iteration */
-  //cpxstatus_ = CPXXsetdblparam (cpxenv_, CPXPARAM_TimeLimit, timeLimit_);
-  //if ( cpxstatus_ ) {
-     //logger_->msgStream(LogInfo) << me_ << "Failure to set wall time limit, error " 
-       //<< cpxstatus_ << std::endl;
-     //goto TERMINATE;
-  //}
-  
   /* Optimize the problem and obtain solution. */
+  if (bndChanged_ || consChanged_) {
+    /* Because the problem is dual feasible with the rows added, using
+      the dual simplex method is indicated.  */
+    cpxstatus_ = CPXXsetintparam (cpxenv_, CPXPARAM_LPMethod, CPX_ALG_DUAL);
+    if (cpxstatus_) {
+      logger_->msgStream(LogInfo) << me_
+        << "Failed to set the optimization method, error." << std::endl;
+      //goto TERMINATE;
+    }
+  }
+
   cpxstatus_ = CPXXlpopt (cpxenv_, cpxlp_);
   if ( cpxstatus_ ) {
      logger_->msgStream(LogInfo) << me_ << "Failed to optimize LP." << std::endl;
@@ -463,8 +498,10 @@ EngineStatus CplexLPEngine::solve()
   }
   solstat = CPXXgetstat (cpxenv_, cpxlp_);
 
+#if SPEW
   /* Write the output to the screen. */
   logger_->msgStream(LogInfo) << me_ << "Solution status = " << solstat << std::endl;
+#endif
 
   /* Get the (primal) objective value. */
   cpxstatus_ = CPXXgetobjval (cpxenv_, cpxlp_, &objval);
@@ -472,7 +509,9 @@ EngineStatus CplexLPEngine::solve()
      logger_->msgStream(LogInfo) << me_ 
        << "No LP objective value available. Exiting..." << std::endl;
   }
+#if SPEW
   logger_->msgStream(LogInfo) << me_ << "Solution value = " << objval << std::endl;
+#endif
 
   /* Get the solution. */
   cpxstatus_ = CPXXgetx (cpxenv_, cpxlp_, x, 0, cur_numcols-1);
@@ -513,17 +552,6 @@ EngineStatus CplexLPEngine::solve()
     sol_->setPrimal(x);
     sol_->setObjValue(objval);
   }
-//} else if (model->isNodeLimitReached() || model->isSecondsLimitReached() ||
-             //model->isSolutionLimitReached()) {
-    //status_ = EngineIterationLimit;
-    //sol_->setPrimal(osilp_->getStrictColSolution());
-    //sol_->setObjValue(osilp_->getObjValue()
-        //+problem_->getObjective()->getConstant());
-    //std::cout << " limit \n";
-  //} else if(model->isAbandoned()) {
-    //status_ = EngineError;
-    //sol_->setObjValue(INFINITY);
-    //std::cout << " abandoned \n";
   } else {
     status_ = EngineUnknownStatus;
     sol_->setObjValue(INFINITY);
@@ -533,47 +561,9 @@ EngineStatus CplexLPEngine::solve()
   //stats_->time  += timer_->query();
 
 //TERMINATE:
-
-   ////Free up the problem as allocated by CPXXcreateprob, if necessary
-  //if ( cpxlp_ != NULL ) {
-     //cpxstatus_ = CPXXfreeprob (cpxenv_, &cpxlp_);
-     //if ( cpxstatus_ ) {
-        //logger_->msgStream(LogInfo) << me_ << "CPXXfreeprob failed, error code "
-        //  << cpxstatus_ << std::endl;
-
-     //}
-  //}
-
-  ////Free up the CPLEX environment, if necessary
-  //if ( cpxenv_ != NULL ) {
-     //cpxstatus_ = CPXXcloseCPLEX (&cpxenv_);
-
-     //[> Note that CPXXcloseCPLEX produces no output,
-        //so the only way to see the cause of the error is to use
-        //CPXXgeterrorstring.  For other CPLEX routines, the errors will
-        //be seen if the CPXPARAM_ScreenOutput indicator is set to CPX_ON. */
-
-     //if ( cpxstatus_ ) {
-        //char  errmsg[CPXMESSAGEBUFSIZE];
-        //logger_->msgStream(LogInfo) << me_ 
-        //  << "Could not close CPLEX environment." << std::endl;
-        //CPXXgeterrorstring (cpxenv_, cpxstatus_, errmsg);
-        //logger_->msgStream(LogInfo) << me_ << stderr << std::endl; 
-     //}
-  //}
-//TERMINATE:
   delete [] x;
   return status_;
 }
-
-
-void CplexLPEngine::free_(char **ptr)
-{
-   if ( *ptr != NULL ) {
-      free (*ptr);
-      *ptr = NULL;
-   }
-} /* END free_and_null */
 
 
 void CplexLPEngine::writeLP(const char *filename) const 
