@@ -367,7 +367,8 @@ void QGHandler::rootScheme4_(const double *nlpx, ConstraintPtr con)
   VariablePtr nVar, lVar;
   NonlinearFunctionPtr nlf;
   UInt n = minlp_->getNumVars();
-  double alpha, act, slope, lastSlope, delta, nlpSlope, cUb = con->getUb();
+  double alpha, act, slope, lastSlope, delta, nlpSlope, cUb = con->getUb(),
+         incBound;
   //double alpha, minA, maxA, act, slope, lastSlope;
   double linTermCoeff = con->getLinearFunction()->termsBegin()->second;
   nlf = con->getNonlinearFunction();
@@ -388,17 +389,25 @@ void QGHandler::rootScheme4_(const double *nlpx, ConstraintPtr con)
   lastSlope = nlpSlope;
   //minA = nlpx[vnIdx] - nVar->getLb();
   //maxA = nVar->getUb() - nlpx[vnIdx];
-  if (nlpx[vnIdx] - nVar->getLb() >= 1) {
+  
+  if (nVar->getLb() == -INFINITY) {
+    incBound = nlpx[vnIdx]-10;    
     delta = 1;  
   } else {
-    delta = nlpx[vnIdx] - nVar->getLb();  
+    incBound = nVar->getLb();    
+    if (nlpx[vnIdx] - nVar->getLb() >= 1) {
+      delta = 1;  
+    } else {
+      delta = nlpx[vnIdx] - nVar->getLb();  
+    }
   }
+
   alpha = nlpx[vnIdx] - delta;
   //UInt k = 0;
   //while (k <= rScheme4Para_ && alpha >= nVar->getLb()) {
      
   if (delta != 0) {
-   while (alpha >= nVar->getLb()) {
+   while (alpha >= incBound) {
      npt[vnIdx] = alpha; 
      act = nlf->eval(npt, &error); 
      if (error == 0 && linTermCoeff != 0) {
@@ -427,15 +436,23 @@ void QGHandler::rootScheme4_(const double *nlpx, ConstraintPtr con)
      }
    }
   }
-  if (nVar->getUb() - nlpx[vnIdx] >= 1) {
+  
+  if (nVar->getUb() == INFINITY) {
+    incBound = nlpx[vnIdx]+10;    
     delta = 1;  
   } else {
-    delta = nVar->getUb() - nlpx[vnIdx];  
+    incBound = nVar->getUb();    
+    if (nVar->getUb() - nlpx[vnIdx] >= 1) {
+      delta = 1;  
+    } else {
+      delta = nVar->getUb() - nlpx[vnIdx];  
+    }
   }
+
   alpha = nlpx[vnIdx] + delta;
   lastSlope = nlpSlope;
   if (delta != 0) {
-    while (alpha <= nVar->getUb() && delta != 0) {
+    while (alpha <= incBound) {
       npt[vnIdx] = alpha; 
       act = nlf->eval(npt, &error); 
       if (error == 0 && linTermCoeff != 0) {
