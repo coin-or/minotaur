@@ -324,16 +324,16 @@ void Environment::createDefaultOptions_()
   options_->insert(i_option);
 
   i_option = (IntOptionPtr) new Option<int>("root_linScheme1", 
-      "Rounds of extra linearizations to be added at root node under scheme 1", true, 1);
+      "Rounds of extra linearizations to be added at root node under scheme 1", true, 0);
   options_->insert(i_option);
 
 
   i_option = (IntOptionPtr) new Option<int>("root_linScheme3", 
-      "Rounds of extra linearizations to be added at root node under scheme 3", true, 1);
+      "Rounds of extra linearizations to be added at root node under scheme 3", true, 0);
   options_->insert(i_option);
 
   i_option = (IntOptionPtr) new Option<int>("root_linScheme4", 
-      "Rounds of extra linearizations to be added at root node under scheme 4", true, 1);
+      "Rounds of extra linearizations to be added at root node under scheme 4", true, 0);
   options_->insert(i_option);
 
   // double options
