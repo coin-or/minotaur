@@ -367,7 +367,7 @@ void QGHandler::rootScheme4_(const double *nlpx, ConstraintPtr con)
   VariablePtr nVar, lVar;
   NonlinearFunctionPtr nlf;
   UInt n = minlp_->getNumVars();
-  double alpha, act, slope, lastSlope, delta;
+  double alpha, act, slope, lastSlope, delta, nlpSlope, cUb = con->getUb();
   //double alpha, minA, maxA, act, slope, lastSlope;
   double linTermCoeff = con->getLinearFunction()->termsBegin()->second;
   nlf = con->getNonlinearFunction();
@@ -381,10 +381,11 @@ void QGHandler::rootScheme4_(const double *nlpx, ConstraintPtr con)
   f = con->getFunction();
   f->evalGradient(nlpx, a, &error);
   if (a[vlIdx] != 0) {
-    lastSlope = -1*(a[vnIdx]/a[vlIdx]);
+    nlpSlope = -1*(a[vnIdx]/a[vlIdx]);
   } else {
-    lastSlope = 0;
+    nlpSlope = 0;
   }
+  lastSlope = nlpSlope;
   //minA = nlpx[vnIdx] - nVar->getLb();
   //maxA = nVar->getUb() - nlpx[vnIdx];
   if (nlpx[vnIdx] - nVar->getLb() >= 1) {
@@ -395,29 +396,36 @@ void QGHandler::rootScheme4_(const double *nlpx, ConstraintPtr con)
   alpha = nlpx[vnIdx] - delta;
   //UInt k = 0;
   //while (k <= rScheme4Para_ && alpha >= nVar->getLb()) {
-      
-  while (alpha >= nVar->getLb()) {
-    npt[vnIdx] = alpha; 
-    act = nlf->eval(npt, &error); 
-    if (error == 0 && linTermCoeff != 0) {
-      npt[vlIdx] = (con->getUb()- act)/linTermCoeff;    
-      f->evalGradient(npt, a, &error);
-      if (error != 0) {
-        alpha = alpha - delta;
-        continue;      
-      }
-      if (a[vlIdx] != 0) {
-        slope = -1*(a[vnIdx]/a[vlIdx]);
-      } else {
-        alpha = alpha - delta;
-        continue;
-      }
-      if (fabs((slope-lastSlope)/lastSlope)*100 >= 5) {
-        addCutAtRoot_(npt, con, error);
-        alpha = alpha - delta;
-        lastSlope = slope;
-      }
-    }
+     
+  if (delta != 0) {
+   while (alpha >= nVar->getLb()) {
+     npt[vnIdx] = alpha; 
+     act = nlf->eval(npt, &error); 
+     if (error == 0 && linTermCoeff != 0) {
+       npt[vlIdx] = (cUb-act)/linTermCoeff;    
+       f->evalGradient(npt, a, &error);
+       if (error != 0) {
+         alpha = alpha - delta;
+         continue;      
+       }
+       if (a[vlIdx] != 0) {
+         slope = -1*(a[vnIdx]/a[vlIdx]);
+       } else {
+         alpha = alpha - delta;
+         continue;
+       }
+       if (lastSlope == 0) {
+         if (slope != 0) {
+           addCutAtRoot_(npt, con, error);
+           lastSlope = slope;
+         }
+       } else if (fabs((slope-lastSlope)/lastSlope)*100 >= 50) {
+         addCutAtRoot_(npt, con, error);
+         lastSlope = slope;
+       }
+       alpha = alpha - delta;
+     }
+   }
   }
   if (nVar->getUb() - nlpx[vnIdx] >= 1) {
     delta = 1;  
@@ -425,26 +433,34 @@ void QGHandler::rootScheme4_(const double *nlpx, ConstraintPtr con)
     delta = nVar->getUb() - nlpx[vnIdx];  
   }
   alpha = nlpx[vnIdx] + delta;
-  while (alpha <= nVar->getUb()) {
-    npt[vnIdx] = alpha; 
-    act = nlf->eval(npt, &error); 
-    if (error == 0 && linTermCoeff != 0) {
-      npt[vlIdx] = (con->getUb()- act)/linTermCoeff;    
-      f->evalGradient(npt, a, &error);
-      if (error != 0) {
+  lastSlope = nlpSlope;
+  if (delta != 0) {
+    while (alpha <= nVar->getUb() && delta != 0) {
+      npt[vnIdx] = alpha; 
+      act = nlf->eval(npt, &error); 
+      if (error == 0 && linTermCoeff != 0) {
+        npt[vlIdx] = (cUb- act)/linTermCoeff;    
+        f->evalGradient(npt, a, &error);
+        if (error != 0) {
+          alpha = alpha + delta;
+          continue;      
+        }
+        if (a[vlIdx] != 0) {
+          slope = -1*(a[vnIdx]/a[vlIdx]);
+        } else {
+          alpha = alpha + delta;
+          continue;
+        }
+        if (lastSlope == 0) {
+          if (slope != 0) {
+            addCutAtRoot_(npt, con, error);
+            lastSlope = slope;
+          }
+        } else if (fabs((slope-lastSlope)/lastSlope)*100 >= 50) {
+          addCutAtRoot_(npt, con, error);
+          lastSlope = slope;
+        }
         alpha = alpha + delta;
-        continue;      
-      }
-      if (a[vlIdx] != 0) {
-        slope = -1*(a[vnIdx]/a[vlIdx]);
-      } else {
-        alpha = alpha + delta;
-        continue;
-      }
-      if (fabs((slope-lastSlope)/lastSlope)*100 >= 5) {
-        addCutAtRoot_(npt, con, error);
-        alpha = alpha + delta;
-        lastSlope = slope;
       }
     }
   }
