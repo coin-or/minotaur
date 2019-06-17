@@ -10,8 +10,6 @@
 # not. Blas and Lapack are compiled as third-party libs. Ipopt, Clp, etc are
 # linked to these third-party libs
 # 
-# Does not use build_with_externals script
-#
 
 ## The directory ${TEST_DIR} is deleted everyday and recreated.
 ## All builds will take place within ${TEST_DIR}
@@ -443,17 +441,22 @@ CARGS+=" -DSPEW_FLAG:BOOL=ON"
 doTest; listBins; testFiles; checkTest
 
 ##########################################################################
-## Test manual build without automake
+## Test manual build without cmake
 ##########################################################################
 ## we build with -j 1, otherwise it doesn't build sometimes.
 NAME=build-all-manual
-OPTIONS=-x
-./scripts/build_with_externals -M . -d ./${NAME} -e ./minotaur-externals \
-                               -j 1 -l ${NAME}.log -r ${NAME}.err  \
-			       ${OPTIONS}
-ls -lt ${NAME} >> ${NAME}.log
+rm -rf ${NAME}
+mkdir ${NAME}
+cd ${NAME}
+cp ${TEST_DIR}/Makefile.manual Makefile
+
+echo "Making"
+make -j ${CPUS} BQPD_LIB=${TP_DIR}/lib/libbqpd.a FILTERSQP_LIB=${TP_DIR}/lib/libfiltersqp.a IPOPT_INST=${TP_DIR} OSI_INST=${TP_DIR} AMPL_INCS=-I${TP_DIR}/include/asl AMPL_INST=${TP_DIR}/lib BOOST_INC=${TP_DIR} MINOTAUR=${TEST_DIR} EXTRA_LIBS="-lcoinmumps -lz -lbz2"
+echo "stop Making"
 FILES="lib/libminotaur.a lib/libmntrbqpd.a lib/libmntrampl.a lib/libmntrfiltersqp.a lib/libmntripopt.a lib/libmntrosilp.a bin/bnb bin/glob bin/qg bin/qpd"
 testFiles
+
+cd ${TEST_DIR}
 
 ##########################################################################
 ## Copy logs to web
