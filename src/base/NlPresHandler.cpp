@@ -76,6 +76,7 @@ NlPresHandler::NlPresHandler(EnvPtr env, ProblemPtr p)
   stats_.cBnd = 0;
   stats_.cImp = 0;
   stats_.conDel = 0;
+  stats_.conRel = 0;
   stats_.pRefs = 0;
   stats_.iters = 0;
   stats_.nMods = 0;
@@ -104,6 +105,7 @@ void NlPresHandler::chkRed_(ProblemPtr p, bool purge_cons, bool *changed,
   double nlfu, nlfl;
   double impl_lb, impl_ub;
   int error = 0;
+  double bigm = (true==purge_cons)?INFINITY:100000;
 
   for (ConstraintConstIterator cit=p->consBegin(); cit!=p->consEnd();
        ++cit) {
@@ -134,8 +136,11 @@ void NlPresHandler::chkRed_(ProblemPtr p, bool purge_cons, bool *changed,
 
 
 
-      if (c->getLb()>-INFINITY && impl_lb+eTol_ > c->getLb()) {
-        mod = (ConBoundModPtr) new ConBoundMod(c, Lower, -INFINITY);
+      // if the implied-lb is more than constraint-lb, but not too much more,
+      // relax the constraint lb further.
+      if (c->getLb()>-INFINITY && impl_lb+eTol_ > c->getLb()
+          && impl_lb < c->getLb()+bigm-eTol_) {
+        mod = (ConBoundModPtr) new ConBoundMod(c, Lower, c->getLb()-bigm);
         mod->applyToProblem(p);
         *changed = true;
 #if SPEW
@@ -144,10 +149,13 @@ void NlPresHandler::chkRed_(ProblemPtr p, bool purge_cons, bool *changed,
 #endif
         if (false==purge_cons) {
           mods->push_back(mod);
+          ++stats_.conRel;
         }
       }
-      if (c->getUb()<INFINITY && impl_ub-eTol_ < c->getUb()) {
-        mod = (ConBoundModPtr) new ConBoundMod(c, Upper, INFINITY);
+      // similary for implied-ub
+      if (c->getUb()<INFINITY && impl_ub-eTol_ < c->getUb()
+          && impl_ub > c->getUb()-bigm+eTol_) {
+        mod = (ConBoundModPtr) new ConBoundMod(c, Upper, c->getUb()+bigm);
         mod->applyToProblem(p);
         *changed = true;
 #if SPEW
@@ -156,16 +164,21 @@ void NlPresHandler::chkRed_(ProblemPtr p, bool purge_cons, bool *changed,
 #endif
         if (false==purge_cons) {
           mods->push_back(mod);
+          ++stats_.conRel;
         }
       }
-      if (c->getUb()==INFINITY && c->getLb()==-INFINITY) {
-        if (true==purge_cons) {
-          ++stats_.conDel;
-          p->markDelete(c);
-          *changed = true;
-          logger_->msgStream(LogDebug2) << me_ << " marked constraint "
-            << c->getName() << " for deleting." << std::endl;
-        } 
+
+
+      // delete the constraint if unbounded on both sides
+      if (c->getUb()==INFINITY && c->getLb()==-INFINITY && true==purge_cons) {
+        ++stats_.conDel;
+        p->markDelete(c);
+        *changed = true;
+#if SPEW
+        logger_->msgStream(LogDebug2) << me_ << " marked constraint "
+                                      << c->getName() << " for deleting."
+                                      << std::endl;
+#endif
       }
     }
   }
@@ -1079,6 +1092,7 @@ void NlPresHandler::writePreStats(std::ostream &out) const
     << me_ << "Time taken in node presolves   = " << stats_.timeN  << std::endl
     << me_ << "Number of variables deleted    = " << stats_.varDel << std::endl
     << me_ << "Number of constraints deleted  = " << stats_.conDel << std::endl
+    << me_ << "Number of constraints relaxed  = " << stats_.conRel << std::endl
     << me_ << "Number of perspective reform.  = " << stats_.pRefs  << std::endl
     << me_ << "Times variables tightened      = " << stats_.vBnd   << std::endl
     << me_ << "Times constraints tightened    = " << stats_.cBnd   << std::endl
