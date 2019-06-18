@@ -712,7 +712,7 @@ void QGHandler::insertNewPt_(UInt j, UInt k, std::vector<double > & xc,
 void QGHandler::rootLinearizations_()
 {
   //MS: make these schemes option based
-  //rootLinScheme1_();  // 2 var constraints linearizations
+  rootLinScheme1_();  // 2 var constraints linearizations
   rootLinScheme2_();  // warm starting NLP from LP solution
   //rootLinScheme3_();  // add linearizations near root NLP solution
   // Just set a parameter for scheme 3
@@ -795,7 +795,7 @@ void QGHandler::rootLinScheme1_()
   ConstraintPtr con, newcon;
   UInt vnIdx, vlIdx, newConId, numCuts;
   int error = 0, n = rel_->getNumVars(), i;
-  double act, cUb, linTermCoeff, y1, y2, maxVio;
+  double act, cUb, linTermCoeff, y1, y2, maxVio, /*consUb,*/ stopCond;
   double *b1 = new double[n];
   double iP[2]; //intersection point
   std::vector<UInt > newConsId;
@@ -865,7 +865,16 @@ void QGHandler::rootLinScheme1_()
     xc.push_back(vnl->getUb()), yc.push_back(y2), linVioVal.push_back(0);
 
     i = 1; // starting from intersection point
-    for (UInt k = 0; k < rScheme1Para_; ++k) {
+    //for (UInt k = 0; k < rScheme1Para_; ++k) {
+      
+    //consUb = con->getUb();
+    //if (consUb == 0) {
+      stopCond = act/2;    
+    //} else {
+      //stopCond = .1*consUb;    
+    //}
+    maxVio = 2*act;
+    while (maxVio >= stopCond) {
       //add a new cut at the point indexed i
       b1[vnIdx] = xc[i];
       shouldCont = addNewCut_(b1, vlIdx, con, linTermCoeff, error, newConId, nlf);
@@ -890,11 +899,15 @@ void QGHandler::rootLinScheme1_()
             act = getVio_(b1, con, error);
             if (error != 0) {
               shouldCont = 0;    
+            } else {
+              linVioVal.insert(linVioVal.begin()+j,act);
             }
             break;
           } else {
             // delete if violated
-            xc.erase(xc.begin() + j), yc.erase(yc.begin() + j);        
+            xc.erase(xc.begin() + j);
+            yc.erase(yc.begin() + j);        
+            linVioVal.erase(linVioVal.begin() + j);        
           }  
         }
       }
@@ -912,12 +925,18 @@ void QGHandler::rootLinScheme1_()
             act = getVio_(b1, con, error);
             if (error != 0) {
               shouldCont = 0;    
+            } else {
+              linVioVal.insert(linVioVal.begin()+j+1,act);
+              xc.erase(xc.begin()+j+2);
+              yc.erase(yc.begin()+j+2);        
+              linVioVal.erase(linVioVal.begin()+j+2);        
             }
-            xc.erase(xc.begin()+j+2), yc.erase(yc.begin()+j+2);        
             break;
           }  else {
             // delete if violated
-            xc.erase(xc.begin() + j), yc.erase(yc.begin() + j);        
+            xc.erase(xc.begin() + j);
+            yc.erase(yc.begin() + j);        
+            linVioVal.erase(linVioVal.begin() + j);        
           }  
         }
       }
@@ -925,11 +944,13 @@ void QGHandler::rootLinScheme1_()
         break;
       }
       maxVio = *(std::max_element(linVioVal.begin(), linVioVal.end()));
-      cUb = con->getUb();
-      if ((maxVio < cUb + solAbsTol_) ||
-              (cUb =! 0 && maxVio < cUb + fabs(cUb)*solRelTol_) ) { 
-        break;      
-      }
+      //std::cout << "max vio " << maxVio << std::endl;
+    
+      //consUb = con->getUb();
+      //if ((maxVio < consUb + solAbsTol_) ||
+              //(consUb =! 0 && maxVio < consUb + fabs(consUb)*solRelTol_) ) { 
+        //break;      
+      //}
       i = std::max_element(linVioVal.begin(), linVioVal.end())-linVioVal.begin();     
     }
     std::cout << " " << numCuts;
