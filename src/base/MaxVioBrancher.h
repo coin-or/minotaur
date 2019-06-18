@@ -83,7 +83,7 @@ namespace Minotaur {
       BrCandPtr findBestCandidate_();
 
   };
-  typedef boost::shared_ptr<MaxVioBrancher> MaxVioBrancherPtr;
+  typedef MaxVioBrancher* MaxVioBrancherPtr;
 }
 #endif
 

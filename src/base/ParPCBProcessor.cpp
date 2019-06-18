@@ -287,7 +287,7 @@ void ParPCBProcessor::process(NodePtr node, RelaxationPtr rel,
       ws_ = engine_->getWarmStartCopy();
       if (brancher_->getName()=="ParReliabilityBrancher") {
         ParReliabilityBrancherPtr parRelBr;
-        parRelBr = boost::dynamic_pointer_cast <ParReliabilityBrancher> (brancher_);
+        parRelBr = dynamic_cast <ParReliabilityBrancher*> (brancher_);
         branches_ = parRelBr->findBranches(relaxation_, node, sol, s_pool,
                                             br_status, mods, timesUp, timesDown,
                                             pseudoUp, pseudoDown, nodesProc);

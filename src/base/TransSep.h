@@ -34,8 +34,6 @@ namespace Minotaur {
   class LinearHandler;
   class Problem;
   typedef boost::shared_ptr<CGraph> CGraphPtr;
-  typedef boost::shared_ptr<Environment> EnvPtr;
-  typedef boost::shared_ptr<Problem> ProblemPtr;
   typedef std::deque<CNode *> CNodeQ;
 
   class TransSep {

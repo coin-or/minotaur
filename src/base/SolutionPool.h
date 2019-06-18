@@ -17,12 +17,12 @@
 
 #include "Problem.h"
 #include "Solution.h"
+#include "Types.h"
 
 namespace Minotaur {
 
   class Environment;
   class Timer;
-  typedef boost::shared_ptr<Environment> EnvPtr;
 
   class SolutionPool {
   public:
@@ -119,7 +119,7 @@ namespace Minotaur {
 
   };
 
-  typedef boost::shared_ptr<SolutionPool> SolutionPoolPtr;
+  typedef SolutionPool* SolutionPoolPtr;
 }
 #endif
 

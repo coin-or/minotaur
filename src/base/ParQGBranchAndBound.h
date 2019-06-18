@@ -34,14 +34,13 @@ namespace Minotaur {
   typedef Engine* EnginePtr;
   typedef boost::shared_ptr <ParQGBabOptions> ParQGBabOptionsPtr;
   typedef boost::shared_ptr <NodeProcessor> NodeProcessorPtr;
-  typedef boost::shared_ptr <NodeRelaxer> NodeRelaxerPtr;
-  typedef boost::shared_ptr <ParNodeIncRelaxer> ParNodeIncRelaxerPtr;
-  typedef boost::shared_ptr <Problem> ProblemPtr;
+  typedef NodeRelaxer* NodeRelaxerPtr;
+  typedef ParNodeIncRelaxer* ParNodeIncRelaxerPtr;
   typedef boost::shared_ptr <ParPCBProcessor> ParPCBProcessorPtr;
-  typedef boost::shared_ptr <Solution> SolutionPtr;
-  typedef boost::shared_ptr <SolutionPool> SolutionPoolPtr;
+  typedef Solution* SolutionPtr;
+  typedef SolutionPool* SolutionPoolPtr;
   typedef boost::shared_ptr <ParTreeManager> ParTreeManagerPtr;
-  typedef boost::shared_ptr<WarmStart> WarmStartPtr;
+  typedef WarmStart* WarmStartPtr;
 
   /**
    * \brief Implement a generic parallel branch-and-bound algorithm on a multicore cpu. 

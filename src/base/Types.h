@@ -300,26 +300,27 @@ typedef std::set<ConstVariablePtr> ConstVarSet;
 typedef VarSet::const_iterator     ConstVarSetIter;
 
 class Node;
-typedef boost::shared_ptr<Node> NodePtr;
+typedef Node* NodePtr;
 typedef std::vector<NodePtr> NodePtrVector;
 typedef std::vector<NodePtr>::iterator NodePtrIterator;
 
 class Handler;
-typedef boost::shared_ptr<Handler> HandlerPtr;
-typedef boost::shared_ptr<const Handler> ConstHandlerPtr;
+typedef Handler* HandlerPtr;
+typedef const Handler* ConstHandlerPtr;
 typedef std::vector<HandlerPtr> HandlerVector;
 typedef HandlerVector::iterator HandlerIterator;
 typedef HandlerVector::const_iterator HandlerConstIterator;
 
 class   Environment;
-typedef boost::shared_ptr<Environment> EnvPtr;
+typedef Environment* EnvPtr;
+
 class   Problem;
-typedef boost::shared_ptr<Problem> ProblemPtr;
-typedef boost::shared_ptr<const Problem> ConstProblemPtr;
+typedef Problem* ProblemPtr;
+typedef const Problem* ConstProblemPtr;
 
 class   Modification;
-typedef boost::shared_ptr<Modification> ModificationPtr;
-typedef boost::shared_ptr<const Modification> ConstModificationPtr;  
+typedef Modification* ModificationPtr;
+typedef const Modification* ConstModificationPtr;  
 typedef std::vector<ModificationPtr> ModVector;  
 typedef std::vector<ModificationPtr>::const_iterator 
 ModificationConstIterator;
@@ -329,10 +330,10 @@ typedef std::deque<ModificationPtr> ModQ;
 typedef std::stack<ModificationPtr> ModStack;
 
 class   Branch;
-typedef boost::shared_ptr<Branch> BranchPtr;
-typedef boost::shared_ptr<const Branch> ConstBranchPtr;  
+typedef Branch* BranchPtr;
+typedef const Branch* ConstBranchPtr;  
 typedef std::vector<BranchPtr> BranchPtrVector;
-typedef boost::shared_ptr<BranchPtrVector> Branches;
+typedef BranchPtrVector* Branches;
 typedef std::vector<BranchPtr>::const_iterator BranchConstIterator;
 
 // BrCand boost pointer chnaged to regular pointer
@@ -361,7 +362,7 @@ struct CompareIntDouble {
 
 // Compare rule to compare the value of the pair.
 typedef std::pair<ConstVariablePtr, double> VariableValuePair;
-typedef boost::shared_ptr<VariableValuePair> VariableValuePairPtr;
+typedef VariableValuePair* VariableValuePairPtr;
 struct CompareValueVariablePair {
   bool operator() (VariableValuePair v1,VariableValuePair v2) const;
 };
@@ -376,7 +377,7 @@ VariableValueMap;
 
 // Vector of pair<ConstVariablePtr,double value> which is VariableValuePair.
 typedef std::vector<VariableValuePair> VariableValuePairVector;
-typedef boost::shared_ptr<VariableValuePairVector> VariableValuePairVectorPtr;
+typedef VariableValuePairVector* VariableValuePairVectorPtr;
 typedef std::vector<VariableValuePair>::iterator
 VariableValuePairVectorIterator;
 typedef std::vector<VariableValuePair>::const_iterator 
@@ -384,19 +385,19 @@ VariableValuePairVectorConstIterator;
 
 // Cover is a VariableSet
 typedef VariableValuePairVector CoverSet;
-typedef boost::shared_ptr<CoverSet> CoverSetPtr;
-typedef boost::shared_ptr<const CoverSet> ConstCoverSetPtr;
+typedef CoverSet* CoverSetPtr;
+typedef const CoverSet* ConstCoverSetPtr;
 typedef CoverSet::iterator CoverSetIterator;
 typedef CoverSet::const_iterator CoverSetConstIterator; 
 
 // Pointers to classes added.
 class KnapsackList;
-typedef boost::shared_ptr<KnapsackList> KnapsackListPtr;
-typedef boost::shared_ptr<const KnapsackList> ConstKnapsackListPtr;
+typedef KnapsackList* KnapsackListPtr;
+typedef const KnapsackList* ConstKnapsackListPtr;
 
 // Cut class vectors etc.
 class Cut;
-typedef boost::shared_ptr<Cut> CutPtr;
+typedef Cut* CutPtr;
 typedef std::vector<CutPtr> CutVector;
 typedef CutVector::iterator CutVectorIter;
 typedef CutVector::const_iterator CutVectorConstIter;
@@ -406,20 +407,23 @@ typedef CutList::iterator CutListIter;
 //LiftingProblem which is a knapsack problem type of Problem.
 typedef Problem LiftingProblem;
 typedef ProblemPtr LiftingProblemPtr;
+
 // CoverCutGenerator pointer
 class CoverCutGenerator;
-typedef boost::shared_ptr<CoverCutGenerator> CoverCutGeneratorPtr;
+typedef CoverCutGenerator* CoverCutGeneratorPtr;
+
 // LGCIGenerator pointer
 class LGCIGenerator;
-typedef boost::shared_ptr<LGCIGenerator> LGCIGeneratorPtr;
+typedef LGCIGenerator* LGCIGeneratorPtr;
+// Serdar ended.
 
 class Function;
-typedef boost::shared_ptr<const Function> ConstFunctionPtr; 
-// Serdar ended.
+typedef Function* FunctionPtr;
+typedef const Function* ConstFunctionPtr; 
 
 // declare options database
 class OptionDB;
-typedef boost::shared_ptr <OptionDB> OptionDBPtr;
+typedef OptionDB* OptionDBPtr;
 
 // declare options
 template <class T> class Option;

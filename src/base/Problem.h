@@ -30,14 +30,13 @@ namespace Minotaur {
   class QuadraticFunction;
   class SOS;
   class SparseMatrix;
-  typedef boost::shared_ptr<Function> FunctionPtr;
   typedef boost::shared_ptr<Jacobian> JacobianPtr;
   typedef boost::shared_ptr<HessianOfLag> HessianOfLagPtr;
-  typedef boost::shared_ptr<LinearFunction> LinearFunctionPtr;
-  typedef boost::shared_ptr<NonlinearFunction> NonlinearFunctionPtr;
-  typedef boost::shared_ptr<ProblemSize> ProblemSizePtr;
-  typedef boost::shared_ptr<QuadraticFunction> QuadraticFunctionPtr;
-  typedef boost::shared_ptr<const ProblemSize> ConstProblemSizePtr;
+  typedef LinearFunction* LinearFunctionPtr;
+  typedef NonlinearFunction* NonlinearFunctionPtr;
+  typedef ProblemSize* ProblemSizePtr;
+  typedef QuadraticFunction* QuadraticFunctionPtr;
+  typedef const ProblemSize* ConstProblemSizePtr;
 
   /**
    * \brief The Problem that needs to be solved.

@@ -58,7 +58,7 @@ class myNLFun2 : public NonlinearFunction {
     void multiply(const double) {};
     void prepJac(VarSetConstIter, VarSetConstIter) {};
 };
-typedef boost::shared_ptr<myNLFun2> myNLFun2Ptr;
+typedef myNLFun2* myNLFun2Ptr;
 
 #endif
 // Local Variables: 

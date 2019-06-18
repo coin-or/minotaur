@@ -307,7 +307,7 @@ private:
 
   };
 
-  typedef boost::shared_ptr <QGHandler> QGHandlerPtr;
+  typedef QGHandler* QGHandlerPtr;
 }
 #endif
 

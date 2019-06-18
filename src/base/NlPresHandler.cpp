@@ -89,7 +89,8 @@ NlPresHandler::NlPresHandler(EnvPtr env, ProblemPtr p)
 
 NlPresHandler::~NlPresHandler()
 {
-  env_.reset();
+  //env_.reset();
+  env_ = 0;
 }
 
 
@@ -423,7 +424,8 @@ void  NlPresHandler::bin2Lin_(ProblemPtr p, PreModQ *mods, bool *changed)
           f = (FunctionPtr) new Function(lf);
           p->newConstraint(f, c->getLb(), c->getUb());
         } else {
-          lf.reset();
+          //lf.reset();
+          lf = 0;
         }
         p->markDelete(c);
         *changed = true;

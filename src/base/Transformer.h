@@ -28,14 +28,12 @@ class Solution;
 class YEqLFs;
 class YEqUCGs;
 class YEqVars;
-typedef boost::shared_ptr<CxUnivarHandler> CxUnivarHandlerPtr;
-typedef boost::shared_ptr<CGraph> CGraphPtr;
-typedef boost::shared_ptr<Environment> EnvPtr;
-typedef boost::shared_ptr<LinearHandler> LinearHandlerPtr;
-typedef boost::shared_ptr<Problem> ProblemPtr;
-typedef boost::shared_ptr<QuadHandler> QuadHandlerPtr;
-typedef boost::shared_ptr<Solution> SolutionPtr;
-typedef boost::shared_ptr<const Solution> ConstSolutionPtr;
+typedef CxUnivarHandler* CxUnivarHandlerPtr;
+typedef CGraph* CGraphPtr;
+typedef LinearHandler* LinearHandlerPtr;
+typedef QuadHandler* QuadHandlerPtr;
+typedef Solution* SolutionPtr;
+typedef const Solution* ConstSolutionPtr;
 
 
 /**
@@ -239,8 +237,8 @@ private:
     
 };
 
-typedef boost::shared_ptr<Transformer> TransformerPtr;
-typedef boost::shared_ptr<const Transformer> ConstTransformerPtr;
+typedef Transformer* TransformerPtr;
+typedef const Transformer* ConstTransformerPtr;
 
 }
 

@@ -35,7 +35,8 @@ BrVarCand::BrVarCand(VariablePtr var, int i, double d, double u)
 BrVarCand::~BrVarCand()
 {
   //var_.reset(); need to check it.
-  h_.reset();
+  //h_.reset();
+  h_ = 0;
 }
 
 

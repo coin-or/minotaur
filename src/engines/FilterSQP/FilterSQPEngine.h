@@ -23,11 +23,11 @@ namespace Minotaur {
   class   Problem;
   class   Solution;
   class   Timer;
-  typedef boost::shared_ptr<Environment> EnvPtr;
-  typedef boost::shared_ptr<FilterSQPWarmStart> FilterWSPtr;
-  typedef boost::shared_ptr<const FilterSQPWarmStart> ConstFilterWSPtr;
-  typedef boost::shared_ptr<Problem> ProblemPtr;
-  typedef boost::shared_ptr<Solution> SolutionPtr;
+  typedef Environment* EnvPtr;
+  typedef FilterSQPWarmStart* FilterWSPtr;
+  typedef const FilterSQPWarmStart* ConstFilterWSPtr;
+  typedef Problem* ProblemPtr;
+  typedef Solution* SolutionPtr;
 
   struct FilterSQPStats {
     UInt calls;     ///<  Total number of calls to solve.

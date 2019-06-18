@@ -97,11 +97,13 @@ void PolyUT::polynomial()
 
   // x1^3 + 3x1x2
   m = (MonomialFunPtr) new MonomialFunction(1, x1, 3);
-  (*p1) += m;
+  //(*p1) += m;
+  p1->add(m);
 
   m = (MonomialFunPtr) new MonomialFunction(3, x1, 1);
   m->multiply(1., x2, 1);
-  (*p1) += m;
+  //(*p1) += m;
+  p1->add(m);
 
   //p1->write(std::cout);
   double x[2];

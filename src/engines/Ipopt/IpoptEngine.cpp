@@ -201,7 +201,8 @@ IpoptWarmStart::IpoptWarmStart(ConstIpoptWarmStartPtr ws)
 
 IpoptWarmStart::~IpoptWarmStart()
 {
-  sol_.reset();
+  //sol_.reset();
+  sol_ = 0;
 }
 
 
@@ -293,8 +294,10 @@ IpoptEngine::IpoptEngine(EnvPtr env)
 
 IpoptEngine::~IpoptEngine()
 {
-  ws_.reset();
-  sol_.reset();
+  //ws_.reset();
+  //sol_.reset();
+  ws_ = 0;
+  sol_ = 0;
   if (timer_) {
     delete timer_;
   }
@@ -306,7 +309,8 @@ IpoptEngine::~IpoptEngine()
   }
   if (problem_) {
   	 problem_->unsetEngine();
-	 problem_.reset();
+	 //problem_.reset();
+     problem_ = 0;
   }
   return;
 }
@@ -358,11 +362,14 @@ void IpoptEngine::changeObj(FunctionPtr, double)
 void IpoptEngine::clear() 
 {
 
-  ws_.reset();
-  sol_.reset();
+  //ws_.reset();
+  //sol_.reset();
+  ws_ = 0;
+  sol_ = 0;
   if (problem_) {
     problem_->unsetEngine();
-    problem_.reset();
+    //problem_.reset();
+    problem_ = 0;
   }
 }
 
@@ -468,8 +475,7 @@ void IpoptEngine::loadFromWarmStart(const WarmStartPtr ws)
     // Two important points:
     // 1. dynamic cast can't seem to be avoided.
     // 2. we need to use boost::dynamic_pointer_cast instead of dynamic_cast.
-    ConstIpoptWarmStartPtr ws2 = 
-      boost::dynamic_pointer_cast <const IpoptWarmStart> (ws);
+    ConstIpoptWarmStartPtr ws2 = dynamic_cast <const IpoptWarmStart*> (ws);
 
     // now create a full copy.
     ws_ = (IpoptWarmStartPtr) new IpoptWarmStart(ws2);
@@ -820,10 +826,12 @@ IpoptFunInterface::IpoptFunInterface(Minotaur::ProblemPtr problem,
 IpoptFunInterface::~IpoptFunInterface()
 {
   if (sol_) {
-    sol_.reset();
+    //sol_.reset();
+    sol_ = 0;
   }
   if (problem_) {
-    problem_.reset();
+    //problem_.reset();
+    problem_ = 0;
   }
 }
 

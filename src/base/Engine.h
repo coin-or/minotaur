@@ -26,13 +26,12 @@ namespace Minotaur {
   class   Engine;
   typedef Engine* EnginePtr;
   typedef const Engine* ConstEnginePtr;  
-  typedef boost::shared_ptr<Function> FunctionPtr;
   typedef Constraint* ConstraintPtr; //change boost -> simple
-  typedef boost::shared_ptr<LinearFunction> LinearFunctionPtr;
-  typedef boost::shared_ptr<NonlinearFunction> NonlinearFunctionPtr;
-  typedef boost::shared_ptr<const Solution> ConstSolutionPtr;
-  typedef boost::shared_ptr<WarmStart> WarmStartPtr;
-  typedef boost::shared_ptr<const WarmStart> ConstWarmStartPtr;
+  typedef LinearFunction* LinearFunctionPtr;
+  typedef NonlinearFunction* NonlinearFunctionPtr;
+  typedef const Solution* ConstSolutionPtr;
+  typedef WarmStart* WarmStartPtr;
+  typedef const WarmStart* ConstWarmStartPtr;
 
   /**
    * An Engine is a solver that can solve a Problem. In most invocations of an

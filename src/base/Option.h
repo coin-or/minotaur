@@ -231,7 +231,7 @@ namespace Minotaur {
     /// Set of all flags (options that don't need any arguments).
     FlagOptionSet flag_ops_;
   };
-  typedef boost::shared_ptr <OptionDB> OptionDBPtr;
+  typedef OptionDB* OptionDBPtr;
 }
 
 #endif

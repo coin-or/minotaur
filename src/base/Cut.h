@@ -19,8 +19,6 @@ namespace Minotaur {
   
   class Function;
 
-  typedef boost::shared_ptr<Function> FunctionPtr;
-
   struct CutInfo {
     UInt timesEnabled;       /// No. of times it was moved from pool to problem. 
     UInt timesDisabled;      /// No. of times it was removed from problem.

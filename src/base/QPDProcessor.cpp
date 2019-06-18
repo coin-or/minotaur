@@ -115,11 +115,15 @@ QPDProcessor::QPDProcessor(EnvPtr env, ProblemPtr p, EnginePtr e, EnginePtr qe,
 
 QPDProcessor::~QPDProcessor()
 {
-  env_.reset();
-  qp_.reset();
-  p_.reset();
+  //env_.reset();
+  env_ = 0;
+  //qp_.reset();
+  //p_.reset();
+  qp_ = 0;
+  p_  = 0;
   nlCons_.clear();
-  ws_.reset();
+  //ws_.reset();
+  ws_ = 0; 
 }
 
 
@@ -1362,7 +1366,8 @@ void QPDProcessor::setupQP_(ConstSolutionPtr sol)
       qf = (QuadraticFunctionPtr) new QuadraticFunction(hess_nz, hess, irow,
                                                         jcol, vbeg);
       if (qf->getNumTerms()==0) {
-        qf.reset();
+        //qf.reset();
+        qf = 0;
 #if SPEW
         logger_->msgStream(LogInfo) << me_ << "qf is empty!" << std::endl; 
 #endif

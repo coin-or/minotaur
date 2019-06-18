@@ -22,8 +22,8 @@
 namespace Minotaur {
 
   class SecantMod;
-  typedef boost::shared_ptr<SecantMod> SecantModPtr;
-  typedef boost::shared_ptr<const SecantMod> ConstSecantModPtr;  
+  typedef SecantMod* SecantModPtr;
+  typedef const SecantMod* ConstSecantModPtr;  
 
   /// Modification of a single linear constraint and its upper bound. An old
   /// constraint:

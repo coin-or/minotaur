@@ -109,7 +109,8 @@ void QuadraticFunctionTest::testEvaluate()
 
 void QuadraticFunctionTest::testOperations()
 {
-  q2_ = q_ + q_;
+  //q2_ = q_ + q_;
+  q2_ = q_->copyAdd(q_);
   CPPUNIT_ASSERT(q2_->getNumTerms() == 3);
   CPPUNIT_ASSERT(q2_->getNumVars() == 2);
   CPPUNIT_ASSERT(q2_->getWeight(vars_[0], vars_[0]) == 2.0);
@@ -117,7 +118,8 @@ void QuadraticFunctionTest::testOperations()
   CPPUNIT_ASSERT(q2_->getWeight(vars_[1], vars_[0]) == 4.0);
   CPPUNIT_ASSERT(q2_->getWeight(vars_[1], vars_[1]) == 2.0);
 
-  q2_ = -6.0*q_;
+  //q2_ = -6.0*q_;
+  q2_ = q_->copyMult(-6.0);
   CPPUNIT_ASSERT(q2_->getNumTerms() == 3);
   CPPUNIT_ASSERT(q2_->getNumVars() == 2);
   CPPUNIT_ASSERT(q2_->getWeight(vars_[0], vars_[0]) == -6.0);
@@ -125,7 +127,8 @@ void QuadraticFunctionTest::testOperations()
   CPPUNIT_ASSERT(q2_->getWeight(vars_[1], vars_[0]) == -12.0);
   CPPUNIT_ASSERT(q2_->getWeight(vars_[1], vars_[1]) == -6.0);
 
-  q2_ = q1_ + q2_;
+  //q2_ = q1_ + q2_;
+  q2_ = q1_->copyAdd(q2_);
   CPPUNIT_ASSERT(q2_->getNumTerms() == 3);
   CPPUNIT_ASSERT(q2_->getNumVars() == 2);
   CPPUNIT_ASSERT(q2_->getWeight(vars_[0], vars_[0]) == -6.0);
@@ -133,7 +136,8 @@ void QuadraticFunctionTest::testOperations()
   CPPUNIT_ASSERT(q2_->getWeight(vars_[1], vars_[0]) == -14.0);
   CPPUNIT_ASSERT(q2_->getWeight(vars_[1], vars_[1]) == -8.0);
 
-  q2_ = q1_ - q2_;
+  //q2_ = q1_ - q2_;
+  q2_ = q1_->copyMinus(q2_);
   CPPUNIT_ASSERT(q2_->getNumTerms() == 3);
   CPPUNIT_ASSERT(q2_->getNumVars() == 2);
   CPPUNIT_ASSERT(q2_->getWeight(vars_[0], vars_[0]) ==  6.0);
@@ -141,7 +145,8 @@ void QuadraticFunctionTest::testOperations()
   CPPUNIT_ASSERT(q2_->getWeight(vars_[1], vars_[0]) ==  12.0);
   CPPUNIT_ASSERT(q2_->getWeight(vars_[1], vars_[1]) ==  6.0);
 
-  (*q2_) += q1_;
+  //(*q2_) += q1_;
+  q2_->add(q1_);
   CPPUNIT_ASSERT(q2_->getNumTerms() == 3);
   CPPUNIT_ASSERT(q2_->getNumVars() == 2);
   CPPUNIT_ASSERT(q2_->getWeight(vars_[0], vars_[0]) ==  6.0);
@@ -161,14 +166,16 @@ void QuadraticFunctionTest::testOperations()
   LinearFunctionPtr l2;
 
   l1->addTerm(vars_[0], 2);
-  q2_ = l1 * l2;
+  //q2_ = l1 * l2;
   // q2_ should be NULL
+  q2_ = l1->copyMult(l2);
   CPPUNIT_ASSERT(!q2_);
 
   l2 = (LinearFunctionPtr) new LinearFunction();
   l2->addTerm(vars_[0], -1);
   l2->addTerm(vars_[1],  2);
-  q2_ = l1 * l2;
+  //q2_ = l1 * l2;
+  q2_ = l1->copyMult(l2);
   CPPUNIT_ASSERT(q2_->getNumTerms() == 2);
   CPPUNIT_ASSERT(q2_->getNumVars() == 2);
   CPPUNIT_ASSERT(q2_->getWeight(vars_[0], vars_[0]) == -2.0);

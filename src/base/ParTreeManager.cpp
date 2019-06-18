@@ -83,7 +83,8 @@ ParTreeManager::ParTreeManager(EnvPtr env)
 ParTreeManager::~ParTreeManager()
 {
   clearAll();
-  active_nodes_.reset();
+  //active_nodes_.reset();
+  active_nodes_ = 0;
   if (doVbc_) {
     vbcFile_.close();
     delete timer_;
@@ -167,7 +168,8 @@ UInt ParTreeManager::getActiveNodes() const
 NodePtr ParTreeManager::getCandidate()
 {
   NodePtr node = NodePtr(); // NULL
-  aNode_.reset();
+  //aNode_.reset();
+  aNode_ = 0;
   while (active_nodes_->getSize() > 0) {
     node = active_nodes_->top();
     // std::cout << "tm: node lb = " << node->getLb() << std::endl;
@@ -175,7 +177,8 @@ NodePtr ParTreeManager::getCandidate()
       // std::cout << "tm: node pruned." << std::endl;
       removeActiveNode(node);
       pruneNode(node);
-      node.reset(); // NULL
+      //node.reset(); // NULL
+      node = 0;
     } else {
       if (doVbc_) {
         vbcFile_ << toClockTime(timer_->query()) << " P " << node->getId()+1
@@ -381,7 +384,8 @@ void ParTreeManager::removeNode_(NodePtr node)
   }
   // std::cout << "node " << node->getId() << " use count = " <<
   // node.use_count() << std::endl;
-  node.reset();
+  //node.reset();
+  node = 0;
 }
 
 

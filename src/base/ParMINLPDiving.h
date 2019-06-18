@@ -27,8 +27,8 @@ namespace Minotaur {
   class Solution;
   class Timer;
   class VarBoundMod;
-  typedef boost::shared_ptr<const Solution> ConstSolutionPtr;
-  typedef boost::shared_ptr<VarBoundMod> VarBoundModPtr;
+  typedef const Solution* ConstSolutionPtr;
+  typedef VarBoundMod* VarBoundModPtr;
 
   /// Direction of rounding
   typedef enum {

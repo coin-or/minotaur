@@ -1308,7 +1308,8 @@ void LinearHandler::relax_(ProblemPtr p, RelaxationPtr rel, bool *is_inf)
       newf = f->cloneWithVars(rel->varsBegin(), &err);
       rel->newObjective(newf, oPtr->getConstant(), Minimize);
     } else if (!f) {
-      newf.reset();
+      //newf.reset();
+      newf = 0;
       rel->newObjective(newf, oPtr->getConstant(), Minimize);
     } else { 
       // NULL

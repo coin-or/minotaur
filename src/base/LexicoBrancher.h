@@ -72,7 +72,7 @@ namespace Minotaur {
       LexicoBrStats *stats_;
 
   };
-  typedef boost::shared_ptr<LexicoBrancher> LexicoBrancherPtr;
+  typedef LexicoBrancher* LexicoBrancherPtr;
 }
 #endif
 

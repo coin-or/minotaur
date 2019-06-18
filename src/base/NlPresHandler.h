@@ -20,8 +20,8 @@ namespace Minotaur {
 class CGraph;
 class CNode;
 class PreAuxVars;
-typedef boost::shared_ptr<CGraph> CGraphPtr;
-typedef boost::shared_ptr<PreAuxVars> PreAuxVarsPtr;
+typedef CGraph* CGraphPtr;
+typedef PreAuxVars* PreAuxVarsPtr;
 
 
 /// Store statistics of presolving.
@@ -183,7 +183,7 @@ private:
   void varBndsFromCons_(ProblemPtr p, bool apply_to_prob, bool *changed,
                         ModQ *mods, SolveStatus &status);
 };
-typedef boost::shared_ptr<NlPresHandler> NlPresHandlerPtr;
+typedef NlPresHandler* NlPresHandlerPtr;
 }
 #endif
 

@@ -47,7 +47,7 @@ private:
 
 };
 
-typedef boost::shared_ptr<PreSubstVars> PreSubstVarsPtr;
+typedef PreSubstVars* PreSubstVarsPtr;
 }
 #endif
 

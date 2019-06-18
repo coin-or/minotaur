@@ -404,7 +404,7 @@ private:
   DoubleVector x_;
 
 };
-typedef boost::shared_ptr<ParReliabilityBrancher> ParReliabilityBrancherPtr;
+typedef ParReliabilityBrancher* ParReliabilityBrancherPtr;
 }
 #endif
 

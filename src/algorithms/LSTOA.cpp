@@ -294,7 +294,7 @@ void writeSTOAStatus(EnvPtr env, double gap, double objLb, double objUb,
 }
 
 
-void showStatus(EnvironmentPtr env, double objLb, double objUb, double gap, double obj_sense)
+void showStatus(EnvPtr env, double objLb, double objUb, double gap, double obj_sense)
 {
   int err = 0;
   env->getLogger()->msgStream(LogInfo)

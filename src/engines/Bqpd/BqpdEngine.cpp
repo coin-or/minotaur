@@ -84,11 +84,13 @@ BqpdEngine::~BqpdEngine()
 {
   //delete ;
   if (sol_) {
-    sol_.reset();
+    //sol_.reset();
+    sol_ = 0;
   }
   if (problem_) {
 	 problem_->unsetEngine();
-    problem_.reset();
+    //problem_.reset();
+    problem_ = 0;
   }
   if (fStart_) {
     delete fStart_;
@@ -133,7 +135,8 @@ void BqpdEngine::clear() {
 
   if (problem_) {
     problem_->unsetEngine();
-    problem_.reset();
+    //problem_.reset();
+    problem_ = 0;
   }
   if (fStart_) {
     delete fStart_;

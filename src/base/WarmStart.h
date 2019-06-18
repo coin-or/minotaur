@@ -20,8 +20,8 @@
 namespace Minotaur {
 
   class WarmStart;
-  typedef boost::shared_ptr<WarmStart> WarmStartPtr;
-  typedef boost::shared_ptr<const WarmStart> ConstWarmStartPtr;
+  typedef WarmStart* WarmStartPtr;
+  typedef const WarmStart* ConstWarmStartPtr;
 
   // /** 
   // Warm starting information enables an engine to quickly resolve a problem
