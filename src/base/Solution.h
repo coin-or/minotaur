@@ -21,12 +21,11 @@
 namespace Minotaur {
 
   class Solution;
-  typedef boost::shared_ptr<Solution> SolutionPtr;
-  typedef boost::shared_ptr<const Solution> ConstSolutionPtr;
+  typedef Solution* SolutionPtr;
+  typedef const Solution* ConstSolutionPtr;
   typedef std::vector<SolutionPtr> SolutionPtrVector;
   typedef std::vector<SolutionPtr>::iterator SolutionIterator;
   class Problem;
-  typedef boost::shared_ptr<Problem> ProblemPtr;
 
   class Solution {    
 

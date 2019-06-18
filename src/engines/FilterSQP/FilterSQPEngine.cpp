@@ -147,7 +147,8 @@ FilterSQPWarmStart::FilterSQPWarmStart()
 
 FilterSQPWarmStart::~FilterSQPWarmStart()
 {
-  sol_.reset();
+  //sol_.reset();
+  sol_ = 0;
 }
 
 
@@ -248,7 +249,8 @@ FilterSQPEngine::~FilterSQPEngine()
     c_ = 0;
   }
   if (sol_) {
-    sol_.reset();
+    //sol_.reset();
+    sol_ = 0;
   }
   if (timer_) {
     delete timer_;
@@ -258,7 +260,8 @@ FilterSQPEngine::~FilterSQPEngine()
   }
   if (problem_) {
     problem_->unsetEngine();
-    problem_.reset();
+    //problem_.reset();
+    problem_ = 0;
   }
 }
 
@@ -332,13 +335,16 @@ void FilterSQPEngine::clear()
   }
   if (problem_) {
     problem_->unsetEngine();
-    problem_.reset();
+    //problem_.reset();
+    problem_ = 0;
   }
   if (sol_) {
-    sol_.reset();
+    //sol_.reset();
+    sol_ = 0;
   }
   if (warmSt_) {
-    warmSt_.reset();
+    //warmSt_.reset();
+    warmSt_ = 0;
   }
   strBr_       = false;
   consChanged_ = true;
@@ -589,8 +595,7 @@ void FilterSQPEngine::loadFromWarmStart(const WarmStartPtr warm_st)
     // Two important points:
     // 1. dynamic cast can't seem to be avoided.
     // 2. we need to use boost::dynamic_pointer_cast instead of dynamic_cast.
-    ConstFilterWSPtr warm_st2 = 
-      boost::dynamic_pointer_cast <const FilterSQPWarmStart> (warm_st);
+    ConstFilterWSPtr warm_st2 = dynamic_cast<const FilterSQPWarmStart*> (warm_st);
 
     // now create a full copy.
     warmSt_ = (FilterWSPtr) new FilterSQPWarmStart(warm_st2);

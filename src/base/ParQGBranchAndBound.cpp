@@ -93,11 +93,15 @@ ParQGBranchAndBound::~ParQGBranchAndBound()
     delete logger_;
   }
   nodePrcssr_.reset();
-  nodeRlxr_.reset();
+  //nodeRlxr_.reset();
+  nodeRlxr_ = 0;
   tm_.reset();
-  solPool_.reset();
-  problem_.reset();
-  env_.reset();
+  //solPool_.reset();
+  //problem_.reset();
+  //env_.reset();
+  solPool_ = 0;
+  problem_ = 0;
+  env_ = 0;
   if (timer_) {
     delete timer_;
   }
@@ -590,7 +594,7 @@ void ParQGBranchAndBound::parsolve(ParNodeIncRelaxerPtr parNodeRlxr[],
                   consVec.clear();
                 }
                 if (isParRel) {
-                  parRelBr = boost::dynamic_pointer_cast <ParReliabilityBrancher> (nodePrcssr[j]->getBrancher());
+                  parRelBr = dynamic_cast <ParReliabilityBrancher*> (nodePrcssr[j]->getBrancher());
                   tmpTimesUp = parRelBr->getTimesUp();
                   tmpTimesDown = parRelBr->getTimesDown();
                   tmpPseudoUp = parRelBr->getPCUp();

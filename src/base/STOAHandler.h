@@ -315,7 +315,7 @@ private:
 
   };
 
-  typedef boost::shared_ptr <STOAHandler> STOAHandlerPtr;
+  typedef STOAHandler* STOAHandlerPtr;
 }
 #endif
 

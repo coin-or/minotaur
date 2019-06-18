@@ -343,7 +343,7 @@ private:
   DoubleVector x_;
 
 };
-typedef boost::shared_ptr<ReliabilityBrancher> ReliabilityBrancherPtr;
+typedef ReliabilityBrancher* ReliabilityBrancherPtr;
 }
 #endif
 

@@ -14,12 +14,10 @@
 #define MINOTAURLINEARCUT_H
 
 #include "Cut.h"
-
+#include "Types.h"
 
 namespace Minotaur {
 
-  class Function;
-  typedef boost::shared_ptr<Function> FunctionPtr;
   /**
    * A linear cut is a valid inequality of the form \f$ l \leq ax \leq u \f$,
    * where \f$a \in \mathcal{R}^n, l \in \mathcal{R}, u \in \mathcal{R}\f$.

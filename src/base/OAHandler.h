@@ -281,7 +281,7 @@ private:
 
   };
 
-  typedef boost::shared_ptr <OAHandler> OAHandlerPtr;
+  typedef OAHandler* OAHandlerPtr;
 }
 #endif
 

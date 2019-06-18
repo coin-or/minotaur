@@ -20,7 +20,6 @@
 namespace Minotaur {
 
   class Node;
-  typedef boost::shared_ptr<Node> NodePtr;
 
   /** 
    * \brief Save and retrieve active nodes.
@@ -83,7 +82,7 @@ namespace Minotaur {
         */
        virtual void write(std::ostream &out) const = 0;
    };
-   typedef boost::shared_ptr<ActiveNodeStore> ActiveNodeStorePtr;
+   typedef ActiveNodeStore* ActiveNodeStorePtr;
 }
 #endif
 

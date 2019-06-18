@@ -59,8 +59,8 @@ namespace Minotaur {
 
   // Typedefs
   class PerspCutGenerator;
-  typedef boost::shared_ptr<PerspCutGenerator> PerspCutGeneratorPtr;
-  typedef boost::shared_ptr<const PerspCutGenerator> ConstPerspCutGeneratorPtr;
+  typedef PerspCutGenerator* PerspCutGeneratorPtr;
+  typedef const PerspCutGenerator* ConstPerspCutGeneratorPtr;
   //typedef PerspGenStats * PerspGenStatsPtr;
   //typedef PerspGenStats const * ConstPerspGenStatsPtr;
 

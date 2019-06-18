@@ -94,7 +94,7 @@ void LinFeasPump::constructObj_(ProblemPtr, ConstSolutionPtr)
   i              = 0;
   constant       = 0;
   olf_mod        = olfClone_->clone();
-  (*olf_mod)    *= obj_weight;
+  olf_mod->multiply( obj_weight);
 
   for (VariableConstIterator v_iter=r_->varsBegin();
       v_iter!=r_->varsEnd(); ++v_iter, ++i) {

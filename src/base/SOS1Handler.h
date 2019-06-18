@@ -118,8 +118,8 @@ private:
    */
   double zTol_;
 };
-typedef boost::shared_ptr<SOS1Handler> SOS1HandlerPtr;
-typedef boost::shared_ptr<const SOS1Handler> ConstSOS1HandlerPtr;
+typedef SOS1Handler* SOS1HandlerPtr;
+typedef const SOS1Handler* ConstSOS1HandlerPtr;
 }
 #endif
 

@@ -105,9 +105,12 @@ ParQGHandler::~ParQGHandler()
     delete stats_;
   }
 
-  env_.reset();
-  rel_.reset();
-  minlp_.reset();
+  //env_.reset();
+  env_ = 0;
+  //rel_.reset();
+  //minlp_.reset();
+  rel_ = 0;
+  minlp_ = 0;
 }
 
 

@@ -18,15 +18,14 @@
 #include "ParCutMan.h"
 #include "ParReliabilityBrancher.h"
 #include "ParTreeManager.h"
+#include "Types.h"
 
 namespace Minotaur {
 
-  class Engine;
-  class Problem;
+  //class Engine;
+  //class Problem;
   class Solution;
-  typedef Engine* EnginePtr;
-  typedef boost::shared_ptr<const Problem> ConstProblemPtr;
-  typedef boost::shared_ptr<const Solution> ConstSolutionPtr;
+  typedef const Solution* ConstSolutionPtr;
 
   struct ParNodeStats {
     UInt bra;    /// Number of times relaxation became infeasible

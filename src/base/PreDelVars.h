@@ -39,8 +39,8 @@ namespace Minotaur {
 
   };
 
-  typedef boost::shared_ptr<PreDelVars> PreDelVarsPtr;
-  typedef boost::shared_ptr<const PreDelVars> ConstPreDelVarsPtr;
+  typedef PreDelVars* PreDelVarsPtr;
+  typedef const PreDelVars* ConstPreDelVarsPtr;
 }
 #endif
 

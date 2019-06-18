@@ -95,7 +95,7 @@ namespace Minotaur {
 
 
   };
-  typedef boost::shared_ptr<CutInfo> CutInfoPtr;
+  typedef CutInfo* CutInfoPtr;
   typedef std::vector< CutInfoPtr > CutInfoVector;
   typedef CutInfoVector::iterator CutInfoIterator;
   typedef CutInfoVector::const_iterator CutInfoConstIterator;

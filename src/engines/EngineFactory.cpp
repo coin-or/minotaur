@@ -66,7 +66,8 @@ EngineFactory::EngineFactory(EnvPtr env)
 
 EngineFactory::~EngineFactory()
 {
-  env_.reset();
+  //env_.reset();
+  env_ = 0;
 }
 
 

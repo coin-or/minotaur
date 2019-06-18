@@ -47,8 +47,8 @@ namespace Minotaur {
       // QuadraticGradientPtr qgrad_;
   };
 
-  typedef boost::shared_ptr<Gradient> GradientPtr;
-  typedef boost::shared_ptr<const Gradient> ConstGradientPtr;  
+  typedef Gradient* GradientPtr;
+  typedef const Gradient* ConstGradientPtr;  
 }
 #endif
 

@@ -157,30 +157,35 @@ void LinearFunctionTest::testOperations()
   lf1->addTerm(vars[1], 13.0);
   lf1->addTerm(vars[3], 24.5);
 
-  lf2 = lf + lf1;
+  //lf2 = lf + lf1;
+  lf2 = lf->copyAdd(lf1);
   CPPUNIT_ASSERT(lf2->getWeight(vars[0]) == 6.0);
   CPPUNIT_ASSERT(lf2->getWeight(vars[1]) == 7.0);
   CPPUNIT_ASSERT(lf2->getWeight(vars[2]) == 1.0);
   CPPUNIT_ASSERT(lf2->getWeight(vars[3]) == 24.5);
 
-  lf2 = lf - lf1;
+  //lf2 = lf - lf1;
+  lf2 = lf->copyMinus(lf1);
   CPPUNIT_ASSERT(lf2->getWeight(vars[0]) == -2.0);
   CPPUNIT_ASSERT(lf2->getWeight(vars[1]) == -19.0);
   CPPUNIT_ASSERT(lf2->getWeight(vars[2]) == 1.0);
   CPPUNIT_ASSERT(lf2->getWeight(vars[3]) == -24.5);
 
-  lf2 = lf - lf;
+  //lf2 = lf - lf;
+  lf2 = lf->copyMinus(lf);
   CPPUNIT_ASSERT(lf2->getWeight(vars[0]) == 0.0); 
   CPPUNIT_ASSERT(lf2->getWeight(vars[3]) == 0.0); 
 
   // multiply by scalar.
-  lf2 = 1.5*lf;
+  //lf2 = 1.5*lf;
+  lf2 = lf->copyMult(1.5);
   CPPUNIT_ASSERT(lf2->getWeight(vars[0]) == 3.0); 
   CPPUNIT_ASSERT(lf2->getWeight(vars[1]) == -9.0); 
   CPPUNIT_ASSERT(lf2->getWeight(vars[3]) == 0.0); 
 
   // increment
-  (*lf) += lf1;
+  //(*lf) += lf1;
+  lf->add(lf1);
   CPPUNIT_ASSERT(lf->getWeight(vars[0]) == 6.0); 
   CPPUNIT_ASSERT(lf->getWeight(vars[1]) == 7.0); 
   CPPUNIT_ASSERT(lf->getWeight(vars[2]) == 1.0);

@@ -30,7 +30,7 @@ Node::Node()
     lb_(-INFINITY),
     pMods_(0), 
     rMods_(0), 
-    parent_(boost::shared_ptr<Node>()),
+    parent_(NodePtr()),
     status_(NodeNotProcessed),
     vioVal_(0),
     tbScore_(0)
@@ -163,7 +163,8 @@ void Node::removeChildren()
 
 void Node::removeParent()
 {
-  parent_.reset();
+  //parent_.reset();
+  parent_ = 0;
 }
 
 

@@ -75,11 +75,11 @@ struct LGCIGenStats
 
 // Typedefs for ease of coding.
 class LGCIGenerator;
-typedef boost::shared_ptr<LGCIGenerator> LGCIGeneratorPtr;
-typedef boost::shared_ptr<const LGCIGenerator> ConstLGCIGeneratorPtr;
+typedef LGCIGenerator* LGCIGeneratorPtr;
+typedef const LGCIGenerator* ConstLGCIGeneratorPtr;
 typedef LGCIGenStats* LGCIGenStatsPtr;
 typedef LGCIGenStats const * ConstLGCIGenStatsPtr;
-typedef boost::shared_ptr<const LinearFunction> ConstLinearFunctionPtr;
+typedef const LinearFunction* ConstLinearFunctionPtr;
 typedef std::map<ConstVariablePtr, ConstVariablePtr> OrigLiftVars;
 typedef boost::shared_ptr<OrigLiftVars> OrigLiftVarsPtr;
   

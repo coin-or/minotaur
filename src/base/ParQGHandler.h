@@ -264,7 +264,7 @@ private:
 
   };
 
-  typedef boost::shared_ptr <ParQGHandler> ParQGHandlerPtr;
+  typedef ParQGHandler* ParQGHandlerPtr;
 }
 #endif
 

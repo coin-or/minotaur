@@ -21,7 +21,7 @@ namespace Minotaur {
 
 class   Modification;
 class   Relaxation;
-typedef boost::shared_ptr<Relaxation> RelaxationPtr;
+typedef Relaxation* RelaxationPtr;
 
 /**
  * NodeRelaxer class is used to create relaxations for nodes in a tree.
@@ -79,7 +79,7 @@ public:
   virtual RelaxationPtr getRelaxation() = 0;
 };
 
-typedef boost::shared_ptr <NodeRelaxer> NodeRelaxerPtr;
+typedef NodeRelaxer* NodeRelaxerPtr;
 }
 #endif
 

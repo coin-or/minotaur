@@ -126,8 +126,8 @@ private:
   bool isXFeasible_(const double *x, SOSPtr sos);
 
 };
-typedef boost::shared_ptr<SOS2Handler> SOS2HandlerPtr;
-typedef boost::shared_ptr<const SOS2Handler> ConstSOS2HandlerPtr;
+typedef SOS2Handler* SOS2HandlerPtr;
+typedef const SOS2Handler* ConstSOS2HandlerPtr;
 }
 #endif
 

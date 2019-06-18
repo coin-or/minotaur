@@ -71,7 +71,8 @@ Cut::Cut(ProblemPtr p, FunctionPtr f, double lb, double ub,
 
 Cut::~Cut()
 {
-  f_.reset();
+  //f_.reset();
+  f_ = 0;
 }
 
 void Cut::applyToProblem(ProblemPtr p)

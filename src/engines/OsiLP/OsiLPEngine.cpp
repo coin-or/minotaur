@@ -160,7 +160,8 @@ OsiLPEngine::~OsiLPEngine()
   delete timer_;
   if (problem_) {
     problem_->unsetEngine();
-    problem_.reset();
+    //problem_.reset();
+    problem_ = 0;
   }
 }
 
@@ -298,7 +299,8 @@ void OsiLPEngine::clear() {
   }
   if (problem_) {
     problem_->unsetEngine();
-    problem_.reset();
+    //problem_.reset();
+    problem_ = 0;
   }
 }
 
@@ -487,8 +489,7 @@ void OsiLPEngine::load(ProblemPtr problem)
 
 void OsiLPEngine::loadFromWarmStart(const WarmStartPtr ws)
 {
-  ConstOsiLPWarmStartPtr ws2 = 
-    boost::dynamic_pointer_cast <const OsiLPWarmStart> (ws);
+  ConstOsiLPWarmStartPtr ws2 = dynamic_cast <const OsiLPWarmStart*> (ws);
   assert (ws2);
   CoinWarmStart *coin_ws = ws2->getCoinWarmStart();
   osilp_->setWarmStart(coin_ws);

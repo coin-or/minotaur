@@ -19,7 +19,7 @@
 
 namespace Minotaur {
 class CGraph;
-typedef boost::shared_ptr<CGraph> CGraphPtr;
+typedef CGraph* CGraphPtr;
 
 class YEqCGs {
 public:

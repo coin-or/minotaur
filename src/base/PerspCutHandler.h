@@ -24,8 +24,8 @@
 namespace Minotaur {
 //MS: constraint form expected is f(x) <= b
   class PerspCutHandler;
-  typedef boost::shared_ptr<PerspCutHandler> PerspCutHandlerPtr;
-  typedef boost::shared_ptr<const PerspCutHandler> ConstPerspCutHandlerPtr;
+  typedef PerspCutHandler* PerspCutHandlerPtr;
+  typedef const PerspCutHandler* ConstPerspCutHandlerPtr;
  
   struct PRStats {
     size_t imprvPt;   /// Number of points feasible to original nonlinear constraint but not the PR constraint.

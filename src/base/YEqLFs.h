@@ -18,7 +18,7 @@
 
 namespace Minotaur {
 class LinearFunction;
-typedef boost::shared_ptr<LinearFunction> LinearFunctionPtr;
+typedef LinearFunction* LinearFunctionPtr;
 
 class YEqLFs
 {

@@ -70,7 +70,7 @@ namespace Minotaur {
     UInt seed_;
 
   };
-  typedef boost::shared_ptr<RandomBrancher> RandomBrancherPtr;
+  typedef RandomBrancher* RandomBrancherPtr;
 }
 #endif
 

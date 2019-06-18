@@ -53,8 +53,10 @@ SOS1Handler::SOS1Handler(EnvPtr env, ProblemPtr problem)
 
 SOS1Handler::~SOS1Handler()
 {
-  problem_.reset();
-  env_.reset();
+  //problem_.reset();
+  //env_.reset();
+  env_     =  0;
+  problem_ = 0;
 }
 
 

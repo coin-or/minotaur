@@ -24,7 +24,7 @@ namespace Minotaur {
 
 class LinearFunction;
 class Timer;
-typedef boost::shared_ptr<LinearFunction> LinearFunctionPtr;
+typedef LinearFunction* LinearFunctionPtr;
 
 /**
  * \brief A structure to save information about constraints of the form \f$ y
@@ -374,7 +374,7 @@ private:
 };
 
 /// Shared pointer to QuadHandler.
-typedef boost::shared_ptr<QuadHandler> QuadHandlerPtr;
+typedef QuadHandler* QuadHandlerPtr;
 }
 #endif
 

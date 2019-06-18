@@ -15,6 +15,7 @@
 #define MINOTAURQPDPROCESSOR_H
 
 #include "NodeProcessor.h"
+#include "Types.h"
 
 namespace Minotaur {
 
@@ -22,11 +23,9 @@ namespace Minotaur {
   class NonlinearFunction;
   class Problem;
   class Solution;
-  typedef Engine* EnginePtr;
-  typedef boost::shared_ptr<NonlinearFunction> NonlinearFunctionPtr;
-  typedef boost::shared_ptr<Problem> ProblemPtr;
-  typedef boost::shared_ptr<Solution> SolutionPtr;
-  typedef boost::shared_ptr<const Solution> ConstSolutionPtr;
+  typedef NonlinearFunction* NonlinearFunctionPtr;
+  typedef Solution* SolutionPtr;
+  typedef const Solution* ConstSolutionPtr;
 
   struct QPDStats {
     UInt bra;    /// Number of times relaxation became infeasible

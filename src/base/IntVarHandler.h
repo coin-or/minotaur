@@ -123,8 +123,8 @@ private:
   /// The problem for which the handler was created.
   ProblemPtr problem_;
 };
-typedef boost::shared_ptr<IntVarHandler> IntVarHandlerPtr;
-typedef boost::shared_ptr<const IntVarHandler> ConstIntVarHandlerPtr;
+typedef IntVarHandler* IntVarHandlerPtr;
+typedef const IntVarHandler* ConstIntVarHandlerPtr;
 }
 #endif
 

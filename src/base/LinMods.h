@@ -21,8 +21,8 @@
 namespace Minotaur {
 
   class LinMods;
-  typedef boost::shared_ptr< LinMods > LinModsPtr;
-  typedef boost::shared_ptr< const LinMods > ConstLinModsPtr;
+  typedef LinMods* LinModsPtr;
+  typedef const LinMods*  ConstLinModsPtr;
 
   /** 
    * LinMods keeps record of changes in linear functions of different

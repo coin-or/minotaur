@@ -89,9 +89,10 @@ OAHandler::~OAHandler()
   if (timer_) {
     delete timer_;
   }
-  env_.reset();
-  rel_.reset();
-  minlp_.reset();
+  env_ = 0;
+  rel_ = 0;
+  minlp_ = 0;
+  logger_ = 0;
 }
 
 

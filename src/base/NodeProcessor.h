@@ -24,11 +24,11 @@ namespace Minotaur {
   class SolutionPool;
   class WarmStart;
   class CutManager;
-  typedef boost::shared_ptr <Brancher> BrancherPtr;
-  typedef boost::shared_ptr <Relaxation> RelaxationPtr;
-  typedef boost::shared_ptr <SolutionPool> SolutionPoolPtr;
-  typedef boost::shared_ptr <WarmStart> WarmStartPtr;
-  typedef boost::shared_ptr<CutManager> CutManagerPtr;
+  typedef Brancher* BrancherPtr;
+  typedef Relaxation* RelaxationPtr;
+  typedef SolutionPool* SolutionPoolPtr;
+  typedef WarmStart* WarmStartPtr;
+  typedef CutManager* CutManagerPtr;
   /**
    * NodeProcessor class is the place that does the most important tasks in
    * branch-and-bound. It processes a given node. By processing a node, we

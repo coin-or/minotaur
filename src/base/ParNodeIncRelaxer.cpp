@@ -36,9 +36,11 @@ ParNodeIncRelaxer::ParNodeIncRelaxer (EnvPtr env, HandlerVector handlers)
 
 ParNodeIncRelaxer::~ParNodeIncRelaxer ()
 {
-  rel_.reset();
+  //rel_.reset();
+  rel_ = 0;
   handlers_.clear();
-  env_.reset();
+  //env_.reset();
+  env_ = 0;  
 }
 
 

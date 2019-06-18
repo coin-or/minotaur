@@ -104,8 +104,8 @@ namespace Minotaur {
     FunctionType objType;
 
   };
-  typedef boost::shared_ptr< ProblemSize > ProblemSizePtr;
-  typedef boost::shared_ptr< const ProblemSize > ConstProblemSizePtr;
+  typedef  ProblemSize * ProblemSizePtr;
+  typedef  const ProblemSize * ConstProblemSizePtr;
 }
 
 #endif

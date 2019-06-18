@@ -22,10 +22,9 @@ namespace Minotaur {
   class   LinearFunction;
   class   QuadraticFunction;
   class   NonlinearFunction;
-  typedef boost::shared_ptr<Function> FunctionPtr;
-  typedef boost::shared_ptr<LinearFunction> LinearFunctionPtr;
-  typedef boost::shared_ptr<NonlinearFunction> NonlinearFunctionPtr;
-  typedef boost::shared_ptr<QuadraticFunction> QuadraticFunctionPtr;
+  typedef LinearFunction* LinearFunctionPtr;
+  typedef NonlinearFunction* NonlinearFunctionPtr;
+  typedef QuadraticFunction* QuadraticFunctionPtr;
   typedef std::set<std::pair<VariablePtr, FunctionType> >::const_iterator 
     VariableFunIterator;
 

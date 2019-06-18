@@ -26,10 +26,10 @@ namespace Minotaur {
   class   Problem;
   class   Solution;
   class   WarmStart;
-  typedef boost::shared_ptr<Environment> EnvPtr;
-  typedef boost::shared_ptr<Problem> ProblemPtr;
-  typedef boost::shared_ptr<Solution> SolutionPtr;
-  typedef boost::shared_ptr<WarmStart> WarmStartPtr;
+  typedef Environment* EnvPtr;
+  typedef Problem* ProblemPtr;
+  typedef Solution* SolutionPtr;
+  typedef WarmStart* WarmStartPtr;
 
   /// Statistics
   struct CplexMILPStats {

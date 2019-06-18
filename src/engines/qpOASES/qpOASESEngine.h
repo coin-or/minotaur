@@ -31,9 +31,9 @@ namespace Minotaur {
   class   Environment;
   class   Problem;
   class   Solution;
-  typedef boost::shared_ptr<Environment> EnvPtr;
-  typedef boost::shared_ptr<Problem> ProblemPtr;
-  typedef boost::shared_ptr<Solution> SolutionPtr;
+  typedef Environment* EnvPtr;
+  typedef Problem* ProblemPtr;
+  typedef Solution* SolutionPtr;
 
 
   /**
@@ -301,7 +301,7 @@ namespace Minotaur {
     void restorePoint (qpOASESPoint *);
   };
 
-  typedef boost::shared_ptr<qpOASESEngine> qpOASESEnginePtr;
+  typedef qpOASESEngine* qpOASESEnginePtr;
 } // end namespace Minotaur
 
 #endif

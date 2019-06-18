@@ -23,21 +23,21 @@ namespace Minotaur {
   class LinearFunction;
   class MonomialFunction;
   class QuadraticFunction;
-  typedef boost::shared_ptr<CGraph> CGraphPtr;
-  typedef boost::shared_ptr<LinearFunction> LinearFunctionPtr;
-  typedef boost::shared_ptr<MonomialFunction> MonomialFunPtr;
-  typedef boost::shared_ptr<QuadraticFunction> QuadraticFunctionPtr;
-  typedef boost::shared_ptr<const LinearFunction> ConstLinearFunctionPtr;
-  typedef boost::shared_ptr<const MonomialFunction> ConstMonomialFunPtr;
-  typedef boost::shared_ptr<const QuadraticFunction> ConstQuadraticFunctionPtr;
+  typedef CGraph* CGraphPtr;
+  typedef LinearFunction* LinearFunctionPtr;
+  typedef MonomialFunction* MonomialFunPtr;
+  typedef QuadraticFunction* QuadraticFunctionPtr;
+  typedef const LinearFunction* ConstLinearFunctionPtr;
+  typedef const MonomialFunction* ConstMonomialFunPtr;
+  typedef const QuadraticFunction* ConstQuadraticFunctionPtr;
   typedef std::vector<MonomialFunPtr> MonomialVector;
   typedef MonomialVector::iterator MonomialIter;
   typedef MonomialVector::const_iterator MonomialConstIter;
 
 
   class PolynomialFunction;
-  typedef boost::shared_ptr<PolynomialFunction> PolyFunPtr;
-  typedef boost::shared_ptr<const PolynomialFunction> ConstPolyFunPtr;  
+  typedef PolynomialFunction* PolyFunPtr;
+  typedef const PolynomialFunction* ConstPolyFunPtr;  
 
   /**
    * \brief MonomialFunction represents functions of the form
@@ -263,54 +263,48 @@ namespace Minotaur {
      * polynomial and not the shared pointer. The user must ensure that it
      * is not null.
      */
-    void operator+=(ConstMonomialFunPtr m);
-
-    /// Add a polynomial to the polynomial.
-    void operator+=(ConstPolyFunPtr p);
-
-    /// Multiply by a constant.
-    void operator*=(double c);
-
+    //void operator+=(ConstMonomialFunPtr m);
+    //void add(ConstMonomialFunPtr m);  
+    
     /// Add a constant.
-    void operator+=(double c);
+    //void operator+=(double c);
+    void add(const double c);
 
     /// Add a linear function.
-    void operator+=(ConstLinearFunctionPtr lf);
-
-    /// Subtract a linear function.
-    void operator-=(ConstLinearFunctionPtr lf);
-
-    /// Multiply with a linear function.
-    void operator*=(ConstLinearFunctionPtr lf);
+    //void operator+=(ConstLinearFunctionPtr lf);
+    void add(ConstLinearFunctionPtr lf);
 
     /// Add a quadratic.
-    void operator+=(ConstQuadraticFunctionPtr qf);
+    //void operator+=(ConstQuadraticFunctionPtr qf);
+    void  add(ConstQuadraticFunctionPtr qf);
+
+    /// Add a polynomial to the polynomial.
+    //void operator+=(ConstPolyFunPtr p);
+    void add(ConstPolyFunPtr p);
 
     /// Multiply with a quadratic.
-    void operator*=(ConstQuadraticFunctionPtr qf);
+    //void operator*=(ConstQuadraticFunctionPtr qf);
+    void multiply(ConstQuadraticFunctionPtr qf);
 
     /// Multiply with a polynomial.
-    void operator*=(ConstPolyFunPtr p2);
+    //void operator*=(ConstPolyFunPtr p2);
+    void multiply(ConstPolyFunPtr p2);
 
     /// Add two polynomials. Creates a new polynomial.
-    friend PolyFunPtr operator + (ConstPolyFunPtr p1, ConstPolyFunPtr p2);
+    //friend PolyFunPtr operator + (ConstPolyFunPtr p1, ConstPolyFunPtr p2);
+    PolyFunPtr copyAdd(ConstPolyFunPtr p2) const;
 
-    /// Subtract two polynomials.
-    friend PolyFunPtr operator - (ConstPolyFunPtr p1, ConstPolyFunPtr p2);
+    ///// Multiply a polynomial with constant.
+    PolyFunPtr copyMult(double c);
 
-    /// Multiply a polynomial with constant.
-    friend PolyFunPtr operator*(double c, ConstPolyFunPtr p2);
+    ///// Multiply a linear function and polynomial function.
+    PolyFunPtr copyMult(ConstLinearFunctionPtr l2) const;
 
-    /// Multiply a linear function and polynomial function.
-    friend PolyFunPtr operator*(ConstPolyFunPtr p2, 
-                                ConstLinearFunctionPtr l1);
+    ///// Multiply a polynomial with quadratic.
+    PolyFunPtr copyMult(ConstQuadraticFunctionPtr q2) const;
 
-    /// Multiply a polynomial with quadratic.
-    friend PolyFunPtr operator*(ConstPolyFunPtr p1, 
-                                ConstQuadraticFunctionPtr q2);
-
-    /// Multiply a polynomial with constant.
-    friend PolyFunPtr operator*(ConstPolyFunPtr p1, ConstPolyFunPtr p2);
+    ///// Multiply a polynomial with constant.
+    PolyFunPtr copyMult(ConstPolyFunPtr p2) const;
 
   protected:
     /// Additional constant.
