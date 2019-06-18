@@ -69,10 +69,9 @@ war_cnt=`grep "warning:" ${NAME}.err | grep -c -v third-party`
 if [[ x${ok_match} == "x" ]]
 then
   echo ${NAME}: utest ERROR >> ${SUMMARY}
-else
-  echo ${NAME}: ${err_cnt} errors and ${war_cnt} warnings in compiling, utest output: ${ok_match} >> ${SUMMARY}
-  echo "" >> ${SUMMARY}
 fi
+echo ${NAME}: ${err_cnt} errors and ${war_cnt} warnings in compiling, utest output: ${ok_match} >> ${SUMMARY}
+echo "" >> ${SUMMARY}
 }
 
 function listBins {
@@ -450,11 +449,11 @@ mkdir ${NAME}
 cd ${NAME}
 cp ${TEST_DIR}/Makefile.manual Makefile
 
-echo "Making"
+echo "Making using Makefile.manual" >> ../${NAME}.log 2>> ../${NAME}.err
 make -j ${CPUS} BQPD_LIB=${TP_DIR}/lib/libbqpd.a FILTERSQP_LIB=${TP_DIR}/lib/libfiltersqp.a IPOPT_INST=${TP_DIR} OSI_INST=${TP_DIR} AMPL_INCS=-I${TP_DIR}/include/asl AMPL_INST=${TP_DIR}/lib BOOST_INC=${TP_DIR} MINOTAUR=${TEST_DIR} EXTRA_LIBS="-lcoinmumps -lz -lbz2"
-echo "stop Making"
+echo "finished Making" >> ../${NAME}.log 2>> ../${NAME}.err
 FILES="lib/libminotaur.a lib/libmntrbqpd.a lib/libmntrampl.a lib/libmntrfiltersqp.a lib/libmntripopt.a lib/libmntrosilp.a bin/bnb bin/glob bin/qg bin/qpd"
-testFiles
+listBins; testFiles; checkTest
 
 cd ${TEST_DIR}
 
