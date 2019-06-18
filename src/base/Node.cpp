@@ -33,7 +33,8 @@ Node::Node()
     parent_(NodePtr()),
     status_(NodeNotProcessed),
     vioVal_(0),
-    tbScore_(0)
+    tbScore_(0),
+    ws_(0)
 {
 }
 
@@ -47,7 +48,8 @@ Node::Node(NodePtr parentNode, BranchPtr branch)
     parent_(parentNode),
     status_(NodeNotProcessed),
     vioVal_(0),
-    tbScore_(0)
+    tbScore_(0),
+    ws_(0)
 {
   lb_ = parentNode->getLb();
 }
@@ -112,7 +114,7 @@ void Node::applyRModsTrans(RelaxationPtr rel)
   ModificationConstIterator mod_iter;
   ModificationPtr mod;
   ModificationPtr pmod1, mod2;
-  ProblemPtr p;   //not used, just passed
+  ProblemPtr p=0;   //not used, just passed
 
   // first apply the mods that created this node from its parent
   if (branch_) {
@@ -163,7 +165,6 @@ void Node::removeChildren()
 
 void Node::removeParent()
 {
-  //parent_.reset();
   parent_ = 0;
 }
 
@@ -252,7 +253,7 @@ void Node::undoRModsTrans(RelaxationPtr rel)
 {
   ModificationRConstIterator mod_iter;
   ModificationPtr mod;
-  ProblemPtr p;
+  ProblemPtr p=0;
 
   // explicitely request the const_reverse_iterator for rend():
   // for bug in STL C++ standard

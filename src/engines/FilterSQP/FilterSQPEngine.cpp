@@ -576,7 +576,7 @@ WarmStartPtr FilterSQPEngine::getWarmStartCopy()
   if (warmSt_) {
     warm_st = (FilterWSPtr) new FilterSQPWarmStart(warmSt_); // copy
   } else {
-    warm_st = FilterWSPtr(); // NULL
+    warm_st = 0; 
   }
   return warm_st;
 }
