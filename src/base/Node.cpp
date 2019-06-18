@@ -24,7 +24,7 @@ using namespace Minotaur;
 using namespace std;
 
 Node::Node()
-  : branch_(BranchPtr()),
+  : branch_(0),
     depth_(0),
     id_(0),
     lb_(-INFINITY),
@@ -57,6 +57,9 @@ Node::Node(NodePtr parentNode, BranchPtr branch)
 
 Node::~Node()
 {
+  if (branch_) {
+    delete branch_;
+  }
   pMods_.clear();
   rMods_.clear();
   children_.clear();

@@ -40,6 +40,7 @@ Environment::Environment()
 Environment::~Environment()
 {
   delete logger_;
+  delete options_;
   delete timer_;
   delete timerFac_;
 }

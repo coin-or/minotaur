@@ -59,6 +59,9 @@ PCBProcessor::PCBProcessor (EnvPtr env, EnginePtr engine, HandlerVector handlers
 
 PCBProcessor::~PCBProcessor()
 {
+  if (brancher_) {
+    delete brancher_;
+  }
   handlers_.clear();
 }
 

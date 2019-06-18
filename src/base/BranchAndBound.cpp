@@ -75,14 +75,16 @@ BranchAndBound::~BranchAndBound()
 {
   options_.reset();
   nodePrcssr_.reset();
-  //nodeRlxr_.reset();
-  nodeRlxr_ = 0;
+  if (nodeRlxr_) {
+   delete nodeRlxr_;
+   nodeRlxr_ = 0;
+  }
   tm_.reset();
-  //solPool_.reset();
-  solPool_ = 0;
-  //problem_.reset();
+  if (solPool_) {
+    delete solPool_;
+    solPool_ = 0;
+  }
   problem_ = 0;
-  //env_.reset();
   env_ = 0;
   if (timer_) {
     delete timer_;
