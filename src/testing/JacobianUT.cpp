@@ -48,8 +48,10 @@ void JacobianUT::setUp()
 void JacobianUT::tearDown()
 {
   vars_.clear();
-  lf_.reset();
-  qf_.reset();
+  //lf_.reset();
+  //qf_.reset();
+  lf_ = 0;
+  qf_ = 0;
 }
 
 

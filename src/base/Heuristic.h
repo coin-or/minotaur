@@ -22,9 +22,8 @@ namespace Minotaur {
   class   Node;
   class   Relaxation;
   class   SolutionPool;
-  typedef boost::shared_ptr<Node> NodePtr;
-  typedef boost::shared_ptr<Relaxation> RelaxationPtr;
-  typedef boost::shared_ptr<SolutionPool> SolutionPoolPtr;
+  typedef Relaxation* RelaxationPtr;
+  typedef SolutionPool* SolutionPoolPtr;
 
 
   /**

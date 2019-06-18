@@ -121,7 +121,7 @@ namespace Minotaur {
       BrCandPtr findBestCandidate_();
 
   };
-  typedef boost::shared_ptr<MaxFreqBrancher> MaxFreqBrancherPtr;
+  typedef MaxFreqBrancher* MaxFreqBrancherPtr;
 }
 #endif
 

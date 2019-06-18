@@ -64,7 +64,28 @@ void LinearFunction::add(LinearFunctionPtr lf)
   }
 }
 
+void LinearFunction::add(ConstLinearFunctionPtr lf)
+{
+  if (lf) {
+    for (VariableGroupConstIterator it = lf->terms_.begin(); it != lf->terms_.end(); 
+         ++it) {
+      incTerm(it->first, it->second);
+    }
+    hasChanged_ = true;
+  }
+}
 
+void LinearFunction::minus(LinearFunctionPtr lf){
+    if (lf){
+      for (VariableGroupConstIterator it = lf->terms_.begin(); it != lf->terms_.end();
+            ++it) {
+          incTerm(it->first, -1*it->second);
+    }
+    hasChanged_ = true;
+    
+    }
+
+}
 void LinearFunction::addTerm(ConstVariablePtr var, const double a) 
 {
   if (fabs(a) > tol_) {
@@ -275,40 +296,71 @@ void LinearFunction::prepJac(VarSetConstIter vbeg, VarSetConstIter vend)
 }
 
 
-void LinearFunction::operator+=(ConstLinearFunctionPtr l2)
+
+LinearFunctionPtr LinearFunction::copyMinus(ConstLinearFunctionPtr l2)
 {
-  if (l2) {
-    for (VariableGroupConstIterator it = l2->terms_.begin(); 
-        it != l2->terms_.end(); ++it) {
-      incTerm(it->first, it->second);
-    }
-    hasChanged_ = true;
-  }
-}
-
-
-void LinearFunction::operator-=(ConstLinearFunctionPtr l2)
-{
-  if (l2) {
-    for (VariableGroupConstIterator it = l2->terms_.begin(); 
-        it != l2->terms_.end(); ++it) {
-      incTerm(it->first, -1.*it->second);
-    }
-    hasChanged_ = true;
-  }
-}
-
-
-void LinearFunction::operator*=(const double c)
-{
-  if (fabs(c) < 1e-7) {
-    terms_.clear();
+  LinearFunctionPtr lf = LinearFunctionPtr();  //NULL
+  if (!l2) {
+    lf = this->clone();
   } else {
-    for (VariableGroupIterator it = terms_.begin(); it != terms_.end(); ++it) {
-      it->second *= c;
+    lf = this->clone();
+    for (VariableGroupConstIterator it = l2->terms_.begin(); 
+        it != l2->terms_.end(); ++it) {
+      lf->incTerm(it->first, -1*it->second);
     }
   }
-  hasChanged_ = true;
+  return lf;
+}
+LinearFunctionPtr LinearFunction::copyAdd(ConstLinearFunctionPtr l2)
+{
+  LinearFunctionPtr lf = LinearFunctionPtr();  //NULL
+  if (!l2) {
+    lf = this->clone();
+  } else {
+    lf = this->clone();
+    for (VariableGroupConstIterator it = l2->terms_.begin(); 
+        it != l2->terms_.end(); ++it) {
+      lf->incTerm(it->first, it->second);
+    }
+  }
+  return lf;
+}
+
+
+LinearFunctionPtr LinearFunction::copyMult(const double c)
+{
+  // creates a linear function even when c = 0.
+  // Returns NULL if l2 is NULL.
+  LinearFunctionPtr lf = LinearFunctionPtr();  //NULL
+  if (fabs(c)>1e-7) {
+    lf = (LinearFunctionPtr) new LinearFunction();
+    for (VariableGroupConstIterator it = this->terms_.begin(); 
+        it != this->terms_.end(); ++it) {
+      lf->addTerm(it->first, c*it->second);
+    }
+  } else {
+    // do nothing
+  }
+  return lf;
+}
+
+
+QuadraticFunctionPtr LinearFunction::copyMult(ConstLinearFunctionPtr l2)
+{
+  QuadraticFunctionPtr qf = QuadraticFunctionPtr(); // NULL
+  if (l2) {
+    qf = (QuadraticFunctionPtr) new QuadraticFunction();
+    for (VariableGroupConstIterator it1 = this->terms_.begin(); 
+        it1 != this->terms_.end(); ++it1) {
+      for (VariableGroupConstIterator it2 = l2->terms_.begin(); 
+          it2 != l2->terms_.end(); ++it2) {
+        qf->incTerm(it1->first, it2->first, it1->second * it2->second);
+      }
+    }
+  } else {
+    // do nothing
+  }
+  return qf;
 }
 
 
@@ -327,88 +379,66 @@ void LinearFunction::write(std::ostream &s) const
 }
 
 
-namespace Minotaur {
-LinearFunctionPtr operator-(ConstLinearFunctionPtr l1, 
-     ConstLinearFunctionPtr l2)
-{
-  LinearFunctionPtr lf = LinearFunctionPtr();  //NULL
-  if (!l1 && !l2) {
-    // do nothing.
-  } else if (!l1) {
-    lf = l2->clone();
-    (*lf) *= -1.;
-  } else if (!l2) {
-    lf = l1->clone();
-  } else {
-    lf = l1->clone();
-    for (VariableGroupConstIterator it = l2->terms_.begin(); 
-        it != l2->terms_.end(); ++it) {
-      lf->incTerm(it->first, -1*it->second);
-    }
-  }
-  return lf;
-}
-
-
-LinearFunctionPtr operator+(ConstLinearFunctionPtr l1, 
-     ConstLinearFunctionPtr l2)
-{
-  LinearFunctionPtr lf = LinearFunctionPtr();  //NULL
-  if (!l1 && !l2) {
-    // do nothing.
-  } else if (!l1) {
-    lf = l2->clone();
-  } else if (!l2) {
-    lf = l1->clone();
-  } else {
-    lf = l1->clone();
-    for (VariableGroupConstIterator it = l2->terms_.begin(); 
-        it != l2->terms_.end(); ++it) {
-      lf->incTerm(it->first, it->second);
-    }
-  }
-  return lf;
-}
-
-
-LinearFunctionPtr operator*(const double c, ConstLinearFunctionPtr l2)
-{
-  // creates a linear function even when c = 0.
-  // Returns NULL if l2 is NULL.
-  LinearFunctionPtr lf = LinearFunctionPtr();  //NULL
-  if (l2 && fabs(c)>1e-7) {
-    lf = (LinearFunctionPtr) new LinearFunction();
-    for (VariableGroupConstIterator it = l2->terms_.begin(); 
-        it != l2->terms_.end(); ++it) {
-      lf->addTerm(it->first, c*it->second);
-    }
-  } else {
-    // do nothing
-  }
-  return lf;
-}
-
-
-QuadraticFunctionPtr operator*(ConstLinearFunctionPtr l1, 
-    ConstLinearFunctionPtr l2)
-{
-  QuadraticFunctionPtr qf = QuadraticFunctionPtr(); // NULL
-  if (l1 && l2) {
-    qf = (QuadraticFunctionPtr) new QuadraticFunction();
-    for (VariableGroupConstIterator it1 = l1->terms_.begin(); 
-        it1 != l1->terms_.end(); ++it1) {
-      for (VariableGroupConstIterator it2 = l2->terms_.begin(); 
-          it2 != l2->terms_.end(); ++it2) {
-        qf->incTerm(it1->first, it2->first, it1->second * it2->second);
-      }
-    }
-  } else {
-    // do nothing
-  }
-  return qf;
-} 
-
-} // namespace Minotaur
+//namespace Minotaur {
+//LinearFunctionPtr operator+(ConstLinearFunctionPtr l1, 
+//     ConstLinearFunctionPtr l2)
+//{
+//  LinearFunctionPtr lf = LinearFunctionPtr();  //NULL
+//  if (!l1 && !l2) {
+//    // do nothing.
+//  } else if (!l1) {
+//    lf = l2->clone();
+//  } else if (!l2) {
+//    lf = l1->clone();
+//  } else {
+//    lf = l1->clone();
+//    for (VariableGroupConstIterator it = l2->terms_.begin(); 
+//        it != l2->terms_.end(); ++it) {
+//      lf->incTerm(it->first, it->second);
+//    }
+//  }
+//  return lf;
+//}
+//
+//
+//LinearFunctionPtr operator*(const double c, ConstLinearFunctionPtr l2)
+//{
+//  // creates a linear function even when c = 0.
+//  // Returns NULL if l2 is NULL.
+//  LinearFunctionPtr lf = LinearFunctionPtr();  //NULL
+//  if (l2 && fabs(c)>1e-7) {
+//    lf = (LinearFunctionPtr) new LinearFunction();
+//    for (VariableGroupConstIterator it = l2->terms_.begin(); 
+//        it != l2->terms_.end(); ++it) {
+//      lf->addTerm(it->first, c*it->second);
+//    }
+//  } else {
+//    // do nothing
+//  }
+//  return lf;
+//}
+//
+//
+//QuadraticFunctionPtr operator*(ConstLinearFunctionPtr l1, 
+//    ConstLinearFunctionPtr l2)
+//{
+//  QuadraticFunctionPtr qf = QuadraticFunctionPtr(); // NULL
+//  if (l1 && l2) {
+//    qf = (QuadraticFunctionPtr) new QuadraticFunction();
+//    for (VariableGroupConstIterator it1 = l1->terms_.begin(); 
+//        it1 != l1->terms_.end(); ++it1) {
+//      for (VariableGroupConstIterator it2 = l2->terms_.begin(); 
+//          it2 != l2->terms_.end(); ++it2) {
+//        qf->incTerm(it1->first, it2->first, it1->second * it2->second);
+//      }
+//    }
+//  } else {
+//    // do nothing
+//  }
+//  return qf;
+//} 
+//
+//} // namespace Minotaur
 
 // Local Variables: 
 // mode: c++ 

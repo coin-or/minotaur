@@ -15,6 +15,7 @@
 #define MINOTAURCXQUADRATICHANDLER_H
 
 #include "Handler.h"
+#include "Types.h"
 
 namespace Minotaur {
 
@@ -23,11 +24,8 @@ class Function;
 class LinearFunction;
 class Problem;
 class QuadraticFunction;
-typedef Engine* EnginePtr;
-typedef boost::shared_ptr<Function> FunctionPtr;
-typedef boost::shared_ptr<LinearFunction> LinearFunctionPtr;
-typedef boost::shared_ptr<const Problem> ConstProblemPtr;
-typedef boost::shared_ptr<QuadraticFunction> QuadraticFunctionPtr;
+typedef LinearFunction* LinearFunctionPtr;
+typedef QuadraticFunction* QuadraticFunctionPtr;
 
 /// Save information about constraints of the form \f$ y \leq x^2 \f$.
 struct Secant {
@@ -148,7 +146,7 @@ public:
                   const double &y0val, const double &tol) const;
 };
 /// shared pointer to McCormick object.
-typedef boost::shared_ptr<McCormick> McCormickPtr;
+typedef McCormick* McCormickPtr;
 
 /**
  * Compare two McCormick objects. Since we keep them in a set, we need to
@@ -333,10 +331,10 @@ public:
 };
 
 /// Shared pointer to CxQuadHandler.
-typedef boost::shared_ptr<CxQuadHandler> CxQuadHandlerPtr;
+typedef CxQuadHandler* CxQuadHandlerPtr;
 
 /// Shared pointer to const CxQuadHandler.
-typedef boost::shared_ptr<const CxQuadHandler> CxQuadConstHandlerPtr;
+typedef const CxQuadHandler* CxQuadConstHandlerPtr;
 }
 #endif
 

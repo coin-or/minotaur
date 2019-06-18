@@ -41,7 +41,7 @@ private:
 
 };
 
-typedef boost::shared_ptr<PreAuxVars> PreAuxVarsPtr;
+typedef PreAuxVars* PreAuxVarsPtr;
 }
 #endif
 

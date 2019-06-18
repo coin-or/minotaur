@@ -25,7 +25,7 @@ namespace Minotaur {
 
 class CGraph;
 class CNode;
-typedef boost::shared_ptr<CGraph> CGraphPtr;
+typedef CGraph* CGraphPtr;
 typedef std::deque<CNode *> CNodeQ;
 typedef std::vector<CNode *> CNodeVector;
 typedef std::map<ConstVariablePtr, CNode*, CompareVariablePtr> VarNodeMap;

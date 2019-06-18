@@ -242,10 +242,10 @@ void Function::operator*=(const double c)
     nlf_ = NonlinearFunctionPtr();
   } else {
     if (lf_) {
-      (*lf_) *= c;
+      lf_->multiply(c);
     }
     if (qf_) {
-      (*qf_) *= c;
+      qf_->multiply(c);
     }
     if (nlf_) {
       nlf_->multiply(c);
@@ -336,7 +336,7 @@ void Function::evalHessian(const double mult, const double *x,
 void Function::add(ConstLinearFunctionPtr lPtr)
 {
   if (lf_) {
-    (*lf_) += lPtr;
+    lf_->add(lPtr);
   } else {
     lf_ = lPtr->clone();
     if (type_== Constant) {

@@ -59,7 +59,8 @@ Constraint::Constraint(UInt id, UInt index, FunctionPtr f, double lb,
 
 Constraint::~Constraint()
 {
-  f_.reset();
+  //f_.reset();
+  f_ = 0;
 }
 
 

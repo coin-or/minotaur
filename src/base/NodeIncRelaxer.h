@@ -97,7 +97,7 @@ private:
   RelaxationPtr rel_;
 };
 
-typedef boost::shared_ptr <NodeIncRelaxer> NodeIncRelaxerPtr;
+typedef NodeIncRelaxer* NodeIncRelaxerPtr;
 }
 #endif
 

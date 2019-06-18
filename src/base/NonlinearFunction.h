@@ -20,8 +20,8 @@ namespace Minotaur {
   struct LTHessStor;
   class NonlinearFunction;
   class VarBoundMod;
-  typedef boost::shared_ptr<NonlinearFunction> NonlinearFunctionPtr;
-  typedef boost::shared_ptr<VarBoundMod> VarBoundModPtr;
+  typedef NonlinearFunction* NonlinearFunctionPtr;
+  typedef VarBoundMod* VarBoundModPtr;
   typedef std::vector<VarBoundModPtr> VarBoundModVector;
   typedef VarBoundModVector::iterator VarBoundModIter;
 
@@ -283,8 +283,8 @@ namespace Minotaur {
     VariableSet vars_;
   };
 
-  typedef boost::shared_ptr<NonlinearFunction> NonlinearFunctionPtr;
-  typedef boost::shared_ptr<const NonlinearFunction> ConstNonlinearFunctionPtr;  
+  typedef NonlinearFunction* NonlinearFunctionPtr;
+  typedef const NonlinearFunction* ConstNonlinearFunctionPtr;  
 
 }
 #endif

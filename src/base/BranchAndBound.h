@@ -28,10 +28,10 @@ namespace Minotaur {
   class   TreeManager;
   typedef boost::shared_ptr <BabOptions> BabOptionsPtr;
   typedef boost::shared_ptr <NodeProcessor> NodeProcessorPtr;
-  typedef boost::shared_ptr <NodeRelaxer> NodeRelaxerPtr;
-  typedef boost::shared_ptr <Problem> ProblemPtr;
-  typedef boost::shared_ptr <Solution> SolutionPtr;
-  typedef boost::shared_ptr <SolutionPool> SolutionPoolPtr;
+  typedef NodeRelaxer* NodeRelaxerPtr;
+  typedef Problem* ProblemPtr;
+  typedef Solution* SolutionPtr;
+  typedef SolutionPool* SolutionPoolPtr;
   typedef boost::shared_ptr <TreeManager> TreeManagerPtr;
 
 

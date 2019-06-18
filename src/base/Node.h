@@ -21,10 +21,9 @@ namespace Minotaur {
   class Node;
   class Relaxation;
   class WarmStart;
-  typedef boost::shared_ptr<Node> NodePtr;
-  typedef boost::shared_ptr<const Node> ConstNodePtr;
-  typedef boost::shared_ptr<Relaxation> RelaxationPtr;
-  typedef boost::shared_ptr<WarmStart> WarmStartPtr;
+  typedef const Node* ConstNodePtr;
+  typedef Relaxation* RelaxationPtr;
+  typedef WarmStart* WarmStartPtr;
   
    /**
     * A Node is a node in the search tree or the branch-and-bound tree.
@@ -218,7 +217,7 @@ namespace Minotaur {
     void removeParent();
 
     /// Remove warm start information associated with this node.
-    void removeWarmStart() { ws_.reset(); }
+    void removeWarmStart() { ws_ = 0; }
 
     /// Set the branching candidate information for this node.
     void setBrCands(UIntVector brCands) { brCands_ = brCands; }

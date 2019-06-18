@@ -1,4 +1,5 @@
 // 
+//
 //     MINOTAUR -- It's only 1/2 bull
 // 
 //     (C)opyright 2009 - 2017 The MINOTAUR Team.
@@ -24,7 +25,7 @@ namespace Minotaur {
   class Engine;
   class ConBoundMod;
   typedef Engine* EnginePtr;
-  typedef boost::shared_ptr<ConBoundMod> ConBoundModPtr;
+  typedef ConBoundMod* ConBoundModPtr;
   typedef std::vector <ConBoundModPtr> ConBoundModVector;
   typedef ConBoundModVector::iterator ConBoundModIter;
   typedef ConBoundModVector::const_iterator ConBoundModConstIter;
@@ -80,8 +81,8 @@ namespace Minotaur {
   };
 
   class ConBoundMod2;
-  typedef boost::shared_ptr<ConBoundMod2> ConBoundMod2Ptr;
-  typedef boost::shared_ptr<const ConBoundMod2> ConstConBoundMod2Ptr;  
+  typedef ConBoundMod2* ConBoundMod2Ptr;
+  typedef const ConBoundMod2* ConstConBoundMod2Ptr;  
   typedef std::vector < ConBoundMod2Ptr > ConBoundMod2Vector;
   typedef ConBoundMod2Vector::iterator ConBoundMod2Iter;
   typedef ConBoundMod2Vector::const_iterator ConBoundMod2ConstIter;
@@ -140,8 +141,8 @@ namespace Minotaur {
 
 
   class ConMod;
-  typedef boost::shared_ptr<ConMod> ConModPtr;
-  typedef boost::shared_ptr<const ConMod> ConstConModPtr;  
+  typedef ConMod* ConModPtr;
+  typedef const ConMod* ConstConModPtr;  
   typedef std::vector < ConModPtr > ConModVector;
   typedef ConModVector::iterator ConModIter;
   typedef ConModVector::const_iterator ConModConstIter;

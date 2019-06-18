@@ -42,9 +42,12 @@ SecantMod::SecantMod(ConstraintPtr con, LinearFunctionPtr new_lf,
 
 SecantMod::~SecantMod()
 {
-  ymod_.reset();
-  xmod_.reset();
-  lmod_.reset();
+  //ymod_.reset();
+  //xmod_.reset();
+  //lmod_.reset();
+  ymod_ = 0;
+  xmod_ = 0;
+  lmod_ = 0;
 }
 
 

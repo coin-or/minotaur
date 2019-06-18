@@ -22,10 +22,9 @@ namespace Minotaur {
   class   Relaxation;
   class   Solution;
   class   SolutionPool;
-  typedef boost::shared_ptr <Node> NodePtr;
-  typedef boost::shared_ptr <Relaxation> RelaxationPtr;
-  typedef boost::shared_ptr <const Solution> ConstSolutionPtr;
-  typedef boost::shared_ptr <SolutionPool> SolutionPoolPtr;
+  typedef Relaxation* RelaxationPtr;
+  typedef const Solution* ConstSolutionPtr;
+  typedef SolutionPool* SolutionPoolPtr;
 
   /**
    * \brief A brancher is used to find suitable branches for a given node. e.g.
@@ -81,7 +80,7 @@ namespace Minotaur {
       LoggerPtr logger_;
 
   };
-  typedef boost::shared_ptr<Brancher> BrancherPtr;
+  typedef Brancher* BrancherPtr;
 
 }
 #endif

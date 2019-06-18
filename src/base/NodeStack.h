@@ -78,7 +78,7 @@ namespace Minotaur {
       /// stack of active nodes.
       NodePtrStack nodes_;
   };
-  typedef boost::shared_ptr<NodeStack> NodeStackPtr;
+  typedef NodeStack* NodeStackPtr;
 }
 #endif
 

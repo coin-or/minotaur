@@ -25,11 +25,10 @@ namespace Minotaur {
   class   PreMod;
   class   Solution;
   class   SolutionPool;
-  typedef boost::shared_ptr<Node> NodePtr;
-  typedef boost::shared_ptr<Relaxation> RelaxationPtr;
-  typedef boost::shared_ptr<PreMod> PreModPtr;
-  typedef boost::shared_ptr<const Solution> ConstSolutionPtr;
-  typedef boost::shared_ptr<SolutionPool> SolutionPoolPtr;
+  typedef Relaxation* RelaxationPtr;
+  typedef PreMod* PreModPtr;
+  typedef const Solution* ConstSolutionPtr;
+  typedef SolutionPool* SolutionPoolPtr;
   typedef std::deque<PreModPtr> PreModQ;
   typedef PreModQ::iterator PreModQIter;
   typedef PreModQ::const_iterator PreModQConstIter;

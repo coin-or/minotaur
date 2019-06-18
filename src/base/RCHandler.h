@@ -20,6 +20,7 @@
 #include "Engine.h"
 #include "Problem.h"
 #include "Function.h"
+#include "Types.h"
 
 namespace Minotaur {
 
@@ -34,7 +35,6 @@ class CutManager;
 class Timer;
 class SimpleCutMan;
 class Environment;
-typedef boost::shared_ptr <Environment> EnvPtr;
 
 /**
  * \brief Handler for reduced cost strengthening 
@@ -145,7 +145,7 @@ private:
              double bestobj,  const double rel_obj, double xval, double r,
              VariablePtr v);
 };
-  typedef boost::shared_ptr <RCHandler> RCHandlerPtr;
+  typedef RCHandler* RCHandlerPtr;
 }
 
 

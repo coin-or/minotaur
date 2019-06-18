@@ -20,7 +20,6 @@ namespace Minotaur {
 
 class Handler;
 class Variable;
-typedef boost::shared_ptr<Handler> HandlerPtr;
 
 /**
  * \brief Base class for describing candidates for branching on a node in

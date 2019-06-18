@@ -17,8 +17,6 @@
 #include "Types.h"
 
 namespace Minotaur {
-  class Function;
-  typedef boost::shared_ptr<Function> FunctionPtr;
 
   struct LTHessStor {
     UInt nz;

@@ -13,6 +13,7 @@
 #define LINFEASPUMP_H
 
 #include "FeasibilityPump.h"
+#include "Types.h"
 
 namespace Minotaur {
   class Engine;
@@ -21,10 +22,9 @@ namespace Minotaur {
   class Problem;
   class QGHandler;
   typedef Engine* EnginePtr;
-  typedef boost::shared_ptr<LinearFunction> LinearFunctionPtr;
-  typedef boost::shared_ptr<LinearHandler> LinHandlerPtr;
-  typedef boost::shared_ptr<Problem> ProblemPtr;
-  typedef boost::shared_ptr <QGHandler> QGHandlerPtr;
+  typedef LinearFunction* LinearFunctionPtr;
+  typedef LinearHandler* LinHandlerPtr;
+  typedef QGHandler* QGHandlerPtr;
 
   /// statistics for Linear Feasibility Pump
   struct LinFeasStats {

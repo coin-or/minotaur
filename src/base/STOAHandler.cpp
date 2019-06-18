@@ -123,11 +123,14 @@ STOAHandler::~STOAHandler()
   if (timer_) {
     delete timer_;
   }
-  env_.reset();
-  rel_.reset();
+  //env_.reset();
+  env_ = 0;
+  //rel_.reset();
   //nlpe_.reset();
-  minlp_.reset();
+  //minlp_.reset();
   //logger_.reset();
+  rel_   = 0;
+  minlp_ =  0;
 }
 
 

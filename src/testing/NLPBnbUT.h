@@ -248,12 +248,12 @@ class myHess3 : public HessianOfLag {
 };
 
 
-typedef boost::shared_ptr<myNLFun3> myNLFun3Ptr;
-typedef boost::shared_ptr<myNLFun4> myNLFun4Ptr;
+typedef myNLFun3* myNLFun3Ptr;
+typedef myNLFun4* myNLFun4Ptr;
 typedef boost::shared_ptr<myJac2> myJac2Ptr;
 typedef boost::shared_ptr<myHess2> myHess2Ptr;
-typedef boost::shared_ptr<myNLFun5> myNLFun5Ptr;
-typedef boost::shared_ptr<myNLFun6> myNLFun6Ptr;
+typedef myNLFun5* myNLFun5Ptr;
+typedef myNLFun6* myNLFun6Ptr;
 typedef boost::shared_ptr<myJac3> myJac3Ptr;
 typedef boost::shared_ptr<myHess3> myHess3Ptr;
 

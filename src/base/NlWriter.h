@@ -21,8 +21,8 @@ namespace Minotaur {
 
 class NonlinearFunction;
 class QuadraticFunction;
-typedef boost::shared_ptr<NonlinearFunction> NonlinearFunctionPtr;
-typedef boost::shared_ptr<QuadraticFunction> QuadraticFunctionPtr;
+typedef NonlinearFunction* NonlinearFunctionPtr;
+typedef QuadraticFunction* QuadraticFunctionPtr;
 
 /**
  * \brief Writes a problem to a .nl file. The nonlinear functions must be

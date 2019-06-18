@@ -185,7 +185,7 @@ void Presolver::linearizeObjective_()
 
       // add a new constraint containing the new variable and the quadratic.
       // qf - lf <= 0
-      (*lf) *= -1.0;
+      lf->multiply(-1.0);
       FunctionPtr f = (FunctionPtr) new Function(lf, qf);
       problem_->newConstraint(f, -INFINITY, 0.0);
     }

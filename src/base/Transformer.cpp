@@ -178,7 +178,8 @@ void Transformer::copyLinear_(ConstProblemPtr p, ProblemPtr newp)
   obj = p->getObjective();
 
   if (!obj) {
-    f.reset();
+    //f.reset();
+    f = 0;
     newp_->newObjective(f, 0.0, Minimize);
   } else {
     switch (obj->getFunctionType()) {

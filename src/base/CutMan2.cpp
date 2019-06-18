@@ -109,10 +109,12 @@ CutMan2::~CutMan2()
   if (hashVec_) {
     delete[] hashVec_;
   }
-  env_.reset();
+  //env_.reset();
+  env_ = 0;
   pool_.clear();
   rel_.clear();
-  p_.reset();
+  //p_.reset();
+  p_ = 0;
   delete timer_;
 }
 

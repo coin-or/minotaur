@@ -268,7 +268,7 @@ private:
 
   };
 
-  typedef boost::shared_ptr <QGAdvHandler> QGAdvHandlerPtr;
+  typedef QGAdvHandler* QGAdvHandlerPtr;
 }
 #endif
 

@@ -28,14 +28,12 @@ namespace Minotaur {
   class YEqCGs;
   class YEqLFs;
   class YEqVars;
-  typedef boost::shared_ptr<CxUnivarHandler> CxUnivarHandlerPtr;
-  typedef boost::shared_ptr<CGraph> CGraphPtr;
-  typedef boost::shared_ptr<Environment> EnvPtr;
-  typedef boost::shared_ptr<LinearHandler> LinearHandlerPtr;
-  typedef boost::shared_ptr<Problem> ProblemPtr;
-  typedef boost::shared_ptr<QuadHandler> QuadHandlerPtr;
-  typedef boost::shared_ptr<Solution> SolutionPtr;
-  typedef boost::shared_ptr<const Solution> ConstSolutionPtr;
+  typedef CxUnivarHandler* CxUnivarHandlerPtr;
+  typedef CGraph* CGraphPtr;
+  typedef LinearHandler* LinearHandlerPtr;
+  typedef QuadHandler* QuadHandlerPtr;
+  typedef Solution* SolutionPtr;
+  typedef const Solution* ConstSolutionPtr;
 
 
   /**
@@ -120,8 +118,8 @@ namespace Minotaur {
                     LinearFunctionPtr &lf, VariablePtr &v, double &d);
 
   };
-  typedef boost::shared_ptr<SimpleTransformer> SimpTranPtr;
-  typedef boost::shared_ptr<const SimpleTransformer> ConstSimpTranPtr;
+  typedef SimpleTransformer* SimpTranPtr;
+  typedef const SimpleTransformer* ConstSimpTranPtr;
 
 }
 

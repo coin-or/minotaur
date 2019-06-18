@@ -22,7 +22,7 @@ namespace Minotaur {
   class Engine;
   class VarBoundMod;
   typedef Engine* EnginePtr;
-  typedef boost::shared_ptr<VarBoundMod> VarBoundModPtr;
+  typedef VarBoundMod* VarBoundModPtr;
   typedef std::vector < VarBoundModPtr > VarBoundModVector;
   typedef VarBoundModVector::iterator VarBoundModIter;
   typedef VarBoundModVector::const_iterator VarBoundModConstIter;
@@ -76,8 +76,8 @@ namespace Minotaur {
   };
 
   class VarBoundMod2;
-  typedef boost::shared_ptr<VarBoundMod2> VarBoundMod2Ptr;
-  typedef boost::shared_ptr<const VarBoundMod2> ConstVarBoundMod2Ptr;  
+  typedef VarBoundMod2* VarBoundMod2Ptr;
+  typedef const VarBoundMod2* ConstVarBoundMod2Ptr;  
   typedef std::vector < VarBoundMod2Ptr > VarBoundMod2Vector;
   typedef VarBoundMod2Vector::iterator VarBoundMod2Iter;
   typedef VarBoundMod2Vector::const_iterator VarBoundMod2ConstIter;

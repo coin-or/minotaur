@@ -335,7 +335,7 @@ void writeOAStatus(EnvPtr env, double gap, double objLb, double objUb,
 }
 
 
-void showStatus(EnvironmentPtr env, double objLb, double objUb, double gap, int iterNum)
+void showStatus(EnvPtr env, double objLb, double objUb, double gap, int iterNum)
 {
   int err = 0;
   env->getLogger()->msgStream(LogInfo)
@@ -363,8 +363,8 @@ double getWallTime() {
 }
 
 
-bool shouldStop(EnvironmentPtr env, SolveStatus &status, double gap, int iterNum, SolutionPoolPtr solPool, double wallTimeStart)
-//bool shouldStop(EnvironmentPtr env, SolveStatus &status, double gap, SolutionPoolPtr solPool)
+bool shouldStop( EnvPtr env, SolveStatus &status, double gap, int iterNum, SolutionPoolPtr solPool, double wallTimeStart)
+//bool shouldStop(EnvPtr env, SolveStatus &status, double gap, SolutionPoolPtr solPool)
 {
   bool stop_oa = false;
   //int err = 0;

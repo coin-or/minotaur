@@ -21,8 +21,8 @@
 namespace Minotaur {
 
   class QuadraticFunction;
-  typedef boost::shared_ptr<QuadraticFunction> QuadraticFunctionPtr;
-  typedef boost::shared_ptr<const QuadraticFunction> ConstQuadraticFunctionPtr;
+  typedef QuadraticFunction* QuadraticFunctionPtr;
+  typedef const QuadraticFunction* ConstQuadraticFunctionPtr;
   //class EigenVector;
   //typedef boost::shared_ptr<const EigenVector> EigenVectorPtr;
   //typedef LinearFunction EigenVector;
@@ -31,7 +31,7 @@ namespace Minotaur {
   typedef std::vector<EigenPair>::const_iterator EigenPairConstIterator;
 
   class Eigen;
-  typedef boost::shared_ptr<Eigen> EigenPtr;
+  typedef Eigen* EigenPtr;
   
   // /**
   // In Minotaur, EigenVectors are used only in the context of quadratic 
