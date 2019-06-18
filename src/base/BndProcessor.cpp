@@ -76,6 +76,9 @@ BndProcessor::BndProcessor (EnvPtr env, EnginePtr engine,
 
 BndProcessor::~BndProcessor()
 {
+  if (brancher_) {
+    delete brancher_;
+  }
   handlers_.clear();
 }
 

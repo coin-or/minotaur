@@ -147,7 +147,6 @@ FilterSQPWarmStart::FilterSQPWarmStart()
 
 FilterSQPWarmStart::~FilterSQPWarmStart()
 {
-  //sol_.reset();
   sol_ = 0;
 }
 
@@ -158,7 +157,7 @@ FilterSQPWarmStart::FilterSQPWarmStart(ConstFilterWSPtr warmSt)
   if (warmSt && warmSt->sol_) {
     sol_ = (SolutionPtr) new Solution(warmSt->sol_);
   } else {
-    sol_ = SolutionPtr(); // NULL
+    sol_ = 0;
   }
 }
  
@@ -213,7 +212,7 @@ FilterSQPEngine::FilterSQPEngine(EnvPtr env)
   saveSol_(true),
   sol_(SolutionPtr()),
   strBr_(false),
-  warmSt_(FilterWSPtr()),
+  warmSt_(0),
   ws_(0),
   x_(0)
 {
@@ -243,13 +242,12 @@ FilterSQPEngine::FilterSQPEngine(EnvPtr env)
 
 FilterSQPEngine::~FilterSQPEngine()
 {
-  //delete ;
   if (c_) {
     freeStorage_();
     c_ = 0;
   }
   if (sol_) {
-    //sol_.reset();
+    delete sol_;
     sol_ = 0;
   }
   if (timer_) {
@@ -260,8 +258,11 @@ FilterSQPEngine::~FilterSQPEngine()
   }
   if (problem_) {
     problem_->unsetEngine();
-    //problem_.reset();
     problem_ = 0;
+  }
+  if (warmSt_) {
+    delete warmSt_;
+    warmSt_ = 0;
   }
 }
 
@@ -335,15 +336,14 @@ void FilterSQPEngine::clear()
   }
   if (problem_) {
     problem_->unsetEngine();
-    //problem_.reset();
     problem_ = 0;
   }
   if (sol_) {
-    //sol_.reset();
+    delete sol_;
     sol_ = 0;
   }
   if (warmSt_) {
-    //warmSt_.reset();
+    delete warmSt_;
     warmSt_ = 0;
   }
   strBr_       = false;
@@ -576,7 +576,7 @@ WarmStartPtr FilterSQPEngine::getWarmStartCopy()
   if (warmSt_) {
     warm_st = (FilterWSPtr) new FilterSQPWarmStart(warmSt_); // copy
   } else {
-    warm_st = FilterWSPtr(); // NULL
+    warm_st = 0; 
   }
   return warm_st;
 }
@@ -598,6 +598,9 @@ void FilterSQPEngine::loadFromWarmStart(const WarmStartPtr warm_st)
     ConstFilterWSPtr warm_st2 = dynamic_cast<const FilterSQPWarmStart*> (warm_st);
 
     // now create a full copy.
+    if (warmSt_) {
+      delete warmSt_;
+    }
     warmSt_ = (FilterWSPtr) new FilterSQPWarmStart(warm_st2);
     if (!useWs_) {
       logger_->msgStream(LogInfo) << "setWarmStart() method is called but"
@@ -672,8 +675,14 @@ void FilterSQPEngine::setStorage_(int mxwk, int maxa)
   FunctionType ftype;
 
   if (consChanged_) {
+    if (sol_) {
+      delete sol_;
+    }
     sol_ = (SolutionPtr) new Solution(1E20, 0, problem_);
     if (prepareWs_) {
+      if (warmSt_) {
+        delete warmSt_;
+      }
       warmSt_ = (FilterWSPtr) new FilterSQPWarmStart();
       warmSt_->setPoint(sol_);
     }
