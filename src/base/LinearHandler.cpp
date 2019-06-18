@@ -823,7 +823,6 @@ void LinearHandler::dualFix_(bool *changed)
       logger_->msgStream(LogDebug) << me_ << "variable " << v->getName() 
                                    << " fixed by dual fixing" << std::endl;
       mod->write(logger_->msgStream(LogDebug));
-      mod.reset();
     }
 #endif
   }
