@@ -27,32 +27,32 @@ using namespace Minotaur;
 
 
 Constraint::Constraint() 
-  : f_(FunctionPtr()),
-    numAct_(0),
-    minDepth_(INFINITY),
-    maxDepth_(-INFINITY),
-    id_(0),
-    index_(0),
-    lb_(-INFINITY),
-    name_(""),
-    state_(NormalCons),
-    ub_(INFINITY)
+: f_(FunctionPtr()),
+  numAct_(0),
+  minDepth_(1000000000),
+  maxDepth_(0),
+  id_(0),
+  index_(0),
+  lb_(-INFINITY),
+  name_(""),
+  state_(NormalCons),
+  ub_(INFINITY)
 {
 }
 
 
-Constraint::Constraint(UInt id, UInt index, FunctionPtr f, double lb, double
-                       ub, std::string name)
-  :f_(f),
-   numAct_(0),
-   minDepth_(INFINITY),
-   maxDepth_(-INFINITY),
-   id_(id),
-   index_(index),
-   lb_(lb),
-   name_(name),
-   state_(NormalCons),
-   ub_(ub)
+Constraint::Constraint(UInt id, UInt index, FunctionPtr f, double lb,
+                       double ub, std::string name)
+: f_(f),
+  numAct_(0),
+  minDepth_(1000000000),
+  maxDepth_(0),
+  id_(id),
+  index_(index),
+  lb_(lb),
+  name_(name),
+  state_(NormalCons),
+  ub_(ub)
 {
 }
 

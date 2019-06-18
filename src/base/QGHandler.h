@@ -87,7 +87,10 @@ private:
   bool oNl_;
   bool rootLinScheme3_;
   
-  UInt cutNum_;
+  UInt rScheme1Para_;
+  UInt rScheme2Para_;
+  UInt rScheme3Para_;
+  UInt rScheme4Para_;
 
   /// Pointer to relaxation of the problem.
   RelaxationPtr rel_;
@@ -96,7 +99,7 @@ private:
   double relobj_; 
   
   const double * solC_; 
-  const double * solNLP_; 
+  double * solNLP_; 
 
   /// Absolute tolerance for constraint feasibility.
   double solAbsTol_;
@@ -175,7 +178,8 @@ private:
 
   bool diffFunVarVal_(const double *x, FunctionPtr f);
 
-  void addExtraCuts_(const double *nlpx, ConstraintPtr con, LinearFunctionPtr lf);
+  void rootScheme3_(const double *nlpx, ConstraintPtr con, LinearFunctionPtr lf);
+  void rootScheme4_(const double *nlpx, ConstraintPtr con);
 
   bool twoVarsCon_(ConstraintPtr con);
   void rootLinearizations_();

@@ -217,19 +217,19 @@ namespace Minotaur {
 
   private:
     /// Set of all boolean options.
-    BoolOptionSet bool_ops_;
+    BoolOptionSet boolOps_;
 
     /// Set of all integer options.
-    IntOptionSet int_ops_;
+    IntOptionSet intOps_;
 
     /// Set of all double options.
-    DoubleOptionSet double_ops_;
+    DoubleOptionSet doubleOps_;
 
     /// Set of all string options.
-    StringOptionSet string_ops_;
+    StringOptionSet stringOps_;
 
     /// Set of all flags (options that don't need any arguments).
-    FlagOptionSet flag_ops_;
+    FlagOptionSet flagOps_;
   };
   typedef OptionDB* OptionDBPtr;
 }

@@ -63,6 +63,10 @@ CbcEngine::~CbcEngine()
     delete stats_;
     stats_ = 0;
   }
+  if (problem_) {
+    problem_->unsetEngine();
+    problem_.reset();
+  }
   if (osilp_) {
     delete osilp_;
     osilp_ = 0;

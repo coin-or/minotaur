@@ -24,6 +24,7 @@
 #endif
 
 #ifdef USE_CPX
+#include "CplexLPEngine.h"
 #include "CplexMILPEngine.h"
 #endif
 
@@ -72,6 +73,11 @@ EngineFactory::~EngineFactory()
 
 LPEnginePtr EngineFactory::getLPEngine()
 {
+#ifdef USE_CPX
+  if (env_->getOptions()->findString("lp_engine")->getValue()=="Cplex") {
+    return ((CplexLPEnginePtr) new CplexLPEngine(env_));
+  }
+#endif
 #ifdef USE_OSILP
   if (env_->getOptions()->findString("lp_engine")->getValue()!="None") {
     return ((OsiLPEnginePtr) new OsiLPEngine(env_));

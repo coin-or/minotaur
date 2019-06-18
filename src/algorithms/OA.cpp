@@ -498,7 +498,11 @@ int main(int argc, char* argv[])
     nr = (NodeIncRelaxerPtr) new NodeIncRelaxer(env, handlers);
     nr->setModFlag(false);
     milp = nr->createRootRelaxation(NodePtr(), prune);
-    nr->setEngine(milp_e); 
+    if (milp_e) {
+      nr->setEngine(milp_e);
+    } else {
+      assert(!"No MILP engine!");
+    }
  
     double solAbsTol = env->getOptions()->findDouble("solAbs_tol")->getValue();
     double solRelTol = env->getOptions()->findDouble("solRel_tol")->getValue();

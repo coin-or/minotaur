@@ -118,9 +118,6 @@ private:
 
 
 public:
-  /// Empty constructor.
-  OAHandler();
-
   /**
    * \brief Default Constructor.
    *

@@ -32,6 +32,7 @@ struct NlPresStats
   double timeN; /// Total time used in node presolves.
   int varDel;   /// Number of variables marked for deletion.
   int conDel;   /// Number of constraints marked for deletion.
+  int conRel;   /// Number of times constraint bounds relaxed.
   int infBnds;  /// No. of times infeasible implied bounds detected.
   int pRefs;    /// Number of perspective reformulations
   int vBnd;     /// Number of times variable-bounds were tightened.
