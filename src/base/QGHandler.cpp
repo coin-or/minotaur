@@ -731,11 +731,11 @@ void QGHandler::rootLinScheme3_()
   if (rScheme3Para_ <= 0) {
     return;  
   }
-  bool isInf = false;
-  findCenter_(&isInf);
-  if (isInf == true) {
-    return;
-  }
+  //bool isInf = false;
+  //findCenter_(&isInf);
+  //if (isInf == true) {
+    //return;
+  //}
   lpe_->load(rel_);
   FunctionPtr f;
   const double *lpx;
@@ -1750,7 +1750,18 @@ void QGHandler::relax_(bool *isInf)
       nlCons_.push_back(c);
     }
   }
- 
+  if (rScheme3Para_ > 0) {
+    if (nlCons_.size() > 0) {
+      bool noCenter = false;
+      findCenter_(&noCenter);
+      if (noCenter == true) {
+        rScheme3Para_ = 0;
+      }   
+    } else {
+      rScheme3Para_ = 0;
+    }
+  }
+
   linearizeObj_();
   nlpe_->load(minlp_); // loading original problem to NLP engine
   //rootLinScheme3_ = true; // set from environment option: MS: for scheme  4???
