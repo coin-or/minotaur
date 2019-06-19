@@ -29,8 +29,8 @@ using std::ofstream;
 namespace Minotaur {
 
 class PerspCon;
-typedef boost::shared_ptr<PerspCon> PerspConPtr;
-typedef boost::shared_ptr<const PerspCon> ConstPerspConPtr;
+typedef PerspCon* PerspConPtr;
+typedef const PerspCon* ConstPerspConPtr;
 
 
 /**

@@ -80,7 +80,7 @@ private:
   /// Size of tmp_ array.
   bool negObj_; 
 };
-typedef boost::shared_ptr<AMPLHessian> AMPLHessianPtr;
+typedef AMPLHessian* AMPLHessianPtr;
 }
 
 

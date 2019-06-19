@@ -73,13 +73,16 @@ BranchAndBound::BranchAndBound(EnvPtr env, ProblemPtr p)
 
 BranchAndBound::~BranchAndBound()
 {
-  options_.reset();
-  nodePrcssr_.reset();
+  //options_.reset();
+  //nodePrcssr_.reset();
   //nodeRlxr_.reset();
+  options_ = 0;
   nodeRlxr_ = 0;
-  tm_.reset();
+  nodePrcssr_ = 0;
+  //tm_.reset();
   //solPool_.reset();
   solPool_ = 0;
+  tm_ = 0;
   //problem_.reset();
   problem_ = 0;
   //env_.reset();

@@ -618,11 +618,11 @@ bool LGCIGenerator::liftingGNS(const ConstCoverSetPtr cone,
 {
   // Generate cover set version of GUBs from constraint type.
   // This is exactly the same as GUB constraints but in cover set data ype.
-  boost::shared_ptr< std::vector<CoverSetPtr> > guborigcoeffs = 
-    (boost::shared_ptr<std::vector<CoverSetPtr> >)   new std::vector<CoverSetPtr>;
+  std::vector<CoverSetPtr> * guborigcoeffs = 
+    (std::vector<CoverSetPtr> *)   new std::vector<CoverSetPtr>;
   // This one will be modified to be non-overlapping.
-  boost::shared_ptr< std::vector<CoverSetPtr> > gubcoverlist =
-    (boost::shared_ptr< std::vector<CoverSetPtr> >)  new std::vector<CoverSetPtr>;
+  std::vector<CoverSetPtr> * gubcoverlist =
+    (std::vector<CoverSetPtr> *)  new std::vector<CoverSetPtr>;
   // GUB lists are generated.
   generateGubMaps(gublist, gubcoverlist, guborigcoeffs);
   // Get the non-overlapping GUB set that covers knapsack inequality.
@@ -641,8 +641,8 @@ bool LGCIGenerator::liftingGNS(const ConstCoverSetPtr cone,
   // First constraint is similar to C1.
   CoverSetPtr consknap = (CoverSetPtr) new CoverSet(*cone);
   // remaining constraints are related to GUB constraints.
-  boost::shared_ptr< std::vector<CoverSetPtr> > gubcons =  
-    (boost::shared_ptr< std::vector<CoverSetPtr> >) new std::vector<CoverSetPtr>;
+  std::vector<CoverSetPtr> * gubcons =  
+    (std::vector<CoverSetPtr> *) new std::vector<CoverSetPtr>;
   initGubCons(cone,gubcoverlist, gubcons);
   
   // Construct rhs of lifting problem, i.e. for knapsack it is b, 
@@ -735,9 +735,9 @@ bool LGCIGenerator::liftingGNS(const ConstCoverSetPtr cone,
  * varset and liftup does not change.
  */
 void LGCIGenerator::liftSet(CoverSetPtr obj,
-                            boost::shared_ptr<std::vector<CoverSetPtr> > origgubs,
+                            std::vector<CoverSetPtr> * origgubs,
                             CoverSetPtr consknap,
-                            boost::shared_ptr<std::vector<CoverSetPtr> > gubcons,
+                            std::vector<CoverSetPtr> * gubcons,
                             const ConstCoverSetPtr varset,
                             CoverSetPtr coverineq,
                             double & rhs,
@@ -816,7 +816,7 @@ void LGCIGenerator::liftSet(CoverSetPtr obj,
  */
 // double LGCIGenerator::lift(CoverSetPtr obj,
 //                          CoverSetPtr consknap,
-//                          boost::shared_ptr<std::vector<CoverSetPtr> > gubcons,
+//                          std::vector<CoverSetPtr> * gubcons,
 //                          const CoverSetConstIterator variable,
 //                          double & rhs,
 //                          double & initialbknap,
@@ -926,7 +926,7 @@ void LGCIGenerator::liftSet(CoverSetPtr obj,
 void LGCIGenerator::addCons(CoverSetPtr obj,
                             CoverSetPtr consknap,
                             double bknap,
-                            boost::shared_ptr< std::vector<CoverSetPtr> > gubcons,
+                            std::vector<CoverSetPtr> * gubcons,
                             double * bgubs,
                             OrigLiftVarsPtr varmap,
                             ProblemPtr liftprob)
@@ -1041,9 +1041,9 @@ VariablePtr LGCIGenerator::addVar(VariablePtr var, OrigLiftVarsPtr varmap,
 }
 
 double LGCIGenerator::lift(CoverSetPtr obj,
-                           boost::shared_ptr<std::vector<CoverSetPtr> > origgubs,
+                           std::vector<CoverSetPtr> * origgubs,
                            CoverSetPtr consknap,
-                           boost::shared_ptr<std::vector<CoverSetPtr> > gubcons,
+                           std::vector<CoverSetPtr> * gubcons,
                            const CoverSetConstIterator variable,
                            double & rhs,
                            double & initialbknap,
@@ -1297,8 +1297,8 @@ double LGCIGenerator::roundHeur(ProblemPtr prob)
 
 
 void LGCIGenerator::initGubCons(const ConstCoverSetPtr cone,
-                                boost::shared_ptr<std::vector<CoverSetPtr> > gubcoverlist, 
-                                boost::shared_ptr<std::vector<CoverSetPtr> > gubcons)
+                                std::vector<CoverSetPtr> * gubcoverlist, 
+                                std::vector<CoverSetPtr> * gubcons)
 {
   // Generate empty GUB constraints.
   UInt numgubs = gubcoverlist->size();
@@ -1356,8 +1356,8 @@ void LGCIGenerator::initGubCons(const ConstCoverSetPtr cone,
 }
 
 void LGCIGenerator::generateGubMaps(ConstConstraintVectorPtr gublist, 
-                                    boost::shared_ptr< std::vector<CoverSetPtr> > gubcoverlist, 
-                                    boost::shared_ptr< std::vector<CoverSetPtr> > guborigcoeffs)
+                                    std::vector<CoverSetPtr> * gubcoverlist, 
+                                    std::vector<CoverSetPtr> * guborigcoeffs)
 {
   // Number of GUB constraints to be converted to coversets.
   ConstConstraintIterator it;
@@ -1404,7 +1404,7 @@ void LGCIGenerator::generateGubMaps(ConstConstraintVectorPtr gublist,
 
 }
 
-void LGCIGenerator::nonOverlap(boost::shared_ptr< std::vector<CoverSetPtr> > gubcoverlist)
+void LGCIGenerator::nonOverlap(std::vector<CoverSetPtr> * gubcoverlist)
 {
   // Iterators for the gubs in the list.
   std::vector<CoverSetPtr>::iterator it;

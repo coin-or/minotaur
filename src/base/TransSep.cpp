@@ -104,7 +104,7 @@ void TransSep::candCons()
       c_iter!=problem_->consEnd(); ++c_iter) {
     c_ptr=*c_iter;
     f=c_ptr->getFunction();
-    cgp = boost::dynamic_pointer_cast <CGraph> (f->getNonlinearFunction());
+    cgp = dynamic_cast <CGraph*> (f->getNonlinearFunction());
 
     if (cgp == NULL) {
       sepStatus = false;
@@ -761,7 +761,7 @@ void TransSep::objSepCheck()
   ObjectivePtr obj;
   obj = problem_->getObjective();
   f = obj->getFunction();
-  cgp = boost::dynamic_pointer_cast <CGraph> (f->getNonlinearFunction());
+  cgp = dynamic_cast <CGraph*> (f->getNonlinearFunction());
 
   if (cgp == NULL) {
     sepStatus = false;

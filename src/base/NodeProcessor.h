@@ -98,7 +98,7 @@ namespace Minotaur {
       BrancherPtr brancher_;
   };
 
-  typedef boost::shared_ptr <NodeProcessor> NodeProcessorPtr;
+  typedef NodeProcessor* NodeProcessorPtr;
 
 }
 #endif

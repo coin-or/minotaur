@@ -23,7 +23,7 @@ class Problem;
 class Solution;
 
 typedef Environment* EnvironmentPtr;
-typedef boost::shared_ptr<Cut> CutPtr;
+typedef Cut* CutPtr;
 typedef Solution* SolutionPtr;
 
 typedef std::vector<CutPtr> CutVector;

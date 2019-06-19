@@ -103,7 +103,7 @@ namespace Minotaur {
 
   };
 
-  typedef boost::shared_ptr <NodeFullRelaxer> NodeFullRelaxerPtr;
+  typedef NodeFullRelaxer* NodeFullRelaxerPtr;
 }
 #endif
 

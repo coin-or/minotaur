@@ -201,7 +201,7 @@ namespace Minotaur {
 
   };
 
-  typedef boost::shared_ptr <ParPCBProcessor> ParPCBProcessorPtr;
+  typedef ParPCBProcessor* ParPCBProcessorPtr;
 
 }
 #endif

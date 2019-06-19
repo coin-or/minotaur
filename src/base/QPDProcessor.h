@@ -262,7 +262,7 @@ namespace Minotaur {
     void updateUb_(SolutionPoolPtr s_pool, double *nlpval);
   };
 
-  typedef boost::shared_ptr <QPDProcessor> QPDProcessorPtr;
+  typedef QPDProcessor* QPDProcessorPtr;
 
 }
 #endif

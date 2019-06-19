@@ -234,7 +234,7 @@ namespace Minotaur {
 
   };
 
-  typedef boost::shared_ptr<FeasibilityPump> FeasPumpPtr;
+  typedef FeasibilityPump* FeasPumpPtr;
 
 }
 

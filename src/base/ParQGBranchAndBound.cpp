@@ -87,18 +87,21 @@ ParQGBranchAndBound::ParQGBranchAndBound(EnvPtr env, ProblemPtr p)
 
 ParQGBranchAndBound::~ParQGBranchAndBound()
 {
-  options_.reset();
+  //options_.reset();
   //logger_.reset();
+  options_ = 0;
   if (logger_){
     delete logger_;
   }
-  nodePrcssr_.reset();
+  //nodePrcssr_.reset();
   //nodeRlxr_.reset();
   nodeRlxr_ = 0;
-  tm_.reset();
+  nodePrcssr_ = 0;
+  //tm_.reset();
   //solPool_.reset();
   //problem_.reset();
   //env_.reset();
+  tm_ = 0;
   solPool_ = 0;
   problem_ = 0;
   env_ = 0;

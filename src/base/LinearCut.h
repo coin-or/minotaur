@@ -69,7 +69,7 @@ namespace Minotaur {
       /// ub.
       double ub_;
   };
-  typedef boost::shared_ptr<LinearCut> LinearCutPtr;
+  typedef LinearCut* LinearCutPtr;
   typedef std::vector< LinearCutPtr > LinearCutVector;
   typedef CutVector::iterator LinearCutIterator;
   typedef CutVector::const_iterator LinearCutConstIterator;

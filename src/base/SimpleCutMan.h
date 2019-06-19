@@ -115,7 +115,7 @@ namespace Minotaur {
     void mvNewToPool_();
   };
 
-//typedef boost::shared_ptr<CutManager> CutManagerPtr;
+//typedef CutManager* CutManagerPtr;
 }
 #endif
 

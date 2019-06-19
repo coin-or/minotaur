@@ -225,7 +225,7 @@ namespace Minotaur {
     void removeNode_(NodePtr node);
   };
 
-  typedef boost::shared_ptr<TreeManager> TreeManagerPtr;
+  typedef TreeManager* TreeManagerPtr;
 
 }
 #endif

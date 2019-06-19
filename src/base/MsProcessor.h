@@ -212,7 +212,7 @@ namespace Minotaur {
 
   };
 
-  typedef boost::shared_ptr <MsProcessor> MsProcessorPtr;
+  typedef MsProcessor* MsProcessorPtr;
 
 }
 #endif

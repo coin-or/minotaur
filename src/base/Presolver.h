@@ -135,7 +135,7 @@ namespace Minotaur {
 
   };
 
-  typedef boost::shared_ptr<Presolver> PresolverPtr;
+  typedef Presolver* PresolverPtr;
 }
 #endif
 

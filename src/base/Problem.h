@@ -30,8 +30,8 @@ namespace Minotaur {
   class QuadraticFunction;
   class SOS;
   class SparseMatrix;
-  typedef boost::shared_ptr<Jacobian> JacobianPtr;
-  typedef boost::shared_ptr<HessianOfLag> HessianOfLagPtr;
+  typedef Jacobian* JacobianPtr;
+  typedef HessianOfLag* HessianOfLagPtr;
   typedef LinearFunction* LinearFunctionPtr;
   typedef NonlinearFunction* NonlinearFunctionPtr;
   typedef ProblemSize* ProblemSizePtr;

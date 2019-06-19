@@ -109,7 +109,7 @@ namespace Minotaur {
       UInt nz_;
 
   };
-  typedef boost::shared_ptr<Jacobian> JacobianPtr;
+  typedef Jacobian* JacobianPtr;
 }
 #endif
 

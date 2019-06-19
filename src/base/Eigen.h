@@ -24,7 +24,6 @@ namespace Minotaur {
   typedef QuadraticFunction* QuadraticFunctionPtr;
   typedef const QuadraticFunction* ConstQuadraticFunctionPtr;
   //class EigenVector;
-  //typedef boost::shared_ptr<const EigenVector> EigenVectorPtr;
   //typedef LinearFunction EigenVector;
   //typedef LinearFunctionPtr EigenVectorPtr;
   typedef std::pair<double, LinearFunctionPtr> EigenPair;

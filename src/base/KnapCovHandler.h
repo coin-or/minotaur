@@ -29,7 +29,6 @@ typedef KnapCovHandler* KnapCovHandlerPtr;
 typedef const KnapCovHandler* ConstKnapCovHandler;
 
 class Logger;
-//typedef boost::shared_ptr<Logger> LoggerPtr;
 
 
 struct KCStats

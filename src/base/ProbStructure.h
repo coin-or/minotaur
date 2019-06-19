@@ -31,14 +31,14 @@ struct ProbStructStats
 }; 
 
 class ProbStructure;
-typedef boost::shared_ptr<const ProbStructure> ConstProbStructPtr;
-typedef boost::shared_ptr<ProbStructure> ProbStructPtr;
+typedef const ProbStructure* ConstProbStructPtr;
+typedef ProbStructure* ProbStructPtr;
 typedef ProbStructStats* ProbStructStatsPtr;
 typedef ProbStructStats const * ConstProbStructStatsPtr;
 
 typedef std::pair<ConstVariablePtr, ConstConstraintVectorPtr> VarConsPair;
 typedef std::map<ConstVariablePtr, ConstConstraintVectorPtr> VarCons;
-typedef boost::shared_ptr< VarCons > VarConsPtr;
+typedef VarCons * VarConsPtr;
 typedef VarCons::iterator VarConsIterator;
 typedef VarCons::const_iterator VarConsConstIterator;
 
