@@ -271,6 +271,8 @@ bool ParBndProcessor::shouldPrune_(NodePtr node, double solval,
                                  << "violated in node " << node->getId()
                                  << std::endl;
      ++stats_.prob;
+     // This comment silences g++ warnings. Do not remove
+     // fall through
    case (ProvenInfeasible):
    case (ProvenLocalInfeasible):
      node->setStatus(NodeInfeasible);
@@ -320,6 +322,8 @@ bool ParBndProcessor::shouldPrune_(NodePtr node, double solval,
                                  << "continuing in node " << node->getId()
                                  << std::endl;
      // continue with this node by following ProvenLocalOptimal case.
+     // This comment silences g++ warnings. Do not remove
+     // fall through
    case (ProvenLocalOptimal):
    case (ProvenOptimal):
      node->setLb(solval);

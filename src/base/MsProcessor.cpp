@@ -677,8 +677,8 @@ void MsProcessor::process(NodePtr node, RelaxationPtr rel,
   EngineStatus* eStatus = new EngineStatus[numThreads_];
   int* solCount = new int[numThreads_]; //#solutions obtained at each thread
 
-  ConstSolutionPtr bestsolthd;          //thread-best solution
-  ConstSolutionPtr bestsol ;            //best solution among all threads
+  ConstSolutionPtr bestsolthd = 0;             //thread-best solution
+  ConstSolutionPtr bestsol = 0;            //best solution among all threads
 
   double threadBestVal = INFINITY, bestVal = INFINITY;
   double *startPoint = NULL;
@@ -716,7 +716,7 @@ void MsProcessor::process(NodePtr node, RelaxationPtr rel,
 #pragma omp parallel for 
 #endif
     for(UInt i = 0; i < numThreads_; i++) {
-      ConstSolutionPtr sol1;
+      ConstSolutionPtr sol1 = 0;
       double radius = 0.8;                //initial radius of region
 
       for(UInt j = 0; j < 1 + numRestarts_; j++) {
@@ -940,6 +940,8 @@ bool MsProcessor::shouldPrune_(NodePtr node, double solval,
     << "violated in node " << node->getId()
     << std::endl;
     ++stats_.prob;
+    // This comment silences g++ warnings. Do not remove
+    // fall through
   case (ProvenInfeasible):
   case (ProvenLocalInfeasible):
     node->setStatus(NodeInfeasible);
@@ -989,6 +991,8 @@ bool MsProcessor::shouldPrune_(NodePtr node, double solval,
       << "continuing in node " << node->getId()
       << std::endl;
     // continue with this node by following ProvenLocalOptimal case.
+    // This comment silences g++ warnings. Do not remove
+    // fall through
   case (ProvenLocalOptimal):
   case (ProvenOptimal):
     node->setLb(solval);

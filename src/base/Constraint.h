@@ -18,13 +18,6 @@
 #include "Types.h"
 
 namespace Minotaur {
-  class   Function;
-  class   LinearFunction;
-  class   QuadraticFunction;
-  class   NonlinearFunction;
-  typedef LinearFunction* LinearFunctionPtr;
-  typedef NonlinearFunction* NonlinearFunctionPtr;
-  typedef QuadraticFunction* QuadraticFunctionPtr;
   typedef std::set<std::pair<VariablePtr, FunctionType> >::const_iterator 
     VariableFunIterator;
 
@@ -99,7 +92,7 @@ namespace Minotaur {
       bool getBFlag() const { return bTemp_; }
 
       /// Return a pointer to the function.
-      const FunctionPtr getFunction() const { return f_; }
+      FunctionPtr getFunction() const { return f_; }
 
       /// Get the function type.
       FunctionType getFunctionType() const;
@@ -114,16 +107,16 @@ namespace Minotaur {
       double getLb() const { return lb_; }
 
       /// Get the linear part of the constraint function 'f'.
-      const LinearFunctionPtr getLinearFunction() const;
+      LinearFunctionPtr getLinearFunction() const;
 
       // Get the name of the constraint. 
       const std::string getName() const;
 
       /// Get the nonlinear part of the constraint function 'f'.
-      const NonlinearFunctionPtr getNonlinearFunction() const;
+      NonlinearFunctionPtr getNonlinearFunction() const;
 
       /// Get the quadratic part of the constraint function 'f'.
-      const QuadraticFunctionPtr getQuadraticFunction() const;
+      QuadraticFunctionPtr getQuadraticFunction() const;
 
       /// Get the current state of the constraint: freed, fixed etc.
       ConsState getState() const { return state_; }

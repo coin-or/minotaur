@@ -279,7 +279,7 @@ void FeasibilityPump::implementFP_(const double* x, SolutionPoolPtr s_pool)
   e_->load(prob);
   while (cont_FP && stats_->numNLPs < max_iter 
       && stats_->numCycles < max_cycle) {
-    constructObj_(prob, sol);
+    constructObj_(prob, 0);
     e_->solve();
     ++(stats_->numNLPs);
     sol = e_->getSolution();

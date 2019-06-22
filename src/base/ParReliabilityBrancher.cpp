@@ -172,7 +172,7 @@ Branches ParReliabilityBrancher::findBranches(RelaxationPtr rel, NodePtr node,
                         DoubleVector pseudoUp, DoubleVector pseudoDown,
                         UInt nodesProc)
 {
-  Branches branches;
+  Branches branches = 0;
   BrCandPtr br_can = BrCandPtr(); //NULL
   const double *x = sol->getPrimal();
 
@@ -246,7 +246,6 @@ void ParReliabilityBrancher::findCandidates_(UIntVector *timesUp,
                                              DoubleVector *pseudoDown,
                                              UInt nodesProc)
 {
-  VariablePtr v_ptr;
   VariableIterator v_iter, v_iter2, best_iter;
   VariableConstIterator cv_iter;
   int index;

@@ -259,9 +259,9 @@ bool BranchAndBound::shouldPrune_(NodePtr node)
   switch (node->getStatus()) {
    case (NodeOptimal):
      should_prune = true;
+     break;
    case (NodeHitUb):
      should_prune = true;
-     // check if we want to search for more solutions
      break;
    case (NodeInfeasible):
      should_prune = true;

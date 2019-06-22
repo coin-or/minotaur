@@ -200,7 +200,7 @@ public:
   void generateCuts(ConstConstraintPtr cons, ConstConstraintVectorPtr gublist);
 
   // Generate a cut from a given variable set and rhs.
-  void generateCut(const ConstCoverSetPtr inequality, double ub, CutPtr cut);
+  CutPtr generateCut(const ConstCoverSetPtr inequality, double ub);
 
   // Generates a GNS LGCI cut.
   bool GNS(const ConstConstraintPtr cons, ConstConstraintVectorPtr gublist);
