@@ -6,7 +6,8 @@
 
 /**
  * \file ParQGBranchAndBound.cpp
- * \brief Define ParQGBranchAndBound class for a generic parallel branch-and-bound method.
+ * \brief Define ParQGBranchAndBound class for a generic parallel
+ * branch-and-bound method.
  * \author Prashant Palkar, Meenarli Sharma, IIT Bombay
  */
 
@@ -273,6 +274,7 @@ bool ParQGBranchAndBound::shouldPrune_(NodePtr node)
   switch (node->getStatus()) {
   case (NodeOptimal):
     should_prune = true;
+    break;
   case (NodeHitUb):
     should_prune = true;
     // check if we want to search for more solutions

@@ -421,6 +421,18 @@ class Function;
 typedef Function* FunctionPtr;
 typedef const Function* ConstFunctionPtr; 
 
+class   LinearFunction;
+typedef LinearFunction* LinearFunctionPtr;
+typedef const LinearFunction* ConstLinearFunctionPtr;
+
+class   NonlinearFunction;
+typedef NonlinearFunction* NonlinearFunctionPtr;
+typedef const NonlinearFunction* ConstNonlinearFunctionPtr;
+
+class   QuadraticFunction;
+typedef QuadraticFunction* QuadraticFunctionPtr;
+typedef const QuadraticFunction* ConstQuadraticFunctionPtr;
+
 // declare options database
 class OptionDB;
 typedef OptionDB* OptionDBPtr;

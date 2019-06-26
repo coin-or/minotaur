@@ -155,7 +155,6 @@ BASE_SRCS = \
         $(BASE_DIR)/FeasibilityPump.cpp  \
         $(BASE_DIR)/Function.cpp  \
         $(BASE_DIR)/HessianOfLag.cpp  \
-        $(BASE_DIR)/Interrupt.cpp  \
         $(BASE_DIR)/IntVarHandler.cpp  \
         $(BASE_DIR)/Jacobian.cpp \
         $(BASE_DIR)/KnapsackList.cpp  \
@@ -271,7 +270,6 @@ ALL_HEADERS = \
         $(BASE_DIR)/HessianOfLag.h \
         $(BASE_DIR)/Heuristic.h \
         $(BASE_DIR)/Iterate.h \
-        $(BASE_DIR)/Interrupt.h \
         $(BASE_DIR)/IntVarHandler.h \
         $(BASE_DIR)/Jacobian.h \
         $(BASE_DIR)/KnapsackList.h \

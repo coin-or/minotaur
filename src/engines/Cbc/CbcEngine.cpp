@@ -65,7 +65,7 @@ CbcEngine::~CbcEngine()
   }
   if (problem_) {
     problem_->unsetEngine();
-    //problem_.reset();
+//problem_.reset();
     problem_ = 0;
   }
   if (osilp_) {

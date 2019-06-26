@@ -166,7 +166,7 @@ Branches ReliabilityBrancher::findBranches(RelaxationPtr rel, NodePtr node,
                                            BrancherStatus & br_status,
                                            ModVector &mods) 
 {
-  Branches branches;
+  Branches branches = 0;
   BrCandPtr br_can = 0; 
   const double *x = sol->getPrimal();
 

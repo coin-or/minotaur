@@ -171,8 +171,6 @@ UInt ParMINLPDiving::FracBounds_(UInt numfrac, const double* x, Direction d,
   UInt change_wan = (UInt) ceil( (double) (numfrac)/numLevels_ );
   UInt changes    = 0;
   ModVector dummy;
-  NodePtr node = NodePtr();
-  SolutionPoolPtr s_pool = SolutionPoolPtr(); // NULL
   SolveStatus status;
 
   // get the score of violated variables according to their fractional part
@@ -578,8 +576,6 @@ UInt ParMINLPDiving::LexBounds_(UInt numfrac, const double* x, Direction d,
   //UInt change_wan = (UInt) ceil( (double) numfrac/env_->getOptions()->findInt("divheurLevel")->getValue());
   UInt changes    = 0;
   ModVector dummy;
-  NodePtr node = NodePtr();
-  SolutionPoolPtr s_pool = SolutionPoolPtr(); // NULL
   SolveStatus status;
 
   getScore_(x, ReducedCost, score, p, avgDual, gradientObj);
@@ -667,8 +663,6 @@ UInt ParMINLPDiving::ReducedCost_(UInt numfrac, const double* x, Direction d,
   //UInt change_wan = (UInt) ceil( (double) numfrac/env_->getOptions()->findInt("divheurLevel")->getValue());
   UInt changes    = 0;
   ModVector dummy;
-  NodePtr node = NodePtr();
-  SolutionPoolPtr s_pool = SolutionPoolPtr(); // NULL
   SolveStatus status;
 
   getScore_(x, ReducedCost, score, p, avgDual, gradientObj);
@@ -1127,8 +1121,6 @@ UInt ParMINLPDiving::VectorLength_(UInt numfrac, const double* x, Direction d,
   //UInt change_wan = (UInt) ceil( (double) numfrac/env_->getOptions()->findInt("divheurLevel")->getValue());
   UInt changes    = 0;
   ModVector dummy;
-  NodePtr node = NodePtr();
-  SolutionPoolPtr s_pool = SolutionPoolPtr(); // NULL
   SolveStatus status;
 
   getScore_(x, VectorLength, score, p, avgDual, gradientObj);

@@ -85,7 +85,6 @@ BranchAndBound::~BranchAndBound()
   tm_ = 0;
   //problem_.reset();
   problem_ = 0;
-  //env_.reset();
   env_ = 0;
   if (timer_) {
     delete timer_;
@@ -260,9 +259,9 @@ bool BranchAndBound::shouldPrune_(NodePtr node)
   switch (node->getStatus()) {
    case (NodeOptimal):
      should_prune = true;
+     break;
    case (NodeHitUb):
      should_prune = true;
-     // check if we want to search for more solutions
      break;
    case (NodeInfeasible):
      should_prune = true;

@@ -41,7 +41,6 @@ set (MINOTAUR_SOURCES
      FeasibilityPump.cpp 
      Function.cpp 
      HessianOfLag.cpp 
-     Interrupt.cpp 
      IntVarHandler.cpp 
      Jacobian.cpp
      KnapsackList.cpp 
@@ -161,7 +160,6 @@ set (MINOTAUR_HEADERS
      HessianOfLag.h
      Heuristic.h
      Iterate.h
-     Interrupt.h
      IntVarHandler.h
      Jacobian.h
      KnapsackList.h # Serdar

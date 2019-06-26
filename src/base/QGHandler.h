@@ -85,8 +85,6 @@ private:
 
   /// Nonlinearity status of objective function. 1 if nonlinear 0 otherwise.
   bool oNl_;
-  bool rootLinScheme3_;
-  
   UInt rScheme1Para_;
   UInt rScheme2Para_;
   UInt rScheme3Para_;
@@ -176,22 +174,6 @@ private:
   void alphaSelect_(VariablePtr nVar, VariablePtr lVar, double d1, double d2, 
                              const double * nlpx, double &minA, double &maxA);
 
-  bool diffFunVarVal_(const double *x, FunctionPtr f);
-
-  void rootScheme3_(const double *nlpx, ConstraintPtr con, LinearFunctionPtr lf);
-  void rootScheme4_(const double *nlpx, ConstraintPtr con);
-
-  bool twoVarsCon_(ConstraintPtr con);
-  void rootLinearizations_();
-
-  /* Add linerizations to constraints with exactly two variables. One var in
-   * linear and one in nonlinear part of the constraint.
-   */
-  void rootLinScheme1_();
-  /* Warm-start the NLP at the root LP solution and linearize at this NLP
-   * solution
-   */
-  void rootLinScheme2_();
   /// Base class method. calls relax_().
   void relaxInitFull(RelaxationPtr rel, bool *is_inf);
 
@@ -230,13 +212,39 @@ private:
   void cutIntSol_(ConstSolutionPtr sol, CutManager *cutMan, 
                   SolutionPoolPtr s_pool, bool *sol_found, 
                   SeparationStatus *status);
+  void addEshAtRoot_(const double *lpx, double* x, ConstraintPtr con);
 
+
+  void findCenter_(bool* isInf);
+  bool isFeas_(ConstSolutionPtr sol);
   /**
    * Fix integer constrained variables to integer values in x. Called
    * before solving NLP.
    */
   void fixInts_(const double *x);
 
+  bool diffFunVarVal_(const double *x, FunctionPtr f);
+
+  void rootScheme3_(const double *nlpx, ConstraintPtr con, LinearFunctionPtr lf);
+  void rootScheme4_(const double *nlpx, ConstraintPtr con);
+
+  bool twoVarsCon_(ConstraintPtr con);
+  void rootLinearizations_();
+
+  bool lineSearchPt_(double* x, const double* l, const double* u, ConstraintPtr con, double & nlpact);
+ 
+
+
+  /* Add linerizations to constraints with exactly two variables. One var in
+   * linear and one in nonlinear part of the constraint.
+   */
+  void rootLinScheme1_();
+  /* Warm-start the NLP at the root LP solution and linearize at this NLP
+   * solution
+   */
+  bool shouldPrune_(EngineStatus eStatus);
+  void rootLinScheme2_();
+  void rootLinScheme3_();
   /**
    * Solve the NLP relaxation of the MINLP and add linearizations about
    * the optimal point. isInf is set to true if the relaxation is found

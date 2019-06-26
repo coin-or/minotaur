@@ -67,8 +67,8 @@ BranchAndBound* createBab(EnvPtr env, ProblemPtr p, EnginePtr e,
   LinHandlerPtr l_hand = (LinHandlerPtr) new LinearHandler(env, p);
   NlPresHandlerPtr nlhand;
   NodeIncRelaxerPtr nr;
-  RelaxationPtr rel;
-  BrancherPtr br;
+  RelaxationPtr rel = 0;
+  BrancherPtr br = 0;
   const std::string me("bnb main: ");
   OptionDBPtr options = env->getOptions();
   SOS2HandlerPtr s2_hand;
@@ -78,6 +78,8 @@ BranchAndBound* createBab(EnvPtr env, ProblemPtr p, EnginePtr e,
   if (s_hand->isNeeded()) {
     s_hand->setModFlags(false, true);
     handlers.push_back(s_hand);
+  } else {
+    delete s_hand;
   }
 
 
@@ -94,6 +96,8 @@ BranchAndBound* createBab(EnvPtr env, ProblemPtr p, EnginePtr e,
   if (s2_hand->isNeeded()) {
     s2_hand->setModFlags(false, true);
     handlers.push_back(s2_hand);
+  } else {
+    delete s2_hand;
   }
   
   
@@ -518,7 +522,11 @@ int main(int argc, char** argv)
   loadProblem(env, iface, oinst, &obj_sense);
   orig_v = new VarVector(oinst->varsBegin(), oinst->varsEnd());
   pres = presolve(env, oinst, iface->getNumDefs(), handlers);
+  for (HandlerVector::iterator it=handlers.begin(); it!=handlers.end(); ++it) {
+    delete (*it);
+  }
   handlers.clear();
+
   if (Finished != pres->getStatus() && NotStarted != pres->getStatus()) {
     env->getLogger()->msgStream(LogInfo) << me 
       << "status of presolve: " 
@@ -549,6 +557,9 @@ int main(int argc, char** argv)
   writeBnbStatus(env, bab, obj_sense);
 
 CLEANUP:
+  for (HandlerVector::iterator it=handlers.begin(); it!=handlers.end(); ++it) {
+    delete (*it);
+  }
   if (engine) {
     delete engine;
   }
@@ -560,6 +571,9 @@ CLEANUP:
   }
   if (orig_v) {
     delete orig_v;
+  }
+  if (env) {
+    delete env;
   }
 
   return 0;

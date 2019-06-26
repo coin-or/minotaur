@@ -381,7 +381,6 @@ void LinearHandler::tightenInts_(ProblemPtr p, bool apply_to_prob,
   VariablePtr v;
   double lb, ub;
   VarBoundModPtr mod;
-  LinearFunctionPtr lf;
 
 #if SPEW
   logger_->msgStream(LogDebug) << me_ << "tightening bounds." << std::endl; 
@@ -665,7 +664,7 @@ void  LinearHandler::computeImpBounds_(ConstraintPtr c, VariablePtr z,
   double uu = 0.;
   double l1, u1, a2, b2;
   ConstraintPtr c2;
-  LinearFunctionPtr lf, lf2;
+  LinearFunctionPtr lf2;
   ModStack mods;
   VarBoundModPtr m;
   ModificationPtr m2;
@@ -823,7 +822,6 @@ void LinearHandler::dualFix_(bool *changed)
       logger_->msgStream(LogDebug) << me_ << "variable " << v->getName() 
                                    << " fixed by dual fixing" << std::endl;
       mod->write(logger_->msgStream(LogDebug));
-      mod.reset();
     }
 #endif
   }

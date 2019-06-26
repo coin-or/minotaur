@@ -1025,7 +1025,7 @@ void CoverCutGenerator::generateCuts(ConstConstraintPtr cons)
     printIneq(cover,cover->size()-1,Cover,"Minimal cover for simple lifted cover inequality.");
   }
   // Requires a minimum cover.
-  CoverSetPtr cone = (CoverSetPtr) new CoverSet(*cover);
+  //CoverSetPtr cone = (CoverSetPtr) new CoverSet(*cover);
   CoverSetPtr cbar = (CoverSetPtr) new CoverSet();
   cBar(cover, cbar, cons);
   

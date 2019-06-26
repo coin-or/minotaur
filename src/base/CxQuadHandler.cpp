@@ -76,9 +76,7 @@ void CxQuadHandler::relax_(RelaxationPtr rel, bool *)
   ConstraintConstIterator c_iter;
   ConstraintPtr cons;
 
-  LinearFunctionPtr lf0, lf1, lf;
-  QuadraticFunctionPtr qf, cx_qf0, cx_qf1; 
-  FunctionPtr f;
+  QuadraticFunctionPtr qf; 
 
   std::vector< VariablePtr > psqVars, nsqVars;
 

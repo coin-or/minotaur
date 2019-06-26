@@ -1246,7 +1246,7 @@ double LGCIGenerator::roundHeur(ProblemPtr prob)
       if (numrows == 1) {
         rowindex1 = cons1->getIndex();
       }
-      LinearFunctionPtr lf = cons1->getLinearFunction(); 
+      //LinearFunctionPtr lf = cons1->getLinearFunction(); 
       //double coeff1 = lf->getWeight(var1);
      
  
@@ -1259,7 +1259,7 @@ double LGCIGenerator::roundHeur(ProblemPtr prob)
       if (numrows2 == 1) {
         rowindex2 = cons2->getIndex();
       }
-      LinearFunctionPtr lf2 = cons2->getLinearFunction();
+      //LinearFunctionPtr lf2 = cons2->getLinearFunction();
       // double coeff2 = lf->getWeight(var2);
       
       if (rowindex1 != rowindex2) {
@@ -1659,8 +1659,7 @@ bool LGCIGenerator::addCut(CoverSetPtr cov, double rhs, UInt cuttype, CutFail&)
   // Check violation of the coefficients.
   bool cutexists = checkExists(cov, rhs);
   if (cutexists == false){
-    CutPtr cut;
-    generateCut(cov, rhs, cut);
+    CutPtr cut = generateCut(cov, rhs);
     addCut(cut);
     // Increment the number of cuts for the type of cuts generated.
     stats_->cuts += 1;
@@ -1679,9 +1678,12 @@ bool LGCIGenerator::addCut(CoverSetPtr cov, double rhs, UInt cuttype, CutFail&)
 
 }
 
-// Assumption a cut pointer is given and the cut will be returned by this pointer.
-void LGCIGenerator::generateCut(const ConstCoverSetPtr inequality, double rhs, CutPtr cut)
+// Assumption a cut pointer is given and the cut will be returned by this
+// pointer.
+CutPtr LGCIGenerator::generateCut(const ConstCoverSetPtr inequality,
+                                  double rhs)
 {
+  CutPtr cut = 0;
   // Generate linear function for cut.
   LinearFunctionPtr lf = (LinearFunctionPtr) new LinearFunction();
   // create iterators for cover set elements.
@@ -1699,9 +1701,9 @@ void LGCIGenerator::generateCut(const ConstCoverSetPtr inequality, double rhs, C
   // generate function.
   FunctionPtr f = (FunctionPtr) new Function(lf);
   // Assumption: coefficients are positive lower bound is zero.
-  double lb = 0.0;
   // Generate cover cut.
-  cut = (CutPtr) new Cut(p_->getNumVars(), f, lb, rhs, false, false);
+  cut = new Cut(p_->getNumVars(), f, 0.0, rhs, false, false);
+  return cut;
 }
 
 /**

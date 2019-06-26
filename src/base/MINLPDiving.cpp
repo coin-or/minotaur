@@ -150,8 +150,6 @@ UInt MINLPDiving::FracBounds_(UInt numfrac, const double* x,
   UInt change_wan = (UInt) ceil( (double) numfrac/4);
   UInt changes    = 0;
   ModVector dummy;
-  NodePtr node = NodePtr();
-  SolutionPoolPtr s_pool = SolutionPoolPtr(); // NULL
   SolveStatus status;
 
   // get the score of violated variables according to their fractional part
@@ -412,8 +410,6 @@ UInt MINLPDiving::LexBounds_(UInt numfrac, const double* x,
   UInt change_wan = (UInt) ceil( (double) numfrac/4);
   UInt changes    = 0;
   ModVector dummy;
-  NodePtr node = NodePtr();
-  SolutionPoolPtr s_pool = SolutionPoolPtr(); // NULL
   SolveStatus status;
   
   getScore_(x, LexBound);
@@ -496,8 +492,6 @@ UInt MINLPDiving::ReducedCost_(UInt numfrac, const double* x,
   UInt change_wan = (UInt) ceil( (double) numfrac/4);
   UInt changes    = 0;
   ModVector dummy;
-  NodePtr node = NodePtr();
-  SolutionPoolPtr s_pool = SolutionPoolPtr(); // NULL
   SolveStatus status;
 
   getScore_(x, ReducedCost);
@@ -813,8 +807,6 @@ UInt MINLPDiving::VectorLength_(UInt numfrac, const double* x,
   UInt change_wan = (UInt) ceil( (double) numfrac/4);
   UInt changes    = 0;
   ModVector dummy;
-  NodePtr node = NodePtr();
-  SolutionPoolPtr s_pool = SolutionPoolPtr(); // NULL
   SolveStatus status;
 
   getScore_(x, VectorLength);

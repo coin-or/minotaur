@@ -25,7 +25,6 @@ Jacobian::Jacobian()
 Jacobian::Jacobian(const std::vector<ConstraintPtr> & cons, const UInt)
 {
   ConstraintConstIterator c_iter;
-  FunctionPtr f;
 
   nz_ = 0;
   cons_ = &cons;

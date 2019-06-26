@@ -372,6 +372,7 @@ bool ParBranchAndBound::shouldPrune_(NodePtr node)
   switch (node->getStatus()) {
   case (NodeOptimal):
     should_prune = true;
+    break;
   case (NodeHitUb):
     should_prune = true;
     // check if we want to search for more solutions
