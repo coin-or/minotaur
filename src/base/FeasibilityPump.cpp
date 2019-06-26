@@ -193,7 +193,7 @@ void FeasibilityPump::convertSol_(SolutionPoolPtr s_pool, ConstSolutionPtr sol)
   for (VariableConstIterator v_iter=p_->varsBegin();
       v_iter!=p_->varsEnd(); ++v_iter, ++i) {
     if ((*v_iter)->getType() == Binary) {
-      p_->changeBound(i, x[i], x[i]);
+      p_->changeBoundByInd(i, x[i], x[i]);
     }
   }
   //solve the original problem with modified bounds
@@ -279,7 +279,7 @@ void FeasibilityPump::implementFP_(const double* x, SolutionPoolPtr s_pool)
   e_->load(prob);
   while (cont_FP && stats_->numNLPs < max_iter 
       && stats_->numCycles < max_cycle) {
-    constructObj_(prob, sol);
+    constructObj_(prob, 0);
     e_->solve();
     ++(stats_->numNLPs);
     sol = e_->getSolution();
@@ -378,8 +378,8 @@ void FeasibilityPump::perturb_(double hash_val, UInt n_to_flip)
 void FeasibilityPump::restoreBounds_(double* LB_copy, double* UB_copy, UInt vars)
 {
   for (UInt i=0; i<vars; ++i, ++LB_copy, ++UB_copy) {
-    p_->changeBound(i, Lower, *LB_copy);
-    p_->changeBound(i, Upper, *UB_copy);
+    p_->changeBoundByInd(i, Lower, *LB_copy);
+    p_->changeBoundByInd(i, Upper, *UB_copy);
   }
 }
 

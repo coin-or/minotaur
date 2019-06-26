@@ -16,6 +16,7 @@
 #include <list>
 #include <map>
 #include "CutManager.h"
+#include "Types.h"
 
 namespace Minotaur {
 
@@ -23,8 +24,7 @@ namespace Minotaur {
 
   class Node;
   class Timer;
-  typedef boost::shared_ptr<Constraint> ConstraintPtr;
-  typedef boost::shared_ptr<Node> NodePtr;
+  typedef Constraint* ConstraintPtr; //changed from boost-> simple
   typedef std::list<CutPtr> cutList;
 
   /**
@@ -194,7 +194,7 @@ namespace Minotaur {
 
 
 };
-  typedef boost::shared_ptr <CutMan2> CutMan2Ptr;
+  typedef CutMan2* CutMan2Ptr;
 }
 #endif
 

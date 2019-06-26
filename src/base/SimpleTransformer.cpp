@@ -105,14 +105,15 @@ void SimpleTransformer::bilRef_(LinearFunctionPtr lfl, VariablePtr vl,
       vr = newVar_(lfr, dr, newp_);
     } 
     if (vr) {
-      lf.reset();
+      //lf.reset();
+      lf = 0;
       d = 0;
       v = newBilVar_(vl, vr);
     } else {
       lf = lfl;
       lf->multiply(dr);
       d = dl*dr;
-      v.reset();
+      v = 0;
     }
   } else if (vl) {
     vl = newVar_(vl, dl, newp_);
@@ -123,27 +124,29 @@ void SimpleTransformer::bilRef_(LinearFunctionPtr lfl, VariablePtr vl,
     } 
     if (vr) {
       v = newBilVar_(vl, vr);
-      lf.reset();
+      //lf.reset();
+      lf = 0;
       d = 0;
     } else {
       lf = (LinearFunctionPtr) new LinearFunction();
       lf->addTerm(vl, dr);
-      v.reset();
+      v = 0;
       d = 0;
     }
   } else if (lfr) {
     lf = lfr;
     lf->multiply(dl);
     d = dl*dr;
-    v.reset();
+    v = 0;
   } else if (vr) {
     lf = (LinearFunctionPtr) new LinearFunction();
     lf->addTerm(vr, dl);
-    v.reset();
+    v = 0;
     d = 0;
   } else {
-    lf.reset();
-    v.reset();
+    //lf.reset();
+    lf = 0;
+    v = 0;
     d = dl*dr;
   }
 }
@@ -235,8 +238,9 @@ void SimpleTransformer::powKRef_(LinearFunctionPtr lfl,
     n2 = cg->newNode(OpPowK, n1, n2);
     cg->setOut(n2);
     cg->finalize();
-    v.reset();
-    lf.reset();
+    v = 0;
+    //lf.reset();
+    lf = 0;
     v = newVar_(cg, newp_);
     d = 0;
   } else {
@@ -319,7 +323,8 @@ void SimpleTransformer::recursRef_(const CNode *node, LinearFunctionPtr &lf,
       cg->finalize();
       v2 = newVar_(cg, newp_);
 
-      lfr.reset();
+      //lfr.reset();
+      lfr = 0;
       // now we have to do (lfl + vl + dl)*v2
       bilRef_(lfl, vl, dl, lfr, v2, 0.0, lf, v, d);
     }
@@ -361,7 +366,7 @@ void SimpleTransformer::recursRef_(const CNode *node, LinearFunctionPtr &lf,
       } else if (vr) {
         lf->incTerm(vr, -1.0);
       }
-      v.reset();
+      v = 0;
     }
     break;
   case (OpMult):
@@ -396,7 +401,7 @@ void SimpleTransformer::recursRef_(const CNode *node, LinearFunctionPtr &lf,
       } else if (vr) {
         lf->incTerm(vr, 1.0);
       }
-      v.reset();
+      v = 0;
     }
     break;
   case (OpPow):
@@ -422,7 +427,9 @@ void SimpleTransformer::recursRef_(const CNode *node, LinearFunctionPtr &lf,
     lf = (LinearFunctionPtr) new LinearFunction();
     for (CNode **it=node->getListL(); it!=node->getListR(); ++it) {
       n1 = *it;
-      lfl.reset(); vl.reset(); dl = 0;
+      //lfl.reset(); 
+      lfl = 0;
+      vl = 0; dl = 0;
       recursRef_(n1, lfl, vl, dl);
       d += dl;
       if (lfl) {
@@ -459,7 +466,8 @@ void SimpleTransformer::recursRef_(const CNode *node, LinearFunctionPtr &lf,
   if (lf && lf->getNumTerms()==1 &&
       fabs(lf->termsBegin()->second-1.0)<zTol_) { // return v, not lf
     v = lf->termsBegin()->first;
-    lf.reset();
+    //lf.reset();
+    lf = 0;
   }
 }
 
@@ -486,8 +494,10 @@ void SimpleTransformer::refNonlinCons_(ConstProblemPtr oldp)
       } else {
         lf2 = (LinearFunctionPtr) new LinearFunction();
       }
-      lf.reset(); v.reset(); d = 0.0;
-      cg = boost::dynamic_pointer_cast <CGraph> (f->getNonlinearFunction());
+      //lf.reset();
+      v = 0; d = 0.0;
+      lf = 0;
+      cg = dynamic_cast <CGraph*> (f->getNonlinearFunction());
       assert(cg);
 #if SPEW
       logger_->msgStream(LogDebug) << me_ << "reformulating the constraint"
@@ -569,7 +579,7 @@ void SimpleTransformer::refNonlinObj_(ConstProblemPtr oldp)
     } else {
       lf2 = (LinearFunctionPtr) new LinearFunction();
     }
-    cg = boost::dynamic_pointer_cast <CGraph> (f->getNonlinearFunction());
+    cg = dynamic_cast <CGraph*> (f->getNonlinearFunction());
 #if SPEW
     logger_->msgStream(LogDebug) << me_ << "reformulating the objective"
       << std::endl;
@@ -593,7 +603,8 @@ void SimpleTransformer::refNonlinObj_(ConstProblemPtr oldp)
       }
       obj = newp_->newObjective(f2, d, Minimize);
     } else {
-      f2.reset();
+      //f2.reset();
+      f2 = 0;
       obj = newp_->newObjective(f2, d, Minimize);
       logger_->msgStream(LogDebug)
         << "Problem objective reduced to a constant" << std::endl;
@@ -697,8 +708,9 @@ void SimpleTransformer::uniVarRef_(const CNode *n0, LinearFunctionPtr lfl,
     n2 = cg->newNode(n0->getOp(), n1, n2);
     cg->setOut(n2);
     cg->finalize();
-    v.reset();
-    lf.reset();
+    v = 0;
+    //lf.reset();
+    lf = 0;
     v = newVar_(cg, newp_);
     d = 0;
   } else {

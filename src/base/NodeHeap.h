@@ -94,7 +94,7 @@ namespace Minotaur {
         /// The type of criteria used to order the heap.
         Type type_;
    };
-   typedef boost::shared_ptr<NodeHeap> NodeHeapPtr;
+   typedef NodeHeap* NodeHeapPtr;
 }
 #endif
 

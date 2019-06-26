@@ -26,13 +26,13 @@ namespace Minotaur {
   class   SolutionPool;
   class   Timer;
   class   TreeManager;
-  typedef boost::shared_ptr <BabOptions> BabOptionsPtr;
-  typedef boost::shared_ptr <NodeProcessor> NodeProcessorPtr;
-  typedef boost::shared_ptr <NodeRelaxer> NodeRelaxerPtr;
-  typedef boost::shared_ptr <Problem> ProblemPtr;
-  typedef boost::shared_ptr <Solution> SolutionPtr;
-  typedef boost::shared_ptr <SolutionPool> SolutionPoolPtr;
-  typedef boost::shared_ptr <TreeManager> TreeManagerPtr;
+  typedef BabOptions* BabOptionsPtr;
+  typedef NodeProcessor* NodeProcessorPtr;
+  typedef NodeRelaxer* NodeRelaxerPtr;
+  typedef Problem* ProblemPtr;
+  typedef Solution* SolutionPtr;
+  typedef SolutionPool* SolutionPoolPtr;
+  typedef TreeManager* TreeManagerPtr;
 
 
   /**
@@ -86,6 +86,12 @@ namespace Minotaur {
      * NULL.
      */
     SolutionPtr getSolution();
+
+    /*
+     * \brief Return solution from the root node solve. If no solution was found, return
+     * NULL.
+     */
+    //SolutionPtr getRootSolution();
 
     /// Return the final status.
     SolveStatus getStatus();
@@ -280,7 +286,7 @@ namespace Minotaur {
     double timeLimit;
   };
 
-  typedef boost::shared_ptr<BranchAndBound> BranchAndBoundPtr;
+  typedef BranchAndBound* BranchAndBoundPtr;
 }
 #endif
 

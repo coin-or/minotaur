@@ -20,8 +20,6 @@ namespace Minotaur {
 
 class   BrCand;
 class   Modification;
-typedef boost::shared_ptr <BrCand> BrCandPtr;
-typedef boost::shared_ptr <Modification> ModificationPtr;
 
 /**
  * \brief Base class for storing branching modifications.

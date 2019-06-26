@@ -33,7 +33,7 @@ namespace Minotaur {
     protected:
       /// Destructor must be implemented.
   };
-  typedef boost::shared_ptr<QPEngine> QPEnginePtr;
+  typedef QPEngine* QPEnginePtr;
 }
 
 #endif

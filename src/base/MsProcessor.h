@@ -14,15 +14,14 @@
 #define MINOTAURMSPROCESSOR_H
 
 #include "NodeProcessor.h"
+#include "Types.h"
 
 namespace Minotaur {
 
   class Engine;
   class Problem;
   class Solution;
-  typedef boost::shared_ptr<Engine> EnginePtr;
-  typedef boost::shared_ptr<const Problem> ConstProblemPtr;
-  typedef boost::shared_ptr<const Solution> ConstSolutionPtr;
+  typedef const Solution* ConstSolutionPtr;
 
   struct MBPStats {
     UInt bra;    /// Number of times relaxation became infeasible
@@ -213,7 +212,7 @@ namespace Minotaur {
 
   };
 
-  typedef boost::shared_ptr <MsProcessor> MsProcessorPtr;
+  typedef MsProcessor* MsProcessorPtr;
 
 }
 #endif

@@ -42,13 +42,14 @@ LinBil::LinBil(VariablePtr x0, VariablePtr x1, VariablePtr y)
 
 LinBil::~LinBil() 
 {
-  x0_.reset();
-  x1_.reset();
-  y_.reset();
-  c0_.reset();
-  c1_.reset();
-  c2_.reset();
-  c3_.reset();
+  //changed need to delete using different methods
+  //x0_.reset();
+  //x1_.reset();
+  //y_.reset();
+  //c0_.reset();
+  //c1_.reset();
+  //c2_.reset();
+  //c3_.reset();
 }
 
 

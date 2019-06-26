@@ -15,9 +15,12 @@
 
 #include "Types.h"
 
-#include "asl.h"
-#include "nlp.h"
+//#include "nlp.h"
 //#undef filename
+
+struct expr;
+typedef double efunc(expr*);
+struct ASL;
 
 namespace Minotaur {
 class   CGraph;
@@ -28,19 +31,18 @@ class   PolynomialFunction;
 class   Problem;
 class   QuadraticFunction;
 class   Solution;
-typedef boost::shared_ptr<CGraph> CGraphPtr;
-typedef boost::shared_ptr<Environment> EnvironmentPtr;
-typedef boost::shared_ptr<LinearFunction> LinearFunctionPtr;
-typedef boost::shared_ptr<PolynomialFunction> PolyFunPtr;
-typedef boost::shared_ptr<Problem> ProblemPtr;
-typedef boost::shared_ptr<QuadraticFunction> QuadraticFunctionPtr;
-typedef boost::shared_ptr<const Solution> ConstSolutionPtr;
+typedef CGraph* CGraphPtr;
+typedef Environment* EnvironmentPtr;
+typedef LinearFunction* LinearFunctionPtr;
+typedef PolynomialFunction* PolyFunPtr;
+typedef QuadraticFunction* QuadraticFunctionPtr;
+typedef const Solution* ConstSolutionPtr;
 }
 
 namespace MINOTAUR_AMPL {
 
 class AMPLNonlinearFunction;
-typedef boost::shared_ptr<AMPLNonlinearFunction> AMPLNlfPtr;
+typedef AMPLNonlinearFunction* AMPLNlfPtr;
 
 /// What kind of ASL reader is used to read the .nl file.
 typedef enum {

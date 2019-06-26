@@ -26,20 +26,17 @@ namespace Minotaur {
   class Jacobian;
   class LinearFunction;
   class NonlinearFunction;
-  class Objective;
   struct ProblemSize;
   class QuadraticFunction;
   class SOS;
   class SparseMatrix;
-  typedef boost::shared_ptr<Function> FunctionPtr;
-  typedef boost::shared_ptr<Jacobian> JacobianPtr;
-  typedef boost::shared_ptr<HessianOfLag> HessianOfLagPtr;
-  typedef boost::shared_ptr<LinearFunction> LinearFunctionPtr;
-  typedef boost::shared_ptr<NonlinearFunction> NonlinearFunctionPtr;
-  typedef boost::shared_ptr<Objective> ObjectivePtr;
-  typedef boost::shared_ptr<ProblemSize> ProblemSizePtr;
-  typedef boost::shared_ptr<QuadraticFunction> QuadraticFunctionPtr;
-  typedef boost::shared_ptr<const ProblemSize> ConstProblemSizePtr;
+  typedef Jacobian* JacobianPtr;
+  typedef HessianOfLag* HessianOfLagPtr;
+  typedef LinearFunction* LinearFunctionPtr;
+  typedef NonlinearFunction* NonlinearFunctionPtr;
+  typedef ProblemSize* ProblemSizePtr;
+  typedef QuadraticFunction* QuadraticFunctionPtr;
+  typedef const ProblemSize* ConstProblemSizePtr;
 
   /**
    * \brief The Problem that needs to be solved.
@@ -81,10 +78,10 @@ namespace Minotaur {
     virtual void calculateSize(bool shouldRedo=false);
 
     /// Change a bound (lower or upper) on a variable with ID=id.
-    virtual void changeBound(UInt id, BoundType lu, double new_val);
+    virtual void changeBoundByInd(UInt ind, BoundType lu, double new_val);
 
     /// Change both bounds (lower and upper) on a variable with ID=id
-    virtual void changeBound(UInt id, double new_lb, double new_ub);
+    virtual void changeBoundByInd(UInt ind, double new_lb, double new_ub);
 
     /// Change a bound (lower or upper) on a variable 'var'. 
     virtual void changeBound(VariablePtr var, BoundType lu, double new_val);
@@ -137,15 +134,6 @@ namespace Minotaur {
     virtual int checkConVars() const;
 
     /**
-     * \brief Delete the whole Problem.
-     *
-     * Variables and constraints are so interlinked that we just can not call
-     * the destructor. This function just deletes all the constraints. The
-     * variables and functions can still be used after this is called.
-     */
-    virtual void clear();
-
-    /**
      * \brief Clone the given Problem class. Jacobian and Hessian in the cloned
      * problem are NULL.
      *
@@ -172,8 +160,14 @@ namespace Minotaur {
     /// Delete marked constraints.
     virtual void delMarkedCons();
 
-    /// Delete marked variables.
-    virtual void delMarkedVars();
+    /**
+     * Remove marked variables from the problem.
+     *
+     * \param[in] keep If false, the variable pointer is freed from memory.
+     * If true, then it is not deleted, and can possibly be revisited (e.g.
+     * for restoring variables in postsolve). Default is false.
+     */
+    virtual void delMarkedVars(bool keep=false);
 
     /**
      * \brief Return what type of problem it is. May result in re-calculation of
@@ -245,6 +239,9 @@ namespace Minotaur {
 
     /// Fill up the statistics about the size of the problem into size_.
     ConstProblemSizePtr getSize() const;
+
+    /// Calculate and return a measure of the size of the problem.
+    double getSizeEstimate();
 
     /// Return a pointer to the variable with a given index
     virtual VariablePtr getVariable(UInt index) const;
@@ -463,6 +460,8 @@ namespace Minotaur {
 
     /// Remove the quadratic part of objective and return it.
     virtual QuadraticFunctionPtr removeQuadFromObj();
+    
+    virtual NonlinearFunctionPtr removeNonlinFromObj();
 
     /**
      * Remove the jacobian and hessian data structures. Useful when you want to
@@ -651,6 +650,12 @@ namespace Minotaur {
 
     /// Vector of variables.
     VarVector vars_;
+
+    /**
+     * \brief Vector of variables removed from the problem but not yet freed from
+     * memory.
+     */
+    VarVector varsRem_;
 
     /// True if variables delete, added or their bounds changed.
     bool varsModed_;

@@ -19,7 +19,7 @@
 namespace Minotaur {
 
 class LinearFunction;
-typedef boost::shared_ptr<LinearFunction> LinearFunctionPtr;
+typedef LinearFunction* LinearFunctionPtr;
 
 /// Store statistics of presolving.
 struct LinPresolveStats 
@@ -209,6 +209,9 @@ protected:
   /// check if lb <= ub for all variables and constraints.
   SolveStatus checkBounds_(ProblemPtr p);
 
+  /// change constraints flag for presolve
+  void changeBFlag_(VariablePtr v);
+
   void findLinVars_();
 
   void findAllBinCons_();
@@ -259,8 +262,8 @@ protected:
   SolveStatus varBndsFromObj_(ProblemPtr p, double ub, bool apply_to_prob, 
                               bool *changed, ModQ *mods);
 };
-typedef boost::shared_ptr<LinearHandler> LinearHandlerPtr;
-typedef boost::shared_ptr<const LinearHandler> ConstLinearHandlerPtr;
+typedef LinearHandler* LinearHandlerPtr;
+typedef const LinearHandler* ConstLinearHandlerPtr;
 }
 #endif
 

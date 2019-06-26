@@ -12,6 +12,7 @@
 
 #include <cmath>
 #include <iostream>
+#include <omp.h>
 
 #include "MinotaurConfig.h"
 #include "Branch.h"
@@ -23,15 +24,17 @@ using namespace Minotaur;
 using namespace std;
 
 Node::Node()
-  : branch_(BranchPtr()),
+  : branch_(0),
     depth_(0),
     id_(0),
     lb_(-INFINITY),
     pMods_(0), 
     rMods_(0), 
-    parent_(boost::shared_ptr<Node>()),
+    parent_(NodePtr()),
     status_(NodeNotProcessed),
-    tbScore_(0)
+    vioVal_(0),
+    tbScore_(0),
+    ws_(0)
 {
 }
 
@@ -44,7 +47,9 @@ Node::Node(NodePtr parentNode, BranchPtr branch)
     rMods_(0), 
     parent_(parentNode),
     status_(NodeNotProcessed),
-    tbScore_(0)
+    vioVal_(0),
+    tbScore_(0),
+    ws_(0)
 {
   lb_ = parentNode->getLb();
 }
@@ -52,6 +57,9 @@ Node::Node(NodePtr parentNode, BranchPtr branch)
 
 Node::~Node()
 {
+  if (branch_) {
+    delete branch_;
+  }
   pMods_.clear();
   rMods_.clear();
   children_.clear();
@@ -109,7 +117,7 @@ void Node::applyRModsTrans(RelaxationPtr rel)
   ModificationConstIterator mod_iter;
   ModificationPtr mod;
   ModificationPtr pmod1, mod2;
-  ProblemPtr p;   //not used, just passed
+  ProblemPtr p=0;   //not used, just passed
 
   // first apply the mods that created this node from its parent
   if (branch_) {
@@ -117,9 +125,16 @@ void Node::applyRModsTrans(RelaxationPtr rel)
         ++mod_iter) {
       mod = *mod_iter;
       //convert modifications applicable for other relaxation to this one
+//#pragma omp critical
+      //{
+      //std::cout << "Node " << id_ << " thread " << omp_get_thread_num() << " mod " << std::endl;
+      //mod->write(std::cout);
       pmod1 = mod->fromRel(rel, p);
       mod2 = pmod1->toRel(p, rel);
       mod2->applyToProblem(rel);
+      //std::cout << " mod2 " << std::endl;
+      //mod2->write(std::cout);
+      //}
     }
   }
   // now apply any other mods that were added while processing it.
@@ -153,7 +168,7 @@ void Node::removeChildren()
 
 void Node::removeParent()
 {
-  parent_.reset();
+  parent_ = 0;
 }
 
 
@@ -241,7 +256,7 @@ void Node::undoRModsTrans(RelaxationPtr rel)
 {
   ModificationRConstIterator mod_iter;
   ModificationPtr mod;
-  ProblemPtr p;
+  ProblemPtr p=0;
 
   // explicitely request the const_reverse_iterator for rend():
   // for bug in STL C++ standard
@@ -275,6 +290,56 @@ void Node::undoMods(RelaxationPtr rel, ProblemPtr p)
 {
   undoPMods(p);
   undoRMods(rel);
+}
+
+
+void Node::updateBrCands(UInt index) {
+  brCands_.push_back(index);
+}
+
+
+void Node::updateLastStrBranched(UInt index, double value) {
+  if (index >= lastStrBranched_.size()) {
+    lastStrBranched_.push_back(value);
+  } else {
+    lastStrBranched_[index] = value;
+  }
+}
+
+
+void Node::updatePCDown(UInt index, double value) {
+  if (index >= pseudoDown_.size()) {
+    pseudoDown_.push_back(value);
+  } else {
+    pseudoDown_[index] = value;
+  }
+}
+
+
+void Node::updatePCUp(UInt index, double value) {
+  if (index >= pseudoUp_.size()) {
+    pseudoUp_.push_back(value);
+  } else {
+    pseudoUp_[index] = value;
+  }
+}
+
+
+void Node::updateTimesDown(UInt index, double value) {
+  if (index >= timesDown_.size()) {
+    timesDown_.push_back(value);
+  } else {
+    timesDown_[index] = value;
+  }
+}
+
+
+void Node::updateTimesUp(UInt index, double value) {
+  if (index >= timesUp_.size()) {
+    timesUp_.push_back(value);
+  } else {
+    timesUp_[index] = value;
+  }
 }
 
 

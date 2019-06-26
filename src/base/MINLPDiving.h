@@ -18,7 +18,7 @@
  #include "Heuristic.h"
  #include <vector>
  #include <stack>
-
+ #include "Types.h"
 
  namespace Minotaur {
    class Engine;
@@ -27,10 +27,8 @@
    class Solution;
    class Timer;
    class VarBoundMod;
-   typedef boost::shared_ptr<const Solution> ConstSolutionPtr;
-   typedef boost::shared_ptr<Engine> EnginePtr;
-   typedef boost::shared_ptr<Problem> ProblemPtr;
-   typedef boost::shared_ptr<VarBoundMod> VarBoundModPtr;
+   typedef const Solution* ConstSolutionPtr;
+   typedef VarBoundMod* VarBoundModPtr;
 
    /// Direction of rounding
    typedef enum {
@@ -323,7 +321,7 @@
 
    };
 
-   typedef boost::shared_ptr<MINLPDiving> MINLPDivingPtr;
+   typedef MINLPDiving* MINLPDivingPtr;
 }
 #endif
 

@@ -73,13 +73,19 @@ BranchAndBound::BranchAndBound(EnvPtr env, ProblemPtr p)
 
 BranchAndBound::~BranchAndBound()
 {
-  options_.reset();
-  nodePrcssr_.reset();
-  nodeRlxr_.reset();
-  tm_.reset();
-  solPool_.reset();
-  problem_.reset();
-  env_.reset();
+  //options_.reset();
+  //nodePrcssr_.reset();
+  //nodeRlxr_.reset();
+  options_ = 0;
+  nodeRlxr_ = 0;
+  nodePrcssr_ = 0;
+  //tm_.reset();
+  //solPool_.reset();
+  solPool_ = 0;
+  tm_ = 0;
+  //problem_.reset();
+  problem_ = 0;
+  env_ = 0;
   if (timer_) {
     delete timer_;
   }
@@ -123,6 +129,12 @@ SolutionPtr BranchAndBound::getSolution()
 {
   return solPool_->getBestSolution();
 }
+
+
+//SolutionPtr BranchAndBound::getRootSolution()
+//{
+  //return solPool_->getRootSolution();
+//}
 
 
 SolveStatus BranchAndBound::getStatus()
@@ -247,9 +259,9 @@ bool BranchAndBound::shouldPrune_(NodePtr node)
   switch (node->getStatus()) {
    case (NodeOptimal):
      should_prune = true;
+     break;
    case (NodeHitUb):
      should_prune = true;
-     // check if we want to search for more solutions
      break;
    case (NodeInfeasible):
      should_prune = true;
@@ -480,7 +492,9 @@ void BranchAndBound::solve()
     }
   } 
   logger_->msgStream(LogInfo) << me_ << "stopping branch-and-bound"
-    << std::endl;
+    << std::endl
+    << me_ << "nodes processed = " << stats_->nodesProc << std::endl
+    << me_ << "nodes created   = " << tm_->getSize() << std::endl;
   stats_->timeUsed = timer_->query();
   timer_->stop();
 }

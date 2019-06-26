@@ -36,14 +36,17 @@ QPDRelaxer::QPDRelaxer(EnvPtr env, ProblemPtr p, EnginePtr qe,
 
 QPDRelaxer::~QPDRelaxer()
 {
-  e_.reset();
-  qp_.reset();
-  qpe_.reset();
-  if (qp_) {
-    qp_.reset();
+  //qp_.reset();
+  //if (qp_) {
+  //  qp_.reset();
+  //}
+  //p_.reset();
+  //env_.reset();
+  env_ = 0;
+  p_ = 0;
+  if (qp_){
+    qp_ = 0;
   }
-  p_.reset();
-  env_.reset();
   if (logger_) {
     delete logger_;
   }

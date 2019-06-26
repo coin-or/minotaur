@@ -18,15 +18,14 @@
 #include "ParCutMan.h"
 #include "ParReliabilityBrancher.h"
 #include "ParTreeManager.h"
+#include "Types.h"
 
 namespace Minotaur {
 
-  class Engine;
-  class Problem;
+  //class Engine;
+  //class Problem;
   class Solution;
-  typedef boost::shared_ptr<Engine> EnginePtr;
-  typedef boost::shared_ptr<const Problem> ConstProblemPtr;
-  typedef boost::shared_ptr<const Solution> ConstSolutionPtr;
+  typedef const Solution* ConstSolutionPtr;
 
   struct ParNodeStats {
     UInt bra;    /// Number of times relaxation became infeasible
@@ -74,8 +73,8 @@ namespace Minotaur {
     // Find branches that will be used to branch at this node.
     Branches getBranches();
     
-    // Find branches that will be used to branch at this node.
-    ParCutMan* getCutManager(){return cutMan_;};
+    // Return the cut manager used with this processor.
+    CutManager* getCutManager(){return cutMan_;};
 
     // Get warm-start information.
     WarmStartPtr getWarmStart();
@@ -93,7 +92,8 @@ namespace Minotaur {
                  UIntVector timesDown, DoubleVector pseudoUp,
                  DoubleVector pseudoDown, UInt nodesProc);
 
-    void setCutManager(ParCutMan* cutman);
+    // set cut manager
+    void setCutManager(CutManager* cutman);
 
     // write statistics. Base class method.
     void writeStats(std::ostream &out) const; 
@@ -113,7 +113,7 @@ namespace Minotaur {
     bool contOnErr_;
 
      /// The cut manager.
-     ParCutMan *cutMan_;
+     CutManager *cutMan_;
 
     /// Index starting which cuts from the cut pool of other processors should be added.
      //std::vector<UInt> cutsIndex_;
@@ -201,7 +201,7 @@ namespace Minotaur {
 
   };
 
-  typedef boost::shared_ptr <ParPCBProcessor> ParPCBProcessorPtr;
+  typedef ParPCBProcessor* ParPCBProcessorPtr;
 
 }
 #endif

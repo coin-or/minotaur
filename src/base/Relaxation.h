@@ -81,8 +81,8 @@ protected:
   ConstProblemPtr p_;
 };
 
-typedef boost::shared_ptr<Relaxation> RelaxationPtr;
-typedef boost::shared_ptr<const Relaxation> ConstRelaxationPtr;  
+typedef Relaxation* RelaxationPtr;
+typedef const Relaxation* ConstRelaxationPtr;  
 }
 #endif
 

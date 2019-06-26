@@ -468,7 +468,8 @@ ModificationPtr CxUnivarHandler::getBrMod(BrCandPtr cand, DoubleVector &x,
   lmods = (LinModsPtr) new LinMods();
 
   double minFromBds = 0.1;
-  BrVarCandPtr vcand = boost::dynamic_pointer_cast <BrVarCand> (cand);
+  //BrVarCandPtr vcand = boost::dynamic_pointer_cast <BrVarCand> (cand);
+  BrVarCandPtr vcand = dynamic_cast <BrVarCand*> (cand);
   VariablePtr v = vcand->getVar();
 
 #if defined(DEBUG_CXUNIVARHANDLER)  
@@ -516,7 +517,8 @@ Branches CxUnivarHandler::getBranches(BrCandPtr cand, DoubleVector &x,
                                       RelaxationPtr , SolutionPoolPtr )
 {
   double minFromBds = 0.1;
-  BrVarCandPtr vcand = boost::dynamic_pointer_cast <BrVarCand> (cand);
+  //BrVarCandPtr vcand = boost::dynamic_pointer_cast <BrVarCand> (cand);
+  BrVarCandPtr vcand = dynamic_cast <BrVarCand*> (cand);
   VariablePtr v = vcand->getVar();
 
   double xval = x[v->getIndex()];
@@ -607,7 +609,6 @@ BranchPtr CxUnivarHandler::doBranch_(BranchDirection UpOrDown,
 	ConstraintPtr secCon = (*dit)->getSecantCon();
 
 	LinearFunctionPtr lf; 
-	FunctionPtr f;
 
 	double xlb = v->getLb();
 	double xub = bvalue;
@@ -636,10 +637,10 @@ BranchPtr CxUnivarHandler::doBranch_(BranchDirection UpOrDown,
 
 	// Change all linearization constraints
 	ConstraintVector::iterator lin_it;
-        for(lin_it = (*dit)->linConsBegin(); lin_it != (*dit)->linConsEnd();
-            ++lin_it) {
-	  ConstraintPtr c = *lin_it;
-	}
+        //for(lin_it = (*dit)->linConsBegin(); lin_it != (*dit)->linConsEnd();
+        //    ++lin_it) {
+	//  ConstraintPtr c = *lin_it;
+	//}
       }
     }
   } else {

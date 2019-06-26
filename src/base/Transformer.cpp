@@ -178,7 +178,8 @@ void Transformer::copyLinear_(ConstProblemPtr p, ProblemPtr newp)
   obj = p->getObjective();
 
   if (!obj) {
-    f.reset();
+    //f.reset();
+    f = 0;
     newp_->newObjective(f, 0.0, Minimize);
   } else {
     switch (obj->getFunctionType()) {
@@ -305,7 +306,6 @@ VariablePtr Transformer::newVar_(LinearFunctionPtr lf, double d,
 
 VariablePtr Transformer::newVar_(CGraphPtr cg, ProblemPtr newp)
 {
-  VariablePtr iv;
   VariablePtr ov = VariablePtr(); // NULL
   FunctionPtr f;
   LinearFunctionPtr lf;

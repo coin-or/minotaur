@@ -23,11 +23,11 @@ namespace Minotaur {
   class MILPEngine;
   class NLPEngine;
   class QPEngine;
-  typedef boost::shared_ptr<Engine> EnginePtr;
-  typedef boost::shared_ptr<LPEngine> LPEnginePtr;
-  typedef boost::shared_ptr<MILPEngine> MILPEnginePtr;
-  typedef boost::shared_ptr<NLPEngine> NLPEnginePtr;
-  typedef boost::shared_ptr<QPEngine> QPEnginePtr;
+  typedef Engine* EnginePtr;
+  typedef LPEngine* LPEnginePtr;
+  typedef MILPEngine* MILPEnginePtr;
+  typedef NLPEngine* NLPEnginePtr;
+  typedef QPEngine* QPEnginePtr;
 
   class EngineFactory {
     public:

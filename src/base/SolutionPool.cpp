@@ -53,6 +53,13 @@ void SolutionPool::addSolution(ConstSolutionPtr solution)
 }
 
 
+//void SolutionPool::setRootSolution(ConstSolutionPtr solution)
+//{
+  //SolutionPtr newsol = (SolutionPtr) new Solution(solution);
+  //rootSolution_ = newsol;
+//}
+
+
 void SolutionPool::addSolution(const double *x, double obj_value)
 {
   SolutionPtr solution = (SolutionPtr) new Solution(obj_value, x, problem_);
@@ -66,6 +73,12 @@ SolutionPtr SolutionPool::getBestSolution()
 }
 
 
+//SolutionPtr SolutionPool::getRootSolution()
+//{
+  //return rootSolution_;
+//}
+
+
 double SolutionPool::getBestSolutionValue() const
 {
   if (bestSolution_) {
@@ -74,6 +87,16 @@ double SolutionPool::getBestSolutionValue() const
     return INFINITY;
   }
 }
+
+
+//double SolutionPool::getRootSolutionValue() const
+//{
+  //if (rootSolution_) {
+    //return rootSolution_->getObjValue();
+  //} else {
+    //return INFINITY;
+  //}
+//}
 
 
 UInt SolutionPool::getNumSols() const

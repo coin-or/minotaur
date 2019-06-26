@@ -378,7 +378,6 @@ void QuadraticFunction::evalHessian(const double mul, const double *,
 
 void  QuadraticFunction::fillHessStor(LTHessStor *stor)
 {
-  VariablePtr v;
   UInt vindex;
   UInt j;
   std::deque<UInt> *inds;
@@ -462,18 +461,6 @@ void QuadraticFunction::getVars(VariableSet *vars)
   }
 }
 
-
-void QuadraticFunction::mult(double c) {
-  if (fabs(c) < 1e-7) {
-    terms_.clear();
-    varFreq_.clear();
-  } else {
-    for (VariablePairGroupIterator it = terms_.begin(); it != terms_.end(); 
-        ++it) {
-      it->second *= c;
-    }
-  }
-}
 
 
 void QuadraticFunction::addTerm(VariablePair vp, const double weight)
@@ -819,7 +806,7 @@ VarIntMapConstIterator QuadraticFunction::varsEnd() const
 }
 
 
-void QuadraticFunction::operator+=(ConstQuadraticFunctionPtr q2)
+void QuadraticFunction::add(ConstQuadraticFunctionPtr q2)
 {
   if (q2) {
     for (VariablePairGroupConstIterator it = q2->terms_.begin(); 
@@ -830,10 +817,18 @@ void QuadraticFunction::operator+=(ConstQuadraticFunctionPtr q2)
 }
 
 
-void QuadraticFunction::operator*=(const double c)
-{
-  mult(c);
+void QuadraticFunction::multiply(const double c) {
+  if (fabs(c) < 1e-7) {
+    terms_.clear();
+    varFreq_.clear();
+  } else {
+    for (VariablePairGroupIterator it = terms_.begin(); it != terms_.end(); 
+        ++it) {
+      it->second *= c;
+    }
+  }
 }
+
 
 
 void QuadraticFunction::write(std::ostream &s) const
@@ -852,19 +847,13 @@ void QuadraticFunction::write(std::ostream &s) const
 }
 
 
-namespace Minotaur {
-QuadraticFunctionPtr operator-(ConstQuadraticFunctionPtr q1, 
-     ConstQuadraticFunctionPtr q2)
+QuadraticFunctionPtr QuadraticFunction::copyMinus(ConstQuadraticFunctionPtr q2) const
 {
   QuadraticFunctionPtr qf = QuadraticFunctionPtr();  //NULL
-  if (!q1 && !q2) {
-    // do nothing.
-  } else if (!q1) {
-    qf = -1. * q2;
-  } else if (!q2) {
-    qf = q1->clone();
+  if (!q2) {
+    qf = this->clone();
   } else {
-    qf = q1->clone();
+    qf = this->clone();
     for (VariablePairGroupConstIterator it = q2->terms_.begin(); 
         it != q2->terms_.end(); it++) {
       qf->incTerm(it->first, -1*it->second);
@@ -874,18 +863,13 @@ QuadraticFunctionPtr operator-(ConstQuadraticFunctionPtr q1,
 }
 
 
-QuadraticFunctionPtr operator+(ConstQuadraticFunctionPtr q1, 
-     ConstQuadraticFunctionPtr q2)
+QuadraticFunctionPtr QuadraticFunction::copyAdd(ConstQuadraticFunctionPtr q2) const
 {
   QuadraticFunctionPtr qf = QuadraticFunctionPtr();  //NULL
-  if (!q1 && !q2) {
-    // do nothing.
-  } else if (!q1) {
-    qf = q2->clone();
-  } else if (!q2) {
-    qf = q1->clone();
+  if (!q2) {
+    qf = this->clone();
   } else {
-    qf = q1->clone();
+    qf = this->clone();
     for (VariablePairGroupConstIterator it = q2->terms_.begin(); 
         it != q2->terms_.end(); it++) {
       qf->incTerm(it->first, it->second);
@@ -895,24 +879,33 @@ QuadraticFunctionPtr operator+(ConstQuadraticFunctionPtr q1,
 }
 
 
-QuadraticFunctionPtr operator*(const double c, ConstQuadraticFunctionPtr q2)
+QuadraticFunctionPtr QuadraticFunction::copyMult(double c) const
 {
-  // creates a linear function even when c = 0.
-  // Returns NULL if q2 is NULL.
   QuadraticFunctionPtr qf = QuadraticFunctionPtr();  //NULL
-  if (q2) {
-    qf = (QuadraticFunctionPtr) new QuadraticFunction();
-    for (VariablePairGroupConstIterator it = q2->terms_.begin(); 
-        it != q2->terms_.end(); it++) {
-      qf->addTerm(it->first, c*it->second);
-    }
-  } else {
-    // do nothing
-  }
+  qf = (QuadraticFunctionPtr) new QuadraticFunction();
+   for (VariablePairGroupConstIterator it = this->terms_.begin(); 
+        it != this->terms_.end(); it++) {
+     qf->addTerm(it->first, c*it->second);
+   }
   return qf;
 }
 
+PolyFunPtr QuadraticFunction::copyMult(ConstQuadraticFunctionPtr q2) const
+{
+  PolyFunPtr pf = 0; 
+  // need to implement it
+  assert (!"QuadraticFunction::copyMult not implemented");
+  return pf;
 }
+
+PolyFunPtr QuadraticFunction::copyMult(LinearFunctionPtr l1) const
+{
+  PolyFunPtr pf = 0; 
+  //need to implement it
+  assert (!"QuadraticFunction::copyMult not implemented");
+  return pf;
+}
+
 
 
 // Local Variables: 

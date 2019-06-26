@@ -236,12 +236,14 @@ std::string getSolveStatusString(SolveStatus s);
 
 // Important class definitions
 /// Logging
+//Changed boost_shared pointer to simple pointer
 class Logger;
-typedef boost::shared_ptr<Logger> LoggerPtr;
+typedef Logger* LoggerPtr;
 
+//changed boost shared pointer to simple pointer
 class Variable;
-typedef boost::shared_ptr<Variable> VariablePtr;
-typedef boost::shared_ptr<Variable> ConstVariablePtr;
+typedef Variable* VariablePtr;
+typedef Variable* ConstVariablePtr; 
 typedef std::vector<VariablePtr> VarVector;
 typedef std::deque<VariablePtr> VarQueue;
 typedef VarVector::const_iterator VariableConstIterator;
@@ -256,9 +258,14 @@ typedef std::set<ConstVariablePtr, CompareVariablePtr> VariableSet;
 typedef VariableSet::const_iterator VarSetConstIterator;
 typedef std::set<VariablePtr> VarSet;
 
+class Objective;
+typedef Objective* ObjectivePtr;
+typedef const Objective* ConstObjPtr;
+
+//Changed boost_shared pointer to simple pointer
 class Constraint;
-typedef boost::shared_ptr<Constraint> ConstraintPtr;
-typedef boost::shared_ptr<const Constraint> ConstConstraintPtr;
+typedef  Constraint*  ConstraintPtr;
+typedef const Constraint* ConstConstraintPtr;
 typedef std::vector<ConstraintPtr> ConstraintVector;
 typedef ConstraintVector::iterator ConstraintIterator;
 typedef ConstraintVector::const_iterator ConstraintConstIterator;
@@ -270,17 +277,19 @@ typedef SOSVector::iterator SOSIterator;
 typedef SOSVector::const_iterator SOSConstIterator;
 
 // Serdar defined
-typedef boost::shared_ptr<ConstraintVector> ConstraintVectorPtr;
+// some chnaged boost:shared_ptr: vinay
+typedef ConstraintVector* ConstraintVectorPtr;
 typedef std::vector<ConstConstraintPtr> ConstConstraintVector;
-typedef boost::shared_ptr<ConstConstraintVector> ConstConstraintVectorPtr;
+typedef ConstConstraintVector* ConstConstraintVectorPtr;
 typedef ConstConstraintVector::iterator ConstConstraintIterator;
 typedef std::set<ConstraintPtr> ConstrSet;
-typedef std::deque<ConstConstraintPtr> ConstrQ;
+typedef std::deque<ConstraintPtr> ConstrQ;
 
 
 // Serdar added.
-typedef boost::shared_ptr<VarSet> VarSetPtr;
-typedef boost::shared_ptr<const VarSet> ConstVarSetPtr;
+// changed boost:shared_ptr: vinay
+typedef VarSet* VarSetPtr;
+typedef const VarSet* ConstVarSetPtr;
 typedef std::map<ConstVariablePtr, UInt, CompareVariablePtr> VarIntMap;
 typedef VarIntMap::const_iterator VarIntMapConstIterator;
 typedef VarIntMap::iterator VarIntMapIterator;
@@ -291,26 +300,27 @@ typedef std::set<ConstVariablePtr> ConstVarSet;
 typedef VarSet::const_iterator     ConstVarSetIter;
 
 class Node;
-typedef boost::shared_ptr<Node> NodePtr;
+typedef Node* NodePtr;
 typedef std::vector<NodePtr> NodePtrVector;
 typedef std::vector<NodePtr>::iterator NodePtrIterator;
 
 class Handler;
-typedef boost::shared_ptr<Handler> HandlerPtr;
-typedef boost::shared_ptr<const Handler> ConstHandlerPtr;
+typedef Handler* HandlerPtr;
+typedef const Handler* ConstHandlerPtr;
 typedef std::vector<HandlerPtr> HandlerVector;
 typedef HandlerVector::iterator HandlerIterator;
 typedef HandlerVector::const_iterator HandlerConstIterator;
 
 class   Environment;
-typedef boost::shared_ptr<Environment> EnvPtr;
+typedef Environment* EnvPtr;
+
 class   Problem;
-typedef boost::shared_ptr<Problem> ProblemPtr;
-typedef boost::shared_ptr<const Problem> ConstProblemPtr;
+typedef Problem* ProblemPtr;
+typedef const Problem* ConstProblemPtr;
 
 class   Modification;
-typedef boost::shared_ptr<Modification> ModificationPtr;
-typedef boost::shared_ptr<const Modification> ConstModificationPtr;  
+typedef Modification* ModificationPtr;
+typedef const Modification* ConstModificationPtr;  
 typedef std::vector<ModificationPtr> ModVector;  
 typedef std::vector<ModificationPtr>::const_iterator 
 ModificationConstIterator;
@@ -320,21 +330,22 @@ typedef std::deque<ModificationPtr> ModQ;
 typedef std::stack<ModificationPtr> ModStack;
 
 class   Branch;
-typedef boost::shared_ptr<Branch> BranchPtr;
-typedef boost::shared_ptr<const Branch> ConstBranchPtr;  
+typedef Branch* BranchPtr;
+typedef const Branch* ConstBranchPtr;  
 typedef std::vector<BranchPtr> BranchPtrVector;
-typedef boost::shared_ptr<BranchPtrVector> Branches;
+typedef BranchPtrVector* Branches;
 typedef std::vector<BranchPtr>::const_iterator BranchConstIterator;
 
+// BrCand boost pointer chnaged to regular pointer
 class   BrCand;
-typedef boost::shared_ptr<BrCand> BrCandPtr;
-typedef boost::shared_ptr<const BrCand> ConstBrCandPtr;  
+typedef BrCand*  BrCandPtr;
+typedef const BrCand* ConstBrCandPtr;  
 typedef std::vector< BrCandPtr > BrCandVector;
 typedef BrCandVector::iterator BrCandVIter;
 
 class   BrVarCand;
-typedef boost::shared_ptr<BrVarCand> BrVarCandPtr;
-typedef boost::shared_ptr<const BrVarCand> ConstBrVarCandPtr; 
+typedef BrVarCand* BrVarCandPtr;
+typedef const BrVarCand* ConstBrVarCandPtr; 
 struct CompareVarBrCand {
   bool operator()(ConstBrVarCandPtr c1, ConstBrVarCandPtr c2) const;
 };
@@ -351,7 +362,7 @@ struct CompareIntDouble {
 
 // Compare rule to compare the value of the pair.
 typedef std::pair<ConstVariablePtr, double> VariableValuePair;
-typedef boost::shared_ptr<VariableValuePair> VariableValuePairPtr;
+typedef VariableValuePair* VariableValuePairPtr;
 struct CompareValueVariablePair {
   bool operator() (VariableValuePair v1,VariableValuePair v2) const;
 };
@@ -366,7 +377,7 @@ VariableValueMap;
 
 // Vector of pair<ConstVariablePtr,double value> which is VariableValuePair.
 typedef std::vector<VariableValuePair> VariableValuePairVector;
-typedef boost::shared_ptr<VariableValuePairVector> VariableValuePairVectorPtr;
+typedef VariableValuePairVector* VariableValuePairVectorPtr;
 typedef std::vector<VariableValuePair>::iterator
 VariableValuePairVectorIterator;
 typedef std::vector<VariableValuePair>::const_iterator 
@@ -374,19 +385,19 @@ VariableValuePairVectorConstIterator;
 
 // Cover is a VariableSet
 typedef VariableValuePairVector CoverSet;
-typedef boost::shared_ptr<CoverSet> CoverSetPtr;
-typedef boost::shared_ptr<const CoverSet> ConstCoverSetPtr;
+typedef CoverSet* CoverSetPtr;
+typedef const CoverSet* ConstCoverSetPtr;
 typedef CoverSet::iterator CoverSetIterator;
 typedef CoverSet::const_iterator CoverSetConstIterator; 
 
 // Pointers to classes added.
 class KnapsackList;
-typedef boost::shared_ptr<KnapsackList> KnapsackListPtr;
-typedef boost::shared_ptr<const KnapsackList> ConstKnapsackListPtr;
+typedef KnapsackList* KnapsackListPtr;
+typedef const KnapsackList* ConstKnapsackListPtr;
 
 // Cut class vectors etc.
 class Cut;
-typedef boost::shared_ptr<Cut> CutPtr;
+typedef Cut* CutPtr;
 typedef std::vector<CutPtr> CutVector;
 typedef CutVector::iterator CutVectorIter;
 typedef CutVector::const_iterator CutVectorConstIter;
@@ -396,27 +407,46 @@ typedef CutList::iterator CutListIter;
 //LiftingProblem which is a knapsack problem type of Problem.
 typedef Problem LiftingProblem;
 typedef ProblemPtr LiftingProblemPtr;
+
 // CoverCutGenerator pointer
 class CoverCutGenerator;
-typedef boost::shared_ptr<CoverCutGenerator> CoverCutGeneratorPtr;
+typedef CoverCutGenerator* CoverCutGeneratorPtr;
+
 // LGCIGenerator pointer
 class LGCIGenerator;
-typedef boost::shared_ptr<LGCIGenerator> LGCIGeneratorPtr;
+typedef LGCIGenerator* LGCIGeneratorPtr;
+// Serdar ended.
 
 class Function;
-typedef boost::shared_ptr<const Function> ConstFunctionPtr; 
-// Serdar ended.
+typedef Function* FunctionPtr;
+typedef const Function* ConstFunctionPtr; 
+
+class   LinearFunction;
+typedef LinearFunction* LinearFunctionPtr;
+typedef const LinearFunction* ConstLinearFunctionPtr;
+
+class   NonlinearFunction;
+typedef NonlinearFunction* NonlinearFunctionPtr;
+typedef const NonlinearFunction* ConstNonlinearFunctionPtr;
+
+class   QuadraticFunction;
+typedef QuadraticFunction* QuadraticFunctionPtr;
+typedef const QuadraticFunction* ConstQuadraticFunctionPtr;
 
 // declare options database
 class OptionDB;
-typedef boost::shared_ptr <OptionDB> OptionDBPtr;
+typedef OptionDB* OptionDBPtr;
 
 // declare options
 template <class T> class Option;
-typedef boost::shared_ptr< Option<bool>        > BoolOptionPtr;
-typedef boost::shared_ptr< Option<int>         > IntOptionPtr;
-typedef boost::shared_ptr< Option<double>      > DoubleOptionPtr;
-typedef boost::shared_ptr< Option<std::string> > StringOptionPtr;
+typedef  Option<bool>         BoolOption;
+typedef Option<int>           IntOption;
+typedef Option<double>        DoubleOption;
+typedef  Option<std::string>   StringOption;
+typedef BoolOption*         BoolOptionPtr;
+typedef IntOption*           IntOptionPtr;
+typedef DoubleOption*        DoubleOptionPtr;
+typedef  StringOption*   StringOptionPtr;
 typedef BoolOptionPtr FlagOptionPtr;
 
 // define sets of pointers
@@ -463,7 +493,7 @@ typedef const std::map<ConstVariablePtr, UInt, CompareVariablePtr>
 VarCountConstMap;
 
 class   Heuristic;
-typedef boost::shared_ptr<Heuristic> HeurPtr;
+typedef Heuristic* HeurPtr;
 typedef std::vector<HeurPtr> HeurVector;
 }
 

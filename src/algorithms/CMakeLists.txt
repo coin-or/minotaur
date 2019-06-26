@@ -44,9 +44,17 @@ if (LINK_OSI)
   if (LINK_CLP)
     link_directories(${CLP_LIB_DIR_F})
   endif()
-  if (LINK_CPX)
-    link_directories(${CPX_LIB_DIR})
+  if (LINK_CBC)
+    link_directories(${CBC_LIB_DIR})
   endif()
+endif()
+
+if (LINK_CPX)
+  add_definitions(-DUSE_CPX -DIL_STD)
+  include_directories("${PROJECT_SOURCE_DIR}/src/engines/Cplex")
+  include_directories("${CPX_INC_DIR_F}")
+  #include_directories("${CPX_INC_DIR_F}/../../concert/include") # does not read from here
+  link_directories(${CPX_LIB_DIR_F})
 endif()
 
 if (LINK_QPOASES)
@@ -66,6 +74,8 @@ set (ALL_EXEC_LIBS
 	"mntrampl" 
 	"mntrengfac" 
 	"${IPOPT_LIBS}"
+	"${CPX_LIBS}"
+	"${CBC_LIBS}"
         "${OSI_LIBS}"
         "${FILTER_SQP_LIBS}"
 	"${BQPD_LIBS}"
@@ -83,6 +93,33 @@ list(REMOVE_DUPLICATES ALL_EXEC_LIBS)
 list(REVERSE ALL_EXEC_LIBS)
 message(STATUS ${MSG_HEAD} "ALL_EXEC_LIBS after removing duplicates =  ${ALL_EXEC_LIBS}")
 
+##############################################################################
+## Add lines specific to your binaries in this section.
+## Use the lines meant for bnb as a template.
+##############################################################################
+set (LSTOA_SOURCES
+   LSTOA.cpp
+)
+
+add_executable(lstoa ${LSTOA_SOURCES})
+target_link_libraries(lstoa ${ALL_EXEC_LIBS})
+
+# This will install the binary in bin directory.
+install(TARGETS lstoa RUNTIME DESTINATION bin)
+
+##############################################################################
+## Add lines specific to your binaries in this section.
+## Use the lines meant for bnb as a template.
+##############################################################################
+set (OA_SOURCES
+  OA.cpp
+)
+
+add_executable(oa ${OA_SOURCES})
+target_link_libraries(oa ${ALL_EXEC_LIBS})
+
+# This will install the binary in bin directory.
+install(TARGETS oa RUNTIME DESTINATION bin)
 
 ##############################################################################
 ## Add lines specific to your binaries in this section. 
@@ -102,15 +139,15 @@ install(TARGETS bnb RUNTIME DESTINATION bin)
 ## Add lines specific to your binaries in this section.
 ## Use the lines meant for bnb as a template.
 ##############################################################################
-set (MSBNB_SOURCES
- MsBnb.cpp
-)
+#set (MSBNB_SOURCES
+ #MsBnb.cpp
+#)
 
-add_executable(msbnb ${MSBNB_SOURCES})
-target_link_libraries(msbnb ${ALL_EXEC_LIBS})
+#add_executable(msbnb ${MSBNB_SOURCES})
+#target_link_libraries(msbnb ${ALL_EXEC_LIBS})
 
-# This will install the binary in bin directory.
-install(TARGETS msbnb RUNTIME DESTINATION bin)
+## This will install the binary in bin directory.
+#install(TARGETS msbnb RUNTIME DESTINATION bin)
 
 ##############################################################################
 ## Add lines specific to your binaries in this section.
@@ -130,15 +167,15 @@ install(TARGETS mcqg RUNTIME DESTINATION bin)
 ## Add lines specific to your binaries in this section.
 ## Use the lines meant for bnb as a template.
 ##############################################################################
-#set (MCBNB_SOURCES
-# McBnb.cpp
-#)
-#
-#add_executable(mcbnb ${MCBNB_SOURCES})
-#target_link_libraries(mcbnb ${ALL_EXEC_LIBS})
-#
-## This will install the binary in bin directory.
-#install(TARGETS mcbnb RUNTIME DESTINATION bin)
+set (MCBNB_SOURCES
+ McBnb.cpp
+)
+
+add_executable(mcbnb ${MCBNB_SOURCES})
+target_link_libraries(mcbnb ${ALL_EXEC_LIBS})
+
+# This will install the binary in bin directory.
+install(TARGETS mcbnb RUNTIME DESTINATION bin)
 
 ##############################################################################
 ## Add lines specific to your binaries in this section.
@@ -159,7 +196,7 @@ install(TARGETS mcqg RUNTIME DESTINATION bin)
 ## Use the lines meant for bnb as a template.
 ##############################################################################
 set (QPD_SOURCES
-  QPDive.cpp 
+   QPDive.cpp 
 )
 
 add_executable(qpd ${QPD_SOURCES})
@@ -216,7 +253,7 @@ install(TARGETS qg RUNTIME DESTINATION bin)
 ## Use the lines meant for bnb as a template.
 ##############################################################################
 set (GLOB_SOURCES
-  Glob.cpp 
+ Glob.cpp 
 )
 
 add_executable(glob ${GLOB_SOURCES})

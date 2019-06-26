@@ -26,7 +26,7 @@ class ObjectiveUT : public CppUnit::TestCase {
 
     void testGetVal();
     void setUp();
-    void tearDown() { };
+    void tearDown();
 
     CPPUNIT_TEST_SUITE(ObjectiveUT);
     CPPUNIT_TEST(testGetVal);
@@ -58,7 +58,7 @@ class myNLFun2 : public NonlinearFunction {
     void multiply(const double) {};
     void prepJac(VarSetConstIter, VarSetConstIter) {};
 };
-typedef boost::shared_ptr<myNLFun2> myNLFun2Ptr;
+typedef myNLFun2* myNLFun2Ptr;
 
 #endif
 // Local Variables: 

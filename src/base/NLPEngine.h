@@ -45,7 +45,7 @@ namespace Minotaur {
       virtual ~NLPEngine() {};
 
   };
-  typedef boost::shared_ptr<NLPEngine> NLPEnginePtr;
+  typedef NLPEngine* NLPEnginePtr;
 }
 
 #endif

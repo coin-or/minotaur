@@ -191,7 +191,6 @@ Function::~Function()
 void Function::subst(VariablePtr out, VariablePtr in, double rat)
 {
   double w;
-  VariablePtr v1, v2, v3, v4;
 
   if (lf_) {
     w = lf_->getWeight(out);
@@ -243,10 +242,10 @@ void Function::operator*=(const double c)
     nlf_ = NonlinearFunctionPtr();
   } else {
     if (lf_) {
-      (*lf_) *= c;
+      lf_->multiply(c);
     }
     if (qf_) {
-      (*qf_) *= c;
+      qf_->multiply(c);
     }
     if (nlf_) {
       nlf_->multiply(c);
@@ -337,7 +336,7 @@ void Function::evalHessian(const double mult, const double *x,
 void Function::add(ConstLinearFunctionPtr lPtr)
 {
   if (lf_) {
-    (*lf_) += lPtr;
+    lf_->add(lPtr);
   } else {
     lf_ = lPtr->clone();
     if (type_== Constant) {
@@ -346,6 +345,26 @@ void Function::add(ConstLinearFunctionPtr lPtr)
   }
   collectVars_();
 }
+
+
+LinearFunctionPtr Function::removeLinear()
+{
+  LinearFunctionPtr lf = lf_;
+  lf_ = LinearFunctionPtr();
+
+  // change the type of the function.
+  if (nlf_) {
+    // TODO: Fix this. nlf_ may be a constant expression.
+    // do nothing
+  } else if (qf_) {
+    type_ = Quadratic;
+  } else {
+    type_ = Constant;
+  }
+  collectVars_();
+  return lf;
+}
+
 
 
 QuadraticFunctionPtr Function::removeQuadratic()
@@ -510,19 +529,19 @@ void Function::collectVars_()
 }
 
 
-const LinearFunctionPtr Function::getLinearFunction() const 
+LinearFunctionPtr Function::getLinearFunction() const 
 {
   return lf_;
 }
 
 
-const QuadraticFunctionPtr Function::getQuadraticFunction() const 
+QuadraticFunctionPtr Function::getQuadraticFunction() const 
 {
   return qf_;
 }
 
 
-const NonlinearFunctionPtr Function::getNonlinearFunction() const 
+NonlinearFunctionPtr Function::getNonlinearFunction() const 
 {
   return nlf_;
 }

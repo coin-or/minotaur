@@ -20,15 +20,6 @@
 
 namespace Minotaur {
 
-  class   Function;
-  class   LinearFunction;
-  class   QuadraticFunction;
-  class   NonlinearFunction;
-  typedef boost::shared_ptr<Function> FunctionPtr;
-  typedef boost::shared_ptr<LinearFunction> LinearFunctionPtr;
-  typedef boost::shared_ptr<const LinearFunction> ConstLinearFunctionPtr;
-  typedef boost::shared_ptr<NonlinearFunction> NonlinearFunctionPtr;
-  typedef boost::shared_ptr<QuadraticFunction> QuadraticFunctionPtr;
   typedef std::set<std::pair<VariablePtr, FunctionType> >::const_iterator 
     VariableFunIterator;
   /**
@@ -99,7 +90,7 @@ namespace Minotaur {
       virtual const std::string getName() const;
 
       /// Return the function in the objective
-      const FunctionPtr getFunction() const {
+      FunctionPtr getFunction() const {
         return f_;
       }
 
@@ -107,19 +98,19 @@ namespace Minotaur {
        * Return the linear function part of the objective function. Could be
        * NULL.
        */
-      const LinearFunctionPtr getLinearFunction() const;
+      LinearFunctionPtr getLinearFunction() const;
 
       /**
        * Return the quadratic function part of the objective function. Could be
        * NULL.
        */
-      const QuadraticFunctionPtr getQuadraticFunction() const;
+      QuadraticFunctionPtr getQuadraticFunction() const;
 
       /**
        * Return the nonlinear function part of the objective function. Could be
        * NULL.
        */
-      const NonlinearFunctionPtr getNonlinearFunction() const;
+      NonlinearFunctionPtr getNonlinearFunction() const;
 
       /// Print the objective function to the output stream. 
       void write(std::ostream &out) const; 
@@ -188,6 +179,8 @@ namespace Minotaur {
       /// Remove the quadratic part of the function and return a pointer to it.
       QuadraticFunctionPtr removeQuadratic_();
 
+      NonlinearFunctionPtr removeNonlinear_();
+
       void subst_(VariablePtr out, VariablePtr in, double rat=1.0);
 
       /**
@@ -196,9 +189,6 @@ namespace Minotaur {
        */
       void negate_();
   };
-
-  typedef boost::shared_ptr<Objective> ObjectivePtr;
-  typedef boost::shared_ptr<const Objective> ConstObjPtr;
 }
 #endif
 

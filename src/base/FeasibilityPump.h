@@ -13,12 +13,11 @@
 #define FEASIBILITYPUMP_H
 
 #include "Heuristic.h"
+#include "Types.h"
 
 namespace Minotaur {
   class Engine;
   class Problem;
-  typedef boost::shared_ptr<Engine> EnginePtr;
-  typedef boost::shared_ptr<Problem> ProblemPtr;
 
   /// statistics for Feasibility Pump heuristic
   struct FeasPumpStats {
@@ -235,7 +234,7 @@ namespace Minotaur {
 
   };
 
-  typedef boost::shared_ptr<FeasibilityPump> FeasPumpPtr;
+  typedef FeasibilityPump* FeasPumpPtr;
 
 }
 

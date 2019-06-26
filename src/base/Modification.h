@@ -20,9 +20,7 @@ namespace Minotaur {
   class   Modification;
   class   Problem;
   class   Relaxation;
-  typedef boost::shared_ptr <Modification> ModificationPtr;
-  typedef boost::shared_ptr <Problem> ProblemPtr;
-  typedef boost::shared_ptr <Relaxation> RelaxationPtr;
+  typedef Relaxation* RelaxationPtr;
 
   /**
    * Modification is a (pure) abstract class for changes that can be done to a 

@@ -97,8 +97,7 @@ void IntVarHandler::getBranchingCandidates(RelaxationPtr rel,
     v = *it;
     v_type = v->getType();
     index = v->getIndex();
-    if ((v_type==Binary || v_type==Integer) && 
-        fabs(floor(x[index]+0.5) - x[index]) > intTol_) {
+    if ((v_type==Binary || v_type==Integer) && fabs(floor(x[index]+0.5) - x[index]) > intTol_) {
       // yes, it can be branched upon.
       br_can = (BrVarCandPtr) new BrVarCand(v, v->getIndex(), 
                                             x[index]-floor(x[index]),
@@ -114,7 +113,8 @@ ModificationPtr IntVarHandler::getBrMod(BrCandPtr cand, DoubleVector & x,
                                         RelaxationPtr , BranchDirection dir) 
 {
   // TODO: fix this dynamic cast
-  BrVarCandPtr vcand = boost::dynamic_pointer_cast <BrVarCand> (cand);
+  //BrVarCandPtr vcand = boost::dynamic_pointer_cast <BrVarCand> (cand);
+  BrVarCandPtr vcand =dynamic_cast <BrVarCand*> (cand);
   VariablePtr v = vcand->getVar();
   VarBoundModPtr mod;
   double bnd;
@@ -133,7 +133,8 @@ ModificationPtr IntVarHandler::getBrMod(BrCandPtr cand, DoubleVector & x,
 Branches IntVarHandler::getBranches(BrCandPtr cand, DoubleVector & x, 
                                     RelaxationPtr rel, SolutionPoolPtr s_pool)
 {
-  BrVarCandPtr vcand = boost::dynamic_pointer_cast <BrVarCand> (cand);
+  //BrVarCandPtr vcand = boost::dynamic_pointer_cast <BrVarCand> (cand);
+  BrVarCandPtr vcand = dynamic_cast <BrVarCand*> (cand);
   VariablePtr v = vcand->getVar();
   VariablePtr v2;
   double value = x[v->getIndex()];
@@ -167,6 +168,7 @@ Branches IntVarHandler::getBranches(BrCandPtr cand, DoubleVector & x,
     branch2->addRMod(mod);
   }
   branch2->setActivity(value);
+  vcand->setNumBranches(2);
 
   if (true==gDive_ && bestsol) {
     if (bestsol->getPrimal()[v->getIndex()] < x[v->getIndex()]) {

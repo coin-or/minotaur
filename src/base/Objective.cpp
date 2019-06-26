@@ -56,7 +56,7 @@ Objective::Objective(FunctionPtr fPtr, double cb, ObjectiveType otyp,
 }
 
 
-const LinearFunctionPtr Objective::getLinearFunction() const 
+LinearFunctionPtr Objective::getLinearFunction() const 
 { 
   if (f_) {
     return f_->getLinearFunction(); 
@@ -66,7 +66,7 @@ const LinearFunctionPtr Objective::getLinearFunction() const
 }
 
 
-const QuadraticFunctionPtr Objective::getQuadraticFunction() const 
+QuadraticFunctionPtr Objective::getQuadraticFunction() const 
 { 
   if (f_) {
     return f_->getQuadraticFunction(); 
@@ -76,7 +76,7 @@ const QuadraticFunctionPtr Objective::getQuadraticFunction() const
 }
 
 
-const NonlinearFunctionPtr Objective::getNonlinearFunction() const 
+NonlinearFunctionPtr Objective::getNonlinearFunction() const 
 { 
   if (f_) {
     return f_->getNonlinearFunction(); 
@@ -133,6 +133,17 @@ void Objective::add_(double cb)
 {
   cb_ += cb;
 }
+
+
+NonlinearFunctionPtr Objective::removeNonlinear_()
+{
+  NonlinearFunctionPtr nlf = NonlinearFunctionPtr(); // NULL
+  if (f_) {
+    nlf = f_->removeNonlinear();
+  }
+  return nlf;
+}
+
 
 
 QuadraticFunctionPtr Objective::removeQuadratic_()

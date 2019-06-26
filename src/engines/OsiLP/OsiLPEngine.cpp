@@ -108,31 +108,6 @@ void OsiLPWarmStart::write(std::ostream &) const
 // ----------------------------------------------------------------------- //
 // ----------------------------------------------------------------------- //
 
-OsiLPEngine::OsiLPEngine()
-  : bndChanged_(true),
-    consChanged_(true),
-    env_(EnvPtr()),
-    eName_(OsiUndefEngine),
-    maxIterLimit_(10000),
-    objChanged_(true),
-    stats_(0),
-    strBr_(false),
-    timer_(0)
-{
-  logger_ = (LoggerPtr) new Logger(LogInfo);
-#if USE_OSILP 
-#if MNTROSICLP
-  // since env is not set, assume clp as the solver
-  osilp_ = newSolver_(OsiClpEngine);
-  osilp_->setHintParam(OsiDoReducePrint);
-  osilp_->messageHandler()->setLogLevel(0); 
-#endif
-#else 
-#error Need to set USE_OSILP
-#endif
-}
-
-  
 OsiLPEngine::OsiLPEngine(EnvPtr env)
   : bndChanged_(true),
     consChanged_(true),
@@ -147,8 +122,7 @@ OsiLPEngine::OsiLPEngine(EnvPtr env)
 #endif
   std::string etype = env_->getOptions()->findString("lp_engine")->getValue();
 
-  logger_ = (LoggerPtr) new Logger((LogLevel) env->getOptions()->
-                                   findInt("engine_log_level")->getValue());
+  logger_ = env_->getLogger();
   eName_ = OsiUndefEngine;
   if (etype == "OsiClp") {
     eName_ = OsiClpEngine;
@@ -186,7 +160,8 @@ OsiLPEngine::~OsiLPEngine()
   delete timer_;
   if (problem_) {
     problem_->unsetEngine();
-    problem_.reset();
+    //problem_.reset();
+    problem_ = 0;
   }
 }
 
@@ -324,7 +299,8 @@ void OsiLPEngine::clear() {
   }
   if (problem_) {
     problem_->unsetEngine();
-    problem_.reset();
+    //problem_.reset();
+    problem_ = 0;
   }
 }
 
@@ -341,10 +317,7 @@ void OsiLPEngine::disableStrBrSetup()
 
 EnginePtr OsiLPEngine::emptyCopy()
 {
-  if (env_) {
-    return (OsiLPEnginePtr) new OsiLPEngine(env_);
-  }
-  return (OsiLPEnginePtr) new OsiLPEngine();
+  return (OsiLPEnginePtr) new OsiLPEngine(env_);
 }
 
 
@@ -516,8 +489,7 @@ void OsiLPEngine::load(ProblemPtr problem)
 
 void OsiLPEngine::loadFromWarmStart(const WarmStartPtr ws)
 {
-  ConstOsiLPWarmStartPtr ws2 = 
-    boost::dynamic_pointer_cast <const OsiLPWarmStart> (ws);
+  ConstOsiLPWarmStartPtr ws2 = dynamic_cast <const OsiLPWarmStart*> (ws);
   assert (ws2);
   CoinWarmStart *coin_ws = ws2->getCoinWarmStart();
   osilp_->setWarmStart(coin_ws);

@@ -431,7 +431,8 @@ void writeSol(EnvPtr env, VarVector *orig_v,
   if (env->getOptions()->findFlag("AMPL")->getValue() ||
       true == env->getOptions()->findBool("write_sol_file")->getValue()) {
     iface->writeSolution(sol, status);
-  } else if (sol && env->getLogger()->getMaxLevel()>=LogExtraInfo) {
+  } else if (sol && env->getLogger()->getMaxLevel()>=LogExtraInfo &&
+             env->getOptions()->findBool("display_solution")->getValue()) {
     sol->writePrimal(env->getLogger()->msgStream(LogExtraInfo), orig_v);
   }
 }
@@ -492,8 +493,8 @@ int main(int argc, char** argv)
   EnvPtr env      = (EnvPtr) new Environment();
   OptionDBPtr options;
   MINOTAUR_AMPL::AMPLInterface* iface = 0;
-  ProblemPtr oinst;    // instance that needs to be solved.
-  EnginePtr engine;    // engine for solving relaxations. 
+  ProblemPtr oinst;      // instance that needs to be solved.
+  EnginePtr engine = 0;  // engine for solving relaxations. 
   SolutionPtr sol, sol2;
   JacobianPtr jPtr;
   HessianOfLagPtr hPtr;
@@ -562,6 +563,9 @@ int main(int argc, char** argv)
   writeBnbStatus(env, bab, obj_sense);
 
 CLEANUP:
+  if (engine) {
+    delete engine;
+  }
   if (iface) {
     delete iface;
   }

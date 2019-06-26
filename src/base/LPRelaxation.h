@@ -41,8 +41,8 @@ namespace Minotaur {
       ConstProblemPtr originalProblem_;
   };
 
-  typedef boost::shared_ptr <LPRelaxation>       LPRelaxationPtr;
-  typedef boost::shared_ptr <const LPRelaxation> ConstLPRelaxationPtr;
+  typedef LPRelaxation*       LPRelaxationPtr;
+  typedef const LPRelaxation* ConstLPRelaxationPtr;
 }
 #endif
 

@@ -20,8 +20,8 @@ using namespace Minotaur;
 
 void PolyUT::monomial()
 {
-  VariablePtr x1 = (VariablePtr) new Variable(0, 0, 0., 1., Continuous, "x1");
-  VariablePtr x2 = (VariablePtr) new Variable(1, 1, 0., 1., Continuous, "x2");
+  VariablePtr x1 = new Variable(0, 0, 0., 1., Continuous, "x1");
+  VariablePtr x2 = new Variable(1, 1, 0., 1., Continuous, "x2");
   MonomialFunPtr m = (MonomialFunPtr) new MonomialFunction(2., x1, 4); 
   int error=0;
   m->multiply( 5., x2, 2);
@@ -75,13 +75,16 @@ void PolyUT::monomial()
   CPPUNIT_ASSERT(-1600 == g[0]);
   CPPUNIT_ASSERT( -600 == g[1]);
   CPPUNIT_ASSERT(0==error);
+
+  delete x1;
+  delete x2;
 }
 
 
 void PolyUT::polynomial()
 {
-  VariablePtr x1 = (VariablePtr) new Variable(0, 0, 0., 1., Continuous, "x1");
-  VariablePtr x2 = (VariablePtr) new Variable(1, 1, 0., 1., Continuous, "x2");
+  VariablePtr x1 = new Variable(0, 0, 0., 1., Continuous, "x1");
+  VariablePtr x2 = new Variable(1, 1, 0., 1., Continuous, "x2");
   PolyFunPtr  p1 = (PolyFunPtr) new PolynomialFunction();
   MonomialFunPtr  m;
   LinearFunctionPtr lf = (LinearFunctionPtr) new LinearFunction();
@@ -94,11 +97,13 @@ void PolyUT::polynomial()
 
   // x1^3 + 3x1x2
   m = (MonomialFunPtr) new MonomialFunction(1, x1, 3);
-  (*p1) += m;
+  //(*p1) += m;
+  p1->add(m);
 
   m = (MonomialFunPtr) new MonomialFunction(3, x1, 1);
   m->multiply(1., x2, 1);
-  (*p1) += m;
+  //(*p1) += m;
+  p1->add(m);
 
   //p1->write(std::cout);
   double x[2];
@@ -140,6 +145,9 @@ void PolyUT::polynomial()
   CPPUNIT_ASSERT(0==error);
   CPPUNIT_ASSERT(15. == g[0]);
   CPPUNIT_ASSERT( 6. == g[1]);
+
+  delete x1;
+  delete x2;
 
 }
 

@@ -17,8 +17,6 @@
 #include "Types.h"
 
 namespace Minotaur {
-  class Function;
-  typedef boost::shared_ptr<Function> FunctionPtr;
 
   struct LTHessStor {
     UInt nz;
@@ -126,8 +124,8 @@ namespace Minotaur {
 
   };
 
-  typedef boost::shared_ptr<HessianOfLag> HessianOfLagPtr;
-  typedef boost::shared_ptr<const HessianOfLag> ConstHessianOfLagPtr;  
+  typedef HessianOfLag* HessianOfLagPtr;
+  typedef const HessianOfLag* ConstHessianOfLagPtr;  
 
 }
 #endif

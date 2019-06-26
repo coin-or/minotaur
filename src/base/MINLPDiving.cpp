@@ -150,8 +150,6 @@ UInt MINLPDiving::FracBounds_(UInt numfrac, const double* x,
   UInt change_wan = (UInt) ceil( (double) numfrac/4);
   UInt changes    = 0;
   ModVector dummy;
-  NodePtr node = NodePtr();
-  SolutionPoolPtr s_pool = SolutionPoolPtr(); // NULL
   SolveStatus status;
 
   // get the score of violated variables according to their fractional part
@@ -412,8 +410,6 @@ UInt MINLPDiving::LexBounds_(UInt numfrac, const double* x,
   UInt change_wan = (UInt) ceil( (double) numfrac/4);
   UInt changes    = 0;
   ModVector dummy;
-  NodePtr node = NodePtr();
-  SolutionPoolPtr s_pool = SolutionPoolPtr(); // NULL
   SolveStatus status;
   
   getScore_(x, LexBound);
@@ -496,8 +492,6 @@ UInt MINLPDiving::ReducedCost_(UInt numfrac, const double* x,
   UInt change_wan = (UInt) ceil( (double) numfrac/4);
   UInt changes    = 0;
   ModVector dummy;
-  NodePtr node = NodePtr();
-  SolutionPoolPtr s_pool = SolutionPoolPtr(); // NULL
   SolveStatus status;
 
   getScore_(x, ReducedCost);
@@ -567,8 +561,8 @@ UInt MINLPDiving::ReducedCost_(UInt numfrac, const double* x,
 void MINLPDiving::restoreBounds_(double* LB_copy, double* UB_copy, UInt vars)
 {
   for (UInt i=0; i<vars; ++i, ++LB_copy, ++UB_copy) {
-    p_->changeBound(i, Lower, *LB_copy);
-    p_->changeBound(i, Upper, *UB_copy);
+    p_->changeBoundByInd(i, Lower, *LB_copy);
+    p_->changeBoundByInd(i, Upper, *UB_copy);
   }
 }
 
@@ -650,8 +644,6 @@ MINLPDiving::FuncPtr MINLPDiving::selectHeur_(int i, Direction &d, Order &o)
 
 bool MINLPDiving::shouldDive_()
 {
-  VariablePtr variable;
-  
   UInt min_num_bint             = 5;
   ConstProblemSizePtr prob_size = p_->getSize();
   UInt num_bin_int              = prob_size->bins + prob_size->ints;
@@ -815,8 +807,6 @@ UInt MINLPDiving::VectorLength_(UInt numfrac, const double* x,
   UInt change_wan = (UInt) ceil( (double) numfrac/4);
   UInt changes    = 0;
   ModVector dummy;
-  NodePtr node = NodePtr();
-  SolutionPoolPtr s_pool = SolutionPoolPtr(); // NULL
   SolveStatus status;
 
   getScore_(x, VectorLength);

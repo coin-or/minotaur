@@ -201,7 +201,8 @@ IpoptWarmStart::IpoptWarmStart(ConstIpoptWarmStartPtr ws)
 
 IpoptWarmStart::~IpoptWarmStart()
 {
-  sol_.reset();
+  //sol_.reset();
+  sol_ = 0;
 }
 
 
@@ -248,39 +249,6 @@ void IpoptWarmStart::write(std::ostream &out) const
 // ----------------------------------------------------------------------- //
 // ----------------------------------------------------------------------- //
 
-IpoptEngine::IpoptEngine()
-: bndChanged_(false),
-  consChanged_(false),
-  env_(EnvPtr()),
-  etol_(1e-7),
-  myapp_(0),
-  mynlp_(0),
-  prepareWs_(false),
-  sol_(IpoptSolPtr()),      // NULL
-  stats_(0),
-  strBr_(false),
-  timer_(0),
-  useWs_(false),
-  ws_(IpoptWarmStartPtr()) // NULL
-{
-#if defined(USE_IPOPT)  
-  problem_ = ProblemPtr();   // NULL
-  logger_ = (LoggerPtr) new Logger(LogInfo);
-  myapp_ = new Ipopt::IpoptApplication();
-  myapp_->Options()->SetIntegerValue("print_level", 0);
-  //myapp_->Options()->SetNumericValue("tol", 1e-7);
-  //myapp_->Options()->SetIntegerValue("max_iter", 30);
-  //myapp_->Options()->SetStringValue("mu_strategy", "adaptive");
-  //myapp_->Options()->SetStringValue("output_file", "ipopt.out");
-  //myapp_->Options()->SetStringValue("hessian_approximation", "limited-memory");
-  //myapp_->Initialize("");
-  status_ = EngineError;
-#else 
-  assert(!"ipopt engine can only be called when compiled with ipopt!")
-#endif
-}
-
-
 IpoptEngine::IpoptEngine(EnvPtr env)
 : bndChanged_(false),
   consChanged_(false),
@@ -295,8 +263,7 @@ IpoptEngine::IpoptEngine(EnvPtr env)
 {
 #if defined(USE_IPOPT)  
   problem_ = ProblemPtr();   // NULL
-  logger_ = (LoggerPtr) new Logger((LogLevel) env->getOptions()->
-      findInt("engine_log_level")->getValue());
+  logger_ = env_->getLogger();
   myapp_ = new Ipopt::IpoptApplication();
   setOptionsForRepeatedSolve();
 
@@ -327,8 +294,10 @@ IpoptEngine::IpoptEngine(EnvPtr env)
 
 IpoptEngine::~IpoptEngine()
 {
-  ws_.reset();
-  sol_.reset();
+  //ws_.reset();
+  //sol_.reset();
+  ws_ = 0;
+  sol_ = 0;
   if (timer_) {
     delete timer_;
   }
@@ -340,7 +309,8 @@ IpoptEngine::~IpoptEngine()
   }
   if (problem_) {
   	 problem_->unsetEngine();
-	 problem_.reset();
+	 //problem_.reset();
+     problem_ = 0;
   }
   return;
 }
@@ -392,11 +362,14 @@ void IpoptEngine::changeObj(FunctionPtr, double)
 void IpoptEngine::clear() 
 {
 
-  ws_.reset();
-  sol_.reset();
+  //ws_.reset();
+  //sol_.reset();
+  ws_ = 0;
+  sol_ = 0;
   if (problem_) {
     problem_->unsetEngine();
-    problem_.reset();
+    //problem_.reset();
+    problem_ = 0;
   }
 }
 
@@ -410,10 +383,7 @@ void IpoptEngine::disableStrBrSetup()
 
 EnginePtr IpoptEngine::emptyCopy()
 {
-  if (env_) {
-    return (IpoptEnginePtr) new IpoptEngine(env_);
-  }
-  return (IpoptEnginePtr) new IpoptEngine();
+  return (IpoptEnginePtr) new IpoptEngine(env_);
 }
 
 
@@ -505,8 +475,7 @@ void IpoptEngine::loadFromWarmStart(const WarmStartPtr ws)
     // Two important points:
     // 1. dynamic cast can't seem to be avoided.
     // 2. we need to use boost::dynamic_pointer_cast instead of dynamic_cast.
-    ConstIpoptWarmStartPtr ws2 = 
-      boost::dynamic_pointer_cast <const IpoptWarmStart> (ws);
+    ConstIpoptWarmStartPtr ws2 = dynamic_cast <const IpoptWarmStart*> (ws);
 
     // now create a full copy.
     ws_ = (IpoptWarmStartPtr) new IpoptWarmStart(ws2);
@@ -857,10 +826,12 @@ IpoptFunInterface::IpoptFunInterface(Minotaur::ProblemPtr problem,
 IpoptFunInterface::~IpoptFunInterface()
 {
   if (sol_) {
-    sol_.reset();
+    //sol_.reset();
+    sol_ = 0;
   }
   if (problem_) {
-    problem_.reset();
+    //problem_.reset();
+    problem_ = 0;
   }
 }
 
@@ -917,13 +888,6 @@ bool IpoptFunInterface::get_nlp_info(Index& n, Index& m, Index& nnz_jac_g,
                                      Index& nnz_h_lag, 
                                      IndexStyleEnum& index_style)
 {
-  Minotaur::ConstVariablePtr vPtr;
-  Minotaur::ConstraintConstIterator cIter;
-  Minotaur::ConstraintPtr cPtr;
-  Minotaur::FunctionPtr fPtr;
-  Minotaur::NonlinearFunctionPtr nlfPtr;
-  Minotaur::VariableIterator vIter;
-
   n = problem_->getNumVars();
   m = problem_->getNumCons();
 
@@ -931,7 +895,6 @@ bool IpoptFunInterface::get_nlp_info(Index& n, Index& m, Index& nnz_jac_g,
   nnz_jac_g = problem_->getNumJacNnzs();
 
   // ... and in hessian. 
-  //nnz_h_lag = problem_->getNumHessNnzs();
   nnz_h_lag = problem_->getNumHessNnzs(); 
 
   // We use the standard c index style for row/col entries

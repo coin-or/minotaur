@@ -24,14 +24,8 @@ class Problem;
 class Solution;
 class Cut;
 class CutManager;
-typedef boost::shared_ptr<Environment> EnvPtr;
-typedef boost::shared_ptr<Function> FunctionPtr;
-typedef boost::shared_ptr<Problem> ProblemPtr;
-typedef boost::shared_ptr<Cut> CutPtr;
-typedef std::vector<CutPtr> CutVector;
-typedef CutVector::iterator CutVectorIter;
-typedef boost::shared_ptr<CutManager> CutManagerPtr;
-typedef boost::shared_ptr<const Solution>ConstSolutionPtr;
+typedef CutManager* CutManagerPtr;
+typedef const Solution* ConstSolutionPtr;
 
 /**
  * \brief Abstract base class to manage cuts in the relaxation. 

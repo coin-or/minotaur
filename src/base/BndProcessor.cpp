@@ -76,8 +76,10 @@ BndProcessor::BndProcessor (EnvPtr env, EnginePtr engine,
 
 BndProcessor::~BndProcessor()
 {
+  if (brancher_) {
+    delete brancher_;
+  }
   handlers_.clear();
-  engine_.reset();
 }
 
 
@@ -139,6 +141,7 @@ void BndProcessor::process(NodePtr node, RelaxationPtr rel,
 
   ++stats_.proc;
   relaxation_ = rel;
+  numSolutions_ = 0;
 
 #if 0
   double *svar = new double[20];
@@ -273,7 +276,7 @@ bool BndProcessor::shouldPrune_(NodePtr node, double solval,
                                  << "violated in node " << node->getId()
                                  << std::endl;
      ++stats_.prob;
-     // continue to next case
+     // fall through
    case (ProvenInfeasible):
    case (ProvenLocalInfeasible):
      node->setStatus(NodeInfeasible);
@@ -323,6 +326,7 @@ bool BndProcessor::shouldPrune_(NodePtr node, double solval,
                                  << "continuing in node " << node->getId()
                                  << std::endl;
      // continue with this node by following ProvenLocalOptimal case.
+     // fall through
    case (ProvenLocalOptimal):
    case (ProvenOptimal):
      node->setLb(solval);

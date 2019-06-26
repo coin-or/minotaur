@@ -180,7 +180,8 @@ void EigenCalculator::getSumOfSquares (
   n_terms.clear();
   p_const.clear();
   n_const.clear();
-  lin_terms.reset();
+  //lin_terms.reset();
+  lin_terms = 0;
   ePtr = findVectors(qf);
   //ePtr->write(std::cout);
 
@@ -219,7 +220,13 @@ void EigenCalculator::getSumOfSquares (
       //evector->write(std::cout);
       //std::cout << " + " << 0.5/evalue*coeff << ")^2" << std::endl;
       // subtract from lin_terms
-      (*lin_terms) += -1*coeff*evector;
+      // Show to AM sir
+      // (*lin_terms) += -1*coeff*evector;
+      LinearFunctionPtr lfTemp = 0;
+      lfTemp  = evector->copyMult(-1*coeff);
+      lin_terms->add(lfTemp);
+      delete lfTemp;
+
       //std::cout << "remaining linear terms = ";
       //lin_terms->write(std::cout);
       //std::cout << "\n";
@@ -228,11 +235,11 @@ void EigenCalculator::getSumOfSquares (
       c -= 0.25*coeff*coeff/evalue;
 
       if (evalue > 0) {
-        (*evector) *= sqrt(evalue);
+        evector->multiply(sqrt(evalue));
         p_terms.push_back(evector);
         p_const.push_back(0.5/sqrt(evalue)*coeff);
       } else {
-        (*evector) *= sqrt(-evalue);
+        evector->multiply(sqrt(-evalue));
         n_terms.push_back(evector);
         n_const.push_back(-0.5/sqrt(-evalue)*coeff);
       }

@@ -63,7 +63,7 @@ Branches MaxFreqBrancher::findBranches(RelaxationPtr rel, NodePtr ,
                                        BrancherStatus & br_status,
                                        ModVector &) 
 {
-  Branches branches;
+  Branches branches = 0;
   BrCandPtr br_can = BrCandPtr(); //NULL
   const double *x = sol->getPrimal();
 

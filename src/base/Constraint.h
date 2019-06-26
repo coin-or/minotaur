@@ -18,14 +18,6 @@
 #include "Types.h"
 
 namespace Minotaur {
-  class   Function;
-  class   LinearFunction;
-  class   QuadraticFunction;
-  class   NonlinearFunction;
-  typedef boost::shared_ptr<Function> FunctionPtr;
-  typedef boost::shared_ptr<LinearFunction> LinearFunctionPtr;
-  typedef boost::shared_ptr<NonlinearFunction> NonlinearFunctionPtr;
-  typedef boost::shared_ptr<QuadraticFunction> QuadraticFunctionPtr;
   typedef std::set<std::pair<VariablePtr, FunctionType> >::const_iterator 
     VariableFunIterator;
 
@@ -69,6 +61,7 @@ namespace Minotaur {
       /// are private.
       friend class Problem;
       friend class PerspCon;
+      friend class QGHandler;
 
       /// Default constructor.
       Constraint();
@@ -95,8 +88,11 @@ namespace Minotaur {
       /// Get the value or activity at a given point.
       double getActivity(const double *x, int *error) const;
 
+      /// Get the value of the bool flag.
+      bool getBFlag() const { return bTemp_; }
+
       /// Return a pointer to the function.
-      const FunctionPtr getFunction() const { return f_; }
+      FunctionPtr getFunction() const { return f_; }
 
       /// Get the function type.
       FunctionType getFunctionType() const;
@@ -111,22 +107,35 @@ namespace Minotaur {
       double getLb() const { return lb_; }
 
       /// Get the linear part of the constraint function 'f'.
-      const LinearFunctionPtr getLinearFunction() const;
+      LinearFunctionPtr getLinearFunction() const;
 
       // Get the name of the constraint. 
       const std::string getName() const;
 
       /// Get the nonlinear part of the constraint function 'f'.
-      const NonlinearFunctionPtr getNonlinearFunction() const;
+      NonlinearFunctionPtr getNonlinearFunction() const;
 
       /// Get the quadratic part of the constraint function 'f'.
-      const QuadraticFunctionPtr getQuadraticFunction() const;
+      QuadraticFunctionPtr getQuadraticFunction() const;
 
       /// Get the current state of the constraint: freed, fixed etc.
       ConsState getState() const { return state_; }
 
       /// Get the 'u' value. or the upper bound constraint on 'f'.
       double getUb() const { return ub_; }
+
+      void setpId(UInt n) { pid_ = n; }
+      
+      int getpId() { return pid_; }
+
+      void setUB(double newub) { ub_ = newub; }
+      
+      void incrAct() { numAct_++;}
+      void minmaxDepth(UInt depth);
+      void consActStat(UInt &n, UInt &min, UInt &max);
+
+      /// Set the value of the bool flag.
+      void setBFlag(bool b) { bTemp_ = b; }
 
       /// display the constraint
       void write(std::ostream &out) const;
@@ -189,8 +198,15 @@ namespace Minotaur {
       /// The function 'f' in l <= f(x) <= u.
       FunctionPtr f_;
 
+      UInt numAct_;
+      UInt minDepth_;
+      UInt maxDepth_;
       /// id that is unique for this constraint in the problem.
       UInt id_;         
+      
+      /// id of the constraint from which is it generated; used in qg for
+      //linearization (-1 for objective)
+      int pid_;         
 
       /// id that is unique for this constraint in the problem.
       UInt index_;         
@@ -203,6 +219,9 @@ namespace Minotaur {
 
       /// free or fixed etc.
       ConsState state_;
+
+      /// Temporary boolean variable for misc processes
+      bool bTemp_;
 
       /// 'u' (-infinity, infinity].
       double ub_;

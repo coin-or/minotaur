@@ -5,14 +5,15 @@
 // 
 
 /**
- * \file QGHandler.h
+ * \file OAHandler.h
  * \Briefly declare a derived class of Handler that handles convex nonlinear constraints
- * of a problem by using Quesada-Grossmann algorithm.
- * \Author Ashutosh Mahajan, Argonne National Laboratory
+ * of a problem for the Outer Approximation algorithm.
+ * \Authors Meenarli Sharma and Prashant Palkar, Indian Institute of
+ * Techonology Bombay.
  */
 
-#ifndef MINOTAURQGHANDLER_H
-#define MINOTAURQGHANDLER_H
+#ifndef MINOTAUROAHANDLER_H
+#define MINOTAUROAHANDLER_H
 
 #include <stack>
 
@@ -20,16 +21,17 @@
 #include "Engine.h"
 #include "Problem.h"
 #include "Function.h"
+#include "Timer.h"
 
 namespace Minotaur {
 
-class WarmStart;
-typedef boost::shared_ptr<WarmStart> WarmStartPtr;
-
-struct QGStats {
+struct OAStats {
+  size_t milpS;      /// Number of milps solved.
   size_t nlpS;      /// Number of nlps solved.
   size_t nlpF;      /// Number of nlps feasible.
   size_t nlpI;      /// Number of nlps infeasible.
+  size_t nlpIL;     /// Number of nlps hits engine iterations limit.
+  size_t milpIL;     /// Number of milps hits engine iterations limit.
   size_t cuts;      /// Number of cuts added to the LP.
 }; 
 
@@ -38,10 +40,10 @@ struct QGStats {
  * \brief Handler for convex constraints, based on quesada-grossmann
  * algorithm.
  *
- * QGHandler is a derived class of Handler. It adds cuts generated
+ * OAHandler is a derived class of Handler. It adds cuts generated
  * by solving an NLP whenever an integer (but infeasible) solution of LP relaxation is found.
  */
-class QGHandlerPDE : public Handler {
+class OAHandler : public Handler {
 
 private: 
   /// Pointer to environment.
@@ -50,19 +52,7 @@ private:
   /// Tolerance for checking integrality (should be obtained from env).
   double intTol_;
 
- 	/**
-   * Was this handler used to check the feasibility. We generate cuts
-   * only if we checked the feasibility and it is false.
-   */
-//  bool isFeas_; //MS: removed
-
- 	/**
-   * For any linearization constraint that we generate, all 
-   * coefficients with absolute value less than it are assumed zero.
-   */
-  const double linCoeffTol_;
-
-	/// Log.
+  /// Log.
   LoggerPtr logger_;
 
   /// For log:
@@ -70,32 +60,30 @@ private:
 
   /// Pointer to original problem.
   ProblemPtr minlp_;
-  ProblemPtr minlpC_;
 
-	/// Vector of constraints.
-  //std::vector<ConstraintPtr> nlCons_;
+    /**
+     * \brief Timer for keeping track of time.
+     *
+     * The user or the environment from which branch-and-bound is called can
+     * set up the timer and even start it before sending it to
+     * branch-and-bound.
+     */
+  Timer *timer_;
+
+    /// Vector of constraints.
+  std::vector<ConstraintPtr> nlCons_;
 
   /// NLP/QP Engine used to solve the NLP/QP relaxations.
-  EnginePtr lpe_;
+  EnginePtr nlpe_;
+  
+  /// MILP Engine used to solve the MILP relaxations.
+  MILPEnginePtr milpe_;
 
   /// Modifications done to NLP before solving it.
   std::stack<Modification *> nlpMods_;
-
-	/// Status of the NLP/QP engine.
+  
+  /// Status of the NLP/QP engine.
   EngineStatus nlpStatus_;
-
-	  /// Warm-start information for solving NLPs.
-  WarmStartPtr nlpWs_;
-
-  UInt numCuts_;
-
-	int numvars_;
-
-  /**
-   * When the objective function is nonlinear, we need to save it, so
-   * that we can add linear approximations.
-   */
-  FunctionPtr objFun_;
 
   /**
    * The variable corresponding to the objective function. It is a part of
@@ -104,35 +92,32 @@ private:
    */
   VariablePtr objVar_;
 
-	/// Is the objective function nonlinear?
+  /// Nonlinearity status of objective function. 1 if nonlinear 0 otherwise.
   bool oNl_;
 
-  /// Pointer to original problem.
+  /// Pointer to relaxation of the problem.
   RelaxationPtr rel_;
  
+  /// Value of objective in relaxation solution
   double relobj_; 
 
-	/// Tolerance for accepting a new solution value: absolute threshold.
-  const double solAbsTol_;
+  /// Absolute tolerance for constraint feasibility.
+  double solAbsTol_;
 
-  /// Tolerance for accepting a new solution value: relative threshold.
-  const double solRelTol_;
+  /// Relative tolerance for constraint feasibility.
+  double solRelTol_;
 
-  /// Tolerance for checking constraint violation.
- // double eTol_;
+  /// Absolute tolerance for pruning a node.
+  double objATol_;
 
-  /// Tolerance for checking linear cut violation.
- // double eLinTol_;
+  /// Relative tolerance for pruning a node.
+  double objRTol_;
 
   /// Statistics.
-  QGStats *stats_;
+  OAStats *stats_;
 
 
-  
 public:
-  /// Empty constructor.
-  QGHandlerPDE();
-
   /**
    * \brief Default Constructor.
    *
@@ -141,25 +126,28 @@ public:
    * relaxation.)
    * \param [in] nlpe The engine to solve nonlinear continuous problem.
    */
-  QGHandlerPDE(EnvPtr env, ProblemPtr minlp, EnginePtr lpe); 
+  OAHandler(EnvPtr env, ProblemPtr minlp, EnginePtr nlpe, MILPEnginePtr milpe); 
 
   /// Destroy.
-  ~QGHandlerPDE();
+  ~OAHandler();
    
  /// Does nothing.
   Branches getBranches(BrCandPtr, DoubleVector &, RelaxationPtr,
                        SolutionPoolPtr)
-  {return Branches();}; // NULL
+  {return Branches();};
 
   /// Does nothing.
   void getBranchingCandidates(RelaxationPtr, 
                               const DoubleVector &, ModVector &,
                               BrVarCandSet &, BrCandVector &, bool &) {};
 
+  /// Returns the MILP engine.
+  MILPEnginePtr getMILPEngine() {return milpe_;};
+
   /// Does nothing.
   ModificationPtr getBrMod(BrCandPtr, DoubleVector &, RelaxationPtr,
                            BranchDirection)
-  {return ModificationPtr();}; // NULL
+  {return ModificationPtr();};
 
        
   // Base class method. 
@@ -182,102 +170,120 @@ public:
   void postsolveGetX(const double *, UInt, DoubleVector *) {};
 
   // Base class method. calls relax_().
-  void relaxInitFull(RelaxationPtr rel, bool *is_inf);
+  void relaxInitFull(RelaxationPtr, bool *) {};
 
   // Base class method. calls relax_().
-  void relaxInitInc(RelaxationPtr rel, bool *is_inf);
+  void relaxInitInc(RelaxationPtr rel, bool *);
 
   // Base class method. Does nothing.
-  void relaxNodeFull(NodePtr node, RelaxationPtr rel, bool *is_inf);
+  void relaxNodeFull(NodePtr, RelaxationPtr, bool *) {};
 
   // Base class method. Does nothing.
-  void relaxNodeInc(NodePtr node, RelaxationPtr rel, bool *is_inf);
+  void relaxNodeInc(NodePtr, RelaxationPtr, bool *) {};
 
  
   // Base class method. Find cuts.
   void separate(ConstSolutionPtr sol, NodePtr node, RelaxationPtr rel, 
-                CutManager *cutman, SolutionPoolPtr s_pool, ModVector &p_mods,
-                ModVector &r_mods, bool *sol_found,
-                SeparationStatus *status);
+                CutManager *cutman, SolutionPoolPtr s_pool, ModVector &, 
+                ModVector &, bool *sol_found, SeparationStatus *status);
  
+  //void solveMILP(double* objfLb, double* objfUb,
+                 //SolutionPoolPtr solPool, CutManager* cutMan);
+  void solveMILP(double* objfLb, ConstSolutionPtr* sol,
+                 SolutionPoolPtr solPool, CutManager* cutMan);
   // Show statistics.
   void writeStats(std::ostream &out) const;
 
 private:
-	/**
+  /**
    * Find the linearization of nonlinear functions at point x* and add
    * them to the relaxation only (not to the lp engine)
    */
   void addInitLinearX_(const double *x);
 
-	/**
+  /**
    * Add cuts to cut out an integer point not satisfied by nonlinear
    * constraints or objective.
    */
-  void cutIntSol_(ConstSolutionPtr sol, SolutionPoolPtr s_pool, 
-                  bool *sol_found, SeparationStatus *status);
+  void cutIntSol_(ConstSolutionPtr sol, CutManager *cutMan, 
+                  SolutionPoolPtr s_pool, bool *sol_found, 
+                  SeparationStatus *status);
 
   /**
    * Fix integer constrained variables to integer values in x. Called
    * before solving NLP.
    */
-  void fixInts_();
-
- /**
+  void fixInts_(const double *x);
+  
+   /**
    * Solve the NLP relaxation of the MINLP and add linearizations about
    * the optimal point. isInf is set to true if the relaxation is found
    * infeasible. Throw an assert if the relaxation is unbounded.
    */
-  //void initLinear_(bool *isInf);
-
-  /**
-   * Obtain the linear function (lf) and constant (c) from the
-   * linearization of function f at point x.
-   */
-	void linearAt_(FunctionPtr f, double fval, const double *x, 
-                 double *c, LinearFunctionPtr *lf);
+  void initLinear_(bool *isInf);
 
   /** 
    * When the objective function is nonlinear, we need to replace it with
    * a single variable.
    */
-  void linearizeObj_(RelaxationPtr rel);
+  void linearizeObj_();
 
-	/// Add all linearizations at point x that violate inf_x.
-  int OAFromPoint_(const double *x, SeparationStatus *status);
 
-  //int OAFromPointInf_(const double *x, const double *inf_x, 
-                    //SeparationStatus *status);
+  /**
+   * Obtain the linear function (lf) and constant (c) from the
+   * linearization of function f at point x.
+   */
+  void linearAt_(FunctionPtr f, double fval, const double *x, 
+                 double *c, LinearFunctionPtr *lf, int *error);
+
+  /**
+   * Check which nonlinear constraints are violated at the LP solution and
+   * add OA cuts. Return number of OA cuts added.
+   */
+  void cutToCons_(const double *nlpx, const double *lpx, CutManager *,
+                    SeparationStatus *status);
+  
+  /// Add OA cut to a violated constraint.   
+  void addCut_(const double *nlpx, const double *lpx, ConstraintPtr con, 
+               CutManager *cutman, SeparationStatus *status);
+  
+
+  void consCutAtLpSol_(const double *lpx, CutManager *cutman,
+                    SeparationStatus *status);
+
+  void objCutAtLpSol_(const double *lpx, CutManager *cutman,
+                    SeparationStatus *status);
+
+  /**
+   * Check if objective is violated at the LP solution and
+   * add OA cut.
+   */
+  void cutToObj_(const double *nlpx, const double *lpx, CutManager *,
+                   SeparationStatus *status);
 
   /**
    * Create the initial relaxation. It is called from relaxInitFull and
    * relaxInitInc functions.
    */
-  void relax_(RelaxationPtr rel, bool *is_inf);
+  void relax_(bool *is_inf);
 
   /// Solve the nlp.
   void solveNLP_();
 
-	/// Undo the changes done in fixInts_().
+  /// Undo the changes done in fixInts_().
   void unfixInts_();
 
   /**
    * Update the upper bound. XXX: Needs proper integration with
    * Minotaur's Handler design. 
    */
-  //void updateUb_(SolutionPoolPtr s_pool, double *nlp_val, 
-                 //bool *sol_found);
+  void updateUb_(SolutionPoolPtr s_pool, double *nlp_val, bool *sol_found);
 
   };
 
-  typedef boost::shared_ptr <QGHandlerPDE> QGHandlerPDEPtr;
+  typedef OAHandler* OAHandlerPtr;
 }
-
-
 #endif
-
-
-
 
 // Local Variables: 
 // mode: c++ 

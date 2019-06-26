@@ -39,6 +39,8 @@ Environment::Environment()
 
 Environment::~Environment()
 {
+  delete logger_;
+  delete options_;
   delete timer_;
   delete timerFac_;
 }
@@ -63,8 +65,11 @@ void Environment::createDefaultOptions_()
   options_->insert(b_option);
 
   b_option = (BoolOptionPtr) new Option<bool>("display_help", 
-      "Show usage and exit: <0/1>",
-      true, false);
+      "Show usage and exit: <0/1>", true, false);
+  options_->insert(b_option);
+
+  b_option = (BoolOptionPtr) new Option<bool>("display_solution", 
+      "Display the best solution if one found: <0/1>", true, false);
   options_->insert(b_option);
 
   b_option = (BoolOptionPtr) new Option<bool>("use_internal_quad", 
@@ -204,8 +209,23 @@ void Environment::createDefaultOptions_()
       true, false);
   options_->insert(b_option);
 
+  b_option = (BoolOptionPtr) new Option<bool>("pardivheur",
+      "Use parallel diving heuristic for MINLP: <0/1>",
+      true, false);
+  options_->insert(b_option);
+
+  b_option = (BoolOptionPtr) new Option<bool>("divheurLP",
+      "Use LP dives in parallel diving heuristic for MINLP: <0/1>",
+      true, false);
+  options_->insert(b_option);
+
   // reset, so that we don't accidently add it again.
-  b_option.reset();
+  b_option = 0;
+
+  b_option = (BoolOptionPtr) new Option<bool>("root_linScheme2", 
+      "Add linearization by warm-starting NLP at root LP solution", true, false);
+  options_->insert(b_option);
+
 
 
   // int options
@@ -244,15 +264,29 @@ void Environment::createDefaultOptions_()
       true, -1);
   options_->insert(i_option);
 
-  i_option = (IntOptionPtr) new Option<int>("engine_log_level", 
+  i_option = (IntOptionPtr) new Option<int>("divheurLevel",
+      "Number of levels of variable fixings for diving heuristic: >0",
+      true, 4);
+  options_->insert(i_option);
+
+  i_option = (IntOptionPtr) new Option<int>("divheurMaxProbs",
+      "Maximum number of problems to be solved in the diving heuristic: >0",
+      true, 200);
+  options_->insert(i_option);
+
+  i_option = (IntOptionPtr) new Option<int>("engine_log_level",
       "Verbosity of engine: 0-6", true, LogInfo);
   options_->insert(i_option);
+
+  //i_option = (IntOptionPtr) new Option<int>("vio_depth", 
+      //"Any number", true, INFINITY);
+  //options_->insert(i_option);
 
   i_option = (IntOptionPtr) new Option<int>("ml_max_group_size",
        "Maximum size of individual element in grouping: >= 2, <= 20", true, 6);
   options_->insert(i_option);
 
-  i_option = (IntOptionPtr) new Option<int>("rand_seed", 
+  i_option = (IntOptionPtr) new Option<int>("rand_seed",
       "Seed to random number generator: >=0 (0 = time(NULL))", true, 0);
   options_->insert(i_option);
 
@@ -261,11 +295,11 @@ void Environment::createDefaultOptions_()
       true, 25);
   options_->insert(i_option);
  
-  i_option = (IntOptionPtr) new Option<int>("threads", 
+  i_option = (IntOptionPtr) new Option<int>("threads",
       "Number of threads to be used ", true, 1);
   options_->insert(i_option);
 
-  i_option = (IntOptionPtr) new Option<int>("msbnb_scheme_id", 
+  i_option = (IntOptionPtr) new Option<int>("msbnb_scheme_id",
       "Initial point generation scheme for MsProcessor: 1-5", true, 5);
   options_->insert(i_option);
 
@@ -273,7 +307,11 @@ void Environment::createDefaultOptions_()
       "Number of restarts to improve the initial point in MsProcessor: >=0", true, 3);
   options_->insert(i_option);
 
-  i_option.reset();
+  i_option = (IntOptionPtr) new Option<int>("oa_iter_limit",
+      "The maximum number of iterations for Outer approximation algorithm to run: >=1", true, 10000);
+  options_->insert(i_option);
+
+  i_option = 0;
 
   // Initial workspace option for FilterSQP engine
   i_option = (IntOptionPtr) new Option<int>("filter_mxws", 
@@ -286,14 +324,36 @@ void Environment::createDefaultOptions_()
                                             true, 0);
   options_->insert(i_option);
 
+  i_option = (IntOptionPtr) new Option<int>("root_linScheme1", 
+      "Rounds of extra linearizations to be added at root node under scheme 1", true, 0);
+  options_->insert(i_option);
+
+
+  i_option = (IntOptionPtr) new Option<int>("root_linScheme3", 
+      "Rounds of extra linearizations to be added at root node under scheme 3", true, 0);
+  options_->insert(i_option);
+
+  i_option = (IntOptionPtr) new Option<int>("root_linScheme4", 
+      "Rounds of extra linearizations to be added at root node under scheme 4", true, 0);
+  options_->insert(i_option);
+
   // double options
   d_option = (DoubleOptionPtr) new Option<double>("ml_feastol", 
       "MultilinearTermsHandler feasibility tolerance.", true, 0.00001);
   options_->insert(d_option);
 
+    //d_option = (DoubleOptionPtr) new Option<double>("max_vio", 
+      //"Max. violation threshold", true, 50);
+  //options_->insert(d_option);
+
   d_option = (DoubleOptionPtr) new Option<double>("bnb_time_limit", 
       "Limit on time in branch-and-bound in seconds: >0",
       true, 1e20);
+  options_->insert(d_option);
+  
+  d_option = (DoubleOptionPtr) new Option<double>("heur_time_limit", 
+      "Limit on time on each heuristic run in seconds: >0",
+      true, 10);
   options_->insert(d_option);
   
   d_option = (DoubleOptionPtr) new Option<double>("bnb_log_interval", 
@@ -346,7 +406,7 @@ void Environment::createDefaultOptions_()
       true, 0.0);
   options_->insert(d_option);
 
-  d_option.reset();
+  d_option = 0;
  
   // string options
   s_option = (StringOptionPtr) new Option<std::string>("brancher", 
@@ -406,7 +466,7 @@ void Environment::createDefaultOptions_()
       "File name for storing tree information for Vbctool", true, "");
   options_->insert(s_option);
 
-  s_option.reset();
+  s_option = 0;
 }
 
 

@@ -21,11 +21,10 @@ namespace Minotaur {
   class QuadraticFunction;
   class Variable;
 
-  typedef boost::shared_ptr<LinearFunction> LinearFunctionPtr;
-  typedef boost::shared_ptr<const LinearFunction> ConstLinearFunctionPtr;
-  typedef boost::shared_ptr<QuadraticFunction> QuadraticFunctionPtr;
-  typedef boost::shared_ptr<const QuadraticFunction> ConstQuadraticFunctionPtr;
-  typedef boost::shared_ptr<Variable> VariablePtr;
+  typedef LinearFunction* LinearFunctionPtr;
+  typedef const LinearFunction* ConstLinearFunctionPtr;
+  typedef QuadraticFunction* QuadraticFunctionPtr;
+  typedef const QuadraticFunction* ConstQuadraticFunctionPtr;
 
 
   /// The base class linear function is of the form c'x.
@@ -52,6 +51,8 @@ namespace Minotaur {
     ~LinearFunction();
 
     void add(LinearFunctionPtr lf);
+
+    void add(ConstLinearFunctionPtr lf );
 
     /**
      * Add new a linear term to this linear function, with coefficient a. Use
@@ -132,7 +133,15 @@ namespace Minotaur {
      */
     void incTerm(ConstVariablePtr var, const double a);
 
+    /**
+     * Document me.
+     */
+    void minus(LinearFunctionPtr lf);
+
+    //void mult(LinearFunctionPtr lf);
+    
     /// Multiply the linear function by a number.
+    
     void multiply(double d);
 
     void prepJac(VarSetConstIter vbeg, VarSetConstIter vend);
@@ -154,63 +163,27 @@ namespace Minotaur {
 
 
     /**
-     * Add a linear function to this linear function. Terms that become zero
-     * are still retained in the function.
+     * Create a new LinearFunction by copying this function and adding another one.
      */
-    friend LinearFunctionPtr operator + (ConstLinearFunctionPtr l1, 
-                                         ConstLinearFunctionPtr l2);
+    LinearFunctionPtr copyAdd(ConstLinearFunctionPtr l1);
 
     /**
-     * Subtract a linear function from this function. Terms that become zero
-     * are still retained in the function.
+     * Create a new LinearFunction by copying this function and subtracting
+     * another one from it.
      */
-    friend LinearFunctionPtr operator-(ConstLinearFunctionPtr l1, 
-                                       ConstLinearFunctionPtr l2);
-
-    /// Multiply a linear function with a constant.
-    friend LinearFunctionPtr operator*(const double c, 
-                                       ConstLinearFunctionPtr l2);
-
-    /**
-     * Multiply two linear functions to get a quadratic function. If either of
-     * the linear functions is NULL, return NULL.
-     */
-    friend QuadraticFunctionPtr operator*(ConstLinearFunctionPtr l1, 
-                                          ConstLinearFunctionPtr l2);
-
-    /**
-     * This increment operator is dangerous to use because it only works on
-     * objects of type LinearFunction and does not work on type
-     * LinearFunctionPtr.  So if you have:
-     * 
-     * LinearFunctionPtr lPtr, l2Ptr;
-     * 
-     * Then you cannot do:
-     * 
-     * lPtr += l2Ptr;
-     * 
-     * You will have to do:
-     * 
-     * (*lPtr) += l2Ptr;
-     * 
-     * The user must ensure left operand is not NULL.
-     */
-    void operator+=(ConstLinearFunctionPtr l2);
+    LinearFunctionPtr copyMinus(ConstLinearFunctionPtr l1);
 
     /** 
-     * Subtract l2 from this linear function.
-     * The user mu ensure left operand is not NULL.
+     * Create a new LinearFunction by copying this function and multiplying
+     * by a constant.
      */
-    void operator-=(ConstLinearFunctionPtr l2);
+    LinearFunctionPtr copyMult(const double c);
 
     /**
-     * Multiply with a constant. Same precaution as for +=
-     * operator above. If c is zero, then function becomes empty. It is
-     * better for the calling routine to check if c is zero, if so, just
-     * delete the function.
+     * Create a new QuadraticFunction by multiplying this function and 
+     * another LinearFunction.
      */
-    void operator*=(const double c);
-
+    QuadraticFunctionPtr copyMult(ConstLinearFunctionPtr l1);
 
   private:
     /**

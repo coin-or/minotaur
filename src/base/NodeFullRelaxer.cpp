@@ -62,9 +62,10 @@ NodeFullRelaxer::NodeFullRelaxer ()
 NodeFullRelaxer::~NodeFullRelaxer ()
 {
   handlers_.clear();
-  engine_.reset();
-  rel_.reset();
-  env_.reset();
+  //rel_.reset();
+  rel_ = 0;
+  //env_.reset();
+  env_ = 0;
 }
 
 

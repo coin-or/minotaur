@@ -17,13 +17,12 @@
 #define MINOTAURNLPMULTISTART_H
 
 #include "Heuristic.h"
+#include "Types.h"
 
 namespace Minotaur {
 
   class Engine;
   class Problem;
-  typedef boost::shared_ptr<Engine> EnginePtr;
-  typedef boost::shared_ptr<Problem> ProblemPtr;
   
 
   /// Statistic for Multistart heuristic
@@ -104,7 +103,7 @@ namespace Minotaur {
       
   };
 
-  typedef boost::shared_ptr<NLPMultiStart> NLPMSPtr;
+  typedef NLPMultiStart* NLPMSPtr;
 }
 #endif
 

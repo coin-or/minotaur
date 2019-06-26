@@ -18,16 +18,12 @@
 #include "coin/CbcModel.hpp"
 #include "coin/OsiClpSolverInterface.hpp"
 
-// #undef F77_FUNC_
-// #undef F77_FUNC
-
 #include "MinotaurConfig.h"
 #include "CbcEngine.h"
 #include "Constraint.h"
 #include "Environment.h"
 #include "Function.h"
 #include "LinearFunction.h"
-#include "HessianOfLag.h"
 #include "Logger.h"
 #include "Objective.h"
 #include "Option.h"
@@ -45,19 +41,13 @@ const std::string CbcEngine::me_ = "CbcEngine: ";
 // ----------------------------------------------------------------------- //
 // ----------------------------------------------------------------------- //
 
-CbcEngine::CbcEngine()
-  : timer_(0)
-{
-  logger_ = (LoggerPtr) new Logger(LogInfo);
-}
-
-  
 CbcEngine::CbcEngine(EnvPtr env)
   : env_(env)
 {
-  timer_ = env->getNewTimer();
-  osilp_ = 0;
-  stats_ = new CbcStats();
+  logger_ = env_->getLogger();
+  timer_  = env->getNewTimer();
+  osilp_  = 0;
+  stats_  = new CbcStats();
   stats_->calls    = 0;
   stats_->time     = 0;
 }
@@ -65,31 +55,48 @@ CbcEngine::CbcEngine(EnvPtr env)
 
 CbcEngine::~CbcEngine()
 {
+  if (timer_) {
+    delete timer_;
+    timer_ = 0;
+  }
+  if (stats_) {
+    delete stats_;
+    stats_ = 0;
+  }
+  if (problem_) {
+    problem_->unsetEngine();
+//problem_.reset();
+    problem_ = 0;
+  }
+  if (osilp_) {
+    delete osilp_;
+    osilp_ = 0;
+  }
 }
 
 
-void CbcEngine::addConstraint(ConstraintPtr con)
+void CbcEngine::addConstraint(ConstraintPtr )
 {
 }
 
 
-void CbcEngine::changeBound(ConstraintPtr cons, BoundType lu, double new_val)
+void CbcEngine::changeBound(ConstraintPtr , BoundType , double )
 {
 }
 
 
-void CbcEngine::changeBound(VariablePtr var, BoundType lu, double new_val)
+void CbcEngine::changeBound(VariablePtr , BoundType , double )
 {
 }
 
 
-void CbcEngine::changeBound(VariablePtr var, double new_lb, double new_ub)
+void CbcEngine::changeBound(VariablePtr , double , double )
 {
 }
 
 
-void CbcEngine::changeConstraint(ConstraintPtr c, LinearFunctionPtr lf, 
-                                   double lb, double ub)
+void CbcEngine::changeConstraint(ConstraintPtr , LinearFunctionPtr , 
+                                   double , double )
 {
 }
 
@@ -100,7 +107,7 @@ void CbcEngine::changeConstraint(ConstraintPtr, NonlinearFunctionPtr)
 }
 
 
-void CbcEngine::changeObj(FunctionPtr f, double)
+void CbcEngine::changeObj(FunctionPtr , double)
 {
 }
 
@@ -112,6 +119,7 @@ void CbcEngine::clear()
 
 EnginePtr CbcEngine::emptyCopy()
 {
+  return new CbcEngine(env_);
 }
 
 
@@ -252,6 +260,8 @@ void CbcEngine::load_()
   objChanged_ = true;
   bndChanged_ = true;
   consChanged_ = true;
+
+  osilp_->writeLp("foo");
   delete r_mat;
   delete [] index;
   delete [] value;
@@ -273,7 +283,7 @@ void CbcEngine::negateObj()
 }
 
 
-void CbcEngine::removeCons(std::vector<ConstraintPtr> &delcons)
+void CbcEngine::removeCons(std::vector<ConstraintPtr> &)
 {
   consChanged_ = true;
 }
@@ -284,15 +294,25 @@ void CbcEngine::resetIterationLimit()
 }
 
 
-void CbcEngine::setIterationLimit(int limit)
+void CbcEngine::setIterationLimit(int )
 {
 }
   
 
+void CbcEngine::setTimeLimit(double )
+{
+}
+
+
+void CbcEngine::setUpperCutoff(double)
+{
+}
+
+
 EngineStatus CbcEngine::solve()
 {
   CbcModel *model = 0;
-  const char * cbcargs[]={"driver3", "-logLevel", "0", "-solve", "-quit"};
+  std::string params = "-loglevel 0 -solve ";
 
   timer_->start();
   if (true==objChanged_ || true==bndChanged_ || true==consChanged_) {
@@ -306,8 +326,7 @@ EngineStatus CbcEngine::solve()
 #endif
   
   model = new CbcModel(*osilp_);    
-  CbcMain0(*model);
-  CbcMain1(3, cbcargs, *model);
+  callCbc(params, *model);
 
   if (model->isProvenOptimal()) {
     status_ = ProvenOptimal;  
@@ -323,22 +342,18 @@ EngineStatus CbcEngine::solve()
   } else if(model->isProvenDualInfeasible()) {
     status_ = ProvenUnbounded;    // primal is not infeasible but dual is.
     sol_->setObjValue(-INFINITY);
-    std::cout << " dual inf \n";
   } else if (model->isNodeLimitReached() || model->isSecondsLimitReached() ||
              model->isSolutionLimitReached()) {
     status_ = EngineIterationLimit;
     sol_->setPrimal(osilp_->getStrictColSolution());
     sol_->setObjValue(osilp_->getObjValue()
         +problem_->getObjective()->getConstant());
-    std::cout << " limit \n";
   } else if(model->isAbandoned()) {
     status_ = EngineError;
     sol_->setObjValue(INFINITY);
-    std::cout << " abandoned \n";
   } else {
     status_ = EngineUnknownStatus;
     sol_->setObjValue(INFINITY);
-    std::cout << " unknown \n";
   }
 
   stats_->time  += timer_->query();
@@ -353,11 +368,12 @@ EngineStatus CbcEngine::solve()
   consChanged_ = false;
   objChanged_ = false;
 
+  delete model;
   return status_;
 }
 
 
-void CbcEngine::writeLP(const char *filename) const 
+void CbcEngine::writeLP(const char *) const 
 { 
 }
 

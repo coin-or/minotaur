@@ -73,7 +73,7 @@ MultilinearHandler::MultilinearHandler(EnvPtr env, ProblemPtr problem)
     LinearFunctionPtr lcf = constraintF->getLinearFunction();
     QuadraticFunctionPtr qcf = constraintF->getQuadraticFunction();
     NonlinearFunctionPtr nlcf = constraintF->getNonlinearFunction();
-    PolyFunPtr pcf = boost::dynamic_pointer_cast <PolynomialFunction> (nlcf);
+    PolyFunPtr pcf = dynamic_cast <PolynomialFunction*> (nlcf);
 
     if(pcf) {
       pcf->removeLinear(lcf);
@@ -119,7 +119,7 @@ bool MultilinearHandler::findOriginalVariable(ConstVariablePtr rv,
 Branches MultilinearHandler::getBranches(BrCandPtr cand, DoubleVector & x,
                                          RelaxationPtr, SolutionPoolPtr)
 {
-  BrVarCandPtr vcand = boost::dynamic_pointer_cast <BrVarCand> (cand);
+  BrVarCandPtr vcand = dynamic_cast <BrVarCand*> (cand);
   VariablePtr v = vcand->getVar();
 
   
@@ -519,7 +519,7 @@ MultilinearHandler::makeGroupedConvexHull(RelaxationPtr relaxation, bool &should
     LinearFunctionPtr lcf = constraintF->getLinearFunction();
     QuadraticFunctionPtr qcf = constraintF->getQuadraticFunction();
     NonlinearFunctionPtr nlcf = constraintF->getNonlinearFunction();
-    PolyFunPtr pcf = boost::dynamic_pointer_cast <PolynomialFunction> (nlcf);
+    PolyFunPtr pcf = dynamic_cast <PolynomialFunction*> (nlcf);
 
     if(pcf) {
       pcf->removeLinear(lcf);
@@ -664,7 +664,7 @@ MultilinearHandler::makeGroupedConvexHull(RelaxationPtr relaxation, bool &should
       LinearFunctionPtr lcf;
       QuadraticFunctionPtr qcf;
       NonlinearFunctionPtr nlcf = constraintF->getNonlinearFunction();
-      PolyFunPtr pcf = boost::dynamic_pointer_cast <PolynomialFunction> (nlcf);
+      PolyFunPtr pcf = dynamic_cast <PolynomialFunction*> (nlcf);
       lcf = constraintF->getLinearFunction();
       qcf = constraintF->getQuadraticFunction();
       
@@ -803,7 +803,7 @@ MultilinearHandler::makeGroupedConvexHull(RelaxationPtr relaxation, bool &should
     const LinearFunctionPtr objlf = objmlc->getLinearFunction();
     const QuadraticFunctionPtr objqf = objmlc->getQuadraticFunction();
     const NonlinearFunctionPtr objnlf = objmlc->getNonlinearFunction();
-    PolyFunPtr objpf = boost::dynamic_pointer_cast <PolynomialFunction> (objnlf);
+    PolyFunPtr objpf = dynamic_cast <PolynomialFunction*> (objnlf);
 
     LinearFunctionPtr lf = LinearFunctionPtr(new LinearFunction());
 
@@ -972,7 +972,7 @@ MultilinearHandler::makeGroupedConvexHull(RelaxationPtr relaxation, bool &should
     const LinearFunctionPtr olf = omlc->getLinearFunction();
     const QuadraticFunctionPtr oqf = omlc->getQuadraticFunction();
     const NonlinearFunctionPtr onlf = omlc->getNonlinearFunction();
-    PolyFunPtr opf = boost::dynamic_pointer_cast <PolynomialFunction> (onlf);
+    PolyFunPtr opf = dynamic_cast <PolynomialFunction*> (onlf);
 
     LinearFunctionPtr lf = LinearFunctionPtr(new LinearFunction());
     // Linear part of constraint remains the same
@@ -1377,7 +1377,7 @@ MultilinearHandler::makeMcCormick(RelaxationPtr relaxation, bool &should_prune)
     LinearFunctionPtr lcf = constraintF->getLinearFunction();
     QuadraticFunctionPtr qcf = constraintF->getQuadraticFunction();
     NonlinearFunctionPtr nlcf = constraintF->getNonlinearFunction();
-    PolyFunPtr pcf = boost::dynamic_pointer_cast <PolynomialFunction> (nlcf);
+    PolyFunPtr pcf = dynamic_cast <PolynomialFunction*> (nlcf);
 
     if(pcf) {
       pcf->removeLinear(lcf);
@@ -1499,7 +1499,7 @@ MultilinearHandler::makeMcCormick(RelaxationPtr relaxation, bool &should_prune)
       LinearFunctionPtr lcf;
       QuadraticFunctionPtr qcf;
       NonlinearFunctionPtr nlcf = constraintF->getNonlinearFunction();
-      PolyFunPtr pcf = boost::dynamic_pointer_cast <PolynomialFunction> (nlcf);
+      PolyFunPtr pcf = dynamic_cast <PolynomialFunction*> (nlcf);
       lcf = constraintF->getLinearFunction();
       qcf = constraintF->getQuadraticFunction();
       
@@ -1601,7 +1601,7 @@ MultilinearHandler::makeMcCormick(RelaxationPtr relaxation, bool &should_prune)
     const LinearFunctionPtr olf = omlc->getLinearFunction();
     const QuadraticFunctionPtr oqf = omlc->getQuadraticFunction();
     const NonlinearFunctionPtr onlf = omlc->getNonlinearFunction();
-    PolyFunPtr opf = boost::dynamic_pointer_cast <PolynomialFunction> (onlf);
+    PolyFunPtr opf = dynamic_cast <PolynomialFunction*> (onlf);
 
     LinearFunctionPtr lf = LinearFunctionPtr(new LinearFunction());
     // Linear part of constraint remains the same

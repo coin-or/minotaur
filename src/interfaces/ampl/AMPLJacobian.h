@@ -105,7 +105,7 @@ private:
   /// Size of tmp_ array.
   Minotaur::UInt tmpSize_;
 };
-typedef boost::shared_ptr<AMPLJacobian> AMPLJacobianPtr;
+typedef AMPLJacobian* AMPLJacobianPtr;
 }
 
 #endif

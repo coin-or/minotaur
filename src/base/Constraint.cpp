@@ -27,33 +27,40 @@ using namespace Minotaur;
 
 
 Constraint::Constraint() 
-  : f_(FunctionPtr()),
-    id_(0),
-    index_(0),
-    lb_(-INFINITY),
-    name_(""),
-    state_(NormalCons),
-    ub_(INFINITY)
+: f_(FunctionPtr()),
+  numAct_(0),
+  minDepth_(1000000000),
+  maxDepth_(0),
+  id_(0),
+  index_(0),
+  lb_(-INFINITY),
+  name_(""),
+  state_(NormalCons),
+  ub_(INFINITY)
 {
 }
 
 
-Constraint::Constraint(UInt id, UInt index, FunctionPtr f, double lb, double
-                       ub, std::string name)
-  :f_(f),
-   id_(id),
-   index_(index),
-   lb_(lb),
-   name_(name),
-   state_(NormalCons),
-   ub_(ub)
+Constraint::Constraint(UInt id, UInt index, FunctionPtr f, double lb,
+                       double ub, std::string name)
+: f_(f),
+  numAct_(0),
+  minDepth_(1000000000),
+  maxDepth_(0),
+  id_(id),
+  index_(index),
+  lb_(lb),
+  name_(name),
+  state_(NormalCons),
+  ub_(ub)
 {
 }
 
 
 Constraint::~Constraint()
 {
-  f_.reset();
+  //f_.reset();
+  f_ = 0;
 }
 
 
@@ -99,7 +106,7 @@ FunctionType Constraint::getFunctionType() const
 }
 
 
-const LinearFunctionPtr Constraint::getLinearFunction() const
+LinearFunctionPtr Constraint::getLinearFunction() const
 { 
   return f_->getLinearFunction();
 }
@@ -111,17 +118,34 @@ const std::string Constraint::getName() const
 }
 
 
-const NonlinearFunctionPtr Constraint::getNonlinearFunction() const 
+NonlinearFunctionPtr Constraint::getNonlinearFunction() const 
 { 
   return f_->getNonlinearFunction();
 }
 
 
-const QuadraticFunctionPtr Constraint::getQuadraticFunction() const 
+QuadraticFunctionPtr Constraint::getQuadraticFunction() const 
 { 
   return f_->getQuadraticFunction();
 }
 
+void Constraint::consActStat(UInt &n, UInt &min, UInt &max)
+{
+  n = numAct_;
+  min = minDepth_;
+  max = maxDepth_;
+
+}
+
+void Constraint::minmaxDepth(UInt depth)
+{
+  if (depth > maxDepth_) {
+    maxDepth_ = depth;
+  }
+  if (depth < minDepth_) {
+    minDepth_ = depth;
+  }
+}
 
 void Constraint::reverseSense_()
 {

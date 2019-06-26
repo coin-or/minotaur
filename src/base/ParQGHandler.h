@@ -94,10 +94,10 @@ private:
   double solRelTol_;
 
   /// Absolute tolerance for pruning a node.
-  double npATol_;
+  double objATol_;
 
   /// Relative tolerance for pruning a node.
-  double npRTol_;
+  double objRTol_;
 
   /// Statistics.
   ParQGStats *stats_;
@@ -264,7 +264,7 @@ private:
 
   };
 
-  typedef boost::shared_ptr <ParQGHandler> ParQGHandlerPtr;
+  typedef ParQGHandler* ParQGHandlerPtr;
 }
 #endif
 

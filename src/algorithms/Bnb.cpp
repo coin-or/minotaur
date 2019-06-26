@@ -16,6 +16,7 @@
 
 #include "MinotaurConfig.h"
 #include "BndProcessor.h"
+#include "Constraint.h"
 #include "BranchAndBound.h"
 #include "EngineFactory.h"
 #include "Environment.h"
@@ -52,6 +53,7 @@
 #include "AMPLInterface.h"
 #include "AMPLJacobian.h"
 
+//#include "Operations.h"
 using namespace Minotaur;
 BrancherPtr createBrancher(EnvPtr env, ProblemPtr p, HandlerVector handlers,
                            EnginePtr e);
@@ -65,8 +67,8 @@ BranchAndBound* createBab(EnvPtr env, ProblemPtr p, EnginePtr e,
   LinHandlerPtr l_hand = (LinHandlerPtr) new LinearHandler(env, p);
   NlPresHandlerPtr nlhand;
   NodeIncRelaxerPtr nr;
-  RelaxationPtr rel;
-  BrancherPtr br;
+  RelaxationPtr rel = 0;
+  BrancherPtr br = 0;
   const std::string me("bnb main: ");
   OptionDBPtr options = env->getOptions();
   SOS2HandlerPtr s2_hand;
@@ -76,6 +78,8 @@ BranchAndBound* createBab(EnvPtr env, ProblemPtr p, EnginePtr e,
   if (s_hand->isNeeded()) {
     s_hand->setModFlags(false, true);
     handlers.push_back(s_hand);
+  } else {
+    delete s_hand;
   }
 
 
@@ -92,6 +96,8 @@ BranchAndBound* createBab(EnvPtr env, ProblemPtr p, EnginePtr e,
   if (s2_hand->isNeeded()) {
     s2_hand->setModFlags(false, true);
     handlers.push_back(s2_hand);
+  } else {
+    delete s2_hand;
   }
   
   
@@ -432,7 +438,8 @@ void writeSol(EnvPtr env, VarVector *orig_v,
   if (env->getOptions()->findFlag("AMPL")->getValue() ||
       true == env->getOptions()->findBool("write_sol_file")->getValue()) {
     iface->writeSolution(sol, status);
-  } else if (sol && env->getLogger()->getMaxLevel()>=LogExtraInfo) {
+  } else if (sol && env->getLogger()->getMaxLevel()>=LogExtraInfo &&
+             env->getOptions()->findBool("display_solution")->getValue()) {
     sol->writePrimal(env->getLogger()->msgStream(LogExtraInfo), orig_v);
   }
 }
@@ -481,8 +488,8 @@ int main(int argc, char** argv)
   EnvPtr env      = (EnvPtr) new Environment();
   OptionDBPtr options;
   MINOTAUR_AMPL::AMPLInterface* iface = 0;
-  ProblemPtr oinst;    // instance that needs to be solved.
-  EnginePtr engine;    // engine for solving relaxations. 
+  ProblemPtr oinst;         // instance that needs to be solved.
+  EnginePtr engine = 0;     // engine for solving relaxations. 
   SolutionPtr sol, sol2;
   JacobianPtr jPtr;
   HessianOfLagPtr hPtr;
@@ -493,7 +500,7 @@ int main(int argc, char** argv)
   HandlerVector handlers;
   int err = 0;
   double obj_sense = 1.0;
-
+ 
   env->startTimer(err);
   if (err) {
     goto CLEANUP;
@@ -515,7 +522,11 @@ int main(int argc, char** argv)
   loadProblem(env, iface, oinst, &obj_sense);
   orig_v = new VarVector(oinst->varsBegin(), oinst->varsEnd());
   pres = presolve(env, oinst, iface->getNumDefs(), handlers);
+  for (HandlerVector::iterator it=handlers.begin(); it!=handlers.end(); ++it) {
+    delete (*it);
+  }
   handlers.clear();
+
   if (Finished != pres->getStatus() && NotStarted != pres->getStatus()) {
     env->getLogger()->msgStream(LogInfo) << me 
       << "status of presolve: " 
@@ -546,6 +557,12 @@ int main(int argc, char** argv)
   writeBnbStatus(env, bab, obj_sense);
 
 CLEANUP:
+  for (HandlerVector::iterator it=handlers.begin(); it!=handlers.end(); ++it) {
+    delete (*it);
+  }
+  if (engine) {
+    delete engine;
+  }
   if (iface) {
     delete iface;
   }
@@ -554,6 +571,9 @@ CLEANUP:
   }
   if (orig_v) {
     delete orig_v;
+  }
+  if (env) {
+    delete env;
   }
 
   return 0;

@@ -53,8 +53,10 @@ SOS1Handler::SOS1Handler(EnvPtr env, ProblemPtr problem)
 
 SOS1Handler::~SOS1Handler()
 {
-  problem_.reset();
-  env_.reset();
+  //problem_.reset();
+  //env_.reset();
+  env_     =  0;
+  problem_ = 0;
 }
 
 
@@ -96,7 +98,8 @@ bool SOS1Handler::isFeasible(ConstSolutionPtr sol, RelaxationPtr rel, bool &,
 Branches SOS1Handler::getBranches(BrCandPtr cand, DoubleVector &, 
                                   RelaxationPtr rel, SolutionPoolPtr)
 {
-  SOSBrCandPtr scand = boost::dynamic_pointer_cast <SOSBrCand> (cand);
+  //SOSBrCandPtr scand = boost::dynamic_pointer_cast <SOSBrCand> (cand);
+  SOSBrCandPtr scand = dynamic_cast <SOSBrCand*> (cand);
   LinModsPtr mod;
   VarBoundModPtr bmod;
   VariablePtr v2;
@@ -247,7 +250,8 @@ ModificationPtr SOS1Handler::getBrMod(BrCandPtr cand, DoubleVector &,
                                       RelaxationPtr , BranchDirection dir) 
 {
   LinModsPtr mod = (LinModsPtr) new LinMods();
-  SOSBrCandPtr scand = boost::dynamic_pointer_cast <SOSBrCand> (cand);
+  //SOSBrCandPtr scand = boost::dynamic_pointer_cast <SOSBrCand> (cand);
+  SOSBrCandPtr scand = dynamic_cast <SOSBrCand*> (cand);
   VarBoundModPtr bmod;
 
   if (dir==DownBranch) {

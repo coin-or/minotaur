@@ -6,7 +6,8 @@
 
 /**
  * \file ParQGBranchAndBound.cpp
- * \brief Define ParQGBranchAndBound class for a generic parallel branch-and-bound method.
+ * \brief Define ParQGBranchAndBound class for a generic parallel
+ * branch-and-bound method.
  * \author Prashant Palkar, Meenarli Sharma, IIT Bombay
  */
 
@@ -87,14 +88,24 @@ ParQGBranchAndBound::ParQGBranchAndBound(EnvPtr env, ProblemPtr p)
 
 ParQGBranchAndBound::~ParQGBranchAndBound()
 {
-  options_.reset();
-  logger_.reset();
-  nodePrcssr_.reset();
-  nodeRlxr_.reset();
-  tm_.reset();
-  solPool_.reset();
-  problem_.reset();
-  env_.reset();
+  //options_.reset();
+  //logger_.reset();
+  options_ = 0;
+  if (logger_){
+    delete logger_;
+  }
+  //nodePrcssr_.reset();
+  //nodeRlxr_.reset();
+  nodeRlxr_ = 0;
+  nodePrcssr_ = 0;
+  //tm_.reset();
+  //solPool_.reset();
+  //problem_.reset();
+  //env_.reset();
+  tm_ = 0;
+  solPool_ = 0;
+  problem_ = 0;
+  env_ = 0;
   if (timer_) {
     delete timer_;
   }
@@ -221,6 +232,7 @@ NodePtr ParQGBranchAndBound::processRoot_(bool *should_prune, bool *should_dive,
       parNodeRlxr0->reset(current_node, false);
       new_node = tm_->getCandidate();
       assert(new_node);
+      tm_->removeActiveNode(new_node);
     }
   }
   current_node = new_node;
@@ -262,6 +274,7 @@ bool ParQGBranchAndBound::shouldPrune_(NodePtr node)
   switch (node->getStatus()) {
   case (NodeOptimal):
     should_prune = true;
+    break;
   case (NodeHitUb):
     should_prune = true;
     // check if we want to search for more solutions
@@ -586,7 +599,7 @@ void ParQGBranchAndBound::parsolve(ParNodeIncRelaxerPtr parNodeRlxr[],
                   consVec.clear();
                 }
                 if (isParRel) {
-                  parRelBr = boost::dynamic_pointer_cast <ParReliabilityBrancher> (nodePrcssr[j]->getBrancher());
+                  parRelBr = dynamic_cast <ParReliabilityBrancher*> (nodePrcssr[j]->getBrancher());
                   tmpTimesUp = parRelBr->getTimesUp();
                   tmpTimesDown = parRelBr->getTimesDown();
                   tmpPseudoUp = parRelBr->getPCUp();
@@ -634,6 +647,13 @@ void ParQGBranchAndBound::parsolve(ParNodeIncRelaxerPtr parNodeRlxr[],
               {
                 tm_->pruneNode(current_node[i]);
               }
+              //if (!dived_prev[i]) {
+//#if USE_OPENMP
+//#pragma omp critical (treeManager)
+//#endif
+                //tm_->removeActiveNode(current_node[i]);
+              //}
+
 #if USE_OPENMP
 #pragma omp critical (treeManager)
 #endif

@@ -179,9 +179,10 @@ void QuadHandler::findLinPt_(double xval, double yval, double &xl,
 Branches QuadHandler::getBranches(BrCandPtr cand, DoubleVector &x,
                                   RelaxationPtr rel, SolutionPoolPtr)
 {
-  BrVarCandPtr vcand = boost::dynamic_pointer_cast <BrVarCand> (cand);
+  //BrVarCandPtr vcand = boost::dynamic_pointer_cast <BrVarCand> (cand);
+  BrVarCandPtr vcand =dynamic_cast <BrVarCand*> (cand);
   VariablePtr v = vcand->getVar();
-  VariablePtr v2;
+  VariablePtr v2 = 0;
   double value = x[v->getIndex()];
   BranchPtr branch;
   VarBoundModPtr mod;
@@ -370,7 +371,8 @@ ModificationPtr QuadHandler::getBrMod(BrCandPtr cand, DoubleVector &x,
   LinModsPtr lmods = (LinModsPtr) new LinMods();
   LinearFunctionPtr lf;
   LinConModPtr lmod;
-  BrVarCandPtr vcand = boost::dynamic_pointer_cast <BrVarCand> (cand);
+  //BrVarCandPtr vcand = boost::dynamic_pointer_cast <BrVarCand> (cand);
+  BrVarCandPtr vcand = dynamic_cast <BrVarCand*> (cand);
   VariablePtr v = vcand->getVar();
   VariablePtr x0, x1, y;
   double x0val, yval, vio, rhs;
@@ -544,17 +546,20 @@ void QuadHandler::addCut_(VariablePtr x, VariablePtr y,
       2*xl*xval - yval > yl*(1+1e-4)) {
     LinearFunctionPtr lf = (LinearFunctionPtr) new LinearFunction();
     FunctionPtr f;
-    ConstraintPtr c;
 
     lf->addTerm(x, 2*xl);
     lf->addTerm(y, -1.0);
     f = (FunctionPtr) new Function(lf);
-    c = rel->newConstraint(f, -INFINITY, xl*xl);
     ifcuts = true;
     ++sStats_.cuts;
 #if SPEW
+    {
+    ConstraintPtr c = rel->newConstraint(f, -INFINITY, xl*xl);
     logger_->msgStream(LogDebug2) << me_ << "new cut added" << std::endl;
     c->write(logger_->msgStream(LogDebug2));
+    }
+#else
+    rel->newConstraint(f, -INFINITY, xl*xl);
 #endif
   } else {
 #if SPEW
@@ -791,7 +796,6 @@ bool QuadHandler::propSqrBnds_(LinSqrMapIter lx2, RelaxationPtr rel,
 
   VariablePtr x = lx2->first;      // x and y are variables in p_
   VariablePtr y = lx2->second->y;
-  ConstraintPtr con = lx2->second->oeCon;
 
   BoundsOnSquare(x, lb, ub);
   if (updatePBounds_(y, lb, ub, rel, mod_rel, changed, p_mods, r_mods)<0) {
@@ -827,7 +831,6 @@ void QuadHandler::relax_(RelaxationPtr rel, bool *)
   LinearFunctionPtr lf;
   VariablePtr y, x0, x1;
   FunctionPtr f;
-  ConstraintPtr c;
   ConstraintVector cons(4);
 
 

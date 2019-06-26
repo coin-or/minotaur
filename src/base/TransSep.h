@@ -33,9 +33,7 @@ namespace Minotaur {
   class CNode;
   class LinearHandler;
   class Problem;
-  typedef boost::shared_ptr<CGraph> CGraphPtr;
-  typedef boost::shared_ptr<Environment> EnvPtr;
-  typedef boost::shared_ptr<Problem> ProblemPtr;
+  typedef CGraph* CGraphPtr;
   typedef std::deque<CNode *> CNodeQ;
 
   class TransSep {
@@ -215,8 +213,8 @@ namespace Minotaur {
     UInt nvar_;
 
   };
-  typedef boost::shared_ptr<TransSep> TransSepPtr;
-  typedef boost::shared_ptr<const TransSep> ConstTransSepPtr;
+  typedef TransSep* TransSepPtr;
+  typedef const TransSep* ConstTransSepPtr;
 }
 
 #endif // MINOTAURTRANSSEP_H

@@ -37,10 +37,12 @@ NodeIncRelaxer::NodeIncRelaxer (EnvPtr env, HandlerVector handlers)
 
 NodeIncRelaxer::~NodeIncRelaxer ()
 {
-  rel_.reset();
+  if (rel_) {
+    delete rel_;
+    rel_ = 0;
+  }
   handlers_.clear();
-  env_.reset();
-  engine_.reset();
+  env_ = 0;
 }
 
 

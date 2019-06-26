@@ -22,9 +22,9 @@ namespace Minotaur {
   class   Environment;
   class   Problem;
   class   Solution;
-  typedef boost::shared_ptr<Environment> EnvPtr;
-  typedef boost::shared_ptr<Problem> ProblemPtr;
-  typedef boost::shared_ptr<Solution> SolutionPtr;
+  typedef Environment* EnvPtr;
+  typedef Problem* ProblemPtr;
+  typedef Solution* SolutionPtr;
 
   struct BqpdStats {
     UInt calls;     /// Total number of calls to solve.
@@ -55,9 +55,6 @@ namespace Minotaur {
   class BqpdEngine : public QPEngine {
   public:
     friend class Problem;
-
-    /// Default constructor.
-    BqpdEngine();    
 
     /// Constructor using given environment options.
     BqpdEngine(EnvPtr env);    
@@ -336,7 +333,7 @@ namespace Minotaur {
   };
 
   
-  typedef boost::shared_ptr<BqpdEngine> BqpdEnginePtr;
+  typedef BqpdEngine* BqpdEnginePtr;
 } // end namespace Minotaur 
 
 #endif

@@ -41,7 +41,6 @@ set (MINOTAUR_SOURCES
      FeasibilityPump.cpp 
      Function.cpp 
      HessianOfLag.cpp 
-     Interrupt.cpp 
      IntVarHandler.cpp 
      Jacobian.cpp
      KnapsackList.cpp 
@@ -73,12 +72,14 @@ set (MINOTAUR_SOURCES
      NodeProcessor.cpp 
      NodeStack.cpp 
      NonlinearFunction.cpp 
+     OAHandler.cpp
      Objective.cpp 
      Operations.cpp 
      Option.cpp 
      ParBndProcessor.cpp
      ParBranchAndBound.cpp
      ParCutMan.cpp
+     ParMINLPDiving.cpp
      ParNodeIncRelaxer.cpp
      ParQGBranchAndBound.cpp
      ParQGHandler.cpp
@@ -116,6 +117,7 @@ set (MINOTAUR_SOURCES
      SOS1Handler.cpp
      SOS2Handler.cpp
      SOSBrCand.cpp
+     STOAHandler.cpp
      Transformer.cpp 
      TransPoly.cpp 
      #TransSep.cpp
@@ -158,7 +160,6 @@ set (MINOTAUR_HEADERS
      HessianOfLag.h
      Heuristic.h
      Iterate.h
-     Interrupt.h
      IntVarHandler.h
      Jacobian.h
      KnapsackList.h # Serdar
@@ -177,6 +178,7 @@ set (MINOTAUR_HEADERS
      LPRelaxation.h
      MaxFreqBrancher.h
      MaxVioBrancher.h
+     MILPEngine.h
      MINLPDiving.h
      Modification.h
      MsProcessor.h
@@ -193,13 +195,15 @@ set (MINOTAUR_HEADERS
      NodeProcessor.h
      NodeStack.h
      NonlinearFunction.h
-     Operations.h
+     OAHandler.h
      Objective.h
+     Operations.h
      Option.h
      OpCode.h
      ParBndProcessor.h
      ParBranchAndBound.h
      ParCutMan.h
+     ParMINLPDiving.h
      ParNodeIncRelaxer.h
      ParQGBranchAndBound.h
      ParQGHandler.h
@@ -240,6 +244,7 @@ set (MINOTAUR_HEADERS
      SOS1Handler.h
      SOS2Handler.h
      SOSBrCand.h
+     STOAHandler.h
      Timer.h
      Transformer.h 
      TransPoly.h 

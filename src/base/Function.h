@@ -17,17 +17,7 @@
 
 namespace Minotaur {
 
-  class Function;
-  class LinearFunction;
-  class QuadraticFunction;
-  class NonlinearFunction;
   struct LTHessStor;
-  typedef boost::shared_ptr<Function> FunctionPtr;
-  typedef boost::shared_ptr<const Function> ConstFunctionPtr;  
-  typedef boost::shared_ptr<LinearFunction> LinearFunctionPtr;
-  typedef boost::shared_ptr<const LinearFunction> ConstLinearFunctionPtr;
-  typedef boost::shared_ptr<QuadraticFunction> QuadraticFunctionPtr;
-  typedef boost::shared_ptr<NonlinearFunction> NonlinearFunctionPtr;
 
   /**
    * The class Function is meant to model functions that are used to specify
@@ -124,13 +114,13 @@ namespace Minotaur {
     virtual FunctionType getVarFunType(ConstVariablePtr v);
 
     /// Return the linear part of the function.
-    virtual const LinearFunctionPtr getLinearFunction() const;
+    virtual LinearFunctionPtr getLinearFunction() const;
 
     /// Return the quadratic part of the function.
-    virtual const QuadraticFunctionPtr getQuadraticFunction() const;
+    virtual QuadraticFunctionPtr getQuadraticFunction() const;
 
     /// Return the nonlinear part of the function.
-    virtual const NonlinearFunctionPtr getNonlinearFunction() const;
+    virtual NonlinearFunctionPtr getNonlinearFunction() const;
 
     /// Return a begin-iterator for the variables that are in this function.
     VarSetConstIterator varsBegin();
@@ -179,6 +169,13 @@ namespace Minotaur {
      * quadratic part.
      */
     QuadraticFunctionPtr removeQuadratic();
+ 
+    /**
+     * Remove the linear part of the function and return a pointer to the
+     * linear part.
+     */   
+
+    LinearFunctionPtr removeLinear();
 
     /**
      * Remove the nonlinear part of the function and return a pointer to 

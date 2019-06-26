@@ -11,6 +11,7 @@
  */
 
 #include <cmath>
+#include <omp.h>
 #include "MinotaurConfig.h"
 #include "Branch.h"
 #include "Environment.h"
@@ -21,7 +22,7 @@
 #include "Option.h"
 #include "Timer.h"
 #include "ParTreeManager.h"
-
+//#include <omp.h>
 using namespace Minotaur;
     
     
@@ -82,7 +83,8 @@ ParTreeManager::ParTreeManager(EnvPtr env)
 ParTreeManager::~ParTreeManager()
 {
   clearAll();
-  active_nodes_.reset();
+  //active_nodes_.reset();
+  active_nodes_ = 0;
   if (doVbc_) {
     vbcFile_.close();
     delete timer_;
@@ -105,10 +107,13 @@ NodePtr ParTreeManager::branch(Branches branches, NodePtr node, WarmStartPtr ws)
   if (searchType_ == DepthFirst || searchType_ == BestThenDive) {
     is_first = true;
   }
+//#pragma omp critical
+  //std::cout << "in parTM branch: node " << node->getId() << " thread: " << omp_get_thread_num() << std::endl;
 
   for (BranchConstIterator br_iter=branches->begin(); br_iter!=branches->end();
       ++br_iter) {
     branch_p = *br_iter;
+    //branch_p->write(std::cout);
     child = (NodePtr) new Node(node, branch_p);
     child->setLb(node->getLb());
     child->setDepth(node->getDepth()+1);
@@ -163,7 +168,8 @@ UInt ParTreeManager::getActiveNodes() const
 NodePtr ParTreeManager::getCandidate()
 {
   NodePtr node = NodePtr(); // NULL
-  aNode_.reset();
+  //aNode_.reset();
+  aNode_ = 0;
   while (active_nodes_->getSize() > 0) {
     node = active_nodes_->top();
     // std::cout << "tm: node lb = " << node->getLb() << std::endl;
@@ -171,7 +177,8 @@ NodePtr ParTreeManager::getCandidate()
       // std::cout << "tm: node pruned." << std::endl;
       removeActiveNode(node);
       pruneNode(node);
-      node.reset(); // NULL
+      //node.reset(); // NULL
+      node = 0;
     } else {
       if (doVbc_) {
         vbcFile_ << toClockTime(timer_->query()) << " P " << node->getId()+1
@@ -229,6 +236,7 @@ double ParTreeManager::getPerGapPar(double treeLb)
       gap = 0.0;
     }
   }
+  //std::cout << "in parTM: gap " << gap << " treeLb " << treeLb << " ub " << bestUpperBound_ << "\n";
   return gap;
 }
 
@@ -376,7 +384,8 @@ void ParTreeManager::removeNode_(NodePtr node)
   }
   // std::cout << "node " << node->getId() << " use count = " <<
   // node.use_count() << std::endl;
-  node.reset();
+  //node.reset();
+  node = 0;
 }
 
 

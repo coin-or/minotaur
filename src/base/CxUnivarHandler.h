@@ -16,6 +16,7 @@
 #define MINOTAURCXUNIVARHANDLER_H
 
 #include "Handler.h"
+#include "Types.h"
 
 namespace Minotaur {
 
@@ -24,11 +25,8 @@ namespace Minotaur {
   class LinearFunction;
   class Objective;
   class Problem;
-  typedef boost::shared_ptr<Engine> EnginePtr;
-  typedef boost::shared_ptr<Function> FunctionPtr;
-  typedef boost::shared_ptr<LinearFunction> LinearFunctionPtr;
-  typedef boost::shared_ptr<Objective> ObjectivePtr;
-  typedef boost::shared_ptr<const Problem> ConstProblemPtr;
+  typedef LinearFunction* LinearFunctionPtr;
+  typedef Objective* ObjectivePtr;
 
 
   class CxUnivarConstraintData {
@@ -125,7 +123,7 @@ namespace Minotaur {
 
   };
 
-  typedef boost::shared_ptr<CxUnivarConstraintData> CxUnivarConstraintDataPtr;
+  typedef CxUnivarConstraintData* CxUnivarConstraintDataPtr;
   typedef std::vector<CxUnivarConstraintDataPtr> CxUnivarConstraintDataVector;
   typedef CxUnivarConstraintDataVector::iterator CxUnivarConstraintIterator;
 
@@ -261,17 +259,16 @@ namespace Minotaur {
   };
 
   /// Shared pointer to CxUnivarHandler.
-  typedef boost::shared_ptr<CxUnivarConstraintData> CxUnivarConstraintDataPtr;
+  typedef CxUnivarConstraintData* CxUnivarConstraintDataPtr;
 
   /// Shared pointer to const CxUnivarHandler.
-  typedef boost::shared_ptr<const CxUnivarConstraintData>
-    CxUnivarConstConstraintDataPtr;
+  typedef const CxUnivarConstraintData* CxUnivarConstConstraintDataPtr;
 
   /// Shared pointer to CxUnivarHandler.
-  typedef boost::shared_ptr<CxUnivarHandler> CxUnivarHandlerPtr;
+  typedef CxUnivarHandler* CxUnivarHandlerPtr;
 
   /// Shared pointer to const CxUnivarHandler.
-  typedef boost::shared_ptr<const CxUnivarHandler> CxUnivarConstHandlerPtr;
+  typedef const CxUnivarHandler* CxUnivarConstHandlerPtr;
 }
 #endif
 

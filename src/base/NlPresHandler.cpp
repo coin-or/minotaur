@@ -17,6 +17,7 @@
 
 #include "MinotaurConfig.h"
 #include "Constraint.h"
+#include "ConBoundMod.h"
 #include "Environment.h"
 #include "Function.h"
 #include "HessianOfLag.h"
@@ -59,6 +60,7 @@ NlPresHandler::NlPresHandler()
   stats_.nMods = 0;
   stats_.qCone = 0;
   stats_.time = 0;
+  stats_.timeN = 0;
   stats_.varDel = 0;
   stats_.vBnd = 0;
 }
@@ -76,11 +78,13 @@ NlPresHandler::NlPresHandler(EnvPtr env, ProblemPtr p)
   stats_.cBnd = 0;
   stats_.cImp = 0;
   stats_.conDel = 0;
+  stats_.conRel = 0;
   stats_.pRefs = 0;
   stats_.iters = 0;
   stats_.nMods = 0;
   stats_.qCone = 0;
   stats_.time = 0;
+  stats_.timeN = 0;
   stats_.varDel = 0;
   stats_.vBnd = 0;
 }
@@ -88,21 +92,26 @@ NlPresHandler::NlPresHandler(EnvPtr env, ProblemPtr p)
 
 NlPresHandler::~NlPresHandler()
 {
-  env_.reset();
+  //env_.reset();
+  env_ = 0;
 }
 
 
-void  NlPresHandler::chkRed_(bool *changed)
+void NlPresHandler::chkRed_(ProblemPtr p, bool purge_cons, bool *changed,
+                            ModQ *mods, SolveStatus &status)
 {
   ConstraintPtr c;
+  ConBoundModPtr mod;
   LinearFunctionPtr lf;
   NonlinearFunctionPtr nlf;
   QuadraticFunctionPtr qf;
   double lfu, lfl;
   double nlfu, nlfl;
+  double impl_lb, impl_ub;
   int error = 0;
+  double bigm = (true==purge_cons)?INFINITY:100000;
 
-  for (ConstraintConstIterator cit=p_->consBegin(); cit!=p_->consEnd();
+  for (ConstraintConstIterator cit=p->consBegin(); cit!=p->consEnd();
        ++cit) {
     c = *cit;
     if (c->getFunctionType()!=Linear && c->getFunctionType()!=Constant) {
@@ -128,23 +137,67 @@ void  NlPresHandler::chkRed_(bool *changed)
 
       if (c->getLb()>-INFINITY && nlfl+lfl-eTol_ > c->getLb()) {
         p_->changeBound(c, Lower, -INFINITY);
+      nlf->computeBounds(&nlfl, &nlfu, &error);
+      assert(error==0);
+      impl_lb = nlfl + lfl;
+      impl_ub = nlfu + lfu;
+
+      if (impl_ub + eTol_ < c->getLb() || impl_lb - eTol_ > c->getUb()) {
+        status = SolvedInfeasible;
+        ++stats_.infBnds;
+#if SPEW
+        logger_->msgStream(LogDebug2) << me_ << " problem infeaible because of "
+                                      << c->getName() << std::endl;
+#endif
+        break;
+      }
+
+
+
+      // if the implied-lb is more than constraint-lb, but not too much more,
+      // relax the constraint lb further.
+      if (c->getLb()>-INFINITY && impl_lb+eTol_ > c->getLb()
+          && impl_lb < c->getLb()+bigm-eTol_) {
+        mod = (ConBoundModPtr) new ConBoundMod(c, Lower, c->getLb()-bigm);
+        mod->applyToProblem(p);
+>>>>>>> e2034ec6971013f63c59dd5b2d05e34036cdbc3c
         *changed = true;
+#if SPEW
         logger_->msgStream(LogDebug2) << me_ << " removed lb of constraint "
                                       << c->getName() << std::endl;
+#endif
+        if (false==purge_cons) {
+          mods->push_back(mod);
+          ++stats_.conRel;
+        }
       }
-      if (c->getUb()<INFINITY && nlfu+lfu+eTol_ < c->getUb()) {
-        p_->changeBound(c, Upper, INFINITY);
+      // similary for implied-ub
+      if (c->getUb()<INFINITY && impl_ub-eTol_ < c->getUb()
+          && impl_ub > c->getUb()-bigm+eTol_) {
+        mod = (ConBoundModPtr) new ConBoundMod(c, Upper, c->getUb()+bigm);
+        mod->applyToProblem(p);
         *changed = true;
+#if SPEW
         logger_->msgStream(LogDebug2) << me_ << " removed ub of constraint "
                                       << c->getName() << std::endl;
+#endif
+        if (false==purge_cons) {
+          mods->push_back(mod);
+          ++stats_.conRel;
+        }
       }
-      if (c->getUb()>=nlfu+lfu-eTol_ && c->getLb()<=nlfl+lfl+eTol_) {
-        p_->markDelete(c);
-        *changed = true;
+
+
+      // delete the constraint if unbounded on both sides
+      if (c->getUb()==INFINITY && c->getLb()==-INFINITY && true==purge_cons) {
         ++stats_.conDel;
-        logger_->msgStream(LogDebug2) << me_ << " marked of constraint "
+        p->markDelete(c);
+        *changed = true;
+#if SPEW
+        logger_->msgStream(LogDebug2) << me_ << " marked constraint "
                                       << c->getName() << " for deleting."
                                       << std::endl;
+#endif
       }
     }
   }
@@ -414,7 +467,8 @@ void  NlPresHandler::bin2Lin_(ProblemPtr p, PreModQ *mods, bool *changed)
           f = (FunctionPtr) new Function(lf);
           p->newConstraint(f, c->getLb(), c->getUb());
         } else {
-          lf.reset();
+          //lf.reset();
+          lf = 0;
         }
         p->markDelete(c);
         *changed = true;
@@ -624,6 +678,33 @@ void  NlPresHandler::computeImpBounds_(ConstraintPtr c, VariablePtr z,
 }
 
 
+void NlPresHandler::copyBndsFromRel_(RelaxationPtr rel, ModVector &p_mods)
+{
+  VarBoundModPtr mod;
+  VariablePtr xp;
+  VariablePtr xr;
+
+  for (VariableConstIterator it=p_->varsBegin(); it!=p_->varsEnd();
+       ++it) {
+    xp = *it;
+    xr = rel->getRelaxationVar(xp);
+    if (!xr) {
+      continue;
+    }
+    if (xr->getLb() > xp->getLb()+eTol_) {
+      mod = (VarBoundModPtr) new  VarBoundMod(xp, Lower, xr->getLb());
+      mod->applyToProblem(p_);
+      p_mods.push_back(mod);
+    }
+    if (xr->getUb() < xp->getUb()-eTol_) {
+      mod = (VarBoundModPtr) new  VarBoundMod(xp, Upper, xr->getUb());
+      mod->applyToProblem(p_);
+      p_mods.push_back(mod);
+    }
+  }
+}
+
+
 std::string NlPresHandler::getName() const
 {
   return "NlPresHandler (presolving nonlinear constraints).";
@@ -763,15 +844,16 @@ SolveStatus NlPresHandler::presolve(PreModQ *mods, bool *changed0)
   bool changed = true;
   Timer *tim = env_->getNewTimer();
   SolveStatus status = Started;
+  ModQ *dmods = 0; // NULL
 
   tim->start();
   while(changed==true && stats_.iters < 5) {
     logger_->msgStream(LogDebug2) << me_ << "starting presolve iter "
                                   << stats_.iters << std::endl;
     changed = false;
-    chkRed_(&changed);
+    chkRed_(p_, true, &changed, dmods, status);
     p_->delMarkedCons();
-    status = varBndsFromCons_(&changed);
+    varBndsFromCons_(p_, true, &changed, dmods, status);
     if (SolvedInfeasible==status) {
       stats_.time += tim->query();
       delete tim;
@@ -796,10 +878,63 @@ SolveStatus NlPresHandler::presolve(PreModQ *mods, bool *changed0)
 }
 
 
-bool NlPresHandler::presolveNode(RelaxationPtr rel, NodePtr, SolutionPoolPtr s_pool,
-                                 ModVector &, ModVector &r_mods)
+bool NlPresHandler::presolveNode(RelaxationPtr rel, NodePtr,
+                                 SolutionPoolPtr s_pool, ModVector &p_mods,
+                                 ModVector &r_mods)
 {
-  FunctionPtr f = rel->getObjective()->getFunction();
+  SolveStatus status = Started;
+  simplePresolve(rel, s_pool, r_mods, status);
+  if (true==modProb_) {
+    copyBndsFromRel_(rel, p_mods);
+  }
+  return (status==SolvedInfeasible);
+}
+
+
+void NlPresHandler::simplePresolve(ProblemPtr p, SolutionPoolPtr s_pool,
+                                   ModVector &t_mods, SolveStatus &status) 
+{
+  bool changed = true;
+  ModQ mods;
+  UInt max_iters = 4;
+  UInt min_iters = 2;
+  UInt iters = 1;
+  int err = 0;
+  double stime = env_->getTime(err); assert (0==err);
+  double ub = (s_pool)?s_pool->getBestSolutionValue():INFINITY;
+
+  while (true==changed && iters<=max_iters && 
+         iters<=min_iters && status!=SolvedInfeasible) {
+    changed = false;
+    ++iters;
+    chkRed_(p, false, &changed, &mods, status);
+    if (SolvedInfeasible==status) {
+      break;
+    }
+    varBndsFromCons_(p, false, &changed, &mods, status);
+    if (SolvedInfeasible==status) {
+      break;
+    }
+    if (ub < INFINITY) {
+      fixObjBins_(p, ub, &changed, &mods, status);
+      if (SolvedInfeasible==status) {
+        break;
+      }
+    }
+  }
+  
+  for (ModQ::const_iterator it=mods.begin(); it!=mods.end(); ++it) {
+    t_mods.push_back(*it);
+  }
+  stats_.nMods += mods.size();
+  stats_.timeN += (env_->getTime(err) - stime); assert (0==err);
+}
+
+
+void NlPresHandler::fixObjBins_(ProblemPtr p, double ub, bool *changed,
+                                ModQ *mods, SolveStatus &status)
+{
+  FunctionPtr f = p->getObjective()->getFunction();
   NonlinearFunctionPtr nlf;
   LinearFunctionPtr lf;
   double nlfl, nlfu;
@@ -808,7 +943,6 @@ bool NlPresHandler::presolveNode(RelaxationPtr rel, NodePtr, SolutionPoolPtr s_p
   int error = 0;
   double a0;
   VariablePtr z;
-  double ub = (s_pool)?s_pool->getBestSolutionValue():INFINITY;
   VarBoundModPtr mod;
 
   if (f && ub<INFINITY) {
@@ -826,9 +960,10 @@ bool NlPresHandler::presolveNode(RelaxationPtr rel, NodePtr, SolutionPoolPtr s_p
       lf->computeBounds(&lfl, &lfu);
       olb = lfl+nlfl;
       if (olb<=-INFINITY) {
-        return false;
+        return;
       } else if (olb>ub) {
-        return true;
+        status = SolvedInfeasible;
+        return ;
       }
       //std::cout << "obj lb = " << lfl+nlfl << " obj ub = " <<
       //lfu+nlfu << " ub = " << ub << std::endl;
@@ -838,24 +973,25 @@ bool NlPresHandler::presolveNode(RelaxationPtr rel, NodePtr, SolutionPoolPtr s_p
         z = it2->first;
         if ((z->getType()==Binary || z->getType()==ImplBin)
             && (z->getUb()-z->getLb()) > eTol_
-            && !(rel->isMarkedDel(z))) {
+            && !(p->isMarkedDel(z))) {
           a0 = it2->second;
           if (a0>0 && olb+a0>ub) {
+            *changed = true;
             mod = (VarBoundModPtr) new VarBoundMod(z, Upper, 0.0);
-            mod->applyToProblem(rel);
-            r_mods.push_back(mod);
+            mod->applyToProblem(p);
+            mods->push_back(mod);
             ++(stats_.nMods);
           } else if (a0<0 && olb-a0>ub) {
+            *changed = true;
             mod = (VarBoundModPtr) new VarBoundMod(z, Lower, 1.0);
-            r_mods.push_back(mod);
-            mod->applyToProblem(rel);
+            mods->push_back(mod);
+            mod->applyToProblem(p);
             ++(stats_.nMods);
           }
         }
       }
     }
   }
-  return false;
 }
 
 
@@ -1453,7 +1589,7 @@ SolveStatus NlPresHandler::varBndsFromCons_(bool *changed)
 
   SolveStatus status = Started;
 
-  for (ConstraintConstIterator cit=p_->consBegin(); cit!=p_->consEnd();
+  for (ConstraintConstIterator cit=p->consBegin(); cit!=p->consEnd();
        ++cit) {
     c = *cit;
     
@@ -1542,7 +1678,7 @@ SolveStatus NlPresHandler::varBndsFromCons_(bool *changed)
       }
       if (false==mods.empty()) {
         for (VarBoundModVector::iterator it=mods.begin(); it!=mods.end(); ++it) {
-          (*it)->applyToProblem(p_);
+          (*it)->applyToProblem(p);
           ++stats_.vBnd;
       
 
@@ -1598,7 +1734,6 @@ SolveStatus NlPresHandler::varBndsFromCons_(bool *changed)
 //       }         
     }
   }
-  return status;
 }
 
 
@@ -1607,8 +1742,10 @@ void NlPresHandler::writePreStats(std::ostream &out) const
   out << me_ << "Statistics for presolve by NlPresHandler:"        << std::endl
     << me_ << "Number of iterations           = " << stats_.iters  << std::endl
     << me_ << "Time taken in initial presolve = " << stats_.time   << std::endl
+    << me_ << "Time taken in node presolves   = " << stats_.timeN  << std::endl
     << me_ << "Number of variables deleted    = " << stats_.varDel << std::endl
     << me_ << "Number of constraints deleted  = " << stats_.conDel << std::endl
+    << me_ << "Number of constraints relaxed  = " << stats_.conRel << std::endl
     << me_ << "Number of perspective reform.  = " << stats_.pRefs  << std::endl
     << me_ << "Times variables tightened      = " << stats_.vBnd   << std::endl
     << me_ << "Times constraints tightened    = " << stats_.cBnd   << std::endl

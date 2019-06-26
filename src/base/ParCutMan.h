@@ -125,7 +125,7 @@ private:
 
 };
 
-//typedef boost::shared_ptr<ParCutMan > ParCutManPtr;
+//typedef ParCutMan * ParCutManPtr;
 }
 #endif
 

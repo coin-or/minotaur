@@ -22,10 +22,9 @@ class Cut;
 class Problem;
 class Solution;
 
-typedef boost::shared_ptr<Environment> EnvironmentPtr;
-typedef boost::shared_ptr<Cut> CutPtr;
-typedef boost::shared_ptr<Problem> ProblemPtr;
-typedef boost::shared_ptr<Solution> SolutionPtr;
+typedef Environment* EnvironmentPtr;
+typedef Cut* CutPtr;
+typedef Solution* SolutionPtr;
 
 typedef std::vector<CutPtr> CutVector;
 typedef std::deque<CutPtr> CutQ;

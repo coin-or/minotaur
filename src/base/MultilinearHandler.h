@@ -15,7 +15,7 @@
 
 #include "Handler.h"
 #include "LPEngine.h"
-
+#include "Types.h"
 
 namespace Minotaur {
 
@@ -23,10 +23,8 @@ class   Function;
 class   PolynomialFunction;
 class   QuadraticFunction;
 class   Problem;
-typedef boost::shared_ptr<Function> FunctionPtr;
-typedef boost::shared_ptr<PolynomialFunction> PolyFunPtr;
-typedef boost::shared_ptr<QuadraticFunction> QuadraticFunctionPtr;
-typedef boost::shared_ptr<const Problem> ConstProblemPtr;
+typedef PolynomialFunction* PolyFunPtr;
+typedef QuadraticFunction* QuadraticFunctionPtr;
 
 /// A MultilinearHandler handles terms like \f$x_0x_1^2\f$.
 class MultilinearHandler : public Handler {
@@ -478,8 +476,8 @@ private:
     
     
 };
-typedef boost::shared_ptr<MultilinearHandler> MultilinearHandlerPtr;
-typedef boost::shared_ptr<const MultilinearHandler> MultilinearConstHandlerPtr;
+typedef MultilinearHandler* MultilinearHandlerPtr;
+typedef const MultilinearHandler* MultilinearConstHandlerPtr;
 }
 #endif
 

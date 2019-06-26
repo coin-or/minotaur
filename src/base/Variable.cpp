@@ -91,6 +91,11 @@ void Variable::inConstraint_(ConstraintPtr cPtr)
   cons_.insert(cPtr);
 }
 
+void Variable::INConstraint(ConstraintPtr cPtr)
+{
+  cons_.insert(cPtr);
+}
+
 
 void Variable::outOfConstraint_(ConstraintPtr cPtr)
 {
@@ -135,7 +140,6 @@ void Variable::write(std::ostream &out) const
 void Variable::writeConstraintMap(std::ostream &out) const
 {
   ConstrSet::const_iterator cIter;
-  ConstraintPtr cPtr;
   out << std::endl << "in constraint set for variable " << getName();
   out << ", number of constraints = " << cons_.size() << ": " << std::endl;
 

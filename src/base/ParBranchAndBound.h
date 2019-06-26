@@ -31,17 +31,16 @@ namespace Minotaur {
   class   SolutionPool;
   class   WarmStart;
   class   Timer;
-  typedef boost::shared_ptr <Engine> EnginePtr;
-  typedef boost::shared_ptr <ParBabOptions> ParBabOptionsPtr;
-  typedef boost::shared_ptr <NodeProcessor> NodeProcessorPtr;
-  typedef boost::shared_ptr <NodeRelaxer> NodeRelaxerPtr;
-  typedef boost::shared_ptr <ParNodeIncRelaxer> ParNodeIncRelaxerPtr;
-  typedef boost::shared_ptr <Problem> ProblemPtr;
-  typedef boost::shared_ptr <ParBndProcessor> ParBndProcessorPtr;
-  typedef boost::shared_ptr <Solution> SolutionPtr;
-  typedef boost::shared_ptr <SolutionPool> SolutionPoolPtr;
-  typedef boost::shared_ptr <ParTreeManager> ParTreeManagerPtr;
-  typedef boost::shared_ptr<WarmStart> WarmStartPtr;
+  typedef Engine* EnginePtr;
+  typedef ParBabOptions* ParBabOptionsPtr;
+  typedef NodeProcessor* NodeProcessorPtr;
+  typedef NodeRelaxer* NodeRelaxerPtr;
+  typedef ParNodeIncRelaxer* ParNodeIncRelaxerPtr;
+  typedef ParBndProcessor* ParBndProcessorPtr;
+  typedef Solution* SolutionPtr;
+  typedef SolutionPool* SolutionPoolPtr;
+  typedef ParTreeManager* ParTreeManagerPtr;
+  typedef WarmStart* WarmStartPtr;
 
   /**
    * \brief Implement a generic parallel branch-and-bound algorithm on a multicore cpu. 
@@ -393,7 +392,7 @@ namespace Minotaur {
     double timeLimit;
   };
 
-  typedef boost::shared_ptr<ParBranchAndBound> ParBranchAndBoundPtr;
+  typedef ParBranchAndBound* ParBranchAndBoundPtr;
 }
 #endif
 

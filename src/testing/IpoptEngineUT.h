@@ -126,10 +126,10 @@ class myHess : public HessianOfLag {
 // ------------------------------------------------------------------------- //
 // ------------------------------------------------------------------------- //
 
-typedef boost::shared_ptr<myNLFun0> myNLFun0Ptr;
-typedef boost::shared_ptr<myNLFun1> myNLFun1Ptr;
-typedef boost::shared_ptr<myJac> myJacPtr;
-typedef boost::shared_ptr<myHess> myHessPtr;
+typedef myNLFun0* myNLFun0Ptr;
+typedef myNLFun1* myNLFun1Ptr;
+typedef myJac* myJacPtr;
+typedef myHess* myHessPtr;
 
 #endif     // #define IPOPTENGINEUT_H
 

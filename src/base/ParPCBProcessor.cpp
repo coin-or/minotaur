@@ -72,10 +72,10 @@ ParPCBProcessor::ParPCBProcessor (EnvPtr env, EnginePtr engine,
     engineStatus_(EngineUnknownStatus),
     numSolutions_(0),
     relaxation_(RelaxationPtr()),
-    ws_(WarmStartPtr()),
-    oATol_(1e-5),
-    oRTol_(1e-5)
+    ws_(WarmStartPtr())
 {
+  oATol_ = env->getOptions()->findDouble("solAbs_tol")->getValue();
+  oRTol_ = env->getOptions()->findDouble("solRel_tol")->getValue();
   cutOff_ = env->getOptions()->findDouble("obj_cut_off")->getValue();
   handlers_ = handlers;
   logger_ = env->getLogger();
@@ -92,7 +92,6 @@ ParPCBProcessor::ParPCBProcessor (EnvPtr env, EnginePtr engine,
 ParPCBProcessor::~ParPCBProcessor()
 {
   handlers_.clear();
-  engine_.reset();
 }
 
 
@@ -223,6 +222,7 @@ void ParPCBProcessor::process(NodePtr node, RelaxationPtr rel,
 
   ++stats_.proc;
   relaxation_ = rel;
+  numSolutions_ = 0;
 
   // presolve
   should_prune = presolveNode_(node, s_pool);
@@ -287,7 +287,7 @@ void ParPCBProcessor::process(NodePtr node, RelaxationPtr rel,
       ws_ = engine_->getWarmStartCopy();
       if (brancher_->getName()=="ParReliabilityBrancher") {
         ParReliabilityBrancherPtr parRelBr;
-        parRelBr = boost::dynamic_pointer_cast <ParReliabilityBrancher> (brancher_);
+        parRelBr = dynamic_cast <ParReliabilityBrancher*> (brancher_);
         branches_ = parRelBr->findBranches(relaxation_, node, sol, s_pool,
                                             br_status, mods, timesUp, timesDown,
                                             pseudoUp, pseudoDown, nodesProc);
@@ -366,7 +366,7 @@ void ParPCBProcessor::separate_(ConstSolutionPtr sol, NodePtr node,
 }
 
 
-void ParPCBProcessor::setCutManager(ParCutMan* cutman)
+void ParPCBProcessor::setCutManager(CutManager* cutman)
 {
   cutMan_ = cutman;
 }
@@ -395,6 +395,8 @@ bool ParPCBProcessor::shouldPrune_(NodePtr node, double solval,
                                  << "violated in node " << node->getId()
                                  << std::endl;
      ++stats_.prob;
+     // This comment silences g++ warnings
+     // fall through
    case (ProvenInfeasible):
    case (ProvenLocalInfeasible):
      node->setStatus(NodeInfeasible);
@@ -444,6 +446,8 @@ bool ParPCBProcessor::shouldPrune_(NodePtr node, double solval,
                                  << "continuing in node " << node->getId()
                                  << std::endl;
      // continue with this node by following ProvenLocalOptimal case.
+     // This comment silences g++ warnings
+     // fall through
    case (ProvenLocalOptimal):
    case (ProvenOptimal):
      node->setLb(solval);

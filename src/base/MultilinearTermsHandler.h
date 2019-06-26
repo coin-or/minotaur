@@ -20,8 +20,6 @@
 
 namespace Minotaur {
 
-//typedef boost::shared_ptr<const Problem> ConstProblemPtr;
-//typedef boost::shared_ptr<const Variable> ConstVariablePtr;
 
 // These should maybe go in Terms.h and be public -- they seem pretty generic
 typedef std::set<ConstVariablePtr> SetOfVars;
@@ -87,8 +85,8 @@ private:
 };
 
 
-typedef boost::shared_ptr<Hypergraph> HypergraphPtr;
-typedef boost::shared_ptr<const Hypergraph> HypergraphConstPtr;
+typedef Hypergraph* HypergraphPtr;
+typedef const Hypergraph* HypergraphConstPtr;
 
 /** A MultilinearTermsHandler handles all (single) multilinear term
  * constraints
@@ -298,8 +296,8 @@ private:
   void weightedDegreeHeuristic_();
 
 };
-typedef boost::shared_ptr<MultilinearTermsHandler> MultilinearTermsHandlerPtr;
-typedef boost::shared_ptr<const MultilinearTermsHandler> MultilinearConstHandlerPtr;
+typedef MultilinearTermsHandler* MultilinearTermsHandlerPtr;
+typedef const MultilinearTermsHandler* MultilinearConstHandlerPtr;
 
 }
 #endif

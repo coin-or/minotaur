@@ -20,10 +20,8 @@ namespace Minotaur {
 
 class MultilinearTermsHandler;
 class MonomialFunction;
-class Variable;
-typedef boost::shared_ptr<MonomialFunction> MonomialFunPtr;
-typedef boost::shared_ptr<MultilinearTermsHandler> MultilinearTermsHandlerPtr;
-typedef boost::shared_ptr<Variable> VariablePtr;
+typedef MonomialFunction* MonomialFunPtr;
+typedef MultilinearTermsHandler* MultilinearTermsHandlerPtr;
 
 
 class YEqMonomial

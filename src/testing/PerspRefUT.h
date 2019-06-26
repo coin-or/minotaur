@@ -38,6 +38,8 @@ public:
 
 private:
   CGraph* cg_;
+  VariablePtr x_;
+  VariablePtr y_;
   VariablePtr z_;
 
 };

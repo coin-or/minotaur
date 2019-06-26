@@ -24,10 +24,10 @@ namespace Minotaur {
   class   Problem;
   class   Solution;
   class   WarmStart;
-  typedef boost::shared_ptr<Environment> EnvPtr;
-  typedef boost::shared_ptr<Problem> ProblemPtr;
-  typedef boost::shared_ptr<Solution> SolutionPtr;
-  typedef boost::shared_ptr<WarmStart> WarmStartPtr;
+  typedef Environment* EnvPtr;
+  typedef Problem* ProblemPtr;
+  typedef Solution* SolutionPtr;
+  typedef WarmStart* WarmStartPtr;
 
   /// Statistics
   struct CbcStats {
@@ -38,9 +38,6 @@ namespace Minotaur {
   /// The CbcEngine class can be called to solve MILP problems
   class CbcEngine : public MILPEngine {
   public:
-    /// Default constructor.
-    CbcEngine();    
-
     /// Constructor with an environment.
     CbcEngine(EnvPtr env);
 
@@ -116,6 +113,12 @@ namespace Minotaur {
     // Implement Engine::setIterationLimit().
     void setIterationLimit(int limit);
 
+    // base class method
+    void setTimeLimit(double);
+
+    // base class method
+    void setUpperCutoff(double);
+
     /** 
      * Solve the problem that was loaded. Calls resolve() function of Osi.
      * The resolve() function ``smartly'' decides what method of clp should
@@ -170,7 +173,7 @@ namespace Minotaur {
     void load_();
   };
   
-  typedef boost::shared_ptr<CbcEngine> CbcEnginePtr;
+  typedef CbcEngine* CbcEnginePtr;
 }
 
 #endif

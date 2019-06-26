@@ -15,12 +15,12 @@
 #define MINOTAURPCBPROCESSOR_H
 
 #include "NodeProcessor.h"
+#include "Types.h"
 
 namespace Minotaur {
 
   class CutManager;
-  class Problem;
-  typedef boost::shared_ptr<const Problem> ConstProblemPtr;
+  //class Problem;
 
   struct NodeStats {
     UInt bra;    /// Number of times relaxation became infeasible
@@ -176,7 +176,7 @@ namespace Minotaur {
 
   };
 
-  typedef boost::shared_ptr <PCBProcessor> PCBProcessorPtr;
+  typedef PCBProcessor* PCBProcessorPtr;
 
 }
 #endif

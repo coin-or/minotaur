@@ -34,9 +34,9 @@ namespace Minotaur {
   class   IpoptEngine;
   class   Problem;
   class   Timer;
-  typedef boost::shared_ptr<Environment> EnvPtr;
-  typedef boost::shared_ptr<IpoptEngine> IpoptEnginePtr;
-  typedef boost::shared_ptr<Problem> ProblemPtr;
+  typedef Environment* EnvPtr;
+  typedef IpoptEngine* IpoptEnginePtr;
+  typedef Problem* ProblemPtr;
 
   struct IpoptStats {
     UInt calls;     ///< Total number of calls to solve.
@@ -51,8 +51,8 @@ namespace Minotaur {
 
   /// The solution obtained from/for Ipopt.
   class   IpoptSolution;
-  typedef boost::shared_ptr<IpoptSolution> IpoptSolPtr;
-  typedef boost::shared_ptr<const IpoptSolution> ConstIpoptSolPtr;
+  typedef IpoptSolution* IpoptSolPtr;
+  typedef const IpoptSolution* ConstIpoptSolPtr;
 
   class IpoptSolution : public Solution {
   public:
@@ -106,8 +106,8 @@ namespace Minotaur {
 
 
   class IpoptWarmStart;
-  typedef boost::shared_ptr<IpoptWarmStart> IpoptWarmStartPtr;
-  typedef boost::shared_ptr<const IpoptWarmStart> ConstIpoptWarmStartPtr;
+  typedef IpoptWarmStart* IpoptWarmStartPtr;
+  typedef const IpoptWarmStart* ConstIpoptWarmStartPtr;
 
   /// Class for saving and using Warm-start information in Ipopt.
   class IpoptWarmStart : public WarmStart {
@@ -153,9 +153,6 @@ namespace Minotaur {
   public:
 
     friend class Problem;
-
-    /// Default constructor
-    IpoptEngine();
 
     /// Default constructor
     IpoptEngine(EnvPtr env);

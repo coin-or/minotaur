@@ -18,8 +18,8 @@ namespace Minotaur {
 
   class   Solution;
   class   PreMod;
-  typedef boost::shared_ptr<PreMod> PreModPtr;
-  typedef boost::shared_ptr<Solution> SolutionPtr;
+  typedef PreMod* PreModPtr;
+  typedef Solution* SolutionPtr;
   typedef std::deque<PreModPtr> PreModQ;
   typedef PreModQ::iterator PreModQIter;
   typedef PreModQ::const_iterator PreModQConstIter;
@@ -135,7 +135,7 @@ namespace Minotaur {
 
   };
 
-  typedef boost::shared_ptr<Presolver> PresolverPtr;
+  typedef Presolver* PresolverPtr;
 }
 #endif
 

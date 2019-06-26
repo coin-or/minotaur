@@ -17,12 +17,12 @@
 
 #include "Problem.h"
 #include "Solution.h"
+#include "Types.h"
 
 namespace Minotaur {
 
   class Environment;
   class Timer;
-  typedef boost::shared_ptr<Environment> EnvPtr;
 
   class SolutionPool {
   public:
@@ -34,6 +34,9 @@ namespace Minotaur {
 
     /// Add Solution to the pool
     void addSolution(ConstSolutionPtr);
+
+    /// Save the root relaxation solution
+    //void setRootSolution(ConstSolutionPtr);
 
     /// Get number of solutions in the pool
     UInt getNumSols() const;
@@ -62,8 +65,17 @@ namespace Minotaur {
      */
     SolutionPtr getBestSolution();
 
+    /**
+     * Get a solution with the best objective function value. Return NULL if
+     * the pool is empty.
+     */
+    //SolutionPtr getRootSolution();
+
     /// Get the best objective function value
     double getBestSolutionValue() const;
+
+    /// Get the best objective function value
+    //double getRootSolutionValue() const;
 
     /// Write statistics to the outstream.
     void writeStats(std::ostream &out) const; 
@@ -77,6 +89,12 @@ namespace Minotaur {
      * the most recently found one.
      */
     SolutionPtr bestSolution_;
+
+    /**
+     * The best solution in terms of objective function value. In case of tie,
+     * the most recently found one.
+     */
+    //SolutionPtr rootSolution_;
 
     /// For logging.
     const static std::string me_;
@@ -101,7 +119,7 @@ namespace Minotaur {
 
   };
 
-  typedef boost::shared_ptr<SolutionPool> SolutionPoolPtr;
+  typedef SolutionPool* SolutionPoolPtr;
 }
 #endif
 

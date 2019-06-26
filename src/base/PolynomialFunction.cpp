@@ -225,7 +225,6 @@ void MonomialFunction::evalGradient(const double *x, double *grad_f,
                                     int *error) 
 {
   double prod;
-  VariablePtr v;
 
   *error = 0;
   for (VarIntMapConstIterator it=terms_.begin(); it!=terms_.end(); ++it) {
@@ -332,13 +331,13 @@ PolynomialFunction::cloneWithVars(VariableConstIterator vbeg, int *err) const
   PolyFunPtr p = (PolyFunPtr) new PolynomialFunction();
   MonomialFunPtr m2;
   for (MonomialConstIter it = terms_.begin(); it!=terms_.end(); ++it) {
-    m2 = boost::dynamic_pointer_cast <MonomialFunction> 
+    m2 = dynamic_cast <MonomialFunction*> 
       ((*it)->cloneWithVars(vbeg, err));
     p->terms_.push_back(m2);
   }
   p->cb_   = cb_;
   if (cg_) {
-    p->cg_ = boost::dynamic_pointer_cast<CGraph> (cg_->cloneWithVars(vbeg, err));
+    p->cg_ = dynamic_cast<CGraph*> (cg_->cloneWithVars(vbeg, err));
     // hack 
     p->cg_->getVars(&(p->vars_));
   }
@@ -713,38 +712,12 @@ void PolynomialFunction::write(std::ostream &out) const
 }
 
 
-void PolynomialFunction::operator+=(ConstMonomialFunPtr m)
-{
-  add(m);
-}
-
-
-void PolynomialFunction::operator+=(ConstPolyFunPtr p)
-{
-  if (p) {
-    MonomialFunPtr m2;
-    for (MonomialConstIter it = p->terms_.begin(); it!=p->terms_.end(); ++it) {
-      m2 = (*it)->clone();
-      terms_.push_back(m2);
-    }
-    cb_ += p->cb_;
-  }
-}
-
-
-void PolynomialFunction::operator*=(double c)
-{
-  multiply(c);
-}
-
-
-void PolynomialFunction::operator+=(double c)
+void PolynomialFunction::add(const double c)
 {
   cb_ += c;
 }
 
-
-void PolynomialFunction::operator+=(ConstLinearFunctionPtr lf)
+void PolynomialFunction::add(ConstLinearFunctionPtr lf)
 {
   if (lf) {
     MonomialFunPtr m;
@@ -757,63 +730,75 @@ void PolynomialFunction::operator+=(ConstLinearFunctionPtr lf)
   }
 }
 
-
-void PolynomialFunction::operator-=(ConstLinearFunctionPtr lf)
+void PolynomialFunction::add(ConstQuadraticFunctionPtr qf)
 {
-  if (lf) {
-    MonomialFunPtr m;
-    for (VariableGroupConstIterator it=lf->termsBegin(); it!=lf->termsEnd();
-        ++it) {
-      m = (MonomialFunPtr) new MonomialFunction(1.);
-      m->multiply(-1*(it->second), it->first, 1);
-      terms_.push_back(m);
+    if (qf) {
+        MonomialFunPtr m;
+        for (VariablePairGroupConstIterator it=qf->begin(); it!=qf->end(); ++it) {
+            m = (MonomialFunPtr) new MonomialFunction(it->second);
+            m->multiply(1, it->first.first, 1);
+            m->multiply(1, it->first.second, 1);
+            terms_.push_back(m);
+        }
     }
+}
+
+
+void PolynomialFunction::add(ConstPolyFunPtr p)
+{
+  if (p) {
+    MonomialFunPtr m2;
+    for (MonomialConstIter it = p->terms_.begin(); it!=p->terms_.end(); ++it) {
+      m2 = (*it)->clone();
+      terms_.push_back(m2);
+    }
+    cb_ += p->cb_;
   }
 }
 
 
-void  PolynomialFunction::operator +=(ConstQuadraticFunctionPtr qf)
-{
-  if (qf) {
-    MonomialFunPtr m;
-    for (VariablePairGroupConstIterator it=qf->begin(); it!=qf->end(); ++it) {
-      m = (MonomialFunPtr) new MonomialFunction(it->second);
-      m->multiply(1, it->first.first, 1);
-      m->multiply(1, it->first.second, 1);
-      terms_.push_back(m);
-    }
-  }
-}
+
+//PolyFunPtr  PolynomialFunction::copyMinus(ConstLinearFunctionPtr lf)
+//{
+//  if (lf) {
+//    MonomialFunPtr m;
+//    for (VariableGroupConstIterator it=lf->termsBegin(); it!=lf->termsEnd();
+//        ++it) {
+//      m = (MonomialFunPtr) new MonomialFunction(1.);
+//      m->multiply(-1*(it->second), it->first, 1);
+//      terms_.push_back(m);
+//    }
+//  }
+//}
+
+//void PolynomialFunction::multiply(ConstLinearFunctionPtr lf)
+//{
+//  if (lf) {
+//    MonomialFunPtr m;
+//    MonomialVector terms2 = terms_;
+//    terms_.clear();
+//    for (VariableGroupConstIterator it=lf->termsBegin(); it!=lf->termsEnd();
+//        ++it) {
+//      for (MonomialConstIter it2 = terms2.begin(); it2!=terms2.end(); ++it2) {
+//        m = (*it2)->clone();
+//        m->multiply(it->second, it->first, 1);
+//        terms_.push_back(m);
+//      }
+//      if (fabs(cb_)>eTol_) {
+//        m = (MonomialFunPtr) new MonomialFunction(cb_);
+//        m->multiply(it->second, it->first, 1);
+//        terms_.push_back(m);
+//      }
+//    }
+//    terms2.clear();
+//  } else {
+//    clear_();
+//  }
+//  cb_ = 0;
+//}
 
 
-void PolynomialFunction::operator*=(ConstLinearFunctionPtr lf)
-{
-  if (lf) {
-    MonomialFunPtr m;
-    MonomialVector terms2 = terms_;
-    terms_.clear();
-    for (VariableGroupConstIterator it=lf->termsBegin(); it!=lf->termsEnd();
-        ++it) {
-      for (MonomialConstIter it2 = terms2.begin(); it2!=terms2.end(); ++it2) {
-        m = (*it2)->clone();
-        m->multiply(it->second, it->first, 1);
-        terms_.push_back(m);
-      }
-      if (fabs(cb_)>eTol_) {
-        m = (MonomialFunPtr) new MonomialFunction(cb_);
-        m->multiply(it->second, it->first, 1);
-        terms_.push_back(m);
-      }
-    }
-    terms2.clear();
-  } else {
-    clear_();
-  }
-  cb_ = 0;
-}
-
-
-void PolynomialFunction::operator*=(ConstQuadraticFunctionPtr qf)
+void PolynomialFunction::multiply(ConstQuadraticFunctionPtr qf)
 {
   if (qf) {
     MonomialFunPtr m;
@@ -839,7 +824,7 @@ void PolynomialFunction::operator*=(ConstQuadraticFunctionPtr qf)
 }
 
 
-void PolynomialFunction::operator*=(ConstPolyFunPtr p2)
+void PolynomialFunction::multiply(ConstPolyFunPtr p2)
 {
   if (p2) {
     double c2 = p2->cb_;
@@ -880,117 +865,81 @@ void PolynomialFunction::operator*=(ConstPolyFunPtr p2)
 }
 
 
-namespace Minotaur {
-PolyFunPtr operator+(ConstPolyFunPtr p1, ConstPolyFunPtr p2)
+PolyFunPtr PolynomialFunction::copyAdd(ConstPolyFunPtr p2) const
 {
   PolyFunPtr p = PolyFunPtr();  //NULL
-  if (!p1 && !p2) {
+  if (!p2) {
     // do nothing.
-  } else if (!p1) {
-    p = p2->clone();
   } else if (!p2) {
-    p = p1->clone();
+    p = this->clone();
   } else {
-    p = p1->clone();
-    (*p) += p2;
+    p = this->clone();
+    p->add(p2);
   }
   return p;
 }
 
 
-PolyFunPtr operator-(ConstPolyFunPtr p1, ConstPolyFunPtr p2)
-{
-  PolyFunPtr p = PolyFunPtr();  //NULL
-  if (!p1 && !p2) {
-    // do nothing.
-  } else if (!p1) {
-    p = p2->clone();
-    (*p) *= -1;
-  } else if (!p2) {
-    p = p1->clone();
-  } else {
-    p = p2->clone();
-    (*p) *= -1;
-    (*p) += p1;
-  }
-  return p;
-}
+//PolyFunPtr operator-(ConstPolyFunPtr p1, ConstPolyFunPtr p2)
+//{
+//  PolyFunPtr p = PolyFunPtr();  //NULL
+//  if (!p1 && !p2) {
+//    // do nothing.
+//  } else if (!p1) {
+//    p = p2->clone();
+//    (*p) *= -1;
+//  } else if (!p2) {
+//    p = p1->clone();
+//  } else {
+//    p = p2->clone();
+//    (*p) *= -1;
+//    (*p) += p1;
+//  }
+//  return p;
+//}
 
 
-PolyFunPtr operator*(double c, ConstPolyFunPtr p2)
+PolyFunPtr PolynomialFunction::copyMult(double c) 
 {
-  PolyFunPtr p = PolyFunPtr(); // NULL
-  if (p2 && fabs(c)>p2->eTol_) {
+  PolyFunPtr p = 0; // NULL
+  if ( fabs(c)>this->eTol_) {
     LinearFunctionPtr lf = LinearFunctionPtr(); // NULL
-    p = p2->clone();
+    p = this->clone();
     p->multiply(lf, c);
   }
   return p;
 }
 
-
-PolyFunPtr operator*(ConstQuadraticFunctionPtr q2, ConstLinearFunctionPtr l1)
+PolyFunPtr PolynomialFunction::copyMult(ConstLinearFunctionPtr l2) const
 {
   PolyFunPtr p = PolyFunPtr(); // NULL
-  if (l1 && q2) {
-    double c=0.;
-    p = (PolyFunPtr) new PolynomialFunction();
-    (*p) += 1.;
-    (*p) *= q2;
-    p->multiply(l1, c);
+  if (l2) {
+    p = this->clone();
+    p->multiply(l2, 1);
+  }
+  return p;
+}
+
+PolyFunPtr PolynomialFunction::copyMult(ConstQuadraticFunctionPtr q2) const
+{
+  PolyFunPtr p = PolyFunPtr(); // NULL
+  if (q2) {
+    p = this->clone();
+    p->multiply(q2);
   } 
   return p;
 }
 
 
-PolyFunPtr operator*(ConstPolyFunPtr p2, ConstLinearFunctionPtr l1)
+PolyFunPtr PolynomialFunction::copyMult(ConstPolyFunPtr p2) const
 {
   PolyFunPtr p = PolyFunPtr(); // NULL
-  if (l1 && p2) {
+  if (p2) {
     p = p2->clone();
-    (*p) *= l1;
+    p->multiply(this);
   }
   return p;
 }
-
-
-PolyFunPtr operator*(ConstPolyFunPtr p1, ConstQuadraticFunctionPtr q2)
-{
-  PolyFunPtr p = PolyFunPtr(); // NULL
-  if (p1 && q2) {
-    p = p1->clone();
-    (*p) *= q2;
-  }
-  return p;
-}
-
-
-PolyFunPtr operator*(ConstQuadraticFunctionPtr q1, ConstQuadraticFunctionPtr q2)
-{
-  PolyFunPtr p = PolyFunPtr(); // NULL
-  if (q1 && q2) {
-    p = (PolyFunPtr) new PolynomialFunction();
-    (*p) += 1.;
-    (*p) *= q1;
-    (*p) *= q2;
-  }
-  return p;
-}
-
-
-PolyFunPtr operator*(ConstPolyFunPtr p1, ConstPolyFunPtr p2)
-{
-  PolyFunPtr p = PolyFunPtr(); // NULL
-  if (p1 && p2) {
-    p = p1->clone();
-    (*p) *= p2;
-  }
-  return p;
-}
-
-
-} // namespace
-
 
 // Local Variables: 
 // mode: c++ 

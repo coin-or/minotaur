@@ -15,14 +15,13 @@
 #define MINOTAURQPDRELAXER_H
 
 #include "NodeRelaxer.h"
+#include "Types.h"
 
 namespace Minotaur {
 
-  class Engine;
+  //class Engine;
   class Logger;
-  class Problem;
-  typedef boost::shared_ptr<Engine> EnginePtr;
-  typedef boost::shared_ptr<const Problem> ConstProblemPtr;
+  //class Problem;
 
 
   /**
@@ -75,7 +74,7 @@ namespace Minotaur {
 
   };
 
-  typedef boost::shared_ptr <QPDRelaxer> QPDRelaxerPtr;
+  typedef QPDRelaxer* QPDRelaxerPtr;
 }
 #endif
 

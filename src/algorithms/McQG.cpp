@@ -29,7 +29,7 @@
 #include "LPEngine.h"
 #include "MaxFreqBrancher.h"
 #include "MaxVioBrancher.h"
-#include "MINLPDiving.h"
+#include "ParMINLPDiving.h"
 #include "NLPEngine.h"
 #include "NlPresHandler.h"
 #include "Node.h"
@@ -147,6 +147,23 @@ ParQGBranchAndBound* createParBab(EnvPtr env, ProblemPtr p, EnginePtr e,
     relCopy[i]->setProblem(cloneP);
     parNodeRlxr[i]->setModFlag(false);
     parNodeRlxr[i]->setEngine(lpeCopy);
+  }
+  
+  if (options->findBool("pardivheur")->getValue()) {
+    ParMINLPDivingPtr div_heur;
+    if (options->findBool("divheurLP")->getValue()) {
+      RelaxationPtr lp = (RelaxationPtr) new Relaxation(relCopy[0]);
+      //if (true==options->findBool("use_native_cgraph")->getValue()) {
+        lp->setNativeDer();
+      //}
+      div_heur = (ParMINLPDivingPtr) new ParMINLPDiving(env, lp, lin_e->emptyCopy());
+      div_heur->setAltEngine(e->emptyCopy());
+      div_heur->setOrigProb(p);
+    }
+    else {
+      div_heur = (ParMINLPDivingPtr) new ParMINLPDiving(env, p, e->emptyCopy());
+    }
+    bab->addPreRootHeur(div_heur);
   }
 
   delete efac;
@@ -438,7 +455,8 @@ void writeSol(EnvPtr env, VarVector *orig_v,
   if (env->getOptions()->findFlag("AMPL")->getValue() ||
       true == env->getOptions()->findBool("write_sol_file")->getValue()) {
     iface->writeSolution(sol, status);
-  } else if (sol && env->getLogger()->getMaxLevel()>=LogExtraInfo) {
+  } else if (sol && env->getLogger()->getMaxLevel()>=LogExtraInfo &&
+             env->getOptions()->findBool("display_solution")->getValue()) {
     sol->writePrimal(env->getLogger()->msgStream(LogExtraInfo), orig_v);
   }
 }
@@ -525,8 +543,8 @@ int main(int argc, char** argv)
   EnvPtr env      = (EnvPtr) new Environment();
   OptionDBPtr options;
   MINOTAUR_AMPL::AMPLInterface* iface = 0;
-  ProblemPtr oinst;    // instance that needs to be solved.
-  EnginePtr engine;    // engine for solving relaxations. 
+  ProblemPtr oinst;      // instance that needs to be solved.
+  EnginePtr engine = 0;  // engine for solving relaxations. 
   ParQGBranchAndBound * parbab = 0;
   double wallTimeStart = parbab->getWallTime();  //use Timer: to be done!!!
   PresolverPtr pres;
@@ -618,6 +636,9 @@ int main(int argc, char** argv)
   writeParBnbStatus(env, parbab, obj_sense, wallTimeStart);
 
 CLEANUP:
+  if (engine) {
+    delete engine;
+  }
   if (iface) {
     delete iface;
   }

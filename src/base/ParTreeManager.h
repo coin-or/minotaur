@@ -22,8 +22,8 @@ namespace Minotaur {
   
   class ActiveNodeStore;
   class WarmStart;
-  typedef boost::shared_ptr<ActiveNodeStore> ActiveNodeStorePtr;
-  typedef boost::shared_ptr<WarmStart> WarmStartPtr;
+  typedef ActiveNodeStore* ActiveNodeStorePtr;
+  typedef WarmStart* WarmStartPtr;
 
   // 1=like_red, 2=blue, 4=red, 5=yellow, 6=black, 7=pink, 8=cyan, 9=green
   // 11=orange, 12=green, 13=pink, 14=light blue
@@ -239,7 +239,7 @@ namespace Minotaur {
     void removeNode_(NodePtr node);
   };
 
-  typedef boost::shared_ptr<ParTreeManager> ParTreeManagerPtr;
+  typedef ParTreeManager* ParTreeManagerPtr;
 
 }
 #endif

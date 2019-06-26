@@ -74,14 +74,11 @@ void CxQuadHandler::relax_(RelaxationPtr rel, bool *)
 {
   ObjectivePtr oPtr;
   ConstraintConstIterator c_iter;
-  ConstraintPtr cons, sec_cons;
+  ConstraintPtr cons;
 
-  LinearFunctionPtr lf0, lf1, lf;
-  QuadraticFunctionPtr qf, cx_qf0, cx_qf1; 
-  FunctionPtr f;
+  QuadraticFunctionPtr qf; 
 
   std::vector< VariablePtr > psqVars, nsqVars;
-  VariablePtr v0, v1, v;
 
   //problem_->write(std::cout);
   // take care of objective.
@@ -187,14 +184,16 @@ void CxQuadHandler::relaxTwoSided_(QuadraticFunctionPtr qf,
   }
 
   if (cx_qf0->getNumTerms()==0) {
-    cx_qf0.reset();
+    //cx_qf0.reset();
+    cx_qf0 = 0;
   }
   if (cx_qf1->getNumTerms()==0) {
-    cx_qf1.reset();
+    //cx_qf1.reset();
+    cx_qf1 = 0;
   }
 
-  (*lf0) += cons->getLinearFunction();
-  (*lf1) -= cons->getLinearFunction();
+  lf0->add(cons->getLinearFunction());
+  lf1->minus(cons->getLinearFunction());
 
   if (!cx_qf0 && !cx_qf1) {
     // If there are no quadratic terms left, we need to add only one linear
@@ -268,9 +267,10 @@ void CxQuadHandler::relaxOneSided_(QuadraticFunctionPtr qf,
   }
 
   if (cx_qf0->getNumTerms()==0) {
-    cx_qf0.reset();
+    //cx_qf0.reset();
+    cx_qf0 = 0;
   }
-  (*lf0) += cons->getLinearFunction();
+  lf0->minus(cons->getLinearFunction());
   f = (FunctionPtr) new Function(lf0, cx_qf0);
   rel->newConstraint(f, -INFINITY, cons->getUb());
 }
@@ -323,10 +323,11 @@ void CxQuadHandler::relaxObj_(ObjectivePtr obj, RelaxationPtr rel)
     }
   }
   if (cx_qf0->getNumTerms()==0) {
-    cx_qf0.reset();
+    //cx_qf0.reset();
+    cx_qf0 = 0;
   }
   lf1 = obj->getLinearFunction()->cloneWithVars(rel->varsBegin()); 
-  (*lf0) += lf1;
+  lf0->add(lf1);
   f = (FunctionPtr) new Function(lf0, cx_qf0);
   rel->newObjective(f, obj->getConstant(), Minimize);
 }
@@ -688,8 +689,9 @@ ModificationPtr CxQuadHandler::getBrMod(BrCandPtr cand, DoubleVector &xval,
   double            lb, ub, lb1, ub1, b2, rhs=0;
   BoundType         lu;
   ConstraintPtr     cons;
-  BrVarCandPtr      vcand = boost::dynamic_pointer_cast <BrVarCand> (cand);
-  VariablePtr       x0, x1, v, y;
+  //BrVarCandPtr      vcand = boost::dynamic_pointer_cast <BrVarCand> (cand);
+  BrVarCandPtr      vcand = dynamic_cast <BrVarCand*> (cand);
+  VariablePtr       x0, x1, y;
   VarSecantMapIter  s_it;
   LinearFunctionPtr lf;
   McCormickPtr      mcc;
@@ -771,7 +773,8 @@ ModificationPtr CxQuadHandler::getBrMod(BrCandPtr cand, DoubleVector &xval,
 Branches CxQuadHandler::getBranches(BrCandPtr cand, DoubleVector & x,
                                     RelaxationPtr rel, SolutionPoolPtr)
 {
-  BrVarCandPtr vcand = boost::dynamic_pointer_cast <BrVarCand> (cand);
+  //BrVarCandPtr vcand = boost::dynamic_pointer_cast <BrVarCand> (cand);
+  BrVarCandPtr vcand = dynamic_cast <BrVarCand*> (cand);
   VariablePtr v = vcand->getVar();
   VariablePtr v2;
   double value = x[v->getIndex()];
@@ -1018,7 +1021,7 @@ void CxQuadHandler::removeFixedFun_(FunctionPtr f, LinearFunctionPtr lf2,
       qf2->addTerm(v1, v2, -1.*(it->second));
     }
   }
-  (*qf) += qf2;
+  qf->add(qf2);
   if (new_lf==true && lf->getNumTerms()>0) {
     f->add(lf); // lf is cloned and added.
   }
@@ -1109,13 +1112,14 @@ McCormick::McCormick(VariablePtr x0, VariablePtr x1, McCormick::Sense sense)
 
 McCormick::~McCormick() 
 {
-  x0_.reset();
-  x1_.reset();
-  y_.reset();
-  c0_.reset();
-  c1_.reset();
-  c2_.reset();
-  c3_.reset();
+  // Changed: need to delete using different methods 
+  //x0_.reset();
+  //x1_.reset();
+  //y_.reset();
+  //c0_.reset();
+  //c1_.reset();
+  //c2_.reset();
+  //c3_.reset();
 }
 
 

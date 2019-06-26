@@ -14,15 +14,14 @@
 #define MINOTAURPARBNDPROCESSOR_H
 
 #include "NodeProcessor.h"
+#include "Types.h"
 
 namespace Minotaur {
 
-  class Engine;
-  class Problem;
   class Solution;
-  typedef boost::shared_ptr<Engine> EnginePtr;
-  typedef boost::shared_ptr<const Problem> ConstProblemPtr;
-  typedef boost::shared_ptr<const Solution> ConstSolutionPtr;
+  class Engine;
+  typedef Engine* EnginePtr;
+  typedef const Solution* ConstSolutionPtr;
 
   struct ParBPStats {
     UInt bra;    /// Number of times relaxation became infeasible
@@ -145,7 +144,7 @@ namespace Minotaur {
 
   };
 
-  typedef boost::shared_ptr <ParBndProcessor> ParBndProcessorPtr;
+  typedef ParBndProcessor* ParBndProcessorPtr;
 
 }
 #endif

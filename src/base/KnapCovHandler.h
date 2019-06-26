@@ -25,11 +25,10 @@ namespace Minotaur {
 
 // Pointers for knapsack cover cut handler are defined.
 class KnapCovHandler;
-typedef boost::shared_ptr<KnapCovHandler> KnapCovHandlerPtr;
-typedef boost::shared_ptr<const KnapCovHandler> ConstKnapCovHandler;
+typedef KnapCovHandler* KnapCovHandlerPtr;
+typedef const KnapCovHandler* ConstKnapCovHandler;
 
 class Logger;
-typedef boost::shared_ptr<Logger> LoggerPtr;
 
 
 struct KCStats

@@ -115,7 +115,7 @@ private:
   bool isInObj_;
 }; // AMPLNonlinearFunction
 
-typedef boost::shared_ptr<AMPLNonlinearFunction> AMPLNlfPtr;
+typedef AMPLNonlinearFunction* AMPLNlfPtr;
 }  // namespace
 
 #endif

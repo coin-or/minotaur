@@ -26,15 +26,13 @@ namespace Minotaur {
   class QuadraticFunction;
   class PolynomialFunction;
   class Variable;
-  typedef boost::shared_ptr<QuadraticFunction> QuadraticFunctionPtr;
-  typedef boost::shared_ptr<const QuadraticFunction> ConstQuadraticFunctionPtr;
-  typedef boost::shared_ptr<PolynomialFunction> PolyFunPtr;
-  typedef boost::shared_ptr<const LinearFunction> ConstLinearFunctionPtr;
-  typedef boost::shared_ptr<LinearFunction> LinearFunctionPtr;
-  typedef boost::shared_ptr<Variable> VariablePtr;
+  typedef QuadraticFunction* QuadraticFunctionPtr;
+  typedef const QuadraticFunction* ConstQuadraticFunctionPtr;
+  typedef PolynomialFunction* PolyFunPtr;
+  typedef const LinearFunction* ConstLinearFunctionPtr;
+  typedef LinearFunction* LinearFunctionPtr;
 
   //class EigenVector;
-  //typedef boost::shared_ptr<const EigenVector> EigenVectorPtr;
   //typedef std::pair<double, EigenVectorPtr> EigenPair;
 
   class QuadraticFunction {
@@ -95,7 +93,7 @@ namespace Minotaur {
       /*
        * Multiply by a constant. If constant is zero, all terms are removed.
        */
-      void mult(double c);
+      void multiply(double c);
 
       /**
        * Remove a variable v from the function. Add to lf any linear terms
@@ -109,27 +107,24 @@ namespace Minotaur {
        * Add a quadratic function to this quadratic function. Terms that become 
        * zero are not retained in the function.
        */
-      friend QuadraticFunctionPtr operator + (ConstQuadraticFunctionPtr q1, 
-          ConstQuadraticFunctionPtr q2);
+      //friend QuadraticFunctionPtr operator + (const QuadraticFunction q1, 
+      //    const QuadraticFunction q2);
+      QuadraticFunctionPtr copyAdd(ConstQuadraticFunctionPtr q2) const ;  
 
       /**
        * Subtract a linear function from this function. Terms that become zero
        * are still retained in the function.
        */
-      friend QuadraticFunctionPtr operator-(ConstQuadraticFunctionPtr q1, 
-          ConstQuadraticFunctionPtr q2);
+      QuadraticFunctionPtr copyMinus(ConstQuadraticFunctionPtr  q2) const;
 
       /// Multiply a quadratic function with a constant.
-      friend QuadraticFunctionPtr operator*(const double c, 
-          ConstQuadraticFunctionPtr q2);
+      QuadraticFunctionPtr copyMult(double c) const;
 
       /// Multiply a linear function and quadratic function.
-      friend PolyFunPtr operator*(ConstQuadraticFunctionPtr q2, 
-          ConstLinearFunctionPtr l1);
+      PolyFunPtr copyMult(LinearFunctionPtr l1) const;
 
       /// Multiply two quadratics
-      friend PolyFunPtr operator*(ConstQuadraticFunctionPtr q1, 
-          ConstQuadraticFunctionPtr q2);
+      PolyFunPtr copyMult(ConstQuadraticFunctionPtr q2) const;
 
 
       /**
@@ -149,7 +144,7 @@ namespace Minotaur {
        * 
        * The user must check if the left operand is not NULL.
        */
-      void operator+=(ConstQuadraticFunctionPtr q2);
+      void add(ConstQuadraticFunctionPtr q2);
 
       /**
        * Multiply the quadratic with a constant. Same precaution as for +=
@@ -157,7 +152,7 @@ namespace Minotaur {
        * better for the calling routine to check if c is zero, if so, just
        * delete the quadratic.
        */
-      void operator*=(const double c);
+      ///void operator*=(const double c);
 
       /// Get the list of variables and how many times they occur
       VarCountConstMap * getVarMap() const;
