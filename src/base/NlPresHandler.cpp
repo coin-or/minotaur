@@ -24,8 +24,8 @@
 #include "Logger.h"
 #include "Node.h"
 #include "Problem.h"
-#include "VarBoundMod.h"
 #include "NlPresHandler.h"
+#include "VarBoundMod.h"
 #include "NonlinearFunction.h"
 #include "Objective.h"
 #include "Option.h"
@@ -35,6 +35,8 @@
 #include "SolutionPool.h"
 #include "Timer.h"
 #include "Variable.h"
+
+#include "QuadraticFunction.h"
 
 
 using namespace Minotaur;
@@ -95,6 +97,7 @@ void  NlPresHandler::chkRed_(bool *changed)
   ConstraintPtr c;
   LinearFunctionPtr lf;
   NonlinearFunctionPtr nlf;
+  QuadraticFunctionPtr qf;
   double lfu, lfl;
   double nlfu, nlfl;
   int error = 0;
@@ -104,15 +107,25 @@ void  NlPresHandler::chkRed_(bool *changed)
     c = *cit;
     if (c->getFunctionType()!=Linear && c->getFunctionType()!=Constant) {
       lf = c->getFunction()->getLinearFunction();
+
+      qf = c->getFunction()->getQuadraticFunction();
+      
       nlf = c->getFunction()->getNonlinearFunction();
       lfu = lfl = 0.0;
+
       nlfu = nlfl = 0.0;
       if (lf) {
         lf->computeBounds(&lfl, &lfu);
-      }
+      } 
+
       error = 0;
-      nlf->computeBounds(&nlfl, &nlfu, &error);
-      assert(error==0);
+      if (qf) {
+        qf->computeBounds(&nlfl, &nlfu);
+      } else if (nlf) {
+        nlf->computeBounds(&nlfl, &nlfu, &error);
+        assert(error==0);
+      }
+
       if (c->getLb()>-INFINITY && nlfl+lfl-eTol_ > c->getLb()) {
         p_->changeBound(c, Lower, -INFINITY);
         *changed = true;
@@ -144,6 +157,7 @@ void  NlPresHandler::coeffImpr_(bool *changed)
   ConstraintPtr c;
   LinearFunctionPtr lf;
   NonlinearFunctionPtr nlf;
+  QuadraticFunctionPtr qf;
   double ll, uu;
   double cu, cl;
   double a0;
@@ -167,17 +181,28 @@ void  NlPresHandler::coeffImpr_(bool *changed)
       continue;
     }
     nlf   = c->getFunction()->getNonlinearFunction();
+    qf   = c->getFunction()->getQuadraticFunction();
     cu = c->getUb();
     cl = c->getLb();
     for (VariableGroupConstIterator it2=lf->termsBegin();
          it2 != lf->termsEnd(); ++it2) {
       z = it2->first;
       a0 = it2->second;
-      if ((z->getType()!=Binary && z->getType()!=ImplBin)
+      if (nlf){
+        if ((z->getType()!=Binary && z->getType()!=ImplBin)
+            || fabs(z->getUb()-z->getLb()-1) > eTol_
+            || p_->isMarkedDel(z)
+            || nlf->hasVar(z)) {
+          continue;
+        }
+      }
+      if (qf){
+        if ((z->getType()!=Binary && z->getType()!=ImplBin)
           || fabs(z->getUb()-z->getLb()-1) > eTol_
           || p_->isMarkedDel(z)
-          || nlf->hasVar(z)) {
+          || qf->hasVar(z)) {
         continue;
+        }
       }
       computeImpBounds_(c, z, 0.0, &ll, &uu);
       if (uu < cu-eTol_ && uu+a0 >= cu) {
@@ -520,6 +545,8 @@ void  NlPresHandler::computeImpBounds_(ConstraintPtr c, VariablePtr z,
   double l1, u1, a2, b2;
   ConstraintPtr c2;
   LinearFunctionPtr lf, lf2;
+  NonlinearFunctionPtr nlf;
+  QuadraticFunctionPtr qf;
   ModStack mods;
   VarBoundModPtr m;
   ModificationPtr m2;
@@ -577,7 +604,14 @@ void  NlPresHandler::computeImpBounds_(ConstraintPtr c, VariablePtr z,
     }
   }
   c->getFunction()->getLinearFunction()->computeBounds(&ll, &uu);
-  c->getFunction()->getNonlinearFunction()->computeBounds(&l1, &u1, &error);
+  nlf = c->getFunction()->getNonlinearFunction();
+  if (nlf){
+    nlf->computeBounds(&l1, &u1, &error);
+  }
+  qf = c->getFunction()->getQuadraticFunction();
+  if (qf){
+    qf->computeBounds(&l1, &u1);
+  }
   ll += l1;
   uu += u1;
   *lb = ll;
@@ -904,28 +938,601 @@ void NlPresHandler::quadConeRef_(ProblemPtr p, PreModQ *, bool *changed)
 }
 
 
+
+
+
+
+
+void NlPresHandler::quad_bound(VariablePtr v, double a,double b, double *l,
+                                     double *u){
+  double s;
+  double t;
+  double r;
+  double etol = 1e-7;
+
+  if (a == 0){
+    *u = std::max({v->getLb()*(b+etol), v->getUb()*(b+etol)});
+    *l = std::min({v->getLb()*(b+etol), v->getUb()*(b+etol)});
+  }
+  else {
+    *u = std::max({v->getLb()*(a*v->getLb()+b), v->getUb()*(a*v->getUb()+b)});
+    *l = std::min({v->getLb()*(a*v->getLb()+b), v->getUb()*(a*v->getUb()+b)});
+
+    if(a < 0){
+      if (v->getLb() == INFINITY){
+        *l = -INFINITY;
+      }
+    }
+
+    s = b/2;
+    t = s/(-a);
+    if (t > v->getLb()){
+      r = -2*a*v->getUb();
+      if (r < b){
+        if (a < 0){
+          *u = s*t;
+        }
+        else{
+          *l = s*t;
+        }
+      }
+    }
+  }
+ }
+
+                                     
+                                     
+                                     
+
+
+void NlPresHandler::quad_bound_range(VariablePtr v, double a,double blb, double bub, double *l,
+                                     double *u){
+  double llb;
+  double lub;
+  double ulb;
+  double uub;
+
+  quad_bound(v, a, blb,  &llb, &lub);
+  quad_bound(v, a, bub,  &ulb, &uub);
+  *l = std::min({llb, ulb});
+  *u = std::max({lub, uub});
+ }
+
+
+
+
+                                     
+void NlPresHandler::x_bound_with_c(double a,double b,double c, double *l,
+                                     double *u, double *l2){
+  double delta;
+  double xl = -INFINITY;
+  double xu = INFINITY;
+
+  b = b/2;
+  delta = b*b + a*c;
+  
+
+
+  if (b >= 0){
+    if (c > 0){
+      if (delta < 0){
+        xl = INFINITY;
+      }
+      else if (a == 0 && b ==0){
+        xl = INFINITY;
+        }
+      
+      else{
+        if (a > 0){
+          xl = (-b + sqrt(delta))/a;
+          *l2 = (-b - sqrt(delta))/a;
+          }
+        if (a < 0){
+          xu = (-b - sqrt(delta))/a;
+          xl = (-b + sqrt(delta))/a;
+          } 
+        }
+      
+    }
+    else{
+      if (a < 0){
+        xu = (-b - sqrt(delta))/a;
+        xl = (-b + sqrt(delta))/a;
+      }
+      if (a > 0){
+        if(delta >= 0){
+          xl = (-b + sqrt(delta))/a;
+          *l2 = (-b - sqrt(delta))/a;
+
+        }
+
+        
+      }
+    }
+  }
+  else{
+    if (c > 0){
+      if (a > 0){
+        xl = (-b + sqrt(delta))/a;
+        *l2 = (-b - sqrt(delta))/a;
+      }
+      else if (a < 0){
+        if(delta >= 0){
+          xl = (-b + sqrt(delta))/a;
+          xu = (-b - sqrt(delta))/a;
+        }
+        else{
+          xl = INFINITY;
+        }
+      }
+    }
+    else {
+      if(a<0){
+        xu = (-b - sqrt(delta))/a;
+        xl = (-b + sqrt(delta))/a;
+      }
+      if (delta >= 0){
+        if (a > 0){
+          xl = (-b + sqrt(delta))/a;
+          *l2 = (-b + sqrt(delta))/a;
+        }
+      
+      }
+    }
+  }
+
+  
+  if (c == INFINITY){
+    xl = -INFINITY;
+    xu = INFINITY;
+
+  }
+
+  if (a == 0){
+    if (b > 0){
+      xl = c/(2*b);
+    }
+    if (b < 0){
+      xu = c/(2*b);
+    }
+  }
+
+  *l = xl;
+  *u = xu;
+
+
+}  
+  
+
+
+
+void NlPresHandler::linear_var_set(VariableSet lfvars, FunctionPtr f, VariableSet *linear_terms){
+  
+  VariablePtr v;
+  
+  for (VariableSet::iterator it = lfvars.begin(); it != lfvars.end(); ++it){
+    v=*it;
+    if (f->isLinearIn(v)==true){
+      linear_terms->insert(v);
+    }
+  }
+
+}
+
+
+
+void NlPresHandler::get_other_linear_var_bounds(VariablePtr v, double *lflb, double *lfub, 
+                                          VariableSet linear_terms, LinearFunctionPtr lf){
+  VariablePtr v2;
+  double a = 0;
+  double lb = 0;
+  double ub = 0;
+  for (VariableSet::iterator it = linear_terms.begin(); it != linear_terms.end(); ++it){
+    v2 = *it;
+    if (v2 != v){
+      a = lf->getWeight(v2);
+      if (a>0) {
+        lb += a*v2->getLb();
+        ub += a*v2->getUb();
+      } else {
+        lb += a*v2->getUb();
+        ub += a*v2->getLb();
+      }
+
+    }
+  }
+  *lflb = lb;
+  *lfub = ub;
+}
+
+
+
+
+
+void NlPresHandler::get_other_quad_var_bounds(VariablePtr v, double *qflb, double *qfub, VariableSet qfvars,
+                                        QuadraticFunctionPtr qf, LinearFunctionPtr lf){
+  VariablePtr v2;
+  double lb = 0;
+  double ub = 0;
+  double a = 0;
+  double blb = 0;
+  double bub = 0;
+  
+
+  for (VariableSet::iterator it = qfvars.begin(); it != qfvars.end(); ++it){
+    v2 = *it;
+    if (v2 != v){
+
+      a = qf->getWeight(v2, v2);
+      qf->bndsquadterms_2(&blb, &bub, v2, v);
+      blb += lf->getWeight(v2);
+      bub += lf->getWeight(v2);
+
+      quad_bound_range(v2, a, blb, bub, &lb, &ub);
+      *qflb += lb;
+      *qfub += ub;
+
+    }
+
+
+  }
+
+
+
+}
+
+
+
+
+void NlPresHandler::bilinear_bounds(VariablePtr v, double *qflb1, double *qfub1, VariableSet qfvars,
+                                        QuadraticFunctionPtr qf){
+
+  VariablePtr v3;
+  double a = 0;
+  double b = 0;
+  *qflb1 = 0;
+  *qfub1 = 0;
+  
+
+  for (VariableSet::iterator it = qfvars.begin(); it != qfvars.end(); ++it){
+    v3 = *it; 
+    if (v3->getIndex() != v->getIndex()){
+      if(qf->getWeight(v, v3) == 0){
+        a=0;
+        b=0;
+      }
+      else{
+        a = (qf->getWeight(v, v3))*v3->getLb();
+        b = (qf->getWeight(v, v3))*v3->getUb();
+      }
+      
+      
+      *qflb1 += std::min({a,b});
+      *qfub1 += std::max({a,b});
+    }
+
+
+  }
+
+}
+
+
+
+
+
+
+void NlPresHandler::lin_var_bound(VarBoundModVector lfmod, LinearFunctionPtr lf, QuadraticFunctionPtr qf, 
+                                VariableSet qfvars,  VariableSet linear_terms, double cl, double cu, int &change){
+
+  double lflb = 0;
+  double lfub = 0;
+  double qflb = 0;
+  double qfub = 0;
+  double qflb1 = 0;
+  double qfub1 = 0;
+  double lvlb = 0;
+  double lvub = 0;
+
+  double a = 0;
+  double blb = 0;
+  double bub = 0;
+  change = 0;
+
+  VariablePtr v;
+  VariablePtr v2;
+  ConstraintPtr c;
+
+  VariableSet::iterator it2;
+
+  for (VariableSet::iterator it = qfvars.begin(); it != qfvars.end(); ++it){
+    v = *it;
+
+      blb = 0;
+      bub = 0;
+
+      a = qf->getWeight(v,v);
+      bilinear_bounds(v, &blb, &bub, qfvars,qf);
+      blb += lf->getWeight(v);
+      bub += lf->getWeight(v);
+      quad_bound_range(v, a, blb, bub, &qflb1, &qfub1);
+      qflb += qflb1;
+      qfub += qfub1;
+      
+    }
+
+  for (VariableSet::iterator it = linear_terms.begin(); it != linear_terms.end(); ++it){
+    v = *it;
+
+    get_other_linear_var_bounds(v, &lflb, &lfub, linear_terms, lf);
+
+    if (lf->getWeight(v) > 0){
+      lvlb = (cl - lfub - qfub)/(lf->getWeight(v));
+      lvub = (cu - lflb - qflb)/(lf->getWeight(v));
+    }
+
+    if (lf->getWeight(v) < 0){
+      lvub = (cl - lfub - qfub)/(lf->getWeight(v));
+      lvlb = (cu - lflb - qflb)/(lf->getWeight(v));
+    }
+  
+    if (lvlb > v->getLb()) {
+      lfmod.push_back((VarBoundModPtr) new VarBoundMod(v, Lower, lvlb));
+    }
+    if (lvub < v->getUb()) {
+      lfmod.push_back((VarBoundModPtr) new VarBoundMod(v, Upper, lvub));
+    }
+     
+  }
+
+
+  if (false==lfmod.empty()) {
+    for (VarBoundModVector::iterator it=lfmod.begin(); it!=lfmod.end(); ++it) {
+      (*it)->applyToProblem(p_);
+      ++stats_.vBnd;
+      
+    }
+    change = 1;
+}
+
+}
+
+
+
+
+
+void NlPresHandler::quad_var_bound(VarBoundModVector qfmod, LinearFunctionPtr lf, QuadraticFunctionPtr qf, 
+                                  VariableSet qfvars,  VariableSet linear_terms, double cl, double cu,
+                                  int &change){
+
+  VariablePtr v;
+  VariablePtr v2;
+  ConstraintPtr c;
+
+  double lflb = 0;
+  double lfub = 0;
+
+  change = 0;
+  
+  for (VariableSet::iterator it = linear_terms.begin(); it != linear_terms.end(); ++it){
+    v = *it;
+    lflb += std::min({lf->getWeight(v)*v->getLb(), lf->getWeight(v)*v->getUb()});
+    lfub += std::max({lf->getWeight(v)*v->getLb(), lf->getWeight(v)*v->getUb()});
+  }
+
+  for (VariableSet::iterator it = qfvars.begin(); it != qfvars.end(); ++it){
+    v = *it;
+   
+    double qflb = 0;
+    double qfub = 0;
+    double qvlb = 0;
+    double qvub = 0;
+
+    double a = 0;
+    double blb = 0;
+    double bub = 0;
+    double clb = 0;
+    double cub = 0;
+
+    double w = 0;
+    double x = 0;
+    double y = 0;
+    double z = 0;
+
+    double lbu1 = -INFINITY;
+    double ubu1 = INFINITY;
+    double lbul1 = -INFINITY;
+ 
+    double lbu2 = -INFINITY;
+    double ubu2 = INFINITY;
+    double lbul2 = -INFINITY;
+
+    get_other_quad_var_bounds(v, &qflb, &qfub, qfvars, qf, lf);
+
+    w = cl - lflb - qflb;
+    x = cl - lfub - qfub;
+    y = cu - lflb - qflb;
+    z = cu - lfub - qfub;
+    clb = std::min({w,x,y,z});
+    cub = std::max({w,x,y,z});
+    a = qf->getWeight(v, v);
+    qf->bndsquadterms(&blb, &bub, v);
+    
+
+    blb += lf->getWeight(v);
+    bub += lf->getWeight(v);
+
+
+    x_bound_with_c(a, bub, clb, &lbu1, &ubu1, &lbul1);
+
+    if (a>0 && bub>=0 && clb>0 && v->getLb()<lbul1){
+      lbu1 = -INFINITY;
+    }
+
+    if (a>0 && bub>=0 && clb<0 && v->getLb()<lbul1){
+      lbu1 = -INFINITY;
+    }
+    
+    if (a>0 && bub<0 && clb>0 && v->getLb()<lbul1){
+      lbu1 = -INFINITY;
+    }
+
+    if (a>0 && bub<0 && clb<0 && v->getLb()<lbul1){
+      lbu1 = -INFINITY;
+    }
+
+
+    x_bound_with_c(-a, -blb, -cub, &lbu2, &ubu2, &lbul2);
+
+    if (-a>0 && -blb>=0 && -cub>0 && v->getLb()<lbul2){
+      lbu2 = -INFINITY;
+    }
+
+    if (-a>0 && -blb>=0 && -cub<0 && v->getLb()<lbul1){
+      lbu1 = -INFINITY;
+    }
+
+    if (-a>0 && -blb<0 && -cub>0 && v->getLb()<lbul2){
+      lbu2 = -INFINITY;
+    }
+
+    if (-a>0 && -blb<0 && -cub<0 && v->getLb()<lbul1){
+      lbu1 = -INFINITY;
+    }    
+
+  qvlb = std::max({lbu1, lbu2});
+  qvub = std::min({ubu1,ubu2});
+
+   
+  if (qvlb > v->getLb()) {
+      qfmod.push_back((VarBoundModPtr) new VarBoundMod(v, Lower, qvlb));
+    }
+    if (qvub < v->getUb()) {
+      qfmod.push_back((VarBoundModPtr) new VarBoundMod(v, Upper, qvub));
+    }
+  
+  }
+
+  if (false==qfmod.empty()) {
+      for (VarBoundModVector::iterator it=qfmod.begin(); it!=qfmod.end(); ++it) {
+        (*it)->applyToProblem(p_);
+        ++stats_.vBnd;
+      }
+    change = 1;
+
+    }
+
+  
+}
+
+
+
+
 SolveStatus NlPresHandler::varBndsFromCons_(bool *changed)
 {
   ConstraintPtr c;
   LinearFunctionPtr lf;
   NonlinearFunctionPtr nlf;
+  FunctionPtr f;
+
+  QuadraticFunctionPtr qf;
+  
   double lfu, lfl, ub, lb;
+  double ub1, lb1, ub2, lb2, ubc, lbc;
   VarBoundModVector mods;
+  int change1 = 0;
+  int change2 = 0;
+
+  
+  VarBoundModVector lfmod;
+  VarBoundModVector qfmod;
+  
+
+  VariableSet lfvars;
+  VariableSet qfvars;
+  VariableSet linear_terms;
+
   SolveStatus status = Started;
 
   for (ConstraintConstIterator cit=p_->consBegin(); cit!=p_->consEnd();
        ++cit) {
     c = *cit;
+    
+    // std::cout<<"Constraint no. =============="<< c->getName()<<"\n";
+
     if (c->getFunctionType()!=Linear && c->getFunctionType()!=Constant) {
       lf = c->getFunction()->getLinearFunction();
+
+      qf = c->getFunction()->getQuadraticFunction();
+      f = c->getFunction();
+      
       nlf = c->getFunction()->getNonlinearFunction();
+
+
       lfu = lfl = 0.0;
-      if (lf) {
-        lf->computeBounds(&lfl, &lfu);
+
+      if (qf){
+        // VariableSet lfvars;
+        // VariableSet qfvars;
+        // VariableSet linear_terms;
+
+        // lf->getVars(&lfvars);
+        // qf->getVars(&qfvars);
+        
+        // //linear_terms = std::set_difference(lfvars.begin(), lfvars.end(), qfvars.begin(), qfvars.end());
+
+        // //linear variable bounds
+
+
+        ubc = c->getUb();
+        lbc = c->getLb();
+        // std::cout<<"ccccccccccccll"<<lb<<"\n";
+        // std::cout<<"ccccccccccccuu"<<ub<<"\n";
+        qf->computeBounds(&lb1, &ub1);
+        lf->computeBounds(&lb2, &ub2);
+
+        ub = std::min({ubc, ub1 + ub2});
+        lb = std::max({lbc, lb1+lb2});
+        // std::cout<<"cons__bounduuubbb"<<ub<<"\n";
+        // std::cout<<"cons_boundlllllbb"<<lb<<"\n";
+      
+        lf->getVars(&lfvars);
+        qf->getVars(&qfvars);
+        linear_var_set(lfvars, f, &linear_terms);
+        
+        lin_var_bound(lfmod, lf, qf, qfvars, linear_terms, lb, ub, change1);
+        quad_var_bound(qfmod, lf, qf, qfvars,  linear_terms, lb, ub,  change2);
+        //std::cout<<"kkkkkkkkkkkk============"<<qfmod.empty();
+        // std::cout<<"change1"<<change1<<"\n";
+        // std::cout<<"change2"<<change2<<"\n";
+        if (change1 == 1 || change2 == 1){
+          // std::cout<<"channnnnnnnnnnnnggggggggggeeeeeeeeee"<<"\n";
+          *changed = true;
+        }
+        
+        lfvars.clear();
+        qfvars.clear();
+        linear_terms.clear();
+
+        
+
       }
-      ub = c->getUb()-lfl;
-      lb = c->getLb()-lfu;
-      nlf->varBoundMods(lb, ub, mods, &status);
+
+      if (nlf){
+        if (lf) {
+          lf->computeBounds(&lfl, &lfu);
+        }
+        ub = c->getUb()-lfl;
+        lb = c->getLb()-lfu;
+        
+        // if (qf){
+        //   qf->varBoundMods(lb, ub, mods, &status);
+        // }
+
+        if (nlf){
+          nlf->varBoundMods(lb, ub, mods, &status);
+        }
+      }
+      
       if (SolvedInfeasible == status) {
         mods.clear();
         break;
@@ -937,6 +1544,14 @@ SolveStatus NlPresHandler::varBndsFromCons_(bool *changed)
         for (VarBoundModVector::iterator it=mods.begin(); it!=mods.end(); ++it) {
           (*it)->applyToProblem(p_);
           ++stats_.vBnd;
+      
+
+      
+
+
+ 
+
+
 #if SPEW
           logger_->msgStream(LogDebug2) << me_ << " ";
           (*it)->write(logger_->msgStream(LogDebug2));
@@ -945,6 +1560,42 @@ SolveStatus NlPresHandler::varBndsFromCons_(bool *changed)
         mods.clear();
         *changed = true;
       }
+
+
+
+
+
+
+//       if (false==lfmod.empty()) {
+//         for (VarBoundModVector::iterator it=lfmod.begin(); it!=lfmod.end(); ++it) {
+//           (*it)->applyToProblem(p_);
+//           ++stats_.vBnd;
+// #if SPEW
+//           logger_->msgStream(LogDebug2) << me_ << " ";
+//           (*it)->write(logger_->msgStream(LogDebug2));
+// #endif
+//         }
+//         lfmod.clear();
+//         *changed = true;
+//       }
+
+      //std::cout<<"qfmodd"<<qfmod.empty()<<"\n";
+//       if (false==qfmod.empty()) {
+//         std::cout<<"about to apply varboundmodvector========="<<"\n";
+
+        
+//         for (VarBoundModVector::iterator it=qfmod.begin(); it!=qfmod.end(); ++it) {
+//           (*it)->applyToProblem(p_);
+//           ++stats_.vBnd;
+
+// #if SPEW
+//           logger_->msgStream(LogDebug2) << me_ << " ";
+//           (*it)->write(logger_->msgStream(LogDebug2));
+// #endif
+//         }
+//         qfmod.clear();
+//         *changed = true;
+//       }         
     }
   }
   return status;

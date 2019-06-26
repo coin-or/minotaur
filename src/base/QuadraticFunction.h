@@ -15,6 +15,11 @@
 
 #include "Types.h"
 
+
+#include "VarBoundMod.h"
+
+
+
 namespace Minotaur {
   class LinearFunction;
   struct LTHessStor;
@@ -199,6 +204,36 @@ namespace Minotaur {
        * var->getIndex() returns i.
        */
       double eval(const double *x) const;
+
+
+
+
+
+
+
+      /**
+       * Compute bounds for using in Presolver
+       */
+      void computeBounds(double *l, double *u);
+
+      // /**
+      //  * Changing bounds of variables based on bounds of constraints
+      //  */
+      // void varBoundMods(double lb, double ub, VarBoundModVector &mods,
+      //                     SolveStatus *status);
+
+
+       // /**
+      //  * getting b for variable v (in ax^2 +bx)
+      //  */
+      void bndsquadterms(double *l, double *u, VariablePtr v);
+
+
+      // /**
+      //  * getting b for variable v (in ax^2 +bx), excluding terms containing v2
+      //  */ 
+      void bndsquadterms_2(double *l, double *u, VariablePtr v, VariablePtr v2);
+
 
       /**
        * Evaluate the values of the gradient of the quadratic expression at a
