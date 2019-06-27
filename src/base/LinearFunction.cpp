@@ -118,6 +118,18 @@ LinearFunctionPtr LinearFunction::cloneWithVars(VariableConstIterator vbeg)
 }
 
 
+LinearFunctionPtr LinearFunction::cloneWithVarsPermute(VariableConstIterator vbeg, UIntVector variableaddress) 
+  const
+{
+   LinearFunctionPtr lf = (LinearFunctionPtr) new LinearFunction();
+   for (VariableGroupConstIterator it = terms_.begin(); it != terms_.end(); 
+       ++it) {
+      lf->addTerm(*(vbeg+variableaddress[it->first->getIndex()]), it->second);
+   }
+   return lf;
+}
+
+
 void LinearFunction::incTerm(ConstVariablePtr var, const double a)
 {
   if (fabs(a) > tol_) {

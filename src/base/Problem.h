@@ -144,6 +144,12 @@ namespace Minotaur {
     ProblemPtr clone() const;
 
     /**
+     * shuffle variables and constraints while making a clone of the problem
+     */
+    ProblemPtr shuffle(bool varshuff, bool conshuff);
+
+
+    /**
      * \brief Convert all quadratic forms that are stored as CGraph into
      * QuadraticFunction. The order of constraints changes after this
      * conversion.

@@ -482,6 +482,238 @@ ProblemPtr Problem::clone() const
 }
 
 
+
+
+ProblemPtr Problem::shuffle(bool varshuff, bool conshuff)
+{
+  ConstraintPtr c;
+  ConstConstraintPtr cc;
+  VariablePtr v;
+  ConstVariablePtr cv;
+  FunctionPtr f;
+  ObjectivePtr obj;
+  VariableConstIterator vit0;
+  int err = 0;
+  int i;
+  VarVector shuf_vars;
+
+  ProblemPtr newp = (ProblemPtr) new Problem();
+  int rand_seedvar=8;
+  srand(rand_seedvar);
+
+  if (varshuff==1){
+    shuf_vars = vars_;
+    std::random_shuffle (shuf_vars.begin(), shuf_vars.end());
+    std::vector <UInt> variableindex;
+    for (VariableConstIterator it=shuf_vars.begin(); it!= shuf_vars.end(); ++it) {
+      cv = *it;
+      variableindex.push_back(cv -> getIndex());
+    }
+
+    std::vector <UInt> variableaddress (vars_.size());
+    for (UInt j=0; j!=vars_.size(); ++j) {
+      variableaddress[variableindex[j]] = j;
+
+    }
+
+    // Copy the variables.
+    i=0;
+    for (VariableConstIterator it=shuf_vars.begin(); it!=shuf_vars.end(); ++it) {
+        cv = *it;
+        v = newp->newVariable(cv->getLb(), cv->getUb(), cv->getType(),
+                                  cv->getName(), cv->getSrcType());
+        v->setState_(cv->getState());
+        v->setSrcType(cv->getSrcType());
+        v->setFunType_(cv->getFunType());
+        v->setId_(i);
+        v->setIndex_(i);
+        i=i+1;
+    }
+
+    vit0 = newp->vars_.begin();
+
+      // add constraints
+    if (conshuff==1){
+      i=0;
+      ConstraintVector cons2=cons_;
+      std::random_shuffle (cons2.begin(), cons2.end());
+      for (ConstraintConstIterator it=cons2.begin(); it!=cons2.end(); ++it) {
+        cc = *it;
+        // clone the function.
+        f = cc->getFunction()->cloneWithVarsPermute(vit0, variableaddress, &err);
+        assert(err==0);
+        c = newp->newConstraint(f, cc->getLb(), cc->getUb(), cc->getName());
+        c->setId_(i);
+        c->setIndex_(i);
+        c->setState_(cc->getState());
+        ++i;
+      }    
+    }
+
+
+    else{
+      for (ConstraintConstIterator it=cons_.begin(); it!=cons_.end(); ++it) {
+        cc = *it;
+        // clone the function.
+        f = cc->getFunction()->cloneWithVarsPermute(vit0, variableaddress, &err);
+        assert(err==0);
+        c = newp->newConstraint(f, cc->getLb(), cc->getUb(), cc->getName());
+        c->setId_(cc->getId());
+        c->setState_(cc->getState());
+      }    
+    } 
+ 
+    obj = getObjective();
+    if (obj) {
+      f = obj->getFunction()->cloneWithVarsPermute(vit0, variableaddress, &err);
+      assert(err==0);
+      newp->newObjective(f, obj->getConstant(),
+                              obj->getObjectiveType(), obj->getName()); 
+    } 
+
+  }
+  else{
+    // Copy the variables.
+    for (VariableConstIterator it=vars_.begin(); it!=vars_.end(); ++it) {
+      cv = *it;
+      v = newp->newVariable(cv->getLb(), cv->getUb(), cv->getType(),
+                                cv->getName(), cv->getSrcType());
+      v->setState_(cv->getState());
+      v->setSrcType(cv->getSrcType());
+      v->setFunType_(cv->getFunType());
+      v->setId_(cv->getId());
+    }
+    
+    vit0 = newp->vars_.begin();
+
+    // add constraints
+    
+    if (conshuff==1){
+      i=0;
+      ConstraintVector cons2=cons_;
+      std::random_shuffle (cons2.begin(), cons2.end());
+      for (ConstraintConstIterator it=cons2.begin(); it!=cons2.end(); ++it) {
+        cc = *it;
+        // clone the function.
+        f = cc->getFunction()->cloneWithVars(vit0, &err);
+        assert(err==0);
+        c = newp->newConstraint(f, cc->getLb(), cc->getUb(), cc->getName());
+        c->setId_(i);
+        c->setIndex_(i);
+        c->setState_(cc->getState());
+        ++i;
+      }    
+    }
+
+    else{
+    for (ConstraintConstIterator it=cons_.begin(); it!=cons_.end(); ++it) {
+      cc = *it;
+      // clone the function.
+      f = cc->getFunction()->cloneWithVars(vit0, &err);
+      assert(err==0);
+      c = newp->newConstraint(f, cc->getLb(), cc->getUb(), cc->getName());
+      c->setId_(cc->getId());
+      c->setState_(cc->getState());
+      } 
+    }
+  // add objective
+    obj = getObjective();
+    if (obj) {
+      f = obj->getFunction()->cloneWithVars(vit0, &err);
+      assert(err==0);
+      newp->newObjective(f, obj->getConstant(),
+                            obj->getObjectiveType(), obj->getName()); 
+    } 
+
+  }
+
+ 
+
+  logger_->msgStream(LogError) << me_  << "Warning: "
+                               << "SOS1 not impemented in shuffle()"
+                               << std::endl;
+  // copy SOS1 constraints
+  // shuf_vars.clear();
+  // for (SOSConstIterator it=sos1_.begin(); it!=sos1_.end(); ++it) {
+  //   for (VariableConstIterator it2 = (*it)->varsBegin();
+  //        it2!=(*it)->varsEnd(); ++it2) {
+  //     shuf_vars.push_back(*it2);
+  //   }
+  //   newp->newSOS((*it)->getNz(), (*it)->getType(), (*it)->getWeights(),
+  //                    shuf_vars, (*it)->getPriority());
+  //   shuf_vars.clear();
+  // }
+
+  // Now clone everything else...
+  logger_->msgStream(LogError) << me_ << "Warning: "
+                               << "Initial point not impemented in shuffle()"
+                               << std::endl;
+  if (initialPt_) {
+    newp->initialPt_= new double[vars_.size()];
+    if (varshuff==1){std::random_shuffle(initialPt_, initialPt_+vars_.size());
+    std::copy(initialPt_, initialPt_+vars_.size(), newp->initialPt_);}
+    else{std::copy(initialPt_, initialPt_+vars_.size(), newp->initialPt_);}
+  }
+
+  newp->jacobian_  = JacobianPtr(); // NULL.
+  newp->nextCId_   = nextCId_;
+  newp->nextSId_   = nextSId_;
+  newp->nextVId_   = nextVId_;
+  newp->hessian_   = HessianOfLagPtr(); // NULL.
+  newp->logger_    = (LoggerPtr) new Logger(logger_->getMaxLevel());
+  newp->numDVars_  = numDVars_;	
+  newp->numDCons_  = numDCons_;	
+  newp->engine_    = 0;
+  newp->consModed_ = consModed_;
+  newp->varsModed_ = varsModed_;
+
+  // clone size
+  if (size_) {
+    newp->size_                   = (ProblemSizePtr) new ProblemSize();
+    newp->size_->vars             = size_->vars;
+    newp->size_->cons             = size_->cons;
+    newp->size_->objs             = size_->objs;
+    newp->size_->bins             = size_->bins;
+    newp->size_->fixed            = size_->fixed;
+    newp->size_->ints             = size_->ints;
+    newp->size_->conts            = size_->conts;
+    newp->size_->linCons          = size_->linCons;
+    newp->size_->SOS1Cons         = size_->SOS1Cons;
+    newp->size_->SOS2Cons         = size_->SOS2Cons;
+    newp->size_->bilinCons        = size_->bilinCons;
+    newp->size_->multilinCons     = size_->multilinCons;
+    newp->size_->quadCons         = size_->quadCons;
+    newp->size_->nonlinCons       = size_->nonlinCons;
+    newp->size_->consWithLin      = size_->consWithLin;
+    newp->size_->consWithBilin    = size_->consWithBilin;
+    newp->size_->consWithMultilin = size_->consWithMultilin;
+    newp->size_->consWithQuad     = size_->consWithQuad;
+    newp->size_->consWithNonlin   = size_->consWithNonlin;
+    newp->size_->linTerms         = size_->linTerms;
+    newp->size_->multiLinTerms    = size_->multiLinTerms;
+    newp->size_->quadTerms        = size_->quadTerms;
+    newp->size_->objLinTerms      = size_->objLinTerms;
+    newp->size_->objQuadTerms     = size_->objQuadTerms;
+    newp->size_->objType          = size_->objType;
+  } else {
+    newp->size_ = ProblemSizePtr(); // NULL
+  }
+  newp->nativeDer_ = nativeDer_; // Boolean
+
+ // newp->write(std::cout);
+
+  return newp;
+}
+
+
+
+
+
+
+
+
+
+
 void Problem::cg2qf()
 {
   ConstraintPtr c;

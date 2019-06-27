@@ -67,6 +67,10 @@ namespace Minotaur {
     virtual FunctionPtr cloneWithVars(VariableConstIterator vbeg, int *err)
       const;
 
+    /// similar to above function, but for shuffling variables
+    virtual FunctionPtr cloneWithVarsPermute(VariableConstIterator vbeg, UIntVector variableaddress, int *err)
+      const;
+
     /**
      * Evaluate the function at a given point x. error must be zero if no
      * errors were encountered.

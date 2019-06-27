@@ -182,6 +182,37 @@ FunctionPtr Function::cloneWithVars(VariableConstIterator vbeg, int *err)
 }
 
 
+FunctionPtr Function::cloneWithVarsPermute(VariableConstIterator vbeg, UIntVector variableaddress, int *err)
+  const
+{ 
+  LinearFunctionPtr lf;
+  QuadraticFunctionPtr qf;
+  NonlinearFunctionPtr nlf;
+  FunctionPtr f;
+  *err = 0;
+  if (lf_) {
+    lf = lf_->cloneWithVarsPermute(vbeg, variableaddress);
+  } else {
+    lf = LinearFunctionPtr(); // NULL
+  }
+  if (qf_) {
+    qf = qf_->cloneWithVars(vbeg);
+  } else {
+    qf = QuadraticFunctionPtr(); // NULL
+  }
+  if (nlf_) {
+    nlf = nlf_->cloneWithVars(vbeg, err);
+  } else {
+    nlf = NonlinearFunctionPtr(); // NULL
+  }
+  f = (FunctionPtr) new Function(lf, qf, nlf);
+  f->type_ = type_;
+
+  return f;
+}
+
+
+
 Function::~Function()
 {
   vars_.clear();
