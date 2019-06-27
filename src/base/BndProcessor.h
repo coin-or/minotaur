@@ -139,7 +139,7 @@ namespace Minotaur {
 
   };
 
-  typedef boost::shared_ptr <BndProcessor> BndProcessorPtr;
+  typedef BndProcessor* BndProcessorPtr;
 
 }
 #endif

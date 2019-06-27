@@ -529,19 +529,19 @@ void Function::collectVars_()
 }
 
 
-const LinearFunctionPtr Function::getLinearFunction() const 
+LinearFunctionPtr Function::getLinearFunction() const 
 {
   return lf_;
 }
 
 
-const QuadraticFunctionPtr Function::getQuadraticFunction() const 
+QuadraticFunctionPtr Function::getQuadraticFunction() const 
 {
   return qf_;
 }
 
 
-const NonlinearFunctionPtr Function::getNonlinearFunction() const 
+NonlinearFunctionPtr Function::getNonlinearFunction() const 
 {
   return nlf_;
 }

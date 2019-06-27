@@ -609,7 +609,6 @@ BranchPtr CxUnivarHandler::doBranch_(BranchDirection UpOrDown,
 	ConstraintPtr secCon = (*dit)->getSecantCon();
 
 	LinearFunctionPtr lf; 
-	FunctionPtr f;
 
 	double xlb = v->getLb();
 	double xub = bvalue;

@@ -281,7 +281,6 @@ void CutMan2::NodeIsBranched(NodePtr node, ConstSolutionPtr sol, int num)
 {
   CutPtr cut;
   cutList cutlist;
-  NodePtr child;
   const double *y = sol->getDualOfCons();
   int i;
   timer_->start();

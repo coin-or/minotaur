@@ -239,7 +239,7 @@ namespace Minotaur {
     void removeNode_(NodePtr node);
   };
 
-  typedef boost::shared_ptr<ParTreeManager> ParTreeManagerPtr;
+  typedef ParTreeManager* ParTreeManagerPtr;
 
 }
 #endif

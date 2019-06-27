@@ -71,10 +71,10 @@ namespace Minotaur {
 
 
 
-  typedef boost::shared_ptr<const Cut> ConstCutPtr;
+  typedef const Cut* ConstCutPtr;
   typedef CovCutGenStats* CovCutGenStatsPtr; 
   typedef CovCutGenStats const * ConstCovCutGenStatsPtr;
-  typedef boost::shared_ptr<ofstream> OfstreamPtr;
+  typedef ofstream* OfstreamPtr;
 
   /**
    * The CoverCutGenerator class generates a set of minimal covers 

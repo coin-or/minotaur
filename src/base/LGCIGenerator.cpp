@@ -618,11 +618,11 @@ bool LGCIGenerator::liftingGNS(const ConstCoverSetPtr cone,
 {
   // Generate cover set version of GUBs from constraint type.
   // This is exactly the same as GUB constraints but in cover set data ype.
-  boost::shared_ptr< std::vector<CoverSetPtr> > guborigcoeffs = 
-    (boost::shared_ptr<std::vector<CoverSetPtr> >)   new std::vector<CoverSetPtr>;
+  std::vector<CoverSetPtr> * guborigcoeffs = 
+    (std::vector<CoverSetPtr> *)   new std::vector<CoverSetPtr>;
   // This one will be modified to be non-overlapping.
-  boost::shared_ptr< std::vector<CoverSetPtr> > gubcoverlist =
-    (boost::shared_ptr< std::vector<CoverSetPtr> >)  new std::vector<CoverSetPtr>;
+  std::vector<CoverSetPtr> * gubcoverlist =
+    (std::vector<CoverSetPtr> *)  new std::vector<CoverSetPtr>;
   // GUB lists are generated.
   generateGubMaps(gublist, gubcoverlist, guborigcoeffs);
   // Get the non-overlapping GUB set that covers knapsack inequality.
@@ -641,8 +641,8 @@ bool LGCIGenerator::liftingGNS(const ConstCoverSetPtr cone,
   // First constraint is similar to C1.
   CoverSetPtr consknap = (CoverSetPtr) new CoverSet(*cone);
   // remaining constraints are related to GUB constraints.
-  boost::shared_ptr< std::vector<CoverSetPtr> > gubcons =  
-    (boost::shared_ptr< std::vector<CoverSetPtr> >) new std::vector<CoverSetPtr>;
+  std::vector<CoverSetPtr> * gubcons =  
+    (std::vector<CoverSetPtr> *) new std::vector<CoverSetPtr>;
   initGubCons(cone,gubcoverlist, gubcons);
   
   // Construct rhs of lifting problem, i.e. for knapsack it is b, 
@@ -735,9 +735,9 @@ bool LGCIGenerator::liftingGNS(const ConstCoverSetPtr cone,
  * varset and liftup does not change.
  */
 void LGCIGenerator::liftSet(CoverSetPtr obj,
-                            boost::shared_ptr<std::vector<CoverSetPtr> > origgubs,
+                            std::vector<CoverSetPtr> * origgubs,
                             CoverSetPtr consknap,
-                            boost::shared_ptr<std::vector<CoverSetPtr> > gubcons,
+                            std::vector<CoverSetPtr> * gubcons,
                             const ConstCoverSetPtr varset,
                             CoverSetPtr coverineq,
                             double & rhs,
@@ -816,7 +816,7 @@ void LGCIGenerator::liftSet(CoverSetPtr obj,
  */
 // double LGCIGenerator::lift(CoverSetPtr obj,
 //                          CoverSetPtr consknap,
-//                          boost::shared_ptr<std::vector<CoverSetPtr> > gubcons,
+//                          std::vector<CoverSetPtr> * gubcons,
 //                          const CoverSetConstIterator variable,
 //                          double & rhs,
 //                          double & initialbknap,
@@ -926,7 +926,7 @@ void LGCIGenerator::liftSet(CoverSetPtr obj,
 void LGCIGenerator::addCons(CoverSetPtr obj,
                             CoverSetPtr consknap,
                             double bknap,
-                            boost::shared_ptr< std::vector<CoverSetPtr> > gubcons,
+                            std::vector<CoverSetPtr> * gubcons,
                             double * bgubs,
                             OrigLiftVarsPtr varmap,
                             ProblemPtr liftprob)
@@ -1041,9 +1041,9 @@ VariablePtr LGCIGenerator::addVar(VariablePtr var, OrigLiftVarsPtr varmap,
 }
 
 double LGCIGenerator::lift(CoverSetPtr obj,
-                           boost::shared_ptr<std::vector<CoverSetPtr> > origgubs,
+                           std::vector<CoverSetPtr> * origgubs,
                            CoverSetPtr consknap,
-                           boost::shared_ptr<std::vector<CoverSetPtr> > gubcons,
+                           std::vector<CoverSetPtr> * gubcons,
                            const CoverSetConstIterator variable,
                            double & rhs,
                            double & initialbknap,
@@ -1246,7 +1246,7 @@ double LGCIGenerator::roundHeur(ProblemPtr prob)
       if (numrows == 1) {
         rowindex1 = cons1->getIndex();
       }
-      LinearFunctionPtr lf = cons1->getLinearFunction(); 
+      //LinearFunctionPtr lf = cons1->getLinearFunction(); 
       //double coeff1 = lf->getWeight(var1);
      
  
@@ -1259,7 +1259,7 @@ double LGCIGenerator::roundHeur(ProblemPtr prob)
       if (numrows2 == 1) {
         rowindex2 = cons2->getIndex();
       }
-      LinearFunctionPtr lf2 = cons2->getLinearFunction();
+      //LinearFunctionPtr lf2 = cons2->getLinearFunction();
       // double coeff2 = lf->getWeight(var2);
       
       if (rowindex1 != rowindex2) {
@@ -1297,8 +1297,8 @@ double LGCIGenerator::roundHeur(ProblemPtr prob)
 
 
 void LGCIGenerator::initGubCons(const ConstCoverSetPtr cone,
-                                boost::shared_ptr<std::vector<CoverSetPtr> > gubcoverlist, 
-                                boost::shared_ptr<std::vector<CoverSetPtr> > gubcons)
+                                std::vector<CoverSetPtr> * gubcoverlist, 
+                                std::vector<CoverSetPtr> * gubcons)
 {
   // Generate empty GUB constraints.
   UInt numgubs = gubcoverlist->size();
@@ -1356,8 +1356,8 @@ void LGCIGenerator::initGubCons(const ConstCoverSetPtr cone,
 }
 
 void LGCIGenerator::generateGubMaps(ConstConstraintVectorPtr gublist, 
-                                    boost::shared_ptr< std::vector<CoverSetPtr> > gubcoverlist, 
-                                    boost::shared_ptr< std::vector<CoverSetPtr> > guborigcoeffs)
+                                    std::vector<CoverSetPtr> * gubcoverlist, 
+                                    std::vector<CoverSetPtr> * guborigcoeffs)
 {
   // Number of GUB constraints to be converted to coversets.
   ConstConstraintIterator it;
@@ -1404,7 +1404,7 @@ void LGCIGenerator::generateGubMaps(ConstConstraintVectorPtr gublist,
 
 }
 
-void LGCIGenerator::nonOverlap(boost::shared_ptr< std::vector<CoverSetPtr> > gubcoverlist)
+void LGCIGenerator::nonOverlap(std::vector<CoverSetPtr> * gubcoverlist)
 {
   // Iterators for the gubs in the list.
   std::vector<CoverSetPtr>::iterator it;
@@ -1659,8 +1659,7 @@ bool LGCIGenerator::addCut(CoverSetPtr cov, double rhs, UInt cuttype, CutFail&)
   // Check violation of the coefficients.
   bool cutexists = checkExists(cov, rhs);
   if (cutexists == false){
-    CutPtr cut;
-    generateCut(cov, rhs, cut);
+    CutPtr cut = generateCut(cov, rhs);
     addCut(cut);
     // Increment the number of cuts for the type of cuts generated.
     stats_->cuts += 1;
@@ -1679,9 +1678,12 @@ bool LGCIGenerator::addCut(CoverSetPtr cov, double rhs, UInt cuttype, CutFail&)
 
 }
 
-// Assumption a cut pointer is given and the cut will be returned by this pointer.
-void LGCIGenerator::generateCut(const ConstCoverSetPtr inequality, double rhs, CutPtr cut)
+// Assumption a cut pointer is given and the cut will be returned by this
+// pointer.
+CutPtr LGCIGenerator::generateCut(const ConstCoverSetPtr inequality,
+                                  double rhs)
 {
+  CutPtr cut = 0;
   // Generate linear function for cut.
   LinearFunctionPtr lf = (LinearFunctionPtr) new LinearFunction();
   // create iterators for cover set elements.
@@ -1699,9 +1701,9 @@ void LGCIGenerator::generateCut(const ConstCoverSetPtr inequality, double rhs, C
   // generate function.
   FunctionPtr f = (FunctionPtr) new Function(lf);
   // Assumption: coefficients are positive lower bound is zero.
-  double lb = 0.0;
   // Generate cover cut.
-  cut = (CutPtr) new Cut(p_->getNumVars(), f, lb, rhs, false, false);
+  cut = new Cut(p_->getNumVars(), f, 0.0, rhs, false, false);
+  return cut;
 }
 
 /**

@@ -194,7 +194,7 @@ namespace Minotaur {
 
 
 };
-  typedef boost::shared_ptr <CutMan2> CutMan2Ptr;
+  typedef CutMan2* CutMan2Ptr;
 }
 #endif
 

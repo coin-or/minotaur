@@ -124,8 +124,8 @@ namespace Minotaur {
 
   };
 
-  typedef boost::shared_ptr<HessianOfLag> HessianOfLagPtr;
-  typedef boost::shared_ptr<const HessianOfLag> ConstHessianOfLagPtr;  
+  typedef HessianOfLag* HessianOfLagPtr;
+  typedef const HessianOfLag* ConstHessianOfLagPtr;  
 
 }
 #endif

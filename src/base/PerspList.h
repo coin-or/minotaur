@@ -35,18 +35,18 @@ namespace Minotaur {
   };
 
   class PerspList;
-  typedef boost::shared_ptr<PerspList> PerspListPtr;
-  typedef boost::shared_ptr<const PerspList> ConstPerspListPtr;
+  typedef PerspList* PerspListPtr;
+  typedef const PerspList* ConstPerspListPtr;
   typedef PerspListStats* PerspListStatsPtr;
   typedef PerspListStats const * ConstPerspListStatsPtr;
 
   typedef std::map<VariablePtr, std::pair<ConstConstraintPtr, ConstConstraintPtr> > VarUbLb;
-  typedef boost::shared_ptr<VarUbLb> VarUbLbPtr;
+  typedef VarUbLb* VarUbLbPtr;
   typedef std::pair<ConstConstraintPtr, ConstVariablePtr> ConsVar;
   //typedef std::map<ConstConstraintPtr, VarUbLbPtr> PerspCons;
   typedef std::map<ConsVar, VarUbLbPtr> PerspCons;
-  typedef boost::shared_ptr<PerspCons> PerspConsPtr;
-  typedef boost::shared_ptr<const PerspCons> ConstPerspConsPtr;
+  typedef PerspCons* PerspConsPtr;
+  typedef const PerspCons* ConstPerspConsPtr;
 
   /** 
    * This class identifies the constraints that can be used for 

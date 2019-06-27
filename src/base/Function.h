@@ -17,15 +17,7 @@
 
 namespace Minotaur {
 
-  class Function;
-  class LinearFunction;
-  class QuadraticFunction;
-  class NonlinearFunction;
   struct LTHessStor;
-  typedef LinearFunction* LinearFunctionPtr;
-  typedef const LinearFunction* ConstLinearFunctionPtr;
-  typedef QuadraticFunction* QuadraticFunctionPtr;
-  typedef NonlinearFunction* NonlinearFunctionPtr;
 
   /**
    * The class Function is meant to model functions that are used to specify
@@ -122,13 +114,13 @@ namespace Minotaur {
     virtual FunctionType getVarFunType(ConstVariablePtr v);
 
     /// Return the linear part of the function.
-    virtual const LinearFunctionPtr getLinearFunction() const;
+    virtual LinearFunctionPtr getLinearFunction() const;
 
     /// Return the quadratic part of the function.
-    virtual const QuadraticFunctionPtr getQuadraticFunction() const;
+    virtual QuadraticFunctionPtr getQuadraticFunction() const;
 
     /// Return the nonlinear part of the function.
-    virtual const NonlinearFunctionPtr getNonlinearFunction() const;
+    virtual NonlinearFunctionPtr getNonlinearFunction() const;
 
     /// Return a begin-iterator for the variables that are in this function.
     VarSetConstIterator varsBegin();

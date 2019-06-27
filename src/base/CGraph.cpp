@@ -365,6 +365,7 @@ void CGraph::fillHessInds2_(CNode *node, UIntQ *inds)
         st.push(n2);
         st2.push(n2);
       }
+      break;
     default:
       {
       CQIter2 *it = n->getParB();
@@ -692,6 +693,7 @@ void CGraph::fwdGrad2_(std::stack<CNode *> *st2, CNode *node)
         n2->setTempI(1);
         nset.insert(n2);
       }
+      break;
     default:
       {
       CQIter2 *it = n->getParB();

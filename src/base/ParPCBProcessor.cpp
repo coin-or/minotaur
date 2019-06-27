@@ -395,6 +395,8 @@ bool ParPCBProcessor::shouldPrune_(NodePtr node, double solval,
                                  << "violated in node " << node->getId()
                                  << std::endl;
      ++stats_.prob;
+     // This comment silences g++ warnings
+     // fall through
    case (ProvenInfeasible):
    case (ProvenLocalInfeasible):
      node->setStatus(NodeInfeasible);
@@ -444,6 +446,8 @@ bool ParPCBProcessor::shouldPrune_(NodePtr node, double solval,
                                  << "continuing in node " << node->getId()
                                  << std::endl;
      // continue with this node by following ProvenLocalOptimal case.
+     // This comment silences g++ warnings
+     // fall through
    case (ProvenLocalOptimal):
    case (ProvenOptimal):
      node->setLb(solval);

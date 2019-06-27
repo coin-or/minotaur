@@ -121,7 +121,6 @@ private:
 
 };
 
-//typedef boost::shared_ptr<CutManager> CutManagerPtr;
 }
 #endif
 

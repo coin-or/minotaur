@@ -73,17 +73,17 @@ BranchAndBound::BranchAndBound(EnvPtr env, ProblemPtr p)
 
 BranchAndBound::~BranchAndBound()
 {
-  options_.reset();
-  nodePrcssr_.reset();
-  if (nodeRlxr_) {
-   delete nodeRlxr_;
-   nodeRlxr_ = 0;
-  }
-  tm_.reset();
-  if (solPool_) {
-    delete solPool_;
-    solPool_ = 0;
-  }
+  //options_.reset();
+  //nodePrcssr_.reset();
+  //nodeRlxr_.reset();
+  options_ = 0;
+  nodeRlxr_ = 0;
+  nodePrcssr_ = 0;
+  //tm_.reset();
+  //solPool_.reset();
+  solPool_ = 0;
+  tm_ = 0;
+  //problem_.reset();
   problem_ = 0;
   env_ = 0;
   if (timer_) {
@@ -259,9 +259,9 @@ bool BranchAndBound::shouldPrune_(NodePtr node)
   switch (node->getStatus()) {
    case (NodeOptimal):
      should_prune = true;
+     break;
    case (NodeHitUb):
      should_prune = true;
-     // check if we want to search for more solutions
      break;
    case (NodeInfeasible):
      should_prune = true;

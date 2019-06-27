@@ -106,7 +106,7 @@ FunctionType Constraint::getFunctionType() const
 }
 
 
-const LinearFunctionPtr Constraint::getLinearFunction() const
+LinearFunctionPtr Constraint::getLinearFunction() const
 { 
   return f_->getLinearFunction();
 }
@@ -118,13 +118,13 @@ const std::string Constraint::getName() const
 }
 
 
-const NonlinearFunctionPtr Constraint::getNonlinearFunction() const 
+NonlinearFunctionPtr Constraint::getNonlinearFunction() const 
 { 
   return f_->getNonlinearFunction();
 }
 
 
-const QuadraticFunctionPtr Constraint::getQuadraticFunction() const 
+QuadraticFunctionPtr Constraint::getQuadraticFunction() const 
 { 
   return f_->getQuadraticFunction();
 }

@@ -72,7 +72,7 @@ Branches LexicoBrancher::findBranches(RelaxationPtr rel, NodePtr ,
                                       BrancherStatus &br_status,
                                       ModVector &mods) 
 {
-  Branches branches;
+  Branches branches = 0;
   DoubleVector x(rel->getNumVars());
   BrVarCandSet cands;
   BrCandVector gencands;

@@ -26,13 +26,13 @@ namespace Minotaur {
   class   SolutionPool;
   class   Timer;
   class   TreeManager;
-  typedef boost::shared_ptr <BabOptions> BabOptionsPtr;
-  typedef boost::shared_ptr <NodeProcessor> NodeProcessorPtr;
+  typedef BabOptions* BabOptionsPtr;
+  typedef NodeProcessor* NodeProcessorPtr;
   typedef NodeRelaxer* NodeRelaxerPtr;
   typedef Problem* ProblemPtr;
   typedef Solution* SolutionPtr;
   typedef SolutionPool* SolutionPoolPtr;
-  typedef boost::shared_ptr <TreeManager> TreeManagerPtr;
+  typedef TreeManager* TreeManagerPtr;
 
 
   /**
@@ -286,7 +286,7 @@ namespace Minotaur {
     double timeLimit;
   };
 
-  typedef boost::shared_ptr<BranchAndBound> BranchAndBoundPtr;
+  typedef BranchAndBound* BranchAndBoundPtr;
 }
 #endif
 

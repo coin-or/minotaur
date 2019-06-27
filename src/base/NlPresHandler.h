@@ -14,6 +14,8 @@
 #define MINOTAURNLPRESHANDLER_H
 
 #include "Handler.h"
+#include "VarBoundMod.h"
+#include "QuadraticFunction.h"
 
 namespace Minotaur {
 
@@ -129,6 +131,98 @@ public:
 
   // base class method.
   void writeStats(std::ostream &out) const;
+
+
+
+
+
+
+
+  /**
+   * Bounds for unvariate case, x>0 for ax^2 +bx >= c 
+   */
+  void x_bound_with_c(double a,double b,double c, double *l,
+                                    double *u, double *l2);
+
+
+  /**
+   * Bounds for unvariate case, x>0, b=[blb,bub], for ax^2 +bx >= c 
+   */
+
+  //void x_bound_range_with_c(double a,double blb,double bub, double c, double *l,
+                                  //double *u, int infeasibility);
+
+
+  /**
+   * get set of variables having only linear terms in fucntion 
+   */
+
+ void linear_var_set(VariableSet lfvars, FunctionPtr f,VariableSet *linear_terms);
+
+  /**
+   * Bounds for variables with only linear terms in function 
+   */
+
+  void lin_var_bound(VarBoundModVector lfmod, LinearFunctionPtr lf, QuadraticFunctionPtr qf, 
+                              VariableSet qfvars,  VariableSet linear_terms, double cl, double cu, int &change);
+
+
+
+  /**
+   * Bounds for variables with only linear terms in function other than the variable given as input to this function
+   * to be used for above function, for getting linear var bound
+   * 
+   */
+
+  void get_other_linear_var_bounds(VariablePtr v, double *lflb, double *lfub, 
+                                            VariableSet linear_tSerms, LinearFunctionPtr lf);
+
+
+
+   /**
+   * Bounds for quadratic variable terms 
+   */
+
+  void quad_var_bound(VarBoundModVector qfmod, LinearFunctionPtr lf, QuadraticFunctionPtr qf, 
+                                  VariableSet qfvars,  VariableSet linear_terms, double cl, double cu,
+                                  int &change);
+
+
+
+
+   /**
+   * Bounds for quadratic variable terms other than the variable given as input to this function  to be used for
+   *  above function, for getting quad var bound
+   */
+  void get_other_quad_var_bounds(VariablePtr v, double *qflb, double *qfub, VariableSet qfvars, 
+                                        QuadraticFunctionPtr qf, LinearFunctionPtr lf);
+
+   /**
+   * Bounds for bilinear variable terms other than the variable given as input to this function  to be used for
+   *  above function, for getting quad var bound
+   */
+  void bilinear_bounds(VariablePtr v, double *qflb1, double *qfub1, VariableSet qfvars,
+                                        QuadraticFunctionPtr qf);
+
+
+
+   /**
+   * Bounds for a quadratic function : x>0 for ax^2 +bx  
+   */
+  void quad_bound(VariablePtr v, double a,double b, double *l,
+                                     double *u);
+
+
+  /**
+   * Bounds for a quadratic function : x>0, b=[blb,bub]  for ax^2 +bx  
+   */                       
+  void quad_bound_range(VariablePtr v, double a,double blb, double bub, double *l,
+                                     double *u);
+
+
+
+
+
 private:
   /// Should we try perspective reformulation?
   bool doPersp_;
@@ -181,8 +275,7 @@ private:
   void perspMod_(ConstraintPtr c, VariablePtr z);
   void perspRef_(ProblemPtr p, PreModQ *mods, bool *changed);
   void quadConeRef_(ProblemPtr p, PreModQ *mods, bool *changed);
-  void varBndsFromCons_(ProblemPtr p, bool apply_to_prob, bool *changed,
-                        ModQ *mods, SolveStatus &status);
+  SolveStatus varBndsFromCons_(bool *changed);
 };
 typedef NlPresHandler* NlPresHandlerPtr;
 }

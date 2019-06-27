@@ -6,7 +6,8 @@
 
 /**
  * \file ParQGBranchAndBound.cpp
- * \brief Define ParQGBranchAndBound class for a generic parallel branch-and-bound method.
+ * \brief Define ParQGBranchAndBound class for a generic parallel
+ * branch-and-bound method.
  * \author Prashant Palkar, Meenarli Sharma, IIT Bombay
  */
 
@@ -87,18 +88,21 @@ ParQGBranchAndBound::ParQGBranchAndBound(EnvPtr env, ProblemPtr p)
 
 ParQGBranchAndBound::~ParQGBranchAndBound()
 {
-  options_.reset();
+  //options_.reset();
   //logger_.reset();
+  options_ = 0;
   if (logger_){
     delete logger_;
   }
-  nodePrcssr_.reset();
+  //nodePrcssr_.reset();
   //nodeRlxr_.reset();
   nodeRlxr_ = 0;
-  tm_.reset();
+  nodePrcssr_ = 0;
+  //tm_.reset();
   //solPool_.reset();
   //problem_.reset();
   //env_.reset();
+  tm_ = 0;
   solPool_ = 0;
   problem_ = 0;
   env_ = 0;
@@ -270,6 +274,7 @@ bool ParQGBranchAndBound::shouldPrune_(NodePtr node)
   switch (node->getStatus()) {
   case (NodeOptimal):
     should_prune = true;
+    break;
   case (NodeHitUb):
     should_prune = true;
     // check if we want to search for more solutions

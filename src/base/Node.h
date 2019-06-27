@@ -184,7 +184,7 @@ namespace Minotaur {
     WarmStartPtr getWarmStart() { return ws_; }
 
     /// \todo Dont know what this is meant for.
-    void makeChildOf(boost::shared_ptr<const Node> parent);
+    void makeChildOf(const Node* parent);
 
     /**
      * Get the first modification that was applied at this node to the

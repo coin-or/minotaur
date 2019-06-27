@@ -85,8 +85,8 @@ private:
 };
 
 
-typedef boost::shared_ptr<Hypergraph> HypergraphPtr;
-typedef boost::shared_ptr<const Hypergraph> HypergraphConstPtr;
+typedef Hypergraph* HypergraphPtr;
+typedef const Hypergraph* HypergraphConstPtr;
 
 /** A MultilinearTermsHandler handles all (single) multilinear term
  * constraints

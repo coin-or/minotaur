@@ -32,14 +32,14 @@ namespace Minotaur {
   class   WarmStart;
   class   Timer;
   typedef Engine* EnginePtr;
-  typedef boost::shared_ptr <ParBabOptions> ParBabOptionsPtr;
-  typedef boost::shared_ptr <NodeProcessor> NodeProcessorPtr;
+  typedef ParBabOptions* ParBabOptionsPtr;
+  typedef NodeProcessor* NodeProcessorPtr;
   typedef NodeRelaxer* NodeRelaxerPtr;
   typedef ParNodeIncRelaxer* ParNodeIncRelaxerPtr;
-  typedef boost::shared_ptr <ParBndProcessor> ParBndProcessorPtr;
+  typedef ParBndProcessor* ParBndProcessorPtr;
   typedef Solution* SolutionPtr;
   typedef SolutionPool* SolutionPoolPtr;
-  typedef boost::shared_ptr <ParTreeManager> ParTreeManagerPtr;
+  typedef ParTreeManager* ParTreeManagerPtr;
   typedef WarmStart* WarmStartPtr;
 
   /**
@@ -392,7 +392,7 @@ namespace Minotaur {
     double timeLimit;
   };
 
-  typedef boost::shared_ptr<ParBranchAndBound> ParBranchAndBoundPtr;
+  typedef ParBranchAndBound* ParBranchAndBoundPtr;
 }
 #endif
 

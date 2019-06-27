@@ -21,6 +21,10 @@
 #include "QuadraticFunction.h"
 #include "Variable.h"
 
+#include "Problem.h"
+
+#include "VarBoundMod.h"
+
 using namespace Minotaur;
 
 
@@ -141,6 +145,199 @@ double QuadraticFunction::eval(const double *x) const
    }
    return sum;
 }
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+void QuadraticFunction::computeBounds(double *l, double *u){
+  double a;
+  double b;
+  double c;
+  double d;
+  double lb = 0;
+  double ub = 0;
+  for (VariablePairGroupConstIterator it = begin(); it != end(); ++it) {
+      a = it->second * (it->first.first -> getLb()) * 
+        (it->first.second -> getLb());
+      b = it->second * (it->first.first -> getLb()) * 
+        (it->first.second -> getUb());
+      c = it->second * (it->first.first -> getUb()) * 
+        (it->first.second -> getLb());
+      d = it->second * (it->first.first -> getUb()) * 
+        (it->first.second -> getUb());
+      lb += std::min({a,b,c,d});
+      ub += std::max({a,b,c,d});
+  }
+  *l = lb;
+  *u = ub;
+}
+
+
+
+
+
+
+void QuadraticFunction::bndsquadterms(double *l, double *u, VariablePtr v){
+  double a1;
+  double a2;
+  double b1;
+  double b2;
+  double lb = 0;
+  double ub = 0;
+  for (VariablePairGroupConstIterator it = begin(); it != end(); ++it) {
+    if (it->first.first == v || it->first.second == v){
+      if (it->first.first != v){
+      a1 = it->second * (it->first.first -> getLb());
+      a2 = it->second * (it->first.first -> getUb());
+      lb += std::min({a1,a2});
+      ub += std::max({a1,a2});
+      }
+      if (it->first.second != v){
+      b1 = it->second * (it->first.second -> getLb());
+      b2 = it->second * (it->first.second -> getUb());
+      lb += std::min({b1,b2});
+      ub += std::max({b1,b2});
+      }
+      
+      
+    }
+  }
+  *l = lb;
+  *u = ub;
+}
+
+
+
+
+
+
+void QuadraticFunction::bndsquadterms_2(double *l, double *u, VariablePtr v, VariablePtr v2){
+  double a1;
+  double a2;
+  double b1;
+  double b2;
+  double lb = 0;
+  double ub = 0;
+  for (VariablePairGroupConstIterator it = begin(); it != end(); ++it) {
+    if ((it->first.first == v || it->first.second == v) && (it->first.first != v2) && (it->first.second != v2)){
+      if (it->first.first != v){
+      a1 = it->second * (it->first.first -> getLb());
+      a2 = it->second * (it->first.first -> getUb());
+      lb += std::min({a1,a2});
+      ub += std::max({a1,a2});
+      }
+      if (it->first.second != v){
+      b1 = it->second * (it->first.second -> getLb());
+      b2 = it->second * (it->first.second -> getUb());
+      lb += std::min({b1,b2});
+      ub += std::max({b1,b2});
+      }
+      
+      
+    }
+  }
+  *l = lb;
+  *u = ub;
+}
+
+
+
+
+
+
+
+
+
+
+// void QuadraticFunction::varBoundMods(double lb, double ub, VarBoundModVector &mods,
+//                           SolveStatus *status)
+// {
+//   double lb2 = -INFINITY;
+//   double ub2 = INFINITY;
+//   int error = 0;
+//   bool is_inf = false;
+//   const double bslack = 1e-5;
+//   const double bslack10 = 1e-4;
+//   double lbv;
+//   double ubv;
+//   double a;
+//   double b;
+//   double c;
+//   double d;
+//   VariableSet *vars;
+//   ConstVariablePtr cv;
+
+//   computeBounds(&lb2, &ub2);
+//   lb2 = fmax(lb,lb2);
+//   ub2 = fmin(ub,ub2);
+
+//   getVars(vars);
+    
+//    for (VariableConstIterator itv=vars.begin(); itv!=vars.end(); ++itv) {
+//     cv = *itv;
+//     lbv = cv->getLb();
+//     ubv = cv->getUb();
+//     for (VariablePairGroupConstIterator it = begin(); it != end(); ++it) {
+//      if (itv -> getIndex() != first.first ->index_ || itv -> getIndex() != first.second ->index_  ){
+//       a = it->second * (it->first.first -> getLb()) * 
+//         (it->first.second -> getLb());
+//       b = it->second * (it->first.first -> getLb()) * 
+//         (it->first.second -> getUb());
+//       c = it->second * (it->first.first -> getUb()) * 
+//         (it->first.second -> getLb());
+//       d = it->second * (it->first.first -> getUb()) * 
+//         (it->first.second -> getUb());
+//       lb2 -= std::min({a,b,c,d});
+//       ub2 -= std::max({a,b,c,d});
+
+//      }
+//     }
+
+//     if (itv -> getIndex() == first.first ->getIndex() && itv -> getIndex() == first.second ->getIndex() ){
+//       lb2 = sqrt(lb2/it->second);
+//       ub2 = sqrt(ub2/it->second);
+//       if (lbv < fmax(-ub2,lb2)){
+//         mods.push_back((VarBoundModPtr) new VarBoundMod(getVar(*itv), Lower,
+//                                                       fmax(-ub2,lb2)));
+//       }
+//       if (ubv > fmin(ub2,-lb2)){
+//         mods.push_back((VarBoundModPtr) new VarBoundMod(getVar(*itv), Upper,
+//                                                       fmin(ub2,-lb2)));
+//       }
+//     }
+//    }
+// }
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 void QuadraticFunction::evalGradient(const double *x, double *grad_f)
