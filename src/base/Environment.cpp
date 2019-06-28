@@ -204,6 +204,16 @@ void Environment::createDefaultOptions_()
           true, true);
   options_->insert(b_option);
 
+  b_option = (BoolOptionPtr) new Option<bool>("varshuff", 
+      "Create a new problem with shuffled variable order in the problem: <0/1>",
+      true, false);
+  options_->insert(b_option);
+
+  b_option = (BoolOptionPtr) new Option<bool>("conshuff", 
+      "Create a new problem with shuffled constraint order in the problem: <0/1>",
+      true, false);
+  options_->insert(b_option);
+
   b_option = (BoolOptionPtr) new Option<bool>("cgtoqf", 
       "Convert all quadratic functions from cgraph to qf: <0/1>",
       true, false);

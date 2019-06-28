@@ -75,6 +75,9 @@ namespace Minotaur {
 
     LinearFunctionPtr cloneWithVars(VariableConstIterator vbeg) const;
 
+    LinearFunctionPtr cloneWithVarsPermute(VariableConstIterator vbeg, UIntVector variableaddress) 
+  const;
+
     /**
      * \brief Get bounds based on lower and upperbounds of each variable
      * \param [out] l This pointer should contain lower bound.
