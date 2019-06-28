@@ -360,130 +360,130 @@ void QGHandler::alphaSelect_(VariablePtr nVar, VariablePtr lVar, double d1, doub
   //}
 //}
 
-void QGHandler::rootScheme4_(const double *nlpx, ConstraintPtr con)
-{
-  //MS: make scheme 4 parameter binary
-  int error = 0;
-  UInt vnIdx, vlIdx;
-  FunctionPtr f;
-  VariablePtr nVar, lVar;
-  NonlinearFunctionPtr nlf;
-  UInt n = minlp_->getNumVars();
-  double alpha, act, slope, lastSlope, delta, nlpSlope, cUb = con->getUb(),
-         incBound;
-  //double alpha, minA, maxA, act, slope, lastSlope;
-  double linTermCoeff = con->getLinearFunction()->termsBegin()->second;
-  nlf = con->getNonlinearFunction();
-  nVar = (*(nlf->varsBegin())); // var in nonlinear term
-  lVar = (con->getLinearFunction()->termsBegin()->first); // var in lin term
-  vnIdx = nVar->getIndex(), vlIdx = lVar->getIndex();
-  double* npt = new double[n];
-  std::fill(npt, npt+n, 0.);
-  double *a = new double[n];
-  std::fill(a, a+n, 0.);
-  f = con->getFunction();
-  f->evalGradient(nlpx, a, &error);
-  if (a[vlIdx] != 0) {
-    nlpSlope = -1*(a[vnIdx]/a[vlIdx]);
-  } else {
-    nlpSlope = 0;
-  }
-  lastSlope = nlpSlope;
+//void QGHandler::rootScheme4_(const double *nlpx, ConstraintPtr con)
+//{
+  ////MS: make scheme 4 parameter binary
+  //int error = 0;
+  //UInt vnIdx, vlIdx;
+  //FunctionPtr f;
+  //VariablePtr nVar, lVar;
+  //NonlinearFunctionPtr nlf;
+  //UInt n = minlp_->getNumVars();
+  //double alpha, act, slope, lastSlope, delta, nlpSlope, cUb = con->getUb(),
+         //incBound;
+  ////double alpha, minA, maxA, act, slope, lastSlope;
+  //double linTermCoeff = con->getLinearFunction()->termsBegin()->second;
+  //nlf = con->getNonlinearFunction();
+  //nVar = (*(nlf->varsBegin())); // var in nonlinear term
+  //lVar = (con->getLinearFunction()->termsBegin()->first); // var in lin term
+  //vnIdx = nVar->getIndex(), vlIdx = lVar->getIndex();
+  //double* npt = new double[n];
+  //std::fill(npt, npt+n, 0.);
+  //double *a = new double[n];
+  //std::fill(a, a+n, 0.);
+  //f = con->getFunction();
+  //f->evalGradient(nlpx, a, &error);
+  //if (a[vlIdx] != 0) {
+    //nlpSlope = -1*(a[vnIdx]/a[vlIdx]);
+  //} else {
+    //nlpSlope = 0;
+  //}
+  //lastSlope = nlpSlope;
   
-  if (nVar->getLb() == -INFINITY) {
-    incBound = nlpx[vnIdx]-10;    
-    delta = 1;  
-  } else {
-    incBound = nVar->getLb();    
-    if (nlpx[vnIdx] - nVar->getLb() >= 1) {
-      delta = 1;  
-    } else {
-      delta = nlpx[vnIdx] - nVar->getLb();  
-    }
-  }
+  //if (nVar->getLb() == -INFINITY) {
+    //incBound = nlpx[vnIdx]-10;    
+    //delta = 1;  
+  //} else {
+    //incBound = nVar->getLb();    
+    //if (nlpx[vnIdx] - nVar->getLb() >= 1) {
+      //delta = 1;  
+    //} else {
+      //delta = nlpx[vnIdx] - nVar->getLb();  
+    //}
+  //}
 
-  alpha = nlpx[vnIdx] - delta;
-  //UInt k = 0;
-  //while (k <= rScheme4Para_ && alpha >= nVar->getLb()) {
+  //alpha = nlpx[vnIdx] - delta;
+  ////UInt k = 0;
+  ////while (k <= rScheme4Para_ && alpha >= nVar->getLb()) {
      
-  if (delta != 0) {
-   while (alpha >= incBound) {
-     npt[vnIdx] = alpha; 
-     act = nlf->eval(npt, &error); 
-     if (error == 0 && linTermCoeff != 0) {
-       npt[vlIdx] = (cUb-act)/linTermCoeff;    
-       f->evalGradient(npt, a, &error);
-       if (error != 0) {
-         alpha = alpha - delta;
-         continue;      
-       }
-       if (a[vlIdx] != 0) {
-         slope = -1*(a[vnIdx]/a[vlIdx]);
-       } else {
-         alpha = alpha - delta;
-         continue;
-       }
-       if (lastSlope == 0) {
-         if (slope != 0) {
-           addCutAtRoot_(npt, con, error);
-           lastSlope = slope;
-         }
-       } else if (fabs((slope-lastSlope)/lastSlope)*100 >= 50) {
-         addCutAtRoot_(npt, con, error);
-         lastSlope = slope;
-       }
-       alpha = alpha - delta;
-     }
-   }
-  }
+  //if (delta != 0) {
+   //while (alpha >= incBound) {
+     //npt[vnIdx] = alpha; 
+     //act = nlf->eval(npt, &error); 
+     //if (error == 0 && linTermCoeff != 0) {
+       //npt[vlIdx] = (cUb-act)/linTermCoeff;    
+       //f->evalGradient(npt, a, &error);
+       //if (error != 0) {
+         //alpha = alpha - delta;
+         //continue;      
+       //}
+       //if (a[vlIdx] != 0) {
+         //slope = -1*(a[vnIdx]/a[vlIdx]);
+       //} else {
+         //alpha = alpha - delta;
+         //continue;
+       //}
+       //if (lastSlope == 0) {
+         //if (slope != 0) {
+           //addCutAtRoot_(npt, con, error);
+           //lastSlope = slope;
+         //}
+       //} else if (fabs((slope-lastSlope)/lastSlope)*100 >= 50) {
+         //addCutAtRoot_(npt, con, error);
+         //lastSlope = slope;
+       //}
+       //alpha = alpha - delta;
+     //}
+   //}
+  //}
   
-  if (nVar->getUb() == INFINITY) {
-    incBound = nlpx[vnIdx]+10;    
-    delta = 1;  
-  } else {
-    incBound = nVar->getUb();    
-    if (nVar->getUb() - nlpx[vnIdx] >= 1) {
-      delta = 1;  
-    } else {
-      delta = nVar->getUb() - nlpx[vnIdx];  
-    }
-  }
+  //if (nVar->getUb() == INFINITY) {
+    //incBound = nlpx[vnIdx]+10;    
+    //delta = 1;  
+  //} else {
+    //incBound = nVar->getUb();    
+    //if (nVar->getUb() - nlpx[vnIdx] >= 1) {
+      //delta = 1;  
+    //} else {
+      //delta = nVar->getUb() - nlpx[vnIdx];  
+    //}
+  //}
 
-  alpha = nlpx[vnIdx] + delta;
-  lastSlope = nlpSlope;
-  if (delta != 0) {
-    while (alpha <= incBound) {
-      npt[vnIdx] = alpha; 
-      act = nlf->eval(npt, &error); 
-      if (error == 0 && linTermCoeff != 0) {
-        npt[vlIdx] = (cUb- act)/linTermCoeff;    
-        f->evalGradient(npt, a, &error);
-        if (error != 0) {
-          alpha = alpha + delta;
-          continue;      
-        }
-        if (a[vlIdx] != 0) {
-          slope = -1*(a[vnIdx]/a[vlIdx]);
-        } else {
-          alpha = alpha + delta;
-          continue;
-        }
-        if (lastSlope == 0) {
-          if (slope != 0) {
-            addCutAtRoot_(npt, con, error);
-            lastSlope = slope;
-          }
-        } else if (fabs((slope-lastSlope)/lastSlope)*100 >= 50) {
-          addCutAtRoot_(npt, con, error);
-          lastSlope = slope;
-        }
-        alpha = alpha + delta;
-      }
-    }
-  }
-  delete [] a;
-  delete [] npt;
-}
+  //alpha = nlpx[vnIdx] + delta;
+  //lastSlope = nlpSlope;
+  //if (delta != 0) {
+    //while (alpha <= incBound) {
+      //npt[vnIdx] = alpha; 
+      //act = nlf->eval(npt, &error); 
+      //if (error == 0 && linTermCoeff != 0) {
+        //npt[vlIdx] = (cUb- act)/linTermCoeff;    
+        //f->evalGradient(npt, a, &error);
+        //if (error != 0) {
+          //alpha = alpha + delta;
+          //continue;      
+        //}
+        //if (a[vlIdx] != 0) {
+          //slope = -1*(a[vnIdx]/a[vlIdx]);
+        //} else {
+          //alpha = alpha + delta;
+          //continue;
+        //}
+        //if (lastSlope == 0) {
+          //if (slope != 0) {
+            //addCutAtRoot_(npt, con, error);
+            //lastSlope = slope;
+          //}
+        //} else if (fabs((slope-lastSlope)/lastSlope)*100 >= 50) {
+          //addCutAtRoot_(npt, con, error);
+          //lastSlope = slope;
+        //}
+        //alpha = alpha + delta;
+      //}
+    //}
+  //}
+  //delete [] a;
+  //delete [] npt;
+//}
 
 
 //MS: variation of rootLinScheme3 to add cut even for inactive cons - OLD
