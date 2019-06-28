@@ -146,8 +146,8 @@ private:
                            BranchDirection)
   {return ModificationPtr();};
 
-  void findIntersectPt(std::vector<UInt > newConsId, VariablePtr vl,
-                       VariablePtr vnl, double * iP, bool & shouldCont);
+  bool findIntersectPt(std::vector<UInt > newConsId, VariablePtr vl,
+                       VariablePtr vnl, double * iP);
  
   // Base class method. 
   std::string getName() const;
@@ -203,7 +203,7 @@ private:
   void addInitLinearX_(const double *x, bool isSecNLP);
 
 
-  UInt addCutAtRoot_(double *x, ConstraintPtr con, int & error);
+  UInt addCutAtRoot_(double *x, ConstraintPtr con);
 
   /**
    * Solve NLP by fixing integer variables at LP solution and add 
@@ -228,7 +228,7 @@ private:
   void rootScheme3_(const double *nlpx, ConstraintPtr con, LinearFunctionPtr lf);
   void rootScheme4_(const double *nlpx, ConstraintPtr con);
 
-  bool twoVarsCon_(ConstraintPtr con);
+  bool twoVarsCon_(LinearFunctionPtr lf, NonlinearFunctionPtr nlf);
   void rootLinearizations_();
 
   bool lineSearchPt_(double* x, const double* l, const double* u, ConstraintPtr con, double & nlpact);
@@ -290,8 +290,7 @@ private:
                     SeparationStatus *status);
 
   bool addNewCut_(double *b1, UInt vlIdx, ConstraintPtr con, 
-                  double linTermCoeff, int &error, UInt &newConId,
-                  NonlinearFunctionPtr nlf);
+                  double linTermCoeff, UInt &newConId);
   /**
    * Check if objective is violated at the LP solution and
    * add OA cut.
