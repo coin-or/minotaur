@@ -65,7 +65,8 @@ CplexLPEngine::~CplexLPEngine()
   delete timer_;
   if (problem_) {
     problem_->unsetEngine();
-    problem_.reset();
+    //problem_.reset();
+    problem_ = 0;
   }
 }
 

@@ -73,8 +73,9 @@ CplexMILPEngine::~CplexMILPEngine()
   delete stats_;
   delete timer_;
   if (problem_) {
-    //problem_->unsetEngine();
-    problem_.reset();
+    problem_->unsetEngine();
+    //problem_.reset();
+    problem_ = 0;
   }
 }
 
