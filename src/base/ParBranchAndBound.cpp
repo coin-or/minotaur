@@ -26,7 +26,7 @@
 #include "NodeProcessor.h"
 #include "NodeRelaxer.h"
 #include "Option.h"
-#include "ParBndProcessor.h"
+#include "ParPCBProcessor.h"
 #include "ParBranchAndBound.h"
 #include "ParNodeIncRelaxer.h"
 #include "ParTreeManager.h"
@@ -253,7 +253,7 @@ void ParBranchAndBound::print2dvec(std::vector<std::vector<int> > output)
 
 NodePtr ParBranchAndBound::processRoot_(bool *should_prune, bool *should_dive,
                                         ParNodeIncRelaxerPtr parNodeRlxr0,
-                                        ParBndProcessorPtr nodePrcssr0,
+                                        ParPCBProcessorPtr nodePrcssr0,
                                         WarmStartPtr ws0)
 {
   NodePtr current_node = (NodePtr) new Node ();
@@ -517,7 +517,7 @@ int ParBranchAndBound::strToInt(std::string str)
 
 
 void ParBranchAndBound::parsolve(ParNodeIncRelaxerPtr parNodeRlxr[],
-                                 ParBndProcessorPtr nodePrcssr[],
+                                 ParPCBProcessorPtr nodePrcssr[],
                                  UInt numThreads)
 {
   double wallTimeStart = getWallTime();
@@ -525,9 +525,9 @@ void ParBranchAndBound::parsolve(ParNodeIncRelaxerPtr parNodeRlxr[],
   bool *dived_prev = new bool[numThreads];
   bool *should_prune = new bool[numThreads];
   bool *initialized = new bool[numThreads];
-  NodePtr *current_node = new NodePtr[numThreads];
+  NodePtr *current_node = new NodePtr[numThreads]();
   NodePtr *new_node = new NodePtr[numThreads];
-  Branches branches;
+  Branches *branches = new Branches[numThreads];
   WarmStartPtr *ws = new WarmStartPtr[numThreads];
   RelaxationPtr *rel = new RelaxationPtr[numThreads];
   UInt nodeCount;
@@ -539,20 +539,12 @@ void ParBranchAndBound::parsolve(ParNodeIncRelaxerPtr parNodeRlxr[],
   UInt *nodeCountTh = new UInt[numThreads];
   bool iterMode = env_->getOptions()->findBool("mcbnb_iter_mode")->getValue();
   UInt iterCount = 1;
-#if 0
-  UInt timeCount = 0;
-#endif
-#if PRINT
-  const char* inputFile = "1alan";      //serial bnb tree input filename
-  std::vector<std::vector<double> > serialOutput = readSerialOutput(inputFile);
-  std::vector<std::vector<double> > parallelOutput;
-  std::vector<double> *tmp = new std::vector<double> [numThreads];
-#endif
+  UInt numVars = 0;
 
 #if USE_OPENMP
 #pragma omp parallel for
 #endif
-  for(UInt i = 0; i < numThreads; i++) {
+  for(UInt i = 0; i < numThreads; ++i) {
     should_dive[i] = false;
     dived_prev[i] = false;
     should_prune[i] = false;
@@ -588,6 +580,8 @@ void ParBranchAndBound::parsolve(ParNodeIncRelaxerPtr parNodeRlxr[],
   // TODO: use user options to set the pool size. For now it is 1.
   solPool_ = (SolutionPoolPtr) new SolutionPool(env_, problem_, 1);
 
+  rel[0] = parNodeRlxr[0]->getRelaxation();
+
   // call heuristics before the root, if needed 
   for (HeurVector::iterator it=preHeurs_.begin(); it!=preHeurs_.end(); ++it) {
     (*it)->solve(current_node[0], rel[0], solPool_);
@@ -597,7 +591,6 @@ void ParBranchAndBound::parsolve(ParNodeIncRelaxerPtr parNodeRlxr[],
   // do the root
   current_node[0] = processRoot_(&should_prune[0], &dived_prev[0],
                                  parNodeRlxr[0], nodePrcssr[0], ws[0]);
-
   // stop if done
   if (!current_node[0]) { 
     tm_->updateLb();
@@ -628,7 +621,15 @@ void ParBranchAndBound::parsolve(ParNodeIncRelaxerPtr parNodeRlxr[],
   // solve root outside the loop. save the useful information.
   bool shouldRun = true;
   initialized[0] = true; //pseudoCosts for thread0 initialized while doing root
+  numVars = rel[0]->getNumVars();
+  bool isParRel = false;
+  if (nodePrcssr[0]->getBrancher()->getName() == "ParReliabilityBrancher") {
+    isParRel = true;
+  }
 
+  if (current_node[1]) {
+    assert(!"Memory leak (fake node) non-master thread\n");
+  }
   while(nodeCount > 0 && shouldRun) {
 #if SPEW
     logger_->msgStream(LogDebug1) << me_ << "processing node "
@@ -644,60 +645,92 @@ void ParBranchAndBound::parsolve(ParNodeIncRelaxerPtr parNodeRlxr[],
 #if USE_OPENMP
 #pragma omp for
 #endif
-      for(UInt i = 0; i < numThreads; i++) {
-        if(iterMode == true) shouldRunTh[i] = true;
+      for(UInt i = 0; i < numThreads; ++i) {
+        ParReliabilityBrancherPtr parRelBr;
+        UIntVector tmpTimesUp, tmpTimesDown, timesUp, timesDown, lastStrBranched;
+        DoubleVector tmpPseudoUp, tmpPseudoDown, pseudoUp, pseudoDown;
+        if (isParRel) {
+          timesUp.resize(numVars,0);
+          timesDown.resize(numVars,0);
+          pseudoUp.resize(numVars,0);
+          pseudoDown.resize(numVars,0);
+          lastStrBranched.resize(numVars,0);
+        }
 
-        while(nodeCountTh[i] > 0 && shouldRunTh[i]) {
-          if(!current_node[i]) {
+        if (iterMode == true) shouldRunTh[i] = true;
+        while (nodeCountTh[i] > 0 && shouldRunTh[i]) {
+          if (current_node[i]) {
 #if USE_OPENMP
 #pragma omp critical (treeManager)
 #endif
             {
+#if SPEW
+#pragma omp critical (cout)
+              logger_->msgStream(LogInfo) << "has node " << " thread "
+                << omp_get_thread_num() << std::endl;
+#endif
+              if (tm_->shouldPrune_(current_node[i])) {
+                parNodeRlxr[i]->reset(current_node[i], false);
+                tm_->pruneNode(current_node[i]);
+                current_node[i] = NodePtr();
+              }
+            }
+          }
+          if (!current_node[i]) {
+#if USE_OPENMP
+#pragma omp critical (treeManager)
+#endif
+            {
+#if SPEW
+              logger_->msgStream(LogInfo) << "doesn't have node " << " thread "
+                << omp_get_thread_num() << std::endl;
+#endif
+
               current_node[i] = tm_->getCandidate();
               if(current_node[i]) {
+#if SPEW
+              logger_->msgStream(LogInfo) << "get/remove node " << current_node[i]->getId()
+                << " thread " << omp_get_thread_num() << std::endl;
+#endif
                 tm_->removeActiveNode(current_node[i]);
                 dived_prev[i] = false;
               }
             }
           }
-          if(current_node[i]) { 
+          if (current_node[i]) {
 #if SPEW
-            logger_->msgStream(LogDebug1) << me_ << "processing node "
-              << current_node[i]->getId() << std::endl
+            logger_->msgStream(LogInfo) << me_ << "process node "
+              << current_node[i]->getId() << " thread " << omp_get_thread_num() << std::endl
               << me_ << "depth = " << current_node[i]->getDepth() << std::endl
               << me_ << "did we dive = " << dived_prev[i] << std::endl;
 #endif
             should_dive[i] = false;
+
             rel[i] = parNodeRlxr[i]->createNodeRelaxation(current_node[i],
                                                           dived_prev[i],
                                                           should_prune[i]);
-#if PRINT
-            tmp[i].push_back(current_node[i]->getId());
-            tmp[i].push_back(current_node[i]->getParent()->getId());
-            tmp[i].push_back(strToInt(current_node[i]->getBranch()->getBrCand()->getName()));
-            tmp[i].push_back(current_node[i]->getLb());
-            tmp[i].push_back(i);
-#if PRINT
+            for(UInt j = 0; j < numThreads; ++j) {
+              if (i!=j || numThreads==1) {
+                if (isParRel) {
+                  parRelBr = dynamic_cast <ParReliabilityBrancher*> (nodePrcssr[j]->getBrancher());
+                  tmpTimesUp = parRelBr->getTimesUp();
+                  tmpTimesDown = parRelBr->getTimesDown();
+                  tmpPseudoUp = parRelBr->getPCUp();
+                  tmpPseudoDown = parRelBr->getPCDown();
+                  for (UInt l=0; l < tmpTimesDown.size(); ++l) {
+                    timesUp[l] += tmpTimesUp[l];
+                    timesDown[l] += tmpTimesDown[l];
+                    pseudoUp[l] += tmpTimesUp[l]*tmpPseudoUp[l];
+                    pseudoDown[l] += tmpTimesDown[l]*tmpPseudoDown[l];
+                  }
+                }
+              }
+            }
+            nodePrcssr[i]->process(current_node[i], rel[i], solPool_,
+                                   initialized[i], timesUp, timesDown,
+                                   pseudoUp, pseudoDown, stats_->nodesProc);
 #if USE_OPENMP
 #pragma omp critical
-#endif
-            {
-              tmp[i].push_back(getWallTime() - wallTimeStart);
-            }
-#endif
-#endif
-            nodePrcssr[i]->process(current_node[i], rel[i], solPool_, initialized[i]);
-#if PRINT
-#if USE_OPENMP
-#pragma omp critical
-#endif
-            {
-              tmp[i].push_back(getWallTime() - wallTimeStart);
-            }
-            tmp[i].push_back(current_node[i]->getTbScore());
-#endif
-#if USE_OPENMP
-#pragma omp critical (stats)
 #endif
             ++stats_->nodesProc;
 
@@ -713,71 +746,65 @@ void ParBranchAndBound::parsolve(ParNodeIncRelaxerPtr parNodeRlxr[],
                 tm_->setUb(solPool_->getBestSolutionValue());
               }
             }
-#if USE_OPENMP
-#pragma omp critical (treeManager)
-#endif
             should_prune[i] = shouldPrune_(current_node[i]);
 
             if (should_prune[i]) {
 #if SPEW
-              logger_->msgStream(LogDebug1) << me_ << "node pruned" << 
-                std::endl;
+              logger_->msgStream(LogInfo) << me_ << "prune node " << current_node[i]->getId()
+                << " thread " << omp_get_thread_num() << std::endl;
 #endif
               parNodeRlxr[i]->reset(current_node[i], false);
 #if USE_OPENMP
 #pragma omp critical (treeManager)
 #endif
               {
-#if PRINT
-                tmp[i].push_back(current_node[i]->getStatus());
-                if(current_node[i]->getStatus()==NodeOptimal)
-                {
-                  tmp[i].push_back(tm_->getUb());
-                }
-                else
-                  tmp[i].push_back(-1);
-#endif
                 tm_->pruneNode(current_node[i]);
               }
+              //if (!dived_prev[i]) {
+//#if USE_OPENMP
+//#pragma omp critical (treeManager)
+//#endif
+                //tm_->removeActiveNode(current_node[i]);
+              //}
+
 #if USE_OPENMP
 #pragma omp critical (treeManager)
 #endif
               {
                 new_node[i] = tm_->getCandidate();
                 if(new_node[i]) {
+#if SPEW
+                  logger_->msgStream(LogInfo) << "get/remove node " << current_node[i]->getId()
+                    << " thread " << omp_get_thread_num() << std::endl;
+#endif
                   tm_->removeActiveNode(new_node[i]);
                 }
               }
               dived_prev[i] = false;
 
             } else {
-#if PRINT
-              tmp[i].push_back(-1);     //prune status
-              tmp[i].push_back(-1);     //feasible solution/ub
-#endif
               initialized[i] = true;
 #if SPEW
-              logger_->msgStream(LogDebug1) << me_ << "branching" << 
-                std::endl;
+              logger_->msgStream(LogInfo) << me_ << "branch at node " << current_node[i]->getId()
+               << " thread " << omp_get_thread_num() << std::endl;
 #endif
-#if USE_OPENMP
-#pragma omp critical
-#endif
-              branches = nodePrcssr[i]->getBranches();
+              branches[i] = nodePrcssr[i]->getBranches();
 
               ws[i] = nodePrcssr[i]->getWarmStart();
-              //if (!dived_prev[i]) {
-              //tm_->removeActiveNode(current_node[i]);
-              //}
+
               should_dive[i] = tm_->shouldDive();
-              if (!branches) {
-                std::cout<<" NO BRANCHES \n";
+              if (!branches[i]) {
+                logger_->msgStream(LogInfo) << " NO BRANCHES \n";
               }
 #if USE_OPENMP
 #pragma omp critical (treeManager)
 #endif
               {
-                new_node[i] = tm_->branch(branches, current_node[i], ws[i]);
+                new_node[i] = tm_->branch(branches[i], current_node[i], ws[i]);
+#if SPEW
+                logger_->msgStream(LogInfo) << "get node (branch) " << new_node[i]->getId()
+                  << " thread " << omp_get_thread_num() << std::endl;
+#endif
               }
               assert((should_dive[i] && new_node[i])
                      || (!should_dive[i] && !new_node[i]));
@@ -792,8 +819,12 @@ void ParBranchAndBound::parsolve(ParNodeIncRelaxerPtr parNodeRlxr[],
                   new_node[i] = tm_->getCandidate(); // Can be NULL. The
                   // branches that were created could have large lb and tm
                   // might have eliminated them.
-                  if(new_node[i]) {
+                  if (new_node[i]) {
                     tm_->removeActiveNode(new_node[i]);
+#if SPEW
+                    logger_->msgStream(LogInfo) << "get/remove node " << new_node[i]->getId()
+                      << " thread " << omp_get_thread_num() << std::endl;
+#endif
                   }
                   dived_prev[i] = false;
                 }
@@ -808,15 +839,8 @@ void ParBranchAndBound::parsolve(ParNodeIncRelaxerPtr parNodeRlxr[],
 #endif
           treeLbTh[i] = tm_->updateLb();
           minNodeLbTh[i] = INFINITY;
-#if 0
-#if USE_OPENMP
-#pragma omp critical
-#endif
-          if(i==numThreads-1 && (getWallTime()-wallTimeStart) > timeCount) {
-            std::cout<<" Idle threads:";
-          }
-#endif
-          for (UInt j=0; j < numThreads; j++) {
+
+          for (UInt j=0; j < numThreads; ++j) {
             if (current_node[j]) {
               nodeLbTh[i] = current_node[j]->getLb(); 
               if (nodeLbTh[i] < minNodeLbTh[i])
@@ -825,24 +849,8 @@ void ParBranchAndBound::parsolve(ParNodeIncRelaxerPtr parNodeRlxr[],
               }
               nodeCountTh[i]++;
             } 
-#if 0
-#if USE_OPENMP
-#pragma omp critical
-#endif
-            else {
-              if(i==numThreads-1 && (getWallTime()-wallTimeStart) > timeCount) {
-                std::cout<<" "<<j;
-              }
-            }
-#endif
           }
-#if 0
-#if USE_OPENMP
-#pragma omp critical
-#endif
-          if(i==numThreads-1 && (getWallTime()-wallTimeStart) > timeCount) {
-            std::cout<<std::endl; timeCount++;}
-#endif
+
           if (minNodeLbTh[i] < treeLbTh[i]) {
             treeLbTh[i] = minNodeLbTh[i];
           }
@@ -856,18 +864,6 @@ void ParBranchAndBound::parsolve(ParNodeIncRelaxerPtr parNodeRlxr[],
               shouldRunTh[i] = false;
             }
           }
-#if USE_OPENMP
-#pragma omp critical
-#endif
-          {
-#if PRINT
-            if(!tmp[i].empty())
-            {
-              parallelOutput.push_back(tmp[i]);
-              tmp[i].clear();
-            }
-#endif
-          }
           if(iterMode == true) shouldRunTh[i] = false;
         } //internal while ends
       } //parallel for end
@@ -875,18 +871,11 @@ void ParBranchAndBound::parsolve(ParNodeIncRelaxerPtr parNodeRlxr[],
 #pragma omp single
 #endif
       { 
-#if 0
-        {
-          std::cout<<"Started checking stopping conditions "
-            << " at thread " << omp_get_thread_num()
-            << " at time " << getWallTime() - wallTimeStart<<"\n";
-        }
-#endif
         iterCount++;
         nodeCount = 0;
         treeLb = tm_->updateLb();
         minNodeLb = INFINITY;
-        for (UInt j = 0; j < numThreads; j++) {
+        for (UInt j = 0; j < numThreads; ++j) {
           if (current_node[j]) {
             nodeLb = current_node[j]->getLb(); 
             if (nodeLb < minNodeLb)
@@ -901,10 +890,7 @@ void ParBranchAndBound::parsolve(ParNodeIncRelaxerPtr parNodeRlxr[],
         }
 
         showParStatus_(nodeCount, treeLb, wallTimeStart);
-#if 0
-        std::cout<< "# nodes in process: "<< nodeCount <<"; # active nodes: "
-          << numActiveNodes << std::endl;
-#endif
+
         // update stopping conditions
         if (nodeCount == 0) {
           tm_->updateLb();
@@ -932,12 +918,6 @@ void ParBranchAndBound::parsolve(ParNodeIncRelaxerPtr parNodeRlxr[],
       } //omp master/single ended
     }   //parallel region ends
   }     //while ends
-#if PRINT
-  print2dvec(serialOutput);
-  print2dvec(parallelOutput);
-  std::vector<std::vector<double> > finalParOutput = mapSerialOutput(serialOutput, parallelOutput);
-  print2dvec(finalParOutput);
-#endif
   logger_->msgStream(LogInfo) << me_ << "stopping branch-and-bound"
     << std::endl
     << me_ << "nodes processed = " << stats_->nodesProc << std::endl
@@ -963,14 +943,12 @@ void ParBranchAndBound::parsolve(ParNodeIncRelaxerPtr parNodeRlxr[],
   delete[] shouldRunTh;
   delete[] ws;
   delete[] rel;
-#if PRINT
-  delete[] tmp;
-#endif
+  delete[] branches;
 }
 
 
 void ParBranchAndBound::parsolveSync(ParNodeIncRelaxerPtr parNodeRlxr[],
-                                 ParBndProcessorPtr nodePrcssr[],
+                                 ParPCBProcessorPtr nodePrcssr[],
                                  UInt numThreads)
 {
   double wallTimeStart = getWallTime();
@@ -1099,6 +1077,10 @@ void ParBranchAndBound::parsolveSync(ParNodeIncRelaxerPtr parNodeRlxr[],
 #pragma omp for
 #endif
         for(UInt i = 0; i < numThreads; ++i) {
+          //ParReliabilityBrancherPtr parRelBr;
+          UIntVector tmpTimesUp, tmpTimesDown, timesUp, timesDown, lastStrBranched;
+          DoubleVector tmpPseudoUp, tmpPseudoDown, pseudoUp, pseudoDown;
+
           if (current_node[i]) {
 #if SPEW
             logger_->msgStream(LogDebug1) << me_ << "processing node "
@@ -1110,7 +1092,9 @@ void ParBranchAndBound::parsolveSync(ParNodeIncRelaxerPtr parNodeRlxr[],
             rel[i] = parNodeRlxr[i]->createNodeRelaxation(current_node[i],
                                                           dived_prev[i],
                                                           should_prune[i]);
-            nodePrcssr[i]->process(current_node[i], rel[i], solPool_, initialized[i]);
+            nodePrcssr[i]->process(current_node[i], rel[i], solPool_,
+                                   initialized[i], timesUp, timesDown,
+                                   pseudoUp, pseudoDown, stats_->nodesProc);
 #if USE_OPENMP
 #pragma omp critical
 #endif
@@ -1314,7 +1298,7 @@ void ParBranchAndBound::writeStats(std::ostream &out)
   solPool_->writeStats(out);
 }
 
-void ParBranchAndBound::writeParStats(std::ostream &out, ParBndProcessorPtr nodePrcssr[])
+void ParBranchAndBound::writeParStats(std::ostream &out, ParPCBProcessorPtr nodePrcssr[])
 {
   out << me_ << "time taken      = " << std::fixed << std::setprecision(2)
     << stats_->timeUsed << std::endl
