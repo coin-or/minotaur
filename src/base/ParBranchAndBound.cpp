@@ -665,9 +665,11 @@ void ParBranchAndBound::parsolve(ParNodeIncRelaxerPtr parNodeRlxr[],
 #endif
             {
 #if SPEW
+#if USE_OPENMP
 #pragma omp critical (cout)
               logger_->msgStream(LogInfo) << "has node " << " thread "
                 << omp_get_thread_num() << std::endl;
+#endif
 #endif
               if (tm_->shouldPrune_(current_node[i])) {
                 parNodeRlxr[i]->reset(current_node[i], false);
@@ -682,15 +684,19 @@ void ParBranchAndBound::parsolve(ParNodeIncRelaxerPtr parNodeRlxr[],
 #endif
             {
 #if SPEW
+#if USE_OPENMP
               logger_->msgStream(LogInfo) << "doesn't have node " << " thread "
                 << omp_get_thread_num() << std::endl;
+#endif
 #endif
 
               current_node[i] = tm_->getCandidate();
               if(current_node[i]) {
 #if SPEW
+#if USE_OPENMP
               logger_->msgStream(LogInfo) << "get/remove node " << current_node[i]->getId()
                 << " thread " << omp_get_thread_num() << std::endl;
+#endif
 #endif
                 tm_->removeActiveNode(current_node[i]);
                 dived_prev[i] = false;
@@ -699,10 +705,12 @@ void ParBranchAndBound::parsolve(ParNodeIncRelaxerPtr parNodeRlxr[],
           }
           if (current_node[i]) {
 #if SPEW
+#if USE_OPENMP
             logger_->msgStream(LogInfo) << me_ << "process node "
               << current_node[i]->getId() << " thread " << omp_get_thread_num() << std::endl
               << me_ << "depth = " << current_node[i]->getDepth() << std::endl
               << me_ << "did we dive = " << dived_prev[i] << std::endl;
+#endif
 #endif
             should_dive[i] = false;
 
@@ -750,8 +758,10 @@ void ParBranchAndBound::parsolve(ParNodeIncRelaxerPtr parNodeRlxr[],
 
             if (should_prune[i]) {
 #if SPEW
+#if USE_OPENMP
               logger_->msgStream(LogInfo) << me_ << "prune node " << current_node[i]->getId()
                 << " thread " << omp_get_thread_num() << std::endl;
+#endif
 #endif
               parNodeRlxr[i]->reset(current_node[i], false);
 #if USE_OPENMP
@@ -774,8 +784,10 @@ void ParBranchAndBound::parsolve(ParNodeIncRelaxerPtr parNodeRlxr[],
                 new_node[i] = tm_->getCandidate();
                 if(new_node[i]) {
 #if SPEW
+#if USE_OPENMP
                   logger_->msgStream(LogInfo) << "get/remove node " << current_node[i]->getId()
                     << " thread " << omp_get_thread_num() << std::endl;
+#endif
 #endif
                   tm_->removeActiveNode(new_node[i]);
                 }
@@ -785,8 +797,10 @@ void ParBranchAndBound::parsolve(ParNodeIncRelaxerPtr parNodeRlxr[],
             } else {
               initialized[i] = true;
 #if SPEW
+#if USE_OPENMP
               logger_->msgStream(LogInfo) << me_ << "branch at node " << current_node[i]->getId()
                << " thread " << omp_get_thread_num() << std::endl;
+#endif
 #endif
               branches[i] = nodePrcssr[i]->getBranches();
 
@@ -802,8 +816,10 @@ void ParBranchAndBound::parsolve(ParNodeIncRelaxerPtr parNodeRlxr[],
               {
                 new_node[i] = tm_->branch(branches[i], current_node[i], ws[i]);
 #if SPEW
+#if USE_OPENMP
                 logger_->msgStream(LogInfo) << "get node (branch) " << new_node[i]->getId()
                   << " thread " << omp_get_thread_num() << std::endl;
+#endif
 #endif
               }
               assert((should_dive[i] && new_node[i])
@@ -822,8 +838,10 @@ void ParBranchAndBound::parsolve(ParNodeIncRelaxerPtr parNodeRlxr[],
                   if (new_node[i]) {
                     tm_->removeActiveNode(new_node[i]);
 #if SPEW
+#if USE_OPENMP
                     logger_->msgStream(LogInfo) << "get/remove node " << new_node[i]->getId()
                       << " thread " << omp_get_thread_num() << std::endl;
+#endif
 #endif
                   }
                   dived_prev[i] = false;
