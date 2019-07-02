@@ -187,7 +187,7 @@ Branches ReliabilityBrancher::findBranches(RelaxationPtr rel, NodePtr node,
   findCandidates_();
   if (status_ == PrunedByBrancher) {
     br_status = status_;
-    return branches;
+    return 0;
   }
 
   if (status_ == NotModifiedByBrancher) {

@@ -135,10 +135,6 @@ void NlPresHandler::chkRed_(ProblemPtr p, bool purge_cons, bool *changed,
         assert(error==0);
       }
 
-      if (c->getLb()>-INFINITY && nlfl+lfl-eTol_ > c->getLb()) {
-        p_->changeBound(c, Lower, -INFINITY);
-      nlf->computeBounds(&nlfl, &nlfu, &error);
-      assert(error==0);
       impl_lb = nlfl + lfl;
       impl_ub = nlfu + lfu;
 
@@ -160,7 +156,6 @@ void NlPresHandler::chkRed_(ProblemPtr p, bool purge_cons, bool *changed,
           && impl_lb < c->getLb()+bigm-eTol_) {
         mod = (ConBoundModPtr) new ConBoundMod(c, Lower, c->getLb()-bigm);
         mod->applyToProblem(p);
->>>>>>> e2034ec6971013f63c59dd5b2d05e34036cdbc3c
         *changed = true;
 #if SPEW
         logger_->msgStream(LogDebug2) << me_ << " removed lb of constraint "
@@ -1563,18 +1558,19 @@ void NlPresHandler::quad_var_bound(VarBoundModVector qfmod, LinearFunctionPtr lf
 
 
 
-SolveStatus NlPresHandler::varBndsFromCons_(bool *changed)
+SolveStatus NlPresHandler::varBndsFromCons_(ProblemPtr p, bool apply_to_prob,
+                                            bool *changed, ModQ* mods,
+                                            SolveStatus &status)
 {
   ConstraintPtr c;
   LinearFunctionPtr lf;
   NonlinearFunctionPtr nlf;
   FunctionPtr f;
-
   QuadraticFunctionPtr qf;
   
   double lfu, lfl, ub, lb;
   double ub1, lb1, ub2, lb2, ubc, lbc;
-  VarBoundModVector mods;
+  VarBoundModVector dmods;
   int change1 = 0;
   int change2 = 0;
 
@@ -1587,7 +1583,7 @@ SolveStatus NlPresHandler::varBndsFromCons_(bool *changed)
   VariableSet qfvars;
   VariableSet linear_terms;
 
-  SolveStatus status = Started;
+  status = Started;
 
   for (ConstraintConstIterator cit=p->consBegin(); cit!=p->consEnd();
        ++cit) {
@@ -1607,18 +1603,6 @@ SolveStatus NlPresHandler::varBndsFromCons_(bool *changed)
       lfu = lfl = 0.0;
 
       if (qf){
-        // VariableSet lfvars;
-        // VariableSet qfvars;
-        // VariableSet linear_terms;
-
-        // lf->getVars(&lfvars);
-        // qf->getVars(&qfvars);
-        
-        // //linear_terms = std::set_difference(lfvars.begin(), lfvars.end(), qfvars.begin(), qfvars.end());
-
-        // //linear variable bounds
-
-
         ubc = c->getUb();
         lbc = c->getLb();
         // std::cout<<"ccccccccccccll"<<lb<<"\n";
@@ -1648,90 +1632,38 @@ SolveStatus NlPresHandler::varBndsFromCons_(bool *changed)
         lfvars.clear();
         qfvars.clear();
         linear_terms.clear();
-
-        
-
       }
-
       if (nlf){
         if (lf) {
           lf->computeBounds(&lfl, &lfu);
         }
         ub = c->getUb()-lfl;
         lb = c->getLb()-lfu;
-        
-        // if (qf){
-        //   qf->varBoundMods(lb, ub, mods, &status);
-        // }
-
-        if (nlf){
-          nlf->varBoundMods(lb, ub, mods, &status);
-        }
+        nlf->varBoundMods(lb, ub, dmods, &status);
       }
       
       if (SolvedInfeasible == status) {
-        mods.clear();
+        dmods.clear();
         break;
       } else if (SolveError == status) {
-        mods.clear();
+        dmods.clear();
         break;
       }
-      if (false==mods.empty()) {
-        for (VarBoundModVector::iterator it=mods.begin(); it!=mods.end(); ++it) {
+      if (false==dmods.empty()) {
+        for (VarBoundModVector::iterator it=dmods.begin(); it!=dmods.end(); ++it) {
           (*it)->applyToProblem(p);
           ++stats_.vBnd;
-      
-
-      
-
-
- 
-
-
+          if (false==apply_to_prob) {
+            mods->push_back(*it);
+          }
 #if SPEW
           logger_->msgStream(LogDebug2) << me_ << " ";
           (*it)->write(logger_->msgStream(LogDebug2));
 #endif
         }
-        mods.clear();
+        dmods.clear();
         *changed = true;
       }
-
-
-
-
-
-
-//       if (false==lfmod.empty()) {
-//         for (VarBoundModVector::iterator it=lfmod.begin(); it!=lfmod.end(); ++it) {
-//           (*it)->applyToProblem(p_);
-//           ++stats_.vBnd;
-// #if SPEW
-//           logger_->msgStream(LogDebug2) << me_ << " ";
-//           (*it)->write(logger_->msgStream(LogDebug2));
-// #endif
-//         }
-//         lfmod.clear();
-//         *changed = true;
-//       }
-
-      //std::cout<<"qfmodd"<<qfmod.empty()<<"\n";
-//       if (false==qfmod.empty()) {
-//         std::cout<<"about to apply varboundmodvector========="<<"\n";
-
-        
-//         for (VarBoundModVector::iterator it=qfmod.begin(); it!=qfmod.end(); ++it) {
-//           (*it)->applyToProblem(p_);
-//           ++stats_.vBnd;
-
-// #if SPEW
-//           logger_->msgStream(LogDebug2) << me_ << " ";
-//           (*it)->write(logger_->msgStream(LogDebug2));
-// #endif
-//         }
-//         qfmod.clear();
-//         *changed = true;
-//       }         
     }
   }
 }
