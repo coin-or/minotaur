@@ -24,7 +24,7 @@ namespace Minotaur {
   class   NodeProcessor;
   class   NodeRelaxer;
   class   ParNodeIncRelaxer;
-  class   ParBndProcessor;
+  class   ParPCBProcessor;
   class   ParTreeManager;
   class   Problem;
   class   Solution;
@@ -36,7 +36,7 @@ namespace Minotaur {
   typedef NodeProcessor* NodeProcessorPtr;
   typedef NodeRelaxer* NodeRelaxerPtr;
   typedef ParNodeIncRelaxer* ParNodeIncRelaxerPtr;
-  typedef ParBndProcessor* ParBndProcessorPtr;
+  typedef ParPCBProcessor* ParPCBProcessorPtr;
   typedef Solution* SolutionPtr;
   typedef SolutionPool* SolutionPoolPtr;
   typedef ParTreeManager* ParTreeManagerPtr;
@@ -169,22 +169,22 @@ namespace Minotaur {
      * \brief Start solving the Problem using branch-and-bound.
      *
      * \param [in] parNodeRelaxer is the array of node relaxers.
-     * \param [in] parBndProcessor is the array of node processors.
+     * \param [in] parPCBProcessor is the array of node processors.
      * \param [in] nThreads is the number of threads being used.
      */ 
     void parsolve(ParNodeIncRelaxerPtr parNodeRelaxer[],
-                  ParBndProcessorPtr parBndProcessor[],
+                  ParPCBProcessorPtr parPCBProcessor[],
                   UInt nThreads);
 
     /**
      * \brief Start solving the Problem using branch-and-bound with reproducibility.
      *
      * \param [in] parNodeRelaxer is the array of node relaxers.
-     * \param [in] parBndProcessor is the array of node processors.
+     * \param [in] parPCBProcessor is the array of node processors.
      * \param [in] nThreads is the number of threads being used.
      */
     void parsolveSync(ParNodeIncRelaxerPtr parNodeRelaxer[],
-                  ParBndProcessorPtr parBndProcessor[],
+                  ParPCBProcessorPtr parPCBProcessor[],
                   UInt nThreads);
 
     /// Print a two-dimensional vector (customized).
@@ -211,7 +211,7 @@ namespace Minotaur {
 
     /// Write statistics of parallel algorithm to the ostream out
     void writeParStats(std::ostream & out,
-                       ParBndProcessorPtr parBndProcessor[]);
+                       ParPCBProcessorPtr parPCBProcessor[]);
 
     /// Write statistics to the logger
     void writeStats();
@@ -297,7 +297,7 @@ namespace Minotaur {
      */
     NodePtr processRoot_(bool *should_prune, bool *should_dive,
                          ParNodeIncRelaxerPtr parNodeRlxr,
-                         ParBndProcessorPtr nodePrcssr, WarmStartPtr ws);
+                         ParPCBProcessorPtr nodePrcssr, WarmStartPtr ws);
 
 
     /// Return True if a node can be pruned.

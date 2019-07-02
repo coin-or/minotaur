@@ -115,6 +115,12 @@ Branches ParPCBProcessor::getBranches()
 }
 
 
+ConstSolutionPtr ParPCBProcessor::getSolution()
+{
+  return engine_->getSolution();
+}
+
+
 WarmStartPtr ParPCBProcessor::getWarmStart()
 {
   return ws_;

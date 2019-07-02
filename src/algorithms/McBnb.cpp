@@ -17,10 +17,7 @@
 #include <omp.h>
 #endif
 #include "MinotaurConfig.h"
-#include "BndProcessor.h"
-#include "ParBndProcessor.h"
 #include "BranchAndBound.h"
-#include "ParBranchAndBound.h"
 #include "EngineFactory.h"
 #include "Environment.h"
 #include "IntVarHandler.h"
@@ -33,13 +30,15 @@
 #include "MaxVioBrancher.h"
 //#include "MINLPDiving.h"
 #include "NLPEngine.h"
-#include "NlPresHandler.h"
+//#include "NlPresHandler.h"
 #include "NodeIncRelaxer.h"
 #include "Objective.h"
 #include "Option.h"
+#include "ParBranchAndBound.h"
 #include "ParMINLPDiving.h"
 #include "ParNodeIncRelaxer.h"
-#include "PCBProcessor.h"
+#include "ParPCBProcessor.h"
+#include "ParReliabilityBrancher.h"
 #include "Presolver.h"
 #include "ProblemSize.h"
 #include "Problem.h"
@@ -64,7 +63,7 @@ BrancherPtr createBrancher(EnvPtr env, ProblemPtr p, HandlerVector handlers,
 ParBranchAndBound* createParBab(EnvPtr env, ProblemPtr p, EnginePtr e,
                                 UInt numThreads,
                                 RelaxationPtr relCopy[],
-                                ParBndProcessorPtr nodePrcssr[],
+                                ParPCBProcessorPtr nodePrcssr[],
                                 ParNodeIncRelaxerPtr parNodeRlxr[])
 {
   ParBranchAndBound *bab = new ParBranchAndBound(env, p);
@@ -80,7 +79,7 @@ ParBranchAndBound* createParBab(EnvPtr env, ProblemPtr p, EnginePtr e,
     HandlerVector handlersCopy;
     IntVarHandlerPtr v_hand = (IntVarHandlerPtr) new IntVarHandler(env, p);
     LinHandlerPtr l_hand = (LinHandlerPtr) new LinearHandler(env, p);
-    NlPresHandlerPtr nlhand;
+    //NlPresHandlerPtr nlhand;
     SOS1HandlerPtr s_hand = (SOS1HandlerPtr) new SOS1Handler(env, p);
     SOS2HandlerPtr s2_hand;
     
@@ -105,9 +104,9 @@ ParBranchAndBound* createParBab(EnvPtr env, ProblemPtr p, EnginePtr e,
         true==options->findBool("presolve")->getValue() &&
         true==options->findBool("use_native_cgraph")->getValue() &&
         true==options->findBool("nl_presolve")->getValue()) {
-      nlhand = (NlPresHandlerPtr) new NlPresHandler(env, p);
-      nlhand->setModFlags(false, true);
-      handlersCopy.push_back(nlhand);
+      //nlhand = (NlPresHandlerPtr) new NlPresHandler(env, p);
+      //nlhand->setModFlags(false, true);
+      //handlersCopy.push_back(nlhand);
     }
 
     br = createBrancher(env, p, handlersCopy, eCopy);
@@ -122,7 +121,8 @@ ParBranchAndBound* createParBab(EnvPtr env, ProblemPtr p, EnginePtr e,
     }
     relCopy[i]->setInitialPoint(p->getInitialPoint());
 
-    nodePrcssr[i] = (ParBndProcessorPtr) new ParBndProcessor(env, eCopy, handlersCopy);
+    //nodePrcssr[i] = (ParBndProcessorPtr) new ParBndProcessor(env, eCopy, handlersCopy);
+    nodePrcssr[i] = (ParPCBProcessorPtr) new ParPCBProcessor(env, eCopy, handlersCopy);
     nodePrcssr[i]->setBrancher(br);
 
     parNodeRlxr[i] = (ParNodeIncRelaxerPtr) new ParNodeIncRelaxer(env, handlersCopy);
@@ -190,6 +190,11 @@ BrancherPtr createBrancher(EnvPtr env, ProblemPtr p, HandlerVector handlers,
       "reliability branching iteration limit = " <<
       rel_br->getIterLim() << std::endl;
     br = rel_br;
+  } else if (env->getOptions()->findString("brancher")->getValue() == "parRel") {
+    ParReliabilityBrancherPtr parRel_br;
+    parRel_br = (ParReliabilityBrancherPtr) new ParReliabilityBrancher(env, handlers);
+    parRel_br->setEngine(e);
+    br = parRel_br;
   } else if (env->getOptions()->findString("brancher")->getValue() ==
              "maxvio") {
     br = (MaxVioBrancherPtr) new MaxVioBrancher(env, handlers);
@@ -339,8 +344,8 @@ PresolverPtr presolve(EnvPtr env, ProblemPtr p, size_t ndefs,
          true==env->getOptions()->findBool("use_native_cgraph")->getValue() && 
          true==env->getOptions()->findBool("nl_presolve")->getValue() 
        ) {
-      NlPresHandlerPtr nlhand = (NlPresHandlerPtr) new NlPresHandler(env, p);
-      handlers.push_back(nlhand);
+      //NlPresHandlerPtr nlhand = (NlPresHandlerPtr) new NlPresHandler(env, p);
+      //handlers.push_back(nlhand);
     }
 
     // write the names.
@@ -524,24 +529,20 @@ void writeParBnbStatus(EnvPtr env, ParBranchAndBound *parbab, double obj_sense,
 int main(int argc, char** argv)
 {
   EnvPtr env      = (EnvPtr) new Environment();
-  OptionDBPtr options;
+  //OptionDBPtr options;
   MINOTAUR_AMPL::AMPLInterface* iface = 0;
   ProblemPtr oinst;     // instance that needs to be solved.
   EnginePtr engine = 0; // engine for solving relaxations. 
-  SolutionPtr sol, sol2;
-  JacobianPtr jPtr;
-  HessianOfLagPtr hPtr;
   ParBranchAndBound * parbab = 0;
   double WallTimeStart = parbab->getWallTime();  //use Timer: to be done!!!
   PresolverPtr pres;
   const std::string me("mcbnb main: ");
-  VarVector *orig_v=0;
+  VarVector *orig_v = 0;
   HandlerVector handlers;
   int err = 0;
   double obj_sense = 1.0;
-  
   UInt numThreads;
-  ParBndProcessorPtr *nodePrcssr = 0; 
+  ParPCBProcessorPtr *nodePrcssr = 0;
   ParNodeIncRelaxerPtr *parNodeRlxr = 0;
   RelaxationPtr *relCopy = 0;
   env->startTimer(err);
@@ -568,7 +569,7 @@ int main(int argc, char** argv)
 #else
   numThreads = 1;
 #endif
-  nodePrcssr = new ParBndProcessorPtr[numThreads];
+  nodePrcssr = new ParPCBProcessorPtr[numThreads];
   parNodeRlxr = new ParNodeIncRelaxerPtr[numThreads];
   relCopy = new RelaxationPtr[numThreads]; 
   loadProblem(env, iface, oinst, &obj_sense);
@@ -600,6 +601,7 @@ int main(int argc, char** argv)
   parbab = createParBab(env, oinst, engine, numThreads, relCopy,
                         nodePrcssr, parNodeRlxr);
   if (true==env->getOptions()->findBool("mcbnb_deter_mode")->getValue()) {
+    assert(!"Deterministic mode not available right now!");
     parbab->parsolveSync(parNodeRlxr, nodePrcssr, numThreads);
   } else {
     parbab->parsolve(parNodeRlxr, nodePrcssr, numThreads);

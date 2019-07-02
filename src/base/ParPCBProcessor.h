@@ -46,6 +46,7 @@ namespace Minotaur {
    */
   class ParPCBProcessor : public NodeProcessor {
 
+    friend class ParBranchAndBound;
     friend class ParQGBranchAndBound;
 
   public:
@@ -67,14 +68,14 @@ namespace Minotaur {
     // True if a new solution was found while processing this node.
     bool foundNewSolution(); 
 
-  
-    //ParReliabilityBrancherPtr getRelBrancher() { return boost::dynamic_pointer_cast <ParReliabilityBrancher> (brancher_); };
-  
     // Find branches that will be used to branch at this node.
     Branches getBranches();
     
     // Return the cut manager used with this processor.
     CutManager* getCutManager(){return cutMan_;};
+
+    // Get the recent solution from the engine.
+    ConstSolutionPtr getSolution();
 
     // Get warm-start information.
     WarmStartPtr getWarmStart();

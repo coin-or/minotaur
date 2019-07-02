@@ -43,7 +43,9 @@ namespace Minotaur {
   class ParTreeManager {
 
   public:
+    friend class ParBranchAndBound;
     friend class ParQGBranchAndBound;
+
     /// Constructor.
     ParTreeManager(EnvPtr env);
 
