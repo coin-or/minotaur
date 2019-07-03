@@ -245,7 +245,7 @@ void OAHandler::solveMILP(double* objfLb, ConstSolutionPtr* sol,
                           SolutionPoolPtr, CutManager*)
 {
 
-  milpe_->load(rel_);         //remove double loading in iteration 1!
+  milpe_->load(rel_);         //double loading in first iteration!
   EngineStatus lpStatus = milpe_->solve();
   ++(stats_->milpS);
   switch (lpStatus) {

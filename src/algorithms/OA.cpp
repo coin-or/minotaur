@@ -4,7 +4,7 @@
 //     (C)opyright 2008 - 2017 The MINOTAUR Team.
 // 
 
-/*! \brief Outer-approximation algorithm for solving convex MINLP
+/*! \brief (Multitree) Outer-approximation algorithm for solving convex MINLP
  *
  * \authors Meenarli Sharma and Prashant Palkar, IIT Bombay
  */
@@ -335,7 +335,7 @@ void writeOAStatus(EnvPtr env, double gap, double objLb, double objUb,
 }
 
 
-void showStatus(EnvPtr env, double objLb, double objUb, double gap, int iterNum)
+void showStatus(EnvPtr env, double objLb, double objUb, double gap, int iterNum, UInt numSols)
 {
   int err = 0;
   env->getLogger()->msgStream(LogInfo)
@@ -347,6 +347,7 @@ void showStatus(EnvPtr env, double objLb, double objUb, double gap, int iterNum)
     << std::setprecision(4)  << " ub = "   << objUb
     << std::setprecision(2)  << " gap% = " << gap
     << " iterations = " << iterNum 
+    << " solutions = " << numSols
     << std::endl
     << std::endl;
 }
@@ -398,14 +399,14 @@ int main(int argc, char* argv[])
 
   MINOTAUR_AMPL::AMPLInterfacePtr iface = MINOTAUR_AMPL::AMPLInterfacePtr();
   ProblemPtr inst;
-  SolutionPtr sol2;
+  //SolutionPtr sol2;
   double obj_sense =1.0, gap = INFINITY;
   double wallTimeStart = getWallTime();
   
   // jacobian is read from AMPL interface and passed on to branch-and-bound
-  JacobianPtr jPtr;
+  //JacobianPtr jPtr;
   // hessian is read from AMPL interface and passed on to branch-and-bound
-  MINOTAUR_AMPL::AMPLHessianPtr hPtr;
+  //MINOTAUR_AMPL::AMPLHessianPtr hPtr;
 
   // the branch-and-bound
   PresolverPtr pres;
@@ -414,7 +415,7 @@ int main(int argc, char* argv[])
   SolveStatus status;
   //handlers
   HandlerVector handlers;
-  IntVarHandlerPtr v_hand;
+  //IntVarHandlerPtr v_hand;
   LinearHandlerPtr l_hand;
   OAHandlerPtr oa_hand;
 
@@ -425,6 +426,7 @@ int main(int argc, char* argv[])
   MILPEnginePtr milp_e = 0;
   VarVector *orig_v=0;
   int err = 0;
+  UInt numSols = 0;
   
   // start timing.
   env->startTimer(err);
@@ -468,7 +470,7 @@ int main(int argc, char* argv[])
     goto CLEANUP;
   }
  
-   if (options->findBool("solve")->getValue()==true) {
+  if (options->findBool("solve")->getValue()==true) {
     if (true==options->findBool("use_native_cgraph")->getValue()) {
       inst->setNativeDer();
     }
@@ -540,10 +542,17 @@ int main(int argc, char* argv[])
         objUb = solPool->getBestSolutionValue();
         status = SolvedOptimal;
         gap = 0;
-        showStatus(env, objLb, objUb, gap, iterNum);
+        showStatus(env, objLb, objUb, gap, iterNum, numSols);
         break;
       }
-      // Solve NLP and update MILP by adding OA cuts
+      // Solve multiple NLPs in parallel and update MILP by adding OA cuts at
+      // various solutions obtained from the solution pool of CPLEX
+      if (options->findBool("oa_use_solutions")->getValue()==true) {
+        numSols = oa_hand->getMILPEngine()->getNumSols();
+        for (UInt i=0; i < numSols; i++) {
+          oa_hand->separate(sol, NodePtr(), milp, cutMan, solPool, pmod, rmod, &solFound, &sepStatus);
+        }
+      }
       oa_hand->separate(sol, NodePtr(), milp, cutMan, solPool, pmod, rmod, &solFound, &sepStatus);
       objUb = solPool->getBestSolutionValue();
       gap = getPerGap(objLb, objUb);
@@ -555,10 +564,10 @@ int main(int argc, char* argv[])
         solPool->addSolution(x, sol->getObjValue());
         objUb = solPool->getBestSolutionValue();
         status = SolvedOptimal;
-        showStatus(env, objLb, objUb, gap, iterNum);
+        showStatus(env, objLb, objUb, gap, iterNum, numSols);
         break;
       }
-      showStatus(env, objLb, objUb, gap, iterNum);
+      showStatus(env, objLb, objUb, gap, iterNum, numSols);
     } // end while (objLo <= objUp) or time limit 
     time = -wallTimeStart + getWallTime();
     writeOAStatus(env, gap, objLb, objUb, obj_sense, status, iterNum, time);

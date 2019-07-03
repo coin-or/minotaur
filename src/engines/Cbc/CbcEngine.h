@@ -76,6 +76,9 @@ namespace Minotaur {
 
     void enableStrBrSetup() {};
 
+    /// Get the number of solutions in the solution pool of Cbc.
+    UInt getNumSols() {};
+
     /// Return the solution value of the objective after solving the LP.
     double getSolutionValue();
 

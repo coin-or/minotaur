@@ -45,6 +45,9 @@ namespace Minotaur {
       /// Set upper cutoff for an iteration
       virtual void setUpperCutoff(double) = 0;
 
+      /// Get number of solutions in the solution pool of MILP engine
+      virtual UInt getNumSols() = 0;
+
   };
   typedef MILPEngine* MILPEnginePtr;
 }

@@ -368,7 +368,6 @@ int main(int argc, char* argv[])
   //engines
   EnginePtr nlp_e;
   
-  
   VarVector *orig_v=0;
   int err = 0;
   double wallTimeStart = getWallTime();

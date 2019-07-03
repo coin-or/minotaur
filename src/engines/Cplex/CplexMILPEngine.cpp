@@ -134,6 +134,12 @@ std::string CplexMILPEngine::getName() const
 }
 
 
+UInt CplexMILPEngine::getNumSols()
+{
+  return CPXXgetsolnpoolnumsolns(cpxenv_, cpxlp_);
+}
+
+
 double CplexMILPEngine::getSolutionValue() 
 {
   return sol_->getObjValue();
@@ -143,6 +149,29 @@ double CplexMILPEngine::getSolutionValue()
 ConstSolutionPtr CplexMILPEngine::getSolution() 
 {
   return sol_;
+}
+
+
+ConstSolutionPtr CplexMILPEngine::getSolutionFromPool(int index)
+{
+  CPXDIM numcols = CPXXgetnumcols(cpxenv_, cpxlp_);
+  double *x = new double[numcols];
+  SolutionPtr sol;
+  double objval;
+  cpxstatus_ = CPXXgetsolnpoolx (cpxenv_, cpxlp_, index, x, 0, numcols-1);
+  if (cpxstatus_) {
+    logger_->msgStream(LogInfo) << "Could not get solution from CPLEX \n";
+    return sol;
+  }
+  cpxstatus_  = CPXXgetsolnpoolobjval(cpxenv_, cpxlp_, index, &objval);
+  if (cpxstatus_) {
+    logger_->msgStream(LogInfo)
+      << "Could not get objective value of solution from CPLEX \n";
+    return sol;
+  }
+  sol->setPrimal(x);
+  sol->setObjValue(objval);
+  return sol;
 }
 
 
