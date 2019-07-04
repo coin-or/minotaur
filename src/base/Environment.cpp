@@ -236,8 +236,6 @@ void Environment::createDefaultOptions_()
       "Add linearization by warm-starting NLP at root LP solution", true, false);
   options_->insert(b_option);
 
-
-
   // int options
   i_option = (IntOptionPtr) new Option<int>("bnb_node_limit", 
       "Limit on number of nodes created in branch-and-bound: >0",
@@ -334,13 +332,9 @@ void Environment::createDefaultOptions_()
                                             true, 0);
   options_->insert(i_option);
 
-  i_option = (IntOptionPtr) new Option<int>("root_linScheme1", 
-      "Rounds of extra linearizations to be added at root node under scheme 1", true, 0);
-  options_->insert(i_option);
-
 
   i_option = (IntOptionPtr) new Option<int>("root_linScheme3", 
-      "Rounds of extra linearizations to be added at root node under scheme 3", true, 0);
+      "Percentage of slope change for scheme 2", true, 0);
   options_->insert(i_option);
 
   i_option = (IntOptionPtr) new Option<int>("root_linScheme4", 
@@ -415,6 +409,20 @@ void Environment::createDefaultOptions_()
       "Stop if the objective gap percent falls below this level",
       true, 0.0);
   options_->insert(d_option);
+
+  d_option = (DoubleOptionPtr) new Option<double>("root_linScheme1", 
+      "Rounds of extra linearizations to be added at root node under scheme 1", true, 0);
+  options_->insert(d_option);
+
+  d_option = (DoubleOptionPtr) new Option<double>("root_linScheme2_per", 
+      "Threshold for slope change in root linearization scheme 2", true, 0);
+  options_->insert(d_option);
+
+  d_option = (DoubleOptionPtr) new Option<double>("root_linScheme2_nbhSize", 
+      "Neighborhood size for root linearization scheme 2", true, 10);
+  options_->insert(d_option);
+
+
 
   d_option = 0;
  
