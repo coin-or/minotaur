@@ -399,23 +399,14 @@ int main(int argc, char* argv[])
 
   MINOTAUR_AMPL::AMPLInterfacePtr iface = MINOTAUR_AMPL::AMPLInterfacePtr();
   ProblemPtr inst;
-  //SolutionPtr sol2;
   double obj_sense =1.0, gap = INFINITY;
   double wallTimeStart = getWallTime();
   
-  // jacobian is read from AMPL interface and passed on to branch-and-bound
-  //JacobianPtr jPtr;
-  // hessian is read from AMPL interface and passed on to branch-and-bound
-  //MINOTAUR_AMPL::AMPLHessianPtr hPtr;
-
-  // the branch-and-bound
   PresolverPtr pres;
   EngineFactory *efac;
   const std::string me("oa: ");
   SolveStatus status;
-  //handlers
   HandlerVector handlers;
-  //IntVarHandlerPtr v_hand;
   LinearHandlerPtr l_hand;
   OAHandlerPtr oa_hand;
 
@@ -568,7 +559,7 @@ int main(int argc, char* argv[])
         break;
       }
       showStatus(env, objLb, objUb, gap, iterNum, numSols);
-    } // end while (objLo <= objUp) or time limit 
+    } // end while
     time = -wallTimeStart + getWallTime();
     writeOAStatus(env, gap, objLb, objUb, obj_sense, status, iterNum, time);
     nlp_e->writeStats(env->getLogger()->msgStream(LogExtraInfo));

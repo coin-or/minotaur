@@ -267,7 +267,6 @@ void OAHandler::solveMILP(double* objfLb, ConstSolutionPtr* sol,
     assert(!"In OAHandler: MILP infeasible. Check error log.");
     break;
   case (ProvenUnbounded):
-  //case (EngineIterationLimit): // MS: take care of this.
   case (ProvenFailedCQFeas):
   case (ProvenFailedCQInfeas):
   case (FailedFeas):
@@ -334,7 +333,6 @@ bool OAHandler::isFeasible(ConstSolutionPtr sol, RelaxationPtr, bool &,
                            double &)
 {
   int error=0;
-  FunctionPtr f;
   double act, cUb;
   ConstraintPtr c;
   const double *x = sol->getPrimal();

@@ -451,12 +451,11 @@ EngineStatus CplexMILPEngine::solve()
 {
   int solstat;
   double objval;
-  //int cur_numrows = CPXXgetnumrows (cpxenv_, cpxlp_);
   int cur_numcols = CPXXgetnumcols (cpxenv_, cpxlp_);
   
   double *x = new double[cur_numcols];
 
-#if SPEW
+#if 0
   /* Write a copy of the problem to a file. */
   writeLP("minoCpx.lp"); 
 #endif
@@ -518,9 +517,7 @@ EngineStatus CplexMILPEngine::solve()
   
 #if SPEW
   /* Write the solution. */
-  //for (int j = 0; j < cur_numcols; j++) {
-   //logger_->msgStream(LogInfo) << colname[j] << ": " << x[j] << std::endl;
-  //}
+  printx(x, cur_numcols);
 #endif
 
   // Solve status (replace with string later using CPXXgetstatstring(..))
@@ -543,58 +540,16 @@ EngineStatus CplexMILPEngine::solve()
     status_ = EngineIterationLimit;
     if (solstat == 108) {
       sol_->setObjValue(INFINITY);
-  } else {
-    sol_->setPrimal(x);
-    sol_->setObjValue(objval);
-  }
-//} else if (model->isNodeLimitReached() || model->isSecondsLimitReached() ||
-             //model->isSolutionLimitReached()) {
-    //status_ = EngineIterationLimit;
-    //sol_->setPrimal(osilp_->getStrictColSolution());
-    //sol_->setObjValue(osilp_->getObjValue()
-        //+problem_->getObjective()->getConstant());
-    //std::cout << " limit \n";
-  //} else if(model->isAbandoned()) {
-    //status_ = EngineError;
-    //sol_->setObjValue(INFINITY);
-    //std::cout << " abandoned \n";
+    } else {
+      sol_->setPrimal(x);
+      sol_->setObjValue(objval);
+    }
   } else {
     status_ = EngineUnknownStatus;
     sol_->setObjValue(INFINITY);
     logger_->msgStream(LogInfo) << " unknown \n";
   }
 
-  //stats_->time  += timer_->query();
-
-//TERMINATE:
-
-   ////Free up the problem as allocated by CPXXcreateprob, if necessary
-  //if ( cpxlp_ != NULL ) {
-     //cpxstatus_ = CPXXfreeprob (cpxenv_, &cpxlp_);
-     //if (cpxstatus_) {
-        //logger_->msgStream(LogError) << me_ << "CPXXfreeprob failed, error code "
-        //  << cpxstatus_ << std::endl;
-
-     //}
-  //}
-
-  ////Free up the CPLEX environment, if necessary
-  //if ( cpxenv_ != NULL ) {
-     //cpxstatus_ = CPXXcloseCPLEX (&cpxenv_);
-
-     //[> Note that CPXXcloseCPLEX produces no output,
-        //so the only way to see the cause of the error is to use
-        //CPXXgeterrorstring.  For other CPLEX routines, the errors will
-        //be seen if the CPXPARAM_ScreenOutput indicator is set to CPX_ON. */
-
-     //if (cpxstatus_) {
-        //char  errmsg[CPXMESSAGEBUFSIZE];
-        //logger_->msgStream(LogError) << me_
-        //  << "Could not close CPLEX environment." << std::endl;
-        //CPXXgeterrorstring (cpxenv_, cpxstatus_, errmsg);
-        //logger_->msgStream(LogInfo) << me_ << stderr << std::endl;
-     //}
-  //}
 TERMINATE:
   delete [] x;
   return status_;
