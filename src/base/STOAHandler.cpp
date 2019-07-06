@@ -208,7 +208,7 @@ void STOAHandler::addInitLinearX_(const double *x)
 }
 
 
-bool STOAHandler::fixedNLP(const double *lpx, const double * nlpx)
+bool STOAHandler::fixedNLP(const double *lpx, const double * )
 {
   numCalls_++;
   newUb_ = INFINITY;
@@ -222,7 +222,7 @@ bool STOAHandler::fixedNLP(const double *lpx, const double * nlpx)
     ++(stats_->nlpF);
     newUb_ = nlpe_->getSolutionValue();
     solPool_->addSolution(nlpe_->getSolution());
-    nlpx = nlpe_->getSolution()->getPrimal();
+    nlpe_->getSolution()->getPrimal();
     return true;
     break;
   case (ProvenInfeasible):
@@ -459,7 +459,6 @@ void STOAHandler::initLinear_(bool *isInf)
 bool STOAHandler::isFeas(const double *x)
 {
   int error=0;
-  FunctionPtr f;
   double act, cUb;
   ConstraintPtr c;
 
