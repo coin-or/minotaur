@@ -242,7 +242,7 @@ void OAHandler::fixInts_(const double *x)
 }
 
 void OAHandler::solveMILP(double* objfLb, ConstSolutionPtr* sol, 
-                          SolutionPoolPtr, CutManager*)
+                          SolutionPoolPtr, CutManager*, SolveStatus &status)
 {
 
   milpe_->load(rel_);         //remove double loading in iteration 1!
@@ -253,18 +253,21 @@ void OAHandler::solveMILP(double* objfLb, ConstSolutionPtr* sol,
   case (ProvenLocalOptimal):
     *sol = milpe_->getSolution();
     (*objfLb) = (*sol)->getObjValue();
+    status = SolvedOptimal;
     break;
   case (EngineIterationLimit): // MS: take care of this here.
     ++(stats_->milpIL);
     *sol = milpe_->getSolution();
     (*objfLb) = (*sol)->getObjValue();
+    status = IterationLimitReached;
     break;
   case (ProvenInfeasible):
   case (ProvenLocalInfeasible): 
   case (ProvenObjectiveCutOff):
     logger_->msgStream(LogError) << me_ << "MILP engine status at root= " 
       << lpStatus << std::endl;
-    assert(!"In OAHandler: MILP infeasible. Check error log.");
+    //assert(!"In OAHandler: MILP infeasible. Check error log.");
+    status = SolvedInfeasible;
     break;
   case (ProvenUnbounded):
   //case (EngineIterationLimit): // MS: take care of this.
@@ -278,6 +281,7 @@ void OAHandler::solveMILP(double* objfLb, ConstSolutionPtr* sol,
     logger_->msgStream(LogError) << me_ << "MILP engine status= " 
       << lpStatus << std::endl;
     assert(!"In OAHandler: stopped. Check error log.");
+    status = SolveError;
     break;
   }
   return;

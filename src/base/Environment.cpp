@@ -319,7 +319,6 @@ void Environment::createDefaultOptions_()
       "The maximum number of iterations for Outer approximation algorithm to run: >=1", true, 10000);
   options_->insert(i_option);
 
-  i_option = 0;
 
   // Initial workspace option for FilterSQP engine
   i_option = (IntOptionPtr) new Option<int>("filter_mxws", 
@@ -334,12 +333,10 @@ void Environment::createDefaultOptions_()
 
 
   i_option = (IntOptionPtr) new Option<int>("root_linScheme3", 
-      "Percentage of slope change for scheme 2", true, 0);
+      "No. of iteration of ESH at root ", true, 0);
   options_->insert(i_option);
-
-  i_option = (IntOptionPtr) new Option<int>("root_linScheme4", 
-      "Rounds of extra linearizations to be added at root node under scheme 4", true, 0);
-  options_->insert(i_option);
+  
+  i_option = 0;
 
   // double options
   d_option = (DoubleOptionPtr) new Option<double>("ml_feastol", 
@@ -421,8 +418,6 @@ void Environment::createDefaultOptions_()
   d_option = (DoubleOptionPtr) new Option<double>("root_linScheme2_nbhSize", 
       "Neighborhood size for root linearization scheme 2", true, 10);
   options_->insert(d_option);
-
-
 
   d_option = 0;
  
