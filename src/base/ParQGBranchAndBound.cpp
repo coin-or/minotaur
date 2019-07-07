@@ -677,7 +677,7 @@ void ParQGBranchAndBound::parsolve(ParNodeIncRelaxerPtr parNodeRlxr[],
 
               should_dive[i] = tm_->shouldDive();
               if (!branches[i]) {
-                std::cout<<" NO BRANCHES \n";
+                logger_->msgStream(LogInfo) <<" NO BRANCHES \n";
               }
 #if USE_OPENMP
 #pragma omp critical (treeManager)

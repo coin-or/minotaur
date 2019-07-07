@@ -41,7 +41,9 @@
 #include <thread>
 #include <mutex>
 
+#if USE_OPENMP
 std::mutex mtx;
+#endif
 
 #define PRINT 0
 //#include <ilcplex/ilocplex.h>
@@ -134,6 +136,12 @@ std::string CplexMILPEngine::getName() const
 }
 
 
+UInt CplexMILPEngine::getNumSols()
+{
+  return CPXXgetsolnpoolnumsolns(cpxenv_, cpxlp_);
+}
+
+
 double CplexMILPEngine::getSolutionValue() 
 {
   return sol_->getObjValue();
@@ -143,6 +151,29 @@ double CplexMILPEngine::getSolutionValue()
 ConstSolutionPtr CplexMILPEngine::getSolution() 
 {
   return sol_;
+}
+
+
+ConstSolutionPtr CplexMILPEngine::getSolutionFromPool(int index)
+{
+  CPXDIM numcols = CPXXgetnumcols(cpxenv_, cpxlp_);
+  double *x = new double[numcols];
+  SolutionPtr sol = 0;
+  double objval;
+  cpxstatus_ = CPXXgetsolnpoolx (cpxenv_, cpxlp_, index, x, 0, numcols-1);
+  if (cpxstatus_) {
+    logger_->msgStream(LogError) << "Could not get solution from CPLEX \n";
+    return sol;
+  }
+  cpxstatus_  = CPXXgetsolnpoolobjval(cpxenv_, cpxlp_, index, &objval);
+  if (cpxstatus_) {
+    logger_->msgStream(LogError)
+      << "Could not get objective value of solution from CPLEX \n";
+    return sol;
+  }
+  sol->setPrimal(x);
+  sol->setObjValue(objval);
+  return sol;
 }
 
 
@@ -220,17 +251,17 @@ void CplexMILPEngine::load(ProblemPtr problem)
 
   if ( cpxenv_ == NULL ) {
      char  errmsg[CPXMESSAGEBUFSIZE];
-     logger_->msgStream(LogInfo) << me_ << "Could not open CPLEX environment."
+     logger_->msgStream(LogError) << me_ << "Could not open CPLEX environment."
        << std::endl;
      CPXXgeterrorstring (cpxenv_, cpxstatus_, errmsg);
-     logger_->msgStream(LogInfo) << me_ << errmsg << std::endl;
+     logger_->msgStream(LogError) << me_ << errmsg << std::endl;
      goto TERMINATE;
   }
 
   /* Turn on output to the screen (use a file to read parameters LATER!) */
   cpxstatus_ = CPXXsetintparam (cpxenv_, CPXPARAM_ScreenOutput, CPX_ON);
-  if ( cpxstatus_ ) {
-     logger_->msgStream(LogInfo) << me_ << "Failure to turn on screen indicator, error " 
+  if (cpxstatus_) {
+     logger_->msgStream(LogError) << me_ << "Failure to turn on screen indicator, error "
        << cpxstatus_ << std::endl;
      goto TERMINATE;
   }
@@ -238,7 +269,7 @@ void CplexMILPEngine::load(ProblemPtr problem)
   /* Create the problem. */
   cpxlp_ = CPXXcreateprob (cpxenv_, &cpxstatus_, "minoCpxProb");
   if ( cpxlp_ == NULL ) {
-     logger_->msgStream(LogInfo) << me_ << "Failed to create LP." << std::endl;
+     logger_->msgStream(LogError) << me_ << "Failed to create LP." << std::endl;
      goto TERMINATE;
   }
 
@@ -346,8 +377,8 @@ void CplexMILPEngine::load(ProblemPtr problem)
     conrange[i] = conrangevec[i];
   }
   cpxstatus_ = CPXXchgrngval (cpxenv_, cpxlp_, rcnt, conind, conrange);
-  if ( cpxstatus_ ) {
-     logger_->msgStream(LogInfo) << me_ << "Failed to change range values of constraints." 
+  if (cpxstatus_) {
+     logger_->msgStream(LogError) << me_ << "Failed to change range values of constraints."
        << std::endl;
      goto TERMINATE;
   }
@@ -420,20 +451,19 @@ EngineStatus CplexMILPEngine::solve()
 {
   int solstat;
   double objval;
-  //int cur_numrows = CPXXgetnumrows (cpxenv_, cpxlp_);
   int cur_numcols = CPXXgetnumcols (cpxenv_, cpxlp_);
   
   double *x = new double[cur_numcols];
 
-#if SPEW
+#if 0
   /* Write a copy of the problem to a file. */
   writeLP("minoCpx.lp"); 
 #endif
 
   /* Set time limit (wallclock) for this iteration */
   cpxstatus_ = CPXXsetdblparam (cpxenv_, CPXPARAM_TimeLimit, timeLimit_);
-  if ( cpxstatus_ ) {
-     logger_->msgStream(LogInfo) << me_ << "Failure to set wall time limit, error " 
+  if (cpxstatus_) {
+     logger_->msgStream(LogError) << me_ << "Failure to set wall time limit, error "
        << cpxstatus_ << std::endl;
      goto TERMINATE;
   }
@@ -441,8 +471,8 @@ EngineStatus CplexMILPEngine::solve()
   /* Set upper cutoff (best solution value) for this iteration */
   if (upperCutoff_ < INFINITY) {
     cpxstatus_ = CPXXsetdblparam (cpxenv_, CPXPARAM_MIP_Tolerances_UpperCutoff, upperCutoff_);
-    if ( cpxstatus_ ) {
-       logger_->msgStream(LogInfo) << me_ << "Failure to set upper cutoff, error "
+    if (cpxstatus_) {
+       logger_->msgStream(LogError) << me_ << "Failure to set upper cutoff, error "
          << cpxstatus_ << std::endl;
        goto TERMINATE;
     }
@@ -452,16 +482,16 @@ EngineStatus CplexMILPEngine::solve()
   cpxstatus_ = CPXXsetintparam (cpxenv_, CPXPARAM_Threads,
                                 env_->getOptions()->findInt("threads")->getValue());
 
-  if ( cpxstatus_ ) {
-     logger_->msgStream(LogInfo) << me_ << "Failure to set number of threads, error " 
+  if (cpxstatus_) {
+     logger_->msgStream(LogError) << me_ << "Failure to set number of threads, error "
        << cpxstatus_ << std::endl;
      goto TERMINATE;
   }
 
   /* Optimize the problem and obtain solution. */
   cpxstatus_ = CPXXmipopt (cpxenv_, cpxlp_);
-  if ( cpxstatus_ ) {
-     logger_->msgStream(LogInfo) << me_ << "Failed to optimize MILP." << std::endl;
+  if (cpxstatus_) {
+     logger_->msgStream(LogError) << me_ << "Failed to optimize MILP." << std::endl;
      //goto TERMINATE;
   }
   solstat = CPXXgetstat (cpxenv_, cpxlp_);
@@ -471,8 +501,8 @@ EngineStatus CplexMILPEngine::solve()
 
   /* Get the (primal) objective value. */
   cpxstatus_ = CPXXgetobjval (cpxenv_, cpxlp_, &objval);
-  if ( cpxstatus_ ) {
-     logger_->msgStream(LogInfo) << me_ 
+  if (cpxstatus_) {
+     logger_->msgStream(LogError) << me_
        << "No MILP objective value available. Exiting..." << std::endl;
   }
   logger_->msgStream(LogInfo) << me_ << "Solution value = " << objval << std::endl;
@@ -480,16 +510,14 @@ EngineStatus CplexMILPEngine::solve()
   /* Get the solution. */
   cpxstatus_ = CPXXgetx (cpxenv_, cpxlp_, x, 0, cur_numcols-1);
   if (cpxstatus_) {
-   logger_->msgStream(LogInfo) << me_ << "Failed to get optimal integer x." 
+   logger_->msgStream(LogError) << me_ << "Failed to get optimal integer x."
      << std::endl;
    //goto TERMINATE;
   }
   
 #if SPEW
   /* Write the solution. */
-  //for (int j = 0; j < cur_numcols; j++) {
-   //logger_->msgStream(LogInfo) << colname[j] << ": " << x[j] << std::endl;
-  //}
+  printx(x, cur_numcols);
 #endif
 
   // Solve status (replace with string later using CPXXgetstatstring(..))
@@ -512,58 +540,16 @@ EngineStatus CplexMILPEngine::solve()
     status_ = EngineIterationLimit;
     if (solstat == 108) {
       sol_->setObjValue(INFINITY);
-  } else {
-    sol_->setPrimal(x);
-    sol_->setObjValue(objval);
-  }
-//} else if (model->isNodeLimitReached() || model->isSecondsLimitReached() ||
-             //model->isSolutionLimitReached()) {
-    //status_ = EngineIterationLimit;
-    //sol_->setPrimal(osilp_->getStrictColSolution());
-    //sol_->setObjValue(osilp_->getObjValue()
-        //+problem_->getObjective()->getConstant());
-    //std::cout << " limit \n";
-  //} else if(model->isAbandoned()) {
-    //status_ = EngineError;
-    //sol_->setObjValue(INFINITY);
-    //std::cout << " abandoned \n";
+    } else {
+      sol_->setPrimal(x);
+      sol_->setObjValue(objval);
+    }
   } else {
     status_ = EngineUnknownStatus;
     sol_->setObjValue(INFINITY);
     logger_->msgStream(LogInfo) << " unknown \n";
   }
 
-  //stats_->time  += timer_->query();
-
-//TERMINATE:
-
-   ////Free up the problem as allocated by CPXXcreateprob, if necessary
-  //if ( cpxlp_ != NULL ) {
-     //cpxstatus_ = CPXXfreeprob (cpxenv_, &cpxlp_);
-     //if ( cpxstatus_ ) {
-        //logger_->msgStream(LogInfo) << me_ << "CPXXfreeprob failed, error code "
-        //  << cpxstatus_ << std::endl;
-
-     //}
-  //}
-
-  ////Free up the CPLEX environment, if necessary
-  //if ( cpxenv_ != NULL ) {
-     //cpxstatus_ = CPXXcloseCPLEX (&cpxenv_);
-
-     //[> Note that CPXXcloseCPLEX produces no output,
-        //so the only way to see the cause of the error is to use
-        //CPXXgeterrorstring.  For other CPLEX routines, the errors will
-        //be seen if the CPXPARAM_ScreenOutput indicator is set to CPX_ON. */
-
-     //if ( cpxstatus_ ) {
-        //char  errmsg[CPXMESSAGEBUFSIZE];
-        //logger_->msgStream(LogInfo) << me_ 
-        //  << "Could not close CPLEX environment." << std::endl;
-        //CPXXgeterrorstring (cpxenv_, cpxstatus_, errmsg);
-        //logger_->msgStream(LogInfo) << me_ << stderr << std::endl; 
-     //}
-  //}
 TERMINATE:
   delete [] x;
   return status_;
@@ -612,7 +598,6 @@ static int CPXPUBLIC minolazycallback(CPXCENVptr env, void *cbdata, int wherefro
              void *userdata, int *useraction_p)
 {  
   mtx.lock();
-
   STOAHandlerPtr stoaH = *(STOAHandlerPtr *)(userdata);
   int cpxstatus = 0;
   int numvars = stoaH->getRel()->getNumVars();
@@ -626,14 +611,15 @@ static int CPXPUBLIC minolazycallback(CPXCENVptr env, void *cbdata, int wherefro
   }
  
   cpxstatus = CPXXgetcallbacknodex(env, cbdata, wherefrom, cpxx, 0, numvars - 1);
-  if ( cpxstatus != 0 )
-     return cpxstatus;
+  if (cpxstatus != 0) {
+    mtx.unlock();
+    return cpxstatus;
+  }
 #if SPEW
-  //logger_->msgStream(LogInfo) << "\nIn lazyCB: at x =\n";
   printx(cpxx, numvars);
 #endif
 
-  const double *x = cpxx; //is this correct?
+  const double *x = cpxx;
   //if (!(stoaH->isFeasible(x))) {
     if (stoaH->fixedNLP(x)) {
       UInt vIdx;
@@ -651,11 +637,12 @@ static int CPXPUBLIC minolazycallback(CPXCENVptr env, void *cbdata, int wherefro
             cutind[i] = varIdx[i];
             cutval[i] = varCoeff[i];
           }
-          
           cpxstatus = CPXXcutcallbackadd(env, cbdata, wherefrom, vIdx, rhs, 'L',
                                          cutind, cutval, CPX_USECUT_FORCE);
-          if ( cpxstatus != 0 )
+          if (cpxstatus != 0) {
+            mtx.unlock();
             return cpxstatus;
+          }
           varIdx.clear();
           varCoeff.clear();
           delete [] cutind;
@@ -671,10 +658,10 @@ static int CPXPUBLIC minolazycallback(CPXCENVptr env, void *cbdata, int wherefro
           cutind[i] = varIdx[i];
           cutval[i] = varCoeff[i];
         }
-        
         cpxstatus = CPXXcutcallbackadd(env, cbdata, wherefrom, vIdx, rhs, 'L',
                                        cutind, cutval, CPX_USECUT_FORCE);
-        if ( cpxstatus != 0 ) {
+        if (cpxstatus != 0) {
+            mtx.unlock();
           return cpxstatus;
         }
         varIdx.clear();
@@ -682,8 +669,10 @@ static int CPXPUBLIC minolazycallback(CPXCENVptr env, void *cbdata, int wherefro
         delete [] cutind;
         delete [] cutval;
         
-        if (cpxstatus != 0)
-            return cpxstatus;
+        if (cpxstatus != 0) {
+          mtx.unlock();
+          return cpxstatus;
+        }
         *useraction_p = CPX_CALLBACK_SET;
       }
     }
@@ -709,7 +698,7 @@ static int CPXPUBLIC minocallback (CPXCALLBACKCONTEXTptr context, CPXLONG where,
   CPXNNZ const rmatbeg =0;
   
   CPXXcallbackgetcandidatepoint(context, cpxx, 0, numvars - 1, &ub);
-  if ( cpxstatus != 0 )
+  if (cpxstatus != 0)
      return cpxstatus;
   
   const double *x = cpxx; //is this correct?
@@ -735,7 +724,7 @@ static int CPXPUBLIC minocallback (CPXCALLBACKCONTEXTptr context, CPXLONG where,
           
           cpxstatus = CPXXcallbackrejectcandidate(context, 1, vIdx, objrhs,
                                                   sense, &rmatbeg, cutind, cutval);
-          if ( cpxstatus != 0 )
+          if (cpxstatus != 0)
             return cpxstatus;
           varIdx.clear();
           varCoeff.clear();
@@ -755,7 +744,7 @@ static int CPXPUBLIC minocallback (CPXCALLBACKCONTEXTptr context, CPXLONG where,
         const double* conrhs = &rhs;
         cpxstatus = CPXXcallbackrejectcandidate(context, 1, vIdx, conrhs, sense,
                                                 &rmatbeg, cutind, cutval); 
-        if ( cpxstatus != 0 ) {
+        if (cpxstatus != 0) {
           return cpxstatus;
         }
         varIdx.clear();
@@ -780,7 +769,7 @@ static int CPXPUBLIC minocallback (CPXCALLBACKCONTEXTptr context, CPXLONG where,
           }
           cpxstatus = CPXXcallbackpostheursoln(context, numvars, solind, solval, newUb,
                                              CPXCALLBACKSOLUTION_CHECKFEAS );
-          if ( cpxstatus != 0 ) {
+          if (cpxstatus != 0 ) {
             delete [] solind;
             delete [] solval;
             return cpxstatus;
@@ -836,13 +825,13 @@ EngineStatus CplexMILPEngine::solveST(double *objLb, SolutionPtr* sol,
   * lazy constraints can always be crushed.
   */
   //cpxstatus_ = CPXXsetintparam(cpxenv_, CPXPARAM_MIP_Strategy_CallbackReducedLP, CPX_OFF);
-  //if ( cpxstatus_ != 0 ) {
+  //if (cpxstatus_ != 0) {
      //fprintf(stderr, "Failed to disable reduced LP in callbacks: %s\n",
              //CPXXgeterrorstring(cpxenv_, cpxstatus_, errbuf));
      //goto TERMINATE;
   //}
   //cpxstatus_ = CPXXsetintparam(cpxenv_, CPXPARAM_Preprocessing_Linear, 0);
-  //if ( cpxstatus_ != 0 ) {
+  //if (cpxstatus_ != 0 ) {
      //fprintf(stderr, "Failed to disable dual reductions: %s\n",
              //CPXXgeterrorstring(cpxenv_, cpxstatus_, errbuf));
      //goto TERMINATE;
@@ -851,8 +840,8 @@ EngineStatus CplexMILPEngine::solveST(double *objLb, SolutionPtr* sol,
   /* Set time limit (wallclock) */
   cpxstatus_ = CPXXsetdblparam (cpxenv_, CPXPARAM_TimeLimit,
                                 env_->getOptions()->findDouble("bnb_time_limit")->getValue());
-  if ( cpxstatus_ ) {
-     logger_->msgStream(LogInfo) << me_ << "Failure to set wall time limit, error " 
+  if (cpxstatus_) {
+     logger_->msgStream(LogError) << me_ << "Failure to set wall time limit, error "
        << cpxstatus_ << std::endl;
      goto TERMINATE;
   }
@@ -861,8 +850,8 @@ EngineStatus CplexMILPEngine::solveST(double *objLb, SolutionPtr* sol,
   cpxstatus_ = CPXXsetintparam (cpxenv_, CPXPARAM_Threads,
                                 env_->getOptions()->findInt("threads")->getValue());
 
-  if ( cpxstatus_ ) {
-     logger_->msgStream(LogInfo) << me_ << "Failure to set number of threads, error " 
+  if (cpxstatus_) {
+     logger_->msgStream(LogError) << me_ << "Failure to set number of threads, error "
        << cpxstatus_ << std::endl;
      goto TERMINATE;
   }
@@ -871,7 +860,7 @@ EngineStatus CplexMILPEngine::solveST(double *objLb, SolutionPtr* sol,
 
   cpxstatus_ = CPXXcallbacksetfunc(cpxenv_, cpxlp_, where, minocallback, (void*) &stoa_hand);
  
-  if ( cpxstatus_ != 0 ) {
+  if (cpxstatus_ != 0) {
      fprintf(stderr, "Failed to add callback: %s\n",
              CPXXgeterrorstring(cpxenv_, cpxstatus_, errbuf));
      goto TERMINATE;
@@ -879,8 +868,8 @@ EngineStatus CplexMILPEngine::solveST(double *objLb, SolutionPtr* sol,
 
   /* Optimize the problem and obtain solution. */
   cpxstatus_ = CPXXmipopt (cpxenv_, cpxlp_);
-  if ( cpxstatus_ ) {
-     logger_->msgStream(LogInfo) << me_ << "Failed to optimize MILP."
+  if (cpxstatus_) {
+     logger_->msgStream(LogError) << me_ << "Failed to optimize MILP."
        << CPXXgeterrorstring(cpxenv_, cpxstatus_, errbuf) << std::endl;
      goto TERMINATE;
   }
@@ -892,15 +881,15 @@ EngineStatus CplexMILPEngine::solveST(double *objLb, SolutionPtr* sol,
 
   /* Get the (dual) best bound value. */
   cpxstatus_ = CPXXgetbestobjval(cpxenv_, cpxlp_, objLb);
-  if ( cpxstatus_ ) {
-     logger_->msgStream(LogInfo) << me_ 
+  if (cpxstatus_) {
+     logger_->msgStream(LogError) << me_
        << "No MILP objective value available. Exiting..." << std::endl;
   }
 
   /* Get the (primal) objective value. */
   cpxstatus_ = CPXXgetobjval (cpxenv_, cpxlp_, &objval);
-  if ( cpxstatus_ ) {
-     logger_->msgStream(LogInfo) << me_ 
+  if (cpxstatus_) {
+     logger_->msgStream(LogError) << me_
        << "No MILP objective value available. Exiting..." << std::endl;
   }
   //logger_->msgStream(LogInfo) << me_ << "Solution value = " << objval << std::endl;
@@ -908,7 +897,7 @@ EngineStatus CplexMILPEngine::solveST(double *objLb, SolutionPtr* sol,
   /* Get the solution. */
   cpxstatus_ = CPXXgetx (cpxenv_, cpxlp_, x, 0, cur_numcols-1);
   if (cpxstatus_) {
-   logger_->msgStream(LogInfo) << me_ << "Failed to get optimal integer x." 
+   logger_->msgStream(LogError) << me_ << "Failed to get optimal integer x."
      << std::endl;
    goto TERMINATE;
   }
@@ -974,8 +963,8 @@ EngineStatus CplexMILPEngine::solveST(double *objLb, SolutionPtr* sol,
    ////Free up the problem as allocated by CPXXcreateprob, if necessary
   //if ( cpxlp_ != NULL ) {
      //cpxstatus_ = CPXXfreeprob (cpxenv_, &cpxlp_);
-     //if ( cpxstatus_ ) {
-        //logger_->msgStream(LogInfo) << me_ << "CPXXfreeprob failed, error code "
+     //if (cpxstatus_) {
+        //logger_->msgStream(LogError) << me_ << "CPXXfreeprob failed, error code "
         //  << cpxstatus_ << std::endl;
 
      //}
@@ -990,12 +979,12 @@ EngineStatus CplexMILPEngine::solveST(double *objLb, SolutionPtr* sol,
         //CPXXgeterrorstring.  For other CPLEX routines, the errors will
         //be seen if the CPXPARAM_ScreenOutput indicator is set to CPX_ON. */
 
-     //if ( cpxstatus_ ) {
+     //if (cpxstatus_) {
         //char  errmsg[CPXMESSAGEBUFSIZE];
-        //logger_->msgStream(LogInfo) << me_ 
+        //logger_->msgStream(LogError) << me_
         //  << "Could not close CPLEX environment." << std::endl;
         //CPXXgeterrorstring (cpxenv_, cpxstatus_, errmsg);
-        //logger_->msgStream(LogInfo) << me_ << stderr << std::endl; 
+        //logger_->msgStream(LogError) << me_ << stderr << std::endl;
      //}
   //}
   
@@ -1015,23 +1004,7 @@ EngineStatus CplexMILPEngine::solveSTLazy(double *objLb, SolutionPtr* sol,
   double objval;
 
   char errbuf[CPXMESSAGEBUFSIZE];
-  //char *varname[numvars];
   VariableConstIterator v_iter;
-  //char *cstr; //temporary
-  //int i = 0;
-  //for (v_iter=problem_->varsBegin(); v_iter!=problem_->varsEnd(); ++v_iter, 
-       //++i) {
-    //varlb[i] = (*v_iter)->getLb();
-    //varub[i] = (*v_iter)->getUb();
-    //cstr = new char[(*v_iter)->getName().length() + 1];
-    //strcpy(cstr, (*v_iter)->getName().c_str());
-    //varname[i] = cstr;
-    //if ((*v_iter)->getType() == Binary) {
-      //vartype[i] = 'B';
-    //} else if ((*v_iter)->getType() == Integer) {
-      //vartype[i] = 'I';
-    //}
-  //}
 
   /* Setup callbacks. We disable CPXPARAM_MIP_Strategy_CallbackReducedLP so
   * that indices in the callbacks can refer to the original model and we
@@ -1040,13 +1013,13 @@ EngineStatus CplexMILPEngine::solveSTLazy(double *objLb, SolutionPtr* sol,
   * lazy constraints can always be crushed.
   */
   cpxstatus_ = CPXXsetintparam(cpxenv_, CPXPARAM_MIP_Strategy_CallbackReducedLP, CPX_OFF);
-  if ( cpxstatus_ != 0 ) {
+  if (cpxstatus_ != 0) {
      fprintf(stderr, "Failed to disable reduced LP in callbacks: %s\n",
              CPXXgeterrorstring(cpxenv_, cpxstatus_, errbuf));
      goto TERMINATE;
   }
   cpxstatus_ = CPXXsetintparam(cpxenv_, CPXPARAM_Preprocessing_Linear, 0);
-  if ( cpxstatus_ != 0 ) {
+  if (cpxstatus_ != 0) {
      fprintf(stderr, "Failed to disable dual reductions: %s\n",
              CPXXgeterrorstring(cpxenv_, cpxstatus_, errbuf));
      goto TERMINATE;
@@ -1055,8 +1028,8 @@ EngineStatus CplexMILPEngine::solveSTLazy(double *objLb, SolutionPtr* sol,
   /* Set time limit (wallclock) */
   cpxstatus_ = CPXXsetdblparam (cpxenv_, CPXPARAM_TimeLimit,
                                 env_->getOptions()->findDouble("bnb_time_limit")->getValue());
-  if ( cpxstatus_ ) {
-     logger_->msgStream(LogInfo) << me_ << "Failure to set wall time limit, error " 
+  if (cpxstatus_) {
+     logger_->msgStream(LogError) << me_ << "Failure to set wall time limit, error "
        << cpxstatus_ << std::endl;
      goto TERMINATE;
   }
@@ -1065,25 +1038,22 @@ EngineStatus CplexMILPEngine::solveSTLazy(double *objLb, SolutionPtr* sol,
   cpxstatus_ = CPXXsetintparam (cpxenv_, CPXPARAM_Threads,
                                 env_->getOptions()->findInt("threads")->getValue());
 
-  if ( cpxstatus_ ) {
-     logger_->msgStream(LogInfo) << me_ << "Failure to set number of threads, error " 
+  if (cpxstatus_) {
+     logger_->msgStream(LogError) << me_ << "Failure to set number of threads, error "
        << cpxstatus_ << std::endl;
      goto TERMINATE;
   }
 
 #if SPEW
   cpxstatus_ = CPXXsetintparam (cpxenv_, CPXPARAM_MIP_Interval, 1);
-
-  if ( cpxstatus_ ) {
-     logger_->msgStream(LogInfo) << me_ << "Failure to set MILP log interval, error "
+  if (cpxstatus_) {
+     logger_->msgStream(LogError) << me_ << "Failure to set MILP log interval, error "
        << cpxstatus_ << std::endl;
      goto TERMINATE;
   }
-
   cpxstatus_ = CPXXsetintparam (cpxenv_, CPXPARAM_MIP_Display, 4);
-
-  if ( cpxstatus_ ) {
-     logger_->msgStream(LogInfo) << me_ << "Failure to set MILP display parameter, error "
+  if (cpxstatus_) {
+     logger_->msgStream(LogError) << me_ << "Failure to set MILP display parameter, error "
        << cpxstatus_ << std::endl;
      goto TERMINATE;
   }
@@ -1092,16 +1062,13 @@ EngineStatus CplexMILPEngine::solveSTLazy(double *objLb, SolutionPtr* sol,
   cpxstatus_ = CPXXsetlazyconstraintcallbackfunc(cpxenv_, minolazycallback,
                                              (void*) &stoa_hand);
 
-  if ( cpxstatus_ != 0 ) {
+  if (cpxstatus_ != 0) {
      fprintf(stderr, "Failed to add callback: %s\n",
              CPXXgeterrorstring(cpxenv_, cpxstatus_, errbuf));
      goto TERMINATE;
   }
 
-  //cpxstatus_ = CPXXsetincumbentcallbackfunc(cpxenv_, minoincumbentcallback,
-                                             //(void*) &stoa_hand);
-
-  if ( cpxstatus_ != 0 ) {
+  if (cpxstatus_ != 0) {
      fprintf(stderr, "Failed to add callback: %s\n",
              CPXXgeterrorstring(cpxenv_, cpxstatus_, errbuf));
      goto TERMINATE;
@@ -1109,8 +1076,8 @@ EngineStatus CplexMILPEngine::solveSTLazy(double *objLb, SolutionPtr* sol,
 
   /* Optimize the problem and obtain solution. */
   cpxstatus_ = CPXXmipopt (cpxenv_, cpxlp_);
-  if ( cpxstatus_ ) {
-     logger_->msgStream(LogInfo) << me_ << "Failed to optimize MILP."
+  if (cpxstatus_) {
+     logger_->msgStream(LogError) << me_ << "Failed to optimize MILP."
        << CPXXgeterrorstring(cpxenv_, cpxstatus_, errbuf) << std::endl;
      goto TERMINATE;
   }
@@ -1126,15 +1093,15 @@ EngineStatus CplexMILPEngine::solveSTLazy(double *objLb, SolutionPtr* sol,
 
   /* Get the (dual) best bound value. */
   cpxstatus_ = CPXXgetbestobjval(cpxenv_, cpxlp_, objLb);
-  if ( cpxstatus_ ) {
-     logger_->msgStream(LogInfo) << me_ 
+  if (cpxstatus_) {
+     logger_->msgStream(LogError) << me_
        << "No MILP objective value available. Exiting..." << std::endl;
   }
 
   /* Get the (primal) objective value. */
   cpxstatus_ = CPXXgetobjval (cpxenv_, cpxlp_, &objval);
-  if ( cpxstatus_ ) {
-     logger_->msgStream(LogInfo) << me_ 
+  if (cpxstatus_) {
+     logger_->msgStream(LogError) << me_
        << "No MILP objective value available. Exiting..." << std::endl;
   }
   //logger_->msgStream(LogInfo) << me_ << "Solution value = " << objval << std::endl;
@@ -1142,20 +1109,16 @@ EngineStatus CplexMILPEngine::solveSTLazy(double *objLb, SolutionPtr* sol,
   /* Get the solution. */
   cpxstatus_ = CPXXgetx (cpxenv_, cpxlp_, x, 0, cur_numcols-1);
   if (cpxstatus_) {
-   logger_->msgStream(LogInfo) << me_ << "Failed to get optimal integer x." 
+   logger_->msgStream(LogError) << me_ << "Failed to get optimal integer x."
      << std::endl;
-   //goto TERMINATE;
   }
  
-#if SPEW 
+#if 0
   /* Write a copy of the final problem to a file. */
   writeLP("minoCpxTerm.lp"); 
  
   /* Write the solution. */
-  //for (int j = 0; j < cur_numcols; j++) {
-   //printf ("Column %d:  Value = %10f\n", j, x[j]);
-   //logger_->msgStream(LogInfo) << varname[j] << ": " << x[j] << std::endl;
-  //}
+  printx(x, cur_numcols);
 #endif
 
   // Solve status (replace with string later using CPXXgetstatstring(..))
@@ -1191,40 +1154,7 @@ EngineStatus CplexMILPEngine::solveSTLazy(double *objLb, SolutionPtr* sol,
     logger_->msgStream(LogInfo) << " unknown \n";
   }
 
-  //stats_->time  += timer_->query();
-
-//TERMINATE:
-
-   ////Free up the problem as allocated by CPXXcreateprob, if necessary
-  //if ( cpxlp_ != NULL ) {
-     //cpxstatus_ = CPXXfreeprob (cpxenv_, &cpxlp_);
-     //if ( cpxstatus_ ) {
-        //logger_->msgStream(LogInfo) << me_ << "CPXXfreeprob failed, error code "
-        //  << cpxstatus_ << std::endl;
-
-     //}
-  //}
-
-  ////Free up the CPLEX environment, if necessary
-  //if ( cpxenv_ != NULL ) {
-     //cpxstatus_ = CPXXcloseCPLEX (&cpxenv_);
-
-     //[> Note that CPXXcloseCPLEX produces no output,
-        //so the only way to see the cause of the error is to use
-        //CPXXgeterrorstring.  For other CPLEX routines, the errors will
-        //be seen if the CPXPARAM_ScreenOutput indicator is set to CPX_ON. */
-
-     //if ( cpxstatus_ ) {
-        //char  errmsg[CPXMESSAGEBUFSIZE];
-        //logger_->msgStream(LogInfo) << me_ 
-        //  << "Could not close CPLEX environment." << std::endl;
-        //CPXXgeterrorstring (cpxenv_, cpxstatus_, errmsg);
-        //logger_->msgStream(LogInfo) << me_ << stderr << std::endl; 
-     //}
-  //}
-  
 TERMINATE:
-  //delete [] cstr;
   return status_;
 }
 

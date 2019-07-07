@@ -84,11 +84,17 @@ namespace Minotaur {
 
     void enableStrBrSetup() {};
 
+    /// Get the number of solutions in solution pool after recent solve.
+    UInt getNumSols();
+
     /// Return the solution value of the objective after solving the LP.
     double getSolutionValue();
 
     // Implement Engine::getSolution().
     ConstSolutionPtr getSolution();
+
+    // Get a particular solution from solution pool (-1 fetches incumbent).
+    ConstSolutionPtr getSolutionFromPool(int index);
 
     // Implement Engine::getStatus().
     EngineStatus getStatus();

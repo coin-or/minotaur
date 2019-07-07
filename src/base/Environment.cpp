@@ -195,6 +195,11 @@ void Environment::createDefaultOptions_()
       "Enable multi-start initial heuristic: <0/1>", true, false);
   options_->insert(b_option);
 
+  b_option = (BoolOptionPtr) new Option<bool>("oa_use_solutions",
+      "Should use other solutions to add cuts: <0/1>",
+      true, false);
+  options_->insert(b_option);
+
   b_option = (BoolOptionPtr) new Option<bool>("write_sol_file", 
       "Write solution files: <0/1>", true, false);
   options_->insert(b_option);

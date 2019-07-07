@@ -245,7 +245,7 @@ void OAHandler::solveMILP(double* objfLb, ConstSolutionPtr* sol,
                           SolutionPoolPtr, CutManager*, SolveStatus &status)
 {
 
-  milpe_->load(rel_);         //remove double loading in iteration 1!
+  milpe_->load(rel_);         //double loading in first iteration!
   EngineStatus lpStatus = milpe_->solve();
   ++(stats_->milpS);
   switch (lpStatus) {
@@ -270,7 +270,6 @@ void OAHandler::solveMILP(double* objfLb, ConstSolutionPtr* sol,
     status = SolvedInfeasible;
     break;
   case (ProvenUnbounded):
-  //case (EngineIterationLimit): // MS: take care of this.
   case (ProvenFailedCQFeas):
   case (ProvenFailedCQInfeas):
   case (FailedFeas):
@@ -338,7 +337,6 @@ bool OAHandler::isFeasible(ConstSolutionPtr sol, RelaxationPtr, bool &,
                            double &)
 {
   int error=0;
-  FunctionPtr f;
   double act, cUb;
   ConstraintPtr c;
   const double *x = sol->getPrimal();

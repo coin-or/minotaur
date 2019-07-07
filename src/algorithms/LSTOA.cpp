@@ -344,22 +344,14 @@ int main(int argc, char* argv[])
 
   MINOTAUR_AMPL::AMPLInterfacePtr iface = MINOTAUR_AMPL::AMPLInterfacePtr();
   ProblemPtr inst;
-  SolutionPtr sol2;
+  SolutionPtr sol;
   double obj_sense =1.0, gap = INFINITY;
   
-  // jacobian is read from AMPL interface and passed on to branch-and-bound
-  JacobianPtr jPtr;
-  // hessian is read from AMPL interface and passed on to branch-and-bound
-  MINOTAUR_AMPL::AMPLHessianPtr hPtr;
-
-  // the branch-and-bound
   PresolverPtr pres;
-  EngineFactory *efac;
   const std::string me("oa: ");
   SolveStatus status;
   //handlers
   HandlerVector handlers;
-  IntVarHandlerPtr v_hand;
   LinearHandlerPtr l_hand;
   STOAHandlerPtr stoa_hand;
   EngineStatus engineStatus;
@@ -367,7 +359,6 @@ int main(int argc, char* argv[])
 
   //engines
   EnginePtr nlp_e;
-  
   
   VarVector *orig_v=0;
   int err = 0;
@@ -403,22 +394,8 @@ int main(int argc, char* argv[])
 
   loadProblem(env, iface, inst, &obj_sense);
 
-  // Separability detection
-  //sepDetection(env, inst);
-
-  //Linearize objective if nonlinear
-  //linearizeObj(inst);
-
-
   // Initialize engines
   nlp_e = getNLPEngine(env, inst); //Engine for Original problem
-
-  efac = new EngineFactory(env);
-  //lp_e = efac->getLPEngine();   // lp engine 
-  //milp_e = efac->getMILPEngine();   // milp engine
-  //milp_e = (CplexMILPEnginePtr) new CplexMILPEngine(env);
-  
-  delete efac;
 
   // get presolver.
   orig_v = new VarVector(inst->varsBegin(), inst->varsEnd());
@@ -433,6 +410,8 @@ int main(int argc, char* argv[])
   }
  
    if (options->findBool("solve")->getValue()==true) {
+    double objLb = -INFINITY, objUb = INFINITY;
+    bool prune = false;
     if (true==options->findBool("use_native_cgraph")->getValue()) {
       inst->setNativeDer();
     }
@@ -450,35 +429,19 @@ int main(int argc, char* argv[])
     assert(stoa_hand);
   
     // Initialize the handlers for STOA
-    //CutManager *cutMan = NULL;
-    //bool solFound, shouldPrune;
-    //double inf_meas;
-    //UInt iterNum = 0;
-    ConstSolutionPtr sol;
-    //SeparationStatus sepStatus;
-    bool prune = false;
-    RelaxationPtr milp = RelaxationPtr();
-    // Only store bound-changes of relaxation (not problem)
-  
     NodeIncRelaxerPtr nr;
     nr = (NodeIncRelaxerPtr) new NodeIncRelaxer(env, handlers);
     nr->setModFlag(false);
-    milp = nr->createRootRelaxation(NodePtr(), prune);
+    nr->createRootRelaxation(NodePtr(), prune);
     nr->setEngine(milp_e); 
  
-    //double solAbsTol = env->getOptions()->findDouble("solAbs_tol")->getValue();
-    //double solRelTol = env->getOptions()->findDouble("solRel_tol")->getValue();
     //! initialize the MILP master problem by copying variables & linear constraints and by 
     //linearizing nonlinear constraints at the solution of NLP relaxation of the problem
-  
-    double objLb = -INFINITY, objUb = INFINITY;
     status = Started;
 
-    //MS: Also look relTol if UB =0
-    //milp_e->load(milp);
-    //stoa_hand->solveMILP(&objLb, &sol, solPool, cutMan);
+    //MS: adjust relTol if UB =0
 #ifdef USE_CPX
-    engineStatus = milp_e->solveSTLazy(&objLb, &sol2, stoa_hand, &status);
+    engineStatus = milp_e->solveSTLazy(&objLb, &sol, stoa_hand, &status);
 #else
     env->getLogger()->errStream() << me << "CPLEX MILP Engine not found, exiting" << std::endl;
     goto CLEANUP;
@@ -486,17 +449,6 @@ int main(int argc, char* argv[])
     env->getLogger()->msgStream(LogDebug) << "Engine status :" 
       << engineStatus << std::endl;
  
-    //iterNum++;
-    //MS: different MILP engine status like unbounded, infeasible, and error to be handled
-    //solFound  = stoa_hand->isFeasible(sol, RelaxationPtr(), shouldPrune, inf_meas); 
-    //if (sol2) {
-      //const double *x = sol2->getPrimal();
-      //solPool->addSolution(x, sol2->getObjValue());
-      //objUb = solPool->getBestSolutionValue();
-      ////status = SolvedOptimal;
-      //gap = 0;
-      ////showStatus(env, objLb, objUb, gap);
-    //}
     objUb = solPool->getBestSolutionValue();
     gap = getPerGap(objLb, objUb);
     showStatus(env, objLb, objUb, gap, obj_sense);
@@ -508,7 +460,6 @@ int main(int argc, char* argv[])
          ++it) {
       (*it)->writeStats(env->getLogger()->msgStream(LogExtraInfo));
     }
-    //MS: Other solve status and right way of writing them
     //writeSol(env, orig_v, pres, solPool->getBestSolution(), status, iface);
    }
 
