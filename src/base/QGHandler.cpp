@@ -31,6 +31,7 @@
 #include "Logger.h"
 #include "Node.h"
 #include "NonlinearFunction.h"
+#include "QuadraticFunction.h"
 #include "Objective.h"
 #include "Operations.h"
 #include "Option.h"
@@ -64,10 +65,11 @@ QGHandler::QGHandler()
   solNLP_(NULL),
   stats_(0)
 {
-  rScheme1Para_ = env_->getOptions()->findInt("root_linScheme1")->getValue();
-  rScheme2Para_ = env_->getOptions()->findBool("root_linScheme2")->getValue();
-  rScheme3Para_ = env_->getOptions()->findInt("root_linScheme3")->getValue();
-  rScheme4Para_ = env_->getOptions()->findInt("root_linScheme4")->getValue();
+  rs1_ = env_->getOptions()->findDouble("root_linScheme1")->getValue();
+  rs2Per_ = env_->getOptions()->findDouble("root_linScheme2_per")->getValue();
+  rs2NbhSize_ = env_->getOptions()->findDouble("root_linScheme2_nbhSize")->getValue();
+  //rScheme3Para_ = env_->getOptions()->findInt("root_linScheme3")->getValue();
+  //rScheme4Para_ = env_->getOptions()->findInt("root_linScheme4")->getValue();
   intTol_ = env_->getOptions()->findDouble("int_tol")->getValue();
   solAbsTol_ = env_->getOptions()->findDouble("feasAbs_tol")->getValue();
   solRelTol_ = env_->getOptions()->findDouble("feasRel_tol")->getValue();
@@ -93,10 +95,11 @@ QGHandler::QGHandler(EnvPtr env, ProblemPtr minlp, EnginePtr nlpe)
   solNLP_(NULL)
 {
   //MS: set the option for root_LinSchemes
-  rScheme1Para_ = env_->getOptions()->findInt("root_linScheme1")->getValue();
-  rScheme2Para_ = env_->getOptions()->findBool("root_linScheme2")->getValue();
-  rScheme3Para_ = env_->getOptions()->findInt("root_linScheme3")->getValue();
-  rScheme4Para_ = env_->getOptions()->findInt("root_linScheme4")->getValue();
+  //rScheme3Para_ = env_->getOptions()->findInt("root_linScheme3")->getValue();
+  //rScheme4Para_ = env_->getOptions()->findInt("root_linScheme4")->getValue();
+  rs1_ = env_->getOptions()->findDouble("root_linScheme1")->getValue();
+  rs2Per_ = env_->getOptions()->findDouble("root_linScheme2_per")->getValue();
+  rs2NbhSize_ = env_->getOptions()->findDouble("root_linScheme2_nbhSize")->getValue();
   intTol_ = env_->getOptions()->findDouble("int_tol")->getValue();
   solAbsTol_ = env_->getOptions()->findDouble("feasAbs_tol")->getValue();
   solRelTol_ = env_->getOptions()->findDouble("feasRel_tol")->getValue();
@@ -139,7 +142,6 @@ UInt QGHandler::addCutAtRoot_(double *x, ConstraintPtr con)
       ++(stats_->cuts);
       sstm << "_OAcut_" << stats_->cuts << "_AtRoot";
       f = (FunctionPtr) new Function(lf);
-      rel_->newConstraint(f, -INFINITY, cUb-c, sstm.str());
       newcon = rel_->newConstraint(f, -INFINITY, cUb-c, sstm.str());
       return newcon->getIndex();
       sstm.str("");
@@ -151,31 +153,24 @@ UInt QGHandler::addCutAtRoot_(double *x, ConstraintPtr con)
   return 0;
 }
 
-bool QGHandler::addNewCut_(double *b1, UInt vlIdx, ConstraintPtr con, double linTermCoeff, UInt &newConId)
+bool QGHandler::addNewCut_(double *b1, UInt vlIdx, ConstraintPtr con,
+                           double linTermCoeff, double extraCoeff, UInt &newConId)
 {
-  int error = 0;
   double act; 
+  int error = 0;
+  QuadraticFunctionPtr qf = con->getQuadraticFunction();
   NonlinearFunctionPtr nlf = con->getNonlinearFunction();
-  act = nlf->eval(b1, &error); 
-  if (error == 0) {
-    b1[vlIdx] = (con->getUb()- act)/linTermCoeff;    
-    newConId = addCutAtRoot_(b1, con);
-    return true;
+  if (nlf) {
+    act = nlf->eval(b1, &error); 
+  } else if (qf) {
+    act = qf->eval(b1); 
   }
-  return false;
-}
-
-bool QGHandler::diffFunVarVal_(const double *x, FunctionPtr f)
-{
-  UInt idx; 
-  for(VariableSet::iterator vit=f->varsBegin(); vit!=f->varsEnd(); ++vit) {
-    idx = (*vit)->getIndex();
-    //std::cout << (*vit)->getName() << " old val " << solNLP_[idx] << " new val " << x[idx] << std::endl; 
-    if ((fabs(x[idx]-solNLP_[idx]) > solAbsTol_) &&
-          (solNLP_[idx] != 0 || fabs(x[idx]-solNLP_[idx]) > fabs(solNLP_[idx])*solRelTol_)) {
+  if (error == 0) {
+    b1[vlIdx] = (con->getUb()- act - extraCoeff)/linTermCoeff;    
+    newConId = addCutAtRoot_(b1, con);
+    if (newConId != 0) {
       return true;
-      break;          
-    }
+    } 
   }
   return false;
 }
@@ -183,30 +178,18 @@ bool QGHandler::diffFunVarVal_(const double *x, FunctionPtr f)
 void QGHandler::addInitLinearX_(const double *x, bool isSecNLP)
 { 
   int error=0;
-  bool addCut;
-  UInt newcuts = 0; //MS: for testing
   FunctionPtr f;
   double c, act, cUb;
   std::stringstream sstm;
   ConstraintPtr con;
   //ConstraintPtr newcon;
   LinearFunctionPtr lf = LinearFunctionPtr();
-  //std::cout << "isSecNLP " << isSecNLP << std::endl;
 
   for (CCIter it=nlCons_.begin(); it!=nlCons_.end(); ++it) {
     con = *it;
     act = con->getActivity(x, &error);
     if (error == 0) {
       f = con->getFunction();
-      if (isSecNLP) {
-        //con->write(std::cout);
-        addCut = diffFunVarVal_(x, f);
-        // Add cut only if the new point is different than the previous point
-        if (addCut == false) {
-          continue;
-        }
-        ++newcuts;
-      }
       linearAt_(f, act, x, &c, &lf, &error);
       if (error == 0) {
         cUb = con->getUb();
@@ -217,16 +200,6 @@ void QGHandler::addInitLinearX_(const double *x, bool isSecNLP)
         //newcon = rel_->newConstraint(f, -INFINITY, cUb-c, sstm.str());
         //newcon->write(std::cout);
         sstm.str("");
-        //if (rScheme3Para_ > 0 && twoVarsCon_(con)) { 
-        //if (rScheme4Para_ > 0 && twoVarsCon_(con)) { 
-          //////act = con->getActivity(x, &error);
-          //////if ((fabs(act-cUb) <= solAbsTol_) ||
-              //////(cUb!=0 && (fabs(act-cUb) <= fabs(cUb)*solRelTol_))) {
-            //rootScheme4_(x, con); //MS: try applying for all cons
-            //////rootScheme3_(x, con, lf);
-          //////MS: same technique on the LP solution as well
-          //////}
-        //}
       }
     }	else {
       logger_->msgStream(LogError) << me_ << "Constraint" <<  con->getName() <<
@@ -246,15 +219,6 @@ void QGHandler::addInitLinearX_(const double *x, bool isSecNLP)
       ++(stats_->cuts);
       sstm << "_OAObjcut_" << stats_->cuts << "_AtRoot";
       f = o->getFunction();
-      if (isSecNLP) {
-        addCut = diffFunVarVal_(x, f);
-        // Add cut only if the new point is different than the previous point
-        if (addCut == false) {
-          std::cout << "No. of warmstart cuts " << newcuts << std::endl; // testing
-          return;
-        }
-        ++newcuts;
-      }
       linearAt_(f, act, x, &c, &lf, &error);
       if (error == 0) {
         lf->addTerm(objVar_, -1.0);
@@ -271,12 +235,6 @@ void QGHandler::addInitLinearX_(const double *x, bool isSecNLP)
         "Objective not defined at this point." << std::endl;
 #endif
     }
-  }
-        
-  if (isSecNLP) {
-    rScheme2Para_ = false;
-    delete [] solNLP_;
-    std::cout << "No. of warmstart cuts " << newcuts << std::endl;
   }
   return;
 }
@@ -666,13 +624,13 @@ void QGHandler::initLinear_(bool *isInf, bool isSecNLP)
     assert(!"In QGHandler: stopped at root. Check error log.");
   }
 
-  if (*isInf == false && rScheme2Para_) {
-    int n = minlp_->getNumVars();
-    solNLP_ = new double[n];
-    std::fill(solNLP_, solNLP_+n, 0.);
-    std::copy(x, x+n, solNLP_); 
-    //std::cout << "Root NLP and LP sol val and dist " << std::setprecision(5) << nlpe_->getSolution()->getObjValue(); 
-  }
+  //if (*isInf == false && rScheme2Para_) {
+    //int n = minlp_->getNumVars();
+    //solNLP_ = new double[n];
+    //std::fill(solNLP_, solNLP_+n, 0.);
+    //std::copy(x, x+n, solNLP_); 
+    ////std::cout << "Root NLP and LP sol val and dist " << std::setprecision(5) << nlpe_->getSolution()->getObjValue(); 
+  //}
 #if SPEW
   logger_->msgStream(LogDebug) << me_ << "root NLP solve status = " 
     << nlpe_->getStatusString() << std::endl;
@@ -713,142 +671,172 @@ void QGHandler::insertNewPt_(UInt j, UInt k, std::vector<double > & xc,
 //variables
 void QGHandler::rootLinearizations_()
 {
-  //MS: make these schemes option based
-  rootLinScheme1_();  // 2 var constraints linearizations
-  //rootLinScheme2_();  // warm starting NLP from LP solution
-  //rootLinScheme3_();  // add linearizations near root NLP solution
-  // Just set a parameter for scheme 3
-  //rootLinScheme3_ = true;
-  //if (rootLinScheme3_) {
-    //bool isInf;
-    //findCenter_(&isInf);
-    //if (isInf == true) {
-      //rootLinScheme3_ = false;    
-    //} 
-  //}
+  bool shouldCont;
+  UInt vnIdx, vlIdx;
+  ConstraintPtr con;
+  double linTermCoeff, extraCoeff;
+
+  std::cout << "No. of nonlinear cons and root lins added: " << nlCons_.size(); 
+  for (CCIter it = nlCons_.begin(); it != nlCons_.end(); ++it) {
+    con = *it;
+    vlIdx = 0;
+    linTermCoeff = 0;
+    // constraints with extactly two vars, one in nonlinear and one in linear
+    // part, is considered
+    shouldCont = twoVarsCon_(con, linTermCoeff, vlIdx, vnIdx, extraCoeff); 
+    if (shouldCont == false) {
+      continue;    
+    } else {
+      if (rs1_ > 0) {
+        rootLinScheme1_(con, linTermCoeff, vlIdx, vnIdx, extraCoeff);  
+      }
+      if (rs2Per_ > 0) { // there is a default neighborhood
+        rootLinScheme2_(con, linTermCoeff, vlIdx, vnIdx);  
+      }    
+    }
+  }
+  std::cout << std::endl;
 }
 
+
+//void QGHandler::rootLinearizations_()
+//{
+  ////MS: make these schemes option based
+  //rootLinScheme1_();  // 2 var constraints linearizations
+  ////rootLinScheme2_();  // warm starting NLP from LP solution
+  ////rootLinScheme3_();  // add linearizations near root NLP solution
+  //// Just set a parameter for scheme 3
+  ////rootLinScheme3_ = true;
+  ////if (rootLinScheme3_) {
+    ////bool isInf;
+    ////findCenter_(&isInf);
+    ////if (isInf == true) {
+      ////rootLinScheme3_ = false;    
+    ////} 
+  ////}
+//}
+
 //MS: add esh from LP solution
-void QGHandler::rootLinScheme3_()
-{
-  if (rScheme3Para_ <= 0) {
-    return;  
-  }
-  //bool isInf = false;
-  //findCenter_(&isInf);
-  //if (isInf == true) {
-    //return;
+//void QGHandler::rootLinScheme3_()
+//{
+  //if (rScheme3Para_ <= 0) {
+    //return;  
   //}
-  int error = 0;
-  lpe_->load(rel_);
-  FunctionPtr f;
-  const double *lpx;
-  LinearFunctionPtr lf;
-  VariableType v_type;
-  ConstSolutionPtr lpSol;
-  bool should_prune, isFrac;
-  EngineStatus engineStatus;
-  ConstraintPtr con;
-  //ConstraintPtr newcon;
-  //double val;
-  double c, val, act, cUb;
-  std::stringstream sstm;
-  VariableConstIterator v_iter;
-  double *x = new double[minlp_->getNumVars()];
-  //SeparationStatus status1;
-  //lpe_->solve();
-  for (UInt i = 0; i < rScheme3Para_; ++i) {
-    lpe_->solve();
-    isFrac = false;
-    engineStatus = lpe_->getStatus();
-    lpSol = lpe_->getSolution();
-    lpx = lpSol->getPrimal();
-    should_prune = shouldPrune_(engineStatus);
-    //std::cout << "Iteration and LB " << i+1 << " " << std::setprecision(6) 
-      //<< lpSol->getObjValue() << std::endl;
-    if (!should_prune) {
-      for (v_iter = rel_->varsBegin(); v_iter != rel_->varsEnd(); ++v_iter) {
-        v_type = (*v_iter)->getType();
-        if (v_type == Binary || v_type == Integer) {
-          val = lpx[(*v_iter)->getIndex()];
-          if (fabs(val - floor(val+0.5)) > intTol_) {
-            isFrac = true;
-            break;
-          }
-        }
-      } // for
-      //MS: make sure adding objective here
-      if (isFrac) {
-        for (CCIter it=nlCons_.begin(); it!=nlCons_.end(); ++it) {
-          con = *it;
-          cUb = con->getUb();
-          act = con->getActivity(lpx, &error);
-          if (error == 0) {
-            if ((act <= cUb + solAbsTol_) ||
-                (cUb != 0 && act <= cUb + fabs(cUb)*solRelTol_)) {
-              f = con->getFunction();
-              lf = LinearFunctionPtr();
-              linearAt_(f, act, lpx, &c, &lf, &error);
-              if (error == 0) {
-                ++(stats_->cuts);
-                sstm << "_OAcut_" << stats_->cuts << "_AtRoot";
-                f = (FunctionPtr) new Function(lf);
-                rel_->newConstraint(f, -INFINITY, cUb-c, sstm.str());
-                sstm.str("");
-              }
-            } else {
-              relobj_ = (lpSol) ? lpSol->getObjValue() : -INFINITY;
-              addEshAtRoot_(lpx, x, con); //MS: add cut to cut manager
-            }
-          } else {
-          }
-        }
-        //if (oNl_) {
-          //error = 0;
-          //ObjectivePtr o = minlp_->getObjective();
-          //act = o->eval(x, &error);
-          //if (error==0) {
-            //++(stats_->cuts);
-            //sstm << "_OAObjcut_" << stats_->cuts << "_AtRoot";
-            //f = o->getFunction();
-            //linearAt_(f, act, x, &c, &lf, &error);
-            //if (error == 0) {
-              //lf->addTerm(objVar_, -1.0);
-              //f = (FunctionPtr) new Function(lf);
-              //rel_->newConstraint(f, -INFINITY, -1.0*c, sstm.str());
+  ////bool isInf = false;
+  ////findCenter_(&isInf);
+  ////if (isInf == true) {
+    ////return;
+  ////}
+  //int error = 0;
+  //lpe_->load(rel_);
+  //FunctionPtr f;
+  //const double *lpx;
+  //LinearFunctionPtr lf;
+  //VariableType v_type;
+  //ConstSolutionPtr lpSol;
+  //bool should_prune, isFrac;
+  //EngineStatus engineStatus;
+  //ConstraintPtr con;
+  ////ConstraintPtr newcon;
+  ////double val;
+  //double c, val, act, cUb;
+  //std::stringstream sstm;
+  //VariableConstIterator v_iter;
+  //double *x = new double[minlp_->getNumVars()];
+  ////SeparationStatus status1;
+  ////lpe_->solve();
+  //for (UInt i = 0; i < rScheme3Para_; ++i) {
+    //lpe_->solve();
+    //isFrac = false;
+    //engineStatus = lpe_->getStatus();
+    //lpSol = lpe_->getSolution();
+    //lpx = lpSol->getPrimal();
+    //should_prune = shouldPrune_(engineStatus);
+    ////std::cout << "Iteration and LB " << i+1 << " " << std::setprecision(6) 
+      ////<< lpSol->getObjValue() << std::endl;
+    //if (!should_prune) {
+      //for (v_iter = rel_->varsBegin(); v_iter != rel_->varsEnd(); ++v_iter) {
+        //v_type = (*v_iter)->getType();
+        //if (v_type == Binary || v_type == Integer) {
+          //val = lpx[(*v_iter)->getIndex()];
+          //if (fabs(val - floor(val+0.5)) > intTol_) {
+            //isFrac = true;
+            //break;
+          //}
+        //}
+      //} // for
+      ////MS: make sure adding objective here
+      //if (isFrac) {
+        //for (CCIter it=nlCons_.begin(); it!=nlCons_.end(); ++it) {
+          //con = *it;
+          //cUb = con->getUb();
+          //act = con->getActivity(lpx, &error);
+          //if (error == 0) {
+            //if ((act <= cUb + solAbsTol_) ||
+                //(cUb != 0 && act <= cUb + fabs(cUb)*solRelTol_)) {
+              //f = con->getFunction();
+              //lf = LinearFunctionPtr();
+              //linearAt_(f, act, lpx, &c, &lf, &error);
+              //if (error == 0) {
+                //++(stats_->cuts);
+                //sstm << "_OAcut_" << stats_->cuts << "_AtRoot";
+                //f = (FunctionPtr) new Function(lf);
+                //rel_->newConstraint(f, -INFINITY, cUb-c, sstm.str());
+                //sstm.str("");
+              //}
+            //} else {
+              //relobj_ = (lpSol) ? lpSol->getObjValue() : -INFINITY;
+              //addEshAtRoot_(lpx, x, con); //MS: add cut to cut manager
             //}
           //} else {
           //}
         //}
-      } else {
-        delete [] x;
-        return;
-        //if (isFeas_(lpSol)) {
-          ////objVal = lpSol->getObjValue();
-          ////if (objVal <= s_pool->getBestSolutionValue()) {
-            ////s_pool->addSolution(lpx, objVal);
-            ///[>sol_found = true;
-            ///[>status = SepaPrune;
-            ////MS: take care of this later
-            //return;
+        ////if (oNl_) {
+          ////error = 0;
+          ////ObjectivePtr o = minlp_->getObjective();
+          ////act = o->eval(x, &error);
+          ////if (error==0) {
+            ////++(stats_->cuts);
+            ////sstm << "_OAObjcut_" << stats_->cuts << "_AtRoot";
+            ////f = o->getFunction();
+            ////linearAt_(f, act, x, &c, &lf, &error);
+            ////if (error == 0) {
+              ////lf->addTerm(objVar_, -1.0);
+              ////f = (FunctionPtr) new Function(lf);
+              ////rel_->newConstraint(f, -INFINITY, -1.0*c, sstm.str());
+            ////}
+          ////} else {
           ////}
-          ////update status and sol_found
-        //} else {
-          ////check nonlinear cons feasibility if feasible stop else solve NLP and
-          ////add cuts      
-          ////cutIntSol_(lpSol, cutMan, s_pool, sol_found, status);
-          ////if (*status == SepaPrune) {
-            ////MS: take care of this later
-            //return;          
-          ////}
-        //}
-      }
-    } else {
-      delete [] x;
-      return;    
-    }// if
-  }
-}
+        ////}
+      //} else {
+        //delete [] x;
+        //return;
+        ////if (isFeas_(lpSol)) {
+          //////objVal = lpSol->getObjValue();
+          //////if (objVal <= s_pool->getBestSolutionValue()) {
+            //////s_pool->addSolution(lpx, objVal);
+            /////[>sol_found = true;
+            /////[>status = SepaPrune;
+            //////MS: take care of this later
+            ////return;
+          //////}
+          //////update status and sol_found
+        ////} else {
+          //////check nonlinear cons feasibility if feasible stop else solve NLP and
+          //////add cuts      
+          //////cutIntSol_(lpSol, cutMan, s_pool, sol_found, status);
+          //////if (*status == SepaPrune) {
+            //////MS: take care of this later
+            ////return;          
+          //////}
+        ////}
+      //}
+    //} else {
+      //delete [] x;
+      //return;    
+    //}// if
+  //}
+//}
 
 bool QGHandler::shouldPrune_(EngineStatus eStatus)
 {
@@ -1161,75 +1149,288 @@ void QGHandler::findCenter_(bool* isInf)
   //initLinear_(&isInf, 1);
 //}
 
-bool QGHandler::twoVarsCon_(LinearFunctionPtr lf, NonlinearFunctionPtr nlf)
+bool QGHandler::twoVarsCon_(ConstraintPtr con, double &linTermCoeff,
+                            UInt & vlIdx, UInt & vnIdx, double &extraCoeff)
 {
-  UInt vnIdx, vlIdx = 0;
-  vnIdx = nlf->numVars();
+  double coeff;
+  bool foundVar = false;
+  UInt nlTerms = 0, qTerms = 0, idx;
+  LinearFunctionPtr lf = con->getLinearFunction();
+  QuadraticFunctionPtr qf = con->getQuadraticFunction();
+  NonlinearFunctionPtr nlf = con->getNonlinearFunction();
   const double linCoeffTol =
     env_->getOptions()->findDouble("conCoeff_tol")->getValue();
-
-  if (vnIdx != 1) {
-    return false;        
+  if (nlf) {
+    nlTerms = nlf->numVars();
+    if (nlTerms > 1) {
+      return false;    
+    }
+    vnIdx= (*(nlf->varsBegin()))->getIndex();       // index of var in nonlinear term
+  }
+  if (qf) {
+    qTerms = qf->getNumVars();  
+    if (qTerms > 1) {
+      return false;    
+    }
+    vnIdx= ((qf->varsBegin())->first)->getIndex();       // index of var in nonlinear term
+  }
+  if (qTerms + nlTerms != 1) {
+    return false;  
   }
   if (lf) {
+    extraCoeff = 0;
     for(VariableGroupConstIterator vit = lf->termsBegin(); vit != lf->termsEnd(); ++vit) {
-      if (fabs(vit->second) > linCoeffTol) {
-        ++vlIdx;          
+      coeff = vit->second;
+      idx = (vit->first)->getIndex();
+      if (idx == vnIdx) {
+        extraCoeff = extraCoeff + coeff;
+        continue;      
       }
-      if (vlIdx > 1) {
-        return false;
+      if (fabs(vit->second) > linCoeffTol && foundVar == false) {
+        linTermCoeff = vit->second;
+        vlIdx = (vit->first)->getIndex();
+        foundVar = true;
       }
     }
   }
-  if (vnIdx+vlIdx != 2) {
-    return false;    
+  if (foundVar) {
+    return true;
   }
-  return true;
+  extraCoeff = 0;
+  return false;
 }
 
 //MS: violation based scheme
+void QGHandler::rootLinScheme1_(ConstraintPtr con, double linTermCoeff,
+                            UInt vlIdx, UInt vnIdx, double extraCoeff)
+{
+  //MS: check this functionality once
+  //FunctionPtr f;
+  double iP[2]; //intersection point, storing only nonlinear var val
+  bool shouldCont;
+  ConstraintPtr newcon;
+  std::vector<UInt > newConsId;
+  VariablePtr vnl = NULL, vl = NULL;
+  UInt newConId, numCuts;
+  std::vector<double > linVioVal, xc, yc; // xc is for nonlinear var, yc for lin var
+  int error = 0, n = rel_->getNumVars(), i;
+  double *b1 = new double[n];
+  double act, cUb, y1, y2, maxVio, 
+         stopCond, consUb; // extraCoeff: coeff of nonlin var in linear part
+  std::fill(b1, b1+n, 0.);
+  // initialization
+  vlIdx = 0;
+  numCuts = 0;
+  extraCoeff = 0;
+  linTermCoeff = 0;
+  // constraints with extactly two vars, one in nonlinear and one in linear
+  // part, is considered
+
+  shouldCont = twoVarsCon_(con, linTermCoeff, vlIdx, vnIdx, extraCoeff); 
+  if (shouldCont == false) {
+    delete [] b1;
+    return;    
+  }
+  
+  vl = rel_->getVariable(vlIdx);
+  vnl = rel_->getVariable(vnIdx);
+  //con->write(std::cout);
+  //std::cout << "Lin var and nonlin var pointer - cons1 " << vl << " " << vnl << std::endl;
+  // lower bound of var in nonlinear cons
+  b1[vnIdx] = vnl->getLb();
+  shouldCont = addNewCut_(b1, vlIdx, con, linTermCoeff, extraCoeff, newConId);
+  if (shouldCont) {
+    numCuts++;
+    y1 = b1[vlIdx];
+    newConsId.push_back(newConId); // MS: Add cutmanager later
+  } else {
+    delete [] b1;
+    return;    
+  }
+
+  // upper bound of var in nonlinear cons
+  b1[vnIdx] = vnl->getUb();
+  shouldCont = addNewCut_(b1, vlIdx, con, linTermCoeff, extraCoeff, newConId);
+  if (shouldCont) {
+    numCuts++;
+    y2 = b1[vlIdx];
+    newConsId.push_back(newConId);
+  } else {
+    delete [] b1;
+    return;    
+  }  
+
+   //// intersection point. In iPtAt index 0 is for nonlinear
+   //// and 1 is for linear var
+  shouldCont = findIntersectPt(newConsId, vl, vnl, iP);
+  if (shouldCont == false) {
+    delete [] b1;
+    return;    
+  }
+
+  // populate points ind their distance in cyclic order
+  xc.push_back(vnl->getLb());
+  yc.push_back(y1);
+  linVioVal.push_back(0);
+      
+  b1[vnIdx] = iP[0], b1[vlIdx] = iP[1];
+  act = con->getActivity(b1, &error);
+  if (error != 0) {
+    delete [] b1;
+    return;    
+  }  
+  consUb = con->getUb();
+  act = std::max(act-consUb, 0.0); 
+  xc.push_back(iP[0]), yc.push_back(iP[1]), linVioVal.push_back(act);
+  xc.push_back(vnl->getUb()), yc.push_back(y2), linVioVal.push_back(0);
+
+  i = 1; // starting from intersection point
+  //for (UInt k = 0; k < rScheme1Para_; ++k) 
+    
+  //consUb = con->getUb();
+  if (fabs(consUb) > solAbsTol_) { 
+    stopCond = consUb*rs1_/100;    
+  } else {
+    stopCond = linVioVal[i]*rs1_/100;    
+  }
+  //std::cout << "maxVio and stopCond " << linVioVal[i] << " " << stopCond << std::endl;
+  maxVio = linVioVal[i];
+  while (maxVio >= stopCond) { 
+    //add a new cut at the point indexed i
+    b1[vnIdx] = xc[i];
+    shouldCont = addNewCut_(b1, vlIdx, con, linTermCoeff, extraCoeff, newConId);
+    if (shouldCont) {
+      numCuts++;
+      newcon = rel_->getConstraint(newConId);
+      cUb = newcon->getUb();
+    } else {
+      break;
+    }
+    
+    // Move right and determine first point that satisfy the new cons
+    for (UInt j = i+1; j < xc.size(); ) {
+      b1[vnIdx] = xc[j], b1[vlIdx] = yc[j];
+      act = newcon->getActivity(b1, &error);
+      if (error == 0) {
+        if ((act < cUb + solAbsTol_) ||
+            (cUb =! 0 && act < cUb + fabs(cUb)*solRelTol_)) {
+            //insert new point just before index j
+          insertNewPt_(j, j-1, xc, yc, newcon, vl, vnl, shouldCont); 
+          b1[vnIdx] = xc[j], b1[vlIdx] = yc[j];
+          act = con->getActivity(b1, &error);
+          if (error != 0) {
+            shouldCont = 0;    
+          } else {
+            act = std::max(act-consUb, 0.0); 
+            linVioVal.insert(linVioVal.begin()+j,act);
+          }
+          break;
+        } else {
+          // delete if violated
+          xc.erase(xc.begin() + j);
+          yc.erase(yc.begin() + j);        
+          linVioVal.erase(linVioVal.begin() + j);        
+        }  
+      }
+    }
+    if (shouldCont == false) {
+      break;
+    }
+    for (int j = i-1; j >= 0; --j) {
+      b1[vnIdx] = xc[j], b1[vlIdx] = yc[j];
+      act = newcon->getActivity(b1, &error);
+      if (error == 0) {
+        if ((act < cUb + solAbsTol_) ||
+            (cUb =! 0 && act < cUb + fabs(cUb)*solRelTol_)) {
+          insertNewPt_(j+1, j, xc, yc, newcon, vl, vnl, shouldCont); 
+          b1[vnIdx] = xc[j+1], b1[vlIdx] = yc[j+1];
+          act = con->getActivity(b1, &error);
+          if (error != 0) {
+            shouldCont = 0;    
+          } else {
+            act = std::max(act-consUb, 0.0); 
+            linVioVal.insert(linVioVal.begin()+j+1,act);
+            xc.erase(xc.begin()+j+2);
+            yc.erase(yc.begin()+j+2);        
+            linVioVal.erase(linVioVal.begin()+j+2);        
+          }
+          break;
+        }  else {
+          // delete if violated
+          xc.erase(xc.begin() + j);
+          yc.erase(yc.begin() + j);        
+          linVioVal.erase(linVioVal.begin() + j);        
+        }  
+      }
+    }
+    if (shouldCont == false) {
+      break;
+    }
+    maxVio = *(std::max_element(linVioVal.begin(), linVioVal.end()));
+    //std::cout << "max vio " << maxVio << std::endl;
+    if ((maxVio < solAbsTol_) || 
+        (consUb!=0 && maxVio < fabs(consUb)*solRelTol_ )) { 
+      break;
+    }
+    i = std::max_element(linVioVal.begin(), linVioVal.end())-linVioVal.begin();     
+  }
+  std::cout << " " << numCuts;
+  //std::cout << std::endl;
+  //exit(1);
+  delete [] b1;
+  return;
+}
+
+//MS: distance based scheme
 //void QGHandler::rootLinScheme1_()
 //{
   ////MS: check this functionality once
   ////FunctionPtr f;
-  //VariablePtr vnl, vl;
+  //VariablePtr vnl = NULL, vl = NULL;
   //bool shouldCont;
-  ////LinearFunctionPtr lf;
+  //LinearFunctionPtr lf;
+  //QuadraticFunctionPtr qf;
   //NonlinearFunctionPtr nlf;
   //ConstraintPtr con, newcon;
   //UInt vnIdx, vlIdx, newConId, numCuts;
   //int error = 0, n = rel_->getNumVars(), i;
-  //double act, cUb, linTermCoeff, y1, y2, maxVio, consUb, stopCond;
+  //double act, cUb, linTermCoeff, y1, y2, maxVio, 
+         //stopCond, extraCoeff; // extraCoeff: coeff of nonlin var in linear part
+
   //double *b1 = new double[n];
-  //double iP[2]; //intersection point
+  //double iP[2]; //intersection point, storing only nonlinear var val
   //std::vector<UInt > newConsId;
-  //std::vector<double > linVioVal, xc, yc; //xc - nonlinear var, yc: lin var
+  //std::vector<double > linVioVal, xc, yc; // xc is for nonlinear var, yc for lin var
   //std::fill(b1, b1+n, 0.);
  
-  ////std::cout << "No. of nonlinear cons and root lins added: " << nlCons_.size(); 
+  //std::cout << "No. of nonlinear cons and root lins added: " << nlCons_.size(); 
   //for (CCIter it = nlCons_.begin(); it != nlCons_.end(); ++it) {
     //con = *it;
+    //// initialization
+    //vlIdx = 0;
     //numCuts = 0;
-    //shouldCont = twoVarsCon_(con); //MS: pass directly lf or nlf
+    //extraCoeff = 0;
+    //linTermCoeff = 0;
     //// constraints with extactly two vars, one in nonlinear and one in linear
     //// part, is considered
+    //lf = con->getLinearFunction();
+    //qf = con->getQuadraticFunction();
     //nlf = con->getNonlinearFunction();
-    
+    //shouldCont = twoVarsCon_(lf, nlf, qf, linTermCoeff, vlIdx, vnIdx, extraCoeff); 
     //if (shouldCont == false) {
       //continue;    
     //}
-    //vnIdx= (*(nlf->varsBegin()))->getIndex(); // index of var in nonlinear term
-    //vlIdx = (con->getLinearFunction()->termsBegin()->first)->getIndex(); // index of var in lin term
-    //linTermCoeff = con->getLinearFunction()->termsBegin()->second;
-    //vl = rel_->getVariable(vlIdx);
+    
     //vnl = rel_->getVariable(vnIdx);
+    //vl = rel_->getVariable(vlIdx);
+    
     ////con->write(std::cout);
     ////std::cout << "Lin var and nonlin var pointer - cons1 " << vl << " " << vnl << std::endl;
     //// lower bound of var in nonlinear cons
     //b1[vnIdx] = vnl->getLb();
-    //shouldCont = addNewCut_(b1, vlIdx, con, linTermCoeff, error, newConId, nlf);
-    //numCuts++;
+    //shouldCont = addNewCut_(b1, vlIdx, con, linTermCoeff, extraCoeff, newConId);
     //if (shouldCont) {
+      //numCuts++;
       //y1 = b1[vlIdx];
       //newConsId.push_back(newConId); // MS: Add cutmanager later
     //} else {
@@ -1238,52 +1439,63 @@ bool QGHandler::twoVarsCon_(LinearFunctionPtr lf, NonlinearFunctionPtr nlf)
 
     //// upper bound of var in nonlinear cons
     //b1[vnIdx] = vnl->getUb();
-    //shouldCont = addNewCut_(b1, vlIdx, con, linTermCoeff, error, newConId, nlf);
-    //numCuts++;
+    //shouldCont = addNewCut_(b1, vlIdx, con, linTermCoeff, extraCoeff, newConId);
     //if (shouldCont) {
+      //numCuts++;
       //y2 = b1[vlIdx];
-      //newConsId.push_back(newConId); // MS: Add cutmanager later
+      //newConsId.push_back(newConId);
     //} else {
       //newConsId.clear();
       //continue;    
-    //}   
-    //// Find intersection point and its location. In iPtAt index 0 is for
-    //// nonlinear and 1 is for linear var
-    //findIntersectPt(newConsId, vl, vnl, iP, shouldCont);
+    //}  
+
+     ////// intersection point. In iPtAt index 0 is for nonlinear
+     ////// and 1 is for linear var
+    //shouldCont = findIntersectPt(newConsId, vl, vnl, iP);
     //if (shouldCont == false) {
       //newConsId.clear();
       //continue;    
     //}
 
-    //// populate points in an order and the violation value at the points
-    //xc.push_back(vnl->getLb()), yc.push_back(y1), linVioVal.push_back(0);
+    //// populate points ind their distance in cyclic order
+    //xc.push_back(vnl->getLb());
+    //yc.push_back(y1);
+    //linVioVal.push_back(0);
         
-    //b1[vnIdx] = iP[0], b1[vlIdx] = iP[1];;
-    //act = getVio_(b1, con, error);
-    //if (error != 0) {
+    //b1[vnIdx] = iP[0], b1[vlIdx] = iP[1];
+    //// vertical distance of intersection point
+    //if (nlf) {
+      //act = nlf->eval(b1, &error); 
+    //} else if (qf) {
+      //act = qf->eval(b1); 
+    //}
+    //if (error != 0 || act == 0) {
       //newConsId.clear();
-      //xc.clear(), yc.clear();
+      //xc.clear(), yc.clear(), linVioVal.clear();
       //continue;    
     //}
+    //act = fabs((con->getUb()- act - extraCoeff)/linTermCoeff - iP[1]);    
+    
     //xc.push_back(iP[0]), yc.push_back(iP[1]), linVioVal.push_back(act);
     //xc.push_back(vnl->getUb()), yc.push_back(y2), linVioVal.push_back(0);
 
     //i = 1; // starting from intersection point
-    //for (UInt k = 0; k < rScheme1Para_; ++k) {
+    ////for (UInt k = 0; k < rScheme1Para_; ++k) {
       
     //////consUb = con->getUb();
     //////if (consUb == 0) {
-      ////stopCond = act/2;    
+    //stopCond = linVioVal[i]*rScheme1Para_/100;    
     //////} else {
       //////stopCond = .1*consUb;    
     //////}
-    ////maxVio = 2*act;
-    ////while (maxVio >= stopCond) 
+    ////std::cout << "maxVio and stopCond " << linVioVal[i] << " " << stopCond << std::endl;
+    //maxVio = linVioVal[i];
+    //while (maxVio >= stopCond) { 
       ////add a new cut at the point indexed i
       //b1[vnIdx] = xc[i];
-      //shouldCont = addNewCut_(b1, vlIdx, con, linTermCoeff, error, newConId, nlf);
-      //numCuts++;
+      //shouldCont = addNewCut_(b1, vlIdx, con, linTermCoeff, extraCoeff, newConId);
       //if (shouldCont) {
+        //numCuts++;
         //newcon = rel_->getConstraint(newConId);
         //cUb = newcon->getUb();
       //} else {
@@ -1300,7 +1512,11 @@ bool QGHandler::twoVarsCon_(LinearFunctionPtr lf, NonlinearFunctionPtr nlf)
               ////insert new point just before index j
             //insertNewPt_(j, j-1, xc, yc, newcon, vl, vnl, shouldCont); 
             //b1[vnIdx] = xc[j], b1[vlIdx] = yc[j];
-            //act = getVio_(b1, con, error);
+            //if (nlf) {
+              //act = fabs((con->getUb()- nlf->eval(b1, &error) - extraCoeff)/linTermCoeff - yc[j]);    
+            //} else if (qf) {
+              //act = fabs((con->getUb()- qf->eval(b1) - extraCoeff)/linTermCoeff - yc[j]);    
+            //}
             //if (error != 0) {
               //shouldCont = 0;    
             //} else {
@@ -1326,7 +1542,11 @@ bool QGHandler::twoVarsCon_(LinearFunctionPtr lf, NonlinearFunctionPtr nlf)
               //(cUb =! 0 && act < cUb + fabs(cUb)*solRelTol_)) {
             //insertNewPt_(j+1, j, xc, yc, newcon, vl, vnl, shouldCont); 
             //b1[vnIdx] = xc[j+1], b1[vlIdx] = yc[j+1];
-            //act = getVio_(b1, con, error);
+            //if (nlf) {
+              //act = fabs((con->getUb()- nlf->eval(b1, &error) - extraCoeff)/linTermCoeff - yc[j+1]);
+            //} else if (qf) {
+              //act = fabs((con->getUb()- qf->eval(b1) - extraCoeff)/linTermCoeff - yc[j+1]);
+            //}
             //if (error != 0) {
               //shouldCont = 0;    
             //} else {
@@ -1348,18 +1568,14 @@ bool QGHandler::twoVarsCon_(LinearFunctionPtr lf, NonlinearFunctionPtr nlf)
         //break;
       //}
       //maxVio = *(std::max_element(linVioVal.begin(), linVioVal.end()));
-      //std::cout << "max vio " << maxVio << std::endl;
-    
-      //consUb = con->getUb();
-      //if ((maxVio < consUb + solAbsTol_) ||
-              //(consUb =! 0 && maxVio < consUb + fabs(consUb)*solRelTol_) ) { 
+      ////std::cout << "max vio " << maxVio << std::endl;
+      //if ((maxVio == 0)) { 
         //break;      
       //}
       //i = std::max_element(linVioVal.begin(), linVioVal.end())-linVioVal.begin();     
     //}
-    ////std::cout << " " << numCuts;
-  //std::cout << std::endl;
-  //std::cout << std::endl;
+    //std::cout << " " << numCuts;
+    ////std::cout << std::endl;
     //xc.clear();
     //yc.clear();
     //b1[vnIdx] = 0;
@@ -1369,215 +1585,10 @@ bool QGHandler::twoVarsCon_(LinearFunctionPtr lf, NonlinearFunctionPtr nlf)
   //}
 
   //std::cout << std::endl;
+  ////exit(1);
   //delete [] b1;
   //return;
 //}
-
-
-//MS: distance based scheme
-void QGHandler::rootLinScheme1_()
-{
-  //MS: check this functionality once
-  //FunctionPtr f;
-  VariablePtr vnl, vl;
-  bool shouldCont;
-  LinearFunctionPtr lf;
-  NonlinearFunctionPtr nlf;
-  ConstraintPtr con, newcon;
-  UInt vnIdx, vlIdx, newConId, numCuts;
-  int error = 0, n = rel_->getNumVars(), i;
-  double act, cUb, linTermCoeff, y1, y2, maxVio, stopCond;
-  double *b1 = new double[n];
-  double iP[2]; //intersection point
-  std::vector<UInt > newConsId;
-  std::vector<double > linVioVal, xc, yc; // xc is for nonlinear var, yc for lin var
-  std::fill(b1, b1+n, 0.);
- 
-  std::cout << "No. of nonlinear cons and root lins added: " << nlCons_.size(); 
-  for (CCIter it = nlCons_.begin(); it != nlCons_.end(); ++it) {
-    con = *it;
-    numCuts = 0;
-    // constraints with extactly two vars, one in nonlinear and one in linear
-    // part, is considered
-    lf = con->getLinearFunction();
-    if (lf == NULL) {
-      continue;    
-    }
-
-    nlf = con->getNonlinearFunction();
-    shouldCont = twoVarsCon_(lf, nlf); 
-    
-    if (shouldCont == false) {
-      continue;    
-    }
-
-    linTermCoeff = lf->termsBegin()->second;
-    vnIdx= (*(nlf->varsBegin()))->getIndex();       // index of var in nonlinear term
-    vlIdx = (lf->termsBegin()->first)->getIndex();  // index of var in lin term
-    vl = rel_->getVariable(vlIdx);
-    vnl = rel_->getVariable(vnIdx);
-    
-    //con->write(std::cout);
-    //std::cout << "Lin var and nonlin var pointer - cons1 " << vl << " " << vnl << std::endl;
-    // lower bound of var in nonlinear cons
-    b1[vnIdx] = vnl->getLb();
-    shouldCont = addNewCut_(b1, vlIdx, con, linTermCoeff, newConId);
-    if (shouldCont) {
-      numCuts++;
-      y1 = b1[vlIdx];
-      newConsId.push_back(newConId); // MS: Add cutmanager later
-    } else {
-      continue;    
-    }
-
-    // upper bound of var in nonlinear cons
-    b1[vnIdx] = vnl->getUb();
-    shouldCont = addNewCut_(b1, vlIdx, con, linTermCoeff, newConId);
-    if (shouldCont) {
-      numCuts++;
-      y2 = b1[vlIdx];
-      newConsId.push_back(newConId);
-    } else {
-      newConsId.clear();
-      continue;    
-    }  
-
-    /* intersection point. In iPtAt index 0 is for nonlinear
-     *  and 1 is for linear var
-     */ 
-    shouldCont = findIntersectPt(newConsId, vl, vnl, iP);
-    if (shouldCont == false) {
-      newConsId.clear();
-      continue;    
-    }
-
-    // populate points ind their distance in cyclic order
-    xc.push_back(vnl->getLb());
-    yc.push_back(y1);
-    linVioVal.push_back(0);
-        
-    b1[vnIdx] = iP[0], b1[vlIdx] = iP[1];
-    // vertical distance of intersection point
-    act = nlf->eval(b1, &error); 
-    if (error != 0 || act == 0) {
-      newConsId.clear();
-      xc.clear(), yc.clear(), linVioVal.clear();
-      continue;    
-    }
-    act = fabs((con->getUb()- act)/linTermCoeff - iP[1]);    
-    
-    xc.push_back(iP[0]), yc.push_back(iP[1]), linVioVal.push_back(act);
-    xc.push_back(vnl->getUb()), yc.push_back(y2), linVioVal.push_back(0);
-
-    i = 1; // starting from intersection point
-    //for (UInt k = 0; k < rScheme1Para_; ++k) {
-      
-    ////consUb = con->getUb();
-    ////if (consUb == 0) {
-    stopCond = linVioVal[i]*rScheme1Para_/100;    
-    ////} else {
-      ////stopCond = .1*consUb;    
-    ////}
-    //std::cout << "maxVio and stopCond " << linVioVal[i] << " " << stopCond << std::endl;
-    maxVio = linVioVal[i];
-    while (maxVio >= stopCond) { 
-      //add a new cut at the point indexed i
-      b1[vnIdx] = xc[i];
-      shouldCont = addNewCut_(b1, vlIdx, con, linTermCoeff, newConId);
-      if (shouldCont) {
-        numCuts++;
-        newcon = rel_->getConstraint(newConId);
-        cUb = newcon->getUb();
-      } else {
-        break;    
-      }
-      
-      // Move right and determine first point that satisfy the new cons
-      for (UInt j = i+1; j < xc.size(); ) {
-        b1[vnIdx] = xc[j], b1[vlIdx] = yc[j];
-        act = newcon->getActivity(b1, &error);
-        if (error == 0) {
-          if ((act < cUb + solAbsTol_) ||
-              (cUb =! 0 && act < cUb + fabs(cUb)*solRelTol_)) {
-              //insert new point just before index j
-            insertNewPt_(j, j-1, xc, yc, newcon, vl, vnl, shouldCont); 
-            b1[vnIdx] = xc[j], b1[vlIdx] = yc[j];
-            act = fabs((con->getUb()- nlf->eval(b1, &error))/linTermCoeff - yc[j]);    
-            if (error != 0) {
-              shouldCont = 0;    
-            } else {
-              linVioVal.insert(linVioVal.begin()+j,act);
-            }
-            break;
-          } else {
-            // delete if violated
-            xc.erase(xc.begin() + j);
-            yc.erase(yc.begin() + j);        
-            linVioVal.erase(linVioVal.begin() + j);        
-          }  
-        }
-      }
-      if (shouldCont == false) {
-        break;
-      }
-      for (int j = i-1; j >= 0; --j) {
-        b1[vnIdx] = xc[j], b1[vlIdx] = yc[j];
-        act = newcon->getActivity(b1, &error);
-        if (error == 0) {
-          if ((act < cUb + solAbsTol_) ||
-              (cUb =! 0 && act < cUb + fabs(cUb)*solRelTol_)) {
-            insertNewPt_(j+1, j, xc, yc, newcon, vl, vnl, shouldCont); 
-            b1[vnIdx] = xc[j+1], b1[vlIdx] = yc[j+1];
-            act = fabs((con->getUb()- nlf->eval(b1, &error))/linTermCoeff - yc[j+1]);
-            if (error != 0) {
-              shouldCont = 0;    
-            } else {
-              linVioVal.insert(linVioVal.begin()+j+1,act);
-              xc.erase(xc.begin()+j+2);
-              yc.erase(yc.begin()+j+2);        
-              linVioVal.erase(linVioVal.begin()+j+2);        
-            }
-            break;
-          }  else {
-            // delete if violated
-            xc.erase(xc.begin() + j);
-            yc.erase(yc.begin() + j);        
-            linVioVal.erase(linVioVal.begin() + j);        
-          }  
-        }
-      }
-      if (shouldCont == false) {
-        break;
-      }
-      maxVio = *(std::max_element(linVioVal.begin(), linVioVal.end()));
-      //std::cout << "max vio " << maxVio << std::endl;
-      //consUb = con->getUb();
-      //if ((maxVio < solAbsTol_)) { 
-        //break;      
-      //}
-      i = std::max_element(linVioVal.begin(), linVioVal.end())-linVioVal.begin();     
-    }
-    std::cout << " " << numCuts;
-    //std::cout << std::endl;
-    xc.clear();
-    yc.clear();
-    b1[vnIdx] = 0;
-    b1[vlIdx] = 0;
-    linVioVal.clear();
-    newConsId.clear();
-  }
-
-  std::cout << std::endl;
-  //exit(1);
-  delete [] b1;
-  return;
-}
-double QGHandler::getVio_(double *b1, ConstraintPtr con, int & error)
-{
-  double act = INFINITY;  
-  act = con->getActivity(b1, &error);
-  return act; 
-}
 
 
 bool QGHandler::findIntersectPt(std::vector<UInt > newConsId, VariablePtr vl, VariablePtr vnl, double * iP)
@@ -1609,7 +1620,6 @@ bool QGHandler::findIntersectPt(std::vector<UInt > newConsId, VariablePtr vl, Va
   } else {
     std::cout << "Cramer equations system: determinant is zero\n"
               "there are either no solutions or many solutions exist.\n";
-   
     return false; 
   }
   return true;
@@ -2006,13 +2016,137 @@ void QGHandler::relax_(bool *isInf)
   //rootLinScheme3_ = true; // set from environment option: MS: for scheme  4???
   initLinear_(isInf, 0);
   if (*isInf == false) {
-    if ((rScheme1Para_+ rScheme3Para_ +rScheme4Para_) > 0 || rScheme2Para_) {
+    //Default values of these parameters
+    if ((rs1_ + rs2Per_) > 0) {
+    //if ((rScheme1Para_+ rScheme3Para_ +rScheme4Para_) > 0 || rScheme2Para_) 
       rootLinearizations_();
     }
   }
   return;
 }
 
+void QGHandler::rootLinScheme2_(ConstraintPtr con, double linTermCoeff,
+                                UInt vlIdx, UInt vnIdx)
+{
+  int error = 0;
+  FunctionPtr f;
+  VariablePtr vnl;
+  UInt n = minlp_->getNumVars(), numCuts = 0;
+  double alpha, lastSlope, delta, nlpSlope, nbhSize;
+  const  double *nlpx = nlpe_->getSolution()->getPrimal();
+  
+  vnl = rel_->getVariable(vnIdx);
+  
+  double* npt = new double[n];
+  std::fill(npt, npt+n, 0.);
+  
+  double *grad = new double[n];
+  std::fill(grad, grad+n, 0.);
+  
+  f = con->getFunction();
+  f->evalGradient(nlpx, grad, &error);
+  
+  nlpSlope = -1*(grad[vnIdx]/linTermCoeff);
+  lastSlope = nlpSlope;
+  
+  if (vnl->getLb() == -INFINITY) {
+    nbhSize = nlpx[vnIdx]-10;    
+    delta = 0.5;  
+  } else {
+    //nbhSize = vnl->getLb();    
+    nbhSize = std::max(vnl->getLb(), nlpx[vnIdx] - rs2NbhSize_);    
+    if (nlpx[vnIdx] - nbhSize >= 1) {
+      delta = 0.5;  
+    } else {
+      delta = nlpx[vnIdx] - nbhSize;  
+    }
+  }
+
+  alpha = nlpx[vnIdx] - delta;
+     
+  if (delta != 0) {
+    while (alpha >= nbhSize) {
+      grad[vnIdx] = 0;
+      grad[vlIdx] = 0;
+      rScheme2Cut_(con, alpha, delta, linTermCoeff, lastSlope,
+                     vnIdx, npt, grad, numCuts);
+      alpha = alpha - delta;
+    }
+  }
+  
+  if (vnl->getUb() == INFINITY) {
+    nbhSize = nlpx[vnIdx]+10;    
+      delta = 0.5;  
+    //delta = 1;  
+  } else {
+    //nbhSize = vnl->getUb();    
+    nbhSize = std::min(vnl->getUb(), nlpx[vnIdx] + rs2NbhSize_);    
+    if (nbhSize - nlpx[vnIdx] >= 1) {
+      delta = 0.5;  
+      //delta = 1;  
+    } else {
+      delta = nbhSize - nlpx[vnIdx];  
+    }
+  }
+
+  lastSlope = nlpSlope;
+  alpha = nlpx[vnIdx] + delta;
+  if (delta != 0) {
+    while (alpha <= nbhSize) {
+      grad[vnIdx] = 0;
+      grad[vlIdx] = 0;
+      rScheme2Cut_(con, alpha, delta, linTermCoeff, lastSlope,
+                     vnIdx, npt, grad, numCuts);
+      alpha = alpha + delta;
+    }
+  }
+  std::cout << " " << numCuts;
+  delete [] grad;
+  delete [] npt;
+}
+
+
+void QGHandler::rScheme2Cut_(ConstraintPtr con, double &alpha, double &delta,
+                                double linTermCoeff, double &lastSlope,
+                                UInt vnIdx, double * npt, double * grad,
+                                UInt &numCuts)
+{
+  int error = 0;
+  double newSlope;
+  npt[vnIdx] = alpha; 
+  FunctionPtr f = con->getFunction();
+  f->evalGradient(npt, grad, &error);
+  if (error != 0) {
+    return;
+  } 
+  newSlope = -1*(grad[vnIdx]/linTermCoeff); 
+  if ((lastSlope == 0 && newSlope == 0) ||
+      (fabs((newSlope-lastSlope)/lastSlope)*100 <  rs2Per_)) {
+    delta = 2*delta;
+    return;
+  }
+  //delta = 0.5*delta;
+  ++numCuts;
+  lastSlope = newSlope;
+  //ConstraintPtr newcon;
+  std::stringstream sstm;
+  LinearFunctionPtr lf = LinearFunctionPtr();
+  VariableConstIterator vbeg = rel_->varsBegin(), vend = rel_->varsEnd();
+  const double linCoeffTol =
+    env_->getOptions()->findDouble("conCoeff_tol")->getValue();
+  double c, cUb = con->getUb(), act = con->getActivity(npt, &error);
+  
+  lf = (LinearFunctionPtr) new LinearFunction(grad, vbeg, vend, linCoeffTol);
+  c  = act - InnerProduct(npt, grad, minlp_->getNumVars());
+
+  ++(stats_->cuts);
+  sstm << "_OAcut_" << stats_->cuts << "_AtRoot";
+  f = (FunctionPtr) new Function(lf);
+  rel_->newConstraint(f, -INFINITY, cUb-c, sstm.str());
+  //newcon = rel_->newConstraint(f, -INFINITY, cUb-c, sstm.str());
+  //newcon->write(std::cout);
+  return;
+}
 
 void QGHandler::separate(ConstSolutionPtr sol, NodePtr, RelaxationPtr rel,
                          CutManager *cutMan, SolutionPoolPtr s_pool,

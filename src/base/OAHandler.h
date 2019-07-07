@@ -190,7 +190,8 @@ public:
   //void solveMILP(double* objfLb, double* objfUb,
                  //SolutionPoolPtr solPool, CutManager* cutMan);
   void solveMILP(double* objfLb, ConstSolutionPtr* sol,
-                 SolutionPoolPtr solPool, CutManager* cutMan);
+                 SolutionPoolPtr solPool, CutManager* cutMan,
+                 SolveStatus &status);
   // Show statistics.
   void writeStats(std::ostream &out) const;
 

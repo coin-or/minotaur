@@ -523,7 +523,10 @@ int main(int argc, char* argv[])
         }
       }
       //! solve MILP master problem
-      oa_hand->solveMILP(&objLb, &sol, solPool, cutMan);
+      oa_hand->solveMILP(&objLb, &sol, solPool, cutMan, status);
+      if (status == SolvedInfeasible) {
+        break;  
+      }
       iterNum++;
       //MS: different MILP engine status like unbounded, infeasible, and error to be handled
       solFound  = oa_hand->isFeasible(sol, RelaxationPtr(), shouldPrune, inf_meas); 
