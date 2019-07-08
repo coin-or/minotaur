@@ -85,6 +85,9 @@ namespace Minotaur {
     // Implement Engine::getSolution().
     ConstSolutionPtr getSolution();
 
+    // Get a particular solution from solution pool.
+    ConstSolutionPtr getSolutionFromPool(int ) {};
+
     // Implement Engine::getStatus().
     EngineStatus getStatus();
 

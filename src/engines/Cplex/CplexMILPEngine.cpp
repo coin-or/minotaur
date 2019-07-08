@@ -37,13 +37,10 @@
 #include "Timer.h"
 #include "Variable.h"
 
-#include<omp.h>
 #include <thread>
 #include <mutex>
 
-#if USE_OPENMP
 std::mutex mtx;
-#endif
 
 #define PRINT 0
 //#include <ilcplex/ilocplex.h>
@@ -171,6 +168,7 @@ ConstSolutionPtr CplexMILPEngine::getSolutionFromPool(int index)
       << "Could not get objective value of solution from CPLEX \n";
     return sol;
   }
+  sol = (SolutionPtr) new Solution(1E20, 0, problem_);
   sol->setPrimal(x);
   sol->setObjValue(objval);
   return sol;

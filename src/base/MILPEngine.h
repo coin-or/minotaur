@@ -15,9 +15,6 @@
 #define MINOTAURMILPENGINE_H
 
 #include "Engine.h"
-//#include "SolutionPool.h"
-//#include "CutManager.h"
-//#include "Handler.h"
 
 namespace Minotaur {
 
@@ -47,6 +44,9 @@ namespace Minotaur {
 
       /// Get number of solutions in the solution pool of MILP engine
       virtual UInt getNumSols() = 0;
+
+      /// Get a particular solution from solution pool
+      virtual ConstSolutionPtr getSolutionFromPool(int ) = 0;
 
   };
   typedef MILPEngine* MILPEnginePtr;
