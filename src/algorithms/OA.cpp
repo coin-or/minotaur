@@ -509,7 +509,6 @@ int main(int argc, char* argv[])
     double time = 0;
     while (true) {
       if (objUb-objLb <= solAbsTol || (objUb != 0 && (objUb - objLb < fabs(objUb)*solRelTol))) {
-        std::cout << "break " << objUb - objLb - solAbsTol << " " << (objUb - objLb - fabs(objUb)*solRelTol) <<"\n";
         status = SolvedOptimal;
         break;
       }
