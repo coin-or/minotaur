@@ -114,6 +114,7 @@ OsiLPEngine::OsiLPEngine(EnvPtr env)
     env_(env),
     maxIterLimit_(10000),
     objChanged_(true),
+    problem_(0),
     strBr_(false)
 {
 #if USE_OSILP

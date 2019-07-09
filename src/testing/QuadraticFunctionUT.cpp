@@ -163,7 +163,7 @@ void QuadraticFunctionTest::testOperations()
   CPPUNIT_ASSERT(q2_->getWeight(vars_[1], vars_[1]) == 1.0);
 
   LinearFunctionPtr l1 = (LinearFunctionPtr) new LinearFunction();
-  LinearFunctionPtr l2;
+  LinearFunctionPtr l2 = 0;
 
   l1->addTerm(vars_[0], 2);
   //q2_ = l1 * l2;

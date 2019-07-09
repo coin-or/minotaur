@@ -61,9 +61,6 @@ public:
 
   CPPUNIT_TEST_SUITE_END();
 
-private:
-  AMPLInterfacePtr iface_;
-  Minotaur::ProblemPtr inst_;
 };
 
 #endif

@@ -1626,8 +1626,9 @@ void AMPLInterface::getPoly_(Minotaur::LinearFunctionPtr & lfPtr,
   Minotaur::LinearFunctionPtr lft = 0;
   Minotaur::QuadraticFunctionPtr qft = 0;  //NULL
   Minotaur::PolyFunPtr pft = 0;
-  lfPtr = Minotaur::LinearFunctionPtr();  //NULL
-  qfPtr = Minotaur::QuadraticFunctionPtr();  //NULL
+
+  lfPtr = 0;
+  qfPtr = 0;
   double c1 = 0, c2 = 0;
   c = 0;
   int var_index;
@@ -1639,13 +1640,26 @@ void AMPLInterface::getPoly_(Minotaur::LinearFunctionPtr & lfPtr,
      getPoly_(lfPtr1, qfPtr1, pfPtr1, c1, e_ptr->L.e);
      getPoly_(lfPtr2, qfPtr2, pfPtr2, c2, e_ptr->R.e);
      c = c1 + c2;
-     lfPtr = lfPtr1->copyAdd(lfPtr2);
-     qfPtr = qfPtr1->copyAdd(qfPtr2);
-     if (pfPtr1) {
-       pfPtr = pfPtr1;
-       pfPtr->add(pfPtr2);
-     } else {
-       pfPtr = pfPtr2;
+     
+     lfPtr = new Minotaur::LinearFunction();
+     lfPtr->add(lfPtr1);
+     lfPtr->add(lfPtr2);
+     if (0 == lfPtr->getNumTerms()) {
+       delete lfPtr; lfPtr = 0;
+     }
+
+     qfPtr = new Minotaur::QuadraticFunction();
+     qfPtr->add(qfPtr1);
+     qfPtr->add(qfPtr2);
+     if (0 == qfPtr->getNumTerms()) {
+       delete qfPtr; qfPtr = 0;
+     }
+
+     pfPtr = new Minotaur::PolynomialFunction();
+     pfPtr->add(pfPtr1);
+     pfPtr->add(pfPtr2);
+     if (pfPtr->isEmpty()) {
+       delete pfPtr; pfPtr = 0;
      }
      break;
    case (OPMINUS):  // expr1 - expr2
@@ -1653,14 +1667,23 @@ void AMPLInterface::getPoly_(Minotaur::LinearFunctionPtr & lfPtr,
      getPoly_(lfPtr1, qfPtr1, pfPtr1, c1, e_ptr->L.e);
      getPoly_(lfPtr2, qfPtr2, pfPtr2, c2, e_ptr->R.e);
      c = c1 - c2;
-     lfPtr = lfPtr1->copyMinus(lfPtr2);
-     qfPtr = qfPtr1->copyMinus(qfPtr2);
-     if (pfPtr2) {
-       pfPtr = pfPtr2;
-       pfPtr->multiply(-1.0);
-       pfPtr->add(pfPtr1);
-     } else {
-       pfPtr = pfPtr1;
+
+     if (lfPtr1) {
+       lfPtr = lfPtr1->copyMinus(lfPtr2);
+     } else if (lfPtr2) {
+       lfPtr = lfPtr2->copyMult(-1.0);
+     }
+
+     if (qfPtr1) {
+       qfPtr = qfPtr1->copyMinus(qfPtr2);
+     } else if (qfPtr2) {
+       qfPtr = qfPtr2->copyMult(-1.0);
+     }
+
+     if (pfPtr1) {
+       pfPtr = pfPtr1->copyMinus(pfPtr2);
+     } else if (pfPtr2) {
+       pfPtr = pfPtr2->copyMult(-1.0);
      }
      break;
    case (OPMULT): // expr1*expr2
@@ -1669,54 +1692,107 @@ void AMPLInterface::getPoly_(Minotaur::LinearFunctionPtr & lfPtr,
      getPoly_(lfPtr2, qfPtr2, pfPtr2, c2, e_ptr->R.e);
      c = c1*c2;
 
-     // new lf = lf2*c1 + lf1*c2 
-     lft = lfPtr1->copyMult(c2);
-     lfPtr = lfPtr2->copyMult(c1);
-     lfPtr->add(lft);
-     delete lft;
+     lfPtr = new Minotaur::LinearFunction(); // empty but not null
+     // new lf = lf1*c2 + lf2*c1
+     if (lfPtr1) {
+       lft = lfPtr1->copyMult(c2);
+       lfPtr->add(lft);
+       delete lft;
+     } 
 
-     qfPtr = lfPtr1->copyMult(lfPtr2);
-     qft = qfPtr2->copyMult(c1);
-     qfPtr->add(qft);
-     delete qft;
-     qft = qfPtr1->copyMult(c2);
-     qfPtr->add(qft);
-     delete qft;
+     if (lfPtr2) {
+       lft = lfPtr2->copyMult(c1);
+       lfPtr->add(lft);
+       delete lft;
+     }
+
+     if (0 == lfPtr->getNumTerms()) {
+       delete lfPtr;
+       lfPtr = 0;
+     }
+     
+
+     // qfPtr = lf1*lf2 + qf2*c1 + qf1*c2
+     if (lfPtr1 && lfPtr2) {
+       qfPtr = lfPtr1->copyMult(lfPtr2);
+     } else {
+       qfPtr = new Minotaur::QuadraticFunction();
+     }
+
+     if (qfPtr2) {
+       qft = qfPtr2->copyMult(c1);
+       qfPtr->add(qft);
+       delete qft;
+     } 
+
+     if (qfPtr1) {
+       qft = qfPtr1->copyMult(c2);
+       qfPtr->add(qft);
+       delete qft;
+     }
+
+     if (0 == qfPtr->getNumTerms()) {
+       delete qfPtr;
+       qfPtr = 0;
+     }
      
      //pfPtr = c1*pfPtr2 + c2*pfPtr1 + qfPtr2*lfPtr1 + qfPtr1*lfPtr2 + 
      //   pfPtr2*lfPtr1 + pfPtr1*lfPtr2 + qfPtr1*qfPtr2 + pfPtr2*qfPtr1 + 
      //   pfPtr1*qfPtr2 + pfPtr1*pfPtr2;
+     pfPtr = new Minotaur::PolynomialFunction();
 
-    pfPtr = pfPtr2->copyMult(c1);
-    pft = pfPtr1->copyMult(c2);
-    pfPtr->add(pft); delete pft;
-    pft = qfPtr2->copyMult(lfPtr1);
-    pfPtr->add(pft); delete pft;
-    pft = qfPtr1->copyMult(lfPtr2);
-    pfPtr->add(pft); delete pft;
-    pft = pfPtr2->copyMult(lfPtr1);
-    pfPtr->add(pft); delete pft;
-    pft = pfPtr1->copyMult(lfPtr2);
-    pfPtr->add(pft); delete pft;
-    pft = qfPtr1->copyMult(qfPtr2);
-    pfPtr->add(pft); delete pft;
-    pft = pfPtr2->copyMult(qfPtr1);
-    pfPtr->add(pft); delete pft;
-    pft = pfPtr1->copyMult(qfPtr2);
-    pfPtr->add(pft); delete pft;
-    pft = pfPtr1->copyMult(pfPtr2);
-    pfPtr->add(pft); delete pft;
+     if (qfPtr1) {
+       pft = qfPtr1->copyMult(lfPtr2);
+       pfPtr->add(pft); delete pft;
+       pft = qfPtr1->copyMult(qfPtr2);
+       pfPtr->add(pft); delete pft; pft = 0;
+     }
+
+     if (qfPtr2) {
+       pft = qfPtr2->copyMult(lfPtr1);
+       pfPtr->add(pft); delete pft; pft = 0;
+     }
+
+     if (pfPtr1) {
+       pft = pfPtr1->copyMult(c2);
+       pfPtr->add(pft); delete pft;
+       pft = pfPtr1->copyMult(lfPtr2);
+       pfPtr->add(pft); delete pft;
+       pft = pfPtr1->copyMult(qfPtr2);
+       pfPtr->add(pft); delete pft;
+       pft = pfPtr1->copyMult(pfPtr2);
+       pfPtr->add(pft); delete pft; pft = 0;
+     }
+
+     if (pfPtr2) {
+       pft = pfPtr2->copyMult(c1);
+       pfPtr->add(pft); delete pft;
+       pft = pfPtr2->copyMult(lfPtr1);
+       pfPtr->add(pft); delete pft;
+       pft = pfPtr2->copyMult(qfPtr1);
+       pfPtr->add(pft); delete pft; pft = 0;
+     }
+     if (pfPtr->isEmpty()) {
+       delete pfPtr; pfPtr = 0;
+     }
+
      break;
-   case (OPDIV): // expr1/expr2
-     //logger_->msgStream(Minotaur::LogNone) << " / " << std::endl;
+   case (OPDIV): // expr1/constant
      getPoly_(lfPtr1, qfPtr1, pfPtr1, c1, e_ptr->L.e);
      c2 = ((expr_n *)e_ptr->R.e)->v;
      assert (fabs(c2)>zTol_);
      c     = c1/c2;
      c2    = 1/c2;
-     lfPtr = lfPtr1->copyMult(c2);
-     qfPtr = qfPtr1->copyMult(c2);
-     pfPtr = pfPtr1->copyMult(c2);
+
+     if (lfPtr1) {
+       lfPtr = lfPtr1->copyMult(c2);
+     }
+     if (qfPtr1) {
+       qfPtr = qfPtr1->copyMult(c2);
+     }
+     if (pfPtr1) {
+       pfPtr = pfPtr1->copyMult(c2);
+     }
      break;
    case (OPREM): // remainder by dividing expr1/expr2
      assert(!"OPREM not implemented yet!");
@@ -1727,13 +1803,13 @@ void AMPLInterface::getPoly_(Minotaur::LinearFunctionPtr & lfPtr,
    case (OPUMINUS):
      getPoly_(lfPtr1, qfPtr1, pfPtr1, c1, e_ptr->L.e);
      if (lfPtr1) {
-       lfPtr = lfPtr1->copyMult(-1) ;
+       lfPtr = lfPtr1->copyMult(-1.0) ;
      } 
      if (qfPtr1) {
-       qfPtr = qfPtr1->copyMult(-1);
+       qfPtr = qfPtr1->copyMult(-1.0);
      }
      if (pfPtr1) {
-       pfPtr = pfPtr1->copyMult(-1);
+       pfPtr = pfPtr1->copyMult(-1.0);
      }
      c = -1.0*c1;
      break;
@@ -1754,13 +1830,13 @@ void AMPLInterface::getPoly_(Minotaur::LinearFunctionPtr & lfPtr,
        ++ep;
      }
      if (lfPtr->getNumTerms() == 0) {
-       lfPtr = Minotaur::LinearFunctionPtr(); //NULL
+       delete lfPtr; lfPtr = 0;
      }
      if (qfPtr->getNumTerms() == 0) {
-       qfPtr = Minotaur::QuadraticFunctionPtr(); //NULL
+       delete qfPtr; qfPtr = 0;
      }
      if (pfPtr->isEmpty()) {
-       pfPtr = Minotaur::PolyFunPtr(); //NULL
+       delete pfPtr; pfPtr = 0;
      }
      break;
    case (OP1POW): //  OPPOW for R = numeric constant
@@ -1770,6 +1846,7 @@ void AMPLInterface::getPoly_(Minotaur::LinearFunctionPtr & lfPtr,
        assert (power > 2 && fabs(power - floor(power+0.5)) < intTol_); 
        ipower = (int) power;
        getPoly_(lfPtr1, qfPtr1, pfPtr1, c1, e_ptr->L.e);
+
        pfPtr2 = (Minotaur::PolyFunPtr) new Minotaur::PolynomialFunction();
        pfPtr2->add(c1);
        pfPtr2->add(lfPtr1);
@@ -1781,41 +1858,60 @@ void AMPLInterface::getPoly_(Minotaur::LinearFunctionPtr & lfPtr,
        }
        break;
      }
-
      assert(!"OP1POW not implemented yet!");
    case (OP2POW): //  expr^2
-     //logger_->msgStream(Minotaur::LogNone) <<  "^2" << std::endl;
      getPoly_(lfPtr1, qfPtr1, pfPtr1, c1, e_ptr->L.e);
-
      c = c1*c1;
-     //lfPtr = (2.0*c1) * lfPtr1;
-     lfPtr = lfPtr1->copyMult(2.0*c1);
+
+     //lf = (2.0*c1) * lf1;
+     if (lfPtr1) {
+       lfPtr = lfPtr1->copyMult(2.0*c1);
+     }
      
      //qfPtr = lfPtr1->square() + (2*c1)*qfPtr1;
-     qfPtr = qfPtr1->copyMult(2.0*c1);
-     qft = lfPtr1->square();
-     qfPtr->add(qft); delete qft;
+     if (qfPtr1) {
+       qfPtr = qfPtr1->copyMult(2.0*c1);
+     } else {
+       qfPtr = new Minotaur::QuadraticFunction();
+     }
+     if (lfPtr1) {
+       qft = lfPtr1->square();
+     }
+     qfPtr->add(qft); delete qft; qft = 0;
+     if (0 == qfPtr->getNumTerms()) {
+       delete qfPtr; qfPtr = 0;
+     }
      
      //pfPtr = pfPtr1*pfPtr1 + qfPtr1*qfPtr1 + 2.*pfPtr1*qfPtr1 +
      //  2.*pfPtr1*lfPtr1 + 2.*qfPtr1*lfPtr1 + (2.*c1)*pfPtr1;
-     pfPtr = pfPtr1->copyMult(pfPtr1);
-     pft = qfPtr1->copyMult(qfPtr1);
-     pfPtr->add(pft); delete pft;
-     pft = pfPtr1->copyMult(2.0); pft->multiply(qfPtr1);
-     pfPtr->add(pft); delete pft;
-     pft = pfPtr1->copyMult(2.0); pft->multiply(lfPtr1,1);
-     pfPtr->add(pft); delete pft;
-     qft = qfPtr1->copyMult(2.0);
-     pft = qft->copyMult(lfPtr1);
-     pfPtr->add(pft); delete pft,qft;
-     pft = pfPtr1->copyMult(2.0*c1); 
-     pfPtr->add(pft); delete pft;
+     pfPtr = new Minotaur::PolynomialFunction();
+     if (pfPtr1) {
+       pft = pfPtr1->copyMult(pfPtr1);
+       pfPtr->add(pft); delete pft;
+
+       pft = pfPtr1->copyMult(2.0); pft->multiply(qfPtr1);
+       pfPtr->add(pft); delete pft;
+
+       pft = pfPtr1->copyMult(2.0); pft->multiply(lfPtr1,1);
+       pfPtr->add(pft); delete pft;
+
+       pft = pfPtr1->copyMult(2.0*c1); 
+       pfPtr->add(pft); delete pft; pft = 0;
+     }
+
+     if (qfPtr1) {
+       pft = qfPtr1->copyMult(qfPtr1);
+       pfPtr->add(pft); delete pft;
+
+       pft = qfPtr1->copyMult(lfPtr1);
+       pft->multiply(2.0);
+       pfPtr->add(pft); delete pft; pft = 0;
+     }
      break;
    case (OPCPOW): //  (constant)^expr
      assert(!"OPCPOW not implemented yet!");
    case (OPNUM): //  numeric constant
      c = ((expr_n *)e_ptr)->v;
-     //logger_->msgStream(Minotaur::LogNone) << "constant = " <<  c  << std::endl;
      break;
    case (OPVARVAL): //  single variable
      // not sure if this var_index is correct. no documentation available!

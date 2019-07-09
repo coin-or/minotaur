@@ -54,16 +54,11 @@ using namespace std;
 
 void AMPLCGraphUT::setUp()
 {
-  Minotaur::EnvPtr env = (Minotaur::EnvPtr) new Minotaur::Environment();
-  env->setLogLevel(Minotaur::LogError);
-  iface_ = (AMPLInterfacePtr) new AMPLInterface(env);
-  env->getOptions()->findBool("use_native_cgraph")->setValue(true);
 }
 
 
 void AMPLCGraphUT::tearDown()
 {
-  delete iface_;
 }
 
 
@@ -71,23 +66,42 @@ void AMPLCGraphUT::testAllFuns()
 {
   Minotaur::JacobianPtr jac;
   Minotaur::HessianOfLagPtr hess;
+  Minotaur::EnvPtr env = new Minotaur::Environment();
+  AMPLInterfacePtr iface;
+  Minotaur::ProblemPtr inst;
 
-  inst_ = iface_->readInstance("instances/allfuns");
-  //inst_->write(std::cout);
-  CPPUNIT_ASSERT(inst_->getNumVars() == 74);
-  inst_->setNativeDer();
-  jac = inst_->getJacobian();
-  hess = inst_->getHessian();
+  env->getOptions()->findBool("use_native_cgraph")->setValue(true);
+  env->setLogLevel(Minotaur::LogError);
+  iface = new AMPLInterface(env);
+  inst = iface->readInstance("instances/allfuns");
+
+  CPPUNIT_ASSERT(inst->getNumVars() == 74);
+  inst->setNativeDer();
+  jac = inst->getJacobian();
+  hess = inst->getHessian();
   CPPUNIT_ASSERT(hess->getNumNz() == 115);
 
+  delete inst;
+  delete iface;
+  delete env;
 }
 
 
 void AMPLCGraphUT::testSize()
 {
-  inst_ = iface_->readInstance("instances/minlp_eg0");
-  CPPUNIT_ASSERT(inst_->getNumCons() == 5);
-  CPPUNIT_ASSERT(inst_->getNumVars() == 5);
+  Minotaur::EnvPtr env = new Minotaur::Environment();
+  AMPLInterfacePtr iface;
+  env->getOptions()->findBool("use_native_cgraph")->setValue(true);
+  env->setLogLevel(Minotaur::LogError);
+  
+  iface = new AMPLInterface(env);;
+  Minotaur::ProblemPtr inst = iface->readInstance("instances/minlp_eg0");
+  CPPUNIT_ASSERT(inst->getNumCons() == 5);
+  CPPUNIT_ASSERT(inst->getNumVars() == 5);
+
+  delete inst;
+  delete iface;
+  delete env;
 }
 
 
@@ -95,11 +109,18 @@ void AMPLCGraphUT::testVariables()
 {
   Minotaur::VariablePtr vPtr;
   std::string vName;
+  Minotaur::EnvPtr env = new Minotaur::Environment();
+  AMPLInterfacePtr iface;
+  Minotaur::ProblemPtr inst;
+  env->getOptions()->findBool("use_native_cgraph")->setValue(true);
+  env->setLogLevel(Minotaur::LogError);
 
-  inst_ = iface_->readInstance("instances/minlp_eg0");
+  iface = new AMPLInterface(env);;
+  inst = iface->readInstance("instances/minlp_eg0");
+
   // check Ids
-  for (Minotaur::UInt i=0; i<inst_->getNumVars(); ++i) {
-    vPtr = inst_->getVariable(i);
+  for (Minotaur::UInt i=0; i<inst->getNumVars(); ++i) {
+    vPtr = inst->getVariable(i);
     CPPUNIT_ASSERT(vPtr->getId() == i);
 
     // ampl reorders the variables, so we need to check each variable's name
@@ -141,20 +162,26 @@ void AMPLCGraphUT::testVariables()
 
 void AMPLCGraphUT::testConstraints()
 {
+  Minotaur::EnvPtr env = new Minotaur::Environment();
+  AMPLInterfacePtr iface;
+  Minotaur::ProblemPtr inst;
   Minotaur::ConstraintPtr cPtr;
   std::string cName;
   Minotaur::LinearFunctionPtr lfPtr;
   Minotaur::QuadraticFunctionPtr qfPtr;
   Minotaur::NonlinearFunctionPtr nlfPtr;
-                       // x2,x0,x1,x3,x4   (remember ampl changes order)
+  // x2,x0,x1,x3,x4   (remember ampl changes order)
   double x[5] = {0, 0, 0, 0, 0};
   double y[5] = {7, 0, 2, 9, 6};
   double z[5] = {1,-1, 2,-4, 5};
   int error = 0;
+  env->getOptions()->findBool("use_native_cgraph")->setValue(true);
+  env->setLogLevel(Minotaur::LogError);
 
-  inst_ = iface_->readInstance("instances/minlp_eg0");
-  for (Minotaur::UInt i=0; i<inst_->getNumCons(); ++i) {
-    cPtr = inst_->getConstraint(i);
+  iface = new AMPLInterface(env);;
+  inst = iface->readInstance("instances/minlp_eg0");
+  for (Minotaur::UInt i=0; i<inst->getNumCons(); ++i) {
+    cPtr = inst->getConstraint(i);
     CPPUNIT_ASSERT(cPtr->getId() == i);
 
     // ampl reorders the constraints, so we need to check each constraint's name
@@ -267,6 +294,13 @@ void AMPLCGraphUT::testConstraints()
 
 void AMPLCGraphUT::testJacobian()
 {
+  Minotaur::EnvPtr env = new Minotaur::Environment();
+  AMPLInterfacePtr iface;
+  Minotaur::ProblemPtr inst;
+  env->getOptions()->findBool("use_native_cgraph")->setValue(true);
+  env->setLogLevel(Minotaur::LogError);
+  iface = new AMPLInterface(env);;
+
   //
   // order of variables in the instance is x2, x0, x1, x3, x4
   // order of constraints in the instance is cons0, 1, 2, 3, 4
@@ -294,10 +328,10 @@ void AMPLCGraphUT::testJacobian()
   double correctValues0[12] = {0, 0, 0,  0, -1, 1, 1, 1, 1, 1, 1, 1};
   double correctValues1[12] = {2, 4, 6, 16, -1, 1, 1, 1, 1, 1, 1, 1};
 
-  inst_ = iface_->readInstance("instances/minlp_eg0");
+  inst = iface->readInstance("instances/minlp_eg0");
   // set jacobian
-  inst_->setNativeDer();
-  Minotaur::JacobianPtr jacPtr = inst_->getJacobian();
+  inst->setNativeDer();
+  Minotaur::JacobianPtr jacPtr = inst->getJacobian();
 
   // check jacobian non-zeros
   CPPUNIT_ASSERT(jacPtr->getNumNz() == 12);
@@ -340,11 +374,17 @@ void AMPLCGraphUT::testHessian()
   double con_mult[5] = {0.0, 0.0, 0.0, 0.0, 0.0};
   double exph[5];
   int error = 0;
+  Minotaur::EnvPtr env = new Minotaur::Environment();
+  AMPLInterfacePtr iface;
+  Minotaur::ProblemPtr inst;
 
-  inst_ = iface_->readInstance("instances/minlp_eg0");
-  inst_->setNativeDer();
+  env->getOptions()->findBool("use_native_cgraph")->setValue(true);
+  env->setLogLevel(Minotaur::LogError);
+  iface = new AMPLInterface(env);;
+  inst = iface->readInstance("instances/minlp_eg0");
+  inst->setNativeDer();
 
-  h = inst_->getHessian();
+  h = inst->getHessian();
   CPPUNIT_ASSERT(h->getNumNz() == 5);
   h->fillRowColIndices(row,col);
   for (int i=0; i<5; ++i) {
@@ -400,14 +440,20 @@ void AMPLCGraphUT::testObjective()
   std::string oName;
   Minotaur::NonlinearFunctionPtr nlfPtr;
   Minotaur::QuadraticFunctionPtr qfPtr;
-
-                       // x2,x0,x1,x3,x4   (remember ampl changes order)
+  Minotaur::EnvPtr env = new Minotaur::Environment();
+  Minotaur::ProblemPtr inst;
+  AMPLInterface *iface;
+  // x2,x0,x1,x3,x4   (remember ampl changes order)
   double y[5] = {7, 0, 2, 9, 6};
   double z[5] = {1,-1, 2,-4, 5};
   int error = 0;
-  inst_ = iface_->readInstance("instances/minlp_eg0");
 
-  oPtr = inst_->getObjective();
+  env->getOptions()->findBool("use_native_cgraph")->setValue(true);
+  env->setLogLevel(Minotaur::LogError);
+  iface = new AMPLInterface(env);;
+  inst = iface->readInstance("instances/minlp_eg0");
+
+  oPtr = inst->getObjective();
   if (!oPtr) {
     CPPUNIT_ASSERT(!"objective is missing!");
   } else {
@@ -443,8 +489,13 @@ void AMPLCGraphUT::testObjectiveGradient()
 
   // acually calculated values for just the quadratic parts
   double gradient[5] = {0, 0, 0, 0, 0};
-  inst_ = iface_->readInstance("instances/minlp_eg0");
-  oPtr = inst_->getObjective();
+  Minotaur::EnvPtr env = new Minotaur::Environment();
+  Minotaur::ProblemPtr inst;
+  AMPLInterface *iface;
+
+  iface = new AMPLInterface(env);;
+  inst = iface->readInstance("instances/minlp_eg0");
+  oPtr = inst->getObjective();
   if (!oPtr) {
     CPPUNIT_ASSERT(!"objective is missing!");
     return;
@@ -476,10 +527,10 @@ void AMPLCGraphUT::testObjectiveGradient()
 
 void AMPLCGraphUT::testNl()
 {
-  Minotaur::EnvPtr env = (Minotaur::EnvPtr) new Minotaur::Environment();
-  env->getOptions()->findBool("use_native_cgraph")->setValue(true);
-  env->setLogLevel(Minotaur::LogError);
-  AMPLInterface iface(env);
+  Minotaur::EnvPtr env = new Minotaur::Environment();
+  AMPLInterface *iface;
+  Minotaur::ProblemPtr inst;
+
   double x[5] = {1.0,5,1.0,5,1.0};
   double h[4] = {0.0,0.0,0.0,0.0};
   Minotaur::UInt rows[4] = {0,0,0,0};
@@ -487,30 +538,37 @@ void AMPLCGraphUT::testNl()
   int err = 0;
   double m[2] = {1.0, 1.0};
 
+  env->getOptions()->findBool("use_native_cgraph")->setValue(true);
+  env->setLogLevel(Minotaur::LogError);
+  iface = new AMPLInterface(env);
+  inst = iface->readInstance("instances/hess");
+  inst->setNativeDer();
 
-  inst_ = iface.readInstance("instances/hess");
-  inst_->setNativeDer();
-  inst_->getHessian()->fillRowColIndices(rows, cols);
+  inst->getHessian()->fillRowColIndices(rows, cols);
   h[0] = h[1] = h[2] = h[3] = 0.0;
-  inst_->getHessian()->fillRowColValues(x, 0.0, m, h, &err);
+  inst->getHessian()->fillRowColValues(x, 0.0, m, h, &err);
   CPPUNIT_ASSERT(0==err);
-  CPPUNIT_ASSERT(3==inst_->getHessian()->getNumNz());
+  CPPUNIT_ASSERT(3==inst->getHessian()->getNumNz());
   CPPUNIT_ASSERT(fabs(h[0]+0.138704)<1e-7);
   CPPUNIT_ASSERT(fabs(h[1]-0.0276854)<1e-7);
   CPPUNIT_ASSERT(fabs(h[2]+0.00552603)<1e-7);
 
-  inst_->subst(inst_->getVariable(1), inst_->getVariable(3), 1.0);
-  inst_->subst(inst_->getVariable(2), inst_->getVariable(4), 1.0);
+  inst->subst(inst->getVariable(1), inst->getVariable(3), 1.0);
+  inst->subst(inst->getVariable(2), inst->getVariable(4), 1.0);
   
-  inst_->setNativeDer();
-  inst_->getHessian()->fillRowColIndices(rows, cols);
+  inst->setNativeDer();
+  inst->getHessian()->fillRowColIndices(rows, cols);
   h[0] = h[1] = h[2] = h[3] = 0.0;
-  inst_->getHessian()->fillRowColValues(x, 0.0, m, h, &err);
+  inst->getHessian()->fillRowColValues(x, 0.0, m, h, &err);
   CPPUNIT_ASSERT(0==err);
-  CPPUNIT_ASSERT(3==inst_->getHessian()->getNumNz());
+  CPPUNIT_ASSERT(3==inst->getHessian()->getNumNz());
   CPPUNIT_ASSERT(fabs(h[0]+0.138704)<1e-7);
   CPPUNIT_ASSERT(fabs(h[1]-0.0276854)<1e-7);
   CPPUNIT_ASSERT(fabs(h[2]+0.00552603)<1e-7);
+
+  delete inst;
+  delete iface;
+  delete env;
 }
 
 // Local Variables: 
