@@ -406,6 +406,7 @@ int main(int argc, char* argv[])
   EngineFactory *efac;
   const std::string me("oa: ");
   SolveStatus status;
+  //handlers
   HandlerVector handlers;
   LinearHandlerPtr l_hand;
   OAHandlerPtr oa_hand;
@@ -417,7 +418,7 @@ int main(int argc, char* argv[])
   MILPEnginePtr milp_e = 0;
   VarVector *orig_v=0;
   int err = 0;
-  UInt numSols = 0;
+  UInt numSols = 1;
   
   // start timing.
   env->startTimer(err);
@@ -481,7 +482,7 @@ int main(int argc, char* argv[])
     bool solFound, shouldPrune;
     double inf_meas;
     UInt iterNum = 0;
-    ConstSolutionPtr sol;
+    ConstSolutionPtr sol, sol2;
     SolutionPoolPtr solPool = (SolutionPoolPtr) new SolutionPool(env, inst, 1);
     SeparationStatus sepStatus;
     bool prune = false;
@@ -508,6 +509,7 @@ int main(int argc, char* argv[])
     double time = 0;
     while (true) {
       if (objUb-objLb <= solAbsTol || (objUb != 0 && (objUb - objLb < fabs(objUb)*solRelTol))) {
+        std::cout << "break " << objUb - objLb - solAbsTol << " " << (objUb - objLb - fabs(objUb)*solRelTol) <<"\n";
         status = SolvedOptimal;
         break;
       }
@@ -523,7 +525,14 @@ int main(int argc, char* argv[])
         }
       }
       //! solve MILP master problem
-      oa_hand->solveMILP(&objLb, &sol, solPool, cutMan);
+      oa_hand->solveMILP(&objLb, &sol, solPool, cutMan, status);
+      if (status == SolvedInfeasible) {
+        if (fabs(objUb) != INFINITY) {
+          objLb = objUb;
+          status = SolvedOptimal;
+        }
+        break;
+      }
       iterNum++;
       //MS: different MILP engine status like unbounded, infeasible, and error to be handled
       solFound  = oa_hand->isFeasible(sol, RelaxationPtr(), shouldPrune, inf_meas); 
@@ -536,14 +545,17 @@ int main(int argc, char* argv[])
         showStatus(env, objLb, objUb, gap, iterNum, numSols);
         break;
       }
-      // Solve multiple NLPs in parallel and update MILP by adding OA cuts at
-      // various solutions obtained from the solution pool of CPLEX
+      // Update MILP by adding OA cuts at various solutions obtained from the
+      // solution pool of MILP engine
       if (options->findBool("oa_use_solutions")->getValue()==true) {
         numSols = oa_hand->getMILPEngine()->getNumSols();
         for (UInt i=0; i < numSols; i++) {
-          oa_hand->separate(sol, NodePtr(), milp, cutMan, solPool, pmod, rmod, &solFound, &sepStatus);
+          sol2 = oa_hand->getMILPEngine()->getSolutionFromPool(i);
+          oa_hand->separate(sol2, NodePtr(), milp, cutMan, solPool, pmod, rmod, &solFound, &sepStatus);
         }
       }
+
+      // Solve NLP and update MILP by adding OA cuts
       oa_hand->separate(sol, NodePtr(), milp, cutMan, solPool, pmod, rmod, &solFound, &sepStatus);
       objUb = solPool->getBestSolutionValue();
       gap = getPerGap(objLb, objUb);
@@ -559,7 +571,7 @@ int main(int argc, char* argv[])
         break;
       }
       showStatus(env, objLb, objUb, gap, iterNum, numSols);
-    } // end while
+    } // end while (objLo <= objUp) or time limit
     time = -wallTimeStart + getWallTime();
     writeOAStatus(env, gap, objLb, objUb, obj_sense, status, iterNum, time);
     nlp_e->writeStats(env->getLogger()->msgStream(LogExtraInfo));

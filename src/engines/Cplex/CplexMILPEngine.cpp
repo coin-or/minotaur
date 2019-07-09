@@ -37,13 +37,10 @@
 #include "Timer.h"
 #include "Variable.h"
 
-#include<omp.h>
 #include <thread>
 #include <mutex>
 
-#if USE_OPENMP
 std::mutex mtx;
-#endif
 
 #define PRINT 0
 //#include <ilcplex/ilocplex.h>
@@ -171,6 +168,7 @@ ConstSolutionPtr CplexMILPEngine::getSolutionFromPool(int index)
       << "Could not get objective value of solution from CPLEX \n";
     return sol;
   }
+  sol = (SolutionPtr) new Solution(1E20, 0, problem_);
   sol->setPrimal(x);
   sol->setObjValue(objval);
   return sol;
@@ -470,7 +468,8 @@ EngineStatus CplexMILPEngine::solve()
   
   /* Set upper cutoff (best solution value) for this iteration */
   if (upperCutoff_ < INFINITY) {
-    cpxstatus_ = CPXXsetdblparam (cpxenv_, CPXPARAM_MIP_Tolerances_UpperCutoff, upperCutoff_);
+    cpxstatus_ = CPXXsetdblparam (cpxenv_, CPXPARAM_MIP_Tolerances_UpperCutoff,
+                                  upperCutoff_);
     if (cpxstatus_) {
        logger_->msgStream(LogError) << me_ << "Failure to set upper cutoff, error "
          << cpxstatus_ << std::endl;
@@ -497,7 +496,8 @@ EngineStatus CplexMILPEngine::solve()
   solstat = CPXXgetstat (cpxenv_, cpxlp_);
 
   /* Write the output to the screen. */
-  logger_->msgStream(LogInfo) << me_ << "Solution status = " << solstat << std::endl;
+  logger_->msgStream(LogInfo) << me_ << "Solution status = " << solstat
+    << std::endl;
 
   /* Get the (primal) objective value. */
   cpxstatus_ = CPXXgetobjval (cpxenv_, cpxlp_, &objval);
@@ -505,14 +505,18 @@ EngineStatus CplexMILPEngine::solve()
      logger_->msgStream(LogError) << me_
        << "No MILP objective value available. Exiting..." << std::endl;
   }
-  logger_->msgStream(LogInfo) << me_ << "Solution value = " << objval << std::endl;
+  logger_->msgStream(LogInfo) << me_ << "Solution value = "
+    << objval << std::endl;
+
+  /* Get the number of nodes processed */
+  logger_->msgStream(LogInfo) << me_ << "Nodes processed = "
+    << CPXXgetnodecnt(cpxenv_, cpxlp_) << std::endl;
 
   /* Get the solution. */
   cpxstatus_ = CPXXgetx (cpxenv_, cpxlp_, x, 0, cur_numcols-1);
   if (cpxstatus_) {
    logger_->msgStream(LogError) << me_ << "Failed to get optimal integer x."
      << std::endl;
-   //goto TERMINATE;
   }
   
 #if SPEW
@@ -525,7 +529,7 @@ EngineStatus CplexMILPEngine::solve()
     status_ = ProvenOptimal;
     sol_->setPrimal(x);
     sol_->setObjValue(objval); 
-  } else if (solstat == 103) {
+  } else if (solstat == 103 || solstat == 119) {
     status_ = ProvenInfeasible;
     sol_->setObjValue(INFINITY);
     //*objLb = -INFINITY;
@@ -876,7 +880,7 @@ EngineStatus CplexMILPEngine::solveST(double *objLb, SolutionPtr* sol,
   solstat = CPXXgetstat (cpxenv_, cpxlp_);
 
   /* Write the output to the screen. */
-  logger_->msgStream(LogInfo) << me_ << "Solution status = " 
+  logger_->msgStream(LogInfo) << me_ << "Solution status = "
     << CPXXgetstatstring(cpxenv_, solstat, errbuf) << std::endl;
 
   /* Get the (dual) best bound value. */
@@ -1088,7 +1092,7 @@ EngineStatus CplexMILPEngine::solveSTLazy(double *objLb, SolutionPtr* sol,
 #endif
 
   /* Write the output to the screen. */
-  logger_->msgStream(LogInfo) << me_ << "Solution status = " 
+  logger_->msgStream(LogInfo) << me_ << "Solution status = "
     << CPXXgetstatstring(cpxenv_, solstat, errbuf) << std::endl;
 
   /* Get the (dual) best bound value. */

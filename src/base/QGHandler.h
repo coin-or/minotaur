@@ -85,10 +85,11 @@ private:
 
   /// Nonlinearity status of objective function. 1 if nonlinear 0 otherwise.
   bool oNl_;
-  UInt rScheme1Para_;
-  UInt rScheme2Para_;
-  UInt rScheme3Para_;
-  UInt rScheme4Para_;
+  double rs1_;
+  double rs2Per_;
+  double rs2NbhSize_;
+  //UInt rScheme3Para_;
+  //UInt rScheme4Para_;
 
   /// Pointer to relaxation of the problem.
   RelaxationPtr rel_;
@@ -228,7 +229,8 @@ private:
   void rootScheme3_(const double *nlpx, ConstraintPtr con, LinearFunctionPtr lf);
   void rootScheme4_(const double *nlpx, ConstraintPtr con);
 
-  bool twoVarsCon_(LinearFunctionPtr lf, NonlinearFunctionPtr nlf);
+  bool twoVarsCon_(ConstraintPtr con, double &linTermCoeff, UInt & vlIdx, UInt & vnIdx, 
+                            double &extraCoeff);
   void rootLinearizations_();
 
   bool lineSearchPt_(double* x, const double* l, const double* u, ConstraintPtr con, double & nlpact);
@@ -238,12 +240,21 @@ private:
   /* Add linerizations to constraints with exactly two variables. One var in
    * linear and one in nonlinear part of the constraint.
    */
-  void rootLinScheme1_();
+  void rootLinScheme1_(ConstraintPtr con, double linTermCoeff,
+                            UInt vlIdx, UInt vnIdx, double extraCoeff);
   /* Warm-start the NLP at the root LP solution and linearize at this NLP
    * solution
    */
   bool shouldPrune_(EngineStatus eStatus);
-  void rootLinScheme2_();
+  void rootLinScheme2_(ConstraintPtr con, double linTermCoeff,
+                            UInt vlIdx, UInt vnIdx);
+
+
+  void rScheme2Cut_(ConstraintPtr con, double &alpha, double &delta,
+                                double linTermCoeff, double &lastSlope,
+                                UInt vnIdx, double * npt, double * grad,
+                                UInt &numCuts);
+
   void rootLinScheme3_();
   /**
    * Solve the NLP relaxation of the MINLP and add linearizations about
@@ -281,7 +292,7 @@ private:
                CutManager *cutman, SeparationStatus *status);
   
 
-  double getVio_(double *b1, ConstraintPtr con, int & error);
+  //double getVio_(double *b1, ConstraintPtr con, int & error);
 
   void consCutAtLpSol_(const double *lpx, CutManager *cutman,
                     SeparationStatus *status);
@@ -290,7 +301,7 @@ private:
                     SeparationStatus *status);
 
   bool addNewCut_(double *b1, UInt vlIdx, ConstraintPtr con, 
-                  double linTermCoeff, UInt &newConId);
+                  double linTermCoeff, double extraCoeff, UInt &newConId);
   /**
    * Check if objective is violated at the LP solution and
    * add OA cut.
