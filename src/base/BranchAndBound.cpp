@@ -39,32 +39,30 @@ using namespace Minotaur;
 const std::string BranchAndBound::me_ = "branch-and-bound: ";
 
 BranchAndBound::BranchAndBound()
-  : env_(EnvPtr()),               // NULL
-    nodePrcssr_(),                // NULL
-    nodeRlxr_(NodeRelaxerPtr()),  // NULL
-    options_(BabOptionsPtr()),    // NULL
-    problem_(ProblemPtr()),       // NULL
-    solPool_(SolutionPoolPtr()),  // NULL
+  : env_(0),
+    nodePrcssr_(),
+    nodeRlxr_(0),
+    options_(0),
+    problem_(0),
+    solPool_(0), 
     stats_(0),
     status_(NotStarted),
-    timer_(0),                    // NULL
-    tm_(TreeManagerPtr())         // NULL
+    timer_(0),
+    tm_(0)
 {
 }
 
 
 BranchAndBound::BranchAndBound(EnvPtr env, ProblemPtr p) 
   : env_(env),
-    nodePrcssr_(),                // NULL
-    nodeRlxr_(NodeRelaxerPtr()),  // NULL
+    nodePrcssr_(0),
+    nodeRlxr_(0),
     problem_(p),
-    solPool_(SolutionPoolPtr()),  // NULL
+    solPool_(0),
     stats_(0),
     status_(NotStarted)
 {
   timer_ = env->getNewTimer();
-  assert (env_);
-
   tm_ = (TreeManagerPtr) new TreeManager(env);
   options_ = (BabOptionsPtr) new BabOptions(env);
   logger_ = env->getLogger();
@@ -73,24 +71,24 @@ BranchAndBound::BranchAndBound(EnvPtr env, ProblemPtr p)
 
 BranchAndBound::~BranchAndBound()
 {
-  //options_.reset();
-  //nodePrcssr_.reset();
-  //nodeRlxr_.reset();
-  options_ = 0;
-  nodeRlxr_ = 0;
-  nodePrcssr_ = 0;
-  //tm_.reset();
-  //solPool_.reset();
-  solPool_ = 0;
-  tm_ = 0;
-  //problem_.reset();
   problem_ = 0;
   env_ = 0;
-  if (timer_) {
-    delete timer_;
+  nodeRlxr_ = 0;
+  nodePrcssr_ = 0;
+  if (options_) {
+    delete options_;
+  }
+  if (solPool_) {
+    delete solPool_;
   }
   if (stats_) {
     delete stats_;
+  }
+  if (timer_) {
+    delete timer_;
+  }
+  if (tm_) {
+    delete tm_;
   }
 }
 

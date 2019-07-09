@@ -294,16 +294,19 @@ namespace Minotaur {
     //friend PolyFunPtr operator + (ConstPolyFunPtr p1, ConstPolyFunPtr p2);
     PolyFunPtr copyAdd(ConstPolyFunPtr p2) const;
 
-    ///// Multiply a polynomial with constant.
+    /// create a copy of this polynomial and subtract from it a given polynomial
+    PolyFunPtr copyMinus(ConstPolyFunPtr p2);
+
+    /// Multiply a polynomial with constant.
     PolyFunPtr copyMult(double c);
 
-    ///// Multiply a linear function and polynomial function.
+    /// Multiply a linear function and polynomial function.
     PolyFunPtr copyMult(ConstLinearFunctionPtr l2) const;
 
-    ///// Multiply a polynomial with quadratic.
+    /// Multiply a polynomial with quadratic.
     PolyFunPtr copyMult(ConstQuadraticFunctionPtr q2) const;
 
-    ///// Multiply a polynomial with constant.
+    /// Multiply a polynomial with constant.
     PolyFunPtr copyMult(ConstPolyFunPtr p2) const;
 
   protected:

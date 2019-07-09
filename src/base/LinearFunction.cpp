@@ -325,7 +325,7 @@ LinearFunctionPtr LinearFunction::copyMinus(ConstLinearFunctionPtr l2)
 }
 LinearFunctionPtr LinearFunction::copyAdd(ConstLinearFunctionPtr l2)
 {
-  LinearFunctionPtr lf = LinearFunctionPtr();  //NULL
+  LinearFunctionPtr lf = 0;
   if (!l2) {
     lf = this->clone();
   } else {

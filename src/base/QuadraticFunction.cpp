@@ -18,6 +18,7 @@
 #include "MinotaurConfig.h"
 #include "HessianOfLag.h"
 #include "LinearFunction.h"
+#include "PolynomialFunction.h"
 #include "QuadraticFunction.h"
 #include "Variable.h"
 
@@ -881,28 +882,41 @@ QuadraticFunctionPtr QuadraticFunction::copyAdd(ConstQuadraticFunctionPtr q2) co
 
 QuadraticFunctionPtr QuadraticFunction::copyMult(double c) const
 {
-  QuadraticFunctionPtr qf = QuadraticFunctionPtr();  //NULL
-  qf = (QuadraticFunctionPtr) new QuadraticFunction();
-   for (VariablePairGroupConstIterator it = this->terms_.begin(); 
-        it != this->terms_.end(); it++) {
-     qf->addTerm(it->first, c*it->second);
-   }
+  QuadraticFunctionPtr qf = new QuadraticFunction();
+  for (VariablePairGroupConstIterator it = this->terms_.begin(); 
+       it != this->terms_.end(); it++) {
+    qf->addTerm(it->first, c*it->second);
+  }
   return qf;
 }
+
 
 PolyFunPtr QuadraticFunction::copyMult(ConstQuadraticFunctionPtr q2) const
 {
   PolyFunPtr pf = 0; 
-  // need to implement it
-  assert (!"QuadraticFunction::copyMult not implemented");
+  if (q2) {
+    pf = new PolynomialFunction();
+    pf->add(this);
+    pf->multiply(q2);
+    if (pf->isEmpty()) {
+      delete pf; pf = 0;
+    }
+  }
   return pf;
 }
 
-PolyFunPtr QuadraticFunction::copyMult(LinearFunctionPtr l1) const
+
+PolyFunPtr QuadraticFunction::copyMult(LinearFunctionPtr l2) const
 {
   PolyFunPtr pf = 0; 
-  //need to implement it
-  assert (!"QuadraticFunction::copyMult not implemented");
+  if (l2) {
+    pf = new PolynomialFunction();
+    pf->add(this);
+    pf->multiply(l2, 0.0);
+    if (pf->isEmpty()) {
+      delete pf; pf = 0;
+    }
+  }
   return pf;
 }
 
