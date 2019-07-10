@@ -198,6 +198,7 @@ void QuadraticFunctionTest::testEigen()
   ++it;
   CPPUNIT_ASSERT(it->first == 2.0);
 
+  delete ePtr;
   ePtr = e_cal->findValues(q1_);
   CPPUNIT_ASSERT(ePtr->numNegative() == 1);
   CPPUNIT_ASSERT(ePtr->numZero() == 0);
@@ -208,6 +209,7 @@ void QuadraticFunctionTest::testEigen()
   ++it;
   CPPUNIT_ASSERT(fabs(it->first - 0.414214) < 1e-5);
 
+  delete ePtr;
   delete e_cal;
 }
 

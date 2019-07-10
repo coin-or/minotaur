@@ -62,7 +62,9 @@ void TransformerUT::setUp()
 
 void TransformerUT::tearDown()
 {
+  delete inst_;
   delete iface_;
+  delete env_;
 }
 
 
@@ -76,7 +78,6 @@ void TransformerUT::testSize()
 void TransformerUT::testMakeObjectiveLinear()
 {
   HandlerVector handlers;
-  ProblemPtr newp = (ProblemPtr) new Problem();
   TransPoly t(env_, inst_);
 
 

@@ -109,6 +109,10 @@ void AMPLOsiUT::testOsiWarmStart()
   CPPUNIT_ASSERT(status == ProvenOptimal);
   CPPUNIT_ASSERT(engine2.getStatus() == ProvenOptimal);
   CPPUNIT_ASSERT(engine2.getIterationCount() == 0);
+
+  delete ws;
+  delete inst;
+  delete env;
 }
 
 
@@ -152,6 +156,7 @@ void AMPLOsiUT::testOsiBnB()
   CPPUNIT_ASSERT(bab->getUb() == 1.0);
 
   delete e;
+  delete p;
   delete bab;
 }
 

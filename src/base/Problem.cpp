@@ -88,6 +88,15 @@ Problem::~Problem()
   if (engine_) {
     engine_->clear();
   }
+  if (hessian_) {
+    delete hessian_;
+  }
+  if (jacobian_) {
+    delete jacobian_;
+  }
+  if (size_) {
+    delete size_;
+  }
 
   if (logger_) {
     delete logger_;
@@ -1762,6 +1771,12 @@ void Problem::setNativeDer()
 {
   calculateSize();
   nativeDer_ = true;
+  if (jacobian_) {
+    delete jacobian_; jacobian_ = 0;
+  }
+  if (hessian_) {
+    delete hessian_; hessian_ = 0;
+  }
   jacobian_ = (JacobianPtr) new Jacobian(cons_, vars_.size());
   hessian_ = (HessianOfLagPtr) new HessianOfLag(this);
 }

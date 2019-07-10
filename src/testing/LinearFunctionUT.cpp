@@ -163,6 +163,7 @@ void LinearFunctionTest::testOperations()
   CPPUNIT_ASSERT(lf2->getWeight(vars[1]) == 7.0);
   CPPUNIT_ASSERT(lf2->getWeight(vars[2]) == 1.0);
   CPPUNIT_ASSERT(lf2->getWeight(vars[3]) == 24.5);
+  delete lf2;
 
   //lf2 = lf - lf1;
   lf2 = lf->copyMinus(lf1);
@@ -170,11 +171,13 @@ void LinearFunctionTest::testOperations()
   CPPUNIT_ASSERT(lf2->getWeight(vars[1]) == -19.0);
   CPPUNIT_ASSERT(lf2->getWeight(vars[2]) == 1.0);
   CPPUNIT_ASSERT(lf2->getWeight(vars[3]) == -24.5);
+  delete lf2;
 
   //lf2 = lf - lf;
   lf2 = lf->copyMinus(lf);
   CPPUNIT_ASSERT(lf2->getWeight(vars[0]) == 0.0); 
   CPPUNIT_ASSERT(lf2->getWeight(vars[3]) == 0.0); 
+  delete lf2;
 
   // multiply by scalar.
   //lf2 = 1.5*lf;
@@ -182,6 +185,7 @@ void LinearFunctionTest::testOperations()
   CPPUNIT_ASSERT(lf2->getWeight(vars[0]) == 3.0); 
   CPPUNIT_ASSERT(lf2->getWeight(vars[1]) == -9.0); 
   CPPUNIT_ASSERT(lf2->getWeight(vars[3]) == 0.0); 
+  delete lf2;
 
   // increment
   //(*lf) += lf1;
@@ -199,6 +203,10 @@ void LinearFunctionTest::testOperations()
     CPPUNIT_ASSERT(lf6->getWeight(vars[2]) == 1.0);
     CPPUNIT_ASSERT(lf6->getWeight(vars[3]) == 24.5);
   }
+
+  delete lf6;
+  delete lf1;
+  delete lf;
 
   for (size_t i=0; i<vars.size(); ++i) {
     delete vars[i];

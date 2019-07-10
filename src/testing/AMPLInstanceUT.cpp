@@ -52,16 +52,18 @@ using namespace std;
 
 void AMPLInstanceUT::setUp()
 {
-  Minotaur::EnvPtr env = (Minotaur::EnvPtr) new Minotaur::Environment();
-  env->setLogLevel(Minotaur::LogNone);
-  env->getOptions()->findBool("expand_poly")->setValue(true);
-  iface_ = (AMPLInterfacePtr) new AMPLInterface(env);
+  env_ = (Minotaur::EnvPtr) new Minotaur::Environment();
+  env_->setLogLevel(Minotaur::LogNone);
+  env_->getOptions()->findBool("expand_poly")->setValue(true);
+  iface_ = (AMPLInterfacePtr) new AMPLInterface(env_);
   inst_ = iface_->readInstance("instances/minlp_eg0");
 }
 
 void AMPLInstanceUT::tearDown()
 {
+  delete inst_;
   delete iface_;
+  delete env_;
 }
 
 void AMPLInstanceUT::testSize()
@@ -270,32 +272,34 @@ void AMPLInstanceUT::testJacobian()
   double correctValues1[12] = {2, -1, 1, 4, 16, 1, 1, 6, 1, 1, 1, 1};
 
   // set jacobian
-  AMPLJacobianPtr jacPtr = (AMPLJacobianPtr) new AMPLJacobian(iface_);
+  AMPLJacobianPtr jac = new AMPLJacobian(iface_);
 
   // check jacobian non-zeros
-  CPPUNIT_ASSERT(jacPtr->getNumNz() == 12);
+  CPPUNIT_ASSERT(jac->getNumNz() == 12);
 
   // check indices of non-zeros
-  jacPtr->fillColRowIndices(jCol, iRow);
+  jac->fillColRowIndices(jCol, iRow);
 
-  for (Minotaur::UInt i=0; i<jacPtr->getNumNz(); ++i) {
+  for (Minotaur::UInt i=0; i<jac->getNumNz(); ++i) {
     CPPUNIT_ASSERT(iRow[i] == correctRow[i]);
     CPPUNIT_ASSERT(jCol[i] == correctCol[i]);
   }
 
   // get jacobian at [0 0 0 0 0]
-  jacPtr->fillColRowValues(x0, values, &error);
+  jac->fillColRowValues(x0, values, &error);
   CPPUNIT_ASSERT(0==error);
-  for (Minotaur::UInt i=0; i<jacPtr->getNumNz(); ++i) {
+  for (Minotaur::UInt i=0; i<jac->getNumNz(); ++i) {
     CPPUNIT_ASSERT(fabs(values[i] - correctValues0[i]) < 1e-7);
   }
 
   // get jacobian at [1 2 3 4 5]
-  jacPtr->fillColRowValues(x1, values, &error);
+  jac->fillColRowValues(x1, values, &error);
   CPPUNIT_ASSERT(0==error);
-  for (Minotaur::UInt i=0; i<jacPtr->getNumNz(); ++i) {
+  for (Minotaur::UInt i=0; i<jac->getNumNz(); ++i) {
     CPPUNIT_ASSERT(fabs(values[i] - correctValues1[i]) < 1e-7);
   }
+
+  delete jac;
 
 }
 
@@ -305,7 +309,6 @@ void AMPLInstanceUT::testObjective()
   Minotaur::ObjectivePtr oPtr;
   std::string oName;
   Minotaur::NonlinearFunctionPtr nlfPtr;
-  Minotaur::QuadraticFunctionPtr qfPtr;
   int error;
 
                        // x2,x0,x1,x3,x4   (remember ampl changes order)
@@ -322,11 +325,11 @@ void AMPLInstanceUT::testObjective()
     // test eval
     nlfPtr = oPtr->getNonlinearFunction();
     CPPUNIT_ASSERT(!nlfPtr); // nlfPtr is NULL
-    qfPtr = oPtr->getQuadraticFunction();
     CPPUNIT_ASSERT(oPtr->eval(y, &error) == 20);
     CPPUNIT_ASSERT(oPtr->eval(z, &error) == 11);
   }
 }
+
 
 void AMPLInstanceUT::testObjectiveGradient()
 {

@@ -63,6 +63,7 @@ void AMPLFilterSQPUT::testNLP()
   CPPUNIT_ASSERT(fabs(value-1.7201185) < 1e-7);
 
   delete filter_e;
+  delete inst;
   delete iface_;
 }
 

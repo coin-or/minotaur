@@ -328,8 +328,12 @@ void NLPBnbUT::testNLPBnb1()
   bab->solve();
   CPPUNIT_ASSERT(fabs(bab->getUb() + 0.5) < 1e-6);
 
+  delete nr;
   delete e;
   delete bab;
+  delete nproc;
+  delete l_hand;
+  delete v_hand;
 
   //CPPUNIT_ASSERT(!"implement me!");
 }
