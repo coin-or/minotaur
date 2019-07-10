@@ -187,8 +187,7 @@ void AMPLInterface::addLinearTermsFromObj_(Minotaur::LinearFunctionPtr & lf,
     }
   }
   if (lf->getNumTerms()==0) {
-    //lf.reset();
-    lf = 0;
+    delete lf; lf = 0;
   }
 }
 
@@ -1828,6 +1827,15 @@ void AMPLInterface::getPoly_(Minotaur::LinearFunctionPtr & lfPtr,
        pfPtr->add(pfPtr2);
        c += c2;
        ++ep;
+       if (lfPtr2) {
+         delete lfPtr2; lfPtr2 = 0;
+       }
+       if (qfPtr2) {
+         delete qfPtr2; qfPtr2 = 0;
+       }
+       if (pfPtr2) {
+         delete pfPtr2; pfPtr2 = 0;
+       }
      }
      if (lfPtr->getNumTerms() == 0) {
        delete lfPtr; lfPtr = 0;
@@ -2101,7 +2109,7 @@ Minotaur::ProblemPtr AMPLInterface::readInstance(std::string fname)
 Minotaur::ProblemPtr AMPLInterface::readInstanceASL_(std::string fname) 
 {
   Minotaur::ProblemType problem_type = Minotaur::OtherProblemType;
-  Minotaur::ProblemPtr instance;
+  Minotaur::ProblemPtr instance = 0;
   std::vector<std::set<int> > vars;
   bool do_poly = env_->getOptions()->findBool("expand_poly")->getValue();
 

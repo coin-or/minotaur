@@ -67,6 +67,7 @@ void AMPLIpoptUT::testNLP()
   delete ipopt_e;
   delete inst;
   delete iface_;
+  delete env;
 }
 
 // Local Variables: 

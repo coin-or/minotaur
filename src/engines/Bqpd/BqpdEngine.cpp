@@ -57,7 +57,7 @@ BqpdEngine::BqpdEngine(EnvPtr env)
     maxIterLimit_(1000),
     prevStrBr_(false),
     resolveError_(true),
-    sol_(SolutionPtr()),
+    sol_(0),
     strBr_(false),
     timer_(0)
 {
@@ -84,12 +84,10 @@ BqpdEngine::~BqpdEngine()
 {
   //delete ;
   if (sol_) {
-    //sol_.reset();
-    sol_ = 0;
+    delete sol_;
   }
   if (problem_) {
-	 problem_->unsetEngine();
-    //problem_.reset();
+    problem_->unsetEngine();
     problem_ = 0;
   }
   if (fStart_) {

@@ -59,8 +59,9 @@ Constraint::Constraint(UInt id, UInt index, FunctionPtr f, double lb,
 
 Constraint::~Constraint()
 {
-  //f_.reset();
-  f_ = 0;
+  if (f_) {
+    delete f_;
+  }
 }
 
 

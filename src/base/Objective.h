@@ -66,7 +66,7 @@ namespace Minotaur {
                 std::string name);
 
       /// Destroy
-      virtual ~Objective() { }
+      virtual ~Objective();
 
 
       // Functions that query or get information.

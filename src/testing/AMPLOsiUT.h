@@ -14,6 +14,7 @@
 #include <cppunit/extensions/HelperMacros.h>
 
 #include "Types.h"
+#include "Environment.h"
 #include "OsiLPEngine.h"
 #include "AMPLInterface.h"
 
@@ -40,6 +41,7 @@ public:
   CPPUNIT_TEST_SUITE_END();
 
 private:
+  Minotaur::EnvPtr env_;
   AMPLInterfacePtr iface_;
   Minotaur::OsiLPEnginePtr engine_ptr_;
 };

@@ -67,6 +67,7 @@ void AMPLBqpdUT::testNLP()
   delete bqpd_e;
   delete inst;
   delete iface_;
+  delete env;
 }
 
 // Local Variables: 
