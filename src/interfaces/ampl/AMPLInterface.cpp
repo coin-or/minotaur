@@ -1617,12 +1617,12 @@ void AMPLInterface::getPoly_(Minotaur::LinearFunctionPtr & lfPtr,
                              double & c, expr *e_ptr)
 {
   int opcode;
-  Minotaur::LinearFunctionPtr lfPtr1 = Minotaur::LinearFunctionPtr();
-  Minotaur::LinearFunctionPtr lfPtr2 = Minotaur::LinearFunctionPtr();
-  Minotaur::QuadraticFunctionPtr qfPtr1 = Minotaur::QuadraticFunctionPtr();
-  Minotaur::QuadraticFunctionPtr qfPtr2 = Minotaur::QuadraticFunctionPtr();
-  Minotaur::PolyFunPtr pfPtr1 = Minotaur::PolyFunPtr();
-  Minotaur::PolyFunPtr pfPtr2 = Minotaur::PolyFunPtr();
+  Minotaur::LinearFunctionPtr lfPtr1 = 0;
+  Minotaur::LinearFunctionPtr lfPtr2 = 0;
+  Minotaur::QuadraticFunctionPtr qfPtr1 = 0;
+  Minotaur::QuadraticFunctionPtr qfPtr2 = 0;
+  Minotaur::PolyFunPtr pfPtr1 = 0;
+  Minotaur::PolyFunPtr pfPtr2 = 0;
   Minotaur::LinearFunctionPtr lft = 0;
   Minotaur::QuadraticFunctionPtr qft = 0;  //NULL
   Minotaur::PolyFunPtr pft = 0;
@@ -1926,6 +1926,25 @@ void AMPLInterface::getPoly_(Minotaur::LinearFunctionPtr & lfPtr,
        << std::endl;
      assert(!"can not recover function from ASL!");
      break;
+  }
+
+  if (lfPtr1) {
+    delete lfPtr1;
+  }
+  if (lfPtr2) {
+    delete lfPtr2;
+  }
+  if (qfPtr1) {
+    delete qfPtr1;
+  }
+  if (qfPtr2) {
+    delete qfPtr2;
+  }
+  if (pfPtr1) {
+    delete pfPtr1;
+  }
+  if (pfPtr2) {
+    delete pfPtr2;
   }
 }
 

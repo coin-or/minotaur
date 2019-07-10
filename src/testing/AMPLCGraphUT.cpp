@@ -157,6 +157,9 @@ void AMPLCGraphUT::testVariables()
        CPPUNIT_ASSERT_MESSAGE("variable has an unexpected name", false);
     }
   }
+  delete iface;
+  delete inst;
+  delete env;
 }
 
 
@@ -289,6 +292,9 @@ void AMPLCGraphUT::testConstraints()
        CPPUNIT_ASSERT_MESSAGE("constraint has an unexpected name", false);
     }
   }
+  delete iface;
+  delete inst;
+  delete env;
 }
 
 
@@ -357,6 +363,9 @@ void AMPLCGraphUT::testJacobian()
   for (Minotaur::UInt i=0; i<jacPtr->getNumNz(); ++i) {
     CPPUNIT_ASSERT(fabs(values[i] - correctValues1[i]) < 1e-7);
   }
+  delete iface;
+  delete inst;
+  delete env;
 
 }
 
@@ -431,6 +440,10 @@ void AMPLCGraphUT::testHessian()
     //std::cout << hval[i] << " " << exph[i] << std::endl;
     CPPUNIT_ASSERT(fabs(hval[i] - exph[i])<1e-10);
   }
+
+  delete iface;
+  delete inst;
+  delete env;
 }
 
 
@@ -467,6 +480,9 @@ void AMPLCGraphUT::testObjective()
     CPPUNIT_ASSERT(oPtr->getFunction()->eval(y, &error) == 20);
     CPPUNIT_ASSERT(oPtr->getFunction()->eval(z, &error) == 11);
   }
+  delete iface;
+  delete inst;
+  delete env;
 }
 
 
@@ -522,6 +538,9 @@ void AMPLCGraphUT::testObjectiveGradient()
   for (Minotaur::UInt i=0; i<5; ++i) {
     CPPUNIT_ASSERT(fabs(gradient[i] - gz[i]) < 1e-7);
   }
+  delete iface;
+  delete inst;
+  delete env;
 }
 
 
