@@ -102,8 +102,9 @@ Problem::~Problem()
     delete logger_;
   }
 
-  delete obj_;
-  obj_ = 0;
+  if (obj_) {
+    delete obj_;
+  }
 
   vars_.clear();
   cons_.clear();

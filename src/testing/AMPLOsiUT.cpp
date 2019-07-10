@@ -28,10 +28,10 @@ using namespace Minotaur;
 
 void AMPLOsiUT::setUp()
 {
-  EnvPtr env = (EnvPtr) new Environment();
-  env->setLogLevel(LogNone);
-  iface_ = (MINOTAUR_AMPL::AMPLInterfacePtr) new AMPLInterface(env);
-  engine_ptr_ = (OsiLPEnginePtr) new OsiLPEngine(env);
+  env_ = (EnvPtr) new Environment();
+  env_->setLogLevel(LogNone);
+  iface_ = (MINOTAUR_AMPL::AMPLInterfacePtr) new AMPLInterface(env_);
+  engine_ptr_ = (OsiLPEnginePtr) new OsiLPEngine(env_);
 }
 
 
@@ -39,6 +39,7 @@ void AMPLOsiUT::tearDown()
 {
   delete engine_ptr_;
   delete iface_;
+  delete env_;
 }
 
 

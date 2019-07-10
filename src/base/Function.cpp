@@ -18,9 +18,9 @@
 using namespace Minotaur;
 
 Function::Function() 
-  : lf_(LinearFunctionPtr()),
-    qf_(QuadraticFunctionPtr()),
-    nlf_(NonlinearFunctionPtr())
+  : lf_(0),
+    nlf_(0),
+    qf_(0)
 {
   type_ = Constant;
   vars_.clear();
@@ -28,23 +28,24 @@ Function::Function()
 
 
 Function::Function(LinearFunctionPtr lf)
-  : lf_(lf)
+: lf_(lf),
+  nlf_(0),
+  qf_(0)
 {
   if (lf) {
     type_ = Linear;
   } else {
     type_ = Constant;
   }
-  qf_ = QuadraticFunctionPtr();
-  nlf_ = NonlinearFunctionPtr();
   collectVars_();
 }
 
 
 Function::Function(LinearFunctionPtr lf, QuadraticFunctionPtr qf)
-  : lf_(lf), qf_(qf)
+: lf_(lf),
+  nlf_(0),
+  qf_(qf)
 {
-  nlf_ = NonlinearFunctionPtr(); // NULL
   if (qf) {
     // Check whether quadratic is bilinear or quadratic
     type_ = Bilinear;
@@ -67,10 +68,10 @@ Function::Function(LinearFunctionPtr lf, QuadraticFunctionPtr qf)
 
 
 Function::Function(LinearFunctionPtr lf, NonlinearFunctionPtr nlf) 
-  : lf_(lf),
-    nlf_(nlf)
+: lf_(lf),
+  nlf_(nlf),
+  qf_(0)
 {
-  qf_ = QuadraticFunctionPtr();
   if (nlf_) {
     type_ = nlf_->getType();
   } else {
@@ -82,7 +83,9 @@ Function::Function(LinearFunctionPtr lf, NonlinearFunctionPtr nlf)
 
 Function::Function(LinearFunctionPtr lf, QuadraticFunctionPtr qf,
                    NonlinearFunctionPtr nlf) 
-  : lf_(lf), qf_(qf), nlf_(nlf)
+: lf_(lf),
+  nlf_(nlf),
+  qf_(qf)
 {
   type_ = Constant;
 
@@ -99,56 +102,35 @@ Function::Function(LinearFunctionPtr lf, QuadraticFunctionPtr qf,
   }
 
   collectVars_();
-#if 0   // Jeff's stuff
-  // do checks for type_
-  if (qf_) {
-    // Jeff's stuff, needs cleanup.
-    // Check if quadratic part is bilinear
-    bool qib = true;
-    for(VariablePairGroupConstIterator it = qf_->begin(); it != qf_->end(); ++it) {
-      if (it->second != 0.0) {
-        if (it->first.first->getId() == it->first.second->getId()) {
-          qib = false;
-          break;
-        }
-      }
-    }
-
-    if (!qib) {
-      type_ = Quadratic;
-    } else {
-      //XXX Only way (now) that function is multilinear is if it was entered as 
-      // such.
-      //  Check via a downcast...
-      MultilinearFunction *mlf = dynamic_cast<MultilinearFunction *>(nlf_.get());
-      if (mlf == 0) {
-        type_ = Nonlinear;
-      }
-      else {
-        type_ = Multilinear;
-      }
-    }
-  }
-
-  if (nlf_) {
-    type_ = Nonlinear;
-  }
-  collectVars_();
-#endif 
 }
 
 
 Function::Function(NonlinearFunctionPtr nlf) 
-  : nlf_(nlf)
+: lf_(0),
+  nlf_(nlf),
+  qf_(0)
 {
-  lf_ = LinearFunctionPtr();
-  qf_ = QuadraticFunctionPtr();
   if (nlf_) {
     type_ = nlf_->getType();
   } else {
     type_ = Constant;
   }
   collectVars_();
+}
+
+
+Function::~Function()
+{
+  if (lf_) {
+    delete lf_;
+  }
+  if (qf_) {
+    delete qf_;
+  }
+  if (nlf_) {
+    delete nlf_;
+  }
+  vars_.clear();
 }
 
 
@@ -211,12 +193,6 @@ FunctionPtr Function::cloneWithVarsPermute(VariableConstIterator vbeg, UIntVecto
   return f;
 }
 
-
-
-Function::~Function()
-{
-  vars_.clear();
-}
 
 
 void Function::subst(VariablePtr out, VariablePtr in, double rat)
