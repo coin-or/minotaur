@@ -42,6 +42,8 @@ void QuadraticFunctionTest::setUp()
 
 void QuadraticFunctionTest::tearDown()
 {
+  delete q_;
+  delete q1_;
   for (size_t i=0; i<vars_.size(); ++i) {
     delete vars_[i];
   }
@@ -181,6 +183,9 @@ void QuadraticFunctionTest::testOperations()
   CPPUNIT_ASSERT(q2_->getWeight(vars_[0], vars_[0]) == -2.0);
   CPPUNIT_ASSERT(q2_->getWeight(vars_[0], vars_[1]) == 4.0);
   CPPUNIT_ASSERT(q2_->getWeight(vars_[1], vars_[0]) == 4.0);
+
+  delete l1;
+  delete l2;
 }
 
 

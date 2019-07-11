@@ -96,6 +96,9 @@ void NLPBnbUT::testNLPBnb()
   //CPPUNIT_ASSERT(fabs(bab->getUb() + 1.0) < 1e-6);
   
   //delete lp_e;
+  
+  delete instance;
+  delete env;
 
 }
 
@@ -334,6 +337,7 @@ void NLPBnbUT::testNLPBnb1()
   delete nproc;
   delete l_hand;
   delete v_hand;
+  delete env;
 
   //CPPUNIT_ASSERT(!"implement me!");
 }

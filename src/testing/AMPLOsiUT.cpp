@@ -156,8 +156,12 @@ void AMPLOsiUT::testOsiBnB()
   bab->solve();
   CPPUNIT_ASSERT(bab->getUb() == 1.0);
 
+  delete v_hand;
+  delete l_hand;
   delete e;
   delete p;
+  delete nproc;
+  delete nr;
   delete bab;
 }
 

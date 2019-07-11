@@ -34,8 +34,9 @@ public:
   CPPUNIT_TEST_SUITE_END();
 
 private:
-  AMPLInterfacePtr iface_;
+  Minotaur::EnvPtr env_;
   Minotaur::CbcEnginePtr e_;
+  AMPLInterfacePtr iface_;
 };
 
 #endif

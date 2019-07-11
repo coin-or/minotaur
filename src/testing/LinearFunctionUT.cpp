@@ -67,6 +67,7 @@ void LinearFunctionTest::setUp()
 
 void LinearFunctionTest::tearDown()
 {
+  delete instance_;
 }
 
 

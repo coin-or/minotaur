@@ -40,23 +40,28 @@ using namespace std;
 
 void PolySolverUT::setUp()
 {
-  Minotaur::EnvPtr env = (Minotaur::EnvPtr) new Minotaur::Environment();
-  env->getOptions()->findBool("expand_poly")->setValue(true);
-  env->setLogLevel(Minotaur::LogNone);
-  iface_ = (AMPLInterfacePtr) new AMPLInterface(env);
+  env_ = new Minotaur::Environment();
+  env_->getOptions()->findBool("expand_poly")->setValue(true);
+  env_->setLogLevel(Minotaur::LogNone);
+  iface_ = new AMPLInterface(env_);
   inst_ = iface_->readInstance("instances/luedtke-1");
 }
+
 
 void PolySolverUT::tearDown()
 {
   delete iface_;
+  delete env_;
 }
+
 
 void PolySolverUT::testSize()
 {
   CPPUNIT_ASSERT(inst_->getNumCons() == 2);
   CPPUNIT_ASSERT(inst_->getNumVars() == 8);
 }
+
+
 // Local Variables: 
 // mode: c++ 
 // eval: (c-set-style "k&r") 
