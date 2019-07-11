@@ -85,15 +85,13 @@ void PolyUT::polynomial()
 {
   VariablePtr x1 = new Variable(0, 0, 0., 1., Continuous, "x1");
   VariablePtr x2 = new Variable(1, 1, 0., 1., Continuous, "x2");
-  PolyFunPtr  p1 = (PolyFunPtr) new PolynomialFunction();
+  PolyFunPtr  p1 = new PolynomialFunction();
+  PolyFunPtr  p2 = 0;
   MonomialFunPtr  m;
-  LinearFunctionPtr lf = (LinearFunctionPtr) new LinearFunction();
-  NonlinearFunctionPtr nlf;
+  LinearFunctionPtr lf = 0;
   QuadraticFunctionPtr qf = QuadraticFunctionPtr();
   FunctionPtr f;
   int error = 0;
-
-  lf->addTerm(x1, 1.0);
 
   // x1^3 + 3x1x2
   m = (MonomialFunPtr) new MonomialFunction(1, x1, 3);
@@ -137,18 +135,20 @@ void PolyUT::polynomial()
 
   f = (FunctionPtr) new Function(p1);
   CPPUNIT_ASSERT(Polynomial == f->getType());
-  lf = LinearFunctionPtr(); // NULL
-  f = (FunctionPtr) new Function(lf, qf, p1);
+  p2 = p1->clone();
+  delete f;
+
+  f = (FunctionPtr) new Function(lf, qf, p2);
   CPPUNIT_ASSERT(Polynomial == f->getType());
 
-  p1->evalGradient(x, g, &error);
+  p2->evalGradient(x, g, &error);
   CPPUNIT_ASSERT(0==error);
   CPPUNIT_ASSERT(15. == g[0]);
   CPPUNIT_ASSERT( 6. == g[1]);
 
+  delete f;
   delete x1;
   delete x2;
-
 }
 
 // Local Variables: 

@@ -256,10 +256,10 @@ IpoptEngine::IpoptEngine(EnvPtr env)
   etol_(1e-7),
   myapp_(0),
   mynlp_(0),
-  sol_(IpoptSolPtr()),      // NULL
+  sol_(0),      // NULL
   strBr_(false),
   timer_(0),
-  ws_(IpoptWarmStartPtr()) // NULL
+  ws_(0) // NULL
 {
 #if defined(USE_IPOPT)  
   problem_ = ProblemPtr();   // NULL
@@ -294,10 +294,12 @@ IpoptEngine::IpoptEngine(EnvPtr env)
 
 IpoptEngine::~IpoptEngine()
 {
-  //ws_.reset();
-  //sol_.reset();
-  ws_ = 0;
-  sol_ = 0;
+  if (ws_) {
+    delete ws_;
+  }
+  if (sol_) {
+    delete sol_;
+  }
   if (timer_) {
     delete timer_;
   }
@@ -308,9 +310,8 @@ IpoptEngine::~IpoptEngine()
     delete myapp_;
   }
   if (problem_) {
-  	 problem_->unsetEngine();
-	 //problem_.reset();
-     problem_ = 0;
+    problem_->unsetEngine();
+    problem_ = 0;
   }
   return;
 }
@@ -361,14 +362,10 @@ void IpoptEngine::changeObj(FunctionPtr, double)
 
 void IpoptEngine::clear() 
 {
-
-  //ws_.reset();
-  //sol_.reset();
-  ws_ = 0;
-  sol_ = 0;
+  delete ws_; ws_ = 0;
+  delete sol_; sol_ = 0;
   if (problem_) {
     problem_->unsetEngine();
-    //problem_.reset();
     problem_ = 0;
   }
 }
@@ -456,7 +453,10 @@ void IpoptEngine::load(ProblemPtr problem)
 
   // check if warm start needs to be saved
   if (prepareWs_) {
-    ws_ = (IpoptWarmStartPtr) new IpoptWarmStart();
+    if (ws_) {
+      delete ws_; ws_ = 0;
+    }
+    ws_ = new IpoptWarmStart();
   }
 
   // set the status of the engine to unknown.
@@ -478,6 +478,9 @@ void IpoptEngine::loadFromWarmStart(const WarmStartPtr ws)
     ConstIpoptWarmStartPtr ws2 = dynamic_cast <const IpoptWarmStart*> (ws);
 
     // now create a full copy.
+    if (ws_) {
+      delete ws_;
+    }
     ws_ = (IpoptWarmStartPtr) new IpoptWarmStart(ws2);
     if (!useWs_) {
       logger_->msgStream(LogInfo) << me_ << "setWarmStart() method is called "

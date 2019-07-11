@@ -64,34 +64,35 @@ ProblemTest::setUp()
   instance_->calculateSize(1); 
 }
 
-void 
-ProblemTest::tearDown()
+
+void ProblemTest::tearDown()
 {
+  delete instance_;
 }
 
-void
-ProblemTest::testevalCon()
+
+void ProblemTest::testevalCon()
 {
 
 }
 
-void
-ProblemTest::testConsTypes() 
+
+void ProblemTest::testConsTypes() 
 {
   CPPUNIT_ASSERT(instance_->isLinear() == true); 
   CPPUNIT_ASSERT(instance_->isQP() == false); 
   CPPUNIT_ASSERT(instance_->isQuadratic() == false); 
 }
 
-void 
-ProblemTest::testObjTypes()
+
+void ProblemTest::testObjTypes()
 {
   CPPUNIT_ASSERT(instance_->getSize()->objLinTerms == 2);
   CPPUNIT_ASSERT(instance_->getSize()->objQuadTerms == 0);
 }
 
-void
-ProblemTest::testVarTypes()
+
+void ProblemTest::testVarTypes()
 {
   //instance_->countVarTypes();
   CPPUNIT_ASSERT(instance_->getSize()->bins == 0);
@@ -109,8 +110,8 @@ ProblemTest::testVarTypes()
   CPPUNIT_ASSERT(instance_->getSize()->conts == 1); 
 }
 
-void
-ProblemTest::testChangeBound()
+
+void ProblemTest::testChangeBound()
 {
   CPPUNIT_ASSERT(instance_->getVariable(0)->getLb() == 0.0); 
   instance_->changeBoundByInd(0, Lower, 0.5);
@@ -122,8 +123,8 @@ ProblemTest::testChangeBound()
   CPPUNIT_ASSERT(instance_->getVariable(1)->getUb() == 5.0);   
 }
 
-void 
-ProblemTest::testDeleteVar()
+
+void ProblemTest::testDeleteVar()
 {
   VariablePtr varToDelete = instance_->getVariable(0); 
   instance_->markDelete(varToDelete);
@@ -135,12 +136,13 @@ ProblemTest::testDeleteVar()
   CPPUNIT_ASSERT(instance_->getSize()->ints == 1);  
 }
 
-void 
-ProblemTest::testaddToObj()
+
+void ProblemTest::testaddToObj()
 {
   LinearFunctionPtr lf = LinearFunctionPtr(new LinearFunction());
   lf->addTerm(instance_->newVariable(0.0, 4.0, Continuous), 5.0);
   instance_->addToObj(lf); 
+  delete lf;
   instance_->calculateSize(); 
   CPPUNIT_ASSERT(instance_->getSize()->objLinTerms == 3);
 }

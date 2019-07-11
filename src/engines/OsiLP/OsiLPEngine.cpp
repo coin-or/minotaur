@@ -115,6 +115,7 @@ OsiLPEngine::OsiLPEngine(EnvPtr env)
     maxIterLimit_(10000),
     objChanged_(true),
     problem_(0),
+    sol_(0),
     strBr_(false)
 {
 #if USE_OSILP
@@ -161,8 +162,10 @@ OsiLPEngine::~OsiLPEngine()
   delete timer_;
   if (problem_) {
     problem_->unsetEngine();
-    //problem_.reset();
     problem_ = 0;
+  }
+  if (sol_) {
+    delete sol_;
   }
 }
 
@@ -465,6 +468,9 @@ void OsiLPEngine::load(ProblemPtr problem)
                                start, NULL);
   osilp_->loadProblem(*r_mat, varlb, varub, obj, conlb, conub);
 
+  if (sol_) {
+    delete sol_; sol_ = 0;
+  }
   sol_ = (SolutionPtr) new Solution(1E20, 0, problem_);
 
   objChanged_ = true;

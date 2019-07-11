@@ -39,6 +39,8 @@ void CGraphUT::testIdentical()
   CPPUNIT_ASSERT(cg2->isIdenticalTo(cg1)); 
   CPPUNIT_ASSERT(cg1->isIdenticalTo(cg2)); 
   CPPUNIT_ASSERT(cg1->isIdenticalTo(cg1)); 
+  delete cg1;
+  delete cg2;
 
   // x^2 != x^3
   cg1 = (CGraphPtr) new CGraph();
@@ -57,6 +59,7 @@ void CGraphUT::testIdentical()
 
   CPPUNIT_ASSERT(cg2->isIdenticalTo(cg2)); 
   CPPUNIT_ASSERT(false == cg1->isIdenticalTo(cg2)); 
+  delete cg1;
 
   // x^3 == x^3
   cg1 = (CGraphPtr) new CGraph();
@@ -67,6 +70,8 @@ void CGraphUT::testIdentical()
   cg1->finalize();
   CPPUNIT_ASSERT(cg1->isIdenticalTo(cg2)); 
 
+  delete cg1;
+  delete cg2;
   delete v0;
 }
 

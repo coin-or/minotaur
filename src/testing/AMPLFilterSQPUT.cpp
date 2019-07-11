@@ -20,12 +20,13 @@ using namespace MINOTAUR_AMPL;
 
 void AMPLFilterSQPUT::testNLP()
 {
-  Minotaur::EnvPtr env = (Minotaur::EnvPtr) new Minotaur::Environment();
-  env->setLogLevel(Minotaur::LogNone);
-  iface_ = (AMPLInterfacePtr) new AMPLInterface(env);
+  Minotaur::ProblemPtr inst;
+  env_ = (Minotaur::EnvPtr) new Minotaur::Environment();
+  env_->setLogLevel(Minotaur::LogNone);
+  iface_ = (AMPLInterfacePtr) new AMPLInterface(env_);
 
   // read an instance
-  Minotaur::ProblemPtr inst = iface_->readInstance("instances/3pk");
+  inst = iface_->readInstance("instances/3pk");
 
   // set starting point if any
   inst->setInitialPoint(iface_->getInitialPoint());
@@ -46,7 +47,7 @@ void AMPLFilterSQPUT::testNLP()
 
   //create a new engine
   Minotaur::FilterSQPEnginePtr filter_e = (Minotaur::FilterSQPEnginePtr) 
-    new Minotaur::FilterSQPEngine(env);
+    new Minotaur::FilterSQPEngine(env_);
 
   //load the problem
   filter_e->load(inst);
@@ -65,29 +66,37 @@ void AMPLFilterSQPUT::testNLP()
   delete filter_e;
   delete inst;
   delete iface_;
+  delete env_;
 }
 
 
 void AMPLFilterSQPUT::testLP()
 {
-  Minotaur::EnvPtr env = (Minotaur::EnvPtr) new Minotaur::Environment();
-  env->setLogLevel(Minotaur::LogNone);
-  iface_ = (AMPLInterfacePtr) new AMPLInterface(env);
+  Minotaur::FilterSQPEnginePtr filter_e;
+  Minotaur::ProblemPtr inst;
+  Minotaur::EngineStatus status;
+  double value;
+
+  env_ = new Minotaur::Environment();
+  env_->setLogLevel(Minotaur::LogNone);
+  iface_ = new AMPLInterface(env_);
   // read an instance
-  Minotaur::FilterSQPEnginePtr filter_e = (Minotaur::FilterSQPEnginePtr) 
-    new Minotaur::FilterSQPEngine(env);
-  Minotaur::ProblemPtr inst = iface_->readInstance("instances/lp0");
+  filter_e = new Minotaur::FilterSQPEngine(env_);
+  inst = iface_->readInstance("instances/lp0");
 
   inst->negateObj();
   inst->setNativeDer();
   filter_e->load(inst);
   filter_e->solve();
-  Minotaur::EngineStatus status = filter_e->getStatus();
+  status = filter_e->getStatus();
   CPPUNIT_ASSERT(status==Minotaur::ProvenLocalOptimal);
-  double value = filter_e->getSolutionValue();
+  value = filter_e->getSolutionValue();
   CPPUNIT_ASSERT(fabs(value+8.4286) < 1e-4);
+
   delete filter_e;
   delete iface_;
+  delete inst;
+  delete env_;
 }
 
 

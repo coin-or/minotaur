@@ -165,7 +165,7 @@ void AMPLInterface::addLinearTermsFromConstr_(Minotaur::LinearFunctionPtr & lf,
     }
   }
   if (lf->getNumTerms()==0) {
-    //lf.reset();
+    delete lf;
     lf = 0;
   }
 }
@@ -719,8 +719,8 @@ Minotaur::ProblemPtr AMPLInterface::copyInstanceFromASL2_()
   start_index = 0;
   stop_index = myAsl_->i.nlc_ - myAsl_->i.nlnc_;
   for (Minotaur::UInt i=start_index; i<stop_index; ++i) {
-    cgraph = (Minotaur::CGraphPtr) new Minotaur::CGraph();
-    lf = (Minotaur::LinearFunctionPtr) new Minotaur::LinearFunction();
+    cgraph = new Minotaur::CGraph();
+    lf = new Minotaur::LinearFunction();
     addLinearTermsFromConstr_(lf, i);
     constraint_cde = asl_fg->I.con_de_+i;
     cnode = getCGraph_(constraint_cde->e, cgraph, instance);

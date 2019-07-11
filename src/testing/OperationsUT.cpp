@@ -39,7 +39,7 @@ void OperationsTest::testToLower()
 
 void OperationsTest::testSortVarX()
 {
-  ProblemPtr p = (ProblemPtr) new Problem();
+  ProblemPtr p = new Problem();
   VarVector vvec;
   double *x = new double[100];
 
@@ -74,6 +74,7 @@ void OperationsTest::testSortVarX()
   }
 
   delete [] x;
+  delete p;
 }
 
 
