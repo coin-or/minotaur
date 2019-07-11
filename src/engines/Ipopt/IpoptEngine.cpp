@@ -183,7 +183,7 @@ void IpoptSolution::write(std::ostream &out) const
 // ----------------------------------------------------------------------- //
 
 IpoptWarmStart::IpoptWarmStart()
-  : sol_(IpoptSolPtr()) // NULL
+  : sol_(0)
 {
 }
 
@@ -194,15 +194,16 @@ IpoptWarmStart::IpoptWarmStart(ConstIpoptWarmStartPtr ws)
   if (ws && ws->sol_) {
     sol_ = (IpoptSolPtr) new IpoptSolution(ws->sol_);
   } else {
-    sol_ = IpoptSolPtr(); // NULL
+    sol_ = 0;
   }
 }
 
 
 IpoptWarmStart::~IpoptWarmStart()
 {
-  //sol_.reset();
-  sol_ = 0;
+  if (sol_) {
+    delete sol_;
+  }
 }
 
 
@@ -220,16 +221,6 @@ bool IpoptWarmStart::hasInfo()
   } else {
     return false;
   }
-}
-
-
-void IpoptWarmStart::makeCopy()
-{
-  if (sol_) {
-    // make full copy and save.
-    IpoptSolPtr sol = (IpoptSolPtr) new IpoptSolution(sol_);
-    sol_ = sol;
-  } 
 }
 
 
@@ -256,13 +247,14 @@ IpoptEngine::IpoptEngine(EnvPtr env)
   etol_(1e-7),
   myapp_(0),
   mynlp_(0),
-  sol_(0),      // NULL
+  sol_(0),
   strBr_(false),
   timer_(0),
-  ws_(0) // NULL
+  ws_(0), 
+  wsSb_(0) 
 {
 #if defined(USE_IPOPT)  
-  problem_ = ProblemPtr();   // NULL
+  problem_ = 0;
   logger_ = env_->getLogger();
   myapp_ = new Ipopt::IpoptApplication();
   setOptionsForRepeatedSolve();
@@ -294,10 +286,13 @@ IpoptEngine::IpoptEngine(EnvPtr env)
 
 IpoptEngine::~IpoptEngine()
 {
-  if (ws_) {
-    delete ws_;
+  if (wsSb_) {
+    delete wsSb_;
   }
-  if (sol_) {
+  if (ws_) {
+    delete ws_; // deletes sol_ as well
+    sol_ = 0;
+  } else if (sol_) {
     delete sol_;
   }
   if (timer_) {
@@ -362,8 +357,15 @@ void IpoptEngine::changeObj(FunctionPtr, double)
 
 void IpoptEngine::clear() 
 {
-  delete ws_; ws_ = 0;
-  delete sol_; sol_ = 0;
+  if (ws_) {
+    delete ws_; ws_ = 0; // deletes sol_ as well
+    sol_ = 0;
+  } else if (sol_) {
+    delete sol_; sol_ = 0;
+  }
+  if (wsSb_) {
+    delete wsSb_; wsSb_ = 0;
+  }
   if (problem_) {
     problem_->unsetEngine();
     problem_ = 0;
@@ -374,7 +376,10 @@ void IpoptEngine::clear()
 void IpoptEngine::disableStrBrSetup()
 {
   prepareWs_ = useWs_;
-  strBr_      = false;
+  strBr_     = false;
+  if (wsSb_) {
+    delete wsSb_; wsSb_ = 0;
+  }
 }
 
 
@@ -387,10 +392,10 @@ EnginePtr IpoptEngine::emptyCopy()
 void IpoptEngine::enableStrBrSetup()
 {
   if (ws_) {
-    ws_->makeCopy();
+    wsSb_ = new IpoptWarmStart(ws_);
   }
   prepareWs_ = false;
-  strBr_      = true;
+  strBr_     = true;
 }
 
 
@@ -421,7 +426,7 @@ WarmStartPtr IpoptEngine::getWarmStartCopy()
   if (ws_) {
     ws = (IpoptWarmStartPtr) new IpoptWarmStart(ws_); // copy
   } else {
-    ws = IpoptWarmStartPtr(); // NULL
+    ws = 0; // NULL
   }
   return ws;
 }
@@ -445,7 +450,11 @@ void IpoptEngine::load(ProblemPtr problem)
     problem_->unsetEngine();
   }
   problem_ = problem;
-  sol_ = (IpoptSolPtr) new IpoptSolution(0, INFINITY, problem);
+
+  if (sol_) {
+    delete sol_;
+  }
+  sol_ = new IpoptSolution(0, INFINITY, problem);
   mynlp_ = new Ipopt::IpoptFunInterface(problem, sol_);
   //Ipopt::ApplicationReturnStatus status;
   //status = myapp_->Initialize();
@@ -453,9 +462,6 @@ void IpoptEngine::load(ProblemPtr problem)
 
   // check if warm start needs to be saved
   if (prepareWs_) {
-    if (ws_) {
-      delete ws_; ws_ = 0;
-    }
     ws_ = new IpoptWarmStart();
   }
 
@@ -479,15 +485,17 @@ void IpoptEngine::loadFromWarmStart(const WarmStartPtr ws)
 
     // now create a full copy.
     if (ws_) {
-      delete ws_;
+      delete ws_; // sol_ gets freed
+      ws_ = 0; sol_ = 0;
     }
-    ws_ = (IpoptWarmStartPtr) new IpoptWarmStart(ws2);
+    ws_ = new IpoptWarmStart(ws2);
+    sol_ = ws_->getPoint();
     if (!useWs_) {
       logger_->msgStream(LogInfo) << me_ << "setWarmStart() method is called "
         << "but warm-start is not enabled." << std::endl;
     }
   } else {
-    ws_ = IpoptWarmStartPtr(); //NULL
+    ws_ = 0;
   }
 }
 
@@ -661,10 +669,12 @@ EngineStatus IpoptEngine::solve()
   }
   // Check if warm start is enabled. If so, load the information and
   // resolve. Otherwise solve from scratch.
-  if (useWs_ && ws_ && ws_->hasInfo()) {
+  if (useWs_ &&
+      ((false==strBr_ && ws_ && ws_->hasInfo()) ||
+       (strBr_ && wsSb_ && wsSb_->hasInfo()))) {
     myapp_->Options()->SetStringValue("warm_start_init_point", "yes");
     if (true == strBr_) {
-      mynlp_->copySolution(ws_->getPoint());
+      mynlp_->copySolution(wsSb_->getPoint());
     } else {
       mynlp_->setSolution(ws_->getPoint());
     }
@@ -691,7 +701,8 @@ EngineStatus IpoptEngine::solve()
     } else if (status_ == ProvenLocalInfeasible) {
       status = Ipopt::Infeasible_Problem_Detected;
     }
-  } else if (ws_ && ws_->hasInfo() && stats_->calls > 1) {
+  } else if (((ws_ && ws_->hasInfo()) || (strBr_ && wsSb_ && wsSb_->hasInfo()))
+             && stats_->calls > 1) {
     status = myapp_->ReOptimizeTNLP(mynlp_);
   } else {
     status = myapp_->OptimizeTNLP(mynlp_);
@@ -829,11 +840,9 @@ IpoptFunInterface::IpoptFunInterface(Minotaur::ProblemPtr problem,
 IpoptFunInterface::~IpoptFunInterface()
 {
   if (sol_) {
-    //sol_.reset();
     sol_ = 0;
   }
   if (problem_) {
-    //problem_.reset();
     problem_ = 0;
   }
 }
