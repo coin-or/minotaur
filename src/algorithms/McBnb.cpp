@@ -30,7 +30,7 @@
 #include "MaxVioBrancher.h"
 //#include "MINLPDiving.h"
 #include "NLPEngine.h"
-//#include "NlPresHandler.h"
+#include "NlPresHandler.h"
 #include "NodeIncRelaxer.h"
 #include "Objective.h"
 #include "Option.h"
@@ -194,6 +194,23 @@ BrancherPtr createBrancher(EnvPtr env, ProblemPtr p, HandlerVector handlers,
     ParReliabilityBrancherPtr parRel_br;
     parRel_br = (ParReliabilityBrancherPtr) new ParReliabilityBrancher(env, handlers);
     parRel_br->setEngine(e);
+    t = (p->getSize()->ints + p->getSize()->bins)/10;
+    t = std::max(t, (UInt) 2);
+    t = std::min(t, (UInt) 4);
+    parRel_br->setThresh(t);
+    env->getLogger()->msgStream(LogExtraInfo) << me <<
+      "setting reliability threshhold to " << t << std::endl;
+    t = (UInt) p->getSize()->ints + p->getSize()->bins/20+2;
+    t = std::min(t, (UInt) 10);
+    parRel_br->setMaxDepth(t);
+    env->getLogger()->msgStream(LogExtraInfo) << me <<
+      "setting reliability maxdepth to " << t << std::endl;
+    if (e->getName()=="Filter-SQP") {
+      parRel_br->setIterLim(5);
+    }
+    env->getLogger()->msgStream(LogExtraInfo) << me <<
+      "reliability branching iteration limit = " <<
+      parRel_br->getIterLim() << std::endl;
     br = parRel_br;
   } else if (env->getOptions()->findString("brancher")->getValue() ==
              "maxvio") {
@@ -529,12 +546,11 @@ void writeParBnbStatus(EnvPtr env, ParBranchAndBound *parbab, double obj_sense,
 int main(int argc, char** argv)
 {
   EnvPtr env      = (EnvPtr) new Environment();
-  //OptionDBPtr options;
   MINOTAUR_AMPL::AMPLInterface* iface = 0;
-  ProblemPtr oinst;     // instance that needs to be solved.
-  EnginePtr engine = 0; // engine for solving relaxations. 
+  ProblemPtr oinst;     // instance that needs to be solved
+  EnginePtr engine = 0; // engine for solving relaxations
   ParBranchAndBound * parbab = 0;
-  double WallTimeStart = parbab->getWallTime();  //use Timer: to be done!!!
+  double WallTimeStart = parbab->getWallTime();
   PresolverPtr pres;
   const std::string me("mcbnb main: ");
   VarVector *orig_v = 0;
@@ -607,13 +623,13 @@ int main(int argc, char** argv)
     parbab->parsolve(parNodeRlxr, nodePrcssr, numThreads);
   }
   
-  //Take care of important bnb statistics: to be done!!!
+  //Take care of important bnb statistics
   //parbab->writeParStats(env->getLogger()->msgStream(LogExtraInfo), nodePrcssr);
   
-  //Take care of important engine statistics: to be done!!!
+  //Take care of important engine statistics
   //engine->writeStats(env->getLogger()->msgStream(LogExtraInfo));
   
-  //Take care of important handler statistics: to be done!!!
+  //Take care of important handler statistics
   //for (HandlerVector::iterator it=handlers.begin(); it!=handlers.end(); ++it) {
     //(*it)->writeStats(env->getLogger()->msgStream(LogExtraInfo));
   //}
