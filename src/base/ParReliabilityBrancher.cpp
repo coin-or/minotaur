@@ -157,13 +157,6 @@ BrCandPtr ParReliabilityBrancher::findBestCandidate_(const double objval,
   return best_cand;
 }
 
- //Branches ParReliabilityBrancher::findBranches(RelaxationPtr rel, NodePtr node, 
-                        //ConstSolutionPtr sol, SolutionPoolPtr s_pool, 
-                        //BrancherStatus & br_status, ModVector &mods)
-//{
-  //Branches br;
-  //return br;
-//}
 
 Branches ParReliabilityBrancher::findBranches(RelaxationPtr rel, NodePtr node, 
                         ConstSolutionPtr sol, SolutionPoolPtr s_pool, 
