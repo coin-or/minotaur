@@ -83,8 +83,7 @@ ParTreeManager::ParTreeManager(EnvPtr env)
 ParTreeManager::~ParTreeManager()
 {
   clearAll();
-  //active_nodes_.reset();
-  active_nodes_ = 0;
+  delete active_nodes_;
   if (doVbc_) {
     vbcFile_.close();
     delete timer_;
@@ -145,7 +144,7 @@ NodePtr ParTreeManager::branch(Branches branches, NodePtr node, WarmStartPtr ws)
 
 void ParTreeManager::clearAll()
 {
-  NodePtr n, par, c_node;
+  NodePtr n;
   NodePtrIterator node_i;
 
   if (aNode_) {
@@ -345,7 +344,7 @@ void ParTreeManager::removeNode_(NodePtr node)
   // std::cout << "removing node xx " << node->getId() << std::endl;
 
   if (node->getId()>0) {
-    NodePtr cNode, tNode;
+    NodePtr cNode;
     // check if the parent of this node has this node as its child. this check
     // is only for debugging purposes. may be removed if confident that
     // parents and children are properly linked.

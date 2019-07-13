@@ -44,6 +44,7 @@
 #include "Problem.h"
 #include "QPEngine.h"
 #include "RandomBrancher.h"
+#include "RCHandler.h"
 #include "Relaxation.h"
 #include "ReliabilityBrancher.h"
 #include "Solution.h"
@@ -80,12 +81,23 @@ ParBranchAndBound* createParBab(EnvPtr env, ProblemPtr p, EnginePtr e,
     IntVarHandlerPtr v_hand = (IntVarHandlerPtr) new IntVarHandler(env, p);
     LinHandlerPtr l_hand = (LinHandlerPtr) new LinearHandler(env, p);
     //NlPresHandlerPtr nlhand;
-    SOS1HandlerPtr s_hand = (SOS1HandlerPtr) new SOS1Handler(env, p);
     SOS2HandlerPtr s2_hand;
+    RCHandlerPtr rc_hand;
     
+    SOS1HandlerPtr s_hand = (SOS1HandlerPtr) new SOS1Handler(env, p);
     if (s_hand->isNeeded()) {
       s_hand->setModFlags(false, true);
       handlersCopy.push_back(s_hand);
+    } else {
+      delete s_hand;
+    }
+
+    //adding RCHandler
+    if (options->findBool("rc_fix")->getValue()) {
+        rc_hand = (RCHandlerPtr) new RCHandler(env);
+        rc_hand->setModFlags(false, true);
+        handlersCopy.push_back(rc_hand);
+        assert(rc_hand);
     }
 
     // add SOS2 handler here.
@@ -93,6 +105,8 @@ ParBranchAndBound* createParBab(EnvPtr env, ProblemPtr p, EnginePtr e,
     if (s2_hand->isNeeded()) {
       s2_hand->setModFlags(false, true);
       handlersCopy.push_back(s2_hand);
+    } else {
+      delete s2_hand;
     }
 
     handlersCopy.push_back(v_hand);

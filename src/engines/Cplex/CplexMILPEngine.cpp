@@ -55,7 +55,8 @@ const std::string CplexMILPEngine::me_ = "CplexMILPEngine: ";
 // ----------------------------------------------------------------------- //
 
 CplexMILPEngine::CplexMILPEngine(EnvPtr env)
-  : env_(env)
+  : env_(env),
+    sol_(0)
 {
   timer_ = env->getNewTimer();
   stats_ = new CplexMILPStats();
@@ -69,12 +70,18 @@ CplexMILPEngine::CplexMILPEngine(EnvPtr env)
 
 CplexMILPEngine::~CplexMILPEngine()
 {
-  delete stats_;
-  delete timer_;
+  if (timer_) {
+    delete timer_;
+  }
+  if (stats_) {
+    delete stats_;
+  }
   if (problem_) {
     problem_->unsetEngine();
-    //problem_.reset();
     problem_ = 0;
+  }
+  if (sol_) {
+    delete sol_;
   }
 }
 

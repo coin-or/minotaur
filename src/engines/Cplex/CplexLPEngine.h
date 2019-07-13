@@ -127,9 +127,6 @@ namespace Minotaur {
     // Implement Engine::setTimeLimit().
     void setTimeLimit(double);
 
-    // Implement Engine::setUpperCutoff().
-    void setUpperCutoff(double);
-    
     // Implement the LP solve() function of Cplex
     EngineStatus solve();
 
@@ -152,9 +149,6 @@ namespace Minotaur {
 
     /// Time limit for the iteration
     double timeLimit_;
-
-    /// Upper cutoff for the iteration
-    double upperCutoff_;
 
     /// True if any bound on variable on constraint was changed after 
     /// previous solve.

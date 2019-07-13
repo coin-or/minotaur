@@ -55,18 +55,23 @@ CplexLPEngine::CplexLPEngine(EnvPtr env)
   stats_->time     = 0;
   logger_ = env->getLogger();
   timeLimit_ = INFINITY;
-  upperCutoff_ = INFINITY;
 }
 
 
 CplexLPEngine::~CplexLPEngine()
 {
-  delete stats_;
-  delete timer_;
+  if (timer_) {
+    delete timer_;
+  }
+  if (stats_) {
+    delete stats_;
+  }
   if (problem_) {
     problem_->unsetEngine();
-    //problem_.reset();
     problem_ = 0;
+  }
+  if (sol_) {
+    delete sol_;
   }
 }
 
@@ -463,12 +468,6 @@ void CplexLPEngine::setIterationLimit(int)
 void CplexLPEngine::setTimeLimit(double timelimit)
 {
   timeLimit_ = timelimit;
-}
-
-
-void CplexLPEngine::setUpperCutoff(double cutoff)
-{
-  upperCutoff_ = cutoff;
 }
   
 

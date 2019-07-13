@@ -141,7 +141,7 @@ NodePtr TreeManager::branch(Branches branches, NodePtr node, WarmStartPtr ws)
 
 void TreeManager::clearAll()
 {
-  NodePtr n, par, c_node;
+  NodePtr n;
   NodePtrIterator node_i;
 
   if (aNode_) {
@@ -308,7 +308,7 @@ void TreeManager::removeNode_(NodePtr node)
   // std::cout << "removing node xx " << node->getId() << std::endl;
 
   if (node->getId()>0) {
-    NodePtr cNode, tNode;
+    NodePtr cNode;
     // check if the parent of this node has this node as its child. this check
     // is only for debugging purposes. may be removed if confident that
     // parents and children are properly linked.
