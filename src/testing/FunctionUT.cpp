@@ -121,6 +121,9 @@ void FunctionTest::testEvalGradient()
 void FunctionTest::tearDown()
 {
   int n = vars_.size();
+  delete lf1_;
+  delete qf1_;
+  delete qf2_;
   for (int i=0; i<n; ++i) {
     delete vars_[i];
   }

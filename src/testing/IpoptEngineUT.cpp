@@ -27,7 +27,7 @@ void IpoptEngineUT::setUp()
 
 void IpoptEngineUT::tearDown()
 {
-
+  delete instance_;
 }
 
 void IpoptEngineUT::createInstance_()

@@ -76,6 +76,7 @@ void PolyUT::monomial()
   CPPUNIT_ASSERT( -600 == g[1]);
   CPPUNIT_ASSERT(0==error);
 
+  delete m;
   delete x1;
   delete x2;
 }
@@ -95,13 +96,13 @@ void PolyUT::polynomial()
 
   // x1^3 + 3x1x2
   m = (MonomialFunPtr) new MonomialFunction(1, x1, 3);
-  //(*p1) += m;
   p1->add(m);
+  delete m;
 
   m = (MonomialFunPtr) new MonomialFunction(3, x1, 1);
   m->multiply(1., x2, 1);
-  //(*p1) += m;
   p1->add(m);
+  delete m;
 
   //p1->write(std::cout);
   double x[2];

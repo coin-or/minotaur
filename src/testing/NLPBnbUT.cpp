@@ -320,8 +320,9 @@ void NLPBnbUT::testNLPBnb1()
 
   rel = (RelaxationPtr) new Relaxation(p);
   rel->calculateSize();
-  rel->setJacobian(p->getJacobian());
-  rel->setHessian(p->getHessian());
+  rel->setJacobian(new myJac3());
+  rel->setHessian(new myHess3());
+
   nr->setRelaxation(rel);
   nr->setEngine(e);
   nr->setModFlag(false);
@@ -333,10 +334,12 @@ void NLPBnbUT::testNLPBnb1()
 
   delete nr;
   delete e;
+  delete p;
   delete bab;
   delete nproc;
   delete l_hand;
   delete v_hand;
+  // delete rel; // not required, as nr frees it.
   delete env;
 
   //CPPUNIT_ASSERT(!"implement me!");

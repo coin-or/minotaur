@@ -12,6 +12,7 @@
 
 #include <cassert>
 #include <cmath>
+#include <iostream>
 
 #include "MinotaurConfig.h"
 #include "Constraint.h"

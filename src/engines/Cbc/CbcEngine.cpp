@@ -42,7 +42,8 @@ const std::string CbcEngine::me_ = "CbcEngine: ";
 // ----------------------------------------------------------------------- //
 
 CbcEngine::CbcEngine(EnvPtr env)
-  : env_(env)
+: env_(env),
+  sol_(0)
 {
   logger_ = env_->getLogger();
   timer_  = env->getNewTimer();
@@ -57,20 +58,19 @@ CbcEngine::~CbcEngine()
 {
   if (timer_) {
     delete timer_;
-    timer_ = 0;
   }
   if (stats_) {
     delete stats_;
-    stats_ = 0;
   }
   if (problem_) {
     problem_->unsetEngine();
-//problem_.reset();
     problem_ = 0;
   }
   if (osilp_) {
     delete osilp_;
-    osilp_ = 0;
+  }
+  if (sol_) {
+    delete sol_;
   }
 }
 
@@ -255,6 +255,9 @@ void CbcEngine::load_()
     }
   }
 
+  if (sol_) {
+    delete sol_;
+  }
   sol_ = (SolutionPtr) new Solution(1E20, 0, problem_);
 
   objChanged_ = true;

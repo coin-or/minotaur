@@ -82,8 +82,7 @@ TreeManager::TreeManager(EnvPtr env)
 TreeManager::~TreeManager()
 {
   clearAll();
-  //active_nodes_.reset();
-  active_nodes_ = 0;
+  delete active_nodes_;
   if (doVbc_) {
     vbcFile_.close();
     delete timer_;

@@ -172,7 +172,7 @@ class myNLFun5 : public NonlinearFunction {
     myNLFun5() {}
     NonlinearFunctionPtr cloneWithVars(VariableConstIterator,
                                        int *err) const 
-    {*err = 1; return NonlinearFunctionPtr();};
+    {return new myNLFun5();} ;
     
     
     double eval(const double *x, int *error) ;
@@ -199,7 +199,7 @@ class myNLFun6 : public NonlinearFunction {
     myNLFun6() {}
     NonlinearFunctionPtr cloneWithVars(VariableConstIterator,
                                        int *err) const 
-    {*err = 1; return NonlinearFunctionPtr();};
+    {return new myNLFun6();};
     
     double eval(const double *x, int *error) ;
     void evalGradient(const double *, double *, int *) {}

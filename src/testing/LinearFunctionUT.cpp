@@ -245,6 +245,7 @@ void LinearFunctionTest::testFix()
   lf->removeVar(x3, 0.0);
   CPPUNIT_ASSERT(lf->eval(x) ==  (2.0*1.0 - 6.0*5.0));
 
+  delete lf;
   delete x0;
   delete x1;
   delete x2;
