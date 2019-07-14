@@ -80,7 +80,7 @@ ParBranchAndBound* createParBab(EnvPtr env, ProblemPtr p, EnginePtr e,
     HandlerVector handlersCopy;
     IntVarHandlerPtr v_hand = (IntVarHandlerPtr) new IntVarHandler(env, p);
     LinHandlerPtr l_hand = (LinHandlerPtr) new LinearHandler(env, p);
-    //NlPresHandlerPtr nlhand;
+    NlPresHandlerPtr nlhand;
     SOS2HandlerPtr s2_hand;
     RCHandlerPtr rc_hand;
     
@@ -118,8 +118,8 @@ ParBranchAndBound* createParBab(EnvPtr env, ProblemPtr p, EnginePtr e,
         true==options->findBool("presolve")->getValue() &&
         true==options->findBool("use_native_cgraph")->getValue() &&
         true==options->findBool("nl_presolve")->getValue()) {
-      //nlhand = (NlPresHandlerPtr) new NlPresHandler(env, p);
-      //nlhand->setModFlags(false, true);
+      nlhand = (NlPresHandlerPtr) new NlPresHandler(env, p);
+      nlhand->setModFlags(false, true);
       //handlersCopy.push_back(nlhand);
     }
 
