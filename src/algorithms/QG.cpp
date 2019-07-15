@@ -21,6 +21,7 @@
 #include <Constraint.h>
 #include <Function.h>
 #include <LinearFunction.h>
+#include <QuadraticFunction.h>
 #include <Handler.h>
 #include <Option.h>
 #include <Problem.h>
@@ -62,7 +63,7 @@ void writeSol(EnvPtr env, VarVector *orig_v, PresolverPtr pres,
               MINOTAUR_AMPL::AMPLInterface* iface);
 
 
-void test(ProblemPtr p);
+//void test(ProblemPtr p);
 void loadProblem(EnvPtr env, MINOTAUR_AMPL::AMPLInterface* iface,
                  ProblemPtr &oinst, double *obj_sense)
 {
@@ -211,6 +212,7 @@ PresolverPtr presolve(EnvPtr env, ProblemPtr p, size_t ndefs,
         true==env->getOptions()->findBool("use_native_cgraph")->getValue() && 
         true==env->getOptions()->findBool("nl_presolve")->getValue() 
        ) {
+      //MS: undo once NlPresSolver is fixed
       NlPresHandlerPtr nlhand = (NlPresHandlerPtr) new NlPresHandler(env, p);
       handlers.push_back(nlhand);
     }
@@ -232,69 +234,90 @@ PresolverPtr presolve(EnvPtr env, ProblemPtr p, size_t ndefs,
   return pres;
 }
 
-void test(ProblemPtr p)
-{
-//MS: delete header files that are not required
-  //testing 
-  bool isONl = false;
-  ObjectivePtr o = p->getObjective();
-  FunctionType fType = o->getFunctionType();
-  if (o && fType != Linear && fType != Constant) {
-    isONl = true;
-  }
+//void test(ProblemPtr p)
+//{
+////MS: delete header files that are not required
+  ////testing 
+  //bool isONl = false;
+  //ObjectivePtr o = p->getObjective();
+  //FunctionType fType = o->getFunctionType();
+  //if (o && fType != Linear && fType != Constant) {
+    //isONl = true;
+  //}
   
-  CGraphPtr cgp;
-  FunctionPtr f;
-  ConstraintPtr c;
-  LinearFunctionPtr lf;
-  NonlinearFunctionPtr nlf;
-  UInt tnl = 0, nol = 0, ns = 0, tn, tl = 0, t;
+  ////CGraphPtr cgp;
+  //FunctionPtr f;
+  //ConstraintPtr c;
+  //LinearFunctionPtr lf;
+  //QuadraticFunctionPtr qf;
+  //NonlinearFunctionPtr nlf;
+  //UInt tnl = 0, nol = 0, ns = 0, tn = 0, tq = 0, tl = 0, t;
 
-  for (ConstraintConstIterator it=p->consBegin(); it!=p->consEnd(); 
-       ++it) {
-    c = *it;
-    tl = 0;
-    f = c->getFunction();
-    fType = c->getFunctionType();
-    if (fType !=Constant && fType != Linear) {
-      tnl++;
-      nlf = f->getNonlinearFunction();
-      tn = nlf->numVars();
-      lf = c->getLinearFunction();
-      //t = f->getNumVars();
+  //for (ConstraintConstIterator it=p->consBegin(); it!=p->consEnd(); 
+       //++it) {
+    //c = *it;
+    //tl = 0;
+    //f = c->getFunction();
+    //fType = c->getFunctionType();
+    //if (fType !=Constant && fType != Linear) {
+      //tnl++;
+      //nlf = f->getNonlinearFunction();
+      //qf = f->getQuadraticFunction();
+      //if (nlf) {
+        //tn = nlf->numVars();
+      //} else {
+        //tn = 0;      
+      //}
+      //if (qf) {
+        //tq = qf->getNumVars();
+      //} else {
+        //tq = 0;      
+      //}
+      ////lf = c->getLinearFunction();
+      //////t = f->getNumVars();
       
-      if (lf) {
-        for(VariableGroupConstIterator vit = lf->termsBegin(); vit != lf->termsEnd(); ++vit) {
-          if (fabs(vit->second) > 1e-6) {
-            tl++;          
-          }
-        }
-      }
-      t = tl + tn;
-      if (t == 2) {
-        ns++;      
-      }
-    } else {
-      nol++;    
-    }
-  }
+      ////if (lf) {
+        ////for(VariableGroupConstIterator vit = lf->termsBegin(); vit != lf->termsEnd(); ++vit) {
+          ////if (fabs(vit->second) > 1e-6) {
+            ////tl++;          
+          ////}
+
+          ////if (tl > 1) {
+            ////tl = 0;
+            ////tn = 0;
+            ////break;
+          ////}
+        ////}
+      ////}
+      ////t = tl + tn;
+      ////if (t == 2) {
+        ////ns++;      
+      ////}
+      ////
+      //if (tn + tq == 1) {
+        //ns++;      
+      //}
+    //} else {
+      //nol++;    
+    //}
+  //}
   
-  if (tnl > 0 && ns > 0) {
-    std::cout << "structure found \n" ;
-  }
-  std::cout << "output: " << isONl << " " << tnl << " " << nol << " " << ns << std::endl;
-}
+  //if (tnl > 0 && ns > 0) {
+    //std::cout << "structure found \n" ;
+  //}
+  //std::cout << "output: " << isONl << " " << tnl << " " << nol << " " << ns << std::endl;
+//}
 
 int main(int argc, char* argv[])
 {
   EnvPtr env = (EnvPtr) new Environment();
   OptionDBPtr options;
 
-  ConstSolutionPtr xc;
+  //ConstSolutionPtr xc;
 
   MINOTAUR_AMPL::AMPLInterfacePtr iface = MINOTAUR_AMPL::AMPLInterfacePtr();  
   ProblemPtr inst;
-  SolutionPtr sol, sol2;
+  SolutionPtr sol;
   double obj_sense =1.0;
   
   // jacobian is read from AMPL interface and passed on to branch-and-bound
@@ -420,7 +443,9 @@ int main(int argc, char* argv[])
     qg_hand->setModFlags(false, true);
     
     //MS: for root linearizations, turn it on based on the scheme option 
-    qg_hand->setLpEngine(lin_e);
+    if (env->getOptions()->findInt("root_linScheme3")->getValue() > 0) {
+      qg_hand->setLpEngine(lin_e);
+    }
 
     handlers.push_back(qg_hand);
     assert(qg_hand);
@@ -582,7 +607,7 @@ void writeSol(EnvPtr env, VarVector *orig_v,
               MINOTAUR_AMPL::AMPLInterface* iface)
 {
   if (sol) {
-    //sol->writePrimal(std::cout);
+    sol->writePrimal(std::cout);
     sol = pres->getPostSol(sol);
   }
 
