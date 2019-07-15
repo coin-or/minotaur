@@ -153,7 +153,7 @@ message(STATUS ${MSG_HEAD} "SPEW flag is " ${SPEW_FLAG})
 ###########################################################################
 ## OPENMP option
 ###########################################################################
-OPTION (USE_OpenMP "Use OpenMP." OFF)
+OPTION (USE_OpenMP "Use OpenMP." ON)
 if(${USE_OpenMP})
   FIND_PACKAGE(OpenMP)
   if(OPENMP_FOUND)
@@ -162,7 +162,8 @@ if(${USE_OpenMP})
     set (CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} ${OpenMP_CXX_FLAGS}")
     message(STATUS ${MSG_HEAD} "OpenMP support detected.")
   else()
-    add_definitions(-DUSE_OPENMP=0)	
+    message(FATAL_ERROR " ${MSG_HEAD}" 
+	    "Cannot find OPENMP in the system.")
   endif()
 else()
   add_definitions(-DUSE_OPENMP=0)	
