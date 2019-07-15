@@ -113,7 +113,6 @@ ModificationPtr IntVarHandler::getBrMod(BrCandPtr cand, DoubleVector & x,
                                         RelaxationPtr , BranchDirection dir) 
 {
   // TODO: fix this dynamic cast
-  //BrVarCandPtr vcand = boost::dynamic_pointer_cast <BrVarCand> (cand);
   BrVarCandPtr vcand =dynamic_cast <BrVarCand*> (cand);
   VariablePtr v = vcand->getVar();
   VarBoundModPtr mod;

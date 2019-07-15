@@ -431,16 +431,21 @@ void writeSol(EnvPtr env, VarVector *orig_v,
               PresolverPtr pres, SolutionPtr sol, SolveStatus status,
               MINOTAUR_AMPL::AMPLInterface* iface)
 {
+  Solution* final_sol = 0;
   if (sol) {
-    sol = pres->getPostSol(sol);
+    final_sol = pres->getPostSol(sol);
   }
 
   if (env->getOptions()->findFlag("AMPL")->getValue() ||
       true == env->getOptions()->findBool("write_sol_file")->getValue()) {
-    iface->writeSolution(sol, status);
-  } else if (sol && env->getLogger()->getMaxLevel()>=LogExtraInfo &&
+    iface->writeSolution(final_sol, status);
+  } else if (final_sol && env->getLogger()->getMaxLevel()>=LogExtraInfo &&
              env->getOptions()->findBool("display_solution")->getValue()) {
-    sol->writePrimal(env->getLogger()->msgStream(LogExtraInfo), orig_v);
+    final_sol->writePrimal(env->getLogger()->msgStream(LogExtraInfo), orig_v);
+  }
+
+  if (final_sol) {
+    delete final_sol;
   }
 }
 
@@ -486,15 +491,11 @@ void writeBnbStatus(EnvPtr env, BranchAndBound *bab, double obj_sense)
 int main(int argc, char** argv)
 {
   EnvPtr env      = (EnvPtr) new Environment();
-  OptionDBPtr options;
   MINOTAUR_AMPL::AMPLInterface* iface = 0;
-  ProblemPtr oinst;         // instance that needs to be solved.
+  ProblemPtr oinst = 0;     // instance that needs to be solved.
   EnginePtr engine = 0;     // engine for solving relaxations. 
-  SolutionPtr sol, sol2;
-  JacobianPtr jPtr;
-  HessianOfLagPtr hPtr;
   BranchAndBound * bab = 0;
-  PresolverPtr pres;
+  PresolverPtr pres = 0;
   const std::string me("bnb main: ");
   VarVector *orig_v=0;
   HandlerVector handlers;
@@ -566,8 +567,20 @@ CLEANUP:
   if (iface) {
     delete iface;
   }
+  if (pres) {
+    delete pres;
+  }
   if (bab) {
+    if (bab->getNodeRelaxer()) {
+      delete bab->getNodeRelaxer();
+    }
+    if (bab->getNodeProcessor()) {
+      delete bab->getNodeProcessor();
+    }
     delete bab;
+  }
+  if (oinst) {
+    delete oinst;
   }
   if (orig_v) {
     delete orig_v;

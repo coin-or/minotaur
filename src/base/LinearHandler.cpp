@@ -402,6 +402,7 @@ void LinearHandler::tightenInts_(ProblemPtr p, bool apply_to_prob,
         mod->applyToProblem(p);
         if (apply_to_prob) {
           chkIntToBin_(v);
+          delete mod;
         } else {
           mods->push_back(mod);
 #if SPEW
@@ -416,6 +417,7 @@ void LinearHandler::tightenInts_(ProblemPtr p, bool apply_to_prob,
         changeBFlag_(v);
         if (apply_to_prob) {
           chkIntToBin_(v);
+          delete mod;
         } else {
           mods->push_back(mod);
 #if SPEW
@@ -730,6 +732,7 @@ void  LinearHandler::computeImpBounds_(ConstraintPtr c, VariablePtr z,
     m2 = mods.top();
     mods.pop();
     m2->undoToProblem(problem_);
+    delete m2;
   }
 }
 
@@ -1032,6 +1035,7 @@ void LinearHandler::updateLfBoundsFromLb_(ProblemPtr p, bool apply_to_prob,
           //std::cout << std::endl;
           chkIntToBin_(var);
           ++(pStats_->vBnd);
+          delete mod;
         } else {
           mods->push_back(mod);
         }
@@ -1067,6 +1071,7 @@ void LinearHandler::updateLfBoundsFromLb_(ProblemPtr p, bool apply_to_prob,
           //std::cout << std::endl;
           ++(pStats_->vBnd);
           chkIntToBin_(var);
+          delete mod;
         } else {
           mods->push_back(mod);
         }
@@ -1123,6 +1128,7 @@ void LinearHandler::updateLfBoundsFromUb_(ProblemPtr p, bool apply_to_prob,
           //std::cout << std::endl;
           ++(pStats_->vBnd);
           chkIntToBin_(var);
+          delete mod;
         } else {
           mods->push_back(mod);
         }
@@ -1157,6 +1163,7 @@ void LinearHandler::updateLfBoundsFromUb_(ProblemPtr p, bool apply_to_prob,
           //std::cout << std::endl;
           ++(pStats_->vBnd);
           chkIntToBin_(var);
+          delete mod;
         } else {
           mods->push_back(mod);
         }
@@ -1422,10 +1429,12 @@ void LinearHandler::substVars_(bool *, PreModQ *mods)
         if (in->getLb() < out->getLb()) {
           mod = (VarBoundModPtr) new VarBoundMod(in, Lower, out->getLb());
           mod->applyToProblem(problem_);
+          delete mod;
         }
         if (in->getUb() > out->getUb()) {
           mod = (VarBoundModPtr) new VarBoundMod(in, Upper, out->getUb());
           mod->applyToProblem(problem_);
+          delete mod;
         }
 #if SPEW
         logger_->msgStream(LogDebug) << me_ << "substituting " 
@@ -1461,10 +1470,12 @@ void LinearHandler::substVars_(bool *, PreModQ *mods)
         if (in->getLb() < a1) {
           mod = (VarBoundModPtr) new VarBoundMod(in, Lower, a1);
           mod->applyToProblem(problem_);
+          delete mod;
         }
         if (in->getUb() > a2) {
           mod = (VarBoundModPtr) new VarBoundMod(in, Upper, a2);
           mod->applyToProblem(problem_);
+          delete mod;
         }
         problem_->subst(out, in, rat);
         problem_->markDelete(c);
@@ -1483,6 +1494,8 @@ void LinearHandler::substVars_(bool *, PreModQ *mods)
   }
   if (smod->getSize()>0) {
     mods->push_front(smod);
+  } else {
+    delete smod;
   }
 }
 

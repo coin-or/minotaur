@@ -58,6 +58,9 @@ Presolver::Presolver(ProblemPtr problem, EnvPtr env, HandlerVector handlers)
 Presolver::~Presolver()
 {
   handlers_.clear();
+  for (PreModQIter m=mods_.begin(); m!=mods_.end(); ++m) {
+    delete (*m);
+  }
   mods_.clear();
 }
 

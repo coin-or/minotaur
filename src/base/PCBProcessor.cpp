@@ -36,9 +36,10 @@ using namespace Minotaur;
 const std::string PCBProcessor::me_ = "PCBProcessor: ";
 
 PCBProcessor::PCBProcessor (EnvPtr env, EnginePtr engine, HandlerVector handlers)
-  : contOnErr_(false),
-    cutMan_(0),
-    numSolutions_(0)
+: branches_(0),
+  contOnErr_(false),
+  cutMan_(0),
+  numSolutions_(0)
 
 {
   oATol_ = env->getOptions()->findDouble("solAbs_tol")->getValue();
@@ -61,6 +62,9 @@ PCBProcessor::~PCBProcessor()
 {
   if (brancher_) {
     delete brancher_;
+  }
+  if (branches_) {
+    delete branches_;
   }
   handlers_.clear();
 }
@@ -181,6 +185,10 @@ void PCBProcessor::process(NodePtr node, RelaxationPtr rel,
   ++stats_.proc;
   relaxation_ = rel;
   numSolutions_ = 0;
+  if (branches_) {
+    delete branches_;
+    branches_ = 0;
+  }
 
 #if defined(PRINT_RELAXATION_SIZE)
   std::cout << "Relaxation has : " << rel->getNumCons() << " constraints and "
