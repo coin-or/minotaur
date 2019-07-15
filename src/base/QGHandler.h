@@ -88,6 +88,7 @@ private:
   double rs1_;
   double rs2Per_;
   double rs2NbhSize_;
+  UInt rs3_;
   //UInt rScheme3Para_;
   //UInt rScheme4Para_;
 
@@ -201,7 +202,7 @@ private:
    * Add linearization of nonlinear constraints and objective at point x* 
    * to the relaxation only (not to the lp engine)
    */
-  void addInitLinearX_(const double *x, bool isSecNLP);
+  void addInitLinearX_(const double *x);
 
 
   UInt addCutAtRoot_(double *x, ConstraintPtr con);
@@ -216,7 +217,7 @@ private:
   void addEshAtRoot_(const double *lpx, double* x, ConstraintPtr con);
 
 
-  void findCenter_(bool* isInf);
+  void findCenter_(bool &noCenter);
   bool isFeas_(ConstSolutionPtr sol);
   /**
    * Fix integer constrained variables to integer values in x. Called
@@ -226,13 +227,14 @@ private:
 
   bool diffFunVarVal_(const double *x, FunctionPtr f);
 
-  void rootScheme3_(const double *nlpx, ConstraintPtr con, LinearFunctionPtr lf);
-  void rootScheme4_(const double *nlpx, ConstraintPtr con);
+  //void rootScheme3_(const double *nlpx, ConstraintPtr con, LinearFunctionPtr lf);
+  //void rootScheme4_(const double *nlpx, ConstraintPtr con);
 
   bool twoVarsCon_(ConstraintPtr con, double &linTermCoeff, UInt & vlIdx, UInt & vnIdx, 
                             double &extraCoeff);
   void rootLinearizations_();
 
+  //bool lineSearchPt_(double* x, const double* l, const double* u);
   bool lineSearchPt_(double* x, const double* l, const double* u, ConstraintPtr con, double & nlpact);
  
 
@@ -250,18 +252,19 @@ private:
                             UInt vlIdx, UInt vnIdx);
 
 
+  void rootLinScheme3_(ConstSolutionPtr sol, CutManager *, SolutionPoolPtr s_pool, bool *sol_found,
+                       SeparationStatus *status);
+
   void rScheme2Cut_(ConstraintPtr con, double &alpha, double &delta,
                                 double linTermCoeff, double &lastSlope,
-                                UInt vnIdx, double * npt, double * grad,
-                                UInt &numCuts);
+                                UInt vnIdx, double * npt, double * grad);
 
-  void rootLinScheme3_();
   /**
    * Solve the NLP relaxation of the MINLP and add linearizations about
    * the optimal point. isInf is set to true if the relaxation is found
    * infeasible. Throw an assert if the relaxation is unbounded.
    */
-  void initLinear_(bool *isInf, bool isSecNLP);
+  void initLinear_(bool *isInf);
 
   /**
    * Obtain the linear function (lf) and constant (c) from the
