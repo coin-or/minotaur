@@ -356,8 +356,14 @@ void PCBProcessor::process(NodePtr node, RelaxationPtr rel,
         should_prune = true;
         node->setStatus(NodeInfeasible);
         stats_.inf++;
+        for (ModificationConstIterator miter=mods.begin(); miter!=mods.end();
+             ++miter) {
+          delete *miter;
+        }
+        mods.clear();
         break;
       } else if (br_status==ModifiedByBrancher) {
+        //std::cout << "mods size = " << mods.size() << " node id = " << node->getId() << std::endl;
         for (ModificationConstIterator miter=mods.begin(); miter!=mods.end();
              ++miter) {
           node->addRMod(*miter);

@@ -36,6 +36,14 @@ Branch::Branch()
 
 Branch::~Branch()
 {
+  for (ModificationConstIterator it = pMods_.begin(); it != pMods_.end();
+       ++it) {
+    delete (*it);
+  }
+  for (ModificationConstIterator it = rMods_.begin(); it != rMods_.end();
+       ++it) {
+    delete (*it);
+  }
   pMods_.clear();
   rMods_.clear();
   if (brCand_) {

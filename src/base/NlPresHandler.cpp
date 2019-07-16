@@ -474,6 +474,8 @@ void  NlPresHandler::bin2Lin_(ProblemPtr p, PreModQ *mods, bool *changed)
 
   if (mod->getSize()>0) {
     mods->push_back(mod);
+  } else {
+    delete mod;
   }
   p->delMarkedCons();
   delete [] mult;
