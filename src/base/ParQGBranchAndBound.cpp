@@ -17,6 +17,8 @@
 #include <string>
 #if USE_OPENMP
 #include <omp.h>
+#else
+#error "Cannot compile parallel algorithms: turn USE_OpenMP flag ON."
 #endif
 #include "MinotaurConfig.h"
 #include "Brancher.h"
@@ -414,15 +416,13 @@ void ParQGBranchAndBound::parsolve(ParNodeIncRelaxerPtr parNodeRlxr[],
   bool *shouldRunTh = new bool[numThreads];
   UInt *nodeCountTh = new UInt[numThreads];
   std::vector<ParCutMan*> cutman(numThreads, new ParCutMan(env_, problem_));
-  bool iterMode = env_->getOptions()->findBool("mcbnb_iter_mode")->getValue();
+  //bool iterMode = env_->getOptions()->findBool("mcbnb_iter_mode")->getValue();
   UInt iterCount = 1;
   UInt *cutsIndex = new UInt[numThreads*numThreads]();
   UInt *numCuts = new UInt[numThreads]();
   UInt numVars = 0;
 
-#if USE_OPENMP
 #pragma omp parallel for
-#endif
   for(UInt i = 0; i < numThreads; ++i) {
     // declare cut manager
     nodePrcssr[i]->setCutManager(cutman[i]);
@@ -439,10 +439,8 @@ void ParQGBranchAndBound::parsolve(ParNodeIncRelaxerPtr parNodeRlxr[],
 
   logger_->msgStream(LogInfo) << me_ << "starting branch-and-bound ";
   if(numThreads > 1) {
-#if USE_OPENMP
   logger_->msgStream(LogInfo) << "using " << numThreads << " out of "
     << omp_get_num_procs() << " processors";
-#endif
   }
   logger_->msgStream(LogInfo) << std::endl;
   // get problem size and statistics to detect problem type.
@@ -515,13 +513,9 @@ void ParQGBranchAndBound::parsolve(ParNodeIncRelaxerPtr parNodeRlxr[],
       << me_ << "did we dive = " << dived_prev[0] << std::endl;
 #endif
 
-#if USE_OPENMP
 #pragma omp parallel 
-#endif
     {
-#if USE_OPENMP
 #pragma omp for
-#endif
       for(UInt i = 0; i < numThreads; ++i) {
         FunctionPtr f;
         VariablePtr v;
@@ -538,12 +532,10 @@ void ParQGBranchAndBound::parsolve(ParNodeIncRelaxerPtr parNodeRlxr[],
           lastStrBranched.resize(numVars,0);
         }
 
-        if (iterMode == true) shouldRunTh[i] = true;
-        while (nodeCountTh[i] > 0 && shouldRunTh[i]) {
+        //if (iterMode == true) shouldRunTh[i] = true;
+        //while (nodeCountTh[i] > 0 && shouldRunTh[i]) {
           if (current_node[i]) {
-#if USE_OPENMP
 #pragma omp critical (treeManager)
-#endif
             {
               if (tm_->shouldPrune_(current_node[i])) {
                 parNodeRlxr[i]->reset(current_node[i], false);
@@ -553,15 +545,12 @@ void ParQGBranchAndBound::parsolve(ParNodeIncRelaxerPtr parNodeRlxr[],
             }
           }
           if (!current_node[i]) {
-#if USE_OPENMP
 #pragma omp critical (treeManager)
-#endif
-            {
-              current_node[i] = tm_->getCandidate();
-              if(current_node[i]) {
-                tm_->removeActiveNode(current_node[i]);
-                dived_prev[i] = false;
-              }
+            current_node[i] = tm_->getCandidate();
+            if(current_node[i]) {
+#pragma omp critical (treeManager)
+              tm_->removeActiveNode(current_node[i]);
+              dived_prev[i] = false;
             }
           }
           if (current_node[i]) { 
@@ -616,18 +605,14 @@ void ParQGBranchAndBound::parsolve(ParNodeIncRelaxerPtr parNodeRlxr[],
             nodePrcssr[i]->process(current_node[i], rel[i], solPool_,
                                    initialized[i], timesUp, timesDown,
                                    pseudoUp, pseudoDown, stats_->nodesProc);
-#if USE_OPENMP
 #pragma omp critical
-#endif
             ++stats_->nodesProc;
 
 #if SPEW
             logger_->msgStream(LogDebug1) << me_ << "node lower bound = " <<
               current_node[i]->getLb() << std::endl;
 #endif
-#if USE_OPENMP
 #pragma omp critical (treeManager)
-#endif
             {
               if (nodePrcssr[i]->foundNewSolution()) { 
                 tm_->setUb(solPool_->getBestSolutionValue());
@@ -641,27 +626,14 @@ void ParQGBranchAndBound::parsolve(ParNodeIncRelaxerPtr parNodeRlxr[],
                 std::endl;
 #endif
               parNodeRlxr[i]->reset(current_node[i], false);
-#if USE_OPENMP
 #pragma omp critical (treeManager)
-#endif
-              {
-                tm_->pruneNode(current_node[i]);
-              }
-              //if (!dived_prev[i]) {
-//#if USE_OPENMP
-//#pragma omp critical (treeManager)
-//#endif
-                //tm_->removeActiveNode(current_node[i]);
-              //}
+              tm_->pruneNode(current_node[i]);
 
-#if USE_OPENMP
 #pragma omp critical (treeManager)
-#endif
-              {
-                new_node[i] = tm_->getCandidate();
-                if(new_node[i]) {
-                  tm_->removeActiveNode(new_node[i]);
-                }
+              new_node[i] = tm_->getCandidate();
+              if(new_node[i]) {
+#pragma omp critical (treeManager)
+                tm_->removeActiveNode(new_node[i]);
               }
               dived_prev[i] = false;
 
@@ -679,39 +651,30 @@ void ParQGBranchAndBound::parsolve(ParNodeIncRelaxerPtr parNodeRlxr[],
               if (!branches[i]) {
                 logger_->msgStream(LogInfo) <<" NO BRANCHES \n";
               }
-#if USE_OPENMP
 #pragma omp critical (treeManager)
-#endif
-              {
-                new_node[i] = tm_->branch(branches[i], current_node[i], ws[i]);
-              }
+              new_node[i] = tm_->branch(branches[i], current_node[i], ws[i]);
               assert((should_dive[i] && new_node[i])
                      || (!should_dive[i] && !new_node[i]));
               if (should_dive[i]) {
                 dived_prev[i] = true;
               } else {
                 parNodeRlxr[i]->reset(current_node[i], false);
-#if USE_OPENMP
 #pragma omp critical (treeManager)
-#endif
-                {
-                  new_node[i] = tm_->getCandidate(); // Can be NULL. The
-                  // branches that were created could have large lb and tm
-                  // might have eliminated them.
-                  if(new_node[i]) {
-                    tm_->removeActiveNode(new_node[i]);
-                  }
-                  dived_prev[i] = false;
+                new_node[i] = tm_->getCandidate(); // Can be NULL. The
+                // branches that were created could have large lb and tm
+                // might have eliminated them.
+                if(new_node[i]) {
+#pragma omp critical (treeManager)
+                  tm_->removeActiveNode(new_node[i]);
                 }
+                dived_prev[i] = false;
               }
             }
             current_node[i] = new_node[i];
           } // if (current_node[i]) ends
           //stopping condition at each thread
           nodeCountTh[i] = 0;
-#if USE_OPENMP
 #pragma omp critical (treeManager)
-#endif
           treeLbTh[i] = tm_->updateLb();
           minNodeLbTh[i] = INFINITY;
 
@@ -729,9 +692,7 @@ void ParQGBranchAndBound::parsolve(ParNodeIncRelaxerPtr parNodeRlxr[],
           if (minNodeLbTh[i] < treeLbTh[i]) {
             treeLbTh[i] = minNodeLbTh[i];
           }
-#if USE_OPENMP
 #pragma omp critical
-#endif
           {
             showParStatus_(nodeCountTh[i], treeLbTh[i], wallTimeStart);
             if (shouldStopPar_(wallTimeStart, treeLbTh[i])) {
@@ -739,12 +700,10 @@ void ParQGBranchAndBound::parsolve(ParNodeIncRelaxerPtr parNodeRlxr[],
               shouldRunTh[i] = false;
             }
           }
-          if(iterMode == true) shouldRunTh[i] = false;
-        } //internal while ends
+          //if(iterMode == true) shouldRunTh[i] = false;
+        //} //internal while ends
       } //parallel for end
-#if USE_OPENMP
 #pragma omp single
-#endif
       { 
         iterCount++;
         nodeCount = 0;
@@ -797,10 +756,10 @@ void ParQGBranchAndBound::parsolve(ParNodeIncRelaxerPtr parNodeRlxr[],
     << std::endl
     << me_ << "nodes processed = " << stats_->nodesProc << std::endl
     << me_ << "nodes created   = " << tm_->getSize() << std::endl;
-  if (iterMode) {
+  //if (iterMode) {
     logger_->msgStream(LogInfo) << me_ << "iterations = " << iterCount
       << std::endl;
-  }
+  //}
 
   stats_->timeUsed = timer_->query();
   timer_->stop();
