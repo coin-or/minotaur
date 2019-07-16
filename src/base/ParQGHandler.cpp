@@ -791,7 +791,7 @@ void ParQGHandler::writeStats(std::ostream &out) const
     << me_ << "number of feasible nlps                     = "
     << stats_->nlpF << std::endl
     << me_ << "number of nlps hit engine iterations limit  = " 
-    << stats_->nlpF << std::endl
+    << stats_->nlpIL << std::endl
     << me_ << "number of cuts added                        = " 
     << stats_->cuts << std::endl;
   return;

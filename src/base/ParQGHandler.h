@@ -138,6 +138,9 @@ public:
   // Base class method. 
   std::string getName() const;
   
+  // Get statistics
+  ParQGStats* getStats() {return stats_; };
+
   void nlCons();
   
   void loadProbToEngine();

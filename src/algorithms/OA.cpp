@@ -506,7 +506,7 @@ int main(int argc, char* argv[])
     double objLb = -INFINITY, objUb = INFINITY;
 
     //MS: add iteration limit in termination condition
-    double time = 0;
+    double time = 0, sepTime = 0;
     while (true) {
       if (objUb-objLb <= solAbsTol || (objUb != 0 && (objUb - objLb < fabs(objUb)*solRelTol))) {
         status = SolvedOptimal;
@@ -547,11 +547,15 @@ int main(int argc, char* argv[])
       // Update MILP by adding OA cuts at various solutions obtained from the
       // solution pool of MILP engine
       if (options->findBool("oa_use_solutions")->getValue()==true) {
+        sepTime = getWallTime();
         numSols = oa_hand->getMILPEngine()->getNumSols();
         for (UInt i=0; i < numSols; i++) {
           sol2 = oa_hand->getMILPEngine()->getSolutionFromPool(i);
           oa_hand->separate(sol2, NodePtr(), milp, cutMan, solPool, pmod, rmod, &solFound, &sepStatus);
         }
+        env->getLogger()->msgStream(LogInfo) << "number of solutions used = "
+          << numSols << " separation time = " << getWallTime() - sepTime
+          << std::endl;
       }
 
       // Solve NLP and update MILP by adding OA cuts
