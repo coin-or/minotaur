@@ -15,6 +15,8 @@
 #include <iostream>
 #if USE_OPENMP
 #include <omp.h>
+#else
+#error "Cannot compile parallel algorithms: turn USE_OpenMP flag ON."
 #endif
 #include "MinotaurConfig.h"
 #include "BranchAndBound.h"
@@ -66,19 +68,20 @@ ParQGBranchAndBound* createParBab(EnvPtr env, ProblemPtr p, EnginePtr e,
                                 UInt numThreads,
                                 RelaxationPtr relCopy[],
                                 ParPCBProcessorPtr nodePrcssr[],
-                                ParNodeIncRelaxerPtr parNodeRlxr[])
+                                ParNodeIncRelaxerPtr parNodeRlxr[],
+                                HandlerVector handlersCopy[])
 {
   ParQGBranchAndBound *bab = new ParQGBranchAndBound(env, p);
   const std::string me("mcqg main: ");
   OptionDBPtr options = env->getOptions();
-  //For ParQG
+  //Specific to parallel QG
   bab->shouldCreateRoot(false);
   LPEnginePtr lin_e;
   EngineFactory *efac;
   efac = new EngineFactory(env);
   lin_e = efac->getLPEngine();   // lp engine 
  
-  HandlerVector *handlersCopy = new HandlerVector[numThreads];
+  //HandlerVector *handlersCopy = new HandlerVector[numThreads];
 
   // If objective is nonlinear add an extra var name eta to move objective to
   // constraint in ParQGHandler
@@ -91,9 +94,7 @@ ParQGBranchAndBound* createParBab(EnvPtr env, ProblemPtr p, EnginePtr e,
     p->newVariable(-INFINITY,INFINITY,Continuous,name);
   }
 
-//#if USE_OPENMP
-  //#pragma omp parallel for
-//#endif
+#pragma omp parallel for
   for(UInt i = 0; i < numThreads; ++i) {
     //BrancherPtr br;
     EnginePtr eCopy = e->emptyCopy();
@@ -167,7 +168,7 @@ ParQGBranchAndBound* createParBab(EnvPtr env, ProblemPtr p, EnginePtr e,
   }
 
   delete efac;
-  delete [] handlersCopy;
+  //delete [] handlersCopy;
   return bab;
 }
 
@@ -355,8 +356,8 @@ PresolverPtr presolve(EnvPtr env, ProblemPtr p, size_t ndefs,
          true==env->getOptions()->findBool("use_native_cgraph")->getValue() && 
          true==env->getOptions()->findBool("nl_presolve")->getValue() 
        ) {
-      NlPresHandlerPtr nlhand = (NlPresHandlerPtr) new NlPresHandler(env, p);
-      handlers.push_back(nlhand);
+      //NlPresHandlerPtr nlhand = (NlPresHandlerPtr) new NlPresHandler(env, p);
+      //handlers.push_back(nlhand);
     }
 
     // write the names.
@@ -541,7 +542,7 @@ void writeParBnbStatus(EnvPtr env, ParQGBranchAndBound *parbab, double obj_sense
 int main(int argc, char** argv)
 {
   EnvPtr env      = (EnvPtr) new Environment();
-  OptionDBPtr options;
+  //OptionDBPtr options;
   MINOTAUR_AMPL::AMPLInterface* iface = 0;
   ProblemPtr oinst;      // instance that needs to be solved.
   EnginePtr engine = 0;  // engine for solving relaxations. 
@@ -558,6 +559,7 @@ int main(int argc, char** argv)
   ParPCBProcessorPtr *nodePrcssr = 0; 
   ParNodeIncRelaxerPtr *parNodeRlxr = 0;
   RelaxationPtr *relCopy = 0;
+  HandlerVector *handlersCopy = 0;
   env->startTimer(err);
 
   if (err) {
@@ -577,15 +579,12 @@ int main(int argc, char** argv)
     goto CLEANUP;
   }
 
-#if USE_OPENMP
   numThreads = std::min(env->getOptions()->findInt("threads")->getValue(),
                         omp_get_num_procs());
-#else
-  numThreads = 1;
-#endif
   nodePrcssr = new ParPCBProcessorPtr[numThreads];
   parNodeRlxr = new ParNodeIncRelaxerPtr[numThreads];
   relCopy = new RelaxationPtr[numThreads]; 
+  handlersCopy = new HandlerVector[numThreads];
   loadProblem(env, iface, oinst, &obj_sense);
 
   orig_v = new VarVector(oinst->varsBegin(), oinst->varsEnd());
@@ -618,7 +617,7 @@ int main(int argc, char** argv)
       << "LP and NLP solver only**" << std::endl;
   }
   parbab = createParBab(env, oinst, engine, numThreads, relCopy,
-                        nodePrcssr, parNodeRlxr);
+                        nodePrcssr, parNodeRlxr, handlersCopy);
   parbab->parsolve(parNodeRlxr, nodePrcssr, numThreads);
   
   //Take care of important bnb statistics: to be done!!!
@@ -628,9 +627,13 @@ int main(int argc, char** argv)
   //engine->writeStats(env->getLogger()->msgStream(LogExtraInfo));
   
   //Take care of important handler statistics: to be done!!!
-  //for (HandlerVector::iterator it=handlers.begin(); it!=handlers.end(); ++it) {
-    //(*it)->writeStats(env->getLogger()->msgStream(LogExtraInfo));
-  //}
+
+  for (UInt i=0; i < numThreads; i++) {
+    env->getLogger()->msgStream(LogExtraInfo) << "Thread " << i << std::endl;
+    for (HandlerVector::iterator it=handlersCopy[i].begin(); it!=handlersCopy[i].end(); ++it) {
+      (*it)->writeStats(env->getLogger()->msgStream(LogExtraInfo));
+    }
+  }
 
   writeSol(env, orig_v, pres, parbab->getSolution(), parbab->getStatus(), iface);
   writeParBnbStatus(env, parbab, obj_sense, wallTimeStart);
@@ -650,6 +653,9 @@ CLEANUP:
   }
   if (relCopy) {
     delete[] relCopy;
+  }
+  if (handlersCopy) {
+    delete[] handlersCopy;
   }
   if (parbab) {
     delete parbab;

@@ -15,6 +15,8 @@
 #include <iostream>
 #if USE_OPENMP
 #include <omp.h>
+#else
+#error "Cannot compile parallel algorithms: turn USE_OpenMP flag ON."
 #endif
 #include "MinotaurConfig.h"
 #include "BranchAndBound.h"
@@ -71,9 +73,7 @@ ParBranchAndBound* createParBab(EnvPtr env, ProblemPtr p, EnginePtr e,
   const std::string me("mcbnb main: ");
   OptionDBPtr options = env->getOptions();
   bab->shouldCreateRoot(false);
-#if USE_OPENMP
-  #pragma omp parallel for
-#endif
+#pragma omp parallel for
   for(UInt i = 0; i < numThreads; i++) {
     BrancherPtr br;
     EnginePtr eCopy = e->emptyCopy();
@@ -593,12 +593,8 @@ int main(int argc, char** argv)
     goto CLEANUP;
   }
 
-#if USE_OPENMP
   numThreads = std::min(env->getOptions()->findInt("threads")->getValue(),
                         omp_get_num_procs());
-#else
-  numThreads = 1;
-#endif
   nodePrcssr = new ParPCBProcessorPtr[numThreads];
   parNodeRlxr = new ParNodeIncRelaxerPtr[numThreads];
   relCopy = new RelaxationPtr[numThreads]; 
