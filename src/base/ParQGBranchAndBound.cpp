@@ -403,7 +403,7 @@ void ParQGBranchAndBound::parsolve(ParNodeIncRelaxerPtr parNodeRlxr[],
   bool *dived_prev = new bool[numThreads];
   bool *should_prune = new bool[numThreads];
   bool *initialized = new bool[numThreads];
-  NodePtr *current_node = new NodePtr[numThreads];
+  NodePtr *current_node = new NodePtr[numThreads]();
   NodePtr *new_node = new NodePtr[numThreads];
   Branches *branches = new Branches[numThreads];
   WarmStartPtr *ws = new WarmStartPtr[numThreads];
@@ -419,7 +419,6 @@ void ParQGBranchAndBound::parsolve(ParNodeIncRelaxerPtr parNodeRlxr[],
   //bool iterMode = env_->getOptions()->findBool("mcbnb_iter_mode")->getValue();
   UInt iterCount = 1;
   UInt *cutsIndex = new UInt[numThreads*numThreads]();
-  UInt *numCuts = new UInt[numThreads]();
   UInt numVars = 0;
 
 #pragma omp parallel for
@@ -505,6 +504,15 @@ void ParQGBranchAndBound::parsolve(ParNodeIncRelaxerPtr parNodeRlxr[],
     isParRel = true;
   }
 
+  // memory leak check: remove later
+  if (numThreads > 1) {
+    for (UInt i=1; i < numThreads; i++) {
+      if (current_node[i]) {
+        assert(!"Memory leak (fake node) non-master thread\n");
+      }
+    }
+  }
+
   while(nodeCount > 0 && shouldRun) {
 #if SPEW
     logger_->msgStream(LogDebug1) << me_ << "processing node "
@@ -584,7 +592,6 @@ void ParQGBranchAndBound::parsolve(ParNodeIncRelaxerPtr parNodeRlxr[],
                     }
                   }
                   cutsIndex[i*numThreads+j] = consVec.size();
-                  numCuts[j] = consVec.size();
                   consVec.clear();
                 }
                 if (isParRel) {
@@ -764,10 +771,6 @@ void ParQGBranchAndBound::parsolve(ParNodeIncRelaxerPtr parNodeRlxr[],
   stats_->timeUsed = timer_->query();
   timer_->stop();
   
-  for (UInt i=0; i<numThreads; ++i) {
-    logger_->msgStream(LogInfo) << me_ << "cuts added by thread " << i <<": "<<numCuts[i] <<"\n";
-  }
-
   delete[] should_dive;
   delete[] dived_prev;
   delete[] should_prune;
@@ -782,9 +785,7 @@ void ParQGBranchAndBound::parsolve(ParNodeIncRelaxerPtr parNodeRlxr[],
   delete[] ws;
   delete[] rel;
   delete[] branches;
-  delete[] numCuts;
   delete[] cutsIndex;
-  //delete[] cutman;
 }
 
 void ParQGBranchAndBound::writeStats(std::ostream &out)
