@@ -183,7 +183,7 @@ void IpoptSolution::write(std::ostream &out) const
 // ----------------------------------------------------------------------- //
 
 IpoptWarmStart::IpoptWarmStart()
-  : sol_(0)
+: sol_(0)
 {
 }
 

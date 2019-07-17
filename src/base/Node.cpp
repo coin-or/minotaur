@@ -18,6 +18,7 @@
 #include "Modification.h"
 #include "Node.h"
 #include "Relaxation.h"
+#include "WarmStart.h"
 
 using namespace Minotaur;
 using namespace std;
@@ -56,8 +57,15 @@ Node::Node(NodePtr parentNode, BranchPtr branch)
 
 Node::~Node()
 {
+  removeWarmStart();
   if (branch_) {
     delete branch_;
+  }
+  for (ModificationConstIterator it=pMods_.begin(); it!=pMods_.end(); ++it) {
+    delete *it;
+  }
+  for (ModificationConstIterator it=rMods_.begin(); it!=rMods_.end(); ++it) {
+    delete *it;
   }
   pMods_.clear();
   rMods_.clear();
@@ -172,6 +180,19 @@ void Node::removeParent()
 }
 
 
+void Node::removeWarmStart()
+{ 
+  if (ws_) {
+    assert(ws_->getUseCnt()>0);
+    ws_->decrUseCnt();
+    if (0==ws_->getUseCnt()) {
+      delete ws_;
+    }
+  }
+  ws_ = 0;
+}
+
+
 void Node::setDepth(UInt depth)
 {
   depth_ = depth;
@@ -193,6 +214,7 @@ void Node::setLb(double value)
 void Node::setWarmStart (WarmStartPtr ws) 
 { 
   ws_ = ws; 
+  ws_->incrUseCnt();
 }
 
 

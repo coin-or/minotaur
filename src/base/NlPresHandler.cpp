@@ -164,6 +164,8 @@ void NlPresHandler::chkRed_(ProblemPtr p, bool purge_cons, bool *changed,
         if (false==purge_cons) {
           mods->push_back(mod);
           ++stats_.conRel;
+        } else {
+          delete mod;
         }
       }
       // similary for implied-ub
@@ -179,6 +181,8 @@ void NlPresHandler::chkRed_(ProblemPtr p, bool purge_cons, bool *changed,
         if (false==purge_cons) {
           mods->push_back(mod);
           ++stats_.conRel;
+        } else {
+          delete mod;
         }
       }
 
@@ -395,13 +399,14 @@ void  NlPresHandler::bin2Lin_(ProblemPtr p, PreModQ *mods, bool *changed)
   UInt *irow = 0;
   UInt *jcol = 0;
   UInt nz = 0;
-  PreAuxVarsPtr mod = (PreAuxVarsPtr) new PreAuxVars();
+  PreAuxVarsPtr mod;
 
   p->calculateSize();
   if (0==p->getSize()->quadCons && Quadratic!=p->getSize()->objType) {
     return;
   }
 
+  mod = new PreAuxVars();
   p->setNativeDer(); // TODO: avoid setting it up repeatedly.
   hess = p->getHessian();
   nz = hess->getNumNz();
@@ -1655,13 +1660,15 @@ SolveStatus NlPresHandler::varBndsFromCons_(ProblemPtr p, bool apply_to_prob,
         for (VarBoundModVector::iterator it=dmods.begin(); it!=dmods.end(); ++it) {
           (*it)->applyToProblem(p);
           ++stats_.vBnd;
-          if (false==apply_to_prob) {
-            mods->push_back(*it);
-          }
 #if SPEW
           logger_->msgStream(LogDebug2) << me_ << " ";
           (*it)->write(logger_->msgStream(LogDebug2));
 #endif
+          if (false==apply_to_prob) {
+            mods->push_back(*it);
+          } else {
+            delete (*it);
+          }
         }
         dmods.clear();
         *changed = true;

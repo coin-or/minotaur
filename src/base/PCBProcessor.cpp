@@ -26,12 +26,11 @@
 #include "Modification.h"
 #include "Relaxation.h"
 #include "SolutionPool.h"
+#include "WarmStart.h"
 
 using namespace Minotaur;
 
 // #define SPEW 1
-#undef JTL_DEBUG
-#undef PRINT_RELAXATION_SIZE
 
 const std::string PCBProcessor::me_ = "PCBProcessor: ";
 
@@ -39,8 +38,8 @@ PCBProcessor::PCBProcessor (EnvPtr env, EnginePtr engine, HandlerVector handlers
 : branches_(0),
   contOnErr_(false),
   cutMan_(0),
-  numSolutions_(0)
-
+  numSolutions_(0),
+  ws_(0)
 {
   oATol_ = env->getOptions()->findDouble("solAbs_tol")->getValue();
   oRTol_ = env->getOptions()->findDouble("solRel_tol")->getValue();
@@ -60,6 +59,12 @@ PCBProcessor::PCBProcessor (EnvPtr env, EnginePtr engine, HandlerVector handlers
 
 PCBProcessor::~PCBProcessor()
 {
+  if (ws_) {
+    ws_->decrUseCnt();
+    if (0 == ws_->getUseCnt()) {
+      delete ws_;
+    }
+  }
   if (brancher_) {
     delete brancher_;
   }
@@ -149,7 +154,6 @@ bool PCBProcessor::presolveNode_(NodePtr node, SolutionPoolPtr s_pool)
       for (ModificationConstIterator m_iter=r_mods.begin();
            m_iter!=r_mods.end(); ++m_iter) {
         node->addRMod(*m_iter);
-        // (*m_iter)->write(std::cout);
       }
       if ((p_mods.size()==0 && r_mods.size()==0) || true==is_inf) {
         cont = false;
@@ -164,8 +168,6 @@ bool PCBProcessor::presolveNode_(NodePtr node, SolutionPoolPtr s_pool)
     ++stats_.inf;
   }
 
-  //relaxation_->write(std::cout);
-  //std::cout << "*** *** ***\n";
   return is_inf;
 }
 
@@ -190,11 +192,15 @@ void PCBProcessor::process(NodePtr node, RelaxationPtr rel,
     branches_ = 0;
   }
 
-#if defined(PRINT_RELAXATION_SIZE)
-  std::cout << "Relaxation has : " << rel->getNumCons() << " constraints and "
-            << rel->getNumVars() << " variables." << std::endl;
-#endif
-
+  if (ws_) {
+    ws_->decrUseCnt();
+    if (0 == ws_->getUseCnt()) {
+      delete ws_;
+      ws_ = 0;
+    } else {
+      ws_ = 0;
+    }
+  }
 
 #if 0
   double *svar = new double[20];
@@ -251,6 +257,7 @@ void PCBProcessor::process(NodePtr node, RelaxationPtr rel,
   // presolve
   should_prune = presolveNode_(node, s_pool);
   if (should_prune) {
+    node->removeWarmStart();
     return;
   }
 
@@ -265,29 +272,13 @@ void PCBProcessor::process(NodePtr node, RelaxationPtr rel,
                                << std::endl;
 #endif
 
-  //if (node->getId() == 1769 || node->getId() == 1771) {
-    ////rel->write(std::cout);
-  //}
-    //relaxation_->write(std::cout);
     solveRelaxation_();
-
     sol = engine_->getSolution();
-      //std::cout << "In PCB: Node " << node->getId() << std::endl;
-
-#if defined(JTL_DEBUG)
-    NodePtr parentNode = node->getParent();
-    if (parentNode) {
-      double zparent = parentNode->getLb();
-      std:: cout << " z(parent): " << zparent << " z(child): " << sol->getObjValue() << std::endl;      
-      assert(zparent <= sol->getObjValue());
-    }
-#endif
 
     // check if the relaxation is infeasible or if the cost is too high.
     // In either case we can prune. Also set lb of node.
     should_prune = shouldPrune_(node, sol->getObjValue(), s_pool);
     if (should_prune) {
-      //std::cout << "In PCB: Node " << node->getId() << " prune - " << engine_->getStatusString() << std::endl;
       break;
     }
 
@@ -299,7 +290,6 @@ void PCBProcessor::process(NodePtr node, RelaxationPtr rel,
     // check feasibility. if it is feasible, we can still prune this node.
     isFeasible_(node, sol, s_pool, should_prune);
     if (should_prune) {
-      //std::cout << "In PCB: Node " << node->getId() << " int feasible - prune" << std::endl;
       break;
     }
 
@@ -316,8 +306,6 @@ void PCBProcessor::process(NodePtr node, RelaxationPtr rel,
     tightenBounds_();
     separate_(sol, node, s_pool, &sep_status);
 
-//    relaxation_->write(std::cout);
-
     if (sep_status == SepaPrune) {
       node->setStatus(NodeInfeasible);
       should_resolve = false;
@@ -328,6 +316,7 @@ void PCBProcessor::process(NodePtr node, RelaxationPtr rel,
     } else {
       // save warm start information before branching. This step is expensive.
       ws_ = engine_->getWarmStartCopy();
+      ws_->incrUseCnt();
       //MS: WarmStart information for root linearizations
       //if (node->getId() == 0) {
         //HandlerIterator h;
@@ -363,12 +352,12 @@ void PCBProcessor::process(NodePtr node, RelaxationPtr rel,
         mods.clear();
         break;
       } else if (br_status==ModifiedByBrancher) {
-        //std::cout << "mods size = " << mods.size() << " node id = " << node->getId() << std::endl;
         for (ModificationConstIterator miter=mods.begin(); miter!=mods.end();
              ++miter) {
           node->addRMod(*miter);
           (*miter)->applyToProblem(relaxation_);
         }
+        mods.clear();
         should_prune = presolveNode_(node, s_pool);
         if (should_prune) {
           break;
@@ -386,21 +375,7 @@ void PCBProcessor::process(NodePtr node, RelaxationPtr rel,
     cutMan_->updatePool(relaxation_,sol);
     cutMan_->updateRel(sol,relaxation_);
   } 
-#if 0
-  if ((true==should_prune || node->getLb() >-4150) && true==xfeas) {
-    std::cout << "problem here!\n";
-    std::cout << node->getStatus() << "\n";
-    rel->write(std::cout);
-    exit(0);
-  }
-#endif
-  //if (node->getId()==0) {
-    ////sol->writePrimal(std::cout);
-    //s_pool->setRootSolution(sol);
-  //}
-  //if (env->getOptions()->findInt("threads")->getValue() > 1) {
-    //exit(0);
-  //}
+  node->removeWarmStart();
   return;
 }
 
@@ -433,7 +408,6 @@ void PCBProcessor::separate_(ConstSolutionPtr sol, NodePtr node,
     for (ModificationConstIterator m_iter=r_mods.begin();
          m_iter!=r_mods.end(); ++m_iter) {
       node->addRMod(*m_iter);
-      // (*m_iter)->write(std::cout);
     }
   }
   if (true == sol_found) {

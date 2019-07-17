@@ -115,6 +115,7 @@ NodePtr TreeManager::branch(Branches branches, NodePtr node, WarmStartPtr ws)
     child->setDepth(node->getDepth()+1);
     node->addChild(child);
     if (is_first) {
+      child->setWarmStart(ws);
       insertCandidate_(child, true);
       is_first = false;
       new_cand = child;
@@ -167,9 +168,7 @@ NodePtr TreeManager::getCandidate()
   aNode_ = 0;
   while (activeNodes_->getSize() > 0) {
     node = activeNodes_->top();
-    // std::cout << "tm: node lb = " << node->getLb() << std::endl;
     if (shouldPrune_(node)) {
-      // std::cout << "tm: node pruned." << std::endl;
       removeActiveNode(node);
       pruneNode(node);
       //node.reset(); // NULL
@@ -293,8 +292,6 @@ void TreeManager::removeActiveNode(NodePtr node)
   }
 
   activeNodes_->pop();
-  // activeNodes_->write(std::cout);
-  //std::cout << "size of active nodes = " << activeNodes_.size() << std::endl;
   // dont remove the head until the candidate has been processed.
 }
 
