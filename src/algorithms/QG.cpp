@@ -310,7 +310,7 @@ PresolverPtr presolve(EnvPtr env, ProblemPtr p, size_t ndefs,
 
 int main(int argc, char* argv[])
 {
-  EnvPtr env = (EnvPtr) new Environment();
+  EnvPtr env = new Environment();
   OptionDBPtr options;
 
   //ConstSolutionPtr xc;
@@ -384,6 +384,9 @@ int main(int argc, char* argv[])
   // get presolver.
   orig_v = new VarVector(inst->varsBegin(), inst->varsEnd());
   pres = presolve(env, inst, iface->getNumDefs(), handlers);
+  for (HandlerVector::iterator it=handlers.begin(); it!=handlers.end(); ++it) {
+    delete (*it);
+  }
   handlers.clear();
   if (Finished != pres->getStatus() && NotStarted != pres->getStatus()) {
     env->getLogger()->msgStream(LogInfo) << me 
@@ -509,6 +512,9 @@ int main(int argc, char* argv[])
   }
 
 CLEANUP:
+  for (HandlerVector::iterator it=handlers.begin(); it!=handlers.end(); ++it) {
+    delete (*it);
+  }
   if (lin_e) {
     delete lin_e;
   }
@@ -518,11 +524,26 @@ CLEANUP:
   if (iface) {
     delete iface;
   }
+  if (pres) {
+    delete pres;
+  }
+  if (bab) {
+    if (bab->getNodeRelaxer()) {
+      delete bab->getNodeRelaxer();
+    }
+    if (bab->getNodeProcessor()) {
+      delete bab->getNodeProcessor();
+    }
+    delete bab;
+  }
+  if (inst) {
+    delete inst;
+  }
   if (orig_v) {
     delete orig_v;
   }
-  if (bab) {
-    delete bab;
+  if (env) {
+    delete env;
   }
 
   return 0;

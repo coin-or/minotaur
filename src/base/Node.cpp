@@ -213,8 +213,13 @@ void Node::setLb(double value)
 
 void Node::setWarmStart (WarmStartPtr ws) 
 { 
+  if (ws) {
   ws_ = ws; 
   ws_->incrUseCnt();
+  } else {
+    removeWarmStart();
+    ws_ = 0;
+  }
 }
 
 

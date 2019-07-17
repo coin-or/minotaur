@@ -376,7 +376,7 @@ WarmStartPtr OsiLPEngine::getWarmStartCopy()
   // create a new copy of warm-start information from osilp_
   CoinWarmStart *coin_copy = osilp_->getWarmStart();
 
-  OsiLPWarmStartPtr ws = (OsiLPWarmStartPtr) new OsiLPWarmStart();
+  OsiLPWarmStartPtr ws = new OsiLPWarmStart();
   // save it. It is our responsibility to free it.
   ws->setCoinWarmStart(coin_copy, true);
 

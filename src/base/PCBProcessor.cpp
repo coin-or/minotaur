@@ -316,7 +316,9 @@ void PCBProcessor::process(NodePtr node, RelaxationPtr rel,
     } else {
       // save warm start information before branching. This step is expensive.
       ws_ = engine_->getWarmStartCopy();
-      ws_->incrUseCnt();
+      if (ws_) {
+        ws_->incrUseCnt();
+      }
       //MS: WarmStart information for root linearizations
       //if (node->getId() == 0) {
         //HandlerIterator h;

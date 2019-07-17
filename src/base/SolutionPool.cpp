@@ -49,9 +49,12 @@ void SolutionPool::addSolution(ConstSolutionPtr solution)
   ++numSolsFound_;
   if (sols_.size() > 0) {
     if (sols_[0]->getObjValue() > solution->getObjValue()) {
+      delete sols_[0];
       sols_[0] = newsol;
       bestSolution_ = newsol;
       timeBest_ = timer_->query();
+    } else {
+      delete newsol;
     }
   } else {
     sols_.push_back(newsol);
