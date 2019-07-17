@@ -1852,7 +1852,7 @@ void QGHandler::addCut_(const double *nlpx, const double *lpx,
   std::stringstream sstm;
   double c, lpvio, act, cUb;
   FunctionPtr f = con->getFunction();
-  LinearFunctionPtr lf = LinearFunctionPtr();
+  LinearFunctionPtr lf = 0;
 
   act = con->getActivity(nlpx, &error);
   if (error == 0) {
@@ -1874,9 +1874,13 @@ void QGHandler::addCut_(const double *nlpx, const double *lpx,
         rel_->newConstraint(f, -INFINITY, cUb-c, sstm.str());
         //newcon = rel_->newConstraint(f, -INFINITY, cUb-c, sstm.str());
         return;
+      } else {
+        delete lf;
       }
+    } else {
+      delete lf;
     }
-  }	else {
+  } else {
     logger_->msgStream(LogError) << me_ << " constraint not defined at"
       << " this point. "<<  std::endl;
 #if SPEW

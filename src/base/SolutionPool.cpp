@@ -67,8 +67,9 @@ void SolutionPool::addSolution(ConstSolutionPtr solution)
 
 void SolutionPool::addSolution(const double *x, double obj_value)
 {
-  SolutionPtr solution = (SolutionPtr) new Solution(obj_value, x, problem_);
+  SolutionPtr solution = new Solution(obj_value, x, problem_);
   addSolution(solution);
+  delete solution;
 }
 
 
