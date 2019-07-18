@@ -411,6 +411,8 @@ void PCBProcessor::separate_(ConstSolutionPtr sol, NodePtr node,
          m_iter!=r_mods.end(); ++m_iter) {
       node->addRMod(*m_iter);
     }
+    p_mods.clear();
+    r_mods.clear();
   }
   if (true == sol_found) {
     ++numSolutions_;

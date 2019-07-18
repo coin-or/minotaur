@@ -117,7 +117,7 @@ void RCHandler::rcfix_(RelaxationPtr rel,
           new_ub = floor(new_ub + tolerance*100);
           if (new_ub < ub){
             m = (VarBoundModPtr) new VarBoundMod(v, Upper, new_ub);
-            m->applyToProblem(rel);
+            // m->applyToProblem(rel);
             r_mods.push_back(m);
 #if SPEW
             logger_->msgStream(LogDebug) << me_ << "Variable name = "
@@ -129,7 +129,7 @@ void RCHandler::rcfix_(RelaxationPtr rel,
           } else{
             if (new_ub < ub*0.9){
               m = (VarBoundModPtr) new VarBoundMod(v, Upper, new_ub);
-              m->applyToProblem(rel);
+              // m->applyToProblem(rel);
               r_mods.push_back(m);
 #if SPEW
               logger_->msgStream(LogDebug) << me_ << "Variable name = "
@@ -149,7 +149,7 @@ void RCHandler::rcfix_(RelaxationPtr rel,
           new_lb = ceil(new_lb - tolerance * 100);
           if (new_lb > lb){
             m = (VarBoundModPtr) new VarBoundMod(v, Lower, new_lb);
-            m->applyToProblem(rel);
+            //m->applyToProblem(rel);
             r_mods.push_back(m);
 #if SPEW
             logger_->msgStream(LogDebug) << me_ << "Variable name = "
@@ -164,7 +164,7 @@ void RCHandler::rcfix_(RelaxationPtr rel,
         }else{
           if (new_lb > lb * 1.1){
             m = (VarBoundModPtr) new VarBoundMod(v, Lower, new_lb);
-            m->applyToProblem(rel);
+            //m->applyToProblem(rel);
             r_mods.push_back(m);
 #if SPEW
             logger_->msgStream(LogDebug) << me_ << "Variable name = "
