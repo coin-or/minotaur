@@ -507,7 +507,7 @@ int main(int argc, char* argv[])
     }
 
     //qg_hand->vioStats();
-    //writeSol(env, orig_v, pres, bab->getSolution(), bab->getStatus(), iface);
+    writeSol(env, orig_v, pres, bab->getSolution(), bab->getStatus(), iface);
     writeBnbStatus(env, bab, obj_sense);
   }
 
@@ -627,17 +627,21 @@ void writeSol(EnvPtr env, VarVector *orig_v,
               PresolverPtr pres, SolutionPtr sol, SolveStatus status,
               MINOTAUR_AMPL::AMPLInterface* iface)
 {
+  Solution* final_sol = 0;
   if (sol) {
-    sol->writePrimal(std::cout);
-    sol = pres->getPostSol(sol);
+    final_sol = pres->getPostSol(sol);
   }
 
   if (env->getOptions()->findFlag("AMPL")->getValue() ||
       true == env->getOptions()->findBool("write_sol_file")->getValue()) {
-    iface->writeSolution(sol, status);
-  } else if (sol && env->getLogger()->getMaxLevel()>=LogExtraInfo &&
+    iface->writeSolution(final_sol, status);
+  } else if (final_sol && env->getLogger()->getMaxLevel()>=LogExtraInfo &&
              env->getOptions()->findBool("display_solution")->getValue()) {
-    sol->writePrimal(env->getLogger()->msgStream(LogExtraInfo), orig_v);
+    final_sol->writePrimal(env->getLogger()->msgStream(LogExtraInfo), orig_v);
+  }
+
+  if (final_sol) {
+    delete final_sol;
   }
 }
 
