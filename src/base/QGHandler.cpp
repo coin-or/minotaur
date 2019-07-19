@@ -62,20 +62,18 @@ QGHandler::QGHandler()
   rel_(RelaxationPtr()),
   relobj_(0.0),
   solC_(NULL),
-  solNLP_(NULL),
   stats_(0)
 {
-  rs1_ = env_->getOptions()->findDouble("root_linScheme1")->getValue();
-  rs2Per_ = env_->getOptions()->findDouble("root_linScheme2_per")->getValue();
-  rs2NbhSize_ = env_->getOptions()->findDouble("root_linScheme2_nbhSize")->getValue();
-  rs3_ = env_->getOptions()->findInt("root_linScheme3")->getValue();
-  //rScheme4Para_ = env_->getOptions()->findInt("root_linScheme4")->getValue();
-  intTol_ = env_->getOptions()->findDouble("int_tol")->getValue();
-  solAbsTol_ = env_->getOptions()->findDouble("feasAbs_tol")->getValue();
-  solRelTol_ = env_->getOptions()->findDouble("feasRel_tol")->getValue();
-  objATol_ = env_->getOptions()->findDouble("solAbs_tol")->getValue();
-  objRTol_ = env_->getOptions()->findDouble("solRel_tol")->getValue();
-  logger_ = (LoggerPtr) new Logger(LogInfo);
+  //rs1_ = env_->getOptions()->findDouble("root_linScheme1")->getValue();
+  //rs2Per_ = env_->getOptions()->findDouble("root_linScheme2_per")->getValue();
+  //rs2NbhSize_ = env_->getOptions()->findDouble("root_linScheme2_nbhSize")->getValue();
+  //rs3_ = env_->getOptions()->findInt("root_linScheme3")->getValue();
+  //intTol_ = env_->getOptions()->findDouble("int_tol")->getValue();
+  //solAbsTol_ = env_->getOptions()->findDouble("feasAbs_tol")->getValue();
+  //solRelTol_ = env_->getOptions()->findDouble("feasRel_tol")->getValue();
+  //objATol_ = env_->getOptions()->findDouble("solAbs_tol")->getValue();
+  //objRTol_ = env_->getOptions()->findDouble("solRel_tol")->getValue();
+  //logger_ = (LoggerPtr) new Logger(LogInfo);
 }
 
 
@@ -91,12 +89,9 @@ QGHandler::QGHandler(EnvPtr env, ProblemPtr minlp, EnginePtr nlpe)
   oNl_(false),
   rel_(RelaxationPtr()),
   relobj_(0.0),
-  solC_(NULL),
-  solNLP_(NULL)
+  solC_(NULL)
 {
   //MS: set the option for root_LinSchemes
-  //rScheme3Para_ = env_->getOptions()->findInt("root_linScheme3")->getValue();
-  //rScheme4Para_ = env_->getOptions()->findInt("root_linScheme4")->getValue();
   rs1_ = env_->getOptions()->findDouble("root_linScheme1")->getValue();
   rs2Per_ = env_->getOptions()->findDouble("root_linScheme2_per")->getValue();
   rs2NbhSize_ = env_->getOptions()->findDouble("root_linScheme2_nbhSize")->getValue();
@@ -178,13 +173,13 @@ bool QGHandler::addNewCut_(double *b1, UInt vlIdx, ConstraintPtr con,
 
 void QGHandler::addInitLinearX_(const double *x)
 { 
-  int error=0;
+  int error = 0;
   FunctionPtr f;
   double c, act, cUb;
   std::stringstream sstm;
   ConstraintPtr con;
   //ConstraintPtr newcon;
-  LinearFunctionPtr lf = LinearFunctionPtr();
+  LinearFunctionPtr lf = 0;
 
   for (CCIter it=nlCons_.begin(); it!=nlCons_.end(); ++it) {
     con = *it;
@@ -348,7 +343,7 @@ void QGHandler::fixInts_(const double *x)
   for (VariableConstIterator vit=minlp_->varsBegin(); vit!=minlp_->varsEnd();
        ++vit) {
     v = *vit;
-    if (v->getType()==Binary || v->getType()==Integer) {
+    if (v->getType() == Binary || v->getType() == Integer) {
       xval = x[v->getIndex()];
       xval = floor(xval + 0.5);
       m = new VarBoundMod2(v, xval, xval);
@@ -369,12 +364,14 @@ void QGHandler::initLinear_(bool *isInf)
   solveNLP_();
   //std::cout << "minlp_ \n";
   //minlp_->write(std::cout);
-  
+  solNLP_ = 0;  
   switch (nlpStatus_) {
   case (ProvenOptimal):
   case (ProvenLocalOptimal):
     ++(stats_->nlpF);
     x = nlpe_->getSolution()->getPrimal();
+    solNLP_ = nlpe_->getSolution()->getPrimal();
+    objNLP_ = nlpe_->getSolution()->getObjValue();
     addInitLinearX_(x);
     break;
   case (EngineIterationLimit):
@@ -442,9 +439,9 @@ void QGHandler::insertNewPt_(UInt j, UInt k, std::vector<double > & xc,
 void QGHandler::rootLinearizations_()
 {
   bool shouldCont;
-  UInt vnIdx, vlIdx, cutsCount = stats_->cuts;
   ConstraintPtr con;
   double linTermCoeff, extraCoeff;
+  UInt vnIdx, vlIdx, cutsCount = stats_->cuts;
 
   for (CCIter it = nlCons_.begin(); it != nlCons_.end(); ++it) {
     con = *it;
@@ -710,7 +707,7 @@ void QGHandler::rootLinScheme3_(ConstSolutionPtr sol, CutManager * cutMan,
  //MS: check if this works 
   //std::cout << "number of cuts initially " << stats_->cuts << std::endl;
   oldCuts = stats_->cuts;
-  for (UInt i = 1; ; ++i) {
+  for (UInt i = 1; i <= rs3_; ++i) {
     isFrac = false;
     //std::cout << "Iteration and LB " << i+1 << " " << std::setprecision(6) 
       //<< lpSol->getObjValue() << std::endl;
@@ -750,8 +747,9 @@ void QGHandler::rootLinScheme3_(ConstSolutionPtr sol, CutManager * cutMan,
           s_pool->addSolution(lpSol);
           *sol_found = true;
           *status = SepaPrune;
-          delete [] x;
-          return;
+          break;
+          //delete [] x;
+          //return;
         }
       } else {
         //check nonlinear cons feasibility if feasible stop else solve NLP and
@@ -759,8 +757,9 @@ void QGHandler::rootLinScheme3_(ConstSolutionPtr sol, CutManager * cutMan,
         cutIntSol_(lpSol, cutMan, s_pool, sol_found, status);
         if (*status == SepaPrune || *status == SepaError) {
           //MS: take care of this later
-          delete [] x;
-          return;          
+          //delete [] x;
+          //return;          
+          break;
         }
       }
     }
@@ -797,9 +796,9 @@ void QGHandler::rootLinScheme3_(ConstSolutionPtr sol, CutManager * cutMan,
           << " objective not defined at this solution point." << std::endl;
       }
     }
-    if (i == rs3_ || stats_->cuts == oldCuts) { 
-    //if (stats_->cuts == oldCuts) 
-      delete [] x;
+    //if (i == rs3_ || stats_->cuts == oldCuts)  
+    if (stats_->cuts == oldCuts) {
+      //delete [] x;
       break;    
     }
     oldCuts = stats_->cuts;    
@@ -808,12 +807,13 @@ void QGHandler::rootLinScheme3_(ConstSolutionPtr sol, CutManager * cutMan,
     engineStatus = lpe_->getStatus();
     should_prune = shouldPrune_(engineStatus);
     if (should_prune) {
-      delete [] x;
+      //delete [] x;
       break;    
     }
     lpSol = lpe_->getSolution();
     lpx = lpSol->getPrimal();
   }
+  delete [] x;
   return;
 }
 
@@ -877,9 +877,9 @@ void QGHandler::addEshAtRoot_(const double *lpx, double* x, ConstraintPtr con)
   bool lsPtFound;
   std::stringstream sstm;
   //ConstraintPtr newcon;
+  LinearFunctionPtr lf = 0;
   FunctionPtr f = con->getFunction();
   double c, nlpact, cUb = con->getUb();
-  LinearFunctionPtr lf = LinearFunctionPtr();
   
   lsPtFound = lineSearchPt_(x, solC_, lpx, con, nlpact);
 
@@ -1045,7 +1045,7 @@ void QGHandler::findCenter_(bool &noCenter)
      ++it) {
     con = *it;
     fType = con->getFunctionType();
-    if (fType ==Constant || fType == Linear) {
+    if (fType == Constant || fType == Linear) {
       continue;
     }
     lfc = con->getLinearFunction();
@@ -1112,6 +1112,10 @@ void QGHandler::findCenter_(bool &noCenter)
     break;
   }
   //exit(1);
+  inst_C = 0;
+  delete lfc;
+  delete fnewc; 
+  delete inst_C;
   return;
 }
 
@@ -1876,9 +1880,8 @@ void QGHandler::addCut_(const double *nlpx, const double *lpx,
         return;
       } else {
         delete lf;
+        lf = 0;
       }
-    } else {
-      delete lf;
     }
   } else {
     logger_->msgStream(LogError) << me_ << " constraint not defined at"
@@ -2184,7 +2187,7 @@ void QGHandler::solveNLP_()
 void QGHandler::unfixInts_()
 {
   Modification *m = 0;
-  while(nlpMods_.empty() == false) {
+  while (nlpMods_.empty() == false) {
     m = nlpMods_.top();
     m->undoToProblem(minlp_);
     nlpMods_.pop();
