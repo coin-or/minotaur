@@ -99,7 +99,8 @@ private:
   double relobj_; 
   
   const double * solC_; 
-  double * solNLP_; 
+  const double * solNLP_;  //MS: delete after use
+  double objNLP_;  //MS: delete after use
 
   /// Absolute tolerance for constraint feasibility.
   double solAbsTol_;
@@ -163,6 +164,9 @@ private:
   SolveStatus presolve(PreModQ *, bool *) {return Finished;};
   
   void setLpEngine(EnginePtr lpe);
+  
+  const double * getRootNLPSolution() {return solNLP_;}
+  double getRootNLPVal() {return objNLP_;}
 
   /// Does nothing.
   bool presolveNode(RelaxationPtr, NodePtr, SolutionPoolPtr, ModVector &,
