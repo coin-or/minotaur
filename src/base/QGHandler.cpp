@@ -1062,7 +1062,7 @@ void QGHandler::findCenter_(bool &noCenter)
   inst_C->resetInitialPoint(1);
   
   nlpe1_ = nlpe_->emptyCopy(); //Engine for modified problem
-  nlpe1_->clear();
+  //nlpe1_->clear();
   nlpe1_->load(inst_C);
   nlpStatus = nlpe1_->solve();
   //std::cout << "After \n";
@@ -1113,6 +1113,8 @@ void QGHandler::findCenter_(bool &noCenter)
   }
   //exit(1);
   inst_C = 0;
+  nlpe1_ = 0;
+  delete nlpe1_;
   delete lfc;
   delete fnewc; 
   delete inst_C;
