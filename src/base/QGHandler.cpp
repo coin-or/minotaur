@@ -118,6 +118,9 @@ QGHandler::~QGHandler()
     delete stats_;
   }
   nlCons_.clear();
+  if (solC_) {
+    delete [] solC_;
+  }
 }
 
 UInt QGHandler::addCutAtRoot_(double *x, ConstraintPtr con)
@@ -1027,6 +1030,7 @@ void QGHandler::findCenter_(bool &noCenter)
   FunctionType fType;
   EngineStatus nlpStatus;
   ProblemPtr inst_C = minlp_->clone();
+  const double *dtemp;
 
   //std::cout << "Original problem\n";
   //inst_C->write(std::cout);
@@ -1071,7 +1075,12 @@ void QGHandler::findCenter_(bool &noCenter)
   switch(nlpStatus) {
   case (ProvenOptimal):
   case (ProvenLocalOptimal):
-    solC_ = nlpe1_->getSolution()->getPrimal();
+    dtemp = nlpe1_->getSolution()->getPrimal();
+    if (solC_) {
+      delete solC_;
+    }
+    solC_ = new double[minlp_->getNumVars()];
+    std::copy(dtemp, dtemp+minlp_->getNumVars(), solC_);
     act = nlpe1_->getSolution()->getObjValue();
     //for (CCIter it=nlCons_.begin(); it!=nlCons_.end(); ++it) {
       //cUb = (*it)->getUb();
@@ -1112,12 +1121,10 @@ void QGHandler::findCenter_(bool &noCenter)
     break;
   }
   //exit(1);
-  inst_C = 0;
-  nlpe1_ = 0;
   delete nlpe1_;
-  delete lfc;
-  delete fnewc; 
+  nlpe1_ = 0;
   delete inst_C;
+  inst_C = 0;
   return;
 }
 
