@@ -199,6 +199,7 @@ NodePtr BranchAndBound::processRoot_(bool *should_prune, bool *should_dive)
   if (prune) {
     nodeRlxr_->reset(current_node, false);
     tm_->pruneNode(current_node);
+    tm_->removeActiveNode(current_node);
   } else {
 #if SPEW
     logger_->msgStream(LogDebug1) << me_ << "branching in root" << 

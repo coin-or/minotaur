@@ -192,16 +192,6 @@ void PCBProcessor::process(NodePtr node, RelaxationPtr rel,
     branches_ = 0;
   }
 
-  if (ws_) {
-    ws_->decrUseCnt();
-    if (0 == ws_->getUseCnt()) {
-      delete ws_;
-      ws_ = 0;
-    } else {
-      ws_ = 0;
-    }
-  }
-
 #if 0
   double *svar = new double[20];
   bool xfeas = true;
@@ -267,9 +257,18 @@ void PCBProcessor::process(NodePtr node, RelaxationPtr rel,
     ++iter;
     should_resolve = false;
 
+    if (ws_) {
+      ws_->decrUseCnt();
+      if (0 == ws_->getUseCnt()) {
+        delete ws_;
+      } 
+      ws_ = 0;
+    }
+
+
 #if SPEW
-  logger_->msgStream(LogDebug) <<  me_ << "iteration " << iter 
-                               << std::endl;
+    logger_->msgStream(LogDebug) <<  me_ << "iteration " << iter 
+                                 << std::endl;
 #endif
 
     solveRelaxation_();

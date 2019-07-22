@@ -676,6 +676,7 @@ void  NlPresHandler::computeImpBounds_(ConstraintPtr c, VariablePtr z,
     m2 = mods.top();
     mods.pop();
     m2->undoToProblem(p_);
+    delete m2;
   }
 }
 
