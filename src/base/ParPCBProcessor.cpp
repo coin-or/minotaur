@@ -34,6 +34,7 @@
 #include "Relaxation.h"
 #include "SolutionPool.h"
 #include "ParTreeManager.h"
+#include "WarmStart.h"
 
 using namespace Minotaur;
 
