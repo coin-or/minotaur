@@ -98,7 +98,7 @@ private:
   /// Value of objective in relaxation solution
   double relobj_; 
   
-  const double * solC_; 
+  double * solC_; 
   const double * solNLP_;  //MS: delete after use
   double objNLP_;  //MS: delete after use
 

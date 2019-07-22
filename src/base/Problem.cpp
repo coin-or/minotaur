@@ -450,7 +450,7 @@ ProblemPtr Problem::clone() const
   clonePtr->nextSId_   = nextSId_;
   clonePtr->nextVId_   = nextVId_;
   clonePtr->hessian_   = HessianOfLagPtr(); // NULL.
-  clonePtr->logger_    = (LoggerPtr) new Logger(logger_->getMaxLevel());
+  clonePtr->logger_->setMaxLevel(logger_->getMaxLevel());
   clonePtr->numDVars_  = numDVars_;	
   clonePtr->numDCons_  = numDCons_;	
   clonePtr->engine_    = 0;
