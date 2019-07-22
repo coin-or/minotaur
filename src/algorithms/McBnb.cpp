@@ -565,7 +565,7 @@ int main(int argc, char** argv)
   EnginePtr engine = 0; // engine for solving relaxations
   ParBranchAndBound * parbab = 0;
   double WallTimeStart = parbab->getWallTime();
-  PresolverPtr pres;
+  PresolverPtr pres = 0;
   const std::string me("mcbnb main: ");
   VarVector *orig_v = 0;
   HandlerVector handlers;
@@ -601,6 +601,9 @@ int main(int argc, char** argv)
   loadProblem(env, iface, oinst, &obj_sense);
   orig_v = new VarVector(oinst->varsBegin(), oinst->varsEnd());
   pres = presolve(env, oinst, iface->getNumDefs(), handlers);
+  for (HandlerVector::iterator it=handlers.begin(); it!=handlers.end(); ++it) {
+    delete (*it);
+  }
   handlers.clear();
   if (Finished != pres->getStatus() && NotStarted != pres->getStatus()) {
     env->getLogger()->msgStream(LogInfo) << me 
@@ -648,11 +651,17 @@ int main(int argc, char** argv)
   writeParBnbStatus(env, parbab, obj_sense, WallTimeStart);
 
 CLEANUP:
+  for (HandlerVector::iterator it=handlers.begin(); it!=handlers.end(); ++it) {
+    delete (*it);
+  }
   if (engine) {
     delete engine;
   }
   if (iface) {
     delete iface;
+  }
+  if (pres) {
+    delete pres;
   }
   if (nodePrcssr) {
     delete[] nodePrcssr;

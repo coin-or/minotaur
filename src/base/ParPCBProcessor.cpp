@@ -91,6 +91,18 @@ ParPCBProcessor::ParPCBProcessor (EnvPtr env, EnginePtr engine,
 
 ParPCBProcessor::~ParPCBProcessor()
 {
+  if (ws_) {
+    ws_->decrUseCnt();
+    if (0 == ws_->getUseCnt()) {
+      delete ws_;
+    }
+  }
+  if (brancher_) {
+    delete brancher_;
+  }
+  if (branches_) {
+    delete branches_;
+  }
   handlers_.clear();
 }
 
@@ -241,6 +253,14 @@ void ParPCBProcessor::process(NodePtr node, RelaxationPtr rel,
     ++iter;
     should_resolve = false;
 
+    if (ws_) {
+      ws_->decrUseCnt();
+      if (0 == ws_->getUseCnt()) {
+        delete ws_;
+      }
+      ws_ = 0;
+    }
+
 #if SPEW
     logger_->msgStream(LogDebug) << me_ << "iteration " << iter << std::endl;
 #endif
@@ -291,6 +311,9 @@ void ParPCBProcessor::process(NodePtr node, RelaxationPtr rel,
     //save warm start information before branching. This step is expensive.
   
       ws_ = engine_->getWarmStartCopy();
+      if (ws_) {
+        ws_->incrUseCnt();
+      }
       if (brancher_->getName()=="ParReliabilityBrancher") {
         ParReliabilityBrancherPtr parRelBr;
         parRelBr = dynamic_cast <ParReliabilityBrancher*> (brancher_);
