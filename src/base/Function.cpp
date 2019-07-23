@@ -145,17 +145,17 @@ FunctionPtr Function::cloneWithVars(VariableConstIterator vbeg, int *err)
   if (lf_) {
     lf = lf_->cloneWithVars(vbeg);
   } else {
-    lf = LinearFunctionPtr(); // NULL
+    lf = 0;
   }
   if (qf_) {
     qf = qf_->cloneWithVars(vbeg);
   } else {
-    qf = QuadraticFunctionPtr(); // NULL
+    qf = 0;
   }
   if (nlf_) {
     nlf = nlf_->cloneWithVars(vbeg, err);
   } else {
-    nlf = NonlinearFunctionPtr(); // NULL
+    nlf = 0;
   }
   f = (FunctionPtr) new Function(lf, qf, nlf);
   f->type_ = type_;
@@ -175,17 +175,17 @@ FunctionPtr Function::cloneWithVarsPermute(VariableConstIterator vbeg, UIntVecto
   if (lf_) {
     lf = lf_->cloneWithVarsPermute(vbeg, variableaddress);
   } else {
-    lf = LinearFunctionPtr(); // NULL
+    lf = 0;
   }
   if (qf_) {
     qf = qf_->cloneWithVars(vbeg);
   } else {
-    qf = QuadraticFunctionPtr(); // NULL
+    qf = 0;
   }
   if (nlf_) {
     nlf = nlf_->cloneWithVars(vbeg, err);
   } else {
-    nlf = NonlinearFunctionPtr(); // NULL
+    nlf = 0;
   }
   f = (FunctionPtr) new Function(lf, qf, nlf);
   f->type_ = type_;
@@ -204,14 +204,16 @@ void Function::subst(VariablePtr out, VariablePtr in, double rat)
     lf_->incTerm(in, w*rat);
     lf_->incTerm(out, -w);
     if (0 == lf_->getNumTerms()) {
-      lf_ = LinearFunctionPtr(); // NULL
+      delete lf_;
+      lf_ = 0;
     }
   }
 
   if (qf_) {
     qf_->subst(out, in, rat);
     if (0 == qf_->getNumTerms()) {
-      qf_ = QuadraticFunctionPtr(); // NULL
+      delete qf_;
+      qf_ = 0;
     }
   }
 
@@ -509,6 +511,9 @@ FunctionType Function::getType()
 
 void Function::changeLf(LinearFunctionPtr lf)
 {
+  if (lf) {
+    delete lf;
+  }
   lf_ = lf;
   collectVars_();
 }
@@ -516,6 +521,9 @@ void Function::changeLf(LinearFunctionPtr lf)
 
 void Function::changeNlf(NonlinearFunctionPtr nlf)
 {
+  if (nlf_) {
+    delete nlf_;
+  }
   nlf_ = nlf;
   collectVars_();
 }
@@ -602,7 +610,8 @@ void Function::removeVar(VariablePtr v, double val)
     }
     qf_->removeVar(v, val, lf_);
     if (lf_->getNumTerms() < 1) {
-      lf_ = LinearFunctionPtr(); // NULL
+      delete lf_;
+      lf_ = 0;
     }
   }
   if (nlf_) {
