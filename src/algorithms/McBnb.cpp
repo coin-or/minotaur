@@ -663,14 +663,25 @@ CLEANUP:
   if (pres) {
     delete pres;
   }
+  for (UInt i=0; i < numThreads; i++) {
+    if (nodePrcssr[i]) {
+      delete nodePrcssr[i];
+    }
+    if (parNodeRlxr[i]) {
+      delete parNodeRlxr[i];
+    }
+    if (relCopy[i]) {
+      delete relCopy[i];
+    }
+  }
+  if (relCopy) {
+    delete[] relCopy;
+  }
   if (nodePrcssr) {
     delete[] nodePrcssr;
   }
   if (parNodeRlxr) {
     delete[] parNodeRlxr;
-  }
-  if (relCopy) {
-    delete[] relCopy;
   }
   if (parbab) {
     delete parbab;
