@@ -295,9 +295,10 @@ namespace Minotaur {
      * \param [out] nodePrcssr used to solve a node.
      * \param [out] ws information to be used as warmstart for next node.
      */
-    NodePtr processRoot_(bool *should_prune, bool *should_dive,
+    void processRoot_(bool *should_prune, bool *should_dive,
                          ParNodeIncRelaxerPtr parNodeRlxr,
-                         ParPCBProcessorPtr nodePrcssr, WarmStartPtr ws);
+                         ParPCBProcessorPtr nodePrcssr, WarmStartPtr ws,
+                         NodePtr &node);
 
 
     /// Return True if a node can be pruned.
