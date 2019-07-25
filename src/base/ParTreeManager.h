@@ -179,7 +179,7 @@ namespace Minotaur {
 
   private:
     /// Set of nodes that are still active (those who need to be processed).
-    ActiveNodeStorePtr active_nodes_; 
+    ActiveNodeStorePtr activeNodes_;
 
     /// An active node that is not in the ActiveNodeStore. One such node may
     /// exist. When we are diving. It must be deleted in the end.

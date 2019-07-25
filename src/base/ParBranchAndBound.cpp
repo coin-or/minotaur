@@ -40,6 +40,7 @@
 #include "Branch.h"
 #include "BrCand.h"
 #include "BrVarCand.h"
+#include "WarmStart.h"
 
 
 //#define SPEW 1
@@ -900,7 +901,16 @@ void ParBranchAndBound::parsolve(ParNodeIncRelaxerPtr parNodeRlxr[],
   delete[] initialized;
   for (UInt i=0; i < numThreads; i++) {
     if (current_node[i]) {
-      delete current_node[i];
+      delete current_node[i]; current_node[i] = 0;
+    }
+    if (new_node[i]) {
+      delete new_node[i]; new_node[i] = 0;
+    }
+    if (ws[i]) {
+      ws[i] = 0;
+    }
+    if (branches[i]) {
+      branches[i] = 0;
     }
   }
   delete[] current_node;
