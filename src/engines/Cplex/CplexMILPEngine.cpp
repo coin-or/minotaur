@@ -14,13 +14,6 @@
 #include <iostream>
 #include <iomanip>
 
-//#include "coin/CoinPragma.hpp"
-//#include "coin/CbcModel.hpp"
-//#include "coin/OsiClpSolverInterface.hpp"
-
-// #undef F77_FUNC_
-// #undef F77_FUNC
-
 #include "MinotaurConfig.h"
 #include "CplexMILPEngine.h"
 #include "Constraint.h"
@@ -70,6 +63,18 @@ CplexMILPEngine::CplexMILPEngine(EnvPtr env)
 
 CplexMILPEngine::~CplexMILPEngine()
 {
+  if (cpxenv_ != NULL) {
+    cpxstatus_ = CPXXcloseCPLEX (&cpxenv_);
+
+    /* Note that CPXXcloseCPLEX produces no output,
+       so the only way to see the cause of the error is to use
+       CPXXgeterrorstring.  For other CPLEX routines, the errors will
+       be seen if the CPXPARAM_ScreenOutput indicator is set to CPX_ON. */
+    if (cpxstatus_) {
+      logger_->msgStream(LogError) << "Could not close CPLEX environment.\n";
+    }
+  }
+
   if (timer_) {
     delete timer_;
   }
@@ -83,6 +88,7 @@ CplexMILPEngine::~CplexMILPEngine()
   if (sol_) {
     delete sol_;
   }
+
 }
 
 
@@ -254,7 +260,7 @@ void CplexMILPEngine::load(ProblemPtr problem)
      CPXXgeterrorstring.  For other CPLEX routines, the errors will
      be seen if the CPXXPARAM_ScreenOutput indicator is set to CPXX_ON.  */
 
-  if ( cpxenv_ == NULL ) {
+  if (cpxenv_ == NULL) {
      char  errmsg[CPXMESSAGEBUFSIZE];
      logger_->msgStream(LogError) << me_ << "Could not open CPLEX environment."
        << std::endl;
@@ -263,7 +269,7 @@ void CplexMILPEngine::load(ProblemPtr problem)
      goto TERMINATE;
   }
 
-  /* Turn on output to the screen (use a file to read parameters LATER!) */
+  /* Turn on output to te screen (use a file to read parameters LATER!) */
   cpxstatus_ = CPXXsetintparam (cpxenv_, CPXPARAM_ScreenOutput, CPX_ON);
   if (cpxstatus_) {
      logger_->msgStream(LogError) << me_ << "Failure to turn on screen indicator, error "
@@ -273,7 +279,7 @@ void CplexMILPEngine::load(ProblemPtr problem)
 
   /* Create the problem. */
   cpxlp_ = CPXXcreateprob (cpxenv_, &cpxstatus_, "minoCpxProb");
-  if ( cpxlp_ == NULL ) {
+  if (cpxlp_ == NULL) {
      logger_->msgStream(LogError) << me_ << "Failed to create LP." << std::endl;
      goto TERMINATE;
   }
@@ -294,6 +300,8 @@ void CplexMILPEngine::load(ProblemPtr problem)
     conname[i] = cstr;
     i++;
   }
+  delete [] cstr;
+  cstr = 0;
 
   index = new int[nnz];
   value = new double[nnz];
@@ -388,6 +396,9 @@ void CplexMILPEngine::load(ProblemPtr problem)
      goto TERMINATE;
   }
   
+  if (sol_) {
+    delete sol_;
+  }
   sol_ = (SolutionPtr) new Solution(1E20, 0, problem_);
 
 TERMINATE:
@@ -407,7 +418,10 @@ TERMINATE:
   delete [] cstr;
   delete [] varname;
   delete [] conname;
-  //delete [] sense;
+  delete [] conind;
+  delete [] conrange;
+  delete [] sense;
+  delete [] vartype;
   //problem->setEngine(this);
 
 }
