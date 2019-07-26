@@ -120,7 +120,7 @@ MINOTAUR = ..
 ##############################################################################
 ### Optional flags. Don't change them if you don't know about them.
 ##############################################################################
-DEFINES = -DSPEW=0 -DDEBUG=0 -DCOIN_BIG_INDEX=0 -DUSE_OPENMP=0
+DEFINES = -DSPEW=0 -DDEBUG=0 -DCOIN_BIG_INDEX=0 -DUSE_OPENMP=1
 
 EXTRA_LIBS = -lpthread
 ##############################################################################
