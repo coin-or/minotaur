@@ -11,7 +11,7 @@
  */
 
 #include <cmath>
-#include <omp.h>
+
 #include "MinotaurConfig.h"
 #include "Branch.h"
 #include "Environment.h"
@@ -22,7 +22,7 @@
 #include "Option.h"
 #include "Timer.h"
 #include "ParTreeManager.h"
-//#include <omp.h>
+
 using namespace Minotaur;
     
     
@@ -48,11 +48,11 @@ ParTreeManager::ParTreeManager(EnvPtr env)
 
   switch (searchType_) {
    case (DepthFirst):
-     active_nodes_ = (NodeStackPtr) new NodeStack();
+     activeNodes_ = (NodeStackPtr) new NodeStack();
      break;
    case (BestFirst):
    case (BestThenDive):
-     active_nodes_ = (NodeHeapPtr) new NodeHeap(NodeHeap::Value);
+     activeNodes_ = (NodeHeapPtr) new NodeHeap(NodeHeap::Value);
      break;
    default:
      assert (!"search strategy must be defined!");
@@ -83,7 +83,7 @@ ParTreeManager::ParTreeManager(EnvPtr env)
 ParTreeManager::~ParTreeManager()
 {
   clearAll();
-  delete active_nodes_;
+  delete activeNodes_;
   if (doVbc_) {
     vbcFile_.close();
     delete timer_;
@@ -93,7 +93,7 @@ ParTreeManager::~ParTreeManager()
 
 bool ParTreeManager::anyActiveNodesLeft()
 {
-  return !active_nodes_->isEmpty();
+  return !activeNodes_->isEmpty();
 }
 
 
@@ -106,18 +106,16 @@ NodePtr ParTreeManager::branch(Branches branches, NodePtr node, WarmStartPtr ws)
   if (searchType_ == DepthFirst || searchType_ == BestThenDive) {
     is_first = true;
   }
-//#pragma omp critical
-  //std::cout << "in parTM branch: node " << node->getId() << " thread: " << omp_get_thread_num() << std::endl;
-
   for (BranchConstIterator br_iter=branches->begin(); br_iter!=branches->end();
       ++br_iter) {
     branch_p = *br_iter;
-    //branch_p->write(std::cout);
     child = (NodePtr) new Node(node, branch_p);
     child->setLb(node->getLb());
+    child->setTbScore(node->getTbScore());
     child->setDepth(node->getDepth()+1);
     node->addChild(child);
     if (is_first) {
+      child->setWarmStart(ws);
       insertCandidate_(child, true);
       is_first = false;
       new_cand = child;
@@ -127,7 +125,6 @@ NodePtr ParTreeManager::branch(Branches branches, NodePtr node, WarmStartPtr ws)
       child->setWarmStart(ws);
       insertCandidate_(child);
     }
-    //std::cout << "inserting candidate\n";
   }
   if (doVbc_) {
     vbcFile_ << toClockTime(timer_->query()) << " P " << node->getId()+1 << " "
@@ -150,17 +147,17 @@ void ParTreeManager::clearAll()
   if (aNode_) {
     removeNode_(aNode_);
   }
-  while (false==active_nodes_->isEmpty()) {
-    n = active_nodes_->top();
+  while (false==activeNodes_->isEmpty()) {
+    n = activeNodes_->top();
     removeNode_(n);
-    active_nodes_->pop();
+    activeNodes_->pop();
   }
 }
 
 
 UInt ParTreeManager::getActiveNodes() const
 {
-  return active_nodes_->getSize();
+  return activeNodes_->getSize();
 }
 
 
@@ -169,11 +166,9 @@ NodePtr ParTreeManager::getCandidate()
   NodePtr node = NodePtr(); // NULL
   //aNode_.reset();
   aNode_ = 0;
-  while (active_nodes_->getSize() > 0) {
-    node = active_nodes_->top();
-    // std::cout << "tm: node lb = " << node->getLb() << std::endl;
+  while (activeNodes_->getSize() > 0) {
+    node = activeNodes_->top();
     if (shouldPrune_(node)) {
-      // std::cout << "tm: node pruned." << std::endl;
       removeActiveNode(node);
       pruneNode(node);
       //node.reset(); // NULL
@@ -205,7 +200,7 @@ double ParTreeManager::getPerGap()
   double gap = 0.0;
   if (bestUpperBound_ >= INFINITY) {
     gap = INFINITY;
-  } else if (fabs(bestLowerBound_) < etol_) {
+  } else if ((bestUpperBound_ > etol_) && (fabs(bestLowerBound_) < etol_)) {
     gap = 100.0;
   } else {
     gap = (bestUpperBound_ - bestLowerBound_)/(fabs(bestUpperBound_)+etol_) 
@@ -281,9 +276,9 @@ void ParTreeManager::insertCandidate_(NodePtr node, bool pop_now)
 
   // add node to the heap/stack of active nodes. If pop_now is true, the node
   // is processed right after creating it; we don't
-  // want to keep it in active_nodes (e.g. while diving)
+  // want to keep it in activeNodes (e.g. while diving)
   if (!pop_now) {
-    active_nodes_->push(node);
+    activeNodes_->push(node);
   } 
   if (doVbc_) {
     vbcFile_ << toClockTime(timer_->query()) << " N "
@@ -296,11 +291,11 @@ void ParTreeManager::insertCandidate_(NodePtr node, bool pop_now)
 void ParTreeManager::insertRoot(NodePtr node)
 {
   assert(size_==0);
-  assert(active_nodes_->getSize()==0);
+  assert(activeNodes_->getSize()==0);
 
   node->setId(0);
   node->setDepth(0);
-  active_nodes_->push(node);
+  activeNodes_->push(node);
   ++size_;
   if (doVbc_) {
     // father node color
@@ -322,16 +317,14 @@ void ParTreeManager::removeActiveNode(NodePtr node)
   if (doVbc_) {
     if (node->getStatus()==NodeOptimal) {
       vbcFile_ << toClockTime(timer_->query()) << " P "
-        << active_nodes_->top()->getId()+1 << " " << VbcFeas << std::endl;
+        << activeNodes_->top()->getId()+1 << " " << VbcFeas << std::endl;
     } else if (node->getStatus()!=NodeInfeasible && node->getStatus()!=NodeHitUb) {
       vbcFile_ << toClockTime(timer_->query()) << " P "
-               << active_nodes_->top()->getId()+1 << " " << VbcSolved << std::endl;
+               << activeNodes_->top()->getId()+1 << " " << VbcSolved << std::endl;
     } 
   }
 
-  active_nodes_->pop();
-  // active_nodes_->write(std::cout);
-  //std::cout << "size of active nodes = " << active_nodes_.size() << std::endl;
+  activeNodes_->pop();
   // dont remove the head until the candidate has been processed.
 }
 
@@ -373,6 +366,7 @@ void ParTreeManager::removeNode_(NodePtr node)
         vbcFile_ << toClockTime(timer_->query()) << " P " << node->getId()+1 << " " 
                  << c << std::endl;
       }
+      delete node;
       if (parent->getNumChildren() < 1) {
         removeNode_(parent);
       }
@@ -380,11 +374,10 @@ void ParTreeManager::removeNode_(NodePtr node)
     } else {
       assert (!"Current node is not in its parent's list of children!");
     }
+  } else {
+    // root node
+    delete node;
   }
-  // std::cout << "node " << node->getId() << " use count = " <<
-  // node.use_count() << std::endl;
-  //node.reset();
-  node = 0;
 }
 
 
@@ -427,7 +420,7 @@ bool ParTreeManager::shouldPrune_(NodePtr node)
 double ParTreeManager::updateLb()
 {
   // this could be an expensive operation. Try to avoid it.
-  bestLowerBound_ = active_nodes_->getBestLB();
+  bestLowerBound_ = activeNodes_->getBestLB();
 
   return bestLowerBound_;
 }

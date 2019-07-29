@@ -149,6 +149,7 @@ private:
                            BranchDirection)
   {return ModificationPtr();};
 
+  //MS: make it private
   bool findIntersectPt(std::vector<UInt > newConsId, VariablePtr vl,
                        VariablePtr vnl, double * iP);
  

@@ -243,7 +243,7 @@ void TreeManager::insertCandidate_(NodePtr node, bool pop_now)
 
   // add node to the heap/stack of active nodes. If pop_now is true, the node
   // is processed right after creating it; we don't
-  // want to keep it in active_nodes (e.g. while diving)
+  // want to keep it in activeNodes (e.g. while diving)
   if (!pop_now) {
     activeNodes_->push(node);
   } 

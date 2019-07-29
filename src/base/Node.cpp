@@ -136,9 +136,11 @@ void Node::applyRModsTrans(RelaxationPtr rel)
       if (pmod1) {
         mod2 = pmod1->toRel(p, rel);
         mod2->applyToProblem(rel);
+        delete mod2; mod2 = 0;
       } else {
         mod->applyToProblem(rel);
       }
+      delete pmod1; pmod1 = 0;
     }
   }
   // now apply any other mods that were added while processing it.
@@ -148,9 +150,11 @@ void Node::applyRModsTrans(RelaxationPtr rel)
     if (pmod1) {
       mod2 = pmod1->toRel(p, rel);
       mod2->applyToProblem(rel);
+      delete mod2; mod2 = 0;
     } else {
       mod->applyToProblem(rel);
     }
+    delete pmod1; pmod1 = 0;
   }
 }
 
@@ -299,9 +303,11 @@ void Node::undoRModsTrans(RelaxationPtr rel)
     if (pmod1) {
       mod2 = pmod1->toRel(p, rel);
       mod2->undoToProblem(rel);
+      delete mod2; mod2 = 0;
     } else {
       mod->undoToProblem(rel);
     }
+    delete pmod1; pmod1 = 0;
   }
 
   // now undo the mods that were used to create this node from its parent.
@@ -313,9 +319,11 @@ void Node::undoRModsTrans(RelaxationPtr rel)
       if (pmod1) {
         mod2 = pmod1->toRel(p, rel);
         mod2->undoToProblem(rel);
+        delete mod2; mod2 = 0;
       } else {
         mod->undoToProblem(rel);
       }
+      delete pmod1; pmod1 = 0;
     }
   }
 }

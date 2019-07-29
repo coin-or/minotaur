@@ -14,41 +14,42 @@
 #include <fstream>
 #include <sys/time.h>
 
-#include <MinotaurConfig.h>
-#include <AMPLHessian.h>
-#include <AMPLJacobian.h>
-#include <Environment.h>
-#include <Handler.h>
-#include <Option.h>
-#include <Problem.h>
-#include <Engine.h>
-#include <QPEngine.h>
-#include <LPEngine.h>
-#include <Logger.h>
-#include <MILPEngine.h>
+#include "MinotaurConfig.h"
+#include "AMPLHessian.h"
+#include "AMPLJacobian.h"
+#include "Environment.h"
+#include "Handler.h"
+#include "Option.h"
+#include "Problem.h"
+#include "Engine.h"
+#include "QPEngine.h"
+#include "LinFeasPump.h"
+#include "LPEngine.h"
+#include "Logger.h"
+#include "MILPEngine.h"
 #include "Modification.h"
-#include <NLPEngine.h>
+#include "NLPEngine.h"
 #include "NlPresHandler.h"
-#include <NodeRelaxer.h>
-#include <NodeIncRelaxer.h>
-#include <MaxVioBrancher.h>
-#include <OAHandler.h>
-#include <ReliabilityBrancher.h>
-#include <AMPLInterface.h>
-#include <BranchAndBound.h>
-#include <PCBProcessor.h>
-#include <Presolver.h>
-#include <Timer.h>
-#include <LexicoBrancher.h>
-#include <Logger.h>
-#include <LinearHandler.h>
-#include <IntVarHandler.h>
-#include <Solution.h>
-#include <SolutionPool.h>
-#include <TreeManager.h>
-#include <EngineFactory.h>
-#include <CxQuadHandler.h>
-#include <Objective.h>
+#include "NodeRelaxer.h"
+#include "NodeIncRelaxer.h"
+#include "MaxVioBrancher.h"
+#include "OAHandler.h"
+#include "ReliabilityBrancher.h"
+#include "AMPLInterface.h"
+#include "BranchAndBound.h"
+#include "PCBProcessor.h"
+#include "Presolver.h"
+#include "Timer.h"
+#include "LexicoBrancher.h"
+#include "Logger.h"
+#include "LinearHandler.h"
+#include "IntVarHandler.h"
+#include "Solution.h"
+#include "SolutionPool.h"
+#include "TreeManager.h"
+#include "EngineFactory.h"
+#include "CxQuadHandler.h"
+#include "Objective.h"
 
 using namespace Minotaur;
 
@@ -217,11 +218,11 @@ PresolverPtr presolve(EnvPtr env, ProblemPtr p, size_t ndefs,
                       HandlerVector &handlers)
 {
   PresolverPtr pres = PresolverPtr(); // NULL
-  const std::string me("qg: ");
+  const std::string me("bnb main: ");
 
   p->calculateSize();
   if (env->getOptions()->findBool("presolve")->getValue() == true) {
-    LinearHandlerPtr lhandler = (LinearHandlerPtr) new LinearHandler(env, p);
+    LinHandlerPtr lhandler = (LinHandlerPtr) new LinearHandler(env, p);
     handlers.push_back(lhandler);
     if (p->isQP() || p->isQuadratic() || p->isLinear() ||
         true==env->getOptions()->findBool("use_native_cgraph")->getValue()) {
@@ -240,9 +241,9 @@ PresolverPtr presolve(EnvPtr env, ProblemPtr p, size_t ndefs,
     }
 
     if (!p->isLinear() && 
-        true==env->getOptions()->findBool("use_native_cgraph")->getValue() && 
-        true==env->getOptions()->findBool("nl_presolve")->getValue() 
-       ) {
+         true==env->getOptions()->findBool("use_native_cgraph")->getValue() &&
+         true==env->getOptions()->findBool("nl_presolve")->getValue()
+         ) {
       NlPresHandlerPtr nlhand = (NlPresHandlerPtr) new NlPresHandler(env, p);
       handlers.push_back(nlhand);
     }
@@ -261,6 +262,9 @@ PresolverPtr presolve(EnvPtr env, ProblemPtr p, size_t ndefs,
   pres->standardize(); 
   if (env->getOptions()->findBool("presolve")->getValue() == true) {
     pres->solve();
+    for (HandlerVector::iterator h=handlers.begin(); h!=handlers.end(); ++h) {
+      (*h)->writeStats(env->getLogger()->msgStream(LogExtraInfo));
+    }
   }
   return pres;
 }
@@ -398,11 +402,11 @@ int main(int argc, char* argv[])
   OptionDBPtr options;
 
   MINOTAUR_AMPL::AMPLInterfacePtr iface = MINOTAUR_AMPL::AMPLInterfacePtr();
-  ProblemPtr inst;
+  ProblemPtr inst = 0;
   double obj_sense =1.0, gap = INFINITY;
   double wallTimeStart = getWallTime();
   
-  PresolverPtr pres;
+  PresolverPtr pres = 0;
   EngineFactory *efac;
   const std::string me("oa: ");
   SolveStatus status;
@@ -412,6 +416,8 @@ int main(int argc, char* argv[])
   OAHandlerPtr oa_hand;
 
   ModVector pmod, rmod;
+  NodeIncRelaxerPtr nr = 0;
+  SolutionPoolPtr solPool = 0;
 
   //engines
   EnginePtr nlp_e = 0;
@@ -453,6 +459,9 @@ int main(int argc, char* argv[])
   // get presolver.
   orig_v = new VarVector(inst->varsBegin(), inst->varsEnd());
   pres = presolve(env, inst, iface->getNumDefs(), handlers);
+  for (HandlerVector::iterator it=handlers.begin(); it!=handlers.end(); ++it) {
+    delete (*it);
+  }
   handlers.clear();
   if (Finished != pres->getStatus() && NotStarted != pres->getStatus()) {
     env->getLogger()->msgStream(LogInfo) << me 
@@ -483,12 +492,11 @@ int main(int argc, char* argv[])
     double inf_meas;
     UInt iterNum = 0;
     ConstSolutionPtr sol, sol2;
-    SolutionPoolPtr solPool = (SolutionPoolPtr) new SolutionPool(env, inst, 1);
+    solPool = (SolutionPoolPtr) new SolutionPool(env, inst, 1);
     SeparationStatus sepStatus;
     bool prune = false;
     RelaxationPtr milp = RelaxationPtr();
   
-    NodeIncRelaxerPtr nr;
     nr = (NodeIncRelaxerPtr) new NodeIncRelaxer(env, handlers);
     nr->setModFlag(false);
     milp = nr->createRootRelaxation(NodePtr(), prune);
@@ -586,20 +594,42 @@ int main(int argc, char* argv[])
     }
     //MS: Other solve status and right way of writing them
     //writeSol(env, orig_v, pres, solPool->getBestSolution(), solveStatus, iface);
-   }
+  }
 
 CLEANUP:
+  for (HandlerVector::iterator it=handlers.begin(); it!=handlers.end(); ++it) {
+    delete (*it);
+  }
   if (nlp_e) {
     delete nlp_e;
   }
   if (milp_e) {
     delete milp_e;
   }
+  if (efac) {
+    delete efac;
+  }
+  if (solPool) {
+    delete solPool;
+  }
+  if (nr) {
+    delete nr;
+    orig_v = 0;
+  }
   if (iface) {
     delete iface;
   }
-  if (orig_v) {
-    delete orig_v;
+  if (pres) {
+    delete pres;
+  }
+  if (inst) {
+    delete inst;
+  }
+  //if (orig_v) {
+    //delete orig_v;
+  //}
+  if (env) {
+    delete env;
   }
   return 0;
 }

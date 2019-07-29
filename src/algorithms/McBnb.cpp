@@ -67,7 +67,9 @@ ParBranchAndBound* createParBab(EnvPtr env, ProblemPtr p, EnginePtr e,
                                 UInt numThreads,
                                 RelaxationPtr relCopy[],
                                 ParPCBProcessorPtr nodePrcssr[],
-                                ParNodeIncRelaxerPtr parNodeRlxr[])
+                                ParNodeIncRelaxerPtr parNodeRlxr[],
+                                HandlerVector handlersCopy[],
+                                EnginePtr eCopy[])
 {
   ParBranchAndBound *bab = new ParBranchAndBound(env, p);
   const std::string me("mcbnb main: ");
@@ -76,8 +78,7 @@ ParBranchAndBound* createParBab(EnvPtr env, ProblemPtr p, EnginePtr e,
 #pragma omp parallel for
   for(UInt i = 0; i < numThreads; i++) {
     BrancherPtr br;
-    EnginePtr eCopy = e->emptyCopy();
-    HandlerVector handlersCopy;
+    eCopy[i] = e->emptyCopy();
     IntVarHandlerPtr v_hand = (IntVarHandlerPtr) new IntVarHandler(env, p);
     LinHandlerPtr l_hand = (LinHandlerPtr) new LinearHandler(env, p);
     NlPresHandlerPtr nlhand;
@@ -87,7 +88,7 @@ ParBranchAndBound* createParBab(EnvPtr env, ProblemPtr p, EnginePtr e,
     SOS1HandlerPtr s_hand = (SOS1HandlerPtr) new SOS1Handler(env, p);
     if (s_hand->isNeeded()) {
       s_hand->setModFlags(false, true);
-      handlersCopy.push_back(s_hand);
+      handlersCopy[i].push_back(s_hand);
     } else {
       delete s_hand;
     }
@@ -96,7 +97,7 @@ ParBranchAndBound* createParBab(EnvPtr env, ProblemPtr p, EnginePtr e,
     if (options->findBool("rc_fix")->getValue()) {
         rc_hand = (RCHandlerPtr) new RCHandler(env);
         rc_hand->setModFlags(false, true);
-        handlersCopy.push_back(rc_hand);
+        handlersCopy[i].push_back(rc_hand);
         assert(rc_hand);
     }
 
@@ -104,15 +105,15 @@ ParBranchAndBound* createParBab(EnvPtr env, ProblemPtr p, EnginePtr e,
     s2_hand = (SOS2HandlerPtr) new SOS2Handler(env, p);
     if (s2_hand->isNeeded()) {
       s2_hand->setModFlags(false, true);
-      handlersCopy.push_back(s2_hand);
+      handlersCopy[i].push_back(s2_hand);
     } else {
       delete s2_hand;
     }
 
-    handlersCopy.push_back(v_hand);
+    handlersCopy[i].push_back(v_hand);
     if (true==options->findBool("presolve")->getValue()) {
       l_hand->setModFlags(false, true);
-      handlersCopy.push_back(l_hand);
+      handlersCopy[i].push_back(l_hand);
     }
     if (!p->isLinear() && 
         true==options->findBool("presolve")->getValue() &&
@@ -120,10 +121,10 @@ ParBranchAndBound* createParBab(EnvPtr env, ProblemPtr p, EnginePtr e,
         true==options->findBool("nl_presolve")->getValue()) {
       nlhand = (NlPresHandlerPtr) new NlPresHandler(env, p);
       nlhand->setModFlags(false, true);
-      //handlersCopy.push_back(nlhand);
+      handlersCopy[i].push_back(nlhand);
     }
 
-    br = createBrancher(env, p, handlersCopy, eCopy);
+    br = createBrancher(env, p, handlersCopy[i], eCopy[i]);
     relCopy[i] = (RelaxationPtr) new Relaxation(p);
     relCopy[i]->calculateSize();
     if (options->findBool("use_native_cgraph")->getValue() ||
@@ -135,14 +136,13 @@ ParBranchAndBound* createParBab(EnvPtr env, ProblemPtr p, EnginePtr e,
     }
     relCopy[i]->setInitialPoint(p->getInitialPoint());
 
-    //nodePrcssr[i] = (ParBndProcessorPtr) new ParBndProcessor(env, eCopy, handlersCopy);
-    nodePrcssr[i] = (ParPCBProcessorPtr) new ParPCBProcessor(env, eCopy, handlersCopy);
+    nodePrcssr[i] = (ParPCBProcessorPtr) new ParPCBProcessor(env, eCopy[i], handlersCopy[i]);
     nodePrcssr[i]->setBrancher(br);
 
-    parNodeRlxr[i] = (ParNodeIncRelaxerPtr) new ParNodeIncRelaxer(env, handlersCopy);
+    parNodeRlxr[i] = (ParNodeIncRelaxerPtr) new ParNodeIncRelaxer(env, handlersCopy[i]);
     parNodeRlxr[i]->setModFlag(false);
     parNodeRlxr[i]->setRelaxation(relCopy[i]);
-    parNodeRlxr[i]->setEngine(eCopy);
+    parNodeRlxr[i]->setEngine(eCopy[i]);
   }
   
   if (options->findBool("pardivheur")->getValue()) {
@@ -298,6 +298,10 @@ void loadProblem(EnvPtr env, MINOTAUR_AMPL::AMPLInterface* iface,
   env->getLogger()->msgStream(LogInfo) << me 
     << "time used in reading instance (s) = " << std::fixed 
     << std::setprecision(2) << timer->query() << std::endl;
+
+  if (options->findBool("cgtoqf")->getValue()==1){
+    oinst->cg2qf();
+  }
 
   // display the problem
   oinst->calculateSize();
@@ -467,16 +471,20 @@ void writeSol(EnvPtr env, VarVector *orig_v,
               PresolverPtr pres, SolutionPtr sol, SolveStatus status,
               MINOTAUR_AMPL::AMPLInterface* iface)
 {
+  Solution* final_sol = 0;
   if (sol) {
-    sol = pres->getPostSol(sol);
+    final_sol = pres->getPostSol(sol);
   }
 
   if (env->getOptions()->findFlag("AMPL")->getValue() ||
       true == env->getOptions()->findBool("write_sol_file")->getValue()) {
-    iface->writeSolution(sol, status);
-  } else if (sol && env->getLogger()->getMaxLevel()>=LogExtraInfo &&
+    iface->writeSolution(final_sol, status);
+  } else if (final_sol && env->getLogger()->getMaxLevel()>=LogExtraInfo &&
              env->getOptions()->findBool("display_solution")->getValue()) {
-    sol->writePrimal(env->getLogger()->msgStream(LogExtraInfo), orig_v);
+    final_sol->writePrimal(env->getLogger()->msgStream(LogExtraInfo), orig_v);
+  }
+  if (final_sol) {
+    delete final_sol;
   }
 }
 
@@ -572,6 +580,8 @@ int main(int argc, char** argv)
   int err = 0;
   double obj_sense = 1.0;
   UInt numThreads;
+  HandlerVector *handlersCopy;
+  EnginePtr *eCopy = 0;
   ParPCBProcessorPtr *nodePrcssr = 0;
   ParNodeIncRelaxerPtr *parNodeRlxr = 0;
   RelaxationPtr *relCopy = 0;
@@ -598,6 +608,8 @@ int main(int argc, char** argv)
   nodePrcssr = new ParPCBProcessorPtr[numThreads];
   parNodeRlxr = new ParNodeIncRelaxerPtr[numThreads];
   relCopy = new RelaxationPtr[numThreads]; 
+  eCopy = new EnginePtr[numThreads];
+  handlersCopy = new HandlerVector[numThreads];
   loadProblem(env, iface, oinst, &obj_sense);
   orig_v = new VarVector(oinst->varsBegin(), oinst->varsEnd());
   pres = presolve(env, oinst, iface->getNumDefs(), handlers);
@@ -628,7 +640,7 @@ int main(int argc, char** argv)
       << "NLP solver only (e.g. IPOPT with MA97)**" << std::endl;
   }
   parbab = createParBab(env, oinst, engine, numThreads, relCopy,
-                        nodePrcssr, parNodeRlxr);
+                        nodePrcssr, parNodeRlxr, handlersCopy, eCopy);
   if (true==env->getOptions()->findBool("mcbnb_deter_mode")->getValue()) {
     assert(!"Deterministic mode not available right now!");
     parbab->parsolveSync(parNodeRlxr, nodePrcssr, numThreads);
@@ -663,21 +675,49 @@ CLEANUP:
   if (pres) {
     delete pres;
   }
+  for (UInt i=0; i < numThreads; i++) {
+    for (HandlerVector::iterator it=handlersCopy[i].begin(); it!=handlersCopy[i].end(); ++it) {
+      delete (*it);
+    }
+    if (eCopy[i]) {
+      delete eCopy[i];
+    }
+    if (parNodeRlxr[i]) {
+      delete parNodeRlxr[i];
+      relCopy[i] = 0;
+    }
+    if (nodePrcssr[i]) {
+      delete nodePrcssr[i];
+    }
+  }
+  if (handlersCopy) {
+    delete[] handlersCopy;
+  }
+  if (eCopy) {
+    delete[] eCopy;
+  }
+  if (relCopy) {
+    delete[] relCopy;
+  }
   if (nodePrcssr) {
     delete[] nodePrcssr;
   }
   if (parNodeRlxr) {
     delete[] parNodeRlxr;
   }
-  if (relCopy) {
-    delete[] relCopy;
-  }
   if (parbab) {
     delete parbab;
+  }
+  if (oinst) {
+    delete oinst;
   }
   if (orig_v) {
     delete orig_v;
   }
+  if (env) {
+    delete env;
+  }
+
   return 0;
 }
 

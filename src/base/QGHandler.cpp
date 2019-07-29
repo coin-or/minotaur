@@ -121,6 +121,7 @@ QGHandler::~QGHandler()
   if (solC_) {
     delete [] solC_;
   }
+  // MS: delete logger, rel_, minlp_ ike in parQGHandler
 }
 
 UInt QGHandler::addCutAtRoot_(double *x, ConstraintPtr con)
@@ -1228,17 +1229,17 @@ void QGHandler::rootLinScheme1_(ConstraintPtr con, double linTermCoeff,
          stopCond, consUb; // extraCoeff: coeff of nonlin var in linear part
   std::fill(b1, b1+n, 0.);
   // initialization
-  vlIdx = 0;
-  extraCoeff = 0;
-  linTermCoeff = 0;
+  //vlIdx = 0;
+  //extraCoeff = 0;
+  //linTermCoeff = 0;
   // constraints with extactly two vars, one in nonlinear and one in linear
   // part, is considered
 
-  shouldCont = twoVarsCon_(con, linTermCoeff, vlIdx, vnIdx, extraCoeff); 
-  if (shouldCont == false) {
-    delete [] b1;
-    return;    
-  }
+  //shouldCont = twoVarsCon_(con, linTermCoeff, vlIdx, vnIdx, extraCoeff); 
+  //if (shouldCont == false) {
+    //delete [] b1;
+    //return;    
+  //}
   
   vl = rel_->getVariable(vlIdx);
   vnl = rel_->getVariable(vnIdx);
@@ -2014,7 +2015,7 @@ void QGHandler::relax_(bool *isInf)
 
   if (*isInf == false) {
     //Default values of these parameters
-    if ((rs1_ + rs2Per_ + rs3_ > 0) > 0) {
+    if ((rs1_ + rs2Per_ + rs3_ ) > 0) {
       rootLinearizations_();
     }
   }
