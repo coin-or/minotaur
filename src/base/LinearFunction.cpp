@@ -369,9 +369,7 @@ QuadraticFunctionPtr LinearFunction::copyMult(ConstLinearFunctionPtr l2)
         qf->incTerm(it1->first, it2->first, it1->second * it2->second);
       }
     }
-  } else {
-    // do nothing
-  }
+  } 
   return qf;
 }
 

@@ -506,6 +506,7 @@ void AMPLCGraphUT::testObjectiveGradient()
   // acually calculated values for just the quadratic parts
   double gradient[5] = {0, 0, 0, 0, 0};
   Minotaur::EnvPtr env = new Minotaur::Environment();
+  env->setLogLevel(Minotaur::LogError);
   Minotaur::ProblemPtr inst;
   AMPLInterface *iface;
 

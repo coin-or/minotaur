@@ -114,6 +114,10 @@ void CbcEngine::changeObj(FunctionPtr , double)
 
 void CbcEngine::clear()
 {
+  if (problem_) {
+    problem_->unsetEngine();
+    problem_ = 0;
+  }
 }
 
 

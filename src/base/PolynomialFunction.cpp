@@ -291,8 +291,7 @@ PolynomialFunction::PolynomialFunction(CGraphPtr cg)
 
 PolynomialFunction::~PolynomialFunction()
 {
-  terms_.clear();
-  vars_.clear();
+  clear_();
 }
 
 
@@ -308,7 +307,14 @@ void PolynomialFunction::add(ConstMonomialFunPtr m)
 void PolynomialFunction::clear_()
 {
   cb_ = 0;
+  for (MonomialConstIter it = terms_.begin(); it!=terms_.end(); ++it) {
+    delete (*it);
+  }
+  if (cg_) {
+    delete cg_;
+  }
   terms_.clear();
+  vars_.clear();
 }
 
 
@@ -356,6 +362,10 @@ void PolynomialFunction::createCG()
     ++size;
   }
   cnodes = new CNode*[size];
+
+  if (cg_) {
+    delete cg_;
+  }
 
   cg_ = (CGraphPtr) new CGraph();
   if (fabs(cb_)<eTol_) {
@@ -500,6 +510,9 @@ void PolynomialFunction::multiply(ConstLinearFunctionPtr lf, double c)
   }
 
   cb_ *= c;
+  for (MonomialConstIter it2 = terms2.begin(); it2!=terms2.end(); ++it2) {
+    delete *it2;
+  }
   terms2.clear();
 }
 
@@ -780,6 +793,10 @@ void PolynomialFunction::multiply(ConstQuadraticFunctionPtr qf)
         terms_.push_back(m);
       }
     }
+    for (MonomialConstIter it2 = terms2.begin(); it2!=terms2.end(); ++it2) {
+      delete *it2;
+    }
+    terms2.clear();
   }
   cb_ = 0;
 }

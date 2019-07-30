@@ -27,7 +27,6 @@ void IpoptEngineUT::setUp()
 
 void IpoptEngineUT::tearDown()
 {
-  delete instance_;
 }
 
 void IpoptEngineUT::createInstance_()
@@ -62,7 +61,6 @@ void IpoptEngineUT::createInstance_()
   fPtr = (FunctionPtr) new Function(con0_f);
   instance_->newConstraint(fPtr, 1.0, 1.0, "cons0");
   
-
 }
 
 void IpoptEngineUT::testGetObjVal()
@@ -107,6 +105,9 @@ void IpoptEngineUT::testGetObjVal()
   const double *x = ipopt_e.getSolution()->getPrimal();
   CPPUNIT_ASSERT(fabs(x[0]-0.7071067812) < 1e-6);
   CPPUNIT_ASSERT(fabs(x[1]+0.7071067812) < 1e-6);
+
+  delete instance_;
+  delete env;
 }
 
 // ------------------------------------------------------------------------- //

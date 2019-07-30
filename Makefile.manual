@@ -358,6 +358,7 @@ ALL_HEADERS = \
         $(BASE_DIR)/TreeManager.h \
         $(BASE_DIR)/Types.h \
         $(BASE_DIR)/WarmStart.h \
+        $(BASE_DIR)/VarBoundMod.h  \
         $(BASE_DIR)/Variable.h \
         $(BASE_DIR)/YEqCGs.h \
         $(BASE_DIR)/YEqLFs.h \

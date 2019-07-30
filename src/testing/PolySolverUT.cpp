@@ -50,6 +50,7 @@ void PolySolverUT::setUp()
 
 void PolySolverUT::tearDown()
 {
+  delete inst_;
   delete iface_;
   delete env_;
 }

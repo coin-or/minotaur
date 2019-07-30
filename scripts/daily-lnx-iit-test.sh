@@ -406,8 +406,12 @@ doTest; listBins; testFiles; checkTest
 ## valgrind
 cd ${NAME}/src/testing
 valgrind --leak-check=full --show-reachable=yes \
-./unittest all >> ../../../${NAME}.out 2>> ../../../${NAME}.err
+./unittest all &> ../../../${NAME}-valgrind.out 
 cd ${TEST_DIR}
+echo "" >> ${SUMMARY}
+echo "Valgrind:" >> ${SUMMARY}
+grep -A 5 'LEAK SUMMARY' build-all-debug-valgrind.out >> ${SUMMARY}
+
 
 ## static+debug
 NAME=build-all-static-debug

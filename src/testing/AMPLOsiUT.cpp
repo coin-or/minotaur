@@ -70,6 +70,8 @@ void AMPLOsiUT::testOsiLP()
   CPPUNIT_ASSERT(engine_ptr_->getStatus() == ProvenOptimal);
   CPPUNIT_ASSERT(fabs(engine_ptr_->getSolutionValue()+2.0) < 1e-5);
 
+  delete inst;
+
 }
 
 
@@ -86,6 +88,7 @@ void AMPLOsiUT::testOsiLP2()
   CPPUNIT_ASSERT(status == ProvenInfeasible);
   CPPUNIT_ASSERT(engine_ptr_->getStatus() == ProvenInfeasible);
  
+  delete inst;
 }
 
 
@@ -163,6 +166,7 @@ void AMPLOsiUT::testOsiBnB()
   delete nproc;
   delete nr;
   delete bab;
+  delete env;
 }
 
 // Local Variables: 
