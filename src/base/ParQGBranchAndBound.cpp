@@ -47,7 +47,6 @@
 #include "BrCand.h"
 #include "BrVarCand.h"
 
-
 //#define SPEW 1
 #define PRINT 0
 
@@ -80,39 +79,32 @@ ParQGBranchAndBound::ParQGBranchAndBound(EnvPtr env, ProblemPtr p)
   status_(NotStarted)
 {
   timer_ = env->getNewTimer();
-  assert (env_);
-
   tm_ = (ParTreeManagerPtr) new ParTreeManager(env);
   options_ = (ParQGBabOptionsPtr) new ParQGBabOptions(env);
-  logger_ = (LoggerPtr) new Logger(options_->logLevel);
+  logger_ = env->getLogger();
 }
 
 
 ParQGBranchAndBound::~ParQGBranchAndBound()
 {
-  //options_.reset();
-  //logger_.reset();
-  options_ = 0;
-  if (logger_){
-    delete logger_;
-  }
-  //nodePrcssr_.reset();
-  //nodeRlxr_.reset();
-  nodeRlxr_ = 0;
-  nodePrcssr_ = 0;
-  //tm_.reset();
-  //solPool_.reset();
-  //problem_.reset();
-  //env_.reset();
-  tm_ = 0;
-  solPool_ = 0;
   problem_ = 0;
   env_ = 0;
-  if (timer_) {
-    delete timer_;
+  nodeRlxr_ = 0;
+  nodePrcssr_ = 0;
+  if (options_) {
+    delete options_;
+  }
+  if (solPool_) {
+    delete solPool_;
   }
   if (stats_) {
     delete stats_;
+  }
+  if (timer_) {
+    delete timer_;
+  }
+  if (tm_) {
+    delete tm_;
   }
 }
 

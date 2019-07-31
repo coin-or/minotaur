@@ -67,13 +67,14 @@ ParPCBProcessor::ParPCBProcessor()
 
 ParPCBProcessor::ParPCBProcessor (EnvPtr env, EnginePtr engine,
                             HandlerVector handlers)
-  : contOnErr_(false),
-    cutMan_(0),
-    engine_(engine),
-    engineStatus_(EngineUnknownStatus),
-    numSolutions_(0),
-    relaxation_(RelaxationPtr()),
-    ws_(WarmStartPtr())
+: branches_(0),
+  contOnErr_(false),
+  cutMan_(0),
+  engine_(engine),
+  engineStatus_(EngineUnknownStatus),
+  numSolutions_(0),
+  relaxation_(RelaxationPtr()),
+  ws_(WarmStartPtr())
 {
   oATol_ = env->getOptions()->findDouble("solAbs_tol")->getValue();
   oRTol_ = env->getOptions()->findDouble("solRel_tol")->getValue();
@@ -92,6 +93,9 @@ ParPCBProcessor::ParPCBProcessor (EnvPtr env, EnginePtr engine,
 
 ParPCBProcessor::~ParPCBProcessor()
 {
+  if (cutMan_) {
+    delete cutMan_;
+  }
   if (ws_) {
     ws_->decrUseCnt();
     if (0 == ws_->getUseCnt()) {
@@ -242,6 +246,11 @@ void ParPCBProcessor::process(NodePtr node, RelaxationPtr rel,
   ++stats_.proc;
   relaxation_ = rel;
   numSolutions_ = 0;
+
+  if (branches_) {
+    delete branches_;
+    branches_ = 0;
+  }
 
   // presolve
   should_prune = presolveNode_(node, s_pool);

@@ -51,12 +51,15 @@ ParCutMan::ParCutMan(EnvPtr env, ProblemPtr p)
     maxInactCutAge_(1),
     p_(p)
 {
-  logger_ = (LoggerPtr) new Logger(LogDebug2);
+  logger_ = env->getLogger();
 }
 
 
 ParCutMan::~ParCutMan()
 {
+  for (CutList::iterator it=pool_.begin(); it != pool_.end(); ++it) {
+    delete (*it);
+  }
   pool_.clear();
   enCuts_.clear();
 }

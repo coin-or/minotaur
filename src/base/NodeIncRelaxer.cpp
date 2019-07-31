@@ -65,8 +65,6 @@ RelaxationPtr NodeIncRelaxer::createRootRelaxation(NodePtr, bool &prune)
     }
   }
 
- 
-
   return rel_;
 }
 

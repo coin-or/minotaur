@@ -64,51 +64,31 @@ BrancherPtr createBrancher(EnvPtr env, ProblemPtr p, HandlerVector handlers,
                            EnginePtr e);
 
 
-ParQGBranchAndBound* createParBab(EnvPtr env, ProblemPtr p, EnginePtr e,
-                                UInt numThreads,
-                                RelaxationPtr relCopy[],
-                                ParPCBProcessorPtr nodePrcssr[],
-                                ParNodeIncRelaxerPtr parNodeRlxr[],
-                                HandlerVector handlersCopy[])
+ParQGBranchAndBound* createParBab(EnvPtr env, UInt numThreads, NodePtr &node,
+                                  RelaxationPtr relCopy[], ProblemPtr pCopy[],
+                                  ParPCBProcessorPtr nodePrcssr[],
+                                  ParNodeIncRelaxerPtr parNodeRlxr[],
+                                  HandlerVector handlersCopy[],
+                                  LPEnginePtr lpeCopy[], EnginePtr eCopy[])
 {
-  ParQGBranchAndBound *bab = new ParQGBranchAndBound(env, p);
+  ParQGBranchAndBound *bab = new ParQGBranchAndBound(env, pCopy[0]);
   const std::string me("mcqg main: ");
   OptionDBPtr options = env->getOptions();
-  //Specific to parallel QG
   bab->shouldCreateRoot(false);
-  LPEnginePtr lin_e;
-  EngineFactory *efac;
-  efac = new EngineFactory(env);
-  lin_e = efac->getLPEngine();   // lp engine 
  
-  // If objective is nonlinear add an extra var name eta to move objective to
-  // constraint in ParQGHandler
-  ObjectivePtr oPtr = p->getObjective();
-  std::string name = "eta";
-  if (!oPtr) {
-    assert(!"No objective function in the problem!");
-  } else if (oPtr->getFunctionType() != Linear &&
-             oPtr->getFunctionType() != Constant) {
-    p->newVariable(-INFINITY,INFINITY,Continuous,name);
-  }
-
   for(UInt i = 0; i < numThreads; ++i) {
     BrancherPtr br;
-    EnginePtr eCopy = e->emptyCopy();
-    EnginePtr lpeCopy = lin_e->emptyCopy();
-    ProblemPtr cloneP = p->clone();
-
-    LinHandlerPtr l_hand = (LinHandlerPtr) new LinearHandler(env, cloneP);
+    LinHandlerPtr l_hand = (LinHandlerPtr) new LinearHandler(env, pCopy[i]);
     l_hand->setModFlags(false, true);
     handlersCopy[i].push_back(l_hand);
     assert(l_hand);
 
-    IntVarHandlerPtr v_hand = (IntVarHandlerPtr) new IntVarHandler(env, cloneP);
+    IntVarHandlerPtr v_hand = (IntVarHandlerPtr) new IntVarHandler(env, pCopy[i]);
     v_hand->setModFlags(false, true);
     handlersCopy[i].push_back(v_hand);
     assert(v_hand);
 
-    ParQGHandlerPtr qg_hand = (ParQGHandlerPtr) new ParQGHandler(env, cloneP, eCopy); 
+    ParQGHandlerPtr qg_hand = (ParQGHandlerPtr) new ParQGHandler(env, pCopy[i], eCopy[i]);
     qg_hand->setModFlags(false, true);
     qg_hand->loadProbToEngine();
     if (i>0) {
@@ -117,12 +97,12 @@ ParQGBranchAndBound* createParBab(EnvPtr env, ProblemPtr p, EnginePtr e,
     handlersCopy[i].push_back(qg_hand);
     assert(qg_hand);
 
-    br = createBrancher(env, cloneP, handlersCopy[i], lpeCopy);
-    nodePrcssr[i] = (ParPCBProcessorPtr) new ParPCBProcessor(env, lpeCopy, handlersCopy[i]);
+    br = createBrancher(env, pCopy[i], handlersCopy[i], lpeCopy[i]);
+    nodePrcssr[i] = (ParPCBProcessorPtr) new ParPCBProcessor(env, lpeCopy[i], handlersCopy[i]);
     nodePrcssr[i]->setBrancher(br);
     parNodeRlxr[i] = (ParNodeIncRelaxerPtr) new ParNodeIncRelaxer(env, handlersCopy[i]);
     if (i==0) {
-      NodePtr node = (NodePtr) new Node ();
+      node = (NodePtr) new Node ();
       bool prune = false;
       relCopy[0] = parNodeRlxr[0]->createRootRelaxation(node, prune);
     } else {
@@ -131,29 +111,26 @@ ParQGBranchAndBound* createParBab(EnvPtr env, ProblemPtr p, EnginePtr e,
       qg_hand->setRelaxation(relCopy[i]);
       qg_hand->setObjVar();
     }
-    relCopy[i]->setProblem(cloneP);
+    relCopy[i]->setProblem(pCopy[i]);
     parNodeRlxr[i]->setModFlag(false);
-    parNodeRlxr[i]->setEngine(lpeCopy);
+    parNodeRlxr[i]->setEngine(lpeCopy[i]);
   }
   
+  // when using heuristic, check if engine copy[0] should be cleared etc.
   if (options->findBool("pardivheur")->getValue()) {
     ParMINLPDivingPtr div_heur;
     if (options->findBool("divheurLP")->getValue()) {
       RelaxationPtr lp = (RelaxationPtr) new Relaxation(relCopy[0]);
-      //if (true==options->findBool("use_native_cgraph")->getValue()) {
-        lp->setNativeDer();
-      //}
-      div_heur = (ParMINLPDivingPtr) new ParMINLPDiving(env, lp, lin_e->emptyCopy());
-      div_heur->setAltEngine(e->emptyCopy());
-      div_heur->setOrigProb(p);
+      lp->setNativeDer();
+      div_heur = (ParMINLPDivingPtr) new ParMINLPDiving(env, lp, lpeCopy[0]);
+      div_heur->setAltEngine(eCopy[0]);
+      div_heur->setOrigProb(pCopy[0]);
     }
     else {
-      div_heur = (ParMINLPDivingPtr) new ParMINLPDiving(env, p, e->emptyCopy());
+      div_heur = (ParMINLPDivingPtr) new ParMINLPDiving(env, pCopy[0], eCopy[0]);
     }
     bab->addPreRootHeur(div_heur);
   }
-
-  delete efac;
   return bab;
 }
 
@@ -358,8 +335,8 @@ PresolverPtr presolve(EnvPtr env, ProblemPtr p, size_t ndefs,
          true==env->getOptions()->findBool("use_native_cgraph")->getValue() && 
          true==env->getOptions()->findBool("nl_presolve")->getValue() 
        ) {
-      //NlPresHandlerPtr nlhand = (NlPresHandlerPtr) new NlPresHandler(env, p);
-      //handlers.push_back(nlhand);
+      NlPresHandlerPtr nlhand = (NlPresHandlerPtr) new NlPresHandler(env, p);
+      handlers.push_back(nlhand);
     }
 
     // write the names.
@@ -451,16 +428,21 @@ void writeSol(EnvPtr env, VarVector *orig_v,
               PresolverPtr pres, SolutionPtr sol, SolveStatus status,
               MINOTAUR_AMPL::AMPLInterface* iface)
 {
+  Solution* final_sol = 0;
   if (sol) {
-    sol = pres->getPostSol(sol);
+    final_sol = pres->getPostSol(sol);
   }
 
   if (env->getOptions()->findFlag("AMPL")->getValue() ||
       true == env->getOptions()->findBool("write_sol_file")->getValue()) {
-    iface->writeSolution(sol, status);
-  } else if (sol && env->getLogger()->getMaxLevel()>=LogExtraInfo &&
+    iface->writeSolution(final_sol, status);
+  } else if (final_sol && env->getLogger()->getMaxLevel()>=LogExtraInfo &&
              env->getOptions()->findBool("display_solution")->getValue()) {
-    sol->writePrimal(env->getLogger()->msgStream(LogExtraInfo), orig_v);
+    final_sol->writePrimal(env->getLogger()->msgStream(LogExtraInfo), orig_v);
+  }
+
+  if (final_sol) {
+    delete final_sol;
   }
 }
 
@@ -592,8 +574,16 @@ int main(int argc, char** argv)
   UInt numThreads;
   ParPCBProcessorPtr *nodePrcssr = 0; 
   ParNodeIncRelaxerPtr *parNodeRlxr = 0;
+  ProblemPtr *pCopy = 0;
   RelaxationPtr *relCopy = 0;
   HandlerVector *handlersCopy = 0;
+  EngineFactory *efac;
+  LPEnginePtr *lpeCopy = 0;
+  EnginePtr *eCopy = 0;
+  ObjectivePtr oPtr = 0;
+  NodePtr node = 0;
+  std::string name = "";
+
   env->startTimer(err);
 
   if (err) {
@@ -613,16 +603,13 @@ int main(int argc, char** argv)
     goto CLEANUP;
   }
 
-  numThreads = std::min(env->getOptions()->findInt("threads")->getValue(),
-                        omp_get_num_procs());
-  nodePrcssr = new ParPCBProcessorPtr[numThreads];
-  parNodeRlxr = new ParNodeIncRelaxerPtr[numThreads];
-  relCopy = new RelaxationPtr[numThreads]; 
-  handlersCopy = new HandlerVector[numThreads];
   loadProblem(env, iface, oinst, &obj_sense);
 
   orig_v = new VarVector(oinst->varsBegin(), oinst->varsEnd());
   pres = presolve(env, oinst, iface->getNumDefs(), handlers);
+  for (HandlerVector::iterator it=handlers.begin(); it!=handlers.end(); ++it) {
+    delete (*it);
+  }
   handlers.clear();
   if (Finished != pres->getStatus() && NotStarted != pres->getStatus()) {
     env->getLogger()->msgStream(LogInfo) << me 
@@ -645,13 +632,45 @@ int main(int argc, char** argv)
   if (err) {
     goto CLEANUP;
   }
+
+  numThreads = std::min(env->getOptions()->findInt("threads")->getValue(),
+                        omp_get_num_procs());
+  nodePrcssr = new ParPCBProcessorPtr[numThreads];
+  parNodeRlxr = new ParNodeIncRelaxerPtr[numThreads];
+  relCopy = new RelaxationPtr[numThreads];
+  pCopy = new ProblemPtr[numThreads];
+  handlersCopy = new HandlerVector[numThreads];
+  efac = new EngineFactory(env);
+  lpeCopy = new LPEnginePtr[numThreads];
+  eCopy = new EnginePtr[numThreads];
+
+  // If objective is nonlinear add an extra var name eta to move objective to
+  // constraint in ParQGHandler
+  pCopy[0] = oinst->clone();
+  oPtr = oinst->getObjective();
+  if (!oPtr) {
+    assert(!"No objective function in the problem!");
+  } else if (oPtr->getFunctionType() != Linear &&
+             oPtr->getFunctionType() != Constant) {
+    name = "eta";
+    pCopy[0]->newVariable(-INFINITY,INFINITY,Continuous,name);
+  }
+
+  for(UInt i=0; i < numThreads; ++i) {
+    lpeCopy[i] = efac->getLPEngine();
+    eCopy[i] = engine->emptyCopy();
+    if (i > 0) {
+      pCopy[i] = pCopy[0]->clone();
+    }
+  }
+
   if (numThreads > 1) {
     env->getLogger()->msgStream(LogInfo)
       << "**Works in parallel with a thread-safe "
       << "LP and NLP solver only**" << std::endl;
   }
-  parbab = createParBab(env, oinst, engine, numThreads, relCopy,
-                        nodePrcssr, parNodeRlxr, handlersCopy);
+  parbab = createParBab(env, numThreads, node, relCopy, pCopy, nodePrcssr,
+                        parNodeRlxr, handlersCopy, lpeCopy, eCopy);
   parbab->parsolve(parNodeRlxr, nodePrcssr, numThreads);
   
   //Take care of important bnb statistics
@@ -676,8 +695,39 @@ CLEANUP:
   if (engine) {
     delete engine;
   }
+  if (efac) {
+    delete efac;
+  }
   if (iface) {
     delete iface;
+  }
+  if (pres) {
+    delete pres;
+  }
+  for (UInt i=0; i < numThreads; i++) {
+    for (HandlerVector::iterator it=handlersCopy[i].begin();
+         it!=handlersCopy[i].end(); ++it) {
+      delete (*it);
+    }
+    if (lpeCopy[i]) {
+      delete lpeCopy[i];
+    }
+    if (eCopy[i]) {
+      delete eCopy[i];
+    }
+    if (pCopy[i]) {
+      delete pCopy[i];
+    }
+    if (parNodeRlxr[i]) {
+      delete parNodeRlxr[i];
+      relCopy[i] = 0;
+    }
+    if (nodePrcssr[i]) {
+      delete nodePrcssr[i];
+    }
+  }
+  if (node) {
+    delete node;
   }
   if (nodePrcssr) {
     delete[] nodePrcssr;
@@ -688,14 +738,35 @@ CLEANUP:
   if (relCopy) {
     delete[] relCopy;
   }
+  if (pCopy) {
+    delete[] pCopy;
+  }
+  if (eCopy) {
+    delete[] eCopy;
+  }
+  if (handlersCopy) {
+    delete[] lpeCopy;
+  }
   if (handlersCopy) {
     delete[] handlersCopy;
   }
   if (parbab) {
+    if (parbab->getNodeRelaxer()) {
+      delete parbab->getNodeRelaxer();
+    }
+    if (parbab->getNodeProcessor()) {
+      delete parbab->getNodeProcessor();
+    }
     delete parbab;
+  }
+  if (oinst) {
+    delete oinst;
   }
   if (orig_v) {
     delete orig_v;
+  }
+  if (env) {
+    delete env;
   }
   return 0;
 }
