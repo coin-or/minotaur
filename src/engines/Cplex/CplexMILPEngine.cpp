@@ -299,9 +299,11 @@ void CplexMILPEngine::load(ProblemPtr problem)
     strcpy(cstr, (*c_iter)->getName().c_str());
     conname[i] = cstr;
     i++;
+    delete [] cstr;
+    cstr = 0;
   }
-  delete [] cstr;
-  cstr = 0;
+  //delete [] cstr;
+  //cstr = 0;
 
   index = new int[nnz];
   value = new double[nnz];
@@ -358,6 +360,8 @@ void CplexMILPEngine::load(ProblemPtr problem)
     } else if ((*v_iter)->getType() == Integer) {
       vartype[i] = 'I';
     }
+    delete [] cstr;
+    cstr = 0;
   }
 
   //// XXX: check if linear function is NULL
@@ -1180,6 +1184,7 @@ EngineStatus CplexMILPEngine::solveSTLazy(double *objLb, SolutionPtr* sol,
   }
 
 TERMINATE:
+  delete [] x;
   return status_;
 }
 

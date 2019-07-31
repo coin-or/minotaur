@@ -42,7 +42,7 @@
 #include "BrVarCand.h"
 #include "WarmStart.h"
 
-//#define SPEW 1
+#define SPEW 1
 #define PRINT 0
 
 using namespace Minotaur;

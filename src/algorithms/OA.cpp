@@ -218,7 +218,7 @@ PresolverPtr presolve(EnvPtr env, ProblemPtr p, size_t ndefs,
                       HandlerVector &handlers)
 {
   PresolverPtr pres = PresolverPtr(); // NULL
-  const std::string me("oa main: ");
+  const std::string me("bnb main: ");
 
   p->calculateSize();
   if (env->getOptions()->findBool("presolve")->getValue() == true) {
@@ -268,28 +268,6 @@ PresolverPtr presolve(EnvPtr env, ProblemPtr p, size_t ndefs,
   }
   return pres;
 }
-
-//For separability detection: Check separability if problem is not linear.
-//TransSepPtr sepDetection(EnvPtr env, ProblemPtr p)
-//void sepDetection(EnvPtr env, ProblemPtr p)
-//{
-  //TransSepPtr sep = TransSepPtr();
-  //const std::string me("qg: ");
-
-  //if (env->getOptions()->findBool("separability")->getValue() == true) {
-    //if (p -> isLinear()) {
-      //env ->getLogger()->msgStream(LogInfo) << me
-        //<< "Problem is linear, skipping separability detection" 
-        //<< std::endl;
-    //} else {
-      //sep = (TransSepPtr) new TransSep(env, p);
-      //sep->findSep();
-      //env ->getLogger()->msgStream(LogDebug) << me
-        //<< "Is problem separable? - "<< sep->getStatus() 
-        //<< std::endl;
-    //}
-  //}
-//}
 
 
 double getPerGap(double objLb, double objUb)
@@ -614,7 +592,6 @@ CLEANUP:
   }
   if (nr) {
     delete nr;
-    orig_v = 0;
   }
   if (iface) {
     delete iface;
@@ -625,9 +602,9 @@ CLEANUP:
   if (inst) {
     delete inst;
   }
-  //if (orig_v) {
-    //delete orig_v;
-  //}
+  if (orig_v) {
+    delete orig_v;
+  }
   if (env) {
     delete env;
   }

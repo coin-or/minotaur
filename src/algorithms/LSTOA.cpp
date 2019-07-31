@@ -19,43 +19,43 @@
 #include <fstream>
 #include <sys/time.h>
 
-#include <MinotaurConfig.h>
-#include <AMPLHessian.h>
-#include <AMPLJacobian.h>
-#include <Environment.h>
-#include <Handler.h>
-#include <Option.h>
-#include <Problem.h>
-#include <Engine.h>
-#include <QPEngine.h>
-#include <LPEngine.h>
-#include <Logger.h>
-#include <MILPEngine.h>
+#include "MinotaurConfig.h"
+#include "AMPLHessian.h"
+#include "AMPLJacobian.h"
+#include "Environment.h"
+#include "Handler.h"
+#include "Option.h"
+#include "Problem.h"
+#include "Engine.h"
+#include "QPEngine.h"
+#include "LinFeasPump.h"
+#include "LPEngine.h"
+#include "Logger.h"
+#include "MILPEngine.h"
 #include "Modification.h"
-#include <NLPEngine.h>
+#include "NLPEngine.h"
 #include "NlPresHandler.h"
-#include <NodeRelaxer.h>
-#include <NodeIncRelaxer.h>
-#include <MaxVioBrancher.h>
-#include <STOAHandler.h>
-#include <ReliabilityBrancher.h>
-#include <AMPLInterface.h>
-#include <BranchAndBound.h>
-#include <PCBProcessor.h>
-#include <Presolver.h>
-#include <Timer.h>
-#include <LexicoBrancher.h>
-#include <Logger.h>
-#include <LinearHandler.h>
-#include <IntVarHandler.h>
-#include <Solution.h>
-#include <SolutionPool.h>
-#include <TreeManager.h>
-#include <EngineFactory.h>
-#include <CxQuadHandler.h>
-#include <Objective.h>
-
-#include <Relaxation.h> //(why needed to included here?)
+#include "NodeRelaxer.h"
+#include "NodeIncRelaxer.h"
+#include "MaxVioBrancher.h"
+#include "STOAHandler.h"
+#include "ReliabilityBrancher.h"
+#include "AMPLInterface.h"
+#include "BranchAndBound.h"
+#include "PCBProcessor.h"
+#include "Presolver.h"
+#include "Timer.h"
+#include "LexicoBrancher.h"
+#include "Logger.h"
+#include "LinearHandler.h"
+#include "IntVarHandler.h"
+#include "Solution.h"
+#include "SolutionPool.h"
+#include "TreeManager.h"
+#include "EngineFactory.h"
+#include "CxQuadHandler.h"
+#include "Objective.h"
+#include "Relaxation.h" //(why needed to included here?)
 
 
 using namespace Minotaur;
@@ -91,7 +91,7 @@ void loadProblem(EnvPtr env, MINOTAUR_AMPL::AMPLInterface* iface,
   }
   // create the jacobian
   if (false==options->findBool("use_native_cgraph")->getValue()) {
-    jac = (MINOTAUR_AMPL::AMPLJacobianPtr) 
+    jac = (MINOTAUR_AMPL::AMPLJacobianPtr)
       new MINOTAUR_AMPL::AMPLJacobian(iface);
     oinst->setJacobian(jac);
 
@@ -198,11 +198,11 @@ PresolverPtr presolve(EnvPtr env, ProblemPtr p, size_t ndefs,
                       HandlerVector &handlers)
 {
   PresolverPtr pres = PresolverPtr(); // NULL
-  const std::string me("qg: ");
+  const std::string me("oa main: ");
 
   p->calculateSize();
   if (env->getOptions()->findBool("presolve")->getValue() == true) {
-    LinearHandlerPtr lhandler = (LinearHandlerPtr) new LinearHandler(env, p);
+    LinHandlerPtr lhandler = (LinHandlerPtr) new LinearHandler(env, p);
     handlers.push_back(lhandler);
     if (p->isQP() || p->isQuadratic() || p->isLinear() ||
         true==env->getOptions()->findBool("use_native_cgraph")->getValue()) {
@@ -221,9 +221,9 @@ PresolverPtr presolve(EnvPtr env, ProblemPtr p, size_t ndefs,
     }
 
     if (!p->isLinear() && 
-        true==env->getOptions()->findBool("use_native_cgraph")->getValue() && 
-        true==env->getOptions()->findBool("nl_presolve")->getValue() 
-       ) {
+         true==env->getOptions()->findBool("use_native_cgraph")->getValue() && 
+         true==env->getOptions()->findBool("nl_presolve")->getValue()
+         ) {
       NlPresHandlerPtr nlhand = (NlPresHandlerPtr) new NlPresHandler(env, p);
       handlers.push_back(nlhand);
     }
@@ -242,9 +242,13 @@ PresolverPtr presolve(EnvPtr env, ProblemPtr p, size_t ndefs,
   pres->standardize(); 
   if (env->getOptions()->findBool("presolve")->getValue() == true) {
     pres->solve();
+    for (HandlerVector::iterator h=handlers.begin(); h!=handlers.end(); ++h) {
+      (*h)->writeStats(env->getLogger()->msgStream(LogExtraInfo));
+    }
   }
   return pres;
 }
+
 
 
 
@@ -356,9 +360,11 @@ int main(int argc, char* argv[])
   STOAHandlerPtr stoa_hand;
   EngineStatus engineStatus;
   ModVector pmod, rmod;
+  NodeIncRelaxerPtr nr = 0;
+  SolutionPoolPtr solPool = 0;
 
   //engines
-  EnginePtr nlp_e;
+  EnginePtr nlp_e = 0;
   
   VarVector *orig_v=0;
   int err = 0;
@@ -400,6 +406,9 @@ int main(int argc, char* argv[])
   // get presolver.
   orig_v = new VarVector(inst->varsBegin(), inst->varsEnd());
   pres = presolve(env, inst, iface->getNumDefs(), handlers);
+  for (HandlerVector::iterator it=handlers.begin(); it!=handlers.end(); ++it) {
+    delete (*it);
+  }
   handlers.clear();
   if (Finished != pres->getStatus() && NotStarted != pres->getStatus()) {
     env->getLogger()->msgStream(LogInfo) << me 
@@ -409,7 +418,7 @@ int main(int argc, char* argv[])
     goto CLEANUP;
   }
  
-   if (options->findBool("solve")->getValue()==true) {
+  if (options->findBool("solve")->getValue()==true) {
     double objLb = -INFINITY, objUb = INFINITY;
     bool prune = false;
     if (true==options->findBool("use_native_cgraph")->getValue()) {
@@ -421,7 +430,7 @@ int main(int argc, char* argv[])
     handlers.push_back(l_hand);
     assert(l_hand);
 
-    SolutionPoolPtr solPool = (SolutionPoolPtr) new SolutionPool(env, inst, 1);
+    solPool = (SolutionPoolPtr) new SolutionPool(env, inst, 1);
     
     stoa_hand = (STOAHandlerPtr) new STOAHandler(env, inst, nlp_e, milp_e, solPool);
     stoa_hand->setModFlags(false, true);
@@ -429,7 +438,6 @@ int main(int argc, char* argv[])
     assert(stoa_hand);
   
     // Initialize the handlers for STOA
-    NodeIncRelaxerPtr nr;
     nr = (NodeIncRelaxerPtr) new NodeIncRelaxer(env, handlers);
     nr->setModFlag(false);
     nr->createRootRelaxation(NodePtr(), prune);
@@ -464,11 +472,32 @@ int main(int argc, char* argv[])
    }
 
 CLEANUP:
+  for (HandlerVector::iterator it=handlers.begin(); it!=handlers.end(); ++it) {
+    delete (*it);
+  }
+  if (milp_e) {
+    delete milp_e;
+  }
+  if (nlp_e) {
+    delete nlp_e;
+  }
+  if (solPool) {
+    delete solPool;
+  }
   if (iface) {
     delete iface;
   }
+  if (nr) {
+    delete nr;
+  }
+  if (pres) {
+    delete pres;
+  }
   if (orig_v) {
     delete orig_v;
+  }
+  if (env) {
+    delete env;
   }
   return 0;
 }
