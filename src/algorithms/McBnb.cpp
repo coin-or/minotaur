@@ -643,7 +643,7 @@ int main(int argc, char** argv)
                         nodePrcssr, parNodeRlxr, handlersCopy, eCopy);
   if (true==env->getOptions()->findBool("mcbnb_deter_mode")->getValue()) {
     assert(!"Deterministic mode not available right now!");
-    parbab->parsolveSync(parNodeRlxr, nodePrcssr, numThreads);
+    //parbab->parsolveSync(parNodeRlxr, nodePrcssr, numThreads);
   } else {
     parbab->parsolve(parNodeRlxr, nodePrcssr, numThreads);
   }
