@@ -275,8 +275,8 @@ private:
   void perspMod_(ConstraintPtr c, VariablePtr z);
   void perspRef_(ProblemPtr p, PreModQ *mods, bool *changed);
   void quadConeRef_(ProblemPtr p, PreModQ *mods, bool *changed);
-  SolveStatus varBndsFromCons_(ProblemPtr p, bool apply_to_prob,
-                               bool *changed, ModQ* mods, SolveStatus &status);
+  void varBndsFromCons_(ProblemPtr p, bool apply_to_prob, bool *changed,
+                        ModQ* mods, SolveStatus &status);
 };
 typedef NlPresHandler* NlPresHandlerPtr;
 }

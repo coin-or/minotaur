@@ -90,7 +90,7 @@ void RCHandler::separate(ConstSolutionPtr sol, NodePtr node,
   return;
 }
 
-void RCHandler::rcfix_(RelaxationPtr rel,
+void RCHandler::rcfix_(RelaxationPtr,
                        ModVector &r_mods, double bestobj,
                        const double rel_obj, double xval, 
                        double r, VariablePtr v)

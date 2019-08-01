@@ -44,7 +44,6 @@ namespace Minotaur {
 
   typedef enum {
     OsiClpEngine,
-    OsiCpxEngine,
     OsiGlpkEngine,
     OsiGrbEngine,
     OsiMskEngine,
@@ -216,7 +215,7 @@ namespace Minotaur {
     /// Environment.
     EnvPtr env_;
 
-    /// Name of the engine: OsiCpx, OsiClp etc.
+    /// Name of the engine: OsiGrb, OsiClp etc.
     OsiLPEngineName eName_;
 
     /// The maximum limit that can be set on Osi solver. 

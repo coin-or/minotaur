@@ -260,7 +260,6 @@ void SimpleTransformer::recursRef_(const CNode *node, LinearFunctionPtr &lf,
 {
   double dl = 0;
   double dr = 0;
-  FunctionPtr f;
   LinearFunctionPtr lfl = LinearFunctionPtr();
   LinearFunctionPtr lfr = LinearFunctionPtr();
   VariablePtr vl = VariablePtr();

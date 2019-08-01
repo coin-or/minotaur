@@ -292,7 +292,6 @@ int main(int argc, char** argv)
   ProblemPtr inst;    // instance that needs to be solved
   EnginePtr engine = 0;    
   EnginePtr qe = 0;
-  SolutionPtr sol, sol2;
   BranchAndBound * bab = 0; // the branch-and-bound
   PresolverPtr pres;
   VarVector *orig_v=0;

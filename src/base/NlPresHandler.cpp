@@ -600,7 +600,7 @@ void  NlPresHandler::computeImpBounds_(ConstraintPtr c, VariablePtr z,
   double uu = 0.;
   double l1, u1, a2, b2;
   ConstraintPtr c2;
-  LinearFunctionPtr lf, lf2;
+  LinearFunctionPtr lf2;
   NonlinearFunctionPtr nlf;
   QuadraticFunctionPtr qf;
   ModStack mods;
@@ -1378,8 +1378,6 @@ void NlPresHandler::lin_var_bound(VarBoundModVector lfmod, LinearFunctionPtr lf,
   change = 0;
 
   VariablePtr v;
-  VariablePtr v2;
-  ConstraintPtr c;
 
   VariableSet::iterator it2;
 
@@ -1444,8 +1442,6 @@ void NlPresHandler::quad_var_bound(VarBoundModVector qfmod, LinearFunctionPtr lf
                                   int &change){
 
   VariablePtr v;
-  VariablePtr v2;
-  ConstraintPtr c;
 
   double lflb = 0;
   double lfub = 0;
@@ -1564,11 +1560,9 @@ void NlPresHandler::quad_var_bound(VarBoundModVector qfmod, LinearFunctionPtr lf
 }
 
 
-
-
-SolveStatus NlPresHandler::varBndsFromCons_(ProblemPtr p, bool apply_to_prob,
-                                            bool *changed, ModQ* mods,
-                                            SolveStatus &status)
+void NlPresHandler::varBndsFromCons_(ProblemPtr p, bool apply_to_prob,
+                                     bool *changed, ModQ* mods,
+                                     SolveStatus &status)
 {
   ConstraintPtr c;
   LinearFunctionPtr lf;

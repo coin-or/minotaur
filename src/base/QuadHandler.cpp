@@ -82,14 +82,12 @@ QuadHandler::~QuadHandler()
 
 void QuadHandler::addConstraint(ConstraintPtr newcon)
 {
-  LinearFunctionPtr lf0, lf1, lf;
+  LinearFunctionPtr lf;
   QuadraticFunctionPtr qf; 
   NonlinearFunctionPtr nlf;
   VariablePtr y, x0, x1;
-  FunctionPtr f;
   LinSqrPtr lx2;
   LinBil* linbil;
-  LinBilSetIter biter;
 
   cons_.push_back(newcon);
   qf = newcon->getQuadraticFunction();
@@ -699,8 +697,6 @@ bool QuadHandler::propBilBnds_(LinBil* lx0x1, RelaxationPtr rel,
   VariablePtr x1 = lx0x1->getX1();
   VariablePtr  y = lx0x1->getY();
   double lb, ub;
-  VarBoundMod2Ptr b2mod;
-  VarBoundModPtr bmod;
 
   BoundsOnProduct(true, x0, x1, lb, ub);
   //x0->write(std::cout);
@@ -790,9 +786,6 @@ bool QuadHandler::propSqrBnds_(LinSqrMapIter lx2, RelaxationPtr rel,
                                ModVector &r_mods)
 {
   double lb, ub;
-  VarBoundMod2Ptr b2mod;
-  VarBoundModPtr bmod;
-  LinearFunctionPtr lf;
 
   VariablePtr x = lx2->first;      // x and y are variables in p_
   VariablePtr y = lx2->second->y;
@@ -1043,7 +1036,6 @@ int QuadHandler::updatePBounds_(VariablePtr v, double lb, double ub,
 void QuadHandler::upBilCon_(LinBil* lx0x1, RelaxationPtr rel, ModVector
                             &r_mods)
 {
-  LinModsPtr   lmods;
   LinConModPtr lmod;
   LinearFunctionPtr lf;
   VariablePtr y  = rel->getRelaxationVar(lx0x1->getY());

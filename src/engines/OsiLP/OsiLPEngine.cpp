@@ -18,10 +18,6 @@
 #include "coin/OsiClpSolverInterface.hpp"
 #endif
 
-#if MNTROSICPX
-#include "coin/OsiCpxSolverInterface.hpp"
-#endif
-
 #if MNTROSIGRB
 #include "coin/OsiGrbSolverInterface.hpp"
 #endif
@@ -128,8 +124,6 @@ OsiLPEngine::OsiLPEngine(EnvPtr env)
   eName_ = OsiUndefEngine;
   if (etype == "OsiClp") {
     eName_ = OsiClpEngine;
-  } else if (etype == "OsiCpx") {
-    eName_ = OsiCpxEngine;
   } else if (etype == "OsiGrb") {
     eName_ = OsiGrbEngine;
   }
@@ -527,16 +521,6 @@ OsiSolverInterface* OsiLPEngine::newSolver_(OsiLPEngineName ename)
 #else
     logger_->errStream()
       << me_ << "Minotaur is not compiled with OsiClp!" << std::endl;
-#endif
-    break;
-  case (OsiCpxEngine):
-#if MNTROSICPX
-    si = new OsiCpxSolverInterface();
-    si->setHintParam(OsiDoReducePrint);
-    si->messageHandler()->setLogLevel(0); 
-#else
-    logger_->errStream()
-      << me_ << "Minotaur is not compiled with OsiCpx!" << std::endl;
 #endif
     break;
   case (OsiGrbEngine):

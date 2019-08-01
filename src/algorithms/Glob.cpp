@@ -162,7 +162,6 @@ BranchAndBound * createBab (EnvPtr env, ProblemPtr p, EnginePtr e,
   BranchAndBound *bab = new BranchAndBound(env, p);
   PCBProcessorPtr nproc;
   NodeIncRelaxerPtr nr;
-  RelaxationPtr rel;
   BrancherPtr br;
   const std::string me("mntr-glob: ");
 
@@ -205,7 +204,6 @@ BranchAndBound * createBab (EnvPtr env, ProblemPtr p, EnginePtr e,
 
   nr = (NodeIncRelaxerPtr) new NodeIncRelaxer(env, handlers);
   nr->setProblem(p);
-  nr->setRelaxation(rel);
   nr->setEngine(e);
   bab->setNodeRelaxer(nr);
   bab->shouldCreateRoot(true);
@@ -392,11 +390,9 @@ void writeStatus(EnvPtr env, BranchAndBound *bab, double obj_sense)
 int main(int argc, char** argv)
 {
   EnvPtr env      = (EnvPtr) new Environment();
-  OptionDBPtr options;
   MINOTAUR_AMPL::AMPLInterfacePtr iface;
   ProblemPtr inst;       // instance that needs to be solved.
   EnginePtr engine = 0;  // engine for solving relaxations. 
-  SolutionPtr sol, sol2;
   BranchAndBound *bab = 0;
   PresolverPtr pres, pres2;
   const std::string me("mntr-glob: ");

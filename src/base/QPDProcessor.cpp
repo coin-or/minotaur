@@ -388,7 +388,6 @@ bool QPDProcessor::presolveNode_(NodePtr node, SolutionPoolPtr s_pool)
   ModVector n_mods;      // Mods that are applied in this node.
   ModVector t_mods;      // Mods that need to be saved for subsequent nodes 
                          // as well. It is a subset of n_mods;
-  ModificationPtr mod2;
   bool is_inf = false;
 
   // TODO: make this more sophisticated: loop several times until no more

@@ -317,14 +317,8 @@ int main(int argc, char* argv[])
 
   MINOTAUR_AMPL::AMPLInterfacePtr iface = MINOTAUR_AMPL::AMPLInterfacePtr();  
   ProblemPtr inst;
-  SolutionPtr sol;
   double obj_sense =1.0;
   
-  // jacobian is read from AMPL interface and passed on to branch-and-bound
-  JacobianPtr jPtr;
-  // hessian is read from AMPL interface and passed on to branch-and-bound
-  MINOTAUR_AMPL::AMPLHessianPtr hPtr;
-
   // the branch-and-bound
   BranchAndBound *bab = 0;
   PresolverPtr pres;

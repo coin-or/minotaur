@@ -396,8 +396,7 @@ void PerspCutHandler::atPtx(RelaxationPtr rel, const double *x)
   int error;
   FunctionPtr f;
   ConstraintPtr con;
-  double * y = new double[minlp_->getNumVars()]; //MS: minlp_ or rel_
-  double c, act, cUb;
+  double act, cUb;
   for (UInt it = 0; it < cons_.size(); ++it) {
     error = 0;
     con = cons_[it];
@@ -548,7 +547,7 @@ void PerspCutHandler::oriInfeasPt(RelaxationPtr rel, const double *x)
 }
 
 
-void PerspCutHandler::cvxCombPt(RelaxationPtr rel, const double *x, UInt it)
+void PerspCutHandler::cvxCombPt(RelaxationPtr , const double *, UInt )
 {
   return;
 }

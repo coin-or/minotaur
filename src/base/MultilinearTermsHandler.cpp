@@ -226,7 +226,7 @@ ModificationPtr MultilinearTermsHandler::getBrMod(BrCandPtr cand, DoubleVector &
         lf->addTerm(lam, val);
         ++pix;
       }       
-      FunctionPtr f = (FunctionPtr) new Function(lf);
+      //FunctionPtr f = (FunctionPtr) new Function(lf);
 
       IntVarPtrPairConstraintMap::iterator pos;
       pos = xConMap_.find(IntVarPtrPair(gix, xvar));

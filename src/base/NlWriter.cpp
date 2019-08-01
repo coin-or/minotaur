@@ -99,7 +99,6 @@ int NlWriter::co_(ProblemPtr p, std::ofstream &of)
   ObjectivePtr obj;
   int cnt;
   QuadraticFunctionPtr qf;
-  LinearFunctionPtr lf;
   NonlinearFunctionPtr nlf;
   int err=0;
   std::string str;

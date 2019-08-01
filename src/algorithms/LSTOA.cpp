@@ -348,10 +348,9 @@ int main(int argc, char* argv[])
 
   MINOTAUR_AMPL::AMPLInterfacePtr iface = MINOTAUR_AMPL::AMPLInterfacePtr();
   ProblemPtr inst;
-  SolutionPtr sol;
   double obj_sense =1.0, gap = INFINITY;
   
-  PresolverPtr pres;
+  PresolverPtr pres = 0;
   const std::string me("oa: ");
   SolveStatus status;
   //handlers
@@ -449,7 +448,10 @@ int main(int argc, char* argv[])
 
     //MS: adjust relTol if UB =0
 #ifdef USE_CPX
-    engineStatus = milp_e->solveSTLazy(&objLb, &sol, stoa_hand, &status);
+    {
+      SolutionPtr sol = 0;
+      engineStatus = milp_e->solveSTLazy(&objLb, &sol, stoa_hand, &status);
+    }
 #else
     env->getLogger()->errStream() << me << "CPLEX MILP Engine not found, exiting" << std::endl;
     goto CLEANUP;

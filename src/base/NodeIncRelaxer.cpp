@@ -148,7 +148,7 @@ RelaxationPtr NodeIncRelaxer::createNodeRelaxation(NodePtr node, bool dived,
     if (ws) {
       engine_->loadFromWarmStart(ws);
     }
-  } else if (ws) {
+  } else {
     node->removeWarmStart();
   }
   return rel_;
