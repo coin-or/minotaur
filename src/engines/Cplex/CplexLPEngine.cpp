@@ -233,10 +233,10 @@ void CplexLPEngine::load(ProblemPtr problem)
   int numcons = problem->getNumCons();
   int i, j, rcnt;
   double obj_sense = 1, ztol = 1e-6;
-  double *conlb, *conub, *conrhs, *conrange, *varlb, *varub, *obj;
-  double *value;
+  double *conlb = 0, *conub = 0, *conrhs = 0, *conrange = 0, *varlb = 0, *varub = 0, *obj = 0;
+  double *value = 0;
   //int *index;
-  CPXDIM *index, *conind;
+  CPXDIM *index = 0, *conind = 0;
   //int *start = new int[numcons];
   CPXNNZ *start = new CPXNNZ[numcons];
   memset(start, 0, numcons*sizeof(int));
@@ -244,7 +244,7 @@ void CplexLPEngine::load(ProblemPtr problem)
   char **varname = new char*[numvars];
   //char *conname[numcons];
   char **conname = new char*[numcons];
-  char *cstr; //temporary
+  char *cstr = NULL; //temporary
 
   std::vector<UInt> conindvec;
   std::vector<double> conrangevec; 
@@ -318,6 +318,8 @@ void CplexLPEngine::load(ProblemPtr problem)
     strcpy(cstr, (*c_iter)->getName().c_str());
     conname[i] = cstr;
     i++;
+    delete [] cstr;
+    cstr = 0;
   }
 
   index = new int[nnz];
@@ -375,6 +377,8 @@ void CplexLPEngine::load(ProblemPtr problem)
     //} else if ((*v_iter)->getType() == Integer) {
       //vartype[i] = 'I';
     //}
+    delete [] cstr;
+    cstr = 0;
   }
 
   //// XXX: check if linear function is NULL

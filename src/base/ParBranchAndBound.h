@@ -183,9 +183,9 @@ namespace Minotaur {
      * \param [in] parPCBProcessor is the array of node processors.
      * \param [in] nThreads is the number of threads being used.
      */
-    void parsolveSync(ParNodeIncRelaxerPtr parNodeRelaxer[],
-                  ParPCBProcessorPtr parPCBProcessor[],
-                  UInt nThreads);
+    //void parsolveSync(ParNodeIncRelaxerPtr parNodeRelaxer[],
+                  //ParPCBProcessorPtr parPCBProcessor[],
+                  //UInt nThreads);
 
     /// Print a two-dimensional vector (customized).
     void print2dvec(std::vector<std::vector<int> > output);

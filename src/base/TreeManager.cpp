@@ -302,7 +302,7 @@ void TreeManager::removeNode_(NodePtr node)
   NodePtrIterator node_i;
 
   if (node->getId()>0) {
-    NodePtr cNode;
+    NodePtr cNode = 0;
     // check if the parent of this node has this node as its child. this check
     // is only for debugging purposes. may be removed if confident that
     // parents and children are properly linked.
