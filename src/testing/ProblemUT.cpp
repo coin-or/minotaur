@@ -19,7 +19,6 @@
 CPPUNIT_TEST_SUITE_REGISTRATION(ProblemTest);
 CPPUNIT_TEST_SUITE_NAMED_REGISTRATION(ProblemTest, "ProblemUT");
 
-using namespace boost;
 using namespace Minotaur;
 using namespace std;
 

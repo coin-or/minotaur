@@ -17,18 +17,11 @@
 
 namespace Minotaur {
 
-  class   Constraint;
-  class   Function;
-  class   LinearFunction;
-  class   NonlinearFunction;
   class   Solution;
   class   WarmStart;
   class   Engine;
   typedef Engine* EnginePtr;
   typedef const Engine* ConstEnginePtr;  
-  typedef Constraint* ConstraintPtr; //change boost -> simple
-  typedef LinearFunction* LinearFunctionPtr;
-  typedef NonlinearFunction* NonlinearFunctionPtr;
   typedef const Solution* ConstSolutionPtr;
   typedef WarmStart* WarmStartPtr;
   typedef const WarmStart* ConstWarmStartPtr;

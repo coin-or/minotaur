@@ -19,7 +19,6 @@
 CPPUNIT_TEST_SUITE_REGISTRATION(FunctionTest);
 CPPUNIT_TEST_SUITE_NAMED_REGISTRATION(FunctionTest, "FunctionUT");
 
-using namespace boost;
 using namespace Minotaur;
 using namespace std;
 

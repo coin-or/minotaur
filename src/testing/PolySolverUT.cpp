@@ -12,7 +12,6 @@
 
 CPPUNIT_TEST_SUITE_REGISTRATION(PolySolverUT);
 CPPUNIT_TEST_SUITE_NAMED_REGISTRATION(PolySolverUT, "PolySolverUT");
-using namespace boost;
 using namespace MINOTAUR_AMPL;
 using namespace std;
 

@@ -617,15 +617,6 @@ else()
   message(STATUS ${MSG_HEAD} "Link Cplex? No.")
 endif()
 
-#if (LINK_CPX)
-  #message(STATUS ${MSG_HEAD} "Link Cplex? Yes.")
-  #add_definitions("-DMNTROSICPX=1")
-#else()
-  #message(STATUS ${MSG_HEAD} "Link Cplex? No.")
-  #add_definitions("-DMNTROSICPX=0")
-#endif()
-
-
 ###########################################################################
 ## Gurobi
 ###########################################################################

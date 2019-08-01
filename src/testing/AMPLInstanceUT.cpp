@@ -18,7 +18,6 @@
 
 CPPUNIT_TEST_SUITE_REGISTRATION(AMPLInstanceUT);
 CPPUNIT_TEST_SUITE_NAMED_REGISTRATION(AMPLInstanceUT, "AMPLInstanceUT");
-using namespace boost;
 using namespace MINOTAUR_AMPL;
 using namespace std;
 

@@ -15,7 +15,6 @@
 
 CPPUNIT_TEST_SUITE_REGISTRATION(AMPLBqpdUT);
 CPPUNIT_TEST_SUITE_NAMED_REGISTRATION(AMPLBqpdUT, "AMPLBqpdUT");
-using namespace boost;
 using namespace MINOTAUR_AMPL;
 using namespace std;
 

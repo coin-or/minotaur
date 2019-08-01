@@ -20,7 +20,6 @@
 
 CPPUNIT_TEST_SUITE_REGISTRATION(AMPLCGraphUT);
 CPPUNIT_TEST_SUITE_NAMED_REGISTRATION(AMPLCGraphUT, "AMPLCGraphUT");
-using namespace boost;
 using namespace MINOTAUR_AMPL;
 using namespace std;
 
