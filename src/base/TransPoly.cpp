@@ -198,7 +198,7 @@ VariablePtr TransPoly::newPolyVar_(const CNode* cnode, MonomialFunPtr mf,
                                    double d, double k)
 {
   VariablePtr y;
-  CGraphPtr cg;
+  CGraphPtr cg = 0;
   CNode *n1;
   CNode *n2 = 0;
 

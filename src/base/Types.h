@@ -13,7 +13,7 @@
 #ifndef MINOTAURTYPES_H
 #define MINOTAURTYPES_H
 
-#include <boost/shared_ptr.hpp>
+#include <assert.h>
 #include <list>
 #include <map>
 #include <deque>
@@ -236,11 +236,9 @@ std::string getSolveStatusString(SolveStatus s);
 
 // Important class definitions
 /// Logging
-//Changed boost_shared pointer to simple pointer
 class Logger;
 typedef Logger* LoggerPtr;
 
-//changed boost shared pointer to simple pointer
 class Variable;
 typedef Variable* VariablePtr;
 typedef Variable* ConstVariablePtr; 
@@ -262,7 +260,6 @@ class Objective;
 typedef Objective* ObjectivePtr;
 typedef const Objective* ConstObjPtr;
 
-//Changed boost_shared pointer to simple pointer
 class Constraint;
 typedef  Constraint*  ConstraintPtr;
 typedef const Constraint* ConstConstraintPtr;
@@ -277,7 +274,6 @@ typedef SOSVector::iterator SOSIterator;
 typedef SOSVector::const_iterator SOSConstIterator;
 
 // Serdar defined
-// some chnaged boost:shared_ptr: vinay
 typedef ConstraintVector* ConstraintVectorPtr;
 typedef std::vector<ConstConstraintPtr> ConstConstraintVector;
 typedef ConstConstraintVector* ConstConstraintVectorPtr;
@@ -287,7 +283,6 @@ typedef std::deque<ConstraintPtr> ConstrQ;
 
 
 // Serdar added.
-// changed boost:shared_ptr: vinay
 typedef VarSet* VarSetPtr;
 typedef const VarSet* ConstVarSetPtr;
 typedef std::map<ConstVariablePtr, UInt, CompareVariablePtr> VarIntMap;
@@ -336,7 +331,6 @@ typedef std::vector<BranchPtr> BranchPtrVector;
 typedef BranchPtrVector* Branches;
 typedef std::vector<BranchPtr>::const_iterator BranchConstIterator;
 
-// BrCand boost pointer chnaged to regular pointer
 class   BrCand;
 typedef BrCand*  BrCandPtr;
 typedef const BrCand* ConstBrCandPtr;  

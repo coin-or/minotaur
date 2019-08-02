@@ -1290,7 +1290,7 @@ void QPDProcessor::setupQP_(ConstSolutionPtr sol)
   double pred = 0; // for debug.
   double obj_const = 0;
   UInt zduals = 0;
-  NonlinearFunctionPtr nlf;
+  NonlinearFunctionPtr nlf = 0;
   double val;
   SolutionPtr qpsol;
   double *ddd = new double[p_->getNumCons()];

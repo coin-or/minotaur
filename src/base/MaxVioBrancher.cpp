@@ -60,7 +60,7 @@ Branches MaxVioBrancher::findBranches(RelaxationPtr rel, NodePtr ,
                                       BrancherStatus & br_status,
                                       ModVector &mods) 
 {
-  Branches branches;
+  Branches branches = 0;
   BrCandPtr br_can = BrCandPtr(); //NULL
   const double *x = sol->getPrimal();
   bool should_prune = false;

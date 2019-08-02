@@ -321,7 +321,7 @@ int main(int argc, char* argv[])
   
   // the branch-and-bound
   BranchAndBound *bab = 0;
-  PresolverPtr pres;
+  PresolverPtr pres = 0;
   EngineFactory *efac;
   const std::string me("qg: ");
 

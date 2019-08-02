@@ -1090,12 +1090,12 @@ void NlPresHandler::quad_bound(VariablePtr v, double a,double b, double *l,
   double etol = 1e-7;
 
   if (a == 0){
-    *u = std::max({v->getLb()*(b+etol), v->getUb()*(b+etol)});
-    *l = std::min({v->getLb()*(b+etol), v->getUb()*(b+etol)});
+    *u = std::max(v->getLb()*(b+etol), v->getUb()*(b+etol));
+    *l = std::min(v->getLb()*(b+etol), v->getUb()*(b+etol));
   }
   else {
-    *u = std::max({v->getLb()*(a*v->getLb()+b), v->getUb()*(a*v->getUb()+b)});
-    *l = std::min({v->getLb()*(a*v->getLb()+b), v->getUb()*(a*v->getUb()+b)});
+    *u = std::max(v->getLb()*(a*v->getLb()+b), v->getUb()*(a*v->getUb()+b));
+    *l = std::min(v->getLb()*(a*v->getLb()+b), v->getUb()*(a*v->getUb()+b));
 
     if(a < 0){
       if (v->getLb() == INFINITY){
@@ -1133,8 +1133,8 @@ void NlPresHandler::quad_bound_range(VariablePtr v, double a,double blb, double 
 
   quad_bound(v, a, blb,  &llb, &lub);
   quad_bound(v, a, bub,  &ulb, &uub);
-  *l = std::min({llb, ulb});
-  *u = std::max({lub, uub});
+  *l = std::min(llb, ulb);
+  *u = std::max(lub, uub);
  }
 
 
@@ -1346,8 +1346,8 @@ void NlPresHandler::bilinear_bounds(VariablePtr v, double *qflb1, double *qfub1,
       }
       
       
-      *qflb1 += std::min({a,b});
-      *qfub1 += std::max({a,b});
+      *qflb1 += std::min(a,b);
+      *qfub1 += std::max(a,b);
     }
 
 
@@ -1450,8 +1450,8 @@ void NlPresHandler::quad_var_bound(VarBoundModVector qfmod, LinearFunctionPtr lf
   
   for (VariableSet::iterator it = linear_terms.begin(); it != linear_terms.end(); ++it){
     v = *it;
-    lflb += std::min({lf->getWeight(v)*v->getLb(), lf->getWeight(v)*v->getUb()});
-    lfub += std::max({lf->getWeight(v)*v->getLb(), lf->getWeight(v)*v->getUb()});
+    lflb += std::min(lf->getWeight(v)*v->getLb(), lf->getWeight(v)*v->getUb());
+    lfub += std::max(lf->getWeight(v)*v->getLb(), lf->getWeight(v)*v->getUb());
   }
 
   for (VariableSet::iterator it = qfvars.begin(); it != qfvars.end(); ++it){
@@ -1487,8 +1487,8 @@ void NlPresHandler::quad_var_bound(VarBoundModVector qfmod, LinearFunctionPtr lf
     x = cl - lfub - qfub;
     y = cu - lflb - qflb;
     z = cu - lfub - qfub;
-    clb = std::min({w,x,y,z});
-    cub = std::max({w,x,y,z});
+    clb = std::min(w,x); clb = std::min(clb,y); clb = std::min(clb,z);
+    cub = std::max(w,x); cub = std::max(cub,y); cub = std::max(cub,z);
     a = qf->getWeight(v, v);
     qf->bndsquadterms(&blb, &bub, v);
     
@@ -1534,8 +1534,8 @@ void NlPresHandler::quad_var_bound(VarBoundModVector qfmod, LinearFunctionPtr lf
       lbu1 = -INFINITY;
     }    
 
-  qvlb = std::max({lbu1, lbu2});
-  qvub = std::min({ubu1,ubu2});
+  qvlb = std::max(lbu1, lbu2);
+  qvub = std::min(ubu1, ubu2);
 
    
   if (qvlb > v->getLb()) {
@@ -1612,8 +1612,8 @@ void NlPresHandler::varBndsFromCons_(ProblemPtr p, bool apply_to_prob,
         qf->computeBounds(&lb1, &ub1);
         lf->computeBounds(&lb2, &ub2);
 
-        ub = std::min({ubc, ub1 + ub2});
-        lb = std::max({lbc, lb1+lb2});
+        ub = std::min(ubc, ub1 + ub2);
+        lb = std::max(lbc, lb1+lb2);
         // std::cout<<"cons__bounduuubbb"<<ub<<"\n";
         // std::cout<<"cons_boundlllllbb"<<lb<<"\n";
       

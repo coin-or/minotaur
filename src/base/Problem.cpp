@@ -10,7 +10,7 @@
  * \author Ashutosh Mahajan, Argonne National Laboratory
  */
 
-#include <cassert>
+#include <algorithm>
 #include <cmath>
 #include <ios>
 #include <iomanip>
@@ -1585,7 +1585,7 @@ void Problem::objToCons()
     assert(!"No objective function in the problem!");
   } else if (obj_->getFunctionType() != Linear &&
              obj_->getFunctionType() != Constant) {
-    FunctionPtr fold, fnew;
+    FunctionPtr fold = 0, fnew = 0;
     double objCons = obj_->getConstant();
     ObjectiveType objType = obj_->getObjectiveType();
     LinearFunctionPtr lf = obj_->getLinearFunction();

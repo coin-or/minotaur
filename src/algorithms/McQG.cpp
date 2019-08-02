@@ -77,7 +77,7 @@ ParQGBranchAndBound* createParBab(EnvPtr env, UInt numThreads, NodePtr &node,
   bab->shouldCreateRoot(false);
  
   for(UInt i = 0; i < numThreads; ++i) {
-    BrancherPtr br;
+    BrancherPtr br = 0;
     LinHandlerPtr l_hand = (LinHandlerPtr) new LinearHandler(env, pCopy[i]);
     l_hand->setModFlags(false, true);
     handlersCopy[i].push_back(l_hand);
@@ -138,7 +138,7 @@ ParQGBranchAndBound* createParBab(EnvPtr env, UInt numThreads, NodePtr &node,
 BrancherPtr createBrancher(EnvPtr env, ProblemPtr p, HandlerVector handlers,
                            EnginePtr e)
 {
-  BrancherPtr br;
+  BrancherPtr br = 0;
   UInt t;
   const std::string me("mcqg main: ");
 
@@ -564,20 +564,20 @@ int main(int argc, char** argv)
   EnginePtr engine = 0;  // engine for solving relaxations. 
   ParQGBranchAndBound * parbab = 0;
   double wallTimeStart = parbab->getWallTime();  //use Timer: to be done!!!
-  PresolverPtr pres;
+  PresolverPtr pres = 0;
   const std::string me("mcqg main: ");
   VarVector *orig_v=0;
   HandlerVector handlers;
   int err = 0;
   double obj_sense = 1.0;
   
-  UInt numThreads;
+  UInt numThreads = 0;
   ParPCBProcessorPtr *nodePrcssr = 0; 
   ParNodeIncRelaxerPtr *parNodeRlxr = 0;
   ProblemPtr *pCopy = 0;
   RelaxationPtr *relCopy = 0;
   HandlerVector *handlersCopy = 0;
-  EngineFactory *efac;
+  EngineFactory *efac = 0;
   LPEnginePtr *lpeCopy = 0;
   EnginePtr *eCopy = 0;
   ObjectivePtr oPtr = 0;

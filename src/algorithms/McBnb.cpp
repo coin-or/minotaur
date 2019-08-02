@@ -77,7 +77,7 @@ ParBranchAndBound* createParBab(EnvPtr env, ProblemPtr p, EnginePtr e,
   bab->shouldCreateRoot(false);
 #pragma omp parallel for
   for(UInt i = 0; i < numThreads; i++) {
-    BrancherPtr br;
+    BrancherPtr br = 0;
     eCopy[i] = e->emptyCopy();
     IntVarHandlerPtr v_hand = (IntVarHandlerPtr) new IntVarHandler(env, p);
     LinHandlerPtr l_hand = (LinHandlerPtr) new LinearHandler(env, p);
@@ -178,7 +178,7 @@ ParBranchAndBound* createParBab(EnvPtr env, ProblemPtr p, EnginePtr e,
 BrancherPtr createBrancher(EnvPtr env, ProblemPtr p, HandlerVector handlers,
                            EnginePtr e)
 {
-  BrancherPtr br;
+  BrancherPtr br = 0;
   UInt t;
   const std::string me("mcbnb main: ");
 
@@ -579,8 +579,8 @@ int main(int argc, char** argv)
   HandlerVector handlers;
   int err = 0;
   double obj_sense = 1.0;
-  UInt numThreads;
-  HandlerVector *handlersCopy;
+  UInt numThreads = 0;
+  HandlerVector *handlersCopy = 0;
   EnginePtr *eCopy = 0;
   ParPCBProcessorPtr *nodePrcssr = 0;
   ParNodeIncRelaxerPtr *parNodeRlxr = 0;
@@ -676,8 +676,10 @@ CLEANUP:
     delete pres;
   }
   for (UInt i=0; i < numThreads; i++) {
-    for (HandlerVector::iterator it=handlersCopy[i].begin(); it!=handlersCopy[i].end(); ++it) {
-      delete (*it);
+    if (handlersCopy) {
+      for (HandlerVector::iterator it=handlersCopy[i].begin(); it!=handlersCopy[i].end(); ++it) {
+        delete (*it);
+      }
     }
     if (eCopy[i]) {
       delete eCopy[i];

@@ -10,6 +10,7 @@
  * \author Prashant Palkar, Meenarli Sharma, Ashutosh Mahajan, IIT Bombay
  */
 
+#include <algorithm>
 #include <cmath>
 #include <iomanip>
 

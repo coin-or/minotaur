@@ -10,6 +10,7 @@
  * \author Ashutosh Mahajan, Argonne National Laboratory
  */
 
+#include <algorithm>
 #include <cmath>
 #include <iomanip>
 #include <omp.h>

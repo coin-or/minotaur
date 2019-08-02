@@ -385,7 +385,7 @@ int main(int argc, char* argv[])
   double wallTimeStart = getWallTime();
   
   PresolverPtr pres = 0;
-  EngineFactory *efac;
+  EngineFactory *efac = 0;
   const std::string me("oa: ");
   SolveStatus status;
   //handlers
@@ -432,7 +432,7 @@ int main(int argc, char* argv[])
   efac = new EngineFactory(env);
   milp_e = efac->getMILPEngine();
   
-  delete efac;
+  delete efac; efac = 0;
 
   // get presolver.
   orig_v = new VarVector(inst->varsBegin(), inst->varsEnd());

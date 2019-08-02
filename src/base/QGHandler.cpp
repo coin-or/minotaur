@@ -156,7 +156,7 @@ UInt QGHandler::addCutAtRoot_(double *x, ConstraintPtr con)
 bool QGHandler::addNewCut_(double *b1, UInt vlIdx, ConstraintPtr con,
                            double linTermCoeff, double extraCoeff, UInt &newConId)
 {
-  double act; 
+  double act = 0; 
   int error = 0;
   QuadraticFunctionPtr qf = con->getQuadraticFunction();
   NonlinearFunctionPtr nlf = con->getNonlinearFunction();

@@ -162,7 +162,7 @@ BranchAndBound * createBab (EnvPtr env, ProblemPtr p, EnginePtr e,
   BranchAndBound *bab = new BranchAndBound(env, p);
   PCBProcessorPtr nproc;
   NodeIncRelaxerPtr nr;
-  BrancherPtr br;
+  BrancherPtr br = 0;
   const std::string me("mntr-glob: ");
 
   if (env->getOptions()->findString("brancher")->getValue() == "rel") {

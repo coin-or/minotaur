@@ -4,6 +4,7 @@
 //    (C)opyright 2009 - 2017 The MINOTAUR Team.
 //
 
+#include <unistd.h>
 #include "MinotaurConfig.h"
 #include "Timer.h"
 #include "TimerUT.h"
@@ -45,7 +46,7 @@ void TimerUT::testSleep()
 
   // finally sleep test
   timer->start();
-  sleep(2);
+  usleep(2000);
   time_used = timer->query();
   CPPUNIT_ASSERT(time_used <= 1.5);
   delete timer;

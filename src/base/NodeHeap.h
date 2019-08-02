@@ -15,6 +15,7 @@
 #ifndef MINOTAURNODEHEAP_H
 #define MINOTAURNODEHEAP_H
 
+#include "Types.h"
 #include "ActiveNodeStore.h"
 
 namespace Minotaur {

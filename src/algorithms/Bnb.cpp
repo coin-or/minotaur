@@ -165,7 +165,7 @@ BranchAndBound* createBab(EnvPtr env, ProblemPtr p, EnginePtr e,
 BrancherPtr createBrancher(EnvPtr env, ProblemPtr p, HandlerVector handlers,
                            EnginePtr e)
 {
-  BrancherPtr br;
+  BrancherPtr br = 0;
   UInt t;
   const std::string me("bnb main: ");
 
