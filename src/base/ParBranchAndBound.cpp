@@ -882,6 +882,7 @@ void ParBranchAndBound::parsolve(ParNodeIncRelaxerPtr parNodeRlxr[],
             status_ = SolvedInfeasible; // TODO: get the right status
           }
 #if SPEW
+#pragma omp critical (logger)
           logger_->msgStream(LogDebug) << me_ << "all nodes have "
             << "been processed" << std::endl;
 #endif
@@ -890,6 +891,7 @@ void ParBranchAndBound::parsolve(ParNodeIncRelaxerPtr parNodeRlxr[],
           shouldRun = false;
         } else {
 #if SPEW
+#pragma omp critical (logger)
           logger_->msgStream(LogDebug) << std::setprecision(8)
             << me_ << "lb = " << tm_->updateLb() << std::endl 
             << me_ << "ub = " << tm_->getUb() << std::endl;

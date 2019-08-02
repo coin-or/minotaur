@@ -216,10 +216,10 @@ void CplexMILPEngine::load(ProblemPtr problem)
   int numcons = problem->getNumCons();
   int i, j, rcnt;
   double obj_sense = 1, ztol = 1e-6;
-  double *conlb, *conub, *conrhs, *conrange, *varlb, *varub, *obj;
-  double *value;
+  double *conlb = 0, *conub = 0, *conrhs = 0, *conrange = 0, *varlb = 0, *varub = 0, *obj = 0;
+  double *value = 0;
   //int *index;
-  CPXDIM *index, *conind;
+  CPXDIM *index = 0, *conind = 0;
   //int *start = new int[numcons];
   CPXNNZ *start = new CPXNNZ[numcons];
   memset(start, 0, numcons*sizeof(int));
@@ -227,7 +227,7 @@ void CplexMILPEngine::load(ProblemPtr problem)
   char **varname = new char*[numvars];
   //char *conname[numcons];
   char **conname = new char*[numcons];
-  char *cstr; //temporary
+  char *cstr = NULL; //temporary
 
   std::vector<UInt> conindvec;
   std::vector<double> conrangevec; 

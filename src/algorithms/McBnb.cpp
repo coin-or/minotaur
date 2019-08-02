@@ -641,12 +641,12 @@ int main(int argc, char** argv)
   }
   parbab = createParBab(env, oinst, engine, numThreads, relCopy,
                         nodePrcssr, parNodeRlxr, handlersCopy, eCopy);
-  if (true==env->getOptions()->findBool("mcbnb_deter_mode")->getValue()) {
-    assert(!"Deterministic mode not available right now!");
+  //if (true==env->getOptions()->findBool("mcbnb_deter_mode")->getValue()) {
+    //assert(!"Deterministic mode not available right now!");
     //parbab->parsolveSync(parNodeRlxr, nodePrcssr, numThreads);
-  } else {
-    parbab->parsolve(parNodeRlxr, nodePrcssr, numThreads);
-  }
+  //} else {
+  parbab->parsolve(parNodeRlxr, nodePrcssr, numThreads);
+  //}
   
   //Take care of important bnb statistics
   //parbab->writeParStats(env->getLogger()->msgStream(LogExtraInfo), nodePrcssr);
