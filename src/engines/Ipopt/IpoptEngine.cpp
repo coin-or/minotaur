@@ -271,6 +271,8 @@ IpoptEngine::IpoptEngine(EnvPtr env)
 
   stats_ = new IpoptStats();
   stats_->calls    = 0;
+  stats_->opt      = 0;
+  stats_->reopt    = 0;
   stats_->strCalls = 0;
   stats_->time     = 0;
   stats_->ptime    = 0;
@@ -298,11 +300,14 @@ IpoptEngine::~IpoptEngine()
   if (timer_) {
     delete timer_;
   }
-  if (stats_) {
-    delete stats_;
-  }
   if (myapp_) {
-    delete myapp_;
+    delete myapp_; // deletes mynlp_ as well
+  }
+  if (stats_) {
+    if (0==stats_->opt && 0==stats_->reopt && mynlp_) {
+      delete mynlp_;
+    }
+    delete stats_;
   }
   if (problem_) {
     problem_->unsetEngine();
@@ -704,8 +709,10 @@ EngineStatus IpoptEngine::solve()
   } else if (((ws_ && ws_->hasInfo()) || (strBr_ && wsSb_ && wsSb_->hasInfo()))
              && stats_->calls > 1) {
     status = myapp_->ReOptimizeTNLP(mynlp_);
+    stats_->reopt += 1;
   } else {
     status = myapp_->OptimizeTNLP(mynlp_);
+    stats_->opt += 1;
   }
 
 #if SPEW
@@ -809,6 +816,8 @@ void IpoptEngine::writeStats(std::ostream &out) const
   if (stats_) {
     std::string me = "Ipopt: ";
     out << me << "total calls            = " << stats_->calls << std::endl
+      << me << "calls to Optimize      = " << stats_->opt << std::endl
+      << me << "calls to ReOptimize    = " << stats_->reopt << std::endl
       << me << "strong branching calls = " << stats_->strCalls << std::endl
       << me << "total time in solving  = " << stats_->time  << std::endl
       << me << "total time in presolve = " << stats_->ptime  << std::endl

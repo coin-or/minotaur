@@ -1928,7 +1928,7 @@ void QGHandler::cutToObj_(const double *nlpx, const double *lpx,
         act = o->eval(nlpx, &error);
         if (error == 0) {
           f = o->getFunction();
-          LinearFunctionPtr lf = LinearFunctionPtr(); 
+          LinearFunctionPtr lf = 0;
           linearAt_(f, act, nlpx, &c, &lf, &error);
           if (error == 0) {
             vio = std::max(c+lf->eval(lpx)-relobj_, 0.0);
@@ -1946,6 +1946,8 @@ void QGHandler::cutToObj_(const double *nlpx, const double *lpx,
               f = (FunctionPtr) new Function(lf);
               rel_->newConstraint(f, -INFINITY, -1.0*c, sstm.str());
               //newcon = rel_->newConstraint(f, -INFINITY, -1.0*c, sstm.str());
+            } else {
+              delete lf; lf = 0;
             }
           }
         }

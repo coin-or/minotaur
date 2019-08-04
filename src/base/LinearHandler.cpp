@@ -743,7 +743,7 @@ void LinearHandler::dualFix_(bool *changed)
   ConstraintPtr c;
   double w;
   int dir, cdir;
-  ModificationPtr mod = ModificationPtr(); //null
+  ModificationPtr mod = 0;
   LinearFunctionPtr olf = problem_->getObjective()->getLinearFunction();
 
   findLinVars_();
@@ -820,13 +820,15 @@ void LinearHandler::dualFix_(bool *changed)
         ++(pStats_->vBnd);
       }
     }
-#if SPEW
     if (mod) {
+#if SPEW
       logger_->msgStream(LogDebug) << me_ << "variable " << v->getName() 
                                    << " fixed by dual fixing" << std::endl;
       mod->write(logger_->msgStream(LogDebug));
-    }
 #endif
+      delete mod;
+      mod = 0;
+    }
   }
 }
 

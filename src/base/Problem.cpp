@@ -1481,6 +1481,9 @@ ObjectivePtr Problem::newObjective(FunctionPtr f, double cb,
   assert(engine_ == 0 ||
       (!"Cannot add objective after loading problem to engine\n")); 
 
+  if (obj_) {
+    delete obj_; obj_ = 0;
+  }
   obj_ = new Objective(f, cb, otyp, name);
   consModed_ = true;
   return obj_;

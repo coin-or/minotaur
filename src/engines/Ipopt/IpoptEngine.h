@@ -40,6 +40,8 @@ namespace Minotaur {
 
   struct IpoptStats {
     UInt calls;     ///< Total number of calls to solve.
+    UInt opt;       ///< No. of calls to Ipopt's Optimize 
+    UInt reopt;     ///< No. of calls to Ipopt's ReOptimize 
     UInt iters;     ///< Sum of number of iterations in all calls. 
     double ptime;   ///< Sum of time taken in all calls to presolve.
     UInt strCalls;  ///< Calls to solve while strong branching.
@@ -273,6 +275,10 @@ namespace Minotaur {
 
     Ipopt::IpoptApplication  *myapp_; 
 
+    // usually gets freed automatically when myapp_ is deleted.
+    // In case myapp_->Optimize or myapp_->Reoptimize are
+    // not called even once, then we have to free it (see
+    // IpoptStats::opt, reopt).
     Ipopt::IpoptFunInterface *mynlp_;
 
     /**
