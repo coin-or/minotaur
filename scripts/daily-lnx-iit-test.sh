@@ -411,6 +411,8 @@ cd ${TEST_DIR}
 echo "" >> ${SUMMARY}
 echo "Valgrind:" >> ${SUMMARY}
 grep -A 5 'LEAK SUMMARY' build-all-debug-valgrind.out >> ${SUMMARY}
+echo "" >> ${SUMMARY}
+echo "" >> ${SUMMARY}
 
 
 ## static+debug
