@@ -714,7 +714,7 @@ static int CPXPUBLIC minolazycallback(CPXCENVptr env, void *cbdata, int wherefro
     return cpxstatus;
   }
 #if SPEW
-  printx(cpxx, numvars);
+  //printx(cpxx, numvars);
 #endif
 
   const double *x = cpxx;
