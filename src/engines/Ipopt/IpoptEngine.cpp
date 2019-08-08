@@ -46,7 +46,8 @@ const std::string IpoptEngine::me_ = "IpoptEngine: ";
 // ----------------------------------------------------------------------- //
 // ----------------------------------------------------------------------- //
 IpoptSolution::IpoptSolution()
-: dualXLow_(0),
+: Solution(),
+  dualXLow_(0),
   dualXUp_(0)
 {
 }
@@ -468,6 +469,7 @@ void IpoptEngine::load(ProblemPtr problem)
   // check if warm start needs to be saved
   if (prepareWs_) {
     ws_ = new IpoptWarmStart();
+    ws_->setPoint(sol_);
   }
 
   // set the status of the engine to unknown.

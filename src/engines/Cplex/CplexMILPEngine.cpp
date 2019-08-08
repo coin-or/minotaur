@@ -13,6 +13,7 @@
 #include <cmath>
 #include <iostream>
 #include <iomanip>
+#include <fstream>
 
 #include "MinotaurConfig.h"
 #include "CplexMILPEngine.h"
@@ -88,7 +89,11 @@ CplexMILPEngine::~CplexMILPEngine()
   if (sol_) {
     delete sol_;
   }
-
+  if (remove("minoCpxMipStart.mst") != 0) {
+    logger_->msgStream(LogError) << "Could not remove mip starts file. \n";
+  } else {
+    logger_->msgStream(LogError) << "Deleted mip starts file. \n";
+  }
 }
 
 
@@ -223,10 +228,10 @@ void CplexMILPEngine::load(ProblemPtr problem)
   //int *start = new int[numcons];
   CPXNNZ *start = new CPXNNZ[numcons];
   memset(start, 0, numcons*sizeof(int));
-  //char *varname = new char[numvars];
-  char **varname = new char*[numvars];
-  //char *conname[numcons];
   char **conname = new char*[numcons];
+  //char const** conname = new char const*[numcons];
+  char **varname = new char*[numvars];
+  //char const** varname = new char const*[numvars];
   char *cstr = NULL; //temporary
 
   std::vector<UInt> conindvec;
@@ -240,6 +245,7 @@ void CplexMILPEngine::load(ProblemPtr problem)
   conrhs = new double[numcons];
   varlb = new double[numvars];
   varub = new double[numvars];
+  obj = new double[numvars];
   //double *rhs = new double[numcons];
   char *sense = new char[numcons];
   std::fill(sense, sense+numcons, 'L'); //assuming all cons <= to start with
@@ -298,9 +304,11 @@ void CplexMILPEngine::load(ProblemPtr problem)
     cstr = new char[(*c_iter)->getName().length() + 1];
     strcpy(cstr, (*c_iter)->getName().c_str());
     conname[i] = cstr;
+    //strcpy(conname[i], (*c_iter)->getName().c_str());
+    //conname[i] = (*c_iter)->getName().c_str();
     i++;
-    delete [] cstr;
-    cstr = 0;
+    //delete [] cstr;
+    //cstr = 0;
   }
   //delete [] cstr;
   //cstr = 0;
@@ -355,13 +363,15 @@ void CplexMILPEngine::load(ProblemPtr problem)
     cstr = new char[(*v_iter)->getName().length() + 1];
     strcpy(cstr, (*v_iter)->getName().c_str());
     varname[i] = cstr;
+    //strcpy(varname[i], (*v_iter)->getName().c_str());
+    //varname[i] = (*v_iter)->getName().c_str();
     if ((*v_iter)->getType() == Binary) {
       vartype[i] = 'B';
     } else if ((*v_iter)->getType() == Integer) {
       vartype[i] = 'I';
     }
-    delete [] cstr;
-    cstr = 0;
+    //delete [] cstr;
+    //cstr = 0;
   }
 
   //// XXX: check if linear function is NULL
@@ -369,7 +379,7 @@ void CplexMILPEngine::load(ProblemPtr problem)
   if (problem->getObjective()->getObjectiveType() == Minotaur::Maximize) {
     obj_sense = -1.;
   }
-  obj = new double[numvars];
+  //obj = new double[numvars];
   i = 0;
   if (lin) {
     for (v_iter=problem->varsBegin(); v_iter!=problem->varsEnd(); ++v_iter, 
@@ -426,8 +436,15 @@ TERMINATE:
   delete [] conrange;
   delete [] sense;
   delete [] vartype;
+
   //problem->setEngine(this);
 
+  //if (cpxenv_ != NULL) {
+    //cpxstatus_ = CPXXcloseCPLEX (&cpxenv_);
+    //if (cpxstatus_) {
+      //logger_->msgStream(LogError) << "Could not close CPLEX environment.\n";
+    //}
+  //}
 }
 
 
@@ -475,8 +492,28 @@ EngineStatus CplexMILPEngine::solve()
   int solstat;
   double objval;
   int cur_numcols = CPXXgetnumcols (cpxenv_, cpxlp_);
-  
   double *x = new double[cur_numcols];
+  std::string mipStartfile = "minoCpxMipStart.mst";
+  std::ifstream mstfile;
+
+   //Initialize the CPLEX environment
+  //cpxenv_ = CPXXopenCPLEX (&cpxstatus_);
+
+   //If an error occurs, the status value indicates the reason for
+     //failure.  A call to CPXXgeterrorstring will produce the text of
+     //the error message.  Note that CPXXopenCPLEX produces no output,
+     //so the only way to see the cause of the error is to use
+     //CPXXgeterrorstring.  For other CPLEX routines, the errors will
+     //be seen if the CPXXPARAM_ScreenOutput indicator is set to CPXX_ON.
+
+  //if (cpxenv_ == NULL) {
+     //char  errmsg[CPXMESSAGEBUFSIZE];
+     //logger_->msgStream(LogError) << me_ << "Could not open CPLEX environment."
+       //<< std::endl;
+     //CPXXgeterrorstring (cpxenv_, cpxstatus_, errmsg);
+     //logger_->msgStream(LogError) << me_ << errmsg << std::endl;
+     //goto TERMINATE;
+  //}
 
 #if 0
   /* Write a copy of the problem to a file. */
@@ -512,6 +549,17 @@ EngineStatus CplexMILPEngine::solve()
      goto TERMINATE;
   }
 
+  // Read MIP starts if they exist (in a file)
+  mstfile.open(mipStartfile.c_str());
+  if (!mstfile.fail()) {
+    cpxstatus_ = CPXXreadcopymipstarts(cpxenv_, cpxlp_, mipStartfile.c_str());
+    if (cpxstatus_) {
+      logger_->msgStream(LogError) << me_ << "Failed to read MIP starts."
+        << std::endl;
+    }
+    mstfile.close();
+  }
+
   /* Optimize the problem and obtain solution. */
   cpxstatus_ = CPXXmipopt (cpxenv_, cpxlp_);
   if (cpxstatus_) {
@@ -543,7 +591,18 @@ EngineStatus CplexMILPEngine::solve()
    logger_->msgStream(LogError) << me_ << "Failed to get optimal integer x."
      << std::endl;
   }
-  
+
+  // Write MIP start for the next iteration
+  //mstfile.open(mipStartfile.c_str());
+  //if (!mstfile.fail()) {
+    cpxstatus_ = CPXXwritemipstarts (cpxenv_, cpxlp_, mipStartfile.c_str(), 0, 0);
+    if (cpxstatus_) {
+     logger_->msgStream(LogError) << me_ << "Failed to write MIP starts."
+       << std::endl;
+    }
+    //mstfile.close();
+  //}
+
 #if SPEW
   /* Write the solution. */
   printx(x, cur_numcols);
@@ -581,6 +640,16 @@ EngineStatus CplexMILPEngine::solve()
 
 TERMINATE:
   delete [] x;
+  if (cpxenv_ != NULL) {
+    cpxstatus_ = CPXXcloseCPLEX (&cpxenv_);
+    /* Note that CPXXcloseCPLEX produces no output,
+       so the only way to see the cause of the error is to use
+       CPXXgeterrorstring.  For other CPLEX routines, the errors will
+       be seen if the CPXPARAM_ScreenOutput indicator is set to CPX_ON. */
+    if (cpxstatus_) {
+      logger_->msgStream(LogError) << "Could not close CPLEX environment.\n";
+    }
+  }
   return status_;
 }
 
@@ -645,7 +714,7 @@ static int CPXPUBLIC minolazycallback(CPXCENVptr env, void *cbdata, int wherefro
     return cpxstatus;
   }
 #if SPEW
-  printx(cpxx, numvars);
+  //printx(cpxx, numvars);
 #endif
 
   const double *x = cpxx;
