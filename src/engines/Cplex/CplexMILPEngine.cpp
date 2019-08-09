@@ -352,7 +352,7 @@ void CplexMILPEngine::load(ProblemPtr problem)
   if (problem->getObjective()->getObjectiveType() == Minotaur::Maximize) {
     obj_sense = -1.;
   }
-  //obj = new double[numvars];
+
   i = 0;
   if (lin) {
     for (v_iter=problem->varsBegin(); v_iter!=problem->varsEnd(); ++v_iter, 

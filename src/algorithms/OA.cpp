@@ -431,7 +431,10 @@ int main(int argc, char* argv[])
 
   efac = new EngineFactory(env);
   milp_e = efac->getMILPEngine();
-  
+  if (!milp_e) {
+    assert(!"No MILP engine!");
+  }
+
   delete efac; efac = 0;
 
   // get presolver.
@@ -478,11 +481,6 @@ int main(int argc, char* argv[])
     nr = (NodeIncRelaxerPtr) new NodeIncRelaxer(env, handlers);
     nr->setModFlag(false);
     milp = nr->createRootRelaxation(NodePtr(), prune);
-    if (milp_e) {
-      nr->setEngine(milp_e);
-    } else {
-      assert(!"No MILP engine!");
-    }
  
     double solAbsTol = env->getOptions()->findDouble("solAbs_tol")->getValue();
     double solRelTol = env->getOptions()->findDouble("solRel_tol")->getValue();

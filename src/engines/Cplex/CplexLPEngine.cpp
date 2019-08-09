@@ -235,16 +235,11 @@ void CplexLPEngine::load(ProblemPtr problem)
   double obj_sense = 1, ztol = 1e-6;
   double *conlb = 0, *conub = 0, *conrhs = 0, *conrange = 0, *varlb = 0, *varub = 0, *obj = 0;
   double *value = 0;
-  //int *index;
   CPXDIM *index = 0, *conind = 0;
-  //int *start = new int[numcons];
   CPXNNZ *start = new CPXNNZ[numcons];
   memset(start, 0, numcons*sizeof(int));
-  //char *varname = new char[numvars];
-  char **varname = new char*[numvars];
-  //char *conname[numcons];
   char **conname = new char*[numcons];
-  char *cstr = NULL; //temporary
+  char **varname = new char*[numvars];
 
   std::vector<UInt> conindvec;
   std::vector<double> conrangevec; 
@@ -257,11 +252,11 @@ void CplexLPEngine::load(ProblemPtr problem)
   conrhs = new double[numcons];
   varlb = new double[numvars];
   varub = new double[numvars];
-  //double *rhs = new double[numcons];
+  obj = new double[numvars];
   char *sense = new char[numcons];
   std::fill(sense, sense+numcons, 'L'); //assuming all cons <= to start with
-  //char *vartype = new char[numvars];
-  //std::fill(vartype, vartype+numvars, 'C'); //assuming all vars continuous
+  char *vartype = new char[numvars];
+  std::fill(vartype, vartype+numvars, 'C'); //assuming all vars continuous
   int nnz = 0;  
   VariableGroupConstIterator it;
   
@@ -277,29 +272,27 @@ void CplexLPEngine::load(ProblemPtr problem)
      CPXXgeterrorstring.  For other CPLEX routines, the errors will
      be seen if the CPXXPARAM_ScreenOutput indicator is set to CPXX_ON.  */
 
-  if ( cpxenv_ == NULL ) {
+  if (cpxenv_ == NULL) {
      char  errmsg[CPXMESSAGEBUFSIZE];
-     logger_->msgStream(LogInfo) << me_ << "Could not open CPLEX environment."
+     logger_->msgStream(LogError) << me_ << "Could not open CPLEX environment."
        << std::endl;
      CPXXgeterrorstring (cpxenv_, cpxstatus_, errmsg);
-     logger_->msgStream(LogInfo) << me_ << errmsg << std::endl;
+     logger_->msgStream(LogError) << me_ << errmsg << std::endl;
      goto TERMINATE;
   }
 
-#if SPEW
-  /* Turn on output to the screen (use a file to read parameters LATER!) */
+  /* Turn on output to te screen (use a file to read parameters LATER!) */
   cpxstatus_ = CPXXsetintparam (cpxenv_, CPXPARAM_ScreenOutput, CPX_ON);
-  if ( cpxstatus_ ) {
-     logger_->msgStream(LogInfo) << me_ << "Failure to turn on screen indicator, error " 
+  if (cpxstatus_) {
+     logger_->msgStream(LogError) << me_ << "Failure to turn on screen indicator, error "
        << cpxstatus_ << std::endl;
      goto TERMINATE;
   }
-#endif
 
   /* Create the problem. */
   cpxlp_ = CPXXcreateprob (cpxenv_, &cpxstatus_, "minoCpxProb");
-  if ( cpxlp_ == NULL ) {
-     logger_->msgStream(LogInfo) << me_ << "Failed to create LP." << std::endl;
+  if (cpxlp_ == NULL) {
+     logger_->msgStream(LogError) << me_ << "Failed to create LP." << std::endl;
      goto TERMINATE;
   }
 
@@ -314,12 +307,9 @@ void CplexLPEngine::load(ProblemPtr problem)
     assert((*c_iter)->getFunctionType() == Linear);
     lin = (*c_iter)->getLinearFunction();
     nnz += lin->getNumTerms();
-    cstr = new char[(*c_iter)->getName().length() + 1];
-    strcpy(cstr, (*c_iter)->getName().c_str());
-    conname[i] = cstr;
+    conname[i] = new char[(*c_iter)->getName().length() + 1];
+    strcpy(conname[i], (*c_iter)->getName().c_str());
     i++;
-    delete [] cstr;
-    cstr = 0;
   }
 
   index = new int[nnz];
@@ -345,7 +335,6 @@ void CplexLPEngine::load(ProblemPtr problem)
       sense[i] = 'E';                              
     } else if (conlb[i] > -INFINITY) {
       if (conub[i] < INFINITY) {
-        //assert(!"Ranged constraints not allowed right now!");
         sense[i] = 'R';
         // always provide positive range values: conlb[i] <= constraintFunction <= conlb[i] + range[i]
         conrhs[i] = conlb[i];
@@ -363,22 +352,19 @@ void CplexLPEngine::load(ProblemPtr problem)
       start[i]=j;
     }
   }
-  
+
   i = 0;
   for (v_iter=problem->varsBegin(); v_iter!=problem->varsEnd(); ++v_iter, 
        ++i) {
     varlb[i] = (*v_iter)->getLb();
     varub[i] = (*v_iter)->getUb();
-    cstr = new char[(*v_iter)->getName().length() + 1];
-    strcpy(cstr, (*v_iter)->getName().c_str());
-    varname[i] = cstr;
+    varname[i] = new char[(*v_iter)->getName().length() + 1];
+    strcpy(varname[i], (*v_iter)->getName().c_str());
     //if ((*v_iter)->getType() == Binary) {
       //vartype[i] = 'B';
     //} else if ((*v_iter)->getType() == Integer) {
       //vartype[i] = 'I';
     //}
-    delete [] cstr;
-    cstr = 0;
   }
 
   //// XXX: check if linear function is NULL
@@ -386,7 +372,7 @@ void CplexLPEngine::load(ProblemPtr problem)
   if (problem->getObjective()->getObjectiveType() == Minotaur::Maximize) {
     obj_sense = -1.;
   }
-  obj = new double[numvars];
+
   i = 0;
   if (lin) {
     for (v_iter=problem->varsBegin(); v_iter!=problem->varsEnd(); ++v_iter, 
@@ -397,7 +383,7 @@ void CplexLPEngine::load(ProblemPtr problem)
     memset(obj, 0, numvars * sizeof(double));
   }
 
-  cpxstatus_ = CPXXnewcols (cpxenv_, cpxlp_, numvars, obj, varlb, varub, NULL, varname);
+  cpxstatus_ = CPXXnewcols (cpxenv_, cpxlp_, numvars, obj, varlb, varub, vartype, varname);
   if (cpxstatus_)  goto TERMINATE;
   cpxstatus_ = CPXXaddrows (cpxenv_, cpxlp_, 0, numcons, nnz, conrhs, sense, start,
                        index, value, NULL, conname);
@@ -411,12 +397,15 @@ void CplexLPEngine::load(ProblemPtr problem)
     conrange[i] = conrangevec[i];
   }
   cpxstatus_ = CPXXchgrngval (cpxenv_, cpxlp_, rcnt, conind, conrange);
-  if ( cpxstatus_ ) {
-     logger_->msgStream(LogInfo) << me_ << "Failed to change range values of constraints." 
+  if (cpxstatus_) {
+     logger_->msgStream(LogError) << me_ << "Failed to change range values of constraints."
        << std::endl;
      goto TERMINATE;
   }
   
+  if (sol_) {
+    delete sol_;
+  }
   sol_ = (SolutionPtr) new Solution(1E20, 0, problem_);
 
 TERMINATE:
@@ -433,12 +422,31 @@ TERMINATE:
   delete [] varlb;
   delete [] varub;
   delete [] obj;
-  delete [] cstr;
+  for (i=0; i < numvars; ++i) {
+    if (varname[i]) {
+      delete [] varname[i];
+    }
+  }
   delete [] varname;
+  for (i=0; i < numcons; ++i) {
+    if (conname[i]) {
+      delete [] conname[i];
+    }
+  }
   delete [] conname;
-  //delete [] sense;
+  delete [] conind;
+  delete [] conrange;
+  delete [] sense;
+  delete [] vartype;
+
   problem->setEngine(this);
 
+  //if (cpxenv_ != NULL) {
+    //cpxstatus_ = CPXXcloseCPLEX (&cpxenv_);
+    //if (cpxstatus_) {
+      //logger_->msgStream(LogError) << "Could not close CPLEX environment.\n";
+    //}
+  //}
 }
 
 
