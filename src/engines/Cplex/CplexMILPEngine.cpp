@@ -36,9 +36,6 @@
 
 std::mutex mtx;
 
-#define PRINT 0
-//#include <ilcplex/ilocplex.h>
-
 using namespace Minotaur;
 
 //#define SPEW 1
@@ -210,29 +207,19 @@ void CplexMILPEngine::load(ProblemPtr problem)
   bndChanged_ = true;
   consChanged_ = true;
   problem_ = problem;
-#if PRINT
-  std::cout << "\nIn cpxengine load:\n";
-  problem->write(std::cout);
-#endif
   
   // Cplex objects
-  
   int numvars = problem->getNumVars();
   int numcons = problem->getNumCons();
   int i, j, rcnt;
   double obj_sense = 1, ztol = 1e-6;
   double *conlb = 0, *conub = 0, *conrhs = 0, *conrange = 0, *varlb = 0, *varub = 0, *obj = 0;
   double *value = 0;
-  //int *index;
   CPXDIM *index = 0, *conind = 0;
-  //int *start = new int[numcons];
   CPXNNZ *start = new CPXNNZ[numcons];
   memset(start, 0, numcons*sizeof(int));
   char **conname = new char*[numcons];
-  //char const** conname = new char const*[numcons];
   char **varname = new char*[numvars];
-  //char const** varname = new char const*[numvars];
-  char *cstr = NULL; //temporary
 
   std::vector<UInt> conindvec;
   std::vector<double> conrangevec; 
@@ -246,7 +233,6 @@ void CplexMILPEngine::load(ProblemPtr problem)
   varlb = new double[numvars];
   varub = new double[numvars];
   obj = new double[numvars];
-  //double *rhs = new double[numcons];
   char *sense = new char[numcons];
   std::fill(sense, sense+numcons, 'L'); //assuming all cons <= to start with
   char *vartype = new char[numvars];
@@ -301,17 +287,10 @@ void CplexMILPEngine::load(ProblemPtr problem)
     assert((*c_iter)->getFunctionType() == Linear);
     lin = (*c_iter)->getLinearFunction();
     nnz += lin->getNumTerms();
-    cstr = new char[(*c_iter)->getName().length() + 1];
-    strcpy(cstr, (*c_iter)->getName().c_str());
-    conname[i] = cstr;
-    //strcpy(conname[i], (*c_iter)->getName().c_str());
-    //conname[i] = (*c_iter)->getName().c_str();
+    conname[i] = new char[(*c_iter)->getName().length() + 1];
+    strcpy(conname[i], (*c_iter)->getName().c_str());
     i++;
-    //delete [] cstr;
-    //cstr = 0;
   }
-  //delete [] cstr;
-  //cstr = 0;
 
   index = new int[nnz];
   value = new double[nnz];
@@ -336,7 +315,6 @@ void CplexMILPEngine::load(ProblemPtr problem)
       sense[i] = 'E';                              
     } else if (conlb[i] > -INFINITY) {
       if (conub[i] < INFINITY) {
-        //assert(!"Ranged constraints not allowed right now!");
         sense[i] = 'R';
         // always provide positive range values: conlb[i] <= constraintFunction <= conlb[i] + range[i]
         conrhs[i] = conlb[i];
@@ -360,18 +338,13 @@ void CplexMILPEngine::load(ProblemPtr problem)
        ++i) {
     varlb[i] = (*v_iter)->getLb();
     varub[i] = (*v_iter)->getUb();
-    cstr = new char[(*v_iter)->getName().length() + 1];
-    strcpy(cstr, (*v_iter)->getName().c_str());
-    varname[i] = cstr;
-    //strcpy(varname[i], (*v_iter)->getName().c_str());
-    //varname[i] = (*v_iter)->getName().c_str();
+    varname[i] = new char[(*v_iter)->getName().length() + 1];
+    strcpy(varname[i], (*v_iter)->getName().c_str());
     if ((*v_iter)->getType() == Binary) {
       vartype[i] = 'B';
     } else if ((*v_iter)->getType() == Integer) {
       vartype[i] = 'I';
     }
-    //delete [] cstr;
-    //cstr = 0;
   }
 
   //// XXX: check if linear function is NULL
@@ -429,8 +402,17 @@ TERMINATE:
   delete [] varlb;
   delete [] varub;
   delete [] obj;
-  delete [] cstr;
+  for (i=0; i < numvars; ++i) {
+    if (varname[i]) {
+      delete [] varname[i];
+    }
+  }
   delete [] varname;
+  for (i=0; i < numcons; ++i) {
+    if (conname[i]) {
+      delete [] conname[i];
+    }
+  }
   delete [] conname;
   delete [] conind;
   delete [] conrange;
