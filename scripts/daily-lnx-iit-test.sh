@@ -20,7 +20,7 @@ TP_DIR=${TEST_DIR}/third-party
 GIT_REPOS="https://github.com/minotaur-solver/minotaur"
 
 ## Local LOGS
-WEB_DIR=/home/amahajan/misc/web/minotaur/nightly/origin
+WEB_DIR=/home/amahajan/misc/webpage/minotaur/nightly/origin
 REM_WEB_DIR=powai:/home/amahajan/webpage/minotaur/nightly/origin
 
 ## parallel flag
