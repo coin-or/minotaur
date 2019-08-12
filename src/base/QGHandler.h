@@ -49,6 +49,8 @@ private:
   /// Pointer to environment.
   EnvPtr env_;
 
+  /// Pointer to original problem.
+  ProblemPtr minlp_;
   /// Tolerance for checking integrality (should be obtained from env).
   double intTol_;
 
@@ -58,16 +60,16 @@ private:
   /// For log:
   static const std::string me_;
 
-  /// Pointer to original problem.
-  ProblemPtr minlp_;
-
   /// Vector of nonlinear constraints.
   std::vector<ConstraintPtr> nlCons_;
 
   /// NLP/QP Engine used to solve the NLP/QP relaxations.
   EnginePtr nlpe_;
+  
+  /// NLP/QP Engine used to approximate the center of the feasible region
   EnginePtr nlpe1_;
   
+  /// LP Engine used in root linearization scheme 3
   EnginePtr lpe_;
 
   /// Modifications done to NLP before solving it.
@@ -85,12 +87,17 @@ private:
 
   /// Nonlinearity status of objective function. 1 if nonlinear 0 otherwise.
   bool oNl_;
+
+  /// Parameter for root lin scheme 1
   double rs1_;
+  
+  /// Parameters for root lin scheme 2
   double rs2Per_;
+
   double rs2NbhSize_;
+  
+  /// Parameter for root lin scheme 3
   UInt rs3_;
-  //UInt rScheme3Para_;
-  //UInt rScheme4Para_;
 
   /// Pointer to relaxation of the problem.
   RelaxationPtr rel_;
@@ -98,12 +105,11 @@ private:
   /// Value of objective in relaxation solution
   double relobj_; 
   
-  double * solC_; 
-  const double * solNLP_;  //MS: delete after use
-  double objNLP_;  //MS: delete after use
-
   /// Absolute tolerance for constraint feasibility.
   double solAbsTol_;
+  
+  /// Approximation of the center of the feasible region
+  double * solC_; 
 
   /// Relative tolerance for constraint feasibility.
   double solRelTol_;
@@ -149,10 +155,6 @@ private:
                            BranchDirection)
   {return ModificationPtr();};
 
-  //MS: make it private
-  bool findIntersectPt(std::vector<UInt > newConsId, VariablePtr vl,
-                       VariablePtr vnl, double * iP);
- 
   // Base class method. 
   std::string getName() const;
 
@@ -166,9 +168,6 @@ private:
   
   void setLpEngine(EnginePtr lpe);
   
-  const double * getRootNLPSolution() {return solNLP_;}
-  double getRootNLPVal() {return objNLP_;}
-
   /// Does nothing.
   bool presolveNode(RelaxationPtr, NodePtr, SolutionPoolPtr, ModVector &,
                     ModVector &)
@@ -176,10 +175,6 @@ private:
 
   /// Does nothing.
   void postsolveGetX(const double *, UInt, DoubleVector *) {};
-
-
-  void alphaSelect_(VariablePtr nVar, VariablePtr lVar, double d1, double d2, 
-                             const double * nlpx, double &minA, double &maxA);
 
   /// Base class method. calls relax_().
   void relaxInitFull(RelaxationPtr rel, bool *is_inf);
@@ -203,6 +198,15 @@ private:
   void writeStats(std::ostream &out) const;
 
 private:
+ 
+  /// Add OA cut to a violated constraint.   
+  void addCut_(const double *nlpx, const double *lpx, ConstraintPtr con,
+               CutManager *cutman, SeparationStatus *status);
+  
+
+ /// Add linearization in root linearization scheme 1 
+  UInt addCutAtRoot_(double *x, ConstraintPtr con);
+
   /**
    * Add linearization of nonlinear constraints and objective at point x* 
    * to the relaxation only (not to the lp engine)
@@ -210,7 +214,17 @@ private:
   void addInitLinearX_(const double *x);
 
 
-  UInt addCutAtRoot_(double *x, ConstraintPtr con);
+  /// Add extended supporting hyperplanes in root linearization scheme 3 
+  void addEshAtRoot_(const double *lpx, double* x, ConstraintPtr con);
+
+
+  /// Add new cut in case of root linearization scheme 1
+  bool addNewCut_(double *b1, UInt vlIdx, ConstraintPtr con, 
+                  double linTermCoeff, double extraCoeff, UInt &newConId);
+
+  /// OA cut at the LP solution
+  void consCutAtLpSol_(const double *lpx, CutManager *cutman,
+                    SeparationStatus *status);
 
   /**
    * Solve NLP by fixing integer variables at LP solution and add 
@@ -219,50 +233,33 @@ private:
   void cutIntSol_(ConstSolutionPtr sol, CutManager *cutMan, 
                   SolutionPoolPtr s_pool, bool *sol_found, 
                   SeparationStatus *status);
-  void addEshAtRoot_(const double *lpx, double* x, ConstraintPtr con);
 
+  /**
+   * Check which nonlinear constraints are violated at the LP solution and
+   * add OA cuts. Return number of OA cuts added.
+   */
+  void cutToCons_(const double *nlpx, const double *lpx, CutManager *,
+                    SeparationStatus *status);
+  
+   /**
+   * Check if objective is violated at the LP solution and
+   * add OA cut.
+   */
+  void cutToObj_(const double *nlpx, const double *lpx, CutManager *,
+                   SeparationStatus *status);
 
+  /// Find approximate center of the feasible region
   void findCenter_(bool &noCenter);
-  bool isFeas_(ConstSolutionPtr sol);
+
+  /// Find intersection of two linearizations in root linearization scheme 1  
+  bool findIntersectPt_(std::vector<UInt > newConsId, VariablePtr vl,
+                       VariablePtr vnl, double * iP);
+
   /**
    * Fix integer constrained variables to integer values in x. Called
    * before solving NLP.
    */
   void fixInts_(const double *x);
-
-  bool diffFunVarVal_(const double *x, FunctionPtr f);
-
-  //void rootScheme3_(const double *nlpx, ConstraintPtr con, LinearFunctionPtr lf);
-  //void rootScheme4_(const double *nlpx, ConstraintPtr con);
-
-  bool twoVarsCon_(ConstraintPtr con, double &linTermCoeff, UInt & vlIdx, UInt & vnIdx, 
-                            double &extraCoeff);
-  void rootLinearizations_();
-
-  //bool lineSearchPt_(double* x, const double* l, const double* u);
-  bool lineSearchPt_(double* x, const double* l, const double* u, ConstraintPtr con, double & nlpact);
- 
-
-
-  /* Add linerizations to constraints with exactly two variables. One var in
-   * linear and one in nonlinear part of the constraint.
-   */
-  void rootLinScheme1_(ConstraintPtr con, double linTermCoeff,
-                            UInt vlIdx, UInt vnIdx, double extraCoeff);
-  /* Warm-start the NLP at the root LP solution and linearize at this NLP
-   * solution
-   */
-  bool shouldPrune_(EngineStatus eStatus);
-  void rootLinScheme2_(ConstraintPtr con, double linTermCoeff,
-                            UInt vlIdx, UInt vnIdx);
-
-
-  void rootLinScheme3_(ConstSolutionPtr sol, CutManager *, SolutionPoolPtr s_pool, bool *sol_found,
-                       SeparationStatus *status);
-
-  void rScheme2Cut_(ConstraintPtr con, double &alpha, double &delta,
-                                double linTermCoeff, double &lastSlope,
-                                UInt vnIdx, double * npt, double * grad);
 
   /**
    * Solve the NLP relaxation of the MINLP and add linearizations about
@@ -270,6 +267,17 @@ private:
    * infeasible. Throw an assert if the relaxation is unbounded.
    */
   void initLinear_(bool *isInf);
+
+  /**
+   * Insert a new point in the candidate list for adding linearization in
+   * case of root linearization scheme 1
+  */
+  void insertNewPt_(UInt j, UInt k, std::vector<double > & xc, 
+                    std::vector<double> & yc, ConstraintPtr con, 
+                    VariablePtr vl, VariablePtr vnl, bool & shouldCont);
+
+  /// Check feasibility of sol 
+  bool isFeas_(ConstSolutionPtr sol);
 
   /**
    * Obtain the linear function (lf) and constant (c) from the
@@ -284,47 +292,62 @@ private:
    */
   void linearizeObj_();
 
-  void insertNewPt_(UInt j, UInt k, std::vector<double > & xc, 
-                    std::vector<double> & yc, ConstraintPtr con, 
-                    VariablePtr vl, VariablePtr vnl, bool & shouldCont);
-
-  /**
-   * Check which nonlinear constraints are violated at the LP solution and
-   * add OA cuts. Return number of OA cuts added.
-   */
-  void cutToCons_(const double *nlpx, const double *lpx, CutManager *,
-                    SeparationStatus *status);
+  /// Line search in root linearization scheme 3
+  bool lineSearchPt_(double* x, const double* l, const double* u,
+                     ConstraintPtr con, double & nlpact);
   
-  /// Add OA cut to a violated constraint.   
-  void addCut_(const double *nlpx, const double *lpx, ConstraintPtr con, 
-               CutManager *cutman, SeparationStatus *status);
-  
-
-  //double getVio_(double *b1, ConstraintPtr con, int & error);
-
-  void consCutAtLpSol_(const double *lpx, CutManager *cutman,
-                    SeparationStatus *status);
-
-  void objCutAtLpSol_(const double *lpx, CutManager *cutman,
-                    SeparationStatus *status);
-
-  bool addNewCut_(double *b1, UInt vlIdx, ConstraintPtr con, 
-                  double linTermCoeff, double extraCoeff, UInt &newConId);
-  /**
-   * Check if objective is violated at the LP solution and
-   * add OA cut.
-   */
-  void cutToObj_(const double *nlpx, const double *lpx, CutManager *,
-                   SeparationStatus *status);
-
-  /**
+   
+   /**
    * Create the initial relaxation. It is called from relaxInitFull and
    * relaxInitInc functions.
    */
   void relax_(bool *is_inf);
 
+  /// Root linearization schemes
+  void rootLinearizations_();
+
+  /**
+   * Add linerizations to constraints with exactly one var in the nonlinear
+   * part - root linearization scheme 1
+   */
+  void rootLinScheme1_(ConstraintPtr con, double linTermCoeff, UInt vlIdx,
+                       UInt vnIdx, double extraCoeff, UInt &numRS1Cuts);
+  
+  /**
+   * Add linearizations in the neighborhood of the root nonlinear relaxation
+   * solution - root linearization scheme 2
+   */
+  void rootLinScheme2_(ConstraintPtr con, double linTermCoeff,
+                            UInt vlIdx, UInt vnIdx, UInt &numRS2Cuts);
+
+  /**
+   * Find points with reasoanble difference in curvature to add linearizaion
+   * in root linearization scheme 2
+   */
+  void rScheme2Cut_(ConstraintPtr con, double &alpha, double &delta,
+                                double linTermCoeff, double &lastSlope,
+                                UInt vnIdx, double * npt, double * grad,
+                                UInt &numRS2Cuts);
+
+
+  /**
+   * Add linearizatios by performing line search between center of the
+   * feasible region and the root LP solution - root linearization scheme 3
+   */
+  void rootLinScheme3_(ConstSolutionPtr sol, CutManager *,
+                       SolutionPoolPtr s_pool, bool *sol_found,
+                       SeparationStatus *status);
+
+
   /// Solve the nlp.
   void solveNLP_();
+
+  /// Prune on the basis of LP engine status
+  bool shouldPrune_(EngineStatus eStatus);
+
+  /// Find nonlinear constraint with only one variable in the nonlinear part
+  bool twoVarsCon_(ConstraintPtr con, double &linTermCoeff, UInt & vlIdx,
+                   UInt & vnIdx, double &extraCoeff);
 
   /// Undo the changes done in fixInts_().
   void unfixInts_();
@@ -334,6 +357,7 @@ private:
    * Minotaur's Handler design. 
    */
   void updateUb_(SolutionPoolPtr s_pool, double *nlp_val, bool *sol_found);
+
 
   };
 
