@@ -4,14 +4,14 @@
 //     (C)opyright 2008 - 2017 The MINOTAUR Team.
 // 
 
-/*! \brief Single-tree Outer-approximation algorithm with Lazy callback for solving convex MINLP
+/*! \brief Single-tree Outer-approximation algorithm with Lazy Cuts callback for solving convex MINLPs.
  *
  * \authors Meenarli Sharma and Prashant Palkar, IIT Bombay
  */
 
 
 #ifdef USE_CPX
-#include <CplexMILPEngine.h> //(why sequence matters?)
+#include <CplexMILPEngine.h>
 #endif
 
 #include <iomanip>
@@ -55,7 +55,7 @@
 #include "EngineFactory.h"
 #include "CxQuadHandler.h"
 #include "Objective.h"
-#include "Relaxation.h" //(why needed to included here?)
+#include "Relaxation.h"
 
 
 using namespace Minotaur;
@@ -250,13 +250,8 @@ PresolverPtr presolve(EnvPtr env, ProblemPtr p, size_t ndefs,
 }
 
 
-
-
 double getPerGap(double objLb, double objUb)
 {
-  // for minimization problems, gap = (ub - lb)/(ub) * 100
-  // so that if one has a ub, she can say that the solution can not be more
-  // than gap% away from the current ub.
   double gap = 0.0, etol = 1e-6;
   if (objUb >= INFINITY) {
     gap = INFINITY;
@@ -289,9 +284,7 @@ void writeSTOAStatus(EnvPtr env, double gap, double objLb, double objUb,
     << me << "gap = " << std::max(0.0, objUb - objLb)
     << std::endl
     << me << "gap percentage = " << gap << std::endl
-    //<< me << "iterations = " << iterNum << std::endl
     << me << "time used (s) = " << std::fixed << std::setprecision(2) 
-    //<< env->getTime(err) << std::endl
     << getWallTime() - wallTimeStart << std::endl
     << me << "status of outer approximation: " << getSolveStatusString(status) << std::endl;
   env->stopTimer(err); assert(0==err);
@@ -309,13 +302,11 @@ void showStatus(EnvPtr env, double objLb, double objUb, double gap, double obj_s
     << std::setprecision(4)  << " ub = "   << objUb
     << std::setprecision(2)  << " gap% = " << gap
     << std::setprecision(0)  << " obj_sense = " << obj_sense
-    //<< " iterations = " << iterNum 
     << std::endl;
 }
 
 
 bool shouldStop(EnvironmentPtr env, SolveStatus &status, double gap, SolutionPoolPtr solPool)
-//bool shouldStop(EnvironmentPtr env, SolveStatus &status, double gap, SolutionPoolPtr solPool)
 {
   bool stop_oa = false;
   int err = 0;
@@ -329,9 +320,6 @@ bool shouldStop(EnvironmentPtr env, SolveStatus &status, double gap, SolutionPoo
   } else if (env->getTime(err) > env->getOptions()->findDouble("bnb_time_limit")->getValue()) {
     stop_oa = true;
     status = TimeLimitReached;
-  //} else if (iterNum >= env->getOptions()->findInt("oa_iter_limit")->getValue()) {
-    //stop_oa = true;
-    //status = IterationLimitReached;
   } else if (solPool->getNumSolsFound() >= (UInt) env->getOptions()->findInt("bnb_sol_limit")->getValue()) {
     stop_oa = true;
     status = SolLimitReached;
@@ -495,6 +483,9 @@ CLEANUP:
   if (pres) {
     delete pres;
   }
+  if (inst) {
+    delete inst;
+  }
   if (orig_v) {
     delete orig_v;
   }
@@ -544,21 +535,23 @@ void writeSol(EnvPtr env, VarVector *orig_v,
               PresolverPtr pres, SolutionPtr sol, SolveStatus status,
               MINOTAUR_AMPL::AMPLInterface* iface)
 {
+  Solution* final_sol = 0;
   if (sol) {
-    sol = pres->getPostSol(sol);
-    iface->writeSolution(sol, status);
+    final_sol = pres->getPostSol(sol);
   }
 
   if (env->getOptions()->findFlag("AMPL")->getValue() ||
       true == env->getOptions()->findBool("write_sol_file")->getValue()) {
-    iface->writeSolution(sol, status);
-  } else if (sol && env->getLogger()->getMaxLevel()>=LogExtraInfo) {
-    sol->writePrimal(env->getLogger()->msgStream(LogExtraInfo), orig_v);
+    iface->writeSolution(final_sol, status);
+  } else if (final_sol && env->getLogger()->getMaxLevel()>=LogExtraInfo &&
+             env->getOptions()->findBool("display_solution")->getValue()) {
+    final_sol->writePrimal(env->getLogger()->msgStream(LogExtraInfo), orig_v);
+  }
+
+  if (final_sol) {
+    delete final_sol;
   }
 }
-
-
-
 
 
 // Local Variables: 
