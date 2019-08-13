@@ -63,7 +63,6 @@ void writeSol(EnvPtr env, VarVector *orig_v, PresolverPtr pres,
               MINOTAUR_AMPL::AMPLInterface* iface);
 
 
-//void test(ProblemPtr p);
 void loadProblem(EnvPtr env, MINOTAUR_AMPL::AMPLInterface* iface,
                  ProblemPtr &oinst, double *obj_sense)
 {
@@ -212,7 +211,6 @@ PresolverPtr presolve(EnvPtr env, ProblemPtr p, size_t ndefs,
         true==env->getOptions()->findBool("use_native_cgraph")->getValue() && 
         true==env->getOptions()->findBool("nl_presolve")->getValue() 
        ) {
-      //MS: undo once NlPresSolver is fixed
       NlPresHandlerPtr nlhand = (NlPresHandlerPtr) new NlPresHandler(env, p);
       handlers.push_back(nlhand);
     }
@@ -234,79 +232,6 @@ PresolverPtr presolve(EnvPtr env, ProblemPtr p, size_t ndefs,
   return pres;
 }
 
-//void test(ProblemPtr p)
-//{
-////MS: delete header files that are not required
-  ////testing 
-  //bool isONl = false;
-  //ObjectivePtr o = p->getObjective();
-  //FunctionType fType = o->getFunctionType();
-  //if (o && fType != Linear && fType != Constant) {
-    //isONl = true;
-  //}
-  
-  ////CGraphPtr cgp;
-  //FunctionPtr f;
-  //ConstraintPtr c;
-  //LinearFunctionPtr lf;
-  //QuadraticFunctionPtr qf;
-  //NonlinearFunctionPtr nlf;
-  //UInt tnl = 0, nol = 0, ns = 0, tn = 0, tq = 0, tl = 0, t;
-
-  //for (ConstraintConstIterator it=p->consBegin(); it!=p->consEnd(); 
-       //++it) {
-    //c = *it;
-    //tl = 0;
-    //f = c->getFunction();
-    //fType = c->getFunctionType();
-    //if (fType !=Constant && fType != Linear) {
-      //tnl++;
-      //nlf = f->getNonlinearFunction();
-      //qf = f->getQuadraticFunction();
-      //if (nlf) {
-        //tn = nlf->numVars();
-      //} else {
-        //tn = 0;      
-      //}
-      //if (qf) {
-        //tq = qf->getNumVars();
-      //} else {
-        //tq = 0;      
-      //}
-      ////lf = c->getLinearFunction();
-      //////t = f->getNumVars();
-      
-      ////if (lf) {
-        ////for(VariableGroupConstIterator vit = lf->termsBegin(); vit != lf->termsEnd(); ++vit) {
-          ////if (fabs(vit->second) > 1e-6) {
-            ////tl++;          
-          ////}
-
-          ////if (tl > 1) {
-            ////tl = 0;
-            ////tn = 0;
-            ////break;
-          ////}
-        ////}
-      ////}
-      ////t = tl + tn;
-      ////if (t == 2) {
-        ////ns++;      
-      ////}
-      ////
-      //if (tn + tq == 1) {
-        //ns++;      
-      //}
-    //} else {
-      //nol++;    
-    //}
-  //}
-  
-  //if (tnl > 0 && ns > 0) {
-    //std::cout << "structure found \n" ;
-  //}
-  //std::cout << "output: " << isONl << " " << tnl << " " << nol << " " << ns << std::endl;
-//}
 
 int main(int argc, char* argv[])
 {
@@ -319,6 +244,11 @@ int main(int argc, char* argv[])
   ProblemPtr inst;
   double obj_sense =1.0;
   
+  // jacobian is read from AMPL interface and passed on to branch-and-bound
+  JacobianPtr jPtr;
+  // hessian is read from AMPL interface and passed on to branch-and-bound
+  MINOTAUR_AMPL::AMPLHessianPtr hPtr;
+
   // the branch-and-bound
   BranchAndBound *bab = 0;
   PresolverPtr pres = 0;
@@ -391,30 +321,6 @@ int main(int argc, char* argv[])
     goto CLEANUP;
   }
 
-  //test(inst);
-  //o = inst->getObjective();
-  //fType = o->getFunctionType();
-  //if (o && (fType == Linear || fType == Constant)) {
-      //std::cout << "Lin obj "<< 1 << std::endl;
-  //} else {
-      //std::cout << "Lin obj "<< 0 << std::endl;
-  //}
-  //exit(1);
-  //for (ConstraintConstIterator it=inst->consBegin(); it!=inst->consEnd();
-       //++it) {
-    //if ((*it)->getFunctionType()!=Constant && (*it)->getFunctionType() != Linear) {
-      //isMINLP = true;
-      //break;
-    //}
-  //}
-  //if (!isMINLP) {
-    //if (inst->getObjective()->getFunctionType() != Linear && inst->getObjective()->getFunctionType()!= Constant) {
-      //isMINLP = true;
-    //}
-  //}
-  //std::cout << "Problem is MINLP = " << isMINLP << std::endl;
-  //exit(1);
-
   if (options->findBool("solve")->getValue()==true) {
     if (true==options->findBool("use_native_cgraph")->getValue()) {
       inst->setNativeDer();
@@ -439,7 +345,7 @@ int main(int argc, char* argv[])
     qg_hand = (QGHandlerPtr) new QGHandler(env, inst, nlp_e); 
     qg_hand->setModFlags(false, true);
     
-    //MS: for root linearizations, turn it on based on the scheme option 
+    // Set LP engine for root linearization scheme 3 
     if (env->getOptions()->findInt("root_linScheme3")->getValue() > 0) {
       qg_hand->setLpEngine(lin_e);
     }
@@ -484,23 +390,21 @@ int main(int argc, char* argv[])
 
     bab = new BranchAndBound(env, inst);
     bab->setNodeRelaxer(nr);
-    //bab->setQGHandler(qg_hand);
     bab->setNodeProcessor(nproc);
     bab->shouldCreateRoot(true);
 
     // start solving
     bab->solve();
+
     bab->writeStats(env->getLogger()->msgStream(LogExtraInfo));
     nlp_e->writeStats(env->getLogger()->msgStream(LogExtraInfo));
     lin_e->writeStats(env->getLogger()->msgStream(LogExtraInfo));
 
     for (HandlerVector::iterator it=handlers.begin(); it!=handlers.end();
          ++it) {
-      //(*it)->writeStats(std::cout);
       (*it)->writeStats(env->getLogger()->msgStream(LogExtraInfo));
     }
 
-    //qg_hand->vioStats();
     writeSol(env, orig_v, pres, bab->getSolution(), bab->getStatus(), iface);
     writeBnbStatus(env, bab, obj_sense);
   }
