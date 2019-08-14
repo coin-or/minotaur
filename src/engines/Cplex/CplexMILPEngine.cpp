@@ -49,6 +49,7 @@ CplexMILPEngine::CplexMILPEngine(EnvPtr env)
   : env_(env),
     sol_(0)
 {
+  cpxenv_ = 0;
   timer_ = env->getNewTimer();
   stats_ = new CplexMILPStats();
   stats_->calls    = 0;
@@ -89,7 +90,9 @@ CplexMILPEngine::~CplexMILPEngine()
   if (remove("minoCpxMipStart.mst") != 0) {
     logger_->msgStream(LogError) << "Could not remove mip starts file. \n";
   } else {
+#if SPEW
     logger_->msgStream(LogError) << "Deleted mip starts file. \n";
+#endif
   }
 }
 
@@ -207,6 +210,17 @@ void CplexMILPEngine::load(ProblemPtr problem)
   bndChanged_ = true;
   consChanged_ = true;
   problem_ = problem;
+
+  if (cpxenv_ != NULL) {
+    cpxstatus_ = CPXXcloseCPLEX (&cpxenv_);
+    /* Note that CPXXcloseCPLEX produces no output,
+       so the only way to see the cause of the error is to use
+       CPXXgeterrorstring.  For other CPLEX routines, the errors will
+       be seen if the CPXPARAM_ScreenOutput indicator is set to CPX_ON. */
+    if (cpxstatus_) {
+      logger_->msgStream(LogError) << "Could not close CPLEX environment.\n";
+    }
+  }
   
   // Cplex objects
   int numvars = problem->getNumVars();
@@ -622,16 +636,6 @@ EngineStatus CplexMILPEngine::solve()
 
 TERMINATE:
   delete [] x;
-  if (cpxenv_ != NULL) {
-    cpxstatus_ = CPXXcloseCPLEX (&cpxenv_);
-    /* Note that CPXXcloseCPLEX produces no output,
-       so the only way to see the cause of the error is to use
-       CPXXgeterrorstring.  For other CPLEX routines, the errors will
-       be seen if the CPXPARAM_ScreenOutput indicator is set to CPX_ON. */
-    if (cpxstatus_) {
-      logger_->msgStream(LogError) << "Could not close CPLEX environment.\n";
-    }
-  }
   return status_;
 }
 
