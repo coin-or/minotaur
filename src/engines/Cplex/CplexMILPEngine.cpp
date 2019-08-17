@@ -57,6 +57,7 @@ CplexMILPEngine::CplexMILPEngine(EnvPtr env)
   logger_ = env->getLogger();
   timeLimit_ = INFINITY;
   upperCutoff_ = INFINITY;
+  mipStartFile_ = env_->getOptions()->findString("problem_file")->getValue() + ".mst";
 }
 
 
@@ -87,7 +88,7 @@ CplexMILPEngine::~CplexMILPEngine()
   if (sol_) {
     delete sol_;
   }
-  if (remove("minoCpxMipStart.mst") != 0) {
+  if (remove(mipStartFile_.c_str()) != 0) {
     logger_->msgStream(LogError) << "Could not remove mip starts file. \n";
   } else {
 #if SPEW
@@ -489,7 +490,7 @@ EngineStatus CplexMILPEngine::solve()
   double objval;
   int cur_numcols = CPXXgetnumcols (cpxenv_, cpxlp_);
   double *x = new double[cur_numcols];
-  std::string mipStartfile = "minoCpxMipStart.mst";
+  //std::string mipStartfile = "minoCpxMipStart.mst";
   std::ifstream mstfile;
 
    //Initialize the CPLEX environment
@@ -546,9 +547,9 @@ EngineStatus CplexMILPEngine::solve()
   }
 
   // Read MIP starts if they exist (in a file)
-  mstfile.open(mipStartfile.c_str());
+  mstfile.open(mipStartFile_.c_str());
   if (!mstfile.fail()) {
-    cpxstatus_ = CPXXreadcopymipstarts(cpxenv_, cpxlp_, mipStartfile.c_str());
+    cpxstatus_ = CPXXreadcopymipstarts(cpxenv_, cpxlp_, mipStartFile_.c_str());
     if (cpxstatus_) {
       logger_->msgStream(LogError) << me_ << "Failed to read MIP starts."
         << std::endl;
@@ -591,7 +592,7 @@ EngineStatus CplexMILPEngine::solve()
   // Write MIP start for the next iteration
   //mstfile.open(mipStartfile.c_str());
   //if (!mstfile.fail()) {
-    cpxstatus_ = CPXXwritemipstarts (cpxenv_, cpxlp_, mipStartfile.c_str(), 0, 0);
+    cpxstatus_ = CPXXwritemipstarts (cpxenv_, cpxlp_, mipStartFile_.c_str(), 0, 0);
     if (cpxstatus_) {
      logger_->msgStream(LogError) << me_ << "Failed to write MIP starts."
        << std::endl;

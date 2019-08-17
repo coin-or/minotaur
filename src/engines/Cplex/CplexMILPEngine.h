@@ -189,6 +189,9 @@ namespace Minotaur {
     /// The maximum limit that can be set on the solver. 
     int maxIterLimit_;
 
+    /// String name for mip starts file.
+    std::string mipStartFile_;
+
     /// String name used in log messages.
     static const std::string me_;
 
