@@ -98,29 +98,92 @@ CplexMILPEngine::~CplexMILPEngine()
 }
 
 
-void CplexMILPEngine::addConstraint(ConstraintPtr)
+void CplexMILPEngine::addConstraint(ConstraintPtr con)
 {
+  LinearFunctionPtr lf = con->getLinearFunction();
+  int nnz = lf->getNumTerms();
+  int *cols = new int[nnz];
+  double *elems = new double[nnz];
+  double *conrhs = new double;
+  *conrhs = con->getUb();
+  char **conname = new char*[1];
+  conname[0] = new char[con->getName().length() + 1];
+  strcpy(conname[0], con->getName().c_str());
+  char* sense = new char;
+  *sense = 'L';
+  CPXNNZ *start = new CPXNNZ[1];
+  start[0] = 0;
+
+  VariableGroupConstIterator it;
+  int i=0;
+
+  for (it = lf->termsBegin(); it != lf->termsEnd(); ++it, ++i){
+    cols[i] = it->first->getIndex();
+    elems[i] = it->second;
+  }
+
+  cpxstatus_ = CPXXaddrows (cpxenv_, cpxlp_, 0, 1, nnz, conrhs, sense, start,
+                       cols, elems, NULL, conname);
+  if (cpxstatus_) {
+    assert(!"unable to add constraint!");
+  }
+  delete [] cols;
+  delete [] elems;
+  delete conrhs;
+  delete [] conname[0];
+  delete [] conname;
+  delete sense;
+  delete start;
+  consChanged_ = true;
+
 }
 
 
 void CplexMILPEngine::changeBound(ConstraintPtr, BoundType, double)
 {
+  assert(!"implement me!");
 }
 
 
-void CplexMILPEngine::changeBound(VariablePtr, BoundType, double)
+void CplexMILPEngine::changeBound(VariablePtr var, BoundType lu, double new_val)
 {
+  //XXX: need a better map than the following for mapping variables to indices
+  //and vice versa
+  CPXDIM *index = new int[1];
+  char *bndType = new char[1];
+  double *value = new double[1];
+  index[0] = var->getIndex();
+  value[0] = new_val;
+
+  switch (lu) {
+   case Lower:
+     bndType[0] = 'L';
+     cpxstatus_ = CPXXchgbds (cpxenv_, cpxlp_, 1, index, bndType, value);
+     break;
+   case Upper:
+     bndType[0] = 'U';
+     cpxstatus_ = CPXXchgbds (cpxenv_, cpxlp_, 1, index, bndType, value);
+     break;
+   default:
+     break;
+  }
+  bndChanged_ = true;
+  delete [] index;
+  delete [] bndType;
+  delete [] value;
 }
 
 
 void CplexMILPEngine::changeBound(VariablePtr, double, double)
 {
+  assert(!"implement me!");
 }
 
 
 void CplexMILPEngine::changeConstraint(ConstraintPtr, LinearFunctionPtr, 
                                    double, double)
 {
+  assert(!"implement me!");
 }
 
 
@@ -132,11 +195,13 @@ void CplexMILPEngine::changeConstraint(ConstraintPtr, NonlinearFunctionPtr)
 
 void CplexMILPEngine::changeObj(FunctionPtr, double)
 {
+  assert(!"implement me!");
 }
 
 
 void CplexMILPEngine::clear()
 {
+  assert(!"implement me!");
 }
 
 
@@ -222,7 +287,7 @@ void CplexMILPEngine::load(ProblemPtr problem)
       logger_->msgStream(LogError) << "Could not close CPLEX environment.\n";
     }
   }
-  
+
   // Cplex objects
   int numvars = problem->getNumVars();
   int numcons = problem->getNumCons();
@@ -347,7 +412,7 @@ void CplexMILPEngine::load(ProblemPtr problem)
       start[i]=j;
     }
   }
-  
+
   i = 0;
   for (v_iter=problem->varsBegin(); v_iter!=problem->varsEnd(); ++v_iter, 
        ++i) {
@@ -490,27 +555,7 @@ EngineStatus CplexMILPEngine::solve()
   double objval;
   int cur_numcols = CPXXgetnumcols (cpxenv_, cpxlp_);
   double *x = new double[cur_numcols];
-  //std::string mipStartfile = "minoCpxMipStart.mst";
   std::ifstream mstfile;
-
-   //Initialize the CPLEX environment
-  //cpxenv_ = CPXXopenCPLEX (&cpxstatus_);
-
-   //If an error occurs, the status value indicates the reason for
-     //failure.  A call to CPXXgeterrorstring will produce the text of
-     //the error message.  Note that CPXXopenCPLEX produces no output,
-     //so the only way to see the cause of the error is to use
-     //CPXXgeterrorstring.  For other CPLEX routines, the errors will
-     //be seen if the CPXXPARAM_ScreenOutput indicator is set to CPXX_ON.
-
-  //if (cpxenv_ == NULL) {
-     //char  errmsg[CPXMESSAGEBUFSIZE];
-     //logger_->msgStream(LogError) << me_ << "Could not open CPLEX environment."
-       //<< std::endl;
-     //CPXXgeterrorstring (cpxenv_, cpxstatus_, errmsg);
-     //logger_->msgStream(LogError) << me_ << errmsg << std::endl;
-     //goto TERMINATE;
-  //}
 
 #if 0
   /* Write a copy of the problem to a file. */

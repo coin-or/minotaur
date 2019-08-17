@@ -14,13 +14,6 @@
 #include <iostream>
 #include <iomanip>
 
-//#include "coin/CoinPragma.hpp"
-//#include "coin/CbcModel.hpp"
-//#include "coin/OsiClpSolverInterface.hpp"
-
-// #undef F77_FUNC_
-// #undef F77_FUNC
-
 #include "MinotaurConfig.h"
 #include "CplexLPEngine.h"
 #include "Constraint.h"
@@ -47,8 +40,10 @@ const std::string CplexLPEngine::me_ = "CplexLPEngine: ";
 // ----------------------------------------------------------------------- //
 
 CplexLPEngine::CplexLPEngine(EnvPtr env)
-  : env_(env)
+  : env_(env),
+    sol_(0)
 {
+  cpxenv_ = 0;
   timer_ = env->getNewTimer();
   stats_ = new CplexLPStats();
   stats_->calls    = 0;
@@ -60,6 +55,18 @@ CplexLPEngine::CplexLPEngine(EnvPtr env)
 
 CplexLPEngine::~CplexLPEngine()
 {
+  if (cpxenv_ != NULL) {
+    cpxstatus_ = CPXXcloseCPLEX (&cpxenv_);
+
+    /* Note that CPXXcloseCPLEX produces no output,
+       so the only way to see the cause of the error is to use
+       CPXXgeterrorstring.  For other CPLEX routines, the errors will
+       be seen if the CPXPARAM_ScreenOutput indicator is set to CPX_ON. */
+    if (cpxstatus_) {
+      logger_->msgStream(LogError) << "Could not close CPLEX environment.\n";
+    }
+  }
+
   if (timer_) {
     delete timer_;
   }
@@ -85,14 +92,11 @@ void CplexLPEngine::addConstraint(ConstraintPtr con)
   double *conrhs = new double;
   *conrhs = con->getUb();
   char **conname = new char*[1];
-  char* cstr;
-  cstr = new char[con->getName().length() + 1];
-  strcpy(cstr, con->getName().c_str());
-  conname[0] = cstr;
+  conname[0] = new char[con->getName().length() + 1];
+  strcpy(conname[0], con->getName().c_str());
   char* sense = new char;
   *sense = 'L';
   CPXNNZ *start = new CPXNNZ[1];
-  //start[0] = CPXXgetnumnz (cpxenv_, cpxlp_);
   start[0] = 0;
 
   VariableGroupConstIterator it;
@@ -103,7 +107,6 @@ void CplexLPEngine::addConstraint(ConstraintPtr con)
     elems[i] = it->second;
   }
 
-  //osilp_->addRow(nz, cols, elems, con->getLb(), con->getUb());
   cpxstatus_ = CPXXaddrows (cpxenv_, cpxlp_, 0, 1, nnz, conrhs, sense, start,
                        cols, elems, NULL, conname);
   if (cpxstatus_) {
@@ -112,11 +115,11 @@ void CplexLPEngine::addConstraint(ConstraintPtr con)
   delete [] cols;
   delete [] elems;
   delete conrhs;
-  delete [] cstr;
+  delete [] conname[0];
   delete [] conname;
   delete sense;
+  delete start;
   consChanged_ = true;
-
 }
 
 
@@ -170,7 +173,7 @@ void CplexLPEngine::changeConstraint(ConstraintPtr, LinearFunctionPtr,
 
 void CplexLPEngine::changeConstraint(ConstraintPtr, NonlinearFunctionPtr)
 {
-    assert(!"Cannot change a nonlinear function in CplexLPEngine");
+  assert(!"Cannot change a nonlinear function in CplexLPEngine");
 }
 
 
@@ -217,7 +220,7 @@ EngineStatus CplexLPEngine::getStatus()
 
 void CplexLPEngine::printx(double *x, UInt size) {
   for (UInt i=0; i < size; i++) {
-    logger_->msgStream(LogInfo) <<  i+1 << " " << x[i] << "\n";
+    logger_->msgStream(LogInfo) << i+1 << " " << x[i] << "\n";
   }
 }
 
@@ -227,7 +230,18 @@ void CplexLPEngine::load(ProblemPtr problem)
   bndChanged_ = true;
   consChanged_ = true;
   problem_ = problem;
-  
+
+  if (cpxenv_ != NULL) {
+    cpxstatus_ = CPXXcloseCPLEX (&cpxenv_);
+    /* Note that CPXXcloseCPLEX produces no output,
+       so the only way to see the cause of the error is to use
+       CPXXgeterrorstring.  For other CPLEX routines, the errors will
+       be seen if the CPXPARAM_ScreenOutput indicator is set to CPX_ON. */
+    if (cpxstatus_) {
+      logger_->msgStream(LogError) << "Could not close CPLEX environment.\n";
+    }
+  }
+
   // Cplex objects
   int numvars = problem->getNumVars();
   int numcons = problem->getNumCons();
@@ -383,7 +397,7 @@ void CplexLPEngine::load(ProblemPtr problem)
     memset(obj, 0, numvars * sizeof(double));
   }
 
-  cpxstatus_ = CPXXnewcols (cpxenv_, cpxlp_, numvars, obj, varlb, varub, vartype, varname);
+  cpxstatus_ = CPXXnewcols (cpxenv_, cpxlp_, numvars, obj, varlb, varub, NULL, varname);
   if (cpxstatus_)  goto TERMINATE;
   cpxstatus_ = CPXXaddrows (cpxenv_, cpxlp_, 0, numcons, nnz, conrhs, sense, start,
                        index, value, NULL, conname);
@@ -485,6 +499,7 @@ void CplexLPEngine::setTimeLimit(double timelimit)
 
 EngineStatus CplexLPEngine::solve()
 {
+  timer_->start();
   int solstat;
   double objval;
   //int cur_numrows = CPXXgetnumrows (cpxenv_, cpxlp_);
@@ -492,7 +507,7 @@ EngineStatus CplexLPEngine::solve()
   
   double *x = new double[cur_numcols];
 
-#if SPEW
+#if 1
   /* Write a copy of the problem to a file. */
   writeLP("minoCpx.lp"); 
 #endif
@@ -541,9 +556,7 @@ EngineStatus CplexLPEngine::solve()
   
 #if SPEW
   /* Write the solution. */
-  //for (int j = 0; j < cur_numcols; j++) {
-   //logger_->msgStream(LogInfo) << colname[j] << ": " << x[j] << std::endl;
-  //}
+  printx(x, cur_numcols);
 #endif
 
   // Solve status (replace with string later using CPXXgetstatstring(..))
@@ -576,7 +589,17 @@ EngineStatus CplexLPEngine::solve()
     logger_->msgStream(LogInfo) << " unknown \n";
   }
 
-  //stats_->time  += timer_->query();
+  stats_->time  += timer_->query();
+
+#if SPEW
+  logger_->msgStream(LogDebug) << me_ << "status = " << status_ << std::endl
+                               << me_ << "solution value = "
+                               << sol_->getObjValue() << std::endl;
+#endif
+  timer_->stop();
+  bndChanged_ = false;
+  consChanged_ = false;
+  objChanged_ = false;
 
 //TERMINATE:
   delete [] x;
