@@ -296,7 +296,7 @@ void CplexLPEngine::load(ProblemPtr problem)
   }
 
   /* Turn on output to te screen (use a file to read parameters LATER!) */
-  cpxstatus_ = CPXXsetintparam (cpxenv_, CPXPARAM_ScreenOutput, CPX_ON);
+  //cpxstatus_ = CPXXsetintparam (cpxenv_, CPXPARAM_ScreenOutput, CPX_ON);
   if (cpxstatus_) {
      logger_->msgStream(LogError) << me_ << "Failure to turn on screen indicator, error "
        << cpxstatus_ << std::endl;
