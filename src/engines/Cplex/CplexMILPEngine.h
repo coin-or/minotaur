@@ -210,6 +210,9 @@ namespace Minotaur {
     /// Timer for solves. 
     Timer *timer_;
 
+    /// Whether MIP Starts should be saved
+    bool writeMipStarts_;
+
     /// Actually load the problem. Called before _every_ solve.
     void load_();
   };

@@ -57,7 +57,10 @@ CplexMILPEngine::CplexMILPEngine(EnvPtr env)
   logger_ = env->getLogger();
   timeLimit_ = INFINITY;
   upperCutoff_ = INFINITY;
-  mipStartFile_ = env_->getOptions()->findString("problem_file")->getValue() + ".mst";
+  writeMipStarts_ = env_->getOptions()->findBool("oa_use_mip_starts");
+  if (writeMipStarts_) {
+    mipStartFile_ = env_->getOptions()->findString("problem_file")->getValue() + ".mst";
+  }
 }
 
 
@@ -88,12 +91,14 @@ CplexMILPEngine::~CplexMILPEngine()
   if (sol_) {
     delete sol_;
   }
-  if (remove(mipStartFile_.c_str()) != 0) {
-    logger_->msgStream(LogError) << "Could not remove mip starts file. \n";
-  } else {
+  if (writeMipStarts_) {
+    if (remove(mipStartFile_.c_str()) != 0) {
+      logger_->msgStream(LogError) << "Could not remove mip starts file. \n";
+    } else {
 #if SPEW
-    logger_->msgStream(LogError) << "Deleted mip starts file. \n";
+      logger_->msgStream(LogError) << "Deleted mip starts file. \n";
 #endif
+    }
   }
 }
 
@@ -552,14 +557,15 @@ void CplexMILPEngine::setUpperCutoff(double cutoff)
 EngineStatus CplexMILPEngine::solve()
 {
   int solstat;
-  double objval;
+  double objval = INFINITY;
   int cur_numcols = CPXXgetnumcols (cpxenv_, cpxlp_);
   double *x = new double[cur_numcols];
   std::ifstream mstfile;
 
 #if 0
   /* Write a copy of the problem to a file. */
-  writeLP("minoCpx.lp"); 
+  problem_->write(std::cout);
+  writeLP("minoCpx.lp");
 #endif
 
   /* Set time limit (wallclock) for this iteration */
@@ -591,14 +597,16 @@ EngineStatus CplexMILPEngine::solve()
   }
 
   // Read MIP starts if they exist (in a file)
-  mstfile.open(mipStartFile_.c_str());
-  if (!mstfile.fail()) {
-    cpxstatus_ = CPXXreadcopymipstarts(cpxenv_, cpxlp_, mipStartFile_.c_str());
-    if (cpxstatus_) {
-      logger_->msgStream(LogError) << me_ << "Failed to read MIP starts."
-        << std::endl;
+  if (writeMipStarts_) {
+    mstfile.open(mipStartFile_.c_str());
+    if (!mstfile.fail()) {
+      cpxstatus_ = CPXXreadcopymipstarts(cpxenv_, cpxlp_, mipStartFile_.c_str());
+      if (cpxstatus_) {
+        logger_->msgStream(LogError) << me_ << "Failed to read MIP starts."
+          << std::endl;
+      }
+      mstfile.close();
     }
-    mstfile.close();
   }
 
   /* Optimize the problem and obtain solution. */
@@ -634,15 +642,13 @@ EngineStatus CplexMILPEngine::solve()
   }
 
   // Write MIP start for the next iteration
-  //mstfile.open(mipStartfile.c_str());
-  //if (!mstfile.fail()) {
+  if (writeMipStarts_) {
     cpxstatus_ = CPXXwritemipstarts (cpxenv_, cpxlp_, mipStartFile_.c_str(), 0, 0);
     if (cpxstatus_) {
      logger_->msgStream(LogError) << me_ << "Failed to write MIP starts."
        << std::endl;
     }
-    //mstfile.close();
-  //}
+  }
 
 #if SPEW
   /* Write the solution. */
@@ -1127,6 +1133,7 @@ EngineStatus CplexMILPEngine::solveSTLazy(double *objLb, SolutionPtr* sol,
                                       STOAHandlerPtr stoa_hand,
                                       SolveStatus* solveStatus)
 {
+  writeMipStarts_ = false;
   int solstat;
   int cur_numcols = CPXXgetnumcols (cpxenv_, cpxlp_);
   double *x = new double[cur_numcols];
