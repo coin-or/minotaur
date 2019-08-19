@@ -75,7 +75,7 @@ ParBranchAndBound* createParBab(EnvPtr env, ProblemPtr p, EnginePtr e,
   const std::string me("mcbnb main: ");
   OptionDBPtr options = env->getOptions();
   bab->shouldCreateRoot(false);
-#pragma omp parallel for
+
   for(UInt i = 0; i < numThreads; i++) {
     BrancherPtr br = 0;
     eCopy[i] = e->emptyCopy();

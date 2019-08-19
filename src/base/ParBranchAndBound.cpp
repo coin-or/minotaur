@@ -542,7 +542,7 @@ void ParBranchAndBound::parsolve(ParNodeIncRelaxerPtr parNodeRlxr[],
   NodePtr *current_node = new NodePtr[numThreads]();
   NodePtr *new_node = new NodePtr[numThreads];
   Branches *branches = new Branches[numThreads];
-  WarmStartPtr *ws = new WarmStartPtr[numThreads];
+  WarmStartPtr *ws = new WarmStartPtr[numThreads]();
   RelaxationPtr *rel = new RelaxationPtr[numThreads];
   UInt nodeCount;
   double treeLb, nodeLb, minNodeLb;
@@ -554,6 +554,7 @@ void ParBranchAndBound::parsolve(ParNodeIncRelaxerPtr parNodeRlxr[],
   UInt iterCount = 1;
   UInt numVars = 0;
 
+  omp_set_num_threads(numThreads);
 #pragma omp parallel for
   for(UInt i = 0; i < numThreads; ++i) {
     should_dive[i] = false;
@@ -921,7 +922,7 @@ void ParBranchAndBound::parsolve(ParNodeIncRelaxerPtr parNodeRlxr[],
       delete current_node[i]; current_node[i] = 0;
     }
     if (new_node[i]) {
-      delete new_node[i]; new_node[i] = 0;
+      new_node[i] = 0;
     }
     if (ws[i]) {
       ws[i] = 0;

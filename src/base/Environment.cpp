@@ -196,7 +196,12 @@ void Environment::createDefaultOptions_()
   options_->insert(b_option);
 
   b_option = (BoolOptionPtr) new Option<bool>("oa_use_solutions",
-      "Should use other solutions to add cuts: <0/1>",
+      "If true, use feasible solutions to generate OA cuts: <0/1>",
+      true, false);
+  options_->insert(b_option);
+
+  b_option = (BoolOptionPtr) new Option<bool>("oa_use_mip_starts",
+      "If true, use MIP starts from the previous solve: <0/1>",
       true, false);
   options_->insert(b_option);
 
