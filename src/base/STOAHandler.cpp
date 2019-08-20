@@ -297,12 +297,13 @@ void STOAHandler::OACutToObj(const double *lpx, double* rhs,
                              std::vector<double>* varCoeff, double ub)
 {
   relobj_ = ub;
-  const double *nlpx;
   switch(nlpStatus_) {
   case (ProvenOptimal):
   case (ProvenLocalOptimal):
-    nlpx = nlpe_->getSolution()->getPrimal();
-    cutToObj_(nlpx, rhs, varIdx, varCoeff);
+    {
+      const double * nlpx = nlpe_->getSolution()->getPrimal();
+      cutToObj_(nlpx, rhs, varIdx, varCoeff);
+    }
     break;
   case (EngineIterationLimit):
     objCutAtLpSol_(lpx, rhs, varIdx, varCoeff);
