@@ -273,14 +273,14 @@ private:
    */
   void cutToCons_(ConstraintPtr con, const double *nlpx, double* rhs, std::vector<UInt> *varIdx,
                             std::vector<double>* varCoeff);
-   void cutToConsInf_(ConstraintPtr con, const double *nlpx, const double *lpx, double* rhs, std::vector<UInt> *varIdx,
+   void cutToConsInf_(ConstraintPtr con, const double *nlpx, double* rhs, std::vector<UInt> *varIdx,
                             std::vector<double>* varCoeff);
   
   /// Add OA cut to a violated constraint.   
   void addCut_(const double *nlpx, ConstraintPtr con, double* rhs, std::vector<UInt> *varIdx,
                             std::vector<double>* varCoeff);
   
- void addCutInf_(const double *nlpx, const double *lpx, ConstraintPtr con, double* rhs, std::vector<UInt> *varIdx,
+ void addCutInf_(const double *nlpx, ConstraintPtr con, double* rhs, std::vector<UInt> *varIdx,
                             std::vector<double>* varCoeff);
   
   void objCutAtLpSol_(const double *lpx, double* rhs,

@@ -319,7 +319,6 @@ void STOAHandler::OACutToCons(const double *lpx, ConstraintPtr con,
 {
   const double *nlpx;
 #if SPEW
-  //printx(lpx, minlp_->getNumVars());
   logger_->msgStream(LogDebug) << " nlp status " 
     << nlpe_->getStatusString() << std::endl;
 #endif
@@ -332,7 +331,7 @@ void STOAHandler::OACutToCons(const double *lpx, ConstraintPtr con,
   case (ProvenLocalInfeasible): 
   case (ProvenObjectiveCutOff):
     nlpx = nlpe_->getSolution()->getPrimal();
-    cutToConsInf_(con, nlpx, lpx, rhs, varIdx, varCoeff);
+    cutToConsInf_(con, nlpx, rhs, varIdx, varCoeff);
     break;
   case (EngineIterationLimit):
     consCutAtLpSol_(con, lpx, rhs, varIdx, varCoeff);
@@ -567,25 +566,24 @@ void STOAHandler::linearAt_(FunctionPtr f, double fval, const double *x,
 
 
 void STOAHandler::cutToConsInf_(ConstraintPtr con, const double *nlpx,
-                             const double *lpx, double* rhs,
-                             std::vector<UInt> *varIdx,
+                             double* rhs, std::vector<UInt> *varIdx,
                             std::vector<double>* varCoeff)
 {
   int error = 0;
   double nlpact, cUb;
-  nlpact =  con->getActivity(lpx, &error);
+  nlpact =  con->getActivity(nlpx, &error);
 
   if (error == 0) {
     cUb = con->getUb();
-    if (nlpact > cUb + solAbsTol_ ||
-        (cUb != 0 && nlpact > (cUb+fabs(cUb)*solRelTol_))) {
+    if (nlpact >= cUb - solAbsTol_ ||
+        (cUb != 0 && (nlpact >= cUb - fabs(cUb)*solRelTol_))) {
 #if SPEW
       con->write(logger_->msgStream(LogDebug));
       logger_->msgStream(LogDebug) << me_ << " constraint " <<
         con->getName() << " violated at LP solution with violation = " <<
         nlpact - cUb << std::endl;
 #endif
-      addCutInf_(nlpx, lpx, con, rhs, varIdx, varCoeff);
+      addCutInf_(nlpx, con, rhs, varIdx, varCoeff);
     } else {
 #if SPEW
       logger_->msgStream(LogDebug) << me_ << " constraint " << con->getName() <<
@@ -614,7 +612,7 @@ void STOAHandler::cutToCons_(ConstraintPtr con, const double *nlpx,
   if (error == 0) {
     cUb = con->getUb();
     if (fabs(nlpact-cUb) <= solAbsTol_ ||
-        (cUb != 0 && fabs((nlpact-cUb)/fabs(cUb)) <= solRelTol_)) {
+        (cUb != 0 && (fabs(nlpact-cUb) <= fabs(cUb)*solRelTol_))) {
 #if SPEW
       con->write(logger_->msgStream(LogDebug));
       logger_->msgStream(LogDebug) << me_ << " constraint " <<
@@ -761,13 +759,13 @@ void STOAHandler::addCut_(const double *nlpx, ConstraintPtr con, double* rhs,
 }
 
 
-void STOAHandler::addCutInf_(const double *nlpx, const double *lpx,
+void STOAHandler::addCutInf_(const double *nlpx,
                         ConstraintPtr con, double* rhs,
                              std::vector<UInt> *varIdx,
                             std::vector<double>* varCoeff)
 {
   int error=0;
-  double c, lpvio, act, cUb;
+  double c, act, cUb;
   FunctionPtr f = con->getFunction();
   LinearFunctionPtr lf = LinearFunctionPtr(); 
 
@@ -776,34 +774,14 @@ void STOAHandler::addCutInf_(const double *nlpx, const double *lpx,
     linearAt_(f, act, nlpx, &c, &lf, &error);
     if (error==0) { 
       cUb = con->getUb();
-      lpvio = std::max(lf->eval(lpx)-cUb+c, 0.0);
-      if (lpvio>solAbsTol_ || ((cUb-c)!=0 && (lpvio>fabs(cUb-c)*solRelTol_))) {
-#if SPEW
-        logger_->msgStream(LogDebug) << " nlp sol " << std::endl;
-        lf->write(logger_->msgStream(LogDebug));
-        logger_->msgStream(LogDebug) << " rhs " << cUb - c << std::endl;
-        logger_->msgStream(LogDebug) << me_ << " linearization of constraint "
-          << con->getName() << " violated at LP solution with violation = " <<
-          lpvio << ". OA cut added." << std::endl;
-#endif
-        ++(stats_->cuts);
-        *rhs = cUb-c;
-        for (VariableGroupConstIterator it=lf->termsBegin(); it!=lf->termsEnd();
-       ++it) {
-          (*varIdx).push_back(it->first->getIndex());
-          (*varCoeff).push_back(it->second);
-        }
-        return;
-      } else {
-#if SPEW
-        logger_->msgStream(LogDebug) << " nlp sol " << std::endl;
-        lf->write(logger_->msgStream(LogDebug));
-        logger_->msgStream(LogDebug) << " rhs " << cUb - c << std::endl;
-        logger_->msgStream(LogDebug) << me_ << " linearization of constraint "
-          << con->getName() << " NOT violated at LP solution with violation = " <<
-          lpvio << ". OA cut redundant." << std::endl;
-#endif
+      ++(stats_->cuts);
+      *rhs = cUb-c;
+      for (VariableGroupConstIterator it=lf->termsBegin(); it!=lf->termsEnd();
+           ++it) {
+        (*varIdx).push_back(it->first->getIndex());
+        (*varCoeff).push_back(it->second);
       }
+      return;
     }
   }	else {
     logger_->msgStream(LogError) << me_ << " constraint not defined at"
@@ -842,6 +820,10 @@ void STOAHandler::cutToObj_(const double *nlpx, double* rhs,
                              std::vector<UInt> *varIdx,
                             std::vector<double>* varCoeff)
 {
+  if (nlpStatus_ != ProvenOptimal || nlpStatus_ != ProvenLocalOptimal) {
+    return;
+  }
+
   if (oNl_) {
     int error=0;
     FunctionPtr f;
