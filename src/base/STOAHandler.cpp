@@ -305,7 +305,7 @@ void STOAHandler::OACutToObj(const double *lpx, double* rhs,
     cutToObj_(nlpx, rhs, varIdx, varCoeff);
     break;
   case (EngineIterationLimit):
-    //objCutAtLpSol_(lpx, rhs, varIdx, varCoeff);
+    objCutAtLpSol_(lpx, rhs, varIdx, varCoeff);
     break;
   default:
     break;
