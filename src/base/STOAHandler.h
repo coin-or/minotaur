@@ -280,9 +280,6 @@ private:
   void addCut_(const double *nlpx, ConstraintPtr con, double* rhs, std::vector<UInt> *varIdx,
                             std::vector<double>* varCoeff);
   
- void addCutInf_(const double *nlpx, ConstraintPtr con, double* rhs, std::vector<UInt> *varIdx,
-                            std::vector<double>* varCoeff);
-  
   void objCutAtLpSol_(const double *lpx, double* rhs,
                              std::vector<UInt> *varIdx,
                             std::vector<double>* varCoeff);

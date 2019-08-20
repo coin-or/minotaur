@@ -577,13 +577,7 @@ void STOAHandler::cutToConsInf_(ConstraintPtr con, const double *nlpx,
     cUb = con->getUb();
     if (nlpact >= cUb - solAbsTol_ ||
         (cUb != 0 && (nlpact >= cUb - fabs(cUb)*solRelTol_))) {
-#if SPEW
-      con->write(logger_->msgStream(LogDebug));
-      logger_->msgStream(LogDebug) << me_ << " constraint " <<
-        con->getName() << " violated at LP solution with violation = " <<
-        nlpact - cUb << std::endl;
-#endif
-      addCutInf_(nlpx, con, rhs, varIdx, varCoeff);
+      addCut_(nlpx, con, rhs, varIdx, varCoeff);
     } else {
 #if SPEW
       logger_->msgStream(LogDebug) << me_ << " constraint " << con->getName() <<
@@ -758,42 +752,6 @@ void STOAHandler::addCut_(const double *nlpx, ConstraintPtr con, double* rhs,
   return;
 }
 
-
-void STOAHandler::addCutInf_(const double *nlpx,
-                        ConstraintPtr con, double* rhs,
-                             std::vector<UInt> *varIdx,
-                            std::vector<double>* varCoeff)
-{
-  int error=0;
-  double c, act, cUb;
-  FunctionPtr f = con->getFunction();
-  LinearFunctionPtr lf = LinearFunctionPtr(); 
-
-  act = con->getActivity(nlpx, &error); 
-  if (error == 0) {
-    linearAt_(f, act, nlpx, &c, &lf, &error);
-    if (error==0) { 
-      cUb = con->getUb();
-      ++(stats_->cuts);
-      *rhs = cUb-c;
-      for (VariableGroupConstIterator it=lf->termsBegin(); it!=lf->termsEnd();
-           ++it) {
-        (*varIdx).push_back(it->first->getIndex());
-        (*varCoeff).push_back(it->second);
-      }
-      return;
-    }
-  }	else {
-    logger_->msgStream(LogError) << me_ << " constraint not defined at"
-      << " this point. "<<  std::endl;
-#if SPEW
-          logger_->msgStream(LogDebug) << me_ << " constraint " <<
-            con->getName() << " not defined at this point." << std::endl;
-#endif
-  }
-  return;
-}
- 
 
 double STOAHandler::newUb(std::vector<UInt> *varIdx,
                         std::vector<double>* varVal)
