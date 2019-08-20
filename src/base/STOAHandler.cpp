@@ -305,7 +305,7 @@ void STOAHandler::OACutToObj(const double *lpx, double* rhs,
     cutToObj_(nlpx, rhs, varIdx, varCoeff);
     break;
   case (EngineIterationLimit):
-    objCutAtLpSol_(lpx, rhs, varIdx, varCoeff);
+    //objCutAtLpSol_(lpx, rhs, varIdx, varCoeff);
     break;
   default:
     break;
@@ -607,12 +607,6 @@ void STOAHandler::cutToCons_(ConstraintPtr con, const double *nlpx,
     cUb = con->getUb();
     if (fabs(nlpact-cUb) <= solAbsTol_ ||
         (cUb != 0 && (fabs(nlpact-cUb) <= fabs(cUb)*solRelTol_))) {
-#if SPEW
-      con->write(logger_->msgStream(LogDebug));
-      logger_->msgStream(LogDebug) << me_ << " constraint " <<
-        con->getName() << " violated at LP solution with violation = " <<
-        nlpact - cUb << std::endl;
-#endif
       addCut_(nlpx, con, rhs, varIdx, varCoeff);
     } else {
 #if SPEW
@@ -640,14 +634,15 @@ void STOAHandler::objCutAtLpSol_(const double *lpx, double* rhs,
     int error = 0;
     FunctionPtr f;
     double c, vio, act;
+    std::stringstream sstm;
     ObjectivePtr o = minlp_->getObjective();
 
     act = o->eval(lpx, &error);
     if (error == 0) {
       vio = std::max(act-relobj_, 0.0);
-      if (vio > solAbsTol_ || (relobj_ != 0 && vio > fabs(relobj_)*solRelTol_)) {
+      if (vio >solAbsTol_ || (relobj_ != 0 && vio > fabs(relobj_)*solRelTol_)) {
           f = o->getFunction();
-          LinearFunctionPtr lf = LinearFunctionPtr();
+          LinearFunctionPtr lf = 0;
           linearAt_(f, act, lpx, &c, &lf, &error);
           if (error == 0) {
             ++(stats_->cuts);
@@ -659,6 +654,10 @@ void STOAHandler::objCutAtLpSol_(const double *lpx, double* rhs,
             }
             (*varIdx).push_back(objVar_->getIndex());
             (*varCoeff).push_back(-1.0);
+            sstm << "_OAObjcut_" << stats_->cuts;
+            lf->addTerm(objVar_, -1.0);
+            f = (FunctionPtr) new Function(lf);
+            rel_->newConstraint(f, -INFINITY, -1.0*c, sstm.str());
           }
         }
     }	else {
@@ -675,12 +674,11 @@ void STOAHandler::consCutAtLpSol_(ConstraintPtr con, const double *lpx, double* 
                             std::vector<double>* varCoeff)
 {
   int error=0;
-  FunctionPtr f;
-  LinearFunctionPtr lf;
+  std::stringstream sstm;
+  LinearFunctionPtr lf = 0;
   double c, lpvio, nlpact, cUb;
+  FunctionPtr f = con->getFunction();
 
-  f = con->getFunction();
-  lf = LinearFunctionPtr();
   nlpact =  con->getActivity(lpx, &error);
   if (error == 0) {
     cUb = con->getUb();
@@ -698,7 +696,13 @@ void STOAHandler::consCutAtLpSol_(ConstraintPtr con, const double *lpx, double* 
             (*varIdx).push_back(it->first->getIndex());
             (*varCoeff).push_back(it->first->getIndex());
           }
+          sstm << "_OAcut_" << stats_->cuts;
+          f = (FunctionPtr) new Function(lf);
+          rel_->newConstraint(f, -INFINITY, cUb-c, sstm.str());
           return;
+        } else {
+          delete lf;
+          lf = 0;
         }
       }
     }
@@ -716,22 +720,15 @@ void STOAHandler::addCut_(const double *nlpx, ConstraintPtr con, double* rhs,
 {
   int error=0;
   double c, act, cUb;
+  std::stringstream sstm;
+  LinearFunctionPtr lf = 0; 
   FunctionPtr f = con->getFunction();
-  LinearFunctionPtr lf = LinearFunctionPtr(); 
 
   act = con->getActivity(nlpx, &error); 
   if (error == 0) {
     linearAt_(f, act, nlpx, &c, &lf, &error);
     if (error==0) { 
       cUb = con->getUb();
-#if SPEW
-      logger_->msgStream(LogDebug) << " nlp sol " << std::endl;
-      lf->write(logger_->msgStream(LogDebug));
-      logger_->msgStream(LogDebug) << " rhs " << cUb - c << std::endl;
-      logger_->msgStream(LogDebug) << me_ << " linearization of constraint "
-        << con->getName() << " violated at LP solution with violation = " <<
-        lpvio << ". OA cut added." << std::endl;
-#endif
       ++(stats_->cuts);
       *rhs = cUb-c;
       for (VariableGroupConstIterator it=lf->termsBegin(); it!=lf->termsEnd();
@@ -739,6 +736,9 @@ void STOAHandler::addCut_(const double *nlpx, ConstraintPtr con, double* rhs,
         (*varIdx).push_back(it->first->getIndex());
         (*varCoeff).push_back(it->second);
       }
+      sstm << "_OAcut_" << stats_->cuts;
+      f = (FunctionPtr) new Function(lf);
+      rel_->newConstraint(f, -INFINITY, cUb-c, sstm.str());
       return;
     }
   }	else {
@@ -774,40 +774,40 @@ double STOAHandler::newUb(std::vector<UInt> *varIdx,
 
 }
 
+
 void STOAHandler::cutToObj_(const double *nlpx, double* rhs,
                              std::vector<UInt> *varIdx,
                             std::vector<double>* varCoeff)
 {
-  if (nlpStatus_ != ProvenOptimal || nlpStatus_ != ProvenLocalOptimal) {
-    return;
-  }
-
-  if (oNl_) {
-    int error=0;
-    FunctionPtr f;
-    double c, act;
-    std::stringstream sstm;
-    ObjectivePtr o = minlp_->getObjective();
-    
-    act = o->eval(nlpx, &error);
-    if (error == 0) {
-      f = o->getFunction();
-      LinearFunctionPtr lf = LinearFunctionPtr(); 
-      linearAt_(f, act, nlpx, &c, &lf, &error);
+  if (nlpStatus_ == ProvenOptimal || nlpStatus_ == ProvenLocalOptimal) {
+    if (oNl_) {
+      int error=0;
+      FunctionPtr f;
+      double c, act;
+      std::stringstream sstm;
+      ObjectivePtr o = minlp_->getObjective();
+      
+      act = o->eval(nlpx, &error);
       if (error == 0) {
-        ++(stats_->cuts);
-        *rhs = -1.0*c;
-        for (VariableGroupConstIterator it=lf->termsBegin(); it!=lf->termsEnd();
-             ++it) {
-          (*varIdx).push_back(it->first->getIndex());
-          (*varCoeff).push_back(it->second);
+        f = o->getFunction();
+        LinearFunctionPtr lf = 0; 
+        linearAt_(f, act, nlpx, &c, &lf, &error);
+        if (error == 0) {
+          ++(stats_->cuts);
+          *rhs = -1.0*c;
+          for (VariableGroupConstIterator it=lf->termsBegin();
+               it!=lf->termsEnd();
+               ++it) {
+            (*varIdx).push_back(it->first->getIndex());
+            (*varCoeff).push_back(it->second);
+          }
+          (*varIdx).push_back(objVar_->getIndex());
+          (*varCoeff).push_back(-1.0);
+          sstm << "_OAObjcut_" << stats_->cuts;
+          lf->addTerm(objVar_, -1.0);
+          f = (FunctionPtr) new Function(lf);
+          rel_->newConstraint(f, -INFINITY, -1.0*c, sstm.str());
         }
-        (*varIdx).push_back(objVar_->getIndex());
-        (*varCoeff).push_back(-1.0);
-        sstm << "_OAObjcut_" << stats_->cuts;
-        lf->addTerm(objVar_, -1.0);
-        f = (FunctionPtr) new Function(lf);
-        rel_->newConstraint(f, -INFINITY, -1.0*c, sstm.str());
       }
     }
   }
