@@ -66,9 +66,15 @@ CplexMILPEngine::CplexMILPEngine(EnvPtr env)
 
 CplexMILPEngine::~CplexMILPEngine()
 {
+  if (cpxlp_ != NULL) {
+    cpxstatus_ = CPXXfreeprob(cpxenv_, &cpxlp_);
+    if (cpxstatus_) {
+      logger_->msgStream(LogError) << "Could not free CPLEX problem.\n";
+    }
+  }
+
   if (cpxenv_ != NULL) {
     cpxstatus_ = CPXXcloseCPLEX (&cpxenv_);
-
     /* Note that CPXXcloseCPLEX produces no output,
        so the only way to see the cause of the error is to use
        CPXXgeterrorstring.  For other CPLEX routines, the errors will
@@ -750,9 +756,6 @@ static int CPXPUBLIC minolazycallback(CPXCENVptr env, void *cbdata, int wherefro
     mtx.unlock();
     return cpxstatus;
   }
-#if SPEW
-  //printx(cpxx, numvars);
-#endif
 
   const double *x = cpxx;
   //if (!(stoaH->isFeasible(x))) {
@@ -761,7 +764,7 @@ static int CPXPUBLIC minolazycallback(CPXCENVptr env, void *cbdata, int wherefro
       double rhs;
       std::vector<UInt> varIdx;
       std::vector<double> varCoeff;
-      for (ConstraintConstIterator it = stoaH->consBegin(); 
+      for (ConstraintConstIterator it = stoaH->consBegin();
            it != stoaH->consEnd(); ++it) {
         stoaH->OACutToCons(x, *it, &rhs, &varIdx, &varCoeff);
         vIdx = varIdx.size();
@@ -1218,10 +1221,6 @@ EngineStatus CplexMILPEngine::solveSTLazy(double *objLb, SolutionPtr* sol,
      goto TERMINATE;
   }
   solstat = CPXXgetstat (cpxenv_, cpxlp_);
-
-#if 0
-  cpxstatus_ = CPXXwritemipstarts (cpxenv_, cpxlp_, "minoCpxMipStart.mst", 0, 0);
-#endif
 
   /* Write the output to the screen. */
   logger_->msgStream(LogInfo) << me_ << "Solution status = "
