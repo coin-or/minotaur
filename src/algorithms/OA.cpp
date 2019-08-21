@@ -67,7 +67,7 @@ void loadProblem(EnvPtr env, MINOTAUR_AMPL::AMPLInterface* iface,
   OptionDBPtr options = env->getOptions();
   JacobianPtr jac;
   HessianOfLagPtr hess;
-  const std::string me("qg: ");
+  const std::string me("oa: ");
 
   timer->start();
   oinst = iface->readInstance(options->findString("problem_file")->getValue());
