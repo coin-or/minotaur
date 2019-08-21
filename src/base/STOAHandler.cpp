@@ -778,10 +778,10 @@ void STOAHandler::cutToObj_(const double *nlpx, double* rhs,
     double c, act;
     std::stringstream sstm;
     ObjectivePtr o = minlp_->getObjective();
-    
+
     act = o->eval(nlpx, &error);
     if (error == 0) {
-      if ((act > relobj_ + solAbsTol_) && 
+      if ((act > relobj_ + solAbsTol_) &&
           (relobj_ == 0 || (act > relobj_ + fabs(relobj_)*solRelTol_))) {
         f = o->getFunction();
         LinearFunctionPtr lf = 0; 
