@@ -27,12 +27,10 @@
 namespace Minotaur {
 
 struct STOAStats {
-  size_t milpS;      /// Number of milps solved.
   size_t nlpS;      /// Number of nlps solved.
   size_t nlpF;      /// Number of nlps feasible.
   size_t nlpI;      /// Number of nlps infeasible.
   size_t nlpIL;     /// Number of nlps hits engine iterations limit.
-  size_t milpIL;     /// Number of milps hits engine iterations limit.
   size_t cuts;      /// Number of cuts added to the LP.
 };
 

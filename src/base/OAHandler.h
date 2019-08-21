@@ -26,13 +26,13 @@
 namespace Minotaur {
 
 struct OAStats {
-  size_t milpS;      /// Number of milps solved.
+  size_t cuts;      /// Number of cuts added to the MILP.
   size_t nlpS;      /// Number of nlps solved.
   size_t nlpF;      /// Number of nlps feasible.
   size_t nlpI;      /// Number of nlps infeasible.
   size_t nlpIL;     /// Number of nlps hits engine iterations limit.
+  size_t milpS;      /// Number of milps solved.
   size_t milpIL;     /// Number of milps hits engine iterations limit.
-  size_t cuts;      /// Number of cuts added to the LP.
 }; 
 
 
@@ -241,27 +241,28 @@ private:
    * Check which nonlinear constraints are violated at the LP solution and
    * add OA cuts. Return number of OA cuts added.
    */
-  void cutToCons_(const double *nlpx, const double *lpx, CutManager *,
+  void cutToCons_(const double *nlpx, CutManager *,
                     SeparationStatus *status);
-  
+
+  void cutToConsInf_(const double *nlpx, CutManager *,
+                    SeparationStatus *status);
+ 
   /// Add OA cut to a violated constraint.   
-  void addCut_(const double *nlpx, const double *lpx, ConstraintPtr con, 
+  void addCut_(const double *nlpx, ConstraintPtr con,
                CutManager *cutman, SeparationStatus *status);
-  
 
-  void consCutAtLpSol_(const double *lpx, CutManager *cutman,
+ /// OA cut at the LP solution
+  void cutsAtLpSol_(const double *lpx, CutManager *cutman,
                     SeparationStatus *status);
 
-  void objCutAtLpSol_(const double *lpx, CutManager *cutman,
-                    SeparationStatus *status);
 
   /**
    * Check if objective is violated at the LP solution and
    * add OA cut.
    */
-  void cutToObj_(const double *nlpx, const double *lpx, CutManager *,
+  void cutToObj_(const double *nlpx, CutManager *,
                    SeparationStatus *status);
-
+  
   /**
    * Create the initial relaxation. It is called from relaxInitFull and
    * relaxInitInc functions.
