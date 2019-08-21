@@ -79,7 +79,8 @@ STOAHandler::STOAHandler()
 }
 
 
-STOAHandler::STOAHandler(EnvPtr env, ProblemPtr minlp, EnginePtr nlpe, MILPEnginePtr milpe, SolutionPoolPtr solPool)
+STOAHandler::STOAHandler(EnvPtr env, ProblemPtr minlp, EnginePtr nlpe,
+                         MILPEnginePtr milpe, SolutionPoolPtr solPool)
 : env_(env),
   minlp_(minlp),
   nlCons_(0),
@@ -100,16 +101,12 @@ STOAHandler::STOAHandler(EnvPtr env, ProblemPtr minlp, EnginePtr nlpe, MILPEngin
   npATol_ = env_->getOptions()->findDouble("solAbs_tol")->getValue();
   npRTol_ = env_->getOptions()->findDouble("solRel_tol")->getValue();
   logger_ = env->getLogger();
-  //logger_ = (LoggerPtr) new Logger((LogLevel)env->getOptions()->
-                                   //findInt("handler_log_level")->getValue());
 
   stats_   = new STOAStats();
-  stats_->milpS = 0;
   stats_->nlpS = 0;
   stats_->nlpF = 0;
   stats_->nlpI = 0;
   stats_->nlpIL = 0;
-  stats_->milpIL = 0;
   stats_->cuts = 0;
 }
 
@@ -123,14 +120,10 @@ STOAHandler::~STOAHandler()
   if (timer_) {
     delete timer_;
   }
-  //env_.reset();
   env_ = 0;
-  //rel_.reset();
-  //nlpe_.reset();
-  //minlp_.reset();
-  //logger_.reset();
-  rel_   = 0;
-  minlp_ =  0;
+  rel_ = 0;
+  nlpe_ = 0;
+  minlp_ = 0;
 }
 
 
@@ -166,7 +159,7 @@ void STOAHandler::addInitLinearX_(const double *x)
       if (error == 0) {
         cUb = con->getUb(); 
         ++(stats_->cuts);
-        sstm << "_STOAcut_" << stats_->cuts << "_AtRoot";
+        sstm << "_STOACut_" << stats_->cuts << "_AtRoot";
         f = (FunctionPtr) new Function(lf);
         rel_->newConstraint(f, -INFINITY, cUb-c, sstm.str());
         sstm.str("");
@@ -187,7 +180,7 @@ void STOAHandler::addInitLinearX_(const double *x)
     act = o->eval(x, &error);
     if (error==0) {
       ++(stats_->cuts);
-      sstm << "_STOAObjcut_" << stats_->cuts << "_AtRoot";
+      sstm << "_STOAObjCut_" << stats_->cuts << "_AtRoot";
       f = o->getFunction();
       linearAt_(f, act, x, &c, &lf, &error);
       if (error == 0) {
@@ -197,10 +190,10 @@ void STOAHandler::addInitLinearX_(const double *x)
       }
     }	else {
       logger_->msgStream(LogError) << me_ <<
-        "Objective not defined at this point" << std::endl;
+        "Objective is not defined at this point" << std::endl;
 #if SPEW
       logger_->msgStream(LogDebug) << me_ <<
-        "Objective not defined at this point" << std::endl;
+        "Objective is not defined at this point" << std::endl;
 #endif
     }
   }
@@ -208,7 +201,7 @@ void STOAHandler::addInitLinearX_(const double *x)
 }
 
 
-bool STOAHandler::fixedNLP(const double *lpx, const double * )
+bool STOAHandler::fixedNLP(const double *lpx, const double *)
 {
   numCalls_++;
   newUb_ = INFINITY;
@@ -216,6 +209,7 @@ bool STOAHandler::fixedNLP(const double *lpx, const double * )
   fixInts_(lpx);           // Fix integer variables
   solveNLP_();
   unfixInts_();             // Unfix integer variables
+
   switch(nlpStatus_) {
   case (ProvenOptimal):
   case (ProvenLocalOptimal):
@@ -243,14 +237,15 @@ bool STOAHandler::fixedNLP(const double *lpx, const double * )
   case (EngineUnknownStatus):
   case (ProvenFailedCQInfeas):
   default:
-    logger_->msgStream(LogError) << me_ << "NLP engine status = " 
-      << nlpe_->getStatusString() << std::endl; 
-    logger_->msgStream(LogError)<< me_ << "No cut generated, may cycle!" 
+    logger_->msgStream(LogError) << me_ << "NLP engine status = "
+      << nlpe_->getStatusString() << std::endl;
+    logger_->msgStream(LogError)<< me_ << "No cut generated, may cycle!"
       << std::endl;
     return false;
   }
   return true;
 }
+
 
 bool STOAHandler::fixedNLP(const double *lpx)
 {
@@ -260,6 +255,7 @@ bool STOAHandler::fixedNLP(const double *lpx)
   fixInts_(lpx);           // Fix integer variables
   solveNLP_();
   unfixInts_();             // Unfix integer variables
+
   switch(nlpStatus_) {
   case (ProvenOptimal):
   case (ProvenLocalOptimal):
@@ -268,7 +264,7 @@ bool STOAHandler::fixedNLP(const double *lpx)
     solPool_->addSolution(nlpe_->getSolution());
     break;
   case (ProvenInfeasible):
-  case (ProvenLocalInfeasible): 
+  case (ProvenLocalInfeasible):
   case (ProvenObjectiveCutOff):
     ++(stats_->nlpI);
     break;
@@ -283,14 +279,15 @@ bool STOAHandler::fixedNLP(const double *lpx)
   case (EngineUnknownStatus):
   case (ProvenFailedCQInfeas):
   default:
-    logger_->msgStream(LogError) << me_ << "NLP engine status = " 
-      << nlpe_->getStatusString() << std::endl; 
-    logger_->msgStream(LogError)<< me_ << "No cut generated, may cycle!" 
+    logger_->msgStream(LogError) << me_ << "NLP engine status = "
+      << nlpe_->getStatusString() << std::endl;
+    logger_->msgStream(LogError)<< me_ << "No cut generated, may cycle!"
       << std::endl;
     return false;
   }
   return true;
 }
+
 
 void STOAHandler::OACutToObj(const double *lpx, double* rhs,
                              std::vector<UInt> *varIdx,
@@ -327,7 +324,10 @@ void STOAHandler::OACutToCons(const double *lpx, ConstraintPtr con,
   case (ProvenOptimal):
   case (ProvenLocalOptimal):
     nlpx = nlpe_->getSolution()->getPrimal();
-    cutToCons_(con, nlpx, rhs, varIdx, varCoeff);
+    if (!(isFeas(nlpx))) {
+      cutToCons_(con, nlpx, rhs, varIdx, varCoeff);
+    }
+    break;
   case (ProvenInfeasible):
   case (ProvenLocalInfeasible): 
   case (ProvenObjectiveCutOff):
@@ -338,7 +338,8 @@ void STOAHandler::OACutToCons(const double *lpx, ConstraintPtr con,
     consCutAtLpSol_(con, lpx, rhs, varIdx, varCoeff);
     break;
   default:
-    logger_->msgStream(LogError) << me_ << "Unknown NLP engine statusi" << std::endl; 
+    logger_->msgStream(LogError) << me_ << "Unknown NLP engine status"
+      << std::endl; 
   }
 }
 
@@ -348,7 +349,7 @@ void STOAHandler::fixInts_(const double *x)
   double xval;
   VariablePtr v;
   VarBoundMod2 *m = 0;
-  for (VariableConstIterator vit=minlp_->varsBegin(); vit!=minlp_->varsEnd(); 
+  for (VariableConstIterator vit=minlp_->varsBegin(); vit!=minlp_->varsEnd();
        ++vit) {
     v = *vit;
     if (v->getType()==Binary || v->getType()==Integer) {
@@ -365,10 +366,8 @@ void STOAHandler::fixInts_(const double *x)
 void STOAHandler::solveMILP(double* objfLb, ConstSolutionPtr* sol, 
                           SolutionPoolPtr, CutManager*)
 {
- //MS: cross check the solveStatus here 
   milpe_->load(rel_);         //link directly to CPLEX (already loading in NodeRelaxer, remove initial double loading!)
   EngineStatus lpStatus = milpe_->solve();
-  ++(stats_->milpS);
   switch (lpStatus) {
   case (ProvenOptimal):
   case (ProvenLocalOptimal):
@@ -376,7 +375,6 @@ void STOAHandler::solveMILP(double* objfLb, ConstSolutionPtr* sol,
     (*objfLb) = (*sol)->getObjValue();
     break;
   case (EngineIterationLimit): // MS: take care of this.
-    ++(stats_->milpIL);
     *sol = milpe_->getSolution();
     (*objfLb) = (*sol)->getObjValue();
     break;
@@ -388,7 +386,6 @@ void STOAHandler::solveMILP(double* objfLb, ConstSolutionPtr* sol,
     assert(!"In STOAHandler: MILP infeasible. Check error log.");
     break;
   case (ProvenUnbounded):
-  //case (EngineIterationLimit): // MS: take care of this here.
   case (ProvenFailedCQFeas):
   case (ProvenFailedCQInfeas):
   case (FailedFeas):
@@ -396,7 +393,6 @@ void STOAHandler::solveMILP(double* objfLb, ConstSolutionPtr* sol,
   case (EngineError):
   case (EngineUnknownStatus):
   default:
-    //*milpStatus = SolvedUnbounded;
     logger_->msgStream(LogError) << me_ << "MILP engine status= " 
       << lpStatus << std::endl;
     assert(!"In STOAHandler: stopped. Check error log.");
@@ -404,6 +400,7 @@ void STOAHandler::solveMILP(double* objfLb, ConstSolutionPtr* sol,
   }
   return;
 }
+
 
 void STOAHandler::initLinear_(bool *isInf)
 {
@@ -438,13 +435,13 @@ void STOAHandler::initLinear_(bool *isInf)
   case (EngineUnknownStatus):
   case (ProvenFailedCQInfeas):
   default:
-    logger_->msgStream(LogError) << me_ << "NLP engine status at root= " 
+    logger_->msgStream(LogError) << me_ << "NLP engine status at root = "
       << nlpStatus_ << std::endl;
     assert(!"In STOAHandler: stopped at root. Check error log.");
     break;
   }
 #if SPEW
-  logger_->msgStream(LogDebug) << me_ << "root NLP solve status = " 
+  logger_->msgStream(LogDebug) << me_ << "root NLP solve status = "
     << nlpe_->getStatusString() << std::endl;
 #endif
 #if PRINT
@@ -458,9 +455,10 @@ void STOAHandler::initLinear_(bool *isInf)
   return;
 }
 
+
 bool STOAHandler::isFeas(const double *x)
 {
-  int error=0;
+  int error = 0;
   double act, cUb;
   ConstraintPtr c;
 
@@ -473,41 +471,22 @@ bool STOAHandler::isFeas(const double *x)
           (cUb != 0 && act > cUb + fabs(cUb)*solRelTol_)) {
 #if SPEW
         logger_->msgStream(LogDebug) << me_ << "constraint " <<
-          c->getName() << " violated with violation = " << act - cUb <<
+          c->getName() << " is violated with violation = " << act - cUb <<
           std::endl;
 #endif
         return false;     
       } 
     } else {
       logger_->msgStream(LogError) << me_ << c->getName() <<
-        "constraint not defined at this point."<< std::endl;
+        "constraint is not defined at this point."<< std::endl;
 #if SPEW
       logger_->msgStream(LogDebug) << me_ << "constraint " << c->getName() <<
-        " not defined at this point." << std::endl;
+        " is not defined at this point." << std::endl;
 #endif
       return false;
     }
   }
  
-  if (oNl_) {
-    error = 0;
-    relobj_ = x[objVar_->getIndex()];
-    act = minlp_->getObjValue(x, &error);
-    if (error == 0) {
-      if (act > relobj_ + solAbsTol_ || 
-          (relobj_ != 0 && (act > relobj_ + fabs(relobj_)*solRelTol_))) {
-#if SPEW
-        logger_->msgStream(LogDebug) << me_ << "objective violated with "
-          << "violation = " << act - relobj_ << std::endl;
-#endif
-        return false;
-      }
-    }	else {
-      logger_->msgStream(LogError) << me_ 
-        <<" Objective not defined at this point"<< std::endl;
-      return false;
-    }
-  }
   return true;
 }
 
@@ -517,7 +496,7 @@ void STOAHandler::linearizeObj_()
   ObjectivePtr o = minlp_->getObjective();
   FunctionType fType = o->getFunctionType();
   if (!o) {
-    assert(!"need objective in QG!");
+    assert(!"no objective function!");
   } else if (fType != Linear && fType != Constant) {
     oNl_ = true;
     FunctionPtr f;
@@ -537,7 +516,7 @@ void STOAHandler::linearizeObj_()
 }
 
 
-void STOAHandler::linearAt_(FunctionPtr f, double fval, const double *x, 
+void STOAHandler::linearAt_(FunctionPtr f, double fval, const double *x,
                           double *c, LinearFunctionPtr *lf, int *error)
 {
 
@@ -551,7 +530,7 @@ void STOAHandler::linearAt_(FunctionPtr f, double fval, const double *x,
   f->evalGradient(x, a, error);
   
   if (*error==0) {
-    *lf = (LinearFunctionPtr) new LinearFunction(a, vbeg, vend, linCoeffTol); 
+    *lf = (LinearFunctionPtr) new LinearFunction(a, vbeg, vend, linCoeffTol);
     *c  = fval - InnerProduct(x, a, minlp_->getNumVars());
   } else {
     logger_->msgStream(LogError) << me_ <<"gradient not defined at this point."
@@ -582,19 +561,20 @@ void STOAHandler::cutToConsInf_(ConstraintPtr con, const double *nlpx,
     } else {
 #if SPEW
       logger_->msgStream(LogDebug) << me_ << " constraint " << con->getName() <<
-        " feasible at LP solution. No OA cut to be added." << std::endl;
+        " is inactive at NLP solution. No OA cut to be added." << std::endl;
 #endif
     }
   } else {
-    logger_->msgStream(LogError) << me_ << " constraint not defined at" <<
+    logger_->msgStream(LogError) << me_ << " constraint is not defined at" <<
       " this point. "<<  std::endl;
 #if SPEW
     logger_->msgStream(LogDebug) << me_ << " constraint " << con->getName() <<
-      " not defined at this point." << std::endl;
+      " is not defined at this point." << std::endl;
 #endif
   }
   return;
 }
+
 
 void STOAHandler::cutToCons_(ConstraintPtr con, const double *nlpx,
                              double* rhs, std::vector<UInt> *varIdx,
@@ -612,15 +592,15 @@ void STOAHandler::cutToCons_(ConstraintPtr con, const double *nlpx,
     } else {
 #if SPEW
       logger_->msgStream(LogDebug) << me_ << " constraint " << con->getName() <<
-        " feasible at LP solution. No OA cut to be added." << std::endl;
+        " is active at NLP solution. No OA cut to be added." << std::endl;
 #endif
     }
   } else {
-    logger_->msgStream(LogError) << me_ << " constraint not defined at" <<
+    logger_->msgStream(LogError) << me_ << " constraint is not defined at" <<
       " this point. "<<  std::endl;
 #if SPEW
     logger_->msgStream(LogDebug) << me_ << " constraint " << con->getName() <<
-      " not defined at this point." << std::endl;
+      " is not defined at this point." << std::endl;
 #endif
   }
   return;
@@ -631,7 +611,7 @@ void STOAHandler::objCutAtLpSol_(const double *lpx, double* rhs,
                              std::vector<UInt> *varIdx,
                             std::vector<double>* varCoeff)
 {
-  if (oNl_) {
+  if (oNl_ && nlCons_.size() == 0) {
     int error = 0;
     FunctionPtr f;
     double c, vio, act;
@@ -642,42 +622,42 @@ void STOAHandler::objCutAtLpSol_(const double *lpx, double* rhs,
     if (error == 0) {
       vio = std::max(act-relobj_, 0.0);
       if (vio >solAbsTol_ || (relobj_ != 0 && vio > fabs(relobj_)*solRelTol_)) {
-          f = o->getFunction();
-          LinearFunctionPtr lf = 0;
-          linearAt_(f, act, lpx, &c, &lf, &error);
-          if (error == 0) {
-            ++(stats_->cuts);
-            *rhs = -1.0*c;
-            for (VariableGroupConstIterator it=lf->termsBegin(); it!=lf->termsEnd();
-                 ++it) {
-              (*varIdx).push_back(it->first->getIndex());
-              (*varCoeff).push_back(it->first->getIndex());
-            }
-            (*varIdx).push_back(objVar_->getIndex());
-            (*varCoeff).push_back(-1.0);
-            sstm << "_OAObjcut_" << stats_->cuts;
-            lf->addTerm(objVar_, -1.0);
-            f = (FunctionPtr) new Function(lf);
-            rel_->newConstraint(f, -INFINITY, -1.0*c, sstm.str());
+        f = o->getFunction();
+        LinearFunctionPtr lf = 0;
+        linearAt_(f, act, lpx, &c, &lf, &error);
+        if (error == 0) {
+          ++(stats_->cuts);
+          *rhs = -1.0*c;
+          for (VariableGroupConstIterator it=lf->termsBegin(); it!=lf->termsEnd();
+               ++it) {
+            (*varIdx).push_back(it->first->getIndex());
+            (*varCoeff).push_back(it->first->getIndex());
           }
+          (*varIdx).push_back(objVar_->getIndex());
+          (*varCoeff).push_back(-1.0);
+          sstm << "_OAObjCut_" << stats_->cuts;
+          lf->addTerm(objVar_, -1.0);
+          f = (FunctionPtr) new Function(lf);
+          rel_->newConstraint(f, -INFINITY, -1.0*c, sstm.str());
         }
+      }
     }	else {
       logger_->msgStream(LogError) << me_
-        << " objective not defined at this solution point." << std::endl;
+        << "objective is not defined at this solution point." << std::endl;
     }
   }
   return;
 }
 
 
-void STOAHandler::consCutAtLpSol_(ConstraintPtr con, const double *lpx, double* rhs,
-                             std::vector<UInt> *varIdx,
-                            std::vector<double>* varCoeff)
+void STOAHandler::consCutAtLpSol_(ConstraintPtr con, const double *lpx,
+                                  double* rhs, std::vector<UInt> *varIdx,
+                                  std::vector<double>* varCoeff)
 {
-  int error=0;
+  int error = 0;
+  double c, nlpact, cUb;
   std::stringstream sstm;
   LinearFunctionPtr lf = 0;
-  double c, lpvio, nlpact, cUb;
   FunctionPtr f = con->getFunction();
 
   nlpact =  con->getActivity(lpx, &error);
@@ -687,28 +667,21 @@ void STOAHandler::consCutAtLpSol_(ConstraintPtr con, const double *lpx, double* 
         (cUb != 0 && nlpact > (cUb+fabs(cUb)*solRelTol_))) {
       linearAt_(f, nlpact, lpx, &c, &lf, &error);
       if (error==0) {
-        lpvio = std::max(lf->eval(lpx)-cUb+c, 0.0);
-        if (lpvio>solAbsTol_ || ((cUb-c)!=0 &&
-                                 (lpvio>fabs(cUb-c)*solRelTol_))) {
-          ++(stats_->cuts);
-          *rhs = cUb-c;
-          for (VariableGroupConstIterator it=lf->termsBegin(); it!=lf->termsEnd();
-               ++it) {
-            (*varIdx).push_back(it->first->getIndex());
-            (*varCoeff).push_back(it->first->getIndex());
-          }
-          sstm << "_OAcut_" << stats_->cuts;
-          f = (FunctionPtr) new Function(lf);
-          rel_->newConstraint(f, -INFINITY, cUb-c, sstm.str());
-          return;
-        } else {
-          delete lf;
-          lf = 0;
+        ++(stats_->cuts);
+        *rhs = cUb-c;
+        for (VariableGroupConstIterator it=lf->termsBegin(); it!=lf->termsEnd();
+             ++it) {
+          (*varIdx).push_back(it->first->getIndex());
+          (*varCoeff).push_back(it->first->getIndex());
         }
+        sstm << "_OACut_" << stats_->cuts;
+        f = (FunctionPtr) new Function(lf);
+        rel_->newConstraint(f, -INFINITY, cUb-c, sstm.str());
+        return;
       }
     }
   }	else {
-    logger_->msgStream(LogError) << me_ << " constraint not defined at" <<
+    logger_->msgStream(LogError) << me_ << " constraint is not defined at" <<
       " this point. "<<  std::endl;
   }
   return;
@@ -743,11 +716,11 @@ void STOAHandler::addCut_(const double *nlpx, ConstraintPtr con, double* rhs,
       return;
     }
   }	else {
-    logger_->msgStream(LogError) << me_ << " constraint not defined at"
+    logger_->msgStream(LogError) << me_ << " constraint is not defined at"
       << " this point. "<<  std::endl;
 #if SPEW
     logger_->msgStream(LogDebug) << me_ << " constraint " <<
-      con->getName() << " not defined at this point." << std::endl;
+      con->getName() << " is not defined at this point." << std::endl;
 #endif
   }
   return;
@@ -760,11 +733,10 @@ double STOAHandler::newUb(std::vector<UInt> *varIdx,
   int i =0;
   double val = nlpe_->getSolutionValue();
   const double *x = nlpe_->getSolution()->getPrimal();
-  for (VariableConstIterator v = minlp_->varsBegin(); v != minlp_->varsEnd();++v, ++i) {
-    //if (x[i] != 0)  {
-      (*varIdx).push_back((*v)->getIndex());
-      (*varVal).push_back(x[i]);
-    //}
+  for (VariableConstIterator v = minlp_->varsBegin(); v != minlp_->varsEnd();
+       ++v, ++i) {
+    (*varIdx).push_back((*v)->getIndex());
+    (*varVal).push_back(x[i]);
   }
   if (oNl_) {
     (*varIdx).push_back(objVar_->getIndex());
@@ -804,7 +776,7 @@ void STOAHandler::cutToObj_(const double *nlpx, double* rhs,
           }
           (*varIdx).push_back(objVar_->getIndex());
           (*varCoeff).push_back(-1.0);
-          sstm << "_OAObjcut_" << stats_->cuts;
+          sstm << "_OAObjCut_" << stats_->cuts;
           lf->addTerm(objVar_, -1.0);
           f = (FunctionPtr) new Function(lf);
           rel_->newConstraint(f, -INFINITY, -1.0*c, sstm.str());
@@ -829,7 +801,7 @@ void STOAHandler::relax_(bool *isInf)
   ConstraintPtr c;
   FunctionType fType;
   
-  for (ConstraintConstIterator it=minlp_->consBegin(); it!=minlp_->consEnd(); 
+  for (ConstraintConstIterator it=minlp_->consBegin(); it!=minlp_->consEnd();
        ++it) {
     c = *it;
     fType = c->getFunctionType();
@@ -868,7 +840,7 @@ void STOAHandler::unfixInts_()
 void STOAHandler::writeStats(std::ostream &out) const
 {
   out
-    << me_ << "number of nlps solved                          = " 
+    << me_ << "number of nlps solved                          = "
     << stats_->nlpS << std::endl
     << me_ << "number of infeasible nlps                      = " 
     << stats_->nlpI << std::endl
@@ -876,11 +848,7 @@ void STOAHandler::writeStats(std::ostream &out) const
     << stats_->nlpF << std::endl
     << me_ << "number of nlps hit engine iterations limit     = " 
     << stats_->nlpIL << std::endl
-    << me_ << "number of milps solved                         = " 
-    << stats_->milpS << std::endl
-    << me_ << "number of milps hit engine iterations limit    = " 
-    << stats_->milpIL << std::endl
-    << me_ << "number of cuts added                           = " 
+    << me_ << "number of cuts added                           = "
     << stats_->cuts << std::endl;
   return;
 }
