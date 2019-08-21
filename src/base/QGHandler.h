@@ -79,6 +79,8 @@ private:
    * objective.
    */
   VariablePtr objVar_;
+  
+  //ConstraintPtr newCon_;
 
   /// Nonlinearity status of objective function. 1 if nonlinear 0 otherwise.
   bool oNl_;
@@ -199,8 +201,8 @@ private:
 private:
  
   /// Add OA cut to a violated constraint.   
-  void addCut_(const double *nlpx, ConstraintPtr con,
-               CutManager *cutman, SeparationStatus *status);
+  void addCut_(const double *nlpx, const double *lpx, ConstraintPtr con,
+               CutManager *cutman, SeparationStatus *status, double act);
   
 
   /**
@@ -225,16 +227,16 @@ private:
    * Check which nonlinear constraints are violated at the LP solution and
    * add OA cuts. Return number of OA cuts added.
    */
-  void cutToCons_(const double *nlpx, CutManager *,
+  void cutToCons_(const double *nlpx, const double *lpx, CutManager *,
                     SeparationStatus *status);
   
-  void cutToConsInf_(const double *nlpx, CutManager *,
+  void cutToConsInf_(const double *nlpx, const double *lpx, CutManager *,
                     SeparationStatus *status);
    /**
    * Check if objective is violated at the LP solution and
    * add OA cut.
    */
-  void cutToObj_(const double *nlpx, CutManager *,
+  void cutToObj_(const double *nlpx, const double *lpx, CutManager *,
                    SeparationStatus *status);
 
   /**
@@ -264,7 +266,9 @@ private:
    * a single variable.
    */
   void linearizeObj_();
-  
+ 
+  void objCutAtLpSol_(const double *lpx, CutManager *,
+                                  SeparationStatus *status);
   /**
    * Create the initial relaxation. It is called from relaxInitFull and
    * relaxInitInc functions.

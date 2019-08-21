@@ -269,14 +269,14 @@ private:
    * Check which nonlinear constraints are violated at the LP solution and
    * add OA cuts. Return number of OA cuts added.
    */
-  void cutToCons_(ConstraintPtr con, const double *nlpx, double* rhs, std::vector<UInt> *varIdx,
+  void cutToCons_(ConstraintPtr con, const double *nlpx, const double *lpx, double* rhs, std::vector<UInt> *varIdx,
                             std::vector<double>* varCoeff);
-   void cutToConsInf_(ConstraintPtr con, const double *nlpx, double* rhs, std::vector<UInt> *varIdx,
+   void cutToConsInf_(ConstraintPtr con, const double *nlpx, const double *lpx, double* rhs, std::vector<UInt> *varIdx,
                             std::vector<double>* varCoeff);
   
   /// Add OA cut to a violated constraint.   
-  void addCut_(const double *nlpx, ConstraintPtr con, double* rhs, std::vector<UInt> *varIdx,
-                            std::vector<double>* varCoeff);
+  void addCut_(const double *nlpx, const double *lpx, ConstraintPtr con, double* rhs, std::vector<UInt> *varIdx,
+                            std::vector<double>* varCoeff, double act);
   
   void objCutAtLpSol_(const double *lpx, double* rhs,
                              std::vector<UInt> *varIdx,
@@ -290,8 +290,8 @@ private:
    * Check if objective is violated at the LP solution and
    * add OA cut.
    */
-  void cutToObj_(const double *nlpx, double* rhs,
-                             std::vector<UInt> *varIdx,
+  void cutToObj_(const double *nlpx, const double *lpx,
+                 double* rhs, std::vector<UInt> *varIdx,
                             std::vector<double>* varCoeff);
 
   /**

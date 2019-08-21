@@ -195,6 +195,7 @@ void OAHandler::cutIntSol_(ConstSolutionPtr sol, CutManager *cutMan,
   case (EngineIterationLimit):
     ++(stats_->nlpIL);
     cutsAtLpSol_(lpx, cutMan, status);
+    objCutAtLpSol_(lpx, cutMan, status);
     break;
   case (FailedFeas):
   case (EngineError):
@@ -654,6 +655,44 @@ void OAHandler::cutToObj_(const double *nlpx, CutManager *,
         << " point." << std::endl;
 #endif
     }  
+  }
+  return;
+}
+
+
+void OAHandler::objCutAtLpSol_(const double *lpx, CutManager *,
+                                  SeparationStatus *status)
+{
+  if (oNl_) {
+    int error = 0;
+    FunctionPtr f;
+    double c, vio, act;
+    //ConstraintPtr newcon;
+    std::stringstream sstm;
+    ObjectivePtr o = minlp_->getObjective();
+
+    act = o->eval(lpx, &error);
+    if (error == 0) {
+      vio = std::max(act-relobj_, 0.0);
+      if ((vio > solAbsTol_) &&
+          (relobj_ == 0 || vio > fabs(relobj_)*solRelTol_)) {
+          f = o->getFunction();
+          LinearFunctionPtr lf = LinearFunctionPtr();
+          linearAt_(f, act, lpx, &c, &lf, &error);
+          if (error == 0) {
+            ++(stats_->cuts);
+            sstm << "_OAObjcut_" << stats_->cuts;
+            lf->addTerm(objVar_, -1.0);
+            *status = SepaResolve;
+            f = (FunctionPtr) new Function(lf);
+            rel_->newConstraint(f, -INFINITY, -1.0*c, sstm.str());
+            //newcon = rel_->newConstraint(f, -INFINITY, -1.0*c, sstm.str());
+          }
+        }
+    }	else {
+      logger_->msgStream(LogError) << me_
+        << " objective not defined at this solution point." << std::endl;
+    }
   }
   return;
 }
