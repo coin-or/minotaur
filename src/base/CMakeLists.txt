@@ -55,6 +55,7 @@ set (MINOTAUR_SOURCES
      LinearFunction.cpp 
      LinearHandler.cpp
      LinFeasPump.cpp 
+     Linearizations.cpp
      Logger.cpp 
      MaxFreqBrancher.cpp
      MaxVioBrancher.cpp
@@ -169,6 +170,7 @@ set (MINOTAUR_HEADERS
      LinearFunction.h
      LinearHandler.h
      LinFeasPump.h 
+     Linearizations.h
      LinBil.h
      LinConMod.h
      LinMods.h
