@@ -467,8 +467,8 @@ bool STOAHandler::isFeas(const double *x)
     act = c->getActivity(x, &error);
     if (error==0) {
       cUb = c->getUb();
-      if (act > cUb + solAbsTol_ || 
-          (cUb != 0 && act > cUb + fabs(cUb)*solRelTol_)) {
+      if ((act > cUb + solAbsTol_) &&
+          (cUb == 0 || act > cUb + fabs(cUb)*solRelTol_)) {
 #if SPEW
         logger_->msgStream(LogDebug) << me_ << "constraint " <<
           c->getName() << " is violated with violation = " << act - cUb <<
@@ -487,6 +487,26 @@ bool STOAHandler::isFeas(const double *x)
     }
   }
  
+  if (oNl_) {
+    error = 0;
+    relobj_ = x[objVar_->getIndex()];
+    act = minlp_->getObjValue(x, &error);
+    if (error == 0) {
+      if ((act > relobj_ + solAbsTol_) &&
+          (relobj_ == 0 || (act > relobj_ + fabs(relobj_)*solRelTol_))) {
+#if SPEW
+        logger_->msgStream(LogDebug) << me_ << "objective is violated with "
+          << "violation = " << act - relobj_ << std::endl;
+#endif
+        return false;
+      }
+    }	else {
+      logger_->msgStream(LogError) << me_
+        <<"objective not defined at this point."<< std::endl;
+      return false;
+    }
+  }
+
   return true;
 }
 
@@ -555,8 +575,8 @@ void STOAHandler::cutToConsInf_(ConstraintPtr con, const double *nlpx,
 
   if (error == 0) {
     cUb = con->getUb();
-    if (nlpact >= cUb - solAbsTol_ ||
-        (cUb != 0 && (nlpact >= cUb - fabs(cUb)*solRelTol_))) {
+    if ((nlpact >= cUb - solAbsTol_) &&
+        (cUb == 0 || (nlpact >= cUb - fabs(cUb)*solRelTol_))) {
       addCut_(nlpx, con, rhs, varIdx, varCoeff);
     } else {
 #if SPEW
@@ -611,17 +631,17 @@ void STOAHandler::objCutAtLpSol_(const double *lpx, double* rhs,
                              std::vector<UInt> *varIdx,
                             std::vector<double>* varCoeff)
 {
-  if (oNl_ && nlCons_.size() == 0) {
+  if (oNl_) {
     int error = 0;
     FunctionPtr f;
-    double c, vio, act;
+    double c, act;
     std::stringstream sstm;
     ObjectivePtr o = minlp_->getObjective();
 
     act = o->eval(lpx, &error);
     if (error == 0) {
-      vio = std::max(act-relobj_, 0.0);
-      if (vio >solAbsTol_ || (relobj_ != 0 && vio > fabs(relobj_)*solRelTol_)) {
+      if ((act > relobj_ + solAbsTol_) &&
+          (relobj_ == 0 || (act > relobj_ + fabs(relobj_)*solRelTol_))) {
         f = o->getFunction();
         LinearFunctionPtr lf = 0;
         linearAt_(f, act, lpx, &c, &lf, &error);
@@ -663,10 +683,10 @@ void STOAHandler::consCutAtLpSol_(ConstraintPtr con, const double *lpx,
   nlpact =  con->getActivity(lpx, &error);
   if (error == 0) {
     cUb = con->getUb();
-    if (nlpact > cUb + solAbsTol_ ||
-        (cUb != 0 && nlpact > (cUb+fabs(cUb)*solRelTol_))) {
+    if ((nlpact > cUb + solAbsTol_) &&
+        (cUb == 0 || nlpact > cUb+fabs(cUb)*solRelTol_)) {
       linearAt_(f, nlpact, lpx, &c, &lf, &error);
-      if (error==0) {
+      if (error == 0) {
         ++(stats_->cuts);
         *rhs = cUb-c;
         for (VariableGroupConstIterator it=lf->termsBegin(); it!=lf->termsEnd();
@@ -752,16 +772,17 @@ void STOAHandler::cutToObj_(const double *nlpx, double* rhs,
                              std::vector<UInt> *varIdx,
                             std::vector<double>* varCoeff)
 {
-  if (nlpStatus_ == ProvenOptimal || nlpStatus_ == ProvenLocalOptimal) {
-    if (oNl_) {
-      int error=0;
-      FunctionPtr f;
-      double c, act;
-      std::stringstream sstm;
-      ObjectivePtr o = minlp_->getObjective();
-      
-      act = o->eval(nlpx, &error);
-      if (error == 0) {
+  if (oNl_) {
+    int error=0;
+    FunctionPtr f;
+    double c, act;
+    std::stringstream sstm;
+    ObjectivePtr o = minlp_->getObjective();
+    
+    act = o->eval(nlpx, &error);
+    if (error == 0) {
+      if ((act > relobj_ + solAbsTol_) && 
+          (relobj_ == 0 || (act > relobj_ + fabs(relobj_)*solRelTol_))) {
         f = o->getFunction();
         LinearFunctionPtr lf = 0; 
         linearAt_(f, act, nlpx, &c, &lf, &error);
