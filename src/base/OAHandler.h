@@ -241,15 +241,15 @@ private:
    * Check which nonlinear constraints are violated at the LP solution and
    * add OA cuts. Return number of OA cuts added.
    */
-  void cutToCons_(const double *nlpx, CutManager *,
+  void cutToCons_(const double *nlpx, const double *lpx, CutManager *,
                     SeparationStatus *status);
 
-  void cutToConsInf_(const double *nlpx, CutManager *,
+  void cutToConsInf_(const double *nlpx, const double *lpx, CutManager *,
                     SeparationStatus *status);
  
   /// Add OA cut to a violated constraint.   
-  void addCut_(const double *nlpx, ConstraintPtr con,
-               CutManager *cutman, SeparationStatus *status);
+  void addCut_(const double *nlpx, const double *lpx, ConstraintPtr con,
+               CutManager *cutman, SeparationStatus *status, double act);
 
  /// OA cut at the LP solution
   void cutsAtLpSol_(const double *lpx, CutManager *cutman,
@@ -260,7 +260,7 @@ private:
    * Check if objective is violated at the LP solution and
    * add OA cut.
    */
-  void cutToObj_(const double *nlpx, CutManager *,
+  void cutToObj_(const double *nlpx, const double *lpx, CutManager *,
                    SeparationStatus *status);
 
   void objCutAtLpSol_(const double *lpx, CutManager *,

@@ -181,8 +181,8 @@ void OAHandler::cutIntSol_(ConstSolutionPtr sol, CutManager *cutMan,
     } else {
       relobj_= sol->getObjValue();
       nlpx = nlpe_->getSolution()->getPrimal();
-      cutToCons_(nlpx, cutMan, status);
-      cutToObj_(nlpx, cutMan, status);
+      cutToCons_(nlpx, lpx, cutMan, status);
+      cutToObj_(nlpx, lpx, cutMan, status);
     }
     break;
   case (ProvenInfeasible):
@@ -190,7 +190,7 @@ void OAHandler::cutIntSol_(ConstSolutionPtr sol, CutManager *cutMan,
   case (ProvenObjectiveCutOff):
     ++(stats_->nlpI);
     nlpx = nlpe_->getSolution()->getPrimal();
-    cutToConsInf_(nlpx, cutMan, status);
+    cutToConsInf_(nlpx, lpx, cutMan, status);
     break;
   case (EngineIterationLimit):
     ++(stats_->nlpIL);
@@ -215,9 +215,9 @@ void OAHandler::cutIntSol_(ConstSolutionPtr sol, CutManager *cutMan,
   /* This happens when the NLP solution is also feasible to original problem 
    * but there is some tolerance differences
   */
-  //if (*status == SepaContinue) {
-    //*status = SepaPrune;
-  //}
+  if (*status == SepaContinue) {
+    *status = SepaPrune;
+  }
 
 #if SPEW
   logger_->msgStream(LogDebug) << me_ << "NLP solve status = "
@@ -516,7 +516,7 @@ void OAHandler::linearAt_(FunctionPtr f, double fval, const double *x,
 }
 
 
-void OAHandler::cutToCons_(const double *nlpx, CutManager *cutman,
+void OAHandler::cutToCons_(const double *nlpx, const double *lpx, CutManager *cutman,
                            SeparationStatus *status)
 {
   int error=0;
@@ -530,7 +530,7 @@ void OAHandler::cutToCons_(const double *nlpx, CutManager *cutman,
       cUb = con->getUb();
       if ((fabs(nlpact-cUb) <= solAbsTol_) ||
         (cUb != 0 && (fabs(nlpact-cUb) <= fabs(cUb)*solRelTol_))) {
-        addCut_(nlpx, con, cutman, status);
+        addCut_(nlpx, lpx, con, cutman, status, nlpact);
       } else {
 #if SPEW
       logger_->msgStream(LogDebug) << me_ << " constraint " << con->getName()
@@ -551,7 +551,7 @@ void OAHandler::cutToCons_(const double *nlpx, CutManager *cutman,
 }
 
 
-void OAHandler::cutToConsInf_(const double *nlpx, CutManager *cutman,
+void OAHandler::cutToConsInf_(const double *nlpx, const double *lpx, CutManager *cutman,
                               SeparationStatus *status)
 {
   int error=0;
@@ -565,7 +565,7 @@ void OAHandler::cutToConsInf_(const double *nlpx, CutManager *cutman,
       cUb = con->getUb();
       if ((nlpact >= cUb - solAbsTol_) &&
         (cUb == 0 || (nlpact >= cUb - fabs(cUb)*solRelTol_))) {
-        addCut_(nlpx, con, cutman, status);
+        addCut_(nlpx, lpx, con, cutman, status, nlpact);
       } else {
 #if SPEW
       logger_->msgStream(LogDebug) << me_ << " constraint " << con->getName()
@@ -586,30 +586,39 @@ void OAHandler::cutToConsInf_(const double *nlpx, CutManager *cutman,
 }
 
 
-void OAHandler::addCut_(const double *nlpx, ConstraintPtr con,
-                        CutManager*, SeparationStatus *status)
+void OAHandler::addCut_(const double *nlpx, const double *lpx,
+                        ConstraintPtr con, CutManager*,
+                        SeparationStatus *status, double act)
 {
   int error=0;
+  double c, lpvio, cUb;
   //ConstraintPtr newcon;
-  double c, act, cUb;
   std::stringstream sstm;
-  LinearFunctionPtr lf = 0;
   FunctionPtr f = con->getFunction();
+  LinearFunctionPtr lf = LinearFunctionPtr();
 
-  act = con->getActivity(nlpx, &error);
   if (error == 0) {
     linearAt_(f, act, nlpx, &c, &lf, &error);
     if (error==0) {
       cUb = con->getUb();
+      lpvio = std::max(lf->eval(lpx)-cUb+c, 0.0);
+      if ((lpvio > solAbsTol_) &&
+          ((cUb-c)==0 || (lpvio>fabs(cUb-c)*solRelTol_))) {
+#if SPEW
+        logger_->msgStream(LogDebug) << me_ << " linearization of constraint "
+          << con->getName() << " violated at LP solution with violation = " <<
+          lpvio << std::endl;
+#endif
+        *status = SepaResolve;
+      }
       ++(stats_->cuts);
-      *status = SepaResolve;
-      sstm << "_OACut_" << stats_->cuts;
+      sstm << "_OAcut_" << stats_->cuts;
       f = (FunctionPtr) new Function(lf);
       rel_->newConstraint(f, -INFINITY, cUb-c, sstm.str());
       //newcon = rel_->newConstraint(f, -INFINITY, cUb-c, sstm.str());
       return;
     }
-  } else {
+  }	else {
     logger_->msgStream(LogError) << me_ << " constraint is not defined at"
       << " this point. "<<  std::endl;
 #if SPEW
@@ -619,33 +628,41 @@ void OAHandler::addCut_(const double *nlpx, ConstraintPtr con,
   }
   return;
 }
-  
 
-void OAHandler::cutToObj_(const double *nlpx, CutManager *,
-                          SeparationStatus *status)
+
+void OAHandler::cutToObj_(const double *nlpx, const double *lpx,
+                            CutManager *, SeparationStatus *status)
 {
   if (oNl_) {
-    int error = 0;
+    int error=0;
     FunctionPtr f;
-    double c, act;
+    double c, vio, act;
+    //ConstraintPtr newcon;
     std::stringstream sstm;
     ObjectivePtr o = minlp_->getObjective();
-   
+    
     act = o->eval(nlpx, &error);
     if (error == 0) {
-      if ((act > relobj_ + solAbsTol_) && 
-          (relobj_ == 0 || (act > relobj_ + fabs(relobj_)*solRelTol_))) {
-        f = o->getFunction();
-        LinearFunctionPtr lf = LinearFunctionPtr(); 
-        linearAt_(f, act, nlpx, &c, &lf, &error);
-        if (error == 0) {
-          ++(stats_->cuts);
-          sstm << "_OAObjCut_" << stats_->cuts;
-          lf->addTerm(objVar_, -1.0);
+      f = o->getFunction();
+      LinearFunctionPtr lf = LinearFunctionPtr(); 
+      linearAt_(f, act, nlpx, &c, &lf, &error);
+      if (error == 0) {
+        vio = std::max(c+lf->eval(lpx)-relobj_, 0.0);
+        if ((vio > solAbsTol_) && ((relobj_-c) == 0
+                                 || vio > fabs(relobj_-c)*solRelTol_)) {
+#if SPEW
+          logger_->msgStream(LogDebug) << me_ << "linearization of "
+            "objective violated at LP solution with violation = " <<
+            vio << ". OA cut added." << std::endl;
+#endif
           *status = SepaResolve;
-          f = (FunctionPtr) new Function(lf);
-          rel_->newConstraint(f, -INFINITY, -1.0*c, sstm.str());
         }
+        ++(stats_->cuts);
+        sstm << "_OAObjcut_" << stats_->cuts;
+        lf->addTerm(objVar_, -1.0);
+        f = (FunctionPtr) new Function(lf);
+        rel_->newConstraint(f, -INFINITY, -1.0*c, sstm.str());
+        //newcon = rel_->newConstraint(f, -INFINITY, -1.0*c, sstm.str());
       }
     }	else {
       logger_->msgStream(LogError) << me_
@@ -654,10 +671,11 @@ void OAHandler::cutToObj_(const double *nlpx, CutManager *,
       logger_->msgStream(LogDebug) << me_ << " objective not defined at this "
         << " point." << std::endl;
 #endif
-    }  
+    }
   }
   return;
 }
+
 
 
 void OAHandler::objCutAtLpSol_(const double *lpx, CutManager *,

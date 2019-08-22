@@ -201,8 +201,8 @@ private:
 private:
  
   /// Add OA cut to a violated constraint.   
-  void addCut_(const double *nlpx, const double *lpx, ConstraintPtr con,
-               CutManager *cutman, SeparationStatus *status, double act);
+  void addCut_(ConstraintPtr con, const double *nlpx, const double *lpx, 
+               CutManager *cutman, SeparationStatus *status);
   
 
   /**
@@ -212,7 +212,7 @@ private:
   void addInitLinearX_(const double *x);
 
   /// OA cut at the LP solution
-  void cutsAtLpSol_(const double *lpx, CutManager *cutman,
+  void consCutAtLpSol_(const double *lpx, CutManager *cutman,
                     SeparationStatus *status);
 
   /**
@@ -230,8 +230,6 @@ private:
   void cutToCons_(const double *nlpx, const double *lpx, CutManager *,
                     SeparationStatus *status);
   
-  void cutToConsInf_(const double *nlpx, const double *lpx, CutManager *,
-                    SeparationStatus *status);
    /**
    * Check if objective is violated at the LP solution and
    * add OA cut.
