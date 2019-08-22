@@ -414,7 +414,7 @@ bool OAHandler::isFeasible(ConstSolutionPtr sol, RelaxationPtr, bool &,
   ConstraintPtr c;
   const double *x = sol->getPrimal();
 
-  for (CCIter it=nlCons_.begin(); it!=nlCons_.end(); ++it) { 
+  for (CCIter it=nlCons_.begin(); it!=nlCons_.end(); ++it) {
     c = *it;
     act = c->getActivity(x, &error);
     if (error==0) {
@@ -516,87 +516,42 @@ void OAHandler::linearAt_(FunctionPtr f, double fval, const double *x,
 }
 
 
-void OAHandler::cutToCons_(const double *nlpx, const double *lpx, CutManager *cutman,
+void OAHandler::cutToCons_(const double *nlpx, const double *lpx,
+                           CutManager *cutman,
                            SeparationStatus *status)
 {
-  int error=0;
   ConstraintPtr con;
-  double nlpact, cUb;
-
   for (CCIter it = nlCons_.begin(); it != nlCons_.end(); ++it) {
     con = *it;
-    nlpact =  con->getActivity(nlpx, &error);
-    if (error == 0) {
-      cUb = con->getUb();
-      if ((fabs(nlpact-cUb) <= solAbsTol_) ||
-        (cUb != 0 && (fabs(nlpact-cUb) <= fabs(cUb)*solRelTol_))) {
-        addCut_(nlpx, lpx, con, cutman, status, nlpact);
-      } else {
-#if SPEW
-      logger_->msgStream(LogDebug) << me_ << " constraint " << con->getName()
-        << " is inactive at NLP solution. No OA cut to be added."
-        << std::endl;
-#endif
-      }
-    } else {
-      logger_->msgStream(LogError) << me_ << " constraint is not defined at" <<
-        " this point. "<<  std::endl;
-#if SPEW
-      logger_->msgStream(LogDebug) << me_ << " constraint " << con->getName() <<
-        " is not defined at this point." << std::endl;
-#endif
-    }
+    addCut_(con, nlpx, lpx, cutman, status);
   }
   return;
 }
 
 
-void OAHandler::cutToConsInf_(const double *nlpx, const double *lpx, CutManager *cutman,
-                              SeparationStatus *status)
+void OAHandler::cutToConsInf_(const double *nlpx, const double *lpx,
+                           CutManager *cutman,
+                           SeparationStatus *status)
 {
-  int error=0;
   ConstraintPtr con;
-  double nlpact, cUb;
-
   for (CCIter it = nlCons_.begin(); it != nlCons_.end(); ++it) {
     con = *it;
-    nlpact =  con->getActivity(nlpx, &error);
-    if (error == 0) {
-      cUb = con->getUb();
-      if ((nlpact >= cUb - solAbsTol_) &&
-        (cUb == 0 || (nlpact >= cUb - fabs(cUb)*solRelTol_))) {
-        addCut_(nlpx, lpx, con, cutman, status, nlpact);
-      } else {
-#if SPEW
-      logger_->msgStream(LogDebug) << me_ << " constraint " << con->getName()
-        << " is inactive at NLP solution. No OA cut to be added." 
-        << std::endl;
-#endif
-      }
-    }	else {
-      logger_->msgStream(LogError) << me_ << " constraint is not defined at" <<
-        " this point. "<<  std::endl;
-#if SPEW
-      logger_->msgStream(LogDebug) << me_ << " constraint " << con->getName() <<
-        " is not defined at this point." << std::endl;
-#endif
-    }
+    addCutInf_(con, nlpx, lpx, cutman, status);
   }
   return;
 }
 
-
-void OAHandler::addCut_(const double *nlpx, const double *lpx,
-                        ConstraintPtr con, CutManager*,
-                        SeparationStatus *status, double act)
+void OAHandler::addCutInf_(ConstraintPtr con, const double *nlpx,
+                        const double *lpx, CutManager *,
+                           SeparationStatus *status)
 {
-  int error=0;
-  double c, lpvio, cUb;
-  //ConstraintPtr newcon;
+  int error = 0;
   std::stringstream sstm;
+  LinearFunctionPtr lf = 0;
+  double c, lpvio, act, cUb;
   FunctionPtr f = con->getFunction();
-  LinearFunctionPtr lf = LinearFunctionPtr();
 
+  act =  con->getActivity(nlpx, &error);
   if (error == 0) {
     linearAt_(f, act, nlpx, &c, &lf, &error);
     if (error==0) {
@@ -606,28 +561,111 @@ void OAHandler::addCut_(const double *nlpx, const double *lpx,
           ((cUb-c)==0 || (lpvio>fabs(cUb-c)*solRelTol_))) {
 #if SPEW
         logger_->msgStream(LogDebug) << me_ << " linearization of constraint "
-          << con->getName() << " violated at LP solution with violation = " <<
+          << con->getName() << " violates LP solution with violation = " <<
           lpvio << std::endl;
 #endif
         *status = SepaResolve;
+        ++(stats_->cuts);
+        sstm << "_OACut_" << stats_->cuts;
+        f = (FunctionPtr) new Function(lf);
+        rel_->newConstraint(f, -INFINITY, cUb-c, sstm.str());
+        //newcon = rel_->newConstraint(f, -INFINITY, cUb-c, sstm.str());
+      } else {
+        // linearizations add to active constraint for NLP optimal case and,
+        // to active and violated constraints for NLP infeasible case
+        if ((act >= cUb - solAbsTol_) &&
+            (cUb == 0 || (act >= cUb - fabs(cUb)*solRelTol_))) {
+
+          ++(stats_->cuts);
+          sstm << "_OACut_" << stats_->cuts;
+          f = (FunctionPtr) new Function(lf);
+          rel_->newConstraint(f, -INFINITY, cUb-c, sstm.str());
+          //newcon = rel_->newConstraint(f, -INFINITY, cUb-c, sstm.str());
+        } else {
+#if SPEW
+          logger_->msgStream(LogDebug) << me_ << " constraint " 
+            << con->getName() << 
+            " is inactive at NLP solution. No OA cut to be added."
+            << std::endl;
+#endif
+        }
       }
-      ++(stats_->cuts);
-      sstm << "_OAcut_" << stats_->cuts;
-      f = (FunctionPtr) new Function(lf);
-      rel_->newConstraint(f, -INFINITY, cUb-c, sstm.str());
-      //newcon = rel_->newConstraint(f, -INFINITY, cUb-c, sstm.str());
       return;
     }
-  }	else {
-    logger_->msgStream(LogError) << me_ << " constraint is not defined at"
-      << " this point. "<<  std::endl;
+  } else {
+    logger_->msgStream(LogError) << me_ << " constraint is not defined at" <<
+      " this point. "<<  std::endl;
 #if SPEW
-          logger_->msgStream(LogDebug) << me_ << " constraint " <<
-            con->getName() << " is not defined at this point." << std::endl;
+    logger_->msgStream(LogDebug) << me_ << " constraint " << con->getName() <<
+      " is not defined at this point." << std::endl;
 #endif
   }
   return;
 }
+
+void OAHandler::addCut_(ConstraintPtr con, const double *nlpx,
+                        const double *lpx, CutManager *,
+                           SeparationStatus *status)
+{
+  int error = 0;
+  std::stringstream sstm;
+  LinearFunctionPtr lf = 0;
+  double c, lpvio, act, cUb;
+  FunctionPtr f = con->getFunction();
+
+  act =  con->getActivity(nlpx, &error);
+  if (error == 0) {
+    linearAt_(f, act, nlpx, &c, &lf, &error);
+    if (error==0) {
+      cUb = con->getUb();
+      lpvio = std::max(lf->eval(lpx)-cUb+c, 0.0);
+      if ((lpvio > solAbsTol_) &&
+          ((cUb-c)==0 || (lpvio>fabs(cUb-c)*solRelTol_))) {
+#if SPEW
+        logger_->msgStream(LogDebug) << me_ << " linearization of constraint "
+          << con->getName() << " violates LP solution with violation = " <<
+          lpvio << std::endl;
+#endif
+        *status = SepaResolve;
+        ++(stats_->cuts);
+        sstm << "_OACut_" << stats_->cuts;
+        f = (FunctionPtr) new Function(lf);
+        rel_->newConstraint(f, -INFINITY, cUb-c, sstm.str());
+        //newcon = rel_->newConstraint(f, -INFINITY, cUb-c, sstm.str());
+      } else {
+        // linearizations add to active constraint for NLP optimal case and,
+        // to active and violated constraints for NLP infeasible case
+    
+        if (fabs(act-cUb) <= solAbsTol_ ||
+            (cUb != 0 && (fabs(act-cUb) <= fabs(cUb)*solRelTol_))) {
+          ++(stats_->cuts);
+          sstm << "_OACut_" << stats_->cuts;
+          f = (FunctionPtr) new Function(lf);
+          rel_->newConstraint(f, -INFINITY, cUb-c, sstm.str());
+          //newcon = rel_->newConstraint(f, -INFINITY, cUb-c, sstm.str());
+        } else {
+#if SPEW
+          logger_->msgStream(LogDebug) << me_ << " constraint " 
+            << con->getName() << 
+            " is inactive at NLP solution. No OA cut to be added."
+            << std::endl;
+#endif
+        }
+      }
+      return;
+    }
+  } else {
+    logger_->msgStream(LogError) << me_ << " constraint is not defined at" <<
+      " this point. "<<  std::endl;
+#if SPEW
+    logger_->msgStream(LogDebug) << me_ << " constraint " << con->getName() <<
+      " is not defined at this point." << std::endl;
+#endif
+  }
+  return;
+}
+
+
 
 
 void OAHandler::cutToObj_(const double *nlpx, const double *lpx,

@@ -246,12 +246,15 @@ private:
 
   void cutToConsInf_(const double *nlpx, const double *lpx, CutManager *,
                     SeparationStatus *status);
- 
-  /// Add OA cut to a violated constraint.   
-  void addCut_(const double *nlpx, const double *lpx, ConstraintPtr con,
-               CutManager *cutman, SeparationStatus *status, double act);
 
- /// OA cut at the LP solution
+  /// Add OA cut to a violated constraint.   
+  void addCut_(ConstraintPtr con, const double *nlpx, const double *lpx,
+               CutManager *cutman, SeparationStatus *status);
+
+  void addCutInf_(ConstraintPtr con, const double *nlpx, const double *lpx, 
+               CutManager *cutman, SeparationStatus *status);
+
+  /// OA cut at the LP solution
   void cutsAtLpSol_(const double *lpx, CutManager *cutman,
                     SeparationStatus *status);
 
