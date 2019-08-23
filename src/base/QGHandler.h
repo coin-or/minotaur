@@ -204,7 +204,8 @@ private:
   void addCut_(ConstraintPtr con, const double *nlpx, const double *lpx, 
                CutManager *cutman, SeparationStatus *status);
   
-
+  void addCutInf_(ConstraintPtr con, const double *nlpx, const double *lpx, 
+               CutManager *cutman, SeparationStatus *status);
   /**
    * Add linearization of nonlinear constraints and objective at point x* 
    * to the relaxation only (not to the lp engine)
@@ -212,7 +213,7 @@ private:
   void addInitLinearX_(const double *x);
 
   /// OA cut at the LP solution
-  void consCutAtLpSol_(const double *lpx, CutManager *cutman,
+  void cutsAtLpSol_(const double *lpx, CutManager *cutman,
                     SeparationStatus *status);
 
   /**
@@ -229,7 +230,8 @@ private:
    */
   void cutToCons_(const double *nlpx, const double *lpx, CutManager *,
                     SeparationStatus *status);
-  
+    void cutToConsInf_(const double *nlpx, const double *lpx, CutManager *,
+                    SeparationStatus *status);
    /**
    * Check if objective is violated at the LP solution and
    * add OA cut.
@@ -265,8 +267,6 @@ private:
    */
   void linearizeObj_();
  
-  void objCutAtLpSol_(const double *lpx, CutManager *,
-                                  SeparationStatus *status);
   /**
    * Create the initial relaxation. It is called from relaxInitFull and
    * relaxInitInc functions.

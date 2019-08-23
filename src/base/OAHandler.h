@@ -266,9 +266,7 @@ private:
   void cutToObj_(const double *nlpx, const double *lpx, CutManager *,
                    SeparationStatus *status);
 
-  void objCutAtLpSol_(const double *lpx, CutManager *,
-                      SeparationStatus *status);
-  /**
+   /**
    * Create the initial relaxation. It is called from relaxInitFull and
    * relaxInitInc functions.
    */
