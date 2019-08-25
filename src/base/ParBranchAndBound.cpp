@@ -555,7 +555,7 @@ void ParBranchAndBound::parsolve(ParNodeIncRelaxerPtr parNodeRlxr[],
   UInt numVars = 0;
 
   omp_set_num_threads(numThreads);
-#pragma omp parallel for
+//#pragma omp parallel for
   for(UInt i = 0; i < numThreads; ++i) {
     should_dive[i] = false;
     dived_prev[i] = false;
@@ -756,16 +756,17 @@ void ParBranchAndBound::parsolve(ParNodeIncRelaxerPtr parNodeRlxr[],
               tm_->pruneNode(current_node[i]);
               current_node[i] = NodePtr();
               new_node[i] = tm_->getCandidate();
-            }
-            if (new_node[i]) {
+              if (new_node[i]) {
 #if SPEW
 #pragma omp critical (logger)
-              logger_->msgStream(LogInfo) << me_ << "get node (prune) "
-                << new_node[i]->getId() << " thread "
-                << omp_get_thread_num() << std::endl;
+                logger_->msgStream(LogInfo) << me_ << "get node (prune) "
+                  << new_node[i]->getId() << " thread "
+                  << omp_get_thread_num() << std::endl;
 #endif
-#pragma omp critical (treeManager)
-              tm_->removeActiveNode(new_node[i]);
+                //getting and removing node must be in the same critical
+                //block otherwise some other thread might take the same node
+                tm_->removeActiveNode(new_node[i]); 
+              }
             }
             dived_prev[i] = false;
 
