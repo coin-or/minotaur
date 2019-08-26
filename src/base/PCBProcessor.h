@@ -7,7 +7,7 @@
 /**
  * \file PCBProcessor.h
  * \brief Define the derived class of NodeProcessor that solves LP
- * relaxations.
+ * or NLP relaxations.
  * \author Ashutosh Mahajan, Argonne National Laboratory
  */
 

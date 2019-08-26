@@ -316,8 +316,7 @@ void ParPCBProcessor::process(NodePtr node, RelaxationPtr rel,
     } else if (sep_status == SepaResolve) {
       should_resolve = true;
     } else {
-    //save warm start information before branching. This step is expensive.
-  
+      //save warm start information before branching. This step is expensive.
       ws_ = engine_->getWarmStartCopy();
       if (ws_) {
         ws_->incrUseCnt();
