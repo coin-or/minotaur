@@ -7,14 +7,12 @@
 /**
  * \file ParPCBProcessor.cpp
  * \brief Define the derived class of NodeProcessor that solves LP
- * relaxations.
+ * or NLP relaxations for parallel algorithms.
  * \author Prashant Palkar and Meenarli Sharma, IIT Bombay
  */
 #include <cmath> // for INFINITY
 #include <iomanip>
-#if USE_OPENMP
 #include <omp.h>
-#endif
 #include "MinotaurConfig.h"
 #include "Brancher.h"
 #include "Constraint.h"
@@ -42,27 +40,27 @@ using namespace Minotaur;
 
 const std::string ParPCBProcessor::me_ = "ParPCBProcessor: ";
 
-ParPCBProcessor::ParPCBProcessor()
-  : contOnErr_(false),
-    cutMan_(0),
-    cutOff_(INFINITY),
-    engine_(EnginePtr()),
-    engineStatus_(EngineUnknownStatus),
-    numSolutions_(0),
-    relaxation_(RelaxationPtr()),
-    ws_(WarmStartPtr()),
-    oATol_(1e-5),
-    oRTol_(1e-5)
-{
-  handlers_.clear();
-  logger_ = (LoggerPtr) new Logger(LogInfo);
-  stats_.bra = 0;
-  stats_.inf = 0;
-  stats_.opt = 0;
-  stats_.prob = 0;
-  stats_.proc = 0;
-  stats_.ub = 0;
-}
+//ParPCBProcessor::ParPCBProcessor()
+  //: contOnErr_(false),
+    //cutMan_(0),
+    //cutOff_(INFINITY),
+    //engine_(EnginePtr()),
+    //engineStatus_(EngineUnknownStatus),
+    //numSolutions_(0),
+    //relaxation_(RelaxationPtr()),
+    //ws_(WarmStartPtr()),
+    //oATol_(1e-5),
+    //oRTol_(1e-5)
+//{
+  //handlers_.clear();
+  //logger_ = (LoggerPtr) new Logger(LogInfo);
+  //stats_.bra = 0;
+  //stats_.inf = 0;
+  //stats_.opt = 0;
+  //stats_.prob = 0;
+  //stats_.proc = 0;
+  //stats_.ub = 0;
+//}
 
 
 ParPCBProcessor::ParPCBProcessor (EnvPtr env, EnginePtr engine,
@@ -70,15 +68,16 @@ ParPCBProcessor::ParPCBProcessor (EnvPtr env, EnginePtr engine,
 : branches_(0),
   contOnErr_(false),
   cutMan_(0),
-  engine_(engine),
   engineStatus_(EngineUnknownStatus),
   numSolutions_(0),
   relaxation_(RelaxationPtr()),
-  ws_(WarmStartPtr())
+  //ws_(WarmStartPtr())
+  ws_(0)
 {
   oATol_ = env->getOptions()->findDouble("solAbs_tol")->getValue();
   oRTol_ = env->getOptions()->findDouble("solRel_tol")->getValue();
   cutOff_ = env->getOptions()->findDouble("obj_cut_off")->getValue();
+  engine_ = engine;
   handlers_ = handlers;
   logger_ = env->getLogger();
   presFreq_ = env->getOptions()-> findInt("pres_freq")->getValue();
@@ -161,9 +160,7 @@ bool ParPCBProcessor::isFeasible_(NodePtr node, ConstSolutionPtr sol,
   }
 
   if (is_feas == true && h==handlers_.end()) {
-#if USE_OPENMP
-#pragma omp critical
-#endif
+#pragma omp critical (solPool)
     {
       s_pool->addSolution(sol);
     }
@@ -255,6 +252,7 @@ void ParPCBProcessor::process(NodePtr node, RelaxationPtr rel,
   // presolve
   should_prune = presolveNode_(node, s_pool);
   if (should_prune) {
+    node->removeWarmStart();
     return;
   }
 
@@ -339,33 +337,37 @@ void ParPCBProcessor::process(NodePtr node, RelaxationPtr rel,
         should_prune = true;
         node->setStatus(NodeInfeasible);
         stats_.inf++;
+        for (ModificationConstIterator miter=mods.begin(); miter!=mods.end();
+             ++miter) {
+          delete *miter;
+        }
+        mods.clear();
         break;
       } else if (br_status==ModifiedByBrancher) {
-      for (ModificationConstIterator miter=mods.begin(); miter!=mods.end();
-           ++miter) {
-        node->addRMod(*miter);
-        (*miter)->applyToProblem(relaxation_);
-      }
-
-      should_prune = presolveNode_(node, s_pool);
-      if (should_prune) {
-        break;
-      }
-      should_resolve = true;
-    } else if (cutMan_){
+        for (ModificationConstIterator miter=mods.begin(); miter!=mods.end();
+             ++miter) {
+          node->addRMod(*miter);
+          (*miter)->applyToProblem(relaxation_);
+        }
+        mods.clear();
+        should_prune = presolveNode_(node, s_pool);
+        if (should_prune) {
+          break;
+        }
+        should_resolve = true;
+      } else if (cutMan_) {
         cutMan_->nodeIsBranched(node,sol,branches_->size());
       }
     }
-
     if (should_resolve == false) {
       break;
     }
   }
-    if (cutMan_ ){
+  if (cutMan_ ){
     cutMan_->updatePool(relaxation_,sol);
     cutMan_->updateRel(sol,relaxation_);
   } 
- 
+  node->removeWarmStart();
   return;
 }
 
@@ -412,6 +414,7 @@ void ParPCBProcessor::setCutManager(CutManager* cutman)
   cutMan_ = cutman;
 }
 
+
 bool ParPCBProcessor::shouldPrune_(NodePtr node, double solval, 
                                SolutionPoolPtr s_pool)
 {
@@ -455,6 +458,7 @@ bool ParPCBProcessor::shouldPrune_(NodePtr node, double solval,
      should_prune = false;
      logger_->msgStream(LogDebug2) << me_ << "problem relaxation is "
                                    << "unbounded!" << std::endl;
+     assert(!"Relaxation unbounded.");
      break;
 
    case (FailedFeas):
@@ -487,8 +491,6 @@ bool ParPCBProcessor::shouldPrune_(NodePtr node, double solval,
                                  << "continuing in node " << node->getId()
                                  << std::endl;
      // continue with this node by following ProvenLocalOptimal case.
-     // This comment silences g++ warnings
-     // fall through
    case (ProvenLocalOptimal):
    case (ProvenOptimal):
      node->setLb(solval);
@@ -562,6 +564,7 @@ void ParPCBProcessor::tightenBounds_()
 {
 
 }
+
 
 void ParPCBProcessor::writeStats(std::ostream &out) const
 {
