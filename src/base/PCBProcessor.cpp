@@ -6,7 +6,8 @@
 
 /**
  * \file PCBProcessor.cpp
- * \brief Define base class Node Processor.
+ * \brief Define the derived class of NodeProcessor that solves LP
+ * or NLP relaxations.
  * \author Ashutosh Mahajan, Argonne National Laboratory
  */
 #include <cmath> // for INFINITY
