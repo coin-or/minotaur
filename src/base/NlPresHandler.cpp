@@ -152,39 +152,43 @@ void NlPresHandler::chkRed_(ProblemPtr p, bool purge_cons, bool *changed,
 
       // if the implied-lb is more than constraint-lb, but not too much more,
       // relax the constraint lb further.
-      if (c->getLb()>-INFINITY && impl_lb+eTol_ > c->getLb()
-          && impl_lb < c->getLb()+bigm-eTol_) {
-        mod = (ConBoundModPtr) new ConBoundMod(c, Lower, c->getLb()-bigm);
-        mod->applyToProblem(p);
-        *changed = true;
-#if SPEW
-        logger_->msgStream(LogDebug2) << me_ << " removed lb of constraint "
-                                      << c->getName() << std::endl;
-#endif
-        if (false==purge_cons) {
-          mods->push_back(mod);
-          ++stats_.conRel;
-        } else {
-          delete mod;
-        }
-      }
-      // similary for implied-ub
-      if (c->getUb()<INFINITY && impl_ub-eTol_ < c->getUb()
-          && impl_ub > c->getUb()-bigm+eTol_) {
-        mod = (ConBoundModPtr) new ConBoundMod(c, Upper, c->getUb()+bigm);
-        mod->applyToProblem(p);
-        *changed = true;
-#if SPEW
-        logger_->msgStream(LogDebug2) << me_ << " removed ub of constraint "
-                                      << c->getName() << std::endl;
-#endif
-        if (false==purge_cons) {
-          mods->push_back(mod);
-          ++stats_.conRel;
-        } else {
-          delete mod;
-        }
-      }
+      //if (c->getLb()>-INFINITY && impl_lb+eTol_ > c->getLb()
+      //    && impl_lb < c->getLb()+bigm-eTol_) {
+      //  mod = (ConBoundModPtr) new ConBoundMod(c, Lower, c->getLb()-bigm);
+      //  std::cout << "conboundmod\n";
+      //  mod->write(std::cout);
+      //  mod->applyToProblem(p);
+      //  *changed = true;
+//#if SPEW
+      //  logger_->msgStream(LogDebug2) << me_ << " removed lb of constraint "
+      //                                << c->getName() << std::endl;
+//#endif//
+      //  if (false==purge_cons) {
+      //    mods->push_back(mod);
+      //    ++stats_.conRel;
+      //  } else {
+      //    delete mod;
+      //  }
+      //}
+      //// similary for implied-ub
+      //if (c->getUb()<INFINITY && impl_ub-eTol_ < c->getUb()
+      //    && impl_ub > c->getUb()-bigm+eTol_) {
+      //  mod = (ConBoundModPtr) new ConBoundMod(c, Upper, c->getUb()+bigm);
+      //  mod->write(std::cout);
+      //  std::cout << "mod " << mod << " con " << c << "\n";
+      //  mod->applyToProblem(p);
+      //  *changed = true;
+//#if SPEW
+      //  logger_->msgStream(LogDebug2) << me_ << " removed ub of constraint "
+      //                                << c->getName() << std::endl;
+//#endif//
+      //  if (false==purge_cons) {
+      //    mods->push_back(mod);
+      //    ++stats_.conRel;
+      //  } else {
+      //    delete mod;
+      //  }
+      //}
 
 
       // delete the constraint if unbounded on both sides
