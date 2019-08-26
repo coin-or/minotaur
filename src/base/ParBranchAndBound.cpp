@@ -270,7 +270,6 @@ void ParBranchAndBound::processRoot_(bool *should_prune, bool *should_dive,
                                         ParPCBProcessorPtr nodePrcssr0,
                                         WarmStartPtr ws0, NodePtr &current_node)
 {
-  //current_node = (NodePtr) new Node ();
   NodePtr new_node = NodePtr(); // NULL
   RelaxationPtr rel;
   bool prune = *should_prune;
@@ -331,7 +330,6 @@ void ParBranchAndBound::processRoot_(bool *should_prune, bool *should_dive,
 
   showStatus_(*should_dive);
   *should_prune = prune;
-  //return current_node;
 }
 
 std::vector<std::vector<double> > ParBranchAndBound::
@@ -487,11 +485,9 @@ void ParBranchAndBound::showParStatus_(UInt off, double treeLb,
                                        double WallTimeStart)
 {
   if (timer_->query()-stats_->updateTime > options_->logInterval) {
-    //double lb = tm_->updateLb();
     logger_->msgStream(LogInfo) 
       << me_ 
       << std::fixed
-      //<< std::setprecision(1)  << "time = "            << timer_->query()
       << std::setprecision(1)  << "time = " << getWallTime() - WallTimeStart
       << std::setprecision(4)  << " lb = "  << treeLb
       << std::setprecision(4)  << " ub = "  << tm_->getUb()
@@ -733,7 +729,8 @@ void ParBranchAndBound::parsolve(ParNodeIncRelaxerPtr parNodeRlxr[],
 #if SPEW
 #pragma omp critical (logger)
           logger_->msgStream(LogDebug1) << me_ << "node lower bound = " <<
-            current_node[i]->getLb() << std::endl;
+            current_node[i]->getLb() << current_node[i]->getId() << " thread "
+            << omp_get_thread_num()<< std::endl;
 #endif
           if (nodePrcssr[i]->foundNewSolution()) {
 #pragma omp critical (treeManager)
@@ -825,7 +822,9 @@ void ParBranchAndBound::parsolve(ParNodeIncRelaxerPtr parNodeRlxr[],
         //stopping condition at each thread
         nodeCountTh[i] = 0;
 #pragma omp critical (treeManager)
-        treeLbTh[i] = tm_->updateLb();
+        {
+          treeLbTh[i] = tm_->updateLb();
+        }
         minNodeLbTh[i] = INFINITY;
 
         for (UInt j=0; j < numThreads; ++j) {
@@ -845,10 +844,13 @@ void ParBranchAndBound::parsolve(ParNodeIncRelaxerPtr parNodeRlxr[],
 #pragma omp critical (logger)
         {
           showParStatus_(nodeCountTh[i], treeLbTh[i], wallTimeStart);
-          if (shouldStopPar_(wallTimeStart, treeLbTh[i])) {
+        }
+        if (shouldStopPar_(wallTimeStart, treeLbTh[i])) {
+#pragma omp critical (treeManager)
+          {
             tm_->updateLb();
-            shouldRunTh[i] = false;
           }
+          shouldRunTh[i] = false;
         }
       } //parallel for end
 #pragma omp single
