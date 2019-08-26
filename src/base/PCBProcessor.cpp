@@ -266,7 +266,6 @@ void PCBProcessor::process(NodePtr node, RelaxationPtr rel,
       ws_ = 0;
     }
 
-
 #if SPEW
     logger_->msgStream(LogDebug) <<  me_ << "iteration " << iter 
                                  << std::endl;
