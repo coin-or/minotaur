@@ -533,7 +533,7 @@ bool PCBProcessor::shouldPrune_(NodePtr node, double solval,
        }
      } else {
        logger_->msgStream(LogError) << me_ << "engine reports error, "
-                                    << " pruning node " << node->getId()
+                                    << "pruning node " << node->getId()
                                     << std::endl;
        should_prune = true;
        node->setStatus(NodeInfeasible);
