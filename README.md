@@ -17,3 +17,4 @@ See the LICENSE file for details on license to use and distribute it.
   ones](https://github.com/minotaur-solver/minotaur/issues)
 * [Mailing list for developers](https://lists.mcs.anl.gov/mailman/listinfo/minotaur-dev)
 
+
