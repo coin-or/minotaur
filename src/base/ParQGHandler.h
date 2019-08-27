@@ -237,7 +237,7 @@ private:
   void addCut_(const double *nlpx, const double *lpx, ConstraintPtr con, 
                CutManager *cutman, SeparationStatus *status);
   
-  void oaCutEngLim_(const double *lpx, CutManager *cutman,
+  void oaCutsAtLpSol_(const double *lpx, CutManager *cutman,
                     SeparationStatus *status);
 
   /**
