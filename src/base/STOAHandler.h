@@ -165,7 +165,7 @@ public:
   bool isFeasible(ConstSolutionPtr, RelaxationPtr, 
                   bool &, double &) { return 0;};
 
-  bool isFeas(const double* x);
+  //bool isFeas(const double* x);
 
   /// Does nothing.
   SolveStatus presolve(PreModQ *, bool *) {return Finished;};
@@ -207,7 +207,7 @@ public:
   RelaxationPtr getRel() {return rel_;}
   bool fixedNLP(const double *lpx);
 
-  bool fixedNLP(const double *lpx, const double * nlpx);
+  //bool fixedNLP(const double *lpx, const double * nlpx);
   double newUb(std::vector<UInt> *varIdx,
                         std::vector<double>* varCoeff);
   //void cutIntSol(const double *lpx, double objVal);
@@ -271,9 +271,10 @@ private:
    */
   void cutToCons_(ConstraintPtr con, const double *nlpx, const double *lpx, double* rhs, std::vector<UInt> *varIdx,
                             std::vector<double>* varCoeff);
-   void cutToConsInf_(ConstraintPtr con, const double *nlpx, const double *lpx, double* rhs, std::vector<UInt> *varIdx,
-                            std::vector<double>* varCoeff);
   
+  void addCut_(const double *nlpx, const double *lpx, ConstraintPtr con, double* rhs, std::vector<UInt> *varIdx,
+                            std::vector<double>* varCoeff);
+
   void objCutAtLpSol_(const double *lpx, double* rhs,
                              std::vector<UInt> *varIdx,
                             std::vector<double>* varCoeff);
