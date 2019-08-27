@@ -1557,12 +1557,14 @@ VariablePtr Problem::newVariable(double lb, double ub, VariableType vtype,
 {
   assert(engine_ == 0 ||
       (!"Cannot add variables after loading problem to engine\n")); 
-  VariablePtr v;
-  v = (VariablePtr) new Variable(nextVId_, vars_.size(), lb, ub, vtype, name);
+  VariablePtr v = new Variable(nextVId_, vars_.size(), lb, ub, vtype, name);
   v->setSrcType(stype);
   ++nextVId_;
   vars_.push_back(v);
   varsModed_ = true;
+  if (initialPt_) {
+    delete [] initialPt_; initialPt_ = 0;
+  }
   return v;
 }
 

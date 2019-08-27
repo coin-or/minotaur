@@ -28,7 +28,7 @@
 using namespace Minotaur;
 
 Relaxation::Relaxation()
-  : p_(ProblemPtr()) // NULL
+  : p_(0) 
 {
 }
 
@@ -51,7 +51,7 @@ Relaxation::Relaxation(ProblemPtr problem)
   VariableIterator vbeg;
   VarVector vvec;
 
-  initialPt_ = 0; //NULL
+  initialPt_ = 0;
 
   // add variables
   i = 0;
