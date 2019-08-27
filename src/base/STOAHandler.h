@@ -162,10 +162,10 @@ public:
 
   // Base class method. Check if x is feasible. x has to satisfy integrality
   // and also nonlinear constraints.
-  //bool isFeasible(ConstSolutionPtr, RelaxationPtr, 
-                  //bool &, double &) { return 0;};
+  bool isFeasible(ConstSolutionPtr, RelaxationPtr, 
+                  bool &, double &) { return 0;};
 
-  bool isFeas(const double* x);
+  //bool isFeas(const double* x);
 
   /// Does nothing.
   SolveStatus presolve(PreModQ *, bool *) {return Finished;};

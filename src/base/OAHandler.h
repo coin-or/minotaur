@@ -248,7 +248,7 @@ private:
                     SeparationStatus *status);
 
   /// Add OA cut to a violated constraint.   
-  void addCut_(ConstraintPtr con, const double *nlpx, const double *lpx,
+  void addCut_(const double *nlpx, const double *lpx, ConstraintPtr con, 
                CutManager *cutman, SeparationStatus *status);
 
   void addCutInf_(ConstraintPtr con, const double *nlpx, const double *lpx, 
