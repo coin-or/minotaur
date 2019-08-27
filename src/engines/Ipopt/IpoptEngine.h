@@ -264,6 +264,10 @@ namespace Minotaur {
     /// If lb>ub+etol_, declare infeasible.
     const double etol_;
 
+    /// True right after loading a problem, changes to false after the first
+    /// call to Optimize() or ReOptimize()
+    bool justLoaded_;
+
     /// Where to put logs.
     LoggerPtr logger_;
 
