@@ -507,7 +507,7 @@ EngineStatus CplexLPEngine::solve()
   
   double *x = new double[cur_numcols];
 
-#if 1
+#if 0
   /* Write a copy of the problem to a file. */
   writeLP("minoCpx.lp"); 
 #endif
