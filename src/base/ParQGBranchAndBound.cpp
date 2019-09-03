@@ -207,6 +207,7 @@ NodePtr ParQGBranchAndBound::processRoot_(bool *should_prune, bool *should_dive,
   if (prune) {
     parNodeRlxr0->reset(current_node, false);
     tm_->pruneNode(current_node);
+    tm_->removeActiveNode(current_node);
   } else {
 #if SPEW
     logger_->msgStream(LogDebug1) << me_ << "branching in root" << 
@@ -546,12 +547,13 @@ void ParQGBranchAndBound::parsolve(ParNodeIncRelaxerPtr parNodeRlxr[],
           }
           if (!current_node[i]) {
 #pragma omp critical (treeManager)
-            current_node[i] = tm_->getCandidate();
-            if(current_node[i]) {
-#pragma omp critical (treeManager)
-              tm_->removeActiveNode(current_node[i]);
-              dived_prev[i] = false;
+            {
+              current_node[i] = tm_->getCandidate();
+              if(current_node[i]) {
+                tm_->removeActiveNode(current_node[i]);
+              }
             }
+            dived_prev[i] = false;
           }
           if (current_node[i]) { 
 #if SPEW
@@ -604,10 +606,13 @@ void ParQGBranchAndBound::parsolve(ParNodeIncRelaxerPtr parNodeRlxr[],
             nodePrcssr[i]->process(current_node[i], rel[i], solPool_,
                                    initialized[i], timesUp, timesDown,
                                    pseudoUp, pseudoDown, stats_->nodesProc);
-#pragma omp critical
-            ++stats_->nodesProc;
+#pragma omp critical (stats)
+            {
+              ++stats_->nodesProc;
+            }
 
 #if SPEW
+#pragma omp critical (logger)
             logger_->msgStream(LogDebug1) << me_ << "node lower bound = " <<
               current_node[i]->getLb() << std::endl;
 #endif
@@ -621,24 +626,29 @@ void ParQGBranchAndBound::parsolve(ParNodeIncRelaxerPtr parNodeRlxr[],
 
             if (should_prune[i]) {
 #if SPEW
+#pragma omp critical (logger)
               logger_->msgStream(LogDebug1) << me_ << "node pruned" << 
                 std::endl;
 #endif
               parNodeRlxr[i]->reset(current_node[i], false);
 #pragma omp critical (treeManager)
-              tm_->pruneNode(current_node[i]);
-
+              {
+                tm_->pruneNode(current_node[i]);
+              }
+              current_node[i] = NodePtr();
 #pragma omp critical (treeManager)
-              new_node[i] = tm_->getCandidate();
-              if(new_node[i]) {
-#pragma omp critical (treeManager)
-                tm_->removeActiveNode(new_node[i]);
+              {
+                new_node[i] = tm_->getCandidate();
+                if(new_node[i]) {
+                  tm_->removeActiveNode(new_node[i]);
+                }
               }
               dived_prev[i] = false;
 
             } else {
               initialized[i] = true;
 #if SPEW
+#pragma omp critical (logger)
               logger_->msgStream(LogDebug1) << me_ << "branching" << 
                 std::endl;
 #endif
@@ -651,7 +661,15 @@ void ParQGBranchAndBound::parsolve(ParNodeIncRelaxerPtr parNodeRlxr[],
                 logger_->msgStream(LogInfo) <<" NO BRANCHES \n";
               }
 #pragma omp critical (treeManager)
-              new_node[i] = tm_->branch(branches[i], current_node[i], ws[i]);
+              {
+                new_node[i] = tm_->branch(branches[i], current_node[i], ws[i]);
+#if SPEW
+#pragma omp critical (logger)
+                logger_->msgStream(LogInfo) << me_ << "get node (branch) "
+                  << new_node[i]->getId() << " thread " << omp_get_thread_num()
+                  << std::endl;
+#endif
+              }
               assert((should_dive[i] && new_node[i])
                      || (!should_dive[i] && !new_node[i]));
               if (should_dive[i]) {
@@ -659,12 +677,19 @@ void ParQGBranchAndBound::parsolve(ParNodeIncRelaxerPtr parNodeRlxr[],
               } else {
                 parNodeRlxr[i]->reset(current_node[i], false);
 #pragma omp critical (treeManager)
-                new_node[i] = tm_->getCandidate(); // Can be NULL. The
-                // branches that were created could have large lb and tm
-                // might have eliminated them.
-                if(new_node[i]) {
-#pragma omp critical (treeManager)
-                  tm_->removeActiveNode(new_node[i]);
+                {
+                  new_node[i] = tm_->getCandidate(); // Can be NULL. The
+                  // branches that were created could have large lb and tm
+                  // might have eliminated them.
+                  if(new_node[i]) {
+                    tm_->removeActiveNode(new_node[i]);
+#if SPEW
+#pragma omp critical (logger)
+                    logger_->msgStream(LogInfo) << me_ << "get/remove node "
+                      << new_node[i]->getId() << " thread "
+                      << omp_get_thread_num() << std::endl;
+#endif
+                  }
                 }
                 dived_prev[i] = false;
               }
@@ -674,7 +699,9 @@ void ParQGBranchAndBound::parsolve(ParNodeIncRelaxerPtr parNodeRlxr[],
           //stopping condition at each thread
           nodeCountTh[i] = 0;
 #pragma omp critical (treeManager)
-          treeLbTh[i] = tm_->updateLb();
+          {
+            treeLbTh[i] = tm_->updateLb();
+          }
           minNodeLbTh[i] = INFINITY;
 
           for (UInt j=0; j < numThreads; ++j) {
@@ -691,13 +718,16 @@ void ParQGBranchAndBound::parsolve(ParNodeIncRelaxerPtr parNodeRlxr[],
           if (minNodeLbTh[i] < treeLbTh[i]) {
             treeLbTh[i] = minNodeLbTh[i];
           }
-#pragma omp critical
+#pragma omp critical (logger)
           {
             showParStatus_(nodeCountTh[i], treeLbTh[i], wallTimeStart);
-            if (shouldStopPar_(wallTimeStart, treeLbTh[i])) {
+          }
+          if (shouldStopPar_(wallTimeStart, treeLbTh[i])) {
+#pragma omp critical (logger)
+            {
               tm_->updateLb();
-              shouldRunTh[i] = false;
             }
+            shouldRunTh[i] = false;
           }
           //if(iterMode == true) shouldRunTh[i] = false;
         //} //internal while ends

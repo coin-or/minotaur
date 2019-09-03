@@ -302,6 +302,7 @@ void ParBranchAndBound::processRoot_(bool *should_prune, bool *should_dive,
   if (prune) {
     parNodeRlxr0->reset(current_node, false);
     tm_->pruneNode(current_node);
+    tm_->removeActiveNode(current_node);
   } else {
 #if SPEW
     logger_->msgStream(LogDebug1) << me_ << "branching in root" << 
@@ -751,7 +752,10 @@ void ParBranchAndBound::parsolve(ParNodeIncRelaxerPtr parNodeRlxr[],
 #pragma omp critical (treeManager)
             {
               tm_->pruneNode(current_node[i]);
-              current_node[i] = NodePtr();
+            }
+            current_node[i] = NodePtr();
+#pragma omp critical (treeManager)
+            {
               new_node[i] = tm_->getCandidate();
               if (new_node[i]) {
 #if SPEW
@@ -808,8 +812,9 @@ void ParBranchAndBound::parsolve(ParNodeIncRelaxerPtr parNodeRlxr[],
                   tm_->removeActiveNode(new_node[i]);
 #if SPEW
 #pragma omp critical (logger)
-                  logger_->msgStream(LogInfo) << me_ << "get/remove node " << new_node[i]->getId()
-                    << " thread " << omp_get_thread_num() << std::endl;
+                  logger_->msgStream(LogInfo) << me_ << "get/remove node "
+                    << new_node[i]->getId() << " thread "
+                    << omp_get_thread_num() << std::endl;
 #endif
                 }
                 dived_prev[i] = false;

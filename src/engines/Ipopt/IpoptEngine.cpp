@@ -246,6 +246,7 @@ IpoptEngine::IpoptEngine(EnvPtr env)
   consChanged_(false),
   env_(env),
   etol_(1e-7),
+  justLoaded_(false),
   myapp_(0),
   mynlp_(0),
   sol_(0),
@@ -479,6 +480,7 @@ void IpoptEngine::load(ProblemPtr problem)
   problem->calculateSize();
   setOptionsForProb_();
   problem->setEngine(this);
+  justLoaded_ = true;
 }
 
 
@@ -709,11 +711,13 @@ EngineStatus IpoptEngine::solve()
       status = Ipopt::Infeasible_Problem_Detected;
     }
   } else if (((ws_ && ws_->hasInfo()) || (strBr_ && wsSb_ && wsSb_->hasInfo()))
-             && stats_->calls > 1) {
+             && false==justLoaded_) {
     status = myapp_->ReOptimizeTNLP(mynlp_);
+    justLoaded_ = false;
     stats_->reopt += 1;
   } else {
     status = myapp_->OptimizeTNLP(mynlp_);
+    justLoaded_ = false;
     stats_->opt += 1;
   }
 
@@ -723,7 +727,6 @@ EngineStatus IpoptEngine::solve()
   logger_->msgStream(LogDebug) << me_ << "Ipopt's status = " << status 
     << std::endl;
 #endif
-  //exit(0);
 
   // See IpReturnCodes_inc.h for the list
   switch (status) {
@@ -996,7 +999,6 @@ bool IpoptFunInterface::eval_f(Index, const Number* x, bool, Number& obj_value)
   int error = 0;
   // return the value of the objective function
   obj_value = problem_->getObjValue((double *)x, &error);
-  //std::cout << "obj = " << obj_value << std::endl;
   return (0==error);
 }
 
