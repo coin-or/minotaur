@@ -39,15 +39,84 @@ const std::string CplexLPEngine::me_ = "CplexLPEngine: ";
 // ----------------------------------------------------------------------- //
 // ----------------------------------------------------------------------- //
 
+CpxLPWarmStart::CpxLPWarmStart()
+  : mustDelete_(true),
+  sol_(0),
+  constat_(0),
+  varstat_(0)
+{
+}
+
+
+CpxLPWarmStart::~CpxLPWarmStart()
+{
+  if (sol_) {
+    sol_ = 0;
+  }
+  if (varstat_) {
+    delete [] varstat_;
+  }
+  if (constat_) {
+    delete [] constat_;
+  }
+}
+
+
+bool CpxLPWarmStart::hasInfo()
+{
+  if (constat_ || varstat_ || sol_) {
+    return true;
+  } else {
+    return false;
+  }
+}
+
+
+void CpxLPWarmStart::setVarStat(int* varstat, int numvars)
+{
+  if (varstat_) {
+    delete [] varstat_;
+  }
+  varstat_ = new int[numvars];
+  for (int i=0; i < numvars; ++i) {
+    varstat_[i] = varstat[i];
+  }
+}
+
+void CpxLPWarmStart::setConStat(int* constat, int numcons)
+{
+  if (constat_) {
+    delete [] constat_;
+  }
+  constat_ = new int[numcons];
+  for (int i=0; i < numcons; ++i) {
+    constat_[i] = constat[i];
+  }
+}
+
+// ----------------------------------------------------------------------- //
+// ----------------------------------------------------------------------- //
+
 CplexLPEngine::CplexLPEngine(EnvPtr env)
-  : env_(env),
-    sol_(0)
+  : bndChanged_(true),
+    consChanged_(true),
+    env_(env),
+    maxIterLimit_(10000),
+    objChanged_(true),
+    problem_(0),
+    sol_(0),
+    strBr_(false),
+    ws_(0)
 {
   cpxenv_ = 0;
   timer_ = env->getNewTimer();
   stats_ = new CplexLPStats();
   stats_->calls    = 0;
+  stats_->strCalls = 0;
   stats_->time     = 0;
+  stats_->strTime  = 0;
+  stats_->iters    = 0;
+  stats_->strIters = 0;
   logger_ = env->getLogger();
   timeLimit_ = INFINITY;
 }
@@ -66,7 +135,6 @@ CplexLPEngine::~CplexLPEngine()
       logger_->msgStream(LogError) << "Could not close CPLEX environment.\n";
     }
   }
-
   if (timer_) {
     delete timer_;
   }
@@ -79,6 +147,9 @@ CplexLPEngine::~CplexLPEngine()
   }
   if (sol_) {
     delete sol_;
+  }
+  if (ws_) {
+    delete ws_; ws_ = 0;
   }
 }
 
@@ -189,9 +260,29 @@ void CplexLPEngine::clear()
 }
 
 
+void CplexLPEngine::disableStrBrSetup()
+{
+#if SPEW
+  logger_->msgStream(LogDebug) << me_ << "disabling strong branching."
+                               << std::endl;
+#endif
+  strBr_ = false;
+}
+
+
 EnginePtr CplexLPEngine::emptyCopy()
 {
   return new CplexLPEngine(env_);
+}
+
+
+void CplexLPEngine::enableStrBrSetup()
+{
+#if SPEW
+  logger_->msgStream(LogDebug) << me_ << "enabling strong branching."
+                               << std::endl;
+#endif
+  strBr_ = true;
 }
 
 
@@ -218,17 +309,36 @@ EngineStatus CplexLPEngine::getStatus()
   return status_;
 }
 
+
+WarmStartPtr CplexLPEngine::getWarmStartCopy()
+{
+  //Create a new copy of warm-start information from cplex
+  CpxLPWarmStartPtr ws = new CpxLPWarmStart();
+  // save it. It is our responsibility to free it.
+  //ws->setCpxLPWarmStart(ws_->getVarStat(), ws_->getConStat(), ws_->getSolution());
+  ws->setVarStat(ws_->getVarStat(), problem_->getNumVars());
+  ws->setConStat(ws_->getConStat(), problem_->getNumCons());
+
+  return ws;
+}
+
+
 void CplexLPEngine::printx(double *x, UInt size) {
   for (UInt i=0; i < size; i++) {
     logger_->msgStream(LogInfo) << i+1 << " " << x[i] << "\n";
   }
 }
 
+
+void CplexLPEngine::printx(const int *x, UInt size) {
+  for (UInt i=0; i < size; i++) {
+    logger_->msgStream(LogInfo) << i+1 << " " << x[i] << "\n";
+  }
+}
+
+
 void CplexLPEngine::load(ProblemPtr problem)
 {
-  objChanged_ = true;
-  bndChanged_ = true;
-  consChanged_ = true;
   problem_ = problem;
 
   if (cpxenv_ != NULL) {
@@ -245,10 +355,16 @@ void CplexLPEngine::load(ProblemPtr problem)
   // Cplex objects
   int numvars = problem->getNumVars();
   int numcons = problem->getNumCons();
+  if (ws_) {
+    delete ws_; ws_ = 0;
+  }
+  //ws_ = new CpxLPWarmStart(numvars, numcons);
+  ws_ = new CpxLPWarmStart();
+
   int i, j, rcnt;
   double obj_sense = 1, ztol = 1e-6;
-  double *conlb = 0, *conub = 0, *conrhs = 0, *conrange = 0, *varlb = 0, *varub = 0, *obj = 0;
-  double *value = 0;
+  double *conlb = 0, *conub = 0, *conrhs = 0, *conrange = 0, *varlb = 0,
+         *varub = 0, *obj = 0, *value = 0;
   CPXDIM *index = 0, *conind = 0;
   CPXNNZ *start = new CPXNNZ[numcons];
   memset(start, 0, numcons*sizeof(int));
@@ -270,7 +386,7 @@ void CplexLPEngine::load(ProblemPtr problem)
   char *sense = new char[numcons];
   std::fill(sense, sense+numcons, 'L'); //assuming all cons <= to start with
   char *vartype = new char[numvars];
-  std::fill(vartype, vartype+numvars, 'C'); //assuming all vars continuous
+  std::fill(vartype, vartype+numvars, 'C'); //setting all vars as continuous
   int nnz = 0;  
   VariableGroupConstIterator it;
   
@@ -295,12 +411,32 @@ void CplexLPEngine::load(ProblemPtr problem)
      goto TERMINATE;
   }
 
-  /* Turn on output to te screen (use a file to read parameters LATER!) */
-  //cpxstatus_ = CPXXsetintparam (cpxenv_, CPXPARAM_ScreenOutput, CPX_ON);
-  if (cpxstatus_) {
-     logger_->msgStream(LogError) << me_ << "Failure to turn on screen indicator, error "
-       << cpxstatus_ << std::endl;
-     goto TERMINATE;
+  if (stats_->calls < 1) {
+#if 1
+    /* Turn on output to the screen (use a file to read parameters LATER!) */
+    cpxstatus_ = CPXXsetintparam (cpxenv_, CPXPARAM_ScreenOutput, CPX_ON);
+    if (cpxstatus_) {
+       logger_->msgStream(LogError) << me_ << "Failure to turn on screen indicator, error "
+         << cpxstatus_ << std::endl;
+       goto TERMINATE;
+    }
+
+    /* Display information for each iteration */
+    cpxstatus_ = CPXXsetintparam (cpxenv_, CPX_PARAM_SIMDISPLAY, 2);
+    if (cpxstatus_) {
+       logger_->msgStream(LogError) << me_ << "Failure to turn on simplex iterations log, error "
+         << cpxstatus_ << std::endl;
+       goto TERMINATE;
+    }
+#endif
+
+    /* Set number of threads (1 for LP solver) */
+    cpxstatus_ = CPXXsetintparam (cpxenv_, CPXPARAM_Threads, 1);
+    if (cpxstatus_) {
+       logger_->msgStream(LogError) << me_ << "Failure to set number of threads, error "
+         << cpxstatus_ << std::endl;
+       goto TERMINATE;
+    }
   }
 
   /* Create the problem. */
@@ -454,20 +590,25 @@ TERMINATE:
   delete [] vartype;
 
   problem->setEngine(this);
+}
 
-  //if (cpxenv_ != NULL) {
-    //cpxstatus_ = CPXXcloseCPLEX (&cpxenv_);
-    //if (cpxstatus_) {
-      //logger_->msgStream(LogError) << "Could not close CPLEX environment.\n";
-    //}
-  //}
+
+void CplexLPEngine::loadFromWarmStart(const WarmStartPtr ws)
+{
+  ConstCpxLPWarmStartPtr ws2 = dynamic_cast <const CpxLPWarmStart*> (ws);
+  cpxstatus_ = CPXXcopybase(cpxenv_, cpxlp_, ws2->getVarStat(), ws2->getConStat());
+#if 0
+  logger_->msgStream(LogInfo) << "ws vars\n";
+  printx(ws2->getVarStat(), CPXXgetnumcols (cpxenv_, cpxlp_));
+  logger_->msgStream(LogInfo) << "ws cons\n";
+  printx(ws2->getConStat(), CPXXgetnumrows (cpxenv_, cpxlp_));
+#endif
 }
 
 
 void CplexLPEngine::load_()
 {
 }
-
 
 
 void CplexLPEngine::negateObj()
@@ -500,12 +641,20 @@ void CplexLPEngine::setTimeLimit(double timelimit)
 EngineStatus CplexLPEngine::solve()
 {
   timer_->start();
+  stats_->calls += 1;
+#if SPEW
+  logger_->msgStream(LogDebug) << me_ << "in call number " << stats_->calls
+                               << std::endl;
+#endif
+
   int solstat;
   double objval;
-  //int cur_numrows = CPXXgetnumrows (cpxenv_, cpxlp_);
+  int cur_numrows = CPXXgetnumrows (cpxenv_, cpxlp_);
   int cur_numcols = CPXXgetnumcols (cpxenv_, cpxlp_);
   
   double *x = new double[cur_numcols];
+  int *varstat = new int[cur_numcols];
+  int *constat = new int[cur_numrows];
 
 #if 0
   /* Write a copy of the problem to a file. */
@@ -524,6 +673,11 @@ EngineStatus CplexLPEngine::solve()
     }
   }
 
+  /* Set objective limits on LP solves (assume minimization) */
+  //CPXsetdblparam(env_, CPXPARAM_Simplex_Limits_LowerObj, primalobjlimit + objoffset);
+  //CPXsetdblparam(env_, CPXPARAM_Simplex_Limits_UpperObj, dualobjlimit + objoffset);
+
+
   cpxstatus_ = CPXXlpopt (cpxenv_, cpxlp_);
   if ( cpxstatus_ ) {
      logger_->msgStream(LogInfo) << me_ << "Failed to optimize LP." << std::endl;
@@ -531,39 +685,34 @@ EngineStatus CplexLPEngine::solve()
   }
   solstat = CPXXgetstat (cpxenv_, cpxlp_);
 
-#if SPEW
-  /* Write the output to the screen. */
-  logger_->msgStream(LogInfo) << me_ << "Solution status = " << solstat << std::endl;
-#endif
-
-  /* Get the (primal) objective value. */
-  cpxstatus_ = CPXXgetobjval (cpxenv_, cpxlp_, &objval);
-  if ( cpxstatus_ ) {
-     logger_->msgStream(LogInfo) << me_ 
-       << "No LP objective value available. Exiting..." << std::endl;
-  }
-#if SPEW
-  logger_->msgStream(LogInfo) << me_ << "Solution value = " << objval << std::endl;
-#endif
-
-  /* Get the solution. */
-  cpxstatus_ = CPXXgetx (cpxenv_, cpxlp_, x, 0, cur_numcols-1);
-  if (cpxstatus_) {
-   logger_->msgStream(LogInfo) << me_ << "Failed to get optimal integer x." 
-     << std::endl;
-   //goto TERMINATE;
-  }
-  
-#if SPEW
-  /* Write the solution. */
-  printx(x, cur_numcols);
-#endif
-
   // Solve status (replace with string later using CPXXgetstatstring(..))
   if (solstat == 1) {
     status_ = ProvenOptimal;
+
+    /* Get the (primal) objective value. */
+    cpxstatus_ = CPXXgetobjval (cpxenv_, cpxlp_, &objval);
+    if ( cpxstatus_ ) {
+       logger_->msgStream(LogInfo) << me_
+         << "No LP objective value available. Exiting..." << std::endl;
+    }
+
+    /* Get the solution. */
+    cpxstatus_ = CPXXgetx (cpxenv_, cpxlp_, x, 0, cur_numcols-1);
+    if (cpxstatus_) {
+     logger_->msgStream(LogInfo) << me_ << "Failed to get optimal integer x."
+       << std::endl;
+    }
+#if SPEW
+  /* Print the solution. */
+  printx(x, cur_numcols);
+#endif
     sol_->setPrimal(x);
-    sol_->setObjValue(objval); 
+    sol_->setObjValue(objval);
+
+    // Store the warm start basis information
+    cpxstatus_ = CPXXgetbase(cpxenv_, cpxlp_, varstat, constat);
+    ws_->setVarStat(varstat, cur_numcols);
+    ws_->setConStat(constat, cur_numrows);
   } else if (solstat == 3) {
     status_ = ProvenInfeasible;
     sol_->setObjValue(INFINITY);
@@ -589,12 +738,21 @@ EngineStatus CplexLPEngine::solve()
     logger_->msgStream(LogInfo) << " unknown \n";
   }
 
+  stats_->iters += CPXXgetitcnt(cpxenv_, cpxlp_);
   stats_->time  += timer_->query();
+
+  if (strBr_) {
+    ++(stats_->strCalls);
+    stats_->strIters += CPXXgetitcnt(cpxenv_, cpxlp_);
+    stats_->strTime  += timer_->query();
+  }
 
 #if SPEW
   logger_->msgStream(LogDebug) << me_ << "status = " << status_ << std::endl
                                << me_ << "solution value = "
-                               << sol_->getObjValue() << std::endl;
+                               << sol_->getObjValue() << std::endl
+                               << me_ << "iterations = "
+                               << CPXXgetitcnt(cpxenv_, cpxlp_) << std::endl;
 #endif
   timer_->stop();
   bndChanged_ = false;
@@ -603,6 +761,8 @@ EngineStatus CplexLPEngine::solve()
 
 //TERMINATE:
   delete [] x;
+  delete [] constat;
+  delete [] varstat;
   return status_;
 }
 
@@ -619,8 +779,13 @@ void CplexLPEngine::writeLP(const char *filename) const
 void CplexLPEngine::writeStats(std::ostream &out) const
 {
   if (stats_) {
-    out << me_ << "total calls            = " << stats_->calls << std::endl
-      << me_ << "total time in solving  = " << stats_->time  << std::endl;
+    std::string me = "CplexLP: ";
+    out << me << "total calls            = " << stats_->calls << std::endl
+      << me << "strong branching calls = " << stats_->strCalls << std::endl
+      << me << "total time in solving  = " << stats_->time  << std::endl
+      << me << "time in str branching  = " << stats_->strTime << std::endl
+      << me << "total iterations       = " << stats_->iters << std::endl
+      << me << "strong br iterations   = " << stats_->strIters << std::endl;
   }
 }
 
