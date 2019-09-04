@@ -7,7 +7,7 @@
 /** 
  * \file Linearizations.cpp
  * \Briefly define a class for adding linearizations in linearization
- * based methods.
+ * based methods. Added for problems with nonlinear constraints
  * \Author Meenarli Sharma, Indian Institute of Technology Bombay
  */
 
@@ -47,15 +47,16 @@ using namespace Minotaur;
 typedef std::vector<ConstraintPtr>::const_iterator CCIter;
 const std::string Linearizations::me_ = "Linearizations: ";
 
-
 Linearizations::Linearizations()
 : env_(EnvPtr()),
-  minlp_(ProblemPtr()),
   rel_(RelaxationPtr()),
+  minlp_(ProblemPtr()),
   nlpe_(EnginePtr()),
   lpe_(EnginePtr()),
-  solC_(NULL)
-  //stats_(0)
+  solC_(NULL),
+  nlpx_(NULL),
+  varPtrs_(0),
+  stats_(0)
 {
   rs1_ = env_->getOptions()->findDouble("root_linScheme1")->getValue();
   rs2Per_ = env_->getOptions()->findDouble("root_linScheme2_per")->getValue();
@@ -72,11 +73,13 @@ Linearizations::Linearizations()
 Linearizations::Linearizations(EnvPtr env, EnginePtr nlpe, RelaxationPtr rel,
                                ProblemPtr minlp)
 : env_(env),
+  rel_(rel),
   minlp_(minlp),
   nlpe_(nlpe),
   lpe_(EnginePtr()),
-  rel_(rel),
-  solC_(NULL)
+  solC_(NULL),
+  nlpx_(NULL),
+  varPtrs_(0)
 {
   //MS: set the option for root_LinSchemes
   rs1_ = env_->getOptions()->findDouble("root_linScheme1")->getValue();
@@ -94,12 +97,10 @@ Linearizations::Linearizations(EnvPtr env, EnginePtr nlpe, RelaxationPtr rel,
   if (rs3_ > 0) {
     nlpe1_ = nlpe_->emptyCopy(); //Engine for modified problem
   }
-  //stats_ = new QGStats();
-  //stats_->nlpS = 0;
-  //stats_->nlpF = 0;
-  //stats_->nlpI = 0;
-  //stats_->nlpIL = 0;
-  //stats_->cuts = 0;
+  stats_ = new LinStats();
+  stats_->rs1Cuts = 0;
+  stats_->rs2Cuts = 0;
+  stats_->rgs1Cuts = 0;
  }
 
 
@@ -119,53 +120,6 @@ Linearizations::~Linearizations()
 }
 
 
-void Linearizations::addCut_(const double *nlpx, const double *lpx,
-                        ConstraintPtr con, CutManager*,
-                        SeparationStatus *status)
-{
-  int error=0;
-  //ConstraintPtr newcon;
-  std::stringstream sstm;
-  double c, lpvio, act, cUb;
-  FunctionPtr f = con->getFunction();
-  LinearFunctionPtr lf = 0;
-
-  act = con->getActivity(nlpx, &error);
-  if (error == 0) {
-    linearAt_(f, act, nlpx, &c, &lf, &error);
-    if (error==0) {
-      cUb = con->getUb();
-      lpvio = std::max(lf->eval(lpx)-cUb+c, 0.0);
-      if ((lpvio > solAbsTol_) &&
-          ((cUb-c)==0 || (lpvio>fabs(cUb-c)*solRelTol_))) {
-#if SPEW
-        logger_->msgStream(LogDebug) << me_ << "linearization of constraint "
-          << con->getName() << " violated at LP solution with violation = " <<
-          lpvio << ". OA cut added." << std::endl;
-#endif
-        //++(stats_->cuts);
-        //sstm << "_OAcut_" << stats_->cuts;
-        *status = SepaResolve;
-        f = (FunctionPtr) new Function(lf);
-        rel_->newConstraint(f, -INFINITY, cUb-c, sstm.str());
-        //newcon = rel_->newConstraint(f, -INFINITY, cUb-c, sstm.str());
-        return;
-      } else {
-        delete lf;
-        lf = 0;
-      }
-    }
-  } else {
-    logger_->msgStream(LogError) << me_ << " constraint not defined at"
-      << " this point. "<<  std::endl;
-#if SPEW
-          logger_->msgStream(LogDebug) << me_ << " constraint " <<
-            con->getName() << " not defined at this point." << std::endl;
-#endif
-  }
-  return;
-}
-
 bool Linearizations::addCutAtRoot_(double *x, ConstraintPtr con, UInt &newConId)
 {
   int error = 0; 
@@ -181,8 +135,8 @@ bool Linearizations::addCutAtRoot_(double *x, ConstraintPtr con, UInt &newConId)
     linearAt_(f, act, x, &c, &lf, &error);
     if (error == 0) {
       cUb = con->getUb();
-      //++(stats_->cuts);
-      //sstm << "_OAcut_" << stats_->cuts << "_AtRoot";
+      ++(stats_->rs1Cuts);
+      sstm << "_OAcut_" << stats_->rs1Cuts << "_AtRoot";
       f = (FunctionPtr) new Function(lf);
       newcon = rel_->newConstraint(f, -INFINITY, cUb-c, sstm.str());
       newConId = newcon->getIndex();
@@ -196,79 +150,111 @@ bool Linearizations::addCutAtRoot_(double *x, ConstraintPtr con, UInt &newConId)
   return false;
 }
 
+//MS: delete unused functions
+//bool Linearizations::cutAtLineSearchPt_(double *xout, double* xnew,
+                                        //ConstraintPtr con)
+//{
+  //double nlpact;
+  //bool lsPtFound;
+  ////ConstraintPtr newcon;
+  //lsPtFound = lineSearchPt_(xnew, solC_, xout, con, nlpact);
+  //if (lsPtFound) {
+    //int error = 0;
+    //std::stringstream sstm;
+    ////ConstraintPtr newcon;
+    //LinearFunctionPtr lf = 0;
+    //FunctionPtr f = con->getFunction();
+    //double c, cUb = con->getUb();
+    //if (error == 0) {
+      //linearAt_(f, nlpact, xnew, &c, &lf, &error);
+      ////MS: Add cut value for this par and other schemes
+      //++(stats_->rgs1Cuts);
+      //sstm << "_OAcut_" << stats_->rgs1Cuts;
+      //f = (FunctionPtr) new Function(lf);
+      //rel_->newConstraint(f, -INFINITY, cUb-c, sstm.str());
+      ////newcon = rel_->newConstraint(f, -INFINITY, cUb-c, sstm.str());
+    //}	else {
+      //return false;
+    //}
+   //} else {
+     //return false;   
+   //}
+  //return true;
+//}
 
 //MS: for rootLinScheme3_ for all constraints
-void Linearizations::addEshAtRoot_(const double *lpx, double* x, ConstraintPtr con)
-{
-  int error = 0;
-  bool lsPtFound;
-  std::stringstream sstm;
-  //ConstraintPtr newcon;
-  LinearFunctionPtr lf = 0;
-  FunctionPtr f = con->getFunction();
-  double c, nlpact, cUb = con->getUb();
+//use here cutAtLineSearchPt()
+//void Linearizations::addEshAtRoot_(const double *lpx, double* x, ConstraintPtr con)
+//{
+  //int error = 0;
+  //bool lsPtFound;
+  //std::stringstream sstm;
+  ////ConstraintPtr newcon;
+  //LinearFunctionPtr lf = 0;
+  //FunctionPtr f = con->getFunction();
+  //double c, nlpact, cUb = con->getUb();
   
-  lsPtFound = lineSearchPt_(x, solC_, lpx, con, nlpact);
+  //lsPtFound = lineSearchPt_(x, solC_, lpx, con, nlpact);
 
-  if (lsPtFound) {
-    if (error == 0) {
-      linearAt_(f, nlpact, x, &c, &lf, &error);
-    }	else {
-      return;
-    }
-  } else {
-    nlpact =  con->getActivity(lpx, &error);
-    if (error == 0) {
-      linearAt_(f, nlpact, lpx, &c, &lf, &error);
-    }	else {
-      return;
-    }
-  }
-  if (error==0) {
-    //++(stats_->cuts);
-    //sstm << "_OAcut_" << stats_->cuts;
-    f = (FunctionPtr) new Function(lf);
-    rel_->newConstraint(f, -INFINITY, cUb-c, sstm.str());
-    //newcon = rel_->newConstraint(f, -INFINITY, cUb-c, sstm.str());
-    //newcon->write(std::cout);
-  }
-  
-  //if (oNl_) {
-    //ObjectivePtr o = minlp_->getObjective();
-    
-    //nlpact = o->eval(lpx, &error);
+  //if (lsPtFound) {
     //if (error == 0) {
-      //vio = std::max(nlpact-relobj_, 0.0);
-      //if ((vio > solAbsTol_)
-        //&& (relobj_ == 0 || vio > fabs(relobj_)*solRelTol_)) {
-        //nlpact = o->eval(x, &error);
-        //if (error == 0) {
-          //f = o->getFunction();
-          //lf = LinearFunctionPtr(); 
-          //linearAt_(f, nlpact, x, &c, &lf, &error);
-          //if (error == 0) {
-            //vio = std::max(c+lf->eval(lpx)-relobj_, 0.0);
-            //if ((vio > solAbsTol_) && ((relobj_-c) == 0
-                                     //|| vio > fabs(relobj_-c)*solRelTol_)) {
-              //++(stats_->cuts);
-              //sstm << "_OAObjcut_" << stats_->cuts;
-              //lf->addTerm(objVar_, -1.0);
-              //f = (FunctionPtr) new Function(lf);
-              //rel_->newConstraint(f, -INFINITY, -1.0*c, sstm.str());
-              ////newcon = rel_->newConstraint(f, -INFINITY, -1.0*c, sstm.str());
-              ////newcon->write(std::cout);
-            //}
-          //}
-        //}
-      //}  else {
-
-      //}
+      //linearAt_(f, nlpact, x, &c, &lf, &error);
     //}	else {
-
+      //return;
+    //}
+  //} else {
+    //nlpact =  con->getActivity(lpx, &error);
+    //if (error == 0) {
+      //linearAt_(f, nlpact, lpx, &c, &lf, &error);
+    //}	else {
+      //return;
     //}
   //}
-  return;
-}
+  //if (error==0) {
+    ////++(stats_->cuts);
+    ////sstm << "_OAcut_" << stats_->cuts;
+    //f = (FunctionPtr) new Function(lf);
+    //rel_->newConstraint(f, -INFINITY, cUb-c, sstm.str());
+    ////newcon = rel_->newConstraint(f, -INFINITY, cUb-c, sstm.str());
+    ////newcon->write(std::cout);
+  //}
+  
+  ////if (oNl_) {
+    ////ObjectivePtr o = minlp_->getObjective();
+    
+    ////nlpact = o->eval(lpx, &error);
+    ////if (error == 0) {
+      ////vio = std::max(nlpact-relobj_, 0.0);
+      ////if ((vio > solAbsTol_)
+        ////&& (relobj_ == 0 || vio > fabs(relobj_)*solRelTol_)) {
+        ////nlpact = o->eval(x, &error);
+        ////if (error == 0) {
+          ////f = o->getFunction();
+          ////lf = LinearFunctionPtr(); 
+          ////linearAt_(f, nlpact, x, &c, &lf, &error);
+          ////if (error == 0) {
+            ////vio = std::max(c+lf->eval(lpx)-relobj_, 0.0);
+            ////if ((vio > solAbsTol_) && ((relobj_-c) == 0
+                                     ////|| vio > fabs(relobj_-c)*solRelTol_)) {
+              ////++(stats_->cuts);
+              ////sstm << "_OAObjcut_" << stats_->cuts;
+              ////lf->addTerm(objVar_, -1.0);
+              ////f = (FunctionPtr) new Function(lf);
+              ////rel_->newConstraint(f, -INFINITY, -1.0*c, sstm.str());
+              //////newcon = rel_->newConstraint(f, -INFINITY, -1.0*c, sstm.str());
+              //////newcon->write(std::cout);
+            ////}
+          ////}
+        ////}
+      ////}  else {
+
+      ////}
+    ////}	else {
+
+    ////}
+  ////}
+  //return;
+//}
 
 
 bool Linearizations::linPart_(double *b1, UInt lVarIdx, ConstraintPtr con,
@@ -294,201 +280,19 @@ bool Linearizations::linPart_(double *b1, UInt lVarIdx, ConstraintPtr con,
 }
 
 
-bool Linearizations::addNewCut_(double *b1, UInt lVarIdx, ConstraintPtr con,
-                           double lVarCoeff, double act, UInt &newConId)
+bool Linearizations::addNewCut_(double *b1, ConstraintPtr con,
+                           UInt &newConId)
 {
-  bool found = linPart_(b1, lVarIdx, con, lVarCoeff, act);  
+  bool found;  
+  found = addCutAtRoot_(b1, con, newConId);
   if (found) {
-    found = addCutAtRoot_(b1, con, newConId);
-    if (found) {
-      return true;
-    } 
-  }
+    return true;
+  } 
   return false;
 }
 
 
-void Linearizations::consCutAtLpSol_(const double *lpx, CutManager *,
-                             SeparationStatus *status)
-{
-  int error=0;
-  FunctionPtr f;
-  LinearFunctionPtr lf;
-  std::stringstream sstm;
-  ConstraintPtr con;
-  //ConstraintPtr newcon;
-  double c, nlpact, cUb;
-
-  for (CCIter it = nlCons_.begin(); it != nlCons_.end(); ++it) {
-    con = *it;
-    f = con->getFunction();
-    lf = LinearFunctionPtr();
-    nlpact =  con->getActivity(lpx, &error);
-    if (error == 0) {
-      cUb = con->getUb();
-      if ((nlpact > cUb + solAbsTol_) &&
-          (cUb == 0 || nlpact > cUb+fabs(cUb)*solRelTol_)) {
-        linearAt_(f, nlpact, lpx, &c, &lf, &error);
-        if (error==0) {
-          //++(stats_->cuts);
-          //sstm << "_OAcut_" << stats_->cuts;
-          *status = SepaResolve;
-          f = (FunctionPtr) new Function(lf);
-          rel_->newConstraint(f, -INFINITY, cUb-c, sstm.str());
-          //newcon = rel_->newConstraint(f, -INFINITY, cUb-c, sstm.str());
-          return;
-        }
-      }
-    }	else {
-      logger_->msgStream(LogError) << me_ << " constraint not defined at" <<
-        " this point. "<<  std::endl;
-    }
-  }
-  return;
-}
-
-
-void Linearizations::consCutAtNLPSol_(const double *nlpx, CutManager *)
-{
-  int error=0;
-  FunctionPtr f;
-  LinearFunctionPtr lf;
-  std::stringstream sstm;
-  ConstraintPtr con;
-  //ConstraintPtr newcon;
-  double c, nlpact, cUb;
-
-  for (CCIter it = nlCons_.begin(); it != nlCons_.end(); ++it) {
-    con = *it;
-    f = con->getFunction();
-    lf = LinearFunctionPtr();
-    nlpact =  con->getActivity(nlpx, &error);
-    if (error == 0) {
-      cUb = con->getUb();
-      if ((fabs(nlpact -cUb ) <= solAbsTol_) ||
-          (cUb != 0 && (fabs(nlpact-(cUb+fabs(cUb))) <= solRelTol_))) {
-        linearAt_(f, nlpact, nlpx, &c, &lf, &error);
-        if (error==0) {
-          //++(stats_->cuts);
-          //sstm << "_OAcut_" << stats_->cuts;
-          f = (FunctionPtr) new Function(lf);
-          rel_->newConstraint(f, -INFINITY, cUb-c, sstm.str());
-          //newcon = rel_->newConstraint(f, -INFINITY, cUb-c, sstm.str());
-          return;
-        }
-      }
-    }	else {
-      logger_->msgStream(LogError) << me_ << " constraint not defined at" <<
-        " this point. "<<  std::endl;
-    }
-  }
-  return;
-}
-
-
-void Linearizations::cutToCons_(const double *nlpx, const double *lpx,
-                             CutManager *cutman, SeparationStatus *status)
-{
-  int error=0;
-  ConstraintPtr con;
-  double nlpact, cUb;
-
-  for (CCIter it = nlCons_.begin(); it != nlCons_.end(); ++it) {
-    con = *it;
-    nlpact =  con->getActivity(lpx, &error);
-    if (error == 0) {
-      cUb = con->getUb();
-      if ((nlpact > cUb + solAbsTol_) &&
-          (cUb == 0 || nlpact > cUb+fabs(cUb)*solRelTol_)) {
-#if SPEW
-        logger_->msgStream(LogDebug) << me_ << " constraint " <<
-          con->getName() << " violated at LP solution with violation = " <<
-          nlpact - cUb << std::endl;
-#endif
-        addCut_(nlpx, lpx, con, cutman, status);
-      } else {
-#if SPEW
-        logger_->msgStream(LogDebug) << me_ << " constraint " << con->getName() <<
-          " feasible at LP solution. No OA cut to be added." << std::endl;
-#endif
-      }
-    }	else {
-      logger_->msgStream(LogError) << me_ << " constraint not defined at" <<
-        " this point. "<<  std::endl;
-#if SPEW
-      logger_->msgStream(LogDebug) << me_ << " constraint " << con->getName() <<
-        " not defined at this point." << std::endl;
-#endif
-    }
-  }
-  return;
-}
-
-
-void Linearizations::cutToObj_(const double *nlpx, const double *lpx,
-                            CutManager *, SeparationStatus *status)
-{
-  if (oNl_) {
-    int error=0;
-    FunctionPtr f;
-    double c, vio, act;
-    //ConstraintPtr newcon;
-    std::stringstream sstm;
-    ObjectivePtr o = minlp_->getObjective();
-    
-    act = o->eval(lpx, &error);
-    if (error == 0) {
-      vio = std::max(act-relobj_, 0.0);
-      if ((vio > solAbsTol_)
-        && (relobj_ == 0 || vio > fabs(relobj_)*solRelTol_)) {
-#if SPEW
-        logger_->msgStream(LogDebug) << me_ << " objective violated at LP "
-          << " solution with violation = " << vio << std::endl;
-#endif
-        act = o->eval(nlpx, &error);
-        if (error == 0) {
-          f = o->getFunction();
-          LinearFunctionPtr lf = LinearFunctionPtr(); 
-          linearAt_(f, act, nlpx, &c, &lf, &error);
-          if (error == 0) {
-            vio = std::max(c+lf->eval(lpx)-relobj_, 0.0);
-            if ((vio > solAbsTol_) && ((relobj_-c) == 0
-                                     || vio > fabs(relobj_-c)*solRelTol_)) {
-#if SPEW
-              logger_->msgStream(LogDebug) << me_ << "linearization of "
-                "objective violated at LP solution with violation = " <<
-                vio << ". OA cut added." << std::endl;
-#endif
-              //++(stats_->cuts);
-              //sstm << "_OAObjcut_" << stats_->cuts;
-              lf->addTerm(objVar_, -1.0);
-              *status = SepaResolve;
-              f = (FunctionPtr) new Function(lf);
-              rel_->newConstraint(f, -INFINITY, -1.0*c, sstm.str());
-              //newcon = rel_->newConstraint(f, -INFINITY, -1.0*c, sstm.str());
-            }
-          }
-        }
-      }  else {
-#if SPEW
-        logger_->msgStream(LogDebug) << me_ << " objective feasible at LP "
-          << " solution. No OA cut to be added." << std::endl;
-#endif
-      }
-    }	else {
-      logger_->msgStream(LogError) << me_
-        << " objective not defined at this solution point." << std::endl;
-#if SPEW
-      logger_->msgStream(LogDebug) << me_ << " objective not defined at this "
-        << " point." << std::endl;
-#endif
-    }
-  }
-  return;
-}
-
-
-void Linearizations::findCenter_(bool &noCenter)
+void Linearizations::findCenter_(bool &foundCenter)
 {
   //Find center
   double act;
@@ -539,12 +343,9 @@ void Linearizations::findCenter_(bool &noCenter)
     solC_ = new double[minlp_->getNumVars()];
     std::copy(dtemp, dtemp+minlp_->getNumVars(), solC_);
     act = nlpe1_->getSolution()->getObjValue();
-    if (act >= 0) {
-      noCenter = true;
-    } else {
-      std::cout << "Center NLP Status " << nlpe1_->getStatusString() 
-        << " and obj value " << act << std::endl;
-    }
+    if (act < 0) {
+      foundCenter = true;
+    } 
     //++(stats_->nlpF);
     break;
   case (EngineIterationLimit):
@@ -553,8 +354,6 @@ void Linearizations::findCenter_(bool &noCenter)
   case (ProvenLocalInfeasible): 
   case (ProvenObjectiveCutOff):
     //++(stats_->nlpI);
-    solC_ = NULL;
-    noCenter = true;
     break;
   case (FailedFeas):
   case (EngineError):
@@ -566,8 +365,6 @@ void Linearizations::findCenter_(bool &noCenter)
   default:
     logger_->msgStream(LogError) << me_ << "NLP engine status = "
       << nlpe1_->getStatusString() << std::endl;
-    solC_ = NULL;
-    noCenter = true;
     break;
   }
   delete nlpe1_;
@@ -614,36 +411,16 @@ bool Linearizations::findIntersectPt_(std::vector<UInt > newConsId, VariablePtr 
 }
 
 
-void Linearizations::fixInts_(const double *x)
-{
-  double xval;
-  VariablePtr v;
-  VarBoundMod2 *m = 0;
-  for (VariableConstIterator vit=minlp_->varsBegin(); vit!=minlp_->varsEnd();
-       ++vit) {
-    v = *vit;
-    if (v->getType() == Binary || v->getType() == Integer) {
-      xval = x[v->getIndex()];
-      xval = floor(xval + 0.5);
-      m = new VarBoundMod2(v, xval, xval);
-      m->applyToProblem(minlp_);
-      nlpMods_.push(m);
-    }
-  }
-  return;
-}
-
-
-void Linearizations::insertNewPt_(UInt j, UInt k, std::vector<double > & xc,
-                             std::vector<double> & yc, ConstraintPtr con,
+void Linearizations::insertNewPt_(UInt j, UInt i, std::vector<double > & xc,
+                             std::vector<double> & yc, ConstraintPtr newcon,
                              VariablePtr vl, VariablePtr vnl, bool & shouldCont)
 {
-  LinearFunctionPtr lf;
-  double f = con->getUb();
-  lf = con->getLinearFunction();
+  double f = newcon->getUb();
+  LinearFunctionPtr lf = newcon->getLinearFunction();
+  
   double d = lf->getWeight(vl);
   double c = lf->getWeight(vnl);
-  double x1 = xc[j], y1 = yc[j], x2 = xc[k], y2 = yc[k], x, y;
+  double x1 = xc[j], y1 = yc[j], x2 = xc[i], y2 = yc[i], x, y;
 
   // point of intersection of newcon with the lin from j and j-1
   double a = y1-y2;
@@ -663,30 +440,30 @@ void Linearizations::insertNewPt_(UInt j, UInt k, std::vector<double > & xc,
 }
 
 
-bool Linearizations::isFeas_(ConstSolutionPtr sol)
-{
-  int error=0;
-  double act, cUb;
-  ConstraintPtr c;
-  const double *x = sol->getPrimal();
+//bool Linearizations::isFeas_(ConstSolutionPtr sol)
+//{
+  //int error=0;
+  //double act, cUb;
+  //ConstraintPtr c;
+  //const double *x = sol->getPrimal();
 
-  for (CCIter it=nlCons_.begin(); it!=nlCons_.end(); ++it) {
-    c = *it;
-    act = c->getActivity(x, &error);
-    if (error == 0) {
-      cUb = c->getUb();
-      if ((act > cUb + solAbsTol_) &&
-          (cUb == 0 || act > cUb + fabs(cUb)*solRelTol_)) {
-        return false;
-      }
-    }	else {
-      logger_->msgStream(LogError) << me_ << c->getName() <<
-        " constraint not defined at this point."<< std::endl;
-      return false;
-    }
-  }
-  return true;
-}
+  //for (CCIter it=nlCons_.begin(); it!=nlCons_.end(); ++it) {
+    //c = *it;
+    //act = c->getActivity(x, &error);
+    //if (error == 0) {
+      //cUb = c->getUb();
+      //if ((act > cUb + solAbsTol_) &&
+          //(cUb == 0 || act > cUb + fabs(cUb)*solRelTol_)) {
+        //return false;
+      //}
+    //}	else {
+      //logger_->msgStream(LogError) << me_ << c->getName() <<
+        //" constraint not defined at this point."<< std::endl;
+      //return false;
+    //}
+  //}
+  //return true;
+//}
 
 
 void Linearizations::linearAt_(FunctionPtr f, double fval, const double *x,
@@ -717,128 +494,687 @@ void Linearizations::linearAt_(FunctionPtr f, double fval, const double *x,
 }
 
 
-void Linearizations::linearizeObj_()
-{
-  ObjectivePtr o = minlp_->getObjective();
-  FunctionType fType = o->getFunctionType();
-  if (!o) {
-    assert(!"need objective in QG!");
-  } else if (fType != Linear && fType != Constant) {
-    oNl_ = true;
-    FunctionPtr f;
-    std::string name = "eta";
-    ObjectiveType objType = o->getObjectiveType();
-    LinearFunctionPtr lf = (LinearFunctionPtr) new LinearFunction();
-    VariablePtr vPtr = rel_->newVariable(-INFINITY, INFINITY, Continuous,
-                                         name, VarHand);
-    assert(objType == Minimize);
-    rel_->removeObjective();
-    lf->addTerm(vPtr, 1.0);
-    f = (FunctionPtr) new Function(lf);
-    rel_->newObjective(f, 0.0, objType);
-    objVar_ = vPtr;
-  }
-  return;
-}
-
-
 //MS: rootLinScheme3_ - all ESH - working
-bool Linearizations::lineSearchPt_(double* x, const double* l, const double* u,
-                              ConstraintPtr con, double &nlpact)
-{
-  int error = 0;
-  bool ptFound = true;
-  double cUb = con->getUb();
-  FunctionPtr f = con->getFunction();
-  UInt numVars =  minlp_->getNumVars();
+//bool Linearizations::lineSearchPt_(double* x, const double* l, const double* u,
+                              //ConstraintPtr con, double &nlpact)
+//{
+  //int error = 0;
+  //bool ptFound = true;
+  //double cUb = con->getUb();
+  //FunctionPtr f = con->getFunction();
+  //UInt numVars =  minlp_->getNumVars();
   
-  double* xl = new double[numVars];
-  double* xu = new double[numVars];
-  std::copy(l,l+numVars,xl);
-  std::copy(u,u+numVars,xu);
-  //std::cout << "xl x xu " << std::endl;
-  while (true) {
-    for (UInt i = 0 ; i < minlp_->getNumVars(); ++i) {
-      x[i] = 0.5*(xl[i] + xu[i]);
-      //std::cout << xl[i] << " " << x[i] << " " << xu[i] << std::endl;
-    }
-    nlpact = f->eval(x, &error);
-    //std::cout << "cons val at new point and ub " << nlpact << " " << cUb << "\n";
-    if (error == 0) {
-      if (nlpact>cUb+solAbsTol_ && (cUb==0 ||  nlpact > cUb+fabs(cUb)*solRelTol_)) {
-        std::copy(x,x+numVars,xu);
-        //std::cout << "change upper bound \n";
-      } else {
-        if (fabs(cUb-nlpact) <= solAbsTol_ || (cUb!=0 && fabs(cUb-nlpact) <= fabs(cUb)*solRelTol_)) {
-          break;
-        } else {
-          //std::cout << "change lower bound \n";
-          std::copy(x,x+numVars,xl);
-        }
-      }
-    } else {
-      //MS: think later what can be done here
-      ptFound = false;
-      break;
-    }
-  }
+  //double* xl = new double[numVars];
+  //double* xu = new double[numVars];
+  //std::copy(l,l+numVars,xl);
+  //std::copy(u,u+numVars,xu);
+  ////std::cout << "xl x xu " << std::endl;
+  //while (true) {
+    ////MS: all vars or only in the nonlinear ones
+    //for (UInt i = 0 ; i < minlp_->getNumVars(); ++i) {
+      //x[i] = 0.5*(xl[i] + xu[i]);
+      ////std::cout << xl[i] << " " << x[i] << " " << xu[i] << std::endl;
+    //}
+    //nlpact = f->eval(x, &error);
+    ////std::cout << "cons val at new point and ub " << nlpact << " " << cUb << "\n";
+    //if (error == 0) {
+      //if (nlpact>cUb+solAbsTol_ && (cUb==0 ||  nlpact > cUb+fabs(cUb)*solRelTol_)) {
+        //std::copy(x,x+numVars,xu);
+        ////std::cout << "change upper bound \n";
+      //} else {
+        //if (fabs(cUb-nlpact) <= solAbsTol_ || (cUb!=0 && fabs(cUb-nlpact) <= fabs(cUb)*solRelTol_)) {
+          //break;
+        //} else {
+          ////std::cout << "change lower bound \n";
+          //std::copy(x,x+numVars,xl);
+        //}
+      //}
+    //} else {
+      ////MS: think later what can be done here
+      //ptFound = false;
+      //break;
+    //}
+  //}
 
-  delete [] xl;
-  delete [] xu;
-  return ptFound;
-}
+  //delete [] xl;
+  //delete [] xu;
+  //return ptFound;
+//}
 
 
 
 void Linearizations::rootLinearizations(std::vector<ConstraintPtr> nlCons,
                                         const double * nlpx)
 {
-  bool shouldCont;
   ConstraintPtr con;
+  bool shouldCont, foundCenter = false;
   double lVarCoeff = 0, nVarCoeff = 0;
-  UInt nVarIdx, lVarIdx, numRS1Lin = 0, numRS2Lin = 0;
-
+  UInt nVarIdx, lVarIdx;
+    
+  nlpx_ = nlpx;
+  
   for (CCIter it = nlCons.begin(); it != nlCons.end(); ++it) {
     con = *it;
     lVarIdx = 0;
     lVarCoeff = 0;
     nVarCoeff = 0;
     // constraints with only one var in the nonlinear part
-    shouldCont = twoVarsCon_(con, lVarCoeff, lVarIdx, nVarIdx, nVarCoeff); 
+    shouldCont = uniVarNlFunc_(con, lVarCoeff, lVarIdx, nVarIdx, nVarCoeff); 
+    //MS: see if this if-else has to be changed
     if (shouldCont == false) {
       continue;    
     } else {
       if (rs1_ > 0) {
-        rootLinScheme1_(con, lVarCoeff, lVarIdx, nVarIdx, nVarCoeff, numRS1Lin);
+        rootLinScheme1_(con, lVarCoeff, lVarIdx, nVarIdx, nVarCoeff);
       }
       if (rs2Per_ > 0) { // there is a default neighborhood
-        rootLinScheme2_(con, nlpx, lVarCoeff, nVarCoeff, lVarIdx, nVarIdx,
-                        numRS2Lin);  
-      }    
+        //nlpx_ = nlpx;
+        rootLinScheme2_(con, lVarCoeff, lVarIdx, nVarIdx);  
+      }
     }
   }
-  std::cout << "No. of nonlinear cons, root lin Scheme 1, Scheme 2 added: "
-    << nlCons.size() << " " << numRS1Lin << " " << numRS2Lin << std::endl; 
+  /// General scheme at root
+  // Option for general scheme
+  nlpe1_ = nlpe_->emptyCopy(); //Engine for modified problem
+  nlpe1_->clear();
+  findCenter_(foundCenter);
+  if (foundCenter) {
+    // populate varPtrs_ with index of variables in nonlinear constraints
+    varsInNonlinCons_();
+    // General scheme using center and  positive spanning vectors
+    rootLinGenScheme1_();
 
-  if (rs3_ > 0) {
-    if (nlCons_.size() > 0) {
-      bool noCenter = false;
-      findCenter_(noCenter);
-      if (noCenter == true) {
-        //std::cout << "No center is found\n";
-        rs3_ = 0;
-      }   
+    // General scheme using nonlinear solution and positive spanning vectors
+    rootLinGenScheme2_();
+  }
+    //if (rs3_ > 0) {
+    //if (nlCons_.size() > 0) {
+      //bool noCenter = false;
+      //findCenter_(noCenter);
+      //if (noCenter == true) {
+        ////std::cout << "No center is found\n";
+        //rs3_ = 0;
+      //}   
+    //} else {
+      //rs3_ = 0;
+    //}
+  //}
+  return;
+}
+
+
+void Linearizations::rootLinGenScheme2_()
+{
+  VariablePtr v;
+  UInt fixIdx, vIdx, pos;
+  bool shouldCont = true;
+  std::vector<double > alphaSign;
+  std::vector<UInt > varIdx; // first index is the coordinate direction componenet 
+  int n = minlp_->getNumVars();
+  double *xOut = new double[n], *lastDir = new double[n]; 
+  double varbound, rhs = 0.0, coeff, fixCoeff;   
+
+    
+  /* variable to be fixed in finding search direction */
+  for (UInt i = 0; i < varPtrs_.size(); ++i) {
+    v = varPtrs_[i];
+    vIdx = v->getIndex();
+    rhs = rhs + nlpx_[vIdx]*(solC_[vIdx] - nlpx_[vIdx]);
+    if (shouldCont && (solC_[vIdx] - nlpx_[vIdx]) != 0) {
+      fixIdx = vIdx;
+      shouldCont = false;              
+    }
+
+    /* variables that are bounding in the last direction */
+    //varbound = v->getUb() - nlpx_[vIdx];
+    //if (varbound < vUb) {
+      //vUb = v->getUb();
+      //uIdx = vIdx;
+    //}
+    //varbound = nlpx_[vIdx] - v->getLb();
+    //if (varbound < vLb) {
+      //vLb = v->getLb();
+      //lIdx = vIdx;
+    //}
+  }
+  
+  /* in case rhs is 0, shift the plane to find search directions */
+  if (rhs == 0) {
+    rhs = 1;  
+  }
+
+  std::copy(nlpx_, nlpx_+minlp_->getNumVars(), xOut);
+  fixCoeff = rhs/(solC_[fixIdx] - nlpx_[fixIdx]);
+  lastDir[fixIdx] = 0;
+
+  for (UInt i = 0; i < varPtrs_.size(); ++i) {
+    v = varPtrs_[i];
+    vIdx = v->getIndex();
+    if (vIdx < fixIdx) {
+      /* in this case coeff of v is zero in hyperplane expression */
+      lastDir[vIdx] = -1;
+      varbound = v->getUb();
+      alphaSign.push_back(1);
+      varIdx.push_back(vIdx);
+      search_(varbound, vIdx, varIdx, xOut, shouldCont, alphaSign, 0, 0);
+      if (shouldCont) {
+        alphaSign[0] = -alphaSign[0];
+        varbound = v->getLb();
+        xOut[vIdx] = nlpx_[vIdx];
+        search_(varbound, vIdx, varIdx, xOut, shouldCont, alphaSign, 0, 0);
+      }
+    } else if (vIdx > fixIdx) {
+      /* in this case coeff of v is nonzero in the hyperplane */
+      coeff = rhs/(solC_[vIdx] - nlpx_[vIdx]);
+      lastDir[vIdx] = -coeff;
+      lastDir[fixIdx] = lastDir[fixIdx] + fixCoeff;
+      //MS: confirm ordering of arguments and signs of coeff 
+      //MS: changeIdx may change if direction reverses
+      boundingVar_(varbound, vIdx, fixIdx, coeff, -fixCoeff,
+                 alphaSign, varIdx);
+      search_(varbound, varIdx[0], varIdx, xOut, shouldCont, alphaSign, 0, 0);
+      if (shouldCont) {
+        xOut[vIdx] = nlpx_[vIdx];
+        xOut[fixIdx] = nlpx_[fixIdx];
+        alphaSign[0] = -alphaSign[0];
+        alphaSign[1] = -alphaSign[1];
+        varIdx.clear();
+        boundingVar_(varbound, vIdx, fixIdx, -coeff, fixCoeff,
+                 alphaSign, varIdx);
+        search_(varbound, varIdx[0], varIdx, xOut, shouldCont, alphaSign, 0, 0);
+      }
+      xOut[fixIdx] = nlpx_[fixIdx];
+    }
+    varIdx.clear();
+    alphaSign.clear();
+    xOut[vIdx] = nlpx_[vIdx];
+  }
+
+  boundingVar_(varbound, pos, lastDir, alphaSign);
+  search_(varbound, varPtrs_[pos]->getIndex(), varIdx, xOut, shouldCont, alphaSign, pos, 1);
+  if (shouldCont) {
+    for (UInt i = 0; i < varPtrs_.size(); ++i) {
+      lastDir[i] = -lastDir[i];
+    }
+    std::copy(nlpx_, nlpx_+minlp_->getNumVars(), xOut);
+    boundingVar_(varbound, pos, lastDir, alphaSign);
+    search_(varbound, varPtrs_[pos]->getIndex(), varIdx, xOut, shouldCont, alphaSign, pos, 1);
+  }
+
+  delete [] xOut;
+  return;
+}
+
+
+void Linearizations::search_(double varbound, UInt vIdx,
+                             std::vector<UInt > varIdx, 
+                             double *xOut, bool &shouldCont,
+                             std::vector<double > &alphaSign,
+                             UInt pos, bool isLastDir)
+{
+  double alpha;
+  setStepSize_(varbound, alpha, vIdx, alphaSign[pos]);
+  alpha = 0.25*varbound;
+
+  if (isLastDir) {
+    UInt idx;
+    for (UInt i = 0; i < varPtrs_.size(); ++i) {
+      idx = varPtrs_[i]->getIndex();
+      alphaSign[i] = alpha*alphaSign[i];  
+      xOut[idx] = xOut[idx] + alphaSign[i];
+    } 
+  } else {
+    for (UInt i = 0; i < alphaSign.size(); ++i) {
+      alphaSign[i] = alpha*alphaSign[i];  
+      xOut[varIdx[i]] = xOut[varIdx[i]] + alphaSign[i];
+    }
+  }
+  shouldCont = foundLinPt_(vIdx, varIdx, alphaSign, varbound, xOut, isLastDir);
+  return;
+}
+
+
+void Linearizations::boundingVar_(double &varbound, UInt &pos, 
+                                  double *lastDir,
+                                  std::vector<double > &alphaSign)
+{
+  UInt idx;
+  double diff, minDiff = INFINITY, bound;
+    
+  for (UInt i = 0; i < varPtrs_.size(); ++i) {
+    idx = varPtrs_[i]->getIndex();
+    if (lastDir[i] < 0) {
+      bound = varPtrs_[i]->getLb();
+      diff = nlpx_[idx] - bound;
+      alphaSign[i] = -1;
     } else {
-      rs3_ = 0;
+      bound = varPtrs_[i]->getUb();
+      diff = bound - nlpx_[idx];
+      alphaSign[i] = 1;
+    }
+    if (diff < minDiff) {
+      pos = i;
+      varbound = bound;    
+    }
+  }
+  return;
+}
+
+void Linearizations::boundingVar_(double &varbound,
+                                  UInt vIdx, UInt fixIdx, double coeff,
+                                 double fixCoeff, 
+                                 std::vector<double > &alphaSign, 
+                                 std::vector<UInt > &varIdx)
+{
+  double diffCurrent, diffFix;
+  VariablePtr v = varPtrs_[vIdx], fixVar = varPtrs_[fixIdx];
+
+  if (coeff < 0) {
+    alphaSign.push_back(-1);
+    diffCurrent = nlpx_[vIdx] - v->getLb();
+    if (fixCoeff < 0) {
+      alphaSign.push_back(-1);
+      diffFix = nlpx_[vIdx] - fixVar->getLb();
+      if (diffCurrent < diffFix) {
+        varIdx.push_back(vIdx);
+        varIdx.push_back(fixIdx);
+        varbound = v->getLb();
+      } else {
+        varIdx.push_back(fixIdx);
+        varIdx.push_back(vIdx);
+        varbound = fixVar->getLb();
+      }
+    } else {
+      alphaSign.push_back(1);
+      diffFix = fixVar->getUb() - nlpx_[vIdx];
+      if (diffCurrent < diffFix) {
+        varIdx.push_back(vIdx);
+        varIdx.push_back(fixIdx);
+        varbound = v->getLb();
+      } else {
+        varIdx.push_back(fixIdx);
+        varIdx.push_back(vIdx);
+        varbound = fixVar->getUb();
+      }
+    }
+  } else {
+    alphaSign.push_back(1);
+    diffCurrent = v->getLb() - nlpx_[vIdx];
+    if (fixCoeff < 0) {
+      alphaSign.push_back(-1);
+      diffFix = nlpx_[vIdx] - fixVar->getLb();
+      if (diffCurrent < diffFix) {
+        varIdx.push_back(vIdx);
+        varIdx.push_back(fixIdx);
+        varbound = v->getUb();
+      } else {
+        varIdx.push_back(fixIdx);
+        varIdx.push_back(vIdx);
+        varbound = fixVar->getLb();
+      }
+    } else {
+      alphaSign.push_back(1);
+      diffFix = fixVar->getUb() - nlpx_[vIdx];
+      if (diffCurrent < diffFix) {
+        varIdx.push_back(vIdx);
+        varIdx.push_back(fixIdx);
+        varbound = v->getUb();
+      } else {
+        varIdx.push_back(fixIdx);
+        varIdx.push_back(vIdx);
+        varbound = fixVar->getUb();
+      }
+    } 
+  }
+  return;
+}
+
+
+void Linearizations::rootLinGenScheme1_()
+{
+  VariablePtr v;
+  UInt lPos, uPos, vIdx, uIdx, lIdx;
+  bool shouldCont = false;
+  int n = minlp_->getNumVars();
+  double *xOut = new double[n];
+  double varbound, vLb = INFINITY, vUb = INFINITY;   
+  std::vector<double > alphaSign;
+  std::vector<UInt > varIdx; // first index is the coordinate direction componenet 
+
+  std::copy(solC_, solC_+minlp_->getNumVars(), xOut);
+
+   /*Take coordinate direction along each variable in varPtrs_t.
+    If this direction is unsuccessful in finding a point to add 
+    linearization then reverse the direction.*/
+  for (UInt i = 0; i < varPtrs_.size(); ++i) {
+    v = varPtrs_[i];
+    vIdx = v->getIndex();
+
+    /* determine indices of variables that are bounding in the last
+    direction (and its opposite) of search and bound values */
+    // MS: think about this once again
+    varbound = v->getUb() - solC_[vIdx];
+    if (varbound < vUb) {
+      vUb = v->getUb();
+      uPos = i;
+      uIdx = vIdx;
+    }
+    varbound = solC_[vIdx] - v->getLb();
+    if (varbound < vLb) {
+      vLb = v->getLb();
+      lPos = i;
+      lIdx = vIdx;
+    }
+
+    /* coordinate direction for each variable */
+    alphaSign.push_back(1);
+    varIdx.push_back(vIdx);
+    varbound = v->getUb();
+    search_(varbound, vIdx, varIdx, xOut, shouldCont, alphaSign, 0, 0);
+    
+    /* reverse search direction if previous direction was unsuccessful */
+    if (shouldCont) {
+      alphaSign[0] = -alphaSign[0];
+      varbound = v->getLb();
+      xOut[vIdx] = solC_[vIdx];
+      search_(varbound, vIdx, varIdx, xOut, shouldCont, alphaSign, 0, 0);
+    }
+    varIdx.clear();
+    alphaSign.clear();
+    xOut[vIdx] = solC_[vIdx];
+  }
+  
+  /* last direction in positive spanning set */
+  if (vLb == INFINITY) {
+    lPos = 0; 
+    lIdx = varPtrs_[0]->getIndex(); 
+  }
+  alphaSign.resize(varPtrs_.size());
+  std::fill(alphaSign.begin(), alphaSign.end(),-1);
+  
+  search_(vLb, lIdx, varIdx, xOut, shouldCont, alphaSign, lPos, 1);
+ 
+  if (shouldCont) {
+    if (vUb == INFINITY) {
+      uPos = 0;  
+      uIdx = varPtrs_[0]->getIndex(); 
+    }
+    std::copy(solC_, solC_+minlp_->getNumVars(), xOut);
+    std::fill(alphaSign.begin(), alphaSign.end(),1);
+    search_(vUb, uIdx, varIdx, xOut, shouldCont, alphaSign, uPos, 1);
+  }
+  return;
+}
+
+
+void Linearizations::setStepSize_(double &varbound, double &alpha,
+                                   UInt vIdx,
+                                   double boundSign)
+{
+
+  if (varbound != boundSign*INFINITY) {
+    alpha = varbound;
+  } else {
+    if (fabs(nlpx_[vIdx] - solC_[vIdx]) != 0) {
+      alpha = fabs(nlpx_[vIdx] - solC_[vIdx]);
+    } else {
+      alpha = fabs(nlpx_[vIdx]) + 1;
+    }
+    varbound = nlpx_[vIdx] + boundSign*(fabs(10*nlpx_[vIdx]) + 10); // parameter here
+  }
+  return;
+}
+          
+
+void Linearizations::varsInNonlinCons_()
+{
+  VariablePtr v;
+  ConstraintPtr con;
+  FunctionType type;
+  QuadraticFunctionPtr qf;
+  NonlinearFunctionPtr nlf;
+  std::vector<VariablePtr>::iterator vit;
+
+  for (ConstraintConstIterator c = minlp_->consBegin(); 
+                  c != minlp_->consEnd(); ++c) {
+    con = *c;
+    type = con->getFunctionType();
+    if (type == Constant || type == Linear) {
+      continue;
+    } else {
+      qf = con->getQuadraticFunction();
+      nlf = con->getNonlinearFunction();
+      
+      if (nlf) {
+        for (VarSetIter it=nlf->varsBegin(); it!=nlf->varsEnd(); ++it) {
+          v = *it;
+          vit = std::find (varPtrs_.begin(), varPtrs_.end(), v); 
+          if (vit == varPtrs_.end()) {
+            varPtrs_.push_back(v);
+          }
+        }
+      }
+      
+      if (qf) {
+        for (VariablePairGroupConstIterator it=qf->begin(); it!=qf->end(); 
+             ++it) {
+          v = it->first.first;
+          vit = std::find (varPtrs_.begin(), varPtrs_.end(), v); 
+          if (vit == varPtrs_.end()) {
+            varPtrs_.push_back(v);
+          }
+        }
+      }
     }
   }
   return;
 }
 
 
+bool Linearizations::foundLinPt_(UInt vIdx, std::vector<UInt> varIdx, 
+                                 std::vector<double> alphaSign, double varBound,
+                                 double *xOut, bool isLast)
+{
+  double act, cUb;
+  ConstraintPtr con;
+  FunctionType type;
+  std::vector<ConstraintPtr > vioCons;
+  bool isPtFound, shouldCont = false;
+  int n = minlp_->getNumVars(), error = 0;
+  
+  /* find constraints violated at xOut. If no constraint is violated then
+   * move further along the given direction, If all linear constraints are
+   * violated then stop and return. 
+   */
+  while (fabs(xOut[vIdx]-varBound) != 0  && !isPtFound) {
+    for (ConstraintConstIterator c=minlp_->consBegin(); 
+                  c!=minlp_->consEnd(); ++c) {
+      con = *c;
+      cUb = con->getUb();
+      type = con->getFunctionType();
+      if (type == Constant) {
+        continue;    
+      } else {
+         act = con->getActivity(xOut, &error);
+        if (error == 0) {
+          if ((act > cUb + solAbsTol_) &&
+              (cUb == 0 || act > cUb + fabs(cUb)*solRelTol_)) { // violated cons
+            vioCons.push_back(con);
+            if (type != Linear) {
+              shouldCont = 1;
+            }
+          }
+        } else {
+          delete [] xOut;
+          return false;      
+        }   
+      }
+    }
+    if (vioCons.size() == 0) {
+      newPoint_(isLast, varIdx, xOut, alphaSign);   
+    } else {
+      break;    
+    }
+  }
+  
+  if (!shouldCont) { 
+    /* all violated constraints are linear */
+    delete [] xOut;
+    return false;  
+  }
+
+  /* find point on boundary along the direction */
+  double *xIn = new double[n];
+  std::copy(solC_, solC_+minlp_->getNumVars(), xIn);
+  while (shouldCont) {
+    shouldCont = findBoundaryPt_(isPtFound, xOut, xIn, vioCons);
+  }
+  delete [] xIn;
+  delete [] xOut;
+  
+  if (isPtFound) {
+    return false;
+  }
+  return true;
+}
+
+void Linearizations::newPoint_(bool isLast,
+                               std::vector<UInt> varIdx, double *xOut, std::vector<double> alphaSign)
+{
+  if (isLast) {
+    UInt idx;
+    for (UInt i = 0; i < varPtrs_.size(); ++i) {
+      idx = varPtrs_[i]->getIndex();
+      xOut[idx] = xOut[idx] + alphaSign[i];
+    }
+  } else {
+    for (UInt i = 0; i < varIdx.size(); ++i) {
+      xOut[varIdx[i]] = xOut[varIdx[i]] + alphaSign[i];
+    }
+  }
+  return;
+}
+
+
+bool Linearizations::findBoundaryPt_(bool &isPtFound,
+                                     double *xOut, double *xIn,
+                                     std::vector<ConstraintPtr> &vioCons)
+{
+  int error = 0;
+  double act, cUb; 
+  ConstraintPtr con;
+  FunctionType type;
+  std::vector<double > activeConsAct;
+  UInt numVars =  minlp_->getNumVars();
+  double* x = new double[numVars];
+  bool vioNLCons = false, firstVio = false, firstActive = false, activeNLCons = false;
+  
+  isPtFound = false;
+  for (UInt i = 0 ; i < minlp_->getNumVars(); ++i) {
+    x[i] = 0.5*(xIn[i] + xOut[i]);
+  }
+  for (ConstraintIterator it = vioCons.begin(); it != vioCons.end();
+         ) {
+    con = *it;
+    cUb = con->getUb();
+    type = con->getFunctionType();
+    if (type == Constant) {
+      continue;    
+    } else {
+      act = con->getActivity(x, &error);
+      if (error != 0) {
+        delete [] x;
+        return false;      
+      }
+      if ((act > cUb + solAbsTol_) &&
+          (cUb == 0 || act > cUb + fabs(cUb)*solRelTol_)) { // violated
+        if (!firstVio) {
+          firstVio = true;
+          if (it != vioCons.begin()) {
+            --it;
+            vioCons.erase(vioCons.begin(),it);
+          }
+        }
+        ++it;
+        if (type != Linear) {
+          vioNLCons = true; 
+        }
+      } else if ((fabs(act-cUb) <= solAbsTol_) ||
+            (cUb != 0 && fabs(act- cUb) < fabs(cUb)*solRelTol_)) { // active
+        if (firstVio) {
+          vioCons.erase(it);
+        } else {
+          if (!firstActive) {
+            firstActive = true;         
+            if (it != vioCons.begin()) {
+              --it;
+              vioCons.erase(vioCons.begin(),it);
+            }
+            activeConsAct.push_back(act);
+            ++it;
+            if (type != Linear) {
+              activeNLCons = true; 
+            }
+          }
+        }
+      } else {
+         if (firstVio || firstActive) {
+          vioCons.erase(it);
+        }     
+      }
+    }
+  }
+
+  if (!firstVio) {
+    if (!firstActive) {
+      /* all constraints are inactive. Find another point */
+      std::copy(x,x+numVars,xIn);
+    } else {
+      if (activeNLCons) {
+      /* add linearization to active nonlinear constraints */
+        double c;
+        UInt j = 0;
+        FunctionPtr f;
+        std::stringstream sstm;
+        LinearFunctionPtr lf = 0;
+        for (ConstraintIterator it = vioCons.begin();
+             it != vioCons.end(); ++it, ++j) {
+          con = *it;
+          if (con->getFunctionType() == Linear) {
+            continue;        
+          }
+          isPtFound = true;
+          f = con->getFunction();
+          linearAt_(f, activeConsAct[j], x, &c, &lf, &error);
+          if (error == 0) {
+            cUb = con->getUb();
+            ++(stats_->rgs1Cuts);
+            sstm << "_OAcut_" << stats_->rgs1Cuts << "_AtRoot";
+            f = (FunctionPtr) new Function(lf);
+            rel_->newConstraint(f, -INFINITY, cUb-c, sstm.str());
+            //newcon = rel_->newConstraint(f, -INFINITY, cUb-c, sstm.str());
+            sstm.str("");
+          }
+        }
+      }
+      delete [] x;
+      return false;
+    }
+  } else {
+    if (vioNLCons) {
+      std::copy(x,x+numVars,xOut);
+    } else {
+      delete [] x;
+      return false;
+    }
+  } 
+  delete [] x;
+  return true;    
+}
+  
+
 void Linearizations::rootLinScheme1_(ConstraintPtr con, double lVarCoeff,
-                            UInt lVarIdx, UInt nVarIdx, double nVarCoeff,
-                            UInt &numRS1Lin)
+                            UInt lVarIdx, UInt nVarIdx, double nVarCoeff)
 {
   double iP[2]; // intersection point
   UInt newConId;
@@ -873,28 +1209,41 @@ void Linearizations::rootLinScheme1_(ConstraintPtr con, double lVarCoeff,
     
   b1[nVarIdx] = vLb;
   act = nVarCoeff*vLb;
-  shouldCont = addNewCut_(b1, lVarIdx, con, lVarCoeff, act, newConId);
+  shouldCont = linPart_(b1, lVarIdx, con, lVarCoeff, act);  
   if (shouldCont) {
-    ++numRS1Lin;
-    y1 = b1[lVarIdx];
-    newConsId.push_back(newConId); 
+    shouldCont = addNewCut_(b1, con, newConId);
+    if (shouldCont) {
+      ++stats_->rs1Cuts;
+      y1 = b1[lVarIdx];
+      newConsId.push_back(newConId); 
+    } else {
+      delete [] b1;
+      return;    
+    }
   } else {
     delete [] b1;
     return;    
   }
 
+
   // upper bound of var in nonlinear cons
   b1[nVarIdx] = vUb;
   act = nVarCoeff*vUb;
-  shouldCont = addNewCut_(b1, lVarIdx, con, lVarCoeff, act, newConId);
+  shouldCont = linPart_(b1, lVarIdx, con, lVarCoeff, act);  
   if (shouldCont) {
-    ++numRS1Lin;
-    y2 = b1[lVarIdx];
-    newConsId.push_back(newConId);
+    shouldCont = addNewCut_(b1, con, newConId);
+    if (shouldCont) {
+      ++stats_->rs1Cuts;
+      y2 = b1[lVarIdx];
+      newConsId.push_back(newConId); 
+    } else {
+      delete [] b1;
+      return;    
+    }
   } else {
     delete [] b1;
     return;    
-  }  
+  }
 
   shouldCont = findIntersectPt_(newConsId, vl, vnl, iP);
   if (shouldCont == false) {
@@ -928,13 +1277,18 @@ void Linearizations::rootLinScheme1_(ConstraintPtr con, double lVarCoeff,
     stopCond = maxVio*rs1_/100;    
   }
 
+  if ((stopCond < solAbsTol_) || 
+      (consUb!=0 && stopCond < fabs(consUb)*solRelTol_ )) { 
+    delete [] b1;
+    return;
+  }
+
   while (maxVio >= stopCond) { 
     //add a new cut at the point indexed i
     b1[nVarIdx] = xc[i];
-    act = b1[nVarIdx]*nVarCoeff;
-    shouldCont = addNewCut_(b1, lVarIdx, con, lVarCoeff, act, newConId);
+    shouldCont = addNewCut_(b1, con, newConId);
     if (shouldCont) {
-      ++numRS1Lin;
+      ++stats_->rs1Cuts;
       newcon = rel_->getConstraint(newConId);
       cUb = newcon->getUb();
     } else {
@@ -970,7 +1324,8 @@ void Linearizations::rootLinScheme1_(ConstraintPtr con, double lVarCoeff,
     if (shouldCont == false) {
       break;
     }
-    for (int j = i-1; j >= 0; --j) {
+    int j = i-1;
+    while (j >= 0) {
       b1[nVarIdx] = xc[j], b1[lVarIdx] = yc[j];
       act = newcon->getActivity(b1, &error);
       if (error == 0) {
@@ -994,6 +1349,7 @@ void Linearizations::rootLinScheme1_(ConstraintPtr con, double lVarCoeff,
           xc.erase(xc.begin() + j);
           yc.erase(yc.begin() + j);        
           linVioVal.erase(linVioVal.begin() + j);        
+          --j;
         }  
       }
     }
@@ -1012,15 +1368,14 @@ void Linearizations::rootLinScheme1_(ConstraintPtr con, double lVarCoeff,
 }
 
 
-void Linearizations::rootLinScheme2_(ConstraintPtr con, const  double *nlpx,
-                                     double lVarCoeff, double nVarCoeff,
-                                     UInt lVarIdx, UInt nVarIdx,
-                                     UInt &numRS2Lin)
+void Linearizations::rootLinScheme2_(ConstraintPtr con,
+                                     double lVarCoeff,
+                                     UInt lVarIdx, UInt nVarIdx)
 {
   int error = 0;
   FunctionPtr f;
   VariablePtr vnl;
-  bool isCont = true;
+  //bool isCont = true;
   UInt n = minlp_->getNumVars();
   double lastSlope, delta, nlpSlope, nbhSize;
   
@@ -1033,58 +1388,44 @@ void Linearizations::rootLinScheme2_(ConstraintPtr con, const  double *nlpx,
   std::fill(grad, grad+n, 0.);
   
   f = con->getFunction();
-  f->evalGradient(nlpx, grad, &error);
+  f->evalGradient(nlpx_, grad, &error);
   
   nlpSlope = -1*(grad[nVarIdx]/lVarCoeff);
   lastSlope = nlpSlope;
   
-  nbhSize = std::max(vnl->getLb(), nlpx[nVarIdx] - rs2NbhSize_);    
-  if (nlpx[nVarIdx] - nbhSize >= 1) {
+  nbhSize = std::max(vnl->getLb(), nlpx_[nVarIdx] - rs2NbhSize_);    
+  if (nlpx_[nVarIdx] - nbhSize >= 1) {
     delta = 0.5;  
   } else {
-    delta = nlpx[nVarIdx] - nbhSize;  
+    delta = nlpx_[nVarIdx] - nbhSize;  
   }
 
-  npt[nVarIdx] = nlpx[nVarIdx] - delta;
-  isCont = linPart_(npt, lVarIdx, con, lVarCoeff, nVarCoeff);
-  if (!isCont) {
-    return;  
-  }
+  npt[nVarIdx] = nlpx_[nVarIdx] - delta;
      
   if (delta != 0) {
     while (npt[nVarIdx] >= nbhSize) {
       grad[nVarIdx] = 0;
       grad[lVarIdx] = 0;
-      isCont = linPart_(npt, lVarIdx, con, lVarCoeff, nVarCoeff);
-      if (!isCont) {
-        return;  
-      }
-      rScheme2Cut_(con, delta, lVarCoeff, lastSlope, nVarIdx, npt, grad,
-                   numRS2Lin);
+      rScheme2Cut_(con, delta, lVarCoeff, lastSlope, nVarIdx, npt, grad);
       npt[nVarIdx] =  npt[nVarIdx] - delta;
     }
   }
   
-  nbhSize = std::min(vnl->getUb(), nlpx[nVarIdx] + rs2NbhSize_);
-  if (nbhSize - nlpx[nVarIdx] >= 1) {
-    delta = 0.5;  
+  nbhSize = std::min(vnl->getUb(), nlpx_[nVarIdx] + rs2NbhSize_);
+  if (nbhSize - nlpx_[nVarIdx] >= 1) {
+    delta = 0.5;  //MS: can be a parameter  
   } else {
-    delta = nbhSize - nlpx[nVarIdx];  
+    delta = nbhSize - nlpx_[nVarIdx];  
   }
 
   lastSlope = nlpSlope;
-  npt[nVarIdx] = nlpx[nVarIdx] + delta;
+  npt[nVarIdx] = nlpx_[nVarIdx] + delta;
 
   if (delta != 0) {
     while (npt[nVarIdx] <= nbhSize) {
-      isCont = linPart_(npt, lVarIdx, con, lVarCoeff, nVarCoeff);
-      if (!isCont) {
-        return;  
-      }
       grad[nVarIdx] = 0;
       grad[lVarIdx] = 0;
-      rScheme2Cut_(con, delta, lVarCoeff, lastSlope, nVarIdx, npt, grad,
-                   numRS2Lin);
+      rScheme2Cut_(con, delta, lVarCoeff, lastSlope, nVarIdx, npt, grad);
       npt[nVarIdx] =  npt[nVarIdx] + delta;
     }
   }
@@ -1096,8 +1437,7 @@ void Linearizations::rootLinScheme2_(ConstraintPtr con, const  double *nlpx,
 
 void Linearizations::rScheme2Cut_(ConstraintPtr con, double &delta,
                                 double lVarCoeff, double &lastSlope,
-                                UInt nVarIdx, double * npt, double * grad,
-                                UInt &numRS2Lin)
+                                UInt nVarIdx, double * npt, double * grad)
 {
   int error = 0;
   double newSlope;
@@ -1108,14 +1448,14 @@ void Linearizations::rScheme2Cut_(ConstraintPtr con, double &delta,
   } 
   newSlope = -1*(grad[nVarIdx]/lVarCoeff); 
   if ((lastSlope == 0 && newSlope == 0) ||
-      (fabs((newSlope-lastSlope)/lastSlope)*100 <  rs2Per_)) {
+      (lastSlope != 0 && fabs((newSlope-lastSlope)/lastSlope)*100 <  rs2Per_)) {
     delta = 2*delta;
     return;
   }
   lastSlope = newSlope;
   //ConstraintPtr newcon;
   std::stringstream sstm;
-  LinearFunctionPtr lf = LinearFunctionPtr();
+  LinearFunctionPtr lf = 0;
   VariableConstIterator vbeg = rel_->varsBegin(), vend = rel_->varsEnd();
   const double linCoeffTol =
     env_->getOptions()->findDouble("conCoeff_tol")->getValue();
@@ -1124,11 +1464,10 @@ void Linearizations::rScheme2Cut_(ConstraintPtr con, double &delta,
   lf = (LinearFunctionPtr) new LinearFunction(grad, vbeg, vend, linCoeffTol);
   c  = act - InnerProduct(npt, grad, minlp_->getNumVars());
 
-  //++(stats_->cuts);
-  //sstm << "_OAcut_" << stats_->cuts << "_AtRoot";
+  ++stats_->rs2Cuts;
+  sstm << "_OAcut_" << stats_->rs2Cuts << "_AtRoot";
   f = (FunctionPtr) new Function(lf);
   rel_->newConstraint(f, -INFINITY, cUb-c, sstm.str());
-  numRS2Lin++;
   //newcon = rel_->newConstraint(f, -INFINITY, cUb-c, sstm.str());
   //newcon->write(std::cout);
   return;
@@ -1136,210 +1475,150 @@ void Linearizations::rScheme2Cut_(ConstraintPtr con, double &delta,
 
 
 //MS: add esh all from LP solution - working
-void Linearizations::rootLinScheme3(ConstSolutionPtr sol, CutManager * cutMan,
-                           SolutionPoolPtr s_pool, bool *sol_found,
-                           SeparationStatus *status)
-{
-  UInt oldCuts;
-  int error = 0;
-  FunctionPtr f;
-  ObjectivePtr o;
-  const double *lpx;
-  ConstraintPtr con;
-  VariableType v_type;
-  LinearFunctionPtr lf;
-  ConstSolutionPtr lpSol;
-  std::stringstream sstm;
-  EngineStatus engineStatus;
-  bool should_prune = false, isFrac;
-  double c, val, act, cUb, bestVal, vio;
-  double *x = new double[minlp_->getNumVars()];
-  //ConstraintPtr newcon;
+//void Linearizations::rootLinScheme3(ConstSolutionPtr sol, CutManager * cutMan,
+                           //SolutionPoolPtr s_pool, bool *sol_found,
+                           //SeparationStatus *status)
+//{
+  //UInt oldCuts;
+  //int error = 0;
+  //FunctionPtr f;
+  //ObjectivePtr o;
+  //const double *lpx;
+  //ConstraintPtr con;
+  //VariableType v_type;
+  //LinearFunctionPtr lf;
+  //ConstSolutionPtr lpSol;
+  //std::stringstream sstm;
+  //EngineStatus engineStatus;
+  //bool should_prune = false, isFrac;
+  //double c, val, act, cUb, bestVal, vio;
+  //double *x = new double[minlp_->getNumVars()];
+  ////ConstraintPtr newcon;
  
-  // load relaxation to the lp engine 
-  //lpe_->load(rel_);
-  //Check if new constraints are added
+  //// load relaxation to the lp engine 
+  ////lpe_->load(rel_);
+  ////Check if new constraints are added
  
-  lpSol = sol;
-  lpx = lpSol->getPrimal();
- //MS: check if this works 
-  //std::cout << "number of cuts initially " << stats_->cuts << std::endl;
-  //oldCuts = stats_->cuts;
-  for (UInt i = 1; i <= rs3_; ++i) {
-    isFrac = false;
-    //std::cout << "Iteration and LB " << i+1 << " " << std::setprecision(6) 
-      //<< lpSol->getObjValue() << std::endl;
-    for (VariableConstIterator v_iter = rel_->varsBegin(); 
-         v_iter != rel_->varsEnd(); ++v_iter) {
-      v_type = (*v_iter)->getType();
-      if (v_type == Binary || v_type == Integer) {
-        val = lpx[(*v_iter)->getIndex()];
-        if (fabs(val - floor(val+0.5)) > intTol_) {
-          isFrac = true;
-          break;
-        }
-      }
-    } // for
-    //MS: make sure adding objective here
-    if (isFrac) {
-      for (CCIter it = nlCons_.begin(); it!=nlCons_.end(); ++it) {
-        con = *it;
-        cUb = con->getUb();
-        act = con->getActivity(lpx, &error);
-        if (error == 0) {
-          if ((act > cUb + solAbsTol_) &&
-              (cUb == 0 || act > cUb + fabs(cUb)*solRelTol_)) {
-            addEshAtRoot_(lpx, x, con); 
-          }
-        } else {
-          logger_->msgStream(LogError) << me_ << "Constraint" <<  con->getName()
-            << " is not defined at this point." << std::endl;
-        }
-      }
-    } else {
-      if (isFeas_(lpSol)) {
-        val = lpSol->getObjValue();
-        bestVal = s_pool->getBestSolutionValue();
-        if ((bestVal - objATol_ > val) ||
-            (bestVal != 0 && (bestVal - fabs(bestVal)*objRTol_) > val)) {
-          s_pool->addSolution(lpSol);
-          *sol_found = true;
-          *status = SepaPrune;
-          break;
-          //delete [] x;
-          //return;
-        }
-      } else {
-        //check nonlinear cons feasibility if feasible stop else solve NLP and
-        //add cuts      
-        //cutIntSol_(lpSol, cutMan, s_pool, sol_found, status);
-        if (*status == SepaPrune || *status == SepaError) {
-          //MS: take care of this later
-          //delete [] x;
-          //return;          
-          break;
-        }
-      }
-    }
+  //lpSol = sol;
+  //lpx = lpSol->getPrimal();
+ ////MS: check if this works 
+  ////std::cout << "number of cuts initially " << stats_->cuts << std::endl;
+  ////oldCuts = stats_->cuts;
+  //for (UInt i = 1; i <= rs3_; ++i) {
+    //isFrac = false;
+    ////std::cout << "Iteration and LB " << i+1 << " " << std::setprecision(6) 
+      ////<< lpSol->getObjValue() << std::endl;
+    //for (VariableConstIterator v_iter = rel_->varsBegin(); 
+         //v_iter != rel_->varsEnd(); ++v_iter) {
+      //v_type = (*v_iter)->getType();
+      //if (v_type == Binary || v_type == Integer) {
+        //val = lpx[(*v_iter)->getIndex()];
+        //if (fabs(val - floor(val+0.5)) > intTol_) {
+          //isFrac = true;
+          //break;
+        //}
+      //}
+    //} // for
+    ////MS: make sure adding objective here
+    //if (isFrac) {
+      //for (CCIter it = nlCons_.begin(); it!=nlCons_.end(); ++it) {
+        //con = *it;
+        //cUb = con->getUb();
+        //act = con->getActivity(lpx, &error);
+        //if (error == 0) {
+          //if ((act > cUb + solAbsTol_) &&
+              //(cUb == 0 || act > cUb + fabs(cUb)*solRelTol_)) {
+            //addEshAtRoot_(lpx, x, con); 
+          //}
+        //} else {
+          //logger_->msgStream(LogError) << me_ << "Constraint" <<  con->getName()
+            //<< " is not defined at this point." << std::endl;
+        //}
+      //}
+    //} else {
+      //if (isFeas_(lpSol)) {
+        //val = lpSol->getObjValue();
+        //bestVal = s_pool->getBestSolutionValue();
+        //if ((bestVal - objATol_ > val) ||
+            //(bestVal != 0 && (bestVal - fabs(bestVal)*objRTol_) > val)) {
+          //s_pool->addSolution(lpSol);
+          //*sol_found = true;
+          //*status = SepaPrune;
+          //break;
+          ////delete [] x;
+          ////return;
+        //}
+      //} else {
+        ////check nonlinear cons feasibility if feasible stop else solve NLP and
+        ////add cuts      
+        ////cutIntSol_(lpSol, cutMan, s_pool, sol_found, status);
+        //if (*status == SepaPrune || *status == SepaError) {
+          ////MS: take care of this later
+          ////delete [] x;
+          ////return;          
+          //break;
+        //}
+      //}
+    //}
 
-    if (oNl_) {
-      error = 0;
-      o = minlp_->getObjective();
-      act = o->eval(lpx, &error);
-      relobj_ = (lpSol) ? lpSol->getObjValue() : -INFINITY;
-      if (error == 0) {
-        vio = std::max(act-relobj_, 0.0);
-        if ((vio > solAbsTol_)
-          && (relobj_ == 0 || vio > fabs(relobj_)*solRelTol_)) {
-          f = o->getFunction();
-          lf = LinearFunctionPtr(); 
-          linearAt_(f, act, lpx, &c, &lf, &error);
-          if (error == 0) {
-            //++(stats_->cuts);
-            //sstm << "_OAObjcut_" << stats_->cuts;
-            lf->addTerm(objVar_, -1.0);
-            //status = SepaResolve;
-            f = (FunctionPtr) new Function(lf);
-            rel_->newConstraint(f, -INFINITY, -1.0*c, sstm.str());
-            //newcon = rel_->newConstraint(f, -INFINITY, -1.0*c, sstm.str());
-          }
-        } else {
-#if SPEW
-          logger_->msgStream(LogDebug) << me_ << " objective feasible at LP "
-            << " solution. No OA cut to be added." << std::endl;
-#endif
-        }
-      }	else {
-        logger_->msgStream(LogError) << me_
-          << " objective not defined at this solution point." << std::endl;
-      }
-    }
-    //if (stats_->cuts == oldCuts) {
+    //if (oNl_) {
+      //error = 0;
+      //o = minlp_->getObjective();
+      //act = o->eval(lpx, &error);
+      //relobj_ = (lpSol) ? lpSol->getObjValue() : -INFINITY;
+      //if (error == 0) {
+        //vio = std::max(act-relobj_, 0.0);
+        //if ((vio > solAbsTol_)
+          //&& (relobj_ == 0 || vio > fabs(relobj_)*solRelTol_)) {
+          //f = o->getFunction();
+          //lf = LinearFunctionPtr(); 
+          //linearAt_(f, act, lpx, &c, &lf, &error);
+          //if (error == 0) {
+            ////++(stats_->cuts);
+            ////sstm << "_OAObjcut_" << stats_->cuts;
+            //lf->addTerm(objVar_, -1.0);
+            ////status = SepaResolve;
+            //f = (FunctionPtr) new Function(lf);
+            //rel_->newConstraint(f, -INFINITY, -1.0*c, sstm.str());
+            ////newcon = rel_->newConstraint(f, -INFINITY, -1.0*c, sstm.str());
+          //}
+        //} else {
+//#if SPEW
+          //logger_->msgStream(LogDebug) << me_ << " objective feasible at LP "
+            //<< " solution. No OA cut to be added." << std::endl;
+//#endif
+        //}
+      //}	else {
+        //logger_->msgStream(LogError) << me_
+          //<< " objective not defined at this solution point." << std::endl;
+      //}
+    //}
+    ////if (stats_->cuts == oldCuts) {
+      ////break;    
+    ////}
+    ////oldCuts = stats_->cuts;    
+    ////std::cout << "number of cuts " << stats_->cuts << std::endl;
+    //lpe_->solve();
+    //engineStatus = lpe_->getStatus();
+    //should_prune = shouldPrune_(engineStatus);
+    //if (should_prune) {
+      ////delete [] x;
       //break;    
     //}
-    //oldCuts = stats_->cuts;    
-    //std::cout << "number of cuts " << stats_->cuts << std::endl;
-    lpe_->solve();
-    engineStatus = lpe_->getStatus();
-    should_prune = shouldPrune_(engineStatus);
-    if (should_prune) {
-      //delete [] x;
-      break;    
-    }
-    lpSol = lpe_->getSolution();
-    lpx = lpSol->getPrimal();
-  }
-  delete [] x;
-  return;
-}
+    //lpSol = lpe_->getSolution();
+    //lpx = lpSol->getPrimal();
+  //}
+  //delete [] x;
+  //return;
+//}
 
 
-bool Linearizations::shouldPrune_(EngineStatus eStatus)
-{
-  bool should_prune = false;
-  switch (eStatus) {
-   case (FailedInfeas):
-     logger_->msgStream(LogInfo) << me_ << "failed to converge "
-     << "(infeasible) in root" << std::endl;
-     should_prune = true;
-     break;
-   case (ProvenFailedCQInfeas):
-     logger_->msgStream(LogInfo) << me_ << "constraint qualification "
-                                        << "violated in root "
-                                        << std::endl;
-   case (ProvenInfeasible):
-   case (ProvenLocalInfeasible):
-     should_prune = true;
-     break;
-   case (ProvenObjectiveCutOff):
-     should_prune = true;
-     break;
-   case (ProvenUnbounded):
-     should_prune = false;
-     logger_->msgStream(LogDebug2) << me_ << "problem relaxation is "
-                                   << "unbounded!" << std::endl;
-     assert(!"Relaxation unbounded."); 
-     break;
-   case (FailedFeas):
-     logger_->msgStream(LogInfo) << me_ << "Failed to converge " 
-                                 << "(feasible) in root " << std::endl;
-     break;
-   case (ProvenFailedCQFeas):
-     logger_->msgStream(LogInfo) << me_ << "constraint qualification "
-                                 << "violated in root" << std::endl;
-     break;
-   case (EngineIterationLimit):
-     logger_->msgStream(LogInfo) << me_ << "engine hit iteration limit, "
-                                 << "continuing in root" << std::endl;
-     // continue with this node by following ProvenLocalOptimal case.
-   case (ProvenLocalOptimal):
-   case (ProvenOptimal):
-     break;
-   case (EngineError):
-     should_prune = true;
-     break;
-   default:
-     break;
-  }
-
-  return should_prune;
-}
-
-
-void Linearizations::solveNLP_()
-{
-  nlpStatus_ = nlpe_->solve();
-  //++(stats_->nlpS);
-  return;
-}
-
-
-bool Linearizations::twoVarsCon_(ConstraintPtr con, double &lVarCoeff,
+bool Linearizations::uniVarNlFunc_(ConstraintPtr con, double &lVarCoeff,
                             UInt & lVarIdx, UInt & nVarIdx, double &nVarCoeff)
 {
   double coeff;
-  bool foundVar = false;
-  UInt nlTerms = 0, idx;
+  bool foundVar = false, foundNVar = false;
+  UInt nlTerms = 0, qTerms = 0, idx;
   LinearFunctionPtr lf = con->getLinearFunction();
   QuadraticFunctionPtr qf = con->getQuadraticFunction();
   NonlinearFunctionPtr nlf = con->getNonlinearFunction();
@@ -1347,22 +1626,25 @@ bool Linearizations::twoVarsCon_(ConstraintPtr con, double &lVarCoeff,
     env_->getOptions()->findDouble("conCoeff_tol")->getValue();
   if (nlf) {
     nlTerms = nlf->numVars();
-    if (nlTerms > 1) {
+    if (nlTerms != 1) {
       return false;    
     }
     nVarIdx= (*(nlf->varsBegin()))->getIndex(); //index of var in nonlinear term
   }
 
   if (qf) {
-    if (qf->getNumVars() > 1) {
-      return false;    
-    }
-    if (nlTerms > 1) {
-      if (nVarIdx != ((qf->varsBegin())->first)->getIndex()) {
-        return false;      
+    qTerms = qf->getNumVars();
+    if (qTerms != 0) {
+      if (qTerms > 1) {
+        return false;    
       }
-    } else {
-      nVarIdx= ((qf->varsBegin())->first)->getIndex(); 
+      if (nlTerms > 1) {
+        if (nVarIdx != ((qf->varsBegin())->first)->getIndex()) {
+          return false;      
+        }
+      } else {
+        nVarIdx = ((qf->varsBegin())->first)->getIndex(); 
+      }
     }
   }
   
@@ -1372,13 +1654,17 @@ bool Linearizations::twoVarsCon_(ConstraintPtr con, double &lVarCoeff,
       coeff = vit->second;
       idx = (vit->first)->getIndex();
       if (idx == nVarIdx) {
-        nVarCoeff = nVarCoeff + coeff;
+        foundNVar = true;
+        nVarCoeff = coeff;
         continue;      
       }
       if (fabs(coeff) > linCoeffTol && foundVar == false) {
+        lVarIdx = idx;
         foundVar = true;
         lVarCoeff = coeff;
-        lVarIdx = (vit->first)->getIndex();
+      }
+      if (foundVar && foundNVar) {
+        break;      
       }
     }
   }
@@ -1386,43 +1672,23 @@ bool Linearizations::twoVarsCon_(ConstraintPtr con, double &lVarCoeff,
   if (foundVar) {
     return true;
   }
-  
   return false;
 }
 
 
-void Linearizations::unfixInts_()
+void Linearizations::writeStats(std::ostream &out) const
 {
-  Modification *m = 0;
-  while (nlpMods_.empty() == false) {
-    m = nlpMods_.top();
-    m->undoToProblem(minlp_);
-    nlpMods_.pop();
-    delete m;
-  }
+  out
+    << me_ << "number of cuts in root scheme 1      = "
+    << stats_->rs1Cuts << std::endl
+    << me_ << "number of cuts in root scheme 2      = "
+    << stats_->rs1Cuts << std::endl
+    << me_ << "number of cuts in root gen. scheme 1 = "
+    << stats_->rgs1Cuts << std::endl;
   return;
 }
 
 
-void Linearizations::updateUb_(SolutionPoolPtr s_pool, double *nlpval,
-                          bool *sol_found)
-{
-  double val = nlpe_->getSolutionValue();
-  double bestval = s_pool->getBestSolutionValue();
-
-  if ((bestval - objATol_ > val) ||
-        (bestval != 0 && (bestval - fabs(bestval)*objRTol_) > val)) {
-    const double *x = nlpe_->getSolution()->getPrimal();
-    s_pool->addSolution(x, val);
-    *sol_found = true;
-#if SPEW
-    logger_->msgStream(LogDebug) << me_ << "Better solution found, value = "
-      << val << std::endl;
-#endif
-  }
-  *nlpval = val;
-  return;
-}
 
 
 // Local Variables:
