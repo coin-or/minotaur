@@ -574,17 +574,25 @@ void Linearizations::rootLinearizations(std::vector<ConstraintPtr> nlCons,
   }
   /// General scheme at root
   // Option for general scheme
-  nlpe1_ = nlpe_->emptyCopy(); //Engine for modified problem
-  nlpe1_->clear();
-  findCenter_(foundCenter);
-  if (foundCenter) {
-    // populate varPtrs_ with index of variables in nonlinear constraints
-    varsInNonlinCons_();
-    // General scheme using center and  positive spanning vectors
-    rootLinGenScheme1_();
+  bool rg1 = env_->getOptions()->findBool("root_genLinScheme1")->getValue();
+  bool rg2 = env_->getOptions()->findBool("root_genLinScheme2")->getValue();
+  if (rg1 || rg2) {
+    nlpe1_ = nlpe_->emptyCopy(); //Engine for modified problem
+    nlpe1_->clear();
+    findCenter_(foundCenter);
+    if (foundCenter) {
+      // populate varPtrs_ with index of variables in nonlinear constraints
+      varsInNonlinCons_();
+      // General scheme using center and  positive spanning vectors
+      if (rg1) {
+        rootLinGenScheme1_();
+      }
 
-    // General scheme using nonlinear solution and positive spanning vectors
-    rootLinGenScheme2_();
+      // General scheme using nonlinear solution and positive spanning vectors
+      if (rg2) {
+        rootLinGenScheme2_();
+      }
+    }
   }
     //if (rs3_ > 0) {
     //if (nlCons_.size() > 0) {

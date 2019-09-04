@@ -239,12 +239,16 @@ void Environment::createDefaultOptions_()
       true, false);
   options_->insert(b_option);
 
+  b_option = (BoolOptionPtr) new Option<bool>("root_genLinScheme1", 
+      "Rounds of extra linearizations to be added at root node under gen scheme 1: <0/1>", true, false);
+  options_->insert(b_option);
+
+  b_option = (BoolOptionPtr) new Option<bool>("root_genLinScheme2", 
+      "Rounds of extra linearizations to be added at root node under gen scheme 2: <0/1>", true, false);
+  options_->insert(b_option);
+
   // reset, so that we don't accidently add it again.
   b_option = 0;
-
-  b_option = (BoolOptionPtr) new Option<bool>("root_linScheme2", 
-      "Add linearization by warm-starting NLP at root LP solution", true, false);
-  options_->insert(b_option);
 
   // int options
   i_option = (IntOptionPtr) new Option<int>("bnb_node_limit", 
