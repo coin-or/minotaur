@@ -24,6 +24,7 @@
 #include <QuadraticFunction.h>
 #include <Handler.h>
 #include <Option.h>
+#include <Operations.h>
 #include <Problem.h>
 #include <Engine.h>
 #include <QPEngine.h>
@@ -242,13 +243,9 @@ int main(int argc, char* argv[])
 
   MINOTAUR_AMPL::AMPLInterfacePtr iface = MINOTAUR_AMPL::AMPLInterfacePtr();  
   ProblemPtr inst;
+  
   double obj_sense =1.0;
   
-  // jacobian is read from AMPL interface and passed on to branch-and-bound
-  JacobianPtr jPtr;
-  // hessian is read from AMPL interface and passed on to branch-and-bound
-  MINOTAUR_AMPL::AMPLHessianPtr hPtr;
-
   // the branch-and-bound
   BranchAndBound *bab = 0;
   PresolverPtr pres = 0;
@@ -259,7 +256,6 @@ int main(int argc, char* argv[])
   PCBProcessorPtr nproc;
 
   NodeIncRelaxerPtr nr;
-  //bool isMINLP = false;
 
   //handlers
   HandlerVector handlers;
@@ -272,7 +268,6 @@ int main(int argc, char* argv[])
   EnginePtr nlp_e = 0;
 
   LPEnginePtr lin_e = 0;   // lp engine 
-  //LoggerPtr logger_ = (LoggerPtr) new Logger(LogInfo);
   VarVector *orig_v=0;
 
   int err = 0;
@@ -344,12 +339,7 @@ int main(int argc, char* argv[])
 
     qg_hand = (QGHandlerPtr) new QGHandler(env, inst, nlp_e); 
     qg_hand->setModFlags(false, true);
-    
-    // Set LP engine for root linearization scheme 3 
-    if (env->getOptions()->findInt("root_linScheme3")->getValue() > 0) {
-      qg_hand->setLpEngine(lin_e);
-    }
-
+   
     handlers.push_back(qg_hand);
     assert(qg_hand);
      
