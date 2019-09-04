@@ -50,8 +50,6 @@ private:
   /// Pointer to environment.
   EnvPtr env_;
 
-  /// Pointer to original problem.
-  ProblemPtr minlp_;
   /// Tolerance for checking integrality (should be obtained from env).
   double intTol_;
 
@@ -61,12 +59,15 @@ private:
   /// For log:
   static const std::string me_;
 
+  /// Pointer to original problem.
+  ProblemPtr minlp_;
+
   /// Vector of nonlinear constraints.
   std::vector<ConstraintPtr> nlCons_;
 
   /// NLP/QP Engine used to solve the NLP/QP relaxations.
   EnginePtr nlpe_;
-  
+
   /// Modifications done to NLP before solving it.
   std::stack<Modification *> nlpMods_;
 
@@ -79,30 +80,19 @@ private:
    * objective.
    */
   VariablePtr objVar_;
-  
-  //ConstraintPtr newCon_;
 
   /// Nonlinearity status of objective function. 1 if nonlinear 0 otherwise.
   bool oNl_;
-
-  /// Parameter for root lin scheme 1
-  double rs1_;
-  
-  /// Parameters for root lin scheme 2
-  double rs2Per_;
-
-  /// Parameter for root lin scheme 3
-  UInt rs3_;
 
   /// Pointer to relaxation of the problem.
   RelaxationPtr rel_;
 
   /// Value of objective in relaxation solution
   double relobj_; 
-  
+
   /// Absolute tolerance for constraint feasibility.
   double solAbsTol_;
-  
+
   /// Relative tolerance for constraint feasibility.
   double solRelTol_;
 
@@ -117,11 +107,10 @@ private:
   /// Statistics.
   QGStats *stats_;
 
-  //MS: to delete
-  //const double * solNLP_;  //MS: delete after use
-  //double objNLP_;  //MS: delete after use
+  /// MS: delete after use
+  //ConstSolutionPtr rootNLPSol_;
 
-  public:
+public:
   /// Empty constructor.
   QGHandler();
 
@@ -153,6 +142,7 @@ private:
                            BranchDirection)
   {return ModificationPtr();};
 
+       
   // Base class method. 
   std::string getName() const;
 
@@ -163,9 +153,7 @@ private:
 
   /// Does nothing.
   SolveStatus presolve(PreModQ *, bool *) {return Finished;};
-  
-  void setLpEngine(EnginePtr lpe);
-  
+
   /// Does nothing.
   bool presolveNode(RelaxationPtr, NodePtr, SolutionPoolPtr, ModVector &,
                     ModVector &)
@@ -194,27 +182,16 @@ private:
  
   /// Show statistics.
   void writeStats(std::ostream &out) const;
-  // MS: To delete
-  //const double * getRootNLPSolution() {return solNLP_;}
-  //double getRootNLPVal() {return objNLP_;}
+
+  ///MS: delete after use
+  //ConstSolutionPtr getRootNLPSol_() {return rootNLPSol_;}
 
 private:
- 
-  /// Add OA cut to a violated constraint.   
-  void addCut_(ConstraintPtr con, const double *nlpx, const double *lpx, 
-               CutManager *cutman, SeparationStatus *status);
-  
-  void addCutInf_(ConstraintPtr con, const double *nlpx, const double *lpx, 
-               CutManager *cutman, SeparationStatus *status);
   /**
    * Add linearization of nonlinear constraints and objective at point x* 
    * to the relaxation only (not to the lp engine)
    */
   void addInitLinearX_(const double *x);
-
-  /// OA cut at the LP solution
-  void cutsAtLpSol_(const double *lpx, CutManager *cutman,
-                    SeparationStatus *status);
 
   /**
    * Solve NLP by fixing integer variables at LP solution and add 
@@ -223,21 +200,6 @@ private:
   void cutIntSol_(ConstSolutionPtr sol, CutManager *cutMan, 
                   SolutionPoolPtr s_pool, bool *sol_found, 
                   SeparationStatus *status);
-
-  /**
-   * Check which nonlinear constraints are violated at the LP solution and
-   * add OA cuts. Return number of OA cuts added.
-   */
-  void cutToCons_(const double *nlpx, const double *lpx, CutManager *,
-                    SeparationStatus *status);
-    void cutToConsInf_(const double *nlpx, const double *lpx, CutManager *,
-                    SeparationStatus *status);
-   /**
-   * Check if objective is violated at the LP solution and
-   * add OA cut.
-   */
-  void cutToObj_(const double *nlpx, const double *lpx, CutManager *,
-                   SeparationStatus *status);
 
   /**
    * Fix integer constrained variables to integer values in x. Called
@@ -252,8 +214,6 @@ private:
    */
   void initLinear_(bool *isInf);
 
-
-
   /**
    * Obtain the linear function (lf) and constant (c) from the
    * linearization of function f at point x.
@@ -266,13 +226,38 @@ private:
    * a single variable.
    */
   void linearizeObj_();
- 
+
+  /**
+   * Check which nonlinear constraints are violated at the LP solution and
+   * add OA cuts. Return number of OA cuts added.
+   */
+  void cutToCons_(const double *nlpx, const double *lpx, CutManager *,
+                    SeparationStatus *status);
+  
+  /// Add OA cut to a violated constraint.   
+  void addCut_(const double *nlpx, const double *lpx, ConstraintPtr con, 
+               CutManager *cutman, SeparationStatus *status);
+  
+
+  void cutsAtLpSol_(const double *lpx, CutManager *cutman,
+                    SeparationStatus *status);
+
+  //void objCutAtLpSol_(const double *lpx, CutManager *cutman,
+                    //SeparationStatus *status);
+
+      
+  /**
+   * Check if objective is violated at the LP solution and
+   * add OA cut.
+   */
+  void cutToObj_(const double *nlpx, const double *lpx, CutManager *,
+                   SeparationStatus *status);
+
   /**
    * Create the initial relaxation. It is called from relaxInitFull and
    * relaxInitInc functions.
    */
   void relax_(bool *is_inf);
-
 
   /// Solve the nlp.
   void solveNLP_();
