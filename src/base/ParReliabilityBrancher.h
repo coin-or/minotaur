@@ -62,7 +62,7 @@ public:
                         DoubleVector pseudoUp, DoubleVector pseudoDown,
                         UInt nodesProc);
 
-   /// Return value of trustCutoff parameter.
+  /// Return value of trustCutoff parameter.
   bool getTrustCutoff();
 
   /// Get iteration limit of engine.
@@ -210,6 +210,12 @@ private:
   void findCandidates_(UIntVector *timesUp, UIntVector *timesDown,
                        DoubleVector *pseudoUp, DoubleVector *pseudoDown,
                        UInt nodesProc);
+
+  /**
+   * Clean up reliable and unreliable candidates, except for the no_del
+   * candidate.
+   */
+  void freeCandidates_(BrCandPtr no_del);
 
   /**
    * \brief Find the score of a candidate based on its pseudo costs.
