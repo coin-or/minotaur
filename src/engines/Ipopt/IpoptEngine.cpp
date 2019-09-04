@@ -946,19 +946,16 @@ bool IpoptFunInterface::get_starting_point(Index n, bool init_x, Number* x,
   // your own NLP, you can provide starting values for the others if
   // you wish.
 
-  const double *initial_point;
   assert(init_x == true);
 
   if (init_z == false || init_lambda == false) {
-    // fall back on using initial point provided by the problem or use 0.
-    initial_point = problem_->getInitialPoint();
-    //std::cout << "Not using warm start information for ipopt\n";
-    if (initial_point) {
-      std::copy(initial_point, initial_point + n, x);
-    } else {
-      std::fill(x, x+n, 0);
+    double* xp = x;
+    for (Minotaur::VariableConstIterator vit=problem_->varsBegin();
+         vit!=problem_->varsEnd(); ++vit, ++xp) {
+      *xp = (*vit)->getInitVal();
     }
   } else {
+    const double *initial_point;
     // we should have some starting information in sol_.
     assert(sol_);
     initial_point = sol_->getPrimal();

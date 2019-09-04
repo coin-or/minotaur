@@ -328,7 +328,6 @@ void Linearizations::findCenter_(bool &foundCenter)
     }
     inst_C->changeConstraint(con, lfc, con->getLb(), con->getUb());
   }
-  inst_C->resetInitialPoint(1);
   
   nlpe1_->load(inst_C);
   nlpStatus = nlpe1_->solve();
