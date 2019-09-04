@@ -187,12 +187,6 @@ namespace Minotaur {
     /// Return the hessian of the lagrangean. Could be NULL.
     virtual HessianOfLagPtr getHessian() const;
 
-    /**
-     * \brief Get the initial point. Used by some engines like IpoptEngine. The
-     * pointer returned from this function should not be changed or deleted.
-     */
-    virtual const double * getInitialPoint() const { return initialPt_; }
-
     /// Return the jacobian. Could be NULL.
     virtual JacobianPtr getJacobian() const;
 
@@ -476,17 +470,6 @@ namespace Minotaur {
     virtual void resetDer();
 
     /**
-     * \brief Reset an initial point.
-     *
-     * Initial point is used by some engines like IpoptEngine. If new
-     * variables are added, then set their initial values to zero and keep the
-     * initial values of the other variables as before.
-     * \param[in] newvar is number of new variables added to the problem.
-     */
-    virtual void resetInitialPoint(UInt newvar);
-
-
-    /**
      * \brief Reverse the sense of a constraint.
      * 
      * \param[in] cons The constraint whose sense has to be reversed.
@@ -502,6 +485,13 @@ namespace Minotaur {
      * \param[in] engine The engine pointer.
      */
     virtual void setEngine(Engine* engine);
+
+    /**
+     * \brief Add a pointer to the hessian of the Lagrangean. 
+     *
+     * \param[in] hessian Pointer to the HessianOfLag object.
+     */
+    virtual void setHessian(HessianOfLagPtr hessian);
 
     /**
      * \brief Set an initial point.
@@ -525,12 +515,8 @@ namespace Minotaur {
      */
     virtual void setInitialPoint(const double *x, size_t k);
 
-    /**
-     * \brief Add a pointer to the hessian of the Lagrangean. 
-     *
-     * \param[in] hessian Pointer to the HessianOfLag object.
-     */
-    virtual void setHessian(HessianOfLagPtr hessian);
+    virtual void setInitVal(VariablePtr v, double val);
+    virtual void setInitValByInd(UInt ind, double val);
 
     /**
      * \brief Set the jacobian of the constraints. 
@@ -611,9 +597,6 @@ namespace Minotaur {
 
     /// Pointer to the hessian of the lagrangean. Could be NULL.
     HessianOfLagPtr hessian_;
-
-    /// Initial point. Can be NULL.
-    double * initialPt_;
 
     /// Pointer to the jacobian of constraints. Can be NULL.
     JacobianPtr jacobian_;

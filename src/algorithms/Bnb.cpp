@@ -73,6 +73,7 @@ BranchAndBound* createBab(EnvPtr env, ProblemPtr p, EnginePtr e,
   OptionDBPtr options = env->getOptions();
   SOS2HandlerPtr s2_hand;
   RCHandlerPtr rc_hand;
+  UInt j;
 
   SOS1HandlerPtr s_hand = (SOS1HandlerPtr) new SOS1Handler(env, p);
   if (s_hand->isNeeded()) {
@@ -134,7 +135,7 @@ BranchAndBound* createBab(EnvPtr env, ProblemPtr p, EnginePtr e,
     rel->setJacobian(p->getJacobian());
     rel->setHessian(p->getHessian());
   }
-  rel->setInitialPoint(p->getInitialPoint());
+
   nr->setRelaxation(rel);
   nr->setEngine(e);
   bab->setNodeRelaxer(nr);

@@ -27,15 +27,16 @@ Variable::Variable()
 
 Variable::Variable(UInt id, UInt index, double lb, double ub, VariableType vtype, 
                    std::string name)
-  : id_(id), 
-    index_(index),
-    lb_(lb), 
-    ub_(ub), 
-    vtype_(vtype), 
-    ftype_(Constant),
-    state_(NormalVar), 
-    stype_(VarOrig),
-    name_(name) 
+: ftype_(Constant),
+  id_(id), 
+  index_(index),
+  lb_(lb), 
+  name_(name),
+  initVal_(0.0),
+  state_(NormalVar), 
+  stype_(VarOrig),
+  ub_(ub),
+  vtype_(vtype) 
 {
   cons_.clear();
 }
@@ -47,8 +48,10 @@ VariablePtr Variable::clone(UInt id) const
   VariablePtr newvar = (VariablePtr) new Variable(id, index_, lb_, ub_, vtype_, 
                                                   name_);
   newvar->stype_ = stype_;
+  newvar->initVal_ = initVal_;
   return newvar;
 }
+
 
 Variable::~Variable()
 {
@@ -87,11 +90,6 @@ UInt Variable::getNumCons() const
 
 
 void Variable::inConstraint_(ConstraintPtr cPtr)
-{
-  cons_.insert(cPtr);
-}
-
-void Variable::INConstraint(ConstraintPtr cPtr)
 {
   cons_.insert(cPtr);
 }

@@ -845,6 +845,11 @@ void LinearHandler::dupRows_(bool *changed)
   ConstraintPtr c1, c2;
   bool is_deleted;
 
+#if SPEW
+  logger_->msgStream(LogDebug) << me_ << "searching for duplicate "
+    << "constraints" << std::endl; 
+#endif
+
   r1.reserve(n);
   r2.reserve(n);
   h1.reserve(m);

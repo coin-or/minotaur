@@ -60,6 +60,9 @@ public:
    */
   UInt getIndex() const { return index_; }
 
+  /// Get starting or initial value.
+  double getInitVal() const { return initVal_; }
+
   /// Get lowerbound.
   double getLb() const { return lb_; }
 
@@ -95,37 +98,39 @@ public:
    */
   void write(std::ostream &out) const;
 
-  void INConstraint(ConstraintPtr c);
   /// Write the list of constraints in which this variable occurs.
   void writeConstraintMap(std::ostream & out) const;
 
 protected:
+  /// Change the function type to a new value.
+  void setFunType_(FunctionType ftype) { ftype_ = ftype; return; }
+
   /// Change the id to a new value.
   void setId_(UInt n) { id_ = n; }
-
-  /// Change the state to a new value.
-  void setState_(VarState state) { state_ = state; return; }
-
-  /// Change the lowerbound to a new value.
-  void setLb_(double newLb) { lb_ = newLb; }
-
-  /// Change the upperbound to a new value.
-  void setUb_(double newUb) { ub_ = newUb; }
 
   /// Change the index to a new value.
   void setIndex_(UInt n) { index_ = n; }
 
+  /// Change starting value.
+  void setInitVal_(double val) { initVal_ = val; }
+
+  /// Change the lowerbound to a new value.
+  void setLb_(double newLb) { lb_ = newLb; }
+
   /// Change the name to a new value.
   void setName_(std::string newName) { name_ = newName; }
+
+  /// Change the type of the origin of this variable
+  void setSrcType(VarSrcType stype) { stype_ = stype; }
+
+  /// Change the state to a new value.
+  void setState_(VarState state) { state_ = state; return; }
 
   /// Change the type to a new value.
   void setType_(VariableType vtype) { vtype_ = vtype; return; }
 
-  /// Change the function type to a new value.
-  void setFunType_(FunctionType ftype) { ftype_ = ftype; return; }
-
-  /// Change the type of the origin of this variable
-  void setSrcType(VarSrcType stype) { stype_ = stype; }
+  /// Change the upperbound to a new value.
+  void setUb_(double newUb) { ub_ = newUb; }
 
   /**
    * \brief Remove the constraint from the list of constraints this variable
@@ -143,6 +148,12 @@ protected:
   void clearConstraints_();
 
 private:
+  /// Set of constraints in which this variable appears.
+  ConstrSet cons_;
+
+  /// What kind of constraints does it appear in? Linear, Quadratic, ...
+  FunctionType ftype_;
+
   /// unique id for this variable
   UInt id_;
 
@@ -152,14 +163,11 @@ private:
   /// lower bound
   double lb_;
 
-  /// upper bound
-  double ub_;
+  /// name
+  std::string name_;
 
-  /// type: integer, binary, continuous etc
-  VariableType vtype_;
-
-  /// What kind of constraints does it appear in? Linear, Quadratic, ...
-  FunctionType ftype_;
+  /// Starting or initial value, sometimes used by NLP engines or heuristics
+  double initVal_;
 
   /// state: fixed, freed etc
   VarState state_;
@@ -167,11 +175,11 @@ private:
   /// Where did this variable originate? Original problem, transformer, etc.
   VarSrcType stype_;
 
-  /// name
-  std::string name_;
+  /// upper bound
+  double ub_;
 
-  /// Set of constraints in which this variable appears.
-  ConstrSet cons_;
+  /// type: integer, binary, continuous etc
+  VariableType vtype_;
 
   /// Copy constructor is not allowed.
   Variable(const Variable &v);

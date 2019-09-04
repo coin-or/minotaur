@@ -74,6 +74,7 @@ ParBranchAndBound* createParBab(EnvPtr env, ProblemPtr p, EnginePtr e,
   ParBranchAndBound *bab = new ParBranchAndBound(env, p);
   const std::string me("mcbnb main: ");
   OptionDBPtr options = env->getOptions();
+
   bab->shouldCreateRoot(false);
 
   for(UInt i = 0; i < numThreads; i++) {
@@ -134,7 +135,6 @@ ParBranchAndBound* createParBab(EnvPtr env, ProblemPtr p, EnginePtr e,
       relCopy[i]->setJacobian(p->getJacobian());
       relCopy[i]->setHessian(p->getHessian());
     }
-    relCopy[i]->setInitialPoint(p->getInitialPoint());
 
     nodePrcssr[i] = (ParPCBProcessorPtr) new ParPCBProcessor(env, eCopy[i], handlersCopy[i]);
     nodePrcssr[i]->setBrancher(br);

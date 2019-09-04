@@ -590,12 +590,10 @@ void BqpdEngine::storeSol_(double f)
 
 void BqpdEngine::setInitialPoint_()
 {
-  const double *initial_point = problem_->getInitialPoint();
-  if (initial_point) {
-    std::copy(initial_point, initial_point + problem_->getNumVars(), fStart_->x);
-  } else {
-    // start with zero.
-    memset(fStart_->x, 0, problem_->getNumVars() * sizeof(double));
+  double* xp = fStart_->x;
+  for (VariableConstIterator vit=problem_->varsBegin();
+       vit!=problem_->varsEnd(); ++vit, ++xp) {
+    *xp = (*vit)->getInitVal();
   }
 }
 

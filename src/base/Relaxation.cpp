@@ -51,8 +51,6 @@ Relaxation::Relaxation(ProblemPtr problem)
   VariableIterator vbeg;
   VarVector vvec;
 
-  initialPt_ = 0;
-
   // add variables
   i = 0;
   for (VariableConstIterator it=p_->varsBegin(); it!=p_->varsEnd(); 
