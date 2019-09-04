@@ -73,7 +73,6 @@ BranchAndBound* createBab(EnvPtr env, ProblemPtr p, EnginePtr e,
   OptionDBPtr options = env->getOptions();
   SOS2HandlerPtr s2_hand;
   RCHandlerPtr rc_hand;
-  UInt j;
 
   SOS1HandlerPtr s_hand = (SOS1HandlerPtr) new SOS1Handler(env, p);
   if (s_hand->isNeeded()) {
