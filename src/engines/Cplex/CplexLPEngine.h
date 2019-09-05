@@ -199,6 +199,9 @@ namespace Minotaur {
     // Implement Engine::setIterationLimit().
     void setIterationLimit(int);
 
+    // Implement Engine::setDualObjLimit().
+    int setDualObjLimit(double);
+
     // Implement Engine::setTimeLimit().
     void setTimeLimit(double);
 
@@ -243,6 +246,9 @@ namespace Minotaur {
 
     /// True if objective was changed after previous solve.
     bool objChanged_;
+
+    /// True if objective was changed after previous solve.
+    double dualObjLimit_;
 
     /// Problem that is loaded, if any.
     ProblemPtr problem_;

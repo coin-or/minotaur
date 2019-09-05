@@ -149,6 +149,9 @@ namespace Minotaur {
     /// Reset the iteration limit to maximum possible.
     virtual void resetIterationLimit() = 0;
 
+    /// Set the dual objective limit
+    virtual int setDualObjLimit(double) = 0;
+
     /** 
      * Set a limit on number of iterations. For strong-branching, for
      * instance.

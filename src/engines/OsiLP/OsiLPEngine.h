@@ -191,6 +191,9 @@ namespace Minotaur {
     // Implement Engine::setIterationLimit().
     void setIterationLimit(int limit);
 
+    // Implement Engine::setDualObjLimit().
+    int setDualObjLimit(double) {return 1;};
+
     /** 
      * Solve the problem that was loaded. Calls resolve() function of Osi.
      * The resolve() function ``smartly'' decides what method of clp should

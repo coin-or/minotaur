@@ -119,6 +119,7 @@ CplexLPEngine::CplexLPEngine(EnvPtr env)
   stats_->strIters = 0;
   logger_ = env->getLogger();
   timeLimit_ = INFINITY;
+  dualObjLimit_ = INFINITY;
 }
 
 
@@ -412,7 +413,7 @@ void CplexLPEngine::load(ProblemPtr problem)
   }
 
   if (stats_->calls < 1) {
-#if 1
+#if 0
     /* Turn on output to the screen (use a file to read parameters LATER!) */
     cpxstatus_ = CPXXsetintparam (cpxenv_, CPXPARAM_ScreenOutput, CPX_ON);
     if (cpxstatus_) {
@@ -421,7 +422,7 @@ void CplexLPEngine::load(ProblemPtr problem)
        goto TERMINATE;
     }
 
-    /* Display information for each iteration */
+    /* Display information for each simplex iteration */
     cpxstatus_ = CPXXsetintparam (cpxenv_, CPX_PARAM_SIMDISPLAY, 2);
     if (cpxstatus_) {
        logger_->msgStream(LogError) << me_ << "Failure to turn on simplex iterations log, error "
@@ -624,11 +625,20 @@ void CplexLPEngine::removeCons(std::vector<ConstraintPtr> &)
 
 void CplexLPEngine::resetIterationLimit()
 {
+  cpxstatus_ = CPXXsetintparam (cpxenv_, CPXPARAM_Simplex_Limits_Iterations, maxIterLimit_);
 }
 
 
-void CplexLPEngine::setIterationLimit(int)
+void CplexLPEngine::setIterationLimit(int limit)
 {
+  cpxstatus_ = CPXXsetintparam (cpxenv_, CPXPARAM_Simplex_Limits_Iterations, limit);
+}
+
+
+int CplexLPEngine::setDualObjLimit(double val)
+{
+  dualObjLimit_ = val;
+  return 0;
 }
   
 
@@ -676,7 +686,6 @@ EngineStatus CplexLPEngine::solve()
   /* Set objective limits on LP solves (assume minimization) */
   //CPXsetdblparam(env_, CPXPARAM_Simplex_Limits_LowerObj, primalobjlimit + objoffset);
   //CPXsetdblparam(env_, CPXPARAM_Simplex_Limits_UpperObj, dualobjlimit + objoffset);
-
 
   cpxstatus_ = CPXXlpopt (cpxenv_, cpxlp_);
   if ( cpxstatus_ ) {
