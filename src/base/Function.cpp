@@ -511,8 +511,8 @@ FunctionType Function::getType()
 
 void Function::changeLf(LinearFunctionPtr lf)
 {
-  if (lf) {
-    delete lf;
+  if (lf_) {
+    delete lf_;
   }
   lf_ = lf;
   collectVars_();
