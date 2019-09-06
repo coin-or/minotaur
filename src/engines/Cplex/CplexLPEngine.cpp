@@ -413,15 +413,17 @@ void CplexLPEngine::load(ProblemPtr problem)
   }
 
   if (stats_->calls < 1) {
-#if 0
-    /* Turn on output to the screen (use a file to read parameters LATER!) */
+#if 1
+    /* Turn on output to the screen (use a file to read parameters: TBD) */
     cpxstatus_ = CPXXsetintparam (cpxenv_, CPXPARAM_ScreenOutput, CPX_ON);
     if (cpxstatus_) {
        logger_->msgStream(LogError) << me_ << "Failure to turn on screen indicator, error "
          << cpxstatus_ << std::endl;
        goto TERMINATE;
     }
+#endif
 
+#if 0
     /* Display information for each simplex iteration */
     cpxstatus_ = CPXXsetintparam (cpxenv_, CPX_PARAM_SIMDISPLAY, 2);
     if (cpxstatus_) {
@@ -663,6 +665,8 @@ EngineStatus CplexLPEngine::solve()
   int cur_numcols = CPXXgetnumcols (cpxenv_, cpxlp_);
   
   double *x = new double[cur_numcols];
+  double *redCosts = new double[cur_numcols];
+  double *dualOfCons = new double[cur_numrows];
   int *varstat = new int[cur_numcols];
   int *constat = new int[cur_numrows];
 
@@ -679,72 +683,69 @@ EngineStatus CplexLPEngine::solve()
     if (cpxstatus_) {
       logger_->msgStream(LogInfo) << me_
         << "Failed to set the optimization method, error." << std::endl;
-      //goto TERMINATE;
     }
   }
 
   /* Set objective limits on LP solves (assume minimization) */
-  //CPXsetdblparam(env_, CPXPARAM_Simplex_Limits_LowerObj, primalobjlimit + objoffset);
-  //CPXsetdblparam(env_, CPXPARAM_Simplex_Limits_UpperObj, dualobjlimit + objoffset);
-
-  cpxstatus_ = CPXXlpopt (cpxenv_, cpxlp_);
-  if ( cpxstatus_ ) {
-     logger_->msgStream(LogInfo) << me_ << "Failed to optimize LP." << std::endl;
-     //goto TERMINATE;
+  cpxstatus_ = CPXXsetdblparam(cpxenv_, CPXPARAM_Simplex_Limits_UpperObj, dualObjLimit_);
+  if (cpxstatus_) {
+     logger_->msgStream(LogInfo) << me_ << "Failed to set dual objective limit."
+       << std::endl;
   }
-  solstat = CPXXgetstat (cpxenv_, cpxlp_);
+
+  // Solve the problem
+  cpxstatus_ = CPXXlpopt (cpxenv_, cpxlp_);
+  if (cpxstatus_) {
+     logger_->msgStream(LogInfo) << me_ << "Failed to optimize LP." << std::endl;
+  }
+
+  cpxstatus_ = CPXXsolution (cpxenv_, cpxlp_, &solstat, &objval, x, dualOfCons, NULL, redCosts);
+  if (cpxstatus_) {
+     logger_->msgStream(LogInfo) << me_ << "Failed to obtain solution data." << std::endl;
+  }
 
   // Solve status (replace with string later using CPXXgetstatstring(..))
   if (solstat == 1) {
     status_ = ProvenOptimal;
-
-    /* Get the (primal) objective value. */
-    cpxstatus_ = CPXXgetobjval (cpxenv_, cpxlp_, &objval);
-    if ( cpxstatus_ ) {
-       logger_->msgStream(LogInfo) << me_
-         << "No LP objective value available. Exiting..." << std::endl;
-    }
-
-    /* Get the solution. */
-    cpxstatus_ = CPXXgetx (cpxenv_, cpxlp_, x, 0, cur_numcols-1);
-    if (cpxstatus_) {
-     logger_->msgStream(LogInfo) << me_ << "Failed to get optimal integer x."
-       << std::endl;
-    }
-#if SPEW
-  /* Print the solution. */
-  printx(x, cur_numcols);
+#if 0
+    /* Print the solution. */
+    printx(x, cur_numcols);
 #endif
     sol_->setPrimal(x);
-    sol_->setObjValue(objval);
+    sol_->setObjValue(objval + problem_->getObjective()->getConstant());
+    sol_->setDualOfCons(dualOfCons);
+    sol_->setDualOfVars(redCosts);
 
-    // Store the warm start basis information
+    // Store basis information for warm starting
     cpxstatus_ = CPXXgetbase(cpxenv_, cpxlp_, varstat, constat);
     ws_->setVarStat(varstat, cur_numcols);
     ws_->setConStat(constat, cur_numrows);
   } else if (solstat == 3) {
     status_ = ProvenInfeasible;
     sol_->setObjValue(INFINITY);
-    //*objLb = -INFINITY;
+    sol_->setDualOfCons(dualOfCons);
+    sol_->setDualOfVars(redCosts);
   } else if(solstat == 2 || solstat == 20) {
     status_ = ProvenUnbounded;    // or it could be infeasible
     sol_->setObjValue(-INFINITY);
-  //} else if(model->isProvenDualInfeasible()) {
-    //status_ = ProvenUnbounded;    // primal is not infeasible but dual is.
-    //sol_->setObjValue(-INFINITY);
-    //std::cout << " dual inf \n";
-  } else if (solstat == 10 || solstat == 11 ) {
+    sol_->setDualOfCons(dualOfCons);
+    sol_->setDualOfVars(redCosts);
+  } else if (solstat == 10) {
     status_ = EngineIterationLimit;
-    if (solstat == 108) {
-      sol_->setObjValue(INFINITY);
-  } else {
+    sol_->setObjValue(INFINITY);
     sol_->setPrimal(x);
-    sol_->setObjValue(objval);
-  }
+    sol_->setObjValue(objval + problem_->getObjective()->getConstant());
+    sol_->setDualOfCons(dualOfCons);
+    sol_->setDualOfVars(redCosts);
+  } else if (solstat == 12) {
+    status_ = ProvenObjectiveCutOff;
+    sol_->setPrimal(x);
+    sol_->setObjValue(objval + problem_->getObjective()->getConstant());
+    sol_->setDualOfCons(dualOfCons);
+    sol_->setDualOfVars(redCosts);
   } else {
     status_ = EngineUnknownStatus;
     sol_->setObjValue(INFINITY);
-    logger_->msgStream(LogInfo) << " unknown \n";
   }
 
   stats_->iters += CPXXgetitcnt(cpxenv_, cpxlp_);
@@ -770,6 +771,8 @@ EngineStatus CplexLPEngine::solve()
 
 //TERMINATE:
   delete [] x;
+  delete [] dualOfCons;
+  delete [] redCosts;
   delete [] constat;
   delete [] varstat;
   return status_;
