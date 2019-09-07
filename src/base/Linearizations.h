@@ -29,6 +29,7 @@ namespace Minotaur {
   size_t rs1Cuts; /// Number of cuts in root scheme 1.
   size_t rs2Cuts; /// Number of cuts in root scheme 2.
   size_t rgs1Cuts; /// Number of cuts in root gen scheme 1.
+  size_t rgs2Cuts; /// Number of cuts in root gen scheme 2.
 };
 
 class Linearizations {
@@ -90,6 +91,12 @@ private:
   
   /// Parameter for root lin scheme 3
   UInt rs3_;
+  
+  /// Parameter for root lin scheme 1 for general problem
+  bool rgs1_;
+  
+  /// Parameter for root lin scheme 1 for general problem
+  bool rgs2_;
 
   /// Value of objective in relaxation solution
   double relobj_; 
@@ -182,7 +189,7 @@ private:
 
 
   void setStepSize_(double &varbound, double &alpha,
-                                   UInt vIdx, double boundSign);
+                                   UInt vIdx, double value, double boundSign);
 
   bool foundLinPt_(UInt pos, std::vector<UInt> varIdx, std::vector<double> alphaSign, double varBound, double *xOut, bool isLast);
 
@@ -250,8 +257,9 @@ private:
   
   void rootLinGenScheme2_();
 
-  void search_(double varbound, UInt vIdx, std::vector<UInt > varIdx, 
-                             double *xOut, bool &shouldCont,
+  void search_(double varbound, UInt vIdx, double val,
+               std::vector<UInt > varIdx, 
+                             double *xOut, bool &isFound,
                              std::vector<double > &alphaSign,
                              UInt pos, bool isLastDir);
 
