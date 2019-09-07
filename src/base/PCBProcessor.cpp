@@ -270,6 +270,7 @@ void PCBProcessor::process(NodePtr node, RelaxationPtr rel,
     logger_->msgStream(LogDebug) <<  me_ << "iteration " << iter 
                                  << std::endl;
 #endif
+    engine_->setDualObjLimit(s_pool->getBestSolutionValue());
 
     solveRelaxation_();
     sol = engine_->getSolution();
