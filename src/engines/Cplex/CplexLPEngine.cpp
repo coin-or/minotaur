@@ -413,7 +413,7 @@ void CplexLPEngine::load(ProblemPtr problem)
   }
 
   if (stats_->calls < 1) {
-#if 1
+#if 0
     /* Turn on output to the screen (use a file to read parameters: TBD) */
     cpxstatus_ = CPXXsetintparam (cpxenv_, CPXPARAM_ScreenOutput, CPX_ON);
     if (cpxstatus_) {
