@@ -621,30 +621,11 @@ EngineStatus CplexMILPEngine::solve()
      logger_->msgStream(LogError) << me_ << "Failed to optimize MILP." << std::endl;
      //goto TERMINATE;
   }
-  solstat = CPXXgetstat (cpxenv_, cpxlp_);
 
-  /* Write the output to the screen. */
-  logger_->msgStream(LogInfo) << me_ << "Solution status = " << solstat
-    << std::endl;
-
-  /* Get the (primal) objective value. */
-  cpxstatus_ = CPXXgetobjval (cpxenv_, cpxlp_, &objval);
+  // Access the solve information
+  cpxstatus_ = CPXXsolution (cpxenv_, cpxlp_, &solstat, &objval, x, NULL, NULL, NULL);
   if (cpxstatus_) {
-     logger_->msgStream(LogError) << me_
-       << "No MILP objective value available. Exiting..." << std::endl;
-  }
-  logger_->msgStream(LogInfo) << me_ << "Solution value = "
-    << objval << std::endl;
-
-  /* Get the number of nodes processed */
-  logger_->msgStream(LogInfo) << me_ << "Nodes processed = "
-    << CPXXgetnodecnt(cpxenv_, cpxlp_) << std::endl;
-
-  /* Get the solution. */
-  cpxstatus_ = CPXXgetx (cpxenv_, cpxlp_, x, 0, cur_numcols-1);
-  if (cpxstatus_) {
-   logger_->msgStream(LogError) << me_ << "Failed to get optimal integer x."
-     << std::endl;
+     logger_->msgStream(LogInfo) << me_ << "Failed to obtain solution data." << std::endl;
   }
 
   // Write MIP start for the next iteration
@@ -656,6 +637,11 @@ EngineStatus CplexMILPEngine::solve()
     }
   }
 
+  logger_->msgStream(LogInfo) << me_ << "status = " << solstat << std::endl
+                               << me_ << "solution value = "
+                               << objval << std::endl
+                               << me_ << "nodes processed = "
+                               << CPXXgetnodecnt(cpxenv_, cpxlp_) << std::endl;
 #if SPEW
   /* Write the solution. */
   printx(x, cur_numcols);
@@ -669,14 +655,9 @@ EngineStatus CplexMILPEngine::solve()
   } else if (solstat == 103 || solstat == 119) {
     status_ = ProvenInfeasible;
     sol_->setObjValue(INFINITY);
-    //*objLb = -INFINITY;
   } else if(solstat == 118 || solstat == 119) {
     status_ = ProvenUnbounded;    // or it could be infeasible
     sol_->setObjValue(-INFINITY);
-  //} else if(model->isProvenDualInfeasible()) {
-    //status_ = ProvenUnbounded;    // primal is not infeasible but dual is.
-    //sol_->setObjValue(-INFINITY);
-    //std::cout << " dual inf \n";
   } else if (solstat == 107 || solstat == 108 ) {
     status_ = EngineIterationLimit;
     if (solstat == 108) {

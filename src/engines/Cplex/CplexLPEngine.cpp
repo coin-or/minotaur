@@ -699,6 +699,7 @@ EngineStatus CplexLPEngine::solve()
      logger_->msgStream(LogInfo) << me_ << "Failed to optimize LP." << std::endl;
   }
 
+  // Access the solve information
   cpxstatus_ = CPXXsolution (cpxenv_, cpxlp_, &solstat, &objval, x, dualOfCons, NULL, redCosts);
   if (cpxstatus_) {
      logger_->msgStream(LogInfo) << me_ << "Failed to obtain solution data." << std::endl;
