@@ -191,7 +191,7 @@ private:
   void setStepSize_(double &varbound, double &alpha,
                                    UInt vIdx, double value, double boundSign);
 
-  bool foundLinPt_(UInt pos, std::vector<UInt> varIdx, std::vector<double> alphaSign, double varBound, double *xOut, bool isLast);
+  bool foundLinPt_(UInt vIdx, std::vector<UInt> varIdx, UInt pos, std::vector<double> alphaSign, double varBound, double *xOut, bool isLast);
 
   /**
    * Insert a new point in the candidate list for adding linearization in
