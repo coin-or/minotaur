@@ -111,9 +111,9 @@ Linearizations::Linearizations(EnvPtr env, EnginePtr nlpe, RelaxationPtr rel,
 
 Linearizations::~Linearizations()
 { 
-  //if (stats_) {
-    //delete stats_;
-  //}
+  if (stats_) {
+    delete stats_;
+  }
   nlCons_.clear();
   if (solC_) {
     delete [] solC_;
@@ -299,7 +299,8 @@ bool Linearizations::addNewCut_(double *b1, ConstraintPtr con,
 
 void Linearizations::findCenter_(bool &foundCenter)
 {
-  //Find center
+  // Center is found if the feasible region is compact and has
+  // non-empty inetrior. Otherwise, not.
   double act;
   VariablePtr vPtr;
   ConstraintPtr con;
@@ -321,15 +322,19 @@ void Linearizations::findCenter_(bool &foundCenter)
      ++it) {
     con = *it;
     fType = con->getFunctionType();
-    if (fType == Constant || fType == Linear) {
+    if (fType == Constant) {
       continue;
-    }
-    if (con->getLinearFunction()) {
+    } else if (fType == Linear)  {
       lfc = con->getLinearFunction()->clone();
       lfc->addTerm(vPtr, -1.0);
     } else {
-      lfc = (LinearFunctionPtr) new LinearFunction();
-      lfc->addTerm(vPtr, -1.0);
+      if (con->getLinearFunction()) {
+        lfc = con->getLinearFunction()->clone();
+        lfc->addTerm(vPtr, -1.0);
+      } else {
+        lfc = (LinearFunctionPtr) new LinearFunction();
+        lfc->addTerm(vPtr, -1.0);
+      }
     }
     inst_C->changeConstraint(con, lfc, con->getLb(), con->getUb());
   }
@@ -740,7 +745,7 @@ void Linearizations::search_(double varbound, UInt vIdx, double val,
       xOut[varIdx[i]] = xOut[varIdx[i]] + alphaSign[i];
     }
   }
-  isFound = foundLinPt_(vIdx, varIdx, alphaSign, varbound, xOut, isLastDir);
+  isFound = foundLinPt_(vIdx, varIdx, pos, alphaSign, varbound, xOut, isLastDir);
   return;
 }
 
@@ -927,7 +932,6 @@ void Linearizations::setStepSize_(double &varbound, double &alpha,
       alpha = fabs(val) + 1;
     }
     varbound = val + boundSign*(fabs(10*val) + 10); // parameter here
-    //varbound = nlpx_[vIdx] + boundSign*(fabs(10*nlpx_[vIdx]) + 10); // parameter here
   }
   alpha = 0.25*alpha;
   return;
@@ -980,6 +984,7 @@ void Linearizations::varsInNonlinCons_()
 
 
 bool Linearizations::foundLinPt_(UInt vIdx, std::vector<UInt> varIdx, 
+                                 UInt pos,
                                  std::vector<double> alphaSign, double varbound,
                                  double *xOut, bool isLast)
 {
@@ -1019,7 +1024,7 @@ bool Linearizations::foundLinPt_(UInt vIdx, std::vector<UInt> varIdx,
     }
     if (vioCons.size() == 0) {
       newPoint_(isLast, varIdx, xOut, alphaSign);  
-     if (alphaSign[vIdx] < 0) {
+     if (alphaSign[pos] < 0) {
        if ((xOut[vIdx]-varbound) < 0) {
          break;
        }
@@ -1044,7 +1049,8 @@ bool Linearizations::foundLinPt_(UInt vIdx, std::vector<UInt> varIdx,
   while (shouldCont) {
     shouldCont = findBoundaryPt_(isPtFound, xOut, xIn, vioCons);
   }
-  
+ 
+  delete [] xIn; 
   if (isPtFound) {
     return false;
   }
@@ -1052,17 +1058,19 @@ bool Linearizations::foundLinPt_(UInt vIdx, std::vector<UInt> varIdx,
 }
 
 void Linearizations::newPoint_(bool isLast,
-                               std::vector<UInt> varIdx, double *xOut, std::vector<double> alphaSign)
+                               std::vector<UInt> varIdx, double *xOut,
+                               std::vector<double> alphaSign)
 {
+  UInt idx;
   if (isLast) {
-    UInt idx;
     for (UInt i = 0; i < varPtrs_.size(); ++i) {
       idx = varPtrs_[i]->getIndex();
       xOut[idx] = xOut[idx] + alphaSign[i];
     }
   } else {
     for (UInt i = 0; i < varIdx.size(); ++i) {
-      xOut[varIdx[i]] = xOut[varIdx[i]] + alphaSign[i];
+      idx  = varIdx[i];
+      xOut[idx] = xOut[idx] + alphaSign[i];
     }
   }
   return;
