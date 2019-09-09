@@ -143,7 +143,7 @@ void CplexMILPEngine::addConstraint(ConstraintPtr con)
   delete conrhs;
   delete [] conname[0];
   delete [] conname;
-  delete sense;
+  delete [] sense;
   delete start;
   consChanged_ = true;
 

@@ -77,8 +77,14 @@ namespace Minotaur {
     // Return constat array from warmstart
     int *getConStat() const { return constat_;}
 
+    // Return the size of constat_ (number of constraints)
+    int getNumCons() const { return numCons_;}
+
     // Return solution from warmstart
     SolutionPtr getSolution() const { return sol_;}
+
+    // Return the size of constat_ (number of constraints)
+    void setNumCons(int num) { numCons_ = num;}
 
     // Set varstat array for warmstart
     void setVarStat(int *varstat, int numvars);
@@ -101,6 +107,9 @@ namespace Minotaur {
 
     /// An array to store the variable warmstart info
     int * varstat_;
+
+    /// Size of constat_
+    int numCons_;
   };
 
 
