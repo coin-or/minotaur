@@ -54,10 +54,10 @@ CpxLPWarmStart::~CpxLPWarmStart()
     sol_ = 0;
   }
   if (varstat_) {
-    delete [] varstat_;
+    delete [] varstat_; varstat_ = 0;
   }
   if (constat_) {
-    delete [] constat_;
+    delete [] constat_; constat_ = 0;
   }
 }
 
@@ -190,7 +190,7 @@ void CplexLPEngine::addConstraint(ConstraintPtr con)
   delete [] conname[0];
   delete [] conname;
   delete sense;
-  delete start;
+  delete [] start;
   consChanged_ = true;
 }
 
@@ -314,12 +314,14 @@ EngineStatus CplexLPEngine::getStatus()
 WarmStartPtr CplexLPEngine::getWarmStartCopy()
 {
   //Create a new copy of warm-start information from cplex
-  CpxLPWarmStartPtr ws = new CpxLPWarmStart();
-  // save it. It is our responsibility to free it.
-  //ws->setCpxLPWarmStart(ws_->getVarStat(), ws_->getConStat(), ws_->getSolution());
-  ws->setVarStat(ws_->getVarStat(), problem_->getNumVars());
-  ws->setConStat(ws_->getConStat(), problem_->getNumCons());
-
+  CpxLPWarmStartPtr ws = 0;
+  if (ws_) {
+    ws = new CpxLPWarmStart();
+    // save it. It is our responsibility to free it.
+    ws->setVarStat(ws_->getVarStat(), problem_->getNumVars());
+    ws->setConStat(ws_->getConStat(), ws_->getNumCons());
+    ws->setNumCons(ws_->getNumCons());
+  }
   return ws;
 }
 
@@ -599,13 +601,35 @@ TERMINATE:
 void CplexLPEngine::loadFromWarmStart(const WarmStartPtr ws)
 {
   ConstCpxLPWarmStartPtr ws2 = dynamic_cast <const CpxLPWarmStart*> (ws);
-  cpxstatus_ = CPXXcopybase(cpxenv_, cpxlp_, ws2->getVarStat(), ws2->getConStat());
-#if 0
-  logger_->msgStream(LogInfo) << "ws vars\n";
-  printx(ws2->getVarStat(), CPXXgetnumcols (cpxenv_, cpxlp_));
-  logger_->msgStream(LogInfo) << "ws cons\n";
-  printx(ws2->getConStat(), CPXXgetnumrows (cpxenv_, cpxlp_));
-#endif
+  assert (ws2);
+  int wsNumCons = ws2->getNumCons();
+  int probNumCons = problem_->getNumCons();
+
+  if (wsNumCons == probNumCons) {
+    cpxstatus_ = CPXXcopybase(cpxenv_, cpxlp_, ws2->getVarStat(), ws2->getConStat());
+    if (cpxstatus_) {
+       logger_->msgStream(LogError) << me_
+         << "Failed to pass basis information for warm starting."
+         << std::endl;
+    }
+  } else {
+    assert(!(probNumCons < wsNumCons));
+    int *constat = new int[probNumCons];
+    int *wsconstat = ws2->getConStat();
+    for (int i=0; i < wsNumCons; ++i) {
+      constat[i] = wsconstat[i];
+    }
+    for (int i=wsNumCons; i < probNumCons; ++i) {
+      constat[i] = 0; //assume dual/slack is nonbasic for new constraint
+    }
+    cpxstatus_ = CPXXcopybase(cpxenv_, cpxlp_, ws2->getVarStat(), constat);
+    if (cpxstatus_) {
+       logger_->msgStream(LogError) << me_
+         << "Failed to pass basis information for warm starting."
+         << std::endl;
+    }
+    delete [] constat;
+  }
 }
 
 
@@ -671,6 +695,7 @@ EngineStatus CplexLPEngine::solve()
   int *constat = new int[cur_numrows];
 
 #if 0
+  problem_->write(std::cout,9);
   /* Write a copy of the problem to a file. */
   writeLP("minoCpx.lp"); 
 #endif
@@ -703,6 +728,7 @@ EngineStatus CplexLPEngine::solve()
   cpxstatus_ = CPXXsolution (cpxenv_, cpxlp_, &solstat, &objval, x, dualOfCons, NULL, redCosts);
   if (cpxstatus_) {
      logger_->msgStream(LogInfo) << me_ << "Failed to obtain solution data." << std::endl;
+     solstat = CPXXgetstat(cpxenv_, cpxlp_); //get solve status
   }
 
   // Solve status (replace with string later using CPXXgetstatstring(..))
@@ -720,6 +746,7 @@ EngineStatus CplexLPEngine::solve()
     // Store basis information for warm starting
     cpxstatus_ = CPXXgetbase(cpxenv_, cpxlp_, varstat, constat);
     ws_->setVarStat(varstat, cur_numcols);
+    ws_->setNumCons(cur_numrows);
     ws_->setConStat(constat, cur_numrows);
   } else if (solstat == 3) {
     status_ = ProvenInfeasible;
