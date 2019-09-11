@@ -620,7 +620,7 @@ void CplexLPEngine::loadFromWarmStart(const WarmStartPtr ws)
       constat[i] = wsconstat[i];
     }
     for (int i=wsNumCons; i < probNumCons; ++i) {
-      constat[i] = 1; //assuming dual/slack is basic for new constraint
+      constat[i] = 0; //assume dual/slack is nonbasic for new constraint
     }
     cpxstatus_ = CPXXcopybase(cpxenv_, cpxlp_, ws2->getVarStat(), constat);
     if (cpxstatus_) {
@@ -695,6 +695,7 @@ EngineStatus CplexLPEngine::solve()
   int *constat = new int[cur_numrows];
 
 #if 0
+  problem_->write(std::cout,9);
   /* Write a copy of the problem to a file. */
   writeLP("minoCpx.lp"); 
 #endif
@@ -727,6 +728,7 @@ EngineStatus CplexLPEngine::solve()
   cpxstatus_ = CPXXsolution (cpxenv_, cpxlp_, &solstat, &objval, x, dualOfCons, NULL, redCosts);
   if (cpxstatus_) {
      logger_->msgStream(LogInfo) << me_ << "Failed to obtain solution data." << std::endl;
+     solstat = CPXXgetstat(cpxenv_, cpxlp_); //get solve status
   }
 
   // Solve status (replace with string later using CPXXgetstatstring(..))
