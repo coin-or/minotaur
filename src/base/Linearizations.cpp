@@ -844,8 +844,8 @@ void Linearizations::boundingVar_(double &varbound,
 void Linearizations::rootLinGenScheme1_()
 {
   VariablePtr v;
-  UInt lPos, uPos, vIdx, uIdx, lIdx;
   bool isFound = false;
+  UInt lPos, uPos, vIdx;
   int n = minlp_->getNumVars();
   double *xOut = new double[n];
   double varbound, vLb = INFINITY, vUb = INFINITY;   
@@ -867,14 +867,12 @@ void Linearizations::rootLinGenScheme1_()
     varbound = v->getUb() - solC_[vIdx];
     if (varbound < vUb) {
       uPos = i;
-      uIdx = vIdx;
-      vUb = v->getUb();
+      vUb = varbound;
     }
     varbound = solC_[vIdx] - v->getLb();
     if (varbound < vLb) {
       lPos = i;
-      lIdx = vIdx;
-      vLb = v->getLb();
+      vLb = varbound;
     }
 
      // coordinate direction for each variable 
@@ -898,21 +896,27 @@ void Linearizations::rootLinGenScheme1_()
    // last direction in positive spanning set 
   if (vLb == INFINITY) {
     lPos = 0; 
-    lIdx = varPtrs_[0]->getIndex(); 
+    vIdx = varPtrs_[0]->getIndex(); 
+  } else {
+    vLb = varPtrs_[lPos]->getLb();
+    vIdx = varPtrs_[lPos]->getIndex(); 
   }
   alphaSign.resize(varPtrs_.size());
   std::fill(alphaSign.begin(), alphaSign.end(),-1);
   
-  search_(vLb, lIdx, solC_[lIdx], varIdx, xOut, isFound, alphaSign, lPos, 1);
+  search_(vLb, vIdx, solC_[vIdx], varIdx, xOut, isFound, alphaSign, lPos, 1);
  
   if (!isFound) {
     if (vUb == INFINITY) {
       uPos = 0;  
-      uIdx = varPtrs_[0]->getIndex(); 
-    }
+      vIdx = varPtrs_[0]->getIndex(); 
+    } else {
+      vUb = varPtrs_[uPos]->getUb();
+      vIdx = varPtrs_[uPos]->getIndex(); 
+  }
     std::copy(solC_, solC_+minlp_->getNumVars(), xOut);
     std::fill(alphaSign.begin(), alphaSign.end(),1);
-    search_(vUb, uIdx, solC_[uIdx], varIdx, xOut, isFound, alphaSign, uPos, 1);
+    search_(vUb, vIdx, solC_[vIdx], varIdx, xOut, isFound, alphaSign, uPos, 1);
   }
   delete [] xOut;
   return;
@@ -1255,7 +1259,6 @@ void Linearizations::rootLinScheme1_(ConstraintPtr con, double lVarCoeff,
     delete [] b1;
     return;    
   }
-
 
   // upper bound of var in nonlinear cons
   b1[nVarIdx] = vUb;
