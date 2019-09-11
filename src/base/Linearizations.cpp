@@ -557,7 +557,7 @@ void Linearizations::rootLinearizations(std::vector<ConstraintPtr> nlCons,
                                         const double * nlpx)
 {
   ConstraintPtr con;
-  bool shouldCont, foundCenter = false;
+  bool shouldCont, isFound = false;
   double lVarCoeff = 0, nVarCoeff = 0;
   UInt nVarIdx, lVarIdx;
     
@@ -575,6 +575,7 @@ void Linearizations::rootLinearizations(std::vector<ConstraintPtr> nlCons,
       if (shouldCont == false) {
         continue;    
       } else {
+        isFound = true;
         if (rs1_ > 0) {
           rootLinScheme1_(con, lVarCoeff, lVarIdx, nVarIdx, nVarCoeff);
         }
@@ -585,13 +586,18 @@ void Linearizations::rootLinearizations(std::vector<ConstraintPtr> nlCons,
       }
     }
   }
+  if (!isFound) {
+    std::cout << "No univariate nonlinear function.\n";
+    exit(1);
+  }
   /// General scheme at root
   // Option for general scheme
+  isFound = false;
   if (rgs1_ || rgs2_) {
     nlpe1_ = nlpe_->emptyCopy(); //Engine for modified problem
     //nlpe1_->clear();
-    findCenter_(foundCenter);
-    if (foundCenter) {
+    findCenter_(isFound);
+    if (isFound) {
       // populate varPtrs_ with index of variables in nonlinear constraints
       varsInNonlinCons_();
       // General scheme using center and  positive spanning vectors
