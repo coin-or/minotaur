@@ -1716,7 +1716,7 @@ void Linearizations::writeStats(std::ostream &out) const
     << me_ << "number of cuts in root scheme 1      = "
     << stats_->rs1Cuts << std::endl
     << me_ << "number of cuts in root scheme 2      = "
-    << stats_->rs1Cuts << std::endl
+    << stats_->rs2Cuts << std::endl
     << me_ << "number of cuts in root gen. scheme 1 = "
     << stats_->rgs1Cuts << std::endl
     << me_ << "number of cuts in root gen. scheme 2 = "
