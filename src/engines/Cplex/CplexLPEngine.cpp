@@ -701,7 +701,7 @@ EngineStatus CplexLPEngine::solve()
 #endif
 
   /* Optimize the problem and obtain solution. */
-  if (bndChanged_ || consChanged_) {
+  if ((bndChanged_ || consChanged_) && (stats_->calls > 1)) {
     /* Because the problem is dual feasible with the rows added, using
       the dual simplex method is indicated.  */
     cpxstatus_ = CPXXsetintparam (cpxenv_, CPXPARAM_LPMethod, CPX_ALG_DUAL);
@@ -748,7 +748,7 @@ EngineStatus CplexLPEngine::solve()
     ws_->setVarStat(varstat, cur_numcols);
     ws_->setNumCons(cur_numrows);
     ws_->setConStat(constat, cur_numrows);
-  } else if (solstat == 3) {
+  } else if (solstat == 3 || solstat == 5) {
     status_ = ProvenInfeasible;
     sol_->setObjValue(INFINITY);
     sol_->setDualOfCons(dualOfCons);
