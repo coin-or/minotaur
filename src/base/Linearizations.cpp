@@ -557,7 +557,7 @@ void Linearizations::rootLinearizations(std::vector<ConstraintPtr> nlCons,
                                         const double * nlpx)
 {
   ConstraintPtr con;
-  bool shouldCont, isFound = false;
+  bool isFound = false;
   double lVarCoeff = 0, nVarCoeff = 0;
   UInt nVarIdx, lVarIdx;
     
@@ -570,12 +570,11 @@ void Linearizations::rootLinearizations(std::vector<ConstraintPtr> nlCons,
       lVarCoeff = 0;
       nVarCoeff = 0;
       // constraints with only one var in the nonlinear part
-      shouldCont = uniVarNlFunc_(con, lVarCoeff, lVarIdx, nVarIdx, nVarCoeff); 
+      isFound = uniVarNlFunc_(con, lVarCoeff, lVarIdx, nVarIdx, nVarCoeff); 
       //MS: see if this if-else has to be changed
-      if (shouldCont == false) {
+      if (isFound == false) {
         continue;    
       } else {
-        isFound = true;
         if (rs1_ > 0) {
           rootLinScheme1_(con, lVarCoeff, lVarIdx, nVarIdx, nVarCoeff);
         }
@@ -586,10 +585,7 @@ void Linearizations::rootLinearizations(std::vector<ConstraintPtr> nlCons,
       }
     }
   }
-  if (!isFound) {
-    std::cout << "No univariate nonlinear function.\n";
-    exit(1);
-  }
+
   /// General scheme at root
   // Option for general scheme
   isFound = false;
@@ -1254,7 +1250,6 @@ void Linearizations::rootLinScheme1_(ConstraintPtr con, double lVarCoeff,
   if (shouldCont) {
     shouldCont = addNewCut_(b1, con, newConId);
     if (shouldCont) {
-      ++stats_->rs1Cuts;
       y1 = b1[lVarIdx];
       newConsId.push_back(newConId); 
     } else {
@@ -1273,7 +1268,6 @@ void Linearizations::rootLinScheme1_(ConstraintPtr con, double lVarCoeff,
   if (shouldCont) {
     shouldCont = addNewCut_(b1, con, newConId);
     if (shouldCont) {
-      ++stats_->rs1Cuts;
       y2 = b1[lVarIdx];
       newConsId.push_back(newConId); 
     } else {
@@ -1328,7 +1322,6 @@ void Linearizations::rootLinScheme1_(ConstraintPtr con, double lVarCoeff,
     b1[nVarIdx] = xc[i];
     shouldCont = addNewCut_(b1, con, newConId);
     if (shouldCont) {
-      ++stats_->rs1Cuts;
       newcon = rel_->getConstraint(newConId);
       cUb = newcon->getUb();
     } else {
