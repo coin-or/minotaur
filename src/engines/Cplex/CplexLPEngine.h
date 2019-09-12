@@ -220,6 +220,9 @@ namespace Minotaur {
     /// Writes an LP file of the loaded LP.
     void writeLP(const char *filename) const;
 
+    /// Writes an LP file in the directory of problem file.
+    void writeLP();
+
     /// Write statistics.
     void writeStats(std::ostream &out) const;
 

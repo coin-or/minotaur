@@ -425,7 +425,7 @@ void CplexLPEngine::load(ProblemPtr problem)
     }
 #endif
 
-#if 0
+#if 1
     /* Display information for each simplex iteration */
     cpxstatus_ = CPXXsetintparam (cpxenv_, CPX_PARAM_SIMDISPLAY, 2);
     if (cpxstatus_) {
@@ -612,6 +612,12 @@ void CplexLPEngine::loadFromWarmStart(const WarmStartPtr ws)
          << "Failed to pass basis information for warm starting."
          << std::endl;
     }
+    cpxstatus_ = CPXXsetintparam (cpxenv_, CPXPARAM_Advance, 1);
+    if (cpxstatus_) {
+       logger_->msgStream(LogError) << me_
+         << "Failed to set advanced basis usage parameter to 1."
+         << std::endl;
+    }
   } else {
     assert(!(probNumCons < wsNumCons));
     int *constat = new int[probNumCons];
@@ -626,6 +632,12 @@ void CplexLPEngine::loadFromWarmStart(const WarmStartPtr ws)
     if (cpxstatus_) {
        logger_->msgStream(LogError) << me_
          << "Failed to pass basis information for warm starting."
+         << std::endl;
+    }
+    cpxstatus_ = CPXXsetintparam (cpxenv_, CPXPARAM_Advance, 2);
+    if (cpxstatus_) {
+       logger_->msgStream(LogError) << me_
+         << "Failed to set advanced basis usage parameter to 2."
          << std::endl;
     }
     delete [] constat;
@@ -695,9 +707,9 @@ EngineStatus CplexLPEngine::solve()
   int *constat = new int[cur_numrows];
 
 #if 0
-  problem_->write(std::cout,9);
+  //problem_->write(std::cout, 9);
   /* Write a copy of the problem to a file. */
-  writeLP("minoCpx.lp"); 
+  writeLP();
 #endif
 
   /* Optimize the problem and obtain solution. */
@@ -727,7 +739,9 @@ EngineStatus CplexLPEngine::solve()
   // Access the solve information
   cpxstatus_ = CPXXsolution (cpxenv_, cpxlp_, &solstat, &objval, x, dualOfCons, NULL, redCosts);
   if (cpxstatus_) {
+#if SPEW
      logger_->msgStream(LogInfo) << me_ << "Failed to obtain solution data." << std::endl;
+#endif
      solstat = CPXXgetstat(cpxenv_, cpxlp_); //get solve status
   }
 
@@ -758,6 +772,7 @@ EngineStatus CplexLPEngine::solve()
     sol_->setObjValue(-INFINITY);
     sol_->setDualOfCons(dualOfCons);
     sol_->setDualOfVars(redCosts);
+    //writeLP();
   } else if (solstat == 10) {
     status_ = EngineIterationLimit;
     sol_->setObjValue(INFINITY);
@@ -809,6 +824,16 @@ EngineStatus CplexLPEngine::solve()
 
 void CplexLPEngine::writeLP(const char *filename) const 
 {
+  int status = CPXXwriteprob (cpxenv_, cpxlp_, filename, NULL);
+  if (status) {
+   assert(!"Failed to write LP to disk.\n");
+  }
+}
+
+
+void CplexLPEngine::writeLP()
+{
+  const char *filename = (env_->getOptions()->findString("problem_file")->getValue() + ".lp").c_str();
   int status = CPXXwriteprob (cpxenv_, cpxlp_, filename, NULL);
   if (status) {
    assert(!"Failed to write LP to disk.\n");
