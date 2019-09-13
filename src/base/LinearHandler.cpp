@@ -361,14 +361,17 @@ void LinearHandler::chkSing_(bool *changed)
         }
       }
       if (del_var) {
+#if SPEW
+        logger_->msgStream(LogDebug) << me_ << "variable " << v->getName() 
+                                     << " appears in a single constraint "
+                                     << c->getName() << ". Fixed." 
+                                     << std::endl;
+#endif
+        c->setBFlag(true);
         problem_->changeBound(v, 0.0, 0.0);
         problem_->markDelete(v);
         ++(pStats_->varDel);
         *changed = true;
-#if SPEW
-        logger_->msgStream(LogDebug) << me_ << "variable " << v->getName() 
-                                     << " is a singleton. Fixed." << std::endl;
-#endif
       }
     } 
   }
@@ -470,7 +473,7 @@ SolveStatus LinearHandler::varBndsFromCons_(ProblemPtr p, bool apply_to_prob,
        c_iter!=p->consEnd(); ++c_iter) {
     c_ptr = *c_iter;
     // For-VC: add one more check
-    if (  c_ptr->getBFlag() &&  c_ptr->getFunctionType() == Linear && DeletedCons!=c_ptr->getState()) {
+    if (c_ptr->getBFlag() &&  c_ptr->getFunctionType() == Linear && DeletedCons!=c_ptr->getState()) {
       t_changed = true;
       c_ptr->setBFlag(false);
       while (true == t_changed) {
@@ -614,6 +617,7 @@ void LinearHandler::coeffImp_(bool *changed)
             // constraint is redundant when x0=1
             assert(a0 < 0);
             lf->incTerm(v, ub-uu-a0);
+            c->setBFlag(true);
             *changed = true;
             ++(pStats_->cImp);
             break;
@@ -621,6 +625,7 @@ void LinearHandler::coeffImp_(bool *changed)
             // constraint is redundant when x0=1
             assert(a0 > 0);
             lf->incTerm(v, lb-ll-a0);
+            c->setBFlag(true);
             *changed = true;
             ++(pStats_->cImp);
             break;
@@ -639,6 +644,7 @@ void LinearHandler::coeffImp_(bool *changed)
             assert(a0 > 0);
             lf->incTerm(v, uu-a0-ub);
             problem_->changeBound(c, Upper, uu-a0);
+            c->setBFlag(true);
             *changed = true;
             ++(pStats_->cImp);
             break;
@@ -647,6 +653,7 @@ void LinearHandler::coeffImp_(bool *changed)
             assert(a0 < 0);
             lf->incTerm(v, ll-a0-lb);
             problem_->changeBound(c, Lower, ll-a0);
+            c->setBFlag(true);
             *changed = true;
             ++(pStats_->cImp);
             break;
@@ -1184,11 +1191,13 @@ void LinearHandler::updateLfBoundsFromUb_(ProblemPtr p, bool apply_to_prob,
   }
 }
 
+
 void LinearHandler::changeBFlag_(VariablePtr v){
   for (ConstrSet::iterator cit=v->consBegin(); cit!=v->consEnd(); ++cit){
     (*cit)->setBFlag(true);
   }
 }
+
 
 void LinearHandler::getLfBnds_(LinearFunctionPtr lf, double *lo, double *up)
 {
@@ -1671,6 +1680,7 @@ bool LinearHandler::treatDupRows_(ConstraintPtr c1, ConstraintPtr c2,
     lb = (c1->getLb()<lb)?lb:c1->getLb();
     ub = (c1->getUb()<ub)?c1->getUb():ub;
     problem_->changeBound(c1, lb, ub);
+    c1->setBFlag(true);
     problem_->markDelete(c2);
 #if SPEW
     logger_->msgStream(LogDebug) << me_ << "marked constraint " << c2->getName()
