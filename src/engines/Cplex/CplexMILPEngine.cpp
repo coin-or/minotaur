@@ -1298,7 +1298,7 @@ void CplexMILPEngine::writeLP(const char *filename) const
   }
 }
 
-void CplexLPEngine::writeLP()
+void CplexMILPEngine::writeLP()
 {
   const char *filename = (env_->getOptions()->findString("problem_file")->getValue() + ".lp").c_str();
   int status = CPXXwriteprob (cpxenv_, cpxlp_, filename, NULL);
