@@ -18,9 +18,6 @@
 
 namespace Minotaur {
 
-class LinearFunction;
-typedef LinearFunction* LinearFunctionPtr;
-
 /// Store statistics of presolving.
 struct LinPresolveStats 
 {
@@ -62,7 +59,6 @@ struct LinPresolveOpts {
  */
 class LinearHandler : public Handler {
 public:
-
   /// Default constructor.
   LinearHandler();
 
@@ -170,6 +166,9 @@ protected:
    * valued.
    */
   const double intTol_;
+
+  /// If true, dupRows_ is run in presolve
+  bool chkDupRows_;
 
   /// Tolerance.
   const double eTol_;

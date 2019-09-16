@@ -98,6 +98,7 @@ SolveStatus Presolver::solve()
     << std::endl;
   // call all handlers.
   while (true==changed && false==stop && iters<5) {
+    logger_->msgStream(LogDebug) << me_ << "major iteration " << iters << std::endl;
     for (HandlerIterator h = handlers_.begin(); h != handlers_.end(); ++h) {
       changed = false;
       h_status = (*h)->presolve(&mods_, &changed);
