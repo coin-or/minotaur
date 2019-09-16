@@ -210,7 +210,7 @@ void CplexLPEngine::changeBound(VariablePtr var, BoundType lu, double new_val)
   double *value = new double[1];
   index[0] = var->getIndex();
   value[0] = new_val;
-  
+
   switch (lu) {
    case Lower:
      bndType[0] = 'L';

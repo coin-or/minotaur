@@ -154,8 +154,11 @@ namespace Minotaur {
                          STOAHandlerPtr stoa_hand,
                          SolveStatus* solveStatus);
 
-    /// Writes an LP file of the loaded LP.
+    /// Writes an LP file of the loaded problem.
     void writeLP(const char *filename) const;
+
+    /// Writes an LP file in the directory of problem file.
+    void writeLP();
 
     /// Write statistics.
     void writeStats(std::ostream &out) const;

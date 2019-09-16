@@ -217,7 +217,7 @@ namespace Minotaur {
     // Implement the LP solve() function of Cplex
     EngineStatus solve();
 
-    /// Writes an LP file of the loaded LP.
+    /// Writes an LP file of the loaded problem.
     void writeLP(const char *filename) const;
 
     /// Writes an LP file in the directory of problem file.

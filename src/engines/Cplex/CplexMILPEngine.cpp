@@ -143,10 +143,9 @@ void CplexMILPEngine::addConstraint(ConstraintPtr con)
   delete conrhs;
   delete [] conname[0];
   delete [] conname;
-  delete [] sense;
-  delete start;
+  delete sense;
+  delete [] start;
   consChanged_ = true;
-
 }
 
 
@@ -562,6 +561,11 @@ void CplexMILPEngine::setUpperCutoff(double cutoff)
 
 EngineStatus CplexMILPEngine::solve()
 {
+  stats_->calls += 1;
+#if SPEW
+  logger_->msgStream(LogDebug) << me_ << "in call number " << stats_->calls
+                               << std::endl;
+#endif
   int solstat;
   double objval = INFINITY;
   int cur_numcols = CPXXgetnumcols (cpxenv_, cpxlp_);
@@ -571,7 +575,7 @@ EngineStatus CplexMILPEngine::solve()
 #if 0
   /* Write a copy of the problem to a file. */
   problem_->write(std::cout);
-  writeLP("minoCpx.lp");
+  writeLP();
 #endif
 
   /* Set time limit (wallclock) for this iteration */
@@ -626,6 +630,7 @@ EngineStatus CplexMILPEngine::solve()
   cpxstatus_ = CPXXsolution (cpxenv_, cpxlp_, &solstat, &objval, x, NULL, NULL, NULL);
   if (cpxstatus_) {
      logger_->msgStream(LogInfo) << me_ << "Failed to obtain solution data." << std::endl;
+     solstat = CPXXgetstat(cpxenv_, cpxlp_); //get solve status
   }
 
   // Write MIP start for the next iteration
@@ -1287,6 +1292,15 @@ void CplexMILPEngine::free_(char **ptr)
 
 void CplexMILPEngine::writeLP(const char *filename) const 
 {
+  int status = CPXXwriteprob (cpxenv_, cpxlp_, filename, NULL);
+  if (status) {
+   assert(!"Failed to write LP to disk.\n");
+  }
+}
+
+void CplexMILPEngine::writeLP()
+{
+  const char *filename = (env_->getOptions()->findString("problem_file")->getValue() + ".lp").c_str();
   int status = CPXXwriteprob (cpxenv_, cpxlp_, filename, NULL);
   if (status) {
    assert(!"Failed to write LP to disk.\n");
