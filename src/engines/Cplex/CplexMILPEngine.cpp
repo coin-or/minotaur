@@ -1300,8 +1300,8 @@ void CplexMILPEngine::writeLP(const char *filename) const
 
 void CplexMILPEngine::writeLP()
 {
-  const char *filename = (env_->getOptions()->findString("problem_file")->getValue() + ".lp").c_str();
-  int status = CPXXwriteprob (cpxenv_, cpxlp_, filename, NULL);
+  std::string filename = env_->getOptions()->findString("problem_file")->getValue() + ".lp";
+  int status = CPXXwriteprob (cpxenv_, cpxlp_, filename.c_str(), NULL);
   if (status) {
    assert(!"Failed to write LP to disk.\n");
   }

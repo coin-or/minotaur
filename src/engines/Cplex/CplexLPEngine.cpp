@@ -612,12 +612,6 @@ void CplexLPEngine::loadFromWarmStart(const WarmStartPtr ws)
          << "Failed to pass basis information for warm starting."
          << std::endl;
     }
-    cpxstatus_ = CPXXsetintparam (cpxenv_, CPXPARAM_Advance, 1);
-    if (cpxstatus_) {
-       logger_->msgStream(LogError) << me_
-         << "Failed to set advanced basis usage parameter to 1."
-         << std::endl;
-    }
   } else {
     assert(!(probNumCons < wsNumCons));
     int *constat = new int[probNumCons];
@@ -631,13 +625,7 @@ void CplexLPEngine::loadFromWarmStart(const WarmStartPtr ws)
     cpxstatus_ = CPXXcopybase(cpxenv_, cpxlp_, ws2->getVarStat(), constat);
     if (cpxstatus_) {
        logger_->msgStream(LogError) << me_
-         << "Failed to pass basis information for warm starting."
-         << std::endl;
-    }
-    cpxstatus_ = CPXXsetintparam (cpxenv_, CPXPARAM_Advance, 2);
-    if (cpxstatus_) {
-       logger_->msgStream(LogError) << me_
-         << "Failed to set advanced basis usage parameter to 2."
+         << "Failed to pass extended basis information for warm starting."
          << std::endl;
     }
     delete [] constat;
@@ -690,6 +678,7 @@ EngineStatus CplexLPEngine::solve()
 {
   timer_->start();
   stats_->calls += 1;
+
 #if SPEW
   logger_->msgStream(LogDebug) << me_ << "in call number " << stats_->calls
                                << std::endl;
@@ -833,8 +822,8 @@ void CplexLPEngine::writeLP(const char *filename) const
 
 void CplexLPEngine::writeLP()
 {
-  const char *filename = (env_->getOptions()->findString("problem_file")->getValue() + ".lp").c_str();
-  int status = CPXXwriteprob (cpxenv_, cpxlp_, filename, NULL);
+  std::string filename = env_->getOptions()->findString("problem_file")->getValue() + ".lp";
+  int status = CPXXwriteprob (cpxenv_, cpxlp_, filename.c_str(), NULL);
   if (status) {
    assert(!"Failed to write LP to disk.\n");
   }
