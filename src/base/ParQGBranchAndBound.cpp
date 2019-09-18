@@ -408,15 +408,17 @@ void ParQGBranchAndBound::parsolve(ParNodeIncRelaxerPtr parNodeRlxr[],
   double *minNodeLbTh = new double[numThreads];
   bool *shouldRunTh = new bool[numThreads];
   UInt *nodeCountTh = new UInt[numThreads];
-  std::vector<ParCutMan*> cutman(numThreads, new ParCutMan(env_, problem_));
+  std::vector<ParCutMan*> cutman(numThreads);
   //bool iterMode = env_->getOptions()->findBool("mcbnb_iter_mode")->getValue();
   UInt iterCount = 1;
   UInt *cutsIndex = new UInt[numThreads*numThreads]();
   UInt numVars = 0;
 
-#pragma omp parallel for
+  omp_set_num_threads(numThreads);
+//#pragma omp parallel for
   for(UInt i = 0; i < numThreads; ++i) {
     // declare cut manager
+    cutman[i] = new ParCutMan(env_, problem_);
     nodePrcssr[i]->setCutManager(cutman[i]);
     should_dive[i] = false;
     dived_prev[i] = false;
