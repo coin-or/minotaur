@@ -36,7 +36,7 @@
 
 using namespace Minotaur;
 
-const std::string BranchAndBound::me_ = "branch-and-bound: ";
+const std::string BranchAndBound::me_ = "BranchAndBound: ";
 
 BranchAndBound::BranchAndBound()
   : env_(0),

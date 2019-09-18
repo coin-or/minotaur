@@ -52,7 +52,7 @@
 
 using namespace Minotaur;
 
-const std::string ParQGBranchAndBound::me_ = "branch-and-bound: ";
+const std::string ParQGBranchAndBound::me_ = "ParQGBranchAndBound: ";
 
 ParQGBranchAndBound::ParQGBranchAndBound()
   : env_(EnvPtr()),             // NULL
@@ -431,8 +431,8 @@ void ParQGBranchAndBound::parsolve(ParNodeIncRelaxerPtr parNodeRlxr[],
 
   logger_->msgStream(LogInfo) << me_ << "starting branch-and-bound ";
   if(numThreads > 1) {
-  logger_->msgStream(LogInfo) << "using " << numThreads << " out of "
-    << omp_get_num_procs() << " processors";
+    logger_->msgStream(LogInfo) << "using " << numThreads << " out of "
+      << omp_get_num_procs() << " processors.";
   }
   logger_->msgStream(LogInfo) << std::endl;
   // get problem size and statistics to detect problem type.
@@ -665,7 +665,7 @@ void ParQGBranchAndBound::parsolve(ParNodeIncRelaxerPtr parNodeRlxr[],
                 new_node[i] = tm_->branch(branches[i], current_node[i], ws[i]);
 #if SPEW
 #pragma omp critical (logger)
-                logger_->msgStream(LogInfo) << me_ << "get node (branch) "
+                logger_->msgStream(LogDebug) << me_ << "get node (branch) "
                   << new_node[i]->getId() << " thread " << omp_get_thread_num()
                   << std::endl;
 #endif
@@ -685,7 +685,7 @@ void ParQGBranchAndBound::parsolve(ParNodeIncRelaxerPtr parNodeRlxr[],
                     tm_->removeActiveNode(new_node[i]);
 #if SPEW
 #pragma omp critical (logger)
-                    logger_->msgStream(LogInfo) << me_ << "get/remove node "
+                    logger_->msgStream(LogDebug) << me_ << "get/remove node "
                       << new_node[i]->getId() << " thread "
                       << omp_get_thread_num() << std::endl;
 #endif

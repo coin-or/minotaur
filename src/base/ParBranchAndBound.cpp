@@ -47,7 +47,7 @@
 
 using namespace Minotaur;
 
-const std::string ParBranchAndBound::me_ = "branch-and-bound: ";
+const std::string ParBranchAndBound::me_ = "ParBranchAndBound: ";
 
 ParBranchAndBound::ParBranchAndBound()
   : env_(0),
@@ -760,7 +760,7 @@ void ParBranchAndBound::parsolve(ParNodeIncRelaxerPtr parNodeRlxr[],
               if (new_node[i]) {
 #if SPEW
 #pragma omp critical (logger)
-                logger_->msgStream(LogInfo) << me_ << "get node (prune) "
+                logger_->msgStream(LogDebug) << me_ << "get node (prune) "
                   << new_node[i]->getId() << " thread "
                   << omp_get_thread_num() << std::endl;
 #endif
@@ -775,7 +775,7 @@ void ParBranchAndBound::parsolve(ParNodeIncRelaxerPtr parNodeRlxr[],
             initialized[i] = true;
 #if SPEW
 #pragma omp critical (logger)
-            logger_->msgStream(LogInfo) << me_ << "branch at node "
+            logger_->msgStream(LogDebug) << me_ << "branch at node "
               << current_node[i]->getId() << " thread "
               << omp_get_thread_num() << std::endl;
 #endif
@@ -785,14 +785,14 @@ void ParBranchAndBound::parsolve(ParNodeIncRelaxerPtr parNodeRlxr[],
 
             should_dive[i] = tm_->shouldDive();
             if (!branches[i]) {
-              logger_->msgStream(LogInfo) << " NO BRANCHES \n";
+              logger_->msgStream(LogDebug) << " NO BRANCHES \n";
             }
 #pragma omp critical (treeManager)
             {
               new_node[i] = tm_->branch(branches[i], current_node[i], ws[i]);
 #if SPEW
 #pragma omp critical (logger)
-              logger_->msgStream(LogInfo) << me_ << "get node (branch) "
+              logger_->msgStream(LogDebug) << me_ << "get node (branch) "
                 << new_node[i]->getId() << " thread " << omp_get_thread_num()
                 << std::endl;
 #endif
@@ -812,7 +812,7 @@ void ParBranchAndBound::parsolve(ParNodeIncRelaxerPtr parNodeRlxr[],
                   tm_->removeActiveNode(new_node[i]);
 #if SPEW
 #pragma omp critical (logger)
-                  logger_->msgStream(LogInfo) << me_ << "get/remove node "
+                  logger_->msgStream(LogDebug) << me_ << "get/remove node "
                     << new_node[i]->getId() << " thread "
                     << omp_get_thread_num() << std::endl;
 #endif
@@ -909,12 +909,12 @@ void ParBranchAndBound::parsolve(ParNodeIncRelaxerPtr parNodeRlxr[],
       } //omp master/single ended
     }   //parallel region ends
   }     //while ends
-  logger_->msgStream(LogInfo) << me_ << "stopping branch-and-bound"
+  logger_->msgStream(LogDebug) << me_ << "stopping branch-and-bound"
     << std::endl
     << me_ << "nodes processed = " << stats_->nodesProc << std::endl
     << me_ << "nodes created   = " << tm_->getSize() << std::endl;
   //if (iterMode) {
-  logger_->msgStream(LogInfo) << me_ << "iterations = " << iterCount
+  logger_->msgStream(LogExtraInfo) << me_ << "iterations = " << iterCount
       << std::endl;
   //}
 

@@ -353,9 +353,6 @@ PresolverPtr presolve(EnvPtr env, ProblemPtr p, size_t ndefs,
   pres->standardize(); 
   if (env->getOptions()->findBool("presolve")->getValue() == true) {
     pres->solve();
-    for (HandlerVector::iterator h=handlers.begin(); h!=handlers.end(); ++h) {
-      (*h)->writeStats(env->getLogger()->msgStream(LogExtraInfo));
-    }
   }
   return pres;
 }
@@ -371,9 +368,9 @@ void setInitialOptions(EnvPtr env)
 
 void showHelp()
 {
-  std::cout << "NLP-based parallel branch-and-bound solver for convex MINLP"
+  std::cout << "Quesada-Grossmann (LP/NLP) parallel algorithm for convex MINLP"
             << std::endl
-            << "**Works in parallel with a thread-safe NLP and LP solver only "
+            << "Requires a thread-safe NLP and LP solver."
             //<< "(e.g. IPOPT with MA97)**" << std::endl
             << std::endl
             << "Usage:" << std::endl
@@ -666,8 +663,8 @@ int main(int argc, char** argv)
 
   if (numThreads > 1) {
     env->getLogger()->msgStream(LogInfo)
-      << "**Works in parallel with a thread-safe "
-      << "LP and NLP solver only**" << std::endl;
+      << "Number of threads = " << numThreads 
+      << ". Requires a thread-safe LP and NLP solver." << std::endl;
   }
   parbab = createParBab(env, numThreads, node, relCopy, pCopy, nodePrcssr,
                         parNodeRlxr, handlersCopy, lpeCopy, eCopy);
