@@ -254,7 +254,8 @@ namespace Minotaur {
      */
     NodePtr processRoot_(bool *should_prune, bool *should_dive,
                          ParNodeIncRelaxerPtr parNodeRlxr,
-                         ParPCBProcessorPtr nodePrcssr, WarmStartPtr ws);
+                         ParPCBProcessorPtr nodePrcssr, WarmStartPtr ws,
+                         NodePtr &node);
 
     /// Return True if a node can be pruned.
     bool shouldPrune_(NodePtr node);
