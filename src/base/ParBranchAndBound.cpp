@@ -80,7 +80,6 @@ ParBranchAndBound::ParBranchAndBound(EnvPtr env, ProblemPtr p)
 }
 
 
-
 ParBranchAndBound::~ParBranchAndBound()
 {
   problem_ = 0;
@@ -567,8 +566,8 @@ void ParBranchAndBound::parsolve(ParNodeIncRelaxerPtr parNodeRlxr[],
 
   logger_->msgStream(LogInfo) << me_ << "starting branch-and-bound ";
   if(numThreads > 1) {
-  logger_->msgStream(LogInfo) << "using " << numThreads << " out of "
-    << omp_get_num_procs() << " processors";
+    logger_->msgStream(LogInfo) << "using " << numThreads << " out of "
+      << omp_get_num_procs() << " processors";
   }
   logger_->msgStream(LogInfo) << std::endl;
   // get problem size and statistics to detect problem type.
@@ -685,11 +684,11 @@ void ParBranchAndBound::parsolve(ParNodeIncRelaxerPtr parNodeRlxr[],
 #pragma omp critical (treeManager)
           {
             current_node[i] = tm_->getCandidate();
-            if (current_node[i]) {
+            if(current_node[i]) {
               tm_->removeActiveNode(current_node[i]);
-              dived_prev[i] = false;
             }
           }
+          dived_prev[i] = false;
         }
         if (current_node[i]) {
 #if SPEW
@@ -725,7 +724,9 @@ void ParBranchAndBound::parsolve(ParNodeIncRelaxerPtr parNodeRlxr[],
                                  initialized[i], timesUp, timesDown,
                                  pseudoUp, pseudoDown, stats_->nodesProc);
 #pragma omp critical (stats)
-          ++stats_->nodesProc;
+          {
+            ++stats_->nodesProc;
+          }
 
 #if SPEW
 #pragma omp critical (logger)
@@ -914,7 +915,7 @@ void ParBranchAndBound::parsolve(ParNodeIncRelaxerPtr parNodeRlxr[],
     << me_ << "nodes processed = " << stats_->nodesProc << std::endl
     << me_ << "nodes created   = " << tm_->getSize() << std::endl;
   //if (iterMode) {
-  logger_->msgStream(LogExtraInfo) << me_ << "iterations = " << iterCount
+  logger_->msgStream(LogInfo) << me_ << "iterations = " << iterCount
       << std::endl;
   //}
 
@@ -1298,6 +1299,9 @@ double ParBranchAndBound::totalTime()
 {
   return stats_->timeUsed;
 }
+
+
+// --------------------------------------------------------------------------
 // --------------------------------------------------------------------------
 
   ParBabStats::ParBabStats()
