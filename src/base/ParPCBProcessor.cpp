@@ -490,6 +490,7 @@ bool ParPCBProcessor::shouldPrune_(NodePtr node, double solval,
                                  << "continuing in node " << node->getId()
                                  << std::endl;
      // continue with this node by following ProvenLocalOptimal case.
+     // fall through
    case (ProvenLocalOptimal):
    case (ProvenOptimal):
      node->setLb(solval);

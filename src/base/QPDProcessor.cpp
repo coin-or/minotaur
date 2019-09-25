@@ -1460,6 +1460,7 @@ bool QPDProcessor::shouldPrune_(NodePtr node, EngineStatus status,
    case (FailedInfeas):
    case (ProvenFailedCQInfeas):
      ++stats_.prob;
+     //fall through
    case (ProvenInfeasible):
    case (ProvenLocalInfeasible):
      node->setStatus(NodeInfeasible);
@@ -1541,6 +1542,7 @@ bool QPDProcessor::shouldPruneQP_(NodePtr node, EngineStatus status,
    case (FailedInfeas):
    case (ProvenFailedCQInfeas):
      ++stats_.prob;
+     //fall through
    case (ProvenInfeasible):
    case (ProvenLocalInfeasible):
      node->setStatus(NodeInfeasible);

@@ -68,10 +68,10 @@ template <class T> void Option<T>::write(std::ostream &out) const
 // leave these lines here. They should come after the definition of all
 // Option.functions(). See, for example, 
 // http://www.parashift.com/c++-faq-lite/templates.html#faq-35.15
-template class Option<int>;
-template class Option<bool>;
-template class Option<double>;
-template class Option<std::string>;
+template class Minotaur::Option<int>;
+template class Minotaur::Option<bool>;
+template class Minotaur::Option<double>;
+template class Minotaur::Option<std::string>;
 
 
 //------------------------------------------------------------------------ // 

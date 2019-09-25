@@ -98,10 +98,10 @@ NlPresHandler::~NlPresHandler()
 
 
 void NlPresHandler::chkRed_(ProblemPtr p, bool purge_cons, bool *changed,
-                            ModQ *mods, SolveStatus &status)
+                            ModQ *, SolveStatus &status)
 {
   ConstraintPtr c;
-  ConBoundModPtr mod;
+//  ConBoundModPtr mod;
   LinearFunctionPtr lf;
   NonlinearFunctionPtr nlf;
   QuadraticFunctionPtr qf;
@@ -109,7 +109,7 @@ void NlPresHandler::chkRed_(ProblemPtr p, bool purge_cons, bool *changed,
   double nlfu, nlfl;
   double impl_lb, impl_ub;
   int error = 0;
-  double bigm = (true==purge_cons)?INFINITY:100000;
+//  double bigm = (true==purge_cons)?INFINITY:100000;
 
   for (ConstraintConstIterator cit=p->consBegin(); cit!=p->consEnd();
        ++cit) {

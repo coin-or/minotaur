@@ -84,6 +84,8 @@ void RCHandler::separate(ConstSolutionPtr sol, NodePtr node,
     rcfix_( rel, r_mods, bestobj, rel_obj, xval, rnode, v);
     if (rootDuals_) {
       rroot = rootDuals_[v->getIndex()];
+    } else {
+      rroot = 0.0;
     }
     rcfix_( rel, r_mods, bestobj, rel_obj, xval, rroot, v);
   }
