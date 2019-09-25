@@ -42,8 +42,8 @@ err ()
   exit 1
 }
 
-TARNAME="minotaur-0.2.2-third-party-src"
-TARURL=http://www.mcs.anl.gov/research/projects/minotaur/dist/${TARNAME}.tar.gz
+TARNAME="minotaur-0.2.3-third-party-src"
+TARURL=http://www.ieor.iitb.ac.in/files/faculty/amahajan/minotaur/third-party/${TARNAME}.tar.gz
 
 ASL="asl-20170731"
 BOOST="boost-1.65.0"
