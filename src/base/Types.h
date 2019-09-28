@@ -19,6 +19,8 @@
 #include <deque>
 #include <set>
 #include <stack>
+#include <stdlib.h>
+#include <string>
 #include <vector>
 
 namespace Minotaur {
