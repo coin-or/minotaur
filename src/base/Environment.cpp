@@ -433,6 +433,10 @@ void Environment::createDefaultOptions_()
       "Neighborhood size for root linearization scheme 2", true, 10);
   options_->insert(d_option);
 
+  d_option = (DoubleOptionPtr) new Option<double>("maxVioPer", 
+      "Percentage above which constraint violation is unacceptable", true, 0);
+  options_->insert(d_option);
+
   d_option = 0;
  
   // string options
