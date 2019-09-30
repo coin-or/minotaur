@@ -57,7 +57,6 @@ QGHandler::QGHandler()
   oNl_(false),
   rel_(RelaxationPtr()),
   relobj_(0.0),
-  extraLin_(0),
   //rootNLPSol_(0),
   stats_(0)
 {
@@ -81,9 +80,8 @@ QGHandler::QGHandler(EnvPtr env, ProblemPtr minlp, EnginePtr nlpe)
   objVar_(VariablePtr()),
   oNl_(false),
   rel_(RelaxationPtr()),
-  relobj_(0.0),
+  relobj_(0.0)
   //rootNLPSol_(0),
-  extraLin_(0)
 {
   intTol_ = env_->getOptions()->findDouble("int_tol")->getValue();
   solAbsTol_ = env_->getOptions()->findDouble("feasAbs_tol")->getValue();
@@ -108,14 +106,9 @@ QGHandler::~QGHandler()
   }
 
   nlCons_.clear();
-
-  if (extraLin_) {
-    delete extraLin_;  
-  }
   env_ = 0;
   rel_ = 0;
   minlp_ = 0;
-  extraLin_ = 0;  
   nlCons_.clear();
 }
 
@@ -640,20 +633,6 @@ void QGHandler::relax_(bool *isInf)
  
   linearizeObj_();
   initLinear_(isInf);
-
-  // user input for root linearization schemes
-  int rs3 = env_->getOptions()->findInt("root_linScheme3")->getValue();
-  bool rg1 = env_->getOptions()->findBool("root_genLinScheme1")->getValue();
-  bool rg2 = env_->getOptions()->findBool("root_genLinScheme2")->getValue();
-  double rs1 = env_->getOptions()->findDouble("root_linScheme1")->getValue();
-  double rs2Per = env_->getOptions()->findDouble("root_linScheme2_per")->getValue();
-  
-  if (*isInf == false && nlCons_.size() > 0) {
-    if (((rs1 + rs2Per + rs3) > 0) || rg1 || rg2) {
-      extraLin_ = new Linearizations(env_, nlpe_, rel_, minlp_);
-      extraLin_->rootLinearizations(nlCons_, nlpe_->getSolution()->getPrimal());
-    }
-  }
   return;
 }
 
@@ -724,10 +703,6 @@ void QGHandler::updateUb_(SolutionPoolPtr s_pool, double *nlpval,
 
 void QGHandler::writeStats(std::ostream &out) const
 {
-  if (extraLin_ != 0) {
-    extraLin_->writeStats(out);  
-  } 
-
   out
     << me_ << "number of nlps solved                       = "
     << stats_->nlpS << std::endl

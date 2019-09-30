@@ -21,8 +21,6 @@
 #include "Engine.h"
 #include "Problem.h"
 #include "Function.h"
-#include "Linearizations.h"
-
 #include "Solution.h"
 
 namespace Minotaur {
@@ -102,8 +100,6 @@ private:
   /// Relative tolerance for pruning a node.
   double objRTol_;
   
-  LinearizationsPtr extraLin_;
-
   /// Statistics.
   QGStats *stats_;
 
