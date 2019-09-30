@@ -56,9 +56,6 @@ private:
   /// Vector of nonlinear constraints.
   std::vector<ConstraintPtr> nlCons_;
 
-  /// NLP/QP Engine used to solve the NLP/QP relaxations.
-  EnginePtr nlpe_;
-  
   /// NLP/QP Engine used to approximate the center of the feasible region
   EnginePtr nlpe1_;
   
@@ -126,9 +123,6 @@ private:
   LinStats *stats_;
 
   public:
-  /// Empty constructor.
-  Linearizations();
-
   /**
    * \brief Default Constructor.
    *
@@ -138,15 +132,20 @@ private:
    * \param [in] nlpe The engine to solve nonlinear continuous problem.
    */
   Linearizations(EnvPtr env, EnginePtr nlpe, RelaxationPtr rel,
-                               ProblemPtr minlp); 
+                               ProblemPtr minlp, std::vector<ConstraintPtr> nlCons); 
   
   /// Destroy.
   ~Linearizations();
    
   /// Root linearization schemes
-  void rootLinearizations(std::vector<ConstraintPtr> nlCons,
-                                        const double * nlpx);
+  void rootLinearizations(const double * nlpx);
 
+  double * getCenter() {return solC_;}
+  
+  /// Find approximate center of the feasible region
+  void findCenter();
+
+  double maxVio(const double *x, int &index);
   /**
    * Add linearizatios by performing line search between center of the
    * feasible region and the root LP solution - root linearization scheme 3
@@ -176,8 +175,6 @@ private:
   void boundingVar_(double &varbound,
                                   UInt vIdx, UInt fixIdx, double coeff,
                                  double fixCoeff, std::vector<double > &alphaSign, std::vector<UInt > &varIdx);
-  /// Find approximate center of the feasible region
-  void findCenter_(bool &noCenter);
 
   /// Find intersection of two linearizations in root linearization scheme 1  
   bool findIntersectPt_(std::vector<UInt > newConsId, VariablePtr vl,
