@@ -17,19 +17,27 @@
 #include <AMPLHessian.h>
 #include <AMPLJacobian.h>
 #include <Environment.h>
+//#include <Constraint.h>
+#include <Constraint.h>
+#include <Function.h>
+#include <LinearFunction.h>
+#include <QuadraticFunction.h>
 #include <Handler.h>
 #include <Option.h>
+#include <Operations.h>
 #include <Problem.h>
 #include <Engine.h>
 #include <QPEngine.h>
 #include <LPEngine.h>
 #include <Logger.h>
 #include <NLPEngine.h>
+#include <NonlinearFunction.h>
 #include "NlPresHandler.h"
 #include <NodeRelaxer.h>
+#include <Relaxation.h>
 #include <NodeIncRelaxer.h>
 #include <MaxVioBrancher.h>
-#include <QGAdvHandler.h>
+#include <QGHandlerAdvance.h>
 #include <ReliabilityBrancher.h>
 #include <AMPLInterface.h>
 #include <BranchAndBound.h>
@@ -46,8 +54,7 @@
 #include <CxQuadHandler.h>
 #include <Objective.h>
 #include "RCHandler.h"
-#include <PerspCon.h>
-#include <PerspCutHandler.h>
+
 using namespace Minotaur;
 
 EnginePtr getNLPEngine(EnvPtr env, ProblemPtr p);
@@ -60,7 +67,7 @@ void writeSol(EnvPtr env, VarVector *orig_v, PresolverPtr pres,
 void loadProblem(EnvPtr env, MINOTAUR_AMPL::AMPLInterface* iface,
                  ProblemPtr &oinst, double *obj_sense)
 {
-  Timer *timer = env->getNewTimer();
+  Timer *timer     = env->getNewTimer();
   OptionDBPtr options = env->getOptions();
   JacobianPtr jac;
   HessianOfLagPtr hess;
@@ -119,7 +126,7 @@ void setInitialOptions(EnvPtr env)
   env->getOptions()->findBool("nl_presolve")->setValue(true);
   env->getOptions()->findBool("separability")->setValue(false);
   env->getOptions()->findBool("perspective")->setValue(false);
-  env->getOptions()->findBool("rc_fix")->setValue(true);
+  env->getOptions()->findBool("rc_fix")->setValue(false);
 }
 
 
@@ -218,7 +225,6 @@ PresolverPtr presolve(EnvPtr env, ProblemPtr p, size_t ndefs,
         << (*h)->getName() << std::endl;
     }
   }
-
   pres = (PresolverPtr) new Presolver(p, env, handlers);
   pres->standardize(); 
   if (env->getOptions()->findBool("presolve")->getValue() == true) {
@@ -227,24 +233,22 @@ PresolverPtr presolve(EnvPtr env, ProblemPtr p, size_t ndefs,
   return pres;
 }
 
+
 int main(int argc, char* argv[])
 {
-  EnvPtr env = (EnvPtr) new Environment();
+  EnvPtr env = new Environment();
   OptionDBPtr options;
+
+  //ConstSolutionPtr xc;
 
   MINOTAUR_AMPL::AMPLInterfacePtr iface = MINOTAUR_AMPL::AMPLInterfacePtr();  
   ProblemPtr inst;
-  SolutionPtr sol, sol2;
+  
   double obj_sense =1.0;
   
-  // jacobian is read from AMPL interface and passed on to branch-and-bound
-  JacobianPtr jPtr;
-  // hessian is read from AMPL interface and passed on to branch-and-bound
-  MINOTAUR_AMPL::AMPLHessianPtr hPtr;
-
   // the branch-and-bound
   BranchAndBound *bab = 0;
-  PresolverPtr pres;
+  PresolverPtr pres = 0;
   EngineFactory *efac;
   const std::string me("qg: ");
 
@@ -255,22 +259,19 @@ int main(int argc, char* argv[])
 
   //handlers
   HandlerVector handlers;
-  IntVarHandlerPtr vHand;
-  LinearHandlerPtr lHand;
-  QGAdvHandlerPtr qgHand;
-  RCHandlerPtr rcHand;
+  IntVarHandlerPtr v_hand;
+  LinearHandlerPtr l_hand;
+  QGHandlerAdvancePtr qg_hand;
+  RCHandlerPtr rc_hand;
 
   //engines
   EnginePtr nlp_e = 0;
-  EnginePtr proj_nlp_e = 0;
-  EnginePtr l1proj_nlp_e = 0;
 
   LPEnginePtr lin_e = 0;   // lp engine 
-  LoggerPtr logger_ = (LoggerPtr) new Logger(LogInfo);
   VarVector *orig_v=0;
 
   int err = 0;
-
+ 
   // start timing.
   env->startTimer(err);
   if (err) {
@@ -292,7 +293,6 @@ int main(int argc, char* argv[])
   }
 
   loadProblem(env, iface, inst, &obj_sense);
-
   // Initialize engines
   nlp_e = getNLPEngine(env, inst); //Engine for Original problem
 
@@ -303,6 +303,9 @@ int main(int argc, char* argv[])
   // get presolver.
   orig_v = new VarVector(inst->varsBegin(), inst->varsEnd());
   pres = presolve(env, inst, iface->getNumDefs(), handlers);
+  for (HandlerVector::iterator it=handlers.begin(); it!=handlers.end(); ++it) {
+    delete (*it);
+  }
   handlers.clear();
   if (Finished != pres->getStatus() && NotStarted != pres->getStatus()) {
     env->getLogger()->msgStream(LogInfo) << me 
@@ -312,60 +315,47 @@ int main(int argc, char* argv[])
     writeBnbStatus(env, bab, obj_sense);
     goto CLEANUP;
   }
- 
-   if (options->findBool("solve")->getValue()==true) {
+
+  if (options->findBool("solve")->getValue()==true) {
     if (true==options->findBool("use_native_cgraph")->getValue()) {
       inst->setNativeDer();
     }
-    // Initialize the handlers for branch-and-cut
-    lHand = (LinearHandlerPtr) new LinearHandler(env, inst);
-    lHand->setModFlags(false, true);
-    handlers.push_back(lHand);
-    assert(lHand);
-
-    vHand = (IntVarHandlerPtr) new IntVarHandler(env, inst);
-    vHand->setModFlags(false, true); 
-    handlers.push_back(vHand);
-    assert(vHand);
-    // Use of perspective handler is user choice
-    if (env->getOptions()->findBool("perspective")->getValue() == true) {
-      PerspCutHandlerPtr pcHand = (PerspCutHandlerPtr) new 
-        PerspCutHandler(env, inst); 
-      pcHand->findPRCons();
-      if (pcHand->getStatus()) {
-        qgHand = (QGAdvHandlerPtr) new QGAdvHandler(env, inst, nlp_e, pcHand);
-      } else {
-        qgHand = (QGAdvHandlerPtr) new QGAdvHandler(env, inst, nlp_e); 
-      }
-    } else {
-        qgHand = (QGAdvHandlerPtr) new QGAdvHandler(env, inst, nlp_e); 
-    }
-    qgHand->setModFlags(false, true);
-    handlers.push_back(qgHand);
-    assert(qgHand);
-    
     if (options->findBool("rc_fix")->getValue()) {
-      rcHand = (RCHandlerPtr) new RCHandler(env);
-      rcHand->setModFlags(false, true); 
-      handlers.push_back(rcHand);
-      assert(rcHand);
-    }  
+      rc_hand = (RCHandlerPtr) new RCHandler(env);
+      rc_hand->setModFlags(false, true); 
+      handlers.push_back(rc_hand);
+      assert(rc_hand);
+    }
+    // Initialize the handlers for branch-and-cut
+    l_hand = (LinearHandlerPtr) new LinearHandler(env, inst);
+    l_hand->setModFlags(false, true);
+    handlers.push_back(l_hand);
+    assert(l_hand);
 
+    v_hand = (IntVarHandlerPtr) new IntVarHandler(env, inst);
+    v_hand->setModFlags(false, true); 
+    handlers.push_back(v_hand);
+    assert(v_hand);
+
+    qg_hand = (QGHandlerAdvancePtr) new QGHandlerAdvance(env, inst, nlp_e); 
+    qg_hand->setModFlags(false, true);
+   
+    handlers.push_back(qg_hand);
+    assert(qg_hand);
+     
     // report name
     env->getLogger()->msgStream(LogExtraInfo) << me << "handlers used:"
       << std::endl;
     for (HandlerIterator h = handlers.begin(); h != handlers.end(); ++h) {
-        env->getLogger()->msgStream(LogExtraInfo) << me << (*h)->getName()
+      env->getLogger()->msgStream(LogExtraInfo) << me << (*h)->getName()
         << std::endl;
     }
 
     // Only store bound-changes of relaxation (not problem)
     nr = (NodeIncRelaxerPtr) new NodeIncRelaxer(env, handlers);
     nr->setModFlag(false);
-
     nr->setEngine(lin_e);
     nproc = (PCBProcessorPtr) new PCBProcessor(env, lin_e, handlers);
-
     if (env->getOptions()->findString("brancher")->getValue() == "rel") {
       ReliabilityBrancherPtr rel_br = 
         (ReliabilityBrancherPtr) new ReliabilityBrancher(env, handlers);
@@ -393,17 +383,15 @@ int main(int argc, char* argv[])
     bab->setNodeProcessor(nproc);
     bab->shouldCreateRoot(true);
 
-
     // start solving
     bab->solve();
+
     bab->writeStats(env->getLogger()->msgStream(LogExtraInfo));
-    //bab->writeStats(std::cout);
     nlp_e->writeStats(env->getLogger()->msgStream(LogExtraInfo));
     lin_e->writeStats(env->getLogger()->msgStream(LogExtraInfo));
 
     for (HandlerVector::iterator it=handlers.begin(); it!=handlers.end();
          ++it) {
-      //(*it)->writeStats(std::cout);
       (*it)->writeStats(env->getLogger()->msgStream(LogExtraInfo));
     }
 
@@ -412,6 +400,9 @@ int main(int argc, char* argv[])
   }
 
 CLEANUP:
+  for (HandlerVector::iterator it=handlers.begin(); it!=handlers.end(); ++it) {
+    delete (*it);
+  }
   if (lin_e) {
     delete lin_e;
   }
@@ -421,11 +412,26 @@ CLEANUP:
   if (iface) {
     delete iface;
   }
+  if (pres) {
+    delete pres;
+  }
+  if (bab) {
+    if (bab->getNodeRelaxer()) {
+      delete bab->getNodeRelaxer();
+    }
+    if (bab->getNodeProcessor()) {
+      delete bab->getNodeProcessor();
+    }
+    delete bab;
+  }
+  if (inst) {
+    delete inst;
+  }
   if (orig_v) {
     delete orig_v;
   }
-  if (bab) {
-    delete bab;
+  if (env) {
+    delete env;
   }
 
   return 0;
@@ -485,7 +491,7 @@ void writeBnbStatus(EnvPtr env, BranchAndBound *bab, double obj_sense)
       << me << "gap percentage = " << bab->getPerGap() << std::endl
       << me << "time used (s) = " << std::fixed << std::setprecision(2) 
       << env->getTime(err) << std::endl
-      << me << "status of branch-and-bound: " 
+      << me << "status of branch-and-bound = " 
       << getSolveStatusString(bab->getStatus()) << std::endl;
     env->stopTimer(err); assert(0==err);
   } else {
@@ -509,16 +515,21 @@ void writeSol(EnvPtr env, VarVector *orig_v,
               PresolverPtr pres, SolutionPtr sol, SolveStatus status,
               MINOTAUR_AMPL::AMPLInterface* iface)
 {
+  Solution* final_sol = 0;
   if (sol) {
-    sol = pres->getPostSol(sol);
+    final_sol = pres->getPostSol(sol);
   }
 
   if (env->getOptions()->findFlag("AMPL")->getValue() ||
       true == env->getOptions()->findBool("write_sol_file")->getValue()) {
-    iface->writeSolution(sol, status);
-  } else if (sol && env->getLogger()->getMaxLevel()>=LogExtraInfo &&
+    iface->writeSolution(final_sol, status);
+  } else if (final_sol && env->getLogger()->getMaxLevel()>=LogExtraInfo &&
              env->getOptions()->findBool("display_solution")->getValue()) {
-    sol->writePrimal(env->getLogger()->msgStream(LogExtraInfo), orig_v);
+    final_sol->writePrimal(env->getLogger()->msgStream(LogExtraInfo), orig_v);
+  }
+
+  if (final_sol) {
+    delete final_sol;
   }
 }
 
