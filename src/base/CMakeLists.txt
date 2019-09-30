@@ -100,6 +100,7 @@ set (MINOTAUR_SOURCES
      ProbStructure.cpp 
      #QGAdvHandler.cpp 
      QGHandler.cpp 
+     QGHandlerAdvance.cpp 
      #QGHandlerPDE.cpp 
      QPDRelaxer.cpp 
      QPDProcessor.cpp 
@@ -227,6 +228,7 @@ set (MINOTAUR_HEADERS
      ProbStructure.h # Serdar
      QPEngine.h
      QGHandler.h
+     QGHandlerAdvance.h 
      #QGAdvHandler.h 
      #QGHandlerPDE.h
      QPDProcessor.h 
