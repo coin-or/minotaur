@@ -60,8 +60,8 @@ QGHandlerAdvance::QGHandlerAdvance()
   rel_(RelaxationPtr()),
   relobj_(0.0),
   extraLin_(0),
-  lastNodeId_(-1),
-  lastNodeIdLbUb_(-1),
+  lastNodeId_(0),
+  lastNodeIdLbUb_(0),
   maxVioVal_(0),
   maxVioPer_(0),
   lastLb_(-INFINITY),
@@ -93,8 +93,8 @@ QGHandlerAdvance::QGHandlerAdvance(EnvPtr env, ProblemPtr minlp, EnginePtr nlpe)
   relobj_(0.0),
   //rootNLPSol_(0),
   extraLin_(0),
-  lastNodeId_(-1),
-  lastNodeIdLbUb_(-1),
+  lastNodeId_(0),
+  lastNodeIdLbUb_(0),
   maxVioVal_(0),
   maxVioPer_(0),
   lastLb_(-INFINITY),
@@ -471,9 +471,7 @@ void QGHandlerAdvance::cutToCons_(const double *nlpx, const double *lpx,
 void QGHandlerAdvance::consCutsAtLpSol_(const double *lpx, CutManager *cutMan,
                              SeparationStatus *status)
 {
-  int error = 0;
   bool cutAdded;
-
   for ( UInt i = 0; i < nlCons_.size(); ++i) {
     cutAdded = ECPTypeCut_(lpx, cutMan, i, "_OACut_");
     if (cutAdded) {
@@ -742,6 +740,7 @@ void QGHandlerAdvance::lbub_(const double *x, NodePtr node, bool *sol_found,
       //MS: resolve_ is reused here. Verify it.
       resolve_ = 1;
       lastLb_ = node->getLb();
+      lastNodeIdLbUb_ = nIndex;          
       return;
     }
     if (nIndex != lastNodeIdLbUb_) {
@@ -756,7 +755,7 @@ void QGHandlerAdvance::lbub_(const double *x, NodePtr node, bool *sol_found,
       //ESH
       ConstraintPtr c;
       int error = 0, i = 0;
-      double act, cUb, max = -INFINITY;
+      double act, cUb;
       for (CCIter it=nlCons_.begin(); it!=nlCons_.end(); ++it, ++i) {
         c = *it;
         act = c->getActivity(x, &error);
@@ -787,9 +786,10 @@ void QGHandlerAdvance::lbub_(const double *x, NodePtr node, bool *sol_found,
   return;
 }
 
-void QGHandlerAdvance::dualScheme_(ConstSolutionPtr sol, NodePtr node,
-                         CutManager *cutMan, SolutionPoolPtr s_pool,
-                         bool *sol_found, SeparationStatus *status)
+// MS: remove all the arguments that are not needed
+void QGHandlerAdvance::dualScheme_(ConstSolutionPtr sol, NodePtr,
+                         CutManager *, SolutionPoolPtr,
+                         bool *, SeparationStatus *)
 {
   int i = 0;
   double gradSize  = 0, maxVal = -INFINITY, conVal;
@@ -1128,22 +1128,22 @@ void QGHandlerAdvance::maxVio_(const double *x, NodePtr node, bool *sol_found,
     if (consMaxVio >  (maxVioPer_/100) * maxVioVal_) {
       maxVioVal_ = consMaxVio; 
       //// ECP
-      //cutAdded = ECPTypeCut_(x, cutMan, conIndex, "_OACutVio_"); // ECP
+      cutAdded = ECPTypeCut_(x, cutMan, conIndex, "_OACutVio_"); // ECP
 
-      //if (cutAdded) {
-        //++(stats_->fracCuts);
-        //if (resolve_) {
-          //*status = SepaResolve;      
-        //} else {
-          //*status = SepaContinue;
-        //}
-      //}
+      if (cutAdded) {
+        ++(stats_->fracCuts);
+        if (resolve_) {
+          *status = SepaResolve;      
+        } else {
+          *status = SepaContinue;
+        }
+      }
 
       //objCutAtLpSol_(x, cutMan, status);         //MS: required??
 
       //// NLP
       //// 1. restricted NLP
-      //restrictedNLP_(node, sol_found, s_pool, cutMan, status); // Restricted NLP
+      restrictedNLP_(node, sol_found, s_pool, cutMan, status); // Restricted NLP
 
       ////2. Fixed NLP solve 
       //if (fixSomeInts_(x)) {
@@ -1155,7 +1155,7 @@ void QGHandlerAdvance::maxVio_(const double *x, NodePtr node, bool *sol_found,
       //}
       
       //// ESH
-      //ESHTypeCut_(x, cutMan, status, conIndex); // ESH standard way
+      ESHTypeCut_(x, cutMan, status, conIndex); // ESH standard way
     }
     lastNodeId_ = nIndex;          
   }

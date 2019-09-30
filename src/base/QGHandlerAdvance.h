@@ -106,9 +106,9 @@ private:
   
   LinearizationsPtr extraLin_;
 
-  int lastNodeId_;
+  UInt lastNodeId_;
    
-  int lastNodeIdLbUb_;
+  UInt lastNodeIdLbUb_;
 
   double maxVioVal_;
   
