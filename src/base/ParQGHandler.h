@@ -230,21 +230,21 @@ private:
    * Check which nonlinear constraints are violated at the LP solution and
    * add OA cuts. Return number of OA cuts added.
    */
-  void oaCutToCons_(const double *nlpx, const double *lpx, CutManager *,
+  void cutToCons_(const double *nlpx, const double *lpx, CutManager *,
                     SeparationStatus *status);
   
   /// Add OA cut to a violated constraint.   
   void addCut_(const double *nlpx, const double *lpx, ConstraintPtr con, 
                CutManager *cutman, SeparationStatus *status);
   
-  void oaCutsAtLpSol_(const double *lpx, CutManager *cutman,
+  void cutsAtLpSol_(const double *lpx, CutManager *cutman,
                     SeparationStatus *status);
 
   /**
    * Check if objective is violated at the LP solution and
    * add OA cut.
    */
-  void oaCutToObj_(const double *nlpx, const double *lpx, CutManager *,
+  void cutToObj_(const double *nlpx, const double *lpx, CutManager *,
                    SeparationStatus *status);
 
   /**
@@ -263,7 +263,7 @@ private:
    * Update the upper bound. XXX: Needs proper integration with
    * Minotaur's Handler design. 
    */
-  void updateUb_(SolutionPoolPtr s_pool, double *nlp_val, bool *sol_found);
+  void updateUb_(SolutionPoolPtr s_pool, double nlpval, bool *sol_found);
 
   };
 

@@ -105,12 +105,10 @@ ParQGHandler::~ParQGHandler()
     delete stats_;
   }
 
-  //env_.reset();
   env_ = 0;
-  //rel_.reset();
-  //minlp_.reset();
   rel_ = 0;
   minlp_ = 0;
+  nlCons_.clear();
 }
 
 
@@ -135,9 +133,7 @@ void ParQGHandler::addInitLinearX_(const double *x)
         sstm << "Thr_" << omp_get_thread_num();
 #endif
         ++(stats_->cuts);
-        sstm << "_OAcut_";
-        sstm << stats_->cuts;
-        sstm << "_AtRoot";
+        sstm << "_qgCutRoot_" << stats_->cuts;
         f = (FunctionPtr) new Function(lf);
         //newcon = rel_->newConstraint(f, -INFINITY, cUb-c, sstm.str());
         rel_->newConstraint(f, -INFINITY, cUb-c, sstm.str());
@@ -159,15 +155,14 @@ void ParQGHandler::addInitLinearX_(const double *x)
     act = o->eval(x, &error);
     if (error==0) {
       ++(stats_->cuts);
-      sstm << "_OAObjcut_";
-      sstm << stats_->cuts;
-      sstm << "_AtRoot";
+      sstm << "_qgObjCutRoot_" << stats_->cuts;
       f = o->getFunction();
       linearAt_(f, act, x, &c, &lf, &error);
       if (error == 0) {
         lf->addTerm(objVar_, -1.0);
         f = (FunctionPtr) new Function(lf);
         rel_->newConstraint(f, -INFINITY, -1.0*c, sstm.str());
+        //newcon = rel_->newConstraint(f, -INFINITY, -1.0*c, sstm.str());
       }
     }	else {
       logger_->msgStream(LogError) << me_ <<
@@ -186,8 +181,7 @@ void ParQGHandler::cutIntSol_(ConstSolutionPtr sol, CutManager *cutMan,
                            SolutionPoolPtr s_pool, bool *sol_found,
                            SeparationStatus *status)
 {
-  double nlpval = INFINITY;
-  const double *lpx = sol->getPrimal(), *nlpx;
+  const double *lpx = sol->getPrimal();
   relobj_ = (sol) ? sol->getObjValue() : -INFINITY;
 
   fixInts_(lpx);           // Fix integer variables
@@ -197,28 +191,32 @@ void ParQGHandler::cutIntSol_(ConstSolutionPtr sol, CutManager *cutMan,
   switch(nlpStatus_) {
   case (ProvenOptimal):
   case (ProvenLocalOptimal):
-    ++(stats_->nlpF);
-    updateUb_(s_pool, &nlpval, sol_found);
-    if ((relobj_ >= nlpval-objATol_) ||
-        (nlpval != 0 && (relobj_ >= nlpval-fabs(nlpval)*objRTol_))) {
-        *status = SepaPrune;
-        break;
-    } else {
-      nlpx = nlpe_->getSolution()->getPrimal();
-      oaCutToCons_(nlpx, lpx, cutMan, status);
-      oaCutToObj_(nlpx, lpx, cutMan, status);
-      break;
+    {
+      ++(stats_->nlpF);
+      double nlpval = nlpe_->getSolutionValue();
+      updateUb_(s_pool, nlpval, sol_found);
+      if ((relobj_ >= nlpval-objATol_) ||
+          (nlpval != 0 && (relobj_ >= nlpval-fabs(nlpval)*objRTol_))) {
+          *status = SepaPrune;
+      } else {
+        const double * nlpx = nlpe_->getSolution()->getPrimal();
+        cutToObj_(nlpx, lpx, cutMan, status);
+        cutToCons_(nlpx, lpx, cutMan, status);
+      }
     }
+    break;
   case (ProvenInfeasible):
   case (ProvenLocalInfeasible):
   case (ProvenObjectiveCutOff):
-    ++(stats_->nlpI);
-    nlpx = nlpe_->getSolution()->getPrimal();
-    oaCutToCons_(nlpx, lpx, cutMan, status);
+    {
+      ++(stats_->nlpI);
+      const double * nlpx = nlpe_->getSolution()->getPrimal();
+      cutToCons_(nlpx, lpx, cutMan, status);
+    }
     break;
   case (EngineIterationLimit):
     ++(stats_->nlpIL);
-    oaCutsAtLpSol_(lpx, cutMan, status);
+    cutsAtLpSol_(lpx, cutMan, status);
     break;
   case (FailedFeas):
   case (EngineError):
@@ -235,8 +233,8 @@ void ParQGHandler::cutIntSol_(ConstSolutionPtr sol, CutManager *cutMan,
     *status = SepaError;
   }
 
- if (*status==SepaContinue) {
-   // No linearizations are generated so prune the node
+ if (*status == SepaContinue) {
+   // happens due to tolerance. No linearizations are generated so prune the node
    *status = SepaPrune;
  }
 
@@ -345,7 +343,7 @@ bool ParQGHandler::isFeasible(ConstSolutionPtr sol, RelaxationPtr, bool &,
 
   if (oNl_) {
     error = 0;
-    relobj_ = x[objVar_->getIndex()];
+    relobj_ = sol->getObjValue();
     act = minlp_->getObjValue(x, &error);
     if (error == 0) {
       if ((act > relobj_ + solAbsTol_) &&
@@ -439,7 +437,7 @@ void ParQGHandler::linearAt_(FunctionPtr f, double fval, const double *x,
 }
 
 
-void ParQGHandler::oaCutToCons_(const double *nlpx, const double *lpx,
+void ParQGHandler::cutToCons_(const double *nlpx, const double *lpx,
                              CutManager *cutman, SeparationStatus *status)
 {
   int error = 0;
@@ -469,7 +467,7 @@ void ParQGHandler::oaCutToCons_(const double *nlpx, const double *lpx,
 }
 
 
-void ParQGHandler::oaCutsAtLpSol_(const double *lpx, CutManager *cutman,
+void ParQGHandler::cutsAtLpSol_(const double *lpx, CutManager *cutman,
                              SeparationStatus *status)
 {
   int error=0;
@@ -494,7 +492,7 @@ void ParQGHandler::oaCutsAtLpSol_(const double *lpx, CutManager *cutman,
           if ((lpvio > solAbsTol_) && ((cUb-c)==0 ||
                                    (lpvio>fabs(cUb-c)*solRelTol_))) {
             ++(stats_->cuts);
-            sstm << "_OAcut_";
+            sstm << "_qgCut_";
             sstm << stats_->cuts;
             *status = SepaResolve;
             f = (FunctionPtr) new Function(lf);
@@ -536,7 +534,7 @@ void ParQGHandler::oaCutsAtLpSol_(const double *lpx, CutManager *cutman,
               *status = SepaResolve;
               lf->addTerm(objVar_, -1.0);
               f = (FunctionPtr) new Function(lf);
-              sstm << "_OAObjcut_" << stats_->cuts;
+              sstm << "_qgObjCut_" << stats_->cuts;
               rel_->newConstraint(f, -INFINITY, -1.0*c, sstm.str());
               //newcon = rel_->newConstraint(f, -INFINITY, -1.0*c, sstm.str());
             } else {
@@ -574,8 +572,7 @@ void ParQGHandler::addCut_(const double *nlpx, const double *lpx,
       if ((lpvio>solAbsTol_) &&
           ((cUb-c)==0 || (lpvio>fabs(cUb-c)*solRelTol_))) {
         ++(stats_->cuts);
-        sstm << "_OAcut_";
-        sstm << stats_->cuts;
+        sstm << "_qgCut_" << stats_->cuts;
         *status = SepaResolve;
         f = (FunctionPtr) new Function(lf);
         newcon = rel_->newConstraint(f, -INFINITY, cUb-c, sstm.str());
@@ -597,7 +594,7 @@ void ParQGHandler::addCut_(const double *nlpx, const double *lpx,
 }
  
 
-void ParQGHandler::oaCutToObj_(const double *nlpx, const double *lpx,
+void ParQGHandler::cutToObj_(const double *nlpx, const double *lpx,
                             CutManager *cutman, SeparationStatus *status)
 {
   if (oNl_) {
@@ -623,8 +620,7 @@ void ParQGHandler::oaCutToObj_(const double *nlpx, const double *lpx,
             if ((vio > solAbsTol_) && ((relobj_-c)==0
                                      || vio > fabs(relobj_-c)*solRelTol_)) {
               ++(stats_->cuts);
-              sstm << "_OAObjcut_";
-              sstm << stats_->cuts;
+              sstm << "_qgObjCut_" << stats_->cuts;
               lf->addTerm(objVar_, -1.0);
               *status = SepaResolve;
               f = (FunctionPtr) new Function(lf);
@@ -712,29 +708,28 @@ void ParQGHandler::relax_(bool *isInf)
 
 
 void ParQGHandler::separate(ConstSolutionPtr sol, NodePtr , RelaxationPtr rel,
-                         CutManager *cutMan, SolutionPoolPtr s_pool, ModVector &,
-                         ModVector &, bool *sol_found, SeparationStatus *status)
+                         CutManager *cutMan, SolutionPoolPtr s_pool,
+                         ModVector &, ModVector &, bool *sol_found,
+                         SeparationStatus *status)
 {
   double val;
+  VariablePtr var;
   VariableType v_type;
-  VariableConstIterator v_iter;
   const double *x = sol->getPrimal();
-  *status = SepaContinue;
 
-  for (v_iter = rel->varsBegin(); v_iter != rel->varsEnd(); ++v_iter) {
-    v_type = (*v_iter)->getType();
+  *status = SepaContinue;
+  for (VariableConstIterator v_iter = rel->varsBegin();
+       v_iter != rel->varsEnd(); ++v_iter) {
+    var = *v_iter;
+    v_type = var->getType();
     if (v_type == Binary || v_type == Integer) {
-      val = x[(*v_iter)->getIndex()];
+      val = x[var->getIndex()];
       if (fabs(val - floor(val+0.5)) > intTol_) {
-#if SPEW
-        logger_->msgStream(LogDebug) << me_ << "variable " <<
-          (*v_iter)->getName() << " has fractional value = " << val <<
-          std::endl;
-#endif
         return;
       }
     }
   }
+
   cutIntSol_(sol, cutMan, s_pool, sol_found, status);
   return;
 }
@@ -761,19 +756,17 @@ void ParQGHandler::unfixInts_()
 }
 
 
-void ParQGHandler::updateUb_(SolutionPoolPtr s_pool, double *nlpval,
+void ParQGHandler::updateUb_(SolutionPoolPtr s_pool, double nlpval,
                           bool *sol_found)
 {
-  double val = nlpe_->getSolutionValue();
   double bestval = s_pool->getBestSolutionValue();
 
-  if ((bestval - objATol_ > val) ||
-        (bestval != 0 && (bestval - val > fabs(bestval)*objRTol_))) {
+  if ((bestval - objATol_ > nlpval) ||
+        (bestval != 0 && (bestval - fabs(bestval)*objRTol_ > nlpval))) {
     const double *x = nlpe_->getSolution()->getPrimal();
-    s_pool->addSolution(x, val);
+    s_pool->addSolution(x, nlpval);
     *sol_found = true;
   }
-  *nlpval = val;
   return;
 }
 

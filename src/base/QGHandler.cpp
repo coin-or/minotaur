@@ -105,7 +105,6 @@ QGHandler::~QGHandler()
     delete stats_;
   }
 
-  nlCons_.clear();
   env_ = 0;
   rel_ = 0;
   minlp_ = 0;
@@ -226,6 +225,7 @@ void QGHandler::cutIntSol_(ConstSolutionPtr sol, CutManager *cutMan,
   }
 
  if (*status == SepaContinue) {
+   // happens due to tolerance. No linearizations are generated so prune the node
    *status = SepaPrune;
  }
 
@@ -425,9 +425,9 @@ void QGHandler::cutsAtLpSol_(const double *lpx, CutManager *,
 {
   int error=0;
   FunctionPtr f;
+  ConstraintPtr con;
   LinearFunctionPtr lf;
   std::stringstream sstm;
-  ConstraintPtr con;
   //ConstraintPtr newcon;
   double c, lpvio, act, cUb;
 
@@ -648,11 +648,10 @@ void QGHandler::separate(ConstSolutionPtr sol, NodePtr, RelaxationPtr rel,
   double val;
   VariablePtr var;
   VariableType v_type;
-  VariableConstIterator v_iter;
   const double *x = sol->getPrimal();
 
   *status = SepaContinue;
-  for (v_iter = rel->varsBegin(); v_iter != rel->varsEnd(); ++v_iter) {
+  for (VariableConstIterator v_iter = rel->varsBegin(); v_iter != rel->varsEnd(); ++v_iter) {
     var = *v_iter;
     v_type = var->getType();
     if (v_type == Binary || v_type == Integer) {
