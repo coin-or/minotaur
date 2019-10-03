@@ -17,7 +17,6 @@
 #include <AMPLHessian.h>
 #include <AMPLJacobian.h>
 #include <Environment.h>
-//#include <Constraint.h>
 #include <Constraint.h>
 #include <Function.h>
 #include <LinearFunction.h>
@@ -238,8 +237,6 @@ int main(int argc, char* argv[])
 {
   EnvPtr env = new Environment();
   OptionDBPtr options;
-
-  //ConstSolutionPtr xc;
 
   MINOTAUR_AMPL::AMPLInterfacePtr iface = MINOTAUR_AMPL::AMPLInterfacePtr();  
   ProblemPtr inst;
