@@ -57,11 +57,8 @@ QGHandler::QGHandler()
   oNl_(false),
   rel_(RelaxationPtr()),
   relobj_(0.0),
-  //rootNLPSol_(0),
   stats_(0)
 {
-  
-
   intTol_ = env_->getOptions()->findDouble("int_tol")->getValue();
   solAbsTol_ = env_->getOptions()->findDouble("feasAbs_tol")->getValue();
   solRelTol_ = env_->getOptions()->findDouble("feasRel_tol")->getValue();
@@ -81,7 +78,6 @@ QGHandler::QGHandler(EnvPtr env, ProblemPtr minlp, EnginePtr nlpe)
   oNl_(false),
   rel_(RelaxationPtr()),
   relobj_(0.0)
-  //rootNLPSol_(0),
 {
   intTol_ = env_->getOptions()->findDouble("int_tol")->getValue();
   solAbsTol_ = env_->getOptions()->findDouble("feasAbs_tol")->getValue();
@@ -91,11 +87,11 @@ QGHandler::QGHandler(EnvPtr env, ProblemPtr minlp, EnginePtr nlpe)
   logger_ = env->getLogger();
 
   stats_ = new QGStats();
+  stats_->cuts = 0;
   stats_->nlpS = 0;
   stats_->nlpF = 0;
   stats_->nlpI = 0;
   stats_->nlpIL = 0;
-  stats_->cuts = 0;
 }
 
 
@@ -125,6 +121,7 @@ void QGHandler::addInitLinearX_(const double *x)
   for (CCIter it=nlCons_.begin(); it!=nlCons_.end(); ++it) {
     con = *it;
     act = con->getActivity(x, &error);
+    
     if (error == 0) {
       f = con->getFunction();
       linearAt_(f, act, x, &c, &lf, &error);
@@ -147,6 +144,7 @@ void QGHandler::addInitLinearX_(const double *x)
     error = 0;
     ObjectivePtr o = minlp_->getObjective();
     act = o->eval(x, &error);
+    
     if (error==0) {
       ++(stats_->cuts);
       sstm << "_qgObjCutRoot_" << stats_->cuts;
@@ -241,7 +239,7 @@ void QGHandler::fixInts_(const double *x)
   for (VariableConstIterator vit=minlp_->varsBegin(); vit!=minlp_->varsEnd();
        ++vit) {
     v = *vit;
-    if (v->getType()==Binary || v->getType()==Integer) {
+    if (v->getType() == Binary || v->getType() == Integer) {
       xval = x[v->getIndex()];
       xval = floor(xval + 0.5);
       m = new VarBoundMod2(v, xval, xval);
@@ -266,12 +264,10 @@ void QGHandler::initLinear_(bool *isInf)
   case (ProvenLocalOptimal):
     ++(stats_->nlpF);
     x = nlpe_->getSolution()->getPrimal();
-    //rootNLPSol_ = nlpe_->getSolution();
     addInitLinearX_(x);
     break;
   case (EngineIterationLimit):
     ++(stats_->nlpIL);
-    //rootNLPSol_ = nlpe_->getSolution();
     x = nlpe_->getSolution()->getPrimal();
     addInitLinearX_(x);
     break;
@@ -345,6 +341,7 @@ void QGHandler::linearizeObj_()
 {
   ObjectivePtr o = minlp_->getObjective();
   FunctionType fType = o->getFunctionType();
+  
   if (!o) {
     assert(!"need objective in QG!");
   } else if (fType != Linear && fType != Constant) {
@@ -441,7 +438,7 @@ void QGHandler::cutsAtLpSol_(const double *lpx, CutManager *,
       if ((act > cUb + solAbsTol_) &&
           (cUb == 0 || act > cUb+fabs(cUb)*solRelTol_)) {
         linearAt_(f, act, lpx, &c, &lf, &error);
-        if (error==0) {
+        if (error == 0) {
           lpvio = std::max(lf->eval(lpx)-cUb+c, 0.0);
           if ((lpvio > solAbsTol_) && ((cUb-c)==0 ||
                                    (lpvio>fabs(cUb-c)*solRelTol_))) {
@@ -625,11 +622,11 @@ void QGHandler::relax_(bool *isInf)
   ConstraintPtr c;
   FunctionType fType;
   
-  for (ConstraintConstIterator it=minlp_->consBegin(); it!=minlp_->consEnd();
-       ++it) {
+  for (ConstraintConstIterator it = minlp_->consBegin();
+       it != minlp_->consEnd(); ++it) {
     c = *it;
     fType = c->getFunctionType();
-    if (fType !=Constant && fType != Linear) {
+    if (fType != Constant && fType != Linear) {
       nlCons_.push_back(c);
     }
   }
@@ -651,7 +648,8 @@ void QGHandler::separate(ConstSolutionPtr sol, NodePtr, RelaxationPtr rel,
   const double *x = sol->getPrimal();
 
   *status = SepaContinue;
-  for (VariableConstIterator v_iter = rel->varsBegin(); v_iter != rel->varsEnd(); ++v_iter) {
+  for (VariableConstIterator v_iter = rel->varsBegin();
+       v_iter != rel->varsEnd(); ++v_iter) {
     var = *v_iter;
     v_type = var->getType();
     if (v_type == Binary || v_type == Integer) {
@@ -678,6 +676,7 @@ void QGHandler::solveNLP_()
 void QGHandler::unfixInts_()
 {
   Modification *m = 0;
+
   while(nlpMods_.empty() == false) {
     m = nlpMods_.top();
     m->undoToProblem(minlp_);
