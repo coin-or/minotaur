@@ -107,9 +107,6 @@ private:
   //ConstSolutionPtr rootNLPSol_;
 
 public:
-  /// Empty constructor.
-  QGHandler();
-
   /**
    * \brief Default Constructor.
    *

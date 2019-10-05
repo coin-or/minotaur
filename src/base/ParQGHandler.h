@@ -103,9 +103,6 @@ private:
   ParQGStats *stats_;
 
 public:
-  /// Empty constructor.
-  ParQGHandler();
-
   /**
    * \brief Default Constructor.
    *

@@ -46,28 +46,6 @@ using namespace Minotaur;
 typedef std::vector<ConstraintPtr>::const_iterator CCIter;
 const std::string QGHandler::me_ = "QGHandler: ";
 
-
-QGHandler::QGHandler()
-: env_(EnvPtr()),
-  minlp_(ProblemPtr()),
-  nlCons_(0),
-  nlpe_(EnginePtr()),
-  nlpStatus_(EngineUnknownStatus),
-  objVar_(VariablePtr()),
-  oNl_(false),
-  rel_(RelaxationPtr()),
-  relobj_(0.0),
-  stats_(0)
-{
-  intTol_ = env_->getOptions()->findDouble("int_tol")->getValue();
-  solAbsTol_ = env_->getOptions()->findDouble("feasAbs_tol")->getValue();
-  solRelTol_ = env_->getOptions()->findDouble("feasRel_tol")->getValue();
-  objATol_ = env_->getOptions()->findDouble("solAbs_tol")->getValue();
-  objRTol_ = env_->getOptions()->findDouble("solRel_tol")->getValue();
-  logger_ = (LoggerPtr) new Logger(LogInfo);
-}
-
-
 QGHandler::QGHandler(EnvPtr env, ProblemPtr minlp, EnginePtr nlpe)
 : env_(env),
   minlp_(minlp),
