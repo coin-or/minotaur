@@ -72,25 +72,25 @@ namespace Minotaur {
     void write(std::ostream &) const {};
 
     // Return varstat array from warmstart
-    int *getVarStat() const { return varstat_;}
+    //int *getVarStat() const { return varstat_;}
 
     // Return constat array from warmstart
-    int *getConStat() const { return constat_;}
+    //int *getConStat() const { return constat_;}
 
     // Return the size of constat_ (number of constraints)
-    int getNumCons() const { return numCons_;}
+    //int getNumCons() const { return numCons_;}
 
     // Return solution from warmstart
     SolutionPtr getSolution() const { return sol_;}
 
     // Return the size of constat_ (number of constraints)
-    void setNumCons(int num) { numCons_ = num;}
+    //void setNumCons(int num) { numCons_ = num;}
 
     // Set varstat array for warmstart
-    void setVarStat(int *varstat, int numvars);
+    //void setVarStat(int *varstat, int numvars);
 
     // Set constat array for warmstart
-    void setConStat(int *constat, int numrows);
+    //void setConStat(int *constat, int numrows);
 
   private:
     /**
@@ -103,10 +103,10 @@ namespace Minotaur {
     SolutionPtr sol_;
 
     /// An array to store the constraint warmstart info
-    int * constat_;
+    //int * constat_;
 
     /// An array to store the variable warmstart info
-    int * varstat_;
+    //int * varstat_;
 
     /// Size of constat_
     int numCons_;
@@ -188,7 +188,7 @@ namespace Minotaur {
      */
     void load(ProblemPtr problem);
 
-    void loadFromWarmStart(const WarmStartPtr);
+    void loadFromWarmStart(const WarmStartPtr){};
 
     // Convert 'min f' to 'min -f'.
     void negateObj();

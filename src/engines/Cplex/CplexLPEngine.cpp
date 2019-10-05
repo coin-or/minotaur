@@ -41,9 +41,9 @@ const std::string CplexLPEngine::me_ = "CplexLPEngine: ";
 
 CpxLPWarmStart::CpxLPWarmStart()
   : mustDelete_(true),
-  sol_(0),
-  constat_(0),
-  varstat_(0)
+  sol_(0)
+  //constat_(0),
+  //varstat_(0)
 {
 }
 
@@ -53,46 +53,48 @@ CpxLPWarmStart::~CpxLPWarmStart()
   if (sol_) {
     sol_ = 0;
   }
-  if (varstat_) {
-    delete [] varstat_; varstat_ = 0;
-  }
-  if (constat_) {
-    delete [] constat_; constat_ = 0;
-  }
+  //if (varstat_) {
+    //delete [] varstat_; varstat_ = 0;
+  //}
+  //if (constat_) {
+    //delete [] constat_; constat_ = 0;
+  //}
 }
 
 
 bool CpxLPWarmStart::hasInfo()
 {
-  if (constat_ || varstat_ || sol_) {
-    return true;
-  } else {
-    return false;
-  }
+  //if (constat_ || varstat_ || sol_) {
+    //return true;
+  //} else {
+    //return false;
+  //}
+  //Assume that Cplex's warmstart info from the previous solve is good
+  return true;
 }
 
 
-void CpxLPWarmStart::setVarStat(int* varstat, int numvars)
-{
-  if (varstat_) {
-    delete [] varstat_;
-  }
-  varstat_ = new int[numvars];
-  for (int i=0; i < numvars; ++i) {
-    varstat_[i] = varstat[i];
-  }
-}
+//void CpxLPWarmStart::setVarStat(int* varstat, int numvars)
+//{
+  //if (varstat_) {
+    //delete [] varstat_;
+  //}
+  //varstat_ = new int[numvars];
+  //for (int i=0; i < numvars; ++i) {
+    //varstat_[i] = varstat[i];
+  //}
+//}
 
-void CpxLPWarmStart::setConStat(int* constat, int numcons)
-{
-  if (constat_) {
-    delete [] constat_;
-  }
-  constat_ = new int[numcons];
-  for (int i=0; i < numcons; ++i) {
-    constat_[i] = constat[i];
-  }
-}
+//void CpxLPWarmStart::setConStat(int* constat, int numcons)
+//{
+  //if (constat_) {
+    //delete [] constat_;
+  //}
+  //constat_ = new int[numcons];
+  //for (int i=0; i < numcons; ++i) {
+    //constat_[i] = constat[i];
+  //}
+//}
 
 // ----------------------------------------------------------------------- //
 // ----------------------------------------------------------------------- //
@@ -315,13 +317,13 @@ WarmStartPtr CplexLPEngine::getWarmStartCopy()
 {
   //Create a new copy of warm-start information from cplex
   CpxLPWarmStartPtr ws = 0;
-  if (ws_) {
-    ws = new CpxLPWarmStart();
-    // save it. It is our responsibility to free it.
-    ws->setVarStat(ws_->getVarStat(), problem_->getNumVars());
-    ws->setConStat(ws_->getConStat(), ws_->getNumCons());
-    ws->setNumCons(ws_->getNumCons());
-  }
+  //if (ws_) {
+    //ws = new CpxLPWarmStart();
+    //// save it. It is our responsibility to free it.
+    //ws->setVarStat(ws_->getVarStat(), problem_->getNumVars());
+    //ws->setConStat(ws_->getConStat(), ws_->getNumCons());
+    //ws->setNumCons(ws_->getNumCons());
+  //}
   return ws;
 }
 
@@ -425,7 +427,7 @@ void CplexLPEngine::load(ProblemPtr problem)
     }
 #endif
 
-#if 1
+#if 0
     /* Display information for each simplex iteration */
     cpxstatus_ = CPXXsetintparam (cpxenv_, CPX_PARAM_SIMDISPLAY, 2);
     if (cpxstatus_) {
@@ -598,39 +600,39 @@ TERMINATE:
 }
 
 
-void CplexLPEngine::loadFromWarmStart(const WarmStartPtr ws)
-{
-  ConstCpxLPWarmStartPtr ws2 = dynamic_cast <const CpxLPWarmStart*> (ws);
-  assert (ws2);
-  int wsNumCons = ws2->getNumCons();
-  int probNumCons = problem_->getNumCons();
+//void CplexLPEngine::loadFromWarmStart(const WarmStartPtr ws)
+//{
+  //ConstCpxLPWarmStartPtr ws2 = dynamic_cast <const CpxLPWarmStart*> (ws);
+  //assert (ws2);
+  //int wsNumCons = ws2->getNumCons();
+  //int probNumCons = problem_->getNumCons();
 
-  if (wsNumCons == probNumCons) {
-    cpxstatus_ = CPXXcopybase(cpxenv_, cpxlp_, ws2->getVarStat(), ws2->getConStat());
-    if (cpxstatus_) {
-       logger_->msgStream(LogError) << me_
-         << "Failed to pass basis information for warm starting."
-         << std::endl;
-    }
-  } else {
-    assert(!(probNumCons < wsNumCons));
-    int *constat = new int[probNumCons];
-    int *wsconstat = ws2->getConStat();
-    for (int i=0; i < wsNumCons; ++i) {
-      constat[i] = wsconstat[i];
-    }
-    for (int i=wsNumCons; i < probNumCons; ++i) {
-      constat[i] = 0; //assume dual/slack is nonbasic for new constraint
-    }
-    cpxstatus_ = CPXXcopybase(cpxenv_, cpxlp_, ws2->getVarStat(), constat);
-    if (cpxstatus_) {
-       logger_->msgStream(LogError) << me_
-         << "Failed to pass extended basis information for warm starting."
-         << std::endl;
-    }
-    delete [] constat;
-  }
-}
+  //if (wsNumCons == probNumCons) {
+    //cpxstatus_ = CPXXcopybase(cpxenv_, cpxlp_, ws2->getVarStat(), ws2->getConStat());
+    //if (cpxstatus_) {
+       //logger_->msgStream(LogError) << me_
+         //<< "Failed to pass basis information for warm starting."
+         //<< std::endl;
+    //}
+  //} else {
+    //assert(!(probNumCons < wsNumCons));
+    //int *constat = new int[probNumCons];
+    //int *wsconstat = ws2->getConStat();
+    //for (int i=0; i < wsNumCons; ++i) {
+      //constat[i] = wsconstat[i];
+    //}
+    //for (int i=wsNumCons; i < probNumCons; ++i) {
+      //constat[i] = 0; //assume dual/slack is nonbasic for new constraint
+    //}
+    //cpxstatus_ = CPXXcopybase(cpxenv_, cpxlp_, ws2->getVarStat(), constat);
+    //if (cpxstatus_) {
+       //logger_->msgStream(LogError) << me_
+         //<< "Failed to pass extended basis information for warm starting."
+         //<< std::endl;
+    //}
+    //delete [] constat;
+  //}
+//}
 
 
 void CplexLPEngine::load_()
@@ -747,10 +749,10 @@ EngineStatus CplexLPEngine::solve()
     sol_->setDualOfVars(redCosts);
 
     // Store basis information for warm starting
-    cpxstatus_ = CPXXgetbase(cpxenv_, cpxlp_, varstat, constat);
-    ws_->setVarStat(varstat, cur_numcols);
-    ws_->setNumCons(cur_numrows);
-    ws_->setConStat(constat, cur_numrows);
+    //cpxstatus_ = CPXXgetbase(cpxenv_, cpxlp_, varstat, constat);
+    //ws_->setVarStat(varstat, cur_numcols);
+    //ws_->setNumCons(cur_numrows);
+    //ws_->setConStat(constat, cur_numrows);
   } else if (solstat == 3 || solstat == 5) {
     status_ = ProvenInfeasible;
     sol_->setObjValue(INFINITY);
