@@ -18,7 +18,6 @@
 #include "Engine.h"
 #include "Environment.h"
 #include "Handler.h"
-#include "QGHandler.h"
 #include "Heuristic.h"
 #include "PCBProcessor.h"
 #include "Logger.h"
@@ -178,7 +177,6 @@ void PCBProcessor::process(NodePtr node, RelaxationPtr rel,
 {
   bool should_prune = true;
   bool should_resolve;
-  //bool sol_found;
   BrancherStatus br_status;
   ConstSolutionPtr sol;
   ModVector mods;
@@ -230,20 +228,6 @@ void PCBProcessor::process(NodePtr node, RelaxationPtr rel,
     std::cout << "xsol NOT feasible in node " << node->getId() << std::endl;
   }
 #endif 
-  //MS: For root linearizations
-  //if (node->getId() == 0) {
-    //HandlerIterator h;
-    //for (h = handlers_.begin(); h != handlers_.end(); ++h) {
-      //if ((*h)->getName() =="QG Handler (Quesada-Grossmann)") {
-        //QGHandlerPtr qgh = boost::dynamic_pointer_cast <QGHandler> (*(h));
-       //should_prune = qgh->rootLinearizations(cutMan_, s_pool, &sol_found, &sep_status);
-       //if (should_prune) {
-         //return;
-       //} 
-       //break;
-      //}
-    //}
-  //}
   
   // presolve
   should_prune = presolveNode_(node, s_pool);
@@ -319,27 +303,6 @@ void PCBProcessor::process(NodePtr node, RelaxationPtr rel,
       if (ws_) {
         ws_->incrUseCnt();
       }
-      //MS: WarmStart information for root linearizations
-      //if (node->getId() == 0) {
-        //HandlerIterator h;
-        //ModVector t_pmods;      // Mods that are applied to the problem
-        //ModVector t_rmods;      // Mods that are applied to the relaxation.
-        //SeparationStatus st = SepaContinue;
-        //bool solFound;
-        //for (h = handlers_.begin(); h != handlers_.end(); ++h) {
-          //if ((*h)->getName() =="QG Handler (Quesada-Grossmann)") {
-            //QGHandlerPtr qgh = boost::dynamic_pointer_cast <QGHandler> (*(h));
-            //qgh->setLPWarmStart(ws_);
-            //qgh->separate(sol, node, relaxation_, cutMan_, s_pool, t_pmods, t_rmods,
-                   //&solFound, &st);
-           //break;
-          //}
-        //}
-        //if (st == SepaResolve) {
-          //should_resolve = true;
-          //continue;
-        //}
-      //}
       branches_ = brancher_->findBranches(relaxation_, node, sol, s_pool, 
                                           br_status, mods);
       if (br_status==PrunedByBrancher) {
@@ -601,7 +564,6 @@ void PCBProcessor::reset(NodePtr node)
   }
 }
 #endif
-
 
       
 // Local Variables: 
