@@ -6,11 +6,8 @@
 
 /**
  * \file QGHandlerAdvance.h
- * \Briefly declare a derived class of Handler that improved vanilla 
- * Quesada-Grossmann algorithmi using linearizations schemes at root node
- * and nodes with fractional LP optimal solution.
- * \Author Meenarli Sharma, Indian Institute of
- * Techonology Bombay.
+ * \Briefly declare a derived class of Handler with enhanced feastures for the Quesada-Grossmann algorithm.
+ * \Author Meenarli Sharma, Indian Institute of Techonology Bombay.
  */
 
 #ifndef MINOTAURQGHANDLERADVANCE_H
@@ -33,7 +30,7 @@ struct QGStats {
   size_t nlpF;      /// Number of nlps feasible.
   size_t nlpI;      /// Number of nlps infeasible.
   size_t nlpIL;     /// Number of nlps hits engine iterations limit.
-  size_t oaCuts;    /// Number of oa cuts added to the LP.
+  size_t qgCuts;    /// Total number of cuts added.
   size_t fracCuts; /// Number of cuts at fractional nodes. 
 }; 
 
@@ -118,15 +115,10 @@ private:
   
   bool resolve_;
   
-  UInt newCuts_; //MS: to be deleted
-
   double * solC_;
 
   /// Statistics.
   QGStats *stats_;
-
-  /// MS: delete after use
-  //ConstSolutionPtr rootNLPSol_;
 
 public:
   /// Empty constructor.
@@ -226,7 +218,7 @@ private:
    */
   void fixInts_(const double *x);
   
-  bool fixSomeInts_(const double *x);
+  void fixSomeInts_(const double *x);
 
   /**
    * Solve the NLP relaxation of the MINLP and add linearizations about
@@ -262,16 +254,19 @@ private:
   void addCutAtFrac_(const double *nlpx, ConstraintPtr con, CutManager*,
                          SeparationStatus *status);
 
-  bool ECPTypeCut_(const double *x, CutManager *,
-                    int index, std::string cutName);
+  void ECPTypeCut_(const double *x, CutManager *, int index);
 
   void ESHTypeCut_(const double *x, CutManager *cutman,
-                    SeparationStatus *status, int index);
+                    int index);
 
 
   void consCutsAtLpSol_(const double *lpx, CutManager *cutman,
                     SeparationStatus *status);
 
+
+  void cutAtNlpSol_(CutManager *cutMan,
+                           SolutionPoolPtr s_pool, bool *sol_found,
+                           SeparationStatus *status);
 
   void cutToConsAtFrac_(const double *nlpx, CutManager *cutman,
                          SeparationStatus *status);
@@ -279,7 +274,7 @@ private:
   void cutToObjAtFrac_(const double *nlpx, CutManager *,
                          SeparationStatus *status);
 
-  void dualScheme_(ConstSolutionPtr sol, NodePtr node,
+  void kktCondBasedScheme_(ConstSolutionPtr sol, NodePtr node,
                          CutManager *cutMan, SolutionPoolPtr s_pool,
                          bool *sol_found, SeparationStatus *status);
 
@@ -321,14 +316,16 @@ private:
   /// Solve the nlp.
   void solveNLP_();
 
+
+  void findMods_(VarBoundModPtr m);
   /// Undo the changes done in fixInts_().
-  void unfixInts_();
+  void undoMods_();
 
   /**
    * Update the upper bound. XXX: Needs proper integration with
    * Minotaur's Handler design. 
    */
-  void updateUb_(SolutionPoolPtr s_pool, double *nlp_val, bool *sol_found);
+  void updateUb_(SolutionPoolPtr s_pool, double nlpval, bool *sol_found);
 
   };
 
