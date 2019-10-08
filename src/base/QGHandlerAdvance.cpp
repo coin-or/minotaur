@@ -730,7 +730,7 @@ void QGHandlerAdvance::relax_(bool *isInf)
           }
         }
       }
-      if (rs1 || rs2Per) {
+      if (rs1 || rs2Per || rs3 || rg1 || rg2) {
         extraLin_->rootLinearizations(nlpe_->getSolution()->getPrimal());
       }
     }
@@ -1322,8 +1322,7 @@ void QGHandlerAdvance::writeStats(std::ostream &out) const
   if (extraLin_ != 0) {
     extraLin_->writeStats(out);  
   } 
-  
-  UInt diff = stats_->qgCuts - stats_->fracCuts;
+
   out
     << me_ << "number of nlps solved                       = "
     << stats_->nlpS << std::endl
@@ -1335,8 +1334,8 @@ void QGHandlerAdvance::writeStats(std::ostream &out) const
     << stats_->nlpIL << std::endl
     << me_ << "number of cuts added at frac nodes          = " 
     << stats_->fracCuts << std::endl
-    << me_ << "number of cuts added at int feas nodes      = " 
-    << diff << std::endl;
+    << me_ << "total number of cuts added                  = " 
+    << stats_->qgCuts << std::endl;
   return;
 }
 
