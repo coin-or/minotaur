@@ -339,6 +339,10 @@ int main(int argc, char* argv[])
 
     qg_hand = (QGHandlerAdvancePtr) new QGHandlerAdvance(env, inst, nlp_e); 
     qg_hand->setModFlags(false, true);
+    if (env->getOptions()->findInt("root_linScheme3")->getValue() > 0) {
+      //MS: verify that lin_e passed here is not same as lin_e
+      qg_hand->setLpEngine(lin_e);    
+    }
    
     handlers.push_back(qg_hand);
     assert(qg_hand);
