@@ -47,42 +47,12 @@ using namespace Minotaur;
 typedef std::vector<ConstraintPtr>::const_iterator CCIter;
 const std::string QGHandlerAdvance::me_ = "QGHandlerAdvance: ";
 
-
-QGHandlerAdvance::QGHandlerAdvance()
-: env_(EnvPtr()),
-  minlp_(ProblemPtr()),
-  nlCons_(0),
-  nlpe_(EnginePtr()),
-  nlpStatus_(EngineUnknownStatus),
-  objVar_(VariablePtr()),
-  oNl_(false),
-  rel_(RelaxationPtr()),
-  relobj_(0.0),
-  extraLin_(0),
-  lastNodeId_(0),
-  lastNodeIdLbUb_(0),
-  maxVioVal_(0),
-  maxVioPer_(0),
-  lastLb_(-INFINITY),
-  resolve_(1),
-  solC_(NULL),
-  stats_(0)
-{
-  
-  intTol_ = env_->getOptions()->findDouble("int_tol")->getValue();
-  solAbsTol_ = env_->getOptions()->findDouble("feasAbs_tol")->getValue();
-  solRelTol_ = env_->getOptions()->findDouble("feasRel_tol")->getValue();
-  objATol_ = env_->getOptions()->findDouble("solAbs_tol")->getValue();
-  objRTol_ = env_->getOptions()->findDouble("solRel_tol")->getValue();
-  logger_ = (LoggerPtr) new Logger(LogInfo);
-}
-
-
 QGHandlerAdvance::QGHandlerAdvance(EnvPtr env, ProblemPtr minlp, EnginePtr nlpe)
 : env_(env),
   minlp_(minlp),
   nlCons_(0),
   nlpe_(nlpe),
+  lpe_(EnginePtr()),
   nlpStatus_(EngineUnknownStatus),
   objVar_(VariablePtr()),
   oNl_(false),
@@ -127,7 +97,9 @@ QGHandlerAdvance::~QGHandlerAdvance()
     delete extraLin_;  
   }
   env_ = 0;
+  lpe_ = 0;
   rel_ = 0;
+  nlpe_ = 0;
   minlp_ = 0;
   extraLin_ = 0;  
   nlCons_.clear();
@@ -712,16 +684,18 @@ void QGHandlerAdvance::relax_(bool *isInf)
   // user input for root linearization schemes
   // //MS: names of the schemes
   maxVioPer_ = env_->getOptions()->findDouble("maxVioPer")->getValue();
-  int rs3 = env_->getOptions()->findInt("root_linScheme3")->getValue();
+  rs3_ = env_->getOptions()->findInt("root_linScheme3")->getValue();
+  //int rs3 = env_->getOptions()->findInt("root_linScheme3")->getValue();
   bool rg1 = env_->getOptions()->findBool("root_genLinScheme1")->getValue();
   bool rg2 = env_->getOptions()->findBool("root_genLinScheme2")->getValue();
   double rs1 = env_->getOptions()->findDouble("root_linScheme1")->getValue();
   double rs2Per = env_->getOptions()->findDouble("root_linScheme2_per")->getValue();
   
   if (*isInf == false && nlCons_.size() > 0) {
-    if (rs1 || rs2Per ||  rs3 || rg1 || rg2 || maxVioPer_) {
-      extraLin_ = new Linearizations(env_, nlpe_, rel_, minlp_, nlCons_);
-      if (rs3 || rg1 || rg2 || maxVioPer_) {
+    if (rs1 || rs2Per ||  rs3_ || rg1 || rg2 || maxVioPer_) {
+      extraLin_ = new Linearizations(env_, rel_, minlp_, nlCons_);
+      if (rs3_ || rg1 || rg2 || maxVioPer_) {
+        extraLin_->setNlpEngine(nlpe_->emptyCopy());        
         extraLin_->findCenter();
         if (maxVioPer_) {
           solC_ = extraLin_->getCenter();
@@ -730,7 +704,7 @@ void QGHandlerAdvance::relax_(bool *isInf)
           }
         }
       }
-      if (rs1 || rs2Per || rs3 || rg1 || rg2) {
+      if (rs1 || rs2Per || rs3_ || rg1 || rg2) {
         extraLin_->rootLinearizations(nlpe_->getSolution()->getPrimal());
       }
     }
@@ -748,8 +722,16 @@ void QGHandlerAdvance::separate(ConstSolutionPtr sol, NodePtr node,
                                 SeparationStatus *status)
 {
   const double *x = sol->getPrimal();
-
   *status = SepaContinue;
+
+  if (rs3_ && node->getId() == 0) {
+    rs3_ = false;
+    extraLin_->rootLinScheme3(sol->getPrimal(), lpe_, status);
+    if (*status == SepaResolve) {
+      return;    
+    }
+  }
+
   if (!(isIntFeas_(x))) {
     if (maxVioPer_ > 0) {
       //MS: parameter tunning for depth
