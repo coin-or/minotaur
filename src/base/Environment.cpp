@@ -240,13 +240,11 @@ void Environment::createDefaultOptions_()
   options_->insert(b_option);
 
   b_option = (BoolOptionPtr) new Option<bool>("root_genLinScheme1", 
-      "Rounds of extra linearizations to be added at root node under 
-      gen scheme 1: <0/1>", true, false);
+      "Rounds of extra linearizations to be added at root node under gen scheme 1: <0/1>", true, false);
   options_->insert(b_option);
 
   b_option = (BoolOptionPtr) new Option<bool>("root_genLinScheme2", 
-      "Rounds of extra linearizations to be added at root node under 
-      gen scheme 2: <0/1>", true, false);
+      "Rounds of extra linearizations to be added at root node under gen scheme 2: <0/1>", true, false);
   options_->insert(b_option);
 
   // reset, so that we don't accidently add it again.
@@ -333,8 +331,7 @@ void Environment::createDefaultOptions_()
   options_->insert(i_option);
 
   i_option = (IntOptionPtr) new Option<int>("oa_iter_limit",
-      "The maximum number of iterations for Outer approximation algorithm to 
-      run: >=1", true, 10000);
+      "The maximum number of iterations for Outer approximation algorithm to run: >=1", true, 10000);
   options_->insert(i_option);
 
 
@@ -426,8 +423,7 @@ void Environment::createDefaultOptions_()
   options_->insert(d_option);
 
   d_option = (DoubleOptionPtr) new Option<double>("root_linScheme1", 
-      "Rounds of extra linearizations to be added at root node under 
-      scheme 1", true, 0);
+      "Rounds of extra linearizations to be added at root node under scheme 1", true, 0);
   options_->insert(d_option);
 
   d_option = (DoubleOptionPtr) new Option<double>("root_linScheme2_per", 
