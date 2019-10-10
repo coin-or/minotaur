@@ -75,10 +75,10 @@ private:
    * all linearizations of the objective function and it appears in the
    * objective.
    */
-  VariablePtr objVar_;
+  //VariablePtr objVar_;
 
   /// Nonlinearity status of objective function. 1 if nonlinear 0 otherwise.
-  bool oNl_;
+  //bool oNl_;
 
   /// Parameter for root lin scheme 1
   double rs1_;
@@ -98,7 +98,7 @@ private:
   bool rgs2_;
 
   /// Value of objective in relaxation solution
-  double relobj_; 
+  //double relobj_; 
   
   /// Absolute tolerance for constraint feasibility.
   double solAbsTol_;
@@ -152,7 +152,7 @@ private:
    * Add linearizatios by performing line search between center of the
    * feasible region and the root LP solution - root linearization scheme 3
    */
-  void rootLinScheme3(const double *lpx, EnginePtr lpe_,
+  void rootLinScheme3(EnginePtr lpe_, VariablePtr objVar,
                                     SeparationStatus *status);
 
   //void setLpEngine(EnginePtr lpe) {lpe_ = lpe;};

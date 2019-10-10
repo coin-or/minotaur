@@ -13,12 +13,12 @@
 
 
 #include <cmath>
-#include <algorithm>
-#include <iomanip>
-#include <iostream>
+#include <string>
 #include <fstream>
 #include <sstream>
-#include <string>
+#include <iomanip>
+#include <iostream>
+#include <algorithm>
 
 #include "MinotaurConfig.h"
 
@@ -375,7 +375,7 @@ void Linearizations::findCenter()
   inst_C->prepareForSolve();
   nlpe_->load(inst_C);
   nlpStatus = nlpe_->solve();
-  inst_C->write(std::cout);
+  //inst_C->write(std::cout);
  
   switch(nlpStatus) {
   case (ProvenOptimal):
@@ -535,7 +535,7 @@ void Linearizations::linearAt_(FunctionPtr f, double fval, const double *x,
 }
 
 
-//MS: rootLinScheme3_ - all ESH - working
+//MS: rootLinScheme3_ - individual cons - working
 bool Linearizations::lineSearchPt_(double* x, const double* u,
                               ConstraintPtr con, double &nlpact)
 {
@@ -1098,7 +1098,7 @@ void Linearizations::newPoint_(bool isLast,
   return;
 }
 
-
+// MS: change return value here
 bool Linearizations::findBoundaryPt_(bool &isPtFound,
                                      double *xOut, double *xIn,
                                      std::vector<ConstraintPtr> &vioCons)
@@ -1197,12 +1197,16 @@ bool Linearizations::findBoundaryPt_(bool &isPtFound,
             cUb = con->getUb();
             if (rgs1_) {
               ++(stats_->rgs1Cuts);
+              sstm << "_OAcut_" << stats_->rgs1Cuts << "_AtRoot";
             } else if (rgs2_) {
               ++(stats_->rgs2Cuts);
+              sstm << "_OAcut_" << stats_->rgs2Cuts << "_AtRoot";
+            } else if (rs3_) {
+              ++(stats_->rs3Cuts);
+              sstm << "_OAcut_" << stats_->rs3Cuts << "_AtRoot";
             } else {
               // Later: print message here.            
             }
-            sstm << "_OAcut_" << stats_->rgs1Cuts << "_AtRoot";
             f = (FunctionPtr) new Function(lf);
             rel_->newConstraint(f, -INFINITY, cUb-c, sstm.str());
             //newcon = rel_->newConstraint(f, -INFINITY, cUb-c, sstm.str());
@@ -1574,46 +1578,137 @@ bool Linearizations::shouldStop_(EngineStatus eStatus)
 }
 
 //MS: add esh all from LP solution - working
-void Linearizations::rootLinScheme3(const double *lpx, EnginePtr lpe,
+void Linearizations::rootLinScheme3(EnginePtr lpe, VariablePtr objVar,
                                     SeparationStatus *status)
 {
-  int error = 0;
-  bool shouldStop;
-  double act, cUb;
-  UInt numOldCuts;
-  ConstraintPtr con;
-  double *x = new double[minlp_->getNumVars()];
- 
+ //// ESH to all nonlinear constraints 
+ //  int error = 0;
+  //const double *lpx;
+  //ConstraintPtr con;
+  //bool isFound, oNl = false;
+  //ObjectivePtr o = minlp_->getObjective();
+  //double act, cUb, objVal, minDist = INFINITY;
+  //UInt numOldCuts, numVars = minlp_->getNumVars();
+  //double *x = new double[numVars];
+  //double *boundaryPt = new double[numVars];
+  
+  //if (o) {
+    //objVal = lpe->getSolution()->getObjValue();
+    //FunctionType fType = o->getFunctionType();
+    //if (fType != Linear && fType != Constant) {
+      //oNl = true;
+    //}
+  //}
+  //for (UInt i = 1; i <= rs3_; ++i) {
+    //numOldCuts = stats_->rs3Cuts;
+    //lpx = lpe->getSolution()->getPrimal();
+    //for (CCIter it = nlCons_.begin(); it!=nlCons_.end(); ++it) {
+      //con = *it;
+      //cUb = con->getUb();
+      //act = con->getActivity(lpx, &error);
+      //if (error == 0) {
+        //if ((act > cUb + solAbsTol_) &&
+            //(cUb == 0 || act > cUb + fabs(cUb)*solRelTol_)) {
+          //isFound = cutAtLineSearchPt_(lpx, x, con);
+          //if (oNl && isFound) {
+            //act = getDistance(solC_, x, numVars);
+            //if (act < minDist) {
+              //std::copy(x, x+numVars, boundaryPt);          
+            //}
+          //}
+        //}
+      //} else {
+        //logger_->msgStream(LogError) << me_ << "Constraint" <<  con->getName()
+          //<< " is not defined at this point." << std::endl;
+      //}
+    //}
+    //if (numOldCuts < stats_->rs3Cuts) {
+      //// linearize objective at boundaryPt
+      //if (oNl) {
+        //error = 0;
+        //FunctionPtr f;
+        //double c, lpvio;
+        //LinearFunctionPtr lf;
+        ////ConstraintPtr newcon;
+        //std::stringstream sstm;
+        //act = o->eval(boundaryPt, &error);
+
+        //if (error == 0) {
+          //lpvio = std::max(act-objVal, 0.0);
+          //if ((lpvio > solAbsTol_) &&
+              //(objVal == 0 || lpvio > fabs(objVal)*solRelTol_)) {
+              //lf = 0;
+              //f = o->getFunction();
+              //linearAt_(f, act, boundaryPt, &c, &lf, &error);
+              //if (error == 0) {
+                //lpvio = std::max(c+lf->eval(boundaryPt)-objVal, 0.0);
+                //if ((lpvio > solAbsTol_) && ((objVal-c) == 0
+                                           //|| lpvio > fabs(objVal-c)*solRelTol_)) {
+                  //++(stats_->rs3Cuts);
+                  //lf->addTerm(objVar, -1.0);
+                  //f = (FunctionPtr) new Function(lf);
+                  //sstm << "_OAObjCut_" << stats_->rs3Cuts;
+                  //rel_->newConstraint(f, -INFINITY, -1.0*c, sstm.str());
+                  ////newcon = rel_->newConstraint(f, -INFINITY, -1.0*c, sstm.str());
+                //} else {
+                  //delete lf;
+                  //lf = 0;
+                //}
+              //}
+            //}
+        //}	else {
+          //logger_->msgStream(LogError) << me_
+            //<< " objective not defined at this solution point." << std::endl;
+        //}
+      //}
+
+      //lpe->solve();
+      //isFound = shouldStop_(lpe->getStatus());
+      //if (isFound) {
+        //break;    
+      //}
+    //} else {
+      //break;
+    //}
+  //}
+  //delete [] x;
+  //return;
+
+
+  //// ESH only at the boundary point
+  bool shouldCont, isPtFound = false;
+  std::vector<ConstraintPtr > vioCons;
+  UInt numOldCuts, numVars = minlp_->getNumVars();
+  const double *lpx = lpe->getSolution()->getPrimal();
+  double *x = new double[numVars];
+  std::copy(lpx, lpx+numVars, x);          
+  
   for (UInt i = 1; i <= rs3_; ++i) {
+    for (CCIter it=nlCons_.begin(); it!=nlCons_.end(); ++it) {
+      vioCons.push_back(*it);
+    }
+    shouldCont = true;
     numOldCuts = stats_->rs3Cuts;
-    for (CCIter it = nlCons_.begin(); it!=nlCons_.end(); ++it) {
-      con = *it;
-      cUb = con->getUb();
-      act = con->getActivity(lpx, &error);
-      if (error == 0) {
-        if ((act > cUb + solAbsTol_) &&
-            (cUb == 0 || act > cUb + fabs(cUb)*solRelTol_)) {
-          cutAtLineSearchPt_(lpx, x, con); 
-        }
-      } else {
-        logger_->msgStream(LogError) << me_ << "Constraint" <<  con->getName()
-          << " is not defined at this point." << std::endl;
-      }
+    //MS: shouldCont is confusing here
+    while (shouldCont) {
+      shouldCont = findBoundaryPt_(isPtFound, x, solC_, vioCons);
     }
     if (numOldCuts < stats_->rs3Cuts) {
       lpe->solve();
-      shouldStop = shouldStop_(lpe->getStatus());
-      if (shouldStop) {
+      shouldCont = shouldStop_(lpe->getStatus());
+      if (shouldCont) {
         break;    
       }
-      lpx = lpe->getSolution()->getPrimal();
     } else {
       break;
     }
+    vioCons.clear();
   }
+
   if (stats_->rs3Cuts > 0) {
     *status = SepaResolve;
   }
+  
   delete [] x;
   return;
 }
@@ -1727,8 +1822,6 @@ void Linearizations::writeStats(std::ostream &out) const
     << stats_->rgs2Cuts << std::endl;
   return;
 }
-
-
 
 
 // Local Variables:

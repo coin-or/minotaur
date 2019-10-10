@@ -709,6 +709,7 @@ void QGHandlerAdvance::relax_(bool *isInf)
       }
     }
   } else {
+    rs3_ = 0;
     maxVioPer_ = 0;  
   }
   return;
@@ -726,7 +727,7 @@ void QGHandlerAdvance::separate(ConstSolutionPtr sol, NodePtr node,
 
   if (rs3_ && node->getId() == 0) {
     rs3_ = false;
-    extraLin_->rootLinScheme3(sol->getPrimal(), lpe_, status);
+    extraLin_->rootLinScheme3(lpe_, objVar_, status);
     if (*status == SepaResolve) {
       return;    
     }
