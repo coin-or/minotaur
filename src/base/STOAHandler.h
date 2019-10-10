@@ -123,9 +123,6 @@ private:
 
 
 public:
-  /// Empty constructor.
-  STOAHandler();
-
   /**
    * \brief Default Constructor.
    *

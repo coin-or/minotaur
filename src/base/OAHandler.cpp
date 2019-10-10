@@ -115,7 +115,7 @@ void OAHandler::addInitLinearX_(const double *x)
       if (error == 0) {
         cUb = con->getUb();
         ++(stats_->cuts);
-        sstm << "_OACut_" << stats_->cuts << "_AtRoot";
+        sstm << "_OACutRoot_" << stats_->cuts;
         f = (FunctionPtr) new Function(lf);
         rel_->newConstraint(f, -INFINITY, cUb-c, sstm.str());
         sstm.str("");
@@ -134,9 +134,10 @@ void OAHandler::addInitLinearX_(const double *x)
     error = 0;
     ObjectivePtr o = minlp_->getObjective();
     act = o->eval(x, &error);
+    
     if (error==0) {
       ++(stats_->cuts);
-      sstm << "_OAObjCut_" << stats_->cuts << "_AtRoot";
+      sstm << "_OAObjCutRoot_" << stats_->cuts;
       f = o->getFunction();
       linearAt_(f, act, x, &c, &lf, &error);
       if (error == 0) {
@@ -161,8 +162,7 @@ void OAHandler::cutIntSol_(ConstSolutionPtr sol, CutManager *cutMan,
                            SolutionPoolPtr s_pool, bool *sol_found,
                            SeparationStatus *status)
 {
-  double nlpval = INFINITY;
-  const double *lpx = sol->getPrimal(), *nlpx;
+  const double *lpx = sol->getPrimal();
   relobj_ = (sol) ? sol->getObjValue() : -INFINITY;
 
   fixInts_(lpx);           // Fix integer variables
@@ -172,24 +172,28 @@ void OAHandler::cutIntSol_(ConstSolutionPtr sol, CutManager *cutMan,
   switch(nlpStatus_) {
   case (ProvenOptimal):
   case (ProvenLocalOptimal):
-    ++(stats_->nlpF);
-    updateUb_(s_pool, &nlpval, sol_found);
-    if ((relobj_ >= nlpval-objATol_) ||
-        (nlpval != 0 && (relobj_ >= nlpval-fabs(nlpval)*objRTol_))) {
-        *status = SepaPrune;
-        break;
-    } else {
-      nlpx = nlpe_->getSolution()->getPrimal();
-      cutToCons_(nlpx, lpx, cutMan, status);
-      cutToObj_(nlpx, lpx, cutMan, status);
+    {
+      ++(stats_->nlpF);
+      double nlpval = nlpe_->getSolutionValue();
+      updateUb_(s_pool, nlpval, sol_found);
+      if ((relobj_ >= nlpval-objATol_) ||
+          (nlpval != 0 && (relobj_ >= nlpval-fabs(nlpval)*objRTol_))) {
+          *status = SepaPrune;
+      } else {
+        const double * nlpx = nlpe_->getSolution()->getPrimal();
+        cutToObj_(nlpx, lpx, cutMan, status);
+        cutToCons_(nlpx, lpx, cutMan, status);
+      }
     }
     break;
   case (ProvenInfeasible):
   case (ProvenLocalInfeasible):
   case (ProvenObjectiveCutOff):
-    ++(stats_->nlpI);
-    nlpx = nlpe_->getSolution()->getPrimal();
-    cutToCons_(nlpx, lpx, cutMan, status);
+    {
+      ++(stats_->nlpI);
+      const double * nlpx = nlpe_->getSolution()->getPrimal();
+      cutToCons_(nlpx, lpx, cutMan, status);
+    }
     break;
   case (EngineIterationLimit):
     ++(stats_->nlpIL);
@@ -333,6 +337,7 @@ void OAHandler::solveMILP(double* objfLb, ConstSolutionPtr* sol,
   milpe_->load(rel_);        //double loading in first iteration!
   EngineStatus lpStatus = milpe_->solve();
   ++(stats_->milpS);
+
   switch (lpStatus) {
   case (ProvenOptimal):
   case (ProvenLocalOptimal):
@@ -454,7 +459,7 @@ bool OAHandler::isFeasible(ConstSolutionPtr sol, RelaxationPtr, bool &,
 
   if (oNl_) {
     error = 0;
-    relobj_ = x[objVar_->getIndex()];
+    relobj_ = sol->getObjValue();
     act = minlp_->getObjValue(x, &error);
     if (error == 0) {
       if ((act > relobj_ + solAbsTol_) &&
@@ -489,12 +494,12 @@ void OAHandler::linearizeObj_()
     LinearFunctionPtr lf = (LinearFunctionPtr) new LinearFunction();
     VariablePtr vPtr = rel_->newVariable(-INFINITY, INFINITY, Continuous,
                                          name, VarHand);
+    objVar_ = vPtr;
     assert(objType == Minimize);
     rel_->removeObjective();
     lf->addTerm(vPtr, 1.0);
     f = (FunctionPtr) new Function(lf);
     rel_->newObjective(f, 0.0, objType);
-    objVar_ = vPtr;
   } 
   return;
 }
@@ -712,25 +717,18 @@ void OAHandler::unfixInts_()
 }
 
 
-void OAHandler::updateUb_(SolutionPoolPtr s_pool, double *nlpval, 
+void OAHandler::updateUb_(SolutionPoolPtr s_pool, double nlpval, 
                           bool *sol_found)
 {
   //MS: solution is added to the pool only if better than incumbent
-  double val = nlpe_->getSolutionValue();
   double bestval = s_pool->getBestSolutionValue();
 
-  if ((bestval - objATol_ > val) ||
-        (bestval != 0 && (bestval - fabs(bestval)*objRTol_) > val)) {
+  if ((bestval - objATol_ > nlpval) ||
+        (bestval != 0 && (bestval - fabs(bestval)*objRTol_ > nlpval))) {
     const double *x = nlpe_->getSolution()->getPrimal();
-    s_pool->addSolution(x, val);
+    s_pool->addSolution(x, nlpval);
     *sol_found = true;
-#if SPEW
-    logger_->msgStream(LogDebug) << me_ << "new solution found, value = " 
-      << val << std::endl;
-#endif
   }
-  //objVar_->setUb_(bestval-objATol_);  
-  *nlpval = val;
   return;
 }
 

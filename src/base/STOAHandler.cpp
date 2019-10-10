@@ -53,30 +53,6 @@ using namespace Minotaur;
 typedef std::vector<ConstraintPtr>::const_iterator CCIter;
 const std::string STOAHandler::me_ = "STOAHandler: ";
 
-STOAHandler::STOAHandler()
-: env_(EnvPtr()),      
-  minlp_(ProblemPtr()),
-  timer_(0),                    // NULL
-  nlCons_(0),
-  nlpe_(EnginePtr()),
-  milpe_(MILPEnginePtr()),
-  nlpStatus_(EngineUnknownStatus),
-  objVar_(VariablePtr()),
-  oNl_(false),
-  rel_(RelaxationPtr()),
-  solPool_(SolutionPoolPtr()),
-  relobj_(0.0),
-  numCalls_(0),
-  stats_(0)
-{
-  intTol_ = env_->getOptions()->findDouble("int_tol")->getValue();
-  solAbsTol_ = env_->getOptions()->findDouble("solAbs_tol")->getValue();
-  solRelTol_ = env_->getOptions()->findDouble("solRel_tol")->getValue();
-  npATol_ = env_->getOptions()->findDouble("solAbs_tol")->getValue();
-  npRTol_ = env_->getOptions()->findDouble("solRel_tol")->getValue();
-  logger_ = (LoggerPtr) new Logger(LogDebug2);
-}
-
 
 STOAHandler::STOAHandler(EnvPtr env, ProblemPtr minlp, EnginePtr nlpe,
                          MILPEnginePtr milpe, SolutionPoolPtr solPool)
@@ -352,15 +328,16 @@ void STOAHandler::OACutToCons(const double *lpx, ConstraintPtr con,
                               double* rhs, std::vector<UInt> *varIdx,
                               std::vector<double>* varCoeff)
 {
-  const double *nlpx;
   switch(nlpStatus_) {
   case (ProvenOptimal):
   case (ProvenLocalOptimal):
   case (ProvenInfeasible):
   case (ProvenLocalInfeasible): 
   case (ProvenObjectiveCutOff):
-    nlpx = nlpe_->getSolution()->getPrimal();
-    cutToCons_(con, nlpx, lpx, rhs, varIdx, varCoeff);
+    {
+      const double * nlpx = nlpe_->getSolution()->getPrimal();
+      cutToCons_(con, nlpx, lpx, rhs, varIdx, varCoeff);
+    }
     break;
   case (EngineIterationLimit):
     consCutAtLpSol_(con, lpx, rhs, varIdx, varCoeff);
@@ -550,12 +527,12 @@ void STOAHandler::linearizeObj_()
     LinearFunctionPtr lf = (LinearFunctionPtr) new LinearFunction();
     VariablePtr vPtr = rel_->newVariable(-INFINITY, INFINITY, Continuous,
                                          name, VarHand);
+    objVar_ = vPtr;
     assert(objType == Minimize);
     rel_->removeObjective();
     lf->addTerm(vPtr, 1.0);
     f = (FunctionPtr) new Function(lf);
     rel_->newObjective(f, 0.0, objType);
-    objVar_ = vPtr;
   }
   return;
 }

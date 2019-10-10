@@ -282,7 +282,7 @@ private:
    * Update the upper bound. XXX: Needs proper integration with
    * Minotaur's Handler design. 
    */
-  void updateUb_(SolutionPoolPtr s_pool, double *nlp_val, bool *sol_found);
+  void updateUb_(SolutionPoolPtr s_pool, double nlp_val, bool *sol_found);
 
   };
 
