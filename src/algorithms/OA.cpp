@@ -560,7 +560,6 @@ int main(int argc, char* argv[])
       showStatus(env, objLb, objUb, gap, iterNum, numSols);
     } // end while (objLo <= objUp) or time limit
     time = -wallTimeStart + getWallTime();
-    writeOAStatus(env, gap, objLb, objUb, obj_sense, status, iterNum, time);
     nlp_e->writeStats(env->getLogger()->msgStream(LogExtraInfo));
     milp_e->writeStats(env->getLogger()->msgStream(LogExtraInfo));
 
@@ -570,6 +569,7 @@ int main(int argc, char* argv[])
     }
     //MS: Other solve status and right way of writing them
     //writeSol(env, orig_v, pres, solPool->getBestSolution(), solveStatus, iface);
+    writeOAStatus(env, gap, objLb, objUb, obj_sense, status, iterNum, time);
   }
 
 CLEANUP:

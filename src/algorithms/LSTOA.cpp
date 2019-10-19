@@ -450,7 +450,6 @@ int main(int argc, char* argv[])
     objUb = solPool->getBestSolutionValue();
     gap = getPerGap(objLb, objUb);
     showStatus(env, objLb, objUb, gap, obj_sense);
-    writeSTOAStatus(env, gap, objLb, objUb, obj_sense, status, wallTimeStart);
     nlp_e->writeStats(env->getLogger()->msgStream(LogExtraInfo));
     milp_e->writeStats(env->getLogger()->msgStream(LogExtraInfo));
 
@@ -459,6 +458,7 @@ int main(int argc, char* argv[])
       (*it)->writeStats(env->getLogger()->msgStream(LogExtraInfo));
     }
     //writeSol(env, orig_v, pres, solPool->getBestSolution(), status, iface);
+    writeSTOAStatus(env, gap, objLb, objUb, obj_sense, status, wallTimeStart);
    }
 
 CLEANUP:
