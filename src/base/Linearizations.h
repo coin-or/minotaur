@@ -28,6 +28,8 @@ namespace Minotaur {
   struct LinStats {
   size_t rs1Cuts; /// Number of cuts in root scheme 1.
   size_t rs2Cuts; /// Number of cuts in root scheme 2.
+  size_t rs3Cuts; /// Number of cuts in root scheme 3 version 1.
+  size_t rs4Cuts; /// Number of cuts in root scheme 3 version 2.
   size_t rgs1Cuts; /// Number of cuts in root gen scheme 1.
   size_t rgs2Cuts; /// Number of cuts in root gen scheme 2.
 };
@@ -56,11 +58,11 @@ private:
   /// Vector of nonlinear constraints.
   std::vector<ConstraintPtr> nlCons_;
 
-  /// NLP/QP Engine used to approximate the center of the feasible region
-  EnginePtr nlpe1_;
-  
   /// LP Engine used in root linearization scheme 3
-  EnginePtr lpe_;
+  //EnginePtr lpe_;
+
+  /// NLP/QP Engine used to approximate the center of the feasible region
+  EnginePtr nlpe_;
 
   /// Modifications done to NLP before solving it.
   std::stack<Modification *> nlpMods_;
@@ -73,10 +75,10 @@ private:
    * all linearizations of the objective function and it appears in the
    * objective.
    */
-  VariablePtr objVar_;
+  //VariablePtr objVar_;
 
   /// Nonlinearity status of objective function. 1 if nonlinear 0 otherwise.
-  bool oNl_;
+  //bool oNl_;
 
   /// Parameter for root lin scheme 1
   double rs1_;
@@ -96,7 +98,7 @@ private:
   bool rgs2_;
 
   /// Value of objective in relaxation solution
-  double relobj_; 
+  //double relobj_; 
   
   /// Absolute tolerance for constraint feasibility.
   double solAbsTol_;
@@ -131,7 +133,7 @@ private:
    * relaxation.)
    * \param [in] nlpe The engine to solve nonlinear continuous problem.
    */
-  Linearizations(EnvPtr env, EnginePtr nlpe, RelaxationPtr rel,
+  Linearizations(EnvPtr env, RelaxationPtr rel,
                                ProblemPtr minlp, std::vector<ConstraintPtr> nlCons); 
   
   /// Destroy.
@@ -150,11 +152,12 @@ private:
    * Add linearizatios by performing line search between center of the
    * feasible region and the root LP solution - root linearization scheme 3
    */
-  //void rootLinScheme3(ConstSolutionPtr sol, CutManager *,
-                       //SolutionPoolPtr s_pool, bool *sol_found,
-                       //SeparationStatus *status);
+  void rootLinScheme3(EnginePtr lpe_, VariablePtr objVar,
+                                    SeparationStatus *status);
 
-  void setLpEngine(EnginePtr lpe) {lpe_ = lpe;};
+  //void setLpEngine(EnginePtr lpe) {lpe_ = lpe;};
+  
+  void setNlpEngine(EnginePtr nlpe) {nlpe_ = nlpe;};
 
   /// Show statistics.
   void writeStats(std::ostream &out) const;
@@ -209,8 +212,8 @@ private:
                  double *c, LinearFunctionPtr *lf, int *error);
 
   /// Line search in root linearization scheme 3
-  //bool lineSearchPt_(double* x, const double* l, const double* u,
-                     //ConstraintPtr con, double & nlpact);
+  bool lineSearchPt_(double* x, const double* u,
+                     ConstraintPtr con, double & nlpact);
   
    
   /// Compute variable in the linear part 
@@ -260,8 +263,9 @@ private:
                              std::vector<double > &alphaSign,
                              UInt pos, bool isLastDir);
 
-  //bool cutAtLineSearchPt_(double *xout, double* xnew,
-                                        //ConstraintPtr con);
+
+  bool shouldStop_(EngineStatus eStatus);
+  bool cutAtLineSearchPt_(const double *xout, double* xnew, ConstraintPtr con);
 
   /// Find nonlinear constraint with only one variable in the nonlinear part
   bool uniVarNlFunc_(ConstraintPtr con, double &linTermCoeff, UInt & vlIdx,

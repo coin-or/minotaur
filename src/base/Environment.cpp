@@ -326,7 +326,8 @@ void Environment::createDefaultOptions_()
   options_->insert(i_option);
 
   i_option = (IntOptionPtr) new Option<int>("msbnb_restarts",
-      "Number of restarts to improve the initial point in MsProcessor: >=0", true, 3);
+      "Number of restarts to improve the initial point in MsProcessor: >=0",
+      true, 3);
   options_->insert(i_option);
 
   i_option = (IntOptionPtr) new Option<int>("oa_iter_limit",

@@ -30,10 +30,12 @@ namespace Minotaur {
  */
 class Variable {
 public:
-  /// Only Problem class can modify a Variable. All modification methods
+  /// Following classes can modify a Variable. All modification methods
   /// are private.
-  friend class Problem;
+  friend class Linearizations;
   friend class PerspCon;
+  friend class Problem;
+  friend class QGHandler;
   friend class OAHandler;
 
   /// Default constructor.

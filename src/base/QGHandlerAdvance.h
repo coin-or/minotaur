@@ -66,6 +66,8 @@ private:
 
   /// NLP/QP Engine used to solve the NLP/QP relaxations.
   EnginePtr nlpe_;
+  
+  EnginePtr lpe_;
 
   /// Modifications done to NLP before solving it.
   std::stack<Modification *> nlpMods_;
@@ -111,6 +113,8 @@ private:
   
   double maxVioPer_;
   
+  int rs3_;
+  
   double lastLb_;
   
   bool resolve_;
@@ -121,9 +125,6 @@ private:
   QGStats *stats_;
 
 public:
-  /// Empty constructor.
-  QGHandlerAdvance();
-
   /**
    * \brief Default Constructor.
    *
@@ -190,6 +191,9 @@ public:
                 CutManager *cutman, SolutionPoolPtr s_pool, ModVector &p_mods,
                 ModVector &r_mods, bool *sol_found, SeparationStatus *status);
  
+
+  void setLpEngine(EnginePtr lpe) {lpe_ = lpe;};
+
   /// Show statistics.
   void writeStats(std::ostream &out) const;
 
