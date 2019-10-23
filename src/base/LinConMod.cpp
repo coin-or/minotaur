@@ -32,7 +32,7 @@ LinConMod::LinConMod(ConstraintPtr con, LinearFunctionPtr new_lf,
     newLb_(new_lb),
     newUb_(new_ub)
 {
-  oldLf_ = con->getLinearFunction();
+  oldLf_ = con->getLinearFunction()->clone();
   oldUb_ = con->getUb();
   oldLb_ = con->getLb();
 }
@@ -43,6 +43,9 @@ LinConMod::~LinConMod()
   //con_.reset(); //changed: need to delete using different methods
   //newLf_.reset();
   //oldLf_.reset();
+  if (oldLf_) {
+    delete oldLf_; oldLf_ = 0;
+  }
   newLf_ = 0;
   oldLf_ = 0;
 }
