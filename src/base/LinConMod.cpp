@@ -53,13 +53,15 @@ LinConMod::~LinConMod()
 
 void LinConMod::applyToProblem(ProblemPtr problem) 
 {
-  problem->changeConstraint(con_, newLf_, newLb_, newUb_);
+  LinearFunctionPtr lf = newLf_->clone();
+  problem->changeConstraint(con_, lf, newLb_, newUb_);
 }
 
 
 void LinConMod::undoToProblem(ProblemPtr problem) 
 {
-  problem->changeConstraint(con_, oldLf_, oldLb_, oldUb_);
+  LinearFunctionPtr lf = oldLf_->clone();
+  problem->changeConstraint(con_, lf, oldLb_, oldUb_);
 }
 
 
