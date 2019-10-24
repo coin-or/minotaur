@@ -394,7 +394,7 @@ int main(int argc, char** argv)
   ProblemPtr inst;       // instance that needs to be solved.
   EnginePtr engine = 0;  // engine for solving relaxations. 
   BranchAndBound *bab = 0;
-  PresolverPtr pres, pres2;
+  PresolverPtr pres = 0, pres2 = 0;
   const std::string me("mntr-glob: ");
   VarVector *orig_v=0;
   HandlerVector handlers;
@@ -434,6 +434,9 @@ int main(int argc, char** argv)
   if (env->getOptions()->findBool("presolve")->getValue() == true) {
     pres->solve();
   }
+  for (HandlerVector::iterator it=handlers.begin(); it!=handlers.end(); ++it) {
+    delete (*it);
+  }
   handlers.clear();
 
   err = transform(env, inst, newp, handlers);
@@ -466,17 +469,35 @@ int main(int argc, char** argv)
   writeStatus(env, bab, obj_sense);
 
 CLEANUP:
+  for (HandlerVector::iterator it=handlers.begin(); it!=handlers.end(); ++it) {
+    delete (*it);
+  }
   if (engine) {
     delete engine;
   }
   if (iface) {
     delete iface;
   }
+  if (pres) {
+    delete pres;
+  }
+  if (pres2) {
+    delete pres2;
+  }
   if (bab) {
+    if (bab->getNodeRelaxer()) {
+      delete bab->getNodeRelaxer();
+    }
+    if (bab->getNodeProcessor()) {
+      delete bab->getNodeProcessor();
+    }
     delete bab;
   }
   if (orig_v) {
     delete orig_v;
+  }
+  if (env) {
+    delete env;
   }
 
   return 0;

@@ -215,6 +215,7 @@ Branches QuadHandler::getBranches(BrCandPtr cand, DoubleVector &x,
   }
   branch->setActivity(0.5); // TODO: set this correctly
   branches->push_back(branch);
+  vcand->setNumBranches(2);
 
 #if SPEW
   logger_->msgStream(LogDebug2) << me_ << "branching on " << v->getName()
