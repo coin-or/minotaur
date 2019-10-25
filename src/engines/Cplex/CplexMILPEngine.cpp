@@ -1242,6 +1242,12 @@ EngineStatus CplexMILPEngine::solveSTLazy(double *objLb, SolutionPtr* sol,
   printx(x, cur_numcols);
 #endif
 
+  logger_->msgStream(LogInfo) << me_ << "status = " << solstat << std::endl
+                               << me_ << "solution value = "
+                               << objval << std::endl
+                               << me_ << "nodes processed = "
+                               << CPXXgetnodecnt(cpxenv_, cpxlp_) << std::endl;
+
   // Solve status (replace with string later using CPXXgetstatstring(..))
   if (solstat == 101 || solstat == 102) {
     status_ = ProvenOptimal;
