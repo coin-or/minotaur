@@ -568,6 +568,7 @@ EngineStatus CplexMILPEngine::solve()
 #endif
   int solstat;
   double objval = INFINITY;
+  double cpxtimeStart = 0, cpxtimeEnd = 0;
   int cur_numcols = CPXXgetnumcols (cpxenv_, cpxlp_);
   double *x = new double[cur_numcols];
   std::ifstream mstfile;
@@ -619,11 +620,23 @@ EngineStatus CplexMILPEngine::solve()
     }
   }
 
+  /* Initialize Cplex time stamp */
+  cpxstatus_ = CPXXgettime(cpxenv_, &cpxtimeStart);
+  if (cpxstatus_) {
+     logger_->msgStream(LogError) << me_ << "Failed to get CPLEX time stamp." << std::endl;
+  }
+
   /* Optimize the problem and obtain solution. */
   cpxstatus_ = CPXXmipopt (cpxenv_, cpxlp_);
   if (cpxstatus_) {
      logger_->msgStream(LogError) << me_ << "Failed to optimize MILP." << std::endl;
      //goto TERMINATE;
+  }
+
+  /* Obtain Cplex time stamp after solve */
+  cpxstatus_ = CPXXgettime(cpxenv_, &cpxtimeEnd);
+  if (cpxstatus_) {
+     logger_->msgStream(LogError) << me_ << "Failed to get CPLEX time stamp." << std::endl;
   }
 
   // Access the solve information
@@ -676,6 +689,7 @@ EngineStatus CplexMILPEngine::solve()
     sol_->setObjValue(INFINITY);
     logger_->msgStream(LogInfo) << " unknown \n";
   }
+  stats_->time += cpxtimeEnd - cpxtimeStart;
 
 TERMINATE:
   delete [] x;
@@ -1122,11 +1136,13 @@ EngineStatus CplexMILPEngine::solveSTLazy(double *objLb, SolutionPtr* sol,
                                       STOAHandlerPtr stoa_hand,
                                       SolveStatus* solveStatus)
 {
+  stats_->calls += 1;
   writeMipStarts_ = false;
   int solstat;
   int cur_numcols = CPXXgetnumcols (cpxenv_, cpxlp_);
   double *x = new double[cur_numcols];
-  double objval;
+  double objval = INFINITY;
+  double cpxtimeStart = 0, cpxtimeEnd = 0;
 
   char errbuf[CPXMESSAGEBUFSIZE];
   VariableConstIterator v_iter;
@@ -1199,6 +1215,12 @@ EngineStatus CplexMILPEngine::solveSTLazy(double *objLb, SolutionPtr* sol,
      goto TERMINATE;
   }
 
+  /* Initialize Cplex time stamp */
+  cpxstatus_ = CPXXgettime(cpxenv_, &cpxtimeStart);
+  if (cpxstatus_) {
+     logger_->msgStream(LogError) << me_ << "Failed to get CPLEX time stamp." << std::endl;
+  }
+
   /* Optimize the problem and obtain solution. */
   cpxstatus_ = CPXXmipopt (cpxenv_, cpxlp_);
   if (cpxstatus_) {
@@ -1207,6 +1229,12 @@ EngineStatus CplexMILPEngine::solveSTLazy(double *objLb, SolutionPtr* sol,
      goto TERMINATE;
   }
   solstat = CPXXgetstat (cpxenv_, cpxlp_);
+
+  /* Obtain Cplex time stamp after solve */
+  cpxstatus_ = CPXXgettime(cpxenv_, &cpxtimeEnd);
+  if (cpxstatus_) {
+     logger_->msgStream(LogError) << me_ << "Failed to get CPLEX time stamp." << std::endl;
+  }
 
   /* Write the output to the screen. */
   logger_->msgStream(LogInfo) << me_ << "Solution status = "
@@ -1280,6 +1308,8 @@ EngineStatus CplexMILPEngine::solveSTLazy(double *objLb, SolutionPtr* sol,
     sol_->setObjValue(INFINITY);
     logger_->msgStream(LogInfo) << " unknown \n";
   }
+  stats_->time += cpxtimeEnd - cpxtimeStart;
+  std::cout << "Time " << stats_->time <<"\n";
 
 TERMINATE:
   delete [] x;
@@ -1318,7 +1348,8 @@ void CplexMILPEngine::writeStats(std::ostream &out) const
 {
   if (stats_) {
     out << me_ << "total calls            = " << stats_->calls << std::endl
-      << me_ << "total time in solving  = " << stats_->time  << std::endl;
+      << me_ << std::setprecision(2) << "total time in solving  = "
+      << stats_->time  << std::endl;
   }
 }
 
