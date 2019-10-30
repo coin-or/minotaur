@@ -172,7 +172,7 @@ private:
   bool addNewCut_(double *b1, ConstraintPtr con, 
                   UInt &newConId);
 
-  void boundingVar_(double &varbound, UInt &pos, 
+  void boundingVar_(double &varbound, std::vector<UInt > &varIdx, UInt &pos, 
                                   double *lastDir,
                                   std::vector<double > &alphaSign);
   void boundingVar_(double &varbound,
@@ -183,15 +183,17 @@ private:
   bool findIntersectPt_(std::vector<UInt > newConsId, VariablePtr vl,
                        VariablePtr vnl, double * iP);
 
-  bool findBoundaryPt_(bool &isPtFound,
-                                     double *xOut, double *xIn,
-                                     std::vector<ConstraintPtr> &consToCheck);
-
+  bool findBoundaryPt_(const double *xOut, const double *xIn,
+                                     double *x, 
+                                     std::vector<ConstraintPtr> &vioCons);
 
   void setStepSize_(double &varbound, double &alpha,
-                                   UInt vIdx, double value, double boundSign);
+                                   UInt vIdx, double val,
+                                   double boundSign);
 
-  bool foundLinPt_(UInt vIdx, std::vector<UInt> varIdx, UInt pos, std::vector<double> alphaSign, double varBound, double *xOut, bool isLast);
+  void solveNLP_();
+
+  void foundLinPt_(UInt vIdx, std::vector<UInt> varIdx, UInt pos, std::vector<double> alphaSign, double varBound, double *xOut, bool isAllOne);
 
   /**
    * Insert a new point in the candidate list for adding linearization in
@@ -212,9 +214,8 @@ private:
                  double *c, LinearFunctionPtr *lf, int *error);
 
   /// Line search in root linearization scheme 3
-  bool lineSearchPt_(double* x, const double* u,
-                     ConstraintPtr con, double & nlpact);
-  
+
+  bool lineSearchPt_(const double *xIn, const double *xOut, double* x, ConstraintPtr con, double &nlpact);
    
   /// Compute variable in the linear part 
   bool linPart_(double *b1, UInt vlIdx, ConstraintPtr con, 
@@ -224,7 +225,7 @@ private:
                   double &varbound, UInt vIdx, UInt fixIdx,
                   double coeff, double fixCoeff);
 
-  void newPoint_(bool isLast,
+  void newPoint_(bool isAllOne,
                                std::vector<UInt> varIdx, double *xOut, std::vector<double> alphaSign);
 
   void populateVarIdx(VariablePtr v, std::vector<UInt > &varIdx,
@@ -257,15 +258,17 @@ private:
   
   void rootLinGenScheme2_();
 
-  void search_(double varbound, UInt vIdx, double val,
+  void search_(double varbound, UInt vIdx, double val, 
                std::vector<UInt > varIdx, 
-                             double *xOut, bool &isFound,
+                             double *xOut,
                              std::vector<double > &alphaSign,
-                             UInt pos, bool isLastDir);
+                             UInt pos, bool isAllOne);
 
 
   bool shouldStop_(EngineStatus eStatus);
-  bool cutAtLineSearchPt_(const double *xout, double* xnew, ConstraintPtr con);
+
+  bool cutAtLineSearchPt_(const double *xIn, const double *xOut, double* xNew,
+                                        ConstraintPtr con);
 
   /// Find nonlinear constraint with only one variable in the nonlinear part
   bool uniVarNlFunc_(ConstraintPtr con, double &linTermCoeff, UInt & vlIdx,
