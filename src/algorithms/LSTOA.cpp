@@ -302,7 +302,7 @@ void showStatus(EnvPtr env, double objLb, double objUb, double gap, double obj_s
     << std::setprecision(4)  << " ub = "   << objUb
     << std::setprecision(2)  << " gap% = " << gap
     << std::setprecision(0)  << " obj_sense = " << obj_sense
-    << std::endl;
+    << std::setprecision(2) << std::endl;
 }
 
 

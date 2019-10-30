@@ -1309,7 +1309,6 @@ EngineStatus CplexMILPEngine::solveSTLazy(double *objLb, SolutionPtr* sol,
     logger_->msgStream(LogInfo) << " unknown \n";
   }
   stats_->time += cpxtimeEnd - cpxtimeStart;
-  std::cout << "Time " << stats_->time <<"\n";
 
 TERMINATE:
   delete [] x;
