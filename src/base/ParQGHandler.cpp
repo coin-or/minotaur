@@ -108,11 +108,8 @@ void ParQGHandler::addInitLinearX_(const double *x)
       linearAt_(f, act, x, &c, &lf, &error);
       if (error == 0) {
         cUb = con->getUb();
-#if USE_OPENMP
-        sstm << "Thr_" << omp_get_thread_num();
-#endif
         ++(stats_->cuts);
-        sstm << "_qgCutRoot_" << stats_->cuts;
+        sstm << "_qgCutRoot_Thr_" << omp_get_thread_num() << stats_->cuts;
         f = (FunctionPtr) new Function(lf);
         //newcon = rel_->newConstraint(f, -INFINITY, cUb-c, sstm.str());
         rel_->newConstraint(f, -INFINITY, cUb-c, sstm.str());
@@ -134,7 +131,7 @@ void ParQGHandler::addInitLinearX_(const double *x)
     act = o->eval(x, &error);
     if (error==0) {
       ++(stats_->cuts);
-      sstm << "_qgObjCutRoot_" << stats_->cuts;
+      sstm << "_qgObjCutRoot_Thr_" << omp_get_thread_num() << stats_->cuts;
       f = o->getFunction();
       linearAt_(f, act, x, &c, &lf, &error);
       if (error == 0) {
@@ -471,8 +468,7 @@ void ParQGHandler::cutsAtLpSol_(const double *lpx, CutManager *cutman,
           if ((lpvio > solAbsTol_) && ((cUb-c)==0 ||
                                    (lpvio>fabs(cUb-c)*solRelTol_))) {
             ++(stats_->cuts);
-            sstm << "_qgCut_";
-            sstm << stats_->cuts;
+            sstm << "_qgCut_Thr_" << omp_get_thread_num() << stats_->cuts;
             *status = SepaResolve;
             f = (FunctionPtr) new Function(lf);
             newcon = rel_->newConstraint(f, -INFINITY, cUb-c, sstm.str());
@@ -513,7 +509,7 @@ void ParQGHandler::cutsAtLpSol_(const double *lpx, CutManager *cutman,
               *status = SepaResolve;
               lf->addTerm(objVar_, -1.0);
               f = (FunctionPtr) new Function(lf);
-              sstm << "_qgObjCut_" << stats_->cuts;
+              sstm << "_qgObjCut_Thr_" << omp_get_thread_num() << stats_->cuts;
               rel_->newConstraint(f, -INFINITY, -1.0*c, sstm.str());
               //newcon = rel_->newConstraint(f, -INFINITY, -1.0*c, sstm.str());
             } else {
@@ -551,7 +547,7 @@ void ParQGHandler::addCut_(const double *nlpx, const double *lpx,
       if ((lpvio>solAbsTol_) &&
           ((cUb-c)==0 || (lpvio>fabs(cUb-c)*solRelTol_))) {
         ++(stats_->cuts);
-        sstm << "_qgCut_" << stats_->cuts;
+        sstm << "_qgCut_Thr_" << omp_get_thread_num() << stats_->cuts;
         *status = SepaResolve;
         f = (FunctionPtr) new Function(lf);
         newcon = rel_->newConstraint(f, -INFINITY, cUb-c, sstm.str());
@@ -599,7 +595,7 @@ void ParQGHandler::cutToObj_(const double *nlpx, const double *lpx,
             if ((vio > solAbsTol_) && ((relobj_-c)==0
                                      || vio > fabs(relobj_-c)*solRelTol_)) {
               ++(stats_->cuts);
-              sstm << "_qgObjCut_" << stats_->cuts;
+              sstm << "_qgObjCut_Thr_" << omp_get_thread_num() << stats_->cuts;
               lf->addTerm(objVar_, -1.0);
               *status = SepaResolve;
               f = (FunctionPtr) new Function(lf);
