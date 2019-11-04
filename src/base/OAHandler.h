@@ -141,6 +141,12 @@ public:
                               const DoubleVector &, ModVector &,
                               BrVarCandSet &, BrCandVector &, bool &) {};
 
+  std::vector<ConstraintPtr> getNonlinCons() {return nlCons_;}
+
+  VariablePtr getObjVar() {return objVar_;}
+
+  bool getObjType() { return oNl_;}
+
   /// Returns the MILP engine.
   MILPEnginePtr getMILPEngine() {return milpe_;};
 
@@ -194,6 +200,18 @@ public:
                  SolveStatus &status);
   // Show statistics.
   void writeStats(std::ostream &out) const;
+
+  /// Set the nonlinear constraints
+  void setNonlinCons(std::vector<ConstraintPtr> nlCons) {nlCons_ = nlCons;}
+
+  void setObjVar(VariablePtr objvar) {objVar_ = objvar;}
+
+  void setObjType(bool oNl) {oNl_ = oNl;}
+
+  void setRelaxation(RelaxationPtr rel) {rel_ = rel;}
+
+  /// Set the relaxation
+  void setRelObj(double val) {relobj_ = val;}
 
 private:
   /**
