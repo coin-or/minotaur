@@ -30,8 +30,7 @@ struct QGStats {
   size_t nlpF;      /// Number of nlps feasible.
   size_t nlpI;      /// Number of nlps infeasible.
   size_t nlpIL;     /// Number of nlps hits engine iterations limit.
-  size_t qgCuts;    /// Total number of cuts added.
-  size_t fracCuts; /// Number of cuts at fractional nodes. 
+  size_t cuts;    /// Number of cuts at int feas nodes.
 }; 
 
 
@@ -105,21 +104,10 @@ private:
   
   LinearizationsPtr extraLin_;
 
-  UInt lastNodeId_;
-   
-  UInt lastNodeIdLbUb_;
-
-  double maxVioVal_;
-  
-  double maxVioPer_;
-  
   int rs3_;
   
-  double lastLb_;
-  
-  bool resolve_;
-  
-  double * solC_;
+  //double lpdist_;
+  //EngineStatus shortestNlpStatus_;
 
   /// Statistics.
   QGStats *stats_;
@@ -222,8 +210,6 @@ private:
    */
   void fixInts_(const double *x);
   
-  void fixSomeInts_(const double *x);
-
   /**
    * Solve the NLP relaxation of the MINLP and add linearizations about
    * the optimal point. isInf is set to true if the relaxation is found
@@ -255,44 +241,13 @@ private:
   void addCut_(const double *nlpx, const double *lpx, ConstraintPtr con, 
                CutManager *cutman, SeparationStatus *status);
   
-  void addCutAtFrac_(const double *nlpx, ConstraintPtr con, CutManager*,
-                         SeparationStatus *status);
-
   void ECPTypeCut_(const double *x, CutManager *, int index);
-
-  void ESHTypeCut_(const double *x, CutManager *cutman,
-                    int index);
-
 
   void consCutsAtLpSol_(const double *lpx, CutManager *cutman,
                     SeparationStatus *status);
 
 
-  void cutAtNlpSol_(CutManager *cutMan,
-                           SolutionPoolPtr s_pool, bool *sol_found,
-                           SeparationStatus *status);
-
-  void cutToConsAtFrac_(const double *nlpx, CutManager *cutman,
-                         SeparationStatus *status);
-
-  void cutToObjAtFrac_(const double *nlpx, CutManager *,
-                         SeparationStatus *status);
-
-  void kktCondBasedScheme_(ConstSolutionPtr sol, NodePtr node,
-                         CutManager *cutMan, SolutionPoolPtr s_pool,
-                         bool *sol_found, SeparationStatus *status);
-
   bool isIntFeas_(const double* x);
-
-  void lbub_(const double *x, NodePtr node, bool *sol_found,  
-                           SolutionPoolPtr s_pool, CutManager *cutMan,
-                         SeparationStatus *status);
-
-  double maxVioConsIdx_(const double *x, UInt &index);
-
-  void maxVio_(const double *x, NodePtr node, bool *sol_found,  
-                           SolutionPoolPtr s_pool, CutManager *cutMan,
-                         SeparationStatus *status);
 
   void objCutAtLpSol_(const double *lpx, CutManager *,
                                   SeparationStatus *status);
@@ -313,15 +268,9 @@ private:
    */
   void relax_(bool *is_inf);
 
-  void restrictedNLP_(NodePtr node, bool *sol_found,  
-                           SolutionPoolPtr s_pool, CutManager *cutMan,
-                         SeparationStatus *status);
-
   /// Solve the nlp.
   void solveNLP_();
 
-
-  void findMods_(VarBoundModPtr m);
   /// Undo the changes done in fixInts_().
   void undoMods_();
 
@@ -330,6 +279,8 @@ private:
    * Minotaur's Handler design. 
    */
   void updateUb_(SolutionPoolPtr s_pool, double nlpval, bool *sol_found);
+
+  //void shortestDist_(ConstSolutionPtr sol);
 
   };
 
