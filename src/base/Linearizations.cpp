@@ -329,10 +329,12 @@ void Linearizations::findCenter()
       inst_C->newConstraint(fnewc, -INFINITY, ub);
     }
   }
-
   inst_C->prepareForSolve();
+  
+  nlpe_->clear();
   nlpe_->load(inst_C);
   solveNLP_();
+  
   //inst_C->write(std::cout);
   if (solC_ == 0) {
     if (NLPFeas) {
@@ -607,6 +609,10 @@ void Linearizations::rootLinearizations(const double * nlpx)
         }
       }
     }
+    // To be written here for objective
+    //if (oNl_) {
+    
+    //}
   }
   /// General scheme at root
   // Option for general scheme
@@ -618,6 +624,9 @@ void Linearizations::rootLinearizations(const double * nlpx)
     if (solC_) {
       // populate varPtrs_ with index of variables in nonlinear constraints
       varsInNonlinCons_();
+      if (varPtrs_.size() == 0) {
+        return;      
+      }
       // General scheme using center and  positive spanning vectors
       if (rgs1_) {
         rootLinGenScheme1_();
@@ -638,13 +647,16 @@ void Linearizations::rootLinGenScheme2_()
 {
   VariablePtr v;
   bool isFound = false;
-  UInt fixIdx, vIdx, pos;
   std::vector<UInt > varIdx;
+  UInt fixIdx, vIdx, pos = 0, firstnnz;
+    //, nnzc = 0;
   std::vector<double > alphaSign;
   int n = minlp_->getNumVars();
   double varbound, rhs = 0.0, coeff, fixCoeff;   
-  double *xOut = new double[n], *lastDir = new double[n]; 
+  double *xOut = new double[n]; 
+  double *lastDir = new double[n]; 
   
+  std::fill(lastDir, lastDir+n, 0);
   std::copy(nlpx_, nlpx_+n, xOut);
     
   //// variable to be fixed in finding search direction
@@ -652,10 +664,15 @@ void Linearizations::rootLinGenScheme2_()
     v = varPtrs_[i];
     vIdx = v->getIndex();
     rhs = rhs + nlpx_[vIdx]*(solC_[vIdx] - nlpx_[vIdx]);
-    if (!isFound && (solC_[vIdx] - nlpx_[vIdx]) != 0) {
+    if ((isFound == false) && (solC_[vIdx] - nlpx_[vIdx]) != 0) {
+      firstnnz = i;
       fixIdx = vIdx;
       isFound = true;              
     }
+  }
+
+  if (!isFound) {
+    return;  
   }
   
   //// in case rhs is 0, shift the plane to find search directions 
@@ -665,15 +682,13 @@ void Linearizations::rootLinGenScheme2_()
 
   // coefficient of the fix var in any direction
   fixCoeff = rhs/(solC_[fixIdx] - nlpx_[fixIdx]);
-  lastDir[fixIdx] = 0;
      
   // coordinate direction for each variable 
   for (UInt i = 0; i < varPtrs_.size(); ++i) {
     v = varPtrs_[i];
     vIdx = v->getIndex();
-    if (vIdx < fixIdx || (solC_[vIdx] - nlpx_[vIdx]) == 0) {
+    if (i < firstnnz) {
       // in this case coeff of v is zero in hyperplane expression 
-      lastDir[vIdx] = 0;
       varbound = v->getUb();
       alphaSign.push_back(1);
       varIdx.push_back(vIdx);
@@ -683,24 +698,20 @@ void Linearizations::rootLinGenScheme2_()
       varbound = v->getLb();
       xOut[vIdx] = nlpx_[vIdx];
       search_(varbound, vIdx, nlpx_[vIdx], varIdx, xOut, alphaSign, 0, 0);
-    } else if (vIdx > fixIdx) {
-      // in this case coeff of v is nonzero in the hyperplane expression 
+    } else if (i > firstnnz) {
+      // in this case coeff of v could be nonzero in the hyperplane expression 
       coeff = rhs/(solC_[vIdx] - nlpx_[vIdx]);
       lastDir[vIdx] = -coeff;
       lastDir[fixIdx] = lastDir[fixIdx] + fixCoeff;
-      boundingVar_(varbound, vIdx, fixIdx, coeff, -fixCoeff, alphaSign,
-                   varIdx);
-      search_(varbound, varIdx[0], nlpx_[varIdx[0]], varIdx, xOut, alphaSign,
-              0, 0);
+      boundingVar_(varbound,i,varPtrs_[firstnnz],coeff,-fixCoeff,alphaSign,varIdx);
+      search_(varbound,varIdx[0],nlpx_[varIdx[0]],varIdx,xOut,alphaSign,0,0);
       //// reverse direction
       xOut[vIdx] = nlpx_[vIdx];
       xOut[fixIdx] = nlpx_[fixIdx];
       varIdx.clear();
       alphaSign.clear();
-      boundingVar_(varbound, vIdx, fixIdx, -coeff, fixCoeff,
-               alphaSign, varIdx);
-      search_(varbound, varIdx[0], nlpx_[varIdx[0]], varIdx, xOut, alphaSign,
-              0, 0);
+      boundingVar_(varbound, i,varPtrs_[firstnnz],-coeff, fixCoeff, alphaSign, varIdx);
+      search_(varbound,varIdx[0],nlpx_[varIdx[0]],varIdx,xOut,alphaSign,0,0);
       xOut[fixIdx] = nlpx_[fixIdx];
     } else {
       continue;    
@@ -710,22 +721,24 @@ void Linearizations::rootLinGenScheme2_()
     xOut[vIdx] = nlpx_[vIdx];
   }
 
-  // last direction in positive spanning set 
-  boundingVar_(varbound, varIdx, pos, lastDir, alphaSign);
+  //// last direction in positive spanning set 
+  varIdx.resize(0, 0);
+  alphaSign.resize(n, 0);
+  boundingVar_(varbound, pos, lastDir, alphaSign);
   vIdx = varPtrs_[pos]->getIndex();
-  search_(varbound, vIdx, nlpx_[vIdx] , varIdx, xOut, alphaSign, pos, 0);
+  search_(varbound, vIdx, nlpx_[vIdx] , varIdx, xOut, alphaSign, pos, 1);
 
   //// reverse the direction
   for (UInt i = 0; i < varPtrs_.size(); ++i) {
     lastDir[i] = -lastDir[i];
   }
   std::copy(nlpx_, nlpx_+n, xOut);
-  boundingVar_(varbound, varIdx, pos, lastDir, alphaSign);
+  boundingVar_(varbound, pos, lastDir, alphaSign);
   vIdx = varPtrs_[pos]->getIndex();
-  search_(varbound, vIdx, nlpx_[vIdx], varIdx, xOut, alphaSign, pos, 0);
+  search_(varbound, vIdx, nlpx_[vIdx], varIdx, xOut, alphaSign, pos, 1);
+  delete [] lastDir;
 
   delete [] xOut;
-  delete [] lastDir;
   return;
 }
 
@@ -736,7 +749,9 @@ void Linearizations::search_(double varbound, UInt vIdx, double val,
                              bool isAllOne)
 {
   double alpha;
+  //std::cout << "pos alphaSign" << pos << " " << alphaSign.size() << std::endl;
   setStepSize_(varbound, alpha, vIdx, val, alphaSign[pos]);
+  //std::cout <<"Stepsize step: varUb, alpha, val " << varbound << " " << alpha << " " << val << "\n";
   
   if (alpha == 0) {
     return;  
@@ -760,13 +775,13 @@ void Linearizations::search_(double varbound, UInt vIdx, double val,
 }
 
 // determine which out of varPtrs_ is bounding 
-void Linearizations::boundingVar_(double &varbound, std::vector<UInt > &varIdx, 
+void Linearizations::boundingVar_(double &varbound, 
                                   UInt &pos, 
                                   double *lastDir,
                                   std::vector<double > &alphaSign)
 {
-  UInt idx;
   VariablePtr v;
+  UInt idx;
   double diff, minDiff = INFINITY, bound;
     
   for (UInt i = 0; i < varPtrs_.size(); ++i) {
@@ -775,14 +790,13 @@ void Linearizations::boundingVar_(double &varbound, std::vector<UInt > &varIdx,
     if (lastDir[i] < 0) {
       bound = v->getLb();
       diff = nlpx_[idx] - bound;
-      varIdx.push_back(idx);
-      alphaSign.push_back(-1);
+      alphaSign[i] = -1;
     } else if (lastDir[i] > 0) {
       bound = v->getUb();
       diff = bound - nlpx_[idx];
-      varIdx.push_back(idx);
-      alphaSign.push_back(1);
+      alphaSign[i] = 1;
     } else {
+      alphaSign[i] = 0;
       continue;    
     }
     if (diff < minDiff) {
@@ -795,62 +809,71 @@ void Linearizations::boundingVar_(double &varbound, std::vector<UInt > &varIdx,
 
 // determine which out of vIdx and fixIdx is bounding 
 void Linearizations::boundingVar_(double &varbound,
-                                  UInt vIdx, UInt fixIdx, double coeff,
+                                  UInt vpos, VariablePtr fixVar, double coeff,
                                  double fixCoeff, 
                                  std::vector<double > &alphaSign, 
                                  std::vector<UInt > &varIdx)
 {
-  double diffCurrent, diffFix;
-  VariablePtr v = varPtrs_[vIdx], fixVar = varPtrs_[fixIdx];
+  VariablePtr v = varPtrs_[vpos];
+  double diffCurrent, diffFix, val1, val2;
+  UInt vIdx = v->getIndex(), fixIdx = fixVar->getIndex();
 
   if (coeff < 0) {
-    diffCurrent = nlpx_[vIdx] - v->getLb();
+    val1 = v->getLb();
+    diffCurrent = nlpx_[vIdx] - val1;
     if (fixCoeff < 0) {
-      diffFix = nlpx_[vIdx] - fixVar->getLb();
+      val2 = fixVar->getLb();
+      alphaSign.push_back(-1); alphaSign.push_back(-1); // one for each
+      diffFix = nlpx_[fixIdx] - val2;
       if (diffCurrent < diffFix) {
-        varIdx.push_back(vIdx); alphaSign.push_back(-1);
-        varIdx.push_back(fixIdx); alphaSign.push_back(-1);
-        varbound = v->getLb();
+        varbound = val1;
+        varIdx.push_back(vIdx);
+        varIdx.push_back(fixIdx);
       } else {
-        varIdx.push_back(fixIdx); alphaSign.push_back(-1);
-        varIdx.push_back(vIdx); alphaSign.push_back(-1);
-        varbound = fixVar->getLb();
+        varbound = val2;
+        varIdx.push_back(fixIdx);
+        varIdx.push_back(vIdx);
       }
     } else {
-      diffFix = fixVar->getUb() - nlpx_[vIdx];
+      val2 = fixVar->getUb();
+      diffFix = val2 - nlpx_[fixIdx];
       if (diffCurrent < diffFix) {
+        varbound = val1;
         varIdx.push_back(vIdx); alphaSign.push_back(-1);
         varIdx.push_back(fixIdx); alphaSign.push_back(1);
-        varbound = v->getLb();
       } else {
+        varbound = val2;
         varIdx.push_back(fixIdx); alphaSign.push_back(1);
         varIdx.push_back(vIdx); alphaSign.push_back(-1);
-        varbound = fixVar->getUb();
       }
     }
   } else {
-    diffCurrent = v->getUb() - nlpx_[vIdx];
+    val1 = v->getUb();
+    diffCurrent = val1 - nlpx_[vIdx];
     if (fixCoeff < 0) {
-      diffFix = nlpx_[vIdx] - fixVar->getLb();
+      val2 = fixVar->getLb();
+      diffFix = nlpx_[fixIdx] - val2;
       if (diffCurrent < diffFix) {
+        varbound = val1;
         varIdx.push_back(vIdx); alphaSign.push_back(1);
         varIdx.push_back(fixIdx); alphaSign.push_back(-1);
-        varbound = v->getUb();
       } else {
+        varbound = val2;
         varIdx.push_back(fixIdx); alphaSign.push_back(-1);
         varIdx.push_back(vIdx); alphaSign.push_back(1);
-        varbound = fixVar->getLb();
       }
     } else {
-      diffFix = fixVar->getUb() - nlpx_[vIdx];
+      val2 = fixVar->getUb();
+      diffFix = val2 - nlpx_[fixIdx];
+      alphaSign.push_back(1); alphaSign.push_back(1); // one for each
       if (diffCurrent < diffFix) {
-        varIdx.push_back(vIdx); alphaSign.push_back(1);
-        varIdx.push_back(fixIdx); alphaSign.push_back(1);
-        varbound = v->getUb();
+        varbound = val1;
+        varIdx.push_back(vIdx);
+        varIdx.push_back(fixIdx);
       } else {
-        varIdx.push_back(fixIdx); alphaSign.push_back(1);
-        varIdx.push_back(vIdx); alphaSign.push_back(1);
-        varbound = fixVar->getUb();
+        varbound = val2;
+        varIdx.push_back(fixIdx);
+        varIdx.push_back(vIdx);
       }
     } 
   }
@@ -874,7 +897,6 @@ void Linearizations::rootLinGenScheme1_()
   for (UInt i = 0; i < varPtrs_.size(); ++i) {
     v = varPtrs_[i];
     vIdx = v->getIndex();
-
     // determine indices of variables that are bounding in the last
     // direction (and its opposite) of search and bound values 
     varbound = v->getUb() - solC_[vIdx];
@@ -905,28 +927,28 @@ void Linearizations::rootLinGenScheme1_()
   }
   
    // last direction in positive spanning set 
-  if (vLb == INFINITY) {
-    lPos = 0; 
-    vIdx = varPtrs_[0]->getIndex(); 
-  } else {
-    vLb = varPtrs_[lPos]->getLb();
-    vIdx = varPtrs_[lPos]->getIndex(); 
-  }
-  for (UInt i = 0; i < varPtrs_.size(); ++i) {
-    alphaSign.push_back(-1);
-  }
-  search_(vLb, vIdx, solC_[vIdx], varIdx, xOut, alphaSign, lPos, 1);
+  //if (vLb == INFINITY) {
+    //lPos = 0; 
+    //vIdx = varPtrs_[0]->getIndex(); 
+  //} else {
+    //vLb = varPtrs_[lPos]->getLb();
+    //vIdx = varPtrs_[lPos]->getIndex(); 
+  //}
+  //for (UInt i = 0; i < varPtrs_.size(); ++i) {
+    //alphaSign.push_back(-1);
+  //}
+  //search_(vLb, vIdx, solC_[vIdx], varIdx, xOut, alphaSign, lPos, 1);
  
-  if (vUb == INFINITY) {
-    uPos = 0;  
-    vIdx = varPtrs_[0]->getIndex(); 
-  } else {
-    vUb = varPtrs_[uPos]->getUb();
-    vIdx = varPtrs_[uPos]->getIndex(); 
-  }
-  std::copy(solC_, solC_+minlp_->getNumVars(), xOut);
-  std::fill(alphaSign.begin(), alphaSign.end(),1);
-  search_(vUb, vIdx, solC_[vIdx], varIdx, xOut, alphaSign, uPos, 1);
+  //if (vUb == INFINITY) {
+    //uPos = 0;  
+    //vIdx = varPtrs_[0]->getIndex(); 
+  //} else {
+    //vUb = varPtrs_[uPos]->getUb();
+    //vIdx = varPtrs_[uPos]->getIndex(); 
+  //}
+  //std::copy(solC_, solC_+minlp_->getNumVars(), xOut);
+  //std::fill(alphaSign.begin(), alphaSign.end(),1);
+  //search_(vUb, vIdx, solC_[vIdx], varIdx, xOut, alphaSign, uPos, 1);
   
   delete [] xOut;
   return;
@@ -960,9 +982,11 @@ void Linearizations::varsInNonlinCons_()
     v = *vit;
     type = v->getFunType();
     if (!(type == Linear || type == Constant)) {
+      //std::cout << v->getName() << std::endl;
       varPtrs_.push_back(v);
     }
   }
+  //exit(1);
   return;
 }
 
@@ -972,7 +996,7 @@ void Linearizations::foundLinPt_(UInt vIdx, std::vector<UInt> varIdx,
                                  std::vector<double> alphaSign, double varbound,
                                  double *xOut, bool isAllOne)
 {
-  int error = 0;
+  int aSign = 1, error = 0;
   double act, cUb;
   ConstraintPtr con;
   std::vector<ConstraintPtr > vioCons;
@@ -981,6 +1005,9 @@ void Linearizations::foundLinPt_(UInt vIdx, std::vector<UInt> varIdx,
    * move further along the given direction, If all linear constraints are
    * violated then stop and return. 
    */
+  if (alphaSign[pos] < 0) {
+    aSign = -1;
+  }
   while (true) {
     for (CCIter it = nlCons_.begin(); it != nlCons_.end(); ++it) {
       con = *it;
@@ -995,7 +1022,8 @@ void Linearizations::foundLinPt_(UInt vIdx, std::vector<UInt> varIdx,
     }
     if (vioCons.size() == 0) {
       newPoint_(isAllOne, varIdx, xOut, alphaSign);  
-      if (alphaSign[pos]*(xOut[vIdx]-varbound) > 0) {
+      //if (alphaSign[pos]*(xOut[vIdx]-varbound) > 0) 
+      if (aSign*(xOut[vIdx]-varbound) > 0) {
         return;
       }
     } else {
@@ -1343,7 +1371,6 @@ void Linearizations::rootLinScheme2_(ConstraintPtr con,
   int error = 0;
   FunctionPtr f;
   VariablePtr vnl;
-  //bool isCont = true;
   UInt n = minlp_->getNumVars();
   double lastSlope, delta, nlpSlope, nbhSize;
   
@@ -1357,11 +1384,16 @@ void Linearizations::rootLinScheme2_(ConstraintPtr con,
   
   f = con->getFunction();
   f->evalGradient(nlpx_, grad, &error);
+
+  if (error != 0) {
+    return;
+  }
   
   nlpSlope = -1*(grad[nVarIdx]/lVarCoeff);
-  lastSlope = nlpSlope;
+  lastSlope = nlpSlope;       // nlpSlope is going to be used later on as well
   
   nbhSize = std::max(vnl->getLb(), nlpx_[nVarIdx] - rs2NbhSize_);    
+  //nbhSize = vnl->getLb();    
   if (nlpx_[nVarIdx] - nbhSize >= 1) {
     delta = 0.5;  
   } else {
@@ -1372,14 +1404,14 @@ void Linearizations::rootLinScheme2_(ConstraintPtr con,
      
   if (delta != 0) {
     while (npt[nVarIdx] >= nbhSize) {
-      grad[nVarIdx] = 0;
-      grad[lVarIdx] = 0;
+      grad[nVarIdx] = 0; grad[lVarIdx] = 0;
       rScheme2Cut_(con, delta, lVarCoeff, lastSlope, nVarIdx, npt, grad);
       npt[nVarIdx] =  npt[nVarIdx] - delta;
     }
   }
   
   nbhSize = std::min(vnl->getUb(), nlpx_[nVarIdx] + rs2NbhSize_);
+  //nbhSize = vnl->getUb();    
   if (nbhSize - nlpx_[nVarIdx] >= 1) {
     delta = 0.5;  //MS: can be a parameter  
   } else {
@@ -1391,8 +1423,7 @@ void Linearizations::rootLinScheme2_(ConstraintPtr con,
 
   if (delta != 0) {
     while (npt[nVarIdx] <= nbhSize) {
-      grad[nVarIdx] = 0;
-      grad[lVarIdx] = 0;
+      grad[nVarIdx] = 0; grad[lVarIdx] = 0;
       rScheme2Cut_(con, delta, lVarCoeff, lastSlope, nVarIdx, npt, grad);
       npt[nVarIdx] =  npt[nVarIdx] + delta;
     }
@@ -1408,18 +1439,31 @@ void Linearizations::rScheme2Cut_(ConstraintPtr con, double &delta,
                                 UInt nVarIdx, double * npt, double * grad)
 {
   int error = 0;
-  double newSlope;
   FunctionPtr f = con->getFunction();
+  double newSlope, angle, tanTheta, PI = 3.14159265;
+  
   f->evalGradient(npt, grad, &error);
   if (error != 0) {
     return;
   } 
-  newSlope = -1*(grad[nVarIdx]/lVarCoeff); 
-  if ((lastSlope == 0 && newSlope == 0) ||
-      (lastSlope != 0 && fabs((newSlope-lastSlope)/lastSlope)*100 <  rs2Per_)) {
+  
+  newSlope = -1*(grad[nVarIdx]/lVarCoeff);
+  tanTheta = (newSlope-lastSlope)/(1+newSlope*lastSlope);
+  angle = atan (tanTheta) * 180 / PI;
+
+ // MS: old stuff beased on gradient comparison 
+  //if ((lastSlope == 0 && newSlope == 0) ||
+      //(lastSlope != 0 && fabs((newSlope-lastSlope)/lastSlope)*100 <  rs2Per_)) {
+    //delta = 2*delta;
+    //return;
+  //}
+
+  // Add new linearization if angle between the two lines is at least rs2Per_
+  if (fabs(angle) <  rs2Per_) {
     delta = 2*delta;
     return;
   }
+
   lastSlope = newSlope;
   //ConstraintPtr newcon;
   std::stringstream sstm;

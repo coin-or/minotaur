@@ -172,11 +172,11 @@ private:
   bool addNewCut_(double *b1, ConstraintPtr con, 
                   UInt &newConId);
 
-  void boundingVar_(double &varbound, std::vector<UInt > &varIdx, UInt &pos, 
+  void boundingVar_(double &varbound, UInt &pos, 
                                   double *lastDir,
                                   std::vector<double > &alphaSign);
   void boundingVar_(double &varbound,
-                                  UInt vIdx, UInt fixIdx, double coeff,
+                                  UInt vIdx, VariablePtr fixVar, double coeff,
                                  double fixCoeff, std::vector<double > &alphaSign, std::vector<UInt > &varIdx);
 
   /// Find intersection of two linearizations in root linearization scheme 1  
