@@ -565,6 +565,8 @@ void ParQGBranchAndBound::parsolve(ParNodeIncRelaxerPtr parNodeRlxr[],
           rel[i] = parNodeRlxr[i]->createNodeRelaxation(current_node[i],
                                                         dived_prev[i],
                                                         should_prune[i]);
+          // CAUTION: if parRel branching is not used, cuts are also not shared.
+          // Sharing pseudocosts must be separated from sharing cuts.
           if (isParRel) {
             for(UInt j = 0; j < numThreads; ++j) {
               if (i!=j || numThreads==1) {

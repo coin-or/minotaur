@@ -10,7 +10,11 @@
  * \Authors Meenarli Sharma and Prashant Palkar, IIT Bombay
  */
 
-
+#if USE_OPENMP
+#include <omp.h>
+#else
+#error "Cannot compile parallel algorithms: turn USE_OpenMP flag ON."
+#endif
 #include <cmath>
 #include <iomanip>
 #include <iostream>
@@ -115,7 +119,7 @@ void OAHandler::addInitLinearX_(const double *x)
       if (error == 0) {
         cUb = con->getUb();
         ++(stats_->cuts);
-        sstm << "_OACutRoot_" << stats_->cuts;
+        sstm << "_OACutRoot_Th_" << omp_get_thread_num() << "_" << stats_->cuts;
         f = (FunctionPtr) new Function(lf);
         rel_->newConstraint(f, -INFINITY, cUb-c, sstm.str());
         sstm.str("");
@@ -137,7 +141,7 @@ void OAHandler::addInitLinearX_(const double *x)
     
     if (error==0) {
       ++(stats_->cuts);
-      sstm << "_OAObjCutRoot_" << stats_->cuts;
+      sstm << "_OAObjRoot_Th_" << omp_get_thread_num() << "_" << stats_->cuts;
       f = o->getFunction();
       linearAt_(f, act, x, &c, &lf, &error);
       if (error == 0) {
@@ -163,7 +167,7 @@ void OAHandler::cutIntSol_(ConstSolutionPtr sol, CutManager *cutMan,
                            SeparationStatus *status)
 {
   const double *lpx = sol->getPrimal();
-  relobj_ = (sol) ? sol->getObjValue() : -INFINITY;
+  //relobj_ = (sol) ? sol->getObjValue() : -INFINITY;
 
   fixInts_(lpx);           // Fix integer variables
   solveNLP_();
@@ -217,9 +221,9 @@ void OAHandler::cutIntSol_(ConstSolutionPtr sol, CutManager *cutMan,
   /* This happens when the NLP solution is also feasible to original problem 
    * but there is some tolerance differences
   */
-  if (*status == SepaContinue) {
-    *status = SepaPrune;
-  }
+  //if (*status == SepaContinue) {
+    //*status = SepaPrune;
+  //}
 
 #if SPEW
   logger_->msgStream(LogDebug) << me_ << "NLP solve status = "
@@ -239,7 +243,6 @@ void OAHandler::cutsAtLpSol_(const double *lpx, CutManager *,
   ConstraintPtr con;
   double c, act, cUb, vio;
   LinearFunctionPtr lf;
-  //ConstraintPtr newcon;
   std::stringstream sstm;
 
   for (CCIter it = nlCons_.begin(); it != nlCons_.end(); ++it) {
@@ -258,10 +261,10 @@ void OAHandler::cutsAtLpSol_(const double *lpx, CutManager *,
               ((cUb-c)==0 || (vio>fabs(cUb-c)*solRelTol_))) {
             ++(stats_->cuts);
             *status = SepaResolve;
-            sstm << "_OACut_" << stats_->cuts;
+            sstm << "_OACut_Th_" << omp_get_thread_num() << "_" << stats_->cuts;
             f = (FunctionPtr) new Function(lf);
+#pragma omp critical (milp)
             rel_->newConstraint(f, -INFINITY, cUb-c, sstm.str());
-            //newcon = rel_->newConstraint(f, -INFINITY, cUb-c, sstm.str());
             return;
           } else {
             delete lf;
@@ -294,9 +297,8 @@ void OAHandler::cutsAtLpSol_(const double *lpx, CutManager *,
             *status = SepaResolve;
             lf->addTerm(objVar_, -1.0);
             f = (FunctionPtr) new Function(lf);
-            sstm << "_OAObjcut_" << stats_->cuts;
+            sstm << "_OAObjCut_Th_" << omp_get_thread_num() << "_" << stats_->cuts;
             rel_->newConstraint(f, -INFINITY, -1.0*c, sstm.str());
-            //newcon = rel_->newConstraint(f, -INFINITY, -1.0*c, sstm.str());
           } else {
             delete lf;
             lf = 0;
@@ -570,7 +572,6 @@ void OAHandler::addCut_(const double *nlpx, const double *lpx,
                         SeparationStatus *status)
 {
   int error = 0;
-  //ConstraintPtr newcon;
   std::stringstream sstm;
   LinearFunctionPtr lf = 0;
   double c, lpvio, act, cUb;
@@ -585,11 +586,11 @@ void OAHandler::addCut_(const double *nlpx, const double *lpx,
       if ((lpvio > solAbsTol_) &&
           ((cUb-c)==0 || (lpvio>fabs(cUb-c)*solRelTol_))) {
         ++(stats_->cuts);
-        sstm << "_OAcut_" << stats_->cuts;
+        sstm << "_OACut_Th_" << omp_get_thread_num() << "_" << stats_->cuts;
         *status = SepaResolve;
         f = (FunctionPtr) new Function(lf);
+#pragma omp critical (milp)
         rel_->newConstraint(f, -INFINITY, cUb-c, sstm.str());
-        //newcon = rel_->newConstraint(f, -INFINITY, cUb-c, sstm.str());
         return;
       } else {
         delete lf;
@@ -611,7 +612,6 @@ void OAHandler::cutToObj_(const double *nlpx, const double *lpx,
     int error = 0;
     FunctionPtr f;
     double c, vio, act;
-    //ConstraintPtr newcon;
     std::stringstream sstm;
     ObjectivePtr o = minlp_->getObjective();
     
@@ -630,11 +630,11 @@ void OAHandler::cutToObj_(const double *nlpx, const double *lpx,
             if ((vio > solAbsTol_) && ((relobj_-c) == 0
                                      || vio > fabs(relobj_-c)*solRelTol_)) {
               ++(stats_->cuts);
-              sstm << "_OAObjcut_" << stats_->cuts;
+              sstm << "_OAObjCut_Th_" << omp_get_thread_num() << "_" << stats_->cuts;
               lf->addTerm(objVar_, -1.0);
               *status = SepaResolve;
               f = (FunctionPtr) new Function(lf);
-              //newcon = rel_->newConstraint(f, -INFINITY, -1.0*c, sstm.str());
+#pragma omp critical (milp)
               rel_->newConstraint(f, -INFINITY, -1.0*c, sstm.str());
             } else {
               delete lf;
@@ -689,7 +689,7 @@ void OAHandler::separate(ConstSolutionPtr sol, NodePtr, RelaxationPtr,
                          CutManager *cutMan, SolutionPoolPtr s_pool,
                          ModVector &, ModVector &, bool *sol_found,
                          SeparationStatus *status)
-{      
+{
   *status = SepaContinue;
   cutIntSol_(sol, cutMan, s_pool, sol_found, status);
   return;
@@ -726,6 +726,7 @@ void OAHandler::updateUb_(SolutionPoolPtr s_pool, double nlpval,
   if ((bestval - objATol_ > nlpval) ||
         (bestval != 0 && (bestval - fabs(bestval)*objRTol_ > nlpval))) {
     const double *x = nlpe_->getSolution()->getPrimal();
+#pragma omp critical (solPool)
     s_pool->addSolution(x, nlpval);
     *sol_found = true;
   }
