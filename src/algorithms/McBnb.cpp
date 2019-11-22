@@ -565,6 +565,23 @@ void writeParBnbStatus(EnvPtr env, ParBranchAndBound *parbab, double obj_sense,
 }
 
 
+void writeNLPStats(EnvPtr env, std::string name, std::vector<double> stats) {
+  if (stats.size()) {
+    std::string me = name + ": ";
+    env->getLogger()->msgStream(LogExtraInfo)
+      << me << "total calls            = " << UInt(stats[0]) << std::endl
+      << me << "calls to Optimize      = " << UInt(stats[1]) << std::endl
+      << me << "calls to ReOptimize    = " << UInt(stats[2]) << std::endl
+      << me << "strong branching calls = " << UInt(stats[3]) << std::endl
+      << me << "total time in solving  = " << stats[4] << std::endl
+      << me << "total time in presolve = " << stats[5] << std::endl
+      << me << "time in str branching  = " << stats[6] << std::endl
+      << me << "total iterations       = " << UInt(stats[7]) << std::endl
+      << me << "strong br iterations   = " << UInt(stats[8]) << std::endl;
+  }
+}
+
+
 int main(int argc, char** argv)
 {
   EnvPtr env      = (EnvPtr) new Environment();
@@ -585,6 +602,9 @@ int main(int argc, char** argv)
   ParPCBProcessorPtr *nodePrcssr = 0;
   ParNodeIncRelaxerPtr *parNodeRlxr = 0;
   RelaxationPtr *relCopy = 0;
+
+  std::vector<double> nlpStats(9,0);
+
   env->startTimer(err);
   if (err) {
     goto CLEANUP;
@@ -652,7 +672,10 @@ int main(int argc, char** argv)
   //parbab->writeParStats(env->getLogger()->msgStream(LogExtraInfo), nodePrcssr);
   
   //Take care of important engine statistics
-  //engine->writeStats(env->getLogger()->msgStream(LogExtraInfo));
+  for (UInt i=0; i < numThreads; i++) {
+    eCopy[i]->fillStats(nlpStats);
+  }
+  writeNLPStats(env, eCopy[0]->getName(), nlpStats);
   
   //Take care of important handler statistics
   //for (HandlerVector::iterator it=handlers.begin(); it!=handlers.end(); ++it) {
