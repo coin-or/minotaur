@@ -193,6 +193,9 @@ namespace Minotaur {
     /// Make settings for strong branching.
     void enableStrBrSetup();
 
+    // Implement Engine::fillStats()
+    void fillStats(std::vector<double> &);
+
     // get name.
     std::string getName() const;
 

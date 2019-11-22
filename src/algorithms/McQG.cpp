@@ -553,6 +553,37 @@ void writeParQGStats(EnvPtr env, ParQGBranchAndBound *parbab, UInt numThreads,
 }
 
 
+void writeLPStats(EnvPtr env, std::string name, std::vector<double> stats) {
+  if (stats.size()) {
+    std::string me = name + ": ";
+    env->getLogger()->msgStream(LogInfo)
+      << me << "total calls            = " << UInt(stats[0]) << std::endl
+      << me << "strong branching calls = " << UInt(stats[1]) << std::endl
+      << me << "total time in solving  = " << stats[2] << std::endl
+      << me << "time in str branching  = " << stats[3] << std::endl
+      << me << "total iterations       = " << UInt(stats[4]) << std::endl
+      << me << "strong br iterations   = " << UInt(stats[5]) << std::endl;
+  }
+}
+
+
+void writeNLPStats(EnvPtr env, std::string name, std::vector<double> stats) {
+  if (stats.size()) {
+    std::string me = name + ": ";
+    env->getLogger()->msgStream(LogInfo)
+      << me << "total calls            = " << UInt(stats[0]) << std::endl
+      << me << "calls to Optimize      = " << UInt(stats[1]) << std::endl
+      << me << "calls to ReOptimize    = " << UInt(stats[2]) << std::endl
+      << me << "strong branching calls = " << UInt(stats[3]) << std::endl
+      << me << "total time in solving  = " << stats[4] << std::endl
+      << me << "total time in presolve = " << stats[5] << std::endl
+      << me << "time in str branching  = " << stats[6] << std::endl
+      << me << "total iterations       = " << UInt(stats[7]) << std::endl
+      << me << "strong br iterations   = " << UInt(stats[8]) << std::endl;
+  }
+}
+
+
 int main(int argc, char** argv)
 {
   EnvPtr env      = (EnvPtr) new Environment();
@@ -581,6 +612,8 @@ int main(int argc, char** argv)
   NodePtr node = 0;
   std::string name = "";
 
+  std::vector<double> lpStats(6,0);
+  std::vector<double> nlpStats(9,0);
   env->startTimer(err);
 
   if (err) {
@@ -675,6 +708,13 @@ int main(int argc, char** argv)
   
   //Take care of important engine statistics
   //engine->writeStats(env->getLogger()->msgStream(LogExtraInfo));
+  for (UInt i=0; i < numThreads; i++) {
+    lpeCopy[i]->fillStats(lpStats);
+    eCopy[i]->fillStats(nlpStats);
+  }
+
+  writeLPStats(env, lpeCopy[0]->getName(), lpStats);
+  writeNLPStats(env, eCopy[0]->getName(), nlpStats);
   
   //Take care of important handler statistics
   //for (UInt i=0; i < numThreads; i++) {

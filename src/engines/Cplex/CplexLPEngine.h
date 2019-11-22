@@ -164,6 +164,9 @@ namespace Minotaur {
 
     void enableStrBrSetup();
 
+    // Implement Engine::fillStats()
+    void fillStats(std::vector<double> &);
+
     /// Return the solution value of the objective after solving the LP.
     double getSolutionValue();
 

@@ -335,6 +335,19 @@ int OsiLPEngine::getIterationCount()
 }
 
 
+void OsiLPEngine::fillStats(std::vector<double> &lpStats)
+{
+  if (lpStats.size()) {
+    lpStats[0] += stats_->calls;
+    lpStats[1] += stats_->strCalls;
+    lpStats[2] += stats_->time;
+    lpStats[3] += stats_->strTime;
+    lpStats[4] += stats_->iters;
+    lpStats[5] += stats_->strIters;
+  }
+}
+
+
 std::string OsiLPEngine::getName() const
 {
   return "OsiLP";

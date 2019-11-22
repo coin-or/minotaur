@@ -174,6 +174,10 @@ namespace Minotaur {
      */
     virtual void writeStats(std::ostream &) const {};
 
+    /// Accumulate statistics from different threads in a common data
+    //structure for parallel algorithms
+    virtual void fillStats(std::vector<double> &) {};
+
   protected:
     /// Status of the last solve.
     EngineStatus status_;

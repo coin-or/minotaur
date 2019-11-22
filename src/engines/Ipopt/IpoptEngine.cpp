@@ -816,6 +816,22 @@ EngineStatus IpoptEngine::solve()
 }
 	  
 
+void IpoptEngine::fillStats(std::vector<double> &nlpStats)
+{
+  if (nlpStats.size()) {
+    nlpStats[0] += stats_->calls;
+    nlpStats[1] += stats_->opt;
+    nlpStats[2] += stats_->reopt;
+    nlpStats[3] += stats_->strCalls;
+    nlpStats[4] += stats_->time;
+    nlpStats[5] += stats_->ptime;
+    nlpStats[6] += stats_->strTime;
+    nlpStats[7] += stats_->iters;
+    nlpStats[8] += stats_->strIters;
+  }
+}
+
+
 void IpoptEngine::writeStats(std::ostream &out) const 
 {
   if (stats_) {
