@@ -57,7 +57,7 @@ CplexMILPEngine::CplexMILPEngine(EnvPtr env)
   logger_ = env->getLogger();
   timeLimit_ = INFINITY;
   upperCutoff_ = INFINITY;
-  writeMipStarts_ = env_->getOptions()->findBool("oa_use_mip_starts");
+  writeMipStarts_ = env_->getOptions()->findBool("oa_use_mip_starts")->getValue();
   if (writeMipStarts_) {
     mipStartFile_ = env_->getOptions()->findString("problem_file")->getValue() + ".mst";
   }
