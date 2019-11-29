@@ -824,7 +824,10 @@ void ParBranchAndBound::parsolve(ParNodeIncRelaxerPtr parNodeRlxr[],
           }
           current_node[i] = new_node[i];
         } // if (current_node[i]) ends
+      } //parallel for end
 
+#pragma omp for
+      for(UInt i = 0; i < numThreads; ++i) {
         //stopping condition at each thread
         nodeCountTh[i] = 0;
 #pragma omp critical (treeManager)
@@ -858,7 +861,7 @@ void ParBranchAndBound::parsolve(ParNodeIncRelaxerPtr parNodeRlxr[],
           }
           shouldRunTh[i] = false;
         }
-      } //parallel for end
+      } //parallel for2 end
 #pragma omp single
       { 
         iterCount++;
