@@ -598,7 +598,8 @@ void QGHandlerAdvance::relax_(bool *isInf)
   // //MS: names of the schemes
   rs3_ = env_->getOptions()->findInt("root_linScheme3")->getValue();
   bool rg1 = env_->getOptions()->findBool("root_genLinScheme1")->getValue();
-  bool rg2 = env_->getOptions()->findBool("root_genLinScheme2")->getValue();
+  //bool rg2 = env_->getOptions()->findBool("root_genLinScheme2")->getValue();
+  double rg2 = env_->getOptions()->findDouble("root_linGenScheme2_per")->getValue(); //MS: change name in Environment
   double rs1 = env_->getOptions()->findDouble("root_linScheme1")->getValue();
   double rs2Per = env_->getOptions()->findDouble("root_linScheme2_per")->getValue();
   

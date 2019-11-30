@@ -94,8 +94,9 @@ private:
   /// Parameter for root lin scheme 1 for general problem
   bool rgs1_;
   
-  /// Parameter for root lin scheme 1 for general problem
-  bool rgs2_;
+  /// Parameter for root lin scheme 2 for general problem
+  double rsg2Per_;
+  //bool rgs2_;
 
   /// Value of objective in relaxation solution
   //double relobj_; 
@@ -177,7 +178,7 @@ private:
                                   std::vector<double > &alphaSign);
   void boundingVar_(double &varbound,
                                   UInt vIdx, VariablePtr fixVar, double coeff,
-                                 double fixCoeff, std::vector<double > &alphaSign, std::vector<UInt > &varIdx);
+                                 double fixCoeff, std::vector<int > &alphaSign, std::vector<UInt > &varIdx);
 
   /// Find intersection of two linearizations in root linearization scheme 1  
   bool findIntersectPt_(std::vector<UInt > newConsId, VariablePtr vl,
@@ -205,7 +206,29 @@ private:
 
   /// Check feasibility of sol 
   //bool isFeas_(ConstSolutionPtr sol);
+ 
+  bool boundaryPt_(const double *xOut,
+                                     std::vector<UInt > &varConsPos,
+                                   std::vector<double* > & lastGrad);
+  bool findLinPoint_(double *xOut, 
+                                   std::vector<UInt > varConsPos,
+                                   std::vector<double* > & lastGrad);
 
+
+  void exploreDir_(double *xOut, std::vector<UInt > vIdx,
+                                 std::vector<UInt > varConsPos, 
+                                std::vector<double *> nlconsGrad,
+                                std::vector<int> alpha,
+                                double &vbnd);
+
+
+  bool genLin_(double *x, std::vector<UInt > vioConsPos,
+                                     std::vector<double *> &lastGrad);
+
+  std::vector<UInt > isFeas_(double *x, std::vector<UInt > varConsPos,
+                             bool &foundActive, bool &foundVio);
+
+  void varCons_(std::vector<UInt > varPos, std::vector<UInt > &varConsPos);
   /**
    * Obtain the linear function (lf) and constant (c) from the
    * linearization of function f at point x.
