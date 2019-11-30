@@ -118,6 +118,9 @@ private:
   /// Callback calls
   UInt numCalls_;
 
+  /// Total wall clock time spent in callbacks
+  double cbtime_;
+
   /// Statistics.
   STOAStats *stats_;
 
@@ -142,7 +145,13 @@ public:
   {return Branches();};
 
   /// Return number of callbacks till now
-  UInt getNumCalls() { return numCalls_; }
+  UInt getNumCalls() {return numCalls_;}
+
+  /// Return the time taken in callbacks till now
+  double getCbTime() {return cbtime_;}
+
+  /// Set the time taken in callbacks till now
+  void setCbTime(double timeval) {cbtime_ = timeval;}
 
   /// Does nothing.
   void getBranchingCandidates(RelaxationPtr, 
@@ -160,7 +169,7 @@ public:
   // Base class method. Check if x is feasible. x has to satisfy integrality
   // and also nonlinear constraints.
   bool isFeasible(ConstSolutionPtr, RelaxationPtr, 
-                  bool &, double &) { return 0;};
+                  bool &, double &) {return 0;};
 
   //bool isFeas(const double* x);
 

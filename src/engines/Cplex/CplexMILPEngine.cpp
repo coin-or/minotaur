@@ -740,11 +740,18 @@ static int CPXPUBLIC minolazycallback(CPXCENVptr env, void *cbdata, int wherefro
 {  
   mtx.lock();
   STOAHandlerPtr stoaH = *(STOAHandlerPtr *)(userdata);
+  double timeStart, timeEnd = 0;
   int cpxstatus = 0;
   int numvars = stoaH->getRel()->getNumVars();
   double *cpxx = new double[numvars]; 
   double ub;
   
+  cpxstatus = CPXXgettime(env, &timeStart);
+  if (cpxstatus) {
+    std::cout << "Can't get start time stamp from Cplex.";
+    return cpxstatus;
+  }
+
   cpxstatus = CPXXgetcallbacknodeobjval (env, cbdata, wherefrom, &ub);
   if (cpxstatus) {
     std::cout << "Can't get node objective value.";
@@ -799,7 +806,13 @@ static int CPXPUBLIC minolazycallback(CPXCENVptr env, void *cbdata, int wherefro
         cpxstatus = CPXXcutcallbackadd(env, cbdata, wherefrom, vIdx, rhs, 'L',
                                        cutind, cutval, CPX_USECUT_FORCE);
         if (cpxstatus != 0) {
-            mtx.unlock();
+          cpxstatus = CPXXgettime(env, &timeEnd);
+          if (cpxstatus) {
+            std::cout << "Can't get end time stamp from Cplex.";
+            return cpxstatus;
+          }
+          stoaH->setCbTime(stoaH->getCbTime() + timeEnd - timeStart);
+          mtx.unlock();
           return cpxstatus;
         }
         varIdx.clear();
@@ -808,6 +821,12 @@ static int CPXPUBLIC minolazycallback(CPXCENVptr env, void *cbdata, int wherefro
         delete [] cutval;
         
         if (cpxstatus != 0) {
+          cpxstatus = CPXXgettime(env, &timeEnd);
+          if (cpxstatus) {
+            std::cout << "Can't get end time stamp from Cplex.";
+            return cpxstatus;
+          }
+          stoaH->setCbTime(stoaH->getCbTime() + timeEnd - timeStart);
           mtx.unlock();
           return cpxstatus;
         }
@@ -816,6 +835,13 @@ static int CPXPUBLIC minolazycallback(CPXCENVptr env, void *cbdata, int wherefro
     }
   //}
   delete [] cpxx;
+  cpxstatus = CPXXgettime(env, &timeEnd);
+  if (cpxstatus) {
+    std::cout << "Can't get end time stamp from Cplex.";
+    return cpxstatus;
+  }
+  stoaH->setCbTime(stoaH->getCbTime() + timeEnd - timeStart);
+  //std::cout << "out of callback " << timeEnd - timeStart << "\n";
   mtx.unlock();
   return 0;
 }
@@ -1274,7 +1300,11 @@ EngineStatus CplexMILPEngine::solveSTLazy(double *objLb, SolutionPtr* sol,
                                << me_ << "solution value = "
                                << objval << std::endl
                                << me_ << "nodes processed = "
-                               << CPXXgetnodecnt(cpxenv_, cpxlp_) << std::endl;
+                               << CPXXgetnodecnt(cpxenv_, cpxlp_)
+                               << std::endl
+                               << me_ << "time in callbacks = "
+                               << stoa_hand->getCbTime()
+                               << std::endl;
 
   // Solve status (replace with string later using CPXXgetstatstring(..))
   if (solstat == 101 || solstat == 102) {

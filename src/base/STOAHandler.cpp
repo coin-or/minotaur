@@ -67,7 +67,8 @@ STOAHandler::STOAHandler(EnvPtr env, ProblemPtr minlp, EnginePtr nlpe,
   rel_(RelaxationPtr()),
   solPool_(solPool),
   relobj_(0.0),
-  numCalls_(0)
+  numCalls_(0),
+  cbtime_(0)
 {
   timer_ = env->getNewTimer();
   intTol_ = env_->getOptions()->findDouble("int_tol")->getValue();
