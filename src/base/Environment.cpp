@@ -243,9 +243,9 @@ void Environment::createDefaultOptions_()
       "Rounds of extra linearizations to be added at root node under gen scheme 1: <0/1>", true, false);
   options_->insert(b_option);
 
-  b_option = (BoolOptionPtr) new Option<bool>("root_genLinScheme2", 
-      "Rounds of extra linearizations to be added at root node under gen scheme 2: <0/1>", true, false);
-  options_->insert(b_option);
+  //b_option = (BoolOptionPtr) new Option<bool>("root_genLinScheme2", 
+      //"Rounds of extra linearizations to be added at root node under gen scheme 2: <0/1>", true, false);
+  //options_->insert(b_option);
 
   // reset, so that we don't accidently add it again.
   b_option = 0;
@@ -429,6 +429,11 @@ void Environment::createDefaultOptions_()
   d_option = (DoubleOptionPtr) new Option<double>("root_linScheme2_per", 
       "Threshold for slope change in root linearization scheme 2", true, 0);
   options_->insert(d_option);
+
+  d_option = (DoubleOptionPtr) new Option<double>("root_linGenScheme2_per", 
+      "Threshold for slope change in root linearization gen scheme 2", true, 0);
+  options_->insert(d_option);
+
 
   d_option = (DoubleOptionPtr) new Option<double>("root_linScheme2_nbhSize", 
       "Neighborhood size for root linearization scheme 2", true, 10);
