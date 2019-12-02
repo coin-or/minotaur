@@ -33,6 +33,7 @@ public:
   /// Following classes can modify a Variable. All modification methods
   /// are private.
   friend class Linearizations;
+  friend class QGHandlerAdvance;
   friend class PerspCon;
   friend class Problem;
   friend class QGHandler;
