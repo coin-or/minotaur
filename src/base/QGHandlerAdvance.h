@@ -31,6 +31,7 @@ struct QGStats {
   size_t nlpI;      /// Number of nlps infeasible.
   size_t nlpIL;     /// Number of nlps hits engine iterations limit.
   size_t cuts;    /// Number of cuts at int feas nodes.
+  size_t fracCuts;    /// Number of cuts at int feas nodes.
 }; 
 
 
@@ -111,10 +112,11 @@ private:
 
   double maxDist_;
   
-  int lastNodeId_;
   
   //double lpdist_;
   //EngineStatus shortestNlpStatus_;
+  
+  int lastNodeId_;
 
   /// Statistics.
   QGStats *stats_;
