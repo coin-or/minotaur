@@ -74,6 +74,7 @@ private:
   /// Status of the NLP/QP engine.
   EngineStatus nlpStatus_;
 
+  double * solC_;
   /**
    * The variable corresponding to the objective function. It is a part of
    * all linearizations of the objective function and it appears in the
@@ -105,6 +106,12 @@ private:
   LinearizationsPtr extraLin_;
 
   int rs3_;
+  
+  double maxVioPer_;
+
+  double maxDist_;
+  
+  int lastNodeId_;
   
   //double lpdist_;
   //EngineStatus shortestNlpStatus_;
@@ -204,6 +211,8 @@ private:
                   SolutionPoolPtr s_pool, bool *sol_found, 
                   SeparationStatus *status);
 
+
+  void findCenter_();
   /**
    * Fix integer constrained variables to integer values in x. Called
    * before solving NLP.
@@ -241,13 +250,17 @@ private:
   void addCut_(const double *nlpx, const double *lpx, ConstraintPtr con, 
                CutManager *cutman, SeparationStatus *status);
   
-  void ECPTypeCut_(const double *x, CutManager *, int index);
+  void ECPTypeCut_(const double *x, CutManager *, ConstraintPtr con);
 
   void consCutsAtLpSol_(const double *lpx, CutManager *cutman,
                     SeparationStatus *status);
 
 
   bool isIntFeas_(const double* x);
+
+  void maxVio_(const double *x, NodePtr node, bool *sol_found,
+                               SolutionPoolPtr s_pool, CutManager *cutMan,
+                               SeparationStatus *status);
 
   void objCutAtLpSol_(const double *lpx, CutManager *,
                                   SeparationStatus *status);
@@ -267,6 +280,8 @@ private:
    * relaxInitInc functions.
    */
   void relax_(bool *is_inf);
+
+  void solveCenterNLP_(EngineStatus nlpStatus, ConstSolutionPtr sol);
 
   /// Solve the nlp.
   void solveNLP_();
