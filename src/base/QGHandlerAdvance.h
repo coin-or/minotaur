@@ -212,6 +212,9 @@ private:
                   SeparationStatus *status);
 
 
+  void ESHTypeCut_(const double *lpx, CutManager *cutMan,
+                             ConstraintPtr con);
+
   void findCenter_();
   /**
    * Fix integer constrained variables to integer values in x. Called
@@ -250,7 +253,7 @@ private:
   void addCut_(const double *nlpx, const double *lpx, ConstraintPtr con, 
                CutManager *cutman, SeparationStatus *status);
   
-  void ECPTypeCut_(const double *x, CutManager *, ConstraintPtr con);
+  void ECPTypeCut_(const double *x, CutManager *, ConstraintPtr con, double act);
 
   void consCutsAtLpSol_(const double *lpx, CutManager *cutman,
                     SeparationStatus *status);
