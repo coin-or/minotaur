@@ -805,7 +805,7 @@ void Linearizations::exploreDir_(double *xOut, std::vector<UInt > varIdx,
   std::vector<double* > lastGrad;
   std::vector<double > unitVec;
   lastGrad.resize(nlCons_.size(), 0); //MS: Can be made efficient.
-  double delta = 0.5, val = fabs(vbnd - nlpx_[idx]), nbhSize = 20;    //MS: parametrize nbhSize;
+  double delta = 0.5, val = fabs(vbnd - nlpx_[idx]), nbhSize = 50;    //MS: parametrize nbhSize;
  
   if (val < 1) {
     delta = fabs(vbnd - nlpx_[idx]);
@@ -1455,7 +1455,7 @@ bool Linearizations::boundaryPt_(const double *x,
   int error = 0, repPt = 0;
   UInt numVars =  minlp_->getNumVars();
   bool firstVio, firstActive, cutAdded = false;
-  double act, cUb, repSol, repSolOld = 0, lambda1 = 0.5, lambda2 = 0.5;
+  double act, cUb, repSol, repSolOld = INFINITY, lambda1 = 0.5, lambda2 = 0.5;
  
   double* xnew = new double[numVars];
   double* xl = new double[numVars];
