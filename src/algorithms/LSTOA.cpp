@@ -450,8 +450,8 @@ int main(int argc, char* argv[])
     objUb = solPool->getBestSolutionValue();
     gap = getPerGap(objLb, objUb);
     showStatus(env, objLb, objUb, gap, obj_sense);
-    nlp_e->writeStats(env->getLogger()->msgStream(LogExtraInfo));
     milp_e->writeStats(env->getLogger()->msgStream(LogExtraInfo));
+    nlp_e->writeStats(env->getLogger()->msgStream(LogExtraInfo));
 
     for (HandlerVector::iterator it=handlers.begin(); it!=handlers.end();
          ++it) {
