@@ -105,18 +105,24 @@ QGHandlerAdvance::~QGHandlerAdvance()
 }
 
 
-void QGHandlerAdvance::addInitLinearX_(const double *x)
+void QGHandlerAdvance::addInitLinearX_(ConstSolutionPtr sol)
 { 
   int error = 0;
   FunctionPtr f;
   ConstraintPtr con;
-  double c, act, cUb;
+  double c, act, cUb, maxDual = -INFINITY;
   std::stringstream sstm;
   LinearFunctionPtr lf = 0;
+  const double *x = sol->getPrimal();
+  const double * consDual = sol->getDualOfCons();
   //ConstraintPtr newcon;
 
   for (CCIter it=nlCons_.begin(); it!=nlCons_.end(); ++it) {
     con = *it;
+    act = consDual[con->getIndex()];
+    if (act > maxDual) {
+      maxDual = act;    
+    }
     act = con->getActivity(x, &error);
     if (error == 0) {
       f = con->getFunction();
@@ -133,6 +139,16 @@ void QGHandlerAdvance::addInitLinearX_(const double *x)
     }	else {
       logger_->msgStream(LogError) << me_ << "Constraint" <<  con->getName() <<
         " is not defined at this point." << std::endl;
+    }
+  }
+
+  if (maxDual > 0) {
+    for (CCIter it=nlCons_.begin(); it!=nlCons_.end(); ++it) {
+      con = *it;
+      act = consDual[con->getIndex()];
+      if (act >= 0.5*maxDual) {
+        highDualCons_.push_back(con);
+      }
     }
   }
 
@@ -242,7 +258,6 @@ void QGHandlerAdvance::fixInts_(const double *x)
 void QGHandlerAdvance::initLinear_(bool *isInf)
 {
   *isInf = false;
-  const double *x;
   
   nlpe_->load(minlp_);
   solveNLP_();
@@ -251,13 +266,11 @@ void QGHandlerAdvance::initLinear_(bool *isInf)
   case (ProvenOptimal):
   case (ProvenLocalOptimal):
     ++(stats_->nlpF);
-    x = nlpe_->getSolution()->getPrimal();
-    addInitLinearX_(x);
+    addInitLinearX_(nlpe_->getSolution());
     break;
   case (EngineIterationLimit):
     ++(stats_->nlpIL);
-    x = nlpe_->getSolution()->getPrimal();
-    addInitLinearX_(x);
+    addInitLinearX_(nlpe_->getSolution());
     break;
   case (ProvenInfeasible):
   case (ProvenLocalInfeasible):
@@ -982,7 +995,7 @@ void QGHandlerAdvance::maxVio_(const double *x, NodePtr node, bool *sol_found,
   double act, cUb, vio = 0.0;
   UInt  temp = stats_->cuts, nodeId = node->getId();
 
-  for (CCIter it=nlCons_.begin(); it!=nlCons_.end(); ++it) {
+  for (CCIter it=highDualCons_.begin(); it!=highDualCons_.end(); ++it) {
     c = *it; 
     act = c->getActivity(x, &error);
     if (error == 0) { 
