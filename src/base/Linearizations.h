@@ -118,6 +118,8 @@ private:
 
   /// Relative tolerance for pruning a node.
   double objRTol_;
+  
+  double nbhSize_; //MS: make a parameter later
 
   // populate this if any general scheme is on 
   std::vector<VariablePtr> varPtrs_; 
@@ -178,7 +180,7 @@ private:
                                   std::vector<double > &alphaSign);
   void boundingVar_(double &varbound,
                                   UInt vIdx, VariablePtr fixVar, double coeff,
-                                 double fixCoeff, std::vector<int > &alphaSign, std::vector<UInt > &varIdx);
+                                 double fixCoeff, int &alpha, std::vector<UInt > &varIdx);
 
   /// Find intersection of two linearizations in root linearization scheme 1  
   bool findIntersectPt_(std::vector<UInt > newConsId, VariablePtr vl,
@@ -218,8 +220,7 @@ private:
   void exploreDir_(double *xOut, std::vector<UInt > vIdx,
                                  std::vector<UInt > varConsPos, 
                                 std::vector<double *> nlconsGrad,
-                                std::vector<int> alpha,
-                                double &vbnd);
+                                std::vector<double > unitVec);
 
 
   bool genLin_(double *x, std::vector<UInt > vioConsPos,

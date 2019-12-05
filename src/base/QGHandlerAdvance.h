@@ -31,6 +31,7 @@ struct QGStats {
   size_t nlpI;      /// Number of nlps infeasible.
   size_t nlpIL;     /// Number of nlps hits engine iterations limit.
   size_t cuts;    /// Number of cuts at int feas nodes.
+  size_t fracCuts;    /// Number of cuts at int feas nodes.
 }; 
 
 
@@ -62,7 +63,9 @@ private:
 
   /// Vector of nonlinear constraints.
   std::vector<ConstraintPtr> nlCons_;
-
+  
+  std::vector<ConstraintPtr> highDualCons_;
+  
   /// NLP/QP Engine used to solve the NLP/QP relaxations.
   EnginePtr nlpe_;
   
@@ -111,10 +114,11 @@ private:
 
   double maxDist_;
   
-  int lastNodeId_;
   
   //double lpdist_;
   //EngineStatus shortestNlpStatus_;
+  
+  int lastNodeId_;
 
   /// Statistics.
   QGStats *stats_;
@@ -200,7 +204,8 @@ private:
    * Add linearization of nonlinear constraints and objective at point x* 
    * to the relaxation only (not to the lp engine)
    */
-  void addInitLinearX_(const double *x);
+
+  void addInitLinearX_(ConstSolutionPtr sol);
 
   /**
    * Solve NLP by fixing integer variables at LP solution and add 

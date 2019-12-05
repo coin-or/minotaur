@@ -63,6 +63,7 @@ QGHandlerAdvance::QGHandlerAdvance(EnvPtr env, ProblemPtr minlp, EnginePtr nlpe)
   extraLin_(0),
   maxVioPer_(0),
   maxDist_(0),
+  //lpdist_(0),
   lastNodeId_(-1)
 {
   intTol_ = env_->getOptions()->findDouble("int_tol")->getValue();
@@ -74,6 +75,7 @@ QGHandlerAdvance::QGHandlerAdvance(EnvPtr env, ProblemPtr minlp, EnginePtr nlpe)
 
   stats_ = new QGStats();
   stats_->cuts = 0;
+  stats_->fracCuts = 0;
   stats_->nlpS = 0;
   stats_->nlpF = 0;
   stats_->nlpI = 0;
@@ -103,18 +105,24 @@ QGHandlerAdvance::~QGHandlerAdvance()
 }
 
 
-void QGHandlerAdvance::addInitLinearX_(const double *x)
+void QGHandlerAdvance::addInitLinearX_(ConstSolutionPtr sol)
 { 
   int error = 0;
   FunctionPtr f;
   ConstraintPtr con;
-  double c, act, cUb;
+  double c, act, cUb, maxDual = -INFINITY;
   std::stringstream sstm;
   LinearFunctionPtr lf = 0;
+  const double *x = sol->getPrimal();
+  const double * consDual = sol->getDualOfCons();
   //ConstraintPtr newcon;
 
   for (CCIter it=nlCons_.begin(); it!=nlCons_.end(); ++it) {
     con = *it;
+    act = consDual[con->getIndex()];
+    if (act > maxDual) {
+      maxDual = act;    
+    }
     act = con->getActivity(x, &error);
     if (error == 0) {
       f = con->getFunction();
@@ -131,6 +139,16 @@ void QGHandlerAdvance::addInitLinearX_(const double *x)
     }	else {
       logger_->msgStream(LogError) << me_ << "Constraint" <<  con->getName() <<
         " is not defined at this point." << std::endl;
+    }
+  }
+
+  if (maxDual > 0) {
+    for (CCIter it=nlCons_.begin(); it!=nlCons_.end(); ++it) {
+      con = *it;
+      act = consDual[con->getIndex()];
+      if (act >= 0.5*maxDual) {
+        highDualCons_.push_back(con);
+      }
     }
   }
 
@@ -240,7 +258,6 @@ void QGHandlerAdvance::fixInts_(const double *x)
 void QGHandlerAdvance::initLinear_(bool *isInf)
 {
   *isInf = false;
-  const double *x;
   
   nlpe_->load(minlp_);
   solveNLP_();
@@ -249,13 +266,11 @@ void QGHandlerAdvance::initLinear_(bool *isInf)
   case (ProvenOptimal):
   case (ProvenLocalOptimal):
     ++(stats_->nlpF);
-    x = nlpe_->getSolution()->getPrimal();
-    addInitLinearX_(x);
+    addInitLinearX_(nlpe_->getSolution());
     break;
   case (EngineIterationLimit):
     ++(stats_->nlpIL);
-    x = nlpe_->getSolution()->getPrimal();
-    addInitLinearX_(x);
+    addInitLinearX_(nlpe_->getSolution());
     break;
   case (ProvenInfeasible):
   case (ProvenLocalInfeasible):
@@ -624,23 +639,24 @@ void QGHandlerAdvance::relax_(bool *isInf)
   if (*isInf == false && nlCons_.size() > 0) {
     if (rs1 || rs2Per ||  rs3_ || rg1 || rg2) {
       extraLin_ = new Linearizations(env_, rel_, minlp_, nlCons_);
-      if (rs3_ || rg1 || rg2 || maxVioPer_) {
-      //if (rs3_ || rg1 || rg2) 
+      //if (rs3_ || rg1 || rg2 || maxVioPer_) {
+      if (rs3_ || rg1 || rg2) {
         extraLin_->setNlpEngine(nlpe_->emptyCopy());        
         extraLin_->findCenter();
-        if (maxVioPer_) {
-          solC_ = extraLin_->getCenter();
-          if (solC_ == 0) {
-            maxVioPer_ = 0;
-          }
-        }
+        //if (maxVioPer_) {
+          //solC_ = extraLin_->getCenter();
+          //if (solC_ == 0) {
+            //maxVioPer_ = 0;
+          //}
+        //}
       } 
       if (rs1 || rs2Per || rs3_ || rg1 || rg2) {
         extraLin_->rootLinearizations(nlpe_->getSolution()->getPrimal());
       }
-    } else if (maxVioPer_) {
-      findCenter_();
-    }
+    } 
+      //else if (maxVioPer_) {
+      //findCenter_();
+    //}
   } else {
     rs3_ = 0;
     maxVioPer_ = 0;
@@ -859,6 +875,14 @@ void QGHandlerAdvance::separate(ConstSolutionPtr sol, NodePtr node,
   bool isIntFeas;
   const double *x = sol->getPrimal();
 
+	//if (node->getId() == 0) {
+		//shortestDist_(sol);
+	//} else {
+		//std::cout << "Shortest dist NLP solve status and shortest distance ; " 
+			//<< shortestNlpStatus_ << " ; " << std::setprecision(6) << lpdist_ << std::endl;
+		//exit(0);  
+	//}
+
   *status = SepaContinue;
 
   if (rs3_ && node->getId() == 0) {
@@ -971,7 +995,7 @@ void QGHandlerAdvance::maxVio_(const double *x, NodePtr node, bool *sol_found,
   double act, cUb, vio = 0.0;
   UInt  temp = stats_->cuts, nodeId = node->getId();
 
-  for (CCIter it=nlCons_.begin(); it!=nlCons_.end(); ++it) {
+  for (CCIter it=highDualCons_.begin(); it!=highDualCons_.end(); ++it) {
     c = *it; 
     act = c->getActivity(x, &error);
     if (error == 0) { 
@@ -985,12 +1009,13 @@ void QGHandlerAdvance::maxVio_(const double *x, NodePtr node, bool *sol_found,
           vio = 100*(act - cUb); 
         }
         if (vio >= maxVioPer_) {
-          //ECPTypeCut_(x, cutMan, c, act);
-          ESHTypeCut_(x, cutMan, c);
+          ECPTypeCut_(x, cutMan, c, act);
+          //ESHTypeCut_(x, cutMan, c);
         }
       }
     }
   }
+  stats_->fracCuts = stats_->fracCuts + (stats_->cuts - temp);
 
   if ((temp < stats_->cuts) && (nodeId != UInt(lastNodeId_))) {
     *status = SepaResolve;
@@ -1001,6 +1026,85 @@ void QGHandlerAdvance::maxVio_(const double *x, NodePtr node, bool *sol_found,
   lastNodeId_ = nodeId;
   return;
 }
+
+//void QGHandlerAdvance::shortestDist_(ConstSolutionPtr sol)
+//{
+	//EnginePtr nlpe = nlpe_->emptyCopy(); //Engine for modified problem
+	//ProblemPtr inst_C = minlp_->clone();
+	//UInt n = minlp_->getNumVars();
+	//std::vector<CNode *> temp;
+	//CNode * n1, * n2, * nf;
+	//VariablePtr v;
+	//const double *x = sol->getPrimal();
+	////std::cout << "Problem before construction\n";
+	////inst_C->write(std::cout);
+	////exit(1);
+
+	//CGraphPtr t = (CGraphPtr) new CGraph();
+		
+	//for (VariableConstIterator v_iter=inst_C->varsBegin(); 
+			//v_iter!=inst_C->varsEnd(); ++v_iter) {
+		//v = *v_iter;
+		//v->setFunType_(Nonlinear);
+		//n1 = t->newNode(v);
+		//n2 = t->newNode(x[v->getIndex()]);
+		//nf = t->newNode(Minotaur::OpMinus, n1, n2);
+		//n2 = t->newNode(2);
+		//n1 = t->newNode(Minotaur::OpPowK, nf, n2);
+		//temp.push_back(n1);
+	//}  
+	//CNode **childr = new Minotaur::CNode *[n];
+	//for (UInt i = 0; i < n; ++i) {
+		//childr[i]=temp[i];
+	//}  
+	//nf = t->newNode(Minotaur::OpSumList,childr, n);
+	////n1 = t->newNode(Minotaur::OpSqrt, nf, 0);
+	////t->setOut(n1);
+	//t->setOut(nf);
+	//t->finalize();
+	
+	//inst_C->removeObjective();
+	//FunctionPtr f = (FunctionPtr) new Function(t);
+	//inst_C->newObjective(f, 0.0, Minimize);
+	//inst_C->prepareForSolve();
+	//std::cout << "Shortest distance NLP \n";
+	////inst_C->write(std::cout);
+	////exit(1);
+	//nlpe->load(inst_C);
+	//shortestNlpStatus_ = nlpe->solve();
+
+	//switch(shortestNlpStatus_) {
+	//case (ProvenOptimal):
+	//case (ProvenLocalOptimal):
+		//lpdist_ = nlpe->getSolution()->getObjValue();
+		//break;
+	//case (EngineIterationLimit):
+	//case (ProvenInfeasible):
+	//case (ProvenLocalInfeasible): 
+	//case (ProvenObjectiveCutOff):
+		//break;
+	//case (FailedFeas):
+	//case (EngineError):
+	//case (FailedInfeas):
+	//case (ProvenUnbounded):
+	//case (ProvenFailedCQFeas):
+	//case (EngineUnknownStatus):
+	//case (ProvenFailedCQInfeas):
+	//default:
+		//logger_->msgStream(LogError) << me_ << "NLP engine status = "
+			//<< nlpe->getStatusString() << std::endl;
+		//std::cout << "Shortest distance of LP sol from feasible region couldn't find" << std::endl;
+		//break;
+	//}  
+	
+	//delete nlpe;
+	//nlpe = 0;
+	//delete inst_C;
+	//inst_C = 0;
+	//delete [] childr;
+	//temp.clear();
+	//return;
+//}
 
 
 bool QGHandlerAdvance::isIntFeas_(const double* x)
@@ -1100,8 +1204,8 @@ void QGHandlerAdvance::writeStats(std::ostream &out) const
     extraLin_->writeStats(out);  
   } 
 
-  //std::cout << "Shortest dist NLP solve status and shortest distance ; " 
-      //<< shortestNlpStatus_ << " ; " << std::setprecision(6) << lpdist_ << std::endl;
+	//std::cout << "Shortest dist NLP solve status and shortest distance ; " 
+			//<< shortestNlpStatus_ << " ; " << std::setprecision(6) << lpdist_ << std::endl;
 
   out
     << me_ << "number of nlps solved                       = "
@@ -1112,6 +1216,8 @@ void QGHandlerAdvance::writeStats(std::ostream &out) const
     << stats_->nlpF << std::endl
     << me_ << "number of nlps hit engine iterations limit  = " 
     << stats_->nlpIL << std::endl
+    << me_ << "number of frac cuts added                   = " 
+    << stats_->fracCuts << std::endl
     << me_ << "number of cuts added                        = " 
     << stats_->cuts << std::endl;
   return;
