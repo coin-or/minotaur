@@ -797,7 +797,6 @@ Minotaur::ProblemPtr AMPLInterface::copyInstanceFromASL2_()
   return instance;
 }
 
-
 void AMPLInterface::createFunctionMap_()
 {
   // We want a map such that if an 'f' of type (efunc) is input, the
@@ -2222,7 +2221,6 @@ Minotaur::ProblemPtr AMPLInterface::readInstanceCG_(std::string fname)
   //instance->write(std::cout);
   return instance;
 }
-
 
 void AMPLInterface::saveNlVars_(std::vector<std::set<int> > &vars)
 {

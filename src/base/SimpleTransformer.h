@@ -28,6 +28,7 @@ namespace Minotaur {
   class YEqCGs;
   class YEqLFs;
   class YEqVars;
+  class YEqQfBil;
   typedef CxUnivarHandler* CxUnivarHandlerPtr;
   typedef CGraph* CGraphPtr;
   typedef LinearHandler* LinearHandlerPtr;
@@ -75,6 +76,7 @@ namespace Minotaur {
     static const std::string me_;
 
     YEqCGs *yBiVars_;
+    YEqQfBil *yQfBil_;
 
     void absRef_(LinearFunctionPtr lfl, VariablePtr vl, double dl,
                  VariablePtr &v, double &d);
@@ -103,6 +105,8 @@ namespace Minotaur {
      * \param [in] oldp Original problem.
      */
     void refNonlinObj_(ConstProblemPtr oldp);
+
+    void refQuadCons_(QuadraticFunctionPtr qf, LinearFunctionPtr &lf);
 
     /**
      * TODO

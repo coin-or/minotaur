@@ -1088,7 +1088,8 @@ ProblemType Problem::findType()
     return (size_->bins+size_->ints > 0) ? MIQP : QP;
 
   } else if (size_->cons == size_->linCons+size_->bilinCons+size_->quadCons &&
-             (Quadratic == size_->objType || Bilinear == size_->objType)) {
+             (Quadratic == size_->objType || Bilinear == size_->objType
+              || Linear == size_->objType || Constant == size_->objType)) {
     return (size_->bins+size_->ints > 0) ? MIQCQP : QCQP;
   } else if (isPolyp_()) {
     return (size_->bins+size_->ints > 0) ? MIPOLYP : POLYP;

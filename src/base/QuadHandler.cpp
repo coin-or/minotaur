@@ -93,7 +93,26 @@ void QuadHandler::addConstraint(ConstraintPtr newcon)
   qf = newcon->getQuadraticFunction();
 
   if (qf) {
-    assert(!"cannot yet handle qf in QuadHandler.");
+    lf = newcon->getLinearFunction();
+    
+    assert(lf && qf);
+    assert(1==lf->getNumTerms());
+    assert(1==qf->getNumTerms());
+    y = lf->termsBegin()->first;
+    if (qf->begin()->first.first->getId()==qf->begin()->first.second->getId())
+    {
+      x0 = qf->begin()->first.first;
+      lx2 = new LinSqr();
+      lx2->y = y;
+      lx2->x = x0;
+      lx2->oeCon = ConstraintPtr();
+      x2Funs_.insert(std::pair<VariablePtr, LinSqrPtr>(x0, lx2));
+    } else {
+      x0 = qf->begin()->first.first;
+      x1 = qf->begin()->first.second;
+      linbil = new LinBil(x0, x1, y);
+      x0x1Funs_.insert(linbil);
+    }
   } else {
     nlf = newcon->getNonlinearFunction();
     lf  = newcon->getLinearFunction();

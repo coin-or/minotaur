@@ -35,6 +35,7 @@
 #include "Presolver.h"
 #include "ProblemSize.h"
 #include "Problem.h"
+#include "QuadHandler.h"
 #include "Relaxation.h"
 #include "ReliabilityBrancher.h"
 #include "SimpleTransformer.h"
@@ -109,6 +110,10 @@ void loadProblem(EnvPtr env, MINOTAUR_AMPL::AMPLInterface* iface,
   env->getLogger()->msgStream(LogInfo) << me 
     << "time used in reading instance = " << std::fixed 
     << std::setprecision(2) << timer->query() << std::endl;
+
+  if (options->findBool("cgtoqf")->getValue()==1) {
+    inst->cg2qf();
+  }
 
   // display the problem
   inst->calculateSize();
@@ -247,7 +252,14 @@ PresolverPtr createPres(EnvPtr env, ProblemPtr p, size_t ndefs,
       lhandler->setPreOptDualFix(true);
     }
 
-    if (!p->isLinear() && 
+    if (!p->isLinear() &&
+         (p->isQP() || p->isQuadratic()) &&
+         true==env->getOptions()->findBool("cgtoqf")->getValue()) {
+      QuadHandlerPtr qhand = (QuadHandlerPtr) new QuadHandler(env, p);
+      handlers.push_back(qhand);
+    }
+
+    if (!(p->isLinear() || p->isQP() || p->isQuadratic()) &&
          true==env->getOptions()->findBool("use_native_cgraph")->getValue() && 
          true==env->getOptions()->findBool("nl_presolve")->getValue() 
          ) {
@@ -266,6 +278,7 @@ PresolverPtr createPres(EnvPtr env, ProblemPtr p, size_t ndefs,
   }
 
   pres = (PresolverPtr) new Presolver(p, env, handlers);
+  pres->standardize();
   return pres;
 }
 
@@ -409,7 +422,7 @@ int main(int argc, char** argv)
 
   // Important to setup AMPL Interface first as it adds several options.
   iface = (MINOTAUR_AMPL::AMPLInterfacePtr) 
-    new MINOTAUR_AMPL::AMPLInterface(env, "mntr-glob");
+    new MINOTAUR_AMPL::AMPLInterface(env, "glob");
 
   // read user-specified options
   env->readOptions(argc, argv);
