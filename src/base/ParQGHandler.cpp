@@ -712,7 +712,10 @@ void ParQGHandler::separate(ConstSolutionPtr sol, NodePtr , RelaxationPtr rel,
 
 void ParQGHandler::solveNLP_()
 {
-  nlpStatus_ = nlpe_->solve();
+#pragma omp critical
+  {
+    nlpStatus_ = nlpe_->solve();
+  }
   ++(stats_->nlpS);
   return;
 }
