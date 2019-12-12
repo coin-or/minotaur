@@ -363,6 +363,9 @@ void setInitialOptions(EnvPtr env)
   env->getOptions()->findBool("presolve")->setValue(true);
   env->getOptions()->findBool("use_native_cgraph")->setValue(true);
   env->getOptions()->findBool("nl_presolve")->setValue(true);
+  env->getOptions()->findString("brancher")->setValue("parRel");
+  env->getOptions()->findString("nlp_engine")->setValue("IPOPT");
+  env->getOptions()->findString("qp_engine")->setValue("None");
 }
 
 
