@@ -30,19 +30,31 @@ SolutionPool::SolutionPool (EnvPtr env, ProblemPtr problem, UInt limit)
   timeBest_(-1),
   timeFirst_(-1)
 {
-  timer_ = env->getTimer();
+  timer_ = env->getTimer(); // should not be deleted.
 }
+
+
+SolutionPool::~SolutionPool()
+{
+  for (std::vector<SolutionPtr>::iterator it=sols_.begin(); it!=sols_.end(); 
+       ++it) {
+    delete *it;
+  }
+}
+
 
 void SolutionPool::addSolution(ConstSolutionPtr solution)
 {
-  // XXX: for now we save only one solution.
-  SolutionPtr newsol = (SolutionPtr) new Solution(solution);
+  SolutionPtr newsol = new Solution(solution);
   ++numSolsFound_;
   if (sols_.size() > 0) {
     if (sols_[0]->getObjValue() > solution->getObjValue()) {
+      delete sols_[0];
       sols_[0] = newsol;
       bestSolution_ = newsol;
       timeBest_ = timer_->query();
+    } else {
+      delete newsol;
     }
   } else {
     sols_.push_back(newsol);
@@ -53,17 +65,11 @@ void SolutionPool::addSolution(ConstSolutionPtr solution)
 }
 
 
-//void SolutionPool::setRootSolution(ConstSolutionPtr solution)
-//{
-  //SolutionPtr newsol = (SolutionPtr) new Solution(solution);
-  //rootSolution_ = newsol;
-//}
-
-
 void SolutionPool::addSolution(const double *x, double obj_value)
 {
-  SolutionPtr solution = (SolutionPtr) new Solution(obj_value, x, problem_);
+  SolutionPtr solution = new Solution(obj_value, x, problem_);
   addSolution(solution);
+  delete solution;
 }
 
 
@@ -71,12 +77,6 @@ SolutionPtr SolutionPool::getBestSolution()
 {
   return bestSolution_;
 }
-
-
-//SolutionPtr SolutionPool::getRootSolution()
-//{
-  //return rootSolution_;
-//}
 
 
 double SolutionPool::getBestSolutionValue() const
@@ -87,16 +87,6 @@ double SolutionPool::getBestSolutionValue() const
     return INFINITY;
   }
 }
-
-
-//double SolutionPool::getRootSolutionValue() const
-//{
-  //if (rootSolution_) {
-    //return rootSolution_->getObjValue();
-  //} else {
-    //return INFINITY;
-  //}
-//}
 
 
 UInt SolutionPool::getNumSols() const

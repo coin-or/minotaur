@@ -57,7 +57,6 @@ bool PerspCon::boundBinVar(ConstraintPtr cons, VariablePtr& binvar)
 {
   int error = 0;
   double cu, act = 0;
-  ConstVariablePtr var;
   VariableGroup lVarFixVal, nlVarFixVal;
   bool nboundsok = false, lboundsok = true;
   

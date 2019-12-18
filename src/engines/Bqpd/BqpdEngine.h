@@ -109,10 +109,10 @@ namespace Minotaur {
     EngineStatus getStatus();
 
     // Implement Engine::getWarmStart(). // NULL for now.
-    ConstWarmStartPtr getWarmStart() {return WarmStartPtr(); }; 
+    ConstWarmStartPtr getWarmStart() {return 0; }; 
 
     // Implement Engine::getWarmStartCopy(). // NULL for now.
-    WarmStartPtr getWarmStartCopy() {return WarmStartPtr(); };
+    WarmStartPtr getWarmStartCopy() {return 0; };
 
     /// Method to read the problem and initialize bqpd.
     void load(ProblemPtr problem);
@@ -131,6 +131,9 @@ namespace Minotaur {
 
     // Implement Engine::setIterationLimit().
     void setIterationLimit(int limit);
+
+    // Implement Engine::setDualObjLimit().
+    int setDualObjLimit(double) {return 1;};
 
     /// Solve the problem that was loaded and report the status.
     EngineStatus solve();

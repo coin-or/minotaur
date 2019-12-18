@@ -12,13 +12,13 @@
 
 #include <cmath>
 #include <iostream>
-#include <omp.h>
 
 #include "MinotaurConfig.h"
 #include "Branch.h"
 #include "Modification.h"
 #include "Node.h"
 #include "Relaxation.h"
+#include "WarmStart.h"
 
 using namespace Minotaur;
 using namespace std;
@@ -57,8 +57,15 @@ Node::Node(NodePtr parentNode, BranchPtr branch)
 
 Node::~Node()
 {
+  removeWarmStart();
   if (branch_) {
     delete branch_;
+  }
+  for (ModificationConstIterator it=pMods_.begin(); it!=pMods_.end(); ++it) {
+    delete *it;
+  }
+  for (ModificationConstIterator it=rMods_.begin(); it!=rMods_.end(); ++it) {
+    delete *it;
   }
   pMods_.clear();
   rMods_.clear();
@@ -125,24 +132,29 @@ void Node::applyRModsTrans(RelaxationPtr rel)
         ++mod_iter) {
       mod = *mod_iter;
       //convert modifications applicable for other relaxation to this one
-//#pragma omp critical
-      //{
-      //std::cout << "Node " << id_ << " thread " << omp_get_thread_num() << " mod " << std::endl;
-      //mod->write(std::cout);
       pmod1 = mod->fromRel(rel, p);
-      mod2 = pmod1->toRel(p, rel);
-      mod2->applyToProblem(rel);
-      //std::cout << " mod2 " << std::endl;
-      //mod2->write(std::cout);
-      //}
+      if (pmod1) {
+        mod2 = pmod1->toRel(p, rel);
+        mod2->applyToProblem(rel);
+        delete mod2; mod2 = 0;
+      } else {
+        mod->applyToProblem(rel);
+      }
+      delete pmod1; pmod1 = 0;
     }
   }
   // now apply any other mods that were added while processing it.
   for (mod_iter=rMods_.begin(); mod_iter!=rMods_.end(); ++mod_iter) {
     mod = *mod_iter;
     pmod1 = mod->fromRel(rel, p);
-    mod2 = pmod1->toRel(p, rel);
-    mod2->applyToProblem(rel);
+    if (pmod1) {
+      mod2 = pmod1->toRel(p, rel);
+      mod2->applyToProblem(rel);
+      delete mod2; mod2 = 0;
+    } else {
+      mod->applyToProblem(rel);
+    }
+    delete pmod1; pmod1 = 0;
   }
 }
 
@@ -172,6 +184,19 @@ void Node::removeParent()
 }
 
 
+void Node::removeWarmStart()
+{ 
+  if (ws_) {
+    assert(ws_->getUseCnt()>0);
+    ws_->decrUseCnt();
+    if (0==ws_->getUseCnt()) {
+      delete ws_;
+    }
+  }
+  ws_ = 0;
+}
+
+
 void Node::setDepth(UInt depth)
 {
   depth_ = depth;
@@ -192,7 +217,13 @@ void Node::setLb(double value)
 
 void Node::setWarmStart (WarmStartPtr ws) 
 { 
+  if (ws) {
   ws_ = ws; 
+  ws_->incrUseCnt();
+  } else {
+    removeWarmStart();
+    ws_ = 0;
+  }
 }
 
 
@@ -269,8 +300,14 @@ void Node::undoRModsTrans(RelaxationPtr rel)
     mod = *mod_iter;
     //converting modifications applicable for one relaxation to another
     pmod1 = mod->fromRel(rel, p);
-    mod2 = pmod1->toRel(p, rel);
-    mod2->undoToProblem(rel);
+    if (pmod1) {
+      mod2 = pmod1->toRel(p, rel);
+      mod2->undoToProblem(rel);
+      delete mod2; mod2 = 0;
+    } else {
+      mod->undoToProblem(rel);
+    }
+    delete pmod1; pmod1 = 0;
   }
 
   // now undo the mods that were used to create this node from its parent.
@@ -279,8 +316,14 @@ void Node::undoRModsTrans(RelaxationPtr rel)
         ++mod_iter) {
       mod = *mod_iter;
       pmod1 = mod->fromRel(rel, p);
-      mod2 = pmod1->toRel(p, rel);
-      mod2->undoToProblem(rel);
+      if (pmod1) {
+        mod2 = pmod1->toRel(p, rel);
+        mod2->undoToProblem(rel);
+        delete mod2; mod2 = 0;
+      } else {
+        mod->undoToProblem(rel);
+      }
+      delete pmod1; pmod1 = 0;
     }
   }
 }

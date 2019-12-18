@@ -919,6 +919,12 @@ EngineStatus FilterSQPEngine::solve()
       std::copy(initial_point, initial_point+m, lam_+n);
     }
     initial_point = warmSt_->getPoint()->getPrimal();
+    if (initial_point) {
+      std::copy(initial_point, initial_point + n, x_);
+    } else {
+      std::fill(x_, x_+n, 0.);
+    }
+    std::fill(lam_, lam_+m+n, 0.);
     ifail = 0; 
     //if (consChanged_==false) {
     //  ifail = 0; // should be -1 for warm starting?
@@ -926,14 +932,12 @@ EngineStatus FilterSQPEngine::solve()
     //  ifail = 0; 
     //}
   } else {
-    initial_point = problem_->getInitialPoint();
+    double* xp = x_;
+    for (VariableConstIterator vit=problem_->varsBegin();
+         vit!=problem_->varsEnd(); ++vit, ++xp) {
+      *xp = (*vit)->getInitVal();
+    }
     std::fill(lam_, lam_+m+n, 0.);
-  }
-
-  if (initial_point) {
-    std::copy(initial_point, initial_point + n, x_);
-  } else {
-    std::fill(x_, x_+n, 0.);
   }
 
   // reload bounds if necessary

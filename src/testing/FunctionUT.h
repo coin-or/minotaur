@@ -53,7 +53,6 @@ private:
   LinearFunctionPtr lf1_;
   QuadraticFunctionPtr qf1_;
   QuadraticFunctionPtr qf2_;
-  NonlinearFunctionPtr nlf1_;
   std::vector<VariablePtr> vars_;
 
 };

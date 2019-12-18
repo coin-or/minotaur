@@ -165,7 +165,7 @@ void AMPLInterface::addLinearTermsFromConstr_(Minotaur::LinearFunctionPtr & lf,
     }
   }
   if (lf->getNumTerms()==0) {
-    //lf.reset();
+    delete lf;
     lf = 0;
   }
 }
@@ -187,8 +187,7 @@ void AMPLInterface::addLinearTermsFromObj_(Minotaur::LinearFunctionPtr & lf,
     }
   }
   if (lf->getNumTerms()==0) {
-    //lf.reset();
-    lf = 0;
+    delete lf; lf = 0;
   }
 }
 
@@ -720,8 +719,8 @@ Minotaur::ProblemPtr AMPLInterface::copyInstanceFromASL2_()
   start_index = 0;
   stop_index = myAsl_->i.nlc_ - myAsl_->i.nlnc_;
   for (Minotaur::UInt i=start_index; i<stop_index; ++i) {
-    cgraph = (Minotaur::CGraphPtr) new Minotaur::CGraph();
-    lf = (Minotaur::LinearFunctionPtr) new Minotaur::LinearFunction();
+    cgraph = new Minotaur::CGraph();
+    lf = new Minotaur::LinearFunction();
     addLinearTermsFromConstr_(lf, i);
     constraint_cde = asl_fg->I.con_de_+i;
     cnode = getCGraph_(constraint_cde->e, cgraph, instance);
@@ -797,7 +796,6 @@ Minotaur::ProblemPtr AMPLInterface::copyInstanceFromASL2_()
 
   return instance;
 }
-
 
 void AMPLInterface::createFunctionMap_()
 {
@@ -1828,6 +1826,15 @@ void AMPLInterface::getPoly_(Minotaur::LinearFunctionPtr & lfPtr,
        pfPtr->add(pfPtr2);
        c += c2;
        ++ep;
+       if (lfPtr2) {
+         delete lfPtr2; lfPtr2 = 0;
+       }
+       if (qfPtr2) {
+         delete qfPtr2; qfPtr2 = 0;
+       }
+       if (pfPtr2) {
+         delete pfPtr2; pfPtr2 = 0;
+       }
      }
      if (lfPtr->getNumTerms() == 0) {
        delete lfPtr; lfPtr = 0;
@@ -2101,7 +2108,7 @@ Minotaur::ProblemPtr AMPLInterface::readInstance(std::string fname)
 Minotaur::ProblemPtr AMPLInterface::readInstanceASL_(std::string fname) 
 {
   Minotaur::ProblemType problem_type = Minotaur::OtherProblemType;
-  Minotaur::ProblemPtr instance;
+  Minotaur::ProblemPtr instance = 0;
   std::vector<std::set<int> > vars;
   bool do_poly = env_->getOptions()->findBool("expand_poly")->getValue();
 
@@ -2214,7 +2221,6 @@ Minotaur::ProblemPtr AMPLInterface::readInstanceCG_(std::string fname)
   //instance->write(std::cout);
   return instance;
 }
-
 
 void AMPLInterface::saveNlVars_(std::vector<std::set<int> > &vars)
 {

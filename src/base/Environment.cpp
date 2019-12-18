@@ -196,7 +196,12 @@ void Environment::createDefaultOptions_()
   options_->insert(b_option);
 
   b_option = (BoolOptionPtr) new Option<bool>("oa_use_solutions",
-      "Should use other solutions to add cuts: <0/1>",
+      "If true, use feasible solutions to generate OA cuts: <0/1>",
+      true, false);
+  options_->insert(b_option);
+
+  b_option = (BoolOptionPtr) new Option<bool>("oa_use_mip_starts",
+      "If true, use MIP starts from the previous solve: <0/1>",
       true, false);
   options_->insert(b_option);
 
@@ -234,12 +239,16 @@ void Environment::createDefaultOptions_()
       true, false);
   options_->insert(b_option);
 
+  b_option = (BoolOptionPtr) new Option<bool>("root_genLinScheme1", 
+      "Rounds of extra linearizations to be added at root node under gen scheme 1: <0/1>", true, false);
+  options_->insert(b_option);
+
+  //b_option = (BoolOptionPtr) new Option<bool>("root_genLinScheme2", 
+      //"Rounds of extra linearizations to be added at root node under gen scheme 2: <0/1>", true, false);
+  //options_->insert(b_option);
+
   // reset, so that we don't accidently add it again.
   b_option = 0;
-
-  b_option = (BoolOptionPtr) new Option<bool>("root_linScheme2", 
-      "Add linearization by warm-starting NLP at root LP solution", true, false);
-  options_->insert(b_option);
 
   // int options
   i_option = (IntOptionPtr) new Option<int>("bnb_node_limit", 
@@ -317,7 +326,8 @@ void Environment::createDefaultOptions_()
   options_->insert(i_option);
 
   i_option = (IntOptionPtr) new Option<int>("msbnb_restarts",
-      "Number of restarts to improve the initial point in MsProcessor: >=0", true, 3);
+      "Number of restarts to improve the initial point in MsProcessor: >=0",
+      true, 3);
   options_->insert(i_option);
 
   i_option = (IntOptionPtr) new Option<int>("oa_iter_limit",
@@ -420,8 +430,17 @@ void Environment::createDefaultOptions_()
       "Threshold for slope change in root linearization scheme 2", true, 0);
   options_->insert(d_option);
 
+  d_option = (DoubleOptionPtr) new Option<double>("root_linGenScheme2_per", 
+      "Threshold for slope change in root linearization gen scheme 2", true, 0);
+  options_->insert(d_option);
+
+
   d_option = (DoubleOptionPtr) new Option<double>("root_linScheme2_nbhSize", 
       "Neighborhood size for root linearization scheme 2", true, 10);
+  options_->insert(d_option);
+
+  d_option = (DoubleOptionPtr) new Option<double>("maxVioPer", 
+      "Percentage above which constraint violation is unacceptable", true, 0);
   options_->insert(d_option);
 
   d_option = 0;

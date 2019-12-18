@@ -19,7 +19,6 @@ using namespace Minotaur;
 NLPRelaxation::NLPRelaxation()
   : originalProblem_(ProblemPtr()) // NULL
 {
-  initialPt_ = 0;
   jacobian_ = JacobianPtr();
   hessian_ = HessianOfLagPtr();
   logger_ = LoggerPtr();

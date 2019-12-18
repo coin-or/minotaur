@@ -130,6 +130,9 @@ namespace Minotaur {
     // Implement Engine::setIterationLimit().
     void setIterationLimit(int);
 
+    // Implement Engine::setDualObjLimit().
+    int setDualObjLimit(double) {return 1;};
+
     // Implement Engine::setTimeLimit().
     void setTimeLimit(double);
 
@@ -151,8 +154,11 @@ namespace Minotaur {
                          STOAHandlerPtr stoa_hand,
                          SolveStatus* solveStatus);
 
-    /// Writes an LP file of the loaded LP.
+    /// Writes an LP file of the loaded problem.
     void writeLP(const char *filename) const;
+
+    /// Writes an LP file in the directory of problem file.
+    void writeLP();
 
     /// Write statistics.
     void writeStats(std::ostream &out) const;
@@ -189,6 +195,9 @@ namespace Minotaur {
     /// The maximum limit that can be set on the solver. 
     int maxIterLimit_;
 
+    /// String name for mip starts file.
+    std::string mipStartFile_;
+
     /// String name used in log messages.
     static const std::string me_;
 
@@ -206,6 +215,9 @@ namespace Minotaur {
 
     /// Timer for solves. 
     Timer *timer_;
+
+    /// Whether MIP Starts should be saved
+    bool writeMipStarts_;
 
     /// Actually load the problem. Called before _every_ solve.
     void load_();

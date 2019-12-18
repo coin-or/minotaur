@@ -121,10 +121,10 @@ namespace Ipopt {
     Minotaur::ProblemPtr problem_;
 
     /**
-     * The final solution obtained from Ipopt. It is not clear from the
-     * documentation of Ipopt that the final solution it sends in
-     * finalize_solution above is not freed immediately after that function.
-     * Hence we need to copy the solution.
+     * The final solution obtained from Ipopt. We copy the solution from
+     * Ipopt and not merely keep a pointer. The allocation and freeing of this
+     * pointer is managed by IpoptEngine class. The size and allocation is not
+     * changed within IpoptFunInterface
      */
     Minotaur::IpoptSolPtr sol_;
   };

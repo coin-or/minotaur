@@ -16,7 +16,6 @@
 CPPUNIT_TEST_SUITE_REGISTRATION(TransformerUT);
 CPPUNIT_TEST_SUITE_NAMED_REGISTRATION(TransformerUT, "TransformerUT");
 
-using namespace boost;
 using namespace Minotaur;
 using namespace std;
 

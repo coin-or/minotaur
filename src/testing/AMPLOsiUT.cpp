@@ -28,10 +28,10 @@ using namespace Minotaur;
 
 void AMPLOsiUT::setUp()
 {
-  EnvPtr env = (EnvPtr) new Environment();
-  env->setLogLevel(LogNone);
-  iface_ = (MINOTAUR_AMPL::AMPLInterfacePtr) new AMPLInterface(env);
-  engine_ptr_ = (OsiLPEnginePtr) new OsiLPEngine(env);
+  env_ = (EnvPtr) new Environment();
+  env_->setLogLevel(LogNone);
+  iface_ = (MINOTAUR_AMPL::AMPLInterfacePtr) new AMPLInterface(env_);
+  engine_ptr_ = (OsiLPEnginePtr) new OsiLPEngine(env_);
 }
 
 
@@ -39,6 +39,7 @@ void AMPLOsiUT::tearDown()
 {
   delete engine_ptr_;
   delete iface_;
+  delete env_;
 }
 
 
@@ -69,6 +70,8 @@ void AMPLOsiUT::testOsiLP()
   CPPUNIT_ASSERT(engine_ptr_->getStatus() == ProvenOptimal);
   CPPUNIT_ASSERT(fabs(engine_ptr_->getSolutionValue()+2.0) < 1e-5);
 
+  delete inst;
+
 }
 
 
@@ -85,6 +88,7 @@ void AMPLOsiUT::testOsiLP2()
   CPPUNIT_ASSERT(status == ProvenInfeasible);
   CPPUNIT_ASSERT(engine_ptr_->getStatus() == ProvenInfeasible);
  
+  delete inst;
 }
 
 
@@ -155,9 +159,14 @@ void AMPLOsiUT::testOsiBnB()
   bab->solve();
   CPPUNIT_ASSERT(bab->getUb() == 1.0);
 
+  delete v_hand;
+  delete l_hand;
   delete e;
   delete p;
+  delete nproc;
+  delete nr;
   delete bab;
+  delete env;
 }
 
 // Local Variables: 

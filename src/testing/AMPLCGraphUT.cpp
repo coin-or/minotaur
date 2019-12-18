@@ -20,7 +20,6 @@
 
 CPPUNIT_TEST_SUITE_REGISTRATION(AMPLCGraphUT);
 CPPUNIT_TEST_SUITE_NAMED_REGISTRATION(AMPLCGraphUT, "AMPLCGraphUT");
-using namespace boost;
 using namespace MINOTAUR_AMPL;
 using namespace std;
 
@@ -64,7 +63,6 @@ void AMPLCGraphUT::tearDown()
 
 void AMPLCGraphUT::testAllFuns()
 {
-  Minotaur::JacobianPtr jac;
   Minotaur::HessianOfLagPtr hess;
   Minotaur::EnvPtr env = new Minotaur::Environment();
   AMPLInterfacePtr iface;
@@ -77,7 +75,6 @@ void AMPLCGraphUT::testAllFuns()
 
   CPPUNIT_ASSERT(inst->getNumVars() == 74);
   inst->setNativeDer();
-  jac = inst->getJacobian();
   hess = inst->getHessian();
   CPPUNIT_ASSERT(hess->getNumNz() == 115);
 
@@ -451,8 +448,6 @@ void AMPLCGraphUT::testObjective()
 {
   Minotaur::ObjectivePtr oPtr;
   std::string oName;
-  Minotaur::NonlinearFunctionPtr nlfPtr;
-  Minotaur::QuadraticFunctionPtr qfPtr;
   Minotaur::EnvPtr env = new Minotaur::Environment();
   Minotaur::ProblemPtr inst;
   AMPLInterface *iface;
@@ -474,9 +469,6 @@ void AMPLCGraphUT::testObjective()
     CPPUNIT_ASSERT(oName == "obj");
 
     // test eval
-    nlfPtr = oPtr->getNonlinearFunction();
-    //CPPUNIT_ASSERT(!nlfPtr); // nlfPtr is NULL
-    //qfPtr = oPtr->getQuadraticFunction();
     CPPUNIT_ASSERT(oPtr->getFunction()->eval(y, &error) == 20);
     CPPUNIT_ASSERT(oPtr->getFunction()->eval(z, &error) == 11);
   }
@@ -506,6 +498,7 @@ void AMPLCGraphUT::testObjectiveGradient()
   // acually calculated values for just the quadratic parts
   double gradient[5] = {0, 0, 0, 0, 0};
   Minotaur::EnvPtr env = new Minotaur::Environment();
+  env->setLogLevel(Minotaur::LogError);
   Minotaur::ProblemPtr inst;
   AMPLInterface *iface;
 

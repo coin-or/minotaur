@@ -10,7 +10,7 @@
  * \author Ashutosh Mahajan, Argonne National Laboratory
  */
 
-#include <cassert>
+#include <algorithm>
 #include <cmath>
 
 #include "MinotaurConfig.h"

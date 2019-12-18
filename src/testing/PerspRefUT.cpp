@@ -45,6 +45,8 @@ void PerspRefUT::iterative()
   val = p->eval(a, &err);
   CPPUNIT_ASSERT(err == 0); 
   CPPUNIT_ASSERT(fabs(val-16.0) < 1e-4); 
+
+  delete p;
 }
 
 

@@ -26,13 +26,13 @@
 namespace Minotaur {
 
 struct OAStats {
-  size_t milpS;      /// Number of milps solved.
+  size_t cuts;      /// Number of cuts added to the MILP.
   size_t nlpS;      /// Number of nlps solved.
   size_t nlpF;      /// Number of nlps feasible.
   size_t nlpI;      /// Number of nlps infeasible.
   size_t nlpIL;     /// Number of nlps hits engine iterations limit.
+  size_t milpS;      /// Number of milps solved.
   size_t milpIL;     /// Number of milps hits engine iterations limit.
-  size_t cuts;      /// Number of cuts added to the LP.
 }; 
 
 
@@ -141,6 +141,12 @@ public:
                               const DoubleVector &, ModVector &,
                               BrVarCandSet &, BrCandVector &, bool &) {};
 
+  std::vector<ConstraintPtr> getNonlinCons() {return nlCons_;}
+
+  VariablePtr getObjVar() {return objVar_;}
+
+  bool getObjType() { return oNl_;}
+
   /// Returns the MILP engine.
   MILPEnginePtr getMILPEngine() {return milpe_;};
 
@@ -195,6 +201,18 @@ public:
   // Show statistics.
   void writeStats(std::ostream &out) const;
 
+  /// Set the nonlinear constraints
+  void setNonlinCons(std::vector<ConstraintPtr> nlCons) {nlCons_ = nlCons;}
+
+  void setObjVar(VariablePtr objvar) {objVar_ = objvar;}
+
+  void setObjType(bool oNl) {oNl_ = oNl;}
+
+  void setRelaxation(RelaxationPtr rel) {rel_ = rel;}
+
+  /// Set the relaxation
+  void setRelObj(double val) {relobj_ = val;}
+
 private:
   /**
    * Find the linearization of nonlinear functions at point x* and add
@@ -243,17 +261,21 @@ private:
    */
   void cutToCons_(const double *nlpx, const double *lpx, CutManager *,
                     SeparationStatus *status);
-  
+
+  void cutToConsInf_(const double *nlpx, const double *lpx, CutManager *,
+                    SeparationStatus *status);
+
   /// Add OA cut to a violated constraint.   
   void addCut_(const double *nlpx, const double *lpx, ConstraintPtr con, 
                CutManager *cutman, SeparationStatus *status);
-  
 
-  void consCutAtLpSol_(const double *lpx, CutManager *cutman,
+  void addCutInf_(ConstraintPtr con, const double *nlpx, const double *lpx, 
+               CutManager *cutman, SeparationStatus *status);
+
+  /// OA cut at the LP solution
+  void cutsAtLpSol_(const double *lpx, CutManager *cutman,
                     SeparationStatus *status);
 
-  void objCutAtLpSol_(const double *lpx, CutManager *cutman,
-                    SeparationStatus *status);
 
   /**
    * Check if objective is violated at the LP solution and
@@ -262,7 +284,7 @@ private:
   void cutToObj_(const double *nlpx, const double *lpx, CutManager *,
                    SeparationStatus *status);
 
-  /**
+   /**
    * Create the initial relaxation. It is called from relaxInitFull and
    * relaxInitInc functions.
    */
@@ -278,7 +300,7 @@ private:
    * Update the upper bound. XXX: Needs proper integration with
    * Minotaur's Handler design. 
    */
-  void updateUb_(SolutionPoolPtr s_pool, double *nlp_val, bool *sol_found);
+  void updateUb_(SolutionPoolPtr s_pool, double nlp_val, bool *sol_found);
 
   };
 

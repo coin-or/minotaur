@@ -10,7 +10,7 @@
  * \author Ashutosh Mahajan, Argonne National Laboratory
  */
 
-#include <cassert>
+#include <algorithm>
 #include <cmath>
 #include <ios>
 #include <iomanip>
@@ -41,7 +41,6 @@ Problem::Problem()
   consModed_(false),
   engine_(0),
   hessian_(0),
-  initialPt_(0), 
   jacobian_(0),
   nativeDer_(false),
   nextCId_(0),
@@ -102,17 +101,14 @@ Problem::~Problem()
     delete logger_;
   }
 
-  delete obj_;
-  obj_ = 0;
+  if (obj_) {
+    delete obj_;
+  }
 
   vars_.clear();
   cons_.clear();
   sos1_.clear();
   sos2_.clear();
-
-  if (initialPt_) {
-    delete [] initialPt_;
-  }
 }
 
 
@@ -403,6 +399,7 @@ ProblemPtr Problem::clone() const
     v->setSrcType(cv->getSrcType());
     v->setFunType_(cv->getFunType());
     v->setId_(cv->getId());
+    v->setInitVal_(cv->getInitVal());
   }
   
   vit0 = clonePtr->varsBegin();
@@ -438,18 +435,12 @@ ProblemPtr Problem::clone() const
                            oPtr->getObjectiveType(), oPtr->getName()); 
   } 
 
-  // Now clone everything else...
-  if (initialPt_) {
-    clonePtr->initialPt_= new double[vars_.size()];
-    std::copy(initialPt_, initialPt_+vars_.size(), clonePtr->initialPt_);
-  }
-
   clonePtr->jacobian_  = JacobianPtr(); // NULL.
   clonePtr->nextCId_   = nextCId_;
   clonePtr->nextSId_   = nextSId_;
   clonePtr->nextVId_   = nextVId_;
   clonePtr->hessian_   = HessianOfLagPtr(); // NULL.
-  clonePtr->logger_    = (LoggerPtr) new Logger(logger_->getMaxLevel());
+  clonePtr->logger_->setMaxLevel(logger_->getMaxLevel());
   clonePtr->numDVars_  = numDVars_;	
   clonePtr->numDCons_  = numDCons_;	
   clonePtr->engine_    = 0;
@@ -538,6 +529,7 @@ ProblemPtr Problem::shuffle(bool varshuff, bool conshuff)
         v->setFunType_(cv->getFunType());
         v->setId_(i);
         v->setIndex_(i);
+        v->setInitVal_(cv->getInitVal());
         i=i+1;
     }
 
@@ -593,6 +585,7 @@ ProblemPtr Problem::shuffle(bool varshuff, bool conshuff)
       v->setSrcType(cv->getSrcType());
       v->setFunType_(cv->getFunType());
       v->setId_(cv->getId());
+      v->setInitVal_(cv->getInitVal());
     }
     
     vit0 = newp->vars_.begin();
@@ -656,16 +649,6 @@ ProblemPtr Problem::shuffle(bool varshuff, bool conshuff)
   // }
 
   // Now clone everything else...
-  logger_->msgStream(LogError) << me_ << "Warning: "
-                               << "Initial point not impemented in shuffle()"
-                               << std::endl;
-  if (initialPt_) {
-    newp->initialPt_= new double[vars_.size()];
-    if (varshuff==1){std::random_shuffle(initialPt_, initialPt_+vars_.size());
-    std::copy(initialPt_, initialPt_+vars_.size(), newp->initialPt_);}
-    else{std::copy(initialPt_, initialPt_+vars_.size(), newp->initialPt_);}
-  }
-
   newp->jacobian_  = JacobianPtr(); // NULL.
   newp->nextCId_   = nextCId_;
   newp->nextSId_   = nextSId_;
@@ -1105,7 +1088,8 @@ ProblemType Problem::findType()
     return (size_->bins+size_->ints > 0) ? MIQP : QP;
 
   } else if (size_->cons == size_->linCons+size_->bilinCons+size_->quadCons &&
-             (Quadratic == size_->objType || Bilinear == size_->objType)) {
+             (Quadratic == size_->objType || Bilinear == size_->objType
+              || Linear == size_->objType || Constant == size_->objType)) {
     return (size_->bins+size_->ints > 0) ? MIQCQP : QCQP;
   } else if (isPolyp_()) {
     return (size_->bins+size_->ints > 0) ? MIPOLYP : POLYP;
@@ -1480,6 +1464,9 @@ ObjectivePtr Problem::newObjective(FunctionPtr f, double cb,
   assert(engine_ == 0 ||
       (!"Cannot add objective after loading problem to engine\n")); 
 
+  if (obj_) {
+    delete obj_; obj_ = 0;
+  }
   obj_ = new Objective(f, cb, otyp, name);
   consModed_ = true;
   return obj_;
@@ -1553,8 +1540,7 @@ VariablePtr Problem::newVariable(double lb, double ub, VariableType vtype,
 {
   assert(engine_ == 0 ||
       (!"Cannot add variables after loading problem to engine\n")); 
-  VariablePtr v;
-  v = (VariablePtr) new Variable(nextVId_, vars_.size(), lb, ub, vtype, name);
+  VariablePtr v = new Variable(nextVId_, vars_.size(), lb, ub, vtype, name);
   v->setSrcType(stype);
   ++nextVId_;
   vars_.push_back(v);
@@ -1584,7 +1570,7 @@ void Problem::objToCons()
     assert(!"No objective function in the problem!");
   } else if (obj_->getFunctionType() != Linear &&
              obj_->getFunctionType() != Constant) {
-    FunctionPtr fold, fnew;
+    FunctionPtr fold = 0, fnew = 0;
     double objCons = obj_->getConstant();
     ObjectiveType objType = obj_->getObjectiveType();
     LinearFunctionPtr lf = obj_->getLinearFunction();
@@ -1670,22 +1656,6 @@ void Problem::resetDer()
   hessian_   = HessianOfLagPtr(); // NULL.
 }
 
-void Problem::resetInitialPoint(UInt newvar) 
-{
-  if (newvar != 0) {
-   double *x = new double[vars_.size()];
-   UInt ov = vars_.size()- newvar;
-   std::copy(initialPt_, initialPt_+ov, x);
-   for (UInt i = ov; i<vars_.size(); ++i){
-      x[i] = 0; 
-   }
-  delete [] initialPt_;
-  initialPt_ = 0; 
-  setInitialPoint(x);
-  delete [] x;
-  }  
-}
-
 
 void Problem::reverseSense(ConstraintPtr cons) 
 {
@@ -1717,38 +1687,42 @@ void Problem::setIndex_(VariablePtr v, UInt i)
 
 void Problem::setInitialPoint(const double *x) 
 {
-  // if x is null or if there are no variables, do nothing.
+  const double* xp = x;
   if (!x || vars_.size() == 0) {
     return;
   }
 
-  // if initial point hasnt been set before, allocate memory. otherwise just
-  // use the old space.
-  if (!initialPt_) {
-    initialPt_ = new double[vars_.size()];
+  for (VariableIterator viter=vars_.begin(); viter!=vars_.end();
+       ++viter, ++xp) {
+    (*viter)->setInitVal_(*xp);
   }
-
-  // copy
-  std::copy(x, x+vars_.size(), initialPt_);
- }
+}
 
 
 void Problem::setInitialPoint(const double *x, size_t k) 
 {
-  // if x is null or if there are no variables, do nothing.
+  const double* xp = x;
+  VariableIterator viter=vars_.begin();
+
   if (!x || vars_.size() == 0) {
     return;
   }
 
-  // if initial point hasnt been set before, allocate memory. otherwise just
-  // use the old space.
-  if (!initialPt_) {
-    initialPt_ = new double[vars_.size()];
+  for (size_t i=0; i<k; ++viter, ++xp, ++i) {
+    (*viter)->setInitVal_(*xp);
   }
+}
 
-  // copy
-  std::copy(x, x+k, initialPt_);
-  std::fill(initialPt_+k, initialPt_+vars_.size(), 0.);
+
+void Problem::setInitVal(VariablePtr v, double val) 
+{
+  v->setInitVal_(val);
+}
+
+
+void Problem::setInitValByInd(UInt ind, double val) 
+{
+  vars_[ind]->setInitVal_(val);
 }
 
 

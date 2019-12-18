@@ -24,35 +24,46 @@
 using namespace Minotaur;
 
 Objective::Objective() 
+: cb_(0),
+  otyp_(Minimize),
+  state_(NormalObj) 
 {
 }
 
 
 Objective::Objective(double cb, ObjectiveType otyp)
-  : cb_(cb), 
-    otyp_(otyp), 
-    state_(NormalObj) 
+: cb_(cb), 
+  otyp_(otyp), 
+  state_(NormalObj) 
 {
 }
 
 
 Objective::Objective(FunctionPtr fPtr, double cb, ObjectiveType otyp)
-  : cb_(cb),
-    otyp_(otyp),
-    state_(NormalObj),
-    f_(fPtr)
+: cb_(cb),
+  otyp_(otyp),
+  state_(NormalObj),
+  f_(fPtr)
 {
 }
 
 
 Objective::Objective(FunctionPtr fPtr, double cb, ObjectiveType otyp, 
     std::string name)
-  : cb_(cb),
-    otyp_(otyp),
-    state_(NormalObj),
-    f_(fPtr),
-    name_(name)
+: cb_(cb),
+  otyp_(otyp),
+  state_(NormalObj),
+  f_(fPtr),
+  name_(name)
 {
+}
+
+
+Objective::~Objective()
+{
+  if (f_) {
+    delete f_;
+  }
 }
 
 

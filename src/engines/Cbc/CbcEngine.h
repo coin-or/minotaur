@@ -119,6 +119,9 @@ namespace Minotaur {
     // Implement Engine::setIterationLimit().
     void setIterationLimit(int limit);
 
+    // Implement Engine::setDualObjLimit().
+    int setDualObjLimit(double) {return 1;};
+
     // base class method
     void setTimeLimit(double);
 

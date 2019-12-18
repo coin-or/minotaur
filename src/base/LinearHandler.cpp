@@ -233,6 +233,27 @@ SolveStatus LinearHandler::presolve(PreModQ *pre_mods, bool *changed0)
   }
   
 
+  // In the big loop, we do the following checks.
+  // For each constraint, we do:
+  // 1. checkBounds_
+  // 2. varBndsFromCons_
+  // 3. dupRows_
+  // 4. coeffImp_
+  // For each variable, we do:
+  // 1. checkBounds_
+  // 2. tightenInts_
+  // 3. dualFix_
+  // 4. delFixedVars_
+  // 5. substVars_
+  // 6. chkSing_
+  // We maintain two flags to avoid repeated unnecessary checks: 
+  // 1. For each constraint if c->getBFlag() is true, then check for new
+  // bounds on variables of that constraint
+  // 2. if chkDupRows_ is true then check for duplicate rows. This flag is not
+  // constraint specific. Even if one constraint is changed, all constraints
+  // are checked for duplicacy.
+
+  chkDupRows_ = true;
   for (ConstraintConstIterator c_iter = problem_->consBegin();
        c_iter != problem_->consEnd(); ++c_iter) {
     (*c_iter)->setBFlag(true);
@@ -273,9 +294,10 @@ SolveStatus LinearHandler::presolve(PreModQ *pre_mods, bool *changed0)
       chkSing_(&changed);
       purgeVars_(pre_mods);
     }
-    if (true == pOpts_->purgeCons) {
+    if (true == chkDupRows_ && true == pOpts_->purgeCons) {
       dupRows_(&changed);
       problem_->delMarkedCons();
+      chkDupRows_ = false;
     }
     if (true == pOpts_->coeffImp) coeffImp_(&changed);
     ++(pStats_->iters);
@@ -361,14 +383,18 @@ void LinearHandler::chkSing_(bool *changed)
         }
       }
       if (del_var) {
+#if SPEW
+        logger_->msgStream(LogDebug) << me_ << "variable " << v->getName() 
+                                     << " appears in a single constraint "
+                                     << c->getName() << ". Fixed." 
+                                     << std::endl;
+#endif
+        c->setBFlag(true);
         problem_->changeBound(v, 0.0, 0.0);
         problem_->markDelete(v);
         ++(pStats_->varDel);
         *changed = true;
-#if SPEW
-        logger_->msgStream(LogDebug) << me_ << "variable " << v->getName() 
-                                     << " is a singleton. Fixed." << std::endl;
-#endif
+        chkDupRows_ = true;
       }
     } 
   }
@@ -402,6 +428,7 @@ void LinearHandler::tightenInts_(ProblemPtr p, bool apply_to_prob,
         mod->applyToProblem(p);
         if (apply_to_prob) {
           chkIntToBin_(v);
+          delete mod;
         } else {
           mods->push_back(mod);
 #if SPEW
@@ -416,6 +443,7 @@ void LinearHandler::tightenInts_(ProblemPtr p, bool apply_to_prob,
         changeBFlag_(v);
         if (apply_to_prob) {
           chkIntToBin_(v);
+          delete mod;
         } else {
           mods->push_back(mod);
 #if SPEW
@@ -464,11 +492,11 @@ SolveStatus LinearHandler::varBndsFromCons_(ProblemPtr p, bool apply_to_prob,
                                << std::endl; 
 #endif
 
-  for (ConstraintConstIterator c_iter=p->consBegin(); 
-       c_iter!=p->consEnd(); ++c_iter) {
+  for (ConstraintConstIterator c_iter=p->consBegin(); c_iter!=p->consEnd();
+       ++c_iter) {
     c_ptr = *c_iter;
-    // For-VC: add one more check
-    if (  c_ptr->getBFlag() &&  c_ptr->getFunctionType() == Linear && DeletedCons!=c_ptr->getState()) {
+    if (c_ptr->getBFlag() &&  c_ptr->getFunctionType() == Linear &&
+        DeletedCons!=c_ptr->getState()) {
       t_changed = true;
       c_ptr->setBFlag(false);
       while (true == t_changed) {
@@ -612,14 +640,18 @@ void LinearHandler::coeffImp_(bool *changed)
             // constraint is redundant when x0=1
             assert(a0 < 0);
             lf->incTerm(v, ub-uu-a0);
+            c->setBFlag(true);
             *changed = true;
+            chkDupRows_ = true;
             ++(pStats_->cImp);
             break;
           } else if (ll+a0 > lb+coeftol && ll <= lb) {
             // constraint is redundant when x0=1
             assert(a0 > 0);
             lf->incTerm(v, lb-ll-a0);
+            c->setBFlag(true);
             *changed = true;
+            chkDupRows_ = true;
             ++(pStats_->cImp);
             break;
           } 
@@ -637,7 +669,9 @@ void LinearHandler::coeffImp_(bool *changed)
             assert(a0 > 0);
             lf->incTerm(v, uu-a0-ub);
             problem_->changeBound(c, Upper, uu-a0);
+            c->setBFlag(true);
             *changed = true;
+            chkDupRows_ = true;
             ++(pStats_->cImp);
             break;
           } else if (ll-a0 > lb+coeftol && ll <= lb) {
@@ -645,7 +679,9 @@ void LinearHandler::coeffImp_(bool *changed)
             assert(a0 < 0);
             lf->incTerm(v, ll-a0-lb);
             problem_->changeBound(c, Lower, ll-a0);
+            c->setBFlag(true);
             *changed = true;
+            chkDupRows_ = true;
             ++(pStats_->cImp);
             break;
           }
@@ -730,6 +766,7 @@ void  LinearHandler::computeImpBounds_(ConstraintPtr c, VariablePtr z,
     m2 = mods.top();
     mods.pop();
     m2->undoToProblem(problem_);
+    delete m2;
   }
 }
 
@@ -740,7 +777,7 @@ void LinearHandler::dualFix_(bool *changed)
   ConstraintPtr c;
   double w;
   int dir, cdir;
-  ModificationPtr mod = ModificationPtr(); //null
+  ModificationPtr mod = 0;
   LinearFunctionPtr olf = problem_->getObjective()->getLinearFunction();
 
   findLinVars_();
@@ -817,13 +854,15 @@ void LinearHandler::dualFix_(bool *changed)
         ++(pStats_->vBnd);
       }
     }
-#if SPEW
     if (mod) {
+#if SPEW
       logger_->msgStream(LogDebug) << me_ << "variable " << v->getName() 
                                    << " fixed by dual fixing" << std::endl;
       mod->write(logger_->msgStream(LogDebug));
-    }
 #endif
+      delete mod;
+      mod = 0;
+    }
   }
 }
 
@@ -839,6 +878,11 @@ void LinearHandler::dupRows_(bool *changed)
   DoubleVector h2;
   ConstraintPtr c1, c2;
   bool is_deleted;
+
+#if SPEW
+  logger_->msgStream(LogDebug) << me_ << "searching for duplicate "
+    << "constraints" << std::endl; 
+#endif
 
   r1.reserve(n);
   r2.reserve(n);
@@ -925,16 +969,15 @@ SolveStatus LinearHandler::linBndTighten_(ProblemPtr p, bool apply_to_prob,
       ++(pStats_->conDel);
     }
 
-    // For-VC: Think about it and discuss!
     return Started;
   }
 
-  if (ll > lb+eTol_) {
+  // if (ll > lb+eTol_) {
     // change constraint bounds?
-  } 
-  if (uu < ub-eTol_) {
+  // } 
+  // if (uu < ub-eTol_) {
     // change constraint bounds?
-  }
+  // }
 
   if (ll > ub+eTol_) {
 #if SPEW
@@ -1018,7 +1061,6 @@ void LinearHandler::updateLfBoundsFromLb_(ProblemPtr p, bool apply_to_prob,
         if (nlb > var->getUb()-eTol_) {
           nlb = var->getUb();
         }
-        // For-VC: Call a function in LinearHandler to find all constraints where this variable appears, and mark them true.
         changeBFlag_(var);
         mod = (VarBoundModPtr) new VarBoundMod(var, Lower, nlb);
         mod->applyToProblem(p);
@@ -1032,6 +1074,7 @@ void LinearHandler::updateLfBoundsFromLb_(ProblemPtr p, bool apply_to_prob,
           //std::cout << std::endl;
           chkIntToBin_(var);
           ++(pStats_->vBnd);
+          delete mod;
         } else {
           mods->push_back(mod);
         }
@@ -1053,7 +1096,6 @@ void LinearHandler::updateLfBoundsFromLb_(ProblemPtr p, bool apply_to_prob,
           nub = var->getLb();
         }
 
-        // For-VC: Call a function in LinearHandler to find all constraints where this variable appears, and mark them true.
         changeBFlag_(var);
         mod = (VarBoundModPtr) new VarBoundMod(var, Upper, nub);
         mod->applyToProblem(p);
@@ -1067,6 +1109,7 @@ void LinearHandler::updateLfBoundsFromLb_(ProblemPtr p, bool apply_to_prob,
           //std::cout << std::endl;
           ++(pStats_->vBnd);
           chkIntToBin_(var);
+          delete mod;
         } else {
           mods->push_back(mod);
         }
@@ -1109,7 +1152,6 @@ void LinearHandler::updateLfBoundsFromUb_(ProblemPtr p, bool apply_to_prob,
         if (nub < var->getLb()+eTol_) {
           nub = var->getLb();
         }
-        // For-VC: Call a function in LinearHandler to find all constraints where this variable appears, and mark them true.
         changeBFlag_(var);
         mod = (VarBoundModPtr) new VarBoundMod(var, Upper, nub);
         mod->applyToProblem(p);
@@ -1123,6 +1165,7 @@ void LinearHandler::updateLfBoundsFromUb_(ProblemPtr p, bool apply_to_prob,
           //std::cout << std::endl;
           ++(pStats_->vBnd);
           chkIntToBin_(var);
+          delete mod;
         } else {
           mods->push_back(mod);
         }
@@ -1143,7 +1186,6 @@ void LinearHandler::updateLfBoundsFromUb_(ProblemPtr p, bool apply_to_prob,
         if (nlb > var->getUb()-eTol_) {
           nlb = var->getUb();
         }
-        // For-VC: Call a function in LinearHandler to find all constraints where this variable appears, and mark them true.
         changeBFlag_(var);
         mod = (VarBoundModPtr) new VarBoundMod(var, Lower, nlb);
         mod->applyToProblem(p);
@@ -1157,6 +1199,7 @@ void LinearHandler::updateLfBoundsFromUb_(ProblemPtr p, bool apply_to_prob,
           //std::cout << std::endl;
           ++(pStats_->vBnd);
           chkIntToBin_(var);
+          delete mod;
         } else {
           mods->push_back(mod);
         }
@@ -1170,11 +1213,14 @@ void LinearHandler::updateLfBoundsFromUb_(ProblemPtr p, bool apply_to_prob,
   }
 }
 
-void LinearHandler::changeBFlag_(VariablePtr v){
-  for (ConstrSet::iterator cit=v->consBegin(); cit!=v->consEnd(); ++cit){
+
+void LinearHandler::changeBFlag_(VariablePtr v)
+{
+  for (ConstrSet::iterator cit=v->consBegin(); cit!=v->consEnd(); ++cit) {
     (*cit)->setBFlag(true);
   }
 }
+
 
 void LinearHandler::getLfBnds_(LinearFunctionPtr lf, double *lo, double *up)
 {
@@ -1276,6 +1322,7 @@ void LinearHandler::delFixedVars_(bool *changed)
       problem_->markDelete(v);
       ++(pStats_->varDel);
       *changed = true;
+      chkDupRows_ = true;
 #if SPEW
       logger_->msgStream(LogDebug) << me_ << "fixed variable " 
                                    << v->getName() << " at value "
@@ -1367,7 +1414,7 @@ void LinearHandler::relaxNodeInc(NodePtr, RelaxationPtr, bool *)
 }
 
 
-void LinearHandler::substVars_(bool *, PreModQ *mods)
+void LinearHandler::substVars_(bool *changed, PreModQ *mods)
 {
   ConstraintPtr c;
   LinearFunctionPtr lf;
@@ -1422,10 +1469,12 @@ void LinearHandler::substVars_(bool *, PreModQ *mods)
         if (in->getLb() < out->getLb()) {
           mod = (VarBoundModPtr) new VarBoundMod(in, Lower, out->getLb());
           mod->applyToProblem(problem_);
+          delete mod;
         }
         if (in->getUb() > out->getUb()) {
           mod = (VarBoundModPtr) new VarBoundMod(in, Upper, out->getUb());
           mod->applyToProblem(problem_);
+          delete mod;
         }
 #if SPEW
         logger_->msgStream(LogDebug) << me_ << "substituting " 
@@ -1438,6 +1487,8 @@ void LinearHandler::substVars_(bool *, PreModQ *mods)
         problem_->markDelete(out);
         ++(pStats_->varDel);
         ++(pStats_->conDel);
+        *changed = true;
+        chkDupRows_ = true;
         smod->insert(out, in);
       } else if (v1->getType() == Continuous && v2->getType() == Continuous) {
         double rat = 1.0;
@@ -1461,28 +1512,34 @@ void LinearHandler::substVars_(bool *, PreModQ *mods)
         if (in->getLb() < a1) {
           mod = (VarBoundModPtr) new VarBoundMod(in, Lower, a1);
           mod->applyToProblem(problem_);
+          delete mod;
         }
         if (in->getUb() > a2) {
           mod = (VarBoundModPtr) new VarBoundMod(in, Upper, a2);
           mod->applyToProblem(problem_);
+          delete mod;
         }
-        problem_->subst(out, in, rat);
-        problem_->markDelete(c);
-        problem_->markDelete(out);
-        ++(pStats_->varDel);
-        ++(pStats_->conDel);
-        smod->insert(out, in, rat);
 #if SPEW
         logger_->msgStream(LogDebug) << me_ << "substituting " 
                                      << out->getName() << " in constraint " 
                                      << c->getName() << " by " << in->getName() 
                                      << std::endl;
 #endif
+        problem_->subst(out, in, rat);
+        problem_->markDelete(c);
+        problem_->markDelete(out);
+        ++(pStats_->varDel);
+        ++(pStats_->conDel);
+        *changed = true;
+        chkDupRows_ = true;
+        smod->insert(out, in, rat);
       }  
     }
   }
   if (smod->getSize()>0) {
     mods->push_front(smod);
+  } else {
+    delete smod;
   }
 }
 
@@ -1547,38 +1604,33 @@ void LinearHandler::simplePresolve(ProblemPtr p, SolutionPoolPtr spool,
   timer = env_->getNewTimer();
   timer->start();
 
-  // For-VC: write a for loop over all constraints
-  // c->setTempBool(True);
-  for (ConstraintConstIterator c_iter = p->consBegin();
-       c_iter != p->consEnd(); ++c_iter){
-          c_ptr = *c_iter;
-          c_ptr->setBFlag(true);
-        }
+  for (ConstraintConstIterator c_iter = p->consBegin(); c_iter != p->consEnd();
+       ++c_iter) {
+    c_ptr = *c_iter;
+    c_ptr->setBFlag(true);
+  }
 
-    while (true == changed && iters <= max_iters &&
-           (iters <= min_iters || nintmods > 0) &&
-           status != SolvedInfeasible)
-    {
-      nintmods = 0;
-      changed = false;
-      ++iters;
-      varBndsFromCons_(p, false, &changed, &mods, &nintmods);
-      if (spool && spool->getNumSols() > 0)
-      {
-        varBndsFromObj_(p, spool->getBestSolutionValue(), false, &changed, &mods);
-      }
-      tightenInts_(p, false, &changed, &mods);
-      status = checkBounds_(p);
+  while (true == changed && iters <= max_iters &&
+         (iters <= min_iters || nintmods > 0) &&
+         status != SolvedInfeasible) {
+    nintmods = 0;
+    changed = false;
+    ++iters;
+    varBndsFromCons_(p, false, &changed, &mods, &nintmods);
+    if (spool && spool->getNumSols() > 0) {
+      varBndsFromObj_(p, spool->getBestSolutionValue(), false, &changed, &mods);
     }
+    tightenInts_(p, false, &changed, &mods);
+    status = checkBounds_(p);
+  }
 
-    for (ModQ::const_iterator it = mods.begin(); it != mods.end(); ++it)
-    {
-      t_mods.push_back(*it);
-    }
-    pStats_->nMods += mods.size();
-    pStats_->timeN += timer->query();
+  for (ModQ::const_iterator it = mods.begin(); it != mods.end(); ++it) {
+    t_mods.push_back(*it);
+  }
+  pStats_->nMods += mods.size();
+  pStats_->timeN += timer->query();
 
-    delete timer;
+  delete timer;
 }
 
 
@@ -1651,6 +1703,7 @@ bool LinearHandler::treatDupRows_(ConstraintPtr c1, ConstraintPtr c2,
     lb = (c1->getLb()<lb)?lb:c1->getLb();
     ub = (c1->getUb()<ub)?c1->getUb():ub;
     problem_->changeBound(c1, lb, ub);
+    c1->setBFlag(true);
     problem_->markDelete(c2);
 #if SPEW
     logger_->msgStream(LogDebug) << me_ << "marked constraint " << c2->getName()

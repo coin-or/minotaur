@@ -13,42 +13,47 @@
 #include <iostream>
 #include <fstream>
 #include <sys/time.h>
-
-#include <MinotaurConfig.h>
-#include <AMPLHessian.h>
-#include <AMPLJacobian.h>
-#include <Environment.h>
-#include <Handler.h>
-#include <Option.h>
-#include <Problem.h>
-#include <Engine.h>
-#include <QPEngine.h>
-#include <LPEngine.h>
-#include <Logger.h>
-#include <MILPEngine.h>
+#if USE_OPENMP
+#include <omp.h>
+#else
+#error "Cannot compile parallel algorithms: turn USE_OpenMP flag ON."
+#endif
+#include "MinotaurConfig.h"
+#include "AMPLHessian.h"
+#include "AMPLJacobian.h"
+#include "Environment.h"
+#include "Handler.h"
+#include "Option.h"
+#include "Problem.h"
+#include "Engine.h"
+#include "QPEngine.h"
+#include "LinFeasPump.h"
+#include "LPEngine.h"
+#include "Logger.h"
+#include "MILPEngine.h"
 #include "Modification.h"
-#include <NLPEngine.h>
+#include "NLPEngine.h"
 #include "NlPresHandler.h"
-#include <NodeRelaxer.h>
-#include <NodeIncRelaxer.h>
-#include <MaxVioBrancher.h>
-#include <OAHandler.h>
-#include <ReliabilityBrancher.h>
-#include <AMPLInterface.h>
-#include <BranchAndBound.h>
-#include <PCBProcessor.h>
-#include <Presolver.h>
-#include <Timer.h>
-#include <LexicoBrancher.h>
-#include <Logger.h>
-#include <LinearHandler.h>
-#include <IntVarHandler.h>
-#include <Solution.h>
-#include <SolutionPool.h>
-#include <TreeManager.h>
-#include <EngineFactory.h>
-#include <CxQuadHandler.h>
-#include <Objective.h>
+#include "NodeRelaxer.h"
+#include "NodeIncRelaxer.h"
+#include "MaxVioBrancher.h"
+#include "OAHandler.h"
+#include "ReliabilityBrancher.h"
+#include "AMPLInterface.h"
+#include "BranchAndBound.h"
+#include "PCBProcessor.h"
+#include "Presolver.h"
+#include "Timer.h"
+#include "LexicoBrancher.h"
+#include "Logger.h"
+#include "LinearHandler.h"
+#include "IntVarHandler.h"
+#include "Solution.h"
+#include "SolutionPool.h"
+#include "TreeManager.h"
+#include "EngineFactory.h"
+#include "CxQuadHandler.h"
+#include "Objective.h"
 
 using namespace Minotaur;
 
@@ -66,7 +71,7 @@ void loadProblem(EnvPtr env, MINOTAUR_AMPL::AMPLInterface* iface,
   OptionDBPtr options = env->getOptions();
   JacobianPtr jac;
   HessianOfLagPtr hess;
-  const std::string me("qg: ");
+  const std::string me("oa: ");
 
   timer->start();
   oinst = iface->readInstance(options->findString("problem_file")->getValue());
@@ -217,11 +222,11 @@ PresolverPtr presolve(EnvPtr env, ProblemPtr p, size_t ndefs,
                       HandlerVector &handlers)
 {
   PresolverPtr pres = PresolverPtr(); // NULL
-  const std::string me("qg: ");
+  const std::string me("bnb main: ");
 
   p->calculateSize();
   if (env->getOptions()->findBool("presolve")->getValue() == true) {
-    LinearHandlerPtr lhandler = (LinearHandlerPtr) new LinearHandler(env, p);
+    LinHandlerPtr lhandler = (LinHandlerPtr) new LinearHandler(env, p);
     handlers.push_back(lhandler);
     if (p->isQP() || p->isQuadratic() || p->isLinear() ||
         true==env->getOptions()->findBool("use_native_cgraph")->getValue()) {
@@ -240,9 +245,9 @@ PresolverPtr presolve(EnvPtr env, ProblemPtr p, size_t ndefs,
     }
 
     if (!p->isLinear() && 
-        true==env->getOptions()->findBool("use_native_cgraph")->getValue() && 
-        true==env->getOptions()->findBool("nl_presolve")->getValue() 
-       ) {
+         true==env->getOptions()->findBool("use_native_cgraph")->getValue() &&
+         true==env->getOptions()->findBool("nl_presolve")->getValue()
+         ) {
       NlPresHandlerPtr nlhand = (NlPresHandlerPtr) new NlPresHandler(env, p);
       handlers.push_back(nlhand);
     }
@@ -261,31 +266,12 @@ PresolverPtr presolve(EnvPtr env, ProblemPtr p, size_t ndefs,
   pres->standardize(); 
   if (env->getOptions()->findBool("presolve")->getValue() == true) {
     pres->solve();
+    for (HandlerVector::iterator h=handlers.begin(); h!=handlers.end(); ++h) {
+      (*h)->writeStats(env->getLogger()->msgStream(LogExtraInfo));
+    }
   }
   return pres;
 }
-
-//For separability detection: Check separability if problem is not linear.
-//TransSepPtr sepDetection(EnvPtr env, ProblemPtr p)
-//void sepDetection(EnvPtr env, ProblemPtr p)
-//{
-  //TransSepPtr sep = TransSepPtr();
-  //const std::string me("qg: ");
-
-  //if (env->getOptions()->findBool("separability")->getValue() == true) {
-    //if (p -> isLinear()) {
-      //env ->getLogger()->msgStream(LogInfo) << me
-        //<< "Problem is linear, skipping separability detection" 
-        //<< std::endl;
-    //} else {
-      //sep = (TransSepPtr) new TransSep(env, p);
-      //sep->findSep();
-      //env ->getLogger()->msgStream(LogDebug) << me
-        //<< "Is problem separable? - "<< sep->getStatus() 
-        //<< std::endl;
-    //}
-  //}
-//}
 
 
 double getPerGap(double objLb, double objUb)
@@ -311,7 +297,8 @@ double getPerGap(double objLb, double objUb)
 
 void writeOAStatus(EnvPtr env, double gap, double objLb, double objUb, 
                    double obj_sense, SolveStatus status, UInt iterNum,
-                   double time)
+                   double time, double totSepTime, UInt solsPerIter,
+                   UInt totNumSols)
 {
 
   const std::string me("oa main: ");
@@ -327,6 +314,10 @@ void writeOAStatus(EnvPtr env, double gap, double objLb, double objUb,
     << std::endl
     << me << "gap percentage = " << gap << std::endl
     << me << "iterations = " << iterNum << std::endl
+    << me << "solutions separated = " << totNumSols << std::endl
+    << me << "separation time = " << std::setprecision(2) << totSepTime << std::endl
+    << me << "mean separation time = " << std::setprecision(2)
+    << totSepTime/solsPerIter << std::endl
     << me << "time used (s) = " << std::fixed << std::setprecision(2) 
     //<< env->getTime(err) << std::endl
     << time << std::endl
@@ -398,27 +389,30 @@ int main(int argc, char* argv[])
   OptionDBPtr options;
 
   MINOTAUR_AMPL::AMPLInterfacePtr iface = MINOTAUR_AMPL::AMPLInterfacePtr();
-  ProblemPtr inst;
+  ProblemPtr *inst = 0;
   double obj_sense =1.0, gap = INFINITY;
   double wallTimeStart = getWallTime();
+  UInt numThreads = 0;
   
-  PresolverPtr pres;
-  EngineFactory *efac;
+  PresolverPtr pres = 0;
+  EngineFactory *efac = 0;
   const std::string me("oa: ");
   SolveStatus status;
   //handlers
   HandlerVector handlers;
   LinearHandlerPtr l_hand;
-  OAHandlerPtr oa_hand;
+  OAHandlerPtr *oa_hand = 0;
 
   ModVector pmod, rmod;
+  NodeIncRelaxerPtr nr = 0;
+  SolutionPoolPtr solPool = 0;
 
   //engines
-  EnginePtr nlp_e = 0;
+  EnginePtr *nlp_e = 0;
   MILPEnginePtr milp_e = 0;
   VarVector *orig_v=0;
   int err = 0;
-  UInt numSols = 1;
+  UInt numSols = 1, totNumSols = 0, solsPerIter = 0;
   
   // start timing.
   env->startTimer(err);
@@ -440,19 +434,30 @@ int main(int argc, char* argv[])
     goto CLEANUP;
   }
 
-  loadProblem(env, iface, inst, &obj_sense);
+  numThreads = std::min(env->getOptions()->findInt("threads")->getValue(),
+                        omp_get_num_procs());
+  omp_set_num_threads(numThreads);
+  inst = new ProblemPtr[numThreads];
+  oa_hand = new OAHandlerPtr[numThreads]();
+  nlp_e = new EnginePtr[numThreads];
+
+  loadProblem(env, iface, inst[0], &obj_sense);
 
   // Initialize engines
-  nlp_e = getNLPEngine(env, inst);
-
   efac = new EngineFactory(env);
   milp_e = efac->getMILPEngine();
-  
-  delete efac;
+  if (!milp_e) {
+    assert(!"No MILP engine!");
+  }
+
+  delete efac; efac = 0;
 
   // get presolver.
-  orig_v = new VarVector(inst->varsBegin(), inst->varsEnd());
-  pres = presolve(env, inst, iface->getNumDefs(), handlers);
+  orig_v = new VarVector(inst[0]->varsBegin(), inst[0]->varsEnd());
+  pres = presolve(env, inst[0], iface->getNumDefs(), handlers);
+  for (HandlerVector::iterator it=handlers.begin(); it!=handlers.end(); ++it) {
+    delete (*it);
+  }
   handlers.clear();
   if (Finished != pres->getStatus() && NotStarted != pres->getStatus()) {
     env->getLogger()->msgStream(LogInfo) << me 
@@ -464,79 +469,86 @@ int main(int argc, char* argv[])
  
   if (options->findBool("solve")->getValue()==true) {
     if (true==options->findBool("use_native_cgraph")->getValue()) {
-      inst->setNativeDer();
+      inst[0]->setNativeDer();
     }
     // Initialize the handlers for branch-and-cut
-    l_hand = (LinearHandlerPtr) new LinearHandler(env, inst);
+    l_hand = (LinearHandlerPtr) new LinearHandler(env, inst[0]);
     l_hand->setModFlags(false, true);
-    handlers.push_back(l_hand);
     assert(l_hand);
+    handlers.push_back(l_hand);
 
-    oa_hand = (OAHandlerPtr) new OAHandler(env, inst, nlp_e, milp_e);
-    oa_hand->setModFlags(false, true);
-    handlers.push_back(oa_hand);
-    assert(oa_hand);
-  
-    // Initialize the handlers for OA
-    CutManager *cutMan = NULL;
-    bool solFound, shouldPrune;
-    double inf_meas;
-    UInt iterNum = 0;
-    ConstSolutionPtr sol, sol2;
-    SolutionPoolPtr solPool = (SolutionPoolPtr) new SolutionPool(env, inst, 1);
-    SeparationStatus sepStatus;
+    // MILP engine required only for one of the copies (oa_hand[0])
+    nlp_e[0] = getNLPEngine(env, inst[0]);
+    oa_hand[0] = (OAHandlerPtr) new OAHandler(env, inst[0], nlp_e[0], milp_e);
+    oa_hand[0]->setModFlags(false, true);
+    assert(oa_hand[0]);
+    handlers.push_back(oa_hand[0]);
+
+    //! initialize the MILP master problem by copying variables & linear constraints and by 
+    //linearizing nonlinear constraints at the solution of NLP relaxation of the problem
     bool prune = false;
     RelaxationPtr milp = RelaxationPtr();
-  
-    NodeIncRelaxerPtr nr;
     nr = (NodeIncRelaxerPtr) new NodeIncRelaxer(env, handlers);
     nr->setModFlag(false);
     milp = nr->createRootRelaxation(NodePtr(), prune);
-    if (milp_e) {
-      nr->setEngine(milp_e);
-    } else {
-      assert(!"No MILP engine!");
-    }
  
+    for (UInt i=1; i < numThreads; ++i) {
+      inst[i] = inst[0]->clone();
+      nlp_e[i] = getNLPEngine(env, inst[i]);
+      oa_hand[i] = (OAHandlerPtr) new OAHandler(env, inst[i], nlp_e[i], NULL);
+      nlp_e[i]->load(inst[i]);
+      oa_hand[i]->setModFlags(false, true);
+      oa_hand[i]->setRelaxation(milp);
+      oa_hand[i]->setObjVar(oa_hand[0]->getObjVar());
+      oa_hand[i]->setObjType(oa_hand[0]->getObjType());
+      oa_hand[i]->setNonlinCons(oa_hand[0]->getNonlinCons());
+      assert(oa_hand[i]);
+    }
+
+    CutManager *cutMan = NULL;
+    bool *solFound = new bool[numThreads];
+    bool shouldPrune, shouldCont = true;
+    double inf_meas;
+    UInt iterNum = 0;
+    ConstSolutionPtr sol;
+    ConstSolutionPtr *sol2 = new ConstSolutionPtr[numThreads];
+    solPool = (SolutionPoolPtr) new SolutionPool(env, inst[0], 1);
+    SeparationStatus *sepStatus = new SeparationStatus[numThreads];
     double solAbsTol = env->getOptions()->findDouble("solAbs_tol")->getValue();
     double solRelTol = env->getOptions()->findDouble("solRel_tol")->getValue();
-    //! initialize the MILP master problem by copying variables & linear constraints and by 
-    //linearizing nonlinear constraints at the solution of NLP relaxation of the problem
   
     double objLb = -INFINITY, objUb = INFINITY;
 
     //MS: add iteration limit in termination condition
-    double time = 0;
-    while (true) {
-      if (objUb-objLb <= solAbsTol || (objUb != 0 && (objUb - objLb < fabs(objUb)*solRelTol))) {
-        std::cout << "break " << objUb - objLb - solAbsTol << " " << (objUb - objLb - fabs(objUb)*solRelTol) <<"\n";
-        status = SolvedOptimal;
-        break;
-      }
+    double time = 0, sepTimeStart = 0, totSepTime = 0;
+    while (shouldCont) {
       //set best ub as upper cutoff for MILP engine
-      oa_hand->getMILPEngine()->setUpperCutoff(objUb);
+      oa_hand[0]->getMILPEngine()->setUpperCutoff(objUb);
 
       time = wallTimeStart - getWallTime() + env->getOptions()->findDouble("bnb_time_limit")->getValue();
       if (time > 0) {
-        oa_hand->getMILPEngine()->setTimeLimit(time); //set remaining time as limit for MILP solve
+        oa_hand[0]->getMILPEngine()->setTimeLimit(time); //set remaining time as limit for MILP solver
       } else {
-        if (shouldStop(env, status, gap, iterNum, solPool, wallTimeStart) || sepStatus==SepaPrune) {
+        if (shouldStop(env, status, gap, iterNum, solPool, wallTimeStart) || sepStatus[0]==SepaPrune) {
           break;
         }
       }
       //! solve MILP master problem
-      oa_hand->solveMILP(&objLb, &sol, solPool, cutMan, status);
+      oa_hand[0]->solveMILP(&objLb, &sol, solPool, cutMan, status);
       if (status == SolvedInfeasible) {
         if (fabs(objUb) != INFINITY) {
           objLb = objUb;
           status = SolvedOptimal;
         }
         break;
+      } else if (objUb-objLb <= solAbsTol || (objUb != 0 && (objUb - objLb < fabs(objUb)*solRelTol))) {
+        status = SolvedOptimal;
+        break;
       }
       iterNum++;
       //MS: different MILP engine status like unbounded, infeasible, and error to be handled
-      solFound  = oa_hand->isFeasible(sol, RelaxationPtr(), shouldPrune, inf_meas); 
-      if (solFound) {
+      solFound[0]  = oa_hand[0]->isFeasible(sol, RelaxationPtr(), shouldPrune, inf_meas);
+      if (solFound[0]) {
         const double *x = sol->getPrimal();
         solPool->addSolution(x, sol->getObjValue());
         objUb = solPool->getBestSolutionValue();
@@ -547,34 +559,76 @@ int main(int argc, char* argv[])
       }
       // Update MILP by adding OA cuts at various solutions obtained from the
       // solution pool of MILP engine
-      if (options->findBool("oa_use_solutions")->getValue()==true) {
-        numSols = oa_hand->getMILPEngine()->getNumSols();
-        for (UInt i=0; i < numSols; i++) {
-          sol2 = oa_hand->getMILPEngine()->getSolutionFromPool(i);
-          oa_hand->separate(sol2, NodePtr(), milp, cutMan, solPool, pmod, rmod, &solFound, &sepStatus);
+      if (options->findBool("oa_use_solutions")->getValue() == true) {
+        sepTimeStart = getWallTime();
+        numSols = oa_hand[0]->getMILPEngine()->getNumSols();
+        // id -1 fetches the incumbent from Cplex
+        int j = -1;
+        while (j <= int(numSols - 2)) {
+#pragma omp parallel for
+          for (UInt t=0; t < numThreads; ++t) {
+            if (int(j + t) <= int(numSols -2)) {
+              sol2[t] = oa_hand[0]->getMILPEngine()->getSolutionFromPool(j+t);
+              oa_hand[t]->setRelObj(objLb);
+              oa_hand[t]->separate(sol2[t], NodePtr(), milp, cutMan, solPool, pmod, rmod, &solFound[t], &sepStatus[t]);
+              if (solFound[t]) {
+#pragma omp critical
+                {
+                  objUb = solPool->getBestSolutionValue();
+                  gap = getPerGap(objLb, objUb);
+                  if (shouldStop(env, status, gap, iterNum, solPool, wallTimeStart)) {
+                    j = numSols;
+                    shouldCont = false;
+                  }
+                }
+              }
+              if (sepStatus[t] == SepaPrune) {
+#pragma omp critical
+                {
+                  j = numSols;
+                  shouldCont = false;
+                  status = SolvedOptimal;
+                  objUb = solPool->getBestSolutionValue();
+                }
+              }
+            }
+          }
+          j = j + numThreads;
+        }
+        env->getLogger()->msgStream(LogInfo) << "number of solutions used = "
+          << numSols << " separation time = " << getWallTime() - sepTimeStart
+          << " separation time per sol = " << (getWallTime() - sepTimeStart)*numSols
+          << std::endl;
+      } else {
+        // Solve NLP and update MILP by adding OA cuts
+        oa_hand[0]->setRelObj(objLb);
+        oa_hand[0]->separate(sol, NodePtr(), milp, cutMan, solPool, pmod, rmod, &solFound[0], &sepStatus[0]);
+        if (solFound[0]) {
+          objUb = solPool->getBestSolutionValue();
+          gap = getPerGap(objLb, objUb);
+          if (shouldStop(env, status, gap, iterNum, solPool, wallTimeStart)) {
+            shouldCont = false;
+            break;
+          }
+        }
+        if (sepStatus[0] == SepaPrune) {
+          shouldCont = false;
+          status = SolvedOptimal;
+          objUb = solPool->getBestSolutionValue();
+          break;
         }
       }
-
-      // Solve NLP and update MILP by adding OA cuts
-      oa_hand->separate(sol, NodePtr(), milp, cutMan, solPool, pmod, rmod, &solFound, &sepStatus);
-      objUb = solPool->getBestSolutionValue();
+      totNumSols += numSols;
+      totSepTime += getWallTime() - sepTimeStart;
+      solsPerIter += ceil((double(numSols)/double(numThreads)));
       gap = getPerGap(objLb, objUb);
-      if (shouldStop(env, status, gap, iterNum, solPool, wallTimeStart)) {
-        break;
-      }
-      if (sepStatus==SepaPrune) {
-        const double *x = sol->getPrimal();
-        solPool->addSolution(x, sol->getObjValue());
-        objUb = solPool->getBestSolutionValue();
-        status = SolvedOptimal;
-        showStatus(env, objLb, objUb, gap, iterNum, numSols);
-        break;
-      }
       showStatus(env, objLb, objUb, gap, iterNum, numSols);
     } // end while (objLo <= objUp) or time limit
+    gap = getPerGap(objLb, objUb);
     time = -wallTimeStart + getWallTime();
-    writeOAStatus(env, gap, objLb, objUb, obj_sense, status, iterNum, time);
-    nlp_e->writeStats(env->getLogger()->msgStream(LogExtraInfo));
+    for (UInt i=0; i < numThreads; ++i) {
+      nlp_e[i]->writeStats(env->getLogger()->msgStream(LogExtraInfo));
+    }
     milp_e->writeStats(env->getLogger()->msgStream(LogExtraInfo));
 
     for (HandlerVector::iterator it=handlers.begin(); it!=handlers.end();
@@ -583,20 +637,48 @@ int main(int argc, char* argv[])
     }
     //MS: Other solve status and right way of writing them
     //writeSol(env, orig_v, pres, solPool->getBestSolution(), solveStatus, iface);
-   }
+    writeOAStatus(env, gap, objLb, objUb, obj_sense, status, iterNum, time,
+                  totSepTime, solsPerIter, totNumSols);
+  }
 
 CLEANUP:
-  if (nlp_e) {
-    delete nlp_e;
+  for (HandlerVector::iterator it=handlers.begin(); it!=handlers.end(); ++it) {
+    delete (*it);
+  }
+  for (UInt i=0; i < numThreads; i++) {
+    if (inst[i]) {
+      delete inst[i];
+    }
+    if (nlp_e[i]) {
+      delete nlp_e[i];
+    }
+    if (oa_hand[i] && i>0) {
+      delete oa_hand[i];
+    }
   }
   if (milp_e) {
     delete milp_e;
   }
+  if (efac) {
+    delete efac;
+  }
+  if (solPool) {
+    delete solPool;
+  }
+  if (nr) {
+    delete nr;
+  }
   if (iface) {
     delete iface;
   }
+  if (pres) {
+    delete pres;
+  }
   if (orig_v) {
     delete orig_v;
+  }
+  if (env) {
+    delete env;
   }
   return 0;
 }
@@ -641,21 +723,23 @@ void writeSol(EnvPtr env, VarVector *orig_v,
               PresolverPtr pres, SolutionPtr sol, SolveStatus status,
               MINOTAUR_AMPL::AMPLInterface* iface)
 {
+  Solution* final_sol = 0;
   if (sol) {
-    sol = pres->getPostSol(sol);
-    iface->writeSolution(sol, status);
+    final_sol = pres->getPostSol(sol);
   }
 
   if (env->getOptions()->findFlag("AMPL")->getValue() ||
       true == env->getOptions()->findBool("write_sol_file")->getValue()) {
-    iface->writeSolution(sol, status);
-  } else if (sol && env->getLogger()->getMaxLevel()>=LogExtraInfo) {
-    sol->writePrimal(env->getLogger()->msgStream(LogExtraInfo), orig_v);
+    iface->writeSolution(final_sol, status);
+  } else if (final_sol && env->getLogger()->getMaxLevel()>=LogExtraInfo &&
+             env->getOptions()->findBool("display_solution")->getValue()) {
+    final_sol->writePrimal(env->getLogger()->msgStream(LogExtraInfo), orig_v);
+  }
+
+  if (final_sol) {
+    delete final_sol;
   }
 }
-
-
-
 
 
 // Local Variables: 

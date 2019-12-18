@@ -57,7 +57,7 @@ BqpdEngine::BqpdEngine(EnvPtr env)
     maxIterLimit_(1000),
     prevStrBr_(false),
     resolveError_(true),
-    sol_(SolutionPtr()),
+    sol_(0),
     strBr_(false),
     timer_(0)
 {
@@ -84,12 +84,10 @@ BqpdEngine::~BqpdEngine()
 {
   //delete ;
   if (sol_) {
-    //sol_.reset();
-    sol_ = 0;
+    delete sol_;
   }
   if (problem_) {
-	 problem_->unsetEngine();
-    //problem_.reset();
+    problem_->unsetEngine();
     problem_ = 0;
   }
   if (fStart_) {
@@ -592,12 +590,10 @@ void BqpdEngine::storeSol_(double f)
 
 void BqpdEngine::setInitialPoint_()
 {
-  const double *initial_point = problem_->getInitialPoint();
-  if (initial_point) {
-    std::copy(initial_point, initial_point + problem_->getNumVars(), fStart_->x);
-  } else {
-    // start with zero.
-    memset(fStart_->x, 0, problem_->getNumVars() * sizeof(double));
+  double* xp = fStart_->x;
+  for (VariableConstIterator vit=problem_->varsBegin();
+       vit!=problem_->varsEnd(); ++vit, ++xp) {
+    *xp = (*vit)->getInitVal();
   }
 }
 

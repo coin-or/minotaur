@@ -12,11 +12,11 @@
 
 #ifndef MINOTAURCPLEXLPENGINE_H
 #define MINOTAURCPLEXLPENGINE_H
-//#include <ilcplex/ilocplex.h>
 #include <ilcplex/cplexx.h>
 #include <string.h>
 #include "LPEngine.h"
 #include "STOAHandler.h"
+#include "WarmStart.h"
 
 
 namespace Minotaur {
@@ -34,8 +34,88 @@ namespace Minotaur {
   /// Statistics
   struct CplexLPStats {
     UInt calls;     /// Total number of calls to solve.
+    UInt strCalls;  /// Calls to solve while strong branching.
     double time;    /// Sum of time taken in all calls to solve.
+    double strTime; /// time taken in strong branching alone.
+    UInt iters;     /// Sum of number of iterations in all calls.
+    UInt strIters;  /// Number of iterations in strong branching alone.
   };
+
+  class CpxLPWarmStart;
+  typedef CpxLPWarmStart* CpxLPWarmStartPtr;
+  typedef const CpxLPWarmStart* ConstCpxLPWarmStartPtr;
+
+  /// Class for saving and using Warm-start information in Cplex LP engine.
+  class CpxLPWarmStart : public WarmStart {
+
+  public:
+    /// Default constructor
+    CpxLPWarmStart();
+
+    /// Destroy
+    ~CpxLPWarmStart();
+
+    /// Return the soluton that can be used as starting point.
+    //CpxLPSolPtr getPoint();
+
+    // Implement WarmStart::hasInfo().
+    bool hasInfo();
+
+    /*
+     Overwrite the primal and dual values of warm-start. Sometimes, the
+     warm-start data is initialized and needs to be updated. This
+     should be called in place of deleting and creating a new warm-start
+     object. */
+    //void setPoint(CpxLPSolPtr sol);
+
+    // Implement WarmStart::write().
+    void write(std::ostream &) const {};
+
+    // Return varstat array from warmstart
+    //int *getVarStat() const { return varstat_;}
+
+    // Return constat array from warmstart
+    //int *getConStat() const { return constat_;}
+
+    // Return the size of constat_ (number of constraints)
+    //int getNumCons() const { return numCons_;}
+
+    // Return solution from warmstart
+    SolutionPtr getSolution() const { return sol_;}
+
+    // Return the size of constat_ (number of constraints)
+    //void setNumCons(int num) { numCons_ = num;}
+
+    // Set varstat array for warmstart
+    //void setVarStat(int *varstat, int numvars);
+
+    // Set constat array for warmstart
+    //void setConStat(int *constat, int numrows);
+
+  private:
+    /**
+     * If true, we must delete the warm-start description. If it is false,
+     * we should never delete it.
+     */
+    bool mustDelete_;
+
+    /// The starting solution that is used to warm-start.
+    SolutionPtr sol_;
+
+    /// An array to store the constraint warmstart info
+    //int * constat_;
+
+    /// An array to store the variable warmstart info
+    //int * varstat_;
+
+    /// Size of constat_
+    int numCons_;
+  };
+
+
+// ----------------------------------------------------------------------- //
+// ----------------------------------------------------------------------- //
+
 
   /// The CplexLPEngine class can be called to solve LP problems
   class CplexLPEngine : public LPEngine {
@@ -77,12 +157,15 @@ namespace Minotaur {
     /// Clear the problem.
     void clear();
 
-    void disableStrBrSetup() {};
+    void disableStrBrSetup();
 
     /// Return an empty CplexLPEngine pointer.
     EnginePtr emptyCopy();
 
-    void enableStrBrSetup() {};
+    void enableStrBrSetup();
+
+    // Implement Engine::fillStats()
+    void fillStats(std::vector<double> &);
 
     /// Return the solution value of the objective after solving the LP.
     double getSolutionValue();
@@ -93,12 +176,13 @@ namespace Minotaur {
     // Implement Engine::getStatus().
     EngineStatus getStatus();
 
-    // get name.
+    // Return name of the solver.
     std::string getName() const;
 
     ConstWarmStartPtr getWarmStart() {return WarmStartPtr();};
 
-    WarmStartPtr getWarmStartCopy()  {return WarmStartPtr();};
+    // Implement Engine::getWarmStartCopy().
+    WarmStartPtr getWarmStartCopy();
 
     /** 
      * Load the problem into the engine. We create arrays of variables and
@@ -107,13 +191,16 @@ namespace Minotaur {
      */
     void load(ProblemPtr problem);
 
-    void loadFromWarmStart(const WarmStartPtr ) {};
+    void loadFromWarmStart(const WarmStartPtr){};
 
     // Convert 'min f' to 'min -f'.
     void negateObj();
 
     // Print a point x
     void printx(double *, UInt );
+
+    // Print a point x
+    void printx(const int *, UInt );
     
     // base class method.
     void removeCons(std::vector<ConstraintPtr> &delcons);
@@ -124,17 +211,20 @@ namespace Minotaur {
     // Implement Engine::setIterationLimit().
     void setIterationLimit(int);
 
+    // Implement Engine::setDualObjLimit().
+    int setDualObjLimit(double);
+
     // Implement Engine::setTimeLimit().
     void setTimeLimit(double);
 
-    // Implement Engine::setUpperCutoff().
-    void setUpperCutoff(double);
-    
     // Implement the LP solve() function of Cplex
     EngineStatus solve();
 
-    /// Writes an LP file of the loaded LP.
+    /// Writes an LP file of the loaded problem.
     void writeLP(const char *filename) const;
+
+    /// Writes an LP file in the directory of problem file.
+    void writeLP();
 
     /// Write statistics.
     void writeStats(std::ostream &out) const;
@@ -152,9 +242,6 @@ namespace Minotaur {
 
     /// Time limit for the iteration
     double timeLimit_;
-
-    /// Upper cutoff for the iteration
-    double upperCutoff_;
 
     /// True if any bound on variable on constraint was changed after 
     /// previous solve.
@@ -175,6 +262,9 @@ namespace Minotaur {
     /// True if objective was changed after previous solve.
     bool objChanged_;
 
+    /// True if objective was changed after previous solve.
+    double dualObjLimit_;
+
     /// Problem that is loaded, if any.
     ProblemPtr problem_;
 
@@ -183,6 +273,12 @@ namespace Minotaur {
 
     /// Statistics.
     CplexLPStats *stats_;
+
+    /// True if strong-branching.
+    bool strBr_;
+
+    /// Warm start.
+    CpxLPWarmStartPtr ws_;
 
     /// Timer for solves. 
     Timer *timer_;

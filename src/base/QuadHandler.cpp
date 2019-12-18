@@ -82,20 +82,37 @@ QuadHandler::~QuadHandler()
 
 void QuadHandler::addConstraint(ConstraintPtr newcon)
 {
-  LinearFunctionPtr lf0, lf1, lf;
+  LinearFunctionPtr lf;
   QuadraticFunctionPtr qf; 
   NonlinearFunctionPtr nlf;
   VariablePtr y, x0, x1;
-  FunctionPtr f;
   LinSqrPtr lx2;
   LinBil* linbil;
-  LinBilSetIter biter;
 
   cons_.push_back(newcon);
   qf = newcon->getQuadraticFunction();
 
   if (qf) {
-    assert(!"cannot yet handle qf in QuadHandler.");
+    lf = newcon->getLinearFunction();
+    
+    assert(lf && qf);
+    assert(1==lf->getNumTerms());
+    assert(1==qf->getNumTerms());
+    y = lf->termsBegin()->first;
+    if (qf->begin()->first.first->getId()==qf->begin()->first.second->getId())
+    {
+      x0 = qf->begin()->first.first;
+      lx2 = new LinSqr();
+      lx2->y = y;
+      lx2->x = x0;
+      lx2->oeCon = ConstraintPtr();
+      x2Funs_.insert(std::pair<VariablePtr, LinSqrPtr>(x0, lx2));
+    } else {
+      x0 = qf->begin()->first.first;
+      x1 = qf->begin()->first.second;
+      linbil = new LinBil(x0, x1, y);
+      x0x1Funs_.insert(linbil);
+    }
   } else {
     nlf = newcon->getNonlinearFunction();
     lf  = newcon->getLinearFunction();
@@ -217,6 +234,7 @@ Branches QuadHandler::getBranches(BrCandPtr cand, DoubleVector &x,
   }
   branch->setActivity(0.5); // TODO: set this correctly
   branches->push_back(branch);
+  vcand->setNumBranches(2);
 
 #if SPEW
   logger_->msgStream(LogDebug2) << me_ << "branching on " << v->getName()
@@ -699,8 +717,6 @@ bool QuadHandler::propBilBnds_(LinBil* lx0x1, RelaxationPtr rel,
   VariablePtr x1 = lx0x1->getX1();
   VariablePtr  y = lx0x1->getY();
   double lb, ub;
-  VarBoundMod2Ptr b2mod;
-  VarBoundModPtr bmod;
 
   BoundsOnProduct(true, x0, x1, lb, ub);
   //x0->write(std::cout);
@@ -790,9 +806,6 @@ bool QuadHandler::propSqrBnds_(LinSqrMapIter lx2, RelaxationPtr rel,
                                ModVector &r_mods)
 {
   double lb, ub;
-  VarBoundMod2Ptr b2mod;
-  VarBoundModPtr bmod;
-  LinearFunctionPtr lf;
 
   VariablePtr x = lx2->first;      // x and y are variables in p_
   VariablePtr y = lx2->second->y;
@@ -1043,7 +1056,6 @@ int QuadHandler::updatePBounds_(VariablePtr v, double lb, double ub,
 void QuadHandler::upBilCon_(LinBil* lx0x1, RelaxationPtr rel, ModVector
                             &r_mods)
 {
-  LinModsPtr   lmods;
   LinConModPtr lmod;
   LinearFunctionPtr lf;
   VariablePtr y  = rel->getRelaxationVar(lx0x1->getY());

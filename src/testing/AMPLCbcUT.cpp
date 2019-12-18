@@ -24,10 +24,10 @@ using namespace Minotaur;
 
 void AMPLCbcUT::setUp()
 {
-  EnvPtr env = (EnvPtr) new Environment();
-  env->setLogLevel(LogNone);
-  iface_ = (MINOTAUR_AMPL::AMPLInterfacePtr) new AMPLInterface(env);
-  e_ = (CbcEnginePtr) new CbcEngine(env);
+  env_ = (EnvPtr) new Environment();
+  env_->setLogLevel(LogNone);
+  iface_ = (MINOTAUR_AMPL::AMPLInterfacePtr) new AMPLInterface(env_);
+  e_ = (CbcEnginePtr) new CbcEngine(env_);
 }
 
 
@@ -35,6 +35,7 @@ void AMPLCbcUT::tearDown()
 {
   delete e_;
   delete iface_;
+  delete env_;
 }
 
 
@@ -61,6 +62,8 @@ void AMPLCbcUT::testCbc()
   CPPUNIT_ASSERT(status == ProvenOptimal);
   CPPUNIT_ASSERT(e_->getStatus() == ProvenOptimal);
   CPPUNIT_ASSERT(fabs(e_->getSolutionValue()+1.0) < 1e-5);
+
+  delete p;
 
 }
 

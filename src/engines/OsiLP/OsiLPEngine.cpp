@@ -18,10 +18,6 @@
 #include "coin/OsiClpSolverInterface.hpp"
 #endif
 
-#if MNTROSICPX
-#include "coin/OsiCpxSolverInterface.hpp"
-#endif
-
 #if MNTROSIGRB
 #include "coin/OsiGrbSolverInterface.hpp"
 #endif
@@ -115,6 +111,7 @@ OsiLPEngine::OsiLPEngine(EnvPtr env)
     maxIterLimit_(10000),
     objChanged_(true),
     problem_(0),
+    sol_(0),
     strBr_(false)
 {
 #if USE_OSILP
@@ -127,8 +124,6 @@ OsiLPEngine::OsiLPEngine(EnvPtr env)
   eName_ = OsiUndefEngine;
   if (etype == "OsiClp") {
     eName_ = OsiClpEngine;
-  } else if (etype == "OsiCpx") {
-    eName_ = OsiCpxEngine;
   } else if (etype == "OsiGrb") {
     eName_ = OsiGrbEngine;
   }
@@ -161,8 +156,10 @@ OsiLPEngine::~OsiLPEngine()
   delete timer_;
   if (problem_) {
     problem_->unsetEngine();
-    //problem_.reset();
     problem_ = 0;
+  }
+  if (sol_) {
+    delete sol_;
   }
 }
 
@@ -338,6 +335,19 @@ int OsiLPEngine::getIterationCount()
 }
 
 
+void OsiLPEngine::fillStats(std::vector<double> &lpStats)
+{
+  if (lpStats.size()) {
+    lpStats[0] += stats_->calls;
+    lpStats[1] += stats_->strCalls;
+    lpStats[2] += stats_->time;
+    lpStats[3] += stats_->strTime;
+    lpStats[4] += stats_->iters;
+    lpStats[5] += stats_->strIters;
+  }
+}
+
+
 std::string OsiLPEngine::getName() const
 {
   return "OsiLP";
@@ -373,7 +383,7 @@ WarmStartPtr OsiLPEngine::getWarmStartCopy()
   // create a new copy of warm-start information from osilp_
   CoinWarmStart *coin_copy = osilp_->getWarmStart();
 
-  OsiLPWarmStartPtr ws = (OsiLPWarmStartPtr) new OsiLPWarmStart();
+  OsiLPWarmStartPtr ws = new OsiLPWarmStart();
   // save it. It is our responsibility to free it.
   ws->setCoinWarmStart(coin_copy, true);
 
@@ -465,6 +475,9 @@ void OsiLPEngine::load(ProblemPtr problem)
                                start, NULL);
   osilp_->loadProblem(*r_mat, varlb, varub, obj, conlb, conub);
 
+  if (sol_) {
+    delete sol_; sol_ = 0;
+  }
   sol_ = (SolutionPtr) new Solution(1E20, 0, problem_);
 
   objChanged_ = true;
@@ -521,16 +534,6 @@ OsiSolverInterface* OsiLPEngine::newSolver_(OsiLPEngineName ename)
 #else
     logger_->errStream()
       << me_ << "Minotaur is not compiled with OsiClp!" << std::endl;
-#endif
-    break;
-  case (OsiCpxEngine):
-#if MNTROSICPX
-    si = new OsiCpxSolverInterface();
-    si->setHintParam(OsiDoReducePrint);
-    si->messageHandler()->setLogLevel(0); 
-#else
-    logger_->errStream()
-      << me_ << "Minotaur is not compiled with OsiCpx!" << std::endl;
 #endif
     break;
   case (OsiGrbEngine):

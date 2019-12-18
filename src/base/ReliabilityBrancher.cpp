@@ -10,6 +10,7 @@
  * \author Ashutosh Mahajan, Argonne National Laboratory
  */
 
+#include <algorithm>
 #include <cmath>
 #include <iomanip>
 #include <omp.h>
@@ -509,6 +510,7 @@ void ReliabilityBrancher::strongBranch_(BrCandPtr cand, double & obj_up,
   ++(stats_->strBrCalls);
   obj_down = engine_->getSolutionValue();
   mod->undoToProblem(rel_);
+  delete mod;
 
   // now go up.
   mod = h->getBrMod(cand, x_, rel_, UpBranch);
@@ -523,6 +525,7 @@ void ReliabilityBrancher::strongBranch_(BrCandPtr cand, double & obj_up,
   ++(stats_->strBrCalls);
   obj_up = engine_->getSolutionValue();
   mod->undoToProblem(rel_);
+  delete mod;
 }
 
 

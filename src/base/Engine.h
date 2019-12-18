@@ -17,18 +17,11 @@
 
 namespace Minotaur {
 
-  class   Constraint;
-  class   Function;
-  class   LinearFunction;
-  class   NonlinearFunction;
   class   Solution;
   class   WarmStart;
   class   Engine;
   typedef Engine* EnginePtr;
   typedef const Engine* ConstEnginePtr;  
-  typedef Constraint* ConstraintPtr; //change boost -> simple
-  typedef LinearFunction* LinearFunctionPtr;
-  typedef NonlinearFunction* NonlinearFunctionPtr;
   typedef const Solution* ConstSolutionPtr;
   typedef WarmStart* WarmStartPtr;
   typedef const WarmStart* ConstWarmStartPtr;
@@ -156,6 +149,9 @@ namespace Minotaur {
     /// Reset the iteration limit to maximum possible.
     virtual void resetIterationLimit() = 0;
 
+    /// Set the dual objective limit
+    virtual int setDualObjLimit(double) = 0;
+
     /** 
      * Set a limit on number of iterations. For strong-branching, for
      * instance.
@@ -177,6 +173,10 @@ namespace Minotaur {
      * statistics may be written.
      */
     virtual void writeStats(std::ostream &) const {};
+
+    /// Accumulate statistics from different threads in a common data
+    //structure for parallel algorithms
+    virtual void fillStats(std::vector<double> &) {};
 
   protected:
     /// Status of the last solve.

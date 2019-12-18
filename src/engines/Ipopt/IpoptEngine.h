@@ -40,6 +40,8 @@ namespace Minotaur {
 
   struct IpoptStats {
     UInt calls;     ///< Total number of calls to solve.
+    UInt opt;       ///< No. of calls to Ipopt's Optimize 
+    UInt reopt;     ///< No. of calls to Ipopt's ReOptimize 
     UInt iters;     ///< Sum of number of iterations in all calls. 
     double ptime;   ///< Sum of time taken in all calls to presolve.
     UInt strCalls;  ///< Calls to solve while strong branching.
@@ -127,8 +129,6 @@ namespace Minotaur {
     // Implement WarmStart::hasInfo().
     bool hasInfo();
 
-    void makeCopy();
-
     /**
      * Overwrite the primal and dual values of warm-start. Sometimes, the
      * warm-start data is initialized and needs to be updated. This
@@ -193,6 +193,9 @@ namespace Minotaur {
     /// Make settings for strong branching.
     void enableStrBrSetup();
 
+    // Implement Engine::fillStats()
+    void fillStats(std::vector<double> &);
+
     // get name.
     std::string getName() const;
 
@@ -229,6 +232,9 @@ namespace Minotaur {
     // Implement Engine::setIterationLimit().
     void setIterationLimit(int limit);
 
+    // Implement Engine::setDualObjLimit().
+    int setDualObjLimit(double) {return 1;};
+
     void setOptionsForSingleSolve();
 
     void setOptionsForRepeatedSolve();
@@ -264,6 +270,10 @@ namespace Minotaur {
     /// If lb>ub+etol_, declare infeasible.
     const double etol_;
 
+    /// True right after loading a problem, changes to false after the first
+    /// call to Optimize() or ReOptimize()
+    bool justLoaded_;
+
     /// Where to put logs.
     LoggerPtr logger_;
 
@@ -275,6 +285,10 @@ namespace Minotaur {
 
     Ipopt::IpoptApplication  *myapp_; 
 
+    // usually gets freed automatically when myapp_ is deleted.
+    // In case myapp_->Optimize or myapp_->Reoptimize are
+    // not called even once, then we have to free it (see
+    // IpoptStats::opt, reopt).
     Ipopt::IpoptFunInterface *mynlp_;
 
     /**
@@ -292,7 +306,7 @@ namespace Minotaur {
     ProblemPtr problem_;
 
     /**
-     * The solution obtained from last solve. The solution_ in 
+     * The solution obtained from last solve. The sol_ in 
      * IpoptFunInterface points to the same array as this one. So the
      * solution from Ipopt is copied to this array only once. This array
      * does not get freed in IpoptFunInterface and so must be freed here.
@@ -317,8 +331,11 @@ namespace Minotaur {
      */
     bool useWs_;
 
-    /// Private copy of the warm start information.
+    /// warm start information.
     IpoptWarmStartPtr ws_;
+
+    /// warm start information only for strong branching.
+    IpoptWarmStartPtr wsSb_;
 
     /// Set problem specific options to make IPOPT faster
     void setOptionsForProb_();

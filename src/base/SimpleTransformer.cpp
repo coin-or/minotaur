@@ -41,6 +41,7 @@
 #include "YEqLFs.h"
 #include "YEqUCGs.h"
 #include "YEqVars.h"
+#include "YEqQfBil.h"
 
 // #define SPEW 1
 
@@ -260,7 +261,6 @@ void SimpleTransformer::recursRef_(const CNode *node, LinearFunctionPtr &lf,
 {
   double dl = 0;
   double dr = 0;
-  FunctionPtr f;
   LinearFunctionPtr lfl = LinearFunctionPtr();
   LinearFunctionPtr lfr = LinearFunctionPtr();
   VariablePtr vl = VariablePtr();
@@ -478,6 +478,7 @@ void SimpleTransformer::refNonlinCons_(ConstProblemPtr oldp)
   FunctionPtr f, f2;
   CGraphPtr cg;
   LinearFunctionPtr lf, lf2;
+  QuadraticFunctionPtr qf, qf2;
   double d, lb, ub;
   VariablePtr v = VariablePtr();
 
@@ -497,14 +498,22 @@ void SimpleTransformer::refNonlinCons_(ConstProblemPtr oldp)
       //lf.reset();
       v = 0; d = 0.0;
       lf = 0;
-      cg = dynamic_cast <CGraph*> (f->getNonlinearFunction());
-      assert(cg);
 #if SPEW
       logger_->msgStream(LogDebug) << me_ << "reformulating the constraint"
                                    << std::endl;
       c->write(logger_->msgStream(LogDebug));
 #endif
-      recursRef_(cg->getOut(), lf, v, d);
+      qf = f->getQuadraticFunction();
+      if (qf) {
+        qf2 = qf->cloneWithVars(newp_->varsBegin());
+        refQuadCons_(qf2, lf);
+      }
+
+      if (f->getNonlinearFunction()) {
+        cg = dynamic_cast <CGraph*> (f->getNonlinearFunction());
+        assert(cg || qf);
+        recursRef_(cg->getOut(), lf, v, d);
+      }
       if (lf) {
         lf2->add(lf);
         if (lf2->getNumTerms()>1) {
@@ -555,6 +564,7 @@ void SimpleTransformer::refNonlinObj_(ConstProblemPtr oldp)
   double d = 0;
   VariablePtr v = VariablePtr();
   LinearFunctionPtr lf, lf2;
+  QuadraticFunctionPtr qf, qf2;
   CGraphPtr cg;
 
   assert(newp_);
@@ -579,13 +589,22 @@ void SimpleTransformer::refNonlinObj_(ConstProblemPtr oldp)
     } else {
       lf2 = (LinearFunctionPtr) new LinearFunction();
     }
-    cg = dynamic_cast <CGraph*> (f->getNonlinearFunction());
 #if SPEW
     logger_->msgStream(LogDebug) << me_ << "reformulating the objective"
       << std::endl;
     obj->write(logger_->msgStream(LogDebug));
 #endif
-    recursRef_(cg->getOut(), lf, v, d);
+    qf = f->getQuadraticFunction();
+    if (qf) {
+      qf2 = qf->cloneWithVars(newp_->varsBegin());
+      refQuadCons_(qf2, lf);
+      d = obj->getConstant();
+    }
+    
+    cg = dynamic_cast <CGraph*> (f->getNonlinearFunction());
+    if (cg) {
+      recursRef_(cg->getOut(), lf, v, d);
+    }
     if (lf) {
       lf2->add(lf);
       if (lf2->getNumTerms()>0) {
@@ -612,6 +631,37 @@ void SimpleTransformer::refNonlinObj_(ConstProblemPtr oldp)
   } // else the other case is already handled in copyLinear_()
 }
 
+void SimpleTransformer::refQuadCons_(QuadraticFunctionPtr qf,
+                                     LinearFunctionPtr &lf)
+{
+  VariablePtr v = VariablePtr();
+  LinearFunctionPtr lf1;
+  QuadraticFunctionPtr qf1;
+  FunctionPtr f;
+  ConstraintPtr cnew;
+  lf = (LinearFunctionPtr) new LinearFunction();
+  for (VariablePairGroupConstIterator it = qf->begin();
+                                      it != qf->end(); ++it) {
+    v = yQfBil_->findY(it->first.first, it->first.second);
+    if (!v) {
+      v = newp_->newVariable();
+      lf1 = (LinearFunctionPtr) new LinearFunction();
+      lf1->addTerm(v, -1.0);
+      qf1 = (QuadraticFunctionPtr) new QuadraticFunction();
+      qf1->addTerm(it->first.first, it->first.second, 1.0);
+      f = (FunctionPtr) new Function(lf1, qf1);
+      cnew = newp_->newConstraint(f, 0.0, 0.0);
+#if SPEW
+      logger_->msgStream(LogDebug) << me_ << "added new constraint"
+                                          << std::endl;
+      cnew->write(logger_->msgStream(LogDebug));
+#endif
+      qHandler_->addConstraint(cnew);
+      yQfBil_->insert(v, it->first.first, it->first.second);
+    }
+    lf->addTerm(v, it->second);
+  }
+}
 
 void SimpleTransformer::reformulate(ProblemPtr &newp, HandlerVector &handlers,
                                     int &status)
@@ -623,6 +673,7 @@ void SimpleTransformer::reformulate(ProblemPtr &newp, HandlerVector &handlers,
   yUniExprs_ = new YEqUCGs();
   yBiVars_ = new YEqCGs();
   yVars_ = new YEqVars(p_->getNumVars()+40);
+  yQfBil_ = new YEqQfBil();
   copyVars_(p_, newp_);
 
   // create handlers.

@@ -20,7 +20,7 @@ TP_DIR=${TEST_DIR}/third-party
 GIT_REPOS="https://github.com/minotaur-solver/minotaur"
 
 ## Local LOGS
-WEB_DIR=/home/amahajan/misc/web/minotaur/nightly/origin
+WEB_DIR=/home/amahajan/misc/webpage/minotaur/nightly/origin
 REM_WEB_DIR=powai:/home/amahajan/webpage/minotaur/nightly/origin
 
 ## parallel flag
@@ -406,8 +406,14 @@ doTest; listBins; testFiles; checkTest
 ## valgrind
 cd ${NAME}/src/testing
 valgrind --leak-check=full --show-reachable=yes \
-./unittest all >> ../../../${NAME}.out 2>> ../../../${NAME}.err
+./unittest all &> ../../../${NAME}-valgrind.out 
 cd ${TEST_DIR}
+echo "" >> ${SUMMARY}
+echo "Valgrind:" >> ${SUMMARY}
+grep -A 5 'LEAK SUMMARY' build-all-debug-valgrind.out >> ${SUMMARY}
+echo "" >> ${SUMMARY}
+echo "" >> ${SUMMARY}
+
 
 ## static+debug
 NAME=build-all-static-debug

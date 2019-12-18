@@ -21,7 +21,6 @@
 #include "Engine.h"
 #include "Problem.h"
 #include "Function.h"
-
 #include "Solution.h"
 
 namespace Minotaur {
@@ -66,9 +65,6 @@ private:
 
   /// NLP/QP Engine used to solve the NLP/QP relaxations.
   EnginePtr nlpe_;
-  EnginePtr nlpe1_;
-  
-  EnginePtr lpe_;
 
   /// Modifications done to NLP before solving it.
   std::stack<Modification *> nlpMods_;
@@ -85,20 +81,12 @@ private:
 
   /// Nonlinearity status of objective function. 1 if nonlinear 0 otherwise.
   bool oNl_;
-  double rs1_;
-  double rs2Per_;
-  double rs2NbhSize_;
-  //UInt rScheme3Para_;
-  //UInt rScheme4Para_;
 
   /// Pointer to relaxation of the problem.
   RelaxationPtr rel_;
 
   /// Value of objective in relaxation solution
   double relobj_; 
-  
-  const double * solC_; 
-  double * solNLP_; 
 
   /// Absolute tolerance for constraint feasibility.
   double solAbsTol_;
@@ -111,14 +99,14 @@ private:
 
   /// Relative tolerance for pruning a node.
   double objRTol_;
-
+  
   /// Statistics.
   QGStats *stats_;
 
-  public:
-  /// Empty constructor.
-  QGHandler();
+  /// MS: delete after use
+  //ConstSolutionPtr rootNLPSol_;
 
+public:
   /**
    * \brief Default Constructor.
    *
@@ -147,9 +135,7 @@ private:
                            BranchDirection)
   {return ModificationPtr();};
 
-  bool findIntersectPt(std::vector<UInt > newConsId, VariablePtr vl,
-                       VariablePtr vnl, double * iP);
- 
+       
   // Base class method. 
   std::string getName() const;
 
@@ -160,8 +146,6 @@ private:
 
   /// Does nothing.
   SolveStatus presolve(PreModQ *, bool *) {return Finished;};
-  
-  void setLpEngine(EnginePtr lpe);
 
   /// Does nothing.
   bool presolveNode(RelaxationPtr, NodePtr, SolutionPoolPtr, ModVector &,
@@ -170,10 +154,6 @@ private:
 
   /// Does nothing.
   void postsolveGetX(const double *, UInt, DoubleVector *) {};
-
-
-  void alphaSelect_(VariablePtr nVar, VariablePtr lVar, double d1, double d2, 
-                             const double * nlpx, double &minA, double &maxA);
 
   /// Base class method. calls relax_().
   void relaxInitFull(RelaxationPtr rel, bool *is_inf);
@@ -196,15 +176,15 @@ private:
   /// Show statistics.
   void writeStats(std::ostream &out) const;
 
+  ///MS: delete after use
+  //ConstSolutionPtr getRootNLPSol_() {return rootNLPSol_;}
+
 private:
   /**
    * Add linearization of nonlinear constraints and objective at point x* 
    * to the relaxation only (not to the lp engine)
    */
-  void addInitLinearX_(const double *x, bool isSecNLP);
-
-
-  UInt addCutAtRoot_(double *x, ConstraintPtr con);
+  void addInitLinearX_(const double *x);
 
   /**
    * Solve NLP by fixing integer variables at LP solution and add 
@@ -213,55 +193,19 @@ private:
   void cutIntSol_(ConstSolutionPtr sol, CutManager *cutMan, 
                   SolutionPoolPtr s_pool, bool *sol_found, 
                   SeparationStatus *status);
-  void addEshAtRoot_(const double *lpx, double* x, ConstraintPtr con);
 
-
-  void findCenter_(bool* isInf);
-  bool isFeas_(ConstSolutionPtr sol);
   /**
    * Fix integer constrained variables to integer values in x. Called
    * before solving NLP.
    */
   void fixInts_(const double *x);
 
-  bool diffFunVarVal_(const double *x, FunctionPtr f);
-
-  void rootScheme3_(const double *nlpx, ConstraintPtr con, LinearFunctionPtr lf);
-  void rootScheme4_(const double *nlpx, ConstraintPtr con);
-
-  bool twoVarsCon_(ConstraintPtr con, double &linTermCoeff, UInt & vlIdx, UInt & vnIdx, 
-                            double &extraCoeff);
-  void rootLinearizations_();
-
-  bool lineSearchPt_(double* x, const double* l, const double* u, ConstraintPtr con, double & nlpact);
- 
-
-
-  /* Add linerizations to constraints with exactly two variables. One var in
-   * linear and one in nonlinear part of the constraint.
-   */
-  void rootLinScheme1_(ConstraintPtr con, double linTermCoeff,
-                            UInt vlIdx, UInt vnIdx, double extraCoeff);
-  /* Warm-start the NLP at the root LP solution and linearize at this NLP
-   * solution
-   */
-  bool shouldPrune_(EngineStatus eStatus);
-  void rootLinScheme2_(ConstraintPtr con, double linTermCoeff,
-                            UInt vlIdx, UInt vnIdx);
-
-
-  void rScheme2Cut_(ConstraintPtr con, double &alpha, double &delta,
-                                double linTermCoeff, double &lastSlope,
-                                UInt vnIdx, double * npt, double * grad,
-                                UInt &numCuts);
-
-  void rootLinScheme3_();
   /**
    * Solve the NLP relaxation of the MINLP and add linearizations about
    * the optimal point. isInf is set to true if the relaxation is found
    * infeasible. Throw an assert if the relaxation is unbounded.
    */
-  void initLinear_(bool *isInf, bool isSecNLP);
+  void initLinear_(bool *isInf);
 
   /**
    * Obtain the linear function (lf) and constant (c) from the
@@ -276,10 +220,6 @@ private:
    */
   void linearizeObj_();
 
-  void insertNewPt_(UInt j, UInt k, std::vector<double > & xc, 
-                    std::vector<double> & yc, ConstraintPtr con, 
-                    VariablePtr vl, VariablePtr vnl, bool & shouldCont);
-
   /**
    * Check which nonlinear constraints are violated at the LP solution and
    * add OA cuts. Return number of OA cuts added.
@@ -292,16 +232,13 @@ private:
                CutManager *cutman, SeparationStatus *status);
   
 
-  //double getVio_(double *b1, ConstraintPtr con, int & error);
-
-  void consCutAtLpSol_(const double *lpx, CutManager *cutman,
+  void cutsAtLpSol_(const double *lpx, CutManager *cutman,
                     SeparationStatus *status);
 
-  void objCutAtLpSol_(const double *lpx, CutManager *cutman,
-                    SeparationStatus *status);
+  //void objCutAtLpSol_(const double *lpx, CutManager *cutman,
+                    //SeparationStatus *status);
 
-  bool addNewCut_(double *b1, UInt vlIdx, ConstraintPtr con, 
-                  double linTermCoeff, double extraCoeff, UInt &newConId);
+      
   /**
    * Check if objective is violated at the LP solution and
    * add OA cut.
@@ -325,7 +262,7 @@ private:
    * Update the upper bound. XXX: Needs proper integration with
    * Minotaur's Handler design. 
    */
-  void updateUb_(SolutionPoolPtr s_pool, double *nlp_val, bool *sol_found);
+  void updateUb_(SolutionPoolPtr s_pool, double nlpval, bool *sol_found);
 
   };
 

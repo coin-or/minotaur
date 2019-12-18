@@ -72,7 +72,7 @@ namespace Minotaur {
     Branches getBranches();
     
     // Return the cut manager used with this processor.
-    CutManager* getCutManager(){return cutMan_;};
+    CutManager* getCutManager() {return cutMan_;};
 
     // Get the recent solution from the engine.
     ConstSolutionPtr getSolution();
@@ -113,11 +113,8 @@ namespace Minotaur {
      */
     bool contOnErr_;
 
-     /// The cut manager.
-     CutManager *cutMan_;
-
-    /// Index starting which cuts from the cut pool of other processors should be added.
-     //std::vector<UInt> cutsIndex_;
+    /// The cut manager.
+    CutManager *cutMan_;
 
     /// If lb is greater than cutOff_, we can prune this node.
     double cutOff_;

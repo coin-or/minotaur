@@ -27,12 +27,10 @@
 namespace Minotaur {
 
 struct STOAStats {
-  size_t milpS;      /// Number of milps solved.
   size_t nlpS;      /// Number of nlps solved.
   size_t nlpF;      /// Number of nlps feasible.
   size_t nlpI;      /// Number of nlps infeasible.
   size_t nlpIL;     /// Number of nlps hits engine iterations limit.
-  size_t milpIL;     /// Number of milps hits engine iterations limit.
   size_t cuts;      /// Number of cuts added to the LP.
 };
 
@@ -120,14 +118,14 @@ private:
   /// Callback calls
   UInt numCalls_;
 
+  /// Total wall clock time spent in callbacks
+  double cbtime_;
+
   /// Statistics.
   STOAStats *stats_;
 
 
 public:
-  /// Empty constructor.
-  STOAHandler();
-
   /**
    * \brief Default Constructor.
    *
@@ -147,7 +145,13 @@ public:
   {return Branches();};
 
   /// Return number of callbacks till now
-  UInt getNumCalls() { return numCalls_; }
+  UInt getNumCalls() {return numCalls_;}
+
+  /// Return the time taken in callbacks till now
+  double getCbTime() {return cbtime_;}
+
+  /// Set the time taken in callbacks till now
+  void setCbTime(double timeval) {cbtime_ = timeval;}
 
   /// Does nothing.
   void getBranchingCandidates(RelaxationPtr, 
@@ -165,9 +169,9 @@ public:
   // Base class method. Check if x is feasible. x has to satisfy integrality
   // and also nonlinear constraints.
   bool isFeasible(ConstSolutionPtr, RelaxationPtr, 
-                  bool &, double &) { return 0;};
+                  bool &, double &) {return 0;};
 
-  bool isFeas(const double* x);
+  //bool isFeas(const double* x);
 
   /// Does nothing.
   SolveStatus presolve(PreModQ *, bool *) {return Finished;};
@@ -209,7 +213,7 @@ public:
   RelaxationPtr getRel() {return rel_;}
   bool fixedNLP(const double *lpx);
 
-  bool fixedNLP(const double *lpx, const double * nlpx);
+  //bool fixedNLP(const double *lpx, const double * nlpx);
   double newUb(std::vector<UInt> *varIdx,
                         std::vector<double>* varCoeff);
   //void cutIntSol(const double *lpx, double objVal);
@@ -274,10 +278,8 @@ private:
   void cutToCons_(ConstraintPtr con, const double *nlpx, const double *lpx, double* rhs, std::vector<UInt> *varIdx,
                             std::vector<double>* varCoeff);
   
-  /// Add OA cut to a violated constraint.   
   void addCut_(const double *nlpx, const double *lpx, ConstraintPtr con, double* rhs, std::vector<UInt> *varIdx,
                             std::vector<double>* varCoeff);
-  
 
   void objCutAtLpSol_(const double *lpx, double* rhs,
                              std::vector<UInt> *varIdx,
@@ -291,8 +293,8 @@ private:
    * Check if objective is violated at the LP solution and
    * add OA cut.
    */
-  void cutToObj_(const double *nlpx, const double *lpx, double* rhs,
-                             std::vector<UInt> *varIdx,
+  void cutToObj_(const double *nlpx, const double *lpx,
+                 double* rhs, std::vector<UInt> *varIdx,
                             std::vector<double>* varCoeff);
 
   /**

@@ -123,7 +123,6 @@ BranchAndBound* createBab(EnvPtr env, ProblemPtr p, EnginePtr e,
     rel->setJacobian(p->getJacobian());	
     rel->setHessian(p->getHessian());
   }
-  rel->setInitialPoint(p->getInitialPoint());
   nr->setRelaxation(rel);
   nr->setEngine(e);
   bab->setNodeRelaxer(nr);

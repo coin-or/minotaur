@@ -55,6 +55,7 @@ set (MINOTAUR_SOURCES
      LinearFunction.cpp 
      LinearHandler.cpp
      LinFeasPump.cpp 
+     Linearizations.cpp
      Logger.cpp 
      MaxFreqBrancher.cpp
      MaxVioBrancher.cpp
@@ -99,6 +100,7 @@ set (MINOTAUR_SOURCES
      ProbStructure.cpp 
      #QGAdvHandler.cpp 
      QGHandler.cpp 
+     QGHandlerAdvance.cpp 
      #QGHandlerPDE.cpp 
      QPDRelaxer.cpp 
      QPDProcessor.cpp 
@@ -130,6 +132,7 @@ set (MINOTAUR_SOURCES
      YEqMonomial.cpp
      YEqUCGs.cpp
      YEqVars.cpp
+     YEqQfBil.cpp
 )
 
 set (MINOTAUR_HEADERS
@@ -169,6 +172,7 @@ set (MINOTAUR_HEADERS
      LinearFunction.h
      LinearHandler.h
      LinFeasPump.h 
+     Linearizations.h
      LinBil.h
      LinConMod.h
      LinMods.h
@@ -225,6 +229,7 @@ set (MINOTAUR_HEADERS
      ProbStructure.h # Serdar
      QPEngine.h
      QGHandler.h
+     QGHandlerAdvance.h 
      #QGAdvHandler.h 
      #QGHandlerPDE.h
      QPDProcessor.h 
@@ -258,6 +263,7 @@ set (MINOTAUR_HEADERS
      YEqMonomial.h
      YEqUCGs.h
      YEqVars.h
+     YEqQfBil.h
      )
 
 

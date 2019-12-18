@@ -15,6 +15,8 @@
 #include <iostream>
 #if USE_OPENMP
 #include <omp.h>
+#else
+#error "Cannot compile parallel algorithms: turn USE_OpenMP flag ON."
 #endif
 #include "MinotaurConfig.h"
 #include "BranchAndBound.h"
@@ -62,63 +64,31 @@ BrancherPtr createBrancher(EnvPtr env, ProblemPtr p, HandlerVector handlers,
                            EnginePtr e);
 
 
-ParQGBranchAndBound* createParBab(EnvPtr env, ProblemPtr p, EnginePtr e,
-                                UInt numThreads,
-                                RelaxationPtr relCopy[],
-                                ParPCBProcessorPtr nodePrcssr[],
-                                ParNodeIncRelaxerPtr parNodeRlxr[])
+ParQGBranchAndBound* createParBab(EnvPtr env, UInt numThreads, NodePtr &node,
+                                  RelaxationPtr relCopy[], ProblemPtr pCopy[],
+                                  ParPCBProcessorPtr nodePrcssr[],
+                                  ParNodeIncRelaxerPtr parNodeRlxr[],
+                                  HandlerVector handlersCopy[],
+                                  LPEnginePtr lpeCopy[], EnginePtr eCopy[])
 {
-  ParQGBranchAndBound *bab = new ParQGBranchAndBound(env, p);
+  ParQGBranchAndBound *bab = new ParQGBranchAndBound(env, pCopy[0]);
   const std::string me("mcqg main: ");
   OptionDBPtr options = env->getOptions();
-  //For ParQG
   bab->shouldCreateRoot(false);
-  LPEnginePtr lin_e;
-  EngineFactory *efac;
-  efac = new EngineFactory(env);
-  lin_e = efac->getLPEngine();   // lp engine 
  
-  HandlerVector *handlersCopy = new HandlerVector[numThreads];
-
-  // If objective is nonlinear add an extra var name eta to move objective to
-  // constraint in ParQGHandler
-  ObjectivePtr oPtr = p->getObjective();
-  std::string name = "eta";
-  if (!oPtr) {
-    assert(!"No objective function in the problem!");
-  } else if (oPtr->getFunctionType() != Linear &&
-             oPtr->getFunctionType() != Constant) {
-    p->newVariable(-INFINITY,INFINITY,Continuous,name);
-  }
-
-//#if USE_OPENMP
-  //#pragma omp parallel for
-//#endif
   for(UInt i = 0; i < numThreads; ++i) {
-    //BrancherPtr br;
-    EnginePtr eCopy = e->emptyCopy();
-    ProblemPtr cloneP = p->clone();
-    //HessianOfLagPtr cloneH = p->getHessian();
-    //JacobianPtr cloneJ = p->getJacobian();
-    //cloneP->setJacobian(cloneJ);
-    //cloneP->setHessian(cloneH);
-
-    //EnginePtr lpeCopy = lin_e->emptyCopy();
-    //HandlerVector handlersCopy;
-    //LinHandlerPtr l_hand = (LinHandlerPtr) new LinearHandler(env, p);
-    LinHandlerPtr l_hand = (LinHandlerPtr) new LinearHandler(env, cloneP);
+    BrancherPtr br = 0;
+    LinHandlerPtr l_hand = (LinHandlerPtr) new LinearHandler(env, pCopy[i]);
     l_hand->setModFlags(false, true);
     handlersCopy[i].push_back(l_hand);
     assert(l_hand);
 
-    //IntVarHandlerPtr v_hand = (IntVarHandlerPtr) new IntVarHandler(env, p);
-    IntVarHandlerPtr v_hand = (IntVarHandlerPtr) new IntVarHandler(env, cloneP);
+    IntVarHandlerPtr v_hand = (IntVarHandlerPtr) new IntVarHandler(env, pCopy[i]);
     v_hand->setModFlags(false, true);
     handlersCopy[i].push_back(v_hand);
     assert(v_hand);
 
-    //ParQGHandlerPtr qg_hand = (ParQGHandlerPtr) new ParQGHandler(env, p, eCopy); 
-    ParQGHandlerPtr qg_hand = (ParQGHandlerPtr) new ParQGHandler(env, cloneP, eCopy); 
+    ParQGHandlerPtr qg_hand = (ParQGHandlerPtr) new ParQGHandler(env, pCopy[i], eCopy[i]);
     qg_hand->setModFlags(false, true);
     qg_hand->loadProbToEngine();
     if (i>0) {
@@ -127,15 +97,12 @@ ParQGBranchAndBound* createParBab(EnvPtr env, ProblemPtr p, EnginePtr e,
     handlersCopy[i].push_back(qg_hand);
     assert(qg_hand);
 
-    BrancherPtr br;
-    EnginePtr lpeCopy = lin_e->emptyCopy();
-    //br = createBrancher(env, p, handlersCopy[i], lpeCopy);
-    br = createBrancher(env, cloneP, handlersCopy[i], lpeCopy);
-    nodePrcssr[i] = (ParPCBProcessorPtr) new ParPCBProcessor(env, lpeCopy, handlersCopy[i]);
+    br = createBrancher(env, pCopy[i], handlersCopy[i], lpeCopy[i]);
+    nodePrcssr[i] = (ParPCBProcessorPtr) new ParPCBProcessor(env, lpeCopy[i], handlersCopy[i]);
     nodePrcssr[i]->setBrancher(br);
     parNodeRlxr[i] = (ParNodeIncRelaxerPtr) new ParNodeIncRelaxer(env, handlersCopy[i]);
     if (i==0) {
-      NodePtr node = (NodePtr) new Node ();
+      node = (NodePtr) new Node ();
       bool prune = false;
       relCopy[0] = parNodeRlxr[0]->createRootRelaxation(node, prune);
     } else {
@@ -144,67 +111,80 @@ ParQGBranchAndBound* createParBab(EnvPtr env, ProblemPtr p, EnginePtr e,
       qg_hand->setRelaxation(relCopy[i]);
       qg_hand->setObjVar();
     }
-    relCopy[i]->setProblem(cloneP);
+    relCopy[i]->setProblem(pCopy[i]);
     parNodeRlxr[i]->setModFlag(false);
-    parNodeRlxr[i]->setEngine(lpeCopy);
+    parNodeRlxr[i]->setEngine(lpeCopy[i]);
   }
   
+  // when using heuristic, check if engine copy[0] should be cleared etc.
   if (options->findBool("pardivheur")->getValue()) {
     ParMINLPDivingPtr div_heur;
     if (options->findBool("divheurLP")->getValue()) {
       RelaxationPtr lp = (RelaxationPtr) new Relaxation(relCopy[0]);
-      //if (true==options->findBool("use_native_cgraph")->getValue()) {
-        lp->setNativeDer();
-      //}
-      div_heur = (ParMINLPDivingPtr) new ParMINLPDiving(env, lp, lin_e->emptyCopy());
-      div_heur->setAltEngine(e->emptyCopy());
-      div_heur->setOrigProb(p);
+      lp->setNativeDer();
+      div_heur = (ParMINLPDivingPtr) new ParMINLPDiving(env, lp, lpeCopy[0]);
+      div_heur->setAltEngine(eCopy[0]);
+      div_heur->setOrigProb(pCopy[0]);
     }
     else {
-      div_heur = (ParMINLPDivingPtr) new ParMINLPDiving(env, p, e->emptyCopy());
+      div_heur = (ParMINLPDivingPtr) new ParMINLPDiving(env, pCopy[0], eCopy[0]);
     }
     bab->addPreRootHeur(div_heur);
   }
-
-  delete efac;
-  delete [] handlersCopy;
   return bab;
 }
 
 
-BrancherPtr createBrancher(EnvPtr env, ProblemPtr , HandlerVector handlers,
+BrancherPtr createBrancher(EnvPtr env, ProblemPtr p, HandlerVector handlers,
                            EnginePtr e)
 {
-  BrancherPtr br;
-  //UInt t;
+  BrancherPtr br = 0;
+  UInt t;
   const std::string me("mcqg main: ");
 
   if (env->getOptions()->findString("brancher")->getValue() == "rel") {
     ReliabilityBrancherPtr rel_br;
     rel_br = (ReliabilityBrancherPtr) new ReliabilityBrancher(env, handlers);
     rel_br->setEngine(e);
-    //t = (p->getSize()->ints + p->getSize()->bins)/10;
-    //t = std::max(t, (UInt) 2);
-    //t = std::min(t, (UInt) 4);
-    //rel_br->setThresh(t);
-    //env->getLogger()->msgStream(LogExtraInfo) << me <<
-      //"setting reliability threshhold to " << t << std::endl;
-    //t = (UInt) p->getSize()->ints + p->getSize()->bins/20+2;
-    //t = std::min(t, (UInt) 10);
-    //rel_br->setMaxDepth(t);
-    //env->getLogger()->msgStream(LogExtraInfo) << me <<
-      //"setting reliability maxdepth to " << t << std::endl;
-    //if (e->getName()=="Filter-SQP") {
-      //rel_br->setIterLim(5);
-    //}
-    //env->getLogger()->msgStream(LogExtraInfo) << me <<
-      //"reliability branching iteration limit = " <<
-      //rel_br->getIterLim() << std::endl;
+    t = (p->getSize()->ints + p->getSize()->bins)/10;
+    t = std::max(t, (UInt) 2);
+    t = std::min(t, (UInt) 4);
+    rel_br->setThresh(t);
+    env->getLogger()->msgStream(LogExtraInfo) << me <<
+      "setting reliability threshhold to " << t << std::endl;
+    t = (UInt) p->getSize()->ints + p->getSize()->bins/20+2;
+    t = std::min(t, (UInt) 10);
+    rel_br->setMaxDepth(t);
+    env->getLogger()->msgStream(LogExtraInfo) << me <<
+      "setting reliability maxdepth to " << t << std::endl;
+    if (e->getName()=="Filter-SQP") {
+      rel_br->setIterLim(5);
+    }
+    env->getLogger()->msgStream(LogExtraInfo) << me <<
+      "reliability branching iteration limit = " <<
+      rel_br->getIterLim() << std::endl;
     br = rel_br;
   } else if (env->getOptions()->findString("brancher")->getValue() == "parRel") {
     ParReliabilityBrancherPtr parRel_br;
     parRel_br = (ParReliabilityBrancherPtr) new ParReliabilityBrancher(env, handlers);
     parRel_br->setEngine(e);
+    t = (p->getSize()->ints + p->getSize()->bins)/10;
+    t = std::max(t, (UInt) 2);
+    t = std::min(t, (UInt) 4);
+    parRel_br->setThresh(t);
+    env->getLogger()->msgStream(LogExtraInfo) << me <<
+      "setting reliability threshhold to " << t << std::endl;
+    t = (UInt) p->getSize()->ints + p->getSize()->bins/20+2;
+    t = std::min(t, (UInt) 10);
+    parRel_br->setMaxDepth(t);
+    env->getLogger()->msgStream(LogExtraInfo) << me <<
+      "setting reliability maxdepth to " << t << std::endl;
+    if (e->getName()=="Filter-SQP") {
+      parRel_br->setIterLim(5);
+    }
+    env->getLogger()->msgStream(LogExtraInfo) << me <<
+      "reliability branching iteration limit = " <<
+      parRel_br->getIterLim() << std::endl;
     br = parRel_br;
   } else if (env->getOptions()->findString("brancher")->getValue() ==
              "maxvio") {
@@ -373,9 +353,6 @@ PresolverPtr presolve(EnvPtr env, ProblemPtr p, size_t ndefs,
   pres->standardize(); 
   if (env->getOptions()->findBool("presolve")->getValue() == true) {
     pres->solve();
-    for (HandlerVector::iterator h=handlers.begin(); h!=handlers.end(); ++h) {
-      (*h)->writeStats(env->getLogger()->msgStream(LogExtraInfo));
-    }
   }
   return pres;
 }
@@ -386,14 +363,17 @@ void setInitialOptions(EnvPtr env)
   env->getOptions()->findBool("presolve")->setValue(true);
   env->getOptions()->findBool("use_native_cgraph")->setValue(true);
   env->getOptions()->findBool("nl_presolve")->setValue(true);
+  env->getOptions()->findString("brancher")->setValue("parRel");
+  env->getOptions()->findString("nlp_engine")->setValue("IPOPT");
+  env->getOptions()->findString("qp_engine")->setValue("None");
 }
 
 
 void showHelp()
 {
-  std::cout << "NLP-based parallel branch-and-bound solver for convex MINLP"
+  std::cout << "Quesada-Grossmann (LP/NLP) parallel algorithm for convex MINLP"
             << std::endl
-            << "**Works in parallel with a thread-safe NLP and LP solver only "
+            << "Requires a thread-safe NLP and LP solver."
             //<< "(e.g. IPOPT with MA97)**" << std::endl
             << std::endl
             << "Usage:" << std::endl
@@ -448,16 +428,21 @@ void writeSol(EnvPtr env, VarVector *orig_v,
               PresolverPtr pres, SolutionPtr sol, SolveStatus status,
               MINOTAUR_AMPL::AMPLInterface* iface)
 {
+  Solution* final_sol = 0;
   if (sol) {
-    sol = pres->getPostSol(sol);
+    final_sol = pres->getPostSol(sol);
   }
 
   if (env->getOptions()->findFlag("AMPL")->getValue() ||
       true == env->getOptions()->findBool("write_sol_file")->getValue()) {
-    iface->writeSolution(sol, status);
-  } else if (sol && env->getLogger()->getMaxLevel()>=LogExtraInfo &&
+    iface->writeSolution(final_sol, status);
+  } else if (final_sol && env->getLogger()->getMaxLevel()>=LogExtraInfo &&
              env->getOptions()->findBool("display_solution")->getValue()) {
-    sol->writePrimal(env->getLogger()->msgStream(LogExtraInfo), orig_v);
+    final_sol->writePrimal(env->getLogger()->msgStream(LogExtraInfo), orig_v);
+  }
+
+  if (final_sol) {
+    delete final_sol;
   }
 }
 
@@ -538,26 +523,101 @@ void writeParBnbStatus(EnvPtr env, ParQGBranchAndBound *parbab, double obj_sense
 }
 
 
+void writeParQGStats(EnvPtr env, ParQGBranchAndBound *parbab, UInt numThreads,
+                     HandlerVector handlersCopy[])
+{
+  if (parbab) {
+    const std::string me("ParQGHandler: ");
+    UInt nlpSolved = 0, nlpInf = 0, nlpFeas = 0, nlpItLim = 0, numCuts = 0;
+    for (UInt i=0; i < numThreads; i++) {
+      for (HandlerVector::iterator it=handlersCopy[i].begin(); it!=handlersCopy[i].end(); ++it) {
+        if ((*it)->getName() == "ParQGHandler (Quesada-Grossmann)") {
+          ParQGHandlerPtr parqgHand = dynamic_cast <ParQGHandler*> (*it);
+          nlpSolved += parqgHand->getStats()->nlpS;
+          nlpInf += parqgHand->getStats()->nlpI;
+          nlpFeas += parqgHand->getStats()->nlpF;
+          nlpItLim += parqgHand->getStats()->nlpIL;
+          numCuts += parqgHand->getStats()->cuts;
+        }
+      }
+    }
+    env->getLogger()->msgStream(LogInfo)
+      << me << "number of nlps solved                       = "
+      << nlpSolved << std::endl
+      << me << "number of infeasible nlps                   = "
+      << nlpInf << std::endl
+      << me << "number of feasible nlps                     = "
+      << nlpFeas << std::endl
+      << me << "number of nlps hit engine iterations limit  = "
+      << nlpItLim << std::endl
+      << me << "number of cuts added                        = "
+      << numCuts << std::endl;
+  }
+}
+
+
+void writeLPStats(EnvPtr env, std::string name, std::vector<double> stats) {
+  if (stats.size()) {
+    std::string me = name + ": ";
+    env->getLogger()->msgStream(LogExtraInfo)
+      << me << "total calls            = " << UInt(stats[0]) << std::endl
+      << me << "strong branching calls = " << UInt(stats[1]) << std::endl
+      << me << "total time in solving  = " << stats[2] << std::endl
+      << me << "time in str branching  = " << stats[3] << std::endl
+      << me << "total iterations       = " << UInt(stats[4]) << std::endl
+      << me << "strong br iterations   = " << UInt(stats[5]) << std::endl;
+  }
+}
+
+
+void writeNLPStats(EnvPtr env, std::string name, std::vector<double> stats) {
+  if (stats.size()) {
+    std::string me = name + ": ";
+    env->getLogger()->msgStream(LogExtraInfo)
+      << me << "total calls            = " << UInt(stats[0]) << std::endl
+      << me << "calls to Optimize      = " << UInt(stats[1]) << std::endl
+      << me << "calls to ReOptimize    = " << UInt(stats[2]) << std::endl
+      << me << "strong branching calls = " << UInt(stats[3]) << std::endl
+      << me << "total time in solving  = " << stats[4] << std::endl
+      << me << "total time in presolve = " << stats[5] << std::endl
+      << me << "time in str branching  = " << stats[6] << std::endl
+      << me << "total iterations       = " << UInt(stats[7]) << std::endl
+      << me << "strong br iterations   = " << UInt(stats[8]) << std::endl;
+  }
+}
+
+
 int main(int argc, char** argv)
 {
   EnvPtr env      = (EnvPtr) new Environment();
-  OptionDBPtr options;
   MINOTAUR_AMPL::AMPLInterface* iface = 0;
   ProblemPtr oinst;      // instance that needs to be solved.
   EnginePtr engine = 0;  // engine for solving relaxations. 
   ParQGBranchAndBound * parbab = 0;
   double wallTimeStart = parbab->getWallTime();  //use Timer: to be done!!!
-  PresolverPtr pres;
+  PresolverPtr pres = 0;
   const std::string me("mcqg main: ");
   VarVector *orig_v=0;
   HandlerVector handlers;
   int err = 0;
   double obj_sense = 1.0;
   
-  UInt numThreads;
+  UInt numThreads = 0;
   ParPCBProcessorPtr *nodePrcssr = 0; 
   ParNodeIncRelaxerPtr *parNodeRlxr = 0;
+  ProblemPtr *pCopy = 0;
   RelaxationPtr *relCopy = 0;
+  HandlerVector *handlersCopy = 0;
+  EngineFactory *efac = 0;
+  LPEnginePtr *lpeCopy = 0;
+  EnginePtr *eCopy = 0;
+  ObjectivePtr oPtr = 0;
+  NodePtr node = 0;
+  std::string name = "";
+
+  std::vector<double> lpStats(6,0);
+  std::vector<double> nlpStats(9,0);
+ 
   env->startTimer(err);
 
   if (err) {
@@ -577,19 +637,13 @@ int main(int argc, char** argv)
     goto CLEANUP;
   }
 
-#if USE_OPENMP
-  numThreads = std::min(env->getOptions()->findInt("threads")->getValue(),
-                        omp_get_num_procs());
-#else
-  numThreads = 1;
-#endif
-  nodePrcssr = new ParPCBProcessorPtr[numThreads];
-  parNodeRlxr = new ParNodeIncRelaxerPtr[numThreads];
-  relCopy = new RelaxationPtr[numThreads]; 
   loadProblem(env, iface, oinst, &obj_sense);
 
   orig_v = new VarVector(oinst->varsBegin(), oinst->varsEnd());
   pres = presolve(env, oinst, iface->getNumDefs(), handlers);
+  for (HandlerVector::iterator it=handlers.begin(); it!=handlers.end(); ++it) {
+    delete (*it);
+  }
   handlers.clear();
   if (Finished != pres->getStatus() && NotStarted != pres->getStatus()) {
     env->getLogger()->msgStream(LogInfo) << me 
@@ -612,35 +666,107 @@ int main(int argc, char** argv)
   if (err) {
     goto CLEANUP;
   }
+
+  numThreads = std::min(env->getOptions()->findInt("threads")->getValue(),
+                        omp_get_num_procs());
+  nodePrcssr = new ParPCBProcessorPtr[numThreads];
+  parNodeRlxr = new ParNodeIncRelaxerPtr[numThreads];
+  relCopy = new RelaxationPtr[numThreads];
+  pCopy = new ProblemPtr[numThreads];
+  handlersCopy = new HandlerVector[numThreads];
+  efac = new EngineFactory(env);
+  lpeCopy = new LPEnginePtr[numThreads];
+  eCopy = new EnginePtr[numThreads];
+
+  // If objective is nonlinear add an extra var name eta to move objective to
+  // constraint in ParQGHandler
+  pCopy[0] = oinst->clone();
+  oPtr = oinst->getObjective();
+  if (!oPtr) {
+    assert(!"No objective function in the problem!");
+  } else if (oPtr->getFunctionType() != Linear &&
+             oPtr->getFunctionType() != Constant) {
+    name = "eta";
+    pCopy[0]->newVariable(-INFINITY,INFINITY,Continuous,name);
+  }
+
+  for(UInt i=0; i < numThreads; ++i) {
+    lpeCopy[i] = efac->getLPEngine();
+    eCopy[i] = engine->emptyCopy();
+    if (i > 0) {
+      pCopy[i] = pCopy[0]->clone();
+    }
+  }
+
   if (numThreads > 1) {
     env->getLogger()->msgStream(LogInfo)
-      << "**Works in parallel with a thread-safe "
-      << "LP and NLP solver only**" << std::endl;
+      << "Number of threads = " << numThreads 
+      << ". Requires a thread-safe LP and NLP solver." << std::endl;
   }
-  parbab = createParBab(env, oinst, engine, numThreads, relCopy,
-                        nodePrcssr, parNodeRlxr);
+  parbab = createParBab(env, numThreads, node, relCopy, pCopy, nodePrcssr,
+                        parNodeRlxr, handlersCopy, lpeCopy, eCopy);
   parbab->parsolve(parNodeRlxr, nodePrcssr, numThreads);
   
-  //Take care of important bnb statistics: to be done!!!
+  //Take care of important bnb statistics
   //parbab->writeParStats(env->getLogger()->msgStream(LogExtraInfo), nodePrcssr);
   
-  //Take care of important engine statistics: to be done!!!
-  //engine->writeStats(env->getLogger()->msgStream(LogExtraInfo));
+  //Take care of important engine statistics
+  for (UInt i=0; i < numThreads; i++) {
+    lpeCopy[i]->fillStats(lpStats);
+    eCopy[i]->fillStats(nlpStats);
+  }
+  writeLPStats(env, lpeCopy[0]->getName(), lpStats);
+  writeNLPStats(env, eCopy[0]->getName(), nlpStats);
   
-  //Take care of important handler statistics: to be done!!!
-  //for (HandlerVector::iterator it=handlers.begin(); it!=handlers.end(); ++it) {
-    //(*it)->writeStats(env->getLogger()->msgStream(LogExtraInfo));
+  //Take care of important handler statistics
+  //for (UInt i=0; i < numThreads; i++) {
+    //env->getLogger()->msgStream(LogExtraInfo) << "Thread " << i << std::endl;
+    //for (HandlerVector::iterator it=handlersCopy[i].begin(); it!=handlersCopy[i].end(); ++it) {
+      //(*it)->writeStats(env->getLogger()->msgStream(LogExtraInfo));
+    //}
   //}
 
   writeSol(env, orig_v, pres, parbab->getSolution(), parbab->getStatus(), iface);
+  writeParQGStats(env, parbab, numThreads, handlersCopy);
   writeParBnbStatus(env, parbab, obj_sense, wallTimeStart);
 
 CLEANUP:
   if (engine) {
     delete engine;
   }
+  if (efac) {
+    delete efac;
+  }
   if (iface) {
     delete iface;
+  }
+  if (pres) {
+    delete pres;
+  }
+  for (UInt i=0; i < numThreads; i++) {
+    for (HandlerVector::iterator it=handlersCopy[i].begin();
+         it!=handlersCopy[i].end(); ++it) {
+      delete (*it);
+    }
+    if (lpeCopy[i]) {
+      delete lpeCopy[i];
+    }
+    if (eCopy[i]) {
+      delete eCopy[i];
+    }
+    if (pCopy[i]) {
+      delete pCopy[i];
+    }
+    if (parNodeRlxr[i]) {
+      delete parNodeRlxr[i];
+      relCopy[i] = 0;
+    }
+    if (nodePrcssr[i]) {
+      delete nodePrcssr[i];
+    }
+  }
+  if (node) {
+    delete node;
   }
   if (nodePrcssr) {
     delete[] nodePrcssr;
@@ -651,11 +777,35 @@ CLEANUP:
   if (relCopy) {
     delete[] relCopy;
   }
+  if (pCopy) {
+    delete[] pCopy;
+  }
+  if (eCopy) {
+    delete[] eCopy;
+  }
+  if (handlersCopy) {
+    delete[] lpeCopy;
+  }
+  if (handlersCopy) {
+    delete[] handlersCopy;
+  }
   if (parbab) {
+    if (parbab->getNodeRelaxer()) {
+      delete parbab->getNodeRelaxer();
+    }
+    if (parbab->getNodeProcessor()) {
+      delete parbab->getNodeProcessor();
+    }
     delete parbab;
+  }
+  if (oinst) {
+    delete oinst;
   }
   if (orig_v) {
     delete orig_v;
+  }
+  if (env) {
+    delete env;
   }
   return 0;
 }

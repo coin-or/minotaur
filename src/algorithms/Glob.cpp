@@ -35,6 +35,7 @@
 #include "Presolver.h"
 #include "ProblemSize.h"
 #include "Problem.h"
+#include "QuadHandler.h"
 #include "Relaxation.h"
 #include "ReliabilityBrancher.h"
 #include "SimpleTransformer.h"
@@ -110,6 +111,10 @@ void loadProblem(EnvPtr env, MINOTAUR_AMPL::AMPLInterface* iface,
     << "time used in reading instance = " << std::fixed 
     << std::setprecision(2) << timer->query() << std::endl;
 
+  if (options->findBool("cgtoqf")->getValue()==1) {
+    inst->cg2qf();
+  }
+
   // display the problem
   inst->calculateSize();
   if (options->findBool("display_problem")->getValue()==true) {
@@ -162,8 +167,7 @@ BranchAndBound * createBab (EnvPtr env, ProblemPtr p, EnginePtr e,
   BranchAndBound *bab = new BranchAndBound(env, p);
   PCBProcessorPtr nproc;
   NodeIncRelaxerPtr nr;
-  RelaxationPtr rel;
-  BrancherPtr br;
+  BrancherPtr br = 0;
   const std::string me("mntr-glob: ");
 
   if (env->getOptions()->findString("brancher")->getValue() == "rel") {
@@ -205,7 +209,6 @@ BranchAndBound * createBab (EnvPtr env, ProblemPtr p, EnginePtr e,
 
   nr = (NodeIncRelaxerPtr) new NodeIncRelaxer(env, handlers);
   nr->setProblem(p);
-  nr->setRelaxation(rel);
   nr->setEngine(e);
   bab->setNodeRelaxer(nr);
   bab->shouldCreateRoot(true);
@@ -249,7 +252,14 @@ PresolverPtr createPres(EnvPtr env, ProblemPtr p, size_t ndefs,
       lhandler->setPreOptDualFix(true);
     }
 
-    if (!p->isLinear() && 
+    if (!p->isLinear() &&
+         (p->isQP() || p->isQuadratic()) &&
+         true==env->getOptions()->findBool("cgtoqf")->getValue()) {
+      QuadHandlerPtr qhand = (QuadHandlerPtr) new QuadHandler(env, p);
+      handlers.push_back(qhand);
+    }
+
+    if (!(p->isLinear() || p->isQP() || p->isQuadratic()) &&
          true==env->getOptions()->findBool("use_native_cgraph")->getValue() && 
          true==env->getOptions()->findBool("nl_presolve")->getValue() 
          ) {
@@ -268,6 +278,7 @@ PresolverPtr createPres(EnvPtr env, ProblemPtr p, size_t ndefs,
   }
 
   pres = (PresolverPtr) new Presolver(p, env, handlers);
+  pres->standardize();
   return pres;
 }
 
@@ -281,6 +292,7 @@ void setInitialOptions(EnvPtr env)
   options->findBool("lin_presolve")->setValue(true);
   options->findBool("msheur")->setValue(true);
   options->findString("brancher")->setValue("maxvio");
+  env->getOptions()->findString("nlp_engine")->setValue("IPOPT");
 }
 
 void showHelp()
@@ -392,13 +404,11 @@ void writeStatus(EnvPtr env, BranchAndBound *bab, double obj_sense)
 int main(int argc, char** argv)
 {
   EnvPtr env      = (EnvPtr) new Environment();
-  OptionDBPtr options;
   MINOTAUR_AMPL::AMPLInterfacePtr iface;
   ProblemPtr inst;       // instance that needs to be solved.
   EnginePtr engine = 0;  // engine for solving relaxations. 
-  SolutionPtr sol, sol2;
   BranchAndBound *bab = 0;
-  PresolverPtr pres, pres2;
+  PresolverPtr pres = 0, pres2 = 0;
   const std::string me("mntr-glob: ");
   VarVector *orig_v=0;
   HandlerVector handlers;
@@ -413,7 +423,7 @@ int main(int argc, char** argv)
 
   // Important to setup AMPL Interface first as it adds several options.
   iface = (MINOTAUR_AMPL::AMPLInterfacePtr) 
-    new MINOTAUR_AMPL::AMPLInterface(env, "mntr-glob");
+    new MINOTAUR_AMPL::AMPLInterface(env, "glob");
 
   // read user-specified options
   env->readOptions(argc, argv);
@@ -437,6 +447,9 @@ int main(int argc, char** argv)
   pres = createPres(env, inst, iface->getNumDefs(), handlers);
   if (env->getOptions()->findBool("presolve")->getValue() == true) {
     pres->solve();
+  }
+  for (HandlerVector::iterator it=handlers.begin(); it!=handlers.end(); ++it) {
+    delete (*it);
   }
   handlers.clear();
 
@@ -470,17 +483,35 @@ int main(int argc, char** argv)
   writeStatus(env, bab, obj_sense);
 
 CLEANUP:
+  for (HandlerVector::iterator it=handlers.begin(); it!=handlers.end(); ++it) {
+    delete (*it);
+  }
   if (engine) {
     delete engine;
   }
   if (iface) {
     delete iface;
   }
+  if (pres) {
+    delete pres;
+  }
+  if (pres2) {
+    delete pres2;
+  }
   if (bab) {
+    if (bab->getNodeRelaxer()) {
+      delete bab->getNodeRelaxer();
+    }
+    if (bab->getNodeProcessor()) {
+      delete bab->getNodeProcessor();
+    }
     delete bab;
   }
   if (orig_v) {
     delete orig_v;
+  }
+  if (env) {
+    delete env;
   }
 
   return 0;

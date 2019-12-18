@@ -388,7 +388,6 @@ bool QPDProcessor::presolveNode_(NodePtr node, SolutionPoolPtr s_pool)
   ModVector n_mods;      // Mods that are applied in this node.
   ModVector t_mods;      // Mods that need to be saved for subsequent nodes 
                          // as well. It is a subset of n_mods;
-  ModificationPtr mod2;
   bool is_inf = false;
 
   // TODO: make this more sophisticated: loop several times until no more
@@ -1291,7 +1290,7 @@ void QPDProcessor::setupQP_(ConstSolutionPtr sol)
   double pred = 0; // for debug.
   double obj_const = 0;
   UInt zduals = 0;
-  NonlinearFunctionPtr nlf;
+  NonlinearFunctionPtr nlf = 0;
   double val;
   SolutionPtr qpsol;
   double *ddd = new double[p_->getNumCons()];
@@ -1461,6 +1460,7 @@ bool QPDProcessor::shouldPrune_(NodePtr node, EngineStatus status,
    case (FailedInfeas):
    case (ProvenFailedCQInfeas):
      ++stats_.prob;
+     //fall through
    case (ProvenInfeasible):
    case (ProvenLocalInfeasible):
      node->setStatus(NodeInfeasible);
@@ -1542,6 +1542,7 @@ bool QPDProcessor::shouldPruneQP_(NodePtr node, EngineStatus status,
    case (FailedInfeas):
    case (ProvenFailedCQInfeas):
      ++stats_.prob;
+     //fall through
    case (ProvenInfeasible):
    case (ProvenLocalInfeasible):
      node->setStatus(NodeInfeasible);

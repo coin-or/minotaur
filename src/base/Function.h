@@ -233,11 +233,11 @@ namespace Minotaur {
     /// The linear function part of the function. Could be NULL.
     LinearFunctionPtr lf_;
 
-    /// The quadratic function part of the function. Could be NULL.
-    QuadraticFunctionPtr qf_;
-
     /// The nonlinear function part of the function. Could be NULL.
     NonlinearFunctionPtr nlf_;
+
+    /// The quadratic function part of the function. Could be NULL.
+    QuadraticFunctionPtr qf_;
 
     /**
      * Collect all the variables from the components into a single vector.

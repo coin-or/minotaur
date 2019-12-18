@@ -4,14 +4,14 @@
 //     (C)opyright 2008 - 2017 The MINOTAUR Team.
 // 
 
-/*! \brief Single-tree Outer-approximation algorithm with Lazy callback for solving convex MINLP
+/*! \brief Single-tree Outer-approximation algorithm with Lazy Cuts callback for solving convex MINLPs.
  *
  * \authors Meenarli Sharma and Prashant Palkar, IIT Bombay
  */
 
 
 #ifdef USE_CPX
-#include <CplexMILPEngine.h> //(why sequence matters?)
+#include <CplexMILPEngine.h>
 #endif
 
 #include <iomanip>
@@ -19,43 +19,43 @@
 #include <fstream>
 #include <sys/time.h>
 
-#include <MinotaurConfig.h>
-#include <AMPLHessian.h>
-#include <AMPLJacobian.h>
-#include <Environment.h>
-#include <Handler.h>
-#include <Option.h>
-#include <Problem.h>
-#include <Engine.h>
-#include <QPEngine.h>
-#include <LPEngine.h>
-#include <Logger.h>
-#include <MILPEngine.h>
+#include "MinotaurConfig.h"
+#include "AMPLHessian.h"
+#include "AMPLJacobian.h"
+#include "Environment.h"
+#include "Handler.h"
+#include "Option.h"
+#include "Problem.h"
+#include "Engine.h"
+#include "QPEngine.h"
+#include "LinFeasPump.h"
+#include "LPEngine.h"
+#include "Logger.h"
+#include "MILPEngine.h"
 #include "Modification.h"
-#include <NLPEngine.h>
+#include "NLPEngine.h"
 #include "NlPresHandler.h"
-#include <NodeRelaxer.h>
-#include <NodeIncRelaxer.h>
-#include <MaxVioBrancher.h>
-#include <STOAHandler.h>
-#include <ReliabilityBrancher.h>
-#include <AMPLInterface.h>
-#include <BranchAndBound.h>
-#include <PCBProcessor.h>
-#include <Presolver.h>
-#include <Timer.h>
-#include <LexicoBrancher.h>
-#include <Logger.h>
-#include <LinearHandler.h>
-#include <IntVarHandler.h>
-#include <Solution.h>
-#include <SolutionPool.h>
-#include <TreeManager.h>
-#include <EngineFactory.h>
-#include <CxQuadHandler.h>
-#include <Objective.h>
-
-#include <Relaxation.h> //(why needed to included here?)
+#include "NodeRelaxer.h"
+#include "NodeIncRelaxer.h"
+#include "MaxVioBrancher.h"
+#include "STOAHandler.h"
+#include "ReliabilityBrancher.h"
+#include "AMPLInterface.h"
+#include "BranchAndBound.h"
+#include "PCBProcessor.h"
+#include "Presolver.h"
+#include "Timer.h"
+#include "LexicoBrancher.h"
+#include "Logger.h"
+#include "LinearHandler.h"
+#include "IntVarHandler.h"
+#include "Solution.h"
+#include "SolutionPool.h"
+#include "TreeManager.h"
+#include "EngineFactory.h"
+#include "CxQuadHandler.h"
+#include "Objective.h"
+#include "Relaxation.h"
 
 
 using namespace Minotaur;
@@ -73,7 +73,7 @@ void loadProblem(EnvPtr env, MINOTAUR_AMPL::AMPLInterface* iface,
   OptionDBPtr options = env->getOptions();
   JacobianPtr jac;
   HessianOfLagPtr hess;
-  const std::string me("qg: ");
+  const std::string me("oa: ");
 
   timer->start();
   oinst = iface->readInstance(options->findString("problem_file")->getValue());
@@ -91,7 +91,7 @@ void loadProblem(EnvPtr env, MINOTAUR_AMPL::AMPLInterface* iface,
   }
   // create the jacobian
   if (false==options->findBool("use_native_cgraph")->getValue()) {
-    jac = (MINOTAUR_AMPL::AMPLJacobianPtr) 
+    jac = (MINOTAUR_AMPL::AMPLJacobianPtr)
       new MINOTAUR_AMPL::AMPLJacobian(iface);
     oinst->setJacobian(jac);
 
@@ -198,11 +198,11 @@ PresolverPtr presolve(EnvPtr env, ProblemPtr p, size_t ndefs,
                       HandlerVector &handlers)
 {
   PresolverPtr pres = PresolverPtr(); // NULL
-  const std::string me("qg: ");
+  const std::string me("oa main: ");
 
   p->calculateSize();
   if (env->getOptions()->findBool("presolve")->getValue() == true) {
-    LinearHandlerPtr lhandler = (LinearHandlerPtr) new LinearHandler(env, p);
+    LinHandlerPtr lhandler = (LinHandlerPtr) new LinearHandler(env, p);
     handlers.push_back(lhandler);
     if (p->isQP() || p->isQuadratic() || p->isLinear() ||
         true==env->getOptions()->findBool("use_native_cgraph")->getValue()) {
@@ -221,9 +221,9 @@ PresolverPtr presolve(EnvPtr env, ProblemPtr p, size_t ndefs,
     }
 
     if (!p->isLinear() && 
-        true==env->getOptions()->findBool("use_native_cgraph")->getValue() && 
-        true==env->getOptions()->findBool("nl_presolve")->getValue() 
-       ) {
+         true==env->getOptions()->findBool("use_native_cgraph")->getValue() && 
+         true==env->getOptions()->findBool("nl_presolve")->getValue()
+         ) {
       NlPresHandlerPtr nlhand = (NlPresHandlerPtr) new NlPresHandler(env, p);
       handlers.push_back(nlhand);
     }
@@ -242,17 +242,16 @@ PresolverPtr presolve(EnvPtr env, ProblemPtr p, size_t ndefs,
   pres->standardize(); 
   if (env->getOptions()->findBool("presolve")->getValue() == true) {
     pres->solve();
+    for (HandlerVector::iterator h=handlers.begin(); h!=handlers.end(); ++h) {
+      (*h)->writeStats(env->getLogger()->msgStream(LogExtraInfo));
+    }
   }
   return pres;
 }
 
 
-
 double getPerGap(double objLb, double objUb)
 {
-  // for minimization problems, gap = (ub - lb)/(ub) * 100
-  // so that if one has a ub, she can say that the solution can not be more
-  // than gap% away from the current ub.
   double gap = 0.0, etol = 1e-6;
   if (objUb >= INFINITY) {
     gap = INFINITY;
@@ -285,9 +284,7 @@ void writeSTOAStatus(EnvPtr env, double gap, double objLb, double objUb,
     << me << "gap = " << std::max(0.0, objUb - objLb)
     << std::endl
     << me << "gap percentage = " << gap << std::endl
-    //<< me << "iterations = " << iterNum << std::endl
     << me << "time used (s) = " << std::fixed << std::setprecision(2) 
-    //<< env->getTime(err) << std::endl
     << getWallTime() - wallTimeStart << std::endl
     << me << "status of outer approximation: " << getSolveStatusString(status) << std::endl;
   env->stopTimer(err); assert(0==err);
@@ -305,13 +302,11 @@ void showStatus(EnvPtr env, double objLb, double objUb, double gap, double obj_s
     << std::setprecision(4)  << " ub = "   << objUb
     << std::setprecision(2)  << " gap% = " << gap
     << std::setprecision(0)  << " obj_sense = " << obj_sense
-    //<< " iterations = " << iterNum 
-    << std::endl;
+    << std::setprecision(2) << std::endl;
 }
 
 
 bool shouldStop(EnvironmentPtr env, SolveStatus &status, double gap, SolutionPoolPtr solPool)
-//bool shouldStop(EnvironmentPtr env, SolveStatus &status, double gap, SolutionPoolPtr solPool)
 {
   bool stop_oa = false;
   int err = 0;
@@ -325,9 +320,6 @@ bool shouldStop(EnvironmentPtr env, SolveStatus &status, double gap, SolutionPoo
   } else if (env->getTime(err) > env->getOptions()->findDouble("bnb_time_limit")->getValue()) {
     stop_oa = true;
     status = TimeLimitReached;
-  //} else if (iterNum >= env->getOptions()->findInt("oa_iter_limit")->getValue()) {
-    //stop_oa = true;
-    //status = IterationLimitReached;
   } else if (solPool->getNumSolsFound() >= (UInt) env->getOptions()->findInt("bnb_sol_limit")->getValue()) {
     stop_oa = true;
     status = SolLimitReached;
@@ -344,10 +336,9 @@ int main(int argc, char* argv[])
 
   MINOTAUR_AMPL::AMPLInterfacePtr iface = MINOTAUR_AMPL::AMPLInterfacePtr();
   ProblemPtr inst;
-  SolutionPtr sol;
   double obj_sense =1.0, gap = INFINITY;
   
-  PresolverPtr pres;
+  PresolverPtr pres = 0;
   const std::string me("oa: ");
   SolveStatus status;
   //handlers
@@ -356,9 +347,11 @@ int main(int argc, char* argv[])
   STOAHandlerPtr stoa_hand;
   EngineStatus engineStatus;
   ModVector pmod, rmod;
+  NodeIncRelaxerPtr nr = 0;
+  SolutionPoolPtr solPool = 0;
 
   //engines
-  EnginePtr nlp_e;
+  EnginePtr nlp_e = 0;
   
   VarVector *orig_v=0;
   int err = 0;
@@ -381,7 +374,7 @@ int main(int argc, char* argv[])
   setInitialOptions(env);
 
   iface = (MINOTAUR_AMPL::AMPLInterfacePtr) 
-    new MINOTAUR_AMPL::AMPLInterface(env, "qg");
+    new MINOTAUR_AMPL::AMPLInterface(env, "oa");
 
   // parse options
   env->readOptions(argc, argv);
@@ -400,6 +393,9 @@ int main(int argc, char* argv[])
   // get presolver.
   orig_v = new VarVector(inst->varsBegin(), inst->varsEnd());
   pres = presolve(env, inst, iface->getNumDefs(), handlers);
+  for (HandlerVector::iterator it=handlers.begin(); it!=handlers.end(); ++it) {
+    delete (*it);
+  }
   handlers.clear();
   if (Finished != pres->getStatus() && NotStarted != pres->getStatus()) {
     env->getLogger()->msgStream(LogInfo) << me 
@@ -409,7 +405,7 @@ int main(int argc, char* argv[])
     goto CLEANUP;
   }
  
-   if (options->findBool("solve")->getValue()==true) {
+  if (options->findBool("solve")->getValue()==true) {
     double objLb = -INFINITY, objUb = INFINITY;
     bool prune = false;
     if (true==options->findBool("use_native_cgraph")->getValue()) {
@@ -421,7 +417,7 @@ int main(int argc, char* argv[])
     handlers.push_back(l_hand);
     assert(l_hand);
 
-    SolutionPoolPtr solPool = (SolutionPoolPtr) new SolutionPool(env, inst, 1);
+    solPool = (SolutionPoolPtr) new SolutionPool(env, inst, 1);
     
     stoa_hand = (STOAHandlerPtr) new STOAHandler(env, inst, nlp_e, milp_e, solPool);
     stoa_hand->setModFlags(false, true);
@@ -429,7 +425,6 @@ int main(int argc, char* argv[])
     assert(stoa_hand);
   
     // Initialize the handlers for STOA
-    NodeIncRelaxerPtr nr;
     nr = (NodeIncRelaxerPtr) new NodeIncRelaxer(env, handlers);
     nr->setModFlag(false);
     nr->createRootRelaxation(NodePtr(), prune);
@@ -441,7 +436,10 @@ int main(int argc, char* argv[])
 
     //MS: adjust relTol if UB =0
 #ifdef USE_CPX
-    engineStatus = milp_e->solveSTLazy(&objLb, &sol, stoa_hand, &status);
+    {
+      SolutionPtr sol = 0;
+      engineStatus = milp_e->solveSTLazy(&objLb, &sol, stoa_hand, &status);
+    }
 #else
     env->getLogger()->errStream() << me << "CPLEX MILP Engine not found, exiting" << std::endl;
     goto CLEANUP;
@@ -452,23 +450,47 @@ int main(int argc, char* argv[])
     objUb = solPool->getBestSolutionValue();
     gap = getPerGap(objLb, objUb);
     showStatus(env, objLb, objUb, gap, obj_sense);
-    writeSTOAStatus(env, gap, objLb, objUb, obj_sense, status, wallTimeStart);
-    nlp_e->writeStats(env->getLogger()->msgStream(LogExtraInfo));
     milp_e->writeStats(env->getLogger()->msgStream(LogExtraInfo));
+    nlp_e->writeStats(env->getLogger()->msgStream(LogExtraInfo));
 
     for (HandlerVector::iterator it=handlers.begin(); it!=handlers.end();
          ++it) {
       (*it)->writeStats(env->getLogger()->msgStream(LogExtraInfo));
     }
     //writeSol(env, orig_v, pres, solPool->getBestSolution(), status, iface);
+    writeSTOAStatus(env, gap, objLb, objUb, obj_sense, status, wallTimeStart);
    }
 
 CLEANUP:
+  for (HandlerVector::iterator it=handlers.begin(); it!=handlers.end(); ++it) {
+    delete (*it);
+  }
+  if (milp_e) {
+    delete milp_e;
+  }
+  if (nlp_e) {
+    delete nlp_e;
+  }
+  if (solPool) {
+    delete solPool;
+  }
   if (iface) {
     delete iface;
   }
+  if (nr) {
+    delete nr;
+  }
+  if (pres) {
+    delete pres;
+  }
+  if (inst) {
+    delete inst;
+  }
   if (orig_v) {
     delete orig_v;
+  }
+  if (env) {
+    delete env;
   }
   return 0;
 }
@@ -513,21 +535,23 @@ void writeSol(EnvPtr env, VarVector *orig_v,
               PresolverPtr pres, SolutionPtr sol, SolveStatus status,
               MINOTAUR_AMPL::AMPLInterface* iface)
 {
+  Solution* final_sol = 0;
   if (sol) {
-    sol = pres->getPostSol(sol);
-    iface->writeSolution(sol, status);
+    final_sol = pres->getPostSol(sol);
   }
 
   if (env->getOptions()->findFlag("AMPL")->getValue() ||
       true == env->getOptions()->findBool("write_sol_file")->getValue()) {
-    iface->writeSolution(sol, status);
-  } else if (sol && env->getLogger()->getMaxLevel()>=LogExtraInfo) {
-    sol->writePrimal(env->getLogger()->msgStream(LogExtraInfo), orig_v);
+    iface->writeSolution(final_sol, status);
+  } else if (final_sol && env->getLogger()->getMaxLevel()>=LogExtraInfo &&
+             env->getOptions()->findBool("display_solution")->getValue()) {
+    final_sol->writePrimal(env->getLogger()->msgStream(LogExtraInfo), orig_v);
+  }
+
+  if (final_sol) {
+    delete final_sol;
   }
 }
-
-
-
 
 
 // Local Variables: 

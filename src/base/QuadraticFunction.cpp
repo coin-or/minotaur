@@ -169,6 +169,7 @@ void QuadraticFunction::computeBounds(double *l, double *u){
   double d;
   double lb = 0;
   double ub = 0;
+  double m;
   for (VariablePairGroupConstIterator it = begin(); it != end(); ++it) {
       a = it->second * (it->first.first -> getLb()) * 
         (it->first.second -> getLb());
@@ -178,8 +179,10 @@ void QuadraticFunction::computeBounds(double *l, double *u){
         (it->first.second -> getLb());
       d = it->second * (it->first.first -> getUb()) * 
         (it->first.second -> getUb());
-      lb += std::min({a,b,c,d});
-      ub += std::max({a,b,c,d});
+      m = std::min(a,b); m = std::min(m,c); m = std::min(m,d);
+      lb += m;
+      m = std::max(a,b); m = std::max(m,c); m = std::max(m,d);
+      ub += m; 
   }
   *l = lb;
   *u = ub;
@@ -202,14 +205,14 @@ void QuadraticFunction::bndsquadterms(double *l, double *u, VariablePtr v){
       if (it->first.first != v){
       a1 = it->second * (it->first.first -> getLb());
       a2 = it->second * (it->first.first -> getUb());
-      lb += std::min({a1,a2});
-      ub += std::max({a1,a2});
+      lb += std::min(a1,a2);
+      ub += std::max(a1,a2);
       }
       if (it->first.second != v){
       b1 = it->second * (it->first.second -> getLb());
       b2 = it->second * (it->first.second -> getUb());
-      lb += std::min({b1,b2});
-      ub += std::max({b1,b2});
+      lb += std::min(b1,b2);
+      ub += std::max(b1,b2);
       }
       
       
@@ -236,14 +239,14 @@ void QuadraticFunction::bndsquadterms_2(double *l, double *u, VariablePtr v, Var
       if (it->first.first != v){
       a1 = it->second * (it->first.first -> getLb());
       a2 = it->second * (it->first.first -> getUb());
-      lb += std::min({a1,a2});
-      ub += std::max({a1,a2});
+      lb += std::min(a1,a2);
+      ub += std::max(a1,a2);
       }
       if (it->first.second != v){
       b1 = it->second * (it->first.second -> getLb());
       b2 = it->second * (it->first.second -> getUb());
-      lb += std::min({b1,b2});
-      ub += std::max({b1,b2});
+      lb += std::min(b1,b2);
+      ub += std::max(b1,b2);
       }
       
       

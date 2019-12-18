@@ -13,13 +13,7 @@
 #include <cmath>
 #include <iostream>
 #include <iomanip>
-
-//#include "coin/CoinPragma.hpp"
-//#include "coin/CbcModel.hpp"
-//#include "coin/OsiClpSolverInterface.hpp"
-
-// #undef F77_FUNC_
-// #undef F77_FUNC
+#include <fstream>
 
 #include "MinotaurConfig.h"
 #include "CplexMILPEngine.h"
@@ -42,9 +36,6 @@
 
 std::mutex mtx;
 
-#define PRINT 0
-//#include <ilcplex/ilocplex.h>
-
 using namespace Minotaur;
 
 //#define SPEW 1
@@ -55,8 +46,10 @@ const std::string CplexMILPEngine::me_ = "CplexMILPEngine: ";
 // ----------------------------------------------------------------------- //
 
 CplexMILPEngine::CplexMILPEngine(EnvPtr env)
-  : env_(env)
+  : env_(env),
+    sol_(0)
 {
+  cpxenv_ = 0;
   timer_ = env->getNewTimer();
   stats_ = new CplexMILPStats();
   stats_->calls    = 0;
@@ -64,44 +57,143 @@ CplexMILPEngine::CplexMILPEngine(EnvPtr env)
   logger_ = env->getLogger();
   timeLimit_ = INFINITY;
   upperCutoff_ = INFINITY;
+  writeMipStarts_ = env_->getOptions()->findBool("oa_use_mip_starts")->getValue();
+  if (writeMipStarts_) {
+    mipStartFile_ = env_->getOptions()->findString("problem_file")->getValue() + ".mst";
+  }
 }
 
 
 CplexMILPEngine::~CplexMILPEngine()
 {
-  delete stats_;
-  delete timer_;
+  if (cpxlp_ != NULL) {
+    cpxstatus_ = CPXXfreeprob(cpxenv_, &cpxlp_);
+    if (cpxstatus_) {
+      logger_->msgStream(LogError) << "Could not free CPLEX problem.\n";
+    }
+  }
+
+  if (cpxenv_ != NULL) {
+    cpxstatus_ = CPXXcloseCPLEX (&cpxenv_);
+    /* Note that CPXXcloseCPLEX produces no output,
+       so the only way to see the cause of the error is to use
+       CPXXgeterrorstring.  For other CPLEX routines, the errors will
+       be seen if the CPXPARAM_ScreenOutput indicator is set to CPX_ON. */
+    if (cpxstatus_) {
+      logger_->msgStream(LogError) << "Could not close CPLEX environment.\n";
+    }
+  }
+
+  if (timer_) {
+    delete timer_;
+  }
+  if (stats_) {
+    delete stats_;
+  }
   if (problem_) {
     problem_->unsetEngine();
-    //problem_.reset();
     problem_ = 0;
+  }
+  if (sol_) {
+    delete sol_;
+  }
+  if (writeMipStarts_) {
+    if (remove(mipStartFile_.c_str()) != 0) {
+      logger_->msgStream(LogError) << "Could not remove mip starts file. \n";
+    } else {
+#if SPEW
+      logger_->msgStream(LogError) << "Deleted mip starts file. \n";
+#endif
+    }
   }
 }
 
 
-void CplexMILPEngine::addConstraint(ConstraintPtr)
+void CplexMILPEngine::addConstraint(ConstraintPtr con)
 {
+  LinearFunctionPtr lf = con->getLinearFunction();
+  int nnz = lf->getNumTerms();
+  int *cols = new int[nnz];
+  double *elems = new double[nnz];
+  double *conrhs = new double;
+  *conrhs = con->getUb();
+  char **conname = new char*[1];
+  conname[0] = new char[con->getName().length() + 1];
+  strcpy(conname[0], con->getName().c_str());
+  char* sense = new char;
+  *sense = 'L';
+  CPXNNZ *start = new CPXNNZ[1];
+  start[0] = 0;
+
+  VariableGroupConstIterator it;
+  int i=0;
+
+  for (it = lf->termsBegin(); it != lf->termsEnd(); ++it, ++i){
+    cols[i] = it->first->getIndex();
+    elems[i] = it->second;
+  }
+
+  cpxstatus_ = CPXXaddrows (cpxenv_, cpxlp_, 0, 1, nnz, conrhs, sense, start,
+                       cols, elems, NULL, conname);
+  if (cpxstatus_) {
+    assert(!"unable to add constraint!");
+  }
+  delete [] cols;
+  delete [] elems;
+  delete conrhs;
+  delete [] conname[0];
+  delete [] conname;
+  delete sense;
+  delete [] start;
+  consChanged_ = true;
 }
 
 
 void CplexMILPEngine::changeBound(ConstraintPtr, BoundType, double)
 {
+  assert(!"implement me!");
 }
 
 
-void CplexMILPEngine::changeBound(VariablePtr, BoundType, double)
+void CplexMILPEngine::changeBound(VariablePtr var, BoundType lu, double new_val)
 {
+  //XXX: need a better map than the following for mapping variables to indices
+  //and vice versa
+  CPXDIM *index = new int[1];
+  char *bndType = new char[1];
+  double *value = new double[1];
+  index[0] = var->getIndex();
+  value[0] = new_val;
+
+  switch (lu) {
+   case Lower:
+     bndType[0] = 'L';
+     cpxstatus_ = CPXXchgbds (cpxenv_, cpxlp_, 1, index, bndType, value);
+     break;
+   case Upper:
+     bndType[0] = 'U';
+     cpxstatus_ = CPXXchgbds (cpxenv_, cpxlp_, 1, index, bndType, value);
+     break;
+   default:
+     break;
+  }
+  bndChanged_ = true;
+  delete [] index;
+  delete [] bndType;
+  delete [] value;
 }
 
 
 void CplexMILPEngine::changeBound(VariablePtr, double, double)
 {
+  assert(!"implement me!");
 }
 
 
 void CplexMILPEngine::changeConstraint(ConstraintPtr, LinearFunctionPtr, 
                                    double, double)
 {
+  assert(!"implement me!");
 }
 
 
@@ -113,11 +205,13 @@ void CplexMILPEngine::changeConstraint(ConstraintPtr, NonlinearFunctionPtr)
 
 void CplexMILPEngine::changeObj(FunctionPtr, double)
 {
+  assert(!"implement me!");
 }
 
 
 void CplexMILPEngine::clear()
 {
+  assert(!"implement me!");
 }
 
 
@@ -192,29 +286,30 @@ void CplexMILPEngine::load(ProblemPtr problem)
   bndChanged_ = true;
   consChanged_ = true;
   problem_ = problem;
-#if PRINT
-  std::cout << "\nIn cpxengine load:\n";
-  problem->write(std::cout);
-#endif
-  
+
+  if (cpxenv_ != NULL) {
+    cpxstatus_ = CPXXcloseCPLEX (&cpxenv_);
+    /* Note that CPXXcloseCPLEX produces no output,
+       so the only way to see the cause of the error is to use
+       CPXXgeterrorstring.  For other CPLEX routines, the errors will
+       be seen if the CPXPARAM_ScreenOutput indicator is set to CPX_ON. */
+    if (cpxstatus_) {
+      logger_->msgStream(LogError) << "Could not close CPLEX environment.\n";
+    }
+  }
+
   // Cplex objects
-  
   int numvars = problem->getNumVars();
   int numcons = problem->getNumCons();
   int i, j, rcnt;
   double obj_sense = 1, ztol = 1e-6;
-  double *conlb, *conub, *conrhs, *conrange, *varlb, *varub, *obj;
-  double *value;
-  //int *index;
-  CPXDIM *index, *conind;
-  //int *start = new int[numcons];
+  double *conlb = 0, *conub = 0, *conrhs = 0, *conrange = 0, *varlb = 0, *varub = 0, *obj = 0;
+  double *value = 0;
+  CPXDIM *index = 0, *conind = 0;
   CPXNNZ *start = new CPXNNZ[numcons];
   memset(start, 0, numcons*sizeof(int));
-  //char *varname = new char[numvars];
-  char **varname = new char*[numvars];
-  //char *conname[numcons];
   char **conname = new char*[numcons];
-  char *cstr; //temporary
+  char **varname = new char*[numvars];
 
   std::vector<UInt> conindvec;
   std::vector<double> conrangevec; 
@@ -227,7 +322,7 @@ void CplexMILPEngine::load(ProblemPtr problem)
   conrhs = new double[numcons];
   varlb = new double[numvars];
   varub = new double[numvars];
-  //double *rhs = new double[numcons];
+  obj = new double[numvars];
   char *sense = new char[numcons];
   std::fill(sense, sense+numcons, 'L'); //assuming all cons <= to start with
   char *vartype = new char[numvars];
@@ -247,7 +342,7 @@ void CplexMILPEngine::load(ProblemPtr problem)
      CPXXgeterrorstring.  For other CPLEX routines, the errors will
      be seen if the CPXXPARAM_ScreenOutput indicator is set to CPXX_ON.  */
 
-  if ( cpxenv_ == NULL ) {
+  if (cpxenv_ == NULL) {
      char  errmsg[CPXMESSAGEBUFSIZE];
      logger_->msgStream(LogError) << me_ << "Could not open CPLEX environment."
        << std::endl;
@@ -256,7 +351,7 @@ void CplexMILPEngine::load(ProblemPtr problem)
      goto TERMINATE;
   }
 
-  /* Turn on output to the screen (use a file to read parameters LATER!) */
+  /* Turn on output to te screen (use a file to read parameters LATER!) */
   cpxstatus_ = CPXXsetintparam (cpxenv_, CPXPARAM_ScreenOutput, CPX_ON);
   if (cpxstatus_) {
      logger_->msgStream(LogError) << me_ << "Failure to turn on screen indicator, error "
@@ -266,7 +361,7 @@ void CplexMILPEngine::load(ProblemPtr problem)
 
   /* Create the problem. */
   cpxlp_ = CPXXcreateprob (cpxenv_, &cpxstatus_, "minoCpxProb");
-  if ( cpxlp_ == NULL ) {
+  if (cpxlp_ == NULL) {
      logger_->msgStream(LogError) << me_ << "Failed to create LP." << std::endl;
      goto TERMINATE;
   }
@@ -282,9 +377,8 @@ void CplexMILPEngine::load(ProblemPtr problem)
     assert((*c_iter)->getFunctionType() == Linear);
     lin = (*c_iter)->getLinearFunction();
     nnz += lin->getNumTerms();
-    cstr = new char[(*c_iter)->getName().length() + 1];
-    strcpy(cstr, (*c_iter)->getName().c_str());
-    conname[i] = cstr;
+    conname[i] = new char[(*c_iter)->getName().length() + 1];
+    strcpy(conname[i], (*c_iter)->getName().c_str());
     i++;
   }
 
@@ -311,7 +405,6 @@ void CplexMILPEngine::load(ProblemPtr problem)
       sense[i] = 'E';                              
     } else if (conlb[i] > -INFINITY) {
       if (conub[i] < INFINITY) {
-        //assert(!"Ranged constraints not allowed right now!");
         sense[i] = 'R';
         // always provide positive range values: conlb[i] <= constraintFunction <= conlb[i] + range[i]
         conrhs[i] = conlb[i];
@@ -329,15 +422,14 @@ void CplexMILPEngine::load(ProblemPtr problem)
       start[i]=j;
     }
   }
-  
+
   i = 0;
   for (v_iter=problem->varsBegin(); v_iter!=problem->varsEnd(); ++v_iter, 
        ++i) {
     varlb[i] = (*v_iter)->getLb();
     varub[i] = (*v_iter)->getUb();
-    cstr = new char[(*v_iter)->getName().length() + 1];
-    strcpy(cstr, (*v_iter)->getName().c_str());
-    varname[i] = cstr;
+    varname[i] = new char[(*v_iter)->getName().length() + 1];
+    strcpy(varname[i], (*v_iter)->getName().c_str());
     if ((*v_iter)->getType() == Binary) {
       vartype[i] = 'B';
     } else if ((*v_iter)->getType() == Integer) {
@@ -350,7 +442,7 @@ void CplexMILPEngine::load(ProblemPtr problem)
   if (problem->getObjective()->getObjectiveType() == Minotaur::Maximize) {
     obj_sense = -1.;
   }
-  obj = new double[numvars];
+
   i = 0;
   if (lin) {
     for (v_iter=problem->varsBegin(); v_iter!=problem->varsEnd(); ++v_iter, 
@@ -381,6 +473,9 @@ void CplexMILPEngine::load(ProblemPtr problem)
      goto TERMINATE;
   }
   
+  if (sol_) {
+    delete sol_;
+  }
   sol_ = (SolutionPtr) new Solution(1E20, 0, problem_);
 
 TERMINATE:
@@ -397,12 +492,31 @@ TERMINATE:
   delete [] varlb;
   delete [] varub;
   delete [] obj;
-  delete [] cstr;
+  for (i=0; i < numvars; ++i) {
+    if (varname[i]) {
+      delete [] varname[i];
+    }
+  }
   delete [] varname;
+  for (i=0; i < numcons; ++i) {
+    if (conname[i]) {
+      delete [] conname[i];
+    }
+  }
   delete [] conname;
-  //delete [] sense;
+  delete [] conind;
+  delete [] conrange;
+  delete [] sense;
+  delete [] vartype;
+
   //problem->setEngine(this);
 
+  //if (cpxenv_ != NULL) {
+    //cpxstatus_ = CPXXcloseCPLEX (&cpxenv_);
+    //if (cpxstatus_) {
+      //logger_->msgStream(LogError) << "Could not close CPLEX environment.\n";
+    //}
+  //}
 }
 
 
@@ -447,15 +561,22 @@ void CplexMILPEngine::setUpperCutoff(double cutoff)
 
 EngineStatus CplexMILPEngine::solve()
 {
+  stats_->calls += 1;
+#if SPEW
+  logger_->msgStream(LogDebug) << me_ << "in call number " << stats_->calls
+                               << std::endl;
+#endif
   int solstat;
-  double objval;
+  double objval = INFINITY;
+  double cpxtimeStart = 0, cpxtimeEnd = 0;
   int cur_numcols = CPXXgetnumcols (cpxenv_, cpxlp_);
-  
   double *x = new double[cur_numcols];
+  std::ifstream mstfile;
 
 #if 0
   /* Write a copy of the problem to a file. */
-  writeLP("minoCpx.lp"); 
+  problem_->write(std::cout);
+  writeLP();
 #endif
 
   /* Set time limit (wallclock) for this iteration */
@@ -480,11 +601,29 @@ EngineStatus CplexMILPEngine::solve()
   /* Set number of threads (default 1) */
   cpxstatus_ = CPXXsetintparam (cpxenv_, CPXPARAM_Threads,
                                 env_->getOptions()->findInt("threads")->getValue());
-
   if (cpxstatus_) {
      logger_->msgStream(LogError) << me_ << "Failure to set number of threads, error "
        << cpxstatus_ << std::endl;
      goto TERMINATE;
+  }
+
+  // Read MIP starts if they exist (in a file)
+  if (writeMipStarts_) {
+    mstfile.open(mipStartFile_.c_str());
+    if (!mstfile.fail()) {
+      cpxstatus_ = CPXXreadcopymipstarts(cpxenv_, cpxlp_, mipStartFile_.c_str());
+      if (cpxstatus_) {
+        logger_->msgStream(LogError) << me_ << "Failed to read MIP starts."
+          << std::endl;
+      }
+      mstfile.close();
+    }
+  }
+
+  /* Initialize Cplex time stamp */
+  cpxstatus_ = CPXXgettime(cpxenv_, &cpxtimeStart);
+  if (cpxstatus_) {
+     logger_->msgStream(LogError) << me_ << "Failed to get CPLEX time stamp." << std::endl;
   }
 
   /* Optimize the problem and obtain solution. */
@@ -493,32 +632,34 @@ EngineStatus CplexMILPEngine::solve()
      logger_->msgStream(LogError) << me_ << "Failed to optimize MILP." << std::endl;
      //goto TERMINATE;
   }
-  solstat = CPXXgetstat (cpxenv_, cpxlp_);
 
-  /* Write the output to the screen. */
-  logger_->msgStream(LogInfo) << me_ << "Solution status = " << solstat
-    << std::endl;
-
-  /* Get the (primal) objective value. */
-  cpxstatus_ = CPXXgetobjval (cpxenv_, cpxlp_, &objval);
+  /* Obtain Cplex time stamp after solve */
+  cpxstatus_ = CPXXgettime(cpxenv_, &cpxtimeEnd);
   if (cpxstatus_) {
-     logger_->msgStream(LogError) << me_
-       << "No MILP objective value available. Exiting..." << std::endl;
+     logger_->msgStream(LogError) << me_ << "Failed to get CPLEX time stamp." << std::endl;
   }
-  logger_->msgStream(LogInfo) << me_ << "Solution value = "
-    << objval << std::endl;
 
-  /* Get the number of nodes processed */
-  logger_->msgStream(LogInfo) << me_ << "Nodes processed = "
-    << CPXXgetnodecnt(cpxenv_, cpxlp_) << std::endl;
-
-  /* Get the solution. */
-  cpxstatus_ = CPXXgetx (cpxenv_, cpxlp_, x, 0, cur_numcols-1);
+  // Access the solve information
+  cpxstatus_ = CPXXsolution (cpxenv_, cpxlp_, &solstat, &objval, x, NULL, NULL, NULL);
   if (cpxstatus_) {
-   logger_->msgStream(LogError) << me_ << "Failed to get optimal integer x."
-     << std::endl;
+     logger_->msgStream(LogInfo) << me_ << "Failed to obtain solution data." << std::endl;
+     solstat = CPXXgetstat(cpxenv_, cpxlp_); //get solve status
   }
-  
+
+  // Write MIP start for the next iteration
+  if (writeMipStarts_) {
+    cpxstatus_ = CPXXwritemipstarts (cpxenv_, cpxlp_, mipStartFile_.c_str(), 0, 0);
+    if (cpxstatus_) {
+     logger_->msgStream(LogError) << me_ << "Failed to write MIP starts."
+       << std::endl;
+    }
+  }
+
+  logger_->msgStream(LogInfo) << me_ << "status = " << solstat << std::endl
+                               << me_ << "solution value = "
+                               << objval << std::endl
+                               << me_ << "nodes processed = "
+                               << CPXXgetnodecnt(cpxenv_, cpxlp_) << std::endl;
 #if SPEW
   /* Write the solution. */
   printx(x, cur_numcols);
@@ -532,14 +673,9 @@ EngineStatus CplexMILPEngine::solve()
   } else if (solstat == 103 || solstat == 119) {
     status_ = ProvenInfeasible;
     sol_->setObjValue(INFINITY);
-    //*objLb = -INFINITY;
   } else if(solstat == 118 || solstat == 119) {
     status_ = ProvenUnbounded;    // or it could be infeasible
     sol_->setObjValue(-INFINITY);
-  //} else if(model->isProvenDualInfeasible()) {
-    //status_ = ProvenUnbounded;    // primal is not infeasible but dual is.
-    //sol_->setObjValue(-INFINITY);
-    //std::cout << " dual inf \n";
   } else if (solstat == 107 || solstat == 108 ) {
     status_ = EngineIterationLimit;
     if (solstat == 108) {
@@ -553,6 +689,7 @@ EngineStatus CplexMILPEngine::solve()
     sol_->setObjValue(INFINITY);
     logger_->msgStream(LogInfo) << " unknown \n";
   }
+  stats_->time += cpxtimeEnd - cpxtimeStart;
 
 TERMINATE:
   delete [] x;
@@ -603,11 +740,18 @@ static int CPXPUBLIC minolazycallback(CPXCENVptr env, void *cbdata, int wherefro
 {  
   mtx.lock();
   STOAHandlerPtr stoaH = *(STOAHandlerPtr *)(userdata);
+  double timeStart, timeEnd = 0;
   int cpxstatus = 0;
   int numvars = stoaH->getRel()->getNumVars();
   double *cpxx = new double[numvars]; 
   double ub;
   
+  cpxstatus = CPXXgettime(env, &timeStart);
+  if (cpxstatus) {
+    std::cout << "Can't get start time stamp from Cplex.";
+    return cpxstatus;
+  }
+
   cpxstatus = CPXXgetcallbacknodeobjval (env, cbdata, wherefrom, &ub);
   if (cpxstatus) {
     std::cout << "Can't get node objective value.";
@@ -619,9 +763,6 @@ static int CPXPUBLIC minolazycallback(CPXCENVptr env, void *cbdata, int wherefro
     mtx.unlock();
     return cpxstatus;
   }
-#if SPEW
-  printx(cpxx, numvars);
-#endif
 
   const double *x = cpxx;
   //if (!(stoaH->isFeasible(x))) {
@@ -630,7 +771,7 @@ static int CPXPUBLIC minolazycallback(CPXCENVptr env, void *cbdata, int wherefro
       double rhs;
       std::vector<UInt> varIdx;
       std::vector<double> varCoeff;
-      for (ConstraintConstIterator it = stoaH->consBegin(); 
+      for (ConstraintConstIterator it = stoaH->consBegin();
            it != stoaH->consEnd(); ++it) {
         stoaH->OACutToCons(x, *it, &rhs, &varIdx, &varCoeff);
         vIdx = varIdx.size();
@@ -665,7 +806,13 @@ static int CPXPUBLIC minolazycallback(CPXCENVptr env, void *cbdata, int wherefro
         cpxstatus = CPXXcutcallbackadd(env, cbdata, wherefrom, vIdx, rhs, 'L',
                                        cutind, cutval, CPX_USECUT_FORCE);
         if (cpxstatus != 0) {
-            mtx.unlock();
+          cpxstatus = CPXXgettime(env, &timeEnd);
+          if (cpxstatus) {
+            std::cout << "Can't get end time stamp from Cplex.";
+            return cpxstatus;
+          }
+          stoaH->setCbTime(stoaH->getCbTime() + timeEnd - timeStart);
+          mtx.unlock();
           return cpxstatus;
         }
         varIdx.clear();
@@ -674,6 +821,12 @@ static int CPXPUBLIC minolazycallback(CPXCENVptr env, void *cbdata, int wherefro
         delete [] cutval;
         
         if (cpxstatus != 0) {
+          cpxstatus = CPXXgettime(env, &timeEnd);
+          if (cpxstatus) {
+            std::cout << "Can't get end time stamp from Cplex.";
+            return cpxstatus;
+          }
+          stoaH->setCbTime(stoaH->getCbTime() + timeEnd - timeStart);
           mtx.unlock();
           return cpxstatus;
         }
@@ -682,6 +835,13 @@ static int CPXPUBLIC minolazycallback(CPXCENVptr env, void *cbdata, int wherefro
     }
   //}
   delete [] cpxx;
+  cpxstatus = CPXXgettime(env, &timeEnd);
+  if (cpxstatus) {
+    std::cout << "Can't get end time stamp from Cplex.";
+    return cpxstatus;
+  }
+  stoaH->setCbTime(stoaH->getCbTime() + timeEnd - timeStart);
+  //std::cout << "out of callback " << timeEnd - timeStart << "\n";
   mtx.unlock();
   return 0;
 }
@@ -1002,10 +1162,13 @@ EngineStatus CplexMILPEngine::solveSTLazy(double *objLb, SolutionPtr* sol,
                                       STOAHandlerPtr stoa_hand,
                                       SolveStatus* solveStatus)
 {
+  stats_->calls += 1;
+  writeMipStarts_ = false;
   int solstat;
   int cur_numcols = CPXXgetnumcols (cpxenv_, cpxlp_);
   double *x = new double[cur_numcols];
-  double objval;
+  double objval = INFINITY;
+  double cpxtimeStart = 0, cpxtimeEnd = 0;
 
   char errbuf[CPXMESSAGEBUFSIZE];
   VariableConstIterator v_iter;
@@ -1078,6 +1241,12 @@ EngineStatus CplexMILPEngine::solveSTLazy(double *objLb, SolutionPtr* sol,
      goto TERMINATE;
   }
 
+  /* Initialize Cplex time stamp */
+  cpxstatus_ = CPXXgettime(cpxenv_, &cpxtimeStart);
+  if (cpxstatus_) {
+     logger_->msgStream(LogError) << me_ << "Failed to get CPLEX time stamp." << std::endl;
+  }
+
   /* Optimize the problem and obtain solution. */
   cpxstatus_ = CPXXmipopt (cpxenv_, cpxlp_);
   if (cpxstatus_) {
@@ -1087,9 +1256,11 @@ EngineStatus CplexMILPEngine::solveSTLazy(double *objLb, SolutionPtr* sol,
   }
   solstat = CPXXgetstat (cpxenv_, cpxlp_);
 
-#if 0
-  cpxstatus_ = CPXXwritemipstarts (cpxenv_, cpxlp_, "minoCpxMipStart.mst", 0, 0);
-#endif
+  /* Obtain Cplex time stamp after solve */
+  cpxstatus_ = CPXXgettime(cpxenv_, &cpxtimeEnd);
+  if (cpxstatus_) {
+     logger_->msgStream(LogError) << me_ << "Failed to get CPLEX time stamp." << std::endl;
+  }
 
   /* Write the output to the screen. */
   logger_->msgStream(LogInfo) << me_ << "Solution status = "
@@ -1125,6 +1296,16 @@ EngineStatus CplexMILPEngine::solveSTLazy(double *objLb, SolutionPtr* sol,
   printx(x, cur_numcols);
 #endif
 
+  logger_->msgStream(LogInfo) << me_ << "status = " << solstat << std::endl
+                               << me_ << "solution value = "
+                               << objval << std::endl
+                               << me_ << "nodes processed = "
+                               << CPXXgetnodecnt(cpxenv_, cpxlp_)
+                               << std::endl
+                               << me_ << "time in callbacks = "
+                               << stoa_hand->getCbTime()
+                               << std::endl;
+
   // Solve status (replace with string later using CPXXgetstatstring(..))
   if (solstat == 101 || solstat == 102) {
     status_ = ProvenOptimal;
@@ -1157,8 +1338,10 @@ EngineStatus CplexMILPEngine::solveSTLazy(double *objLb, SolutionPtr* sol,
     sol_->setObjValue(INFINITY);
     logger_->msgStream(LogInfo) << " unknown \n";
   }
+  stats_->time += cpxtimeEnd - cpxtimeStart;
 
 TERMINATE:
+  delete [] x;
   return status_;
 }
 
@@ -1180,12 +1363,22 @@ void CplexMILPEngine::writeLP(const char *filename) const
   }
 }
 
+void CplexMILPEngine::writeLP()
+{
+  std::string filename = env_->getOptions()->findString("problem_file")->getValue() + ".lp";
+  int status = CPXXwriteprob (cpxenv_, cpxlp_, filename.c_str(), NULL);
+  if (status) {
+   assert(!"Failed to write LP to disk.\n");
+  }
+}
+
 
 void CplexMILPEngine::writeStats(std::ostream &out) const
 {
   if (stats_) {
     out << me_ << "total calls            = " << stats_->calls << std::endl
-      << me_ << "total time in solving  = " << stats_->time  << std::endl;
+      << me_ << std::setprecision(2) << "total time in solving  = "
+      << stats_->time  << std::endl;
   }
 }
 

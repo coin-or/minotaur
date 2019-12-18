@@ -36,11 +36,12 @@ ParNodeIncRelaxer::ParNodeIncRelaxer (EnvPtr env, HandlerVector handlers)
 
 ParNodeIncRelaxer::~ParNodeIncRelaxer ()
 {
-  //rel_.reset();
-  rel_ = 0;
+  if (rel_) {
+    delete rel_;
+    rel_ = 0;
+  }
   handlers_.clear();
-  //env_.reset();
-  env_ = 0;  
+  env_ = 0;
 }
 
 
@@ -146,7 +147,7 @@ RelaxationPtr ParNodeIncRelaxer::createNodeRelaxation(NodePtr node, bool dived,
     if (ws) {
       engine_->loadFromWarmStart(ws);
     }
-  } else if (ws) {
+  } else {
     node->removeWarmStart();
   }
 

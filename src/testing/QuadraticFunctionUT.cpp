@@ -42,6 +42,8 @@ void QuadraticFunctionTest::setUp()
 
 void QuadraticFunctionTest::tearDown()
 {
+  delete q_;
+  delete q1_;
   for (size_t i=0; i<vars_.size(); ++i) {
     delete vars_[i];
   }
@@ -117,6 +119,7 @@ void QuadraticFunctionTest::testOperations()
   CPPUNIT_ASSERT(q2_->getWeight(vars_[0], vars_[1]) == 4.0);
   CPPUNIT_ASSERT(q2_->getWeight(vars_[1], vars_[0]) == 4.0);
   CPPUNIT_ASSERT(q2_->getWeight(vars_[1], vars_[1]) == 2.0);
+  delete q2_;
 
   //q2_ = -6.0*q_;
   q2_ = q_->copyMult(-6.0);
@@ -126,24 +129,31 @@ void QuadraticFunctionTest::testOperations()
   CPPUNIT_ASSERT(q2_->getWeight(vars_[0], vars_[1]) == -12.0);
   CPPUNIT_ASSERT(q2_->getWeight(vars_[1], vars_[0]) == -12.0);
   CPPUNIT_ASSERT(q2_->getWeight(vars_[1], vars_[1]) == -6.0);
+  delete q2_;
 
   //q2_ = q1_ + q2_;
-  q2_ = q1_->copyAdd(q2_);
+  QuadraticFunctionPtr q3 = q_->copyMult(-6.0);
+  q2_ = q1_->copyAdd(q3);
   CPPUNIT_ASSERT(q2_->getNumTerms() == 3);
   CPPUNIT_ASSERT(q2_->getNumVars() == 2);
   CPPUNIT_ASSERT(q2_->getWeight(vars_[0], vars_[0]) == -6.0);
   CPPUNIT_ASSERT(q2_->getWeight(vars_[0], vars_[1]) == -14.0);
   CPPUNIT_ASSERT(q2_->getWeight(vars_[1], vars_[0]) == -14.0);
   CPPUNIT_ASSERT(q2_->getWeight(vars_[1], vars_[1]) == -8.0);
+  delete q3;
+
+  q3 = q2_->clone();
+  delete q2_;
 
   //q2_ = q1_ - q2_;
-  q2_ = q1_->copyMinus(q2_);
+  q2_ = q1_->copyMinus(q3);
   CPPUNIT_ASSERT(q2_->getNumTerms() == 3);
   CPPUNIT_ASSERT(q2_->getNumVars() == 2);
   CPPUNIT_ASSERT(q2_->getWeight(vars_[0], vars_[0]) ==  6.0);
   CPPUNIT_ASSERT(q2_->getWeight(vars_[0], vars_[1]) ==  12.0);
   CPPUNIT_ASSERT(q2_->getWeight(vars_[1], vars_[0]) ==  12.0);
   CPPUNIT_ASSERT(q2_->getWeight(vars_[1], vars_[1]) ==  6.0);
+  delete q3;
 
   //(*q2_) += q1_;
   q2_->add(q1_);
@@ -153,6 +163,7 @@ void QuadraticFunctionTest::testOperations()
   CPPUNIT_ASSERT(q2_->getWeight(vars_[0], vars_[1]) ==  10.0);
   CPPUNIT_ASSERT(q2_->getWeight(vars_[1], vars_[0]) ==  10.0);
   CPPUNIT_ASSERT(q2_->getWeight(vars_[1], vars_[1]) ==  4.0);
+  delete q2_;
 
   q2_ = q_->clone();
   CPPUNIT_ASSERT(q2_->getNumTerms() == 3);
@@ -161,6 +172,7 @@ void QuadraticFunctionTest::testOperations()
   CPPUNIT_ASSERT(q2_->getWeight(vars_[0], vars_[1]) == 2.0);
   CPPUNIT_ASSERT(q2_->getWeight(vars_[1], vars_[0]) == 2.0);
   CPPUNIT_ASSERT(q2_->getWeight(vars_[1], vars_[1]) == 1.0);
+  delete q2_;
 
   LinearFunctionPtr l1 = (LinearFunctionPtr) new LinearFunction();
   LinearFunctionPtr l2 = 0;
@@ -170,6 +182,7 @@ void QuadraticFunctionTest::testOperations()
   // q2_ should be NULL
   q2_ = l1->copyMult(l2);
   CPPUNIT_ASSERT(!q2_);
+  delete q2_;
 
   l2 = (LinearFunctionPtr) new LinearFunction();
   l2->addTerm(vars_[0], -1);
@@ -181,6 +194,10 @@ void QuadraticFunctionTest::testOperations()
   CPPUNIT_ASSERT(q2_->getWeight(vars_[0], vars_[0]) == -2.0);
   CPPUNIT_ASSERT(q2_->getWeight(vars_[0], vars_[1]) == 4.0);
   CPPUNIT_ASSERT(q2_->getWeight(vars_[1], vars_[0]) == 4.0);
+  delete q2_;
+
+  delete l1;
+  delete l2;
 }
 
 

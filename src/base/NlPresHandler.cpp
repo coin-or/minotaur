@@ -98,10 +98,10 @@ NlPresHandler::~NlPresHandler()
 
 
 void NlPresHandler::chkRed_(ProblemPtr p, bool purge_cons, bool *changed,
-                            ModQ *mods, SolveStatus &status)
+                            ModQ *, SolveStatus &status)
 {
   ConstraintPtr c;
-  ConBoundModPtr mod;
+//  ConBoundModPtr mod;
   LinearFunctionPtr lf;
   NonlinearFunctionPtr nlf;
   QuadraticFunctionPtr qf;
@@ -109,7 +109,7 @@ void NlPresHandler::chkRed_(ProblemPtr p, bool purge_cons, bool *changed,
   double nlfu, nlfl;
   double impl_lb, impl_ub;
   int error = 0;
-  double bigm = (true==purge_cons)?INFINITY:100000;
+//  double bigm = (true==purge_cons)?INFINITY:100000;
 
   for (ConstraintConstIterator cit=p->consBegin(); cit!=p->consEnd();
        ++cit) {
@@ -152,35 +152,43 @@ void NlPresHandler::chkRed_(ProblemPtr p, bool purge_cons, bool *changed,
 
       // if the implied-lb is more than constraint-lb, but not too much more,
       // relax the constraint lb further.
-      if (c->getLb()>-INFINITY && impl_lb+eTol_ > c->getLb()
-          && impl_lb < c->getLb()+bigm-eTol_) {
-        mod = (ConBoundModPtr) new ConBoundMod(c, Lower, c->getLb()-bigm);
-        mod->applyToProblem(p);
-        *changed = true;
-#if SPEW
-        logger_->msgStream(LogDebug2) << me_ << " removed lb of constraint "
-                                      << c->getName() << std::endl;
-#endif
-        if (false==purge_cons) {
-          mods->push_back(mod);
-          ++stats_.conRel;
-        }
-      }
-      // similary for implied-ub
-      if (c->getUb()<INFINITY && impl_ub-eTol_ < c->getUb()
-          && impl_ub > c->getUb()-bigm+eTol_) {
-        mod = (ConBoundModPtr) new ConBoundMod(c, Upper, c->getUb()+bigm);
-        mod->applyToProblem(p);
-        *changed = true;
-#if SPEW
-        logger_->msgStream(LogDebug2) << me_ << " removed ub of constraint "
-                                      << c->getName() << std::endl;
-#endif
-        if (false==purge_cons) {
-          mods->push_back(mod);
-          ++stats_.conRel;
-        }
-      }
+      //if (c->getLb()>-INFINITY && impl_lb+eTol_ > c->getLb()
+      //    && impl_lb < c->getLb()+bigm-eTol_) {
+      //  mod = (ConBoundModPtr) new ConBoundMod(c, Lower, c->getLb()-bigm);
+      //  std::cout << "conboundmod\n";
+      //  mod->write(std::cout);
+      //  mod->applyToProblem(p);
+      //  *changed = true;
+//#if SPEW
+      //  logger_->msgStream(LogDebug2) << me_ << " removed lb of constraint "
+      //                                << c->getName() << std::endl;
+//#endif//
+      //  if (false==purge_cons) {
+      //    mods->push_back(mod);
+      //    ++stats_.conRel;
+      //  } else {
+      //    delete mod;
+      //  }
+      //}
+      //// similary for implied-ub
+      //if (c->getUb()<INFINITY && impl_ub-eTol_ < c->getUb()
+      //    && impl_ub > c->getUb()-bigm+eTol_) {
+      //  mod = (ConBoundModPtr) new ConBoundMod(c, Upper, c->getUb()+bigm);
+      //  mod->write(std::cout);
+      //  std::cout << "mod " << mod << " con " << c << "\n";
+      //  mod->applyToProblem(p);
+      //  *changed = true;
+//#if SPEW
+      //  logger_->msgStream(LogDebug2) << me_ << " removed ub of constraint "
+      //                                << c->getName() << std::endl;
+//#endif//
+      //  if (false==purge_cons) {
+      //    mods->push_back(mod);
+      //    ++stats_.conRel;
+      //  } else {
+      //    delete mod;
+      //  }
+      //}
 
 
       // delete the constraint if unbounded on both sides
@@ -395,13 +403,14 @@ void  NlPresHandler::bin2Lin_(ProblemPtr p, PreModQ *mods, bool *changed)
   UInt *irow = 0;
   UInt *jcol = 0;
   UInt nz = 0;
-  PreAuxVarsPtr mod = (PreAuxVarsPtr) new PreAuxVars();
+  PreAuxVarsPtr mod;
 
   p->calculateSize();
   if (0==p->getSize()->quadCons && Quadratic!=p->getSize()->objType) {
     return;
   }
 
+  mod = new PreAuxVars();
   p->setNativeDer(); // TODO: avoid setting it up repeatedly.
   hess = p->getHessian();
   nz = hess->getNumNz();
@@ -474,6 +483,8 @@ void  NlPresHandler::bin2Lin_(ProblemPtr p, PreModQ *mods, bool *changed)
 
   if (mod->getSize()>0) {
     mods->push_back(mod);
+  } else {
+    delete mod;
   }
   p->delMarkedCons();
   delete [] mult;
@@ -593,7 +604,7 @@ void  NlPresHandler::computeImpBounds_(ConstraintPtr c, VariablePtr z,
   double uu = 0.;
   double l1, u1, a2, b2;
   ConstraintPtr c2;
-  LinearFunctionPtr lf, lf2;
+  LinearFunctionPtr lf2;
   NonlinearFunctionPtr nlf;
   QuadraticFunctionPtr qf;
   ModStack mods;
@@ -669,6 +680,7 @@ void  NlPresHandler::computeImpBounds_(ConstraintPtr c, VariablePtr z,
     m2 = mods.top();
     mods.pop();
     m2->undoToProblem(p_);
+    delete m2;
   }
 }
 
@@ -1082,12 +1094,12 @@ void NlPresHandler::quad_bound(VariablePtr v, double a,double b, double *l,
   double etol = 1e-7;
 
   if (a == 0){
-    *u = std::max({v->getLb()*(b+etol), v->getUb()*(b+etol)});
-    *l = std::min({v->getLb()*(b+etol), v->getUb()*(b+etol)});
+    *u = std::max(v->getLb()*(b+etol), v->getUb()*(b+etol));
+    *l = std::min(v->getLb()*(b+etol), v->getUb()*(b+etol));
   }
   else {
-    *u = std::max({v->getLb()*(a*v->getLb()+b), v->getUb()*(a*v->getUb()+b)});
-    *l = std::min({v->getLb()*(a*v->getLb()+b), v->getUb()*(a*v->getUb()+b)});
+    *u = std::max(v->getLb()*(a*v->getLb()+b), v->getUb()*(a*v->getUb()+b));
+    *l = std::min(v->getLb()*(a*v->getLb()+b), v->getUb()*(a*v->getUb()+b));
 
     if(a < 0){
       if (v->getLb() == INFINITY){
@@ -1125,8 +1137,8 @@ void NlPresHandler::quad_bound_range(VariablePtr v, double a,double blb, double 
 
   quad_bound(v, a, blb,  &llb, &lub);
   quad_bound(v, a, bub,  &ulb, &uub);
-  *l = std::min({llb, ulb});
-  *u = std::max({lub, uub});
+  *l = std::min(llb, ulb);
+  *u = std::max(lub, uub);
  }
 
 
@@ -1338,8 +1350,8 @@ void NlPresHandler::bilinear_bounds(VariablePtr v, double *qflb1, double *qfub1,
       }
       
       
-      *qflb1 += std::min({a,b});
-      *qfub1 += std::max({a,b});
+      *qflb1 += std::min(a,b);
+      *qfub1 += std::max(a,b);
     }
 
 
@@ -1370,8 +1382,6 @@ void NlPresHandler::lin_var_bound(VarBoundModVector lfmod, LinearFunctionPtr lf,
   change = 0;
 
   VariablePtr v;
-  VariablePtr v2;
-  ConstraintPtr c;
 
   VariableSet::iterator it2;
 
@@ -1436,8 +1446,6 @@ void NlPresHandler::quad_var_bound(VarBoundModVector qfmod, LinearFunctionPtr lf
                                   int &change){
 
   VariablePtr v;
-  VariablePtr v2;
-  ConstraintPtr c;
 
   double lflb = 0;
   double lfub = 0;
@@ -1446,8 +1454,8 @@ void NlPresHandler::quad_var_bound(VarBoundModVector qfmod, LinearFunctionPtr lf
   
   for (VariableSet::iterator it = linear_terms.begin(); it != linear_terms.end(); ++it){
     v = *it;
-    lflb += std::min({lf->getWeight(v)*v->getLb(), lf->getWeight(v)*v->getUb()});
-    lfub += std::max({lf->getWeight(v)*v->getLb(), lf->getWeight(v)*v->getUb()});
+    lflb += std::min(lf->getWeight(v)*v->getLb(), lf->getWeight(v)*v->getUb());
+    lfub += std::max(lf->getWeight(v)*v->getLb(), lf->getWeight(v)*v->getUb());
   }
 
   for (VariableSet::iterator it = qfvars.begin(); it != qfvars.end(); ++it){
@@ -1483,8 +1491,8 @@ void NlPresHandler::quad_var_bound(VarBoundModVector qfmod, LinearFunctionPtr lf
     x = cl - lfub - qfub;
     y = cu - lflb - qflb;
     z = cu - lfub - qfub;
-    clb = std::min({w,x,y,z});
-    cub = std::max({w,x,y,z});
+    clb = std::min(w,x); clb = std::min(clb,y); clb = std::min(clb,z);
+    cub = std::max(w,x); cub = std::max(cub,y); cub = std::max(cub,z);
     a = qf->getWeight(v, v);
     qf->bndsquadterms(&blb, &bub, v);
     
@@ -1530,8 +1538,8 @@ void NlPresHandler::quad_var_bound(VarBoundModVector qfmod, LinearFunctionPtr lf
       lbu1 = -INFINITY;
     }    
 
-  qvlb = std::max({lbu1, lbu2});
-  qvub = std::min({ubu1,ubu2});
+  qvlb = std::max(lbu1, lbu2);
+  qvub = std::min(ubu1, ubu2);
 
    
   if (qvlb > v->getLb()) {
@@ -1556,11 +1564,9 @@ void NlPresHandler::quad_var_bound(VarBoundModVector qfmod, LinearFunctionPtr lf
 }
 
 
-
-
-SolveStatus NlPresHandler::varBndsFromCons_(ProblemPtr p, bool apply_to_prob,
-                                            bool *changed, ModQ* mods,
-                                            SolveStatus &status)
+void NlPresHandler::varBndsFromCons_(ProblemPtr p, bool apply_to_prob,
+                                     bool *changed, ModQ* mods,
+                                     SolveStatus &status)
 {
   ConstraintPtr c;
   LinearFunctionPtr lf;
@@ -1610,8 +1616,8 @@ SolveStatus NlPresHandler::varBndsFromCons_(ProblemPtr p, bool apply_to_prob,
         qf->computeBounds(&lb1, &ub1);
         lf->computeBounds(&lb2, &ub2);
 
-        ub = std::min({ubc, ub1 + ub2});
-        lb = std::max({lbc, lb1+lb2});
+        ub = std::min(ubc, ub1 + ub2);
+        lb = std::max(lbc, lb1+lb2);
         // std::cout<<"cons__bounduuubbb"<<ub<<"\n";
         // std::cout<<"cons_boundlllllbb"<<lb<<"\n";
       
@@ -1653,13 +1659,15 @@ SolveStatus NlPresHandler::varBndsFromCons_(ProblemPtr p, bool apply_to_prob,
         for (VarBoundModVector::iterator it=dmods.begin(); it!=dmods.end(); ++it) {
           (*it)->applyToProblem(p);
           ++stats_.vBnd;
-          if (false==apply_to_prob) {
-            mods->push_back(*it);
-          }
 #if SPEW
           logger_->msgStream(LogDebug2) << me_ << " ";
           (*it)->write(logger_->msgStream(LogDebug2));
 #endif
+          if (false==apply_to_prob) {
+            mods->push_back(*it);
+          } else {
+            delete (*it);
+          }
         }
         dmods.clear();
         *changed = true;

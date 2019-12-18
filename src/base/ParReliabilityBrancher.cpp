@@ -10,6 +10,7 @@
  * \author Prashant Palkar, Meenarli Sharma, Ashutosh Mahajan, IIT Bombay
  */
 
+#include <algorithm>
 #include <cmath>
 #include <iomanip>
 
@@ -84,9 +85,7 @@ BrCandPtr ParReliabilityBrancher::findBestCandidate_(const double objval,
   double score, change_up, change_down, maxchange;
   UInt cnt, maxcnt;
   EngineStatus status_up, status_down;
-  BrCandPtr cand, best_cand;
-
-  best_cand = BrCandPtr(); // NULL
+  BrCandPtr cand, best_cand = 0;
 
   // first evaluate candidates that have reliable pseudo costs
   for (BrCandVIter it=relCands_.begin(); it!=relCands_.end(); ++it) {
@@ -157,13 +156,6 @@ BrCandPtr ParReliabilityBrancher::findBestCandidate_(const double objval,
   return best_cand;
 }
 
- //Branches ParReliabilityBrancher::findBranches(RelaxationPtr rel, NodePtr node, 
-                        //ConstSolutionPtr sol, SolutionPoolPtr s_pool, 
-                        //BrancherStatus & br_status, ModVector &mods)
-//{
-  //Branches br;
-  //return br;
-//}
 
 Branches ParReliabilityBrancher::findBranches(RelaxationPtr rel, NodePtr node, 
                         ConstSolutionPtr sol, SolutionPoolPtr s_pool, 
@@ -173,7 +165,7 @@ Branches ParReliabilityBrancher::findBranches(RelaxationPtr rel, NodePtr node,
                         UInt nodesProc)
 {
   Branches branches = 0;
-  BrCandPtr br_can = BrCandPtr(); //NULL
+  BrCandPtr br_can = 0; 
   const double *x = sol->getPrimal();
 
   ++(stats_->calls);
@@ -193,7 +185,7 @@ Branches ParReliabilityBrancher::findBranches(RelaxationPtr rel, NodePtr node,
   findCandidates_(&timesUp, &timesDown, &pseudoUp, &pseudoDown, nodesProc);
   if (status_ == PrunedByBrancher) {
     br_status = status_;
-    return branches;
+    return 0;
   }
 
   if (status_ == NotModifiedByBrancher) {
@@ -236,6 +228,11 @@ Branches ParReliabilityBrancher::findBranches(RelaxationPtr rel, NodePtr node,
     }
 #endif
   }
+
+  freeCandidates_(br_can);
+  if (status_ != NotModifiedByBrancher && br_can) {
+    delete br_can;
+  }
   return branches;
 }
 
@@ -259,9 +256,8 @@ void ParReliabilityBrancher::findCandidates_(UIntVector *timesUp,
   double i_wt = 1e-6;
   double score;
 
-  // first clear the list of candidates
-  relCands_.clear();
-  unrelCands_.clear();
+  assert(relCands_.empty());
+  assert(unrelCands_.empty());
 
   for (HandlerIterator h = handlers_.begin(); h != handlers_.end(); ++h) {
     // ask each handler to give some candidates
@@ -274,27 +270,22 @@ void ParReliabilityBrancher::findCandidates_(UIntVector *timesUp,
     }
     cands.insert(cands2.begin(), cands2.end());
     gencands.insert(gencands.end(), gencands2.begin(), gencands2.end());
-    if (is_inf) {
-      relCands_.clear();
-      unrelCands_.clear();
-      cands2.clear();
-      cands.clear();
-      gencands2.clear();
-      gencands.clear();
-      status_ = PrunedByBrancher;
-      return;
-    } else if (mods_.size()>0) {
-      status_ = ModifiedByBrancher;
-      relCands_.clear();
-      unrelCands_.clear();
-      cands2.clear();
-      cands.clear();
-      gencands2.clear();
-      gencands.clear();
-      return;
-    }
     cands2.clear();
     gencands2.clear();
+    if (is_inf || mods_.size() > 0) {
+      for (BrVarCandIter it=cands.begin(); it!=cands.end(); ++it) {
+        delete *it;
+      }
+      for (BrCandVIter it=gencands.begin(); it!=gencands.end(); ++it) {
+        delete *it;
+      }
+      if (is_inf) {
+        status_ = PrunedByBrancher;
+      } else {
+        status_ = ModifiedByBrancher;
+      }
+      return;
+    } 
   }
 
   // visit each candidate in and check if it has reliable pseudo costs.
@@ -341,10 +332,26 @@ void ParReliabilityBrancher::findCandidates_(UIntVector *timesUp,
     writeScores_(logger_->msgStream(LogDebug2));
   }
 #endif
-  
+
   return;
 }
 
+
+void ParReliabilityBrancher::freeCandidates_(BrCandPtr no_del)
+{
+  for (BrCandVIter it=unrelCands_.begin(); it!=unrelCands_.end(); ++it) {
+    if (no_del != *it) {
+      delete *it;
+    }
+  }
+  for (BrCandVIter it=relCands_.begin(); it!=relCands_.end(); ++it) {
+    if (no_del != *it) {
+      delete *it;
+    }
+  }
+  relCands_.clear();
+  unrelCands_.clear();
+}
 
 
 bool ParReliabilityBrancher::getTrustCutoff()
@@ -513,6 +520,7 @@ void ParReliabilityBrancher::strongBranch_(BrCandPtr cand, double & obj_up,
   ++(stats_->strBrCalls);
   obj_down = engine_->getSolutionValue();
   mod->undoToProblem(rel_);
+  delete mod;
 
   // now go up.
   mod = h->getBrMod(cand, x_, rel_, UpBranch);
@@ -525,6 +533,7 @@ void ParReliabilityBrancher::strongBranch_(BrCandPtr cand, double & obj_up,
   ++(stats_->strBrCalls);
   obj_up = engine_->getSolutionValue();
   mod->undoToProblem(rel_);
+  delete mod;
 }
 
 

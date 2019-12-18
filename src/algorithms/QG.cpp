@@ -17,12 +17,13 @@
 #include <AMPLHessian.h>
 #include <AMPLJacobian.h>
 #include <Environment.h>
-//#include <Constraint.h>
 #include <Constraint.h>
 #include <Function.h>
 #include <LinearFunction.h>
+#include <QuadraticFunction.h>
 #include <Handler.h>
 #include <Option.h>
+#include <Operations.h>
 #include <Problem.h>
 #include <Engine.h>
 #include <QPEngine.h>
@@ -62,7 +63,6 @@ void writeSol(EnvPtr env, VarVector *orig_v, PresolverPtr pres,
               MINOTAUR_AMPL::AMPLInterface* iface);
 
 
-void test(ProblemPtr p);
 void loadProblem(EnvPtr env, MINOTAUR_AMPL::AMPLInterface* iface,
                  ProblemPtr &oinst, double *obj_sense)
 {
@@ -232,79 +232,20 @@ PresolverPtr presolve(EnvPtr env, ProblemPtr p, size_t ndefs,
   return pres;
 }
 
-void test(ProblemPtr p)
-{
-//MS: delete header files that are not required
-  //testing 
-  bool isONl = false;
-  ObjectivePtr o = p->getObjective();
-  FunctionType fType = o->getFunctionType();
-  if (o && fType != Linear && fType != Constant) {
-    isONl = true;
-  }
-  
-  CGraphPtr cgp;
-  FunctionPtr f;
-  ConstraintPtr c;
-  LinearFunctionPtr lf;
-  NonlinearFunctionPtr nlf;
-  UInt tnl = 0, nol = 0, ns = 0, tn, tl = 0, t;
-
-  for (ConstraintConstIterator it=p->consBegin(); it!=p->consEnd(); 
-       ++it) {
-    c = *it;
-    tl = 0;
-    f = c->getFunction();
-    fType = c->getFunctionType();
-    if (fType !=Constant && fType != Linear) {
-      tnl++;
-      nlf = f->getNonlinearFunction();
-      tn = nlf->numVars();
-      lf = c->getLinearFunction();
-      //t = f->getNumVars();
-      
-      if (lf) {
-        for(VariableGroupConstIterator vit = lf->termsBegin(); vit != lf->termsEnd(); ++vit) {
-          if (fabs(vit->second) > 1e-6) {
-            tl++;          
-          }
-        }
-      }
-      t = tl + tn;
-      if (t == 2) {
-        ns++;      
-      }
-    } else {
-      nol++;    
-    }
-  }
-  
-  if (tnl > 0 && ns > 0) {
-    std::cout << "structure found \n" ;
-  }
-  std::cout << "output: " << isONl << " " << tnl << " " << nol << " " << ns << std::endl;
-}
 
 int main(int argc, char* argv[])
 {
-  EnvPtr env = (EnvPtr) new Environment();
+  EnvPtr env = new Environment();
   OptionDBPtr options;
-
-  ConstSolutionPtr xc;
 
   MINOTAUR_AMPL::AMPLInterfacePtr iface = MINOTAUR_AMPL::AMPLInterfacePtr();  
   ProblemPtr inst;
-  SolutionPtr sol, sol2;
+  
   double obj_sense =1.0;
   
-  // jacobian is read from AMPL interface and passed on to branch-and-bound
-  JacobianPtr jPtr;
-  // hessian is read from AMPL interface and passed on to branch-and-bound
-  MINOTAUR_AMPL::AMPLHessianPtr hPtr;
-
   // the branch-and-bound
   BranchAndBound *bab = 0;
-  PresolverPtr pres;
+  PresolverPtr pres = 0;
   EngineFactory *efac;
   const std::string me("qg: ");
 
@@ -312,7 +253,6 @@ int main(int argc, char* argv[])
   PCBProcessorPtr nproc;
 
   NodeIncRelaxerPtr nr;
-  //bool isMINLP = false;
 
   //handlers
   HandlerVector handlers;
@@ -325,7 +265,6 @@ int main(int argc, char* argv[])
   EnginePtr nlp_e = 0;
 
   LPEnginePtr lin_e = 0;   // lp engine 
-  //LoggerPtr logger_ = (LoggerPtr) new Logger(LogInfo);
   VarVector *orig_v=0;
 
   int err = 0;
@@ -361,6 +300,9 @@ int main(int argc, char* argv[])
   // get presolver.
   orig_v = new VarVector(inst->varsBegin(), inst->varsEnd());
   pres = presolve(env, inst, iface->getNumDefs(), handlers);
+  for (HandlerVector::iterator it=handlers.begin(); it!=handlers.end(); ++it) {
+    delete (*it);
+  }
   handlers.clear();
   if (Finished != pres->getStatus() && NotStarted != pres->getStatus()) {
     env->getLogger()->msgStream(LogInfo) << me 
@@ -370,30 +312,6 @@ int main(int argc, char* argv[])
     writeBnbStatus(env, bab, obj_sense);
     goto CLEANUP;
   }
-
-  //test(inst);
-  //o = inst->getObjective();
-  //fType = o->getFunctionType();
-  //if (o && (fType == Linear || fType == Constant)) {
-      //std::cout << "Lin obj "<< 1 << std::endl;
-  //} else {
-      //std::cout << "Lin obj "<< 0 << std::endl;
-  //}
-  //exit(1);
-  //for (ConstraintConstIterator it=inst->consBegin(); it!=inst->consEnd();
-       //++it) {
-    //if ((*it)->getFunctionType()!=Constant && (*it)->getFunctionType() != Linear) {
-      //isMINLP = true;
-      //break;
-    //}
-  //}
-  //if (!isMINLP) {
-    //if (inst->getObjective()->getFunctionType() != Linear && inst->getObjective()->getFunctionType()!= Constant) {
-      //isMINLP = true;
-    //}
-  //}
-  //std::cout << "Problem is MINLP = " << isMINLP << std::endl;
-  //exit(1);
 
   if (options->findBool("solve")->getValue()==true) {
     if (true==options->findBool("use_native_cgraph")->getValue()) {
@@ -418,10 +336,7 @@ int main(int argc, char* argv[])
 
     qg_hand = (QGHandlerPtr) new QGHandler(env, inst, nlp_e); 
     qg_hand->setModFlags(false, true);
-    
-    //MS: for root linearizations, turn it on based on the scheme option 
-    qg_hand->setLpEngine(lin_e);
-
+   
     handlers.push_back(qg_hand);
     assert(qg_hand);
      
@@ -462,28 +377,29 @@ int main(int argc, char* argv[])
 
     bab = new BranchAndBound(env, inst);
     bab->setNodeRelaxer(nr);
-    //bab->setQGHandler(qg_hand);
     bab->setNodeProcessor(nproc);
     bab->shouldCreateRoot(true);
 
     // start solving
     bab->solve();
+
     bab->writeStats(env->getLogger()->msgStream(LogExtraInfo));
     nlp_e->writeStats(env->getLogger()->msgStream(LogExtraInfo));
     lin_e->writeStats(env->getLogger()->msgStream(LogExtraInfo));
 
     for (HandlerVector::iterator it=handlers.begin(); it!=handlers.end();
          ++it) {
-      //(*it)->writeStats(std::cout);
       (*it)->writeStats(env->getLogger()->msgStream(LogExtraInfo));
     }
 
-    //qg_hand->vioStats();
-    //writeSol(env, orig_v, pres, bab->getSolution(), bab->getStatus(), iface);
+    writeSol(env, orig_v, pres, bab->getSolution(), bab->getStatus(), iface);
     writeBnbStatus(env, bab, obj_sense);
   }
 
 CLEANUP:
+  for (HandlerVector::iterator it=handlers.begin(); it!=handlers.end(); ++it) {
+    delete (*it);
+  }
   if (lin_e) {
     delete lin_e;
   }
@@ -493,11 +409,26 @@ CLEANUP:
   if (iface) {
     delete iface;
   }
+  if (pres) {
+    delete pres;
+  }
+  if (bab) {
+    if (bab->getNodeRelaxer()) {
+      delete bab->getNodeRelaxer();
+    }
+    if (bab->getNodeProcessor()) {
+      delete bab->getNodeProcessor();
+    }
+    delete bab;
+  }
+  if (inst) {
+    delete inst;
+  }
   if (orig_v) {
     delete orig_v;
   }
-  if (bab) {
-    delete bab;
+  if (env) {
+    delete env;
   }
 
   return 0;
@@ -581,17 +512,21 @@ void writeSol(EnvPtr env, VarVector *orig_v,
               PresolverPtr pres, SolutionPtr sol, SolveStatus status,
               MINOTAUR_AMPL::AMPLInterface* iface)
 {
+  Solution* final_sol = 0;
   if (sol) {
-    //sol->writePrimal(std::cout);
-    sol = pres->getPostSol(sol);
+    final_sol = pres->getPostSol(sol);
   }
 
   if (env->getOptions()->findFlag("AMPL")->getValue() ||
       true == env->getOptions()->findBool("write_sol_file")->getValue()) {
-    iface->writeSolution(sol, status);
-  } else if (sol && env->getLogger()->getMaxLevel()>=LogExtraInfo &&
+    iface->writeSolution(final_sol, status);
+  } else if (final_sol && env->getLogger()->getMaxLevel()>=LogExtraInfo &&
              env->getOptions()->findBool("display_solution")->getValue()) {
-    sol->writePrimal(env->getLogger()->msgStream(LogExtraInfo), orig_v);
+    final_sol->writePrimal(env->getLogger()->msgStream(LogExtraInfo), orig_v);
+  }
+
+  if (final_sol) {
+    delete final_sol;
   }
 }
 

@@ -48,11 +48,11 @@ TreeManager::TreeManager(EnvPtr env)
 
   switch (searchType_) {
    case (DepthFirst):
-     active_nodes_ = (NodeStackPtr) new NodeStack();
+     activeNodes_ = (NodeStackPtr) new NodeStack();
      break;
    case (BestFirst):
    case (BestThenDive):
-     active_nodes_ = (NodeHeapPtr) new NodeHeap(NodeHeap::Value);
+     activeNodes_ = (NodeHeapPtr) new NodeHeap(NodeHeap::Value);
      break;
    default:
      assert (!"search strategy must be defined!");
@@ -82,8 +82,7 @@ TreeManager::TreeManager(EnvPtr env)
 TreeManager::~TreeManager()
 {
   clearAll();
-  //active_nodes_.reset();
-  active_nodes_ = 0;
+  delete activeNodes_;
   if (doVbc_) {
     vbcFile_.close();
     delete timer_;
@@ -93,7 +92,7 @@ TreeManager::~TreeManager()
 
 bool TreeManager::anyActiveNodesLeft()
 {
-  return !active_nodes_->isEmpty();
+  return !activeNodes_->isEmpty();
 }
 
 
@@ -116,6 +115,7 @@ NodePtr TreeManager::branch(Branches branches, NodePtr node, WarmStartPtr ws)
     child->setDepth(node->getDepth()+1);
     node->addChild(child);
     if (is_first) {
+      child->setWarmStart(ws);
       insertCandidate_(child, true);
       is_first = false;
       new_cand = child;
@@ -125,7 +125,6 @@ NodePtr TreeManager::branch(Branches branches, NodePtr node, WarmStartPtr ws)
       child->setWarmStart(ws);
       insertCandidate_(child);
     }
-    //std::cout << "inserting candidate\n";
   }
   if (doVbc_) {
     vbcFile_ << toClockTime(timer_->query()) << " P " << node->getId()+1 << " "
@@ -148,17 +147,17 @@ void TreeManager::clearAll()
   if (aNode_) {
     removeNodeAndUp_(aNode_);
   }
-  while (false==active_nodes_->isEmpty()) {
-    n = active_nodes_->top();
+  while (false==activeNodes_->isEmpty()) {
+    n = activeNodes_->top();
     removeNodeAndUp_(n);
-    active_nodes_->pop();
+    activeNodes_->pop();
   }
 }
 
 
 UInt TreeManager::getActiveNodes() const
 {
-  return active_nodes_->getSize();
+  return activeNodes_->getSize();
 }
 
 
@@ -167,11 +166,9 @@ NodePtr TreeManager::getCandidate()
   NodePtr node = NodePtr(); // NULL
   //aNode_.reset();
   aNode_ = 0;
-  while (active_nodes_->getSize() > 0) {
-    node = active_nodes_->top();
-    // std::cout << "tm: node lb = " << node->getLb() << std::endl;
+  while (activeNodes_->getSize() > 0) {
+    node = activeNodes_->top();
     if (shouldPrune_(node)) {
-      // std::cout << "tm: node pruned." << std::endl;
       removeActiveNode(node);
       pruneNode(node);
       //node.reset(); // NULL
@@ -246,9 +243,9 @@ void TreeManager::insertCandidate_(NodePtr node, bool pop_now)
 
   // add node to the heap/stack of active nodes. If pop_now is true, the node
   // is processed right after creating it; we don't
-  // want to keep it in active_nodes (e.g. while diving)
+  // want to keep it in activeNodes (e.g. while diving)
   if (!pop_now) {
-    active_nodes_->push(node);
+    activeNodes_->push(node);
   } 
   if (doVbc_) {
     vbcFile_ << toClockTime(timer_->query()) << " N "
@@ -261,11 +258,11 @@ void TreeManager::insertCandidate_(NodePtr node, bool pop_now)
 void TreeManager::insertRoot(NodePtr node)
 {
   assert(size_==0);
-  assert(active_nodes_->getSize()==0);
+  assert(activeNodes_->getSize()==0);
 
   node->setId(0);
   node->setDepth(0);
-  active_nodes_->push(node);
+  activeNodes_->push(node);
   ++size_;
   if (doVbc_) {
     // father node color
@@ -287,16 +284,14 @@ void TreeManager::removeActiveNode(NodePtr node)
   if (doVbc_) {
     if (node->getStatus()==NodeOptimal) {
       vbcFile_ << toClockTime(timer_->query()) << " P "
-        << active_nodes_->top()->getId()+1 << " " << VbcFeas << std::endl;
+        << activeNodes_->top()->getId()+1 << " " << VbcFeas << std::endl;
     } else if (node->getStatus()!=NodeInfeasible && node->getStatus()!=NodeHitUb) {
       vbcFile_ << toClockTime(timer_->query()) << " P "
-               << active_nodes_->top()->getId()+1 << " " << VbcSolved << std::endl;
+               << activeNodes_->top()->getId()+1 << " " << VbcSolved << std::endl;
     } 
   }
 
-  active_nodes_->pop();
-  // active_nodes_->write(std::cout);
-  //std::cout << "size of active nodes = " << active_nodes_.size() << std::endl;
+  activeNodes_->pop();
   // dont remove the head until the candidate has been processed.
 }
 
@@ -305,8 +300,6 @@ void TreeManager::removeNode_(NodePtr node)
 {
   NodePtr cNode, parent;
   NodePtrIterator node_i;
-
-  std::cout << "TreeManager: " << "removing node " << node->getId() << std::endl;
 
   parent = node->getParent();
   if (node->getId()>0) {
@@ -339,10 +332,7 @@ void TreeManager::removeNode_(NodePtr node)
     } else {
       assert (!"Current node is not in its parent's list of children!");
     }
-  }
-  // std::cout << "node " << node->getId() << " use count = " <<
-  // node.use_count() << std::endl;
-  //node.reset();
+  } 
   delete node;
 }
 
@@ -402,7 +392,7 @@ bool TreeManager::shouldPrune_(NodePtr node)
 double TreeManager::updateLb()
 {
   // this could be an expensive operation. Try to avoid it.
-  bestLowerBound_ = active_nodes_->getBestLB();
+  bestLowerBound_ = activeNodes_->getBestLB();
 
   return bestLowerBound_;
 }

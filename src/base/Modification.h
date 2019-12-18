@@ -36,7 +36,7 @@ namespace Minotaur {
       virtual ~Modification() {};
 
       /**
-       * \brief Covert a modification for a relaxation  to one for its original
+       * \brief Covert a modification for a relaxation to one for its original
        * problem. 
        * \param[in] rel Relaxation for which this mod is applicable.
        * \param[in] p Problem for which the new mod will be applicable.
@@ -46,7 +46,7 @@ namespace Minotaur {
         = 0;
 
       /**
-       * \brief Covert a modification for a problem  to one for its 
+       * \brief Covert a modification for a problem to one for its
        * relaxation. 
        * \param[in] p Problem for which this mod is applicable.
        * \param[in] rel Relaxation for which the new mod will be applicable.

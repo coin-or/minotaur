@@ -78,7 +78,7 @@ Branches RandomBrancher::findBranches(RelaxationPtr rel, NodePtr ,
                                       BrancherStatus & br_status,
                                       ModVector &mods) 
 {
-  Branches branches;
+  Branches branches = 0;
   DoubleVector x(rel->getNumVars());
   BrVarCandSet cands;      // candidates from which to choose one.
   BrVarCandSet cands2;     // temporary set.

@@ -18,9 +18,6 @@
 
 namespace Minotaur {
 
-class LinearFunction;
-typedef LinearFunction* LinearFunctionPtr;
-
 /// Store statistics of presolving.
 struct LinPresolveStats 
 {
@@ -62,7 +59,6 @@ struct LinPresolveOpts {
  */
 class LinearHandler : public Handler {
 public:
-
   /// Default constructor.
   LinearHandler();
 
@@ -171,6 +167,9 @@ protected:
    */
   const double intTol_;
 
+  /// If true, dupRows_ is run in presolve
+  bool chkDupRows_;
+
   /// Tolerance.
   const double eTol_;
 
@@ -195,7 +194,17 @@ protected:
 
   void chkIntToBin_(VariablePtr v);
 
+  /**
+   * \brief Find each variable that appears in exactly one constraint in
+   * linear form and does not appear in objective. Such a variable can be
+   * fixed depending on its coefficient in the constraint.
+   *
+   * \param[out] changed Set to true if some such variables are found and
+   * fixed.
+   */
   void chkSing_(bool *changed);
+
+
   void coeffImp_(bool *changed);
   void computeImpBounds_(ConstraintPtr c, VariablePtr z, double zval,
                          double *lb, double *ub);

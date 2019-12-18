@@ -44,7 +44,6 @@ namespace Minotaur {
 
   typedef enum {
     OsiClpEngine,
-    OsiCpxEngine,
     OsiGlpkEngine,
     OsiGrbEngine,
     OsiMskEngine,
@@ -141,6 +140,9 @@ namespace Minotaur {
     // Implement Engine::enableStrBrSetup()
     void enableStrBrSetup();
 
+    // Implement Engine::fillStats()
+    void fillStats(std::vector<double> &);
+
     /// Return the solution value of the objective after solving the LP.
     double getSolutionValue();
 
@@ -192,6 +194,9 @@ namespace Minotaur {
     // Implement Engine::setIterationLimit().
     void setIterationLimit(int limit);
 
+    // Implement Engine::setDualObjLimit().
+    int setDualObjLimit(double) {return 1;};
+
     /** 
      * Solve the problem that was loaded. Calls resolve() function of Osi.
      * The resolve() function ``smartly'' decides what method of clp should
@@ -216,7 +221,7 @@ namespace Minotaur {
     /// Environment.
     EnvPtr env_;
 
-    /// Name of the engine: OsiCpx, OsiClp etc.
+    /// Name of the engine: OsiGrb, OsiClp etc.
     OsiLPEngineName eName_;
 
     /// The maximum limit that can be set on Osi solver. 

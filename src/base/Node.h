@@ -217,7 +217,7 @@ namespace Minotaur {
     void removeParent();
 
     /// Remove warm start information associated with this node.
-    void removeWarmStart() { ws_ = 0; }
+    void removeWarmStart();
 
     /// Set the branching candidate information for this node.
     void setBrCands(UIntVector brCands) { brCands_ = brCands; }

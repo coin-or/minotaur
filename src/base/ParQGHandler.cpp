@@ -51,27 +51,6 @@ using namespace Minotaur;
 typedef std::vector<ConstraintPtr>::const_iterator CCIter;
 const std::string ParQGHandler::me_ = "ParQGHandler: ";
 
-ParQGHandler::ParQGHandler()
-: env_(EnvPtr()),
-  minlp_(ProblemPtr()),
-  nlCons_(0),
-  nlpe_(EnginePtr()),
-  nlpStatus_(EngineUnknownStatus),
-  objVar_(VariablePtr()),
-  oNl_(false),
-  rel_(RelaxationPtr()),
-  relobj_(0.0),
-  stats_(0)
-{
-  intTol_ = env_->getOptions()->findDouble("int_tol")->getValue();
-  solAbsTol_ = env_->getOptions()->findDouble("feasAbs_tol")->getValue();
-  solRelTol_ = env_->getOptions()->findDouble("feasRel_tol")->getValue();
-  objATol_ = env_->getOptions()->findDouble("solAbs_tol")->getValue();
-  objRTol_ = env_->getOptions()->findDouble("solRel_tol")->getValue();
-  logger_ = (LoggerPtr) new Logger(LogInfo);
-}
-
-
 ParQGHandler::ParQGHandler(EnvPtr env, ProblemPtr minlp, EnginePtr nlpe)
 : env_(env),
   minlp_(minlp),
@@ -105,12 +84,10 @@ ParQGHandler::~ParQGHandler()
     delete stats_;
   }
 
-  //env_.reset();
   env_ = 0;
-  //rel_.reset();
-  //minlp_.reset();
   rel_ = 0;
   minlp_ = 0;
+  nlCons_.clear();
 }
 
 
@@ -131,13 +108,8 @@ void ParQGHandler::addInitLinearX_(const double *x)
       linearAt_(f, act, x, &c, &lf, &error);
       if (error == 0) {
         cUb = con->getUb();
-#if USE_OPENMP
-        sstm << "Thr_" << omp_get_thread_num();
-#endif
         ++(stats_->cuts);
-        sstm << "_OAcut_";
-        sstm << stats_->cuts;
-        sstm << "_AtRoot";
+        sstm << "_qgCutRoot_Thr_" << omp_get_thread_num() << stats_->cuts;
         f = (FunctionPtr) new Function(lf);
         //newcon = rel_->newConstraint(f, -INFINITY, cUb-c, sstm.str());
         rel_->newConstraint(f, -INFINITY, cUb-c, sstm.str());
@@ -159,15 +131,14 @@ void ParQGHandler::addInitLinearX_(const double *x)
     act = o->eval(x, &error);
     if (error==0) {
       ++(stats_->cuts);
-      sstm << "_OAObjcut_";
-      sstm << stats_->cuts;
-      sstm << "_AtRoot";
+      sstm << "_qgObjCutRoot_Thr_" << omp_get_thread_num() << stats_->cuts;
       f = o->getFunction();
       linearAt_(f, act, x, &c, &lf, &error);
       if (error == 0) {
         lf->addTerm(objVar_, -1.0);
         f = (FunctionPtr) new Function(lf);
         rel_->newConstraint(f, -INFINITY, -1.0*c, sstm.str());
+        //newcon = rel_->newConstraint(f, -INFINITY, -1.0*c, sstm.str());
       }
     }	else {
       logger_->msgStream(LogError) << me_ <<
@@ -186,38 +157,42 @@ void ParQGHandler::cutIntSol_(ConstSolutionPtr sol, CutManager *cutMan,
                            SolutionPoolPtr s_pool, bool *sol_found,
                            SeparationStatus *status)
 {
-  double nlpval = INFINITY;
-  const double *lpx = sol->getPrimal(), *nlpx;
+  const double *lpx = sol->getPrimal();
   relobj_ = (sol) ? sol->getObjValue() : -INFINITY;
 
   fixInts_(lpx);           // Fix integer variables
   solveNLP_();
   unfixInts_();            // Unfix integer variables
+  
   switch(nlpStatus_) {
   case (ProvenOptimal):
   case (ProvenLocalOptimal):
-    ++(stats_->nlpF);
-    updateUb_(s_pool, &nlpval, sol_found);
-    if ((relobj_ >= nlpval-objATol_) ||
-        (nlpval != 0 && (relobj_ >= nlpval-fabs(nlpval)*objRTol_))) {
-        *status = SepaPrune;
-        break;
-    } else {
-      nlpx = nlpe_->getSolution()->getPrimal();
-      oaCutToCons_(nlpx, lpx, cutMan, status);
-      oaCutToObj_(nlpx, lpx, cutMan, status);
-      break;
+    {
+      ++(stats_->nlpF);
+      double nlpval = nlpe_->getSolutionValue();
+      updateUb_(s_pool, nlpval, sol_found);
+      if ((relobj_ >= nlpval-objATol_) ||
+          (nlpval != 0 && (relobj_ >= nlpval-fabs(nlpval)*objRTol_))) {
+          *status = SepaPrune;
+      } else {
+        const double * nlpx = nlpe_->getSolution()->getPrimal();
+        cutToObj_(nlpx, lpx, cutMan, status);
+        cutToCons_(nlpx, lpx, cutMan, status);
+      }
     }
+    break;
   case (ProvenInfeasible):
   case (ProvenLocalInfeasible):
   case (ProvenObjectiveCutOff):
-    ++(stats_->nlpI);
-    nlpx = nlpe_->getSolution()->getPrimal();
-    oaCutToCons_(nlpx, lpx, cutMan, status);
+    {
+      ++(stats_->nlpI);
+      const double * nlpx = nlpe_->getSolution()->getPrimal();
+      cutToCons_(nlpx, lpx, cutMan, status);
+    }
     break;
   case (EngineIterationLimit):
     ++(stats_->nlpIL);
-    oaCutEngLim_(lpx, cutMan, status);
+    cutsAtLpSol_(lpx, cutMan, status);
     break;
   case (FailedFeas):
   case (EngineError):
@@ -234,8 +209,8 @@ void ParQGHandler::cutIntSol_(ConstSolutionPtr sol, CutManager *cutMan,
     *status = SepaError;
   }
 
- if (*status==SepaContinue) {
-   // No linearizations are generated so prune the node
+ if (*status == SepaContinue) {
+   // happens due to tolerance. No linearizations are generated so prune the node
    *status = SepaPrune;
  }
 
@@ -321,7 +296,7 @@ void ParQGHandler::initLinear_(bool *isInf)
 bool ParQGHandler::isFeasible(ConstSolutionPtr sol, RelaxationPtr, bool &,
                            double &)
 {
-  int error=0;
+  int error = 0;
   double act, cUb;
   ConstraintPtr c;
   const double *x = sol->getPrimal();
@@ -333,35 +308,22 @@ bool ParQGHandler::isFeasible(ConstSolutionPtr sol, RelaxationPtr, bool &,
       cUb = c->getUb();
       if ((act > cUb + solAbsTol_) &&
           (cUb == 0 || act > cUb + fabs(cUb)*solRelTol_)) {
-#if SPEW
-        logger_->msgStream(LogDebug) << me_ << "constraint " <<
-          c->getName() << " violated with violation = " << act - cUb <<
-          std::endl;
-#endif
         return false;
       }
     }	else {
       logger_->msgStream(LogError) << me_ << c->getName() <<
         "constraint not defined at this point."<< std::endl;
-#if SPEW
-      logger_->msgStream(LogDebug) << me_ << "constraint " << c->getName() <<
-        " not defined at this point." << std::endl;
-#endif
       return false;
     }
   }
 
   if (oNl_) {
     error = 0;
-    relobj_ = x[objVar_->getIndex()];
+    relobj_ = sol->getObjValue();
     act = minlp_->getObjValue(x, &error);
     if (error == 0) {
       if ((act > relobj_ + solAbsTol_) &&
           (relobj_ == 0 || (act > relobj_ + fabs(relobj_)*solRelTol_))) {
-#if SPEW
-        logger_->msgStream(LogDebug) << me_ << "objective violated with "
-          << "violation = " << act - relobj_ << std::endl;
-#endif
         return false;
       }
     }	else {
@@ -445,20 +407,16 @@ void ParQGHandler::linearAt_(FunctionPtr f, double fval, const double *x,
   } else {
     logger_->msgStream(LogError) << me_ <<"gradient not defined at this point."
       << std::endl;
-#if SPEW
-    logger_->msgStream(LogDebug) << me_ <<"gradient not defined at this point."
-      << std::endl;
-#endif
   }
   delete [] a;
   return;
 }
 
 
-void ParQGHandler::oaCutToCons_(const double *nlpx, const double *lpx,
+void ParQGHandler::cutToCons_(const double *nlpx, const double *lpx,
                              CutManager *cutman, SeparationStatus *status)
 {
-  int error=0;
+  int error = 0;
   ConstraintPtr con;
   double nlpact, cUb;
 
@@ -469,11 +427,6 @@ void ParQGHandler::oaCutToCons_(const double *nlpx, const double *lpx,
       cUb = con->getUb();
       if ((nlpact > cUb + solAbsTol_) &&
           (cUb == 0 || nlpact > cUb+fabs(cUb)*solRelTol_)) {
-#if SPEW
-        logger_->msgStream(LogDebug) << me_ << " constraint " <<
-          con->getName() << " violated at LP solution with violation = " <<
-          nlpact - cUb << std::endl;
-#endif
         addCut_(nlpx, lpx, con, cutman, status);
       } else {
 #if SPEW
@@ -484,17 +437,13 @@ void ParQGHandler::oaCutToCons_(const double *nlpx, const double *lpx,
     }	else {
       logger_->msgStream(LogError) << me_ << "Constraint not defined at"
         << " this point. "<<  std::endl;
-#if SPEW
-          logger_->msgStream(LogDebug) << me_ << "constraint " <<
-            con->getName() << " not defined at this point." << std::endl;
-#endif
     }
   }
   return;
 }
 
 
-void ParQGHandler::oaCutEngLim_(const double *lpx, CutManager *cutman,
+void ParQGHandler::cutsAtLpSol_(const double *lpx, CutManager *cutman,
                              SeparationStatus *status)
 {
   int error=0;
@@ -502,35 +451,76 @@ void ParQGHandler::oaCutEngLim_(const double *lpx, CutManager *cutman,
   LinearFunctionPtr lf;
   std::stringstream sstm;
   ConstraintPtr con, newcon;
-  double c, nlpact, cUb;
+  double c, act, cUb, lpvio;
 
   for (CCIter it = nlCons_.begin(); it != nlCons_.end(); ++it) {
+    lf = 0;
     con = *it;
     f = con->getFunction();
-    lf = LinearFunctionPtr();
-    nlpact =  con->getActivity(lpx, &error);
+    act =  con->getActivity(lpx, &error);
     if (error == 0) {
       cUb = con->getUb();
-      if ((nlpact > cUb + solAbsTol_) &&
-          (cUb == 0 || nlpact > cUb+fabs(cUb)*solRelTol_)) {
-        linearAt_(f, nlpact, lpx, &c, &lf, &error);
+      if ((act > cUb + solAbsTol_) &&
+          (cUb == 0 || act > cUb+fabs(cUb)*solRelTol_)) {
+        linearAt_(f, act, lpx, &c, &lf, &error);
         if (error==0) {
-          ++(stats_->cuts);
-          sstm << "_OAcut_";
-          sstm << stats_->cuts;
-          *status = SepaResolve;
-          f = (FunctionPtr) new Function(lf);
-          newcon = rel_->newConstraint(f, -INFINITY, cUb-c, sstm.str());
-          CutPtr cut = (CutPtr) new Cut(minlp_->getNumVars(),f, -INFINITY,
-                                        cUb-c, false,false);
-          cut->setCons(newcon);
-          cutman->addCutToPool(cut);
-          return;
+          lpvio = std::max(lf->eval(lpx)-cUb+c, 0.0);
+          if ((lpvio > solAbsTol_) && ((cUb-c)==0 ||
+                                   (lpvio>fabs(cUb-c)*solRelTol_))) {
+            ++(stats_->cuts);
+            sstm << "_qgCut_Thr_" << omp_get_thread_num() << stats_->cuts;
+            *status = SepaResolve;
+            f = (FunctionPtr) new Function(lf);
+            newcon = rel_->newConstraint(f, -INFINITY, cUb-c, sstm.str());
+            CutPtr cut = (CutPtr) new Cut(minlp_->getNumVars(),f, -INFINITY,
+                                          cUb-c, false,false);
+            cut->setCons(newcon);
+            cutman->addCutToPool(cut);
+            return;
+          } else {
+            delete lf;
+            lf = 0;
+          }
         }
       }
     }	else {
       logger_->msgStream(LogError) << me_ << " constraint not defined at" <<
         " this point. "<<  std::endl;
+    }
+  }
+  
+  if (oNl_) {
+    error = 0;
+    ObjectivePtr o = minlp_->getObjective();
+
+    act = o->eval(lpx, &error);
+    if (error == 0) {
+      lpvio = std::max(act-relobj_, 0.0);
+      if ((lpvio > solAbsTol_) &&
+          (relobj_ == 0 || lpvio > fabs(relobj_)*solRelTol_)) {
+          lf = 0;
+          f = o->getFunction();
+          linearAt_(f, act, lpx, &c, &lf, &error);
+          if (error == 0) {
+            lpvio = std::max(c+lf->eval(lpx)-relobj_, 0.0);
+            if ((lpvio > solAbsTol_) && ((relobj_-c) == 0
+                                       || lpvio > fabs(relobj_-c)*solRelTol_)) {
+              ++(stats_->cuts);
+              *status = SepaResolve;
+              lf->addTerm(objVar_, -1.0);
+              f = (FunctionPtr) new Function(lf);
+              sstm << "_qgObjCut_Thr_" << omp_get_thread_num() << stats_->cuts;
+              rel_->newConstraint(f, -INFINITY, -1.0*c, sstm.str());
+              //newcon = rel_->newConstraint(f, -INFINITY, -1.0*c, sstm.str());
+            } else {
+              delete lf;
+              lf = 0;
+            }
+          }
+        }
+    }	else {
+      logger_->msgStream(LogError) << me_
+        << " objective not defined at this solution point." << std::endl;
     }
   }
   return;
@@ -551,19 +541,13 @@ void ParQGHandler::addCut_(const double *nlpx, const double *lpx,
   act = con->getActivity(nlpx, &error);
   if (error == 0) {
     linearAt_(f, act, nlpx, &c, &lf, &error);
-    if (error==0) {
+    if (error == 0) {
       cUb = con->getUb();
       lpvio = std::max(lf->eval(lpx)-cUb+c, 0.0);
       if ((lpvio>solAbsTol_) &&
           ((cUb-c)==0 || (lpvio>fabs(cUb-c)*solRelTol_))) {
-#if SPEW
-        logger_->msgStream(LogDebug) << me_ << " linearization of constraint "
-          << con->getName() << " violated at LP solution with violation = " <<
-          lpvio << ". OA cut added." << std::endl;
-#endif
         ++(stats_->cuts);
-        sstm << "_OAcut_";
-        sstm << stats_->cuts;
+        sstm << "_qgCut_Thr_" << omp_get_thread_num() << stats_->cuts;
         *status = SepaResolve;
         f = (FunctionPtr) new Function(lf);
         newcon = rel_->newConstraint(f, -INFINITY, cUb-c, sstm.str());
@@ -572,21 +556,20 @@ void ParQGHandler::addCut_(const double *nlpx, const double *lpx,
         cut->setCons(newcon);
         cutman->addCutToPool(cut);
         return;
+      } else {
+        delete lf;
+        lf = 0;
       }
     }
   }	else {
     logger_->msgStream(LogError) << me_ << "Constraint not defined at"
       << " this point. "<<  std::endl;
-#if SPEW
-          logger_->msgStream(LogDebug) << me_ << "constraint " <<
-            con->getName() << " not defined at this point." << std::endl;
-#endif
   }
   return;
 }
  
 
-void ParQGHandler::oaCutToObj_(const double *nlpx, const double *lpx,
+void ParQGHandler::cutToObj_(const double *nlpx, const double *lpx,
                             CutManager *cutman, SeparationStatus *status)
 {
   if (oNl_) {
@@ -602,27 +585,17 @@ void ParQGHandler::oaCutToObj_(const double *nlpx, const double *lpx,
       vio = std::max(act-relobj_, 0.0);
       if ((vio > solAbsTol_) &&
           (relobj_ == 0 || vio > fabs(relobj_)*solRelTol_)) {
-#if SPEW
-        logger_->msgStream(LogDebug) << me_ << " objective violated at LP "
-          << " solution with violation = " << vio << std::endl;
-#endif
         act = o->eval(nlpx, &error);
         if (error == 0) {
           f = o->getFunction();
-          LinearFunctionPtr lf = LinearFunctionPtr();
+          LinearFunctionPtr lf = 0;
           linearAt_(f, act, nlpx, &c, &lf, &error);
           if (error == 0) {
             vio = std::max(c+lf->eval(lpx)-relobj_, 0.0);
             if ((vio > solAbsTol_) && ((relobj_-c)==0
                                      || vio > fabs(relobj_-c)*solRelTol_)) {
-#if SPEW
-              logger_->msgStream(LogDebug) << me_ << "linearization of "
-                "objective violated at LP solution with violation = " <<
-                vio << ". OA cut added." << std::endl;
-#endif
               ++(stats_->cuts);
-              sstm << "_OAObjcut_";
-              sstm << stats_->cuts;
+              sstm << "_qgObjCut_Thr_" << omp_get_thread_num() << stats_->cuts;
               lf->addTerm(objVar_, -1.0);
               *status = SepaResolve;
               f = (FunctionPtr) new Function(lf);
@@ -631,6 +604,9 @@ void ParQGHandler::oaCutToObj_(const double *nlpx, const double *lpx,
                                             -1.0*c, false,false);
               cut->setCons(newcon);
               cutman->addCutToPool(cut);
+            } else {
+              delete lf;
+              lf = 0;
             }
           }
         }
@@ -643,10 +619,6 @@ void ParQGHandler::oaCutToObj_(const double *nlpx, const double *lpx,
     }	else {
       logger_->msgStream(LogError) << me_
         << " objective not defined at this solution point." << std::endl;
-#if SPEW
-      logger_->msgStream(LogDebug) << me_ << " objective not defined at this "
-        << " point." << std::endl;
-#endif
     }
   }
   return;
@@ -711,29 +683,28 @@ void ParQGHandler::relax_(bool *isInf)
 
 
 void ParQGHandler::separate(ConstSolutionPtr sol, NodePtr , RelaxationPtr rel,
-                         CutManager *cutMan, SolutionPoolPtr s_pool, ModVector &,
-                         ModVector &, bool *sol_found, SeparationStatus *status)
+                         CutManager *cutMan, SolutionPoolPtr s_pool,
+                         ModVector &, ModVector &, bool *sol_found,
+                         SeparationStatus *status)
 {
   double val;
+  VariablePtr var;
   VariableType v_type;
-  VariableConstIterator v_iter;
   const double *x = sol->getPrimal();
-  *status = SepaContinue;
 
-  for (v_iter = rel->varsBegin(); v_iter != rel->varsEnd(); ++v_iter) {
-    v_type = (*v_iter)->getType();
+  *status = SepaContinue;
+  for (VariableConstIterator v_iter = rel->varsBegin();
+       v_iter != rel->varsEnd(); ++v_iter) {
+    var = *v_iter;
+    v_type = var->getType();
     if (v_type == Binary || v_type == Integer) {
-      val = x[(*v_iter)->getIndex()];
+      val = x[var->getIndex()];
       if (fabs(val - floor(val+0.5)) > intTol_) {
-#if SPEW
-        logger_->msgStream(LogDebug) << me_ << "variable " <<
-          (*v_iter)->getName() << " has fractional value = " << val <<
-          std::endl;
-#endif
         return;
       }
     }
   }
+
   cutIntSol_(sol, cutMan, s_pool, sol_found, status);
   return;
 }
@@ -741,7 +712,10 @@ void ParQGHandler::separate(ConstSolutionPtr sol, NodePtr , RelaxationPtr rel,
 
 void ParQGHandler::solveNLP_()
 {
-  nlpStatus_ = nlpe_->solve();
+#pragma omp critical
+  {
+    nlpStatus_ = nlpe_->solve();
+  }
   ++(stats_->nlpS);
   return;
 }
@@ -760,23 +734,17 @@ void ParQGHandler::unfixInts_()
 }
 
 
-void ParQGHandler::updateUb_(SolutionPoolPtr s_pool, double *nlpval,
+void ParQGHandler::updateUb_(SolutionPoolPtr s_pool, double nlpval,
                           bool *sol_found)
 {
-  double val = nlpe_->getSolutionValue();
   double bestval = s_pool->getBestSolutionValue();
 
-  if ((bestval - objATol_ > val) ||
-        (bestval != 0 && (bestval - fabs(bestval)*objRTol_) > val)) {
+  if ((bestval - objATol_ > nlpval) ||
+        (bestval != 0 && (bestval - fabs(bestval)*objRTol_ > nlpval))) {
     const double *x = nlpe_->getSolution()->getPrimal();
-    s_pool->addSolution(x, val);
+    s_pool->addSolution(x, nlpval);
     *sol_found = true;
-#if SPEW
-    logger_->msgStream(LogDebug) << me_ << "new solution found, value = "
-      << val << std::endl;
-#endif
   }
-  *nlpval = val;
   return;
 }
 
@@ -791,7 +759,7 @@ void ParQGHandler::writeStats(std::ostream &out) const
     << me_ << "number of feasible nlps                     = "
     << stats_->nlpF << std::endl
     << me_ << "number of nlps hit engine iterations limit  = " 
-    << stats_->nlpF << std::endl
+    << stats_->nlpIL << std::endl
     << me_ << "number of cuts added                        = " 
     << stats_->cuts << std::endl;
   return;

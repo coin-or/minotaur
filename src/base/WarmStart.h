@@ -45,20 +45,35 @@ namespace Minotaur {
   class WarmStart {
     public:
       /// Default constructor
-      WarmStart() {}
+      WarmStart() {cnt_ = 0;} ;
 
       /// Destroy
-      virtual ~WarmStart() {}
+      virtual ~WarmStart() {} ;
+      
+      virtual void decrUseCnt()
+      {--cnt_;} ;
+
+      virtual int getUseCnt()
+      {return cnt_;} ;
       
       /// Return true if warm start information is initialized, false
       /// otherwise.
       virtual bool hasInfo() = 0;
 
+      virtual void incrUseCnt()
+      {++cnt_;} ;
+      
       /// Write to an output stream
       virtual void write(std::ostream &out) const = 0;
 
-      /// \todo
-      //virtual void setEngine(EnginePtr engine) = 0;
+    protected:
+      /**
+       * Warm start information can be stored at different nodes of the
+       * tree -- making it difficult to delete when it is no longer in use.
+       * This variable keeps track of number of places (nodes for example) it
+       * is in use. When it is zero, it is safe to delete it.
+       */
+      int cnt_;
   };
 }
 #endif

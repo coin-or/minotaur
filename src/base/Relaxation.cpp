@@ -12,6 +12,7 @@
 
 #include <cassert>
 #include <cmath>
+#include <iostream>
 
 #include "MinotaurConfig.h"
 #include "Constraint.h"
@@ -27,7 +28,7 @@
 using namespace Minotaur;
 
 Relaxation::Relaxation()
-  : p_(ProblemPtr()) // NULL
+  : p_(0) 
 {
 }
 
@@ -49,8 +50,6 @@ Relaxation::Relaxation(ProblemPtr problem)
   int err;
   VariableIterator vbeg;
   VarVector vvec;
-
-  initialPt_ = 0; //NULL
 
   // add variables
   i = 0;

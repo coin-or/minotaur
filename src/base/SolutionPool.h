@@ -29,6 +29,9 @@ namespace Minotaur {
     /// Default constructor.
     SolutionPool();
 
+    /// Destroy
+    ~SolutionPool();
+
     /// Construct a solution pool of a given size for a given problem
     SolutionPool(EnvPtr env, ProblemPtr problem, UInt limit=100);
 
