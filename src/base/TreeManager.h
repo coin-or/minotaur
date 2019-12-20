@@ -217,10 +217,19 @@ namespace Minotaur {
     void insertCandidate_(NodePtr node, bool pop_now = false);
 
     /**
-     * \brief Remove a node from the tree.
+     * \brief Remove a node from the tree. Ancestors are removed if their
+     * single child is removed.
      *
      * \param[in] node The node that is to be removed. It may remove the
      * parents of the current node also if they are no longer required.
+     */
+    void removeNodeAndUp_(NodePtr node);
+
+    /**
+     * \brief Remove just a node from the tree. 
+     *
+     * \param[in] node The node that is to be removed. Parents of the 
+     * node are not removed.
      */
     void removeNode_(NodePtr node);
   };
