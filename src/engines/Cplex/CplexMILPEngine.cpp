@@ -1213,8 +1213,11 @@ EngineStatus CplexMILPEngine::solveSTLazy(double *objLb, SolutionPtr* sol,
      goto TERMINATE;
   }
 
+  /* Set parallel search mode (default deterministic with callbacks) */
+  cpxstatus_ = CPXXsetintparam (cpxenv_, CPXPARAM_Parallel, CPX_PARALLEL_OPPORTUNISTIC);
+
   if (cpxstatus_) {
-     logger_->msgStream(LogError) << me_ << "Failure to set number of threads, error "
+     logger_->msgStream(LogError) << me_ << "Failure to set parallel mode, error "
        << cpxstatus_ << std::endl;
      goto TERMINATE;
   }
