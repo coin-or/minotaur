@@ -78,7 +78,7 @@ private:
   MILPEnginePtr milpe_;
 
   /// Modifications done to NLP before solving it.
-  std::stack<Modification *> nlpMods_;
+  //std::stack<Modification *> nlpMods_;
   
   /// Status of the NLP/QP engine.
   EngineStatus nlpStatus_;
@@ -101,7 +101,7 @@ private:
   SolutionPoolPtr solPool_;
  
   /// Value of objective in relaxation solution
-  double relobj_; 
+  //double relobj_;
 
   /// Absolute tolerance for constraint feasibility.
   double solAbsTol_;
@@ -209,26 +209,32 @@ public:
   // Show statistics.
   void writeStats(std::ostream &out) const;
 
-  //arrange order of functions
+  // Return the relaxation pointer
   RelaxationPtr getRel() {return rel_;}
-  bool fixedNLP(const double *lpx);
 
+  // Return true if the fixed NLP was feasible
   //bool fixedNLP(const double *lpx, const double * nlpx);
+  bool fixedNLP(const double *lpx, EnginePtr &nlpe);
+
+  // Return the upper bound obtained from an integer solution
   double newUb(std::vector<UInt> *varIdx,
                         std::vector<double>* varCoeff);
+
   //void cutIntSol(const double *lpx, double objVal);
 
+  /// Iterate over constraints. Returns the 'begin' iterator.
   ConstraintConstIterator consBegin() const { return nlCons_.begin(); }
 
   /// Iterate over constraints. Returns the 'end' iterator.
   ConstraintConstIterator consEnd() const { return nlCons_.end(); }
 
 
-  void OACutToCons(const double *lpx, ConstraintPtr con, double* rhs, std::vector<UInt> *varIdx,
-                            std::vector<double>* varCoeff);
+  void OACutToCons(const double *lpx, ConstraintPtr con, double* rhs,
+                   std::vector<UInt> *varIdx, std::vector<double>* varCoeff,
+                   EnginePtr nlpe);
 
   void OACutToObj(const double *lpx, double* rhs, std::vector<UInt> *varIdx,
-                            std::vector<double>* varCoeff, double ub);
+                  std::vector<double>* varCoeff, double ub, EnginePtr nlpe);
 
 private:
   /**
@@ -248,7 +254,7 @@ private:
    * Fix integer constrained variables to integer values in x. Called
    * before solving NLP.
    */
-  void fixInts_(const double *x);
+  void fixInts_(const double *x, ProblemPtr minlp, std::stack<Modification *> nlpMods);
   
    /**
    * Solve the NLP relaxation of the MINLP and add linearizations about
@@ -283,7 +289,7 @@ private:
 
   void objCutAtLpSol_(const double *lpx, double* rhs,
                              std::vector<UInt> *varIdx,
-                            std::vector<double>* varCoeff);
+                            std::vector<double>* varCoeff, double relobj);
 
   void consCutAtLpSol_(ConstraintPtr con, const double *lpx, double* rhs,
                              std::vector<UInt> *varIdx,
@@ -295,7 +301,7 @@ private:
    */
   void cutToObj_(const double *nlpx, const double *lpx,
                  double* rhs, std::vector<UInt> *varIdx,
-                            std::vector<double>* varCoeff);
+                            std::vector<double>* varCoeff, double relobj);
 
   /**
    * Create the initial relaxation. It is called from relaxInitFull and
@@ -307,7 +313,7 @@ private:
   void solveNLP_();
 
   /// Undo the changes done in fixInts_().
-  void unfixInts_();
+  void unfixInts_(ProblemPtr minlp, std::stack<Modification *> nlpMods);
 
   /**
    * Update the upper bound. XXX: Needs proper integration with

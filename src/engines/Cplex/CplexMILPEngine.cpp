@@ -31,10 +31,11 @@
 #include "Timer.h"
 #include "Variable.h"
 
-#include <thread>
-#include <mutex>
+//#include <thread>
+//#include <mutex>
+//#include <chrono>
 
-std::mutex mtx;
+//std::mutex mtx;
 
 using namespace Minotaur;
 
@@ -738,15 +739,14 @@ TERMINATE:
 static int CPXPUBLIC minolazycallback(CPXCENVptr env, void *cbdata, int wherefrom,
              void *userdata, int *useraction_p)
 {  
-  mtx.lock();
-  STOAHandlerPtr stoaH = *(STOAHandlerPtr *)(userdata);
+  //mtx.lock();
   double timeStart, timeEnd = 0;
-  int cpxstatus = 0;
+  STOAHandlerPtr stoaH = *(STOAHandlerPtr *)(userdata);
   int numvars = stoaH->getRel()->getNumVars();
   double *cpxx = new double[numvars]; 
   double ub;
   
-  cpxstatus = CPXXgettime(env, &timeStart);
+  int cpxstatus = CPXXgettime(env, &timeStart);
   if (cpxstatus) {
     std::cout << "Can't get start time stamp from Cplex.";
     return cpxstatus;
@@ -760,20 +760,22 @@ static int CPXPUBLIC minolazycallback(CPXCENVptr env, void *cbdata, int wherefro
  
   cpxstatus = CPXXgetcallbacknodex(env, cbdata, wherefrom, cpxx, 0, numvars - 1);
   if (cpxstatus != 0) {
-    mtx.unlock();
+    //mtx.unlock();
     return cpxstatus;
   }
 
   const double *x = cpxx;
   //if (!(stoaH->isFeasible(x))) {
-    if (stoaH->fixedNLP(x)) {
+    EnginePtr nlpe = 0;
+    bool fixNlp = stoaH->fixedNLP(x, nlpe);
+    if (fixNlp) {
       UInt vIdx;
       double rhs;
       std::vector<UInt> varIdx;
       std::vector<double> varCoeff;
       for (ConstraintConstIterator it = stoaH->consBegin();
            it != stoaH->consEnd(); ++it) {
-        stoaH->OACutToCons(x, *it, &rhs, &varIdx, &varCoeff);
+        stoaH->OACutToCons(x, *it, &rhs, &varIdx, &varCoeff, nlpe);
         vIdx = varIdx.size();
         if (varIdx.size() > 0) {
           CPXDIM *cutind = new CPXDIM[vIdx];
@@ -785,7 +787,7 @@ static int CPXPUBLIC minolazycallback(CPXCENVptr env, void *cbdata, int wherefro
           cpxstatus = CPXXcutcallbackadd(env, cbdata, wherefrom, vIdx, rhs, 'L',
                                          cutind, cutval, CPX_USECUT_FORCE);
           if (cpxstatus != 0) {
-            mtx.unlock();
+            //mtx.unlock();
             return cpxstatus;
           }
           varIdx.clear();
@@ -794,7 +796,7 @@ static int CPXPUBLIC minolazycallback(CPXCENVptr env, void *cbdata, int wherefro
           delete [] cutval;
         }
       }
-      stoaH->OACutToObj(x, &rhs, &varIdx, &varCoeff, ub);
+      stoaH->OACutToObj(x, &rhs, &varIdx, &varCoeff, ub, nlpe);
       vIdx = varIdx.size();
       if (varIdx.size() > 0) {
          CPXDIM *cutind = new CPXDIM[vIdx];
@@ -812,7 +814,7 @@ static int CPXPUBLIC minolazycallback(CPXCENVptr env, void *cbdata, int wherefro
             return cpxstatus;
           }
           stoaH->setCbTime(stoaH->getCbTime() + timeEnd - timeStart);
-          mtx.unlock();
+          //mtx.unlock();
           return cpxstatus;
         }
         varIdx.clear();
@@ -827,12 +829,13 @@ static int CPXPUBLIC minolazycallback(CPXCENVptr env, void *cbdata, int wherefro
             return cpxstatus;
           }
           stoaH->setCbTime(stoaH->getCbTime() + timeEnd - timeStart);
-          mtx.unlock();
+          //mtx.unlock();
           return cpxstatus;
         }
         *useraction_p = CPX_CALLBACK_SET;
       }
     }
+    nlpe = 0;
   //}
   delete [] cpxx;
   cpxstatus = CPXXgettime(env, &timeEnd);
@@ -841,112 +844,111 @@ static int CPXPUBLIC minolazycallback(CPXCENVptr env, void *cbdata, int wherefro
     return cpxstatus;
   }
   stoaH->setCbTime(stoaH->getCbTime() + timeEnd - timeStart);
-  //std::cout << "out of callback " << timeEnd - timeStart << "\n";
-  mtx.unlock();
+  //mtx.unlock();
   return 0;
 }
 
 static int CPXPUBLIC minocallback (CPXCALLBACKCONTEXTptr context, CPXLONG where, void* userdata)
 {  
-  assert(where==CPX_CALLBACKCONTEXT_CANDIDATE);
-  mtx.lock();
-#if SPEW
-  //logger_->msgStream(LogInfo) << "thread " << std::this_thread::get_id() << "\n";
-#endif
-  STOAHandlerPtr stoaH = *(STOAHandlerPtr *)(userdata);
-  int cpxstatus = 0;
-  int numvars = stoaH->getRel()->getNumVars();
-  double *cpxx = new double[numvars]; 
-  double ub;
-  const char* sense = "L";
-  CPXNNZ const rmatbeg =0;
+  //assert(where==CPX_CALLBACKCONTEXT_CANDIDATE);
+  //mtx.lock();
+//#if SPEW
+  ////logger_->msgStream(LogInfo) << "thread " << std::this_thread::get_id() << "\n";
+//#endif
+  //STOAHandlerPtr stoaH = *(STOAHandlerPtr *)(userdata);
+  //int cpxstatus = 0;
+  //int numvars = stoaH->getRel()->getNumVars();
+  //double *cpxx = new double[numvars];
+  //double ub;
+  //const char* sense = "L";
+  //CPXNNZ const rmatbeg =0;
   
-  CPXXcallbackgetcandidatepoint(context, cpxx, 0, numvars - 1, &ub);
-  if (cpxstatus != 0)
-     return cpxstatus;
+  //CPXXcallbackgetcandidatepoint(context, cpxx, 0, numvars - 1, &ub);
+  //if (cpxstatus != 0)
+     //return cpxstatus;
   
-  const double *x = cpxx; //is this correct?
-  double newUb;
-  //if (!(stoaH->isFeasible(x))) {
-    if (stoaH->fixedNLP(x)) {
-      UInt vIdx;
-      double rhs;
-      std::vector<UInt> varIdx;
-      std::vector<double> varCoeff;
-      for (ConstraintConstIterator it = stoaH->consBegin(); 
-           it != stoaH->consEnd(); ++it) {
-        stoaH->OACutToCons(x, *it, &rhs, &varIdx, &varCoeff);
-        vIdx = varIdx.size();
-        if (varIdx.size() > 0) {
-          CPXDIM *cutind = new CPXDIM[vIdx];
-          double *cutval = new double[vIdx];
-          for (UInt i=0; i<vIdx; ++i) {
-            cutind[i] = varIdx[i];
-            cutval[i] = varCoeff[i];
-          }
-          const double* objrhs = &rhs;
+  //const double *x = cpxx; //is this correct?
+  //double newUb;
+  ////if (!(stoaH->isFeasible(x))) {
+    //if (stoaH->fixedNLP(x)) {
+      //UInt vIdx;
+      //double rhs;
+      //std::vector<UInt> varIdx;
+      //std::vector<double> varCoeff;
+      //for (ConstraintConstIterator it = stoaH->consBegin();
+           //it != stoaH->consEnd(); ++it) {
+        //stoaH->OACutToCons(x, *it, &rhs, &varIdx, &varCoeff);
+        //vIdx = varIdx.size();
+        //if (varIdx.size() > 0) {
+          //CPXDIM *cutind = new CPXDIM[vIdx];
+          //double *cutval = new double[vIdx];
+          //for (UInt i=0; i<vIdx; ++i) {
+            //cutind[i] = varIdx[i];
+            //cutval[i] = varCoeff[i];
+          //}
+          //const double* objrhs = &rhs;
           
-          cpxstatus = CPXXcallbackrejectcandidate(context, 1, vIdx, objrhs,
-                                                  sense, &rmatbeg, cutind, cutval);
-          if (cpxstatus != 0)
-            return cpxstatus;
-          varIdx.clear();
-          varCoeff.clear();
-          delete [] cutind;
-          delete [] cutval;
-        }
-      }
-      stoaH->OACutToObj(x, &rhs, &varIdx, &varCoeff, ub);
-      vIdx = varIdx.size();
-      if (varIdx.size() > 0) {
-         CPXDIM *cutind = new CPXDIM[vIdx];
-         double *cutval = new double[vIdx];
-        for (UInt i=0; i<vIdx; ++i) {
-          cutind[i] = varIdx[i];
-          cutval[i] = varCoeff[i];
-        }
-        const double* conrhs = &rhs;
-        cpxstatus = CPXXcallbackrejectcandidate(context, 1, vIdx, conrhs, sense,
-                                                &rmatbeg, cutind, cutval); 
-        if (cpxstatus != 0) {
-          return cpxstatus;
-        }
-        varIdx.clear();
-        varCoeff.clear();
-        delete [] cutind;
-        delete [] cutval;
-      }
+          //cpxstatus = CPXXcallbackrejectcandidate(context, 1, vIdx, objrhs,
+                                                  //sense, &rmatbeg, cutind, cutval);
+          //if (cpxstatus != 0)
+            //return cpxstatus;
+          //varIdx.clear();
+          //varCoeff.clear();
+          //delete [] cutind;
+          //delete [] cutval;
+        //}
+      //}
+      //stoaH->OACutToObj(x, &rhs, &varIdx, &varCoeff, ub);
+      //vIdx = varIdx.size();
+      //if (varIdx.size() > 0) {
+         //CPXDIM *cutind = new CPXDIM[vIdx];
+         //double *cutval = new double[vIdx];
+        //for (UInt i=0; i<vIdx; ++i) {
+          //cutind[i] = varIdx[i];
+          //cutval[i] = varCoeff[i];
+        //}
+        //const double* conrhs = &rhs;
+        //cpxstatus = CPXXcallbackrejectcandidate(context, 1, vIdx, conrhs, sense,
+                                                //&rmatbeg, cutind, cutval);
+        //if (cpxstatus != 0) {
+          //return cpxstatus;
+        //}
+        //varIdx.clear();
+        //varCoeff.clear();
+        //delete [] cutind;
+        //delete [] cutval;
+      //}
 
-      std::vector<UInt> solVarIdx;
-      std::vector<double> solVarVal;
-      // either new ub found (fixed NLP feasible) otherwise infinite
-      newUb = stoaH->newUb(&solVarIdx, &solVarVal);
-      if (newUb != INFINITY) {
-        cpxstatus = CPXXcallbackgetincumbent(context, cpxx, 0, numvars-1, &ub); 
-        if (ub > newUb) {
-          //send this solution to cplex
-          CPXDIM *solind = new CPXDIM[numvars];
-          double *solval = new double[numvars];
-          for (int i=0; i<numvars; ++i) {
-            solind[i] = solVarIdx[i];
-            solval[i] = solVarVal[i];
-          }
-          cpxstatus = CPXXcallbackpostheursoln(context, numvars, solind, solval, newUb,
-                                             CPXCALLBACKSOLUTION_CHECKFEAS );
-          if (cpxstatus != 0 ) {
-            delete [] solind;
-            delete [] solval;
-            return cpxstatus;
-          }
-          delete [] solind;
-          delete [] solval;
-        }
-      }
-    }
-  //}
-  delete [] cpxx;
+      //std::vector<UInt> solVarIdx;
+      //std::vector<double> solVarVal;
+      ////// either new ub found (fixed NLP feasible) otherwise infinite
+      //newUb = stoaH->newUb(&solVarIdx, &solVarVal);
+      //if (newUb != INFINITY) {
+        //cpxstatus = CPXXcallbackgetincumbent(context, cpxx, 0, numvars-1, &ub);
+        //if (ub > newUb) {
+          ////send this solution to cplex
+          //CPXDIM *solind = new CPXDIM[numvars];
+          //double *solval = new double[numvars];
+          //for (int i=0; i<numvars; ++i) {
+            //solind[i] = solVarIdx[i];
+            //solval[i] = solVarVal[i];
+          //}
+          //cpxstatus = CPXXcallbackpostheursoln(context, numvars, solind, solval, newUb,
+                                             //CPXCALLBACKSOLUTION_CHECKFEAS );
+          //if (cpxstatus != 0 ) {
+            //delete [] solind;
+            //delete [] solval;
+            //return cpxstatus;
+          //}
+          //delete [] solind;
+          //delete [] solval;
+        //}
+      //}
+    //}
+  ////}
+  //delete [] cpxx;
   
-  mtx.unlock();
+  //mtx.unlock();
   
   return 0;
 }
@@ -1211,6 +1213,12 @@ EngineStatus CplexMILPEngine::solveSTLazy(double *objLb, SolutionPtr* sol,
      goto TERMINATE;
   }
 
+  if (cpxstatus_) {
+     logger_->msgStream(LogError) << me_ << "Failure to set number of threads, error "
+       << cpxstatus_ << std::endl;
+     goto TERMINATE;
+  }
+
 #if SPEW
   cpxstatus_ = CPXXsetintparam (cpxenv_, CPXPARAM_MIP_Interval, 1);
   if (cpxstatus_) {
@@ -1228,12 +1236,6 @@ EngineStatus CplexMILPEngine::solveSTLazy(double *objLb, SolutionPtr* sol,
   
   cpxstatus_ = CPXXsetlazyconstraintcallbackfunc(cpxenv_, minolazycallback,
                                              (void*) &stoa_hand);
-
-  if (cpxstatus_ != 0) {
-     fprintf(stderr, "Failed to add callback: %s\n",
-             CPXXgeterrorstring(cpxenv_, cpxstatus_, errbuf));
-     goto TERMINATE;
-  }
 
   if (cpxstatus_ != 0) {
      fprintf(stderr, "Failed to add callback: %s\n",

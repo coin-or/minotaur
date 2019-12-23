@@ -66,7 +66,7 @@ STOAHandler::STOAHandler(EnvPtr env, ProblemPtr minlp, EnginePtr nlpe,
   oNl_(false),
   rel_(RelaxationPtr()),
   solPool_(solPool),
-  relobj_(0.0),
+  //relobj_(0.0),
   numCalls_(0),
   cbtime_(0)
 {
@@ -261,21 +261,28 @@ void STOAHandler::addInitLinearX_(const double *x)
 //}
 
 
-bool STOAHandler::fixedNLP(const double *lpx)
+bool STOAHandler::fixedNLP(const double *lpx, EnginePtr &nlpe)
 {
   numCalls_++;
+  //MS: Verify before using newUb_
   newUb_ = INFINITY;
+  EngineStatus nlpStatus;
+  std::stack<Modification *> nlpMods;
+  ProblemPtr minlp = minlp_->clone();
+  nlpe = nlpe_->emptyCopy();
 
-  fixInts_(lpx);           // Fix integer variables
-  solveNLP_();
-  unfixInts_();             // Unfix integer variables
+  fixInts_(lpx, minlp, nlpMods);           // Fix integer variables
+  nlpe->load(minlp);
+  nlpStatus = nlpe->solve();
+  ++(stats_->nlpS);
+  unfixInts_(minlp, nlpMods);             // Unfix integer variables
 
-  switch(nlpStatus_) {
+  switch(nlpStatus) {
   case (ProvenOptimal):
   case (ProvenLocalOptimal):
     ++(stats_->nlpF);
-    newUb_ = nlpe_->getSolutionValue();
-    solPool_->addSolution(nlpe_->getSolution());
+    newUb_ = nlpe->getSolutionValue();
+    solPool_->addSolution(nlpe->getSolution());
     break;
   case (ProvenInfeasible):
   case (ProvenLocalInfeasible):
@@ -305,19 +312,19 @@ bool STOAHandler::fixedNLP(const double *lpx)
 
 void STOAHandler::OACutToObj(const double *lpx, double* rhs,
                              std::vector<UInt> *varIdx,
-                             std::vector<double>* varCoeff, double ub)
+                             std::vector<double>* varCoeff, double ub, EnginePtr nlpe)
 {
-  relobj_ = ub;
-  switch(nlpStatus_) {
+  EngineStatus nlpStatus = nlpe->getStatus();
+  switch(nlpStatus) {
   case (ProvenOptimal):
   case (ProvenLocalOptimal):
     {
-      const double * nlpx = nlpe_->getSolution()->getPrimal();
-      cutToObj_(nlpx, lpx, rhs, varIdx, varCoeff);
+      const double * nlpx = nlpe->getSolution()->getPrimal();
+      cutToObj_(nlpx, lpx, rhs, varIdx, varCoeff, ub);
     }
     break;
   case (EngineIterationLimit):
-    objCutAtLpSol_(lpx, rhs, varIdx, varCoeff);
+    objCutAtLpSol_(lpx, rhs, varIdx, varCoeff, ub);
     break;
   default:
     break;
@@ -327,16 +334,17 @@ void STOAHandler::OACutToObj(const double *lpx, double* rhs,
 
 void STOAHandler::OACutToCons(const double *lpx, ConstraintPtr con,
                               double* rhs, std::vector<UInt> *varIdx,
-                              std::vector<double>* varCoeff)
+                              std::vector<double>* varCoeff, EnginePtr nlpe)
 {
-  switch(nlpStatus_) {
+  EngineStatus nlpStatus = nlpe->getStatus();
+  switch(nlpStatus) {
   case (ProvenOptimal):
   case (ProvenLocalOptimal):
   case (ProvenInfeasible):
   case (ProvenLocalInfeasible): 
   case (ProvenObjectiveCutOff):
     {
-      const double * nlpx = nlpe_->getSolution()->getPrimal();
+      const double * nlpx = nlpe->getSolution()->getPrimal();
       cutToCons_(con, nlpx, lpx, rhs, varIdx, varCoeff);
     }
     break;
@@ -361,20 +369,20 @@ void STOAHandler::OACutToCons(const double *lpx, ConstraintPtr con,
 }
 
 
-void STOAHandler::fixInts_(const double *x)
+void STOAHandler::fixInts_(const double *x, ProblemPtr minlp, std::stack<Modification *> nlpMods)
 {
   double xval;
   VariablePtr v;
   VarBoundMod2 *m = 0;
-  for (VariableConstIterator vit=minlp_->varsBegin(); vit!=minlp_->varsEnd();
+  for (VariableConstIterator vit=minlp->varsBegin(); vit!=minlp->varsEnd();
        ++vit) {
     v = *vit;
     if (v->getType()==Binary || v->getType()==Integer) {
       xval = x[v->getIndex()];
       xval = floor(xval + 0.5); 
       m = new VarBoundMod2(v, xval, xval);
-      m->applyToProblem(minlp_);
-      nlpMods_.push(m);
+      m->applyToProblem(minlp);
+      nlpMods.push(m);
     }
   }
   return;
@@ -424,7 +432,9 @@ void STOAHandler::initLinear_(bool *isInf)
   *isInf = false;
   const double *x;
   nlpe_->load(minlp_);
-  solveNLP_();
+  nlpStatus_ = nlpe_->solve();
+  ++(stats_->nlpS);
+  //solveNLP_();
  
   switch (nlpStatus_) {
   case (ProvenOptimal):
@@ -598,7 +608,7 @@ void STOAHandler::cutToCons_(ConstraintPtr con, const double *nlpx,
 
 void STOAHandler::objCutAtLpSol_(const double *lpx, double* rhs,
                              std::vector<UInt> *varIdx,
-                            std::vector<double>* varCoeff)
+                            std::vector<double>* varCoeff, double relobj)
 {
   if (oNl_) {
     int error = 0;
@@ -608,15 +618,15 @@ void STOAHandler::objCutAtLpSol_(const double *lpx, double* rhs,
 
     act = o->eval(lpx, &error);
     if (error == 0) {
-      if ((act > relobj_ + solAbsTol_) &&
-          (relobj_ == 0 || (act > relobj_ + fabs(relobj_)*solRelTol_))) {
+      if ((act > relobj + solAbsTol_) &&
+          (relobj == 0 || (act > relobj + fabs(relobj)*solRelTol_))) {
         f = o->getFunction();
         LinearFunctionPtr lf = 0;
         linearAt_(f, act, lpx, &c, &lf, &error);
         if (error == 0) {
-          lpvio = std::max(lf->eval(lpx)-relobj_+c, 0.0);
+          lpvio = std::max(lf->eval(lpx)-relobj+c, 0.0);
           if ((lpvio > solAbsTol_) &&
-            ((relobj_-c) == 0 || (lpvio>fabs(relobj_-c)*solRelTol_))) {
+            ((relobj-c) == 0 || (lpvio>fabs(relobj-c)*solRelTol_))) {
             ++(stats_->cuts);
             *rhs = -1.0*c;
             for (VariableGroupConstIterator it=lf->termsBegin(); 
@@ -685,7 +695,7 @@ void STOAHandler::consCutAtLpSol_(ConstraintPtr con, const double *lpx,
 
 double STOAHandler::newUb(std::vector<UInt> *varIdx,
                         std::vector<double>* varVal)
-{  
+{
   int i =0;
   double val = nlpe_->getSolutionValue();
   const double *x = nlpe_->getSolution()->getPrimal();
@@ -698,15 +708,14 @@ double STOAHandler::newUb(std::vector<UInt> *varIdx,
     (*varIdx).push_back(objVar_->getIndex());
     (*varVal).push_back(val);
   }
-  //MS: check how the auxiliarly var is stored in x. At what position
+  //MS: check how the auxiliarly var is stored in x and at what position.
   return newUb_;
-
 }
 
 
 void STOAHandler::cutToObj_(const double *nlpx, const double *lpx,
                             double* rhs, std::vector<UInt> *varIdx,
-                            std::vector<double>* varCoeff)
+                            std::vector<double>* varCoeff, double relobj)
 {
   if (oNl_) {
     int error = 0;
@@ -716,18 +725,18 @@ void STOAHandler::cutToObj_(const double *nlpx, const double *lpx,
     
     act = o->eval(lpx, &error);
     if (error == 0) {
-      vio = std::max(act-relobj_, 0.0);
+      vio = std::max(act-relobj, 0.0);
       if ((vio > solAbsTol_)
-        && (relobj_ == 0 || vio > fabs(relobj_)*solRelTol_)) {
+        && (relobj == 0 || vio > fabs(relobj)*solRelTol_)) {
         act = o->eval(nlpx, &error);
         if (error == 0) {
           f = o->getFunction();
           LinearFunctionPtr lf = 0; 
           linearAt_(f, act, nlpx, &c, &lf, &error);
           if (error == 0) {
-            vio = std::max(c+lf->eval(lpx)-relobj_, 0.0);
-            if ((vio > solAbsTol_) && ((relobj_-c) == 0
-                                     || vio > fabs(relobj_-c)*solRelTol_)) {
+            vio = std::max(c+lf->eval(lpx)-relobj, 0.0);
+            if ((vio > solAbsTol_) && ((relobj-c) == 0
+                                     || vio > fabs(relobj-c)*solRelTol_)) {
               ++(stats_->cuts);
               *rhs = -1.0*c;
               for (VariableGroupConstIterator it=lf->termsBegin();
@@ -787,21 +796,21 @@ void STOAHandler::relax_(bool *isInf)
 }
 
 
-void STOAHandler::solveNLP_()
-{
-  nlpStatus_ = nlpe_->solve();
-  ++(stats_->nlpS);
-  return;
-}
+//void STOAHandler::solveNLP_()
+//{
+  //nlpStatus_ = nlpe_->solve();
+  //++(stats_->nlpS);
+  //return;
+//}
 
 
-void STOAHandler::unfixInts_()
+void STOAHandler::unfixInts_(ProblemPtr minlp, std::stack<Modification *> nlpMods)
 {
   Modification *m = 0;
-  while(nlpMods_.empty() == false) {
-    m = nlpMods_.top();
-    m->undoToProblem(minlp_);
-    nlpMods_.pop();
+  while(nlpMods.empty() == false) {
+    m = nlpMods.top();
+    m->undoToProblem(minlp);
+    nlpMods.pop();
     delete m;
   }
   return;
