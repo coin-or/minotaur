@@ -145,11 +145,11 @@ void ParTreeManager::clearAll()
   NodePtrIterator node_i;
 
   if (aNode_) {
-    removeNode_(aNode_);
+    removeNodeAndUp_(aNode_);
   }
   while (false==activeNodes_->isEmpty()) {
     n = activeNodes_->top();
-    removeNode_(n);
+    removeNodeAndUp_(n);
     activeNodes_->pop();
   }
 }
@@ -308,7 +308,7 @@ void ParTreeManager::insertRoot(NodePtr node)
 void ParTreeManager::pruneNode(NodePtr node)
 {
   // XXX: if required do something before deleting the node.
-  removeNode_(node);
+  removeNodeAndUp_(node);
 }
 
 
@@ -331,16 +331,12 @@ void ParTreeManager::removeActiveNode(NodePtr node)
 
 void ParTreeManager::removeNode_(NodePtr node) 
 {
-  NodePtr parent = node->getParent();
+  NodePtr cNode, parent;
   NodePtrIterator node_i;
 
-  // std::cout << "removing node xx " << node->getId() << std::endl;
-
+  parent = node->getParent();
   if (node->getId()>0) {
-    NodePtr cNode = 0;
-    // check if the parent of this node has this node as its child. this check
-    // is only for debugging purposes. may be removed if confident that
-    // parents and children are properly linked.
+    // Find the iterator corresponding to this node
     for (node_i = parent->childrenBegin(); node_i != parent->childrenEnd(); 
         ++node_i) {
       cNode = *node_i;
@@ -366,17 +362,26 @@ void ParTreeManager::removeNode_(NodePtr node)
         vbcFile_ << toClockTime(timer_->query()) << " P " << node->getId()+1 << " " 
                  << c << std::endl;
       }
-      delete node;
-      if (parent->getNumChildren() < 1) {
-        removeNode_(parent);
-      }
-
     } else {
       assert (!"Current node is not in its parent's list of children!");
     }
-  } else {
-    // root node
-    delete node;
+  }
+  delete node;
+}
+
+
+void ParTreeManager::removeNodeAndUp_(NodePtr node)
+{
+  NodePtr parent = node->getParent();
+
+  // remove the given node
+  removeNode_(node);
+
+  // remove the ancestors of the given node, if they have no children left
+  while (parent && parent->getNumChildren()==0) {
+    node = parent;
+    parent = node->getParent();
+    removeNode_(node);
   }
 }
 
