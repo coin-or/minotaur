@@ -766,41 +766,21 @@ static int CPXPUBLIC minolazycallback(CPXCENVptr env, void *cbdata, int wherefro
 
   const double *x = cpxx;
   //if (!(stoaH->isFeasible(x))) {
-    EnginePtr nlpe = 0;
-    bool fixNlp = stoaH->fixedNLP(x, nlpe);
-    if (fixNlp) {
-      UInt vIdx;
-      double rhs;
-      std::vector<UInt> varIdx;
-      std::vector<double> varCoeff;
-      for (ConstraintConstIterator it = stoaH->consBegin();
-           it != stoaH->consEnd(); ++it) {
-        stoaH->OACutToCons(x, *it, &rhs, &varIdx, &varCoeff, nlpe);
-        vIdx = varIdx.size();
-        if (varIdx.size() > 0) {
-          CPXDIM *cutind = new CPXDIM[vIdx];
-          double *cutval = new double[vIdx];
-          for (UInt i=0; i<vIdx; ++i) {
-            cutind[i] = varIdx[i];
-            cutval[i] = varCoeff[i];
-          }
-          cpxstatus = CPXXcutcallbackadd(env, cbdata, wherefrom, vIdx, rhs, 'L',
-                                         cutind, cutval, CPX_USECUT_FORCE);
-          if (cpxstatus != 0) {
-            //mtx.unlock();
-            return cpxstatus;
-          }
-          varIdx.clear();
-          varCoeff.clear();
-          delete [] cutind;
-          delete [] cutval;
-        }
-      }
-      stoaH->OACutToObj(x, &rhs, &varIdx, &varCoeff, ub, nlpe);
+  ProblemPtr minlp = 0;
+  EnginePtr nlpe = 0;
+  bool fixNlp = stoaH->fixedNLP(x, nlpe, minlp);
+  if (fixNlp) {
+    UInt vIdx;
+    double rhs;
+    std::vector<UInt> varIdx;
+    std::vector<double> varCoeff;
+    for (ConstraintConstIterator it = stoaH->consBegin();
+         it != stoaH->consEnd(); ++it) {
+      stoaH->OACutToCons(x, *it, &rhs, &varIdx, &varCoeff, nlpe);
       vIdx = varIdx.size();
       if (varIdx.size() > 0) {
-         CPXDIM *cutind = new CPXDIM[vIdx];
-         double *cutval = new double[vIdx];
+        CPXDIM *cutind = new CPXDIM[vIdx];
+        double *cutval = new double[vIdx];
         for (UInt i=0; i<vIdx; ++i) {
           cutind[i] = varIdx[i];
           cutval[i] = varCoeff[i];
@@ -808,12 +788,6 @@ static int CPXPUBLIC minolazycallback(CPXCENVptr env, void *cbdata, int wherefro
         cpxstatus = CPXXcutcallbackadd(env, cbdata, wherefrom, vIdx, rhs, 'L',
                                        cutind, cutval, CPX_USECUT_FORCE);
         if (cpxstatus != 0) {
-          cpxstatus = CPXXgettime(env, &timeEnd);
-          if (cpxstatus) {
-            std::cout << "Can't get end time stamp from Cplex.";
-            return cpxstatus;
-          }
-          stoaH->setCbTime(stoaH->getCbTime() + timeEnd - timeStart);
           //mtx.unlock();
           return cpxstatus;
         }
@@ -821,21 +795,55 @@ static int CPXPUBLIC minolazycallback(CPXCENVptr env, void *cbdata, int wherefro
         varCoeff.clear();
         delete [] cutind;
         delete [] cutval;
-        
-        if (cpxstatus != 0) {
-          cpxstatus = CPXXgettime(env, &timeEnd);
-          if (cpxstatus) {
-            std::cout << "Can't get end time stamp from Cplex.";
-            return cpxstatus;
-          }
-          stoaH->setCbTime(stoaH->getCbTime() + timeEnd - timeStart);
-          //mtx.unlock();
-          return cpxstatus;
-        }
-        *useraction_p = CPX_CALLBACK_SET;
       }
     }
+    stoaH->OACutToObj(x, &rhs, &varIdx, &varCoeff, ub, nlpe);
+    vIdx = varIdx.size();
+    if (varIdx.size() > 0) {
+       CPXDIM *cutind = new CPXDIM[vIdx];
+       double *cutval = new double[vIdx];
+      for (UInt i=0; i<vIdx; ++i) {
+        cutind[i] = varIdx[i];
+        cutval[i] = varCoeff[i];
+      }
+      cpxstatus = CPXXcutcallbackadd(env, cbdata, wherefrom, vIdx, rhs, 'L',
+                                     cutind, cutval, CPX_USECUT_FORCE);
+      if (cpxstatus != 0) {
+        cpxstatus = CPXXgettime(env, &timeEnd);
+        if (cpxstatus) {
+          std::cout << "Can't get end time stamp from Cplex.";
+          return cpxstatus;
+        }
+        stoaH->setCbTime(stoaH->getCbTime() + timeEnd - timeStart);
+        //mtx.unlock();
+        return cpxstatus;
+      }
+      varIdx.clear();
+      varCoeff.clear();
+      delete [] cutind;
+      delete [] cutval;
+
+      if (cpxstatus != 0) {
+        cpxstatus = CPXXgettime(env, &timeEnd);
+        if (cpxstatus) {
+          std::cout << "Can't get end time stamp from Cplex.";
+          return cpxstatus;
+        }
+        stoaH->setCbTime(stoaH->getCbTime() + timeEnd - timeStart);
+        //mtx.unlock();
+        return cpxstatus;
+      }
+      *useraction_p = CPX_CALLBACK_SET;
+    }
+  }
+  if (minlp) {
+    delete minlp;
+    minlp = 0;
+  }
+  if (nlpe) {
+    delete nlpe;
     nlpe = 0;
+  }
   //}
   delete [] cpxx;
   cpxstatus = CPXXgettime(env, &timeEnd);
@@ -850,20 +858,20 @@ static int CPXPUBLIC minolazycallback(CPXCENVptr env, void *cbdata, int wherefro
 
 static int CPXPUBLIC minocallback (CPXCALLBACKCONTEXTptr context, CPXLONG where, void* userdata)
 {  
-  //assert(where==CPX_CALLBACKCONTEXT_CANDIDATE);
+  assert(where==CPX_CALLBACKCONTEXT_CANDIDATE);
   //mtx.lock();
 //#if SPEW
   ////logger_->msgStream(LogInfo) << "thread " << std::this_thread::get_id() << "\n";
 //#endif
-  //STOAHandlerPtr stoaH = *(STOAHandlerPtr *)(userdata);
+  STOAHandlerPtr stoaH = *(STOAHandlerPtr *)(userdata);
   //int cpxstatus = 0;
-  //int numvars = stoaH->getRel()->getNumVars();
-  //double *cpxx = new double[numvars];
-  //double ub;
+  int numvars = stoaH->getRel()->getNumVars();
+  double *cpxx = new double[numvars];
+  double ub = 0;
   //const char* sense = "L";
   //CPXNNZ const rmatbeg =0;
   
-  //CPXXcallbackgetcandidatepoint(context, cpxx, 0, numvars - 1, &ub);
+  CPXXcallbackgetcandidatepoint(context, cpxx, 0, numvars - 1, &ub);
   //if (cpxstatus != 0)
      //return cpxstatus;
   

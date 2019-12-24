@@ -214,7 +214,7 @@ public:
 
   // Return true if the fixed NLP was feasible
   //bool fixedNLP(const double *lpx, const double * nlpx);
-  bool fixedNLP(const double *lpx, EnginePtr &nlpe);
+  bool fixedNLP(const double *lpx, EnginePtr &nlpe, ProblemPtr &minlp);
 
   // Return the upper bound obtained from an integer solution
   double newUb(std::vector<UInt> *varIdx,
@@ -254,7 +254,7 @@ private:
    * Fix integer constrained variables to integer values in x. Called
    * before solving NLP.
    */
-  void fixInts_(const double *x, ProblemPtr minlp, std::stack<Modification *> nlpMods);
+  void fixInts_(const double *x, ProblemPtr minlp, std::stack<Modification *> &nlpMods);
   
    /**
    * Solve the NLP relaxation of the MINLP and add linearizations about
@@ -313,7 +313,7 @@ private:
   void solveNLP_();
 
   /// Undo the changes done in fixInts_().
-  void unfixInts_(ProblemPtr minlp, std::stack<Modification *> nlpMods);
+  void unfixInts_(ProblemPtr minlp, std::stack<Modification *> &nlpMods);
 
   /**
    * Update the upper bound. XXX: Needs proper integration with
