@@ -891,7 +891,7 @@ void QGHandlerAdvance::separate(ConstSolutionPtr sol, NodePtr node,
 
   if (rs3_ && node->getId() == 0) {
     rs3_ = false;
-    extraLin_->rootLinScheme3(lpe_, objVar_, status);
+    extraLin_->rootLinScheme3(lpe_, status);
     if (*status == SepaResolve) {
       return;
     }
@@ -990,8 +990,8 @@ void QGHandlerAdvance::ESHTypeCut_(const double *lpx, CutManager *cutMan,
 }
 
 
-void QGHandlerAdvance::maxVio_(const double *x, NodePtr node, bool *sol_found,
-                               SolutionPoolPtr s_pool, CutManager *cutMan,
+void QGHandlerAdvance::maxVio_(const double *x, NodePtr node, bool *,
+                               SolutionPoolPtr , CutManager *cutMan,
                                SeparationStatus *status)
 {
   int error = 0; 

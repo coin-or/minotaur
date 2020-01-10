@@ -161,8 +161,7 @@ private:
    * Add linearizatios by performing line search between center of the
    * feasible region and the root LP solution - root linearization scheme 3
    */
-  void rootLinScheme3(EnginePtr lpe_, VariablePtr objVar,
-                                    SeparationStatus *status);
+  void rootLinScheme3(EnginePtr lpe_, SeparationStatus *status);
 
   //void setLpEngine(EnginePtr lpe) {lpe_ = lpe;};
   

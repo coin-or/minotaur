@@ -1620,7 +1620,8 @@ bool Linearizations::findBoundaryPt_(const double *xOut,
   ConstraintPtr con;
   bool firstVio, firstActive;
   UInt numVars =  minlp_->getNumVars();
-  double act, cUb, repSol, repSolOld = INFINITY, lambda1 = 0.5, lambda2 = 0.5;
+  //double act, cUb, repSol, repSolOld = INFINITY, lambda1 = 0.5, lambda2 = 0.5;
+  double act, cUb;
   
   double* x = new double[numVars];
   double* xl = new double[numVars];
@@ -1746,7 +1747,7 @@ void Linearizations::rootLinScheme1_(FunctionPtr fun, double lVarCoeff,
   VariablePtr vnl = NULL, vl = NULL;
   std::vector<double > linVioVal, xc, yc; // xc and yc  nonlinear and lin var
   int i, error = 0, n = rel_->getNumVars();
-  double act, vio, cUb, y1, y2, vLb, vUb, maxVio, stopCond, consUb; 
+  double act, vio, cUb, y1, y2, vLb, vUb, maxVio, stopCond; 
 
   double *b1 = new double[n];
   std::fill(b1, b1+n, 0.);
@@ -2117,8 +2118,7 @@ bool Linearizations::shouldStop_(EngineStatus eStatus)
 }
 
 //MS: add esh all from LP solution - working
-void Linearizations::rootLinScheme3(EnginePtr lpe, VariablePtr objVar,
-                                    SeparationStatus *status)
+void Linearizations::rootLinScheme3(EnginePtr lpe, SeparationStatus *status)
 {
  //// ESH to all nonlinear constraints 
   if (solC_ == 0) {
