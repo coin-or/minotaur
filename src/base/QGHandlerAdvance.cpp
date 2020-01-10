@@ -56,7 +56,7 @@ QGHandlerAdvance::QGHandlerAdvance(EnvPtr env, ProblemPtr minlp, EnginePtr nlpe)
   lpe_(EnginePtr()),
   nlpStatus_(EngineUnknownStatus),
   solC_(0),
-  objVar_(VariablePtr()),
+  objVar_(0),
   oNl_(false),
   rel_(RelaxationPtr()),
   relobj_(0.0),
@@ -632,13 +632,13 @@ void QGHandlerAdvance::relax_(bool *isInf)
   maxVioPer_ = env_->getOptions()->findDouble("maxVioPer")->getValue();
   rs3_ = env_->getOptions()->findInt("root_linScheme3")->getValue();
   bool rg1 = env_->getOptions()->findBool("root_genLinScheme1")->getValue();
-  double rg2 = env_->getOptions()->findDouble("root_linGenScheme2_per")->getValue(); //MS: change name in Environment
   double rs1 = env_->getOptions()->findDouble("root_linScheme1")->getValue();
-  double rs2Per = env_->getOptions()->findDouble("root_linScheme2_per")->getValue();
+  double rs2Per = env_->getOptions()->findDouble("root_linScheme2")->getValue();
+  double rg2 = env_->getOptions()->findDouble("root_linGenScheme2_per")->getValue(); //MS: change name in Environment
   
-  if (*isInf == false && nlCons_.size() > 0) {
+  if (*isInf == false && ((nlCons_.size() > 0) || oNl_)) {
     if (rs1 || rs2Per ||  rs3_ || rg1 || rg2) {
-      extraLin_ = new Linearizations(env_, rel_, minlp_, nlCons_);
+      extraLin_ = new Linearizations(env_, rel_, minlp_, nlCons_, objVar_);
       //if (rs3_ || rg1 || rg2 || maxVioPer_) {
       if (rs3_ || rg1 || rg2) {
         extraLin_->setNlpEngine(nlpe_->emptyCopy());        
@@ -651,11 +651,15 @@ void QGHandlerAdvance::relax_(bool *isInf)
         //}
       } 
       if (rs1 || rs2Per || rs3_ || rg1 || rg2) {
-        extraLin_->rootLinearizations(nlpe_->getSolution()->getPrimal());
+        //extraLin_->rootLinearizations(nlpe_->getSolution()->getPrimal());
+        extraLin_->rootLinearizations(nlpe_->getSolution());
       }
     } 
       //else if (maxVioPer_) {
       //findCenter_();
+      //          //if (solC_ == 0) {
+            //maxVioPer_ = 0;
+          //}
     //}
   } else {
     rs3_ = 0;
