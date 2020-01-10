@@ -426,7 +426,7 @@ void Environment::createDefaultOptions_()
       "Rounds of extra linearizations to be added at root node under scheme 1", true, 0);
   options_->insert(d_option);
 
-  d_option = (DoubleOptionPtr) new Option<double>("root_linScheme2_per", 
+  d_option = (DoubleOptionPtr) new Option<double>("root_linScheme2", 
       "Threshold for slope change in root linearization scheme 2", true, 0);
   options_->insert(d_option);
 
