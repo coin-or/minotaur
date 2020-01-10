@@ -138,15 +138,16 @@ void STOAHandler::addCut_(const double *nlpx, const double *lpx,
         ++(stats_->cuts);
         *rhs = cUb-c;
         for (VariableGroupConstIterator it=lf->termsBegin(); it!=lf->termsEnd();
-       ++it) {
+             ++it) {
           (*varIdx).push_back(it->first->getIndex());
           (*varCoeff).push_back(it->second);
         }
         //MS: not updating rel_ with new linearizations.
-      } else {
-        delete lf;
-        lf = 0;
       }
+      //else {
+      delete lf;
+      lf = 0;
+      //}
     }
   }	else {
     logger_->msgStream(LogError) << me_ << " constraint not defined at"
@@ -261,14 +262,14 @@ void STOAHandler::addInitLinearX_(const double *x)
 //}
 
 
-bool STOAHandler::fixedNLP(const double *lpx, EnginePtr &nlpe)
+bool STOAHandler::fixedNLP(const double *lpx, EnginePtr &nlpe, ProblemPtr &minlp)
 {
   numCalls_++;
   //MS: Verify before using newUb_
   newUb_ = INFINITY;
   EngineStatus nlpStatus;
   std::stack<Modification *> nlpMods;
-  ProblemPtr minlp = minlp_->clone();
+  minlp = minlp_->clone();
   nlpe = nlpe_->emptyCopy();
 
   fixInts_(lpx, minlp, nlpMods);           // Fix integer variables
@@ -369,7 +370,7 @@ void STOAHandler::OACutToCons(const double *lpx, ConstraintPtr con,
 }
 
 
-void STOAHandler::fixInts_(const double *x, ProblemPtr minlp, std::stack<Modification *> nlpMods)
+void STOAHandler::fixInts_(const double *x, ProblemPtr minlp, std::stack<Modification *> &nlpMods)
 {
   double xval;
   VariablePtr v;
@@ -747,10 +748,9 @@ void STOAHandler::cutToObj_(const double *nlpx, const double *lpx,
               }
               (*varIdx).push_back(objVar_->getIndex());
               (*varCoeff).push_back(-1.0);
-            } else {
-              delete lf;
-              lf = 0;
             }
+            delete lf;
+            lf = 0;
           }
         }
       }  else {
@@ -804,7 +804,7 @@ void STOAHandler::relax_(bool *isInf)
 //}
 
 
-void STOAHandler::unfixInts_(ProblemPtr minlp, std::stack<Modification *> nlpMods)
+void STOAHandler::unfixInts_(ProblemPtr minlp, std::stack<Modification *> &nlpMods)
 {
   Modification *m = 0;
   while(nlpMods.empty() == false) {
