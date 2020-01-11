@@ -283,17 +283,17 @@ private:
    * Add linearizations in the neighborhood of the root nonlinear relaxation
    * solution - root linearization scheme 2
    */
-  void rootLinScheme2_(ConstraintPtr con, 
-                       double lVarCoeff,
-                            UInt vlIdx, UInt vnIdx);
-
+  void rootLinScheme2_(FunctionPtr f, double UB,
+                                     double lVarCoeff,
+                                     UInt lVarIdx, UInt nVarIdx, bool isObj);
   /**
    * Find points with reasoanble difference in curvature to add linearizaion
    * in root linearization scheme 2
    */
-  void rScheme2Cut_(ConstraintPtr con, double &delta,
-                                double linTermCoeff, double &lastSlope,
-                                UInt vnIdx, double * npt, double * grad);
+  void rScheme2Cut_(FunctionPtr f, double UB, double &delta,
+                                  double lVarCoeff, double &lastSlope,
+                                  UInt nVarIdx, double * npt, double * grad,
+                                  bool isObj);
 
   void rootLinGenScheme1_();
   

@@ -626,20 +626,20 @@ bool Linearizations::lineSearchPt_(const double *xIn, const double *xOut,
 }
 
 
-
 void Linearizations::rootLinearizations(ConstSolutionPtr sol)
 {
   ConstraintPtr con;
   bool isFound = false;
   UInt nVarIdx, lVarIdx;
   FunctionPtr f; 
-  double lVarCoeff = 0, nVarCoeff = 0;
+  double lVarCoeff = 0, nVarCoeff = 0, conUb;
    
   nlpx_ = sol->getPrimal();
  
   if (rs1_ || rs2Per_) { 
     for (CCIter it = nlCons_.begin(); it != nlCons_.end(); ++it) {
       con = *it;
+      conUb = con->getUb();
       f = con->getFunction();
       lVarIdx = 0; lVarCoeff = 0; nVarCoeff = 0;
       // constraints with only one var in the nonlinear part which is not in
@@ -649,10 +649,10 @@ void Linearizations::rootLinearizations(ConstSolutionPtr sol)
       if (isFound) {
         if (rs1_ > 0) {
           rootLinScheme1_(f, lVarCoeff, lVarIdx, nVarIdx, nVarCoeff, 
-                          con->getUb(), 0);
+                          conUb, 0);
         }
         if (rs2Per_ > 0) { // there is a default neighborhood
-          rootLinScheme2_(con, lVarCoeff, lVarIdx, nVarIdx);  
+          rootLinScheme2_(f, conUb, lVarCoeff, lVarIdx, nVarIdx, 0);
         }
       }
     }
@@ -663,6 +663,9 @@ void Linearizations::rootLinearizations(ConstSolutionPtr sol)
       if (isFound) {
         if (rs1_ > 0) {
           rootLinScheme1_(f, lVarCoeff, lVarIdx, nVarIdx, nVarCoeff, 0, 1);
+        }
+        if (rs2Per_ > 0) { // there is a default neighborhood
+          rootLinScheme2_(f, 0, lVarCoeff, lVarIdx, nVarIdx, 1);
         }
       }      
     }
@@ -1945,12 +1948,11 @@ void Linearizations::rootLinScheme1_(FunctionPtr fun, double lVarCoeff,
 }
 
 
-void Linearizations::rootLinScheme2_(ConstraintPtr con,
+void Linearizations::rootLinScheme2_(FunctionPtr f, double UB,
                                      double lVarCoeff,
-                                     UInt lVarIdx, UInt nVarIdx)
+                                     UInt lVarIdx, UInt nVarIdx, bool isObj)
 {
   int error = 0;
-  FunctionPtr f;
   VariablePtr vnl;
   UInt n = minlp_->getNumVars();
   double lastSlope, delta, nlpSlope, nbhSize;
@@ -1963,50 +1965,49 @@ void Linearizations::rootLinScheme2_(ConstraintPtr con,
   double *grad = new double[n];
   std::fill(grad, grad+n, 0.);
   
-  f = con->getFunction();
   f->evalGradient(nlpx_, grad, &error);
 
-  if (error != 0) {
-    return;
-  }
-  
-  nlpSlope = -1*(grad[nVarIdx]/lVarCoeff);
-  lastSlope = nlpSlope;       // nlpSlope is going to be used later on as well
-  
-  nbhSize = std::max(vnl->getLb(), nlpx_[nVarIdx] - rs2NbhSize_);    
-  //nbhSize = vnl->getLb();    
-  if (nlpx_[nVarIdx] - nbhSize >= 1) {
-    delta = 0.5;  
-  } else {
-    delta = nlpx_[nVarIdx] - nbhSize;  
-  }
-
-  npt[nVarIdx] = nlpx_[nVarIdx] - delta;
-     
-  if (delta != 0) {
-    while (npt[nVarIdx] >= nbhSize) {
-      grad[nVarIdx] = 0; grad[lVarIdx] = 0;
-      rScheme2Cut_(con, delta, lVarCoeff, lastSlope, nVarIdx, npt, grad);
-      npt[nVarIdx] =  npt[nVarIdx] - delta;
+  if (error == 0) {
+    nlpSlope = -1*(grad[nVarIdx]/lVarCoeff);
+    lastSlope = nlpSlope;       // nlpSlope is going to be used later on as well
+    
+    nbhSize = std::max(vnl->getLb(), nlpx_[nVarIdx] - rs2NbhSize_);    
+    //nbhSize = vnl->getLb();    
+    if (nlpx_[nVarIdx] - nbhSize >= 1) {
+      delta = 0.5;  
+    } else {
+      delta = nlpx_[nVarIdx] - nbhSize;  
     }
-  }
-  
-  nbhSize = std::min(vnl->getUb(), nlpx_[nVarIdx] + rs2NbhSize_);
-  //nbhSize = vnl->getUb();    
-  if (nbhSize - nlpx_[nVarIdx] >= 1) {
-    delta = 0.5;  //MS: can be a parameter  
-  } else {
-    delta = nbhSize - nlpx_[nVarIdx];  
-  }
 
-  lastSlope = nlpSlope;
-  npt[nVarIdx] = nlpx_[nVarIdx] + delta;
+    npt[nVarIdx] = nlpx_[nVarIdx] - delta;
+       
+    if (delta != 0) {
+      while (npt[nVarIdx] >= nbhSize) {
+        grad[nVarIdx] = 0; grad[lVarIdx] = 0;
+        rScheme2Cut_(f, UB, delta, lVarCoeff, lastSlope, nVarIdx, npt, grad,
+                     isObj);
+        npt[nVarIdx] =  npt[nVarIdx] - delta;
+      }
+    }
+    
+    nbhSize = std::min(vnl->getUb(), nlpx_[nVarIdx] + rs2NbhSize_);
+    //nbhSize = vnl->getUb();    
+    if (nbhSize - nlpx_[nVarIdx] >= 1) {
+      delta = 0.5;  //MS: can be a parameter  
+    } else {
+      delta = nbhSize - nlpx_[nVarIdx];  
+    }
 
-  if (delta != 0) {
-    while (npt[nVarIdx] <= nbhSize) {
-      grad[nVarIdx] = 0; grad[lVarIdx] = 0;
-      rScheme2Cut_(con, delta, lVarCoeff, lastSlope, nVarIdx, npt, grad);
-      npt[nVarIdx] =  npt[nVarIdx] + delta;
+    lastSlope = nlpSlope;
+    npt[nVarIdx] = nlpx_[nVarIdx] + delta;
+
+    if (delta != 0) {
+      while (npt[nVarIdx] <= nbhSize) {
+        grad[nVarIdx] = 0; grad[lVarIdx] = 0;
+        rScheme2Cut_(f, UB, delta, lVarCoeff, lastSlope, nVarIdx, npt, grad,
+                     isObj);
+        npt[nVarIdx] =  npt[nVarIdx] + delta;
+      }
     }
   }
   delete [] grad;
@@ -2015,54 +2016,51 @@ void Linearizations::rootLinScheme2_(ConstraintPtr con,
 }
 
 
-void Linearizations::rScheme2Cut_(ConstraintPtr con, double &delta,
-                                double lVarCoeff, double &lastSlope,
-                                UInt nVarIdx, double * npt, double * grad)
+void Linearizations::rScheme2Cut_(FunctionPtr f, double UB, double &delta,
+                                  double lVarCoeff, double &lastSlope,
+                                  UInt nVarIdx, double * npt, double * grad,
+                                  bool isObj)
 {
   int error = 0;
-  FunctionPtr f = con->getFunction();
   double newSlope, angle, tanTheta, PI = 3.14159265;
   
   f->evalGradient(npt, grad, &error);
-  if (error != 0) {
-    return;
-  } 
-  
-  newSlope = -1*(grad[nVarIdx]/lVarCoeff);
-  tanTheta = (newSlope-lastSlope)/(1+newSlope*lastSlope);
-  angle = atan (tanTheta) * 180 / PI;
+  if (error == 0) {
+    newSlope = -1*(grad[nVarIdx]/lVarCoeff);
+    tanTheta = (newSlope-lastSlope)/(1+newSlope*lastSlope);
+    angle = atan(tanTheta)*180/PI;
+    std::cout << " angle " << angle << "\n";
 
- // MS: old stuff beased on gradient comparison 
-  //if ((lastSlope == 0 && newSlope == 0) ||
-      //(lastSlope != 0 && fabs((newSlope-lastSlope)/lastSlope)*100 <  rs2Per_)) {
-    //delta = 2*delta;
-    //return;
-  //}
+    // Add new linearization if angle between the two lines is at least rs2Per_
+    if (fabs(angle) <  rs2Per_) {
+      delta = 2*delta;
+      return;
+    }
 
-  // Add new linearization if angle between the two lines is at least rs2Per_
-  if (fabs(angle) <  rs2Per_) {
-    delta = 2*delta;
-    return;
+    lastSlope = newSlope;
+    //ConstraintPtr newcon;
+    std::stringstream sstm;
+    FunctionPtr newF;
+    LinearFunctionPtr lf = 0;
+    VariableConstIterator vbeg = rel_->varsBegin(), vend = rel_->varsEnd();
+    const double linCoeffTol =
+      env_->getOptions()->findDouble("conCoeff_tol")->getValue();
+    double c, act = f->eval(npt, &error);
+
+    if (error == 0) {
+      lf = (LinearFunctionPtr) new LinearFunction(grad, vbeg, vend, linCoeffTol);
+      c  = act - InnerProduct(npt, grad, minlp_->getNumVars());
+      ++stats_->rs2Cuts;
+      sstm << "_OAcut_" << stats_->rs2Cuts << "_AtRoot";
+      if (isObj) {
+        lf->addTerm(objVar_, -1.0);
+      }
+      newF = (FunctionPtr) new Function(lf);
+      rel_->newConstraint(newF, -INFINITY, UB-c, sstm.str());
+      //newcon = rel_->newConstraint(f, -INFINITY, cUb-c, sstm.str());
+      //newcon->write(std::cout);
+    }
   }
-
-  lastSlope = newSlope;
-  //ConstraintPtr newcon;
-  std::stringstream sstm;
-  LinearFunctionPtr lf = 0;
-  VariableConstIterator vbeg = rel_->varsBegin(), vend = rel_->varsEnd();
-  const double linCoeffTol =
-    env_->getOptions()->findDouble("conCoeff_tol")->getValue();
-  double c, cUb = con->getUb(), act = con->getActivity(npt, &error);
-  
-  lf = (LinearFunctionPtr) new LinearFunction(grad, vbeg, vend, linCoeffTol);
-  c  = act - InnerProduct(npt, grad, minlp_->getNumVars());
-
-  ++stats_->rs2Cuts;
-  sstm << "_OAcut_" << stats_->rs2Cuts << "_AtRoot";
-  f = (FunctionPtr) new Function(lf);
-  rel_->newConstraint(f, -INFINITY, cUb-c, sstm.str());
-  //newcon = rel_->newConstraint(f, -INFINITY, cUb-c, sstm.str());
-  //newcon->write(std::cout);
   return;
 }
 
