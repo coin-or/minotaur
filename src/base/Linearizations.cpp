@@ -91,6 +91,9 @@ Linearizations::Linearizations(EnvPtr env, RelaxationPtr rel,
   if (objVar) {
     oNl_ = true;
     objVar_ = objVar;
+  } else {
+    oNl_ = false;
+    objVar_ = 0;  
   }
  }
 
@@ -103,6 +106,9 @@ Linearizations::~Linearizations()
   if (solC_) {
     delete [] solC_;
     solC_ = 0;
+  }
+  if (timer_) {
+    delete timer_;
   }
   env_ = 0;
   rel_ = 0;
