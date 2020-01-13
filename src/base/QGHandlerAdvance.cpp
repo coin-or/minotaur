@@ -39,6 +39,7 @@
 #include "QGHandlerAdvance.h"
 #include "Relaxation.h"
 #include "Solution.h"
+#include "Timer.h"
 #include "SolutionPool.h"
 #include "VarBoundMod.h"
 #include "Variable.h"
@@ -347,7 +348,7 @@ void QGHandlerAdvance::linearizeObj_()
   } else if (fType != Linear && fType != Constant) {
     oNl_ = true;
     FunctionPtr f;
-    std::string name = "eta";
+    std::string name = "dummy_obj_var";
     ObjectiveType objType = o->getObjectiveType();
     LinearFunctionPtr lf = (LinearFunctionPtr) new LinearFunction();
     VariablePtr vPtr = rel_->newVariable(-INFINITY, INFINITY, Continuous,
@@ -623,24 +624,25 @@ void QGHandlerAdvance::relax_(bool *isInf)
       nlCons_.push_back(c);
     }
   }
+  //minlp_->write(std::cout);
+  //exit(1);
  
   linearizeObj_();
   initLinear_(isInf);
 
   // user input for root linearization schemes
   // //MS: names of the schemes
-  maxVioPer_ = env_->getOptions()->findDouble("maxVioPer")->getValue();
   rs3_ = env_->getOptions()->findInt("root_linScheme3")->getValue();
+  maxVioPer_ = env_->getOptions()->findDouble("maxVioPer")->getValue();
   bool rg1 = env_->getOptions()->findBool("root_genLinScheme1")->getValue();
   double rs1 = env_->getOptions()->findDouble("root_linScheme1")->getValue();
   double rs2Per = env_->getOptions()->findDouble("root_linScheme2")->getValue();
   double rg2 = env_->getOptions()->findDouble("root_linGenScheme2_per")->getValue(); //MS: change name in Environment
-  
-  if (*isInf == false && ((nlCons_.size() > 0) || oNl_)) {
+   if (*isInf == false && ((nlCons_.size() > 0) || oNl_)) {
     if (rs1 || rs2Per ||  rs3_ || rg1 || rg2) {
       extraLin_ = new Linearizations(env_, rel_, minlp_, nlCons_, objVar_);
       //if (rs3_ || rg1 || rg2 || maxVioPer_) {
-      if (rs3_ || rg1 || rg2) {
+      if ((rs3_ && nlCons_.size() > 0) || rg1 || rg2) {
         extraLin_->setNlpEngine(nlpe_->emptyCopy());        
         extraLin_->findCenter();
         //if (maxVioPer_) {
@@ -906,8 +908,10 @@ void QGHandlerAdvance::separate(ConstSolutionPtr sol, NodePtr node,
     cutIntSol_(x, cutMan, s_pool, sol_found, status);
   } else {
      //if ((maxVioPer_ > 0) && (int(node->getDepth()) < depth_)) 
+    //timer_->start();
      if (maxVioPer_ > 0) {
       maxVio_(x, node, sol_found, s_pool, cutMan, status); // maxViolation
+    //timer_->stop();
     } 
   }
   return;
