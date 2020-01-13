@@ -32,6 +32,7 @@ namespace Minotaur {
   size_t rs4Cuts; /// Number of cuts in root scheme 3 version 2.
   size_t rgs1Cuts; /// Number of cuts in root gen scheme 1.
   size_t rgs2Cuts; /// Number of cuts in root gen scheme 2.
+  double linSchemesTime; ///Total time taken in the linearization scheme;
 };
 
 class Linearizations {
@@ -45,6 +46,8 @@ private:
 
   /// Pointer to original problem.
   ProblemPtr minlp_;
+  
+  Timer *timer_;
 
   /// Tolerance for checking integrality (should be obtained from env).
   double intTol_;
@@ -127,6 +130,8 @@ private:
   bool oNl_;
   // auxiliary variable for nonlinear objective
   VariablePtr objVar_;
+  
+  double objVarVal_;
 
   /// Statistics.
   LinStats *stats_;
@@ -266,6 +271,8 @@ private:
   void newPoint_(bool isAllOne,
                                std::vector<UInt> varIdx, double *xOut, std::vector<double> alphaSign);
 
+  //void objToCons_(ProblemPtr problem, VariablePtr vObj, VariablePtr newVar);
+
   void populateVarIdx(VariablePtr v, std::vector<UInt > &varIdx,
                                       double &vMinUb, double &vMaxLb,
                                       UInt &lIdx, UInt &uIdx);
@@ -308,8 +315,10 @@ private:
 
   bool shouldStop_(EngineStatus eStatus);
 
-  bool cutAtLineSearchPt_(const double *xIn, const double *xOut, double* xNew,
-                                        ConstraintPtr con);
+  void objCut_(const double* xNew, double relObj);
+
+  void cutAtLineSearchPt_(const double *xIn, const double *xOut,
+                          double *xNew, ConstraintPtr con, double lpObj);
 
   /// Find nonlinear constraint with only one variable in the nonlinear part
 
