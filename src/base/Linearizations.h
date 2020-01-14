@@ -197,7 +197,7 @@ private:
   bool findIntersectPt_(std::vector<UInt > newConsId, VariablePtr vl,
                        VariablePtr vnl, double * iP);
 
-  bool findBoundaryPt_(const double *xOut, 
+  void findBoundaryPt_(const double *xOut, double lpObj, 
                                      std::vector<ConstraintPtr> &vioCons);
 
   void setStepSize_(double &varbound, double &alpha,
@@ -238,7 +238,7 @@ private:
   bool genLin_(double *x, std::vector<UInt > vioConsPos,
                                      std::vector<double *> &lastGrad);
 
-  void genLin_(double *x, std::vector<ConstraintPtr > vioConsPos);
+  void genLin_(const double *x, std::vector<ConstraintPtr > vioConsPos);
 
   std::vector<UInt > isFeas_(double *x, std::vector<UInt > varConsPos,
                              bool &foundActive, bool &foundVio);
