@@ -904,9 +904,10 @@ void QGHandlerAdvance::separate(ConstSolutionPtr sol, NodePtr node,
     if (rg1_ && (nlCons_.size() == 0) && oNl_) {
       rg1_ = false;
       cutsAdded = extraLin_->rootLinGenScheme1(sol->getObjValue());
-    }
-    if (cutsAdded) {
-      *status = SepaResolve;    
+    
+      if (cutsAdded) {
+        *status = SepaResolve;    
+      }
     }
     if (*status == SepaResolve) {
       return;
