@@ -62,6 +62,8 @@ QGHandlerAdvance::QGHandlerAdvance(EnvPtr env, ProblemPtr minlp, EnginePtr nlpe)
   rel_(RelaxationPtr()),
   relobj_(0.0),
   extraLin_(0),
+  rs3_(0),
+  rg1_(0),
   maxVioPer_(0),
   maxDist_(0),
   //lpdist_(0),
@@ -634,15 +636,15 @@ void QGHandlerAdvance::relax_(bool *isInf)
   // //MS: names of the schemes
   rs3_ = env_->getOptions()->findInt("root_linScheme3")->getValue();
   maxVioPer_ = env_->getOptions()->findDouble("maxVioPer")->getValue();
-  bool rg1 = env_->getOptions()->findBool("root_genLinScheme1")->getValue();
+  rg1_ = env_->getOptions()->findBool("root_genLinScheme1")->getValue();
   double rs1 = env_->getOptions()->findDouble("root_linScheme1")->getValue();
   double rs2Per = env_->getOptions()->findDouble("root_linScheme2")->getValue();
   double rg2 = env_->getOptions()->findDouble("root_linGenScheme2_per")->getValue(); //MS: change name in Environment
    if (*isInf == false && ((nlCons_.size() > 0) || oNl_)) {
-    if (rs1 || rs2Per ||  rs3_ || rg1 || rg2) {
+    if (rs1 || rs2Per ||  rs3_ || rg1_ || rg2) {
       extraLin_ = new Linearizations(env_, rel_, minlp_, nlCons_, objVar_);
       //if (rs3_ || rg1 || rg2 || maxVioPer_) {
-      if ((rs3_ && nlCons_.size() > 0) || rg1 || rg2) {
+      if ((rs3_ && nlCons_.size() > 0) || rg1_ || rg2) {
         extraLin_->setNlpEngine(nlpe_->emptyCopy());        
         extraLin_->findCenter();
         //if (maxVioPer_) {
@@ -652,7 +654,7 @@ void QGHandlerAdvance::relax_(bool *isInf)
           //}
         //}
       } 
-      if (rs1 || rs2Per || rs3_ || rg1 || rg2) {
+      if (rs1 || rs2Per || rs3_ || rg1_ || rg2) {
         //extraLin_->rootLinearizations(nlpe_->getSolution()->getPrimal());
         extraLin_->rootLinearizations(nlpe_->getSolution());
       }
@@ -665,6 +667,7 @@ void QGHandlerAdvance::relax_(bool *isInf)
     //}
   } else {
     rs3_ = 0;
+    rg1_ = 0;
     maxVioPer_ = 0;
   }
   return;
@@ -891,9 +894,20 @@ void QGHandlerAdvance::separate(ConstSolutionPtr sol, NodePtr node,
 
   *status = SepaContinue;
 
-  if (rs3_ && node->getId() == 0) {
-    rs3_ = false;
-    extraLin_->rootLinScheme3(lpe_, status);
+  if (node->getId() == 0) {
+    bool cutsAdded;
+    if (rs3_) {
+      rs3_ = 0;
+      extraLin_->rootLinScheme3(lpe_, status);
+    }
+  
+    if (rg1_ && (nlCons_.size() == 0) && oNl_) {
+      rg1_ = false;
+      cutsAdded = extraLin_->rootLinGenScheme1(sol->getObjValue());
+    }
+    if (cutsAdded) {
+      *status = SepaResolve;    
+    }
     if (*status == SepaResolve) {
       return;
     }

@@ -26,6 +26,7 @@
 namespace Minotaur {
 
   struct LinStats {
+  size_t cuts;    /// Total cuts from all root schemes.
   size_t rs1Cuts; /// Number of cuts in root scheme 1.
   size_t rs2Cuts; /// Number of cuts in root scheme 2.
   size_t rs3Cuts; /// Number of cuts in root scheme 3 version 1.
@@ -130,7 +131,9 @@ private:
   bool oNl_;
   // auxiliary variable for nonlinear objective
   VariablePtr objVar_;
-  
+ 
+  //bool isAllCons_; 
+
   double objVarVal_;
 
   /// Statistics.
@@ -162,6 +165,8 @@ private:
   void findCenter();
 
   double maxVio(const double *x, int &index);
+  
+  bool rootLinGenScheme1(double relobj);
   /**
    * Add linearizatios by performing line search between center of the
    * feasible region and the root LP solution - root linearization scheme 3
@@ -186,6 +191,11 @@ private:
   bool addNewCut_(double *b1, ConstraintPtr con, 
                   UInt &newConId);
 
+  bool boundaryPtForObj_(double* xnew, const double *xOut,
+                                     std::vector<ConstraintPtr> &vioCons, int vIdx);
+
+  void candConsForObj_(double *xOut, std::vector<ConstraintPtr > &consToLin);
+
   void boundingVar_(double &varbound, UInt &pos, 
                                   double *lastDir,
                                   std::vector<double > &alphaSign);
@@ -193,12 +203,17 @@ private:
                                   UInt vIdx, VariablePtr fixVar, double coeff,
                                  double fixCoeff, int &alpha, std::vector<UInt > &varIdx);
 
+  void candLinCons_(const double *x, std::vector<ConstraintPtr > &consToLin,
+                             bool &foundActive, bool &foundVio);
+
+  void cutsAtBoundary_(double *xOut, double relobj, int vIdx);
+
   /// Find intersection of two linearizations in root linearization scheme 1  
   bool findIntersectPt_(std::vector<UInt > newConsId, VariablePtr vl,
                        VariablePtr vnl, double * iP);
 
-  void findBoundaryPt_(const double *xOut, double lpObj, 
-                                     std::vector<ConstraintPtr> &vioCons);
+  bool findBoundaryPt_(double* xnew, const double *xOut, 
+                                     std::vector<ConstraintPtr> &vioCons, int vIdx);
 
   void setStepSize_(double &varbound, double &alpha,
                                    UInt vIdx, double val,
@@ -301,9 +316,7 @@ private:
                                   double lVarCoeff, double &lastSlope,
                                   UInt nVarIdx, double * npt, double * grad,
                                   bool isObj);
-
-  void rootLinGenScheme1_();
-  
+ 
   void rootLinGenScheme2_();
 
   void search_(double varbound, UInt vIdx, double val, 

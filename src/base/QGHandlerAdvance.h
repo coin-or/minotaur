@@ -110,6 +110,8 @@ private:
 
   int rs3_;
   
+  bool rg1_;
+  
   double maxVioPer_;
 
   double maxDist_;
