@@ -64,6 +64,7 @@ QGHandlerAdvance::QGHandlerAdvance(EnvPtr env, ProblemPtr minlp, EnginePtr nlpe)
   extraLin_(0),
   rs3_(0),
   rg1_(0),
+  rg2_(0),
   maxVioPer_(0),
   maxDist_(0),
   //lpdist_(0),
@@ -639,12 +640,12 @@ void QGHandlerAdvance::relax_(bool *isInf)
   rg1_ = env_->getOptions()->findBool("root_genLinScheme1")->getValue();
   double rs1 = env_->getOptions()->findDouble("root_linScheme1")->getValue();
   double rs2Per = env_->getOptions()->findDouble("root_linScheme2")->getValue();
-  double rg2 = env_->getOptions()->findDouble("root_linGenScheme2_per")->getValue(); //MS: change name in Environment
+  rg2_ = env_->getOptions()->findDouble("root_linGenScheme2_per")->getValue(); //MS: change name in Environment
    if (*isInf == false && ((nlCons_.size() > 0) || oNl_)) {
-    if (rs1 || rs2Per ||  rs3_ || rg1_ || rg2) {
+    if (rs1 || rs2Per ||  rs3_ || rg1_ || rg2_) {
       extraLin_ = new Linearizations(env_, rel_, minlp_, nlCons_, objVar_);
       //if (rs3_ || rg1 || rg2 || maxVioPer_) {
-      if ((rs3_ && nlCons_.size() > 0) || rg1_ || rg2) {
+      if ((rs3_ && nlCons_.size() > 0) || rg1_ || rg2_) {
         extraLin_->setNlpEngine(nlpe_->emptyCopy());        
         extraLin_->findCenter();
         //if (maxVioPer_) {
@@ -654,8 +655,7 @@ void QGHandlerAdvance::relax_(bool *isInf)
           //}
         //}
       } 
-      if (rs1 || rs2Per || rs3_ || rg1_ || rg2) {
-        //extraLin_->rootLinearizations(nlpe_->getSolution()->getPrimal());
+      if (rs1 || rs2Per || rg1_ || rg2_) {
         extraLin_->rootLinearizations(nlpe_->getSolution());
       }
     } 
@@ -668,6 +668,7 @@ void QGHandlerAdvance::relax_(bool *isInf)
   } else {
     rs3_ = 0;
     rg1_ = 0;
+    rg2_ = 0;
     maxVioPer_ = 0;
   }
   return;
@@ -909,6 +910,16 @@ void QGHandlerAdvance::separate(ConstSolutionPtr sol, NodePtr node,
         *status = SepaResolve;    
       }
     }
+
+    if (rg2_ && oNl_) {
+      rg2_ = false;
+      cutsAdded = extraLin_->rootLinGenScheme2(sol->getObjValue());
+    
+      if (cutsAdded) {
+        *status = SepaResolve;    
+      }
+    }
+
     if (*status == SepaResolve) {
       return;
     }

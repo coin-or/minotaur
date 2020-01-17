@@ -112,6 +112,8 @@ private:
   
   bool rg1_;
   
+  double rg2_;
+  
   double maxVioPer_;
 
   double maxDist_;
