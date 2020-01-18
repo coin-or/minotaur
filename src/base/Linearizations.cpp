@@ -1665,7 +1665,7 @@ void Linearizations::genLin_(double *x, std::vector<UInt > vioConsPos,
       } else {
         angle = angleBetVectors_(a, lastGradObj, n);
       }
-      std::cout << "angle " << angle << "\n";
+      //std::cout << "angle " << angle << "\n";
     
       if (fabs(angle) >= rgs2Per_ || isCont) {
         cutsAdded = objCut_(x);
@@ -1716,7 +1716,7 @@ void Linearizations::genLin_(double *x, std::vector<UInt > vioConsPos,
         continue;
       }
 
-      std::cout << "angle " << angle << "\n";
+      //std::cout << "angle " << angle << "\n";
       if (fabs(angle) >= rgs2Per_ || isCont) {
         cUb = con->getUb();
         act = con->getActivity(x, &error);
