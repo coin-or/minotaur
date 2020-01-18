@@ -828,13 +828,16 @@ void Linearizations::search_(std::vector<VariablePtr > vars,
   double * gradObj;
   std::vector<double* > gradCons;
 
-  if (numNl == 0) {
+  if (oNl_) {
     double * grad = new double[n];
     std::copy(objGrad, objGrad+n, grad);
     gradObj = grad;
-  } else {
+  } 
+  
+  if (numNl > 0) {
     gradCons.resize(nlCons_.size(), 0); //MS: Can be made efficient.
   }
+
   isFound = newPoint_(vars, xOut, alpha, dir);
 
   if (isFound) {
@@ -857,10 +860,12 @@ void Linearizations::search_(std::vector<VariablePtr > vars,
     }
   }
 
-  if (numNl == 0) {
+  if (oNl_) {
     delete [] gradObj;
     gradObj = 0;    
-  } else {
+  } 
+  
+  if (numNl > 0) {
     for (UInt i = 0; i < nlCons_.size(); ++i) {
       if (gradCons[i]) {
         delete [] gradCons[i];
@@ -1641,15 +1646,12 @@ void Linearizations::genLin_(double *x, std::vector<UInt > vioConsPos,
 { 
   UInt cIdx;
   FunctionPtr f;
-  ConstraintPtr con;
-  std::stringstream sstm;
-  LinearFunctionPtr lf = 0;
   bool isCont, cutsAdded = 0;
   int error, n = minlp_->getNumVars();
   double angle, cUb, act, c;
  
 
-  if (nlCons_.size() == 0) {
+  if (oNl_) {
     error = 0;
     isCont = false;
     double *a = new double[n];
@@ -1663,7 +1665,7 @@ void Linearizations::genLin_(double *x, std::vector<UInt > vioConsPos,
       } else {
         angle = angleBetVectors_(a, lastGradObj, n);
       }
-      //std::cout << "angle " << angle << "\n";
+      std::cout << "angle " << angle << "\n";
     
       if (fabs(angle) >= rgs2Per_ || isCont) {
         cutsAdded = objCut_(x);
@@ -1680,15 +1682,21 @@ void Linearizations::genLin_(double *x, std::vector<UInt > vioConsPos,
       delete [] a;
       a = 0;    
     }
-  } else {
+  } 
+  
+  if (nlCons_.size() > 0) {
+    int nr = rel_->getNumVars();
+    ConstraintPtr con;
+    std::stringstream sstm;
+    LinearFunctionPtr lf = 0;
     VariableConstIterator vbeg = rel_->varsBegin(), vend = rel_->varsEnd();
     const double linCoeffTol =
     env_->getOptions()->findDouble("conCoeff_tol")->getValue();
     for (UInt j = 0; j < vioConsPos.size(); ++j) {
       error = 0;
       isCont = false;
-      double *a = new double[n];
-      std::fill(a, a+n, 0.);
+      double *a = new double[nr];
+      std::fill(a, a+nr, 0.);
       cIdx = vioConsPos[j];
 
       con = nlCons_[cIdx];
@@ -1708,7 +1716,7 @@ void Linearizations::genLin_(double *x, std::vector<UInt > vioConsPos,
         continue;
       }
 
-      //std::cout << "angle " << angle << "\n";
+      std::cout << "angle " << angle << "\n";
       if (fabs(angle) >= rgs2Per_ || isCont) {
         cUb = con->getUb();
         act = con->getActivity(x, &error);
@@ -1735,9 +1743,6 @@ void Linearizations::genLin_(double *x, std::vector<UInt > vioConsPos,
         delete [] a;
         a = 0;
       }
-    }
-    if (oNl_) {
-      cutsAdded = objCut_(x);    
     }
   }
   if (!cutsAdded) {
