@@ -911,14 +911,14 @@ void QGHandlerAdvance::separate(ConstSolutionPtr sol, NodePtr node,
       }
     }
 
-    if (rg2_ && oNl_) {
-      rg2_ = false;
-      cutsAdded = extraLin_->rootLinGenScheme2(sol->getObjValue());
+    //if (rg2_ && oNl_) {
+      //rg2_ = false;
+      //cutsAdded = extraLin_->rootLinGenScheme2(sol->getObjValue());
     
-      if (cutsAdded) {
-        *status = SepaResolve;    
-      }
-    }
+      //if (cutsAdded) {
+        //*status = SepaResolve;    
+      //}
+    //}
 
     if (*status == SepaResolve) {
       return;

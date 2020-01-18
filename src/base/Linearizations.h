@@ -182,7 +182,7 @@ private:
 
   bool rootLinGenScheme1(double lpObj);
 
-  bool rootLinGenScheme2(double lpObj);
+  //bool rootLinGenScheme2(double lpObj);
   
   /**
    * Add linearizatios by performing line search between center of the
@@ -204,6 +204,9 @@ private:
   bool addCutAtRoot_(double *x, FunctionPtr f, UInt &newConId, double UB,
                      bool isObj);
 
+  //void objCutGenScheme2_(double *xnew, double *lastGrad,
+                                       //double &alpha);
+
   bool boundaryPtForObj_(double* xnew, const double *xOut,
                                      std::vector<ConstraintPtr> &vioCons);
 
@@ -218,7 +221,7 @@ private:
   bool findIntersectPt_(std::vector<UInt > newConsId, VariablePtr vl,
                        VariablePtr vnl, double * iP);
 
-  bool findBoundaryPt_(double* xnew, const double *xOut, 
+  bool boundaryPtForCons_(double* xnew, const double *xOut, 
                                      std::vector<UInt > &vioCons);
 
   void solveNLP_();
@@ -237,20 +240,29 @@ private:
                     std::vector<double> & yc, ConstraintPtr con, 
                     VariablePtr vl, VariablePtr vnl, bool & shouldCont);
 
+
+  double angleBetVectors_(double *v1, double *v2, int n);
+
   /// Check feasibility of sol 
   //bool isFeas_(ConstSolutionPtr sol);
 
-
-  void findLinPointObj_(double *xOut, double &alpha);
-
-  void findLinPoint_(double *xOut,
-                                   std::vector<UInt > varConsPos,
+  bool isInteriorPt_(double *xOut, std::vector<UInt > varConsPos,
                                    std::vector<double* > & lastGrad,
-                                   double &alpha);
+                                   double* & lastGradObj, double &alpha,
+                                   bool onlObj);
+
+  //void findLinPointObj_(double *xOut, double &alpha,
+                                      //double *lastGrad);
+
+  void findLinPoint_(double *xOut, std::vector<UInt > varConsPos,
+                                   std::vector<double* > & lastGrad,
+                                   double * &lastGradObj, double &alpha,
+                                   bool onlyObj);
 
   void genLin_(double *x, std::vector<UInt > vioConsPos,
                                      std::vector<double *> &lastGrad,
-                                     double &alpha);
+                                     double * &lastGradObj, double &alpha,
+                                     bool onlyObj);
 
   void genLin_(const double *x, std::vector<UInt > vioConsPos);
 
@@ -318,6 +330,9 @@ private:
                                   UInt nVarIdx, double * npt, double * grad,
                                   bool isObj);
  
+  void exploreDir_(std::vector<UInt > &varPos, std::vector<VariablePtr > vars,
+                   std::vector<double > dir, double* xOut, double* objGrad,
+                   std::vector<double* > nlconsGrad);
 
   bool shouldStop_(EngineStatus eStatus);
 
@@ -328,14 +343,14 @@ private:
 
   /// Find nonlinear constraint with only one variable in the nonlinear part
 
-  void searchObj_(std::vector<VariablePtr > vars,
-                             double *xOut,
-                             std::vector<double > dir);
+  //void searchObj_(std::vector<VariablePtr > vars,
+                             //double *xOut, double *objGrad,
+                             //std::vector<double > dir);
 
   void search_(std::vector<VariablePtr > vars,
                              std::vector<UInt > varConsPos,
-                             std::vector<double* > nlconsGrad, double *xOut,
-                             std::vector<double > dir);
+                             std::vector<double* > nlconsGrad, double *xOut, double *objGrad,
+                             std::vector<double > dir, bool onlyObj);
 
 
   bool uniVarNlFunc_(FunctionPtr f,
