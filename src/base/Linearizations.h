@@ -100,7 +100,6 @@ private:
   
   /// Parameter for root lin scheme 2 for general problem
   double rgs2Per_;
-  //bool rgs2_;
 
   /// Value of objective in relaxation solution
   //double relobj_; 
@@ -128,28 +127,17 @@ private:
   // populate this if any general scheme is on 
   std::vector<VariablePtr> varPtrs_; 
   
-  // index of the vars to be changed in finding boundary points. Useful for
-  // directions in which fewer components change
-  std::vector<UInt > changeVar_; 
-  
-  // vars only in nonlinear part of obj and not in nonlinear part of nonlinear
-  // cons
-  std::vector<VariablePtr> objVarPtrs_; 
-
   bool oNl_;
   // auxiliary variable for nonlinear objective
   VariablePtr objVar_;
+    
+  // index of the variables to be changed in line search
+  std::vector<UInt > changeVar_;
  
-  //bool isAllCons_; 
-
   // root LP solution
   double lpObj_;
 
-  bool varInObj_;
-
   const double * nlpDuals_;
-
-  double objVarVal_;
 
   /// Statistics.
   LinStats *stats_;
@@ -210,7 +198,8 @@ private:
   bool boundaryPtForObj_(double* xnew, const double *xOut,
                                      std::vector<ConstraintPtr> &vioCons);
 
-  void candConsForObj_(double *xOut, std::vector<ConstraintPtr > &consToLin, bool &active, bool &vio);
+  void candConsForObj_(double *xOut, std::vector<ConstraintPtr > &consToLin,
+                       bool &active, bool &vio);
 
   void candLinCons_(const double *x, std::vector<UInt > &consToLin,
                              bool &foundActive, bool &foundVio);
@@ -230,7 +219,9 @@ private:
   void setStepSize_(double &alpha, std::vector<VariablePtr > vars,
                                   double *xOut, std::vector<double > unitVec);
 
-  void foundLinPt_(UInt vIdx, std::vector<UInt> varIdx, UInt pos, std::vector<double> alphaSign, double varBound, double *xOut, bool isAllOne);
+  void foundLinPt_(UInt vIdx, std::vector<UInt> varIdx, UInt pos,
+                   std::vector<double> alphaSign, double varBound, double *xOut,
+                   bool isAllOne);
 
   /**
    * Insert a new point in the candidate list for adding linearization in
@@ -243,39 +234,21 @@ private:
 
   double angleBetVectors_(double *v1, double *v2, int n);
 
-  /// Check feasibility of sol 
-  //bool isFeas_(ConstSolutionPtr sol);
-
-  bool isInteriorPt_(double *xOut, std::vector<UInt > varConsPos,
+  bool isInteriorPt_(double *xOut,
                                    std::vector<double* > & lastGrad,
-                                   double* & lastGradObj, double &alpha,
-                                   bool onlObj);
+                                   double* & lastGradObj, double &alpha);
 
-  //void findLinPointObj_(double *xOut, double &alpha,
-                                      //double *lastGrad);
-
-  void findLinPoint_(double *xOut, std::vector<UInt > varConsPos,
-                                   std::vector<double* > & lastGrad,
-                                   double * &lastGradObj, double &alpha,
-                                   bool onlyObj);
+  void findLinPoint_(double *xOut, std::vector<double* > & lastGrad,
+                                   double * &lastGradObj, double &alpha);
 
   void genLin_(double *x, std::vector<UInt > vioConsPos,
                                      std::vector<double *> &lastGrad,
-                                     double * &lastGradObj, double &alpha,
-                                     bool onlyObj);
+                                     double * &lastGradObj, double &alpha);
 
   void genLin_(const double *x, std::vector<UInt > vioConsPos);
 
-  void inObj_(std::vector<UInt > varPos);
+  std::vector<UInt > isFeas_(double *x, bool &foundActive, bool &foundVio);
 
-  std::vector<UInt > isFeas_(double *x, std::vector<UInt > varConsPos,
-                             bool &foundActive, bool &foundVio);
-
-  std::vector<ConstraintPtr > isFeas_(double *x,
-                             bool &foundActive, bool &foundVio);
-
-
-  void varCons_(std::vector<UInt > varPos, std::vector<UInt > &varConsPos);
   /**
    * Obtain the linear function (lf) and constant (c) from the
    * linearization of function f at point x.
@@ -285,23 +258,20 @@ private:
 
   /// Line search in root linearization scheme 3
 
-  bool lineSearchPt_(const double *xIn, const double *xOut, double* x, ConstraintPtr con, double &nlpact);
+  bool lineSearchPt_(const double *xIn, const double *xOut, double* x,
+                     ConstraintPtr con, double &nlpact);
    
   /// Compute variable in the linear part 
 
-  bool linPart_(double *b1, UInt lVarIdx, 
-                           double lVarCoeff, double act, FunctionPtr f, double UB);
+  bool linPart_(double *b1, UInt lVarIdx, double lVarCoeff,
+                double act, FunctionPtr f, double UB);
 
-
-  bool atBound_(std::vector<double > unitVec,
-                              std::vector<VariablePtr > vars);
+  bool atBound_(std::vector<double > unitVec, std::vector<VariablePtr > vars);
 
   bool boundCheck_(double dirVal, double varVal, VariablePtr v);
-  bool newPoint_(std::vector<VariablePtr> vars, double *xOut,
-                               double alpha,
-                               std::vector<double> unitVec);
 
-  //void objToCons_(ProblemPtr problem, VariablePtr vObj, VariablePtr newVar);
+  bool newPoint_(std::vector<VariablePtr> vars, double *xOut, double alpha,
+                 std::vector<double> unitVec);
 
   void rootLinGenScheme2_();
    /**
@@ -309,29 +279,26 @@ private:
    * part - root linearization scheme 1
    */
   
-
-  void rootLinScheme1_(FunctionPtr fun, double lVarCoeff,
-                            UInt lVarIdx, UInt nVarIdx, double nVarCoeff,
-                            double UB, bool isObj);
+  void rootLinScheme1_(FunctionPtr fun, double lVarCoeff, UInt lVarIdx,
+                       UInt nVarIdx, double nVarCoeff, double UB, bool isObj);
   
   /**
    * Add linearizations in the neighborhood of the root nonlinear relaxation
    * solution - root linearization scheme 2
    */
-  void rootLinScheme2_(FunctionPtr f, double UB,
-                                     double lVarCoeff,
-                                     UInt lVarIdx, UInt nVarIdx, bool isObj);
+  void rootLinScheme2_(FunctionPtr f, double UB, double lVarCoeff,
+                       UInt lVarIdx, UInt nVarIdx, bool isObj);
+
   /**
    * Find points with reasoanble difference in curvature to add linearizaion
    * in root linearization scheme 2
    */
-  void rScheme2Cut_(FunctionPtr f, double UB, double &delta,
-                                  double lVarCoeff, double &lastSlope,
-                                  UInt nVarIdx, double * npt, double * grad,
-                                  bool isObj);
+  void rScheme2Cut_(FunctionPtr f, double UB, double &delta, double lVarCoeff,
+                    double &lastSlope, UInt nVarIdx, double * npt,
+                    double * grad, bool isObj);
  
-  void exploreDir_(std::vector<UInt > &varPos, std::vector<VariablePtr > vars,
-                   std::vector<double > dir, double* xOut, double* objGrad,
+  void exploreDir_(std::vector<VariablePtr > vars, std::vector<double > dir,
+                   double* xOut, double* objGrad,
                    std::vector<double* > nlconsGrad);
 
   bool shouldStop_(EngineStatus eStatus);
@@ -341,22 +308,11 @@ private:
   void cutAtLineSearchPt_(const double *xIn, const double *xOut,
                           double *xNew, ConstraintPtr con);
 
-  /// Find nonlinear constraint with only one variable in the nonlinear part
+  void search_(std::vector<VariablePtr > vars, std::vector<double* > nlconsGrad,
+               double *xOut, double *objGrad, std::vector<double > dir);
 
-  //void searchObj_(std::vector<VariablePtr > vars,
-                             //double *xOut, double *objGrad,
-                             //std::vector<double > dir);
-
-  void search_(std::vector<VariablePtr > vars,
-                             std::vector<UInt > varConsPos,
-                             std::vector<double* > nlconsGrad, double *xOut, double *objGrad,
-                             std::vector<double > dir, bool onlyObj);
-
-
-  bool uniVarNlFunc_(FunctionPtr f,
-                                   double &lVarCoeff,
-                                   UInt & lVarIdx, UInt & nVarIdx, double &nVarCoeff,
-                                   bool isObj);
+  bool uniVarNlFunc_(FunctionPtr f, double &lVarCoeff, UInt & lVarIdx,
+                     UInt & nVarIdx, double &nVarCoeff, bool isObj);
 
   void varsInNonlinCons_();
   };
