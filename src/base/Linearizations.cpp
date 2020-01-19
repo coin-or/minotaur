@@ -1244,26 +1244,26 @@ void Linearizations::rootLinGenScheme2_()
   UInt fixIdx, numVars = varPtrs_.size(), vIdx;
   
   //// variable to be fixed in finding search direction
-  for (UInt i = 0; i < numVars; ++i) {
-    v = varPtrs_[i];
-    vIdx = v->getIndex();
-    rhs = rhs + nlpx_[vIdx]*(solC_[vIdx] - nlpx_[vIdx]);
-    if ((firstnnz == -1) && (fabs(solC_[vIdx] - nlpx_[vIdx]) != 0)) {
-      firstnnz = i;
-      fixIdx = vIdx;
+  if (numVars > 1) {
+    for (UInt i = 0; i < numVars; ++i) {
+      v = varPtrs_[i];
+      vIdx = v->getIndex();
+      rhs = rhs + nlpx_[vIdx]*(solC_[vIdx] - nlpx_[vIdx]);
+      if ((firstnnz == -1) && (fabs(solC_[vIdx] - nlpx_[vIdx]) != 0)) {
+        firstnnz = i;
+        fixIdx = vIdx;
+      }
     }
+
+    // For unit Direction
+    if (firstnnz == -1 || rhs == 0) {
+      return;
+    }
+
+    // coefficient of the fix var in any direction
+    fixCoeff = rhs/(solC_[fixIdx] - nlpx_[fixIdx]);
   }
 
-  // For unit Direction
-  if (firstnnz == -1 || rhs == 0) {
-    return;
-    // find a parallel plane when rhs = 0 in the case of coordinate
-    // like direction directions
-  }
-
-  //if (rhs == 0) {
-    //rhs = 1;    
-  //}
 
   int error;
   FunctionPtr f;
@@ -1313,10 +1313,9 @@ void Linearizations::rootLinGenScheme2_()
     }
   }
   
-  // coefficient of the fix var in any direction
-  fixCoeff = rhs/(solC_[fixIdx] - nlpx_[fixIdx]);
 
-  // coordinate direction for each variable 
+
+  // coordinate direction is considered if there is only single variable
   for (UInt i = 0; i < numVars; ++i) {
     v = varPtrs_[i];
     vIdx = v->getIndex();
