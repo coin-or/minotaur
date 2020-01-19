@@ -1238,9 +1238,9 @@ void Linearizations::exploreDir_(std::vector<VariablePtr > vars,
 void Linearizations::rootLinGenScheme2_()
 {
   VariablePtr v;
-  double rhs = 0.0;
   int firstnnz= -1;
   lpObj_ = -INFINITY;
+  double fixCoeff, rhs = 0.0;
   UInt fixIdx, numVars = varPtrs_.size(), vIdx;
   
   //// variable to be fixed in finding search direction
@@ -1271,7 +1271,7 @@ void Linearizations::rootLinGenScheme2_()
   ConstraintPtr con;
   std::vector<double > dir;
   std::vector<VariablePtr > vars;
-  double coeff, fixCoeff, lastVal = 0, val;   
+  double coeff, lastVal = 0, val;   
   UInt n = minlp_->getNumVars(), numOldCuts = stats_->cuts;
   
   std::vector<double* > nlconsGrad;
