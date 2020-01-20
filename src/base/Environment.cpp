@@ -503,6 +503,10 @@ void Environment::createDefaultOptions_()
       "File name for storing tree information for Vbctool", true, "");
   options_->insert(s_option);
 
+  s_option = (StringOptionPtr) new Option<std::string>("cutMethod", 
+      "Name of method for generating cuts: ecp, esh", true, "esh");
+  options_->insert(s_option);
+
   s_option = 0;
 }
 
