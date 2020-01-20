@@ -94,6 +94,11 @@ QGHandlerAdvance::~QGHandlerAdvance()
   nlCons_.clear();
   undoMods_();
  
+  if (solC_) {
+    delete [] solC_;
+    solC_ = 0;
+  }
+
   if (extraLin_) {
     delete extraLin_;  
   }
@@ -104,6 +109,7 @@ QGHandlerAdvance::~QGHandlerAdvance()
   minlp_ = 0;
   extraLin_ = 0;  
   nlCons_.clear();
+  consDual_.clear();
 }
 
 
