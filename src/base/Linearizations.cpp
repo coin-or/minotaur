@@ -1048,17 +1048,19 @@ void Linearizations::exploreDir_(std::vector<VariablePtr > vars,
   //UInt numVars = varPtrs_.size(), vIdx;
   
   ////// variable to be fixed in finding search direction
-  //for (UInt i = 0; i < numVars; ++i) {
-    //v = varPtrs_[i];
-    //vIdx = v->getIndex();
-    //if ((firstnnz == -1) && (fabs(solC_[vIdx] - nlpx_[vIdx]) != 0)) {
-      //firstnnz = i;
-      //break;
+  //if (numVars > 1) {
+    //for (UInt i = 0; i < numVars; ++i) {
+      //v = varPtrs_[i];
+      //vIdx = v->getIndex();
+      //if ((firstnnz == -1) && (fabs(solC_[vIdx] - nlpx_[vIdx]) != 0)) {
+        //firstnnz = i;
+        //break;
+      //}
     //}
-  //}
 
-  //if (firstnnz == -1) {
-    //return;
+    //if (firstnnz == -1) {
+      //return;
+    //}
   //}
 
   //int error;
@@ -1108,10 +1110,11 @@ void Linearizations::exploreDir_(std::vector<VariablePtr > vars,
   //}
   
   //// coordinate direction for each variable 
-  //for (UInt i = 0; i < varPtrs_.size(); ++i) {
+  //for (UInt i = 0; i < numVars; ++i) {
     //v = varPtrs_[i];
     //vIdx = v->getIndex();
-    //if ((int(i) < firstnnz) || (fabs(solC_[vIdx] - nlpx_[vIdx]) < solAbsTol_)) {
+    //if ((int(i) < firstnnz) || (fabs(solC_[vIdx] - nlpx_[vIdx]) < solAbsTol_) ||
+        //(numVars == 1)) {
       //// Coeff of var is zero in the hyperplane expression
       //// for last direction
       //lastDir[i] = -1;
@@ -1136,7 +1139,9 @@ void Linearizations::exploreDir_(std::vector<VariablePtr > vars,
     //vars.clear();
   //}
   ///// last direction in positive spanning set 
-  //exploreDir_(varPtrs_, lastDir, xOut, objGrad, nlconsGrad);
+  //if (numVars > 1) {
+    //exploreDir_(varPtrs_, lastDir, xOut, objGrad, nlconsGrad);
+  //}
  
   //for (UInt i = 0; i < nlCons_.size(); ++i) {
     //if (nlconsGrad[i]) {
@@ -1267,7 +1272,7 @@ void Linearizations::rootLinGenScheme2_()
 
   int error;
   FunctionPtr f;
-  double * objGrad;
+  double * objGrad = 0;
   ConstraintPtr con;
   std::vector<double > dir;
   std::vector<VariablePtr > vars;
@@ -1669,7 +1674,7 @@ void Linearizations::genLin_(double *x, std::vector<UInt > vioConsPos,
       } else {
         angle = angleBetVectors_(a, lastGradObj, n);
       }
-      std::cout << "angle " << angle << "\n";
+      //std::cout << "angle " << angle << "\n";
     
       if (fabs(angle) >= rgs2Per_ || isCont) {
         cutsAdded = objCut_(x);
@@ -1720,7 +1725,7 @@ void Linearizations::genLin_(double *x, std::vector<UInt > vioConsPos,
         continue;
       }
 
-      std::cout << "angle " << angle << "\n";
+      //std::cout << "angle " << angle << "\n";
       if (fabs(angle) >= rgs2Per_ || isCont) {
         cUb = con->getUb();
         act = con->getActivity(x, &error);

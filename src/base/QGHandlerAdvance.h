@@ -60,6 +60,8 @@ private:
 
   /// Pointer to original problem.
   ProblemPtr minlp_;
+  
+  Timer *timer_;
 
   /// Vector of nonlinear constraints.
   std::vector<ConstraintPtr> nlCons_;
@@ -111,9 +113,10 @@ private:
   int rs3_;
   
   double maxVioPer_;
+  
+  std::string cutMethod_;
 
   double maxDist_;
-  
   
   //double lpdist_;
   //EngineStatus shortestNlpStatus_;
@@ -289,7 +292,7 @@ private:
    */
   void relax_(bool *is_inf);
 
-  void solveCenterNLP_(EngineStatus nlpStatus, ConstSolutionPtr sol);
+  void solveCenterNLP_();
 
   /// Solve the nlp.
   void solveNLP_();
