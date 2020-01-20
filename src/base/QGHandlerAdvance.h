@@ -113,11 +113,11 @@ private:
   int rs3_;
   
   double maxVioPer_;
-  
+
+  std::vector<double > consDual_; 
+
   std::string cutMethod_;
 
-  double maxDist_;
-  
   //double lpdist_;
   //EngineStatus shortestNlpStatus_;
   
@@ -210,6 +210,8 @@ private:
 
   void addInitLinearX_(ConstSolutionPtr sol);
 
+  void dualBasedCons_(ConstSolutionPtr sol);
+
   /**
    * Solve NLP by fixing integer variables at LP solution and add 
    * outer-approximation cuts to constraints and/or objective.
@@ -269,8 +271,8 @@ private:
 
   bool isIntFeas_(const double* x);
 
-  void maxVio_(const double *x, NodePtr node, bool *sol_found,
-                               SolutionPoolPtr s_pool, CutManager *cutMan,
+  void maxVio_(ConstSolutionPtr sol, NodePtr node,
+                               CutManager *cutMan,
                                SeparationStatus *status);
 
   void objCutAtLpSol_(const double *lpx, CutManager *,
