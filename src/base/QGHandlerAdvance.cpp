@@ -719,7 +719,6 @@ void QGHandlerAdvance::solveCenterNLP_()
     
     {
       //std::cout << "Center " << std::setprecision(6) << nlpe_->getSolution()->getObjValue() << "\n";
-      //exit(1);
       UInt numVars = minlp_->getNumVars();
       const double *temp = nlpe_->getSolution()->getPrimal();
       solC_ = new double[numVars];
@@ -858,7 +857,6 @@ void QGHandlerAdvance::findCenter_()
   //minlp_->write(std::cout);
   //std::cout <<" MODIFIED PROBLEM \n";
   //inst_C->write(std::cout);
-  //exit(1);
   if (solC_) {
     if (fabs(nlpe_->getSolution()->getObjValue()) <= solAbsTol_) {
       double act;
@@ -928,7 +926,6 @@ void QGHandlerAdvance::separate(ConstSolutionPtr sol, NodePtr node,
 	//} else {
 		//std::cout << "Shortest dist NLP solve status and shortest distance ; " 
 			//<< shortestNlpStatus_ << " ; " << std::setprecision(6) << lpdist_ << std::endl;
-		//exit(0);  
 	//}
 
   *status = SepaContinue;
@@ -1126,7 +1123,6 @@ void QGHandlerAdvance::maxVio_(ConstSolutionPtr sol, NodePtr node,
       consAct.push_back(INFINITY);
     }    
   }
-  //exit(1);
 
   if (vioConsNum > 0) { 
     totScore = totScore/vioConsNum;  
@@ -1139,9 +1135,8 @@ void QGHandlerAdvance::maxVio_(ConstSolutionPtr sol, NodePtr node,
   if (nodeId > 0 && int(nodeId) != lastNodeId_) {
     parentScore = node->getParent()->getVioVal();  
     if (parentScore < INFINITY && totScore < INFINITY) {
-      //std::cout << std::setprecision(6) << "node, score, and target score "<< nodeId << " " << totScore << " " << parentScore << "\n";
-      if (fabs(parentScore) > 1e-2 && fabs(totScore) > (maxVioPer_*fabs(parentScore)/100)) {
-        //std::cout << std::setprecision(6) << "node, score, and target score "<< nodeId << " " << totScore << " " << totScore_ << "\n";
+      if (fabs(parentScore) > 1e-3 && fabs(totScore) > 1e-2 && fabs(totScore) > (maxVioPer_*fabs(parentScore))) { //MS: here maxVioPer_ is in times (0.5, 1, 2, 5,..)
+        //std::cout << std::setprecision(6) << "node, score, and parent's score "<< nodeId << " " << totScore << " " << parentScore << "\n";
         UInt temp = stats_->cuts;
         i = 0; 
         for (CCIter it = nlCons_.begin(); it != nlCons_.end(); ++it, ++i) {
@@ -1190,7 +1185,6 @@ void QGHandlerAdvance::maxVio_(ConstSolutionPtr sol, NodePtr node,
 	//const double *x = sol->getPrimal();
 	////std::cout << "Problem before construction\n";
 	////inst_C->write(std::cout);
-	////exit(1);
 
 	//CGraphPtr t = (CGraphPtr) new CGraph();
 		
@@ -1221,7 +1215,6 @@ void QGHandlerAdvance::maxVio_(ConstSolutionPtr sol, NodePtr node,
 	//inst_C->prepareForSolve();
 	//std::cout << "Shortest distance NLP \n";
 	////inst_C->write(std::cout);
-	////exit(1);
 	//nlpe->load(inst_C);
 	//shortestNlpStatus_ = nlpe->solve();
 
