@@ -246,6 +246,7 @@ namespace Minotaur {
                         std::vector<double> &grad_f); 
       void evalHessian(const double mult, const double *x, 
                        const LTHessStor *stor, double *values , int *error);
+      bool isConvex();
 
       void prepJac(VarSetConstIter vbeg, VarSetConstIter vend);
       void prepHess();

@@ -477,7 +477,7 @@ void SimpleTransformer::refNonlinCons_(ConstProblemPtr oldp)
   ConstraintPtr c, cnew;
   FunctionPtr f, f2;
   CGraphPtr cg;
-  LinearFunctionPtr lf, lf2;
+  LinearFunctionPtr lf = 0, lf2;
   QuadraticFunctionPtr qf, qf2;
   double d, lb, ub;
   VariablePtr v = VariablePtr();
@@ -507,6 +507,7 @@ void SimpleTransformer::refNonlinCons_(ConstProblemPtr oldp)
       if (qf) {
         qf2 = qf->cloneWithVars(newp_->varsBegin());
         refQuadCons_(qf2, lf);
+        delete qf2;
       }
 
       if (f->getNonlinearFunction()) {
@@ -553,6 +554,9 @@ void SimpleTransformer::refNonlinCons_(ConstProblemPtr oldp)
           lHandler_->addConstraint(cnew);
       } 
     } // other case already dealt with in copyLinear_() 
+  }
+  if (lf) {
+    delete lf;
   }
 }
 
@@ -631,26 +635,113 @@ void SimpleTransformer::refNonlinObj_(ConstProblemPtr oldp)
   } // else the other case is already handled in copyLinear_()
 }
 
+//void SimpleTransformer::refQuadCons_(QuadraticFunctionPtr qf,
+//                                     LinearFunctionPtr &lf)
+//{
+//  VarSet vars;
+//  VariablePtr v = VariablePtr();
+//  VariablePtr v2 = VariablePtr();
+//  VariablePtr v3 = VariablePtr();
+//  LinearFunctionPtr lf1,lf2;
+//  QuadraticFunctionPtr qf1;
+//  FunctionPtr f;
+//  ConstraintPtr c;
+//  lf = (LinearFunctionPtr) new LinearFunction();
+//
+//  for (VariablePairGroupConstIterator it = qf->begin();
+//                                      it != qf->end(); ++it) {
+//    v = it->first.first;
+//    if (vars.find(v) == vars.end()) {
+//      vars.insert(v);
+//      lf1 = (LinearFunctionPtr) new LinearFunction();
+//      for (VariablePairGroupConstIterator it1 = it; it1 != qf->end(); ++it1) {
+//        if (v == it1->first.first) {
+//          lf1->addTerm(it1->first.second, it1->second);
+//        }
+//      }
+//      if (lf1->getNumTerms() == 1) {
+//        v2 = yQfBil_->findY(v, lf1->termsBegin()->first);
+//        if (!v2) {
+//          v2 = newp_->newVariable();
+//          lf2 = (LinearFunctionPtr) new LinearFunction();
+//          lf2->addTerm(v2, -1.0);
+//          qf1 = (QuadraticFunctionPtr) new QuadraticFunction();
+//          qf1->addTerm(v, lf1->termsBegin()->first, 1.0);
+//          f = (FunctionPtr) new Function(lf2, qf1);
+//          c = newp_->newConstraint(f, 0.0, 0.0);
+//#if SPEW
+//          logger_->msgStream(LogDebug) << me_ << "added new constraint"
+//                                          << std::endl;
+//          c->write(logger_->msgStream(LogDebug));
+//#endif
+//          qHandler_->addConstraint(c);
+//          yQfBil_->insert(v2, v, lf1->termsBegin()->first);
+//        }
+//        lf->addTerm(v2, lf1->termsBegin()->second);
+//        delete lf1;
+//      }
+//      else {
+//        v2 = yLfs_->findY(lf1, 0.0);
+//        if (!v2) {
+//          v2 = newp_->newVariable();
+//          lf2 = (LinearFunctionPtr) new LinearFunction();
+//          lf2 = lf1->cloneWithVars(newp_->varsBegin());
+//          lf2->addTerm(v2, -1.0);
+//          f = (FunctionPtr) new Function(lf2);
+//          c = newp_->newConstraint(f, 0.0, 0.0);
+//#if SPEW
+//          logger_->msgStream(LogDebug) << me_ << "added new constraint"
+//                                          << std::endl;
+//          c->write(logger_->msgStream(LogDebug));
+//#endif
+//          lHandler_->addConstraint(c);
+//          yLfs_->insert(v2, lf1, 0.0);
+//        } 
+//        v3 = yQfBil_->findY(v, v2);
+//        if (!v3) {
+//          v3 = newp_->newVariable();
+//          lf2 = (LinearFunctionPtr) new LinearFunction();
+//          lf2->addTerm(v3, -1.0);
+//          qf1 = (QuadraticFunctionPtr) new QuadraticFunction();
+//          qf1->addTerm(v, v2, 1.0);
+//          f = (FunctionPtr) new Function(lf2, qf1);
+//          c = newp_->newConstraint(f, 0.0, 0.0);
+//#if SPEW
+//          logger_->msgStream(LogDebug) << me_ << "added new constraint"
+//                                          << std::endl;
+//          c->write(logger_->msgStream(LogDebug));
+//#endif
+//          qHandler_->addConstraint(c);
+//          yQfBil_->insert(v3, v, v2);
+//        }
+//        lf->addTerm(v3, 1.0);
+//      }
+//    }
+//  }
+//  vars.clear();
+//}
+
 void SimpleTransformer::refQuadCons_(QuadraticFunctionPtr qf,
                                      LinearFunctionPtr &lf)
 {
   VariablePtr v = VariablePtr();
-  LinearFunctionPtr lf1;
-  QuadraticFunctionPtr qf1;
-  FunctionPtr f;
+  LinearFunctionPtr lfnew;
+  QuadraticFunctionPtr qfnew;
+  FunctionPtr fnew;
   ConstraintPtr cnew;
   lf = (LinearFunctionPtr) new LinearFunction();
+  
   for (VariablePairGroupConstIterator it = qf->begin();
                                       it != qf->end(); ++it) {
     v = yQfBil_->findY(it->first.first, it->first.second);
     if (!v) {
       v = newp_->newVariable();
-      lf1 = (LinearFunctionPtr) new LinearFunction();
-      lf1->addTerm(v, -1.0);
-      qf1 = (QuadraticFunctionPtr) new QuadraticFunction();
-      qf1->addTerm(it->first.first, it->first.second, 1.0);
-      f = (FunctionPtr) new Function(lf1, qf1);
-      cnew = newp_->newConstraint(f, 0.0, 0.0);
+      lfnew = (LinearFunctionPtr) new LinearFunction();
+      lfnew->addTerm(v, -1.0);
+      qfnew = (QuadraticFunctionPtr) new QuadraticFunction();
+      qfnew->addTerm(it->first.first, it->first.second, 1.0);
+      fnew = (FunctionPtr) new Function(lfnew, qfnew);
+      cnew = newp_->newConstraint(fnew, 0.0, 0.0);
 #if SPEW
       logger_->msgStream(LogDebug) << me_ << "added new constraint"
                                           << std::endl;
@@ -660,6 +751,53 @@ void SimpleTransformer::refQuadCons_(QuadraticFunctionPtr qf,
       yQfBil_->insert(v, it->first.first, it->first.second);
     }
     lf->addTerm(v, it->second);
+
+    //Linearizing the product of bilinear terms
+    if ((it->first.first->getType() == Binary) && 
+        (it->first.second->getType() == Binary)) {
+      //changing the bounds of the new variable
+      newp_->changeBound(v, 0.0, 1.0);
+
+      //y<=x1
+      lfnew = (LinearFunctionPtr) new LinearFunction();
+      lfnew->addTerm(v, 1.0);
+      lfnew->addTerm(it->first.first, -1.0);
+      fnew = (FunctionPtr) new Function(lfnew);
+      cnew = newp_->newConstraint(fnew, -INFINITY, 0.0);
+#if SPEW
+      logger_->msgStream(LogDebug) << me_ << "added new constraint"
+                                          << std::endl;
+      cnew->write(logger_->msgStream(LogDebug));
+#endif
+      lHandler_->addConstraint(cnew);
+
+      //y<=x2
+      lfnew = (LinearFunctionPtr) new LinearFunction();
+      lfnew->addTerm(v, 1.0);
+      lfnew->addTerm(it->first.second, -1.0);
+      fnew = (FunctionPtr) new Function(lfnew);
+      cnew = newp_->newConstraint(fnew, -INFINITY, 0.0);
+#if SPEW
+      logger_->msgStream(LogDebug) << me_ << "added new constraint"
+                                          << std::endl;
+      cnew->write(logger_->msgStream(LogDebug));
+#endif
+      lHandler_->addConstraint(cnew);
+
+      //y>=x1+x2-1
+      lfnew = (LinearFunctionPtr) new LinearFunction();
+      lfnew->addTerm(v, -1.0);
+      lfnew->addTerm(it->first.first, 1.0);
+      lfnew->addTerm(it->first.second, 1.0);
+      fnew = (FunctionPtr) new Function(lfnew);
+      cnew = newp_->newConstraint(fnew, -INFINITY, 1.0);
+#if SPEW
+      logger_->msgStream(LogDebug) << me_ << "added new constraint"
+                                          << std::endl;
+      cnew->write(logger_->msgStream(LogDebug));
+#endif
+      lHandler_->addConstraint(cnew);
+    }
   }
 }
 

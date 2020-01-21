@@ -126,7 +126,6 @@ EigenPtr EigenCalculator::findVectors(ConstQuadraticFunctionPtr qf)
   return ePtr;
 }
 
-
 void EigenCalculator::fillA_()
 {
   UInt i,j;
@@ -379,7 +378,6 @@ LinearFunctionPtr EigenCalculator::getLinearFunction_(const int i)
   }
   return lf;
 }
-
 
 // ----------------------------------------------------------------------- //
 // ----------------------------------------------------------------------- //
