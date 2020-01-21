@@ -239,7 +239,7 @@ void Environment::createDefaultOptions_()
       true, false);
   options_->insert(b_option);
 
-  b_option = (BoolOptionPtr) new Option<bool>("root_genLinScheme1", 
+  b_option = (BoolOptionPtr) new Option<bool>("root_linGenScheme1", 
       "Rounds of extra linearizations to be added at root node under gen scheme 1: <0/1>", true, false);
   options_->insert(b_option);
 
@@ -501,6 +501,10 @@ void Environment::createDefaultOptions_()
 
   s_option = (StringOptionPtr) new Option<std::string>("vbc_file", 
       "File name for storing tree information for Vbctool", true, "");
+  options_->insert(s_option);
+
+  s_option = (StringOptionPtr) new Option<std::string>("cutMethod", 
+      "Name of method for generating cuts: ecp, esh", true, "esh");
   options_->insert(s_option);
 
   s_option = 0;

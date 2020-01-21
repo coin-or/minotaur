@@ -387,7 +387,7 @@ int main(int argc, char* argv[])
     qg_hand = (QGHandlerAdvancePtr) new QGHandlerAdvance(env, inst, nlp_e); 
     qg_hand->setModFlags(false, true);
     if (env->getOptions()->findInt("root_linScheme3")->getValue() > 0 ||
-        env->getOptions()->findBool("root_genLinScheme1")->getValue() ||
+        env->getOptions()->findBool("root_linGenScheme1")->getValue() ||
         env->getOptions()->findDouble("root_linGenScheme2_per")->getValue() > 0) {
       qg_hand->setLpEngine(lin_e);    
     }

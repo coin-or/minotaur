@@ -168,10 +168,6 @@ private:
   /// Find approximate center of the feasible region
   void findCenter();
 
-  bool rootLinGenScheme1(double lpObj);
-
-  //bool rootLinGenScheme2(double lpObj);
-  
   /**
    * Add linearizatios by performing line search between center of the
    * feasible region and the root LP solution - root linearization scheme 3
@@ -204,7 +200,7 @@ private:
   void candLinCons_(const double *x, std::vector<UInt > &consToLin,
                              bool &foundActive, bool &foundVio);
 
-  void cutsAtBoundary_(double *xOut, int vIdx);
+  void cutsAtBoundary_(double *xOut);
 
   /// Find intersection of two linearizations in root linearization scheme 1  
   bool findIntersectPt_(std::vector<UInt > newConsId, VariablePtr vl,
@@ -273,6 +269,8 @@ private:
   bool newPoint_(std::vector<VariablePtr> vars, double *xOut, double alpha,
                  std::vector<double> unitVec);
 
+  void rootLinGenScheme1_();
+  
   void rootLinGenScheme2_();
    /**
    * Add linerizations to constraints with exactly one var in the nonlinear
