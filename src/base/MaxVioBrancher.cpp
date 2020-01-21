@@ -126,8 +126,12 @@ void MaxVioBrancher::findCandidates_(ModVector &mods, bool &should_prune)
       ret = cands_.insert(*it);
       if (false == ret.second) { // already exists.
         br_can = *(ret.first);
-        br_can->setDist((*it)->getDDist()+br_can->getDDist(),
-                        (*it)->getDDist()+br_can->getUDist());
+        if (br_can->getDDist()+br_can->getUDist() <= (*it)->getDDist()+(*it)->getUDist()) {
+          br_can->setDist((*it)->getDDist(), (*it)->getUDist());
+          br_can->setHandler(*h);
+        }
+        //br_can->setDist((*it)->getDDist()+br_can->getDDist(),
+        //                (*it)->getDDist()+br_can->getUDist());
       }
     }
     for (BrCandVIter it = gencands2.begin(); it != gencands2.end(); ++it) {
@@ -137,6 +141,7 @@ void MaxVioBrancher::findCandidates_(ModVector &mods, bool &should_prune)
     cands2.clear();
     gencands2.clear();
   }
+
 
 #if SPEW
   logger_->msgStream(LogDebug) << me_ << "candidates: " << std::endl;

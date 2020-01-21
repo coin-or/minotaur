@@ -21,7 +21,7 @@
 #include "PolynomialFunction.h"
 #include "QuadraticFunction.h"
 #include "Variable.h"
-
+#include "Eigen.h"
 #include "Problem.h"
 
 #include "VarBoundMod.h"
@@ -147,21 +147,6 @@ double QuadraticFunction::eval(const double *x) const
    return sum;
 }
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 void QuadraticFunction::computeBounds(double *l, double *u){
   double a;
   double b;
@@ -187,11 +172,6 @@ void QuadraticFunction::computeBounds(double *l, double *u){
   *l = lb;
   *u = ub;
 }
-
-
-
-
-
 
 void QuadraticFunction::bndsquadterms(double *l, double *u, VariablePtr v){
   double a1;
@@ -222,11 +202,6 @@ void QuadraticFunction::bndsquadterms(double *l, double *u, VariablePtr v){
   *u = ub;
 }
 
-
-
-
-
-
 void QuadraticFunction::bndsquadterms_2(double *l, double *u, VariablePtr v, VariablePtr v2){
   double a1;
   double a2;
@@ -255,15 +230,6 @@ void QuadraticFunction::bndsquadterms_2(double *l, double *u, VariablePtr v, Var
   *l = lb;
   *u = ub;
 }
-
-
-
-
-
-
-
-
-
 
 // void QuadraticFunction::varBoundMods(double lb, double ub, VarBoundModVector &mods,
 //                           SolveStatus *status)
@@ -324,26 +290,6 @@ void QuadraticFunction::bndsquadterms_2(double *l, double *u, VariablePtr v, Var
 //    }
 // }
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 void QuadraticFunction::evalGradient(const double *x, double *grad_f)
 {
   assert (grad_f);
@@ -370,6 +316,17 @@ void QuadraticFunction::evalGradient(const std::vector<double> & x,
   }
 }
 
+bool QuadraticFunction::isConvex()
+{
+  EigenPtr eptr;
+  EigenCalculator *ecalc = new EigenCalculator();
+  eptr = ecalc->findValues(this);
+  if(eptr->numNegative()>0)
+  {
+    return false;
+  }
+  return true;
+}
 
 void QuadraticFunction::evalHessian(const double mul, const double *, 
                                     const LTHessStor *, double *values, int *)

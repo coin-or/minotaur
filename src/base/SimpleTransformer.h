@@ -49,7 +49,6 @@ namespace Minotaur {
    */
   class SimpleTransformer : public Transformer {
   public:
-
     /// Default Constructor.
     SimpleTransformer();
 

@@ -64,7 +64,7 @@ STOAHandler::STOAHandler(EnvPtr env, ProblemPtr minlp, EnginePtr nlpe,
   nlpStatus_(EngineUnknownStatus),
   objVar_(VariablePtr()),
   oNl_(false),
-  rel_(RelaxationPtr()),
+  rel_(0),
   solPool_(solPool),
   //relobj_(0.0),
   numCalls_(0),
@@ -269,7 +269,7 @@ bool STOAHandler::fixedNLP(const double *lpx, EnginePtr &nlpe, ProblemPtr &minlp
   newUb_ = INFINITY;
   EngineStatus nlpStatus;
   std::stack<Modification *> nlpMods;
-  minlp = minlp_->clone();
+  minlp = minlp_->clone(env_);
   nlpe = nlpe_->emptyCopy();
 
   fixInts_(lpx, minlp, nlpMods);           // Fix integer variables

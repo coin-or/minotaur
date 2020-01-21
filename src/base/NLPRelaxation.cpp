@@ -16,8 +16,9 @@
 
 using namespace Minotaur;
 
-NLPRelaxation::NLPRelaxation()
-  : originalProblem_(ProblemPtr()) // NULL
+NLPRelaxation::NLPRelaxation(EnvPtr env)
+  : Relaxation(env),
+    originalProblem_(0) // NULL
 {
   jacobian_ = JacobianPtr();
   hessian_ = HessianOfLagPtr();
@@ -26,8 +27,8 @@ NLPRelaxation::NLPRelaxation()
 }
 
 
-NLPRelaxation::NLPRelaxation(ProblemPtr problem)
-  : Relaxation(problem)
+NLPRelaxation::NLPRelaxation(ProblemPtr problem, EnvPtr env)
+  : Relaxation(problem, env)
 {
 }
 

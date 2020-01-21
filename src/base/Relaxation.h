@@ -56,7 +56,7 @@ class Relaxation : public Problem {
     
 public:
   /// Default constructor.
-  Relaxation();
+  Relaxation(EnvPtr env);
 
   /**
    * Construct a relaxation from an Problem. In the default
@@ -65,7 +65,7 @@ public:
    * cloned, their pointers are saved.  Everything else in the constraint
    * (bounds, sense, map etc.) are copied.
    */
-  Relaxation(ProblemPtr problem);
+  Relaxation(ProblemPtr problem, EnvPtr env);
 
   /// Destructor. No need yet. Use ~Problem().
   ~Relaxation() {};

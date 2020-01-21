@@ -44,7 +44,7 @@ namespace Minotaur {
 
   public:
     /// Default constructor
-    MsProcessor();
+    MsProcessor(EnvPtr env);
 
     /// Constructor with a given engine.
     MsProcessor(EnvPtr env, EnginePtr engine, HandlerVector handlers_);
@@ -156,6 +156,9 @@ namespace Minotaur {
 
     /// Status of the engine
     EngineStatus engineStatus_;
+
+    /// Environment pointer
+    EnvPtr env_;
 
     /// All the handlers that are used for this processor
     HandlerVector handlers_;

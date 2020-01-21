@@ -106,7 +106,7 @@ ParQGBranchAndBound* createParBab(EnvPtr env, UInt numThreads, NodePtr &node,
       bool prune = false;
       relCopy[0] = parNodeRlxr[0]->createRootRelaxation(node, prune);
     } else {
-      relCopy[i] = (RelaxationPtr) new Relaxation(relCopy[0]);
+      relCopy[i] = (RelaxationPtr) new Relaxation(relCopy[0], env);
       parNodeRlxr[i]->setRelaxation(relCopy[i]);
       qg_hand->setRelaxation(relCopy[i]);
       qg_hand->setObjVar();
@@ -120,7 +120,7 @@ ParQGBranchAndBound* createParBab(EnvPtr env, UInt numThreads, NodePtr &node,
   if (options->findBool("pardivheur")->getValue()) {
     ParMINLPDivingPtr div_heur;
     if (options->findBool("divheurLP")->getValue()) {
-      RelaxationPtr lp = (RelaxationPtr) new Relaxation(relCopy[0]);
+      RelaxationPtr lp = (RelaxationPtr) new Relaxation(relCopy[0], env);
       lp->setNativeDer();
       div_heur = (ParMINLPDivingPtr) new ParMINLPDiving(env, lp, lpeCopy[0]);
       div_heur->setAltEngine(eCopy[0]);
@@ -680,7 +680,7 @@ int main(int argc, char** argv)
 
   // If objective is nonlinear add an extra var name eta to move objective to
   // constraint in ParQGHandler
-  pCopy[0] = oinst->clone();
+  pCopy[0] = oinst->clone(env);
   oPtr = oinst->getObjective();
   if (!oPtr) {
     assert(!"No objective function in the problem!");
@@ -694,7 +694,7 @@ int main(int argc, char** argv)
     lpeCopy[i] = efac->getLPEngine();
     eCopy[i] = engine->emptyCopy();
     if (i > 0) {
-      pCopy[i] = pCopy[0]->clone();
+      pCopy[i] = pCopy[0]->clone(env);
     }
   }
 

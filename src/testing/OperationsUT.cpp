@@ -7,6 +7,7 @@
 #include <cmath>
 
 #include "MinotaurConfig.h"
+#include "Environment.h"
 #include "OperationsUT.h"
 #include "Operations.h"
 #include "Problem.h"
@@ -39,7 +40,8 @@ void OperationsTest::testToLower()
 
 void OperationsTest::testSortVarX()
 {
-  ProblemPtr p = new Problem();
+  EnvPtr env = new Environment();
+  ProblemPtr p = new Problem(env);
   VarVector vvec;
   double *x = new double[100];
 
@@ -75,6 +77,7 @@ void OperationsTest::testSortVarX()
 
   delete [] x;
   delete p;
+  delete env;
 }
 
 

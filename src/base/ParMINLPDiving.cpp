@@ -389,7 +389,7 @@ void ParMINLPDiving::implementDive_(int i, const double* x, SolutionPoolPtr s_po
           logger_->msgStream(LogInfo) << me_ << "LP feasible point" << std::endl;
           //Solve NLP and add solution if NLP is optimal
           EnginePtr nlpe = nlpe_->emptyCopy();
-          ProblemPtr minlp = minlp_->clone();
+          ProblemPtr minlp = minlp_->clone(env_);
           nlpe->load(minlp);
           solveNLP(sol, &solFound, minlp, nlpe);
           if (solFound) {
@@ -990,7 +990,7 @@ void ParMINLPDiving::solve(NodePtr, RelaxationPtr, SolutionPoolPtr s_pool)
         x = root_copy;
         // Thread specific 
         EnginePtr e =  e_->emptyCopy();
-        ProblemPtr p = p_->clone();
+        ProblemPtr p = p_->clone(env_);
         LinearHandler *lh;
         double* gradientObj;
         DoubleVector score;

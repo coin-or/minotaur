@@ -507,6 +507,12 @@ CLEANUP:
     }
     delete bab;
   }
+  if (inst) {
+    delete inst;
+  }
+  if (newp) {
+    delete newp;
+  }
   if (orig_v) {
     delete orig_v;
   }

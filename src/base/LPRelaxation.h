@@ -22,12 +22,12 @@ namespace Minotaur {
       // /**
       // Construct an empty Nonlinear Relaxation.
       // */
-      LPRelaxation();
+      LPRelaxation(EnvPtr env);
 
       // /** 
       // Construct from a problem.
       // */
-      LPRelaxation(ProblemPtr problem);
+      LPRelaxation(ProblemPtr problem, EnvPtr env);
 
       // /** 
       // Destroy

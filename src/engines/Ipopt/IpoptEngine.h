@@ -38,6 +38,7 @@ namespace Minotaur {
   typedef IpoptEngine* IpoptEnginePtr;
   typedef Problem* ProblemPtr;
 
+  // thread based statistics
   struct IpoptStats {
     UInt calls;     ///< Total number of calls to solve.
     UInt opt;       ///< No. of calls to Ipopt's Optimize 
@@ -48,6 +49,7 @@ namespace Minotaur {
     UInt strIters;  ///< Number of iterations in strong branching alone.
     double strTime; ///< time taken in strong branching alone.
     double time;    ///< Sum of time taken in all calls to solve.
+    double walltime;///<
   };
 
 

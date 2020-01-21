@@ -50,6 +50,7 @@ class ProblemTest : public CppUnit::TestCase {
     //void testgetCons();
 
   private:
+    EnvPtr env_;
     ProblemPtr instance_;
 
 };

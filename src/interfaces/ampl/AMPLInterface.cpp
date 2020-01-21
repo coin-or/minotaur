@@ -647,7 +647,7 @@ Minotaur::ProblemPtr AMPLInterface::copyInstanceFromASL_()
 
   // new instance
   Minotaur::ProblemPtr instance = (Minotaur::ProblemPtr) 
-                                      new Minotaur::Problem();
+                                      new Minotaur::Problem(env_);
   addVariablesFromASL_(instance);
   addDefinedVars_(instance);
 
@@ -706,7 +706,7 @@ Minotaur::ProblemPtr AMPLInterface::copyInstanceFromASL2_()
 
   // new instance
   Minotaur::ProblemPtr instance = (Minotaur::ProblemPtr) 
-                                   new Minotaur::Problem();
+                                   new Minotaur::Problem(env_);
   addVariablesFromASL_(instance);
   addDefinedVars_(instance);
 
@@ -1400,7 +1400,7 @@ Minotaur::ProblemPtr AMPLInterface::getInstanceFromASL_(
 
   // new instance
   Minotaur::ProblemPtr instance = (Minotaur::ProblemPtr) 
-    new Minotaur::Problem();
+    new Minotaur::Problem(env_);
 
   addVariablesFromASL_(instance);
   nDefVars_    = 0;

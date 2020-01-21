@@ -493,7 +493,7 @@ int main(int argc, char* argv[])
     milp = nr->createRootRelaxation(NodePtr(), prune);
  
     for (UInt i=1; i < numThreads; ++i) {
-      inst[i] = inst[0]->clone();
+      inst[i] = inst[0]->clone(env);
       nlp_e[i] = getNLPEngine(env, inst[i]);
       oa_hand[i] = (OAHandlerPtr) new OAHandler(env, inst[i], nlp_e[i], NULL);
       nlp_e[i]->load(inst[i]);

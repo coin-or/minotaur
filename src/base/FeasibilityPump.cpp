@@ -274,7 +274,7 @@ void FeasibilityPump::implementFP_(const double* x, SolutionPoolPtr s_pool)
   UInt max_iter        = 100;
   UInt max_cycle       = 300;
   UInt min_flip        = 3;
-  ProblemPtr prob      = p_->clone();
+  ProblemPtr prob      = p_->clone(env_);
 
   e_->load(prob);
   while (cont_FP && stats_->numNLPs < max_iter 
