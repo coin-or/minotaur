@@ -2038,8 +2038,8 @@ void Linearizations::rootLinScheme1_(FunctionPtr fun, double lVarCoeff,
 {
   double iP[2]; // intersection point
   UInt newConId;
-  bool shouldCont;
   ConstraintPtr newcon;
+  bool shouldCont, varDel;
   std::vector<UInt > newConsId;
   VariablePtr vnl = NULL, vl = NULL;
   std::vector<double > linVioVal, xc, yc; // xc and yc  nonlinear and lin var
@@ -2147,6 +2147,7 @@ void Linearizations::rootLinScheme1_(FunctionPtr fun, double lVarCoeff,
 
   while (maxVio >= stopCond) { 
     //add a new cut at the point indexed i
+    varDel = false;
     b1[nVarIdx] = xc[i];
     shouldCont = addCutAtRoot_(b1, fun, newConId, UB, isObj);
     if (shouldCont) {
@@ -2179,16 +2180,10 @@ void Linearizations::rootLinScheme1_(FunctionPtr fun, double lVarCoeff,
                 linVioVal.insert(linVioVal.begin()+j,vio);
                 break;
               }
-            } else {
-              xc.erase(xc.begin() + j);
-              yc.erase(yc.begin() + j);
-              linVioVal.erase(linVioVal.begin() + j);
-            }
+            } 
           } else {
             // delete point if violates newcon
-            xc.erase(xc.begin() + j);
-            yc.erase(yc.begin() + j);
-            linVioVal.erase(linVioVal.begin() + j);
+            updateInfo_(xc, yc, linVioVal, j);
           }
         }
       }
@@ -2208,6 +2203,7 @@ void Linearizations::rootLinScheme1_(FunctionPtr fun, double lVarCoeff,
                 xc.erase(xc.begin() + (j+1));
                 yc.erase(yc.begin() + (j+1));
               } else {
+                varDel = true;
                 if (isObj) {
                   if (lVarIdx == objVar_->getIndex()) {
                     act = act - b1[lVarIdx];
@@ -2215,31 +2211,42 @@ void Linearizations::rootLinScheme1_(FunctionPtr fun, double lVarCoeff,
                 }
                 vio = std::max(act-UB, 0.0); 
                 linVioVal.insert(linVioVal.begin()+j+1,vio);
-                xc.erase(xc.begin()+j+2);
-                yc.erase(yc.begin()+j+2);        
-                linVioVal.erase(linVioVal.begin()+j+2);        
+                updateInfo_(xc, yc, linVioVal, j+2);
+                break;
               }
             }
-            break;
           }  else {
             // delete point if violates newcon
-            xc.erase(xc.begin() + j);
-            yc.erase(yc.begin() + j);        
-            linVioVal.erase(linVioVal.begin() + j);        
+            updateInfo_(xc, yc, linVioVal, j);
+            --i;
             --j;
           }  
         }
       }
+    } 
+    if (!varDel) {
+      updateInfo_(xc, yc, linVioVal, i);
     }
-
     maxVio = *(std::max_element(linVioVal.begin(), linVioVal.end()));
-    if ((maxVio < solAbsTol_) || 
-        (UB !=0 && maxVio < fabs(UB)*solRelTol_ )) { 
+    if ((maxVio <= solAbsTol_) || 
+        (UB !=0 && maxVio <= fabs(UB)*solRelTol_ )) { 
       break;
     }
     i = std::max_element(linVioVal.begin(), linVioVal.end())-linVioVal.begin();     
   }
   delete [] b1;
+  return;
+}
+
+
+void Linearizations::updateInfo_(std::vector<double > &xc,
+                                 std::vector<double > &yc,
+                                 std::vector<double > &linVioVal, UInt j)
+{
+
+  xc.erase(xc.begin() + j); 
+  yc.erase(yc.begin() + j);
+  linVioVal.erase(linVioVal.begin() + j);
   return;
 }
 
@@ -2639,6 +2646,7 @@ bool Linearizations::uniVarNlFunc_(FunctionPtr f, double &lVarCoeff,
 
   const double linCoeffTol =
     env_->getOptions()->findDouble("conCoeff_tol")->getValue();
+
   if (nlf) {
     nlTerms = nlf->numVars();
     if (nlTerms != 1) {

@@ -312,6 +312,9 @@ private:
   bool uniVarNlFunc_(FunctionPtr f, double &lVarCoeff, UInt & lVarIdx,
                      UInt & nVarIdx, double &nVarCoeff, bool isObj);
 
+  void updateInfo_(std::vector<double > &xc,
+                                 std::vector<double > &yc,
+                                 std::vector<double > &linVioVal, UInt j);
   void varsInNonlinCons_();
   };
 
