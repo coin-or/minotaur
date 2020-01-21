@@ -1061,7 +1061,7 @@ double LGCIGenerator::lift(CoverSetPtr obj,
   }
 
   // Create lifting problem.
-  ProblemPtr liftprob = (ProblemPtr) new Problem();
+  ProblemPtr liftprob = (ProblemPtr) new Problem(env_);
   // Clean the lp engine before use.
   lpengine_->clear();
   OrigLiftVarsPtr varmap = (OrigLiftVarsPtr) new OrigLiftVars();

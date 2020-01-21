@@ -35,17 +35,18 @@ using namespace Minotaur;
 
 const std::string MsProcessor::me_ = "MsProcessor: ";
 
-  MsProcessor::MsProcessor()
+MsProcessor::MsProcessor(EnvPtr env)
 : contOnErr_(false),
   cutOff_(INFINITY),
   engine_(EnginePtr()),
   engineStatus_(EngineUnknownStatus),
+  env_(env),
   numSolutions_(0),
   relaxation_(RelaxationPtr()),
   ws_(WarmStartPtr())
 {
   handlers_.clear();
-  logger_ = (LoggerPtr) new Logger(LogInfo);
+  logger_ = env_->getLogger();
   stats_.inf = 0;
   stats_.opt = 0;
   stats_.prob = 0;
@@ -632,7 +633,7 @@ double * MsProcessor::genInitialPoint(UInt n, RelaxationPtr rel1)
 {
   double* initPoint = new double[n];
   EngineStatus status;
-  RelaxationPtr relc = (RelaxationPtr) new Relaxation(rel1);
+  RelaxationPtr relc = (RelaxationPtr) new Relaxation(rel1, env_);
   EnginePtr ec = engine_->emptyCopy();
   ec->clear();
   VariablePtr v;
@@ -694,7 +695,7 @@ void MsProcessor::process(NodePtr node, RelaxationPtr rel,
 #pragma omp parallel for   
 #endif
   for(UInt i = 0; i < numThreads_; i++) {
-    relCopy[i] = (RelaxationPtr) new Relaxation(rel);
+    relCopy[i] = (RelaxationPtr) new Relaxation(rel, env_);
     eCopy[i] = engine_->emptyCopy();
     eCopy[i]->clear();
     relCopy[i]->prepareForSolve();

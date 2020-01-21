@@ -27,7 +27,7 @@ CPPUNIT_TEST_SUITE_NAMED_REGISTRATION(NLPBnbUT, "NLPBnbUT");
 
 using namespace Minotaur;
 
-ProblemPtr NLPBnbUT::createInstance_()
+ProblemPtr NLPBnbUT::createInstance_(EnvPtr env)
 {
   // 
   // (Minor changes to Nocedal & Wright, Chapter 12, page 360)
@@ -43,7 +43,7 @@ ProblemPtr NLPBnbUT::createInstance_()
   double initial_pt[2] = {0.5, 0.0};
 
   // create instance and add variables 
-  instance = (ProblemPtr) new Problem();
+  instance = (ProblemPtr) new Problem(env);
 
   instance->newVariable(-1, 1, Integer);
 
@@ -81,7 +81,7 @@ void NLPBnbUT::testNLPBnb()
   env->getOptions()->findBool("modify_rel_only")->setValue(true);
 
   // create the instance.
-  ProblemPtr instance = createInstance_();
+  ProblemPtr instance = createInstance_(env);
 
   // create a NULL LP engine.
   //LPEnginePtr lp_e;
@@ -233,7 +233,7 @@ void myHess2::fillRowColValues(const double *, double obj_mult,
 
 // ------------------------------------------------------------------------- //
 // ------------------------------------------------------------------------- //
-ProblemPtr NLPBnbUT::createInstance1_()
+ProblemPtr NLPBnbUT::createInstance1_(EnvPtr env)
 {
   // solve the following MINLP:
   //
@@ -251,7 +251,7 @@ ProblemPtr NLPBnbUT::createInstance1_()
   double initial_pt[2] = {0.0, 0.0};
 
   // create instance and add variables 
-  instance = (ProblemPtr) new Problem();
+  instance = (ProblemPtr) new Problem(env);
 
   // variable x0.
   instance->newBinaryVariable();
@@ -289,7 +289,7 @@ void NLPBnbUT::testNLPBnb1()
   EnvPtr env = (EnvPtr) new Environment();
   env->getOptions()->findBool("modify_rel_only")->setValue(true);
   env->getOptions()->findString("nlp_engine")->setValue("IPOPT");
-  ProblemPtr p = createInstance1_();
+  ProblemPtr p = createInstance1_(env);
   HandlerVector handlers;
   ReliabilityBrancherPtr br;
   RelaxationPtr rel;
@@ -318,7 +318,7 @@ void NLPBnbUT::testNLPBnb1()
   NodeIncRelaxerPtr nr = (NodeIncRelaxerPtr) new NodeIncRelaxer(env, handlers);
   bab->setNodeRelaxer(nr);
 
-  rel = (RelaxationPtr) new Relaxation(p);
+  rel = (RelaxationPtr) new Relaxation(p, env);
   rel->calculateSize();
   rel->setJacobian(new myJac3());
   rel->setHessian(new myHess3());

@@ -62,6 +62,7 @@ void writeBnbStatus(EnvPtr env, BranchAndBound *bab, double obj_sense);
 void writeSol(EnvPtr env, VarVector *orig_v, PresolverPtr pres,
               SolutionPtr sol, SolveStatus status,
               MINOTAUR_AMPL::AMPLInterface* iface);
+//void objToCons(ProblemPtr inst);
 
 
 void loadProblem(EnvPtr env, MINOTAUR_AMPL::AMPLInterface* iface,
@@ -118,6 +119,51 @@ void loadProblem(EnvPtr env, MINOTAUR_AMPL::AMPLInterface* iface,
   delete timer;
 }
 
+
+//void objToCons(ProblemPtr problem)
+//{
+  //assert(problem);
+  //ObjectivePtr oPtr = problem->getObjective();
+  //FunctionType objFunType = oPtr->getFunctionType();
+
+  //if (oPtr) {
+    //if (objFunType == Constant || objFunType == Linear) {
+      //return;  
+    //}
+    //FunctionPtr f = oPtr->getFunction();
+
+    //QuadraticFunctionPtr qf = f->getQuadraticFunction();
+    //NonlinearFunctionPtr nlf = f->getNonlinearFunction();
+    //// add a new variable
+    //std::string name = "obj_dummy_var";
+    //VariablePtr vPtr = problem->newVariable(-INFINITY, INFINITY, 
+        //Continuous, name); 
+    //// add this variable to the objective
+    //LinearFunctionPtr lf = (LinearFunctionPtr) new LinearFunction();
+    //lf->addTerm(vPtr, 1.0);
+    //problem->addToObj(lf);
+    //lf->multiply(-1.0);
+
+    //if (qf) {
+      //// remove quadratic parts from the objective
+      //qf = problem->removeQuadFromObj();
+      //// add a new constraint containing the new variable and the quadratic.
+      //// qf - lf <= 0
+    //} 
+    //if (objFunType == Nonlinear) {
+      //nlf = problem->removeNonlinFromObj();
+    //}
+
+    //if (qf && nlf) {
+      //f = (FunctionPtr) new Function(lf, qf, nlf);
+    //} else if (qf) {
+      //f = (FunctionPtr) new Function(lf, qf);
+    //} else if (nlf) {
+      //f = (FunctionPtr) new Function(lf, nlf);
+    //}
+      //problem->newConstraint(f, -INFINITY, 0.0);
+  //}
+//}
 
 void setInitialOptions(EnvPtr env)
 {
@@ -293,6 +339,7 @@ int main(int argc, char* argv[])
   }
 
   loadProblem(env, iface, inst, &obj_sense);
+
   // Initialize engines
   nlp_e = getNLPEngine(env, inst); //Engine for Original problem
 
@@ -339,13 +386,15 @@ int main(int argc, char* argv[])
 
     qg_hand = (QGHandlerAdvancePtr) new QGHandlerAdvance(env, inst, nlp_e); 
     qg_hand->setModFlags(false, true);
-    if (env->getOptions()->findInt("root_linScheme3")->getValue() > 0) {
+    if (env->getOptions()->findInt("root_linScheme3")->getValue() > 0 ||
+        env->getOptions()->findBool("root_linGenScheme1")->getValue() ||
+        env->getOptions()->findDouble("root_linGenScheme2_per")->getValue() > 0) {
       qg_hand->setLpEngine(lin_e);    
     }
    
     handlers.push_back(qg_hand);
     assert(qg_hand);
-     
+ 
     // report name
     env->getLogger()->msgStream(LogExtraInfo) << me << "handlers used:"
       << std::endl;

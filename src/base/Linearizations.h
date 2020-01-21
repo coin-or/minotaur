@@ -26,12 +26,14 @@
 namespace Minotaur {
 
   struct LinStats {
+  size_t cuts;    /// Total cuts from all root schemes.
   size_t rs1Cuts; /// Number of cuts in root scheme 1.
   size_t rs2Cuts; /// Number of cuts in root scheme 2.
   size_t rs3Cuts; /// Number of cuts in root scheme 3 version 1.
   size_t rs4Cuts; /// Number of cuts in root scheme 3 version 2.
   size_t rgs1Cuts; /// Number of cuts in root gen scheme 1.
   size_t rgs2Cuts; /// Number of cuts in root gen scheme 2.
+  double linSchemesTime; ///Total time taken in the linearization scheme;
 };
 
 class Linearizations {
@@ -45,6 +47,8 @@ private:
 
   /// Pointer to original problem.
   ProblemPtr minlp_;
+  
+  Timer *timer_;
 
   /// Tolerance for checking integrality (should be obtained from env).
   double intTol_;
@@ -95,8 +99,7 @@ private:
   bool rgs1_;
   
   /// Parameter for root lin scheme 2 for general problem
-  double rsg2Per_;
-  //bool rgs2_;
+  double rgs2Per_;
 
   /// Value of objective in relaxation solution
   //double relobj_; 
@@ -123,9 +126,22 @@ private:
 
   // populate this if any general scheme is on 
   std::vector<VariablePtr> varPtrs_; 
+  
+  bool oNl_;
+  // auxiliary variable for nonlinear objective
+  VariablePtr objVar_;
+    
+  // index of the variables to be changed in line search
+  std::vector<UInt > changeVar_;
+ 
+  // root LP solution
+  double lpObj_;
+
+  const double * nlpDuals_;
 
   /// Statistics.
   LinStats *stats_;
+
 
   public:
   /**
@@ -137,26 +153,26 @@ private:
    * \param [in] nlpe The engine to solve nonlinear continuous problem.
    */
   Linearizations(EnvPtr env, RelaxationPtr rel,
-                               ProblemPtr minlp, std::vector<ConstraintPtr> nlCons); 
+                               ProblemPtr minlp, std::vector<ConstraintPtr> nlCons,
+                               VariablePtr objVar); 
   
   /// Destroy.
   ~Linearizations();
    
   /// Root linearization schemes
-  void rootLinearizations(const double * nlpx);
+  //void rootLinearizations(const double * nlpx);
+  void rootLinearizations(ConstSolutionPtr sol);
 
   double * getCenter() {return solC_;}
   
   /// Find approximate center of the feasible region
   void findCenter();
 
-  double maxVio(const double *x, int &index);
   /**
    * Add linearizatios by performing line search between center of the
    * feasible region and the root LP solution - root linearization scheme 3
    */
-  void rootLinScheme3(EnginePtr lpe_, VariablePtr objVar,
-                                    SeparationStatus *status);
+  void rootLinScheme3(EnginePtr lpe_, SeparationStatus *status);
 
   //void setLpEngine(EnginePtr lpe) {lpe_ = lpe;};
   
@@ -169,34 +185,39 @@ private:
 private:
  
   /// Add linearization in root linearization scheme 1 
-  bool addCutAtRoot_(double *x, ConstraintPtr con, UInt &newConId);
+  bool addCutAtRoot_(double *x, FunctionPtr f, UInt &newConId, double UB,
+                     bool isObj);
 
-  /// Add new cut in case of root linearization scheme 1
-  bool addNewCut_(double *b1, ConstraintPtr con, 
-                  UInt &newConId);
+  //void objCutGenScheme2_(double *xnew, double *lastGrad,
+                                       //double &alpha);
 
-  void boundingVar_(double &varbound, UInt &pos, 
-                                  double *lastDir,
-                                  std::vector<double > &alphaSign);
-  void boundingVar_(double &varbound,
-                                  UInt vIdx, VariablePtr fixVar, double coeff,
-                                 double fixCoeff, int &alpha, std::vector<UInt > &varIdx);
+  bool boundaryPtForObj_(double* xnew, const double *xOut,
+                                     std::vector<ConstraintPtr> &vioCons);
+
+  void candConsForObj_(double *xOut, std::vector<ConstraintPtr > &consToLin,
+                       bool &active, bool &vio);
+
+  void candLinCons_(const double *x, std::vector<UInt > &consToLin,
+                             bool &foundActive, bool &foundVio);
+
+  void cutsAtBoundary_(double *xOut);
 
   /// Find intersection of two linearizations in root linearization scheme 1  
   bool findIntersectPt_(std::vector<UInt > newConsId, VariablePtr vl,
                        VariablePtr vnl, double * iP);
 
-  bool findBoundaryPt_(const double *xOut, const double *xIn,
-                                     double *x, 
-                                     std::vector<ConstraintPtr> &vioCons);
-
-  void setStepSize_(double &varbound, double &alpha,
-                                   UInt vIdx, double val,
-                                   double boundSign);
+  bool boundaryPtForCons_(double* xnew, const double *xOut, 
+                                     std::vector<UInt > &vioCons);
 
   void solveNLP_();
 
-  void foundLinPt_(UInt vIdx, std::vector<UInt> varIdx, UInt pos, std::vector<double> alphaSign, double varBound, double *xOut, bool isAllOne);
+
+  void setStepSize_(double &alpha, std::vector<VariablePtr > vars,
+                                  double *xOut, std::vector<double > unitVec);
+
+  void foundLinPt_(UInt vIdx, std::vector<UInt> varIdx, UInt pos,
+                   std::vector<double> alphaSign, double varBound, double *xOut,
+                   bool isAllOne);
 
   /**
    * Insert a new point in the candidate list for adding linearization in
@@ -206,30 +227,24 @@ private:
                     std::vector<double> & yc, ConstraintPtr con, 
                     VariablePtr vl, VariablePtr vnl, bool & shouldCont);
 
-  /// Check feasibility of sol 
-  //bool isFeas_(ConstSolutionPtr sol);
- 
-  bool boundaryPt_(const double *xOut,
-                                     std::vector<UInt > &varConsPos,
-                                   std::vector<double* > & lastGrad);
-  bool findLinPoint_(double *xOut, 
-                                   std::vector<UInt > varConsPos,
-                                   std::vector<double* > & lastGrad);
 
+  double angleBetVectors_(double *v1, double *v2, int n);
 
-  void exploreDir_(double *xOut, std::vector<UInt > vIdx,
-                                 std::vector<UInt > varConsPos, 
-                                std::vector<double *> nlconsGrad,
-                                std::vector<double > unitVec);
+  bool isInteriorPt_(double *xOut,
+                                   std::vector<double* > & lastGrad,
+                                   double* & lastGradObj, double &alpha);
 
+  void findLinPoint_(double *xOut, std::vector<double* > & lastGrad,
+                                   double * &lastGradObj, double &alpha);
 
-  bool genLin_(double *x, std::vector<UInt > vioConsPos,
-                                     std::vector<double *> &lastGrad);
+  void genLin_(double *x, std::vector<UInt > vioConsPos,
+                                     std::vector<double *> &lastGrad,
+                                     double * &lastGradObj, double &alpha);
 
-  std::vector<UInt > isFeas_(double *x, std::vector<UInt > varConsPos,
-                             bool &foundActive, bool &foundVio);
+  void genLin_(const double *x, std::vector<UInt > vioConsPos);
 
-  void varCons_(std::vector<UInt > varPos, std::vector<UInt > &varConsPos);
+  std::vector<UInt > isFeas_(double *x, bool &foundActive, bool &foundVio);
+
   /**
    * Obtain the linear function (lf) and constant (c) from the
    * linearization of function f at point x.
@@ -239,64 +254,63 @@ private:
 
   /// Line search in root linearization scheme 3
 
-  bool lineSearchPt_(const double *xIn, const double *xOut, double* x, ConstraintPtr con, double &nlpact);
+  bool lineSearchPt_(const double *xIn, const double *xOut, double* x,
+                     ConstraintPtr con, double &nlpact);
    
   /// Compute variable in the linear part 
-  bool linPart_(double *b1, UInt vlIdx, ConstraintPtr con, 
-                  double linVarCoeff, double nVarCoeff);
 
-  UInt minChange_(double diff1, double diff2, double &alpha,
-                  double &varbound, UInt vIdx, UInt fixIdx,
-                  double coeff, double fixCoeff);
+  bool linPart_(double *b1, UInt lVarIdx, double lVarCoeff,
+                double act, FunctionPtr f, double UB);
 
-  void newPoint_(bool isAllOne,
-                               std::vector<UInt> varIdx, double *xOut, std::vector<double> alphaSign);
+  bool atBound_(std::vector<double > unitVec, std::vector<VariablePtr > vars);
 
-  void populateVarIdx(VariablePtr v, std::vector<UInt > &varIdx,
-                                      double &vMinUb, double &vMaxLb,
-                                      UInt &lIdx, UInt &uIdx);
+  bool boundCheck_(double dirVal, double varVal, VariablePtr v);
+
+  bool newPoint_(std::vector<VariablePtr> vars, double *xOut, double alpha,
+                 std::vector<double> unitVec);
+
+  void rootLinGenScheme1_();
+  
+  void rootLinGenScheme2_();
    /**
    * Add linerizations to constraints with exactly one var in the nonlinear
    * part - root linearization scheme 1
    */
-  void rootLinScheme1_(ConstraintPtr con, double linTermCoeff, UInt vlIdx,
-                       UInt vnIdx, double extraCoeff);
+  
+  void rootLinScheme1_(FunctionPtr fun, double lVarCoeff, UInt lVarIdx,
+                       UInt nVarIdx, double nVarCoeff, double UB, bool isObj);
   
   /**
    * Add linearizations in the neighborhood of the root nonlinear relaxation
    * solution - root linearization scheme 2
    */
-  void rootLinScheme2_(ConstraintPtr con, 
-                       double lVarCoeff,
-                            UInt vlIdx, UInt vnIdx);
+  void rootLinScheme2_(FunctionPtr f, double UB, double lVarCoeff,
+                       UInt lVarIdx, UInt nVarIdx, bool isObj);
 
   /**
    * Find points with reasoanble difference in curvature to add linearizaion
    * in root linearization scheme 2
    */
-  void rScheme2Cut_(ConstraintPtr con, double &delta,
-                                double linTermCoeff, double &lastSlope,
-                                UInt vnIdx, double * npt, double * grad);
-
-  void rootLinGenScheme1_();
-  
-  void rootLinGenScheme2_();
-
-  void search_(double varbound, UInt vIdx, double val, 
-               std::vector<UInt > varIdx, 
-                             double *xOut,
-                             std::vector<double > &alphaSign,
-                             UInt pos, bool isAllOne);
-
+  void rScheme2Cut_(FunctionPtr f, double UB, double &delta, double lVarCoeff,
+                    double &lastSlope, UInt nVarIdx, double * npt,
+                    double * grad, bool isObj);
+ 
+  void exploreDir_(std::vector<VariablePtr > vars, std::vector<double > dir,
+                   double* xOut, double* objGrad,
+                   std::vector<double* > nlconsGrad);
 
   bool shouldStop_(EngineStatus eStatus);
 
-  bool cutAtLineSearchPt_(const double *xIn, const double *xOut, double* xNew,
-                                        ConstraintPtr con);
+  bool objCut_(const double* xNew);
 
-  /// Find nonlinear constraint with only one variable in the nonlinear part
-  bool uniVarNlFunc_(ConstraintPtr con, double &linTermCoeff, UInt & vlIdx,
-                   UInt & vnIdx, double &extraCoeff);
+  void cutAtLineSearchPt_(const double *xIn, const double *xOut,
+                          double *xNew, ConstraintPtr con);
+
+  void search_(std::vector<VariablePtr > vars, std::vector<double* > nlconsGrad,
+               double *xOut, double *objGrad, std::vector<double > dir);
+
+  bool uniVarNlFunc_(FunctionPtr f, double &lVarCoeff, UInt & lVarIdx,
+                     UInt & nVarIdx, double &nVarCoeff, bool isObj);
 
   void varsInNonlinCons_();
   };

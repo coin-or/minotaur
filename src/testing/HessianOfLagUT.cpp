@@ -7,6 +7,7 @@
 #include <cmath>
 
 #include "MinotaurConfig.h"
+#include "Environment.h"
 #include "Function.h"
 #include "HessianOfLagUT.h"
 #include "LinearFunction.h"
@@ -20,7 +21,8 @@ using namespace Minotaur;
 
 void HessianOfLagUT::setUp()
 {
-  instance_ = (ProblemPtr) new Problem();
+  env_ = new Environment();
+  instance_ = (ProblemPtr) new Problem(env_);
   // 6 variables
   vars_.push_back(instance_->newVariable(0.0, INFINITY, Integer));
   vars_.push_back(instance_->newVariable(0.0, 1.0, Integer));
@@ -53,6 +55,7 @@ void HessianOfLagUT::tearDown()
 {
   vars_.clear();
   delete instance_;
+  delete env_;
 }
 
 

@@ -76,8 +76,8 @@ private:
   // nonlinear functions, jacobian of the constraint matrix and hessian of the
   // lagrangean.
   // */
-  ProblemPtr createInstance_();
-  ProblemPtr createInstance1_();
+  ProblemPtr createInstance_(EnvPtr env);
+  ProblemPtr createInstance1_(EnvPtr env);
 };
 
 // ------------------------------------------------------------------------- //

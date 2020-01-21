@@ -142,6 +142,7 @@ void MaxVioBrancher::findCandidates_(ModVector &mods, bool &should_prune)
     gencands2.clear();
   }
 
+
 #if SPEW
   logger_->msgStream(LogDebug) << me_ << "candidates: " << std::endl;
   for (BrVarCandIter it=cands_.begin(); it!=cands_.end(); ++it) {

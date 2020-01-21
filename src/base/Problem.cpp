@@ -19,6 +19,7 @@
 #include "MinotaurConfig.h"
 #include "Constraint.h"
 #include "Engine.h"
+#include "Environment.h"
 #include "Function.h"
 #include "HessianOfLag.h"
 #include "Jacobian.h"
@@ -36,7 +37,7 @@
 using namespace Minotaur;
 const std::string Problem::me_ = "Problem: ";
 
-Problem::Problem() 
+Problem::Problem(EnvPtr env) 
 : cons_(0), 
   consModed_(false),
   engine_(0),
@@ -54,7 +55,7 @@ Problem::Problem()
   varsModed_(false)
 
 {
-  logger_ = (LoggerPtr) new Logger(LogInfo);
+  logger_ = env->getLogger();
 }
 
 
@@ -95,10 +96,6 @@ Problem::~Problem()
   }
   if (size_) {
     delete size_;
-  }
-
-  if (logger_) {
-    delete logger_;
   }
 
   if (obj_) {
@@ -376,7 +373,7 @@ int Problem::checkConVars() const
 
 
 // Does not clone Jacobian and Hessian yet.
-ProblemPtr Problem::clone() const
+ProblemPtr Problem::clone(EnvPtr env) const
 {
   ConstraintPtr c;
   ConstConstraintPtr cc;
@@ -388,7 +385,7 @@ ProblemPtr Problem::clone() const
   int err = 0;
   VarVector vvec;
 
-  ProblemPtr clonePtr = (ProblemPtr) new Problem();
+  ProblemPtr clonePtr = (ProblemPtr) new Problem(env);
 
   // Copy the variables.
   for (VariableConstIterator it=vars_.begin(); it!=vars_.end(); ++it) {
@@ -440,7 +437,6 @@ ProblemPtr Problem::clone() const
   clonePtr->nextSId_   = nextSId_;
   clonePtr->nextVId_   = nextVId_;
   clonePtr->hessian_   = HessianOfLagPtr(); // NULL.
-  clonePtr->logger_->setMaxLevel(logger_->getMaxLevel());
   clonePtr->numDVars_  = numDVars_;	
   clonePtr->numDCons_  = numDCons_;	
   clonePtr->engine_    = 0;
@@ -486,7 +482,7 @@ ProblemPtr Problem::clone() const
 
 
 
-ProblemPtr Problem::shuffle(bool varshuff, bool conshuff)
+ProblemPtr Problem::shuffle(bool varshuff, bool conshuff, EnvPtr env)
 {
   ConstraintPtr c;
   ConstConstraintPtr cc;
@@ -499,7 +495,7 @@ ProblemPtr Problem::shuffle(bool varshuff, bool conshuff)
   int i;
   VarVector shuf_vars;
 
-  ProblemPtr newp = (ProblemPtr) new Problem();
+  ProblemPtr newp = (ProblemPtr) new Problem(env);
   int rand_seedvar=8;
   srand(rand_seedvar);
 
@@ -654,7 +650,6 @@ ProblemPtr Problem::shuffle(bool varshuff, bool conshuff)
   newp->nextSId_   = nextSId_;
   newp->nextVId_   = nextVId_;
   newp->hessian_   = HessianOfLagPtr(); // NULL.
-  newp->logger_    = (LoggerPtr) new Logger(logger_->getMaxLevel());
   newp->numDVars_  = numDVars_;	
   newp->numDCons_  = numDCons_;	
   newp->engine_    = 0;
@@ -1195,12 +1190,6 @@ JacobianPtr Problem::getJacobian() const
 }
 
 
-LoggerPtr Problem::getLogger() 
-{
-  return logger_;
-}
-
-
 UInt Problem::getNumHessNnzs() const
 {
   if (hessian_) {
@@ -1729,15 +1718,6 @@ void Problem::setInitValByInd(UInt ind, double val)
 void Problem::setJacobian(JacobianPtr jacobian)
 {
   jacobian_ = jacobian;
-}
-
-
-void  Problem::setLogger(LoggerPtr logger)
-{ 
-  if (logger_) {
-    delete logger_;
-  }
-  logger_ = logger;
 }
 
 

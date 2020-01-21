@@ -42,6 +42,7 @@ public:
   void testFix();
 
 private:
+  EnvPtr env_;
   ProblemPtr instance_;
 };
 

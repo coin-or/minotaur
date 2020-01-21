@@ -60,6 +60,8 @@ private:
 
   /// Pointer to original problem.
   ProblemPtr minlp_;
+  
+  Timer *timer_;
 
   /// Vector of nonlinear constraints.
   std::vector<ConstraintPtr> nlCons_;
@@ -112,9 +114,10 @@ private:
   
   double maxVioPer_;
 
-  double maxDist_;
-  
-  
+  std::vector<double > consDual_; 
+
+  std::string cutMethod_;
+
   //double lpdist_;
   //EngineStatus shortestNlpStatus_;
   
@@ -207,6 +210,8 @@ private:
 
   void addInitLinearX_(ConstSolutionPtr sol);
 
+  void dualBasedCons_(ConstSolutionPtr sol);
+
   /**
    * Solve NLP by fixing integer variables at LP solution and add 
    * outer-approximation cuts to constraints and/or objective.
@@ -266,8 +271,8 @@ private:
 
   bool isIntFeas_(const double* x);
 
-  void maxVio_(const double *x, NodePtr node, bool *sol_found,
-                               SolutionPoolPtr s_pool, CutManager *cutMan,
+  void maxVio_(ConstSolutionPtr sol, NodePtr node,
+                               CutManager *cutMan,
                                SeparationStatus *status);
 
   void objCutAtLpSol_(const double *lpx, CutManager *,
@@ -289,7 +294,7 @@ private:
    */
   void relax_(bool *is_inf);
 
-  void solveCenterNLP_(EngineStatus nlpStatus, ConstSolutionPtr sol);
+  void solveCenterNLP_();
 
   /// Solve the nlp.
   void solveNLP_();

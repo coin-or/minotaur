@@ -806,7 +806,7 @@ void SimpleTransformer::reformulate(ProblemPtr &newp, HandlerVector &handlers,
 {
   assert(p_);
 
-  newp_ = (ProblemPtr) new Problem();
+  newp_ = (ProblemPtr) new Problem(env_);
   yLfs_ = new YEqLFs(2*p_->getNumVars());
   yUniExprs_ = new YEqUCGs();
   yBiVars_ = new YEqCGs();

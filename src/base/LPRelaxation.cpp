@@ -18,8 +18,9 @@
 
 using namespace Minotaur;
 
-LPRelaxation::LPRelaxation()
-  : originalProblem_(ProblemPtr()) // NULL
+LPRelaxation::LPRelaxation(EnvPtr env)
+  : Relaxation(env),
+  originalProblem_(0) // NULL
 {
   jacobian_ = JacobianPtr();
   hessian_ = HessianOfLagPtr();
@@ -29,8 +30,8 @@ LPRelaxation::LPRelaxation()
 }
 
 
-LPRelaxation::LPRelaxation(ProblemPtr problem)
-  : Relaxation(problem)
+LPRelaxation::LPRelaxation(ProblemPtr problem, EnvPtr env)
+  : Relaxation(problem, env)
 {
 }
 

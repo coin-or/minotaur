@@ -126,7 +126,7 @@ ParBranchAndBound* createParBab(EnvPtr env, ProblemPtr p, EnginePtr e,
     }
 
     br = createBrancher(env, p, handlersCopy[i], eCopy[i]);
-    relCopy[i] = (RelaxationPtr) new Relaxation(p);
+    relCopy[i] = (RelaxationPtr) new Relaxation(p, env);
     relCopy[i]->calculateSize();
     if (options->findBool("use_native_cgraph")->getValue() ||
         relCopy[i]->isQP() || relCopy[i]->isQuadratic()) {

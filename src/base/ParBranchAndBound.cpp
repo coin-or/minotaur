@@ -921,6 +921,7 @@ void ParBranchAndBound::parsolve(ParNodeIncRelaxerPtr parNodeRlxr[],
   logger_->msgStream(LogInfo) << me_ << "iterations = " << iterCount
       << std::endl;
   //}
+  solPool_->writeStats(logger_->msgStream(LogExtraInfo));
 
   stats_->timeUsed = timer_->query();
   timer_->stop();
