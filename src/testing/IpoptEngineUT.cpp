@@ -29,7 +29,7 @@ void IpoptEngineUT::tearDown()
 {
 }
 
-void IpoptEngineUT::createInstance_()
+void IpoptEngineUT::createInstance_(EnvPtr env)
 {
   /* 
    * (Nocedal & Wright, Chapter 12, page 360)
@@ -42,7 +42,7 @@ void IpoptEngineUT::createInstance_()
   myNLFun1Ptr con0_f;
 
   /* create instance and add variables */
-  instance_ = (ProblemPtr) new Problem();
+  instance_ = (ProblemPtr) new Problem(env);
 
   /* x0 */
   instance_->newVariable(-10, 10, Continuous);
@@ -67,7 +67,7 @@ void IpoptEngineUT::testGetObjVal()
 {
   EnvPtr env = (EnvPtr) new Environment();
   double initial_pt[2] = {1, -0};
-  createInstance_();
+  createInstance_(env);
 
   //create a new engine
   IpoptEngine ipopt_e(env);
@@ -83,9 +83,6 @@ void IpoptEngineUT::testGetObjVal()
 
   // set an initial point
   instance_->setInitialPoint(initial_pt);
-
-  LoggerPtr logger = (LoggerPtr) new Logger(LogDebug);
-  instance_->setLogger(logger);
 
   //load the problem
   ipopt_e.load(instance_);

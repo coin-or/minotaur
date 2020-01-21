@@ -74,7 +74,7 @@ RelaxationPtr NodeFullRelaxer::createRootRelaxation(NodePtr rootNode,
 {
 
   prune = false;
-  rel_ = (RelaxationPtr) new Relaxation();
+  rel_ = (RelaxationPtr) new Relaxation(env_);
   for (HandlerIterator h = handlers_.begin(); h != handlers_.end() && !prune; 
       ++h) {
     (*h)->relaxInitFull(rel_, &prune);
@@ -92,7 +92,7 @@ RelaxationPtr NodeFullRelaxer::createRootRelaxation(NodePtr rootNode,
       // Delete relaxation: Not sure how.  Or will smart pointer do it for you?
       //delete(rel_);
       std::cout << "HOORAY: We were able to strengthen bounds" << std::endl;
-      rel_ = (RelaxationPtr) new Relaxation();      
+      rel_ = (RelaxationPtr) new Relaxation(env_);      
       rel_ = createNodeRelaxation(rootNode, false, prune);      
     }
   }
@@ -124,7 +124,7 @@ RelaxationPtr NodeFullRelaxer::createNodeRelaxation(NodePtr node, bool,
 #endif
 
   prune = false;
-  rel_ = (RelaxationPtr) new Relaxation();
+  rel_ = (RelaxationPtr) new Relaxation(env_);
   for (HandlerIterator h = handlers_.begin(); h != handlers_.end() && !prune; 
       ++h) { 
     (*h)->relaxNodeFull(node, rel_, &prune);
@@ -140,7 +140,7 @@ RelaxationPtr NodeFullRelaxer::createNodeRelaxation(NodePtr node, bool,
       // Delete relaxation: Not sure how.  Or will smart pointer do it for you?
       //delete(rel_);
       std::cout << "HOORAY: We were able to strengthen bounds" << std::endl;
-      rel_ = (RelaxationPtr) new Relaxation();  
+      rel_ = (RelaxationPtr) new Relaxation(env_);  
       prune = false;
       for (HandlerIterator h = handlers_.begin(); h != handlers_.end() && !prune; 
            ++h) { 

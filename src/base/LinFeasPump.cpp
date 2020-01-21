@@ -243,7 +243,7 @@ bool LinFeasPump::prepareLP_()
   bool is_inf = false;
  //  std::vector<bool> c_list(p_->getNumCons(), false);
   
-  r_  = (RelaxationPtr) new Relaxation();
+  r_  = (RelaxationPtr) new Relaxation(env_);
   lh_ = (LinearHandlerPtr) new LinearHandler(env_, p_);
   qh_ = (QGHandlerPtr)  new QGHandler(env_, p_, e_);
   

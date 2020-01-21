@@ -56,7 +56,7 @@ QPDRelaxer::~QPDRelaxer()
 RelaxationPtr QPDRelaxer::createRootRelaxation(NodePtr, bool &prune)
 {
   prune = false;
-  qp_ = (RelaxationPtr) new Relaxation(); // empty, but not NULL
+  qp_ = (RelaxationPtr) new Relaxation(env_); // empty, but not NULL
   qp_->setProblem(p_);
 
   if (e_) {

@@ -12,6 +12,7 @@
 
 #include "MinotaurConfig.h"
 #include "Constraint.h"
+#include "Environment.h"
 #include "Function.h"
 #include "LinearFunctionUT.h"
 #include "Objective.h"
@@ -32,7 +33,8 @@ void LinearFunctionTest::setUp()
   FunctionPtr f;
   LinearFunctionPtr lo, lf;
 
-  instance_ = (ProblemPtr) new Problem();
+  env_ = new Environment();
+  instance_ = (ProblemPtr) new Problem(env_);
   std::vector<VariablePtr> vars;
 
   vars.push_back(instance_->newVariable(0.0, INFINITY, Integer));
@@ -68,6 +70,7 @@ void LinearFunctionTest::setUp()
 void LinearFunctionTest::tearDown()
 {
   delete instance_;
+  delete env_;
 }
 
 

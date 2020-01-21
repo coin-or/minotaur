@@ -258,7 +258,7 @@ void Linearizations::findCenter()
   FunctionType fType;
   VariablePtr vPtr, v;
   std::vector<ConstraintPtr > cp;
-  ProblemPtr inst_C = minlp_->clone();
+  ProblemPtr inst_C = minlp_->clone(env_);
   LinearFunctionPtr lfc = (LinearFunctionPtr) new LinearFunction();
  
   // Modify objective 

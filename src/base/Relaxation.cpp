@@ -16,6 +16,7 @@
 
 #include "MinotaurConfig.h"
 #include "Constraint.h"
+#include "Environment.h"
 #include "Function.h"
 #include "LinearFunction.h"
 #include "NonlinearFunction.h"
@@ -27,14 +28,16 @@
 
 using namespace Minotaur;
 
-Relaxation::Relaxation()
-  : p_(0) 
+Relaxation::Relaxation(EnvPtr env)
+  : Problem(env),
+    p_(0) 
 {
 }
 
 
-Relaxation::Relaxation(ProblemPtr problem)
-: p_(problem)
+Relaxation::Relaxation(ProblemPtr problem, EnvPtr env)
+: Problem(env),
+  p_(problem)
 {
   VariablePtr vcopy, v0, v1;
   VariableGroupConstIterator vit;
@@ -51,6 +54,7 @@ Relaxation::Relaxation(ProblemPtr problem)
   VariableIterator vbeg;
   VarVector vvec;
 
+  logger_ = env->getLogger();
   // add variables
   i = 0;
   for (VariableConstIterator it=p_->varsBegin(); it!=p_->varsEnd(); 

@@ -757,7 +757,7 @@ void TransPoly::reformulate(ProblemPtr &newp, HandlerVector &handlers,
                             int &status) 
 {
   assert(p_);
-  newp = (ProblemPtr) new Problem();
+  newp = (ProblemPtr) new Problem(env_);
   newp_ = newp;
   yMonoms_ = new YEqMonomial(2*p_->getNumVars());
   yLfs_ = new YEqLFs(2*p_->getNumVars());

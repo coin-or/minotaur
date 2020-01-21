@@ -11,6 +11,7 @@
 #include <iostream>
 
 #include "MinotaurConfig.h"
+#include "Environment.h"
 #include "LinearFunction.h"
 #include "ProblemUT.h"
 #include "ProblemSize.h"
@@ -28,8 +29,9 @@ ProblemTest::setUp()
 {
   // This is instance on page 95 in Wolsey.
   //  max 4x1 - x2, 7x1 - 2 x2 <= 14, x2 <= 3, 2 x1 - 2 x2 <= 3
+  env_ = new Environment();
 
-  instance_ = ProblemPtr(new Problem);
+  instance_ = new Problem(env_);
   std::vector<VariablePtr> vars;
 
   vars.push_back(instance_->newVariable(0.0, INFINITY, Integer));
@@ -67,6 +69,7 @@ ProblemTest::setUp()
 void ProblemTest::tearDown()
 {
   delete instance_;
+  delete env_;
 }
 
 

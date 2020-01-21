@@ -39,6 +39,7 @@ public:
   void testQuadEval();
 
 private:
+  EnvPtr env_;
   LinearFunctionPtr lf_;
   QuadraticFunctionPtr qf_;
   ProblemPtr instance_;

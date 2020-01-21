@@ -7,6 +7,7 @@
 #include <cmath>
 
 #include "MinotaurConfig.h"
+#include "Environment.h"
 #include "Jacobian.h"
 #include "JacobianUT.h"
 #include "QuadraticFunction.h"
@@ -19,7 +20,8 @@ using namespace Minotaur;
 
 void JacobianUT::setUp()
 {
-  instance_ = (ProblemPtr) new Problem();
+  env_ = new Environment();
+  instance_ = new Problem(env_);
   // 6 variables
   vars_.push_back(instance_->newVariable(0.0, INFINITY, Integer));
   vars_.push_back(instance_->newVariable(0.0, 1.0, Integer));
@@ -49,6 +51,7 @@ void JacobianUT::tearDown()
 {
   vars_.clear();
   delete instance_;
+  delete env_;
 }
 
 

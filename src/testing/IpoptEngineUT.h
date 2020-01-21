@@ -36,7 +36,7 @@ class IpoptEngineUT : public CppUnit::TestCase {
 
   private:
     ProblemPtr instance_;
-    void createInstance_();
+    void createInstance_(EnvPtr env);
 };
 
 // ------------------------------------------------------------------------- //

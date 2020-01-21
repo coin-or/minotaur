@@ -30,12 +30,12 @@ namespace Minotaur {
       // /**
       // Construct an empty Nonlinear Relaxation.
       // */
-      NLPRelaxation();
+      NLPRelaxation(EnvPtr env);
 
       // /**
       // Construct relaxation from a problem. For now, just copy the whole problem.
       // */
-      NLPRelaxation(ProblemPtr problem);
+      NLPRelaxation(ProblemPtr problem, EnvPtr env);
 
       // /**
       // Destroy

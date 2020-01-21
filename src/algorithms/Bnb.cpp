@@ -31,6 +31,7 @@
 #include "MINLPDiving.h"
 #include "NLPEngine.h"
 #include "NlPresHandler.h"
+#include "NlWriter.h"
 #include "NodeIncRelaxer.h"
 #include "Objective.h"
 #include "Option.h"
@@ -125,7 +126,7 @@ BranchAndBound* createBab(EnvPtr env, ProblemPtr p, EnginePtr e,
 
   nr = (NodeIncRelaxerPtr) new NodeIncRelaxer(env, handlers);
   nr->setModFlag(false);
-  rel = (RelaxationPtr) new Relaxation(p);
+  rel = (RelaxationPtr) new Relaxation(p, env);
   rel->calculateSize();
   if (options->findBool("use_native_cgraph")->getValue() ||
       rel->isQP() || rel->isQuadratic()) {
@@ -139,6 +140,8 @@ BranchAndBound* createBab(EnvPtr env, ProblemPtr p, EnginePtr e,
   nr->setEngine(e);
   bab->setNodeRelaxer(nr);
   bab->shouldCreateRoot(false);
+  NlWriter wr(env);
+  wr.write(rel, "test1234.nl");
 
   if (0 <= options->findInt("divheur")->getValue()) {
     MINLPDivingPtr div_heur;
@@ -363,6 +366,7 @@ PresolverPtr presolve(EnvPtr env, ProblemPtr p, size_t ndefs,
   if (env->getOptions()->findBool("presolve")->getValue() == true) {
     pres->solve();
   }
+
   return pres;
 }
 

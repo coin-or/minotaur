@@ -724,7 +724,7 @@ void QGHandlerAdvance::findCenter_()
   ConstraintPtr con;
   FunctionType fType;
   std::vector<ConstraintPtr > cp;
-  ProblemPtr inst_C = minlp_->clone();
+  ProblemPtr inst_C = minlp_->clone(env_);
   //inst_C->write(std::cout);
   //UInt numVars = minlp_->getNumVars();
   double *sol1;

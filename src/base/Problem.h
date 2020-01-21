@@ -60,7 +60,7 @@ namespace Minotaur {
   class Problem {
   public:
     /// Default constructor
-    Problem();
+    Problem(EnvPtr env);
 
     /// Destroy
     virtual ~Problem();
@@ -140,13 +140,18 @@ namespace Minotaur {
      * The variables are created. If the functions are stored in native format,
      * they are also cloned. Problem size and the initial point are cloned as
      * well.
+     * \param[in] env Pointer to environment for the clone.
      */
-    ProblemPtr clone() const;
+    ProblemPtr clone(EnvPtr env) const;
 
     /**
-     * shuffle variables and constraints while making a clone of the problem
+     * \brief shuffle variables and constraints while making a clone of the problem
+     *
+     * \param[in] varshuff If true, the variables are to be shuffled
+     * \param[in] conshuff If true, the constraints are to be shuffled
+     * \param[in] env Environment pointer for the cloned problem
      */
-    ProblemPtr shuffle(bool varshuff, bool conshuff);
+    ProblemPtr shuffle(bool varshuff, bool conshuff, EnvPtr env);
 
 
     /**
@@ -189,9 +194,6 @@ namespace Minotaur {
 
     /// Return the jacobian. Could be NULL.
     virtual JacobianPtr getJacobian() const;
-
-    /// Get pointer to the log manager. Could be NULL.
-    virtual LoggerPtr getLogger();
 
     /// Return the number of constraints.
     virtual UInt getNumCons() const { return cons_.size(); }
@@ -524,13 +526,6 @@ namespace Minotaur {
      * \param[in] jacobian Pointer to the Jacobian object.
      */
     virtual void setJacobian(JacobianPtr jacobian);
-
-    /**
-     * Set the log manager.
-     *
-     * \param[in] logger The log manager which should be used for logging.
-     */
-    virtual void  setLogger(LoggerPtr logger);
 
     /**
      * \brief Ask Problem to construct its own jacobian and hessian using
