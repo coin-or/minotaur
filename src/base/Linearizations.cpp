@@ -2426,10 +2426,11 @@ void Linearizations::rootLinScheme3(EnginePtr lpe, SeparationStatus *status)
     //bool vio, active;
     //ConstraintPtr con;
     //const double *lpx;
-    //std::stringstream sstm;
     //double c, act, cUb;
+    //std::stringstream sstm;
     //LinearFunctionPtr lf = 0;
     //UInt numOldCuts, initCuts = stats_->cuts;
+    //lpObj_ = lpe->getSolution()->getObjValue();
     //double* xNew = new double[minlp_->getNumVars()];
 
     //if (numNl > 0) {
@@ -2437,7 +2438,6 @@ void Linearizations::rootLinScheme3(EnginePtr lpe, SeparationStatus *status)
         //vio = false, active = false;
         //numOldCuts = stats_->cuts;
         //lpx = lpe->getSolution()->getPrimal();
-        //lpObj_ = lpe->getSolution()->getObjValue();
         //for (CCIter it = nlCons_.begin(); it!=nlCons_.end(); ++it) {
           //con = *it;
           //cUb = con->getUb();
@@ -2449,7 +2449,6 @@ void Linearizations::rootLinScheme3(EnginePtr lpe, SeparationStatus *status)
               //cutAtLineSearchPt_(solC_, lpx, xNew, con);
             //} else if ((fabs(act-cUb) <= solAbsTol_) ||
                 //(cUb != 0 && fabs(act-cUb) <= fabs(cUb)*solRelTol_)) {
-              ////ConstraintPtr newcon;
               //active = true;
               //lf = 0;
               //f = con->getFunction();
@@ -2487,8 +2486,7 @@ void Linearizations::rootLinScheme3(EnginePtr lpe, SeparationStatus *status)
        //for (UInt i = 1; i <= rs3_; ++i) {
         //numOldCuts = stats_->cuts;
         //lpx = lpe->getSolution()->getPrimal();
-        //lpObj_ = lpe->getSolution()->getObjValue();
-        //objCut_(lpx, lpObj);
+        //objCut_(lpx);
         //if (numOldCuts < stats_->cuts) {
           //lpe->solve();
           //if (shouldStop_(lpe->getStatus())) {
@@ -2505,12 +2503,12 @@ void Linearizations::rootLinScheme3(EnginePtr lpe, SeparationStatus *status)
       //*status = SepaResolve;
     //}
     //delete [] xNew;
-    //return;
 
     //// ESH only at the boundary point
     const double *lpx;
     std::vector<UInt > consToLin; // cons to add linearizations
     UInt numOldCuts, initCuts = stats_->cuts;
+    lpObj_ = lpe->getSolution()->getObjValue();
     bool vio = false, active = false, ptFound;
  
     if (numNl > 0) { 
@@ -2518,8 +2516,6 @@ void Linearizations::rootLinScheme3(EnginePtr lpe, SeparationStatus *status)
       for (UInt i = 1; i <= rs3_; ++i) {
         vio = false, active = false;
         lpx = lpe->getSolution()->getPrimal();
-        // check if lpObj_ is needed
-        lpObj_ = lpe->getSolution()->getObjValue(); // store only in there is nonlinear obj
         candLinCons_(lpx, consToLin, active, vio);
         if (vio) {
           // find boundary points and add cuts to nonlinear constraints and
@@ -2560,7 +2556,6 @@ void Linearizations::rootLinScheme3(EnginePtr lpe, SeparationStatus *status)
       for (UInt i = 1; i <= rs3_; ++i) {
         numOldCuts = stats_->cuts;
         lpx = lpe->getSolution()->getPrimal();
-        lpObj_ = lpe->getSolution()->getObjValue();
         objCut_(lpx);
         if (numOldCuts < stats_->cuts) {
           lpe->solve();
@@ -2577,8 +2572,9 @@ void Linearizations::rootLinScheme3(EnginePtr lpe, SeparationStatus *status)
     if (stats_->rs3Cuts > 0) {
       *status = SepaResolve;
     }
-  }
   
+  }
+  lpObj_ = INFINITY;
   return;
 }
 
