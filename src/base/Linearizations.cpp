@@ -2421,7 +2421,7 @@ bool Linearizations::shouldStop_(EngineStatus eStatus)
 //MS: add esh all from LP solution - working
 void Linearizations::rootLinScheme3(EnginePtr lpe, SeparationStatus *status)
 {
-  // Report time as well!!
+  timer_->start();
   UInt numNl = nlCons_.size();
   if ((solC_ == 0 && numNl > 0) || oNl_) {
     //// ESH to all nonlinear constraints individually 
@@ -2579,6 +2579,8 @@ void Linearizations::rootLinScheme3(EnginePtr lpe, SeparationStatus *status)
   
   }
   lpObj_ = INFINITY;
+  stats_->linSchemesTime = stats_->linSchemesTime + timer_->query();
+  timer_->stop();
   return;
 }
 
