@@ -2423,7 +2423,7 @@ void Linearizations::rootLinScheme3(EnginePtr lpe, SeparationStatus *status)
 {
   timer_->start();
   UInt numNl = nlCons_.size();
-  if ((solC_ == 0 && numNl > 0) || oNl_) {
+  if ((solC_ != 0 && numNl > 0) || oNl_) {
     //// ESH to all nonlinear constraints individually 
     int error = 0;
     FunctionPtr f;
@@ -2474,14 +2474,12 @@ void Linearizations::rootLinScheme3(EnginePtr lpe, SeparationStatus *status)
         if (oNl_ && active) {
           objCut_(lpx);
         }
-        if (numOldCuts < stats_->cuts) {
-          if (vio) {
+        if (numOldCuts < stats_->cuts && vio) {
             // not a boundary point when some cons are nonlinear
-            lpe->solve();
-            if (shouldStop_(lpe->getStatus())) {
-              break;    
-            } 
-          }
+          lpe->solve();
+          if (shouldStop_(lpe->getStatus())) {
+            break;    
+          } 
         } else {
           break;
         }
