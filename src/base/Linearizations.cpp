@@ -113,6 +113,10 @@ Linearizations::~Linearizations()
     delete [] solC_;
     solC_ = 0;
   }
+  if (nlpx_) {
+    delete [] nlpx_;
+    nlpx_ = 0;
+  }
   if (timer_) {
     delete timer_;
   }
