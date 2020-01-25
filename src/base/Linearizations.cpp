@@ -501,7 +501,7 @@ void Linearizations::candLinCons_(const double *x,
                                   std::vector<UInt > &consToLin,
                                   bool &foundActive, bool &foundVio)
 {
-  UInt i =0;
+  UInt i = 0;
   int error = 0;
   ConstraintPtr c;
   double act, cUb;
@@ -1652,20 +1652,22 @@ void Linearizations::genLin_(const double *x, std::vector<UInt > vioCons)
   FunctionPtr f;
   ConstraintPtr con;
   double c, cUb, act;
+  LinearFunctionPtr lf;
   std::stringstream sstm;
-  LinearFunctionPtr lf = 0;
+
   for (UInt i = 0; i < vioCons.size(); ++i) {
     error = 0;
     con = nlCons_[vioCons[i]];
     act = con->getActivity(x, &error);
     if (error == 0) {
+      lf = 0;
       f = con->getFunction();
       linearAt_(f, act, x, &c, &lf, &error);
       if (error == 0) {
-        cUb = con->getUb();
         ++(stats_->cuts);
-        sstm << "_OACutRoot_" << stats_->cuts;
+        cUb = con->getUb();
         f = (FunctionPtr) new Function(lf);
+        sstm << "_OACutRoot_" << stats_->cuts;
         rel_->newConstraint(f, -INFINITY, cUb-c, sstm.str());
         //newcon = rel_->newConstraint(f, -INFINITY, cUb-c, sstm.str());
         sstm.str("");
@@ -1840,7 +1842,7 @@ bool Linearizations::boundaryPtForCons_(double* xnew, const double *xOut,
     } else {
       for (UInt i = 0 ; i < varToChange; ++i) {
         j = changeVar_[i];
-        xnew[i] = lambdaIn*xl[i] + lambdaOut*xu[i];
+        xnew[j] = lambdaIn*xl[j] + lambdaOut*xu[j];
       }
     }
     repSol = 0;
@@ -2314,21 +2316,17 @@ void Linearizations::rootLinScheme3(EnginePtr lpe, SeparationStatus *status)
       for (UInt i = 0 ; i < numVars; ++i) {
         solC_[i] = 0.5*nlpx_[i] + 0.5*solC_[i];
       }
+      bool vio, active, ptFound;
       std::vector<UInt > consToLin; // cons to add linearizations
       double* xnew = new double[numVars];
-      bool vio = false, active = false, ptFound;
       for (UInt i = 1; i <= rs3_; ++i) {
         vio = false, active = false;
         lpx = lpe->getSolution()->getPrimal();
         candLinCons_(lpx, consToLin, active, vio);
         if (vio) {
-          // find boundary points and add cuts to nonlinear constraints and
-          // objective (if nonlinear)
           numOldCuts = stats_->cuts;
           ptFound = boundaryPtForCons_(xnew, lpx, consToLin);
           if (ptFound) {
-            // add linearization to active nonlinear constraints only if the
-            // linearizations are far apart
             genLin_(xnew, consToLin);
           }
           if (numOldCuts < stats_->cuts) {
@@ -2340,7 +2338,6 @@ void Linearizations::rootLinScheme3(EnginePtr lpe, SeparationStatus *status)
             break;
           }
         } else if (active) {
-          // Add cuts to objective and active constraints
           genLin_(lpx, consToLin);
           break;
         } else {
@@ -2385,29 +2382,29 @@ void Linearizations::rootLinScheme3(EnginePtr lpe, SeparationStatus *status)
   return;
 }
 
+
 bool Linearizations::objCut_(const double* xNew)
 {
   double c, act;
   int error = 0;
   FunctionPtr f;
+  //ConstraintPtr newcon;
   std::stringstream sstm;
   LinearFunctionPtr lf = 0;
   ObjectivePtr o = minlp_->getObjective();
   
   act = o->eval(xNew, &error);
   if (error == 0) {
-    lf = 0;
     f = o->getFunction();
     linearAt_(f, act, xNew, &c, &lf, &error);
     if (error == 0) {
       ++(stats_->cuts);
       lf->addTerm(objVar_, -1.0);
       f = (FunctionPtr) new Function(lf);
-      sstm << "_OACutObj_" << stats_->cuts;
+      sstm << "_OACutRootObj_" << stats_->cuts;
       rel_->newConstraint(f, -INFINITY, -1.0*c, sstm.str());
-      sstm.str("");
-      return true;
       //newcon = rel_->newConstraint(f, -INFINITY, -1.0*c, sstm.str());
+      return true;
     }   
   } else {
     logger_->msgStream(LogError) << me_
@@ -2415,6 +2412,7 @@ bool Linearizations::objCut_(const double* xNew)
   }
   return false;
 }
+
 
 bool Linearizations::uniVarNlFunc_(FunctionPtr f, double &lVarCoeff,
                                    UInt & lVarIdx, UInt & nVarIdx,
