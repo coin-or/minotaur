@@ -672,7 +672,8 @@ void QGHandlerAdvance::relax_(bool *isInf)
   double rg2 = env_->getOptions()->findDouble("root_linGenScheme2_per")->getValue(); //MS: change name in Environment
    if (*isInf == false && ((nlCons_.size() > 0) || oNl_)) {
     if (rs1 || rs2Per ||  rs3_ || rg1 || rg2) {
-      extraLin_ = new Linearizations(env_, rel_, minlp_, nlCons_, objVar_);
+      extraLin_ = new Linearizations(env_, rel_, minlp_, nlCons_, objVar_,
+                                     nlpe_->getSolution());
       if (((rs3_ || maxVioPer_) && nlCons_.size() > 0) || rg1 || rg2) {
         extraLin_->setNlpEngine(nlpe_->emptyCopy());        
         extraLin_->findCenter();
@@ -684,7 +685,7 @@ void QGHandlerAdvance::relax_(bool *isInf)
         }
       } 
       if (rs1 || rs2Per || rg1 || rg2) {
-        extraLin_->rootLinearizations(nlpe_->getSolution());
+        extraLin_->rootLinearizations();
       }
     } else if (maxVioPer_ && (nlCons_.size() > 0) && cutMethod_ == "esh") {
       findCenter_();

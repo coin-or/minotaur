@@ -111,7 +111,7 @@ private:
   double * solC_; 
  
   /// Solution of root NLP
-  const double * nlpx_; 
+  double * nlpx_; 
 
   /// Relative tolerance for constraint feasibility.
   double solRelTol_;
@@ -134,9 +134,6 @@ private:
   // index of the variables to be changed in line search
   std::vector<UInt > changeVar_;
  
-  // root LP solution
-  double lpObj_;
-
   const double * nlpDuals_;
 
   /// Statistics.
@@ -154,14 +151,14 @@ private:
    */
   Linearizations(EnvPtr env, RelaxationPtr rel,
                                ProblemPtr minlp, std::vector<ConstraintPtr> nlCons,
-                               VariablePtr objVar); 
+                               VariablePtr objVar, ConstSolutionPtr sol); 
   
   /// Destroy.
   ~Linearizations();
    
   /// Root linearization schemes
   //void rootLinearizations(const double * nlpx);
-  void rootLinearizations(ConstSolutionPtr sol);
+  void rootLinearizations();
 
   double * getCenter() {return solC_;}
   
@@ -243,8 +240,6 @@ private:
 
   void genLin_(const double *x, std::vector<UInt > vioConsPos);
 
-  std::vector<UInt > isFeas_(double *x, bool &foundActive, bool &foundVio);
-
   /**
    * Obtain the linear function (lf) and constant (c) from the
    * linearization of function f at point x.
@@ -252,11 +247,6 @@ private:
   void linearAt_(FunctionPtr f, double fval, const double *x, 
                  double *c, LinearFunctionPtr *lf, int *error);
 
-  /// Line search in root linearization scheme 3
-
-  bool lineSearchPt_(const double *xIn, const double *xOut, double* x,
-                     ConstraintPtr con, double &nlpact);
-   
   /// Compute variable in the linear part 
 
   bool linPart_(double *b1, UInt lVarIdx, double lVarCoeff,
@@ -302,9 +292,6 @@ private:
   bool shouldStop_(EngineStatus eStatus);
 
   bool objCut_(const double* xNew);
-
-  void cutAtLineSearchPt_(const double *xIn, const double *xOut,
-                          double *xNew, ConstraintPtr con);
 
   void search_(std::vector<VariablePtr > vars, std::vector<double* > nlconsGrad,
                double *xOut, double *objGrad, std::vector<double > dir);
