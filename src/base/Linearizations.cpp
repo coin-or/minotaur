@@ -1616,6 +1616,10 @@ void Linearizations::candConsForObj_(double *xOut,
     } 
   }
 
+  if (minlp_->getNumCons() == 0) {
+    active = true;  
+  } 
+
   return;
 }
 
