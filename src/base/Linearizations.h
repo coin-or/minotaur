@@ -136,6 +136,11 @@ private:
  
   const double * nlpDuals_;
 
+  bool hasEqCons_;
+
+  // Is the center point found as a boundary point?
+  bool isBoundPt_;
+  
   /// Statistics.
   LinStats *stats_;
 
@@ -260,6 +265,10 @@ private:
                  std::vector<double> unitVec);
 
   void rootLinGenScheme1_();
+    
+  void ifNonlinCons_();
+
+  void ifOnlyNonlinObj_();
   
   void rootLinGenScheme2_();
    /**
