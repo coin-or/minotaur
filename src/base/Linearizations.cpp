@@ -435,7 +435,7 @@ void Linearizations::ifOnlyNonlinObj_()
     } else if (fType == Linear)  {
       if (lb != -INFINITY && ub != INFINITY) {
         if (fabs(lb-ub) <= solAbsTol_) {
-          //hasEqCons_ = 1;
+          hasEqCons_ = 1;
           continue;       
         }
         cp.push_back(con);
@@ -779,9 +779,9 @@ void Linearizations::rootLinearizations()
     // General scheme using center and  positive spanning vectors
     if (rgs1_) {
       //hasEqCons_ = 0;
-      //if (!hasEqCons_) {
+      if (!hasEqCons_) {
         varsInNonlinCons_();
-      //}
+      }
       rootLinGenScheme1_();
     }
 
@@ -1467,10 +1467,8 @@ void Linearizations::rootLinGenScheme1_()
   std::copy(solC_, solC_ + n, xOut);
   
   // coordinate direction along each variable in varPtrs_.
-  //if (!isBoundPt_ && !hasEqCons_) {
-  if (!isBoundPt_) {
-  //if (!isBoundPt_ && (nlCons_.size() > 0 || (oNl_ && !hasEqCons_))) 
   //if (!isBoundPt_) 
+  if (!isBoundPt_ && (nlCons_.size() > 0 || (oNl_ && !hasEqCons_))) {
     changeVar_.push_back(0);
     for (UInt i = 0; i < varPtrs_.size(); ++i) {
       v = varPtrs_[i];
@@ -1537,11 +1535,24 @@ void Linearizations::rootLinGenScheme1_()
     //cutsAtBoundary_(xOut);
 
     //changeVar_.clear();
-    delete [] xOut;
   } else {
-    std::cout << "Boundary Pt\n";
-    exit(1);  
+    //// Line search between center and nlp solution
+    std::cout << isBoundPt_ << " " << hasEqCons_ << "\n";
+    double alpha = 0.2;
+    while (alpha <= 1) {
+      for (UInt i = 0; i < n; ++i) {
+        xOut[i] = solC_[i] + alpha * (nlpx_[i] - solC_[i]);
+      }
+      objCut_(xOut);
+      for (UInt i = 0; i < n; ++i) {
+        xOut[i] = -xOut[i];
+      }
+      objCut_(xOut);
+      alpha = alpha + 0.2;
+    }
   } 
+    
+  delete [] xOut;
   stats_->rgs1Cuts = stats_->cuts - numOldCuts; 
   return;
 }
