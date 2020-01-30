@@ -96,6 +96,8 @@ Linearizations::Linearizations(EnvPtr env, RelaxationPtr rel,
     nlpx_ = new double[n];
     const double * x = sol->getPrimal();
     std::copy(x, x+n, nlpx_);
+  } else {
+    nlpx_ = 0;  
   }
 
   if (rgs2Per_ ) {
@@ -103,6 +105,8 @@ Linearizations::Linearizations(EnvPtr env, RelaxationPtr rel,
     const double *temp = sol->getDualOfCons();
     nlpDuals_ = new double[numCons];
     std::copy(temp, temp+numCons, nlpDuals_);
+  } else {
+    nlpDuals_ = 0;  
   }
 
   if (objVar) {
