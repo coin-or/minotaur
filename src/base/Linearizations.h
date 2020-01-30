@@ -134,13 +134,15 @@ private:
   // index of the variables to be changed in line search
   std::vector<UInt > changeVar_;
  
-  const double * nlpDuals_;
+  double * nlpDuals_;
 
   bool hasEqCons_;
+  
+  UInt numDir_;
 
   // Is the center point found as a boundary point?
   bool isBoundPt_;
-  
+
   /// Statistics.
   LinStats *stats_;
 
@@ -242,6 +244,8 @@ private:
   void genLin_(double *x, std::vector<UInt > vioConsPos,
                                      std::vector<double *> &lastGrad,
                                      double * &lastGradObj, double &alpha);
+
+  bool genLinObj_(double *x, double* &lastGradObj);
 
   void genLin_(const double *x, std::vector<UInt > vioConsPos);
 
