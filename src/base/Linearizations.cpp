@@ -1227,7 +1227,9 @@ void Linearizations::rootLinGenScheme2_()
         // Coeff of var is zero in the hyperplane expression
         // for last direction
         lastDir[i] = -1;
-        lastDir[firstnnz] = lastDir[firstnnz] + 1;
+        if (firstnnz != -1) {
+          lastDir[firstnnz] = lastDir[firstnnz] + 1;
+        }
         
         dir.push_back(1);
         vars.push_back(v);
@@ -1250,6 +1252,7 @@ void Linearizations::rootLinGenScheme2_()
       vars.clear();
     }
     
+    // for last direction
     if (numVars > 1) {
       exploreDir_(varPtrs_, lastDir, xOut, objGrad, nlconsGrad);
     } 
