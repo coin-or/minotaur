@@ -294,7 +294,7 @@ private:
    */
   void relax_(bool *is_inf);
 
-  void solveCenterNLP_();
+  void solveCenterNLP_(EnginePtr nlpe);
 
   /// Solve the nlp.
   void solveNLP_();
