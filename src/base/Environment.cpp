@@ -443,6 +443,10 @@ void Environment::createDefaultOptions_()
       "Percentage above which constraint violation is unacceptable", true, 0);
   options_->insert(d_option);
 
+  d_option = (DoubleOptionPtr) new Option<double>("objVioMul", 
+      "Multiple above which objective violation is unacceptable", true, 3);
+  options_->insert(d_option);
+
   d_option = 0;
  
   // string options

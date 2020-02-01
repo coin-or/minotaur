@@ -113,6 +113,8 @@ private:
   int rs3_;
   
   double maxVioPer_;
+  
+  double objVioMul_;
 
   std::vector<double > consDual_; 
 
@@ -268,6 +270,7 @@ private:
   void consCutsAtLpSol_(const double *lpx, CutManager *cutman,
                     SeparationStatus *status);
 
+  void genLin_(const double *x, std::vector<UInt> vioCons, CutManager *cutMan);
 
   bool isIntFeas_(const double* x);
 
@@ -275,12 +278,16 @@ private:
                                CutManager *cutMan,
                                SeparationStatus *status);
 
+  void ESHTypeCut_(const double *lpx, CutManager *cutMan);
+
   void objCutAtLpSol_(const double *lpx, CutManager *,
                                   SeparationStatus *status);
   //void objCutAtLpSol_(const double *lpx, CutManager *cutman,
                     //SeparationStatus *status);
 
-      
+ 
+  bool boundaryPtForCons_(double* xnew, const double *xOut,
+                                     std::vector<UInt > &vioCons);
   /**
    * Check if objective is violated at the LP solution and
    * add OA cut.
