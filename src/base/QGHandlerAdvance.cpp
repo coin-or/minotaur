@@ -114,30 +114,31 @@ QGHandlerAdvance::~QGHandlerAdvance()
 }
 
 
-//void QGHandlerAdvance::dualBasedCons_(ConstSolutionPtr sol)
-//{
-  // Dual based scheme
-  //highDualCons_.clear();
-  //double act, maxDual = -INFINITY;
-  //const double * consDual = sol->getDualOfCons();
+void QGHandlerAdvance::dualBasedCons_(ConstSolutionPtr sol)
+{
+  //// Dual based scheme
+  double K = 0.5; // MS: can be parametrized.
+  highDualCons_.clear();
+  double act, maxDual = -INFINITY;
+  const double * consDual = sol->getDualOfCons();
 
-  //for (CCIter it=nlCons_.begin(); it!=nlCons_.end(); ++it) {
-    //act = consDual[(*it)->getIndex()];
-    //if (act > maxDual) {
-      //maxDual = act;    
-    //}
-  //}
+  for (CCIter it=nlCons_.begin(); it!=nlCons_.end(); ++it) {
+    act = consDual[(*it)->getIndex()];
+    if (act > maxDual) {
+      maxDual = act;    
+    }
+  }
 
-  //if (maxDual > 0) {
-    //for (CCIter it=nlCons_.begin(); it!=nlCons_.end(); ++it) {
-      //act = consDual[(*it)->getIndex()];
-      //if (act >= 0.5*maxDual) {
-        //highDualCons_.push_back(*it);
-      //}
-    //}
-  //}
+  if (maxDual > 0) {
+    for (CCIter it=nlCons_.begin(); it!=nlCons_.end(); ++it) {
+      act = consDual[(*it)->getIndex()];
+      if (act >= K*maxDual) {
+        highDualCons_.push_back(*it);
+      }
+    }
+  }
 
-  // Score based scheme
+  ////  Score based scheme
   //double lambda1 = 0.05, lambda2 = 0.95;
   //const double * consDual = sol->getDualOfCons();
   ////consDual_.clear();
@@ -148,8 +149,8 @@ QGHandlerAdvance::~QGHandlerAdvance()
       //lambda2*(consDual[(nlCons_[i])->getIndex()]);
   //}
 
-  //return;
-//}
+  return;
+}
 
 void QGHandlerAdvance::addInitLinearX_(ConstSolutionPtr sol)
 { 
@@ -717,10 +718,10 @@ void QGHandlerAdvance::relax_(bool *isInf)
   }
    
  //// For dual multiplier based maxvio rule 
-  //if (maxVioPer_ && (nlCons > 0)) {
-    //consDual_.resize(nlCons, 0);
-    //dualBasedCons_(nlpe_->getSolution());
-  //}
+  if (maxVioPer_ && (nlCons > 0)) {
+    consDual_.resize(nlCons, 0);
+    dualBasedCons_(nlpe_->getSolution());
+  }
   return;
 }
 
@@ -1248,8 +1249,8 @@ void QGHandlerAdvance::maxVio_(ConstSolutionPtr sol, NodePtr node,
   UInt  temp = stats_->cuts, nodeId = node->getId();
 
   if (cutMethod_ == "ecp" || (nlCons_.size() == 0 && oNl_)) {
-    //for (CCIter it=highDualCons_.begin(); it!=highDualCons_.end(); ++it) {
-    for (CCIter it=nlCons_.begin(); it!=nlCons_.end(); ++it) {
+    for (CCIter it=highDualCons_.begin(); it!=highDualCons_.end(); ++it) {
+    //for (CCIter it=nlCons_.begin(); it!=nlCons_.end(); ++it) {
       c = *it; 
       act = c->getActivity(x, &error);
       if (error == 0) { 
@@ -1275,7 +1276,8 @@ void QGHandlerAdvance::maxVio_(ConstSolutionPtr sol, NodePtr node,
       objCutAtLpSol_(x, cutMan, &s);
     }
   } else if (cutMethod_ == "esh") {
-     for (CCIter it=nlCons_.begin(); it!=nlCons_.end(); ++it) {
+     //for (CCIter it=nlCons_.begin(); it!=nlCons_.end(); ++it) {
+    for (CCIter it=highDualCons_.begin(); it!=highDualCons_.end(); ++it) {
       c = *it; 
       act = c->getActivity(x, &error);
       if (error == 0) { 
@@ -1559,9 +1561,9 @@ void QGHandlerAdvance::updateUb_(SolutionPoolPtr s_pool, double nlpval,
     s_pool->addSolution(x, nlpval);
     *sol_found = true;
     
-    //if (maxVioPer_ && (nlCons_.size() > 0)) {
-      //dualBasedCons_(nlpe_->getSolution());
-    //}
+    if (maxVioPer_ && (nlCons_.size() > 0)) {
+      dualBasedCons_(nlpe_->getSolution());
+    }
   }
   return;
 }
