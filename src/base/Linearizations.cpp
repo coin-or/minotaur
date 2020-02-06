@@ -567,7 +567,7 @@ void Linearizations::findCenter()
       //for (UInt i = 0 ; i < minlp_->getNumVars(); ++i) {
         //solC_[i] = l1*nlpx_[i] + l2*solC_[i];
       //}
-    //} 
+    //}
   //}
 
   stats_->linSchemesTime = stats_->linSchemesTime + timer_->query();
@@ -1489,7 +1489,7 @@ void Linearizations::rootLinGenScheme1_()
 {
   double val;   
   VariablePtr v;
-  double bound, vLb = INFINITY, vUb = INFINITY; // for last direction 
+  //double bound, vLb = INFINITY, vUb = INFINITY; // for last direction 
   UInt vIdx, numOldCuts = stats_->cuts, n = minlp_->getNumVars();
   
   double *xOut = new double[n];
