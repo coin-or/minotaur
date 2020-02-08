@@ -1633,21 +1633,60 @@ void Linearizations::rootLinGenScheme1_()
     //changeVar_.clear();
   } else {
     //// Line search between center and nlp solution
+    bool isCont = true;
+    FunctionType type;
     std::cout << isBoundPt_ << " " << hasEqCons_ << "\n";
-    double dist = InnerProduct(solC_, nlpx_, n);
+    double dist = InnerProduct(solC_, nlpx_, n), bound;
     if (fabs(dist) > solAbsTol_) {
+      double *xOut1 = new double[n];
+      std::fill(xOut1, xOut1+n, 0.);
       double alpha = 0.2;
       while (alpha <= 1) {
-        for (UInt i = 0; i < n; ++i) {
-          xOut[i] = solC_[i] + alpha * (nlpx_[i] - solC_[i]);
+        if (isCont) {
+          for (UInt i = 0; i < n; ++i) {
+            xOut[i] = solC_[i] + alpha * (nlpx_[i] - solC_[i]);
+            xOut1[i] = solC_[i] - alpha * (nlpx_[i] - solC_[i]);
+          }
+        } else {
+           for (UInt i = 0; i < n; ++i) {
+            xOut[i] = solC_[i] + alpha * (nlpx_[i] - solC_[i]);
+          }       
         }
         objCut_(xOut);
-        for (UInt i = 0; i < n; ++i) {
-          xOut[i] = -xOut[i];
+        if (isCont) {
+          for (VariableConstIterator vit = minlp_->varsBegin(); 
+               vit != minlp_->varsEnd(); ++vit) {
+            v = *vit;
+            type = v->getFunType();
+            if ((type == Linear || type == Constant)) {
+              continue;
+            }
+            bound = v->getUb();
+            vIdx = v->getIndex();
+            if (bound == INFINITY) {
+              bound = nlpx_[vIdx] + 50; //MS: can be parameterized
+            }
+            if (xOut[vIdx] - bound > solAbsTol_) {
+              isCont = false;
+              break;
+            }
+            bound = v->getLb();
+            if (bound == -INFINITY) {
+              bound = nlpx_[vIdx] - 50; //MS: can be parameterized
+            }
+            if (bound - xOut[vIdx] > solAbsTol_) {
+              isCont = false;
+              break;
+            }
+          }
+        
+          if (isCont) {
+            objCut_(xOut1);
+          }
         }
-        objCut_(xOut);
         alpha = alpha + 0.2;
       }
+      delete [] xOut1;
     } else {
       std::cout << "Interior and center are same\n";
     }
