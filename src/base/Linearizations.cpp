@@ -1153,201 +1153,41 @@ void Linearizations::exploreDir_(std::vector<VariablePtr > vars,
 
 
 //// For 1/-1 components in unit direction
-//void Linearizations::rootLinGenScheme2_()
-//{
-  //VariablePtr v;
-  //int firstnnz= -1;
-  //UInt numVars = varPtrs_.size(), vIdx;
-  
-  ////// variable to be fixed in finding search direction
-  //if (numVars > 1) {
-    //for (UInt i = 0; i < numVars; ++i) {
-      //v = varPtrs_[i];
-      //vIdx = v->getIndex();
-      //if ((firstnnz == -1) && (fabs(solC_[vIdx] - nlpx_[vIdx]) != 0)) {
-        //firstnnz = i;
-        //break;
-      //}
-    //}
-
-    //if (firstnnz == -1) {
-      //return;
-    //}
-  //}
-
-  //int error;
-  //FunctionPtr f;
-  //double * objGrad = 0;
-  //ConstraintPtr con;
-  //std::vector<double > dir; 
-  //std::vector<VariablePtr > vars;
-  //UInt n = minlp_->getNumVars(), numOldCuts = stats_->cuts;
-  
-  //std::vector<double* > nlconsGrad;
-  
-  //double *xOut = new double[n]; 
-  //std::copy(nlpx_, nlpx_+n, xOut);
-  
-  //if (oNl_) {
-    //double *objgrad = new double[n];
-    //std::fill(objgrad, objgrad+n, 0.);
-    //f = minlp_->getObjective()->getFunction();
-    //f->evalGradient(nlpx_, objgrad, &error);
-    //if (error != 0) {
-      //delete [] objgrad;
-      //objGrad = 0;      
-    //} else {
-      //objGrad = objgrad;    
-    //}
-  //}
-  
-   //////// Gradient of constraints at nonlinear solution nlpx_
-
-  //if (nlCons_.size() > 0) {
-    //for (CCIter it = nlCons_.begin(); it != nlCons_.end(); ++it) {
-      //con = *it;
-      //error = 0;
-      //f = con->getFunction();
-      //double *grad = new double[n];
-      //std::fill(grad, grad+n, 0);
-      //f->evalGradient(nlpx_, grad, &error);
-      //if (error == 0) {
-        //nlconsGrad.push_back(grad);
-      //} else {
-        //nlconsGrad.push_back(0);
-      //}
-    //}
-  //}
-  
-  //if (nlCons_.size() > 0 || (!isBoundPt_ && !hasEqCons_)) {
-  //// coordinate direction is considered if there is only single variable
-    //std::vector<double > lastDir;
-    //lastDir.resize(numVars, 0);
-    //for (UInt i = 0; i < numVars; ++i) {
-      //v = varPtrs_[i];
-      //vIdx = v->getIndex();
-      //if ((int(i) < firstnnz) || (fabs(solC_[vIdx] - nlpx_[vIdx]) < solAbsTol_)
-          //|| (numVars == 1)) {
-        //// Coeff of var is zero in the hyperplane expression
-        //// for last direction
-        //lastDir[i] = -1;
-        //if (firstnnz != -1) {
-          //lastDir[firstnnz] = lastDir[firstnnz] + 1;
-        //}
-        
-        //dir.push_back(1);
-        //vars.push_back(v);
-        //exploreDir_(vars, dir, xOut, objGrad, nlconsGrad);
-      //} else if (int(i) > firstnnz) {
-        //// for last direction
-        //lastDir[i] = -1;
-        //lastDir[firstnnz] = lastDir[firstnnz] + 1;
-        
-        //// unit vector
-        //dir.push_back(1);
-        //dir.push_back(-1);
-        //vars.push_back(v);
-        //vars.push_back(varPtrs_[firstnnz]);
-        //exploreDir_(vars, dir, xOut, objGrad, nlconsGrad);
-      //} else {
-        //continue;    
-      //}
-      //dir.clear();
-      //vars.clear();
-    //}
-    
-    //// for last direction
-    //if (numVars > 1) {
-      //exploreDir_(varPtrs_, lastDir, xOut, objGrad, nlconsGrad);
-    //} 
-  //} else {
-    ////// Line search between center and nlp solution
-    //std::cout << isBoundPt_ << " " << hasEqCons_ << "\n";
-    //bool cutsAdded;
-    //double dist = InnerProduct(solC_, nlpx_, n);
-    //if (fabs(dist) > solAbsTol_) {
-      //double alpha = 0.2;
-      //double * grad = new double[n];
-      //std::copy(objGrad, objGrad+n, grad);
-      //while (alpha <= 1) {
-        //for (UInt i = 0; i < n; ++i) {
-          //xOut[i] = xOut[i] + alpha * (solC_[i] - nlpx_[i]);
-        //}
-        //cutsAdded = genLinObj_(xOut, grad);
-        //if (!cutsAdded) {
-          //alpha = 2*alpha;
-        //}
-      //}
-      //delete [] grad;
-      //grad = 0;
-    //}
-  //}
-
-  //for (UInt i = 0; i < nlCons_.size(); ++i) {
-    //if (nlconsGrad[i]) {
-      //delete [] nlconsGrad[i];
-      //nlconsGrad[i] = 0;
-    //}
-  //}
-
-  //delete [] xOut;
-  //if (objGrad) {
-    //delete [] objGrad;
-    //objGrad = 0;  
-  //}
-  //stats_->rgs2Cuts = stats_->cuts - numOldCuts; 
-  //return;
-//}
-
-//// For unit direction
 void Linearizations::rootLinGenScheme2_()
 {
   VariablePtr v;
-  int firstnnz = -1;
-  double fixCoeff, rhs = 0.0;
-  UInt fixIdx, numVars = varPtrs_.size(), vIdx;
+  int firstnnz= -1;
+  UInt numVars = varPtrs_.size(), vIdx;
   
   //// variable to be fixed in finding search direction
   if (numVars > 1) {
     for (UInt i = 0; i < numVars; ++i) {
       v = varPtrs_[i];
       vIdx = v->getIndex();
-      rhs = rhs + nlpx_[vIdx]*(solC_[vIdx] - nlpx_[vIdx]);
-      if ((firstnnz == -1) && (fabs(solC_[vIdx] - nlpx_[vIdx]) > solAbsTol_)) {
+      if ((firstnnz == -1) && (fabs(solC_[vIdx] - nlpx_[vIdx]) != 0)) {
         firstnnz = i;
-        fixIdx = vIdx;
+        break;
       }
     }
 
-    // For unit Direction
     if (firstnnz == -1) {
       return;
     }
-
-    if (rhs == 0) {
-      // find a parallel plane
-      rhs = 10;
-    }
-    // coefficient of the fix var in any direction
-    fixCoeff = rhs/(solC_[fixIdx] - nlpx_[fixIdx]);
   }
-
 
   int error;
   FunctionPtr f;
   double * objGrad = 0;
   ConstraintPtr con;
-  std::vector<double > dir;
+  std::vector<double > dir; 
   std::vector<VariablePtr > vars;
-  double coeff, lastVal = 0, val;   
   UInt n = minlp_->getNumVars(), numOldCuts = stats_->cuts;
   
   std::vector<double* > nlconsGrad;
   
   double *xOut = new double[n]; 
   std::copy(nlpx_, nlpx_+n, xOut);
-
-
+  
   if (oNl_) {
     double *objgrad = new double[n];
     std::fill(objgrad, objgrad+n, 0.);
@@ -1361,7 +1201,7 @@ void Linearizations::rootLinGenScheme2_()
     }
   }
   
-   //// Gradient of constraints at nonlinear solution nlpx_
+   ////// Gradient of constraints at nonlinear solution nlpx_
 
   if (nlCons_.size() > 0) {
     for (CCIter it = nlCons_.begin(); it != nlCons_.end(); ++it) {
@@ -1378,10 +1218,11 @@ void Linearizations::rootLinGenScheme2_()
       }
     }
   }
+  
   if (nlCons_.size() > 0 || (!isBoundPt_ && !hasEqCons_)) {
   // coordinate direction is considered if there is only single variable
     std::vector<double > lastDir;
-    lastDir.resize(numVars, 0); 
+    lastDir.resize(numVars, 0);
     for (UInt i = 0; i < numVars; ++i) {
       v = varPtrs_[i];
       vIdx = v->getIndex();
@@ -1390,22 +1231,21 @@ void Linearizations::rootLinGenScheme2_()
         // Coeff of var is zero in the hyperplane expression
         // for last direction
         lastDir[i] = -1;
-        lastVal = lastVal + 1;
+        if (firstnnz != -1) {
+          lastDir[firstnnz] = lastDir[firstnnz] + 1;
+        }
         
         dir.push_back(1);
         vars.push_back(v);
         exploreDir_(vars, dir, xOut, objGrad, nlconsGrad);
       } else if (int(i) > firstnnz) {
-        coeff = rhs/(solC_[vIdx] - nlpx_[vIdx]);
         // for last direction
-        lastDir[i] = -coeff;
-        lastVal = lastVal + pow(coeff, 2);
-        lastDir[firstnnz] = lastDir[firstnnz] + fixCoeff;
-    
+        lastDir[i] = -1;
+        lastDir[firstnnz] = lastDir[firstnnz] + 1;
+        
         // unit vector
-        val = sqrt(pow(coeff,2) + pow(fixCoeff,2));
-        dir.push_back(coeff/val);
-        dir.push_back(-fixCoeff/val);
+        dir.push_back(1);
+        dir.push_back(-1);
         vars.push_back(v);
         vars.push_back(varPtrs_[firstnnz]);
         exploreDir_(vars, dir, xOut, objGrad, nlconsGrad);
@@ -1416,15 +1256,9 @@ void Linearizations::rootLinGenScheme2_()
       vars.clear();
     }
     
+    // for last direction
     if (numVars > 1) {
-      /// last direction in positive spanning set 
-      lastVal = lastVal + pow(lastDir[fixIdx], 2);
-      lastVal = sqrt(lastVal);
-
-      for (UInt i = 0; i < varPtrs_.size(); ++i) {
-        dir.push_back(lastDir[i]/lastVal);
-      }
-      exploreDir_(varPtrs_, dir, xOut, objGrad, nlconsGrad);
+      exploreDir_(varPtrs_, lastDir, xOut, objGrad, nlconsGrad);
     } 
   } else {
     //// Line search between center and nlp solution
@@ -1496,6 +1330,204 @@ void Linearizations::rootLinGenScheme2_()
   stats_->rgs2Cuts = stats_->cuts - numOldCuts; 
   return;
 }
+
+//// For unit direction
+//void Linearizations::rootLinGenScheme2_()
+//{
+  //VariablePtr v;
+  //int firstnnz = -1;
+  //double fixCoeff, rhs = 0.0;
+  //UInt fixIdx, numVars = varPtrs_.size(), vIdx;
+  
+  ////// variable to be fixed in finding search direction
+  //if (numVars > 1) {
+    //for (UInt i = 0; i < numVars; ++i) {
+      //v = varPtrs_[i];
+      //vIdx = v->getIndex();
+      //rhs = rhs + nlpx_[vIdx]*(solC_[vIdx] - nlpx_[vIdx]);
+      //if ((firstnnz == -1) && (fabs(solC_[vIdx] - nlpx_[vIdx]) > solAbsTol_)) {
+        //firstnnz = i;
+        //fixIdx = vIdx;
+      //}
+    //}
+
+    //// For unit Direction
+    //if (firstnnz == -1) {
+      //return;
+    //}
+
+    //if (rhs == 0) {
+      //// find a parallel plane
+      //rhs = 10;
+    //}
+    //// coefficient of the fix var in any direction
+    //fixCoeff = rhs/(solC_[fixIdx] - nlpx_[fixIdx]);
+  //}
+
+
+  //int error;
+  //FunctionPtr f;
+  //double * objGrad = 0;
+  //ConstraintPtr con;
+  //std::vector<double > dir;
+  //std::vector<VariablePtr > vars;
+  //double coeff, lastVal = 0, val;   
+  //UInt n = minlp_->getNumVars(), numOldCuts = stats_->cuts;
+  
+  //std::vector<double* > nlconsGrad;
+  
+  //double *xOut = new double[n]; 
+  //std::copy(nlpx_, nlpx_+n, xOut);
+
+
+  //if (oNl_) {
+    //double *objgrad = new double[n];
+    //std::fill(objgrad, objgrad+n, 0.);
+    //f = minlp_->getObjective()->getFunction();
+    //f->evalGradient(nlpx_, objgrad, &error);
+    //if (error != 0) {
+      //delete [] objgrad;
+      //objGrad = 0;      
+    //} else {
+      //objGrad = objgrad;    
+    //}
+  //}
+  
+   ////// Gradient of constraints at nonlinear solution nlpx_
+
+  //if (nlCons_.size() > 0) {
+    //for (CCIter it = nlCons_.begin(); it != nlCons_.end(); ++it) {
+      //con = *it;
+      //error = 0;
+      //f = con->getFunction();
+      //double *grad = new double[n];
+      //std::fill(grad, grad+n, 0);
+      //f->evalGradient(nlpx_, grad, &error);
+      //if (error == 0) {
+        //nlconsGrad.push_back(grad);
+      //} else {
+        //nlconsGrad.push_back(0);
+      //}
+    //}
+  //}
+  //if (nlCons_.size() > 0 || (!isBoundPt_ && !hasEqCons_)) {
+  //// coordinate direction is considered if there is only single variable
+    //std::vector<double > lastDir;
+    //lastDir.resize(numVars, 0); 
+    //for (UInt i = 0; i < numVars; ++i) {
+      //v = varPtrs_[i];
+      //vIdx = v->getIndex();
+      //if ((int(i) < firstnnz) || (fabs(solC_[vIdx] - nlpx_[vIdx]) < solAbsTol_)
+          //|| (numVars == 1)) {
+        //// Coeff of var is zero in the hyperplane expression
+        //// for last direction
+        //lastDir[i] = -1;
+        //lastVal = lastVal + 1;
+        
+        //dir.push_back(1);
+        //vars.push_back(v);
+        //exploreDir_(vars, dir, xOut, objGrad, nlconsGrad);
+      //} else if (int(i) > firstnnz) {
+        //coeff = rhs/(solC_[vIdx] - nlpx_[vIdx]);
+        //// for last direction
+        //lastDir[i] = -coeff;
+        //lastVal = lastVal + pow(coeff, 2);
+        //lastDir[firstnnz] = lastDir[firstnnz] + fixCoeff;
+    
+        //// unit vector
+        //val = sqrt(pow(coeff,2) + pow(fixCoeff,2));
+        //dir.push_back(coeff/val);
+        //dir.push_back(-fixCoeff/val);
+        //vars.push_back(v);
+        //vars.push_back(varPtrs_[firstnnz]);
+        //exploreDir_(vars, dir, xOut, objGrad, nlconsGrad);
+      //} else {
+        //continue;    
+      //}
+      //dir.clear();
+      //vars.clear();
+    //}
+    
+    //if (numVars > 1) {
+      ///// last direction in positive spanning set 
+      //lastVal = lastVal + pow(lastDir[fixIdx], 2);
+      //lastVal = sqrt(lastVal);
+
+      //for (UInt i = 0; i < varPtrs_.size(); ++i) {
+        //dir.push_back(lastDir[i]/lastVal);
+      //}
+      //exploreDir_(varPtrs_, dir, xOut, objGrad, nlconsGrad);
+    //} 
+  //} else {
+    ////// Line search between center and nlp solution
+    //std::cout << isBoundPt_ << " " << hasEqCons_ << "\n";
+    //FunctionType type;
+    //bool cutsAdded, isCont = true;
+    //double dist = InnerProduct(solC_, nlpx_, n), bound;
+    //if (fabs(dist) > solAbsTol_) {
+      //double alpha = 0.25;
+      //double * grad = new double[n];
+      //std::copy(objGrad, objGrad+n, grad);
+      ////while (alpha <= 1) {
+      //while (true) {
+        //for (UInt i = 0; i < n; ++i) {
+          //xOut[i] = xOut[i] + alpha * (solC_[i] - nlpx_[i]);
+        //}
+  
+        //cutsAdded = genLinObj_(xOut, grad);
+        //if (!cutsAdded) {
+          //alpha = 2*alpha;
+        //}
+
+        //for (VariableConstIterator vit = minlp_->varsBegin(); 
+             //vit != minlp_->varsEnd(); ++vit) {
+          //v = *vit;
+          //type = v->getFunType();
+          //if ((type == Linear || type == Constant)) {
+            //continue;
+          //}
+          //bound = v->getUb();
+          //vIdx = v->getIndex();
+          //if (bound == INFINITY) {
+            //bound = nlpx_[vIdx] + 50; //MS: can be parameterized
+          //}
+          //if (xOut[vIdx] - bound > solAbsTol_) {
+            //isCont = false;
+            //break;
+          //}
+          //bound = v->getLb();
+          //if (bound == -INFINITY) {
+            //bound = nlpx_[vIdx] - 50; //MS: can be parameterized
+          //}
+          //if (bound - xOut[vIdx] > solAbsTol_) {
+            //isCont = false;
+            //break;
+          //}
+        //}
+        //if (!isCont) {
+          //break;        
+        //}
+      //}
+      //delete [] grad;
+      //grad = 0;
+    //}
+  //}
+
+  //for (UInt i = 0; i < nlCons_.size(); ++i) {
+    //if (nlconsGrad[i]) {
+      //delete [] nlconsGrad[i];
+      //nlconsGrad[i] = 0;
+    //}
+  //}
+
+  //delete [] xOut;
+  //if (objGrad) {
+    //delete [] objGrad;
+    //objGrad = 0;  
+  //}
+  //stats_->rgs2Cuts = stats_->cuts - numOldCuts; 
+  //return;
+//}
 
 
 bool Linearizations::atBound_(std::vector<double > dir,
