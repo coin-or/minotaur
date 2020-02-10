@@ -111,7 +111,7 @@ private:
   double * solC_; 
  
   /// Solution of root NLP
-  const double * nlpx_; 
+  double * nlpx_; 
 
   /// Relative tolerance for constraint feasibility.
   double solRelTol_;
@@ -134,10 +134,14 @@ private:
   // index of the variables to be changed in line search
   std::vector<UInt > changeVar_;
  
-  // root LP solution
-  double lpObj_;
+  double * nlpDuals_;
 
-  const double * nlpDuals_;
+  bool hasEqCons_;
+  
+  UInt numDir_;
+
+  // Is the center point found as a boundary point?
+  bool isBoundPt_;
 
   /// Statistics.
   LinStats *stats_;
@@ -154,14 +158,14 @@ private:
    */
   Linearizations(EnvPtr env, RelaxationPtr rel,
                                ProblemPtr minlp, std::vector<ConstraintPtr> nlCons,
-                               VariablePtr objVar); 
+                               VariablePtr objVar, ConstSolutionPtr sol); 
   
   /// Destroy.
   ~Linearizations();
    
   /// Root linearization schemes
   //void rootLinearizations(const double * nlpx);
-  void rootLinearizations(ConstSolutionPtr sol);
+  void rootLinearizations();
 
   double * getCenter() {return solC_;}
   
@@ -241,9 +245,9 @@ private:
                                      std::vector<double *> &lastGrad,
                                      double * &lastGradObj, double &alpha);
 
-  void genLin_(const double *x, std::vector<UInt > vioConsPos);
+  bool genLinObj_(double *x, double* &lastGradObj);
 
-  std::vector<UInt > isFeas_(double *x, bool &foundActive, bool &foundVio);
+  void genLin_(const double *x, std::vector<UInt > vioConsPos);
 
   /**
    * Obtain the linear function (lf) and constant (c) from the
@@ -252,11 +256,6 @@ private:
   void linearAt_(FunctionPtr f, double fval, const double *x, 
                  double *c, LinearFunctionPtr *lf, int *error);
 
-  /// Line search in root linearization scheme 3
-
-  bool lineSearchPt_(const double *xIn, const double *xOut, double* x,
-                     ConstraintPtr con, double &nlpact);
-   
   /// Compute variable in the linear part 
 
   bool linPart_(double *b1, UInt lVarIdx, double lVarCoeff,
@@ -270,6 +269,10 @@ private:
                  std::vector<double> unitVec);
 
   void rootLinGenScheme1_();
+    
+  void ifNonlinCons_();
+
+  void ifOnlyNonlinObj_();
   
   void rootLinGenScheme2_();
    /**
@@ -303,15 +306,15 @@ private:
 
   bool objCut_(const double* xNew);
 
-  void cutAtLineSearchPt_(const double *xIn, const double *xOut,
-                          double *xNew, ConstraintPtr con);
-
   void search_(std::vector<VariablePtr > vars, std::vector<double* > nlconsGrad,
                double *xOut, double *objGrad, std::vector<double > dir);
 
   bool uniVarNlFunc_(FunctionPtr f, double &lVarCoeff, UInt & lVarIdx,
                      UInt & nVarIdx, double &nVarCoeff, bool isObj);
 
+  void updateInfo_(std::vector<double > &xc,
+                                 std::vector<double > &yc,
+                                 std::vector<double > &linVioVal, UInt j);
   void varsInNonlinCons_();
   };
 
