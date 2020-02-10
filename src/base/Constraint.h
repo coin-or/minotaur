@@ -129,6 +129,10 @@ namespace Minotaur {
       int getpId() { return pid_; }
 
       void setUB(double newub) { ub_ = newub; }
+
+      Convexity getConvexity() { return convex_; }
+
+      void setConvexity(Convexity convex) { convex_ = convex; }
       
       void incrAct() { numAct_++;}
       void minmaxDepth(UInt depth);
@@ -225,6 +229,9 @@ namespace Minotaur {
 
       /// 'u' (-infinity, infinity].
       double ub_;
+
+      /// Convexity of the constraint.
+      Convexity convex_;
   };
 }
 #endif

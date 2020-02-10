@@ -31,7 +31,7 @@ namespace Minotaur {
   typedef PolynomialFunction* PolyFunPtr;
   typedef const LinearFunction* ConstLinearFunctionPtr;
   typedef LinearFunction* LinearFunctionPtr;
-
+  typedef std::vector<QuadraticFunctionPtr> QfVector;
   //class EigenVector;
   //typedef std::pair<double, EigenVectorPtr> EigenPair;
 
@@ -246,7 +246,22 @@ namespace Minotaur {
                         std::vector<double> &grad_f); 
       void evalHessian(const double mult, const double *x, 
                        const LTHessStor *stor, double *values , int *error);
-      bool isConvex();
+      
+      /**
+       * Checks the convexity of the quadratic function by finding the eigen
+       * values of the hessian matrix. It will return whether function is
+       * convex (PSD hessian), concave (NSD hessian) or nonconvex (Indefinte
+       * hessian).
+       */
+      Convexity isConvex();
+
+      /**
+       * For the quadratic function finding the subgraphs (where each node
+       * represent a variable and edge means there is a bilinear term between
+       * those two variables) which are seprable i.e. they have no variable
+       * common between them.
+       */
+      QfVector findSubgraphs();
 
       void prepJac(VarSetConstIter vbeg, VarSetConstIter vend);
       void prepHess();
@@ -303,6 +318,8 @@ namespace Minotaur {
        * x0^2 + 2x0x1 + x0x3
        */
       VarIntMap varFreq_;
+
+      Convexity convex_;
 
       void sortLT_(UInt n, UInt *f, UInt *s, double *c);
   };

@@ -36,6 +36,7 @@
 #include "QuadHandler.h"
 #include "SimpleTransformer.h"
 #include "Solution.h"
+#include "Timer.h"
 #include "Variable.h"
 #include "YEqCGs.h"
 #include "YEqLFs.h"
@@ -721,6 +722,73 @@ void SimpleTransformer::refNonlinObj_(ConstProblemPtr oldp)
 //  vars.clear();
 //}
 
+bool SimpleTransformer::checkQuadConvexity_() {
+  QfVector qf_vector;
+  QfVector::iterator it;
+  bool convex_cons;
+  bool all_convex = true;
+  ConstraintPtr c;
+  QuadraticFunctionPtr qf;
+  Convexity sg, sg_old = Unknown;
+
+  for (ConstraintConstIterator cit=p_->consBegin(); cit!=p_->consEnd(); ++cit) {
+    c = *cit;
+    qf = c->getFunction()->getQuadraticFunction();
+    if (qf) {
+      convex_cons = true;
+      qf_vector = qf->findSubgraphs();
+      for (it = qf_vector.begin(); it != qf_vector.end(); ++it) {
+        sg = (*it)->isConvex();
+        if (sg == Nonconvex) {
+          convex_cons = false;
+          c->setConvexity(Nonconvex);
+          all_convex = false;
+        } else {
+          // to add y=qf part
+          if (sg_old != Unknown && sg != sg_old) {
+            convex_cons = false;
+            c->setConvexity(Nonconvex);
+            all_convex = false;
+          }
+          sg_old = sg;
+        }
+      }
+      if (convex_cons) {
+        if (sg == Convex) {
+          if (c->getLb() > -INFINITY) {
+            convex_cons = false;
+            c->setConvexity(Nonconvex);
+            all_convex = false;
+          } else {
+            c->setConvexity(Convex);
+          }
+        } else {
+          if (c->getUb() < INFINITY) {
+            convex_cons = false;
+            c->setConvexity(Nonconvex);
+            all_convex = false;
+          } else {
+            c->setConvexity(Convex);
+          }
+        }
+      }
+    }
+  }
+  qf = p_->getObjective()->getFunction()->getQuadraticFunction();
+  if (qf) {
+    convex_cons = true;
+    qf_vector = qf->findSubgraphs();
+    for (it = qf_vector.begin(); it != qf_vector.end(); ++it) {
+      sg = (*it)->isConvex();
+      if (sg == Nonconvex || sg == Concave) {
+        convex_cons = false;
+        all_convex = false;
+      } 
+    }
+  }
+  return all_convex;
+}
+
 void SimpleTransformer::refQuadCons_(QuadraticFunctionPtr qf,
                                      LinearFunctionPtr &lf)
 {
@@ -833,6 +901,7 @@ void SimpleTransformer::reformulate(ProblemPtr &newp, HandlerVector &handlers,
   handlers.push_back(uHandler_);
 
   copyLinear_(p_, newp_);
+  checkQuadConvexity_();
   refNonlinCons_(p_);
   refNonlinObj_(p_);
   newp_->calculateSize();

@@ -259,7 +259,7 @@ PresolverPtr createPres(EnvPtr env, ProblemPtr p, size_t ndefs,
       handlers.push_back(qhand);
     }
 
-    if (!(p->isLinear() || p->isQP() || p->isQuadratic()) &&
+    if (!(p->isLinear()) &&
          true==env->getOptions()->findBool("use_native_cgraph")->getValue() && 
          true==env->getOptions()->findBool("nl_presolve")->getValue() 
          ) {

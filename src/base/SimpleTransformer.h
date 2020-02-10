@@ -86,6 +86,11 @@ namespace Minotaur {
 
     VariablePtr newBilVar_(VariablePtr vl, VariablePtr vr);
 
+    /**
+     * \brief Checks the convexity of quadratic problems
+     */
+    bool checkQuadConvexity_();
+
     void powKRef_(LinearFunctionPtr lfl,
                   VariablePtr vl, double dl, double k,
                   LinearFunctionPtr &lf, VariablePtr &v,

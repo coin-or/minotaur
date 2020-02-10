@@ -36,7 +36,8 @@ Variable::Variable(UInt id, UInt index, double lb, double ub, VariableType vtype
   state_(NormalVar), 
   stype_(VarOrig),
   ub_(ub),
-  vtype_(vtype) 
+  vtype_(vtype),
+  itmp_(0) 
 {
   cons_.clear();
 }
@@ -88,6 +89,10 @@ UInt Variable::getNumCons() const
   return cons_.size();
 }
 
+UInt Variable::getItmp() const
+{
+  return itmp_;
+}
 
 void Variable::inConstraint_(ConstraintPtr cPtr)
 {
@@ -100,6 +105,10 @@ void Variable::outOfConstraint_(ConstraintPtr cPtr)
   cons_.erase(cPtr);
 }
 
+void Variable::setItmp(UInt itmp)
+{
+  itmp_ = itmp;
+}
 
 void Variable::write(std::ostream &out) const
 {
