@@ -1556,7 +1556,7 @@ void Linearizations::rootLinGenScheme1_()
 {
   double val;   
   VariablePtr v;
-  //double bound, vLb = INFINITY, vUb = INFINITY; // for last direction 
+  //double bnd, vLb = INFINITY, vUb = INFINITY; // for last direction 
   UInt vIdx, numOldCuts = stats_->cuts, n = minlp_->getNumVars();
   
   double *xOut = new double[n];
@@ -1575,9 +1575,9 @@ void Linearizations::rootLinGenScheme1_()
       val = v->getUb();
       
       //// for last direction
-      //bound = val - solC_[vIdx];
-      //if (bound < vUb) {
-        //vUb = bound;
+      //bnd = val - solC_[vIdx];
+      //if (bnd < vUb) {
+        //vUb = bnd;
       //}
 
       // coordinate direction for each variable 
@@ -1592,9 +1592,9 @@ void Linearizations::rootLinGenScheme1_()
       /// Reverse search direction if previous direction was unsuccessful 
       val = v->getLb();
       //// for last direction
-      //bound = solC_[vIdx] - val;
-      //if (bound < vLb) {
-        //vLb = bound;
+      //bnd = solC_[vIdx] - val;
+      //if (bnd < vLb) {
+        //vLb = bnd;
       //}
 
       if (val == -INFINITY) {
@@ -1640,7 +1640,7 @@ void Linearizations::rootLinGenScheme1_()
     if (fabs(dist) > solAbsTol_) {
       double *xOut1 = new double[n];
       std::fill(xOut1, xOut1+n, 0.);
-      double alpha = 0.2;
+      double alpha = 0.2;   // MS: can be parameterized.
       while (alpha <= 1) {
         if (isCont) {
           for (UInt i = 0; i < n; ++i) {
@@ -1684,7 +1684,7 @@ void Linearizations::rootLinGenScheme1_()
             objCut_(xOut1);
           }
         }
-        alpha = alpha + 0.2;
+        alpha = alpha + 0.2;  //MS: can be parameterized.
       }
       delete [] xOut1;
     } else {
