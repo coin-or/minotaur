@@ -86,6 +86,8 @@ public:
 
   UInt getNumCons() const;
 
+  UInt getItmp() const;
+
   /// First iterator of constraints where this variable appears.
   ConstrSet::iterator consBegin();
 
@@ -94,6 +96,8 @@ public:
 
   /// Get name of the variable.
   const std::string getName() const;
+
+  void setItmp(UInt itmp);
 
   /**
    * \brief Write the full description of the variable including name, bounds,
@@ -189,6 +193,9 @@ private:
 
   /// Copy by assignment is no allowed.
   Variable & operator = (const Variable &v);
+
+  /// Temporary integer variable.
+  UInt itmp_;
 };
 
 typedef std::set<std::pair<ConstraintPtr, FunctionType> >::const_iterator 

@@ -36,7 +36,8 @@ Constraint::Constraint()
   lb_(-INFINITY),
   name_(""),
   state_(NormalCons),
-  ub_(INFINITY)
+  ub_(INFINITY),
+  convex_(Unknown)
 {
 }
 
@@ -52,7 +53,8 @@ Constraint::Constraint(UInt id, UInt index, FunctionPtr f, double lb,
   lb_(lb),
   name_(name),
   state_(NormalCons),
-  ub_(ub)
+  ub_(ub),
+  convex_(Unknown)
 {
 }
 

@@ -36,7 +36,8 @@ QuadraticFunction::QuadraticFunction()
     hOff_(0),
     hSecond_(0),
     terms_(), 
-    varFreq_()
+    varFreq_(),
+    convex_(Unknown)
 {
 }
 
@@ -49,7 +50,8 @@ QuadraticFunction::QuadraticFunction(UInt nz, double *vals, UInt *irow,
   hOff_(0),
   hSecond_(0),
   terms_(), 
-  varFreq_()
+  varFreq_(),
+  convex_(Unknown)
 {
   VariablePtr v1, v2;
   for (UInt i=0; i<nz; ++i) {
@@ -72,7 +74,8 @@ QuadraticFunction::QuadraticFunction(double* vals, VariableConstIterator vbeg,
   hOff_(0),
   hSecond_(0),
   terms_(), 
-  varFreq_()
+  varFreq_(),
+  convex_(Unknown)
 {
   UInt i = 0;
   for(VariableConstIterator it = vbeg; it != vend; ++it)
@@ -301,9 +304,7 @@ void QuadraticFunction::evalGradient(const double *x, double *grad_f)
         x[it->first.first->getIndex()];
     }
   }
-
 }
-
 
 void QuadraticFunction::evalGradient(const std::vector<double> & x, 
     std::vector<double> & grad_f)
@@ -316,16 +317,96 @@ void QuadraticFunction::evalGradient(const std::vector<double> & x,
   }
 }
 
-bool QuadraticFunction::isConvex()
+QfVector QuadraticFunction::findSubgraphs()
+{
+  QfVector qf_vector;
+  QuadraticFunctionPtr qf;
+  UInt count = 0;
+  UInt i,j;
+  QfVector::iterator qit;
+  std::vector<UInt> to_del;
+
+  for (VariablePairGroupConstIterator it = terms_.begin(); it != terms_.end(); ++it) {
+    i = it->first.first->getItmp();
+    j = it->first.second->getItmp();
+    if (i == 0) {
+      if (j == 0) {
+        qf = (QuadraticFunctionPtr) new QuadraticFunction();
+        qf->addTerm(it->first, it->second);
+        qf_vector.push_back(qf);
+        ++count;
+        it->first.first->setItmp(count);
+        it->first.second->setItmp(count);
+      } else {
+        qf_vector[j-1]->addTerm(it->first, it->second);
+        it->first.first->setItmp(j);
+      }
+    } else {
+      if (j != 0) {
+        if (i != j) {
+          if (i > j) {
+            qf_vector[j-1]->addTerm(it->first, it->second);
+            qf_vector[j-1]->add(qf_vector[i-1]);
+            to_del.push_back(i-1);
+            for (VariablePairGroupConstIterator it1 = qf_vector[i-1]->begin();
+                 it1 != qf_vector[i-1]->end(); ++it1) {
+              it1->first.first->setItmp(j);
+              it1->first.second->setItmp(j);
+            }
+          } else {
+            qf_vector[i-1]->addTerm(it->first, it->second);
+            qf_vector[i-1]->add(qf_vector[j-1]);
+            to_del.push_back(j-1);
+            for (VariablePairGroupConstIterator it1 = qf_vector[j-1]->begin();
+                 it1 != qf_vector[j-1]->end(); ++it1) {
+              it1->first.first->setItmp(i);
+              it1->first.second->setItmp(i);
+            }
+          }
+        } else {
+          qf_vector[i-1]->addTerm(it->first, it->second);
+        }
+      } else {
+        qf_vector[i-1]->addTerm(it->first, it->second);
+        it->first.second->setItmp(i);
+      }
+    }
+  }
+
+  i = 0;
+  for (std::vector<UInt>::iterator uit = to_del.begin(); uit != to_del.end(); ++uit) {
+    qit = qf_vector.begin();
+    std::advance(qit, (*uit)-i);
+    delete (*qit);
+    qf_vector.erase(qit);
+    ++i;
+  }
+  to_del.clear();
+  // resetting Itmp
+  for (VariablePairGroupConstIterator it = terms_.begin(); it != terms_.end(); ++it) {
+    it->first.first->setItmp(0);
+    it->first.second->setItmp(0);
+  }
+  return qf_vector;
+}
+
+Convexity QuadraticFunction::isConvex()
 {
   EigenPtr eptr;
+  if (convex_ != Unknown) {
+    return convex_;
+  }
   EigenCalculator *ecalc = new EigenCalculator();
   eptr = ecalc->findValues(this);
-  if(eptr->numNegative()>0)
+  if(eptr->numNegative() == 0)
   {
-    return false;
+    convex_ = Convex;
+  } else if (eptr->numPositive() == 0) {
+    convex_ = Concave;
+  } else {
+    convex_ = Nonconvex;
   }
-  return true;
+  return convex_;
 }
 
 void QuadraticFunction::evalHessian(const double mul, const double *, 
@@ -790,7 +871,9 @@ void QuadraticFunction::multiply(const double c) {
   }
 }
 
-
+//void QuadraticFunction::setConvex(bool convex) {
+//  convex_ = convex;
+//}
 
 void QuadraticFunction::write(std::ostream &s) const
 {

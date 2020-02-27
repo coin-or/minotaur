@@ -213,7 +213,13 @@ typedef enum {
   BestThenDive     /// First find the best bound, then dive until pruned.
 } TreeSearchOrder;
 
-
+/// Convexity of a function or a constraint.
+typedef enum {
+  Convex,
+  Concave, /// Constraint can't be concave only functions can be concave.
+  Nonconvex,
+  Unknown
+} Convexity;
 
 
 // Miscellaneous functions related to above types.
