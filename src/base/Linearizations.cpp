@@ -91,7 +91,7 @@ Linearizations::Linearizations(EnvPtr env, RelaxationPtr rel,
   stats_->rgs2Cuts = 0;
   stats_->linSchemesTime = 0;
 
-  if (rs2Per_ || rgs1_ || rgs2Per_) {
+  if (rs2Per_ || rgs1_ || rgs2Per_ || rs3_) {
     UInt n =  minlp_->getNumVars();
     nlpx_ = new double[n];
     const double * x = sol->getPrimal();
@@ -275,7 +275,7 @@ void Linearizations::ifNonlinCons_()
     //if (fType == Constant) {
       //inst_C->markDelete(con);
       //continue;
-    //} else 
+    //}  
     if (fType == Linear)  {
       //if (fabs(lb-ub) <= solAbsTol_) {
         //hasEqCons_ = 1;
