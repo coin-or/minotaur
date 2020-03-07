@@ -91,14 +91,14 @@ Linearizations::Linearizations(EnvPtr env, RelaxationPtr rel,
   stats_->rgs2Cuts = 0;
   stats_->linSchemesTime = 0;
 
-  if (rs2Per_ || rgs1_ || rgs2Per_ || rs3_) {
-    UInt n =  minlp_->getNumVars();
-    nlpx_ = new double[n];
-    const double * x = sol->getPrimal();
-    std::copy(x, x+n, nlpx_);
-  } else {
-    nlpx_ = 0;  
-  }
+  //if (rs1_ || rs2Per_ || rgs1_ || rgs2Per_ || rs3_) {
+  UInt n =  minlp_->getNumVars();
+  nlpx_ = new double[n];
+  const double * x = sol->getPrimal();
+  std::copy(x, x+n, nlpx_);
+  //} else {
+    //nlpx_ = 0;  
+  //}
 
   if (rgs2Per_ ) {
     UInt numCons = minlp_->getNumCons();
@@ -2198,17 +2198,19 @@ void Linearizations::rootLinScheme1_(FunctionPtr fun, double lVarCoeff,
   vLb = vnl->getLb(); vUb = vnl->getUb();
 
   if (vLb == -INFINITY) { // MS: this can be parametrized later if need be.
+    //std::cout << "Infi case: LB infi\n";
+    vLb = nlpx_[nVarIdx] - 50;
     if (vUb == INFINITY) {
-      vLb = -50;
-      vUb = 50;
-    } else {
-      vLb = vUb - 100;
+      //std::cout << "Infi case: UB also infi\n";
+      vUb = nlpx_[nVarIdx] + 50;
     }
   } else {
     if (vUb == INFINITY) {
-      vUb = vLb + 100;
+      //std::cout << "Infi case: UB infi\n";
+      vUb = nlpx_[nVarIdx] + 50;
     } 
   }
+  //exit(1);
     
   b1[nVarIdx] = vLb;
   act = nVarCoeff*vLb;
