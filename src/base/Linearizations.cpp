@@ -1262,7 +1262,7 @@ void Linearizations::rootLinGenScheme2_()
     } 
   } else {
     //// Line search between center and nlp solution
-    std::cout << isBoundPt_ << " " << hasEqCons_ << "\n";
+    //std::cout << isBoundPt_ << " " << hasEqCons_ << "\n";
     FunctionType type;
     bool cutsAdded, isCont = true;
     double dist = InnerProduct(solC_, nlpx_, n), bound;

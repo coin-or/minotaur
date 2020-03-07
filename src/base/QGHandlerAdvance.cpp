@@ -499,7 +499,7 @@ void QGHandlerAdvance::objCutAtLpSol_(const double *lpx, CutManager *,
             ((lpvio-relobj_)*100/fabs(relobj_) < objVioMul_)) {
           return;
         }
-        std::cout << "lpvio " << lpvio << " relobj_ " << relobj_ << "\n";
+        //std::cout << "lpvio " << lpvio << " relobj_ " << relobj_ << "\n";
       }
       if ((lpvio > solAbsTol_) &&
           (relobj_ == 0 || lpvio > fabs(relobj_)*solRelTol_)) {
