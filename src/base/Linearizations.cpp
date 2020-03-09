@@ -555,10 +555,17 @@ void Linearizations::findCenter()
 {
   timer_->start();
   isBoundPt_ = false;
-  if (nlCons_.size() > 0) { 
-    ifNonlinCons_();
-  } else if (oNl_) {
-    ifOnlyNonlinObj_();  
+
+  if (rs3_) {
+    if (nlCons_.size() > 0) { 
+      ifNonlinCons_();
+    }
+  } else {
+    if (nlCons_.size() > 0) { 
+      ifNonlinCons_();
+    } else if (oNl_) {
+      ifOnlyNonlinObj_();  
+    }
   }
   
   if (solC_) {
@@ -1021,6 +1028,7 @@ bool Linearizations::isInteriorPt_(double *xOut,
   bool foundActive = false, foundVio = false;
 
   if (numNl == 0) {
+    //MS: are var bounds considered here??
     candConsForObj_(xOut, cons, foundActive, foundVio);
   } else {
     candLinCons_(xOut, vConsPos, foundActive, foundVio);
@@ -1635,7 +1643,7 @@ void Linearizations::rootLinGenScheme1_()
     //// Line search between center and nlp solution
     bool isCont = true;
     FunctionType type;
-    std::cout << isBoundPt_ << " " << hasEqCons_ << "\n";
+    //std::cout << isBoundPt_ << " " << hasEqCons_ << "\n";
     double dist = InnerProduct(solC_, nlpx_, n), bound;
     if (fabs(dist) > solAbsTol_) {
       double *xOut1 = new double[n];
@@ -2566,7 +2574,7 @@ void Linearizations::rootLinScheme3(EnginePtr lpe, SeparationStatus *status)
 {
   timer_->start();
   UInt numNl = nlCons_.size();
-  if ((solC_ != 0 && numNl > 0 && !isBoundPt_) || oNl_) {
+  if ((solC_ != 0 && numNl > 0) || oNl_) {
     const double *lpx;
     UInt numVars =  minlp_->getNumVars(); 
     UInt numOldCuts, initCuts = stats_->cuts;
