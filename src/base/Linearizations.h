@@ -171,6 +171,8 @@ private:
   
   /// Find approximate center of the feasible region
   void findCenter();
+  
+  LinStats* getStats() {return stats_; };
 
   /**
    * Add linearizatios by performing line search between center of the

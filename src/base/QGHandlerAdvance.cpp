@@ -1370,7 +1370,8 @@ void QGHandlerAdvance::maxVio_(ConstSolutionPtr sol, NodePtr node,
     if (nodeId > 0 && int(nodeId) != lastNodeId_) {
       parentScore = node->getParent()->getVioVal();
       if (parentScore < INFINITY && totScore < INFINITY) {
-        if (fabs(parentScore) > 1e-3 && fabs(totScore) > 1e-2 && fabs(totScore) > (maxVioPer_*fabs(parentScore))) { //MS: here maxVioPer_ is in times (0.5, 1, 2, 5,..)
+        if (fabs(parentScore) > 1e-3 && fabs(totScore) > 1e-2 
+            && fabs(totScore) > (maxVioPer_*fabs(parentScore))) { //MS: here maxVioPer_ is in times (0.5, 1, 2, 5,..)
           //std::cout << std::setprecision(6) << "node, score, and parent's score "<< nodeId << " " << totScore << " " << parentScore << "\n";
           if (cutMethod_ == "ecp") {
             i = 0;

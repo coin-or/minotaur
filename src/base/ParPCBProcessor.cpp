@@ -273,6 +273,11 @@ void ParPCBProcessor::process(NodePtr node, RelaxationPtr rel,
     logger_->msgStream(LogDebug) << me_ << "iteration " << iter << std::endl;
 #endif
 
+//#pragma omp critical
+    //{
+    //std::cout << " node " << node->getId() << " thread " << omp_get_thread_num() << std::endl;
+    //rel->write(std::cout);
+    //}
     solveRelaxation_();
 
     sol = engine_->getSolution();

@@ -84,6 +84,7 @@ set (MINOTAUR_SOURCES
      ParNodeIncRelaxer.cpp
      ParQGBranchAndBound.cpp
      ParQGHandler.cpp
+     ParQGHandlerAdvance.cpp
      ParPCBProcessor.cpp
      ParReliabilityBrancher.cpp
      ParTreeManager.cpp
@@ -211,6 +212,7 @@ set (MINOTAUR_HEADERS
      ParNodeIncRelaxer.h
      ParQGBranchAndBound.h
      ParQGHandler.h
+     ParQGHandlerAdvance.h
      ParPCBProcessor.h
      ParReliabilityBrancher.h
      ParTreeManager.h
