@@ -66,6 +66,7 @@ QGHandlerAdvance::QGHandlerAdvance(EnvPtr env, ProblemPtr minlp, EnginePtr nlpe)
   maxVioPer_(0),
   objVioMul_(0),
   consDual_(0),
+  cutMethod_("ecp"),
   //lpdist_(-1),
   lastNodeId_(-1)
 {
@@ -92,8 +93,6 @@ QGHandlerAdvance::~QGHandlerAdvance()
     delete stats_;
   }
 
-  nlCons_.clear();
-  undoMods_();
   
   if (extraLin_) {
     delete extraLin_;  
@@ -110,6 +109,7 @@ QGHandlerAdvance::~QGHandlerAdvance()
   nlpe_ = 0;
   minlp_ = 0;
   extraLin_ = 0;  
+  undoMods_();
   nlCons_.clear();
   consDual_.clear();
 }
@@ -943,7 +943,6 @@ void QGHandlerAdvance::separate(ConstSolutionPtr sol, NodePtr node,
                                 ModVector &, bool *sol_found,
                                 SeparationStatus *status)
 {
-  bool isIntFeas;
   const double *x = sol->getPrimal();
 
   //if (node->getId() == 0) {
@@ -965,7 +964,7 @@ void QGHandlerAdvance::separate(ConstSolutionPtr sol, NodePtr node,
     }
   }
 
-  isIntFeas = isIntFeas_(x);
+  bool isIntFeas = isIntFeas_(x);
   if (isIntFeas) {
     fixInts_(x);            // Fix integer variables
     relobj_ = (sol) ? sol->getObjValue() : -INFINITY;

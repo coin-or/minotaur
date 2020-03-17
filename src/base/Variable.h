@@ -34,6 +34,7 @@ public:
   /// are private.
   friend class Linearizations;
   friend class QGHandlerAdvance;
+  friend class ParQGHandlerAdvance;
   friend class PerspCon;
   friend class Problem;
   friend class QGHandler;

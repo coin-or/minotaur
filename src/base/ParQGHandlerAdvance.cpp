@@ -61,7 +61,13 @@ ParQGHandlerAdvance::ParQGHandlerAdvance(EnvPtr env, ProblemPtr minlp,
   objVar_(VariablePtr()),
   oNl_(false),
   rel_(RelaxationPtr()),
-  relobj_(0.0)
+  relobj_(0.0),
+  extraLin_(0),
+  maxVioPer_(0),
+  objVioMul_(0),
+  consDual_(0),
+  cutMethod_("ecp"),
+  lastNodeId_(-1)
 {
   intTol_ = env_->getOptions()->findDouble("int_tol")->getValue();
   solAbsTol_ = env_->getOptions()->findDouble("feasAbs_tol")->getValue();
@@ -85,11 +91,24 @@ ParQGHandlerAdvance::~ParQGHandlerAdvance()
   if (stats_) {
     delete stats_;
   }
+  
+  if (extraLin_) {
+    delete extraLin_;  
+  } else {
+    if (solC_) {
+      delete [] solC_;
+      solC_ = 0;
+    }
+  }
 
   env_ = 0;
   rel_ = 0;
+  nlpe_ = 0;
   minlp_ = 0;
+  extraLin_ = 0;  
+  unfixInts_();
   nlCons_.clear();
+  consDual_.clear();
 }
 
 
@@ -155,17 +174,10 @@ void ParQGHandlerAdvance::addInitLinearX_(const double *x)
 }
 
 
-void ParQGHandlerAdvance::cutIntSol_(ConstSolutionPtr sol, CutManager *cutMan,
+void ParQGHandlerAdvance::cutIntSol_(const double *lpx, CutManager *cutMan,
                            SolutionPoolPtr s_pool, bool *sol_found,
                            SeparationStatus *status)
 {
-  const double *lpx = sol->getPrimal();
-  relobj_ = (sol) ? sol->getObjValue() : -INFINITY;
-
-  fixInts_(lpx);           // Fix integer variables
-  solveNLP_();
-  unfixInts_();            // Unfix integer variables
-  
   switch(nlpStatus_) {
   case (ProvenOptimal):
   case (ProvenLocalOptimal):
@@ -680,53 +692,455 @@ void ParQGHandlerAdvance::relax_(bool *isInf)
   nlCons();
   linearizeObj_();
   initLinear_(isInf);
+  bool temp = 0;
+  UInt numNlCons = nlCons_.size();
+  maxVioPer_ = env_->getOptions()->findDouble("maxVioPer")->getValue();
+  objVioMul_ = env_->getOptions()->findDouble("objVioMul")->getValue();
+  cutMethod_ = env_->getOptions()->findString("cutMethod")->getValue();
   double rs1 = env_->getOptions()->findDouble("root_linScheme1")->getValue();
   double rg2 = env_->getOptions()->findDouble("root_linGenScheme2_per")->getValue(); //MS: change name in Environment
- 
-  if (*isInf == false && ((nlCons_.size() > 0) || oNl_)) {
+
+  if (maxVioPer_ && (cutMethod_ == "esh") && (numNlCons > 0)) {
+    temp = 1;
+  }
+
+  if (*isInf == false && ((numNlCons > 0) || oNl_)) {
     if (rs1 || rg2) {
       extraLin_ = new Linearizations(env_, rel_, minlp_, nlCons_, objVar_,
                                      nlpe_->getSolution());
       if (rg2) {
         extraLin_->setNlpEngine(nlpe_->emptyCopy());        
         extraLin_->findCenter();
-
+        if (temp) {
+          solC_ = extraLin_->getCenter();
+          if (solC_ == 0) {
+            maxVioPer_ = 0;
+          }
+        }
       }
       extraLin_->rootLinearizations();
       stats_->rcuts = extraLin_->getStats()->rs1Cuts + extraLin_->getStats()->rgs2Cuts;
-    } 
+    } else if (temp) {
+      findCenter_();
+      if (solC_ == 0) {
+        maxVioPer_ = 0;
+      } else {
+        const double *nlpx = nlpe_->getSolution()->getPrimal();
+        double l1 = 0.5, l2 = 0.5; //MS: can be parametrized.
+        for (UInt i = 0 ; i < minlp_->getNumVars(); ++i) {
+          solC_[i] = l1*nlpx[i] + l2*solC_[i];
+        }
+      }
+    }
+  }
+   
+ //// For dual multiplier based score based rule
+ //// Also make appropriate changes in the updateUb_()
+  if (maxVioPer_ && (numNlCons > 0)) {
+    consDual_.resize(numNlCons, 0);
+    dualBasedCons_(nlpe_->getSolution());
   }
   return;
 }
 
 
-void ParQGHandlerAdvance::separate(ConstSolutionPtr sol, NodePtr , RelaxationPtr rel,
-                         CutManager *cutMan, SolutionPoolPtr s_pool,
-                         ModVector &, ModVector &, bool *sol_found,
-                         SeparationStatus *status)
+void ParQGHandlerAdvance::findCenter_()
+{
+  double lb, ub;
+  FunctionPtr fnewc;
+  ConstraintPtr con;
+  FunctionType fType;
+  VariablePtr vPtr, v;
+  std::vector<ConstraintPtr > cp;
+  ProblemPtr inst_C = minlp_->clone(env_);
+  EnginePtr nlpe = nlpe_->emptyCopy();
+  LinearFunctionPtr lfc = (LinearFunctionPtr) new LinearFunction();
+  
+  // Modify objective 
+  vPtr = inst_C->newVariable(-INFINITY, 0, Continuous, "eta", VarHand);
+  vPtr->setFunType_(Nonlinear);
+  inst_C->removeObjective();
+  lfc->addTerm(vPtr, 1.0);
+  fnewc = (FunctionPtr) new Function(lfc);
+  inst_C->newObjective(fnewc, 0.0, Minimize);
+
+
+  // Solving more restricted proiblem - consider only inequality constraints
+  // including variable bounds - to find center 
+  for (ConstraintConstIterator it=inst_C->consBegin(); it!=inst_C->consEnd();
+     ++it) {
+    con = *it;
+    lb = con->getLb();
+    ub = con->getUb();
+    fType = con->getFunctionType();
+    //if (fType == Constant) {
+      //inst_C->markDelete(con);
+      //continue;
+    //} else 
+    if (fType == Linear)  {
+      continue;
+    } else {
+      if (con->getLinearFunction()) {
+        lfc = con->getLinearFunction()->clone();
+        lfc->addTerm(vPtr, -1.0);
+      } else {
+        lfc = (LinearFunctionPtr) new LinearFunction();
+        lfc->addTerm(vPtr, -1.0);
+      }
+    }
+    inst_C->changeConstraint(con, lfc, lb, ub);
+  }
+
+  inst_C->prepareForSolve();
+  nlpe->load(inst_C);
+  solveCenterNLP_(nlpe);
+  //std::cout <<" ORIGINAL PROBLEM \n";
+  //minlp_->write(std::cout);
+  //std::cout <<" MODIFIED PROBLEM \n";
+  //inst_C->write(std::cout);
+
+  if (nlpe->getStatusString() == "ProvenUnbounded") {
+    logger_->msgStream(LogDebug) << me_ 
+      << " Problem for finding center is unbounded." <<
+     " Solving a restricted problem." << std::endl;
+
+    for (ConstraintConstIterator it=inst_C->consBegin(); it!=inst_C->consEnd();
+         ++it) {
+      con = *it;
+      lb = con->getLb();
+      ub = con->getUb();
+      fType = con->getFunctionType();
+      if (fType == Linear)  {
+        if (lb != -INFINITY && ub != INFINITY) {
+          if (fabs(lb-ub) <= solAbsTol_) {
+            continue;       
+          }
+          cp.push_back(con);
+          inst_C->markDelete(con);
+          continue;
+        } else if (lb != -INFINITY) {
+          ub = INFINITY;
+          lfc = con->getLinearFunction()->clone();
+          lfc->addTerm(vPtr, 1.0);
+        } else if (ub != INFINITY ) {
+          lb = -INFINITY;
+          lfc = con->getLinearFunction()->clone();
+          lfc->addTerm(vPtr, -1.0);
+        } 
+      }  else {
+        continue;      
+      }
+      inst_C->changeConstraint(con, lfc, lb, ub);
+    }
+
+    for (UInt i = 0; i < cp.size(); ++i) {
+      con = cp[i];
+      lb = con->getLb(), ub = con->getUb();
+      lfc = con->getLinearFunction()->clone();
+      lfc->addTerm(vPtr, 1.0);
+      fnewc = (FunctionPtr) new Function(lfc);
+      inst_C->newConstraint(fnewc, lb, INFINITY);
+
+      lfc = con->getLinearFunction()->clone();
+      lfc->addTerm(vPtr, -1.0);
+      fnewc = (FunctionPtr) new Function(lfc);
+      inst_C->newConstraint(fnewc, -INFINITY, ub);
+    }
+    cp.clear();
+
+    for (VariableConstIterator vit=inst_C->varsBegin(); vit!=inst_C->varsEnd()-1;
+         ++vit) {
+      v = *vit;
+      lb = v->getLb(), ub = v->getUb();
+      if (fabs(lb-ub) <= solAbsTol_) {
+        continue;
+      }
+
+      if (lb != -INFINITY) {
+        lfc = (LinearFunctionPtr) new LinearFunction();
+        lfc->addTerm(vPtr, 1.0);
+        lfc->addTerm(v, 1.0);
+        fnewc = (FunctionPtr) new Function(lfc);
+        inst_C->newConstraint(fnewc, lb, INFINITY);
+      }
+      
+      if (ub != INFINITY) {
+        lfc = (LinearFunctionPtr) new LinearFunction();
+        lfc->addTerm(vPtr, -1.0);
+        lfc->addTerm(v, 1.0);
+        fnewc = (FunctionPtr) new Function(lfc);
+        inst_C->newConstraint(fnewc, -INFINITY, ub);
+      }
+    }
+    //inst_C->write(std::cout);
+
+    inst_C->prepareForSolve();  
+    nlpe->load(inst_C);
+    solveCenterNLP_(nlpe);
+  
+    if (solC_) {
+      if (fabs(nlpe->getSolution()->getObjValue()) <= solAbsTol_) {
+        delete [] solC_;
+        solC_ = 0;
+      }
+    } else {
+      logger_->msgStream(LogError) << me_ 
+        << "NLP engine status for restricted center problem = "
+        << nlpe->getStatusString() << std::endl;
+    }
+  } else {
+    if (solC_) {
+      if (fabs(nlpe->getSolution()->getObjValue()) <= solAbsTol_) {
+        delete [] solC_;
+        solC_ = 0;
+      }
+    } else {
+      logger_->msgStream(LogError) << me_ 
+        << "NLP engine status for center problem = "
+        << nlpe->getStatusString() << std::endl;
+    }
+  }
+
+  delete nlpe;
+  nlpe = 0;
+  delete inst_C;
+  inst_C = 0;
+  return;
+}
+
+
+void ParQGHandlerAdvance::solveCenterNLP_(EnginePtr nlpe)
+{ 
+  if (solC_) {
+    delete [] solC_;
+    solC_ = 0;
+  }
+  EngineStatus nlpStatus = nlpe->solve();
+
+  switch(nlpStatus) {
+  case (ProvenOptimal):
+  case (ProvenLocalOptimal):
+    {
+      //std::cout << "Center " << std::setprecision(6) << nlpe_->getSolution()->getObjValue() << "\n";
+      //exit(1);
+      UInt numVars = minlp_->getNumVars();
+      const double *temp = nlpe->getSolution()->getPrimal();
+      solC_ = new double[numVars];
+      std::copy(temp, temp+numVars, solC_);
+    }
+    break;
+  case (ProvenUnbounded):
+    break;
+  case (EngineIterationLimit):
+  case (ProvenInfeasible):
+  case (ProvenLocalInfeasible): 
+  case (ProvenObjectiveCutOff):
+  case (FailedFeas):
+  case (EngineError):
+  case (FailedInfeas):
+  case (ProvenFailedCQFeas):
+  case (EngineUnknownStatus):
+  case (ProvenFailedCQInfeas):
+  default:
+    logger_->msgStream(LogError) << me_ << "NLP engine status = "
+      << nlpe_->getStatusString() << std::endl;
+    break;
+  }
+
+  return;
+}
+
+
+bool ParQGHandlerAdvance::isIntFeas_(const double* x)
 {
   double val;
   VariablePtr var;
   VariableType v_type;
-  const double *x = sol->getPrimal();
+  VariableConstIterator v_iter;
 
-  *status = SepaContinue;
-  for (VariableConstIterator v_iter = rel->varsBegin();
-       v_iter != rel->varsEnd(); ++v_iter) {
+  for (v_iter = rel_->varsBegin(); v_iter != rel_->varsEnd(); ++v_iter) {
     var = *v_iter;
     v_type = var->getType();
     if (v_type == Binary || v_type == Integer) {
       val = x[var->getIndex()];
       if (fabs(val - floor(val+0.5)) > intTol_) {
-        return;
+        return false;
       }
     }
   }
+  return true;
+}
 
-  cutIntSol_(sol, cutMan, s_pool, sol_found, status);
+
+void ParQGHandlerAdvance::dualBasedCons_(ConstSolutionPtr sol)
+{
+  ////  Score based scheme
+  double lambda1 = 0.05, lambda2 = 0.95;
+  const double * consDual = sol->getDualOfCons();
+  //consDual_.clear();
+  //for (CCIter it=nlCons_.begin(); it!=nlCons_.end(); ++it) {
+    //consDual_.push_back(consDual[(*it)->getIndex()]);
+  for (UInt i = 0; i < nlCons_.size(); ++i) {
+    consDual_[i] = lambda1*consDual_[i] + 
+      lambda2*(consDual[(nlCons_[i])->getIndex()]);
+  }
+
   return;
 }
 
+
+void ParQGHandlerAdvance::ECPTypeCut_(const double *lpx, CutManager *, ConstraintPtr con, double act)
+{
+  int error = 0;
+  std::stringstream sstm;
+  //ConstraintPtr newcon;
+  LinearFunctionPtr lf = 0;
+  
+  double c, cUb, lpvio;
+  FunctionPtr f = con->getFunction();
+  
+  linearAt_(f, act, lpx, &c, &lf, &error);
+  
+  if (error==0) {
+    cUb = con->getUb();
+    lpvio = std::max(lf->eval(lpx)-cUb+c, 0.0);
+    if ((lpvio > solAbsTol_) && ((cUb-c)==0 ||
+                             (lpvio>fabs(cUb-c)*solRelTol_))) {
+      ++(stats_->cuts);
+      sstm << "_qgCut_" << stats_->cuts;
+      f = (FunctionPtr) new Function(lf);
+      rel_->newConstraint(f, -INFINITY, cUb-c, sstm.str());
+      //newcon = rel_->newConstraint(f, -INFINITY, cUb-c, sstm.str());
+      return;
+    } else {
+      delete lf;
+      lf = 0;
+    }
+  }
+
+  return;
+}
+
+
+void ParQGHandlerAdvance::separate(ConstSolutionPtr sol, NodePtr node, RelaxationPtr,
+                         CutManager *cutMan, SolutionPoolPtr s_pool,
+                         ModVector &, ModVector &, bool *sol_found,
+                         SeparationStatus *status)
+{
+  const double *x = sol->getPrimal();
+
+  *status = SepaContinue;
+
+  bool isIntFeas = isIntFeas_(x);
+  if (isIntFeas) {
+    fixInts_(x);            // Fix integer variables
+    relobj_ = (sol) ? sol->getObjValue() : -INFINITY;
+    solveNLP_();            // solve NLP
+    unfixInts_();            // Unfix integer variables
+    cutIntSol_(x, cutMan, s_pool, sol_found, status);
+  } else {
+     if (maxVioPer_ > 0) {
+       relobj_ = (sol) ? sol->getObjValue() : -INFINITY;
+       maxVio_(sol, node, cutMan, status); // maxViolation
+    } 
+  }
+  return;
+}
+
+//// Score based rule
+void ParQGHandlerAdvance::maxVio_(ConstSolutionPtr sol, NodePtr node,
+                               CutManager *cutMan, SeparationStatus *status)
+{
+  int error = 0;
+  ConstraintPtr c;
+  UInt temp = stats_->cuts;
+  std::vector<double > consAct;
+  const double *x = sol->getPrimal();
+  double act, cUb, vio, totScore = 0, parentScore; 
+  UInt i = 0, vioConsNum = 0, nodeId = node->getId();
+
+  if (nlCons_.size() > 0) {
+    for (CCIter it = nlCons_.begin(); it != nlCons_.end(); ++it, ++i) {
+      c = *it;
+      act = c->getActivity(x, &error);
+      if (error == 0) {
+        cUb = c->getUb();
+        vio = act - cUb;
+        if (cutMethod_ == "ecp") {
+          consAct.push_back(act);
+        }
+        if ((vio > solAbsTol_) &&
+            (cUb == 0 || vio > fabs(cUb)*solRelTol_)) {
+          ++vioConsNum;
+          vio = act - cUb;
+          if (fabs(cUb) > solAbsTol_) {
+            totScore = totScore + vio*consDual_[i] + vio/fabs(cUb);
+            //std::cout << "act = "<< act << " vio = " << vio << " dual = " << consDual_[i] << " cub = " << cUb << std::endl;
+          } else {
+            totScore = totScore + vio*consDual_[i] + vio;
+          }
+        }
+      } else {
+        if (cutMethod_ == "ecp") {
+          consAct.push_back(INFINITY);
+        }
+      }
+    }
+
+    if (vioConsNum > 0) {
+      totScore = totScore/vioConsNum;
+      node->setVioVal(totScore);
+    } else {
+      node->setVioVal(totScore);
+      return;
+    }
+
+    if (nodeId > 0 && int(nodeId) != lastNodeId_) {
+      parentScore = node->getParent()->getVioVal();
+      if (parentScore < INFINITY && totScore < INFINITY) {
+        if (fabs(parentScore) > 1e-3 && fabs(totScore) > 1e-2 
+            && fabs(totScore) > (maxVioPer_*fabs(parentScore))) { //MS: here maxVioPer_ is in times (0.5, 1, 2, 5,..)
+          //std::cout << std::setprecision(6) << "node, score, and parent's score "<< nodeId << " " << totScore << " " << parentScore << "\n";
+          if (cutMethod_ == "ecp") {
+            i = 0;
+            for (CCIter it = nlCons_.begin(); it != nlCons_.end(); ++it, ++i) {
+              c = *it;
+              act = consAct[i];
+              if (act == INFINITY) {
+                continue;
+              }
+              cUb = c->getUb();
+              vio = act - cUb;
+              if ((vio > solAbsTol_) &&
+                    (cUb == 0 || vio > fabs(cUb)*solRelTol_)) {
+                ECPTypeCut_(x, cutMan, c, act);
+              }
+            }
+
+            if (oNl_) {
+              SeparationStatus s = SepaContinue;
+              objCutAtLpSol_(x, cutMan, &s);
+            }
+          } else if (cutMethod_ == "esh") {
+            ESHTypeCut_(x, cutMan);
+          }
+        }
+      }
+    }
+  } else if (oNl_) {
+    SeparationStatus s = SepaContinue;
+    objCutAtLpSol_(x, cutMan, &s);
+  }
+
+  stats_->fracCuts = stats_->fracCuts + (stats_->cuts - temp);
+
+  if ((temp < stats_->cuts) && (nodeId != UInt(lastNodeId_))) {
+    *status = SepaResolve;
+  }
+
+  lastNodeId_ = nodeId;
+  return;
+}
 
 void ParQGHandlerAdvance::solveNLP_()
 {
@@ -735,6 +1149,238 @@ void ParQGHandlerAdvance::solveNLP_()
   return;
 }
 
+
+void ParQGHandlerAdvance::genLin_(const double *x, std::vector<UInt > vioCons,
+                               CutManager *cutMan)
+{
+  int error;
+  FunctionPtr f;
+  ConstraintPtr con;
+  double c, cUb, act;
+  LinearFunctionPtr lf;
+  std::stringstream sstm;
+
+  for (UInt i = 0; i < vioCons.size(); ++i) {
+    error = 0;
+    con = nlCons_[vioCons[i]];
+    act = con->getActivity(x, &error);
+    if (error == 0) {
+      lf = 0;
+      f = con->getFunction();
+      linearAt_(f, act, x, &c, &lf, &error);
+      if (error == 0) {
+        ++(stats_->cuts);
+        cUb = con->getUb();
+        f = (FunctionPtr) new Function(lf);
+        sstm << "_qgCut_" << stats_->cuts;
+        rel_->newConstraint(f, -INFINITY, cUb-c, sstm.str());
+        //newcon = rel_->newConstraint(f, -INFINITY, cUb-c, sstm.str());
+        sstm.str("");
+      } 
+    }
+  }
+
+  if (oNl_) {
+    SeparationStatus s = SepaContinue;
+    objCutAtLpSol_(x, cutMan, &s);
+  }
+  return;
+}
+
+bool ParQGHandlerAdvance::boundaryPtForCons_(double* xnew, const double *xOut,
+                                     std::vector<UInt > &vioCons)
+{
+  ConstraintPtr con;
+  int error = 0, repPt = 0;
+  bool firstVio, firstActive;
+  UInt numVars =  minlp_->getNumVars(); 
+
+  double* xl = new double[numVars];
+  double* xu = new double[numVars];
+  double act, cUb, repSol, oldSol = INFINITY, lambdaIn = 0.5, lambdaOut = 0.5;
+
+  std::copy(xOut, xOut+numVars, xu);
+  std::copy(solC_, solC_+numVars, xl);
+    
+  while (true) {
+    for (UInt i = 0 ; i < numVars; ++i) {
+      xnew[i] = lambdaIn*xl[i] + lambdaOut*xu[i];
+    }
+    
+    repSol = 0;
+    firstVio = false, firstActive = false;
+
+    for (UInt k = 0; k < vioCons.size(); ) {
+      con = nlCons_[vioCons[k]];
+      act = con->getActivity(xnew, &error);
+      if (error != 0) {
+        delete [] xl;
+        delete [] xu;
+        return false;
+      }
+      cUb = con->getUb();
+      repSol = repSol + act;
+      if ((act > cUb + solAbsTol_) &&
+          (cUb == 0 || act > cUb + fabs(cUb)*solRelTol_)) { // violated
+        if (!firstVio) {
+          firstVio = true;
+          if (k != 0) {
+            vioCons.erase(vioCons.begin(), vioCons.begin() + k);
+            k = 0;
+          }
+        }
+        ++k;
+      } else if ((fabs(act-cUb) <= solAbsTol_) ||
+            (cUb != 0 && fabs(act- cUb) <= fabs(cUb)*solRelTol_)) { // active
+        if (firstVio) {
+          vioCons.erase(vioCons.begin() + k);
+        } else {
+          if (!firstActive) {
+            firstActive = true;
+            if (k != 0) {
+              vioCons.erase(vioCons.begin(),vioCons.begin() + k);
+              k = 0;
+            }
+          }
+          ++k;
+        }
+      } else {
+        if (firstVio || firstActive) {
+           vioCons.erase(vioCons.begin() + k);
+        } else {
+           ++k;
+        }
+      }
+    }
+    
+    if (fabs(repSol-oldSol) <= solAbsTol_) {
+      ++repPt;
+    } else {
+      repPt = 0;
+      oldSol = repSol;
+    }
+
+    if (repPt == 10) {
+      firstVio = false;
+      firstActive = true;
+    }
+
+    if (!firstVio) {
+      if (!firstActive) {
+        std::copy(xnew,xnew+numVars,xl);
+      } else {
+        delete [] xl;
+        delete [] xu;
+        return true;
+      }
+    } else {
+      std::copy(xnew,xnew+numVars,xu);
+    } 
+  }
+  
+  return false;
+}
+
+void ParQGHandlerAdvance::ESHTypeCut_(const double *x, CutManager *cutMan)
+{
+  UInt i = 0;
+  int error = 0;
+  ConstraintPtr c;
+  double act, cUb;
+  std::vector<UInt > consToLin; // cons to add linearizations
+  bool active = false, vio = false, ptFound;
+
+  for (CCIter it = nlCons_.begin(); it != nlCons_.end(); ++it, ++i) {
+    c = *it;
+    act = c->getActivity(x, &error);
+    if (error == 0) {
+      cUb = c->getUb();
+      if ((act > cUb + solAbsTol_) &&
+          (cUb == 0 || act > cUb + fabs(cUb)*solRelTol_)) {
+        if (!vio) {
+          vio = true;
+          if (consToLin.size() != 0) {
+            consToLin.clear();
+          }
+        }
+        consToLin.push_back(i);
+      } else if ((fabs(act-cUb) <= solAbsTol_) ||
+            (cUb != 0 && fabs(act- cUb) <= fabs(cUb)*solRelTol_)) {
+        if (!vio) {
+          if (!active) {
+            active = true;         
+          }
+          consToLin.push_back(i);
+        }
+      }
+    }
+  }
+  
+  if (vio) {
+    double* xnew = new double[minlp_->getNumVars()];
+    ptFound = boundaryPtForCons_(xnew, x, consToLin);
+    if (ptFound) {
+      genLin_(xnew, consToLin, cutMan);
+    }
+    delete [] xnew;
+  } else if (active) {
+    genLin_(x, consToLin, cutMan);
+  }
+  return;
+}
+
+void ParQGHandlerAdvance::objCutAtLpSol_(const double *lpx, CutManager *,
+                                  SeparationStatus *status)
+{
+  if (oNl_) {
+    int error = 0;
+    FunctionPtr f;
+    LinearFunctionPtr lf;
+    double c, lpvio, act;
+    //ConstraintPtr newcon;
+    std::stringstream sstm;
+    ObjectivePtr o = minlp_->getObjective();
+
+    act = o->eval(lpx, &error);
+    if (error == 0) {
+      lpvio = std::max(act-relobj_, 0.0);
+      //std::cout << relobj_ << " " << lpvio << "\n";
+      if (maxVioPer_) {
+        if ((fabs(relobj_) < solAbsTol_) || (fabs(lpvio) < solAbsTol_) || 
+            ((lpvio-relobj_)*100/fabs(relobj_) < objVioMul_)) {
+          return;
+        }
+        //std::cout << "lpvio " << lpvio << " relobj_ " << relobj_ << "\n";
+      }
+      if ((lpvio > solAbsTol_) &&
+          (relobj_ == 0 || lpvio > fabs(relobj_)*solRelTol_)) {
+          lf = 0;
+          f = o->getFunction();
+          linearAt_(f, act, lpx, &c, &lf, &error);
+          if (error == 0) {
+            lpvio = std::max(c+lf->eval(lpx)-relobj_, 0.0);
+            if ((lpvio > solAbsTol_) && ((relobj_-c) == 0
+                                       || lpvio > fabs(relobj_-c)*solRelTol_)) {
+              ++(stats_->cuts);
+              *status = SepaResolve;
+              lf->addTerm(objVar_, -1.0);
+              f = (FunctionPtr) new Function(lf);
+              sstm << "_qgObjCut_" << stats_->cuts;
+              rel_->newConstraint(f, -INFINITY, -1.0*c, sstm.str());
+              //newcon = rel_->newConstraint(f, -INFINITY, -1.0*c, sstm.str());
+            } else {
+              delete lf;
+              lf = 0;
+            }
+          }
+        }
+    }	else {
+      logger_->msgStream(LogError) << me_
+        << " objective not defined at this solution point." << std::endl;
+    }
+  }
+  return;
+}
 
 void ParQGHandlerAdvance::unfixInts_()
 {
@@ -759,6 +1405,10 @@ void ParQGHandlerAdvance::updateUb_(SolutionPoolPtr s_pool, double nlpval,
     const double *x = nlpe_->getSolution()->getPrimal();
     s_pool->addSolution(x, nlpval);
     *sol_found = true;
+
+    if (maxVioPer_ && (nlCons_.size() > 0)) {
+      dualBasedCons_(nlpe_->getSolution());
+    }
   }
   return;
 }

@@ -32,6 +32,7 @@ struct ParQGStats {
   size_t nlpIL;     /// Number of nlps hits engine iterations limit.
   size_t cuts;      /// Number of cuts added to the LP.
   size_t rcuts;     /// Number of extra root cuts.
+  size_t fracCuts;    /// Number of cuts at int feas nodes.
 }; 
 
 
@@ -72,6 +73,8 @@ private:
   
   /// Status of the NLP/QP engine.
   EngineStatus nlpStatus_;
+  
+  double * solC_;
 
   /**
    * The variable corresponding to the objective function. It is a part of
@@ -100,11 +103,21 @@ private:
 
   /// Relative tolerance for pruning a node.
   double objRTol_;
+  
+  LinearizationsPtr extraLin_;
+  
+  double maxVioPer_;
+  
+  double objVioMul_;
+  
+  std::vector<double > consDual_; 
+  
+  std::string cutMethod_;
+  
+  int lastNodeId_;
 
   /// Statistics.
   ParQGStats *stats_;
-  
-  LinearizationsPtr extraLin_;
 
 public:
   /**
@@ -119,6 +132,8 @@ public:
   
   /// Destroy.
   ~ParQGHandlerAdvance();
+  
+  void findCenter_();
    
   /// Does nothing.
   Branches getBranches(BrCandPtr, DoubleVector &, RelaxationPtr,
@@ -184,6 +199,8 @@ public:
   /// Set oNl_ to true and objVar_ when problem objective is nonlinear
   void setObjVar();
 
+  void solveCenterNLP_(EnginePtr nlpe);
+
   /// Show statistics.
   void writeStats(std::ostream &out) const;
 
@@ -198,7 +215,7 @@ private:
    * Solve NLP by fixing integer variables at LP solution and add 
    * outer-approximation cuts to constraints and/or objective.
    */
-  void cutIntSol_(ConstSolutionPtr sol, CutManager *cutMan, 
+  void cutIntSol_(const double *lpx, CutManager *cutMan, 
                   SolutionPoolPtr s_pool, bool *sol_found, 
                   SeparationStatus *status);
 
@@ -207,6 +224,18 @@ private:
    * before solving NLP.
    */
   void fixInts_(const double *x);
+   
+  bool boundaryPtForCons_(double* xnew, const double *xOut,
+                                     std::vector<UInt > &vioCons);
+
+  void genLin_(const double *x, std::vector<UInt> vioCons, CutManager *cutMan);
+  
+  void ECPTypeCut_(const double *x, CutManager *, ConstraintPtr con, double act);
+  
+  void ESHTypeCut_(const double *lpx, CutManager *cutMan);
+  
+  void objCutAtLpSol_(const double *lpx, CutManager *,
+                                  SeparationStatus *status);
 
   /**
    * Solve the NLP relaxation of the MINLP and add linearizations about
@@ -214,6 +243,14 @@ private:
    * infeasible. Throw an assert if the relaxation is unbounded.
    */
   void initLinear_(bool *isInf);
+  
+  bool isIntFeas_(const double* x);
+  
+  void dualBasedCons_(ConstSolutionPtr sol);
+
+  void maxVio_(ConstSolutionPtr sol, NodePtr node,
+                               CutManager *cutMan,
+                               SeparationStatus *status);
 
   /**
    * When the objective function is nonlinear, we need to replace it with
