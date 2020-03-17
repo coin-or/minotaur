@@ -681,13 +681,19 @@ void ParQGHandlerAdvance::relax_(bool *isInf)
   linearizeObj_();
   initLinear_(isInf);
   double rs1 = env_->getOptions()->findDouble("root_linScheme1")->getValue();
+  double rg2 = env_->getOptions()->findDouble("root_linGenScheme2_per")->getValue(); //MS: change name in Environment
  
   if (*isInf == false && ((nlCons_.size() > 0) || oNl_)) {
-    if (rs1) {
+    if (rs1 || rg2) {
       extraLin_ = new Linearizations(env_, rel_, minlp_, nlCons_, objVar_,
                                      nlpe_->getSolution());
+      if (rg2) {
+        extraLin_->setNlpEngine(nlpe_->emptyCopy());        
+        extraLin_->findCenter();
+
+      }
       extraLin_->rootLinearizations();
-      stats_->rcuts = extraLin_->getStats()->rs1Cuts;
+      stats_->rcuts = extraLin_->getStats()->rs1Cuts + extraLin_->getStats()->rgs2Cuts;
     } 
   }
   return;

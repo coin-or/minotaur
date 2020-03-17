@@ -1238,18 +1238,18 @@ void Linearizations::rootLinGenScheme2_()
           || (numVars == 1)) {
         // Coeff of var is zero in the hyperplane expression
         // for last direction
-        lastDir[i] = -1;
-        if (firstnnz != -1) {
-          lastDir[firstnnz] = lastDir[firstnnz] + 1;
-        }
+        //lastDir[i] = -1;
+        //if (firstnnz != -1) {
+          //lastDir[firstnnz] = lastDir[firstnnz] + 1;
+        //}
         
         dir.push_back(1);
         vars.push_back(v);
         exploreDir_(vars, dir, xOut, objGrad, nlconsGrad);
       } else if (int(i) > firstnnz) {
         // for last direction
-        lastDir[i] = -1;
-        lastDir[firstnnz] = lastDir[firstnnz] + 1;
+        //lastDir[i] = -1;
+        //lastDir[firstnnz] = lastDir[firstnnz] + 1;
         
         // unit vector
         dir.push_back(1);
@@ -1265,9 +1265,9 @@ void Linearizations::rootLinGenScheme2_()
     }
     
     // for last direction
-    if (numVars > 1) {
-      exploreDir_(varPtrs_, lastDir, xOut, objGrad, nlconsGrad);
-    } 
+    //if (numVars > 1) {
+      //exploreDir_(varPtrs_, lastDir, xOut, objGrad, nlconsGrad);
+    //} 
   } else {
     //// Line search between center and nlp solution
     //std::cout << isBoundPt_ << " " << hasEqCons_ << "\n";
