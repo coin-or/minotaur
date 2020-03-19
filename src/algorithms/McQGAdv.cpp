@@ -7,8 +7,9 @@
 /**
  * \file McQG.cpp
  * \brief The main function for solving instances in ampl format (.nl) by
- * using a parallel implementation of Branch-and-Bound.
- * \author Prashant Palkar, Meenarli Sharma, IIT Bombay
+ * using a parallel implementation of Advanced Quesada-Grossmann (QG)
+ * algorithm for solving convex MINLPs.
+ * \author Meenarli Sharma, Prashant Palkar, IIT Bombay
  */
 
 #include <iomanip>
@@ -72,7 +73,7 @@ ParQGBranchAndBound* createParBab(EnvPtr env, UInt numThreads, NodePtr &node,
                                   LPEnginePtr lpeCopy[], EnginePtr eCopy[])
 {
   ParQGBranchAndBound *bab = new ParQGBranchAndBound(env, pCopy[0]);
-  const std::string me("mcqg main: ");
+  const std::string me("mcqgadv main: ");
   OptionDBPtr options = env->getOptions();
   bab->shouldCreateRoot(false);
  
@@ -140,7 +141,7 @@ BrancherPtr createBrancher(EnvPtr env, ProblemPtr p, HandlerVector handlers,
 {
   BrancherPtr br = 0;
   UInt t;
-  const std::string me("mcqg main: ");
+  const std::string me("mcqgadv main: ");
 
   if (env->getOptions()->findString("brancher")->getValue() == "rel") {
     ReliabilityBrancherPtr rel_br;
@@ -208,7 +209,7 @@ EnginePtr getEngine(EnvPtr env, ProblemPtr p, int &err)
   EngineFactory *efac = new EngineFactory(env);
   EnginePtr e = EnginePtr(); // NULL
   bool cont=false;
-  const std::string me("mcqg main: ");
+  const std::string me("mcqgadv main: ");
 
   err = 0;
   p->calculateSize();
@@ -251,7 +252,7 @@ void loadProblem(EnvPtr env, MINOTAUR_AMPL::AMPLInterface* iface,
   OptionDBPtr options = env->getOptions();
   JacobianPtr jac;
   HessianOfLagPtr hess;
-  const std::string me("mcqg main: ");
+  const std::string me("mcqgadv main: ");
 
   timer->start();
   oinst = iface->readInstance(options->findString("problem_file")->getValue());
@@ -309,7 +310,7 @@ PresolverPtr presolve(EnvPtr env, ProblemPtr p, size_t ndefs,
                       HandlerVector &handlers)
 {
   PresolverPtr pres = PresolverPtr(); // NULL
-  const std::string me("mcqg main: ");
+  const std::string me("mcqgadv main: ");
 
   p->calculateSize();
   if (env->getOptions()->findBool("presolve")->getValue() == true) {
@@ -377,11 +378,11 @@ void showHelp()
             //<< "(e.g. IPOPT with MA97)**" << std::endl
             << std::endl
             << "Usage:" << std::endl
-            << "To show version: mcqg -v (or --show_version yes) "
+            << "To show version: mcqgadv -v (or --show_version yes) "
             << std::endl
-            << "To show all options: mcqg -= (or --show_options yes)"
+            << "To show all options: mcqgadv -= (or --show_options yes)"
             << std::endl
-            << "To solve an instance: mcqg --option1 [value] "
+            << "To solve an instance: mcqgadv --option1 [value] "
             << "--option2 [value] ... " << " .nl-file" << std::endl;
 }
 
@@ -389,7 +390,7 @@ void showHelp()
 int showInfo(EnvPtr env)
 {
   OptionDBPtr options = env->getOptions();
-  const std::string me("mcqg main: ");
+  const std::string me("mcqgadv main: ");
 
   if (options->findBool("display_options")->getValue() ||
       options->findFlag("=")->getValue()) {
@@ -450,7 +451,7 @@ void writeSol(EnvPtr env, VarVector *orig_v,
 void writeBnbStatus(EnvPtr env, BranchAndBound *bab, double obj_sense)
 {
 
-  const std::string me("mcqg main: ");
+  const std::string me("mcqgadv main: ");
   int err = 0;
 
   if (bab) {
@@ -488,7 +489,7 @@ void writeParBnbStatus(EnvPtr env, ParQGBranchAndBound *parbab, double obj_sense
                        double wallTimeStart)
 {
 
-  const std::string me("mcqg main: ");
+  const std::string me("mcqgadv main: ");
   int err = 0;
 
   if (parbab) {
@@ -603,7 +604,7 @@ int main(int argc, char** argv)
   ParQGBranchAndBound * parbab = 0;
   double wallTimeStart = parbab->getWallTime();  //use Timer: to be done!!!
   PresolverPtr pres = 0;
-  const std::string me("mcqg main: ");
+  const std::string me("mcqgadv main: ");
   VarVector *orig_v=0;
   HandlerVector handlers;
   int err = 0;
