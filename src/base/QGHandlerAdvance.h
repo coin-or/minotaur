@@ -118,6 +118,8 @@ private:
 
   std::vector<double > consDual_; 
 
+  bool findC_;
+
   std::string cutMethod_;
 
   //double lpdist_;
