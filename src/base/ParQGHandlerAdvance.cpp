@@ -66,6 +66,7 @@ ParQGHandlerAdvance::ParQGHandlerAdvance(EnvPtr env, ProblemPtr minlp,
   maxVioPer_(0),
   objVioMul_(0),
   consDual_(0),
+  findC_(0),
   cutMethod_("ecp"),
   lastNodeId_(-1)
 {
@@ -94,8 +95,9 @@ ParQGHandlerAdvance::~ParQGHandlerAdvance()
   
   if (extraLin_) {
     delete extraLin_;  
+    extraLin_ = 0;  
   } else {
-    if (solC_) {
+    if (solC_ && findC_) {
       delete [] solC_;
       solC_ = 0;
     }
@@ -105,7 +107,6 @@ ParQGHandlerAdvance::~ParQGHandlerAdvance()
   rel_ = 0;
   nlpe_ = 0;
   minlp_ = 0;
-  extraLin_ = 0;  
   unfixInts_();
   nlCons_.clear();
   consDual_.clear();

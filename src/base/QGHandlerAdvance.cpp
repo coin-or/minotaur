@@ -66,6 +66,7 @@ QGHandlerAdvance::QGHandlerAdvance(EnvPtr env, ProblemPtr minlp, EnginePtr nlpe)
   maxVioPer_(0),
   objVioMul_(0),
   consDual_(0),
+  findC_(0),
   cutMethod_("ecp"),
   //lpdist_(-1),
   lastNodeId_(-1)
@@ -93,11 +94,10 @@ QGHandlerAdvance::~QGHandlerAdvance()
     delete stats_;
   }
 
-  
   if (extraLin_) {
     delete extraLin_;  
   } else {
-    if (solC_) {
+    if (solC_ && findC_) {
       delete [] solC_;
       solC_ = 0;
     }
@@ -705,6 +705,7 @@ void QGHandlerAdvance::relax_(bool *isInf)
         extraLin_->rootLinearizations();
       }
     } else if (temp2) {
+      findC_ = 1;
       findCenter_();
       if (solC_ == 0) {
         maxVioPer_ = 0;

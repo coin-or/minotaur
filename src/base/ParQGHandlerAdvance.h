@@ -110,7 +110,9 @@ private:
   
   double objVioMul_;
   
-  std::vector<double > consDual_; 
+  std::vector<double > consDual_;
+
+  bool findC_;
   
   std::string cutMethod_;
   
