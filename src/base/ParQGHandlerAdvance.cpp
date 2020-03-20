@@ -84,6 +84,7 @@ ParQGHandlerAdvance::ParQGHandlerAdvance(EnvPtr env, ProblemPtr minlp,
   stats_->nlpIL = 0;
   stats_->cuts = 0;
   stats_->rcuts = 0;
+  stats_->fracCuts = 0;
 }
 
 
@@ -1429,6 +1430,8 @@ void ParQGHandlerAdvance::writeStats(std::ostream &out) const
     << stats_->nlpF << std::endl
     << me_ << "number of nlps hit engine iterations limit  = " 
     << stats_->nlpIL << std::endl
+    << me_ << "number of frac cuts added                   = " 
+    << stats_->fracCuts << std::endl
     << me_ << "number of cuts added                        = " 
     << stats_->cuts << std::endl;
   return;
