@@ -529,7 +529,7 @@ void writeParQGStats(EnvPtr env, ParQGBranchAndBound *parbab, UInt numThreads,
   if (parbab) {
     const std::string me("ParQGHandlerAdvance: ");
     UInt nlpSolved = 0, nlpInf = 0, nlpFeas = 0, nlpItLim = 0, numCuts = 0,
-         numLinCuts = 0;
+         numLinCuts = 0, numFracCuts = 0;
     for (UInt i=0; i < numThreads; i++) {
       for (HandlerVector::iterator it=handlersCopy[i].begin(); it!=handlersCopy[i].end(); ++it) {
         if ((*it)->getName() == "ParQGHandlerAdvance (Quesada-Grossmann)") {
@@ -539,6 +539,7 @@ void writeParQGStats(EnvPtr env, ParQGBranchAndBound *parbab, UInt numThreads,
           nlpFeas += parqgHand->getStats()->nlpF;
           nlpItLim += parqgHand->getStats()->nlpIL;
           numCuts += parqgHand->getStats()->cuts;
+          numFracCuts += parqgHand->getStats()->fracCuts;
           if (i == 0) {
             numLinCuts += parqgHand->getStats()->rcuts;
           }
@@ -557,6 +558,8 @@ void writeParQGStats(EnvPtr env, ParQGBranchAndBound *parbab, UInt numThreads,
       << nlpItLim << std::endl
       << me << "number of extra root Linearizations         = "
       << numLinCuts << std::endl
+      << me << "number of fractional cuts added             = "
+      << numFracCuts << std::endl
       << me << "number of cuts added                        = "
       << numCuts << std::endl;
   }
