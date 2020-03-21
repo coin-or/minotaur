@@ -991,11 +991,11 @@ void ParQGHandlerAdvance::dualBasedCons_(ConstSolutionPtr sol)
 }
 
 
-void ParQGHandlerAdvance::ECPTypeCut_(const double *lpx, CutManager *, ConstraintPtr con, double act)
+void ParQGHandlerAdvance::ECPTypeCut_(const double *lpx, CutManager *cutman, ConstraintPtr con, double act)
 {
   int error = 0;
   std::stringstream sstm;
-  //ConstraintPtr newcon;
+  ConstraintPtr newcon;
   LinearFunctionPtr lf = 0;
   
   double c, cUb, lpvio;
@@ -1011,8 +1011,11 @@ void ParQGHandlerAdvance::ECPTypeCut_(const double *lpx, CutManager *, Constrain
       ++(stats_->cuts);
       sstm << "_qgCut_" << stats_->cuts;
       f = (FunctionPtr) new Function(lf);
-      rel_->newConstraint(f, -INFINITY, cUb-c, sstm.str());
-      //newcon = rel_->newConstraint(f, -INFINITY, cUb-c, sstm.str());
+      newcon = rel_->newConstraint(f, -INFINITY, cUb-c, sstm.str());
+      CutPtr cut = (CutPtr) new Cut(minlp_->getNumVars(),f, -INFINITY,
+                                    cUb-c, false,false);
+      cut->setCons(newcon);
+      cutman->addCutToPool(cut);
       return;
     } else {
       delete lf;
@@ -1153,14 +1156,14 @@ void ParQGHandlerAdvance::solveNLP_()
 
 
 void ParQGHandlerAdvance::genLin_(const double *x, std::vector<UInt > vioCons,
-                               CutManager *cutMan)
+                               CutManager *cutman)
 {
   int error;
   FunctionPtr f;
-  ConstraintPtr con;
   double c, cUb, act;
   LinearFunctionPtr lf;
   std::stringstream sstm;
+  ConstraintPtr con, newcon;
 
   for (UInt i = 0; i < vioCons.size(); ++i) {
     error = 0;
@@ -1175,8 +1178,11 @@ void ParQGHandlerAdvance::genLin_(const double *x, std::vector<UInt > vioCons,
         cUb = con->getUb();
         f = (FunctionPtr) new Function(lf);
         sstm << "_qgCut_" << stats_->cuts;
-        rel_->newConstraint(f, -INFINITY, cUb-c, sstm.str());
-        //newcon = rel_->newConstraint(f, -INFINITY, cUb-c, sstm.str());
+        newcon = rel_->newConstraint(f, -INFINITY, cUb-c, sstm.str());
+        CutPtr cut = (CutPtr) new Cut(minlp_->getNumVars(),f, -INFINITY,
+                                      cUb-c, false,false);
+        cut->setCons(newcon);
+        cutman->addCutToPool(cut);
         sstm.str("");
       } 
     }
@@ -1184,7 +1190,7 @@ void ParQGHandlerAdvance::genLin_(const double *x, std::vector<UInt > vioCons,
 
   if (oNl_) {
     SeparationStatus s = SepaContinue;
-    objCutAtLpSol_(x, cutMan, &s);
+    objCutAtLpSol_(x, cutman, &s);
   }
   return;
 }
@@ -1331,7 +1337,7 @@ void ParQGHandlerAdvance::ESHTypeCut_(const double *x, CutManager *cutMan)
   return;
 }
 
-void ParQGHandlerAdvance::objCutAtLpSol_(const double *lpx, CutManager *,
+void ParQGHandlerAdvance::objCutAtLpSol_(const double *lpx, CutManager *cutman,
                                   SeparationStatus *status)
 {
   if (oNl_) {
@@ -1339,7 +1345,7 @@ void ParQGHandlerAdvance::objCutAtLpSol_(const double *lpx, CutManager *,
     FunctionPtr f;
     LinearFunctionPtr lf;
     double c, lpvio, act;
-    //ConstraintPtr newcon;
+    ConstraintPtr newcon;
     std::stringstream sstm;
     ObjectivePtr o = minlp_->getObjective();
 
@@ -1368,8 +1374,11 @@ void ParQGHandlerAdvance::objCutAtLpSol_(const double *lpx, CutManager *,
               lf->addTerm(objVar_, -1.0);
               f = (FunctionPtr) new Function(lf);
               sstm << "_qgObjCut_" << stats_->cuts;
-              rel_->newConstraint(f, -INFINITY, -1.0*c, sstm.str());
-              //newcon = rel_->newConstraint(f, -INFINITY, -1.0*c, sstm.str());
+              newcon = rel_->newConstraint(f, -INFINITY, -1.0*c, sstm.str());
+              CutPtr cut = (CutPtr) new Cut(minlp_->getNumVars(),f, -INFINITY,
+                                            -1.0*c, false,false);
+              cut->setCons(newcon);
+              cutman->addCutToPool(cut);
             } else {
               delete lf;
               lf = 0;
