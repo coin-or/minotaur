@@ -7,6 +7,8 @@ See the LICENSE file for details on license to use and distribute it.
 ### Important Links
 * [MINOTAUR home page at the Argonne National
   Laboratory](https://wiki.mcs.anl.gov/minotaur)
+* [Reference Paper describing the classes, structure and solvers in
+  Minotaur](http://www.optimization-online.org/DB_HTML/2017/10/6275.html)
 * [Download current release-version with third-party libraries (open-source
   only)](https://wiki.mcs.anl.gov/minotaur/index.php/Minotaur_Download)
 * Download nightly builds (coming soon)
