@@ -109,8 +109,6 @@ ParQGHandlerAdvance::~ParQGHandlerAdvance()
   nlpe_ = 0;
   minlp_ = 0;
   unfixInts_();
-  nlCons_.clear();
-  consDual_.clear();
 }
 
 
@@ -710,10 +708,11 @@ void ParQGHandlerAdvance::relax_(bool *isInf)
     if (rs1 || rg2) {
       extraLin_ = new Linearizations(env_, rel_, minlp_, nlCons_, objVar_,
                                      nlpe_->getSolution());
-      if (rg2) {
+      if (rg2 || temp) {
         extraLin_->setNlpEngine(nlpe_->emptyCopy());        
         extraLin_->findCenter();
         if (temp) {
+          findC_ = 1;
           solC_ = extraLin_->getCenter();
           if (solC_ == 0) {
             maxVioPer_ = 0;
@@ -910,6 +909,16 @@ void ParQGHandlerAdvance::findCenter_()
   return;
 }
 
+void ParQGHandlerAdvance::setCenter(double * temp)
+{
+  if (temp) {
+    UInt numVars = minlp_->getNumVars();
+    solC_ = new double[numVars];
+    std::copy(temp, temp+numVars, solC_);
+    findC_ = 1;
+  }
+  return;
+}
 
 void ParQGHandlerAdvance::solveCenterNLP_(EnginePtr nlpe)
 { 

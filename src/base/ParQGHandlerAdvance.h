@@ -134,6 +134,10 @@ public:
   
   /// Destroy.
   ~ParQGHandlerAdvance();
+
+  void setCenter(double * temp);
+
+  double * getCenter() {return solC_;};
   
   void findCenter_();
    
