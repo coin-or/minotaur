@@ -1,0 +1,40 @@
+Fortran EXT_ETIME does not exist. 
+ Change Dir: /home/mustafa.vora/minotaur/third-party/minotaur-0.2.3-third-party-src/lapack-3.7.1/build/INSTALL
+
+Run Build Command:"/usr/bin/make" "secondtst_EXT_ETIME"
+Scanning dependencies of target secondtst_EXT_ETIME
+[ 33%] Building Fortran object CMakeFiles/secondtst_EXT_ETIME.dir/second_EXT_ETIME.f.o
+[ 66%] Building Fortran object CMakeFiles/secondtst_EXT_ETIME.dir/secondtst.f.o
+[100%] Linking Fortran executable secondtst_EXT_ETIME
+CMakeFiles/secondtst_EXT_ETIME.dir/second_EXT_ETIME.f.o: In function `second_':
+second_EXT_ETIME.f:(.text+0x15): undefined reference to `etime_'
+collect2: error: ld returned 1 exit status
+CMakeFiles/secondtst_EXT_ETIME.dir/build.make:120: recipe for target 'secondtst_EXT_ETIME' failed
+make[3]: *** [secondtst_EXT_ETIME] Error 1
+CMakeFiles/Makefile2:181: recipe for target 'CMakeFiles/secondtst_EXT_ETIME.dir/all' failed
+make[2]: *** [CMakeFiles/secondtst_EXT_ETIME.dir/all] Error 2
+CMakeFiles/Makefile2:194: recipe for target 'CMakeFiles/secondtst_EXT_ETIME.dir/rule' failed
+make[1]: *** [CMakeFiles/secondtst_EXT_ETIME.dir/rule] Error 2
+Makefile:157: recipe for target 'secondtst_EXT_ETIME' failed
+make: *** [secondtst_EXT_ETIME] Error 2
+ 
+Fortran EXT_ETIME_ does not exist. 
+ Change Dir: /home/mustafa.vora/minotaur/third-party/minotaur-0.2.3-third-party-src/lapack-3.7.1/build/INSTALL
+
+Run Build Command:"/usr/bin/make" "secondtst_EXT_ETIME_"
+Scanning dependencies of target secondtst_EXT_ETIME_
+[ 33%] Building Fortran object CMakeFiles/secondtst_EXT_ETIME_.dir/second_EXT_ETIME_.f.o
+[ 66%] Building Fortran object CMakeFiles/secondtst_EXT_ETIME_.dir/secondtst.f.o
+[100%] Linking Fortran executable secondtst_EXT_ETIME_
+CMakeFiles/secondtst_EXT_ETIME_.dir/second_EXT_ETIME_.f.o: In function `second_':
+second_EXT_ETIME_.f:(.text+0x15): undefined reference to `etime__'
+collect2: error: ld returned 1 exit status
+CMakeFiles/secondtst_EXT_ETIME_.dir/build.make:120: recipe for target 'secondtst_EXT_ETIME_' failed
+make[3]: *** [secondtst_EXT_ETIME_] Error 1
+CMakeFiles/Makefile2:257: recipe for target 'CMakeFiles/secondtst_EXT_ETIME_.dir/all' failed
+make[2]: *** [CMakeFiles/secondtst_EXT_ETIME_.dir/all] Error 2
+CMakeFiles/Makefile2:270: recipe for target 'CMakeFiles/secondtst_EXT_ETIME_.dir/rule' failed
+make[1]: *** [CMakeFiles/secondtst_EXT_ETIME_.dir/rule] Error 2
+Makefile:183: recipe for target 'secondtst_EXT_ETIME_' failed
+make: *** [secondtst_EXT_ETIME_] Error 2
+ 

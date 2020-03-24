@@ -1,0 +1,652 @@
+Cut here <<<<<<<<<<<<<<<<<<<
+Christen this file scaling.f
+
+c     ******************************************************************
+c     Scaling subroutines for filter
+c     ==============================
+c     * readscale     - read scale parameters from a data filename
+c     * confun1       - wrap around user supplied confun to handle scaling
+c     * objfun1       - wrap around user supplied objfun to handle scaling
+c     * gradient1     - wrap around user supplied gradient to handle scaling
+c     * hessian1      - wrap around user supplied hessian to handle scaling
+c     * init_scale    - initialize scaling before call to filterSQP1
+c     * end_unscale   - unscale solution after solve by filterSQP1
+c     ******************************************************************
+
+c     ==================================================================
+c     The following routine is now obsolete in AMPL: to use scaling in AMPL, 
+c     simply use the following suffix notation in your *.mod or *.dat file:
+c
+c     suffix scale IN;            # for two AMPL variables x[1], x[2]
+c     let x[1].scale := 2;
+c     let x[2].scale := 2;
+c     ==================================================================
+
+      subroutine readscale (n,m,vname,cname,fname,flen,scale,ifail)
+
+c     ------------------------------------------------------------------
+c     Read scale factors from data file fname.scl. Usage see below. 
+c     
+c     Copyright: S. Leyffer, University of Dundee, March 1999.
+c
+c     Version date: 18 March 1999
+c
+c     Parameters:
+c     ==========
+c     n              : number of variables [INTEGER]
+c     m              : number of constraints [INTEGER]
+c     vname(n)       : names of variables [CHARACTER*10/30]
+c     cname(m)       : names of constraints [CHARACTER*10/30]
+c     fname          : filename of *.scl file
+c     flen           : number of characters in fname
+c     scale(n+m)     : variable and constraint scale factors
+c     ifail          : indicates success/failure [INTEGER]
+c                      = 0 if successful, 
+c                      = 1 if file could not be opened
+c                      = 2 if file contained invalid keyword
+c                      = 3 if variable/constraint name not found
+c
+c     File format for pname.scl:
+c     =========================
+c     
+c     KEYWORD
+c
+c     SCALE_LIST
+c
+c     ... where KEYWORD      is      variables    or   VARIABLES 
+c                                    constraints  or   CONSTRAINTS
+c
+c     ... and   SCALE_LIST   is       NAME  VALUE
+c                                     { SCALE_LIST }
+c                                     END
+c     
+c     where several pairs of KEYWORD, SCALE_LIST may appear. The file
+c     can be closed with EOI
+c
+c     All variables are assigned a default scaling of 1.D0.
+c
+c     Note that ALL variables/constraints which contain NAME are assigned 
+c     VALUE as scale-factor. This enables arrays to be given identical 
+c     scaling, e.g.
+c     y      100
+c     z[1,   10
+c     z[2,   1
+c     would give y[1],...,y[10] say the scale-factor 100, z[1,1],...,z[1,10]
+c     the scale-factor 10 and z[2,1],...,z[2,10] the scale-factor 1.
+c
+c     In AMPL session say ...
+c     
+c     ampl: model synthes1.mod;              -> problem description
+c     ampl: option solver filter;            -> solve with filter
+c     ampl: option filter_auxfiles rc;       -> save variable/constraint names
+c     ampl: option mip_priorities synthes1;  -> read info from synthes1.scl
+c     ampl: solve;                           -> solve the problem
+c
+c     When using CUTE ...
+c
+c     Ensure the *.scl file is in the current directory.
+c     Add readscale.f to the makefiles & executables for linking.
+c     Call readscale before a solve with the filter solver AFTER csetup.
+c
+c     After reading all the information a stub.outscale file is created
+c     listing all the information read by this routine.
+c
+c     ------------------------------------------------------------------
+
+      implicit none
+
+c     ... constant depending on whether AMPL or CUTE is used
+      integer     clen
+      parameter ( clen = 30 )
+CUTE  parameter ( clen = 10 )
+cAMPL parameter ( clen = 30 )
+c     ... NB: also change character*nn for vname, cname, name
+
+c     ... declaration of passed parameters
+      integer n, m, ifail, flen
+      double precision         scale(n+m)
+      character*72 vname(n), cname(m)
+CUTE  character*10 vname(n), cname(m)
+cAMPL character*72 vname(n), cname(m)
+      character*10 fname
+
+c     ... common block for problemname
+      integer         char_l
+      character*10            pname
+      common /cpname/ char_l, pname
+
+c     ... storage map for hessian and scale_mode
+      integer         scale_mode, phe
+      common /scalec/ scale_mode, phe
+
+c     ... declaration of internal parameters
+      character*11 keyword
+      character*72 name
+CUTE  character*10 name
+cAMPL character*72 name
+      integer      i, ii, j, nin, ic
+      logical      found, var_scale, con_scale
+      double precision         value
+
+      data nin /17/
+      data var_scale, con_scale /.false. , .false./
+
+c     ========================  procedure body  =========================
+
+c     ... copy filename & length into common block
+      pname  = fname
+      char_l = flen
+
+c     ... open options file (if possible)
+      ifail = 1
+      open(nin, file=pname(1:char_l)//'.scl', status='OLD', err=999)
+
+      ic = 0
+c     ... read keyword & priorities
+      ifail = 2
+ 1000 continue
+
+         read(nin,*,end=99) keyword
+cc         print *,' keyword ',keyword
+         
+         if ((keyword(1:9).eq.'variables').or.
+     .       (keyword(1:9).eq.'VARIABLES')) then
+            ifail = 0
+            var_scale = .true.
+c           ... initialize variable scales to 1.D0
+            do i=1,n
+               scale(i) = 1.D0
+            enddo
+c           ... read variable scales from data file
+ 100        continue
+               name = 'EOF_found'
+               read(nin,*,err=199,end=199) name, value
+cc               print *,' name, value (1) ',name, value
+               ii = clen
+               do j=clen,1,-1
+                  if (name(j:j).eq.' ') then
+                     ii = j-1
+                  endif
+               enddo
+               found = .false.
+               do j=1,n
+                  if (name(1:ii).eq.vname(j)(1:ii)) then
+                     scale(j) = value
+                     found    = .true.
+                     ic       = ic + 1
+                  endif
+               enddo
+               if (.not.found) then
+                  print *,'vname not found:',name(1:ii)
+               endif
+            goto 100
+ 199        continue
+            if (name(1:3).ne.'END') then
+               print *,'WARNING: variable scales end with ',name
+            endif
+         elseif ((keyword.eq.'constraints').or.
+     .           (keyword.eq.'CONSTRAINTS')) then
+c           ... read constraint scales
+            ifail = 0
+            con_scale = .true.
+c           ... initialize constraint scales to 1.D0
+            do i=n+1,n+m
+               scale(i) = 1.D0
+            enddo
+ 200        continue
+               name = 'EOF_found'
+               read(nin,*,err=299,end=299) name, value
+cc               print *,' name, value (2) ',name, value 
+               ii = clen
+               do j=clen,1,-1
+                  if (name(j:j).eq.' ') then
+                     ii = j-1
+                  endif
+               enddo
+               found = .false.
+               do j=1,m
+                  if (name(1:ii).eq.cname(j)(1:ii)) then
+                     scale(n+j) = value
+                     found      = .true.
+                     ic       = ic + 1
+                  endif
+               enddo
+               if (.not.found) then
+                  print *,'cname not found:',name(1:ii)
+               endif
+            goto 200
+ 299        continue
+            if (name(1:3).ne.'END') then
+               print *,'WARNING: constraint scales end with ',name
+            endif
+         elseif (keyword(1:3).eq.'EOI') then
+            goto 99
+         else
+            print *,'ERROR: WRONG keyword in *.scl: ',keyword
+            ifail = 2
+            goto 99
+         endif
+            
+      goto 1000
+
+ 999  continue
+      print *,'WARNING: No ',pname(1:flen),'.scl file'
+      scale_mode = 0
+
+ 99   continue
+      close(nin)
+      if (ifail.eq.0) then
+         print *,'Scaling read successfully for ',pname(1:flen)
+         if (var_scale.and.con_scale) then
+            scale_mode = 3
+         elseif (con_scale) then
+            scale_mode = 2
+         elseif (var_scale) then
+            scale_mode = 1
+         else
+            scale_mode = 0
+         endif
+      else
+         print *,'ERROR in ',pname(1:flen),'.scl file: ifail = ',ifail
+         scale_mode = 0
+      endif
+      if (ic.eq.0) then
+         scale_mode = 0
+      endif
+
+      if (scale_mode.gt.0) then
+c        ... print the data collected in this routine
+         open(unit=18, file=pname(1:char_l)//'.outscale')
+         write(18,*) 'Scaling information read for ',pname(1:char_l)
+         write(18,*) '========================================'
+         write(18,*)
+         write(18,*) 'scale_mode, ifail = ',scale_mode, ifail
+         write(18,*)
+         write(18,*) 'Number of variables: ',n
+         write(18,*) 'Scale factors for variables'
+         write(18,*) '    i  name       scale         ',
+     .        '    i  name       scale'
+         write(18,*) '--------------------------------',
+     .        '----------------------------'
+         write(18,2000) (i,vname(i),scale(i),i=1,n)
+         write(18,*)
+         write(18,*) 'Number of constraints: ',m
+         write(18,*) 'Scale factors for constraints'
+         write(18,*) '    i  name       scale         ',
+     .        '    i  name       scale'
+         write(18,*) '--------------------------------',
+     .        '----------------------------'
+         write(18,2000) (i,cname(i),scale(n+i),i=1,m)
+         close(18)
+      endif
+
+ 2000 format(2(I6,2X,A,G10.3,4X))
+
+      return
+      end
+
+c     ******************************************************************
+
+      subroutine confun1(x,n,m,c,a,la,s,user,iuser,flag)
+
+      implicit none
+
+c     ... declaration of passed parameters -- scalars
+      integer n, m, flag
+
+c     ... declaration of passed parameters -- arrays
+      double precision    x(n), c(m), a(*), user(*), s(n+m)
+      integer la(0:*), iuser(*)
+
+c     ... storage map for hessian and scale_mode
+      integer         scale_mode, phe
+      common /scalec/ scale_mode, phe
+
+c     ... declaration of internal variables
+      integer i
+
+c     =======================  procedure body  =========================
+
+      if (m.gt.0) then 
+c        ... unscale the variables & Jacobian (=> linear terms not re-scaled)
+         if (scale_mode.ge.1) then
+            i = 0
+            call cunscale1(n,m,a,la,x,s,scale_mode,i)
+            if (i.ne.0) then
+               print *,'ERROR in cunscale1 in confun: STOP ',i
+               STOP
+            endif
+         endif
+
+c        ... call user provided confun
+         call confun (x,n,m,c,a,la,user,iuser,flag)
+
+c        ... scale the variables & Jacobian entries
+         if (scale_mode.ge.1) then
+            i = 0
+            call cscale1(n,m,a,la,x,s,scale_mode,i)
+            if (i.ne.0) then
+               print *,'ERROR in cscale1 in confun: STOP ',i
+               STOP
+            endif
+         endif
+c        ... scale the constraint values
+         if (scale_mode.ge.2) then
+            do i=1,m
+               c(i) = c(i) / s(n+i)
+            enddo
+         endif
+      endif
+
+      return
+      end
+
+c     ******************************************************************
+
+      subroutine objfun1(x,n,f,s,user,iuser,flag)
+
+      implicit none
+
+c     ... declaration of passed parameters -- scalars
+      integer n, flag
+      double precision    f
+
+c     ... declaration of passed parameters -- arrays
+      double precision    x(n), user(*), s(n)
+      integer iuser(*)
+
+c     ... storage map for hessian and scale_mode
+      integer         scale_mode, phe
+      common /scalec/ scale_mode, phe
+
+c     ... declaration of internal variables
+      integer i
+
+c     =======================  procedure body  =========================
+
+c     ... unscale the variables
+      if ((scale_mode.eq.1).or.(scale_mode.eq.3)) then
+         do i=1,n
+            x(i) = x(i) * s(i)
+         enddo
+      endif
+
+c     ... call user provided objfun
+      call objfun (x,n,f,user,iuser,flag)
+
+c     ... scale the variables values
+      if ((scale_mode.eq.1).or.(scale_mode.eq.3)) then
+         do i=1,n
+            x(i) = x(i) / s(i)
+         enddo
+      endif
+
+      return
+      end
+
+c     ******************************************************************
+
+      subroutine gradient1(n,m,mxa,x,a,la,maxa,s,user,iuser,flag)
+
+      implicit none
+
+c     ... declaration of passed parameters -- scalars
+      integer n, m, mxa, maxa, flag
+
+c     ... declaration of passed parameters -- arrays
+      integer la(0:*), iuser(*)
+      double precision    x(n), a(maxa), user(*), s(n+m)
+
+c     ... storage map for hessian and scale_mode
+      integer         scale_mode, phe
+      common /scalec/ scale_mode, phe
+
+c     ... declaration of internal variables
+      integer i
+
+c     =======================  procedure body  =========================
+
+c     ... unscale the variables & Jacobian (=> linear terms not re-scaled)
+      if (scale_mode.ge.1) then
+         i = 0
+         call cunscale1(n,m,a,la,x,s,scale_mode,i)
+         if (i.ne.0) then
+            print *,'ERROR in cunscale1 in gradient: STOP ',i
+            STOP
+         endif
+      endif
+
+c     ... call user provided gradient
+      call gradient (n,m,mxa,x,a,la,maxa,user,iuser,flag)
+
+c     ... scale the variables & Jacobian entries
+      if (scale_mode.ge.1) then
+         i = 0
+         call cscale1(n,m,a,la,x,s,scale_mode,i)
+         if (i.ne.0) then
+            print *,'ERROR in cscale1 in gradient: STOP ',i
+            STOP
+         endif
+      endif
+
+      return
+      end
+
+c     ******************************************************************
+
+      subroutine objgrad1(n,m,mxa,x,a,la,maxa,s,user,iuser,flag)
+
+      implicit none
+
+c     ... declaration of passed parameters -- scalars
+      integer n, m, mxa, maxa, flag
+
+c     ... declaration of passed parameters -- arrays
+      integer la(0:*), iuser(*)
+      double precision    x(n), a(maxa), user(*), s(n+m)
+
+c     ... storage map for hessian and scale_mode
+      integer         scale_mode, phe
+      common /scalec/ scale_mode, phe
+
+c     ... declaration of internal variables
+      integer i
+
+c     =======================  procedure body  =========================
+
+c     ... unscale the variables & Jacobian (=> linear terms not re-scaled)
+      if (scale_mode.ge.1) then
+         i = 0
+         call cunscale1(n,m,a,la,x,s,scale_mode,i)
+         if (i.ne.0) then
+            print *,'ERROR in cunscale1 in gradient: STOP ',i
+            STOP
+         endif
+      endif
+
+c     ... call user provided gradient
+      call objgrad (n,m,mxa,x,a,la,maxa,user,iuser,flag)
+
+c     ... scale the variables & Jacobian entries
+      if (scale_mode.ge.1) then
+         i = 0
+         call cscale1(n,m,a,la,x,s,scale_mode,i)
+         if (i.ne.0) then
+            print *,'ERROR in cscale1 in gradient: STOP ',i
+            STOP
+         endif
+      endif
+
+      return
+      end
+
+c     ******************************************************************
+
+      subroutine hessian1(x,n,m,phase,lam,ws,lws,s,user,iuser,l_hess,
+     .                    li_hess,flag)
+
+      implicit none
+
+c     ... declaration of passed parameters -- scalars
+      integer n, m, phase, flag, l_hess, li_hess
+
+c     ... declaration of passed parameters -- arrays
+      double precision    x(n), lam(n+m), ws(*), user(*), s(n+m)
+      integer lws(*), iuser(*)
+
+c     ... storage map for hessian and scale_mode
+      integer         scale_mode, phe
+      common /scalec/ scale_mode, phe
+
+c     ... declaration of internal variables
+      integer i
+
+c     =======================  procedure body  =========================
+
+c     ... unscale the variables; scale multipliers
+      if ((scale_mode.eq.1).or.(scale_mode.eq.3)) then
+         do i=1,n
+            x(i) = x(i) * s(i)
+         enddo
+      endif
+      if (scale_mode.ge.2) then
+         do i=1,m
+            lam(n+i) = lam(n+i) / s(n+i)
+         enddo
+      endif
+
+c     ... call user provided Hessian
+      call hessian(x,n,m,phase,lam,ws,lws,user,iuser,l_hess,li_hess,
+     .             flag)
+
+c     ... scale the variables values
+      if ((scale_mode.eq.1).or.(scale_mode.eq.3)) then
+         do i=1,n
+            x(i) = x(i) / s(i)
+         enddo
+      endif
+      if (scale_mode.ge.2) then
+         do i=1,m
+            lam(n+i) =lam(n+i) * s(n+i)
+         enddo
+      endif
+
+      return
+      end
+
+c     ******************************************************************
+
+      subroutine init_scale (n, m, s, ws, x, bl, bu, lam, a, la)
+
+      implicit none
+
+c     ... declaration of passed parameters -- scalars
+      integer n, m, la(0:*)
+
+c     ... decalaration of passed parameters -- arrays
+      double precision    s(n+m), ws(*), x(n), bl(n+m), bu(n+m), 
+     .        lam(n+m), a(*)
+
+c     ... declaration of internal variables
+      integer i
+      double precision    t, z
+
+c     ... storage map for hessian and scale_mode
+      integer         scale_mode, phe
+      common /scalec/ scale_mode, phe
+
+c     ========================  EXECUTABLE STATEMENTS ==================
+
+      if (scale_mode.ge.1) then
+c        ... set storage map for scale factors (real workspace ws)
+         phe = n+m
+         z = 1.D0 / log( 2.D0 )
+         if (scale_mode.ne.2) then
+            do i=1,n
+               t     = 2.D0**nint(log(s(i))*z)
+               s(i)  = t
+               ws(i) = t
+               bl(i) = bl(i) / t
+               bu(i) = bu(i) / t
+            enddo
+         endif
+         if (scale_mode.ge.2) then
+            do i=n+1,n+m
+               t      = 2.D0**nint(log(s(i))*z)
+               s(i)   = t
+               ws(i)  = t
+               lam(i) = lam(i) * t
+               bl(i)  = bl(i) / t
+               bu(i)  = bu(i) / t
+            enddo
+         endif
+         i = 0
+         call cscale1(n,m,a,la,x,s,scale_mode,i)
+         if (i.ne.0) then
+            print *,'ERROR in cscale1 in init_scale: STOP ',i
+            STOP            
+         endif
+      else
+c        ... no scaling
+         phe        = 0
+         scale_mode = 0
+         do i=1,n
+            s(i) = 1.D0
+         enddo
+      endif
+
+      return
+      end
+
+c     ******************************************************************
+
+      subroutine end_unscale(n, m, x, c, bl, bu, lam, s, a, la)
+
+      implicit none
+
+c     ... declaration of passed parameters -- scalars
+      integer n, m, la(0:*)
+
+c     ... decalaration of passed parameters -- arrays
+      double precision    s(n+m), x(n), bl(n+m), bu(n+m), 
+     .        lam(n+m), c(m), a(*)
+
+c     ... declaration of internal variables
+      integer i
+      double precision    t
+
+c     ... storage map for hessian and scale_mode
+      integer         scale_mode, phe
+      common /scalec/ scale_mode, phe
+
+c     ========================  EXECUTABLE STATEMENTS ==================
+
+      if ((scale_mode.eq.1).or.(scale_mode.eq.3)) then
+         do i=1,n
+            t     = s(i)
+            bl(i) = bl(i) * t
+            bu(i) = bu(i) * t
+         enddo
+      endif
+      if (scale_mode.ge.2) then
+         do i=1,m
+            t        = s(n+i)
+            c(i)     = c(i) * t
+            lam(n+i) = lam(n+i) / t
+            bl(n+i)  = bl(n+i) * t
+            bu(n+i)  = bu(n+i) * t
+         enddo
+      endif
+      if (scale_mode.ge.1) then
+         i = 0
+         call cunscale1(n,m,a,la,x,s,scale_mode,i)
+         if (i.ne.0) then
+            print *,'ERROR in cunscale1 in end_unscale: STOP ',i
+            STOP
+         endif
+      endif
+
+      return
+      end
+
+c     *******************************  E N D  **************************

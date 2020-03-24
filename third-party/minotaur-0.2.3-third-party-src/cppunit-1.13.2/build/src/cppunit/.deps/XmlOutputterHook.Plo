@@ -1,0 +1,18 @@
+XmlOutputterHook.lo: ../../../src/cppunit/XmlOutputterHook.cpp \
+ /usr/include/stdc-predef.h ../../../include/cppunit/XmlOutputterHook.h \
+ ../../../include/cppunit/Portability.h \
+ ../../include/cppunit/config-auto.h \
+ ../../../include/cppunit/config/CppUnitApi.h \
+ ../../../include/cppunit/config/SelectDllLoader.h
+
+/usr/include/stdc-predef.h:
+
+../../../include/cppunit/XmlOutputterHook.h:
+
+../../../include/cppunit/Portability.h:
+
+../../include/cppunit/config-auto.h:
+
+../../../include/cppunit/config/CppUnitApi.h:
+
+../../../include/cppunit/config/SelectDllLoader.h:

@@ -1,0 +1,97 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<?xml-stylesheet type = "text/xsl" href = "http://www.coin-or.org/projects/autoGen.xsl"?>
+<projectData xmlns="coin-or.org" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="coin-or.org http://www.coin-or.org/projects/autoGen.xsd">
+  <projectBasics>
+    <projectName>Cgl</projectName>
+    <projectDescription>
+      The COIN-OR Cut Generation Library (Cgl) is an open collection
+      of cutting plane implementations ("cut generators") for use in
+      teaching, research, and applications. Cgl can be used with other
+      COIN-OR packages that make use of cuts, such as the mixed-integer
+      linear programming solver Cbc. Each cut generator has its own
+      maintainer who leads the development of its functionality, testing,
+      and documentation. See below for a listing of available generators.
+      All the generators are combined in one library when Cgl is compiled.
+    </projectDescription>
+    <projectShortDescription>
+      A library of cutting-plane generators.
+    </projectShortDescription>
+    <projectManager>Robin Lougee (rlougee at us.ibm.com)</projectManager>
+    <projectHomePage>https://github.com/coin-or/Cgl</projectHomePage>
+    <projectLicense>Eclipse Public License 1.0</projectLicense>
+    <projectLicenseURL>http://www.opensource.org/licenses/eclipse-1.0</projectLicenseURL>
+    <coinLinkedProjects>
+      <coinProject>
+        <repoName>CoinUtils</repoName>
+      </coinProject>
+      <coinProject>
+        <repoName>Osi</repoName>
+      </coinProject>
+    </coinLinkedProjects>
+    <otherLinkedPackages/>
+    <projectLanguage>C++</projectLanguage>
+    <developmentStatus>
+      <activityStatus>Active</activityStatus>
+      <maturityLevel>5</maturityLevel>
+    </developmentStatus>
+    <testedPlatforms>
+      <platform>
+        <operatingSystem>Microsoft Windows / CYGWIN / MinGW / Msys</operatingSystem>
+        <compiler>gcc, cl</compiler>
+      </platform>
+      <platform>
+        <operatingSystem>Microsoft Windows</operatingSystem>
+        <compiler>Visual Studio, cl</compiler>
+      </platform>
+      <platform>
+        <operatingSystem>SuSE Linux</operatingSystem>
+        <compiler>gcc</compiler>
+      </platform>
+      <platform>
+        <operatingSystem>Fedora Linux</operatingSystem>
+        <compiler>gcc</compiler>
+      </platform>
+    </testedPlatforms>
+    <projectCategories>
+      <category>Optimization deterministic linear discrete</category>
+    </projectCategories>
+    <subProjectCategory name="Combinatorial cuts">
+      <subProject>CglAllDifferent</subProject>
+      <subProject>CglClique</subProject>
+      <subProject>CglKnapsackCover</subProject>
+      <subProject>CglOddHole</subProject>
+      <subProject>CglZeroHalf</subProject>
+    </subProjectCategory>
+    <subProjectCategory name="Flow cover cuts">
+      <subProject>CglFlowCover</subProject>
+    </subProjectCategory>
+    <subProjectCategory name="Gomory cuts and variants">
+      <subProject>CglGomory</subProject>
+      <subProject>CglGMI</subProject>
+      <subProject>CglRedSplit</subProject>
+      <subProject>CglRedSplit2</subProject>
+    </subProjectCategory>
+    <subProjectCategory name="Lift-and-project cuts">
+      <subProject>CglLiftAndProject</subProject>
+      <subProject>CglLandP</subProject>
+    </subProjectCategory>
+    <subProjectCategory name="Mixed integer rounding cuts and variants">
+      <subProject>CglMixedIntegerRounding</subProject>
+      <subProject>CglMixedIntegerRounding2</subProject>
+      <subProject>CglTwomir</subProject>
+      <subProject>CglResidualCapacity</subProject>
+    </subProjectCategory>
+    <subProjectCategory name="Strengthening">
+      <subProject>CglDuplicateRow</subProject>
+      <subProject>CglPreprocess</subProject>
+      <subProject>CglProbing</subProject>
+      <subProject>CglSimpleRounding</subProject>
+    </subProjectCategory>
+  </projectBasics>
+  <leftMenuLinks>
+    <documentation>https://github.com/coin-or/Cgl/wiki</documentation>
+    <sourceCodeDownload>http://www.coin-or.org/download/source/Cgl</sourceCodeDownload>
+    <binaryDownload></binaryDownload>
+    <mailingList>http://list.coin-or.org/mailman/listinfo/cgl</mailingList>
+  </leftMenuLinks>
+</projectData>

@@ -1,0 +1,10 @@
+prefix=/home/mustafa.vora/minotaur/third-party
+libdir=/home/mustafa.vora/minotaur/third-party/minotaur-0.2.3-third-party-src/cbc-2.10.2/build/Cbc/src
+
+Name: CBC
+Description: COIN-OR Branch and Cut
+URL: https://projects.coin-or.org/Cbc
+Version: 2.10.2
+Libs: ${libdir}/libCbcSolver.la ${libdir}/libCbc.la 
+Cflags: -I/home/mustafa.vora/minotaur/third-party/minotaur-0.2.3-third-party-src/cbc-2.10.2/Cbc/Cbc/src -I/home/mustafa.vora/minotaur/third-party/minotaur-0.2.3-third-party-src/cbc-2.10.2/build/Cbc/src
+Requires: osi-clp cgl osi coinutils 

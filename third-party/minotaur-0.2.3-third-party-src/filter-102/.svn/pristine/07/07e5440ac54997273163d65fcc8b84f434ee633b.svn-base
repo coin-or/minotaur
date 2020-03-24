@@ -1,0 +1,250 @@
+%This is a TeX file of User Information for bqpd
+\documentstyle[12pt]{article}
+
+\setlength{\oddsidemargin}{.25in}
+\setlength{\evensidemargin}{.25in}
+\setlength{\topmargin}{0pt}
+\setlength{\textheight}{8.5in}
+\setlength{\textwidth}{6in}
+
+\begin{document}
+
+\def\diag{\mathop{\rm diag}}
+\def\mod{\mathop{\rm mod}}
+\def\rank{\mathop{\rm rank}}
+\def\mini{\mathop{\rm minimize}\hskip1.4em}
+\def\maxi{\mathop{\rm maximize}\hskip1.3em}
+\def\subj{\hbox{\rm subject~to}\quad}
+\def\IR{{\rm I\hskip-2pt R}}
+\def\fr#1#2{{\textstyle{#1\over#2}}}
+\def\phm{\phantom{-}}
+
+\def\ba{{\bf {a}}}
+\def\bb{{\bf {b}}}
+\def\bc{{\bf {c}}}
+\def\bd{{\bf {d}}}
+\def\be{{\bf {e}}}
+\def\bff{{\bf {f}}}
+\def\bg{{\bf {g}}}
+\def\bh{{\bf {h}}}
+\def\bl{{\bf {l}}}
+\def\bp{{\bf {p}}}
+\def\bq{{\bf {q}}}
+\def\br{{\bf {r}}}
+\def\bs{{\bf {s}}}
+\def\bu{{\bf {u}}}
+\def\bv{{\bf {v}}}
+\def\bw{{\bf {w}}}
+\def\bx{{\bf {x}}}
+\def\by{{\bf {y}}}
+\def\bz{{\bf {z}}}
+\def\zero{{\bf {0}}}
+
+\centerline{\Large User Information for {\tt bqpd}}
+
+\vspace{0.3cm}
+
+\leftline{\bf Introduction}
+\noindent
+Welcome to {\tt bqpd}! This is a package of Fortran 77 subroutines
+for solving quadratic programming (QP) problems in the form
+\begin{center}
+\begin{tabular}{ll}
+minimize&$f(\bx)=\bc^T\bx+\fr12\bx^TG\bx$\\
+subject to&$\bl\le[I\,:\,A]^T\bx\le\bu$
+\end{tabular}
+\end{center}
+where $\bx$ and $\bc$ are $n$-vectors, $G$ is a symmetric $n\times n$ matrix
+(the Hessian matrix), and $A$ is an $n\times m$ matrix. Thus the first $n$
+constraints are simple bounds, and the remaining $m$ constraints are
+general linear constraints whose normal vectors are columns of $A$.
+
+More specifically, the package is designed to find a Kuhn--Tucker (KT) point
+of this problem (see for example R. Fletcher, {\it Practical Methods of
+Optimization, 2nd. Edition}, John Wiley, 1987, for background information).
+If $G$ is positive semi-definite then the KT point is a global solution, else
+usually a local solution. The method may also be used efficiently to solve a
+linear programming (LP) problem ($G=0$). A recursive form of a null-space
+active set method is used, using Wolfe's method to resolve degeneracy.
+This would guarantee termination if exact arithmetic could be used.
+Matrix information is made available and processed by calls to external
+subroutines. Details of these are given in an auxiliary file named either
+{\tt denseL.f} or {\tt sparseL.f}.
+
+The {\tt bqpd} package provides a number of features which make for flexible
+use, and reliable and efficient solution. These include
+\begin{itemize}
+\item indefinite Hessian allowed
+\item two-sided simple bounds and general constraints
+\item sparse or dense format for $\bc$ and $A$
+\item sparse or dense matrix algebra modules
+\item cold/warm/hot starts
+\item steepest-edge pivoting
+\item automatic scaling option
+\item efficient as an LP solver
+\item effective in both single and double precision
+\item new features for numerical stability.
+\end{itemize}
+
+\newpage
+\leftline{\bf Using {\tt bqpd}}
+\noindent
+The master subroutine is stored in the file {\tt bqpd.f}, and other auxiliary
+files store subroutines used by {\tt bqpd.f}. To use {\tt bqpd}, a routine
+which drives (i.e. calls) {\tt bqpd} must be supplied. Examples of driver
+routines are supplied which will drive {\tt bqpd.f} from a data file.
+To use {\tt bqpd} with dense matrix storage, the driver program {\tt ddd.f}
+(or the user's driver program) and the files\\
+\centerline{{\tt bqpd.f}, {\tt denseL.f}, {\tt denseA.f}, {\tt auxil.f}, {\tt util.f}}
+must be compiled and linked. To use {\tt bqpd} with sparse matrix storage, the
+driver program {\tt sss.f} and the files\\
+\centerline{{\tt bqpd.f}, {\tt sparseL.f}, {\tt sparseA.f}, {\tt auxil.f}, {\tt util.f}}
+must be compiled and linked. The combination of {\tt denseL.f} and
+{\tt sparseA.f} is also allowed. The subroutines are written as though for
+single precision (r4) usage. Users with SUN equipment can obtain double
+precision (r8) arithmetic by compiling with the {\tt -r8} flag. Other users
+should globally change all occurrences of the word {\tt REAL} to {\tt double
+precision} and {\tt .E} to {\tt .D} in all the files supplied.
+It is also recommended to change {\tt DOUBLE PRECISION} to {\tt real*16}
+(or similar) throughout, whenever your
+system supports quadruple precision. In this case it is advisable (although
+probably not imperative) to change the use of {\tt dble(.)} to some suitable
+function for conversion to {\tt real*16} type. In SUN Fortran the appropriate
+function is {\tt qext(.)}. Changing from single to double
+precision is recommended for large or ill-conditioned problems. IT IS
+IMPORTANT TO SET THE DEFAULT TOLERANCES (around line 1175 of {\tt bqpd.f})
+TO MATCH THE PRECISION BEING USED.\\
+
+\leftline{\bf Data structures for specifying the QP problem}
+\noindent
+The vectors $\bx$, $\bl$ and $\bu$ are stored as dense vectors in the usual
+Fortran 77 form. Equality constraints are designated by having $l_i=u_i$.
+The matrix $[\bc\,:\,A]$ may be stored in either dense or
+sparse format. The dense format is the conventional Fortran~77 storage
+scheme for a matrix,
+that is by columns, with a possible gap between each column. The `stride'
+between columns is stored in the parameter {\tt la} of {\tt bqpd.f} (set
+{\tt la} to $n$ for no gap between the columns).
+
+The sparse format is explained in the header of file {\tt sparseA.f}. It may
+be illustrated for the {\tt avgas} test problem, for which $n=8$, $m=10$,
+$$
+[\bc\,:\,A]=\left[\matrix{\phm0&-1&&&&-1&&\phm2&\phm5\cr -2&-1&&&&&-1&&&\phm1&\phm1\cr
+-1&&-1&&&-1&&\phm1&\phm3&\cr -3&&-1&&&&-1&&&-1\cr -2&&&-1&&-1&&&-3\cr
+-4&&&-1&&&-1&&&-3&-3\cr -3&&&&-1&-1&&-1&-1\cr -5&&&&-1&&-1&&&-5&-2\cr}\right],
+$$
+$$
+\bl^T=(0,\,0,\,0,\,0,\,0,\,0,\,0,\,0,
+-1,-1,-1,-1,-2,-2,\,0,\,0,\,0,\,0)
+$$
+and
+$$
+\bu^T=(1,\,1,\,1,\,1,\,1,\,1,\,1,\,1,
+\infty,\infty,\infty,\infty,\infty,\infty,\infty,\infty,\infty,\infty).
+$$
+In sparse format, the nonzero elements of $[\bc,\,A]$ would be stored in the
+vector
+$$
+{\tt a}=(-2,-1,-3,-2,-4,-3,-5;-1,-1;-1,-1;-1,-1;-1,-1;-1,-1,-1,-1;\ldots
+$$
+$$
+~~~~~~~~~~~~~~~~~~~\ldots-1,-1,-1,-1;\,2,\,1,-1;\,\,5,\,3,-3,-1;\,1,-1,-3,-5;\,1,-3,-5)
+$$
+and the indexing information in the vector {\tt la(0:*)} would be
+$$
+(38\,|\,2,3,4,5,6,7,8;\,1,2;\,3,4;\,5,6;\,7,8;\,1,3,5,7;\ldots~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+$$
+$$
+\ldots\,2,4,6,8;\,1,3,7;\,1,3,5,7;\,2,4,6,8;\,2,6,8\,|\,1,8,10,12,14,16,20,24,27,31,35,38).
+$$
+
+\noindent
+Data files for the avgas problem, suitable for dense and sparse formats 
+respectively, are supplied in the files {\tt avgas.d} and {\tt avgas.s}.
+
+The Hessian matrix $G$ is supplied indirectly to {\tt bqpd.f} by means of a
+user subroutine {\tt gdotx} which calculates the vector $\bv=G\bx$ from a given
+vector $\bx$. The format of this subroutine is explained in the header to the
+file {\tt bqpd.f}. Information for use with {\tt gdotx} is supplied to
+the subroutine {\tt bqpd} via the parameters {\tt ws} and {\tt lws}.
+Thus the user is free to specify $G$ in whatever way is most convenient.\\
+
+\leftline{\bf Setting and Interpreting the Parameters of {\tt bqpd}}
+\noindent
+The definition of the parameters of {\tt bqpd} is explained in the header to
+the file {\tt bqpd.f}. Most of this is straightforward but some further
+explanation of how to interpret the contents of the parameters {\tt ls} and
+{\tt r} may be helpful. This is done by reference to the {\tt avgas} test
+problem above, the solution of which is
+$$
+\bx^T=(0,\,1,\,\fr34,\,\fr14,\,\fr12,\,\fr14,\,\fr34,\,0).
+$$
+In examining the outcome of {\tt bqpd}, we first inspect the resulting vector
+$$
+{\tt ls}=(8,\,15,-2,\,9,\,10,\,16,\,17,\,13,\,18,\,4,\,11,-3,\,5,\,14,-7,\,12,\,\,6,\,1)
+$$
+and the parameter values ${\tt k}=0$, ${\tt peq}=0$, ${\tt lp(1)}=1$
+and ${\tt lp(2)}=9$, which determine how {\tt ls} is partitioned.
+We recall that constraint indices in the range 1:8 (that is 1:$n$) refer to
+simple bounds, and those in the range 9:18 to general constraints.
+We deduce that there are no active equality constraints or pseudo-bounds,
+since the ranges 1:{\tt peq} and {\tt peq}$+$1:{\tt lp(1)}--1 are empty.
+(Had {\tt peq} been say 2, it would be deduced from {\tt ls} that constraints
+8 and 15 were active equality constraints.) Thus the active set constraints
+at the solution are those in positions 1:8 (that is {\tt lp(1)}:$n$--$k$) of
+{\tt ls}. The negative sign on ${\tt ls(3)}=-2$ indicates that the upper
+bound of constraint 2 (that is $x_2\le1$) is active. Constraint indices in
+positions 9:18 (that is {\tt lp(2)}:$n$$+$$m$) of {\tt ls} determine the
+inactive constraints, or more precisely the constraints not in the active set.
+The sign of these indices indicates which bound is closest to being active.
+
+The contents of the vector
+$$
+{\tt r}=(0,\,\fr56,\,\fr14,\,\fr14,\,\fr12,\,\fr14,\,\fr14,\,\fr53,\,\fr52,\,\fr53,\,\fr14,\,\fr14,\,\fr{11}8,\,\fr12,\,\fr{17}{12},\,\fr5{24},\,\fr43,\,\fr14)
+$$
+give the multipliers of the active constraints and the residuals of the
+inactive constraints, stored in the natural ordering. Thus ${\tt r(2)}=\fr56$
+indicates that the multiplier of the constraint $x_2\le1$ is $\fr56$, since
+this constraint is in the active set. Also, since constraint $-7$ is an
+inactive constraint, the value ${\tt r(7)}=\fr14$ indicates that the
+residual of this constraint, measured from its upper bound, is $\fr14$.
+Likewise the residual, or slack, in constraint 18, which is also inactive,
+is $\fr14$, measured from its lower bound. The sign convention for {\tt r} is
+that its elements are always nonnegative at a KT point (except possibly for
+multipliers of equality constraints). Note that constraint 1, which is
+not in the active set, has a residual ${\tt r(1)}=0$, indicating that it is
+active but degenerate.\\
+
+\leftline{\bf Post-processing with {\tt bqpd}}
+\noindent
+{\tt bqpd} is a null-space method, for which we shall follow the notation of 
+Chapter 10.1 of {\it Practical Methods of Optimization} referenced above. 
+The matrix $V$ is made up of unit vectors as in Equation (10.1.21), chosen so
+as to keep the null-space matrix $Z$ well-conditioned. The indices of
+the unit vectors are stored in positions {\tt ll}$+$1:{\tt ll}$+$$k$ of
+the vector {\tt lws}. Operations with $Z$ or $Z^T$ can be implemented by making
+solves with the basis matrix $B=[A\,:\,V]$. Subroutines {\tt fbsub} and
+{\tt tfbsub} which enable this to be done are provided with a common
+interface by both {\tt denseL.f} and {\tt sparseL.f}, and are documented in
+the headers to these subroutines. 
+
+It may also be required to carry out post-processing using the reduced
+Hessian matrix $Z^TGZ$ at the solution. In {\tt bqpd} the Choleski factor $R$,
+given by $Z^TGZ=R^TR$ is stored starting at location {\tt kk}$+$1 of the vector
+{\tt ws}. Utilities to perform solves with the reduced Hessian are
+provided by subroutines {\tt rsol} and {\tt rtsol} in the file {\tt util.f}.
+The data structure of $R$ and the mode of use of these subroutines is described
+in their headers. Note that the reduced Hessian is always stored in dense
+format, irrespective of whether a dense or sparse format is used for
+storage of $A$ or factors of $B$. A consequence of this is that {\tt bqpd}
+becomes inefficient if the dimension $k$ of the null-space becomes very
+large.
+
+The parameters {\tt kk} and {\tt ll} in the above description are those
+set by the user in {\tt common/wsc/} (see the header to {\tt bqpd}).
+\vspace{0.5cm}
+
+\rightline{R. Fletcher, April 1998}
+
+
+\end{document}

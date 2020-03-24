@@ -1,0 +1,11 @@
+#! /bin/csh -f
+#
+# remove all real*16 and qext() from bqpd/filter/minlp
+#
+
+echo "CHANGING:  real*16 -> DOUBLE PRECISION"
+R162DP bqpd.f sparseA.f denseA.f filteraux.f
+
+echo "CHANGING:  qext -> dble"
+qext2dble bqpd.f denseA.f sparseA.f
+

@@ -1,0 +1,166 @@
+      program driver
+
+c     ----------------------------------------------------------
+c     Purpose: driver program for MINLP branch-and-bound routine 
+c
+c     Date of last change: 01 / 10 / 97
+c     ----------------------------------------------------------
+
+      implicit none
+
+c     ... declaration of constants
+      integer    nmax,     nivarmax,      mmax,     nstackmax
+      parameter (nmax=350, nivarmax=nmax, mmax=450, nstackmax=5000)
+      integer    lworkmax,         liworkmax,        maxa
+      parameter (lworkmax=7000000, liworkmax=50000,  maxa=5000)
+
+c     ... decalaration of arrays
+      double precision    a(maxa), x(nmax), bl(nmax+mmax),bu(nmax+mmax), 
+     .        work(lworkmax), user(maxa), s(nmax+mmax), c(nmax+mmax),
+     .        lam(nmax+mmax)
+      integer priority(nivarmax), iwork(liworkmax), ivar(nivarmax),
+     .        la(0:maxa+mmax+2), iuser(2*maxa+1)
+      character cstype(mmax)
+      character*10 xnames(nmax),gnames(mmax)
+
+c     ... declaration of scalars
+      integer i, n, nin, npriority, m, iprint, iter, ifail, nivar, nout,
+     .        kmax
+      double precision    fstar, rho
+      logical equatn(mmax), linear(mmax)
+
+c     ... common statement with optimality tol & infty
+      double precision            MIopttol,  eps, infty
+      common /cTolInf/ MIopttol, eps, infty
+
+c     ... common for user infinity & epsilon (SQP solver)
+      double precision                 infty1, eps1
+      common /NLP_eps_inf/ infty1, eps1
+
+c     ... common statements for NLP solver
+      integer             n_bqpd_calls, n_bqpd_print
+      common /bqpd_count/ n_bqpd_calls, n_bqpd_print
+      integer               n_filter_print
+      common /filter_count/ n_filter_print
+      double precision               given_mu
+      logical                      update_mu
+      common /penalty_c/ given_mu, update_mu
+      integer         char_l
+      character*10            pname
+      common /cpname/ char_l, pname
+
+c     ... storage map for hessian and scale_mode
+      integer         scale_mode, phe
+      common /scalec/ scale_mode, phe
+
+c     ... data statements
+      data nin/3/
+
+c     =========================  procedure body ========================
+
+c     ... read tols & iprint
+      print *,'MINLP Branch--and--Bound Solver'
+      print *,'Enter integer tolerance'
+      read  *, eps
+      print *,'Enter MINLP optimality tolerance'
+      read  *, MIopttol
+      print *,'Enter iprint (SQPiprint = iprint - 2)'
+      read  *,iprint
+      print *,'Enter nout (6 = screen)& No. SQP print (-2=none, -1=all)'
+      read  *,nout, n_filter_print
+      print *,'No. QP print (0=none, -1=all)'
+      read  *,n_bqpd_print
+
+c     ... read problem dimensions & linear constraints & integer vars
+      call initialize_NLP (n,m,nmax,mmax,nout,rho,bl,bu,x,lam,equatn,
+     .                     linear,cstype,xnames,gnames,s,user,iuser)
+
+c     ... open output file
+      if ((iprint.ge.1).and.(iprint.le.2)) then
+         if (nout.ne.6) then
+            open (unit=nout, file=pname(1:char_l)//'.output')
+         endif
+      endif
+
+c     ... read integer information from additional file
+      open (unit = nin , file = pname(1:char_l)//'.INT')
+      read (nin,*) nivar
+      read (nin,*) (ivar(i),i=1,nivar)
+      do i=1,n
+         priority(i) = 0
+      enddo
+      read(nin,*) npriority
+      if (npriority .gt. 0) then
+         read(nin,*) (priority(ivar(i)),i=1,nivar)
+      endif
+      close (nin)
+
+c     ... initialize constants & tolerances
+      update_mu  = .true.
+      scale_mode = 0
+      infty      = 1.D20
+      kmax       = n
+      do i=1,n+m
+         s(i) = 0.D0
+      enddo
+      print *,'Enter TR radius rho and eps for SQP solver'
+      read  *, rho, eps1
+
+c     ... call the branch and bound routine
+      call minlpsolver(nivar,n,m,kmax,nstackmax,bl,bu,fstar,rho,x,s,lam,
+     .                 ivar,priority,c,cstype,a,la,maxa,iwork,liworkmax,
+     .                 work,lworkmax,user,iuser,iter,iprint,nout,ifail)
+
+c     ... output the result
+      if (ifail .eq. 0) then
+        write(nout,2000)' x '
+        write(nout,2030)(x(i),i=1,n)
+        write(nout,2020)' f(x) = ', fstar
+      else if (ifail .gt. 10) then
+        write(nout,2010)' Sub-optimal solution found: ifail = ',ifail-10
+        write(nout,2000)' x '
+        write(nout,2030)(x(i),i=1,n)
+        write(nout,2020)' f(x) = ', fstar
+      else
+        write(nout,2010)' Ifail = ', ifail
+      endif
+      write(nout,2040)iter,' NLP problems solved'
+
+      if (iprint .gt. 0) close(nout)
+
+c     ... write solution onto a file
+      if (iprint.le.2) then
+         open(unit=1,file=pname(1:char_l)//'.solution')
+      endif
+      write(1,*) 'MINLP Solution for ',pname(1:char_l)
+      write(1,*) '============================='
+      write(1,*) '  f* = ', fstar
+      write(1,*)
+      write(1,'(2A)')' Name    |    lower bd   |       x*      |',
+     .     '  upper bd    | multiplier'
+      write(1,'(2A)')'---------+---------------+---------------+',
+     .     '--------------+--------------'
+      write(1,7000) (xnames(i),bl(i),x(i),bu(i),lam(i),i=1,n)
+      write(1,*)
+      write(1,'(2A)')' Name    |    lower bd   |     c(x*)     |',
+     .     '  upper bd    | multiplier'
+      write(1,'(2A)')'---------+---------------+---------------+',
+     .     '--------------+--------------'
+      write(1,7001)(gnames(i),bl(n+i),c(i),bu(n+i),lam(n+i),cstype(i),
+     .              i=1,m)
+
+      stop
+
+ 2000 format(/a)
+ 2010 format(/a,i2)
+ 2020 format(/a,g12.6)
+ 2030 format(5(3x,g12.6))
+ 2040 format(/i5,a)
+ 7000 format(A,4G15.7)
+ 7001 format(A,4G15.7,A)
+
+      end
+
+
+
+

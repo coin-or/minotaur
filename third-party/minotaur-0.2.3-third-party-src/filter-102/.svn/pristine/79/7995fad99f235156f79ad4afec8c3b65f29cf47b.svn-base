@@ -1,0 +1,3113 @@
+Christen this file filteraux.f
+
+c     ******************************************************************
+c     Auxilliary subroutines for filter
+c     =================================
+c     * version         - date of current versuion and copyright notice
+c     * seconds         - system dependent timings routine
+c     * setup_QP        - compute bounds for QP, intersect with TR
+c     * update_QP       - set x=x+d, update grad, f, c, Hessian & lambda
+c     * SOCS_QP         - compute a second order correction step
+c     * add             - compute y = x + d for three n vectors
+c     * inf_NLP         - TR method to min || c(x) ||
+c     * h_one           - computes hc = sum(c_i(x),0) for c_i(x) <= 0
+c     * Jnorm           - computes |c|_J, |c|_Jt for feasibility restoration
+c     * infeasible      - logical function = .true., if QP feasible
+c     * add_to_filter   - check whether new point is acceptable to filter
+c     * suff_redn       - check for sufficient reduction 
+c     * unblock_filter  - remove blocking entry from the filter
+c     * inf_QP          - solve phase I QP by calling bqpd
+c     * lin_inf         - check whether QPsolve returns linear feasible step
+c     * find_J_set      - find the sets J and Jt for a QP (phase I) solve
+c     * bound_shift     - shift the bounds for the TR/QP
+c     * enlarge_TR      - heuristic for enlarging the trust--region
+c     * reduce_TR       - function that reduces TR radius
+c     * progress        - give a one-line report on iteration progress
+c     * linear_feasible - check that initial point is feasible wrt linear c/s
+c     * penalty_est     - estimate of the l_1 exact penalty function
+c     * infty_norm      - compute the SCALED infinity norm of a vector
+c     * solve_SO_inf    - set up and solve a 2nd order phase I QP
+c     * unbddQP         - compute the QP search direction of an unbounded QP
+c     * print_QP        - print a QP (SPARSE data structure) to fort.22
+c     * int2char        - convert integer 0<= i <= 9999 to character string
+c     * conv_test       - compute KT residual and check convergence
+c     * NLP_inf_optimal - check optimality in NLP feasibility restoration
+c     * print_stats     - print the statistics for this run to nout.
+c     
+c     ******************************************************************
+
+
+      subroutine version (nout)
+      integer nout
+      integer ipass
+      data    ipass /0/
+      if (ipass.eq.0) then
+         write(nout,'(A)')'filterSQP: version 20010817'
+         ipass = 1
+      endif
+      return
+      end
+
+
+c     ******************************************************************
+
+
+      double precision function seconds()
+c     system dependent function to time the runs
+CUNIX ==================================================================
+CUNIX ... uncomment the following 2 lines on a UNIX system
+      real*4 dummy(2), etime
+      seconds = etime ( dummy )
+CUNIX ==================================================================
+CINTL ==================================================================
+CINTL .. uncomment following lines for INTEL fortran on UNIX
+CINTL double precision xectim
+CINTL seconds = xectim()
+CINTL ==================================================================
+CDOS  ==================================================================
+CDOS  ... uncomment the following 4 lines on a PC with Windows NT
+CDOS  include 'flib.fd'
+CDOS  integer * 2      hrs, mins, secs, hsecs
+CDOS  call gettim( hrs, mins, secs, hsecs )
+CDOS  seconds = 3600. * HRS + 60. * MINS + SECS + HSECS / 100.
+CDOS  ==================================================================
+CNONE ==================================================================
+CNONE ... uncomment the following line if there is no timing function
+CNONE seconds = 0.D0
+CNONE ==================================================================
+      return
+      end
+
+
+c     ******************************************************************
+
+
+      subroutine setup_QP (n, m, outcome, blo, bup, c, cstype, x, bu, 
+     .                     bl, rho, d, ws)
+
+      implicit none
+
+c     ... declaration of passed parameters -- scalars
+      integer n, m, outcome
+      double precision    rho
+
+c     ... declaration of passed parameters -- arrays
+      double precision    blo(n+m), bup(n+m), c(m), x(n), bu(n+m), 
+     .        bl(n+m), d(n), ws(*)
+      character cstype(m)
+
+c     ... declaration of internal variables
+      integer i
+
+c     =======================  procedure body  =========================
+
+      call bound_shift (n,m,blo,bup,bl,bu,x,c,cstype,rho,0.D0,ws,
+     .                  0.D0,.false.)
+
+      if (outcome.eq.2) then
+c        ... phase 1 QP was just feasible. DO not reset d to zero
+         outcome = 0
+      else
+         do i=1,n
+            d(i) = 0.D0
+         enddo
+      endif
+
+      return
+      end
+
+
+c     ******************************************************************
+
+
+      subroutine update_QP (n,m,k,c,cnew,mxa,a,la,maxa,gcount,hcount,
+     .                      f,fnew,hc,hcnew,lam,r,ls,x,xnew,ws,lws,hess,
+     .                      iprint,nout,phase,QPfail,blo,bup,s,user,
+     .                      iuser,flag)
+
+      implicit none
+
+c     ... declaration of passed parameters -- scalars
+      integer n, m, k, mxa, gcount, nout, maxa, iprint, phase,
+     .        QPfail, flag, hcount
+      double precision    f, fnew, hc, hcnew
+      logical hess
+
+c     ... declaration of passed parameters -- arrays
+      integer la(0:*), lws(*), ls(n+m), iuser(*)
+      double precision    c(m), cnew(m), a(maxa), lam(n+m), ws(*), 
+     .        r(n+m), x(n), xnew(n), user(*), blo(n+m), bup(n+m), s(n+m)
+
+c     ... declaration of internal variables -- scalars
+      integer i, alsi, l_hess, li_hess, flag1
+      double precision    lam_norm, infty_norm, mult
+
+c     ... storage map for hessian and scale_mode
+      integer         scale_mode, phe
+      common /scalec/ scale_mode, phe
+
+c     ... common for QP tolerance
+      double precision            QPtol  
+      common /QPtolc/ QPtol
+
+c     ... total available storage & storage used for Hessian
+      integer      kk, ll, kkk, lll, maxwk, maxiwk
+      common /wsc/ kk, ll, kkk, lll, maxwk, maxiwk
+
+c     =======================  procedure body  =========================
+
+c     ... compute new objective gradient and Jacobian matrix
+      call gradient1(n,m,mxa,xnew,a,la,maxa,s,user,iuser,flag)
+      gcount = gcount + 1
+      if (flag.ne.0) then
+c        ... re-evaluate the gradient at old point (do not accept step)
+         flag1 = 0
+         call gradient1(n,m,mxa,x,a,la,maxa,s,user,iuser,flag1)
+         gcount = gcount + 1
+         if (flag1.ne.0) then
+            print *,'ERROR in gradient: unexpected IEEE: update_QP'
+            STOP
+         endif
+         GOTO 999
+      endif
+
+      f  = fnew
+      hc = hcnew
+      do i=1,m
+         c(i) = cnew(i)
+      enddo
+      do i=1,n
+         x(i) = xnew(i)
+      enddo
+
+      if (QPfail.ne.1) then
+c        ... copy multipliers from r into lam (re--order)
+         do i=1,n+m
+            lam(i) = 0.D0
+         enddo
+         do i=1,n-k
+            alsi = abs(ls(i))
+            mult = r(alsi) * sign(1.D0,dble(ls(i)))
+            if (alsi.gt.n) then
+               lam(alsi) = mult
+            elseif ((abs(blo(alsi)-x(alsi)).le.QPtol)
+     .              .or.(abs(bup(alsi)-x(alsi)).le.QPtol)) then
+               lam(alsi) = mult
+            endif
+         enddo
+      else
+         if (iprint.ge.2) then
+            write(nout,*)'Multipliers NOT updated, unbdd QP:',QPfail
+         endif
+      endif
+
+      if (iprint.ge.2) then
+         if (phase.eq.1) then
+            write(nout,2001)'New phase I objective and constrnts:',f,hc
+         elseif (phase.eq.2) then
+            write(nout,2001)'New objective and constraints:', f, hc
+         endif
+         lam_norm = infty_norm (m, lam(n+1), ws(n+1))
+         write(nout,*) '|| lam || = ',lam_norm
+      endif
+      if (iprint.ge.3) then
+         write(nout,*) 'New x-values'
+         write(nout,*) (x(i), i=1,n)
+         write(nout,*) 'Multipliers'
+         write(nout,2003) (r(abs(ls(i))), ls(i), i=1,n-k)
+c         write(nout,*) 'Objective gradient'
+c         write(nout,2002) (a(i), i=1,n)
+      endif
+
+      if (hess) then
+c        ... set max length for Hessian on input & call Hessian
+         l_hess  = maxwk
+         li_hess = maxiwk
+         call hessian1(x,n,m,phase,lam,ws(phe+1),lws,s,user,iuser,
+     .                 l_hess,li_hess,i)
+         hcount = hcount + 1
+         kk = n+m + l_hess
+         ll = li_hess
+      endif
+
+ 999  continue
+
+ 2001 format(A,2G15.6)
+ 2002 format(5G15.6)
+ 2003 format(4(G15.6,I5))
+
+      return
+      end
+
+
+c     ******************************************************************
+
+
+      subroutine SOCS_QP (n,m,k,kmax,a,d,blo,bup,q,qmin,g,r,w,e,ls,alp,
+     .                   lp,mlp,peq,ws,lws,QPifail,mode,info,bl,bu,
+     .                   iprint,nout,cnew,cstype,rho,x,la,phase,n_iatt,
+     .                   iatt,QPpivot,mode2QP,mode4QP)
+
+      implicit none
+
+c     ... declaration of passed parameters -- scalars
+      integer n, m, k, kmax, mlp, peq, QPifail, nout, iprint, 
+     .        phase, n_iatt, QPpivot, mode, mode2QP, mode4QP
+      double precision    q, qmin, rho
+
+c     ... declaration of passed parameters -- arrays
+      integer la(0:*), ls(n+m), lp(mlp), lws(*), info(100), iatt(n_iatt)
+      double precision    a(*), d(n), blo(n+m), bup(n+m), g(n), r(n+m), 
+     .        alp(mlp), w(n+m), e(n+m), ws(*), bl(n+m), bu(n+m), 
+     .        cnew(m), x(n)
+      character cstype(m)
+
+c     ... declaration of internal variables
+      integer i, j, npivot
+
+c     ... decalaration of external functions
+      DOUBLE PRECISION daidotx
+
+c     ... common statements
+      double precision            alpha
+      common /alphac/ alpha
+      double precision                 infty, eps
+      common /NLP_eps_inf/ infty, eps
+c     ... count number of calls to bqpd & print if necessary
+      integer             n_bqpd_calls, n_bqpd_print
+      common /bqpd_count/ n_bqpd_calls, n_bqpd_print
+c     ... common block that defines the modes for QP solves
+      integer        cold_start, warm_start, hot_start
+      common /modes/ cold_start, warm_start, hot_start
+
+c     =======================  procedure body  =========================
+
+      if (mode.ge.warm_start) then
+         mode = hot_start
+      else
+         mode = warm_start
+      endif
+
+c     ... compute w = A'.d  
+      do j=1,m
+         w(j) = daidotx (n, a, la, j, d)
+      enddo
+
+c     ... shift the bounds, also computing the new bounds on x
+      call bound_shift (n,m,blo,bup,bl,bu,x,cnew,cstype,rho,0.D0,ws,
+     .                  w,.true.)
+
+c     ... relax general c/s in phase I sum if phase==1
+      if (phase.eq.1) then
+         if (iprint.ge.2) then
+            write(nout,*)'Relaxing general bounds for SOCS'
+         endif 
+         do i=1,n_iatt
+            j = abs(iatt(i))
+            if (iatt(i).gt.0) then
+               bl(j) = -infty
+            else
+               bu(j) =  infty
+            endif
+         enddo
+      endif
+
+c     ... solve QP to get Second Order Correction Step
+      call QPsolve (n,m,k,kmax,a,la,d,bl,bu,q,qmin,g,r,w,e,ls,alp,lp,
+     .             mlp,peq,ws,lws,cstype,mode,QPifail,info,iprint,
+     .             nout,npivot,mode2QP,mode4QP)
+      QPpivot = QPpivot + npivot
+      mode    = warm_start
+
+c     ... check for unbounded QP; take step if necessary
+      if (QPifail.eq.1) then
+         call unbddQP(n,m,k,nout,alpha,d,ls,w)
+      endif
+
+      if (iprint.ge.2) then
+         write(nout,*) 'QPifail from SOCS =', QPifail
+      endif
+
+      return
+      end
+
+
+c     ******************************************************************
+
+
+      subroutine add (n, x, d, y)
+
+c     computes y = x + d for vector of length n
+
+      implicit none
+
+c     ... declaration of passed parameters -- scalars
+      integer n
+
+c     ... declaration of passed parameters -- arrays
+      double precision x(n), d(n), y(n)
+
+c     ... declaration of internal variables
+      integer i
+
+c     =======================  procedure body  =========================
+
+c     ... form y = x + d (NB: round-off error can corrupt the result *)
+      do i=1,n
+         y(i) = x(i) + d(i)
+      enddo
+
+      return
+      end
+
+
+c     ******************************************************************
+
+      subroutine inf_NLP(n,m,k,kmax,ccount,gcount,fcount,hcount,mxa,
+     .                   maxa,nout,mlp,peq,iprint,
+     .                   maxf,rho, old_rho,q,la,lws,ls,alp,lp,info,x,
+     .                   xnew,d,blo,bup,bl,bu,a,cnew,c,cstype,ws,g,r,w,
+     .                   e,lam,rest_filter,hc,hJ,hJt,rKT,almx,maxlam,
+     .                   cs_ubd,outcome,nQPcrash,mode2QP,mode4QP,
+     .                   infcount,SOCScount,QPpivot,iter,maxfil1,
+     .                   max_iter,s,user,iuser,work,iatt,iwork)
+
+c     outcome flags the result of this routine:
+c     0 : continue with infeasible iterations
+c     1 : minimum of c/s violation found
+c     2 : feasible QP found -> return to SQP phase II
+c     3 : IEEE cannot be resolved
+c     4 : rho < epsilon STOP
+c     5 : iter > max_iter STOP
+c     6 : Unexpected ifail from QP solver
+
+      implicit none
+
+c     ... declaration of passed parameters -- scalars
+      integer n, m, ccount, gcount, fcount, k, mxa, maxa, nout, mlp, 
+     .        peq, iprint, maxf, outcome, SOCScount,
+     .        infcount, iter, kmax, max_iter,
+     .        QPpivot, nQPcrash, hcount, mode2QP,mode4QP, maxfil1
+      double precision    rho, old_rho, q, hc, cs_ubd, hJ, hJt,
+     .        rKT, almx, maxlam
+
+c     ... declaration of passed parameters -- arrays
+      integer la(0:*), lws(*), ls(n+m), lp(mlp), info(100), 
+     .        iuser(*), iatt(m), iwork(m+n)
+      double precision    x(n), xnew(n), d(n),blo(n+m),bup(n+m),bl(n+m), 
+     .        bu(n+m), a(*), cnew(m), c(m), ws(*), g(n), r(n+m), w(n+m),
+     .        lam(n+m), e(n+m), rest_filter(maxf,4), user(*), s(n+m),
+     .        work(3*n+m), alp(mlp)
+      character cstype(m)
+      
+c     ... declaration of internal variables
+      integer QPfail, infiter, n1, n2, n3, n_iatt, n_feas, n_feas_old, 
+     .        i, alsi, ii, f_posn, f_posn0, SOCiter, flag, mode, iiter,
+     .        best_k, nn, f_Jlength
+      logical optimal, hess, accept_step, feasible,
+     .        Jt_changed, found, unblocked, exit
+      double precision    d_norm, qmin, hJnew, hJtnew, act_red, 
+     .        mu, cs_ubd1, hJthat, best_hc, rate, avg_rate, hcnew,
+     .        hc_LP, hJ_LP, hJt_LP
+      character*3 step, best_step, step0
+      character*5 step1
+      character*2 NWSE, best_NWSE
+      character*4 char
+
+c     ... declaration of external functions
+      double precision        infty_norm, reduce_TR, l1_pen_est
+      logical     infeasible
+      character*4 int2char
+
+c     ... common statements
+      double precision                 infty, eps
+      common /NLP_eps_inf/ infty, eps
+
+c     ... storage divison of filter
+      integer           func, cons, redn, pen
+      common /filter_c/ func, cons, redn, pen
+
+c     ... problem name
+      integer         char_l
+      character*10            pname
+      common /cpname/ char_l, pname
+
+c     ... common for QP tolerance
+      double precision            QPtol  
+      common /QPtolc/ QPtol
+
+c     ... common block that defines the modes for QP solves
+      integer        cold_start, warm_start, hot_start
+      common /modes/ cold_start, warm_start, hot_start
+
+c     =======================  procedure body  =========================
+
+      mode = warm_start
+
+c     ... copy the cs_ubd into a local variable
+      cs_ubd1 = cs_ubd
+      mu      = 1.D0
+
+c     ... storage map for work space used in this routine
+      n1 = n+1
+      n2 = n1+n
+      n3 = n2+n
+
+c     ... flush filter at start of each feasibility restoration
+      f_Jlength = 0
+
+      if (iprint.ge.2) then
+         write(nout,*) 'SOLVING A FEASIBILITY PROBLEM'
+         write(nout,*) '============================='
+         write(nout,9000) 'Initial TR radius                 = ', rho
+         write(nout,9000) 'Initial infeasibility from QP     = ', q
+         write(nout,9000) 'Initial l_1 norm of c/s violation = ', hc
+      endif
+
+c     ... add upper bound on c/s violation from phase II to phase I filter
+      call add_to_filter (-infty,cs_ubd1,mu,f_Jlength,maxf,
+     .     rest_filter,f_posn0,accept_step,NWSE,cs_ubd,1,nout,iprint)
+
+c     ... add upper bound on c/s violation from phase II to phase I filter
+      call add_to_filter (max(11.D-1*hc,cs_ubd1),0.D0,mu,f_Jlength,maxf,
+     .     rest_filter,f_posn0,accept_step,NWSE,cs_ubd,1,nout,iprint)
+      maxfil1 = max ( maxfil1 , f_Jlength )
+
+c     ... compute infinity norm of step for output
+      call progress(iter,0,rho,0.D0,'INF  ',0.D0,hc,hc,nout,iprint)
+
+c     ... reset iteratn count and termination indicator
+      infiter     = 0
+      outcome     = 0
+      accept_step = .false.
+      old_rho     = rho
+      Jt_changed  = .false.
+
+c     REPEAT
+ 1000 continue
+
+         qmin    = -infty
+         iter    = iter + 1
+         iiter   = 0
+         infiter = infiter + 1
+
+         if (iprint.ge.2) then
+            if ((iprint.ge.3).and.(n+m.ge.100)) then
+               close(nout)
+               nout = 200 + iter
+               char = int2char ( iter )
+               open (unit = nout , file = pname(1:char_l)//'.out'//char)
+               write(nout,*)
+               write(nout,*)'FEASIBILITY PROBLEM ', infiter, 
+     .                      ' AT ITERATION ', iter,'  ',pname
+               write(nout,*)'=========================================='
+            else
+               write(nout,*)
+               write(nout,*)'FEASIBILITY PROBLEM ', infiter, 
+     .                      ' AT ITERATION ', iter,'  ',pname
+               write(nout,*)'=========================================='
+
+            endif
+         endif
+
+C        FOLLOWING LINES ADDED 18/01/99 (BUG IN RETURN TO PHASE II)
+c        ... save objective gradient in work(2*n+1:3*n) for return to phase II
+         nn = n+n
+         do i=1,n
+            work(nn+i) = a(i)
+         enddo
+
+c        ... use mode 4 start if TR was cut back
+         if ((old_rho.gt.rho).and.(step1.ne.'-12-8')
+     .                       .and.(.not.Jt_changed)) then
+            mode = 4
+         endif
+
+         old_rho    = rho
+         Jt_changed = .false.
+         qmin = infty
+c        ... solve phase I LP problem and fix J (set of violated c/s)
+         call setup_QP (n,m,outcome,blo,bup,c,cstype,x,bu,bl,rho,d,ws)
+         call inf_QP (n,m,k,kmax,a,la,d,cstype,bl,bu,blo,bup,c,q,g,r,w,
+     .                e,ls,alp,lp,mlp,peq,ws,lws,iatt,n_iatt,n_feas,
+     .                feasible,QPfail,info,iprint,nout,
+     .                QPpivot,mode,mode2QP,mode4QP)
+         iiter = iiter + 1
+
+         if (QPfail.eq.30) then
+            QPfail = 3
+            rho = rho / 2.D0
+            if (iprint.ge.1) then
+               write(nout,9000)'Linear infeas. phase I reduce TR ',rho
+               write(2   ,9000)'Linear infeas. phase I reduce TR ',rho
+            endif
+            do i=1,n
+               d(i) = 0.D0
+            enddo
+            step1 = '-12-8'
+            GOTO 8888
+         else
+            mode   = warm_start
+         endif
+
+         if (QPfail.eq.8) then
+            if (iprint.ge.1) then
+               write(nout,*)'WARNING: max. no. of restarts in LP(I)'
+               write(2   ,*)'WARNING: max. no. of restarts in LP(I)'  
+            endif
+            GOTO 888
+         elseif ((QPfail.le.1).and.(infiter.ge.2)) then
+c           ... feasible QP found -> return to SQP
+            outcome = 2
+            if (iprint.ge.2) then
+               write(nout,*) 'Feasible QP found, return to SQP'
+            endif
+C           FOLLOWING LINES ADDED 18/01/99 (BUG IN RETURN TO PHASE II)
+c           ... copy objective gradient from work(2*n+1:3*n) (s.a.)
+            do i=1,n
+               a(i) = work(nn+i)
+            enddo
+         elseif ((QPfail.ne.3).and.(QPfail.ne.8)
+     .                          .and.(infiter.ge.2)) then
+            outcome = 6
+            if (iprint.ge.1) then
+               write(nout,*) 'STOP: Phase I unexpected QP ifail:',QPfail
+            endif
+         else
+c           ... save LP step (best up to now)
+            do i=1,n
+               work(i) = d(i)
+            enddo 
+            best_k = k
+            do i=1,n-k
+               alsi       = abs(ls(i))
+               work(n+i)  = r(alsi)
+               iwork(m+i) = ls(i)
+            enddo
+            best_step = '+11'
+            best_NWSE = '  '
+            step1 = best_step//best_NWSE
+c           ... copy multipliers of phase I LP problem 
+            do i=1,n+m
+               lam(i) = 0.D0
+            enddo
+c           ... multipliers of active c/s
+            do i=1,n-k
+               alsi = abs(ls(i))
+               lam(alsi) = r(alsi) * sign(1.D0,dble(ls(i)))
+            enddo
+c           ... multipliers of c/s which are in the phase I sum
+            do i=1,n_iatt
+               lam(abs(iatt(i)))=sign(1.D0,dble(iatt(i)))
+            enddo
+c           ... solve the 2nd order feasibility problem
+            qmin = -infty
+            if (iprint.ge.2) then
+               write(nout,*)'Solve 2nd order feasibility problem' 
+            endif
+            call solve_SO_inf (n,m,k,kmax,nout,n_iatt,iatt,ls, 
+     .                         info,a,la,bl,bu,ws,lws,g,r,w,e,alp,lp,
+     .                         mlp,peq,x,d,q,qmin,lam,iprint,mode,
+     .                         QPfail,cstype,s,user,iuser,QPpivot,
+     .                         hcount,mode2QP,mode4QP)
+c           ... compute infinity norm of step 
+            d_norm = infty_norm (n, d, ws)
+            iiter = iiter + 1
+
+            mode = warm_start
+
+            if (QPfail.eq.3) then
+               if (iprint.ge.1) then
+                  write(nout,*) 'WARNING: ifail from solve_SO_inf = 3'
+                  write(2   ,*) 'WARNING: ifail from solve_SO_inf = 3'
+               endif
+c              ... use 1st order step, since solve_SO_inf failed
+               k = best_k
+               do i=1,n-k
+                  alsi    = abs(iwork(m+i))
+                  r(alsi) = work(n+i)  
+                  ls(i)   = iwork(m+i)
+               enddo
+               do i=1,n
+                  d(i) = work(i)
+               enddo
+               QPfail = 0
+               step0 = '+11'
+               mode = cold_start
+            elseif (QPfail.eq.8) then
+               if (iprint.ge.1) then
+                  write(nout,*)'WARNING: max. no. of restarts QP (I)'
+                  write(2   ,*)'WARNING: max. no. of restarts QP (I)'
+               endif
+               GOTO 888
+            else
+c              ... save sufficient reduction in filter
+               rest_filter(f_posn0,redn) = - q
+               step0 = '+12'
+            endif
+
+            if (QPfail.eq.0) then
+c              ... update x provisionally 
+               call add(n, x, d, xnew)
+c              ... evaluate new c/s residuals
+               call confun1(xnew,n,m,cnew,a,la,s,user,iuser,flag)
+               ccount = ccount + 1
+               if (flag.ne.0) GOTO 999
+c              ... evaluate the J-norm of the c/s residual
+               call Jnorm (n,m,blo(n1),bup(n1),cnew,n_iatt,n_feas,
+     .                     iatt,hJnew,hJtnew)
+               hJthat = hJtnew
+               hcnew  = hJnew + hJtnew
+c              ... check whether new point is accepted by phase I filter
+               mu = l1_pen_est (n,m,n_feas,n_iatt,iatt,lam,mu)
+               call add_to_filter (hJnew,hJtnew,mu,f_Jlength,maxf,
+     .                            rest_filter,f_posn,accept_step,
+     .                            NWSE,cs_ubd,1,nout,iprint)
+               maxfil1 = max ( maxfil1 , f_Jlength )
+               if (iprint.ge.2) then
+                  write(nout,7000)'QP STEP:'
+                  write(nout,9003)'hJ,hJt (old/new)  = ',hJ,hJnew,
+     .                 hJt,hJtnew
+                  write(nout,9003)'old/new l1 sum    = ',hc,hcnew
+                  if (iprint.ge.3) then
+                     write(nout,9003) 'x_new'
+                     write(nout,*) (xnew(i),i=1,n)
+                     write(nout,9003) 'c_new'
+                     write(nout,*) (cnew(i),i=1,m)
+                  endif
+               endif
+c     **NEW** NEXT 6 LINES ADDED 24/06/98: allow 0 step to be accepted
+               if (d_norm.le.QPtol) then
+                  accept_step = .true.
+                  if (iprint.ge.2) then
+                     write(nout,*) 'Zero step from QP: accept'
+                  endif
+               endif
+               if (accept_step) then
+c                 ... step accepted by phase I filter 
+                  step = step0
+                  if (iprint.ge.2) then
+                     write(nout,*) 'Accept QP step'
+                  endif
+               else
+c                 ... QP step rejected. See if LP step is better
+c                 ... update x provisionally 
+                  call add(n, x, work, xnew)
+c                 ... evaluate new c/s residuals
+                  call confun1(xnew,n,m,cnew,a,la,s,user,iuser,flag)
+                  ccount = ccount + 1
+                  if (flag.ne.0) GOTO 999
+c                 ... evaluate the J-norm of the c/s residual
+                  call Jnorm (n,m,blo(n1),bup(n1),cnew,n_iatt,n_feas,
+     .                        iatt,hJ_LP,hJt_LP)
+                  hc_LP  = hJ_LP + hJt_LP
+c                 ... save 2nd order step (best up to now)
+                  if (hcnew.le.hc_LP) then
+                     do i=1,n
+                        work(i) = d(i)
+                     enddo 
+                     best_k = k
+                     do i=1,n-k
+                        alsi       = abs(ls(i))
+                        work(n+i)  = r(alsi)
+                        iwork(m+i) = ls(i)
+                     enddo
+                     best_step = '+12'
+                     best_NWSE = NWSE
+                     step      = '-12'
+                     if (iprint.ge.2) then
+                        write(nout,*) 'Reject QP step: best so far'
+                     endif
+                  else
+                     hJthat = hJt_LP
+                     hcnew  = hc_LP
+                     d_norm = infty_norm (n, work, ws)
+                     best_step = '+11'
+                     best_NWSE = NWSE
+                     step      = '-12'
+                     if (iprint.ge.2) then
+                        write(nout,*) 'Reject QP step: save LP step'
+                     endif
+                  endif
+                  best_hc   = hcnew
+               endif
+               step1 = step//NWSE
+               call progress(iter,iiter,old_rho,d_norm,step1,hJnew,
+     .                       hJtnew,hcnew,nout,iprint)
+            elseif ((QPfail.eq.2).or.(QPfail.ge.4)) then
+               write(nout,*)'STOP: ifail from solve_SO_inf: ',QPfail
+               call find_J_set (n,m,k,n_iatt,n_feas,ls,r,cstype,iatt)
+               write(nout,*)'c/s in J-set : ',(iatt(i),i=1,n_iatt)
+               write(nout,*)'c/s in Jt-set: ',(iatt(m-i+1),i=1,n_feas)      
+               outcome = 6
+c              ... do not do SOC steps, but go straight to end
+               accept_step = .true.
+            endif
+
+            if ((.not.accept_step).and.(hcnew.lt.infty)
+     .                            .and.(hJtnew.gt.0.D0)) then
+c              ... try 2nd Order Correction Steps (possibly more than 1)
+               SOCiter  = 0
+               exit     = .false.
+               avg_rate = 1.D0
+c              REPEAT
+ 2000          continue
+                  SOCiter = SOCiter + 1
+                  call SOCS_QP (n,m,k,kmax,a,d,blo,bup,q,qmin,g,r,w,e,
+     .                          ls,alp,lp,mlp,peq,ws,lws,QPfail,mode,
+     .                          info,bl,bu,iprint,nout,cnew,cstype,rho,
+     .                          x,la,1,n_iatt,iatt,QPpivot,mode2QP,
+     .                          mode4QP)
+                  SOCScount = SOCScount + 1
+                  iiter = iiter + 1
+                  if (QPfail.eq.1) then
+                     if (iprint.ge.2) then
+                        write(nout,*)'WARNING: unbdd QP: phase I SOCS'
+                     endif
+                  elseif (QPfail.eq.8) then
+                     if (iprint.ge.1) then
+                        write(nout,*)'WARNING: max. no. of restarts SOC'
+                        write(2   ,*)'WARNING: max. no. of restarts SOC'
+                     endif
+                     GOTO 888
+                  elseif ((QPfail.eq.2).or.(QPfail.ge.4)) then
+                     outcome = 6
+                     if (iprint.ge.1) then
+                        write(nout,*)'STOP: SOC unexpect ifail:',QPfail
+                     endif
+                  endif
+
+c                 ... compute infinity norm of step 
+                  d_norm = infty_norm (n, d, ws)
+
+                  if (.not.infeasible(QPfail)) then
+c                    ... update x provisionally 
+                     call add(n, x, d, xnew)
+c                    ... evaluate new c/s residuals
+                     call confun1(xnew,n,m,cnew,a,la,s,user,iuser,flag)
+                     ccount = ccount + 1
+                     if (flag.ne.0) GOTO 999
+c                    ... evaluate the l1-norm of the c/s residual
+                     call Jnorm (n,m,blo(n1),bup(n1),cnew,n_iatt,n_feas,
+     .                           iatt,hJnew,hJtnew)
+                     hcnew = hJnew + hJtnew
+c                    ... check whether SOC step acceptable (suff. redn)
+                     mu = l1_pen_est (n,m,n_feas,n_iatt,iatt,lam,mu)
+                     call add_to_filter(hJnew,hJtnew,mu,f_Jlength,maxf,
+     .                                  rest_filter,f_posn,accept_step,
+     .                                  NWSE,cs_ubd,1,nout,iprint)
+                     maxfil1 = max ( maxfil1 , f_Jlength )
+
+                     if (iprint.ge.2) then
+                        write(nout,7000)'SOC STEP:', SOCiter
+                        write(nout,9003)'hJ,hJt (old/new)  = ',hJ,hJnew,
+     .                                                        hJt,hJtnew
+                        write(nout,9003)'old/new l1 sum    = ',hc,hcnew
+                        if (iprint.ge.3) then
+                           write(nout,9003) 'New constraint values'
+                           write(nout,*) (cnew(i),i=1,m)
+                        endif
+                     endif
+
+c                    ... compute linear rate of convergence for SOC step
+                     if (hJthat.le.0.D0) then
+                        rate  = 1.D-1
+                     else
+                        rate  = hJtnew / hJthat 
+                     endif
+                     
+                     avg_rate = ( (SOCiter-1)*avg_rate + rate )/SOCiter
+
+c                    ... check for reduction in c/s l_1 sum
+                     if (accept_step) then
+                        exit = .true.
+                        step = '+13'
+                        if (iprint.ge.2) then
+                           write(nout,*)'Accept SOC step',SOCiter
+                        endif
+                     else
+c                       ... check whether another SOC step would be helpful
+                        if ((hJtnew.gt.eps).and.(rate.le.25.D-2)) then
+                           exit = .false.
+                           if (iprint.ge.2) then
+                              write(nout,9001)'Next SOC step, suff. ',
+     .                          'reductn: rate, hJtnew =',rate, hJtnew
+                           endif
+                           hJthat = hJtnew
+                        else
+                           exit = .true.
+                           if (iprint.ge.2) then
+                              write(nout,9001)'STOP SOC: not suff.',
+     .                          'reductn: rate, hJtnew =',rate, hJtnew
+                           endif
+                        endif
+                        step = '-13'
+                        if (hcnew.lt.best_hc) then
+c                          ... save best step up to now
+                           best_hc = hcnew
+                           do i=1,n
+                              work(i) = d(i)
+                           enddo 
+                           best_k = k
+                           do i=1,n-k
+                              alsi       = abs(ls(i))
+                              work(n+i)  = r(alsi)
+                              iwork(m+i) = ls(i)
+                           enddo
+                           best_NWSE = NWSE
+                           best_step = '+13'
+                        endif
+                     endif
+                  else
+                     step = '-13'
+                     exit = .true.
+                     if (iprint.ge.2) then
+                        write(nout,*) 'Reject SOC step, infeasible'
+                     endif
+                  endif
+                  step1 = step//NWSE
+                  call progress(iter,iiter,old_rho,d_norm,step1,hJnew,
+     .                          hJtnew,hcnew,nout,iprint)
+                  
+               if (.not.exit) GOTO 2000
+c              UNTIL (exit)
+            endif
+
+            if ((.not.accept_step).and.(hcnew.lt.infty)) then
+c              ... unblock filter for best step, if J set has changed
+               if (infiter.eq.1) then
+c                  ... Jt set cannot change on 1st iteration
+                  Jt_changed = .false.
+               else
+                  if (n_feas.ne.n_feas_old) then
+                     Jt_changed = .true.
+                  else
+                     Jt_changed = .false.
+                     do i=1,n_feas
+                        alsi = abs(iatt(m-i+1))
+                        found = .false.
+                        do ii=1,n_feas_old
+                           if (alsi.eq.iwork(ii)) then
+                              found = .true.
+                              goto 3000
+                           endif
+                        enddo
+                        if (.not.found) then
+                           Jt_changed = .true.
+                           goto 4000
+                        endif
+ 3000                   continue
+                     enddo
+ 4000                continue
+                  endif
+               endif
+               if (Jt_changed) then
+c                 ... try to unblock the phase I filter for best step
+                  if (iprint.ge.2) then
+                     write(nout,*)'Attempt to unblock phase I filter'
+                  endif
+c                 ... use best step to unblock the filter
+                  step = best_step
+                  NWSE = best_NWSE
+                  k = best_k
+                  do i=1,n-k
+                     alsi    = abs(iwork(m+i))
+                     r(alsi) = work(n+i)  
+                     ls(i)   = iwork(m+i)
+                  enddo
+                  do i=1,n
+                     d(i) = work(i)
+                  enddo
+c                 ... compute infinity norm of step 
+                  d_norm = infty_norm (n, d, ws)
+c                 ... update x provisionally
+                  call add(n, x, d, xnew)
+c                 ... evaluate new c/s residuals
+                  call confun1(xnew,n,m,cnew,a,la,s,user,iuser,flag)
+                  ccount = ccount + 1
+                  if (flag.ne.0) GOTO 999
+c                 ... evaluate the l1-norm of the c/s residual
+                  call Jnorm (n,m,blo(n1),bup(n1),cnew,n_iatt,n_feas,
+     .                        iatt,hJnew,hJtnew)
+                  hcnew = hJnew + hJtnew
+                  call unblock_filter(hJnew,hJtnew,mu,f_Jlength,maxf,
+     .                                rest_filter,f_posn,unblocked,
+     .                                cs_ubd1,1,nout,iprint,NWSE)
+                  if (unblocked) then
+                     accept_step = .true.
+                     step = '+14'
+                     if (iprint.ge.2) then
+                        write(nout,*)'Filter unblocked'
+                     endif
+                  else
+                     accept_step = .false.
+                     step = '-14'
+                     if (iprint.ge.2) then
+                        write(nout,*)'Filter NOT unblocked'
+                     endif
+                  endif
+                  step1 = step//NWSE
+                  call progress(iter,iiter,old_rho,d_norm,step1,hJnew,
+     .                          hJtnew,hcnew,nout,iprint)
+               else
+c                 ... step rejected by phase I filter (Jt unchanged)
+                  accept_step = .false.
+                  if (iprint.ge.2) then
+                     write(nout,*)'J unchanged: Cannot unblocked filter'
+                  endif
+               endif
+            endif
+
+c           ... IEEE jump adress for exceptions
+ 999        continue
+            if  (flag.ne.0) then
+               accept_step = .false.
+               if (iprint.ge.1) then
+                  write(nout,*)'WARNING: IEEE exception: reject step'
+               endif
+               step = 'EXC'
+            endif
+
+            if (accept_step) then
+c              ... output norm of step d (computed above)
+               if (iprint.ge.2) then
+                  write(nout,9000) 'norm of step  = ', d_norm
+               endif
+c              ... save position in filter of new entry for update of q
+               f_posn0 = f_posn
+c              ... increase TR radius, provided SOC steps made good progress
+               if ((step.eq.'+13').and.(avg_rate.gt.1.D-1)) then
+                  if (iprint.ge.2) then
+                     write(nout,9001) 'Do not increase TR radius:',
+     .                    ' SOC rate too large ', avg_rate
+                  endif
+               elseif (step.eq.'+14') then
+                  if (iprint.ge.2) then
+                     write(nout,9001) 'No increase in TR radius after',
+     .                                ' unblocking'
+                  endif
+               else
+                  call enlarge_TR (rho,n,d_norm,hJnew,hJ,q,hJtnew,hJt,
+     .                          mu,1,nout,iprint)
+               endif
+            else
+c              ... reduce TR radius
+               rho = reduce_TR (rho, d_norm)
+               if (iprint.ge.2) then
+                  write(nout,9000) 'Reduce TR radius to ',rho
+               endif
+            endif
+
+            if (rho.lt.eps/1.D2) then
+               accept_step = .true.
+               if (iprint.ge.1) then
+                  write(nout,*)'WARNING: rho < epsilon; TERMINATE',
+     .                      ' (restoration phase)'
+               endif
+               if ((d_norm.le.eps).and.(hJt.le.eps)) then
+                  outcome = 1
+                  if (iprint.ge.1) then
+                     write(nout,*)'=======  optimum found'
+                  endif
+               else
+                  outcome = 4
+               endif
+               hc = hJ+hJt
+            endif
+
+            if ((outcome.eq.0).and.(accept_step)) then
+               act_red = abs( hJ - hJnew )
+               hess = .false.
+               if (iprint.ge.2) then
+                  write(nout,*) 'update x, f(x), c(x) and A(x)'
+               endif
+               call update_QP(n,m,k,c,cnew,mxa,a,la,maxa,gcount,hcount,
+     .                     hJ,hJnew,hJt,hJtnew,lam,r,ls,x,xnew,ws,lws,
+     .                     hess,iprint,nout,1,0,blo,bup,s,user,iuser,
+     .                     flag)
+               if (flag.ne.0) GOTO 999
+               hc = hJ+hJt
+
+c              ... multipliers of c/s which are in the phase I sum
+               do i=1,n_iatt
+                  lam(abs(iatt(i)))=sign(1.D0,dble(iatt(i)))
+               enddo
+
+c              ... check optimality and termination for phase I problem
+               call NLP_inf_optimal(n,m,k,xnew,blo,bup,hJt,d_norm,rKT,
+     .                              almx,maxlam,optimal,a,la,r,ls,work,
+     .                              iatt,n_iatt,nout,iprint)
+               if (optimal) then
+c     FIX 2011/04/01 feasible NLP stuck at non-stationary point
+c                  if (hc.le.QPtol) then
+                  if (hc.le.eps) then
+c                    ... next QP will be feasible & exit
+                     outcome = 2
+c                    -> Return to SQP phase II
+                     if (iprint.ge.2) then                  
+                        write(nout,9000)'Feasible optimum of c/s violn'
+                        write(nout,9000)'NLP-c/s violation = ', hc
+                     endif
+                  else
+c                    ... found minimum of phase I c/s violation
+                     outcome = 1
+                     if (iprint.ge.2) then                  
+                        write(nout,9000)'Found min of NLP-c/s violation'
+                        write(nout,9000)'NLP-c/s violation = ', hc
+                     endif
+                  endif
+               endif
+c              ... save old Jt-set
+               n_feas_old = n_feas
+               do i=1,n_feas
+                  iwork(i) = abs(iatt(m-i+1))
+               enddo
+            endif
+
+         endif
+
+c        ... jump address for bqpd crash
+ 888     if (QPfail.eq.8) then
+            d_norm   = infty_norm (n, d, ws)
+            step1 = '-12-8'
+            call progress (iter,iiter,rho,d_norm,step1,hJ,hJt,hJ+hJt,
+     .                     nout,iprint)
+            nQPcrash = nQPcrash + 1
+            mode     = cold_start
+            rho      = rho / 4.D0
+            if (iprint.ge.1) then
+               write(nout,9000)'Too many restarts, reduce TR to ',rho
+               write(2   ,9000)'Too many restarts, reduce TR to ',rho
+            endif
+         endif         
+
+ 8888    if (iter.gt.max_iter) then
+            outcome = 5
+            if (iprint.ge.1) then
+               write(nout,*) 'STOP: TOO MANY ITERATIONS'
+            endif
+            hc = hJ+hJt
+         elseif ((rho.lt.eps/1.D2).and.(outcome.eq.0)) then
+            if (iprint.ge.1) then
+               write(nout,*)'WARNING: rho < epsilon; TERMINATE',
+     .                      ' (restoration phase)'
+            endif
+            outcome = 4
+            hc = hJ+hJt
+         endif
+
+      if (outcome.eq.0) goto 1000
+c     UNTIL (outcome /= 0)
+
+ 9999 continue
+      if (flag.ne.0) then
+         if (iprint.ge.1) then
+            write(nout,*)'ERROR in inf_NLP: IEEE flags unexpected'
+         endif
+         outcome = 3
+      endif
+
+      infcount = infcount + infiter
+
+      if (iprint.ge.2) then
+         write(nout,*)
+         write(nout,*) 'Terminated feasibility problem'
+         write(nout,*) '=============================='
+         write(nout,*) 'Final TR radius   = ', rho
+         write(nout,*) 'outcome           = ', outcome
+         write(nout,*) 'No. of iterations = ', infiter
+      endif
+
+ 7000 format(A,I4)
+ 9000 format(A,G15.6,A,G15.6)
+ 9001 format(2A,2G15.6)
+ 9003 format(A,4G15.6)
+
+      return
+      end
+
+
+c     ******************************************************************
+
+
+      double precision function h_one (m, c, bl, bu)
+
+      implicit none
+
+c     ... declaration of passed parameters -- scalars
+      integer m
+
+c     ... declaration of passed parameters -- arrays
+      double precision c(m), bl(m), bu(m)
+
+c     ... declaration of internal variables
+      integer i
+
+c     =======================  procedure body  =========================
+
+      h_one = 0.D0
+      do i=1,m
+         h_one = h_one + max ( 0.D0 , bl(i)-c(i) , c(i)-bu(i) )
+      enddo
+
+      return
+      end
+
+
+c     ******************************************************************
+
+
+      subroutine Jnorm (n, m, bl, bu, c, n_iatt, n_feas, iatt, hJ, hJt)
+
+      implicit none
+
+c     ... declaration of passed parameters -- scalars
+      integer n, m, n_iatt, n_feas
+      double precision    hJ, hJt
+
+c     ... declaration of passed parameters -- arrays
+      double precision    c(m), bl(m), bu(m)
+      integer iatt(m)
+
+c     ... declaration of internal variables
+      integer i, alsi
+
+c     =======================  procedure body  =========================
+
+c     ... one norm of constraints in J
+      hJ  = 0.D0
+      do i=1,n_iatt
+         alsi = abs(iatt(i)) - n
+         hJ   = hJ + max ( 0.D0 , bl(alsi)-c(alsi) , c(alsi)-bu(alsi) )
+      enddo
+
+c     ... one norm of constraints NOT in J
+      hJt = 0.D0
+      do i=1,n_feas
+         alsi = abs(iatt(m-i+1)) - n 
+         hJt  = hJt + max ( 0.D0 , bl(alsi)-c(alsi) , c(alsi)-bu(alsi) )
+      enddo
+
+      return
+      end
+
+
+c     ******************************************************************
+
+
+      logical function infeasible (QPifail)      
+
+      implicit none
+
+      integer QPifail
+
+c     =======================  procedure body  =========================
+
+      infeasible = .true.
+
+      if (QPifail.eq.0) then
+         infeasible = .false.
+      elseif (QPifail.eq.1) then
+         print *, 'WARNING:  unbounded QP detected'
+         infeasible = .false.
+      elseif (QPifail.ge.4) then
+         print *, 'WARNING: ifail > 3 from bqpd:', QPifail
+         infeasible = .false.
+      endif
+
+      return
+      end
+
+
+c     ******************************************************************
+
+
+      subroutine add_to_filter(f,hc,mu,f_length,maxf,filter,f_posn,
+     .                         acceptable,NWSE,cs_ubd,phase,nout,iprint)
+
+c     This routine is now used for both phase I and phase II filter;
+c     the parameter phase indicates which phase/output is appropriate
+
+      implicit none
+
+c     ... decalaration of passed parameters -- scalars
+      integer f_length, maxf, f_posn, phase, nout, iprint
+      double precision    f, hc, mu, cs_ubd
+      logical acceptable
+      character*2 NWSE
+
+c     ... decalaration of passed parameters -- arrays
+      double precision    filter(maxf,4)
+
+c     ... common statements
+      integer           func, cons, redn, pen
+      common /filter_c/ func, cons, redn, pen
+
+c     ... declaration of internal variables
+      integer     i
+      character*7 string1, string2, string3
+
+c     =======================  procedure body  =========================
+
+c     ... printed output depends on phase being used
+      if (phase.eq.1) then
+         string1 = '||c||_J'
+         string2 = '|c|_J  '
+         string3 = '|c|_Jt '      
+      elseif (phase.eq.2) then
+
+         string1 = '[f,|c|]'
+         string2 = '   f   '
+         string3 = '  |c|  '
+      else
+         write(nout,*)'ERROR: Wrong phase in add_to_filter; STOP',phase
+         STOP
+      endif
+
+c     ... check whether the new entry can be accepted by the filter
+      call check_accept (f,hc,mu,cs_ubd,f_length,maxf,f_posn,
+     .                   filter,phase,nout,iprint,acceptable,NWSE)
+
+c     ... add the new entry to the filter
+      if (acceptable) then
+         call add_entri (f,hc,mu,cs_ubd,f_length,maxf,f_posn,
+     .                   filter,phase,nout,iprint)
+      endif
+
+      if (iprint.ge.2) then
+         write(nout,*) 'Current Filter: (length = ', f_length,')'
+         write(nout,*) '   ',string2,'   |     ', string3,
+     .                 '    | pred.reductn | penalty'
+         do i=1,f_length
+            write(nout,2001)filter(i,func),filter(i,cons),
+     .                      filter(i,redn),filter(i,pen)
+         enddo
+      endif
+
+ 2001 format(4G15.6)
+
+      return
+      end
+
+
+c     ******************************************************************
+
+
+      subroutine check_accept (f,hc,mu,cs_ubd,f_length,maxf,f_posn,
+     .                         filter,phase,nout,iprint,acceptable,NWSE)
+      
+      implicit none
+
+c     ... decalaration of passed parameters -- scalars
+      integer f_length, maxf, f_posn, phase, nout, iprint
+      double precision    f, hc, mu, cs_ubd
+      logical acceptable
+      character*2 NWSE
+
+c     ... decalaration of passed parameters -- arrays
+      double precision    filter(maxf,4)
+
+c     ... common statements
+      integer           func, cons, redn, pen
+      common /filter_c/ func, cons, redn, pen
+      double precision                 infty, eps
+      common /NLP_eps_inf/ infty, eps
+
+c     ... declaration of internal variables
+      integer     i, k
+      logical     found
+      double precision        pen_est, mu1
+      character*7 string1, string2, string3
+
+c     =======================  procedure body  =========================      
+
+c     ... printed output depends on phase being used
+      if (phase.eq.1) then
+         string1 = '||c||_J'
+         string2 = '|c|_J  '
+         string3 = '|c|_Jt '      
+      elseif (phase.eq.2) then
+         string1 = '[f,|c|]'
+         string2 = '   f   '
+         string3 = '  |c|  '
+      else
+         write(nout,*)'ERROR: Wrong phase in check_accept: STOP',phase
+         STOP
+      endif
+
+      acceptable = .true.
+      NWSE = ' '
+
+c     ... (1) find interval in h(c) for new c/s violation
+      i     = 0
+      found = .false.
+      if ((i+1).le.f_length) then
+c        REPEAT 
+ 1000    continue
+            i = i+1
+c           ... need to include suff_redn to get correct interval 
+            call suff_redn (-infty,hc,infty,0.D0,0.D0,1.D0,
+     .                      filter(i,cons),found,.true.)
+         if ((i.lt.f_length).and.(.not.found)) GOTO 1000
+c        UNTIL ((i >= f_length).or.(found))
+      else
+c        ... 1st point for filter
+         found = .true.
+      endif
+
+c     ... (2) decide whether or not to accept the step
+      if (found) then
+         if ((i.eq.0).or.((i.eq.1).and.(f_length.eq.1))) then
+c           ... 1st point on filter OR 1st point after upper bound
+            acceptable = .true.
+         elseif (i.eq.1) then
+cNWr            k = i
+cNWrc           ... NW corner rule for filter (extrapolate function value)
+cNWr            mu1 = 1.D3 * filter(1,pen)
+cNWr            pen_est = filter(1,func) + mu1*filter(1,cons)
+cNWrc           ... use predicted increase as NW corner rule
+cNWr            acceptable = (f + mu1*hc).le.pen_est
+cNWr            if (.not.acceptable) then
+cNWr               if (iprint.ge.2) then
+cNWr                  write(nout,*) 'Step rejected by NW corner rule'
+cNWr                  write(nout,2003) ' penalty function = ',f+mu1*hc,
+cNWr     .                             ' > ',pen_est,'  mu = ',mu1
+cNWr               endif
+cNWr               if (hc.lt.filter(1,cons)) then
+cNWrc                 hc = filter(1,cons), then this is not NW corner rule
+cNWr                  NWSE = 'NW'
+cNWr               endif
+cNWr            else
+cNWr               if (iprint.ge.2) then
+cNWr                  write(nout,*) 'Step accepted by NW corner rule'
+cNWr                  write(nout,2003) ' penalty function = ',f+mu1*hc,
+cNWr     .                             ' <= ',pen_est,'  mu = ',mu1
+cNWr               endif
+cNWr            endif
+         elseif (i.le.(f_length-1)) then
+c           ... ask for suff reductn in f AND |c| 
+            call suff_redn (f,hc,filter(i-1,func),filter(i-1,cons), 
+     .                      filter(i-1,redn),filter(i-1,pen),
+     .                      filter(i,cons),acceptable,.true.)
+            k = i-1
+            if (.not.acceptable) then
+               if (iprint.ge.2) then
+                  write(nout,*) string1,' not acceptable to filter...'
+                  write(nout,2004)string2,' >= tau  :',f, filter(k,func)
+                  write(nout,2004)string3,' >= theta:',hc,filter(k,cons)
+               endif
+            endif
+         else 
+            call suff_redn (f,hc,filter(i-1,func),filter(i-1,cons), 
+     .                      filter(i-1,redn),filter(i-1,pen),
+     .                      filter(i,cons),acceptable,.true.) 
+            k = i-1
+            if (.not.acceptable) then
+               if (iprint.ge.2) then
+                  write(nout,*) string1,' not acceptable to filter...'
+                  write(nout,2004)string2,' >= tau  :',f, filter(k,func)
+                  write(nout,2004)string3,' >= theta:',hc,filter(k,cons)
+               endif
+            endif
+cSEr            if (acceptable) then
+cSErc              ... SE corner rule for filter (extrapolate function value)
+cSEr               mu1 = 1.D-3 * filter(k,pen)
+cSEr               pen_est = filter(k,func)+mu1*filter(k,cons)
+cSEr               acceptable = (f+mu1*hc) .le. pen_est
+cSEr               if (.not.acceptable) then
+cSEr                  if (iprint.ge.2) then
+cSEr                     write(nout,*) 'Step rejected by SE corner rule'
+cSEr                     write(nout,2003) ' penalty function = ',f+mu1*hc,
+cSEr     .                             ' > ',pen_est,'  mu = ',mu1
+cSEr                  endif
+cSEr                  NWSE = 'SE'
+cSEr               else
+cSEr                  if (iprint.ge.2) then
+cSEr                     write(nout,*) 'Step accepted by SE corner rule'
+cSEr                     write(nout,2003) ' penalty function = ',f+mu1*hc,
+cSEr     .                             ' <= ',pen_est,'  mu = ',mu1
+cSEr                  endif
+cSEr               endif
+cSEr            endif
+         endif
+      else
+         acceptable = .false.
+         NWSE = 'UB'
+         if ((iprint.ge.2).and.((k.ne.1).or.(k.ne.f_length-1))) then
+            write(nout,*) 'Reject the step, ',string3,' >= upper bound'
+            write(nout,2005) '... ',string3,'=',hc,' >= upper bnd=',
+     .           filter(f_length,cons)
+         endif
+      endif
+
+      f_posn = i
+
+ 2003 format(3(A,G15.6))
+ 2004 format(A,A,2G15.6)
+ 2005 format(3A,G15.6,A,G15.6)
+
+      return
+      end
+
+
+c     ******************************************************************
+
+
+      subroutine add_entri (f,hc,mu,cs_ubd,f_length,maxf,f_posn,
+     .                      filter,phase,nout,iprint)
+
+      implicit none
+
+c     ... decalaration of passed parameters -- scalars
+      integer f_length, maxf, f_posn, phase, nout, iprint
+      double precision    f, hc, mu, cs_ubd
+
+c     ... decalaration of passed parameters -- arrays
+      double precision    filter(maxf,4)
+
+c     ... common statements
+      double precision                 infty, eps
+      common /NLP_eps_inf/ infty, eps
+c     ... storage divison of filter
+      integer           func, cons, redn, pen
+      common /filter_c/ func, cons, redn, pen
+
+c     ... declaration of internal variables
+      integer     i, k, ii
+      logical     replace
+      character*7 string1, string2, string3
+
+      external r_shift
+
+c     =======================  procedure body  =========================      
+
+c     ... printed output depends on phase being used
+      if (phase.eq.1) then
+         string1 = '||c||_J'
+         string2 = '|c|_J  '
+         string3 = '|c|_Jt '      
+      elseif (phase.eq.2) then
+         string1 = '[f,|c|]'
+         string2 = '   f   '
+         string3 = '  |c|  '
+      else
+         write(nout,*)'ERROR: Wrong phase in add_entri: STOP',phase
+         STOP
+      endif
+
+      i = f_posn
+
+c     ... add an acceptable (f, hc) to the filter
+      if (i.eq.0) then
+c        ... 1st point on filter
+         replace = .false.
+         i = 1
+      elseif (i.eq.1) then
+         if (f.le.filter(1,func)) then
+c           ... replace the left most entry on the filter
+            replace = .true.
+         else
+            replace = .false.
+         endif
+      elseif (hc.eq.filter(i-1,cons)) then
+c        ... replace entry i-1 on filter
+         replace = .true.
+         i = i-1
+      elseif ((i.le.f_length).and.(f.le.filter(i,func))) then
+c        ... replace entry i on filter
+         replace = .true.
+      else
+c        ... add entry before upper bound
+         replace = .false.
+      endif
+
+      if (replace) then
+c        ... replace entry i on the filter
+         if (iprint.ge.2) then
+            write(nout,*) string1, ' acceptable to filter...'
+            write(nout,2004)' ...replace tau by   ',string2,
+     .                      filter(i,func),f
+            write(nout,2004)' ...replace theta by ',string3,
+     .                      filter(i,cons),hc
+         endif
+         filter(i,func) = f
+         filter(i,cons) = hc
+         filter(i,redn) = 0.D0
+         filter(i,pen)  = mu
+         f_posn         = i
+c        ... remove redundant entries from the filter
+         ii = 0
+         do k=i+1,f_length
+            if((f.le.filter(k,func)).and.(hc.le.filter(k,cons)))then
+               ii = ii + 1
+            else
+               goto 2000
+            endif
+         enddo
+ 2000    continue
+         if (ii.gt.0) then
+            call r_shift (filter(i+1,func),f_length-ii-i,ii)
+            call r_shift (filter(i+1,cons),f_length-ii-i,ii)
+            call r_shift (filter(i+1,redn),f_length-ii-i,ii)
+            call r_shift (filter(i+1,pen) ,f_length-ii-i,ii)
+            f_length = f_length - ii
+         endif
+      else
+         if ((f_length+1).gt.maxf) then
+            if (iprint.ge.2) then
+               write(nout,*) 'WARNING: filter too small:', 
+     .                       'max = length :', maxf, f_length
+            endif
+c           ... remove last entry (upper bound)
+            f_length = f_length - 1
+c           ... transform last-1 entry into upper bound
+            if (iprint.ge.2) then
+               write(nout,2002)'Add upper bnd on c/s violatn',cs_ubd
+            endif
+            filter(f_length,func) = -infty
+            filter(f_length,cons) = cs_ubd
+            filter(f_length,redn) = 0.D0
+            filter(f_length,pen)  = 1.D0
+c           ... if new entry was in last interval then need to change 
+            if (i.eq.maxf) then
+               i = i-1
+            endif
+         endif
+         f_length = f_length + 1
+c        ... shift entries to right (new entry in center)
+c>>>         call r_shift (filter(i+1,func),f_length-i,-1)
+c>>>         call r_shift (filter(i+1,cons),f_length-i,-1)
+c>>>         call r_shift (filter(i+1,redn),f_length-i,-1)
+c>>>         call r_shift (filter(i+1,pen) ,f_length-i,-1)
+c        ... previous lines caused access to r(0). Mar, 20, 2003.
+         call shift_right (filter(i,func), f_length-i)
+         call shift_right (filter(i,cons), f_length-i)
+         call shift_right (filter(i,redn), f_length-i)
+         call shift_right (filter(i,pen) , f_length-i)
+c        ... add new entry to filter
+         filter(i,func) = f
+         filter(i,cons) = hc
+         filter(i,redn) = 0.D0
+         filter(i,pen)  = mu
+         f_posn         = i
+         if (iprint.ge.2) then
+            write(nout,2004)string1,' acceptable to filter; add',f,hc
+         endif
+      endif
+
+ 2002 format(A,G15.6,A,G15.6)
+ 2004 format(A,A,2G15.6)
+
+      return
+      end
+
+c     ******************************************************************
+
+      subroutine shift_right(r,n)
+      integer n, i
+      double precision r(0:n)
+      do i=n,1,-1
+         r(i)=r(i-1)
+      enddo
+      return
+      end
+
+c     ******************************************************************
+
+      subroutine suff_redn (f,hc,func1,cons1,redn1,mu1,cons2,acceptable,
+     .                      both)
+
+      implicit none
+
+c     ... decalaration of passed parameters -- scalars
+      double precision    f, hc, func1, cons1, redn1, mu1, cons2
+      logical acceptable, both
+
+c     ... declaration of internal constants
+      double precision        alpha,         alpha2,           beta
+      parameter ( alpha = 25.D-2 , alpha2 = 1.D-4 , beta = 99.D-2 )
+
+c     ... declaration of internal variables
+      logical suff_redn_f, suff_redn_hc, both1
+      double precision    redn_f
+
+c     =======================  procedure body  =========================
+
+c     ... initialize suff_red as false (only check true)
+      acceptable = .false.
+
+c     ... use local copy of both
+      both1 = both
+
+c     ... sufficient reduction in f 
+      redn_f      = max ( alpha*redn1 , alpha2*cons1*mu1 )
+      suff_redn_f = f.le.(func1 - redn_f)
+
+c     ... sufficient reduction in ||c||
+      suff_redn_hc = hc.lt.(beta*cons2)
+
+c     ... if BOTH hc = cons2 = 0, then need to ask for suff reduction in f
+      if ((hc.eq.0.D0).and.(cons2.eq.0.D0)) then
+         both1 = .true.
+      endif
+
+c     ... special treatment for NW corner point of filter ???
+      if (both1) then
+         acceptable = suff_redn_f.and.suff_redn_hc
+      else
+         acceptable = suff_redn_f.or.suff_redn_hc
+      endif
+
+      return
+      end
+
+
+c     ******************************************************************
+
+
+      subroutine unblock_filter (f,hc,mu,f_length,maxf,filter,f_posn,
+     .                        unblocked,cs_ubd,phase,nout,iprint,NWSE)
+
+      implicit none
+
+c     ... decalaration of passed parameters -- scalars
+      integer f_length, maxf, phase, nout, f_posn, iprint
+      double precision    f, hc, mu, cs_ubd
+      logical unblocked
+      character*2 NWSE
+
+c     ... decalaration of passed parameters -- arrays
+      double precision    filter(maxf,4)
+
+c     ... declaration of internal variables
+      integer i, ii, n_block, index(100)
+      double precision    min_f, cs_ubd1, hc1
+      logical acceptable, ubd_block
+      character*7 string1, string2, string3
+      character*2 NWSE1
+
+c     ... common statements
+      double precision                 infty, eps
+      common /NLP_eps_inf/ infty, eps
+
+c     ... storage divison of filter
+      integer           func, cons, redn, pen
+      common /filter_c/ func, cons, redn, pen
+
+      external r_shift
+
+c     =======================  procedure body  =========================
+
+c     ... use local copy of cs_ubd so that cs_ubd is not corrupted
+      cs_ubd1 = cs_ubd
+
+c     ... printed output depends on phase being used
+      if (phase.eq.1) then
+         string1 = '||c||_J'
+         string2 = '|c|_J  '
+         string3 = '|c|_Jt '      
+         min_f   = - infty
+         hc1     = f + hc
+      elseif (phase.eq.2) then
+         string1 = '[f,|c|]'
+         string2 = '   f   '
+         string3 = '  |c|  '
+         min_f   = - infty
+         hc1     = hc
+      else
+         write(nout,*)'ERROR: Wrong phase in add_to_filter; STOP',phase
+         STOP
+      endif
+
+      unblocked = .false. 
+c     ... check whether upper bound is blocking entry OR total c/s violn
+      ubd_block = .false. 
+      call suff_redn(0.D0,hc1,infty,0.D0,0.D0,1.D0,
+     .               filter(f_length,cons),acceptable,.true.)
+
+      if (.not.acceptable) then
+c        ... upper bound is blocking entry 
+         if (iprint.ge.2) then
+            write(nout,*)'  Blocking entry is upper bnd on theta',
+     .                   ':  DO NOT REMOVE THIS ENTRY.'
+         endif
+         NWSE1     = 'UB'
+         ubd_block = .true. 
+      else
+c        ... find all blocking (thetap, taup) in the filter
+         NWSE1 = NWSE
+         n_block = 0
+         do i=1,f_length-1
+            call suff_redn(f,hc,filter(i,func),filter(i,cons),
+     .                     filter(i,redn),filter(i,pen),filter(i,cons),
+     .                     acceptable,.false.)
+            if (.not.acceptable) then
+               unblocked = .true.
+               if (iprint.ge.2) then
+                  write(nout,*)'Blocking [taup,thetap] in filter found'
+                  write(nout,2002)string2,'>=taup  :',f,filter(i,func)
+                  write(nout,2002)string3,'>=thetap:',hc,filter(i,cons)
+               endif
+c              ... mark entry for removal from filter
+               n_block = n_block+1
+               index(n_block) = i
+            endif
+         enddo
+      endif
+
+c     ... add upper bound to filter (if unblocked)
+      if (unblocked) then
+         cs_ubd1 = max ( cs_ubd1/1.D1 , hc1 )
+         if (iprint.ge.2) then
+            write(nout,*) 'UNBLOCKING FILTER:'
+            write(nout,*) 'Reduce c/s upper bound to ', cs_ubd1
+         endif
+         call add_entri(min_f,cs_ubd1,1.D0,cs_ubd1,f_length,maxf,
+     .                  f_length,filter,phase,nout,iprint)
+
+c        ... update c/s upper bound
+         cs_ubd = cs_ubd1
+c        ... remove blocking entries (in list) from filter & find new f_posn
+         f_posn = 10000
+         do i=n_block,1,-1
+            ii = index(i)
+            f_posn = min ( f_posn , ii )
+            if (iprint.ge.2) then
+               write(nout,*) 'Remove entry ',ii,' : ',
+     .                 filter(ii,func), filter(ii,cons)
+            endif
+            call r_shift (filter(ii,func),f_length-ii,1)
+            call r_shift (filter(ii,cons),f_length-ii,1)
+            call r_shift (filter(ii,redn),f_length-ii,1)
+            call r_shift (filter(ii,pen) ,f_length-ii,1)
+            f_length = f_length - 1
+         enddo
+         if (abs(cs_ubd1-hc).le.eps) then
+            if (iprint.ge.2) then
+               write(nout,*) 'Blocked entry lies on upper bound'
+            endif
+            call add_entri(min_f,cs_ubd1,1.D0,cs_ubd1,f_length,maxf,
+     .                     f_posn,filter,phase,nout,iprint)
+         else
+c           ... add blocked entry to filter (which is now unblocked)
+            if (iprint.ge.2) then
+               write(nout,*) 'Add blocked entry to filter:'
+            endif
+            call add_entri(f,hc,mu,cs_ubd1,f_length,maxf,f_posn,
+     .                     filter,phase,nout,iprint)
+         endif
+      elseif (.not.ubd_block) then
+         if ((NWSE.eq.'NW').or.(NWSE.eq.'SE')) then
+cUNB            if (phase.eq.1) then
+cUNB            unblocked = .false.
+cUNB            if (iprint.ge.2) then
+cUNB               write(nout,*)'Block by ',NWSE,' corner: NOT UNBLOCKED'
+cUNB            endif
+cUNB            else
+c           ... add new entry to filter if NW corner pertinent
+            unblocked = .true. 
+            if (iprint.ge.2) then
+               write(nout,*) 'Blocking caused by ',NWSE,' corner'
+            endif
+            if (NWSE.eq.'NW') then
+               f_posn = 1
+            else
+               f_posn = f_length
+            endif
+            call add_entri(f,hc,mu,cs_ubd1,f_length,maxf,f_posn,
+     .                     filter,phase,nout,iprint)
+cUNB            endif
+         else 
+            unblocked = .true.
+cNWSE            write(nout,*) '***  WARNING: NOT NW or SE  ***'
+         endif
+      else
+         if (.not.ubd_block) then
+            write(nout,*) '***  WARNING: Cannot unblock filter  ***'
+         endif
+      endif
+
+      if (iprint.ge.2) then
+         write(nout,*) 'Current Filter: (length = ', f_length,')'
+         write(nout,*) '   ',string2,'   |     ', string3,
+     .                 '    | pred.reductn | penalty'
+         do i=1,f_length
+            write(nout,2001)filter(i,func),filter(i,cons),
+     .                      filter(i,redn),filter(i,pen)
+         enddo
+      endif
+
+      NWSE = NWSE1
+
+ 2001 format(4G15.6)
+ 2002 format(2A,2G15.6)
+
+      return
+      end
+
+
+c     ******************************************************************
+
+
+      subroutine inf_QP (n,m,k,kmax,a,la,d,cstype,bl,bu,blo,bup,c,q,g,r,
+     .                   w,e,ls,alp,lp,mlp,peq,ws,lws,iatt,n_iatt,
+     .                   n_feas,feasible,ifail,info,iprint,
+     .                   nout,QPpivot,mode,mode2QP,mode4QP)
+                                
+      implicit none
+
+c     ... decalaration of passed parameters -- scalars
+      integer n, m, k, kmax, mlp, iprint, nout, peq, ifail, 
+     .        n_iatt, n_feas, QPpivot, mode, mode2QP, mode4QP
+      double precision    q
+      logical feasible
+
+c     ... decalaration of passed parameters -- arrays
+      integer la(0:*), ls(n+m), lp(mlp), lws(*), info(100), iatt(m)
+      double precision    a(*), d(n), bl(n+m), bu(n+m), g(n), r(n+m), 
+     .        w(n+m), e(n+m), ws(*), alp(mlp), blo(n+m), bup(n+m), c(m)
+      character cstype(m)
+
+c     ... declaration of internal variables
+      integer i, j, npivot, alsi, ir, nr, m0de, lws_phl
+      double precision    qmin, ainfty
+      logical inf_bound, lin_inf
+
+c     ... common block that defines the modes for QP solves
+      integer        cold_start, warm_start, hot_start
+      common /modes/ cold_start, warm_start, hot_start
+
+c     ... common statements
+      double precision                 infty, eps
+      common /NLP_eps_inf/ infty, eps
+
+c     ... count number of calls to bqpd & print if necessary
+      integer             n_bqpd_calls, n_bqpd_print
+      common /bqpd_count/ n_bqpd_calls, n_bqpd_print
+
+c     ... storage map for hessian 
+      integer        phl, phr, phc
+      common /hessc/ phl, phr, phc
+
+c     =======================  procedure body  =========================
+
+      feasible  = .false.
+
+c     ... set objective of QP to zero => only do phase I
+      do i=1,n
+         a(i) = 0.D0
+      enddo
+      lws_phl = phl
+      phl     = 0
+      if (iprint.ge.2) then
+         write(nout,*) 'Solve feasibility LP'
+      endif
+      call QPsolve(n,m,k,kmax,a,la,d,bl,bu,q,qmin,g,r,w,e,ls,alp,lp,mlp,
+     .             peq,ws,lws,cstype,mode,ifail,info,iprint,nout,npivot,
+     .             mode2QP,mode4QP)
+      QPpivot   = QPpivot + npivot
+
+c     ... check whether any simple bounds are infeasible
+      if (ifail.eq.3) then
+         ainfty = 987.D-3 * infty
+         inf_bound = lin_inf(n,m,k,ls,r,cstype)
+         if (inf_bound) then
+            m0de = 4
+            if (iprint.ge.2) then
+               write(nout,*) '   INFEASIBLE LINEAR CONSTRAINTS'
+               if (iprint.ge.3) then
+                  write(nout,*) '     ls = ',(ls(i),i=1,n+m)
+                  write(nout,*) '      r = ',( r(i),i=1,n+m)
+               endif
+            endif
+c           ... relax all inactive nonlinear c/s
+            nr = 0
+            do i=n-k+1,n+m
+               alsi = abs(ls(i))
+               if ((alsi.gt.n).and.(cstype(alsi-n).eq.'N')) then
+                  bl(alsi) = -ainfty
+                  bu(alsi) =  ainfty
+                  iatt(m-nr) = ls(i)
+                  nr         = nr + 1
+               endif
+            enddo
+c           ... relax active nonlinear constraints, so that d=0 is feasible
+            ir = 0
+            do i=1,n-k
+               alsi = abs(ls(i))
+               if ((alsi.gt.n).and.(cstype(alsi-n).eq.'N')) then
+                  ir       = ir + 1
+                  if (bl(alsi).gt.0.D0) then
+                     bu(alsi) = bl(alsi)
+                     bl(alsi) = - ainfty
+                     ls(i)    = - alsi
+                     iatt(ir) =   alsi
+                  elseif (bu(alsi).lt.0.D0) then
+                     bl(alsi) = bu(alsi)
+                     bu(alsi) =   ainfty
+                     ls(i)    =   alsi
+                     iatt(ir) = - alsi
+                  endif
+               endif
+            enddo
+            if (iprint.ge.3) then
+               write(nout,*) '     dropped nonlinear c/s',
+     .              (iatt(i),i=m-nr+1,m)
+               write(nout,*) '     relaxed nonlinear c/s',
+     .              (iatt(i),i=1,ir)
+            endif
+c           ... solve LP in smaller number of constraints
+            if (iprint.ge.2) then
+               write(nout,*) '     solve relaxed phase I LP'   
+               if (iprint.ge.3) then
+                  write(nout,*) '     ls = ',(ls(i),i=1,n),
+     .                 ' # ',(ls(i),i=n+1,n+m)
+               endif
+            endif
+            call QPsolve(n,m,k,kmax,a,la,d,bl,bu,q,qmin,g,r,w,e,
+     .                   ls,alp,lp,mlp,peq,ws,lws,cstype,m0de,ifail,
+     .                   info,iprint,nout,npivot,mode2QP,mode4QP)
+            QPpivot   = QPpivot + npivot
+c           ... now linear c/s should be feasible 
+c           ... unrelax nonlin. c/s & change corresp. sign of ls(i)
+            do i=lp(1),n+m
+               alsi = abs( ls(i) )
+               if ((alsi.gt.n).and.(cstype(alsi-n).eq.'N')) then
+                  if (bl(alsi).eq.-ainfty) then
+                     bl(alsi) = blo(alsi) - c(alsi-n)
+                     bu(alsi) = bup(alsi) - c(alsi-n)
+                     ls(i)    = alsi
+                  elseif (bu(alsi).eq.ainfty) then
+                     bu(alsi) = bup(alsi) - c(alsi-n)
+                     bl(alsi) = blo(alsi) - c(alsi-n)
+                     ls(i)    = - alsi
+                  endif
+               endif
+            enddo
+c           ... resolve the FULL LP a last time
+            if (iprint.ge.2) then
+               write(nout,*) '     re-solve FULL phase I LP'   
+               if (iprint.ge.3) then
+                  write(nout,*) '     ls = ',(ls(i),i=1,n),
+     .                                 ' # ',(ls(i),i=n+1,n+m)
+               endif
+            endif
+            m0de = 4
+            call QPsolve(n,m,k,kmax,a,la,d,bl,bu,q,qmin,g,r,w,e,ls,
+     .                   alp,lp,mlp,peq,ws,lws,cstype,m0de,ifail,
+     .                   info,iprint,nout,npivot,mode2QP,mode4QP)
+         endif
+      endif
+
+c     FIX: 29/3/01: Ensure that simple bounds are satisfied
+      do j=lp(1),n-k
+         i=abs(ls(j))
+         if(i.le.n)then
+            if(ls(j).ge.0)then
+               d(i) = bl(i)
+            else
+               d(i) = bu(i)
+            endif
+         endif
+      enddo
+      do i=1,n
+         d(i)=max( min( d(i), bu(i) ), bl(i) )
+      enddo
+      do j=n-k+1,n+m
+         i=abs(ls(j))
+         if(r(i).eq.0.D0.and.i.le.n)then
+            if(ls(j).ge.0)then
+               d(i) = bl(i)
+            else
+               d(i) = bu(i)
+            endif
+         endif
+      enddo
+c     END FIX: 29/3/01 ... important for MPECs
+
+      if (ifail.le.1) then
+         feasible = .true.
+         q = 0.D0
+         if (iprint.ge.2) then
+            write(nout,*) 'Feasible QP found, RETURN', ifail
+         endif
+         call find_J_set (n,m,k,n_iatt,n_feas,ls,r,cstype,iatt)
+      elseif ((ifail.eq.3).or.(ifail.eq.8)) then
+         inf_bound = lin_inf(n,m,k,ls,r,cstype)
+         if (inf_bound) then
+            ifail = 30
+         endif
+c        ... find sets J and Jt for this QP
+         call find_J_set (n,m,k,n_iatt,n_feas,ls,r,cstype,iatt)
+         if (iprint.ge.2) then
+            write(nout,2001)'Phase I c/s violation from bqpd: ', q
+            if (iprint.ge.3) then
+               write(nout,*)'constraints in J-set : '
+               write(nout,2002) (iatt(i),i=1,n_iatt)
+               write(nout,*)'constraints in Jt-set: '
+               write(nout,2002) (iatt(m-i+1),i=1,n_feas)      
+            endif
+         endif
+      endif
+c     ... finally reset the Hessian
+      phl = lws_phl
+
+ 2001 format(A,G15.6)
+ 2002 format(14I5)
+
+      return
+      end
+
+
+c     ******************************************************************
+
+      logical function lin_inf(n,m,k,ls,r,cstype)
+
+      implicit none
+
+c     ... decalaration of passed parameters -- scalars
+      integer n, m, k
+
+c     ... decalaration of passed parameters -- arrays
+      integer ls(n+m)
+      double precision    r(n+m)
+      character cstype(m)
+
+c     ... decalaration of internal parameters -- scalars
+      integer i, alsi
+
+c     =======================  procedure body  =========================
+
+      lin_inf = .false.
+      do i=n-k+1,n+m
+         alsi = abs(ls(i))
+         if ((alsi.le.n).and.(r(alsi).lt.0.D0)) then
+            lin_inf = .true.
+c           ... infeasible simple bound found --> EXIT
+            GOTO 100
+         endif
+         if ((alsi.gt.n).and.(cstype(alsi-n).eq.'L')
+     .        .and.(r(alsi).lt.0.D0)) then
+            lin_inf = .true.
+c           ... infeasible linear c/s found --> EXIT
+            GOTO 100
+         endif
+      enddo
+ 100  continue
+      return
+      end
+
+
+c     ******************************************************************
+
+
+      subroutine find_J_set (n,m,k,n_iatt,n_feas,ls,r,cstype,iatt)
+      implicit none
+
+c     ... decalaration of passed parameters -- scalars
+      integer n, m, k, n_iatt, n_feas
+
+c     ... decalaration of passed parameters -- arrays
+      integer ls(n+m), iatt(m)
+      double precision    r(n+m)
+      character cstype(m)
+
+c     ... declaration of internal variables
+      integer i, alsi
+
+c     =======================  procedure body  =========================
+
+c     ... find the c/s which are part of the phase I sum 
+      n_iatt = 0
+      n_feas = 0
+      do i=n-k+1,n+m
+         alsi = abs(ls(i))
+         if ((alsi.gt.n).and.(cstype(alsi-n).eq.'N')) then
+            if (r(alsi).lt.0.D0) then
+c              ... infeasible (nonlinear) c/s 
+               n_iatt       = n_iatt + 1
+               iatt(n_iatt) = ls(i)
+            else
+c              ... other (nonlinear) c/s
+               n_feas           = n_feas + 1
+               iatt(m-n_feas+1) = ls(i)
+            endif
+         endif
+      enddo
+c     ... active c/s that attain their bound
+      do i=1,n-k
+         alsi = abs(ls(i))
+         if ((alsi.gt.n).and.(cstype(alsi-n).eq.'N')) then
+            n_feas           = n_feas + 1
+            iatt(m-n_feas+1) = ls(i)
+         endif
+      enddo
+
+      return
+      end
+
+
+c     ******************************************************************
+
+
+      subroutine bound_shift (n, m, blo, bup, bl, bu, x, c, cstype, rho,
+     .                        shift, ws, w, SOCS)
+
+      implicit none
+
+c     ... declaration of passed parameters -- scalars
+      integer n, m
+      double precision    rho, shift
+      logical SOCS
+
+c     ... declaration of passed parameters -- arrays
+      double precision      blo(n+m),bup(n+m),c(m),x(n),bu(n+m),bl(n+m),
+     .          w(m),ws(*)
+      character cstype(m)
+
+c     ... declaration of internal variables
+      integer i
+
+c     =======================  procedure body  =========================
+
+      if (shift.gt.0.D0) then
+         do i=1,m
+            if (cstype(i).eq.'N') then
+               bl(n+i) = blo(n+i) - c(i) - shift
+               bu(n+i) = bup(n+i) - c(i) + shift
+            else
+               bl(n+i) = blo(n+i) - c(i)
+               bu(n+i) = bup(n+i) - c(i)
+            endif
+         enddo      
+         if (SOCS) then
+            print *, 'ERROR in bound_shift: STOP'
+            STOP
+         endif
+      else
+         if (SOCS) then
+            do i=1,m
+               bl(n+i) = blo(n+i) - c(i) + w(i)
+               bu(n+i) = bup(n+i) - c(i) + w(i)
+            enddo
+         else
+            do i=1,m
+               bl(n+i) = blo(n+i) - c(i)
+               bu(n+i) = bup(n+i) - c(i)
+            enddo
+         endif
+      endif
+
+      do i=1,n
+         bl(i) = max ( blo(i)-x(i) , -rho )
+         bu(i) = min ( bup(i)-x(i) ,  rho )
+      enddo
+      
+c     ... tidy up linear c/s bounds by ensuring that d=0 is feasible
+      if (shift.eq.0.D0) then
+         do i=1,m
+            if (cstype(i).eq.'L') then
+               if (blo(n+i).eq.bup(n+i)) then
+                  bu(n+i) = 0.D0
+                  bl(n+i) = 0.D0
+               else
+                  bu(n+i) = max( bu(n+i) , 0.D0 )
+                  bl(n+i) = min( bl(n+i) , 0.D0 )
+               endif
+            endif
+         enddo
+         do i=1,n
+            if (blo(i).eq.bup(i)) then
+               bu(i) = 0.D0
+               bl(i) = 0.D0
+            else
+               bu(i) = max( bu(i) , 0.D0 )
+               bl(i) = min( bl(i) , 0.D0 )
+            endif
+         enddo
+      endif
+
+      return
+      end
+
+
+c     ******************************************************************
+
+
+      subroutine enlarge_TR (rho, n, d_norm, fnew, f, q, hcnew, hc, mu, 
+     .                       phase, nout, iprint)
+
+c     NB: This routine is used for phase I and phase II
+
+      implicit none
+
+c     ... declaration of passed parameters -- scalars
+      integer n, phase, nout, iprint
+      double precision    rho, f, fnew, q, hc, hcnew, d_norm, mu
+c$$$      double precision    phi, phinew, act_red, pred_red, ratio
+
+c     =======================  procedure body  =========================
+
+      if (d_norm.eq.rho) then
+         if (iprint.ge.2) then
+            write(nout,7000)
+     .           'Increase TR radius from ',rho, ' to ',2.D0*rho
+         endif
+         rho = 2.D0*rho
+      endif
+
+ 7000 format(2(A,G15.6))
+
+      return
+      end
+
+
+c     ******************************************************************
+
+
+      double precision function reduce_TR (rho, d_norm)
+
+c     NB: This routine is used for phase I and phase II
+
+      implicit none
+
+c     ... declaration of passed parameters -- scalars
+      double precision    rho, d_norm
+
+c     =======================  procedure body  =========================
+
+      reduce_TR = min ( rho , d_norm ) / 2.D0
+
+      return
+      end
+
+
+c     ******************************************************************
+
+
+      subroutine progress (iter,iiter,rho,d_norm,step,f,hc,phi,nout,
+     .                     iprint)
+
+      implicit none
+
+c     ... declaration of passed parameters -- scalars
+      integer     iter, iiter, nout, iprint
+      double precision        rho, d_norm, f, hc, phi
+      character*5 step
+
+c     =======================  procedure body  =========================
+
+      if (iprint.eq.1) then
+         write(nout,1000) iter, iiter, rho, d_norm, f, hc, phi, step
+         write(2   ,1000) iter, iiter, rho, d_norm, f, hc, phi, step
+      elseif (iprint.ge.2) then
+         write(2   ,1000) iter, iiter, rho, d_norm, f, hc, phi, step
+      endif
+
+ 1000 format (I4,':',I1,2G13.6,3G15.8,1X,A)
+
+      return
+      end
+
+
+c     ******************************************************************
+
+
+      subroutine linear_feasible (n, m, x, c, bl, bu, cstype, lin_feas)
+
+      implicit none
+
+c     ... declaration of passed parameters -- scalars
+      integer n, m
+      logical lin_feas
+
+c     ... declaration of passed parameters -- arrays
+      double precision    x(n), c(m), bu(n+m), bl(n+m)
+      character cstype(m)
+
+c     ... declaration of internal variables -- scalars
+      integer j
+      double precision    res
+
+c     =======================  procedure body  =========================
+
+      lin_feas = .true.
+      j = 1
+
+c     ... check feasibility of simple bounds
+c     WHILE ((j <= m) & (lin_feas)) DO
+ 100  if (.not.((j.le.n).and.(lin_feas))) GOTO 200
+         res = max ( 0.D0 , bl(j) - x(j) , x(j) - bu(j) )
+         if (res.gt.0.D0) then
+            lin_feas = .false.
+         endif
+         j = j+1
+      GOTO 100
+c     END WHILE
+ 200  continue
+
+      j = 1
+c     ... check feasibility of linear constraints
+c     WHILE ((j <= m) & (lin_feas)) DO
+ 1000 if (.not.((j.le.m).and.(lin_feas))) GOTO 2000
+         if (cstype(j).eq.'L') then
+            res = max ( 0.D0 , bl(n+j) - c(j) , c(j) - bu(n+j) )
+            if (res.gt.0.D0) then
+               lin_feas = .false.
+            endif
+         endif
+         j = j+1
+      GOTO 1000
+c     END WHILE
+ 2000 continue
+
+      return
+      end
+
+
+c     ******************************************************************
+
+
+      double precision function penalty_est (n,m,k,f,hc,r,ls,cstype,mu)
+
+      implicit none
+
+c     ... declaration of passed parameters -- scalars
+      integer n, m, k
+      double precision    f, hc, mu
+
+c     ... declaration of passed parameters -- arrays
+      double precision      r(n+m)
+      integer   ls(n+m)
+      character cstype(m)
+
+c     ... common to indicate initial penalty parameter & updating or not
+      double precision               given_mu
+      logical                      update_mu
+      common /penalty_c/ given_mu, update_mu
+
+c     ... declaration of internal variables -- scalars
+      integer i, alsi
+      double precision    temp
+
+c     =======================  procedure body  =========================
+
+c     ... estimate the penalty parameter to lie within [1E-6,1E6]
+      mu = 1.D-6
+      do i=1,n-k
+         alsi = abs(ls(i))
+         if ((alsi-n).gt.0) then
+            if ((cstype(alsi-n).eq.'N').and.(abs(r(alsi)).gt.0.D0)) then
+               temp = 1.D1**nint(log10(abs(r(alsi))) + 1)
+               mu   = max ( mu , temp )
+            endif
+         endif
+      enddo
+      mu = min ( mu , 1.D6 )
+
+c     ... estimate of l_infty exact penalty function
+      if (update_mu) then
+         penalty_est = f + mu * hc
+      else
+         penalty_est = f + given_mu * hc         
+      endif
+
+      return
+      end
+
+
+c     ******************************************************************
+
+
+      double precision function l1_pen_est (n,m,n_feas,n_iatt,iatt,lam,
+     .                          mu)
+
+      implicit none
+
+c     ... declaration of passed parameters -- scalars
+      integer n, m, n_feas, n_iatt
+      double precision    mu
+
+c     ... declaration of passed parameters -- arrays
+      double precision    lam(n+m)
+      integer iatt(m)
+
+c     ... declaration of internal variables -- scalars
+      integer j, alsj
+      double precision    temp
+
+c     =======================  procedure body  =========================
+
+c     ... estimate the penalty parameter to lie within [1E-6,1E6]
+      mu = 1.D-6
+      do j=1,n_feas
+         alsj = abs(iatt(m-j+1))
+         if (abs(lam(alsj)).gt.0.D0) then
+            temp        = 1.D0**nint(log10(abs(lam(alsj))) + 1)
+            mu = max ( mu , temp )
+         endif
+      enddo
+      mu = min ( mu , 1.D6 )
+
+      l1_pen_est = mu
+
+      return
+      end
+
+
+c     ******************************************************************
+
+
+      double precision function infty_norm (n, d, ws)
+
+      implicit none
+
+c     ... declaration of passed parameters -- scalars
+      integer n
+
+c     ... declaration of passed parameters -- arrays
+      double precision d(n), ws(*)
+
+c     ... declaration of internal variables -- scalars
+      integer i
+
+c     =======================  procedure body  =========================
+      
+      infty_norm = abs(d(1))
+      do i=2,n
+         infty_norm = max ( infty_norm , abs(d(i)) )
+      enddo
+
+      return
+      end
+
+
+c     ******************************************************************
+
+
+      subroutine solve_SO_inf(n,m,k,kmx,nout,n_iatt,iatt,ls,info,a,la,
+     .                        bl,bu,ws,lws,g,r,w,e,alp,lp,mlp,peq,x,d,
+     .                        q,qmin,lam,iprint,mode,SOifail,cstype,s,
+     .                        user,iuser,QPpivot,hcount,mode2QP,mode4QP)
+
+      implicit none
+
+c     ... declaration of passed parameters -- scalars
+      integer n, m, k, kmx, n_iatt, nout, peq, iprint, mlp,
+     .        SOifail, QPpivot, mode, hcount, mode2QP, mode4QP
+      double precision    q, qmin
+
+c     ... declaration of passed parameters -- arrays
+      double precision    a(*), ws(*), d(n), x(n), g(n), r(n+m), w(n+m), 
+     .        e(n+m), user(*), lam(n+m), bl(n+m), bu(n+m), alp(mlp),
+     .        s(n+m)
+      integer lp(mlp), ls(n+m), la(0:*), lws(*), info(100), iuser(*), 
+     .        iatt(n_iatt)
+      character cstype(m)
+
+c     ... declaration of internal variables -- scalars
+      integer i, jj, alsi, npivot, l_hess, li_hess
+      double precision    mult
+      logical inf_bound
+
+c     ... common statements
+      double precision                 infty, eps
+      common /NLP_eps_inf/ infty, eps
+
+c     ... storage map for hessian and scale_mode
+      integer         scale_mode, phe
+      common /scalec/ scale_mode, phe
+
+c     ... total available storage & storage used for Hessian
+      integer      kk, ll, kkk, lll, maxwk, maxiwk
+      common /wsc/ kk, ll, kkk, lll, maxwk, maxiwk
+
+c     =======================  procedure body  =========================
+
+c     ... set max length for Hessian on input & call Hessian
+      l_hess  = maxwk
+      li_hess = maxiwk
+      call hessian1(x,n,m,1,lam,ws(phe+1),lws,s,user,iuser,
+     .             l_hess,li_hess,i)
+      hcount = hcount + 1
+      kk = n+m + l_hess
+      ll = li_hess
+      
+c     ... setup a 2nd order problem (min phase I sum + 2nd order term)
+c     ... accumulate the objective gradient from phase I terms
+c     ... NB: In objective multipliers sign is reversed
+      do i=1,n
+         a(i) = 0.D0
+      enddo      
+      do i=1,n_iatt
+         mult = sign(1.D0,dble(iatt(i)))
+         jj   = abs(iatt(i)) - n
+         call saxpy_ai (-mult, a, la, jj, a(1), n)
+      enddo
+c     ... bounds of phase I c/s are set to \infty
+      do i=1,n_iatt
+         alsi = abs(iatt(i))
+         if (iatt(i).gt.0) then
+            bl(alsi) = -infty
+         else
+            bu(alsi) =  infty
+         endif
+      enddo
+c     ... solve 2nd order problem (min phase I sum + 2nd order term)
+      if (mode.ge.2) then
+         mode = 4
+      endif
+      call QPsolve (n,m,k,kmx,a,la,d,bl,bu,q,qmin,g,r,w,e,ls,alp,lp,mlp,
+     .           peq,ws,lws,cstype,mode,SOifail,info,iprint,nout,npivot,
+     .           mode2QP,mode4QP)
+      QPpivot = QPpivot + npivot
+
+      if (SOifail.eq.1) then
+         write(nout,*) '** WARNING: unbounded QP in phase I detected **'
+      elseif (SOifail.eq.2) then
+         write(nout,*) 'Simple bounds inconsistent in solve_SO_inf'
+         do i=1,n
+            if (bl(i).gt.bu(i)) then
+               write(nout,*) i, bl(i), bu(i)
+            endif  
+         enddo
+      elseif (SOifail.eq.3) then
+         if (iprint.ge.2) then
+            write(nout,*)'Infeasible QP for 2nd order step, phase I'
+            inf_bound = .false.
+            do i=n-k+1,n+m
+               alsi = abs(ls(i))
+               if ((alsi.le.n).and.(r(alsi).lt.0.D0)) then
+                  inf_bound = .true.
+c                 ... infeasible simple bound found --> EXIT
+                  write(nout,*)'simple bound no ',alsi, ' infeasible'
+               endif
+               if ((alsi.gt.n).and.(cstype(alsi-n).eq.'L')
+     .                 .and.(r(alsi).lt.0.D0)) then
+                  inf_bound = .true.
+c                 ... infeasible linear c/s found --> EXIT
+                  write(nout,*)'linear c/s   no ',alsi, ' infeasible'
+               endif
+            enddo
+         endif
+      endif
+
+      return
+      end
+
+
+c     ******************************************************************
+
+
+      subroutine unbddQP(n,m,k,nout,alpha,d,ls,w)
+
+      implicit none
+
+c     ... declaration of passed parameters -- scalars
+      integer n, m, k, nout
+      double precision    alpha
+
+c     ... declaration of passed parameters -- arrays
+      integer ls(n+m)
+      double precision    d(n), w(n+m)
+
+c     ... declaration of internal parameters -- scalars
+      integer j, alsj
+
+c     =======================  procedure body  ========================
+
+c     ... compute the search direction which led to an unbounded QP
+      do j=n-k+1,n+m
+         alsj = abs(ls(j))
+         if (alsj.le.n) then
+            d(alsj) = d(alsj) - alpha * sign(1.D0,dble(ls(j))) * w(alsj)
+         endif
+      enddo
+
+      return
+      end
+
+
+c     ******************************************************************
+
+
+      character*4 function int2char ( int )
+
+c     ... converts integer int into character string
+
+      implicit none
+
+      integer     int, int1, d(4), i
+      character*4 char
+
+c     ==========================   function body   =====================
+
+c     ... find thousands, hundreds, tens and ones
+      int1 = int
+      d(1) = int1 / 1000
+      int1 = int1 - d(1)*1000
+      d(2) = int1 / 100
+      int1 = int1 - d(2)*100
+      d(3) = int1 / 10
+      d(4) = int1 - d(3)*10
+
+c     ... convert each into a character
+      char = ' '
+      do i=1,4
+         if (d(i).eq.0) then
+            char(i:i) = '0'
+         elseif (d(i).eq.1) then
+            char(i:i) = '1'
+         elseif (d(i).eq.2) then
+            char(i:i) = '2'
+         elseif (d(i).eq.3) then
+            char(i:i) = '3'
+         elseif (d(i).eq.4) then
+            char(i:i) = '4'
+         elseif (d(i).eq.5) then
+            char(i:i) = '5'
+         elseif (d(i).eq.6) then
+            char(i:i) = '6'
+         elseif (d(i).eq.7) then
+            char(i:i) = '7'
+         elseif (d(i).eq.8) then
+            char(i:i) = '8'
+         elseif (d(i).eq.9) then
+            char(i:i) = '9'
+         endif
+      enddo
+
+c     ... save result in int2char
+      int2char = char
+
+      return
+      end
+      
+
+c     *******************************************************************
+
+
+      subroutine conv_test (n,m,k,ls,r,w,a,la,mxa,blo,bup,hc,d_norm,
+     .                      rKT,almx,maxlam,f,fmin,x,c,convergence,nout,
+     .                      iprint,ifail)
+
+      implicit none
+
+c     ... decalaration of passed parameters -- scalars
+      integer n, m, k, nout, mxa, iprint, ifail
+      double precision    hc, d_norm, f, fmin,
+     .        rKT, almx, maxlam
+      logical convergence
+
+c     ... decalaration of passed parameters -- arrays
+      integer ls(n+m), la(0:*)
+      double precision    r(n+m), w(n), a(mxa), blo(n+m), bup(n+m), 
+     .        x(n), c(m)
+
+c     ... declaration of internal variables
+      integer i, j, jj, alsj
+      double precision    mult, hcA
+
+c     ... declaration of functions
+      double precision    lengthai
+
+      double precision                 infty, eps
+      common /NLP_eps_inf/ infty, eps
+
+c     ... common for QP tolerance
+      double precision            QPtol  
+      common /QPtolc/ QPtol
+
+c     =======================  procedure body  =========================
+
+      convergence = .false.
+      if (hc.le.eps) then
+c        ... compute residual of active constraints (make sure this is small)
+         hcA = 0.D0
+         do j=1,n-k
+            alsj = abs(ls(j))
+            if (alsj.gt.n) then
+               mult = r(alsj) * sign(1.D0,dble(ls(j)))
+               if ( abs( mult ) .ge. eps ) then
+                  jj = alsj - n
+                  if (mult.gt.0.D0) then
+                     hcA = hcA + (c(jj) - blo(alsj))
+                  else
+                     hcA = hcA + (bup(alsj) - c(jj))
+                  endif
+               endif
+            endif
+         enddo
+      endif
+
+      if ((hc.le.eps).and.(hcA.le.eps)) then
+c        ... w = g - A.lam(n+1:n+m) - lam(1:n) is the KT residual vector
+c        ... (i) w = 0.D0
+         do i=1,n
+            w(i) = 0.D0
+         enddo
+c        ... (ii) w = w + g 
+         call saxpy_ai (1.D0, a, la, 0, w, n)
+         almx   = max ( 1.D0 , lengthai(n,a,la,0) )
+         maxlam = 0.D0
+c        ... (iii) w = w - A.lam
+         do j=1,n-k
+            alsj = abs(ls(j))
+            mult = r(alsj) * sign(1.D0,dble(ls(j)))
+            if (alsj.le.n) then
+               if ((abs(blo(alsj) - x(alsj)).le.QPtol).or.
+     .              (abs(bup(alsj) - x(alsj)).le.QPtol)) then
+                  w(alsj) = w(alsj) - mult
+                  almx   = max ( almx   , abs(mult) )
+                  maxlam = max ( maxlam , abs(mult) )
+               endif
+            elseif (mult.ne.0.D0) then
+               jj = alsj - n
+               call saxpy_ai (-mult, a, la, jj, w, n)
+               almx   = max ( almx   , abs(mult)*lengthai(n,a,la,jj) )
+               maxlam = max ( maxlam , abs(mult) )
+            endif
+         enddo
+
+c        ... compute l_2 norm of the KT residual in re
+         rKT = 0.D0
+         do i=1,n
+            rKT = rKT + w(i)**2.D0
+         enddo
+         rKT = sqrt(rKT)
+
+         if (iprint.ge.2) then
+            write(nout,*) 'Convergence Test: '
+            write(nout,*) ' Norm of KT residual     = ', rKT
+            write(nout,*) ' max( |g|, |a_i*lam_i| ) = ', almx
+            write(nout,*) ' largest multiplier      = ', maxlam
+ccc         write(nout,'(A,(6G10.3))') ' KT-vector =',(w(j),j=1,n)
+ccc         write(nout,'(A,(6G10.3))') '  x-vector =',(x(j),j=1,n)
+            write(nout,*) ' Norm of step            = ', d_norm
+            write(nout,*) ' Norm of c/s violation   = ', hc
+            write(nout,*) ' Residual of active c/s  = ', hcA
+         endif
+
+c        ... convergence test
+         if (f.lt.fmin) then
+            convergence = .true.
+            ifail       = 1
+            if (iprint.ge.1) then
+               write(nout,*) 'STOP: UNBOUNDED NLP DETECTED'
+               write(nout,*) '      f = ',f,' < fmin = ',fmin
+               write(2,*)
+               write(2,*) 'STOP: UNBOUNDED NLP DETECTED'
+               write(2,*) '      f = ',f,' < fmin = ',fmin
+               write(2,*)
+               write(2,*) ' Norm of KT residual     = ', rKT
+               write(2,*) ' max( |g|, |a_i*lam_i| ) = ', almx
+               write(2,*) ' largest multiplier      = ', maxlam
+               write(2,*) ' Norm of step            = ', d_norm
+               write(2,*) ' Norm of c/s violation   = ', hc
+               write(2,*) ' Residual of active c/s  = ', hcA
+               write(2,*)
+            endif
+cMPEC         elseif ((d_norm.le.eps).or.(rKT/almx.le.eps)) then
+         elseif ((d_norm.le.eps).or.(rKT.le.eps)) then
+            convergence = .true.
+            ifail       = 0
+            if (iprint.ge.1) then
+               write(nout,*) 'CONVERGENCE: ALGORITHM STOPS'
+               write(2,*)
+               write(2,*) 'CONVERGENCE: ALGORITHM STOPS'
+               write(2,*) ' Norm of KT residual     = ', rKT
+               write(2,*) ' max( |g|, |a_i*lam_i| ) = ', almx
+               write(2,*) ' largest multiplier      = ', maxlam
+               write(2,*) ' Norm of step            = ', d_norm
+               write(2,*) ' Norm of c/s violation   = ', hc
+               write(2,*) ' Residual of active c/s  = ', hcA
+            endif
+         endif
+      elseif (d_norm.le.eps) then
+         convergence = .true.
+         if (hc.le.eps) then
+            ifail = 0
+         else
+            ifail = 3
+         endif
+         if (iprint.ge.1) then
+            write(nout,*) 'STOP: small step;',
+     .                    ' solution may not be optimal'
+            write(2,*)
+            write(2,*) ' STOP: small step;',
+     .                 ' solution may not be optimal'
+            write(2,*) ' Norm of KT residual     = ', rKT
+            write(2,*) ' max( |g|, |a_i*lam_i| ) = ', almx
+            write(2,*) ' largest multiplier      = ', maxlam
+            write(2,*) ' Norm of step            = ', d_norm
+            write(2,*) ' Norm of c/s violation   = ', hc
+            write(2,*) ' Residual of active c/s  = ', hcA
+         endif
+      endif
+      return
+      end
+
+
+c     ******************************************************************
+
+
+      subroutine NLP_inf_optimal (n,m,k,x,blo,bup,hJt,d_norm,rKT,almx, 
+     .                            maxlam,optimal,a,la,r,ls,w,iatt,
+     .                            n_iatt,nout,iprint)
+
+      implicit none
+
+c     ... declaration of passed parameters -- scalars
+      integer nout, n, m, k, n_iatt, iprint
+      double precision    hJt, d_norm
+      double precision    rKT, almx, maxlam
+      logical optimal
+
+c     ... declaration of passed parameters -- scalars
+      double precision    x(n), blo(n+m), bup(n+m), w(n), a(*), r(n+m)
+      integer iatt(n_iatt), la(0:*), ls(n+m)
+
+c     ... declaration of functions
+      double precision    lengthai
+
+c     ... infinity and tolerance
+      double precision                 infty, eps
+      common /NLP_eps_inf/ infty, eps
+
+c     ... common for QP tolerance
+      double precision            QPtol  
+      common /QPtolc/ QPtol
+
+c     ... declaration of internal variables -- scalars
+      integer i, j, jj, alsj
+      double precision    mult
+
+c     =======================  procedure body  =========================
+
+      optimal = .false.
+      if (hJt.le.eps) then
+c        ... find negative residuals to form KT conditions
+c        ... (i) w = 0
+         do i=1,n
+            w(i) = 0.D0
+         enddo
+         maxlam = 1.D0
+         almx   = 1.D0
+c        ... (ii) subtract terms from phase I objective (multiplier = +/- 1)
+         do j=1,n_iatt
+            jj   = abs(iatt(j)) - n
+            mult = sign(1.D0,dble(iatt(j)))
+            call saxpy_ai (-mult, a, la, jj, w, n)
+         enddo
+c        ... (iii) w = w - A.lam
+         do j=1,n-k
+            alsj = abs(ls(j))
+            mult = r(alsj) * sign(1.D0,dble(ls(j)))
+            if (alsj.le.n) then
+               if ((abs(blo(alsj) - x(alsj)).le.QPtol).or.
+     .              (abs(bup(alsj) - x(alsj)).le.QPtol)) then
+                  w(alsj) = w(alsj) - mult
+                  almx   = max ( almx   , abs(mult) )
+                  maxlam = max ( maxlam , abs(mult) )
+               endif
+            elseif (mult.ne.0.D0) then
+               jj = alsj - n
+               call saxpy_ai (-mult, a, la, jj, w, n)
+               almx   = max ( almx   , abs(mult)*lengthai(n,a,la,jj) ) 
+               maxlam = max ( maxlam , abs(mult) )
+           endif
+         enddo
+c        ... compute l_2 norm of the KT residual in rKT
+         rKT = 0.D0
+         do i=1,n
+            rKT = rKT + w(i)**2.D0
+         enddo
+         rKT = sqrt(rKT)
+         if ((rKT/almx.le.eps).or.(d_norm.le.eps)) then 
+            optimal = .true.
+         endif
+         if (iprint.ge.2) then
+            write(nout,*) 'Optimality Test for Feasibility Restoration'
+            write(nout,*) ' c/s violation of c/s in Jt = ',hJt
+            write(nout,*) ' norm of step               = ',d_norm
+            write(nout,*) ' norm of KT residual        = ',rKT
+            write(nout,*) ' max( |a_i*lam_i| )         = ', almx
+            write(nout,*) ' largest multiplier         = ', maxlam
+         endif
+         if (optimal.and.(iprint.ge.1)) then
+            write(2,*) 'Optimality Test for Feasibility Restoration'
+            write(2,*) ' c/s violation of c/s in Jt = ',hJt
+            write(2,*) ' norm of step               = ',d_norm
+            write(2,*) ' norm of KT residual        = ',rKT
+            write(2,*) ' max( |a_i*lam_i| )         = ', almx
+            write(2,*) ' largest multiplier         = ', maxlam
+         endif
+      endif
+      return
+      end
+
+
+c     ******************************************************************
+
+
+      subroutine readpar (iprint, kmax, maxf, maxiter, mlp, mxiwk, 
+     .                    mxwk, nobj, nout, rho, stackmax)
+
+      implicit none
+
+c     ... declaration of passed parameters
+      integer iprint, kmax, maxf, maxiter, mlp, mxiwk, mxwk, nobj, nout,
+     .        stackmax
+      double precision    rho
+
+c     ... declaration of internal variables
+      integer     nin
+      double precision        value
+      character*8 option
+      character*8 nam1
+
+c     ... upper bound on filter
+      double precision          ubd, tt
+      common /ubdc/ ubd, tt
+
+c     ... infinity and epsilon
+      double precision                 infty, eps
+      common /NLP_eps_inf/ infty, eps
+
+c     ... state whether a QP should be printed
+      integer             n_bqpd_calls, n_bqpd_print
+      common /bqpd_count/ n_bqpd_calls, n_bqpd_print
+
+      data nam1 /'spec.par'/
+      data nin  /29/
+
+c     ========================  procedure body  =========================
+
+c     ... open options file (if possible)
+      open(nin, file=nam1, status='OLD', err=999)
+
+ 100  continue
+
+         read(nin,*,end=99) option, value
+         
+c        ***************************************************************
+c        *** NOTE: variables differ from keywords (same as for bqpd) ***
+c        ***************************************************************
+
+         if (option.eq.'iprint  ') then
+            iprint  = int( value )
+         elseif (option.eq.'kmax    ') then
+            kmax    = int( value )
+         elseif (option.eq.'maxf    ') then
+            maxf    = int( value )
+         elseif (option.eq.'maxiter ') then
+            maxiter = int( value )
+         elseif (option.eq.'mlp     ') then
+            mlp     = int( value )
+         elseif (option.eq.'mxlws   ') then
+            mxiwk   = int( value )
+         elseif (option.eq.'mxws    ') then
+            mxwk    = int( value )
+         elseif (option.eq.'nout    ') then
+            nout    = int( value )
+         elseif (option.eq.'nobj    ') then
+            nobj    = int( value )
+         elseif (option.eq.'eps     ') then
+            eps     =      value
+         elseif (option.eq.'infty   ') then
+            infty   =      value
+         elseif (option.eq.'rho     ') then
+            rho     =      value
+         elseif (option.eq.'stackmax') then
+            stackmax=      value
+         elseif (option.eq.'tt      ') then
+            tt      =      value
+         elseif (option.eq.'ubd     ') then
+            ubd     =      value
+         elseif (option.eq.'zprint  ') then
+            n_bqpd_print =      value
+         else
+            print *,'WARNING: WRONG spec.par option ',option, value
+         endif
+            
+      goto 100
+      
+ 999  continue
+      print *,'WARNING: no spec.par file: use defaults'
+ 99   continue
+      if (iprint.ge.2) then
+         print *,'eps      = ',eps
+         print *,'infty    = ',infty
+         print *,'iprint   = ',iprint
+         print *,'kmax     = ',kmax
+         print *,'maxf     = ',maxf
+         print *,'maxiter  = ',maxiter
+         print *,'mlp      = ',mlp
+         print *,'mxlws    = ',mxiwk
+         print *,'mxws     = ',mxwk
+         print *,'nobj     = ',nobj
+         print *,'nout     = ',nout
+         print *,'rho      = ',rho
+         print *,'stackmax = ',stackmax
+         print *,'tt       = ',tt
+         print *,'ubd      = ',ubd  
+      endif
+
+      close(nin)
+
+      return
+      end
+
+
+c     ******************************************************************
+
+
+      subroutine print_stats (nout,ifail,f,rho,istat,rstat,cpu)
+
+      implicit none
+
+      integer nout, ifail, istat(14)
+      double precision    f, rho, rstat(7), cpu
+      integer         char_l
+      character*10            pname
+      common /cpname/ char_l, pname
+
+c     =======================  procedure body  =========================
+
+      write(nout,*)
+      write(nout,*)'Final statistics for problem ',pname
+      write(nout,*)'---------------------------------------'
+      write(nout,*)' Ifail for this solve................',ifail
+      write(nout,*)' Number of iterations................',istat(2)
+      write(nout,*)' ... of which iterations in inf NLP..',istat(3)
+      write(nout,*)' Number of SOC steps.................',istat(11)
+      write(nout,*)' Number of QP problems solved........',istat(8)
+     .                                                     +istat(9)
+      write(nout,*)' ... of which mode <= 2..............',istat(8)
+      write(nout,*)' ... of which mode >= 4..............',istat(9)
+      write(nout,*)' Number of QPs crashes...............',istat(14)
+      write(nout,*)' Total number of QP pivots...........',istat(10)
+      write(nout,*)' Number of function evaluations......',istat(4)
+      write(nout,*)' Number of constraint evaluations....',istat(5)
+      write(nout,*)' Number of gradient evaluations......',istat(6)
+      write(nout,*)' Number of Hessian evaluations.......',istat(7)
+      write(nout,*)' Dimension of null space.............',istat(1)
+      write(nout,*)' max. size of phase II filter........',istat(12)
+      write(nout,*)' max. size of phase I  filter........',istat(13)
+      write(nout,*)' Final value f(x*)...................',f
+      write(nout,*)' Final value || c(x*) ||.............',rstat(5)
+      if (ifail.eq.1) then
+         write(nout,*)' ... of which hJ (if ifail=1)........',rstat(6)
+         write(nout,*)' ... of which hJtag (if ifail=1).....',rstat(7)
+      endif
+      write(nout,*)' Final trust region radius...........',rho
+      write(nout,*)' Norm of KKT residual................',rstat(1)
+      write(nout,*)' max( |lam_i| * || a_i ||)...........',rstat(2)
+      write(nout,*)' Largest modulus multiplier..........',rstat(3)
+      write(nout,*)' Norm of step........................',rstat(4)
+      write(nout,*)' CPU time for solve [seconds]........',cpu
+      return
+      end
+
+
+c     **************************** E N D *********************************

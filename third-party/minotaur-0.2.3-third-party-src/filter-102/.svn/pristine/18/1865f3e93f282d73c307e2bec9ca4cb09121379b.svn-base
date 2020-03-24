@@ -1,0 +1,58 @@
+# /****************************************************************
+# Copyright (C) 2001 Lucent Technologies
+# All Rights Reserved
+#
+# Permission to use, copy, modify, and distribute this software and
+# its documentation for any purpose and without fee is hereby
+# granted, provided that the above copyright notice appear in all
+# copies and that both that the copyright notice and this
+# permission notice and warranty disclaimer appear in supporting
+# documentation, and that the name of Lucent or any of its entities
+# not be used in advertising or publicity pertaining to
+# distribution of the software without specific, written prior
+# permission.
+#
+# LUCENT DISCLAIMS ALL WARRANTIES WITH REGARD TO THIS SOFTWARE,
+# INCLUDING ALL IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS.
+# IN NO EVENT SHALL LUCENT OR ANY OF ITS ENTITIES BE LIABLE FOR ANY
+# SPECIAL, INDIRECT OR CONSEQUENTIAL DAMAGES OR ANY DAMAGES
+# WHATSOEVER RESULTING FROM LOSS OF USE, DATA OR PROFITS, WHETHER
+# IN AN ACTION OF CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION,
+# ARISING OUT OF OR IN CONNECTION WITH THE USE OR PERFORMANCE OF
+# THIS SOFTWARE.
+# ****************************************************************/
+
+# For making filter and minlp on Unix systems.
+
+# make compilation architecture dependent
+ARCH = $(shell uname -m)
+
+# object/binary copde depends on architecture
+O = OBJ-$(ARCH)
+
+# AMPL solver interface directory is $S
+S = ../$O
+
+# src code is in
+M = src/$O
+
+# The usual assumption is that source, etc., from the solver owner
+# appears in the src directory.  Here we just assume that minlplib
+# appears in directory $M.
+
+all: 
+	@echo $S
+	cd $S; make 
+	cd $M; make 
+	cd $O; make
+
+clean:
+	@echo $M
+	@echo $O
+	cd $M; make clean
+	cd $O; make clean
+
+reallyclean: clean
+	@echo $S
+	cd $S; make clean
+

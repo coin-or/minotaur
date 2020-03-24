@@ -1,0 +1,793 @@
+### Reading from directory: ./
+###           instance     time      nodes           ub           lb      gap   status 
+               abel_cg       -1         -1           NF           NF       NF   NO-OUT 
+               abel_qf       -1         -1           NF           NF       NF   NO-OUT 
+               alan_cg     0.04        116        2.925        2.925     0.00       OK 
+               alan_qf     0.04         71        2.925        2.925     0.00       OK 
+           arki0001_cg       -1         -1           NF           NF       NF   NO-OUT 
+           arki0001_qf       -1         -1           NF           NF       NF   NO-OUT 
+ autocorr_bern20-03_cg     0.00          1      -72.000      -72.000     0.00       OK 
+ autocorr_bern20-03_qf     0.00          1      -72.000      -72.000     0.00       OK 
+ autocorr_bern25-03_cg     0.00          1      -92.000      -92.000     0.00       OK 
+ autocorr_bern25-03_qf     0.01          1      -92.000      -92.000     0.00       OK 
+        ball_mk2_10_cg     0.16       1023        0.000        0.000     0.00       OK 
+        ball_mk2_10_qf     0.16       1023        0.000        0.000     0.00       OK 
+        ball_mk2_30_cg       -1         -1           NF           NF       NF   NO-OUT 
+        ball_mk2_30_qf       -1         -1           NF           NF       NF   NO-OUT 
+        ball_mk3_10_cg     0.68       1307           NF           NF       NF      INF 
+        ball_mk3_10_qf     0.67       1307           NF           NF       NF      INF 
+        ball_mk3_20_cg       -1         -1           NF           NF       NF   NO-OUT 
+        ball_mk3_20_qf       -1         -1           NF           NF       NF   NO-OUT 
+        ball_mk3_30_cg       -1         -1           NF           NF       NF   NO-OUT 
+        ball_mk3_30_qf       -1         -1           NF           NF       NF   NO-OUT 
+        ball_mk4_05_cg       -1         -1           NF           NF       NF   NO-OUT 
+        ball_mk4_05_qf       -1         -1           NF           NF       NF   NO-OUT 
+        ball_mk4_10_cg       -1         -1           NF           NF       NF   NO-OUT 
+        ball_mk4_10_qf       -1         -1           NF           NF       NF   NO-OUT 
+        ball_mk4_15_cg       -1         -1           NF           NF       NF   NO-OUT 
+        ball_mk4_15_qf       -1         -1           NF           NF       NF   NO-OUT 
+          bayes2_10_cg    22.50       2896        0.030        0.030     0.00       OK 
+          bayes2_10_qf       -1         -1           NF           NF       NF   NO-OUT 
+          bayes2_20_cg   115.50      19924        0.000        0.000     0.00       OK 
+          bayes2_20_qf       -1         -1           NF           NF       NF   NO-OUT 
+          bayes2_30_cg   194.79      26150        0.000        0.000     0.00       OK 
+          bayes2_30_qf       -1         -1           NF           NF       NF   NO-OUT 
+          bayes2_50_cg       -1         -1           NF           NF       NF   NO-OUT 
+          bayes2_50_qf       -1         -1           NF           NF       NF   NO-OUT 
+           blend029_cg     1.21       1578       13.359       13.359     0.00       OK 
+           blend029_qf     1.37       1815       13.359       13.359     0.00       OK 
+           blend146_cg  1814.54     616691       45.297       45.297     0.00       OK 
+           blend146_qf  1270.81     400540       45.297       45.297     0.00       OK 
+           blend480_cg  1800.04     595294        7.713        9.641    24.99       OK 
+           blend480_qf  1800.05     575749        7.771        9.743    25.39       OK 
+           blend531_cg  1800.04     510727       20.039       20.738     3.49       OK 
+           blend531_qf  1800.04     463807       19.989       20.365     1.88       OK 
+           blend718_cg  1800.02     953590        7.180       16.291   126.90       OK 
+           blend718_qf  1800.02     878320        7.234       15.425   113.24       OK 
+           blend721_cg   128.36      43468       13.527       13.527     0.00       OK 
+           blend721_qf   147.70      49519       13.527       13.527     0.00       OK 
+           blend852_cg  1172.14     359720       53.963       53.963     0.00       OK 
+           blend852_qf  1020.20     318456       53.963       53.963     0.00       OK 
+        camshape100_cg  1800.04     146106       -4.284       -4.722    10.23       OK 
+        camshape100_qf  1800.04     158716       -4.284       -4.727    10.34       OK 
+        camshape200_cg  1800.05     133360       -4.279       -5.112    19.47       OK 
+        camshape200_qf  1800.03      89413       -4.279       -5.035    17.66       OK 
+        camshape400_cg  1800.07     154666       -4.277       -5.242    22.57       OK 
+        camshape400_qf  1800.06      47924       -5.211       -5.212     0.02       OK 
+        camshape800_cg     7.00         51       -5.326       -5.326     0.00       OK 
+        camshape800_qf     2.70         32       -5.323       -5.323     0.00       OK 
+         cardqp_iqp_cg  1800.10      41817     4373.200     2044.996    53.24       OK 
+         cardqp_iqp_qf  1800.04     226287     3911.707     2738.064    30.00       OK 
+            carton7_cg       -1         -1           NF           NF       NF   NO-OUT 
+            carton7_qf       -1         -1           NF           NF       NF   NO-OUT 
+            carton9_cg       -1         -1           NF           NF       NF   NO-OUT 
+            carton9_qf  1800.05     378692      424.205       30.936    92.71       OK 
+          catmix100_cg       -1         -1           NF           NF       NF   NO-OUT 
+          catmix100_qf       -1         -1           NF           NF       NF   NO-OUT 
+          catmix200_cg       -1         -1           NF           NF       NF   NO-OUT 
+          catmix200_qf       -1         -1           NF           NF       NF   NO-OUT 
+          catmix400_cg       -1         -1           NF           NF       NF   NO-OUT 
+          catmix400_qf       -1         -1           NF           NF       NF   NO-OUT 
+          catmix800_cg       -1         -1           NF           NF       NF   NO-OUT 
+          catmix800_qf       -1         -1           NF           NF       NF   NO-OUT 
+             circle_cg       -1         -1           NF           NF       NF   NO-OUT 
+             circle_qf       -1         -1           NF           NF       NF   NO-OUT 
+          clay0203m_cg     2.47        348    41573.137    41573.137     0.00       OK 
+          clay0203m_qf     0.45        404    41552.012    41552.012     0.00       OK 
+          clay0204m_cg   603.34      30757     6545.000     6545.000     0.00       OK 
+          clay0204m_qf     3.10       2373     6545.000     6545.000     0.00       OK 
+          clay0205m_cg  1800.03      36846     8092.500     4659.586    42.42       OK 
+          clay0205m_qf    88.73      46080     8092.500     8092.500     0.00       OK 
+          clay0303m_cg     4.92        761    26669.102    26669.102     0.00       OK 
+          clay0303m_qf     1.02        959    26659.879    26659.879     0.00       OK 
+          clay0304m_cg   256.60      14551    40262.326    40262.326     0.00       OK 
+          clay0304m_qf    24.46      12530    40255.184    40255.184     0.00       OK 
+          clay0305m_cg  1800.02      43928     8219.599     1706.524    79.24       OK 
+          clay0305m_qf   119.04      52899     8092.500     8092.500     0.00       OK 
+     color_lab2_4x0_cg  1810.57        484       76.175      -79.426   204.27       OK 
+     color_lab2_4x0_qf  1803.56        388       66.175      -79.905   220.75       OK 
+   color_lab6b_4x20_cg  1845.30         55           NF   -10086.856   100.00      INF 
+   color_lab6b_4x20_qf  1821.15        135       19.575    -9960.751 50984.80       OK 
+     crossdock_15x7_cg  1800.13      65341    14711.000     1882.604    87.20       OK 
+     crossdock_15x7_qf  1800.07      90297    14839.000     1574.683    89.39       OK 
+     crossdock_15x8_cg  1800.20      45252    16225.000     1834.481    88.69       OK 
+     crossdock_15x8_qf  1800.42      62584    16477.000     1487.584    90.97       OK 
+   crudeoil_lee1_05_cg       -1         -1           NF           NF       NF   NO-OUT 
+   crudeoil_lee1_05_qf       -1         -1           NF           NF       NF   NO-OUT 
+   crudeoil_lee1_06_cg   296.33      41131           NF           NF       NF      INF 
+   crudeoil_lee1_06_qf       -1         -1           NF           NF       NF   NO-OUT 
+   crudeoil_lee1_07_cg    65.16       5357           NF           NF       NF      INF 
+   crudeoil_lee1_07_qf       -1         -1           NF           NF       NF   NO-OUT 
+   crudeoil_lee1_08_cg   148.99      10411           NF           NF       NF      INF 
+   crudeoil_lee1_08_qf       -1         -1           NF           NF       NF   NO-OUT 
+   crudeoil_lee1_09_cg       -1         -1           NF           NF       NF   NO-OUT 
+   crudeoil_lee1_09_qf       -1         -1           NF           NF       NF   NO-OUT 
+   crudeoil_lee1_10_cg  1800.46      84108           NF       79.985   100.00      INF 
+   crudeoil_lee1_10_qf       -1         -1           NF           NF       NF   NO-OUT 
+   crudeoil_lee2_05_cg       -1         -1           NF           NF       NF   NO-OUT 
+   crudeoil_lee2_05_qf       -1         -1           NF           NF       NF   NO-OUT 
+   crudeoil_lee2_06_cg       -1         -1           NF           NF       NF   NO-OUT 
+   crudeoil_lee2_06_qf       -1         -1           NF           NF       NF   NO-OUT 
+   crudeoil_lee2_07_cg       -1         -1           NF           NF       NF   NO-OUT 
+   crudeoil_lee2_07_qf       -1         -1           NF           NF       NF   NO-OUT 
+   crudeoil_lee2_08_cg       -1         -1           NF           NF       NF   NO-OUT 
+   crudeoil_lee2_08_qf       -1         -1           NF           NF       NF   NO-OUT 
+   crudeoil_lee2_09_cg       -1         -1           NF           NF       NF   NO-OUT 
+   crudeoil_lee2_09_qf       -1         -1           NF           NF       NF   NO-OUT 
+   crudeoil_lee2_10_cg       -1         -1           NF           NF       NF   NO-OUT 
+   crudeoil_lee2_10_qf       -1         -1           NF           NF       NF   NO-OUT 
+   crudeoil_lee3_05_cg       -1         -1           NF           NF       NF   NO-OUT 
+   crudeoil_lee3_05_qf       -1         -1           NF           NF       NF   NO-OUT 
+   crudeoil_lee3_06_cg       -1         -1           NF           NF       NF   NO-OUT 
+   crudeoil_lee3_06_qf       -1         -1           NF           NF       NF   NO-OUT 
+   crudeoil_lee3_07_cg       -1         -1           NF           NF       NF   NO-OUT 
+   crudeoil_lee3_07_qf       -1         -1           NF           NF       NF   NO-OUT 
+   crudeoil_lee3_08_cg       -1         -1           NF           NF       NF   NO-OUT 
+   crudeoil_lee3_08_qf       -1         -1           NF           NF       NF   NO-OUT 
+   crudeoil_lee3_09_cg       -1         -1           NF           NF       NF   NO-OUT 
+   crudeoil_lee3_09_qf       -1         -1           NF           NF       NF   NO-OUT 
+   crudeoil_lee3_10_cg       -1         -1           NF           NF       NF   NO-OUT 
+   crudeoil_lee3_10_qf       -1         -1           NF           NF       NF   NO-OUT 
+   crudeoil_lee4_05_cg       -1         -1           NF           NF       NF   NO-OUT 
+   crudeoil_lee4_05_qf       -1         -1           NF           NF       NF   NO-OUT 
+   crudeoil_lee4_06_cg       -1         -1           NF           NF       NF   NO-OUT 
+   crudeoil_lee4_06_qf       -1         -1           NF           NF       NF   NO-OUT 
+   crudeoil_lee4_07_cg       -1         -1           NF           NF       NF   NO-OUT 
+   crudeoil_lee4_07_qf       -1         -1           NF           NF       NF   NO-OUT 
+   crudeoil_lee4_08_cg       -1         -1           NF           NF       NF   NO-OUT 
+   crudeoil_lee4_08_qf       -1         -1           NF           NF       NF   NO-OUT 
+   crudeoil_lee4_09_cg       -1         -1           NF           NF       NF   NO-OUT 
+   crudeoil_lee4_09_qf       -1         -1           NF           NF       NF   NO-OUT 
+   crudeoil_lee4_10_cg       -1         -1           NF           NF       NF   NO-OUT 
+   crudeoil_lee4_10_qf       -1         -1           NF           NF       NF   NO-OUT 
+      crudeoil_li01_cg  1800.02     496086           NF     5232.766   100.00      INF 
+      crudeoil_li01_qf  1800.03     494498           NF     5232.766   100.00      INF 
+      crudeoil_li02_cg     0.20          1           NF           NF       NF      INF 
+      crudeoil_li02_qf  1800.23     399593           NF 101909621.743    98.98      INF 
+      crudeoil_li03_cg  1800.14      71767           NF     3566.759   100.00      INF 
+      crudeoil_li03_qf  1800.16      72420           NF     3566.736   100.00      INF 
+      crudeoil_li05_cg  1800.09     128712           NF     3381.314   100.00      INF 
+      crudeoil_li05_qf  1800.10     129524           NF     3381.263   100.00      INF 
+      crudeoil_li06_cg  1800.12     107027           NF     3375.000   100.00      INF 
+      crudeoil_li06_qf  1800.14     107150           NF     3375.000   100.00      INF 
+      crudeoil_li11_cg  1800.18      79265           NF     4789.809   100.00      INF 
+      crudeoil_li11_qf  1800.21      79487           NF     4789.808   100.00      INF 
+      crudeoil_li21_cg  1800.30      44329           NF     4963.059   100.00      INF 
+      crudeoil_li21_qf  1800.31      44153           NF     4963.059   100.00      INF 
+cvxnonsep_normcon20r_cg     0.04         25      -21.749      -21.749     0.00       OK 
+cvxnonsep_normcon20r_qf     0.04         25      -21.749      -21.749     0.00       OK 
+cvxnonsep_normcon30r_cg     0.20        104      -34.244      -34.244     0.00       OK 
+cvxnonsep_normcon30r_qf     0.19        104      -34.244      -34.244     0.00       OK 
+cvxnonsep_normcon40r_cg     0.51        290      -32.630      -32.630     0.00       OK 
+cvxnonsep_normcon40r_qf     0.51        290      -32.630      -32.630     0.00       OK 
+              demo7_cg       -1         -1           NF           NF       NF   NO-OUT 
+              demo7_qf       -1         -1           NF           NF       NF   NO-OUT 
+           dispatch_cg     0.04         17     3155.288     3155.288     0.00       OK 
+           dispatch_qf     0.02          9     3155.288     3155.288     0.00       OK 
+            du-opt5_cg     1.74         20      235.891      235.891     0.00       OK 
+            du-opt5_qf  1800.04     156308       53.909    -5241.344  9822.49       OK 
+             du-opt_cg     5.60        124        3.556        3.556     0.00       OK 
+             du-opt_qf  2396.09      71449       15.178    -4524.920 29911.97       OK 
+    edgecross10-010_cg     0.02          3        1.000        1.000     0.00       OK 
+    edgecross10-010_qf     0.02          3        1.000        1.000     0.00       OK 
+    edgecross10-020_cg     0.08         13       11.000       11.000     0.00       OK 
+    edgecross10-020_qf     0.21         53       11.000       11.000     0.00       OK 
+    edgecross10-030_cg     0.78         78       52.000       52.000     0.00       OK 
+    edgecross10-030_qf     3.55        420       52.000       52.000     0.00       OK 
+    edgecross10-040_cg     6.39        334      142.000      142.000     0.00       OK 
+    edgecross10-040_qf    43.36       2515      142.000      142.000     0.00       OK 
+    edgecross10-050_cg    29.42        852      276.000      276.000     0.00       OK 
+    edgecross10-050_qf   219.45       7647      276.000      276.000     0.00       OK 
+    edgecross10-060_cg    94.32       2046      459.000      459.000     0.00       OK 
+    edgecross10-060_qf       -1         -1           NF           NF       NF   NO-OUT 
+    edgecross10-070_cg   299.09       5090      717.000      717.000     0.00       OK 
+    edgecross10-070_qf  1800.07      39221      717.000      692.000     3.49       OK 
+    edgecross10-080_cg   206.61       4496     1037.000     1037.000     0.00       OK 
+    edgecross10-080_qf  1800.04     158914     1061.125      881.750    16.90       OK 
+    edgecross10-090_cg     0.76         24     1387.000     1387.000     0.00       OK 
+    edgecross10-090_qf     2.62        120     1387.000     1387.000     0.00       OK 
+    edgecross14-019_cg     0.12         12        4.000        4.000     0.00       OK 
+    edgecross14-019_qf     0.30         51        4.000        4.000     0.00       OK 
+    edgecross14-039_cg    64.87       2089      109.000      109.000     0.00       OK 
+    edgecross14-039_qf  1800.04     189752      142.000       65.750    53.70       OK 
+    edgecross14-058_cg   387.43       5021      353.000      353.000     0.00       OK 
+    edgecross14-058_qf       -1         -1           NF           NF       NF   NO-OUT 
+    edgecross14-078_cg  1800.08      16826      736.000      647.000    12.09       OK 
+    edgecross14-078_qf       -1         -1           NF           NF       NF   NO-OUT 
+    edgecross14-098_cg  1800.29      13944     1395.000     1055.000    24.37       OK 
+    edgecross14-098_qf  1800.15      18950     1355.000      796.500    41.22       OK 
+    edgecross14-117_cg  1800.33      10209     2065.000     1489.500    27.87       OK 
+    edgecross14-117_qf  1800.11      10744     1973.000     1373.000    30.41       OK 
+    edgecross14-137_cg  1800.89       9634     3055.000     2417.500    20.87       OK 
+    edgecross14-137_qf  1800.47       9809     2874.000     2302.000    19.90       OK 
+    edgecross14-156_cg  1800.12       9039     4367.000     3756.500    13.98       OK 
+    edgecross14-156_qf  1800.10      45327     4587.875     3426.750    25.31       OK 
+    edgecross14-176_cg   998.47       4165     5875.000     5875.000     0.00       OK 
+    edgecross14-176_qf  1800.13      16353     5876.000     5667.000     3.56       OK 
+    edgecross20-040_cg    11.50        265       57.000       57.000     0.00       OK 
+    edgecross20-040_qf  1800.10      59141       57.000       39.500    30.70       OK 
+    edgecross20-080_cg  1800.09      14193      577.000      347.000    39.86       OK 
+    edgecross20-080_qf  1800.18      18459      517.000      172.000    66.73       OK 
+    edgecross22-048_cg    12.74        171       84.000       84.000     0.00       OK 
+    edgecross22-048_qf  1336.92      17731       84.000       84.000     0.00       OK 
+    edgecross22-096_cg  1800.23       8385      967.000      433.000    55.22       OK 
+    edgecross22-096_qf  1800.30      12251      943.000      188.000    80.06       OK 
+    edgecross24-057_cg  1800.22      11814      178.000      168.500     5.34       OK 
+    edgecross24-057_qf  1800.17      19532      178.000       50.000    71.91       OK 
+    edgecross24-115_cg  1800.28       6945     1577.000      441.000    72.04       OK 
+    edgecross24-115_qf  1800.86       9305     1491.000      238.000    84.04       OK 
+                elf_cg       -1         -1           NF           NF       NF   NO-OUT 
+                elf_qf       -1         -1           NF           NF       NF   NO-OUT 
+        emfl050_3_3_cg       -1         -1           NF           NF       NF   NO-OUT 
+        emfl050_3_3_qf       -1         -1           NF           NF       NF   NO-OUT 
+        emfl050_5_5_cg       -1         -1           NF           NF       NF   NO-OUT 
+        emfl050_5_5_qf       -1         -1           NF           NF       NF   NO-OUT 
+        emfl100_3_3_cg       -1         -1           NF           NF       NF   NO-OUT 
+        emfl100_3_3_qf       -1         -1           NF           NF       NF   NO-OUT 
+        emfl100_5_5_cg       -1         -1           NF           NF       NF   NO-OUT 
+        emfl100_5_5_qf       -1         -1           NF           NF       NF   NO-OUT 
+            ex1223a_cg     0.00          3        4.580        4.580     0.00       OK 
+            ex1223a_qf     0.00          3        4.580        4.580     0.00       OK 
+             ex1263_cg     2.22       4367       19.600       19.600     0.00       OK 
+             ex1263_qf     2.24       4367       19.600       19.600     0.00       OK 
+            ex1263a_cg     0.34        734       19.600       19.600     0.00       OK 
+            ex1263a_qf     0.34        734       19.600       19.600     0.00       OK 
+             ex1264_cg     0.91       1686        8.600        8.600     0.00       OK 
+             ex1264_qf     0.90       1686        8.600        8.600     0.00       OK 
+            ex1264a_cg     0.38        745        8.600        8.600     0.00       OK 
+            ex1264a_qf     0.38        745        8.600        8.600     0.00       OK 
+             ex1265_cg     1.85       3643       10.300       10.300     0.00       OK 
+             ex1265_qf     1.86       3643       10.300       10.300     0.00       OK 
+            ex1265a_cg     0.32        652       10.300       10.300     0.00       OK 
+            ex1265a_qf     0.32        652       10.300       10.300     0.00       OK 
+             ex1266_cg     0.48        712       16.300       16.300     0.00       OK 
+             ex1266_qf     0.48        712       16.300       16.300     0.00       OK 
+            ex1266a_cg     0.04         46       16.300       16.300     0.00       OK 
+            ex1266a_qf     0.04         46       16.300       16.300     0.00       OK 
+           ex14_1_6_cg     0.14          1       -0.000       -0.000     0.00       OK 
+           ex14_1_6_qf     0.19          1       -0.000       -0.000     0.00       OK 
+           ex2_1_10_cg     0.12          5    49318.010    49318.010     0.00       OK 
+           ex2_1_10_qf     0.09          5    49318.010    49318.010     0.00       OK 
+            ex2_1_1_cg     0.06         17      -17.000      -17.000     0.00       OK 
+            ex2_1_1_qf     0.04         17      -17.000      -17.000     0.00       OK 
+            ex2_1_2_cg     0.03          1     -213.000     -213.000     0.00       OK 
+            ex2_1_2_qf     0.03          1     -213.000     -213.000     0.00       OK 
+            ex2_1_3_cg     0.02          1       -9.000       -9.000     0.00       OK 
+            ex2_1_3_qf     0.01          1      -15.000      -15.000     0.00       OK 
+            ex2_1_4_cg     0.02          1      -11.000      -11.000     0.00       OK 
+            ex2_1_4_qf     0.02          1      -11.000      -11.000     0.00       OK 
+            ex2_1_5_cg     0.04          7     -268.015     -268.015     0.00       OK 
+            ex2_1_5_qf     0.05          7     -268.015     -268.015     0.00       OK 
+            ex2_1_6_cg     0.06         16      -39.000      -39.000     0.00       OK 
+            ex2_1_6_qf     0.06         14      -39.000      -39.000     0.00       OK 
+            ex2_1_7_cg     1.07       2322    -4150.548    -4150.548     0.00       OK 
+            ex2_1_7_qf     0.36       1495    -4150.410    -4150.410     0.00       OK 
+            ex2_1_8_cg     0.12         50    15639.000    15639.000     0.00       OK 
+            ex2_1_8_qf     0.22         41    15639.000    15639.000     0.00       OK 
+            ex2_1_9_cg     4.69       6373       -0.375       -0.375     0.00       OK 
+            ex2_1_9_qf     4.74       6371       -0.375       -0.375     0.00       OK 
+            ex3_1_1_cg    58.16     132006     7048.416     7048.416     0.00       OK 
+            ex3_1_1_qf    58.36     132006     7048.416     7048.416     0.00       OK 
+            ex3_1_2_cg     0.03          7   -30665.539   -30665.539     0.00       OK 
+            ex3_1_2_qf     0.02          7   -30665.539   -30665.539     0.00       OK 
+            ex3_1_3_cg     0.04          3     -310.000     -310.000     0.00       OK 
+            ex3_1_3_qf     0.04          3     -310.000     -310.000     0.00       OK 
+            ex3_1_4_cg     0.03         49       -4.000       -4.000     0.00       OK 
+            ex3_1_4_qf     0.04         47       -4.000       -4.000     0.00       OK 
+                ex4_cg     7.04        358       -8.064       -8.064     0.00       OK 
+                ex4_qf     0.13        123       -8.065       -8.065     0.00       OK 
+      ex5_2_2_case1_cg     0.03          7     -400.000     -400.000     0.00       OK 
+      ex5_2_2_case1_qf     0.02          7     -400.000     -400.000     0.00       OK 
+      ex5_2_2_case2_cg     0.03         88     -600.000     -600.000     0.00       OK 
+      ex5_2_2_case2_qf     0.03         88     -600.000     -600.000     0.00       OK 
+      ex5_2_2_case3_cg     0.03          5     -750.000     -750.000     0.00       OK 
+      ex5_2_2_case3_qf     0.03          5     -750.000     -750.000     0.00       OK 
+            ex5_2_4_cg     0.06        125     -450.000     -450.000     0.00       OK 
+            ex5_2_4_qf     0.42       1775     -450.000     -450.000     0.00       OK 
+            ex5_2_5_cg       -1         -1           NF           NF       NF   NO-OUT 
+            ex5_2_5_qf       -1         -1           NF           NF       NF   NO-OUT 
+            ex5_3_2_cg     0.30        359        1.864        1.864     0.00       OK 
+            ex5_3_2_qf     0.29        359        1.864        1.864     0.00       OK 
+            ex5_3_3_cg       -1         -1           NF           NF       NF   NO-OUT 
+            ex5_3_3_qf       -1         -1           NF           NF       NF   NO-OUT 
+            ex5_4_2_cg     4.88      18138     7512.007     7512.007     0.00       OK 
+            ex5_4_2_qf     4.64      18138     7512.007     7512.007     0.00       OK 
+            ex7_3_3_cg       -1         -1           NF           NF       NF   NO-OUT 
+            ex7_3_3_qf       -1         -1           NF           NF       NF   NO-OUT 
+            ex8_3_2_cg     3.59          1      -10.000      -10.000     0.00       OK 
+            ex8_3_2_qf  1800.03     255325       -0.303      -10.000  3196.01       OK 
+            ex8_3_3_cg     0.85          1      -10.000      -10.000     0.00       OK 
+            ex8_3_3_qf  1800.02     249676       -0.319      -10.000  3035.81       OK 
+            ex8_3_4_cg     2.30          1      -10.000      -10.000     0.00       OK 
+            ex8_3_4_qf  1800.02     196407       -0.222      -10.000  4408.61       OK 
+            ex8_3_5_cg   132.81      11211      -10.000      -10.000     0.00       OK 
+            ex8_3_5_qf       -1         -1           NF           NF       NF   NO-OUT 
+            ex8_3_8_cg  1800.02      70349       -9.594      -10.000     4.24       OK 
+            ex8_3_8_qf  1800.02     131714       -3.050      -10.000   227.82       OK 
+            ex8_3_9_cg     0.13          1      -10.000      -10.000     0.00       OK 
+            ex8_3_9_qf       -1         -1           NF           NF       NF   NO-OUT 
+            ex8_4_1_cg     0.32        110        0.618        0.618     0.00       OK 
+            ex8_4_1_qf     0.14         95        0.607        0.607     0.00       OK 
+            ex9_1_1_cg       -1         -1           NF           NF       NF   NO-OUT 
+            ex9_1_1_qf       -1         -1           NF           NF       NF   NO-OUT 
+            ex9_1_2_cg       -1         -1           NF           NF       NF   NO-OUT 
+            ex9_1_2_qf       -1         -1           NF           NF       NF   NO-OUT 
+            ex9_1_4_cg     0.03          1      -37.000      -37.000     0.00       OK 
+            ex9_1_4_qf     0.03          1      -37.000      -37.000     0.00       OK 
+            ex9_1_5_cg       -1         -1           NF           NF       NF   NO-OUT 
+            ex9_1_5_qf       -1         -1           NF           NF       NF   NO-OUT 
+            ex9_1_8_cg       -1         -1           NF           NF       NF   NO-OUT 
+            ex9_1_8_qf       -1         -1           NF           NF       NF   NO-OUT 
+            ex9_2_2_cg     0.06          3      100.000      100.000     0.00       OK 
+            ex9_2_2_qf     0.05         37       99.971       99.971     0.00       OK 
+            ex9_2_3_cg     0.04         15        5.000        5.000     0.00       OK 
+            ex9_2_3_qf     0.04         15        5.000        5.000     0.00       OK 
+            ex9_2_4_cg     0.04         51        0.500        0.500     0.00       OK 
+            ex9_2_4_qf     0.02         11        0.500        0.500     0.00       OK 
+            ex9_2_5_cg       -1         -1           NF           NF       NF   NO-OUT 
+            ex9_2_5_qf       -1         -1           NF           NF       NF   NO-OUT 
+            ex9_2_6_cg     0.05         13       -1.000       -1.000     0.00       OK 
+            ex9_2_6_qf     0.06         13       -1.000       -1.000     0.00       OK 
+            ex9_2_7_cg     0.05          5       17.000       17.000     0.00       OK 
+            ex9_2_7_qf     0.04         13       17.000       17.000     0.00       OK 
+            ex9_2_8_cg     0.01          1        1.000        1.000     0.00       OK 
+            ex9_2_8_qf     0.01          1        1.500        1.500     0.00       OK 
+               fac3_cg     0.04         34 31982302.199 31982302.199     0.00       OK 
+               fac3_qf       -1         -1           NF           NF       NF   NO-OUT 
+          faclay20h_cg  1800.12      20157    16791.000     7691.000    54.20       OK 
+          faclay20h_qf       -1         -1           NF           NF       NF   NO-OUT 
+           faclay25_cg  1800.18      10862     5524.000     1399.500    74.67       OK 
+           faclay25_qf  1800.39      10218     4791.000     1324.500    72.35       OK 
+           faclay30_cg  1800.44       5491    10243.000     1730.500    83.11       OK 
+           faclay30_qf  1800.34       4100     8436.000     1607.000    80.95       OK 
+          faclay30h_cg  1804.27       4442    52589.000     9246.500    82.42       OK 
+          faclay30h_qf  1800.49       4250    48223.000     9592.000    80.11       OK 
+           faclay33_cg  1809.96       3257    73831.000    10163.000    86.23       OK 
+           faclay33_qf  1800.62       2746    64808.000    10475.500    83.84       OK 
+           faclay35_cg  1802.00       2704    83613.000    11226.500    86.57       OK 
+           faclay35_qf  1800.87       1942    73087.000    10865.000    85.13       OK 
+           faclay60_cg  4982.38          1           NF   114887.000   100.00      INF 
+           faclay60_qf       -1         -1           NF           NF       NF   NO-OUT 
+           faclay70_cg  3511.03          1           NF   111207.927   100.00      INF 
+           faclay70_qf       -1         -1           NF           NF       NF   NO-OUT 
+           faclay75_cg       -1         -1           NF           NF       NF   NO-OUT 
+           faclay75_qf       -1         -1           NF           NF       NF   NO-OUT 
+           faclay80_cg       -1         -1           NF           NF       NF   NO-OUT 
+           faclay80_qf       -1         -1           NF           NF       NF   NO-OUT 
+          fdesign10_cg       -1         -1           NF           NF       NF   NO-OUT 
+          fdesign10_qf       -1         -1           NF           NF       NF   NO-OUT 
+          fdesign25_cg       -1         -1           NF           NF       NF   NO-OUT 
+          fdesign25_qf       -1         -1           NF           NF       NF   NO-OUT 
+          fdesign50_cg       -1         -1           NF           NF       NF   NO-OUT 
+          fdesign50_qf       -1         -1           NF           NF       NF   NO-OUT 
+          feedtray2_cg       -1         -1           NF           NF       NF   NO-OUT 
+          feedtray2_qf       -1         -1           NF           NF       NF   NO-OUT 
+     flowchan100fix_cg       -1         -1           NF           NF       NF   NO-OUT 
+     flowchan100fix_qf       -1         -1           NF           NF       NF   NO-OUT 
+     flowchan200fix_cg       -1         -1           NF           NF       NF   NO-OUT 
+     flowchan200fix_qf       -1         -1           NF           NF       NF   NO-OUT 
+     flowchan400fix_cg       -1         -1           NF           NF       NF   NO-OUT 
+     flowchan400fix_qf       -1         -1           NF           NF       NF   NO-OUT 
+      flowchan50fix_cg       -1         -1           NF           NF       NF   NO-OUT 
+      flowchan50fix_qf       -1         -1           NF           NF       NF   NO-OUT 
+               fuel_cg     0.01          5     8565.997     8565.997     0.00       OK 
+               fuel_qf     0.01          5     8565.997     8565.997     0.00       OK 
+             gams03_cg       -1         -1           NF           NF       NF   NO-OUT 
+             gams03_qf  1842.38         75           NF   132599.109   100.00      INF 
+  gasprod_sarawak01_cg  1800.01    1428149   -32445.266   -32877.207     1.33       OK 
+  gasprod_sarawak01_qf       -1         -1           NF           NF       NF   NO-OUT 
+  gasprod_sarawak16_cg       -1         -1           NF           NF       NF   NO-OUT 
+  gasprod_sarawak16_qf       -1         -1           NF           NF       NF   NO-OUT 
+  gasprod_sarawak81_cg  1800.44      55716   -12230.355   -33165.960   171.18       OK 
+  gasprod_sarawak81_qf  1800.75      56707   -12230.355   -33165.960   171.18       OK 
+                gbd_cg     0.00          1        2.200        2.200     0.00       OK 
+                gbd_qf     0.00          1        2.200        2.200     0.00       OK 
+    genpooling_lee1_cg  1800.01    2580155           NF    -4981.518   100.00      INF 
+    genpooling_lee1_qf  1802.78    2499374           NF    -4983.792   100.00      INF 
+    genpooling_lee2_cg  1809.24    1348111           NF    -4359.227   100.00      INF 
+    genpooling_lee2_qf  1812.76    1661964           NF    -4348.041   100.00      INF 
+ genpooling_meyer04_cg       -1         -1           NF           NF       NF   NO-OUT 
+ genpooling_meyer04_qf  1800.02     940901           NF  1036840.803    99.99      INF 
+ genpooling_meyer10_cg  1800.03     181859           NF   704573.580    99.99      INF 
+ genpooling_meyer10_qf  1800.02     182366           NF   705885.768    99.99      INF 
+ genpooling_meyer15_cg  1800.03     103922           NF   646455.885    99.99      INF 
+ genpooling_meyer15_qf  1800.05     107232           NF   646296.209    99.99      INF 
+graphpart_2g-0055-0062     0.28         77 -1484348.000 -1484348.000     0.00       OK 
+graphpart_2g-0066-0066_cg     3.25        655 -2865560.000 -2865560.000     0.00       OK 
+graphpart_2g-0066-0066_qf     1.61        516 -2865560.000 -2865560.000     0.00       OK 
+graphpart_2g-0077-0077_cg     6.46       1048 -3282435.000 -3282435.000     0.00       OK 
+graphpart_2g-0077-0077_qf     8.39       2189 -3282435.000 -3282435.000     0.00       OK 
+graphpart_2g-0088-0088_cg    13.13       1412 -5935341.000 -5935341.000     0.00       OK 
+graphpart_2g-0088-0088_qf    41.33       7692 -5935341.000 -5935341.000     0.00       OK 
+graphpart_2g-0099-9211_cg  1433.02     138484 -5070020.000 -5070020.000     0.00       OK 
+graphpart_2g-0099-9211_qf  1800.02     375924 -5070020.000 -5252499.500     3.60       OK 
+graphpart_2g-1010-0824_cg   500.82      31732 -7024864.000 -7024864.000     0.00       OK 
+graphpart_2g-1010-0824_qf       -1         -1           NF           NF       NF   NO-OUT 
+graphpart_2pm-0044-0044_cg     0.08         43      -13.000      -13.000     0.00       OK 
+graphpart_2pm-0044-0044_qf     0.08         43      -13.000      -13.000     0.00       OK 
+graphpart_2pm-0055-0055_cg     0.69        330      -20.000      -20.000     0.00       OK 
+graphpart_2pm-0055-0055_qf     0.68        330      -20.000      -20.000     0.00       OK 
+graphpart_2pm-0066-0066_cg    19.43       7097      -29.000      -29.000     0.00       OK 
+graphpart_2pm-0066-0066_qf    19.19       7097      -29.000      -29.000     0.00       OK 
+graphpart_2pm-0077-0777_cg    97.22      25369      -40.000      -40.000     0.00       OK 
+graphpart_2pm-0077-0777_qf    96.44      25369      -40.000      -40.000     0.00       OK 
+graphpart_2pm-0088-0888_cg    45.10       9768      -55.000      -55.000     0.00       OK 
+graphpart_2pm-0088-0888_qf    45.12       9768      -55.000      -55.000     0.00       OK 
+graphpart_2pm-0099-0999_cg  1800.02     369968      -64.000      -71.000    10.94       OK 
+graphpart_2pm-0099-0999_qf  1815.40     378280      -64.000      -71.000    10.94       OK 
+graphpart_3g-0234-0234_cg     1.07        248 -1952753.000 -1952753.000     0.00       OK 
+graphpart_3g-0234-0234_qf     3.39       1414 -1952753.000 -1952753.000     0.00       OK 
+graphpart_3g-0244-0244_cg     0.61         91 -2725383.000 -2725383.000     0.00       OK 
+graphpart_3g-0244-0244_qf     2.54        737 -2725383.000 -2725383.000     0.00       OK 
+graphpart_3g-0333-0333_cg     1.82        344 -1882389.000 -1882389.000     0.00       OK 
+graphpart_3g-0333-0333_qf     4.86       1448 -1882389.000 -1882389.000     0.00       OK 
+graphpart_3g-0334-0334_cg     9.90       1291 -3410696.000 -3410696.000     0.00       OK 
+graphpart_3g-0334-0334_qf    81.72      16395 -3410696.000 -3410696.000     0.00       OK 
+graphpart_3g-0344-0344_cg     9.31        670 -5301516.000 -5301516.000     0.00       OK 
+graphpart_3g-0344-0344_qf    51.52       7240 -5301516.000 -5301516.000     0.00       OK 
+graphpart_3g-0444-0444_cg   496.40      26691 -7603756.000 -7603756.000     0.00       OK 
+graphpart_3g-0444-0444_qf  1800.02     193429 -7582886.000 -7996697.500     5.46       OK 
+graphpart_3pm-0234-0234_cg     2.86       1255      -20.000      -20.000     0.00       OK 
+graphpart_3pm-0234-0234_qf     2.84       1255      -20.000      -20.000     0.00       OK 
+graphpart_3pm-0244-0244_cg    44.06      14025      -28.000      -28.000     0.00       OK 
+graphpart_3pm-0244-0244_qf    44.07      14025      -28.000      -28.000     0.00       OK 
+graphpart_3pm-0333-0333_cg    17.18       5403      -26.000      -26.000     0.00       OK 
+graphpart_3pm-0333-0333_qf    17.06       5403      -26.000      -26.000     0.00       OK 
+graphpart_3pm-0334-0334_cg   485.50      90164      -36.000      -36.000     0.00       OK 
+graphpart_3pm-0334-0334_qf   571.54     107676      -36.000      -36.000     0.00       OK 
+graphpart_3pm-0344-0344_cg       -1         -1           NF           NF       NF   NO-OUT 
+graphpart_3pm-0344-0344_qf       -1         -1           NF           NF       NF   NO-OUT 
+graphpart_3pm-0444-0444_cg  1800.01     244157      -65.000      -78.500    20.77       OK 
+graphpart_3pm-0444-0444_qf  1800.02     243063      -65.000      -78.500    20.77       OK 
+graphpart_clique-20_cg    32.80       2354      147.000      147.000     0.00       OK 
+graphpart_clique-20_qf    15.38       1718      147.000      147.000     0.00       OK 
+graphpart_clique-30_cg  1800.15      36617      495.000      480.000     3.03       OK 
+graphpart_clique-30_qf   887.34      23840      495.000      495.000     0.00       OK 
+graphpart_clique-40_cg  1800.11      37458     1640.000      634.500    61.31       OK 
+graphpart_clique-40_qf  1800.07      42888     1183.000      759.000    35.84       OK 
+graphpart_clique-50_cg  1800.26      24093     3271.000      637.000    80.53       OK 
+graphpart_clique-50_qf  1800.30      26685     2312.000      993.500    57.03       OK 
+graphpart_clique-60_cg  1800.64      15331     5872.000      822.500    85.99       OK 
+graphpart_clique-60_qf  1800.12      17609     3990.000     1015.500    74.55       OK 
+graphpart_clique-70_cg  1801.65      10266     9339.000     1067.000    88.57       OK 
+graphpart_clique-70_qf  1800.16      13124     6348.000     1173.000    81.52       OK 
+            haverly_cg       -1         -1           NF           NF       NF   NO-OUT 
+            haverly_qf       -1         -1           NF           NF       NF   NO-OUT 
+           himmel11_cg     0.02          7   -30665.539   -30665.539     0.00       OK 
+           himmel11_qf     0.02          7   -30665.539   -30665.539     0.00       OK 
+           himmel16_cg       -1         -1           NF           NF       NF   NO-OUT 
+           himmel16_qf       -1         -1           NF           NF       NF   NO-OUT 
+              house_cg     0.10        217    -4500.245    -4500.245     0.00       OK 
+              house_qf       -1         -1           NF           NF       NF   NO-OUT 
+hybriddynamic_fixed_cg     0.01          3        3.855        3.855     0.00       OK 
+hybriddynamic_fixed_qf     0.00          3        1.474        1.474     0.00       OK 
+hybriddynamic_fixedcc_cg       -1         -1           NF           NF       NF   NO-OUT 
+hybriddynamic_fixedcc_qf       -1         -1           NF           NF       NF   NO-OUT 
+              hydro_cg     0.06          1  4366944.081  4366944.081     0.00       OK 
+              hydro_qf     0.06          1  4366944.081  4366944.081     0.00       OK 
+       hydroenergy1_cg  1800.03    1727223   207602.953   211049.640     1.66       OK 
+       hydroenergy1_qf  1800.03    1657592   209640.002   210220.456     0.28       OK 
+       hydroenergy2_cg  1800.05     524202   374594.645   383716.200     2.44       OK 
+       hydroenergy2_qf  1800.07     565450   369728.402   376119.062     1.73       OK 
+       hydroenergy3_cg  1800.12     272182   733519.313   769962.909     4.97       OK 
+       hydroenergy3_qf  1800.12     289729   739431.083   760601.005     2.86       OK 
+              immun_cg     0.08          1       -0.000       -0.000     0.00       OK 
+              immun_qf     0.04          1  -160809.637  -160809.637     0.00       OK 
+      instancelist.txt       -1         NF           NF           NF       NF   NO-OUT
+  ising2_5-300_5555_cg  1806.68       3376  8172645.000 10695164.500    30.87       OK 
+  ising2_5-300_5555_qf  1804.12       2345  8451597.000 10797070.266    27.75       OK 
+        jbearing100_cg       -1         -1           NF           NF       NF   NO-OUT 
+        jbearing100_qf       -1         -1           NF           NF       NF   NO-OUT 
+         jbearing25_cg       -1         -1           NF           NF       NF   NO-OUT 
+         jbearing25_qf       -1         -1           NF           NF       NF   NO-OUT 
+         jbearing50_cg       -1         -1           NF           NF       NF   NO-OUT 
+         jbearing50_qf       -1         -1           NF           NF       NF   NO-OUT 
+         jbearing75_cg       -1         -1           NF           NF       NF   NO-OUT 
+         jbearing75_qf       -1         -1           NF           NF       NF   NO-OUT 
+   kall_circles_c6a_cg  1800.04      17954        2.982        0.000   100.00       OK 
+   kall_circles_c6a_qf  1800.01     204820        2.796        0.000   100.00       OK 
+   kall_circles_c6b_cg  1800.14      17963        2.484        0.000   100.00       OK 
+   kall_circles_c6b_qf  1800.01     220784        2.783        0.146    94.76       OK 
+   kall_circles_c6c_cg  1800.24      12063        4.846        0.000   100.00       OK 
+   kall_circles_c6c_qf  1800.01     122405        4.702        0.000   100.00       OK 
+   kall_circles_c7a_cg    16.72        391        0.216        0.216     0.00       OK 
+   kall_circles_c7a_qf  1800.02     232972        2.591        0.000   100.00       OK 
+   kall_circles_c8a_cg  1800.40       8147        0.939        0.000    99.99       OK 
+   kall_circles_c8a_qf  1800.03     179527        4.037        0.000   100.00       OK 
+kall_circlespolygons_c1p11_cg       -1         -1           NF           NF       NF   NO-OUT 
+kall_circlespolygons_c1p11_qf     0.07          1        2.687        2.687     0.00       OK 
+kall_circlespolygons_c1p12_cg       -1         -1           NF           NF       NF   NO-OUT 
+kall_circlespolygons_c1p12_qf     0.06          1        2.121        2.121     0.00       OK 
+kall_circlespolygons_c1p13_cg       -1         -1           NF           NF       NF   NO-OUT 
+kall_circlespolygons_c1p13_qf     0.07          1        1.054        1.054     0.00       OK 
+kall_circlespolygons_c1p5a_cg       -1         -1           NF           NF       NF   NO-OUT 
+kall_circlespolygons_c1p5a_qf  1800.02     233369        2.750        0.000   100.00       OK 
+kall_circlespolygons_c1p5b_cg       -1         -1           NF           NF       NF   NO-OUT 
+kall_circlespolygons_c1p5b_qf  1800.05     177341       10.812        0.000   100.00       OK 
+kall_circlespolygons_c1p6a_cg       -1         -1           NF           NF       NF   NO-OUT 
+kall_circlespolygons_c1p6a_qf  1800.06     134278        8.956        0.000   100.00       OK 
+kall_circlesrectangles_c1r11_cg       -1         -1           NF           NF       NF   NO-OUT 
+kall_circlesrectangles_c1r11_qf     0.09          1        0.442        0.442     0.00       OK 
+kall_circlesrectangles_c1r12_cg       -1         -1           NF           NF       NF   NO-OUT 
+kall_circlesrectangles_c1r12_qf     0.21          1        0.462        0.462     0.00       OK 
+kall_circlesrectangles_c1r13_cg       -1         -1           NF           NF       NF   NO-OUT 
+kall_circlesrectangles_c1r13_qf     0.12          1        0.635        0.635     0.00       OK 
+kall_circlesrectangles_c6r1_cg       -1         -1           NF           NF       NF   NO-OUT 
+kall_circlesrectangles_c6r1_qf     0.97          1       12.294       12.294     0.00       OK 
+kall_circlesrectangles_c6r29_cg       -1         -1           NF           NF       NF   NO-OUT 
+kall_circlesrectangles_c6r29_qf     1.74          1       11.294       11.294     0.00       OK 
+kall_circlesrectangles_c6r39_cg       -1         -1           NF           NF       NF   NO-OUT 
+kall_circlesrectangles_c6r39_qf     4.68          1       10.476       10.476     0.00       OK 
+kall_congruentcircles_c31_cg     0.31        481        0.644        0.644     0.00       OK 
+kall_congruentcircles_c31_qf     0.09        151        0.643        0.643     0.00       OK 
+kall_congruentcircles_c32_cg     0.05         45        0.678        0.678     0.00       OK 
+kall_congruentcircles_c32_qf     0.11         92        1.375        1.375     0.00       OK 
+kall_congruentcircles_c41_cg       -1         -1           NF           NF       NF   NO-OUT 
+kall_congruentcircles_c41_qf     0.20         51        0.858        0.858     0.00       OK 
+kall_congruentcircles_c42_cg     0.18        147        0.252        0.252     0.00       OK 
+kall_congruentcircles_c42_qf     0.31        554        0.858        0.858     0.00       OK 
+kall_congruentcircles_c51_cg  1800.08     104222        1.073        0.000    99.99       OK 
+kall_congruentcircles_c51_qf    78.26      25899        1.071        1.071     0.00       OK 
+kall_congruentcircles_c52_cg     4.54        859        0.513        0.513     0.00       OK 
+kall_congruentcircles_c52_qf     1.57       1651        1.536        1.536     0.00       OK 
+kall_congruentcircles_c61_cg  1800.01      49918        1.288        0.000    99.99       OK 
+kall_congruentcircles_c61_qf  1800.01     254050        2.118        1.257    40.66       OK 
+kall_congruentcircles_c62_cg    91.18       4691        0.712        0.712     0.00       OK 
+kall_congruentcircles_c62_qf     5.92       3333        1.287        1.287     0.00       OK 
+kall_congruentcircles_c63_cg     0.69        197        0.802        0.802     0.00       OK 
+kall_congruentcircles_c63_qf    83.36      22944        1.284        1.284     0.00       OK 
+kall_congruentcircles_c71_cg  1800.02      24337        1.502        0.000    99.99       OK 
+kall_congruentcircles_c71_qf  1800.01     218447        5.430        0.000   100.00       OK 
+kall_congruentcircles_c72_cg  1333.00      29207        0.743        0.743     0.00       OK 
+kall_congruentcircles_c72_qf  1800.01     324147        3.966        0.830    79.08       OK 
+kall_diffcircles_10_cg       -1         -1           NF           NF       NF   NO-OUT 
+kall_diffcircles_10_qf  1800.01      90939       16.615        0.000   100.00       OK 
+kall_diffcircles_5a_cg     0.17         17        3.887        3.887     0.00       OK 
+kall_diffcircles_5a_qf    15.11       9768        5.115        5.115     0.00       OK 
+kall_diffcircles_5b_cg   171.90      10010        5.116        5.116     0.00       OK 
+kall_diffcircles_5b_qf   447.63     142557        5.115        5.115     0.00       OK 
+ kall_diffcircles_6_cg     4.34          9        2.779        2.779     0.00       OK 
+ kall_diffcircles_6_qf    38.46      18361        7.784        7.784     0.00       OK 
+ kall_diffcircles_7_cg    50.86       2798        7.153        7.153     0.00       OK 
+ kall_diffcircles_7_qf   214.04      46548        7.146        7.146     0.00       OK 
+ kall_diffcircles_8_cg       -1         -1           NF           NF       NF   NO-OUT 
+ kall_diffcircles_8_qf  1800.01     195028       19.017        3.125    83.57       OK 
+ kall_diffcircles_9_cg       -1         -1           NF           NF       NF   NO-OUT 
+ kall_diffcircles_9_qf  1800.01     110133       20.202        0.000   100.00       OK 
+            knp3-12_cg  1800.71       1624        1.106       12.000   985.29       OK 
+            knp3-12_qf  1800.42      10703        1.106        4.997   351.90       OK 
+            knp4-24_cg  1810.14         71        0.539       16.000  2869.58       OK 
+            knp4-24_qf  1800.48       2330        0.949        7.250   663.89       OK 
+            knp5-40_cg       -1         -1           NF           NF       NF   NO-OUT 
+            knp5-40_qf  6071.19          1        0.762       12.000  1475.23       OK 
+            knp5-41_cg       -1         -1           NF           NF       NF   NO-OUT 
+            knp5-41_qf       -1         -1           NF           NF       NF   NO-OUT 
+            knp5-42_cg       -1         -1           NF           NF       NF   NO-OUT 
+            knp5-42_qf       -1         -1           NF           NF       NF   NO-OUT 
+            knp5-43_cg       -1         -1           NF           NF       NF   NO-OUT 
+            knp5-43_qf  1806.64        446        0.000       12.000 12000000.00       OK 
+            knp5-44_cg       -1         -1           NF           NF       NF   NO-OUT 
+            knp5-44_qf       -1         -1           NF           NF       NF   NO-OUT 
+### Number of instances =  568
+### Number of errors    =  216
+### Number of unsolved  =  0
+###
+### errors: 
+###     abel_cg
+###     abel_qf
+###     arki0001_cg
+###     arki0001_qf
+###     ball_mk2_30_cg
+###     ball_mk2_30_qf
+###     ball_mk3_10_cg
+###     ball_mk3_10_qf
+###     ball_mk3_20_cg
+###     ball_mk3_20_qf
+###     ball_mk3_30_cg
+###     ball_mk3_30_qf
+###     ball_mk4_05_cg
+###     ball_mk4_05_qf
+###     ball_mk4_10_cg
+###     ball_mk4_10_qf
+###     ball_mk4_15_cg
+###     ball_mk4_15_qf
+###     bayes2_10_qf
+###     bayes2_20_qf
+###     bayes2_30_qf
+###     bayes2_50_cg
+###     bayes2_50_qf
+###     carton7_cg
+###     carton7_qf
+###     carton9_cg
+###     catmix100_cg
+###     catmix100_qf
+###     catmix200_cg
+###     catmix200_qf
+###     catmix400_cg
+###     catmix400_qf
+###     catmix800_cg
+###     catmix800_qf
+###     circle_cg
+###     circle_qf
+###     color_lab6b_4x20_cg
+###     crudeoil_lee1_05_cg
+###     crudeoil_lee1_05_qf
+###     crudeoil_lee1_06_cg
+###     crudeoil_lee1_06_qf
+###     crudeoil_lee1_07_cg
+###     crudeoil_lee1_07_qf
+###     crudeoil_lee1_08_cg
+###     crudeoil_lee1_08_qf
+###     crudeoil_lee1_09_cg
+###     crudeoil_lee1_09_qf
+###     crudeoil_lee1_10_cg
+###     crudeoil_lee1_10_qf
+###     crudeoil_lee2_05_cg
+###     crudeoil_lee2_05_qf
+###     crudeoil_lee2_06_cg
+###     crudeoil_lee2_06_qf
+###     crudeoil_lee2_07_cg
+###     crudeoil_lee2_07_qf
+###     crudeoil_lee2_08_cg
+###     crudeoil_lee2_08_qf
+###     crudeoil_lee2_09_cg
+###     crudeoil_lee2_09_qf
+###     crudeoil_lee2_10_cg
+###     crudeoil_lee2_10_qf
+###     crudeoil_lee3_05_cg
+###     crudeoil_lee3_05_qf
+###     crudeoil_lee3_06_cg
+###     crudeoil_lee3_06_qf
+###     crudeoil_lee3_07_cg
+###     crudeoil_lee3_07_qf
+###     crudeoil_lee3_08_cg
+###     crudeoil_lee3_08_qf
+###     crudeoil_lee3_09_cg
+###     crudeoil_lee3_09_qf
+###     crudeoil_lee3_10_cg
+###     crudeoil_lee3_10_qf
+###     crudeoil_lee4_05_cg
+###     crudeoil_lee4_05_qf
+###     crudeoil_lee4_06_cg
+###     crudeoil_lee4_06_qf
+###     crudeoil_lee4_07_cg
+###     crudeoil_lee4_07_qf
+###     crudeoil_lee4_08_cg
+###     crudeoil_lee4_08_qf
+###     crudeoil_lee4_09_cg
+###     crudeoil_lee4_09_qf
+###     crudeoil_lee4_10_cg
+###     crudeoil_lee4_10_qf
+###     crudeoil_li01_cg
+###     crudeoil_li01_qf
+###     crudeoil_li02_cg
+###     crudeoil_li02_qf
+###     crudeoil_li03_cg
+###     crudeoil_li03_qf
+###     crudeoil_li05_cg
+###     crudeoil_li05_qf
+###     crudeoil_li06_cg
+###     crudeoil_li06_qf
+###     crudeoil_li11_cg
+###     crudeoil_li11_qf
+###     crudeoil_li21_cg
+###     crudeoil_li21_qf
+###     demo7_cg
+###     demo7_qf
+###     edgecross10-060_qf
+###     edgecross14-058_qf
+###     edgecross14-078_qf
+###     elf_cg
+###     elf_qf
+###     emfl050_3_3_cg
+###     emfl050_3_3_qf
+###     emfl050_5_5_cg
+###     emfl050_5_5_qf
+###     emfl100_3_3_cg
+###     emfl100_3_3_qf
+###     emfl100_5_5_cg
+###     emfl100_5_5_qf
+###     ex5_2_5_cg
+###     ex5_2_5_qf
+###     ex5_3_3_cg
+###     ex5_3_3_qf
+###     ex7_3_3_cg
+###     ex7_3_3_qf
+###     ex8_3_5_qf
+###     ex8_3_9_qf
+###     ex9_1_1_cg
+###     ex9_1_1_qf
+###     ex9_1_2_cg
+###     ex9_1_2_qf
+###     ex9_1_5_cg
+###     ex9_1_5_qf
+###     ex9_1_8_cg
+###     ex9_1_8_qf
+###     ex9_2_5_cg
+###     ex9_2_5_qf
+###     fac3_qf
+###     faclay20h_qf
+###     faclay60_cg
+###     faclay60_qf
+###     faclay70_cg
+###     faclay70_qf
+###     faclay75_cg
+###     faclay75_qf
+###     faclay80_cg
+###     faclay80_qf
+###     fdesign10_cg
+###     fdesign10_qf
+###     fdesign25_cg
+###     fdesign25_qf
+###     fdesign50_cg
+###     fdesign50_qf
+###     feedtray2_cg
+###     feedtray2_qf
+###     flowchan100fix_cg
+###     flowchan100fix_qf
+###     flowchan200fix_cg
+###     flowchan200fix_qf
+###     flowchan400fix_cg
+###     flowchan400fix_qf
+###     flowchan50fix_cg
+###     flowchan50fix_qf
+###     gams03_cg
+###     gams03_qf
+###     gasprod_sarawak01_qf
+###     gasprod_sarawak16_cg
+###     gasprod_sarawak16_qf
+###     genpooling_lee1_cg
+###     genpooling_lee1_qf
+###     genpooling_lee2_cg
+###     genpooling_lee2_qf
+###     genpooling_meyer04_cg
+###     genpooling_meyer04_qf
+###     genpooling_meyer10_cg
+###     genpooling_meyer10_qf
+###     genpooling_meyer15_cg
+###     genpooling_meyer15_qf
+###     graphpart_2g-1010-0824_qf
+###     graphpart_3pm-0344-0344_cg
+###     graphpart_3pm-0344-0344_qf
+###     haverly_cg
+###     haverly_qf
+###     himmel16_cg
+###     himmel16_qf
+###     house_qf
+###     hybriddynamic_fixedcc_cg
+###     hybriddynamic_fixedcc_qf
+###     instancelist.txt
+###     jbearing100_cg
+###     jbearing100_qf
+###     jbearing25_cg
+###     jbearing25_qf
+###     jbearing50_cg
+###     jbearing50_qf
+###     jbearing75_cg
+###     jbearing75_qf
+###     kall_circlespolygons_c1p11_cg
+###     kall_circlespolygons_c1p12_cg
+###     kall_circlespolygons_c1p13_cg
+###     kall_circlespolygons_c1p5a_cg
+###     kall_circlespolygons_c1p5b_cg
+###     kall_circlespolygons_c1p6a_cg
+###     kall_circlesrectangles_c1r11_cg
+###     kall_circlesrectangles_c1r12_cg
+###     kall_circlesrectangles_c1r13_cg
+###     kall_circlesrectangles_c6r1_cg
+###     kall_circlesrectangles_c6r29_cg
+###     kall_circlesrectangles_c6r39_cg
+###     kall_congruentcircles_c41_cg
+###     kall_diffcircles_10_cg
+###     kall_diffcircles_8_cg
+###     kall_diffcircles_9_cg
+###     knp5-40_cg
+###     knp5-41_cg
+###     knp5-41_qf
+###     knp5-42_cg
+###     knp5-42_qf
+###     knp5-43_cg
+###     knp5-44_cg
+###     knp5-44_qf
+###
+### unsolved: 

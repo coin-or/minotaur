@@ -1,0 +1,1226 @@
+Christen this file filter.f
+
+c     ************************************************'
+c     * FILTER - SQP - SOLVER: VERSION 1             *'
+c     *       Copyright, University of Dundee,       *'
+c     *  R. Fletcher & S. Leyffer, September 1996    *'
+c     ************************************************'
+
+c     *******************************************************************
+c     The main SQP solver subroutine
+c     ==============================
+c     * filterSQP       - the main subroutine implementing the SQP method
+c                         simple parameter list, calls filterSQP1
+c     * filterSQP1      - same as above, but more comprehensive parameter
+c                         list
+c
+c     *******************************************************************
+
+      subroutine filterSQP (n,m,kmax,maxa,maxf,mlp,mxwk,mxiwk,iprint,
+     .                     nout,ifail,rho,x,c,f,fmin,blo,bup,s,a,la,ws,
+     .                     lws,lam,cstype,user,iuser,max_iter,istat,
+     .                     rstat)
+      
+c     --------------------------------------------------------------
+c     Solve NLP problems of the form
+c     
+c          minimize    f(x)
+c          subject to  l_j <= c_j(x) <= u_j  ,    j = 1 , ... , m
+c                      l_i <=   x_i  <= u_i  ,    i = 1 , ... , n
+c
+c     The problems solved are defined using initialize_NLP, objfun,
+c     confun, gradient and hessian.
+c
+c     SIMPLE PARAMETER LIST
+c     =====================
+c     n      : number of variables
+c     m      : number of constraints (linear & nonlinear)
+c     kmax   : max. allowable dimension of null space
+c     maxa   : max. number of entries in a, la
+c     maxf   : max. length of filter (25 is a good number)
+c     mlp    : max. level for resolving degeneracy in QP (10 will do)
+c     mxwk   : length of *real* workspace
+c     mxiwk  : length of *integer* workspace
+c     iprint : print flag: 0 = quiet (no printing)
+c                          1 = one line per iteration
+c                          2 = scalar information printed
+c                          3 = scalar & vector information printed
+c                         >3 = as 3, and call QP solver with iprint-3
+c     nout   : output channel 
+c     ifail  : fail flag: -1 = ON ENTRY: warm start (use ONLY if
+c                              n, m, k, lws unchanged from previous call)
+c                          0 = successful run
+c                          1 = unbounded NLP detected (f < fmin)
+c                          2 = linear constraints are infeasible
+c                          3 = nonlinear constraints locally infeasible
+c                          4 = h <= eps, but QP is infeasible
+c                          5 = termiation with rho < eps
+c                          6 = termiation with iter > max_iter
+c                          7 = crash in user routine (IEEE error) could
+c                              not be resolved
+c                          8 = unexpect ifail from QP solver 
+c                          9 = not enough *real* workspace
+c                         10 = not enough *integer* workspace
+c     rho       : initial/final trust region radius
+c     x(n)      : initial gues of variables / best solution found
+c     c(n)      : constraint values at solution
+c     f         : objective value at solution
+c     fmin      : lower bound on f(x); unbounded, if f(x) < fmin
+c     blo(n+m)  : lower bounds on variables and constraints
+c     bup(n+m)  : upper bounds on variables and constraints
+c     s(n+m)    : variable scale factors (see scale_mode on settings)
+c     a         : dense/sparse storage of Jacobian & objective gradient
+c     la        : integers associated with storage of a
+c     ws        : *real* workspace
+c     lws       : *integer* workspace
+c     lam(n+m)  : Lagrange multipliers at solution
+c     cstype(m) : 'N' for Nonlinear; 'L' for Linear constraints
+c     user(*)   : *real* user workspace passed through to objfun etc.
+c     iuser(*)  : *integer* user workspace passed through to objfun etc.
+c     max_iter  : Max. number of iterations allowed to SQP solver
+c     istat(14) : storage for some *integer* statistics of this run
+c     rstat(7)  : storage for some *real* statistics of this run
+c     --------------------------------------------------------------
+
+      implicit none
+
+c     ... declaration of passed parameters -- scalars
+      integer n, m, kmax, maxa, maxf, mlp, mxwk, mxiwk, 
+     .        iprint, nout, ifail, max_iter, i
+      double precision    rho, f, fmin
+
+c     ... declaration of passed parameters -- arrays
+      integer la(0:maxa+m+2), lws(mxiwk), iuser(*), istat(14)
+      double precision    a(maxa), blo(n+m), bup(n+m), x(n), c(m), 
+     .        lam(n+m), ws(mxwk), user(*), rstat(7), s(n+m)
+      character cstype(m)
+
+c     ... common block for storage for bqpd
+      integer      kk, ll, kkk, lll, maxwk, maxiwk
+      common /wsc/ kk, ll, kkk, lll, maxwk, maxiwk
+
+c     ... common block defining mxm1 for bqpd
+      integer        mxm1
+      common /mxm1c/ mxm1
+
+c     ... storage map for hessian and scale_mode
+      integer         scale_mode, phe
+      common /scalec/ scale_mode, phe
+
+c     ... common block for problemname
+      integer         char_l
+      character*10            pname
+      common /cpname/ char_l, pname
+
+c     ... common block for printing QP subproblems (not for user)
+      integer             n_bqpd_calls, n_bqpd_print
+      common /bqpd_count/ n_bqpd_calls, n_bqpd_print
+
+c     ... common for user infinity & epsilon
+      double precision                 infty, eps
+      common /NLP_eps_inf/ infty, eps
+
+c     ... declaration of internal variables
+      integer p_xnew, p_cnew, p_bl, p_bu, p_d, p_g, p_r, p_w, p_e, 
+     .        p_ls, p_alp, p_lp, p_info, p_filter, p_rest_filter, 
+     .        p_work, p_iwork, p_ws, p_lws, ipass
+      double precision tstart, tend, cpu, seconds
+
+c     ... data statements
+      data ipass /0/
+
+c     ========================  procedure body  ======================
+
+c     ... print version date
+      call version (nout)
+
+c     ... start timing for run
+      tstart = seconds()
+
+      if ((iprint.ge.1).and.(ipass.eq.0)) then
+         ipass = 1
+c        ... open output files
+         if (nout.ne.6) then
+            open (unit=nout, file=pname(1:char_l)//'.output')
+         endif
+         open(unit=2, file=pname(1:char_l)//'.summary')
+c        ... write headers for output files
+         write(nout,*) 'Problemname.........',pname(1:char_l)
+         write(nout,*) 'No. of variables....',n
+         write(nout,*) 'No. of constraints..',m
+         write(2,*)'Problemname.........',pname(1:char_l)
+         write(2,*) 'No. of variables....',n
+         write(2,*) 'No. of constraints..',m
+         if (scale_mode.eq.0) then
+            write(nout,*) 'NO SCALING'
+            write(2   ,*) 'NO SCALING'
+         elseif (scale_mode.eq.1) then
+            write(nout,*) 'USER PROVIDED VARIABLE SCALING'
+            write(2   ,*) 'USER PROVIDED VARIABLE SCALING'
+         elseif (scale_mode.eq.2) then
+            write(nout,*) 'USER PROVIDED CONSTRAINT SCALING'
+            write(2   ,*) 'USER PROVIDED CONSTRAINT SCALING'
+         elseif (scale_mode.eq.3) then
+            write(nout,*) 'USER PROVIDED VARIABLE & CONSTRAINT SCALING'
+            write(2   ,*) 'USER PROVIDED VARIABLE & CONSTRAINT SCALING'
+         endif
+         write(2,*) '=================================================='
+      endif
+      
+c     ... set up common blocks
+      mxm1   = min ( n , m+1 )
+
+c     ... set storage map (real)
+      p_xnew        = 1
+      p_cnew        = p_xnew        + n
+      p_bl          = p_cnew        + m
+      p_bu          = p_bl          + n+m
+      p_d           = p_bu          + n+m
+      p_g           = p_d           + n
+      p_r           = p_g           + n
+      p_w           = p_r           + n+m
+      p_e           = p_w           + n+m
+      p_alp         = p_e           + n+m 
+      p_filter      = p_alp         + mlp
+      p_rest_filter = p_filter      + maxf*4
+      p_work        = p_rest_filter + maxf*4
+      p_ws          = p_work        + 3*n+m
+
+c     ... set storage map (INTEGER)
+      p_ls    = 1
+      p_lp    = p_ls    + n+m
+      p_info  = p_lp    + mlp
+      p_iwork = p_info  + 100
+      p_lws   = p_iwork + m+m+n
+      
+c     ... check sufficient storage available to call SQP solver
+      if (p_ws.gt.mxwk) then
+         print *, 'NOT ENOUGH *real* WORKSPACE:',p_ws,' > ',mxwk
+         ifail = 9
+         return
+      else
+         maxwk = mxwk - p_ws
+      endif
+      if (p_lws.gt.mxiwk) then
+         print *, 'NOT ENOUGH *integer* WORKSPACE:',p_lws,' > ',mxiwk
+         ifail = 10
+         return
+      else
+         maxiwk = mxiwk - p_lws
+      endif
+
+c     ... copy scale factors s -> ws and set storage map for ws
+      call init_scale (n, m, s, ws(p_ws), x, blo, bup, lam, a, la)
+
+c     ... call the SQP solver
+      call filterSQP1(n,m,kmax,maxa,maxf,mlp,maxwk,maxiwk,iprint,nout,
+     .                ifail,rho,x,ws(p_xnew),c,ws(p_cnew),f,fmin,blo,
+     .                bup,ws(p_bl),ws(p_bu),a,la,ws(p_ws),lws(p_lws),
+     .                ws(p_d),ws(p_g),ws(p_r),ws(p_w),ws(p_e),lws(p_ls),
+     .                ws(p_alp),lws(p_lp),lws(p_info),lam,ws(p_filter),
+     .                ws(p_rest_filter),cstype,s,user,iuser,ws(p_work),
+     .                lws(p_iwork),max_iter,istat,rstat)
+
+c     ... scale problem if necessary
+      call end_unscale(n, m, x, c, blo, bup, lam, s, a, la)
+
+c     ... stop watch for run
+      tend = seconds()
+      cpu  = tend - tstart
+
+c     ... write the summary in output files
+      if (iprint.ge.1) then
+         call print_stats(nout,ifail,f,rho,istat,rstat,cpu)
+         call print_stats(2   ,ifail,f,rho,istat,rstat,cpu)
+         if (iprint.ge.2) then
+            write(nout,*)'Active constraints (1:n variable bounds,',
+     .                   ' n+1:n+m general c/s; + lower, - upper)'
+            write(nout,*) (lws(p_ls+i-1),i=1,n-istat(1))
+         endif
+      endif
+
+ 7000 format(I4,5G15.7)
+ 7001 format(I4,5G15.7,A)
+
+      return
+      end
+
+
+c     ******************************************************************
+
+
+      subroutine filterSQP1(n,m,kmax,maxa,maxf,mlp,maxwk,maxiwk,iprint,
+     .                     nout,ifail,rho,x,xnew,c,cnew,f,fmin,blo,bup,
+     .                     bl,bu,a,la,ws,lws,d,g,r,w,e,ls,alp,lp,info,
+     .                     lam,filter,rest_filter,cstype,s,user,iuser,
+     .                     work,iwork,max_iter,istat,rstat)
+      
+c     --------------------------------------------------------------
+c     Solve NLP problems of the form
+c     
+c          minimize    f(x)
+c          subject to  l_j <= c_j(x) <= u_j  ,    j = 1 , ... , m
+c                      l_i <=   x_i  <= u_i  ,    i = 1 , ... , n
+c
+c     The problems solved are defined using initialize_NLP, objfun,
+c     confun, gradient and Hessian.
+c
+c     COMPREHENSIVE PARAMETER LIST (SEE filterSQP FOR DETAILS)
+c     --------------------------------------------------------------
+
+      implicit none
+
+c     ... declaration of passed parameters -- scalars
+      integer n, m, kmax, maxa, maxf, mlp, maxwk, maxiwk, 
+     .        iprint, nout, ifail, max_iter
+      double precision    rho, f, fmin
+
+c     ... declaration of passed parameters -- arrays
+      integer la(0:maxa+m+2), ls(n+m), lp(mlp), lws(maxiwk), 
+     .        info(100), iuser(*), iwork(m+m+n), istat(14)
+      double precision    a(maxa), blo(n+m), bup(n+m), bl(n+m), bu(n+m), 
+     .        x(n), c(m), xnew(n), cnew(m), d(n), g(n), r(n+m), w(n+m), 
+     .        lam(n+m), ws(maxwk),filter(maxf,4), rest_filter(maxf,4), 
+     .        user(*), work(3*n+m), rstat(7), alp(mlp), e(n+m), s(n+m)
+      character cstype(m)
+
+c     ... declaration of internal variables -- scalars
+      logical termination, convergence, hess, 
+     .        lin_feas, feas_rest, accept_step, unblocked, exit
+      integer iter, peq, mode, f_length, f_Jlength, QPfail, 
+     .        fcount, ccount, gcount, hcount, k, i, outcome, 
+     .        infcount, SOCScount, mxa, QPpivot, npivot,
+     .        f_posn, f_posn0, SOCiter, flag, alsi, best_k, n1,
+     .        l_hess, li_hess, nQPcrash, iiter, lsi, nk,
+     .        mode2QP, mode4QP, maxfil1, maxfil2, kmx
+      double precision    hc, hcnew, q, qmin, d_norm, old_rho, phi, 
+     .        phinew, cs_ubd, mu, 
+     .        hchat, avg_rate, rate, fnew, best_phi, lam_norm,
+     .        rKT, almx, maxlam, hJ, hJt
+      character*3 step, best_step
+      character*5 step1
+      character*2 NWSE, best_NWSE
+      character*4 char
+
+c     ... total available storage & storage used for Hessian
+      integer      kk, ll, kkk, lll, maxwk0, maxiwk0
+      common /wsc/ kk, ll, kkk, lll, maxwk0, maxiwk0
+
+c     ... declaration of common statements 
+      double precision            alpha
+      common /alphac/ alpha
+      double precision                 infty, eps
+      common /NLP_eps_inf/ infty, eps
+      integer         char_l
+      character*10            pname
+      common /cpname/ char_l, pname
+
+c     ... count number of calls to bqpd & print if necessary
+      integer             n_bqpd_calls, n_bqpd_print
+      common /bqpd_count/ n_bqpd_calls, n_bqpd_print
+
+c     ... common block that defines the modes for QP solves
+      integer        cold_start, warm_start, hot_start
+      common /modes/ cold_start, warm_start, hot_start
+
+c     ... storage divison of filter
+      integer           func, cons, redn, pen
+      common /filter_c/ func, cons, redn, pen
+
+c     ... storage map for hessian and scale_mode
+      integer         scale_mode, phe
+      common /scalec/ scale_mode, phe
+
+c     ... common to indicate initial penalty parameter & updating or not
+      double precision               given_mu
+      logical                      update_mu
+      common /penalty_c/ given_mu, update_mu
+
+c     ... declaration of external functions
+      logical     infeasible
+      double precision        h_one, penalty_est, infty_norm, reduce_TR
+      character*4 int2char
+
+c     ... user supplied upper bound on constraint violation
+      double precision          ubd, tt
+      common /ubdc/ ubd, tt
+      
+c     ========================  procedure body  ======================
+
+c     ... initialize the counters
+      iter      = 0
+      infcount  = 0
+      fcount    = 0
+      ccount    = 0
+      gcount    = 0
+      hcount    = 0
+      mode2QP   = 0
+      mode4QP   = 0
+      SOCScount = 0
+      QPpivot   = 0
+      nQPcrash  = 0
+
+c     ... initialize common variables / tolerances
+      flag      = 0
+      outcome   = 0
+      f_length  = 0
+      f_Jlength = 0
+      maxfil1   = 0
+      maxfil2   = 0
+      QPfail    = 0
+      k         = 0
+      qmin      = fmin
+      convergence = .false.
+      termination = .false.
+      feas_rest   = .false.
+      accept_step = .false.
+      n_bqpd_calls = 0
+
+      hJ  = 0.D0
+      hJt = 0.D0
+
+c     ... ifail = -1 means that warm start can be used
+      if (ifail.eq.-1) then
+         mode = warm_start
+         k    = istat(1)
+      else
+         mode = cold_start
+      endif
+      ifail = 0
+
+c     ... allow solution of unc/s or bound c/s problems
+      if (m.gt.0) then
+         n1 = n+1
+      else
+         n1 = n
+      endif
+
+c     ... print a header for the .summary or output
+      if (iprint.eq.1) then
+         write(nout,*) 'Initial trust region (TR) radius...', rho
+         write(nout,*)
+         write(nout,'(3A)') 'iter  |    rho     |   ||d||    |',
+     .               '    f / hJ    |',
+     .               '   ||c||/hJt  | penalty func |IS  '
+         write(nout,'(3A)') '------+------------+------------+',
+     .               '--------------+',
+     .               '--------------+--------------+---'
+         write(2,'(3A)') 'iter  |    rho     |   ||d||    |',
+     .               '    f / hJ    |',
+     .               '   ||c||/hJt  | penalty func |IS'
+         write(2,'(3A)') '------+------------+------------+',
+     .               '--------------+',
+     .               '--------------+--------------+---'
+      elseif (iprint.ge.2) then
+         write(2,'(3A)') 'iter  |    rho     |   ||d||    |',
+     .               '    f / hJ    |',
+     .               '   ||c||/hJt  | penalty func |IS'
+         write(2,'(3A)') '------+------------+------------+',
+     .               '--------------+',
+     .               '--------------+--------------+---'
+         write(nout,*) 'Storage Check:'
+         write(nout,*) '============= '
+         write(nout,*) 'maxwk  = ', maxwk
+         if (iprint.ge.3) then
+            write(nout,*) 'Initial x values'
+            write(nout,8000) (x(i),i=1,n)
+            write(nout,*) 'c/s types : ',(cstype(i),i=1,m)
+            write(nout,*) 'Initial multipliers'
+            write(nout,8000) (lam(i),i=n+1,n+m)
+         endif
+      endif
+
+c     ... truncate initial x to lie inside simple bounds
+      do i=1,n
+         x(i) = min( bup(i) , max( blo(i) , x(i) ) )
+      enddo
+
+c     ... evaluate the constraints at the initial point
+      call confun1(x,n,m,c,a,la,s,user,iuser,flag)
+      ccount = ccount + 1
+      if (flag.ne.0) GOTO 9999
+      call gradient1(n,m,mxa,x,a,la,maxa,s,user,iuser,flag)
+      gcount = gcount + 1
+      if (flag.ne.0) GOTO 9999
+
+c     ... exit, if max_iter = 0
+      if (max_iter.eq.0) GOTO 9999
+
+c     ... ensure that the initial point is feasible wrt linear c/s
+      call linear_feasible (n, m, x, c, blo, bup, cstype, lin_feas)
+      do i=1,n
+         d(i) = 0.D0
+      enddo
+      if (.not. lin_feas) then
+         call objfun1(x,n,f,s,user,iuser,flag)
+         hc = h_one (m, c, blo(n1), bup(n1))
+         phi = f + hc
+         call progress(iter,0,rho,0.D0,'L-INF',f,hc,phi,nout,iprint)
+         if (iprint.ge.2) then
+            write(nout,*) 'Initial point not feasible in linear c/s...'
+            write(nout,*) '...solving a phase 1 problem for linear c/s'
+            write(nout,*) '...setting Hessian = I and gradient = 0'
+         endif
+c        1 LINE ADDED 26/07/00 to ensure Hessian = I and g = 0
+         call ident_Hessian(n,lws,ws(phe+1),a)
+c        comment/uncomment next four lines to switch Hessian on/off
+         kmx  = kmax
+         qmin = - infty
+c        kmx  = 0
+c        qmin = infty
+c        ... remove nonlinear c/s from active set, if NLP warm start
+         if (mode.eq.warm_start) then
+            nk = 0
+            do i=1,n-k
+               lsi  = ls(i)
+               alsi = abs(lsi)
+               if (alsi.le.n) then
+                  nk     = nk + 1
+                  ls(nk) = lsi
+               elseif (cstype(alsi-n).eq.'L') then
+                  nk     = nk + 1
+                  ls(nk) = lsi
+               endif
+            enddo
+            k = n - nk
+         endif
+c        ... shift the bounds (nonlinear c/s to infty)
+         call bound_shift (n,m,blo,bup,bl,bu,x,c,cstype,infty,infty,
+     .                     ws,ws,.false.)
+c        ... solve feasibility problem for linear c/s only
+         call QPsolve (n,m,k,kmx,a,la,d,bl,bu,q,qmin,g,r,w,e,ls,alp,lp,
+     .                 mlp,peq,ws,lws,cstype,mode,QPfail,info,iprint,
+     .                 nout,npivot,mode2QP,mode4QP)
+         QPpivot = QPpivot + npivot
+         mode = warm_start
+         if (QPfail.le.3) then
+c           ... update x, also if initial LP is infeasible
+            call add(n, x, d, xnew)
+
+c           ... evaluate f, c at new starting point
+            call objfun1(xnew,n,fnew,s,user,iuser,flag)
+            fcount = fcount + 1
+            if (flag.ne.0) GOTO 9999
+            call confun1(xnew,n,m,cnew,a,la,s,user,iuser,flag)
+            ccount = ccount + 1
+            if (flag.ne.0) GOTO 9999
+            do i=1,n
+               x(i) = xnew(i)
+            enddo
+
+c           ... compute h(c(x)) = max ( c_i(x) , 0 ) for c_i(x) <= 0
+            hcnew = h_one (m, cnew, blo(n1), bup(n1))
+
+c           ... update x, c(x), Jacobian and Hessian matrix
+            hess = .true.
+            call update_QP(n,m,k,c,cnew,mxa,a,la,maxa,gcount,hcount,f,
+     .                     fnew,hc,hcnew,lam,r,ls,x,xnew,ws,lws,hess,
+     .                     iprint,nout,2,QPfail,blo,bup,s,user,iuser,
+     .                     flag)
+            if (flag.ne.0) GOTO 9999
+
+            if (QPfail.le.1) then
+               if (iprint.ge.2) then
+                  write(nout,*) 'Feasible point for linear c/s found'
+                  write(nout,*) 'f(x), h(c(x)) = ', fnew, hcnew
+                  write(nout,*) 'update x, f(x), c(x), A(x) and W(x)'
+               endif
+            elseif (QPfail.eq.2) then
+               if (iprint.ge.1) then
+                  write(nout,*) 'Linear c/s BOUNDS inconsistent: STOP'
+               endif
+               ifail = 2
+               GOTO 9999
+            elseif (QPfail.eq.3) then
+c              ... find c/s in phase I sum & set multiplier +/- 1
+               do i=n-k+1,n+m
+                  alsi = abs(ls(i))
+                  if ((alsi.gt.n).and.(r(alsi).lt.0.D0)) then
+                     lam(alsi) = sign(1.D0,dble(ls(i)))
+                  endif
+               enddo
+               if (iprint.ge.1) then
+                  write(nout,*) 'Linear c/s are inconsistent: STOP'
+               endif
+               ifail = 2
+               GOTO 9999
+            endif
+         else
+            write(nout,*) 'Mayday; phase I QP failure; SQP going down'
+     .                    ,' QP ifail = ', QPfail
+            ifail = 8
+            GOTO 9999
+         endif
+         qmin = fmin
+      else
+         if (iprint.ge.2) then
+            write(nout,*)'Initial point is feasible wrt linear c/s'
+         endif
+         call objfun1(x,n,f,s,user,iuser,flag)
+         fcount = fcount + 1
+         if (flag.ne.0) GOTO 9999
+c        ... set max length for Hessian on input & call Hessian
+         l_hess  = maxwk
+         li_hess = maxiwk
+         call hessian1(x,n,m,2,lam,ws(phe+1),lws,s,user,iuser,l_hess,
+     .                li_hess,flag)
+         hcount = hcount + 1
+         kk = n+m + l_hess
+         ll = li_hess
+         if (flag.ne.0) GOTO 9999
+c        ... compute initial c/s violation
+         hc = h_one(m,c,blo(n1),bup(n1))
+      endif
+
+      mu = 1.D0
+      phi = f + hc
+
+c     ... add upper bound on c/s violation to filter
+c      cs_ubd = max(ubd,125.D-2*hc) 
+      cs_ubd = max(ubd,tt*hc) 
+      call add_to_filter (-infty,cs_ubd,mu,f_length,maxf,filter,
+     .                    f_posn0,accept_step,NWSE,cs_ubd,2,nout,iprint)
+
+c     ... place initial point on filter
+      call add_to_filter(f,hc,mu,f_length,maxf,filter,
+     .                   f_posn0,accept_step,NWSE,cs_ubd,2,nout,iprint)
+      maxfil2 = max ( maxfil2 , f_length )
+
+c     ... initialize penalty function estimate for monitoring only
+      d_norm = infty_norm (n, d, ws)
+      call progress(iter,0,rho,d_norm,'START',f,hc,phi,nout,iprint)
+      old_rho = rho
+
+c     REPEAT 
+ 1000 continue
+
+         if (outcome.ne.2) then
+            iter = iter + 1
+            if ((iprint.ge.3).and.(n+m.ge.100)) then
+               close(nout)
+               nout = 20 + iter
+               char = int2char ( iter )
+               open (unit = nout , file = pname(1:char_l)//'.out'//char)
+               write(nout,*)
+               write(nout,*)'ITERATION Number',iter,'  ',pname(1:char_l)
+               write(nout,*)'========================================='
+            elseif (iprint.ge.2) then
+               write(nout,*)
+               write(nout,*)'ITERATION Number', iter
+               write(nout,*)'========================================='
+            endif
+         endif
+         iiter = 0
+
+c        ... use mode 4 start if TR was cut back
+         if ((old_rho.gt.rho).and.(step1.ne.'-22-8')
+     .                       .and.(step.ne.'-24')) then
+            mode = 4
+         endif
+
+c        ... set up and solve QP subproblem
+         call setup_QP (n,m,outcome,blo,bup,c,cstype,x,bu,bl,rho,d,ws)
+         old_rho = rho
+         call QPsolve (n,m,k,kmax,a,la,d,bl,bu,q,qmin,g,r,w,e,ls,alp,lp,
+     .                 mlp,peq,ws,lws,cstype,mode,QPfail,info,iprint,
+     .                 nout,npivot,mode2QP,mode4QP)
+         mode    = warm_start
+         QPpivot = QPpivot + npivot
+         iiter   = iiter + 1
+
+c        ... check for unbounded QP; take step if necessary
+         if (QPfail.eq.1) then
+cnew            call unbddQP(n,m,k,nout,alpha,d,ls,w)
+            if (iprint.ge.1) then
+               write(nout,*)'WARNING: unbounded QP: reject step'
+               write(2   ,*)'WARNING: unbounded QP: reject step'
+            endif
+            rho  = rho / 4.D0
+            mode = 0
+            goto 888
+         elseif (QPfail.eq.8) then
+            if (iprint.ge.1) then
+               write(nout,*)'WARNING: max. no. of restarts in QP'
+               write(2   ,*)'WARNING: max. no. of restarts in QP'
+            endif
+            GOTO 888
+         elseif (QPfail.ge.4) then
+            write(nout,*)'STOP: Unexpected ifail from QP solver:',QPfail
+            ifail = 8
+            GOTO 9999
+         endif
+
+         if (infeasible(QPfail)) then
+c           ... solve phase I SQP 
+            call inf_NLP(n,m,k,kmax,ccount,gcount,fcount,hcount,mxa,
+     .                   maxa, nout,mlp,peq,iprint,
+     .                   maxf,rho,old_rho,q,la,lws,ls,alp,lp,info,x,
+     .                   xnew,d,blo,bup,bl,bu,a,cnew,c,cstype,ws,g,r,
+     .                   w,e,lam,rest_filter,hc,hJ,hJt,rKT,almx,maxlam,
+     .                   cs_ubd,outcome,nQPcrash,mode2QP,mode4QP,
+     .                   infcount,SOCScount,QPpivot,iter,maxfil1,
+     .                   max_iter,s,user,iuser,work,iwork,iwork(m+1))
+c           ... compute the infty norm of the step
+            d_norm = infty_norm (n, d, ws)
+c           ... evaluate the objective at the solution to min || c(x) ||
+            if (outcome.ne.2) then
+               call objfun1(xnew,n,f,s,user,iuser,flag)
+            endif
+
+            if (outcome.eq.1) then
+               convergence = .true.
+               termination = .true.
+               if (hc.le.eps) then
+                  ifail = 4
+               else
+                  ifail = 3
+               endif
+            elseif (outcome.eq.2) then
+               if (iprint.ge.2) then
+                  write(nout,*) 'CONTINUE SOLUTION OF QP (PHASE II)'
+                  write(nout,*) '=================================='
+                  write(nout,*) 'Re-evaluate Hessian of Lagrangian'
+                  lam_norm = infty_norm (m, lam(n+1), ws(n+1))
+                  write(nout,*) '|| lam || = ',lam_norm
+               endif
+c              ... set max length for Hessian on input & call Hessian
+               l_hess  = maxwk
+               li_hess = maxiwk-1
+               call hessian1(x,n,m,2,lam,ws(phe+1),lws,s,user,iuser,
+     .                      l_hess,li_hess,flag)
+               hcount = hcount + 1
+               kk = n+m + l_hess
+               ll = li_hess
+               if (flag.ne.0) GOTO 999
+c              ... indicate that next step should be accepted by filter
+               feas_rest = .true.
+c              ... add the current point to the filter, if it lies in NW corner
+               call objfun1(x,n,f,s,user,iuser,flag)
+               fcount = fcount + 1
+               if (flag.ne.0) GOTO 999
+               hc = h_one (m, c, blo(n1), bup(n1))
+               if (hc.lt.filter(1,cons)) then
+                  if (iprint.ge.2) then
+                     write(nout,*)'Add current point from feasibility',
+     .                    ' restoration to filter [f,hc]=',f,hc
+                  endif
+                  f_posn = 1
+                  call add_entri(f,hc,mu,cs_ubd,f_length,maxf,f_posn,
+     .                 filter,2,nout,iprint)
+               else
+                  if (iprint.ge.2) then
+                     write(nout,*)'Do NOT add current point from ',
+     .                    'feasibility restoration to filter hc>hc',hc,
+     .                    filter(1,cons)
+                  endif
+               endif
+            elseif (outcome.eq.3) then
+               if (iprint.ge.1) then
+                  write(nout,*)'STOP: IEEE flags unresolved in phase I'
+               endif
+               termination = .true.
+               ifail = 7
+            elseif (outcome.eq.4) then
+               if (iprint.ge.1) then
+                  write(nout,*)'STOP: rho < epsilon in phase I'
+               endif
+               termination = .true.
+               ifail = 5
+            elseif (outcome.eq.5) then
+               if (iprint.ge.1) then
+                  write(nout,*)'STOP: iter > max_iter in phase I'
+               endif
+               termination = .true.
+               ifail = 6
+            elseif (outcome.eq.6) then
+               if (iprint.ge.1) then
+                  write(nout,*)'STOP: Unexpected QP ifail in phase I'
+               endif
+               termination = .true.
+               ifail = 8
+            endif
+
+         else
+               
+c           ... update the sufficient reduction entry in the filter
+            if (.not.feas_rest) then
+               filter(f_posn0,redn) = - q
+            endif
+
+c           ... compute the infty norm of the step
+            d_norm = infty_norm (n, d, ws)
+c           ... update x provisionally & evaluate f(x+d), c(x+d)
+            call add(n, x, d, xnew)
+            call objfun1(xnew,n,fnew,s,user,iuser,flag)
+            if (flag.ne.0) GOTO 999
+            fcount = fcount + 1
+            call confun1(xnew,n,m,cnew,a,la,s,user,iuser,flag)
+            ccount = ccount + 1
+            if (flag.ne.0) GOTO 999
+c           ... compute h(c(x)) = max ( c_i(x) , 0 ) for c_i(x) <= 0
+            hcnew  = h_one (m, cnew, blo(n1), bup(n1))
+            hchat  = hcnew
+            phinew = penalty_est(n,m,k,fnew,hcnew,r,ls,cstype,mu)
+            call add_to_filter (fnew,hcnew,mu,f_length,maxf,filter,
+     .                    f_posn,accept_step,NWSE,cs_ubd,2,nout,iprint)
+            maxfil2 = max ( maxfil2 , f_length )
+            if (d_norm.le.eps) then
+               accept_step = .true.
+               if (iprint.ge.2) then
+                  write(nout,*) 'Zero step from QP: accept'
+               endif
+            endif
+            if (accept_step) then
+               if (iprint.ge.2) then
+                  write(nout,*) 'Step acceptable to filter, rho =', rho
+               endif
+               step = '+22'
+            else
+               step = '-22'
+c              ... save step in work, in case SOCs fail & unblocking occurs
+               if (feas_rest) then
+                  do i=1,n
+                     work(i) = d(i)
+                  enddo  
+                  do i=1,n-k
+                     alsi      = abs(ls(i))
+                     work(n+i) = r(alsi)
+                     iwork(i)  = ls(i)
+                  enddo
+                  step      = '-22'
+                  best_phi  = phinew
+                  best_NWSE = NWSE
+                  best_step = '+22'
+                  best_k    = k
+               endif
+            endif
+            step1 = step//NWSE
+            call progress(iter,iiter,old_rho,d_norm,step1,fnew,hcnew,
+     .                     phinew,nout,iprint)
+            if (iprint.ge.2) then
+               write(nout,7002)'QP STEP:'
+               write(nout,9003)'f, h(c) (old/new) = ',f,fnew,hc,hcnew
+               write(nout,9003)'penalty (old/new) = ',phi,phinew
+               write(nout,9003)'pred./actual redn.= ',-q,f-fnew
+               if (iprint.ge.3) then
+                  write(nout,9003) 'New constraint values',
+     .                              (cnew(i),i=1,m)
+               endif
+            endif
+
+            if ((.not. accept_step).and.(hcnew.lt.infty)
+     .                             .and.(hcnew.gt.0.D0)) then
+               if (iprint.ge.2) then
+                  write(nout,*) 'Step not accepted, try SOC steps'
+               endif
+               SOCiter  = 0
+               exit     = .false.
+               avg_rate = 1.D0
+c              REPEAT
+ 2000          continue
+                  SOCiter = SOCiter + 1
+                  call SOCS_QP(n,m,k,kmax,a,d,blo,bup,q,qmin,g,r,w,e,ls,
+     .                         alp,lp,mlp,peq,ws,lws,QPfail,mode,info,
+     .                         bl,bu,iprint,nout,cnew,cstype,rho,x,la,2,
+     .                         1,i,QPpivot,mode2QP,mode4QP)
+                  SOCScount = SOCScount + 1
+                  iiter     = iiter + 1
+
+                  if (QPfail.eq.1) then
+                     if (iprint.ge.2) then
+                        write(nout,*)'WARNING: unbdd QP: phase II SOCS'
+                     endif
+                  elseif (QPfail.eq.8) then
+                     if (iprint.ge.1) then
+                        write(nout,*)'WARNING: max no. restarts SOC QP'
+                        write(2   ,*)'WARNING: max no. restarts SOC QP'
+                     endif
+                     GOTO 888
+                  elseif ((QPfail.eq.2).or.(QPfail.ge.4)) then
+                     ifail = 6
+                     if (iprint.ge.1) then
+                        write(nout,*)'STOP: SOCS unexpect ifail:',QPfail
+                     endif
+                     GOTO 9999
+                  endif
+
+c                 ... compute infinity norm of step 
+                  d_norm = infty_norm (n,d,ws)
+
+                  if (.not.infeasible(QPfail)) then
+c                    ... update x provisionally & evaluate f(x+d), c(x+d)
+                     call add (n,x,d,xnew)
+                     call objfun1(xnew,n,fnew,s,user,iuser,flag)
+                     fcount = fcount + 1
+                     if (flag.ne.0) GOTO 999
+                     call confun1(xnew,n,m,cnew,a,la,s,user,iuser,flag)
+                     ccount = ccount + 1
+                     if (flag.ne.0) GOTO 999
+                     hcnew = h_one (m,cnew,blo(n1),bup(n1))
+                     phinew=penalty_est(n,m,k,fnew,hcnew,r,ls,cstype,mu)
+                     call add_to_filter(fnew,hcnew,mu,f_length,maxf,
+     .                    filter,f_posn,accept_step,NWSE,cs_ubd,2,nout,
+     .                    iprint)
+                     maxfil2 = max ( maxfil2 , f_length )
+                     if (iprint.ge.2) then
+                        write(nout,7002)'SOC STEP:', SOCiter
+                        write(nout,9003)'f, h(c) after SOSC ',fnew,hcnew
+                        write(nout,9003)'penalty after SOSC ',phinew
+                        if (iprint.ge.3) then
+                           write(nout,9003) 'New constraint values',
+     .                                       (cnew(i),i=1,m)
+                        endif
+                     endif
+
+c                    ... compute linear rate of convergence for SOC step
+                     if (hchat.le.0.D0) then
+                        rate  = 1.D-1
+                     else
+                        rate  = hcnew / hchat 
+                     endif
+                     avg_rate = ( (SOCiter-1)*avg_rate + rate )/SOCiter
+
+c                    ... check for reduction in c/s l_1 sum
+                     if (accept_step) then
+                        exit = .true.
+                        step = '+23'
+                        if (iprint.ge.2) then
+                           write(nout,*)'Accept SOC step',SOCiter
+                        endif
+                     else
+c                       ... check whether another SOC step would be helpful
+                        if ((hcnew.gt.eps).and.(rate.le.25.D-2)) then
+                           exit = .false.
+                           if (iprint.ge.2) then
+                              write(nout,9004)'Next SOC step, suff. ',
+     .                             'reductn: rate, hcnew =',rate,hcnew
+                           endif
+                           hchat = hcnew
+                           if (feas_rest) then
+                              if (phinew.lt.best_phi) then
+                                 best_phi  = phinew
+                                 best_NWSE = NWSE
+                                 best_step = '+23'
+                                 best_k    = k
+c                                ... save best step up to now
+                                 do i=1,n
+                                    work(i) = d(i)
+                                 enddo
+                                 do i=1,n-k
+                                    alsi      = abs(ls(i))
+                                    work(n+i) = r(alsi)
+                                    iwork(i)  = ls(i)
+                                 enddo
+                              endif
+                           endif         
+                        else
+                           exit = .true.
+                           if (iprint.ge.2) then
+                              write(nout,9004)'STOP SOC: not suff.',
+     .                             'reductn: rate, hcnew =',rate,hcnew
+                           endif
+                        endif
+                        step = '-23'
+                     endif
+                  else
+                     step = '-23'
+                     exit = .true.
+                     if (iprint.ge.2) then
+                        write(nout,*) 'Reject SOC step, infeasible'
+                     endif
+                     if (feas_rest) then
+c                       ... copy best step back into d
+                        do i=1,n
+                           d(i) = work(i)
+                        enddo
+                        k = best_k
+                        do i=1,n-k
+                           alsi    = abs(iwork(i))
+                           r(alsi) = work(n+i)  
+                           ls(i)   = iwork(i) 
+                        enddo
+                        mode   = cold_start
+                        phinew = best_phi  
+                        NWSE   = best_NWSE
+                        step   = best_step 
+                        d_norm = infty_norm (n,d,ws)
+                     endif
+                  endif
+                  if (step(2:3).ne.'23') then
+                     step1 = '-23'//NWSE
+                  else
+                     step1 = step//NWSE
+                  endif
+                  call progress(iter,iiter,old_rho,d_norm,step1,fnew,
+     .                          hcnew,phinew,nout,iprint)
+
+               if (.not.exit) GOTO 2000
+c              UNTIL (exit)
+            endif
+
+c           ... try to unblock filter (for 1st step after feas. restn.)
+            if (feas_rest.and.(.not.accept_step)) then
+               call unblock_filter (fnew,hcnew,mu,f_length,maxf,filter,
+     .                  f_posn,unblocked,cs_ubd,2,nout,iprint,NWSE)
+               if (unblocked) then
+c                 ... accept the step (filter can be unblocked)
+                  accept_step = .true.
+                  if (iprint.ge.2) then
+                     write(nout,*)'1st step after feasibty-restn:accept'
+                  endif
+                  step = '+24'
+               else
+                  if (iprint.ge.2) then
+                     write(nout,*)'Unblocking unsuccessful'
+                  endif
+                  accept_step = .false.
+                  step = '-24'
+               endif
+c              ... write a one line progress report per iteration
+               step1 = step//NWSE
+               call progress(iter,iiter,old_rho,d_norm,step1,fnew,hcnew,
+     .                       phinew,nout,iprint)
+            endif
+
+c           ... reset indicator for feasibility restoration to false
+            if (accept_step) then
+               feas_rest = .false.
+            endif
+            
+            if (.not.accept_step) then
+c              ... reduce Trust region
+               rho = reduce_TR (rho, d_norm)
+               if (iprint.ge.2) then
+                  write(nout,*) 'Step rejected after SOCS',
+     .                 ': reduce TR radius:', rho
+               endif
+            endif
+
+            if (accept_step) then
+c              ... take step modify TR (if necessary), new gradients
+               if ((step.eq.'+23').and.(avg_rate.gt.1.D-1)) then
+                  if (iprint.ge.2) then
+                     write(nout,9004) 'Do not increase TR radius:',
+     .                    ' SOC rate too large ', avg_rate
+                  endif
+               elseif (step.eq.'+24') then
+                  if (iprint.ge.2) then
+                     write(nout,9004) 'No increase in TR radius after',
+     .                                ' unblocking'
+                  endif
+               else
+                  call enlarge_TR (rho,n,d_norm,fnew,f,q,hcnew,hc,mu,2,
+     .                             nout,iprint)
+               endif
+c              ... save position in filter of new entry for update of q
+               f_posn0 = f_posn
+c              ... update penalty function value
+               phi     = phinew
+               if (iprint.ge.2) then
+                  write(nout,*) 'update x, f(x), c(x) A(x), and W(x)'
+               endif
+               hess = .true.
+               call update_QP (n,m,k,c,cnew,mxa,a,la,maxa,gcount,hcount,
+     .                         f,fnew,hc,hcnew,lam,r,ls,x,xnew,ws,lws,
+     .                         hess,iprint,nout,2,QPfail,blo, 
+     .                         bup,s,user,iuser,flag)
+               if ((flag.ne.0).and.(.not.convergence)) GOTO 999
+c              ... convergence test (for termination)
+               call conv_test (n,m,k,ls,r,work,a,la,mxa,blo,bup,hc,
+     .                         d_norm,rKT,almx,maxlam,f,fmin,x,c,
+     .                         convergence,nout,iprint,ifail)
+            endif
+            if ((iter.ge.max_iter).and.(.not.convergence)) then
+               termination = .true.
+               ifail = 6
+               if (iprint.ge.1) then
+                  write(nout,*) 'STOP: ITERATION LIMIT REACHED'
+               endif
+            endif
+         endif
+
+c           ... IEEE exception jump address
+ 999     if (flag.ne.0) then
+            step1 = 'EXC'
+            call progress(iter,0,rho,d_norm,step1,f,hc,phi,nout,
+     .           iprint)
+            accept_step = .false.
+            rho = reduce_TR (rho,d_norm)
+            if (iprint.ge.1) then
+               write(nout,*)'WARNING: IEEE exception: reject SQP step',
+     .                      ' reduce TR to ', rho
+            endif
+         endif
+
+c        ... jump address for bqpd crash
+ 888     if (QPfail.eq.8) then
+            step1 = '-22-8'
+            call progress(iter,0,rho,d_norm,step1,f,hc,phi,nout,
+     .                    iprint)
+            nQPcrash = nQPcrash + 1
+            d_norm   = infty_norm (n, d, ws)
+            mode     = cold_start
+            rho      = rho / 2.D0
+            do i=1,n
+               d(i) = 0.D0
+            enddo
+            if (iprint.ge.2) then
+               write(nout,*)'Reject step & reduce TR',rho
+            endif
+         endif
+
+c        ... check whether TR has gone to zero
+         if (.not.feas_rest) then
+            if ((rho.lt.eps/1.D2).and.(.not.convergence)) then
+               if (iprint.ge.1) then
+                  write(nout,*)'WARNING: rho < epsilon: TERMINATE SQP'
+               endif
+               convergence = .true.
+               ifail = 5
+            endif
+         endif
+
+         if (iprint.ge.3) then
+            write(nout,9001) 'Active set:',(ls(i),i=1,n-k)
+         endif
+
+         if (convergence) then
+            termination = .true.
+         endif
+
+      if (.not.termination) go to 1000
+c     UNTIL (termination)
+
+c     ... IEEE starting point exception address
+ 9999 continue
+      if ((iter.eq.0).and.((QPfail.eq.2).or.(QPfail.eq.3))) then
+         ifail = 2
+         if (iprint.ge.1) then
+            write(nout,*) 'Problem is linear infeasible' 
+         endif
+      elseif (flag.ne.0) then
+         write(nout,*) 'STOP: IEEE exception could not be resolved'
+         open (unit = 17 , file = pname(1:char_l)//'.IEEE')
+         write(17,*) 'x   =',(x(i),i=1,n)
+         write(17,*) 'c(x)=',(c(i),i=1,m)
+         call print_QP (n, m, k, kmax, d, a, la, bl, bu, ws, lws, ls, 
+     .                  mode, 17, 3, cstype)
+         close(17)
+         ifail = 7
+      endif
+
+c     ... write final filter onto output file
+      if (iprint.ge.2) then
+         write(nout,*)' Final phase II filter:'
+         write(nout,*)' ======================'
+         write(nout,*)'     ||c||           ',
+     .                     'f(x)        pred. reductn   penalty'
+         do i=1,f_length
+            write(nout,7001)filter(i,cons),filter(i,func),
+     .                      filter(i,redn),filter(i,pen)
+         enddo
+         write(nout,*)' Final phase I filter :'
+         write(nout,*)' ======================'
+         write(nout,*)'     ||c||_Jt       ',
+     .                     '||c||_J     pred. reductn   penalty'
+         do i=1,f_Jlength
+            write(nout,7001) rest_filter(i,cons),rest_filter(i,func),
+     .                       rest_filter(i,redn),rest_filter(i,pen)
+         enddo
+      endif
+
+c     ... save various counts in istats 
+      istat(1)  = k
+      istat(2)  = iter
+      istat(3)  = infcount
+      istat(4)  = fcount
+      istat(5)  = ccount
+      istat(6)  = gcount
+      istat(7)  = hcount
+      istat(8)  = mode2QP
+      istat(9)  = mode4QP
+      istat(10) = QPpivot
+      istat(11) = SOCScount
+      istat(12) = maxfil1
+      istat(13) = maxfil2
+      istat(14) = nQPcrash
+c     ... save some real statistics
+      rstat(1) = rKT
+      rstat(2) = almx
+      rstat(3) = maxlam
+      rstat(4) = d_norm
+      rstat(5) = hc
+      rstat(6) = hJ
+      rstat(7) = hJt
+
+ 7001 format(4G16.8)
+ 7002 format(A,I4)
+ 8000 format(5G15.6)
+ 9000 format(A,G15.6,A,G15.6)
+ 9001 format(A,6(1X,I6))
+ 9003 format(A,(4G15.6))
+ 9004 format(2A,2G15.6)
+
+      return
+      end
+
+c     ******************************************************************
+
+      block data NLP_defaults
+
+      implicit none
+
+C     --------------------------
+C     COMMON BLOCKS DECLARATIONS
+C     --------------------------
+
+c     ... upper bound on filter
+      double precision          ubd, tt
+      common /ubdc/ ubd, tt
+
+c     ... storage map for hessian and scale_mode
+      integer         scale_mode, phe
+      common /scalec/ scale_mode, phe
+
+c     ... infinity and epsilon
+      double precision                 infty, eps
+      common /NLP_eps_inf/ infty, eps
+
+c     ... extra printing from bqpd
+      integer             n_bqpd_calls, n_bqpd_print
+      common /bqpd_count/ n_bqpd_calls, n_bqpd_print
+
+c     ... problem name/length
+      integer                      char_l
+      character*10                       pname
+      common /cpname/ char_l, pname
+
+c     ... storage divison of filter
+      integer           func, cons, redn, pen
+      common /filter_c/ func, cons, redn, pen
+
+c     ... common block that defines the modes for QP solves
+      integer        cold_start, warm_start, hot_start
+      common /modes/ cold_start, warm_start, hot_start
+
+C     ----------------------------------
+C     DATA STATEMENTS FOR INITIALIZATION
+C     ----------------------------------
+
+      data infty, eps /1.D20 , 1.D-6/
+
+      data scale_mode / 0 /
+
+      data ubd, tt /1.D2, 125.D-2/
+cLOOSE      data ubd, tt /1.D2, 125.D-2/
+cTIGHT      data ubd, tt /1.D1, 1.D-4/
+
+      data n_bqpd_calls, n_bqpd_print /0, 0/
+      data char_l, pname /10 , 'NLPproblem'/
+      data func, cons, redn, pen              / 1 , 2 , 3 , 4 /
+      data cold_start, warm_start, hot_start  / 0 , 2 , 6 /
+
+
+      end
+
+c     *******************************  E N D  **************************

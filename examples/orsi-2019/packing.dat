@@ -1,0 +1,7 @@
+param NUM_CIRCLES:= 2;
+
+param RADII:=
+1 1
+2 1;
+
+param TRIANGLE_SIDE:= 5;

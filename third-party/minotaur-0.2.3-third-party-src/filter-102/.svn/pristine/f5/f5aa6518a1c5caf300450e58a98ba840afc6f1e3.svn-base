@@ -1,0 +1,20 @@
+#! /bin/csh -f
+#
+# Convert single precision filter & bqpd to double precision
+# all *.f files are changed by this shell script.
+#
+
+echo "CHANGING: dble -> qext"
+dble2qext bqpd.f sparseA.f
+
+echo "CHANGING: DOUBLE PRECISION -> real*16"
+DP2R16 bqpd.f sparseA.f filteraux.f
+
+echo "CHANGING: REAL -> double precision"
+R2DP *.f
+
+echo "CHANGING: .E -> .D"
+E2D *.f
+
+echo "CHANGING: Real -> dble"
+Real2dble *.f

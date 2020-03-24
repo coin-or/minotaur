@@ -1,0 +1,1 @@
+/usr/bin/f95     CMakeFiles/secondtst_NONE.dir/second_NONE.f.o CMakeFiles/secondtst_NONE.dir/secondtst.f.o  -o secondtst_NONE  

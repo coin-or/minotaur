@@ -1,0 +1,6 @@
+#! /bin/csh -f
+
+foreach f ($argv)
+perl -pi -e 's/\.D/\.E/g' $f
+echo $f "changed"
+end

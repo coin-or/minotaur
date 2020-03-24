@@ -1,0 +1,5 @@
+reset;
+model packing_max_num.mod;
+data packing_max_num.dat;
+option auxfiles rc;
+write gpacknum;

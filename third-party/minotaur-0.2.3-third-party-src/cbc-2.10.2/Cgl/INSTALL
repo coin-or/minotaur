@@ -1,0 +1,155 @@
+CUT GENERATION LIBRARY INSTALLATION
+===================================
+
+The instructions here are somewhat outdated. See also README.md.
+
+The instruction in this file are useful only if you downloaded the
+Cgl package. If you dowloaded another package, Cgl should be installed
+as part of that package. See the INSTALL file in the main directory
+of the package.
+
+In this document, the following names are used:
+
+1. 'coin-Cgl' is the full path to the directory in which you have 
+   dowloaded Cgl.
+
+2. 'build' is the full path to the directory used for the installation 
+   of Cgl. It might be coin-Cgl or any other directory of your choosing.
+
+
+OVERVIEW
+========
+
+More information, including current stable version number and current release
+number, is available on the Cut Generation Library (Cgl)
+Trac page at:
+
+   https://projects.coin-or.org/Cgl
+
+The instructions below are for UNIX-like systems (including Linux, Cygwin
+and MSys) only. If Microsoft Developer Studio projects are
+maintained for this package, you can find instructions at
+
+  https://projects.coin-or.org/MSVisualStudio
+
+For other systems or for more information about dowloading and installing
+go to:
+
+   https://projects.coin-or.org/CoinHelp
+
+
+DOWNLOADING CGL
+===============
+
+You can obtain the source code for the Cgl package as follow:
+
+   Download the most recent tarball from 
+   http://www.coin-or.org/download/source/Cgl. Its name should be
+   Cgl-x.y.x.tgz where x, y, and z are three numbers.
+
+   Extract the code, for example, with
+
+   gunzip Cgl-x.y.z.tgz
+   tar xvf Cgl-x.y.z.tar
+
+   (Here "x.y.z" is of course replaced by the string in the
+   tarball you downloaded.)
+
+   To match the description in the remainder of this installation file,
+   rename the directory "Cgl-x.y" to "coin-Cgl" using
+
+   mv Cgl-x.y coin-Cgl
+
+
+More detailed download instructions can be found at
+
+   https://projects.coin-or.org/CoinHelp
+
+
+
+CONFIGURATION OF CGL
+====================
+
+Go into the directory 'build' where you want to install Cgl.  There, type
+
+   coin-Cgl/configure
+
+Note that you might have to specify additional options, in case you
+don't want to use the default choices that configure makes (e.g.,
+compilers).  Please visit
+
+   https://projects.coin-or.org/CoinHelp
+
+and the Cgl Trac page for more information.
+
+If everything went fine, you will see at the end of the output
+
+   "Main configuration of Cgl successful"
+
+
+COMPILATION AND INSTALLATION
+============================
+
+In the directory 'build':
+
+1. Compile the code by typing
+
+   make
+
+2. To test if the code works, type (this is optional)
+
+   make test
+
+   The typical output of the test is available from the Cgl Trac page.
+
+3. To install the code, type
+
+   make install
+
+   The executables are installed in build/bin, the libraries in
+   build/lib and the header files in build/include.
+
+More information on the compilation and installation can be found on 
+the Cgl Trac page and at
+
+   https://projects.coin-or.org/CoinHelp
+
+
+DOCUMENTATION
+=============
+
+If you have Doxygen available, you can create the html documentation 
+by typing
+
+   make doxydoc
+
+in the directory 'build'. Then open the file 
+
+   coin-Cgl/doxydoc/html/index.html 
+
+with a browser. Note that this creates the documentation for all the
+projects in the package. If you prefer to generate the documentation 
+only for a subset of these projects, you can edit the file 
+  
+   coin-Cgl/doxydoc/doxygen.conf 
+
+to exclude directories (using the EXCLUDE variable, for example).
+
+If Doxygen is not available, the html documentation is available at:
+
+   http://www.coin-or.org/download/source/Cgl
+
+
+USING THE LIBRARIES
+===================
+
+Now you can link your own code with the installed libraries.  You can
+find examples in the
+
+   coin-Cgl/Cgl/examples/
+
+subdirectory, see also the information at
+
+   https://projects.coin-or.org/CoinHelp
+
+

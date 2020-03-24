@@ -1,0 +1,10 @@
+prefix=/home/mustafa.vora/minotaur/third-party
+libdir=/home/mustafa.vora/minotaur/third-party/minotaur-0.2.3-third-party-src/cbc-2.10.2/build/Osi/src/Osi
+
+Name: Osi
+Description: COIN-OR Open Solver Interface
+URL: https://projects.coin-or.org/Osi
+Version: 0.108.4
+Libs: ${libdir}/libOsi.la 
+Cflags: -I/home/mustafa.vora/minotaur/third-party/minotaur-0.2.3-third-party-src/cbc-2.10.2/Osi/Osi/src/Osi -I/home/mustafa.vora/minotaur/third-party/minotaur-0.2.3-third-party-src/cbc-2.10.2/build/Osi/src/Osi
+Requires: coinutils 

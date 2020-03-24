@@ -1,0 +1,10 @@
+prefix=/home/mustafa.vora/minotaur/third-party
+libdir=/home/mustafa.vora/minotaur/third-party/minotaur-0.2.3-third-party-src/cbc-2.10.2/build/CoinUtils/src
+
+Name: CoinUtils
+Description: COIN-OR Utilities
+URL: https://projects.coin-or.org/CoinUtils
+Version: 2.11.2
+Libs: ${libdir}/libCoinUtils.la -lbz2 -lz -llapack -lblas -lm 
+Cflags: -I/home/mustafa.vora/minotaur/third-party/minotaur-0.2.3-third-party-src/cbc-2.10.2/CoinUtils/CoinUtils/src -I/home/mustafa.vora/minotaur/third-party/minotaur-0.2.3-third-party-src/cbc-2.10.2/build/CoinUtils/src
+Requires: 

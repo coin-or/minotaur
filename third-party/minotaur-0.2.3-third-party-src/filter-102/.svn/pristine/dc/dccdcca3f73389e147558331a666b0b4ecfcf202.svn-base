@@ -1,0 +1,574 @@
+Cut here >>>>>>>>>>>>>>>>>>>>
+Christen this file TreeHandler.f
+
+c     *****************************************************************
+c     Routines for handling branch--and--bound tree
+c     =============================================
+c     * addtostack     : add problem to the stack
+c     * exfromstack    ; remove a problem from the stack
+c     * stripstack     : remove redundant entries from stack
+c     * reorderstack   : reorder the stack
+c     * lbdonstack     : find global lower bound by looking at nodes
+c     *****************************************************************
+
+      subroutine addtostack(nstack,nstackmax,n,m,nivar,ivar,pstack,
+     .     problm,l,e,bli,bui,bl,bu,xStack,x,lamStack,lam,varno,bvar,
+     .     fractns,fract,lowerbd,estimate,nproblm,ifail)
+
+c     ------------------------------------------------------------------
+c     Purpose : add a new problem to a LIFO stack in MINLP branch-and-bound
+c
+c     Date of last change   : 01 / 10 / 97
+c
+c     Parameter list:
+c     ==============
+c        nstack     - no of entries in stack (>= 0 when called)
+c        nivar      - no of integer var
+c        n          - no of variables
+c        m          - no of linear/nonlinear c/s
+c        ivar       - indices of integer variables 
+c        pstack     - pointer to problems on stack (to access the lists)
+c        problm     - problem indices
+c        l          - list of lower bounds
+c        e          - list of estimates
+c        bli, bui   - list of lower/upper bounds on integer variables
+c        bl, bu     - lower/upper bounds on new problem
+c        xStack     - variable values of problems on stack
+c        x          - variable values of problem most recently solved
+c        lamStack   - multiplier of problems on stack
+c        lam        - multiplier of problem most recently solved
+c        varno      - list of indeces of branching variable (<0 for SOS)
+c        bvar       - index of branching variable (<0 for SOS)
+c        fractns    - list of fractionals for pseudo-costs
+c        fract      - fractional part
+c        lowerbd    - lower bound on soln of new problem
+c        estimate   - estimate on soln of new problem
+c        nproblm    - problem counter
+c
+c     calls: no other subroutines
+c     ------------------------------------------------------------------
+
+      implicit none
+
+c     declaration of passed parameters - scalars
+      integer nstack, nivar, n, nstackmax, ifail, nproblm, m, bvar
+      double precision    lowerbd, estimate, fract
+      
+c     declaration of passed parameters - arrays
+      integer pstack(nstackmax), ivar(nivar), problm(nstackmax), 
+     .     varno(nstackmax)
+      double precision    l(nstackmax), bli(nstackmax,nivar), 
+     .        bui(nstackmax,nivar), bl(n), bu(n), e(nstackmax), 
+     .        lamStack(nstackmax,n+m), lam(n+m), xStack(nstackmax,n),
+     .        x(n), fractns(nstackmax)
+
+c     declaration of internal variables - scalars
+      integer i
+
+c     declaration of statement functions
+      logical stackisfull
+      stackisfull (nstack) = nstack .ge. nstackmax
+
+c     ======================== procedure body ==========================
+
+c     ... check whether the stack is already full and return if it is
+      if (stackisfull(nstack)) then
+         ifail = 11
+      else
+c        ... increase nstack by one, as one problem is added
+         nstack = nstack + 1
+c        ... put lower bound, bounds and ... onto stack
+         problm(pstack(nstack))  = nproblm
+         l(pstack(nstack))       = lowerbd
+         e(pstack(nstack))       = estimate
+         fractns(pstack(nstack)) = fract
+         varno(pstack(nstack))   = bvar
+         do i=1,nivar
+            bli(pstack(nstack),i) = bl(ivar(i))
+            bui(pstack(nstack),i) = bu(ivar(i))
+         enddo
+         do i=1,n+m
+            lamStack(pstack(nstack),i) = lam(i)
+         enddo
+         do i=1,n
+            xStack(pstack(nstack),i) = x(i)
+         enddo
+      endif
+
+      return
+      end
+
+c     ******************************************************************
+
+      subroutine exfromstack(nstack,nstackmax,nivar,n,m,l,e,bli,bui,bl,
+     .     bu,xStack,x,lamStack,lam,pstack,problm,varno,bvar,fractns,
+     .     fract,ivar,lowerbd,estimate,problmno)
+
+c     ------------------------------------------------------------------
+c     Purpose : extract the top problem from a LIFO stack (in MIQP 
+c               branch-and-bound
+c
+c               NB: NO check, whether stack is empty !!!!
+c                   This is guaranteed from the main program.
+c
+c     Date of last change   : 01 / 10 / 97
+c
+c     Parameter list:
+c     ==============
+c        nstack     - no of entries in stack (>= 0 when called)
+c        nstackmax  - max no of entries in stack and dim of vectors
+c        nivar      - no of integer var
+c        n          - no of variables
+c        ivar       - indices of integer variables 
+c        pstack     - pointer to problems on stack (to access the lists)
+c        problm     - problem no of problems on stack
+c        varno      - list of indeces of branching variable (<0 for SOS)
+c        bvar       - index of branching variable (<0 for SOS)
+c        l          - list of lower bounds
+c        e          - list of estimates
+c        bli, bui   - list of lower/upper bounds on integer variables
+c        bl, bu     - lower/upper bounds on new problem (var   o n l y)
+c        lamStack   - multiplier of problems on stack
+c        lam        - multiplier of problem most recently solved
+c        lowerbd    - lower bound on soln of new problem
+c        problmno   - identifier of problem extracted
+c        fract      - fractional part
+c        lowerbd    - lower bound on soln of new problem
+c
+c     calls: no other subroutines
+c     ------------------------------------------------------------------
+
+      implicit none
+
+c     declaration of passed parameters - scalars
+      integer nstack, nstackmax, nivar, n, problmno, m, bvar
+      double precision   lowerbd, estimate, fract
+
+c     declaration of passed parameters - arrays
+      integer pstack(nstackmax), ivar(nivar), problm(nstackmax),
+     .     varno(nstackmax)
+      double precision    l(nstackmax), bli(nstackmax,nivar), 
+     .        bui(nstackmax,nivar), 
+     .        bl(n), bu(n), e(nstackmax), lamStack(nstackmax,n+m), 
+     .        lam(n+m), xStack(nstackmax,n), x(n), fractns(nstackmax)
+
+c     declaration of internal variables - scalars
+      integer i
+
+c     ======================== procedure body ==========================
+
+c     ... take lower bound, bounds and ... from stack
+      lowerbd   = l(pstack(nstack))
+      estimate  = e(pstack(nstack))
+      fract     = fractns(pstack(nstack))
+      problmno  = problm(pstack(nstack))
+      bvar      = varno(pstack(nstack))
+      do i=1,nivar
+         bl(ivar(i)) = bli(pstack(nstack),i)
+         bu(ivar(i)) = bui(pstack(nstack),i)
+      enddo
+      do i=1,n+m
+         lam(i) = lamStack(pstack(nstack),i)
+      enddo
+      do i=1,n
+         x(i) = xStack(pstack(nstack),i)
+      enddo
+
+c     ... reduce nstack by one, as one problem has been extracted
+      nstack = nstack - 1
+
+      return
+      end
+
+c     ******************************************************************
+
+      subroutine stripstack(nstack,nstackmax,pstack,problm,lbd,fstar,
+     .                      iprint,nout)
+
+c     ------------------------------------------------------------------
+c     Purpose : Remove all problems from stack which have an lower bnd
+c               (lbd) greater than the current best integer feasible sol
+c               (fstar), which provides an upper bound
+c
+c     Date of last change   : 01 / 10 / 97
+c
+c     Parameter list:
+c     ==============
+c
+c        nstack     - length of stack
+c        nstackmax  - max length of stack
+c        pstack     - pointer to problems on stack (top - pstack(nstack))
+c        lbd        - lower bounds of problems on stack
+c        fstar      - value of current best integer feasible solution
+c        iprint     - printing flag
+c        nout       - output channel
+c
+c     calls: no other subroutines
+c     ------------------------------------------------------------------
+
+      implicit none
+
+c     declaration of common block for tolerance and infinity
+      double precision   MIopttol, eps, infty
+      common /cTolInf/   MIopttol, eps, infty
+
+c     declaration of passed parameters - scalars
+      integer nstack, iprint, nout, nstackmax
+      double precision    fstar
+
+c     declaration of passed parameters - arrays
+      integer pstack(nstackmax), problm(nstackmax)
+      double precision    lbd(nstackmax)
+
+c     declaration of internal variables - scalars
+      integer i, i0
+
+c     ======================== procedure body ==========================
+
+      do i=nstack,1,-1
+c        ... remove problem from stack, if its lower bound >= fstar
+         if (lbd(pstack(i)).gt.(fstar-MIopttol)) then
+            if (iprint.ge.2) then
+               write(nout,1001) 'strip stack: remove problem No ',
+     .                          problm(pstack(i)),'with lower bound ',
+     .                          lbd(pstack(i))
+            endif
+c           ... exchange  pstack(i) <-> pstack(nstack)
+            i0             = pstack(i)
+            pstack(i)      = pstack(nstack)
+            pstack(nstack) = i0
+            nstack         = nstack - 1
+         endif
+      enddo
+      if (iprint.ge.2) then
+         write(nout,*) '   No. of problems remaining on stack = ',nstack
+      endif
+
+      return
+ 1001 format (3X,A,I6,2X,A,G12.6)
+      end
+
+c     ******************************************************************
+
+      subroutine reorderstack(n,nivar,tSOS1,nSOS1,nstack,nstackmax,
+     .     pstack,problm,est,lbd,x,ivar,pSOS1,iSOS1,rSOS1,pcU,pcD,
+     .     pcSOSU,pcSOSD,iprint,nout)
+
+c     ------------------------------------------------------------------
+c     Purpose : Re-order the stack to implement the branch-and-bound STRATEGY
+c     
+c     (A) LIFO
+c     (B) backtrack
+c         (a) always according to NodeSelect (NoInfNodes=0)
+c         (b) only if IFS found, or maximum infeasibility reached
+c
+c     Date of last change   : 08 / 12 / 09
+c
+c     Parameter list:
+c     ==============
+c
+c        nstack     - length of stack
+c        nstackmax  - max length of stack
+c        pstack     - pointer to problems on stack (top - pstack(nstack))
+c        problm     - problemno ( identifier)
+c        est        - estimates of problems on stack
+c        iprint     - printing flag
+c        nout       - output channel
+c
+c     calls: no other subroutines
+c     ------------------------------------------------------------------
+
+      implicit none
+
+c     ... commnon blocks
+      logical             ifs_found
+      common /cifs_found/ ifs_found
+      integer            BranchRule, NodeSelect, ReliabilityThreshold, 
+     .                   QPIters, NoInfNodes
+      common /cBnBRules/ BranchRule, NodeSelect, ReliabilityThreshold, 
+     .                   QPIters, NoInfNodes
+
+c     ... declaration of common block for tolerance and infinity
+      double precision MIopttol, eps, infty
+      common /cTolInf/ MIopttol, eps, infty
+
+c     ... declaration of passed parameters - scalars
+      integer nstack, iprint, nout, nstackmax, tSOS1, nSOS1, n, nivar
+
+c     ... declaration of passed parameters - arrays
+      integer pstack(nstackmax), problm(nstackmax), pSOS1(tSOS1+1), 
+     .     iSOS1(nSOS1), ivar(nivar)
+      double precision est(nstackmax), lbd(nstackmax), rSOS1(nSOS1), 
+     .     x(n), pcU(n), pcD(n), pcSOSU(tSOS1), pcSOSD(tSOS1)
+
+c     ... declaration of internal variables
+      integer inf_nodes
+      data inf_nodes /0/
+
+c     ======================== procedure body ==========================
+
+c     ... no re-ordering for LIFO
+      if (NodeSelect.gt.1) then
+
+c        ... only re-order stack, if IFS found, or after number of infeasible nodes
+         if ((ifs_found).or.(inf_nodes.ge.NoInfNodes)) then
+            if (iprint.ge.2) then
+               write(nout,1000) 'No. of consecutive infeasible nodes =',
+     .              inf_nodes,' RE-ORDER'
+            endif
+c           ... reset counter of consecutive infeasible nodes
+            inf_nodes = 0
+            if (NodeSelect.eq.3) then
+c              ... best bound
+               call BestBound(nstack,nstackmax,pstack,problm,lbd,iprint,
+     .              nout)
+            else
+c              ... minimum estimate or expected solution
+               call BestEst(nstack,nstackmax,pstack,problm,est,iprint,
+     .              nout)
+            endif
+         else
+            inf_nodes = inf_nodes + 1
+            if (iprint.ge.2) then
+               write(nout,1001)'Do NOT re-order stack: No integer soln',
+     .              ' yet; # inf. nodes =',inf_nodes
+               
+            endif
+         endif
+      endif
+
+      return
+ 1000 format (3X,A,I6,2X,A,G12.6)
+ 1001 format (3X,A,A,I6)
+      end
+
+c     ******************************************************************
+
+      subroutine BestEst(nstack,nstackmax,pstack,problm,est,iprint,nout)
+
+c     ------------------------------------------------------------------
+c     Purpose : Find node with best estimate
+c
+c     Date of last change   : 08 / 12 / 09
+c
+c     Parameter list:
+c     ==============
+c
+c        nstack     - length of stack
+c        nstackmax  - max length of stack
+c        pstack     - pointer to problems on stack (top - pstack(nstack))
+c        problm     - problemno ( identifier)
+c        est        - estimates of problems on stack
+c        iprint     - printing flag
+c        nout       - output channel
+c
+c     calls: no other subroutines
+c     ------------------------------------------------------------------
+
+      implicit none
+
+c     ... declaration of common block for tolerance and infinity
+      double precision MIopttol, eps, infty
+      common /cTolInf/ MIopttol, eps, infty
+
+c     ... declaration of passed parameters - scalars
+      integer nstack, iprint, nout, nstackmax
+
+c     ... declaration of passed parameters - arrays
+      integer pstack(nstackmax), problm(nstackmax)
+      double precision    est(nstackmax)
+
+c     ... declaration of internal variables - scalars
+      integer ntop, i0, i, problmno
+      double precision    minest
+
+c     ======================== procedure body ==========================
+
+c     ... search through stack for problem with smallest estimate
+      i0 = nstack
+      minest = infty
+      do i=1,nstack
+         if (est(pstack(i)) .lt. minest) then
+            minest   = est(pstack(i))
+            problmno = problm(pstack(i))
+            ntop     = pstack(i)
+            i0       = i
+         endif
+      enddo
+
+c     ... place problem with smallest estimate on the top of the stack
+      if (iprint.ge.2) then
+         write(nout,1000) 're-order stack: new top problem No ',
+     .        problmno, 'with estimate ' , minest
+      endif
+
+      i              = pstack(nstack)
+      pstack(nstack) = ntop
+      pstack(i0)     = i
+      
+      return
+ 1000 format (3X,A,I6,2X,A,G12.6)
+ 1001 format (3X,A,A,I6)
+      end
+
+c     ******************************************************************
+
+      subroutine BestBound(nstack,nstackmax,pstack,problm,lbd,iprint,
+     .     nout)
+
+c     ------------------------------------------------------------------
+c     Purpose : Re-order and find best lower bound on stack
+c
+c     Date of last change   : 08 / 12 / 09
+c
+c     Parameter list:
+c     ==============
+c
+c        nstack     - length of stack
+c        nstackmax  - max length of stack
+c        pstack     - pointer to problems on stack (top - pstack(nstack))
+c        problm     - problemno ( identifier)
+c        est        - estimates of problems on stack
+c        iprint     - printing flag
+c        nout       - output channel
+c
+c     calls: no other subroutines
+c     ------------------------------------------------------------------
+
+      implicit none
+
+c     ... declaration of common block for tolerance and infinity
+      double precision MIopttol, eps, infty
+      common /cTolInf/ MIopttol, eps, infty
+
+c     ... declaration of passed parameters - scalars
+      integer nstack, iprint, nout, nstackmax
+
+c     ... declaration of passed parameters - arrays
+      integer pstack(nstackmax), problm(nstackmax)
+      double precision    lbd(nstackmax)
+
+c     ... declaration of internal variables - scalars
+      integer ntop, i0, i, problmno
+      double precision    minlbd
+
+c     ======================== procedure body ==========================
+
+c     ... search through stack for problem with lowest bound
+      i0 = nstack
+      minlbd = infty
+      do i=1,nstack
+         if (lbd(pstack(i)) .lt. minlbd) then
+            minlbd   = lbd(pstack(i))
+            problmno = problm(pstack(i))
+            ntop     = pstack(i)
+            i0       = i
+         endif
+      enddo
+c     ... place problem with smallest estimate on the top of the stack
+      if (iprint.ge.2) then
+         write(nout,1000) 're-order stack: new top problem No ',
+     .        problmno, 'with lowest bound ' , minlbd
+      endif
+      i              = pstack(nstack)
+      pstack(nstack) = ntop
+      pstack(i0)     = i
+
+      return
+ 1000 format (3X,A,I6,2X,A,G12.6)
+      end
+
+c     ******************************************************************
+
+      subroutine lbdonstack (nstack, nstackmax, pstack, lbd, lbdtree)
+
+c     ------------------------------------------------------------------
+c     Purpose : Find lower bound by considering all problems on the stack
+c     Date of file creation : 01 / 02 / 96
+c     Date of last change   : 01 / 02 / 96
+c
+c     Parameter list:
+c     ==============
+c
+c        nstack  - length of stack
+c        nstackmax  - max length of stack
+c        pstack  - pointer to problems on stack (top - pstack(nstack))
+c        lbd     - lower bounds of problems on stack
+c        lbdtree - smallest lower bound
+c
+c     calls: no other subroutines
+c     ------------------------------------------------------------------
+
+      implicit none
+
+c     declaration of passed parameters - scalars
+      integer nstack, nstackmax
+      double precision    lbdtree
+
+c     declaration of passed parameters - arrays
+      integer pstack(nstackmax)
+      double precision    lbd(nstackmax)
+
+c     declaration of internal variables - scalars
+      integer i
+
+c     ======================== procedure body ==========================
+
+c     ... search through stack for problem with smallest lower bound
+      lbdtree = lbd(pstack(1))
+      do i=2,nstack
+         if (lbd(pstack(i)) .lt. lbdtree) then
+            lbdtree = lbd(pstack(i))
+         endif
+      enddo
+
+      return
+      end
+
+c     ******************************************************************
+
+      subroutine writestack(nout,nstack,nstackmax,pstack,problm,lbd,e)
+
+c     ------------------------------------------------------------------
+c     Purpose : Print the stack (use with care)
+c     Date of file creation : 04 / 06 / 2010
+c     Date of last change   : 04 / 06 / 2010
+c
+c     Parameter list:
+c     ==============
+c
+c        nstack  - length of stack
+c        nstackmax  - max length of stack
+c        pstack  - pointer to problems on stack (top - pstack(nstack))
+c        lbd     - lower bounds of problems on stack
+c        lbdtree - smallest lower bound
+c
+c     calls: no other subroutines
+c     ------------------------------------------------------------------
+
+      implicit none
+
+c     declaration of passed parameters - scalars
+      integer nstack, nstackmax, nout
+
+c     declaration of passed parameters - arrays
+      integer pstack(nstackmax), problm(nstackmax)
+      double precision    lbd(nstackmax), e(nstackmax)
+
+c     declaration of internal variables - scalars
+      integer i, pi
+
+c     ======================== procedure body ==========================
+
+c     ... write out stack with lower bounds
+      write(nout,*)'i,pstack,problm,lbd,est'
+      do i=1,nstack
+         pi = pstack(i)
+         write(nout,*) i,pi,problm(pi),lbd(pi),e(pi)
+      enddo
+
+      return
+      end
+
+c     ************************ E N D   O F   F I L E *******************
+

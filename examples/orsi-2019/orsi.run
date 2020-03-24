@@ -1,0 +1,10 @@
+reset;
+model packing_max_num.mod;
+data packing_max_num.dat;
+option solver glob;
+#option solver baron;
+option presolve 0;
+option glob_options '-display_presolved_problem 1 -cgtoqf 1 -nlp_engine IPOPT';
+#option bnb_options '--display_presolved_problem 1 --nlp_engine IPOPT';
+solve;
+display _varname, _var;

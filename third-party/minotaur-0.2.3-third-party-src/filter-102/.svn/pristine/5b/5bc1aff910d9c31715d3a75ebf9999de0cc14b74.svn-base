@@ -1,0 +1,6 @@
+#! /bin/csh -f
+
+foreach f ($argv)
+perl -pi -e 's/DOUBLE\ PRECISION/real*16/g' $f
+echo $f "changed"
+end

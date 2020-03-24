@@ -1,0 +1,3 @@
+20170722
+  mpec_adj.c: fix a bug with ASL_cc_simplify (in the flags argument to
+.nl readers) that bit on problems with integer (or binary) variables.

@@ -1,0 +1,2608 @@
+Christen this file branch.f
+
+c     *****************************************************************
+c     Auxiliary routines for nonlinear branch--and--bound
+c     ===================================================
+c     * bdecision      : choose between different branching rules
+c     * MaxFrac        : maximum fractional branching
+c     * StrongBranch   : strong branching
+c     * ApproxStrong   : approximate strong branching
+c     * SetUpQP        : set-up QP for approximate strong branching
+c     * SolveQP        : solve QPs in approximate strong branching
+c     * PseudoCost     : pseudo-cost branching
+c     * Reliability    : reliability branching
+c     * InitPC         : initialize pseudo costs
+c     * UpdatePC       : update pseudo costs
+c     * PrintPC        : print pseudo-costs
+c     * StrongBranchNLP: solve a strong branching NLP
+c     * FindSOS1Frac   : find fractional special-ordered set of type 1
+c     *****************************************************************
+
+      subroutine bdecision(ntopp,n,x,lbdplus,lbdminus,estplus,estminus,
+     .     ibranch,xfract,marker,pvar,nSOS1,tSOS1,pSOS1,iSOS1,rSOS1,bl,
+     .     bu,pcU,pcD,npcU,npcD,pcSOSU,pcSOSD,npcSOSU,npcSOSD,first,
+     .     nout,m,kmax,maxa,maxf,mlp,maxwk,maxiwk,ifail,rho,c,fdash,
+     .     fmin,s,a,la,ws,lws,lam,cstype,user,iuser,xdash,ldash,sbu,
+     .     max_NLP,istat,rstat,iprint,siter)
+
+c     ------------------------------------------------------------------
+c     Purpose : Select branching rule from list.
+c
+c     Date of last change   : 15 / 07 / 2009
+c
+c     Parameter list:
+c     ==============
+c
+c     ntopp            - no of integer variables that are not integer feasible
+c                        of top priority
+c     n                - no of variables
+c     x                - variables
+c     lbdplus,lbdminus - lower bound for branching
+c     estplus,estminus - estimates for branchning
+c     ibranch          - index of branching variable (< 0 for SOS1 variable)
+c     xfract           - fractional part of SOS1
+c     marker           - marker where to branch SOS1
+c     pvar             - pointer to variables with highest priority
+c                        ii = pvar(i) < 0 means that ii points to SOS1
+c     nSOS1            - number of variables that are elements of a SOS1 set
+c     tSOS1            - number of SOS1 sets
+c     pSOS1            - (tSOS1+1) pointers to start of each SOS1 [INTEGER]
+c     iSOS1            - (nSOS1) index of each integer variable in SOS1 
+c                        [INTEGER] ith indices are iSOS1(pSOS1(i):pSOS1(i+1))
+c     rSOS1            - (nSOS1) reference row of SOS1, stored as iSOS1 [double precision]
+c     bl / bu          - lower / upper bounds on variables in QP
+c     pcU / pcD        - pseudo-cost for Up/Down branching
+c     pcSOSU / pcSOSD  - pseudo-cost for Up/Down branching (for SOS variables)
+c     first            - 'P-' or 'P+' depending which problem is to be
+c                        placed first on the stack
+c
+c     calls: no other subroutines
+c     ------------------------------------------------------------------
+
+      implicit none
+
+c     declaration of common block for tolerance, infinity & BB rules
+      double precision             MIopttol, eps, infty
+      common /cTolInf/ MIopttol, eps, infty
+      integer            BranchRule, NodeSelect, ReliabilityThreshold, 
+     .                   QPIters, NoInfNodes
+      common /cBnBRules/ BranchRule, NodeSelect, ReliabilityThreshold, 
+     .                   QPIters, NoInfNodes
+
+c     ... declaration of passed parameters - scalars
+      integer ntopp, ibranch, n, m, nout, nSOS1, tSOS1, marker, kmax,
+     .        maxa, maxf, mlp, maxwk, maxiwk, ifail, max_NLP, iprint,
+     .        siter
+      double precision    lbdplus, lbdminus, estplus, estminus, xfract,
+     .        rho, fdash, fmin
+      character*2 first
+
+c     ... declaration of passed parameters - arrays
+      integer pvar(ntopp), pSOS1(tSOS1+1), iSOS1(nSOS1), iuser(*), 
+     .        istat(14), lws(*), la(0:*), npcU(n), npcD(n), 
+     .        npcSOSU(tSOS1), npcSOSD(tSOS1)
+      double precision    x(n), bl(n), bu(n), rSOS1(nSOS1), pcU(n),
+     .     pcD(n), pcSOSU(tSOS1), pcSOSD(tSOS1), user(*),
+     .        a(*), c(m), s(n+m), ws(*), lam(n+m), xdash(n), ldash(n+m),
+     .        sbu(n), rstat(*)
+      character cstype(m)
+
+c     ... declaration of internal parameters
+      integer ii, jj, j0, j1, j, r
+      double precision piplus, piminus, fract, atx, etx, lr, ur
+      logical found
+
+c     ======================== procedure body ==========================
+
+      if ((BranchRule.eq.1).or.(ntopp.eq.1)) then
+         call MaxFrac(ntopp,n,x,lbdplus,lbdminus,estplus,estminus,
+     .        ibranch,xfract,marker,pvar,nSOS1,tSOS1,pSOS1,iSOS1,
+     .        rSOS1,bl,bu,first,nout)
+      elseif (BranchRule.eq.2) then
+         call StrongBranch (ntopp,n,x,lbdplus,lbdminus,estplus,
+     .        estminus,ibranch,xfract,marker,pvar,nSOS1,tSOS1,pSOS1,
+     .        iSOS1,rSOS1,bl,bu,first,nout,m,kmax,maxa,maxf,mlp,
+     .        maxwk,maxiwk,ifail,rho,c,fdash,fmin,s,a,la,ws,lws,lam,
+     .        cstype,user,iuser,xdash,ldash,sbu,max_NLP,istat,rstat,
+     .        iprint,siter)
+      elseif (BranchRule.eq.3) then
+         call ApproxStrong (ntopp,n,x,lbdplus,lbdminus,estplus,
+     .        estminus,ibranch,xfract,marker,pvar,nSOS1,tSOS1,pSOS1,
+     .        iSOS1,rSOS1,bl,bu,first,nout,m,kmax,maxa,maxf,mlp,
+     .        maxwk,maxiwk,ifail,rho,c,fdash,fmin,s,a,la,ws,lws,lam,
+     .        cstype,user,iuser,xdash,ldash,sbu,max_NLP,istat,rstat,
+     .        iprint,siter)
+      elseif (BranchRule.eq.4) then
+         call PseudoCost(ntopp,n,x,lbdplus,lbdminus,estplus,estminus,
+     .        ibranch,xfract,marker,pvar,nSOS1,tSOS1,pSOS1,iSOS1,
+     .        rSOS1,pcU,pcD,pcSOSU,pcSOSD,bl,bu,first,nout)
+      elseif (BranchRule.eq.5) then
+         call Reliability (ntopp,n,x,lbdplus,lbdminus,estplus,
+     .        estminus,ibranch,xfract,marker,pvar,nSOS1,tSOS1,pSOS1,
+     .        iSOS1,rSOS1,pcU,pcD,npcU,npcD,pcSOSU,pcSOSD,npcSOSU,
+     .        npcSOSD,bl,bu,first,nout,m,kmax,maxa,maxf,mlp,maxwk,
+     .        maxiwk,ifail,rho,c,fdash,fmin,s,a,la,ws,lws,lam,cstype,
+     .        user,iuser,xdash,ldash,sbu,max_NLP,istat,rstat,iprint,
+     .        siter)
+      elseif (BranchRule.eq.6) then
+         call ApproxReliable (ntopp,n,x,lbdplus,lbdminus,estplus,
+     .        estminus,ibranch,xfract,marker,pvar,nSOS1,tSOS1,pSOS1,
+     .        iSOS1,rSOS1,pcU,pcD,npcU,npcD,pcSOSU,pcSOSD,npcSOSU,
+     .        npcSOSD,bl,bu,first,nout,m,kmax,maxa,maxf,mlp,maxwk,
+     .        maxiwk,ifail,rho,c,fdash,fmin,s,a,la,ws,lws,lam,cstype,
+     .        user,iuser,xdash,ldash,sbu,max_NLP,istat,rstat,iprint,
+     .        siter)
+      elseif (BranchRule.eq.0) then
+         call Random (ntopp,n,x,lbdplus,lbdminus,estplus,estminus,
+     .        ibranch,xfract,marker,pvar,nSOS1,tSOS1,pSOS1,iSOS1,
+     .        rSOS1,bl,bu,first,nout)
+      else
+         call MaxFrac (ntopp,n,x,lbdplus,lbdminus,estplus,estminus,
+     .        ibranch,xfract,marker,pvar,nSOS1,tSOS1,pSOS1,iSOS1,
+     .        rSOS1,bl,bu,first,nout)
+      endif
+
+      return
+      end
+
+c     ******************************************************************
+
+      subroutine MaxFrac(ntopp,n,x,lbdplus,lbdminus,estplus,estminus,
+     .                     ibranch,xfract,marker,pvar,nSOS1,tSOS1,pSOS1,
+     .                     iSOS1,rSOS1,bl,bu,first,nout)
+
+c     ------------------------------------------------------------------
+c     Purpose : Implementation of branching (t a c t i c a l) decision
+c               for branch-and-bound procedure. 
+c               Here the following tactic is used:
+c
+c               (i)  choose the branching variable which most 
+c                    violates the integrality restrictions.
+c                    i.e. find  max(i){min(pi+,pi-)}
+c                    pi+ = int(x(i)+1) - x(i) , pi- = x(i) - int(x(i))
+c      
+c                    SOS1 sets are also used here (pvar(i) < 0 means SOS1)
+c
+c               (c.f. Padberg/Rinaldi (1991) or Barahona et.al. (1989))
+c
+c               For different branching rules just write a different routine.
+c
+c     Date of last change   : 18 / 02 / 99
+c
+c     Parameter list:
+c     ==============
+c
+c     ntopp            - no of integer variables that are not integer feasible
+c                        of top priority
+c     n                - no of variables
+c     x                - variables
+c     lbdplus,lbdminus - lower bound for branching
+c     estplus,estminus - estimates for branchning
+c     ibranch          - index of branching variable (< 0 for SOS1 variable)
+c     xfract           - fractional part of SOS1
+c     marker           - marker where to branch SOS1
+c     pvar             - pointer to variables with highest priority
+c                        ii = pvar(i) < 0 means that ii points to SOS1
+c     nSOS1            - number of variables that are elements of a SOS1 set
+c     tSOS1            - number of SOS1 sets
+c     pSOS1            - (tSOS1+1) pointers to start of each SOS1 [INTEGER]
+c     iSOS1            - (nSOS1) index of each integer variable in SOS1 
+c                        [INTEGER] ith indices are iSOS1(pSOS1(i):pSOS1(i+1))
+c     rSOS1            - (nSOS1) reference row of SOS1, stored as iSOS1 [double precision]
+c     bl / bu          - lower / upper bounds on variables in QP
+c     first            - 'P-' or 'P+' depending which problem is to be
+c                        placed first on the stack
+c
+c     calls: no other subroutines
+c     ------------------------------------------------------------------
+
+      implicit none
+
+c     declaration of common block for tolerance and infinity
+      double precision             MIopttol, eps, infty
+      common /cTolInf/ MIopttol, eps, infty
+
+c     declaration of passed parameters - scalars
+      integer ntopp, ibranch, n, nout, nSOS1, tSOS1, marker
+      double precision    lbdplus, lbdminus, estplus, estminus, xfract
+      character*2 first
+
+c     declaration of passed parameters - arrays
+      integer pvar(ntopp), pSOS1(tSOS1+1), iSOS1(nSOS1)
+      double precision    x(n), bl(n), bu(n), rSOS1(nSOS1)
+
+c     declaration of internal variables - scalars
+      integer i, ii, j, jj, j0, j1, r
+      double precision    maxi, piplus, piminus, atx, etx, fract, 
+     .        lr, ur
+      logical found
+
+c     ======================== procedure body ==========================
+      
+c     ... initialize maxi
+      maxi = -infty
+
+c     ... initialize lbdplus,lbdminus,estplus,estminus
+      lbdplus  = 0.D0
+      lbdminus = 0.D0
+      estplus  = 0.D0
+      estminus = 0.D0
+
+c     ... find max(i){min(p+,p-)} tactical branching decision
+      do i=1,ntopp
+         ii = pvar(i)
+         if (ii.gt.0) then
+c           ... ii > 0 branch on a variable; compute fractionality
+            piplus  = int(x(ii)+1.D0) - x(ii)
+            piminus = x(ii) - int(x(ii)) 
+            if (piplus.gt.piminus) then
+               if ((abs(piminus-maxi).le.eps)
+     .              .or.(piminus.ge.(maxi+eps))) then
+                  ibranch = ii
+                  xfract  = x(ii)
+                  maxi    = piminus
+                  first   = 'P-'
+               endif
+            else
+               if ((abs(piplus-maxi).le.eps)
+     .              .or.(piplus.ge.(maxi+eps))) then
+                  ibranch = ii
+                  xfract  = x(ii)
+                  maxi    = piplus
+                  first   = 'P+'
+               endif
+            endif
+         else
+c           ... ii < 0 branch on a SOS1 set: compute fractionality
+            ii = - ii
+            call FindSOS1Frac(ii,r,n,nSOS1,tSOS1,fract,found,pSOS1,
+     .           iSOS1,x,rSOS1)
+            if (found) then
+c              ... save max. fractional SOS1 variable for branching
+               fract   = (fract - rSOS1(r)) / (rSOS1(r+1) - rSOS1(r))
+               piplus  = int(fract+1.D0) - fract
+               piminus = fract - int(fract) 
+               if (piplus.gt.piminus) then
+                  if ((abs(piminus-maxi).le.eps)
+     .                 .or.(piminus.ge.(maxi+eps))) then
+                     xfract  = fract
+                     ibranch = -ii
+                     marker  = r
+                     maxi    = piminus
+                     first   = 'P-'
+                  endif
+               else
+                  if ((abs(piplus-maxi).le.eps)
+     .                 .or.(piplus.ge.(maxi+eps))) then
+                     xfract  = fract
+                     ibranch = -ii
+                     marker  = r
+                     maxi    = piplus
+                     first   = 'P+'
+                  endif
+               endif
+            endif
+         endif
+      enddo
+
+      return
+      end
+
+c     ******************************************************************
+
+      subroutine StrongBranch (ntopp,n,x,lbdplus,lbdminus,estplus,
+     .     estminus,ibranch,xfract,marker,pvar,nSOS1,tSOS1,pSOS1,
+     .     iSOS1,rSOS1,bl,bu,first,nout,m,kmax,maxa,maxf,mlp,maxwk,
+     .     maxiwk,ifail,rho,c,fdash,fmin,s,a,la,ws,lws,lam,cstype,
+     .     user,iuser,xdash,ldash,sbu,max_NLP,istat,rstat,iprint,siter)
+
+c     ------------------------------------------------------------------
+c     Purpose : Implementation of strong branching for branch-and-bound. 
+c
+c     Date of last change   : 21 / 07 / 2009
+c
+c     Parameter list:
+c     ==============
+c
+c     ntopp            - no of integer variables that are not integer feasible
+c                        of top priority
+c     n                - no of variables
+c     x                - variables
+c     lbdplus,lbdminus - lower bound for branching
+c     estplus,estminus - estimates for branchning
+c     ibranch          - index of branching variable (< 0 for SOS1 variable)
+c     xfract           - fractional part of SOS1
+c     marker           - marker where to branch SOS1
+c     pvar             - pointer to variables with highest priority
+c                        ii = pvar(i) < 0 means that ii points to SOS1
+c     nSOS1            - number of variables that are elements of a SOS1 set
+c     tSOS1            - number of SOS1 sets
+c     pSOS1            - (tSOS1+1) pointers to start of each SOS1 [INTEGER]
+c     iSOS1            - (nSOS1) index of each integer variable in SOS1 
+c                        [INTEGER] ith indices are iSOS1(pSOS1(i):pSOS1(i+1))
+c     rSOS1            - (nSOS1) reference row of SOS1, stored as iSOS1 [double precision]
+c     bl / bu          - lower / upper bounds on variables in QP
+c     first            - 'P-' or 'P+' depending which problem is to be
+c                        placed first on the stack
+c
+c     calls: no other subroutines
+c     ------------------------------------------------------------------
+
+      implicit none
+
+c     declaration of constants
+      double precision  mu
+      parameter        (mu = 1.D0/6.D0)
+
+c     declaration of common block for tolerance and infinity
+      double precision             MIopttol, eps, infty
+      common /cTolInf/ MIopttol, eps, infty
+
+c     declaration of passed parameters - scalars
+      integer ntopp, ibranch, n, nout, nSOS1, tSOS1, marker, m, kmax,
+     .        maxa, maxf, mlp, maxwk, maxiwk, ifail, max_NLP, iprint,
+     .        siter
+      double precision    xfract, rho, fdash, fmin,
+     .        lbdplus, lbdminus, estplus, estminus
+      character*2 first
+
+c     declaration of passed parameters - arrays
+      integer pvar(ntopp), pSOS1(tSOS1+1), iSOS1(nSOS1), iuser(*), 
+     .        istat(14), lws(*), la(0:*)
+      double precision    x(n), bl(n), bu(n), rSOS1(nSOS1), user(*),
+     .        a(*), c(m), s(n+m), ws(*), lam(n+m), xdash(n), ldash(n+m),
+     .        sbu(n), rstat(*)
+      character cstype(m)
+
+c     declaration of internal variables - scalars
+      integer i, ii, j, jj, ij, j0, j1, r, NLPprint, istart(2), iend(2), 
+     .        ik
+      double precision    est(2), atx, etx, fract, hc, lr, ur, TSTART, 
+     .        TEND, buii, blii, buiic, bliic, fp, MaxScore, score, diff
+      logical found, fixed
+
+c     declaration of functions
+      double precision    seconds
+      logical NLPerror
+      NLPerror(ifail) = ifail.ne.0
+
+c     ======================== procedure body ==========================
+      
+c     ... initialize maxi
+      MaxScore = -1.D20
+      ibranch  = 0
+      NLPprint = max ( 0 , iprint - 3 )
+
+c     ... initialize lbdplus,lbdminus,estplus,estminus
+      lbdplus  = 0.D0
+      lbdminus = 0.D0
+      estplus  = 0.D0
+      estminus = 0.D0
+
+c     ... save solution to parent node
+      fp = fdash
+      do i=1,n
+         xdash(i) = x(i)
+         ldash(i) = lam(i)
+      enddo
+      do i=1,m
+         ldash(n+i) = lam(n+i)
+      enddo
+
+c     ... find variable to max{(1-mu)*min(est(1),est(2)) + mu*max(est(1),est(2))}
+      do i=1,ntopp
+         fixed  = .false.
+         ii     = pvar(i)
+         est(1) = 0.D0
+         est(2) = 0.D0
+         if (ii.gt.0) then
+c           ... ii > 0 branch on a variable; solve two NLPs
+            buii  = bu(ii)
+            blii  = bl(ii)
+            buiic = bu(ii)
+            bliic = bl(ii)
+c           ... previous branching may have fixed integers => re-check
+            diff = x(ii) - anint(x(ii))
+            if (diff.gt.eps) then
+               do jj=1,2
+                  if (jj.eq.1) then 
+                     if (x(ii).ge.0.D0) then
+                        bl(ii) = int(x(ii)) + 1.D0
+                        buiic  = int(x(ii))
+                     else
+                        bl(ii) = anint(x(ii))
+                        buiic  = anint(x(ii)) - 1.D0
+                     endif
+                  else
+                     if (x(ii).ge.0.D0) then
+                        bu(ii) = int(x(ii))
+                        bliic  = int(x(ii)) + 1.D0
+                     else
+                        bu(ii) = int(x(ii)) - 1.D0
+                        bliic  = int(x(ii))
+                     endif
+                  endif
+                  call StrongBranchNLP(n,m,kmax,maxa,maxf,mlp,maxwk,
+     .                 maxiwk,ifail,ii,iprint,siter,nout,rho,fdash,fmin,
+     .                 iuser,istat,lws,la,x,bl,bu,user,a,c,s,ws,lam,
+     .                 xdash,ldash,rstat,cstype)
+c                 ... restore bounds
+                  bl(ii) = blii
+                  bu(ii) = buii
+c                 ... one infeasible => fix bounds; two infeasible; fathom parent!
+                  if (NLPerror(ifail)) then
+                     if(iprint.ge.2)write(nout,7001)ii,x(ii),bliic,buiic
+                     fixed = .true.
+c                    ... set complementary bounds ... correctly!!!
+                     if (jj.eq.1) then
+                        bu(ii) = buiic
+                     else
+                        bl(ii) = bliic
+                     endif
+                     goto 200
+                  endif
+c                 ... save changes in f 
+                  est(jj) = fdash - fp
+               enddo
+               fract = x(ii)
+c              ... EXIT if NLP-ifail <> 0
+ 200           continue
+               r = 0
+            endif
+         else
+c           ... ii < 0 branch on a SOS1 set: compute fractionality
+            ii = - ii
+            call FindSOS1Frac(ii,r,n,nSOS1,tSOS1,fract,found,pSOS1,
+     .           iSOS1,x,rSOS1)
+            if (found) then
+               j0 = pSOS1(ii)
+               j1 = pSOS1(ii+1)
+               do j=j0,j1-1
+                  sbu(j) = bu(iSOS1(j))
+               enddo
+c              ... branch up first
+               istart(1) = r+1
+               iend(1)   = j1-1
+               istart(2) = j0
+               iend(2)   = r
+c              ... solve two NLPs
+               do jj=1,2
+                  do j=istart(jj),iend(jj)
+                     bu(iSOS1(j)) = 0.D0
+                  enddo
+                  call StrongBranchNLP(n,m,kmax,maxa,maxf,mlp,maxwk,
+     .                 maxiwk,ifail,-ii,iprint,siter,nout,rho,fdash,
+     .                 fmin,iuser,istat,lws,la,x,bl,bu,user,a,c,s,ws,
+     .                 lam,xdash,ldash,rstat,cstype)
+c                 ... restore bounds
+                  do j=istart(jj),iend(jj)
+                     bu(iSOS1(j)) = sbu(j)
+                  enddo
+c                 ... one infeasible => fix bounds; two infeasible; fathom parent!
+                  if (NLPerror(ifail)) then
+                     if (iprint.ge.2) then
+                        write(nout,7002) ii, r,istart(jj),iend(jj)
+                     endif
+                     fixed = .true.
+c                    ... fix bounds the right way
+                     if (jj.eq.1) then
+                        do j=istart(2),iend(2)
+                           bu(iSOS1(j)) = 0.D0
+                        enddo
+                     else
+                        do j=istart(1),iend(1)
+                           bu(iSOS1(j)) = 0.D0
+                        enddo
+                     endif
+                  else
+c                    ... save changes in f 
+                     est(jj) = fdash - fp
+                  endif
+               enddo
+            endif
+            ii = - ii
+         endif
+         if (.not.fixed) then
+            score = (1-mu)*min(est(1),est(2)) + mu*max(est(1),est(2))
+            if (score .gt. MaxScore) then
+               lbdplus  = est(1)
+               lbdminus = est(2)
+               estplus  = est(1)
+               estminus = est(2)
+               marker   = r
+               ibranch  = ii
+               xfract   = fract
+               MaxScore = score   
+               if (est(1).gt.est(2)) then
+                  first   = 'P+'
+               else
+                  first   = 'P-'
+               endif
+            endif
+         endif
+      enddo
+
+      return
+ 7001 format('SB-NLP infeasible x(',I6,')=',G7.1,' ... fix at',2G7.1)
+ 7002 format('SB-NLP infeasible SOS ',I6,' at marker ', 3I6)
+      end
+
+c     ******************************************************************
+
+      subroutine ApproxStrong (ntopp,n,x,lbdplus,lbdminus,estplus,
+     .     estminus,ibranch,xfract,marker,pvar,nSOS1,tSOS1,pSOS1,
+     .     iSOS1,rSOS1,bl,bu,first,nout,m,kmax,maxa,maxf,mlp,maxwk,
+     .     maxiwk,ifail,rho,c,fdash,fmin,s,a,la,ws,lws,lam,cstype,
+     .     user,iuser,xdash,ldash,sbu,max_NLP,istat,rstat,iprint,siter)
+
+c     ------------------------------------------------------------------
+c     Purpose : Implementation of approx. strong branching for branch-and-bound. 
+c
+c     Date of last change   : 21 / 07 / 2009
+c
+c     Parameter list:
+c     ==============
+c
+c     ntopp            - no of integer variables that are not integer feasible
+c                        of top priority
+c     n                - no of variables
+c     x                - variables
+c     lbdplus,lbdminus - lower bound for branching
+c     estplus,estminus - estimates for branchning
+c     ibranch          - index of branching variable (< 0 for SOS1 variable)
+c     xfract           - fractional part of SOS1
+c     marker           - marker where to branch SOS1
+c     pvar             - pointer to variables with highest priority
+c                        ii = pvar(i) < 0 means that ii points to SOS1
+c     nSOS1            - number of variables that are elements of a SOS1 set
+c     tSOS1            - number of SOS1 sets
+c     pSOS1            - (tSOS1+1) pointers to start of each SOS1 [INTEGER]
+c     iSOS1            - (nSOS1) index of each integer variable in SOS1 
+c                        [INTEGER] ith indices are iSOS1(pSOS1(i):pSOS1(i+1))
+c     rSOS1            - (nSOS1) reference row of SOS1, stored as iSOS1 [double precision]
+c     bl / bu          - lower / upper bounds on variables in QP
+c     first            - 'P-' or 'P+' depending which problem is to be
+c                        placed first on the stack
+c
+c     calls: no other subroutines
+c     ------------------------------------------------------------------
+
+      implicit none
+
+c     declaration of constants
+      double precision  mu
+      parameter        (mu = 1.D0/6.D0)
+
+c     declaration of common block for tolerance and infinity
+      double precision             MIopttol, eps, infty
+      common /cTolInf/ MIopttol, eps, infty
+      integer            BranchRule, NodeSelect, ReliabilityThreshold, 
+     .                   QPIters, NoInfNodes
+      common /cBnBRules/ BranchRule, NodeSelect, ReliabilityThreshold, 
+     .                   QPIters, NoInfNodes
+      double precision  NLP_time, NLP_stime
+      integer NLP_iter, NLP_siter, NLP_sQPiter, NLP_QPiter, NLP_fcount, 
+     .        NLP_ccount, NLP_gcount, NLP_SOCcount, NLP_iiter
+      common /cNLPstats/ NLP_time, NLP_stime, NLP_iter, NLP_siter, 
+     .                   NLP_QPiter, NLP_sQPiter, NLP_fcount, 
+     .                   NLP_ccount, NLP_gcount, NLP_SOCcount, NLP_iiter
+
+c     ... total available storage & storage used for Hessian
+      integer      kk, ll, kkk, lll, maxwk0, maxiwk0
+      common /wsc/ kk, ll, kkk, lll, maxwk0, maxiwk0
+
+c     declaration of passed parameters - scalars
+      integer ntopp, ibranch, n, nout, nSOS1, tSOS1, marker, m, kmax,
+     .        maxa, maxf, mlp, maxwk, maxiwk, ifail, max_NLP, siter,
+     .        iprint
+      double precision    xfract, rho, fdash, fmin,
+     .        lbdplus, lbdminus, estplus, estminus
+      character*2 first
+
+c     declaration of passed parameters - arrays
+      integer pvar(ntopp), pSOS1(tSOS1+1), iSOS1(nSOS1), iuser(*), 
+     .        istat(14), lws(*), la(0:*)
+      double precision    x(n), bl(n), bu(n), rSOS1(nSOS1), user(*),
+     .        a(*), c(m), s(n+m), ws(*), lam(n+m), xdash(n), ldash(n+m),
+     .        sbu(n), rstat(*)
+      character cstype(m)
+
+c     declaration of internal variables - scalars
+      integer i, ii, j, jj, ij, j0, j1, r, NLPprint, istart(2), iend(2),
+     .        l_hess, li_hess, p_blk, p_buk, p_g, p_r, p_w, p_e, p_alp,
+     .        p_work, p_ws, p_ls, p_lp, p_info, p_iwork, p_lws, p_v, 
+     .        p_ak, p_cn, peq, mode, QPfail, QPprint, flag, k
+      double precision    est(2), atx, etx, fract, hc, lr, ur, TSTART, 
+     .        TEND, buii, blii, buiic, bliic, fp, MaxScore, score, qmin,
+     .        q, qq, pi
+      logical found
+
+c     declaration of external functions
+      double precision h_one
+
+c     ======================== procedure body ==========================
+
+c     ------------------------- START SET-UP ---------------------------
+c     storage map for BQPD, evaluate functions, & solve root QP
+c     ... real storage map
+      p_blk   = 1
+      p_buk   = p_blk   + n+m
+      p_ak    = p_buk   + n+m
+      p_cn    = p_ak    + n
+      p_g     = p_cn    + m
+      p_r     = p_g     + n
+      p_v     = p_r     + n+m
+      p_w     = p_v     + n
+      p_e     = p_w     + n+m
+      p_alp   = p_e     + n+m 
+      p_work  = p_alp   + mlp
+      p_ws    = p_work  + 3*n+m
+c     ... integer storage map
+      p_ls    = 1
+      p_lp    = p_ls    + n+m
+      p_info  = p_lp    + mlp
+      p_iwork = p_info  + 100
+      p_lws   = p_iwork + m+m+n
+c     ... Hessian storage for BQPD
+      l_hess  = maxwk0
+      li_hess = maxiwk0
+c     ... set some constants
+      qmin    = -infty
+      QPfail  = 0
+      mode    = 0
+      QPprint = max( 0 , iprint-3 )
+c     ... evaluate objective, constraints, Jacobian, and Hessian [UNSCALED]
+      call objfun (x,n,qq,user,iuser,flag)
+      call confun (x,n,m,c,a,la,user,iuser,flag)
+      call gradient (n,m,maxa,x,a,la,maxa,user,iuser,flag)
+      call hessian (x,n,m,2,lam,ws(p_ws+1),lws(p_lws),user,iuser,l_hess,
+     .     li_hess,flag)
+      kk         = n+m + l_hess
+      ll         = li_hess
+      maxwk0     = maxwk  - p_ws
+      maxiwk0    = maxiwk - p_lws
+      NLP_fcount = NLP_fcount   + 1
+      NLP_ccount = NLP_ccount   + 1
+      NLP_gcount = NLP_gcount   + 1
+c     ... set-up root QP (solve for x, rather than d) ... also PRINT!!!
+      call SetUpQP (n,m,a,la,x,ws(p_v),c,ws(p_blk),ws(p_buk),bl,bu,
+     .     ws(p_ws+1),lws(p_lws),qq,ws(p_ak))
+c     ... solve root QP to set-up hot-starts for braching
+      call SolveQP (n,m,k,kmax,a,la,x,bl,bu,q,qq,qmin,ws(p_g),ws(p_r),
+     .     ws(p_w),ws(p_e),lws(p_ls),ws(p_alp),lws(p_lp),mlp,peq,
+     .     ws(p_ws+1),lws(p_lws),mode,QPfail,lws(p_info),cstype,QPprint,
+     .     nout)
+      siter = siter+1
+c     ... add some error handling here
+      if (QPfail.ge.4) then
+         print *, 'ERROR in SolveQP: ', QPfail
+         stop
+      elseif (QPfail.ge.2) then
+         print *, 'INFEASIBLE SolveQP: ', QPfail
+      elseif (QPfail.eq.1) then
+         print *, 'UNBOUNDED SolveQP: ', QPfail
+      endif
+c     ... now do hot-starts
+      mode = 6
+c     ------------------------- E N D SET-UP ---------------------------
+
+c     ... initialize maxi
+      MaxScore = -1.D20
+      ibranch  = 0
+
+c     ... initialize lbdplus,lbdminus,estplus,estminus
+      lbdplus  = 0.D0
+      lbdminus = 0.D0
+      estplus  = 0.D0
+      estminus = 0.D0
+
+c     ... save solution to parent node
+      fp = fdash
+      do i=1,n
+         xdash(i) = x(i)
+         ldash(i) = lam(i)
+      enddo
+      do i=1,m
+         ldash(n+i) = lam(n+i)
+      enddo
+
+c     ... find variable to max{(1-mu)*min(est(1),est(2)) + mu*max(est(1),est(2))}
+      do i=1,ntopp
+         ii = pvar(i)
+         est(1) = 0.D0
+         est(2) = 0.D0
+         if (ii.gt.0) then
+c           ... ii > 0 branch on a variable; solve two QPs
+            buii  = bu(ii)
+            blii  = bl(ii)
+            buiic = bu(ii)
+            bliic = bl(ii)
+            do jj=1,2
+               if (jj.eq.1) then 
+                  if (x(ii).ge.0.D0) then
+                     bl(ii) = int(x(ii)) + 1.D0
+                     buiic  = int(x(ii))
+                  else
+                     bl(ii) = int(x(ii))
+                     buiic  = int(x(ii)) - 1.D0
+                  endif
+               else
+                  if (x(ii).ge.0.D0) then
+                     bu(ii) = int(x(ii))
+                     bliic  = int(x(ii)) + 1.D0
+                  else
+                     bu(ii) = int(x(ii)) - 1.D0
+                     bliic  = int(x(ii))
+                  endif
+               endif
+c              ... hot-start solve of all child QPs
+               if (iprint.ge.4) then
+                  write (nout,*) '>>>>> START HOT-QP var: ',ii
+                  write (nout,*)
+               endif
+               call SolveQP (n,m,k,kmax,a,la,x,bl,bu,q,qq,qmin,ws(p_g),
+     .              ws(p_r),ws(p_w),ws(p_e),lws(p_ls),ws(p_alp),
+     .              lws(p_lp),mlp,peq,ws(p_ws+1),lws(p_lws),mode,QPfail,
+     .              lws(p_info),cstype,QPprint,nout)
+               siter = siter+1
+c              ... evaluate objective function at the new point
+               call objfun(x,n,fdash,user,iuser,flag)
+c              ... add infeasibility contribution as penalty term
+               call confun(x,n,m,ws(p_cn),a,la,user,iuser,flag)
+               hc    = h_one(m,ws(p_cn),ws(p_blk+n),ws(p_buk+n))
+               if (iprint.ge.3) then
+                  write(nout,*) 'SB-QP(q,f,p)=',q+qq,fdash,fdash+pi*hc
+               endif
+               pi    = max( 1.D-6 , 1.D0**nint(log10(abs(rstat(3)))+1) )
+               fdash = fdash + pi*hc
+c              ... restore bounds
+               bl(ii) = blii
+               bu(ii) = buii
+c              ... save changes in f 
+               est(jj) = fdash - fp
+            enddo
+            fract = x(ii)
+            r     = 0
+         else
+c           ... ii < 0 branch on a SOS1 set: compute fractionality
+            ii = - ii
+            call FindSOS1Frac(ii,r,n,nSOS1,tSOS1,fract,found,pSOS1,
+     .           iSOS1,x,rSOS1)
+            if (found) then
+               j0 = pSOS1(ii)
+               j1 = pSOS1(ii+1)
+               do j=j0,j1-1
+                  sbu(j) = bu(iSOS1(j))
+               enddo
+c              ... branch up first
+               istart(1) = r+1
+               iend(1)   = j1-1
+               istart(2) = j0
+               iend(2)   = r
+c              ... solve two NLPs
+               do jj=1,2
+                  do j=istart(jj),iend(jj)
+                     bu(iSOS1(j)) = 0.D0
+                  enddo
+c                 ... hot-start solve of all child QPs
+                  if (iprint.ge.4) then
+                     write (nout,*) '>>>>> START HOT-QP SOS: ',ii
+                     write (nout,*)
+                  endif
+                  call SolveQP (n,m,k,kmax,a,la,x,bl,bu,q,qq,qmin,
+     .                 ws(p_g),ws(p_r),ws(p_w),ws(p_e),lws(p_ls),
+     .                 ws(p_alp),lws(p_lp),mlp,peq,ws(p_ws+1),
+     .                 lws(p_lws),mode,QPfail,lws(p_info),cstype,
+     .                 QPprint,nout)
+                  siter = siter+1
+c                 ... evaluate objective function at the new point
+                  call objfun(x,n,fdash,user,iuser,flag)
+c                 ... add infeasibility contribution as penalty term
+                  call confun(x,n,m,ws(p_cn),a,la,user,iuser,flag)
+                  hc    = h_one(m,ws(p_cn),ws(p_blk+n),ws(p_buk+n))
+                  if (iprint.ge.3) then
+                     write(nout,*)'SB-QP(q,f,p)=',q+qq,fdash,fdash+pi*hc
+                  endif
+                  pi    = max(1.D-6,1.D0**nint(log10(abs(rstat(3)))+1))
+                  fdash = fdash + pi*hc
+c                 ... restore bounds
+                  do j=istart(jj),iend(jj)
+                     bu(iSOS1(j)) = sbu(j)
+                  enddo
+c                 ... save changes in f 
+                  est(jj) = fdash - fp
+               enddo
+            endif
+            ii = - ii
+         endif
+         score = (1-mu)*min(est(1),est(2)) + mu*max(est(1),est(2))
+         if (score .gt. MaxScore) then
+            estplus  = est(1)
+            estminus = est(2)
+            marker   = r
+            ibranch  = ii
+            xfract   = fract
+            MaxScore = score   
+            if (est(1).gt.est(2)) then
+               first   = 'P+'
+            else
+               first   = 'P-'
+            endif
+         endif
+      enddo
+
+c     ... copy saved bounds (blk,buk) back to (bl,bu)
+      call CopyBndsA(n,m,a,ws(p_ak),bl,bu,ws(p_blk),ws(p_buk))
+
+      return
+      end
+
+c     ******************************************************************
+
+      subroutine SetUpQP(n,m,a,la,x,v,c,blk,buk,bl,bu,ws,lws,qq,ak)
+
+c     ------------------------------------------------------------------
+c     Purpose : set-up QP approximation for approximate strong branching
+c
+c     Date of last change   : 25 / 04 / 2010
+c     ------------------------------------------------------------------
+
+      implicit none
+
+c     declaration of passed parameters - scalars
+      integer n, m
+      double precision qq
+
+c     declaration of passed parameters - arrays
+      integer la(0:*), lws(*)
+      double precision a(*), x(n), v(n), c(m), blk(n+m), buk(n+m), 
+     .     bl(n+m), bu(n+m), ws(*), ak(n)
+
+c     declaration of internal variables - scalars
+      integer i
+      double precision aiTx, daiscpr, gTx, xHx
+
+c     ======================== procedure body ==========================
+
+c     ... save original gradient & NLP bounds
+      do i=1,n
+         ak(i) = a(i)
+      enddo
+      do i=1,n+m
+         blk(i) = bl(i)
+         buk(i) = bu(i)
+      enddo
+
+c     ... form \nabla f + H*x as the new gradient & save it in a
+      gTx = 0.D0
+      do i=1,n
+         v(i) = 0.D0
+         gTx  = gTx + a(i)*x(i)
+      enddo
+      call  wdotd(n, x, ws, lws, v)
+      xHx = 0.D0
+      do i=1,n
+         a(i) = a(i) - v(i)
+         xHx  = xHx + x(i)*v(i)
+      enddo
+
+c     ... shift bounds on constraints
+      do i=1,m
+         aiTx     = daiscpr(n,a,la,i,x,0.D0)
+         bl(n+i) = blk(n+i) - c(i) + aiTx
+         bu(n+i) = buk(n+i) - c(i) + aiTx
+      enddo
+
+c     ... compute constant part of objective (for printing/user)
+      qq = qq - gTx + xHx/2.D0
+
+      return
+      end
+
+c     ******************************************************************
+
+      subroutine SolveQP(n,m,k,kmax,a,la,x,bl,bu,q,qq,qmin,g,r,w,e,ls,
+     .     alp,lp,mlp,peq,ws,lws,mode,QPfail,info,cstype,QPprint,nout)
+
+c     ------------------------------------------------------------------
+c     Purpose : solve QP approximation for approximate strong branching
+c
+c     Date of last change   : 25 / 04 / 2010
+c     ------------------------------------------------------------------
+
+
+      implicit none
+
+c     declaration of common block for stats
+      double precision    NLP_time, NLP_stime
+      integer NLP_iter, NLP_siter, NLP_sQPiter, NLP_QPiter, NLP_fcount, 
+     .        NLP_ccount, NLP_gcount, NLP_SOCcount, NLP_iiter
+      common /cNLPstats/ NLP_time, NLP_stime, NLP_iter, NLP_siter, 
+     .                   NLP_QPiter, NLP_sQPiter, NLP_fcount, 
+     .                   NLP_ccount, NLP_gcount, NLP_SOCcount, NLP_iiter
+
+c     declaration of passed parameters - scalars
+      integer n, m, k, kmax, mlp, peq, mode, QPfail, QPprint, nout
+      double precision q, qmin, qq
+
+c     declaration of passed parameters - arrays
+      integer la(0:*), lws(*), lp(mlp), info(*), ls(n+m)
+      double precision x(n), a(*), bl(n+m), bu(n+m), ws(*), g(n),
+     .     r(n+m), w(n+m), e(n+m), alp(mlp)
+      character cstype(m)
+
+c     declaration of internal variables - scalars
+      integer i, mode1
+      double precision TSTART, TEND
+
+c     declaration of functions
+      double precision    seconds
+
+c     ======================== procedure body ==========================
+
+      if (QPprint.ge.2) then
+         write(nout,*) 'SB-QP Data'
+         write(nout,*) 'x = ', (x(i),i=1,n)
+         call print_QP(n,m,k,kmax,x,a,la,bl,bu,ws,lws,ls,mode,nout,
+     .        QPprint+3,cstype)
+      endif
+
+c     ... solve the QP
+      TSTART = seconds()
+      call bqpd(n,m,k,kmax,a,la,x,bl,bu,q,qmin,g,r,w,e,ls,alp,lp,mlp,
+     .     peq,ws,lws,mode,QPfail,info,QPprint,nout)
+      if (QPfail.eq.88) then
+         mode1 = mode
+         mode  = 0
+         print *,'ERROR in HOT-START QP: resolve',mode,mode1,QPfail
+         call bqpd(n,m,k,kmax,a,la,x,bl,bu,q,qmin,g,r,w,e,ls,alp,lp,mlp,
+     .        peq,ws,lws,mode,QPfail,info,QPprint,nout)
+         mode  = mode1
+      endif
+      TEND = seconds()
+c     ... save statistics
+      NLP_stime     = NLP_stime    + TEND - TSTART
+      NLP_siter     = NLP_siter    + 1
+      NLP_iiter     = NLP_iiter    + 1
+      NLP_sQPiter   = NLP_sQPiter  + 1
+      NLP_fcount    = NLP_fcount   + 1
+      NLP_ccount    = NLP_ccount   + 1
+      NLP_gcount    = NLP_gcount   + 0
+      NLP_SOCcount  = NLP_SOCcount + 0
+
+c     ... may need to tidy up ifail/solution here
+      if (QPprint.ge.1) then
+         write(nout,7000) q+qq, QPfail
+      endif
+      return
+ 7000 format('SB-QP: objf=',G11.4,' ifail=',I3)
+      end
+
+c     ******************************************************************
+
+      subroutine CopyBndsA(n,m,a,ak,bl,bu,blk,buk)
+      implicit none
+      integer n, m, i
+      double precision  a(*), ak(n), bl(n+m), bu(n+m),  blk(n+m), 
+     .     buk(n+m)
+c     ======================== procedure body ==========================
+      do i=1,n+m
+         bl(i) = blk(i)
+         bu(i) = buk(i)
+      enddo
+      do i=1,n
+         a(i) = ak(i)
+      enddo
+      return
+      end
+
+c     ******************************************************************
+
+      subroutine PseudoCost(ntopp,n,x,lbdplus,lbdminus,estplus,estminus,
+     .                     ibranch,xfract,marker,pvar,nSOS1,tSOS1,pSOS1,
+     .                     iSOS1,rSOS1,pcU,pcD,pcSOSU,pcSOSD,bl,bu,
+     .                     first,nout)
+
+c     ------------------------------------------------------------------
+c     Purpose : pseudo-cost branching
+c
+c     Date of last change   : 16 / 07 / 2009
+c
+c     Parameter list:
+c     ==============
+c
+c     ntopp            - no of integer variables that are not integer feasible
+c                        of top priority
+c     n                - no of variables
+c     x                - variables
+c     lbdplus,lbdminus - lower bound for branching
+c     estplus,estminus - estimates for branchning
+c     ibranch          - index of branching variable (< 0 for SOS1 variable)
+c     xfract           - fractional part of SOS1
+c     marker           - marker where to branch SOS1
+c     pvar             - pointer to variables with highest priority
+c                        ii = pvar(i) < 0 means that ii points to SOS1
+c     nSOS1            - number of variables that are elements of a SOS1 set
+c     tSOS1            - number of SOS1 sets
+c     pSOS1            - (tSOS1+1) pointers to start of each SOS1 [INTEGER]
+c     iSOS1            - (nSOS1) index of each integer variable in SOS1 
+c                        [INTEGER] ith indices are iSOS1(pSOS1(i):pSOS1(i+1))
+c     rSOS1            - (nSOS1) reference row of SOS1, stored as iSOS1 [double precision]
+c     pcU / pcD        - pseudo-cost for Up/Down branching
+c     pcSOSU / pcSOSD  - pseudo-cost for Up/Down branching (for SOS variables)
+c     bl / bu          - lower / upper bounds on variables in QP
+c     first            - 'P-' or 'P+' depending which problem is to be
+c                        placed first on the stack
+c
+c     calls: no other subroutines
+c     ------------------------------------------------------------------
+
+      implicit none
+
+c     declaration of constants
+      double precision  mu
+      parameter        (mu = 1.D0/6.D0)
+
+c     declaration of common block for tolerance and infinity
+      double precision             MIopttol, eps, infty
+      common /cTolInf/ MIopttol, eps, infty
+
+c     declaration of passed parameters - scalars
+      integer ntopp, ibranch, n, nout, nSOS1, tSOS1, marker
+      double precision    lbdplus, lbdminus, estplus, estminus, xfract
+      character*2 first
+
+c     declaration of passed parameters - arrays
+      integer pvar(ntopp), pSOS1(tSOS1+1), iSOS1(nSOS1)
+      double precision    x(n), bl(n), bu(n), rSOS1(nSOS1), 
+     .                    pcU(n), pcD(n), pcSOSU(tSOS1), 
+     .                    pcSOSD(tSOS1)
+
+c     declaration of internal variables - scalars
+      integer i, ii, j, jj, j0, j1, r
+      double precision    MaxScore, score, piplus, piminus, atx, etx, 
+     .        fract, lr, ur, UpCost, DnCost
+      logical found
+
+c     ======================== procedure body ==========================
+      
+c     ... initialize MaxScore
+      MaxScore = -1.D20
+
+c     ... initialize lbdplus,lbdminus,estplus,estminus
+      lbdplus  = 0.D0
+      lbdminus = 0.D0
+      estplus  = 0.D0
+      estminus = 0.D0
+
+c     ... pseudo-cost branching with score function
+      do i=1,ntopp
+         ii = pvar(i)
+         if (ii.gt.0) then
+c           ... ii > 0 branch on a variable; compute fractionality
+            piplus  = int(x(ii)+1.D0) - x(ii)
+            piminus = x(ii) - int(x(ii)) 
+c           ... computation of effect of branching
+            UpCost  = pcU(ii)*piplus
+            DnCost  = pcD(ii)*piminus
+            fract   = x(ii)
+            r       = 0
+         else
+c           ... ii < 0 branch on a SOS1 set: compute fractionality
+            ii = - ii
+            call FindSOS1Frac(ii,r,n,nSOS1,tSOS1,fract,found,pSOS1,
+     .           iSOS1,x,rSOS1)
+            if (found) then
+c              ... save max. fractional SOS1 variable for branching
+               fract   = (fract - rSOS1(r)) / (rSOS1(r+1) - rSOS1(r))
+               piplus  = int(fract+1.D0) - fract
+               piminus = fract - int(fract) 
+            else
+               piplus  = 0.D0
+               piminus = 0.D0
+            endif
+c           ... computation of effect of branching on SOS
+            UpCost  = pcSOSU(ii)*piplus
+            DnCost  = pcSOSD(ii)*piminus
+            ii = -ii
+         endif
+         score   = (1-mu)*min(UpCost,DnCost) + mu*max(UpCost,DnCost)
+         if (score .gt. MaxScore) then
+            estplus  = UpCost
+            estminus = DnCost
+            marker   = r
+            ibranch  = ii
+            xfract   = fract
+            MaxScore = score   
+            if (UpCost.gt.DnCost) then
+               first   = 'P-'
+            else
+               first   = 'P+'
+            endif
+         endif
+      enddo
+
+      return
+      end
+
+c     ******************************************************************
+
+      subroutine Reliability (ntopp,n,x,lbdplus,lbdminus,estplus,
+     .     estminus,ibranch,xfract,marker,pvar,nSOS1,tSOS1,pSOS1,
+     .     iSOS1,rSOS1,pcU,pcD,npcU,npcD,pcSOSU,pcSOSD,npcSOSU,npcSOSD,
+     .     bl,bu,first,nout,m,kmax,maxa,maxf,mlp,maxwk,maxiwk,ifail,rho,
+     .     c,fdash,fmin,s,a,la,ws,lws,lam,cstype,user,iuser,xdash,ldash,
+     .     sbu,max_NLP,istat,rstat,iprint,siter)
+
+c     ------------------------------------------------------------------
+c     Purpose : Implementation of reliability branching:
+c        - compute/update pseudocost estimate from approx. NLP solves
+c        - once pseudocosts have been updated ReliabilityThreshold times,
+c          simply continue to update them
+c
+c     Date of last change   : 08 / 10 /2009
+c
+c     Parameter list:
+c     ==============
+c
+c     ntopp            - no of integer variables that are not integer feasible
+c                        of top priority
+c     n                - no of variables
+c     x                - variables
+c     lbdplus,lbdminus - lower bound for branching
+c     estplus,estminus - estimates for branchning
+c     ibranch          - index of branching variable (< 0 for SOS1 variable)
+c     xfract           - fractional part of SOS1
+c     marker           - marker where to branch SOS1
+c     pvar             - pointer to variables with highest priority
+c                        ii = pvar(i) < 0 means that ii points to SOS1
+c     nSOS1            - number of variables that are elements of a SOS1 set
+c     tSOS1            - number of SOS1 sets
+c     pSOS1            - (tSOS1+1) pointers to start of each SOS1 [INTEGER]
+c     iSOS1            - (nSOS1) index of each integer variable in SOS1 
+c                        [INTEGER] ith indices are iSOS1(pSOS1(i):pSOS1(i+1))
+c     rSOS1            - (nSOS1) reference row of SOS1, stored as iSOS1 [double precision]
+c     pcU / pcD        - pseudo-cost for Up/Down branching
+c     pcSOSU / pcSOSD  - pseudo-cost for Up/Down branching (for SOS variables)
+c     bl / bu          - lower / upper bounds on variables in QP
+c     first            - 'P-' or 'P+' depending which problem is to be
+c                        placed first on the stack
+c
+c     ------------------------------------------------------------------
+
+      implicit none
+
+c     ... declaration of constants
+      double precision  mu
+      parameter        (mu = 1.D0/6.D0)
+
+c     ... declaration of common block for tolerance and infinity
+      double precision             MIopttol, eps, infty
+      common /cTolInf/ MIopttol, eps, infty
+      integer            BranchRule, NodeSelect, ReliabilityThreshold, 
+     .                   QPIters, NoInfNodes
+      common /cBnBRules/ BranchRule, NodeSelect, ReliabilityThreshold, 
+     .                   QPIters, NoInfNodes
+
+c     ... declaration of passed parameters - scalars
+      integer ntopp, ibranch, n, nout, nSOS1, tSOS1, marker, m, kmax,
+     .        maxa, maxf, mlp, maxwk, maxiwk, ifail, max_NLP, iprint,
+     .        siter
+      double precision    xfract, rho, fdash, fmin,
+     .        lbdplus, lbdminus, estplus, estminus
+      character*2 first
+
+c     ... declaration of passed parameters - arrays
+      integer pvar(ntopp), pSOS1(tSOS1+1), iSOS1(nSOS1), iuser(*), 
+     .        istat(14), lws(*), la(0:*), npcU(n), npcD(n), 
+     .        npcSOSU(tSOS1), npcSOSD(tSOS1)
+      double precision    x(n), bl(n), bu(n), rSOS1(nSOS1), user(*),
+     .        a(*), c(m), s(n+m), ws(*), lam(n+m), xdash(n), ldash(n+m),
+     .        sbu(n), rstat(*), pcU(n), pcD(n), pcSOSU(tSOS1), 
+     .        pcSOSD(tSOS1)
+      character cstype(m)
+
+c     ... declaration of internal variables - scalars
+      integer i, ii, j, jj, ij, j0, j1, r, NLPprint, istart(2), iend(2)
+      double precision    est(2), atx, etx, fract, hc, lr, ur, TSTART, 
+     .        TEND, buii, blii, buiic, bliic, fp, MaxScore, score,
+     .        piplus, piminus
+      logical found
+
+c     ======================== procedure body ==========================
+      
+c     ... initialize maxi
+      MaxScore = -1.D20
+      ibranch  = 0
+
+c     ... initialize lbdplus,lbdminus,estplus,estminus
+      lbdplus  = 0.D0
+      lbdminus = 0.D0
+      estplus  = 0.D0
+      estminus = 0.D0
+
+c     ... save solution to parent node
+      fp = fdash
+      do i=1,n
+         xdash(i) = x(i)
+         ldash(i) = lam(i)
+      enddo
+      do i=1,m
+         ldash(n+i) = lam(n+i)
+      enddo
+
+c     ... find variable to max{(1-mu)*min(est(1),est(2)) + mu*max(est(1),est(2))}
+      do i=1,ntopp
+         ii = pvar(i)
+         if (ii.gt.0) then
+c           ... ii > 0 branch on a variable; solve two NLPs
+            if (min(npcU(ii),npcD(ii)).lt.ReliabilityThreshold) then
+c              ... compute approximate strong branching for unreliable variables
+               buii  = bu(ii)
+               blii  = bl(ii)
+               buiic = bu(ii)
+               bliic = bl(ii)
+               do jj=1,2
+                  if (jj.eq.1) then 
+                     if (x(ii).ge.0.D0) then
+                        bl(ii) = int(x(ii)) + 1.D0
+                        buiic  = int(x(ii))
+                     else
+                        bl(ii) = int(x(ii))
+                        buiic  = int(x(ii)) - 1.D0
+                     endif
+                  else
+                     if (x(ii).ge.0.D0) then
+                        bu(ii) = int(x(ii))
+                        bliic  = int(x(ii)) + 1.D0
+                     else
+                        bu(ii) = int(x(ii)) - 1.D0
+                        bliic  = int(x(ii))
+                     endif
+                  endif
+                  call StrongBranchNLP(n,m,kmax,maxa,maxf,mlp,maxwk,
+     .                 maxiwk,ifail,ii,iprint,siter,nout,rho,fdash,fmin,
+     .                 iuser,istat,lws,la,x,bl,bu,user,a,c,s,ws,lam,
+     .                 xdash,ldash,rstat,cstype)
+c                 ... restore bounds
+                  bl(ii) = blii
+                  bu(ii) = buii
+c                 ... save changes in f 
+                  est(jj) = fdash - fp
+               enddo
+c              ... update pseudo-costs: est(1) is up, est(2) is down
+               piplus  = int(x(ii)+1.D0) - x(ii)
+               piminus = x(ii) - int(x(ii)) 
+               pcU(ii)  = (npcU(ii)*pcU(ii)+abs(est(1))/piplus)
+     .                    / (npcU(ii)+1)
+               npcU(ii) = npcU(ii) + 1
+               pcD(ii)  = (npcD(ii)*pcD(ii)+abs(est(2))/piminus)
+     .                    / (npcD(ii)+1)
+               npcD(ii) = npcD(ii) + 1
+            else
+c              ... use pseudocosts for reliable variables
+               piplus  = int(x(ii)+1.D0) - x(ii)
+               piminus = x(ii) - int(x(ii)) 
+               est(1) = pcU(ii)*piplus
+               est(2) = pcD(ii)*piminus
+            endif
+            fract = x(ii)
+            r     = 0
+         else
+c           ... ii < 0 branch on a SOS1 set: compute fractionality
+            ii = - ii
+            call FindSOS1Frac(ii,r,n,nSOS1,tSOS1,fract,found,pSOS1,
+     .           iSOS1,x,rSOS1)
+             if (found) then
+               if(min(npcSOSU(ii),npcSOSD(ii)).lt.ReliabilityThreshold)
+     .              then
+c                 ... compute approximate strong branching for unreliable variables
+                  j0 = pSOS1(ii)
+                  j1 = pSOS1(ii+1)
+                  do j=j0,j1-1
+                     sbu(j) = bu(iSOS1(j))
+                  enddo
+c                 ... branch up first
+                  istart(1) = r+1
+                  iend(1)   = j1-1
+                  istart(2) = j0
+                  iend(2)   = r
+c                 ... solve two NLPs
+                  do jj=1,2
+                     do j=istart(jj),iend(jj)
+                        bu(iSOS1(j)) = 0.D0
+                     enddo
+                     call StrongBranchNLP(n,m,kmax,maxa,maxf,mlp,maxwk,
+     .                    maxiwk,ifail,-ii,iprint,siter,nout,rho,fdash,
+     .                    fmin,iuser,istat,lws,la,x,bl,bu,user,a,c,s,ws,
+     .                    lam,xdash,ldash,rstat,cstype)
+c                    ... restore bounds
+                     do j=istart(jj),iend(jj)
+                        bu(iSOS1(j)) = sbu(j)
+                     enddo
+c                    ... save changes in f 
+                     est(jj) = fdash - fp
+                  enddo
+c                 ... update pseudo-costs: est(1) is down, est(2) is up
+                  fract   = (fract - rSOS1(r)) / (rSOS1(r+1) - rSOS1(r))
+                  piplus  = int(fract+1.D0) - fract
+                  piminus = fract - int(fract) 
+                  pcSOSU(ii)  = (npcSOSU(ii)*pcSOSU(ii)+abs(est(2))
+     .                          /piplus) / (npcSOSU(ii)+1)
+                  npcSOSU(ii) = npcSOSU(ii) + 1
+                  pcSOSD(ii)  = (npcSOSD(ii)*pcSOSD(ii)+abs(est(1))
+     .                          /piminus) / (npcSOSD(ii)+1)
+                  npcSOSD(ii) = npcSOSD(ii) + 1
+               else
+                  fract   = (fract - rSOS1(r)) / (rSOS1(r+1) - rSOS1(r))
+                  piplus  = int(fract+1.D0) - fract
+                  piminus = fract - int(fract) 
+                  est(1)  = pcSOSD(ii)*piminus
+                  est(2)  = pcSOSU(ii)*piplus
+               endif
+            endif
+            ii = - ii
+         endif
+         score = (1-mu)*min(est(1),est(2)) + mu*max(est(1),est(2))
+         if (score .gt. MaxScore) then
+            estplus  = est(1)
+            estminus = est(2)
+            marker   = r
+            ibranch  = ii
+            xfract   = fract
+            MaxScore = score   
+            if (est(1).gt.est(2)) then
+               first   = 'P+'
+            else
+               first   = 'P-'
+            endif
+         endif
+      enddo
+
+      return
+      end
+
+c     ******************************************************************
+
+      subroutine ApproxReliable (ntopp,n,x,lbdplus,lbdminus,estplus,
+     .     estminus,ibranch,xfract,marker,pvar,nSOS1,tSOS1,pSOS1,
+     .     iSOS1,rSOS1,pcU,pcD,npcU,npcD,pcSOSU,pcSOSD,npcSOSU,npcSOSD,
+     .     bl,bu,first,nout,m,kmax,maxa,maxf,mlp,maxwk,maxiwk,ifail,rho,
+     .     c,fdash,fmin,s,a,la,ws,lws,lam,cstype,user,iuser,xdash,ldash,
+     .     sbu,max_NLP,istat,rstat,iprint,siter)
+
+c     ------------------------------------------------------------------
+c     Purpose : Implementation of reliability branching:
+c        - compute/update pseudocost estimate from approx. NLP solves
+c        - once pseudocosts have been updated ReliabilityThreshold times,
+c          simply continue to update them
+c
+c     Date of last change   : 08 / 10 /2009
+c
+c     Parameter list:
+c     ==============
+c
+c     ntopp            - no of integer variables that are not integer feasible
+c                        of top priority
+c     n                - no of variables
+c     x                - variables
+c     lbdplus,lbdminus - lower bound for branching
+c     estplus,estminus - estimates for branchning
+c     ibranch          - index of branching variable (< 0 for SOS1 variable)
+c     xfract           - fractional part of SOS1
+c     marker           - marker where to branch SOS1
+c     pvar             - pointer to variables with highest priority
+c                        ii = pvar(i) < 0 means that ii points to SOS1
+c     nSOS1            - number of variables that are elements of a SOS1 set
+c     tSOS1            - number of SOS1 sets
+c     pSOS1            - (tSOS1+1) pointers to start of each SOS1 [INTEGER]
+c     iSOS1            - (nSOS1) index of each integer variable in SOS1 
+c                        [INTEGER] ith indices are iSOS1(pSOS1(i):pSOS1(i+1))
+c     rSOS1            - (nSOS1) reference row of SOS1, stored as iSOS1 [double precision]
+c     pcU / pcD        - pseudo-cost for Up/Down branching
+c     pcSOSU / pcSOSD  - pseudo-cost for Up/Down branching (for SOS variables)
+c     bl / bu          - lower / upper bounds on variables in QP
+c     first            - 'P-' or 'P+' depending which problem is to be
+c                        placed first on the stack
+c
+c     ------------------------------------------------------------------
+
+      implicit none
+
+c     ... declaration of constants
+      double precision  mu
+      parameter        (mu = 1.D0/6.D0)
+
+c     ... declaration of common block for tolerance and infinity
+      double precision             MIopttol, eps, infty
+      common /cTolInf/ MIopttol, eps, infty
+      integer            BranchRule, NodeSelect, ReliabilityThreshold, 
+     .                   QPIters, NoInfNodes
+      common /cBnBRules/ BranchRule, NodeSelect, ReliabilityThreshold, 
+     .                   QPIters, NoInfNodes
+      double precision  NLP_time, NLP_stime
+      integer NLP_iter, NLP_siter, NLP_sQPiter, NLP_QPiter, NLP_fcount, 
+     .        NLP_ccount, NLP_gcount, NLP_SOCcount, NLP_iiter
+      common /cNLPstats/ NLP_time, NLP_stime, NLP_iter, NLP_siter, 
+     .                   NLP_QPiter, NLP_sQPiter, NLP_fcount, 
+     .                   NLP_ccount, NLP_gcount, NLP_SOCcount, NLP_iiter
+
+c     ... total available storage & storage used for Hessian
+      integer      kk, ll, kkk, lll, maxwk0, maxiwk0
+      common /wsc/ kk, ll, kkk, lll, maxwk0, maxiwk0
+
+c     ... declaration of passed parameters - scalars
+      integer ntopp, ibranch, n, nout, nSOS1, tSOS1, marker, m, kmax,
+     .        maxa, maxf, mlp, maxwk, maxiwk, ifail, max_NLP, iprint,
+     .        siter
+      double precision    xfract, rho, fdash, fmin,
+     .        lbdplus, lbdminus, estplus, estminus
+      character*2 first
+
+c     ... declaration of passed parameters - arrays
+      integer pvar(ntopp), pSOS1(tSOS1+1), iSOS1(nSOS1), iuser(*), 
+     .        istat(14), lws(*), la(0:*), npcU(n), npcD(n), 
+     .        npcSOSU(tSOS1), npcSOSD(tSOS1)
+      double precision    x(n), bl(n), bu(n), rSOS1(nSOS1), user(*),
+     .        a(*), c(m), s(n+m), ws(*), lam(n+m), xdash(n), ldash(n+m),
+     .        sbu(n), rstat(*), pcU(n), pcD(n), pcSOSU(tSOS1), 
+     .        pcSOSD(tSOS1)
+      character cstype(m)
+
+c     ... declaration of internal variables - scalars
+      integer i, ii, j, jj, ij, j0, j1, r, NLPprint, istart(2), iend(2),
+     .        l_hess, li_hess, p_blk, p_buk, p_g, p_r, p_w, p_e, p_alp,
+     .        p_work, p_ws, p_ls, p_lp, p_info, p_iwork, p_lws, p_v, 
+     .        p_ak, p_cn, peq, mode, QPfail, QPprint, flag, k
+      double precision    est(2), atx, etx, fract, hc, lr, ur, TSTART, 
+     .        TEND, buii, blii, buiic, bliic, fp, MaxScore, score, qmin,
+     .        q, qq, piplus, piminus, pi
+      logical found
+
+c     declaration of external functions
+      double precision h_one
+
+c     ======================== procedure body ==========================
+      
+c     ------------------------- START SET-UP ---------------------------
+c     storage map for BQPD, evaluate functions, & solve root QP
+c     ... real storage map
+      p_blk   = 1
+      p_buk   = p_blk   + n+m
+      p_ak    = p_buk   + n+m
+      p_cn    = p_ak    + n
+      p_g     = p_cn    + m
+      p_r     = p_g     + n
+      p_v     = p_r     + n+m
+      p_w     = p_v     + n
+      p_e     = p_w     + n+m
+      p_alp   = p_e     + n+m 
+      p_work  = p_alp   + mlp
+      p_ws    = p_work  + 3*n+m
+c     ... integer storage map
+      p_ls    = 1
+      p_lp    = p_ls    + n+m
+      p_info  = p_lp    + mlp
+      p_iwork = p_info  + 100
+      p_lws   = p_iwork + m+m+n
+c     ... Hessian storage for BQPD
+      l_hess  = maxwk0
+      li_hess = maxiwk0
+c     ... set some constants
+      qmin    = -infty
+      QPfail  = 0
+      mode    = 0
+      QPprint = max( 0 , iprint-3 )
+c     ... evaluate objective, constraints, Jacobian, and Hessian [UNSCALED]
+      call objfun (x,n,qq,user,iuser,flag)
+      call confun (x,n,m,c,a,la,user,iuser,flag)
+      call gradient (n,m,maxa,x,a,la,maxa,user,iuser,flag)
+      call hessian (x,n,m,2,lam,ws(p_ws+1),lws(p_lws),user,iuser,l_hess,
+     .     li_hess,flag)
+      kk         = n+m + l_hess
+      ll         = li_hess
+      maxwk0     = maxwk  - p_ws
+      maxiwk0    = maxiwk - p_lws
+      NLP_fcount = NLP_fcount   + 1
+      NLP_ccount = NLP_ccount   + 1
+      NLP_gcount = NLP_gcount   + 1
+c     ... set-up root QP (solve for x, rather than d) ... also PRINT!!!
+      call SetUpQP (n,m,a,la,x,ws(p_v),c,ws(p_blk),ws(p_buk),bl,bu,
+     .     ws(p_ws+1),lws(p_lws),qq,ws(p_ak))
+c     ... solve root QP to set-up hot-starts for braching
+      call SolveQP (n,m,k,kmax,a,la,x,bl,bu,q,qq,qmin,ws(p_g),ws(p_r),
+     .     ws(p_w),ws(p_e),lws(p_ls),ws(p_alp),lws(p_lp),mlp,peq,
+     .     ws(p_ws+1),lws(p_lws),mode,QPfail,lws(p_info),cstype,QPprint,
+     .     nout)
+      siter = siter+1
+c     ... add some error handling here
+      if (QPfail.ge.4) then
+         print *, 'ERROR in SolveQP: ', QPfail
+         stop
+      elseif (QPfail.ge.2) then
+         print *, 'INFEASIBLE SolveQP: ', QPfail
+      elseif (QPfail.eq.1) then
+         print *, 'UNBOUNDED SolveQP: ', QPfail
+      endif
+c     ... now do hot-starts
+      mode = 6
+c     ------------------------- E N D SET-UP ---------------------------
+
+c     ... initialize maxi
+      MaxScore = -1.D20
+      ibranch  = 0
+
+c     ... initialize lbdplus,lbdminus,estplus,estminus
+      lbdplus  = 0.D0
+      lbdminus = 0.D0
+      estplus  = 0.D0
+      estminus = 0.D0
+
+c     ... save solution to parent node
+      fp = fdash
+      do i=1,n
+         xdash(i) = x(i)
+         ldash(i) = lam(i)
+      enddo
+      do i=1,m
+         ldash(n+i) = lam(n+i)
+      enddo
+
+c     ... find variable to max{(1-mu)*min(est(1),est(2)) + mu*max(est(1),est(2))}
+      do i=1,ntopp
+         ii = pvar(i)
+         if (ii.gt.0) then
+c           ... ii > 0 branch on a variable; solve two NLPs
+            if (min(npcU(ii),npcD(ii)).lt.ReliabilityThreshold) then
+c              ... compute approximate strong branching for unreliable variables
+               buii  = bu(ii)
+               blii  = bl(ii)
+               buiic = bu(ii)
+               bliic = bl(ii)
+               do jj=1,2
+                  if (jj.eq.1) then 
+                     if (x(ii).ge.0.D0) then
+                        bl(ii) = int(x(ii)) + 1.D0
+                        buiic  = int(x(ii))
+                     else
+                        bl(ii) = int(x(ii))
+                        buiic  = int(x(ii)) - 1.D0
+                     endif
+                  else
+                     if (x(ii).ge.0.D0) then
+                        bu(ii) = int(x(ii))
+                        bliic  = int(x(ii)) + 1.D0
+                     else
+                        bu(ii) = int(x(ii)) - 1.D0
+                        bliic  = int(x(ii))
+                     endif
+                  endif
+c                 ... hot-start solve of all child QPs
+                  if (iprint.ge.4) then
+                     write (nout,*) '>>>>> START HOT-QP var: ',ii
+                     write (nout,*)
+                  endif
+                  call SolveQP (n,m,k,kmax,a,la,x,bl,bu,q,qq,qmin,
+     .                 ws(p_g),ws(p_r),ws(p_w),ws(p_e),lws(p_ls),
+     .                 ws(p_alp),lws(p_lp),mlp,peq,ws(p_ws+1),
+     .                 lws(p_lws),mode,QPfail,lws(p_info),cstype,
+     .                 QPprint,nout)
+                  siter = siter+1
+c                 ... evaluate objective function at the new point
+                  call objfun(x,n,fdash,user,iuser,flag)
+c                 ... add infeasibility contribution as penalty term
+                  call confun(x,n,m,ws(p_cn),a,la,user,iuser,flag)
+                  hc    = h_one(m,ws(p_cn),ws(p_blk+n),ws(p_buk+n))
+                  if (iprint.ge.3) then
+                     write(nout,*) 'SB-QP(q,f,p)=',
+     .                    q+qq,fdash,fdash+pi*hc
+                  endif
+                  pi    = max(1.D-6,1.D0**nint(log10(abs(rstat(3)))+1))
+                  fdash = fdash + pi*hc
+c                 ... restore bounds
+                  bl(ii) = blii
+                  bu(ii) = buii
+c                 ... save changes in f 
+                  est(jj) = fdash - fp
+               enddo
+c              ... update pseudo-costs: est(1) is up, est(2) is down
+               piplus  = int(x(ii)+1.D0) - x(ii)
+               piminus = x(ii) - int(x(ii)) 
+               pcU(ii)  = (npcU(ii)*pcU(ii)+abs(est(1))/piplus)
+     .                    / (npcU(ii)+1)
+               npcU(ii) = npcU(ii) + 1
+               pcD(ii)  = (npcD(ii)*pcD(ii)+abs(est(2))/piminus)
+     .                    / (npcD(ii)+1)
+               npcD(ii) = npcD(ii) + 1
+            else
+c              ... use pseudocosts for reliable variables
+               piplus  = int(x(ii)+1.D0) - x(ii)
+               piminus = x(ii) - int(x(ii)) 
+               est(1) = pcU(ii)*piplus
+               est(2) = pcD(ii)*piminus
+            endif
+            fract = x(ii)
+            r     = 0
+         else
+c           ... ii < 0 branch on a SOS1 set: compute fractionality
+            ii = - ii
+            call FindSOS1Frac(ii,r,n,nSOS1,tSOS1,fract,found,pSOS1,
+     .           iSOS1,x,rSOS1)
+             if (found) then
+               if(min(npcSOSU(ii),npcSOSD(ii)).lt.ReliabilityThreshold)
+     .              then
+c                 ... compute approximate strong branching for unreliable variables
+                  j0 = pSOS1(ii)
+                  j1 = pSOS1(ii+1)
+                  do j=j0,j1-1
+                     sbu(j) = bu(iSOS1(j))
+                  enddo
+c                 ... branch up first
+                  istart(1) = r+1
+                  iend(1)   = j1-1
+                  istart(2) = j0
+                  iend(2)   = r
+c                 ... solve two NLPs
+                  do jj=1,2
+                     do j=istart(jj),iend(jj)
+                        bu(iSOS1(j)) = 0.D0
+                     enddo
+c                    ... hot-start solve of all child QPs
+                     if (iprint.ge.4) then
+                        write (nout,*) '>>>>> START HOT-QP SOS: ',ii
+                        write (nout,*)
+                     endif
+                     call SolveQP (n,m,k,kmax,a,la,x,bl,bu,q,qq,qmin,
+     .                    ws(p_g),ws(p_r),ws(p_w),ws(p_e),lws(p_ls),
+     .                    ws(p_alp),lws(p_lp),mlp,peq,ws(p_ws+1),
+     .                    lws(p_lws),mode,QPfail,lws(p_info),cstype,
+     .                    QPprint,nout)
+                     siter = siter+1
+c                    ... evaluate objective function at the new point
+                     call objfun(x,n,fdash,user,iuser,flag)
+c                    ... add infeasibility contribution as penalty term
+                     call confun(x,n,m,ws(p_cn),a,la,user,iuser,flag)
+                     hc    = h_one(m,ws(p_cn),ws(p_blk+n),ws(p_buk+n))
+                     if (iprint.ge.3) then
+                        write(nout,*)'SB-QP(q,f,p)=',
+     .                       q+qq,fdash,fdash+pi*hc
+                     endif
+                     pi = max(1.D-6,1.D0**nint(log10(abs(rstat(3)))+1))
+                     fdash = fdash + pi*hc
+c                    ... restore bounds
+                     do j=istart(jj),iend(jj)
+                        bu(iSOS1(j)) = sbu(j)
+                     enddo
+c                    ... save changes in f 
+                     est(jj) = fdash - fp
+                  enddo
+c                 ... update pseudo-costs: est(1) is down, est(2) is up
+                  fract   = (fract - rSOS1(r)) / (rSOS1(r+1) - rSOS1(r))
+                  piplus  = int(fract+1.D0) - fract
+                  piminus = fract - int(fract) 
+                  pcSOSU(ii)  = (npcSOSU(ii)*pcSOSU(ii)+abs(est(2))
+     .                          /piplus) / (npcSOSU(ii)+1)
+                  npcSOSU(ii) = npcSOSU(ii) + 1
+                  pcSOSD(ii)  = (npcSOSD(ii)*pcSOSD(ii)+abs(est(1))
+     .                          /piminus) / (npcSOSD(ii)+1)
+                  npcSOSD(ii) = npcSOSD(ii) + 1
+               else
+                  fract   = (fract - rSOS1(r)) / (rSOS1(r+1) - rSOS1(r))
+                  piplus  = int(fract+1.D0) - fract
+                  piminus = fract - int(fract) 
+                  est(1)  = pcSOSD(ii)*piminus
+                  est(2)  = pcSOSU(ii)*piplus
+               endif
+            endif
+            ii = - ii
+         endif
+         score = (1-mu)*min(est(1),est(2)) + mu*max(est(1),est(2))
+         if (score .gt. MaxScore) then
+            estplus  = est(1)
+            estminus = est(2)
+            marker   = r
+            ibranch  = ii
+            xfract   = fract
+            MaxScore = score   
+            if (est(1).gt.est(2)) then
+               first   = 'P+'
+            else
+               first   = 'P-'
+            endif
+         endif
+      enddo
+
+c     ... copy saved bounds (blk,buk) back to (bl,bu)
+      call CopyBndsA(n,m,a,ws(p_ak),bl,bu,ws(p_blk),ws(p_buk))
+
+      return
+      end
+
+c     ******************************************************************
+
+      subroutine Random(ntopp,n,x,lbdplus,lbdminus,estplus,estminus,
+     .                     ibranch,xfract,marker,pvar,nSOS1,tSOS1,pSOS1,
+     .                     iSOS1,rSOS1,bl,bu,first,nout)
+
+c     ------------------------------------------------------------------
+c     Purpose : Implementation of random branching (choose branching var 
+c               randomly)
+c
+c     Date of last change   : 16 / 07 / 2009
+c
+c     Parameter list:
+c     ==============
+c
+c     ntopp            - no of integer variables that are not integer feasible
+c                        of top priority
+c     n                - no of variables
+c     x                - variables
+c     lbdplus,lbdminus - lower bound for branching
+c     estplus,estminus - estimates for branchning
+c     ibranch          - index of branching variable (< 0 for SOS1 variable)
+c     xfract           - fractional part of SOS1
+c     marker           - marker where to branch SOS1
+c     pvar             - pointer to variables with highest priority
+c                        ii = pvar(i) < 0 means that ii points to SOS1
+c     nSOS1            - number of variables that are elements of a SOS1 set
+c     tSOS1            - number of SOS1 sets
+c     pSOS1            - (tSOS1+1) pointers to start of each SOS1 [INTEGER]
+c     iSOS1            - (nSOS1) index of each integer variable in SOS1 
+c                        [INTEGER] ith indices are iSOS1(pSOS1(i):pSOS1(i+1))
+c     rSOS1            - (nSOS1) reference row of SOS1, stored as iSOS1 [double precision]
+c     bl / bu          - lower / upper bounds on variables in QP
+c     first            - 'P-' or 'P+' depending which problem is to be
+c                        placed first on the stack
+c
+c     calls: no other subroutines
+c     ------------------------------------------------------------------
+
+      implicit none
+
+c     declaration of common block for tolerance and infinity
+      double precision             MIopttol, eps, infty
+      common /cTolInf/ MIopttol, eps, infty
+
+c     declaration of passed parameters - scalars
+      integer ntopp, ibranch, n, nout, nSOS1, tSOS1, marker
+      double precision    lbdplus, lbdminus, estplus, estminus, xfract
+      character*2 first
+
+c     declaration of passed parameters - arrays
+      integer pvar(ntopp), pSOS1(tSOS1+1), iSOS1(nSOS1)
+      double precision    x(n), bl(n), bu(n), rSOS1(nSOS1)
+
+c     declaration of internal variables - scalars
+      integer i, ii, j, jj, j0, j1, r, ib
+      double precision atx, etx, fract, lr, ur
+      real    VarRand, Lower, Upper
+      logical found
+
+c     ======================== procedure body ==========================
+
+c     ... initialize lbdplus,lbdminus,estplus,estminus
+      lbdplus  = 0.D0
+      lbdminus = 0.D0
+      estplus  = 0.D0
+      estminus = 0.D0
+
+c     ... map integers [1:ntopp] to [0,1], generate rand(), and map back
+      VarRand = rand()
+      do i=1,ntopp
+         Lower = real(i-1) / real(ntopp)
+         Upper = real(i)   / real(ntopp)
+c        ... IF (i-1)/ntopp <= VarRad < i/ntopp THEN branch on entity i
+         if ((VarRand .ge. Lower) .and. (VarRand .lt. Upper)) then
+            ib = i
+            goto 100
+         endif
+      enddo
+      ib = ntopp
+ 100  continue
+
+      ii = pvar(ib)
+      if (ii.gt.0) then
+c        ... ii > 0 branch on a variable; thow the dice
+         ibranch = ii
+         xfract  = x(ii)
+      else
+c        ... ii < 0 branch on a SOS1 set: compute fractionality
+         ii = - ii
+         call FindSOS1Frac(ii,r,n,nSOS1,tSOS1,fract,found,pSOS1,
+     .        iSOS1,x,rSOS1)
+         if (found) then
+c           ... save max. fractional SOS1 variable for branching
+            fract   = (fract - rSOS1(r)) / (rSOS1(r+1) - rSOS1(r))
+            xfract  = fract
+            ibranch = -ii
+            marker  = r
+         endif
+      endif
+
+c     ... decide which problem goes on the stack first (same for vars/SOS)
+      VarRand = rand()
+c     print *, 'VarRand = ', VarRand
+      if (VarRand .ge. 0.5) then
+         first   = 'P-'
+      else
+         first   = 'P+'
+      endif
+
+      return
+      end
+
+c     ******************************************************************
+
+      subroutine InitPC (n,m,nivar,ivar,nSOS1,tSOS1,pSOS1,iSOS1,rSOS1,
+     .     pcU,pcD,npcU,npcD,pcSOSU,pcSOSD,npcSOSU,npcSOSD,bl,bu,nout,
+     .     kmax,maxa,maxf,mlp,maxwk,maxiwk,rho,c,fdash,fmin,s,a,
+     .     la,ws,lws,lam,cstype,user,iuser,x,xdash,ldash,sbu,istat,
+     .     rstat,iprint,siter)
+
+c     ------------------------------------------------------------------
+c     Purpose : initialize the pseudo-costs
+c
+c     Date of last change   : 16 / 07 / 2009
+c
+c     Parameter list:
+c     ==============
+c
+c     nivar            - number of integer vars
+c     tSOS1            - number of SOS1 sets
+c     pcU/pcD          - up/down pseudo-cost
+c     npcU/npcD        - number of times updated
+c     pcSOSU/pcSOSD    - up/down pseudo-cost for SOS
+c     npcSOSU/npcSOSD  - number of times updated SOS
+c     
+c     ------------------------------------------------------------------
+
+      implicit none
+
+c     ... declaration of common block for tolerance and infinity
+      integer            BranchRule, NodeSelect, ReliabilityThreshold, 
+     .                   QPIters, NoInfNodes
+      common /cBnBRules/ BranchRule, NodeSelect, ReliabilityThreshold, 
+     .                   QPIters, NoInfNodes
+      double precision MIopttol, eps, infty
+      common /cTolInf/ MIopttol, eps, infty
+
+c     ... declaration of passed parameters - scalars
+      integer n, nivar, tSOS1, m, kmax, maxa, maxf, mlp, maxwk, maxiwk, 
+     .     iprint, siter, nSOS1, nout
+
+c     ... declaration of passed parameters - arrays
+      integer ivar(nivar), pSOS1(tSOS1+1), iSOS1(nSOS1), iuser(*), 
+     .        istat(14), lws(*), la(0:*), npcU(n), npcD(n), 
+     .        npcSOSU(tSOS1), npcSOSD(tSOS1)
+      double precision pcU(n), pcD(n),  pcSOSU(tSOS1), pcSOSD(tSOS1),
+     .        user(*), a(*), c(m), s(n+m), ws(*), lam(n+m), xdash(n), 
+     .        ldash(n+m), sbu(n), rstat(*), bl(n+m), bu(n+m), x(n), 
+     .        rSOS1(nSOS1)
+      character cstype(m)
+
+c     ... declaration of internal variables - scalars
+      double precision    xfract, rho, fdash, fmin, fp, est(2), fract,
+     .        atx, etx,  hc, lr, ur, TSTART, TEND, buii, blii, buiic, 
+     .        bliic, piplus, piminus, xii, diff
+      integer i, j, ii, jj, j0, j1, r, NLPprint, istart(2), iend(2),
+     .        ifail
+      logical found
+
+c     ======================== procedure body ==========================
+
+c     ... save solution to parent (root) node
+      fp = fdash
+      do i=1,n
+         xdash(i) = x(i)
+         ldash(i) = lam(i)
+      enddo
+      do i=1,m
+         ldash(n+i) = lam(n+i)
+      enddo
+      if (iprint.gt.1) then
+         write (nout,1000) fp
+      endif
+
+c     ... initialize pseudo-costs with inexact solve for non-integral vars
+      do i=1,nivar
+         ii    = ivar(i)
+         buii  = bu(ii)
+         blii  = bl(ii)
+         buiic = bu(ii)
+         bliic = bl(ii)
+         xii   = x(ii)
+         diff  = xii - anint(xii)
+         if (diff.gt.eps) then
+            do jj=1,2
+               if (jj.eq.1) then 
+                  if (xii.ge.0.D0) then
+                     bl(ii) = int(xii) + 1.D0
+                     buiic  = int(xii)
+                  else
+                     bl(ii) = int(xii)
+                     buiic  = int(xii) - 1.D0
+                  endif
+               else
+                  if (xii.ge.0.D0) then
+                     bu(ii) = int(xii)
+                     bliic  = int(xii) + 1.D0
+                  else
+                     bu(ii) = int(xii) - 1.D0
+                     bliic  = int(xii)
+                  endif
+               endif
+               call StrongBranchNLP(n,m,kmax,maxa,maxf,mlp,maxwk,
+     .              maxiwk,ifail,ii,iprint,siter,nout,rho,fdash,fmin,
+     .              iuser,istat,lws,la,x,bl,bu,user,a,c,s,ws,lam,
+     .              xdash,ldash,rstat,cstype)
+c              ... restore bounds
+               bl(ii) = blii
+               bu(ii) = buii
+c              ... save changes in f 
+               est(jj) = fdash - fp
+            enddo
+c           ... update pseudo-costs: est(1) is up, est(2) is down
+            piplus  = int(xii+1.D0) - xii
+            piminus = xii - int(xii) 
+            pcU(ii)  = abs( est(1) ) / piplus 
+            npcU(ii) = 1
+            pcD(ii)  = abs( est(2) ) / piminus 
+            npcD(ii) = 1
+         else
+            pcU(ii)  = 0.D0
+            pcD(ii)  = 0.D0
+            npcU(ii) = 1
+            npcD(ii) = 1
+         endif
+      enddo
+      do i=1,tSOS1
+         call FindSOS1Frac(i,r,n,nSOS1,tSOS1,fract,found,pSOS1,
+     .        iSOS1,x,rSOS1)
+         if (found) then
+            j0 = pSOS1(i)
+            j1 = pSOS1(i+1)
+            do j=j0,j1-1
+               sbu(j) = bu(iSOS1(j))
+            enddo
+c           ... branch down first
+            istart(1) = j0
+            iend(1)   = r
+            istart(2) = r+1
+            iend(2)   = j1-1
+c           ... solve two NLPs
+            do jj=1,2
+               do j=istart(jj),iend(jj)
+                  bu(iSOS1(j)) = 0.D0
+               enddo
+               call StrongBranchNLP(n,m,kmax,maxa,maxf,mlp,maxwk,
+     .              maxiwk,ifail,-i,iprint,siter,nout,rho,fdash,fmin,
+     .              iuser,istat,lws,la,x,bl,bu,user,a,c,s,ws,lam,
+     .              xdash,ldash,rstat,cstype)
+c              ... restore bounds
+               do j=istart(jj),iend(jj)
+                  bu(iSOS1(j)) = sbu(j)
+               enddo
+c              ... save changes in f 
+               est(jj) = fdash - fp
+            enddo
+c           ... update pseudo-costs: est(1) is down, est(2) is up
+            fract      = (fract - rSOS1(r)) / (rSOS1(r+1) - rSOS1(r))
+            piplus     = int(fract+1.D0) - fract
+            piminus    = fract - int(fract) 
+            pcSOSU(i)  = abs( est(2) ) / piplus 
+            npcSOSU(i) = 1
+            pcSOSD(i)  = abs( est(1) ) / piminus 
+            npcSOSD(i) = 1
+         endif
+      enddo
+
+      return
+ 1000 format('Initialize pseudo-cost by strong branching; fp=',G11.4)
+      end
+
+c     ******************************************************************
+
+      subroutine ApproxPC (n,m,nivar,ivar,nSOS1,tSOS1,pSOS1,iSOS1,rSOS1,
+     .     pcU,pcD,npcU,npcD,pcSOSU,pcSOSD,npcSOSU,npcSOSD,bl,bu,nout,
+     .     kmax,maxa,maxf,mlp,maxwk,maxiwk,rho,c,fdash,fmin,s,a,
+     .     la,ws,lws,lam,cstype,user,iuser,x,xdash,ldash,sbu,istat,
+     .     rstat,iprint,siter)
+
+c     ------------------------------------------------------------------
+c     Purpose : initialize the pseudo-costs
+c
+c     Date of last change   : 16 / 07 / 2009
+c
+c     Parameter list:
+c     ==============
+c
+c     nivar            - number of integer vars
+c     tSOS1            - number of SOS1 sets
+c     pcU/pcD          - up/down pseudo-cost
+c     npcU/npcD        - number of times updated
+c     pcSOSU/pcSOSD    - up/down pseudo-cost for SOS
+c     npcSOSU/npcSOSD  - number of times updated SOS
+c     
+c     ------------------------------------------------------------------
+
+      implicit none
+
+c     ... declaration of common block for tolerance and infinity
+      integer            BranchRule, NodeSelect, ReliabilityThreshold, 
+     .                   QPIters, NoInfNodes
+      common /cBnBRules/ BranchRule, NodeSelect, ReliabilityThreshold, 
+     .                   QPIters, NoInfNodes
+      double precision MIopttol, eps, infty
+      common /cTolInf/ MIopttol, eps, infty
+      double precision  NLP_time, NLP_stime
+      integer NLP_iter, NLP_siter, NLP_sQPiter, NLP_QPiter, NLP_fcount, 
+     .        NLP_ccount, NLP_gcount, NLP_SOCcount, NLP_iiter
+      common /cNLPstats/ NLP_time, NLP_stime, NLP_iter, NLP_siter, 
+     .                   NLP_QPiter, NLP_sQPiter, NLP_fcount, 
+     .                   NLP_ccount, NLP_gcount, NLP_SOCcount, NLP_iiter
+
+c     ... total available storage & storage used for Hessian
+      integer      kk, ll, kkk, lll, maxwk0, maxiwk0
+      common /wsc/ kk, ll, kkk, lll, maxwk0, maxiwk0
+
+c     ... declaration of passed parameters - scalars
+      integer n, nivar, tSOS1, m, kmax, maxa, maxf, mlp, maxwk, maxiwk, 
+     .     iprint, siter, nSOS1, nout
+
+c     ... declaration of passed parameters - arrays
+      integer ivar(nivar), pSOS1(tSOS1+1), iSOS1(nSOS1), iuser(*), 
+     .        istat(14), lws(*), la(0:*), npcU(n), npcD(n), 
+     .        npcSOSU(tSOS1), npcSOSD(tSOS1)
+      double precision pcU(n), pcD(n),  pcSOSU(tSOS1), pcSOSD(tSOS1),
+     .        user(*), a(*), c(m), s(n+m), ws(*), lam(n+m), xdash(n), 
+     .        ldash(n+m), sbu(n), rstat(*), bl(n+m), bu(n+m), x(n), 
+     .        rSOS1(nSOS1)
+      character cstype(m)
+
+c     ... declaration of internal variables - scalars
+      double precision    xfract, rho, fdash, fmin, fp, est(2), fract,
+     .        atx, etx,  hc, lr, ur, TSTART, TEND, buii, blii, buiic, 
+     .        bliic, piplus, piminus, xii, diff, qmin, q, qq, pi
+      integer i, j, ii, jj, j0, j1, r, NLPprint, istart(2), iend(2),
+     .        l_hess, li_hess, p_blk, p_buk, p_g, p_r, p_w, p_e, p_alp,
+     .        p_work, p_ws, p_ls, p_lp, p_info, p_iwork, p_lws, p_v, 
+     .        p_ak, p_cn, peq, mode, QPfail, QPprint, flag, k,
+     .        ifail
+      logical found
+
+c     declaration of external functions
+      double precision h_one
+
+c     ======================== procedure body ==========================
+
+c     ------------------------- START SET-UP ---------------------------
+c     storage map for BQPD, evaluate functions, & solve root QP
+c     ... real storage map
+      p_blk   = 1
+      p_buk   = p_blk   + n+m
+      p_ak    = p_buk   + n+m
+      p_cn    = p_ak    + n
+      p_g     = p_cn    + m
+      p_r     = p_g     + n
+      p_v     = p_r     + n+m
+      p_w     = p_v     + n
+      p_e     = p_w     + n+m
+      p_alp   = p_e     + n+m 
+      p_work  = p_alp   + mlp
+      p_ws    = p_work  + 3*n+m
+c     ... integer storage map
+      p_ls    = 1
+      p_lp    = p_ls    + n+m
+      p_info  = p_lp    + mlp
+      p_iwork = p_info  + 100
+      p_lws   = p_iwork + m+m+n
+c     ... Hessian storage for BQPD
+      l_hess  = maxwk0
+      li_hess = maxiwk0
+c     ... set some constants
+      qmin    = -infty
+      QPfail  = 0
+      mode    = 0
+      QPprint = max( 0 , iprint-3 )
+c     ... evaluate objective, constraints, Jacobian, and Hessian [UNSCALED]
+      call objfun (x,n,qq,user,iuser,flag)
+      call confun (x,n,m,c,a,la,user,iuser,flag)
+      call gradient (n,m,maxa,x,a,la,maxa,user,iuser,flag)
+      call hessian (x,n,m,2,lam,ws(p_ws+1),lws(p_lws),user,iuser,l_hess,
+     .     li_hess,flag)
+      kk         = n+m + l_hess
+      ll         = li_hess
+      maxwk0     = maxwk  - p_ws
+      maxiwk0    = maxiwk - p_lws
+      NLP_fcount = NLP_fcount   + 1
+      NLP_ccount = NLP_ccount   + 1
+      NLP_gcount = NLP_gcount   + 1
+c     ... set-up root QP (solve for x, rather than d) ... also PRINT!!!
+      call SetUpQP (n,m,a,la,x,ws(p_v),c,ws(p_blk),ws(p_buk),bl,bu,
+     .     ws(p_ws+1),lws(p_lws),qq,ws(p_ak))
+c     ... solve root QP to set-up hot-starts for braching
+      call SolveQP (n,m,k,kmax,a,la,x,bl,bu,q,qq,qmin,ws(p_g),ws(p_r),
+     .     ws(p_w),ws(p_e),lws(p_ls),ws(p_alp),lws(p_lp),mlp,peq,
+     .     ws(p_ws+1),lws(p_lws),mode,QPfail,lws(p_info),cstype,QPprint,
+     .     nout)
+      siter = siter+1
+c     ... add some error handling here
+      if (QPfail.ge.4) then
+         print *, 'ERROR in SolveQP: ', QPfail
+         stop
+      elseif (QPfail.ge.2) then
+         print *, 'INFEASIBLE SolveQP: ', QPfail
+      elseif (QPfail.eq.1) then
+         print *, 'UNBOUNDED SolveQP: ', QPfail
+      endif
+c     ... now do hot-starts
+      mode = 6
+c     ------------------------- E N D SET-UP ---------------------------
+
+c     ... save solution to parent (root) node
+      fp = fdash
+      do i=1,n
+         xdash(i) = x(i)
+         ldash(i) = lam(i)
+      enddo
+      do i=1,m
+         ldash(n+i) = lam(n+i)
+      enddo
+      if (iprint.gt.1) then
+         write (nout,1000) fp
+      endif
+
+c     ... initialize pseudo-costs with inexact solve for non-integral vars
+      do i=1,nivar
+         ii    = ivar(i)
+         buii  = bu(ii)
+         blii  = bl(ii)
+         buiic = bu(ii)
+         bliic = bl(ii)
+         xii   = x(ii)
+         diff  = xii - anint(xii)
+         if (diff.gt.eps) then
+            do jj=1,2
+               if (jj.eq.1) then 
+                  if (xii.ge.0.D0) then
+                     bl(ii) = int(xii) + 1.D0
+                     buiic  = int(xii)
+                  else
+                     bl(ii) = int(xii)
+                     buiic  = int(xii) - 1.D0
+                  endif
+               else
+                  if (xii.ge.0.D0) then
+                     bu(ii) = int(xii)
+                     bliic  = int(xii) + 1.D0
+                  else
+                     bu(ii) = int(xii) - 1.D0
+                     bliic  = int(xii)
+                  endif
+               endif
+c              ... hot-start solve of all child QPs
+               if (iprint.ge.4) then
+                  write (nout,*) '>>>>> START HOT-QP var: ',ii
+                  write (nout,*)
+               endif
+c               print *, 'Start SolveQP'
+               call SolveQP (n,m,k,kmax,a,la,x,bl,bu,q,qq,qmin,ws(p_g),
+     .              ws(p_r),ws(p_w),ws(p_e),lws(p_ls),ws(p_alp),
+     .              lws(p_lp),mlp,peq,ws(p_ws+1),lws(p_lws),mode,QPfail,
+     .              lws(p_info),cstype,QPprint,nout)
+               siter = siter+1
+c               print *, 'E n d SolveQP'
+c              ... evaluate objective function at the new point
+               call objfun(x,n,fdash,user,iuser,flag)
+c              ... add infeasibility contribution as penalty term
+               call confun(x,n,m,ws(p_cn),a,la,user,iuser,flag)
+               hc    = h_one(m,ws(p_cn),ws(p_blk+n),ws(p_buk+n))
+               if (iprint.ge.3) then
+                  write(nout,*) 'PC-QP(q,f,p)=',q+qq,fdash,fdash+pi*hc
+               endif
+               pi    = max( 1.D-6 , 1.D0**nint(log10(abs(rstat(3)))+1) )
+               fdash = fdash + pi*hc
+c              ... restore bounds
+               bl(ii) = blii
+               bu(ii) = buii
+c              ... save changes in f 
+               est(jj) = fdash - fp
+            enddo
+c           ... update pseudo-costs: est(1) is up, est(2) is down
+            piplus  = int(xii+1.D0) - xii
+            piminus = xii - int(xii) 
+            pcU(ii)  = abs( est(1) ) / piplus 
+            npcU(ii) = 1
+            pcD(ii)  = abs( est(2) ) / piminus 
+            npcD(ii) = 1
+         else
+            pcU(ii)  = 0.D0
+            pcD(ii)  = 0.D0
+            npcU(ii) = 1
+            npcD(ii) = 1
+         endif
+      enddo
+      do i=1,tSOS1
+         call FindSOS1Frac(i,r,n,nSOS1,tSOS1,fract,found,pSOS1,
+     .        iSOS1,x,rSOS1)
+         if (found) then
+            j0 = pSOS1(i)
+            j1 = pSOS1(i+1)
+            do j=j0,j1-1
+               sbu(j) = bu(iSOS1(j))
+            enddo
+c           ... branch down first
+            istart(1) = j0
+            iend(1)   = r
+            istart(2) = r+1
+            iend(2)   = j1-1
+c           ... solve two NLPs
+            do jj=1,2
+               do j=istart(jj),iend(jj)
+                  bu(iSOS1(j)) = 0.D0
+               enddo
+c              ... hot-start solve of all child QPs
+               if (iprint.ge.4) then
+                  write (nout,*) '>>>>> START HOT-QP SOS: ',ii
+                  write (nout,*)
+               endif
+               call SolveQP (n,m,k,kmax,a,la,x,bl,bu,q,qq,qmin,
+     .              ws(p_g),ws(p_r),ws(p_w),ws(p_e),lws(p_ls),
+     .              ws(p_alp),lws(p_lp),mlp,peq,ws(p_ws+1),
+     .              lws(p_lws),mode,QPfail,lws(p_info),cstype,
+     .              QPprint,nout)
+               siter = siter+1
+c              ... evaluate objective function at the new point
+               call objfun(x,n,fdash,user,iuser,flag)
+c              ... add infeasibility contribution as penalty term
+               call confun(x,n,m,ws(p_cn),a,la,user,iuser,flag)
+               hc    = h_one(m,ws(p_cn),ws(p_blk+n),ws(p_buk+n))
+               if (iprint.ge.3) then
+                  write(nout,*)'PC-QP(q,f,p)=',q+qq,fdash,fdash+pi*hc
+               endif
+               pi    = max(1.D-6,1.D0**nint(log10(abs(rstat(3)))+1))
+               fdash = fdash + pi*hc
+c              ... restore bounds
+               do j=istart(jj),iend(jj)
+                  bu(iSOS1(j)) = sbu(j)
+               enddo
+c              ... save changes in f 
+               est(jj) = fdash - fp
+            enddo
+c           ... update pseudo-costs: est(1) is down, est(2) is up
+            fract      = (fract - rSOS1(r)) / (rSOS1(r+1) - rSOS1(r))
+            piplus     = int(fract+1.D0) - fract
+            piminus    = fract - int(fract) 
+            pcSOSU(i)  = abs( est(2) ) / piplus 
+            npcSOSU(i) = 1
+            pcSOSD(i)  = abs( est(1) ) / piminus 
+            npcSOSD(i) = 1
+         endif
+      enddo
+
+c     ... copy saved bounds (blk,buk) back to (bl,bu)
+      call CopyBndsA(n,m,a,ws(p_ak),bl,bu,ws(p_blk),ws(p_buk))
+
+      return
+ 1000 format('Approx. init. pseudo-cost by approx branching; fp=',G11.4)
+      end
+
+c     ******************************************************************
+
+      subroutine UpdatePC(n,tSOS1,problmno,bvar,frac,lowerbnd,fdash,
+     .     pcU,pcD,npcU,npcD,pcSOSU,pcSOSD,npcSOSU,npcSOSD)
+
+c     ------------------------------------------------------------------
+c     Purpose : initialize the pseudo-costs
+c
+c     Date of last change   : 16 / 07 / 2009
+c
+c     Parameter list:
+c     ==============
+c
+c     nivar            - number of integer vars
+c     tSOS1            - number of SOS1 sets
+c     pcU/pcD          - up/down pseudo-cost
+c     npcU/npcD        - number of times updated
+c     pcSOSU/pcSOSD    - up/down pseudo-cost for SOS
+c     npcSOSU/npcSOSD  - number of times updated SOS
+c     
+c     calls: no other subroutines
+c     ------------------------------------------------------------------
+
+      implicit none
+
+c     declaration of passed parameters - scalars
+      integer n, tSOS1, problmno, bvar
+      double precision lowerbnd, fdash, frac
+
+c     declaration of passed parameters - arrays
+      integer npcU(n), npcD(n),  npcSOSU(tSOS1), npcSOSD(tSOS1)
+      double precision pcU(n), pcD(n), pcSOSU(tSOS1), pcSOSD(tSOS1)
+
+c     declaration of internal variables - scalars
+      integer ii
+
+c     ======================== procedure body ==========================
+
+      if ((bvar.gt.0).and.(abs(frac).gt.1.D-6)) then
+c        ... update pseudo-costs of integer variable
+         if (problmno.gt.0) then
+c           ... branched up for problmno
+            pcU(bvar)  = (npcU(bvar)*pcU(bvar)+abs(fdash-lowerbnd)/frac)
+     .                   / (npcU(bvar)+1)
+            npcU(bvar) = npcU(bvar) + 1
+         else
+c           ... branched down for problmno
+            pcD(bvar)  = (npcD(bvar)*pcD(bvar)+abs(fdash-lowerbnd)/frac)
+     .                   / (npcD(bvar)+1)
+            npcD(bvar) = npcD(bvar) + 1
+         endif
+      elseif ((bvar.lt.0).and.(abs(frac).gt.1.D-6)) then
+c        ... update pseudo-costs of SOS
+         ii = abs( bvar )
+         if (problmno.gt.0) then
+c           ... branched up for problmno
+            pcSOSU(ii)  = (npcSOSU(ii)*pcSOSU(ii)+abs(fdash-lowerbnd)
+     .                    /frac) / (npcSOSU(ii)+1)
+            npcSOSU(ii) = npcSOSU(ii) + 1
+         else
+c           ... branched down for problmno
+            pcSOSD(ii)  = (npcSOSD(ii)*pcSOSD(ii)+abs(fdash-lowerbnd)
+     .                    /frac) / (npcSOSD(ii)+1)
+            npcSOSD(ii) = npcSOSD(ii) + 1
+         endif
+      else
+c        ... no update possible: strong branching eliminated problems
+      endif
+
+      return
+      end
+
+c     ******************************************************************
+
+      subroutine PrintPC(n,nivar,ivar,tSOS1,pcU,pcD,npcU,npcD,pcSOSU,
+     .     pcSOSD,npcSOSU,npcSOSD,nout)
+
+c     ------------------------------------------------------------------
+c     Purpose : initialize the pseudo-costs
+c
+c     Date of last change   : 16 / 07 / 2009
+c
+c     Parameter list:
+c     ==============
+c
+c     nivar            - number of integer vars
+c     tSOS1            - number of SOS1 sets
+c     pcU/pcD          - up/down pseudo-cost
+c     npcU/npcD        - number of times updated
+c     pcSOSU/pcSOSD    - up/down pseudo-cost for SOS
+c     npcSOSU/npcSOSD  - number of times updated SOS
+c     
+c     calls: no other subroutines
+c     ------------------------------------------------------------------
+
+      implicit none
+
+c     declaration of passed parameters - scalars
+      integer n, nivar, tSOS1, nout
+
+c     declaration of passed parameters - arrays
+      integer ivar(nivar), npcU(n), npcD(n),  npcSOSU(tSOS1), 
+     .     npcSOSD(tSOS1)
+      double precision pcU(n), pcD(n),  pcSOSU(tSOS1), 
+     .     pcSOSD(tSOS1)
+
+c     declaration of internal variables - scalars
+      integer i
+
+c     ======================== procedure body ==========================
+
+      write(nout,1000) 'PSEUDO-COSTS'
+      write(nout,1000) '============'
+      write(nout,1000) 'i-var ivar(i)    pcU          pcD'
+      do i=1,nivar
+         write(nout,1001) i, ivar(i), pcU(ivar(i)), pcD(ivar(i))
+      enddo
+
+      write(nout,1000) 'i-SOS     pcSOSU       pcSOSD'
+      do i=1,tSOS1
+         write(nout,1002) i, pcSOSU(i), pcSOSD(i)
+      enddo
+
+      return
+ 1000 format(A)
+ 1001 format(2I6,2G10.2)
+ 1002 format(I6,2G10.2)
+      end
+
+c     ******************************************************************
+
+      subroutine StrongBranchNLP (n,m,kmax,maxa,maxf,mlp,maxwk,maxiwk,
+     .     ifail,ii,iprint,siter,nout,rho,fdash,fmin,iuser,istat,lws,la,
+     .     x,bl,bu,user,a,c,s,ws,lam,xdash,ldash,rstat,cstype)
+
+c     ------------------------------------------------------------------
+c     Purpose : solve strong branching NLP (possibly approximately)
+c
+c     Date of last change   : 08 / 10 /2009
+c
+c     Parameter list:
+c     ==============
+c
+c     ------------------------------------------------------------------
+
+      implicit none
+
+c     ... declaration of common block for tolerance and infinity
+      double precision    NLP_time, NLP_stime
+      integer NLP_iter, NLP_siter, NLP_sQPiter, NLP_QPiter, NLP_fcount, 
+     .        NLP_ccount, NLP_gcount, NLP_SOCcount, NLP_iiter
+      common /cNLPstats/ NLP_time, NLP_stime, NLP_iter, NLP_siter, 
+     .                   NLP_QPiter, NLP_sQPiter, NLP_fcount, 
+     .                   NLP_ccount, NLP_gcount, NLP_SOCcount, NLP_iiter
+      integer            BranchRule, NodeSelect, ReliabilityThreshold, 
+     .                   QPIters, NoInfNodes
+      common /cBnBRules/ BranchRule, NodeSelect, ReliabilityThreshold, 
+     .                   QPIters, NoInfNodes
+
+c     ... declaration of passed parameters - scalars
+      integer n, m, kmax, maxa, maxf, mlp, maxwk, maxiwk, ifail, ii, 
+     .     iprint, siter, nout
+      double precision    rho, fdash, fmin
+
+c     ... declaration of passed parameters - arrays
+      integer iuser(*), istat(14), lws(*), la(0:*)
+      double precision    x(n), bl(n), bu(n), user(*), a(*), c(m), 
+     .     s(n+m), ws(*), lam(n+m), xdash(n), ldash(n+m), rstat(*)
+      character cstype(m)
+
+c     ... declaration of internal variables - scalars
+      integer ij, NLPprint, istart
+      double precision hc, TSTART, TEND
+
+c     ... declaration of functions
+      double precision    seconds
+
+c     ======================== procedure body ==========================
+      
+      rho      = max ( rho , 5.D0)
+      NLPprint = max ( 0 , iprint - 3 )
+      istart   = ifail
+
+c     ... start solves from parent NLP solution
+      do ij=1,n
+         x(ij)   = xdash(ij)
+         lam(ij) = ldash(ij)
+      enddo
+      do ij=1,m
+         lam(n+ij) = ldash(n+ij)
+      enddo
+      TSTART = seconds()
+      call filterSQP(n,m,kmax,maxa,maxf,mlp,maxwk,maxiwk,
+     .     NLPprint,nout,ifail,rho,x,c,fdash,fmin,bl,bu,s,a,
+     .     la,ws,lws,lam,cstype,user,iuser,QPIters,istat,
+     .     rstat)
+      if ((ifail.eq.88).and.(istart.lt.0)) then
+c        ... error in hot-starts
+         ifail = -1
+         call filterSQP(n,m,kmax,maxa,maxf,mlp,maxwk,maxiwk,
+     .        NLPprint,nout,ifail,rho,x,c,fdash,fmin,bl,bu,s,a,
+     .        la,ws,lws,lam,cstype,user,iuser,QPIters,istat,
+     .        rstat)
+      endif
+      if (iprint.ge.2) then
+         if (ii.gt.0) then
+            write(nout,7000) ii,bl(ii),bu(ii),fdash,ifail
+         elseif (ii.lt.0) then
+            write(nout,7001) -ii,fdash,ifail
+         else
+            write(nout,7002) fdash,ifail
+         endif
+      endif
+      TEND = seconds()
+c     ... save statistics
+      NLP_stime     = NLP_stime    + TEND - TSTART
+      NLP_siter     = NLP_siter    + istat(2)
+      NLP_iiter     = NLP_iiter    + istat(3)
+      NLP_sQPiter   = NLP_sQPiter  + istat(8) + istat(9)
+      NLP_fcount    = NLP_fcount   + istat(4)
+      NLP_ccount    = NLP_ccount   + istat(5)
+      NLP_gcount    = NLP_gcount   + istat(6)
+      NLP_SOCcount  = NLP_SOCcount + istat(11)
+      siter = siter + 1
+      hc = rstat(5)
+
+      return
+ 7000 format('SB-NLP for x(',I6,')=',2G7.1,': objf=',G11.4,' ifail=',I3)
+ 7001 format('SB-NLP for SOS',I6,': objf=',G11.4,' ifail=',I3)
+ 7002 format('SB-NLP resolve: objf=',G11.4,' ifail=',I3)
+      end
+
+c     ******************************************************************
+
+      subroutine FindSOS1Frac (ii,r,n,nSOS1,tSOS1,fract,found,pSOS1,
+     .     iSOS1,x,rSOS1)
+
+c     ------------------------------------------------------------------
+c     Purpose : find marker for fractional SOS1 variables
+c
+c     Date of last change   : 08 / 10 /2009
+c
+c     Parameter list:
+c     ==============
+c
+c     ------------------------------------------------------------------
+
+      implicit none
+
+c     ... declaration of passed parameters - scalars
+      integer ii, r, n, nSOS1, tSOS1
+      double precision fract
+      logical found
+
+c     ... declaration of passed parameters - arrays
+      integer pSOS1(tSOS1+1), iSOS1(nSOS1)
+      double precision rSOS1(nSOS1), x(n)
+
+c     ... declaration of internal variables - scalars
+      integer j0, j1, jj, j
+      double precision lr, ur, atx, etx
+      logical integral
+
+c     ======================== procedure body ==========================
+
+      integral = .false.
+      j0       = pSOS1(ii)
+      j1       = pSOS1(ii+1)
+      fract    = 0.D0
+      atx      = 0.D0
+      etx      = 0.D0
+      do j=j0,j1-1
+         jj  = iSOS1(j)
+         atx = atx + x(jj)*rSOS1(j)
+         etx = etx + x(jj)
+      enddo
+      if (etx.gt.0.D0) then
+         fract = atx / etx
+      elseif (abs(etx-atx).le.1.D-12) then
+         integral = .true.
+      else
+         print *, 'ERROR in SOS1branch: etx = ',etx, atx, rSOS1(j0)
+         print *, (x(iSOS1(j)),j=j0,j1-1)
+         stop
+      endif
+c     ... find fract in reference row (rSOS1)
+      found = .false.
+      if (.not.integral) then
+         do j=j0,j1-2
+            lr = rSOS1(j)
+            ur = rSOS1(j+1)
+            if ((lr.le.fract).and.(fract.lt.ur)) then
+               r     = j
+               found = .true.
+               goto 200
+            endif
+         enddo
+ 200     continue
+      endif
+      if (.not.found) then
+         if (integral.or.(fract.eq.rSOS1(j0)).or.(fract.eq.rSOS1(j1-1))) 
+     .        then
+            print *,'SOS1branch no need to branch on SOS1 #',ii
+c            print *,'fract, atx, etx, rSOS(j0,j1-1) = ',
+c     .               fract,atx,etx,rSOS1(j0),rSOS1(j1-1)
+         else
+            print *,'ERROR in SOS1branch: fract not found; SOS1 #',ii
+            print *,'lr, ur, fract = ',lr, ur, fract
+            print *,'tSOS1 = ',tSOS1,'     nSOS1 = ',nSOS1
+            print *,'pSOS1 = ',(pSOS1(j),j=1,tSOS1+1)
+            print *,'iSOS1 = ',(iSOS1(j),j=1,nSOS1)
+            print *,'rSOS1 = ',(rSOS1(j),j=1,nSOS1)
+         endif
+      endif
+
+      return
+      end
+
+c     ************************ E N D   O F   F I L E *******************

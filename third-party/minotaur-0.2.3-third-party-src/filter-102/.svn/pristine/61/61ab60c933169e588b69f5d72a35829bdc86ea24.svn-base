@@ -1,0 +1,107 @@
+c     old.f ... some old stuff too good to throw away
+
+c     ******************************************************************
+
+      subroutine BestExpSoln(nstack,iprint,nout,nstackmax,tSOS1,nSOS1,n,
+     .     nivar,pstack,problm,ivar,pSOS1,iSOS1,lbd,x,rSOS1,pcU,pcD,
+     .     pcSOSU,pcSOSD)
+
+c     ------------------------------------------------------------------
+c     Purpose : Re-order and find best expected solution
+c
+c     Date of last change   : 08 / 12 / 09
+c
+c     Parameter list:
+c     ==============
+c
+c        nstack     - length of stack
+c        nstackmax  - max length of stack
+c        pstack     - pointer to problems on stack (top - pstack(nstack))
+c        problm     - problemno ( identifier)
+c        est        - estimates of problems on stack
+c        iprint     - printing flag
+c        nout       - output channel
+c
+c     calls: no other subroutines
+c     ------------------------------------------------------------------
+
+      implicit none
+
+c     ... declaration of common block for tolerance and infinity
+      double precision MIopttol, eps, infty
+      common /cTolInf/ MIopttol, eps, infty
+
+c     ... declaration of passed parameters - scalars
+      integer nstack, iprint, nout, nstackmax, tSOS1, nSOS1, n, nivar
+
+c     ... declaration of passed parameters - arrays
+      integer pstack(nstackmax), problm(nstackmax), pSOS1(tSOS1+1), 
+     .     iSOS1(nSOS1), ivar(nivar)
+      double precision    lbd(nstackmax), x(n), rSOS1(nSOS1), 
+     .     pcU(n), pcD(n), pcSOSU(tSOS1), pcSOSD(tSOS1)
+
+c     declaration of internal variables - scalars
+      integer i, i0, j, ii, jj, r, problmno, ntop
+      double precision piplus, piminus, fract, lr, ur, UpCost, DnCost,
+     .     minest, nest, diff
+      logical found
+
+c     ======================== procedure body ==========================
+
+c     ... search through stack for problem with largest estimate
+      minest = infty
+      do i=1,nstack
+c        ... form e_p = f_p + sum_i min{ pcU_i ([y_i+1]-y_i) ,pcD_i (y_i - [y_i])}
+         nest = lbd(pstack(i))
+c        ... compute cost for integer variables
+         do j=1,nivar
+            ii   = ivar(j)
+            diff = x(ii) - anint(x(ii))
+            if (abs(diff).gt.eps) then
+               piplus  = int(x(ii)+1.D0) - x(ii)
+               piminus = x(ii) - int(x(ii)) 
+               UpCost  = pcU(ii)*piplus
+               DnCost  = pcD(ii)*piminus
+               nest    = nest + min( UpCost , DnCost )
+            endif
+         enddo
+c        ... compute cost for SOS1 variables (NB: SOS1 are also 0-1 ... BUG!!!)
+         do j=1,tSOS1
+            call FindSOS1Frac(j,r,n,nSOS1,tSOS1,fract,found,pSOS1,
+     .           iSOS1,x,rSOS1)
+            if (found) then
+c              ... save max. fractional SOS1 variable for branching
+               fract   = (fract - rSOS1(r)) / (rSOS1(r+1) - rSOS1(r))
+               piplus  = int(fract+1.D0) - fract
+               piminus = fract - int(fract) 
+            else
+               piplus  = 0.D0
+               piminus = 0.D0
+            endif
+c           ... computation of effect of branching on SOS
+            UpCost  = pcSOSU(j)*piplus
+            DnCost  = pcSOSD(j)*piminus
+            nest    = nest + min( UpCost , DnCost )
+         enddo
+c        ... record biggest estimate as next node to be solved
+         if (nest.lt.minest) then
+            minest   = nest
+            problmno = problm(pstack(i))
+            ntop     = pstack(i)
+            i0       = i
+         endif
+      enddo
+c     ... place problem with smallest estimate on the top of the stack
+      if (iprint.ge.2) then
+         write(nout,1000) 're-order stack: new top problem No ',
+     .        problmno, 'with best estimate ', minest
+      endif
+
+      i              = pstack(nstack)
+      pstack(nstack) = ntop
+      pstack(i0)     = i
+
+      return
+ 1000 format (3X,A,I6,2X,A,G12.6)
+      end
+

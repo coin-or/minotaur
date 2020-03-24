@@ -1,0 +1,18 @@
+SynchronizedObject.lo: ../../../src/cppunit/SynchronizedObject.cpp \
+ /usr/include/stdc-predef.h ../../../include/cppunit/SynchronizedObject.h \
+ ../../../include/cppunit/Portability.h \
+ ../../include/cppunit/config-auto.h \
+ ../../../include/cppunit/config/CppUnitApi.h \
+ ../../../include/cppunit/config/SelectDllLoader.h
+
+/usr/include/stdc-predef.h:
+
+../../../include/cppunit/SynchronizedObject.h:
+
+../../../include/cppunit/Portability.h:
+
+../../include/cppunit/config-auto.h:
+
+../../../include/cppunit/config/CppUnitApi.h:
+
+../../../include/cppunit/config/SelectDllLoader.h:

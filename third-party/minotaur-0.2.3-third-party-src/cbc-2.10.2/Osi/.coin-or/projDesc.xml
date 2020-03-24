@@ -1,0 +1,124 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<?xml-stylesheet type = "text/xsl" href = "http://www.coin-or.org/projects/autoGen.xsl"?>
+<projectData xmlns="coin-or.org" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="coin-or.org http://www.coin-or.org/projects/autoGen.xsd">
+  <projectBasics>
+    <projectName>OSI</projectName>
+    <projectRepo>Osi</projectRepo>
+    <projectDescription> 
+      The COIN-OR Open Solver Interface is a uniform API for interacting
+      with callable solver libraries.
+      It supports linear programming solvers as well as the ability to "finish off"
+      a mixed-integer problem calling the solver library's MIP solver.
+      A list of supported solvers appears at the bottom of the page.
+    </projectDescription>
+    <projectShortDescription>
+      A uniform API for calling embedded linear and mixed-integer
+      programming solvers.
+    </projectShortDescription>
+    <projectManager>Matthew Saltzman, Lou Hafer</projectManager>
+    <projectHomePage>https://www.github.com/coin-or/Osi</projectHomePage>
+    <projectLicense>Eclipse Public License 1.0</projectLicense>
+    <projectLicenseURL>http://www.opensource.org/licenses/eclipse-1.0</projectLicenseURL>
+    <coinLinkedProjects>
+      <coinProject>
+        <repoName>Cbc</repoName>
+      </coinProject>
+      <coinProject>
+        <repoName>Cgl</repoName>
+      </coinProject>
+      <coinProject>
+        <repoName>Clp</repoName>
+      </coinProject>
+      <coinProject>
+        <repoName>CoinUtils</repoName>
+      </coinProject>
+      <coinProject>
+        <repoName>Data</repoName>
+      </coinProject>
+      <coinProject>
+        <repoName>DyLP</repoName>
+      </coinProject>
+      <coinProject>
+        <repoName>HiGHS</repoName>
+      </coinProject>
+      <coinProject>
+        <repoName>SYMPHONY</repoName>
+      </coinProject>
+      <coinProject>
+        <repoName>Vol</repoName>
+      </coinProject>
+    </coinLinkedProjects>
+    <otherLinkedPackages>
+      <otherPackage>
+        <packageName>CPLEX</packageName>
+        <packageURL>https://www.ibm.com/analytics/cplex-optimizer</packageURL>
+        <requiredOrOptional>Optional</requiredOrOptional>
+      </otherPackage>
+      <otherPackage>
+        <packageName>Glpk</packageName>
+        <packageURL>http://www.gnu.org/software/glpk/</packageURL>
+        <requiredOrOptional>Optional</requiredOrOptional>
+      </otherPackage>
+      <otherPackage>
+        <packageName>FICO-Xpress</packageName>
+        <packageURL>https://www.fico.com/en/products/fico-xpress-optimization</packageURL>
+        <requiredOrOptional>Optional</requiredOrOptional>
+      </otherPackage>
+      <otherPackage>
+        <packageName>Gurobi</packageName>
+        <packageURL>http://www.gurobi.com</packageURL>
+        <requiredOrOptional>Optional</requiredOrOptional>
+      </otherPackage>
+      <otherPackage>
+        <packageName>Mosek</packageName>
+        <packageURL>http://www.mosek.com/</packageURL>
+        <requiredOrOptional>Optional</requiredOrOptional>
+      </otherPackage>
+      <otherPackage>
+        <packageName>SoPlex</packageName>
+        <packageURL>http://soplex.zib.de</packageURL>
+        <requiredOrOptional>Optional</requiredOrOptional>
+      </otherPackage>
+    </otherLinkedPackages>
+    <projectLanguage>C++</projectLanguage>
+    <developmentStatus>
+      <activityStatus>Active</activityStatus>
+      <maturityLevel>5</maturityLevel>
+    </developmentStatus>
+    <testedPlatforms>
+      <platform>
+        <operatingSystem>Microsoft Windows, CYGWIN, MinGW, Msys</operatingSystem>
+        <compiler>gcc, cl</compiler>
+      </platform>
+      <platform>
+        <operatingSystem>Microsoft Windows</operatingSystem>
+        <compiler>Visual Studio, cl</compiler>
+      </platform>
+      <platform>
+        <operatingSystem>GNU/Linux</operatingSystem>
+        <compiler>gcc</compiler>
+      </platform>
+      <platform>
+        <operatingSystem>Mac OS X</operatingSystem>
+        <compiler>gcc</compiler>
+      </platform>
+    </testedPlatforms>
+    <projectCategories>
+      <category>Interfaces</category>
+    </projectCategories>
+    <subProjectCategory name="Solver Interfaces">
+      <subProject>OsiCpx: CPLEX</subProject>
+      <subProject>OsiGlpk: GNU LP Toolkit</subProject>
+      <subProject>OsiGrb: Gurobi</subProject>
+      <subProject>OsiMsk: Mosek</subProject>
+      <subProject>OsiSpx: Soplex</subProject>
+      <subProject>OsiXpr: XPRESS-MP</subProject>
+    </subProjectCategory>
+  </projectBasics>
+  <leftMenuLinks>
+    <documentation>http://www.coin-or.org/Doxygen/Osi/</documentation>
+    <sourceCodeDownload>http://www.coin-or.org/download/source/Osi/</sourceCodeDownload>
+    <binaryDownload></binaryDownload>
+    <mailingList>http://list.coin-or.org/mailman/listinfo/coin-osi-devel</mailingList>
+  </leftMenuLinks>
+</projectData>

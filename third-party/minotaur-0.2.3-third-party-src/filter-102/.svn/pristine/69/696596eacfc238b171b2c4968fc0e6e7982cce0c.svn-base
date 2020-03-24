@@ -1,0 +1,43 @@
+Ordering of Constraints:
+=======================
+
+Category		Count		
+----------------------------------------
+nonlinear general	nlc - nlnc		
+nonlinear network	nlnc		
+linear network		lnc		
+linear general		n_con-(nlc+lnc)
+
+nonlinear constraints  0:nlc-1
+linear constraints     nlc:m-1		 <<< our constraints
+
+n_con = m 
+
+Constraint value	c(0:m-1)
+Constraint bounds	bl(n:n+m-1),     bu(n:n+m-1)
+Nonlinear cons bnds	bl(n:n+nlc-1),   bu(n:n+nlc-1)
+Linear constraint bnds	bl(n+nlc:n+m-1), bu(n+nlc:n+m-1)
+
+pjp = la(0)
+
+Jacobian of linear constraints
+
+            do j=nlc:m-1
+               Jacobian matrix: row, j+1
+               (a(i-1), la(i-1)-1) for i=la(pjp+j+1):la(pjp+j+2)-1
+            enddo
+
+Objective coefficient
+
+         (a(i-1), la(i-1)-1) for i=la(pjp+1):la(pjp+2)-1
+
+where a(i-1) is coefficient value and la(i-1) is the variable
+index.
+
+
+Variables:
+=========
+
+Value		X0(0:n-1)
+Bounds		bl(0:n-1), bu(0:n-1)
+

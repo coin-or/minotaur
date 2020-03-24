@@ -1,0 +1,1 @@
+/usr/bin/f95     CMakeFiles/secondtst_EXT_ETIME_.dir/second_EXT_ETIME_.f.o CMakeFiles/secondtst_EXT_ETIME_.dir/secondtst.f.o  -o secondtst_EXT_ETIME_  

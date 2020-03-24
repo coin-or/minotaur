@@ -1,0 +1,609 @@
+/****************************************************************
+Copyright (C) 2001 Lucent Technologies
+All Rights Reserved
+
+Permission to use, copy, modify, and distribute this software and
+its documentation for any purpose and without fee is hereby
+granted, provided that the above copyright notice appear in all
+copies and that both that the copyright notice and this
+permission notice and warranty disclaimer appear in supporting
+documentation, and that the name of Lucent or any of its entities
+not be used in advertising or publicity pertaining to
+distribution of the software without specific, written prior
+permission.
+
+LUCENT DISCLAIMS ALL WARRANTIES WITH REGARD TO THIS SOFTWARE,
+INCLUDING ALL IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS.
+IN NO EVENT SHALL LUCENT OR ANY OF ITS ENTITIES BE LIABLE FOR ANY
+SPECIAL, INDIRECT OR CONSEQUENTIAL DAMAGES OR ANY DAMAGES
+WHATSOEVER RESULTING FROM LOSS OF USE, DATA OR PROFITS, WHETHER
+IN AN ACTION OF CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION,
+ARISING OUT OF OR IN CONNECTION WITH THE USE OR PERFORMANCE OF
+THIS SOFTWARE.
+****************************************************************/
+
+/********************************************************/
+/* AMPL interface filter.c for MINLP_BB. Date: 22/12/98 */
+/*    Written by S. Leyffer, University of Dundee.	*/
+/*        From various sources at netlib/ampl		*/
+/* Cleaned up and adapted to filterSQP by David M. Gay	*/
+/* (Bell Labs),	June 2001.				*/
+/********************************************************/
+
+/* include AMPL Solver interface Library, NLP part */
+#include "asl_pfgh.h"
+#include "getstub.h"
+#define asl cur_ASL
+
+#ifndef DEVNULL
+#ifdef _WIN32
+#define DEVNULL "nul"
+#else
+#define DEVNULL "/dev/null"
+#endif
+#endif /* DEVNULL */
+
+static fint iprint, kmax = 500, Lhess;
+static fint maxf = 100, maxiter = 1000, mlp = 1000, mxiwk0 = 500000, 
+       mxwk0 = 2000000;
+static int timing;
+static real rho = 10.;
+static char *pname;
+static struct {
+  real ft, ct, gt, ht, st, as;
+	int nf, nc, ng, nh;
+	int nfe, nce;
+	} evals;
+
+/* variables used throughout this file */
+static real *yy, *OW, *ow0, objsign;
+static fint nerror;
+static int nobj = 1;
+
+Cextern void filtersqp_ ANSI((
+	fint *n, fint *m, fint *kmax, fint *maxa,
+	fint *maxf, fint *mlp, fint *mxwk, fint *mxiwk,
+	fint *iprint, fint *nout, fint *ifail, real *rho,
+	real *x, real *c, real *f, real *fmin, real *bl,
+	real *bu, real *s, real *a, fint *la, real *ws,
+	fint *lws, real *lam, char *cstype, real *user,
+	fint *iuser, fint *maxiter, fint *istat,
+	real *rstat, ftnlen cstype_len));
+
+Cextern void fopen_ ANSI((fint*, char*, ftnlen));
+
+/* common block for problemname */
+extern struct {
+  fint  char_l;
+  char pname[10];
+} cpname_;
+
+/* common block for Hessian storage set to 0, i.e. NO Hessian */
+extern struct {
+  fint phl, phr, phc;
+} hessc_;
+
+/* common block for upper bound on filter */
+extern struct {
+  real ubd, tt;
+} ubdc_;
+
+/* common block for infinity & epslon */
+extern struct {
+  real infty, eps;
+} nlp_eps_inf_;
+
+/* common block for printing from QP solver */
+extern struct {
+  fint n_bqpd_calls, n_bqpd_print;
+} bqpd_count_;
+
+/* common for scaling: scale_mode = 0 (none), 1 (variables), 2 (vars+cons) */
+extern struct {
+  fint scale_mode, phe;
+} scalec_;
+
+/* objective function evaluation objfun */
+ void
+objfun_(real *x, fint *n, real *f, real *user, fint *iuser, fint *errflag)
+{
+	real t;
+	Not_Used(user);
+	Not_Used(iuser);
+
+	*errflag = 0;
+	if (nobj > -1) {
+		if (timing)
+			t = xectim_();
+		evals.nf++;
+		*f = objsign * objval(nobj, x, &nerror);
+		if (timing)
+			 evals.ft += xectim_() - t;
+		if (nerror) {
+			*errflag = 1;
+			evals.nfe = evals.nf;
+			}
+		}
+	else
+		*f = 0;
+	}
+
+/* constraint function evaluation confun */
+ void
+confun_(real *x, fint *n, fint *m, real *c, real *a, fint *la, real *user,
+	    fint *iuser, fint *errflag)
+{
+	real t;
+	Not_Used(n);	Not_Used(m);
+	Not_Used(a);	Not_Used(la);
+	Not_Used(user);	Not_Used(iuser);
+
+	if (timing)
+		t = xectim_();
+	evals.nc++;
+	*errflag = 0;
+	conval(x, c, &nerror);
+	if (timing)
+		evals.ct += xectim_() - t;
+
+	if (nerror) {
+		*errflag = 1;
+		evals.nce = evals.nc;
+		}
+	}
+
+/* evaluation of gradients (objective & constraints) */
+ void
+gradient_(fint *N, fint *M, fint *mxa, real *x, real *a, fint *la,
+	      fint *maxa, real *user, fint *iuser, fint *errflag)
+{
+	fint i, n;
+	real t;
+	Not_Used(user);
+	Not_Used(iuser);
+	Not_Used(M);
+	Not_Used(mxa);
+	Not_Used(la);
+	Not_Used(maxa);
+
+	if (timing)
+		t = xectim_();
+	*errflag = 0;
+	n = *N;
+	if (nobj > -1) {
+		objgrd(nobj, x, a, &nerror);
+		if (nerror) {
+			*errflag = 1;
+			if (!(evals.nfe = evals.nf))
+				evals.nfe = evals.nf = 1;
+			return;
+			}
+		if (objsign < 0)
+			for(i = 0; i < n; i++)
+	  			a[i] = -a[i];
+		}
+	else
+		for(i = 0; i < n; i++)
+			a[i] = 0.;
+	if (nlc) {
+		n_conjac[1] = nlc;	/* only need to recompute */
+					/* nonlinear constraint gradients */
+		jacval(x, a, &nerror);
+		n_conjac[1] = n_con;	/* but evaluate all residuals */
+		if (nerror) {
+			*errflag = 1;
+			if (!(evals.nce = evals.nc))
+				evals.nce = evals.nc = 1;
+			}
+		}
+	if (timing)
+		evals.gt += xectim_() - t;
+	}
+
+/* evaluation of objective gradient */
+ void
+objgrad_(fint *N, fint *M, fint *mxa, real *x, real *a, fint *la,
+	      fint *maxa, real *user, fint *iuser, fint *errflag)
+{
+	fint i, n;
+	real t;
+	Not_Used(user);
+	Not_Used(iuser);
+	Not_Used(M);
+	Not_Used(mxa);
+	Not_Used(la);
+	Not_Used(maxa);
+
+	if (timing)
+		t = xectim_();
+	*errflag = 0;
+	evals.ng++;
+	n = *N;
+	if (nobj > -1) {
+		objgrd(nobj, x, a, &nerror);
+		if (nerror) {
+			*errflag = 1;
+			if (!(evals.nfe = evals.nf))
+				evals.nfe = evals.nf = 1;
+			return;
+			}
+		if (objsign < 0)
+			for(i = 0; i < n; i++)
+	  			a[i] = -a[i];
+		}
+	else
+		for(i = 0; i < n; i++)
+			a[i] = 0.;
+
+	if (timing)
+		evals.gt += xectim_() - t;
+	}
+
+/* evaluation of the Hessian of the Lagrangian */
+ void
+hessian_(real *x, fint *N, fint *M, fint *phase, real *lam,
+	     real *ws, fint *lws, real *user, fint *iuser,
+	     fint *l_hess, fint *li_hess, fint *errflag)
+{
+	Jmp_buf err_jmp0;
+	fint i, m, m1, n, nh;
+	fint *hcolstarts, *hrownos;
+	int no;
+	real *g, *ow, t;
+        real dummy = 0.0;
+
+	Not_Used(user);
+	Not_Used(iuser);
+
+	*errflag = 0;
+	err_jmp = &err_jmp0;
+	if (setjmp(err_jmp0.jb)) {
+		*errflag = 1;
+		goto done;
+		}
+        if (0 <= nobj && 2 != *phase) {
+          ow = &dummy; /* ow can't be null. See sphes below. */
+        } else {
+          ow = OW;
+        }
+
+        /*
+	if ((no = nobj) >= 0) {
+		if (*phase != 2) {
+			no = -1;
+			ow = 0;
+			ow = &dummy;
+			}
+		}
+	if (ow0 != ow) {
+		ow0 = ow;
+		sphsetup(no, 0, nlc > 0, 1); no need. 
+		}
+        */
+
+	n = *N;
+	if (!(m1 = nlc))
+		/* g = 0; can't be null. See sphes.*/
+                g = &dummy;
+	else {
+		m = *M;
+		g = yy;
+		lam += n;
+		for(i = 0; i < m1; i++)
+			g[i] = -lam[i];
+		while(i < m)
+			g[i++] = 0.;
+		}
+
+	/* evaluate the Hessian & store in sparse format */
+	if (timing)
+		t = xectim_();
+	xknown(x);
+	sphes(ws, -1, ow, g); /* To be always consistent with sphsetup below,
+                                 ow and g should never be null */
+	if (timing)
+		evals.ht += xectim_() - t;
+
+	hrownos = sputinfo->hrownos;
+	hcolstarts = sputinfo->hcolstarts;
+	*l_hess = nh = Lhess;
+	*li_hess = nh + n + 3;
+
+	*lws++ = nh + 1;
+	for(i = 0; i < nh; i++)
+		*lws++ = hrownos[i];
+	for(i = 0; i <= n; i++)
+		*lws++ = hcolstarts[i];
+	hessc_.phl = 1;
+ done:
+	xunknown();
+	err_jmp = 0;
+	}
+
+ static void
+copyup(fint **xp, fint n)
+{
+	fint *x;
+	int *y;
+
+	y = (int*)*xp;
+	*xp = x = (fint*)Malloc(n*sizeof(fint));
+	while(n-- > 0)
+		*x++ = *y++;
+	}
+
+static keyword keywds[] = {      /* must be in alphabetical order */
+ KW("eps",	D_val,	&nlp_eps_inf_.eps,	"Tolerance for SQP solver"),
+ KW("infty",	D_val,	&nlp_eps_inf_.infty,	"A large number (1E20)"),
+ KW("iprint",	FI_val,	&iprint,	"synonym for \"outlev\""),
+ KW("kmax",	FI_val,	&kmax,		"Dimension of null-space (bqpd) default 500"),
+ KW("maxf",	FI_val,	&maxf,		"Maximum filter length"),
+ KW("maxiter",	FI_val,	&maxiter,	"Maximum number of iterations"),
+ KW("mlp",	FI_val,	&mlp,		"Maximum level for degeneracy (bqpd)"),
+ KW("mxlws",	FI_val,	&mxiwk0,	"INTEGER workspace increment"),
+ KW("mxws",	FI_val,	&mxwk0,		"REAL workspace increment"),
+ KW("objno",	I_val,	&nobj,	"Objective number: 1 = first, 0 = none"),
+ KW("outlev",	FI_val,	&iprint,	"Print level (0=silent,	3=verbose)"),
+ KW("pname",	C_val,	&pname,		"Problem name (default NLPproblem)"),
+ KW("rho",	D_val,	&rho,		"Initial trust region size"),
+ KW("timing",	I_val,	&timing, "whether to time evaluations (1 = yes)"),
+ KW("tt",	D_val,	&ubdc_.tt,	"Parameter for upper bound on filter"),
+ KW("ubd",	D_val,	&ubdc_.ubd,	"Parameter for upper bound on filter"),
+ KW("wantsol",	WS_val,	0,		WS_desc_ASL+5),
+ /* next keyword is for debugging purposes only -> lots of printing */
+ KW("z_print", FI_val, &bqpd_count_.n_bqpd_print, "-2 = None, -1 = All,")
+};
+
+static Option_Info Oinfo = { "filter", "filterSQP (20020316)",
+			     "filter_options", keywds, nkeywds };
+
+ static SufDecl
+suftab[] = {
+	{ "scale", 0, ASL_Sufkind_var | ASL_Sufkind_real },
+	{ "scale", 0, ASL_Sufkind_con | ASL_Sufkind_real }
+	};
+
+#undef asl
+
+ void
+MAIN__(void)
+{
+	extern int xargc;
+	extern char **xargv;
+	char **argv = xargv;
+	ASL_pfgh *asl;
+	FILE *nl;
+	SufDesc *cs, *vs;
+	cgrad *cg;
+	char buf[480], *cstype, *stub;
+	fint *la, *lax, *lws;
+	fint i, ifail, ii, istat[14], iuser, j, m, maxa, mxiwk, mxwk;
+	fint n, nm, nout, lh1;
+	real *a, *bl, *bu, *c, *lam, rstat[7], *s, *ws, *x, *y;
+	real big, f, fmin, mbig, user;
+	real t;
+
+	/* Give information on solution process */
+	typedef struct { char *msg; int code, wantsol; } Sol_info;
+	Sol_info *Si;
+	static Sol_info solinfo[] = {
+	  { /* 0 */ "Optimal solution found", 0, 3 },
+	  { /* 1 */ "Unbounded objective" , 300, 1 },
+	  { /* 2 */ "Linear constraints are infeasible" , 200, 1 },
+	  { /* 3 */ "Nonlinear constraints locally infeasible", 201, 1 },
+	  { /* 4 */ "QP infeasible (ifail = 4)" , 202, 3  },
+	  { /* 5 */ "SQP termination with rho < eps" , 500, 3 },
+	  { /* 6 */ "SQP termination with iter > maxiter" , 400, 3 },
+	  { /* 7 */ "Crash in user supplied routines" , 501, 1 },
+	  { /* 8 */ "Unexpected ifail from QP solver" , 502, 1 },
+	  { /* 9 */ "Not enough REAL workspace or parameter error" , 510, 0  },
+	  { /*10 */ "Not enough INTEGER workspace or parameter error" , 511, 0  },
+	  { /*11 */ "Cannot evaluate objective at starting point", 503, 0 },
+	  { /*12 */ "Cannot evaluate constraint(s) at starting point", 504, 0 }
+	  };
+
+	/* evals.st = xectim_(); */
+	t   = xectim_();
+	asl = (ASL_pfgh*)ASL_alloc(ASL_read_pfgh);
+	bqpd_count_.n_bqpd_print = -2;
+	if (!(stub = getstops(argv, &Oinfo)))
+		usage_ASL(&Oinfo, 1);
+	nl = jac0dim(stub, (fint)strlen(stub));
+	Fortran = 1;
+
+	if (n = nlogv + niv + nlvbi + nlvci + nlvoi) {
+		printf("Ignoring integrality of %ld variables.\n", (long)n);
+		need_nl = 0;
+		}
+
+	n = n_var;
+	m = n_con;
+	nm = n+m;
+	if (kmax > n)
+		kmax = n;
+
+	X0 = (real *)Malloc(n*sizeof(real));
+	lam = (real *)M1zapalloc(nm*sizeof(real));
+	pi0 = lam + n;
+	LUv = bl = (real *)Malloc(2*nm*sizeof(real));
+	LUrhs = bl + n;
+	Uvx = bu = bl + nm;
+	Urhsx = bu + n;
+
+	/* read the stub.nl file */
+	suf_declare(suftab, sizeof(suftab)/sizeof(SufDecl));
+	vs = suf_get("scale", ASL_Sufkind_var);
+	s = vs->u.r = (real *)M1zapalloc(nm*sizeof(real));
+	cs = suf_get("scale", ASL_Sufkind_con);
+	cs->u.r = s + n;
+	pfgh_read(nl, ASL_findgroups);
+
+	for(i = 0; i < nm; i++)
+		if (s[i] <= 0.)
+			s[i] = 1.;
+	scalec_.scale_mode = vs->kind & ASL_Sufkind_input ? 1 : 0;
+	if (cs->kind & ASL_Sufkind_input)
+		scalec_.scale_mode |= 2;
+
+	/* have constraint gardients stored by rows rather than cols */
+	asl->i.congrd_mode = 1;
+
+	/* min f before unbdd */
+	big = nlp_eps_inf_.infty;
+
+	c = (real *)Malloc(m*sizeof(real));
+	cstype = (char *)Malloc(m*sizeof(char));
+
+	/* allocate & read storage for a, la, bl, bu: the problem data */
+	a = (real *)Malloc((maxa = n+nzc)*sizeof(real));
+	la = (fint *)Malloc((maxa+m+3)*sizeof(fint));
+
+	/* prepare for Jacobian evaluations */
+	la[0] = n + nzc + 1;
+	lax = la + la[0];
+	*lax++ = 1;
+	for(j = 1; j <= n; j++)
+		la[j] = j;
+	--j;
+	for(i = 0; i <  m; i++) {
+		*lax++ = j + 1;
+		for(cg = Cgrad[i]; cg; cg = cg->next) {
+			cg->goff = j;
+			a[j++] = cg->coef;
+			la[j] = cg->varno + 1;
+			}
+		}
+	*lax = j + 1;
+
+	if (nlc)
+		yy = (real *)Malloc(m*sizeof(real));
+
+	fmin = mbig = -big;
+	for(i = 0; i < nm; i++) {
+		if (bl[i] < mbig)
+			bl[i] = mbig;
+		if (bu[i] > big)
+			bu[i] = big;
+		}
+
+	/* set up cstype ('N' = nonlinear, 'L' = linear) */
+	for(i = 0; i < nlc; i++)
+		cstype[i] = 'N';
+	for(i=nlc; i < m; i++)
+		cstype[i] = 'L';
+
+	/* set up number of objective to be minimizes & sign */
+	if (nobj < 0 || nobj > n_obj) {
+		fprintf(Stderr,"Bad objno = %d; must be >= 0 and <= %d\n",
+			nobj, n_obj);
+		fprintf(Stderr, "Using %s objective\n",
+			n_obj ? "the first" : "no");
+		nobj = n_obj > 0 ? 1 : 0;
+		}
+	objsign = --nobj >= 0 && objtype[nobj] ? -1. : 1.;
+	//hesset(1, nobj, nobj >= 0, 0, nlc);
+	if (nobj >= 0) {
+		OW = ow0 = (real *)M1zapalloc((n_obj)*sizeof(real));
+		OW[nobj] = objsign;
+		}
+
+	/* allocate storage for workspaces */
+	Lhess = sphsetup(-1, 1, 1, 1); // if first arg >=0, then ampl assumes 
+                                       // that lagrangean multipler of 
+                                       // objective is 1.0 regardless of what
+                                       // we set. Doesn't help in
+                                       // maximization!. Hence we put a -1
+                                       // here. Next 1 means we will always
+                                       // provide an objective multiplier.
+                                       // Next 1 means we will always provide
+                                       // a constraint multiplier. Next 1
+                                       // means upper triangular matrix only.
+	lh1 = Lhess + 8 + 2*n + m;
+	mxwk = 21*n + 8*m + mlp + 8*maxf + lh1 + kmax*(kmax+9)/2 + mxwk0;
+	mxiwk = 13*n + 4*m + mlp + lh1 + kmax + 113 + mxiwk0;
+	ws = (real *)Malloc(mxwk*sizeof(real));
+	lws = (fint *)Malloc(mxiwk*sizeof(fint));
+
+	if (pname && iprint <= 0)
+		iprint = 1;
+	if (iprint > 0) {
+		nout = 6;	/* stdout */
+		if (pname) {
+			i = strlen(pname);
+			if (i >= 10)
+				i = 10;
+			memcpy(cpname_.pname, pname, i);
+			if (i < 10)
+				memset(cpname_.pname+i, ' ', 10-i);
+			cpname_.char_l = i;
+			goto zap_nout;
+			}
+		}
+	else {
+ zap_nout:
+		nout = 7;
+		/* suppress writing fort.7 -- */
+		/* just write explicitly opened files */
+		fopen_(&nout, DEVNULL, strlen(DEVNULL));
+		}
+
+	ifail = 0;
+	
+	evals.as = xectim_() - t;
+	t        = xectim_();
+	filtersqp_(&n, &m, &kmax, &maxa, &maxf, &mlp, &mxwk, &mxiwk,
+	       &iprint, &nout, &ifail, &rho, X0, c, &f, &fmin, bl,
+	       bu, s, a, la, ws, lws, lam, cstype, &user, &iuser,
+	       &maxiter, istat, rstat, (ftnlen)1);
+
+	/* change sign of multipliers, if necessary */
+	if (objsign < 0 && lam)
+	for(i = 0; i<nm; i++)
+	lam[i] *= -1.;
+
+	/* prepare output for AMPL */
+	if (ifail == 7) {
+		if (evals.nfe == 1 || evals.nfe == 2)
+			ifail = 11;
+		else if (evals.nce == 1 || evals.nce == 2)
+			ifail = 12;
+		}
+	Si = solinfo + ifail;
+	solve_result_num = Si->code;
+
+	/* write output */
+	i = sprintf(buf, "%s: %s", Oinfo.bsname, Si->msg);
+	if (Si->wantsol & 2) {
+		if (nobj >= 0)
+			i += sprintf(buf+i, ", objective = %.*g",
+				obj_prec(), objsign*f);
+		}
+	i += sprintf(buf+i, "\n%ld iterations (%ld for feasibility)",
+		(long)istat[1], (long)istat[2]);
+	if (Si->wantsol) {
+		x = X0;
+		y = lam + n;
+		}
+	else
+		x = y = 0;
+	i += sprintf(buf+i,
+		"\nEvals: obj = %ld, constr = %ld, grad = %ld, Hes = %ld",
+			(long)istat[3], (long)istat[4],
+			(long)istat[5], (long)istat[6]);
+	if (timing) {
+		evals.st = xectim_() - t;
+		i += sprintf(buf+i, "\nCPU seconds:");
+		i += sprintf(buf+i, "\n\tfunc:\t%g", evals.ft);
+		i += sprintf(buf+i, "\n\tconstr:\t%g", evals.ct);
+		i += sprintf(buf+i, "\n\tgrad:\t%g", evals.gt);
+		i += sprintf(buf+i, "\n\tHes:\t%g", evals.ht);
+		i += sprintf(buf+i, "\n\tAMPL:\t%g", evals.as);
+		i += sprintf(buf+i,
+			"\n\tsolve:\t%g (evals + algorithm)\n",
+			evals.st);
+		i += sprintf(buf+i,
+			"\n\ttotal:\t%g (AMPL + evals + algorithm)\n",
+			evals.st+evals.as);
+		}
+	write_sol(buf, x, y, &Oinfo);
+	}

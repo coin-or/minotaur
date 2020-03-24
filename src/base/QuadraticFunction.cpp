@@ -121,9 +121,22 @@ QuadraticFunctionPtr QuadraticFunction::cloneWithVars(VariableConstIterator vbeg
   const
 {
   QuadraticFunctionPtr qf = (QuadraticFunctionPtr) new QuadraticFunction();
+  QuadraticFunctionPtr sg;
   for(VariablePairGroupConstIterator it = begin(); it != end(); ++it) {
     qf->addTerm(*(vbeg+it->first.first->getIndex()), 
         *(vbeg+it->first.second->getIndex()), it->second);
+  }
+  qf->setConvexity(convex_);
+  for (QfVector::const_iterator qit = subgraphs_.begin();
+      qit != subgraphs_.end(); ++qit) {
+    sg = (QuadraticFunctionPtr) new QuadraticFunction();
+    for (VariablePairGroupConstIterator it = (*qit)->begin();
+        it != (*qit)->end(); ++it) {
+      sg->addTerm(*(vbeg+it->first.first->getIndex()),
+          *(vbeg+it->first.second->getIndex()), it->second);
+    }
+    sg->setConvexity((*qit)->isConvex());
+    qf->addSubgraph(sg);
   }
   return qf;
 }
@@ -319,12 +332,15 @@ void QuadraticFunction::evalGradient(const std::vector<double> & x,
 
 QfVector QuadraticFunction::findSubgraphs()
 {
-  QfVector qf_vector;
   QuadraticFunctionPtr qf;
   UInt count = 0;
   UInt i,j;
   QfVector::iterator qit;
   std::vector<UInt> to_del;
+
+  if (!subgraphs_.empty()) {
+    return subgraphs_;
+  }
 
   for (VariablePairGroupConstIterator it = terms_.begin(); it != terms_.end(); ++it) {
     i = it->first.first->getItmp();
@@ -333,41 +349,41 @@ QfVector QuadraticFunction::findSubgraphs()
       if (j == 0) {
         qf = (QuadraticFunctionPtr) new QuadraticFunction();
         qf->addTerm(it->first, it->second);
-        qf_vector.push_back(qf);
+        subgraphs_.push_back(qf);
         ++count;
         it->first.first->setItmp(count);
         it->first.second->setItmp(count);
       } else {
-        qf_vector[j-1]->addTerm(it->first, it->second);
+        subgraphs_[j-1]->addTerm(it->first, it->second);
         it->first.first->setItmp(j);
       }
     } else {
       if (j != 0) {
         if (i != j) {
           if (i > j) {
-            qf_vector[j-1]->addTerm(it->first, it->second);
-            qf_vector[j-1]->add(qf_vector[i-1]);
+            subgraphs_[j-1]->addTerm(it->first, it->second);
+            subgraphs_[j-1]->add(subgraphs_[i-1]);
             to_del.push_back(i-1);
-            for (VariablePairGroupConstIterator it1 = qf_vector[i-1]->begin();
-                 it1 != qf_vector[i-1]->end(); ++it1) {
+            for (VariablePairGroupConstIterator it1 = subgraphs_[i-1]->begin();
+                 it1 != subgraphs_[i-1]->end(); ++it1) {
               it1->first.first->setItmp(j);
               it1->first.second->setItmp(j);
             }
           } else {
-            qf_vector[i-1]->addTerm(it->first, it->second);
-            qf_vector[i-1]->add(qf_vector[j-1]);
+            subgraphs_[i-1]->addTerm(it->first, it->second);
+            subgraphs_[i-1]->add(subgraphs_[j-1]);
             to_del.push_back(j-1);
-            for (VariablePairGroupConstIterator it1 = qf_vector[j-1]->begin();
-                 it1 != qf_vector[j-1]->end(); ++it1) {
+            for (VariablePairGroupConstIterator it1 = subgraphs_[j-1]->begin();
+                 it1 != subgraphs_[j-1]->end(); ++it1) {
               it1->first.first->setItmp(i);
               it1->first.second->setItmp(i);
             }
           }
         } else {
-          qf_vector[i-1]->addTerm(it->first, it->second);
+          subgraphs_[i-1]->addTerm(it->first, it->second);
         }
       } else {
-        qf_vector[i-1]->addTerm(it->first, it->second);
+        subgraphs_[i-1]->addTerm(it->first, it->second);
         it->first.second->setItmp(i);
       }
     }
@@ -375,10 +391,10 @@ QfVector QuadraticFunction::findSubgraphs()
 
   i = 0;
   for (std::vector<UInt>::iterator uit = to_del.begin(); uit != to_del.end(); ++uit) {
-    qit = qf_vector.begin();
+    qit = subgraphs_.begin();
     std::advance(qit, (*uit)-i);
     delete (*qit);
-    qf_vector.erase(qit);
+    subgraphs_.erase(qit);
     ++i;
   }
   to_del.clear();
@@ -387,7 +403,7 @@ QfVector QuadraticFunction::findSubgraphs()
     it->first.first->setItmp(0);
     it->first.second->setItmp(0);
   }
-  return qf_vector;
+  return subgraphs_;
 }
 
 Convexity QuadraticFunction::isConvex()
@@ -407,6 +423,27 @@ Convexity QuadraticFunction::isConvex()
     convex_ = Nonconvex;
   }
   return convex_;
+}
+
+bool QuadraticFunction::isIdenticalTo(QuadraticFunctionPtr qf) {
+  VariablePairGroupConstIterator it1, it2;
+  if (!qf) {
+    return false;
+  }
+  if (qf->getNumTerms() != terms_.size() ||
+      qf->getNumVars() != varFreq_.size()) {
+    return false;
+  }
+  it1 = terms_.begin();
+  it2 = qf->begin();
+  for (; it1 != terms_.end(); ++it1, ++it2) {
+    if (it1->first.first->getId() != it2->first.first->getId() ||
+        it1->first.second->getId() != it2->first.second->getId() ||
+        fabs(it1->second - it2->second) >= etol_) {
+      return false;
+    }
+  }
+  return true;
 }
 
 void QuadraticFunction::evalHessian(const double mul, const double *, 
@@ -522,6 +559,10 @@ void QuadraticFunction::addTerm(ConstVariablePtr v1, ConstVariablePtr v2,
   VariablePair vp = (v1->getId() < v2->getId()) ? std::make_pair(v1, v2) :
     std::make_pair(v2, v1);
   addTerm(vp, weight);
+}
+
+void QuadraticFunction::addSubgraph(QuadraticFunctionPtr sg) {
+  subgraphs_.push_back(sg);
 }
 
 

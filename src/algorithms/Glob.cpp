@@ -146,8 +146,10 @@ int transform(EnvPtr env, ProblemPtr p, ProblemPtr &newp,
   int status = 0;
   const std::string me("mntr-glob: ");
 
+  EnginePtr nlp_e = getNLPEngine(env);
+
   handlers.clear();
-  trans = (SimpTranPtr) new SimpleTransformer(env, p);
+  trans = (SimpTranPtr) new SimpleTransformer(env, p, nlp_e);
   trans->reformulate(newp, handlers, status);
   
   env->getLogger()->msgStream(LogInfo) << me 

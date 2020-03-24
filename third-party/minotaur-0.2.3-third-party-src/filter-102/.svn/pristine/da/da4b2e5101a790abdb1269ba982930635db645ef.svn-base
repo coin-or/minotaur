@@ -1,0 +1,681 @@
+Cut here >>>>>>>>>>>>>>>>>>>>
+Christen this file minlpbbaux.f
+
+c     *****************************************************************
+c     Auxiliary routines for nonlinear branch--and--bound
+c     ===================================================
+c     * BBversion      : print version of solver
+c     * isnan          : find out whether a double is NaN
+c     * branch         : branching routine
+c     * SOS1branch     : branch on SOS of type 1
+c     * intfeasible    : check whether y is integer feasible
+c     * writebb        : write branching
+c     * writeqpsol     : write a solution
+c     * writebranch    : write branching decision
+c     * writeSOS1      : write SOS1 branching decision
+c     * addtostack     : add a problem to the stack
+c     * exfromstack    : extrackt a problem from the stack
+c     *****************************************************************
+
+      subroutine BBversion(nout)
+      implicit none
+      integer nout
+      write(nout,'(A)')'MINLPBB: Version-0.3.2 [20100607]'
+      return
+      end
+
+c     ******************************************************************
+
+      logical function MIPisnan(z)
+      double precision z
+      MIPisnan = z.ne.z
+      return
+      end
+
+c     ******************************************************************
+
+      subroutine branch(nivar,n,m,i0,nstack,nstackmax,ivar,priority,
+     .     pvar,nSOS1,tSOS1,pSOS1,iSOS1,rSOS1,SOS1priority,fdash,f_low,
+     .     x,bl,bu,bli,bui,sbu,xStack,varno,fractns,lamStack,lam,lbd,
+     .     est,pstack,problm,pcU,pcD,npcU,npcD,pcSOSU,pcSOSD,npcSOSU,
+     .     npcSOSD,problmno,nproblm,iprint,nout,ifail,kmax,maxa,maxf,
+     .     mlp,maxwk,maxiwk,rho,c,fmin,s,a,la,ws,lws,cstype,user,iuser,
+     .     xdash,ldash,max_NLP,istat,rstat,siter)
+ 
+c     ------------------------------------------------------------------
+c     Purpose : perform branching, creating two new problems which are
+c               placed on the LIFO stack.
+c               branching decision is based on the following criteria:
+c                  i)  user supplied priority
+c                  ii) 2nd order information (implemented in bdecision)
+c               The decision can be altered, by using a different 
+c               routine bdecision.
+c
+c     Date of last change   : 21 / 07 / 2009
+c
+c     Parameter list:
+c     ==============
+c
+c     nivar    - no integer var
+c     n        - no var (continuos and integer)
+c     i0       - index of first integer var that is not integer feassible
+c     nstack   - no of problems on stack
+c     nstackmax- max no of problems on stack allowed
+c     ivar     - (nivar) indeces of integer var
+c     priority - priority of the integer variables
+c     pvar     - (nivar) points to integer var of highest priority
+c                which are not integer --- past to bdecision
+c     nSOS1    - number of variables that are elements of a SOS1 set
+c     tSOS1    - number of SOS1 sets
+c     pSOS1    - (tSOS1+1) pointers to start of each SOS1 [INTEGER]
+c     iSOS1    - (nSOS1) index of each integer variable in SOS1 [INTEGER]
+c                i-th SOS1 indices are in iSOS1(pSOS1(i):pSOS1(i+1))
+c     rSOS1    - (nSOS1) reference row of SOS1, storage as for iSOS1 [double precision]
+c     SOS1priority - (tSOS1) priorities of SOS1 sets [INTEGER]
+c     fdash    - optimum value of QP
+c     x        - soln of QP
+c     bl, bu   - lower and upper bounds on variables of most recent problem
+c     bli,bui  - matrix with lower/upper bounds on integer var (updated in
+c                addtostack)
+c     sbu      - storage for saving bounds for SOS1 branching
+c     lbd      - list with lower bounds (updated in addtostack)
+c     est      - list with estimates    (     - " -           )
+c     pstack   - pointers to stack problems ( - " -           )
+c     xStack   - variable values of problems on stack
+c     lamStack - multiplier of problems on stack
+c     lam      - multiplier of problem most recently solved
+c     problm   - list of problem indices
+c     pcU / pcD        - pseudo-cost for Up/Down branching
+c     pcSOSU / pcSOSD  - pseudo-cost for Up/Down branching (for SOS variables)
+c     nproblm  - counter of problem indices
+c     problmno - no of current QP
+c     iprint   - printing flag
+c     nout     - output channel
+c     ifail    - can run out of space in stack (in addtostack)
+c
+c     calls: bdecision   - make the branching decision 
+c            bounds      - compute lower bounds and estimates on which
+c                          the braching decision is based
+c            addtostack  - adding the two new problems to the stack
+c     ------------------------------------------------------------------
+
+      implicit none
+
+c     declaration of common block for tolerance and infinity
+      double precision MIopttol, eps, infty
+      common /cTolInf/ MIopttol, eps, infty
+      integer            BranchRule, NodeSelect, ReliabilityThreshold, 
+     .                   QPIters, NoInfNodes
+      common /cBnBRules/ BranchRule, NodeSelect, ReliabilityThreshold, 
+     .                   QPIters, NoInfNodes
+
+    
+c     declaration of passed parameters - scalars
+      integer nivar, n, i0, ifail, nstack, nstackmax, iprint, nout,
+     .        problmno, nproblm, m, nSOS1, tSOS1, kmax, maxa, maxf,
+     .        mlp, maxwk, maxiwk, max_NLP, siter
+      double precision    fdash, f_low, rho, fmin
+
+c     declaration of arrays that are passed further down
+      integer pstack(*), problm(*), varno(*), la(0:*), lws(*),
+     .     iuser(*), istat(*)
+      double precision    bli(*), bui(*), est(*), lbd(*),
+     .     lamStack(*), lam(*), xStack(*), fractns(*), pcD(*), 
+     .     pcU(*), pcSOSD(*), pcSOSU(*), c(*), s(*), a(*), 
+     .     user(*), xdash(*), ldash(*), rstat(*), ws(*)
+      character cstype(*)
+
+c     declaration of passed parameters - arrays
+      integer ivar(nivar), pvar(nivar), priority(n), 
+     .        pSOS1(tSOS1+1), iSOS1(nSOS1), SOS1priority(tSOS1),
+     .        npcU(n), npcD(n),  npcSOSU(tSOS1), npcSOSD(tSOS1)
+      double precision    bl(n), bu(n), x(n), rSOS1(nSOS1), sbu(n)
+
+c     declaration of internal variables - scalars
+      integer i, toppriority, ntopp, ibranch, start1, end1, start2,
+     .        end2, incr, naddproblems, j0, j1, j, jj, marker, nfrac,
+     .        topSOSprior, ii, r
+      double precision    diff, liplus, liminus, eiplus, eiminus, 
+     .        buibranch, blibranch, xfract, fract, piplus, piminus,
+     .        UpCost, DnCost, nest
+      double precision    estimate(2), lowerbd(2)
+      logical fractional, found
+      character*2 first
+
+c     ======================== procedure body ==========================
+
+c     ------------------------------------------------------------------
+c     Find the indices and no. of those integer var. that are not integer
+c     feasible with the highest priority (starting by looking through SOS
+c     ------------------------------------------------------------------
+      toppriority = 0
+      topSOSprior = -1
+      ntopp       = 0
+      do i=1,tSOS1
+c        ... find fractional SOS1 with highest priority
+         if (SOS1priority(i).ge.toppriority) then
+            fractional = .false.
+            j0 = pSOS1(i)
+            j1 = pSOS1(i+1)
+            nfrac = 0
+            do j=j0,j1-1
+               jj   = iSOS1(j)
+               diff = x(jj) - anint(x(jj))
+               if (abs(diff).gt.eps) then
+                  nfrac      = nfrac + 1
+                  ibranch    = jj
+                  fractional = .true.
+                  if (nfrac.ge.2) then
+                     ibranch = -i
+                     goto 100
+                  endif
+               endif
+            enddo
+ 100        continue
+c           ... ibranch < 0  =>  SOS1 branching (otherwise branch on x(jj))
+            if (fractional) then
+               if (SOS1priority(i).eq.toppriority) then
+c                 ... another SOS1 with same priority
+                  ntopp       = ntopp+1
+                  pvar(ntopp) = ibranch
+               else
+c                 ... a new top priority has been found
+                  ntopp       = 1
+                  pvar(ntopp) = ibranch
+                  toppriority = SOS1priority(i)
+                  topSOSprior = toppriority
+               endif
+            endif
+         endif
+      enddo
+      call writeqpsol (fdash,x,n,iprint,nout)
+      do i=1,nivar
+c        ... find fractional integer variables with higher priority
+         if (priority(ivar(i)).ge.max(toppriority,topSOSprior+1)) then
+            diff = x(ivar(i)) - anint(x(ivar(i)))
+            if (abs(diff).gt.eps) then
+               if (priority(ivar(i)).eq.toppriority) then
+c                 ... another var. with same priority
+                  ntopp       = ntopp+1
+                  pvar(ntopp) = ivar(i)
+               else
+c                 ... a new top priority has been found
+                  ntopp       = 1
+                  pvar(ntopp) = ivar(i)
+                  toppriority = priority(ivar(i))
+               endif
+            endif
+         endif
+      enddo
+
+      if (iprint.ge.3) then
+         write(nout,*)'Infeasible integer variables and SOS (<0)', ntopp
+         write(nout,*) (pvar(i),i=1,ntopp)
+         do i=1,ntopp
+            if (pvar(i).gt.0) then
+               write(nout,*)i,pvar(i),bl(pvar(i)),x(pvar(i)),bu(pvar(i))
+            endif
+         enddo
+      endif
+
+c     ------------------------------------------------------------------
+c     calculate the bounds and estimates, on which the branching is based
+c     make  t a c t i c a l  decision on branching variable
+c     ------------------------------------------------------------------
+      call bdecision(ntopp,n,x,liplus,liminus,eiplus,eiminus,ibranch,
+     .     xfract,marker,pvar,nSOS1,tSOS1,pSOS1,iSOS1,rSOS1,bl,bu,pcU,
+     .     pcD,npcU,npcD,pcSOSU,pcSOSD,npcSOSU,npcSOSD,first,nout,m,
+     .     kmax,maxa,maxf,mlp,maxwk,maxiwk,ifail,rho,c,fdash,fmin,s,a,
+     .     la,ws,lws,lam,cstype,user,iuser,xdash,ldash,sbu,max_NLP,
+     .     istat,rstat,iprint,siter)
+      if (iprint.ge.3) then
+         write(nout,'(A)') 'Checking bounds after bdecision (ignore -1)'
+         call writebranch (-1,fdash,bl,bu,ibranch,ivar,nivar,n,
+     .                        iprint,nout)
+      endif
+
+c     ... lower bounds and estimates are updated in bdecision
+c      print *,'f-bnds after bdecision',f_low,liplus,liminus
+      lowerbd(1)   = f_low + liplus
+      lowerbd(2)   = f_low + liminus
+      estimate(1)  = fdash + eiplus
+      estimate(2)  = fdash + eiminus
+
+c     ---------------------------------------------------------------------
+c     estimate = best expected solution if NodeSelect==4
+c              = f_p + sum_i min{ pcU_i ([y_i+1]-y_i) ,pcD_i (y_i - [y_i])}
+c     ---------------------------------------------------------------------
+      if (NodeSelect.eq.4) then
+         nest = 0.D0
+c        ... compute cost for integer variables
+         do j=1,nivar
+            ii   = ivar(j)
+            diff = x(ii) - anint(x(ii))
+            if (abs(diff).gt.eps) then
+               piplus  = int(x(ii)+1.D0) - x(ii)
+               piminus = x(ii) - int(x(ii)) 
+               UpCost  = pcU(ii)*piplus
+               DnCost  = pcD(ii)*piminus
+               nest    = nest + min( UpCost , DnCost )
+            endif
+         enddo
+c        ... compute cost for SOS1 variables (NB: SOS1 are also 0-1 ... BUG!!!)
+         do j=1,tSOS1
+            call FindSOS1Frac(j,r,n,nSOS1,tSOS1,fract,found,pSOS1,
+     .           iSOS1,x,rSOS1)
+            if (found) then
+c              ... save max. fractional SOS1 variable for branching
+               fract   = (fract - rSOS1(r)) / (rSOS1(r+1) - rSOS1(r))
+               piplus  = int(fract+1.D0) - fract
+               piminus = fract - int(fract) 
+            else
+               piplus  = 0.D0
+               piminus = 0.D0
+            endif
+c           ... computation of effect of branching on SOS
+            UpCost  = pcSOSU(j)*piplus
+            DnCost  = pcSOSD(j)*piminus
+            nest    = nest + min( UpCost , DnCost )
+        enddo
+        estimate(1) = estimate(1) + nest
+        estimate(2) = estimate(2) + nest
+      endif
+
+c     ------------------------------------------------------------------
+c     add 2 new problems to the stack (branching on variable or SOS1)
+c     ------------------------------------------------------------------
+      if (ibranch.gt.0) then
+c        ... ibranch > 0 means branching on a variable
+         if (first.eq.'P-') then
+            start1 = 1
+            incr   = 1
+            end1   = 2
+         else
+            start1 = 2
+            incr   =-1
+            end1   = 1
+         endif
+         naddproblems = 2
+         buibranch = bu(ibranch)
+         blibranch = bl(ibranch)
+         call writeqpsol (fdash,x,n,iprint,nout)
+         call writebb (problmno,1,ibranch,x(ibranch),iprint,nout)
+         if (iprint.ge.2) then
+            write(nout,7000)'   introduce ',naddproblems,' new problms:'
+         endif
+         nproblm = abs( nproblm ) + naddproblems
+         do i=start1,end1,incr
+            if (x(ibranch).ge.0.D0) then
+               if (i.eq.1) then
+                  bl(ibranch) = int(x(ibranch)) + 1.D0
+                  fract       = int(x(ibranch)) + 1.D0 - x(ibranch)
+               else
+                  bu(ibranch) = int(x(ibranch))
+                  fract       = x(ibranch) - int(x(ibranch)) 
+                  nproblm     = -nproblm
+               endif
+            else
+               if (i.eq.1) then
+                  bl(ibranch) = int(x(ibranch))
+                  fract       = int(x(ibranch)) - x(ibranch)
+               else
+                  bu(ibranch) = int(x(ibranch)) - 1.D0
+                  fract       = int(x(ibranch)) - 1.D0 - x(ibranch)
+                  nproblm     = -nproblm
+               endif
+            endif
+            call addtostack(nstack,nstackmax,n,m,nivar,ivar,pstack,
+     .                      problm,lbd,est,bli,bui,bl,bu,xStack,x,
+     .                      lamStack,lam,varno,ibranch,fractns,fract,
+     .                      lowerbd(i),estimate(i),nproblm,ifail)
+            call writebranch(nproblm,estimate(i),bl,bu,ibranch,ivar,
+     .                       nivar,n,iprint,nout)
+            nproblm = abs( nproblm ) - 1
+            bl(ibranch) = blibranch
+            bu(ibranch) = buibranch
+         enddo
+         nproblm = abs( nproblm ) + naddproblems
+      elseif (ibranch.lt.0) then
+c        ... ibranch < 0 means branching on a SOS1 set
+         ibranch = - ibranch 
+         call writebb (problmno,6,ibranch,xfract,iprint,nout)
+         call writeqpsol (fdash,x,n,iprint,nout)
+         if (iprint.ge.2) then
+            write(nout,7000)'   introduce 2 new problms:'
+         endif
+         j0 = pSOS1(ibranch)
+         j1 = pSOS1(ibranch+1)
+         do j=j0,j1-1
+            sbu(j) = bu(iSOS1(j))
+         enddo
+         nproblm = nproblm+2
+c        ... decide on order in which problems are added to stack
+         if (first.eq.'P-') then
+            start1 = j0
+            end1   = marker
+            start2 = marker+1
+            end2   = j1-1
+            fract  = xfract
+         else
+            start1 = marker+1
+            end1   = j1-1
+            start2 = j0
+            end2   = marker
+            fract  = 1.D0-xfract
+         endif
+c        ... add two problems to stack
+         do j=start1,end1
+            bu(iSOS1(j)) = 0.D0
+         enddo
+         if (first.eq.'P-') then
+            nproblm = - nproblm
+         endif
+         j = - ibranch
+         call addtostack(nstack,nstackmax,n,m,nivar,ivar,pstack,
+     .        problm,lbd,est,bli,bui,bl,bu,xStack,x,lamStack,lam,varno,
+     .        j,fractns,fract,f_low,fdash,nproblm,ifail)
+         call writeSOS1(nproblm,fdash,bl,bu,start1,end1,ivar,nivar,n,
+     .                  iprint,nout)
+         nproblm = abs( nproblm ) - 1
+         do j=start1,end1
+            bu(iSOS1(j)) = sbu(j)
+         enddo
+         do j=start2,end2
+            bu(iSOS1(j)) = 0.D0
+         enddo
+         if (first.eq.'P+') then
+            nproblm = - nproblm
+         endif
+         j = - ibranch
+         call addtostack(nstack,nstackmax,n,m,nivar,ivar,pstack,
+     .        problm,lbd,est,bli,bui,bl,bu,xStack,x,lamStack,lam,varno,
+     .        j,fractns,fract,f_low,fdash,nproblm,ifail)
+         call writeSOS1(nproblm,fdash,bl,bu,start2,end2,ivar,nivar,
+     .                  n,iprint,nout)
+         do j=start2,end2
+            bu(iSOS1(j)) = sbu(j)
+         enddo
+         nproblm = abs( nproblm ) + 1
+      else
+c        ... ibranch = 0 means all variables fixed by strong branching
+         naddproblems = 1
+         lowerbd(1) = f_low + liplus
+         estimate(1)= fdash + eiplus
+         call writeqpsol (fdash,x,n,iprint,nout)
+         if (iprint.ge.2) then
+            write(nout,'(A)') '   strong branching fixed all variables'
+            write(nout,7000)'   introduce ',naddproblems,' new problms:'
+         endif
+         nproblm = abs( nproblm ) + naddproblems
+         call addtostack(nstack,nstackmax,n,m,nivar,ivar,pstack,
+     .                   problm,lbd,est,bli,bui,bl,bu,xStack,x,
+     .                   lamStack,lam,varno,ibranch,fractns,fract,
+     .                   lowerbd(1),estimate(1),nproblm,ifail)
+         call writebranch1(nproblm,estimate(1),bl,bu,ibranch,ivar,
+     .                    nivar,n,iprint,nout)
+      endif
+
+      return
+ 7000 format(A,I1,A)
+      end
+
+c     *****************************************************************
+
+      subroutine intfeasible (nivar, n, ivar, x, i0, integerfeasible)
+
+c     ------------------------------------------------------------------
+c     Purpose : decide, whether x is integer feasible
+c
+c     Date of last change   : 01 / 10 / 97
+c
+c     Parameter list:
+c     ==============
+c        nivar               - no of integer variables
+c        n                   - no of variables
+c        ivar                - indices of integer variables
+c        x                   - vector of variables
+c        i0                  - first appearance of a non ifs integer var.
+c        integerfeasible     - logical variable (true if x is int. feas)
+c
+c     calls: no other subroutines
+c     ------------------------------------------------------------------
+
+      implicit none
+
+c     declaration of common block for tolerance and infinity
+      double precision MIopttol, eps, infty
+      common /cTolInf/ MIopttol, eps, infty
+
+c     declaration of passed parameters - scalars
+      integer nivar, n, i0
+      logical integerfeasible
+
+c     declaration of passed parameters - arrays
+      integer ivar(nivar)
+      double precision    x(n)
+
+c     declaration of internal variables - scalars
+      double precision    diff
+      integer i
+
+c     ======================== procedure body ==========================
+
+c     ... initialize the logical variable
+      integerfeasible = .true.
+      i0 = 0
+
+c     ... check now whether x is indeed integer feasible
+
+c     WHILE ((i0 <= nivar) & integerfeasible) DO BEGIN
+ 100  if ((i0.ge.nivar) .or. (.not.integerfeasible)) goto 200
+
+         i0 = i0+1
+c        ... difference between x and nearest integer
+         diff = x(ivar(i0)) - anint(x(ivar(i0)))
+c        ... x is not integer feasible, if |diff| > eps
+         if (abs(diff).gt.eps) then
+            integerfeasible = .false.
+         endif
+
+         goto 100
+
+ 200  continue
+c     END;  {WHILE LOOP}
+
+      if (integerfeasible) then
+c        ... round the integers, tidying them up
+         do i=1,nivar
+            x(ivar(i)) = anint ( x(ivar(i)) )
+         enddo
+      endif
+
+      return
+      end
+
+c     ******************************************************************
+
+      subroutine writebb (problemno,status,ibranch,xbranch,iprint,nout)
+c     ------------------------------------------------------------------
+c     Purpose: write branch-and-bound status line
+c        problemno - problem identifier
+c        status    - status of soln in branch and bound
+c        ibranch   - stores branching index (if status = 1)
+c        xbranch   - stores branching variable value (if stauts = 1)
+c        nout      - output channel
+c     Date of last change   : 01 / 10 / 97
+c     ------------------------------------------------------------------
+      implicit none
+      integer problemno, status, ibranch, iprint, nout
+      double precision    xbranch
+
+c     ======================== procedure body ==========================
+
+      if (iprint.ge.2) then
+         if (status.eq.1) then
+            write (nout,1001) problemno, ibranch, xbranch
+         elseif (status.eq.2) then
+            write (nout,1002) problemno
+         elseif (status.eq.3) then
+            write (nout,1003) problemno
+         elseif (status.eq.4) then
+            write (nout,1004) problemno
+         elseif (status.eq.5) then
+            write (nout,1005) problemno
+         elseif (status.eq.6) then
+            write (nout,1006) problemno, ibranch, xbranch
+         else
+            write (nout,*) '*** PARAMETER ERROR IN WRITEBB ***'
+         endif
+      endif
+
+      return
+ 1001 format('problem No ',I6,1X,'not integer feasible,',
+     .       ' branch on x(',I5,')=',G16.10)
+ 1002 format('problem No ',I6,1X,'not feasible, fathom node')
+ 1003 format('problem No ',I6,1X,'integer feasible, new upper bound f*')
+ 1004 format('problem No ',I6,1X,'dominated by upper bound,',
+     .       ' fathom node (no solve)')
+ 1005 format('problem No ',I6,1X,'soln dominated by upper bound,',
+     .       ' fathom node')
+ 1006 format('problem No ',I6,1X,'not integer,',
+     .       ' branch on SOS1 #',I5,' fract=',G16.10)
+      end
+
+c     ******************************************************************
+
+      subroutine writeqpsol (f, x, n, iprint, nout)
+c     ------------------------------------------------------------------
+c     Purpose:  write soln of QP relaxation
+c        f         - optimal QP soln
+c        x         - optimal x vector
+c        n         - no of variables
+c        nout      - output channel
+c     Date of last change   : 01 / 10 / 97
+c     ------------------------------------------------------------------
+      implicit none
+      integer n, iprint, nout, i
+      double precision    f, x(n)
+
+c     ======================== procedure body ==========================
+
+      if (iprint.ge.2) then
+         write (nout,1000) '   f* = ', f
+         if (iprint.ge.3) then
+            write (nout,1000) '   x* = ', (x(i),i=1,n)
+         endif
+      endif
+
+      return
+ 1000 format (A,5G12.5,/(8X,G12.5,4(G12.5)))
+      end
+
+c     ******************************************************************
+
+      subroutine writebranch (problemno,est,bl,bu,ibranch,ivar,nivar,n,
+     .                        iprint,nout)
+c     ------------------------------------------------------------------
+c     Purpose: write details of two new problems
+c        problemno - problem identifier
+c        bl,bu     - lower / upper bounds on integer variables
+c        est       - estimate for this problem
+c        ivar      - indices of integer variables
+c        nivar     - number of integer variables
+c        n         - number of variables
+c        nout      - output channel
+c     Date of last change   : 01 / 10 / 97
+c     ------------------------------------------------------------------
+      implicit none
+      integer problemno, ibranch, nivar, iprint, nout, n, ivar(nivar), i
+      double precision    est, bl(n), bu(n)
+
+c     ======================== procedure body ==========================
+      
+      if (iprint.ge.2) then
+         write (nout,1000) problemno,est,ibranch,bl(ibranch),bu(ibranch)
+         if (iprint.ge.3) then
+            write (nout,1001) problemno,est
+            write (nout,1002) 'bl = ', (bl(ivar(i)),i=1,nivar)
+            write (nout,1002) 'bu = ', (bu(ivar(i)),i=1,nivar)
+         endif
+      endif
+
+      return
+ 1000 format (6X,'problem No ',I6,1X,'with estimate ',G10.4,1X,
+     .        'and NEW bounds x(',I5,') = [',F8.0,';',F8.0,']')
+ 1001 format (6X,'problem No ',I6,1X,'with estimate ',G10.4,1X,
+     .        'and bounds ...')
+ 1002 format (7X,A,8F8.0,/(12X,F8.0,7(F8.0)))
+      end
+
+c     ******************************************************************
+
+      subroutine writebranch1(problemno,est,bl,bu,ibranch,ivar,nivar,n,
+     .                        iprint,nout)
+c     ------------------------------------------------------------------
+c     Purpose: write details of ONE new problems
+c        problemno - problem identifier
+c        bl,bu     - lower / upper bounds on integer variables
+c        est       - estimate for this problem
+c        ivar      - indices of integer variables
+c        nivar     - number of integer variables
+c        n         - number of variables
+c        nout      - output channel
+c     Date of last change   : 01 / 10 / 97
+c     ------------------------------------------------------------------
+      implicit none
+      integer problemno, ibranch, nivar, iprint, nout, n, ivar(nivar), i
+      double precision    est, bl(n), bu(n)
+
+c     ======================== procedure body ==========================
+      
+      if (iprint.ge.2) then
+         write (nout,1000) problemno,est
+         if (iprint.ge.3) then
+            write (nout,1002) 'bl = ', (bl(ivar(i)),i=1,nivar)
+            write (nout,1002) 'bu = ', (bu(ivar(i)),i=1,nivar)
+         endif
+      endif
+
+      return
+ 1000 format (6X,'problem No ',I6,1X,'with estimate ',G10.4)
+ 1002 format (7X,A,8F8.0,/(12X,F8.0,7(F8.0)))
+      end
+
+c     ******************************************************************
+
+      subroutine writeSOS1 (problemno,est,bl,bu,j0,j1,ivar,nivar,n,
+     .                      iprint,nout)
+c     ------------------------------------------------------------------
+c     Purpose: write details of two new problems
+c        problemno - problem identifier
+c        bl,bu     - lower / upper bounds on integer variables
+c        est       - estimate for this problem
+c        ivar      - indices of integer variables
+c        nivar     - number of integer variables
+c        n         - number of variables
+c        nout      - output channel
+c     Date of last change   : 13 / 02 / 99
+c     ------------------------------------------------------------------
+      implicit none
+      integer problemno, j0, j1, nivar, iprint, nout, n, ivar(nivar), i
+      double precision    est, bl(n), bu(n)
+
+c     ======================== procedure body ==========================
+      
+      if (iprint.ge.2) then
+         write (nout,1000) problemno,est,j0,j1
+         if (iprint.ge.3) then
+            write (nout,1001) 
+            write (nout,1002) 'bl = ', (bl(ivar(i)),i=1,nivar)
+            write (nout,1002) 'bu = ', (bu(ivar(i)),i=1,nivar)
+         endif
+      endif
+
+      return
+ 1000 format (6X,'problem No ',I6,1X,'with estimate ',G10.4,1X,
+     .        'set SOS1 vars ',I5,' - ',I5,' = 0')
+ 1001 format (6X,'NEW bounds are ...')
+ 1002 format (7X,A,10F6.1,/(12X,F6.1,9(F6.1)))
+      end
+
+c     ************************ E N D   O F   F I L E *******************

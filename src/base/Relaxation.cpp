@@ -79,16 +79,9 @@ Relaxation::Relaxation(ProblemPtr problem, EnvPtr env)
     }
 
     // quadratic part
-    qf2 = QuadraticFunctionPtr(); // NULL
     qf = cconstr->getQuadraticFunction();
     if (qf) {
-      qf2 = (QuadraticFunctionPtr) new QuadraticFunction(); 
-      for (VariablePairGroupConstIterator it=qf->begin(); it!=qf->end(); 
-          ++it) {
-        v0 = vars_[it->first.first->getIndex()];
-        v1 = vars_[it->first.second->getIndex()];
-        qf2->incTerm(std::make_pair(v0, v1), it->second);
-      }
+      qf2 = qf->cloneWithVars(vbeg);
     }
 
     err = 0;
@@ -146,15 +139,9 @@ Relaxation::Relaxation(ProblemPtr problem, EnvPtr env)
     lf2 = LinearFunctionPtr(); // NULL
   }
   // quadratic part
-  qf2 = QuadraticFunctionPtr(); // NULL
   qf = obj->getQuadraticFunction();
   if (qf) {
-    qf2 = (QuadraticFunctionPtr) new QuadraticFunction(); 
-    for (VariablePairGroupConstIterator it=qf->begin(); it!=qf->end(); ++it) {
-      v0 = vars_[it->first.first->getIndex()];
-      v1 = vars_[it->first.second->getIndex()];
-      qf2->incTerm(std::make_pair(v0, v1), it->second);
-    }
+    qf2 = qf->cloneWithVars(vbeg);
   }
   // pass pointer to the original nonlinear function.
   err = 0;

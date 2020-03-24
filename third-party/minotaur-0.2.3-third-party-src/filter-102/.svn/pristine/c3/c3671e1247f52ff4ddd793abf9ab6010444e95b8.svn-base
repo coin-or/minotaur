@@ -1,0 +1,7 @@
+      subroutine fopen(unit, name)
+      integer unit
+      character*(*) name
+      open(unit, file=name, err=999)
+      return
+ 999  write(0,*) 'Could not open "',name,'"'
+      end

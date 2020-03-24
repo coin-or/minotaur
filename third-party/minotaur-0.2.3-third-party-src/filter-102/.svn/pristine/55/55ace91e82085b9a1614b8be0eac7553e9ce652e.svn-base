@@ -1,0 +1,860 @@
+Cut here >>>>>>>>>>>>>>>>>
+Christen this file minlpbb.f
+
+c     *************************************************
+c     *    MINLP - BB - SOLVER:   Date: see BBversion *
+c     *       Copyright, University of Dundee,        *
+c     *    R. Fletcher & S. Leyffer, October 1993     *
+c     *************************************************
+
+c     *****************************************************************
+c     Main solver for nonlinear branch--and--bound
+c     ===================================================
+c     * minlpsolver : simple interface to solver
+c     * minlpsolve  : complex interface to solver
+c     * checkifail  : check ifail 
+c     * otime       : output timings for B&B
+c     *****************************************************************
+
+      subroutine minlpsolver(nivar,n,m,kmax,nstackmax,mlp,bl,bu,fstar,
+     .                      rho,x,s,lam,ivar,priority,nSOS1,tSOS1,pSOS1,
+     .                      iSOS1,rSOS1,SOS1priority,c,cstype,a,la,maxa,
+     .                      iwork,liwork,work,lwork,user,iuser,iter,
+     .                      iprint,nout,ifail,max_NLP)
+
+c     ------------------------------------------------------------------
+c     Purpose : Solve a Mixed Integer NonLinear Program (MINLP) using a 
+c               branch-and-bound procedure. The problem solved is of the type
+c               
+c               /   min   f(x)
+c               |
+c        (P)   {    s.t.  l <= c(x) <= u
+c               |
+c               \         x(i) integer i=ivar(j), j=1,nivar
+c     
+c               where f and g are continuously differentiable functions
+c
+c               The NLP problems are solved using filterSQP
+c
+c               _ bounds are calculated in the routine bounds (empty by default)
+c               _ the branching decision is made according to
+c                 (tactical part of the algorithm)
+c                   i)  user supplied priority
+c                   ii) secondary criteria which are carried out in bdecision
+c               _ the decision on the next problem to be solved is 
+c                 left to the routine reorderstack (strategic part of the 
+c                 algorithm)
+c               - stack handling through routines:
+c                     addtostack, exfromstack, reorderstack, stripstrack
+c
+c     Parameter list:
+c     ==============
+c     nivar     - no of integer variables
+c     n         - total number of variables
+c     m         - number of constraints (linear & nonlin., excl. simple bounds)
+c     kmax      - max dimension of null space <= n.
+c     nstackmax - max size of LIFO stack, storing info about b&b tree
+c     mlp       - max level of degeneracy in QP solver, typically 20 is enough
+c     bl, bu    - (0,n+m) lower and upper bounds
+c     fstar     - optimum objective function value
+c     x         - optimal ifs soln (or if (ifail=6), first ifs obtained)
+c     s         - (n+m) scale factors for variable/constraint scaling
+c     lam       - (n+m) Lagrange multipliers (for debugging only)
+c     ivar      - indices of integer variables
+c     priority  - priority of the integer variables (length n)
+c                 priority(ivar(i)) priority of variable x(ivar(i))
+c                 higher numbers mean higher priority (can be any integer)
+c     nSOS1     - number of variables that are elements of a SOS1 set
+c     tSOS1     - number of SOS1 sets
+c     pSOS1     - (tSOS1+1) pointers to start of each SOS1 [INTEGER]
+c     iSOS1     - (nSOS1) index of each integer variable in SOS1 [INTEGER]
+c                 i-th SOS1 indices are in iSOS1(pSOS1(i):pSOS1(i+1))
+c     rSOS1     - (nSOS1) reference row of SOS1, storage as for iSOS1 [double precision]
+c     SOS1priority - (tSOS1) priorities of SOS1 sets [INTEGER]
+c     c         - c(m) storage for constraint values
+c     cstype    - (m) type of constraints 'L' = linear, 'N' = nonlinear
+c     a         - Jacobian storage
+c     la        - integers associated with Jacobian storage
+c     maxa      - max. number of entries in a
+c     iwork     - integer workspace for B&B and SQP solver
+c     liwork    - length of integer workspace
+c     work      - real workspace for B&B and SQP solver
+c     lwork     - length of real workspace
+c     user      - real user workspace
+c     iuser     - integer user workspace
+c     iter      - no of NLP problems solved
+c     iprint    - print flag
+c                 = 0  no printed output
+c                 = 1  only and some intermediate result is printed
+c                 = 2  result plus intermediary steps are printed
+c                 = 3  some more than 2
+c                 = 4  as 3 but filter is called with iprint = 1 etc.
+c     nout      - output channel
+c     ifail      - failure flag
+c                 = 0  optimal ifs found
+c                 = 1  infeasible root problem
+c                 = 2  integer infeasible
+c                 = 3  stack overflow some ifs obtained
+c                 = 4  stack overflow, no ifs obtained
+c                 = 5  SQP termination with rho < eps
+c                 = 6  SQP termination with iter > max_iter
+c                 = 7  crash in user supplied routines
+c                 = 8  unexpected ifail from QP solver
+c                 = 9  not enough double precision workspace or parameter error
+c                 =10  not enough INTEGR workspace or parameter error
+c     max_NLP   - maximum number of NLP iterations for each node 
+c
+c     calls:  addtostack       - add a new problem to the stack
+c             exfromstack      - extract top problem from stack
+c             reorderstack     - find a new problem if a node cannot be 
+c                                followed any further
+c             stripstack       - remove all problems from stack with
+c                                lower bnd >= current best int feas soln
+c             branch           - to branch, if NLP sol is not integerfeas
+c             filterSQP        - Dundee's SQP solver
+c             intfeasible      - decide, if a soln to an NLP is integer 
+c     ------------------------------------------------------------------
+
+      implicit none
+
+c     declaration of constrants
+      integer    seed
+      parameter (seed = 86456)
+
+c     declaration of passed parameters - scalars
+      integer nivar, n, m, nstackmax, mlp, iprint, nout, ifail, iter, 
+     .        maxa, lwork, liwork, kmax, nSOS1, tSOS1, max_NLP
+      double precision    fstar, rho
+
+c     ... common block for problemname
+      integer         char_l
+      character*10            pname
+      common /cpname/ char_l, pname
+
+c     declaration of passed parameters - arrays
+      integer ivar(nivar), iwork(liwork), priority(n), iuser(*), la(*),
+     .        pSOS1(tSOS1+1), iSOS1(nSOS1), SOS1priority(tSOS1)
+      double precision    bl(n+m), bu(n+m), work(lwork), x(n), user(*), 
+     .        c(m), a(*), s(n+m), lam(n+m), rSOS1(nSOS1)
+      character cstype(m)
+
+c     declaration of internal variables - scalars
+      integer lworkneeded, liworkneeded, plamStack, pxstar, pbli, 
+     .        pbui, pest, plbd, pbls, pbus, ppvar, ppstack, pproblm, 
+     .        mxwk, mxiwk, prstat, pistat, pws, plws, pxStack, psbu,
+     .        nnln, i, ppcU, ppcD, ppcSOSU, ppcSOSD, pvarno, pnpcU,
+     .        pnpcD, pnpcSOSU, pnpcSOSD, pfractns, pxdash, pldash
+      integer ipass
+      data    ipass /0/
+
+c     ==========================  procedure body  ======================
+
+      if (ipass.eq.0) then
+         call BBversion(nout)
+         ipass = 1
+         call srand( seed )
+         if (iprint.ge.1) then
+            nnln = 0
+            do i=1,m
+               if (cstype(i).eq.'N') then
+                  nnln = nnln + 1
+               endif
+            enddo
+c           ... open output file
+            if (nout.ne.6) then
+               open (unit=nout, file=pname(1:char_l)//'.output')
+            endif
+            if (nivar.gt.0) then
+               write(nout,1000)
+               write(nout,1000)'MINLP problem statistics'
+               write(nout,1000)'========================'
+               write(nout,1000)'Number of variables ............',n
+               write(nout,1000)'  of which integer variables ...',nivar
+               write(nout,1000)'Number of SOS1 sets ............',tSOS1
+               write(nout,1000)'  number of variables in SOS1 ..',nSOS1
+               write(nout,1000)'Number of constraints ..........',m
+               write(nout,1000)'  of which nonlinear ...........',nnln
+            endif
+         endif
+      endif
+ 1000 format(A,I6)
+
+c     ... check parameters and return, if faulty
+      lworkneeded  = 5*n + m + 7 + 2*tSOS1 + 3*nivar 
+     .               + nstackmax*(2*n+m+2*nivar+3)
+      liworkneeded = 2*n + nivar + 2*tSOS1 + 3*nstackmax + 14 
+      if ((m.lt.0).or.(n.lt.0).or.(nivar.lt.0).or.
+     .      (nstackmax.lt.0).or.(liwork.lt.liworkneeded) 
+     .      .or.(lwork.lt.lworkneeded)) then
+         write(nout,*) ' NOT ENOUGH WORKSPACE FOR MINLP BB '
+         write(nout,*) ' integer workspace provided:',liwork,
+     .                 '   needed to solve problem:', liworkneeded
+         write(nout,*) ' real workspace provided:',lwork,
+     .                 '   needed to solve problem:', lworkneeded
+         write(nout,*) ' ERROR in m, n, nivar or nstackmax',
+     .                   m, n, nivar, nstackmax  
+         ifail = 9
+         return
+      endif
+
+c     ... set storage map for MINLP solver for work and iwork
+      plamStack = 1
+      pxStack   = plamStack + nstackmax*(n+m)
+      pxstar    = pxStack + nstackmax*n
+      pbli      = pxstar + n
+      pbui      = pbli + nstackmax*nivar
+      psbu      = pbui + nstackmax*nivar
+      pest      = psbu + nivar
+      plbd      = pest + nstackmax
+      pbls      = plbd + nstackmax
+      pbus      = pbls + nivar
+      ppcU      = pbus + nivar
+      ppcD      = ppcU + n
+      ppcSOSU   = ppcD + n
+      ppcSOSD   = ppcSOSU + tSOS1
+      pfractns  = ppcSOSD + tSOS1
+      pxdash    = pfractns + nstackmax
+      pldash    = pxdash + n
+      prstat    = pldash + n+m
+      pws       = prstat + 7
+      mxwk      = lwork - pws
+
+      ppvar     = 1
+      ppstack   = ppvar + nivar
+      pproblm   = ppstack + nstackmax
+      pvarno    = pproblm + nstackmax
+      pnpcU     = pvarno + nstackmax
+      pnpcD     = pnpcU + n
+      pnpcSOSU  = pnpcD + n
+      pnpcSOSD  = pnpcSOSU + tSOS1
+      pistat    = pnpcSOSD + tSOS1
+      plws      = pistat + 14
+      mxiwk     = liwork - plws
+
+c     ... call the MIQP solver
+      call minlpsolve(nivar,n,m,kmax,nstackmax,mlp,bl,bu,fstar,rho,
+     .     x,s,ivar,priority,nSOS1,tSOS1,pSOS1,iSOS1,rSOS1,
+     .     SOS1priority,user,iuser,c,a,la,maxa,cstype,work(psbu),lam,
+     .     work(plamStack),work(pxStack),work(pxstar),work(pbli),
+     .     work(pbui),work(pest),work(plbd),work(pbls),work(pbus),
+     .     work(ppcU),work(ppcD),work(ppcSOSU),work(ppcSOSD),
+     .     work(pfractns),work(pxdash),work(pldash),work(prstat),
+     .     work(pws),iwork(ppvar),
+     .     iwork(ppstack),iwork(pproblm),iwork(pvarno),iwork(pnpcU),
+     .     iwork(pnpcD),iwork(pnpcSOSU),iwork(pnpcSOSD),iwork(pistat),
+     .     iwork(plws),mxwk,mxiwk,iter,iprint,nout,ifail,max_NLP)
+
+      return
+      end
+
+
+c     ******************************************************************
+
+
+      subroutine minlpsolve(nivar,n,m,kmax,nstackmax,mlp,bl,bu,fstar,
+     .     rho,x,s,ivar,priority,nSOS1,tSOS1,pSOS1,iSOS1,rSOS1,
+     .     SOS1priority,user,iuser,c,a,la,maxa,cstype,sbu,lam,lamStack,
+     .     xStack,xstar,bli,bui,est,lbd,bls,bus,pcU,pcD,pcSOSU,pcSOSD,
+     .     fractns,xdash,ldash,rstat,ws,pvar,pstack,problm,varno,npcU,
+     .     npcD,npcSOSU,npcSOSD,istat,lws,maxwk,maxiwk,iter,iprint,nout,
+     .     ifail,max_NLP)
+
+      implicit none
+
+c     declaration of common block for tolerance and infinity
+      double precision   MIopttol, eps, infty
+      common /cTolInf/   MIopttol, eps, infty
+      integer            BranchRule, NodeSelect, ReliabilityThreshold, 
+     .                   QPIters, NoInfNodes
+      common /cBnBRules/ BranchRule, NodeSelect, ReliabilityThreshold, 
+     .                   QPIters, NoInfNodes
+
+c     declaration of passed parameters - scalars
+      integer nivar, n, m, nstackmax, maxa, iprint, nout, ifail, iter, 
+     .        maxwk, maxiwk, kmax, nSOS1, tSOS1, max_NLP, siter
+      double precision    fstar, rho
+
+c     declaration of passed parameters - arrays
+      integer ivar(nivar), priority(n),pvar(nivar), pstack(nstackmax),
+     .        problm(nstackmax), iuser(*), la(0:*), lws(*), istat(14),
+     .        pSOS1(tSOS1+1), iSOS1(nSOS1), SOS1priority(tSOS1), 
+     .        npcU(nivar), npcD(nivar), npcSOSU(tSOS1), npcSOSD(tSOS1),
+     .        varno(nstackmax)
+      double precision    bl(n+m), bu(n+m), x(n), xstar(n), 
+     .        bli(nstackmax,nivar), 
+     .        bui(nstackmax,nivar), est(nstackmax), lbd(nstackmax),
+     .        bls(nivar), bus(nivar),user(*), c(m), a(*), ws(*), s(n+m), 
+     .        lam(n+m), lamStack(nstackmax,n+m), xStack(nstackmax,n), 
+     .        rstat(7), rSOS1(nSOS1), sbu(nivar), pcU(nivar), 
+     .        pcD(nivar), pcSOSU(tSOS1), pcSOSD(tSOS1), 
+     .        fractns(nstackmax), xdash(n), ldash(n+m)
+      character cstype(m)
+
+c     declaration of internal variables - scalars
+      integer nstack, i, i0, nproblm, problmno, NLPprint, maxf,  
+     .        mlp, bvar
+      double precision    lowerbd, estimate, fdash, fmin, rho1, hc, frac
+      logical ifaileq6, integerfeasible
+
+c     declaration of variables and commons for the timings/statistics
+      double precision    TSTART1, TSTART2, TEND1, TEND2, total_time, 
+     .        NLP_time, NLP_stime, lobd, TPRNT
+      integer NLP_iter, NLP_siter, NLP_sQPiter, NLP_QPiter, NLP_fcount, 
+     .        NLP_ccount, NLP_gcount, NLP_SOCcount, NLP_iiter,
+     .        n_bqpd_print0,n_ifail_5,n_ifail_6
+      common /cNLPstats/ NLP_time, NLP_stime, NLP_iter, NLP_siter, 
+     .                   NLP_QPiter, NLP_sQPiter, NLP_fcount, 
+     .                   NLP_ccount, NLP_gcount, NLP_SOCcount, NLP_iiter
+
+c     common to indicate start of printing
+      integer               n_filter_print
+      common /filter_count/ n_filter_print
+
+c     ... common statements for NLP solver
+      integer             n_bqpd_calls, n_bqpd_print
+      common /bqpd_count/ n_bqpd_calls, n_bqpd_print
+
+c     ... common block for problemname
+      integer         char_l
+      character*10            pname
+      common /cpname/ char_l, pname
+
+c     ... commnon block for integer feasible point found
+      logical             ifs_found
+      common /cifs_found/ ifs_found
+
+c     ... common block for Solution Dump Frequence [s CPU time]
+      double precision SolDumpFreq, MaxTime
+      integer MaxNodes
+      common /soldumpfreqc/ SolDumpFreq, MaxTime, MaxNodes
+
+c     declaration of functions
+      logical checkifail
+      double precision    seconds
+
+c     declaration of statement functions
+      logical stackisempty
+      stackisempty(nstack) = nstack.le.0
+
+c     ======================== procedure body ==========================
+
+      NLP_time      = 0.D0
+      NLP_stime     = 0.D0
+      NLP_iter      = 0
+      NLP_siter     = 0
+      NLP_iiter     = 0
+      NLP_QPiter    = 0
+      NLP_sQPiter   = 0
+      NLP_fcount    = 0
+      NLP_ccount    = 0
+      NLP_gcount    = 0
+      NLP_SOCcount  = 0
+      n_ifail_5     = 0
+      n_ifail_6     = 0
+      TSTART1       = seconds()
+      TPRNT         = seconds()
+      n_bqpd_print0 = n_bqpd_print
+
+c     ... initialize variables for filterSQP
+      rho1 = rho
+      maxf = 50
+      if (nivar.eq.0) then
+         NLPprint = iprint
+         iprint   = 0
+      else
+         NLPprint = max ( 0 , iprint - 3 )
+      endif
+      fmin     = - infty
+
+c     ... initialization for B&B
+      iter      = 0
+      siter     = 0
+      nstack    = 0
+      ifs_found = .false.
+      nproblm   = 1
+      ifaileq6  = .false.
+      if (ifail.eq.6) ifaileq6 = .true. 
+
+c     ... save initial bounds (and copy them back into bl, bu later)
+      do i=1,nivar
+         bls(i) = bl(ivar(i)) 
+         bus(i) = bu(ivar(i)) 
+      enddo
+
+c     ... initialize pointer to stack locations
+      do i=1,nstackmax
+         pstack(i) = i
+      enddo
+
+c     ... place the NLP relaxation of the MINLP on the stack
+      lowerbd  = - infty
+      estimate = - infty
+      bvar     = 0
+      problmno = nproblm
+      frac     = 0.D0
+      call addtostack(nstack,nstackmax,n,m, nivar,ivar,pstack,problm,
+     .                lbd,est,bli,bui,bl,bu,xStack,x,lamStack,lam,varno,
+     .                bvar,fractns,frac,lowerbd,estimate,nproblm,ifail)
+
+      if (iprint.ge.3) then
+         write(nout,'(A)') 'Initial bounds on integers'
+         call writebranch (0,0.D0,bl,bu,ivar,ivar,nivar,n,iprint,nout)
+      endif
+
+c     WHILE (stack not empty) DO BEGIN
+ 100  if (stackisempty(nstack)) goto 200
+
+c        ... take top problem from stack. NB: stack not empty at this point
+         call exfromstack(nstack,nstackmax,nivar,n,m,lbd,est,bli,bui,
+     .     bl,bu,xStack,x,lamStack,lam,pstack,problm,varno,bvar,fractns,
+     .     frac,ivar,lowerbd,estimate,problmno)
+cPS         if (iprint.ge.3) then
+cPS            write(nout,*)'STACK after exfromstack'
+cPS            call writestack(nout,nstack,nstackmax,pstack,problm,lbd,est)
+cPS         endif
+
+         if (lowerbd .le. (fstar-MIopttol)) then
+c           ... solve the problem only, if its lower bound is lt fstar
+            rho = max ( rho , rho1 )
+            if ((abs(problmno).eq.n_filter_print)
+     .           .or.(n_filter_print.eq.-1)) then
+               NLPprint     = 1
+               n_bqpd_print = 1
+            else
+               NLPprint     = max ( 0 , iprint - 3 )
+               n_bqpd_print = n_bqpd_print0
+            endif
+            TSTART2 = seconds()
+            call filterSQP(n,m,kmax,maxa,maxf,mlp,maxwk,maxiwk,NLPprint,
+     .                     nout,ifail,rho,x,c,fdash,fmin,bl,bu,s,a,la,
+     .                     ws,lws,lam,cstype,user,iuser,max_NLP,istat,
+     .                     rstat)
+            TEND2 = seconds()
+            NLP_time     = NLP_time     + TEND2 - TSTART2
+            NLP_iter     = NLP_iter     + istat(2)
+            NLP_iiter    = NLP_iiter    + istat(3)
+            NLP_QPiter   = NLP_QPiter   + istat(8) + istat(9)
+            NLP_fcount   = NLP_fcount   + istat(4)
+            NLP_ccount   = NLP_ccount   + istat(5)
+            NLP_gcount   = NLP_gcount   + istat(6)
+            NLP_SOCcount = NLP_SOCcount + istat(11)
+            iter = iter + 1
+            hc = rstat(5)
+            if ((iter.eq.1).and.((ifail.eq.2).or.(ifail.eq.3)
+     .                                       .or.(ifail.ge.7))) goto 999
+            call intfeasible (nivar,n,ivar,x,i0,integerfeasible)
+            if (.not.checkifail(ifail,hc,nout,iprint,problmno,n_ifail_5,
+     .           n_ifail_6,integerfeasible)) goto 999
+
+            if (iter.eq.1) then
+c              ... initialize pseudocosts after first NLP solve
+               if ((BranchRule.eq.3).or.(BranchRule.eq.6)) then
+                  call ApproxPC (n,m,nivar,ivar,nSOS1,tSOS1,pSOS1,iSOS1,
+     .                 rSOS1,pcU,pcD,npcU,npcD,pcSOSU,pcSOSD,npcSOSU,
+     .                 npcSOSD,bl,bu,nout,kmax,maxa,maxf,mlp,maxwk,
+     .                 maxiwk,rho,c,fdash,fmin,s,a,la,ws,lws,lam,cstype,
+     .                 user,iuser,x,xdash,ldash,sbu,istat,rstat,iprint,
+     .                 siter)
+                  if (iprint.gt.1) then
+                     call PrintPC (n,nivar,ivar,tSOS1,pcU,pcD,npcU,
+     .                    npcD,pcSOSU,pcSOSD,npcSOSU,npcSOSD,nout)
+                  endif
+               elseif ((BranchRule.ge.4).or.(NodeSelect.ge.3)) then
+                  call InitPC (n,m,nivar,ivar,nSOS1,tSOS1,pSOS1,iSOS1,
+     .                 rSOS1,pcU,pcD,npcU,npcD,pcSOSU,pcSOSD,npcSOSU,
+     .                 npcSOSD,bl,bu,nout,kmax,maxa,maxf,mlp,maxwk,
+     .                 maxiwk,rho,c,fdash,fmin,s,a,la,ws,lws,lam,cstype,
+     .                 user,iuser,x,xdash,ldash,sbu,istat,rstat,iprint,
+     .                 siter)
+                  if (iprint.gt.1) then
+                     call PrintPC (n,nivar,ivar,tSOS1,pcU,pcD,npcU,
+     .                    npcD,pcSOSU,pcSOSD,npcSOSU,npcSOSD,nout)
+                  endif
+               endif
+            endif
+
+            if (ifail.eq.0) then
+               if (abs(problmno).gt.1) then
+c                 ... current problem is feasible & not root => update pseudocosts
+                  if ((BranchRule.ge.4).or.(NodeSelect.ge.3)) then
+                     call UpdatePC (n,tSOS1,problmno,bvar,frac,lowerbd,
+     .                    fdash,pcU,pcD,npcU,npcD,pcSOSU,pcSOSD,npcSOSU,
+     .                    npcSOSD)
+                     if (iprint.gt.2) then
+                        call PrintPC (n,nivar,ivar,tSOS1,pcU,pcD,npcU,
+     .                       npcD,pcSOSU,pcSOSD,npcSOSU,npcSOSD,nout)
+                     endif
+                  endif
+               endif
+               if (fdash .le. (fstar-MIopttol)) then
+c                 ... current problem has value lt upper bound
+c                 ... decide whether the obtained soln is integ feasible
+                  call intfeasible (nivar,n,ivar,x,i0,integerfeasible)
+                  if (.not. integerfeasible) then
+c                    ... branch since x is not integer feasible
+                     call branch(nivar,n,m,i0,nstack,nstackmax,ivar,
+     .                    priority,pvar,nSOS1,tSOS1,pSOS1,iSOS1,rSOS1,
+     .                    SOS1priority,fdash,fdash,x,bl,bu,bli,bui,sbu,
+     .                    xStack,varno,fractns,lamStack,lam,lbd,est,
+     .                    pstack,problm,pcU,pcD,npcU,npcD,pcSOSU,pcSOSD,
+     .                    npcSOSU,npcSOSD,problmno,nproblm,iprint,nout,
+     .                    ifail,kmax,maxa,maxf,mlp,maxwk,maxiwk,rho,c,
+     .                    fmin,s,a,la,ws,lws,cstype,user,iuser,xdash,
+     .                    ldash,max_NLP,istat,rstat,siter)
+cPS                     if (iprint.ge.3) then
+cPS                        write(nout,*)'STACK after branch'
+cPS                       call writestack(nout,nstack,nstackmax,pstack,
+cPS     .                       problm,lbd,est)
+cPS                     endif
+                     if (.not.checkifail(ifail,hc,nout,iprint,problmno,
+     .                    n_ifail_5,n_ifail_6,integerfeasible)) goto 999
+                  else
+c                    ... update current best integer soln
+                     do i=1,n
+                        xstar(i) = x(i)
+                     enddo
+                     fstar = fdash
+                     ifs_found = .true.
+                     call writebb (problmno,3,0,0.D0,iprint,nout)
+                     call writeqpsol (fstar,x,n,iprint,nout)
+                     TEND1      = seconds()
+                     total_time = TEND1 - TSTART1
+                     if (.not.stackisempty(nstack)) then
+                        call lbdonstack (nstack,nstackmax,pstack,lbd,
+     .                                   lobd)
+                     endif
+                     if (iprint.gt.0) then
+                        write(nout,2001)iter,nstack,lobd,fstar,
+     .                       total_time
+                     endif
+c                    ... EXIT after first ifs, if needed
+                     if (ifaileq6) return
+c                    ... eliminate entries from stack with lower bound > soln
+                     if (.not.stackisempty(nstack)) then
+                        call stripstack(nstack,nstackmax,pstack,
+     .                       problm,lbd,fstar,iprint,nout)
+cPS                        if (iprint.ge.3) then
+cPS                           write(nout,*)'STACK after stripstack'
+cPS                           call writestack(nout,nstack,nstackmax,pstack,
+cPS     .                          problm,lbd,est)
+cPS                        endif
+                    endif
+                     if (.not.stackisempty(nstack)) then
+                        call reorderstack(n,nivar,tSOS1,nSOS1,nstack,
+     .                       nstackmax,pstack,problm,est,lbd,x,ivar,
+     .                       pSOS1,iSOS1,rSOS1,pcU,pcD,pcSOSU,pcSOSD,
+     .                       iprint,nout)
+cPS                        if (iprint.ge.3) then
+cPS                           write(nout,*)'STACK after reorderstack'
+cPS                           call writestack(nout,nstack,nstackmax,pstack,
+cPS     .                          problm,lbd,est)
+cPS                        endif
+                     endif
+                  endif
+               else
+c                 ... reject the problem, since its value > upper bound
+                  call writebb (problmno,5,0,0.D0,iprint,nout)
+                  if (iprint.ge.2) then
+                     write (nout,'(A,G12.5)') '   f* = ', fdash
+                  endif
+c                 ... select a new top problem for the stack (if possible)
+                  if (.not.stackisempty(nstack)) 
+     .               call reorderstack(n,nivar,tSOS1,nSOS1,nstack,
+     .                    nstackmax,pstack,problm,est,lbd,x,ivar,pSOS1,
+     .                    iSOS1,rSOS1,pcU,pcD,pcSOSU,pcSOSD,iprint,nout)
+               endif
+            else
+c              ... reject the problem, since it is infeasible
+               call writebb (problmno,2,0,0.D0,iprint,nout)
+c              ... select a new top problem for the stack (if possible)
+               if (.not.stackisempty(nstack))
+     .            call reorderstack(n,nivar,tSOS1,nSOS1,nstack,
+     .                 nstackmax,pstack,problm,est,lbd,x,ivar,pSOS1,
+     .                 iSOS1,rSOS1,pcU,pcD,pcSOSU,pcSOSD,iprint,nout)
+            endif 
+         else
+c           ... reject this problem, since its lower bound > soln
+            call writebb (problmno,4,0,0.D0,iprint,nout)
+            if (iprint.ge.2) then
+               write (nout,'(A,G12.5)') '   lower bound = ', lowerbd
+            endif
+c           ... select a new top problem, if the stack is not empty
+            if (.not.stackisempty(nstack)) 
+     .         call reorderstack(n,nivar,tSOS1,nSOS1,nstack,nstackmax,
+     .              pstack,problm,est,lbd,x,ivar,pSOS1,iSOS1,rSOS1,
+     .              pcU,pcD,pcSOSU,pcSOSD,iprint,nout)
+
+         endif
+
+c        ... monitor CPU stack and bounds & occasionally print solution
+         TEND1      = seconds()
+         total_time = TEND1 - TSTART1
+         if (iprint.gt.0) then
+            if((mod(iter,1000).eq.0).or.(iter.eq.1)) then
+               if (.not.stackisempty(nstack)) then
+                  call lbdonstack (nstack,nstackmax,pstack,lbd,lobd)
+               endif
+               write(nout,2001)iter,nstack,lobd,fstar,total_time
+               if (TEND1-TPRNT.ge.SolDumpFreq) then
+                  TPRNT = seconds()
+                  write(nout,'(A)') 'Current solution'
+                  call writeqpsol(fstar, xstar, n, 3, nout)
+               endif
+               call flush(nout)
+            endif
+         endif
+         if ((total_time.gt.MaxTime).or.(iter.gt.MaxNodes)) then
+            ifail = 12
+            goto 999
+         endif
+
+         goto 100
+ 200  continue
+c     END;  {WHILE (stack not empty) LOOP} ... normal termination (set ifail=0)
+      ifail = 0
+ 
+c     ... 999 error handling address
+ 999  continue
+
+      if ((ifail.eq.12).and.ifs_found) then
+         ifail = 3
+c         ... copy best integer point back to x but truncated to integer
+         write(nout,*)'time/node limit reached; integer soln found'
+      elseif ((ifail.eq.12).and.(.not.ifs_found)) then
+         ifail = 4
+         write(nout,*)'time/node limit reached; NO integer soln'
+      elseif ((ifail.eq.11).and.ifs_found) then
+         ifail = 3
+c         ... copy best integer point back to x but truncated to integer
+         write(nout,*)'stack overflow; integer solution found'
+      elseif ((ifail.eq.11).and.(.not.ifs_found)) then
+         ifail = 4
+         write(nout,*)'stack overflow; NO integer solution'
+      elseif ((ifail.eq.3).and.(iter.eq.1)) then
+         ifail = 1            
+         write(nout,*)'root problem infeasible'
+      elseif ((ifail.lt.0).and.ifs_found) then
+         ifail = 0            
+         write(nout,*)'optimal solution found'
+      elseif ((ifail.eq.3).and.(.not.ifs_found)) then
+         ifail = 2            
+         write(nout,*)'integer infeasible'
+      endif
+
+c     ... copy best integer point back to x but truncated to integer
+      do i=1,n
+         x(i) = xstar(i)
+      enddo
+
+      TEND1 = seconds()
+      total_time = TEND1 - TSTART1
+      if (nivar.gt.0) then
+         write(nout,1000) 'MINLP - BB exited with ifail = ',ifail
+         write(nout,1001) ' f* = ',fstar
+         if (iprint.ge.3) then
+            write(nout,1001) ' x* = ',(x(i),i=1,n)
+            write(nout,*)
+         endif
+         call otime(total_time,iter,nproblm+1,n_ifail_5,n_ifail_6,nout,
+     .              siter)
+         write(nout,1000)'No. of function evaluations = ',NLP_fcount
+         write(nout,1000)'No. of constraint evaluatns = ',NLP_ccount
+         write(nout,1000)'No. of gradient evaluations = ',NLP_gcount
+         write(nout,1000)'No. of QP problems solved   = ',NLP_QPiter
+         write(nout,1000)'    ... of which SOC QPs    = ',NLP_SOCcount
+      else
+         write(nout,*)' CPU time ...........................',total_time
+      endif
+
+c     ... cummulative subproblem count (NLPs and QPs)
+      iter = iter + siter
+
+c     ... print pseudo-costs
+      if((iprint.ge.1).and.((BranchRule.ge.4).or.(NodeSelect.ge.3)))then
+         call PrintPC (n,nivar,ivar,tSOS1,pcU,pcD,npcU,npcD,pcSOSU,
+     .        pcSOSD,npcSOSU,npcSOSD,nout)
+      endif
+
+c     ... copy correct bounds back into bl and bu
+      do i=1,nivar
+         bl(ivar(i)) = bls(i)
+         bu(ivar(i)) = bus(i) 
+      enddo
+
+      return
+ 1000 format (A,I16)
+ 1001 format (A,5G12.5,/(6X,G12.5,4(G12.5)))
+ 2001 format('solvd=',I10,'; nstck=',I10,'; lo-bnd=',G10.3,'; up-bnd=',
+     .       G10.3,'; CPU=',G10.3)
+      end
+
+
+c     ******************************************************************
+
+
+      logical function checkifail (ifail,hc,nout,iprint,problmno,
+     .                             n_ifail_5,n_ifail_6,integerfeasible)
+c     ------------------------------------------------------------------
+c     ... check ifail and print error message, if necessary
+c     ifail      - failure flag                          ifail checkifail
+c        = 0  optimal soln found                     --> 0        (T)
+c        = 1  unbounded NLP detected                 --> 0        (T)
+c        = 2  linear infeasible                      --> 2        (T)
+c        = 3  min of c/s violation found             --> 3        (T)
+c        = 4  h(x) <= eps, but QP infeasible         --> 0        (T)
+c        = 5  NLP solver terminated with rho < eps   --> 0 or 3   (T)
+c        = 6  termination with iter > maxiter        --> 0 or 3   (T)
+c        = 7  IEEE crash in user routines            --> 3        (T)
+c        = 8  unexpected ifail from QP solver        --> 3 (8)    (F)
+c        = 9  not enough double precision workspace  --> 9        (F)
+c        =10  not enough INTEGER workspace           --> 10       (F)
+c        =11  stack overflow                         --> 11       (F)
+c        NONE OF THE ABOVE --> HORROR
+c         nout - output channel
+c     ------------------------------------------------------------------
+      implicit none
+      integer ifail, nout, iprint, problmno, n_ifail_5, n_ifail_6
+      logical integerfeasible
+      double precision hc
+      double precision                 infty, eps
+      common             /NLP_eps_inf/ infty, eps
+c     ==================== procedure body ===========================
+      checkifail = .false.
+      if ((ifail.le.1).or.(ifail.eq.4)) then
+         checkifail = .true.
+         ifail      = 0
+      elseif (ifail.eq.2) then
+         checkifail = .true.
+         if (iprint.gt.1) write (nout,*)'NLP linear infeasible'
+      elseif (ifail.eq.3) then
+         checkifail = .true.
+         if (iprint.gt.1) write (nout,*)'NLP nonlinear infeasible'
+      elseif ((ifail.eq.5).or.(ifail.eq.6)) then
+         checkifail = .true.
+         if ((hc.gt.10*eps).and.integerfeasible) then
+            if (iprint.gt.0) write (nout,*)'NLP ERROR: ifail = ',ifail,
+     .           ' & ||c|| > eps & integer: fathom node; set ifail=3'
+            ifail = 3
+         else
+            if (iprint.gt.0) write (nout,*)'NLP ERROR: ifail = ',ifail,
+     .           ' try branching or declare optimal; set ifail=0'
+            ifail = 0
+         endif
+         if (ifail.eq.5) then
+            n_ifail_5 = n_ifail_5 + 1
+         else
+            n_ifail_6 = n_ifail_6 + 1
+         endif
+      elseif (ifail.eq.8) then
+         if (iprint.gt.0) 
+     .        write (nout,*)'NLP ERROR ',ifail,' in NLP ',problmno,
+     .        ' set to 0 (try branching)'
+         ifail = 0
+      elseif (ifail.eq.11) then
+         if (iprint.gt.0) write (nout,*)'Stack overflow'
+      elseif (ifail.ge.7) then
+         checkifail = .true.
+         if (iprint.gt.0) 
+     .        write (nout,*)'NLP ERROR ',ifail,' in NLP ',problmno
+         if (hc.le.eps) then
+            ifail = 0
+            if (iprint.gt.0) write (nout,*)'IEEE ERROR: ifail = ',ifail,
+     .                                     ' declare node feasible'
+         else
+            if (iprint.gt.0) write (nout,*)'IEEE ERROR: ifail = ',ifail,
+     .                                     ' try branching; set ifail=0'
+            ifail = 0
+         endif
+      elseif (ifail.le.10) then
+         if (iprint.gt.0) 
+     .        write (nout,*)'NLP ERROR ',ifail,' in NLP ',problmno         
+      else
+         write (nout,*)'HORROR of the Horrors ', ifail
+         stop
+      endif
+      return
+      end
+
+
+c     ******************************************************************
+
+
+      subroutine otime(total_time,iter,nproblm,n_ifail_5,n_ifail_6,nout,
+     .                 siter)
+c     -------------------------------------------------------------
+c     output the timings and statistics of this run
+c     -------------------------------------------------------------
+      implicit none
+      double precision    total_time
+      integer nproblm, nout, iter, siter, n_ifail_5, n_ifail_6
+
+      double precision    NLP_time, NLP_stime
+      integer NLP_iter, NLP_siter, NLP_sQPiter, NLP_QPiter, NLP_fcount, 
+     .        NLP_ccount, NLP_gcount, NLP_SOCcount, NLP_iiter
+      common /cNLPstats/ NLP_time, NLP_stime, NLP_iter, NLP_siter, 
+     .                   NLP_QPiter, NLP_sQPiter, NLP_fcount, 
+     .                   NLP_ccount, NLP_gcount, NLP_SOCcount, NLP_iiter
+
+c     ==================== procedure body ===========================
+
+      write(nout,1000) '==============================================='
+      write(nout,1000) ' T I M I N G S   F O R   M I N L P   S O L V E '
+      write(nout,1000) '==============================================='
+      write(nout,*)
+      write(nout,1000)'1. NLP Branch-and-Bound Stats'
+      write(nout,1000)'============================='
+      write(nout,1000)'Total CPU time                     =',total_time
+      write(nout,1001)'Number of NLPs generated           =',nproblm
+      write(nout,1001)'Number of NLP-nodes solved         =',iter
+      write(nout,1000)'Percentage of NLPs solved          =', 
+     .                                           1.D2*dble(iter)/nproblm
+      write(nout,1001)'Total number of QPs solved         =',NLP_QPiter
+      write(nout,1000)'CPU time for NLPs                  =',NLP_time
+      if (NLP_iter.gt.0) then
+         write(nout,1000)'Average #QPs solved per NLP = ',
+     .        dble(NLP_QPiter)/NLP_iter
+         write(nout,1000)'Average CPU time for NLPs   = ',
+     .        NLP_time/NLP_iter
+      else
+         write(nout,1000)'Average #QPs solved per NLP = ',0.D0
+      endif
+      write(nout,*)
+      write(nout,1000)'2. NLP/QP Strong Branching Stats'
+      write(nout,1000)'================================'
+      write(nout,1001)'Number of SB-probs solved          =',siter
+      write(nout,1001)'Total number of SB-QPs solved      =',NLP_sQPiter
+      write(nout,1000)'CPU time for SB-probs              =',NLP_stime
+      if (NLP_siter.gt.0) then
+         write(nout,1000)'Average #QPs solved per SB-prob = ',
+     .        dble(NLP_sQPiter)/NLP_siter
+         write(nout,1000)'Average CPU time for SB-probs   = ',
+     .        NLP_stime/NLP_siter
+      else
+         write(nout,1000)'Average #QPs solved per SB-probs = ',0.D0
+      endif
+
+      write(nout,1001)
+      write(nout,1001)'==============================='
+      write(nout,1001)'ACCUMULATIVE NLP ERROR MESSAGES'
+      write(nout,1001)'==============================='
+      write(nout,*)'Number of NLP terminated with rho < eps ',
+     .                '(ifail=5):', n_ifail_5
+      write(nout,*)'Number of NLP terminated with iter > max_iter ',
+     .                '(ifail=6):', n_ifail_6
+      return
+ 1000 format(A,F16.2)
+ 1001 format(A,I16)
+      end
+
+
+c     ******************************************************************
+
+
+      block data MIP_defaults
+      double precision MIopttol, eps, infty
+      common /cTolInf/ MIopttol, eps, infty
+      data             MIopttol, eps, infty /1.D-4, 1.D-6, 1.D20/
+      end
+
+
+c     ************************ E N D   O F   F I L E *******************

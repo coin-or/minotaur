@@ -52,7 +52,6 @@
 #include "SolutionPool.h"
 #include "TreeManager.h"
 #include "EngineFactory.h"
-#include "CxQuadHandler.h"
 #include "Objective.h"
 
 using namespace Minotaur;

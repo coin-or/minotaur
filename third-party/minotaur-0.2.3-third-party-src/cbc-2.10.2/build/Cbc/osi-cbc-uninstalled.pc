@@ -1,0 +1,10 @@
+prefix=/home/mustafa.vora/minotaur/third-party
+libdir=/home/mustafa.vora/minotaur/third-party/minotaur-0.2.3-third-party-src/cbc-2.10.2/build/Cbc/src/OsiCbc
+
+Name: OsiCbc
+Description: COIN-OR Open Solver Interface for CBC
+URL: https://projects.coin-or.org/Osi
+Version: 2.10.2
+Libs: ${libdir}/libOsiCbc.la
+Cflags: -I/home/mustafa.vora/minotaur/third-party/minotaur-0.2.3-third-party-src/cbc-2.10.2/Cbc/Cbc/src/OsiCbc
+Requires: cbc

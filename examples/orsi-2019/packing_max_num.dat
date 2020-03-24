@@ -1,0 +1,14 @@
+param NUM_CIRCLES:= 6;
+
+param RADII:=
+1 1
+2 0.5
+3 0.8
+4 1.2
+5 1
+6 2.3;
+#7 0.9
+#8 2;
+
+#param side_up:= 8;
+param TRIANGLE_SIDE:= 8;

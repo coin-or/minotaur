@@ -1,0 +1,284 @@
+%%%%% >>>>> CUT HERE <<<<<
+%%%%%
+%%%%%			LaTeX manual for MIQP solver
+%%%%%
+\documentclass[twoside, 12pt]{article}
+
+\usepackage{a4}
+
+\pagestyle{myheadings}
+
+\begin{document}
+
+\markboth{Sven Leyffer}
+	 {User manual for MINLP\_BB}
+
+\newcommand{\st}{\mbox{subject to }}
+\newcommand{\bmath}[1]{\mbox{\boldmath $ #1 $}}
+
+\title{ User manual for MINLP\_BB
+	\thanks{This work was supported by EPSRC grant number GR/K51204.} 
+	\thanks{University of Dundee Numerical Analysis Report NA/XXX
+		Dundee, DD1 4HN, U.K.} }
+
+\author{ Sven Leyffer\thanks{\tt sleyffer@mcs.dundee.ac.uk} \\
+	 {\it University of Dundee}}
+
+\date{ April 1998 \\ Revised, March 1999 }
+
+\maketitle
+
+\begin{abstract}
+	A software package for the solution of Mixed Integer Nonlinear
+	Programming (MINLP) problems is described. The package implements
+	a branch-and-bound solver with depth-first search and maximal 
+	fractional branching.
+
+	\smallskip
+	\noindent
+	{\em Key words:\/} Mixed Integer Nonlinear Programming, 
+			   branch-and-bound.
+\end{abstract}
+
+\section{ Introduction }
+
+The software package {\tt MINLP\_BB} described in this note solves MINLP
+problems by branch-and-bound. These are 
+Nonlinear Programming (NLP) problems in which some of the variables are
+restricted to take integer values. The nonlinear part of the problem is 
+specified in the same way as for the NLP solver 
+{\sf filterSQP}~\cite{FleLey:98}. 
+
+The solver guarantees to find global solutions, if the problem is convex.
+{\tt MINLP\_BB} is also effective to solve non-convex MINLP problems.
+Even though no guarantee can be given that a global solution is found in
+this case, the solver is more robust than outer approximation or
+Benders Decomposition which usually cut away large parts of the feasible
+region.
+
+{\tt MINLP\_BB} can also be used to solve problems with discrete variables
+(e.g. $z \in \{  0.2 , 7.4 , 18.7 \}$). In this case the problem can be
+reformulated by replacing $z$ by 
+ $z = 0.2 \, y_1 \; + \; 7.4 \, y_2 \; + \; 18.7 \, y_3$
+and $y_1 + y_2 + y_3 = 1$ where $y_i \in \{0 , 1 \}$. This is in fact an
+example of a Special Ordered Set of type 1 (SOS1), e.g.~\cite{WillHP:93}.
+
+\section{ The Algorithm }
+
+The package implements a branch-and-bound scheme (e.g.~\cite{FleLey:98a}) 
+using a depth-first-search. The resulting NLP relaxations are solved 
+using {\sf filterSQP}. 
+The user can influence the {\em branching decision\/} by supplying priorities
+for the integer variables. 
+By default, the solver branches on the variable with the 
+highest priority first. If there is a tie, then the variable with the largest 
+fractional part is selected for branching.
+
+
+\section{ System Requirements and Implementation }
+
+The software package requires a {\tt FORTRAN 77} compiler.
+It comprises a suite of MINLP subroutines:
+
+\begin{tabular}{ll}
+{\tt MINLPdriver.f}	& A sample driver for the MINLP solver.	\\
+{\tt minlpbb.f}		& The main MINLP\_BB routine.		\\
+{\tt minlpbbaux.f}	& Auxiliary routines used in {\tt minlpbb.f}.\\
+{\tt BBaux.f}		& Auxiliary routines used for MINLP and MIQP. \\
+{\tt MINLPuser.f}	& The user supplied problem functions.	\\
+\end{tabular}
+
+\vspace{2ex}
+In addition the user requires an NLP solver ({\sf filterSQP}) consisting of:
+
+\begin{tabular}{ll}
+{\tt filter.f} 		& The main SQP filter routine.		\\
+\end{tabular}
+
+\begin{tabular}{ll}
+{\tt filteraux.f}	& Auxiliary routines used in {\tt filter.f}.\\
+{\tt QPsolved.f}	& The interface to the QP solver, dense storage.\\
+{\tt QPsolves.f}	& The interface to the QP solver, sparse storage.\\
+{\tt scaling.f}		& Routines that scale the problem.	\\
+{\tt bqpd.f}		& The main QP solver routine.		\\
+{\tt auxil.f}		& Some auxiliary routines for {\tt bqpd}.\\
+{\tt denseL.f}		& Dense linear algebra package.		\\
+{\tt sparseL.f}		& Sparse linear algebra package. \\
+{\tt util.f}		& Some linear algebra utilities.	\\
+{\tt sparseA.f}		& Sparse matrix storage/handling {\bf OR}\\
+{\tt denseA.f}		& Dense matrix storage/handling.	\\
+\end{tabular}
+
+A {\tt makefile} for {\tt UNIX} systems is supplied with the distribution
+version. This {\tt makefile} compiles and links the small MINLP problem
+in \cite{FleLey:98}. Interfaces to {\tt CUTE} and {\tt AMPL} can be made 
+available upon request.
+
+\section{ Description of the Interface }
+
+The interface of the MINLP solver has the following form
+
+\begin{verbatim}
+      subroutine minlpsolver(nivar,n,m,kmax,nstackmax,bl,bu,fstar,rho,x,
+     .                      s,lam,ivar,priority,nSOS1,tSOS1,pSOS1,iSOS1,
+     .                      rSOS1,SOS1priority,c,cstype,a,la,maxa,
+     .                      iwork,liwork,work,lwork,user,iuser,iter,
+     .                      iprint,nout,ifail)
+
+\end{verbatim}
+
+\subsection{Definition of Parameters}
+A detailed description of the parameters follows below (the parameters 
+preceded by a {*} must be set on entry to {\tt minlpsolver}.
+
+\noindent
+\begin{tabular}{llp{13cm}}
+{*}& {\tt nivar}     & number of integer variables ({\tt INTEGER})	\\
+{*}& {\tt n}   	     & total number of variables ({\tt INTEGER})	\\
+{*}& {\tt m}         & number of constraints (linear and nonlinear, excluding
+		       simple bounds) ({\tt INTEGER})			\\
+\end{tabular}
+
+\noindent
+\begin{tabular}{llp{12cm}}
+{*}& {\tt kmax}      & maximum size of null-space ($\leq {\tt n}$) 
+		    	({\tt INTEGER})					\\
+{*}& {\tt nstackmax} & maximum size of the stack, storing information 
+			during the tree-search ({\tt INTEGER}) 	\\
+{*}& {\tt bl}        & {\tt bl(n+m)} vector of lower bounds ({\tt REAL})\\
+{*}& {\tt bu}        & {\tt bu(n+m)} vector of upper bounds ({\tt REAL})\\
+   & {\tt fstar}     & optimum objective function value ({\tt REAL})	\\
+{*}& {\tt rho}       & initial trust-region radius ({\tt REAL})		\\
+   & {\tt x}         & {\tt x(n)} optimal integer feasible solution (i.f.s.); 
+			or if (ifail=6) the first i.f.s. obtained 
+			({\tt REAL}) 					\\
+   & {\tt s}	     & {\tt s(n+m)} scale factors for variable/constraint 
+			scaling ({\tt REAL}) 				\\
+   & {\tt lam}       & {\tt lam(n+m)} Lagrange multipliers of simple bounds 
+		    	and general constraints at solution ({\tt REAL}) \\
+{*}& {\tt ivar}      & {\tt ivar(nivar)} vector of indices of the integer 
+  			variables ({\tt INTEGER})			\\
+{*}& {\tt priority}  & {\tt priority(n)} is the priority of the 
+			integer variables; {\tt priority(ivar(i))} is the 
+			priority of variable {\tt x(ivar(i))}; 
+                 	a higher value implies a higher priority 
+			({\tt INTEGER}) 				\\
+{*}& {\tt nSOS1}     & number of variables that are elements of a 
+			SOS1 set ({\tt INTEGER})			\\
+{*}& {\tt tSOS1}     & number of SOS1 sets ({\tt INTEGER})		\\
+{*}& {\tt pSOS1}	& {\tt pSOS1(tSOS1+1)} are pointers to start of 
+			each SOS1  ({\tt INTEGER}) \\
+{*}& {\tt iSOS1}	& {\tt iSOS1(nSOS1)}index of each integer variable 
+			in SOS1 ({\tt INTEGER}).
+                        Indices of the i-th SOS1 are stored 
+			in {\tt iSOS1(pSOS1(i):pSOS1(i+1))}		\\
+{*}& {\tt rSOS1}	& {\tt rSOS1(nSOS1)} reference row of SOS1, storage 
+			as for {\tt iSOS1} ({\tt REAL}) 		\\
+{*}& {\tt SOS1priority}& {\tt SOS1priority(tSOS1)} priorities of SOS1 sets  
+			({\tt INTEGER}) \\
+   & {\tt c}         & {\tt c(m)} vector that stores the final values 
+		    	of the general constraints ({\tt REAL}) 	\\
+{*}& {\tt cstype}    & {\tt cstype(m)} indicates whether the constraint is
+		    	linear or nonlinear, i.e. {\tt cstype(j) = 'L'} for 
+		    	linear and {\tt cstype(j) = 'N'} for nonlinear
+		    	constraint number {\tt j} ({\tt CHARACTER*1}) 	\\
+   & {\tt a}         & Jacobian storage (see {\sf filterSQP}) ({\tt REAL}) \\
+   & {\tt la}        & integer information related to Jacobian storage 
+			(see {\sf filterSQP}) ({\tt INTEGER})		\\
+{*}& {\tt maxa}      & maximum number of entries allowed in Jacobian 
+		    	matrix {\tt a} ({\tt INTEGER})			\\
+   & {\tt iwork}     & {\tt iwork(liwork)} integer workspace for the MINLP and
+			NLP solvers ({\tt INTEGER})			\\
+{*}& {\tt liwork}    & length of {\tt iwork} ({\tt INTEGER}); at least 	
+                       {\tt nivar + 2*nstackmax + 11} locations		
+   		       {\em plus\/} storage required for the NLP solver.\\
+   & {\tt work}      & {\tt work(lwork)} real workspace for the MINLP and
+			NLP solvers ({\tt REAL})			\\
+{*}& {\tt lwork}     & length of {\tt lwork} ({\tt INTEGER}); at least 	\\
+   &		     & {\tt n+m + nstackmax*(n+m) + nstackmax*n + n }	\\
+   &                 & {\tt + 2*nstackmax*nivar + 2*nstackmax + 2*nivar + 3}\\
+   &		     & locations {\em plus\/} storage required for 
+			the NLP solver. \\
+   & {\tt iter}      & number of NLP problems solved ({\tt INTEGER})	\\
+\end{tabular}
+
+\noindent
+\begin{tabular}{llp{13cm}}
+{*}& {\tt iprint}    & print flag ({\tt INTEGER})			\\
+	&	 &	0 : no printed output; 				\\
+	&	 &	1 : only result is printed;			\\
+        &        &	2 : result plus intermediary steps are printed;	\\
+        &        &	3 : as 2 but NLP is called with iprint = 1;	\\
+        &        &	4 : as 2 but NLP is called with iprint = 2 	\\
+{*}& {\tt nout}      & number of output channel ({\tt INTEGER})		\\
+   & {\tt ifail}     & failure flag ({\tt INTEGER})			\\
+	&	&	0 : optimal i.f.s. found			\\
+        &       &  	1 : infeasible root problem			\\
+        &       &  	2 : integer infeasible				\\
+        &       &  	3 : stack overflow some i.f.s. obtained		\\
+        &       &  	4 : stack overflow, no i.f.s. obtained		\\
+        &       & 	5 : SQP termination with {\tt rho < eps}	\\
+        &       & 	6 : SQP termination with {\tt iter > max\_iter}	\\
+        &       & 	7 : crash in user supplied routines		\\
+        &       & 	8 : unexpected {\tt ifail} from QP solver	\\
+        &       & 	9 : not enough {\tt REAL} workspace or parameter error	\\
+        &       &      10 : not enough {\tt INTEGR} workspace or parameter error \\
+\end{tabular}
+
+\subsection{Common Statements}
+A number of named common statement are used to pass information into 
+{\tt bqpd}  and for less important constants. These common statements take 
+the following form
+
+\noindent
+\begin{verbatim}
+      real             eps, infty
+      common /cTolInf/ eps, infty
+\end{verbatim}
+
+The common {\tt /cTolInf/} defines the accuracy, {\tt eps}, to which the 
+problem is solved and a suitably large number to represent $\infty$ in 
+{\tt infty}.
+
+
+\subsection{User-defined Subroutines}
+The user is also responsible for providing subroutines 
+which compute function, gradient and Hessian information. This is explained
+in detail in \cite{FleLey:98}. 
+
+%\bibliographystyle{plain}
+%\bibliography{../../NLP,../../GENERAL,../../MINLP}
+
+
+\begin{thebibliography}{1}
+
+\bibitem{FleLey:98a}
+{Fletcher, R.} and {Leyffer, S.}
+\newblock Numerical experience with lower bounds for {MIQP} branch--and--bound.
+\newblock {\em SIAM Journal on Optimization}, 8(2):604--616, 1998.
+
+\bibitem{FleLey:98}
+{Fletcher, R.} and {Leyffer, S.}
+\newblock User manual for filter{SQP}.
+\newblock Numerical Analysis Report NA/181, Dundee University, April 1998.
+
+\bibitem{WillHP:93}
+H.P. Williams.
+\newblock {\em Model Solving in Mathematical Programming}.
+\newblock John Wiley \& Sons Ltd., Chichester, 1993.
+
+\end{thebibliography}
+
+\end{document}
+
+
+
+
+
+
+
+
+
+
+
+

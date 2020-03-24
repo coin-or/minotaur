@@ -1,0 +1,12 @@
+int xargc;
+char **xargv;
+extern void MAIN__(void);
+
+ int
+main(int argc, char **argv)
+{
+	xargc = argc;
+	xargv = argv;
+	MAIN__();
+	return 0;
+	}

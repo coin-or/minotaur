@@ -43,7 +43,6 @@
 #include <Solution.h>
 #include <TreeManager.h>
 #include <EngineFactory.h>
-#include <CxQuadHandler.h>
 #include <Objective.h>
 #include <TransSep.h>
 #include <PerspCutHandler.h>

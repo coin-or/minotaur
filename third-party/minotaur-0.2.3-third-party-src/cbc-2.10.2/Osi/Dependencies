@@ -1,0 +1,8 @@
+BuildTools  https://projects.coin-or.org/svn/BuildTools/releases/0.8.8/
+ThirdParty/Blas  https://projects.coin-or.org/svn/BuildTools/ThirdParty/Blas/releases/1.4.7/
+ThirdParty/Lapack  https://projects.coin-or.org/svn/BuildTools/ThirdParty/Lapack/releases/1.6.0/
+ThirdParty/Glpk  https://projects.coin-or.org/svn/BuildTools/ThirdParty/Glpk/releases/1.10.6/
+ThirdParty/SoPlex  https://projects.coin-or.org/svn/BuildTools/ThirdParty/SoPlex/releases/1.6.1/
+Data/Netlib  https://projects.coin-or.org/svn/Data/Netlib/releases/1.2.7/
+Data/Sample  https://projects.coin-or.org/svn/Data/Sample/releases/1.2.11/
+CoinUtils  https://projects.coin-or.org/svn/CoinUtils/releases/2.11.2/CoinUtils

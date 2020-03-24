@@ -1,0 +1,72 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<?xml-stylesheet type = "text/xsl" href = "http://www.coin-or.org/projects/autoGen.xsl"?>
+<projectData xmlns="coin-or.org" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="coin-or.org  http://www.coin-or.org/projects/autoGen.xsd">
+  <projectBasics>
+    <projectName>CoinUtils</projectName>
+    <projectDescription>The CoinUtils project is a collection of
+      open-source utilities developed and used by a variety of other
+      projects in the COIN-OR repository. The project includes
+      classes for storing and manipulating sparse matrices and
+      vectors, performing matrix factorization, parsing input files
+      in standard formats, building representations of mathematical
+      programs, comparing floating point numbers with a tolerance,
+      performing simple presolve operations, and warm starting
+      algorithms for mathematical programs, among others.
+    </projectDescription>
+    <projectShortDescription>
+       Utilities, data structures, and linear algebra methods for COIN-OR projects.
+    </projectShortDescription>
+    <projectManager>Laszlo Ladanyi, ladanyi at us dot ibm dot com </projectManager>
+    <projectHomePage>https://www.github.com/coin-or/CoinUtils</projectHomePage>
+    <projectLicense>Eclipse Public License 1.0</projectLicense>
+    <projectLicenseURL>http://www.opensource.org/licenses/eclipse-1.0</projectLicenseURL>
+    <coinLinkedProjects>
+      <coinProject>
+        <repoName>BuildTools</repoName>
+      </coinProject>
+    </coinLinkedProjects>
+    <otherLinkedPackages/>
+    <projectLanguage>C++</projectLanguage>
+    <developmentStatus>
+      <activityStatus>Active</activityStatus>
+      <maturityLevel>5</maturityLevel>
+    </developmentStatus>
+    <testedPlatforms>
+      <platform>
+        <operatingSystem>Microsoft Windows</operatingSystem>
+        <compiler>MSVC++/cl</compiler>
+      </platform>
+      <platform>
+        <operatingSystem>Microsoft Windows</operatingSystem>
+        <compiler>CYGWIN/cl</compiler>
+      </platform>
+      <platform>
+        <operatingSystem>Microsoft Windows</operatingSystem>
+        <compiler>CYGWIN/gcc</compiler>
+      </platform>
+      <platform>
+        <operatingSystem>Microsoft Windows</operatingSystem>
+        <compiler>MSys/gcc</compiler>
+      </platform>
+      <platform>
+        <operatingSystem>Linux</operatingSystem>
+        <compiler>gcc</compiler>
+      </platform>
+      <platform>
+        <operatingSystem>Mac OS X</operatingSystem>
+        <compiler>gcc</compiler>
+      </platform>
+    </testedPlatforms>
+    <projectCategories>
+      <category>
+        Optimization utility
+      </category>
+    </projectCategories>
+  </projectBasics>
+  <leftMenuLinks>
+    <documentation>https://www.coin-or.org/Doxygen/CoinUtils/</documentation>
+    <sourceCodeDownload>http://www.coin-or.org/download/source/CoinUtils</sourceCodeDownload>
+    <binaryDownload></binaryDownload>
+    <mailingList>http://list.coin-or.org/mailman/listinfo/coinutils</mailingList>
+  </leftMenuLinks>
+</projectData>

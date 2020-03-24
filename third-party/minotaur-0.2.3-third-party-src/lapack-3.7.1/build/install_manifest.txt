@@ -1,0 +1,8 @@
+/home/mustafa.vora/minotaur/third-party/lib/cmake/lapack-3.7.1/lapack-targets.cmake
+/home/mustafa.vora/minotaur/third-party/lib/cmake/lapack-3.7.1/lapack-targets-release.cmake
+/home/mustafa.vora/minotaur/third-party/lib/pkgconfig/lapack.pc
+/home/mustafa.vora/minotaur/third-party/lib/cmake/lapack-3.7.1/lapack-config.cmake
+/home/mustafa.vora/minotaur/third-party/lib/cmake/lapack-3.7.1/lapack-config-version.cmake
+/home/mustafa.vora/minotaur/third-party/lib/pkgconfig/blas.pc
+/home/mustafa.vora/minotaur/third-party/lib/libblas.a
+/home/mustafa.vora/minotaur/third-party/lib/liblapack.a

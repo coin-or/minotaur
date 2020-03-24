@@ -1,0 +1,23 @@
+#
+# make the minlplib.a libary for UNIX 
+#
+
+F77             = g95
+FFLAGS          = -g
+
+all: minlplib.a
+
+a = filter.o filteraux.o \
+    scaling.o QPsolves.o wdotd.o minlpbb.o minlpbbaux.o branch.o \
+    TreeHandler.o
+
+# ... compile if *.f was modified (Note special options)
+.f.o:
+	$(F77) -c $(FFLAGS) $*.f
+
+# ... create a library of the object code
+minlplib.a: $(a)
+	ar r minlplib.a $(a)
+
+clean:
+	rm -f *.o minlplib.a

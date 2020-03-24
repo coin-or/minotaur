@@ -1,0 +1,25 @@
+TestSuccessListener.lo: ../../../src/cppunit/TestSuccessListener.cpp \
+ /usr/include/stdc-predef.h \
+ ../../../include/cppunit/TestSuccessListener.h \
+ ../../../include/cppunit/SynchronizedObject.h \
+ ../../../include/cppunit/Portability.h \
+ ../../include/cppunit/config-auto.h \
+ ../../../include/cppunit/config/CppUnitApi.h \
+ ../../../include/cppunit/config/SelectDllLoader.h \
+ ../../../include/cppunit/TestListener.h
+
+/usr/include/stdc-predef.h:
+
+../../../include/cppunit/TestSuccessListener.h:
+
+../../../include/cppunit/SynchronizedObject.h:
+
+../../../include/cppunit/Portability.h:
+
+../../include/cppunit/config-auto.h:
+
+../../../include/cppunit/config/CppUnitApi.h:
+
+../../../include/cppunit/config/SelectDllLoader.h:
+
+../../../include/cppunit/TestListener.h:

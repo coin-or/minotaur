@@ -1,0 +1,39 @@
+# compilation only
+
+.SUFFIXES: .c .f .o
+CC      = gcc
+FORTRAN = g95
+FFLAGS  = -g
+CFLAGS  = -g 
+#CFLAGS = -g -Dbqpd_count_=_bqpd_count__ -Dnlp_eps_inf_=_nlp_eps_inf__ -Dfilter_count_=filter_count__
+ARCH = $(shell uname -m)
+S = ../../OBJ-$(ARCH)
+M = ../src/OBJ-$(ARCH)
+L = -ldl
+
+# the next line should point to the directory of libbqpd.a
+# E.g. my BqpdLib.local contains just a single line, namely
+# BQPDLIB = ../../../../bqpd/OBJ-$(ARCH)/libbqpd.a
+include ../BqpdLib.local
+
+filter = cmain.o filter.o fopen.o $S/amplsolver.a $M/minlplib.a
+minlp = cmain.o minlp.o fopen.o $S/amplsolver.a $M/minlplib.a
+
+all: filter minlp
+
+filter: $(filter)
+	$(FORTRAN) $(FFLAGS) -o filter $(filter) $(BQPDLIB) $L 
+
+minlp: $(minlp)
+	$(FORTRAN) $(FFLAGS) -o minlp $(minlp) $(BQPDLIB) $L
+
+filter.o minlp.o: $S/asl.h $S/getstub.h
+
+.c.o:
+	$(CC) -c $(CFLAGS) -I$S $*.c
+
+.f.o:
+	$(FORTRAN) -c $(FFLAGS) $*.f
+
+clean:
+	rm -f *.o minlp filter

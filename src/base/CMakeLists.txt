@@ -132,7 +132,7 @@ set (MINOTAUR_SOURCES
      YEqMonomial.cpp
      YEqUCGs.cpp
      YEqVars.cpp
-     YEqQfBil.cpp
+     YEqQf.cpp
 )
 
 set (MINOTAUR_HEADERS
@@ -263,7 +263,7 @@ set (MINOTAUR_HEADERS
      YEqMonomial.h
      YEqUCGs.h
      YEqVars.h
-     YEqQfBil.h
+     YEqQf.h
      )
 
 

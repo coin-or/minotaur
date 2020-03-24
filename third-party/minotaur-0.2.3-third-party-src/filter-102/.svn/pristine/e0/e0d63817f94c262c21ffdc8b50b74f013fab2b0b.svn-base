@@ -1,0 +1,708 @@
+Christen this file QPsolves.f
+
+c     *******************************************************************
+c     Interface to the QP solver (NEW bqpd) *** S P A R S E ***
+c     ==========================
+c     Printing of QP problems, scaling etc is performed in here.
+c     For scaling see also function d_norm and subroutine bound_shift
+c     (which use scaling for the TR algorithm)
+c     
+c     The following routines are provided as an interface to the QP solver:
+c     - QPsolve:   solve a QP by hook-or-crook
+c     - cscale1:   scale the QP problem
+c     - cunscale1: unscale the QP problem
+c     - gdotx:     compute Hessian times vector product
+c     - print_QP:  print the current QP
+c     - checkls:   check the representation of the active set, LS
+c     - daidotx:   compute A_i^T x scalar product
+c     - saxpy_ai:  compute s*A_i+y saxpy
+c     *******************************************************************
+
+      subroutine QPsolve (n,m,k,kmax,a,la,d,bl,bu,q,qmin,g,r,w,e,ls,alp,
+     .                    lp,mlp,peq,ws,lws,cstype,mode,ifail,info,
+     .                    iprint,nout,npivot,mode2QP,mode4QP)
+
+      implicit none
+
+c     OUTPUT USED BY FILTERSQP:
+c     k       = dimension of null-space at solution 
+c     d(n)    = optimal primal solution
+c     q       = min quadratic value (may not be needed)
+c     r(n+m)  = residuals and multipliers, see bqpd.f
+c     ls(n+m) = indicators for active set, see bqpd.f
+c     ifail   = indicates error message (=0 OK, otherwise, see bqpd.f)
+c     npivot  = number of pivots of QP solver (or iterations)
+c     mode2QP = cummulative number of calls to bqpd in mode <= 3
+c     mode4QP = cummulative number of calls to bqpd in mode >= 4
+c     lp(1)   = should be set to 1 (see bqpd.f)
+
+c     INPUT PARAMETERS PASSED TO BQPD
+c     n         = number of variables
+c     m         = number of constraints
+c     kmax      = max dimension of null-space (set to 500 or so)
+c     a, la     = Jacobian storage (see sparseA.f)
+c     bl(n+m)   = lower bnds on variables/constraints
+c     bu(n+m)   = upper bnds on variables/constraints
+c     qmin      = min value to declare problem unbounded below
+c     g(n)      = gradient for bqpd
+c     w(n+m)    = storage for bqpd
+c     e(n+m)    = storage for bqpd
+c     alp, lp   = storage for bqpd
+c     mlp       = max level of degeneracy
+c     peq       = pointer to equality constraints
+c     ws, lws   = storage passed to gdotx & bqpd
+c     cstype    = type of constraints (linear/nonlinear)
+c     mode      = warm-start mode
+c     info(100) = information
+c     iprint    = level of printing (0=none, 1=little, 2=more, 3=most)
+c     nout      = f77 output channel
+
+c     ... declaration of passed parameters -- scalars
+      integer n, m, k, kmax, mlp, peq, mode, ifail, iprint, nout, 
+     .        npivot, mode2QP, mode4QP, alsi
+      double precision    q, qmin
+
+c     ... declaration of passed parameters -- arrays
+      double precision    d(n), a(*), bl(n+m), bu(n+m), g(n), r(n+m), 
+     .        w(n+m), e(n+m), alp(mlp), ws(*)
+      integer la(0:*), ls(n+m), lp(mlp), lws(*), info(100)
+      character cstype(m)
+
+c     ... decalartion of internal variables
+      integer i, QPprint, ipass, kk_max, ll_max, ipass1, m0de
+
+c     ... save kk_max, ll_max in common block so that HP f77 remembers them
+      common /kkll_maxc_/ kk_max, ll_max
+
+c     ... storage map for hessian and scale_mode
+      integer         scale_mode, phe
+      common /scalec/ scale_mode, phe
+
+c     ... count calls to bqpd (possibly print No. n_bqpd_print
+      integer             n_bqpd_calls, n_bqpd_print
+      common /bqpd_count/ n_bqpd_calls, n_bqpd_print
+
+c     ... tolerances / storage for bqpd
+      double precision          bqpd_eps, tol, emin
+      common /epsc/ bqpd_eps, tol, emin
+
+c     ... common for QP tolerance
+      double precision            QPtol  
+      common /QPtolc/ QPtol
+
+c     ... total available storage & storage used for Hessian
+      integer      kk, ll, kkk, lll, maxwk, maxiwk
+      common /wsc/ kk, ll, kkk, lll, maxwk, maxiwk
+
+c     ... norm of vertical step (measure of singularity = refinement step)
+      double precision            vstep
+      common /vstepc/ vstep
+
+      integer        nout1
+      common /noutc/ nout1
+      integer          iprint1
+      common /iprintc/ iprint1
+
+c     ... data statements
+      data ipass /0/
+
+c     =======================  procedure body  =========================
+
+c     ... ensure that kk is suff. large, even if LPs are solved
+      if (ipass.eq.0) then
+         nout1  = nout
+         ipass  = 1
+         kk_max = 5*n + n+m
+         ll_max = 10*n+1
+      endif
+c     ... ensure that kk is non-decreasing
+      if (mode.le.3) then
+         if (scale_mode.le.1) then
+            emin = 0.D0
+         else
+            emin = 1.D0
+         endif
+      endif
+      if (mode.le.2) then
+         kk_max = max ( kk , kk_max )
+         ll_max = max ( ll , ll_max )
+      else
+         if (kk.gt.kk_max) then
+c           ... kk increased (increase kk_max, solve with mode 2)
+            kk_max = kk 
+            mode   = 2
+            if (iprint.ge.1) then
+               write(nout,*)'*** kk too small; reset mode to 2 ***'
+               write(2   ,*)'*** kk too small; reset mode to 2 ***'
+            endif
+         endif
+         if (ll.gt.ll_max) then
+c           ... ll increased (increase ll_max, solve with mode 2)
+            ll_max = ll 
+            mode   = 2
+            if (iprint.ge.1) then
+               write(nout,*)'*** ll too small; reset mode to 2 ***'
+               write(2   ,*)'*** ll too small; reset mode to 2 ***'
+            endif
+         endif
+      endif
+      kk = kk_max
+      ll = ll_max
+      
+c     ... initialize QPtol, QPprint
+      QPtol   = tol
+      QPprint = max ( 0 , iprint - 3 )
+      iprint1 = QPprint
+
+c     ... print information about this solve
+      n_bqpd_calls = n_bqpd_calls + 1
+      if (iprint.ge.2) then
+         write(nout,*) 'Solving QP No.', n_bqpd_calls,'  mode = ',mode
+      endif
+      if ((n_bqpd_calls.eq.n_bqpd_print)
+     .     .or.(n_bqpd_print.eq.-1).or.(iprint.ge.3)) then
+         call print_QP (n, m, k, kmax, d, a, la, bl, bu, ws, lws, ls, 
+     .                  mode, nout, 3, cstype)
+         QPprint = min( max ( 2 , iprint - 3 ) , iprint - 3)
+      endif 
+
+      ipass1 = 0
+      m0de   = mode
+C     LOOP UNTIL ifail \= 8
+ 1000 continue
+
+c        ... count number of QP solves for different modes
+         if (mode.le.3) then
+            mode2QP = mode2QP + 1
+         else
+            mode4QP = mode4QP + 1
+         endif
+         
+c        ... solve the QP problem
+         call bqpd (n,m,k,kmax,a,la,d,bl,bu,q,qmin,g,r,w,e,ls,alp,lp,
+     .              mlp,peq,ws,lws,mode,ifail,info,QPprint,nout)
+         npivot = info(1)
+         if (iprint.ge.2) then
+            write(nout,*)'Solved QP # ', n_bqpd_calls,'  mode = ',mode,
+     .                   '  ifail = ',ifail
+         endif
+
+         if (ifail.eq.8) then
+c           ... crash in bqpd; resolve QP
+            ipass1 = ipass1 + 1
+            do i=1,n
+               d(i) = 0.D0
+            enddo
+            mode = 2 - ipass1
+         elseif (vstep.ge.1.D20) then
+c           ... large vertical step -> singular Jacobian? (resolve mode 0)
+            ipass1 = 2
+            mode   = 0
+            do i=1,n
+               d(i) = 0.D0
+            enddo
+         endif
+
+      if ((ifail.eq.8).and.(ipass1.le.2)) then
+         if (iprint.ge.1) then
+            write(nout,*)'QP crash: resolve QP mode',mode,' pass',ipass1
+            write(2   ,*)'QP crash: resolve QP mode',mode,' pass',ipass1
+         endif
+         GOTO 1000
+      elseif (vstep.ge.1.D20) then  
+         if (iprint.ge.1) then
+            write(nout,*)'QP with large vertical step',vstep,' resolve'
+            write(2   ,*)'QP with large vertical step',vstep,' resolve'
+         endif
+         vstep = 0.D0
+         GOTO 1000
+      endif
+C     UNTIL ifail \= 8
+
+      if ((ifail.ne.8).and.(vstep.lt.1.D20)) then
+         mode = m0de
+C     *** BUG: 27/3/00 added 2 lines to prevent mode = -1
+      else
+         mode = max ( 0 , mode )
+      endif
+
+      if (ifail.eq.6) then
+         write(nout,*)'WARNING: kmax too small: continue anyway'
+         if (iprint.ge.1) then
+            write(2,*)'WARNING: kmax too small: continue anyway'
+         endif
+         ifail = 0
+         do i=peq+1,n-k
+            alsi    = abs(ls(i))
+            r(alsi) = max ( r(alsi) , 0.D0 )
+         enddo
+      endif
+      
+      if (QPprint.ge.1) then
+         write(nout,*) 'bqpd--fail ',ifail,' bqpd--q ',q, ' bqpd--k ',k
+         write(nout,*) 'bqpd--d  ', (d(i), i=1,n)
+         write(nout,*) 'bqpd--g  ', (g(i), i=1,n)
+         write(nout,*) 'bqpd--ls ', (ls(i), i=1,n-k),
+     .                             '    #  ',(ls(i), i=n-k+1,n+m)
+         write(nout,*) 'bqpd--mul', (r(abs(ls(i))), ls(i), i=1,n-k)
+         write(nout,*) 'bqpd--res', (r(abs(ls(i))), ls(i), i=n-k+1,n+m)
+      endif
+
+      return
+      end
+
+
+c     *******************************************************************
+
+
+      subroutine cscale1(n,m,a,la,x,s,menu,ifail)
+
+c     scaling for filterSQP:  S P A R S E  version
+c     parameters:
+c     n     - number of variables
+c     m     - number of constraints
+c     a     - Jacobian entries
+c     la    - integers associated with a
+c     x     - variable vector
+c     s     - scale factors (given)
+c     menu  - 1 = variable scaling, 2 = constraint, 3 = 1+2
+c     ifail - error parameter
+
+      implicit none
+
+c     ... declaration of passed parameters
+      integer n, m, menu, ifail
+      double precision    a(*), x(n), s(n+m)
+      integer la(0:*)
+
+c     ... declaration of internal variables
+      integer pjp, j, i
+      double precision    t
+
+c     ======================  procedure body  ==========================
+
+      if ((menu.lt.1).or.(menu.gt.3)) then
+         ifail = 2
+         return
+      endif
+
+      pjp = la(0)
+
+      if (menu.ne.2) then
+c        ... scale variables for menu = 1 or 3
+         do i=1,n
+            x(i) = x(i) / s(i)
+         enddo
+c        ... scale objective gradient (only if variables scaled)
+         do i=1,la(pjp+1)-1
+            a(i) = a(i) * s(la(i))
+         enddo
+      endif
+         
+c     ... scale the constraint normals (3 cases)
+      if (menu.eq.1) then
+c        ... (1) variable scaling
+         do j=1,m
+            do i=la(pjp+j),la(pjp+j+1)-1
+               a(i) = a(i) * s(la(i))
+            enddo
+         enddo
+      elseif (menu.eq.2) then
+c        ... (2) constraint scaling
+         do j=1,m
+            t = s(n+j)
+            do i=la(pjp+j),la(pjp+j+1)-1
+               a(i) = a(i) / t
+            enddo
+         enddo
+      elseif (menu.eq.3) then
+c        ... (3) variable & constraint scaling
+         do j=1,m
+            t = s(n+j)
+            do i=la(pjp+j),la(pjp+j+1)-1
+               a(i) = a(i) * s(la(i)) / t
+            enddo
+         enddo
+      endif
+
+      return
+      end
+
+
+c     *******************************************************************
+
+
+      subroutine cunscale1(n,m,a,la,x,s,menu,ifail)
+
+c     un-scaling for filterSQP:  S P A R S E  version
+c     parameters:
+c     n     - number of variables
+c     m     - number of constraints
+c     a     - Jacobian entries
+c     la    - integers associated with a
+c     x     - variable vector
+c     s     - scale factors (given)
+c     menu  - 1 = variable scaling, 2 = constraint, 3 = 1+2
+c     ifail - error parameter
+
+      implicit none
+
+c     ... declaration of passed parameters
+      integer n, m, menu, ifail
+      double precision    a(*), x(n), s(n+m)
+      integer la(0:*)
+
+c     ... declaration of internal variables
+      integer pjp, j, i
+      double precision    t
+
+c     ======================  procedure body  ==========================
+
+      if ((menu.lt.1).or.(menu.gt.3)) then
+         ifail = 2
+         return
+      endif
+
+      pjp = la(0)
+
+      if (menu.ne.2) then
+c        ... scale variables for menu = 1 or 3
+         do i=1,n
+            x(i) = x(i) * s(i)
+         enddo
+c        ... scale objective gradient (only if variables scaled)
+         do i=1,la(pjp+1)-1
+            a(i) = a(i) / s(la(i))
+         enddo
+      endif
+         
+c     ... scale the constraint normals (3 cases)
+      if (menu.eq.1) then
+c        ... (1) variable scaling
+         do j=1,m
+            do i=la(pjp+j),la(pjp+j+1)-1
+               a(i) = a(i) / s(la(i))
+            enddo
+         enddo
+      elseif (menu.eq.2) then
+c        ... (2) constraint scaling
+         do j=1,m
+            t = s(n+j)
+            do i=la(pjp+j),la(pjp+j+1)-1
+               a(i) = a(i) * t
+            enddo
+         enddo
+      elseif (menu.eq.3) then
+c        ... (3) variable & constraint scaling
+         do j=1,m
+            t = s(n+j)
+            do i=la(pjp+j),la(pjp+j+1)-1
+               a(i) = a(i) / s(la(i)) * t
+            enddo
+         enddo
+      endif
+
+      return
+      end
+
+
+c     ******************************************************************
+
+
+      subroutine gdotx (n, x, ws, lws, v)
+
+      implicit none
+
+c     ... declaration of passed parameters
+      integer n, lws(*)
+      double precision    x(n), v(n), ws(*)
+
+c     ... declaration of internal variables
+      integer i
+
+c     ... storage map for hessian and scale_mode
+      integer         scale_mode, phe
+      common /scalec/ scale_mode, phe
+
+c     ========================  procedure body  =========================
+
+c     ... set v = 0
+      do i=1,n
+         v(i) = 0.D0
+      enddo
+
+c     ... allow for scaling of variables 
+      if ((scale_mode.eq.1).or.(scale_mode.eq.3)) then
+         do i=1,n
+            x(i) = x(i) * ws(i)
+         enddo
+      endif
+
+c     ... form v = W.d from sparse, upper triangular Hessian
+      call Wdotd (n, x, ws(phe+1), lws, v)
+
+c     ... allow for scaling of variables 
+      if ((scale_mode.eq.1).or.(scale_mode.eq.3)) then
+         do i=1,n
+            v(i) = v(i) * ws(i)
+            x(i) = x(i) / ws(i)
+         enddo
+      endif
+
+      return
+      end
+
+
+c     ******************************************************************
+
+
+      subroutine print_QP (n, m, k, kmax, d, a, la, bl, bu, ws, lws, ls, 
+     .                     mode, nout, iprint, cstype)
+
+      implicit none
+
+c     ... declaration of passed parameters -- scalars
+      integer n, m, k, kmax, nout, iprint, mode
+
+c     ... declaration of passed parameters -- arrays
+      integer la(0:*), lws(*), ls(n+m)
+      double precision    d(n), a(*), ws(*), bl(n+m), bu(n+m)
+      character cstype(m)
+
+c     ... storage map for hessian and scale_mode
+      integer         scale_mode, phe
+      common /scalec/ scale_mode, phe
+
+c     ... storage map for hessian 
+      integer        phl, phr, phc
+      common /hessc/ phl, phr, phc
+
+c     ... declaration of internal variables -- scalars
+      integer pjp, pjph, i, j, iter, nnza, ng, jj
+      character*4 char, int2char
+      data    iter /0/
+
+c     =======================  procedure body  =========================
+
+      if (iprint.ge.3) then
+         
+         pjp = la(0)
+         nnza = nnza + la(pjp+m+1)-la(pjp)
+
+         if (phl.gt.0) then
+            pjph = lws(1)
+            ng   = lws(pjph+n+1) - lws(pjph+1)
+         else
+            ng   = 0
+            pjph = 0
+         endif
+cCUTE         if (phl.gt.0) then 
+cCUTE            ng = lws(1)
+cCUTE         else
+cCUTE            ng = 0
+cCUTE         endif
+
+c        ... dump QP in a file 
+c$$$         iter = iter + 1
+c$$$         char = int2char ( iter )
+c$$$         open (unit = 17 , file = 'QP'//char//'.s')
+c$$$         write(17,*) n, m, nnza, ng, '  ... n, m, nnza, ng'
+c$$$         write(17,*)
+c$$$         write(17,1002) (d(i), i=1,n)
+c$$$         write(17,*)
+c$$$         write(17,*) (la(pjp-1+i)-la(pjp-1+(i-1)),i=2,m+2)
+c$$$         write(17,*)
+c$$$         write(17,1001) (la(i),a(i),i=1,nnza)
+c$$$         write(17,*)
+c$$$         write(17,1002) (bl(i),i=1,n),(bl(n+i),i=1,m)
+c$$$         write(17,1002) (bu(i),i=1,n),(bu(n+i),i=1,m)
+c$$$         write(17,*)
+c$$$         if (phl.gt.0) then
+c$$$            do i=1,n
+c$$$               write(17,1003)
+c$$$     .              (i,lws(1+j),ws(j),j=lws(pjph+i),lws(pjph+i+1)-1)
+c$$$            enddo 
+c$$$            write(17,*) 
+c$$$         endif
+c$$$cCUTE         write(101,1003)(lws(phr+i),lws(phc+i),ws(phe+i),i=1,ng)
+c$$$cCUTE         write(17,*) 
+c$$$         write(17,*) mode, '  ... mode'
+c$$$         write(17,*)
+c$$$         if (mode.ge.2) then
+c$$$            write(17,*) n-k
+c$$$            write(17,*) (ls(i),i=1,n-k)
+c$$$         endif
+c$$$         close(17)
+
+         char = int2char ( iter )
+         write(nout,*)
+         write(nout,*)'------------------------------------------------'
+         write(nout,*)'Printing data from QP solve (see QP',char,'.s'
+         write(nout,*)'================================================'
+         write(nout,*)
+         write(nout,*)'1) Linear part of objective'
+         write(nout,*) (a(i), la(i), i=la(pjp+0),la(pjp+1)-1)
+         write(nout,*)'2) Quadratic part of objective'
+c        ... uncomment the following lines for AMPL
+         if (phl.gt.0) then
+            pjph = lws(1)
+            do i=1,n
+               write(nout,*)'row ',i,
+     .              (ws(j),lws(1+j),'; ',j=lws(pjph+i),lws(pjph+i+1)-1)
+            enddo
+         endif
+c        ... uncomment the following lines for CUTE
+cCUTE         if (phl.gt.0) then
+cCUTE           write(nout,*)(lws(phr+i),lws(phc+i),ws(phe+i),i=1,lws(phl))
+cCUTE         endif
+         write(nout,*)'3) Linear constraints'
+         if (mode.ge.4) then
+            do j=1,n+m
+               jj = abs(ls(j)) - n
+               if (jj.gt.0) then
+                  write(nout,*)'Jacobian matrix: row', jj
+                  write(nout,*)(a(i),la(i),i=la(pjp+jj),la(pjp+jj+1)-1)
+               endif
+            enddo
+            write(nout,*)'4) ALL bounds (lower, upper)'
+            write(nout,*) (bl(abs(ls(i))),abs(ls(i)) , i=1,n+m)
+            write(nout,*) (bu(abs(ls(i))),abs(ls(i)) , i=1,n+m)
+         else
+            do j=1,m
+               write(nout,*)'Jacobian matrix: row', j
+               write(nout,*) (a(i),la(i),i=la(pjp+j),la(pjp+j+1)-1)
+            enddo
+            write(nout,*)'4) Simple bounds (lower, upper)'
+            write(nout,*) (bl(i) , i=1,n)
+            write(nout,*) (bu(i) , i=1,n)
+            write(nout,*)'5) General bounds (lower, upper)'
+            write(nout,*) (bl(n+i) , i=1,m)
+            write(nout,*) (bu(n+i) , i=1,m)
+         endif
+         write(nout,*)
+         write(nout,*)'------------------------------------------------'
+         write(nout,*)
+         
+      endif
+
+ 1001 format(2(1X,I4,1X,G26.18))
+ 1002 format(3G26.18)
+ 1003 format(2(2I5,G26.18))
+
+      return
+      end
+
+
+c     ******************************************************************
+
+
+      subroutine checkls (n,m,d,a,la,bl,bu,nout,cstype,lin_feas)
+
+      implicit none
+
+c     ... declaration of passed parameters -- scalars
+      integer n, m, nout
+      logical lin_feas
+
+c     ... declaration of passed parameters -- arrays
+      integer la(0:*)
+      double precision    a(*), d(n), bl(n+m), bu(n+m)
+      character cstype(m)
+
+c     ... declaration of internal variables
+      integer i
+      double precision    val, err
+
+c     ... common for QP tolerance
+      double precision            QPtol  
+      common /QPtolc/ QPtol
+
+c     ... declaration of external functions
+      double precision    aiscpr
+
+c     =======================  procedure body  =========================
+
+      lin_feas = .true.
+      do i=1,m
+         if (cstype(i).eq.'L') then
+            val = aiscpr(n,a,la,i,d,0.D0)
+            err = abs ( min ( bu(n+i) - val , val - bl(n+i) ) )
+            if (err.ge.QPtol) then
+               lin_feas = .false.
+               goto 100
+            endif
+         endif
+      enddo
+
+ 100  continue
+
+      return
+      end
+
+
+c     ******************************************************************
+
+
+      function daidotx (n, a, la, i, x)
+
+c     compute a_i^T * x scalar product by calling routine from BQPD
+
+      implicit none
+
+c     ... declaration of passed parameters -- scalars
+      integer i, n
+
+c     ... declaration of passed parameters -- arrays
+      integer la(0:*)
+      double precision a(*), x(n)
+
+c     ... declaration of external functions
+      double precision daiscpr, daidotx
+
+c     =======================  procedure body  =========================
+      daidotx = daiscpr (n, a, la, i, x, 0.D0)
+      return
+      end
+
+
+c     ******************************************************************
+
+
+      function lengthai(n, a, la, i)
+
+c     compute L2 norm of a_i for i=0 (gradient), i=1, ..., m constraints
+
+      implicit none
+
+c     ... declaration of passed parameters
+      integer n, i, la(0:*)
+      double precision a(*)
+
+c     ... declaration of external functions
+      double precision lengthai, ailen
+
+c     =======================  procedure body  =========================
+      lengthai = ailen(n,a,la,i)
+      return
+      end
+
+
+c     ******************************************************************
+
+
+      subroutine saxpy_ai (s,a,la,i,y,n)
+
+c     compute s*a_i + y saxpy
+
+      implicit none
+
+c     ... declaration of passed parameters
+      integer i, n, la(0:*)
+      double precision s, a(*), y(n)
+
+c     =======================  procedure body  =========================
+      call saipy (s, a, la, i, y, n)
+      return
+      end
+
+c     **************************** E N D *********************************

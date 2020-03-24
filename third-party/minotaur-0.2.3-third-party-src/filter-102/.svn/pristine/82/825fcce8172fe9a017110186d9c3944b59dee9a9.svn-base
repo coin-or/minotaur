@@ -1,0 +1,974 @@
+%%%%% >>>>> CUT HERE <<<<<
+%%%%%
+%%%%%			LaTeX manual for NLP solver
+%%%%%
+\documentclass[twoside, 12pt]{article}
+
+\usepackage{a4}
+
+\pagestyle{myheadings}
+
+\begin{document}
+
+\markboth{Roger Fletcher \& Sven Leyffer}
+	 {User manual for filterSQP}
+
+\newcommand{\st}{\mbox{subject to }}
+\newcommand{\bmath}[1]{\mbox{\boldmath $ #1 $}}
+
+\title{ User manual for filterSQP
+	\thanks{This work was supported by EPSRC grant number GR/K51204.} 
+	\thanks{University of Dundee Numerical Analysis Report NA/181} }
+
+\author{ Roger Fletcher and Sven Leyffer
+	\thanks{University of Dundee, Department of Mathematics, Dundee, 
+		DD1 4HN, Scotland, U.K., {\tt sleyffer@mcs.dundee.ac.uk},
+		{\tt fletcher@mcs.dundee.ac.uk}} \\
+	 {\it University of Dundee}}
+
+\date{ April 1998 \\ Version 1, June 1998 \\ Updated, March 1999 }
+
+\maketitle
+
+\begin{abstract}
+	
+	This paper describes a software package for the solution of 
+	Nonlinear Programming (NLP) problems. The package implements
+	a Sequential Quadratic Programming solver with a ``filter''
+	to promote global convergence. The solver runs with a dense or a
+	sparse linear algebra package and a robust QP solver.
+
+	\vspace{1ex}
+	\noindent
+	{\em Key words\/}: Nonlinear Programming, Sequential Quadratic 
+			   Programming.
+\end{abstract}
+
+\section{Problem Description}
+
+The software package described in this note solves Nonlinear Programming
+(NLP) problems of the following form
+\[ (P)
+    \left\{ 
+      \begin{array} {ll}
+        \displaystyle \min_{x} 	& f({\bf x})			\\
+                      \st  	& {\bf l}_x \leq {\bf x} 
+					    \leq {\bf u}_x	\\
+				& {\bf l}_c \leq {\bf c} ({\bf x}) 
+					    \leq {\bf u}_c 	\\
+         \end{array}
+    \right. 
+\]
+\noindent
+Any linear constraints are a subset of the nonlinear constraints
+(${\bf c}({\bf x})$) and the solver takes advantage of the linear 
+structure. The solver assumes that the simple bounds are stored first 
+in the vectors ({\tt blo, bup}). The linear and nonlinear constraints, 
+however, can be mixed and appear in any order. 
+
+	Note that equality constraints are included in the above formulation
+by setting $l_i = u_i$ for the relevant constraint. Likewise it is possible
+to include one-sided constraints by setting $l_i$  to $-\infty$ or $u_i$ 
+to $\infty$, depending on which bound is required.
+
+\section{The Algorithm}
+
+The package implements a Sequential Quadratic Programming (SQP) trust region
+algorithm with a ``filter'' to promote global convergence. The filter is a 
+list of pairs $(f^{(l)},h^{(l)})$ of objective values 
+ $f^{(l)} = f({\bf x}^{(l)})$ and norms of constraint violations
+ $h^{(l)} = h({\bf c}({\bf x}^{(l)}))$. A new step is 
+accepted whenever it improves the objective or the constraints compared to 
+the filter. Otherwise the step is rejected.
+
+Starting with ${\bf x}^{(k)}$, a quadratic approximation to $(P)$ is solved
+within a {\em trust--region\/} defined by $\| {\bf d} \|_{\infty} \leq \rho$
+\[ (QP) \left\{ \begin{array}{ll} \displaystyle
+	\min_d	& \frac{1}{2} {\bf d}^T {\bf W}^{(k)} {\bf d} 
+			+ {\bf d}^T {\bf g}^{(k)}		      	\\
+	\st	& {\bf l}_x \leq {\bf x}^{(k)} + {\bf d} \leq {\bf u}_x	\\
+		& {\bf l}_c \leq {\bf A}^{(k)^T} {\bf d} + {\bf c}^{(k)} 
+							\leq {\bf u}_c	\\
+		& \| {\bf d} \|_{\infty} \leq \rho
+	\end{array} \right. 
+\]
+which produces a trial step ${\bf d}^{(k)}$. 
+Here ${\bf g}^{(k)} = \nabla f ({\bf x}^{(k)})$, 
+     ${\bf A}^{(k)} = \nabla {\bf c}^T ({\bf x}^{(k)})$ \\
+and  ${\bf W}^{(k)} = \nabla^2 {\cal L} ({\bf x}^{(k)},\bmath{\lambda}^{(k)})$
+is the Hessian of the Lagrangian ${\cal L}({\bf x},\bmath{\lambda}) 
+   = f({\bf x}) - \bmath{\lambda}^T {\bf c}({\bf x})$.
+
+	The trust region radius $\rho$ is changed adaptively by the algorithm.
+If a step is rejected then the quadratic model $(QP)$ of $(P)$ is judged to
+be poor and the trust region is reduced by setting $\rho = \rho / 2$. If a
+step is accepted on the other hand, then the trust region radius is increased
+by setting $\rho = \rho * 2$ The initial trust region radius is usually not 
+critical to the success of the algorithm.
+For a more detailed description of the SQP algorithm see \cite{FleLey:97}.
+
+	The QP problems are solved using the robust QP solver {\tt bqpd}. 
+{\tt bqpd} is a null--space active set method that builds up a factorization of
+the reduced Hessian, that is the projection of the Hessian onto the 
+null--space of constraints that are currently regarded as being active.
+The dimension of the reduced Hessian is closely related to the number of 
+degrees of freedom of $(P)$, and the user must set an upper bound on this
+number of degrees of freedom in {\tt kmax}. Note that {\tt kmax = n} will 
+always be sufficient, but increases the storage requirement which 
+is ${\cal O}({\tt kmax}^2)$.
+
+\subsection{Termination Criteria}
+
+	The algorithm terminates when it has found a Kuhn--Tucker point or
+no further progress appears possible (this allows termination at solutions
+which are not Kuhn--Tucker points). The triple 
+ $({\bf x}^*,\bmath{\nu}^*\bmath{\lambda}^*)$
+is a Kuhn--Tucker point of $(P)$ if the following conditions hold
+\begin{eqnarray}
+   {\bf g}^* - \bmath{\nu}^* - {\bf A}^* \bmath{\lambda}^* 
+			= {\bf 0}	& 	& \label{KKT1}		\\
+   \left. \begin{array}{l}
+      {\bf l}_x \leq {\bf x}^* \leq {\bf u}_x		\\
+      {\bf l}_c \leq {\bf c}^* \leq {\bf u}_c		\\
+   \end{array} \right\}			&	& \label{KKT2}		\\
+   \left. \begin{array}{rcl}
+	x_i^* = l_{x_i} & \Rightarrow & \nu_i^* \geq 0		\\
+	x_i^* = u_{x_i} & \Rightarrow & \nu_i^* \leq 0		\\
+	l_{x_i} < x_i^* < u_{x_i} & \Rightarrow & \nu_i^* = 0	\\
+   \end{array} 	\right\}		&	& \label{KKT3}		\\
+   \left. \begin{array}{rcl}
+	c_i^* = l_{c_i} & \Rightarrow & \lambda_i^* \geq 0	\\
+	c_i^* = u_{c_i} & \Rightarrow & \lambda_i^* \leq 0	\\
+	l_{c_i} < c_i^* < u_{c_i} & \Rightarrow & \lambda_i^* = 0\\
+   \end{array} \right\}			&	& \label{KKT4}		
+\end{eqnarray}
+where ${\bf c}^* = {\bf c}({\bf x}^*)$, ${\bf g}^* = {\bf g}({\bf x}^*)$ etc.
+
+	The solver computes the maximum length
+\begin{equation}
+ \mu_{\max} = \max_i \left\{  \| {\bf g}^* \|_2 \; , \; |\nu_i^*| \; , \; 
+		\| {\bf a}_i^* \|_2 |\lambda^*_i| \right\} \label{mu_max}
+\end{equation}
+of the vectors that are summed in (\ref{KKT1}), 
+and the normalized Kuhn-Tucker residual of (\ref{KKT2}) is defined by
+\begin{equation}
+   r = \frac{\| {\bf g}^* -\bmath{\nu}^* - {\bf A}^* \bmath{\lambda}^* \|_2}
+	    {\max \{ \mu_{\max} , 1.0 \}} .	\label{nKKT}
+\end{equation}
+The solver terminates if the normalized Kuhn-Tucker residual satisfies
+ $r \leq \epsilon$ where $\epsilon$ is a user provided tolerance.
+The use of the normalized Kuhn-Tucker residual removes scaling anomalies 
+from the termination criterion. 
+
+The routine also terminates if the step $\| {\bf d} \|_{\infty}$ or the 
+trust region radius $\rho$ are less than $\epsilon$. In these cases an 
+assessment of the quality of the solution can be gained by also examining
+the maximum modulus Lagrange multiplier. If this is large, then it is
+possible that a solution has been obtained but the active constraints are 
+nearly dependent.
+
+
+
+\subsection{Infeasible NLP problems}
+\label{infNLP}
+
+It may be that $(P)$ has no point that satisfies the constraints or that
+the algorithm is unable to find a feasible point due to the nonconvex 
+nature of $(P)$. In this case, the algorithm is said to be in Phase I
+and aims to converge to a Kuhn--Tucker point of a feasibility problem
+\[ (F) \left\{ \begin{array}{ll} \displaystyle 
+		\min_x	& \displaystyle \sum_{j \in J} c_j({\bf x})	\\
+		\st	& c_j({\bf x}) \leq 0 \; ,\quad j \in J^\perp	\\
+		\end{array} \right.
+\]
+where the index sets $J$ and $J^\perp$ partition the nonlinear constraints
+into those that cannot be satisfied by the $(QP)$ and those that can 
+respectively. The solution of this feasibility problem indicates
+which constraints are causing the NLP $(P)$ to be (locally) infeasible and
+the user can modify the problem accordingly. At a solution to $(F)$ the
+values of the objective of $(F)$, $h_J({\bf x})$, and the sum of infeasibilities 
+of the constraints of $(F)$, $h_{J^{\perp}}({\bf x})$, are passed back to the
+user. Conditions for termination in Phase I are analogous to those in
+Phase II (that is the SQP method).
+
+	The solver always checks the linear constraints first and terminates
+if they are inconsistent ({\tt ifail = 2}). 
+
+
+\subsection{Scaling}
+\label{scaling}
+
+	In many applications, variables of largely different magnitudes appear
+in the problem. The solver can be inefficient under these circumstances as 
+the trust--region does not discriminate between variables of differing 
+magnitudes. To compensate for this, the user may provide orders of magnitude 
+of the variables or constraints or both and {\tt filterSQP} will then solve a 
+scaled problem. 
+
+	Let $s_i$ denote the order of magnitude of variable $x_i$, so that 
+the scaled variable is $\hat{x}_i = x_i / s_i$. Letting
+ ${\bf S} = \mbox{diag}(s_1 , \ldots , s_n)$ the ``scaled'' trust region 
+becomes $\| {\bf S}^{-1} {\bf d} \| \leq \rho$ which means that in the scaled
+problem all variables are roughly of unit scale and a square trust region is
+appropriate. 
+
+	Currently, scaling is done in such a way that the user provides
+all relevant information, such as function and derivative values in 
+{\em unscaled\/} form. This information is then scaled automatically with
+the user provided scale factors before passing it into filterSQP.
+
+	The user needs to set {\tt scale\_mode} to indicate whether or not 
+scaling is used. This is done in the common {\tt scalec} 
+(see Section~\ref{commons}). The scaling options available are: {\em (0)\/}
+no scaling, {\em (1)\/} user provided variable scaling, unit constraint scaling, 
+{\em (2)\/} unit variable scaling, user provided constraint scaling, and
+{\em (3)\/} user provided variable scaling, user provided constraint scaling.
+
+	The constraint scaling also affects the computation 
+of steepest edge coefficients in the QP solver {\tt bqpd} and generally 
+improves the performance of the QP solver at little additional cost. 
+
+
+
+\section{System Requirements}
+
+The software package requires a {\tt FORTRAN 77} compiler, the QP 
+solver {\tt bqpd} and  a suitable dense or sparse linear algebra 
+package (as provided with {\tt bqpd}).
+
+\subsection{Mounting the Package on a {\tt UNIX} workstation}
+
+The package comprises a suite of NLP subroutines:
+
+\begin{tabular}{ll}
+{\tt driver.f}		& A sample driver for the NLP solver.	\\
+{\tt filter.f} 		& The main SQP filter routine.		\\
+{\tt filteraux.f}	& Auxiliary routines used in {\tt filter.f}.\\
+{\tt QPsolved.f}	& The interface to the QP solver, dense storage.\\
+{\tt QPsolves.f}	& The interface to the QP solver, sparse storage.\\
+{\tt scaling.f}		& Routines that scale the problem.	\\
+{\tt user.f}		& The user supplied problem functions.	\\
+\end{tabular}
+
+\bigskip
+In addition the user requires a QP solver ({\tt bqpd}) consisting of:
+
+\begin{tabular}{ll}
+{\tt bqpd.f}		& The main QP solver routine.		\\
+{\tt auxil.f}		& Some auxiliary routines for {\tt bqpd}.\\
+{\tt denseL.f}		& Dense linear algebra package.		\\
+{\tt sparseL.f}		& Sparse linear algebra package. \\
+{\tt util.f}		& Some linear algebra utilities.	\\
+{\tt sparseA.f}		& Sparse matrix storage/handling {\bf OR}\\
+{\tt denseA.f}		& Dense matrix storage/handling.	\\
+\end{tabular}
+
+\vspace{1ex}
+The user has the option of storing the matrix ${\bf A}^{(k)}$ either
+as a dense matrix (using {\tt denseA.f}) or as a sparse matrix
+(using {\tt sparseA.f}). Storage of the sparse matrices is explained 
+in the routine {\tt sparseA.f}. In addition, the user can choose a
+dense or sparse linear algebra solver ({\tt denseL.f} or {\tt sparseL.f}). 
+
+	The solver takes advantage of the sparse data structure.
+For sparse problems of up to 100 variables there is no performance
+gain from a sparse solver, but exploiting the sparse data structure
+still makes sense. One attractive option is the possibility to use
+the sparse data structure with the dense solver. This is particularly
+useful for medium size problems which exhibit sparsity.
+
+\subsection{System Dependent Issues}
+
+\subsubsection{Compiler Options}
+
+It is possible to compile the code in double precision 
+using the flag {\tt -r8} in the SUN f77 compiler.
+In this case, suitable values of tolerances for bqpd should
+be set. This can be done in the {\tt block data defaults} 
+following the routine bqpd, where examples of suitable values are 
+also given. Changing from single to double precision is recommended
+for large or ill-conditioned problems.
+
+An alternative to using the {\tt -r8} flag is to make the following
+changes to all files:
+
+\noindent
+\begin{tabular}{lp{14cm}}
+  1. & Change all occurrences of {\tt REAL} to {\tt double precision}	\\
+  2. & Change all occurrences of {\tt DOUBLE PRECISION} to {\tt real*16}	\\
+  3. & Change all occurrences of {\tt .E} to {\tt .D}			\\
+  4. & Change all occurrences of {\tt dble($\cdot$)} to a suitable routine that
+	converts {\tt double precision} to {\tt real*16} type. On a SUN
+	system, this routine is {\tt qext($\cdot$)}.			\\
+\end{tabular}
+
+Items 2 and 4 may be dispensed with, although the full value of iterative
+refinement may then not be realized.
+A small collection of shell-scripts for UNIX systems which perform these
+changes is available upon request from the authors. 
+
+\subsubsection{System Dependent Routines}
+
+	The file {\tt driver.f} contains the {\tt REAL function seconds}
+which calls a system dependent timing function to measure the CPU time taken
+by the solver. Suitable timing functions are provided for UNIX systems and
+(commented out) for Windows NT in {\tt REAL function seconds}. The user
+must edit {\tt REAL function seconds} for non-UNIX systems. Set 
+{\tt seconds = 1.E0} in {\tt REAL function seconds} if no timing
+function is available (in this case CPU times will be zero for the solves).
+
+	The routine {\tt function xlen} in {\tt util.f} saveguards against
+overflow by using IEEE exception routines. When these are not available, an
+alternative form of {\tt function xlen} can be used which is is not system
+dependent. This routine is provided in {\tt util.f} but commented out.
+
+
+\section{Interface and User Supplied Routines}
+
+The interface of the NLP solver has the following form
+
+\begin{verbatim}
+      subroutine filterSQP (n,m,kmax,maxa,maxf,mlp,mxwk,mxiwk,iprint,
+     .                     nout,ifail,rho,x,c,f,fmin,blo,bup,s,a,la,ws,
+     .                     lws,lam,cstype,user,iuser,max_iter,istat,
+     .	                   rstat)
+\end{verbatim}     
+
+\subsection{Definition of Parameters}
+A detailed description of the parameters follows below (the parameters 
+preceded by a {*} must be set on entry to {\tt filterSQP}.
+
+\noindent
+\begin{tabular}{llp{12cm}}
+{*} &  {\tt n}      & number of variables ({\tt INTEGER})	\\
+{*} &  {\tt m}      & number of constraints 
+		    (excluding simple bounds) ({\tt INTEGER})	\\
+{*} &  {\tt kmax}   & maximum size of null-space ($\leq {\tt n}$) 
+		    ({\tt INTEGER})	\\
+{*} &  {\tt maxa}   & maximum number of nonzero entries allowed in Jacobian 
+		    matrix {\tt a}, {\em only applies if {\tt sparseA.f} is in use}.
+		    ({\tt INTEGER})	\\
+{*} &  {\tt maxf}   & maximum size of the filter -- typically 100  
+	    	    ({\tt INTEGER})\\
+{*} &  {\tt mlp}    & maximum level parameter for resolving degeneracy in 
+		    {\tt bqpd}; typically {\tt mlp } $= 100$ 
+		    ({\tt INTEGER})					\\
+{*} &  {\tt mxwk}   & max. size of {\tt REAL} workspace {\tt ws} for SQP, 
+		    QP and linear algebra solvers ({\tt INTEGER})	\\
+    &		    & For the {\em dense\/} linear algebra solver the 
+			amount of storage required is:			\\
+    &		    & {\tt mxwk }$\leq${\tt 16*n + 8*m + mlp + 8*maxf
+			           + kmax*(kmax+9)/2 + mxm1*(mxm1+3)/2}	\\
+    &		    & where {\tt mxm1 = min(n,m+1)} is the maximum space allowed 
+		      for {\tt m1} in {\tt denseL.f}			\\
+    &		    & For the {\em sparse\/} linear algebra solver the 
+			amount of storage required is:			\\
+    &		    & {\tt mxwk }$\simeq${\tt 16*n + 8*m + mlp + 8*maxf
+			           + kmax*(kmax+9)/2 + 5*n + nprof}	\\
+    &		    & where {\tt nprof} is the space required for storing 
+		      the row spikes of the L matrix and is {\em not\/}
+		      known a priori. A good guess for {\tt nprof} is
+		      a multiple of {\tt n}, say {\tt 20*n}.		\\
+{*} &  {\tt mxiwk}  & max. size of {\tt INTEGER} workspace {\tt lws} for 
+		    SQP, QP and linear algebra solvers ({\tt INTEGER})	\\
+    &		    & For the {\em dense\/} linear algebra solver the 
+			amount of storage required is:			\\
+    &		    & {\tt mxiwk = 4*n + 3*m + mlp + 100 + kmax + mxm1}	\\
+    &		    & For the {\em sparse\/} linear algebra solver the 
+			amount of storage required is:			\\
+    &		    & {\tt mxiwk = 4*n + 3*m + mlp + 100 + kmax +9*n+m}	\\
+{*} &  {\tt iprint} & print flag ({\tt INTEGER}) for different amounts of 
+			print-out: \\
+  &		  & 0 = quiet (no printing)			\\
+  &		  & 1 = one line per iteration			\\
+  &		  & 2 = scalar information printed		\\
+  &		  & 3 = scalar \& vector information printed	\\
+  &		  &$>$3 = as 3, and call QP solver with 
+			{\tt QPiprint = iprint-3} \\
+{*} & {\tt nout} & the output channel (6 = screen).           \\
+\end{tabular}
+
+\noindent
+\begin{tabular}{llp{12cm}}
+  &  {\tt ifail}  & fail flag ({\tt INTEGER}) indicating successful run:\\
+  &               & -1 = ON ENTRY: warm start (use ONLY if
+                         {\tt istat(1), n, m, lws} unchanged from previous 
+			 call)	\\
+  &	 	  &  0 = successful run, solution found			\\
+  &		  &  1 = unbounded, feasible point ${\bf x}$
+			 with $f({\bf x}) \leq$ {\tt fmin} found	\\
+  &		  &  2 = linear constraints are inconsistent		\\
+  &		  &  3 = (locally) nonlinear infeasible, 
+			 optimal solution to feasibility problem $(F)$ 
+			 found					\\
+  &		  &  4 = terminate at point with $h({\bf x}) \leq$ {\tt eps}
+  			 but QP infeasible				\\
+  &		  &  5 = termination with rho $<$ {\tt eps}		\\
+  &		  &  6 = termination with iter $>$ max\_iter		\\
+  &		  &  7 = crash in user routine (IEEE error) could	
+                         not be resolved				\\
+  &		  &  8 = unexpect ifail from QP solver 			\\
+  &		  &  9 = not enough REAL workspace			\\
+  &		  & 10 = not enough INTEGER workspace			\\
+{*} &  {\tt rho}  & initial trust-region radius, default is 10 ({\tt REAL}) \\
+{*} &  {\tt x}    & {\tt x(n)} starting point and final solution 
+		    ({\tt REAL}) 					\\
+  &  {\tt c}      & {\tt c(m)} vector that stores the final values 
+		    of the general constraints ({\tt REAL}) 		\\
+  &  {\tt f}	  & the final objective value	({\tt REAL})		\\
+{*} &  {\tt fmin} & a lower bound on the objective value. The routine 
+		    will terminate if a feasible ${\bf x}$ is found 
+		    for which $f({\bf x}) < {\tt fmin}$	({\tt REAL}) 	\\
+{*} &  {\tt blo}  & {\tt blo(n+m)} vector of lower bounds 
+		    $({\bf l}_x^T , {\bf l}_c^T)^T$	
+		    -- simple bounds stored first ({\tt REAL})		\\
+{*} &  {\tt bup}  & {\tt bup(n+m)} vector of upper bounds similar to
+		    {\tt blo} ({\tt REAL})				\\
+{*} &  {\tt s}    & {\tt s(n+m)} scale factors (see Section~\ref{scaling}). \\
+{*} &  {\tt a}    & {\tt a(1:a\_entries)} stores the 
+		    objective gradient and the constraint normals 
+		    $[{\bf g} : {\bf A}]$  ({\tt REAL})			\\
+    &		  & {\em If using the sparse storage data structures {\tt n} 
+		    nonzero locations must be reserved for {\bf g}} which 
+		    is assumed to be stored in natural order. Further
+		    details on how to store sparse matrices are explained 
+		    in Section~\ref{user_subs}. 			\\
+  &  {\tt la}     & {\tt la(0:a\_entries+m+2)} column indices and 
+		    length of rows of entries in {\tt a} 
+		    ({\tt INTEGER}) (see Section~\ref{user_subs}). In the 
+		    dense case {\tt la} is treated as a scalar and gives the 
+		    leading dimension of {\tt a}. 			\\
+  &  {\tt ws}	  & {\tt ws(mxwk)} {\tt REAL} workspace		\\
+  &  {\tt lws}	  & {\tt lws(mxiwk)} {\tt INTEGER} workspace		\\
+{*}&  {\tt lam}    & {\tt lam(n+m)} Lagrange multipliers of simple bounds 
+		    and general constraints at solution ({\tt REAL}) 	\\
+{*} &  {\tt cstype} & {\tt cstype(m)} indicates whether the constraint is
+		    linear or nonlinear, ie {\tt cstype(j) = 'L'} for 
+		    linear and {\tt cstype(j) = 'N'} for nonlinear
+		    constraint number {\tt j} ({\tt CHARACTER*1}) 	\\
+  &  {\tt user}   & real workspace, passed through to user routines 
+		    such as gradient, hessian etc. ({\tt REAL}) 	\\
+  &  {\tt iuser}  & integer workspace, passed through to user routines 
+		    such as gradient, hessian etc. ({\tt INTEGER}) 	\\
+{*}& {\tt max\_iter}& User supplied iteration limit for SQP solver
+		 	({\tt INTEGER}) 				\\
+\end{tabular}
+
+\noindent
+\begin{tabular}{llp{12cm}}
+  &  {\tt istat}  & {\tt istat(14)} {\tt INTEGER} space for solution
+		    statistics:	\\
+  &		  & {\tt istat(1)} = dimension of null space at solution\\
+  &		  & {\tt istat(2)} = number of iterations		\\
+  &		  & {\tt istat(3)} = number of feasibility iterations	\\
+  &		  & {\tt istat(4)} = number of objective evaluations	\\
+  &		  & {\tt istat(5)} = number of constraint evaluations	\\
+  &		  & {\tt istat(6)} = number of gradient evaluations	\\
+  &		  & {\tt istat(7)} = number of Hessian evaluations	\\
+  &		  & {\tt istat(8)} = number of QPs with mode $\leq 2$	\\
+  &		  & {\tt istat(9)} = number of QPs with mode $\geq 4$	\\
+  &		  & {\tt istat(10)} = total number of QP pivots		\\
+  &		  & {\tt istat(11)} = number of SOC steps		\\
+  &		  & {\tt istat(12)} = maximum size of filter		\\
+  &		  & {\tt istat(13)} = maximum size of phase I filter	\\
+  &		  & {\tt istat(14)} = number of QP crashes		\\
+  &  {\tt rstat}  & {\tt rstat(7)} {\tt REAL} space for solution statistics: \\
+  &		  & {\tt rstat(1)} = $l_2$ norm of KT residual		\\
+  &		  & {\tt rstat(2)} = $\mu_{\max}$ of (\ref{mu_max})	\\
+  &		  & {\tt rstat(3)} = largest modulus multiplier		\\
+  &		  & {\tt rstat(4)} = $l_{\infty}$ norm of final step	\\
+  &		  & {\tt rstat(5)} = final constraint violation $h({\bf x})$\\
+  &		  & {\tt rstat(6)} = $h_J({\bf x})$, if {\tt ifail = 1}	\\
+  &		  & {\tt rstat(7)} = $h_{J^{\perp}}({\bf x})$, 
+			if {\tt ifail = 1}, see Section~\ref{infNLP}	\\
+\end{tabular}
+
+\subsection{Warm Starts}
+In certain situations, such as when solving MINLP problems by 
+branch-and-bound, it is desirable to make use of information from a 
+previous NLP solve. In this case, a warm start facility is available
+by setting {\tt ifail = -1} on entry to {\tt filterSQP}. This assumes
+that {\tt istat(1), n, m, lws} are unchanged from this previous call. 
+
+\subsection{Common Statements}
+\label{commons}
+A number of named common statement are used to pass information into 
+{\tt bqpd} and to pass global constants. These common statements take 
+the following form
+
+\noindent
+\begin{verbatim}
+      REAL                 infty, eps
+      common /NLP_eps_inf/ infty, eps
+\end{verbatim}
+
+\vspace{1ex}
+\noindent
+The common {\tt /NLP\_eps\_inf/} defines ... 
+
+\noindent
+\begin{tabular}{ll}
+{\tt infty}	& A large number $\infty$ (default value is {\tt 1E20})	\\
+{\tt eps}	& A tolerance $\epsilon$ (default value is {\tt 1E-6}), not the
+		  unit round-off	\\
+\end{tabular}
+
+The tolerance $\epsilon$ is used in the termination criteria (Kuhn--Tucker error,
+nonlinear constraint residual and norm of the step).
+
+
+\bigskip
+\noindent
+\begin{verbatim}
+      REAL          ubd, tt
+      common /ubdc/ ubd, tt
+\end{verbatim}
+
+{\tt ubd} and {\tt tt} define the upper bound on constraint violation
+used in the filter. The actual upper bound is defined by the maximum
+of {\tt ubd} and {\tt tt} times the initial constraint violation.
+Default values for {\tt ubd, tt} are 100 and 0.125. On some problems,
+the solver re-enters feasibility restoration many times. In that case
+it may be better to use a tighter upper bound of say, {\tt ubd = 10, 
+tt = 0.0001}.
+
+\bigskip
+\noindent
+\begin{verbatim}
+      integer         char_l
+      character*10            pname
+      common /cpname/ char_l, pname
+\end{verbatim}
+
+\vspace{1ex}
+\noindent
+The common {\tt cpname} defines the name of the problem and its length ...
+
+\noindent
+\begin{tabular}{ll}
+{\tt char\_l}	& The length of {\tt pname\/} (default is {\tt 10})	\\
+{\tt pname}	& The name of the NLP problem (default is {\tt NLPproblem})\\
+\end{tabular}
+
+The problem name is used to name the output files created by {\tt filterSQP}.
+These files are only created if {\tt iprint} $\geq 1$ in {\tt filterSQP}.
+The files are named ...
+
+\noindent
+\begin{tabular}{lp{12cm}}
+{\tt *.summary}	& A summary file with one line per iteration (see below). \\
+{\tt *.solution}& The solution of the problems $({\bf x}^*, \bmath{\lambda}^*)$
+		  and the values of the constraints.			\\
+{\tt *.output}	& The output created by {\tt SQPsolver}, unless {\tt nout = 6}
+		  in which case output is written to the screen.	\\
+{\tt *.outXXXX}	& For problems with {\tt n+m} $\geq 50$ {\em and\/}
+		  {\tt iprint} $\geq 3$, {\tt *.output} 
+		  contains output only for the first iteration. Subsequent
+		  iterations are written to {\tt *.outXXXX}, where {\tt XXXX}
+		  is the iteration number. This is to prevent the files getting
+		  too large for larger problems.				\\
+\end{tabular}
+
+\bigskip
+\begin{verbatim}
+      integer         scale_mode, phe
+      common /scalec/ scale_mode, phe
+\end{verbatim}
+
+	The common {\tt scalec} passes the parameter {\tt scale\_mode}
+There are four modes of scaling currently supported:
+
+\begin{tabular}{ccp{12cm}}
+    mode  &   & type of scaling	\\
+	0 & = & no scaling 	\\
+	1 & = & user provided variable scaling				\\
+	2 & = & unit variable scaling, user provided constraint scaling	\\
+	3 & = & user provided variable and constraint scaling		\\
+\end{tabular}
+
+
+\subsection{Output}
+
+If {\tt iprint} is greater than 0, then {\tt filterSQP} creates three
+output files: {\tt *.summary}, {\tt *.output} and {\tt *.solution}, where
+{\tt *} stands for the name of the problem supplied in {\tt pname}.
+If {\tt nout = 6} then {\tt *.output} is written to the screen. Otherwise,
+it is written to a file. Note that {\tt nout} should not be set to 1 or 2,
+as these are used for {\tt *.solution} and {\tt *.summary}.
+
+	The first file is a summary of the progress of the SQP solver
+with one line per iteration. It gives iteration number {\tt iter}, 
+the trust--region radius {\tt rho}, the step length {\tt ||d||}, the
+values of the objective {\tt f / hJ}, the constraint violation {\tt ||c||/hJt},
+the penalty function {\tt penalty fcn} and finally a 5 character long string
+that indicates the type of iteration {\tt IS}. 
+
+	The string {\tt IS} has the format {\tt $\pm$POXX} where $+$
+indicates a successful step and $-$ an unsuccessful step, {\tt P} is the
+phase (either 1 for feasibility iteration or 2 for normal SQP), {\tt O}
+gives the order of the step (1 = LP, 2 = QP, 3 = Second order correction and
+4 = unblocked). Finally {\tt XX} is nonblank if any heuristics were 
+activated during the step ({\tt UB} = upper bound, {\tt NW} = North West 
+corner rule, {\tt SE} = South East corner rule). See \cite{FleLey:97} for 
+a detailed description of the various heuristics. 
+
+	If a QP problem causes {\tt bqpd} to crash (with
+{\tt bqpd.ifail = 8}, then {\tt XX} is set to {\tt -8}. The number of these
+crashes is recorded in {\tt istat(14)}. Following a crash of {\tt bqpd}
+the trust-region radius is reduced and the QP problem is re-solved in
+cold-start mode.
+
+	The file {\tt *.output} is self explanatory and contains further
+details of the run (if {\tt iprint} $\geq 2$). The file {\tt *.solution}
+contains the final solution ${\bf x}^*$ and ${\bf c}^*$ with lower bound,
+value, upper bound, Lagrange multiplier.
+
+\subsection{User defined Subroutines}
+\label{user_subs}
+
+All function evaluations, gradient and Hessian computations are the 
+sole responsibility of the user. The following routines are used in 
+filter to evaluate these functions. These user supplied function 
+can be found in the file {\tt user.f}. Subroutines that interface
+filterSQP to CUTE and AMPL are also available upon request.
+
+\bigskip
+\noindent
+\begin{verbatim}
+      subroutine confun(x, n, m, c, a, la, user, iuser, flag)
+\end{verbatim}
+
+{\tt confun} evaluates the constraint values (both linear and 
+nonlinear). The parameters are ...
+
+\noindent
+\begin{tabular}{lp{13.51cm}}
+     {\tt x}      & {\tt x(n)} the value of the current variables 
+		    (input from {\tt filterSQP}) ({\tt REAL}) \\
+     {\tt n}      & number of variables ({\tt INTEGER})	\\
+     {\tt m}      & number of linear \& nonlinear constraints 
+		    (excluding simple bounds) ({\tt INTEGER})	\\
+     {\tt c}      & {\tt c(m)} vector that stores the values of the 
+		    constraints (output) ({\tt REAL}) \\
+     {\tt a}   	  & the Jacobian matrix (passed through from {\tt filterSQP}
+		    to evaluate the linear constraints) ({\tt REAL}) \\
+     {\tt la}     & indexing information relating to {\tt a} 
+		    ({\tt INTEGER}) \\
+     {\tt user}	  & user workspace (see above) \\
+     {\tt iuser}  & user workspace (see above) \\
+     {\tt flag}	  & Set to 1 if arithmetics exception occurred in 
+		    {\tt confun}, 0 otherwise. 
+\end{tabular}
+
+\bigskip
+\noindent
+\begin{verbatim}
+      subroutine objfun(x, n, f, user, iuser, flag) 
+\end{verbatim}
+
+{\tt objfun} evaluates the objective function value. The parameters 
+are ...
+
+\noindent
+\begin{tabular}{lp{13.5cm}}
+     {\tt x}      & {\tt x(n)} the value of the current variables 
+		    (input from filter) ({\tt REAL}) \\
+     {\tt n}      & number of variables ({\tt INTEGER})	\\
+     {\tt f}      & the values of the objective function (output) 
+		    ({\tt REAL}) \\
+     {\tt user}	  & user workspace (see above) \\
+     {\tt iuser}  & user workspace (see above) \\
+     {\tt flag}	  & Set to 1 if arithmetics exception occurred in 
+		    {\tt objfun}, 0 otherwise. 
+\end{tabular}
+
+\newpage
+%\bigskip
+\noindent
+\begin{verbatim}
+      subroutine gradient(n,m,mxa,x,a,la,maxa,user,iuser,flag)
+\end{verbatim}
+
+{\tt gradient} evaluates the objective gradient and the constraint 
+Jacobian matrix. It is important to always leave {\tt n} spaces for the
+objective gradient, as this is used in the feasibility restoration step.
+
+{\bf Note:} Linear constraint gradients need not be re--computed. 
+However, the user is responsible for keeping this information 
+consistent. One way of achieving this is to use a routine 
+{\tt initialize\_NLP} to initialize the linear constraints.
+
+\noindent
+\begin{tabular}{lp{13.5cm}}
+     {\tt n}      & number of variables ({\tt INTEGER})			\\
+     {\tt m}      & number of constraints ({\tt INTEGER})		\\
+     {\tt mxa}    & actual number of entries in {\tt a} ({\tt INTEGER})
+		    (returned for information only)			\\
+     {\tt x}      & {\tt x(n)} the value of the current variables 
+		    (input from filter) ({\tt REAL}) 			\\
+     {\tt a}   	  & the Jacobian vector storing the nonzeros of the 
+		    Jacobian ({\tt REAL}) 				\\
+     {\tt la}	  & {\tt la(0:*)} column indices for {\tt a} and 
+		     pointers to start of each row ({\tt INTEGER}) 	\\
+     {\tt maxa}   & maximum size of {\tt a} ({\tt INTEGER}) 		\\
+     {\tt user}	  & user workspace (see above) 				\\
+     {\tt iuser}  & user workspace (see above) 				\\
+     {\tt flag}	  & Set to 1 if arithmetics exception occurred in 
+		    {\tt objfun}, 0 otherwise. If an arithmetic exception
+		    occurred, then the gradients must {\em not\/} be modified
+		    by {\tt gradient}.
+\end{tabular}
+
+The sparse storage scheme is explained in the sparse linear algebra 
+subroutines, which is reproduced here for the sake of completeness.
+
+The sparse matrix data structure stores as a set of column vectors
+the following matrix:
+\[ \hat{\bf A} = \left[ {\bf g} : {\bf A} \right] \]
+where ${\bf g}$ is the current gradient of $f$ and ${\bf A}$ is the 
+Jacobian of the constraints ${\bf c}$. The number of nonzeros in 
+this matrix is {\tt nnza}.
+
+The matrix $\hat{\bf A}$ contains gradients of the linear terms in the 
+objective function (column 0) and the general constraints (columns 1:m).
+No explicit reference to simple bound constraints is required in $\hat{\bf A}$.
+The information is set in the parameters {\tt a} ({\tt REAL}) and 
+{\tt la} ({\tt INTEGER}) of {\tt filterSQP}.
+
+In this sparse format, these vectors have dimension  {\tt a(1:nnza)}  and
+{\tt la(0:lamax)}, where {\tt nnza} is the number of nonzero elements in
+ $\hat{\bf A}$, and {\tt lamax} is at least  {\tt nnza+m+2}.  The last 
+{\tt m+2} elements in {\tt la} are pointers.
+
+The vectors {\tt a(.)} and {\tt la(.)} must be set as follows:
+
+{\tt a(j)} and {\tt la(j)} for {\tt j=1,nnza} are set to the values and row 
+indices (respectively) of all the nonzero elements of $\hat{\bf A}$. 
+Entries for each column are grouped together in increasing column order.
+
+{\tt la(0)} points to the start of the pointer
+information in {\tt la}. {\tt la(0)} must be set to {\tt nnza+1} (or a larger 
+value if it is desired to allow for future increases to {\tt nnza}).
+
+The last {\tt m+2} elements of {\tt la(.)} contain pointers to the first 
+elements in the column groupings. Thus {\tt la(la(0)+i)} for {\tt i=0,m} is 
+set to the location in {\tt a(.)} containing the first nonzero element for 
+column i of $\hat{\bf A}$. Also {\tt la(la(0)+m+1)} is set to {\tt nnza+1}
+(the first unused location in {\tt a(.)}). Note that 
+{\tt la(la(0)+1) = la(la(0)) + n} must hold to allow {\tt n} locations to be 
+stored in column 0 of $\hat{\bf A}$.
+
+
+\newpage
+%\bigskip
+\noindent
+\begin{verbatim}
+      subroutine hessian (x,n,m,phase,lam,ws,lws,user,iuser,l_hess,
+     .                    li_hess,flag)
+\end{verbatim}
+
+
+The subroutine {\tt hessian} resets the Hessian information that is stored
+in {\tt ws} and {\tt lws} and passed through {\tt bqpd} to {\tt Wdotd}. The
+user must reset the Hessian of the Lagrangian ${\bf W}^{(k)}$ for the 
+values of ${\bf x}$ ({\tt x}) and $\bmath{\lambda}$ ({\tt lam}). The Hessian
+may be stored in any form convenient for the problem in hand; but note that 
+{\tt Wdotd} must be kept consistent.
+
+\noindent
+\begin{tabular}{lp{13.5cm}}
+     {\tt x}      & {\tt x(n)} the value of the current variables 
+		    (input from filter) ({\tt REAL}) \\
+     {\tt n}      & number of variables ({\tt INTEGER})	\\
+     {\tt m}      & number of constraints ({\tt INTEGER})	\\
+     {\tt phase}  & indicates what kind of Hessian matrix is required. 
+		    {\tt phase = 2} Hessian of the Lagrangian, 
+	            {\tt phase = 1} Hessian of the Lagrangian 
+		    {\em without\/} 
+		    the objective Hessian. ({\tt INTEGER}) \\
+     {\tt lam}    & {\tt lam(n+m)} vector of Lagrange multipliers 
+		    ({\tt REAL}) \\
+     {\tt ws}	  & workspace for Hessian, passed to {\tt Wdotd}  
+		    ({\tt REAL}) \\
+\end{tabular}
+
+\noindent
+\begin{tabular}{lp{13.5cm}}
+     {\tt lws}	  & workspace for Hessian, passed to {\tt Wdotd}  
+		    ({\tt INTEGER}) \\
+     {\tt user}	  & user workspace (see above) \\
+     {\tt iuser}  & user workspace (see above) \\
+     {\tt l\_hess} & {\em On entry:\/} max. space allowed for Hessian storage 
+		    in {\tt ws}. {\em On exit:\/} actual amount of Hessian 
+		    storage used in {\tt ws} ({\tt INTEGER}). \\
+     {\tt li\_hess}& {\em On entry:\/} max. space allowed for Hessian storage 
+		    in {\tt lws}. {\em On exit:\/} actual amount of Hessian 
+		    storage used in {\tt lws} ({\tt INTEGER}). \\
+     {\tt flag}	  & Set to 1 if arithmetics exception occurred in 
+		    {\tt hessian}, 0 otherwise. If an arithmetic exception
+		    occurred, then the Hessian must {\em not\/} be modified
+		    by {\tt hessian}.
+\end{tabular}
+
+\bigskip
+In our routine {\tt hessian} we use a common that constitutes a storage map 
+for {\tt lws} which is used to pass Hessian information through 
+the QP solver to {\tt Wdotd} (which is explained below). 
+
+\noindent
+\begin{verbatim}
+c     ... storage map for Hessian storage
+      integer        phl, phr, phc
+      common /hessc/ phl, phr, phc
+\end{verbatim}
+
+The three pointers for {\tt lws} are:
+
+\noindent
+\begin{tabular}{lp{13cm}}
+ {\tt phl}	& pointer to location in {\tt lws}, which stores the 
+		  number of Hessian entries (sparse Hessian).		\\
+ {\tt phr}	& pointer to start of row indices of Hessian in {\tt lws}. \\
+ {\tt phc}	& pointer to start of column indices of Hessian in {\tt lws}.\\
+\end{tabular}
+
+Thus, in our Hessian implementation, {\tt ws(i)} is the Hessian value for
+row {\tt lws(phr+i)} and column {\tt lws(phc+i)} for {\tt i=1:lws(phl)}.
+
+{\bf Note:} The user can choose to store the Hessian information in any form
+(e.g. for certain application an outer product form may be more efficient), as
+long as {\tt hessian} and {\tt Wdotd} are consistent.
+
+\bigskip
+The user is also responsible for providing a subroutine {\tt Wdotd} 
+which computes the product ${\bf v} = {\bf W}^{(k)} \cdot {\bf d}$ of 
+the Hessian matrix ${\bf W}^{(k)}$ with an arbitrary vector ${\bf d}$.
+The header of the routine is ...
+
+\noindent
+\begin{verbatim}
+     subroutine Wdotd(n, d, ws, lws, v)
+c    ... user subroutine to compute v = W.d
+     integer n
+     REAL    d(n), ws(*), v(n)
+     integer lws(*)
+\end{verbatim}
+
+Information from the Hessian evaluation {\tt hessian} is passed through 
+the QP solver to this routine in the workspaces {\tt ws, lws}. The user 
+can choose his/her own Hessian representation and storage (see 
+{\tt Wdotd} for an example). 
+
+
+
+\section{ NLP Example Problem }
+
+In the distribution an example problem is included which is taken from 
+A. Duran and I.E. Grossmann~\cite{DurGro:86}. The problem is defined in 
+the user routines {\tt user.f} and the input file {\tt test1.s}. A
+detailed problem description is given below.
+
+\noindent
+{\bf Test problem TP1}
+\[ \left\{ \begin{array}{lrl} \displaystyle
+	\min_{x,y}		& \multicolumn{2}{p{10cm}}
+				 {$5 y_1 + 6 y_2 + 8 y_3 + 10 x_1 
+				  - 7 x_3 
+				  - 18 \ln(x_2 + 1)$ \protect\newline 
+				 $- 19.2 \ln(x_1 - x_2 + 1) + 10$}   \\
+	\mbox{subject to }	& 0.8 \ln(x_2 + 1) 
+				  + 0.96 \ln(x_1 - x_2 + 1) 
+				  - 0.8 x_3  & \geq 0   \\
+				& \ln(x_2 + 1) + 1.2 \ln(x_1 - x_2 + 1) 
+				  - x_3 - 2 y_3   & \geq - 2 \\
+				& x_2 - x_1	       	& \leq 0   \\
+				& x_2 - 2 y_1		& \leq 0   \\
+				& x_1 - x_2 - 2 y_2	& \leq 0   \\
+				& y_1 + y_2		& \leq 1   \\
+				& \multicolumn{2}{l}{0 \leq x \leq u, \; 
+				   \mbox{ where } u^T = (2, 2, 1)} \\
+				& \multicolumn{2}{l}
+				  {0 \leq y_i \leq 1}		   \\
+    	\mbox{NLP solution }	& \multicolumn{2}{l}
+				  {f^* = 0.759, \; 
+			           y^* = (0.273, 0.300,0.000)^T}   \\
+				& \multicolumn{2}{l}
+				  {x^* = (1.147,0.547,1.000)^T}   \\
+	  \end{array} \right. %}
+\]
+
+\section{Interfaces to AMPL, CUTE, C/C++}
+
+	We can provide interfaces to AMPL or CUTE~\cite{ConGouToi:95} upon 
+request. AMPL is an algebraic modelling language. CUTE allows the user to 
+specify a problem in the SIF format and can be obtained from 
+{\tt http://www.dci.clrc.ac.uk/Activity.asp?CUTE}.
+
+	All codes are written in Fortran 77. However, we have had no 
+trouble interfacing them to C code using the Fortran to C converter
+{\tt f2c} which is available at \\
+{\tt http://netlib.bell-labs.com/netlib/f2c/}. 
+
+	Note that while the SIF format allows the user to provide scale
+factors, there are no tools in CUTE to extract these scale factors from
+the {\tt OUTSDIF.d} file, generated by CUTE. As a consequence, scaling
+has to be done within the CUTE file.
+
+
+
+\section{Changes to earlier Versions}
+
+\noindent
+\begin{tabular}{lp{12cm}}
+Date		&	Changes					\\ \hline
+June 1998	& Parameter {\tt istat} now has 13 entries.	\\
+		& Record crashes of bqpd {\tt ifail = 9}.	\\
+		& Facility for changing to double precision
+		  added.					\\ \hline
+September 1998 	& Modified termination criterion (scaled).	\\ \hline
+November 1998	& Added common {\tt ubdc} for upper bound.	\\ \hline
+January 1999	& Added warm start for NLP solver.		\\ \hline
+March 1999	& (1) {\tt ifail} indicator changed.		\\
+		& (2) {\tt istat} and {\tt rstat} changed
+		  statistics, print using {\tt print\_stats}.	\\
+		& (3) new subroutine {\tt readpar} to read user 
+		  parameters for solve. 			\\
+		& (4) Added AMPL/CUTE/C/C++ interface section.	\\ \hline
+\end{tabular}
+
+%\bibliographystyle{plain}
+%\bibliography{../../NLP,../../GENERAL,../../MINLP}
+
+\begin{thebibliography}{1}
+
+\bibitem{ConGouToi:95}
+{{Bongartz, I.} {Conn, A.R.} {Gould, N.I.M.}} and {Toint, Ph.L.}
+\newblock {CUTE}: {C}onstrained and {U}nconstrained {T}esting {E}nviroment.
+\newblock {\em ACM Transactions on Mathematical Software}, (21):123--160, 1995.
+
+\bibitem{DurGro:86}
+{Duran, M.} and {Grossmann, I.E.}
+\newblock An outer-approximation algorithm for a class of mixed--integer
+  nonlinear programs.
+\newblock {\em Mathematical Programming}, 36:307--339, 1986.
+
+\bibitem{FleLey:97}
+{Fletcher, R.} and {Leyffer, S.}
+\newblock Nonlinear programming without a penalty function.
+\newblock Numerical Analysis Report NA/171, Department of Mathematics,
+  University of Dundee, September 1997.
+
+\end{thebibliography}
+
+\end{document}
+
+
+
+
+
+
+
+
+
+
+

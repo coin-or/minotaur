@@ -1,0 +1,180 @@
+
+	Introduction to filterSQP & MINLP with AMPL
+	===========================================
+
+
+Setting paths for AMPL solvers
+==============================
+
+To be able to use the ampl solvers, you need to add their path
+to your local environment variable, e.g. for SUN Solaris, add 
+the following lines to your .cshrc file
+
+	### paths for any additional solvers for AMPL
+	set SOLDIR = '/opt/opti/AMPL/solvers'
+	set path = ($path $SOLDIR/minlp)
+
+where /opt/opti/AMPL is our (Dundee) directory of the AMPL solvers.
+That would have to be adapted to your own needs.
+
+
+Starting & Exiting ampl
+=======================
+
+Simply type "ampl" (without quotes) at the systems prompt 
+to start ampl. You will then see the ampl prompt
+	
+	ampl: 
+
+To exit ampl, type "quit;" at the ampl prompt.
+
+
+Choosing a solver in ampl
+=========================
+
+The default solver in ampl is minos. To set another solver (e.g.
+filter), type the following (without ampl: )
+
+	ampl: option solver filter;
+or 
+	ampl: option solver minlp;
+
+All solve commands will now use this solver.
+
+
+Solving a problem with ampl
+===========================
+
+To solve the attached problem (hs035.mod), type
+
+	ampl: model hs035.mod; solve;
+
+This will produce the output
+
+     filterSQP (20020316): Ignoring integrality of 1 variables.
+     filterSQP (20020316): Optimal solution found, objective = -8.888888889
+     1 iterations (0 for feasibility)
+     Evals: obj = 2, constr = 2, grad = 2, Hes = 2
+
+If your model also includes a data-file, then a command
+like
+
+	ampl: model xxx.mod; data yyy.dat; solve;
+
+can be used. You can also switch in the .mod file to data
+by using the "data;" command.
+
+You can use the display command to look at variables,
+for instance
+
+	ampl: display x;
+
+or
+
+	ampl: display _varname, _var.lb, _var, _var.ub;
+
+will display variables called "x" in the model or all
+variable names, lower bounds, value and upper bounds.
+
+
+Variable & constraint scaling in ampl
+=====================================
+
+By default, all variables are assumed to be of the same
+order of magnitude. This is not always efficient and it
+is possible, to include scaling information in your model.
+
+For instance, looking at hs111.mod, you see the following 
+lines at the end ...
+
+	suffix scale IN;
+
+... tells ampl to prepare for use of scaling. Scaling information
+is passed to ampl by it's suffix notation. A suffix is an extension
+to a variable/constraint name preceded by a "." (above, "_var.lb"
+is the suffix associated with a lower bound)
+
+	let {i in I} x[i].scale := 1;
+
+... set the scaling of variables to 1 and 
+
+	let C1.scale := 1;
+	let C2.scale := 1;
+	let C3.scale := 1;
+
+... sets the constraint scaling to 1. Note that scaling by 1 is
+of course "no scaling". You should give rough estimates of the 
+order of magnitude of the scales of the variables.
+
+
+Options for filter
+==================
+
+The solver allows you to change default options.
+
+eps      Tolerance for SQP solver
+infty    A large number (1E20)
+iprint   synonym for "outlev"
+kmax     Dimension of null-space (bqpd)
+maxf     Maximum filter length
+maxiter  Maximum number of iterations
+mlp      Maximum level for degeneracy (bqpd)
+mxlws    INTEGER workspace increment
+mxws     REAL workspace increment
+objno    Objective number: 1 = first, 0 = none
+outlev   Print level (0=silent, 3=verbose)
+pname    Problem name (default NLPproblem)
+rho      Initial trust region size
+timing   whether to time evaluations (1 = yes)
+tt       Parameter for upper bound on filter
+ubd      Parameter for upper bound on filter
+wantsol  solution report without -AMPL: sum of
+                1 ==> write .sol file
+                2 ==> print primal variable values
+                4 ==> print dual variable values
+                8 ==> do not print solution message
+z_print  -2 = None, -1 = All,
+
+To change options, type
+
+	option filter_options "outlev=2 eps=1E-4";
+
+Note, that you MUST set all options in a single statement
+which can run over several lines using the "\" character at
+the end of each line that is to be continued.
+
+Options for minlp
+=================
+
+eps       Tolerance for SQP solver
+infty     A large number (1E20)
+iprint    synonym for "outlev"
+kmax      Dimension of null-space (bqpd)
+maxf      Maximum filter length
+maxiter   Maximum number of iterations
+miopttol  Integer optimality tolerance
+mlp       Maximum level for degeneracy (bqpd)
+mxlws     INTEGER workspace increment (default 100000)
+mxws      REAL workspace increment (default 100000)
+objno     Objective number: 1 = first, 0 = none
+outlev    Print level (0=silent,        3=verbose)
+plconpri  priority for constraint piecewise-linear terms
+plobjpri  priority for objective piecewise-linear terms
+pname     Problem name (default NLPproblem)
+rho       Initial trust region size
+stackmax  Maximum size of stack for branch-and-bound
+timing    whether to time evaluations (1 = yes)
+tt        Parameter for upper bound on filter
+ubd       Parameter for upper bound on filter
+wantsol   solution report without -AMPL: sum of
+                1 ==> write .sol file
+                2 ==> print primal variable values
+                4 ==> print dual variable values
+                8 ==> do not print solution message
+z_print   -2 = None, -1 = All,
+
+To change options, type
+
+	option minlp_options "outlev=2 eps=1E-4";
+
+Sven Leyffer, University of Dundee, January 2002.

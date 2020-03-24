@@ -1,0 +1,38 @@
+# Copyright (C) 2010 Jelmer Ypma. All Rights Reserved.
+# This code is published under the Eclipse Public License.
+#
+# File:   Makevars.in
+# Author: Jelmer Ypma
+# Date:   14 April 2010
+#
+# Changelog:
+# 30/01/2011 - Changed LIBS to IPOPT_LIBS and INCL to IPOPT_INCL, since R re-defines LIBS and INCL.
+
+
+# C++ Compiler command
+CXX = g++
+
+# C++ Compiler options
+IPOPT_CXXFLAGS = -O3 -pipe -DNDEBUG -Wparentheses -Wreturn-type -Wcast-qual -Wall -Wpointer-arith -Wwrite-strings -Wconversion -Wno-unknown-pragmas -Wno-long-long   -DIPOPT_BUILD
+
+# additional C++ Compiler options for linking
+IPOPT_CXXLINKFLAGS =  -Wl,--rpath -Wl,/home/mustafa.vora/minotaur/third-party/lib
+
+# Include directories (we use the CYGPATH_W variables to allow compilation with Windows compilers)
+IPOPT_INCL = `PKG_CONFIG_PATH=/home/mustafa.vora/minotaur/third-party/lib/pkgconfig:/home/mustafa.vora/minotaur/third-party/share/pkgconfig:/home/mustafa.vora/minotaur/third-party/lib64/pkgconfig:/home/mustafa.vora/minotaur/third-party/lib/pkgconfig:/home/mustafa.vora/minotaur/third-party/share/pkgconfig: pkg-config --cflags ipopt`
+#IPOPT_INCL = -I`$(CYGPATH_W) /home/mustafa.vora/minotaur/third-party/include/coin` 
+
+# Linker flags
+IPOPT_LIBS = `PKG_CONFIG_PATH=/home/mustafa.vora/minotaur/third-party/lib/pkgconfig:/home/mustafa.vora/minotaur/third-party/share/pkgconfig:/home/mustafa.vora/minotaur/third-party/lib64/pkgconfig:/home/mustafa.vora/minotaur/third-party/lib/pkgconfig:/home/mustafa.vora/minotaur/third-party/share/pkgconfig: pkg-config --libs ipopt`  -Wl,--rpath -Wl,/home/mustafa.vora/minotaur/third-party/lib
+##IPOPT_LIBS = -link -libpath:`$(CYGPATH_W) /home/mustafa.vora/minotaur/third-party/lib` libipopt.lib -llapack -lblas -lm  -ldl
+#IPOPT_LIBS = -L/home/mustafa.vora/minotaur/third-party/lib -lipopt -llapack -lblas -lm  -ldl  -Wl,--rpath -Wl,/home/mustafa.vora/minotaur/third-party/lib
+
+# The following is necessary under cygwin, if native compilers are used
+CYGPATH_W = echo
+
+# Define objects for R to build
+OBJECTS = ipoptr.o IpoptRNLP.o IpoptRJournal.o
+
+# Convert to R macros
+PKG_LIBS = ${IPOPT_CXXLINKFLAGS} ${IPOPT_LIBS}
+PKG_CXXFLAGS = ${IPOPT_CXXFLAGS} ${IPOPT_INCL} -I/home/mustafa.vora/minotaur/third-party/minotaur-0.2.3-third-party-src/ipopt-3.12.13/Ipopt/contrib/RInterface/src
