@@ -525,8 +525,11 @@ void ParQGHandlerAdvance::cutsAtLpSol_(const double *lpx, CutManager *cutman,
               lf->addTerm(objVar_, -1.0);
               f = (FunctionPtr) new Function(lf);
               sstm << "_qgObjCut_Thr_" << omp_get_thread_num() << stats_->cuts;
-              rel_->newConstraint(f, -INFINITY, -1.0*c, sstm.str());
-              //newcon = rel_->newConstraint(f, -INFINITY, -1.0*c, sstm.str());
+              newcon = rel_->newConstraint(f, -INFINITY, -1.0*c, sstm.str());
+              CutPtr cut = (CutPtr) new Cut(minlp_->getNumVars(),f, -INFINITY,
+                                            -1.0*c, false,false);
+              cut->setCons(newcon);
+              cutman->addCutToPool(cut);
             } else {
               delete lf;
               lf = 0;
@@ -1383,7 +1386,7 @@ void ParQGHandlerAdvance::objCutAtLpSol_(const double *lpx, CutManager *cutman,
               *status = SepaResolve;
               lf->addTerm(objVar_, -1.0);
               f = (FunctionPtr) new Function(lf);
-              sstm << "_qgObjCut_" << stats_->cuts;
+              sstm << "_qgObjCut_Thr_" << omp_get_thread_num() << stats_->cuts;
               newcon = rel_->newConstraint(f, -INFINITY, -1.0*c, sstm.str());
               CutPtr cut = (CutPtr) new Cut(minlp_->getNumVars(),f, -INFINITY,
                                             -1.0*c, false,false);
