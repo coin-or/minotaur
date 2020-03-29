@@ -726,6 +726,7 @@ void ParQGHandlerAdvance::relax_(bool *isInf)
       extraLin_->rootLinearizations();
       stats_->rcuts = extraLin_->getStats()->rs1Cuts + extraLin_->getStats()->rgs2Cuts;
     } else if (temp) {
+      findC_ = 1;
       findCenter_();
       if (solC_ == 0) {
         maxVioPer_ = 0;
