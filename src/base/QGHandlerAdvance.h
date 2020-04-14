@@ -116,6 +116,8 @@ private:
   
   double objVioMul_;
 
+  UInt nodeDep_;
+
   std::vector<double > consDual_; 
 
   bool findC_;
@@ -283,7 +285,7 @@ private:
   void ESHTypeCut_(const double *lpx, CutManager *cutMan);
 
   void objCutAtLpSol_(const double *lpx, CutManager *,
-                                  SeparationStatus *status);
+                                  SeparationStatus *status, bool fracNode);
   //void objCutAtLpSol_(const double *lpx, CutManager *cutman,
                     //SeparationStatus *status);
 
