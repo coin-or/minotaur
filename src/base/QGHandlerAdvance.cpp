@@ -118,31 +118,31 @@ QGHandlerAdvance::~QGHandlerAdvance()
 
 void QGHandlerAdvance::dualBasedCons_(ConstSolutionPtr sol)
 {
-  //// Dual based scheme
-  //double K = 0.5; // MS: can be parametrized.
-  //highDualCons_.clear();
-  //double act, maxDual = -INFINITY;
-  //const double * consDual = sol->getDualOfCons();
-
-  //for (CCIter it=nlCons_.begin(); it!=nlCons_.end(); ++it) {
-    //act = consDual[(*it)->getIndex()];
-    //if (act > maxDual) {
-      //maxDual = act;    
-    //}
-  //}
-
-  //if (maxDual > 0) {
-    //for (CCIter it=nlCons_.begin(); it!=nlCons_.end(); ++it) {
-      //act = consDual[(*it)->getIndex()];
-      //if (act >= K*maxDual) {
-        //highDualCons_.push_back(*it);
-      //}
-    //}
-  //}
-
-  ////  Score based scheme
-  double lambda1 = 0.05, lambda2 = 0.95;
+  //// QGMV2: Dual based scheme
+  double K = 0.5; // MS: can be parametrized.
+  highDualCons_.clear();
+  double act, maxDual = -INFINITY;
   const double * consDual = sol->getDualOfCons();
+
+  for (CCIter it=nlCons_.begin(); it!=nlCons_.end(); ++it) {
+    act = consDual[(*it)->getIndex()];
+    if (act > maxDual) {
+      maxDual = act;    
+    }
+  }
+
+  if (maxDual > 0) {
+    for (CCIter it=nlCons_.begin(); it!=nlCons_.end(); ++it) {
+      act = consDual[(*it)->getIndex()];
+      if (act >= K*maxDual) {
+        highDualCons_.push_back(*it);
+      }
+    }
+  }
+
+  ////  For QGMV2 and QGMV3: Score based scheme
+  double lambda1 = 0.05, lambda2 = 0.95;
+  //const double * consDual = sol->getDualOfCons();
   //consDual_.clear();
   //for (CCIter it=nlCons_.begin(); it!=nlCons_.end(); ++it) {
     //consDual_.push_back(consDual[(*it)->getIndex()]);
@@ -1313,186 +1313,186 @@ bool QGHandlerAdvance::boundaryPtForCons_(double* xnew, const double *xOut,
 //}
 
 
-//void QGHandlerAdvance::maxVio_(ConstSolutionPtr sol, NodePtr node,
-                               //CutManager *cutMan,
-                               //SeparationStatus *status)
-//{
-  //int error = 0; 
-  //ConstraintPtr c;
-  //double act, cUb, vio = 0.0;
-  //const double *x = sol->getPrimal();
-  //UInt  temp = stats_->cuts, nodeId = node->getId();
-
-  //if (cutMethod_ == "ecp" || (nlCons_.size() == 0 && oNl_)) {
-    ////for (CCIter it=highDualCons_.begin(); it!=highDualCons_.end(); ++it) {
-    //for (CCIter it=nlCons_.begin(); it!=nlCons_.end(); ++it) {
-      //c = *it; 
-      //act = c->getActivity(x, &error);
-      //if (error == 0) { 
-        //cUb = c->getUb();
-        //if (act > cUb+solAbsTol_ && (cUb == 0 || 
-                                     //act > cUb + fabs(cUb)*solRelTol_)) {
-          ////std::cout << "node " << node->getId() << " vio " << act -cUb << "\n";
-          //if (fabs(cUb) > solAbsTol_) {
-            //vio = 100*(act - cUb)/fabs(cUb);     
-          //} else {
-            //vio = 100*(act - cUb); 
-          //}
-          ////std::cout << vio << "\n";
-          //if (vio >= maxVioPer_) {
-            //ECPTypeCut_(x, cutMan, c, act);
-          //}
-        //}
-      //}
-    //}
-
-    //if (oNl_) {
-      //SeparationStatus s = SepaContinue;
-      //objCutAtLpSol_(x, cutMan, &s);
-    //}
-  //} else if (cutMethod_ == "esh") {
-     ////for (CCIter it=nlCons_.begin(); it!=nlCons_.end(); ++it) {
-    //for (CCIter it=highDualCons_.begin(); it!=highDualCons_.end(); ++it) {
-      //c = *it; 
-      //act = c->getActivity(x, &error);
-      //if (error == 0) { 
-        //cUb = c->getUb();
-        //if (act > cUb+solAbsTol_ && (cUb == 0 || 
-                                     //act > cUb + fabs(cUb)*solRelTol_)) {
-          ////std::cout << "node " << node->getId() << " vio " << act -cUb << "\n";
-          //if (fabs(cUb) > solAbsTol_) {
-            //vio = 100*(act - cUb)/fabs(cUb);     
-          //} else {
-            //vio = 100*(act - cUb); 
-          //}
-          ////std::cout << vio << "\n";
-          //if (vio >= maxVioPer_) {
-            //ESHTypeCut_(x, cutMan);
-            //break;
-          //}
-        //}
-      //}
-    //}
-  //}
-  
-  //stats_->fracCuts = stats_->fracCuts + (stats_->cuts - temp);
-
-  //if ((temp < stats_->cuts) && (nodeId != UInt(lastNodeId_))) {
-    //*status = SepaResolve;
-  //}
-  
-  ////std::cout << "Node " << node->getId() << " depth " << node->getDepth() 
-    ////<< " vio val " << val << " bnd " << bnd << " max vio % " << max << "\n";
-  //lastNodeId_ = nodeId;
-  //return;
-//}
-
-
-//// Score based rule
 void QGHandlerAdvance::maxVio_(ConstSolutionPtr sol, NodePtr node,
-                               CutManager *cutMan, SeparationStatus *status)
+                               CutManager *cutMan,
+                               SeparationStatus *status)
 {
-  int error = 0;
+  int error = 0; 
   ConstraintPtr c;
-  std::vector<double > consAct;
+  double act, cUb, vio = 0.0;
   const double *x = sol->getPrimal();
-  double act, cUb, vio, totScore = 0, parentScore, incr; 
-  UInt i = 0, vioConsNum = 0, nodeId = node->getId(), temp = stats_->cuts;
+  UInt  temp = stats_->cuts, nodeId = node->getId();
 
-  if (node->getDepth() >= nodeDep_ && stats_->fracCuts > 0) {
-    return;  
-  } 
-
-  if (nlCons_.size() > 0) {
-    for (CCIter it = nlCons_.begin(); it != nlCons_.end(); ++it, ++i) {
-      c = *it;
+  if (cutMethod_ == "ecp" || (nlCons_.size() == 0 && oNl_)) {
+    //for (CCIter it=nlCons_.begin(); it!=nlCons_.end(); ++it) {
+    for (CCIter it=highDualCons_.begin(); it!=highDualCons_.end(); ++it) {
+      c = *it; 
       act = c->getActivity(x, &error);
-      if (error == 0) {
+      if (error == 0) { 
         cUb = c->getUb();
-        vio = act - cUb;
-        if (cutMethod_ == "ecp") {
-          consAct.push_back(act);
-        }
-        if ((vio > solAbsTol_) &&
-            (cUb == 0 || vio > fabs(cUb)*solRelTol_)) {
-          ++vioConsNum;
-          vio = act - cUb;
+        if (act > cUb+solAbsTol_ && (cUb == 0 || 
+                                     act > cUb + fabs(cUb)*solRelTol_)) {
+          //std::cout << "node " << node->getId() << " vio " << act -cUb << "\n";
           if (fabs(cUb) > solAbsTol_) {
-            totScore = totScore + vio*consDual_[i] + vio/fabs(cUb);
-            //std::cout << "act = "<< act << " vio = " << vio << " dual = " << consDual_[i] << " cub = " << cUb << std::endl;
+            vio = (act - cUb)/fabs(cUb);     
           } else {
-            totScore = totScore + vio*consDual_[i] + vio;
+            vio = (act - cUb); 
           }
-        }
-      } else {
-        if (cutMethod_ == "ecp") {
-          consAct.push_back(INFINITY);
+          //std::cout << vio << "\n";
+          if (vio >= maxVioPer_) {
+            ECPTypeCut_(x, cutMan, c, act);
+          }
         }
       }
     }
 
-    if (vioConsNum > 0) {
-      totScore = totScore/vioConsNum;
-      node->setVioVal(totScore);
-    } else {
-      node->setVioVal(totScore);
-      return;
+    if (oNl_) {
+      SeparationStatus s = SepaContinue;
+      objCutAtLpSol_(x, cutMan, &s, 1);
     }
-
-    if (nodeId > 0 && int(nodeId) != lastNodeId_) {
-      parentScore = node->getParent()->getVioVal();
-      if (parentScore < INFINITY && totScore < INFINITY) {
-        //if (fabs(parentScore) > 1e-3 && fabs(totScore) > 1e-2 
-        //if (fabs(parentScore) > 1e-1 && fabs(totScore) > (maxVioPer_*fabs(parentScore)))  //MS: here maxVioPer_ is in times (0.5, 1, 2, 5,..)
-          //std::cout << std::setprecision(6) << "node, score, and parent's score "<< nodeId << " " << totScore << " " << parentScore << "\n";
-        if (fabs(totScore) >= (maxVioPer_*fabs(parentScore + .001))) { //MS: here maxVioPer_ is in times (0.5, 1, 2, 5,..)
-          std::cout << std::setprecision(6) << "node, score, and parent's score, maxvio "<< nodeId << " " << totScore << " " << parentScore << " " <<maxVioPer_ <<"\n";
-          if (cutMethod_ == "ecp") {
-            i = 0;
-            for (CCIter it = nlCons_.begin(); it != nlCons_.end(); ++it, ++i) {
-              c = *it;
-              act = consAct[i];
-              if (act == INFINITY) {
-                continue;
-              }
-              cUb = c->getUb();
-              vio = act - cUb;
-              if ((vio > solAbsTol_) &&
-                    (cUb == 0 || vio > fabs(cUb)*solRelTol_)) {
-                ECPTypeCut_(x, cutMan, c, act);
-              }
-            }
-
-            if (oNl_) {
-              SeparationStatus s = SepaContinue;
-              objCutAtLpSol_(x, cutMan, &s, 1);
-            }
-          } else if (cutMethod_ == "esh") {
+  } else if (cutMethod_ == "esh") {
+     //for (CCIter it=nlCons_.begin(); it!=nlCons_.end(); ++it) {
+    for (CCIter it=highDualCons_.begin(); it!=highDualCons_.end(); ++it) {
+      c = *it; 
+      act = c->getActivity(x, &error);
+      if (error == 0) { 
+        cUb = c->getUb();
+        if (act > cUb+solAbsTol_ && (cUb == 0 || 
+                                     act > cUb + fabs(cUb)*solRelTol_)) {
+          //std::cout << "node " << node->getId() << " vio " << act -cUb << "\n";
+          if (fabs(cUb) > solAbsTol_) {
+            vio = (act - cUb)/fabs(cUb);     
+          } else {
+            vio = (act - cUb); 
+          }
+          //std::cout << vio << "\n";
+          if (vio >= maxVioPer_) {
             ESHTypeCut_(x, cutMan);
-          }
-        }
-        if (parentScore > solAbsTol_) {
-          incr = std::max(maxVioPer_, (totScore/(parentScore+0.001)));
-          if (incr > maxVioPer_) {
-            maxVioPer_ = ((maxVioPer_ + incr)/2);
+            break;
           }
         }
       }
     }
-  } else if (oNl_) {
-    SeparationStatus s = SepaContinue;
-    objCutAtLpSol_(x, cutMan, &s, 1);
   }
-
+  
   stats_->fracCuts = stats_->fracCuts + (stats_->cuts - temp);
 
   if ((temp < stats_->cuts) && (nodeId != UInt(lastNodeId_))) {
     *status = SepaResolve;
   }
-
+  
+  //std::cout << "Node " << node->getId() << " depth " << node->getDepth() 
+    //<< " vio val " << val << " bnd " << bnd << " max vio % " << max << "\n";
   lastNodeId_ = nodeId;
   return;
 }
+
+
+//// Score based rule
+//void QGHandlerAdvance::maxVio_(ConstSolutionPtr sol, NodePtr node,
+                               //CutManager *cutMan, SeparationStatus *status)
+//{
+  //int error = 0;
+  //ConstraintPtr c;
+  //std::vector<double > consAct;
+  //const double *x = sol->getPrimal();
+  //double act, cUb, vio, totScore = 0, parentScore, incr; 
+  //UInt i = 0, vioConsNum = 0, nodeId = node->getId(), temp = stats_->cuts;
+
+  //if (node->getDepth() >= nodeDep_ && stats_->fracCuts > 0) {
+    //return;  
+  //} 
+
+  //if (nlCons_.size() > 0) {
+    //for (CCIter it = nlCons_.begin(); it != nlCons_.end(); ++it, ++i) {
+      //c = *it;
+      //act = c->getActivity(x, &error);
+      //if (error == 0) {
+        //cUb = c->getUb();
+        //vio = act - cUb;
+        //if (cutMethod_ == "ecp") {
+          //consAct.push_back(act);
+        //}
+        //if ((vio > solAbsTol_) &&
+            //(cUb == 0 || vio > fabs(cUb)*solRelTol_)) {
+          //++vioConsNum;
+          //vio = act - cUb;
+          //if (fabs(cUb) > solAbsTol_) {
+            //totScore = totScore + vio*consDual_[i] + vio/fabs(cUb);
+            ////std::cout << "act = "<< act << " vio = " << vio << " dual = " << consDual_[i] << " cub = " << cUb << std::endl;
+          //} else {
+            //totScore = totScore + vio*consDual_[i] + vio;
+          //}
+        //}
+      //} else {
+        //if (cutMethod_ == "ecp") {
+          //consAct.push_back(INFINITY);
+        //}
+      //}
+    //}
+
+    //if (vioConsNum > 0) {
+      //totScore = totScore/vioConsNum;
+      //node->setVioVal(totScore);
+    //} else {
+      //node->setVioVal(totScore);
+      //return;
+    //}
+
+    //if (nodeId > 0 && int(nodeId) != lastNodeId_) {
+      //parentScore = node->getParent()->getVioVal();
+      //if (parentScore < INFINITY && totScore < INFINITY) {
+        ////if (fabs(parentScore) > 1e-3 && fabs(totScore) > 1e-2 
+        ////if (fabs(parentScore) > 1e-1 && fabs(totScore) > (maxVioPer_*fabs(parentScore)))  //MS: here maxVioPer_ is in times (0.5, 1, 2, 5,..)
+          ////std::cout << std::setprecision(6) << "node, score, and parent's score "<< nodeId << " " << totScore << " " << parentScore << "\n";
+        //if (fabs(totScore) >= (maxVioPer_*fabs(parentScore + .001))) { //MS: here maxVioPer_ is in times (0.5, 1, 2, 5,..)
+          ////std::cout << std::setprecision(6) << "node, score, and parent's score, maxvio "<< nodeId << " " << totScore << " " << parentScore << " " <<maxVioPer_ <<"\n";
+          //if (cutMethod_ == "ecp") {
+            //i = 0;
+            //for (CCIter it = nlCons_.begin(); it != nlCons_.end(); ++it, ++i) {
+              //c = *it;
+              //act = consAct[i];
+              //if (act == INFINITY) {
+                //continue;
+              //}
+              //cUb = c->getUb();
+              //vio = act - cUb;
+              //if ((vio > solAbsTol_) &&
+                    //(cUb == 0 || vio > fabs(cUb)*solRelTol_)) {
+                //ECPTypeCut_(x, cutMan, c, act);
+              //}
+            //}
+
+            //if (oNl_) {
+              //SeparationStatus s = SepaContinue;
+              //objCutAtLpSol_(x, cutMan, &s, 1);
+            //}
+          //} else if (cutMethod_ == "esh") {
+            //ESHTypeCut_(x, cutMan);
+          //}
+        //}
+        //if (parentScore > solAbsTol_) {
+          //incr = std::max(maxVioPer_, (totScore/(parentScore+0.001)));
+          //if (incr > maxVioPer_) {
+            //maxVioPer_ = ((maxVioPer_ + incr)/2);
+          //}
+        //}
+      //}
+    //}
+  //} else if (oNl_) {
+    //SeparationStatus s = SepaContinue;
+    //objCutAtLpSol_(x, cutMan, &s, 1);
+  //}
+
+  //stats_->fracCuts = stats_->fracCuts + (stats_->cuts - temp);
+
+  //if ((temp < stats_->cuts) && (nodeId != UInt(lastNodeId_))) {
+    //*status = SepaResolve;
+  //}
+
+  //lastNodeId_ = nodeId;
+  //return;
+//}
 
 
 //void QGHandlerAdvance::shortestDist_(ConstSolutionPtr sol)
