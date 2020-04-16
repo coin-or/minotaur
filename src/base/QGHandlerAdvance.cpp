@@ -731,8 +731,10 @@ void QGHandlerAdvance::relax_(bool *isInf)
         const double *nlpx = nlpe_->getSolution()->getPrimal();
         double l1 = 0.5, l2 = 0.5; //MS: can be parametrized.
         for (UInt i = 0 ; i < minlp_->getNumVars(); ++i) {
+          std::cout << "i " << i << " nlpx[i] " << nlpx[i] << " solC_ " << solC_[i] <<"\n";
           solC_[i] = l1*nlpx[i] + l2*solC_[i];
         }
+        std::cout << "HERE";
       }
     }
   } else {
@@ -741,10 +743,10 @@ void QGHandlerAdvance::relax_(bool *isInf)
    
  //// For dual multiplier based maxvio rule and score based rule
  //// Also make appropriate changes in the updateUb_()
-  if (maxVioPer_ && (nlCons > 0)) {
-    consDual_.resize(nlCons, 0);
-    dualBasedCons_(nlpe_->getSolution());
-  }
+  //if (maxVioPer_ && (nlCons > 0)) {
+    //consDual_.resize(nlCons, 0);
+    //dualBasedCons_(nlpe_->getSolution());
+  //}
   return;
 }
 
@@ -996,6 +998,7 @@ void QGHandlerAdvance::separate(ConstSolutionPtr sol, NodePtr node,
     relobj_ = (sol) ? sol->getObjValue() : -INFINITY;
     ObjectivePtr o = minlp_->getObjective();
     act = o->eval(x, &error);
+    objVioMul_ = maxVioPer_;
     if (error == 0) {
       lpvio = std::max(act-relobj_, 0.0);
       if (fabs(relobj_) > solAbsTol_) {
@@ -1005,22 +1008,19 @@ void QGHandlerAdvance::separate(ConstSolutionPtr sol, NodePtr node,
         //std::cout << std::setprecision(6) << "lpvio here " << lpvio << " relobj_ " << relobj_ << " ratio " << lpvio << "\n";
         objVioMul_ = lpvio;
       }
-      if (objVioMul_ > 1000) {
-        nodeDep_ = floor(nodeDep_/2);
-      } else if (objVioMul_ < 0.5) {
-        nodeDep_ = nodeDep_*2;   
-        objVioMul_ = 2*objVioMul_;        
+      if (nlCons_.size() == 0 && oNl_) {
+        if (objVioMul_ > 1000) {
+          nodeDep_ = floor(nodeDep_/2);
+        } else if (objVioMul_ < 0.5) {
+          nodeDep_ = nodeDep_*2;   
+          objVioMul_ = 2*objVioMul_;        
+        }
+      } else {
+        if (objVioMul_ < 0.5) {
+          objVioMul_ = 2*objVioMul_;        
+        }    
       }
       //std::cout << "Initial multiplier " << objVioMul_ << "\n";
-
-// This worked for only nonlinear objective     
-      //if (objVioMul_ > 1000) {
-        //nodeDep_ = 2;
-      //} else if (objVioMul_ < 0.5) {
-        //nodeDep_ = 10;   
-        //objVioMul_ = 2*objVioMul_;        
-      //}
-       //std::cout << "Initial multiplier " << objVioMul_ << "\n";
     }
   }
 
@@ -1321,11 +1321,15 @@ void QGHandlerAdvance::maxVio_(ConstSolutionPtr sol, NodePtr node,
   ConstraintPtr c;
   double act, cUb, vio = 0.0;
   const double *x = sol->getPrimal();
-  UInt  temp = stats_->cuts, nodeId = node->getId();
+  UInt temp = stats_->cuts, nodeId = node->getId();
+
+  if (node->getDepth() >= nodeDep_ && stats_->fracCuts > 0) {
+    return;  
+  }
 
   if (cutMethod_ == "ecp" || (nlCons_.size() == 0 && oNl_)) {
-    //for (CCIter it=nlCons_.begin(); it!=nlCons_.end(); ++it) {
-    for (CCIter it=highDualCons_.begin(); it!=highDualCons_.end(); ++it) {
+    for (CCIter it=nlCons_.begin(); it!=nlCons_.end(); ++it) {
+    //for (CCIter it=highDualCons_.begin(); it!=highDualCons_.end(); ++it) {
       c = *it; 
       act = c->getActivity(x, &error);
       if (error == 0) { 
@@ -1351,8 +1355,8 @@ void QGHandlerAdvance::maxVio_(ConstSolutionPtr sol, NodePtr node,
       objCutAtLpSol_(x, cutMan, &s, 1);
     }
   } else if (cutMethod_ == "esh") {
-     //for (CCIter it=nlCons_.begin(); it!=nlCons_.end(); ++it) {
-    for (CCIter it=highDualCons_.begin(); it!=highDualCons_.end(); ++it) {
+     for (CCIter it=nlCons_.begin(); it!=nlCons_.end(); ++it) {
+    //for (CCIter it=highDualCons_.begin(); it!=highDualCons_.end(); ++it) {
       c = *it; 
       act = c->getActivity(x, &error);
       if (error == 0) { 
@@ -1659,9 +1663,9 @@ void QGHandlerAdvance::updateUb_(SolutionPoolPtr s_pool, double nlpval,
     s_pool->addSolution(x, nlpval);
     *sol_found = true;
     
-    if (maxVioPer_ && (nlCons_.size() > 0)) {
-      dualBasedCons_(nlpe_->getSolution());
-    }
+    //if (maxVioPer_ && (nlCons_.size() > 0)) {
+      //dualBasedCons_(nlpe_->getSolution());
+    //}
   }
   return;
 }
