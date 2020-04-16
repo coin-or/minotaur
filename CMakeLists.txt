@@ -16,6 +16,14 @@ INCLUDE(FindPkgConfig OPTIONAL RESULT_VARIABLE MNTR_PKGCON)
 
 set (MSG_HEAD "Minotaur config: ")  ## must preceed every message.
 
+
+if("${CMAKE_HOST_SYSTEM}" MATCHES ".*Windows.*")
+  set(SEP "\\;")
+else() # e.g. Linux
+  set(SEP ":")
+endif()
+message(STATUS MSG_HEAD "Path separator set to " ${SEP})
+
 ## Stop if we are compiling in the minotaur-root directory.
 if ((EXISTS "${PROJECT_BINARY_DIR}/src/base/Types.h") OR 
   ("${PROJECT_SOURCE_DIR}" STREQUAL "${PROJECT_BINARY_DIR}"))
@@ -73,9 +81,9 @@ if (${BUILD_SHARED_LIBS})
   if ("${isSystemDir}" STREQUAL "-1")
     if (IS_ABSOLUTE ${CMAKE_INSTALL_PREFIX})
       set(CMAKE_INSTALL_RPATH 
-        ${CMAKE_INSTALL_RPATH}:${CMAKE_INSTALL_PREFIX}/lib)
+        ${CMAKE_INSTALL_RPATH}${SEP}${CMAKE_INSTALL_PREFIX}/lib)
     else()
-      set(CMAKE_INSTALL_RPATH ${CMAKE_INSTALL_RPATH}:${PROJECT_BINARY_DIR}/${CMAKE_INSTALL_PREFIX}/lib)
+      set(CMAKE_INSTALL_RPATH ${CMAKE_INSTALL_RPATH}${SEP}${PROJECT_BINARY_DIR}/${CMAKE_INSTALL_PREFIX}/lib)
     endif()
   endif()
 endif()
@@ -350,16 +358,18 @@ if (IPOPT_INC_DIR_F)
     add_subdirectory(src/engines/Ipopt)
     set (LINK_IPOPT 1)
     if (${BUILD_SHARED_LIBS})
-      set (CMAKE_INSTALL_RPATH ${CMAKE_INSTALL_RPATH}:${IPOPT_LIB_DIR_F})
+      set (CMAKE_INSTALL_RPATH ${CMAKE_INSTALL_RPATH}${SEP}${IPOPT_LIB_DIR_F})
     endif()
 
     set (MNTR_IPOPT_PC_LIBRARIES)
     if (MNTR_HAVE_PKGCON)
        set (ENV{PKG_CONFIG_PATH}
-	   "${IPOPT_LIB_DIR_F}/pkgconfig:$ENV{PKG_CONFIG_PATH}")
+           "${IPOPT_LIB_DIR_F}/pkgconfig${SEP}$ENV{PKG_CONFIG_PATH}")
        pkg_check_modules(MNTR_IPOPT_PC ipopt)
        message(STATUS ${MSG_HEAD} "Ipopt libraries: "
 	       "${MNTR_IPOPT_PC_LIBRARIES}")
+       message(STATUS ${MSG_HEAD} "pkgconfig path = "
+	       "${IPOPT_LIB_DIR_F}/pkgconfig")
        set (IPOPT_LIBS "mntripopt" ${MNTR_IPOPT_PC_LIBRARIES})
     endif()
 
@@ -444,7 +454,7 @@ if (OSI_INC_DIR_F)
   set (LINK_OSI 1)
 
   if (${BUILD_SHARED_LIBS})
-    set (CMAKE_INSTALL_RPATH ${CMAKE_INSTALL_RPATH}:${OSI_LIB_DIR_F})
+    set (CMAKE_INSTALL_RPATH ${CMAKE_INSTALL_RPATH}${SEP}${OSI_LIB_DIR_F})
   endif()
 
   set (OSI_LIBS mntrosilp)
@@ -526,13 +536,13 @@ if (NOT ("${CLP_INC_DIR_F}" STREQUAL ""))
   set (LINK_OSI 1)
 
   if (${BUILD_SHARED_LIBS})
-    set (CMAKE_INSTALL_RPATH ${CMAKE_INSTALL_RPATH}:${CLP_LIB_DIR_F})
+    set (CMAKE_INSTALL_RPATH ${CMAKE_INSTALL_RPATH}${SEP}${CLP_LIB_DIR_F})
   endif()
 
   set (MNTR_OSI_PC_LIBRARIES)
   if (MNTR_HAVE_PKGCON)
     set (ENV{PKG_CONFIG_PATH}
-      "${CLP_LIB_DIR_F}/pkgconfig:$ENV{PKG_CONFIG_PATH}")
+      "${CLP_LIB_DIR_F}/pkgconfig${SEP}$ENV{PKG_CONFIG_PATH}")
     pkg_check_modules(MNTR_OSI_PC osi-clp)
     message(STATUS ${MSG_HEAD} "Osi CLP libraries: "
       "${MNTR_OSI_PC_LIBRARIES}")
@@ -592,7 +602,7 @@ if (CPX_INC_DIR)
     add_subdirectory(src/engines/Cplex)
     set (LINK_CPX 1)
     if (${BUILD_SHARED_LIBS})
-       set (CMAKE_INSTALL_RPATH ${CMAKE_INSTALL_RPATH}:${CPX_LIB_DIR_F})
+       set (CMAKE_INSTALL_RPATH ${CMAKE_INSTALL_RPATH}${SEP}${CPX_LIB_DIR_F})
     endif()
 
     set (CPX_LIBS mntrcpx "${CPX_LIB_DIR_F}/libcplex.a")
@@ -635,7 +645,7 @@ if (GRB_INC_DIR)
   set (MNTR_OSI_PC3_LIBRARIES)
   if (MNTR_HAVE_PKGCON)
     set (ENV{PKG_CONFIG_PATH}
-      "${OSI_LIB_DIR_F}/pkgconfig:$ENV{PKG_CONFIG_PATH}")
+      "${OSI_LIB_DIR_F}/pkgconfig${SEP}$ENV{PKG_CONFIG_PATH}")
     set (MNTR_OSI_PC3_LIBRARIES)
     pkg_check_modules(MNTR_OSI_PC osi-gurobi)
     message(STATUS ${MSG_HEAD} "Osi Gurobi libraries: "
@@ -719,13 +729,13 @@ if (CBC_INC_DIR_F)
     add_subdirectory(src/engines/Cbc)
     set (LINK_CBC 1)
     if (${BUILD_SHARED_LIBS})
-      set (CMAKE_INSTALL_RPATH ${CMAKE_INSTALL_RPATH}:${CBC_LIB_DIR_F})
+      set (CMAKE_INSTALL_RPATH ${CMAKE_INSTALL_RPATH}${SEP}${CBC_LIB_DIR_F})
     endif()
 
     set (MNTR_CBC_PC_LIBRARIES)
     if (MNTR_HAVE_PKGCON)
        set (ENV{PKG_CONFIG_PATH}
-	       "${CBC_LIB_DIR_F}/pkgconfig:$ENV{PKG_CONFIG_PATH}")
+	       "${CBC_LIB_DIR_F}/pkgconfig${SEP}$ENV{PKG_CONFIG_PATH}")
        pkg_check_modules(MNTR_CBC_PC cbc)
        message(STATUS ${MSG_HEAD} "Cbc libraries: "
 	       "${MNTR_CBC_PC_LIBRARIES}")
@@ -780,7 +790,7 @@ if (QPOASES_INC_DIR)
   if (EXISTS ${QPOASES_LIB_DIR})
     message(STATUS ${MSG_HEAD} "qpOASES library directory exists.")
     add_subdirectory(src/engines/qpOASES)
-    set(CMAKE_INSTALL_RPATH ${CMAKE_INSTALL_RPATH}:${QPOASES_LIB_DIR})
+    set(CMAKE_INSTALL_RPATH ${CMAKE_INSTALL_RPATH}${SEP}${QPOASES_LIB_DIR})
     set (LINK_QPOASES 1)
   else()
     message(FATAL_ERROR " ${MSG_HEAD} "
@@ -843,7 +853,7 @@ if (ASL_INC_DIR_F)
 endif()
 
 if (LINK_ASL)
-  set(ASL_LIBS ${ASL_LIBS} "${ASL_LIB_DIR_F}/amplsolver.a" "dl")
+  set(ASL_LIBS ${ASL_LIBS} "${ASL_LIB_DIR_F}/amplsolver.a" )
   message(STATUS ${MSG_HEAD} "Using AMPL solver interface at"
     ${ASL_INC_DIR_F})
   message(STATUS ${MSG_HEAD} "ASL_LIBS =  ${ASL_LIBS}")
