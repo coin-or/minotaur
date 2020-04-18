@@ -22,8 +22,6 @@
 #include <iomanip>
 #include <iostream>
 
-#include <boost/scoped_array.hpp>
-
 #include "MinotaurConfig.h"
 #include "qpOASESEngine.h"
 #include "Constraint.h"

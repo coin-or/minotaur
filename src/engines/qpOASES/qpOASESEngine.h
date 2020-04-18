@@ -18,8 +18,6 @@
 #ifndef MINOTAURQPOASESENGINE_H
 #define MINOTAURQPOASESENGINE_H
 
-#include <boost/shared_ptr.hpp>
-
 #include "QPEngine.h"
 #include "WarmStart.h"
 
