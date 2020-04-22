@@ -1275,7 +1275,7 @@ Hypergraph::randomEdge(bool &positiveWeight)
 {
   positiveWeight = false;
   SetOfSetOfVars::iterator first_it = E_.begin();  
-  int rix = (int) (drand48()*E_.size());
+  int rix = 0; // (int) (drand48()*E_.size());
   std::advance(first_it, rix);
 
   SetOfSetOfVars::iterator e_it = first_it;

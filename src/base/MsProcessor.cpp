@@ -10,6 +10,7 @@
  * \author Prashant Palkar, IIT Bombay
  */
 #include <cmath> // for INFINITY
+#include <ctime> // for Windows
 #if USE_OPENMP
 #include <omp.h>
 #endif
