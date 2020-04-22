@@ -106,11 +106,13 @@ private:
   
   LinearizationsPtr extraLin_;
   
-  double maxVioPer_;
+  double *maxVioPer_;
   
-  double objVioMul_;
-  
-  std::vector<double > consDual_;
+  double *objVioMul_;
+
+  UInt * nodeDep_;
+
+  std::vector<double > * consDual_; 
 
   bool findC_;
   
@@ -138,6 +140,10 @@ public:
   void setCenter(double * temp);
 
   double * getCenter() {return solC_;};
+  
+  void setConsDual(std::vector<double > *consDual) {consDual_ = consDual;} 
+
+  void setNodeDep(UInt * nodeDep) {nodeDep_ = nodeDep;} 
   
   void findCenter_();
    
@@ -204,6 +210,8 @@ public:
  
   /// Set oNl_ to true and objVar_ when problem objective is nonlinear
   void setObjVar();
+  
+  void setFracNodesLinParam(double *maxVioMul, double *objMul) {maxVioPer_ = maxVioMul; objVioMul_ = objMul;}
 
   void solveCenterNLP_(EnginePtr nlpe);
 
@@ -241,7 +249,7 @@ private:
   void ESHTypeCut_(const double *lpx, CutManager *cutMan);
   
   void objCutAtLpSol_(const double *lpx, CutManager *,
-                                  SeparationStatus *status);
+                                  SeparationStatus *status, bool fracNodes);
 
   /**
    * Solve the NLP relaxation of the MINLP and add linearizations about
@@ -281,8 +289,10 @@ private:
   void addCut_(const double *nlpx, const double *lpx, ConstraintPtr con, 
                CutManager *cutman, SeparationStatus *status);
   
-  void cutsAtLpSol_(const double *lpx, CutManager *cutman,
+ void consCutsAtLpSol_(const double *lpx, CutManager *cutman,
                     SeparationStatus *status);
+
+
 
   /**
    * Check if objective is violated at the LP solution and
