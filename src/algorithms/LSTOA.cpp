@@ -458,6 +458,7 @@ int main(int argc, char* argv[])
       (*it)->writeStats(env->getLogger()->msgStream(LogExtraInfo));
     }
     //writeSol(env, orig_v, pres, solPool->getBestSolution(), status, iface);
+    solPool->writeStats(env->getLogger()->msgStream(LogExtraInfo));
     writeSTOAStatus(env, gap, objLb, objUb, obj_sense, status, wallTimeStart);
    }
 
