@@ -66,6 +66,7 @@ ParQGHandlerAdvance::ParQGHandlerAdvance(EnvPtr env, ProblemPtr minlp,
   extraLin_(0),
   maxVioPer_(0),
   objVioMul_(0),
+  nodeDep_(0),
   consDual_(0),
   findC_(0),
   cutMethod_("ecp"),
@@ -113,6 +114,24 @@ ParQGHandlerAdvance::~ParQGHandlerAdvance()
 }
 
 
+void ParQGHandlerAdvance::dualBasedCons_(ConstSolutionPtr sol)
+{
+  ////  Score based scheme
+  double lambda1 = 0.05, lambda2 = 0.95;
+  const double * consDual = sol->getDualOfCons();
+  //consDual_.clear();
+  //for (CCIter it=nlCons_.begin(); it!=nlCons_.end(); ++it) {
+    //consDual_.push_back(consDual[(*it)->getIndex()]);
+  for (UInt i = 0; i < nlCons_.size(); ++i) {
+    (*consDual_)[i] = lambda1*((*consDual_)[i]) + 
+      lambda2*(consDual[(nlCons_[i])->getIndex()]);
+  }
+
+  return;
+}
+
+
+
 void ParQGHandlerAdvance::addInitLinearX_(const double *x)
 {
   int error=0;
@@ -131,7 +150,7 @@ void ParQGHandlerAdvance::addInitLinearX_(const double *x)
       if (error == 0) {
         cUb = con->getUb();
         ++(stats_->cuts);
-        sstm << "_qgCutRoot_Thr_" << omp_get_thread_num() << stats_->cuts;
+        sstm << "_qgCutRoot_Thr_" << omp_get_thread_num() << "_" << stats_->cuts;
         f = (FunctionPtr) new Function(lf);
         //newcon = rel_->newConstraint(f, -INFINITY, cUb-c, sstm.str());
         rel_->newConstraint(f, -INFINITY, cUb-c, sstm.str());
@@ -153,7 +172,7 @@ void ParQGHandlerAdvance::addInitLinearX_(const double *x)
     act = o->eval(x, &error);
     if (error==0) {
       ++(stats_->cuts);
-      sstm << "_qgObjCutRoot_Thr_" << omp_get_thread_num() << stats_->cuts;
+      sstm << "_qgObjCutRoot_Thr_" << omp_get_thread_num() << "_" << stats_->cuts;
       f = o->getFunction();
       linearAt_(f, act, x, &c, &lf, &error);
       if (error == 0) {
@@ -207,7 +226,8 @@ void ParQGHandlerAdvance::cutIntSol_(const double *lpx, CutManager *cutMan,
     break;
   case (EngineIterationLimit):
     ++(stats_->nlpIL);
-    cutsAtLpSol_(lpx, cutMan, status);
+    objCutAtLpSol_(lpx, cutMan, status, 0);
+    consCutsAtLpSol_(lpx, cutMan, status);
     break;
   case (FailedFeas):
   case (EngineError):
@@ -224,8 +244,8 @@ void ParQGHandlerAdvance::cutIntSol_(const double *lpx, CutManager *cutMan,
     *status = SepaError;
   }
 
+  // happens due to tolerance miss-match among different solvers
  if (*status == SepaContinue) {
-   // happens due to tolerance. No linearizations are generated so prune the node
    *status = SepaPrune;
  }
 
@@ -316,7 +336,7 @@ bool ParQGHandlerAdvance::isFeasible(ConstSolutionPtr sol, RelaxationPtr,
   ConstraintPtr c;
   const double *x = sol->getPrimal();
 
-  for (CCIter it=nlCons_.begin(); it!=nlCons_.end(); ++it) {
+  for (CCIter it = nlCons_.begin(); it != nlCons_.end(); ++it) {
     c = *it;
     act = c->getActivity(x, &error);
     if (error == 0) {
@@ -458,59 +478,68 @@ void ParQGHandlerAdvance::cutToCons_(const double *nlpx, const double *lpx,
 }
 
 
-void ParQGHandlerAdvance::cutsAtLpSol_(const double *lpx, CutManager *cutman,
+void ParQGHandlerAdvance::consCutsAtLpSol_(const double *lpx, CutManager *cutMan,
                              SeparationStatus *status)
 {
-  int error=0;
-  FunctionPtr f;
-  LinearFunctionPtr lf;
-  std::stringstream sstm;
-  ConstraintPtr con, newcon;
-  double c, act, cUb, lpvio;
-
-  for (CCIter it = nlCons_.begin(); it != nlCons_.end(); ++it) {
-    lf = 0;
+  int error = 0;
+  double act, cUb;
+  ConstraintPtr con;
+  UInt temp = stats_->cuts;
+  
+  for (CCIter it=nlCons_.begin(); it!=nlCons_.end(); ++it) {
     con = *it;
-    f = con->getFunction();
     act =  con->getActivity(lpx, &error);
-    if (error == 0) {
+    if (error == 0) { 
       cUb = con->getUb();
       if ((act > cUb + solAbsTol_) &&
-          (cUb == 0 || act > cUb+fabs(cUb)*solRelTol_)) {
-        linearAt_(f, act, lpx, &c, &lf, &error);
-        if (error==0) {
-          lpvio = std::max(lf->eval(lpx)-cUb+c, 0.0);
-          if ((lpvio > solAbsTol_) && ((cUb-c)==0 ||
-                                   (lpvio>fabs(cUb-c)*solRelTol_))) {
-            ++(stats_->cuts);
-            sstm << "_qgCut_Thr_" << omp_get_thread_num() << stats_->cuts;
-            *status = SepaResolve;
-            f = (FunctionPtr) new Function(lf);
-            newcon = rel_->newConstraint(f, -INFINITY, cUb-c, sstm.str());
-            CutPtr cut = (CutPtr) new Cut(minlp_->getNumVars(),f, -INFINITY,
-                                          cUb-c, false,false);
-            cut->setCons(newcon);
-            cutman->addCutToPool(cut);
-            return;
-          } else {
-            delete lf;
-            lf = 0;
-          }
-        }
+        (cUb == 0 || act > cUb+fabs(cUb)*solRelTol_)) {
+        ECPTypeCut_(lpx, cutMan, con, act);
       }
-    }	else {
-      logger_->msgStream(LogError) << me_ << " constraint not defined at" <<
-        " this point. "<<  std::endl;
     }
   }
   
+  if (temp < stats_->cuts) {
+    *status = SepaResolve;
+  }
+  return;
+}
+
+
+void ParQGHandlerAdvance::objCutAtLpSol_(const double *lpx, CutManager * cutman,
+                                  SeparationStatus *status, bool fracNode)
+{
   if (oNl_) {
-    error = 0;
+    int error = 0;
+    FunctionPtr f;
+    LinearFunctionPtr lf;
+    double c, lpvio, act;
+    //double test = 0;
+    ConstraintPtr newcon;
+    std::stringstream sstm;
     ObjectivePtr o = minlp_->getObjective();
 
     act = o->eval(lpx, &error);
     if (error == 0) {
       lpvio = std::max(act-relobj_, 0.0);
+      if ((fracNode == 1) && (*maxVioPer_ > 0) && (lpvio > objATol_)) {
+        //if ((fabs(relobj_) < solAbsTol_) || (fabs(lpvio) < solAbsTol_) || 
+          
+        if (fabs(relobj_) < objATol_) {
+
+          if (lpvio < *objVioMul_) {
+            //test = lpvio;
+            return;
+          }
+        } else {
+          //test = lpvio/fabs(relobj_);
+           if ((lpvio/fabs(relobj_)) < *objVioMul_) {
+            return;
+          }       
+        //std::cout << std:setprecision(6) <<  "lpvio here " << lpvio << " relobj_ " << relobj_ << " ratio " << test << "\n";
+        }
+             
+        //std::cout << "lpvio " << lpvio << " relobj_ " << relobj_ << "\n";
+      }
       if ((lpvio > solAbsTol_) &&
           (relobj_ == 0 || lpvio > fabs(relobj_)*solRelTol_)) {
           lf = 0;
@@ -518,13 +547,12 @@ void ParQGHandlerAdvance::cutsAtLpSol_(const double *lpx, CutManager *cutman,
           linearAt_(f, act, lpx, &c, &lf, &error);
           if (error == 0) {
             lpvio = std::max(c+lf->eval(lpx)-relobj_, 0.0);
-            if ((lpvio > solAbsTol_) && ((relobj_-c) == 0
-                                       || lpvio > fabs(relobj_-c)*solRelTol_)) {
+            if ((lpvio > solAbsTol_) && ((relobj_ -c == 0) || (lpvio > fabs(relobj_ - c)*solRelTol_))) {
               ++(stats_->cuts);
               *status = SepaResolve;
               lf->addTerm(objVar_, -1.0);
               f = (FunctionPtr) new Function(lf);
-              sstm << "_qgObjCut_Thr_" << omp_get_thread_num() << stats_->cuts;
+              sstm << "_qgObjCut_Thr_" << omp_get_thread_num() << "_" << stats_->cuts;
               newcon = rel_->newConstraint(f, -INFINITY, -1.0*c, sstm.str());
               CutPtr cut = (CutPtr) new Cut(minlp_->getNumVars(),f, -INFINITY,
                                             -1.0*c, false,false);
@@ -565,7 +593,7 @@ void ParQGHandlerAdvance::addCut_(const double *nlpx, const double *lpx,
       if ((lpvio>solAbsTol_) &&
           ((cUb-c)==0 || (lpvio>fabs(cUb-c)*solRelTol_))) {
         ++(stats_->cuts);
-        sstm << "_qgCut_Thr_" << omp_get_thread_num() << stats_->cuts;
+        sstm << "_qgCut_Thr_" << omp_get_thread_num() << "_" << stats_->cuts;
         *status = SepaResolve;
         f = (FunctionPtr) new Function(lf);
         newcon = rel_->newConstraint(f, -INFINITY, cUb-c, sstm.str());
@@ -601,8 +629,8 @@ void ParQGHandlerAdvance::cutToObj_(const double *nlpx, const double *lpx,
     act = o->eval(lpx, &error);
     if (error == 0) {
       vio = std::max(act-relobj_, 0.0);
-      if ((vio > solAbsTol_) &&
-          (relobj_ == 0 || vio > fabs(relobj_)*solRelTol_)) {
+      if ((vio > solAbsTol_)
+        && (relobj_ == 0 || vio > fabs(relobj_)*solRelTol_)) {
         act = o->eval(nlpx, &error);
         if (error == 0) {
           f = o->getFunction();
@@ -610,10 +638,10 @@ void ParQGHandlerAdvance::cutToObj_(const double *nlpx, const double *lpx,
           linearAt_(f, act, nlpx, &c, &lf, &error);
           if (error == 0) {
             vio = std::max(c+lf->eval(lpx)-relobj_, 0.0);
-            if ((vio > solAbsTol_) && ((relobj_-c)==0
-                                     || vio > fabs(relobj_-c)*solRelTol_)) {
+            if ((vio > solAbsTol_) && ((relobj_ - c == 0)
+                                     || (vio > fabs(relobj_ - c)*solRelTol_))) {
               ++(stats_->cuts);
-              sstm << "_qgObjCut_Thr_" << omp_get_thread_num() << stats_->cuts;
+              sstm << "_qgObjCut_Thr_" << omp_get_thread_num() << "_" << stats_->cuts;
               lf->addTerm(objVar_, -1.0);
               *status = SepaResolve;
               f = (FunctionPtr) new Function(lf);
@@ -674,11 +702,11 @@ void ParQGHandlerAdvance::nlCons()
   ConstraintPtr c;
   FunctionType fType;
   
-  for (ConstraintConstIterator it=minlp_->consBegin(); it!=minlp_->consEnd();
-       ++it) {
+  for (ConstraintConstIterator it = minlp_->consBegin();
+       it != minlp_->consEnd(); ++it) {
     c = *it;
     fType = c->getFunctionType();
-    if (fType!=Constant && fType!=Linear) {
+    if (fType != Constant && fType != Linear) {
       nlCons_.push_back(c);
     }
   }
@@ -696,19 +724,26 @@ void ParQGHandlerAdvance::relax_(bool *isInf)
   nlCons();
   linearizeObj_();
   initLinear_(isInf);
+  
   bool temp = 0;
   UInt numNlCons = nlCons_.size();
-  maxVioPer_ = env_->getOptions()->findDouble("maxVioPer")->getValue();
-  objVioMul_ = env_->getOptions()->findDouble("objVioMul")->getValue();
+  //maxVioPer_ = env_->getOptions()->findDouble("maxVioPer")->getValue();
+  //objVioMul_ = env_->getOptions()->findDouble("objVioMul")->getValue();
   cutMethod_ = env_->getOptions()->findString("cutMethod")->getValue();
   double rs1 = env_->getOptions()->findDouble("root_linScheme1")->getValue();
   double rg2 = env_->getOptions()->findDouble("root_linGenScheme2_per")->getValue(); //MS: change name in Environment
 
-  if (maxVioPer_ && (cutMethod_ == "esh") && (numNlCons > 0)) {
+  if ((*maxVioPer_ > 0) && (cutMethod_ == "esh") && (numNlCons > 0)) {
     temp = 1;
   }
 
   if (*isInf == false && ((numNlCons > 0) || oNl_)) {
+    if (nlCons_.size() > 0) {
+      *nodeDep_ = 10;    
+    } else {
+      *nodeDep_ = 5;    
+    }
+
     if (rs1 || rg2) {
       extraLin_ = new Linearizations(env_, rel_, minlp_, nlCons_, objVar_,
                                      nlpe_->getSolution());
@@ -719,7 +754,7 @@ void ParQGHandlerAdvance::relax_(bool *isInf)
           findC_ = 1;
           solC_ = extraLin_->getCenter();
           if (solC_ == 0) {
-            maxVioPer_ = 0;
+            *maxVioPer_ = 0;
           }
         }
       }
@@ -729,7 +764,7 @@ void ParQGHandlerAdvance::relax_(bool *isInf)
       findC_ = 1;
       findCenter_();
       if (solC_ == 0) {
-        maxVioPer_ = 0;
+        *maxVioPer_ = 0;
       } else {
         const double *nlpx = nlpe_->getSolution()->getPrimal();
         double l1 = 0.5, l2 = 0.5; //MS: can be parametrized.
@@ -742,10 +777,52 @@ void ParQGHandlerAdvance::relax_(bool *isInf)
    
  //// For dual multiplier based score based rule
  //// Also make appropriate changes in the updateUb_()
-  if (maxVioPer_ && (numNlCons > 0)) {
-    consDual_.resize(numNlCons, 0);
+  if ((*maxVioPer_ > 0) && (numNlCons > 0)) {
+    (*consDual_).resize(numNlCons, 0);
     dualBasedCons_(nlpe_->getSolution());
   }
+  return;
+}
+
+
+void ParQGHandlerAdvance::solveCenterNLP_(EnginePtr nlpe)
+{ 
+  if (solC_) {
+    delete [] solC_;
+    solC_ = 0;
+  }
+  EngineStatus nlpStatus = nlpe->solve();
+
+  switch(nlpStatus) {
+  case (ProvenOptimal):
+  case (ProvenLocalOptimal):
+    {
+      //std::cout << "Center " << std::setprecision(6) << nlpe_->getSolution()->getObjValue() << "\n";
+      //exit(1);
+      UInt numVars = minlp_->getNumVars();
+      const double *temp = nlpe->getSolution()->getPrimal();
+      solC_ = new double[numVars];
+      std::copy(temp, temp+numVars, solC_);
+    }
+    break;
+  case (ProvenUnbounded):
+    break;
+  case (EngineIterationLimit):
+  case (ProvenInfeasible):
+  case (ProvenLocalInfeasible): 
+  case (ProvenObjectiveCutOff):
+  case (FailedFeas):
+  case (EngineError):
+  case (FailedInfeas):
+  case (ProvenFailedCQFeas):
+  case (EngineUnknownStatus):
+  case (ProvenFailedCQInfeas):
+  default:
+    logger_->msgStream(LogError) << me_ << "NLP engine status = "
+      << nlpe_->getStatusString() << std::endl;
+    break;
+  }
+
   return;
 }
 
@@ -925,121 +1002,6 @@ void ParQGHandlerAdvance::setCenter(double * temp)
   return;
 }
 
-void ParQGHandlerAdvance::solveCenterNLP_(EnginePtr nlpe)
-{ 
-  if (solC_) {
-    delete [] solC_;
-    solC_ = 0;
-  }
-  EngineStatus nlpStatus = nlpe->solve();
-
-  switch(nlpStatus) {
-  case (ProvenOptimal):
-  case (ProvenLocalOptimal):
-    {
-      //std::cout << "Center " << std::setprecision(6) << nlpe_->getSolution()->getObjValue() << "\n";
-      //exit(1);
-      UInt numVars = minlp_->getNumVars();
-      const double *temp = nlpe->getSolution()->getPrimal();
-      solC_ = new double[numVars];
-      std::copy(temp, temp+numVars, solC_);
-    }
-    break;
-  case (ProvenUnbounded):
-    break;
-  case (EngineIterationLimit):
-  case (ProvenInfeasible):
-  case (ProvenLocalInfeasible): 
-  case (ProvenObjectiveCutOff):
-  case (FailedFeas):
-  case (EngineError):
-  case (FailedInfeas):
-  case (ProvenFailedCQFeas):
-  case (EngineUnknownStatus):
-  case (ProvenFailedCQInfeas):
-  default:
-    logger_->msgStream(LogError) << me_ << "NLP engine status = "
-      << nlpe_->getStatusString() << std::endl;
-    break;
-  }
-
-  return;
-}
-
-
-bool ParQGHandlerAdvance::isIntFeas_(const double* x)
-{
-  double val;
-  VariablePtr var;
-  VariableType v_type;
-  VariableConstIterator v_iter;
-
-  for (v_iter = rel_->varsBegin(); v_iter != rel_->varsEnd(); ++v_iter) {
-    var = *v_iter;
-    v_type = var->getType();
-    if (v_type == Binary || v_type == Integer) {
-      val = x[var->getIndex()];
-      if (fabs(val - floor(val+0.5)) > intTol_) {
-        return false;
-      }
-    }
-  }
-  return true;
-}
-
-
-void ParQGHandlerAdvance::dualBasedCons_(ConstSolutionPtr sol)
-{
-  ////  Score based scheme
-  double lambda1 = 0.05, lambda2 = 0.95;
-  const double * consDual = sol->getDualOfCons();
-  //consDual_.clear();
-  //for (CCIter it=nlCons_.begin(); it!=nlCons_.end(); ++it) {
-    //consDual_.push_back(consDual[(*it)->getIndex()]);
-  for (UInt i = 0; i < nlCons_.size(); ++i) {
-    consDual_[i] = lambda1*consDual_[i] + 
-      lambda2*(consDual[(nlCons_[i])->getIndex()]);
-  }
-
-  return;
-}
-
-
-void ParQGHandlerAdvance::ECPTypeCut_(const double *lpx, CutManager *cutman, ConstraintPtr con, double act)
-{
-  int error = 0;
-  std::stringstream sstm;
-  ConstraintPtr newcon;
-  LinearFunctionPtr lf = 0;
-  
-  double c, cUb, lpvio;
-  FunctionPtr f = con->getFunction();
-  
-  linearAt_(f, act, lpx, &c, &lf, &error);
-  
-  if (error==0) {
-    cUb = con->getUb();
-    lpvio = std::max(lf->eval(lpx)-cUb+c, 0.0);
-    if ((lpvio > solAbsTol_) && ((cUb-c)==0 ||
-                             (lpvio>fabs(cUb-c)*solRelTol_))) {
-      ++(stats_->cuts);
-      sstm << "_qgCut_" << stats_->cuts;
-      f = (FunctionPtr) new Function(lf);
-      newcon = rel_->newConstraint(f, -INFINITY, cUb-c, sstm.str());
-      CutPtr cut = (CutPtr) new Cut(minlp_->getNumVars(),f, -INFINITY,
-                                    cUb-c, false,false);
-      cut->setCons(newcon);
-      cutman->addCutToPool(cut);
-      return;
-    } else {
-      delete lf;
-      lf = 0;
-    }
-  }
-
-  return;
-}
-
 
 void ParQGHandlerAdvance::separate(ConstSolutionPtr sol, NodePtr node, RelaxationPtr,
                          CutManager *cutMan, SolutionPoolPtr s_pool,
@@ -1047,6 +1009,41 @@ void ParQGHandlerAdvance::separate(ConstSolutionPtr sol, NodePtr node, Relaxatio
                          SeparationStatus *status)
 {
   const double *x = sol->getPrimal();
+ 
+  if ((node->getId() == 0) && oNl_ && (*maxVioPer_ > 0)) {
+    int error = 0;
+    double act, lpvio;
+       
+    relobj_ = (sol) ? sol->getObjValue() : -INFINITY;
+    ObjectivePtr o = minlp_->getObjective();
+    act = o->eval(x, &error);
+    *objVioMul_ = *maxVioPer_;
+    if (error == 0) {
+      lpvio = std::max(act-relobj_, 0.0);
+      if (fabs(relobj_) > solAbsTol_) {
+        *objVioMul_ = lpvio/fabs(relobj_);
+        //std::cout << std::setprecision(6) << "lpvio here " << lpvio << " relobj_ " << relobj_ << " ratio " << lpvio/fabs(relobj_) << "\n";
+      } else {
+        //std::cout << std::setprecision(6) << "lpvio here " << lpvio << " relobj_ " << relobj_ << " ratio " << lpvio << "\n";
+        *objVioMul_ = lpvio;
+      }
+      if (nlCons_.size() == 0 && oNl_) {
+        if (*objVioMul_ > 1000) {
+          *nodeDep_ = floor(*nodeDep_/2);
+        } else if (*objVioMul_ < 0.5) {
+          *nodeDep_ = *nodeDep_*2;   
+          *objVioMul_ = 2*(*objVioMul_);        
+        }
+      } else {
+        if (*objVioMul_ < 0.5) {
+          *objVioMul_ = 2*(*objVioMul_);        
+        }    
+      }
+      //std::cout << "Thr and Initial multiplier " << omp_get_thread_num() << " " <<  *objVioMul_ << "\n";
+    }
+  }
+
+      //std::cout << "Thr and multiplier " << omp_get_thread_num() <<  " " << *objVioMul_ << "\n";
 
   *status = SepaContinue;
 
@@ -1058,113 +1055,63 @@ void ParQGHandlerAdvance::separate(ConstSolutionPtr sol, NodePtr node, Relaxatio
     unfixInts_();            // Unfix integer variables
     cutIntSol_(x, cutMan, s_pool, sol_found, status);
   } else {
-     if (maxVioPer_ > 0) {
+     if (*maxVioPer_ > 0) {
        relobj_ = (sol) ? sol->getObjValue() : -INFINITY;
        maxVio_(sol, node, cutMan, status); // maxViolation
+//# pragma omp critical 
+       //std::cout << "Node, node depth, thread, param nodeDep_ and maxVio" << node->getId() << " " << node->getDepth() << " " 
+         //<< omp_get_thread_num() << " " << *nodeDep_ << " " << *maxVioPer_ << "\n";
     } 
   }
   return;
 }
 
-//// Score based rule
-void ParQGHandlerAdvance::maxVio_(ConstSolutionPtr sol, NodePtr node,
-                               CutManager *cutMan, SeparationStatus *status)
+
+void ParQGHandlerAdvance::ESHTypeCut_(const double *x, CutManager *cutMan)
 {
+  UInt i = 0;
   int error = 0;
   ConstraintPtr c;
-  UInt temp = stats_->cuts;
-  std::vector<double > consAct;
-  const double *x = sol->getPrimal();
-  double act, cUb, vio, totScore = 0, parentScore; 
-  UInt i = 0, vioConsNum = 0, nodeId = node->getId();
+  double act, cUb;
+  std::vector<UInt > consToLin; // cons to add linearizations
+  bool active = false, vio = false, ptFound;
 
-  if (nlCons_.size() > 0) {
-    for (CCIter it = nlCons_.begin(); it != nlCons_.end(); ++it, ++i) {
-      c = *it;
-      act = c->getActivity(x, &error);
-      if (error == 0) {
-        cUb = c->getUb();
-        vio = act - cUb;
-        if (cutMethod_ == "ecp") {
-          consAct.push_back(act);
-        }
-        if ((vio > solAbsTol_) &&
-            (cUb == 0 || vio > fabs(cUb)*solRelTol_)) {
-          ++vioConsNum;
-          vio = act - cUb;
-          if (fabs(cUb) > solAbsTol_) {
-            totScore = totScore + vio*consDual_[i] + vio/fabs(cUb);
-            //std::cout << "act = "<< act << " vio = " << vio << " dual = " << consDual_[i] << " cub = " << cUb << std::endl;
-          } else {
-            totScore = totScore + vio*consDual_[i] + vio;
+  for (CCIter it = nlCons_.begin(); it != nlCons_.end(); ++it, ++i) {
+    c = *it;
+    act = c->getActivity(x, &error);
+    if (error == 0) {
+      cUb = c->getUb();
+      if ((act > cUb + solAbsTol_) &&
+          (cUb == 0 || act > cUb + fabs(cUb)*solRelTol_)) {
+        if (!vio) {
+          vio = true;
+          if (consToLin.size() != 0) {
+            consToLin.clear();
           }
         }
-      } else {
-        if (cutMethod_ == "ecp") {
-          consAct.push_back(INFINITY);
+        consToLin.push_back(i);
+      } else if ((fabs(act-cUb) <= solAbsTol_) ||
+            (cUb != 0 && fabs(act- cUb) <= fabs(cUb)*solRelTol_)) {
+        if (!vio) {
+          if (!active) {
+            active = true;         
+          }
+          consToLin.push_back(i);
         }
       }
     }
-
-    if (vioConsNum > 0) {
-      totScore = totScore/vioConsNum;
-      node->setVioVal(totScore);
-    } else {
-      node->setVioVal(totScore);
-      return;
-    }
-
-    if (nodeId > 0 && int(nodeId) != lastNodeId_) {
-      parentScore = node->getParent()->getVioVal();
-      if (parentScore < INFINITY && totScore < INFINITY) {
-        if (fabs(parentScore) > 1e-3 && fabs(totScore) > 1e-2 
-            && fabs(totScore) > (maxVioPer_*fabs(parentScore))) { //MS: here maxVioPer_ is in times (0.5, 1, 2, 5,..)
-          //std::cout << std::setprecision(6) << "node, score, and parent's score "<< nodeId << " " << totScore << " " << parentScore << "\n";
-          if (cutMethod_ == "ecp") {
-            i = 0;
-            for (CCIter it = nlCons_.begin(); it != nlCons_.end(); ++it, ++i) {
-              c = *it;
-              act = consAct[i];
-              if (act == INFINITY) {
-                continue;
-              }
-              cUb = c->getUb();
-              vio = act - cUb;
-              if ((vio > solAbsTol_) &&
-                    (cUb == 0 || vio > fabs(cUb)*solRelTol_)) {
-                ECPTypeCut_(x, cutMan, c, act);
-              }
-            }
-
-            if (oNl_) {
-              SeparationStatus s = SepaContinue;
-              objCutAtLpSol_(x, cutMan, &s);
-            }
-          } else if (cutMethod_ == "esh") {
-            ESHTypeCut_(x, cutMan);
-          }
-        }
-      }
-    }
-  } else if (oNl_) {
-    SeparationStatus s = SepaContinue;
-    objCutAtLpSol_(x, cutMan, &s);
   }
-
-  stats_->fracCuts = stats_->fracCuts + (stats_->cuts - temp);
-
-  if ((temp < stats_->cuts) && (nodeId != UInt(lastNodeId_))) {
-    *status = SepaResolve;
+  
+  if (vio) {
+    double* xnew = new double[minlp_->getNumVars()];
+    ptFound = boundaryPtForCons_(xnew, x, consToLin);
+    if (ptFound) {
+      genLin_(xnew, consToLin, cutMan);
+    }
+    delete [] xnew;
+  } else if (active) {
+    genLin_(x, consToLin, cutMan);
   }
-
-  lastNodeId_ = nodeId;
-  return;
-}
-
-void ParQGHandlerAdvance::solveNLP_()
-{
-  nlpStatus_ = nlpe_->solve();
-  ++(stats_->nlpS);
   return;
 }
 
@@ -1191,7 +1138,7 @@ void ParQGHandlerAdvance::genLin_(const double *x, std::vector<UInt > vioCons,
         ++(stats_->cuts);
         cUb = con->getUb();
         f = (FunctionPtr) new Function(lf);
-        sstm << "_qgCut_" << stats_->cuts;
+        sstm << "_qgCut_Thr_" << omp_get_thread_num() << "_" << stats_->cuts;
         newcon = rel_->newConstraint(f, -INFINITY, cUb-c, sstm.str());
         CutPtr cut = (CutPtr) new Cut(minlp_->getNumVars(),f, -INFINITY,
                                       cUb-c, false,false);
@@ -1204,10 +1151,11 @@ void ParQGHandlerAdvance::genLin_(const double *x, std::vector<UInt > vioCons,
 
   if (oNl_) {
     SeparationStatus s = SepaContinue;
-    objCutAtLpSol_(x, cutman, &s);
+    objCutAtLpSol_(x, cutman, &s, 1);
   }
   return;
 }
+
 
 bool ParQGHandlerAdvance::boundaryPtForCons_(double* xnew, const double *xOut,
                                      std::vector<UInt > &vioCons)
@@ -1303,109 +1251,180 @@ bool ParQGHandlerAdvance::boundaryPtForCons_(double* xnew, const double *xOut,
   return false;
 }
 
-void ParQGHandlerAdvance::ESHTypeCut_(const double *x, CutManager *cutMan)
+
+//// Score based rule
+void ParQGHandlerAdvance::maxVio_(ConstSolutionPtr sol, NodePtr node,
+                               CutManager *cutMan, SeparationStatus *status)
 {
-  UInt i = 0;
   int error = 0;
   ConstraintPtr c;
-  double act, cUb;
-  std::vector<UInt > consToLin; // cons to add linearizations
-  bool active = false, vio = false, ptFound;
+  std::vector<double > consAct;
+  const double *x = sol->getPrimal();
+  double act, cUb, vio, totScore = 0, parentScore, incr; 
+  UInt i = 0, vioConsNum = 0, nodeId = node->getId(), temp = stats_->cuts;
 
-  for (CCIter it = nlCons_.begin(); it != nlCons_.end(); ++it, ++i) {
-    c = *it;
-    act = c->getActivity(x, &error);
-    if (error == 0) {
-      cUb = c->getUb();
-      if ((act > cUb + solAbsTol_) &&
-          (cUb == 0 || act > cUb + fabs(cUb)*solRelTol_)) {
-        if (!vio) {
-          vio = true;
-          if (consToLin.size() != 0) {
-            consToLin.clear();
+  //if (node->getDepth() >= *nodeDep_ && stats_->fracCuts > 0) {
+  if (node->getDepth() >= *nodeDep_) {
+    return;  
+  } 
+
+  if (nlCons_.size() > 0) {
+    for (CCIter it = nlCons_.begin(); it != nlCons_.end(); ++it, ++i) {
+      c = *it;
+      act = c->getActivity(x, &error);
+      if (error == 0) {
+        cUb = c->getUb();
+        vio = act - cUb;
+        if (cutMethod_ == "ecp") {
+          consAct.push_back(act);
+        }
+        if ((vio > solAbsTol_) &&
+            (cUb == 0 || vio > fabs(cUb)*solRelTol_)) {
+          ++vioConsNum;
+          vio = act - cUb;
+          if (fabs(cUb) > solAbsTol_) {
+            totScore = totScore + vio*(*consDual_)[i] + vio/fabs(cUb);
+            //std::cout << "act = "<< act << " vio = " << vio << " dual = " << consDual_[i] << " cub = " << cUb << std::endl;
+          } else {
+            totScore = totScore + vio*(*consDual_)[i] + vio;
           }
         }
-        consToLin.push_back(i);
-      } else if ((fabs(act-cUb) <= solAbsTol_) ||
-            (cUb != 0 && fabs(act- cUb) <= fabs(cUb)*solRelTol_)) {
-        if (!vio) {
-          if (!active) {
-            active = true;         
-          }
-          consToLin.push_back(i);
+      } else {
+        if (cutMethod_ == "ecp") {
+          consAct.push_back(INFINITY);
         }
       }
     }
-  }
-  
-  if (vio) {
-    double* xnew = new double[minlp_->getNumVars()];
-    ptFound = boundaryPtForCons_(xnew, x, consToLin);
-    if (ptFound) {
-      genLin_(xnew, consToLin, cutMan);
+
+    if (vioConsNum > 0) {
+      totScore = totScore/vioConsNum;
+      node->setVioVal(totScore);
+    } else {
+      node->setVioVal(totScore);
+      return;
     }
-    delete [] xnew;
-  } else if (active) {
-    genLin_(x, consToLin, cutMan);
-  }
-  return;
-}
 
-void ParQGHandlerAdvance::objCutAtLpSol_(const double *lpx, CutManager *cutman,
-                                  SeparationStatus *status)
-{
-  if (oNl_) {
-    int error = 0;
-    FunctionPtr f;
-    LinearFunctionPtr lf;
-    double c, lpvio, act;
-    ConstraintPtr newcon;
-    std::stringstream sstm;
-    ObjectivePtr o = minlp_->getObjective();
-
-    act = o->eval(lpx, &error);
-    if (error == 0) {
-      lpvio = std::max(act-relobj_, 0.0);
-      //std::cout << relobj_ << " " << lpvio << "\n";
-      if (maxVioPer_) {
-        if ((fabs(relobj_) < solAbsTol_) || (fabs(lpvio) < solAbsTol_) || 
-            ((lpvio-relobj_)*100/fabs(relobj_) < objVioMul_)) {
-          return;
-        }
-        //std::cout << "lpvio " << lpvio << " relobj_ " << relobj_ << "\n";
-      }
-      if ((lpvio > solAbsTol_) &&
-          (relobj_ == 0 || lpvio > fabs(relobj_)*solRelTol_)) {
-          lf = 0;
-          f = o->getFunction();
-          linearAt_(f, act, lpx, &c, &lf, &error);
-          if (error == 0) {
-            lpvio = std::max(c+lf->eval(lpx)-relobj_, 0.0);
-            if ((lpvio > solAbsTol_) && ((relobj_-c) == 0
-                                       || lpvio > fabs(relobj_-c)*solRelTol_)) {
-              ++(stats_->cuts);
-              *status = SepaResolve;
-              lf->addTerm(objVar_, -1.0);
-              f = (FunctionPtr) new Function(lf);
-              sstm << "_qgObjCut_Thr_" << omp_get_thread_num() << stats_->cuts;
-              newcon = rel_->newConstraint(f, -INFINITY, -1.0*c, sstm.str());
-              CutPtr cut = (CutPtr) new Cut(minlp_->getNumVars(),f, -INFINITY,
-                                            -1.0*c, false,false);
-              cut->setCons(newcon);
-              cutman->addCutToPool(cut);
-            } else {
-              delete lf;
-              lf = 0;
+    if (nodeId > 0 && int(nodeId) != lastNodeId_) {
+      parentScore = node->getParent()->getVioVal();
+      if (parentScore < INFINITY && totScore < INFINITY) {
+        //if (fabs(parentScore) > 1e-3 && fabs(totScore) > 1e-2 
+            //&& fabs(totScore) > (*maxVioPer_*fabs(parentScore)))  //MS: here *maxVioPer_ is in times (0.5, 1, 2, 5,..)
+          //std::cout << std::setprecision(6) << "node, score, and parent's score "<< nodeId << " " << totScore << " " << parentScore << "\n";
+        if (fabs(totScore) >= (*maxVioPer_*fabs(parentScore + .001))) { //MS: here *maxVioPer_ is in times (0.5, 1, 2, 5,..)
+          if (cutMethod_ == "ecp") {
+            i = 0;
+            for (CCIter it = nlCons_.begin(); it != nlCons_.end(); ++it, ++i) {
+              c = *it;
+              act = consAct[i];
+              if (act == INFINITY) {
+                continue;
+              }
+              cUb = c->getUb();
+              vio = act - cUb;
+              if ((vio > solAbsTol_) &&
+                    (cUb == 0 || vio > fabs(cUb)*solRelTol_)) {
+                ECPTypeCut_(x, cutMan, c, act);
+              }
             }
+
+            if (oNl_) {
+              SeparationStatus s = SepaContinue;
+              objCutAtLpSol_(x, cutMan, &s, 1);
+            }
+          } else if (cutMethod_ == "esh") {
+            ESHTypeCut_(x, cutMan);
           }
         }
-    }	else {
-      logger_->msgStream(LogError) << me_
-        << " objective not defined at this solution point." << std::endl;
+        if (parentScore > solAbsTol_) {
+          incr = std::max(*maxVioPer_, (totScore/(parentScore+0.001)));
+          if (incr > *maxVioPer_) {
+# pragma omp critical (maxVioParam)
+            *maxVioPer_ = ((*maxVioPer_ + incr)/2);
+          }
+        }
+      }
     }
+  } else if (oNl_) {
+    SeparationStatus s = SepaContinue;
+    objCutAtLpSol_(x, cutMan, &s, 1);
   }
+
+  stats_->fracCuts = stats_->fracCuts + (stats_->cuts - temp);
+
+  if ((temp < stats_->cuts) && (nodeId != UInt(lastNodeId_))) {
+    *status = SepaResolve;
+  }
+
+  lastNodeId_ = nodeId;
   return;
 }
+
+
+bool ParQGHandlerAdvance::isIntFeas_(const double* x)
+{
+  double val;
+  VariablePtr var;
+  VariableType v_type;
+  VariableConstIterator v_iter;
+
+  for (v_iter = rel_->varsBegin(); v_iter != rel_->varsEnd(); ++v_iter) {
+    var = *v_iter;
+    v_type = var->getType();
+    if (v_type == Binary || v_type == Integer) {
+      val = x[var->getIndex()];
+      if (fabs(val - floor(val+0.5)) > intTol_) {
+        return false;
+      }
+    }
+  }
+  return true;
+}
+
+
+void ParQGHandlerAdvance::ECPTypeCut_(const double *lpx, CutManager *cutman, ConstraintPtr con, double act)
+{
+  int error = 0;
+  std::stringstream sstm;
+  ConstraintPtr newcon;
+  LinearFunctionPtr lf = 0;
+  
+  double c, cUb, lpvio;
+  FunctionPtr f = con->getFunction();
+  
+  linearAt_(f, act, lpx, &c, &lf, &error);
+  
+  if (error==0) {
+    cUb = con->getUb();
+    lpvio = std::max(lf->eval(lpx)-cUb+c, 0.0);
+    if ((lpvio > solAbsTol_) && ((cUb-c)==0 ||
+                             (lpvio>fabs(cUb-c)*solRelTol_))) {
+      ++(stats_->cuts);
+      //sstm << "_qgCut_" << stats_->cuts;
+      sstm << "_qgCut_Thr_" << omp_get_thread_num() << "_" << stats_->cuts;
+      f = (FunctionPtr) new Function(lf);
+      newcon = rel_->newConstraint(f, -INFINITY, cUb-c, sstm.str());
+      CutPtr cut = (CutPtr) new Cut(minlp_->getNumVars(),f, -INFINITY,
+                                    cUb-c, false,false);
+      cut->setCons(newcon);
+      cutman->addCutToPool(cut);
+      return;
+    } else {
+      delete lf;
+      lf = 0;
+    }
+  }
+
+  return;
+}
+
+
+void ParQGHandlerAdvance::solveNLP_()
+{
+  nlpStatus_ = nlpe_->solve();
+  ++(stats_->nlpS);
+  return;
+}
+
 
 void ParQGHandlerAdvance::unfixInts_()
 {
@@ -1423,18 +1442,20 @@ void ParQGHandlerAdvance::unfixInts_()
 void ParQGHandlerAdvance::updateUb_(SolutionPoolPtr s_pool, double nlpval,
                           bool *sol_found)
 {
-  double bestval = s_pool->getBestSolutionValue();
+//# pragma omp critical (maxVioParam)
+  //{
+    double bestval = s_pool->getBestSolutionValue();
+    if ((bestval - objATol_ > nlpval) ||
+          (bestval != 0 && (bestval - fabs(bestval)*objRTol_ > nlpval))) {
+      const double *x = nlpe_->getSolution()->getPrimal();
+      s_pool->addSolution(x, nlpval);
+      *sol_found = true;
 
-  if ((bestval - objATol_ > nlpval) ||
-        (bestval != 0 && (bestval - fabs(bestval)*objRTol_ > nlpval))) {
-    const double *x = nlpe_->getSolution()->getPrimal();
-    s_pool->addSolution(x, nlpval);
-    *sol_found = true;
-
-    if (maxVioPer_ && (nlCons_.size() > 0)) {
-      dualBasedCons_(nlpe_->getSolution());
+      if ((*maxVioPer_ > 0) && (nlCons_.size() > 0)) {
+        dualBasedCons_(nlpe_->getSolution());
+      }
     }
-  }
+  //}
   return;
 }
 

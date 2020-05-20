@@ -12,8 +12,6 @@
 #ifndef MINOTAURBQPDENGINE_H
 #define MINOTAURBQPDENGINE_H
 
-#include <boost/shared_ptr.hpp>
-
 #include "QPEngine.h"
 
 namespace Minotaur {

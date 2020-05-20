@@ -853,7 +853,7 @@ if (ASL_INC_DIR_F)
 endif()
 
 if (LINK_ASL)
-  set(ASL_LIBS ${ASL_LIBS} "${ASL_LIB_DIR_F}/amplsolver.a" )
+  set(ASL_LIBS ${ASL_LIBS} "${ASL_LIB_DIR_F}/amplsolver.a" ${CMAKE_DL_LIBS})
   message(STATUS ${MSG_HEAD} "Using AMPL solver interface at"
     ${ASL_INC_DIR_F})
   message(STATUS ${MSG_HEAD} "ASL_LIBS =  ${ASL_LIBS}")

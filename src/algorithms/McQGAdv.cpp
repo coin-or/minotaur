@@ -70,7 +70,7 @@ ParQGBranchAndBound* createParBab(EnvPtr env, UInt numThreads, NodePtr &node,
                                   ParPCBProcessorPtr nodePrcssr[],
                                   ParNodeIncRelaxerPtr parNodeRlxr[],
                                   HandlerVector handlersCopy[],
-                                  LPEnginePtr lpeCopy[], EnginePtr eCopy[])
+                                  LPEnginePtr lpeCopy[], EnginePtr eCopy[], double *maxVioMul, double *objMul, std::vector<double > * consDual, UInt * nodeDep)
 {
   ParQGBranchAndBound *bab = new ParQGBranchAndBound(env, pCopy[0]);
   const std::string me("mcqgadv main: ");
@@ -96,6 +96,9 @@ ParQGBranchAndBound* createParBab(EnvPtr env, UInt numThreads, NodePtr &node,
     if (i>0) {
       qg_hand->nlCons();
     }
+    qg_hand->setNodeDep(nodeDep);
+    qg_hand->setConsDual(consDual);
+    qg_hand->setFracNodesLinParam(maxVioMul, objMul);
     handlersCopy[i].push_back(qg_hand);
     assert(qg_hand);
 
@@ -614,7 +617,9 @@ int main(int argc, char** argv)
   VarVector *orig_v=0;
   HandlerVector handlers;
   int err = 0;
-  double obj_sense = 1.0;
+  double obj_sense = 1.0, maxVioMul = 0, objMul = 0;
+  std::vector<double > consDual;
+  UInt nodeDep; 
   
   UInt numThreads = 0;
   ParPCBProcessorPtr *nodePrcssr = 0; 
@@ -717,8 +722,9 @@ int main(int argc, char** argv)
       << "Number of threads = " << numThreads 
       << ". Requires a thread-safe LP and NLP solver." << std::endl;
   }
+  maxVioMul = env->getOptions()->findDouble("maxVioPer")->getValue();
   parbab = createParBab(env, numThreads, node, relCopy, pCopy, nodePrcssr,
-                        parNodeRlxr, handlersCopy, lpeCopy, eCopy);
+                        parNodeRlxr, handlersCopy, lpeCopy, eCopy, &maxVioMul, &objMul, &consDual, &nodeDep);
   parbab->parsolve(parNodeRlxr, nodePrcssr, numThreads);
   
   //Take care of important bnb statistics
