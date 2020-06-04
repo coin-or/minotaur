@@ -6,7 +6,7 @@
  
 /**
  * \file MultiSolHeur.cpp
- * \brief Define the MultiSolHeur Pump class for generating a feasible solution 
+ * \brief Define the MultiSolHeur class for generating a feasible solution 
  * using NLP and MILP solves for MINLPs.
  * \author Meenarli Sharma, Prashant Palkar, Indian Institute of Technology
  * Bombay
@@ -50,8 +50,11 @@ MultiSolHeur::MultiSolHeur()
   nlpe_(EnginePtr()),
   milpe_(MILPEnginePtr()),
   logger_(LoggerPtr()),   // NULL
+  ub_(INFINITY),
+  lb_(-INFINITY),
+  objVar_(VariablePtr()),
   bestSol_(SolutionPtr()),   // NULL
-  bestObjVal_(INFINITY),
+  newSolFound_(false),
   nlCons_(0),
   xC_(NULL),
   stats_(NULL),
@@ -73,8 +76,11 @@ MultiSolHeur::MultiSolHeur(EnvPtr env, ProblemPtr p, EnginePtr nlpe,
   miqp_(ProblemPtr()),
   nlpe_(nlpe),
   milpe_(milpe),
+  ub_(INFINITY),
+  lb_(-INFINITY),
+  objVar_(VariablePtr()),
   bestSol_(SolutionPtr()),   // NULL
-  bestObjVal_(INFINITY),
+  newSolFound_(false),
   nlCons_(0),
   xC_(NULL)
 {
@@ -122,41 +128,52 @@ MultiSolHeur::~MultiSolHeur()
 }
 
 
-void MultiSolHeur::improveSol_()
+void MultiSolHeur::improveSol_(const double * x0)
 {
-  int error = 0;
-  VariablePtr v;
-  FunctionPtr fnewc;
-  int n = miqp_->getNumVars();
-  double *a = new double[n];
-  const double *x = bestSol_->getPrimal();
-  LinearFunctionPtr lfc = (LinearFunctionPtr) new LinearFunction();
-  FunctionPtr f = minlp_->getObjective()->getFunction();
- 
-  std::fill(a, a+n, 0.);
-  f->evalGradient(x, a, &error);
-
-  // Modify objective 
-  if(error == 0) {
-    miqp_->removeObjective();
-    for (VariableConstIterator vit=miqp_->varsBegin(); vit!=miqp_->varsEnd()-1;
-         ++vit) {
-      v = *vit;
-      lfc->addTerm(v, a[v->getIndex()]);
-    }
-    fnewc = (FunctionPtr) new Function(lfc);
-    miqp_->newObjective(fnewc, 0.0, Minimize);
-
-    // Define TR
-    relMods_(x);
-  
-    ++(stats_->milpS);
-    milpe_->load(miqp_);        
-
-    undoMods_();
+  double gapA = ub_ - lb_, gapR = 0;
+  if (fabs(ub_) != 0) {
+    gapR = (ub_-lb_)/fabs(ub_);
   }
+  while (gapA > objATol_ && gapR > objRTol_) {
+    if (newSolFound_) {
+      //FunctionPtr f = newObj_(x0, bestSol_->getPrimal());
+      newSolFound_ = false;
+    }
   
-  delete [] a;
+  }
+  //int error = 0;
+  //VariablePtr v;
+  //FunctionPtr fnewc;
+  //int n = miqp_->getNumVars();
+  //double *a = new double[n];
+  //const double *x = bestSol_->getPrimal();
+  //LinearFunctionPtr lfc = (LinearFunctionPtr) new LinearFunction();
+  //FunctionPtr f = minlp_->getObjective()->getFunction();
+ 
+  //std::fill(a, a+n, 0.);
+  //f->evalGradient(x, a, &error);
+
+  //// Modify objective 
+  //if(error == 0) {
+    //miqp_->removeObjective();
+    //for (VariableConstIterator vit=miqp_->varsBegin(); vit!=miqp_->varsEnd()-1;
+         //++vit) {
+      //v = *vit;
+      //lfc->addTerm(v, a[v->getIndex()]);
+    //}
+    //fnewc = (FunctionPtr) new Function(lfc);
+    //miqp_->newObjective(fnewc, 0.0, Minimize);
+
+    //// Define TR
+    //relMods_(x);
+  
+    //++(stats_->milpS);
+    //milpe_->load(miqp_);        
+
+    //undoMods_();
+  //}
+  
+  //delete [] a;
   return;
 }
 
@@ -185,25 +202,19 @@ void MultiSolHeur::solveAtSol(ConstSolutionPtr sol, RelaxationPtr rel,
     const double *x0 = sol->getPrimal();
     newMIQP_(rel, x0, sPool);
     if (bestSol_) {
-      improveSol_();    
+      improveSol_(x0);    
     }
   }
 }
 
-/* Heuristic exploring integer points around x^0 with same objective as the 
- * original problem
- */
-void MultiSolHeur::newMIQP_(RelaxationPtr rel, const double * x0,
-                            SolutionPoolPtr sPool)
+FunctionPtr MultiSolHeur::newObj_(const double * x0, const double * x)
 {
   UInt vidx;
   VariablePtr v;
   bool hasInt = 0;
   double c1 = 0, c2 = 0, c3 = 0, c;
-  miqp_ = rel->clone(env_);
   LinearFunctionPtr lf = (LinearFunctionPtr) new LinearFunction();
   QuadraticFunctionPtr qf = (QuadraticFunctionPtr) new QuadraticFunction();
-  ConstVariablePtr newVPtr = miqp_->newVariable(0, 1, Continuous, "lambda", VarHand);
   for (VariableConstIterator v_iter=miqp_->varsBegin(); 
        v_iter!=miqp_->varsEnd(); ++v_iter) {
     v = *v_iter;
@@ -211,21 +222,63 @@ void MultiSolHeur::newMIQP_(RelaxationPtr rel, const double * x0,
       hasInt = 1;
       vidx = v->getIndex();
       v->setFunType_(Nonlinear);
-      c1 = x0[vidx] - xC_[vidx];
+      c1 = x0[vidx] - x[vidx];
       c2 = c2 + c1*c1;
-      c3 = c3 + c1*xC_[vidx];
-      c = -2*xC_[vidx];
+      c3 = c3 + c1*x[vidx];
+      c = -2*x[vidx];
       lf->addTerm(v,c);
       qf->addTerm(v, v, 1);
       c = -2*c1;
-      qf->addTerm(v, newVPtr, c);
+      qf->addTerm(v, objVar_, c);
     }
   }
   if (hasInt) {
     c3 = 2*c3;
-    lf->addTerm(newVPtr, c3);
-    qf->addTerm(newVPtr, newVPtr, c2);
+    lf->addTerm(objVar_, c3);
+    qf->addTerm(objVar_, objVar_, c2);
     FunctionPtr f = (FunctionPtr) new Function(lf, qf);
+    return f;
+  }
+  return 0;
+}
+/* Heuristic exploring integer points around x^0 with same objective as the 
+ * original problem
+ */
+void MultiSolHeur::newMIQP_(RelaxationPtr rel, const double * x0,
+                            SolutionPoolPtr sPool)
+{
+  //UInt vidx;
+  //VariablePtr v;
+  //bool hasInt = 0;
+  //double c1 = 0, c2 = 0, c3 = 0, c;
+  miqp_ = rel->clone(env_);
+  //LinearFunctionPtr lf = (LinearFunctionPtr) new LinearFunction();
+  //QuadraticFunctionPtr qf = (QuadraticFunctionPtr) new QuadraticFunction();
+  VariablePtr newVPtr = miqp_->newVariable(0, 1, Continuous, "lambda", VarHand);
+  objVar_ = newVPtr;
+  FunctionPtr f = newObj_(x0, xC_);
+  //for (VariableConstIterator v_iter=miqp_->varsBegin(); 
+       //v_iter!=miqp_->varsEnd(); ++v_iter) {
+    //v = *v_iter;
+    //if (v->getType() == Binary || v->getType() == Integer) {
+      //hasInt = 1;
+      //vidx = v->getIndex();
+      //v->setFunType_(Nonlinear);
+      //c1 = x0[vidx] - xC_[vidx];
+      //c2 = c2 + c1*c1;
+      //c3 = c3 + c1*xC_[vidx];
+      //c = -2*xC_[vidx];
+      //lf->addTerm(v,c);
+      //qf->addTerm(v, v, 1);
+      //c = -2*c1;
+      //qf->addTerm(v, newVPtr, c);
+    //}
+  //}
+  if (f) {
+    //c3 = 2*c3;
+    //lf->addTerm(newVPtr, c3);
+    //qf->addTerm(newVPtr, newVPtr, c2);
+    //FunctionPtr f = (FunctionPtr) new Function(lf, qf);
     miqp_->removeObjective();
     miqp_->newObjective(f, 0.0, Minimize);
     miqp_->prepareForSolve();
@@ -236,7 +289,6 @@ void MultiSolHeur::newMIQP_(RelaxationPtr rel, const double * x0,
     //std::cout << "MIQP \n";
     //miqp_->write(std::cout);
     //exit(1);
-
 
     itrMilpSolve_(sPool);
 
@@ -301,7 +353,7 @@ void MultiSolHeur::itrMilpSolve_(SolutionPoolPtr sPool)
       //load problem 
       double oldBest = sPool->getBestSolutionValue();
       nlpe_->load(minlp_);
-      bestObjVal_ = oldBest;
+      ub_ = oldBest;
       ConstSolutionPtr milpSol;
       int numSols = milpe_->getNumSols();
       /// Infeasible solutions are stored in a vector. 
@@ -309,7 +361,8 @@ void MultiSolHeur::itrMilpSolve_(SolutionPoolPtr sPool)
       std::vector<SolutionPtr> limSols;
       for (int i=-1; i < numSols-1; ++i) {
         milpSol = milpe_->getSolutionFromPool(i);
-        findSol_(milpSol, sPool, oldBest, isTerm, infSols, limSols);
+        findSol_(milpSol, sPool, isTerm, infSols, limSols);
+        //findSol_(milpSol, sPool, oldBest, isTerm, infSols, limSols);
         if (isTerm) {
           break;
         }
@@ -970,7 +1023,8 @@ void MultiSolHeur::solveNLP_()
 
 
 void MultiSolHeur::findSol_(ConstSolutionPtr sol, SolutionPoolPtr sPool,
-                            double oldBest, bool &isTerm,
+                            bool &isTerm,
+                            //double oldBest, bool &isTerm,
                             std::vector<SolutionPtr> & infSols,
                             std::vector<SolutionPtr> & limSols)
 {
@@ -985,14 +1039,14 @@ void MultiSolHeur::findSol_(ConstSolutionPtr sol, SolutionPoolPtr sPool,
   case (ProvenOptimal):
   case (ProvenLocalOptimal):
     {
-
       double nlpval = nlpe_->getSolutionValue();
-      if ((bestObjVal_ - objATol_ > nlpval) ||
-          (bestObjVal_ != 0 && (bestObjVal_ - fabs(bestObjVal_)*objRTol_ > nlpval))) {
+      if ((ub_ - objATol_ > nlpval) ||
+          (ub_ != 0 && (ub_ - fabs(ub_)*objRTol_ > nlpval))) {
         if (bestSol_ ) {
           delete bestSol_;
         } 
-        bestObjVal_ = nlpval;
+        ub_ = nlpval;
+        newSolFound_ = true;
         bestSol_ = new Solution(nlpe_->getSolution());
         std::cout << "Best solution value: " << nlpval << "\n";
       }
@@ -1152,9 +1206,9 @@ void MultiSolHeur::writeStats(std::ostream &out) const
     << std::endl
     << me_ << "total time taken             = " << stats_->time
     << std::endl;
-  if (bestObjVal_ < INFINITY) {
+  if (ub_ < INFINITY) {
     out << me_ << "best objective value         = " 
-      << bestObjVal_ << std::endl;
+      << ub_ << std::endl;
   }
 }
 // Local Variables: 

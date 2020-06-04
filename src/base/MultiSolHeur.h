@@ -82,7 +82,17 @@ namespace Minotaur {
     /// Pointer to the logger
     LoggerPtr logger_;
 
+    /// Best known upper bound
+    double ub_;
+    
+    /// Best known lower bound
+    double lb_;
+  
+    VariablePtr objVar_;
+
     SolutionPtr bestSol_;
+  
+    bool newSolFound_;
 
     /// Tolerance for a number to be considered as an integer
     double intTol_;
@@ -94,8 +104,6 @@ namespace Minotaur {
     double objRTol_;
     
     double solRTol_;
-
-    double bestObjVal_;    /// Best objective value obtained
 
     /// Vector of nonlinear constraints.
     std::vector<ConstraintPtr> nlCons_;
@@ -125,6 +133,8 @@ namespace Minotaur {
 
     void linearAt_(FunctionPtr f, double fval, const double *x,
                           double *c, LinearFunctionPtr *lf, int *error);
+
+    FunctionPtr newObj_(const double * x0, const double * x);
     /**
    
      * Fix integer constrained variables to integer values in x. Called
@@ -141,14 +151,15 @@ namespace Minotaur {
     void findCenter_();
 
     void findSol_(ConstSolutionPtr sol, SolutionPoolPtr sPool,
-                            double oldBest, bool &isTerm,
+                            bool &isTerm,
+                            //double oldBest, bool &isTerm,
                             std::vector<SolutionPtr> & infSols,
                             std::vector<SolutionPtr> & limSols);
     void ifOnlyNonlinObj_();  
 
     void ifNonlinCons_();
     
-    void improveSol_();
+    void improveSol_(const double * x0);
 
     void itrMilpSolve_(SolutionPoolPtr sPool);
 
