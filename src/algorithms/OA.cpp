@@ -637,6 +637,7 @@ int main(int argc, char* argv[])
     }
     //MS: Other solve status and right way of writing them
     //writeSol(env, orig_v, pres, solPool->getBestSolution(), solveStatus, iface);
+    solPool->writeStats(env->getLogger()->msgStream(LogExtraInfo));
     writeOAStatus(env, gap, objLb, objUb, obj_sense, status, iterNum, time,
                   totSepTime, solsPerIter, totNumSols);
   }
