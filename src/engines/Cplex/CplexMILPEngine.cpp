@@ -26,6 +26,7 @@
 #include "Objective.h"
 #include "Option.h"
 #include "Problem.h"
+#include "QuadraticFunction.h"
 #include "Relaxation.h"
 #include "Solution.h"
 #include "Timer.h"
@@ -332,6 +333,12 @@ void CplexMILPEngine::load(ProblemPtr problem)
   VariableGroupConstIterator it;
   
   LinearFunctionPtr lin;
+  QuadraticFunctionPtr quad;
+  double qcoeff;
+  CPXNNZ *qmatbeg = NULL;
+  CPXDIM *qmatcnt = NULL;
+  CPXDIM *qmatind = NULL;
+  double *qmatval = NULL;
 
   /* Initialize the CPLEX environment */
   cpxenv_ = CPXXopenCPLEX (&cpxstatus_);
@@ -473,6 +480,46 @@ void CplexMILPEngine::load(ProblemPtr problem)
        << std::endl;
      goto TERMINATE;
   }
+
+  /* Set up the quadratic objective matrix (Q) */
+  /* (assuming that there are very few nonzeros) */
+  quad = problem->getObjective()->getQuadraticFunction();
+  if (quad) {
+    qmatbeg = new CPXNNZ[numvars];
+    qmatcnt = new CPXDIM[numvars];
+    std::fill(qmatcnt, qmatcnt+numvars, numvars);
+    qmatind = new int[numvars*numvars];
+    qmatval = new double[numvars*numvars];
+    std::fill(qmatval, qmatval+numvars*numvars, 0);
+    for (i=0; i < numvars; ++i) {
+      qmatbeg[i] = i*numvars;
+    }
+    for (i=0; i < numvars*numvars; ++i) {
+      qmatind[i] = i;
+    }
+
+    UInt xfind, xsind;
+    for (VariablePairGroupConstIterator qit = quad->begin(); qit != quad->end(); ++qit) {
+      xfind = (qit->first.first)->getIndex();
+      xsind = (qit->first.second)->getIndex();
+      qcoeff = qit->second;
+
+      if (xfind == xsind) {
+        qmatval[xfind*numvars] = 2*qcoeff;
+      }
+      else {
+        qmatval[xfind*numvars + xsind -1] = qcoeff;
+        qmatval[xsind*numvars + xfind -1] = qcoeff;
+      }
+    }
+    cpxstatus_ = CPXXcopyquad (cpxenv_, cpxlp_, qmatbeg, qmatcnt, qmatind, qmatval);
+    if (cpxstatus_) {
+       logger_->msgStream(LogError) << me_ << "Failed to copy objective quadratic matrix."
+         << std::endl;
+       goto TERMINATE;
+    }
+ }
+
   
   if (sol_) {
     delete sol_;
@@ -509,6 +556,11 @@ TERMINATE:
   delete [] conrange;
   delete [] sense;
   delete [] vartype;
+  delete [] qmatbeg;
+  delete [] qmatcnt;
+  delete [] qmatind;
+  delete [] qmatval;
+
 
   //problem->setEngine(this);
 
