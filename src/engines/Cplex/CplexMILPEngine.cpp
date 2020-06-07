@@ -495,7 +495,7 @@ void CplexMILPEngine::load(ProblemPtr problem)
       qmatbeg[i] = i*numvars;
     }
     for (i=0; i < numvars*numvars; ++i) {
-      qmatind[i] = i;
+      qmatind[i] = i%numvars;
     }
 
     UInt xfind, xsind;
@@ -505,11 +505,10 @@ void CplexMILPEngine::load(ProblemPtr problem)
       qcoeff = qit->second;
 
       if (xfind == xsind) {
-        qmatval[xfind*numvars] = 2*qcoeff;
-      }
-      else {
-        qmatval[xfind*numvars + xsind -1] = qcoeff;
-        qmatval[xsind*numvars + xfind -1] = qcoeff;
+        qmatval[xfind*(1+numvars)] = 2*qcoeff;
+      } else {
+        qmatval[xfind*numvars + xsind] = qcoeff;
+        qmatval[xsind*numvars + xfind] = qcoeff;
       }
     }
     cpxstatus_ = CPXXcopyquad (cpxenv_, cpxlp_, qmatbeg, qmatcnt, qmatind, qmatval);
