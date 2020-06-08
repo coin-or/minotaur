@@ -339,6 +339,7 @@ void CplexMILPEngine::load(ProblemPtr problem)
   CPXDIM *qmatcnt = NULL;
   CPXDIM *qmatind = NULL;
   double *qmatval = NULL;
+  double objConst = problem->getObjective()->getConstant();
 
   /* Initialize the CPLEX environment */
   cpxenv_ = CPXXopenCPLEX (&cpxstatus_);
@@ -517,8 +518,17 @@ void CplexMILPEngine::load(ProblemPtr problem)
          << std::endl;
        goto TERMINATE;
     }
- }
+  }
 
+  /* Add objective constant */
+  if (objConst) {
+    cpxstatus_ = CPXXchgobjoffset (cpxenv_, cpxlp_, objConst);
+    if (cpxstatus_) {
+       logger_->msgStream(LogError) << me_ << "Failed to add objective constant."
+         << std::endl;
+       goto TERMINATE;
+    }
+  }
   
   if (sol_) {
     delete sol_;
