@@ -15,8 +15,8 @@
 
 #include <map>
 #include <fstream>
-using std::ofstream;
 #include <string>
+#include <unordered_map> 
 
 #include "Timer.h"
 #include "Types.h"
@@ -33,10 +33,6 @@ typedef PerspCon* PerspConPtr;
 typedef const PerspCon* ConstPerspConPtr;
 
 
-/**
- * Handler for convex constraints amenable to perspective
- * reformulation. It considers nonlinear constraints in the form f(x) <= b.
- */
 class PerspCon {
 public:
   /// Default constructor.
@@ -52,85 +48,81 @@ public:
    * Checks if the variables in a constraint are bounded by given binary
    * variable binvar.
    */ 
-  bool boundBinVar(ConstraintPtr cons, VariablePtr& binvar);
+  bool boundBinVar();
 
   /*
    * Checks if variables in the linear part of a constraint are bounded by
    * the given binary variable.
    */ 
 
- void checkLVars(ConstraintPtr cons, VariablePtr binvar,
-                                 bool* lboundsok,
-                                 VariableGroup *lVarFixVal,
-                                 VariableGroup *nlVarFixVal);
+  void checkLVars(bool *boundsok, VariablePtr var, 
+                          std::unordered_map<UInt,double> *varsInfo);
 
   /*
    * Checks if variables in the nonlinear part of a constraint are bounded by 
    * a given binary variable.
    */ 
-  void checkNVars(ConstraintPtr cons, VariablePtr binvar,
-                                 bool* boundsok,
-                                 VariableGroup *nlVarFixVal);
 
+ void checkNVars(bool *boundsok, VariablePtr var, 
+                          std::unordered_map<UInt,double> *varsInfo);
+
+ void searchVarIdx(VariablePtr var, bool *boundsok,  
+                          std::unordered_map<UInt,double> *varsInfo);
 
   /// Checks if a variable is bounded by a given binary variable.
-  double checkVarBounds(VariablePtr var, VariablePtr binvar,
+  double checkVarBounds(VariablePtr var,
                         bool* varbounded);
   
   /*
    * Checks if a binary variable is present in the nonlinear part of the
    * given constraint. 
    */
-  bool checkVarTypes(ConstraintPtr cons, VarSetPtr binaries);
-  
+  bool findBinVarsInCons(std::vector<VariablePtr>* binaries);
+
   /// Writes information related to perspective amenable constraints. 
   void displayInfo();
 
-  /// Check if a constraint is amenable to PR.
-  void evalConstraint(ConstraintPtr cons);
+  /// Checks if a constraint is amenable to PR.
+  //void evalConstraint(ConstraintPtr cons);
+  void evalConstraint();
 
-  /// Generate list of constraints amenable to PR.
+  /// Generates list of constraints amenable to PR.
   void findPRCons();
 
 
-  /// Return total number of PR.
-  UInt getNumPersp() const {return cons_.size();}
+  /// Returns total number of PR.
+  UInt getNumPersp() const {return consVec_.size();}
 
   /* 
-   * Return vector containing binary variables associated with constraints 
+   * Returns vector containing binary variables associated with constraints 
    * amenable to PR.
    */ 
-  std::vector<VariablePtr> getPRBinVar() const {return binvar_;}
+  std::vector<VariablePtr> getPRBinVar() const {return bVarVec_;}
 
   /// Returns a vector containing constraints amenable to PR.
-  std::vector<ConstraintPtr> getPRCons() const {return cons_;}
+  std::vector<ConstraintPtr> getPRCons() const {return consVec_;}
   
-  /// Return vector containing structure types of constraints amenable to PR.
-  std::vector<int> getPRStruct() const {return sType_;}
+  /// Returns vector containing structure types of constraints amenable to PR.
+  std::vector<UInt> getPRStruct() const {return sType_;}
    
   /*
-   * Return 1 if problem has at least one constraint amenable to PR,
+   * Returns 1 if problem has at least one constraint amenable to PR,
    * otherwise 0.
    */  
   bool getStatus();
 
-  /*
-   * Return 1 and value to which variable is fixed for z=0, otherwise 0
-   */ 
-  bool ifFixed(double coeffV, double lb, double ub, double* rBnd, 
-                             std::vector<double>* xub, std::vector<double>* xlb);
 
-  void populate (ConstraintPtr cons, VariablePtr binvar, VariableGroup nlVarFixVal,
-               VariableGroup lVarFixVal);
+
+  void populate(std::unordered_map<UInt,double> varsInfo);
   /* Returns a vector containing values to which variables in the 
    * linear part of the constraints amenable to PR are fixed to.
    */
-  std::vector<VariableGroup > getXLV() const {return lVarFixVal_;}
+  //std::vector<VariableGroup > getXLV() const {return lVarFixVal_;}
  
   /* Returns a vector containing values to which variables in the 
    * nonlinear part of the constraints amenable to PR are fixed to.
    */
-  std::vector<VariableGroup > getXNV() const {return nlVarFixVal_;}
+  //std::vector<VariableGroup > getXNV() const {return nlVarFixVal_;}
 
   private:
   
@@ -143,22 +135,28 @@ public:
   /// Log
   LoggerPtr logger_;
 
+  double absTol_;
+
   /// Timer
   //Timer *timer_;
 
   /// For log.
   static const std::string me_;
+  
+  ConstraintPtr cons_;
+  
+  VariablePtr bVar_;
 
   /// Vector of struture types of constraints amenable to PR.
-  std::vector<int> sType_;
+  std::vector<UInt> sType_;
 
   /// Vector of perspective constraint pointers
-  std::vector<ConstraintPtr> cons_;
+  std::vector<ConstraintPtr> consVec_;
   
   /* Vector of pointers to binary variables associated with constraints
    * amenable to PR.
    */
-  std::vector<VariablePtr> binvar_;
+  std::vector<VariablePtr> bVarVec_;
 
   /// Vector of pointers to binary variable that are fixed to 1
   //std::vector<VariablePtr> fixbvar_;
@@ -166,12 +164,13 @@ public:
   /* Vector containing values to which variables in the 
    * nonlinear part of a constraint amenable to PR are fixed to.
    */ 
-  std::vector<VariableGroup> nlVarFixVal_;
+  //std::vector<VariableGroup> nlVarFixVal_;
 
   /* Returns a vector containing values to which variables in the 
-   * linear part (and not in nonlinear part) of a constraint amenable to PR are fixed to.
+   * linear part of a constraint amenable to PR are fixed to.
    */
-  std::vector<VariableGroup> lVarFixVal_;
+  //std::vector<VariableGroup> lVarFixVal_;
+  std::vector<std::unordered_map<UInt,double>> varsInfoVec_;
 }; 
 
 }
