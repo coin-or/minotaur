@@ -253,13 +253,20 @@ PresolverPtr createPres(EnvPtr env, ProblemPtr p, size_t ndefs,
     }
 
     if (!p->isLinear() &&
-         (p->isQP() || p->isQuadratic()) &&
-         true==env->getOptions()->findBool("cgtoqf")->getValue()) {
-      QuadHandlerPtr qhand = (QuadHandlerPtr) new QuadHandler(env, p);
-      handlers.push_back(qhand);
+         (p->isQP() || p->isQuadratic())) {
+      if (true==env->getOptions()->findBool("cgtoqf")->getValue()) {
+        QuadHandlerPtr qhand = (QuadHandlerPtr) new QuadHandler(env, p);
+        handlers.push_back(qhand);
+      } else {
+        if (true == env->getOptions()->findBool("use_native_cgraph")->getValue()
+            && true == env->getOptions()->findBool("nl_presolve")->getValue()) {
+          NlPresHandlerPtr nlhand = (NlPresHandlerPtr) new NlPresHandler(env, p);
+          handlers.push_back(nlhand);
+        }
+      }
     }
 
-    if (!(p->isLinear()) &&
+    if (!(p->isLinear() || p->isQP() || p->isQuadratic()) &&
          true==env->getOptions()->findBool("use_native_cgraph")->getValue() && 
          true==env->getOptions()->findBool("nl_presolve")->getValue() 
          ) {

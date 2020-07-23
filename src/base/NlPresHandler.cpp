@@ -1614,19 +1614,29 @@ void NlPresHandler::varBndsFromCons_(ProblemPtr p, bool apply_to_prob,
         // std::cout<<"ccccccccccccll"<<lb<<"\n";
         // std::cout<<"ccccccccccccuu"<<ub<<"\n";
         qf->computeBounds(&lb1, &ub1);
-        lf->computeBounds(&lb2, &ub2);
+        if (lf) {
+          lf->computeBounds(&lb2, &ub2);
+        } else {
+          lb2 = 0.0;
+          ub2 = 0.0;
+        }
 
         ub = std::min(ubc, ub1 + ub2);
         lb = std::max(lbc, lb1+lb2);
         // std::cout<<"cons__bounduuubbb"<<ub<<"\n";
         // std::cout<<"cons_boundlllllbb"<<lb<<"\n";
       
-        lf->getVars(&lfvars);
-        qf->getVars(&qfvars);
-        linear_var_set(lfvars, f, &linear_terms);
-        
-        lin_var_bound(lfmod, lf, qf, qfvars, linear_terms, lb, ub, change1);
-        quad_var_bound(qfmod, lf, qf, qfvars,  linear_terms, lb, ub,  change2);
+        if (lf) {
+          lf->getVars(&lfvars);
+          qf->getVars(&qfvars);
+          linear_var_set(lfvars, f, &linear_terms);
+          
+          lin_var_bound(lfmod, lf, qf, qfvars, linear_terms, lb, ub, change1);
+          quad_var_bound(qfmod, lf, qf, qfvars,  linear_terms, lb, ub,  change2);
+        } else {
+          change1 = 0;
+          change2 = 0;
+        }
         //std::cout<<"kkkkkkkkkkkk============"<<qfmod.empty();
         // std::cout<<"change1"<<change1<<"\n";
         // std::cout<<"change2"<<change2<<"\n";
