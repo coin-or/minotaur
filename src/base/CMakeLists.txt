@@ -60,7 +60,7 @@ set (MINOTAUR_SOURCES
      MaxFreqBrancher.cpp
      MaxVioBrancher.cpp
      MINLPDiving.cpp
-     MultiSolHeur.cpp
+     #MultiSolHeur.cpp
      MsProcessor.cpp	
      MultilinearTermsHandler.cpp
      NLPRelaxation.cpp 
@@ -90,9 +90,9 @@ set (MINOTAUR_SOURCES
      ParReliabilityBrancher.cpp
      ParTreeManager.cpp
      PCBProcessor.cpp 
-     PerspCon.cpp
+     #PerspCon.cpp
      # PerspCutGenerator.cpp 
-     PerspCutHandler.cpp 
+     #PerspCutHandler.cpp 
      PolynomialFunction.cpp 
      PreAuxVars.cpp
      PreDelVars.cpp
@@ -186,7 +186,7 @@ set (MINOTAUR_HEADERS
      MaxVioBrancher.h
      MILPEngine.h
      MINLPDiving.h
-     MultiSolHeur.h
+     #MultiSolHeur.h
      Modification.h
      MsProcessor.h
      MultilinearTermsHandler.h
@@ -219,9 +219,9 @@ set (MINOTAUR_HEADERS
      ParReliabilityBrancher.h
      ParTreeManager.h
      PCBProcessor.h
-     PerspCon.h
+     #PerspCon.h
      #PerspCutGenerator.h 
-     PerspCutHandler.h
+     #PerspCutHandler.h
      PolynomialFunction.h
      PreAuxVars.h
      PreDelVars.h
