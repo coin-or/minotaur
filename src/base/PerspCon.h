@@ -16,6 +16,7 @@
 #include <map>
 #include <fstream>
 #include <string>
+#include <forward_list>
 #include <unordered_map> 
 
 #include "Timer.h"
@@ -32,6 +33,11 @@ class PerspCon;
 typedef PerspCon* PerspConPtr;
 typedef const PerspCon* ConstPerspConPtr;
 
+typedef struct impliVarsInfo {
+  VariablePtr var;
+  std::vector<double> fixedVal;
+} impliVar;
+
 
 class PerspCon {
 public:
@@ -39,23 +45,26 @@ public:
   PerspCon();
   
   ///Constructs from the given problem.
-  PerspCon(ProblemPtr p, EnvPtr env);
+  PerspCon(EnvPtr env, ProblemPtr p);
 
   /// Destructor.
   ~PerspCon();
 
+  /// Generates list of constraints amenable to PR.
+  void findPRCons();
+private:
   /*
    * Checks if the variables in a constraint are bounded by given binary
    * variable binvar.
    */ 
-  bool boundBinVar();
+  bool boundBinVar_();
 
   /*
    * Checks if variables in the linear part of a constraint are bounded by
    * the given binary variable.
    */ 
 
-  void checkLVars(bool *boundsok, VariablePtr var, 
+  void checkLVars_(bool *boundsok, VariablePtr var, 
                           std::unordered_map<UInt,double> *varsInfo);
 
   /*
@@ -63,57 +72,71 @@ public:
    * a given binary variable.
    */ 
 
- void checkNVars(bool *boundsok, VariablePtr var, 
+ void checkNVars_(bool *boundsok, VariablePtr var, 
                           std::unordered_map<UInt,double> *varsInfo);
 
- void searchVarIdx(VariablePtr var, bool *boundsok,  
+ void searchVarIdx_(VariablePtr var, bool *boundsok,  
                           std::unordered_map<UInt,double> *varsInfo);
 
   /// Checks if a variable is bounded by a given binary variable.
-  double checkVarBounds(VariablePtr var,
-                        bool* varbounded);
+  double checkVarBounds_(VariablePtr var, bool* varbounded);
   
   /*
    * Checks if a binary variable is present in the nonlinear part of the
    * given constraint. 
    */
-  bool findBinVarsInCons(std::vector<VariablePtr>* binaries);
+  bool findBinVarsInCons_(std::vector<VariablePtr>* binaries);
 
   /// Writes information related to perspective amenable constraints. 
-  void displayInfo();
+  void displayInfo_();
+
+  void implications_();
+
+  void deriveImpli_(VariablePtr var);
 
   /// Checks if a constraint is amenable to PR.
   //void evalConstraint(ConstraintPtr cons);
-  void evalConstraint();
-
-  /// Generates list of constraints amenable to PR.
-  void findPRCons();
-
+  void evalConstraint_();
 
   /// Returns total number of PR.
-  UInt getNumPersp() const {return consVec_.size();}
+  UInt getNumPersp_() const {return consVec_.size();}
 
   /* 
    * Returns vector containing binary variables associated with constraints 
    * amenable to PR.
    */ 
-  std::vector<VariablePtr> getPRBinVar() const {return bVarVec_;}
+  std::vector<VariablePtr> getPRBinVar_() const {return bVarVec_;}
 
   /// Returns a vector containing constraints amenable to PR.
-  std::vector<ConstraintPtr> getPRCons() const {return consVec_;}
+  std::vector<ConstraintPtr> getPRCons_() const {return consVec_;}
   
   /// Returns vector containing structure types of constraints amenable to PR.
-  std::vector<UInt> getPRStruct() const {return sType_;}
+  std::vector<UInt> getPRStruct_() const {return sType_;}
    
   /*
    * Returns 1 if problem has at least one constraint amenable to PR,
    * otherwise 0.
    */  
-  bool getStatus();
+  bool getStatus_();
+
+
+  bool twoTermsFunc_(LinearFunctionPtr lf, VariablePtr var, 
+                            std::forward_list<impliVar> *varList, double lb,
+                            double ub, bool z0);
 
 
 
-  void populate(std::unordered_map<UInt,double> varsInfo);
+  bool multiTermsFunc_(LinearFunctionPtr lf, VariablePtr var, 
+                            std::forward_list<impliVar> *varList, double lb,
+                            double ub, double val, bool z0);
+
+
+
+  void addImplications_(ConstraintPtr c, bool z0);
+
+  bool addImplications_(std::forward_list<impliVar> *varList);
+
+  void populate_(std::unordered_map<UInt,double> varsInfo);
   /* Returns a vector containing values to which variables in the 
    * linear part of the constraints amenable to PR are fixed to.
    */
@@ -124,8 +147,6 @@ public:
    */
   //std::vector<VariableGroup > getXNV() const {return nlVarFixVal_;}
 
-  private:
-  
   /// Environment.
   EnvPtr env_;
   
@@ -138,7 +159,7 @@ public:
   double absTol_;
 
   /// Timer
-  //Timer *timer_;
+  Timer *timer_;
 
   /// For log.
   static const std::string me_;
@@ -146,6 +167,9 @@ public:
   ConstraintPtr cons_;
   
   VariablePtr bVar_;
+
+  //  To be deleted
+  UInt c1_, c2_, c3_;
 
   /// Vector of struture types of constraints amenable to PR.
   std::vector<UInt> sType_;
@@ -171,6 +195,10 @@ public:
    */
   //std::vector<VariableGroup> lVarFixVal_;
   std::vector<std::unordered_map<UInt,double>> varsInfoVec_;
+  
+  /// Implication graph using
+  std::unordered_map<VariablePtr, std::forward_list<impliVar>> impli0_;
+  std::unordered_map<VariablePtr, std::forward_list<impliVar>> impli1_;
 }; 
 
 }
