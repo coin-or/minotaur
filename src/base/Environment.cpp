@@ -160,6 +160,10 @@ void Environment::createDefaultOptions_()
       true, false);
   options_->insert(b_option);
   
+  b_option = (BoolOptionPtr) new Option<bool>("multisolheur",
+      "Use multisol heuristic for MINLP: <0/1>", true, false);
+  options_->insert(b_option);
+
   b_option = (BoolOptionPtr) new Option<bool>("FPump", 
       "Use feasibility pump heuristic for MINLP: <0/1>", true, false);
   options_->insert(b_option);
@@ -185,6 +189,10 @@ void Environment::createDefaultOptions_()
 
   b_option = (BoolOptionPtr) new Option<bool>("mcbnb_deter_mode",
       "If true, synchronize all threads in determinisitic mode in parallel branch-and-bound: <0/1>", true, false);
+  options_->insert(b_option);
+
+  b_option = (BoolOptionPtr) new Option<bool>("mcbnb_oppor_mode",
+      "If true, run the parallel branch-and-bound algorithm in opportunistic mode: <0/1>", true, false);
   options_->insert(b_option);
 
   b_option = (BoolOptionPtr) new Option<bool>("mcbnb_iter_mode",
