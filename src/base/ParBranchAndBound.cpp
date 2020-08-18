@@ -825,7 +825,8 @@ void ParBranchAndBound::parsolveOppor(ParNodeIncRelaxerPtr parNodeRlxr[],
           tm_->updateLb();
         }
       }
-      nodeCountThread = 0;
+#pragma omp critical (treeManager)
+      nodeCountThread = tm_->anyActiveNodesLeft();
       treeLb = tm_->updateLb();
       minNodeLb = INFINITY;
       for (UInt j = 0; j < numThreads; ++j) {
