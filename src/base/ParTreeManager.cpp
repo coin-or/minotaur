@@ -145,7 +145,8 @@ void ParTreeManager::clearAll()
   NodePtrIterator node_i;
 
   if (aNode_) {
-    removeNodeAndUp_(aNode_);
+    //removeNodeAndUp_(aNode_);
+    aNode_ = 0;
   }
   while (false==activeNodes_->isEmpty()) {
     n = activeNodes_->top();
