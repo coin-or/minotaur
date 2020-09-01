@@ -541,15 +541,13 @@ void ParBranchAndBound::parsolveOppor(ParNodeIncRelaxerPtr parNodeRlxr[],
   Branches *branches = new Branches[numThreads]();
   WarmStartPtr *ws = new WarmStartPtr[numThreads]();
   RelaxationPtr *rel = new RelaxationPtr[numThreads];
-  UInt nodeCount;
-  double treeLb, nodeLb, minNodeLb;
   double *treeLbTh = new double[numThreads];
   double *nodeLbTh = new double[numThreads];
   double *minNodeLbTh = new double[numThreads];
   UInt *nodeCountTh = new UInt[numThreads];
   UInt *nodesProcTh = new UInt[numThreads];
-  //UInt iterCount = 1;
   UInt numVars = 0;
+  bool shouldRun = true;
 
   omp_set_num_threads(numThreads);
 //#pragma omp parallel for
@@ -613,21 +611,18 @@ void ParBranchAndBound::parsolveOppor(ParNodeIncRelaxerPtr parNodeRlxr[],
     logger_->msgStream(LogDebug) << me_ << "stopping after root node "
       << std::endl;
 #endif
-    nodeCount = 0;
+    shouldRun = false;
   } else if (shouldStopPar_(wallTimeStart, tm_->getLb())) {
     tm_->updateLb();
-    nodeCount = 1;
   } else {
 #if SPEW
     logger_->msgStream(LogDebug) << std::setprecision(8)
       << me_ << "lb = " << tm_->updateLb() << std::endl
       << me_ << "ub = " << tm_->getUb() << std::endl;
 #endif
-    nodeCount = 1;
   }
 
   // solve root outside the loop. save the useful information.
-  bool shouldRun = true;
   initialized[0] = true; //pseudoCosts for thread0 initialized while doing root
   numVars = rel[0]->getNumVars();
   bool isParRel = false;
@@ -639,7 +634,6 @@ void ParBranchAndBound::parsolveOppor(ParNodeIncRelaxerPtr parNodeRlxr[],
 #pragma omp parallel private(i)
   {
     i = omp_get_thread_num();
-    UInt nodeCountThread = nodeCount;
     ParReliabilityBrancherPtr parRelBr;
     UIntVector tmpTimesUp, tmpTimesDown, timesUp, timesDown, lastStrBranched;
     DoubleVector tmpPseudoUp, tmpPseudoDown, pseudoUp, pseudoDown;
@@ -651,7 +645,7 @@ void ParBranchAndBound::parsolveOppor(ParNodeIncRelaxerPtr parNodeRlxr[],
       lastStrBranched.resize(numVars,0);
     }
  
-    while (nodeCountThread > 0 && shouldRun) {
+    while (nodeCountTh[i] > 0 && shouldRun) {
       if (current_node[i]) {
 #pragma omp critical (treeManager)
         {
@@ -722,7 +716,6 @@ void ParBranchAndBound::parsolveOppor(ParNodeIncRelaxerPtr parNodeRlxr[],
         {
           ++stats_->nodesProc;
         }
-
 #if SPEW
 #pragma omp critical (logger)
         logger_->msgStream(LogDebug1) << me_ << "node " 
@@ -820,18 +813,15 @@ void ParBranchAndBound::parsolveOppor(ParNodeIncRelaxerPtr parNodeRlxr[],
         }
         current_node[i] = new_node[i];
       } // if (current_node[i]) ends
-
-      //stopping condition at each thread
-      nodeCountTh[i] = 0;
+      //update lower bound
 #pragma omp critical (treeManager)
       {
         treeLbTh[i] = tm_->updateLb();
       }
       minNodeLbTh[i] = INFINITY;
-
       for (UInt j=0; j < numThreads; ++j) {
         if (current_node[j]) {
-          nodeCountTh[i]++;
+//#pragma omp atomic
           nodeLbTh[i] = current_node[j]->getLb();
           if (nodeLbTh[i] < minNodeLbTh[i]) {
             minNodeLbTh[i] = nodeLbTh[i];
@@ -840,6 +830,17 @@ void ParBranchAndBound::parsolveOppor(ParNodeIncRelaxerPtr parNodeRlxr[],
       }
       if (minNodeLbTh[i] < treeLbTh[i]) {
         treeLbTh[i] = minNodeLbTh[i];
+      }
+      //stopping condition at each thread
+      nodeCountTh[i] = tm_->anyActiveNodesLeft();
+      if (nodeCountTh[i] == 0) {
+        for (UInt j=0; j < numThreads; ++j) {
+          if (current_node[j]) {
+#pragma omp atomic
+            nodeCountTh[i]++;
+            break;
+          }
+        }
       }
 #pragma omp critical (logger)
       {
@@ -851,30 +852,9 @@ void ParBranchAndBound::parsolveOppor(ParNodeIncRelaxerPtr parNodeRlxr[],
           tm_->updateLb();
         }
       }
-#pragma omp critical (treeManager)
-      {
-        nodeCountThread = tm_->anyActiveNodesLeft(); //not critical?
-        treeLb = tm_->updateLb();
-      }
-      minNodeLb = INFINITY;
-      for (UInt j = 0; j < numThreads; ++j) {
-        if (current_node[j]) {
-          nodeCountThread++;
-          nodeLb = current_node[j]->getLb();
-          if (nodeLb < minNodeLb)
-          {
-            minNodeLb = nodeLb;
-          }
-        }
-      }
-      if (minNodeLb < treeLb) {
-        treeLb = minNodeLb;
-      }
-#pragma omp critical (logger)
-      showParStatus_(nodeCountThread, treeLb, wallTimeStart, i);
 
       // update stopping conditions
-      if (nodeCountThread == 0) {
+      if (nodeCountTh[i] == 0) {
         tm_->updateLb();
         if (tm_->getUb() <= -INFINITY) {
           status_ = SolvedUnbounded;
@@ -884,41 +864,36 @@ void ParBranchAndBound::parsolveOppor(ParNodeIncRelaxerPtr parNodeRlxr[],
           status_ = SolvedInfeasible; // TODO: get the right status
         }
 #if SPEW
-//#pragma omp critical (logger)
 #pragma omp single
         logger_->msgStream(LogDebug) << me_ << "all nodes have "
           << "been processed" << " thread " << i << std::endl;
 #endif
-      } else if (shouldStopPar_(wallTimeStart, treeLb)) {
+      } else if (shouldStopPar_(wallTimeStart, treeLbTh[i])) {
         tm_->updateLb();
-        //std::cout << "shouldRun false\n";
         shouldRun = false;
       } else {
-//#if SPEW
-//#pragma omp critical (logger)
-        //logger_->msgStream(LogDebug) << std::setprecision(8)
-          //<< me_ << "lb = " << tm_->updateLb() << std::endl
-          //<< me_ << "ub = " << tm_->getUb() << std::endl;
-//#endif
+#if SPEW
+#pragma omp critical (logger)
+        logger_->msgStream(LogInfo) << "nodesCount " << nodeCountThread << " thread " << i << std::endl;
+        logger_->msgStream(LogDebug) << std::setprecision(8)
+          << me_ << "lb = " << tm_->updateLb() << std::endl
+          << me_ << "ub = " << tm_->getUb() << std::endl;
+#endif
       }
     } //while ends
-//#if SPEW
+#if SPEW
 #pragma omp single
     {
       for (UInt j=0; j < numThreads; ++j) {
         logger_->msgStream(LogInfo) << "nodesProc " << nodesProcTh[j] << " thread " << j << std::endl;
       }
     }
-//#endif
+#endif
   }   //parallel region ends
   logger_->msgStream(LogExtraInfo) << me_ << "stopping branch-and-bound"
     << std::endl
     << me_ << "nodes processed = " << stats_->nodesProc << std::endl
     << me_ << "nodes created   = " << tm_->getSize() << std::endl;
-  //if (iterMode) {
-  //logger_->msgStream(LogInfo) << me_ << "iterations = " << iterCount
-      //<< std::endl;
-  //}
   solPool_->writeStats(logger_->msgStream(LogExtraInfo));
 
   stats_->timeUsed = timer_->query();
