@@ -657,6 +657,7 @@ void ParBranchAndBound::parsolveOppor(ParNodeIncRelaxerPtr parNodeRlxr[],
               << omp_get_thread_num() << std::endl;
 #endif
             tm_->pruneNode(current_node[i]);
+#pragma omp critical (current_node)
             current_node[i] = NodePtr();
           }
         }
@@ -743,6 +744,7 @@ void ParBranchAndBound::parsolveOppor(ParNodeIncRelaxerPtr parNodeRlxr[],
           {
             tm_->pruneNode(current_node[i]);
           }
+#pragma omp critical (current_node)
           current_node[i] = NodePtr();
 #pragma omp critical (treeManager)
           {
@@ -779,6 +781,7 @@ void ParBranchAndBound::parsolveOppor(ParNodeIncRelaxerPtr parNodeRlxr[],
           }
 #pragma omp critical (treeManager)
           {
+#pragma omp critical (current_node)
             new_node[i] = tm_->branch(branches[i], current_node[i], ws[i]);
 #if SPEW
 #pragma omp critical (logger)
@@ -811,6 +814,7 @@ void ParBranchAndBound::parsolveOppor(ParNodeIncRelaxerPtr parNodeRlxr[],
             }
           }
         }
+#pragma omp critical (current_node)
         current_node[i] = new_node[i];
       } // if (current_node[i]) ends
       //update lower bound
@@ -820,9 +824,13 @@ void ParBranchAndBound::parsolveOppor(ParNodeIncRelaxerPtr parNodeRlxr[],
       }
       minNodeLbTh[i] = INFINITY;
       for (UInt j=0; j < numThreads; ++j) {
+#pragma omp critical (current_node)
+        {
+          if (current_node[j]) {
+            nodeLbTh[i] = current_node[j]->getLb();
+          }
+        }
         if (current_node[j]) {
-//#pragma omp atomic
-          nodeLbTh[i] = current_node[j]->getLb();
           if (nodeLbTh[i] < minNodeLbTh[i]) {
             minNodeLbTh[i] = nodeLbTh[i];
           }
