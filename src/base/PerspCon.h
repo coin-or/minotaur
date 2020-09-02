@@ -38,6 +38,12 @@ typedef struct impliVarsInfo {
   std::vector<double> fixedVal;
 } impliVar;
 
+typedef struct prConsInfo {
+  ConstraintPtr cons;
+  VariablePtr binVar;
+  bool binVal;
+  UInt type; // 0 if singleton, 1 ig hyperplane
+} prCons;
 
 class PerspCon {
 public:
@@ -59,24 +65,25 @@ private:
    */ 
   bool boundBinVar_();
 
+  bool isControlled_(std::vector<VariablePtr> binaries);
+
   /*
    * Checks if variables in the linear part of a constraint are bounded by
    * the given binary variable.
    */ 
 
-  void checkLVars_(bool *boundsok, VariablePtr var, 
-                          std::unordered_map<UInt,double> *varsInfo);
+  //void checkLVars_(bool *boundsok, VariablePtr var, 
+                          //std::unordered_map<UInt,double> *varsInfo);
 
   /*
    * Checks if variables in the nonlinear part of a constraint are bounded by 
    * a given binary variable.
    */ 
 
- void checkNVars_(bool *boundsok, VariablePtr var, 
-                          std::unordered_map<UInt,double> *varsInfo);
+ //void checkNVars_(bool *boundsok, VariablePtr var, 
+                          //std::unordered_map<UInt,double> *varsInfo);
 
- void searchVarIdx_(VariablePtr var, bool *boundsok,  
-                          std::unordered_map<UInt,double> *varsInfo);
+  void removeSingleton_();
 
   /// Checks if a variable is bounded by a given binary variable.
   double checkVarBounds_(VariablePtr var, bool* varbounded);
@@ -85,7 +92,7 @@ private:
    * Checks if a binary variable is present in the nonlinear part of the
    * given constraint. 
    */
-  bool findBinVarsInCons_(std::vector<VariablePtr>* binaries);
+  void findBinVarsInCons_(std::vector<VariablePtr>* binaries);
 
   /// Writes information related to perspective amenable constraints. 
   void displayInfo_();
@@ -99,19 +106,19 @@ private:
   void evalConstraint_();
 
   /// Returns total number of PR.
-  UInt getNumPersp_() const {return consVec_.size();}
+  //UInt getNumPersp_() const {return consVec_.size();}
 
   /* 
    * Returns vector containing binary variables associated with constraints 
    * amenable to PR.
    */ 
-  std::vector<VariablePtr> getPRBinVar_() const {return bVarVec_;}
+  //std::vector<VariablePtr> getPRBinVar_() const {return bVarVec_;}
 
   /// Returns a vector containing constraints amenable to PR.
-  std::vector<ConstraintPtr> getPRCons_() const {return consVec_;}
+  //std::vector<ConstraintPtr> getPRCons_() const {return consVec_;}
   
   /// Returns vector containing structure types of constraints amenable to PR.
-  std::vector<UInt> getPRStruct_() const {return sType_;}
+  //std::vector<UInt> getPRStruct_() const {return sType_;}
    
   /*
    * Returns 1 if problem has at least one constraint amenable to PR,
@@ -119,24 +126,30 @@ private:
    */  
   bool getStatus_();
 
+  bool checkNVars_(double *x);
+  bool checkLVars_(double *x);
 
-  bool twoTermsFunc_(LinearFunctionPtr lf, VariablePtr var, 
-                            std::forward_list<impliVar> *varList, double lb,
-                            double ub, bool z0);
+  void delGUBList_();
 
-
-
-  bool multiTermsFunc_(LinearFunctionPtr lf, VariablePtr var, 
-                            std::forward_list<impliVar> *varList, double lb,
-                            double ub, double val, bool z0);
+  bool twoTermsFunc_(ConstraintPtr c, VariablePtr var, 
+                            std::forward_list<impliVar> *varList, bool z);
 
 
+
+  bool multiTermsFunc_(ConstraintPtr c, VariablePtr var, 
+                            std::forward_list<impliVar> *varList, 
+double val, bool z);
+
+  void fixBinaryVar_(VariablePtr var, bool z);
+
+  bool isBinary_(VariablePtr var);
 
   void addImplications_(ConstraintPtr c, bool z0);
 
   bool addImplications_(std::forward_list<impliVar> *varList);
 
-  void populate_(std::unordered_map<UInt,double> varsInfo);
+  void populate_(UInt type);
+
   /* Returns a vector containing values to which variables in the 
    * linear part of the constraints amenable to PR are fixed to.
    */
@@ -167,20 +180,21 @@ private:
   ConstraintPtr cons_;
   
   VariablePtr bVar_;
+  
+  UInt sType_;
 
-  //  To be deleted
-  UInt c1_, c2_, c3_;
+  bool binVal_;
 
   /// Vector of struture types of constraints amenable to PR.
-  std::vector<UInt> sType_;
+  //std::vector<UInt> sType_;
 
   /// Vector of perspective constraint pointers
-  std::vector<ConstraintPtr> consVec_;
+  //std::vector<ConstraintPtr> consVec_;
   
   /* Vector of pointers to binary variables associated with constraints
    * amenable to PR.
    */
-  std::vector<VariablePtr> bVarVec_;
+  //std::vector<VariablePtr> bVarVec_;
 
   /// Vector of pointers to binary variable that are fixed to 1
   //std::vector<VariablePtr> fixbvar_;
@@ -194,11 +208,19 @@ private:
    * linear part of a constraint amenable to PR are fixed to.
    */
   //std::vector<VariableGroup> lVarFixVal_;
-  std::vector<std::unordered_map<UInt,double>> varsInfoVec_;
+  //std::vector<std::unordered_map<UInt,double>> varsInfoVec_;
+  
+  std::vector<prCons> prConsVec_;
   
   /// Implication graph using
   std::unordered_map<VariablePtr, std::forward_list<impliVar>> impli0_;
   std::unordered_map<VariablePtr, std::forward_list<impliVar>> impli1_;
+
+  std::forward_list<ConstraintPtr > gubList0_;
+  std::forward_list<ConstraintPtr > gubList1_;
+  
+  std::unordered_map<VariablePtr, std::forward_list<impliVar>>::iterator 
+    iit_;
 }; 
 
 }
