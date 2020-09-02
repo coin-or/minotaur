@@ -7,7 +7,7 @@
 /**
  * \file McQG.cpp
  * \brief The main function for solving instances in ampl format (.nl) by
- * using a parallel implementation of Branch-and-Bound.
+ * using a parallel implementation of Quesada-Grossmann(QG) algorithm.
  * \author Prashant Palkar, Meenarli Sharma, IIT Bombay
  */
 
@@ -69,7 +69,8 @@ ParQGBranchAndBound* createParBab(EnvPtr env, UInt numThreads, NodePtr &node,
                                   ParPCBProcessorPtr nodePrcssr[],
                                   ParNodeIncRelaxerPtr parNodeRlxr[],
                                   HandlerVector handlersCopy[],
-                                  LPEnginePtr lpeCopy[], EnginePtr eCopy[])
+                                  LPEnginePtr lpeCopy[], EnginePtr eCopy[],
+                                  bool &prune)
 {
   ParQGBranchAndBound *bab = new ParQGBranchAndBound(env, pCopy[0]);
   const std::string me("mcqg main: ");
@@ -103,7 +104,6 @@ ParQGBranchAndBound* createParBab(EnvPtr env, UInt numThreads, NodePtr &node,
     parNodeRlxr[i] = (ParNodeIncRelaxerPtr) new ParNodeIncRelaxer(env, handlersCopy[i]);
     if (i==0) {
       node = (NodePtr) new Node ();
-      bool prune = false;
       relCopy[0] = parNodeRlxr[0]->createRootRelaxation(node, prune);
     } else {
       relCopy[i] = (RelaxationPtr) new Relaxation(relCopy[0], env);
@@ -407,7 +407,7 @@ int showInfo(EnvPtr env)
       options->findFlag("v")->getValue()) {
     env->getLogger()->msgStream(LogNone) << me << "Minotaur version "
       << env->getVersion() << std::endl << me 
-      << "NLP-based parallel branch-and-bound solver for convex MINLP"
+      << "Parallel Quesada-Grossmann (LP/NLP) algorithm for convex MINLP"
       << std::endl;
     return 1;
   }
@@ -419,7 +419,7 @@ int showInfo(EnvPtr env)
 
   env->getLogger()->msgStream(LogInfo)
     << me << "Minotaur version " << env->getVersion() << std::endl
-    << me << "NLP-based parallel branch-and-bound solver for convex MINLP" << std::endl;
+    << me << "Parallel Quesada-Grossmann (LP/NLP) algorithm for convex MINLP" << std::endl;
   return 0;
 }
 
@@ -617,7 +617,7 @@ int main(int argc, char** argv)
 
   std::vector<double> lpStats(6,0);
   std::vector<double> nlpStats(9,0);
- 
+  bool prune = false;
   env->startTimer(err);
 
   if (err) {
@@ -704,9 +704,16 @@ int main(int argc, char** argv)
       << ". Requires a thread-safe LP and NLP solver." << std::endl;
   }
   parbab = createParBab(env, numThreads, node, relCopy, pCopy, nodePrcssr,
-                        parNodeRlxr, handlersCopy, lpeCopy, eCopy);
-  parbab->parsolve(parNodeRlxr, nodePrcssr, numThreads);
-  
+                        parNodeRlxr, handlersCopy, lpeCopy, eCopy, prune);
+  if (true==env->getOptions()->findBool("mcbnb_deter_mode")->getValue()) {
+    assert(!"Deterministic mode not available right now!");
+    //parbab->parsolveSync(parNodeRlxr, nodePrcssr, numThreads, prune);
+  } else if (true==env->getOptions()->findBool("mcbnb_oppor_mode")->getValue()) {
+    parbab->parsolveOppor(parNodeRlxr, nodePrcssr, numThreads, prune);
+  } else {
+    parbab->parsolve(parNodeRlxr, nodePrcssr, numThreads, prune);
+  }
+
   //Take care of important bnb statistics
   //parbab->writeParStats(env->getLogger()->msgStream(LogExtraInfo), nodePrcssr);
   
