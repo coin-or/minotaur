@@ -265,6 +265,14 @@ void  NlPresHandler::coeffImpr_(bool *changed)
         // constraint is redundant when z=0
         assert(a0 > 0);
         lf->incTerm(z, uu-cu);
+        // removing z from constraint function if it is removed from lf and is
+        // not present in nlf and qf either
+        if (fabs(lf->getWeight(z)) < zTol_) {
+          if ((nlf == 0 || (nlf && !(nlf->hasVar(z)))) && 
+             (qf == 0 || (qf && !(qf->hasVar(z))))) {
+            c->getFunction()->removeVar(z, 0.0);          
+          }        
+        }
         p_->changeBound(c, Upper, uu);
         *changed = true;
         ++stats_.cImp;
@@ -273,6 +281,14 @@ void  NlPresHandler::coeffImpr_(bool *changed)
         // constraint is redundant when z=0
         assert(a0 < 0);
         lf->incTerm(z, ll-cl);
+        // removing z from constraint function if it is removed from lf and is
+        // not present in nlf and qf either
+        if (fabs(lf->getWeight(z)) < zTol_) {
+          if ((nlf == 0 || (nlf && !(nlf->hasVar(z)))) && 
+             (qf == 0 || (qf && !(qf->hasVar(z))))) {
+            c->getFunction()->removeVar(z, 0.0);          
+          }        
+        }
         p_->changeBound(c, Lower, ll);
         *changed = true;
         ++stats_.cImp;
@@ -283,6 +299,14 @@ void  NlPresHandler::coeffImpr_(bool *changed)
         // constraint is redundant when z=1
         assert(a0 < 0);
         lf->incTerm(z, cu-uu);
+        // removing z from constraint function if it is removed from lf and is
+        // not present in nlf and qf either
+        if (fabs(lf->getWeight(z)) < zTol_) {
+          if ((nlf == 0 || (nlf && !(nlf->hasVar(z)))) && 
+             (qf == 0 || (qf && !(qf->hasVar(z))))) {
+            c->getFunction()->removeVar(z, 0.0);          
+          }        
+        }
         *changed = true;
         ++stats_.cImp;
         break;
@@ -290,6 +314,14 @@ void  NlPresHandler::coeffImpr_(bool *changed)
         // constraint is redundant when z=1
         assert(a0 > 0);
         lf->incTerm(z, cl-ll);
+        // removing z from constraint function if it is removed from lf and is
+        // not present in nlf and qf either
+        if (fabs(lf->getWeight(z)) < zTol_) {
+          if ((nlf == 0 || (nlf && !(nlf->hasVar(z)))) && 
+             (qf == 0 || (qf && !(qf->hasVar(z))))) {
+            c->getFunction()->removeVar(z, 0.0);          
+          }        
+        }
         *changed = true;
         ++stats_.cImp;
         break;
