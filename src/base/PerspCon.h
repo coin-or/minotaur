@@ -39,11 +39,29 @@ typedef struct impliVarsInfo {
 } impliVar;
 
 typedef struct prConsInfo {
-  ConstraintPtr cons;
+  UInt type; // 1 if singleton, 2 if hyperplane
+  UInt numVarInNonLin; // # of vars in nonlinear part
   VariablePtr binVar;
-  bool binVal;
-  UInt type; // 0 if singleton, 1 ig hyperplane
+  ConstraintPtr cons;
+  bool binVal, bisect;
+  /* bisect = 1, if binVar in absent in cons, or present in only the linear part
+   * of cons with negative coefficient, or fixed x with z= 1 lies in the PR
+   * region
+   */ 
+  /// Vector of variables in the nonlinear and linear parts that are fixed to non-zero values
+  VariableGroup nNonzeroVar, lNonzeroVar;
+
 } prCons;
+
+typedef struct prObjInfo {
+  bool isPR = 0;
+  UInt numVarInNonLin; // # of vars in nonlinear part
+  // type is always 2 (hyperplane)
+  VariablePtr binVar;
+  bool binVal, bisect;
+  /// Vector of variables in the nonlinear parts that are fixed to non-zero values
+  VariableGroup nNonzeroVar;
+} prObj;
 
 class PerspCon {
 public:
@@ -58,12 +76,22 @@ public:
 
   /// Generates list of constraints amenable to PR.
   void findPRCons();
+  
+  /// Returns a vector containing constraints amenable to PR.
+  std::vector<prCons> getPRCons() const {return prConsVec_;}
+
+  prObj getPRObj() const {return prObj_;}
+
+  bool getStatus();
+
 private:
   /*
    * Checks if the variables in a constraint are bounded by given binary
    * variable binvar.
    */ 
   bool boundBinVar_();
+
+  void checkBinPos_();
 
   bool isControlled_(std::vector<VariablePtr> binaries);
 
@@ -92,7 +120,7 @@ private:
    * Checks if a binary variable is present in the nonlinear part of the
    * given constraint. 
    */
-  void findBinVarsInCons_(std::vector<VariablePtr>* binaries);
+  void findBinVarsInFunc_(std::vector<VariablePtr>* binaries);
 
   /// Writes information related to perspective amenable constraints. 
   void displayInfo_();
@@ -103,7 +131,7 @@ private:
 
   /// Checks if a constraint is amenable to PR.
   //void evalConstraint(ConstraintPtr cons);
-  void evalConstraint_();
+  void detect_();
 
   /// Returns total number of PR.
   //UInt getNumPersp_() const {return consVec_.size();}
@@ -114,8 +142,7 @@ private:
    */ 
   //std::vector<VariablePtr> getPRBinVar_() const {return bVarVec_;}
 
-  /// Returns a vector containing constraints amenable to PR.
-  //std::vector<ConstraintPtr> getPRCons_() const {return consVec_;}
+
   
   /// Returns vector containing structure types of constraints amenable to PR.
   //std::vector<UInt> getPRStruct_() const {return sType_;}
@@ -124,10 +151,9 @@ private:
    * Returns 1 if problem has at least one constraint amenable to PR,
    * otherwise 0.
    */  
-  bool getStatus_();
 
-  bool checkNVars_(double *x);
-  bool checkLVars_(double *x);
+  bool checkNVars_(double *x, VariableGroup &nVarVal);
+  bool checkLVars_(double *x, VariableGroup &lVarVal);
 
   void delGUBList_();
 
@@ -148,7 +174,7 @@ double val, bool z);
 
   bool addImplications_(std::forward_list<impliVar> *varList);
 
-  void populate_(UInt type);
+  void populate_(UInt type, VariableGroup nVarVal, VariableGroup lVarVal);
 
   /* Returns a vector containing values to which variables in the 
    * linear part of the constraints amenable to PR are fixed to.
@@ -185,6 +211,10 @@ double val, bool z);
 
   bool binVal_;
 
+  bool isObj_;
+  
+  bool isInFunc_;
+
   /// Vector of struture types of constraints amenable to PR.
   //std::vector<UInt> sType_;
 
@@ -211,6 +241,8 @@ double val, bool z);
   //std::vector<std::unordered_map<UInt,double>> varsInfoVec_;
   
   std::vector<prCons> prConsVec_;
+
+  prObj prObj_;
   
   /// Implication graph using
   std::unordered_map<VariablePtr, std::forward_list<impliVar>> impli0_;

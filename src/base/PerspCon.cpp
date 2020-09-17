@@ -18,6 +18,7 @@
 #include <forward_list>
 
 
+#include "Objective.h"
 #include "Option.h"
 #include "Logger.h"
 #include "Function.h"
@@ -59,15 +60,36 @@ PerspCon::~PerspCon()
 }
 
 
-void PerspCon::populate_(UInt type)
+void PerspCon::populate_(UInt type, VariableGroup nVarVal, 
+                         VariableGroup lVarVal)
 {
  prCons p;
  p.type = type;
  p.cons = cons_;
  p.binVar = bVar_;
  p.binVal = binVal_;
+ p.bisect = 1 - isInFunc_;
+   
+ //p.numVarInNonLin = (cons_->getFunction()->getNumVars());
+ //if (cons_->getLinearFunction()) {
+   //p.numVarInNonLin -= (cons_->getLinearFunction()->getNumTerms());
+ //}
+
+ switch (type) {
+ case 1:
+   p.lNonzeroVar = lVarVal;
+   p.nNonzeroVar = nVarVal;
+   break;
+ case 2:
+   p.nNonzeroVar = nVarVal;
+   break;
+ default:
+   return;
+   break;
+ }
+
  prConsVec_.push_back(p);
-  return;
+ return;
 }
 
 
@@ -107,19 +129,72 @@ bool PerspCon::isControlled_(std::vector<VariablePtr> binaries)
   return false;
 }
 
+void PerspCon::checkBinPos_()
+{
+  LinearFunctionPtr lf;
+  QuadraticFunctionPtr qf;
+  NonlinearFunctionPtr nlf;
+
+  if (isObj_) {
+    ObjectivePtr o = p_->getObjective();
+    lf = o->getFunction()->getLinearFunction();
+    qf = o->getFunction()->getQuadraticFunction();
+    nlf = o->getFunction()->getNonlinearFunction();
+  } else {
+    lf = cons_->getLinearFunction();
+    qf = cons_->getQuadraticFunction();
+    nlf = cons_->getNonlinearFunction();
+  }
+
+  if (nlf && nlf->hasVar(bVar_)) {
+    isInFunc_ = 1;
+    return;
+  }
+
+  if (qf && qf->hasVar(bVar_)) {
+    isInFunc_ = 1;
+    return;
+  }
+
+  if (lf && lf->hasVar(bVar_)) {
+    if (lf->getWeight(bVar_) > -absTol_) {
+      isInFunc_ = 1;    
+      return;
+    }    
+  }
+
+  isInFunc_ = 0;
+}
+
 
 bool PerspCon::boundBinVar_()
 {
+  VariableGroup nVarVal;
   double * x = new double[p_->getNumVars()];
   std::fill(x, x+p_->getNumVars(), 0.);
-  bool boundsok = checkNVars_(x);
 
+  // check if variables in the nonlinear part of the functions are controlled 
+  bool boundsok = checkNVars_(x, nVarVal);
+  
   if (boundsok) {
     int error = 0;
+    double cu, val = 0;
+    VariableGroup lVarVal;
+    QuadraticFunctionPtr qf;
+    NonlinearFunctionPtr nlf;
     // checking for on-off set of type 2
-    double cu = cons_->getUb(), val = 0;
-    QuadraticFunctionPtr qf = cons_->getQuadraticFunction();
-    NonlinearFunctionPtr nlf = cons_->getNonlinearFunction();
+  
+    if (isObj_) {
+      ObjectivePtr o = p_->getObjective();
+      cu = -1*(o->getConstant()); 
+      qf = o->getFunction()->getQuadraticFunction();
+      nlf = o->getFunction()->getNonlinearFunction();
+    } else {
+      cu = cons_->getUb();
+      qf = cons_->getQuadraticFunction();
+      nlf = cons_->getNonlinearFunction();
+    }
+
     if (nlf) {
       val = nlf->eval(x, &error); 
     }
@@ -132,18 +207,32 @@ bool PerspCon::boundBinVar_()
       if (cu - val >= absTol_) {
         boundsok = false;      
       } else {
-        populate_(2); // type 2 on-off set 
+        if (isObj_) {
+          prObj_.isPR = 1;
+          prObj_.binVar = bVar_;
+          prObj_.binVal = binVal_;
+          prObj_.nNonzeroVar = nVarVal;
+          prObj_.bisect = 1 - isInFunc_;
+         
+          //prObj_.numVarInNonLin = (p_->getObjective()->getFunction()->getNumVars()); 
+          //if (p_->getObjective()->getLinearFunction()) {
+            //prObj_.numVarInNonLin -= (p_->getObjective()->getLinearFunction()->getNumTerms());
+          //}
+
+        } else {
+          populate_(2, nVarVal, lVarVal); // type 2 on-off set 
+        }
       }
     } else {
       delete [] x;
       return false;
     }
 
-    if (!boundsok) {
+    if (!boundsok && !isObj_) {
       LinearFunctionPtr lf = cons_->getLinearFunction();
       //check for on-off set of type 1
       if (lf) {
-        boundsok = checkLVars_(x);
+        boundsok = checkLVars_(x, lVarVal);
         val = val + lf->eval(x); 
         if (val >= cu + absTol_) {
           fixBinaryVar_(bVar_, binVal_);
@@ -155,31 +244,23 @@ bool PerspCon::boundBinVar_()
             impli0_.erase(iit_);
           }
         } else {
-          populate_(1); // type 2 on-off set 
+          populate_(1, nVarVal, lVarVal); // type 1 on-off set 
         }
       }
     }
-  } 
-
+  }
   delete [] x;
   return boundsok;
 }
 
 
-bool PerspCon::checkLVars_(double *x)
+bool PerspCon::checkLVars_(double *x, VariableGroup &lVarVal)
 {  
   ConstVariablePtr v;
   bool isFound;
   std::forward_list<impliVar>::iterator it1;
   const LinearFunctionPtr lf = cons_->getLinearFunction();
-  std::unordered_map<VariablePtr, std::forward_list<impliVar>> implications;
    
-  if (binVal_) {
-    implications = impli1_;
-  } else {
-    implications = impli0_;
-  }
- 
   if (lf) {
     isFound = true;
     for (VariableGroupConstIterator it=lf->termsBegin(); it!=lf->termsEnd();
@@ -194,6 +275,9 @@ bool PerspCon::checkLVars_(double *x)
         if (v == (*it1).var) {
           isFound = true;
           x[v->getIndex()] = (*it1).fixedVal[0];
+          if (fabs(x[v->getIndex()]) >= absTol_) {
+            lVarVal.insert({v, x[v->getIndex()]});          
+          }
           break;
         }
       }
@@ -208,13 +292,22 @@ bool PerspCon::checkLVars_(double *x)
 }
 
 
-bool PerspCon::checkNVars_(double *x)
+bool PerspCon::checkNVars_(double *x, VariableGroup &nVarVal)
 {
-  bool isFound;
   ConstVariablePtr v;
+  QuadraticFunctionPtr qf;
+  NonlinearFunctionPtr nlf;
+  bool allFound = false, isFound;
   std::forward_list<impliVar>::iterator it1;
-  QuadraticFunctionPtr qf = cons_->getQuadraticFunction();
-  NonlinearFunctionPtr nlf = cons_->getNonlinearFunction();
+  
+  if (isObj_) {
+    FunctionPtr f = p_->getObjective()->getFunction();
+    qf = f->getQuadraticFunction();
+    nlf = f->getNonlinearFunction();
+  } else {
+    qf = cons_->getQuadraticFunction();
+    nlf = cons_->getNonlinearFunction();
+  }
 
   if (nlf == 0 && qf == 0) {
     return false;
@@ -231,7 +324,11 @@ bool PerspCon::checkNVars_(double *x)
       for (it1 = (iit_->second).begin(); it1 != (iit_->second).end(); ++it1) {
         if (v == (*it1).var) {
           isFound = true;
+          allFound = true;
           x[v->getIndex()] = (*it1).fixedVal[0];
+          if (fabs(x[v->getIndex()]) >= absTol_) {
+            nVarVal.insert({v, x[v->getIndex()]});          
+          }
           break;
         }
       }
@@ -245,19 +342,19 @@ bool PerspCon::checkNVars_(double *x)
   if (qf) {
     for (VarIntMapConstIterator it=qf->varsBegin(); it!=qf->varsEnd(); ++it) {
       v = it->first;
-      if (nlf && nlf->hasVar(v)) {
+      if ((v == iit_->first) || (nlf && nlf->hasVar(v))) {
         continue;        
       }
 
-      if (v == iit_->first) {
-        continue; 
-      }
-      
       isFound = false;
       for (it1 = (iit_->second).begin(); it1 != (iit_->second).end(); ++it1) {
         if (v == (*it1).var) {
           isFound = true;
+          allFound = true;
           x[v->getIndex()] = (*it1).fixedVal[0];
+          if (fabs(x[v->getIndex()]) >= absTol_) {
+            nVarVal.insert({v, x[v->getIndex()]});          
+          }
           break;
         }
       }
@@ -267,14 +364,20 @@ bool PerspCon::checkNVars_(double *x)
       }
     }
   }
-  return true;
+  return allFound;
 }
 
 
-void PerspCon::findBinVarsInCons_(std::vector<VariablePtr>* binaries)
+void PerspCon::findBinVarsInFunc_(std::vector<VariablePtr>* binaries)
 {
+  FunctionPtr f;
   VariablePtr var;
-  FunctionPtr f = cons_->getFunction();
+
+  if (isObj_) {
+    f = p_->getObjective()->getFunction();
+  } else {
+    f = cons_->getFunction();
+  }
 
   for (VarSetConstIterator it=f->varsBegin(); it!=f->varsEnd(); ++it) {
     var = *it;
@@ -290,7 +393,9 @@ void PerspCon::displayInfo_()
 {
   //MS: make display better. Keep limited information remove S1 and S2
   prCons p;
+  //UInt n = 0;
   UInt s = prConsVec_.size();
+
   std::ostream &out = logger_->msgStream(LogInfo);
  
   std::forward_list<impliVar>::iterator it1;
@@ -318,45 +423,68 @@ void PerspCon::displayInfo_()
   }  
 
   out << "---------- PR details --------------------------------"<< std::endl;
-  if (s > 0) {
-    out << me_ <<"Total nonlinear constraints in problem = " <<
-      p_->getNumCons() - p_->getNumLinCons() << std::endl; 
-    out << me_ <<"Number of constraints amenable to PR = " << 
-      prConsVec_.size() << std::endl;
-
-
+  if (prObj_.isPR) {
+    out << me_ <<"Objective is PR amenable." << std::endl;
+    out << "Associated binary variable and val: " << (prObj_.binVar)->getName() << " and " <<
+      (prObj_.binVal) << std::endl;
+    out << "Associated binary variable present in function: " << 1 - prObj_.bisect << std::endl;
+    //out << "No. of vars in nonlinear part " << 1 - prObj_.numVarInNonLin << std::endl;
     out << "----------------------------------------------------"<< std::endl;
-    out << me_ << "Details of constraints amenable to perspective reformulation:";
+  } else {
+    out << me_ <<"Objective is not PR amenable." << std::endl;
+  }
+  if (s > 0) {
+    s = 0;
+    out << "----------------------------------------------------"<< std::endl;
+    out << "*********************************************************************"<< std::endl;
+    out << me_ << "Details of constraints amenable to perspective reformulation:\n";
+    out << "*********************************************************************"<< std::endl;
     for (UInt i = 0; i < prConsVec_.size() ; ++i) {
       out << std::endl; 
       p = prConsVec_[i];
       out << i+1 << ". ";
       p.cons->write(out);
+      if (!(p.bisect)) {
+        ++s;      
+      }
+      //if (p.numVarInNonLin > 1) {
+        //++n;      
+      //}
       out << "Structure type: S" << p.type << std::endl;
       out << "Associated binary variable and val: " << (p.binVar)->getName() << " and " <<
         (p.binVal) << std::endl;
     }
     out << "----------------------------------------------------"<< std::endl;
  
+    out << me_ <<"Total nonlinear constraints in problem = " <<
+      p_->getNumCons() - p_->getNumLinCons() << std::endl; 
+    out << me_ <<"Number of constraints amenable to PR = " << 
+      prConsVec_.size() << std::endl;
+    out << me_ <<"No. of constraints amenable to PR with bin var in the function = " << s << std::endl;
+    //out << me_ <<"No. of constraints amenable to PR with more than one term in nonlinear part of the function = " << n << std::endl;
+    out << "----------------------------------------------------"<< std::endl;
   } else {
     out << me_ <<"Number of constraints amenable to PR = 0" << std::endl;
   }
 }
 
 
-void PerspCon::evalConstraint_()
+void PerspCon::detect_()
 {
-  bool isFound;
+  bool isFound = false;
   std::vector<VariablePtr> binaries;
-  /// Binary variables in the constraint con_
-  findBinVarsInCons_(&binaries);
+  /// Binary variables in the function under consideration
+  findBinVarsInFunc_(&binaries);
+ 
+  /// Check if variables in the function are controlled by some binary
+  //varaible in the function 
   for (std::vector<VariablePtr>::iterator it = binaries.begin();
        it!=binaries.end(); ++it) {
     bVar_ = *it;
-    
     iit_ = impli0_.find(bVar_);
     if (iit_ != impli0_.end()) {
       binVal_ = 0;
+      checkBinPos_();
       isFound = boundBinVar_();    
     }
     if (isFound) {
@@ -365,20 +493,26 @@ void PerspCon::evalConstraint_()
       binVal_ = 1;
       iit_ = impli1_.find(bVar_);
       if (iit_ != impli1_.end()) {
+        checkBinPos_();
         isFound = boundBinVar_();    
       }
-
       if (isFound) {
         return;
       }
     }
   }
+    
+  isInFunc_ = 0;
 
+  /// Check if there exists a binary variable in impli0_ that controls all the
+  //variables in the constraint
   if (impli0_.size() > 0) {
     binVal_ = 0;
     isFound = isControlled_(binaries);
   }
 
+  /// Check if there exists a binary variable in impli0_ that controls all the
+  //variables in the constraint
   if (!isFound && impli1_.size() > 0) {
     binVal_ = 1;
     isFound = isControlled_(binaries);
@@ -1181,6 +1315,16 @@ void PerspCon::findPRCons()
   //Perform this step if there are linear constraints and binary variables 
   implications_(); 
 
+  ObjectivePtr o = p_->getObjective();
+  FunctionType fType = o->getFunctionType();
+  if (!o) {
+    assert(!"need objective in QG!");
+  } else if (fType != Linear && fType != Constant) {
+    isObj_ = 1;
+    detect_();
+  }
+
+  isObj_ = 0;
   //// This to check only nonlinear constraints one by one
   for (ConstraintConstIterator it=p_->consBegin(); it!=p_->consEnd(); ++it) {
     cons_ = *it;
@@ -1192,7 +1336,7 @@ void PerspCon::findPRCons()
     case Bilinear:
     case Polynomial:
     case Multilinear:
-      evalConstraint_();
+      detect_();
       break;
     default:
       break;
@@ -1201,7 +1345,6 @@ void PerspCon::findPRCons()
  
   //#if SPEW 
   displayInfo_();
-  exit(1);
   //#endif  
 
   // Delete implications derived from constraints in gubList0_ and gubList1_
@@ -1213,9 +1356,9 @@ void PerspCon::findPRCons()
 }
 
 
-bool PerspCon::getStatus_()
+bool PerspCon::getStatus()
 {
-  if(prConsVec_.size() > 0){
+  if(prConsVec_.size() > 0 || prObj_.isPR){
     return true; 
   } else {
     return false;
