@@ -20,6 +20,7 @@
 #include "Problem.h"
 #include "Function.h"
 #include "Linearizations.h"
+#include "PerspCutGenerator.h"
 
 #include "Solution.h"
 
@@ -102,11 +103,11 @@ private:
   /// Relative tolerance for constraint feasibility.
   double solRelTol_;
 
-  /// Absolute tolerance for pruning a node.
-  double objATol_;
+  /// Absolute tolerance for objective.
+  double objAbsTol_;
 
-  /// Relative tolerance for pruning a node.
-  double objRTol_;
+  /// Relative tolerance for objective.
+  double objRelTol_;
   
   LinearizationsPtr extraLin_;
 
@@ -128,6 +129,8 @@ private:
   //EngineStatus shortestNlpStatus_;
   
   int lastNodeId_;
+
+  PerspCutGeneratorPtr prCutGen_;
 
   /// Statistics.
   QGStats *stats_;
@@ -216,6 +219,8 @@ private:
 
   void addInitLinearX_(ConstSolutionPtr sol);
 
+  void addCutAtRoot_(ConstraintPtr con, ConstSolutionPtr sol, bool isObj);
+
   void dualBasedCons_(ConstSolutionPtr sol);
 
   /**
@@ -230,6 +235,11 @@ private:
 
   void ESHTypeCut_(const double *lpx, CutManager *cutMan,
                              ConstraintPtr con);
+
+
+  void gradientIneq_(const double *nlpx, const double *lpx,
+                             CutManager *cutman, SeparationStatus *status,
+                             ConstraintPtr con, bool isObj);
 
   void findCenter_();
   /**
