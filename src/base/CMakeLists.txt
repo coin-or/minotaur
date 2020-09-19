@@ -127,6 +127,7 @@ set (MINOTAUR_SOURCES
      #TransSep.cpp
      TreeManager.cpp 
      Types.cpp 
+     UnambRelBrancher.cpp
      VarBoundMod.cpp 
      Variable.cpp 
      YEqCGs.cpp
@@ -260,6 +261,7 @@ set (MINOTAUR_HEADERS
      #TransSep.h
      TreeManager.h
      Types.h
+     UnambRelBrancher.h
      WarmStart.h
      Variable.h
      YEqCGs.h
