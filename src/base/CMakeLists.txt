@@ -90,8 +90,8 @@ set (MINOTAUR_SOURCES
      ParReliabilityBrancher.cpp
      ParTreeManager.cpp
      PCBProcessor.cpp 
-     #PerspCon.cpp
-     # PerspCutGenerator.cpp 
+     PerspCon.cpp
+     PerspCutGenerator.cpp 
      #PerspCutHandler.cpp 
      PolynomialFunction.cpp 
      PreAuxVars.cpp
@@ -220,8 +220,8 @@ set (MINOTAUR_HEADERS
      ParReliabilityBrancher.h
      ParTreeManager.h
      PCBProcessor.h
-     #PerspCon.h
-     #PerspCutGenerator.h 
+     PerspCon.h
+     PerspCutGenerator.h 
      #PerspCutHandler.h
      PolynomialFunction.h
      PreAuxVars.h
