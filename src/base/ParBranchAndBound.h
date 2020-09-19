@@ -183,7 +183,7 @@ namespace Minotaur {
      * \param [in] parNodeRelaxer is the array of node relaxers.
      * \param [in] parPCBProcessor is the array of node processors.
      * \param [in] nThreads is the number of threads being used.
-     */ 
+     */
     void parsolveOppor(ParNodeIncRelaxerPtr parNodeRelaxer[],
                   ParPCBProcessorPtr parPCBProcessor[],
                   UInt nThreads);
@@ -349,9 +349,10 @@ namespace Minotaur {
      *
      * \param [out] treeLb is the lower bound of the branch-and-bound tree. 
      * \param [out] wallStartTime is the start time of branch-and-bound.
+     * \param [out] threadId is the id of a thread in parallel mode (else 0)
      */
     void showParStatus_(UInt current_uncounted, double treeLb,
-                        double wallStartTime, UInt i);
+                        double wallStartTime, UInt threadId);
   };
 
   /// Statistics about the branch-and-bound.

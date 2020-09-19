@@ -54,6 +54,7 @@
 #include "SOS2Handler.h"
 #include "ParQGHandler.h"
 #include "Timer.h"
+#include "UnambRelBrancher.h"
 
 #include "AMPLHessian.h"
 #include "AMPLInterface.h"
@@ -186,6 +187,28 @@ BrancherPtr createBrancher(EnvPtr env, ProblemPtr p, HandlerVector handlers,
       "reliability branching iteration limit = " <<
       parRel_br->getIterLim() << std::endl;
     br = parRel_br;
+  } else if (env->getOptions()->findString("brancher")->getValue() == "unambRel") {
+    UnambRelBrancherPtr unambrel_br;
+    unambrel_br = (UnambRelBrancherPtr) new UnambRelBrancher(env, handlers);
+    unambrel_br->setEngine(e);
+    t = (p->getSize()->ints + p->getSize()->bins)/10;
+    t = std::max(t, (UInt) 2);
+    t = std::min(t, (UInt) 4);
+    unambrel_br->setThresh(t);
+    env->getLogger()->msgStream(LogExtraInfo) << me <<
+      "setting reliability threshhold to " << t << std::endl;
+    t = (UInt) p->getSize()->ints + p->getSize()->bins/20+2;
+    t = std::min(t, (UInt) 10);
+    unambrel_br->setMaxDepth(t);
+    env->getLogger()->msgStream(LogExtraInfo) << me <<
+      "setting reliability maxdepth to " << t << std::endl;
+    if (e->getName()=="Filter-SQP") {
+      unambrel_br->setIterLim(5);
+    }
+    env->getLogger()->msgStream(LogExtraInfo) << me <<
+      "reliability branching iteration limit = " <<
+      unambrel_br->getIterLim() << std::endl;
+    br = unambrel_br;
   } else if (env->getOptions()->findString("brancher")->getValue() ==
              "maxvio") {
     br = (MaxVioBrancherPtr) new MaxVioBrancher(env, handlers);
