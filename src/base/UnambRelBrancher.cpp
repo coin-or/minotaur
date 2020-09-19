@@ -12,6 +12,7 @@
 
 #include <cmath>
 #include <iomanip>
+#include <algorithm>
 
 #include "MinotaurConfig.h"
 #include "Branch.h"
@@ -55,8 +56,7 @@ UnambRelBrancher::UnambRelBrancher(EnvPtr env, HandlerVector & handlers)
   x_(0)
 {
   timer_ = env->getNewTimer();
-  logger_ = (LoggerPtr) new Logger((LogLevel) 
-      env->getOptions()->findInt("br_log_level")->getValue());
+  logger_ = env->getLogger();
   stats_ = new UnambRelBrStats();
   stats_->calls = 0;
   stats_->engProbs = 0;
@@ -71,7 +71,6 @@ UnambRelBrancher::~UnambRelBrancher()
 {
   delete stats_;
   delete timer_;
-  logger_.reset();
 }
 
 
@@ -85,9 +84,7 @@ BrCandPtr UnambRelBrancher::findBestCandidate_(const double objval,
   double score, change_up, change_down, maxchange;
   UInt cnt, maxcnt;
   EngineStatus status_up, status_down;
-  BrCandPtr cand, best_cand;
-
-  best_cand = BrCandPtr(); // NULL
+  BrCandPtr cand, best_cand = 0;
 
   // first evaluate candidates that have reliable pseudo costs
   cnt=0;
@@ -163,9 +160,9 @@ BrCandPtr UnambRelBrancher::findBestCandidate_(const double objval,
     }
   }
   //if (best_cand) {
-//#pragma omp critical
-    //std::cout << "Node " << node->getId() << " lb " << node->getLb() 
-      //<< " brCand " << best_cand->getName() 
+////#pragma omp critical
+    //std::cout << "in rel: node " << node->getId() << " lb " << node->getLb()
+      //<< " brCand " << best_cand->getName() << " best score " << best_score
       //<< " thread  " << omp_get_thread_num() << "\n";
   //}
   return best_cand;
@@ -178,8 +175,8 @@ Branches UnambRelBrancher::findBranches(RelaxationPtr rel, NodePtr node,
                                            BrancherStatus & br_status,
                                            ModVector &mods) 
 {
-  Branches branches;
-  BrCandPtr br_can = BrCandPtr(); //NULL
+  Branches branches = 0;
+  BrCandPtr br_can = 0;
   const double *x = sol->getPrimal();
   
   //position of the branching candidate in brCands (-1 otherwise)
@@ -203,7 +200,7 @@ Branches UnambRelBrancher::findBranches(RelaxationPtr rel, NodePtr node,
   findCandidates_(node, candsPos, candsPosRel, candsPosUnrel);
   if (status_ == PrunedByBrancher) {
     br_status = status_;
-    return branches;
+    return 0;
   }
 
   if (status_ == NotModifiedByBrancher) {
@@ -212,6 +209,7 @@ Branches UnambRelBrancher::findBranches(RelaxationPtr rel, NodePtr node,
                                 candsPos, candsPosRel, candsPosUnrel);
   }
 
+  // status_ might have changed now. Check again.
   if (status_ == NotModifiedByBrancher) {
     // surrounded by br_can :-)
     branches = br_can->getHandler()->getBranches(br_can, x_, rel_, s_pool); 
@@ -247,6 +245,10 @@ Branches UnambRelBrancher::findBranches(RelaxationPtr rel, NodePtr node,
 #endif
   }
   //writeScores_(std::cout);
+  freeCandidates_(br_can);
+  if (status_ != NotModifiedByBrancher && br_can) {
+    delete br_can;
+  }
   return branches;
 }
 
@@ -258,7 +260,7 @@ void UnambRelBrancher::findCandidates_(NodePtr node, IntVector & candsPos,
   VariablePtr v_ptr;
   VariableIterator v_iter, v_iter2, best_iter;
   VariableConstIterator cv_iter;
-  int index, vindex;
+  int index = -1, vindex = -1;
   bool is_inf = false;   // if true, then node can be pruned.
 
   BrVarCandSet cands;       // candidates from which to choose one.
@@ -269,12 +271,10 @@ void UnambRelBrancher::findCandidates_(NodePtr node, IntVector & candsPos,
   double i_wt = 1e-6;
   double score;
 
-  // first clear the list of candidates
-  relCands_.clear();
-  unrelCands_.clear();
-  
-  //also clear all psedocosts info for filling in fresh ones (not needed?)
-  
+  //clear all psedocosts info for filling in fresh ones (not needed?)
+  assert(relCands_.empty());
+  assert(unrelCands_.empty());
+
   for (HandlerIterator h = handlers_.begin(); h != handlers_.end(); ++h) {
     // ask each handler to give some candidates
     (*h)->getBranchingCandidates(rel_, x_, mods_, cands2, gencands2, is_inf);
@@ -359,7 +359,7 @@ void UnambRelBrancher::findCandidates_(NodePtr node, IntVector & candsPos,
       //candsPosUnrel.push_back(-1);
     }
     candi++;
-  } 
+  }
 
   // push all general candidates (that are not variables) as reliable
   // candidates
@@ -403,7 +403,24 @@ void UnambRelBrancher::findCandidates_(NodePtr node, IntVector & candsPos,
 }
 
 
-bool UnambRelBrancher::getTrustCutoff()
+void ReliabilityBrancher::freeCandidates_(BrCandPtr no_del)
+{
+  for (BrCandVIter it=unrelCands_.begin(); it!=unrelCands_.end(); ++it) {
+    if (no_del != *it) {
+      delete *it;
+    }
+  }
+  for (BrCandVIter it=relCands_.begin(); it!=relCands_.end(); ++it) {
+    if (no_del != *it) {
+      delete *it;
+    }
+  }
+  relCands_.clear();
+  unrelCands_.clear();
+}
+
+
+bool ReliabilityBrancher::getTrustCutoff()
 {
   return trustCutoff_;
 }
@@ -576,6 +593,7 @@ void UnambRelBrancher::strongBranch_(BrCandPtr cand, double & obj_up,
   ++(stats_->strBrCalls);
   obj_down = engine_->getSolutionValue();
   mod->undoToProblem(rel_);
+  delete mod;
 
   // now go up.
   mod = h->getBrMod(cand, x_, rel_, UpBranch);
@@ -591,6 +609,7 @@ void UnambRelBrancher::strongBranch_(BrCandPtr cand, double & obj_up,
   ++(stats_->strBrCalls);
   obj_up = engine_->getSolutionValue();
   mod->undoToProblem(rel_);
+  delete mod;
 }
 
 
