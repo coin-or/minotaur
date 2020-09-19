@@ -403,7 +403,7 @@ void UnambRelBrancher::findCandidates_(NodePtr node, IntVector & candsPos,
 }
 
 
-void ReliabilityBrancher::freeCandidates_(BrCandPtr no_del)
+void UnambRelBrancher::freeCandidates_(BrCandPtr no_del)
 {
   for (BrCandVIter it=unrelCands_.begin(); it!=unrelCands_.end(); ++it) {
     if (no_del != *it) {
@@ -420,7 +420,7 @@ void ReliabilityBrancher::freeCandidates_(BrCandPtr no_del)
 }
 
 
-bool ReliabilityBrancher::getTrustCutoff()
+bool UnambRelBrancher::getTrustCutoff()
 {
   return trustCutoff_;
 }
