@@ -406,12 +406,12 @@ void Environment::createDefaultOptions_()
 
   d_option = (DoubleOptionPtr) new Option<double>("solAbs_tol",
       "Absolute tolerance value for accepting solution or node pruning",
-      true, 1e-5);
+      true, 1e-6);
   options_->insert(d_option);
 
   d_option = (DoubleOptionPtr) new Option<double>("solRel_tol",
       "Relative tolerance value for accepting a solution or node pruning",
-      true, 1e-5);
+      true, 1e-6);
   options_->insert(d_option);
 
   // Serdar added these options for MultilinearTermsHandler class
