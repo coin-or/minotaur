@@ -257,7 +257,6 @@ void UnambRelBrancher::findCandidates_(NodePtr node, IntVector & candsPos,
                                        IntVector & candsPosRel,
                                        IntVector & candsPosUnrel)
 {
-  VariablePtr v_ptr;
   VariableIterator v_iter, v_iter2, best_iter;
   VariableConstIterator cv_iter;
   int index = -1, vindex = -1;
