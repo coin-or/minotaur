@@ -18,6 +18,7 @@
 #include "Engine.h"
 #include "Logger.h"
 #include "Problem.h"
+#include "Timer.h"
 
 #include "Solution.h"
 
@@ -46,10 +47,6 @@ private:
   /// Absolute tolerance for constraint feasibility.
   double solAbsTol_;
   
-  /// Approximation of the center of the feasible region
-  double * solC_; 
- 
-
   public:
   /**
    * \brief Default Constructor.
@@ -63,21 +60,21 @@ private:
  
   /// Destroy.
   ~AnalyticalCenter();
-private:
 
   // Find center by adding auxiliary variable only to the nonlinear constraints
   // and keeping linear constraints as they are.
-  double * modifyOnlyNonlinear_();
+  void modifyOnlyNonlinear(double * solC);
 
   // Find center by adding auxiliary variable to all inequalties, including
   // variable bounds.
-  double * modifyWhole_();
-  
-  void solveNLP_();
+  void modifyWhole(double * solC);
+
+private:
+  void solveNLP_(double * solC);
 
   };
 
-  typedef AnalyticalCenter* LinearizationsPtr;
+  typedef AnalyticalCenter* AnalyticalCenterPtr;
 }
 #endif
 

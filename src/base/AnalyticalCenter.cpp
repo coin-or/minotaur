@@ -22,6 +22,7 @@
 
 #include "MinotaurConfig.h"
 
+#include "AnalyticalCenter.h"
 #include "CNode.h"
 #include "Constraint.h"
 #include "Engine.h"
@@ -35,9 +36,7 @@
 #include "Objective.h"
 #include "Operations.h"
 #include "Option.h"
-#include "Timer.h"
 #include "ProblemSize.h"
-#include "AnalyticalCenter.h"
 #include "Relaxation.h"
 #include "Solution.h"
 #include "SolutionPool.h"
@@ -52,8 +51,7 @@ const std::string AnalyticalCenter::me_ = "Linearizations: ";
 AnalyticalCenter::AnalyticalCenter(EnvPtr env, ProblemPtr minlp, EnginePtr nlpe)
 : env_(env),
   minlp_(minlp),
-  nlpe_(nlpe),
-  solC_(NULL)
+  nlpe_(nlpe)
 {
   logger_ = env->getLogger();
   timer_ = env->getNewTimer();
@@ -62,18 +60,13 @@ AnalyticalCenter::AnalyticalCenter(EnvPtr env, ProblemPtr minlp, EnginePtr nlpe)
 
 AnalyticalCenter::~AnalyticalCenter()
 { 
-  if (solC_) {
-    delete [] solC_;
-    solC_ = 0;
-  }
-  
   env_ = 0;
   nlpe_ = 0;
   minlp_ = 0;
 }
 
  
-double * AnalyticalCenter::modifyOnlyNonlinear_()
+void AnalyticalCenter::modifyOnlyNonlinear(double *solC)
 {
   double lb, ub;
   FunctionPtr fnewc;
@@ -116,7 +109,7 @@ double * AnalyticalCenter::modifyOnlyNonlinear_()
 
   inst_C->prepareForSolve();
   nlpe_->load(inst_C);
-  solveNLP_();
+  solveNLP_(solC);
   //std::cout <<" ORIGINAL PROBLEM \n";
   //minlp_->write(std::cout);
   //std::cout <<" MODIFIED PROBLEM \n";
@@ -201,12 +194,11 @@ double * AnalyticalCenter::modifyOnlyNonlinear_()
 
     inst_C->prepareForSolve();  
     nlpe_->load(inst_C);
-    solveNLP_();
+    solveNLP_(solC);
   
-    if (solC_) {
+    if (solC) {
       if (fabs(nlpe_->getSolution()->getObjValue()) < solAbsTol_) {
-        delete [] solC_;
-        solC_ = 0;
+        solC = 0;
       }
     } else {
       logger_->msgStream(LogError) << me_ 
@@ -214,10 +206,9 @@ double * AnalyticalCenter::modifyOnlyNonlinear_()
         << nlpe_->getStatusString() << std::endl;
     }
   } else {
-    if (solC_) {
+    if (solC) {
       if (fabs(nlpe_->getSolution()->getObjValue()) < solAbsTol_) {
-        delete [] solC_;
-        solC_ = 0;
+        solC = 0;
       }
     } else {
       logger_->msgStream(LogError) << me_ 
@@ -238,17 +229,17 @@ double * AnalyticalCenter::modifyOnlyNonlinear_()
   inst_C = 0;
   delete nlpe_;
   nlpe_ = 0;
-  return solC_;
+  return;
 }
 
 
-double * AnalyticalCenter::modifyWhole_()
+void AnalyticalCenter::modifyWhole(double * solC)
 {
   double lb, ub;
   FunctionPtr fnewc;
   ConstraintPtr con;
   FunctionType fType;
-  UInt hasEqCons = 0;
+  //UInt hasEqCons = 0;
   VariablePtr vPtr, v;
   std::vector<ConstraintPtr > cp;
   ProblemPtr inst_C = minlp_->clone(env_);
@@ -276,7 +267,7 @@ double * AnalyticalCenter::modifyWhole_()
     } else if (fType == Linear)  {
       if (lb != -INFINITY && ub != INFINITY) {
         if (fabs(lb-ub) < solAbsTol_) {
-          hasEqCons = 1;
+          //hasEqCons = 1;
           continue;       
         }
         cp.push_back(con);
@@ -343,17 +334,16 @@ double * AnalyticalCenter::modifyWhole_()
   }
   inst_C->prepareForSolve();
   nlpe_->load(inst_C);
-  solveNLP_();
+  solveNLP_(solC);
   //std::cout <<" ORIGINAL PROBLEM \n";
   //minlp_->write(std::cout);
   //std::cout <<" MODIFIED PROBLEM \n";
   //inst_C->write(std::cout);
   //exit(1);
 
-  if (solC_) {
+  if (solC) {
     if (fabs(nlpe_->getSolution()->getObjValue()) < solAbsTol_) {
-      delete [] solC_;
-      solC_ = 0;
+      solC = 0;
     }
   } else {
     logger_->msgStream(LogError) << me_ 
@@ -371,15 +361,15 @@ double * AnalyticalCenter::modifyWhole_()
   inst_C = 0;
   delete nlpe_;
   nlpe_ = 0;
-  return solC_;
+  return;
 }
 
 
-void AnalyticalCenter::solveNLP_()
+void AnalyticalCenter::solveNLP_(double * solC)
 { 
-  if (solC_) {
-    delete [] solC_;
-    solC_ = 0;
+  if (solC) {
+    delete [] solC;
+    solC = 0;
   }
   EngineStatus nlpStatus = nlpe_->solve();
   switch(nlpStatus) {
@@ -390,8 +380,8 @@ void AnalyticalCenter::solveNLP_()
       //exit(1);
       UInt numVars = minlp_->getNumVars();
       const double *temp = nlpe_->getSolution()->getPrimal();
-      solC_ = new double[numVars];
-      std::copy(temp, temp+numVars, solC_);
+      solC = new double[numVars];
+      std::copy(temp, temp+numVars, solC);
     }
     break;
   case (ProvenUnbounded):
