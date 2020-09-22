@@ -17,6 +17,7 @@
 #include <string>
 
 
+#include "AnalyticalCenter.h"
 #include "PerspCutGenerator.h"
 #include "LinearFunction.h"
 #include "CutManager.h"
@@ -40,7 +41,8 @@ typedef std::vector<ConstraintPtr>::const_iterator CCIter;
 const std::string PerspCutGenerator::me_ = "PerspCutGenerator: ";
 
 PerspCutGenerator::PerspCutGenerator()
-  : env_(EnvPtr()),  minlp_(ProblemPtr()), cvxPt(0), stats_(0), prCons_(0)
+  : env_(EnvPtr()),  minlp_(ProblemPtr()), nlpe_(EnginePtr()), cvxPt(0), 
+  stats_(0), prCons_(0), solC_(0)
 {
   logger_ = (LoggerPtr) new Logger(LogDebug2);
   intTol_ = env_->getOptions()->findDouble("int_tol")->getValue();
@@ -51,8 +53,9 @@ PerspCutGenerator::PerspCutGenerator()
 }
 
 
-PerspCutGenerator::PerspCutGenerator(EnvPtr env, ProblemPtr minlp)
-  : env_(env), minlp_(minlp), cvxPt(0), prCons_(0)
+PerspCutGenerator::PerspCutGenerator(EnvPtr env, ProblemPtr minlp,
+                                     EnginePtr nlpe)
+  : env_(env), minlp_(minlp), nlpe_(nlpe), cvxPt(0), prCons_(0), solC_(0)
 {
   intTol_ = env_->getOptions()->findDouble("int_tol")->getValue();
   solAbsTol_ = env_->getOptions()->findDouble("feasAbs_tol")->getValue();
@@ -76,8 +79,76 @@ void PerspCutGenerator::findPRCons()
     prObj_ = prc->getPRObj();
     prCons_ = prc->getPRCons();
   }
+  
+  if (env_->getOptions()->findBool("perspective_cuts")->getValue()) {
+    for (UInt i = 0; i != prCons_.size(); ++i) {
+      if (!(prCons_[i].bisect)) {
+        // find analytical center
+        //std::stack<Modification *> varMods;
+        //std::cout << "Before applying changes \n";
+        //minlp_->write(std::cout);
+        //fixBinVars_(varMods);
+        //std::cout << "After fixing vars \n";
+        //minlp_->write(std::cout);
+        AnalyticalCenterPtr ac = (AnalyticalCenterPtr) new AnalyticalCenter(env_, minlp_, nlpe_);
+        ac->modifyOnlyNonlinear(solC_);
+        //unfixBinVars_(varMods);
+        //std::cout << "After unfixing vars \n";
+        //minlp_->write(std::cout);
+        delete ac;
+        break;      
+      }    
+    }
+
+    if (prCons_.size() == 0 && prObj_.isPR) {
+      solC_ = new double[minlp_->getNumVars()];
+      AnalyticalCenterPtr ac = (AnalyticalCenterPtr) new AnalyticalCenter(env_, minlp_, nlpe_);
+      ac->modifyOnlyNonlinear(solC_);
+      delete ac;
+    }
+  }
+  delete prc;
   return;
 }
+
+
+//void PerspCutGenerator::fixBinVars_(std::stack<Modification *> &varMods)
+//{
+  //double val;
+  //VariablePtr v;
+  //VarBoundMod2 *m = 0;
+  
+  //for (UInt i = 0; i < prCons_.size(); ++i) {
+    //v = prCons_[i].binVar;
+
+    //if (prCons_[i].binVal) {
+      //val = 0;
+    //} else {
+      //val = 1;
+    //}
+
+    //if (v->getLb() != v->getUb()) {
+      //std::cout << "fixing " << v->getName() << "\n";
+      //m = new VarBoundMod2(v, val, val);
+      //m->applyToProblem(minlp_);
+      //varMods.push(m);
+    //}
+  //}
+  //return;
+//}
+
+
+//void PerspCutGenerator::unfixBinVars_(std::stack<Modification *> &varMods)
+//{
+  //ModificationPtr m = 0;
+  //while(varMods.empty() == false) {
+    //m = varMods.top();
+    //m->undoToProblem(minlp_);
+    //varMods.pop();
+    //delete m;
+  //}
+  //return;
+//}
 
 
 bool PerspCutGenerator::getStatus()
@@ -92,14 +163,15 @@ bool PerspCutGenerator::getStatus()
 
 void PerspCutGenerator::linearAt(RelaxationPtr rel, const double * x, 
                                const double *y, double *c, 
-                               LinearFunctionPtr *lf, UInt itn, int *error)
+                               LinearFunctionPtr *lf, UInt itn, int *error,
+                               bool isObj)
 {
   FunctionPtr f;
   ObjectivePtr o;
   ConstraintPtr cp;
   UInt type, binindex, varindex;
 
-  if (isObj_) {
+  if (isObj) {
     o = minlp_->getObjective();
     f = o->getFunction();
   } else {
@@ -124,7 +196,7 @@ void PerspCutGenerator::linearAt(RelaxationPtr rel, const double * x,
     VariableGroupConstIterator mit, mit1;
     *lf = (LinearFunctionPtr) new LinearFunction(); 
 
-    if (isObj_) {
+    if (isObj) {
       type = 2;
       bp = prObj_.binVar;
       binval = prObj_.binVal;
@@ -163,7 +235,7 @@ void PerspCutGenerator::linearAt(RelaxationPtr rel, const double * x,
         if (v == bp) {
           continue;
         }
-        if (isObj_) {
+        if (isObj) {
           mit = (prObj_.nNonzeroVar).find(v);
         } else {
           mit = (prCons_[itn].nNonzeroVar).find(v);
@@ -202,7 +274,7 @@ void PerspCutGenerator::linearAt(RelaxationPtr rel, const double * x,
           continue;        
         }
         
-        if (isObj_) {
+        if (isObj) {
           mit = (prObj_.nNonzeroVar).find(v);
         } else {
           mit = (prCons_[itn].nNonzeroVar).find(v);
@@ -227,7 +299,7 @@ void PerspCutGenerator::linearAt(RelaxationPtr rel, const double * x,
     zCoeff -= ub;
 
     if (lfn) {
-      if (type == 1) {
+      if (type == 1 || type == 3) {
         for (VariableGroupConstIterator vt=lfn->termsBegin();
              vt!=lfn->termsEnd(); ++vt) {
           v = vt->first;
@@ -276,8 +348,60 @@ void PerspCutGenerator::linearAt(RelaxationPtr rel, const double * x,
   return;
 }
 
+//bool PerspCutGenerator::isFeasible(const double *x, UInt i, bool isObj,
+                                   //double relVal)
+//{
+  //bool binval;
+  //int error = 0;
+  //FunctionPtr f;
+  //UInt binindex;
+  //double act, sb, ub, c0, aTol, rTol;
 
-bool PerspCutGenerator::isFeasible(const double *x, UInt i, bool isObj,
+  //if (isObj) {
+    //ub = relVal;
+    //aTol = objAbsTol_;
+    //rTol = objRelTol_;
+    //binval = prObj_.binVal;
+    //ObjectivePtr o = minlp_->getObjective();
+    //f = o->getFunction();
+    //c0 = o->getConstant();
+    //binindex = (prObj_.binVar)->getIndex();
+  //} else {
+    //c0 = 0;
+    //aTol = solAbsTol_;
+    //rTol = solRelTol_;
+    //ConstraintPtr cp = prCons_[i].cons;
+    //ub = cp->getUb();
+    //f = cp->getFunction();
+    //binval = prCons_[i].binVal;
+    //binindex = (prCons_[i].binVar)->getIndex();
+  //}
+
+  //if (binval) {
+    //sb = 1 - x[binindex];
+  //} else {
+    //sb = x[binindex];
+  //}
+
+  //if (fabs(sb) < intTol_) {
+    //return true;
+  //} else {
+    //act = f->eval(x, &error) + c0;
+    //if (error == 0) {
+      //if ((act >= ub + aTol) || (ub != 0 && 
+                                    //act >= ub + fabs(ub)*rTol)) {
+        //return false;
+      //}
+    //}	else {
+      //return false;
+    //}
+  //}
+
+  //return true;
+//}
+
+
+UInt PerspCutGenerator::isFeasible(const double *x, UInt i, bool isObj,
                                    double relVal)
 {
   bool binval;
@@ -293,13 +417,14 @@ bool PerspCutGenerator::isFeasible(const double *x, UInt i, bool isObj,
     binval = prObj_.binVal;
     ObjectivePtr o = minlp_->getObjective();
     f = o->getFunction();
-    c0 = -1*(o->getConstant());
+    c0 = o->getConstant();
     binindex = (prObj_.binVar)->getIndex();
   } else {
-    ub = 0;
+    c0 = 0;
     aTol = solAbsTol_;
+    rTol = solRelTol_;
     ConstraintPtr cp = prCons_[i].cons;
-    c0 = cp->getUb();
+    ub = cp->getUb();
     f = cp->getFunction();
     binval = prCons_[i].binVal;
     binindex = (prCons_[i].binVar)->getIndex();
@@ -312,41 +437,34 @@ bool PerspCutGenerator::isFeasible(const double *x, UInt i, bool isObj,
   }
 
   if (fabs(sb) < intTol_) {
-    return true;
+    return 1; // active
   } else {
-    //if (fabs(1-sb) < intTol_) {
-      //act = (f->eval(x, &error)) + c0;
-      //if (error == 0) {
-        //if ((act >= ub + aTol) || (ub != 0 && 
-                                        //act >= ub + fabs(ub)*rTol)) {
-          //return false;
-        //}
-      //}	else {
-        //return false;
-      //}
-    //} else {
-      act = f->eval(x, &error);
-      if (error == 0) {
-        act = sb*(act - c0);
-        if ((act >= ub + aTol) || (ub != 0 && 
-                                      act >= ub + fabs(ub)*rTol)) {
-          return false;
-        }
-      }	else {
-        return false;
+    act = f->eval(x, &error) + c0;
+    if (error == 0) {
+      if ((act >= ub + aTol) || (ub != 0 && 
+                                    act >= ub + fabs(ub)*rTol)) {
+        return 0; // infeasible
+      } else if ((fabs(act-ub) < solAbsTol_) && (ub == 0 || 
+                                      (fabs(act-ub) < fabs(ub)*solRelTol_))) {
+      
+        return 1; // active
+      } else {
+        return 2; //interior
       }
-    //}
+    }	else {
+      return 0; // infeasible
+    }
   }
 
-  return true;
+  return 0;
 }
 
 
 bool PerspCutGenerator::changeVarForm(VariablePtr v, double xc, double sb,
-                                    UInt itn, double *newPt)
+                                    UInt itn, double *newPt, bool isObj)
 {
   VariableGroupConstIterator mit, mit1;
-  if (isObj_) {
+  if (isObj) {
     mit = (prObj_.nNonzeroVar).find(v);
     mit1 = (prObj_.nNonzeroVar).end();
   } else {
@@ -365,7 +483,8 @@ bool PerspCutGenerator::changeVarForm(VariablePtr v, double xc, double sb,
   return false;
 }
 
-// Returns the same point if z in integer feasible
+// Returns the same point if z is 1 for case in which z = 0 fixes the x
+// variables. Similarly, if z = 0, in z = 1 case. 
 bool PerspCutGenerator::prVars(const double *x, double *prPt, UInt itn,
                                bool isObj)
 {
@@ -413,14 +532,15 @@ bool PerspCutGenerator::prVars(const double *x, double *prPt, UInt itn,
     nlf = c->getNonlinearFunction();
   }
 
-  // Generate solution y=(x/z,1), x are continuous and z is binary variable
+  // Generate solution prPt=((x-(1-z)\hat{x})/z,1), x are continuous and z is binary
+  // variable, z = 0 case
   std::fill(prPt, prPt + minlp_->getNumVars(), 0);
   if (nlf) {
     for (VarSetConstIterator vt = nlf->varsBegin(); vt != nlf->varsEnd();
          ++vt) {
       v = *vt;
       indexvar = v->getIndex();
-      isFound = changeVarForm(v, x[indexvar], sb, itn, &(prPt[indexvar]));
+      isFound = changeVarForm(v, x[indexvar], sb, itn, &(prPt[indexvar]), isObj);
       if (!isFound) {
         return false;
       }
@@ -432,7 +552,7 @@ bool PerspCutGenerator::prVars(const double *x, double *prPt, UInt itn,
          ++vt) {
       v = vt->first;
       indexvar = v->getIndex();
-      isFound = changeVarForm(v, x[indexvar], sb, itn, &(prPt[indexvar]));
+      isFound = changeVarForm(v, x[indexvar], sb, itn, &(prPt[indexvar]), isObj);
       if (!isFound) {
         return false;
       }
@@ -645,7 +765,7 @@ bool PerspCutGenerator::addCutToRel(RelaxationPtr rel, const double *ptToCut,
     if ((act >= solAbsTol_) && 
         (ub == 0 || (act >= fabs(ub)*solRelTol_))) {
       ++(stats_->cuts);
-      if (isObj_) {
+      if (objVar) {
         sstm << "_ObjPCut_" << stats_->cuts;
         lf->addTerm(objVar, -1.0);
       } else {
@@ -662,7 +782,7 @@ bool PerspCutGenerator::addCutToRel(RelaxationPtr rel, const double *ptToCut,
     }
   } else {
     ++(stats_->cuts);  
-    if (isObj_) {
+    if (objVar) {
       sstm << "_ObjPCut_" << stats_->cuts;
       lf->addTerm(objVar, -1.0);
     } else {
@@ -676,6 +796,115 @@ bool PerspCutGenerator::addCutToRel(RelaxationPtr rel, const double *ptToCut,
   return true;
 }
 
+bool PerspCutGenerator::uniDirZSearch(double *y, double * newPt, UInt i,
+                                double zdir)
+{
+  int error = 0;
+  bool isCont = true;
+  ConstraintPtr cp = prCons_[i].cons;
+  FunctionPtr f = cp->getFunction();
+  double zU = zdir, zL, ub = cp->getUb(), act;
+  UInt binindex = (prCons_[i].binVar)->getIndex();
+  double *x = new double[minlp_->getNumVars()];
+  std::copy(y, y+(minlp_->getNumVars()), x);
+  
+  zL = x[binindex];
+
+  while (isCont) {
+    x[binindex] = (zL + zU)/2;
+    isCont = prVars(x, newPt, i, 0);
+    if (isCont) {
+      act = f->eval(newPt, &error);
+      if (error == 0) {
+        if ((act >= ub + solAbsTol_) || (ub != 0 && 
+                                      act >= ub + fabs(ub)*solRelTol_)) {
+          // newPt is still infeasible
+          zU = x[binindex];
+        } else if ((fabs(act-ub) < solAbsTol_) && (ub == 0 || 
+                                      (fabs(act-ub) < fabs(ub)*solRelTol_))) {
+          // NewPt found
+          delete [] x;
+          return true;
+        } else {
+          zL = x[binindex]; // interior
+        }
+      }	else {
+        isCont = false;
+      }
+    } 
+  }
+          
+  delete [] x;
+  return false;
+}
+
+
+bool PerspCutGenerator::lineSearch_(const double *x, double * newPt, UInt i,
+                                bool isObj, double relVal)
+{
+  UInt vIdx;
+  int error = 0;
+  FunctionPtr f;
+  bool isCont = true;
+  double ub, c0, aTol, rTol, act;
+  double *y = new double[minlp_->getNumVars()];
+  double *oPt = new double[minlp_->getNumVars()];
+  std::copy(x, x+(minlp_->getNumVars()), oPt);
+  double *iPt = new double[minlp_->getNumVars()];
+  std::copy(solC_, solC_+(minlp_->getNumVars()), iPt);
+  
+  if (isObj) {
+    ub = relVal;
+    aTol = objAbsTol_;
+    rTol = objRelTol_;
+    ObjectivePtr o = minlp_->getObjective();
+    f = o->getFunction();
+    c0 = o->getConstant();
+  } else {
+    c0 = 0;
+    aTol = solAbsTol_;
+    rTol = solRelTol_;
+    ConstraintPtr cp = prCons_[i].cons;
+    ub = cp->getUb();
+    f = cp->getFunction();
+  }
+
+  while (isCont) {
+    for (VariableConstIterator vit=minlp_->varsBegin(); vit!=minlp_->varsEnd();
+         ++vit) {
+      vIdx = (*vit)->getIndex();
+      y[vIdx] = (iPt[vIdx] + oPt[vIdx])/2;
+    }
+    isCont = prVars(y, newPt, i, isObj);
+    if (isCont) {
+      act = f->eval(newPt, &error) + c0;
+      if (error == 0) {
+        if ((act >= ub + aTol) || (ub != 0 && 
+                                      act >= ub + fabs(ub)*rTol)) {
+          // newPt is still infeasible
+          std::copy(y, y+(minlp_->getNumVars()), oPt);
+        } else if ((act < ub - aTol) || (ub != 0 && 
+                                      act < ub - fabs(ub)*rTol)) {
+          std::copy(y, y+(minlp_->getNumVars()), iPt);
+        } else {
+        // NewPt found
+          delete [] y;
+          delete [] iPt;
+          delete [] oPt;
+          return true;
+        }
+      }	else {
+        isCont = false;
+      }
+    } 
+  }
+  delete [] y;
+  delete [] iPt;
+  delete [] oPt;
+  return false;
+}
+
+
 // This function assumes the point (x*,1) or (x*,0) is in the feasible region.
 bool PerspCutGenerator::bisecPt(const double *x, double * newPt, UInt i,
                                 bool isObj, double relVal)
@@ -684,7 +913,7 @@ bool PerspCutGenerator::bisecPt(const double *x, double * newPt, UInt i,
   UInt binindex;
   FunctionPtr f;
   bool isCont = true, binval;
-  double zU, zL, ub, c0, aTol, rTol, act, sb;
+  double zU, zL, ub, c0, aTol, rTol, act;
   double *y = new double[minlp_->getNumVars()];
   std::copy(x, x+(minlp_->getNumVars()), y);
   
@@ -696,13 +925,13 @@ bool PerspCutGenerator::bisecPt(const double *x, double * newPt, UInt i,
     binindex = (prObj_.binVar)->getIndex();
     ObjectivePtr o = minlp_->getObjective();
     f = o->getFunction();
-    c0 = -1*(o->getConstant());
+    c0 = o->getConstant();
   } else {
-    zU = 1;
-    ub = 0;
+    c0 = 0;
     aTol = solAbsTol_;
+    rTol = solRelTol_;
     ConstraintPtr cp = prCons_[i].cons;
-    c0 = cp->getUb();
+    ub = cp->getUb();
     f = cp->getFunction();
     binval = prCons_[i].binVal;
     binindex = (prCons_[i].binVar)->getIndex();
@@ -710,10 +939,8 @@ bool PerspCutGenerator::bisecPt(const double *x, double * newPt, UInt i,
 
   if (binval) {
     zU = 0;
-    sb = 1 - y[binindex];
   } else {
     zU = 1;
-    sb = y[binindex];
   }
 
   zL = y[binindex];
@@ -722,9 +949,8 @@ bool PerspCutGenerator::bisecPt(const double *x, double * newPt, UInt i,
     y[binindex] = (zL + zU)/2;
     isCont = prVars(y, newPt, i, isObj);
     if (isCont) {
-      act = f->eval(newPt, &error);
+      act = f->eval(newPt, &error) + c0;
       if (error == 0) {
-        act = sb*(act - c0);
         if ((act >= ub + aTol) || (ub != 0 && 
                                       act >= ub + fabs(ub)*rTol)) {
           // newPt is still infeasible
@@ -746,6 +972,58 @@ bool PerspCutGenerator::bisecPt(const double *x, double * newPt, UInt i,
   return false;
 }
 
+
+bool PerspCutGenerator::lineSearchAC(const double *x, double * newPt, UInt i,
+                                bool isObj, double relVal)
+{
+  // check if the analytical center satisfies this constraint, else for (x,
+  // 1). If yes, then apply line search to find point
+  if (solC_ == 0) {
+    return false;  
+  }
+
+  double val;
+  UInt binIdx;
+  bool isFound, binval;
+
+  if (isObj) {
+    binval = prObj_.binVal;
+    binIdx = (prObj_.binVar)->getIndex();
+  } else {
+    binval = prCons_[i].binVal;
+    binIdx = (prCons_[i].binVar)->getIndex();
+  }
+
+  if (binval) {
+    val = 1 - solC_[binIdx];
+  } else {
+    val = solC_[binIdx];
+  }
+
+  if (fabs(val) < intTol_) {
+    return false;  
+  }
+
+  if (isFeasible(solC_, i, isObj, relVal)) {
+    return lineSearch_(x, newPt, i, isObj, relVal);
+      // line search
+  } else {
+    val = solC_[binIdx];
+    if (binval) {
+      solC_[binIdx] = 0;
+    } else {
+      solC_[binIdx] = 1;
+    }
+
+    if (isFeasible(solC_, i, isObj, relVal)) {
+      isFound = lineSearch_(x, newPt, i, isObj, relVal);
+    }  else {
+      isFound = false;
+    }
+    solC_[binIdx] = val;
+  }
+  return isFound;
+}
 
 //void PerspCutGenerator::oriInfeasPt(RelaxationPtr rel, const double *x)
 //{
@@ -793,7 +1071,7 @@ bool PerspCutGenerator::addPC(RelaxationPtr rel, ConstSolutionPtr sol, UInt i,
     return false;
   } else {
     ub = 0;
-    linearAt(rel, x, prPt, &ub, &lf, i, &error);
+    linearAt(rel, x, prPt, &ub, &lf, i, &error, isObj);
     // add perspective cut
     if (error == 0) {
       return addCutToRel(rel, ptToCut, lf, ub, objVar, relVal, cutMan);
@@ -824,6 +1102,9 @@ std::string PerspCutGenerator::getName() const
 PerspCutGenerator::~PerspCutGenerator()
 {
   if (stats_) {
+    delete stats_;
+  }
+  if (solC_) {
     delete stats_;
   }
   env_ = 0;
