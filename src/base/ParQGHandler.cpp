@@ -170,7 +170,10 @@ void ParQGHandler::cutIntSol_(ConstSolutionPtr sol, CutManager *cutMan,
     {
       ++(stats_->nlpF);
       double nlpval = nlpe_->getSolutionValue();
-      updateUb_(s_pool, nlpval, sol_found);
+#pragma omp critical (solPool)
+      {
+       updateUb_(s_pool, nlpval, sol_found);
+      }
       if ((relobj_ >= nlpval-objATol_) ||
           (nlpval != 0 && (relobj_ >= nlpval-fabs(nlpval)*objRTol_))) {
           *status = SepaPrune;
@@ -554,6 +557,7 @@ void ParQGHandler::addCut_(const double *nlpx, const double *lpx,
         *status = SepaResolve;
         f = (FunctionPtr) new Function(lf);
         newcon = rel_->newConstraint(f, -INFINITY, cUb-c, sstm.str());
+        //newcon->write(std::cout);
         CutPtr cut = (CutPtr) new Cut(minlp_->getNumVars(),f, -INFINITY,
                                       cUb-c, false,false);
         cut->setCons(newcon);

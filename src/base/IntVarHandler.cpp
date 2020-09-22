@@ -28,6 +28,9 @@
 #include "VarBoundMod.h"
 #include "Variable.h"
 
+#if USE_OPENMP
+#include <omp.h>
+#endif
 //#define SPEW 1
 
 using namespace Minotaur;
@@ -140,7 +143,12 @@ Branches IntVarHandler::getBranches(BrCandPtr cand, DoubleVector & x,
   BranchPtr branch1, branch2;
   Branches branches = (Branches) new BranchPtrVector();
   VarBoundModPtr mod;
-  SolutionPtr bestsol = s_pool->getBestSolution();
+  SolutionPtr bestsol;
+#if USE_OPENMP
+#pragma omp critical (solPool)
+#endif
+  bestsol = s_pool->getBestSolution();
+  double primalVal;
 
   branch1 = (BranchPtr) new Branch();
   if (modProb_) {
@@ -170,7 +178,11 @@ Branches IntVarHandler::getBranches(BrCandPtr cand, DoubleVector & x,
   vcand->setNumBranches(2);
 
   if (true==gDive_ && bestsol) {
-    if (bestsol->getPrimal()[v->getIndex()] < x[v->getIndex()]) {
+#if USE_OPENMP
+#pragma omp critical (solPool)
+#endif
+    primalVal = bestsol->getPrimal()[v->getIndex()];
+    if (primalVal < x[v->getIndex()]) {
       branches->push_back(branch1);
       branches->push_back(branch2);
     } else {

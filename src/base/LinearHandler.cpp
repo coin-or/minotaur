@@ -38,6 +38,10 @@
 #include "VarBoundMod.h"
 #include "Variable.h"
 
+#if USE_OPENMP
+#include <omp.h>
+#endif
+
 //#define SPEW 1
 //TODO:
 // remove nintmods
@@ -1617,8 +1621,13 @@ void LinearHandler::simplePresolve(ProblemPtr p, SolutionPoolPtr spool,
     changed = false;
     ++iters;
     varBndsFromCons_(p, false, &changed, &mods, &nintmods);
-    if (spool && spool->getNumSols() > 0) {
-      varBndsFromObj_(p, spool->getBestSolutionValue(), false, &changed, &mods);
+#if USE_OPENMP
+#pragma omp critical
+#endif
+    {
+      if (spool && spool->getNumSols() > 0) {
+        varBndsFromObj_(p, spool->getBestSolutionValue(), false, &changed, &mods);
+      }
     }
     tightenInts_(p, false, &changed, &mods);
     status = checkBounds_(p);
