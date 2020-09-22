@@ -14,6 +14,7 @@
 #define MINOTAURPERSPCUTGENERATOR_H
 
 #include "CutManager.h"
+#include "Engine.h" 
 #include "Problem.h"
 #include "Function.h"
 #include "PerspCon.h"
@@ -40,7 +41,7 @@ namespace Minotaur {
   PerspCutGenerator();
   
   /// Constructor.
-  PerspCutGenerator(EnvPtr env, ProblemPtr problem);
+  PerspCutGenerator(EnvPtr env, ProblemPtr problem, EnginePtr nlpe_);
 
   /// Destructor.
   ~PerspCutGenerator();
@@ -133,8 +134,9 @@ namespace Minotaur {
 
 
   /**
-   * Given point x violating PR amenable constraint give a feasible point 
-   * using bisection. 
+   * Given point (x,z) violating PR amenable constraint. Also, known that
+   * (x,1) satisfies the PR constraint. Perform the bisection to find boundary
+   * point. 
    */
   bool bisecPt(const double *x, double * newPt, UInt i,
                                 bool isObj, double relVal);
@@ -142,11 +144,11 @@ namespace Minotaur {
   void cvxCombPt(RelaxationPtr rel, const double * y, UInt it);
  
 
-  bool changeVarForm(VariablePtr v, double xc, double sb,                                   UInt itn, double *newPt);
+  bool changeVarForm(VariablePtr v, double xc, double sb,                                   UInt itn, double *newPt, bool isObj);
   /**
    * Given outer-approximatio to a violated PR constraint
    */
-  void linearAt(RelaxationPtr rel, const double *x, const double *y, double *c, LinearFunctionPtr *lf, UInt itn, int *error);
+  void linearAt(RelaxationPtr rel, const double *x, const double *y, double *c, LinearFunctionPtr *lf, UInt itn, int *error, bool isObj);
 
   /// Return vector of perspective amenable constraint
   std::vector<prCons> getPRCons() {return prCons_;};
@@ -159,26 +161,44 @@ namespace Minotaur {
   //std::vector<UInt> getPRStruct() {return sType_;};
  
   /// Check feasibility of PR amenable constraints at the given solution.
-  bool isFeasible(const double *x, UInt i, bool isObj, double relVal);
+  UInt isFeasible(const double *x, UInt i, bool isObj, double relVal);
 
-  /// Generate variables for PR reformulation
+  /// Generate variables for PR reformulation. Case in which z = 0 fixes x
+  //variables, if z has value 0 then the function returns false; And if z has
+  //value 1, then the function returns the same point. Similarly, for z = 1
+  //fixing case.
   bool prVars(const double *x, double *prPt, UInt itn, bool isObj);
 
   void findPRCons();
 
+  bool uniDirZSearch(double *x, double * newPt, UInt i, double zdir);
+
   /// Return 1 if there are PR amenable constraints in the problem
   bool getStatus();
   
+
+  /// Perform line search using analytical center solC_. This search happens
+  //only if solC_ satisfies the PR amenable constraint or (xC, 1) satisfies,
+  //where xC is x components of  solC_.
+  bool lineSearchAC(const double *x, double * newPt, UInt i, bool isObj, double relVal);
+
   /// Writes statistics.
   void writeStats(std::ostream &out) const;
   
 private:
+
+  //void fixBinVars_(std::stack<Modification *> &varMods);
   
+  //void unfixBinVars_(std::stack<Modification *> &varMods);
+  
+  bool lineSearch_(const double *x, double * newPt, UInt i, bool isObj, double relVal);
   /// Environment.
   EnvPtr env_;
   
   /// Problem for which the handler is created.
   ProblemPtr minlp_;
+ 
+  EnginePtr nlpe_;
   
   /// Log.
   LoggerPtr logger_;
@@ -212,7 +232,9 @@ private:
 
   prObj prObj_;
 
-  bool isObj_;
+  double * solC_;
+
+  //bool isObj_;
 
   };
 }

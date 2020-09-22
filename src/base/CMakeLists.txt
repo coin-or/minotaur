@@ -17,6 +17,7 @@ configure_file (
 include_directories("${PROJECT_BINARY_DIR}/src/base")
  
 set (MINOTAUR_SOURCES
+     AnalyticalCenter.cpp
      BndProcessor.cpp 
      Branch.cpp 
      BranchAndBound.cpp 
@@ -141,6 +142,7 @@ set (MINOTAUR_SOURCES
 set (MINOTAUR_HEADERS
      MinotaurDeconfig.h
      ActiveNodeStore.h
+     AnalyticalCenter.cpp
      BndProcessor.h
      Branch.h
      Brancher.h
