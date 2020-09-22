@@ -83,7 +83,11 @@ void Environment::createDefaultOptions_()
   options_->insert(b_option);
 
   b_option = (BoolOptionPtr) new Option<bool>("perspective",
-      "Should perspective reformulation be used: <0/1>", true, false);
+      "Should perspective amenable structures be detected: <0/1>", true, false);
+  options_->insert(b_option);
+
+  b_option = (BoolOptionPtr) new Option<bool>("perspective_cuts",
+      "Should perspective cuts be used: <0/1>", true, false);
   options_->insert(b_option);
 
   b_option = (BoolOptionPtr) new Option<bool>("presolve", 
