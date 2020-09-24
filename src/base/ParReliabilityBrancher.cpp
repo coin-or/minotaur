@@ -190,7 +190,7 @@ Branches ParReliabilityBrancher::findBranches(RelaxationPtr rel, NodePtr node,
   }
 
   if (status_ == NotModifiedByBrancher) {
-//#pragma omp critical (solPool) // reading best solution value
+#pragma omp critical (solPool) // reading best solution value
     br_can = findBestCandidate_(sol->getObjValue(), 
                                 s_pool->getBestSolutionValue(), node,
                                 pseudoUp, pseudoDown, nodesProc);
@@ -198,7 +198,7 @@ Branches ParReliabilityBrancher::findBranches(RelaxationPtr rel, NodePtr node,
 
   if (status_ == NotModifiedByBrancher) {
     // surrounded by br_can :-)
-//#pragma omp critical (solPool) // taken care at IntVarHandler
+#pragma omp critical (solPool) // can be handled at IntVarHandler?
     branches = br_can->getHandler()->getBranches(br_can, x_, rel_, s_pool);
     for (BranchConstIterator br_iter=branches->begin();
         br_iter!=branches->end(); ++br_iter) {
