@@ -77,6 +77,7 @@ void PerspCon::populate_(UInt type, VariableGroup nVarVal,
 
  switch (type) {
  case 1:
+ case 3:
    p.lNonzeroVar = lVarVal;
    p.nNonzeroVar = nVarVal;
    break;
@@ -86,6 +87,31 @@ void PerspCon::populate_(UInt type, VariableGroup nVarVal,
  default:
    return;
    break;
+ }
+
+ //if (p.bisect == 0 && type != 2)  
+ if (p.bisect == 0)  {
+   double act;
+   int error = 0;
+   double * x = new double[p_->getNumVars()];
+   std::fill(x, x+p_->getNumVars(), 0);
+   for (VariableGroupConstIterator vt=nVarVal.begin(); vt!=nVarVal.end();
+        ++vt) {
+    x[(vt->first)->getIndex()] = vt->second; 
+   }
+   for (VariableGroupConstIterator vt=lVarVal.begin(); vt!=lVarVal.end();
+        ++vt) {
+    x[(vt->first)->getIndex()] = vt->second; 
+   }
+   x[bVar_->getIndex()] = 1;
+   act = cons_->getActivity(x, &error) - cons_->getUb();
+   //ub = cons_->getUb();
+   if (error == 0) {
+   // MS: verify this if.
+     if (act <  absTol_) {
+       p.bisect = 1;
+     }
+   }
  }
 
  prConsVec_.push_back(p);
@@ -177,6 +203,7 @@ bool PerspCon::boundBinVar_()
   bool boundsok = checkNVars_(x, nVarVal);
   
   if (boundsok) {
+    UInt type = 0;
     int error = 0;
     double cu, val = 0;
     VariableGroup lVarVal;
@@ -204,9 +231,7 @@ bool PerspCon::boundBinVar_()
         val = val + qf->eval(x); 
       }
 
-      if (cu - val >= absTol_) {
-        boundsok = false;      
-      } else {
+      if (cu - val < absTol_) {
         if (isObj_) {
           prObj_.isPR = 1;
           prObj_.binVar = bVar_;
@@ -218,9 +243,8 @@ bool PerspCon::boundBinVar_()
           //if (p_->getObjective()->getLinearFunction()) {
             //prObj_.numVarInNonLin -= (p_->getObjective()->getLinearFunction()->getNumTerms());
           //}
-
         } else {
-          populate_(2, nVarVal, lVarVal); // type 2 on-off set 
+          type += 2;
         }
       }
     } else {
@@ -228,7 +252,7 @@ bool PerspCon::boundBinVar_()
       return false;
     }
 
-    if (!boundsok && !isObj_) {
+    if (!isObj_) {
       LinearFunctionPtr lf = cons_->getLinearFunction();
       //check for on-off set of type 1
       if (lf) {
@@ -244,9 +268,12 @@ bool PerspCon::boundBinVar_()
             impli0_.erase(iit_);
           }
         } else {
-          populate_(1, nVarVal, lVarVal); // type 1 on-off set 
+          type += 1;
         }
+      } else {
+        type = 1;
       }
+      populate_(type, nVarVal, lVarVal); 
     }
   }
   delete [] x;
@@ -394,7 +421,7 @@ void PerspCon::displayInfo_()
   //MS: make display better. Keep limited information remove S1 and S2
   prCons p;
   //UInt n = 0;
-  UInt s = prConsVec_.size();
+  UInt s = prConsVec_.size(), type1 = 0, type2 = 0, type3 = 0, other = 0;
 
   std::ostream &out = logger_->msgStream(LogInfo);
  
@@ -444,8 +471,23 @@ void PerspCon::displayInfo_()
       p = prConsVec_[i];
       out << i+1 << ". ";
       p.cons->write(out);
-      if (!(p.bisect)) {
+      if (p.bisect) {
         ++s;      
+      }
+
+      switch (p.type) {
+      case 1:
+        type1 += 1;
+        break;
+      case 3:
+        type3 += 1;
+        break;
+      case 2:
+        type2 += 1;
+        break;
+      default:
+        other += 1;
+        break;
       }
       //if (p.numVarInNonLin > 1) {
         //++n;      
@@ -460,7 +502,8 @@ void PerspCon::displayInfo_()
       p_->getNumCons() - p_->getNumLinCons() << std::endl; 
     out << me_ <<"Number of constraints amenable to PR = " << 
       prConsVec_.size() << std::endl;
-    out << me_ <<"No. of constraints amenable to PR with bin var in the function = " << s << std::endl;
+    out << me_ <<"No. of type 1, 2, both and none = " << type1 << " " << type2 << " " << type3 << " " << other << "\n";
+    out << me_ <<"No. of constraints amenable to PR with bisect amenable structure = " << s << std::endl;
     //out << me_ <<"No. of constraints amenable to PR with more than one term in nonlinear part of the function = " << n << std::endl;
     out << "----------------------------------------------------"<< std::endl;
   } else {
@@ -1344,7 +1387,7 @@ void PerspCon::findPRCons()
   }
  
   //#if SPEW 
-  displayInfo_();
+  //displayInfo_();
   //#endif  
 
   // Delete implications derived from constraints in gubList0_ and gubList1_
