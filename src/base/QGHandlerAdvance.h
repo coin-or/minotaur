@@ -80,6 +80,16 @@ private:
   /// Status of the NLP/QP engine.
   EngineStatus nlpStatus_;
 
+  void perspectiveCutsObjX_(const double *nlpx, const double *lpx, CutManager *, SeparationStatus *status);
+
+  void perspectiveCutsConsX_(const double *nlpx, const double *lpx, CutManager *, SeparationStatus *status);
+
+  void prFeasibleInactive_(bool &isFound, bool binVal, UInt bIdx, UInt i, FunctionPtr f, const double *x, double * y, double * prPt, double * ptToCut, CutManagerPtr cutMan);
+
+  void prInfeasibility_(bool &isFound, bool bisect, bool binVal, double * y, double * prPt, UInt i, bool isObj, double relVal, UInt bIdx, double xVal);
+
+  void shortestDist_(ConstSolutionPtr sol);
+
   double * solC_;
   /**
    * The variable corresponding to the objective function. It is a part of
@@ -130,8 +140,12 @@ private:
   
   int lastNodeId_;
 
+  /// For shortest distance NLP
+  double lpdist_;
+  EngineStatus shortestNlpStatus_;
+  
   PerspCutGeneratorPtr prCutGen_;
-
+  
   /// Statistics.
   QGStats *stats_;
 
@@ -219,7 +233,7 @@ private:
 
   void addInitLinearX_(ConstSolutionPtr sol);
 
-  void addCutAtRoot_(ConstraintPtr con, ConstSolutionPtr sol, bool isObj);
+  void addCutAtRoot_(ConstraintPtr con, const double * x, bool isObj);
 
   void dualBasedCons_(ConstSolutionPtr sol);
 
