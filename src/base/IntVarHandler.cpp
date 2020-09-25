@@ -25,6 +25,7 @@
 #include "Relaxation.h"
 #include "Solution.h"
 #include "SolutionPool.h"
+#include "Types.h"
 #include "VarBoundMod.h"
 #include "Variable.h"
 
@@ -63,7 +64,8 @@ bool IntVarHandler::isFeasible(ConstSolutionPtr sol, RelaxationPtr relaxation,
   for (v_iter=relaxation->varsBegin(); v_iter!=relaxation->varsEnd(); 
        ++v_iter) {
     v_type = (*v_iter)->getType();
-    if (v_type==Binary || v_type==Integer) {
+    if (v_type==Binary || v_type==Integer || v_type==ImplBin ||
+        v_type==ImplInt) {
       value = x[(*v_iter)->getIndex()];
       if (fabs(value - floor(value+0.5)) > intTol_) {
         is_feas = false;

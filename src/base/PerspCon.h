@@ -39,7 +39,7 @@ typedef struct impliVarsInfo {
 } impliVar;
 
 typedef struct prConsInfo {
-  UInt type; // 1 if singleton, 2 if hyperplane
+  UInt type; // 1 if singleton, 2 if hyperplane, 3 both
   UInt numVarInNonLin; // # of vars in nonlinear part
   VariablePtr binVar;
   ConstraintPtr cons;

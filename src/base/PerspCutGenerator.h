@@ -48,12 +48,16 @@ namespace Minotaur {
 
   /// Added perspective cut to a constraint at a given point
 
-  bool addPC(RelaxationPtr rel, ConstSolutionPtr sol, UInt i, 
-                              const double *ptToCut, double *prPt, bool isObj,
-                              VariablePtr objVar, CutManagerPtr cutMan);
+  bool addPC(RelaxationPtr rel, const double * y, UInt i, 
+                              const double *ptToCut, const double *prPt, bool isObj,
+                              VariablePtr objVar, CutManagerPtr cutMan, double relVal);
 
   /// Returns name of the handler.
   std::string getName() const;
+  
+  UInt getNumCuts() {return stats_->cuts;}
+
+  void fixedValue(double * prPt, bool isObj, UInt i);
 
   /**
    * Add Perspective cut (PCut) to a violated PR amenable constraint whose associated
@@ -73,9 +77,9 @@ namespace Minotaur {
    * Add OA cut to original constraint of a violated PR constraint whose
    *  associated binary variable has value 0.
    */
-  void linearAt(RelaxationPtr rel, FunctionPtr f, double fval,
-                const double *x, double *c, LinearFunctionPtr *lf,
-                int *error);
+  //void linearAt(RelaxationPtr rel, FunctionPtr f, double fval,
+                //const double *x, double *c, LinearFunctionPtr *lf,
+                //int *error);
   /**
    * Add PCut to a PR amenable constraint whose associated
    * binary variable in integer at the given point (nlpx). 
@@ -138,7 +142,7 @@ namespace Minotaur {
    * (x,1) satisfies the PR constraint. Perform the bisection to find boundary
    * point. 
    */
-  bool bisecPt(const double *x, double * newPt, UInt i,
+  bool bisecPt(double *x, double * newPt, UInt i,
                                 bool isObj, double relVal);
 
   void cvxCombPt(RelaxationPtr rel, const double * y, UInt it);
@@ -148,7 +152,7 @@ namespace Minotaur {
   /**
    * Given outer-approximatio to a violated PR constraint
    */
-  void linearAt(RelaxationPtr rel, const double *x, const double *y, double *c, LinearFunctionPtr *lf, UInt itn, int *error, bool isObj);
+  void linearAt(RelaxationPtr rel, const double *x, const double *prPt, double *c, LinearFunctionPtr *lf, UInt itn, int *error, bool isObj);
 
   /// Return vector of perspective amenable constraint
   std::vector<prCons> getPRCons() {return prCons_;};
@@ -167,11 +171,11 @@ namespace Minotaur {
   //variables, if z has value 0 then the function returns false; And if z has
   //value 1, then the function returns the same point. Similarly, for z = 1
   //fixing case.
-  bool prVars(const double *x, double *prPt, UInt itn, bool isObj);
+  bool prVars(const double *y, double *prPt, UInt itn, bool isObj);
 
   void findPRCons();
 
-  bool uniDirZSearch(double *x, double * newPt, UInt i, double zdir);
+  bool uniDirZSearch(double *y, double * newPt, UInt i, double zdir);
 
   /// Return 1 if there are PR amenable constraints in the problem
   bool getStatus();
@@ -180,7 +184,7 @@ namespace Minotaur {
   /// Perform line search using analytical center solC_. This search happens
   //only if solC_ satisfies the PR amenable constraint or (xC, 1) satisfies,
   //where xC is x components of  solC_.
-  bool lineSearchAC(const double *x, double * newPt, UInt i, bool isObj, double relVal);
+  bool lineSearchAC(double *y, double * newPt, UInt i, bool isObj, double relVal);
 
   /// Writes statistics.
   void writeStats(std::ostream &out) const;
@@ -191,7 +195,7 @@ private:
   
   //void unfixBinVars_(std::stack<Modification *> &varMods);
   
-  bool lineSearch_(const double *x, double * newPt, UInt i, bool isObj, double relVal);
+  bool lineSearch_(double *y, double * newPt, UInt i, bool isObj, double relVal);
   /// Environment.
   EnvPtr env_;
   
