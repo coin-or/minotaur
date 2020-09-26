@@ -35,6 +35,7 @@ PerspCon::PerspCon()
   gubList0_(0), gubList1_(0)
 {
   absTol_ = env_->getOptions()->findDouble("solAbs_tol")->getValue();
+  relTol_ = env_->getOptions()->findDouble("feasRel_tol")->getValue();
 }
 //MS: include all the declared variables in .h file
 
@@ -45,6 +46,7 @@ PerspCon::PerspCon(EnvPtr env, ProblemPtr p)
   timer_ = env->getNewTimer();
   logger_ = env->getLogger();
   absTol_ = env_->getOptions()->findDouble("solAbs_tol")->getValue();
+  relTol_ = env_->getOptions()->findDouble("feasRel_tol")->getValue();
 }
 
 
@@ -90,9 +92,9 @@ void PerspCon::populate_(UInt type, VariableGroup nVarVal,
  }
 
  //if (p.bisect == 0 && type != 2)  
- if (p.bisect == 0)  {
-   double act;
+ if (p.bisect == 0) {
    int error = 0;
+   double act, ub;
    double * x = new double[p_->getNumVars()];
    std::fill(x, x+p_->getNumVars(), 0);
    for (VariableGroupConstIterator vt=nVarVal.begin(); vt!=nVarVal.end();
@@ -104,14 +106,16 @@ void PerspCon::populate_(UInt type, VariableGroup nVarVal,
     x[(vt->first)->getIndex()] = vt->second; 
    }
    x[bVar_->getIndex()] = 1;
-   act = cons_->getActivity(x, &error) - cons_->getUb();
-   //ub = cons_->getUb();
+   act = cons_->getActivity(x, &error);
+   
    if (error == 0) {
-   // MS: verify this if.
-     if (act <  absTol_) {
+     ub = cons_->getUb();
+     if ((fabs(act-ub) < absTol_) && (ub == 0 || 
+                                      (fabs(act-ub) < fabs(ub)*relTol_))) {
        p.bisect = 1;
      }
    }
+   delete [] x;
  }
 
  prConsVec_.push_back(p);

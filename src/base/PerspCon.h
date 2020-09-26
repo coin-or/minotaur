@@ -197,6 +197,8 @@ double val, bool z);
 
   double absTol_;
 
+  double relTol_;
+
   /// Timer
   Timer *timer_;
 
