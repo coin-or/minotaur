@@ -1210,13 +1210,14 @@ std::string PerspCutGenerator::getName() const
   return "PerspCutGenerator";
 }
 
+
 PerspCutGenerator::~PerspCutGenerator()
 {
   if (stats_) {
     delete stats_;
   }
   if (solC_) {
-    delete stats_;
+    delete solC_;
   }
   env_ = 0;
   minlp_ = 0;
