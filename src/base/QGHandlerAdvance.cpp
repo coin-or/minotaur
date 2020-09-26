@@ -712,19 +712,18 @@ void QGHandlerAdvance::cutIntSol_(const double *lpx, CutManager *cutMan,
   case (EngineIterationLimit):
     {
       ++(stats_->nlpIL);
-      //const double * nlpx = nlpe_->getSolution()->getPrimal();
+      const double * nlpx = nlpe_->getSolution()->getPrimal();
       objCutAtLpSol_(lpx, cutMan, status, 0);
       consCutsAtLpSol_(lpx, cutMan, status);
       
-      //if (prCutGen_) {
-        //UInt pCuts = prCutGen_->getNumCuts();
-        // MS: CORRECT THIS CODE! lpx should not be used!
-        //perspectiveCutsObjX_(nlpx, lpx, cutMan, status);
-        //perspectiveCutsConsX_(nlpx, lpx, cutMan, status);
-        //if (prCutGen_->getNumCuts() > pCuts) {
-          //*status = SepaResolve;
-        //}
-      //}
+      if (prCutGen_) {
+        UInt pCuts = prCutGen_->getNumCuts();
+        perspectiveCutsObjX_(nlpx, lpx, cutMan, status);
+        perspectiveCutsConsX_(nlpx, lpx, cutMan, status);
+        if (prCutGen_->getNumCuts() > pCuts) {
+          *status = SepaResolve;
+        }
+      }
     }
     break;
   case (FailedFeas):
@@ -784,7 +783,13 @@ void QGHandlerAdvance::perspectiveCutsObjX_(const double *nlpx, const double *lp
       }
       
       feas = prCutGen_->isFeasible(prPt, 0, 1, relobj_);
-      if (feas == 0) {
+      if (!feas) {
+        // Pcut at lpx
+        prCutGen_->addPC(rel_, lpx, 0, lpx, lpx, 1, objVar_, cutMan, relobj_);
+        // Pcut at nlpx
+        prCutGen_->addPC(rel_, y, 0, lpx, prPt, 1, objVar_, cutMan, relobj_);
+
+        // Pcut at using analytical center
         isFound = prCutGen_->lineSearchAC(y, prPt, 0, 1, relobj_);
       }
 
@@ -793,7 +798,7 @@ void QGHandlerAdvance::perspectiveCutsObjX_(const double *nlpx, const double *lp
       }
      
       if (!isFound) {
-        gradientIneq_(nlpx, lpx, cutMan, status, ConstraintPtr(), 1); // to obj
+        gradientIneq_(lpx, lpx, cutMan, status, ConstraintPtr(), 1); // to obj
       }
     }
     
@@ -848,7 +853,6 @@ void QGHandlerAdvance::perspectiveCutsConsX_(const double *nlpx, const double *l
         isFound = prCutGen_->lineSearchAC(y, prPt, i, 0, 0);
       } else {
         isFound = true;
-        //MS: which all cut points to be considered?
         if (feas == 2) {
           if (prCons[i].type == 1) {
             if (!((prCons[i].cons)->getLinearFunction())) { // no linear function
@@ -1121,20 +1125,20 @@ void QGHandlerAdvance::consCutsAtLpSol_(const double *lpx, CutManager *cutMan,
     }
   }
    
-  if (prCutGen_) {
-    std::vector<prCons> prCons = prCutGen_->getPRCons();
-    for (UInt i = 0; i < prCons.size(); ++i) {
-      con = prCons[i].cons;
-      act =  con->getActivity(lpx, &error);
-      if (error == 0) { 
-        cUb = con->getUb();
-        if ((act > cUb + solAbsTol_) &&
-          (cUb == 0 || act > cUb+fabs(cUb)*solRelTol_)) {
-          ECPTypeCut_(lpx, cutMan, con, act);
-        }
-      }
-    }
-  }
+  //if (prCutGen_) {
+    //std::vector<prCons> prCons = prCutGen_->getPRCons();
+    //for (UInt i = 0; i < prCons.size(); ++i) {
+      //con = prCons[i].cons;
+      //act =  con->getActivity(lpx, &error);
+      //if (error == 0) { 
+        //cUb = con->getUb();
+        //if ((act > cUb + solAbsTol_) &&
+          //(cUb == 0 || act > cUb+fabs(cUb)*solRelTol_)) {
+          //ECPTypeCut_(lpx, cutMan, con, act);
+        //}
+      //}
+    //}
+  //}
    
   if (temp < stats_->cuts) {
     *status = SepaResolve;
