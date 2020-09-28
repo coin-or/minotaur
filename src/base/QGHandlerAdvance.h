@@ -80,13 +80,13 @@ private:
   /// Status of the NLP/QP engine.
   EngineStatus nlpStatus_;
 
-  void perspectiveCutsObjX_(const double *nlpx, const double *lpx, CutManager *, SeparationStatus *status);
+  void perspectiveCutsObjX_(const double *lpx, CutManager *, SeparationStatus *status);
 
   void perspectiveCutsConsX_(const double *nlpx, const double *lpx, CutManager *, SeparationStatus *status);
 
-  void prFeasibleInactive_(bool &isFound, bool binVal, UInt bIdx, UInt i, FunctionPtr f, const double *x, double * y, double * prPt, double * ptToCut, CutManagerPtr cutMan);
+  void prFeasibleInactive_(bool binVal, UInt bIdx, UInt i, FunctionPtr f, const double *x, double * y, double * prPt, const double * ptToCut, CutManagerPtr cutMan);
 
-  void prInfeasibility_(bool &isFound, bool bisect, bool binVal, double * y, double * prPt, UInt i, bool isObj, double relVal, UInt bIdx, double xVal);
+  void prInfeasibility_(bool bisect, bool binVal, double * y, double * prPt, const double *ptToCut, UInt i, bool isObj, double relVal, UInt bIdx, double xVal);
 
   void shortestDist_(ConstSolutionPtr sol);
 
