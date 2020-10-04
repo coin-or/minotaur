@@ -14,6 +14,7 @@
 
 #include "MinotaurConfig.h"
 #include "Branch.h"
+#include "BrCand.h"
 #include "Environment.h"
 #include "Node.h"
 #include "NodeHeap.h"
@@ -24,8 +25,7 @@
 #include "ParTreeManager.h"
 
 using namespace Minotaur;
-    
-    
+
 ParTreeManager::ParTreeManager(EnvPtr env) 
 : bestLowerBound_(-INFINITY),
   bestUpperBound_(INFINITY),
