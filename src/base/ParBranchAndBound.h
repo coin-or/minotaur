@@ -189,15 +189,15 @@ namespace Minotaur {
                   UInt nThreads);
 
     /**
-     * \brief Start solving the Problem using branch-and-bound with reproducibility.
+     * \brief Branch-and-bound solver with reproducibility of results.
      *
      * \param [in] parNodeRelaxer is the array of node relaxers.
      * \param [in] parPCBProcessor is the array of node processors.
      * \param [in] nThreads is the number of threads being used.
      */
-    //void parsolveSync(ParNodeIncRelaxerPtr parNodeRelaxer[],
-                  //ParPCBProcessorPtr parPCBProcessor[],
-                  //UInt nThreads);
+    void parsolveSync(ParNodeIncRelaxerPtr parNodeRelaxer[],
+                  ParPCBProcessorPtr parPCBProcessor[],
+                  UInt nThreads);
 
     /// Print a two-dimensional vector (customized).
     void print2dvec(std::vector<std::vector<int> > output);
