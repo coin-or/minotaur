@@ -231,7 +231,6 @@ double ParTreeManager::getPerGapPar(double treeLb)
       gap = 0.0;
     }
   }
-  //std::cout << "in parTM: gap " << gap << " treeLb " << treeLb << " ub " << bestUpperBound_ << "\n";
   return gap;
 }
 
@@ -262,10 +261,19 @@ void ParTreeManager::insertCandidate_(NodePtr node, bool pop_now)
   node->setId(size_);
   node->setDepth(node->getParent()->getDepth()+1);
   if (tbRule_ == "twoChild") {
+    bool dir = node->getBranch()->getBrCand()->getDir();
       if (pop_now) {
-        node->setTbScore(2*(node->getParent()->getTbScore()));
+        if (!dir) { // down branch
+          node->setTbScore(2*(node->getParent()->getTbScore()));
+        } else { // up branch
+          node->setTbScore(2*(node->getParent()->getTbScore())+1);
+        }
       } else {
-        node->setTbScore(2*(node->getParent()->getTbScore())+1);
+        if (!dir) {
+          node->setTbScore(2*(node->getParent()->getTbScore())+1);
+        } else {
+          node->setTbScore(2*(node->getParent()->getTbScore()));
+        }
       }
   } else if (tbRule_ == "FIFO") {
       node->setTbScore(node->getId());
@@ -330,7 +338,7 @@ void ParTreeManager::removeActiveNode(NodePtr node)
 }
 
 
-void ParTreeManager::removeNode_(NodePtr node) 
+void ParTreeManager::removeNode_(NodePtr node)
 {
   NodePtr cNode, parent;
   NodePtrIterator node_i;
