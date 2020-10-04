@@ -68,9 +68,9 @@ ParPCBProcessor::ParPCBProcessor (EnvPtr env, EnginePtr engine,
 : branches_(0),
   contOnErr_(false),
   cutMan_(0),
-  engineStatus_(EngineUnknownStatus),
+  //engineStatus_(EngineUnknownStatus),
   numSolutions_(0),
-  relaxation_(RelaxationPtr()),
+  //relaxation_(RelaxationPtr()),
   //ws_(WarmStartPtr())
   ws_(0)
 {
@@ -182,7 +182,13 @@ bool ParPCBProcessor::presolveNode_(NodePtr node, SolutionPoolPtr s_pool)
   int max_iter = 1;
   bool cont = true;
 
-  if (presFreq_<1 || node->getId()%presFreq_!=0) {
+  bool checkForPresolve = (node->getId() == 0 || presFreq_ < 1) ? true : (node->getId()%presFreq_!=0);
+
+  if (node->getTbScore() != 0 && presFreq_ >= 1) {
+    checkForPresolve = ((int)node->getTbScore())%presFreq_!=0;
+  }
+
+  if (presFreq_ < 1 || checkForPresolve) {
     return false;
   } 
   // TODO: make this more sophisticated: loop several times until no more
@@ -212,7 +218,6 @@ bool ParPCBProcessor::presolveNode_(NodePtr node, SolutionPoolPtr s_pool)
     node->setStatus(NodeInfeasible);
     ++stats_.inf;
   }
-
   return is_inf;
 }
 void ParPCBProcessor::process(NodePtr node, RelaxationPtr rel,
@@ -273,15 +278,9 @@ void ParPCBProcessor::process(NodePtr node, RelaxationPtr rel,
     logger_->msgStream(LogDebug) << me_ << "iteration " << iter << std::endl;
 #endif
 
-//#pragma omp critical
-    //{
-    //std::cout << " node " << node->getId() << " thread " << omp_get_thread_num() << std::endl;
-    //rel->write(std::cout);
-    //}
     solveRelaxation_();
-
     sol = engine_->getSolution();
-    
+
     // check if the relaxation is infeasible or if the cost is too high.
     // In either case we can prune. Also set lb of node.
     should_prune = shouldPrune_(node, sol->getObjValue(), s_pool);
@@ -367,10 +366,10 @@ void ParPCBProcessor::process(NodePtr node, RelaxationPtr rel,
       break;
     }
   }
-  if (cutMan_ ){
+  if (cutMan_ ) {
     cutMan_->updatePool(relaxation_,sol);
     cutMan_->updateRel(sol,relaxation_);
-  } 
+  }
   node->removeWarmStart();
   return;
 }
@@ -502,7 +501,7 @@ bool ParPCBProcessor::shouldPrune_(NodePtr node, double solval,
      if (node->getParent() &&
          node->getParent()->getLb() > solval+oATol_ &&
          node->getParent()->getLb() > solval+fabs(solval)*oRTol_ ) {
-       
+#pragma omp critical (logger)
        logger_->msgStream(LogError) << me_ << "node lb lower than parent's lb. "
                                     << "Relaxation may not be convex or "
                                     << "engine has an issue."
