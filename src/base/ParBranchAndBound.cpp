@@ -1480,8 +1480,7 @@ void ParBranchAndBound::parsolveSync(ParNodeIncRelaxerPtr parNodeRlxr[],
     }
   }
 
-  //while ((nodeCount > 0 || tm_->anyActiveNodesLeft()) && shouldRun)
-  while (nodeCount > 0 && shouldRun) {
+  while ((nodeCount > 0 || tm_->anyActiveNodesLeft()) && shouldRun) {
 #if SPEW
     logger_->msgStream(LogDebug1) << me_ << "processing node "
       << current_node[0]->getId() << std::endl
@@ -1570,8 +1569,6 @@ void ParBranchAndBound::parsolveSync(ParNodeIncRelaxerPtr parNodeRlxr[],
         } //for ends
       }
       // BRANCHING SYNCHRONIZATION
-#pragma omp single
-    std::cout << " BRANCHING SYNC: Iter " << iterCount << "\n";
 #pragma omp for
       for (UInt i = 0; i < numThreads; ++i) {
         if (current_node[i]) {
@@ -1681,8 +1678,7 @@ void ParBranchAndBound::parsolveSync(ParNodeIncRelaxerPtr parNodeRlxr[],
         showParStatus_(nodeCount, treeLb, wallTimeStart, 0);
 
         // update stopping conditions
-        //if (nodeCount == 0 && !(tm_->anyActiveNodesLeft()))
-        if (nodeCount == 0) {
+        if (nodeCount == 0 && !(tm_->anyActiveNodesLeft())) {
           tm_->updateLb();
           if (tm_->getUb() <= -INFINITY) {
             status_ = SolvedUnbounded;
