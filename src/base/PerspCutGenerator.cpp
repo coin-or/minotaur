@@ -407,7 +407,7 @@ void PerspCutGenerator::linearAt(RelaxationPtr rel, const double * x,
     zCoeff -= ub;
 
     if (lfn) {
-      if (type != 2) { // either 1 or 3
+      if (type == 1) {
         for (VariableGroupConstIterator vt=lfn->termsBegin();
              vt!=lfn->termsEnd(); ++vt) {
           v = vt->first;
@@ -668,7 +668,7 @@ bool PerspCutGenerator::prVars(const double *x, double *prPt, UInt itn,
 
   if (lf) {
     VariableGroupConstIterator mit;
-    if (type != 2) { // either 1 or 3
+    if (type == 1) { 
       for (VariableGroupConstIterator vt=lf->termsBegin(); vt!=lf->termsEnd();
            ++vt) {
         v = vt->first;

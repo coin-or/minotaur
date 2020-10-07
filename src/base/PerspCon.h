@@ -97,7 +97,7 @@ private:
    * Checks if the variables in a constraint are bounded by given binary
    * variable binvar.
    */ 
-  bool boundBinVar_();
+  bool boundBinVar_(bool &isBinFixed);
 
   void checkBinPos_();
 
