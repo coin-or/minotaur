@@ -16,6 +16,8 @@
 #include <queue>
 
 #include "MinotaurConfig.h"
+#include "CGraph.h"
+#include "CNode.h"
 #include "HessianOfLag.h"
 #include "LinearFunction.h"
 #include "PolynomialFunction.h"
@@ -631,6 +633,106 @@ void QuadraticFunction::removeVar(VariablePtr v, double val,
   }
 }
 
+NonlinearFunctionPtr QuadraticFunction::getPersp(VariablePtr z, double eps,
+                                      VariableGroup nNonzeroVar, double intTol)
+{
+  VariablePtr v, v1;
+  VariableGroupConstIterator vit;
+  UInt i = 0, numChild = terms_.size();
+  CGraphPtr t = (CGraphPtr) new CGraph();
+  CNode **childr = new Minotaur::CNode *[numChild];
+  CNode *dnode = 0, *vnode = 0, *anode = 0, *znode = 0, *node1 = 0, *node2 = 0,
+        *cnode = 0, *zNewnode = t->newNode(z);        
+  
+  if (eps > 0.0) {
+    anode = t->newNode(1.0-eps);
+    znode = t->newNode(OpMult, anode, zNewnode); // z*(1-eps)
+    anode = t->newNode(eps);
+    znode = t->newNode(OpPlus, anode, znode); // eps + z*(1-eps)
+  } 
+  
+  for(VariablePairGroupConstIterator it = terms_.begin(); it != terms_.end(); ++it) {
+    v = it->first.first;
+    v1 = it->first.second;
+    if (v->getId() != v1->getId()) {
+      // for v
+      anode = t->getVarNode(v);
+      if (anode) {
+        if (anode->getUPar()->getOp() == Minotaur::OpMinus) {
+          node1 = anode->getUPar()->getUPar(); // all existing vars have a unique parent
+        } else {
+          node1 = anode->getUPar(); // all existing vars have a unique parent
+        }     
+      } else {
+        vnode = t->newNode(v);            
+        vit = nNonzeroVar.find(v);
+        if (vit != nNonzeroVar.end() && fabs(vit->second) > intTol) {
+          anode = t->newNode(vit->second);
+          cnode = t->newNode(OpMult, anode, zNewnode);
+          anode = t->newNode(vit->second);
+          anode = t->newNode(OpMinus, anode, cnode);
+          vnode = t->newNode(OpMinus, vnode, anode);
+        }
+        node1 = t->newNode(OpDiv, vnode, znode);
+      }
+
+        
+      // for v1
+      dnode = t->getVarNode(v1);
+      if (dnode) {
+        if (dnode->getUPar()->getOp() == Minotaur::OpMinus) {
+          node2 = dnode->getUPar()->getUPar(); // all existing vars have a unique parent
+        } else {
+          node2 = dnode->getUPar(); // all existing vars have a unique parent
+        }     
+      } else {
+        vnode = t->newNode(v);            
+        vit = nNonzeroVar.find(v);
+        if (vit != nNonzeroVar.end() && fabs(vit->second) > intTol) {
+          dnode = t->newNode(vit->second);
+          cnode = t->newNode(OpMult, dnode, zNewnode);
+          dnode = t->newNode(vit->second);
+          dnode = t->newNode(OpMinus, dnode, cnode);
+          vnode = t->newNode(OpMinus, vnode, dnode);
+        }
+        node2 = t->newNode(OpDiv, vnode, znode);
+      }
+      dnode = t->newNode(OpMult, node1, node2); 
+      anode = t->newNode(it->second);     
+    } else {
+      anode = t->getVarNode(v);
+      if (anode) {
+        if (anode->getUPar()->getOp() == Minotaur::OpMinus) {
+          node1 = anode->getUPar()->getUPar(); // all existing vars have a unique parent
+        } else {
+          node1 = anode->getUPar(); // all existing vars have a unique parent
+        }     
+      } else {
+        vnode = t->newNode(v);            
+        vit = nNonzeroVar.find(v);
+        if (vit != nNonzeroVar.end() && fabs(vit->second) > intTol) {
+          anode = t->newNode(vit->second);
+          cnode = t->newNode(OpMult, anode, zNewnode);
+          anode = t->newNode(vit->second);
+          anode = t->newNode(OpMinus, anode, cnode);
+          vnode = t->newNode(OpMinus, vnode, anode);
+        }
+        node1 = t->newNode(OpDiv, vnode, znode);
+      }
+      dnode = t->newNode(OpSqr, node1, 0); 
+      anode = t->newNode(it->second);
+    }
+    childr[i] = t->newNode(Minotaur::OpMult, node1, node2);     
+    ++i;
+  }
+  
+  anode = t->newNode(Minotaur::OpSumList, childr, numChild);
+  delete [] childr;
+  anode = t->newNode(OpMult, anode, znode);
+  t->setOut(anode);
+  t->finalize();
+  return t;
+}
 
 void QuadraticFunction::prepJac(VarSetConstIter vbeg, VarSetConstIter vend)
 {
