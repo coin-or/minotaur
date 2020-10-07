@@ -173,6 +173,25 @@ namespace Minotaur {
                   ParPCBProcessorPtr parPCBProcessor[],
                   UInt nThreads, bool prune);
 
+    /**
+     * \brief Branch-and-bound solver with reproducibility of results.
+     *
+     * \param [in] parNodeRelaxer is the array of node relaxers.
+     * \param [in] parPCBProcessor is the array of node processors.
+     * \param [in] nThreads is the number of threads being used.
+     */
+    void parsolveSync(ParNodeIncRelaxerPtr parNodeRelaxer[],
+                  ParPCBProcessorPtr parPCBProcessor[],
+                  UInt nThreads, bool prune);
+
+    /**
+     * \brief Function to remove the constraints added to this relaxation.
+     *
+     * \param [in] rel is the relaxation of a node.
+     * \param [in] nc is the number of constraints at the root node.
+     */
+    void removeAddedCons(RelaxationPtr rel, UInt nc);
+
     /// Return total time taken.
     double totalTime();
 

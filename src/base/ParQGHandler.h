@@ -99,6 +99,12 @@ private:
   /// Relative tolerance for pruning a node.
   double objRTol_;
 
+  /// Whether cuts generated at a node should be stored with the node.
+  bool storeCutsAtNode_;
+
+  /// Node at which the LP yielded an integer solution.
+  NodePtr node_;
+
   /// Statistics.
   ParQGStats *stats_;
 

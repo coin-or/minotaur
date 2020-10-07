@@ -69,6 +69,9 @@ namespace Minotaur {
     /// Add a child node.
     void addChild(NodePtr childNode);
 
+    /// Add cut to the cut-pool of this node
+    void addCutToPool(CutPtr cut, RelaxationPtr rel);
+
     /**
      * At each node one can make several modifications to the problem.
      * Each such modification must be stored. This includes all the
@@ -84,6 +87,13 @@ namespace Minotaur {
      * (while branching).
      */
     void addRMod(ModificationPtr m) { rMods_.push_back(m); }
+
+    /**
+     * Apply the cuts generated at the ancestors of this node at this node to
+     * the relaxation. First, each cut is translated appropriately so that it
+     * becomes applicable for this relaxation.
+     */
+    void applyCutsByIndex(RelaxationPtr rel);
 
     /**
      * Apply the modifications including the branching that were made 
@@ -120,6 +130,9 @@ namespace Minotaur {
      * from its parent.
      */
     BranchPtr getBranch() const { return branch_; }
+
+    /// Return the cut-pool of this node.
+    CutList getCutPool() { return cutPool_; }
 
     /// Return the depth of the node in the tree.
     UInt getDepth() const { return depth_; }
@@ -373,9 +386,12 @@ namespace Minotaur {
 
     /// Violation measure at the node.
     double vioVal_;
-    
+
     /// Score to break tie-breaks.
     double tbScore_;
+
+    /// List of cuts generated at this node.
+    CutList cutPool_;
 
     /**
      * \brief Number of times we have branched down and noted the effect on

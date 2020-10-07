@@ -113,11 +113,17 @@ namespace Minotaur {
     /// Get lb of the inequality.
     double getLb() { return lb_; }
 
+    /// Get name of the cut
+    std::string getName() { return name_; }
+
     /// Get ub of the inequality.
     double getUb() { return ub_; }
 
     /// Constraint associated with the cut
     void setCons(ConstraintPtr c) { cons_ = c; }
+
+    /// Set name of the cut
+    void setName_(std::string name) { name_ = name; }
 
     /// Display.
     void write(std::ostream &out) const;
@@ -147,8 +153,11 @@ namespace Minotaur {
     /// Upper bound
     double ub_;
 
-    /// fixed score of each cut
+    /// Fixed score of each cut.
     double fixedScore_;
+
+    /// Name of the cut (could be NULL).
+    std::string name_;
 
     /**
      * \brief Initialize the values in info_ data structure.

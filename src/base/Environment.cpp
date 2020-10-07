@@ -255,6 +255,9 @@ void Environment::createDefaultOptions_()
       "Rounds of extra linearizations to be added at root node under gen scheme 1: <0/1>", true, false);
   options_->insert(b_option);
 
+  b_option = (BoolOptionPtr) new Option<bool>("storeCutsAtNode",
+      "Store the cuts generated at a node in the cut-pool of the node: <0/1>", true, false);
+  options_->insert(b_option);
   //b_option = (BoolOptionPtr) new Option<bool>("root_genLinScheme2", 
       //"Rounds of extra linearizations to be added at root node under gen scheme 2: <0/1>", true, false);
   //options_->insert(b_option);

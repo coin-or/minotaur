@@ -220,6 +220,8 @@ bool ParPCBProcessor::presolveNode_(NodePtr node, SolutionPoolPtr s_pool)
   }
   return is_inf;
 }
+
+
 void ParPCBProcessor::process(NodePtr node, RelaxationPtr rel,
                           SolutionPoolPtr s_pool)
 {
