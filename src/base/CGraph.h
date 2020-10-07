@@ -47,6 +47,9 @@ public:
   // base class method.
   NonlinearFunctionPtr getPersp(VariablePtr z, double eps, int *err) const;
 
+  NonlinearFunctionPtr getPersp(VariablePtr z, double eps, int *err, QuadraticFunctionPtr qf, UInt maxId,
+                                      VariableGroup nNonzeroVar, double intTol);
+
   // base class method.
   void computeBounds(double *lb, double *ub, int *error);
 
@@ -78,6 +81,11 @@ public:
 
   // base class method.
   double getFixVarOffset(VariablePtr v, double val);
+
+  // get node corresponding to variable v
+  CNode* getVarNode(VariablePtr v);
+  
+  CNode* getPerspZNode() {return zNode_;};
 
   // get type of function
   FunctionType getType() const;
@@ -213,6 +221,8 @@ private:
 
   /// Topmost node or output node. We assume only one is present.
   CNode *oNode_;
+  
+  CNode *zNode_;
 
   /// A map that tells which node corresponds to a given variable.
   VarNodeMap varNode_;
