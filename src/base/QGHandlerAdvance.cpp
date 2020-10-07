@@ -1456,12 +1456,11 @@ void QGHandlerAdvance::relaxNodeInc(NodePtr , RelaxationPtr , bool *)
 
 void QGHandlerAdvance::relax_(bool *isInf)
 {
+  linearizeObj_();
   ConstraintPtr c;
   FunctionType fType;
-  bool isPR = env_->getOptions()->findBool("perspective")->getValue();
-
-  linearizeObj_();
-  
+  bool isPR = env_->getOptions()->findBool("persp_cuts")->getValue();
+ 
   if (env_->getOptions()->findBool("persp_ref")->getValue()) {
     perspReform_();  
   }
@@ -1471,6 +1470,7 @@ void QGHandlerAdvance::relax_(bool *isInf)
   //impli0_ = pCons->getImplications0();
   //impli1_ = pCons->getImplications1();
   //delete pCons;
+  
 
   if (isPR) {
     bool found;

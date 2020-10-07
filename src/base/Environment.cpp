@@ -82,11 +82,7 @@ void Environment::createDefaultOptions_()
       true, true);
   options_->insert(b_option);
 
-  b_option = (BoolOptionPtr) new Option<bool>("perspective",
-      "Should perspective amenable structures be detected: <0/1>", true, false);
-  options_->insert(b_option);
-
-  b_option = (BoolOptionPtr) new Option<bool>("perspective_cuts",
+  b_option = (BoolOptionPtr) new Option<bool>("persp_cuts",
       "Should perspective cuts be used: <0/1>", true, false);
   options_->insert(b_option);
 
