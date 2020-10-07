@@ -729,8 +729,8 @@ int main(int argc, char** argv)
   parbab = createParBab(env, numThreads, node, relCopy, pCopy, nodePrcssr,
                         parNodeRlxr, handlersCopy, lpeCopy, eCopy, prune);
   if (true==env->getOptions()->findBool("mcbnb_deter_mode")->getValue()) {
-    assert(!"Deterministic mode not available right now!");
-    //parbab->parsolveSync(parNodeRlxr, nodePrcssr, numThreads, prune);
+    //assert(!"Deterministic mode not available right now!");
+    parbab->parsolveSync(parNodeRlxr, nodePrcssr, numThreads, prune);
   } else if (true==env->getOptions()->findBool("mcbnb_oppor_mode")->getValue()) {
     parbab->parsolveOppor(parNodeRlxr, nodePrcssr, numThreads, prune);
   } else {
