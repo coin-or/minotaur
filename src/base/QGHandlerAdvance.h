@@ -28,11 +28,14 @@ namespace Minotaur {
 
 struct QGStats {
   size_t nlpS;      /// Number of nlps solved.
+  size_t nlpM;      /// Number of pr modified nlps solved.
   size_t nlpF;      /// Number of nlps feasible.
   size_t nlpI;      /// Number of nlps infeasible.
   size_t nlpIL;     /// Number of nlps hits engine iterations limit.
   size_t cuts;    /// Number of cuts at int feas nodes.
   size_t fracCuts;    /// Number of cuts at int feas nodes.
+  size_t preNodes;    /// Number of nodes on which presolving is carried out
+  size_t fix;    /// Number of nodes on which vars from implication are fixed
 }; 
 
 
@@ -80,13 +83,15 @@ private:
   /// Status of the NLP/QP engine.
   EngineStatus nlpStatus_;
 
+  void prModNLP_(const double *x);
+
   void perspectiveCutsObjX_(const double *lpx, CutManager *, SeparationStatus *status);
 
   void perspectiveCutsConsX_(const double *nlpx, const double *lpx, CutManager *, SeparationStatus *status);
 
   void prFeasibleInactive_(bool binVal, UInt bIdx, UInt i, FunctionPtr f, const double *x, double * y, double * prPt, const double * ptToCut, CutManagerPtr cutMan);
 
-  void prInfeasibility_(bool bisect, bool binVal, double * y, double * prPt, const double *ptToCut, UInt i, bool isObj, double relVal, UInt bIdx, double xVal);
+  bool prInfeasibility_(bool bisect, bool binVal, double * y, double * prPt, const double *ptToCut, UInt i, bool isObj, double relVal, UInt bIdx, double xVal);
 
   void shortestDist_(ConstSolutionPtr sol);
 
@@ -143,6 +148,9 @@ private:
   /// For shortest distance NLP
   double lpdist_;
   EngineStatus shortestNlpStatus_;
+  
+  std::unordered_map<VariablePtr, std::forward_list<impliVar>> impli0_;
+  std::unordered_map<VariablePtr, std::forward_list<impliVar>> impli1_;
   
   PerspCutGeneratorPtr prCutGen_;
   
@@ -301,6 +309,8 @@ private:
   void genLin_(const double *x, std::vector<UInt> vioCons, CutManager *cutMan);
 
   bool isIntFeas_(const double* x);
+
+  void perspReform_();
 
   void maxVio_(ConstSolutionPtr sol, NodePtr node,
                                CutManager *cutMan,

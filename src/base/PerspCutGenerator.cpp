@@ -96,7 +96,6 @@ void PerspCutGenerator::fixedValue(double * prPt, bool isObj, UInt i)
     mit1 = (prCons_[i].nNonzeroVar).end();
   }
 
-
   if (nlf) {
     for (VarSetConstIterator vt = nlf->varsBegin(); vt != nlf->varsEnd();
          ++vt) {

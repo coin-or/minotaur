@@ -14,6 +14,7 @@
 #include <cmath>
 #include <iostream>
 #include <algorithm>
+#include <iomanip>
 #include <iterator>     // std::distance
 #include <forward_list>
 
@@ -55,10 +56,12 @@ PerspCon::~PerspCon()
   if (timer_) {
     delete timer_;
   }
-  
+ 
   // What else to reset here?
   p_ = 0;
   env_ = 0;
+  
+  delGUBList_();
 }
 
 
@@ -80,10 +83,8 @@ void PerspCon::populate_(UInt type, VariableGroup nVarVal,
  switch (type) {
  case 1:
  case 3:
-   p.lNonzeroVar = lVarVal;
-   p.nNonzeroVar = nVarVal;
-   break;
  case 2:
+   p.lNonzeroVar = lVarVal;
    p.nNonzeroVar = nVarVal;
    break;
  default:
@@ -437,7 +438,7 @@ void PerspCon::displayInfo_()
   out << me_ << "----------------z = 0 case-----------------------\n";
   for (mit = impli0_.begin(); mit != impli0_.end(); ++mit) {
     out << me_ << "---------------------------------------\n";
-    out << me_ << "Binary var " << mit->first->getName() << "\n";
+    out << me_ << "Binary var name and ID " << mit->first->getName() << " " << mit->first->getIndex() << "\n";
     for (it1 = (mit->second).begin(); it1 != (mit->second).end(); ++it1) {
       out << me_ << "var " << (*it1).var->getName() << " " << (*it1).fixedVal[0] << "\n";
     }
@@ -447,7 +448,7 @@ void PerspCon::displayInfo_()
   out << me_ << "----------------z = 1 case-----------------------\n";
   for (mit = impli1_.begin(); mit != impli1_.end(); ++mit) {
     out << me_ << "---------------------------------------\n";
-    out << me_ << "Binary var " << mit->first->getName() << "\n";
+    out << me_ << "Binary var name and ID " << mit->first->getName() << " " << mit->first->getIndex() << "\n";
     for (it1 = (mit->second).begin(); it1 != (mit->second).end(); ++it1) {
       out << me_ << "var " << (*it1).var->getName() << " " << (*it1).fixedVal[0] << "\n";
     }
@@ -848,7 +849,6 @@ bool PerspCon::twoTermsFunc_(ConstraintPtr c, VariablePtr var,
           // new variable
           impli.fixedVal.push_back(vlb);
           impli.fixedVal.push_back(val);
-          (*varList).push_front(impli);
         } else {
           // existing variable
           if (val <= (*it1).fixedVal[1] - absTol_) {
@@ -865,7 +865,6 @@ bool PerspCon::twoTermsFunc_(ConstraintPtr c, VariablePtr var,
           impli.var = v;
           impli.fixedVal.push_back(val);
           impli.fixedVal.push_back(vub);
-          (*varList).push_front(impli);
         } else {
           if (val >= (*it1).fixedVal[0] + absTol_) {
             (*it1).fixedVal[0] = val;
@@ -883,10 +882,18 @@ bool PerspCon::twoTermsFunc_(ConstraintPtr c, VariablePtr var,
          }
           // obtained lower bound
         if (it1 == (*varList).end()) {
-          impli.var = v;
-          impli.fixedVal.push_back(val);
-          impli.fixedVal.push_back(vub);
-          (*varList).push_front(impli);
+          if (impli.fixedVal.size()) {
+            if (impli.fixedVal[0] < val) {
+              impli.fixedVal[0] = val;
+            }
+             if (impli.fixedVal[1] > vub) {
+              impli.fixedVal[1] = vub;
+            }         
+          } else {
+            impli.var = v;
+            impli.fixedVal.push_back(val);
+            impli.fixedVal.push_back(vub);
+          }
         } else {
           if (val >= (*it1).fixedVal[0] + absTol_) {
             (*it1).fixedVal[0] = val;
@@ -899,16 +906,28 @@ bool PerspCon::twoTermsFunc_(ConstraintPtr c, VariablePtr var,
          }
         // obtained upper bound
         if (it1 == (*varList).end()) {
-          impli.var = v;
-          impli.fixedVal.push_back(vlb);
-          impli.fixedVal.push_back(val);
-          (*varList).push_front(impli);
+          if (impli.fixedVal.size()) {
+            if (impli.fixedVal[0] < vlb) {
+              impli.fixedVal[0] = vlb;
+            }
+             if (impli.fixedVal[1] > val) {
+              impli.fixedVal[1] = val;
+            }         
+          } else {
+            impli.var = v;
+            impli.fixedVal.push_back(vlb);
+            impli.fixedVal.push_back(val);
+          }
         } else {
           if (val <= (*it1).fixedVal[1] - absTol_) {
             (*it1).fixedVal[1] = val;
           }
         }              
       }             
+    }
+          
+    if (impli.fixedVal.size()) {
+      (*varList).push_front(impli);
     }
   }
       
@@ -960,7 +979,8 @@ void PerspCon::deriveImpli_(VariablePtr var)
         if (!isFixed0) {
           isFixed0 = twoTermsFunc_(c, var, &varList1, 1);
         }
-      } else if (numVars > 2) {
+      } 
+      else if (numVars > 2) {
         lb = c->getLb();
         ub = c->getUb();
         if ((fabs(lb) < absTol_) || (fabs(ub) < absTol_)) {
@@ -1112,10 +1132,10 @@ void PerspCon::removeSingleton_()
   return;
 }
 
-
-void PerspCon::implications_()
+//MS: clear timer
+void PerspCon::implications()
 {
-  timer_->start();
+  //timer_->start();
   bool isFound;
   VariablePtr var;
   ConstraintPtr c;
@@ -1136,6 +1156,10 @@ void PerspCon::implications_()
 
   // Return if no implication is found
   if ((impli0_.size() == 0) && (impli1_.size() == 0)) {
+    //std::cout << "collection time " << std::setprecision(6) << timer_->query() << std::endl;
+    //timer_->stop();
+    //std::cout << "C23 details: 0 0 0 0 0 0" << std::endl;
+    //exit(1);
     return;  
   }
 
@@ -1180,8 +1204,106 @@ void PerspCon::implications_()
       }
     }
   }
+    
+  //displayInfo_();
+  //
 
-  timer_->stop();
+  //bool found; 
+  //std::forward_list<ConstraintPtr >::iterator git;
+  //std::forward_list<impliVar>::iterator it1;
+  //std::unordered_map<VariablePtr, std::forward_list<impliVar>>::iterator mit;
+  //UInt c0 = 0, c1 = 0, g0 = 0, g1 = 0, cr = 0, cb = 0, ci = 0, nb = 0; 
+  //for (mit = impli0_.begin(); mit != impli0_.end(); ++mit) {
+    //for (it1 = (mit->second).begin(); it1 != (mit->second).end(); ++it1) {
+      //++c0;
+    //}
+  //}
+  
+  //for (mit = impli1_.begin(); mit != impli1_.end(); ++mit) {
+    //for (it1 = (mit->second).begin(); it1 != (mit->second).end(); ++it1) {
+      //++c1;
+    //}
+  //}
+    
+  ////for (git = gubList0_.begin(); git != gubList0_.end(); ++git) {
+    ////++g0;
+  ////}
+  
+  ////for (git = gubList1_.begin(); git != gubList1_.end(); ++git) {
+    ////++g1;
+  ////}
+
+  ////std::cout << "C1 details: " << c0 - g0 << " " << c1 - g1 << std::endl;
+
+  //for (VariableConstIterator it = p_->varsBegin(); it != p_->varsEnd(); 
+       //++it) {
+    //var = *it;
+        
+    //if (isBinary_(var)) {
+      //if (impli0_.find(var) != impli0_.end() || impli1_.find(var) != impli1_.end()) {
+        //++nb;
+      //}
+    //}
+ 
+   //found = 0; 
+    //for (mit = impli0_.begin(); mit != impli0_.end(); ++mit) {
+      //for (it1 = (mit->second).begin(); it1 != (mit->second).end(); ++it1) {
+        //if (var == (*it1).var) {
+            //switch (var->getType()) {
+            //case Binary:
+            //case ImplBin:
+              //++cb;
+              //break;
+            //case Integer:
+            //case ImplInt:
+              //++ci;
+              //break;
+            //default:
+              //++cr;
+              //break;
+            //}
+            //found = 1;
+            //break;
+        //}
+      //}
+      //if (found) {
+        //break;
+      //}
+    //}
+    //if (found) {
+      //continue;    
+    //} else {
+      //for (mit = impli1_.begin(); mit != impli1_.end(); ++mit) {
+        //for (it1 = (mit->second).begin(); it1 != (mit->second).end(); ++it1) {
+          //if (var == (*it1).var) {
+            //switch (var->getType()) {
+            //case Binary:
+            //case ImplBin:
+              //++cb;
+              //break;
+            //case Integer:
+            //case ImplInt:
+              //++ci;
+              //break;
+            //default:
+              //++cr;
+              //break;
+            //}
+            //found = 1;
+            //break;
+          //}
+        //}
+        //if (found) {
+          //break;
+        //}
+      //}   
+    //}
+  //}
+  //std::cout << "C23 details: " << c0 << " " << c1 << " " << nb << " " << cr << " " << cb << " " << ci << " " << std::endl;
+  //exit(1);
+  //std::cout << "collection time " << std::setprecision(6) << timer_->query() << std::endl;
+  //timer_->stop();
+  //exit(1);
   return;
 }
 
@@ -1360,7 +1482,7 @@ void PerspCon::findPRCons()
 {
   /// To determine all the variables fixed by binary variables
   //Perform this step if there are linear constraints and binary variables 
-  implications_(); 
+  implications(); 
 
   ObjectivePtr o = p_->getObjective();
   FunctionType fType = o->getFunctionType();
@@ -1392,10 +1514,11 @@ void PerspCon::findPRCons()
  
   //#if SPEW 
   //displayInfo_();
+  //exit(1);
   //#endif  
 
   // Delete implications derived from constraints in gubList0_ and gubList1_
-  delGUBList_();
+  //delGUBList_();
 
   cons_ = 0;
   bVar_ = 0;

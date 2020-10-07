@@ -83,6 +83,14 @@ public:
   prObj getPRObj() const {return prObj_;}
 
   bool getStatus();
+  
+  void implications();
+
+  std::unordered_map<VariablePtr, std::forward_list<impliVar>> getImplications0() 
+  {return impli0_;};
+
+  std::unordered_map<VariablePtr, std::forward_list<impliVar>> getImplications1() 
+  {return impli1_;};
 
 private:
   /*
@@ -125,7 +133,6 @@ private:
   /// Writes information related to perspective amenable constraints. 
   void displayInfo_();
 
-  void implications_();
 
   void deriveImpli_(VariablePtr var);
 
