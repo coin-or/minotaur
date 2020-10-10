@@ -40,7 +40,6 @@ typedef struct impliVarsInfo {
 
 typedef struct prConsInfo {
   UInt type; // 1 if singleton, 2 if hyperplane, 3 both
-  UInt numVarInNonLin; // # of vars in nonlinear part
   VariablePtr binVar;
   ConstraintPtr cons;
   bool binVal, bisect;
@@ -53,14 +52,30 @@ typedef struct prConsInfo {
 
 } prCons;
 
+// MS: remove later.
+//struct prStats { // stats only for constraints
+  //UInt bvInLin; // # of times controlling bin var in linear part cons
+  //UInt bvInNlin; // # of times controlling bin var in nonlinear part cons
+  //UInt bvInBoth; // # of times controlling bin var in both parts of the cons
+  //UInt bvIsZ; // # of times controlling bin var is z
+  //UInt bvIsZ1; // # of times controlling bin var is 1-z
+  //UInt type1; // # of S1 type PR cons
+  //UInt type2; // # of S2 type PR cons
+  //UInt uniq; // # of unique bin vars in different PR cons;
+  //UInt varFixing0;
+  //UInt varFixing1;
+
+  //// For objective
+  //bool obvInLin, obvInNlin, obvIsZ, obvIsZ1, ouniq;
+//};
+
 typedef struct prObjInfo {
   bool isPR = 0;
-  UInt numVarInNonLin; // # of vars in nonlinear part
   // type is always 2 (hyperplane)
   VariablePtr binVar;
   bool binVal, bisect;
   /// Vector of variables in the nonlinear parts that are fixed to non-zero values
-  VariableGroup nNonzeroVar;
+  VariableGroup nNonzeroVar, lNonzeroVar;
 } prObj;
 
 class PerspCon {
@@ -160,7 +175,7 @@ private:
    */  
 
   bool checkNVars_(double *x, VariableGroup &nVarVal);
-  bool checkLVars_(double *x, VariableGroup &lVarVal);
+  bool checkLVars_(double *x, VariableGroup &lVarVal, VariableGroup &nVarVal, double &lval);
 
   void delGUBList_();
 
@@ -259,7 +274,9 @@ double val, bool z);
 
   std::forward_list<ConstraintPtr > gubList0_;
   std::forward_list<ConstraintPtr > gubList1_;
-  
+
+  //prStats * stats_;
+
   std::unordered_map<VariablePtr, std::forward_list<impliVar>>::iterator 
     iit_;
 }; 
