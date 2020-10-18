@@ -147,8 +147,7 @@ namespace Minotaur {
 
   void cvxCombPt(RelaxationPtr rel, const double * y, UInt it);
  
-
-  bool changeVarForm(VariablePtr v, double xc, double sb,                                   UInt itn, double *newPt, bool isObj);
+  bool changeVarForm(VariablePtr v, double xc, double sb, UInt itn, double *newPt, bool isObj, bool nlin);
   /**
    * Given outer-approximatio to a violated PR constraint
    */
