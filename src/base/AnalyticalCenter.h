@@ -63,14 +63,14 @@ private:
 
   // Find center by adding auxiliary variable only to the nonlinear constraints
   // and keeping linear constraints as they are.
-  void modifyOnlyNonlinear(double * solC);
+  void modifyOnlyNonlinear(double * &solC);
 
   // Find center by adding auxiliary variable to all inequalties, including
   // variable bounds.
-  void modifyWhole(double * solC);
+  void modifyWhole(double * &solC);
 
 private:
-  void solveNLP_(double * solC);
+  void solveNLP_(double * &solC);
 
   };
 

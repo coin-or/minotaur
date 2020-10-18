@@ -66,7 +66,7 @@ AnalyticalCenter::~AnalyticalCenter()
 }
 
  
-void AnalyticalCenter::modifyOnlyNonlinear(double *solC)
+void AnalyticalCenter::modifyOnlyNonlinear(double * &solC)
 {
   double lb, ub;
   FunctionPtr fnewc;
@@ -191,13 +191,13 @@ void AnalyticalCenter::modifyOnlyNonlinear(double *solC)
       }
     }
     //inst_C->write(std::cout);
-
     inst_C->prepareForSolve();  
     nlpe_->load(inst_C);
     solveNLP_(solC);
   
     if (solC) {
-      if (fabs(nlpe_->getSolution()->getObjValue()) < solAbsTol_) {
+      if (nlpe_->getSolution()->getObjValue() > -solAbsTol_) {
+        delete [] solC;
         solC = 0;
       }
     } else {
@@ -207,7 +207,8 @@ void AnalyticalCenter::modifyOnlyNonlinear(double *solC)
     }
   } else {
     if (solC) {
-      if (fabs(nlpe_->getSolution()->getObjValue()) < solAbsTol_) {
+      if (nlpe_->getSolution()->getObjValue() > -solAbsTol_) {
+        delete [] solC;
         solC = 0;
       }
     } else {
@@ -233,7 +234,7 @@ void AnalyticalCenter::modifyOnlyNonlinear(double *solC)
 }
 
 
-void AnalyticalCenter::modifyWhole(double * solC)
+void AnalyticalCenter::modifyWhole(double * &solC)
 {
   double lb, ub;
   FunctionPtr fnewc;
@@ -342,9 +343,10 @@ void AnalyticalCenter::modifyWhole(double * solC)
   //exit(1);
 
   if (solC) {
-    if (fabs(nlpe_->getSolution()->getObjValue()) < solAbsTol_) {
+    if (nlpe_->getSolution()->getObjValue() > -solAbsTol_) {
+      delete [] solC;
       solC = 0;
-    }
+    }   
   } else {
     logger_->msgStream(LogError) << me_ 
       << "NLP engine status for center problem = "
@@ -365,7 +367,7 @@ void AnalyticalCenter::modifyWhole(double * solC)
 }
 
 
-void AnalyticalCenter::solveNLP_(double * solC)
+void AnalyticalCenter::solveNLP_(double *&solC)
 { 
   if (solC) {
     delete [] solC;
