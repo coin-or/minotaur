@@ -75,6 +75,7 @@ QGHandlerAdvance::QGHandlerAdvance(EnvPtr env, ProblemPtr minlp, EnginePtr nlpe)
   cutMethod_("ecp"),
   //lpdist_(-1),
   lastNodeId_(-1),
+  lastNodeIdPre_(0),
   lpdist_(-1),
   prCutGen_(0)
 {
@@ -93,8 +94,11 @@ QGHandlerAdvance::QGHandlerAdvance(EnvPtr env, ProblemPtr minlp, EnginePtr nlpe)
   stats_->nlpI = 0;
   stats_->nlpIL = 0;
   stats_->fracCuts = 0;
-  stats_->preNodes = 0;
-  stats_->fix = 0;
+  //stats_->preNodes = 0;
+  //stats_->preNodesInf = 0;
+  //stats_->fix = 0;
+  //stats_->prInf = 0;
+  //stats_->prAct = 0;
 }
 
 
@@ -211,7 +215,7 @@ void QGHandlerAdvance::addCutAtRoot_(ConstraintPtr con, const double * x,
     f = (FunctionPtr) new Function(lf);
     rel_->newConstraint(f, -INFINITY, ub-c, sstm.str());
     //newcon = rel_->newConstraint(f, -INFINITY, ub-c, sstm.str());
-    //std::cout <<"In QG \n";
+    ////std::cout <<"In QG \n";
     //newcon->write(std::cout);
   }
 }
@@ -418,15 +422,18 @@ void QGHandlerAdvance::addInitLinearX_(ConstSolutionPtr sol)
     double *y = new double[minlp_->getNumVars()];
     std::fill(y, y + minlp_->getNumVars(), 0.0);
     std::fill(prPt, prPt + minlp_->getNumVars(), 0);
+          
 
     for (UInt i = 0; i < prCons.size(); ++i) {
       binVal = prCons[i].binVal;
       bIdx = (prCons[i].binVar)->getIndex();
       
+      // Initial cuts 
+      prCutGen_->fixedValue(prPt, 0, i);
+      addCutAtRoot_(prCons[i].cons, prPt, 0);
+     
       if ((!binVal && fabs(x[bIdx]) < intTol_) ||
           (binVal && fabs(1-x[bIdx]) < intTol_)) {
-        prCutGen_->fixedValue(prPt, 0, i);
-        addCutAtRoot_(prCons[i].cons, prPt, 0);
         continue;
       } else {
         f = prCons[i].cons->getFunction();
@@ -441,26 +448,32 @@ void QGHandlerAdvance::addInitLinearX_(ConstSolutionPtr sol)
       if (isFound) {
         feas = prCutGen_->isFeasible(prPt, i, 0, 0);
         if (!feas) {
+          //// PR infeasibility
           if (!(prCutGen_->addPC(rel_, y, i, ptToCut, prPt, 0, VariablePtr(), CutManagerPtr(), 0))) {
             addCutAtRoot_(prCons[i].cons, x, 0);
           }
-          //// PR infeasibility
-          //if (!(prInfeasibility_(prCons[i].bisect, prCons[i].binVal, y, prPt, ptToCut, i, 0, 0, bIdx, x[bIdx]))) {
+          prInfeasibility_(prCons[i].bisect, binVal, x, y, prPt, ptToCut, i, 0, 0, bIdx, f);
+          continue;
+          //// OR
+          //double *prPtC = new double[minlp_->getNumVars()];
+          //std::copy(prPt, prPt + minlp_->getNumVars(), prPtC);
+          //if (!(prInfeasibility_(prCons[i].bisect, prCons[i].binVal, x, y, prPt, ptToCut, i, 0, 0, bIdx, f))) {
+            //std::copy(prPtC, prPtC + minlp_->getNumVars(), prPt);
             //if (!(prCutGen_->addPC(rel_, y, i, ptToCut, prPt, 0, VariablePtr(), CutManagerPtr(), 0))) {
               //addCutAtRoot_(prCons[i].cons, x, 0);
             //}
           //}
-          //// OR
-          prInfeasibility_(prCons[i].bisect, prCons[i].binVal, y, prPt, ptToCut, i, 0, 0, bIdx, x[bIdx]);
-          continue;
-        } else {
+          //delete [] prPtC;
+          //continue;
+        } 
+        else {
           if (feas == 2) {
             //if (prCons[i].type == 1) {
               //if (!((prCons[i].cons)->getLinearFunction())) { // no linear function
                 if (!(prCutGen_->addPC(rel_, y, i, ptToCut, prPt, 0, VariablePtr(), CutManagerPtr(), 0))) {
                   addCutAtRoot_(prCons[i].cons, x, 0);
                 }
-                prFeasibleInactive_(prCons[i].binVal, bIdx, i, prCons[i].cons->getFunction(), x, y, prPt, ptToCut, CutManagerPtr());
+                prFeasibleInactive_(binVal, bIdx, i, f, x, y, prPt, ptToCut, CutManagerPtr());
                 continue;
               //}
             //}
@@ -478,70 +491,70 @@ void QGHandlerAdvance::addInitLinearX_(ConstSolutionPtr sol)
     }
 
     // For objective
-    prObj prO = prCutGen_->getPRObj();
-    if (prO.isPR) {
-      binVal = prO.binVal;
-      bIdx = (prO.binVar)->getIndex();
-      if ((!binVal && fabs(x[bIdx]) < intTol_) ||
-          (binVal && fabs(1-x[bIdx]) < intTol_)) {
-        prCutGen_->fixedValue(prPt, 1, 0);
-        addCutAtRoot_(ConstraintPtr(), x, 1);
-      } else {
-        f = minlp_->getObjective()->getFunction();
-        for (VarSetConstIterator vit=f->varsBegin(); vit!=f->varsEnd();
-             ++vit) {
-          vIdx = (*vit)->getIndex();
-          y[vIdx] = x[vIdx];
-        }
-        y[bIdx] = x[bIdx];
-        isFound = prCutGen_->prVars(y, prPt, 0, 1);
-        if (isFound) {
-          feas = prCutGen_->isFeasible(prPt, 0, 1, sol->getObjValue());
-          if (!feas) {
-            // at original point
-            if (!(prCutGen_->addPC(rel_, y, 0, ptToCut, prPt, 1, objVar_, CutManagerPtr(), sol->getObjValue()))) {
-              addCutAtRoot_(ConstraintPtr(), x, 1);
-            }
-            isFound = 0;
-            if (prO.bisect) {
-              isFound = prCutGen_->bisecPt(y, prPt, 0, 1, sol->getObjValue());
-            } else {
-              if (prO.binVal == 0) {
-                y[bIdx] = 1;
-              } else {
-                y[bIdx] = 0;
-              }
-              feas = prCutGen_->isFeasible(y, 0, 1, sol->getObjValue());
-              y[bIdx] = x[bIdx];
-              if (feas) {
-                isFound = prCutGen_->bisecPt(y, prPt, 0, 1, sol->getObjValue());
-              } else {
-                isFound = prCutGen_->lineSearchAC(y, prPt, 0, 1, sol->getObjValue());
-              }
-            }
-            if (isFound) {
-              prCutGen_->addPC(rel_, y, 0, ptToCut, prPt, 1, objVar_, CutManagerPtr(), sol->getObjValue());
-            }
+    //prObj prO = prCutGen_->getPRObj();
+    //if (prO.isPR) {
+      //binVal = prO.binVal;
+      //bIdx = (prO.binVar)->getIndex();
+      //if ((!binVal && fabs(x[bIdx]) < intTol_) ||
+          //(binVal && fabs(1-x[bIdx]) < intTol_)) {
+        //prCutGen_->fixedValue(prPt, 1, 0);
+        //addCutAtRoot_(ConstraintPtr(), x, 1);
+      //} else {
+        //f = minlp_->getObjective()->getFunction();
+        //for (VarSetConstIterator vit=f->varsBegin(); vit!=f->varsEnd();
+             //++vit) {
+          //vIdx = (*vit)->getIndex();
+          //y[vIdx] = x[vIdx];
+        //}
+        //y[bIdx] = x[bIdx];
+        //isFound = prCutGen_->prVars(y, prPt, 0, 1);
+        //if (isFound) {
+          //feas = prCutGen_->isFeasible(prPt, 0, 1, sol->getObjValue());
+          //if (!feas) {
+            //// at original point
+            //if (!(prCutGen_->addPC(rel_, y, 0, ptToCut, prPt, 1, objVar_, CutManagerPtr(), sol->getObjValue()))) {
+              //addCutAtRoot_(ConstraintPtr(), x, 1);
+            //}
+            //isFound = 0;
+            //if (prO.bisect) {
+              //isFound = prCutGen_->bisecPt(y, prPt, 0, 1, sol->getObjValue());
+            //} else {
+              //if (prO.binVal == 0) {
+                //y[bIdx] = 1;
+              //} else {
+                //y[bIdx] = 0;
+              //}
+              //feas = prCutGen_->isFeasible(y, 0, 1, sol->getObjValue());
+              //y[bIdx] = x[bIdx];
+              //if (feas) {
+                //isFound = prCutGen_->bisecPt(y, prPt, 0, 1, sol->getObjValue());
+              //} else {
+                //isFound = prCutGen_->lineSearchAC(y, prPt, 0, 1, sol->getObjValue());
+              //}
+            //}
+            //if (isFound) {
+              //prCutGen_->addPC(rel_, y, 0, ptToCut, prPt, 1, objVar_, CutManagerPtr(), sol->getObjValue());
+            //}
 
-            if (prPt) {
-              delete [] prPt;
-            }
-            if (y) {
-              delete [] y;
-            }
-            return;
-          }
-        }
+            //if (prPt) {
+              //delete [] prPt;
+            //}
+            //if (y) {
+              //delete [] y;
+            //}
+            //return;
+          //}
+        //}
 
-        if (isFound) {
-          isFound = prCutGen_->addPC(rel_, y, 0, ptToCut, prPt, 1, objVar_, CutManagerPtr(), sol->getObjValue());
-        }
+        //if (isFound) {
+          //isFound = prCutGen_->addPC(rel_, y, 0, ptToCut, prPt, 1, objVar_, CutManagerPtr(), sol->getObjValue());
+        //}
 
-        if (!isFound) {
-          addCutAtRoot_(ConstraintPtr(), x, 1);
-        }
-      }
-    }
+        //if (!isFound) {
+          //addCutAtRoot_(ConstraintPtr(), x, 1);
+        //}
+      //}
+    //}
 
     if (prPt) {
       delete [] prPt;
@@ -560,86 +573,211 @@ void QGHandlerAdvance::prFeasibleInactive_(bool binVal, UInt bIdx, UInt i,
                                            double * y, double * prPt, 
                                            const double * ptToCut, CutManagerPtr cutMan)
 {
-  UInt vIdx;
-  bool feas;
+  UInt vIdx, feas;
+  bool isFound;
 
   if (binVal == 0) {
     y[bIdx] = 1;
-    feas = prCutGen_->isFeasible(y, i, 0, 0);
-    y[bIdx] = x[bIdx];
-    if (!feas) {
-      if (prCutGen_->uniDirZSearch(y, prPt, i, 1)) {
+    isFound = prCutGen_->prVars(y, prPt, i, 0);
+    
+    if (isFound) {
+      feas = prCutGen_->isFeasible(prPt, i, 0, 0);
+      
+      if (!feas) {
+        y[bIdx] = x[bIdx];
+        if (prCutGen_->uniDirZSearch(y, prPt, i, 1)) {
+          prCutGen_->addPC(rel_, y, i, ptToCut, prPt, 0, VariablePtr(), cutMan, 0);
+          for (VarSetConstIterator vit=f->varsBegin(); vit!=f->varsEnd();
+               ++vit) {
+            vIdx = (*vit)->getIndex();
+            y[vIdx] = x[vIdx];
+          }
+          y[bIdx] = x[bIdx];
+        }
+      } else {
         prCutGen_->addPC(rel_, y, i, ptToCut, prPt, 0, VariablePtr(), cutMan, 0);
+        y[bIdx] = x[bIdx];
       }
-    } else {
-      prCutGen_->addPC(rel_, y, i, ptToCut, prPt, 0, VariablePtr(), cutMan, 0);
-    }
 
-    for (VarSetConstIterator vit=f->varsBegin(); vit!=f->varsEnd();
-         ++vit) {
-      vIdx = (*vit)->getIndex();
-      y[vIdx] = x[vIdx];
-    }
-    y[bIdx] = x[bIdx];
-
-    if (prCutGen_->uniDirZSearch(y, prPt, i, 0)) {
-      prCutGen_->addPC(rel_, y, i, ptToCut, prPt, 0, VariablePtr(), cutMan, 0);
-    }
-  } else {
-    y[bIdx] = 0;
-    feas = prCutGen_->isFeasible(y, i, 0, 0);
-    y[bIdx] = x[bIdx];
-    if (!feas) {
       if (prCutGen_->uniDirZSearch(y, prPt, i, 0)) {
         prCutGen_->addPC(rel_, y, i, ptToCut, prPt, 0, VariablePtr(), cutMan, 0);
       }
-    } else {
-      prCutGen_->addPC(rel_, y, i, ptToCut, prPt, 0, VariablePtr(), cutMan, 0);
     }
+  } else {
+    y[bIdx] = 0;
+     isFound = prCutGen_->prVars(y, prPt, i, 0);
+    
+    if (isFound) {
+      feas = prCutGen_->isFeasible(prPt, i, 0, 0);
+      
+      if (!feas) {
+        y[bIdx] = x[bIdx];
+        if (prCutGen_->uniDirZSearch(y, prPt, i, 0)) {
+          prCutGen_->addPC(rel_, y, i, ptToCut, prPt, 0, VariablePtr(), cutMan, 0);
+          for (VarSetConstIterator vit=f->varsBegin(); vit!=f->varsEnd();
+               ++vit) {
+            vIdx = (*vit)->getIndex();
+            y[vIdx] = x[vIdx];
+          }
+          y[bIdx] = x[bIdx];
+        }
+      } else {
+        prCutGen_->addPC(rel_, y, i, ptToCut, prPt, 0, VariablePtr(), cutMan, 0);
+        y[bIdx] = x[bIdx];
+      }
 
-    for (VarSetConstIterator vit=f->varsBegin(); vit!=f->varsEnd();
-         ++vit) {
-      vIdx = (*vit)->getIndex();
-      y[vIdx] = x[vIdx];
+      if (prCutGen_->uniDirZSearch(y, prPt, i, 1)) {
+        prCutGen_->addPC(rel_, y, i, ptToCut, prPt, 0, VariablePtr(), cutMan, 0);
+      }
     }
-    y[bIdx] = x[bIdx];
-
-    if (prCutGen_->uniDirZSearch(y, prPt, i, 1)) {
-      prCutGen_->addPC(rel_, y, i, ptToCut, prPt, 0, VariablePtr(), cutMan, 0);
-    }
-  }
-
+  }   
   return;
 }
 
 
-bool QGHandlerAdvance::prInfeasibility_(bool bisect, bool binVal,
+bool QGHandlerAdvance::prInfeasibility_(bool bisect, bool binVal, const double *x,
                                         double * y, double * prPt, const double *ptToCut, UInt i,
                                         bool isObj, double relVal, UInt bIdx,
-                                        double xVal)
+                                        FunctionPtr f)
 {
-  bool feas, isFound = false;
+  //MS: include for objective
+///////////////////////////////////////////////////////////////////////////////// 
+
+ // MS: 11 and 12 
+  //UInt vIdx;
+  //bool isFound;
+  //isFound = prCutGen_->lineSearchAC(y, prPt, i, isObj, relVal);   
+  //if (isFound) {
+    //isFound = prCutGen_->addPC(rel_, y, i, ptToCut, prPt, 0, VariablePtr(), CutManagerPtr(), 0);
+    ////// MS: for *2
+    ////if (false == isFound) {
+      ////for (VarSetConstIterator vit=f->varsBegin(); vit!=f->varsEnd();
+           ////++vit) {
+        ////vIdx = (*vit)->getIndex();
+        ////y[vIdx] = x[vIdx];
+      ////}
+      ////y[bIdx] = x[bIdx];
+    ////}
+  //}  
+  
+  //return isFound;
+
+///////////////////////////////////////////////////////////////////////////////// 
+  //// MS: 21 and 22 
+  //UInt feas, vIdx;
+  //bool isFound = false, isFix = false;
+
+  //if (bisect) {
+    //isFound = prCutGen_->bisecPt(y, prPt, i, isObj, relVal);
+  //} 
+
+  //if (false == isFound) {
+    //if (binVal) {
+      //y[bIdx] = 0;
+    //} else {
+      //y[bIdx] = 1;
+    //}
+    //isFound = prCutGen_->prVars(y, prPt, i, 0);
+    //if (isFound) {
+      //feas = prCutGen_->isFeasible(prPt, i, isObj, relVal);
+      //if (feas == 2) {
+        //y[bIdx] = x[bIdx]; 
+        //isFound = prCutGen_->bisecPt(y, prPt, i, isObj, relVal);
+      //} else if (feas == 1) {
+        //isFix = true;
+        //isFound = true;
+      //} else {
+        //y[bIdx] = x[bIdx]; 
+        //isFound = false;      
+      //}
+
+      //if (false == isFound) {
+        //isFound = prCutGen_->lineSearchAC(y, prPt, i, isObj, relVal);
+      //}
+    //} else {
+      //y[bIdx] = x[bIdx]; 
+      //isFound = prCutGen_->lineSearchAC(y, prPt, i, isObj, relVal);   
+    //}
+  //}
+
+  //if (isFound) {
+    //isFound = prCutGen_->addPC(rel_, y, i, ptToCut, prPt, 0, VariablePtr(), CutManagerPtr(), 0);
+
+    ////// MS: for *2
+    ////if (false == isFound) {
+      ////if (false == isFix) { 
+        ////for (VarSetConstIterator vit=f->varsBegin(); vit!=f->varsEnd();
+             ////++vit) {
+          ////vIdx = (*vit)->getIndex();
+          ////y[vIdx] = x[vIdx];
+        ////}
+      ////}
+      ////y[bIdx] = x[bIdx];
+    ////}
+  //}   
+  //return isFound;
+///////////////////////////////////////////////////////////////////////////////// 
+ //// MS: 31 and 32 
+  UInt feas, vIdx;
+  bool isFound1 = false, isFound2 = false, isFix = false;
+
   if (bisect) {
-    isFound = prCutGen_->bisecPt(y, prPt, i, isObj, relVal);
-  } else {
+    isFound1 = prCutGen_->bisecPt(y, prPt, i, isObj, relVal);
+  } 
+  
+  if (false == isFound1) {
     if (binVal) {
       y[bIdx] = 0;
     } else {
       y[bIdx] = 1;
     }
-    feas = prCutGen_->isFeasible(y, i, isObj, relVal);
-    y[bIdx] = xVal;
-    if (feas) {
-      isFound = prCutGen_->bisecPt(y, prPt, i, isObj, relVal);
+    isFound1 = prCutGen_->prVars(y, prPt, i, 0);
+    if (isFound1) {
+      feas = prCutGen_->isFeasible(prPt, i, isObj, relVal);
+      if (feas == 2) {
+        y[bIdx] = x[bIdx]; 
+        isFound1 = prCutGen_->bisecPt(y, prPt, i, isObj, relVal);
+      } else if (feas == 1) {
+        isFix = true;
+        isFound1 = true;
+      }  else {
+        y[bIdx] = x[bIdx]; 
+        isFound1 = false;      
+      }
     } else {
-      isFound = prCutGen_->lineSearchAC(y, prPt, i, isObj, relVal);
+      y[bIdx] = x[bIdx]; 
     }
   }
 
-  if (isFound) {
-    isFound = prCutGen_->addPC(rel_, y, i, ptToCut, prPt, 0, VariablePtr(), CutManagerPtr(), 0);
-  }  
-  return isFound;
+  if (isFound1) {
+    isFound1 = prCutGen_->addPC(rel_, y, i, ptToCut, prPt, 0, VariablePtr(), CutManagerPtr(), 0);
+    if (false == isFix) {
+      for (VarSetConstIterator vit=f->varsBegin(); vit!=f->varsEnd();
+           ++vit) {
+        vIdx = (*vit)->getIndex();
+        y[vIdx] = x[vIdx];
+      }
+    }
+    y[bIdx] = x[bIdx];
+  }
+  
+  isFound2 = prCutGen_->lineSearchAC(y, prPt, i, isObj, relVal);
+  if (isFound2) {
+    isFound2 = prCutGen_->addPC(rel_, y, i, ptToCut, prPt, 0, VariablePtr(), CutManagerPtr(), 0);
+
+    // MS: for *2
+    //if (false == isFound2 + isFound1) {
+      //for (VarSetConstIterator vit=f->varsBegin(); vit!=f->varsEnd();
+           //++vit) {
+        //vIdx = (*vit)->getIndex();
+        //y[vIdx] = x[vIdx];
+      //}
+      //y[bIdx] = x[bIdx];
+    //}
+  }
+
+  return (isFound1 + isFound2);
+///////////////////////////////////////////////////////////////////////////////// 
 }
 
 
@@ -663,19 +801,24 @@ void QGHandlerAdvance::cutIntSol_(const double *lpx, CutManager *cutMan,
         for (CCIter it = nlCons_.begin(); it != nlCons_.end(); ++it) {
           gradientIneq_(nlpx, lpx, cutMan, status, *it, 0);
         }
+  
+        if (oNl_) {
+          gradientIneq_(nlpx, lpx, cutMan, status, ConstraintPtr(), 1);  // to obj
+        }
 
         if (prCutGen_) {
+          //UInt vIdx;
+          //double *y;
+          //FunctionPtr f;
+          
           bool binVal;
-          UInt bIdx, vIdx;
+          UInt bIdx, pCuts = prCutGen_->getNumCuts();
           std::vector<prCons> prCons = prCutGen_->getPRCons();
           
-          FunctionPtr f;
-          double *y = new double[minlp_->getNumVars()];
-          std::fill(y, y + minlp_->getNumVars(), 0.0);
           double *prPt = new double[minlp_->getNumVars()];
           std::fill(prPt, prPt + minlp_->getNumVars(), 0);
 
-          //// Perspective cut for constraints
+          ////// Perspective cut for constraints
           for (UInt i = 0; i < prCons.size(); ++i) {
             binVal = prCons[i].binVal;
             bIdx = (prCons[i].binVar)->getIndex();
@@ -683,52 +826,59 @@ void QGHandlerAdvance::cutIntSol_(const double *lpx, CutManager *cutMan,
                 (binVal && fabs(1-nlpx[bIdx]) < intTol_)) {
               continue;
             }
+        
+            if (prCutGen_->prVars(nlpx, prPt, i, 0)) {
+              if (!(prCutGen_->addPC(rel_, nlpx, i, lpx, prPt, 0, VariablePtr(), cutMan, 0))) {
+                gradientIneq_(nlpx, lpx, cutMan, status, prCons[i].cons, 0);
+              }
 
-            if (!(prCutGen_->addPC(rel_, nlpx, i, lpx, nlpx, 0, VariablePtr(), cutMan, 0))) {
+              //if (prCutGen_->isFeasible(prPt, i, 0, 0) == 2) {
+                //y = new double[minlp_->getNumVars()];
+                //std::fill(y, y + minlp_->getNumVars(), 0.0);
+                ////++stats_->prAct;
+                //////// if (prCons[i].type == 1) {
+                  //////// if (!((prCons[i].cons)->getLinearFunction())) { // no linear function
+                //f = prCons[i].cons->getFunction();
+                //for (VarSetConstIterator vit=f->varsBegin(); vit!=f->varsEnd();
+                     //++vit) {
+                  //vIdx = (*vit)->getIndex();
+                  //y[vIdx] = nlpx[vIdx];
+                //}
+                //y[bIdx] = nlpx[bIdx];
+                //prFeasibleInactive_(binVal, bIdx, i, f, nlpx, y, prPt, lpx, CutManagerPtr());
+                  ////////}
+                ////////}
+                //if (y) {
+                  //delete [] y;
+                //}
+              //} 
+            } else {
               gradientIneq_(nlpx, lpx, cutMan, status, prCons[i].cons, 0);
             }
-
-            if (prCutGen_->isFeasible(nlpx, i, 0, 0) == 2) {
-              //// if (prCons[i].type == 1) {
-                //// if (!((prCons[i].cons)->getLinearFunction())) { // no linear function
-                  f = prCons[i].cons->getFunction();
-                  for (VarSetConstIterator vit=f->varsBegin(); vit!=f->varsEnd();
-                       ++vit) {
-                    vIdx = (*vit)->getIndex();
-                    y[vIdx] = nlpx[vIdx];
-                    prPt[vIdx] = nlpx[vIdx];
-                  }
-                  y[bIdx] = nlpx[bIdx];
-                  prPt[bIdx] = nlpx[bIdx];                 
-                  prFeasibleInactive_(prCons[i].binVal, bIdx, i, prCons[i].cons->getFunction(), nlpx, y, prPt, lpx, CutManagerPtr());
-                ////}
-              ////}
-            } 
           }
 
-          if (prPt) {
+         if (prPt) {
             delete [] prPt;
           }
 
-          if (y) {
-            delete [] y;
-          }
-
-          // Perspective cut for objective
+          //// Perspective cut for objective
           prObj prO = prCutGen_->getPRObj();
           if (prO.isPR) {
             binVal = prO.binVal;
             bIdx = (prO.binVar)->getIndex();
             if ((!binVal && fabs(nlpx[bIdx]) > intTol_) ||
                 (binVal && fabs(1-nlpx[bIdx]) > intTol_)) {
+              ///MS: change according to cons!!
               if (!(prCutGen_->addPC(rel_, nlpx, 0, lpx, nlpx, 1, objVar_, cutMan, relobj_))) {
-                gradientIneq_(nlpx, lpx, cutMan, status, ConstraintPtr(), 1);  // to obj
+                gradientIneq_(nlpx, lpx, cutMan, status, ConstraintPtr(), 1);   // to obj
               }
             }
           }
-        } else {
-          gradientIneq_(nlpx, lpx, cutMan, status, ConstraintPtr(), 1); // to obj
-        }
+
+          if (prCutGen_->getNumCuts() > pCuts) {
+            *status = SepaResolve;
+          }
+        } 
       }
     }
     break;
@@ -756,6 +906,7 @@ void QGHandlerAdvance::cutIntSol_(const double *lpx, CutManager *cutMan,
       //MS: can NLP solution be used in any way?
       //const double * nlpx = nlpe_->getSolution()->getPrimal();
       consCutsAtLpSol_(lpx, cutMan, status);
+      objCutAtLpSol_(lpx, cutMan, status, 0);
 
       if (prCutGen_) {
         UInt pCuts = prCutGen_->getNumCuts();
@@ -764,8 +915,6 @@ void QGHandlerAdvance::cutIntSol_(const double *lpx, CutManager *cutMan,
         if (prCutGen_->getNumCuts() > pCuts) {
           *status = SepaResolve;
         }
-      } else {
-        objCutAtLpSol_(lpx, cutMan, status, 0);
       }
     }
     break;
@@ -796,26 +945,24 @@ void QGHandlerAdvance::cutIntSol_(const double *lpx, CutManager *cutMan,
 void QGHandlerAdvance::perspectiveCutsObjX_(const double *lpx,
                              CutManager *cutMan, SeparationStatus *status)
 {
-  bool binVal;
-  UInt feas, bIdx, vIdx;
-  std::vector<prCons> prCons = prCutGen_->getPRCons();
 
-  FunctionPtr f;
-  double *y = new double[minlp_->getNumVars()];
-  std::fill(y, y + minlp_->getNumVars(), 0.0);
-  double *prPt = new double[minlp_->getNumVars()];
-  std::fill(prPt, prPt + minlp_->getNumVars(), 0);
-
-  // For objective
+  //MS: changes these accordingly!
+  //// For objective
   prObj prO = prCutGen_->getPRObj();
   if (prO.isPR) {
-    binVal = prO.binVal;
-    bIdx = (prO.binVar)->getIndex();
+    FunctionPtr f;
+    double *y = new double[minlp_->getNumVars()];
+    std::fill(y, y + minlp_->getNumVars(), 0.0);
+    double *prPt = new double[minlp_->getNumVars()];
+    std::fill(prPt, prPt + minlp_->getNumVars(), 0);
+    bool binVal = prO.binVal;
+    UInt bIdx = (prO.binVar)->getIndex(), feas, vIdx;
+
     if ((!binVal && fabs(lpx[bIdx]) > intTol_) ||
         (binVal && fabs(1-lpx[bIdx]) > intTol_)) {
 
       if (!(prCutGen_->addPC(rel_, lpx, 0, lpx, lpx, 1, objVar_, cutMan, relobj_))) {
-        gradientIneq_(lpx, lpx, cutMan, status, ConstraintPtr(), 1);  // to obj
+        gradientIneq_(lpx, lpx, cutMan, status, ConstraintPtr(), 1);   // to obj
       }
 
       feas = prCutGen_->isFeasible(lpx, 0, 1, relobj_);
@@ -835,18 +982,15 @@ void QGHandlerAdvance::perspectiveCutsObjX_(const double *lpx,
         }
       }
     }
-  } else {
-    objCutAtLpSol_(lpx, cutMan, status, 0);
-  }
 
-  if (prPt) {
-    delete [] prPt;
-  }
+    if (prPt) {
+      delete [] prPt;
+    }
 
-  if (y) {
-    delete [] y;
+    if (y) {
+      delete [] y;
+    }
   }
-
   return;
 }
 
@@ -859,9 +1003,7 @@ void QGHandlerAdvance::perspectiveCutsConsX_(const double *nlpx, const double *l
     std::vector<prCons> prCons = prCutGen_->getPRCons();
     
     FunctionPtr f;
-    double *y = new double[minlp_->getNumVars()];
-    std::fill(y, y + minlp_->getNumVars(), 0.0);
-    double *prPt = new double[minlp_->getNumVars()];
+    double *y, *prPt = new double[minlp_->getNumVars()];
     std::fill(prPt, prPt + minlp_->getNumVars(), 0);
 
     for (UInt i = 0; i < prCons.size(); ++i) {
@@ -871,59 +1013,73 @@ void QGHandlerAdvance::perspectiveCutsConsX_(const double *nlpx, const double *l
           (binVal && fabs(1-nlpx[bIdx]) < intTol_)) {
         continue;
       } else {
-        if (!(prCutGen_->addPC(rel_, nlpx, i, lpx, nlpx, 0, VariablePtr(), CutManagerPtr(), 0))) {
+        if (prCutGen_->prVars(nlpx, prPt, i, 0)) {
+          prCutGen_->addPC(rel_, nlpx, i, lpx, prPt, 0, VariablePtr(), CutManagerPtr(), 0);
           gradientIneq_(nlpx, lpx, cutMan, status, prCons[i].cons, 0);
-        }
+          //if (!(prCutGen_->addPC(rel_, nlpx, i, lpx, prPt, 0, VariablePtr(), CutManagerPtr(), 0))) {
+            //gradientIneq_(nlpx, lpx, cutMan, status, prCons[i].cons, 0);
+          //}
 
-        feas = prCutGen_->isFeasible(nlpx, i, 0, 0);
-        if (!feas) {
-          //// PR infeasibility
-          f = prCons[i].cons->getFunction();
-          for (VarSetConstIterator vit=f->varsBegin(); vit!=f->varsEnd();
-               ++vit) {
-            vIdx = (*vit)->getIndex();
-            y[vIdx] = nlpx[vIdx];
-            prPt[vIdx] = nlpx[vIdx];
-          }
-          y[bIdx] = nlpx[bIdx];
-          prPt[bIdx] = nlpx[bIdx];
-          // cut generated using analytical center
-          if (prCutGen_->lineSearchAC(y, prPt, i, 0, 0)) {
-            prCutGen_->addPC(rel_, y, i, lpx, prPt, 0, VariablePtr(), CutManagerPtr(), 0);
+          feas = prCutGen_->isFeasible(prPt, i, 0, 0);
+          if (!feas) {
+            y = new double[minlp_->getNumVars()];
+            std::fill(y, y + minlp_->getNumVars(), 0.0);
+            
+            //++stats_->prInf;
+            ////// PR infeasibility
+            f = prCons[i].cons->getFunction();
+            for (VarSetConstIterator vit=f->varsBegin(); vit!=f->varsEnd();
+                 ++vit) {
+              vIdx = (*vit)->getIndex();
+              y[vIdx] = nlpx[vIdx];
+            }
+            y[bIdx] = nlpx[bIdx];
+          
+            // cut generated using analytical center
+            if (prCutGen_->lineSearchAC(y, prPt, i, 0, 0)) {
+              prCutGen_->addPC(rel_, y, i, lpx, prPt, 0, VariablePtr(), CutManagerPtr(), 0);
+            } 
+            delete [] y;
+            //else {
+              //if (!(prCutGen_->addPC(rel_, nlpx, i, lpx, nlpx, 0, VariablePtr(), CutManagerPtr(), 0))) {
+                //gradientIneq_(nlpx, lpx, cutMan, status, prCons[i].cons, 0);
+              //}
+            //}
           } 
           //else {
-            //if (!(prCutGen_->addPC(rel_, nlpx, i, lpx, nlpx, 0, VariablePtr(), CutManagerPtr(), 0))) {
-              //gradientIneq_(nlpx, lpx, cutMan, status, prCons[i].cons, 0);
+            //////if (!(prCutGen_->addPC(rel_, nlpx, i, lpx, nlpx, 0, VariablePtr(), CutManagerPtr(), 0))) {
+              //////gradientIneq_(nlpx, lpx, cutMan, status, prCons[i].cons, 0);
+            //////}
+            //if (feas == 2) {
+              ////++stats_->prAct;
+              //////if (prCons[i].type == 1) {
+                //////if (!((prCons[i].cons)->getLinearFunction())) { // no linear function
+                  //f = prCons[i].cons->getFunction();
+                  //y = new double[minlp_->getNumVars()];
+                  //std::fill(y, y + minlp_->getNumVars(), 0.0);
+                  //for (VarSetConstIterator vit=f->varsBegin(); vit!=f->varsEnd();
+                       //++vit) {
+                    //vIdx = (*vit)->getIndex();
+                    //y[vIdx] = nlpx[vIdx];
+                  //}
+                  //y[bIdx] = nlpx[bIdx];
+                  
+                  //if (binVal == 0) {
+                    //if (prCutGen_->uniDirZSearch(y, prPt, i, 0)) {
+                      //prCutGen_->addPC(rel_, y, i, lpx, prPt, 0, VariablePtr(), CutManagerPtr(), 0);
+                    //}
+                  //} else {
+                    //if (prCutGen_->uniDirZSearch(y, prPt, i, 1)) {
+                      //prCutGen_->addPC(rel_, y, i, lpx, prPt, 0, VariablePtr(), CutManagerPtr(), 0);
+                    //}
+                  //}
+                  //delete [] y;
+                //////}
+              //////}
             //}
           //}
         } else {
-          //if (!(prCutGen_->addPC(rel_, nlpx, i, lpx, nlpx, 0, VariablePtr(), CutManagerPtr(), 0))) {
-            //gradientIneq_(nlpx, lpx, cutMan, status, prCons[i].cons, 0);
-          //}
-          if (feas == 2) {
-            //if (prCons[i].type == 1) {
-              //if (!((prCons[i].cons)->getLinearFunction())) { // no linear function
-                f = prCons[i].cons->getFunction();
-                for (VarSetConstIterator vit=f->varsBegin(); vit!=f->varsEnd();
-                     ++vit) {
-                  vIdx = (*vit)->getIndex();
-                  y[vIdx] = nlpx[vIdx];
-                  prPt[vIdx] = nlpx[vIdx];
-                }
-                y[bIdx] = nlpx[bIdx];
-                prPt[bIdx] = nlpx[bIdx];
-                if (binVal == 0) {
-                  if (prCutGen_->uniDirZSearch(y, prPt, i, 0)) {
-                    prCutGen_->addPC(rel_, y, i, lpx, prPt, 0, VariablePtr(), CutManagerPtr(), 0);
-                  }
-                } else {
-                  if (prCutGen_->uniDirZSearch(y, prPt, i, 1)) {
-                    prCutGen_->addPC(rel_, y, i, lpx, prPt, 0, VariablePtr(), CutManagerPtr(), 0);
-                  }
-                }
-              //}
-            //}
-          }
+          gradientIneq_(nlpx, lpx, cutMan, status, prCons[i].cons, 0);
         }
       }
     }
@@ -932,9 +1088,9 @@ void QGHandlerAdvance::perspectiveCutsConsX_(const double *nlpx, const double *l
       delete [] prPt;
     }
 
-    if (y) {
-      delete [] y;
-    }
+    //if (y) {
+      //delete [] y;
+    //}
   }
   return;
 }
@@ -1302,6 +1458,7 @@ void QGHandlerAdvance::gradientIneq_(const double *nlpx, const double *lpx,
 {
   int error = 0;
   FunctionPtr f;
+  //ConstraintPtr newcon;
   double act, ub, c0, aTol, rTol;
 
   if (isObj) {
@@ -1351,7 +1508,8 @@ void QGHandlerAdvance::gradientIneq_(const double *nlpx, const double *lpx,
             *status = SepaResolve;
             f = (FunctionPtr) new Function(lf);
             rel_->newConstraint(f, -INFINITY, ub, sstm.str());
-            //newcon = rel_->newConstraint(f, -INFINITY, cUb-c, sstm.str());
+            //newcon = rel_->newConstraint(f, -INFINITY, ub, sstm.str());
+            //newcon->write(std::cout);
             return;
           } else {
             delete lf;
@@ -1465,6 +1623,7 @@ void QGHandlerAdvance::relax_(bool *isInf)
     perspReform_();  
   }
 
+  // For node presolve
   //PerspConPtr pCons = (PerspConPtr) new PerspCon(env_, minlp_);
   //pCons->implications();
   //impli0_ = pCons->getImplications0();
@@ -1479,6 +1638,30 @@ void QGHandlerAdvance::relax_(bool *isInf)
                                                              nlpe_->emptyCopy());
     prCutGen_->findPRCons();
     std::vector<prCons> prCons = prCutGen_->getPRCons();
+      
+    //double act, cUb;
+    //int error = 0, g = 0;
+    //double *x = new double[minlp_->getNumVars()];
+    //std::fill(x, x + minlp_->getNumVars(), 0.0);
+
+    //for (UInt i = 0; i < prCons.size(); ++i) {
+      //c = prCons[i].cons;
+      //cUb = c->getUb();
+      //act = c->getActivity(x, &error);
+      
+      //if (0 == error) {
+        //if ((act >= cUb + solAbsTol_) &&
+            //(cUb == 0 || act >= cUb + fabs(cUb)*solRelTol_)) {
+          //++g;
+        //}
+      //} else {
+        //++g;
+      //}
+    //}
+    //delete [] x;
+
+    //std::cout << "No. of PR cons and # greater than ub: " <<  prCons.size() << " " << g << "\n";
+    //exit(1);
     // assuming constraint ordering in minlp_ used here and in
     // class PerspCutGenerator are the same
     for (ConstraintConstIterator it = minlp_->consBegin();
@@ -1502,11 +1685,11 @@ void QGHandlerAdvance::relax_(bool *isInf)
       }
     }
 
-    //if (oNl_) {
-      //if ((prCutGen_->getPRObj()).isPR) {
-        //oNl_ = 0;
-      //}
-    //}
+    if (oNl_) {
+      if ((prCutGen_->getPRObj()).isPR) {
+        oNl_ = 0;
+      }
+    }
   } else {
     for (ConstraintConstIterator it = minlp_->consBegin();
          it != minlp_->consEnd(); ++it) {
@@ -1882,6 +2065,93 @@ void QGHandlerAdvance::shortestDist_(ConstSolutionPtr sol)
   return;
 }
 
+
+// should be done only once at a node
+//bool QGHandlerAdvance::presolveNode(RelaxationPtr rel, NodePtr node,
+                                 //SolutionPoolPtr, ModVector &,
+                                 //ModVector &r_mods)
+//{
+  //VariablePtr v;
+  //BrVarCandPtr bv;
+  //VarBoundMod2 *m;
+  //double lb, ub, fixVal;
+  //std::forward_list<impliVar>::iterator it1;
+  //std::unordered_map<VariablePtr, std::forward_list<impliVar>>::iterator it;
+
+  //if (lastNodeIdPre_ != node->getId()) {
+    //bv = dynamic_cast <BrVarCandPtr> (node->getBranch()->getBrCand());
+    //v = bv->getVar();
+    //lastNodeIdPre_ = node->getId();
+    //if (v->getType() != Binary) {
+      //return false;
+    //}
+  //} else {
+    //return false;
+  //}
+
+  ////std::cout << "Branching var bin, lb and ub " << v->getName() << " " << v->getLb() << " " << v->getUb() << "\n";
+  ////if (v->getLb() == 0 && v->getId() == 83) 
+  ////{
+    ////std::cout << "Here \n";
+  ////}
+
+  //++stats_->preNodes;
+  //if (0 == v->getLb()) {
+    //it = impli0_.find(rel->getOriginalVar(v));
+    //if (it != impli0_.end()) {
+      //for (it1 = (it->second).begin(); it1 != (it->second).end(); ++it1) {
+        //v = rel->getRelaxationVar((*it1).var);
+        //lb = v->getLb();
+        //ub = v->getUb();
+        //fixVal = (*it1).fixedVal[0];
+        //if (fixVal <= lb - solAbsTol_ || fixVal >= ub + solAbsTol_) {
+          //++stats_->preNodesInf;
+          //return true;
+        //} else {
+          //if (fabs(lb-ub) >= solAbsTol_) {
+            //++stats_->fix;
+            //m = new VarBoundMod2(v, fixVal, fixVal);
+            //r_mods.push_back(m);           
+          //} else {
+            //if (fabs(fixVal-lb) >= solAbsTol_) {
+              //++stats_->preNodesInf;
+              //return true;            
+            //}          
+          //}
+        //}
+      //}
+    //}
+  //} else {
+    //it = impli1_.find(rel->getOriginalVar(v));
+    //if (it != impli1_.end()) {
+      //for (it1 = (it->second).begin(); it1 != (it->second).end(); ++it1) {
+        //v = rel->getRelaxationVar((*it1).var);
+        //lb = v->getLb();
+        //ub = v->getUb();
+        //fixVal = (*it1).fixedVal[0];
+        //if (fixVal <= lb - solAbsTol_ || fixVal >= ub + solAbsTol_) {
+          //++stats_->preNodesInf;
+          //return true;
+        //} else {
+          //if (fabs(lb-ub) >= solAbsTol_) {
+            //++stats_->fix;
+            //m = new VarBoundMod2(v, (*it1).fixedVal[0], (*it1).fixedVal[0]);
+            //r_mods.push_back(m);           
+          //} else {
+            //if (fabs(fixVal-lb) >= solAbsTol_ ) {
+              //++stats_->preNodesInf;
+              //return true;            
+            //}          
+          //}
+        //}
+      //}
+    //}
+  //}
+
+  //return false;
+//}
+
+
 void QGHandlerAdvance::separate(ConstSolutionPtr sol, NodePtr node,
                                 RelaxationPtr, CutManager *cutMan,
                                 SolutionPoolPtr s_pool, ModVector &,
@@ -1975,15 +2245,20 @@ void QGHandlerAdvance::separate(ConstSolutionPtr sol, NodePtr node,
   if (isIntFeas_(x)) {
     fixInts_(x);            // Fix integer variables
     relobj_ = (sol) ? sol->getObjValue() : -INFINITY;
+
+    //// For modifying PR constraints
     if (prCutGen_) {
       // Modifying PR amenable constraints when variables are fixed 
       prModNLP_(x); 
     } else {
       solveNLP_();            // solve NLP
     }
+      
+    //solveNLP_();            // solve NLP
     undoMods_();            // Unfix integer variables
-    //std::cout << "Node " << node->getId() << "\n";
+ 
     cutIntSol_(x, cutMan, s_pool, sol_found, status);
+
   } else {
      if (maxVioPer_ > 0) {
        relobj_ = (sol) ? sol->getObjValue() : -INFINITY;
@@ -2115,57 +2390,56 @@ void QGHandlerAdvance::perspReform_()
   //exit(1);
 }
 
-void QGHandlerAdvance::prModNLP_(const double *)
+void QGHandlerAdvance::prModNLP_(const double *x)
 {
-  //std::vector<prCons> prCons = prCutGen_->getPRCons();
+  std::vector<prCons> prCons = prCutGen_->getPRCons();
          
-  //if (prCons.size()) {
-    //double sb;
-    //bool binval;
-    //UInt bIdx;
-    //ConstraintPtr c;
-    //ConBoundMod *m;
-    //Modification *m1;
-    //std::stack<Modification *> prMods;
+  if (prCons.size()) {
+    double sb;
+    UInt bIdx;
+    bool binval;
+    ConBoundMod *m;
+    ConstraintPtr c;
+    Modification *m1;
+    std::stack<Modification *> prMods;
    
-    //for (UInt i = 0; i < prCons.size(); ++i) {
-      //c = prCons[i].cons;
-      //binval = prCons[i].binVal;
-      //bIdx = (prCons[i].binVar)->getIndex();
+    for (UInt i = 0; i < prCons.size(); ++i) {
+      c = prCons[i].cons;
+      binval = prCons[i].binVal;
+      bIdx = (prCons[i].binVar)->getIndex();
       
-      //if (binval) {
-        //sb = 1 - x[bIdx];
-      //} else {
-        //sb = x[bIdx];
-      //}  
+      if (binval) {
+        sb = 1 - x[bIdx];
+      } else {
+        sb = x[bIdx];
+      }  
      
-       
-      //if ((fabs(sb) < intTol_) && (prCons[i].type != 2)) {
-        //m = new ConBoundMod(c, Upper, (c->getUb() + 0.1));
-        //m->applyToProblem(minlp_);
-        //prMods.push(m);
-      //}
-    //}
+      if ((fabs(sb) < intTol_) && (prCons[i].type == 1)) {
+        m = new ConBoundMod(c, Upper, (c->getUb() + 0.1));
+        m->applyToProblem(minlp_);
+        prMods.push(m);
+      }
+    }
 
-    //if (prMods.size()) {
-      //++(stats_->nlpM);
-    //}
+    if (prMods.size()) {
+      ++(stats_->nlpM);
+    }
 
-    //solveNLP_();
+    solveNLP_();
 
-    //// undo modifications
-    //while(prMods.empty() == false)  {
-      //m1 = prMods.top();
-      //m1->undoToProblem(minlp_);
-      //prMods.pop();
-      //delete m1;
-    //}
+    // undo modifications
+    while(prMods.empty() == false)  {
+      m1 = prMods.top();
+      m1->undoToProblem(minlp_);
+      prMods.pop();
+      delete m1;
+    }
 
-  //} else {
-    //solveNLP_();
-  //}
+  } else {
+    solveNLP_();
+  }
 
-  //return;  
+  return;  
 }
 
 
@@ -2793,11 +3067,11 @@ void QGHandlerAdvance::updateUb_(SolutionPoolPtr s_pool, double nlpval,
 
 void QGHandlerAdvance::writeStats(std::ostream &out) const
 {
-  bool impli = 0;
+  //bool impli = 0;
 
-  if (impli0_.size() || impli1_.size()) {
-    impli = 1;
-  }
+  //if (impli0_.size() || impli1_.size()) {
+    //impli = 1;
+  //}
 
   if (extraLin_ != 0) {
     extraLin_->writeStats(out);
@@ -2820,18 +3094,19 @@ void QGHandlerAdvance::writeStats(std::ostream &out) const
     << me_ << "number of frac cuts added                   = "
     << stats_->fracCuts << std::endl
     << me_ << "number of total cuts added                  = "
-    << stats_->cuts << std::endl
-    << me_ << "problem has implications                    = "
-    << impli << std::endl
-    << me_ << "number of presolved nodes                   = "
-    << stats_->preNodes << std::endl
-    << me_ << "number of presolved nodes with var fixing   = "
-    << stats_->fix << std::endl;
+    << stats_->cuts << std::endl;
+    //<< me_ << "problem has implications                    = "
+    //<< impli << std::endl
+    //<< me_ << "number of presolved nodes                   = "
+    //<< stats_->preNodes << std::endl
+    //<< me_ << "number of presolved nodes with var fixing   = "
+    //<< stats_->fix << std::endl;
 
   if (prCutGen_) {
     prCutGen_->writeStats(out);
   }
 
+  //out << me_ << "number act and inf = " << stats_->prAct << " " << stats_->prInf << std::endl;
 
   return;
 }

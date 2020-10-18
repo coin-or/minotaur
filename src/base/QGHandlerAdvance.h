@@ -25,7 +25,7 @@
 #include "Solution.h"
 
 namespace Minotaur {
-
+// MS: remove the ones not needed
 struct QGStats {
   size_t nlpS;      /// Number of nlps solved.
   size_t nlpM;      /// Number of pr modified nlps solved.
@@ -34,8 +34,11 @@ struct QGStats {
   size_t nlpIL;     /// Number of nlps hits engine iterations limit.
   size_t cuts;    /// Number of cuts at int feas nodes.
   size_t fracCuts;    /// Number of cuts at int feas nodes.
-  size_t preNodes;    /// Number of nodes on which presolving is carried out
-  size_t fix;    /// Number of nodes on which vars from implication are fixed
+  //size_t preNodes;    /// Number of nodes on which presolving is carried out
+  //size_t preNodesInf;    /// Number of nodes on which presolving is carried out and became infeasible
+  //size_t fix;    /// Number of nodes on which vars from implication are fixed
+  //size_t prInf;   
+  //size_t prAct;   
 }; 
 
 
@@ -91,7 +94,7 @@ private:
 
   void prFeasibleInactive_(bool binVal, UInt bIdx, UInt i, FunctionPtr f, const double *x, double * y, double * prPt, const double * ptToCut, CutManagerPtr cutMan);
 
-  bool prInfeasibility_(bool bisect, bool binVal, double * y, double * prPt, const double *ptToCut, UInt i, bool isObj, double relVal, UInt bIdx, double xVal);
+  bool prInfeasibility_(bool bisect, bool binVal, const double *x, double * y, double * prPt, const double *ptToCut, UInt i, bool isObj, double relVal, UInt bIdx, FunctionPtr f);
 
   void shortestDist_(ConstSolutionPtr sol);
 
@@ -144,6 +147,8 @@ private:
   //EngineStatus shortestNlpStatus_;
   
   int lastNodeId_;
+  
+  UInt lastNodeIdPre_;
 
   /// For shortest distance NLP
   double lpdist_;
