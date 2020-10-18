@@ -199,9 +199,41 @@ void PerspCon::populate_(UInt type, VariableGroup nVarVal,
     p.lNonzeroVar = lVarVal;
     p.nNonzeroVar = nVarVal;
     p.bisect = 1 - isInFunc_;
+
+    if (p.bisect == 0 && type == 1) {
+      int error = 0;
+      double act, ub;
+      double * x = new double[p_->getNumVars()];
+      std::fill(x, x+p_->getNumVars(), 0);
+      
+      for (VariableGroupConstIterator vt = nVarVal.begin(); vt != nVarVal.end();
+           ++vt) {
+        x[(vt->first)->getIndex()] = vt->second; 
+      }
+     
+      for (VariableGroupConstIterator vt = lVarVal.begin(); vt != lVarVal.end();
+           ++vt) {
+        x[(vt->first)->getIndex()] = vt->second; 
+      }
+
+      if (0 == binVal_) {
+        x[bVar_->getIndex()] = 1;
+      } else {
+        x[bVar_->getIndex()] = 0;
+      }
+
+      act = cons_->getActivity(x, &error);
+      
+      if (error == 0) {
+        ub = cons_->getUb();
+        if ((fabs(act-ub) < absTol_) && (ub == 0 || 
+                                         (fabs(act-ub) < fabs(ub)*relTol_))) {
+          p.bisect = 1;
+        }
+      }
+      delete [] x;
+    }
     prConsVec_.push_back(p);
-
-
   }
   
  //p.numVarInNonLin = (cons_->getFunction()->getNumVars());
@@ -618,7 +650,8 @@ void PerspCon::displayInfo_()
 {
   //MS: make display better. Keep limited information remove S1 and S2
   prCons p;
-  bool isObjPR = 0, isZ = 0, zIn = 0;
+  bool isObjPR = 0, isZ = 0;
+  //bool zIn = 0;
   //UInt n = 0;
   UInt s = prConsVec_.size(), type1 = 0, type2 = 0;
 
@@ -687,9 +720,9 @@ void PerspCon::displayInfo_()
         ++s;      
       }
 
-      if (1 - p.bisect) {
-        ++zIn;
-      }
+      //if (1 - p.bisect) {
+        //++zIn;
+      //}
 
       switch (p.type) {
       case 1:
@@ -704,30 +737,31 @@ void PerspCon::displayInfo_()
       //if (p.numVarInNonLin > 1) {
         //++n;      
       //}
-      out << "Structure type: S" << p.type << std::endl;
-      out << "Associated binary variable and val: " << (p.binVar)->getName() << " and " <<
-        (p.binVal) << std::endl;
+      //out << "Structure type: S" << p.type << std::endl;
+      //out << "Associated binary variable and val: " << (p.binVar)->getName() << " and " <<
+        //(p.binVal) << std::endl;
 
-      out << me_ <<"Vars controlled and their fixed value: ";
+      //out << me_ <<"Vars controlled and their fixed value: ";
 
-      for (VariableGroupConstIterator vt=p.nNonzeroVar.begin(); vt!=p.nNonzeroVar.end(); ++vt) {
-        out << "(" << vt->first->getName() << ", " << vt->second << "), ";
-      }
+      //for (VariableGroupConstIterator vt=p.nNonzeroVar.begin(); vt!=p.nNonzeroVar.end(); ++vt) {
+        //out << "(" << vt->first->getName() << ", " << vt->second << "), ";
+      //}
 
 
-      for (VariableGroupConstIterator vt=p.lNonzeroVar.begin(); vt!=p.lNonzeroVar.end(); ++vt) {
-        out << "(" << vt->first->getName() << ", " << vt->second << "), ";
-      }
+      //for (VariableGroupConstIterator vt=p.lNonzeroVar.begin(); vt!=p.lNonzeroVar.end(); ++vt) {
+        //out << "(" << vt->first->getName() << ", " << vt->second << "), ";
+      //}
 
-      std::cout << "\n";
+      //std::cout << "\n";
     }
     out << "----------------------------------------------------"<< std::endl;
  
-    out << me_ <<"Total nonlinear constraints in problem = " <<
-      p_->getNumCons() - p_->getNumLinCons() << std::endl; 
-    out << me_ <<"Number of constraints amenable to PR = " << 
-      prConsVec_.size() << std::endl;
-    out << me_ <<"No. of type 1 and 2 = " << type1 << " " << type2 << "\n";
+    //out << me_ <<"Total nonlinear constraints in problem = " <<
+      //p_->getNumCons() - p_->getNumLinCons() << std::endl; 
+    //out << me_ <<"Number of constraints amenable to PR = " << 
+      //prConsVec_.size() << std::endl;
+    //out << me_ <<"No. of type 1 and 2 = " << type1 << " " << type2 << "\n";
+    out << me_ <<"Bisection possible constraints = " << s << "\n";
 
 
     //out << me_ <<"No. of constraints amenable to PR with bisect amenable structure = " << s << std::endl;
