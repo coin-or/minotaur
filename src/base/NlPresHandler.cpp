@@ -497,13 +497,15 @@ void  NlPresHandler::bin2Lin_(ProblemPtr p, PreModQ *mods, bool *changed)
         lf = f->getLinearFunction();
         if (!lf) {
           lf = (LinearFunctionPtr) new LinearFunction();
+        } else {
+          lf = lf->clone();
         }
         bin2LinF_(p, lf, nz, irow, jcol, values, mod);
         if (lf->getNumTerms()>0) {
           f = (FunctionPtr) new Function(lf);
           p->newConstraint(f, c->getLb(), c->getUb());
         } else {
-          //lf.reset();
+          delete lf;
           lf = 0;
         }
         p->markDelete(c);
