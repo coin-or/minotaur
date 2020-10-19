@@ -269,9 +269,9 @@ void ParTreeManager::insertCandidate_(NodePtr node, bool pop_now)
           node->setTbScore(2*(node->getParent()->getTbScore())+1);
         }
       } else {
-        if (!dir) {
+        if (!dir) { //up branch for the second child
           node->setTbScore(2*(node->getParent()->getTbScore())+1);
-        } else {
+        } else { //down branch for the second child
           node->setTbScore(2*(node->getParent()->getTbScore()));
         }
       }
