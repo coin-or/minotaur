@@ -330,10 +330,12 @@ void ParPCBProcessor::process(NodePtr node, RelaxationPtr rel,
       if (brancher_->getName()=="ParReliabilityBrancher") {
         ParReliabilityBrancherPtr parRelBr;
         parRelBr = dynamic_cast <ParReliabilityBrancher*> (brancher_);
+#pragma omp critical (solPool)
         branches_ = parRelBr->findBranches(relaxation_, node, sol, s_pool,
                                             br_status, mods, timesUp, timesDown,
                                             pseudoUp, pseudoDown, nodesProc);
       } else {
+#pragma omp critical (solPool)
         branches_ = brancher_->findBranches(relaxation_, node, sol, s_pool,
                                             br_status, mods);
       }
