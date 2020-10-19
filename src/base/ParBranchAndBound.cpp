@@ -1505,7 +1505,7 @@ void ParBranchAndBound::parsolveSync(ParNodeIncRelaxerPtr parNodeRlxr[],
 #pragma omp critical (treeManager)
         {
           current_node[i] = tm_->getCandidate();
-          if(current_node[i]) {
+          if (current_node[i]) {
 #if SPEW
 #pragma omp critical (logger)
             logger_->msgStream(LogDebug1) << "assign node " << current_node[i]->getId() << " score "
