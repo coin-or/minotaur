@@ -160,9 +160,9 @@ BrCandPtr UnambRelBrancher::findBestCandidate_(const double objval,
     }
   }
   //if (best_cand) {
-////#pragma omp critical
+//#pragma omp critical
     //std::cout << "in rel: node " << node->getId() << " lb " << node->getLb()
-      //<< " brCand " << best_cand->getName() << " best score " << best_score
+      //<< " brCand " << best_cand->getName() << " score " << best_score
       //<< " thread  " << omp_get_thread_num() << "\n";
   //}
   return best_cand;
