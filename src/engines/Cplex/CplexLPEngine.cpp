@@ -649,16 +649,29 @@ TERMINATE:
 
 void CplexLPEngine::load_()
 {
+  assert(!"to be implemented!");
 }
 
 
 void CplexLPEngine::negateObj()
 {
+  assert(!"to be implemented!");
 }
 
 
-void CplexLPEngine::removeCons(std::vector<ConstraintPtr> &)
+void CplexLPEngine::removeCons(std::vector<ConstraintPtr> &delcons)
 {
+  int *delinds = new int[CPXXgetnumrows(cpxenv_,cpxlp_)]{0};
+  for (UInt i=0; i < delcons.size(); ++i) {
+    delinds[delcons[i]->getIndex()] = 1;
+  }
+  cpxstatus_ = CPXXdelsetrows (cpxenv_, cpxlp_, delinds);
+  if (cpxstatus_) {
+    assert(!"error while deleting constraints!");
+  }
+  if (delinds) {
+    delete [] delinds;
+  }
   consChanged_ = true;
 }
 
