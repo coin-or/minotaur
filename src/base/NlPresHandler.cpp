@@ -14,6 +14,7 @@
 #include <iomanip>
 #include <iostream>
 #include <string.h> // for memset
+#include <math.h>   // for isfinite
 
 #include "MinotaurConfig.h"
 #include "Constraint.h"
@@ -453,7 +454,7 @@ void  NlPresHandler::bin2Lin_(ProblemPtr p, PreModQ *mods, bool *changed)
   x = new double[p->getNumVars()];
   grad = new double[p->getNumVars()];
   memset(mult, 0, p->getNumCons()*sizeof(double));
-  memset(values, 0, nz*sizeof(UInt));
+  memset(values, 0, nz*sizeof(double));
   memset(irow, 0, nz*sizeof(UInt));
   memset(jcol, 0, nz*sizeof(UInt));
   memset(x, 0, p->getNumVars()*sizeof(double));
@@ -475,6 +476,12 @@ void  NlPresHandler::bin2Lin_(ProblemPtr p, PreModQ *mods, bool *changed)
         f = (FunctionPtr) new Function(lf);
         p->newObjective(f, p->getObjective()->getConstant()+nlconst, Minimize);
         *changed = true;
+
+        // resize mult. Others need not be changed as we add only linear
+        // constraints.
+        delete [] mult;
+        mult = new double[p->getNumCons()];
+        memset(mult, 0, p->getNumCons()*sizeof(double));
       }
     }
   }
@@ -490,7 +497,7 @@ void  NlPresHandler::bin2Lin_(ProblemPtr p, PreModQ *mods, bool *changed)
     }
     if (Quadratic==f->getType()) {
       mult[c->getIndex()] = 1.0;
-      memset(values, 0, nz*sizeof(UInt));
+      memset(values, 0, nz*sizeof(double));
       hess->fillRowColValues(x, 0.0, mult, values, &err); assert(0==err);
       mult[c->getIndex()] = 0.0;
       if (canBin2Lin_(p, nz, irow, jcol, values)) {
@@ -508,6 +515,11 @@ void  NlPresHandler::bin2Lin_(ProblemPtr p, PreModQ *mods, bool *changed)
           delete lf;
           lf = 0;
         }
+        // resize mult. Others need not be changed as we add only linear
+        // constraints.
+        delete [] mult;
+        mult = new double[p->getNumCons()];
+        memset(mult, 0, p->getNumCons()*sizeof(double));
         p->markDelete(c);
         *changed = true;
         cit = p->consBegin()+c->getIndex();
@@ -746,6 +758,70 @@ void NlPresHandler::copyBndsFromRel_(RelaxationPtr rel, ModVector &p_mods)
 }
 
 
+void NlPresHandler::fixedNl_(ProblemPtr p, bool purge_cons, bool *changed,
+                             ModQ *, SolveStatus &status)
+{
+  ConstraintPtr c;
+//  ConBoundModPtr mod;
+  LinearFunctionPtr lf;
+  NonlinearFunctionPtr nlf;
+  QuadraticFunctionPtr qf;
+  double lfu, lfl;
+  double nlfu, nlfl;
+  double impl_lb, impl_ub;
+  FunctionPtr f;
+  int error = 0;
+  const double tol = 1e-7;
+
+  for (ConstraintConstIterator cit=p->consBegin(); cit!=p->consEnd();
+       ++cit) {
+    c = *cit;
+    lf = c->getFunction()->getLinearFunction();
+    nlf = c->getFunction()->getNonlinearFunction();
+    qf = c->getFunction()->getQuadraticFunction();
+
+    if (0 == nlf || 0!=qf) {
+      continue;
+    }
+
+    nlfu = nlfl = 0.0;
+    error = 0;
+    nlf->computeBounds(&nlfl, &nlfu, &error);
+
+    if (0 == error && isfinite(nlfu) && isfinite(nlfl) && nlfu-nlfl<tol) {
+#if SPEW
+      logger_->msgStream(LogDebug2) << me_ << " constraint " << c->getName()
+                                    << " has a constant nonlinear function."
+                                    << " Removing the nonlinear part."
+                                    << std::endl;
+#endif
+      if (lf) {
+        lf = lf->clone();
+        f = new Function(lf);
+        p->newConstraint(f, c->getLb()-nlfu, c->getUb()-nlfu);
+      } else {
+        // we just have lb <= constant <= ub. Either the constraint is
+        // redundant or the problem is infeasible.
+        if (c->getLb()-tol > nlfu || nlfu > c->getUb()+tol) {
+          status = SolvedInfeasible;
+          *changed = true;
+          return ;
+        } else {
+#if SPEW
+        logger_->msgStream(LogDebug2) << me_ << " constraint " << c->getName()
+                                      << " is redundant. Will be removed. "
+                                      << std::endl;
+#endif
+        }
+      }
+      p->markDelete(c);
+      *changed = true;
+      cit = p->consBegin()+c->getIndex();
+    }
+  }
+}
+
+
 std::string NlPresHandler::getName() const
 {
   return "NlPresHandler (presolving nonlinear constraints).";
@@ -894,6 +970,15 @@ SolveStatus NlPresHandler::presolve(PreModQ *mods, bool *changed0)
     changed = false;
     chkRed_(p_, true, &changed, dmods, status);
     p_->delMarkedCons();
+
+    fixedNl_(p_, true, &changed, dmods, status);
+    if (SolvedInfeasible==status) {
+      stats_.time += tim->query();
+      delete tim;
+      return SolvedInfeasible;
+    }
+    p_->delMarkedCons();
+
     varBndsFromCons_(p_, true, &changed, dmods, status);
     if (SolvedInfeasible==status) {
       stats_.time += tim->query();

@@ -266,6 +266,13 @@ private:
   void copyBndsFromRel_(RelaxationPtr rel, ModVector &p_mods);
 
   /**
+   * Check if the nonlinear function is a constant or a linear function
+   * If so, simplify the constraint. Constraint may become infeasible or
+   * redundant after the modification
+   */
+  void fixedNl_(ProblemPtr p, bool purge_cons, bool *changed,
+                ModQ *, SolveStatus &status);
+  /**
    * Fix any binary variables in the objective function based on the
    * incumbent soluion value.
    */
