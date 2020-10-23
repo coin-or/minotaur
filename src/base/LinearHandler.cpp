@@ -149,9 +149,7 @@ void LinearHandler::findLinVars_()
     }
     
     for (ConstrSet::iterator cit=v->consBegin(); cit!=v->consEnd(); ++cit) {
-      if (Linear != (*cit)->getFunction()->getType() && 
-          Constant != (*cit)->getFunction()->getType() &&
-          !((*cit)->getNonlinearFunction()) && !((*cit)->getQuadraticFunction())) {
+      if ((*cit)->getNonlinearFunction() || (*cit)->getQuadraticFunction()) {
         is_lin = false;
         break;
       }

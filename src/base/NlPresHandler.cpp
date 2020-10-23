@@ -501,16 +501,16 @@ void  NlPresHandler::bin2Lin_(ProblemPtr p, PreModQ *mods, bool *changed)
       hess->fillRowColValues(x, 0.0, mult, values, &err); assert(0==err);
       mult[c->getIndex()] = 0.0;
       if (canBin2Lin_(p, nz, irow, jcol, values)) {
-        lf = f->getLinearFunction();
-        if (!lf) {
-          lf = (LinearFunctionPtr) new LinearFunction();
-        } else {
-          lf = lf->clone();
-        }
+        err = 0;
+        memset(grad, 0, p->getNumVars()*sizeof(double));
+        f->evalGradient(x, grad, &err); assert(0==err);
+        nlconst = f->eval(x, &err); assert(0==err);
+        lf = (LinearFunctionPtr) new LinearFunction(grad, p->varsBegin(),
+                                                    p->varsEnd(), 1e-12);
         bin2LinF_(p, lf, nz, irow, jcol, values, mod);
         if (lf->getNumTerms()>0) {
           f = (FunctionPtr) new Function(lf);
-          p->newConstraint(f, c->getLb(), c->getUb());
+          p->newConstraint(f, c->getLb()-nlconst, c->getUb()-nlconst);
         } else {
           delete lf;
           lf = 0;
@@ -522,6 +522,11 @@ void  NlPresHandler::bin2Lin_(ProblemPtr p, PreModQ *mods, bool *changed)
         memset(mult, 0, p->getNumCons()*sizeof(double));
         p->markDelete(c);
         *changed = true;
+#if SPEW
+        logger_->msgStream(LogDebug2) << me_ << " marked constraint "
+                                      << c->getName()
+                                      << "for deletion in bin2lin_" << std::endl;
+#endif
         cit = p->consBegin()+c->getIndex();
       }
     }
@@ -948,10 +953,6 @@ void NlPresHandler::perspRef_(ProblemPtr p, PreModQ *, bool *changed)
 #endif 
       }
     } 
-    // else {
-    //   std::cout << "Did not find it!\n";
-    //   c->write(std::cout);
-    // }
   }
 }
 
@@ -1091,8 +1092,6 @@ void NlPresHandler::fixObjBins_(ProblemPtr p, double ub, bool *changed,
         status = SolvedInfeasible;
         return ;
       }
-      //std::cout << "obj lb = " << lfl+nlfl << " obj ub = " <<
-      //lfu+nlfu << " ub = " << ub << std::endl;
 
       for (VariableGroupConstIterator it2=lf->termsBegin();
            it2 != lf->termsEnd(); ++it2) {
