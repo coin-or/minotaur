@@ -38,6 +38,7 @@ public:
   friend class ParQGHandlerAdvance;
   friend class PerspCon;
   friend class Problem;
+  friend class TransSep;
   friend class QGHandler;
   friend class OAHandler;
   friend class MultiSolHeur;
