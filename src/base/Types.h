@@ -85,6 +85,7 @@ typedef enum {
 typedef enum {
   VarOrig,    ///> Variable was part of the original problem
   VarTran,    ///> Variable created by Transformer
+  VarSep,     ///> Variable created by TransSep for separable constraints
   VarHand,    ///> Variable created by Handler
   VarOtherSrc ///> Variable created by some other source
 } VarSrcType;
