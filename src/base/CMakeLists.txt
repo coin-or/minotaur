@@ -125,7 +125,7 @@ set (MINOTAUR_SOURCES
      STOAHandler.cpp
      Transformer.cpp 
      TransPoly.cpp 
-     #TransSep.cpp
+     TransSep.cpp
      TreeManager.cpp 
      Types.cpp 
      UnambRelBrancher.cpp
@@ -260,7 +260,7 @@ set (MINOTAUR_HEADERS
      Timer.h
      Transformer.h 
      TransPoly.h 
-     #TransSep.h
+     TransSep.h
      TreeManager.h
      Types.h
      UnambRelBrancher.h

@@ -97,6 +97,8 @@ public:
 
   UInt getHessNz();
 
+  bool ifLinear(LinearFunctionPtr lf, UInt pv, double *consVal);
+
   //reset node index every time a node is added or deleted 
   void resetNodeIndex();
 
