@@ -272,6 +272,10 @@ void Environment::createDefaultOptions_()
       1000000000);
   options_->insert(i_option);
 
+  i_option = (IntOptionPtr) new Option<int>("separability_intensity_level",
+      "Intensity of separability detection: 0-1", true, 0);
+  options_->insert(i_option); //MS: disable later after confirming with sir.
+
   i_option = (IntOptionPtr) new Option<int>("pres_freq", 
       "Frequency of node-presolves in branch-and-bound", true, 5);
   options_->insert(i_option);
@@ -290,6 +294,10 @@ void Environment::createDefaultOptions_()
 
   i_option = (IntOptionPtr) new Option<int>("log_level", 
       "Verbosity of the main solving process: 0-6", true, LogInfo);
+  options_->insert(i_option);
+
+  i_option = (IntOptionPtr) new Option<int>("separability_log_level", 
+      "Verbosity of the mseparability detection: 0-6", true, LogInfo);
   options_->insert(i_option);
 
   i_option = (IntOptionPtr) new Option<int>("divheur", 

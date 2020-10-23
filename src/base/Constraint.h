@@ -61,6 +61,7 @@ namespace Minotaur {
       /// are private.
       friend class Problem;
       friend class PerspCon;
+      friend class TransSep;
       friend class QGHandler;
 
       /// Default constructor.

@@ -1082,7 +1082,7 @@ bool PerspCutGenerator::bisecPt(double *y, double * newPt, UInt i,
 {
   int error = 0;
   FunctionPtr f;
-  UInt binindex, vIdx;
+  UInt binindex;
   bool isCont = true, binval;
   double zU, zL, ub, c0, aTol, rTol, act;
   double *yC = new double[minlp_->getNumVars()];
