@@ -1300,6 +1300,7 @@ void CGraph::removeVar(VariablePtr v, double val)
     cnode->setV(VariablePtr());
     cnode->setType(Constant);
     cnode->setOp(OpNum);
+    cnode->setBounds(val, val);
     vars_.erase(v);
     varNode_.erase(it);
     changed_ = true;
