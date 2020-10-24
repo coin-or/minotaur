@@ -536,7 +536,6 @@ int main(int argc, char* argv[])
   loadProblem(env, iface, inst, &obj_sense);
      
   // Separability detection
-  orig_v = new VarVector(inst->varsBegin(), inst->varsEnd());
   sepDetection(env, inst); 
 
   // Initialize engines
@@ -547,7 +546,7 @@ int main(int argc, char* argv[])
   delete efac;
 
   // get presolver.
-  //orig_v = new VarVector(inst->varsBegin(), inst->varsEnd());
+  orig_v = new VarVector(inst->varsBegin(), inst->varsEnd());
   pres = presolve(env, inst, iface->getNumDefs(), handlers);
   for (HandlerVector::iterator it=handlers.begin(); it!=handlers.end(); ++it) {
     delete (*it);
