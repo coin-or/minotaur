@@ -21,6 +21,7 @@
 #include "CGraph.h"
 #include "CNode.h"
 #include "HessianOfLag.h"
+#include "LinearFunction.h"
 #include "QuadraticFunction.h"
 #include "VarBoundMod.h"
 #include "Variable.h"
@@ -1299,6 +1300,7 @@ void CGraph::removeVar(VariablePtr v, double val)
     cnode->setV(VariablePtr());
     cnode->setType(Constant);
     cnode->setOp(OpNum);
+    cnode->setBounds(val, val);
     vars_.erase(v);
     varNode_.erase(it);
     changed_ = true;
@@ -1557,6 +1559,46 @@ void CGraph::subst(VariablePtr out, VariablePtr in, double rat)
 void CGraph::setOut(CNode *node)
 {
   oNode_ = node;
+}
+
+
+bool CGraph::ifLinear(LinearFunctionPtr lf, UInt pv, double *consVal)
+{
+  if (oNode_->findFType() == Linear) {
+    int error = 0;
+    VariablePtr v;
+    double *x = new double[pv]();
+
+    //determine constant by evaluating at all 0's
+    *consVal = eval(x,&error);
+    
+    //determine coefficient by finding hessian at all 0's
+    if (error>0) {
+      assert(!"Function failed to evaluate at x.!!");
+    } else {
+      double *coeff = new double[pv]();
+      evalGradient(x, coeff, &error);
+      if (error > 0) {
+        assert(!"Function failed to evaluate at x.!!");
+      } else {
+        if (lf == 0) {
+          lf = (LinearFunctionPtr) new LinearFunction();
+        }
+        for (CNodeQ::iterator it=vq_.begin(); it!=vq_.end(); ++it) {
+          v = getVar(*it);
+          if (lf->hasVar(v)) {
+            lf->incTerm(v,coeff[v->getIndex()]);        
+          } else {
+            lf->addTerm(v,coeff[v->getIndex()]);        
+          }
+        }
+      }
+      delete [] coeff;
+    }
+    delete [] x;
+    return true;
+  }
+  return false;
 }
 
 

@@ -53,6 +53,7 @@
 #include <CxQuadHandler.h>
 #include <Objective.h>
 #include "RCHandler.h"
+#include <TransSep.h>
 
 using namespace Minotaur;
 
@@ -335,8 +336,6 @@ void setInitialOptions(EnvPtr env)
   env->getOptions()->findBool("presolve")->setValue(true);
   env->getOptions()->findBool("use_native_cgraph")->setValue(true);
   env->getOptions()->findBool("nl_presolve")->setValue(true);
-  env->getOptions()->findBool("separability")->setValue(false);
-  env->getOptions()->findBool("perspective")->setValue(false);
   env->getOptions()->findBool("rc_fix")->setValue(false);
 }
 
@@ -393,8 +392,7 @@ int showInfo(EnvPtr env)
 }
 
 
-PresolverPtr presolve(EnvPtr env, ProblemPtr p, size_t ndefs,
-                      HandlerVector &handlers)
+PresolverPtr presolve(EnvPtr env, ProblemPtr p, size_t ndefs, HandlerVector &handlers)
 {
   PresolverPtr pres = PresolverPtr(); // NULL
   const std::string me("qg: ");
@@ -443,6 +441,37 @@ PresolverPtr presolve(EnvPtr env, ProblemPtr p, size_t ndefs,
   }
   return pres;
 }
+
+//For separability detection: Check separability if problem is not linear.
+//TransSepPtr sepDetection(EnvPtr env, ProblemPtr p)
+void sepDetection(EnvPtr env, ProblemPtr p)
+{
+  TransSepPtr sep = TransSepPtr();
+  const std::string me("qg: ");
+
+  //std::cout <<"Original Problem \n";
+  //p->write(std::cout);
+  //std::cout <<"---------------------------------------- \n";
+
+  if (env->getOptions()->findBool("separability")->getValue() == true) {
+    if (p -> isLinear()) {
+      env ->getLogger()->msgStream(LogInfo) << me
+        << "Problem is linear, skipping separability detection" 
+        << std::endl;
+    } else {
+      sep = (TransSepPtr) new TransSep(env, p);
+      sep->sepDetection();
+      //env ->getLogger()->msgStream(LogDebug) << me
+        //<< "Is problem separable? - "<< sep->getStatus() 
+        //<< std::endl;
+    }
+  }
+
+  //std::cout <<"Separable Problem \n";
+  //p->write(std::cout);
+  //exit(1);
+}
+
 
 
 int main(int argc, char* argv[])
@@ -505,6 +534,9 @@ int main(int argc, char* argv[])
   }
 
   loadProblem(env, iface, inst, &obj_sense);
+     
+  // Separability detection
+  sepDetection(env, inst); 
 
   // Initialize engines
   nlp_e = getNLPEngine(env, inst); //Engine for Original problem
@@ -564,15 +596,6 @@ int main(int argc, char* argv[])
 
     handlers.push_back(qg_hand);
     assert(qg_hand);
-
-   // Perspective reformulation has to be solved using perspective cuts
-    if (env->getOptions()->findBool("perspective")->getValue()) {
-      env->getOptions()->findBool("perspective_cuts")->setValue(true);
-    } else {
-      if (env->getOptions()->findBool("perspective_cuts")->getValue()) {
-        env->getOptions()->findBool("perspective")->setValue(true);
-      }
-    }
 
     // report name
     env->getLogger()->msgStream(LogExtraInfo) << me << "handlers used:"

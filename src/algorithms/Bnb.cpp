@@ -140,8 +140,8 @@ BranchAndBound* createBab(EnvPtr env, ProblemPtr p, EnginePtr e,
   nr->setEngine(e);
   bab->setNodeRelaxer(nr);
   bab->shouldCreateRoot(false);
-  NlWriter wr(env);
-  wr.write(rel, "test1234.nl");
+  // NlWriter wr(env);
+  // wr.write(rel, "test1234.nl");
 
   if (0 <= options->findInt("divheur")->getValue()) {
     MINLPDivingPtr div_heur;

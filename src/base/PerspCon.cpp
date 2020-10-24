@@ -684,24 +684,24 @@ void PerspCon::displayInfo_()
   out << "---------- PR details --------------------------------"<< std::endl;
   if (prObj_.isPR) {
     out << me_ <<"Objective is PR amenable." << std::endl;
-    out << "Associated binary variable and val: " << (prObj_.binVar)->getName() << " and " <<
-      (prObj_.binVal) << std::endl;
-    //out << "Associated binary variable present in function: " << 1 - prObj_.bisect << std::endl;
-    out << me_ <<"Vars controlled and their fixed value: ";
+    //out << "Associated binary variable and val: " << (prObj_.binVar)->getName() << " and " <<
+      //(prObj_.binVal) << std::endl;
+    ////out << "Associated binary variable present in function: " << 1 - prObj_.bisect << std::endl;
+    //out << me_ <<"Vars controlled and their fixed value: ";
 
-    for (VariableGroupConstIterator vt=prObj_.nNonzeroVar.begin(); vt!=prObj_.nNonzeroVar.end(); ++vt) {
-      out << "(" << vt->first->getName() << ", " << vt->second << "), ";
-    }
+    //for (VariableGroupConstIterator vt=prObj_.nNonzeroVar.begin(); vt!=prObj_.nNonzeroVar.end(); ++vt) {
+      //out << "(" << vt->first->getName() << ", " << vt->second << "), ";
+    //}
 
 
-    for (VariableGroupConstIterator vt=prObj_.lNonzeroVar.begin(); vt!=prObj_.lNonzeroVar.end(); ++vt) {
-      out << "(" << vt->first->getName() << ", " << vt->second << "), ";
-    }
+    //for (VariableGroupConstIterator vt=prObj_.lNonzeroVar.begin(); vt!=prObj_.lNonzeroVar.end(); ++vt) {
+      //out << "(" << vt->first->getName() << ", " << vt->second << "), ";
+    //}
 
-    isObjPR = 1;
-    isZ = 1 - prObj_.bisect;
-    //out << "No. of vars in nonlinear part " << 1 - prObj_.numVarInNonLin << std::endl;
-    out << "\n----------------------------------------------------"<< std::endl;
+    //isObjPR = 1;
+    //isZ = 1 - prObj_.bisect;
+    ////out << "No. of vars in nonlinear part " << 1 - prObj_.numVarInNonLin << std::endl;
+    //out << "\n----------------------------------------------------"<< std::endl;
   } else {
     out << me_ <<"Objective is not PR amenable." << std::endl;
   }
@@ -737,31 +737,31 @@ void PerspCon::displayInfo_()
       //if (p.numVarInNonLin > 1) {
         //++n;      
       //}
-      //out << "Structure type: S" << p.type << std::endl;
-      //out << "Associated binary variable and val: " << (p.binVar)->getName() << " and " <<
-        //(p.binVal) << std::endl;
+      out << "Structure type: S" << p.type << std::endl;
+      out << "Associated binary variable and val: " << (p.binVar)->getName() << " and " <<
+        (p.binVal) << std::endl;
 
-      //out << me_ <<"Vars controlled and their fixed value: ";
+      out << me_ <<"Vars controlled and their fixed value: ";
 
-      //for (VariableGroupConstIterator vt=p.nNonzeroVar.begin(); vt!=p.nNonzeroVar.end(); ++vt) {
-        //out << "(" << vt->first->getName() << ", " << vt->second << "), ";
-      //}
+      for (VariableGroupConstIterator vt=p.nNonzeroVar.begin(); vt!=p.nNonzeroVar.end(); ++vt) {
+        out << "(" << vt->first->getName() << ", " << vt->second << "), ";
+      }
 
 
-      //for (VariableGroupConstIterator vt=p.lNonzeroVar.begin(); vt!=p.lNonzeroVar.end(); ++vt) {
-        //out << "(" << vt->first->getName() << ", " << vt->second << "), ";
-      //}
+      for (VariableGroupConstIterator vt=p.lNonzeroVar.begin(); vt!=p.lNonzeroVar.end(); ++vt) {
+        out << "(" << vt->first->getName() << ", " << vt->second << "), ";
+      }
 
-      //std::cout << "\n";
+      std::cout << "\n";
     }
     out << "----------------------------------------------------"<< std::endl;
  
     //out << me_ <<"Total nonlinear constraints in problem = " <<
       //p_->getNumCons() - p_->getNumLinCons() << std::endl; 
-    //out << me_ <<"Number of constraints amenable to PR = " << 
-      //prConsVec_.size() << std::endl;
-    //out << me_ <<"No. of type 1 and 2 = " << type1 << " " << type2 << "\n";
-    out << me_ <<"Bisection possible constraints = " << s << "\n";
+    out << me_ <<"Number of constraints amenable to PR = " << 
+      prConsVec_.size() << std::endl;
+    out << me_ <<"No. of type 1 and 2 = " << type1 << " " << type2 << "\n";
+    //out << me_ <<"Bisection possible constraints = " << s << "\n";
 
 
     //out << me_ <<"No. of constraints amenable to PR with bisect amenable structure = " << s << std::endl;

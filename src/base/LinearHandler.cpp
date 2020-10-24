@@ -149,8 +149,7 @@ void LinearHandler::findLinVars_()
     }
     
     for (ConstrSet::iterator cit=v->consBegin(); cit!=v->consEnd(); ++cit) {
-      if (Linear != (*cit)->getFunction()->getType() && 
-          Constant != (*cit)->getFunction()->getType()) {
+      if ((*cit)->getNonlinearFunction() || (*cit)->getQuadraticFunction()) {
         is_lin = false;
         break;
       }
@@ -500,7 +499,8 @@ SolveStatus LinearHandler::varBndsFromCons_(ProblemPtr p, bool apply_to_prob,
        ++c_iter) {
     c_ptr = *c_iter;
     if (c_ptr->getBFlag() &&  c_ptr->getFunctionType() == Linear &&
-        DeletedCons!=c_ptr->getState()) {
+        c_ptr->getQuadraticFunction() == 0 && c_ptr->getNonlinearFunction() == 0
+        && DeletedCons!=c_ptr->getState()) {
       t_changed = true;
       c_ptr->setBFlag(false);
       while (true == t_changed) {
