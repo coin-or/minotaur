@@ -810,7 +810,7 @@ void ParQGBranchAndBound::parsolveOppor(ParNodeIncRelaxerPtr parNodeRlxr[],
       } else {
 #if SPEW
 #pragma omp critical (logger)
-        logger_->msgStream(LogInfo) << "nodesCount " << nodeCountThread << " thread " << i << std::endl;
+        //logger_->msgStream(LogInfo) << "nodesCount " << nodeCountThread << " thread " << i << std::endl;
         logger_->msgStream(LogDebug) << std::setprecision(8)
           << me_ << "lb = " << tm_->updateLb() << std::endl
           << me_ << "ub = " << tm_->getUb() << std::endl;
