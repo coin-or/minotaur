@@ -1443,9 +1443,7 @@ void ParQGBranchAndBound::parsolveSync(ParNodeIncRelaxerPtr parNodeRlxr[],
           {
             if (tm_->shouldPrune_(current_node[i])) {
               parNodeRlxr[i]->reset(current_node[i], false);
-              if (numThreads > 1) {
-                removeAddedCons(rel[i], numRelCons);
-              }
+              removeAddedCons(rel[i], numRelCons);
 #if SPEW
               logger_->msgStream(LogInfo) << me_ << "prune node "
                 << current_node[i]->getId() << " thread "
@@ -1547,9 +1545,7 @@ void ParQGBranchAndBound::parsolveSync(ParNodeIncRelaxerPtr parNodeRlxr[],
               << omp_get_thread_num() << std::endl;
 #endif
             parNodeRlxr[i]->reset(current_node[i], false);
-            if (numThreads > 1) {
-              removeAddedCons(rel[i], numRelCons);
-            }
+            removeAddedCons(rel[i], numRelCons);
 
 #pragma omp critical (treeManager)
             {
@@ -1601,9 +1597,7 @@ void ParQGBranchAndBound::parsolveSync(ParNodeIncRelaxerPtr parNodeRlxr[],
               dived_prev[i] = true;
             } else {
               parNodeRlxr[i]->reset(current_node[i], false);
-              if (numThreads > 1) {
-                removeAddedCons(rel[i], numRelCons);
-              }
+              removeAddedCons(rel[i], numRelCons);
 #pragma omp critical (treeManager)
               {
                 new_node[i] = tm_->getCandidate(); // Can be NULL. The
