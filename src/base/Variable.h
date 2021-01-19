@@ -39,6 +39,7 @@ public:
   friend class Problem;
   friend class QGHandler;
   friend class OAHandler;
+  friend class QuadHandler;
   friend class MultiSolHeur;
 
   /// Default constructor.

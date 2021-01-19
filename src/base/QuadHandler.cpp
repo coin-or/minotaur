@@ -63,8 +63,9 @@ QuadHandler::QuadHandler(EnvPtr env, ProblemPtr problem)
   logger_  = env->getLogger();
   resetStats_();
   timer_ = env->getTimer();
+  defaultLb_ = 1e12;
+  defaultUb_ = -1e12;
 }
-
 
 QuadHandler::~QuadHandler()
 {
@@ -140,6 +141,55 @@ void QuadHandler::addConstraint(ConstraintPtr newcon)
   }
 }
 
+double QuadHandler::addDefaultBounds_(VariablePtr v, BoundType lu) {
+  if (lu == Lower) {
+    if (defaultLb_ < 1e12) {
+      v->setLb_(defaultLb_);
+    } else {
+      for (VariableConstIterator it=p_->varsBegin(); it!=p_->varsEnd(); ++it) {
+        if ((*it)->getLb() < defaultLb_ && (*it)->getLb() > -1e12) {
+          defaultLb_ = (*it)->getLb();
+        }
+      }
+      if (defaultLb_ < -aTol_ && defaultLb_ > -1e12) {
+        defaultLb_ = 100*defaultLb_;
+      } else if (defaultLb_ > aTol_) {
+        defaultLb_ = -100*defaultLb_;
+      } else {
+        defaultLb_ = -1000;
+      }
+      v->setLb_(defaultLb_);
+    }
+    logger_->msgStream(LogDebug) << me_
+                                 << "WARNING: Adding Default lower bound for "
+                                 << v->getName() << "Lower bound value = "
+                                 << defaultLb_ << std::endl;
+    return defaultLb_;
+  } else {
+    if (defaultUb_ > -1e12) {
+      v->setUb_(defaultUb_);
+    } else {
+      for (VariableConstIterator it=p_->varsBegin(); it!=p_->varsEnd(); ++it) {
+        if ((*it)->getUb() > defaultUb_ && (*it)->getUb() < 1e12) {
+          defaultUb_ = (*it)->getUb();
+        }
+      }
+      if (defaultUb_ < -aTol_) {
+        defaultUb_ = -100*defaultUb_;
+      } else if (defaultUb_ > aTol_ && defaultUb_ < 1e12) {
+        defaultUb_ = 100*defaultUb_;
+      } else {
+        defaultUb_ = 1000;
+      }
+      v->setUb_(defaultUb_);
+    }
+    logger_->msgStream(LogDebug) << me_
+                                 << "WARNING: Adding Default upper bound for "
+                                 << v->getName() << "Upper bound value = "
+                                 << defaultUb_ << std::endl;
+    return defaultUb_;
+  }
+}
 
 void QuadHandler::findLinPt_(double xval, double yval, double &xl,
                              double &yl)
@@ -475,11 +525,23 @@ LinearFunctionPtr QuadHandler::getNewBilLf_(VariablePtr x0, double lb0,
   LinearFunctionPtr lf = (LinearFunctionPtr) new LinearFunction();
 
   if (lb0 < -1e12 || lb1 < -1e12 || ub0 > 1e12 || ub1 > 1e12) {
-    logger_->errStream() << "can not relax " << x0->getName() << "*"
-                         << x1->getName() << " = " << y->getName() 
-                         << "because the bounds on variables are too weak"
-                         << std::endl;
-    exit(500);
+    if (lb0 < -1e12) {
+      lb0 = addDefaultBounds_(x0, Lower);
+    }
+    if (lb1 < -1e12) {
+      lb1 = addDefaultBounds_(x1, Lower);
+    }
+    if (ub0 > 1e12) {
+      ub0 = addDefaultBounds_(x0, Upper);
+    }
+    if (ub1 > 1e12) {
+      ub1 = addDefaultBounds_(x1, Upper);
+    }
+//    logger_->errStream() << "can not relax " << x0->getName() << "*"
+//                         << x1->getName() << " = " << y->getName() 
+//                         << "because the bounds on variables are too weak"
+//                         << std::endl;
+//    exit(500);
   }
 
   switch (type) {
@@ -532,11 +594,17 @@ LinearFunctionPtr QuadHandler::getNewSqLf_(VariablePtr x, VariablePtr y,
 
   r = -ub*lb;
   if (lb < -1e12 || ub > 1e12) {
-    logger_->errStream() << "can not relax " << y->getName() << "="
-                         << x->getName() << "^2, "
-                         << "because the bounds on latter are too weak"
-                         << std::endl;
-    exit(500);
+    if (lb < -1e12) {
+      addDefaultBounds_(x, Lower);
+    }
+    if (ub > 1e12) {
+      addDefaultBounds_(x, Upper);
+    }
+//    logger_->errStream() << "can not relax " << y->getName() << "="
+//                         << x->getName() << "^2, "
+//                         << "because the bounds on latter are too weak"
+//                         << std::endl;
+//    exit(500);
   }
   if (fabs(ub+lb) > eps) {
     lf = (LinearFunctionPtr) new LinearFunction();
@@ -826,7 +894,7 @@ bool QuadHandler::propSqrBnds_(LinSqrMapIter lx2, RelaxationPtr rel,
     if (updatePBounds_(x, lb, ub, rel, mod_rel, changed, p_mods, r_mods)<0) {
       return true; // infeasible
     }
-  } else if (x->getUb()<-bTol_) {
+  } else if (y->getUb()<-bTol_) {
     return true; // infeasible
   } else {
     if (updatePBounds_(x, 0.0, 0.0, rel, mod_rel, changed, p_mods, r_mods)<0) {
@@ -1151,7 +1219,6 @@ void QuadHandler::upSqCon_(ConstraintPtr con, VariablePtr x, VariablePtr y,
     r_mods.push_back(lmod);
   }
 }
-
 
 bool QuadHandler::varBndsFromCons_(bool *changed)
 {

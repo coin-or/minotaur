@@ -39,6 +39,7 @@
 #include "Relaxation.h"
 #include "ReliabilityBrancher.h"
 #include "SimpleTransformer.h"
+#include "QuadTransformer.h"
 #include "Solution.h"
 #include "Timer.h"
 #include "Transformer.h"
@@ -142,12 +143,12 @@ void loadProblem(EnvPtr env, MINOTAUR_AMPL::AMPLInterface* iface,
 int transform(EnvPtr env, ProblemPtr p, ProblemPtr &newp,
               HandlerVector &handlers) 
 {
-  SimpTranPtr trans = SimpTranPtr();
+  QuadTranPtr trans = QuadTranPtr();
   int status = 0;
   const std::string me("mntr-glob: ");
 
   handlers.clear();
-  trans = (SimpTranPtr) new SimpleTransformer(env, p);
+  trans = (QuadTranPtr) new QuadTransformer(env, p);
   trans->reformulate(newp, handlers, status);
   
   env->getLogger()->msgStream(LogInfo) << me 

@@ -625,10 +625,20 @@ void Function::removeVar(VariablePtr v, double val)
     type_ = nlf_->getType();
   }
   if (qf_) {
-    type_ = funcTypesAdd(type_, Quadratic);
+    if (qf_->getNumTerms() == 0) {
+      delete qf_;
+      qf_ = 0;
+    } else {
+      type_ = funcTypesAdd(type_, Quadratic);
+    }
   } 
   if (lf_) {
-    type_ = funcTypesAdd(type_, Linear);
+    if (lf_->getNumTerms() == 0) {
+      delete lf_;
+      lf_ = 0;
+    } else {
+      type_ = funcTypesAdd(type_, Linear);
+    }
   }
 }
 
