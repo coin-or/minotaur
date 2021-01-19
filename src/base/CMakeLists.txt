@@ -17,6 +17,7 @@ configure_file (
 include_directories("${PROJECT_BINARY_DIR}/src/base")
  
 set (MINOTAUR_SOURCES
+     AnalyticalCenter.cpp
      BndProcessor.cpp 
      Branch.cpp 
      BranchAndBound.cpp 
@@ -60,7 +61,7 @@ set (MINOTAUR_SOURCES
      MaxFreqBrancher.cpp
      MaxVioBrancher.cpp
      MINLPDiving.cpp
-     MultiSolHeur.cpp
+     #MultiSolHeur.cpp
      MsProcessor.cpp	
      MultilinearTermsHandler.cpp
      NLPRelaxation.cpp 
@@ -91,8 +92,8 @@ set (MINOTAUR_SOURCES
      ParTreeManager.cpp
      PCBProcessor.cpp 
      PerspCon.cpp
-     # PerspCutGenerator.cpp 
-     PerspCutHandler.cpp 
+     PerspCutGenerator.cpp 
+     #PerspCutHandler.cpp 
      PolynomialFunction.cpp 
      PreAuxVars.cpp
      PreDelVars.cpp
@@ -125,10 +126,11 @@ set (MINOTAUR_SOURCES
      STOAHandler.cpp
      Transformer.cpp 
      TransPoly.cpp 
-     #TransSep.cpp
+     TransSep.cpp
      TreeManager.cpp 
-     Types.cpp
      UnivarQuadHandler.cpp
+     Types.cpp 
+     UnambRelBrancher.cpp
      VarBoundMod.cpp 
      Variable.cpp
      YEqBivar.cpp 
@@ -144,6 +146,7 @@ set (MINOTAUR_SOURCES
 set (MINOTAUR_HEADERS
      MinotaurDeconfig.h
      ActiveNodeStore.h
+     AnalyticalCenter.cpp
      BndProcessor.h
      Branch.h
      Brancher.h
@@ -190,7 +193,7 @@ set (MINOTAUR_HEADERS
      MaxVioBrancher.h
      MILPEngine.h
      MINLPDiving.h
-     MultiSolHeur.h
+     #MultiSolHeur.h
      Modification.h
      MsProcessor.h
      MultilinearTermsHandler.h
@@ -224,8 +227,8 @@ set (MINOTAUR_HEADERS
      ParTreeManager.h
      PCBProcessor.h
      PerspCon.h
-     #PerspCutGenerator.h 
-     PerspCutHandler.h
+     PerspCutGenerator.h 
+     #PerspCutHandler.h
      PolynomialFunction.h
      PreAuxVars.h
      PreDelVars.h
@@ -262,10 +265,11 @@ set (MINOTAUR_HEADERS
      Timer.h
      Transformer.h 
      TransPoly.h 
-     #TransSep.h
+     TransSep.h
      TreeManager.h
      Types.h
      UnivarQuadHandler.h
+     UnambRelBrancher.h
      WarmStart.h
      Variable.h
      YEqBivar.h

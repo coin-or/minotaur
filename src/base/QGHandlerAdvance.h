@@ -20,18 +20,25 @@
 #include "Problem.h"
 #include "Function.h"
 #include "Linearizations.h"
+#include "PerspCutGenerator.h"
 
 #include "Solution.h"
 
 namespace Minotaur {
-
+// MS: remove the ones not needed
 struct QGStats {
   size_t nlpS;      /// Number of nlps solved.
+  size_t nlpM;      /// Number of pr modified nlps solved.
   size_t nlpF;      /// Number of nlps feasible.
   size_t nlpI;      /// Number of nlps infeasible.
   size_t nlpIL;     /// Number of nlps hits engine iterations limit.
   size_t cuts;    /// Number of cuts at int feas nodes.
   size_t fracCuts;    /// Number of cuts at int feas nodes.
+  //size_t preNodes;    /// Number of nodes on which presolving is carried out
+  //size_t preNodesInf;    /// Number of nodes on which presolving is carried out and became infeasible
+  //size_t fix;    /// Number of nodes on which vars from implication are fixed
+  //size_t prInf;   
+  //size_t prAct;   
 }; 
 
 
@@ -79,6 +86,18 @@ private:
   /// Status of the NLP/QP engine.
   EngineStatus nlpStatus_;
 
+  void prModNLP_(const double *x);
+
+  void perspectiveCutsObjX_(const double *lpx, CutManager *, SeparationStatus *status);
+
+  void perspectiveCutsConsX_(const double *nlpx, const double *lpx, CutManager *, SeparationStatus *status);
+
+  void prFeasibleInactive_(bool binVal, UInt bIdx, UInt i, FunctionPtr f, const double *x, double * y, double * prPt, const double * ptToCut, CutManagerPtr cutMan);
+
+  bool prInfeasibility_(bool bisect, bool binVal, const double *x, double * y, double * prPt, const double *ptToCut, UInt i, bool isObj, double relVal, UInt bIdx, FunctionPtr f);
+
+  void shortestDist_(ConstSolutionPtr sol);
+
   double * solC_;
   /**
    * The variable corresponding to the objective function. It is a part of
@@ -102,11 +121,11 @@ private:
   /// Relative tolerance for constraint feasibility.
   double solRelTol_;
 
-  /// Absolute tolerance for pruning a node.
-  double objATol_;
+  /// Absolute tolerance for objective.
+  double objAbsTol_;
 
-  /// Relative tolerance for pruning a node.
-  double objRTol_;
+  /// Relative tolerance for objective.
+  double objRelTol_;
   
   LinearizationsPtr extraLin_;
 
@@ -128,7 +147,18 @@ private:
   //EngineStatus shortestNlpStatus_;
   
   int lastNodeId_;
+  
+  UInt lastNodeIdPre_;
 
+  /// For shortest distance NLP
+  double lpdist_;
+  EngineStatus shortestNlpStatus_;
+  
+  std::unordered_map<VariablePtr, std::forward_list<impliVar>> impli0_;
+  std::unordered_map<VariablePtr, std::forward_list<impliVar>> impli1_;
+  
+  PerspCutGeneratorPtr prCutGen_;
+  
   /// Statistics.
   QGStats *stats_;
 
@@ -216,6 +246,8 @@ private:
 
   void addInitLinearX_(ConstSolutionPtr sol);
 
+  void addCutAtRoot_(ConstraintPtr con, const double * x, bool isObj);
+
   void dualBasedCons_(ConstSolutionPtr sol);
 
   /**
@@ -230,6 +262,11 @@ private:
 
   void ESHTypeCut_(const double *lpx, CutManager *cutMan,
                              ConstraintPtr con);
+
+
+  void gradientIneq_(const double *nlpx, const double *lpx,
+                             CutManager *cutman, SeparationStatus *status,
+                             ConstraintPtr con, bool isObj);
 
   void findCenter_();
   /**
@@ -277,6 +314,8 @@ private:
   void genLin_(const double *x, std::vector<UInt> vioCons, CutManager *cutMan);
 
   bool isIntFeas_(const double* x);
+
+  void perspReform_();
 
   void maxVio_(ConstSolutionPtr sol, NodePtr node,
                                CutManager *cutMan,

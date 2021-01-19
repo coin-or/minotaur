@@ -60,13 +60,15 @@ ParQGHandler::ParQGHandler(EnvPtr env, ProblemPtr minlp, EnginePtr nlpe)
   objVar_(VariablePtr()),
   oNl_(false),
   rel_(RelaxationPtr()),
-  relobj_(0.0)
+  relobj_(0.0),
+  node_(0)
 {
   intTol_ = env_->getOptions()->findDouble("int_tol")->getValue();
   solAbsTol_ = env_->getOptions()->findDouble("feasAbs_tol")->getValue();
   solRelTol_ = env_->getOptions()->findDouble("feasRel_tol")->getValue();
   objATol_ = env_->getOptions()->findDouble("solAbs_tol")->getValue();
   objRTol_ = env_->getOptions()->findDouble("solRel_tol")->getValue();
+  storeCutsAtNode_ = env_->getOptions()->findBool("storeCutsAtNode")->getValue();
   logger_ = env->getLogger();
 
   stats_ = new ParQGStats();
@@ -109,7 +111,7 @@ void ParQGHandler::addInitLinearX_(const double *x)
       if (error == 0) {
         cUb = con->getUb();
         ++(stats_->cuts);
-        sstm << "_qgCutRoot_Thr_" << omp_get_thread_num() << stats_->cuts;
+        sstm << "_qgCutRoot_Thr_" << omp_get_thread_num() << "_" << stats_->cuts;
         f = (FunctionPtr) new Function(lf);
         //newcon = rel_->newConstraint(f, -INFINITY, cUb-c, sstm.str());
         rel_->newConstraint(f, -INFINITY, cUb-c, sstm.str());
@@ -131,7 +133,7 @@ void ParQGHandler::addInitLinearX_(const double *x)
     act = o->eval(x, &error);
     if (error==0) {
       ++(stats_->cuts);
-      sstm << "_qgObjCutRoot_Thr_" << omp_get_thread_num() << stats_->cuts;
+      sstm << "_qgObjCutRoot_Thr_" << omp_get_thread_num() << "_" << stats_->cuts;
       f = o->getFunction();
       linearAt_(f, act, x, &c, &lf, &error);
       if (error == 0) {
@@ -170,7 +172,10 @@ void ParQGHandler::cutIntSol_(ConstSolutionPtr sol, CutManager *cutMan,
     {
       ++(stats_->nlpF);
       double nlpval = nlpe_->getSolutionValue();
-      updateUb_(s_pool, nlpval, sol_found);
+#pragma omp critical (solPool)
+      {
+       updateUb_(s_pool, nlpval, sol_found);
+      }
       if ((relobj_ >= nlpval-objATol_) ||
           (nlpval != 0 && (relobj_ >= nlpval-fabs(nlpval)*objRTol_))) {
           *status = SepaPrune;
@@ -468,13 +473,16 @@ void ParQGHandler::cutsAtLpSol_(const double *lpx, CutManager *cutman,
           if ((lpvio > solAbsTol_) && ((cUb-c)==0 ||
                                    (lpvio>fabs(cUb-c)*solRelTol_))) {
             ++(stats_->cuts);
-            sstm << "_qgCut_Thr_" << omp_get_thread_num() << stats_->cuts;
+            sstm << "_qgCut_Thr_" << omp_get_thread_num() << "_" << stats_->cuts;
             *status = SepaResolve;
             f = (FunctionPtr) new Function(lf);
             newcon = rel_->newConstraint(f, -INFINITY, cUb-c, sstm.str());
             CutPtr cut = (CutPtr) new Cut(minlp_->getNumVars(),f, -INFINITY,
                                           cUb-c, false,false);
             cut->setCons(newcon);
+            if (node_) {
+              node_->addCutToPool(cut, rel_);
+            }
             cutman->addCutToPool(cut);
             return;
           } else {
@@ -509,11 +517,15 @@ void ParQGHandler::cutsAtLpSol_(const double *lpx, CutManager *cutman,
               *status = SepaResolve;
               lf->addTerm(objVar_, -1.0);
               f = (FunctionPtr) new Function(lf);
-              sstm << "_qgObjCut_Thr_" << omp_get_thread_num() << stats_->cuts;
+              sstm << "_qgObjCut_Thr_" << omp_get_thread_num() << "_" << stats_->cuts;
               newcon = rel_->newConstraint(f, -INFINITY, -1.0*c, sstm.str());
               CutPtr cut = (CutPtr) new Cut(minlp_->getNumVars(),f, -INFINITY,
                                             -1.0*c, false,false);
               cut->setCons(newcon);
+              if (node_) {
+                node_->addCutToPool(cut, rel_);
+                cut->setName_(sstm.str());
+              }
               cutman->addCutToPool(cut);
             } else {
               delete lf;
@@ -550,13 +562,17 @@ void ParQGHandler::addCut_(const double *nlpx, const double *lpx,
       if ((lpvio>solAbsTol_) &&
           ((cUb-c)==0 || (lpvio>fabs(cUb-c)*solRelTol_))) {
         ++(stats_->cuts);
-        sstm << "_qgCut_Thr_" << omp_get_thread_num() << stats_->cuts;
+        sstm << "_qgCut_Thr_" << omp_get_thread_num() << "_" << stats_->cuts;
         *status = SepaResolve;
         f = (FunctionPtr) new Function(lf);
         newcon = rel_->newConstraint(f, -INFINITY, cUb-c, sstm.str());
+        //newcon->write(std::cout);
         CutPtr cut = (CutPtr) new Cut(minlp_->getNumVars(),f, -INFINITY,
                                       cUb-c, false,false);
         cut->setCons(newcon);
+        if (node_) {
+          node_->addCutToPool(cut, rel_);
+        }
         cutman->addCutToPool(cut);
         return;
       } else {
@@ -598,7 +614,7 @@ void ParQGHandler::cutToObj_(const double *nlpx, const double *lpx,
             if ((vio > solAbsTol_) && ((relobj_-c)==0
                                      || vio > fabs(relobj_-c)*solRelTol_)) {
               ++(stats_->cuts);
-              sstm << "_qgObjCut_Thr_" << omp_get_thread_num() << stats_->cuts;
+              sstm << "_qgObjCut_Thr_" << omp_get_thread_num() << "_" << stats_->cuts;
               lf->addTerm(objVar_, -1.0);
               *status = SepaResolve;
               f = (FunctionPtr) new Function(lf);
@@ -606,6 +622,9 @@ void ParQGHandler::cutToObj_(const double *nlpx, const double *lpx,
               CutPtr cut = (CutPtr) new Cut(rel_->getNumVars(),f, -INFINITY,
                                             -1.0*c, false,false);
               cut->setCons(newcon);
+              if (node_) {
+                node_->addCutToPool(cut, rel_);
+              }
               cutman->addCutToPool(cut);
             } else {
               delete lf;
@@ -685,7 +704,7 @@ void ParQGHandler::relax_(bool *isInf)
 }
 
 
-void ParQGHandler::separate(ConstSolutionPtr sol, NodePtr , RelaxationPtr rel,
+void ParQGHandler::separate(ConstSolutionPtr sol, NodePtr node, RelaxationPtr rel,
                          CutManager *cutMan, SolutionPoolPtr s_pool,
                          ModVector &, ModVector &, bool *sol_found,
                          SeparationStatus *status)
@@ -708,7 +727,12 @@ void ParQGHandler::separate(ConstSolutionPtr sol, NodePtr , RelaxationPtr rel,
     }
   }
 
+  if (storeCutsAtNode_) {
+    node_ = node;
+  }
+
   cutIntSol_(sol, cutMan, s_pool, sol_found, status);
+  node_ = 0;
   return;
 }
 

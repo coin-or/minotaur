@@ -21,6 +21,8 @@
 #include "CGraph.h"
 #include "CNode.h"
 #include "HessianOfLag.h"
+#include "LinearFunction.h"
+#include "QuadraticFunction.h"
 #include "VarBoundMod.h"
 #include "Variable.h"
 
@@ -739,6 +741,233 @@ std::string CGraph::getNlString(int *err)
   return s.str();
 }
 
+CNode* CGraph::getVarNode(VariablePtr v)
+{
+  VarNodeMap::iterator mit;
+
+  mit = varNode_.find(v);
+
+  if (mit != varNode_.end()) {
+    return mit->second;;  
+  } 
+  return 0;  
+}
+
+
+NonlinearFunctionPtr CGraph::getPersp(VariablePtr z, double eps, int *err, 
+                                      QuadraticFunctionPtr qf, UInt maxId,
+                                      VariableGroup nNonzeroVar, double intTol)
+{
+  CQIter2 *cqit2;
+  VariablePtr v, v1;
+  VariablePtr tempV = 0;
+  VarNodeMap::iterator mit;
+  CGraphPtr nlf = clone_(err);
+  VariableGroupConstIterator vit;
+  CNode *dnode = 0, *vnode = 0, *anode = 0, *zNewnode = 0, *znode = 0, 
+        *tempNode = 0, *cnode = 0;
+  
+  if (*err && qf == 0) {
+    return NonlinearFunctionPtr();
+  }
+ 
+  if (nlf->hasVar(z)) {
+    *err = 1;
+    return NonlinearFunctionPtr();
+  }
+
+  // removing z if it already exists by copying it into tempV
+  if (nlf->vars_.find(z) != nlf->vars_.end()) {
+    tempV = (VariablePtr) new Variable(maxId+1, maxId+1, -INFINITY, INFINITY, 
+                                       Continuous, "temp");
+    tempNode = nlf->newNode(tempV);
+    mit = nlf->varNode_.find(z);
+    dnode = mit->second;
+    nlf->varNode_.erase(mit);
+
+    switch(dnode->numPar()) {
+    case 0:
+      break;
+    case 1: 
+      tempNode->addPar(dnode->getUPar());
+      dnode->getUPar()->changeChild(dnode, tempNode);
+      break;
+    default:
+      cqit2 = dnode->getParB();
+      while (cqit2) {
+        tempNode->addPar(cqit2->node);
+        cqit2->node->changeChild(dnode, tempNode);
+        cqit2 = cqit2->next;
+      }
+      break;
+    }
+    delete dnode;
+    nlf->vars_.erase(z);
+  }
+ 
+  // first remove all nodes that have a variable from aNodes_ 
+  for (CNodeVector::iterator it2=nlf->aNodes_.begin();
+       it2!=nlf->aNodes_.end();) {
+    if (OpVar == (*it2)->getOp()) {
+      it2 = nlf->aNodes_.erase(it2);
+    } else {
+      ++it2;
+    }
+  }
+
+  // create a node for z variable
+  zNewnode = nlf->newNode(z);
+ 
+  if (eps > 0.0) {
+    anode = nlf->newNode(1.0-eps);
+    znode = nlf->newNode(OpMult, anode, zNewnode); // z*(1-eps)
+    anode = nlf->newNode(eps);
+    znode = nlf->newNode(OpPlus, anode, znode); // eps + z*(1-eps)
+  } 
+
+  // visit all nodes that have variables in them
+  for (VarSetConstIter it = nlf->vars_.begin(); it!= nlf->vars_.end(); ++it) {
+    v = *it;
+    if (v == z) {
+      continue;    
+    }
+    mit = nlf->varNode_.find(v);
+    dnode = mit->second;
+    nlf->varNode_.erase(mit);
+    
+    if (v != tempV) {
+      vnode = nlf->newNode(v);
+    } else {
+      vnode = zNewnode;
+    }
+
+    vit = nNonzeroVar.find(v);
+    if (vit != nNonzeroVar.end() && fabs(vit->second) > intTol) {
+      anode = nlf->newNode(vit->second);
+      cnode = nlf->newNode(OpMult, anode, zNewnode);
+      anode = nlf->newNode(vit->second);
+      anode = nlf->newNode(OpMinus, anode, cnode);
+      vnode = nlf->newNode(OpMinus, vnode, anode);
+    }
+    
+    anode = nlf->newNode(OpDiv, vnode, znode);
+    // set parents of anode.
+    switch(dnode->numPar()) {
+    case 0:
+      break;
+    case 1: 
+      anode->addPar(dnode->getUPar());
+      dnode->getUPar()->changeChild(dnode, anode);
+      break;
+    default:
+      cqit2 = dnode->getParB();
+      while (cqit2) {
+        anode->addPar(cqit2->node);
+        cqit2->node->changeChild(dnode, anode);
+        cqit2 = cqit2->next;
+      }
+      break;
+    }
+    delete dnode;
+  }
+
+  if (tempV) {
+    nlf->vars_.erase(tempV);
+    delete tempV;  
+  }
+  
+  if (qf) {
+    CNode **childr = 0;
+    CNode *node1, *node2;
+    UInt i = 0, numChild = qf->getNumTerms();
+    childr = new Minotaur::CNode *[numChild];
+    for(VariablePairGroupConstIterator it = qf->begin(); it != qf->end(); ++it) {
+      v = it->first.first;
+      v1 = it->first.second;
+      if (v->getId() != v1->getId()) {
+        // for v
+        if (nlf->varNode_.find(v) != varNode_.end()) {
+          anode = (nlf->varNode_.find(v))->second;
+          if (anode->getUPar()->getOp() == Minotaur::OpMinus) {
+            node1 = anode->getUPar()->getUPar(); // all existing vars have a unique parent
+          } else {
+            node1 = anode->getUPar(); // all existing vars have a unique parent
+          }
+        } else {
+          vnode = nlf->newNode(v);
+          vit = nNonzeroVar.find(v);
+          if (vit != nNonzeroVar.end() && fabs(vit->second) > intTol) {
+            anode = nlf->newNode(vit->second);
+            cnode = nlf->newNode(OpMult, anode, zNewnode);
+            anode = nlf->newNode(vit->second);
+            anode = nlf->newNode(OpMinus, anode, cnode);
+            vnode = nlf->newNode(OpMinus, vnode, anode);
+          }
+          node1 = nlf->newNode(OpDiv, vnode, znode);
+        }
+
+        // for v1
+        if (nlf->varNode_.find(v1) != varNode_.end()) {
+          dnode = (nlf->varNode_.find(v1))->second;
+          if (dnode->getUPar()->getOp() == Minotaur::OpMinus) {
+            node2 = dnode->getUPar()->getUPar(); // all existing vars have a unique parent
+          } else {
+            node2 = dnode->getUPar(); // all existing vars have a unique parent
+          }
+        } else {
+          vnode = nlf->newNode(v1);
+          vit = nNonzeroVar.find(v1);
+          if (vit != nNonzeroVar.end() && fabs(vit->second) > intTol) {
+            anode = nlf->newNode(vit->second);
+            cnode = nlf->newNode(OpMult, anode, zNewnode);
+            anode = nlf->newNode(vit->second);
+            anode = nlf->newNode(OpMinus, anode, cnode);
+            vnode = nlf->newNode(OpMinus, vnode, anode);          
+          }
+          node2 = nlf->newNode(OpDiv, vnode, znode);
+        }
+        
+        dnode = nlf->newNode(OpMult, node1, node2); 
+        anode = nlf->newNode(it->second);     
+      } else {
+        if (nlf->varNode_.find(v) != varNode_.end()) {
+          anode = (nlf->varNode_.find(v))->second;
+          if (anode->getUPar()->getOp() == Minotaur::OpMinus) {
+            node1 = anode->getUPar()->getUPar(); // all existing vars have a unique parent
+          } else {
+            node1 = anode->getUPar(); // all existing vars have a unique parent
+          }
+        } else {
+          vnode = nlf->newNode(v);
+          vit = nNonzeroVar.find(v);
+          if (vit != nNonzeroVar.end() && fabs(vit->second) > intTol) {
+            anode = nlf->newNode(vit->second);
+            cnode = nlf->newNode(OpMult, anode, zNewnode);
+            anode = nlf->newNode(vit->second);
+            anode = nlf->newNode(OpMinus, anode, cnode);
+            vnode = nlf->newNode(OpMinus, vnode, anode);
+          }
+          node1 = nlf->newNode(OpDiv, vnode, znode);
+        }       
+        dnode = nlf->newNode(OpSqr, node1, 0); 
+        anode = nlf->newNode(it->second);         
+      }
+      childr[i] = nlf->newNode(Minotaur::OpMult, dnode, anode);     
+      ++i;
+    }
+    anode = nlf->newNode(Minotaur::OpSumList, childr, numChild);
+    delete [] childr;
+    anode = nlf->newNode(OpPlus, nlf->oNode_, anode);
+    nlf->oNode_ = nlf->newNode(OpMult, anode, znode);
+  } else {
+    nlf->oNode_ = nlf->newNode(OpMult, nlf->oNode_, znode);
+  }
+  
+  nlf->changed_ = true;
+  nlf->finalize();
+  return nlf;
+}
+
 
 NonlinearFunctionPtr CGraph::getPersp(VariablePtr z, double eps, int *err) const
 {
@@ -1071,6 +1300,7 @@ void CGraph::removeVar(VariablePtr v, double val)
     cnode->setV(VariablePtr());
     cnode->setType(Constant);
     cnode->setOp(OpNum);
+    cnode->setBounds(val, val);
     vars_.erase(v);
     varNode_.erase(it);
     changed_ = true;
@@ -1329,6 +1559,46 @@ void CGraph::subst(VariablePtr out, VariablePtr in, double rat)
 void CGraph::setOut(CNode *node)
 {
   oNode_ = node;
+}
+
+
+bool CGraph::ifLinear(LinearFunctionPtr lf, UInt pv, double *consVal)
+{
+  if (oNode_->findFType() == Linear) {
+    int error = 0;
+    VariablePtr v;
+    double *x = new double[pv]();
+
+    //determine constant by evaluating at all 0's
+    *consVal = eval(x,&error);
+    
+    //determine coefficient by finding hessian at all 0's
+    if (error>0) {
+      assert(!"Function failed to evaluate at x.!!");
+    } else {
+      double *coeff = new double[pv]();
+      evalGradient(x, coeff, &error);
+      if (error > 0) {
+        assert(!"Function failed to evaluate at x.!!");
+      } else {
+        if (lf == 0) {
+          lf = (LinearFunctionPtr) new LinearFunction();
+        }
+        for (CNodeQ::iterator it=vq_.begin(); it!=vq_.end(); ++it) {
+          v = getVar(*it);
+          if (lf->hasVar(v)) {
+            lf->incTerm(v,coeff[v->getIndex()]);        
+          } else {
+            lf->addTerm(v,coeff[v->getIndex()]);        
+          }
+        }
+      }
+      delete [] coeff;
+    }
+    delete [] x;
+    return true;
+  }
+  return false;
 }
 
 

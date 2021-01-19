@@ -53,6 +53,7 @@
 #include "SOS1Handler.h"
 #include "SOS2Handler.h"
 #include "Timer.h"
+#include "UnambRelBrancher.h"
 
 #include "AMPLHessian.h"
 #include "AMPLInterface.h"
@@ -226,6 +227,28 @@ BrancherPtr createBrancher(EnvPtr env, ProblemPtr p, HandlerVector handlers,
       "reliability branching iteration limit = " <<
       parRel_br->getIterLim() << std::endl;
     br = parRel_br;
+  } else if (env->getOptions()->findString("brancher")->getValue() == "unambRel") {
+    UnambRelBrancherPtr unambrel_br;
+    unambrel_br = (UnambRelBrancherPtr) new UnambRelBrancher(env, handlers);
+    unambrel_br->setEngine(e);
+    t = (p->getSize()->ints + p->getSize()->bins)/10;
+    t = std::max(t, (UInt) 2);
+    t = std::min(t, (UInt) 4);
+    unambrel_br->setThresh(t);
+    env->getLogger()->msgStream(LogExtraInfo) << me <<
+      "setting reliability threshhold to " << t << std::endl;
+    t = (UInt) p->getSize()->ints + p->getSize()->bins/20+2;
+    t = std::min(t, (UInt) 10);
+    unambrel_br->setMaxDepth(t);
+    env->getLogger()->msgStream(LogExtraInfo) << me <<
+      "setting reliability maxdepth to " << t << std::endl;
+    if (e->getName()=="Filter-SQP") {
+      unambrel_br->setIterLim(5);
+    }
+    env->getLogger()->msgStream(LogExtraInfo) << me <<
+      "reliability branching iteration limit = " <<
+      unambrel_br->getIterLim() << std::endl;
+    br = unambrel_br;
   } else if (env->getOptions()->findString("brancher")->getValue() ==
              "maxvio") {
     br = (MaxVioBrancherPtr) new MaxVioBrancher(env, handlers);
@@ -661,12 +684,14 @@ int main(int argc, char** argv)
   }
   parbab = createParBab(env, oinst, engine, numThreads, relCopy,
                         nodePrcssr, parNodeRlxr, handlersCopy, eCopy);
-  //if (true==env->getOptions()->findBool("mcbnb_deter_mode")->getValue()) {
+  if (true==env->getOptions()->findBool("mcbnb_deter_mode")->getValue()) {
     //assert(!"Deterministic mode not available right now!");
-    //parbab->parsolveSync(parNodeRlxr, nodePrcssr, numThreads);
-  //} else {
-  parbab->parsolve(parNodeRlxr, nodePrcssr, numThreads);
-  //}
+    parbab->parsolveSync(parNodeRlxr, nodePrcssr, numThreads);
+  } else if (true==env->getOptions()->findBool("mcbnb_oppor_mode")->getValue()) {
+    parbab->parsolveOppor(parNodeRlxr, nodePrcssr, numThreads);
+  } else {
+    parbab->parsolve(parNodeRlxr, nodePrcssr, numThreads);
+  }
   
   //Take care of important bnb statistics
   //parbab->writeParStats(env->getLogger()->msgStream(LogExtraInfo), nodePrcssr);

@@ -284,6 +284,9 @@ namespace Minotaur {
        */
       bool isZero() const { return (getNumTerms() == 0); }
 
+      NonlinearFunctionPtr getPersp(VariablePtr z, double eps,
+                                      VariableGroup nNonzeroVar, double intTol);
+
       /// Iterate over the variables in the quadratic function: begin.
       VarIntMapConstIterator varsBegin() const;
 

@@ -32,11 +32,13 @@ class Variable {
 public:
   /// Following classes can modify a Variable. All modification methods
   /// are private.
+  friend class AnalyticalCenter;
   friend class Linearizations;
   friend class QGHandlerAdvance;
   friend class ParQGHandlerAdvance;
   friend class PerspCon;
   friend class Problem;
+  friend class TransSep;
   friend class QGHandler;
   friend class OAHandler;
   friend class QuadHandler;

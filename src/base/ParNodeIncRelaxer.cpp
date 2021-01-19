@@ -120,10 +120,13 @@ RelaxationPtr ParNodeIncRelaxer::createNodeRelaxation(NodePtr node, bool dived,
       while (!predecessors.empty()) {
         t_node = predecessors.top();
         t_node->applyRModsTrans(rel_);
+        if (env_->getOptions()->findBool("storeCutsAtNode")->getValue() == true) {
+          t_node->applyCutsByIndex(rel_);
+        }
         predecessors.pop();
       }
     }
-  } 
+  }
 
   // put in the modifications that were used to create this node from
   // its parent.

@@ -82,8 +82,8 @@ void Environment::createDefaultOptions_()
       true, true);
   options_->insert(b_option);
 
-  b_option = (BoolOptionPtr) new Option<bool>("perspective",
-      "Should perspective reformulation be used: <0/1>", true, false);
+  b_option = (BoolOptionPtr) new Option<bool>("persp_cuts",
+      "Should perspective cuts be used: <0/1>", true, false);
   options_->insert(b_option);
 
   b_option = (BoolOptionPtr) new Option<bool>("presolve", 
@@ -160,6 +160,10 @@ void Environment::createDefaultOptions_()
       true, false);
   options_->insert(b_option);
   
+  b_option = (BoolOptionPtr) new Option<bool>("multisolheur",
+      "Use multisol heuristic for MINLP: <0/1>", true, false);
+  options_->insert(b_option);
+
   b_option = (BoolOptionPtr) new Option<bool>("FPump", 
       "Use feasibility pump heuristic for MINLP: <0/1>", true, false);
   options_->insert(b_option);
@@ -185,6 +189,10 @@ void Environment::createDefaultOptions_()
 
   b_option = (BoolOptionPtr) new Option<bool>("mcbnb_deter_mode",
       "If true, synchronize all threads in determinisitic mode in parallel branch-and-bound: <0/1>", true, false);
+  options_->insert(b_option);
+
+  b_option = (BoolOptionPtr) new Option<bool>("mcbnb_oppor_mode",
+      "If true, run the parallel branch-and-bound algorithm in opportunistic mode: <0/1>", true, false);
   options_->insert(b_option);
 
   b_option = (BoolOptionPtr) new Option<bool>("mcbnb_iter_mode",
@@ -243,6 +251,9 @@ void Environment::createDefaultOptions_()
       "Rounds of extra linearizations to be added at root node under gen scheme 1: <0/1>", true, false);
   options_->insert(b_option);
 
+  b_option = (BoolOptionPtr) new Option<bool>("storeCutsAtNode",
+      "Store the cuts generated at a node in the cut-pool of the node: <0/1>", true, false);
+  options_->insert(b_option);
   //b_option = (BoolOptionPtr) new Option<bool>("root_genLinScheme2", 
       //"Rounds of extra linearizations to be added at root node under gen scheme 2: <0/1>", true, false);
   //options_->insert(b_option);
@@ -260,6 +271,10 @@ void Environment::createDefaultOptions_()
       "Limit on the number of solutions found: >0", true, 
       1000000000);
   options_->insert(i_option);
+
+  i_option = (IntOptionPtr) new Option<int>("separability_intensity_level",
+      "Intensity of separability detection: 0-1", true, 0);
+  options_->insert(i_option); //MS: disable later after confirming with sir.
 
   i_option = (IntOptionPtr) new Option<int>("pres_freq", 
       "Frequency of node-presolves in branch-and-bound", true, 5);
@@ -279,6 +294,10 @@ void Environment::createDefaultOptions_()
 
   i_option = (IntOptionPtr) new Option<int>("log_level", 
       "Verbosity of the main solving process: 0-6", true, LogInfo);
+  options_->insert(i_option);
+
+  i_option = (IntOptionPtr) new Option<int>("separability_log_level", 
+      "Verbosity of the mseparability detection: 0-6", true, LogInfo);
   options_->insert(i_option);
 
   i_option = (IntOptionPtr) new Option<int>("divheur", 
@@ -398,12 +417,12 @@ void Environment::createDefaultOptions_()
 
   d_option = (DoubleOptionPtr) new Option<double>("solAbs_tol",
       "Absolute tolerance value for accepting solution or node pruning",
-      true, 1e-5);
+      true, 1e-6);
   options_->insert(d_option);
 
   d_option = (DoubleOptionPtr) new Option<double>("solRel_tol",
       "Relative tolerance value for accepting a solution or node pruning",
-      true, 1e-5);
+      true, 1e-6);
   options_->insert(d_option);
 
   // Serdar added these options for MultilinearTermsHandler class
@@ -451,7 +470,7 @@ void Environment::createDefaultOptions_()
  
   // string options
   s_option = (StringOptionPtr) new Option<std::string>("brancher", 
-      "Name of brancher: rel, maxvio, lex, rand, maxfreq, parRel",
+      "Name of brancher: rel, maxvio, lex, rand, maxfreq, parRel, unambRel",
       true, "rel");
   options_->insert(s_option);
 

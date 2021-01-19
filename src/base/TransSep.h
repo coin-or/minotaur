@@ -22,6 +22,7 @@
 
 #include <stack>
 
+#include "Constraint.h"
 #include "Types.h"
 #include "NonlinearFunction.h"
 #include "OpCode.h"
@@ -53,90 +54,100 @@ namespace Minotaur {
     ~TransSep();
 
     /**
-     * Check constraints of the given problem for separability.
+     * Check constraints of the given problem for separability. Constraints
+     * are expected in the form f(x) <= b
      */
-    void candCons();
-
-    /// Clear data structures if constraint is not separable
-    void clearCont();
-
-    /// Clear and populates information
-    bool clearpopu(UInt *j, std::vector<UInt > * m);
+    //void checkCons(std::vector<ConstraintPtr> *sepCons);
+    void checkCons();
 
     /// Generate computation graph 
-    void createCG(std::vector<CGraphPtr> * cg, CNodeQ * dq);
-
+    void createCG(std::vector<CGraphPtr> * cg, CNodeQ * dq, int *itnum,
+                  CNode **tempN);
  
+    bool coeffValue(CNode * n2, double *cv,bool *n, CNode **n1,
+                    std::vector<UInt > *idx);
+
+    void commonConsCheck(std::vector<double > *constCoeff);
     /// Perform Depth first search rooted at node n1 at iteration number j
-    void depthFS(int j, CNode *n1, std::vector<UInt > * m);
+    void depthFS(int j, CNode *n1, std::vector<UInt > * m, int *itnum, CNodeQ *sNodes,
+                       std::deque<int > *sOps, std::vector<CNode *> *sVars,
+                       std::vector<CNode *> *sConsts);
    
+
+    //UInt eqnDirection(ConstraintPtr cptr); 
     /// Explore further from  node n1 at iteration number j
-    void explore(int j, CNode *n1, std::vector<UInt > * m, int opc);
+    bool explore(UInt *j, CNode *n1, std::vector<UInt > * m, int opc, int *itnum, UInt nvar, CNodeQ *sNodes,
+                       std::deque<int > *sOps, std::vector<CNode *> *sVars,
+                       std::vector<CNode *> *sConsts);
 
     /// Generate final computation graph
-    void finalCG(std::vector<CGraphPtr> * cg);
+    void finalCG(std::vector<CGraphPtr > * cg, 
+                 CNode **tempN,std::vector<double > *constCoeff, double *coeff,
+                 std::vector<double > *hashVal1,double *x);
 
     /// Find separability of given problem
-    void findSep();
+    void sepDetection();
+    //void sepDetection(std::vector<ConstraintPtr> *sepCons);
 
-    /// Get left child of node n1 
-    CNode* getLchild(CNode * n1) {return tempN_[n1->getL()->getIndex()];}; 
-    
-    /// Get right child of node n1 
-    CNode* getRchild(CNode * n1) {return tempN_[n1->getR()->getIndex()];}; 
-
-    /// Return Ids of separable constraints in original problem
-    std::vector<UInt > getSepConId() {return sepConId_;}
-
-    /// Give separable status of problem. 
-    /// 1 if problem is separable, 0 otherwise
-    bool getStatus();
+    /// Return no. of vars added 
+    UInt getNumVars() {return newVars_;}
 
     /// Mark nodes visited. Used in generating computation graph of separable
     /// parts
-    void markVis(UInt i);
+    void markVis(UInt i, int *itnum);
+    
+    bool ifRepeated(CGraphPtr nlf,LinearFunctionPtr lfnew,
+                        CGraphPtr cg,
+                       double constCoeff, double coeff, LinearFunctionPtr lf);
+    void linearizeObj();
 
     /// Merge current iteration with iteration mNum
-    void merge(int mNum);
+    void mergeItrInfo(int mNum, CNodeQ *sNodes, std::deque<int > *sOps,
+                            std::vector<CNode *> *sVars,
+                            std::vector<CNode *> *sConsts);
 
     /// Find iteration to merge the current iteration to
-    int mergeIt(int j, int a, std::vector<UInt > * m);
+    int mergeItrNum(int j, int a, std::vector<UInt > * m);
 
-    /// Check separability of objective function
-    void objSepCheck();
+           
+
+    bool sepPartsSearch(UInt sp, std::vector<CGraphPtr > *nlfnew,
+                              std::vector<LinearFunctionPtr > *lfnew,
+                              CGraphPtr cg, double constCoeff,
+                              LinearFunctionPtr lf, std::vector<UInt > *nsp,
+                              double coeff);
 
     /// Check whether constraint is separable
-    bool outCheck(const CNode * o);
-
-
-    /// Populate information about separable part
-    void populate();
-
-    /// Populate nodes list
-    void popuon(CNode * n1, int opc, int t);
-
-    /// Populate tempN_ 
-    void popuTempN(CGraphPtr c, CNode *n1, OpCode op, bool k);
+    bool rootChildren(const CNode * o, std::stack<CNode *> *candNodes,
+                      std::stack<int > *candOp,
+                      double *coeff, UInt nnode, UInt nvar, double *ub,
+                      //double *lb, LinearFunctionPtr lf);
+                      LinearFunctionPtr lf);
 
     /// Generate computational graph of separable parts
-    std::vector<CGraphPtr> sepCGraph(CNodeQ * dq);
-
+    std::vector<CGraphPtr> sepPartsCGraph(CNodeQ * dq, UInt nnode,
+                                          std::vector<double > *constCoeff, double *coeff,
+                                          std::vector<double > *hashVal1, double *x);
     /**
      * Check if the nonlinear constraint is separable. 1 if separable
      * 0 if not separable
      */
-    bool sepCheck();
+    bool sepCheck(double coeff, std::stack<CNode *> *candNodes,
+                      std::stack<int > *candOp, UInt nnode, UInt nvar,
+                      //double *ub, double *lb, LinearFunctionPtr lf);
+                      double *ub, LinearFunctionPtr lf);
+    
 
     /// Populate initial list for depth first search rooted at node n1
-    void tempPop(CNode *n1, std::stack<CNode *> * tempNodes);
-
-    /// Update linear part of the constraint function
-    void updateLin(VariablePtr v, double d);
+    void tempPopulate(CNode *n1, std::stack<CNode *> * tempNodes);
 
     /// Add information of the node already visited
-    bool visited(UInt *j, std::vector<UInt > * m, CNode * n1,
-                 int opc);
 
+    void updateVisNodeItr(UInt* j, std::vector<UInt >*m, CNode *n1,
+                                int opc, int idx, CNodeQ *sNodes,
+                                std::deque<int > *sOps, 
+                                std::vector<CNode *> *sVars,
+                                std::vector<CNode *> *sConsts);
    /// Write reformulated problem after separability detection 
     void writeProb();
 
@@ -153,13 +164,13 @@ namespace Minotaur {
     // Problem whose constraints are to be checked for separability detection.
     ProblemPtr problem_;
 
-    double coeff_;
+    // No. of new variable added to the origina problem after sep detection
+    UInt newVars_;
   
-    /// Iteration number at which a node of the cgraph is visited first
-    std::vector<int> itnum_;
-
     // Separable parts
     std::vector<CNodeQ > sepNodes_;
+
+    // Name of the Constraint that are separable
 
     // Opcodes of nodes in separable parts
     std::vector< std::deque< int> > sepOps_;
@@ -170,48 +181,9 @@ namespace Minotaur {
     // Constant nodes in separable parts
     std::vector< std::vector< CNode *> > sepConst_;
 
-    // Ids of the Constraint that are separable
-    std::vector<UInt > sepConId_;
+    std::vector<ConstraintPtr> sepCons_;
 
-    // No. of new constraints added to the original problem after sep detection
-    UInt newCons_;
-    
-    // No. of new variable added to the origina problem after sep detection
-    UInt newVars_;
-
-    /// Used in generating computational graph of separable parts
-    std::vector<CNode *> tempN_;
-
-    // True if objective is separable
-    bool objSep_;
-
-    // True if problem is separable 
-    bool sepStatus_;
-
-    LinearFunctionPtr lf_;
-    double  ub_;
-    double  lb_;
-
-    // Indicates whether the function under consideration belongs to
-    // consrtaint or objective. True for constraint, false for objective 
-    bool f_; 
- 
-    CNodeQ snodes_;
-
-    std::deque<int > sops_;
-
-    std::vector<CNode *> svars_;
-
-    std::vector<CNode *> sconst_;
-
-    std::stack<CNode *> on_;
-
-    std::stack<int > onop_;
-
-    UInt nnode_;
- 
-    UInt nvar_;
-
+    double intTol_;
   };
   typedef TransSep* TransSepPtr;
   typedef const TransSep* ConstTransSepPtr;

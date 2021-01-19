@@ -25,6 +25,7 @@
 #include "Relaxation.h"
 #include "Solution.h"
 #include "SolutionPool.h"
+#include "Types.h"
 #include "VarBoundMod.h"
 #include "Variable.h"
 

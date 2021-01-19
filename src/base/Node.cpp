@@ -15,6 +15,10 @@
 
 #include "MinotaurConfig.h"
 #include "Branch.h"
+#include "Constraint.h"
+#include "Cut.h"
+#include "Function.h"
+#include "LinearFunction.h"
 #include "Modification.h"
 #include "Node.h"
 #include "Relaxation.h"
@@ -34,6 +38,7 @@ Node::Node()
     status_(NodeNotProcessed),
     vioVal_(0),
     tbScore_(0),
+    cutPool_(0),
     ws_(0)
 {
 }
@@ -49,6 +54,7 @@ Node::Node(NodePtr parentNode, BranchPtr branch)
     status_(NodeNotProcessed),
     vioVal_(0),
     tbScore_(0),
+    cutPool_(0),
     ws_(0)
 {
   lb_ = parentNode->getLb();
@@ -67,8 +73,13 @@ Node::~Node()
   for (ModificationConstIterator it=rMods_.begin(); it!=rMods_.end(); ++it) {
     delete *it;
   }
+  for (CutListIter it=cutPool_.begin(); it!=cutPool_.end(); ++it) {
+    delete *it;
+  }
+
   pMods_.clear();
   rMods_.clear();
+  cutPool_.clear();
   children_.clear();
 }
 
@@ -115,6 +126,52 @@ void Node::applyRMods(RelaxationPtr rel)
   for (mod_iter=rMods_.begin(); mod_iter!=rMods_.end(); ++mod_iter) {
     mod = *mod_iter;
     mod->applyToProblem(rel);
+  }
+}
+
+
+void Node::addCutToPool(CutPtr cut, RelaxationPtr rel)
+{
+  FunctionPtr f;
+  VariablePtr v;
+  LinearFunctionPtr lf, lfnew;
+  lf = cut->getFunction()->getLinearFunction();
+  if (lf) {
+    lfnew = (LinearFunctionPtr) new LinearFunction();
+    for (VariableGroupConstIterator it=lf->termsBegin(); it!=lf->termsEnd();++it) {
+      v = it->first;
+      //transform the cut
+      lfnew->addTerm(rel->getRelaxationVar(rel->getOriginalVar(v)),it->second);
+    }
+    f = (FunctionPtr) new Function(lfnew);
+    CutPtr c = (CutPtr) new Cut(rel->getNumVars(),f, cut->getLb(), cut->getUb(), false,false);
+    //c->setCons(cut->getConstraint());
+    c->setName_(cut->getName());
+    cutPool_.push_back(c);
+  }
+}
+
+
+void Node::applyCutsByIndex(RelaxationPtr rel)
+{
+  if (cutPool_.size() > 0) {
+    FunctionPtr f;
+    VariablePtr v;
+    LinearFunctionPtr lf, lfnew;
+    for (CutListIter it=cutPool_.begin(); it!=cutPool_.end(); ++it) {
+      //lf = dynamic_cast <LinearFunction*> ((*it)->getFunction());
+      lf = (*it)->getFunction()->getLinearFunction();
+      if (lf) {
+        lfnew = (LinearFunctionPtr) new LinearFunction();
+        for (VariableGroupConstIterator it1=lf->termsBegin(); it1!=lf->termsEnd();++it1) {
+          v = it1->first;
+          //transform the cut
+          lfnew->addTerm(rel->getRelaxationVar(rel->getOriginalVar(v)),it1->second);
+        }
+        f = (FunctionPtr) new Function(lfnew);
+        rel->newConstraint(f, (*it)->getLb(), (*it)->getUb(), (*it)->getName());
+      }
+    }
   }
 }
 

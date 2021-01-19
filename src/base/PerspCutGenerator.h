@@ -13,219 +13,244 @@
 #ifndef MINOTAURPERSPCUTGENERATOR_H
 #define MINOTAURPERSPCUTGENERATOR_H
 
-#include <map>
-#include <fstream>
-using std::ofstream;
-#include <string>
-using std::string;
-
-#include "Types.h"
+#include "CutManager.h"
+#include "Engine.h" 
 #include "Problem.h"
-#include "Solution.h"
-#include "Cut.h"
-#include "Relaxation.h"
-#include "Environment.h"
+#include "Function.h"
 #include "PerspCon.h"
-#include "Logger.h"
+#include "SolutionPool.h"
+#include "LinearFunction.h"
 
 namespace Minotaur {
-
-  //typedef enum {
-    //Cons = 0
-  //} PrintType;
-
-  //typedef enum {
-    //Totalcuts = 0,
-    //Cuts,
-    //Violated,
-    //Noviol
-  //} PerspType;
-
-  //typedef enum {
-    //Duplicate = 0,
-    //Notviolated
-  //} CutFail;
-
-  //struct PerspGenStats
-  //{
-    //UInt totalcuts;
-    //UInt violated;
-    //UInt noviol;
-    //UInt perspcons;
-    //UInt perspnotcons;
-    //UInt perspconsidered;
-    //double time;
-  //};
-
-  // Typedefs
+//MS: constraint form expected is f(x) <= b
+// MS: make functions private/public
   class PerspCutGenerator;
   typedef PerspCutGenerator* PerspCutGeneratorPtr;
   typedef const PerspCutGenerator* ConstPerspCutGeneratorPtr;
-  //typedef PerspGenStats * PerspGenStatsPtr;
-  //typedef PerspGenStats const * ConstPerspGenStatsPtr;
+ 
+  struct PRStats {
+    size_t imprvPt;   /// Number of points feasible to original nonlinear constraint but not the PR constraint.
+    size_t infPt;   /// Number of points infeasible to original constraint.
+    size_t cuts;      /// Number of cuts added to the LP.
+  }; 
 
-  /**
-   * PerpsCutGenerator class generates perspective cuts from constraints.
-   * For each constraint, we considere to get the perspective of the constraint.
-   * We generate a linearization of perspective function at the current
-   * solution.
-   * Then, we add this linearization as an inequality to problem formulation.
-   */
   class PerspCutGenerator {
   public:
-    /// Default constructor.
-    PerspCutGenerator();
+
+  /// Default constructor.
+  PerspCutGenerator();
+  
+  /// Constructor.
+  PerspCutGenerator(EnvPtr env, ProblemPtr problem, EnginePtr nlpe_);
+
+  /// Destructor.
+  ~PerspCutGenerator();
+
+  /// Added perspective cut to a constraint at a given point
+
+  bool addPC(RelaxationPtr rel, const double * y, UInt i, 
+                              const double *ptToCut, const double *prPt, bool isObj,
+                              VariablePtr objVar, CutManagerPtr cutMan, double relVal);
+
+  /// Returns name of the handler.
+  std::string getName() const;
+  
+  UInt getNumCuts() {return stats_->cuts;}
+
+  void fixedValue(double * prPt, bool isObj, UInt i);
+
+  /**
+   * Add Perspective cut (PCut) to a violated PR amenable constraint whose associated
+   * binary variable in integer at the given point (nlpx). 
+   */
+  void addCut(RelaxationPtr rel, const double *nlpx, const double *lpx, UInt it,
+              SeparationStatus * pcStatus);
+
+  /**
+   * Add PCut to violated PR amenable constraints whose associated
+   * binary variable in integer at the given point (nlpx). 
+   */
+  void atIntPt(RelaxationPtr rel , const double * nlpx, 
+                 const double *lpx, SeparationStatus * pcStatus, CutManager *);
+  
+  /**
+   * Add OA cut to original constraint of a violated PR constraint whose
+   *  associated binary variable has value 0.
+   */
+  //void linearAt(RelaxationPtr rel, FunctionPtr f, double fval,
+                //const double *x, double *c, LinearFunctionPtr *lf,
+                //int *error);
+  /**
+   * Add PCut to a PR amenable constraint whose associated
+   * binary variable in integer at the given point (nlpx). 
+   */
+  void getCutFun(RelaxationPtr rel,LinearFunctionPtr *lf, UInt it, const double *x, 
+               double *c, int *error);
+
+  /// Add PCut torelaxation 
+  bool addCutToRel(RelaxationPtr rel, const double * ptToCut, 
+                                    LinearFunctionPtr lf, double c, VariablePtr objVar, double relVal, CutManagerPtr);
+  /**
+   * Add PCut to a PR amenable constraint. At point (x) original 
+   * constraint is known to be satisfied but not necessarily PR constraint. If PR
+   * constraint is satisfied at x then PCut is added at x.
+   * Otherwise, a feasible point to add PCut is obtained using bisection. 
+   */ 
+  //void addCutOriFeas(RelaxationPtr rel , UInt it, const double *x);
+
+  /// Iterate over PR amenable constraints to add PCut;
+  void oriFeasPt(RelaxationPtr rel , const double *x);
+
+  void oriInfeasPt(RelaxationPtr rel, const double *x);
+
+  /**
+   * Add PCut to a PR amenable constraint. If both the original and
+   * PR amenable constraints are satisfied at x, PCut is added at x. If only
+   * former is satisfied, then a point feasible to latter is obtained using
+   * bisection at which PCut is then added. If both the constraints are not
+   * satisfied then first a point feasible to original constraint is obtained
+   * using which a point satisfying PR amneable constraint is obtained using
+   * bisection, at which PCut is added. 
+   */ 
+  //void addPCut(RelaxationPtr rel , UInt it, const double *x);
+
+  void atPtx(RelaxationPtr rel, const double *x);
+  
+  void cutToCons(RelaxationPtr rel, const double *x, UInt it);
+  /**
+   * Determine a point feasible to orginal constraint when the given point (x) 
+   * violates both original and PR reformulated constraints.
+   */
+  //void feasBisecPt(const double *x, double *y, UInt it);
+
+  /**
+   * Give variable values when associated binary variable is 0 for a PR 
+   * amenable constraint.
+   */ 
+  //void vertexPt(double * y, UInt it);
+
+  /**
+   * Find a point (w1) feasible to original constraint using bisection method 
+   * on points x and w, where former in feasible and latter is infeasible to
+   * the original constraint. 
+   */
+  //void bisecPtOri(const double *x, double * w, double * w1, UInt it);
 
 
-    /// Constructor that uses a relaxation and a solution given.
-    //MS: do we need both rel and p here?
-    PerspCutGenerator(UInt relvars, ConstSolutionPtr sol, ConstConstraintPtr c,
-                      ConstVariablePtr v);
-    /// Destructor.
-    ~PerspCutGenerator();
+  /**
+   * Given point (x,z) violating PR amenable constraint. Also, known that
+   * (x,1) satisfies the PR constraint. Perform the bisection to find boundary
+   * point. 
+   */
+  bool bisecPt(double *x, double * newPt, UInt i,
+                                bool isObj, double relVal);
 
-    /// Initialize data elements.
-    //void initialize();
+  void cvxCombPt(RelaxationPtr rel, const double * y, UInt it);
+ 
+  bool changeVarForm(VariablePtr v, double xc, double sb, UInt itn, double *newPt, bool isObj, bool nlin);
+  /**
+   * Given outer-approximatio to a violated PR constraint
+   */
+  void linearAt(RelaxationPtr rel, const double *x, const double *prPt, double *c, LinearFunctionPtr *lf, UInt itn, int *error, bool isObj);
 
-    /// Generate all perspective cuts.
-    //bool generateAllCuts();
+  /// Return vector of perspective amenable constraint
+  std::vector<prCons> getPRCons() {return prCons_;};
+  
+  prObj getPRObj() {return prObj_;};
+  
+  ///// Return vector of binary variables of perspective amenable constraints
+  //std::vector<VariablePtr> getPRBinVar() {return binvar_;};
 
-    /// Generate perspective cut.
-    void generateCut();
-    //ConstraintPtr generateCut();
-    
-    void gPCut(FunctionPtr f, double * y);
-    //ConstraintPtr gPCut(FunctionPtr f, double * y);
+  //std::vector<UInt> getPRStruct() {return sType_;};
+ 
+  /// Check feasibility of PR amenable constraints at the given solution.
+  UInt isFeasible(const double *x, UInt i, bool isObj, double relVal);
 
-    // Return function pointer of PC
-    LinearFunctionPtr getPFunction() {return lf_;}
+  /// Generate variables for PR reformulation. Case in which z = 0 fixes x
+  //variables, if z has value 0 then the function returns false; And if z has
+  //value 1, then the function returns the same point. Similarly, for z = 1
+  //fixing case.
+  bool prVars(const double *y, double *prPt, UInt itn, bool isObj);
 
-    // Return constant term of PC
-    //double getConst();
-    /// Add cut to the corresponding lists.
-    //bool addCut(CutPtr cut);
+  void findPRCons();
 
-    /// Check if the same cut is already included in the list.
-    //bool checkExists(CutPtr cut);
+  bool uniDirZSearch(double *y, double * newPt, UInt i, double zdir);
 
-    /// Calculates the violation for a given cut.
-    //double violation(CutPtr cut);
+  /// Return 1 if there are PR amenable constraints in the problem
+  bool getStatus();
+  
 
-    ///True if a new perspective cut violating current solution is found
-    //bool newVioPC() const
-    //{return newVioCut_;}
+  /// Perform line search using analytical center solC_. This search happens
+  //only if solC_ satisfies the PR amenable constraint or (xC, 1) satisfies,
+  //where xC is x components of  solC_.
+  bool lineSearchAC(double *y, double * newPt, UInt i, bool isObj, double relVal);
 
-    /// Return const cut list.
-    //CutVector getCutList() const
-    //{return cutList_;}
+  /// Writes statistics.
+  void writeStats(std::ostream &out) const;
+  
+private:
 
-    /// Return cuts that violates relaxation solution.
-    //CutVector getViolatedCutList() const
-    //{return viollist_;}
+  //void fixBinVars_(std::stack<Modification *> &varMods);
+  
+  //void unfixBinVars_(std::stack<Modification *> &varMods);
+  
+  bool lineSearch_(double *y, double * newPt, UInt i, bool isObj, double relVal);
+  /// Environment.
+  EnvPtr env_;
+  
+  /// Problem for which the handler is created.
+  ProblemPtr minlp_;
+ 
+  EnginePtr nlpe_;
+  
+  /// Log.
+  LoggerPtr logger_;
+ 
+  /// Tolerance for accepting a new solution value: absolute threshold.
+  double solAbsTol_;
+  
+  /// Tolerance for accepting a new solution value: relative threshold.
+  double solRelTol_;
+  
+  /// Absolute tolerance for objective.
+  double objAbsTol_;
 
-    /// Return violation list.
-    //DoubleVector getViolList() const
-    //{return viols_;}
+  /// Relative tolerance for objective.
+  double objRelTol_;
+  
+  /// Tolerance for checking integrality.
+  double intTol_;
 
-    /// Return statistics of cut generator.
-    //ConstPerspGenStatsPtr getStats() const
-    //{return ConstPerspGenStatsPtr(stats_);}
+  /// Convex combination of feasible point
+  double* cvxPt;
 
-    /// Check  if given solution satisfies integrality for given relaxation.
-    //bool checkIntegral(RelaxationPtr p, ConstSolutionPtr s);
+  /// Statistics.
+  PRStats *stats_;
 
-  private:
-    // Environment.
-    //EnvPtr env_;
+  /// For log:
+  static const std::string me_;
+  
+  /// Vector of perspective constraint pointers
+  std::vector<prCons> prCons_;
 
-    // Problem that cover cuts will be generated for.
-    //ProblemPtr p_;
+  prObj prObj_;
 
-    // Relaxation that cover cuts will be generated for.
-    RelaxationPtr rel_;
+  double * solC_;
 
-    // For log
-    LoggerPtr logger_;
+  //bool isObj_;
 
-    // For log
-    static const std::string me_;
-
-    // List of cuts generated.
-    //CutVector cutList_;
-
-    // List of violated cuts.
-    //CutVector viollist_;
-
-    // List of violations for cuts corresponding in cut list.
-    //DoubleVector viols_;
-
-    //This is true is a new cut violating the current solution is added
-     //bool newVioCut_;
-
-    // List of constraints that we can obtain perspective cuts.
-    // We call them perspective constraints.
-    // PerspConPtr persplist_;
-
-    /** Given (possibly fractional) solution.
-     *  Cut will be designed to violate this solution.
-     */
-    ConstSolutionPtr s_;
-
-    // Perspective constraints.
-    //PerspConPtr conslist_;
-    
-    ConstConstraintPtr cp_;
-    ConstVariablePtr bp_;
-
-    // Violation tolerance.
-    //double objtol_;
-
-
-    // Statistics for perspective cut generator.
-    //PerspGenStatsPtr stats_;
-
-    // Hash map that is used to check if a cut is already created or not.
-    //std::map< DoubleVector, UInt > cutmap_;
-
-    // Integer tolerance.
-    //double intTol_;
-
-    /// Tolerance for accepting a new solution value: absolute threshold.
-    //double solAbsTol_;
-    //double solRelTol_;
-    
-    // General tolerance.
-    //double eTol_;
-
-    // Output file
-    ofstream output_;
-
-    // Output file name
-    string outfile_;
-
-    // Function of pc
-    LinearFunctionPtr lf_;
-
-    // Constant term of pc
-    //double cnst_;
-
-    // Number of variable in relaxation
-    UInt rnv_;
   };
 }
 
-#endif // MINOTAURPERSPCUTGENERATOR_H
+#endif // MINOTAURPERSPCUTHANDLER_H
 
-
-
-
-// Local Variables:
+// Local Variables: 
 // mode: c++ 
-// eval: (c-set-style "k&r")
-// eval: (c-set-offset 'innamespace 0)
-// eval: (setq c-basic-offset 2)
-// eval: (setq fill-column 78)
+// eval: (c-set-style "k&r") 
+// eval: (c-set-offset 'innamespace 0) 
+// eval: (setq c-basic-offset 2) 
+// eval: (setq fill-column 78) 
 // eval: (auto-fill-mode 1) 
-// eval: (setq column-number-mode 1)
-// eval: (setq indent-tabs-mode nil)
+// eval: (setq column-number-mode 1) 
+// eval: (setq indent-tabs-mode nil) 
 // End:

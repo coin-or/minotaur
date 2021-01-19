@@ -79,7 +79,6 @@ BrCandPtr ParReliabilityBrancher::findBestCandidate_(const double objval,
                                                   DoubleVector pseudoUp,
                                                   DoubleVector pseudoDown,
                                                   UInt nodesProc)
-
 {
   double best_score = -INFINITY;
   double score, change_up, change_down, maxchange;
@@ -119,6 +118,8 @@ BrCandPtr ParReliabilityBrancher::findBestCandidate_(const double objval,
           status_up, status_down);
       score = getScore_(change_up, change_down);
       lastStrBranched_[cand->getPCostIndex()] = nodesProc + 1;
+      // to also accommodate node resolves, use below
+      //lastStrBranched_[cand->getPCostIndex()] = stats_->calls;
 #if SPEW
       writeScore_(cand, score, change_up, change_down);
 #endif
@@ -189,6 +190,7 @@ Branches ParReliabilityBrancher::findBranches(RelaxationPtr rel, NodePtr node,
   }
 
   if (status_ == NotModifiedByBrancher) {
+//#pragma omp critical (solPool) // reading best solution value
     br_can = findBestCandidate_(sol->getObjValue(), 
                                 s_pool->getBestSolutionValue(), node,
                                 pseudoUp, pseudoDown, nodesProc);
@@ -196,8 +198,9 @@ Branches ParReliabilityBrancher::findBranches(RelaxationPtr rel, NodePtr node,
 
   if (status_ == NotModifiedByBrancher) {
     // surrounded by br_can :-)
-    branches = br_can->getHandler()->getBranches(br_can, x_, rel_, s_pool); 
-    for (BranchConstIterator br_iter=branches->begin(); 
+//#pragma omp critical (solPool) // can be handled at IntVarHandler?
+    branches = br_can->getHandler()->getBranches(br_can, x_, rel_, s_pool);
+    for (BranchConstIterator br_iter=branches->begin();
         br_iter!=branches->end(); ++br_iter) {
       (*br_iter)->setBrCand(br_can);
     }
@@ -300,7 +303,8 @@ void ParReliabilityBrancher::findCandidates_(UIntVector *timesUp,
     if ((*timesDown)[index]) {
       (*pseudoDown)[index] = ((*pseudoDown)[index] + pseudoDown_[index]*timesDown_[index])/(*timesDown)[index];
     }
-
+    // to also accommodate node resolves, use below commented line
+    //if ((minNodeDist_ > fabs(stats_->calls-lastStrBranched_[index])) ||
     if ((minNodeDist_ > fabs(nodesProc-lastStrBranched_[index])) ||
         ((*timesUp)[index] >= thresh_ && (*timesDown)[index] >= thresh_)) {
       relCands_.push_back(*it);
@@ -614,6 +618,7 @@ void ParReliabilityBrancher::writeScore_(BrCandPtr cand, double score,
                                       double change_up, double change_down)
 {
   logger_->msgStream(LogDebug2) << me_ << "candidate: " << cand->getName() 
+                                << " lstStr = " << lastStrBranched_[cand->getPCostIndex()]
                                 << " down change = " << change_down
                                 << " up change = " << change_up
                                 << " score = " << score
