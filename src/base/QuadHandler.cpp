@@ -590,26 +590,28 @@ LinearFunctionPtr QuadHandler::getNewSqLf_(VariablePtr x, VariablePtr y,
                                            double lb, double ub, double & r)
 {
   LinearFunctionPtr lf = LinearFunctionPtr(); // NULL
+  double new_lb = lb;
+  double new_ub = ub;
   double eps = 1e-5; // we do not want a coefficient smaller than this in our LP.
 
-  r = -ub*lb;
   if (lb < -1e12 || ub > 1e12) {
     if (lb < -1e12) {
-      addDefaultBounds_(x, Lower);
+      new_lb = addDefaultBounds_(x, Lower);
     }
     if (ub > 1e12) {
-      addDefaultBounds_(x, Upper);
+      new_ub = addDefaultBounds_(x, Upper);
     }
+  r = -new_ub*new_lb;
 //    logger_->errStream() << "can not relax " << y->getName() << "="
 //                         << x->getName() << "^2, "
 //                         << "because the bounds on latter are too weak"
 //                         << std::endl;
 //    exit(500);
   }
-  if (fabs(ub+lb) > eps) {
+  if (fabs(new_ub+new_lb) > eps) {
     lf = (LinearFunctionPtr) new LinearFunction();
     lf->addTerm(y, 1.);
-    lf->addTerm(x, -1.*(ub+lb));
+    lf->addTerm(x, -1.*(new_ub+new_lb));
   } else {
     lf = (LinearFunctionPtr) new LinearFunction();
     lf->addTerm(y, 1.);
