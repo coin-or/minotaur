@@ -14,6 +14,7 @@
 #include <iostream>
 #include <iomanip>
 #include <queue>
+#include <algorithm>
 
 #include "MinotaurConfig.h"
 #include "CGraph.h"
@@ -376,6 +377,7 @@ QfVector QuadraticFunction::findSubgraphs()
   }
 
   i = 0;
+  std::sort(to_del.begin(), to_del.end());
   for (std::vector<UInt>::iterator uit = to_del.begin(); uit != to_del.end(); ++uit) {
     qit = qf_vector.begin();
     std::advance(qit, (*uit)-i);
@@ -903,10 +905,20 @@ void QuadraticFunction::subst(VariablePtr out, VariablePtr in, double rat)
     if (it->first.first == out || it->first.second==out) {
       vpg = *it;
       if (vpg.first.first==out) {
-        vpg.first.first=in;
+        if (in->getId() <= vpg.first.second->getId()) {
+          vpg.first.first=in;
+        } else {
+          vpg.first.first = vpg.first.second;
+          vpg.first.second = in;
+        }
       }
       if (vpg.first.second==out) {
-        vpg.first.second=in;
+        if (in->getId() >= vpg.first.first->getId()) {
+          vpg.first.second=in;
+        } else {
+          vpg.first.second = vpg.first.first;
+          vpg.first.first = in;
+        }
       }
       vpg.second *= rat;
       newterms.push(vpg);

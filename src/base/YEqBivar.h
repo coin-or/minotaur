@@ -4,23 +4,22 @@
 //
 
  /**
-  * \file YEqQfBil.h
-  * \brief Declare class for storing auxiliary variables equivalent to a
-  * product of two variables.
+  * \file YEqBivar.h
+  * \brief Declare class for storing auxiliary variables equivalent to a bivar.
   * \author Mustafa Vora, IEOR, IIT Bombay
   */
 
-#ifndef MINOTAURYEQQFBIL_H
-#define MINOTAURYEQQFBIL_H
+#ifndef MINOTAURYEQBIVAR_H
+#define MINOTAURYEQBIVAR_H
 
 #include "Types.h"
 
 namespace Minotaur {
 
-class YEqQfBil
+class YEqBivar
 {
 public:
-  YEqQfBil();
+  YEqBivar();
   VariablePtr findY(VariablePtr v1, VariablePtr v2);
   void insert(VariablePtr auxvar, VariablePtr v1, VariablePtr v2);
 
@@ -45,4 +44,3 @@ private:
 // eval: (setq column-number-mode 1) 
 // eval: (setq indent-tabs-mode nil) 
 // End:
-

@@ -93,6 +93,12 @@ void Constraint::delFixedVar_(VariablePtr v, double val)
     lb_ -= offset;
     ub_ -= offset;
     f_->removeVar(v, val);
+//    if (f_->getNumVars() == 0 &&
+//        !(f_->getLinearFunction() ||
+//          f_->getQuadraticFunction() ||
+//          f_->getNonlinearFunction())) {
+//      setState_(DeletedCons);
+//    }
   }
 }
 

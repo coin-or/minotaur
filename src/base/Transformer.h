@@ -25,6 +25,7 @@ class LinearHandler;
 class Problem;
 class QuadHandler;
 class Solution;
+class UnivarQuadHandler;
 class YEqLFs;
 class YEqUCGs;
 class YEqVars;
@@ -32,6 +33,7 @@ typedef CxUnivarHandler* CxUnivarHandlerPtr;
 typedef CGraph* CGraphPtr;
 typedef LinearHandler* LinearHandlerPtr;
 typedef QuadHandler* QuadHandlerPtr;
+typedef UnivarQuadHandler* UnivarQuadHandlerPtr;
 typedef Solution* SolutionPtr;
 typedef const Solution* ConstSolutionPtr;
 
@@ -113,6 +115,9 @@ protected:
 
   /// Handler for univariate constraints.
   CxUnivarHandlerPtr uHandler_;
+
+  /// Handler for univariate quadratic constraints.
+  UnivarQuadHandlerPtr uqHandler_;
 
   /**
    * \brief Storage for auxiliary variables defined by relations of the form

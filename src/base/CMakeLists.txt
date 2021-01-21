@@ -108,7 +108,8 @@ set (MINOTAUR_SOURCES
      QPDRelaxer.cpp 
      QPDProcessor.cpp 
      QuadHandler.cpp 
-     QuadraticFunction.cpp 
+     QuadraticFunction.cpp
+     QuadTransformer.cpp 
      RandomBrancher.cpp
      RCHandler.cpp
      Relaxation.cpp 
@@ -127,14 +128,17 @@ set (MINOTAUR_SOURCES
      TransPoly.cpp 
      TransSep.cpp
      TreeManager.cpp 
+     UnivarQuadHandler.cpp
      Types.cpp 
      UnambRelBrancher.cpp
      VarBoundMod.cpp 
-     Variable.cpp 
+     Variable.cpp
+     YEqBivar.cpp 
      YEqCGs.cpp
      YEqLFs.cpp
      YEqMonomial.cpp
      YEqUCGs.cpp
+     YEqUnivar.cpp
      YEqVars.cpp
      YEqQfBil.cpp
 )
@@ -243,6 +247,7 @@ set (MINOTAUR_HEADERS
      QuadHandler.h 
      QPDRelaxer.h 
      QuadraticFunction.h
+     QuadTransformer.h
      RandomBrancher.h
      RCHandler.h
      Relaxation.h
@@ -263,13 +268,16 @@ set (MINOTAUR_HEADERS
      TransSep.h
      TreeManager.h
      Types.h
+     UnivarQuadHandler.h
      UnambRelBrancher.h
      WarmStart.h
      Variable.h
+     YEqBivar.h
      YEqCGs.h
      YEqLFs.h
      YEqMonomial.h
      YEqUCGs.h
+     YEqUnivar.h
      YEqVars.h
      YEqQfBil.h
      )

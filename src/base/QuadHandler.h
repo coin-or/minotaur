@@ -134,6 +134,14 @@ private:
   /// Update bounds if they can be improved by at least this quantity
   double bTol_;
 
+  /// Lower bound to be used for a variable if presolve does not
+  /// give us a finite lower bound
+  double defaultLb_;
+
+  /// Upper bound to be used for a variable if presolve does not
+  /// give us a finite upper bound
+  double defaultUb_;
+
   /// Logger.
   LoggerPtr logger_;
       
@@ -181,6 +189,10 @@ private:
    */
   void addCut_(VariablePtr x, VariablePtr y, double xl, double yl, double xval,
                double yval, RelaxationPtr rel, bool &ifcuts);
+
+  /// This will add default variable bounds if finite bounds
+  /// are not found by presolve
+  double addDefaultBounds_(VariablePtr x, BoundType lu);
 
   /**
    * \brief Find the point at which a gradient-based linearization inequality

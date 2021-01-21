@@ -41,6 +41,7 @@ public:
   friend class TransSep;
   friend class QGHandler;
   friend class OAHandler;
+  friend class QuadHandler;
   friend class MultiSolHeur;
 
   /// Default constructor.

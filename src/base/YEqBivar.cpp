@@ -5,9 +5,8 @@
 //
 
 /**
- * \file YEqQfBil.cpp
- * \brief Define class for storing auxiliary variables equivalebt to a
- * product of two variables.
+ * \file YEqBivar.cpp
+ * \brief Define class for storing auxiliary variables equivalent to a bivar.
  * \author Mustafa Vora, IEOR, IIT Bombay
  */
 
@@ -17,16 +16,16 @@
 #include "MinotaurConfig.h"
 
 #include "Variable.h"
-#include "YEqQfBil.h"
+#include "YEqBivar.h"
 
 using namespace Minotaur;
 
-YEqQfBil::YEqQfBil()
+YEqBivar::YEqBivar()
 {
 
 }
 
-VariablePtr YEqQfBil::findY(VariablePtr v1, VariablePtr v2)
+VariablePtr YEqBivar::findY(VariablePtr v1, VariablePtr v2)
 {
   UInt key1 = v1->getId();
   UInt key2 = v2->getId();
@@ -39,7 +38,7 @@ VariablePtr YEqQfBil::findY(VariablePtr v1, VariablePtr v2)
   return VariablePtr();
 }
 
-void YEqQfBil::insert(VariablePtr auxvar, VariablePtr v1, VariablePtr v2)
+void YEqBivar::insert(VariablePtr auxvar, VariablePtr v1, VariablePtr v2)
 {
   v1_.push_back(v1);
   v2_.push_back(v2);

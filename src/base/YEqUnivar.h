@@ -4,32 +4,35 @@
 //
 
  /**
-  * \file YEqQfBil.h
-  * \brief Declare class for storing auxiliary variables equivalent to a
-  * product of two variables.
+  * \file YEqUnivar.h
+  * \brief Declare class for storing auxiliary variables equivalent to a univar.
   * \author Mustafa Vora, IEOR, IIT Bombay
   */
 
-#ifndef MINOTAURYEQQFBIL_H
-#define MINOTAURYEQQFBIL_H
+#ifndef MINOTAURYEQUNIVAR_H
+#define MINOTAURYEQUNIVAR_H
 
 #include "Types.h"
 
 namespace Minotaur {
 
-class YEqQfBil
+class YEqUnivar
 {
 public:
-  YEqQfBil();
-  VariablePtr findY(VariablePtr v1, VariablePtr v2);
-  void insert(VariablePtr auxvar, VariablePtr v1, VariablePtr v2);
+  YEqUnivar();
+  VariablePtr findY(VariablePtr v, double a, double b);
+  void insert(VariablePtr auxvar, VariablePtr v, double a, double b);
 
 private:
-  UIntVector hash1_;
-  UIntVector hash2_;
-  std::vector<VariablePtr> v1_;
-  std::vector<VariablePtr> v2_;
+  double randa_;
+  double randb_;
+  DoubleVector hash_;
+  DoubleVector a_;
+  DoubleVector b_;
+  VarVector v_;
   VarVector y_;
+
+  double evalHash_(UInt key, double a, double b);
 };
 }
 
@@ -45,4 +48,3 @@ private:
 // eval: (setq column-number-mode 1) 
 // eval: (setq indent-tabs-mode nil) 
 // End:
-
