@@ -882,7 +882,7 @@ void ParBranchAndBound::parsolveOppor(ParNodeIncRelaxerPtr parNodeRlxr[],
       } else {
 #if SPEW
 #pragma omp critical (logger)
-        logger_->msgStream(LogInfo) << "nodesCount " << nodeCountThread << " thread " << i << std::endl;
+        //logger_->msgStream(LogInfo) << "nodesCount " << nodeCountThread << " thread " << i << std::endl;
         logger_->msgStream(LogDebug) << std::setprecision(8)
           << me_ << "lb = " << tm_->updateLb() << std::endl
           << me_ << "ub = " << tm_->getUb() << std::endl;
@@ -1659,7 +1659,7 @@ void ParBranchAndBound::parsolveSync(ParNodeIncRelaxerPtr parNodeRlxr[],
       } //parallel for end
 #pragma omp single
       {
-        iterCount++;
+        //iterCount++;
         nodeCount = 0;
         treeLb = tm_->updateLb();
         minNodeLb = INFINITY;
@@ -1702,6 +1702,7 @@ void ParBranchAndBound::parsolveSync(ParNodeIncRelaxerPtr parNodeRlxr[],
             << me_ << "lb = " << tm_->updateLb() << std::endl
             << me_ << "ub = " << tm_->getUb() << std::endl;
 #endif
+          iterCount++;
         }
       } //omp master/single ended
     }   //parallel region ends
