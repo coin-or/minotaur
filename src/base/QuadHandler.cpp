@@ -601,13 +601,13 @@ LinearFunctionPtr QuadHandler::getNewSqLf_(VariablePtr x, VariablePtr y,
     if (ub > 1e12) {
       new_ub = addDefaultBounds_(x, Upper);
     }
-  r = -new_ub*new_lb;
 //    logger_->errStream() << "can not relax " << y->getName() << "="
 //                         << x->getName() << "^2, "
 //                         << "because the bounds on latter are too weak"
 //                         << std::endl;
 //    exit(500);
   }
+  r = -new_ub*new_lb;
   if (fabs(new_ub+new_lb) > eps) {
     lf = (LinearFunctionPtr) new LinearFunction();
     lf->addTerm(y, 1.);

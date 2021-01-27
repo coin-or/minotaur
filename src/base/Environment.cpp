@@ -234,7 +234,7 @@ void Environment::createDefaultOptions_()
 
   b_option = (BoolOptionPtr) new Option<bool>("cgtoqf", 
       "Convert all quadratic functions from cgraph to qf: <0/1>",
-      true, false);
+      true, true);
   options_->insert(b_option);
 
   b_option = (BoolOptionPtr) new Option<bool>("pardivheur",
@@ -528,6 +528,10 @@ void Environment::createDefaultOptions_()
 
   s_option = (StringOptionPtr) new Option<std::string>("cutMethod", 
       "Name of method for generating cuts: ecp, esh", true, "esh");
+  options_->insert(s_option);
+
+  s_option = (StringOptionPtr) new Option<std::string>("transformer",
+      "Name of transformer to be used: simp, quad", true, "simp");
   options_->insert(s_option);
 
   s_option = 0;

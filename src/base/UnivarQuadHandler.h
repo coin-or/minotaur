@@ -88,6 +88,8 @@ public:
                               ModVector &mods, BrVarCandSet &cands, 
                               BrCandVector &gencands, bool &is_inf);
 
+  double getBranchingPt_(double vio, double lb, double ub, double allowed_vio);
+
   // base class method
   ModificationPtr getBrMod(BrCandPtr cand, DoubleVector &x, 
                            RelaxationPtr rel, BranchDirection dir) {};
