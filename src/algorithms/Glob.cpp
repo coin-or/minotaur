@@ -261,7 +261,8 @@ PresolverPtr createPres(EnvPtr env, ProblemPtr p, size_t ndefs,
     if (!p->isLinear() &&
          (p->isQP() || p->isQuadratic())) {
       if (true==env->getOptions()->findBool("cgtoqf")->getValue()) {
-        QuadHandlerPtr qhand = (QuadHandlerPtr) new QuadHandler(env, p);
+        QuadHandlerPtr qhand = (QuadHandlerPtr) new QuadHandler(env, p,
+                                                        getEngine(env));
         handlers.push_back(qhand);
       } else {
         if (true == env->getOptions()->findBool("use_native_cgraph")->getValue()

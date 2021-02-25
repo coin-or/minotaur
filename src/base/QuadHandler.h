@@ -54,6 +54,8 @@ public:
   /// Default constructor.
   QuadHandler(EnvPtr env, ProblemPtr problem);
 
+  QuadHandler(EnvPtr env, ProblemPtr problem, EnginePtr lpe);
+  
   /// Destroy
   ~QuadHandler();
 
@@ -177,6 +179,9 @@ private:
 
   /// Logger.
   LoggerPtr logger_;
+
+  /// LP engine
+  EnginePtr lpe_;
       
   /// For printing messages.
   static const std::string me_;
@@ -292,7 +297,7 @@ private:
    * \param[in] e The engine where lp is loaded
    * \param[out] is_inf True if the lp is infeasible.
    */
-  double getBndByLP_(EnginePtr e, bool &is_inf);
+  double getBndByLP_(bool &is_inf);
 
   /**
    * \brief Get one of the four linear functions and right hand sides for the

@@ -17,6 +17,7 @@
 #include <cmath>
 #include <iostream>
 #include <iomanip>
+#include <algorithm>
 
 #include "MinotaurConfig.h"
 #include "Branch.h"
@@ -58,6 +59,24 @@ QuadHandler::QuadHandler(EnvPtr env, ProblemPtr problem)
 : aTol_(1e-5),
   bTol_(1e-8),
   env_(env),
+  lpe_(0),
+  rTol_(1e-4)
+{
+  p_ = problem; 
+  modProb_ = false;
+  modRel_  = true;
+  logger_  = env->getLogger();
+  resetStats_();
+  timer_ = env->getTimer();
+  defaultLb_ = 1e12;
+  defaultUb_ = -1e12;
+}
+
+QuadHandler::QuadHandler(EnvPtr env, ProblemPtr problem, EnginePtr lpe)
+: aTol_(1e-5),
+  bTol_(1e-8),
+  env_(env),
+  lpe_(lpe),
   rTol_(1e-4)
 {
   p_ = problem; 
@@ -1371,10 +1390,10 @@ bool QuadHandler::calcVarBnd_(VariablePtr v, double a, double b, double ly,
  return false; 
 }
 
-double QuadHandler::getBndByLP_(EnginePtr e, bool &is_inf) {
+double QuadHandler::getBndByLP_(bool &is_inf) {
   double b;
   EngineStatus lpStatus;
-  lpStatus = e->solve();
+  lpStatus = lpe_->solve();
   ++bStats_.nLP;
   is_inf = false;
 
@@ -1382,18 +1401,18 @@ double QuadHandler::getBndByLP_(EnginePtr e, bool &is_inf) {
     case (ProvenOptimal):
     case (EngineIterationLimit):
     case (ProvenUnbounded):
-      b = e->getSolution()->getObjValue();
+      b = lpe_->getSolution()->getObjValue();
       break;
     case (ProvenInfeasible):
-    case (ProveObjectiveCutOff):
+    case (ProvenObjectiveCutOff):
       b = INFINITY;
       is_inf = true;
       break;
     case (EngineError):
-    case (EnfineUnkownStatus):
+    case (EngineUnknownStatus):
     default:
       logger_->msgStream(LogError) << me_ << "LP engine status at root= "
-        << lpStatus_ << std::endl;
+        << lpStatus << std::endl;
       assert(!"In QuadHandler: stopped at root. Check error log.");
       break;
   }
@@ -1405,12 +1424,10 @@ bool QuadHandler::tightenLP_(bool *changed) {
   QuadraticFunctionPtr qf;
   LinearFunctionPtr lf, lflp;
   FunctionPtr flp;
-  VariableSet lvars, qvars;
+  VarSet lvars, qvars;
   VariablePtr v;
   std::map<VariablePtr, VariablePtr> pv_lpv;
   ProblemPtr lp;
-  EngineFactory *efac;
-  EnginePtr lpengine;
   double lb, ub, clb, cub;
   bool is_inf;
   bool *c1;
@@ -1479,22 +1496,19 @@ bool QuadHandler::tightenLP_(bool *changed) {
     }
   }
 
-  efac = (EngineFactory *) new EngineFactory(env_);
-  lpengine = efac->getLPEngine();
-  lp->setEngine(lpengine);
-  lpengine->load(lp);
+  lp->setEngine(lpe_);
+  lpe_->load(lp);
 
   for (VariableSet::iterator vit = qvars.begin(); vit != qvars.end(); ++vit) {
     lflp = (LinearFunctionPtr) new LinearFunction();
     lflp->addTerm(pv_lpv[*vit], 1.0);
     flp = (FunctionPtr) new Function(lflp);
     lp->changeObj(flp, 0.0);
-    lb = getBndByLP_(lpengine, is_inf);
+    lb = getBndByLP_(is_inf);
     if (is_inf) {
       qvars.clear();
       pv_lpv.clear();
-      delete efac;
-      delete lpengine;
+      delete lpe_;
       delete lp;
       if (flp) {
         delete flp;
@@ -1506,12 +1520,11 @@ bool QuadHandler::tightenLP_(bool *changed) {
     }
     (*flp) *= -1.0;
     lp->changeObj(flp, 0.0);
-    ub = -getBndByLP_(lp, is_inf);
+    ub = -getBndByLP_(is_inf);
     if (is_inf) {
       qvars.clear();
       pv_lpv.clear();
-      delete efac;
-      delete lpengine;
+      delete lpe_;
       delete lp;
       if (flp) {
         delete flp;
@@ -1525,8 +1538,7 @@ bool QuadHandler::tightenLP_(bool *changed) {
     if (updatePBounds_(*vit, lb, ub, c1) < 0) {
       qvars.clear();
       pv_lpv.clear();
-      delete efac;
-      delete lpengine;
+      delete lpe_;
       delete lp;
       if (flp) {
         delete flp;
@@ -1543,8 +1555,7 @@ bool QuadHandler::tightenLP_(bool *changed) {
   }
   qvars.clear();
   pv_lpv.clear();
-  delete efac;
-  delete lpengine;
+  delete lpe_;
   delete lp;
   if (flp) {
     delete flp;

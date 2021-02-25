@@ -16,7 +16,7 @@
 #include <iostream>
 
 #include "MinotaurConfig.h"
-
+#include "Engine.h"
 #include "Environment.h"
 #include "Constraint.h"
 #include "Function.h"
