@@ -128,8 +128,39 @@ private:
     int nMods;   ///> Number of changes made in all nodes.
   };
 
+  struct BoundTighteningStats
+  {
+    VariableSet qvars; ///> The variables with quadratic terms
+    int nqlb;          ///> Number of quadratic variables with finite lb
+    int nqub;          ///> Number of quadratic variables with finite ub
+    int nqlbs;         ///> Number of quadratic variables whose lb was
+                       ///> found by simple tightening
+    int nqubs;         ///> Number of quadratic variables whose ub was
+                       ///> found by simple tightening
+    int vBnds;         ///> Number of times bounds tightened by
+                       ///> simple tightening
+    int nqlbq;         ///> Number of quadratic variables whose lb was
+                       ///> found by quad tightening
+    int nqubq;         ///> Number of quadratic variables whose ub was
+                       ///> found by quad tightening
+    int vBndq;         ///> Number of times bounds tightened by
+                       ///> quad tightening
+    int nqlbl;         ///> Number of quadratic variables whose lb was
+                       ///> found by lp tightening
+    int nqubl;         ///> Number of quadratic variables whose ub was
+                       ///> found by lp tightening
+    int vBndl;         ///> Number of times bounds tightened by
+                       ///> lp tightening
+    int nLP;           ///> Number of LP solved
+    int dlb;           ///> Number of variables for which default lb was added
+    int dub;           ///> Number of variables for which default ub was added
+  };
+
   /// Absolute feasibility tolerance
   double aTol_;
+
+  /// Statistics about bound tightening
+  BoundTighteningStats bStats_;
 
   /// Update bounds if they can be improved by at least this quantity
   double bTol_;
@@ -141,6 +172,8 @@ private:
   /// Upper bound to be used for a variable if presolve does not
   /// give us a finite upper bound
   double defaultUb_;
+
+  EnvPtr env_;
 
   /// Logger.
   LoggerPtr logger_;
@@ -195,6 +228,55 @@ private:
   double addDefaultBounds_(VariablePtr x, BoundType lu);
 
   /**
+   * \brief Calculate the upper bound of a univariate quadratic of the form
+   * ax^2 + bx.
+   * \param[in] a The coefficient of square term
+   * \param[in] b The coefficient of linear term
+   * \param[in] lx The lower bound of the variable
+   * \param[in] ux The upper bound of the variable
+   */
+  double calcUpperUnivar_(double a, double b, double lx, double ux);
+
+  /**
+   * \brief Calculate bounds of the variable from a linear term bounds
+   * \param[in] v The variable in the linear term
+   * \param[in] coeff The coefficient of the linear term
+   * \param[in] lb The lower bound of the linear term
+   * \param[in] ub The upper bound of the linear term
+   * \param[out] c1 true if the bounds on the variable are changed
+   */
+  bool calcVarBnd_(VariablePtr v, double coef, double lb, double ub,
+                   bool *c1);
+
+  /**
+   * \brief Calculate bounds of the variables from a quadratic term bounds
+   * \param[in] v1 The first variable in the quadratic term
+   * \param[in] v2 The second variable in the quadratic term
+   * \param[in] coeff The coefficient of the quadratic term
+   * \param[in] lb The lower bound of the quadratic term
+   * \param[in] ub The upper bound of the quadratic term
+   * \param[out] c1 true if the bounds on first variable are changed
+   * \param[out] c2 true if the bounds on second variable are changed
+   */
+  bool calcVarBnd_(VariablePtr v1, VariablePtr v2, double coef, double lb,
+                   double ub, bool *c1, bool*c2);
+  
+  /**
+   * \brief Calculate bounds of the variables from a univariate quadratic
+   * term bounds
+   * \param[in] v The variable in the term
+   * \param[in] a The coefficient of the quadrtic term
+   * \param[in] b The coefficient of the liner term
+   * \param[in] ly The lower bound of the term
+   * \param[in] uy The upper bound of the term
+   * \param[out] changed true if the bounds on the variables are changed
+   */
+  bool calcVarBnd_(VariablePtr v, double a, double b, double ly, double uy,
+                   bool *c1);
+
+  void coeffImprov_();
+
+  /**
    * \brief Find the point at which a gradient-based linearization inequality
    * can be added.
    * \param[in] xval x coordinate of point that we want to cut off
@@ -203,6 +285,14 @@ private:
    * \param[in] yl y coordinate of point at which gradient can be evaluated
    */
   void findLinPt_(double xval, double yval, double &xl, double &yl);
+
+  /**
+   * \brief Solve the lp and get the bounds of the variable.
+   * Called by tightenLP_.
+   * \param[in] e The engine where lp is loaded
+   * \param[out] is_inf True if the lp is infeasible.
+   */
+  double getBndByLP_(EnginePtr e, bool &is_inf);
 
   /**
    * \brief Get one of the four linear functions and right hand sides for the
@@ -238,7 +328,37 @@ private:
   LinearFunctionPtr getNewSqLf_(VariablePtr x, VariablePtr y, 
                                 double lb, double ub, double & r);
 
+  /**
+   * \brief Calculate bounds of a linear term from the variable bounds
+   * \param[in] v The variable in the linear term
+   * \param[in] coeff The coefficient of the linear term
+   * \param[out] lb The calculated lower bound of the linear term
+   * \param[out] ub The calculated upper bound of the linear term
+   */
+  void getTermBnds_(VariablePtr v, double coef, double &lb, double &ub);
 
+  /**
+   * \brief Calculate bounds of a quadratic term from the variable bounds
+   * \param[in] v1 The first variable in the quadratic term
+   * \param[in] v2 The second variable in the quadratic term
+   * \param[in] coeff The coefficient of the quadratic term
+   * \param[out] lb The calculated lower bound of the quadratic term
+   * \param[out] ub The calculated upper bound of the quadratic term
+   */
+  void getTermBnds_(VariablePtr v1, VariablePtr v2, double coef, double &lb,
+                    double &ub);
+
+  /**
+   * \brief Calculate bounds of a univariate quadratic term of the
+   * form ax^2 + bx from the variable bounds
+   * \param[in] v The variable in the term
+   * \param[in] a The coefficient of the square term
+   * \param[in] b The coefficient of the linear term
+   * \param[out] lb The calculated lower bound of the term
+   * \param[out] ub The calculated upper bound of the term
+   */
+  void getTermBnds_(VariablePtr v, double a, double b, double &lb, double &ub);
+  
   /// Return true if xval is one of the bounds of variable x
   bool isAtBnds_(ConstVariablePtr x, double xval);
 
@@ -304,10 +424,39 @@ private:
    * \param[out] is_inf True if the relaxation is detected to be infeasible
    * (because of inconsistent bounds or other reasons).
    */
+
   void relax_(RelaxationPtr rel, bool *is_inf);
 
   /// Reset all statistics to zero.
   void resetStats_();
+
+  /**
+   * \brief Bound tightening of the problem by solving LP after removing all
+   * the quadratic components of every constraint and minimizing and
+   * maximizing all quadratic variables. Returns true if the problem is found
+   * to be infeasible, false otherwise.
+   * \pram[out] changed True is some changes are made in the bounds on any
+   * variables.
+   */
+  bool tightenLP_(bool *changed);
+
+  /**
+   * \brief Bound tightening of the problem by considering linear and quadratic
+   * terms simultaneously. Returns true if the problem is found to be
+   * infeasible, false otherwise.
+   * \pram[out] changed True is some changes are made in the bounds on any
+   * variables.
+   */
+  bool tightenQuad_(bool *changed);
+
+  /**
+   * \brief Bound tightening of the problem by using simple interval
+   * arithmetic. Returns true if the problem is found to be infeasible,
+   * false otherwise.
+   * \pram[out] changed True is some changes are made in the bounds on any
+   * variables.
+   */
+  bool tightenSimple_(bool *changed);
 
   /**
    * \brief Modify bounds of a variable in the problem to the new bounds lb
@@ -383,6 +532,7 @@ private:
    * infeasible. Flase otherwise.
    */
   bool varBndsFromCons_(bool *changed);
+  void writeBTStats_(std::ostream &out, bool flag);
 };
 
 /// Shared pointer to QuadHandler.
