@@ -783,6 +783,7 @@ SolveStatus QuadHandler::presolve(PreModQ *, bool *changed)
   bool is_inf = false;
   SolveStatus status = Started;
   QuadraticFunctionPtr qf;
+  ObjectivePtr obj;
 
   *changed = false;
 
@@ -792,7 +793,6 @@ SolveStatus QuadHandler::presolve(PreModQ *, bool *changed)
       status = SolvedInfeasible;
       return status;
     }
-    writeBTStats_(std::cout, false);
   } else {
     coeffImprov_();
     for (ConstraintConstIterator cit = p_->consBegin(); cit != p_->consEnd();
@@ -805,6 +805,17 @@ SolveStatus QuadHandler::presolve(PreModQ *, bool *changed)
                qit != qf->varsEnd(); ++qit) {
             bStats_.qvars.insert(qit->first);
           }
+        }
+      }
+    }
+    obj = p_->getObjective();
+    if (obj->getFunctionType() == Quadratic ||
+        obj->getFunctionType() == Bilinear) {
+      qf = obj->getFunction()->getQuadraticFunction();
+      if (qf) {
+        for (VarIntMapConstIterator qit = qf->varsBegin();
+             qit != qf->varsEnd(); ++qit) {
+          bStats_.qvars.insert(qit->first);
         }
       }
     }
@@ -1094,6 +1105,7 @@ void QuadHandler::relax_(RelaxationPtr rel, bool *)
 
   assert(0 == rel->checkConVars());
 
+  writeBTStats_(std::cout, false);
   return;
 }
 
@@ -1264,6 +1276,7 @@ bool QuadHandler::calcVarBnd_(VariablePtr v1, VariablePtr v2, double coef,
   double qlb, qub, vlb, vub;
   qlb = coef > 0 ? lb/coef : ub/coef;
   qub = coef > 0 ? ub/coef : lb/coef;
+  qlb = qlb >= 0 ? qlb : 0;
   if (v1->getIndex() == v2->getIndex()) {
     if (qub>bTol_) {
       vub = sqrt(qub);
@@ -1486,19 +1499,21 @@ bool QuadHandler::tightenLP_(bool *changed) {
              qit != qf->end(); ++qit) {
           getTermBnds_(qit->first.first, qit->first.second, qit->second,
                            lb, ub);
-          clb = clb > -INFINITY ? clb - lb : -INFINITY;
-          cub = cub < INFINITY ? cub - ub : INFINITY;
+          clb = clb > -INFINITY ? clb - ub : -INFINITY;
+          cub = cub < INFINITY ? cub - lb : INFINITY;
         }
       }
 
-      flp = (FunctionPtr) new Function(lflp);
-      lp->newConstraint(flp, clb, cub);
+      if (clb > -INFINITY || cub < INFINITY) {//cons is redundant otherwise
+        flp = (FunctionPtr) new Function(lflp);
+        lp->newConstraint(flp, clb, cub);
+      }
     }
   }
 
   flp = (FunctionPtr) new Function();
   lp->newObjective(flp, 0.0, Minimize);
-  lp->setEngine(lpe_);
+  //lp->setEngine(lpe_);
   lpe_->load(lp);
 
   for (VariableSet::iterator vit = qvars.begin(); vit != qvars.end(); ++vit) {
@@ -1515,9 +1530,6 @@ bool QuadHandler::tightenLP_(bool *changed) {
       if (flp) {
         delete flp;
       }
-      if (lflp) {
-        delete lflp;
-      }
       return true;
     }
     (*flp) *= -1.0;
@@ -1531,9 +1543,6 @@ bool QuadHandler::tightenLP_(bool *changed) {
       if (flp) {
         delete flp;
       }
-      if (lflp) {
-        delete lflp;
-      }
       return true;
     }
     c1 = false;
@@ -1544,9 +1553,6 @@ bool QuadHandler::tightenLP_(bool *changed) {
       delete lp;
       if (flp) {
         delete flp;
-      }
-      if (lflp) {
-        delete lflp;
       }
       return true;
     }
@@ -1561,9 +1567,6 @@ bool QuadHandler::tightenLP_(bool *changed) {
   delete lp;
   if (flp) {
     delete flp;
-  }
-  if (lflp) {
-    delete lflp;
   }
   return false;
 }
