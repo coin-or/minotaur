@@ -1224,7 +1224,7 @@ void QuadHandler::getTermBnds_(VariablePtr v1, VariablePtr v2, double coef,
     ub = qub < INFINITY ? coef*qub : INFINITY;
   } else {
     lb = qub < INFINITY ? coef*qub : -INFINITY;
-    ub = qlb < -INFINITY ? coef*qlb : INFINITY;
+    ub = qlb > -INFINITY ? coef*qlb : INFINITY;
   }
 }
 
@@ -1430,7 +1430,7 @@ bool QuadHandler::tightenLP_(bool *changed) {
   ProblemPtr lp;
   double lb, ub, clb, cub;
   bool is_inf;
-  bool *c1;
+  bool c1;
 
   if (p_->getSize()->consWithLin == 0) {
     return false;
@@ -1496,6 +1496,8 @@ bool QuadHandler::tightenLP_(bool *changed) {
     }
   }
 
+  flp = (FunctionPtr) new Function();
+  lp->newObjective(flp, 0.0, Minimize);
   lp->setEngine(lpe_);
   lpe_->load(lp);
 
@@ -1534,8 +1536,8 @@ bool QuadHandler::tightenLP_(bool *changed) {
       }
       return true;
     }
-    *c1 = false;
-    if (updatePBounds_(*vit, lb, ub, c1) < 0) {
+    c1 = false;
+    if (updatePBounds_(*vit, lb, ub, &c1) < 0) {
       qvars.clear();
       pv_lpv.clear();
       delete lpe_;
@@ -1548,7 +1550,7 @@ bool QuadHandler::tightenLP_(bool *changed) {
       }
       return true;
     }
-    if (*c1 == true) {
+    if (c1 == true) {
       ++bStats_.vBndl;
       *changed = true;
     }
@@ -1575,7 +1577,7 @@ bool QuadHandler::tightenQuad_(bool *changed) {
   DoubleVector fwdLb, fwdUb;
   DoubleVector::iterator liter, uiter;
   double lb, ub, clb, cub;
-  bool *c1, *c2;
+  bool c1, c2;
 
   for (ConstraintConstIterator cit = p_->consBegin(); cit != p_->consEnd();
                                ++cit) {
@@ -1653,38 +1655,38 @@ bool QuadHandler::tightenQuad_(bool *changed) {
             if (qit->first.first->getIndex() == qit->first.second->getIndex()
                 && std::find(qvars.begin(), qvars.end(),
                              qit->first.first) != qvars.end()) {
-              lb = clb - (implLb - *liter);
-              ub = cub - (implUb - *uiter);
-              *c1 = false;
+              lb = clb - (implUb - *uiter);
+              ub = cub - (implLb - *liter);
+              c1 = false;
               if (calcVarBnd_(qit->first.first, qit->second,
                               lf->getWeight(qit->first.first), lb, ub,
-                              c1)) {
+                              &c1)) {
                 fwdLb.clear();
                 fwdUb.clear();
                 return true;
               }
-              if (*c1 == true) {
+              if (c1 == true) {
                 ++bStats_.vBndq;
                 *changed = true;
               }
               ++liter;
               ++uiter;
             } else {
-              lb = clb - (implLb - *liter);
-              ub = cub - (implUb - *uiter);
-              *c1 = false;
-              *c2 = false;
+              lb = clb - (implUb - *uiter);
+              ub = cub - (implLb - *liter);
+              c1 = false;
+              c2 = false;
               if (calcVarBnd_(qit->first.first, qit->first.second, qit->second,
-                              lb, ub, c1, c2)) {
+                              lb, ub, &c1, &c2)) {
                 fwdLb.clear();
                 fwdUb.clear();
                 return true;
               }
-              if (*c1 == true) {
+              if (c1 == true) {
                 ++bStats_.vBndq;
                 *changed = true;
               }
-              if (*c2 == true) {
+              if (c2 == true) {
                 ++bStats_.vBndq;
                 *changed = true;
               }
@@ -1697,15 +1699,15 @@ bool QuadHandler::tightenQuad_(bool *changed) {
                lit != lf->termsEnd(); ++lit) {
             if (std::find(qvars.begin(), qvars.end(),
                 lit->first) == qvars.end()) {
-              lb = clb - (implLb - *liter);
-              ub = cub - (implUb - *uiter);
-              *c1 = false;
-              if (calcVarBnd_(lit->first, lit->second, lb, ub, c1)) {
+              lb = clb - (implUb - *uiter);
+              ub = cub - (implLb - *liter);
+              c1 = false;
+              if (calcVarBnd_(lit->first, lit->second, lb, ub, &c1)) {
                 fwdLb.clear();
                 fwdUb.clear();
                 return true;
               }
-              if (*c1 == true) {
+              if (c1 == true) {
                 ++bStats_.vBndq;
                 *changed = true;
               }
@@ -1730,7 +1732,7 @@ bool QuadHandler::tightenSimple_(bool *changed) {
   LinearFunctionPtr lf;
   QuadraticFunctionPtr qf;
   double clb, cub, lb, ub;
-  bool *c1, *c2;
+  bool c1, c2;
 
   for (ConstraintConstIterator cit = p_->consBegin(); cit != p_->consEnd();
                                ++cit) {
@@ -1793,15 +1795,15 @@ bool QuadHandler::tightenSimple_(bool *changed) {
       if (lf) {
         for (VariableGroupConstIterator lit = lf->termsBegin();
              lit != lf->termsEnd(); ++lit) {
-          lb = clb - (implLb - *liter);
-          ub = cub - (implUb - *uiter);
-          *c1 = false;
-          if (calcVarBnd_(lit->first, lit->second, lb, ub, c1)) {
+          lb = clb - (implUb - *uiter);
+          ub = cub - (implLb - *liter);
+          c1 = false;
+          if (calcVarBnd_(lit->first, lit->second, lb, ub, &c1)) {
             fwdLb.clear();
             fwdUb.clear();
             return true;
           }
-          if (*c1 == true) {
+          if (c1 == true) {
             ++bStats_.vBnds;
             *changed = true;
           }
@@ -1813,21 +1815,21 @@ bool QuadHandler::tightenSimple_(bool *changed) {
       if (qf) {
         for (VariablePairGroupConstIterator qit = qf->begin();
              qit != qf->end(); ++qit) {
-          lb = clb - (implLb - *liter);
-          ub = cub - (implUb - *uiter);
-          *c1 = false;
-          *c2 = false;
+          lb = clb - (implUb - *uiter);
+          ub = cub - (implLb - *liter);
+          c1 = false;
+          c2 = false;
           if (calcVarBnd_(qit->first.first, qit->first.second, qit->second,
-                          lb, ub, c1, c2)) {
+                          lb, ub, &c1, &c2)) {
             fwdLb.clear();
             fwdUb.clear();
             return true;
           }
-          if (*c1 == true) {
+          if (c1 == true) {
             ++bStats_.vBnds;
             *changed = true;
           }
-          if (*c2 == true) {
+          if (c2 == true) {
             ++bStats_.vBnds;
             *changed = true;
           }
