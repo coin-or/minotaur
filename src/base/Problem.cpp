@@ -1655,7 +1655,7 @@ void Problem::reverseSense(ConstraintPtr cons)
 
 void Problem::setEngine(Engine* engine) 
 {
-  if (engine_) {
+  if (engine_ && engine_ != engine) {
     engine_->clear();
   }
   engine_ = engine;
