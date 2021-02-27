@@ -132,6 +132,7 @@ private:
 
   struct BoundTighteningStats
   {
+    int niters;        ///> Number of iterations
     VariableSet qvars; ///> The variables with quadratic terms
     int nqlb;          ///> Number of quadratic variables with finite lb
     int nqub;          ///> Number of quadratic variables with finite ub

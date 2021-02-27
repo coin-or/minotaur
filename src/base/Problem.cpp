@@ -818,8 +818,13 @@ void Problem::cg2qf()
 
       memset(grad, 0, getNumVars()*sizeof(double));
       f->evalGradient(x, grad, &err); assert(0==err);
-      lfcons[qfi2] = (LinearFunctionPtr) new LinearFunction(grad, varsBegin(),
-                                                            varsEnd(), 1e-12);
+      if (std::all_of(grad, grad+getNumVars(),
+                      [](double comp) { return fabs(comp) < 1e-8; })) {
+        lfcons[qfi2] = 0;
+      } else {
+        lfcons[qfi2] = (LinearFunctionPtr) new LinearFunction(grad, varsBegin(),
+                                                              varsEnd(), 1e-12);
+      }
       nlconstcons[qfi2] = f->eval(x, &err); assert(0==err);
 
 

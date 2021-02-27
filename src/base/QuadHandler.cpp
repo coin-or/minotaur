@@ -794,6 +794,10 @@ SolveStatus QuadHandler::presolve(PreModQ *, bool *changed)
       return status;
     }
   } else {
+    if (bStats_.niters >= 1) {
+      return Finished;
+    }
+    ++bStats_.niters;
     coeffImprov_();
     for (ConstraintConstIterator cit = p_->consBegin(); cit != p_->consEnd();
                                  ++cit) {
@@ -1147,6 +1151,7 @@ void QuadHandler::resetStats_()
   sStats_.cuts   = 0;
   sStats_.time   = 0.0;
 
+  bStats_.niters = 0;
   bStats_.qvars.clear();
   bStats_.nqlb = 0;
   bStats_.nqub = 0;
@@ -1509,6 +1514,17 @@ bool QuadHandler::tightenLP_(bool *changed) {
         lp->newConstraint(flp, clb, cub);
       }
     }
+  }
+
+  if (lp->getNumCons() == 0) {
+      qvars.clear();
+      pv_lpv.clear();
+      delete lpe_;
+      delete lp;
+      if (flp) {
+        delete flp;
+      }
+      return false;
   }
 
   flp = (FunctionPtr) new Function();
