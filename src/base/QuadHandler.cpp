@@ -732,6 +732,27 @@ void QuadHandler::coeffImprov_() {
   }
 }
 
+void QuadHandler::calcRangeOfQuadVars_() {
+  double tot_range = 0, tot_sqr_range = 0, range;
+  for (VariableSet::iterator vit = bStats_.qvars.begin();
+         vit != bStats_.qvars.end(); ++vit) {
+    range = (*vit)->getUb() - (*vit)->getLb();
+    tot_range += range;
+    tot_sqr_range += range*range;
+  }
+
+  bStats_.avg_range = tot_range/bStats_.qvars.size();
+  bStats_.body_diag = sqrt(tot_sqr_range);
+
+  tot_sqr_range = 0;
+  for (VariableSet::iterator vit = bStats_.qvars.begin();
+         vit != bStats_.qvars.end(); ++vit) {
+    range = (*vit)->getUb() - (*vit)->getLb();
+    tot_sqr_range += (range - bStats_.avg_range)*(range - bStats_.avg_range);
+  }
+  bStats_.sd_range = sqrt(tot_sqr_range/bStats_.qvars.size());
+}
+
 bool QuadHandler::isAtBnds_(ConstVariablePtr x, double xval)
 {
   double lb = x->getLb();
@@ -784,6 +805,7 @@ SolveStatus QuadHandler::presolve(PreModQ *, bool *changed)
   SolveStatus status = Started;
   QuadraticFunctionPtr qf;
   ObjectivePtr obj;
+  double stime = timer_->query();
 
   *changed = false;
 
@@ -793,10 +815,11 @@ SolveStatus QuadHandler::presolve(PreModQ *, bool *changed)
       status = SolvedInfeasible;
       return status;
     }
+
   } else {
-    if (bStats_.niters >= 1) {
-      return Finished;
-    }
+    //if (bStats_.niters >= 1) {
+    //  return Finished;
+    //}
     ++bStats_.niters;
     coeffImprov_();
     for (ConstraintConstIterator cit = p_->consBegin(); cit != p_->consEnd();
@@ -867,24 +890,7 @@ SolveStatus QuadHandler::presolve(PreModQ *, bool *changed)
     bStats_.nqlbq -= bStats_.nqlb + bStats_.nqlbs;
     bStats_.nqubq -= bStats_.nqub + bStats_.nqubs;
     p_->delMarkedCons();
-
-    is_inf = tightenLP_(changed);
-    if (is_inf) {
-      status = SolvedInfeasible;
-      return status;
-    }
-    for (VariableSet::iterator vit = bStats_.qvars.begin();
-         vit != bStats_.qvars.end(); ++vit) {
-      if ((*vit)->getLb() > -INFINITY) {
-        ++bStats_.nqlbl;
-      }
-      if ((*vit)->getUb() < INFINITY) {
-        ++bStats_.nqubl;
-      }
-    }
-    bStats_.nqlbl -= bStats_.nqlb + bStats_.nqlbs + bStats_.nqlbq;
-    bStats_.nqubl -= bStats_.nqub + bStats_.nqubs + bStats_.nqubq;
-    writeBTStats_(std::cout, true);
+    bStats_.time = timer_->query()-stime;
   }
 
   if (Started==status) {
@@ -901,8 +907,73 @@ bool QuadHandler::presolveNode(RelaxationPtr rel, NodePtr, SolutionPoolPtr,
   bool changed = true;
   bool is_inf = false;
   double stime = timer_->query();
+  QuadraticFunctionPtr qf;
+  ObjectivePtr obj;
+  bool lpchanged = false;
 
   // visit each quadratic constraint and see if bounds can be improved.
+  if (bStats_.niters < 1) {
+    ++bStats_.niters;
+    for (ConstraintConstIterator cit = p_->consBegin(); cit != p_->consEnd();
+                                 ++cit) {
+      if ((*cit)->getFunctionType() == Quadratic ||
+          (*cit)->getFunctionType() == Bilinear) {
+        qf = (*cit)->getFunction()->getQuadraticFunction();
+        if (qf) {
+          for (VarIntMapConstIterator qit = qf->varsBegin();
+               qit != qf->varsEnd(); ++qit) {
+            bStats_.qvars.insert(qit->first);
+          }
+        }
+      }
+    }
+    obj = p_->getObjective();
+    if (obj->getFunctionType() == Quadratic ||
+        obj->getFunctionType() == Bilinear) {
+      qf = obj->getFunction()->getQuadraticFunction();
+      if (qf) {
+        for (VarIntMapConstIterator qit = qf->varsBegin();
+             qit != qf->varsEnd(); ++qit) {
+          bStats_.qvars.insert(qit->first);
+        }
+      }
+    }
+    for (VariableSet::iterator vit = bStats_.qvars.begin();
+         vit != bStats_.qvars.end(); ++vit) {
+      if ((*vit)->getLb() > -INFINITY) {
+        ++bStats_.nqlb;
+      }
+      if ((*vit)->getUb() < INFINITY) {
+        ++bStats_.nqub;
+      }
+    } 
+    calcRangeOfQuadVars_();
+    writeBTStats_(std::cout, true);
+    is_inf = tightenLP_(&lpchanged);
+    if (is_inf) {
+      return true;
+    }
+
+    if (true==lpchanged) {
+      changed = true;
+    }
+
+    for (VariableSet::iterator vit = bStats_.qvars.begin();
+         vit != bStats_.qvars.end(); ++vit) {
+      if ((*vit)->getLb() > -INFINITY) {
+        ++bStats_.nqlbl;
+      }
+      if ((*vit)->getUb() < INFINITY) {
+        ++bStats_.nqubl;
+      }
+    }
+    bStats_.nqlbl -= bStats_.nqlb;
+    bStats_.nqubl -= bStats_.nqub;
+    bStats_.timeLP = timer_->query()-stime;
+    stime = timer_->query();
+    calcRangeOfQuadVars_();
+    writeBTStats_(std::cout, false);
+  }
   while (true==changed) {
     ++pStats_.iters;
     changed = false;
@@ -1109,7 +1180,7 @@ void QuadHandler::relax_(RelaxationPtr rel, bool *)
 
   assert(0 == rel->checkConVars());
 
-  writeBTStats_(std::cout, false);
+  //writeBTStats_(std::cout, true);
   return;
 }
 
@@ -1158,15 +1229,22 @@ void QuadHandler::resetStats_()
   bStats_.nqlbs = 0;
   bStats_.nqubs = 0;
   bStats_.vBnds = 0;
+  bStats_.cBnds = 0;
   bStats_.nqlbq = 0;
   bStats_.nqubq = 0;
   bStats_.vBndq = 0;
+  bStats_.cBndq = 0;
   bStats_.nqlbl = 0;
   bStats_.nqubl = 0;
   bStats_.vBndl = 0;
   bStats_.nLP = 0;
   bStats_.dlb = 0;
   bStats_.dub = 0;
+  bStats_.time = 0;
+  bStats_.timeLP = 0;
+  bStats_.avg_range = 0;
+  bStats_.sd_range = 0;
+  bStats_.body_diag = 0;
 }
 
 
@@ -1372,14 +1450,14 @@ bool QuadHandler::calcVarBnd_(VariablePtr v, double a, double b, double ly,
         lb = -b/(2.0*a);
         ub = lb;
       } else { /// lower bound is less than maxima
-        lb = (-b - sqrt(delta))/(2.0*a);
-        ub = (-b + sqrt(delta))/(2.0*a);
+        lb = (-b + sqrt(delta))/(2.0*a); // since a is -ve this term will be lb
+        ub = (-b - sqrt(delta))/(2.0*a); // since a is -ve this term will be ub
         delta = b*b + 4.0*a*uy;
         if (delta > aTol_) { /// upper bound is less than maxima
           /// The bound on the variable now are
           /// \mathbb{R} \setminus (lb2, ub2) intersection [lb, ub]
-          lb2 = (-b - sqrt(delta))/(2.0*a);
-          ub2 = (-b + sqrt(delta))/(2.0*a);
+          lb2 = (-b + sqrt(delta))/(2.0*a);//since a is -ve this term will be lb
+          ub2 = (-b - sqrt(delta))/(2.0*a);//since a is -ve this term will be ub
           if (lx > lb2 + bTol_) {
             lb = ub2;
           }
@@ -1435,6 +1513,13 @@ double QuadHandler::getBndByLP_(bool &is_inf) {
       break;
   }
   return b;
+}
+
+void QuadHandler::setEngine(Engine* engine) {
+  if (lpe_ && lpe_ != engine) {
+    lpe_->clear();
+  }
+  lpe_ = engine;
 }
 
 bool QuadHandler::tightenLP_(bool *changed) {
@@ -1521,9 +1606,9 @@ bool QuadHandler::tightenLP_(bool *changed) {
       pv_lpv.clear();
       delete lpe_;
       delete lp;
-      if (flp) {
-        delete flp;
-      }
+      //if (flp) {
+      //  delete flp;
+      //}
       return false;
   }
 
@@ -1669,6 +1754,14 @@ bool QuadHandler::tightenQuad_(bool *changed) {
           uiter = fwdUb.begin();
           clb = clb > implLb ? clb : implLb;
           cub = cub < implUb ? cub : implUb;
+          if (clb > c->getLb() + aTol_) {
+            p_->changeBound(c, Lower, clb);
+            ++bStats_.cBndq;
+          }
+          if (cub < c->getUb() - aTol_) {
+            p_->changeBound(c, Upper, cub);
+            ++bStats_.cBndq;
+          }
           for (VariablePairGroupConstIterator qit = qf->begin();
                qit != qf->end(); ++qit) {
             if (qit->first.first->getIndex() == qit->first.second->getIndex()
@@ -1811,6 +1904,14 @@ bool QuadHandler::tightenSimple_(bool *changed) {
       uiter = fwdUb.begin();
       clb = clb > implLb ? clb : implLb;
       cub = cub < implUb ? cub : implUb;
+      if (clb > c->getLb() + aTol_) {
+        p_->changeBound(c, Lower, clb);
+        ++bStats_.cBnds;
+      }
+      if (cub < c->getUb() - aTol_) {
+        p_->changeBound(c, Upper, cub);
+        ++bStats_.cBnds;
+      }
       if (lf) {
         for (VariableGroupConstIterator lit = lf->termsBegin();
              lit != lf->termsEnd(); ++lit) {
@@ -2107,38 +2208,24 @@ void QuadHandler::writeStats(std::ostream &out) const
 void QuadHandler::writeBTStats_(std::ostream &out, bool flag) {
   if (flag) {
     out << me_ << "Statistics for Bound tightening:" << std::endl << me_ <<
-    "Number of variable with quadratic terms                               = "
-    << bStats_.qvars.size() << std::endl << me_ <<
-    "Number of quadratic variables with given lower bound                  = "
-    << bStats_.nqlb << std::endl << me_ <<
-    "Number of quadratic variables with given upper bound                  = "
-    << bStats_.nqub << std::endl << me_ <<
-    "Number of quadratic variables whose lb was found by simple tightening = "
-    << bStats_.nqlbs << std::endl << me_ <<
-    "Number of quadratic variables whose ub was found by simple tightening = "
-    << bStats_.nqubs << std::endl << me_ <<
-    "Number of times bound tightened by simple tightening                  = "
-    << bStats_.vBnds << std::endl << me_ <<
-    "Number of quadratic variables whose lb was found by quad tightening   = "
-    << bStats_.nqlbq << std::endl << me_ <<
-    "Number of quadratic variables whose ub was found by quad tightening   = "
-    << bStats_.nqubq << std::endl << me_ <<
-    "Number of times bound tightened by quad tightening                    = "
-    << bStats_.vBndq << std::endl << me_ <<
-    "Number of quadratic variables whose lb was found by lp tightening     = "
-    << bStats_.nqlbl << std::endl << me_ <<
-    "Number of quadratic variables whose ub was found by lp tightening     = "
-    << bStats_.nqubl << std::endl << me_ <<
-    "Number of times bound tightened by lp tightening                      = "
-    << bStats_.vBndl << std::endl << me_ <<
-    "Number of LPs solved                                                  = "
-    << bStats_.nLP << std::endl;
+    "Time taken for presolve      ="
+    << bStats_.time << std::endl << me_ <<
+    "Average Range                = "
+    << bStats_.avg_range << std::endl << me_ <<
+    "Standard deviation of Range  = "
+    << bStats_.sd_range << std::endl << me_ <<
+    "Length of Body Diagonal      = "
+    << bStats_.body_diag << std::endl;
   } else {
-    out << me_ << "Statistics for Bound Tightening:" << std::endl
-        << me_ << "Number of variables for which default lb was added = "
-        << bStats_.dlb << std::endl
-        << me_ << "Number of variables for which default ub was added = "
-        << bStats_.dub << std::endl;
+    out << me_ << "Statistics for Bound Tightening:" << std::endl << me_ <<
+    "Time taken in solving LPs      ="
+    << bStats_.timeLP << std::endl << me_ <<
+    "Average Range after LP tightening                = "
+    << bStats_.avg_range << std::endl << me_ <<
+    "Standard deviation of Range after LP tightening  = "
+    << bStats_.sd_range << std::endl << me_ <<
+    "Length of Body Diagonal after LP tightening      = "
+    << bStats_.body_diag << std::endl;
   }
 }
 

@@ -20,6 +20,7 @@
 namespace Minotaur {
 
   class   CutManager;
+  class   Engine;
   class   Node;
   class   Relaxation;
   class   PreMod;
@@ -294,6 +295,8 @@ namespace Minotaur {
      */
     virtual void setModFlags(bool mod_prob, bool mod_rel)
     {modProb_ = mod_prob; modRel_ = mod_rel;};
+
+    virtual void setEngine(Engine* engine) {};
 
     /// Write statistics to ostream out.
     virtual void writeStats(std::ostream &) const {};

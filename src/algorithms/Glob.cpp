@@ -261,8 +261,7 @@ PresolverPtr createPres(EnvPtr env, ProblemPtr p, size_t ndefs,
     if (!p->isLinear() &&
          (p->isQP() || p->isQuadratic())) {
       if (true==env->getOptions()->findBool("cgtoqf")->getValue()) {
-        QuadHandlerPtr qhand = (QuadHandlerPtr) new QuadHandler(env, p,
-                                                        getEngine(env));
+        QuadHandlerPtr qhand = (QuadHandlerPtr) new QuadHandler(env, p);
         handlers.push_back(qhand);
       } else {
         if (true == env->getOptions()->findBool("use_native_cgraph")->getValue()
@@ -473,6 +472,10 @@ int main(int argc, char** argv)
   env->getLogger()->msgStream(LogExtraInfo) << me 
     << "Presolving transformed problem ... " << std::endl;
   pres2 = (PresolverPtr) new Presolver(newp, env, handlers);
+
+  for (HandlerIterator h = handlers.begin(); h != handlers.end(); ++h) {
+    (*h)->setEngine(getEngine(env));
+  }
 
   pres2->solve();
   env->getLogger()->msgStream(LogExtraInfo) << me 
