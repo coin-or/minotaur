@@ -21,6 +21,7 @@
 #include "CNode.h"
 #include "Constraint.h"
 #include "CxUnivarHandler.h"
+#include "Engine.h"
 #include "Function.h"
 #include "IntVarHandler.h"
 #include "LinBil.h"
@@ -870,7 +871,7 @@ void SimpleTransformer::refQuadCons_(QuadraticFunctionPtr qf,
 }
 
 void SimpleTransformer::reformulate(ProblemPtr &newp, HandlerVector &handlers,
-                                    int &status)
+                                    Engine* engine, int &status)
 {
   assert(p_);
 
@@ -896,6 +897,7 @@ void SimpleTransformer::reformulate(ProblemPtr &newp, HandlerVector &handlers,
   handlers.push_back(lHandler_);
   qHandler_ = (QuadHandlerPtr) new QuadHandler(env_, newp_);
   qHandler_->setModFlags(true, true);
+  qHandler_->setEngine(engine);
   handlers.push_back(qHandler_);
   uHandler_ = (CxUnivarHandlerPtr) new CxUnivarHandler(env_, newp_);
   handlers.push_back(uHandler_);

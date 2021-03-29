@@ -154,7 +154,7 @@ int transform(EnvPtr env, ProblemPtr p, ProblemPtr &newp,
   } else if (tr == "quad") {
     trans = (QuadTranPtr) new QuadTransformer(env, p);
   }
-  trans->reformulate(newp, handlers, status);
+  trans->reformulate(newp, handlers, getEngine(env), status);
   
   env->getLogger()->msgStream(LogInfo) << me 
     << "handlers used in transformer: " << std::endl;
@@ -472,10 +472,6 @@ int main(int argc, char** argv)
   env->getLogger()->msgStream(LogExtraInfo) << me 
     << "Presolving transformed problem ... " << std::endl;
   pres2 = (PresolverPtr) new Presolver(newp, env, handlers);
-
-  for (HandlerIterator h = handlers.begin(); h != handlers.end(); ++h) {
-    (*h)->setEngine(getEngine(env));
-  }
 
   pres2->solve();
   env->getLogger()->msgStream(LogExtraInfo) << me 

@@ -68,7 +68,8 @@ namespace Minotaur {
     SolutionPtr getSolTrans(ConstSolutionPtr sol, int &err);
 
     // base class method.
-    void reformulate(ProblemPtr &newp, HandlerVector &handlers, int &status);
+    void reformulate(ProblemPtr &newp, HandlerVector &handlers, Engine* engine,
+                     int &status);
 
 
   private:
