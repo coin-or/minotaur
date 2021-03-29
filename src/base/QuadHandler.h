@@ -349,6 +349,15 @@ private:
                                 double lb, double ub, double & r);
 
   /**
+   * \brief Calculate sum of a vector except current element
+   * \param[in] b begin iterator of the vector
+   * \param[in] e end iterator of the vector
+   * \param[in] curr current element's iterator of the vector
+   */
+  double getSumExcept1_(DoubleVector::iterator b,DoubleVector::iterator e,
+                        DoubleVector::iterator curr);
+
+  /**
    * \brief Calculate bounds of a linear term from the variable bounds
    * \param[in] v The variable in the linear term
    * \param[in] coeff The coefficient of the linear term

@@ -855,7 +855,7 @@ SolveStatus QuadHandler::presolve(PreModQ *, bool *changed)
         ++bStats_.nqub;
       }
     } 
-    //is_inf = tightenSimple_(changed);
+    is_inf = tightenSimple_(changed);
     if (is_inf) {
       status = SolvedInfeasible;
       return status;
@@ -873,7 +873,7 @@ SolveStatus QuadHandler::presolve(PreModQ *, bool *changed)
     bStats_.nqubs -= bStats_.nqub;
     p_->delMarkedCons();
 
-    //is_inf = tightenQuad_(changed);
+    is_inf = tightenQuad_(changed);
     if (is_inf) {
       status = SolvedInfeasible;
       return status;
@@ -949,7 +949,7 @@ bool QuadHandler::presolveNode(RelaxationPtr rel, NodePtr, SolutionPoolPtr,
     } 
     calcRangeOfQuadVars_();
     writeBTStats_(std::cout, true);
-    //is_inf = tightenLP_(&lpchanged);
+    is_inf = tightenLP_(&lpchanged);
     if (is_inf) {
       return true;
     }
@@ -1515,6 +1515,18 @@ double QuadHandler::getBndByLP_(bool &is_inf) {
   return b;
 }
 
+double QuadHandler::getSumExcept1_(DoubleVector::iterator b,
+                                   DoubleVector::iterator e,
+                                   DoubleVector::iterator curr) {
+  double sum_of_elems = 0.0;
+  for (DoubleVector::iterator it = b; it != e; ++it) {
+    if (it != curr) {
+      sum_of_elems += *it;
+    }
+  }
+  return sum_of_elems;
+}
+
 void QuadHandler::setEngine(Engine* engine) {
   if (lpe_ && lpe_ != engine) {
     lpe_->clear();
@@ -1752,17 +1764,8 @@ bool QuadHandler::tightenQuad_(bool *changed) {
             if (qit->first.first->getIndex() == qit->first.second->getIndex()
                 && std::find(qvars.begin(), qvars.end(),
                              qit->first.first) != qvars.end()) {
-              if (implUb >= INFINITY || *uiter >= INFINITY) {
-                lb = -INFINITY;
-              } else {
-                lb = clb - (implUb - *uiter);
-              }
-
-              if (implLb <= -INFINITY || *uiter <= -INFINITY) {
-                ub = INFINITY;
-              } else {
-                ub = cub - (implLb - *liter);
-              }
+              lb = clb - getSumExcept1_(fwdUb.begin(), fwdUb.end(), uiter);
+              ub = cub - getSumExcept1_(fwdLb.begin(), fwdLb.end(), liter);
               c1 = false;
               if (calcVarBnd_(qit->first.first, qit->second,
                               lf->getWeight(qit->first.first), lb, ub,
@@ -1778,17 +1781,8 @@ bool QuadHandler::tightenQuad_(bool *changed) {
               ++liter;
               ++uiter;
             } else {
-              if (implUb >= INFINITY || *uiter >= INFINITY) {
-                lb = -INFINITY;
-              } else {
-                lb = clb - (implUb - *uiter);
-              }
-
-              if (implLb <= -INFINITY || *uiter <= -INFINITY) {
-                ub = INFINITY;
-              } else {
-                ub = cub - (implLb - *liter);
-              }
+              lb = clb - getSumExcept1_(fwdUb.begin(), fwdUb.end(), uiter);
+              ub = cub - getSumExcept1_(fwdLb.begin(), fwdLb.end(), liter);
               c1 = false;
               c2 = false;
               if (calcVarBnd_(qit->first.first, qit->first.second, qit->second,
@@ -1814,17 +1808,8 @@ bool QuadHandler::tightenQuad_(bool *changed) {
                lit != lf->termsEnd(); ++lit) {
             if (std::find(qvars.begin(), qvars.end(),
                 lit->first) == qvars.end()) {
-              if (implUb >= INFINITY || *uiter >= INFINITY) {
-                lb = -INFINITY;
-              } else {
-                lb = clb - (implUb - *uiter);
-              }
-
-              if (implLb <= -INFINITY || *uiter <= -INFINITY) {
-                ub = INFINITY;
-              } else {
-                ub = cub - (implLb - *liter);
-              }
+              lb = clb - getSumExcept1_(fwdUb.begin(), fwdUb.end(), uiter);
+              ub = cub - getSumExcept1_(fwdLb.begin(), fwdLb.end(), liter);
               c1 = false;
               if (calcVarBnd_(lit->first, lit->second, lb, ub, &c1)) {
                 fwdLb.clear();
@@ -1927,17 +1912,8 @@ bool QuadHandler::tightenSimple_(bool *changed) {
       if (lf) {
         for (VariableGroupConstIterator lit = lf->termsBegin();
              lit != lf->termsEnd(); ++lit) {
-          if (implUb >= INFINITY || *uiter >= INFINITY) {
-            lb = -INFINITY;
-          } else {
-            lb = clb - (implUb - *uiter);
-          }
-
-          if (implLb <= -INFINITY || *uiter <= -INFINITY) {
-            ub = INFINITY;
-          } else {
-            ub = cub - (implLb - *liter);
-          }
+          lb = clb - getSumExcept1_(fwdUb.begin(), fwdUb.end(), uiter);
+          ub = cub - getSumExcept1_(fwdLb.begin(), fwdLb.end(), liter);
           c1 = false;
           if (calcVarBnd_(lit->first, lit->second, lb, ub, &c1)) {
             fwdLb.clear();
