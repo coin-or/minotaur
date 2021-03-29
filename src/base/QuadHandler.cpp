@@ -855,7 +855,7 @@ SolveStatus QuadHandler::presolve(PreModQ *, bool *changed)
         ++bStats_.nqub;
       }
     } 
-    is_inf = tightenSimple_(changed);
+    //is_inf = tightenSimple_(changed);
     if (is_inf) {
       status = SolvedInfeasible;
       return status;
@@ -873,7 +873,7 @@ SolveStatus QuadHandler::presolve(PreModQ *, bool *changed)
     bStats_.nqubs -= bStats_.nqub;
     p_->delMarkedCons();
 
-    is_inf = tightenQuad_(changed);
+    //is_inf = tightenQuad_(changed);
     if (is_inf) {
       status = SolvedInfeasible;
       return status;
@@ -949,7 +949,7 @@ bool QuadHandler::presolveNode(RelaxationPtr rel, NodePtr, SolutionPoolPtr,
     } 
     calcRangeOfQuadVars_();
     writeBTStats_(std::cout, true);
-    is_inf = tightenLP_(&lpchanged);
+    //is_inf = tightenLP_(&lpchanged);
     if (is_inf) {
       return true;
     }
@@ -1525,8 +1525,8 @@ void QuadHandler::setEngine(Engine* engine) {
 bool QuadHandler::tightenLP_(bool *changed) {
   ConstraintPtr c;
   QuadraticFunctionPtr qf;
-  LinearFunctionPtr lf, lflp;
-  FunctionPtr flp;
+  LinearFunctionPtr lf, lflp = 0;
+  FunctionPtr flp = 0;
   VarSet lvars, qvars;
   VariablePtr v;
   std::map<VariablePtr, VariablePtr> pv_lpv;
@@ -1606,9 +1606,6 @@ bool QuadHandler::tightenLP_(bool *changed) {
       pv_lpv.clear();
       delete lpe_;
       delete lp;
-      //if (flp) {
-      //  delete flp;
-      //}
       return false;
   }
 
@@ -1628,9 +1625,6 @@ bool QuadHandler::tightenLP_(bool *changed) {
       pv_lpv.clear();
       delete lpe_;
       delete lp;
-      if (flp) {
-        delete flp;
-      }
       return true;
     }
     (*flp) *= -1.0;
@@ -1641,9 +1635,6 @@ bool QuadHandler::tightenLP_(bool *changed) {
       pv_lpv.clear();
       delete lpe_;
       delete lp;
-      if (flp) {
-        delete flp;
-      }
       return true;
     }
     c1 = false;
@@ -1652,9 +1643,6 @@ bool QuadHandler::tightenLP_(bool *changed) {
       pv_lpv.clear();
       delete lpe_;
       delete lp;
-      if (flp) {
-        delete flp;
-      }
       return true;
     }
     if (c1 == true) {
@@ -1666,9 +1654,6 @@ bool QuadHandler::tightenLP_(bool *changed) {
   pv_lpv.clear();
   delete lpe_;
   delete lp;
-  if (flp) {
-    delete flp;
-  }
   return false;
 }
 
@@ -1767,8 +1752,17 @@ bool QuadHandler::tightenQuad_(bool *changed) {
             if (qit->first.first->getIndex() == qit->first.second->getIndex()
                 && std::find(qvars.begin(), qvars.end(),
                              qit->first.first) != qvars.end()) {
-              lb = clb - (implUb - *uiter);
-              ub = cub - (implLb - *liter);
+              if (implUb >= INFINITY || *uiter >= INFINITY) {
+                lb = -INFINITY;
+              } else {
+                lb = clb - (implUb - *uiter);
+              }
+
+              if (implLb <= -INFINITY || *uiter <= -INFINITY) {
+                ub = INFINITY;
+              } else {
+                ub = cub - (implLb - *liter);
+              }
               c1 = false;
               if (calcVarBnd_(qit->first.first, qit->second,
                               lf->getWeight(qit->first.first), lb, ub,
@@ -1784,8 +1778,17 @@ bool QuadHandler::tightenQuad_(bool *changed) {
               ++liter;
               ++uiter;
             } else {
-              lb = clb - (implUb - *uiter);
-              ub = cub - (implLb - *liter);
+              if (implUb >= INFINITY || *uiter >= INFINITY) {
+                lb = -INFINITY;
+              } else {
+                lb = clb - (implUb - *uiter);
+              }
+
+              if (implLb <= -INFINITY || *uiter <= -INFINITY) {
+                ub = INFINITY;
+              } else {
+                ub = cub - (implLb - *liter);
+              }
               c1 = false;
               c2 = false;
               if (calcVarBnd_(qit->first.first, qit->first.second, qit->second,
@@ -1811,8 +1814,17 @@ bool QuadHandler::tightenQuad_(bool *changed) {
                lit != lf->termsEnd(); ++lit) {
             if (std::find(qvars.begin(), qvars.end(),
                 lit->first) == qvars.end()) {
-              lb = clb - (implUb - *uiter);
-              ub = cub - (implLb - *liter);
+              if (implUb >= INFINITY || *uiter >= INFINITY) {
+                lb = -INFINITY;
+              } else {
+                lb = clb - (implUb - *uiter);
+              }
+
+              if (implLb <= -INFINITY || *uiter <= -INFINITY) {
+                ub = INFINITY;
+              } else {
+                ub = cub - (implLb - *liter);
+              }
               c1 = false;
               if (calcVarBnd_(lit->first, lit->second, lb, ub, &c1)) {
                 fwdLb.clear();
@@ -1915,8 +1927,17 @@ bool QuadHandler::tightenSimple_(bool *changed) {
       if (lf) {
         for (VariableGroupConstIterator lit = lf->termsBegin();
              lit != lf->termsEnd(); ++lit) {
-          lb = clb - (implUb - *uiter);
-          ub = cub - (implLb - *liter);
+          if (implUb >= INFINITY || *uiter >= INFINITY) {
+            lb = -INFINITY;
+          } else {
+            lb = clb - (implUb - *uiter);
+          }
+
+          if (implLb <= -INFINITY || *uiter <= -INFINITY) {
+            ub = INFINITY;
+          } else {
+            ub = cub - (implLb - *liter);
+          }
           c1 = false;
           if (calcVarBnd_(lit->first, lit->second, lb, ub, &c1)) {
             fwdLb.clear();
