@@ -18,6 +18,7 @@
 #include "Problem.h"
 #include "Solution.h"
 #include "Types.h"
+//#include <sys/time.h>
 
 namespace Minotaur {
 
@@ -49,6 +50,16 @@ namespace Minotaur {
 
     /// Get the limit on the number of solutions in the pool
     UInt getSizeLimit() const;
+
+    /// Get wall clock time
+    //double getWallTime() {
+      //struct timeval time;
+      //if (gettimeofday(&time,NULL)) {
+        //// Handle error
+        //return 0;
+      //}
+      //return (double)time.tv_sec + (double)time.tv_usec * .000001;
+    //}
 
     /// Put a limit on the number of solutions in the pool
     void setSizeLimit(UInt limit);
@@ -119,6 +130,9 @@ namespace Minotaur {
 
     /// Global timer.
     const Timer* timer_;
+
+    /// Wall clock start time.
+    //double wallTimeStart_;
 
   };
 
