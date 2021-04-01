@@ -418,7 +418,7 @@ int main(int argc, char** argv)
 {
   EnvPtr env      = (EnvPtr) new Environment();
   MINOTAUR_AMPL::AMPLInterfacePtr iface;
-  ProblemPtr inst;       // instance that needs to be solved.
+  ProblemPtr inst = 0;   // instance that needs to be solved.
   EnginePtr engine = 0;  // engine for solving relaxations. 
   BranchAndBound *bab = 0;
   PresolverPtr pres = 0, pres2 = 0;
@@ -427,7 +427,7 @@ int main(int argc, char** argv)
   HandlerVector handlers;
   double obj_sense = 1.0;
   int err = 0;
-  ProblemPtr newp;
+  ProblemPtr newp = 0;
 
   // start timing.
   env->startTimer(err);
