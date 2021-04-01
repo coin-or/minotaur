@@ -21,6 +21,7 @@ class CxUnivarHandler;
 class CGraph;
 class CNode;
 class Environment;
+class Engine;
 class LinearHandler;
 class Problem;
 class QuadHandler;
@@ -92,7 +93,7 @@ public:
    * \param [out] status Zero if reformulated successfully. Nonzero otherwise.
    */
   virtual void reformulate(ProblemPtr &newp, HandlerVector &handlers,
-                           int &status) = 0;
+                           Engine* engine, int &status) = 0;
 
 protected:
   /// The pointer to environment.

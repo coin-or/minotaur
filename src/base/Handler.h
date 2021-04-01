@@ -20,6 +20,7 @@
 namespace Minotaur {
 
   class   CutManager;
+  class   Engine;
   class   Node;
   class   Relaxation;
   class   PreMod;

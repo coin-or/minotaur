@@ -143,13 +143,18 @@ void loadProblem(EnvPtr env, MINOTAUR_AMPL::AMPLInterface* iface,
 int transform(EnvPtr env, ProblemPtr p, ProblemPtr &newp,
               HandlerVector &handlers) 
 {
-  QuadTranPtr trans = QuadTranPtr();
+  TransformerPtr trans;
   int status = 0;
   const std::string me("mntr-glob: ");
+  std::string tr = env->getOptions()->findString("transformer")->getValue();
 
   handlers.clear();
-  trans = (QuadTranPtr) new QuadTransformer(env, p);
-  trans->reformulate(newp, handlers, status);
+  if (tr == "simp") {
+    trans = (SimpTranPtr) new SimpleTransformer(env, p);
+  } else if (tr == "quad") {
+    trans = (QuadTranPtr) new QuadTransformer(env, p);
+  }
+  trans->reformulate(newp, handlers, getEngine(env), status);
   
   env->getLogger()->msgStream(LogInfo) << me 
     << "handlers used in transformer: " << std::endl;

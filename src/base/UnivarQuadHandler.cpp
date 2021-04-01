@@ -799,22 +799,49 @@ void UnivarQuadHandler::getBranchingCandidates(RelaxationPtr rel,
     yval = x[y->getIndex()];
     vio = yval - (*it)->a*x1val*x1val - (*it)->b*x1val;
     if (vio > fabs(yval)*rTol_ && vio > aTol_) {
+      if (false == isAtBnds_(x1, x1val)) {
 #if SPEW
-      logger_->msgStream(LogDebug2) << std::setprecision(9) << me_ 
-        << "branching candidate for LinUnivar: " << (*it)->x->getName()
-        << " value = " << x1val << " aux var: " 
-        << (*it)->y->getName() << " value = " << yval << std::endl;
+        logger_->msgStream(LogDebug2) << std::setprecision(9) << me_ 
+          << "branching candidate for LinUnivar: " << (*it)->x->getName()
+          << " value = " << x1val << " aux var: " 
+          << (*it)->y->getName() << " value = " << yval << std::endl;
 #endif
-      ddist = vio/sqrt(1.0+(*it)->a*(x1->getLb()+x1val)*(x1->getLb()+x1val)
-                          +(*it)->b);
-      udist = vio/sqrt(1.0+(*it)->a*(x1->getUb()+x1val)*(x1->getUb()+x1val)
-                          +(*it)->b);
-      br_can = (BrVarCandPtr) new BrVarCand(x1, x1->getIndex(), ddist,
-                                            udist);
-      ret = cands.insert(br_can);
-      if (false == ret.second) { // already exists.
-        br_can = *(ret.first);
-        br_can->setDist(ddist+br_can->getDDist(), udist+br_can->getDDist());
+        ddist = vio/sqrt(1.0+(*it)->a*(x1->getLb()+x1val)*(x1->getLb()+x1val)
+                            +(*it)->b);
+        udist = vio/sqrt(1.0+(*it)->a*(x1->getUb()+x1val)*(x1->getUb()+x1val)
+                            +(*it)->b);
+        br_can = (BrVarCandPtr) new BrVarCand(x1, x1->getIndex(), ddist,
+                                              udist);
+        ret = cands.insert(br_can);
+        if (false == ret.second) { // already exists.
+          br_can = *(ret.first);
+          br_can->setDist(ddist+br_can->getDDist(), udist+br_can->getDDist());
+        }
+      } else {
+        x1val = getBranchingPt_(vio, x1->getLb(), x1->getUb(),
+                                fabs(yval)*rTol_);
+#if SPEW
+        logger_->msgStream(LogDebug2) << std::setprecision(9) << me_ 
+          << "branching candidate for LinUnivar: " << (*it)->x->getName()
+          << " value = " << x1val << " aux var: " 
+          << (*it)->y->getName() << " value = " << yval << std::endl;
+#endif
+        ddist = vio/sqrt(1.0+(*it)->a*(x1->getLb()+x1val)*(x1->getLb()+x1val)
+                            +(*it)->b);
+        udist = vio/sqrt(1.0+(*it)->a*(x1->getUb()+x1val)*(x1->getUb()+x1val)
+                            +(*it)->b);
+        br_can = (BrVarCandPtr) new BrVarCand(x1, x1->getIndex(), ddist,
+                                              udist);
+        ret = cands.insert(br_can);
+        if (false == ret.second) { // already exists.
+          br_can = *(ret.first);
+          br_can->setDist(ddist+br_can->getDDist(), udist+br_can->getDDist());
+        }
+        //logger_->msgStream(LogError) << std::setprecision(15) << me_ 
+        // << "variable is at bounds, but we still want to branch on "
+        // << "a univar constraint. " << x1->getName() << " = " << x1val
+        // << " a = " << (*it)->a << " b = " << (*it)->b << " auxvar "
+        // << y->getName() << " = " << yval  << std::endl;
       }
     }
   }
@@ -862,7 +889,7 @@ void UnivarQuadHandler::getBranchingCandidates(RelaxationPtr rel,
                                    x2val - sqrt(yval) + x1val)
                         : std::min(x2->getUb() - x2val,
                                    x2val - sqrt(yval) - x1val);
-        br_can = (BrVarCandPtr) new BrVarCand(x1, x1->getIndex(), ddist,
+        br_can = (BrVarCandPtr) new BrVarCand(x2, x2->getIndex(), ddist,
                                               udist); 
         ret = cands.insert(br_can);
         if (false == ret.second) { // already exists.
@@ -878,14 +905,55 @@ void UnivarQuadHandler::getBranchingCandidates(RelaxationPtr rel,
     << fabs(vio) << std::endl;
 #endif
       if (false==check) {
-        logger_->msgStream(LogError) << std::setprecision(15) << me_ 
-         << "both variables are at bounds, but we still want to branch on "
-         << "a bivar constraint. " << x1->getName() << " = " << x1val
-         << " " << x2->getName() << " = " << x2val << " " << y->getName()
-         << " = " << yval  << std::endl;
+        x1val = getBranchingPt_(vio, x1->getLb(), x1->getUb(),
+                                fabs(yval)*rTol_);
+        x2val = getBranchingPt_(vio, x2->getLb(), x2->getUb(),
+                                fabs(yval)*rTol_);
+        ddist = (*it)->pos ? std::min(x1val - x1->getLb(),
+                                   x1val + sqrt(yval) + x2val)
+                        : std::min(x1val - x1->getLb(),
+                                   x1val - sqrt(yval) + x2val);
+        udist = (*it)->pos ? std::min(x1->getUb() - x1val,
+                                   x1val - sqrt(yval) + x2val)
+                        : std::min(x1->getUb() - x1val,
+                                   x1val + sqrt(yval) - x2val);
+        br_can = (BrVarCandPtr) new BrVarCand(x1, x1->getIndex(), ddist,
+                                              udist); 
+        ret = cands.insert(br_can);
+        if (false == ret.second) { // already exists.
+          br_can = *(ret.first);
+          br_can->setDist(ddist+br_can->getDDist(), udist+br_can->getUDist());
+        }
+        
+        ddist = (*it)->pos ? std::min(x2val - x2->getLb(),
+                                   x2val + sqrt(yval) + x1val)
+                        : std::min(x2val - x2->getLb(),
+                                   x2val + sqrt(yval) - x1val);
+        udist = (*it)->pos ? std::min(x2->getUb() - x2val,
+                                   x2val - sqrt(yval) + x1val)
+                        : std::min(x2->getUb() - x2val,
+                                   x2val - sqrt(yval) - x1val);
+        br_can = (BrVarCandPtr) new BrVarCand(x2, x2->getIndex(), ddist,
+                                              udist); 
+        ret = cands.insert(br_can);
+        if (false == ret.second) { // already exists.
+          br_can = *(ret.first);
+          br_can->setDist(ddist+br_can->getDDist(), udist+br_can->getUDist());
+        }
+        //logger_->msgStream(LogError) << std::setprecision(15) << me_ 
+        // << "both variables are at bounds, but we still want to branch on "
+        // << "a bivar constraint. " << x1->getName() << " = " << x1val
+        // << " " << x2->getName() << " = " << x2val << " " << y->getName()
+        // << " = " << yval  << std::endl;
       }
     }
   }
+}
+
+double UnivarQuadHandler::getBranchingPt_(double vio, double lb, double ub,
+                                          double allowed_vio) {
+  double ratio = vio/allowed_vio;
+  return lb + (ub - lb)/ratio;
 }
 
 std::string UnivarQuadHandler::getName() const
@@ -924,6 +992,32 @@ std::vector<LinearFunctionPtr> UnivarQuadHandler::getSecant_(VariablePtr y,
   double mfn, r;
   double l1 = x1->getLb(), u1 = x1->getUb();
   double l2 = x2->getLb(), u2 = x2->getUb();
+
+  if (fabs(u1 - l1) < bTol_) {
+    lf = (LinearFunctionPtr) new LinearFunction();
+    lf->addTerm(y, 1.0);
+    r = pos ? u2 + l2 + u1 + l1 : u2 + l2 - u1 - l1;
+    lf->addTerm(x2, -r);
+    lfs[0] = lf;
+    r = (l1 + u1)/2.0;
+    rhs[0] = r*r - u2*l2;
+    lfs[1] = lf;
+    rhs[1] = rhs[0];
+    return lfs;
+  }
+
+  if (fabs(u2 - l2) < bTol_) {
+    lf = (LinearFunctionPtr) new LinearFunction();
+    lf->addTerm(y, 1.0);
+    r = pos ? u1 + l1 + u2 + l2 : u1 + l1 - u2 - l2;
+    lf->addTerm(x2, -r);
+    lfs[0] = lf;
+    r = (l2 + u2)/2.0;
+    rhs[0] = r*r - u1*l1;
+    lfs[1] = lf;
+    rhs[1] = rhs[0];
+    return lfs;
+  }
 
   fns[0] = pos ? pow(l1 + l2, 2) : pow(l1 - l2, 2);
   fns[1] = pos ? pow(l1 + u2, 2) : pow(l1 - u2, 2);
@@ -1883,9 +1977,17 @@ void UnivarQuadHandler::upBivarCon_(LinBivarPtr lbv, RelaxationPtr rel,
     lmod = (LinConModPtr) new LinConMod(c1, lfs[0], -INFINITY, rhs[0]);
     lmod->applyToProblem(rel);
     r_mods.push_back(lmod);
+    //std::cout << "Bivar cons " << l1 << "    " << u1 << "    " << l2
+    //          << "   " << u2 << std::endl;
+    //std::cout << "lf1 : ";
+    //lfs[0]->write(std::cout);
+    //std::cout << "  rhs : " << rhs[0] << std::endl;
     lmod = (LinConModPtr) new LinConMod(c2, lfs[1], -INFINITY, rhs[1]);
     lmod->applyToProblem(rel);
     r_mods.push_back(lmod);
+    //std::cout << "lf2 : ";
+    //lfs[1]->write(std::cout);
+    //std::cout << "  rhs : " << rhs[1] << std::endl;
   }
 }
 
@@ -2007,18 +2109,23 @@ void UnivarQuadHandler::upUnivarCon_(ConstraintPtr con, VariablePtr x,
   assert(fabs(lf->getWeight(y) - 1.0) <= 1e-8);
   if (a > aTol_) {
     // y - (a(lb+ub) + b)x <= -a*ub*lb
-    if ((a*lb*lb + b + a_x*lb < con->getUb() - eps) ||
-        (a*ub*ub + b + a_x*ub < con->getUb() - eps)) {
+    if ((a*lb*lb + b*lb + a_x*lb < con->getUb() - eps) ||
+        (a*ub*ub + b*ub + a_x*ub < con->getUb() - eps)) {
       lf = getSecant_(y, x, a, b);
       rhs = -a*ub*lb;
+      //std::cout << "Univar x " << x->getName() << "   " <<
+      //             a << "   " << b << "    " << ub << "   "
+      //             << lb << std::endl;
+      //lf->write(std::cout);
+      //std::cout << "   rhs " << rhs << std::endl;
       lmod = (LinConModPtr) new LinConMod(con, lf, -INFINITY, rhs);
       lmod->applyToProblem(rel);
       r_mods.push_back(lmod);
     }
   } else {
     // y - (a(lb+ub) + b)x >= -a*ub*lb
-    if ((a*lb*lb + b + a_x*lb > con->getUb() + eps) ||
-        (a*ub*ub + b + a_x*ub > con->getUb() + eps)) {
+    if ((a*lb*lb + b*lb + a_x*lb > con->getLb() + eps) ||
+        (a*ub*ub + b*ub + a_x*ub > con->getLb() + eps)) {
       lf = getSecant_(y, x, a, b);
       rhs = -a*ub*lb;
       lmod = (LinConModPtr) new LinConMod(con, lf, rhs, INFINITY);
