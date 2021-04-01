@@ -352,7 +352,7 @@ int main(int argc, char* argv[])
 
   //engines
   EnginePtr nlp_e = 0;
-  
+
   VarVector *orig_v=0;
   int err = 0;
   double wallTimeStart = getWallTime();
@@ -428,7 +428,12 @@ int main(int argc, char* argv[])
     nr = (NodeIncRelaxerPtr) new NodeIncRelaxer(env, handlers);
     nr->setModFlag(false);
     nr->createRootRelaxation(NodePtr(), prune);
-    nr->setEngine(milp_e); 
+    nr->setEngine(milp_e);
+
+    //if (env->getOptions()->findBool("multisolheur")->getValue()) {
+      //std::cout << "Best sol from heuristic " << solPool->getBestSolutionValue() << std::endl;
+      //exit(1);
+    //}
  
     //! initialize the MILP master problem by copying variables & linear constraints and by 
     //linearizing nonlinear constraints at the solution of NLP relaxation of the problem
