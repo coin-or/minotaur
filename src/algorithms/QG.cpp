@@ -124,7 +124,7 @@ void setInitialOptions(EnvPtr env)
   env->getOptions()->findBool("use_native_cgraph")->setValue(true);
   env->getOptions()->findBool("nl_presolve")->setValue(true);
   env->getOptions()->findBool("separability")->setValue(false);
-  env->getOptions()->findBool("perspective")->setValue(false);
+  env->getOptions()->findBool("persp_cuts")->setValue(false);
   env->getOptions()->findBool("rc_fix")->setValue(false);
 }
 
@@ -239,7 +239,7 @@ int main(int argc, char* argv[])
   OptionDBPtr options;
 
   MINOTAUR_AMPL::AMPLInterfacePtr iface = MINOTAUR_AMPL::AMPLInterfacePtr();  
-  ProblemPtr inst;
+  ProblemPtr inst = 0;
   
   double obj_sense =1.0;
   
