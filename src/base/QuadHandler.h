@@ -464,10 +464,12 @@ private:
    * the quadratic components of every constraint and minimizing and
    * maximizing all quadratic variables. Returns true if the problem is found
    * to be infeasible, false otherwise.
-   * \pram[out] changed True is some changes are made in the bounds on any
+   * \param[in] rel The relaxation ptr.
+   * \param[out] changed True is some changes are made in the bounds on any
    * variables.
    */
-  bool tightenLP_(bool *changed);
+  bool tightenLP_(RelaxationPtr rel, bool *changed, ModVector &p_mods,
+                  ModVector &r_mods);
 
   /**
    * \brief Bound tightening of the problem by considering linear and quadratic
