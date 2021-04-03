@@ -305,7 +305,8 @@ void setInitialOptions(EnvPtr env)
   options->findBool("lin_presolve")->setValue(true);
   options->findBool("msheur")->setValue(true);
   options->findString("brancher")->setValue("maxvio");
-  //env->getOptions()->findString("nlp_engine")->setValue("IPOPT");
+  options->findString("nlp_engine")->setValue("IPOPT");
+  options->findBool("cgtoqf")->setValue(true);
 }
 
 void showHelp()

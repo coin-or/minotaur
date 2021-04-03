@@ -1359,12 +1359,12 @@ bool QuadHandler::calcVarBnd_(VariablePtr v1, VariablePtr v2, double coef,
   double qlb, qub, vlb, vub;
   qlb = coef > 0 ? lb/coef : ub/coef;
   qub = coef > 0 ? ub/coef : lb/coef;
-  qlb = qlb >= 0 ? qlb : 0;
+  // if term is quadratic
   if (v1->getIndex() == v2->getIndex()) {
     if (qub>bTol_) {
       vub = sqrt(qub);
       vlb = -ub;
-      assert(qlb>=0.0); // square of a number.
+      qlb = qlb >= 0 ? qlb : 0;// square of a number.
       if (v1->getLb() > -sqrt(qlb)+bTol_) {
         vlb = sqrt(qlb);
       }
@@ -1379,6 +1379,7 @@ bool QuadHandler::calcVarBnd_(VariablePtr v1, VariablePtr v2, double coef,
       }
     }
     return false;
+  // if term is bilinear
   } else {
     BoundsOnDiv(qlb, qub, v1->getLb(), v1->getUb(), vlb, vub);
     if (updatePBounds_(v2, vlb, vub, c2) < 0) {
