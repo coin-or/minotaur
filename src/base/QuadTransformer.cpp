@@ -18,7 +18,6 @@
 #include "MinotaurConfig.h"
 #include "Engine.h"
 #include "Environment.h"
-#include "Engine.h"
 #include "Constraint.h"
 #include "Function.h"
 #include "IntVarHandler.h"
@@ -284,7 +283,7 @@ void QuadTransformer::refQuadCons_(QuadraticFunctionPtr qf,
 }
 
 void QuadTransformer::reformulate(ProblemPtr &newp, HandlerVector &handlers,
-                                  Engine* engine, int &status)
+                                  int &status)
 {
   assert(p_);
 
@@ -308,7 +307,7 @@ void QuadTransformer::reformulate(ProblemPtr &newp, HandlerVector &handlers,
   handlers.push_back(lHandler_);
   qHandler_ = (QuadHandlerPtr) new QuadHandler(env_, newp_);
   qHandler_->setModFlags(true, true);
-  qHandler_->setEngine(engine);
+  //qHandler_->setEngine(engine);
   handlers.push_back(qHandler_);
   uqHandler_ = (UnivarQuadHandlerPtr) new UnivarQuadHandler(env_, newp_);
   uqHandler_->setModFlags(true, true);

@@ -21,6 +21,7 @@ namespace Minotaur {
   class CGraph;
   class CNode;
   class Environment;
+  class Engine;
   class LinearHandler;
   class Problem;
   class QuadHandler;
@@ -53,7 +54,7 @@ namespace Minotaur {
     SimpleTransformer();
 
     /// Constructor.
-    SimpleTransformer(EnvPtr env, ConstProblemPtr p);
+    SimpleTransformer(EnvPtr env, ConstProblemPtr p, Engine* e);
 
     /// Destroy.
     ~SimpleTransformer();
@@ -68,12 +69,14 @@ namespace Minotaur {
     SolutionPtr getSolTrans(ConstSolutionPtr sol, int &err);
 
     // base class method.
-    void reformulate(ProblemPtr &newp, HandlerVector &handlers, Engine* engine,
+    void reformulate(ProblemPtr &newp, HandlerVector &handlers,
                      int &status);
 
 
   private:
     static const std::string me_;
+
+    Engine* lpe_;
 
     YEqCGs *yBiVars_;
     YEqQfBil *yQfBil_;

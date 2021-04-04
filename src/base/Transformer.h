@@ -93,7 +93,7 @@ public:
    * \param [out] status Zero if reformulated successfully. Nonzero otherwise.
    */
   virtual void reformulate(ProblemPtr &newp, HandlerVector &handlers,
-                           Engine* engine, int &status) = 0;
+                           int &status) = 0;
 
 protected:
   /// The pointer to environment.

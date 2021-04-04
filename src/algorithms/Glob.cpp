@@ -150,11 +150,11 @@ int transform(EnvPtr env, ProblemPtr p, ProblemPtr &newp,
 
   handlers.clear();
   if (tr == "simp") {
-    trans = (SimpTranPtr) new SimpleTransformer(env, p);
+    trans = (SimpTranPtr) new SimpleTransformer(env, p, getEngine(env));
   } else if (tr == "quad") {
     trans = (QuadTranPtr) new QuadTransformer(env, p);
   }
-  trans->reformulate(newp, handlers, getEngine(env), status);
+  trans->reformulate(newp, handlers, status);
   
   env->getLogger()->msgStream(LogInfo) << me 
     << "handlers used in transformer: " << std::endl;
