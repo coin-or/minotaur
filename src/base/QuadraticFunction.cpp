@@ -410,6 +410,12 @@ Convexity QuadraticFunction::isConvex()
   } else {
     convex_ = Nonconvex;
   }
+  if (eptr) {
+    delete eptr;
+  }
+  if (ecalc) {
+    delete ecalc;
+  }
   return convex_;
 }
 
