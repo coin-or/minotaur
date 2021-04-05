@@ -1313,11 +1313,11 @@ void ParBranchAndBound::parsolve(ParNodeIncRelaxerPtr parNodeRlxr[],
         } else if (shouldStopPar_(wallTimeStart, treeLb)) {
           tm_->updateLb();
           shouldRun = false;
-        } else if (nodeCount == numThreads) {
-          tm_->updateLb();
-          shouldRun = false;
-          logger_->msgStream(LogExtraInfo) << me_
-            << "ramped up: stopping branch-and-bound" << std::endl;
+        //} else if (nodeCount == numThreads) {
+          //tm_->updateLb();
+          //shouldRun = false;
+          //logger_->msgStream(LogExtraInfo) << me_
+            //<< "ramped up: stopping branch-and-bound" << std::endl;
         } else {
 #if SPEW
 #pragma omp critical (logger)
