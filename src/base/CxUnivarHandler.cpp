@@ -140,12 +140,12 @@ bool CxUnivarConstraintData::isFeasible(const double* x)
 }
 
 
-CxUnivarHandler::CxUnivarHandler(EnvPtr , ProblemPtr problem)
+CxUnivarHandler::CxUnivarHandler(EnvPtr env, ProblemPtr problem)
 : eTol_(1e-6),
   vTol_(1e-5)
 {
   problem_ = problem; 
-  logger_  = (LoggerPtr) new Logger((LogLevel) 0 );
+  logger_ = env->getLogger();
 
   tmpX_.resize(problem->getNumVars(), 0.0);
   grad_.resize(problem->getNumVars(), 0.0);

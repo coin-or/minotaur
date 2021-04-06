@@ -328,19 +328,15 @@ void Problem::changeConstraint(ConstraintPtr con, LinearFunctionPtr lf,
 
 void Problem::changeObj(FunctionPtr f, double cb)
 {
-  int err = 0;
-  FunctionPtr f2 = f ? f->cloneWithVars(vars_.begin(), &err) : 
-    (FunctionPtr) new Function();
   std::string name = (obj_) ? obj_->getName() : "obj";
-  assert (err==0);
   if (engine_) {
-    engine_->changeObj(f2, cb);
+    engine_->changeObj(f, cb);
   }
 
   if (obj_) {
     delete obj_;
   }
-  obj_ = (ObjectivePtr) new Objective(f2, cb, Minimize, name);
+  obj_ = (ObjectivePtr) new Objective(f, cb, Minimize, name);
   consModed_ = true;
 }
 
