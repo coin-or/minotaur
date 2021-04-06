@@ -163,6 +163,7 @@ int transform(EnvPtr env, ProblemPtr p, ProblemPtr &newp,
     env->getLogger()->msgStream(LogInfo) << "  " << (*it)->getName()
                                          << std::endl;
   }
+  delete trans;
   return status;
 }
 
@@ -374,6 +375,9 @@ void writeSol(EnvPtr env, VarVector *orig_v,
              env->getOptions()->findBool("display_solution")->getValue()) {
     sol->writePrimal(env->getLogger()->msgStream(LogExtraInfo), orig_v);
   }
+  if (sol) {
+    delete sol;
+  } 
 }
 
 

@@ -69,8 +69,8 @@ SimpleTransformer::SimpleTransformer(EnvPtr env, ConstProblemPtr p, Engine* e)
 SimpleTransformer::~SimpleTransformer() 
 {
   delete yBiVars_;
+  delete yQfBil_;
 }
-
 
 void SimpleTransformer::absRef_(LinearFunctionPtr lfl, VariablePtr vl,
                                 double dl, VariablePtr &v, double &d)
@@ -635,6 +635,12 @@ void SimpleTransformer::refNonlinObj_(ConstProblemPtr oldp)
       logger_->msgStream(LogDebug)
         << "Problem objective reduced to a constant" << std::endl;
     }
+    if (lf) {
+      delete lf;
+    }
+    if (qf2) {
+      delete qf2;
+    }
   } // else the other case is already handled in copyLinear_()
 }
 
@@ -774,6 +780,10 @@ bool SimpleTransformer::checkQuadConvexity_() {
           }
         }
       }
+      for (it = qf_vector.begin(); it != qf_vector.end(); ++it) {
+        delete *it;
+      }
+      qf_vector.clear();
     }
   }
   qf = p_->getObjective()->getFunction()->getQuadraticFunction();
@@ -787,6 +797,10 @@ bool SimpleTransformer::checkQuadConvexity_() {
         all_convex = false;
       } 
     }
+    for (it = qf_vector.begin(); it != qf_vector.end(); ++it) {
+      delete *it;
+    }
+    qf_vector.clear();
   }
   return all_convex;
 }
