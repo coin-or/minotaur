@@ -340,7 +340,7 @@ readSerialOutput(const char* myFile)
   std::ifstream myReadFile;
   myReadFile.open(myFile);
   while (!myReadFile.eof()) {
-    for(int i = 0; i < 1; i++) {
+    for (int i = 0; i < 1; i++) {
       std::vector<double> tmpVec;
       double temp;
       for (int j = 0; j < numFields; j++) {
@@ -551,7 +551,7 @@ void ParBranchAndBound::parsolveOppor(ParNodeIncRelaxerPtr parNodeRlxr[],
 
   omp_set_num_threads(numThreads);
 //#pragma omp parallel for
-  for(UInt i = 0; i < numThreads; ++i) {
+  for (UInt i = 0; i < numThreads; ++i) {
     should_dive[i] = false;
     dived_prev[i] = false;
     should_prune[i] = false;
@@ -694,7 +694,7 @@ void ParBranchAndBound::parsolveOppor(ParNodeIncRelaxerPtr parNodeRlxr[],
                                                       dived_prev[i],
                                                       should_prune[i]);
         if (isParRel) {
-          for(UInt j = 0; j < numThreads; ++j) {
+          for (UInt j = 0; j < numThreads; ++j) {
             if (i!=j) {
               parRelBr = dynamic_cast <ParReliabilityBrancher*> (nodePrcssr[j]->getBrancher());
               tmpTimesUp = parRelBr->getTimesUp();
@@ -962,15 +962,22 @@ void ParBranchAndBound::parsolve(ParNodeIncRelaxerPtr parNodeRlxr[],
   UInt iterCount = 1;
   UInt numVars = 0;
 
+  //Time taken and nodes solved by each thread
+  double *sTimeTh = new double[numThreads];
+  double *wTimeTh = new double[numThreads];
+  UInt *nodesProcTh = new UInt[numThreads];
+
   omp_set_num_threads(numThreads);
 //#pragma omp parallel for
-  for(UInt i = 0; i < numThreads; ++i) {
+  for (UInt i = 0; i < numThreads; ++i) {
     should_dive[i] = false;
     dived_prev[i] = false;
     should_prune[i] = false;
     initialized[i] = false;
     shouldRunTh[i] = true;
     nodeCountTh[i] = 1;
+    nodesProcTh[i] = 0;
+    wTimeTh[i] = 0;
   }
 
   // initialize timer
@@ -1045,6 +1052,7 @@ void ParBranchAndBound::parsolve(ParNodeIncRelaxerPtr parNodeRlxr[],
   if (nodePrcssr[0]->getBrancher()->getName() == "ParReliabilityBrancher") {
     isParRel = true;
   }
+  bool notRampedUp = true;
 
   // memory leak check: remove later
   if (numThreads > 1) {
@@ -1060,7 +1068,8 @@ void ParBranchAndBound::parsolve(ParNodeIncRelaxerPtr parNodeRlxr[],
 #pragma omp parallel 
     {
 #pragma omp for
-      for(UInt i = 0; i < numThreads; ++i) {
+      for (UInt i = 0; i < numThreads; ++i) {
+        sTimeTh[i] = omp_get_wtime();
         ParReliabilityBrancherPtr parRelBr;
         UIntVector tmpTimesUp, tmpTimesDown, timesUp, timesDown, lastStrBranched;
         DoubleVector tmpPseudoUp, tmpPseudoDown, pseudoUp, pseudoDown;
@@ -1116,7 +1125,7 @@ void ParBranchAndBound::parsolve(ParNodeIncRelaxerPtr parNodeRlxr[],
                                                         dived_prev[i],
                                                         should_prune[i]);
           if (isParRel) {
-            for(UInt j = 0; j < numThreads; ++j) {
+            for (UInt j = 0; j < numThreads; ++j) {
               if (i!=j) {
                 parRelBr = dynamic_cast <ParReliabilityBrancher*> (nodePrcssr[j]->getBrancher());
                 tmpTimesUp = parRelBr->getTimesUp();
@@ -1135,6 +1144,7 @@ void ParBranchAndBound::parsolve(ParNodeIncRelaxerPtr parNodeRlxr[],
           nodePrcssr[i]->process(current_node[i], rel[i], solPool_,
                                  initialized[i], timesUp, timesDown,
                                  pseudoUp, pseudoDown, stats_->nodesProc);
+          nodesProcTh[i] += 1;
 #pragma omp critical (stats)
           {
             ++stats_->nodesProc;
@@ -1236,10 +1246,12 @@ void ParBranchAndBound::parsolve(ParNodeIncRelaxerPtr parNodeRlxr[],
           }
           current_node[i] = new_node[i];
         } // if (current_node[i]) ends
+        wTimeTh[i] += omp_get_wtime() - sTimeTh[i];
       } //parallel for end
 
 #pragma omp for
       for (UInt i = 0; i < numThreads; ++i) {
+        sTimeTh[i] = omp_get_wtime();
         //stopping condition at each thread
         nodeCountTh[i] = 0;
 #pragma omp critical (treeManager)
@@ -1273,6 +1285,7 @@ void ParBranchAndBound::parsolve(ParNodeIncRelaxerPtr parNodeRlxr[],
           }
           shouldRunTh[i] = false;
         }
+        wTimeTh[i] += omp_get_wtime() - sTimeTh[i];
       } //parallel for2 end
 #pragma omp single
       {
@@ -1313,11 +1326,14 @@ void ParBranchAndBound::parsolve(ParNodeIncRelaxerPtr parNodeRlxr[],
         } else if (shouldStopPar_(wallTimeStart, treeLb)) {
           tm_->updateLb();
           shouldRun = false;
-        //} else if (nodeCount == numThreads) {
-          //tm_->updateLb();
+        } else if (notRampedUp && (nodeCount == numThreads)) {
+          tm_->updateLb();
+          notRampedUp = false;
+#pragma omp critical (logger)
+          logger_->msgStream(LogExtraInfo) << me_
+            << "ramp-up time = "
+            << getWallTime() - wallTimeStart << std::endl;
           //shouldRun = false;
-          //logger_->msgStream(LogExtraInfo) << me_
-            //<< "ramped up: stopping branch-and-bound" << std::endl;
         } else {
 #if SPEW
 #pragma omp critical (logger)
@@ -1333,6 +1349,16 @@ void ParBranchAndBound::parsolve(ParNodeIncRelaxerPtr parNodeRlxr[],
     << std::endl
     << me_ << "nodes processed = " << stats_->nodesProc << std::endl
     << me_ << "nodes created   = " << tm_->getSize() << std::endl;
+
+  for (UInt i = 0; i < numThreads; ++i) {
+    logger_->msgStream(LogExtraInfo) << me_ << "nodes processed by thread "
+      << i << " = " << nodesProcTh[i] << std::endl;
+  }
+  for (UInt i = 0; i < numThreads; ++i) {
+    logger_->msgStream(LogExtraInfo) << me_ << "wall time taken by thread "
+      << i << " = " << wTimeTh[i] << std::endl;
+  }
+
   //if (iterMode) {
   logger_->msgStream(LogInfo) << me_ << "iterations = " << iterCount
       << std::endl;
@@ -1363,9 +1389,12 @@ void ParBranchAndBound::parsolve(ParNodeIncRelaxerPtr parNodeRlxr[],
   delete[] current_node;
   delete[] new_node;
   delete[] nodeCountTh;
+  delete[] nodesProcTh;
   delete[] treeLbTh;
   delete[] nodeLbTh;
   delete[] minNodeLbTh;
+  delete[] sTimeTh;
+  delete[] wTimeTh;
   delete[] shouldRunTh;
   delete[] ws;
   delete[] rel;
@@ -1399,7 +1428,7 @@ void ParBranchAndBound::parsolveSync(ParNodeIncRelaxerPtr parNodeRlxr[],
 
   omp_set_num_threads(numThreads);
 //#pragma omp parallel for
-  for(UInt i = 0; i < numThreads; ++i) {
+  for (UInt i = 0; i < numThreads; ++i) {
     should_dive[i] = false;
     dived_prev[i] = false;
     should_prune[i] = false;
@@ -1497,7 +1526,7 @@ void ParBranchAndBound::parsolveSync(ParNodeIncRelaxerPtr parNodeRlxr[],
     //{}
     // NODE ASSIGNMENT
 #pragma omp for
-    for(UInt i = 0; i < numThreads; ++i) {
+    for (UInt i = 0; i < numThreads; ++i) {
       if (current_node[i]) {
 #if SPEW
 #pragma omp critical (logger)
