@@ -1355,7 +1355,7 @@ void ParBranchAndBound::parsolve(ParNodeIncRelaxerPtr parNodeRlxr[],
       << i << " = " << nodesProcTh[i] << std::endl;
   }
   for (UInt i = 0; i < numThreads; ++i) {
-    logger_->msgStream(LogExtraInfo) << me_ << "wall time taken by thread "
+    logger_->msgStream(LogExtraInfo) << me_ << "time taken by thread "
       << i << " = " << wTimeTh[i] << std::endl;
   }
 
