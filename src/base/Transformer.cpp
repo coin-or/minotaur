@@ -138,6 +138,7 @@ void Transformer::clearUnusedHandlers_(HandlerVector &handlers)
 {
   for (HandlerVector::iterator it=handlers.begin(); it!=handlers.end();) {
     if (false == (*it)->isNeeded()) {
+      delete *it;
       it = handlers.erase(it);
     } else {
       ++it;

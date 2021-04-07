@@ -61,6 +61,7 @@ NLPMultiStart::NLPMultiStart(EnvPtr env, ProblemPtr p, EnginePtr e)
 
 
 NLPMultiStart::~NLPMultiStart(){
+  delete e_;
   delete [] random_;
 }
 

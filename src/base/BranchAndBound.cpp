@@ -90,6 +90,10 @@ BranchAndBound::~BranchAndBound()
   if (tm_) {
     delete tm_;
   }
+  for (HeurVector::iterator it=preHeurs_.begin(); it!=preHeurs_.end(); ++it) {
+    delete *it;
+  }
+  preHeurs_.clear();
 }
 
 

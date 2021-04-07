@@ -273,7 +273,7 @@ void OsiLPEngine::changeConstraint(ConstraintPtr, NonlinearFunctionPtr)
 
 void OsiLPEngine::changeObj(FunctionPtr f, double)
 {
-  LinearFunctionPtr lf = f->getLinearFunction();
+  LinearFunctionPtr lf = (f) ? f->getLinearFunction() : 0;
   double *obj = new double[problem_->getNumVars()];
   std::fill(obj, obj+problem_->getNumVars(),0.0);
   if (lf) {
