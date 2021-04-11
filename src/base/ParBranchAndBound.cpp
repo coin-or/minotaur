@@ -965,6 +965,8 @@ void ParBranchAndBound::parsolve(ParNodeIncRelaxerPtr parNodeRlxr[],
   //Time taken and nodes solved by each thread
   double *sTimeTh = new double[numThreads];
   double *wTimeTh = new double[numThreads];
+  double *reachTimeTh = new double[numThreads];
+  double *idleTimeTh = new double[numThreads];
   UInt *nodesProcTh = new UInt[numThreads];
 
   omp_set_num_threads(numThreads);
@@ -978,6 +980,7 @@ void ParBranchAndBound::parsolve(ParNodeIncRelaxerPtr parNodeRlxr[],
     nodeCountTh[i] = 1;
     nodesProcTh[i] = 0;
     wTimeTh[i] = 0;
+    idleTimeTh[i] = 0;
   }
 
   // initialize timer
@@ -1247,10 +1250,12 @@ void ParBranchAndBound::parsolve(ParNodeIncRelaxerPtr parNodeRlxr[],
           current_node[i] = new_node[i];
         } // if (current_node[i]) ends
         wTimeTh[i] += omp_get_wtime() - sTimeTh[i];
+        reachTimeTh[i] = omp_get_wtime();
       } //parallel for end
 
 #pragma omp for
       for (UInt i = 0; i < numThreads; ++i) {
+        idleTimeTh[i] += omp_get_wtime() - reachTimeTh[i];
         sTimeTh[i] = omp_get_wtime();
         //stopping condition at each thread
         nodeCountTh[i] = 0;
@@ -1286,7 +1291,11 @@ void ParBranchAndBound::parsolve(ParNodeIncRelaxerPtr parNodeRlxr[],
           shouldRunTh[i] = false;
         }
         wTimeTh[i] += omp_get_wtime() - sTimeTh[i];
+        reachTimeTh[i] = omp_get_wtime();
       } //parallel for2 end
+      for (UInt i = 0; i < numThreads; ++i) {
+        idleTimeTh[i] += omp_get_wtime() - reachTimeTh[i];
+      }
 #pragma omp single
       {
         iterCount++;
@@ -1358,6 +1367,10 @@ void ParBranchAndBound::parsolve(ParNodeIncRelaxerPtr parNodeRlxr[],
     logger_->msgStream(LogExtraInfo) << me_ << "time taken by thread "
       << i << " = " << wTimeTh[i] << std::endl;
   }
+  for (UInt i = 0; i < numThreads; ++i) {
+    logger_->msgStream(LogExtraInfo) << me_ << "idle time of thread "
+      << i << " = " << idleTimeTh[i] << std::endl;
+  }
 
   //if (iterMode) {
   logger_->msgStream(LogInfo) << me_ << "iterations = " << iterCount
@@ -1395,6 +1408,8 @@ void ParBranchAndBound::parsolve(ParNodeIncRelaxerPtr parNodeRlxr[],
   delete[] minNodeLbTh;
   delete[] sTimeTh;
   delete[] wTimeTh;
+  delete[] reachTimeTh;
+  delete[] idleTimeTh;
   delete[] shouldRunTh;
   delete[] ws;
   delete[] rel;
