@@ -948,9 +948,12 @@ bool QuadHandler::presolveNode(RelaxationPtr rel, NodePtr, SolutionPoolPtr,
       }
     } 
     calcRangeOfQuadVars_();
-    writeBTStats_(std::cout, true);
+    writeBTStats_(logger_->msgStream(LogDebug), true);
     is_inf = tightenLP_(rel, &lpchanged, p_mods, r_mods);
     if (is_inf) {
+      bStats_.avg_range = -INFINITY;
+      bStats_.sd_range = -INFINITY;
+      bStats_.body_diag = -INFINITY;
       return true;
     }
 
@@ -972,7 +975,7 @@ bool QuadHandler::presolveNode(RelaxationPtr rel, NodePtr, SolutionPoolPtr,
     bStats_.timeLP = timer_->query()-stime;
     stime = timer_->query();
     calcRangeOfQuadVars_();
-    writeBTStats_(std::cout, false);
+    writeBTStats_(logger_->msgStream(LogDebug), false);
   }
   while (true==changed) {
     ++pStats_.iters;
@@ -1651,7 +1654,9 @@ bool QuadHandler::tightenLP_(RelaxationPtr rel, bool *changed,
       delete lp;
       return true;
     }
-    (*flp) *= -1.0;
+    lflp = (LinearFunctionPtr) new LinearFunction();
+    lflp->addTerm(*vit, -1.0);
+    flp = (FunctionPtr) new Function(lflp);
     lp->changeObj(flp, 0.0);
     ub = -getBndByLP_(is_inf);
     if (is_inf) {
@@ -2437,9 +2442,9 @@ void QuadHandler::writeBTStats_(std::ostream &out, bool flag) {
     out << me_ << "Statistics for Bound tightening:" << std::endl << me_ <<
     "Time taken for presolve      ="
     << bStats_.time << std::endl << me_ <<
-    "Average Range                = "
+    "Average Range of variable bounds                = "
     << bStats_.avg_range << std::endl << me_ <<
-    "Standard deviation of Range  = "
+    "Standard deviation of Range of variable bounds  = "
     << bStats_.sd_range << std::endl << me_ <<
     "Length of Body Diagonal      = "
     << bStats_.body_diag << std::endl;
@@ -2447,9 +2452,9 @@ void QuadHandler::writeBTStats_(std::ostream &out, bool flag) {
     out << me_ << "Statistics for Bound Tightening:" << std::endl << me_ <<
     "Time taken in solving LPs      ="
     << bStats_.timeLP << std::endl << me_ <<
-    "Average Range after LP tightening                = "
+    "Average Range of variable bounds after LP tightening                = "
     << bStats_.avg_range << std::endl << me_ <<
-    "Standard deviation of Range after LP tightening  = "
+    "Standard deviation of Range of variable bounds after LP tightening  = "
     << bStats_.sd_range << std::endl << me_ <<
     "Length of Body Diagonal after LP tightening      = "
     << bStats_.body_diag << std::endl;

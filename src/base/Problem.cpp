@@ -766,6 +766,7 @@ void Problem::cg2qf()
       
       ObjectivePtr newobj = (ObjectivePtr) new Objective(fobj, nlconst, newobjtype);
 
+      delete obj_;
       obj_ = newobj;
     }
   }
