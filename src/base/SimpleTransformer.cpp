@@ -540,6 +540,7 @@ void SimpleTransformer::refNonlinCons_(ConstProblemPtr oldp)
           if (ub<v->getUb()) {
             newp_->changeBound(v, Upper, ub);
           }
+          delete lf2;
 #if SPEW
           logger_->msgStream(LogDebug) << me_ << "new bounds on variable "
                                        << std::endl;

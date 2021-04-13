@@ -46,8 +46,9 @@ LinConMod::~LinConMod()
   if (oldLf_) {
     delete oldLf_; oldLf_ = 0;
   }
-  newLf_ = 0;
-  oldLf_ = 0;
+  if (newLf_) {
+    delete newLf_; newLf_ = 0;
+  }
 }
 
 
