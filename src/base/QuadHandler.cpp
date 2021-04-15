@@ -1552,6 +1552,7 @@ bool QuadHandler::tightenLP_(RelaxationPtr rel, bool *changed,
   double lb, ub, /*clb,*/ cub;
   bool is_inf;
   bool c1;
+  int err;
 
   //if (p_->getSize()->consWithLin == 0) {
   //  return false;
@@ -1629,10 +1630,12 @@ bool QuadHandler::tightenLP_(RelaxationPtr rel, bool *changed,
   
   lp = rel->clone(env_);
 
-  obj = rel->getObjective();
+  obj = lp->getObjective();
   cub = env_->getOptions()->findDouble("obj_cut_off")->getValue();
   if (cub < INFINITY) {
-    lp->newConstraint(obj->getFunction(), -INFINITY, cub);
+    flp = obj->getFunction()->cloneWithVars(lp->varsBegin(), &err); 
+    assert(err==0);
+    lp->newConstraint(flp, -INFINITY, cub);
   }
 
   //flp = (FunctionPtr) new Function();
