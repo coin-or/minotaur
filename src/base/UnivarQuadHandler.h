@@ -91,8 +91,9 @@ public:
   double getBranchingPt_(double vio, double lb, double ub, double allowed_vio);
 
   // base class method
-  ModificationPtr getBrMod(BrCandPtr cand, DoubleVector &x, 
-                           RelaxationPtr rel, BranchDirection dir) {};
+  ModificationPtr getBrMod(BrCandPtr , DoubleVector &, 
+                           RelaxationPtr , BranchDirection )
+  { return 0; };
 
   // base class method
   std::string getName() const;

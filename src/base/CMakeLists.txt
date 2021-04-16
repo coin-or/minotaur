@@ -114,6 +114,7 @@ set (MINOTAUR_SOURCES
      RCHandler.cpp
      Relaxation.cpp 
      ReliabilityBrancher.cpp 
+     Reader.cpp 
      SecantMod.cpp 
      SimpleCutMan.cpp 
      SimpleTransformer.cpp 

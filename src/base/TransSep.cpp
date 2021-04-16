@@ -596,6 +596,7 @@ bool TransSep::coeffValue(CNode * n2, double *c,bool *n, CNode **n1,
     if (nr->getOp()!=Minotaur::OpNum && nr->getOp()!=Minotaur::OpInt) {
       return false;
     }
+    // fall through
   case (OpIntDiv):
     *c = (*c)*(nr->getVal());
     *n = 1;        

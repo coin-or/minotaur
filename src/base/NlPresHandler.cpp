@@ -763,7 +763,7 @@ void NlPresHandler::copyBndsFromRel_(RelaxationPtr rel, ModVector &p_mods)
 }
 
 
-void NlPresHandler::fixedNl_(ProblemPtr p, bool purge_cons, bool *changed,
+void NlPresHandler::fixedNl_(ProblemPtr p, bool , bool *changed,
                              ModQ *, SolveStatus &status)
 {
   ConstraintPtr c;
@@ -771,9 +771,7 @@ void NlPresHandler::fixedNl_(ProblemPtr p, bool purge_cons, bool *changed,
   LinearFunctionPtr lf;
   NonlinearFunctionPtr nlf;
   QuadraticFunctionPtr qf;
-  double lfu, lfl;
   double nlfu, nlfl;
-  double impl_lb, impl_ub;
   FunctionPtr f;
   int error = 0;
   const double tol = 1e-7;

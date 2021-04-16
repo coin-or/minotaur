@@ -133,7 +133,6 @@ void QuadTransformer::refCons_(ConstProblemPtr oldp)
 void QuadTransformer::refObj_(ConstProblemPtr oldp) 
 {
   ObjectivePtr obj = oldp->getObjective();
-  ConstraintPtr cnew;
   FunctionPtr f, f2;
   LinearFunctionPtr lf = 0, lf2;
   QuadraticFunctionPtr qf, qf2;
