@@ -70,13 +70,14 @@ ParQGBranchAndBound* createParBab(EnvPtr env, UInt numThreads, NodePtr &node,
                                   ParPCBProcessorPtr nodePrcssr[],
                                   ParNodeIncRelaxerPtr parNodeRlxr[],
                                   HandlerVector handlersCopy[],
-                                  LPEnginePtr lpeCopy[], EnginePtr eCopy[], double *maxVioMul, double *objMul, std::vector<double > * consDual, UInt * nodeDep)
+                                  LPEnginePtr lpeCopy[], EnginePtr eCopy[],
+                                  bool &prune)
 {
   ParQGBranchAndBound *bab = new ParQGBranchAndBound(env, pCopy[0]);
   const std::string me("mcqgadv main: ");
   OptionDBPtr options = env->getOptions();
   bab->shouldCreateRoot(false);
-  double * centerPt;
+  //double * centerPt;
  
   for(UInt i = 0; i < numThreads; ++i) {
     BrancherPtr br = 0;
@@ -96,9 +97,6 @@ ParQGBranchAndBound* createParBab(EnvPtr env, UInt numThreads, NodePtr &node,
     if (i>0) {
       qg_hand->nlCons();
     }
-    qg_hand->setNodeDep(nodeDep);
-    qg_hand->setConsDual(consDual);
-    qg_hand->setFracNodesLinParam(maxVioMul, objMul);
     handlersCopy[i].push_back(qg_hand);
     assert(qg_hand);
 
@@ -108,15 +106,14 @@ ParQGBranchAndBound* createParBab(EnvPtr env, UInt numThreads, NodePtr &node,
     parNodeRlxr[i] = (ParNodeIncRelaxerPtr) new ParNodeIncRelaxer(env, handlersCopy[i]);
     if (i==0) {
       node = (NodePtr) new Node ();
-      bool prune = false;
       relCopy[0] = parNodeRlxr[0]->createRootRelaxation(node, prune);
-      centerPt = qg_hand->getCenter();
+      //centerPt = qg_hand->getCenter();
     } else {
       relCopy[i] = (RelaxationPtr) new Relaxation(relCopy[0], env);
       parNodeRlxr[i]->setRelaxation(relCopy[i]);
       qg_hand->setRelaxation(relCopy[i]);
       qg_hand->setObjVar();
-      qg_hand->setCenter(centerPt);
+      //qg_hand->setCenter(centerPt);
     }
     relCopy[i]->setProblem(pCopy[i]);
     parNodeRlxr[i]->setModFlag(false);
@@ -378,7 +375,7 @@ void setInitialOptions(EnvPtr env)
 
 void showHelp()
 {
-  std::cout << "Quesada-Grossmann (LP/NLP) parallel algorithm for convex MINLP"
+  std::cout << "Parallel Advanced Quesada-Grossmann (LP/NLP) algorithm for convex MINLP"
             << std::endl
             << "Requires a thread-safe NLP and LP solver."
             //<< "(e.g. IPOPT with MA97)**" << std::endl
@@ -414,7 +411,7 @@ int showInfo(EnvPtr env)
       options->findFlag("v")->getValue()) {
     env->getLogger()->msgStream(LogNone) << me << "Minotaur version "
       << env->getVersion() << std::endl << me 
-      << "NLP-based parallel branch-and-bound solver for convex MINLP"
+      << "Parallel Advanced Quesada-Grossmann (LP/NLP) algorithm for convex MINLP"
       << std::endl;
     return 1;
   }
@@ -426,7 +423,7 @@ int showInfo(EnvPtr env)
 
   env->getLogger()->msgStream(LogInfo)
     << me << "Minotaur version " << env->getVersion() << std::endl
-    << me << "NLP-based parallel branch-and-bound solver for convex MINLP" << std::endl;
+    << me << "Parallel Advanced Quesada-Grossmann (LP/NLP) algorithm for convex MINLP" << std::endl;
   return 0;
 }
 
@@ -492,7 +489,7 @@ void writeBnbStatus(EnvPtr env, BranchAndBound *bab, double obj_sense)
 }
 
 void writeParBnbStatus(EnvPtr env, ParQGBranchAndBound *parbab, double obj_sense,
-                       double wallTimeStart)
+                       double wallTimeStart, clock_t clockTimeStart)
 {
 
   const std::string me("mcqgadv main: ");
@@ -508,8 +505,10 @@ void writeParBnbStatus(EnvPtr env, ParQGBranchAndBound *parbab, double obj_sense
       << me << "gap = " << std::max(0.0,parbab->getUb() - parbab->getLb())
       << std::endl
       << me << "gap percentage = " << parbab->getPerGap() << std::endl
-      << me << "time used (s) = " << std::fixed << std::setprecision(2) 
+      << me << "wall time used (s) = " << std::fixed << std::setprecision(2)
       << parbab->getWallTime() - wallTimeStart << std::endl
+      << me << "process time used (s) = " << std::fixed << std::setprecision(2)
+      << (double)(clock() - clockTimeStart)/CLOCKS_PER_SEC << std::endl
       << me << "status of branch-and-bound: " 
       << getSolveStatusString(parbab->getStatus()) << std::endl;
     env->stopTimer(err); assert(0==err);
@@ -606,6 +605,7 @@ void writeNLPStats(EnvPtr env, std::string name, std::vector<double> stats) {
 
 int main(int argc, char** argv)
 {
+  clock_t clockTimeStart = clock();
   EnvPtr env      = (EnvPtr) new Environment();
   MINOTAUR_AMPL::AMPLInterface* iface = 0;
   ProblemPtr oinst;      // instance that needs to be solved.
@@ -617,9 +617,7 @@ int main(int argc, char** argv)
   VarVector *orig_v=0;
   HandlerVector handlers;
   int err = 0;
-  double obj_sense = 1.0, maxVioMul = 0, objMul = 0;
-  std::vector<double > consDual;
-  UInt nodeDep; 
+  double obj_sense = 1.0;
   
   UInt numThreads = 0;
   ParPCBProcessorPtr *nodePrcssr = 0; 
@@ -636,6 +634,7 @@ int main(int argc, char** argv)
 
   std::vector<double> lpStats(6,0);
   std::vector<double> nlpStats(9,0);
+  bool prune = false;
  
   env->startTimer(err);
 
@@ -669,7 +668,7 @@ int main(int argc, char** argv)
       << "status of presolve: " 
       << getSolveStatusString(pres->getStatus()) << std::endl;
     writeSol(env, orig_v, pres, SolutionPtr(), pres->getStatus(), iface);
-    writeParBnbStatus(env, parbab, obj_sense, wallTimeStart);
+    writeParBnbStatus(env, parbab, obj_sense, wallTimeStart, clockTimeStart);
     goto CLEANUP;
   }
 
@@ -722,10 +721,9 @@ int main(int argc, char** argv)
       << "Number of threads = " << numThreads 
       << ". Requires a thread-safe LP and NLP solver." << std::endl;
   }
-  maxVioMul = env->getOptions()->findDouble("maxVioPer")->getValue();
   parbab = createParBab(env, numThreads, node, relCopy, pCopy, nodePrcssr,
-                        parNodeRlxr, handlersCopy, lpeCopy, eCopy, &maxVioMul, &objMul, &consDual, &nodeDep);
-  parbab->parsolve(parNodeRlxr, nodePrcssr, numThreads);
+                        parNodeRlxr, handlersCopy, lpeCopy, eCopy, prune);
+  parbab->parsolve(parNodeRlxr, nodePrcssr, numThreads, prune);
   
   //Take care of important bnb statistics
   //parbab->writeParStats(env->getLogger()->msgStream(LogExtraInfo), nodePrcssr);
@@ -748,7 +746,7 @@ int main(int argc, char** argv)
 
   writeSol(env, orig_v, pres, parbab->getSolution(), parbab->getStatus(), iface);
   writeParQGStats(env, parbab, numThreads, handlersCopy);
-  writeParBnbStatus(env, parbab, obj_sense, wallTimeStart);
+  writeParBnbStatus(env, parbab, obj_sense, wallTimeStart, clockTimeStart);
 
 CLEANUP:
   if (engine) {

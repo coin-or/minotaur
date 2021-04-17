@@ -508,7 +508,7 @@ void writeBnbStatus(EnvPtr env, BranchAndBound *bab, double obj_sense)
 }
 
 void writeParBnbStatus(EnvPtr env, ParQGBranchAndBound *parbab, double obj_sense,
-                       double wallTimeStart)
+                       double wallTimeStart, clock_t clockTimeStart)
 {
 
   const std::string me("mcqg main: ");
@@ -524,8 +524,10 @@ void writeParBnbStatus(EnvPtr env, ParQGBranchAndBound *parbab, double obj_sense
       << me << "gap = " << std::max(0.0,parbab->getUb() - parbab->getLb())
       << std::endl
       << me << "gap percentage = " << parbab->getPerGap() << std::endl
-      << me << "time used (s) = " << std::fixed << std::setprecision(2) 
+      << me << "wall time used (s) = " << std::fixed << std::setprecision(2)
       << parbab->getWallTime() - wallTimeStart << std::endl
+      << me << "process time used (s) = " << std::fixed << std::setprecision(2)
+      << (double)(clock() - clockTimeStart)/CLOCKS_PER_SEC << std::endl
       << me << "status of branch-and-bound: " 
       << getSolveStatusString(parbab->getStatus()) << std::endl;
     env->stopTimer(err); assert(0==err);
@@ -612,6 +614,7 @@ void writeNLPStats(EnvPtr env, std::string name, std::vector<double> stats) {
 
 int main(int argc, char** argv)
 {
+  clock_t clockTimeStart = clock();
   EnvPtr env      = (EnvPtr) new Environment();
   MINOTAUR_AMPL::AMPLInterface* iface = 0;
   ProblemPtr oinst;      // instance that needs to be solved.
@@ -673,7 +676,7 @@ int main(int argc, char** argv)
       << "status of presolve: " 
       << getSolveStatusString(pres->getStatus()) << std::endl;
     writeSol(env, orig_v, pres, SolutionPtr(), pres->getStatus(), iface);
-    writeParBnbStatus(env, parbab, obj_sense, wallTimeStart);
+    writeParBnbStatus(env, parbab, obj_sense, wallTimeStart, clockTimeStart);
     goto CLEANUP;
   }
 
@@ -758,7 +761,7 @@ int main(int argc, char** argv)
 
   writeSol(env, orig_v, pres, parbab->getSolution(), parbab->getStatus(), iface);
   writeParQGStats(env, parbab, numThreads, handlersCopy);
-  writeParBnbStatus(env, parbab, obj_sense, wallTimeStart);
+  writeParBnbStatus(env, parbab, obj_sense, wallTimeStart, clockTimeStart);
 
 CLEANUP:
   if (engine) {
