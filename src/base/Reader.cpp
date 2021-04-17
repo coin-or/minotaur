@@ -69,6 +69,7 @@ ProblemPtr Reader::readMps(std::string fname, int &err)
     logger_->errStream() << me_ << "could not open file " << fname
       << " for reading" << std::endl;
     err = 1;
+    return 0;
   } 
 
   logger_->msgStream(LogInfo) << me_ << "reading MPS file " << fname 

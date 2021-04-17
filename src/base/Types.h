@@ -36,6 +36,13 @@ typedef std::vector < int >    IntVector;
 typedef std::vector < UInt >   UIntVector;
 typedef std::set    < UInt >   UIntSet;
 
+/// Different types of files for reading/writing
+typedef enum {
+  MPS,
+  NL,
+  FileTypeNone
+} FileType;
+
 /// The different classes of problems
 typedef enum {
   LP,

@@ -215,7 +215,7 @@ void AMPLInterface::addOptions_()
 
   b_option = (Minotaur::BoolOptionPtr) new Minotaur::Option<bool>
     ("display_ampl_model", 
-     "If true, write ampl model before creating the problem: <0/1>", 
+     "If true, display model before creating the problem from AMPL interface: <0/1>", 
      true, false);
   options->insert(b_option);
 

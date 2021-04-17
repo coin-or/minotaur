@@ -41,7 +41,8 @@
 #include "QPEngine.h"
 #include "Problem.h"
 #include "RandomBrancher.h"
-#include "RCHandler.h"        //Rchand (new)
+#include "RCHandler.h"   
+#include "Reader.h"
 #include "Relaxation.h"
 #include "ReliabilityBrancher.h"
 #include "Solution.h"
@@ -252,23 +253,80 @@ EnginePtr getEngine(EnvPtr env, ProblemPtr p, int &err)
 }
 
 
-void loadProblem(EnvPtr env, MINOTAUR_AMPL::AMPLInterface* iface,
-                 ProblemPtr &oinst, double *obj_sense)
+FileType getFileType(std::string fname)
+{
+  FileType ft = FileTypeNone;
+  size_t pos = fname.find_last_of('.');
+
+  if (pos != std::string::npos) {
+    std::string ext = fname.substr(pos);
+    for (size_t i=0; i<ext.length(); ++i) {
+      ext[i] = std::toupper(ext[i]);
+    }
+    if (ext==".MPS") {
+      ft = MPS;
+    } else if (ext == ".NL") {
+      ft = NL;
+    } 
+  } 
+  return ft;
+}
+
+
+int loadProblem(EnvPtr env, MINOTAUR_AMPL::AMPLInterface* iface,
+                ProblemPtr &oinst, double *obj_sense)
 {
   Timer *timer     = env->getNewTimer();
   OptionDBPtr options = env->getOptions();
   JacobianPtr jac;
   HessianOfLagPtr hess;
   const std::string me("bnb main: ");
+  FileType ft;
+  int err = 0;
+  std::string fname; 
 
   timer->start();
-  oinst = iface->readInstance(options->findString("problem_file")->getValue());
-  env->getLogger()->msgStream(LogInfo) << me 
-    << "time used in reading instance = " << std::fixed 
-    << std::setprecision(2) << timer->query() << std::endl;
 
-  if (options->findBool("cgtoqf")->getValue()==1){
-    oinst->cg2qf();
+  fname = options->findString("problem_file")->getValue();
+  ft = getFileType(fname);
+  if (ft==MPS) {
+    Reader rdr(env);
+    env->getOptions()->findString("interface_type")->setValue("mps");
+    oinst = rdr.readMps(fname, err);
+    if (err) {
+      delete timer;
+      return 1;
+    }
+  } else if (ft==NL) {
+    oinst = iface->readInstance(fname);
+    env->getLogger()->msgStream(LogInfo) << me 
+      << "time used in reading instance = " << std::fixed 
+      << std::setprecision(2) << timer->query() << std::endl;
+
+    if (options->findBool("cgtoqf")->getValue()==1){
+      oinst->cg2qf();
+    }
+
+    // create the jacobian
+    if (false==options->findBool("use_native_cgraph")->getValue()) {
+      jac = new MINOTAUR_AMPL::AMPLJacobian(iface);
+      oinst->setJacobian(jac);
+
+      // create the hessian
+      hess = new MINOTAUR_AMPL::AMPLHessian(iface);
+      oinst->setHessian(hess);
+    }
+
+    // set initial point
+    oinst->setInitialPoint(iface->getInitialPoint(), 
+                           oinst->getNumVars()-iface->getNumDefs());
+  } else {
+    env->getLogger()->errStream() << me 
+      << "Missing or unsupported file extension in the input file - "
+      << fname << std::endl
+      << me << "Failed to load the problem." << std::endl;
+    delete timer;
+    return 1;
   }
   
   // display the problem
@@ -279,21 +337,6 @@ void loadProblem(EnvPtr env, MINOTAUR_AMPL::AMPLInterface* iface,
   if (options->findBool("display_size")->getValue()==true) {
     oinst->writeSize(env->getLogger()->msgStream(LogNone));
   }
-  // create the jacobian
-  if (false==options->findBool("use_native_cgraph")->getValue()) {
-    jac = (MINOTAUR_AMPL::AMPLJacobianPtr) 
-      new MINOTAUR_AMPL::AMPLJacobian(iface);
-    oinst->setJacobian(jac);
-
-    // create the hessian
-    hess = (MINOTAUR_AMPL::AMPLHessianPtr)
-      new MINOTAUR_AMPL::AMPLHessian(iface);
-    oinst->setHessian(hess);
-  }
-
-  // set initial point
-  oinst->setInitialPoint(iface->getInitialPoint(), 
-      oinst->getNumVars()-iface->getNumDefs());
 
   if (oinst->getObjective() &&
       oinst->getObjective()->getObjectiveType()==Maximize) {
@@ -308,12 +351,12 @@ void loadProblem(EnvPtr env, MINOTAUR_AMPL::AMPLInterface* iface,
   }
 
   delete timer;
+  return 0;
 }
 
 
-void overrideOptions(EnvPtr env)
+void overrideOptions(EnvPtr )
 {
-  env->getOptions()->findString("interface_type")->setValue("AMPL");
 }
 
 
@@ -376,6 +419,7 @@ void setInitialOptions(EnvPtr env)
   env->getOptions()->findBool("presolve")->setValue(true);
   env->getOptions()->findBool("use_native_cgraph")->setValue(true);
   env->getOptions()->findBool("nl_presolve")->setValue(true);
+  env->getOptions()->findString("interface_type")->setValue("AMPL");
 }
 
 
@@ -510,6 +554,8 @@ int main(int argc, char** argv)
 
   setInitialOptions(env);
 
+
+
   // Important to setup AMPL Interface first as it adds several options.
   iface = new MINOTAUR_AMPL::AMPLInterface(env, "bnb");
 
@@ -521,7 +567,11 @@ int main(int argc, char** argv)
     goto CLEANUP;
   }
 
-  loadProblem(env, iface, oinst, &obj_sense);
+  err = loadProblem(env, iface, oinst, &obj_sense);
+  if (err) {
+    goto CLEANUP;
+  }
+
   orig_v = new VarVector(oinst->varsBegin(), oinst->varsEnd());
   pres = presolve(env, oinst, iface->getNumDefs(), handlers);
   for (HandlerVector::iterator it=handlers.begin(); it!=handlers.end(); ++it) {
