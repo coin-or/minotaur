@@ -1767,7 +1767,6 @@ void QGHandlerAdvance::relax_(bool *isInf)
     } else {
       rs3_ = 0;
     }
-  }
 
  //// For dual multiplier based maxvio rule and score based rule
  //// Also make appropriate changes in the updateUb_()
@@ -1775,6 +1774,7 @@ void QGHandlerAdvance::relax_(bool *isInf)
     //consDual_.resize(nlCons, 0);
     //dualBasedCons_(nlpe_->getSolution());
   //}
+  }
   return;
 }
 
