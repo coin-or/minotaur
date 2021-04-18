@@ -1770,10 +1770,10 @@ void QGHandlerAdvance::relax_(bool *isInf)
 
  //// For dual multiplier based maxvio rule and score based rule
  //// Also make appropriate changes in the updateUb_()
-  //if (maxVioPer_ && (nlCons > 0)) {
-    //consDual_.resize(nlCons, 0);
-    //dualBasedCons_(nlpe_->getSolution());
-  //}
+  if (maxVioPer_ && (nlCons > 0)) {
+    consDual_.resize(nlCons, 0);
+    dualBasedCons_(nlpe_->getSolution());
+  }
   }
   return;
 }
