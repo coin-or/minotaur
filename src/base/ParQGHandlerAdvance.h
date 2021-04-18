@@ -106,13 +106,13 @@ private:
   
   LinearizationsPtr extraLin_;
   
-  double *maxVioPer_;
+  double maxVioPer_;
   
-  double *objVioMul_;
+  double objVioMul_;
 
-  UInt * nodeDep_;
+  UInt nodeDep_;
 
-  std::vector<double > * consDual_; 
+  std::vector<double > consDual_; 
 
   bool findC_;
   
@@ -137,16 +137,15 @@ public:
   /// Destroy.
   ~ParQGHandlerAdvance();
 
-  void setCenter(double * temp);
+  //void setCenter(double * temp);
 
-  double * getCenter() {return solC_;};
+  //double * getCenter() {return solC_;};
   
-  void setConsDual(std::vector<double > *consDual) {consDual_ = consDual;} 
+  //void setConsDual(std::vector<double > *consDual) {consDual_ = consDual;} 
 
-  void setNodeDep(UInt * nodeDep) {nodeDep_ = nodeDep;} 
+  //void setNodeDep(UInt * nodeDep) {nodeDep_ = nodeDep;} 
   
-  void findCenter_();
-   
+  
   /// Does nothing.
   Branches getBranches(BrCandPtr, DoubleVector &, RelaxationPtr,
                        SolutionPoolPtr)
@@ -211,7 +210,7 @@ public:
   /// Set oNl_ to true and objVar_ when problem objective is nonlinear
   void setObjVar();
   
-  void setFracNodesLinParam(double *maxVioMul, double *objMul) {maxVioPer_ = maxVioMul; objVioMul_ = objMul;}
+  //void setFracNodesLinParam(double *maxVioMul, double *objMul) {maxVioPer_ = maxVioMul; objVioMul_ = objMul;}
 
   void solveCenterNLP_(EnginePtr nlpe);
 
@@ -239,6 +238,8 @@ private:
    */
   void fixInts_(const double *x);
    
+  void findCenter_();
+  
   bool boundaryPtForCons_(double* xnew, const double *xOut,
                                      std::vector<UInt > &vioCons);
 

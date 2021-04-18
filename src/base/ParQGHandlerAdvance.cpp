@@ -123,7 +123,7 @@ void ParQGHandlerAdvance::dualBasedCons_(ConstSolutionPtr sol)
   //for (CCIter it=nlCons_.begin(); it!=nlCons_.end(); ++it) {
     //consDual_.push_back(consDual[(*it)->getIndex()]);
   for (UInt i = 0; i < nlCons_.size(); ++i) {
-    (*consDual_)[i] = lambda1*((*consDual_)[i]) + 
+    (consDual_)[i] = lambda1*((consDual_)[i]) + 
       lambda2*(consDual[(nlCons_[i])->getIndex()]);
   }
 
@@ -521,18 +521,18 @@ void ParQGHandlerAdvance::objCutAtLpSol_(const double *lpx, CutManager * cutman,
     act = o->eval(lpx, &error);
     if (error == 0) {
       lpvio = std::max(act-relobj_, 0.0);
-      if ((fracNode == 1) && (*maxVioPer_ > 0) && (lpvio > objATol_)) {
+      if ((fracNode == 1) && (maxVioPer_ > 0) && (lpvio > objATol_)) {
         //if ((fabs(relobj_) < solAbsTol_) || (fabs(lpvio) < solAbsTol_) || 
           
         if (fabs(relobj_) < objATol_) {
 
-          if (lpvio < *objVioMul_) {
+          if (lpvio < objVioMul_) {
             //test = lpvio;
             return;
           }
         } else {
           //test = lpvio/fabs(relobj_);
-           if ((lpvio/fabs(relobj_)) < *objVioMul_) {
+           if ((lpvio/fabs(relobj_)) < objVioMul_) {
             return;
           }       
         //std::cout << std:setprecision(6) <<  "lpvio here " << lpvio << " relobj_ " << relobj_ << " ratio " << test << "\n";
@@ -724,24 +724,28 @@ void ParQGHandlerAdvance::relax_(bool *isInf)
   nlCons();
   linearizeObj_();
   initLinear_(isInf);
-  
+ 
+  if (*isInf) {
+    return;
+  }
+ 
   bool temp = 0;
   UInt numNlCons = nlCons_.size();
-  //maxVioPer_ = env_->getOptions()->findDouble("maxVioPer")->getValue();
+  maxVioPer_ = env_->getOptions()->findDouble("maxVioPer")->getValue();
   //objVioMul_ = env_->getOptions()->findDouble("objVioMul")->getValue();
   cutMethod_ = env_->getOptions()->findString("cutMethod")->getValue();
   double rs1 = env_->getOptions()->findDouble("root_linScheme1")->getValue();
   double rg2 = env_->getOptions()->findDouble("root_linGenScheme2_per")->getValue(); //MS: change name in Environment
 
-  if ((*maxVioPer_ > 0) && (cutMethod_ == "esh") && (numNlCons > 0)) {
+  if (maxVioPer_ && (cutMethod_ == "esh") && (numNlCons > 0)) {
     temp = 1;
   }
 
-  if (*isInf == false && ((numNlCons > 0) || oNl_)) {
+  if (((numNlCons > 0) || oNl_)) {
     if (nlCons_.size() > 0) {
-      *nodeDep_ = 10;    
+      nodeDep_ = 10;    
     } else {
-      *nodeDep_ = 5;    
+      nodeDep_ = 5;    
     }
 
     if (rs1 || rg2) {
@@ -754,7 +758,7 @@ void ParQGHandlerAdvance::relax_(bool *isInf)
           findC_ = 1;
           solC_ = extraLin_->getCenter();
           if (solC_ == 0) {
-            *maxVioPer_ = 0;
+            maxVioPer_ = 0;
           }
         }
       }
@@ -764,7 +768,7 @@ void ParQGHandlerAdvance::relax_(bool *isInf)
       findC_ = 1;
       findCenter_();
       if (solC_ == 0) {
-        *maxVioPer_ = 0;
+        maxVioPer_ = 0;
       } else {
         const double *nlpx = nlpe_->getSolution()->getPrimal();
         double l1 = 0.5, l2 = 0.5; //MS: can be parametrized.
@@ -777,8 +781,8 @@ void ParQGHandlerAdvance::relax_(bool *isInf)
    
  //// For dual multiplier based score based rule
  //// Also make appropriate changes in the updateUb_()
-  if ((*maxVioPer_ > 0) && (numNlCons > 0)) {
-    (*consDual_).resize(numNlCons, 0);
+  if (maxVioPer_ && (numNlCons > 0)) {
+    (consDual_).resize(numNlCons, 0);
     dualBasedCons_(nlpe_->getSolution());
   }
   return;
@@ -991,16 +995,16 @@ void ParQGHandlerAdvance::findCenter_()
   return;
 }
 
-void ParQGHandlerAdvance::setCenter(double * temp)
-{
-  if (temp) {
-    UInt numVars = minlp_->getNumVars();
-    solC_ = new double[numVars];
-    std::copy(temp, temp+numVars, solC_);
-    findC_ = 1;
-  }
-  return;
-}
+//void ParQGHandlerAdvance::setCenter(double * temp)
+//{
+  //if (temp) {
+    //UInt numVars = minlp_->getNumVars();
+    //solC_ = new double[numVars];
+    //std::copy(temp, temp+numVars, solC_);
+    //findC_ = 1;
+  //}
+  //return;
+//}
 
 
 void ParQGHandlerAdvance::separate(ConstSolutionPtr sol, NodePtr node, RelaxationPtr,
@@ -1010,40 +1014,40 @@ void ParQGHandlerAdvance::separate(ConstSolutionPtr sol, NodePtr node, Relaxatio
 {
   const double *x = sol->getPrimal();
  
-  if ((node->getId() == 0) && oNl_ && (*maxVioPer_ > 0)) {
+  if ((node->getId() == 0) && oNl_ && maxVioPer_) {
     int error = 0;
     double act, lpvio;
        
     relobj_ = (sol) ? sol->getObjValue() : -INFINITY;
     ObjectivePtr o = minlp_->getObjective();
     act = o->eval(x, &error);
-    *objVioMul_ = *maxVioPer_;
+    objVioMul_ = maxVioPer_;
     if (error == 0) {
       lpvio = std::max(act-relobj_, 0.0);
       if (fabs(relobj_) > solAbsTol_) {
-        *objVioMul_ = lpvio/fabs(relobj_);
+        objVioMul_ = lpvio/fabs(relobj_);
         //std::cout << std::setprecision(6) << "lpvio here " << lpvio << " relobj_ " << relobj_ << " ratio " << lpvio/fabs(relobj_) << "\n";
       } else {
         //std::cout << std::setprecision(6) << "lpvio here " << lpvio << " relobj_ " << relobj_ << " ratio " << lpvio << "\n";
-        *objVioMul_ = lpvio;
+        objVioMul_ = lpvio;
       }
       if (nlCons_.size() == 0 && oNl_) {
-        if (*objVioMul_ > 1000) {
-          *nodeDep_ = floor(*nodeDep_/2);
-        } else if (*objVioMul_ < 0.5) {
-          *nodeDep_ = *nodeDep_*2;   
-          *objVioMul_ = 2*(*objVioMul_);        
+        if (objVioMul_ > 1000) {
+          nodeDep_ = floor(nodeDep_/2);
+        } else if (objVioMul_ < 0.5) {
+          nodeDep_ = nodeDep_*2;   
+          objVioMul_ = 2*(objVioMul_);        
         }
       } else {
-        if (*objVioMul_ < 0.5) {
-          *objVioMul_ = 2*(*objVioMul_);        
+        if (objVioMul_ < 0.5) {
+          objVioMul_ = 2*(objVioMul_);        
         }    
       }
-      //std::cout << "Thr and Initial multiplier " << omp_get_thread_num() << " " <<  *objVioMul_ << "\n";
+      //std::cout << "Thr and Initial multiplier " << omp_get_thread_num() << " " <<  objVioMul_ << "\n";
     }
   }
 
-      //std::cout << "Thr and multiplier " << omp_get_thread_num() <<  " " << *objVioMul_ << "\n";
+      //std::cout << "Thr and multiplier " << omp_get_thread_num() <<  " " << objVioMul_ << "\n";
 
   *status = SepaContinue;
 
@@ -1055,12 +1059,12 @@ void ParQGHandlerAdvance::separate(ConstSolutionPtr sol, NodePtr node, Relaxatio
     unfixInts_();            // Unfix integer variables
     cutIntSol_(x, cutMan, s_pool, sol_found, status);
   } else {
-     if (*maxVioPer_ > 0) {
+     if (maxVioPer_) {
        relobj_ = (sol) ? sol->getObjValue() : -INFINITY;
        maxVio_(sol, node, cutMan, status); // maxViolation
 //# pragma omp critical 
        //std::cout << "Node, node depth, thread, param nodeDep_ and maxVio" << node->getId() << " " << node->getDepth() << " " 
-         //<< omp_get_thread_num() << " " << *nodeDep_ << " " << *maxVioPer_ << "\n";
+         //<< omp_get_thread_num() << " " << nodeDep_ << " " << maxVioPer_ << "\n";
     } 
   }
   return;
@@ -1263,8 +1267,8 @@ void ParQGHandlerAdvance::maxVio_(ConstSolutionPtr sol, NodePtr node,
   double act, cUb, vio, totScore = 0, parentScore, incr; 
   UInt i = 0, vioConsNum = 0, nodeId = node->getId(), temp = stats_->cuts;
 
-  //if (node->getDepth() >= *nodeDep_ && stats_->fracCuts > 0) {
-  if (node->getDepth() >= *nodeDep_) {
+  if (node->getDepth() >= nodeDep_ && stats_->fracCuts > 0) {
+  //if (node->getDepth() >= nodeDep_) {
     return;  
   } 
 
@@ -1283,10 +1287,10 @@ void ParQGHandlerAdvance::maxVio_(ConstSolutionPtr sol, NodePtr node,
           ++vioConsNum;
           vio = act - cUb;
           if (fabs(cUb) > solAbsTol_) {
-            totScore = totScore + vio*(*consDual_)[i] + vio/fabs(cUb);
+            totScore = totScore + vio*consDual_[i] + vio/fabs(cUb);
             //std::cout << "act = "<< act << " vio = " << vio << " dual = " << consDual_[i] << " cub = " << cUb << std::endl;
           } else {
-            totScore = totScore + vio*(*consDual_)[i] + vio;
+            totScore = totScore + vio*consDual_[i] + vio;
           }
         }
       } else {
@@ -1308,9 +1312,9 @@ void ParQGHandlerAdvance::maxVio_(ConstSolutionPtr sol, NodePtr node,
       parentScore = node->getParent()->getVioVal();
       if (parentScore < INFINITY && totScore < INFINITY) {
         //if (fabs(parentScore) > 1e-3 && fabs(totScore) > 1e-2 
-            //&& fabs(totScore) > (*maxVioPer_*fabs(parentScore)))  //MS: here *maxVioPer_ is in times (0.5, 1, 2, 5,..)
+            //&& fabs(totScore) > (maxVioPer_*fabs(parentScore)))  //MS: here maxVioPer_ is in times (0.5, 1, 2, 5,..)
           //std::cout << std::setprecision(6) << "node, score, and parent's score "<< nodeId << " " << totScore << " " << parentScore << "\n";
-        if (fabs(totScore) >= (*maxVioPer_*fabs(parentScore + .001))) { //MS: here *maxVioPer_ is in times (0.5, 1, 2, 5,..)
+        if (fabs(totScore) >= (maxVioPer_*fabs(parentScore + .001))) { //MS: here maxVioPer_ is in times (0.5, 1, 2, 5,..)
           if (cutMethod_ == "ecp") {
             i = 0;
             for (CCIter it = nlCons_.begin(); it != nlCons_.end(); ++it, ++i) {
@@ -1336,10 +1340,10 @@ void ParQGHandlerAdvance::maxVio_(ConstSolutionPtr sol, NodePtr node,
           }
         }
         if (parentScore > solAbsTol_) {
-          incr = std::max(*maxVioPer_, (totScore/(parentScore+0.001)));
-          if (incr > *maxVioPer_) {
+          incr = std::max(maxVioPer_, (totScore/(parentScore+0.001)));
+          if (incr > maxVioPer_) {
 # pragma omp critical (maxVioParam)
-            *maxVioPer_ = ((*maxVioPer_ + incr)/2);
+            maxVioPer_ = ((maxVioPer_ + incr)/2);
           }
         }
       }
@@ -1451,7 +1455,7 @@ void ParQGHandlerAdvance::updateUb_(SolutionPoolPtr s_pool, double nlpval,
       s_pool->addSolution(x, nlpval);
       *sol_found = true;
 
-      if ((*maxVioPer_ > 0) && (nlCons_.size() > 0)) {
+      if ((maxVioPer_ > 0) && (nlCons_.size() > 0)) {
         dualBasedCons_(nlpe_->getSolution());
       }
     }
