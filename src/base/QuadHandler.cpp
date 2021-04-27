@@ -332,6 +332,8 @@ int QuadHandler::fixNodeErr(RelaxationPtr rel, ConstSolutionPtr sol,
   // Solve the NLP with x as the starting point and get solution
   orig_->setInitialPoint(sol->getPrimal());
   status = nlpe_->solve();
+  ++nlpStats_.nlp;
+  nlpStats_.flag = true;
   // Check if there is a solution or if it reports infeasibility
   switch(status) {
   case (ProvenOptimal):
@@ -340,15 +342,25 @@ int QuadHandler::fixNodeErr(RelaxationPtr rel, ConstSolutionPtr sol,
       double nlpval = nlpe_->getSolutionValue();
       updateUb_(s_pool, nlpval, sol_found);
       error = 0;
+      ++nlpStats_.opt;
       break;
     }
   case (ProvenInfeasible):
   case (ProvenLocalInfeasible):
   case (ProvenObjectiveCutOff):
+    {
+      sol_found = false;
+      error = 1;
+      ++nlpStats_.inf;
+      break;
+    }
   case (EngineIterationLimit):
     {
       sol_found = false;
       error = 1;
+      ++nlpStats_.iter_limit;
+      logger_->msgStream(LogDebug2) << me_ << "NLP iteration limit reached"
+        << " this node will be considered infeasible" << std::endl;
       break;
     }
   case (FailedFeas):
@@ -1363,6 +1375,12 @@ void QuadHandler::resetStats_()
   sStats_.iters  = 0;
   sStats_.cuts   = 0;
   sStats_.time   = 0.0;
+
+  nlpStats_.flag = false;
+  nlpStats_.nlp = 0;
+  nlpStats_.opt = 0;
+  nlpStats_.inf = 0;
+  nlpStats_.iter_limit = 0;
 
   bStats_.niters = 0;
   bStats_.qvars.clear();
@@ -2586,6 +2604,18 @@ void QuadHandler::writeStats(std::ostream &out) const
     << me_ << "Number of cuts added           = "<< sStats_.cuts   << std::endl
     << me_ << "Time taken in separation       = "<< sStats_.time   << std::endl
     ;
+
+  if (nlpStats_.flag) {
+    out << me_ << "Statistics for NLP solved by QuadHandler:" << std::endl
+      << me_ << "Number of NLPs solved                         = "
+      << nlpStats_.nlp << std::endl
+      << me_ << "Number of NLPs optimal                        = "
+      << nlpStats_.opt << std::endl
+      << me_ << "Number of NLPs infeasible                     = "
+      << nlpStats_.inf << std::endl
+      << me_ << "Number of NLPs for which EngineIterationLimit = "
+      << nlpStats_.iter_limit << std::endl;
+  }
 }
 
 void QuadHandler::writeBTStats_(std::ostream &out, bool flag) {

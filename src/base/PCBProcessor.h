@@ -23,12 +23,13 @@ namespace Minotaur {
   //class Problem;
 
   struct NodeStats {
-    UInt bra;    /// Number of times relaxation became infeasible
-    UInt inf;    /// Number of times relaxation became infeasible
-    UInt opt;    /// Number of times relaxation gave optimal feasible solution
-    UInt prob;   /// Number of times problem ocurred in solving
-    UInt proc;   /// Number of nodes processed
-    UInt ub;     /// Number of nodes pruned because of bound
+    UInt bra;     /// Number of times relaxation became infeasible
+    UInt inf;     /// Number of times relaxation became infeasible
+    UInt opt;     /// Number of times relaxation gave optimal feasible solution
+    UInt prob;    /// Number of times problem ocurred in solving
+    UInt proc;    /// Number of nodes processed
+    UInt ub;      /// Number of nodes pruned because of bound
+    UInt tol_err; /// Number of nodes for which fixNodeErr was called
   };
 
   /**

@@ -332,7 +332,10 @@ void PCBProcessor::process(NodePtr node, RelaxationPtr rel,
         }
         should_resolve = true;
       } else if (br_status==NoCandToBranch) {
+        logger_->msgStream(LogDebug2) << "No candidates to branch for the node"
+          << " Calling an NLP solver to resolve it" << std::endl;
         error = infHand_->fixNodeErr(relaxation_, sol, s_pool, sol_found);
+        ++stats_.tol_err;
         assert(error >= 0);
         if (error == 0) {
           if (sol_found) {
@@ -558,12 +561,20 @@ void PCBProcessor::tightenBounds_()
 
 void PCBProcessor::writeStats(std::ostream &out) const
 {
-  out << me_ << "nodes processed     = " << stats_.proc << std::endl 
-      << me_ << "nodes branched      = " << stats_.bra << std::endl 
-      << me_ << "nodes infeasible    = " << stats_.inf << std::endl 
-      << me_ << "nodes optimal       = " << stats_.opt << std::endl 
-      << me_ << "nodes hit ub        = " << stats_.ub << std::endl 
-      << me_ << "nodes with problems = " << stats_.prob << std::endl 
+  out << me_ << "nodes processed                       = "
+      << stats_.proc << std::endl
+      << me_ << "nodes branched                        = "
+      << stats_.bra << std::endl 
+      << me_ << "nodes infeasible                      = "
+      << stats_.inf << std::endl 
+      << me_ << "nodes optimal                         = "
+      << stats_.opt << std::endl 
+      << me_ << "nodes hit ub                          = "
+      << stats_.ub << std::endl 
+      << me_ << "nodes with problems                   = "
+      << stats_.prob << std::endl
+      << me_ << "nodes for which fixNodeErr was called = "
+      << stats_.tol_err << std::endl
       ;
 }
 

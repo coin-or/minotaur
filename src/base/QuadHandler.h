@@ -138,6 +138,15 @@ private:
     int nMods;   ///> Number of changes made in all nodes.
   };
 
+  struct NLPStats
+  {
+    bool flag;        ///> if true that means NLP was solved at least once
+    UInt nlp;         ///> Number of NLPs solved
+    UInt opt;         ///> Number of NLPs optimal
+    UInt inf;         ///> Number of NLPs infeasible
+    UInt iter_limit;  ///> Number of NLPs for which EngineIterationLimit
+  };
+
   struct BoundTighteningStats
   {
     int niters;        ///> Number of iterations
@@ -204,6 +213,9 @@ private:
 
   /// NLP engine
   EnginePtr nlpe_;
+
+  /// NLP stats
+  NLPStats nlpStats_;
       
   /// For printing messages.
   static const std::string me_;
