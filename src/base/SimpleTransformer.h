@@ -54,7 +54,7 @@ namespace Minotaur {
     SimpleTransformer();
 
     /// Constructor.
-    SimpleTransformer(EnvPtr env, ConstProblemPtr p, Engine* e);
+    SimpleTransformer(EnvPtr env, ProblemPtr p, Engine* lpe, EnginePtr nlpe);
 
     /// Destroy.
     ~SimpleTransformer();
@@ -77,6 +77,8 @@ namespace Minotaur {
     static const std::string me_;
 
     Engine* lpe_;
+
+    EnginePtr nlpe_;
 
     YEqCGs *yBiVars_;
     YEqQfBil *yQfBil_;

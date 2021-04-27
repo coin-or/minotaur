@@ -54,7 +54,7 @@ public:
   /// Default constructor.
   QuadHandler(EnvPtr env, ProblemPtr problem);
 
-  QuadHandler(EnvPtr env, ProblemPtr problem, EnginePtr lpe);
+  QuadHandler(EnvPtr env, ProblemPtr problem, ProblemPtr orig_p);
   
   /// Destroy
   ~QuadHandler();
@@ -90,6 +90,10 @@ public:
                     SolutionPoolPtr s_pool, ModVector &p_mods,
                     ModVector &r_mods);
 
+  // implement Handler::fixNodeErr
+  int fixNodeErr(RelaxationPtr rel, ConstSolutionPtr sol,
+                 SolutionPoolPtr s_pool, bool &sol_found);
+
   // base class method. Adds linear inequalities
   void relaxInitFull(RelaxationPtr rel, bool *is_inf);
 
@@ -108,7 +112,9 @@ public:
                 CutManager *cutman, SolutionPoolPtr s_pool, ModVector &p_mods,
                 ModVector &r_mods, bool *sol_found, SeparationStatus *status);
 
-  void setEngine(Engine* engine);
+  void setLPEngine(Engine* engine);
+
+  void setNLPEngine(EnginePtr engine);
 
   // base class method. 
   void writeStats(std::ostream &out) const;
@@ -195,9 +201,15 @@ private:
 
   /// LP engine
   EnginePtr lpe_;
+
+  /// NLP engine
+  EnginePtr nlpe_;
       
   /// For printing messages.
   static const std::string me_;
+
+  /// Original problem (not the transformed)
+  ProblemPtr orig_;
 
   /// Transformed problem (not the relaxation).
   ProblemPtr p_;
@@ -456,6 +468,13 @@ private:
 
   void relax_(RelaxationPtr rel, bool *is_inf);
 
+  /**
+   * \brief Resetting the bounds on original variables
+   * \param[in] varlb the vector of original lb
+   * \param[in] varub the vector of original ub
+   */
+  void resetBoundsinOrig_(DoubleVector &varlb, DoubleVector &varub);
+
   /// Reset all statistics to zero.
   void resetStats_();
 
@@ -468,7 +487,7 @@ private:
    * \param[out] changed True is some changes are made in the bounds on any
    * variables.
    */
-  bool tightenLP_(RelaxationPtr rel, bool *changed, ModVector &p_mods,
+  bool tightenLP_(RelaxationPtr rel, double bestSol, bool *changed, ModVector &p_mods,
                   ModVector &r_mods);
 
   /**
@@ -488,6 +507,17 @@ private:
    * variables.
    */
   bool tightenSimple_(bool *changed);
+
+  /**
+   * \brief Update bounds of variable in original problem as the bounds
+   * on the current node.
+   * \param[in] rel Relaxation at the node
+   * \param[in] x the lp solution at the current node
+   * \param[out] varlb vector of lb on variables before bound changes
+   * \param[out] varlb vector of ub on variables before bound changes
+   */
+  void updateBoundsinOrig_(RelaxationPtr rel, const double *x,
+                          DoubleVector &varlb, DoubleVector &varub);
 
   /**
    * \brief Modify bounds of a variable in the problem to the new bounds lb
@@ -525,6 +555,14 @@ private:
   int updatePBounds_(VariablePtr v, double lb, double ub, RelaxationPtr rel,
                      bool mod_rel, bool *changed, ModVector &p_mods,
                      ModVector &r_mods);
+  /**
+   * \brief After solving an NLP update ub of the problem.
+   * \param[in] s_pool Current solution pool
+   * \param[in] nlpval NLP objective value
+   * \param[out] sol_found true if the NLP solution is better than all
+   * solutions in s_pool
+   */
+  void updateUb_(SolutionPoolPtr s_pool, double nlpval, bool &sol_found);
 
   /**
    * \brief Update linear relaxation of the bilinear constraints after some

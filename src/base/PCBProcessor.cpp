@@ -38,6 +38,7 @@ PCBProcessor::PCBProcessor (EnvPtr env, EnginePtr engine, HandlerVector handlers
 : branches_(0),
   contOnErr_(false),
   cutMan_(0),
+  infHand_(0),
   numSolutions_(0),
   ws_(0)
 {
@@ -113,6 +114,7 @@ bool PCBProcessor::isFeasible_(NodePtr node, ConstSolutionPtr sol,
   for (h = handlers_.begin(); h != handlers_.end(); ++h) {
     is_feas = (*h)->isFeasible(sol, relaxation_, should_prune, inf_meas);
     if (is_feas == false || should_prune == true) {
+      infHand_ = *h;
       break;
     }
   }
@@ -177,11 +179,12 @@ void PCBProcessor::process(NodePtr node, RelaxationPtr rel,
 {
   bool should_prune = true;
   bool should_resolve;
+  bool sol_found = false;
   BrancherStatus br_status;
   ConstSolutionPtr sol;
   ModVector mods;
   SeparationStatus sep_status = SepaContinue;
-  int iter = 0;
+  int iter = 0, error;
 
   ++stats_.proc;
   relaxation_ = rel;
@@ -328,6 +331,25 @@ void PCBProcessor::process(NodePtr node, RelaxationPtr rel,
           break;
         }
         should_resolve = true;
+      } else if (br_status==NoCandToBranch) {
+        error = infHand_->fixNodeErr(relaxation_, sol, s_pool, sol_found);
+        assert(error >= 0);
+        if (error == 0) {
+          if (sol_found) {
+            ++numSolutions_;
+            node->setStatus(NodeOptimal);
+            ++stats_.opt;
+            should_prune = true;
+          } else {
+            should_prune = true;
+            node->setStatus(NodeHitUb);
+            stats_.ub++;
+          }
+        } else if (error == 1) {
+          should_prune = true;
+          node->setStatus(NodeInfeasible);
+          stats_.inf++;
+        }
       } else if (cutMan_){
         cutMan_->nodeIsBranched(node,sol,branches_->size());
       }

@@ -75,6 +75,15 @@ namespace Minotaur {
     {return cons_.end();};
 
     /**
+     * This function processes a node further if no branching candidates were
+     * found by the brancher. It is only implemented for QuadHandler as of now.
+     */
+    virtual int fixNodeErr(RelaxationPtr , ConstSolutionPtr ,
+                           SolutionPoolPtr , bool &) {
+      assert(!"FixNodeErr not implemented for the Handler");
+    };
+
+    /**
      * \brief Return branches for branching.
      *
      * Get branches by branching on the given candidate. In the general scheme

@@ -58,9 +58,11 @@ SimpleTransformer::SimpleTransformer()
 }
 
 
-SimpleTransformer::SimpleTransformer(EnvPtr env, ConstProblemPtr p, Engine* e)
+SimpleTransformer::SimpleTransformer(EnvPtr env, ProblemPtr p,
+                                     Engine* lpe, EnginePtr nlpe)
   : Transformer(env, p),
-    lpe_(e),
+    lpe_(lpe),
+    nlpe_(nlpe),
     yBiVars_(0)
 {
 }
@@ -911,9 +913,10 @@ void SimpleTransformer::reformulate(ProblemPtr &newp, HandlerVector &handlers,
   lHandler_->setPreOptDualFix(false);
   lHandler_->setModFlags(true, true);
   handlers.push_back(lHandler_);
-  qHandler_ = (QuadHandlerPtr) new QuadHandler(env_, newp_);
+  qHandler_ = (QuadHandlerPtr) new QuadHandler(env_, newp_, p_);
   qHandler_->setModFlags(true, true);
-  qHandler_->setEngine(lpe_);
+  qHandler_->setLPEngine(lpe_);
+  qHandler_->setNLPEngine(nlpe_);
   handlers.push_back(qHandler_);
   uHandler_ = (CxUnivarHandlerPtr) new CxUnivarHandler(env_, newp_);
   handlers.push_back(uHandler_);

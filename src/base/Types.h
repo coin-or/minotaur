@@ -169,6 +169,7 @@ typedef enum {
 typedef enum {
   ModifiedByBrancher,
   PrunedByBrancher,
+  NoCandToBranch,
   NotModifiedByBrancher
 } BrancherStatus;     
 

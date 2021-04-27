@@ -56,7 +56,7 @@ Transformer::Transformer()
 }
 
 
-Transformer::Transformer(EnvPtr env, ConstProblemPtr p)
+Transformer::Transformer(EnvPtr env, ProblemPtr p)
   : env_(env),
     p_(p),
     yLfs_(0),

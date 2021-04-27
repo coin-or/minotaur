@@ -54,7 +54,7 @@ QuadTransformer::QuadTransformer()
 }
 
 
-QuadTransformer::QuadTransformer(EnvPtr env, ConstProblemPtr p)
+QuadTransformer::QuadTransformer(EnvPtr env, ProblemPtr p)
   : Transformer(env, p),
   yQfBil_(0),
   yBivar_(0),

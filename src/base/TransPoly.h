@@ -36,7 +36,7 @@ public:
   TransPoly();
 
   /// Constructor.
-  TransPoly(EnvPtr env, ConstProblemPtr p);
+  TransPoly(EnvPtr env, ProblemPtr p);
 
   /// Destroy.
   ~TransPoly();

@@ -97,7 +97,8 @@ Branches MaxVioBrancher::findBranches(RelaxationPtr rel, NodePtr ,
                                << br_can->getHandler()->getName() << std::endl;
 #endif
   } else if (br_status != PrunedByBrancher) {
-    assert(!"problem finding candidate in MaxVioBrancher");
+    br_status = NoCandToBranch;
+    //assert(!"problem finding candidate in MaxVioBrancher");
   }
   stats_->time += timer_->query();
   timer_->stop();

@@ -41,7 +41,7 @@ namespace Minotaur {
     QuadTransformer();
 
     /// Constructor.
-    QuadTransformer(EnvPtr env, ConstProblemPtr p);
+    QuadTransformer(EnvPtr env, ProblemPtr p);
 
     /// Destroy.
     ~QuadTransformer();

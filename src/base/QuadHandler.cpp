@@ -56,11 +56,12 @@ using namespace Minotaur;
 const std::string QuadHandler::me_ = "QuadHandler: ";
 
 QuadHandler::QuadHandler(EnvPtr env, ProblemPtr problem)
-: aTol_(1e-5),
+: aTol_(1e-6),
   bTol_(1e-8),
   env_(env),
   lpe_(0),
-  rTol_(1e-4)
+  nlpe_(0),
+  rTol_(1e-7)
 {
   p_ = problem; 
   modProb_ = false;
@@ -72,14 +73,16 @@ QuadHandler::QuadHandler(EnvPtr env, ProblemPtr problem)
   defaultUb_ = -1e12;
 }
 
-QuadHandler::QuadHandler(EnvPtr env, ProblemPtr problem, EnginePtr lpe)
-: aTol_(1e-5),
+QuadHandler::QuadHandler(EnvPtr env, ProblemPtr problem, ProblemPtr orig_p)
+: aTol_(1e-6),
   bTol_(1e-8),
   env_(env),
-  lpe_(lpe),
-  rTol_(1e-4)
+  lpe_(0),
+  nlpe_(0),
+  rTol_(1e-7)
 {
-  p_ = problem; 
+  orig_ = orig_p;
+  p_ = problem;
   modProb_ = false;
   modRel_  = true;
   logger_  = env->getLogger();
@@ -101,6 +104,9 @@ QuadHandler::~QuadHandler()
   }
   x0x1Funs_.clear();
   bStats_.qvars.clear();
+  if (nlpe_) {
+    delete nlpe_;
+  }
 }
 
 
@@ -267,6 +273,100 @@ void QuadHandler::findLinPt_(double xval, double yval, double &xl,
   yl = la*la;
 }
 
+void QuadHandler::updateBoundsinOrig_(RelaxationPtr rel, const double *x,
+                                DoubleVector &varlb, DoubleVector &varub) {
+  VariablePtr v, relv;
+  double xval;
+
+  for (VariableConstIterator vit = orig_->varsBegin(); vit != orig_->varsEnd();
+       ++vit) {
+    v = *vit;
+    varlb.push_back(v->getLb());
+    varub.push_back(v->getUb());
+    if (v->getType() == Binary || v->getType() == Integer) {
+      xval = x[v->getIndex()];
+      xval = floor(xval + 0.5);
+      orig_->changeBound(v, xval, xval);
+    } else {
+      relv = rel->getVariable(v->getIndex());
+      orig_->changeBound(v, relv->getLb(), relv->getUb());
+    }
+  }
+}
+
+void QuadHandler::resetBoundsinOrig_(DoubleVector &varlb, DoubleVector &varub) {
+  VariablePtr v;
+  DoubleVector::iterator lbit = varlb.begin(), ubit = varub.begin();
+
+  for (VariableConstIterator vit = orig_->varsBegin(); vit != orig_->varsEnd();
+       ++vit) {
+    v = *vit;
+    orig_->changeBound(v, *lbit, *ubit);
+    ++lbit;
+    ++ubit;
+  }
+}
+
+void QuadHandler::updateUb_(SolutionPoolPtr s_pool, double nlpval,
+                            bool &sol_found) {
+  double bestval = s_pool->getBestSolutionValue();
+
+  if ((bestval - aTol_ > nlpval) ||
+      (bestval != 0 && (bestval - fabs(bestval)*rTol_ > nlpval))) {
+    const double *x = nlpe_->getSolution()->getPrimal();
+    s_pool->addSolution(x, nlpval);
+    sol_found = true;
+  }
+}
+
+int QuadHandler::fixNodeErr(RelaxationPtr rel, ConstSolutionPtr sol,
+                            SolutionPoolPtr s_pool, bool &sol_found) {
+  DoubleVector varlb, varub;
+  EngineStatus status;
+  int error;
+
+  varlb.clear();
+  varub.clear();
+  // update the bounds of vars in orig_
+  updateBoundsinOrig_(rel, sol->getPrimal(), varlb, varub);
+  // Solve the NLP with x as the starting point and get solution
+  orig_->setInitialPoint(sol->getPrimal());
+  status = nlpe_->solve();
+  // Check if there is a solution or if it reports infeasibility
+  switch(status) {
+  case (ProvenOptimal):
+  case (ProvenLocalOptimal):
+    {
+      double nlpval = nlpe_->getSolutionValue();
+      updateUb_(s_pool, nlpval, sol_found);
+      error = 0;
+      break;
+    }
+  case (ProvenInfeasible):
+  case (ProvenLocalInfeasible):
+  case (ProvenObjectiveCutOff):
+  case (EngineIterationLimit):
+    {
+      sol_found = false;
+      error = 1;
+      break;
+    }
+  case (FailedFeas):
+  case (EngineError):
+  case (FailedInfeas):
+  case (ProvenUnbounded):
+  case (ProvenFailedCQFeas):
+  case (EngineUnknownStatus):
+  case (ProvenFailedCQInfeas):
+  default:
+    logger_->msgStream(LogError) << me_ << "NLP engine status = "
+      << nlpe_->getStatusString() << std::endl;
+    error = -1;
+    break;
+  }
+  resetBoundsinOrig_(varlb, varub);
+  return error;
+}
 
 Branches QuadHandler::getBranches(BrCandPtr cand, DoubleVector &x,
                                   RelaxationPtr rel, SolutionPoolPtr)
@@ -760,43 +860,79 @@ bool QuadHandler::isAtBnds_(ConstVariablePtr x, double xval)
   return(fabs(xval-lb) < bTol_ || fabs(xval-ub) < bTol_);
 }
 
-
 bool QuadHandler::isFeasible(ConstSolutionPtr sol, RelaxationPtr , bool &,
-                             double &inf_meas)
-{
-  double yval, xval, vio;
+                             double &inf_meas) {
+  ConstraintPtr c;
+  double act, clb, cub;
   const double *x = sol->getPrimal();
+  int error = 0;
   bool is_feas = true;
 
-  for (LinSqrMapIter it=x2Funs_.begin(); it != x2Funs_.end(); ++it) {
-    // check if y <= x^2
-    xval  = x[it->first->getIndex()];
-    yval = x[it->second->y->getIndex()];
-    vio = fabs(yval - xval*xval);
-    if (vio > fabs(yval)*rTol_ && vio > aTol_) {
-      is_feas = false;
-      inf_meas += vio;
+  for (ConstraintConstIterator cit = orig_->consBegin();
+       cit != orig_->consEnd(); ++cit) {
+    c = *cit;
+    if (c->getFunctionType() == Quadratic ||
+        c->getFunctionType() == Bilinear) {
+      act = c->getActivity(x, &error);
+      if (error == 0) {
+        cub = c->getUb();
+        clb = c->getLb();
+        if ((act > cub + aTol_) &&
+            (cub == 0 || act > cub + fabs(cub)*rTol_)) {
+          is_feas = false;
+          inf_meas += act - cub;
+        }
+        if ((act < clb - aTol_) &&
+            (clb == 0 || act < clb - fabs(clb)*rTol_)) {
+          is_feas = false;
+          inf_meas += clb - act;
+        }
+      } else {
+        logger_->msgStream(LogError) << me_ << c->getName() <<
+        " Constraint not defined at this point." << std::endl;
+        is_feas = false;
+      }
     }
   }
-#if SPEW
-  logger_->msgStream(LogDebug2) << me_ << "no branching candidates for y=x^2" 
-                                << std::endl;
-#endif
-
-  for (LinBilSetIter it=x0x1Funs_.begin(); it != x0x1Funs_.end(); ++it) {
-    if ((*it)->isViolated(x, vio)) {
-      is_feas = false;
-      inf_meas += vio;
-    }
-  }
-
-#if SPEW
-  logger_->msgStream(LogDebug2) << me_ << "no branching candidates for y=x1x2" 
-                                << std::endl;
-#endif
   return is_feas;
 }
 
+//bool QuadHandler::isFeasible(ConstSolutionPtr sol, RelaxationPtr , bool &,
+//                             double &inf_meas)
+//{
+//  double yval, xval, vio;
+//  const double *x = sol->getPrimal();
+//  bool is_feas = true;
+//
+//  for (LinSqrMapIter it=x2Funs_.begin(); it != x2Funs_.end(); ++it) {
+//    // check if y <= x^2
+//    xval  = x[it->first->getIndex()];
+//    yval = x[it->second->y->getIndex()];
+//    vio = fabs(yval - xval*xval);
+//    if (vio > fabs(yval)*rTol_ && vio > aTol_) {
+//      is_feas = false;
+//      inf_meas += vio;
+//    }
+//  }
+//#if SPEW
+//  logger_->msgStream(LogDebug2) << me_ << "no branching candidates for y=x^2" 
+//                                << std::endl;
+//#endif
+//
+//  for (LinBilSetIter it=x0x1Funs_.begin(); it != x0x1Funs_.end(); ++it) {
+//    if ((*it)->isViolated(x, vio)) {
+//      is_feas = false;
+//      inf_meas += vio;
+//    }
+//  }
+//
+//#if SPEW
+//  logger_->msgStream(LogDebug2) << me_ << "no branching candidates for y=x1x2" 
+//                                << std::endl;
+//#endif
+//  return is_feas;
+//}
+//
 
 SolveStatus QuadHandler::presolve(PreModQ *, bool *changed)
 {
@@ -900,7 +1036,8 @@ SolveStatus QuadHandler::presolve(PreModQ *, bool *changed)
 }
 
 
-bool QuadHandler::presolveNode(RelaxationPtr rel, NodePtr, SolutionPoolPtr,
+bool QuadHandler::presolveNode(RelaxationPtr rel, NodePtr,
+                               SolutionPoolPtr s_pool,
                                ModVector &p_mods, ModVector &r_mods)
 {
   bool lchanged = true;
@@ -910,6 +1047,7 @@ bool QuadHandler::presolveNode(RelaxationPtr rel, NodePtr, SolutionPoolPtr,
   QuadraticFunctionPtr qf;
   ObjectivePtr obj;
   bool lpchanged = false;
+  double ub;
 
   // visit each quadratic constraint and see if bounds can be improved.
   if (bStats_.niters < 1) {
@@ -949,7 +1087,8 @@ bool QuadHandler::presolveNode(RelaxationPtr rel, NodePtr, SolutionPoolPtr,
     } 
     calcRangeOfQuadVars_();
     writeBTStats_(logger_->msgStream(LogDebug), true);
-    is_inf = tightenLP_(rel, &lpchanged, p_mods, r_mods);
+    ub = s_pool->getBestSolutionValue();
+    is_inf = tightenLP_(rel, ub, &lpchanged, p_mods, r_mods);
     if (is_inf) {
       bStats_.avg_range = -INFINITY;
       bStats_.sd_range = -INFINITY;
@@ -1531,14 +1670,22 @@ double QuadHandler::getSumExcept1_(DoubleVector::iterator b,
   return sum_of_elems;
 }
 
-void QuadHandler::setEngine(Engine* engine) {
+void QuadHandler::setLPEngine(Engine* engine) {
   if (lpe_ && lpe_ != engine) {
     lpe_->clear();
   }
   lpe_ = engine;
 }
 
-bool QuadHandler::tightenLP_(RelaxationPtr rel, bool *changed,
+void QuadHandler::setNLPEngine(EnginePtr engine) {
+  if (nlpe_ && nlpe_ != engine) {
+    nlpe_->clear();
+  }
+  nlpe_ = engine;
+  nlpe_->load(orig_);
+}
+
+bool QuadHandler::tightenLP_(RelaxationPtr rel, double bestSol, bool *changed,
                              ModVector &p_mods, ModVector &r_mods) {
   //ConstraintPtr c;
   //QuadraticFunctionPtr qf;
@@ -1632,6 +1779,7 @@ bool QuadHandler::tightenLP_(RelaxationPtr rel, bool *changed,
 
   obj = lp->getObjective();
   cub = env_->getOptions()->findDouble("obj_cut_off")->getValue();
+  cub = std::min(cub, bestSol);
   if (cub < INFINITY) {
     flp = obj->getFunction()->cloneWithVars(lp->varsBegin(), &err); 
     assert(err==0);

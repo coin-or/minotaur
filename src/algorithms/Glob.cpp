@@ -150,7 +150,8 @@ int transform(EnvPtr env, ProblemPtr p, ProblemPtr &newp,
 
   handlers.clear();
   if (tr == "simp") {
-    trans = (SimpTranPtr) new SimpleTransformer(env, p, getEngine(env));
+    trans = (SimpTranPtr) new SimpleTransformer(env, p, getEngine(env),
+                                                getNLPEngine(env));
   } else if (tr == "quad") {
     trans = (QuadTranPtr) new QuadTransformer(env, p);
   }

@@ -37,7 +37,7 @@ using namespace Minotaur;
 
 #undef DEBUG_TRANSPOLY
 
-TransPoly::TransPoly(EnvPtr env, ConstProblemPtr p)
+TransPoly::TransPoly(EnvPtr env, ProblemPtr p)
   : Transformer(env, p),
     mHandler_(MultilinearTermsHandlerPtr()),
     yMonoms_(0)

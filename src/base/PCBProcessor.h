@@ -106,6 +106,9 @@ namespace Minotaur {
       /// Heuristics that can be called at each node.
       HeurVector heurs_;
 
+      /// The handler which reports the infeasibility of a node.
+      HandlerPtr infHand_;
+
       /// Log
       LoggerPtr logger_;
 
