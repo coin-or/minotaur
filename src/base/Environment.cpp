@@ -52,6 +52,7 @@ void Environment::createDefaultOptions_()
   IntOptionPtr i_option;
   DoubleOptionPtr d_option;
   StringOptionPtr s_option;
+  FlagOptionPtr f_option;
 
   // bool options
   b_option = (BoolOptionPtr) new Option<bool>("display_version", 
@@ -87,7 +88,7 @@ void Environment::createDefaultOptions_()
   options_->insert(b_option);
 
   b_option = (BoolOptionPtr) new Option<bool>("presolve", 
-      "Should presolve be used: <0/1>", true, false);
+      "Should presolve be used: <0/1>", true, true);
   options_->insert(b_option);
 
   b_option = (BoolOptionPtr) new Option<bool>("separability",
@@ -184,7 +185,7 @@ void Environment::createDefaultOptions_()
   options_->insert(b_option);
 
   b_option = (BoolOptionPtr) new Option<bool> ("use_native_cgraph", 
-     "If true, use Minotaur's computational graph to evaluate nonlinear functions and their derivatives. <0/1>", true, false);
+     "If true, use Minotaur's computational graph to evaluate nonlinear functions and their derivatives. <0/1>", true, true);
   options_->insert(b_option);
 
   b_option = (BoolOptionPtr) new Option<bool>("mcbnb_deter_mode",
@@ -535,6 +536,22 @@ void Environment::createDefaultOptions_()
   options_->insert(s_option);
 
   s_option = 0;
+
+  f_option = (FlagOptionPtr) new Minotaur::Option<bool>
+    ("AMPL", "If given, then write .sol file for ampl.", true, false);
+  options_->insert(f_option, true);
+
+  f_option = (FlagOptionPtr) new Minotaur::Option<bool>
+    ("v", "If given, then write version information.", true, false);
+  options_->insert(f_option, true);
+
+  f_option = (FlagOptionPtr) new Minotaur::Option<bool>
+    ("=", "If given, then write all known options.", true, false);
+  options_->insert(f_option, true);
+
+  f_option = (FlagOptionPtr) new Minotaur::Option<bool>
+    ("?", "If given, then write help message.", true, false);
+  options_->insert(f_option, true);
 }
 
 
