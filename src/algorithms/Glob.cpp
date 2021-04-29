@@ -472,6 +472,7 @@ int main(int argc, char** argv)
   }
   handlers.clear();
 
+  inst->setNativeDer();
   err = transform(env, inst, newp, handlers);
   assert(0==err);
 
