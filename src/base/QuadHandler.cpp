@@ -879,6 +879,9 @@ bool QuadHandler::isFeasible(ConstSolutionPtr sol, RelaxationPtr , bool &,
   const double *x = sol->getPrimal();
   int error = 0;
   bool is_feas = true;
+  QuadraticFunctionPtr qf;
+  ObjectivePtr obj;
+  double vio;
 
   for (ConstraintConstIterator cit = orig_->consBegin();
        cit != orig_->consEnd(); ++cit) {
@@ -903,6 +906,19 @@ bool QuadHandler::isFeasible(ConstSolutionPtr sol, RelaxationPtr , bool &,
         logger_->msgStream(LogError) << me_ << c->getName() <<
         " Constraint not defined at this point." << std::endl;
         is_feas = false;
+      }
+    }
+  }
+
+  obj = orig_->getObjective();
+  if (obj->getFunctionType() == Quadratic ||
+      obj->getFunctionType() == Bilinear) {
+    act = obj->eval(x, &error);
+    if (error == 0) {
+      vio = fabs(sol->getObjValue() - act);
+      if (vio > fabs(act)*rTol_ && vio > aTol_) {
+        is_feas = false;
+        inf_meas += vio;
       }
     }
   }
