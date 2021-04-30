@@ -182,7 +182,7 @@ double QuadHandler::addDefaultBounds_(VariablePtr v, BoundType lu) {
       }
       if (defaultLb_ < -aTol_ && defaultLb_ > -1e12) {
         defaultLb_ = 100*defaultLb_;
-      } else if (defaultLb_ > aTol_) {
+      } else if (defaultLb_ > aTol_ && defaultLb_ < 1e12) {
         defaultLb_ = -100*defaultLb_;
       } else {
         defaultLb_ = -1000;
@@ -204,7 +204,7 @@ double QuadHandler::addDefaultBounds_(VariablePtr v, BoundType lu) {
           defaultUb_ = (*it)->getUb();
         }
       }
-      if (defaultUb_ < -aTol_) {
+      if (defaultUb_ < -aTol_ && defaultUb_ > -1e12) {
         defaultUb_ = -100*defaultUb_;
       } else if (defaultUb_ > aTol_ && defaultUb_ < 1e12) {
         defaultUb_ = 100*defaultUb_;
@@ -879,7 +879,6 @@ bool QuadHandler::isFeasible(ConstSolutionPtr sol, RelaxationPtr , bool &,
   const double *x = sol->getPrimal();
   int error = 0;
   bool is_feas = true;
-  QuadraticFunctionPtr qf;
   ObjectivePtr obj;
   double vio;
 
