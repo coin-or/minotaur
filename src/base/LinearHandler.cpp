@@ -574,11 +574,11 @@ SolveStatus LinearHandler::varBndsFromObj_(ProblemPtr p, double ub, bool apply_t
         return SolvedInfeasible;
       }
       if (ll > -infty_) {
-        updateLfBoundsFromUb_(p, apply_to_prob, lf, ub, ll, false, &t_changed, 
-                              mods, &nintmods);
+        updateLfBoundsFromUb_(p, apply_to_prob, lf, ub-o_ptr->getConstant(),
+                              ll, false, &t_changed, mods, &nintmods);
       } else if (sing_ll > -infty_) {
-        updateLfBoundsFromUb_(p, apply_to_prob, lf, ub, sing_ll, true, &t_changed, 
-                              mods, &nintmods);
+        updateLfBoundsFromUb_(p, apply_to_prob, lf, ub-o_ptr->getConstant(),
+                              sing_ll, true, &t_changed, mods, &nintmods);
       }
       if (true == t_changed) {
         *changed = true;
