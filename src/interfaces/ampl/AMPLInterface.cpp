@@ -197,21 +197,6 @@ void AMPLInterface::addOptions_()
   Minotaur::FlagOptionPtr f_option; 
   Minotaur::BoolOptionPtr b_option; 
   Minotaur::OptionDBPtr options = env_->getOptions();
-  f_option = (Minotaur::FlagOptionPtr) new Minotaur::Option<bool>
-    ("AMPL", "If given, then write .sol file for ampl.", true, false);
-  options->insert(f_option, true);
-
-  f_option = (Minotaur::FlagOptionPtr) new Minotaur::Option<bool>
-    ("v", "If given, then write version information.", true, false);
-  options->insert(f_option, true);
-
-  f_option = (Minotaur::FlagOptionPtr) new Minotaur::Option<bool>
-    ("=", "If given, then write all known options.", true, false);
-  options->insert(f_option, true);
-
-  f_option = (Minotaur::FlagOptionPtr) new Minotaur::Option<bool>
-    ("?", "If given, then write help message.", true, false);
-  options->insert(f_option, true);
 
   b_option = (Minotaur::BoolOptionPtr) new Minotaur::Option<bool>
     ("display_ampl_model", 
