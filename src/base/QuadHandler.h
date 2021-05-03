@@ -339,6 +339,20 @@ private:
   double getBndByLP_(bool &is_inf);
 
   /**
+   * \brief Get bounds of a lf of a constraint
+   * \param[in] qf Quadratic Function
+   * \param[out] implLb the implied lower bound of the lf
+   * \param[out] implUb the implied upper bound of the lf
+   * \param[out] fwdLb vector of lower bounds for each term
+   * \param[out] fwdUb vector of upper bounds for each term
+   * \param[out] count_inf_lb # of infinities in lower bound
+   * \param[out] count_inf_ub # of infinities in upper bound
+   */
+  void getLfBnds_(LinearFunctionPtr lf, double &implLb, double &implUb,
+                  DoubleVector &fwdLb, DoubleVector &fwdUb,
+                  UInt &count_inf_lb, UInt &count_inf_ub);
+  
+  /**
    * \brief Get one of the four linear functions and right hand sides for the
    * linear relaxation of a bilinear constraint y = x0x1.
    * \param[in] x0 x0 variable
@@ -373,13 +387,50 @@ private:
                                 double lb, double ub, double & r);
 
   /**
+   * \brief Get bounds of a qf of a constraint
+   * \param[in] qf Quadratic Function
+   * \param[out] implLb the implied lower bound of the qf
+   * \param[out] implUb the implied upper bound of the qf
+   * \param[out] fwdLb vector of lower bounds for each term
+   * \param[out] fwdUb vector of upper bounds for each term
+   * \param[out] count_inf_lb # of infinities in lower bound
+   * \param[out] count_inf_ub # of infinities in upper bound
+   */
+  void getQfBnds_(QuadraticFunctionPtr qf, double &implLb, double &implUb,
+                  DoubleVector &fwdLb, DoubleVector &fwdUb,
+                  UInt &count_inf_lb, UInt &count_inf_ub);
+  
+  /**
+   * \brief Get bounds of a qf and lf of a constraint
+   * \param[in] lf Linear Function
+   * \param[in] qf Quadratic Function
+   * \param[out] implLb the implied lower bound of the lf and qf
+   * \param[out] implUb the implied upper bound of the lf and qf
+   * \param[out] fwdLb vector of lower bounds for each term
+   * \param[out] fwdUb vector of upper bounds for each term
+   * \param[out] count_inf_lb # of infinities in lower bound
+   * \param[out] count_inf_ub # of infinities in upper bound
+   * \param[out] qvars the variables for which there is a term like ax^2 + b
+   * return false if qvars has no element, true otherwise
+   */
+  bool getQfLfBnds_(LinearFunctionPtr lf, QuadraticFunctionPtr qf,
+                    double &implLb, double &implUb, DoubleVector &fwdLb,
+                    DoubleVector &fwdUb, UInt &count_inf_lb,
+                    UInt &count_inf_ub, VarVector &qvars);
+
+  /**
    * \brief Calculate sum of a vector except current element
    * \param[in] b begin iterator of the vector
    * \param[in] e end iterator of the vector
    * \param[in] curr current element's iterator of the vector
+   * \param[in] bt Lower bound or Upper bound
+   * \param[in] bound Implied bound of the vector
+   * \param[in] inf_count count of infinities in the vector
+   * return the sum of the vector except current element
    */
   double getSumExcept1_(DoubleVector::iterator b,DoubleVector::iterator e,
-                        DoubleVector::iterator curr);
+                        DoubleVector::iterator curr, BoundType bt,
+                        double bound, UInt inf_count);
 
   /**
    * \brief Calculate bounds of a linear term from the variable bounds
