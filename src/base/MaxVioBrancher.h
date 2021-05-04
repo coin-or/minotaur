@@ -76,6 +76,11 @@ namespace Minotaur {
 
       DoubleVector x_;
 
+      /**
+       * Clean up candidates, except for the no_del candidate.
+       */
+      void freeCandidates_(BrCandPtr no_del);
+
       /// Fills up the set of candidates in the cands_ array. 
       void findCandidates_(ModVector &mods, bool &should_prune);
 

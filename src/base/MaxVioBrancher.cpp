@@ -192,10 +192,31 @@ BrCandPtr MaxVioBrancher::findBestCandidate_()
     } else {
       best_cand->setDir(DownBranch);
     }
+    freeCandidates_(best_cand);
+  } else {
+    freeCandidates_(0);
   }
 
   return best_cand;
 }
+
+
+void MaxVioBrancher::freeCandidates_(BrCandPtr no_del)
+{
+  for (BrVarCandIter it=cands_.begin(); it!=cands_.end(); ++it) {
+    if (no_del != *it) {
+      delete *it;
+    }
+  }
+  for (BrCandVIter it=gencands_.begin(); it!=gencands_.end(); ++it) {
+    if (no_del != *it) {
+      delete *it;
+    }
+  }
+  cands_.clear();
+  gencands_.clear();
+}
+
 
 
 void MaxVioBrancher::updateAfterSolve(NodePtr , ConstSolutionPtr )
