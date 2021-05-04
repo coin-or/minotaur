@@ -150,40 +150,39 @@ private:
   struct BoundTighteningStats
   {
     int niters;        ///> Number of iterations
-    VariableSet qvars; ///> The variables with quadratic terms
-    int nqlb;          ///> Number of quadratic variables with finite lb
-    int nqub;          ///> Number of quadratic variables with finite ub
-    int nqlbs;         ///> Number of quadratic variables whose lb was
-                       ///> found by simple tightening
-    int nqubs;         ///> Number of quadratic variables whose ub was
-                       ///> found by simple tightening
-    int vBnds;         ///> Number of times bounds tightened by
-                       ///> simple tightening
-    int cBnds;         ///> Number of times cons tightened by
-                       ///> simple tightening
-    int nqlbq;         ///> Number of quadratic variables whose lb was
-                       ///> found by quad tightening
-    int nqubq;         ///> Number of quadratic variables whose ub was
-                       ///> found by quad tightening
-    int vBndq;         ///> Number of times bounds tightened by
-                       ///> quad tightening
-    int cBndq;         ///> Number of times cons tightened by
-                       ///> quad tightening
-    int nqlbl;         ///> Number of quadratic variables whose lb was
-                       ///> found by lp tightening
-    int nqubl;         ///> Number of quadratic variables whose ub was
-                       ///> found by lp tightening
-    int vBndl;         ///> Number of times bounds tightened by
-                       ///> lp tightening
+    //VariableSet qvars; ///> The variables with quadratic terms
+    //int nqlb;          ///> Number of quadratic variables with finite lb
+    //int nqub;          ///> Number of quadratic variables with finite ub
+    //int nqlbs;         ///> Number of quadratic variables whose lb was
+    //                   ///> found by simple tightening
+    //int nqubs;         ///> Number of quadratic variables whose ub was
+    //                   ///> found by simple tightening
+    //int vBnds;         ///> Number of times bounds tightened by
+    //                   ///> simple tightening
+    //int cBnds;         ///> Number of times cons tightened by
+    //                   ///> simple tightening
+    //int nqlbq;         ///> Number of quadratic variables whose lb was
+    //                   ///> found by quad tightening
+    //int nqubq;         ///> Number of quadratic variables whose ub was
+    //                   ///> found by quad tightening
+    //int vBndq;         ///> Number of times bounds tightened by
+    //                   ///> quad tightening
+    //int cBndq;         ///> Number of times cons tightened by
+    //                   ///> quad tightening
+    //int nqlbl;         ///> Number of quadratic variables whose lb was
+    //                   ///> found by lp tightening
+    //int nqubl;         ///> Number of quadratic variables whose ub was
+    //                   ///> found by lp tightening
+    //int vBndl;         ///> Number of times bounds tightened by
+    //                   ///> lp tightening
     int nLP;           ///> Number of LP solved
     int dlb;           ///> Number of variables for which default lb was added
     int dub;           ///> Number of variables for which default ub was added
-    double time;       ///> Time taken for presolve
     double timeLP;     ///> Time taken in solving LPs
-    double avg_range;  ///> Average range of bounds of quadratic variables
-    double sd_range;   ///> Standard deviation of range
-    double body_diag;  ///> The length of body diagonal of hypercube formed by
-                       ///> the range of quadratic variables
+    //double avg_range;  ///> Average range of bounds of quadratic variables
+    //double sd_range;   ///> Standard deviation of range
+    //double body_diag;  ///> The length of body diagonal of hypercube formed by
+    //                   ///> the range of quadratic variables
   };
 
   /// Absolute feasibility tolerance
@@ -268,8 +267,6 @@ private:
   /// This will add default variable bounds if finite bounds
   /// are not found by presolve
   double addDefaultBounds_(VariablePtr x, BoundType lu);
-
-  void calcRangeOfQuadVars_();
 
   /**
    * \brief Calculate the upper bound of a univariate quadratic of the form
@@ -664,7 +661,6 @@ private:
    * infeasible. Flase otherwise.
    */
   bool varBndsFromCons_(bool *changed);
-  void writeBTStats_(std::ostream &out, bool flag);
 };
 
 /// Shared pointer to QuadHandler.

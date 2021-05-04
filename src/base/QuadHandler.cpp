@@ -1,4 +1,4 @@
-// 
+
 //     MINOTAUR -- It's only 1/2 bull
 // 
 //     (C)opyright 2010 - 2017 The MINOTAUR Team.
@@ -103,7 +103,7 @@ QuadHandler::~QuadHandler()
     delete *it;
   }
   x0x1Funs_.clear();
-  bStats_.qvars.clear();
+  //bStats_.qvars.clear();
   if (nlpe_) {
     delete nlpe_;
   }
@@ -844,26 +844,26 @@ void QuadHandler::coeffImprov_() {
   }
 }
 
-void QuadHandler::calcRangeOfQuadVars_() {
-  double tot_range = 0, tot_sqr_range = 0, range;
-  for (VariableSet::iterator vit = bStats_.qvars.begin();
-         vit != bStats_.qvars.end(); ++vit) {
-    range = (*vit)->getUb() - (*vit)->getLb();
-    tot_range += range;
-    tot_sqr_range += range*range;
-  }
-
-  bStats_.avg_range = tot_range/bStats_.qvars.size();
-  bStats_.body_diag = sqrt(tot_sqr_range);
-
-  tot_sqr_range = 0;
-  for (VariableSet::iterator vit = bStats_.qvars.begin();
-         vit != bStats_.qvars.end(); ++vit) {
-    range = (*vit)->getUb() - (*vit)->getLb();
-    tot_sqr_range += (range - bStats_.avg_range)*(range - bStats_.avg_range);
-  }
-  bStats_.sd_range = sqrt(tot_sqr_range/bStats_.qvars.size());
-}
+//void QuadHandler::calcRangeOfQuadVars_() {
+//  double tot_range = 0, tot_sqr_range = 0, range;
+//  for (VariableSet::iterator vit = bStats_.qvars.begin();
+//         vit != bStats_.qvars.end(); ++vit) {
+//    range = (*vit)->getUb() - (*vit)->getLb();
+//    tot_range += range;
+//    tot_sqr_range += range*range;
+//  }
+//
+//  bStats_.avg_range = tot_range/bStats_.qvars.size();
+//  bStats_.body_diag = sqrt(tot_sqr_range);
+//
+//  tot_sqr_range = 0;
+//  for (VariableSet::iterator vit = bStats_.qvars.begin();
+//         vit != bStats_.qvars.end(); ++vit) {
+//    range = (*vit)->getUb() - (*vit)->getLb();
+//    tot_sqr_range += (range - bStats_.avg_range)*(range - bStats_.avg_range);
+//  }
+//  bStats_.sd_range = sqrt(tot_sqr_range/bStats_.qvars.size());
+//}
 
 bool QuadHandler::isAtBnds_(ConstVariablePtr x, double xval)
 {
@@ -966,9 +966,8 @@ SolveStatus QuadHandler::presolve(PreModQ *, bool *changed)
 
   bool is_inf = false;
   SolveStatus status = Started;
-  QuadraticFunctionPtr qf;
-  ObjectivePtr obj;
-  double stime = timer_->query();
+  //QuadraticFunctionPtr qf;
+  //ObjectivePtr obj;
 
   *changed = false;
 
@@ -980,80 +979,76 @@ SolveStatus QuadHandler::presolve(PreModQ *, bool *changed)
     }
 
   } else {
-    //if (bStats_.niters >= 1) {
-    //  return Finished;
-    //}
-    ++bStats_.niters;
+    //++bStats_.niters;
     coeffImprov_();
-    for (ConstraintConstIterator cit = p_->consBegin(); cit != p_->consEnd();
-                                 ++cit) {
-      if ((*cit)->getFunctionType() == Quadratic ||
-          (*cit)->getFunctionType() == Bilinear) {
-        qf = (*cit)->getFunction()->getQuadraticFunction();
-        if (qf) {
-          for (VarIntMapConstIterator qit = qf->varsBegin();
-               qit != qf->varsEnd(); ++qit) {
-            bStats_.qvars.insert(qit->first);
-          }
-        }
-      }
-    }
-    obj = p_->getObjective();
-    if (obj->getFunctionType() == Quadratic ||
-        obj->getFunctionType() == Bilinear) {
-      qf = obj->getFunction()->getQuadraticFunction();
-      if (qf) {
-        for (VarIntMapConstIterator qit = qf->varsBegin();
-             qit != qf->varsEnd(); ++qit) {
-          bStats_.qvars.insert(qit->first);
-        }
-      }
-    }
-    for (VariableSet::iterator vit = bStats_.qvars.begin();
-         vit != bStats_.qvars.end(); ++vit) {
-      if ((*vit)->getLb() > -INFINITY) {
-        ++bStats_.nqlb;
-      }
-      if ((*vit)->getUb() < INFINITY) {
-        ++bStats_.nqub;
-      }
-    } 
+    //for (ConstraintConstIterator cit = p_->consBegin(); cit != p_->consEnd();
+    //                             ++cit) {
+    //  if ((*cit)->getFunctionType() == Quadratic ||
+    //      (*cit)->getFunctionType() == Bilinear) {
+    //    qf = (*cit)->getFunction()->getQuadraticFunction();
+    //    if (qf) {
+    //      for (VarIntMapConstIterator qit = qf->varsBegin();
+    //           qit != qf->varsEnd(); ++qit) {
+    //        bStats_.qvars.insert(qit->first);
+    //      }
+    //    }
+    //  }
+    //}
+    //obj = p_->getObjective();
+    //if (obj->getFunctionType() == Quadratic ||
+    //    obj->getFunctionType() == Bilinear) {
+    //  qf = obj->getFunction()->getQuadraticFunction();
+    //  if (qf) {
+    //    for (VarIntMapConstIterator qit = qf->varsBegin();
+    //         qit != qf->varsEnd(); ++qit) {
+    //      bStats_.qvars.insert(qit->first);
+    //    }
+    //  }
+    //}
+    //for (VariableSet::iterator vit = bStats_.qvars.begin();
+    //     vit != bStats_.qvars.end(); ++vit) {
+    //  if ((*vit)->getLb() > -INFINITY) {
+    //    ++bStats_.nqlb;
+    //  }
+    //  if ((*vit)->getUb() < INFINITY) {
+    //    ++bStats_.nqub;
+    //  }
+    //} 
     is_inf = tightenSimple_(changed);
     if (is_inf) {
       status = SolvedInfeasible;
       return status;
     }
-    for (VariableSet::iterator vit = bStats_.qvars.begin();
-         vit != bStats_.qvars.end(); ++vit) {
-      if ((*vit)->getLb() > -INFINITY) {
-        ++bStats_.nqlbs;
-      }
-      if ((*vit)->getUb() < INFINITY) {
-        ++bStats_.nqubs;
-      }
-    }
-    bStats_.nqlbs -= bStats_.nqlb;
-    bStats_.nqubs -= bStats_.nqub;
-    p_->delMarkedCons();
+    //for (VariableSet::iterator vit = bStats_.qvars.begin();
+    //     vit != bStats_.qvars.end(); ++vit) {
+    //  if ((*vit)->getLb() > -INFINITY) {
+    //    ++bStats_.nqlbs;
+    //  }
+    //  if ((*vit)->getUb() < INFINITY) {
+    //    ++bStats_.nqubs;
+    //  }
+    //}
+    //bStats_.nqlbs -= bStats_.nqlb;
+    //bStats_.nqubs -= bStats_.nqub;
+    //p_->delMarkedCons();
 
     is_inf = tightenQuad_(changed);
     if (is_inf) {
       status = SolvedInfeasible;
       return status;
     }
-    for (VariableSet::iterator vit = bStats_.qvars.begin();
-         vit != bStats_.qvars.end(); ++vit) {
-      if ((*vit)->getLb() > -INFINITY) {
-        ++bStats_.nqlbq;
-      }
-      if ((*vit)->getUb() < INFINITY) {
-        ++bStats_.nqubq;
-      }
-    }
-    bStats_.nqlbq -= bStats_.nqlb + bStats_.nqlbs;
-    bStats_.nqubq -= bStats_.nqub + bStats_.nqubs;
+    //for (VariableSet::iterator vit = bStats_.qvars.begin();
+    //     vit != bStats_.qvars.end(); ++vit) {
+    //  if ((*vit)->getLb() > -INFINITY) {
+    //    ++bStats_.nqlbq;
+    //  }
+    //  if ((*vit)->getUb() < INFINITY) {
+    //    ++bStats_.nqubq;
+    //  }
+    //}
+    //bStats_.nqlbq -= bStats_.nqlb + bStats_.nqlbs;
+    //bStats_.nqubq -= bStats_.nqub + bStats_.nqubs;
     p_->delMarkedCons();
-    bStats_.time = timer_->query()-stime;
   }
 
   if (Started==status) {
@@ -1071,55 +1066,55 @@ bool QuadHandler::presolveNode(RelaxationPtr rel, NodePtr,
   bool changed = true;
   bool is_inf = false;
   double stime = timer_->query();
-  QuadraticFunctionPtr qf;
-  ObjectivePtr obj;
+  //QuadraticFunctionPtr qf;
+  //ObjectivePtr obj;
   bool lpchanged = false;
   double ub;
 
   // visit each quadratic constraint and see if bounds can be improved.
   if (bStats_.niters < 1) {
     ++bStats_.niters;
-    for (ConstraintConstIterator cit = p_->consBegin(); cit != p_->consEnd();
-                                 ++cit) {
-      if ((*cit)->getFunctionType() == Quadratic ||
-          (*cit)->getFunctionType() == Bilinear) {
-        qf = (*cit)->getFunction()->getQuadraticFunction();
-        if (qf) {
-          for (VarIntMapConstIterator qit = qf->varsBegin();
-               qit != qf->varsEnd(); ++qit) {
-            bStats_.qvars.insert(qit->first);
-          }
-        }
-      }
-    }
-    obj = p_->getObjective();
-    if (obj->getFunctionType() == Quadratic ||
-        obj->getFunctionType() == Bilinear) {
-      qf = obj->getFunction()->getQuadraticFunction();
-      if (qf) {
-        for (VarIntMapConstIterator qit = qf->varsBegin();
-             qit != qf->varsEnd(); ++qit) {
-          bStats_.qvars.insert(qit->first);
-        }
-      }
-    }
-    for (VariableSet::iterator vit = bStats_.qvars.begin();
-         vit != bStats_.qvars.end(); ++vit) {
-      if ((*vit)->getLb() > -INFINITY) {
-        ++bStats_.nqlb;
-      }
-      if ((*vit)->getUb() < INFINITY) {
-        ++bStats_.nqub;
-      }
-    } 
-    calcRangeOfQuadVars_();
-    writeBTStats_(logger_->msgStream(LogDebug), true);
+    //for (ConstraintConstIterator cit = p_->consBegin(); cit != p_->consEnd();
+    //                             ++cit) {
+    //  if ((*cit)->getFunctionType() == Quadratic ||
+    //      (*cit)->getFunctionType() == Bilinear) {
+    //    qf = (*cit)->getFunction()->getQuadraticFunction();
+    //    if (qf) {
+    //      for (VarIntMapConstIterator qit = qf->varsBegin();
+    //           qit != qf->varsEnd(); ++qit) {
+    //        bStats_.qvars.insert(qit->first);
+    //      }
+    //    }
+    //  }
+    //}
+    //obj = p_->getObjective();
+    //if (obj->getFunctionType() == Quadratic ||
+    //    obj->getFunctionType() == Bilinear) {
+    //  qf = obj->getFunction()->getQuadraticFunction();
+    //  if (qf) {
+    //    for (VarIntMapConstIterator qit = qf->varsBegin();
+    //         qit != qf->varsEnd(); ++qit) {
+    //      bStats_.qvars.insert(qit->first);
+    //    }
+    //  }
+    //}
+    //for (VariableSet::iterator vit = bStats_.qvars.begin();
+    //     vit != bStats_.qvars.end(); ++vit) {
+    //  if ((*vit)->getLb() > -INFINITY) {
+    //    ++bStats_.nqlb;
+    //  }
+    //  if ((*vit)->getUb() < INFINITY) {
+    //    ++bStats_.nqub;
+    //  }
+    //} 
+    //calcRangeOfQuadVars_();
+    //writeBTStats_(logger_->msgStream(LogDebug), true);
     ub = s_pool->getBestSolutionValue();
     is_inf = tightenLP_(rel, ub, &lpchanged, p_mods, r_mods);
     if (is_inf) {
-      bStats_.avg_range = -INFINITY;
-      bStats_.sd_range = -INFINITY;
-      bStats_.body_diag = -INFINITY;
+      //bStats_.avg_range = -INFINITY;
+      //bStats_.sd_range = -INFINITY;
+      //bStats_.body_diag = -INFINITY;
       return true;
     }
 
@@ -1127,21 +1122,21 @@ bool QuadHandler::presolveNode(RelaxationPtr rel, NodePtr,
       changed = true;
     }
 
-    for (VariableSet::iterator vit = bStats_.qvars.begin();
-         vit != bStats_.qvars.end(); ++vit) {
-      if ((*vit)->getLb() > -INFINITY) {
-        ++bStats_.nqlbl;
-      }
-      if ((*vit)->getUb() < INFINITY) {
-        ++bStats_.nqubl;
-      }
-    }
-    bStats_.nqlbl -= bStats_.nqlb;
-    bStats_.nqubl -= bStats_.nqub;
+    //for (VariableSet::iterator vit = bStats_.qvars.begin();
+    //     vit != bStats_.qvars.end(); ++vit) {
+    //  if ((*vit)->getLb() > -INFINITY) {
+    //    ++bStats_.nqlbl;
+    //  }
+    //  if ((*vit)->getUb() < INFINITY) {
+    //    ++bStats_.nqubl;
+    //  }
+    //}
+    //bStats_.nqlbl -= bStats_.nqlb;
+    //bStats_.nqubl -= bStats_.nqub;
     bStats_.timeLP = timer_->query()-stime;
     stime = timer_->query();
-    calcRangeOfQuadVars_();
-    writeBTStats_(logger_->msgStream(LogDebug), false);
+    //calcRangeOfQuadVars_();
+    //writeBTStats_(logger_->msgStream(LogDebug), false);
   }
   while (true==changed) {
     ++pStats_.iters;
@@ -1349,7 +1344,6 @@ void QuadHandler::relax_(RelaxationPtr rel, bool *)
 
   assert(0 == rel->checkConVars());
 
-  //writeBTStats_(std::cout, true);
   return;
 }
 
@@ -1398,28 +1392,28 @@ void QuadHandler::resetStats_()
   nlpStats_.iter_limit = 0;
 
   bStats_.niters = 0;
-  bStats_.qvars.clear();
-  bStats_.nqlb = 0;
-  bStats_.nqub = 0;
-  bStats_.nqlbs = 0;
-  bStats_.nqubs = 0;
-  bStats_.vBnds = 0;
-  bStats_.cBnds = 0;
-  bStats_.nqlbq = 0;
-  bStats_.nqubq = 0;
-  bStats_.vBndq = 0;
-  bStats_.cBndq = 0;
-  bStats_.nqlbl = 0;
-  bStats_.nqubl = 0;
-  bStats_.vBndl = 0;
+  //bStats_.qvars.clear();
+  //bStats_.nqlb = 0;
+  //bStats_.nqub = 0;
+  //bStats_.nqlbs = 0;
+  //bStats_.nqubs = 0;
+  //bStats_.vBnds = 0;
+  //bStats_.cBnds = 0;
+  //bStats_.nqlbq = 0;
+  //bStats_.nqubq = 0;
+  //bStats_.vBndq = 0;
+  //bStats_.cBndq = 0;
+  //bStats_.nqlbl = 0;
+  //bStats_.nqubl = 0;
+  //bStats_.vBndl = 0;
   bStats_.nLP = 0;
   bStats_.dlb = 0;
   bStats_.dub = 0;
-  bStats_.time = 0;
+  //bStats_.time = 0;
   bStats_.timeLP = 0;
-  bStats_.avg_range = 0;
-  bStats_.sd_range = 0;
-  bStats_.body_diag = 0;
+  //bStats_.avg_range = 0;
+  //bStats_.sd_range = 0;
+  //bStats_.body_diag = 0;
 }
 
 
@@ -1798,7 +1792,7 @@ bool QuadHandler::tightenLP_(RelaxationPtr rel, double bestSol, bool *changed,
       return true;
     }
     if (c1 == true) {
-      ++bStats_.vBndl;
+      //++bStats_.vBndl;
       *changed = true;
     }
   }
@@ -1881,7 +1875,7 @@ bool QuadHandler::tightenQuad_(bool *changed) {
   DoubleVector::iterator liter, uiter;
   double lb, ub, clb, cub;
   bool c1, c2;
-  UInt count_inf_lb, count_inf_ub;
+  UInt count_inf_lb = 0, count_inf_ub = 0;
 
   obj = p_->getObjective();
   cub = env_->getOptions()->findDouble("obj_cut_off")->getValue()
@@ -1922,7 +1916,7 @@ bool QuadHandler::tightenQuad_(bool *changed) {
                   return true;
                 }
                 if (c1 == true) {
-                  ++bStats_.vBndq;
+                  //++bStats_.vBndq;
                   *changed = true;
                 }
                 ++liter;
@@ -1941,11 +1935,11 @@ bool QuadHandler::tightenQuad_(bool *changed) {
                   return true;
                 }
                 if (c1 == true) {
-                  ++bStats_.vBndq;
+                  //++bStats_.vBndq;
                   *changed = true;
                 }
                 if (c2 == true) {
-                  ++bStats_.vBndq;
+                  //++bStats_.vBndq;
                   *changed = true;
                 }
                 ++liter;
@@ -1968,7 +1962,7 @@ bool QuadHandler::tightenQuad_(bool *changed) {
                   return true;
                 }
                 if (c1 == true) {
-                  ++bStats_.vBndq;
+                  //++bStats_.vBndq;
                   *changed = true;
                 }
                 ++liter;
@@ -2025,11 +2019,11 @@ bool QuadHandler::tightenQuad_(bool *changed) {
           cub = cub < implUb ? cub : implUb;
           if (clb > c->getLb() + aTol_) {
             p_->changeBound(c, Lower, clb);
-            ++bStats_.cBndq;
+            //++bStats_.cBndq;
           }
           if (cub < c->getUb() - aTol_) {
             p_->changeBound(c, Upper, cub);
-            ++bStats_.cBndq;
+            //++bStats_.cBndq;
           }
           for (VariablePairGroupConstIterator qit = qf->begin();
                qit != qf->end(); ++qit) {
@@ -2049,7 +2043,7 @@ bool QuadHandler::tightenQuad_(bool *changed) {
                 return true;
               }
               if (c1 == true) {
-                ++bStats_.vBndq;
+                //++bStats_.vBndq;
                 *changed = true;
               }
               ++liter;
@@ -2068,11 +2062,11 @@ bool QuadHandler::tightenQuad_(bool *changed) {
                 return true;
               }
               if (c1 == true) {
-                ++bStats_.vBndq;
+                //++bStats_.vBndq;
                 *changed = true;
               }
               if (c2 == true) {
-                ++bStats_.vBndq;
+                //++bStats_.vBndq;
                 *changed = true;
               }
               ++liter;
@@ -2095,7 +2089,7 @@ bool QuadHandler::tightenQuad_(bool *changed) {
                 return true;
               }
               if (c1 == true) {
-                ++bStats_.vBndq;
+                //++bStats_.vBndq;
                 *changed = true;
               }
               ++liter;
@@ -2164,7 +2158,7 @@ bool QuadHandler::tightenSimple_(bool *changed) {
   ObjectivePtr obj;
   double clb, cub, lb, ub;
   bool c1, c2;
-  UInt count_inf_lb, count_inf_ub;
+  UInt count_inf_lb = 0, count_inf_ub = 0;
 
   obj = p_->getObjective();
   cub = env_->getOptions()->findDouble("obj_cut_off")->getValue()
@@ -2174,8 +2168,6 @@ bool QuadHandler::tightenSimple_(bool *changed) {
   if (cub < INFINITY) {
     implLb = 0.0;
     implUb = 0.0;
-    count_inf_lb = 0;
-    count_inf_ub = 0;
     lf = obj->getFunction()->getLinearFunction();
     qf = obj->getFunction()->getQuadraticFunction();
     // Forward Propagation
@@ -2203,7 +2195,7 @@ bool QuadHandler::tightenSimple_(bool *changed) {
           return true;
         }
         if (c1 == true) {
-          ++bStats_.vBnds;
+          //++bStats_.vBnds;
           *changed = true;
         }
         ++liter;
@@ -2227,11 +2219,11 @@ bool QuadHandler::tightenSimple_(bool *changed) {
           return true;
         }
         if (c1 == true) {
-          ++bStats_.vBnds;
+          //++bStats_.vBnds;
           *changed = true;
         }
         if (c2 == true) {
-          ++bStats_.vBnds;
+          //++bStats_.vBnds;
           *changed = true;
         }
         ++liter;
@@ -2248,6 +2240,8 @@ bool QuadHandler::tightenSimple_(bool *changed) {
     c = *cit;
     implLb = 0.0;
     implUb = 0.0;
+    count_inf_lb = 0;
+    count_inf_ub = 0;
     if (c->getFunctionType() == Quadratic || c->getFunctionType() == Bilinear){
       // delete the constraint if unbounded on both sides
       clb = c->getLb();
@@ -2288,11 +2282,11 @@ bool QuadHandler::tightenSimple_(bool *changed) {
       cub = cub < implUb ? cub : implUb;
       if (clb > c->getLb() + aTol_) {
         p_->changeBound(c, Lower, clb);
-        ++bStats_.cBnds;
+        //++bStats_.cBnds;
       }
       if (cub < c->getUb() - aTol_) {
         p_->changeBound(c, Upper, cub);
-        ++bStats_.cBnds;
+        //++bStats_.cBnds;
       }
       if (lf) {
         for (VariableGroupConstIterator lit = lf->termsBegin();
@@ -2308,7 +2302,7 @@ bool QuadHandler::tightenSimple_(bool *changed) {
             return true;
           }
           if (c1 == true) {
-            ++bStats_.vBnds;
+            //++bStats_.vBnds;
             *changed = true;
           }
           ++liter;
@@ -2332,11 +2326,11 @@ bool QuadHandler::tightenSimple_(bool *changed) {
             return true;
           }
           if (c1 == true) {
-            ++bStats_.vBnds;
+            //++bStats_.vBnds;
             *changed = true;
           }
           if (c2 == true) {
-            ++bStats_.vBnds;
+            //++bStats_.vBnds;
             *changed = true;
           }
           ++liter;
@@ -2590,6 +2584,16 @@ void QuadHandler::writeStats(std::ostream &out) const
     << me_ << "Time taken in separation       = "<< sStats_.time   << std::endl
     ;
 
+  out << me_ << "Statistics for Bound Tightening:" << std::endl << me_
+    << "Number of LPs solved                               = " <<
+    bStats_.nLP << std::endl << me_
+    << "Number of variables for which default lb was added = " <<
+    bStats_.dlb << std::endl << me_
+    << "Number of variables for which default ub was added = " <<
+    bStats_.dub << std::endl << me_
+    << "Time taken in solving LPs                          = " <<
+    bStats_.timeLP << std::endl;
+  
   if (nlpStats_.flag) {
     out << me_ << "Statistics for NLP solved by QuadHandler:" << std::endl
       << me_ << "Number of NLPs solved                         = "
@@ -2600,30 +2604,6 @@ void QuadHandler::writeStats(std::ostream &out) const
       << nlpStats_.inf << std::endl
       << me_ << "Number of NLPs for which EngineIterationLimit = "
       << nlpStats_.iter_limit << std::endl;
-  }
-}
-
-void QuadHandler::writeBTStats_(std::ostream &out, bool flag) {
-  if (flag) {
-    out << me_ << "Statistics for Bound tightening:" << std::endl << me_ <<
-    "Time taken for presolve      ="
-    << bStats_.time << std::endl << me_ <<
-    "Average Range of variable bounds                = "
-    << bStats_.avg_range << std::endl << me_ <<
-    "Standard deviation of Range of variable bounds  = "
-    << bStats_.sd_range << std::endl << me_ <<
-    "Length of Body Diagonal      = "
-    << bStats_.body_diag << std::endl;
-  } else {
-    out << me_ << "Statistics for Bound Tightening:" << std::endl << me_ <<
-    "Time taken in solving LPs      ="
-    << bStats_.timeLP << std::endl << me_ <<
-    "Average Range of variable bounds after LP tightening                = "
-    << bStats_.avg_range << std::endl << me_ <<
-    "Standard deviation of Range of variable bounds after LP tightening  = "
-    << bStats_.sd_range << std::endl << me_ <<
-    "Length of Body Diagonal after LP tightening      = "
-    << bStats_.body_diag << std::endl;
   }
 }
 

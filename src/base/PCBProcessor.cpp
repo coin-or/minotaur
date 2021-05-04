@@ -55,6 +55,7 @@ PCBProcessor::PCBProcessor (EnvPtr env, EnginePtr engine, HandlerVector handlers
   stats_.prob = 0;
   stats_.proc = 0;
   stats_.ub = 0;
+  stats_.tol_err = 0;
 }
 
 
