@@ -552,7 +552,8 @@ void SimpleTransformer::refNonlinCons_(ConstProblemPtr oldp)
                    (d > c->getUb()+zTol_ ||
                     d < c->getLb()-zTol_)) {
             logger_->msgStream(LogInfo) << me_ << "problem infeasible." << std::endl;
-          }
+        }
+        delete lf;
       } else if (v) {
           lf2->incTerm(v, 1.0);
           f2 = (FunctionPtr) new Function(lf2);
@@ -560,9 +561,6 @@ void SimpleTransformer::refNonlinCons_(ConstProblemPtr oldp)
           lHandler_->addConstraint(cnew);
       } 
     } // other case already dealt with in copyLinear_() 
-  }
-  if (lf) {
-    delete lf;
   }
 }
 
