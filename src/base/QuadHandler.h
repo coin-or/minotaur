@@ -289,6 +289,9 @@ private:
   bool calcVarBnd_(VariablePtr v, double coef, double lb, double ub,
                    bool *c1);
 
+  bool calcVarBnd_(RelaxationPtr rel, VariablePtr v, double coef, double lb,
+                   double ub, bool *c1, ModVector &p_mods, ModVector &r_mods);
+
   /**
    * \brief Calculate bounds of the variables from a quadratic term bounds
    * \param[in] v1 The first variable in the quadratic term
@@ -301,6 +304,10 @@ private:
    */
   bool calcVarBnd_(VariablePtr v1, VariablePtr v2, double coef, double lb,
                    double ub, bool *c1, bool*c2);
+
+  bool calcVarBnd_(RelaxationPtr rel, VariablePtr v1, VariablePtr v2,
+                   double coef, double lb, double ub, bool *c1, bool *c2,
+                   ModVector &p_mods, ModVector &r_mods);
   
   /**
    * \brief Calculate bounds of the variables from a univariate quadratic
@@ -314,6 +321,10 @@ private:
    */
   bool calcVarBnd_(VariablePtr v, double a, double b, double ly, double uy,
                    bool *c1);
+
+  bool calcVarBnd_(RelaxationPtr rel, VariablePtr v, double a, double b,
+                   double ly, double uy, bool *c1, ModVector &p_mods,
+                   ModVector &r_mods);
 
   void coeffImprov_();
 
@@ -414,6 +425,11 @@ private:
                     double &implLb, double &implUb, DoubleVector &fwdLb,
                     DoubleVector &fwdUb, UInt &count_inf_lb,
                     UInt &count_inf_ub, VarVector &qvars);
+
+  bool getQfLfBnds_(RelaxationPtr rel, LinearFunctionPtr lf,
+                    QuadraticFunctionPtr qf, double &implLb, double &implUb,
+                    DoubleVector &fwdLb, DoubleVector &fwdUb,
+                    UInt &count_inf_lb, UInt &count_inf_ub, VarVector &qvars);
 
   /**
    * \brief Calculate sum of a vector except current element
@@ -558,6 +574,9 @@ private:
    * variables.
    */
   bool tightenQuad_(bool *changed);
+
+  bool tightenQuad_(RelaxationPtr rel, double bestSol, bool *changed,
+                    ModVector &p_mods, ModVector &r_mods);
 
   /**
    * \brief Bound tightening of the problem by using simple interval
