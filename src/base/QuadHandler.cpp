@@ -72,6 +72,7 @@ QuadHandler::QuadHandler(EnvPtr env, ProblemPtr problem)
   timer_ = env->getTimer();
   defaultLb_ = 1e12;
   defaultUb_ = -1e12;
+  doQT_ = false;
 }
 
 QuadHandler::QuadHandler(EnvPtr env, ProblemPtr problem, ProblemPtr orig_p)
@@ -91,6 +92,7 @@ QuadHandler::QuadHandler(EnvPtr env, ProblemPtr problem, ProblemPtr orig_p)
   timer_ = env->getTimer();
   defaultLb_ = 1e12;
   defaultUb_ = -1e12;
+  doQT_ = false;
 }
 
 QuadHandler::~QuadHandler()
@@ -190,7 +192,7 @@ double QuadHandler::addDefaultBounds_(VariablePtr v, BoundType lu) {
       }
       v->setLb_(defaultLb_);
     }
-    logger_->msgStream(LogDebug) << me_
+    logger_->msgStream(LogError) << me_
                                  << "WARNING: Adding Default lower bound for "
                                  << v->getName() << "Lower bound value = "
                                  << defaultLb_ << std::endl;
@@ -214,7 +216,7 @@ double QuadHandler::addDefaultBounds_(VariablePtr v, BoundType lu) {
       }
       v->setUb_(defaultUb_);
     }
-    logger_->msgStream(LogDebug) << me_
+    logger_->msgStream(LogError) << me_
                                  << "WARNING: Adding Default upper bound for "
                                  << v->getName() << "Upper bound value = "
                                  << defaultUb_ << std::endl;
@@ -1166,14 +1168,16 @@ bool QuadHandler::presolveNode(RelaxationPtr rel, NodePtr,
     }
   }
 
-  lchanged = false;
-  is_inf = tightenQuad_(rel, ub, &lchanged, p_mods, r_mods);
-  if (true == lchanged) {
-    changed = true;
+  if (doQT_) {
     lchanged = false;
-  }
-  if (is_inf) {
-    return true;
+    is_inf = tightenQuad_(rel, ub, &lchanged, p_mods, r_mods);
+    if (true == lchanged) {
+      changed = true;
+      lchanged = false;
+    }
+    if (is_inf) {
+      return true;
+    }
   }
 
   for (LinSqrMapIter it=x2Funs_.begin(); it != x2Funs_.end(); ++it) {
@@ -1931,9 +1935,13 @@ bool QuadHandler::tightenLP_(RelaxationPtr rel, double bestSol, bool *changed,
     lp->changeObj(flp, 0.0);
     lb = getBndByLP_(is_inf);
     if (is_inf) {
-      delete lpe_;
-      delete lp;
-      return true;
+      if (bStats_.nLP == 1) {
+        isfeas = false;
+        delete lpe_;
+        delete lp;
+        return true;
+      }
+      continue;
     }
     lflp = (LinearFunctionPtr) new LinearFunction();
     lflp->addTerm(*vit, -1.0);
@@ -1941,9 +1949,7 @@ bool QuadHandler::tightenLP_(RelaxationPtr rel, double bestSol, bool *changed,
     lp->changeObj(flp, 0.0);
     ub = -getBndByLP_(is_inf);
     if (is_inf) {
-      delete lpe_;
-      delete lp;
-      return true;
+      continue;
     }
     c1 = false;
     if (updatePBounds_(p_->getVariable((*vit)->getIndex()), lb, ub,
@@ -2122,6 +2128,7 @@ bool QuadHandler::tightenQuad_(bool *changed) {
           // Forward Propagation
           if (getQfLfBnds_(lf, qf, implLb, implUb, fwdLb, fwdUb, count_inf_lb,
                            count_inf_ub, qvars)) {
+            doQT_ = true;
             // Backward Propagation
             liter = fwdLb.begin();
             uiter = fwdUb.begin();
@@ -2223,6 +2230,7 @@ bool QuadHandler::tightenQuad_(bool *changed) {
                                     count_inf_lb, count_inf_ub, qvars)) {
             continue;
           }
+          doQT_ = true;
           clb = c->getLb();
           cub = c->getUb();
           

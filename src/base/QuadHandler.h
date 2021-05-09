@@ -228,6 +228,9 @@ private:
   /// Statistics about presolve
   PresolveStats pStats_;
 
+  /// if true only then tightenQuad_ will be called every node
+  bool doQT_;
+
   /// Relative feasibility tolerance
   double rTol_;
 
