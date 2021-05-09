@@ -1936,7 +1936,6 @@ bool QuadHandler::tightenLP_(RelaxationPtr rel, double bestSol, bool *changed,
     lb = getBndByLP_(is_inf);
     if (is_inf) {
       if (bStats_.nLP == 1) {
-        isfeas = false;
         delete lpe_;
         delete lp;
         return true;
