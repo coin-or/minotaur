@@ -1168,7 +1168,7 @@ bool QuadHandler::presolveNode(RelaxationPtr rel, NodePtr,
     }
   }
 
-  if (doQT_) {
+  if (doQT_ || bStats_.niters <= 1) {
     lchanged = false;
     is_inf = tightenQuad_(rel, ub, &lchanged, p_mods, r_mods);
     if (true == lchanged) {
