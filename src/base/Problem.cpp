@@ -422,10 +422,14 @@ ProblemPtr Problem::clone(EnvPtr env) const
   // add objective
   oPtr = getObjective();
   if (oPtr) {
-    f = oPtr->getFunction()->cloneWithVars(vit0, &err);
-    assert(err==0);
-    clonePtr->newObjective(f, oPtr->getConstant(),
-                           oPtr->getObjectiveType(), oPtr->getName()); 
+    if (oPtr->getFunction()) {
+      f = oPtr->getFunction()->cloneWithVars(vit0, &err);
+      assert(err==0);
+      clonePtr->newObjective(f, oPtr->getConstant(),
+                             oPtr->getObjectiveType(), oPtr->getName());
+    } else {
+      clonePtr->newObjective(oPtr->getConstant(), oPtr->getObjectiveType());
+    }
   } 
 
   clonePtr->jacobian_  = JacobianPtr(); // NULL.
@@ -1448,6 +1452,16 @@ ObjectivePtr Problem::newObjective(FunctionPtr f, double cb,
   return o;
 }
 
+ObjectivePtr Problem::newObjective(double cb, ObjectiveType otyp) {
+  assert(engine_ == 0 ||
+      (!"Cannot add objective after loading problem to engine\n"));
+  if (obj_) {
+    delete obj_; obj_ = 0;
+  }
+  obj_ = new Objective(cb, otyp);
+  consModed_ = true;
+  return obj_;
+}
 
 ObjectivePtr Problem::newObjective(FunctionPtr f, double cb, 
                                    ObjectiveType otyp, std::string name)

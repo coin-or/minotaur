@@ -349,6 +349,8 @@ namespace Minotaur {
     virtual ObjectivePtr newObjective(FunctionPtr f, double cb, 
                                       ObjectiveType otyp);
 
+    virtual ObjectivePtr newObjective(double cb, ObjectiveType otyp);
+
     /** 
      * \brief Add a new objective. 
      *

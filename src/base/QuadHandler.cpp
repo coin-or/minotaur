@@ -1907,7 +1907,7 @@ bool QuadHandler::tightenLP_(RelaxationPtr rel, double bestSol, bool *changed,
                              ModVector &p_mods, ModVector &r_mods) {
   ObjectivePtr obj;
   LinearFunctionPtr lflp = 0;
-  FunctionPtr flp = 0;
+  FunctionPtr flp = 0, f;
   ProblemPtr lp;
   double lb, ub, cub;
   bool is_inf;
@@ -1920,9 +1920,12 @@ bool QuadHandler::tightenLP_(RelaxationPtr rel, double bestSol, bool *changed,
   cub = env_->getOptions()->findDouble("obj_cut_off")->getValue();
   cub = std::min(cub, bestSol);
   if (cub < INFINITY) {
-    flp = obj->getFunction()->cloneWithVars(lp->varsBegin(), &err); 
-    assert(err==0);
-    lp->newConstraint(flp, -INFINITY, cub - obj->getConstant());
+    f = obj->getFunction();
+    if (f) {
+      flp = f->cloneWithVars(lp->varsBegin(), &err); 
+      assert(err==0);
+      lp->newConstraint(flp, -INFINITY, cub - obj->getConstant());
+    }
   }
 
   lpe_->load(lp);
@@ -2474,15 +2477,6 @@ bool QuadHandler::tightenQuad_(RelaxationPtr rel, double bestSol, bool *changed,
           clb = c->getLb();
           cub = c->getUb();
           
-          // Implied bounds already better than constraint bounds.
-          // The constraint is redundant.
-          if (implLb > clb + aTol_ && implUb < cub - aTol_) {
-            p_->markDelete(c);
-            *changed = true;
-            fwdLb.clear();
-            fwdUb.clear();
-            continue;
-          }
           // constraint is infeasible
           if (implLb > cub + aTol_ || implUb < clb - aTol_) {
             return true;
@@ -2493,14 +2487,6 @@ bool QuadHandler::tightenQuad_(RelaxationPtr rel, double bestSol, bool *changed,
           uiter = fwdUb.begin();
           clb = clb > implLb ? clb : implLb;
           cub = cub < implUb ? cub : implUb;
-          if (clb > c->getLb() + aTol_) {
-            p_->changeBound(c, Lower, clb);
-            //++bStats_.cBndq;
-          }
-          if (cub < c->getUb() - aTol_) {
-            p_->changeBound(c, Upper, cub);
-            //++bStats_.cBndq;
-          }
           for (VariablePairGroupConstIterator qit = qf->begin();
                qit != qf->end(); ++qit) {
             if (qit->first.first->getIndex() == qit->first.second->getIndex()
