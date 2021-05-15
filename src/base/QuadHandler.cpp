@@ -192,10 +192,12 @@ double QuadHandler::addDefaultBounds_(VariablePtr v, BoundType lu) {
       }
       v->setLb_(defaultLb_);
     }
-    logger_->msgStream(LogError) << me_
+#if SPEW
+    logger_->msgStream(LogDebug2) << me_
                                  << "WARNING: Adding Default lower bound for "
                                  << v->getName() << "Lower bound value = "
                                  << defaultLb_ << std::endl;
+#endif
     ++bStats_.dlb;
     return defaultLb_;
   } else {
@@ -216,10 +218,12 @@ double QuadHandler::addDefaultBounds_(VariablePtr v, BoundType lu) {
       }
       v->setUb_(defaultUb_);
     }
-    logger_->msgStream(LogError) << me_
+#if SPEW
+    logger_->msgStream(LogDebug2) << me_
                                  << "WARNING: Adding Default upper bound for "
                                  << v->getName() << "Upper bound value = "
                                  << defaultUb_ << std::endl;
+#endif
     ++bStats_.dub;
     return defaultUb_;
   }
@@ -1361,6 +1365,16 @@ void QuadHandler::relax_(RelaxationPtr rel, bool *)
 
   assert(0 == rel->checkConVars());
 
+  if (bStats_.dlb > 0) {
+    logger_->msgStream(LogError) << me_
+                          << "WARNING: Default lower bound was assumed for "
+                          << bStats_.dlb << " variables" << std::endl;
+  }
+  if (bStats_.dub > 0) {
+    logger_->msgStream(LogError) << me_
+                          << "WARNING: Default upper bound was assumed for "
+                          << bStats_.dub << " variables" << std::endl;
+  }
   return;
 }
 

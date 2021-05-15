@@ -34,7 +34,8 @@ Objective::Objective()
 Objective::Objective(double cb, ObjectiveType otyp)
 : cb_(cb), 
   otyp_(otyp), 
-  state_(NormalObj) 
+  state_(NormalObj),
+  f_(0)
 {
 }
 
