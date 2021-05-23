@@ -42,7 +42,10 @@ Reader::~Reader()
 ProblemPtr Reader::readMps(std::string fname, int &err)
 {
   std::ifstream fs;
-  std::string line, word, word2, word3, word4, rhsid, rangeid, bndid;
+  std::string line, word, word2, word3, word4;
+  std::string rhsid="";
+  std::string rangeid="";
+  std::string bndid="";
   ProblemPtr p = 0;
   std::istringstream iss;
   int lcnt, m, n, r;
@@ -359,51 +362,51 @@ ProblemPtr Reader::readMps(std::string fname, int &err)
           << " in line " << lcnt << " undeclared " << std::endl;
         err = 10;
         break;
-      } else {
-        dval = INFINITY;
-        if (iss >> word4) {
-          dval = std::stod(word4, &echars);
-        } else if (word3=="LO" || word3=="UP" || word3=="FX") {
-          logger_->msgStream(LogError) << me_ << "ERROR: " << word3 
-            << " key requires a number in line " << lcnt << std::endl;
-          err = 10;
-          break;
-        }
-        v = p->getVariable(colnames[word3]);
-        if (word=="LO") {
-          p->changeBound(v, Lower, dval);
-        } else if (word=="UP") {
-          if (dval < 0.0) {
-            if (v->getLb() == 0.0) {
-              p->changeBound(v, -INFINITY, dval);
-            } else {
-              p->changeBound(v, Upper, dval);
-            }
+      }
+
+      dval = INFINITY;
+      if (iss >> word4) {
+        dval = std::stod(word4, &echars);
+      } else if (word3=="LO" || word3=="UP" || word3=="FX") {
+        logger_->msgStream(LogError) << me_ << "ERROR: " << word3 
+          << " key requires a number in line " << lcnt << std::endl;
+        err = 10;
+        break;
+      }
+      v = p->getVariable(colnames[word3]);
+      if (word=="LO") {
+        p->changeBound(v, Lower, dval);
+      } else if (word=="UP") {
+        if (dval < 0.0) {
+          if (v->getLb() == 0.0) {
+            p->changeBound(v, -INFINITY, dval);
           } else {
             p->changeBound(v, Upper, dval);
           }
-        } else if (word=="FX") {
-          p->changeBound(v, dval, dval);
-        } else if (word=="FR") {
-          p->changeBound(v, -INFINITY, INFINITY);
-        } else if (word=="MI") {
-          p->changeBound(v, Lower, -INFINITY);
-        } else if (word=="PL") {
-          p->changeBound(v, Upper, INFINITY);
-        } else if (word=="BV") {
-          p->setVarType(v, Binary);
-        } else if (word=="LI") {
-          p->setVarType(v, Integer);
-          p->changeBound(v, Lower, dval);
-        } else if (word=="UI") {
-          p->setVarType(v, Integer);
-          p->changeBound(v, Upper, dval);
         } else {
-          logger_->errStream() << me_ << "ERROR: unknown bound type " << word
-            << " in line " << lcnt << std::endl;
-          err = 10;
-          break;
+          p->changeBound(v, Upper, dval);
         }
+      } else if (word=="FX") {
+        p->changeBound(v, dval, dval);
+      } else if (word=="FR") {
+        p->changeBound(v, -INFINITY, INFINITY);
+      } else if (word=="MI") {
+        p->changeBound(v, Lower, -INFINITY);
+      } else if (word=="PL") {
+        p->changeBound(v, Upper, INFINITY);
+      } else if (word=="BV") {
+        p->setVarType(v, Binary);
+      } else if (word=="LI") {
+        p->setVarType(v, Integer);
+        p->changeBound(v, Lower, dval);
+      } else if (word=="UI") {
+        p->setVarType(v, Integer);
+        p->changeBound(v, Upper, dval);
+      } else {
+        logger_->errStream() << me_ << "ERROR: unknown bound type " << word
+          << " in line " << lcnt << std::endl;
+        err = 10;
+        break;
       }
       break;
     case(7):
