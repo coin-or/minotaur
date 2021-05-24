@@ -720,6 +720,9 @@ int main(int argc, char** argv)
     env->getLogger()->msgStream(LogInfo)
       << "Number of threads = " << numThreads 
       << ". Requires a thread-safe LP and NLP solver." << std::endl;
+  } else {
+    env->getLogger()->msgStream(LogInfo)
+      << "Number of threads = " << numThreads << std::endl;
   }
   parbab = createParBab(env, numThreads, node, relCopy, pCopy, nodePrcssr,
                         parNodeRlxr, handlersCopy, lpeCopy, eCopy, prune);
