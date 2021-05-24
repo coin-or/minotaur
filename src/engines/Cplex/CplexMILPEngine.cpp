@@ -672,7 +672,7 @@ EngineStatus CplexMILPEngine::solve()
 
   /* Set number of threads (default 1) */
   cpxstatus_ = CPXXsetintparam (cpxenv_, CPXPARAM_Threads,
-                                env_->getOptions()->findInt("threads")->getValue());
+                                std::min(env_->getOptions()->findInt("threads")->getValue(), numcores));
   if (cpxstatus_) {
      logger_->msgStream(LogError) << me_ << "Failure to set number of threads, error "
        << cpxstatus_ << std::endl;
@@ -1294,7 +1294,7 @@ EngineStatus CplexMILPEngine::solveSTLazy(double *objLb, SolutionPtr* sol,
 
   /* Set number of threads (default 1) */
   cpxstatus_ = CPXXsetintparam (cpxenv_, CPXPARAM_Threads,
-                                env_->getOptions()->findInt("threads")->getValue());
+                                std::min(env_->getOptions()->findInt("threads")->getValue(), numcores));
 
   if (cpxstatus_) {
      logger_->msgStream(LogError) << me_ << "Failure to set number of threads, error "
