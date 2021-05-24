@@ -991,6 +991,7 @@ void ParQGBranchAndBound::parsolve(ParNodeIncRelaxerPtr parNodeRlxr[],
   if (nodePrcssr[0]->getBrancher()->getName() == "ParReliabilityBrancher") {
     isParRel = true;
   }
+  bool notRampedUp = true;
 
   // memory leak check: remove later
   if (numThreads > 1) {
@@ -1288,6 +1289,14 @@ void ParQGBranchAndBound::parsolve(ParNodeIncRelaxerPtr parNodeRlxr[],
         } else if (shouldStopPar_(wallTimeStart, treeLb)) {
           tm_->updateLb();
           shouldRun = false;
+        } else if (notRampedUp && (nodeCount == numThreads)) {
+          tm_->updateLb();
+          notRampedUp = false;
+#pragma omp critical (logger)
+          logger_->msgStream(LogExtraInfo) << me_
+            << "ramp-up time = "
+            << getWallTime() - wallTimeStart << std::endl;
+          //shouldRun = false;
         } else {
 #if SPEW
 #pragma omp critical (logger)
