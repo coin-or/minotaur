@@ -685,6 +685,8 @@ int main(int argc, char** argv)
     goto CLEANUP;
   }
 
+  env->getLogger()->msgStream(LogInfo) << "Number of processors = "
+    << omp_get_num_procs() << std::endl;
   numThreads = std::min(env->getOptions()->findInt("threads")->getValue(),
                         omp_get_num_procs());
   nodePrcssr = new ParPCBProcessorPtr[numThreads];
