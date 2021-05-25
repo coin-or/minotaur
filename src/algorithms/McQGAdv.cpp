@@ -687,8 +687,9 @@ int main(int argc, char** argv)
 
   env->getLogger()->msgStream(LogInfo) << "Number of processors = "
     << omp_get_num_procs() << std::endl;
-  numThreads = std::min(env->getOptions()->findInt("threads")->getValue(),
-                        omp_get_num_procs());
+  //numThreads = std::min(env->getOptions()->findInt("threads")->getValue(),
+                        //omp_get_num_procs());
+  numThreads = env->getOptions()->findInt("threads")->getValue();
   nodePrcssr = new ParPCBProcessorPtr[numThreads];
   parNodeRlxr = new ParNodeIncRelaxerPtr[numThreads];
   relCopy = new RelaxationPtr[numThreads];
