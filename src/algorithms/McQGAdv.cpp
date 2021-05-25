@@ -689,7 +689,8 @@ int main(int argc, char** argv)
     << omp_get_num_procs() << std::endl;
   //numThreads = std::min(env->getOptions()->findInt("threads")->getValue(),
                         //omp_get_num_procs());
-  numThreads = env->getOptions()->findInt("threads")->getValue();
+  numThreads = std::min(env->getOptions()->findInt("threads")->getValue(),
+                        omp_get_max_threads());
   nodePrcssr = new ParPCBProcessorPtr[numThreads];
   parNodeRlxr = new ParNodeIncRelaxerPtr[numThreads];
   relCopy = new RelaxationPtr[numThreads];
