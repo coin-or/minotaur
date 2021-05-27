@@ -35,6 +35,7 @@
 #include "Presolver.h"
 #include "ProblemSize.h"
 #include "Problem.h"
+#include "QG2.h"
 #include "QuadHandler.h"
 #include "Relaxation.h"
 #include "ReliabilityBrancher.h"
@@ -474,7 +475,32 @@ int main(int argc, char** argv)
 
   inst->setNativeDer();
   err = transform(env, inst, newp, handlers);
-  assert(0==err);
+  assert(0==err || 2==err); // return status 2 means problem is convex
+
+  if (err==2) {
+    // call QG
+    QG2 qg(env);
+    if (0!=qg.showInfo()) {
+      goto CLEANUP;
+    }
+
+    err = qg.loadProblem();
+    if (err) {
+      goto CLEANUP;
+    }
+
+    err = qg.loadProblem();
+    if (err) {
+      goto CLEANUP;
+    }
+
+    err = qg.solve();
+    if (err) {
+      goto CLEANUP;
+    }
+
+    goto CLEANUP;
+  }
 
   env->getLogger()->msgStream(LogExtraInfo) << me 
     << "Presolving transformed problem ... " << std::endl;

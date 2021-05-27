@@ -920,7 +920,10 @@ void SimpleTransformer::reformulate(ProblemPtr &newp, HandlerVector &handlers,
   handlers.push_back(uHandler_);
 
   copyLinear_(p_, newp_);
-  checkQuadConvexity_();
+  if (checkQuadConvexity_()) {
+    status = 2; // status 2 means the problem is convex
+    return;
+  }
   refNonlinCons_(p_);
   refNonlinObj_(p_);
   newp_->calculateSize();

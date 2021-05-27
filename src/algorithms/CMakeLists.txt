@@ -283,6 +283,7 @@ install(TARGETS qgadv RUNTIME DESTINATION bin)
 ## Use the lines meant for bnb as a template.
 ##############################################################################
 set (GLOB_SOURCES
+ QG2.cpp
  Glob.cpp 
 )
 
