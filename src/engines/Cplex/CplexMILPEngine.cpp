@@ -634,6 +634,7 @@ EngineStatus CplexMILPEngine::solve()
   int cur_numcols = CPXXgetnumcols (cpxenv_, cpxlp_);
   double *x = new double[cur_numcols];
   std::ifstream mstfile;
+  int numcores = 1;
 
 #if 0
   /* Write a copy of the problem to a file. */
@@ -660,9 +661,18 @@ EngineStatus CplexMILPEngine::solve()
     }
   }
 
+  /* Get number of processors/cores */
+  cpxstatus_ = CPXXgetnumcores(cpxenv_, &numcores);
+  if (cpxstatus_) {
+     logger_->msgStream(LogError) << me_ << "Failure to get the number of cores, error "
+       << cpxstatus_ << std::endl;
+     goto TERMINATE;
+  }
+  logger_->msgStream(LogInfo) << me_ << "Number of cores = " << numcores << std::endl;
+
   /* Set number of threads (default 1) */
   cpxstatus_ = CPXXsetintparam (cpxenv_, CPXPARAM_Threads,
-                                env_->getOptions()->findInt("threads")->getValue());
+                                std::min(env_->getOptions()->findInt("threads")->getValue(), numcores));
   if (cpxstatus_) {
      logger_->msgStream(LogError) << me_ << "Failure to set number of threads, error "
        << cpxstatus_ << std::endl;
@@ -1240,6 +1250,7 @@ EngineStatus CplexMILPEngine::solveSTLazy(double *objLb, SolutionPtr* sol,
   double *x = new double[cur_numcols];
   double objval = INFINITY;
   double cpxtimeStart = 0, cpxtimeEnd = 0;
+  int numcores = 1;
 
   char errbuf[CPXMESSAGEBUFSIZE];
   VariableConstIterator v_iter;
@@ -1271,10 +1282,19 @@ EngineStatus CplexMILPEngine::solveSTLazy(double *objLb, SolutionPtr* sol,
        << cpxstatus_ << std::endl;
      goto TERMINATE;
   }
-  
+
+  /* Get number of processors/cores */
+  cpxstatus_ = CPXXgetnumcores(cpxenv_, &numcores);
+  if (cpxstatus_) {
+     logger_->msgStream(LogError) << me_ << "Failure to get the number of cores, error "
+       << cpxstatus_ << std::endl;
+     goto TERMINATE;
+  }
+  logger_->msgStream(LogInfo) << me_ << "Number of cores = " << numcores << std::endl;
+
   /* Set number of threads (default 1) */
   cpxstatus_ = CPXXsetintparam (cpxenv_, CPXPARAM_Threads,
-                                env_->getOptions()->findInt("threads")->getValue());
+                                std::min(env_->getOptions()->findInt("threads")->getValue(), numcores));
 
   if (cpxstatus_) {
      logger_->msgStream(LogError) << me_ << "Failure to set number of threads, error "
