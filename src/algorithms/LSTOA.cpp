@@ -267,8 +267,9 @@ double getPerGap(double objLb, double objUb)
 }
 
 
-void writeSTOAStatus(EnvPtr env, double gap, double objLb, double objUb, 
-                   double obj_sense, SolveStatus status, double wallTimeStart)
+void writeSTOAStatus(EnvPtr env, double gap, double objLb, double objUb,
+                   double obj_sense, SolveStatus status, double wallTimeStart,
+                   clock_t clockTimeStart)
 {
 
   const std::string me("oa main: ");
@@ -283,8 +284,10 @@ void writeSTOAStatus(EnvPtr env, double gap, double objLb, double objUb,
     << me << "gap = " << std::max(0.0, objUb - objLb)
     << std::endl
     << me << "gap percentage = " << gap << std::endl
-    << me << "time used (s) = " << std::fixed << std::setprecision(2) 
+    << me << "wall time used (s) = " << std::fixed << std::setprecision(2)
     << getWallTime() - wallTimeStart << std::endl
+    << me << "process time used (s) = " << std::fixed << std::setprecision(2)
+    << (double)(clock() - clockTimeStart)/CLOCKS_PER_SEC << std::endl
     << me << "status of outer approximation: " << getSolveStatusString(status) << std::endl;
   env->stopTimer(err); assert(0==err);
 }
@@ -330,6 +333,7 @@ bool shouldStop(EnvironmentPtr env, SolveStatus &status, double gap, SolutionPoo
 
 int main(int argc, char* argv[])
 {
+  clock_t clockTimeStart = clock();
   EnvPtr env = (EnvPtr) new Environment();
   OptionDBPtr options;
 
@@ -463,7 +467,7 @@ int main(int argc, char* argv[])
     }
     //writeSol(env, orig_v, pres, solPool->getBestSolution(), status, iface);
     solPool->writeStats(env->getLogger()->msgStream(LogExtraInfo));
-    writeSTOAStatus(env, gap, objLb, objUb, obj_sense, status, wallTimeStart);
+    writeSTOAStatus(env, gap, objLb, objUb, obj_sense, status, wallTimeStart, clockTimeStart);
    }
 
 CLEANUP:
