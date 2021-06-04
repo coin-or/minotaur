@@ -23,6 +23,7 @@
 #include "Modification.h"
 #include "Relaxation.h"
 #include "SolutionPool.h"
+#include "WarmStart.h"
 
 using namespace Minotaur;
 
@@ -31,7 +32,8 @@ using namespace Minotaur;
 const std::string BndProcessor::me_ = "BndProcessor: ";
 
 BndProcessor::BndProcessor()
-  : contOnErr_(false),
+  : branches_(0),
+    contOnErr_(false),
     cutOff_(INFINITY),
     engine_(EnginePtr()),
     engineStatus_(EngineUnknownStatus),
@@ -39,7 +41,7 @@ BndProcessor::BndProcessor()
     oATol_(1e-5),
     oRTol_(1e-5),
     relaxation_(RelaxationPtr()),
-    ws_(WarmStartPtr())
+    ws_(0)
 {
   handlers_.clear();
   logger_ = (LoggerPtr) new Logger(LogInfo);
@@ -53,14 +55,15 @@ BndProcessor::BndProcessor()
 
 BndProcessor::BndProcessor (EnvPtr env, EnginePtr engine,
                             HandlerVector handlers)
-  : contOnErr_(false),
+  : branches_(0),
+    contOnErr_(false),
     engine_(engine),
     engineStatus_(EngineUnknownStatus),
     numSolutions_(0),
     oATol_(1e-5),
     oRTol_(1e-5),
     relaxation_(RelaxationPtr()),
-    ws_(WarmStartPtr())
+    ws_(0)
 {
   cutOff_ = env->getOptions()->findDouble("obj_cut_off")->getValue();
   handlers_ = handlers;
@@ -76,8 +79,17 @@ BndProcessor::BndProcessor (EnvPtr env, EnginePtr engine,
 
 BndProcessor::~BndProcessor()
 {
+  if (ws_) {
+    ws_->decrUseCnt();
+    if (0 == ws_->getUseCnt()) {
+      delete ws_;
+    }
+  }
   if (brancher_) {
     delete brancher_;
+  }
+  if (branches_) {
+    delete branches_;
   }
   handlers_.clear();
 }
@@ -142,6 +154,10 @@ void BndProcessor::process(NodePtr node, RelaxationPtr rel,
   ++stats_.proc;
   relaxation_ = rel;
   numSolutions_ = 0;
+  if (branches_) {
+    delete branches_;
+    branches_ = 0;
+  }
 
 #if 0
   double *svar = new double[20];

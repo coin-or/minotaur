@@ -107,6 +107,8 @@ BranchAndBound* createBab(EnvPtr env, ProblemPtr p, EnginePtr e,
   if (true==options->findBool("presolve")->getValue()) {
     l_hand->setModFlags(false, true);
     handlers.push_back(l_hand);
+  } else {
+    delete l_hand;
   }
   if (!p->isLinear() && 
        true==options->findBool("presolve")->getValue() &&
@@ -484,8 +486,10 @@ void writeSol(EnvPtr env, VarVector *orig_v,
   if (env->getOptions()->findFlag("AMPL")->getValue() ||
       true == env->getOptions()->findBool("write_sol_file")->getValue()) {
     iface->writeSolution(final_sol, status);
-  } else if (final_sol && env->getLogger()->getMaxLevel()>=LogExtraInfo &&
-             env->getOptions()->findBool("display_solution")->getValue()) {
+  } 
+  
+  if (final_sol &&
+      env->getOptions()->findBool("display_solution")->getValue()) {
     final_sol->writePrimal(env->getLogger()->msgStream(LogExtraInfo), orig_v);
   }
 
