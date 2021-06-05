@@ -286,13 +286,15 @@ void PCBProcessor::process(NodePtr node, RelaxationPtr rel,
       for (HeurVector::iterator it=heurs_.begin(); it!=heurs_.end(); ++it) {
         (*it)->solve(node, rel, s_pool);
       }
+      tightenBounds_(node, s_pool, sol, &sep_status);
     }
 
 
     // the node can not be pruned because of infeasibility or high cost.
     // continue processing.
-    tightenBounds_();
-    separate_(sol, node, s_pool, &sep_status);
+    if (sep_status == SepaContinue) {
+      separate_(sol, node, s_pool, &sep_status);
+    }
 
     if (sep_status == SepaPrune) {
       node->setStatus(NodeInfeasible);
@@ -554,9 +556,30 @@ void PCBProcessor::solveRelaxation_()
 }
 
 
-void PCBProcessor::tightenBounds_() 
-{
+void PCBProcessor::tightenBounds_(NodePtr node, SolutionPoolPtr s_pool,
+                                  ConstSolutionPtr sol,
+                                  SeparationStatus *status) {
+  ModVector p_mods;      // Mods that are applied to the problem
+  ModVector r_mods;      // Mods that are applied to the relaxation.
+  bool is_feas;
+  
+  for (HandlerIterator h = handlers_.begin(); h != handlers_.end(); ++h) {
+    is_feas = (*h)->postSolveRootNode(relaxation_, s_pool, sol, p_mods, r_mods);
+    for (ModificationConstIterator m_iter=p_mods.begin();
+         m_iter!=p_mods.end(); ++m_iter) {
+      node->addPMod(*m_iter);
+    }
+    for (ModificationConstIterator m_iter=r_mods.begin();
+         m_iter!=r_mods.end(); ++m_iter) {
+      node->addRMod(*m_iter);
+    }
+    p_mods.clear();
+    r_mods.clear();
 
+    if (!(is_feas)) {
+      *status = SepaResolve;
+    }
+  }
 }
 
 
