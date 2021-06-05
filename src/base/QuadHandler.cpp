@@ -1293,7 +1293,7 @@ bool QuadHandler::propSqrBnds_(LinSqrMapIter lx2, RelaxationPtr rel,
 bool QuadHandler::postSolveRootNode(RelaxationPtr rel, SolutionPoolPtr s_pool,
                                     ConstSolutionPtr sol, ModVector &p_mods,
                                     ModVector &r_mods) {
-  double vio1, vio2, range, yval, ub;
+  double vio1, vio2, range, yval, xval, ub;
   VariablePtr y, x0, x1;
   double stime = timer_->query();
   bool is_inf, lchanged = false;
@@ -1307,7 +1307,8 @@ bool QuadHandler::postSolveRootNode(RelaxationPtr rel, SolutionPoolPtr s_pool,
     y = it->second->y;
     x0 = it->first;
     yval = x[y->getIndex()];
-    vio1 = fabs(x[x0->getIndex()] - yval);
+    xval = x[x0->getIndex()];
+    vio1 = fabs(xval*xval - yval);
     if (vio1 > 1e-3 && vio1 > 0.1*fabs(yval)) {
       range = x0->getUb() - x0->getLb();
       if (range >= 2) {
@@ -1408,6 +1409,8 @@ bool QuadHandler::postSolveRootNode(RelaxationPtr rel, SolutionPoolPtr s_pool,
   ub = s_pool->getBestSolutionValue();
   is_inf = tightenLP_(rel, ub, &lchanged, p_mods, r_mods);
   bStats_.timeLP = timer_->query()-stime;
+  std::cout << "Time taken in LP solve " << bStats_.timeLP << std::endl;
+  std::cout << "Number of LP solves " << bStats_.nLP << std::endl;
   
   if (true == lchanged) {
     for (LinSqrMapIter it=x2Funs_.begin(); it != x2Funs_.end(); ++it) {
@@ -2096,7 +2099,7 @@ bool QuadHandler::tightenLP_(RelaxationPtr rel, double bestSol, bool *changed,
     v = *vit;
     lb = -INFINITY;
     ub = INFINITY;
-    itmp = v->getItmp();
+    itmp = p_->getVariable(v->getIndex())->getItmp();
     if (itmp == 0) {
       continue;
     }
@@ -2126,7 +2129,7 @@ bool QuadHandler::tightenLP_(RelaxationPtr rel, double bestSol, bool *changed,
       setItmpFromSol_(lpe_->getSolution()->getPrimal());
     }
     c1 = false;
-    if (updatePBounds_(p_->getVariable((*vit)->getIndex()), lb, ub,
+    if (updatePBounds_(p_->getVariable(v->getIndex()), lb, ub,
                        rel, true, &c1, p_mods, r_mods) < 0) {
       delete lpe_;
       delete lp;

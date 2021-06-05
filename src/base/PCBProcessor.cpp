@@ -292,7 +292,9 @@ void PCBProcessor::process(NodePtr node, RelaxationPtr rel,
 
     // the node can not be pruned because of infeasibility or high cost.
     // continue processing.
-    if (sep_status == SepaContinue) {
+    if (!(!node->getParent() && iter == 1 && sep_status == SepaResolve)) {
+      // Do not do separate if we are in root and it is first iteration
+      // and we have resolved it by tightenBounds_()
       separate_(sol, node, s_pool, &sep_status);
     }
 
