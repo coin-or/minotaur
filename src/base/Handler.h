@@ -217,6 +217,30 @@ namespace Minotaur {
                               ModVector &r_mods) = 0;
 
     /**
+     * \brief At the root node post solve the problem and its relaxation.
+     * LP based bound tightening (OBBT) is employed here after filtering variables
+     * for which no OBBT is required.
+     * \param[in] rel Relaxation at the root node.
+     * \param[in] s_pool Pool of solutions.
+     * \param[in] sol The solution from the LP relaxation
+     * \param[in] p_mods Unused. Modifications to the problem that must be
+     * stored in this node so that they are applied to all descendant nodes as
+     * well. All modifications must be appended not prepended.
+     * \param[out] r_mods Modifications to the relaxation that must be stored in
+     * this node so that they are applied to all descendant nodes as well.  All
+     * modifications must be appended not prepended. This may be unnecessary in
+     * certain algorithms.
+     * \return true if the LP solution still remains feasible to the relaxation.
+     */
+    virtual bool postSolveRootNode(RelaxationPtr , SolutionPoolPtr ,
+                                   ConstSolutionPtr , ModVector &,
+                                   ModVector &) {
+      // Do Nothing
+      // Only used for QuadHandler as of now
+      return true;
+    };
+
+    /**
      * \brief Create root relaxation if doing full node relaxations.
      *
      * This method is used to add all the variables and constraints handled

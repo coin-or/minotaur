@@ -90,6 +90,11 @@ public:
                     SolutionPoolPtr s_pool, ModVector &p_mods,
                     ModVector &r_mods);
 
+  // implement Handler::postSolveRootNode
+  bool postSolveRootNode(RelaxationPtr rel, SolutionPoolPtr s_pool,
+                         ConstSolutionPtr sol, ModVector &p_mods,
+                         ModVector &r_mods);
+
   // implement Handler::fixNodeErr
   int fixNodeErr(RelaxationPtr rel, ConstSolutionPtr sol,
                  SolutionPoolPtr s_pool, bool &sol_found);
@@ -482,6 +487,9 @@ private:
   /// Return true if xval is one of the bounds of variable x
   bool isAtBnds_(ConstVariablePtr x, double xval);
 
+  /// Whether a given point is feasible to the relaxation
+  bool isFeasibleToRelaxation_(RelaxationPtr rel, const double *x);
+
   /**
    * \brief Strengthen bounds of variables in a bilinear constraint y=x0x1
    * \param[in] lx0x1 The bilinear term
@@ -556,6 +564,9 @@ private:
 
   /// Reset all statistics to zero.
   void resetStats_();
+
+  /// Setting Itmp for each variable based on the solution from LP
+  void setItmpFromSol_(const double *x);
 
   /**
    * \brief Bound tightening of the problem by solving LP after removing all

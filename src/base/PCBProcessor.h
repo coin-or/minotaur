@@ -176,7 +176,9 @@ namespace Minotaur {
                      SeparationStatus *status);
 
       // Implement NodeProcessor::tightenBounds_()
-      virtual void tightenBounds_(); 
+      virtual void tightenBounds_(NodePtr node, SolutionPoolPtr s_pool,
+                                  ConstSolutionPtr sol,
+                                  SeparationStatus *status); 
 
   };
 
