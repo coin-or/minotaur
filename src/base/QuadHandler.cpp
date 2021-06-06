@@ -1409,8 +1409,6 @@ bool QuadHandler::postSolveRootNode(RelaxationPtr rel, SolutionPoolPtr s_pool,
   ub = s_pool->getBestSolutionValue();
   is_inf = tightenLP_(rel, ub, &lchanged, p_mods, r_mods);
   bStats_.timeLP = timer_->query()-stime;
-  std::cout << "Time taken in LP solve " << bStats_.timeLP << std::endl;
-  std::cout << "Number of LP solves " << bStats_.nLP << std::endl;
   
   if (true == lchanged) {
     for (LinSqrMapIter it=x2Funs_.begin(); it != x2Funs_.end(); ++it) {
