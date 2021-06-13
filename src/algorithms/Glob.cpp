@@ -484,21 +484,7 @@ int main(int argc, char** argv)
       goto CLEANUP;
     }
 
-    err = qg.loadProblem();
-    if (err) {
-      goto CLEANUP;
-    }
-
-    err = qg.loadProblem();
-    if (err) {
-      goto CLEANUP;
-    }
-
-    err = qg.solve();
-    if (err) {
-      goto CLEANUP;
-    }
-
+    err = qg.solve(inst);
     goto CLEANUP;
   }
 

@@ -40,6 +40,9 @@ namespace Minotaur {
     /// Read a file and return the Problem object
     ProblemPtr readMps(std::string fname, int &err);
 
+    /// Read a solution file and store it in Problem for debugging
+    int readSol(ProblemPtr p, std::string sname);
+
   private:
     /// Environment
     EnvPtr env_;

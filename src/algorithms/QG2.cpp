@@ -17,7 +17,6 @@
 
 
 #include "MinotaurConfig.h"
-#include "BranchAndBound.h"
 #include "Environment.h"
 #include "EngineFactory.h"
 #include "Handler.h"
@@ -53,11 +52,11 @@ const std::string QG2::me_ = "QG2: ";
 
 
 QG2::QG2(EnvPtr env) 
-: env_(env),
-  iface_(0),
-  objSense_(1.0),
-  oinst_(0)
+: objSense_(1.0),
+  status_(NotStarted)
 {
+  env_ = env;
+  iface_ = 0;
 }
 
 
@@ -66,23 +65,29 @@ QG2::~QG2()
 }
 
 
-FileType QG2::getFileType(std::string fname)
+DoubleVector QG2::getSolution()
 {
-  FileType ft = FileTypeNone;
-  size_t pos = fname.find_last_of('.');
+  DoubleVector x;
+  return x;
+}
 
-  if (pos != std::string::npos) {
-    std::string ext = fname.substr(pos);
-    for (size_t i=0; i<ext.length(); ++i) {
-      ext[i] = std::toupper(ext[i]);
-    }
-    if (ext==".MPS") {
-      ft = MPS;
-    } else if (ext == ".NL") {
-      ft = NL;
-    } 
-  } 
-  return ft;
+
+
+double QG2::getUb()
+{
+  return INFINITY;
+}
+
+
+double QG2::getLb()
+{
+  return -INFINITY;
+}
+
+
+SolveStatus QG2::getStatus()
+{
+  return status_;
 }
 
 
@@ -106,61 +111,6 @@ int QG2::getEngines_(Engine **nlp_e, LPEngine **lp_e)
 
   *lp_e = efac->getLPEngine();
   delete efac;
-  return 0;
-}
-
-
-int QG2::loadProblem()
-{
-  int err = 0;
-  std::string fname = env_->getOptions()->findString("problem_file")->getValue();
-  err = loadProblem(fname);
-
-  return err;
-}
-
-
-int QG2::loadProblem(std::string fname)
-{
-  FileType ft;
-  OptionDBPtr options = env_->getOptions();
-  int err = 0;
-  Timer *timer     = env_->getNewTimer();
-
-  timer->start();
-  ft = getFileType(fname);
-  iface_ = 0;
-
-  if (ft==MPS) {
-    Reader rdr(env_);
-    options->findString("interface_type")->setValue("mps");
-    oinst_ = rdr.readMps(fname, err);
-    if (err) {
-      delete timer;
-      return 1;
-    }
-  } else if ((ft==NL) || options->findString("interface_type")->getValue()=="AMPL") {
-    iface_ = new MINOTAUR_AMPL::AMPLInterface(env_, "qg2");
-    options->findString("interface_type")->setValue("AMPL");
-    oinst_ = iface_->readInstance(fname);
-    env_->getLogger()->msgStream(LogInfo) << me_ 
-      << "time used in reading instance = " << std::fixed 
-      << std::setprecision(2) << timer->query() << std::endl;
-  } else {
-    env_->getLogger()->errStream() << me_
-      << "Unable to read the problem from file " << fname 
-      << " Either provide a file with .nl or .mps extension or use -AMPL flag"
-      << std::endl;
-    delete timer;
-    return 1;
-  }
-  return 0;
-}
-
-
-int QG2::loadProblem(ProblemPtr p)
-{
-  oinst_ = p;
   return 0;
 }
 
@@ -252,11 +202,6 @@ int QG2::showInfo()
     return 1;
   }
 
-  if (options->findString("problem_file")->getValue()=="") {
-    showHelp();
-    return 1;
-  }
-
   env_->getLogger()->msgStream(LogInfo)
     << me_ << "Minotaur version " << env_->getVersion() << std::endl
     << me_ << "Quesada-Grossmann (LP/NLP) algorithm for convex MINLP"
@@ -265,10 +210,9 @@ int QG2::showInfo()
 }
 
 
-int QG2::solve()
+int QG2::solve(ProblemPtr p)
 {
   OptionDBPtr options = env_->getOptions();
-  oinst_->calculateSize();
   Timer *timer = env_->getNewTimer();
   EnginePtr nlp_e = 0;
   LPEnginePtr lp_e = 0;   // lp engine 
@@ -286,6 +230,8 @@ int QG2::solve()
   QGHandlerPtr qg_hand;
   RCHandlerPtr rc_hand;
 
+  oinst_ = p;
+  oinst_->calculateSize();
   int err = 0;
 
 
@@ -330,12 +276,12 @@ int QG2::solve()
     delete (*it);
   }
   handlers.clear();
-  if (Finished != pres->getStatus() && NotStarted != pres->getStatus()) {
+  status_ = pres->getStatus();
+  if (Finished != status_ && NotStarted != status_) {
     env_->getLogger()->msgStream(LogInfo) << me_ 
-      << "status of presolve: " 
-      << getSolveStatusString(pres->getStatus()) << std::endl;
-    //writeSol(env_, orig_v, pres, SolutionPtr(), pres->getStatus(), iface_);
-    //writeBnbStatus(env_, bab, objSense_);
+      << "status of presolve: " << getSolveStatusString(status_) << std::endl;
+    writeSol_(env_, orig_v, pres, SolutionPtr(), pres->getStatus(), iface_);
+    writeBnbStatus_(bab);
     goto CLEANUP;
   }
 
@@ -423,33 +369,82 @@ int QG2::solve()
       (*it)->writeStats(env_->getLogger()->msgStream(LogExtraInfo));
     }
 
-    //writeSol(env_, orig_v, pres, bab->getSolution(), bab->getStatus(), iface_);
-    //writeBnbStatus(env_, bab, objSense_);
+    err = writeSol_(env_, orig_v, pres, bab->getSolution(), bab->getStatus(), iface_);
+    if (err) {
+      goto CLEANUP;
+    }
+    err = writeBnbStatus_(bab);
 
 CLEANUP:
-    delete timer;
-
+    for (HandlerVector::iterator it=handlers.begin(); it!=handlers.end(); ++it) {
+      delete (*it);
+    }
+    if (lp_e) {
+      delete lp_e;
+    }
+    if (nlp_e) {
+      delete nlp_e;
+    }
+    if (iface_) {
+      delete iface_; iface_ = 0;
+    }
+    if (pres) {
+      delete pres;
+    }
+    if (bab) {
+      if (bab->getNodeRelaxer()) {
+        delete bab->getNodeRelaxer();
+      }
+      if (bab->getNodeProcessor()) {
+        delete bab->getNodeProcessor();
+      }
+      delete bab;
+    }
+    if (orig_v) {
+      delete orig_v;
+    }
+    if (timer) {
+      delete timer;
+    }
+    oinst_ = 0;
+    return err;
 }
 
 
-int QG2::writeSol()
+int QG2::writeBnbStatus_(BranchAndBound *bab)
 {
-//   Solution* final_sol = 0;
-//   if (sol) {
-//     final_sol = pres->getPostSol(sol);
-//   }
-// 
-//   if (env->getOptions()->findFlag("AMPL")->getValue() ||
-//       true == env->getOptions()->findBool("write_sol_file")->getValue()) {
-//     iface->writeSolution(final_sol, status);
-//   } else if (final_sol && env->getLogger()->getMaxLevel()>=LogExtraInfo &&
-//              env->getOptions()->findBool("display_solution")->getValue()) {
-//     final_sol->writePrimal(env->getLogger()->msgStream(LogExtraInfo), orig_v);
-//   }
-// 
-//   if (final_sol) {
-//     delete final_sol;
-//   }
+  int err = 0;
+
+  if (bab) {
+    env_->getLogger()->msgStream(LogInfo)
+      << me_ << std::fixed << std::setprecision(4) 
+      << "best solution value = " << objSense_*bab->getUb() << std::endl
+      << me_ << std::fixed << std::setprecision(4)
+      << "best bound estimate from remaining nodes = "
+      << objSense_*bab->getLb() << std::endl
+      << me_ << "gap = " << std::max(0.0,bab->getUb() - bab->getLb())
+      << std::endl
+      << me_ << "gap percentage = " << bab->getPerGap() << std::endl
+      << me_ << "time used (s) = " << std::fixed << std::setprecision(2) 
+      << env_->getTime(err) << std::endl
+      << me_ << "status of branch-and-bound = " 
+      << getSolveStatusString(bab->getStatus()) << std::endl;
+    env_->stopTimer(err); 
+  } else {
+    env_->getLogger()->msgStream(LogInfo)
+      << me_ << std::fixed << std::setprecision(4)
+      << "best solution value = " << INFINITY << std::endl
+      << me_ << std::fixed << std::setprecision(4)
+      << "best bound estimate from remaining nodes = " << INFINITY << std::endl
+      << me_ << "gap = " << INFINITY << std::endl
+      << me_ << "gap percentage = " << INFINITY << std::endl
+      << me_ << "time used (s) = " << std::fixed << std::setprecision(2) 
+      << env_->getTime(err) << std::endl 
+      << me_ << "status of branch-and-bound: " 
+      << getSolveStatusString(NotStarted) << std::endl;
+    env_->stopTimer(err);
+  }
+  return err;
 }
 
 

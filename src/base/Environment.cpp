@@ -479,6 +479,11 @@ void Environment::createDefaultOptions_()
       "Name of file that contains parameters or options", true, "");
   options_->insert(s_option);
 
+  s_option = (StringOptionPtr) new Option<std::string>("debug_sol", 
+      "File containing a solution that is checked for wrong cutting off",
+      true, "");
+  options_->insert(s_option);
+
   s_option = (StringOptionPtr) new Option<std::string>("interface_type", 
       "What interface is this environment being used with: AMPL or C++",
       true, "C++");

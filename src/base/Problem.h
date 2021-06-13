@@ -481,6 +481,15 @@ namespace Minotaur {
     virtual void reverseSense(ConstraintPtr cons);
 
     /**
+     * \brief Set a solution that can be checked for accidental cutting off by
+     * cuts, branching, reformulations etc.
+     * 
+     * \param[in] x A vector of double values in the same order as variables
+     * in the problem.
+     */
+    virtual void setDebugSol(const DoubleVector &x);
+
+    /**
      * \brief Set the engine that is used to solve this problem.
      *
      * The problem contains a pointer to the engine so that whenever the problem
@@ -588,6 +597,12 @@ namespace Minotaur {
      * time all changes were applied.
      */
     bool consModed_;
+
+    /**
+     * \brief A solution to be used for debugging against accidentally cutting of
+     * feasible points.
+     */
+    DoubleVector *debugSol_;
 
     /// Engine that must be updated if problem is loaded to it, could be null 
     Engine* engine_;

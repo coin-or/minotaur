@@ -40,6 +40,7 @@ const std::string Problem::me_ = "Problem: ";
 Problem::Problem(EnvPtr env) 
 : cons_(0), 
   consModed_(false),
+  debugSol_(0),
   engine_(0),
   hessian_(0),
   jacobian_(0),
@@ -97,11 +98,12 @@ Problem::~Problem()
   if (size_) {
     delete size_;
   }
-
   if (obj_) {
     delete obj_;
   }
-
+  if (debugSol_) {
+    delete debugSol_;
+  }
   vars_.clear();
   cons_.clear();
   sos1_.clear();
@@ -1666,6 +1668,12 @@ void Problem::reverseSense(ConstraintPtr cons)
 {
   cons->reverseSense_();
   consModed_ = true;
+}
+
+
+void Problem::setDebugSol(const DoubleVector &x) 
+{
+  debugSol_ = new DoubleVector(x);
 }
 
 

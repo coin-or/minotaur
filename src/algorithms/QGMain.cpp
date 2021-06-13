@@ -13,6 +13,8 @@
 
 #include "MinotaurConfig.h"
 #include "Environment.h"
+#include "Option.h"
+#include "Problem.h"
 #include "Types.h"
 #include "QG2.h"
 
@@ -23,6 +25,8 @@ int main(int argc, char** argv)
   EnvPtr env = (EnvPtr) new Environment();
   int err = 0;
   QG2 qg(env);
+  ProblemPtr p = 0;
+  std::string fname, dname;
  
   env->startTimer(err);
   if (err) {
@@ -36,22 +40,27 @@ int main(int argc, char** argv)
     goto CLEANUP;
   }
 
-  err = qg.loadProblem();
+  dname = env->getOptions()->findString("debug_sol")->getValue();
+  fname = env->getOptions()->findString("problem_file")->getValue();
+  if (""==fname) {
+    qg.showHelp();
+    goto CLEANUP;
+  }
+
+  p = qg.readProblem(fname, dname, err);
   if (err) {
     goto CLEANUP;
   }
 
-  err = qg.solve();
-  if (err) {
-    goto CLEANUP;
-  }
-
-  err = qg.writeSol();
+  err = qg.solve(p);
   if (err) {
     goto CLEANUP;
   }
 
 CLEANUP:
+  if (p) {
+    delete p;
+  }
   delete env;
 
   return 0;

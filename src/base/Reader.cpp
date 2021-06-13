@@ -61,7 +61,7 @@ ProblemPtr Reader::readMps(std::string fname, int &err)
   VariablePtr v;
   FunctionPtr f;
   double dval, lb, ub;
-  std::string::size_type echars; // to check errors is string to double
+  std::string::size_type echars; // size of string
 
   int section = 0; // 0: None, 1: NAME, 2: ROWS, 3: COLUMNS, 4: RHS,
                    // 5: RANGES, 6: BOUNDS, 7: ENDDATA
@@ -467,5 +467,78 @@ ProblemPtr Reader::readMps(std::string fname, int &err)
   //p->write(std::cout);
   p->calculateSize();
   return p;
+}
+
+
+int Reader::readSol(ProblemPtr p, std::string sname)
+{
+  int err = 0;
+  int lcnt = 0, vcnt = 0;
+  std::ifstream fs;
+  std::istringstream iss;
+  std::string line, word, word2;
+  std::string rhsid="";
+  DoubleVector x(p->getNumVars(),0.0);
+  std::vector<std::string> names;
+  std::string::size_type echars; // size of string
+  bool found = false;
+  double dval;
+
+  fs.open(sname.c_str());
+  if (!fs.is_open()) {
+    logger_->errStream() << me_ << "could not open file " << sname
+      << " for reading" << std::endl;
+    return 1;
+  } 
+
+  logger_->msgStream(LogInfo) << me_ << "reading  file " << sname 
+    << std::endl;
+
+  while (0==err && std::getline(fs, line)) {
+    iss.clear();   // deletes only flags internal to iss
+    iss.str(line); // convert line into ifstream
+    ++lcnt;
+
+    // std::cout << line <<  std::endl;
+
+    if (!(iss >> word)) {
+      continue; // empty line
+    }
+
+    if ('#'==word[0]) {
+      continue; // ignore line, because it is a comment
+    }
+
+    if (!(iss >> word2)) {
+      logger_->errStream() << me_ << "ERROR: not enough fields in line "
+        << lcnt << " of " << sname << std::endl;
+      err = 1;
+    } else {
+      // word = name-of-variable, and word2 = value
+      dval = std::stod(word2, &echars);
+      found = false;
+      vcnt = 0;
+      for (VariableConstIterator it=p->varsBegin(); it!=p->varsEnd(); ++it) {
+        if ((*it)->getName() == word) {
+          found = true;
+          x[vcnt] = dval;
+          break;
+        }
+        ++vcnt;
+      }
+      if (false==found) {
+        logger_->msgStream(LogError) << "Variable " << word 
+                                     << " not found in the solution file "
+                                     << sname << std::endl;
+        err = 1;
+      }
+    }
+  }
+
+  if (0==err) {
+    p->setDebugSol(x);
+  }
+
+  return err;
 }
 
