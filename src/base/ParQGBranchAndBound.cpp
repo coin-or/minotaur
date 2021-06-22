@@ -832,6 +832,11 @@ void ParQGBranchAndBound::parsolveOppor(ParNodeIncRelaxerPtr parNodeRlxr[],
     << me_ << "nodes created   = " << tm_->getSize() << std::endl;
   solPool_->writeStats(logger_->msgStream(LogExtraInfo));
 
+  for (UInt i = 0; i < numThreads; ++i) {
+    logger_->msgStream(LogExtraInfo) << me_ << "nodes processed by thread "
+      << i << " = " << nodesProcTh[i] << std::endl;
+  }
+
   stats_->timeUsed = timer_->query();
   timer_->stop();
 
