@@ -281,7 +281,6 @@ int QG2::solve(ProblemPtr p)
     env_->getLogger()->msgStream(LogInfo) << me_ 
       << "status of presolve: " << getSolveStatusString(status_) << std::endl;
     writeSol_(env_, orig_v, pres, SolutionPtr(), pres->getStatus(), iface_);
-    writeBnbStatus_(bab);
     goto CLEANUP;
   }
 
