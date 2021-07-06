@@ -487,9 +487,7 @@ void IpoptEngine::load(ProblemPtr problem)
 void IpoptEngine::loadFromWarmStart(const WarmStartPtr ws)
 {
   if (ws) {
-    // Two important points:
-    // 1. dynamic cast can't seem to be avoided.
-    // 2. we need to use boost::dynamic_pointer_cast instead of dynamic_cast.
+    // dynamic cast can't seem to be avoided.
     ConstIpoptWarmStartPtr ws2 = dynamic_cast <const IpoptWarmStart*> (ws);
 
     // now create a full copy.
