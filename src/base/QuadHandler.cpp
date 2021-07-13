@@ -110,6 +110,9 @@ QuadHandler::~QuadHandler()
   if (nlpe_) {
     delete nlpe_;
   }
+  if (lpe_) {
+    delete lpe_;
+  }
 }
 
 
@@ -2129,7 +2132,7 @@ bool QuadHandler::tightenLP_(RelaxationPtr rel, double bestSol, bool *changed,
     c1 = false;
     if (updatePBounds_(p_->getVariable(v->getIndex()), lb, ub,
                        rel, true, &c1, p_mods, r_mods) < 0) {
-      delete lpe_;
+      //delete lpe_;
       delete lp;
       return true;
     }
@@ -2138,7 +2141,7 @@ bool QuadHandler::tightenLP_(RelaxationPtr rel, double bestSol, bool *changed,
       *changed = true;
     }
   }
-  delete lpe_;
+  //delete lpe_;
   delete lp;
   return false;
 }

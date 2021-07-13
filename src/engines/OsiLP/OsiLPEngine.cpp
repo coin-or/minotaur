@@ -593,7 +593,6 @@ EngineStatus OsiLPEngine::solve()
 #endif
 
   osilp_->resolve();
-
   if (osilp_->isProvenOptimal()) {
     status_ = ProvenOptimal;  
     sol_->setPrimal(osilp_->getStrictColSolution());

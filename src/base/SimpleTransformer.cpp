@@ -922,6 +922,8 @@ void SimpleTransformer::reformulate(ProblemPtr &newp, HandlerVector &handlers,
   copyLinear_(p_, newp_);
   if (checkQuadConvexity_()) {
     status = 2; // status 2 means the problem is convex
+    clearUnusedHandlers_(handlers);
+    delete newp_;
     return;
   }
   refNonlinCons_(p_);
