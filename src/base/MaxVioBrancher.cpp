@@ -120,9 +120,15 @@ void MaxVioBrancher::findCandidates_(ModVector &mods, bool &should_prune)
     // ask each handler to give some candidates
     (*h)->getBranchingCandidates(rel_, x_, mods, cands2, gencands2, should_prune);
     if (should_prune) {
+      for (BrVarCandIter it=cands2.begin(); it!=cands2.end(); ++it) {
+        delete *it;
+      }
+      for (BrCandVIter it=gencands2.begin(); it!=gencands2.end(); ++it) {
+        delete *it;
+      }
       break;
     }
-    for (BrVarCandIter it = cands2.begin(); it != cands2.end(); ++it) {
+    for (BrVarCandIter it = cands2.begin(); it != cands2.end();) {
       (*it)->setHandler(*h);
       ret = cands_.insert(*it);
       if (false == ret.second) { // already exists.
@@ -131,8 +137,12 @@ void MaxVioBrancher::findCandidates_(ModVector &mods, bool &should_prune)
           br_can->setDist((*it)->getDDist(), (*it)->getUDist());
           br_can->setHandler(*h);
         }
+        delete *it; // free the candidate
+        it = cands2.erase(it); // delete the iterator from cands2
         //br_can->setDist((*it)->getDDist()+br_can->getDDist(),
         //                (*it)->getDDist()+br_can->getUDist());
+      } else {
+        ++it;
       }
     }
     for (BrCandVIter it = gencands2.begin(); it != gencands2.end(); ++it) {
@@ -164,6 +174,7 @@ BrCandPtr MaxVioBrancher::findBestCandidate_()
   double cand_score;
   double lmin = 0.8;
   double lmax = 0.2;
+
 
   for (BrVarCandIter it = cands_.begin(); it != cands_.end(); ++it) {
     cand_score = lmin*std::min((*it)->getDDist(),(*it)->getUDist()) + 
