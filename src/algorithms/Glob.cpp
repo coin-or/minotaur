@@ -479,6 +479,9 @@ int main(int argc, char** argv)
 
   if (err==2) {
     // call QG
+    env->getLogger()->msgStream(LogInfo) << me <<
+      "All constraints and objective found to be convex" << std::endl
+      << "Problem is forwarded to QG2 - convex MINLP solver" << std::endl;
     QG2 qg(env);
     if (0!=qg.showInfo()) {
       goto CLEANUP;
