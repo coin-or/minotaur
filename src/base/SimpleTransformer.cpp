@@ -1023,7 +1023,7 @@ void SimpleTransformer::uniVarRef_(const CNode *n0, LinearFunctionPtr lfl,
   }
 }
 
-void SimpleTransformer::writeStats(std::ostream &out) {
+void SimpleTransformer::writeStats(std::ostream &out) const {
   out << me_ << "Statistics for transformation by SimpleTransformer:"
       << std::endl << me_ <<
       "Time taken in reformulation and Convexity detection = " << stats_.time
