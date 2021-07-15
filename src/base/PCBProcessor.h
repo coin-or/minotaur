@@ -129,9 +129,6 @@ namespace Minotaur {
       /// Relative tolerance for pruning a node on basis of bounds.
       double oRTol_;
 
-      /// Pointer to original problem
-      ConstProblemPtr problem_;
-
       /// Relaxation that is processed by this processor.
       RelaxationPtr relaxation_;
 
