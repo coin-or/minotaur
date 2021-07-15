@@ -1,7 +1,7 @@
 //
 //     MINOTAUR -- It's only 1/2 bull
 //
-//     (C)opyright 2008 - 2017 The MINOTAUR Team.
+//     (C)opyright 2008 - 2021 The MINOTAUR Team.
 //
 
 /**
@@ -574,7 +574,7 @@ void SimpleTransformer::refNonlinObj_(ConstProblemPtr oldp)
   double d = 0;
   VariablePtr v = VariablePtr();
   LinearFunctionPtr lf, lf2;
-  QuadraticFunctionPtr qf, qf2;
+  QuadraticFunctionPtr qf, qf2 = new QuadraticFunction();
   CGraphPtr cg;
 
   assert(newp_);
@@ -740,7 +740,7 @@ bool SimpleTransformer::checkQuadConvexity_() {
   bool all_convex = true;
   ConstraintPtr c;
   QuadraticFunctionPtr qf;
-  Convexity sg, sg_old = Unknown;
+  Convexity sg = Unknown, sg_old = Unknown;
 
   for (ConstraintConstIterator cit=p_->consBegin(); cit!=p_->consEnd(); ++cit) {
     c = *cit;

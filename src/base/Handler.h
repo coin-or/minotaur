@@ -1,7 +1,7 @@
 //
 //     MINOTAUR -- It's only 1/2 bull
 //
-//     (C)opyright 2008 - 2017 The MINOTAUR Team.
+//     (C)opyright 2008 - 2021 The MINOTAUR Team.
 //
 
 /**
@@ -81,6 +81,7 @@ namespace Minotaur {
     virtual int fixNodeErr(RelaxationPtr , ConstSolutionPtr ,
                            SolutionPoolPtr , bool &) {
       assert(!"FixNodeErr not implemented for the Handler");
+      return 0;
     };
 
     /**
