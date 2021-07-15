@@ -1414,6 +1414,7 @@ bool QuadHandler::postSolveRootNode(RelaxationPtr rel, SolutionPoolPtr s_pool,
   }
   ub = s_pool->getBestSolutionValue();
   is_inf = tightenLP_(rel, ub, &lchanged, p_mods, r_mods);
+  assert(!is_inf);
   bStats_.timeLP = timer_->query()-stime;
   
   if (true == lchanged) {
@@ -1556,8 +1557,8 @@ void QuadHandler::resetStats_()
 
 
 void QuadHandler::separate(ConstSolutionPtr sol, NodePtr , RelaxationPtr rel,
-                           CutManager *, SolutionPoolPtr s_pool,
-                           ModVector &p_mods, ModVector &r_mods,  bool *,
+                           CutManager *, SolutionPoolPtr ,
+                           ModVector &, ModVector &,  bool *,
                            SeparationStatus *status)
 {
   double yval, xval;
@@ -1967,6 +1968,7 @@ double QuadHandler::getBndByLP_(bool &is_inf) {
       logger_->msgStream(LogError) << me_ << "LP engine status at root= "
         << lpStatus << std::endl;
       assert(!"In QuadHandler: stopped at root. Check error log.");
+      b = INFINITY;
       break;
   }
   return b;

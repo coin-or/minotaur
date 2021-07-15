@@ -153,7 +153,7 @@ int transform(EnvPtr env, ProblemPtr p, ProblemPtr &newp,
   if (tr == "simp") {
     trans = (SimpTranPtr) new SimpleTransformer(env, p, getEngine(env),
                                                 getNLPEngine(env));
-  } else if (tr == "quad") {
+  } else {//if (tr == "quad") {
     trans = (QuadTranPtr) new QuadTransformer(env, p);
   }
   trans->reformulate(newp, handlers, status);

@@ -81,6 +81,7 @@ namespace Minotaur {
     virtual int fixNodeErr(RelaxationPtr , ConstSolutionPtr ,
                            SolutionPoolPtr , bool &) {
       assert(!"FixNodeErr not implemented for the Handler");
+      return 0;
     };
 
     /**
