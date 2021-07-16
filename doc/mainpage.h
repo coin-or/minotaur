@@ -15,7 +15,7 @@
 // \authors
 // Team Minotaur at Indian Institute of Technology Bombay, Argonne National Lab and University of Wisconsin at Madison 
 // \authors
-// Copyright 2009 - 2017
+// Copyright 2009 - 2021
 //
 // <b> Additional Links </b>
 // - <a href="http://mcs.anl.gov/minotaur">Minotaur Homepage</a>
