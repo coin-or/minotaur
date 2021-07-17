@@ -6,8 +6,7 @@
 
 /**
  * \file Glob.cpp
- * \brief The main function for solving nonconvex optimization instances with
- * quadratic functions in ampl format (.nl).
+ * \brief The Glob class for solving MIQCQP instances using ampl (.nl) format.
  * \author Ashutosh Mahajan, IIT Bombay
  */
 
@@ -20,6 +19,7 @@
 #include "Engine.h"
 #include "EngineFactory.h"
 #include "Environment.h"
+#include "Glob.h"
 #include "LexicoBrancher.h"
 #include "LinearHandler.h"
 #include "Logger.h"
@@ -42,6 +42,7 @@
 #include "SimpleTransformer.h"
 #include "QuadTransformer.h"
 #include "Solution.h"
+#include "Solver.h"
 #include "Timer.h"
 #include "Transformer.h"
 #include "TreeManager.h"
@@ -49,26 +50,39 @@
 #include "AMPLInterface.h"
 
 using namespace Minotaur;
+const std::string Glob::me_ = "mntr-glob: ";
 
-BranchAndBound *createBab (EnvPtr env, ProblemPtr p, EnginePtr e, 
-                           HandlerVector &handlers);
-PresolverPtr createPres(EnvPtr env, ProblemPtr p, size_t ndefs, 
-                        HandlerVector &handlers);
-EnginePtr getEngine(EnvPtr env);
-NLPEnginePtr getNLPEngine(EnvPtr env);
-int transform(EnvPtr env, ProblemPtr p, ProblemPtr &newp,
-              HandlerVector &handlers);
-
-
-
-EnginePtr getEngine(EnvPtr env)
+Glob::Glob(EnvPtr env)
+: objSense_(1.0),
+  status_(NotStarted)
 {
-  EngineFactory *efac = new EngineFactory(env);
+  env_ = env;
+  iface_  = 0;
+  inst_ = 0;
+  newp_ = 0;
+}
+
+Glob::~Glob()
+{
+}
+
+void Glob::doSetup() {
+  int err = 0;
+  env_->startTimer(err);
+
+  setInitialOptions_();
+
+  iface_ = (MINOTAUR_AMPL::AMPLInterfacePtr)
+    new MINOTAUR_AMPL::AMPLInterface(env_, "glob");
+}
+
+EnginePtr Glob::getEngine_()
+{
+  EngineFactory *efac = new EngineFactory(env_);
   EnginePtr e = EnginePtr(); // NULL
-  const std::string me("mntr-glob: ");
   e = efac->getLPEngine();
   if (!e) {
-    env->getLogger()->errStream() << me 
+    env_->getLogger()->errStream() << me_
       << "Cannot find an LP engine. Cannot proceed!" << std::endl;
   } 
 
@@ -76,15 +90,13 @@ EnginePtr getEngine(EnvPtr env)
   return e;
 }
 
-
-NLPEnginePtr getNLPEngine(EnvPtr env)
+NLPEnginePtr Glob::getNLPEngine_()
 {
-  EngineFactory *efac = new EngineFactory(env);
+  EngineFactory *efac = new EngineFactory(env_);
   NLPEnginePtr e = NLPEnginePtr(); // NULL
-  const std::string me("mntr-glob: ");
   e = efac->getNLPEngine();
   if (!e) {
-    env->getLogger()->errStream() << me 
+    env_->getLogger()->errStream() << me_
       << "Cannot find an NLP engine. Cannot proceed!" << std::endl;
   } 
 
@@ -92,161 +104,100 @@ NLPEnginePtr getNLPEngine(EnvPtr env)
   return e;
 }
 
-
-void loadProblem(EnvPtr env, MINOTAUR_AMPL::AMPLInterface* iface,
-                 ProblemPtr &inst, double *obj_sense)
-{
-  OptionDBPtr options = env->getOptions();
-  Timer *timer     = env->getNewTimer();
-  const std::string me("mntr-glob: ");
-
-  if (options->findBool("use_native_cgraph")->getValue()==false) {
-    options->findBool("use_native_cgraph")->setValue(true); 
-    env->getLogger()->msgStream(LogExtraInfo) << me 
-      << "Setting value of 'use_native_cgraph option' to True" << std::endl;
-  }
-
-  // load the problem.
-  timer->start();
-  inst = iface->readInstance(options->findString("problem_file")->getValue());
-  env->getLogger()->msgStream(LogInfo) << me 
-    << "time used in reading instance = " << std::fixed 
-    << std::setprecision(2) << timer->query() << std::endl;
-
-  if (options->findBool("cgtoqf")->getValue()==1) {
-    inst->cg2qf();
-  }
-
-  // display the problem
-  inst->calculateSize();
-  if (options->findBool("display_problem")->getValue()==true) {
-    inst->write(env->getLogger()->msgStream(LogNone), 9);
-  }
-  if (options->findBool("display_size")->getValue()==true) {
-    inst->writeSize(env->getLogger()->msgStream(LogNone));
-  }
-
-  if (inst->getObjective() &&
-      inst->getObjective()->getObjectiveType()==Maximize) {
-    *obj_sense = -1.0;
-    env->getLogger()->msgStream(LogInfo) << me 
-      << "objective sense: maximize (will be converted to Minimize)"
-      << std::endl;
-  } else {
-    *obj_sense = 1.0;
-    env->getLogger()->msgStream(LogInfo) << me 
-      << "objective sense: minimize" << std::endl;
-  }
-  delete timer;
-}
-
-
-int transform(EnvPtr env, ProblemPtr p, ProblemPtr &newp,
-              HandlerVector &handlers) 
-{
+int Glob::transform_(ProblemPtr &newp, HandlerVector &handlers) {
   TransformerPtr trans;
   int status = 0;
-  const std::string me("mntr-glob: ");
-  std::string tr = env->getOptions()->findString("transformer")->getValue();
+  std::string tr = env_->getOptions()->findString("transformer")->getValue();
 
   handlers.clear();
   if (tr == "simp") {
-    trans = (SimpTranPtr) new SimpleTransformer(env, p, getEngine(env),
-                                                getNLPEngine(env));
+    trans = (SimpTranPtr) new SimpleTransformer(env_, inst_, getEngine_(),
+                                                getNLPEngine_());
   } else {//if (tr == "quad") {
-    trans = (QuadTranPtr) new QuadTransformer(env, p);
+    trans = (QuadTranPtr) new QuadTransformer(env_, inst_);
   }
   trans->reformulate(newp, handlers, status);
   
-  env->getLogger()->msgStream(LogInfo) << me 
+  env_->getLogger()->msgStream(LogInfo) << me_
     << "handlers used in transformer: " << std::endl;
   for (HandlerVector::iterator it=handlers.begin(); it!=handlers.end();
        ++it) {
-    env->getLogger()->msgStream(LogInfo) << "  " << (*it)->getName()
+    env_->getLogger()->msgStream(LogInfo) << "  " << (*it)->getName()
                                          << std::endl;
   }
   delete trans;
   return status;
 }
 
-
-BranchAndBound * createBab (EnvPtr env, ProblemPtr p, EnginePtr e, 
-                            HandlerVector &handlers)
-{
-  BranchAndBound *bab = new BranchAndBound(env, p);
+BranchAndBound * Glob::createBab_(EnginePtr e, HandlerVector &handlers) {
+  BranchAndBound *bab = new BranchAndBound(env_, newp_);
   PCBProcessorPtr nproc;
   NodeIncRelaxerPtr nr;
   BrancherPtr br = 0;
-  const std::string me("mntr-glob: ");
 
-  if (env->getOptions()->findString("brancher")->getValue() == "rel") {
+  if (env_->getOptions()->findString("brancher")->getValue() == "rel") {
     UInt t;
     ReliabilityBrancherPtr rel_br;
-    rel_br = (ReliabilityBrancherPtr) new ReliabilityBrancher(env, handlers);
+    rel_br = (ReliabilityBrancherPtr) new ReliabilityBrancher(env_, handlers);
     rel_br->setEngine(e);
-    t = (p->getSize()->ints + p->getSize()->bins)/10;
+    t = (inst_->getSize()->ints + inst_->getSize()->bins)/10;
     t = std::max(t, (UInt) 2);
     t = std::min(t, (UInt) 4);
     rel_br->setThresh(t);
-    env->getLogger()->msgStream(LogExtraInfo) << me 
+    env_->getLogger()->msgStream(LogExtraInfo) << me_
       << "setting reliability threshhold to " << t << std::endl;
-    t = (UInt) p->getSize()->ints + p->getSize()->bins/20+2;
+    t = (UInt) inst_->getSize()->ints + inst_->getSize()->bins/20+2;
     t = std::min(t, (UInt) 10);
     rel_br->setMaxDepth(t);
-    env->getLogger()->msgStream(LogExtraInfo) << me 
+    env_->getLogger()->msgStream(LogExtraInfo) << me_
       << "setting reliability maxdepth to " << t << std::endl;
-    env->getLogger()->msgStream(LogExtraInfo) << me
+    env_->getLogger()->msgStream(LogExtraInfo) << me_
       << "reliability branching iteration limit = " 
       << rel_br->getIterLim() << std::endl;
     br = rel_br;
-  } else if (env->getOptions()->findString("brancher")->getValue() 
+  } else if (env_->getOptions()->findString("brancher")->getValue() 
       == "maxvio") {
     MaxVioBrancherPtr mbr = 
-      (MaxVioBrancherPtr) new MaxVioBrancher(env, handlers);
+      (MaxVioBrancherPtr) new MaxVioBrancher(env_, handlers);
     br = mbr;
-  } else if (env->getOptions()->findString("brancher")->getValue() 
+  } else if (env_->getOptions()->findString("brancher")->getValue() 
       == "lex") {
     LexicoBrancherPtr lbr = 
-      (LexicoBrancherPtr) new LexicoBrancher(env, handlers);
+      (LexicoBrancherPtr) new LexicoBrancher(env_, handlers);
     br = lbr;
   }
-  env->getLogger()->msgStream(LogExtraInfo) << me 
+  env_->getLogger()->msgStream(LogExtraInfo) << me_
     << "brancher used = " << br->getName() << std::endl;
-  nproc = (PCBProcessorPtr) new PCBProcessor(env, e, handlers);
+  nproc = (PCBProcessorPtr) new PCBProcessor(env_, e, handlers);
   nproc->setBrancher(br);
   bab->setNodeProcessor(nproc);
 
-  nr = (NodeIncRelaxerPtr) new NodeIncRelaxer(env, handlers);
-  nr->setProblem(p);
+  nr = (NodeIncRelaxerPtr) new NodeIncRelaxer(env_, handlers);
+  nr->setProblem(inst_);
   nr->setEngine(e);
   bab->setNodeRelaxer(nr);
   bab->shouldCreateRoot(true);
 
-  if (env->getOptions()->findBool("msheur")->getValue() == true && 
-      (p->getSize()->bins == 0 && p->getSize()->ints == 0)) {
-    EnginePtr nlp_e = getNLPEngine(env);
-    p->setNativeDer();
-    NLPMSPtr ms_heur = (NLPMSPtr) new NLPMultiStart(env, p, nlp_e);
+  if (env_->getOptions()->findBool("msheur")->getValue() == true && 
+      (inst_->getSize()->bins == 0 && inst_->getSize()->ints == 0)) {
+    EnginePtr nlp_e = getNLPEngine_();
+    inst_->setNativeDer();
+    NLPMSPtr ms_heur = (NLPMSPtr) new NLPMultiStart(env_, inst_, nlp_e);
     bab->addPreRootHeur(ms_heur); 
   }
 
   return bab;
 }
 
-
-PresolverPtr createPres(EnvPtr env, ProblemPtr p, size_t ndefs, 
-                        HandlerVector &handlers)
-{
+PresolverPtr Glob::createPres_(HandlerVector &handlers) {
   // create handlers for presolve
   PresolverPtr pres = PresolverPtr(); // NULL
-  const std::string me("mntr-glob: ");
 
-  p->calculateSize();
-  if (env->getOptions()->findBool("presolve")->getValue() == true) {
-    LinearHandlerPtr lhandler = (LinearHandlerPtr) new LinearHandler(env, p);
+  inst_->calculateSize();
+  if (env_->getOptions()->findBool("presolve")->getValue() == true) {
+    LinearHandlerPtr lhandler = (LinearHandlerPtr) new LinearHandler(env_, inst_);
     handlers.push_back(lhandler);
-    if (p->isQP() || p->isQuadratic() || p->isLinear() ||
-        true==env->getOptions()->findBool("use_native_cgraph")->getValue()) {
+    if (inst_->isQP() || inst_->isQuadratic() || inst_->isLinear()) {
       lhandler->setPreOptPurgeVars(true);
       lhandler->setPreOptPurgeCons(true);
       lhandler->setPreOptCoeffImp(true);
@@ -255,53 +206,56 @@ PresolverPtr createPres(EnvPtr env, ProblemPtr p, size_t ndefs,
       lhandler->setPreOptPurgeCons(false);
       lhandler->setPreOptCoeffImp(false);
     }
-    if (ndefs>0) {
-      lhandler->setPreOptDualFix(false);
-    } else {
-      lhandler->setPreOptDualFix(true);
-    }
+    lhandler->setPreOptDualFix(true);
 
-    if (!p->isLinear() &&
-         (p->isQP() || p->isQuadratic())) {
-      if (true==env->getOptions()->findBool("cgtoqf")->getValue()) {
-        QuadHandlerPtr qhand = (QuadHandlerPtr) new QuadHandler(env, p);
+    if (!inst_->isLinear() &&
+         (inst_->isQP() || inst_->isQuadratic())) {
+      if (true==env_->getOptions()->findBool("cgtoqf")->getValue()) {
+        QuadHandlerPtr qhand = (QuadHandlerPtr) new QuadHandler(env_, inst_);
         handlers.push_back(qhand);
       } else {
-        if (true == env->getOptions()->findBool("use_native_cgraph")->getValue()
-            && true == env->getOptions()->findBool("nl_presolve")->getValue()) {
-          NlPresHandlerPtr nlhand = (NlPresHandlerPtr) new NlPresHandler(env, p);
+        if (true == env_->getOptions()->findBool("nl_presolve")->getValue()) {
+          NlPresHandlerPtr nlhand = (NlPresHandlerPtr) new NlPresHandler(env_, inst_);
           handlers.push_back(nlhand);
         }
       }
     }
 
-    if (!(p->isLinear() || p->isQP() || p->isQuadratic()) &&
-         true==env->getOptions()->findBool("use_native_cgraph")->getValue() && 
-         true==env->getOptions()->findBool("nl_presolve")->getValue() 
-         ) {
-      NlPresHandlerPtr nlhand = (NlPresHandlerPtr) new NlPresHandler(env, p);
+    if (!(inst_->isLinear() || inst_->isQP() || inst_->isQuadratic()) && 
+         true==env_->getOptions()->findBool("nl_presolve")->getValue()) {
+      NlPresHandlerPtr nlhand = (NlPresHandlerPtr) new NlPresHandler(env_, inst_);
       handlers.push_back(nlhand);
     }
 
     // write the names.
-    env->getLogger()->msgStream(LogExtraInfo) << me 
+    env_->getLogger()->msgStream(LogExtraInfo) << me_ 
       << "handlers used in presolve:" << std::endl;
     for (HandlerIterator h = handlers.begin(); h != handlers.end(); 
         ++h) {
-      env->getLogger()->msgStream(LogExtraInfo) << "  "
+      env_->getLogger()->msgStream(LogExtraInfo) << "  "
         << (*h)->getName()<<std::endl;
     }
   }
 
-  pres = (PresolverPtr) new Presolver(p, env, handlers);
+  pres = (PresolverPtr) new Presolver(inst_, env_, handlers);
   pres->standardize();
   return pres;
 }
 
-
-void setInitialOptions(EnvPtr env)
+DoubleVector Glob::getSolution()
 {
-  OptionDBPtr options = env->getOptions();
+  DoubleVector x;
+  return x;
+}
+
+SolveStatus Glob::getStatus()
+{
+  return status_;
+}
+
+void Glob::setInitialOptions_()
+{
+  OptionDBPtr options = env_->getOptions();
   options->findString("interface_type")->setValue("AMPL");
   options->findBool("presolve")->setValue(true);
   options->findBool("nl_presolve")->setValue(true);
@@ -312,160 +266,50 @@ void setInitialOptions(EnvPtr env)
   options->findBool("cgtoqf")->setValue(true);
 }
 
-void showHelp()
-{
-  std::cout << "global optimization for general QCQP" << std::endl
-            << "Usage:" << std::endl
-            << "To show version: glob -v (or --display_version yes)"
-            << std::endl
-            << "To show all options: glob -= (or --display_options yes)" 
-            << std::endl
-            << "To solve an instance: glob --option1 [value] "
-            << "--option2 [value] ... " << " .nl-file" << std::endl;
-}
-
-
-int showInfo(EnvPtr env)
-{
-  OptionDBPtr options = env->getOptions();
-  const std::string me("mntr-glob: ");
-
-  if (options->findBool("display_options")->getValue() ||
-      options->findFlag("=")->getValue()) {
-    options->write(std::cout);
-    return 1;
-  }
-
-  if (options->findBool("display_help")->getValue() ||
-      options->findFlag("?")->getValue()) {
-    showHelp();
-    return 1;
-  }
-
-  if (options->findBool("display_version")->getValue() ||
-      options->findFlag("v")->getValue()) {
-    env->getLogger()->msgStream(LogNone) << me << "Minotaur version "
-      << env->getVersion() << std::endl 
-      << me << "global optimization for nonconvex QCQP" << std::endl;
-    return 1;
-  }
-
-  if (options->findString("problem_file")->getValue()=="") {
-    showHelp();
-    return 1;
-  }
-
-  env->getLogger()->msgStream(LogInfo)
-    << me << "Minotaur version " << env->getVersion() << std::endl
-    << me << "global optimization for nonconvex QCQP" << std::endl;
-  return 0;
-}
-
-
-void writeSol(EnvPtr env, VarVector *orig_v,
-              PresolverPtr pres, SolutionPtr sol, SolveStatus status,
-              MINOTAUR_AMPL::AMPLInterface* iface)
-{
-  if (sol) {
-    sol = pres->getPostSol(sol);
-  }
-
-  if (env->getOptions()->findFlag("AMPL")->getValue() ||
-      true == env->getOptions()->findBool("write_sol_file")->getValue()) {
-    iface->writeSolution(sol, status);
-  } else if (sol && env->getLogger()->getMaxLevel()>=LogExtraInfo &&
-             env->getOptions()->findBool("display_solution")->getValue()) {
-    sol->writePrimal(env->getLogger()->msgStream(LogExtraInfo), orig_v);
-  }
-  if (sol) {
-    delete sol;
-  } 
-}
-
-
-void writeStatus(EnvPtr env, BranchAndBound *bab, double obj_sense)
-{
-
-  const std::string me("mntr-glob: ");
-  int err = 0;
-
-  if (bab) {
-    env->getLogger()->msgStream(LogInfo)
-      << me << std::fixed << std::setprecision(4) 
-      << "best solution value = " << obj_sense*bab->getUb() << std::endl
-      << me << std::fixed << std::setprecision(4)
-      << "best bound estimate from remaining nodes = "
-      <<  obj_sense*bab->getLb() << std::endl
-      << me << "gap = " << std::max(0.0,bab->getUb() - bab->getLb())
-      << std::endl
-      << me << "gap percentage = " << bab->getPerGap() << std::endl
-      << me << "time used = " << std::fixed << std::setprecision(2) 
-      << env->getTime(err) << std::endl
-      << me << "status of branch-and-bound: " 
-      << getSolveStatusString(bab->getStatus()) << std::endl;
-    env->stopTimer(err); assert(0==err);
-  } else {
-    env->getLogger()->msgStream(LogInfo)
-      << me << std::fixed << std::setprecision(4)
-      << "best solution value = " << INFINITY << std::endl
-      << me << std::fixed << std::setprecision(4)
-      << "best bound estimate from remaining nodes = " << INFINITY << std::endl
-      << me << "gap = " << INFINITY << std::endl
-      << me << "gap percentage = " << INFINITY << std::endl
-      << me << "time used = " << std::fixed << std::setprecision(2) 
-      << env->getTime(err) << std::endl 
-      << me << "status of branch-and-bound: " 
-      << getSolveStatusString(NotStarted) << std::endl;
-    env->stopTimer(err); assert(0==err);
-  }
-}
-
-
-int main(int argc, char** argv)
-{
-  EnvPtr env      = (EnvPtr) new Environment();
-  MINOTAUR_AMPL::AMPLInterfacePtr iface;
-  ProblemPtr inst = 0;   // instance that needs to be solved.
-  EnginePtr engine = 0;  // engine for solving relaxations. 
-  BranchAndBound *bab = 0;
-  PresolverPtr pres = 0, pres2 = 0;
-  const std::string me("mntr-glob: ");
-  VarVector *orig_v=0;
+int Glob::solve(ProblemPtr inst) {
+  EnginePtr engine = 0;
   HandlerVector handlers;
-  double obj_sense = 1.0;
+  VarVector *orig_v=0;
+  PresolverPtr pres = 0, pres2 = 0;
   int err = 0;
   ProblemPtr newp = 0;
+  BranchAndBound *bab = 0;
+  OptionDBPtr options = env_->getOptions();
 
-  // start timing.
-  env->startTimer(err);
-
-  setInitialOptions(env);
-
-  // Important to setup AMPL Interface first as it adds several options.
-  iface = (MINOTAUR_AMPL::AMPLInterfacePtr) 
-    new MINOTAUR_AMPL::AMPLInterface(env, "glob");
-
-  // read user-specified options
-  env->readOptions(argc, argv);
-  // any other value not allowed
-  env->getOptions()->findInt("pres_freq")->setValue(1); 
-
-  if (0!=showInfo(env)) {
-    goto CLEANUP;
+  inst_ = inst;
+  if (options->findBool("cgtoqf")->getValue()==1) {
+    inst_->cg2qf();
   }
 
-  loadProblem(env, iface, inst, &obj_sense);
+  // display the problem
+  inst_->calculateSize();
+  if (options->findBool("display_problem")->getValue()==true) {
+    inst_->write(env_->getLogger()->msgStream(LogNone), 9);
+  }
+  if (options->findBool("display_size")->getValue()==true) {
+    inst_->writeSize(env_->getLogger()->msgStream(LogNone));
+  }
 
+  if (inst_->getObjective() &&
+      inst_->getObjective()->getObjectiveType()==Maximize) {
+    objSense_ = -1.0;
+    env_->getLogger()->msgStream(LogInfo) << me_
+      << "objective sense: maximize (will be converted to Minimize)"
+      << std::endl;
+  } else {
+    env_->getLogger()->msgStream(LogInfo) << me_
+      << "objective sense: minimize" << std::endl;
+  }
   // Get the right engine.
-  engine = getEngine(env);
-  env->getLogger()->msgStream(LogExtraInfo) << me 
+  engine = getEngine_();
+  env_->getLogger()->msgStream(LogExtraInfo) << me_
     << "engine used = " << engine->getName() << std::endl;
 
   // get presolver.
   handlers.clear();
-  orig_v = new VarVector(inst->varsBegin(), inst->varsEnd());
-  pres = createPres(env, inst, iface->getNumDefs(), handlers);
-  if (env->getOptions()->findBool("presolve")->getValue() == true) {
+  orig_v = new VarVector(inst_->varsBegin(), inst_->varsEnd());
+  pres = createPres_(handlers);
+  if (env_->getOptions()->findBool("presolve")->getValue() == true) {
     pres->solve();
   }
   for (HandlerVector::iterator it=handlers.begin(); it!=handlers.end(); ++it) {
@@ -473,49 +317,50 @@ int main(int argc, char** argv)
   }
   handlers.clear();
 
-  inst->setNativeDer();
-  err = transform(env, inst, newp, handlers);
+  inst_->setNativeDer();
+  err = transform_(newp, handlers);
   assert(0==err || 2==err); // return status 2 means problem is convex
 
   if (err==2) {
     // call QG
-    env->getLogger()->msgStream(LogInfo) << me <<
+    env_->getLogger()->msgStream(LogInfo) << me_ <<
       "All constraints and objective found to be convex" << std::endl
       << "Problem is forwarded to QG2 - convex MINLP solver" << std::endl;
-    QG2 qg(env);
+    QG2 qg(env_);
     if (0!=qg.showInfo()) {
       goto CLEANUP;
     }
 
-    err = qg.solve(inst);
+    err = qg.solve(inst_);
     goto CLEANUP;
   }
 
-  env->getLogger()->msgStream(LogExtraInfo) << me 
+  newp_ = newp;
+  env_->getLogger()->msgStream(LogExtraInfo) << me_
     << "Presolving transformed problem ... " << std::endl;
-  pres2 = (PresolverPtr) new Presolver(newp, env, handlers);
+  pres2 = (PresolverPtr) new Presolver(newp_, env_, handlers);
 
   pres2->solve();
-  env->getLogger()->msgStream(LogExtraInfo) << me 
+  env_->getLogger()->msgStream(LogExtraInfo) << me_
     << "Finished presolving transformed problem" << std::endl;
 
   // get branch-and-bound
-  bab = createBab(env, newp, engine, handlers);
+  bab = createBab_(engine, handlers);
 
-  if (false==env->getOptions()->findBool("solve")->getValue()) {
+  if (false==env_->getOptions()->findBool("solve")->getValue()) {
     goto CLEANUP;
   }
 
   // solve
   bab->solve();
-  bab->writeStats(env->getLogger()->msgStream(LogExtraInfo));
-  engine->writeStats(env->getLogger()->msgStream(LogExtraInfo));
+  bab->writeStats(env_->getLogger()->msgStream(LogExtraInfo));
+  engine->writeStats(env_->getLogger()->msgStream(LogExtraInfo));
   for (HandlerVector::iterator it=handlers.begin(); it!=handlers.end(); ++it) {
-    (*it)->writeStats(env->getLogger()->msgStream(LogExtraInfo));
+    (*it)->writeStats(env_->getLogger()->msgStream(LogExtraInfo));
   }
 
-  writeSol(env, orig_v, pres, bab->getSolution(), bab->getStatus(), iface);
-  writeStatus(env, bab, obj_sense);
+  writeSol_(env_, orig_v, pres, bab->getSolution(), bab->getStatus(), iface_);
+  writeStatus_(bab);
 
 CLEANUP:
   for (HandlerVector::iterator it=handlers.begin(); it!=handlers.end(); ++it) {
@@ -523,9 +368,6 @@ CLEANUP:
   }
   if (engine) {
     delete engine;
-  }
-  if (iface) {
-    delete iface;
   }
   if (pres) {
     delete pres;
@@ -542,21 +384,163 @@ CLEANUP:
     }
     delete bab;
   }
-  if (inst) {
-    delete inst;
-  }
-  if (newp) {
+  if (newp_) {
     delete newp;
   }
   if (orig_v) {
     delete orig_v;
   }
-  if (env) {
-    delete env;
-  }
-
+  inst_ = 0;
   return 0;
 }
+
+void Glob::showHelp() const {
+  std::cout << "global optimization for general QCQP" << std::endl
+            << "Usage:" << std::endl
+            << "To show version: glob -v (or --display_version yes)"
+            << std::endl
+            << "To show all options: glob -= (or --display_options yes)" 
+            << std::endl
+            << "To solve an instance: glob --option1 [value] "
+            << "--option2 [value] ... " << " .nl-file" << std::endl;
+}
+
+
+int Glob::showInfo()
+{
+  OptionDBPtr options = env_->getOptions();
+
+  if (options->findBool("display_options")->getValue() ||
+      options->findFlag("=")->getValue()) {
+    options->write(std::cout);
+    return 1;
+  }
+
+  if (options->findBool("display_help")->getValue() ||
+      options->findFlag("?")->getValue()) {
+    showHelp();
+    return 1;
+  }
+
+  if (options->findBool("display_version")->getValue() ||
+      options->findFlag("v")->getValue()) {
+    env_->getLogger()->msgStream(LogNone) << me_ << "Minotaur version "
+      << env_->getVersion() << std::endl 
+      << me_ << "global optimization for nonconvex QCQP" << std::endl;
+    return 1;
+  }
+
+  if (options->findString("problem_file")->getValue()=="") {
+    showHelp();
+    return 1;
+  }
+
+  env_->getLogger()->msgStream(LogInfo)
+    << me_ << "Minotaur version " << env_->getVersion() << std::endl
+    << me_ << "global optimization for nonconvex QCQP" << std::endl;
+  return 0;
+}
+
+void Glob::writeStatus_(BranchAndBound *bab) {
+  int err = 0;
+
+  if (bab) {
+    env_->getLogger()->msgStream(LogInfo)
+      << me_ << std::fixed << std::setprecision(4) 
+      << "best solution value = " << objSense_*bab->getUb() << std::endl
+      << me_ << std::fixed << std::setprecision(4)
+      << "best bound estimate from remaining nodes = "
+      <<  objSense_*bab->getLb() << std::endl
+      << me_ << "gap = " << std::max(0.0,bab->getUb() - bab->getLb())
+      << std::endl
+      << me_ << "gap percentage = " << bab->getPerGap() << std::endl
+      << me_ << "time used = " << std::fixed << std::setprecision(2) 
+      << env_->getTime(err) << std::endl
+      << me_ << "status of branch-and-bound: " 
+      << getSolveStatusString(bab->getStatus()) << std::endl;
+    env_->stopTimer(err); assert(0==err);
+  } else {
+    env_->getLogger()->msgStream(LogInfo)
+      << me_ << std::fixed << std::setprecision(4)
+      << "best solution value = " << INFINITY << std::endl
+      << me_ << std::fixed << std::setprecision(4)
+      << "best bound estimate from remaining nodes = " << INFINITY << std::endl
+      << me_ << "gap = " << INFINITY << std::endl
+      << me_ << "gap percentage = " << INFINITY << std::endl
+      << me_ << "time used = " << std::fixed << std::setprecision(2) 
+      << env_->getTime(err) << std::endl 
+      << me_ << "status of branch-and-bound: " 
+      << getSolveStatusString(NotStarted) << std::endl;
+    env_->stopTimer(err); assert(0==err);
+  }
+}
+
+//ProblemPtr Glob::loadProblem()
+//{
+//  OptionDBPtr options = env_->getOptions();
+//  Timer *timer = env_->getNewTimer();
+//  ProblemPtr inst = 0;
+//
+//  if (options->findBool("use_native_cgraph")->getValue()==false) {
+//    options->findBool("use_native_cgraph")->setValue(true); 
+//    env->getLogger()->msgStream(LogExtraInfo) << me 
+//      << "Setting value of 'use_native_cgraph option' to True" << std::endl;
+//  }
+//
+//  // load the problem.
+//  timer->start();
+//  inst = iface_->readInstance(options->findString("problem_file")->getValue());
+//  env_->getLogger()->msgStream(LogInfo) << me 
+//    << "time used in reading instance = " << std::fixed 
+//    << std::setprecision(2) << timer->query() << std::endl;
+//
+//  if (options->findBool("cgtoqf")->getValue()==1) {
+//    inst->cg2qf();
+//  }
+//
+//  // display the problem
+//  inst->calculateSize();
+//  if (options->findBool("display_problem")->getValue()==true) {
+//    inst->write(env->getLogger()->msgStream(LogNone), 9);
+//  }
+//  if (options->findBool("display_size")->getValue()==true) {
+//    inst->writeSize(env->getLogger()->msgStream(LogNone));
+//  }
+//
+//  if (inst->getObjective() &&
+//      inst->getObjective()->getObjectiveType()==Maximize) {
+//    objSense_ = -1.0;
+//    env->getLogger()->msgStream(LogInfo) << me 
+//      << "objective sense: maximize (will be converted to Minimize)"
+//      << std::endl;
+//  } else {
+//    env->getLogger()->msgStream(LogInfo) << me 
+//      << "objective sense: minimize" << std::endl;
+//  }
+//  delete timer;
+//  return inst;
+//}
+
+//void writeSol(EnvPtr env, VarVector *orig_v,
+//              PresolverPtr pres, SolutionPtr sol, SolveStatus status,
+//              MINOTAUR_AMPL::AMPLInterface* iface)
+//{
+//  if (sol) {
+//    sol = pres->getPostSol(sol);
+//  }
+//
+//  if (env->getOptions()->findFlag("AMPL")->getValue() ||
+//      true == env->getOptions()->findBool("write_sol_file")->getValue()) {
+//    iface->writeSolution(sol, status);
+//  } else if (sol && env->getLogger()->getMaxLevel()>=LogExtraInfo &&
+//             env->getOptions()->findBool("display_solution")->getValue()) {
+//    sol->writePrimal(env->getLogger()->msgStream(LogExtraInfo), orig_v);
+//  }
+//  if (sol) {
+//    delete sol;
+//  } 
+//}
+
 // Local Variables: 
 // mode: c++ 
 // eval: (c-set-style "k&r") 

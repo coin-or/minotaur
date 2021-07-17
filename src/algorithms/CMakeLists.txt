@@ -289,6 +289,7 @@ set (GLOB_SOURCES
  Glob.cpp 
  QG2.cpp
  Solver.cpp
+ GlobMain.cpp
 )
 
 add_executable(glob ${GLOB_SOURCES})
