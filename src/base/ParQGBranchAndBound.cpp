@@ -1,7 +1,7 @@
 // 
 //     MINOTAUR -- It's only 1/2 bull
 // 
-//     (C)opyright 2008 - 2017 The MINOTAUR Team.
+//     (C)opyright 2008 - 2021 The MINOTAUR Team.
 // 
 
 /**
@@ -531,6 +531,7 @@ void ParQGBranchAndBound::parsolveOppor(ParNodeIncRelaxerPtr parNodeRlxr[],
     isParRel = true;
   }
 
+  //bool notRampedUp = true;
   UInt i=0; // thread id
 #pragma omp parallel private(i)
   {
@@ -807,6 +808,14 @@ void ParQGBranchAndBound::parsolveOppor(ParNodeIncRelaxerPtr parNodeRlxr[],
       } else if (shouldStopPar_(wallTimeStart, treeLbTh[i])) {
         tm_->updateLb();
         shouldRun = false;
+      //} else if (notRampedUp && (nodeCount == numThreads)) {
+        //tm_->updateLb();
+        //notRampedUp = false;
+//#pragma omp critical (logger)
+        //logger_->msgStream(LogExtraInfo) << me_
+          //<< "ramp-up time = "
+          //<< getWallTime() - wallTimeStart << std::endl;
+        ////shouldRun = false;
       } else {
 #if SPEW
 #pragma omp critical (logger)
@@ -832,9 +841,9 @@ void ParQGBranchAndBound::parsolveOppor(ParNodeIncRelaxerPtr parNodeRlxr[],
     << me_ << "nodes created   = " << tm_->getSize() << std::endl;
   solPool_->writeStats(logger_->msgStream(LogExtraInfo));
 
-  for (UInt i = 0; i < numThreads; ++i) {
+  for (UInt k = 0; k < numThreads; ++k) {
     logger_->msgStream(LogExtraInfo) << me_ << "nodes processed by thread "
-      << i << " = " << nodesProcTh[i] << std::endl;
+      << k << " = " << nodesProcTh[k] << std::endl;
   }
 
   stats_->timeUsed = timer_->query();

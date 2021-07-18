@@ -1,7 +1,7 @@
 //
 //    MINOTAUR -- It's only 1/2 bull
 //
-//    (C)opyright 2009 - 2017 The MINOTAUR Team.
+//    (C)opyright 2009 - 2021 The MINOTAUR Team.
 //
 
 /**
@@ -90,8 +90,8 @@ ProblemPtr Solver::readProblem(std::string fname, std::string dname, int &err)
       << "Unable to read the problem from file " << fname 
       << " Either provide a file with .nl or .mps extension or use -AMPL flag"
       << std::endl;
-    delete timer;
     err = 1;
+    delete timer;
     return 0;
   }
 

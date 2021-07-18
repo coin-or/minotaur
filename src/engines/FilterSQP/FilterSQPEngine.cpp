@@ -1,7 +1,7 @@
 // 
 //     MINOTAUR -- It's only 1/2 bull
 // 
-//     (C)opyright 2010 - 2017 The MINOTAUR Team.
+//     (C)opyright 2010 - 2021 The MINOTAUR Team.
 // 
 
 /**
@@ -147,7 +147,9 @@ FilterSQPWarmStart::FilterSQPWarmStart()
 
 FilterSQPWarmStart::~FilterSQPWarmStart()
 {
-  sol_ = 0;
+  if (sol_) {
+    delete sol_;
+  }
 }
 
 
@@ -246,10 +248,6 @@ FilterSQPEngine::~FilterSQPEngine()
     freeStorage_();
     c_ = 0;
   }
-  if (sol_) {
-    delete sol_;
-    sol_ = 0;
-  }
   if (timer_) {
     delete timer_;
   }
@@ -262,7 +260,9 @@ FilterSQPEngine::~FilterSQPEngine()
   }
   if (warmSt_) {
     delete warmSt_;
-    warmSt_ = 0;
+    sol_ = 0;
+  } else {
+    delete sol_;
   }
 }
 
@@ -338,14 +338,13 @@ void FilterSQPEngine::clear()
     problem_->unsetEngine();
     problem_ = 0;
   }
-  if (sol_) {
-    delete sol_;
-    sol_ = 0;
-  }
   if (warmSt_) {
-    delete warmSt_;
-    warmSt_ = 0;
+    delete warmSt_; warmSt_ = 0; // deletes sol_ also
+    sol_ = 0; 
+  } else if (sol_) {
+    delete sol_; sol_ = 0;
   }
+    
   strBr_       = false;
   consChanged_ = true;
 }
@@ -592,16 +591,16 @@ void FilterSQPEngine::load(ProblemPtr problem)
 void FilterSQPEngine::loadFromWarmStart(const WarmStartPtr warm_st)
 {
   if (warm_st) {
-    // Two important points:
-    // 1. dynamic cast can't seem to be avoided.
-    // 2. we need to use boost::dynamic_pointer_cast instead of dynamic_cast.
+    // dynamic cast can't seem to be avoided.
     ConstFilterWSPtr warm_st2 = dynamic_cast<const FilterSQPWarmStart*> (warm_st);
 
     // now create a full copy.
     if (warmSt_) {
-      delete warmSt_;
+      delete warmSt_; // deletes sol_ also
+      sol_ = 0;
     }
     warmSt_ = (FilterWSPtr) new FilterSQPWarmStart(warm_st2);
+    sol_ = warmSt_->getPoint();
     if (!useWs_) {
       logger_->msgStream(LogInfo) << "setWarmStart() method is called but"
         " warm-start is not enabled." << std::endl;

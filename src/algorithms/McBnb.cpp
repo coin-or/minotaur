@@ -1,7 +1,7 @@
 //
 //    MINOTAUR -- It's only 1/2 bull
 //
-//    (C)opyright 2009 - 2017 The MINOTAUR Team.
+//    (C)opyright 2009 - 2021 The MINOTAUR Team.
 //
 
 /**
@@ -649,8 +649,12 @@ int main(int argc, char** argv)
     goto CLEANUP;
   }
 
+  env->getLogger()->msgStream(LogInfo) << "Number of processors = "
+    << omp_get_num_procs() << std::endl;
+  //numThreads = std::min(env->getOptions()->findInt("threads")->getValue(),
+                        //omp_get_num_procs());
   numThreads = std::min(env->getOptions()->findInt("threads")->getValue(),
-                        omp_get_num_procs());
+                        omp_get_max_threads());
   nodePrcssr = new ParPCBProcessorPtr[numThreads];
   parNodeRlxr = new ParNodeIncRelaxerPtr[numThreads];
   relCopy = new RelaxationPtr[numThreads]; 

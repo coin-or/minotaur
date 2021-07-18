@@ -1,7 +1,7 @@
 //
 //    MINOTAUR -- It's only 1/2 bull
 //
-//    (C)opyright 2009 - 2017 The MINOTAUR Team.
+//    (C)opyright 2009 - 2021 The MINOTAUR Team.
 //
 
 /**
@@ -281,7 +281,6 @@ int QG2::solve(ProblemPtr p)
     env_->getLogger()->msgStream(LogInfo) << me_ 
       << "status of presolve: " << getSolveStatusString(status_) << std::endl;
     writeSol_(env_, orig_v, pres, SolutionPtr(), pres->getStatus(), iface_);
-    writeBnbStatus_(bab);
     goto CLEANUP;
   }
 

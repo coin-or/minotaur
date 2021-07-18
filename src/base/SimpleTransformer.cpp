@@ -1,7 +1,7 @@
 //
 //     MINOTAUR -- It's only 1/2 bull
 //
-//     (C)opyright 2008 - 2017 The MINOTAUR Team.
+//     (C)opyright 2008 - 2021 The MINOTAUR Team.
 //
 
 /**
@@ -55,6 +55,7 @@ SimpleTransformer::SimpleTransformer()
   : Transformer(),
     yBiVars_(0)
 {
+  resetStats_();
 }
 
 
@@ -65,6 +66,7 @@ SimpleTransformer::SimpleTransformer(EnvPtr env, ProblemPtr p,
     nlpe_(nlpe),
     yBiVars_(0)
 {
+  resetStats_();
 }
 
 
@@ -572,7 +574,7 @@ void SimpleTransformer::refNonlinObj_(ConstProblemPtr oldp)
   double d = 0;
   VariablePtr v = VariablePtr();
   LinearFunctionPtr lf, lf2;
-  QuadraticFunctionPtr qf, qf2;
+  QuadraticFunctionPtr qf, qf2 = new QuadraticFunction();
   CGraphPtr cg;
 
   assert(newp_);
@@ -738,7 +740,7 @@ bool SimpleTransformer::checkQuadConvexity_() {
   bool all_convex = true;
   ConstraintPtr c;
   QuadraticFunctionPtr qf;
-  Convexity sg, sg_old = Unknown;
+  Convexity sg = Unknown, sg_old = Unknown;
 
   for (ConstraintConstIterator cit=p_->consBegin(); cit!=p_->consEnd(); ++cit) {
     c = *cit;
@@ -770,6 +772,7 @@ bool SimpleTransformer::checkQuadConvexity_() {
             all_convex = false;
           } else {
             c->setConvexity(Convex);
+            ++stats_.nconv;
           }
         } else {
           if (c->getUb() < INFINITY) {
@@ -778,6 +781,7 @@ bool SimpleTransformer::checkQuadConvexity_() {
             all_convex = false;
           } else {
             c->setConvexity(Convex);
+            ++stats_.nconv;
           }
         }
       }
@@ -802,6 +806,11 @@ bool SimpleTransformer::checkQuadConvexity_() {
       delete *it;
     }
     qf_vector.clear();
+    if (convex_cons) {
+      stats_.objConv = 1;
+    } else {
+      stats_.objConv = 2;
+    }
   }
   return all_convex;
 }
@@ -821,12 +830,14 @@ void SimpleTransformer::refQuadCons_(QuadraticFunctionPtr qf,
     v = yQfBil_->findY(it->first.first, it->first.second);
     if (!v) {
       v = newp_->newVariable();
+      ++stats_.nvars;
       lfnew = (LinearFunctionPtr) new LinearFunction();
       lfnew->addTerm(v, -1.0);
       qfnew = (QuadraticFunctionPtr) new QuadraticFunction();
       qfnew->addTerm(it->first.first, it->first.second, 1.0);
       fnew = (FunctionPtr) new Function(lfnew, qfnew);
       cnew = newp_->newConstraint(fnew, 0.0, 0.0);
+      ++stats_.ncons;
 #if SPEW
       logger_->msgStream(LogDebug) << me_ << "added new constraint"
                                           << std::endl;
@@ -891,6 +902,8 @@ void SimpleTransformer::reformulate(ProblemPtr &newp, HandlerVector &handlers,
 {
   assert(p_);
 
+  double stime = env_->getTimer()->query();
+
   newp_ = (ProblemPtr) new Problem(env_);
   yLfs_ = new YEqLFs(2*p_->getNumVars());
   yUniExprs_ = new YEqUCGs();
@@ -922,6 +935,8 @@ void SimpleTransformer::reformulate(ProblemPtr &newp, HandlerVector &handlers,
   copyLinear_(p_, newp_);
   if (checkQuadConvexity_()) {
     status = 2; // status 2 means the problem is convex
+    clearUnusedHandlers_(handlers);
+    delete newp_;
     return;
   }
   refNonlinCons_(p_);
@@ -940,8 +955,17 @@ void SimpleTransformer::reformulate(ProblemPtr &newp, HandlerVector &handlers,
   status = 0;
   newp = newp_;
   // newp->write(std::cout);
+  stats_.time = env_->getTimer()->query() - stime;
+  writeStats(logger_->msgStream(LogExtraInfo));
 }
 
+void SimpleTransformer::resetStats_() {
+  stats_.time = 0.0;
+  stats_.nvars = 0;
+  stats_.ncons = 0;
+  stats_.nconv = 0;
+  stats_.objConv = 0;
+}
 
 void SimpleTransformer::trigRef_(OpCode op, LinearFunctionPtr lfl,
                                  VariablePtr vl, double dl, VariablePtr &v,
@@ -999,6 +1023,32 @@ void SimpleTransformer::uniVarRef_(const CNode *n0, LinearFunctionPtr lfl,
   }
 }
 
+void SimpleTransformer::writeStats(std::ostream &out) const {
+  out << me_ << "Statistics for transformation by SimpleTransformer:"
+      << std::endl << me_ <<
+      "Time taken in reformulation and Convexity detection = " << stats_.time
+      << std::endl << me_ <<
+      "Number of variables added in transformation         = " << stats_.nvars
+      << std::endl << me_ <<
+      "Number of constraints added in transformation       = " << stats_.ncons
+      << std::endl << me_ <<
+      "Number of convex quadratic constraints              = " << stats_.nconv
+      << std::endl << me_ <<
+      "Objective Function = ";
+  switch(stats_.objConv) {
+    case 0:
+      out << "Linear" << std::endl;
+      break;
+    case 1:
+      out << "Convex Quadratic" << std::endl;
+      break;
+    case 2:
+      out << "Nonconvex Quadratic" << std::endl;
+      break;
+    default:
+      break;
+  }
+}
 
 // Local Variables: 
 // mode: c++ 

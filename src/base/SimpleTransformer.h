@@ -1,7 +1,7 @@
 //
 //     MINOTAUR -- It's only 1/2 bull
 //
-//     (C)opyright 2008 - 2017 The MINOTAUR Team.
+//     (C)opyright 2008 - 2021 The MINOTAUR Team.
 //
 
 /**
@@ -72,13 +72,27 @@ namespace Minotaur {
     void reformulate(ProblemPtr &newp, HandlerVector &handlers,
                      int &status);
 
+    void writeStats(std::ostream &out) const;
 
   private:
+    // Store statistics of reformulation
+    struct RefStats {
+      double time;  ///> Total time reformulation and convexity detection
+      UInt nvars;   ///> Number of variables added
+      UInt ncons;   ///> Number of constraints added
+      UInt nconv;   ///> Number of convex constraints
+      UInt objConv; ///> 0 : Linear objective
+                    ///> 1 : Convex Quadratic Objective
+                    ///> 2 : Nonconvex Quadratic Objective
+    };
+
     static const std::string me_;
 
     Engine* lpe_;
 
     EnginePtr nlpe_;
+
+    RefStats stats_;
 
     YEqCGs *yBiVars_;
     YEqQfBil *yQfBil_;
@@ -123,6 +137,9 @@ namespace Minotaur {
      */
     void recursRef_(const CNode *node, LinearFunctionPtr &lf, VariablePtr &v,
                     double &d);
+
+    // Reset the statistics for transformer
+    void resetStats_();
 
     void trigRef_(OpCode op, LinearFunctionPtr lfl, VariablePtr vl,
                   double dl, VariablePtr &v, double &d);

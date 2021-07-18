@@ -1,7 +1,7 @@
 // 
 //     MINOTAUR -- It's only 1/2 bull
 // 
-//     (C)opyright 2009 - 2017 The MINOTAUR Team.
+//     (C)opyright 2009 - 2021 The MINOTAUR Team.
 // 
 
 /**
@@ -181,11 +181,13 @@ void PCBProcessor::process(NodePtr node, RelaxationPtr rel,
   bool should_prune = true;
   bool should_resolve;
   bool sol_found = false;
+  DoubleVector *debug_sol = 0;
   BrancherStatus br_status;
   ConstSolutionPtr sol;
   ModVector mods;
   SeparationStatus sep_status = SepaContinue;
   int iter = 0, error;
+  bool debug_feas = false;
 
   ++stats_.proc;
   relaxation_ = rel;
@@ -195,43 +197,13 @@ void PCBProcessor::process(NodePtr node, RelaxationPtr rel,
     branches_ = 0;
   }
 
-#if 0
-  double *svar = new double[20];
-  bool xfeas = true;
-  svar[1-1]   = 0.000000000  ;
-  svar[2-1]   = 0.000000000  ;
-  svar[3-1]   = 1.042899924  ;
-  svar[4-1]   = 0.000000000  ;
-  svar[5-1]   = 0.000000000  ;
-  svar[6-1]   = 0.000000000  ;
-  svar[7-1]   = 0.000000000  ;
-  svar[8-1]   = 0.000000000  ;
-  svar[9-1]   = 0.000000000  ;
-  svar[10-1]  = 0.000000000  ;
-  svar[11-1]  = 1.746743790  ;
-  svar[12-1]  = 0.000000000  ;
-  svar[13-1]  = 0.431470884  ;
-  svar[14-1]  = 0.000000000  ;
-  svar[15-1]  = 0.000000000  ;
-  svar[16-1]  = 4.433050274  ;
-  svar[17-1]  = 0.000000000  ;
-  svar[18-1]  = 15.858931758 ;
-  svar[19-1]  = 0.000000000  ;
-  svar[20-1]  = 16.486903370 ;
+  //debug_sol = relaxation_->getDebugSol();
+  if (debug_sol) {
+    for (ConstraintConstIterator it=relaxation_->consBegin();
+         it!=relaxation_->consEnd(); ++it) {
 
-  for (UInt i=0; i<20; ++i) {
-    if (svar[i] > rel->getVariable(i)->getUb()+1e-6 || 
-        svar[i] < rel->getVariable(i)->getLb()-1e-6) {
-      xfeas = false;
-      break;
     }
   }
-  if (true==xfeas) {
-    std::cout << "xsol feasible in node " << node->getId() << std::endl;
-  } else {
-    std::cout << "xsol NOT feasible in node " << node->getId() << std::endl;
-  }
-#endif 
   
   // presolve
   should_prune = presolveNode_(node, s_pool);

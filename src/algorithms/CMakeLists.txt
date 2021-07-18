@@ -142,7 +142,9 @@ install(TARGETS qg2 RUNTIME DESTINATION bin)
 ## Use the lines meant for bnb as a template.
 ##############################################################################
 set (BNB_SOURCES
+  Solver.cpp
   Bnb.cpp 
+  BnbMain.cpp
 )
 
 add_executable(bnb ${BNB_SOURCES})
@@ -287,6 +289,7 @@ set (GLOB_SOURCES
  Glob.cpp 
  QG2.cpp
  Solver.cpp
+ GlobMain.cpp
 )
 
 add_executable(glob ${GLOB_SOURCES})

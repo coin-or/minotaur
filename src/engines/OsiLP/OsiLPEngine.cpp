@@ -1,7 +1,7 @@
 // 
 //     MINOTAUR -- It's only 1/2 bull
 // 
-//     (C)opyright 2008 - 2017 The MINOTAUR Team.
+//     (C)opyright 2008 - 2021 The MINOTAUR Team.
 // 
 
 /**
@@ -605,7 +605,6 @@ EngineStatus OsiLPEngine::solve()
 #endif
 
   osilp_->resolve();
-
   if (osilp_->isProvenOptimal()) {
     status_ = ProvenOptimal;  
     sol_->setPrimal(osilp_->getStrictColSolution());

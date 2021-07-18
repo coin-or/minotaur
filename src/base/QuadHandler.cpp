@@ -1,7 +1,7 @@
 //
 //     MINOTAUR -- It's only 1/2 bull
 // 
-//     (C)opyright 2010 - 2017 The MINOTAUR Team.
+//     (C)opyright 2010 - 2021 The MINOTAUR Team.
 // 
 
 /**
@@ -109,6 +109,9 @@ QuadHandler::~QuadHandler()
   //bStats_.qvars.clear();
   if (nlpe_) {
     delete nlpe_;
+  }
+  if (lpe_) {
+    delete lpe_;
   }
 }
 
@@ -477,6 +480,7 @@ void QuadHandler::getBranchingCandidates(RelaxationPtr rel,
                                             udist);
       ret = cands.insert(br_can);
       if (false == ret.second) { // already exists.
+        delete br_can;
         br_can = *(ret.first);
         br_can->setDist(ddist+br_can->getDDist(), udist+br_can->getDDist());
       }
@@ -512,6 +516,7 @@ void QuadHandler::getBranchingCandidates(RelaxationPtr rel,
                                               udist); 
         ret = cands.insert(br_can);
         if (false == ret.second) { // already exists.
+          delete br_can;
           br_can = *(ret.first);
           br_can->setDist(ddist+br_can->getDDist(), udist+br_can->getUDist());
         }
@@ -534,6 +539,7 @@ void QuadHandler::getBranchingCandidates(RelaxationPtr rel,
                                               udist); 
         ret = cands.insert(br_can);
         if (false == ret.second) { // already exists.
+          delete br_can;
           br_can = *(ret.first);
           br_can->setDist(ddist+br_can->getDDist(), udist+br_can->getUDist());
         }
@@ -1408,6 +1414,7 @@ bool QuadHandler::postSolveRootNode(RelaxationPtr rel, SolutionPoolPtr s_pool,
   }
   ub = s_pool->getBestSolutionValue();
   is_inf = tightenLP_(rel, ub, &lchanged, p_mods, r_mods);
+  assert(!is_inf);
   bStats_.timeLP = timer_->query()-stime;
   
   if (true == lchanged) {
@@ -1550,8 +1557,8 @@ void QuadHandler::resetStats_()
 
 
 void QuadHandler::separate(ConstSolutionPtr sol, NodePtr , RelaxationPtr rel,
-                           CutManager *, SolutionPoolPtr s_pool,
-                           ModVector &p_mods, ModVector &r_mods,  bool *,
+                           CutManager *, SolutionPoolPtr ,
+                           ModVector &, ModVector &,  bool *,
                            SeparationStatus *status)
 {
   double yval, xval;
@@ -1961,6 +1968,7 @@ double QuadHandler::getBndByLP_(bool &is_inf) {
       logger_->msgStream(LogError) << me_ << "LP engine status at root= "
         << lpStatus << std::endl;
       assert(!"In QuadHandler: stopped at root. Check error log.");
+      b = INFINITY;
       break;
   }
   return b;
@@ -2129,7 +2137,7 @@ bool QuadHandler::tightenLP_(RelaxationPtr rel, double bestSol, bool *changed,
     c1 = false;
     if (updatePBounds_(p_->getVariable(v->getIndex()), lb, ub,
                        rel, true, &c1, p_mods, r_mods) < 0) {
-      delete lpe_;
+      //delete lpe_;
       delete lp;
       return true;
     }
@@ -2138,7 +2146,7 @@ bool QuadHandler::tightenLP_(RelaxationPtr rel, double bestSol, bool *changed,
       *changed = true;
     }
   }
-  delete lpe_;
+  //delete lpe_;
   delete lp;
   return false;
 }
