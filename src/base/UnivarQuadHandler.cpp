@@ -1670,7 +1670,7 @@ bool UnivarQuadHandler::isViolatedAtBounds_(ConstraintPtr c1, ConstraintPtr c2,
   return false;
 }
 
-SolveStatus UnivarQuadHandler::presolve(PreModQ *, bool *changed)
+SolveStatus UnivarQuadHandler::presolve(PreModQ *, bool *changed, Solution **)
 {
 
   bool is_inf = false;

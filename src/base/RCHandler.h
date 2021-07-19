@@ -76,7 +76,7 @@ public:
   { return true; };
 
   // Base class method
-  SolveStatus presolve(PreModQ *, bool *) 
+  SolveStatus presolve(PreModQ *, bool *, Solution **sol) 
   { return Finished; };
 
   // Base class method

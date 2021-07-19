@@ -32,22 +32,24 @@ using namespace Minotaur;
 const std::string Presolver::me_ = "Presolver: ";
 
 Presolver::Presolver ()
- : problem_(ProblemPtr()), // NULL
+ : env_(0),
+   eTol_(1e-8),
    handlers_(0),
    intTol_(1e-6),
-   eTol_(1e-8),
-   logger_(LoggerPtr()),   // NULL
-   env_(EnvPtr()),
+   logger_(0),
+   problem_(ProblemPtr()),
+   sol_(0),
    status_(NotStarted)
 {
 }
 
 
 Presolver::Presolver(ProblemPtr problem, EnvPtr env, HandlerVector handlers)
-  : problem_(problem),
+  : eTol_(1e-8),
     handlers_(handlers),
     intTol_(1e-6),
-    eTol_(1e-8),
+    problem_(problem),
+    sol_(0),
     status_(NotStarted)
 {
   env_ = env;
@@ -62,6 +64,9 @@ Presolver::~Presolver()
     delete (*m);
   }
   mods_.clear();
+  if (sol_) {
+    delete sol_;
+  }
 }
 
 
@@ -101,9 +106,21 @@ SolveStatus Presolver::solve()
     logger_->msgStream(LogDebug) << me_ << "major iteration " << iters << std::endl;
     for (HandlerIterator h = handlers_.begin(); h != handlers_.end(); ++h) {
       changed = false;
-      h_status = (*h)->presolve(&mods_, &changed);
-      if (h_status == SolvedOptimal || h_status == SolvedInfeasible ||
-          h_status == SolvedUnbounded) {
+      h_status = (*h)->presolve(&mods_, &changed, &sol_);
+      if (h_status == SolvedOptimal) {
+        logger_->msgStream(LogDebug) << me_ << "handler " << (*h)->getName()
+                                     << " found an optimal solution "
+                                     << std::endl;
+        status_ = SolvedOptimal;
+        stop = true;
+        if (!sol_) {
+          logger_->errStream() << me_ << " but " << (*h)->getName()
+                                      << " did not return a solution"
+                                      << std::endl;
+          status_ = SolveError;
+        }
+        break;
+      } else if (h_status == SolvedInfeasible || h_status == SolvedUnbounded) {
         status_ = h_status;
         stop = true;
         break;

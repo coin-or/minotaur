@@ -105,7 +105,7 @@ public:
     {return Branches();};
 
   /// Does nothing.
-  SolveStatus presolve(PreModQ *, bool *) {return Finished;};
+  SolveStatus presolve(PreModQ *, bool *, Solution **) {return Finished;};
 
   /// Does nothing.
   //void postsolveGetX(const double *, UInt, DoubleVector *) {};

@@ -158,7 +158,7 @@ public:
                                RelaxationPtr rel, SolutionPoolPtr s_pool);
 
   // presolve.
-  virtual SolveStatus presolve(PreModQ *, bool *) {return Finished;};
+  virtual SolveStatus presolve(PreModQ *, bool *, Solution **) {return Finished;};
     
   // Implement Handler::presolveNode()
   virtual bool presolveNode(RelaxationPtr, NodePtr, SolutionPoolPtr, ModVector &,

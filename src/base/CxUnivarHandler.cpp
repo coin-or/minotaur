@@ -656,7 +656,7 @@ BranchPtr CxUnivarHandler::doBranch_(BranchDirection UpOrDown,
 
 
 // presolve.
-SolveStatus CxUnivarHandler::presolve(PreModQ *, bool *)
+SolveStatus CxUnivarHandler::presolve(PreModQ *, bool *, Solution **)
 {
   return Finished;
 }
