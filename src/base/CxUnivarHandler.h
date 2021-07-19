@@ -238,7 +238,8 @@ namespace Minotaur {
                                  RelaxationPtr rel, SolutionPoolPtr s_pool);
 
     // presolve.
-    virtual SolveStatus presolve(PreModQ *pre_mods, bool *changed);
+    virtual SolveStatus presolve(PreModQ *pre_mods, bool *changed,
+                                 Solution **sol);
 
     // Implement Handler::presolveNode().
     virtual bool presolveNode(RelaxationPtr p, NodePtr node,

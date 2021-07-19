@@ -317,6 +317,15 @@ int Glob::solve(ProblemPtr inst) {
   }
   handlers.clear();
 
+  if (Finished != pres->getStatus() && NotStarted != pres->getStatus()) {
+    env_->getLogger()->msgStream(LogInfo) << me_ 
+      << "status of presolve: " 
+      << getSolveStatusString(pres->getStatus()) << std::endl;
+    writeSol_(env_, orig_v, pres, pres->getSolution(), pres->getStatus(), iface_);
+    goto CLEANUP;
+  }
+
+
   inst_->setNativeDer();
   err = transform_(newp, handlers);
   assert(0==err || 2==err); // return status 2 means problem is convex

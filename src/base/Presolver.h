@@ -49,6 +49,9 @@ namespace Minotaur {
     /// Default presolve.
     virtual void presolve() {};
 
+    /// get solution if any
+    virtual SolutionPtr  getSolution() {return sol_;};
+
     virtual SolveStatus getStatus();
     /**
      * standardize is called before solving any problem even when
@@ -78,23 +81,18 @@ namespace Minotaur {
     SolutionPtr getPostSol(SolutionPtr s);
 
   protected:
-    /*
-     * The problem being presolved. Only one problem may be presolved by one
-     * Presolver.
-     */
-    ProblemPtr problem_;
+
+    /// Environment.
+    EnvPtr env_;
+
+    /// Tolerance for checking feasibility.
+    double eTol_;
 
     /// Handlers used to presolve the problem.
     HandlerVector handlers_;
 
-    /// A queue of presolve-modifications required for post-solve.
-    PreModQ mods_;
-
     /// A value in [z-intTol_, z+intTol_], z integer, will be treated as z.
     double intTol_;
-
-    /// Tolerance for checking feasibility.
-    double eTol_;
 
     /// Log manager.
     LoggerPtr logger_;
@@ -102,8 +100,17 @@ namespace Minotaur {
     /// For logging
     static const std::string me_;
 
-    /// Environment.
-    EnvPtr env_;
+    /// A queue of presolve-modifications required for post-solve.
+    PreModQ mods_;
+
+    /*
+     * The problem being presolved. Only one problem may be presolved by one
+     * Presolver.
+     */
+    ProblemPtr problem_;
+
+    /// Pointer to optimal solution, if one found
+    SolutionPtr sol_;
 
     /// Status.
     SolveStatus status_;

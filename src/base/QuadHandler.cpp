@@ -1005,7 +1005,7 @@ bool QuadHandler::isFeasibleToRelaxation_(RelaxationPtr rel, const double *x) {
 //}
 //
 
-SolveStatus QuadHandler::presolve(PreModQ *, bool *changed)
+SolveStatus QuadHandler::presolve(PreModQ *, bool *changed, Solution **)
 {
 
   bool is_inf = false;

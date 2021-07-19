@@ -955,7 +955,7 @@ void NlPresHandler::perspRef_(ProblemPtr p, PreModQ *, bool *changed)
 }
 
 
-SolveStatus NlPresHandler::presolve(PreModQ *mods, bool *changed0)
+SolveStatus NlPresHandler::presolve(PreModQ *mods, bool *changed0, Solution **)
 {
   bool changed = true;
   Timer *tim = env_->getNewTimer();

@@ -937,7 +937,7 @@ bool CxQuadHandler::presolveNode(RelaxationPtr rel, NodePtr, SolutionPoolPtr,
 }
 
 
-SolveStatus CxQuadHandler::presolve(PreModQ *, bool *)
+SolveStatus CxQuadHandler::presolve(PreModQ *, bool *, Solution **)
 {
   return Finished; // disabled for now.
   removeFixed_();

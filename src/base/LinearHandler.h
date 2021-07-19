@@ -114,7 +114,8 @@ public:
   {return Branches();}; // NULL
 
   // presolve.
-  virtual SolveStatus presolve(PreModQ *pre_mods, bool *changed);
+  virtual SolveStatus presolve(PreModQ *pre_mods, bool *changed,
+                               Solution **sol);
 
   // Implement Handler::presolveNode().
   virtual bool presolveNode(RelaxationPtr p, NodePtr node,
