@@ -174,7 +174,7 @@ public:
   //bool isFeas(const double* x);
 
   /// Does nothing.
-  SolveStatus presolve(PreModQ *, bool *) {return Finished;};
+  SolveStatus presolve(PreModQ *, bool *, Solution **) {return Finished;};
 
   /// Does nothing.
   bool presolveNode(RelaxationPtr, NodePtr, SolutionPoolPtr, ModVector &,

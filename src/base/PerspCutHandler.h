@@ -65,7 +65,7 @@ namespace Minotaur {
   std::string getName() const;
 
     /// Does nothing.
-  SolveStatus presolve(PreModQ *, bool *) {return Finished;};
+  SolveStatus presolve(PreModQ *, bool *, Solution **sol) {return Finished;};
 
   /// Does nothing.
   virtual bool presolveNode(RelaxationPtr, NodePtr,

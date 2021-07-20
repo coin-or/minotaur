@@ -221,7 +221,8 @@ void LinearHandler::separate(ConstSolutionPtr, NodePtr , RelaxationPtr ,
 }
 
 
-SolveStatus LinearHandler::presolve(PreModQ *pre_mods, bool *changed0)
+SolveStatus LinearHandler::presolve(PreModQ *pre_mods, bool *changed0,
+                                    Solution **sol)
 {
   SolveStatus status = Started;
   bool changed = true;
@@ -310,6 +311,13 @@ SolveStatus LinearHandler::presolve(PreModQ *pre_mods, bool *changed0)
   }
   findAllBinCons_();
   fixToCont_();
+
+  if (0 == problem_->getNumVars()) {
+    *sol = new Solution(problem_->getObjective()->getConstant(), 0, problem_);
+    pStats_->time += timer->query();
+    delete timer;
+    return SolvedOptimal;
+  }
 
   pStats_->time += timer->query();
   delete timer;
@@ -1756,7 +1764,7 @@ void LinearHandler::writeStats(std::ostream &out) const
 
 std::string LinearHandler::getName() const
 {
-   return "LinearHandler (Handling linear constraints).";
+   return "LinearHandler (Handling linear constraints)";
 }
 // Local Variables: 
 // mode: c++ 

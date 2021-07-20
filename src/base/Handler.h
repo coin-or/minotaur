@@ -26,6 +26,7 @@ namespace Minotaur {
   class   PreMod;
   class   Solution;
   class   SolutionPool;
+  class   Solution;
   typedef Relaxation* RelaxationPtr;
   typedef PreMod* PreModPtr;
   typedef const Solution* ConstSolutionPtr;
@@ -189,8 +190,11 @@ namespace Minotaur {
      * to pre_mods. The order is important for post-solve.
      * \param[out] changed True if the presolve modified the problem.
      * \return status of presolve.
+     * \param[out] sol Optimal solution found by the handler, if any. The
+     * status must be SolvedOptimal if and only if sol is created.
      */
-    virtual SolveStatus presolve(PreModQ *pre_mods, bool *changed) = 0;
+    virtual SolveStatus presolve(PreModQ *pre_mods, bool *changed,
+                                 Solution **sol) = 0;
 
     /**
      * \brief Presolve the problem and its relaxation at a node.

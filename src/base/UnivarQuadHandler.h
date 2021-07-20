@@ -103,7 +103,7 @@ public:
                   bool &should_prune, double &inf_meas);
 
   // base class method.
-  SolveStatus presolve(PreModQ *pre_mods, bool *changed);
+  SolveStatus presolve(PreModQ *pre_mods, bool *changed, Solution **);
 
   // base class method. Tightens bounds.
   bool presolveNode(RelaxationPtr p, NodePtr node,
