@@ -445,6 +445,7 @@ void Glob::writeStatus_(BranchAndBound *bab) {
   int err = 0;
 
   if (bab) {
+    status_ = bab->getStatus();
     env_->getLogger()->msgStream(LogInfo)
       << me_ << std::fixed << std::setprecision(4) 
       << "best solution value = " << objSense_*bab->getUb() << std::endl
@@ -457,7 +458,7 @@ void Glob::writeStatus_(BranchAndBound *bab) {
       << me_ << "time used = " << std::fixed << std::setprecision(2) 
       << env_->getTime(err) << std::endl
       << me_ << "status of branch-and-bound: " 
-      << getSolveStatusString(bab->getStatus()) << std::endl;
+      << getSolveStatusString(status_) << std::endl;
     env_->stopTimer(err); assert(0==err);
   } else {
     env_->getLogger()->msgStream(LogInfo)
