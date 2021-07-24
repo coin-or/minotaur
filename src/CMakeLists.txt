@@ -105,7 +105,7 @@ set (MINOTAUR_SOURCES
      base/ProbStructure.cpp 
      #base/QGAdvHandler.cpp 
      base/QGHandler.cpp 
-     base/QGHandlerAdvance.cpp 
+     #base/QGHandlerAdvance.cpp 
      #base/QGHandlerPDE.cpp 
      base/QPDRelaxer.cpp 
      base/QPDProcessor.cpp 
@@ -376,10 +376,10 @@ list(REVERSE ALL_EXEC_LIBS)
 message(STATUS ${MSG_HEAD} "ALL_EXEC_LIBS after removing duplicates =  ${ALL_EXEC_LIBS}")
 
 set (SOLVER_SOURCES
-  algorithms/Solver.cpp
-  algorithms/Bnb.cpp 
-  algorithms/Glob.cpp 
-  algorithms/QG2.cpp 
+  solvers/Solver.cpp
+  solvers/Bnb.cpp 
+  solvers/Glob.cpp 
+  solvers/QG2.cpp 
 )
 
 add_library(minotaur ${MINOTAUR_SOURCES} ${ENGFAC_SOURCES} ${IFACE_SOURCES} ${SOLVER_SOURCES})
@@ -394,17 +394,21 @@ else (BUILD_SHARED_LIBS)
 endif (BUILD_SHARED_LIBS)
 
 set (ALL_EXEC_LIBS minotaur ${ALL_EXEC_LIBS})
-add_executable(mntr-bnb algorithms/BnbMain.cpp)
-target_link_libraries(mntr-bnb ${ALL_EXEC_LIBS})
-install(TARGETS mntr-bnb RUNTIME DESTINATION bin)
+add_executable(mbnb solvers/BnbMain.cpp)
+target_link_libraries(mbnb ${ALL_EXEC_LIBS})
+install(TARGETS mbnb RUNTIME DESTINATION bin)
 
-add_executable(mntr-qg algorithms/QGMain.cpp)
-target_link_libraries(mntr-qg ${ALL_EXEC_LIBS})
-install(TARGETS mntr-qg RUNTIME DESTINATION bin)
+add_executable(mqg solvers/QGMain.cpp)
+target_link_libraries(mqg ${ALL_EXEC_LIBS})
+install(TARGETS mqg RUNTIME DESTINATION bin)
 
-add_executable(mntr-glob algorithms/GlobMain.cpp)
-target_link_libraries(mntr-glob ${ALL_EXEC_LIBS})
-install(TARGETS mntr-glob RUNTIME DESTINATION bin)
+add_executable(mqgpar solvers/QGPar.cpp)
+target_link_libraries(mqgpar ${ALL_EXEC_LIBS})
+install(TARGETS mqgpar RUNTIME DESTINATION bin)
+
+add_executable(mglob solvers/GlobMain.cpp)
+target_link_libraries(mglob ${ALL_EXEC_LIBS})
+install(TARGETS mglob RUNTIME DESTINATION bin)
 
 install(FILES ${ENGFAC_HEADERS} DESTINATION include/minotaur)
 install(FILES ${IFACE_HEADERS} DESTINATION include/minotaur)
