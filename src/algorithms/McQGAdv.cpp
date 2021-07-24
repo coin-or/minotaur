@@ -77,7 +77,6 @@ ParQGBranchAndBound* createParBab(EnvPtr env, UInt numThreads, NodePtr &node,
   const std::string me("mcqgadv main: ");
   OptionDBPtr options = env->getOptions();
   bab->shouldCreateRoot(false);
-  //double * centerPt;
  
   for(UInt i = 0; i < numThreads; ++i) {
     BrancherPtr br = 0;
@@ -107,13 +106,11 @@ ParQGBranchAndBound* createParBab(EnvPtr env, UInt numThreads, NodePtr &node,
     if (i==0) {
       node = (NodePtr) new Node ();
       relCopy[0] = parNodeRlxr[0]->createRootRelaxation(node, prune);
-      //centerPt = qg_hand->getCenter();
     } else {
       relCopy[i] = (RelaxationPtr) new Relaxation(relCopy[0], env);
       parNodeRlxr[i]->setRelaxation(relCopy[i]);
       qg_hand->setRelaxation(relCopy[i]);
       qg_hand->setObjVar();
-      //qg_hand->setCenter(centerPt);
     }
     relCopy[i]->setProblem(pCopy[i]);
     parNodeRlxr[i]->setModFlag(false);

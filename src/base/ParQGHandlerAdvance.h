@@ -99,10 +99,10 @@ private:
   double solRelTol_;
 
   /// Absolute tolerance for pruning a node.
-  double objATol_;
+  double objAbsTol_;
 
   /// Relative tolerance for pruning a node.
-  double objRTol_;
+  double objRelTol_;
   
   LinearizationsPtr extraLin_;
   
@@ -114,8 +114,6 @@ private:
 
   std::vector<double > consDual_; 
 
-  bool findC_;
-  
   std::string cutMethod_;
   
   int lastNodeId_;
@@ -137,7 +135,6 @@ public:
   /// Destroy.
   ~ParQGHandlerAdvance();
 
-  //void setCenter(double * temp);
 
   //double * getCenter() {return solC_;};
   
@@ -210,7 +207,6 @@ public:
   /// Set oNl_ to true and objVar_ when problem objective is nonlinear
   void setObjVar();
   
-  //void setFracNodesLinParam(double *maxVioMul, double *objMul) {maxVioPer_ = maxVioMul; objVioMul_ = objMul;}
 
   void solveCenterNLP_(EnginePtr nlpe);
 
