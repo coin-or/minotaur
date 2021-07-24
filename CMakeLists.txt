@@ -678,7 +678,6 @@ if (CBC_INC_DIR_F)
   ## check if library found
   if (EXISTS ${CBC_LIB_DIR_F})
     message(STATUS ${MSG_HEAD} "Cbc library directory exists.")
-    add_subdirectory(src/engines/Cbc)
     set (LINK_CBC 1)
     if (${BUILD_SHARED_LIBS})
       set (CMAKE_INSTALL_RPATH ${CMAKE_INSTALL_RPATH}${SEP}${CBC_LIB_DIR_F})
