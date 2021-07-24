@@ -198,7 +198,10 @@ void ParQGHandlerAdvance::cutIntSol_(const double *lpx, CutManager *cutMan,
     {
       ++(stats_->nlpF);
       double nlpval = nlpe_->getSolutionValue();
-      updateUb_(s_pool, nlpval, sol_found);
+#pragma omp critical (solPool)
+      {
+        updateUb_(s_pool, nlpval, sol_found);
+      }
       if ((relobj_ >= nlpval-objAbsTol_) ||
           (nlpval != 0 && (relobj_ >= nlpval-fabs(nlpval)*objRelTol_))) {
           *status = SepaPrune;
@@ -1024,7 +1027,9 @@ void ParQGHandlerAdvance::separate(ConstSolutionPtr sol, NodePtr node, Relaxatio
     fixInts_(x);            // Fix integer variables
     relobj_ = (sol) ? sol->getObjValue() : -INFINITY;
 # pragma omp critical (fixedNLPSolve)
-    solveNLP_();            // solve fixed NLP
+    {
+      solveNLP_();            // solve fixed NLP
+    }
     unfixInts_();            // Unfix integer variables
     cutIntSol_(x, cutMan, s_pool, sol_found, status);
   } else {
