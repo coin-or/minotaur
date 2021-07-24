@@ -171,29 +171,29 @@ install(TARGETS bnb RUNTIME DESTINATION bin)
 ## Add lines specific to your binaries in this section.
 ## Use the lines meant for bnb as a template.
 ##############################################################################
-set (MCQG_SOURCES
-McQG.cpp
-)
+#set (MCQG_SOURCES
+#McQG.cpp
+#)
 
-add_executable(mcqg ${MCQG_SOURCES})
-target_link_libraries(mcqg ${ALL_EXEC_LIBS})
+#add_executable(mcqg ${MCQG_SOURCES})
+#target_link_libraries(mcqg ${ALL_EXEC_LIBS})
 
-# This will install the binary in bin directory.
-install(TARGETS mcqg RUNTIME DESTINATION bin)
+## This will install the binary in bin directory.
+#install(TARGETS mcqg RUNTIME DESTINATION bin)
 
 ##############################################################################
 ## Add lines specific to your binaries in this section.
 ## Use the lines meant for bnb as a template.
 ##############################################################################
-set (MCQGADV_SOURCES
-McQGAdv.cpp
+set (QGPAR_SOURCES
+QGPar.cpp
 )
 
-add_executable(mcqgadv ${MCQGADV_SOURCES})
-target_link_libraries(mcqgadv ${ALL_EXEC_LIBS})
+add_executable(mqgpar ${QGPAR_SOURCES})
+target_link_libraries(mqgpar ${ALL_EXEC_LIBS})
 
 # This will install the binary in bin directory.
-install(TARGETS mcqgadv RUNTIME DESTINATION bin)
+install(TARGETS mqgpar RUNTIME DESTINATION bin)
 
 
 ##############################################################################
@@ -246,11 +246,11 @@ set (QG_SOURCES
   QG.cpp 
 )
 
-add_executable(qg ${QG_SOURCES})
-target_link_libraries(qg ${ALL_EXEC_LIBS})
+add_executable(mqg ${QG_SOURCES})
+target_link_libraries(mqg ${ALL_EXEC_LIBS})
 
 # This will install the binary in bin directory.
-install(TARGETS qg RUNTIME DESTINATION bin)
+install(TARGETS mqg RUNTIME DESTINATION bin)
 
 ##############################################################################
 ## Add lines specific to your binaries in this section. 
