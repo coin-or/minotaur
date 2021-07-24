@@ -15,277 +15,374 @@ configure_file (
 # add the binary tree to the search path for include files
 # so that we will find TutorialConfig.h
 include_directories("${PROJECT_BINARY_DIR}/src/base")
+include_directories("${PROJECT_SOURCE_DIR}/src/base")
+include_directories("${PROJECT_SOURCE_DIR}/src/interfaces")
  
 set (MINOTAUR_SOURCES
-     AnalyticalCenter.cpp
-     BndProcessor.cpp 
-     Branch.cpp 
-     BranchAndBound.cpp 
-     Brancher.cpp 
-     BrCand.cpp 
-     BrVarCand.cpp 
-     Chol.cpp
-     CGraph.cpp
-     CNode.cpp
-     ConBoundMod.cpp
-     Constraint.cpp
-     CoverCutGenerator.cpp 
-     Cut.cpp
-     CutInfo.cpp
-     CutMan1.cpp
-     CutMan2.cpp
-     CxQuadHandler.cpp 
-     CxUnivarHandler.cpp
-     Eigen.cpp 
-     Engine.cpp 
-     Environment.cpp 
-     FeasibilityPump.cpp 
-     Function.cpp 
-     HessianOfLag.cpp 
-     IntVarHandler.cpp 
-     Jacobian.cpp
-     KnapsackList.cpp 
-     KnapCovHandler.cpp 
-     LGCIGenerator.cpp 
-     LPRelaxation.cpp 
-     LexicoBrancher.cpp 
-     LinBil.cpp 
-     LinConMod.cpp 
-     LinMods.cpp 
-     LinearCut.cpp 
-     LinearFunction.cpp 
-     LinearHandler.cpp
-     LinFeasPump.cpp 
-     Linearizations.cpp
-     Logger.cpp 
-     MaxFreqBrancher.cpp
-     MaxVioBrancher.cpp
-     MINLPDiving.cpp
-     #MultiSolHeur.cpp
-     MsProcessor.cpp	
-     MultilinearTermsHandler.cpp
-     NLPRelaxation.cpp 
-     NlPresHandler.cpp
-     NLPMultiStart.cpp
-     NlWriter.cpp
-     Node.cpp 
-     NodeFullRelaxer.cpp
-     NodeHeap.cpp 
-     NodeIncRelaxer.cpp 
-     NodeProcessor.cpp 
-     NodeStack.cpp 
-     NonlinearFunction.cpp 
-     OAHandler.cpp
-     Objective.cpp 
-     Operations.cpp 
-     Option.cpp 
-     ParBndProcessor.cpp
-     ParBranchAndBound.cpp
-     ParCutMan.cpp
-     ParMINLPDiving.cpp
-     ParNodeIncRelaxer.cpp
-     ParQGBranchAndBound.cpp
-     ParQGHandler.cpp
-     ParQGHandlerAdvance.cpp
-     ParPCBProcessor.cpp
-     ParReliabilityBrancher.cpp
-     ParTreeManager.cpp
-     PCBProcessor.cpp 
-     PerspCon.cpp
-     PerspCutGenerator.cpp 
-     #PerspCutHandler.cpp 
-     PolynomialFunction.cpp 
-     PreAuxVars.cpp
-     PreDelVars.cpp
-     PreSubstVars.cpp
-     Presolver.cpp 
-     Problem.cpp
-     ProbStructure.cpp 
-     #QGAdvHandler.cpp 
-     QGHandler.cpp 
-     #QGHandlerAdvance.cpp 
-     #QGHandlerPDE.cpp 
-     QPDRelaxer.cpp 
-     QPDProcessor.cpp 
-     QuadHandler.cpp 
-     QuadraticFunction.cpp
-     QuadTransformer.cpp 
-     RandomBrancher.cpp
-     RCHandler.cpp
-     Relaxation.cpp 
-     ReliabilityBrancher.cpp 
-     Reader.cpp 
-     SecantMod.cpp 
-     SimpleCutMan.cpp 
-     SimpleTransformer.cpp 
-     Solution.cpp 
-     SolutionPool.cpp 
-     SOS.cpp 
-     SOS1Handler.cpp
-     SOS2Handler.cpp
-     SOSBrCand.cpp
-     STOAHandler.cpp
-     Transformer.cpp 
-     TransPoly.cpp 
-     TransSep.cpp
-     TreeManager.cpp 
-     UnivarQuadHandler.cpp
-     Types.cpp 
-     UnambRelBrancher.cpp
-     VarBoundMod.cpp 
-     Variable.cpp
-     YEqBivar.cpp 
-     YEqCGs.cpp
-     YEqLFs.cpp
-     YEqMonomial.cpp
-     YEqUCGs.cpp
-     YEqUnivar.cpp
-     YEqVars.cpp
-     YEqQfBil.cpp
+     base/AnalyticalCenter.cpp
+     base/BndProcessor.cpp 
+     base/Branch.cpp 
+     base/BranchAndBound.cpp 
+     base/Brancher.cpp 
+     base/BrCand.cpp 
+     base/BrVarCand.cpp 
+     base/Chol.cpp
+     base/CGraph.cpp
+     base/CNode.cpp
+     base/ConBoundMod.cpp
+     base/Constraint.cpp
+     base/CoverCutGenerator.cpp 
+     base/Cut.cpp
+     base/CutInfo.cpp
+     base/CutMan1.cpp
+     base/CutMan2.cpp
+     base/CxQuadHandler.cpp 
+     base/CxUnivarHandler.cpp
+     base/Eigen.cpp 
+     base/Engine.cpp 
+     base/Environment.cpp 
+     base/FeasibilityPump.cpp 
+     base/Function.cpp 
+     base/HessianOfLag.cpp 
+     base/IntVarHandler.cpp 
+     base/Jacobian.cpp
+     base/KnapsackList.cpp 
+     base/KnapCovHandler.cpp 
+     base/LGCIGenerator.cpp 
+     base/LPRelaxation.cpp 
+     base/LexicoBrancher.cpp 
+     base/LinBil.cpp 
+     base/LinConMod.cpp 
+     base/LinMods.cpp 
+     base/LinearCut.cpp 
+     base/LinearFunction.cpp 
+     base/LinearHandler.cpp
+     base/LinFeasPump.cpp 
+     base/Linearizations.cpp
+     base/Logger.cpp 
+     base/MaxFreqBrancher.cpp
+     base/MaxVioBrancher.cpp
+     base/MINLPDiving.cpp
+     #base/MultiSolHeur.cpp
+     base/MsProcessor.cpp	
+     base/MultilinearTermsHandler.cpp
+     base/NLPRelaxation.cpp 
+     base/NlPresHandler.cpp
+     base/NLPMultiStart.cpp
+     base/NlWriter.cpp
+     base/Node.cpp 
+     base/NodeFullRelaxer.cpp
+     base/NodeHeap.cpp 
+     base/NodeIncRelaxer.cpp 
+     base/NodeProcessor.cpp 
+     base/NodeStack.cpp 
+     base/NonlinearFunction.cpp 
+     base/OAHandler.cpp
+     base/Objective.cpp 
+     base/Operations.cpp 
+     base/Option.cpp 
+     base/ParBndProcessor.cpp
+     base/ParBranchAndBound.cpp
+     base/ParCutMan.cpp
+     base/ParMINLPDiving.cpp
+     base/ParNodeIncRelaxer.cpp
+     base/ParQGBranchAndBound.cpp
+     base/ParQGHandler.cpp
+     base/ParQGHandlerAdvance.cpp
+     base/ParPCBProcessor.cpp
+     base/ParReliabilityBrancher.cpp
+     base/ParTreeManager.cpp
+     base/PCBProcessor.cpp 
+     base/PerspCon.cpp
+     base/PerspCutGenerator.cpp 
+     #base/PerspCutHandler.cpp 
+     base/PolynomialFunction.cpp 
+     base/PreAuxVars.cpp
+     base/PreDelVars.cpp
+     base/PreSubstVars.cpp
+     base/Presolver.cpp 
+     base/Problem.cpp
+     base/ProbStructure.cpp 
+     #base/QGAdvHandler.cpp 
+     base/QGHandler.cpp 
+     base/QGHandlerAdvance.cpp 
+     #base/QGHandlerPDE.cpp 
+     base/QPDRelaxer.cpp 
+     base/QPDProcessor.cpp 
+     base/QuadHandler.cpp 
+     base/QuadraticFunction.cpp
+     base/QuadTransformer.cpp 
+     base/RandomBrancher.cpp
+     base/RCHandler.cpp
+     base/Relaxation.cpp 
+     base/ReliabilityBrancher.cpp 
+     base/Reader.cpp 
+     base/SecantMod.cpp 
+     base/SimpleCutMan.cpp 
+     base/SimpleTransformer.cpp 
+     base/Solution.cpp 
+     base/SolutionPool.cpp 
+     base/SOS.cpp 
+     base/SOS1Handler.cpp
+     base/SOS2Handler.cpp
+     base/SOSBrCand.cpp
+     base/STOAHandler.cpp
+     base/Transformer.cpp 
+     base/TransPoly.cpp 
+     base/TransSep.cpp
+     base/TreeManager.cpp 
+     base/UnivarQuadHandler.cpp
+     base/Types.cpp 
+     base/UnambRelBrancher.cpp
+     base/VarBoundMod.cpp 
+     base/Variable.cpp
+     base/YEqBivar.cpp 
+     base/YEqCGs.cpp
+     base/YEqLFs.cpp
+     base/YEqMonomial.cpp
+     base/YEqUCGs.cpp
+     base/YEqUnivar.cpp
+     base/YEqVars.cpp
+     base/YEqQfBil.cpp
 )
 
 set (MINOTAUR_HEADERS
-     MinotaurDeconfig.h
-     ActiveNodeStore.h
-     AnalyticalCenter.cpp
-     BndProcessor.h
-     Branch.h
-     Brancher.h
-     BranchAndBound.h
-     BrCand.h
-     BrVarCand.h
-     CGraph.h
-     CNode.h
-     ConBoundMod.h
-     Constraint.h
-     CoverCutGenerator.h # Serdar
-     CutInfo.h
-     CutManager.h
-     CxQuadHandler.h 
-     CxUnivarHandler.h
-     Eigen.h
-     Engine.h
-     Environment.h
-     FeasibilityPump.h 
-     Exception.h
-     Function.h
-     Handler.h
-     HessianOfLag.h
-     Heuristic.h
-     Iterate.h
-     IntVarHandler.h
-     Jacobian.h
-     KnapsackList.h # Serdar
-     KnapCovHandler.h # Serdar
-     LexicoBrancher.h
-     LinearCut.h
-     LinearFunction.h
-     LinearHandler.h
-     LinFeasPump.h 
-     Linearizations.h
-     LinBil.h
-     LinConMod.h
-     LinMods.h
-     LGCIGenerator.h # Serdar
-     Logger.h
-     LPEngine.h
-     LPRelaxation.h
-     MaxFreqBrancher.h
-     MaxVioBrancher.h
-     MILPEngine.h
-     MINLPDiving.h
-     #MultiSolHeur.h
-     Modification.h
-     MsProcessor.h
-     MultilinearTermsHandler.h
-     NLPEngine.h
-     NLPRelaxation.h
-     NlPresHandler.h
-     NLPMultiStart.h
-     NlWriter.h
-     Node.h
-     NodeHeap.h
-     NodeRelaxer.h
-     NodeIncRelaxer.h
-     NodeProcessor.h
-     NodeStack.h
-     NonlinearFunction.h
-     OAHandler.h
-     Objective.h
-     Operations.h
-     Option.h
-     OpCode.h
-     ParBndProcessor.h
-     ParBranchAndBound.h
-     ParCutMan.h
-     ParMINLPDiving.h
-     ParNodeIncRelaxer.h
-     ParQGBranchAndBound.h
-     ParQGHandler.h
-     ParQGHandlerAdvance.h
-     ParPCBProcessor.h
-     ParReliabilityBrancher.h
-     ParTreeManager.h
-     PCBProcessor.h
-     PerspCon.h
-     PerspCutGenerator.h 
-     #PerspCutHandler.h
-     PolynomialFunction.h
-     PreAuxVars.h
-     PreDelVars.h
-     PreMod.h
-     Presolver.h
-     PreSubstVars.h
-     Problem.h
-     ProblemSize.h
-     ProbStructure.h # Serdar
-     QPEngine.h
-     QGHandler.h
-     #QGHandlerAdvance.h 
-     #QGAdvHandler.h 
-     #QGHandlerPDE.h
-     QPDProcessor.h 
-     QuadHandler.h 
-     QPDRelaxer.h 
-     QuadraticFunction.h
-     QuadTransformer.h
-     RandomBrancher.h
-     RCHandler.h
-     Relaxation.h
-     ReliabilityBrancher.h
-     SecantMod.h
-     SimpleCutMan.h 
-     SimpleTransformer.h 
-     Solution.h
-     SolutionPool.h
-     SOS.h
-     SOS1Handler.h
-     SOS2Handler.h
-     SOSBrCand.h
-     STOAHandler.h
-     Timer.h
-     Transformer.h 
-     TransPoly.h 
-     TransSep.h
-     TreeManager.h
-     Types.h
-     UnivarQuadHandler.h
-     UnambRelBrancher.h
-     WarmStart.h
-     Variable.h
-     YEqBivar.h
-     YEqCGs.h
-     YEqLFs.h
-     YEqMonomial.h
-     YEqUCGs.h
-     YEqUnivar.h
-     YEqVars.h
-     YEqQfBil.h
+     base/MinotaurDeconfig.h
+     base/ActiveNodeStore.h
+     base/AnalyticalCenter.h
+     base/BndProcessor.h
+     base/Branch.h
+     base/Brancher.h
+     base/BranchAndBound.h
+     base/BrCand.h
+     base/BrVarCand.h
+     base/CGraph.h
+     base/CNode.h
+     base/ConBoundMod.h
+     base/Constraint.h
+     base/CoverCutGenerator.h # Serdar
+     base/CutInfo.h
+     base/CutManager.h
+     base/CxQuadHandler.h 
+     base/CxUnivarHandler.h
+     base/Eigen.h
+     base/Engine.h
+     base/Environment.h
+     base/FeasibilityPump.h 
+     base/Exception.h
+     base/Function.h
+     base/Handler.h
+     base/HessianOfLag.h
+     base/Heuristic.h
+     base/Iterate.h
+     base/IntVarHandler.h
+     base/Jacobian.h
+     base/KnapsackList.h # Serdar
+     base/KnapCovHandler.h # Serdar
+     base/LexicoBrancher.h
+     base/LinearCut.h
+     base/LinearFunction.h
+     base/LinearHandler.h
+     base/LinFeasPump.h 
+     base/Linearizations.h
+     base/LinBil.h
+     base/LinConMod.h
+     base/LinMods.h
+     base/LGCIGenerator.h # Serdar
+     base/Logger.h
+     base/LPEngine.h
+     base/LPRelaxation.h
+     base/MaxFreqBrancher.h
+     base/MaxVioBrancher.h
+     base/MILPEngine.h
+     base/MINLPDiving.h
+     #base/MultiSolHeur.h
+     base/Modification.h
+     base/MsProcessor.h
+     base/MultilinearTermsHandler.h
+     base/NLPEngine.h
+     base/NLPRelaxation.h
+     base/NlPresHandler.h
+     base/NLPMultiStart.h
+     base/NlWriter.h
+     base/Node.h
+     base/NodeHeap.h
+     base/NodeRelaxer.h
+     base/NodeIncRelaxer.h
+     base/NodeProcessor.h
+     base/NodeStack.h
+     base/NonlinearFunction.h
+     base/OAHandler.h
+     base/Objective.h
+     base/Operations.h
+     base/Option.h
+     base/OpCode.h
+     base/ParBndProcessor.h
+     base/ParBranchAndBound.h
+     base/ParCutMan.h
+     base/ParMINLPDiving.h
+     base/ParNodeIncRelaxer.h
+     base/ParQGBranchAndBound.h
+     base/ParQGHandler.h
+     base/ParQGHandlerAdvance.h
+     base/ParPCBProcessor.h
+     base/ParReliabilityBrancher.h
+     base/ParTreeManager.h
+     base/PCBProcessor.h
+     base/PerspCon.h
+     base/PerspCutGenerator.h 
+     #base/PerspCutHandler.h
+     base/PolynomialFunction.h
+     base/PreAuxVars.h
+     base/PreDelVars.h
+     base/PreMod.h
+     base/Presolver.h
+     base/PreSubstVars.h
+     base/Problem.h
+     base/ProblemSize.h
+     base/ProbStructure.h # Serdar
+     base/QPEngine.h
+     base/QGHandler.h
+     base/QGHandlerAdvance.h 
+     #base/QGAdvHandler.h 
+     #base/QGHandlerPDE.h
+     base/QPDProcessor.h 
+     base/QuadHandler.h 
+     base/QPDRelaxer.h 
+     base/QuadraticFunction.h
+     base/QuadTransformer.h
+     base/RandomBrancher.h
+     base/RCHandler.h
+     base/Relaxation.h
+     base/ReliabilityBrancher.h
+     base/SecantMod.h
+     base/SimpleCutMan.h 
+     base/SimpleTransformer.h 
+     base/Solution.h
+     base/SolutionPool.h
+     base/SOS.h
+     base/SOS1Handler.h
+     base/SOS2Handler.h
+     base/SOSBrCand.h
+     base/STOAHandler.h
+     base/Timer.h
+     base/Transformer.h 
+     base/TransPoly.h 
+     base/TransSep.h
+     base/TreeManager.h
+     base/Types.h
+     base/UnivarQuadHandler.h
+     base/UnambRelBrancher.h
+     base/WarmStart.h
+     base/Variable.h
+     base/YEqBivar.h
+     base/YEqCGs.h
+     base/YEqLFs.h
+     base/YEqMonomial.h
+     base/YEqUCGs.h
+     base/YEqUnivar.h
+     base/YEqVars.h
+     base/YEqQfBil.h
      )
 
+install(FILES ${MINOTAUR_HEADERS} DESTINATION include/minotaur)
 
-add_library(minotaur ${MINOTAUR_SOURCES})
+include_directories("${PROJECT_SOURCE_DIR}/src/interfaces")
+link_directories(${IPOPT_LIB_DIR})
+link_directories(${OSI_LIB_DIR})
 
+set (ENGFAC_SOURCES
+  interfaces/EngineFactory.cpp
+)
+set (ENGFAC_HEADERS
+  interfaces/EngineFactory.h
+)
+if (LINK_IPOPT)
+  add_definitions(-DUSE_IPOPT)
+  include_directories("${IPOPT_INC_DIR_F}")
+
+  list(APPEND ENGFAC_SOURCES 
+              interfaces/IpoptDummy.f
+              interfaces/IpoptEngine.cpp 
+  )
+  list (APPEND ENGFAC_HEADERS
+               interfaces/IpoptEngine.h 
+               interfaces/IpoptEngineTnlp.h
+  )
+endif()
+
+
+if (LINK_OSI)
+  add_definitions(-DUSE_OSILP)
+  include_directories("${PROJECT_SOURCE_DIR}/src/interfaces")
+  if (OSI_INC_DIR_F)
+    include_directories("${OSI_INC_DIR_F}")
+  endif (OSI_INC_DIR_F)
+  if (CLP_INC_DIR_F)
+    include_directories("${CLP_INC_DIR_F}")
+  endif (CLP_INC_DIR_F)
+
+  add_definitions(-DCOIN_BIG_INDEX=0) ## avoid warnings
+  list (APPEND ENGFAC_SOURCES 
+    interfaces/OsiLPEngine.cpp 
+  )
+  list (APPEND ENGFAC_HEADERS 
+    interfaces/OsiLPEngine.h 
+  )
+endif()
+
+
+
+set (IFACE_SOURCES)
+set (IFACE_HEADERS)
+if (LINK_ASL)
+  add_definitions(-DUSE_MINOTAUR_AMPL_INTERFACE)
+  include_directories("${ASL_INC_DIR_F}")
+  list (APPEND IFACE_SOURCES 
+    interfaces/AMPLHessian.cpp
+    interfaces/AMPLInterface.cpp
+    interfaces/AMPLJacobian.cpp
+    interfaces/AMPLNonlinearFunction.cpp
+  )
+  set (IFACE_HEADERS
+    interfaces/AMPLHessian.h
+    interfaces/AMPLInterface.h
+    interfaces/AMPLJacobian.h
+    interfaces/AMPLNonlinearFunction.h
+  )
+endif()
+
+set (GFORTRAN_COMPILER)
+if (Fortran_COMPILER_NAME STREQUAL "gfortran")
+  if (LINK_IPOPT OR LINK_FILTER_SQP OR LINK_BQPD)
+    set (GFORTRAN_COMPILER gfortran)
+  endif()
+endif()
+
+set (ALL_EXEC_LIBS 
+	"${IPOPT_LIBS}"
+	"${CPX_LIBS}"
+        "${OSI_LIBS}"
+	"${ASL_LIBS}"
+        "lapack"
+	"blas"
+        "${GFORTRAN_COMPILER}"
+        "${MNTR_EXTRA_LIBS}"
+)
+message(STATUS ${MSG_HEAD} "ALL_EXEC_LIBS =  ${ALL_EXEC_LIBS}")
+list(REVERSE ALL_EXEC_LIBS)
+list(REMOVE_DUPLICATES ALL_EXEC_LIBS)
+list(REVERSE ALL_EXEC_LIBS)
+message(STATUS ${MSG_HEAD} "ALL_EXEC_LIBS after removing duplicates =  ${ALL_EXEC_LIBS}")
+
+set (SOLVER_SOURCES
+  algorithms/Solver.cpp
+  algorithms/Bnb.cpp 
+  algorithms/Glob.cpp 
+  algorithms/QG2.cpp 
+)
+
+add_library(minotaur ${MINOTAUR_SOURCES} ${ENGFAC_SOURCES} ${IFACE_SOURCES} ${SOLVER_SOURCES})
 if (BUILD_SHARED_LIBS)
   install(TARGETS minotaur 
           LIBRARY 
@@ -296,8 +393,24 @@ else (BUILD_SHARED_LIBS)
           DESTINATION lib)
 endif (BUILD_SHARED_LIBS)
 
-install(FILES ${MINOTAUR_HEADERS} DESTINATION include/minotaur)
+set (ALL_EXEC_LIBS minotaur ${ALL_EXEC_LIBS})
+add_executable(mntr-bnb algorithms/BnbMain.cpp)
+target_link_libraries(mntr-bnb ${ALL_EXEC_LIBS})
+install(TARGETS mntr-bnb RUNTIME DESTINATION bin)
+
+add_executable(mntr-qg algorithms/QGMain.cpp)
+target_link_libraries(mntr-qg ${ALL_EXEC_LIBS})
+install(TARGETS mntr-qg RUNTIME DESTINATION bin)
+
+add_executable(mntr-glob algorithms/GlobMain.cpp)
+target_link_libraries(mntr-glob ${ALL_EXEC_LIBS})
+install(TARGETS mntr-glob RUNTIME DESTINATION bin)
+
+install(FILES ${ENGFAC_HEADERS} DESTINATION include/minotaur)
+install(FILES ${IFACE_HEADERS} DESTINATION include/minotaur)
 install(FILES ${PROJECT_BINARY_DIR}/src/base/MinotaurConfig.h DESTINATION include/minotaur)
 install(FILES ${PROJECT_BINARY_DIR}/src/base/MinotaurCFortran.h DESTINATION include/minotaur)
 install(FILES ${PROJECT_BINARY_DIR}/src/base/Version.h DESTINATION include/minotaur)
+
+######################################################################################################
 

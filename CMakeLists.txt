@@ -191,11 +191,6 @@ endif()
 
 
 ###########################################################################
-## base
-###########################################################################
-add_subdirectory(src/base)
-
-###########################################################################
 ## Bqpd
 ###########################################################################
 set (BQPD_LIB_DIR)      ## NULL
@@ -215,9 +210,7 @@ message(STATUS ${MSG_HEAD} "BQPD_LIB_DIR_F is set to ${BQPD_LIB_DIR_F}")
 if (BQPD_LIB_DIR_F)
   if (EXISTS "${BQPD_LIB_DIR_F}")
     message(STATUS ${MSG_HEAD} "BQPD library directory exists.")
-    add_subdirectory(src/engines/Bqpd)
     set (LINK_BQPD 1)
-    set (BQPD_LIBS "mntrbqpd" "bqpd")
   else()
     message(FATAL_ERROR " ${MSG_HEAD} BQPD_LIB_DIR_F ${BQPD_LIB_DIR_F} not found.")
   endif()
@@ -251,9 +244,7 @@ message(STATUS ${MSG_HEAD} "FILTER_LIB_DIR_F is set to ${FILTER_LIB_DIR_F}")
 if (FILTER_LIB_DIR_F)
   if (EXISTS "${FILTER_LIB_DIR_F}")
     message(STATUS ${MSG_HEAD} "Filter-SQP library directory exists.")
-    add_subdirectory(src/engines/FilterSQP)
     set (LINK_FILTER_SQP 1)
-    set (FILTER_SQP_LIBS "mntrfiltersqp" "filtersqp")
   else()
     message(FATAL_ERROR " ${MSG_HEAD} FILTER_LIB_DIR_F "
     "${FILTER_LIB_DIR_F} not found.")
@@ -317,7 +308,6 @@ if (IPOPT_INC_DIR_F)
   ## check if library found
   if (EXISTS ${IPOPT_LIB_DIR_F})
     message(STATUS ${MSG_HEAD} "Ipopt library directory exists.")
-    add_subdirectory(src/engines/Ipopt)
     set (LINK_IPOPT 1)
     if (${BUILD_SHARED_LIBS})
       set (CMAKE_INSTALL_RPATH ${CMAKE_INSTALL_RPATH}${SEP}${IPOPT_LIB_DIR_F})
@@ -332,12 +322,12 @@ if (IPOPT_INC_DIR_F)
 	       "${MNTR_IPOPT_PC_LIBRARIES}")
        message(STATUS ${MSG_HEAD} "pkgconfig path = "
 	       "${IPOPT_LIB_DIR_F}/pkgconfig")
-       set (IPOPT_LIBS "mntripopt" ${MNTR_IPOPT_PC_LIBRARIES})
+       set (IPOPT_LIBS ${MNTR_IPOPT_PC_LIBRARIES})
     endif()
 
     if ((NOT (MNTR_HAVE_PKGCON)) OR
 	("${MNTR_IPOPT_PC_LIBRARIES}" STREQUAL ""))
-       set (IPOPT_LIBS "mntripopt" "ipopt")
+       set (IPOPT_LIBS "ipopt")
     endif()
 
   else()
@@ -419,7 +409,7 @@ if (OSI_INC_DIR_F)
     set (CMAKE_INSTALL_RPATH ${CMAKE_INSTALL_RPATH}${SEP}${OSI_LIB_DIR_F})
   endif()
 
-  set (OSI_LIBS mntrosilp)
+  set (OSI_LIBS)
 
 elseif (OSI_LIB_DIR_F)
     message(FATAL_ERROR " ${MSG_HEAD}" 
@@ -508,11 +498,11 @@ if (NOT ("${CLP_INC_DIR_F}" STREQUAL ""))
     pkg_check_modules(MNTR_OSI_PC osi-clp)
     message(STATUS ${MSG_HEAD} "Osi CLP libraries: "
       "${MNTR_OSI_PC_LIBRARIES}")
-    set (OSI_LIBS mntrosilp ${OSI_LIBS} ${MNTR_OSI_PC_LIBRARIES})
+    set (OSI_LIBS ${OSI_LIBS} ${MNTR_OSI_PC_LIBRARIES})
   endif()
 
   if ((NOT (MNTR_HAVE_PKGCON)) OR ("${MNTR_OSI_PC_LIBRARIES}" STREQUAL ""))
-    set (OSI_LIBS mntrosilp ${OSI_LIBS} OsiClp Osi Clp CoinUtils)
+    set (OSI_LIBS ${OSI_LIBS} OsiClp Osi Clp CoinUtils)
   endif()
 
 elseif (CLP_LIB_DIR_F)
@@ -616,7 +606,7 @@ if (GRB_INC_DIR)
   endif()
 
   if ((NOT (MNTR_HAVE_PKGCON)) OR ("${MNTR_OSI_PC3_LIBRARIES}" STREQUAL ""))
-    set (OSI_LIBS ${OSI_LIBS} OsiGrb Osi CoinUtils)
+    set (OSI_LIBS ${OSI_LIBS} Osi CoinUtils)
   endif()
 endif()
 
@@ -635,9 +625,9 @@ endif()
 ###########################################################################
 ## Osi revisited
 ###########################################################################
-if (LINK_OSI)
-  add_subdirectory(src/engines/OsiLP)
-endif()
+#if (LINK_OSI)
+#  add_subdirectory(src/engines/OsiLP)
+#endif()
 
 
 
@@ -774,12 +764,6 @@ else()
 endif()
 
 ###########################################################################
-## Engine Factory
-###########################################################################
-add_subdirectory(src/engines)
-
-
-###########################################################################
 ## ASL
 ###########################################################################
 set(ASL_INC_DIR)        ## NULL
@@ -820,11 +804,15 @@ if (LINK_ASL)
     ${ASL_INC_DIR_F})
   message(STATUS ${MSG_HEAD} "ASL_LIBS =  ${ASL_LIBS}")
   message(STATUS ${MSG_HEAD} "Link AMPL-ASL? Yes.")
-  add_subdirectory(src/interfaces/ampl)
-  add_subdirectory(src/algorithms)
 else()
   message(STATUS ${MSG_HEAD} "Link AMPL-ASL? No.")
 endif()
+
+###########################################################################
+## Engine Factory
+###########################################################################
+add_subdirectory(src)
+
 
 ###########################################################################
 ## Testing
