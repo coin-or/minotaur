@@ -1,7 +1,7 @@
 //
 //    MINOTAUR -- It's only 1/2 bull
 //
-//    (C)opyright 2008 - 2017 The MINOTAUR Team.
+//    (C)opyright 2008 - 2021 The MINOTAUR Team.
 //
 
 /**
@@ -97,7 +97,8 @@ Branches MaxVioBrancher::findBranches(RelaxationPtr rel, NodePtr ,
                                << br_can->getHandler()->getName() << std::endl;
 #endif
   } else if (br_status != PrunedByBrancher) {
-    assert(!"problem finding candidate in MaxVioBrancher");
+    br_status = NoCandToBranch;
+    //assert(!"problem finding candidate in MaxVioBrancher");
   }
   stats_->time += timer_->query();
   timer_->stop();
@@ -119,9 +120,15 @@ void MaxVioBrancher::findCandidates_(ModVector &mods, bool &should_prune)
     // ask each handler to give some candidates
     (*h)->getBranchingCandidates(rel_, x_, mods, cands2, gencands2, should_prune);
     if (should_prune) {
+      for (BrVarCandIter it=cands2.begin(); it!=cands2.end(); ++it) {
+        delete *it;
+      }
+      for (BrCandVIter it=gencands2.begin(); it!=gencands2.end(); ++it) {
+        delete *it;
+      }
       break;
     }
-    for (BrVarCandIter it = cands2.begin(); it != cands2.end(); ++it) {
+    for (BrVarCandIter it = cands2.begin(); it != cands2.end();) {
       (*it)->setHandler(*h);
       ret = cands_.insert(*it);
       if (false == ret.second) { // already exists.
@@ -130,8 +137,12 @@ void MaxVioBrancher::findCandidates_(ModVector &mods, bool &should_prune)
           br_can->setDist((*it)->getDDist(), (*it)->getUDist());
           br_can->setHandler(*h);
         }
+        delete *it; // free the candidate
+        it = cands2.erase(it); // delete the iterator from cands2
         //br_can->setDist((*it)->getDDist()+br_can->getDDist(),
         //                (*it)->getDDist()+br_can->getUDist());
+      } else {
+        ++it;
       }
     }
     for (BrCandVIter it = gencands2.begin(); it != gencands2.end(); ++it) {
@@ -164,6 +175,7 @@ BrCandPtr MaxVioBrancher::findBestCandidate_()
   double lmin = 0.8;
   double lmax = 0.2;
 
+
   for (BrVarCandIter it = cands_.begin(); it != cands_.end(); ++it) {
     cand_score = lmin*std::min((*it)->getDDist(),(*it)->getUDist()) + 
                  lmax*std::max((*it)->getDDist(),(*it)->getUDist());
@@ -191,10 +203,31 @@ BrCandPtr MaxVioBrancher::findBestCandidate_()
     } else {
       best_cand->setDir(DownBranch);
     }
+    freeCandidates_(best_cand);
+  } else {
+    freeCandidates_(0);
   }
 
   return best_cand;
 }
+
+
+void MaxVioBrancher::freeCandidates_(BrCandPtr no_del)
+{
+  for (BrVarCandIter it=cands_.begin(); it!=cands_.end(); ++it) {
+    if (no_del != *it) {
+      delete *it;
+    }
+  }
+  for (BrCandVIter it=gencands_.begin(); it!=gencands_.end(); ++it) {
+    if (no_del != *it) {
+      delete *it;
+    }
+  }
+  cands_.clear();
+  gencands_.clear();
+}
+
 
 
 void MaxVioBrancher::updateAfterSolve(NodePtr , ConstSolutionPtr )

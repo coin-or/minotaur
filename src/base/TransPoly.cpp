@@ -1,7 +1,7 @@
 //
 //     MINOTAUR -- It's only 1/2 bull
 //
-//     (C)opyright 2008 - 2017 The MINOTAUR Team.
+//     (C)opyright 2008 - 2021 The MINOTAUR Team.
 //
 
 /**
@@ -37,7 +37,7 @@ using namespace Minotaur;
 
 #undef DEBUG_TRANSPOLY
 
-TransPoly::TransPoly(EnvPtr env, ConstProblemPtr p)
+TransPoly::TransPoly(EnvPtr env, ProblemPtr p)
   : Transformer(env, p),
     mHandler_(MultilinearTermsHandlerPtr()),
     yMonoms_(0)

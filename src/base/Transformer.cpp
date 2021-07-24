@@ -1,7 +1,7 @@
 //
 //     MINOTAUR -- It's only 1/2 bull
 //
-//     (C)opyright 2008 - 2017 The MINOTAUR Team.
+//     (C)opyright 2008 - 2021 The MINOTAUR Team.
 //
 
 /**
@@ -56,7 +56,7 @@ Transformer::Transformer()
 }
 
 
-Transformer::Transformer(EnvPtr env, ConstProblemPtr p)
+Transformer::Transformer(EnvPtr env, ProblemPtr p)
   : env_(env),
     p_(p),
     yLfs_(0),

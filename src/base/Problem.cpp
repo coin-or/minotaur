@@ -1,7 +1,7 @@
 //
 //    MINOTAUR -- It's only 1/2 bull
 //
-//    (C)opyright 2009 - 2017 The MINOTAUR Team.
+//    (C)opyright 2009 - 2021 The MINOTAUR Team.
 //
 
 /**
@@ -40,6 +40,7 @@ const std::string Problem::me_ = "Problem: ";
 Problem::Problem(EnvPtr env) 
 : cons_(0), 
   consModed_(false),
+  debugSol_(0),
   engine_(0),
   hessian_(0),
   jacobian_(0),
@@ -97,11 +98,12 @@ Problem::~Problem()
   if (size_) {
     delete size_;
   }
-
   if (obj_) {
     delete obj_;
   }
-
+  if (debugSol_) {
+    delete debugSol_;
+  }
   vars_.clear();
   cons_.clear();
   sos1_.clear();
@@ -422,10 +424,14 @@ ProblemPtr Problem::clone(EnvPtr env) const
   // add objective
   oPtr = getObjective();
   if (oPtr) {
-    f = oPtr->getFunction()->cloneWithVars(vit0, &err);
-    assert(err==0);
-    clonePtr->newObjective(f, oPtr->getConstant(),
-                           oPtr->getObjectiveType(), oPtr->getName()); 
+    if (oPtr->getFunction()) {
+      f = oPtr->getFunction()->cloneWithVars(vit0, &err);
+      assert(err==0);
+      clonePtr->newObjective(f, oPtr->getConstant(),
+                             oPtr->getObjectiveType(), oPtr->getName());
+    } else {
+      clonePtr->newObjective(oPtr->getConstant(), oPtr->getObjectiveType());
+    }
   } 
 
   clonePtr->jacobian_  = JacobianPtr(); // NULL.
@@ -1448,6 +1454,16 @@ ObjectivePtr Problem::newObjective(FunctionPtr f, double cb,
   return o;
 }
 
+ObjectivePtr Problem::newObjective(double cb, ObjectiveType otyp) {
+  assert(engine_ == 0 ||
+      (!"Cannot add objective after loading problem to engine\n"));
+  if (obj_) {
+    delete obj_; obj_ = 0;
+  }
+  obj_ = new Objective(cb, otyp);
+  consModed_ = true;
+  return obj_;
+}
 
 ObjectivePtr Problem::newObjective(FunctionPtr f, double cb, 
                                    ObjectiveType otyp, std::string name)
@@ -1652,6 +1668,12 @@ void Problem::reverseSense(ConstraintPtr cons)
 {
   cons->reverseSense_();
   consModed_ = true;
+}
+
+
+void Problem::setDebugSol(const DoubleVector &x) 
+{
+  debugSol_ = new DoubleVector(x);
 }
 
 

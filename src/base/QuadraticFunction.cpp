@@ -1,7 +1,7 @@
 // 
 //     MINOTAUR -- It's only 1/2 bull
 // 
-//     (C)opyright 2008 - 2017 The MINOTAUR Team.
+//     (C)opyright 2008 - 2021 The MINOTAUR Team.
 // 
 
 /**
@@ -901,6 +901,7 @@ void QuadraticFunction::subst(VariablePtr out, VariablePtr in, double rat)
   std::queue <std::pair<VariablePair, double> > newterms;
   std::pair <VariablePair, double> vpg;
   std::map<ConstVariablePtr, UInt>::iterator vit;
+  VariablePtr swap = 0;
 
   vit = varFreq_.find(out);
   if (vit==varFreq_.end()) {
@@ -910,23 +911,22 @@ void QuadraticFunction::subst(VariablePtr out, VariablePtr in, double rat)
   for (VariablePairGroupIterator it = terms_.begin(); it != terms_.end();){
     if (it->first.first == out || it->first.second==out) {
       vpg = *it;
+
       if (vpg.first.first==out) {
-        if (in->getId() <= vpg.first.second->getId()) {
-          vpg.first.first=in;
-        } else {
-          vpg.first.first = vpg.first.second;
-          vpg.first.second = in;
-        }
+        vpg.first.first = in;
+        vpg.second *= rat;
       }
       if (vpg.first.second==out) {
-        if (in->getId() >= vpg.first.first->getId()) {
-          vpg.first.second=in;
-        } else {
-          vpg.first.second = vpg.first.first;
-          vpg.first.first = in;
-        }
+        vpg.first.second = in;
+        vpg.second *= rat;
       }
-      vpg.second *= rat;
+
+      if (vpg.first.first->getIndex() > vpg.first.second->getIndex()) {
+        swap = vpg.first.second;
+        vpg.first.second = vpg.first.first;
+        vpg.first.first = swap;
+      }
+
       newterms.push(vpg);
       varFreq_[it->first.first]  -= 1;
       varFreq_[it->first.second] -= 1;

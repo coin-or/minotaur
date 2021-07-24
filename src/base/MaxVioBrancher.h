@@ -1,7 +1,7 @@
 // 
 //     MINOTAUR -- It's only 1/2 bull
 // 
-//     (C)opyright 2009 - 2017 The MINOTAUR Team.
+//     (C)opyright 2009 - 2021 The MINOTAUR Team.
 // 
 
 /**
@@ -75,6 +75,11 @@ namespace Minotaur {
       Timer *timer_;
 
       DoubleVector x_;
+
+      /**
+       * Clean up candidates, except for the no_del candidate.
+       */
+      void freeCandidates_(BrCandPtr no_del);
 
       /// Fills up the set of candidates in the cands_ array. 
       void findCandidates_(ModVector &mods, bool &should_prune);

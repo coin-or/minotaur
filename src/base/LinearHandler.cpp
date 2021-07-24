@@ -1,7 +1,7 @@
 //
 //     MINOTAUR -- It's only 1/2 bull
 //
-//     (C)opyright 2008 - 2017 The MINOTAUR Team.
+//     (C)opyright 2008 - 2021 The MINOTAUR Team.
 //
 
 /**
@@ -221,7 +221,8 @@ void LinearHandler::separate(ConstSolutionPtr, NodePtr , RelaxationPtr ,
 }
 
 
-SolveStatus LinearHandler::presolve(PreModQ *pre_mods, bool *changed0)
+SolveStatus LinearHandler::presolve(PreModQ *pre_mods, bool *changed0,
+                                    Solution **sol)
 {
   SolveStatus status = Started;
   bool changed = true;
@@ -310,6 +311,13 @@ SolveStatus LinearHandler::presolve(PreModQ *pre_mods, bool *changed0)
   }
   findAllBinCons_();
   fixToCont_();
+
+  if (0 == problem_->getNumVars()) {
+    *sol = new Solution(problem_->getObjective()->getConstant(), 0, problem_);
+    pStats_->time += timer->query();
+    delete timer;
+    return SolvedOptimal;
+  }
 
   pStats_->time += timer->query();
   delete timer;
@@ -574,11 +582,11 @@ SolveStatus LinearHandler::varBndsFromObj_(ProblemPtr p, double ub, bool apply_t
         return SolvedInfeasible;
       }
       if (ll > -infty_) {
-        updateLfBoundsFromUb_(p, apply_to_prob, lf, ub, ll, false, &t_changed, 
+        updateLfBoundsFromUb_(p, apply_to_prob, lf, ub, ll, false, &t_changed,
                               mods, &nintmods);
       } else if (sing_ll > -infty_) {
-        updateLfBoundsFromUb_(p, apply_to_prob, lf, ub, sing_ll, true, &t_changed, 
-                              mods, &nintmods);
+        updateLfBoundsFromUb_(p, apply_to_prob, lf, ub, sing_ll, true,
+                              &t_changed, mods, &nintmods);
       }
       if (true == t_changed) {
         *changed = true;
@@ -1626,7 +1634,9 @@ void LinearHandler::simplePresolve(ProblemPtr p, SolutionPoolPtr spool,
 #endif
     {
       if (spool && spool->getNumSols() > 0) {
-        varBndsFromObj_(p, spool->getBestSolutionValue(), false, &changed, &mods);
+        varBndsFromObj_(p, spool->getBestSolutionValue()
+                           - p->getObjective()->getConstant(),
+                        false, &changed, &mods);
       }
     }
     tightenInts_(p, false, &changed, &mods);
@@ -1754,7 +1764,7 @@ void LinearHandler::writeStats(std::ostream &out) const
 
 std::string LinearHandler::getName() const
 {
-   return "LinearHandler (Handling linear constraints).";
+   return "LinearHandler (Handling linear constraints)";
 }
 // Local Variables: 
 // mode: c++ 

@@ -1,7 +1,7 @@
 //
 //     MINOTAUR -- It's only 1/2 bull
 //
-//     (C)opyright 2008 - 2017 The MINOTAUR Team.
+//     (C)opyright 2008 - 2021 The MINOTAUR Team.
 //
 
 /**
@@ -73,7 +73,7 @@ public:
   bool isNeeded();
 
   /// Presolve. Do not do any presolving.
-  SolveStatus presolve(PreModQ *, bool *) {return Finished;};
+  SolveStatus presolve(PreModQ *, bool *, Solution **sol) {return Finished;};
 
   /// Does nothing.
   void postsolveGetX(const double *, UInt, DoubleVector *);

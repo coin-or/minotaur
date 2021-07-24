@@ -1,7 +1,7 @@
 // 
 //     MINOTAUR -- It's only 1/2 bull
 // 
-//     (C)opyright 2010 - 2017 The MINOTAUR Team.
+//     (C)opyright 2010 - 2021 The MINOTAUR Team.
 // 
 
 /**
@@ -656,7 +656,7 @@ BranchPtr CxUnivarHandler::doBranch_(BranchDirection UpOrDown,
 
 
 // presolve.
-SolveStatus CxUnivarHandler::presolve(PreModQ *, bool *)
+SolveStatus CxUnivarHandler::presolve(PreModQ *, bool *, Solution **)
 {
   return Finished;
 }

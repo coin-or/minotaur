@@ -1,7 +1,7 @@
 //
 //    MINOTAUR -- It's only 1/2 bull
 //
-//    (C)opyright 2009 - 2017 The MINOTAUR Team.
+//    (C)opyright 2009 - 2021 The MINOTAUR Team.
 //
 
 /**
@@ -682,8 +682,12 @@ int main(int argc, char** argv)
     goto CLEANUP;
   }
 
+  env->getLogger()->msgStream(LogInfo) << "Number of processors = "
+    << omp_get_num_procs() << std::endl;
+  //numThreads = std::min(env->getOptions()->findInt("threads")->getValue(),
+                        //omp_get_num_procs());
   numThreads = std::min(env->getOptions()->findInt("threads")->getValue(),
-                        omp_get_num_procs());
+                        omp_get_max_threads());
   nodePrcssr = new ParPCBProcessorPtr[numThreads];
   parNodeRlxr = new ParNodeIncRelaxerPtr[numThreads];
   relCopy = new RelaxationPtr[numThreads];
@@ -717,10 +721,18 @@ int main(int argc, char** argv)
     env->getLogger()->msgStream(LogInfo)
       << "Number of threads = " << numThreads 
       << ". Requires a thread-safe LP and NLP solver." << std::endl;
+  } else {
+    env->getLogger()->msgStream(LogInfo)
+      << "Number of threads = " << numThreads << std::endl;
   }
   parbab = createParBab(env, numThreads, node, relCopy, pCopy, nodePrcssr,
                         parNodeRlxr, handlersCopy, lpeCopy, eCopy, prune);
-  parbab->parsolve(parNodeRlxr, nodePrcssr, numThreads, prune);
+  if (true==env->getOptions()->findBool("mcbnb_oppor_mode")->getValue()) {
+    parbab->parsolveOppor(parNodeRlxr, nodePrcssr, numThreads, prune);
+  } else {
+    parbab->parsolve(parNodeRlxr, nodePrcssr, numThreads, prune);
+  }
+  //parbab->parsolve(parNodeRlxr, nodePrcssr, numThreads, prune);
   
   //Take care of important bnb statistics
   //parbab->writeParStats(env->getLogger()->msgStream(LogExtraInfo), nodePrcssr);

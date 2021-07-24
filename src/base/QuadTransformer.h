@@ -1,7 +1,7 @@
 //
 //     MINOTAUR -- It's only 1/2 bull
 //
-//     (C)opyright 2008 - 2017 The MINOTAUR Team.
+//     (C)opyright 2008 - 2021 The MINOTAUR Team.
 //
 
 /**
@@ -41,7 +41,7 @@ namespace Minotaur {
     QuadTransformer();
 
     /// Constructor.
-    QuadTransformer(EnvPtr env, ConstProblemPtr p);
+    QuadTransformer(EnvPtr env, ProblemPtr p);
 
     /// Destroy.
     ~QuadTransformer();

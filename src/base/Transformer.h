@@ -1,7 +1,7 @@
 //
 //     MINOTAUR -- It's only 1/2 bull
 //
-//     (C)opyright 2008 - 2017 The MINOTAUR Team.
+//     (C)opyright 2008 - 2021 The MINOTAUR Team.
 //
 
 /**
@@ -56,7 +56,7 @@ public:
   Transformer();
 
   /// Constructor.
-  Transformer(EnvPtr env, ConstProblemPtr oldp);
+  Transformer(EnvPtr env, ProblemPtr oldp);
 
   /// Destroy.
   virtual ~Transformer();
@@ -109,7 +109,7 @@ protected:
   ProblemPtr newp_;
 
   /// The original problem
-  ConstProblemPtr p_;
+  ProblemPtr p_;
 
   /// Handler for quadratic terms
   QuadHandlerPtr qHandler_;

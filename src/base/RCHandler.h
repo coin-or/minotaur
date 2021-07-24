@@ -1,7 +1,7 @@
 // 
 //     MINOTAUR -- It's only 1/2 bull
 // 
-//     (C)opyright 2009 - 2017 The MINOTAUR Team.
+//     (C)opyright 2009 - 2021 The MINOTAUR Team.
 // 
 
 /**
@@ -76,7 +76,7 @@ public:
   { return true; };
 
   // Base class method
-  SolveStatus presolve(PreModQ *, bool *) 
+  SolveStatus presolve(PreModQ *, bool *, Solution **sol) 
   { return Finished; };
 
   // Base class method

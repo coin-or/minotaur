@@ -1,7 +1,7 @@
 // 
 //     MINOTAUR -- It's only 1/2 bull
 // 
-//     (C)opyright 2010 - 2017 The MINOTAUR Team.
+//     (C)opyright 2010 - 2021 The MINOTAUR Team.
 // 
 
 /**
@@ -1670,7 +1670,7 @@ bool UnivarQuadHandler::isViolatedAtBounds_(ConstraintPtr c1, ConstraintPtr c2,
   return false;
 }
 
-SolveStatus UnivarQuadHandler::presolve(PreModQ *, bool *changed)
+SolveStatus UnivarQuadHandler::presolve(PreModQ *, bool *changed, Solution **)
 {
 
   bool is_inf = false;

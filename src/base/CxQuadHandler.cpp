@@ -1,7 +1,7 @@
 // 
 //     MINOTAUR -- It's only 1/2 bull
 // 
-//     (C)opyright 2010 - 2017 The MINOTAUR Team.
+//     (C)opyright 2010 - 2021 The MINOTAUR Team.
 // 
 
 /**
@@ -937,7 +937,7 @@ bool CxQuadHandler::presolveNode(RelaxationPtr rel, NodePtr, SolutionPoolPtr,
 }
 
 
-SolveStatus CxQuadHandler::presolve(PreModQ *, bool *)
+SolveStatus CxQuadHandler::presolve(PreModQ *, bool *, Solution **)
 {
   return Finished; // disabled for now.
   removeFixed_();

@@ -1,7 +1,7 @@
 //
 //    MINOTAUR -- It's only 1/2 bull
 //
-//    (C)opyright 2009 - 2020 The MINOTAUR Team.
+//    (C)opyright 2009 - 2021 The MINOTAUR Team.
 //
 
 /**
@@ -42,7 +42,10 @@ Reader::~Reader()
 ProblemPtr Reader::readMps(std::string fname, int &err)
 {
   std::ifstream fs;
-  std::string line, word, word2, word3, word4, rhsid, rangeid, bndid;
+  std::string line, word, word2, word3, word4;
+  std::string rhsid="";
+  std::string rangeid="";
+  std::string bndid="";
   ProblemPtr p = 0;
   std::istringstream iss;
   int lcnt, m, n, r;
@@ -58,7 +61,7 @@ ProblemPtr Reader::readMps(std::string fname, int &err)
   VariablePtr v;
   FunctionPtr f;
   double dval, lb, ub;
-  std::string::size_type echars; // to check errors is string to double
+  std::string::size_type echars; // size of string
 
   int section = 0; // 0: None, 1: NAME, 2: ROWS, 3: COLUMNS, 4: RHS,
                    // 5: RANGES, 6: BOUNDS, 7: ENDDATA
@@ -359,51 +362,51 @@ ProblemPtr Reader::readMps(std::string fname, int &err)
           << " in line " << lcnt << " undeclared " << std::endl;
         err = 10;
         break;
-      } else {
-        dval = INFINITY;
-        if (iss >> word4) {
-          dval = std::stod(word4, &echars);
-        } else if (word3=="LO" || word3=="UP" || word3=="FX") {
-          logger_->msgStream(LogError) << me_ << "ERROR: " << word3 
-            << " key requires a number in line " << lcnt << std::endl;
-          err = 10;
-          break;
-        }
-        v = p->getVariable(colnames[word3]);
-        if (word=="LO") {
-          p->changeBound(v, Lower, dval);
-        } else if (word=="UP") {
-          if (dval < 0.0) {
-            if (v->getLb() == 0.0) {
-              p->changeBound(v, -INFINITY, dval);
-            } else {
-              p->changeBound(v, Upper, dval);
-            }
+      }
+
+      dval = INFINITY;
+      if (iss >> word4) {
+        dval = std::stod(word4, &echars);
+      } else if (word3=="LO" || word3=="UP" || word3=="FX") {
+        logger_->msgStream(LogError) << me_ << "ERROR: " << word3 
+          << " key requires a number in line " << lcnt << std::endl;
+        err = 10;
+        break;
+      }
+      v = p->getVariable(colnames[word3]);
+      if (word=="LO") {
+        p->changeBound(v, Lower, dval);
+      } else if (word=="UP") {
+        if (dval < 0.0) {
+          if (v->getLb() == 0.0) {
+            p->changeBound(v, -INFINITY, dval);
           } else {
             p->changeBound(v, Upper, dval);
           }
-        } else if (word=="FX") {
-          p->changeBound(v, dval, dval);
-        } else if (word=="FR") {
-          p->changeBound(v, -INFINITY, INFINITY);
-        } else if (word=="MI") {
-          p->changeBound(v, Lower, -INFINITY);
-        } else if (word=="PL") {
-          p->changeBound(v, Upper, INFINITY);
-        } else if (word=="BV") {
-          p->setVarType(v, Binary);
-        } else if (word=="LI") {
-          p->setVarType(v, Integer);
-          p->changeBound(v, Lower, dval);
-        } else if (word=="UI") {
-          p->setVarType(v, Integer);
-          p->changeBound(v, Upper, dval);
         } else {
-          logger_->errStream() << me_ << "ERROR: unknown bound type " << word
-            << " in line " << lcnt << std::endl;
-          err = 10;
-          break;
+          p->changeBound(v, Upper, dval);
         }
+      } else if (word=="FX") {
+        p->changeBound(v, dval, dval);
+      } else if (word=="FR") {
+        p->changeBound(v, -INFINITY, INFINITY);
+      } else if (word=="MI") {
+        p->changeBound(v, Lower, -INFINITY);
+      } else if (word=="PL") {
+        p->changeBound(v, Upper, INFINITY);
+      } else if (word=="BV") {
+        p->setVarType(v, Binary);
+      } else if (word=="LI") {
+        p->setVarType(v, Integer);
+        p->changeBound(v, Lower, dval);
+      } else if (word=="UI") {
+        p->setVarType(v, Integer);
+        p->changeBound(v, Upper, dval);
+      } else {
+        logger_->errStream() << me_ << "ERROR: unknown bound type " << word
+          << " in line " << lcnt << std::endl;
+        err = 10;
+        break;
       }
       break;
     case(7):
@@ -464,5 +467,78 @@ ProblemPtr Reader::readMps(std::string fname, int &err)
   //p->write(std::cout);
   p->calculateSize();
   return p;
+}
+
+
+int Reader::readSol(ProblemPtr p, std::string sname)
+{
+  int err = 0;
+  int lcnt = 0, vcnt = 0;
+  std::ifstream fs;
+  std::istringstream iss;
+  std::string line, word, word2;
+  std::string rhsid="";
+  DoubleVector x(p->getNumVars(),0.0);
+  std::vector<std::string> names;
+  std::string::size_type echars; // size of string
+  bool found = false;
+  double dval;
+
+  fs.open(sname.c_str());
+  if (!fs.is_open()) {
+    logger_->errStream() << me_ << "could not open file " << sname
+      << " for reading" << std::endl;
+    return 1;
+  } 
+
+  logger_->msgStream(LogInfo) << me_ << "reading  file " << sname 
+    << std::endl;
+
+  while (0==err && std::getline(fs, line)) {
+    iss.clear();   // deletes only flags internal to iss
+    iss.str(line); // convert line into ifstream
+    ++lcnt;
+
+    // std::cout << line <<  std::endl;
+
+    if (!(iss >> word)) {
+      continue; // empty line
+    }
+
+    if ('#'==word[0]) {
+      continue; // ignore line, because it is a comment
+    }
+
+    if (!(iss >> word2)) {
+      logger_->errStream() << me_ << "ERROR: not enough fields in line "
+        << lcnt << " of " << sname << std::endl;
+      err = 1;
+    } else {
+      // word = name-of-variable, and word2 = value
+      dval = std::stod(word2, &echars);
+      found = false;
+      vcnt = 0;
+      for (VariableConstIterator it=p->varsBegin(); it!=p->varsEnd(); ++it) {
+        if ((*it)->getName() == word) {
+          found = true;
+          x[vcnt] = dval;
+          break;
+        }
+        ++vcnt;
+      }
+      if (false==found) {
+        logger_->msgStream(LogError) << "Variable " << word 
+                                     << " not found in the solution file "
+                                     << sname << std::endl;
+        err = 1;
+      }
+    }
+  }
+
+  if (0==err) {
+    p->setDebugSol(x);
+  }
+
+  return err;
 }
 

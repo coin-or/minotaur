@@ -1,7 +1,7 @@
 // 
 //     MINOTAUR -- It's only 1/2 bull
 // 
-//     (C)opyright 2009 - 2017 The MINOTAUR Team.
+//     (C)opyright 2009 - 2021 The MINOTAUR Team.
 // 
 
 /**
@@ -23,12 +23,13 @@ namespace Minotaur {
   //class Problem;
 
   struct NodeStats {
-    UInt bra;    /// Number of times relaxation became infeasible
-    UInt inf;    /// Number of times relaxation became infeasible
-    UInt opt;    /// Number of times relaxation gave optimal feasible solution
-    UInt prob;   /// Number of times problem ocurred in solving
-    UInt proc;   /// Number of nodes processed
-    UInt ub;     /// Number of nodes pruned because of bound
+    UInt bra;     /// Number of times relaxation became infeasible
+    UInt inf;     /// Number of times relaxation became infeasible
+    UInt opt;     /// Number of times relaxation gave optimal feasible solution
+    UInt prob;    /// Number of times problem ocurred in solving
+    UInt proc;    /// Number of nodes processed
+    UInt ub;      /// Number of nodes pruned because of bound
+    UInt tol_err; /// Number of nodes for which fixNodeErr was called
   };
 
   /**
@@ -106,6 +107,9 @@ namespace Minotaur {
       /// Heuristics that can be called at each node.
       HeurVector heurs_;
 
+      /// The handler which reports the infeasibility of a node.
+      HandlerPtr infHand_;
+
       /// Log
       LoggerPtr logger_;
 
@@ -124,9 +128,6 @@ namespace Minotaur {
 
       /// Relative tolerance for pruning a node on basis of bounds.
       double oRTol_;
-
-      /// Pointer to original problem
-      ConstProblemPtr problem_;
 
       /// Relaxation that is processed by this processor.
       RelaxationPtr relaxation_;
@@ -172,7 +173,9 @@ namespace Minotaur {
                      SeparationStatus *status);
 
       // Implement NodeProcessor::tightenBounds_()
-      virtual void tightenBounds_(); 
+      virtual void tightenBounds_(NodePtr node, SolutionPoolPtr s_pool,
+                                  ConstSolutionPtr sol,
+                                  SeparationStatus *status); 
 
   };
 

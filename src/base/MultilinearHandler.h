@@ -1,7 +1,7 @@
 //
 //     MINOTAUR -- It's only 1/2 bull
 //
-//     (C)opyright 2008 - 2017 The MINOTAUR Team.
+//     (C)opyright 2008 - 2021 The MINOTAUR Team.
 //
 
 /**
@@ -166,7 +166,7 @@ public:
                                RelaxationPtr rel, SolutionPoolPtr s_pool);
 
   // presolve.
-  virtual SolveStatus presolve(PreModQ *, bool *changed) {return Finished;};
+  virtual SolveStatus presolve(PreModQ *, bool *changed, Solution **) {return Finished;};
     
   // Implement Handler::presolveNode()
   virtual bool presolveNode(RelaxationPtr, NodePtr, SolutionPoolPtr, ModVector &,

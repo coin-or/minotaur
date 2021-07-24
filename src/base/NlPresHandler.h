@@ -1,7 +1,7 @@
 //
 //     MINOTAUR -- It's only 1/2 bull
 //
-//     (C)opyright 2008 - 2017 The MINOTAUR Team.
+//     (C)opyright 2008 - 2021 The MINOTAUR Team.
 //
 
 /**
@@ -112,7 +112,7 @@ public:
   {return Branches();}; // NULL
 
   // presolve.
-  SolveStatus presolve(PreModQ *pre_mods, bool *changed);
+  SolveStatus presolve(PreModQ *pre_mods, bool *changed, Solution **sol);
 
   // Implement Handler::presolveNode().
   bool presolveNode(RelaxationPtr p, NodePtr node, SolutionPoolPtr s_pool,

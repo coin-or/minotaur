@@ -2,7 +2,7 @@
 //
 //     MINOTAUR -- It's only 1/2 bull
 //
-//     (C)opyright 2008 - 2017 The MINOTAUR Team.
+//     (C)opyright 2008 - 2021 The MINOTAUR Team.
 //
 
 /**
@@ -54,7 +54,7 @@ QuadTransformer::QuadTransformer()
 }
 
 
-QuadTransformer::QuadTransformer(EnvPtr env, ConstProblemPtr p)
+QuadTransformer::QuadTransformer(EnvPtr env, ProblemPtr p)
   : Transformer(env, p),
   yQfBil_(0),
   yBivar_(0),

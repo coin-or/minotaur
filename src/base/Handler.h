@@ -1,7 +1,7 @@
 //
 //     MINOTAUR -- It's only 1/2 bull
 //
-//     (C)opyright 2008 - 2017 The MINOTAUR Team.
+//     (C)opyright 2008 - 2021 The MINOTAUR Team.
 //
 
 /**
@@ -26,6 +26,7 @@ namespace Minotaur {
   class   PreMod;
   class   Solution;
   class   SolutionPool;
+  class   Solution;
   typedef Relaxation* RelaxationPtr;
   typedef PreMod* PreModPtr;
   typedef const Solution* ConstSolutionPtr;
@@ -73,6 +74,16 @@ namespace Minotaur {
      */
     virtual ConstraintVector::const_iterator consEnd() const
     {return cons_.end();};
+
+    /**
+     * This function processes a node further if no branching candidates were
+     * found by the brancher. It is only implemented for QuadHandler as of now.
+     */
+    virtual int fixNodeErr(RelaxationPtr , ConstSolutionPtr ,
+                           SolutionPoolPtr , bool &) {
+      assert(!"FixNodeErr not implemented for the Handler");
+      return 0;
+    };
 
     /**
      * \brief Return branches for branching.
@@ -179,8 +190,11 @@ namespace Minotaur {
      * to pre_mods. The order is important for post-solve.
      * \param[out] changed True if the presolve modified the problem.
      * \return status of presolve.
+     * \param[out] sol Optimal solution found by the handler, if any. The
+     * status must be SolvedOptimal if and only if sol is created.
      */
-    virtual SolveStatus presolve(PreModQ *pre_mods, bool *changed) = 0;
+    virtual SolveStatus presolve(PreModQ *pre_mods, bool *changed,
+                                 Solution **sol) = 0;
 
     /**
      * \brief Presolve the problem and its relaxation at a node.
@@ -206,6 +220,30 @@ namespace Minotaur {
     virtual bool presolveNode(RelaxationPtr rel, NodePtr node,
                               SolutionPoolPtr s_pool, ModVector &p_mods,
                               ModVector &r_mods) = 0;
+
+    /**
+     * \brief At the root node post solve the problem and its relaxation.
+     * LP based bound tightening (OBBT) is employed here after filtering variables
+     * for which no OBBT is required.
+     * \param[in] rel Relaxation at the root node.
+     * \param[in] s_pool Pool of solutions.
+     * \param[in] sol The solution from the LP relaxation
+     * \param[in] p_mods Unused. Modifications to the problem that must be
+     * stored in this node so that they are applied to all descendant nodes as
+     * well. All modifications must be appended not prepended.
+     * \param[out] r_mods Modifications to the relaxation that must be stored in
+     * this node so that they are applied to all descendant nodes as well.  All
+     * modifications must be appended not prepended. This may be unnecessary in
+     * certain algorithms.
+     * \return true if the LP solution still remains feasible to the relaxation.
+     */
+    virtual bool postSolveRootNode(RelaxationPtr , SolutionPoolPtr ,
+                                   ConstSolutionPtr , ModVector &,
+                                   ModVector &) {
+      // Do Nothing
+      // Only used for QuadHandler as of now
+      return true;
+    };
 
     /**
      * \brief Create root relaxation if doing full node relaxations.

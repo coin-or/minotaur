@@ -1,7 +1,7 @@
 // 
 //     MINOTAUR -- It's only 1/2 bull
 // 
-//     (C)opyright 2009 - 2017 The MINOTAUR Team.
+//     (C)opyright 2009 - 2021 The MINOTAUR Team.
 // 
 
 /**
@@ -145,7 +145,7 @@ public:
                   bool & should_prune, double &inf_meas);
 
   /// Does nothing.
-  SolveStatus presolve(PreModQ *, bool *) {return Finished;};
+  SolveStatus presolve(PreModQ *, bool *, Solution **) {return Finished;};
 
   /// Does nothing.
   bool presolveNode(RelaxationPtr, NodePtr, SolutionPoolPtr, ModVector &,

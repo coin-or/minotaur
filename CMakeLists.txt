@@ -191,44 +191,6 @@ endif()
 
 
 ###########################################################################
-## boost
-###########################################################################
-message(STATUS ${MSG_HEAD} "Searching for boost ...")
-set (BOOST_INC_DIR "" CACHE PATH 
-"Path to boost headers. The path must contain 'boost/shared_ptr.hpp' file.") 
-
-set (BOOST_INC_DIR_F ${BOOST_INC_DIR}) 
-if ("${BOOST_INC_DIR_F}" STREQUAL "" AND 
-  (NOT ("${TP_ABS_PATH}" STREQUAL "")))
-  set (BOOST_INC_DIR_F ${TP_ABS_PATH}/include)
-endif()
-
-if (NOT BOOST_INC_DIR_F)
-  message(STATUS ${MSG_HEAD} "User did not specify any boost path."
-    " Searching system.")
-
-  set (BOOST_DIR_BOOL) ## false
-  CHECK_INCLUDE_FILE_CXX(boost/shared_ptr.hpp BOOST_DIR_BOOL
-                         ${CMAKE_REQUIRED_FLAGS})
-  message(STATUS ${MSG_HEAD} "boost dir. found in system = ${BOOST_DIR_BOOL}") 
-
-  if (NOT BOOST_DIR_BOOL)
-    message(FATAL_ERROR " ${MSG_HEAD}" 
-      "Cannot find Boost headers in the system. "
-      "Please specify a location of boost directory.")
-  endif()
-
-elseif (EXISTS ${BOOST_INC_DIR_F}/boost/shared_ptr.hpp)
-  message(STATUS ${MSG_HEAD} "Using boost headers from ${BOOST_INC_DIR_F}")
-  include_directories(${BOOST_INC_DIR_F})
-
-else()
-  message(FATAL_ERROR " ${MSG_HEAD}"
-    "${BOOST_INC_DIR_F}/boost/shared_ptr.hpp not found in BOOST_INC_DIR_F")
-
-endif()
-
-###########################################################################
 ## base
 ###########################################################################
 add_subdirectory(src/base)

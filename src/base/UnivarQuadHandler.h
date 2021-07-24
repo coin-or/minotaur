@@ -2,7 +2,7 @@
 //
 //     MINOTAUR -- It's only 1/2 bull
 //
-//     (C)opyright 2008 - 2017 The MINOTAUR Team.
+//     (C)opyright 2008 - 2021 The MINOTAUR Team.
 //
 
 /**
@@ -103,7 +103,7 @@ public:
                   bool &should_prune, double &inf_meas);
 
   // base class method.
-  SolveStatus presolve(PreModQ *pre_mods, bool *changed);
+  SolveStatus presolve(PreModQ *pre_mods, bool *changed, Solution **);
 
   // base class method. Tightens bounds.
   bool presolveNode(RelaxationPtr p, NodePtr node,

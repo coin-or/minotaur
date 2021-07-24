@@ -1,7 +1,7 @@
 //
 //     MINOTAUR -- It's only 1/2 bull
 //
-//     (C)opyright 2008 - 2017 The MINOTAUR Team.
+//     (C)opyright 2008 - 2021 The MINOTAUR Team.
 //
 
 /**
@@ -54,7 +54,7 @@ public:
   /// Default constructor.
   QuadHandler(EnvPtr env, ProblemPtr problem);
 
-  QuadHandler(EnvPtr env, ProblemPtr problem, EnginePtr lpe);
+  QuadHandler(EnvPtr env, ProblemPtr problem, ProblemPtr orig_p);
   
   /// Destroy
   ~QuadHandler();
@@ -83,12 +83,21 @@ public:
                   bool &should_prune, double &inf_meas);
 
   // base class method.
-  SolveStatus presolve(PreModQ *pre_mods, bool *changed);
+  SolveStatus presolve(PreModQ *pre_mods, bool *changed, Solution **sol);
 
   // base class method. Tightens bounds.
   bool presolveNode(RelaxationPtr p, NodePtr node,
                     SolutionPoolPtr s_pool, ModVector &p_mods,
                     ModVector &r_mods);
+
+  // implement Handler::postSolveRootNode
+  bool postSolveRootNode(RelaxationPtr rel, SolutionPoolPtr s_pool,
+                         ConstSolutionPtr sol, ModVector &p_mods,
+                         ModVector &r_mods);
+
+  // implement Handler::fixNodeErr
+  int fixNodeErr(RelaxationPtr rel, ConstSolutionPtr sol,
+                 SolutionPoolPtr s_pool, bool &sol_found);
 
   // base class method. Adds linear inequalities
   void relaxInitFull(RelaxationPtr rel, bool *is_inf);
@@ -108,7 +117,9 @@ public:
                 CutManager *cutman, SolutionPoolPtr s_pool, ModVector &p_mods,
                 ModVector &r_mods, bool *sol_found, SeparationStatus *status);
 
-  void setEngine(Engine* engine);
+  void setLPEngine(Engine* engine);
+
+  void setNLPEngine(EnginePtr engine);
 
   // base class method. 
   void writeStats(std::ostream &out) const;
@@ -132,43 +143,51 @@ private:
     int nMods;   ///> Number of changes made in all nodes.
   };
 
+  struct NLPStats
+  {
+    bool flag;        ///> if true that means NLP was solved at least once
+    UInt nlp;         ///> Number of NLPs solved
+    UInt opt;         ///> Number of NLPs optimal
+    UInt inf;         ///> Number of NLPs infeasible
+    UInt iter_limit;  ///> Number of NLPs for which EngineIterationLimit
+  };
+
   struct BoundTighteningStats
   {
     int niters;        ///> Number of iterations
-    VariableSet qvars; ///> The variables with quadratic terms
-    int nqlb;          ///> Number of quadratic variables with finite lb
-    int nqub;          ///> Number of quadratic variables with finite ub
-    int nqlbs;         ///> Number of quadratic variables whose lb was
-                       ///> found by simple tightening
-    int nqubs;         ///> Number of quadratic variables whose ub was
-                       ///> found by simple tightening
-    int vBnds;         ///> Number of times bounds tightened by
-                       ///> simple tightening
-    int cBnds;         ///> Number of times cons tightened by
-                       ///> simple tightening
-    int nqlbq;         ///> Number of quadratic variables whose lb was
-                       ///> found by quad tightening
-    int nqubq;         ///> Number of quadratic variables whose ub was
-                       ///> found by quad tightening
-    int vBndq;         ///> Number of times bounds tightened by
-                       ///> quad tightening
-    int cBndq;         ///> Number of times cons tightened by
-                       ///> quad tightening
-    int nqlbl;         ///> Number of quadratic variables whose lb was
-                       ///> found by lp tightening
-    int nqubl;         ///> Number of quadratic variables whose ub was
-                       ///> found by lp tightening
-    int vBndl;         ///> Number of times bounds tightened by
-                       ///> lp tightening
+    //VariableSet qvars; ///> The variables with quadratic terms
+    //int nqlb;          ///> Number of quadratic variables with finite lb
+    //int nqub;          ///> Number of quadratic variables with finite ub
+    //int nqlbs;         ///> Number of quadratic variables whose lb was
+    //                   ///> found by simple tightening
+    //int nqubs;         ///> Number of quadratic variables whose ub was
+    //                   ///> found by simple tightening
+    //int vBnds;         ///> Number of times bounds tightened by
+    //                   ///> simple tightening
+    //int cBnds;         ///> Number of times cons tightened by
+    //                   ///> simple tightening
+    //int nqlbq;         ///> Number of quadratic variables whose lb was
+    //                   ///> found by quad tightening
+    //int nqubq;         ///> Number of quadratic variables whose ub was
+    //                   ///> found by quad tightening
+    //int vBndq;         ///> Number of times bounds tightened by
+    //                   ///> quad tightening
+    //int cBndq;         ///> Number of times cons tightened by
+    //                   ///> quad tightening
+    //int nqlbl;         ///> Number of quadratic variables whose lb was
+    //                   ///> found by lp tightening
+    //int nqubl;         ///> Number of quadratic variables whose ub was
+    //                   ///> found by lp tightening
+    //int vBndl;         ///> Number of times bounds tightened by
+    //                   ///> lp tightening
     int nLP;           ///> Number of LP solved
     int dlb;           ///> Number of variables for which default lb was added
     int dub;           ///> Number of variables for which default ub was added
-    double time;       ///> Time taken for presolve
     double timeLP;     ///> Time taken in solving LPs
-    double avg_range;  ///> Average range of bounds of quadratic variables
-    double sd_range;   ///> Standard deviation of range
-    double body_diag;  ///> The length of body diagonal of hypercube formed by
-                       ///> the range of quadratic variables
+    //double avg_range;  ///> Average range of bounds of quadratic variables
+    //double sd_range;   ///> Standard deviation of range
+    //double body_diag;  ///> The length of body diagonal of hypercube formed by
+    //                   ///> the range of quadratic variables
   };
 
   /// Absolute feasibility tolerance
@@ -195,15 +214,27 @@ private:
 
   /// LP engine
   EnginePtr lpe_;
+
+  /// NLP engine
+  EnginePtr nlpe_;
+
+  /// NLP stats
+  NLPStats nlpStats_;
       
   /// For printing messages.
   static const std::string me_;
+
+  /// Original problem (not the transformed)
+  ProblemPtr orig_;
 
   /// Transformed problem (not the relaxation).
   ProblemPtr p_;
 
   /// Statistics about presolve
   PresolveStats pStats_;
+
+  /// if true only then tightenQuad_ will be called every node
+  bool doQT_;
 
   /// Relative feasibility tolerance
   double rTol_;
@@ -245,8 +276,6 @@ private:
   /// are not found by presolve
   double addDefaultBounds_(VariablePtr x, BoundType lu);
 
-  void calcRangeOfQuadVars_();
-
   /**
    * \brief Calculate the upper bound of a univariate quadratic of the form
    * ax^2 + bx.
@@ -268,6 +297,9 @@ private:
   bool calcVarBnd_(VariablePtr v, double coef, double lb, double ub,
                    bool *c1);
 
+  bool calcVarBnd_(RelaxationPtr rel, VariablePtr v, double coef, double lb,
+                   double ub, bool *c1, ModVector &p_mods, ModVector &r_mods);
+
   /**
    * \brief Calculate bounds of the variables from a quadratic term bounds
    * \param[in] v1 The first variable in the quadratic term
@@ -280,6 +312,10 @@ private:
    */
   bool calcVarBnd_(VariablePtr v1, VariablePtr v2, double coef, double lb,
                    double ub, bool *c1, bool*c2);
+
+  bool calcVarBnd_(RelaxationPtr rel, VariablePtr v1, VariablePtr v2,
+                   double coef, double lb, double ub, bool *c1, bool *c2,
+                   ModVector &p_mods, ModVector &r_mods);
   
   /**
    * \brief Calculate bounds of the variables from a univariate quadratic
@@ -293,6 +329,10 @@ private:
    */
   bool calcVarBnd_(VariablePtr v, double a, double b, double ly, double uy,
                    bool *c1);
+
+  bool calcVarBnd_(RelaxationPtr rel, VariablePtr v, double a, double b,
+                   double ly, double uy, bool *c1, ModVector &p_mods,
+                   ModVector &r_mods);
 
   void coeffImprov_();
 
@@ -314,6 +354,20 @@ private:
    */
   double getBndByLP_(bool &is_inf);
 
+  /**
+   * \brief Get bounds of a lf of a constraint
+   * \param[in] qf Quadratic Function
+   * \param[out] implLb the implied lower bound of the lf
+   * \param[out] implUb the implied upper bound of the lf
+   * \param[out] fwdLb vector of lower bounds for each term
+   * \param[out] fwdUb vector of upper bounds for each term
+   * \param[out] count_inf_lb # of infinities in lower bound
+   * \param[out] count_inf_ub # of infinities in upper bound
+   */
+  void getLfBnds_(LinearFunctionPtr lf, double &implLb, double &implUb,
+                  DoubleVector &fwdLb, DoubleVector &fwdUb,
+                  UInt &count_inf_lb, UInt &count_inf_ub);
+  
   /**
    * \brief Get one of the four linear functions and right hand sides for the
    * linear relaxation of a bilinear constraint y = x0x1.
@@ -349,13 +403,55 @@ private:
                                 double lb, double ub, double & r);
 
   /**
+   * \brief Get bounds of a qf of a constraint
+   * \param[in] qf Quadratic Function
+   * \param[out] implLb the implied lower bound of the qf
+   * \param[out] implUb the implied upper bound of the qf
+   * \param[out] fwdLb vector of lower bounds for each term
+   * \param[out] fwdUb vector of upper bounds for each term
+   * \param[out] count_inf_lb # of infinities in lower bound
+   * \param[out] count_inf_ub # of infinities in upper bound
+   */
+  void getQfBnds_(QuadraticFunctionPtr qf, double &implLb, double &implUb,
+                  DoubleVector &fwdLb, DoubleVector &fwdUb,
+                  UInt &count_inf_lb, UInt &count_inf_ub);
+  
+  /**
+   * \brief Get bounds of a qf and lf of a constraint
+   * \param[in] lf Linear Function
+   * \param[in] qf Quadratic Function
+   * \param[out] implLb the implied lower bound of the lf and qf
+   * \param[out] implUb the implied upper bound of the lf and qf
+   * \param[out] fwdLb vector of lower bounds for each term
+   * \param[out] fwdUb vector of upper bounds for each term
+   * \param[out] count_inf_lb # of infinities in lower bound
+   * \param[out] count_inf_ub # of infinities in upper bound
+   * \param[out] qvars the variables for which there is a term like ax^2 + b
+   * return false if qvars has no element, true otherwise
+   */
+  bool getQfLfBnds_(LinearFunctionPtr lf, QuadraticFunctionPtr qf,
+                    double &implLb, double &implUb, DoubleVector &fwdLb,
+                    DoubleVector &fwdUb, UInt &count_inf_lb,
+                    UInt &count_inf_ub, VarVector &qvars);
+
+  bool getQfLfBnds_(RelaxationPtr rel, LinearFunctionPtr lf,
+                    QuadraticFunctionPtr qf, double &implLb, double &implUb,
+                    DoubleVector &fwdLb, DoubleVector &fwdUb,
+                    UInt &count_inf_lb, UInt &count_inf_ub, VarVector &qvars);
+
+  /**
    * \brief Calculate sum of a vector except current element
    * \param[in] b begin iterator of the vector
    * \param[in] e end iterator of the vector
    * \param[in] curr current element's iterator of the vector
+   * \param[in] bt Lower bound or Upper bound
+   * \param[in] bound Implied bound of the vector
+   * \param[in] inf_count count of infinities in the vector
+   * return the sum of the vector except current element
    */
   double getSumExcept1_(DoubleVector::iterator b,DoubleVector::iterator e,
-                        DoubleVector::iterator curr);
+                        DoubleVector::iterator curr, BoundType bt,
+                        double bound, UInt inf_count);
 
   /**
    * \brief Calculate bounds of a linear term from the variable bounds
@@ -390,6 +486,9 @@ private:
   
   /// Return true if xval is one of the bounds of variable x
   bool isAtBnds_(ConstVariablePtr x, double xval);
+
+  /// Whether a given point is feasible to the relaxation
+  bool isFeasibleToRelaxation_(RelaxationPtr rel, const double *x);
 
   /**
    * \brief Strengthen bounds of variables in a bilinear constraint y=x0x1
@@ -456,8 +555,18 @@ private:
 
   void relax_(RelaxationPtr rel, bool *is_inf);
 
+  /**
+   * \brief Resetting the bounds on original variables
+   * \param[in] varlb the vector of original lb
+   * \param[in] varub the vector of original ub
+   */
+  void resetBoundsinOrig_(DoubleVector &varlb, DoubleVector &varub);
+
   /// Reset all statistics to zero.
   void resetStats_();
+
+  /// Setting Itmp for each variable based on the solution from LP
+  void setItmpFromSol_(const double *x);
 
   /**
    * \brief Bound tightening of the problem by solving LP after removing all
@@ -468,7 +577,7 @@ private:
    * \param[out] changed True is some changes are made in the bounds on any
    * variables.
    */
-  bool tightenLP_(RelaxationPtr rel, bool *changed, ModVector &p_mods,
+  bool tightenLP_(RelaxationPtr rel, double bestSol, bool *changed, ModVector &p_mods,
                   ModVector &r_mods);
 
   /**
@@ -480,6 +589,9 @@ private:
    */
   bool tightenQuad_(bool *changed);
 
+  bool tightenQuad_(RelaxationPtr rel, double bestSol, bool *changed,
+                    ModVector &p_mods, ModVector &r_mods);
+
   /**
    * \brief Bound tightening of the problem by using simple interval
    * arithmetic. Returns true if the problem is found to be infeasible,
@@ -488,6 +600,17 @@ private:
    * variables.
    */
   bool tightenSimple_(bool *changed);
+
+  /**
+   * \brief Update bounds of variable in original problem as the bounds
+   * on the current node.
+   * \param[in] rel Relaxation at the node
+   * \param[in] x the lp solution at the current node
+   * \param[out] varlb vector of lb on variables before bound changes
+   * \param[out] varlb vector of ub on variables before bound changes
+   */
+  void updateBoundsinOrig_(RelaxationPtr rel, const double *x,
+                          DoubleVector &varlb, DoubleVector &varub);
 
   /**
    * \brief Modify bounds of a variable in the problem to the new bounds lb
@@ -525,6 +648,14 @@ private:
   int updatePBounds_(VariablePtr v, double lb, double ub, RelaxationPtr rel,
                      bool mod_rel, bool *changed, ModVector &p_mods,
                      ModVector &r_mods);
+  /**
+   * \brief After solving an NLP update ub of the problem.
+   * \param[in] s_pool Current solution pool
+   * \param[in] nlpval NLP objective value
+   * \param[out] sol_found true if the NLP solution is better than all
+   * solutions in s_pool
+   */
+  void updateUb_(SolutionPoolPtr s_pool, double nlpval, bool &sol_found);
 
   /**
    * \brief Update linear relaxation of the bilinear constraints after some
@@ -563,7 +694,6 @@ private:
    * infeasible. Flase otherwise.
    */
   bool varBndsFromCons_(bool *changed);
-  void writeBTStats_(std::ostream &out, bool flag);
 };
 
 /// Shared pointer to QuadHandler.

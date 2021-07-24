@@ -1,7 +1,7 @@
-// 
+//
 //     MINOTAUR -- It's only 1/2 bull
 // 
-//     (C)opyright 2010 - 2017 The MINOTAUR Team.
+//     (C)opyright 2010 - 2021 The MINOTAUR Team.
 // 
 
 /**
@@ -18,6 +18,7 @@
 #include <iostream>
 #include <iomanip>
 #include <algorithm>
+#include <string.h>
 
 #include "MinotaurConfig.h"
 #include "Branch.h"
@@ -56,11 +57,12 @@ using namespace Minotaur;
 const std::string QuadHandler::me_ = "QuadHandler: ";
 
 QuadHandler::QuadHandler(EnvPtr env, ProblemPtr problem)
-: aTol_(1e-5),
+: aTol_(1e-6),
   bTol_(1e-8),
   env_(env),
   lpe_(0),
-  rTol_(1e-4)
+  nlpe_(0),
+  rTol_(1e-7)
 {
   p_ = problem; 
   modProb_ = false;
@@ -70,16 +72,19 @@ QuadHandler::QuadHandler(EnvPtr env, ProblemPtr problem)
   timer_ = env->getTimer();
   defaultLb_ = 1e12;
   defaultUb_ = -1e12;
+  doQT_ = false;
 }
 
-QuadHandler::QuadHandler(EnvPtr env, ProblemPtr problem, EnginePtr lpe)
-: aTol_(1e-5),
+QuadHandler::QuadHandler(EnvPtr env, ProblemPtr problem, ProblemPtr orig_p)
+: aTol_(1e-6),
   bTol_(1e-8),
   env_(env),
-  lpe_(lpe),
-  rTol_(1e-4)
+  lpe_(0),
+  nlpe_(0),
+  rTol_(1e-7)
 {
-  p_ = problem; 
+  orig_ = orig_p;
+  p_ = problem;
   modProb_ = false;
   modRel_  = true;
   logger_  = env->getLogger();
@@ -87,6 +92,7 @@ QuadHandler::QuadHandler(EnvPtr env, ProblemPtr problem, EnginePtr lpe)
   timer_ = env->getTimer();
   defaultLb_ = 1e12;
   defaultUb_ = -1e12;
+  doQT_ = false;
 }
 
 QuadHandler::~QuadHandler()
@@ -100,7 +106,13 @@ QuadHandler::~QuadHandler()
     delete *it;
   }
   x0x1Funs_.clear();
-  bStats_.qvars.clear();
+  //bStats_.qvars.clear();
+  if (nlpe_) {
+    delete nlpe_;
+  }
+  if (lpe_) {
+    delete lpe_;
+  }
 }
 
 
@@ -176,17 +188,19 @@ double QuadHandler::addDefaultBounds_(VariablePtr v, BoundType lu) {
       }
       if (defaultLb_ < -aTol_ && defaultLb_ > -1e12) {
         defaultLb_ = 100*defaultLb_;
-      } else if (defaultLb_ > aTol_) {
+      } else if (defaultLb_ > aTol_ && defaultLb_ < 1e12) {
         defaultLb_ = -100*defaultLb_;
       } else {
         defaultLb_ = -1000;
       }
       v->setLb_(defaultLb_);
     }
-    logger_->msgStream(LogDebug) << me_
+#if SPEW
+    logger_->msgStream(LogDebug2) << me_
                                  << "WARNING: Adding Default lower bound for "
                                  << v->getName() << "Lower bound value = "
                                  << defaultLb_ << std::endl;
+#endif
     ++bStats_.dlb;
     return defaultLb_;
   } else {
@@ -198,7 +212,7 @@ double QuadHandler::addDefaultBounds_(VariablePtr v, BoundType lu) {
           defaultUb_ = (*it)->getUb();
         }
       }
-      if (defaultUb_ < -aTol_) {
+      if (defaultUb_ < -aTol_ && defaultUb_ > -1e12) {
         defaultUb_ = -100*defaultUb_;
       } else if (defaultUb_ > aTol_ && defaultUb_ < 1e12) {
         defaultUb_ = 100*defaultUb_;
@@ -207,10 +221,12 @@ double QuadHandler::addDefaultBounds_(VariablePtr v, BoundType lu) {
       }
       v->setUb_(defaultUb_);
     }
-    logger_->msgStream(LogDebug) << me_
+#if SPEW
+    logger_->msgStream(LogDebug2) << me_
                                  << "WARNING: Adding Default upper bound for "
                                  << v->getName() << "Upper bound value = "
                                  << defaultUb_ << std::endl;
+#endif
     ++bStats_.dub;
     return defaultUb_;
   }
@@ -267,6 +283,115 @@ void QuadHandler::findLinPt_(double xval, double yval, double &xl,
   yl = la*la;
 }
 
+void QuadHandler::updateBoundsinOrig_(RelaxationPtr rel, const double *x,
+                                DoubleVector &varlb, DoubleVector &varub) {
+  VariablePtr v, relv;
+  double xval;
+
+  for (VariableConstIterator vit = orig_->varsBegin(); vit != orig_->varsEnd();
+       ++vit) {
+    v = *vit;
+    varlb.push_back(v->getLb());
+    varub.push_back(v->getUb());
+    if (v->getType() == Binary || v->getType() == Integer) {
+      xval = x[v->getIndex()];
+      xval = floor(xval + 0.5);
+      orig_->changeBound(v, xval, xval);
+    } else {
+      relv = rel->getVariable(v->getIndex());
+      orig_->changeBound(v, relv->getLb(), relv->getUb());
+    }
+  }
+}
+
+void QuadHandler::resetBoundsinOrig_(DoubleVector &varlb, DoubleVector &varub) {
+  VariablePtr v;
+  DoubleVector::iterator lbit = varlb.begin(), ubit = varub.begin();
+
+  for (VariableConstIterator vit = orig_->varsBegin(); vit != orig_->varsEnd();
+       ++vit) {
+    v = *vit;
+    orig_->changeBound(v, *lbit, *ubit);
+    ++lbit;
+    ++ubit;
+  }
+}
+
+void QuadHandler::updateUb_(SolutionPoolPtr s_pool, double nlpval,
+                            bool &sol_found) {
+  double bestval = s_pool->getBestSolutionValue();
+  double* new_x = new double[p_->getNumVars()];
+
+  if ((bestval - aTol_ > nlpval) ||
+      (bestval != 0 && (bestval - fabs(bestval)*rTol_ > nlpval))) {
+    const double *x = nlpe_->getSolution()->getPrimal();
+    memcpy(new_x, x, orig_->getNumVars()*sizeof(double));
+    s_pool->addSolution(new_x, nlpval);
+    sol_found = true;
+  }
+  delete [] new_x;
+}
+
+int QuadHandler::fixNodeErr(RelaxationPtr rel, ConstSolutionPtr sol,
+                            SolutionPoolPtr s_pool, bool &sol_found) {
+  DoubleVector varlb, varub;
+  EngineStatus status;
+  int error;
+
+  varlb.clear();
+  varub.clear();
+  // update the bounds of vars in orig_
+  updateBoundsinOrig_(rel, sol->getPrimal(), varlb, varub);
+  // Solve the NLP with x as the starting point and get solution
+  orig_->setInitialPoint(sol->getPrimal());
+  status = nlpe_->solve();
+  ++nlpStats_.nlp;
+  nlpStats_.flag = true;
+  // Check if there is a solution or if it reports infeasibility
+  switch(status) {
+  case (ProvenOptimal):
+  case (ProvenLocalOptimal):
+    {
+      double nlpval = nlpe_->getSolutionValue();
+      updateUb_(s_pool, nlpval, sol_found);
+      error = 0;
+      ++nlpStats_.opt;
+      break;
+    }
+  case (ProvenInfeasible):
+  case (ProvenLocalInfeasible):
+  case (ProvenObjectiveCutOff):
+    {
+      sol_found = false;
+      error = 1;
+      ++nlpStats_.inf;
+      break;
+    }
+  case (EngineIterationLimit):
+    {
+      sol_found = false;
+      error = 1;
+      ++nlpStats_.iter_limit;
+      logger_->msgStream(LogDebug2) << me_ << "NLP iteration limit reached"
+        << " this node will be considered infeasible" << std::endl;
+      break;
+    }
+  case (FailedFeas):
+  case (EngineError):
+  case (FailedInfeas):
+  case (ProvenUnbounded):
+  case (ProvenFailedCQFeas):
+  case (EngineUnknownStatus):
+  case (ProvenFailedCQInfeas):
+  default:
+    logger_->msgStream(LogError) << me_ << "NLP engine status = "
+      << nlpe_->getStatusString() << std::endl;
+    error = -1;
+    break;
+  }
+  resetBoundsinOrig_(varlb, varub);
+  return error;
+}
 
 Branches QuadHandler::getBranches(BrCandPtr cand, DoubleVector &x,
                                   RelaxationPtr rel, SolutionPoolPtr)
@@ -355,6 +480,7 @@ void QuadHandler::getBranchingCandidates(RelaxationPtr rel,
                                             udist);
       ret = cands.insert(br_can);
       if (false == ret.second) { // already exists.
+        delete br_can;
         br_can = *(ret.first);
         br_can->setDist(ddist+br_can->getDDist(), udist+br_can->getDDist());
       }
@@ -390,6 +516,7 @@ void QuadHandler::getBranchingCandidates(RelaxationPtr rel,
                                               udist); 
         ret = cands.insert(br_can);
         if (false == ret.second) { // already exists.
+          delete br_can;
           br_can = *(ret.first);
           br_can->setDist(ddist+br_can->getDDist(), udist+br_can->getUDist());
         }
@@ -412,6 +539,7 @@ void QuadHandler::getBranchingCandidates(RelaxationPtr rel,
                                               udist); 
         ret = cands.insert(br_can);
         if (false == ret.second) { // already exists.
+          delete br_can;
           br_can = *(ret.first);
           br_can->setDist(ddist+br_can->getDDist(), udist+br_can->getUDist());
         }
@@ -732,26 +860,26 @@ void QuadHandler::coeffImprov_() {
   }
 }
 
-void QuadHandler::calcRangeOfQuadVars_() {
-  double tot_range = 0, tot_sqr_range = 0, range;
-  for (VariableSet::iterator vit = bStats_.qvars.begin();
-         vit != bStats_.qvars.end(); ++vit) {
-    range = (*vit)->getUb() - (*vit)->getLb();
-    tot_range += range;
-    tot_sqr_range += range*range;
-  }
-
-  bStats_.avg_range = tot_range/bStats_.qvars.size();
-  bStats_.body_diag = sqrt(tot_sqr_range);
-
-  tot_sqr_range = 0;
-  for (VariableSet::iterator vit = bStats_.qvars.begin();
-         vit != bStats_.qvars.end(); ++vit) {
-    range = (*vit)->getUb() - (*vit)->getLb();
-    tot_sqr_range += (range - bStats_.avg_range)*(range - bStats_.avg_range);
-  }
-  bStats_.sd_range = sqrt(tot_sqr_range/bStats_.qvars.size());
-}
+//void QuadHandler::calcRangeOfQuadVars_() {
+//  double tot_range = 0, tot_sqr_range = 0, range;
+//  for (VariableSet::iterator vit = bStats_.qvars.begin();
+//         vit != bStats_.qvars.end(); ++vit) {
+//    range = (*vit)->getUb() - (*vit)->getLb();
+//    tot_range += range;
+//    tot_sqr_range += range*range;
+//  }
+//
+//  bStats_.avg_range = tot_range/bStats_.qvars.size();
+//  bStats_.body_diag = sqrt(tot_sqr_range);
+//
+//  tot_sqr_range = 0;
+//  for (VariableSet::iterator vit = bStats_.qvars.begin();
+//         vit != bStats_.qvars.end(); ++vit) {
+//    range = (*vit)->getUb() - (*vit)->getLb();
+//    tot_sqr_range += (range - bStats_.avg_range)*(range - bStats_.avg_range);
+//  }
+//  bStats_.sd_range = sqrt(tot_sqr_range/bStats_.qvars.size());
+//}
 
 bool QuadHandler::isAtBnds_(ConstVariablePtr x, double xval)
 {
@@ -760,52 +888,130 @@ bool QuadHandler::isAtBnds_(ConstVariablePtr x, double xval)
   return(fabs(xval-lb) < bTol_ || fabs(xval-ub) < bTol_);
 }
 
-
 bool QuadHandler::isFeasible(ConstSolutionPtr sol, RelaxationPtr , bool &,
-                             double &inf_meas)
-{
-  double yval, xval, vio;
+                             double &inf_meas) {
+  ConstraintPtr c;
+  double act, clb, cub;
   const double *x = sol->getPrimal();
+  int error = 0;
   bool is_feas = true;
+  ObjectivePtr obj;
+  double vio;
 
-  for (LinSqrMapIter it=x2Funs_.begin(); it != x2Funs_.end(); ++it) {
-    // check if y <= x^2
-    xval  = x[it->first->getIndex()];
-    yval = x[it->second->y->getIndex()];
-    vio = fabs(yval - xval*xval);
-    if (vio > fabs(yval)*rTol_ && vio > aTol_) {
-      is_feas = false;
-      inf_meas += vio;
+  for (ConstraintConstIterator cit = orig_->consBegin();
+       cit != orig_->consEnd(); ++cit) {
+    c = *cit;
+    if (c->getFunctionType() == Quadratic ||
+        c->getFunctionType() == Bilinear) {
+      act = c->getActivity(x, &error);
+      if (error == 0) {
+        cub = c->getUb();
+        clb = c->getLb();
+        if ((act > cub + aTol_) &&
+            (cub == 0 || act > cub + fabs(cub)*rTol_)) {
+          is_feas = false;
+          inf_meas += act - cub;
+        }
+        if ((act < clb - aTol_) &&
+            (clb == 0 || act < clb - fabs(clb)*rTol_)) {
+          is_feas = false;
+          inf_meas += clb - act;
+        }
+      } else {
+        logger_->msgStream(LogError) << me_ << c->getName() <<
+        " Constraint not defined at this point." << std::endl;
+        is_feas = false;
+      }
     }
   }
-#if SPEW
-  logger_->msgStream(LogDebug2) << me_ << "no branching candidates for y=x^2" 
-                                << std::endl;
-#endif
 
-  for (LinBilSetIter it=x0x1Funs_.begin(); it != x0x1Funs_.end(); ++it) {
-    if ((*it)->isViolated(x, vio)) {
-      is_feas = false;
-      inf_meas += vio;
+  obj = orig_->getObjective();
+  if (obj->getFunctionType() == Quadratic ||
+      obj->getFunctionType() == Bilinear) {
+    act = obj->eval(x, &error);
+    if (error == 0) {
+      vio = fabs(sol->getObjValue() - act);
+      if (vio > fabs(act)*rTol_ && vio > aTol_) {
+        is_feas = false;
+        inf_meas += vio;
+      }
     }
   }
-
-#if SPEW
-  logger_->msgStream(LogDebug2) << me_ << "no branching candidates for y=x1x2" 
-                                << std::endl;
-#endif
   return is_feas;
 }
 
+bool QuadHandler::isFeasibleToRelaxation_(RelaxationPtr rel, const double *x) {
+  ConstraintPtr c;
+  double act, clb, cub;
+  int error = 0;
 
-SolveStatus QuadHandler::presolve(PreModQ *, bool *changed)
+  for (ConstraintConstIterator cit = rel->consBegin();
+       cit != rel->consEnd(); ++cit) {
+    c = *cit;
+    act = c->getActivity(x, &error);
+    if (error == 0) {
+      cub = c->getUb();
+      clb = c->getLb();
+      if ((act > cub + aTol_) &&
+          (cub == 0 || act > cub + fabs(cub)*rTol_)) {
+        return false;
+      }
+      if ((act < clb - aTol_) &&
+          (clb == 0 || act < clb - fabs(clb)*rTol_)) {
+        return false;
+      }
+    } else {
+      logger_->msgStream(LogError) << me_ << c->getName() <<
+      " Constraint not defined at this point." << std::endl;
+    }
+  }
+  return true;
+}
+
+//bool QuadHandler::isFeasible(ConstSolutionPtr sol, RelaxationPtr , bool &,
+//                             double &inf_meas)
+//{
+//  double yval, xval, vio;
+//  const double *x = sol->getPrimal();
+//  bool is_feas = true;
+//
+//  for (LinSqrMapIter it=x2Funs_.begin(); it != x2Funs_.end(); ++it) {
+//    // check if y <= x^2
+//    xval  = x[it->first->getIndex()];
+//    yval = x[it->second->y->getIndex()];
+//    vio = fabs(yval - xval*xval);
+//    if (vio > fabs(yval)*rTol_ && vio > aTol_) {
+//      is_feas = false;
+//      inf_meas += vio;
+//    }
+//  }
+//#if SPEW
+//  logger_->msgStream(LogDebug2) << me_ << "no branching candidates for y=x^2" 
+//                                << std::endl;
+//#endif
+//
+//  for (LinBilSetIter it=x0x1Funs_.begin(); it != x0x1Funs_.end(); ++it) {
+//    if ((*it)->isViolated(x, vio)) {
+//      is_feas = false;
+//      inf_meas += vio;
+//    }
+//  }
+//
+//#if SPEW
+//  logger_->msgStream(LogDebug2) << me_ << "no branching candidates for y=x1x2" 
+//                                << std::endl;
+//#endif
+//  return is_feas;
+//}
+//
+
+SolveStatus QuadHandler::presolve(PreModQ *, bool *changed, Solution **)
 {
 
   bool is_inf = false;
   SolveStatus status = Started;
-  QuadraticFunctionPtr qf;
-  ObjectivePtr obj;
-  double stime = timer_->query();
+  //QuadraticFunctionPtr qf;
+  //ObjectivePtr obj;
 
   *changed = false;
 
@@ -817,80 +1023,76 @@ SolveStatus QuadHandler::presolve(PreModQ *, bool *changed)
     }
 
   } else {
-    //if (bStats_.niters >= 1) {
-    //  return Finished;
-    //}
-    ++bStats_.niters;
+    //++bStats_.niters;
     coeffImprov_();
-    for (ConstraintConstIterator cit = p_->consBegin(); cit != p_->consEnd();
-                                 ++cit) {
-      if ((*cit)->getFunctionType() == Quadratic ||
-          (*cit)->getFunctionType() == Bilinear) {
-        qf = (*cit)->getFunction()->getQuadraticFunction();
-        if (qf) {
-          for (VarIntMapConstIterator qit = qf->varsBegin();
-               qit != qf->varsEnd(); ++qit) {
-            bStats_.qvars.insert(qit->first);
-          }
-        }
-      }
-    }
-    obj = p_->getObjective();
-    if (obj->getFunctionType() == Quadratic ||
-        obj->getFunctionType() == Bilinear) {
-      qf = obj->getFunction()->getQuadraticFunction();
-      if (qf) {
-        for (VarIntMapConstIterator qit = qf->varsBegin();
-             qit != qf->varsEnd(); ++qit) {
-          bStats_.qvars.insert(qit->first);
-        }
-      }
-    }
-    for (VariableSet::iterator vit = bStats_.qvars.begin();
-         vit != bStats_.qvars.end(); ++vit) {
-      if ((*vit)->getLb() > -INFINITY) {
-        ++bStats_.nqlb;
-      }
-      if ((*vit)->getUb() < INFINITY) {
-        ++bStats_.nqub;
-      }
-    } 
+    //for (ConstraintConstIterator cit = p_->consBegin(); cit != p_->consEnd();
+    //                             ++cit) {
+    //  if ((*cit)->getFunctionType() == Quadratic ||
+    //      (*cit)->getFunctionType() == Bilinear) {
+    //    qf = (*cit)->getFunction()->getQuadraticFunction();
+    //    if (qf) {
+    //      for (VarIntMapConstIterator qit = qf->varsBegin();
+    //           qit != qf->varsEnd(); ++qit) {
+    //        bStats_.qvars.insert(qit->first);
+    //      }
+    //    }
+    //  }
+    //}
+    //obj = p_->getObjective();
+    //if (obj->getFunctionType() == Quadratic ||
+    //    obj->getFunctionType() == Bilinear) {
+    //  qf = obj->getFunction()->getQuadraticFunction();
+    //  if (qf) {
+    //    for (VarIntMapConstIterator qit = qf->varsBegin();
+    //         qit != qf->varsEnd(); ++qit) {
+    //      bStats_.qvars.insert(qit->first);
+    //    }
+    //  }
+    //}
+    //for (VariableSet::iterator vit = bStats_.qvars.begin();
+    //     vit != bStats_.qvars.end(); ++vit) {
+    //  if ((*vit)->getLb() > -INFINITY) {
+    //    ++bStats_.nqlb;
+    //  }
+    //  if ((*vit)->getUb() < INFINITY) {
+    //    ++bStats_.nqub;
+    //  }
+    //} 
     is_inf = tightenSimple_(changed);
     if (is_inf) {
       status = SolvedInfeasible;
       return status;
     }
-    for (VariableSet::iterator vit = bStats_.qvars.begin();
-         vit != bStats_.qvars.end(); ++vit) {
-      if ((*vit)->getLb() > -INFINITY) {
-        ++bStats_.nqlbs;
-      }
-      if ((*vit)->getUb() < INFINITY) {
-        ++bStats_.nqubs;
-      }
-    }
-    bStats_.nqlbs -= bStats_.nqlb;
-    bStats_.nqubs -= bStats_.nqub;
-    p_->delMarkedCons();
+    //for (VariableSet::iterator vit = bStats_.qvars.begin();
+    //     vit != bStats_.qvars.end(); ++vit) {
+    //  if ((*vit)->getLb() > -INFINITY) {
+    //    ++bStats_.nqlbs;
+    //  }
+    //  if ((*vit)->getUb() < INFINITY) {
+    //    ++bStats_.nqubs;
+    //  }
+    //}
+    //bStats_.nqlbs -= bStats_.nqlb;
+    //bStats_.nqubs -= bStats_.nqub;
+    //p_->delMarkedCons();
 
     is_inf = tightenQuad_(changed);
     if (is_inf) {
       status = SolvedInfeasible;
       return status;
     }
-    for (VariableSet::iterator vit = bStats_.qvars.begin();
-         vit != bStats_.qvars.end(); ++vit) {
-      if ((*vit)->getLb() > -INFINITY) {
-        ++bStats_.nqlbq;
-      }
-      if ((*vit)->getUb() < INFINITY) {
-        ++bStats_.nqubq;
-      }
-    }
-    bStats_.nqlbq -= bStats_.nqlb + bStats_.nqlbs;
-    bStats_.nqubq -= bStats_.nqub + bStats_.nqubs;
+    //for (VariableSet::iterator vit = bStats_.qvars.begin();
+    //     vit != bStats_.qvars.end(); ++vit) {
+    //  if ((*vit)->getLb() > -INFINITY) {
+    //    ++bStats_.nqlbq;
+    //  }
+    //  if ((*vit)->getUb() < INFINITY) {
+    //    ++bStats_.nqubq;
+    //  }
+    //}
+    //bStats_.nqlbq -= bStats_.nqlb + bStats_.nqlbs;
+    //bStats_.nqubq -= bStats_.nqub + bStats_.nqubs;
     p_->delMarkedCons();
-    bStats_.time = timer_->query()-stime;
   }
 
   if (Started==status) {
@@ -900,83 +1102,18 @@ SolveStatus QuadHandler::presolve(PreModQ *, bool *changed)
 }
 
 
-bool QuadHandler::presolveNode(RelaxationPtr rel, NodePtr, SolutionPoolPtr,
+bool QuadHandler::presolveNode(RelaxationPtr rel, NodePtr,
+                               SolutionPoolPtr s_pool,
                                ModVector &p_mods, ModVector &r_mods)
 {
   bool lchanged = true;
   bool changed = true;
   bool is_inf = false;
   double stime = timer_->query();
-  QuadraticFunctionPtr qf;
-  ObjectivePtr obj;
-  bool lpchanged = false;
+  double ub = s_pool->getBestSolutionValue();
 
   // visit each quadratic constraint and see if bounds can be improved.
-  if (bStats_.niters < 1) {
-    ++bStats_.niters;
-    for (ConstraintConstIterator cit = p_->consBegin(); cit != p_->consEnd();
-                                 ++cit) {
-      if ((*cit)->getFunctionType() == Quadratic ||
-          (*cit)->getFunctionType() == Bilinear) {
-        qf = (*cit)->getFunction()->getQuadraticFunction();
-        if (qf) {
-          for (VarIntMapConstIterator qit = qf->varsBegin();
-               qit != qf->varsEnd(); ++qit) {
-            bStats_.qvars.insert(qit->first);
-          }
-        }
-      }
-    }
-    obj = p_->getObjective();
-    if (obj->getFunctionType() == Quadratic ||
-        obj->getFunctionType() == Bilinear) {
-      qf = obj->getFunction()->getQuadraticFunction();
-      if (qf) {
-        for (VarIntMapConstIterator qit = qf->varsBegin();
-             qit != qf->varsEnd(); ++qit) {
-          bStats_.qvars.insert(qit->first);
-        }
-      }
-    }
-    for (VariableSet::iterator vit = bStats_.qvars.begin();
-         vit != bStats_.qvars.end(); ++vit) {
-      if ((*vit)->getLb() > -INFINITY) {
-        ++bStats_.nqlb;
-      }
-      if ((*vit)->getUb() < INFINITY) {
-        ++bStats_.nqub;
-      }
-    } 
-    calcRangeOfQuadVars_();
-    writeBTStats_(logger_->msgStream(LogDebug), true);
-    is_inf = tightenLP_(rel, &lpchanged, p_mods, r_mods);
-    if (is_inf) {
-      bStats_.avg_range = -INFINITY;
-      bStats_.sd_range = -INFINITY;
-      bStats_.body_diag = -INFINITY;
-      return true;
-    }
-
-    if (true==lpchanged) {
-      changed = true;
-    }
-
-    for (VariableSet::iterator vit = bStats_.qvars.begin();
-         vit != bStats_.qvars.end(); ++vit) {
-      if ((*vit)->getLb() > -INFINITY) {
-        ++bStats_.nqlbl;
-      }
-      if ((*vit)->getUb() < INFINITY) {
-        ++bStats_.nqubl;
-      }
-    }
-    bStats_.nqlbl -= bStats_.nqlb;
-    bStats_.nqubl -= bStats_.nqub;
-    bStats_.timeLP = timer_->query()-stime;
-    stime = timer_->query();
-    calcRangeOfQuadVars_();
-    writeBTStats_(logger_->msgStream(LogDebug), false);
-  }
+  ++bStats_.niters;
   while (true==changed) {
     ++pStats_.iters;
     changed = false;
@@ -1002,6 +1139,18 @@ bool QuadHandler::presolveNode(RelaxationPtr rel, NodePtr, SolutionPoolPtr,
     }
   }
 
+  if (doQT_ || bStats_.niters <= 1) {
+    lchanged = false;
+    is_inf = tightenQuad_(rel, ub, &lchanged, p_mods, r_mods);
+    if (true == lchanged) {
+      changed = true;
+      lchanged = false;
+    }
+    if (is_inf) {
+      return true;
+    }
+  }
+
   for (LinSqrMapIter it=x2Funs_.begin(); it != x2Funs_.end(); ++it) {
     upSqCon_(it->second->oeCon, rel->getRelaxationVar(it->first),
              rel->getRelaxationVar(it->second->y), rel, r_mods);
@@ -1020,7 +1169,6 @@ bool QuadHandler::presolveNode(RelaxationPtr rel, NodePtr, SolutionPoolPtr,
   pStats_.timeN += timer_->query()-stime;
   return false;
 }
-
 
 bool QuadHandler::propBilBnds_(LinBil* lx0x1, RelaxationPtr rel,
                                bool mod_rel, bool *changed, ModVector &p_mods,
@@ -1080,7 +1228,6 @@ bool QuadHandler::propBilBnds_(LinBil* lx0x1, bool *changed)
   return false;
 }
 
-
 bool QuadHandler::propSqrBnds_(LinSqrMapIter lx2, bool *changed)
 {
   VariablePtr x   = lx2->first;      // x0 and y are variables in p_
@@ -1112,7 +1259,6 @@ bool QuadHandler::propSqrBnds_(LinSqrMapIter lx2, bool *changed)
   }
   return false;
 }
-
 
 bool QuadHandler::propSqrBnds_(LinSqrMapIter lx2, RelaxationPtr rel,
                                bool mod_rel, bool *changed, ModVector &p_mods,
@@ -1150,6 +1296,150 @@ bool QuadHandler::propSqrBnds_(LinSqrMapIter lx2, RelaxationPtr rel,
   return false;
 }
 
+bool QuadHandler::postSolveRootNode(RelaxationPtr rel, SolutionPoolPtr s_pool,
+                                    ConstSolutionPtr sol, ModVector &p_mods,
+                                    ModVector &r_mods) {
+  double vio1, vio2, range, yval, xval, ub;
+  VariablePtr y, x0, x1;
+  double stime = timer_->query();
+  bool is_inf, lchanged = false;
+  const double *x = sol->getPrimal();
+
+  for (VariableConstIterator vit = p_->varsBegin(); vit != p_->varsEnd();
+       ++vit) {
+    (*vit)->setItmp(0);
+  }
+  for (LinSqrMapIter it=x2Funs_.begin(); it != x2Funs_.end(); ++it) {
+    y = it->second->y;
+    x0 = it->first;
+    yval = x[y->getIndex()];
+    xval = x[x0->getIndex()];
+    vio1 = fabs(xval*xval - yval);
+    if (vio1 > 1e-3 && vio1 > 0.1*fabs(yval)) {
+      range = x0->getUb() - x0->getLb();
+      if (range >= 2) {
+        x0->setItmp(3);
+      }
+      range = y->getUb() - y->getLb();
+      if (range >= 2) {
+        vio1 = yval - y->getLb();
+        if (vio1 > 1e-3 && vio1 > 0.1*y->getLb()) {
+          y->setItmp(3);
+        } else {
+          y->setItmp(2);
+        }
+      }
+    }
+  }
+  for (LinBilSetIter it=x0x1Funs_.begin(); it != x0x1Funs_.end(); ++it) {
+    y = (*it)->getY();
+    x0 = (*it)->getX0();
+    x1 = (*it)->getX1();
+    yval = x[y->getIndex()];
+    vio1 = fabs(x[x0->getIndex()]*x[x1->getIndex()] - x[y->getIndex()]);
+    if (vio1 > 1e-3 && vio1 > 0.1*fabs(yval)) {
+      range = x0->getUb() - x0->getLb();
+      if (range >= 2 && x0->getItmp() != 3) {
+        vio1 = x[x0->getIndex()] - x0->getLb();
+        vio2 = x0->getUb() - x[x0->getIndex()];
+        if (vio1 > 1e-3 && vio1 > 0.1*fabs(x0->getLb())) {
+          if (vio2 > 1e-3 && vio2 > 0.1*fabs(x0->getUb())) {
+            x0->setItmp(3);
+          } else {
+            if (x0->getItmp() == 2) {
+              x0->setItmp(3);
+            } else {
+              x0->setItmp(1);
+            }
+          }
+        } else {
+          if (vio2 > 1e-3 && vio2 > fabs(x0->getUb())) {
+            if (x0->getItmp() == 1) {
+              x0->setItmp(3);
+            } else {
+              x0->setItmp(2);
+            }
+          }
+        }
+      }
+      range = x1->getUb() - x1->getLb();
+      if (range >= 2 && x1->getItmp() != 3) {
+        vio1 = x[x1->getIndex()] - x1->getLb();
+        vio2 = x1->getUb() - x[x1->getIndex()];
+        if (vio1 > 1e-3 && vio1 > 0.1*fabs(x1->getLb())) {
+          if (vio2 > 1e-3 && vio2 > 0.1*fabs(x1->getUb())) {
+            x1->setItmp(3);
+          } else {
+            if (x1->getItmp() == 2) {
+              x1->setItmp(3);
+            } else {
+              x1->setItmp(1);
+            }
+          }
+        } else {
+          if (vio2 > 1e-3 && vio2 > fabs(x1->getUb())) {
+            if (x1->getItmp() == 1) {
+              x1->setItmp(3);
+            } else {
+              x1->setItmp(2);
+            }
+          }
+        }
+      }
+      range = y->getUb() - y->getLb();
+      if (range >= 2 && y->getItmp() != 3) {
+        vio1 = x[y->getIndex()] - y->getLb();
+        vio2 = y->getUb() - x[y->getIndex()];
+        if (vio1 > 1e-3 && vio1 > 0.1*fabs(y->getLb())) {
+          if (vio2 > 1e-3 && vio2 > 0.1*fabs(y->getUb())) {
+            y->setItmp(3);
+          } else {
+            if (y->getItmp() == 2) {
+              y->setItmp(3);
+            } else {
+              y->setItmp(1);
+            }
+          }
+        } else {
+          if (vio2 > 1e-3 && vio2 > fabs(y->getUb())) {
+            if (y->getItmp() == 1) {
+              y->setItmp(3);
+            } else {
+              y->setItmp(2);
+            }
+          }
+        }
+      }
+    }
+  }
+  ub = s_pool->getBestSolutionValue();
+  is_inf = tightenLP_(rel, ub, &lchanged, p_mods, r_mods);
+  assert(!is_inf);
+  bStats_.timeLP = timer_->query()-stime;
+  
+  if (true == lchanged) {
+    for (LinSqrMapIter it=x2Funs_.begin(); it != x2Funs_.end(); ++it) {
+      upSqCon_(it->second->oeCon, rel->getRelaxationVar(it->first),
+               rel->getRelaxationVar(it->second->y), rel, r_mods);
+    }
+    for (LinBilSetIter it=x0x1Funs_.begin(); it != x0x1Funs_.end(); ++it) {
+      upBilCon_(*it, rel, r_mods);
+    }
+
+    if (modRel_) {
+      pStats_.nMods += r_mods.size();
+    } else {
+      pStats_.nMods += p_mods.size();
+    }
+    if (isFeasibleToRelaxation_(rel, x)) {
+      return true;
+    } else {
+      return false;
+    }
+  }
+  return true;
+}
+
 void QuadHandler::relax_(RelaxationPtr rel, bool *)
 {
   double rhs;
@@ -1183,7 +1473,16 @@ void QuadHandler::relax_(RelaxationPtr rel, bool *)
 
   assert(0 == rel->checkConVars());
 
-  //writeBTStats_(std::cout, true);
+  if (bStats_.dlb > 0) {
+    logger_->msgStream(LogError) << me_
+                          << "WARNING: Default lower bound was assumed for "
+                          << bStats_.dlb << " variables" << std::endl;
+  }
+  if (bStats_.dub > 0) {
+    logger_->msgStream(LogError) << me_
+                          << "WARNING: Default upper bound was assumed for "
+                          << bStats_.dub << " variables" << std::endl;
+  }
   return;
 }
 
@@ -1225,35 +1524,42 @@ void QuadHandler::resetStats_()
   sStats_.cuts   = 0;
   sStats_.time   = 0.0;
 
+  nlpStats_.flag = false;
+  nlpStats_.nlp = 0;
+  nlpStats_.opt = 0;
+  nlpStats_.inf = 0;
+  nlpStats_.iter_limit = 0;
+
   bStats_.niters = 0;
-  bStats_.qvars.clear();
-  bStats_.nqlb = 0;
-  bStats_.nqub = 0;
-  bStats_.nqlbs = 0;
-  bStats_.nqubs = 0;
-  bStats_.vBnds = 0;
-  bStats_.cBnds = 0;
-  bStats_.nqlbq = 0;
-  bStats_.nqubq = 0;
-  bStats_.vBndq = 0;
-  bStats_.cBndq = 0;
-  bStats_.nqlbl = 0;
-  bStats_.nqubl = 0;
-  bStats_.vBndl = 0;
+  //bStats_.qvars.clear();
+  //bStats_.nqlb = 0;
+  //bStats_.nqub = 0;
+  //bStats_.nqlbs = 0;
+  //bStats_.nqubs = 0;
+  //bStats_.vBnds = 0;
+  //bStats_.cBnds = 0;
+  //bStats_.nqlbq = 0;
+  //bStats_.nqubq = 0;
+  //bStats_.vBndq = 0;
+  //bStats_.cBndq = 0;
+  //bStats_.nqlbl = 0;
+  //bStats_.nqubl = 0;
+  //bStats_.vBndl = 0;
   bStats_.nLP = 0;
   bStats_.dlb = 0;
   bStats_.dub = 0;
-  bStats_.time = 0;
+  //bStats_.time = 0;
   bStats_.timeLP = 0;
-  bStats_.avg_range = 0;
-  bStats_.sd_range = 0;
-  bStats_.body_diag = 0;
+  //bStats_.avg_range = 0;
+  //bStats_.sd_range = 0;
+  //bStats_.body_diag = 0;
 }
 
 
 void QuadHandler::separate(ConstSolutionPtr sol, NodePtr , RelaxationPtr rel,
-                           CutManager *, SolutionPoolPtr , ModVector &,
-                           ModVector &,  bool *, SeparationStatus *status)
+                           CutManager *, SolutionPoolPtr ,
+                           ModVector &, ModVector &,  bool *,
+                           SeparationStatus *status)
 {
   double yval, xval;
   double yl, xl;
@@ -1357,6 +1663,19 @@ bool QuadHandler::calcVarBnd_(VariablePtr v, double coef, double lb,
   return false;
 }
 
+bool QuadHandler::calcVarBnd_(RelaxationPtr rel, VariablePtr v, double coef,
+                              double lb, double ub, bool *c1,
+                              ModVector &p_mods, ModVector &r_mods) {
+  double vlb, vub;
+  vlb = coef > 0 ? lb/coef : ub/coef;
+  vub = coef > 0 ? ub/coef : lb/coef;
+
+  if (updatePBounds_(v, vlb, vub, rel, modRel_, c1, p_mods, r_mods) < 0) {
+    return true;
+  }
+  return false;
+}
+
 bool QuadHandler::calcVarBnd_(VariablePtr v1, VariablePtr v2, double coef,
                               double lb, double ub, bool *c1, bool *c2) {
   double qlb, qub, vlb, vub;
@@ -1391,6 +1710,47 @@ bool QuadHandler::calcVarBnd_(VariablePtr v1, VariablePtr v2, double coef,
 
     BoundsOnDiv(qlb, qub, v2->getLb(), v2->getUb(), vlb, vub);
     if (updatePBounds_(v1, vlb, vub, c1) < 0) {
+      return true;
+    }
+    return false;
+  }
+}
+
+bool QuadHandler::calcVarBnd_(RelaxationPtr rel, VariablePtr v1, VariablePtr v2,
+                              double coef, double lb, double ub, bool *c1,
+                              bool *c2, ModVector &p_mods, ModVector &r_mods) {
+  double qlb, qub, vlb, vub;
+  qlb = coef > 0 ? lb/coef : ub/coef;
+  qub = coef > 0 ? ub/coef : lb/coef;
+  // if term is quadratic
+  if (v1->getIndex() == v2->getIndex()) {
+    if (qub>bTol_) {
+      vub = sqrt(qub);
+      vlb = -ub;
+      qlb = qlb >= 0 ? qlb : 0;// square of a number.
+      if (v1->getLb() > -sqrt(qlb)+bTol_) {
+        vlb = sqrt(qlb);
+      }
+      if (updatePBounds_(v1, vlb, vub, rel, modRel_, c1, p_mods, r_mods) < 0) {
+        return true;
+      } 
+    } else if (qub<-bTol_) {
+      return true;
+    } else {
+      if (updatePBounds_(v1, 0.0, 0.0, rel, modRel_, c1, p_mods, r_mods) < 0) {
+        return true;
+      }
+    }
+    return false;
+  // if term is bilinear
+  } else {
+    BoundsOnDiv(qlb, qub, v1->getLb(), v1->getUb(), vlb, vub);
+    if (updatePBounds_(v2, vlb, vub, rel, modRel_, c2, p_mods, r_mods) < 0) {
+      return true;
+    } 
+
+    BoundsOnDiv(qlb, qub, v2->getLb(), v2->getUb(), vlb, vub);
+    if (updatePBounds_(v1, vlb, vub, rel, modRel_, c1, p_mods, r_mods) < 0) {
       return true;
     }
     return false;
@@ -1490,6 +1850,100 @@ bool QuadHandler::calcVarBnd_(VariablePtr v, double a, double b, double ly,
  return false; 
 }
 
+bool QuadHandler::calcVarBnd_(RelaxationPtr rel, VariablePtr v, double a,
+                              double b, double ly, double uy, bool *c1,
+                              ModVector &p_mods, ModVector &r_mods) {
+  double lx = v->getLb();
+  double ux = v->getUb();
+  double lb = -INFINITY, ub = INFINITY, delta, lb2, ub2;
+
+  if (fabs(a) <= aTol_) {
+    assert(fabs(b) > aTol_);
+    lb = ly/b;
+    ub = uy/b;
+  } else if (a > aTol_) { /// the term is convex
+    if (uy < INFINITY) { /// finite upper bound
+      delta = b*b + 4.0*a*uy;
+      if (delta < -aTol_) { /// upper bound is less than minima
+        return true;
+      } else if (fabs(delta) <= aTol_) { /// upper bound is at minima
+        lb = -b/(2.0*a);
+        ub = lb;
+      } else { /// upper bound is greater than minima
+        lb = (-b - sqrt(delta))/(2.0*a);
+        ub = (-b + sqrt(delta))/(2.0*a);
+        delta = b*b + 4.0*a*ly;
+        if (delta > aTol_) { /// lower bound is greater than minima
+          /// The bound on the variable now are
+          /// \mathbb{R} \setminus (lb2, ub2) intersection [lb, ub]
+          lb2 = (-b - sqrt(delta))/(2.0*a);
+          ub2 = (-b + sqrt(delta))/(2.0*a);
+          if (lx > lb2 + bTol_) {
+            lb = ub2;
+          }
+          if (ux < ub2 - bTol_) {
+            ub = lb2;
+          }
+        }
+      }
+    } else { /// infinite upper bound
+      delta = b*b + 4.0*a*ly;
+      if (delta > aTol_) {
+        lb2 = (-b - sqrt(delta))/(2.0*a);
+        ub2 = (-b + sqrt(delta))/(2.0*a);
+        if (lx > lb2 + bTol_ && lx < ub2 - bTol_) {
+          lb = ub2;
+        }
+        if (ux > lb2 + bTol_ && ux < ub2 - bTol_) {
+          ub = lb2;
+        }
+      }
+    }
+  } else { /// concave term
+    if (ly > -INFINITY) { /// finite lower bound
+      delta = b*b + 4.0*a*ly;
+      if (delta < -aTol_) { /// lower bound is greater than maxima
+        return true;
+      } else if (fabs(delta) <= aTol_) { /// lower bound is at maxima
+        lb = -b/(2.0*a);
+        ub = lb;
+      } else { /// lower bound is less than maxima
+        lb = (-b + sqrt(delta))/(2.0*a); // since a is -ve this term will be lb
+        ub = (-b - sqrt(delta))/(2.0*a); // since a is -ve this term will be ub
+        delta = b*b + 4.0*a*uy;
+        if (delta > aTol_) { /// upper bound is less than maxima
+          /// The bound on the variable now are
+          /// \mathbb{R} \setminus (lb2, ub2) intersection [lb, ub]
+          lb2 = (-b + sqrt(delta))/(2.0*a);//since a is -ve this term will be lb
+          ub2 = (-b - sqrt(delta))/(2.0*a);//since a is -ve this term will be ub
+          if (lx > lb2 + bTol_) {
+            lb = ub2;
+          }
+          if (ux < ub2 - bTol_) {
+            ub = lb2;
+          }
+        }
+      }
+    } else { /// infinite lower bound
+      delta = b*b + 4.0*a*uy;
+      if (delta > aTol_) {
+        lb2 = (-b - sqrt(delta))/(2.0*a);
+        ub2 = (-b + sqrt(delta))/(2.0*a);
+        if (lx > lb2 + bTol_ && lx < ub2 - bTol_) {
+          lb = ub2;
+        }
+        if (ux > lb2 + bTol_ && ux < ub2 - bTol_) {
+          ub = lb2;
+        }
+      }
+    }
+  }
+  if (updatePBounds_(v, lb, ub, rel, modRel_, c1, p_mods, r_mods) < 0) {
+    return true;
+  }
+ return false; 
+}
+
 double QuadHandler::getBndByLP_(bool &is_inf) {
   double b;
   EngineStatus lpStatus;
@@ -1514,6 +1968,7 @@ double QuadHandler::getBndByLP_(bool &is_inf) {
       logger_->msgStream(LogError) << me_ << "LP engine status at root= "
         << lpStatus << std::endl;
       assert(!"In QuadHandler: stopped at root. Check error log.");
+      b = INFINITY;
       break;
   }
   return b;
@@ -1521,173 +1976,310 @@ double QuadHandler::getBndByLP_(bool &is_inf) {
 
 double QuadHandler::getSumExcept1_(DoubleVector::iterator b,
                                    DoubleVector::iterator e,
-                                   DoubleVector::iterator curr) {
+                                   DoubleVector::iterator curr,
+                                   BoundType bt, double bound,
+                                   UInt inf_count) {
   double sum_of_elems = 0.0;
-  for (DoubleVector::iterator it = b; it != e; ++it) {
-    if (it != curr) {
-      sum_of_elems += *it;
-    }
+  if (inf_count == 0) {
+    return bound - *curr;
   }
-  return sum_of_elems;
+  else if (inf_count == 1) {
+    if (bt == Lower) {
+      if (*curr <= -INFINITY) {
+        for (DoubleVector::iterator it = b; it != e; ++it) {
+          if (it != curr) {
+            sum_of_elems += *it;
+          }
+        }
+        return sum_of_elems;
+      } else {
+        return -INFINITY;
+      }
+    } else {
+      if (*curr >= INFINITY) {
+        for (DoubleVector::iterator it = b; it != e; ++it) {
+          if (it != curr) {
+            sum_of_elems += *it;
+          }
+        }
+        return sum_of_elems;
+      } else {
+        return INFINITY;
+      }
+    }
+  } else {
+    return bt == Lower ? -INFINITY : INFINITY;
+  }
 }
 
-void QuadHandler::setEngine(Engine* engine) {
+void QuadHandler::setLPEngine(Engine* engine) {
   if (lpe_ && lpe_ != engine) {
     lpe_->clear();
   }
   lpe_ = engine;
 }
 
-bool QuadHandler::tightenLP_(RelaxationPtr rel, bool *changed,
+void QuadHandler::setNLPEngine(EnginePtr engine) {
+  if (nlpe_ && nlpe_ != engine) {
+    nlpe_->clear();
+  }
+  nlpe_ = engine;
+  nlpe_->load(orig_);
+}
+
+void QuadHandler::setItmpFromSol_(const double *x) {
+  /**
+   * itmp = 0 means the variable need not be tightened at all
+   * itmp = 1 means only lower bound needs to be tightened
+   * itmp = 2 means only upper bound needs to be tightened
+   * itmp = 3 means both bounds need to be tightened
+   */
+  double xval, gap, allowed_gap = 0.01;
+  VariablePtr v;
+  UInt itmp;
+  double lb, ub;
+
+  for (VariableConstIterator vit = p_->varsBegin(); vit != p_->varsEnd();
+       ++vit) {
+    v = *vit;
+    lb = v->getLb();
+    ub = v->getUb();
+    xval = x[v->getIndex()];
+    itmp = v->getItmp();
+    if (itmp == 0) {
+      continue;
+    } else if (itmp == 1) {
+      gap = (xval - lb)/(ub - lb);
+      if (gap <= allowed_gap) {
+        v->setItmp(0);
+      }
+    } else if (itmp == 2) {
+      gap = (ub - xval)/(ub - lb);
+      if (gap <= allowed_gap) {
+        v->setItmp(0);
+      }
+    } else { // itmp = 3
+      gap = (xval - lb)/(ub - lb);
+      if (gap <= allowed_gap) {
+        v->setItmp(2);
+      }
+      gap = (ub - xval)/(ub - lb);
+      if (gap <= allowed_gap) {
+        v->setItmp(1);
+      }
+    }
+  }
+}
+
+bool QuadHandler::tightenLP_(RelaxationPtr rel, double bestSol, bool *changed,
                              ModVector &p_mods, ModVector &r_mods) {
-  //ConstraintPtr c;
-  //QuadraticFunctionPtr qf;
   ObjectivePtr obj;
-  LinearFunctionPtr /*lf,*/ lflp = 0;
-  FunctionPtr flp = 0;
-  //VarSet lvars, qvars;
-  //VariablePtr v;
-  //std::map<VariablePtr, VariablePtr> pv_lpv;
+  LinearFunctionPtr lflp = 0;
+  FunctionPtr flp = 0, f;
   ProblemPtr lp;
-  double lb, ub, /*clb,*/ cub;
+  VariablePtr v;
+  double lb, ub, cub;
   bool is_inf;
   bool c1;
   int err;
+  UInt itmp;
 
-  //if (p_->getSize()->consWithLin == 0) {
-  //  return false;
-  //}
-
-  //for (ConstraintConstIterator cit = p_->consBegin(); cit != p_->consEnd();
-  //                             ++cit) {
-  //  c = *cit;
-  //  lf = c->getFunction()->getLinearFunction();
-  //  if (lf) {
-  //    for (VariableGroupConstIterator lit = lf->termsBegin();
-  //         lit != lf->termsEnd(); ++lit) {
-  //      lvars.insert(lit->first);
-  //    }
-  //  }
-  //}
-
-  //for (VariableSet::iterator vit = bStats_.qvars.begin();
-  //     vit != bStats_.qvars.end(); ++vit) {
-  //  if (std::find(lvars.begin(), lvars.end(), *vit) != lvars.end()) {
-  //    qvars.insert(*vit);
-  //  }
-  //}
-
-  //if (qvars.size() == 0) {
-  //  lvars.clear();
-  //  return false;
-  //}
-
-  //lp = (ProblemPtr) new Problem(env_);
-  //for (VariableSet::iterator vit = lvars.begin(); vit != lvars.end(); ++vit) {
-  //  v = lp->newVariable((*vit)->getLb(), (*vit)->getUb(), (*vit)->getType());
-  //  pv_lpv.insert(std::make_pair(*vit, v));
-  //} 
-  //lvars.clear();
-
-  //for (ConstraintConstIterator cit = p_->consBegin(); cit != p_->consEnd();
-  //                             ++cit) {
-  //  c = *cit;
-  //  lf = c->getFunction()->getLinearFunction();
-  //  if (lf) {
-  //    lflp = (LinearFunctionPtr) new LinearFunction();
-  //    for (VariableGroupConstIterator lit = lf->termsBegin();
-  //         lit != lf->termsEnd(); ++lit) {
-  //      lflp->addTerm(pv_lpv[lit->first], lit->second);
-  //    }
-
-  //    clb = c->getLb();
-  //    cub = c->getUb();
-  //    qf = c->getFunction()->getQuadraticFunction();
-  //    if (qf) {
-  //      for (VariablePairGroupConstIterator qit = qf->begin();
-  //           qit != qf->end(); ++qit) {
-  //        getTermBnds_(qit->first.first, qit->first.second, qit->second,
-  //                         lb, ub);
-  //        clb = clb > -INFINITY ? clb - ub : -INFINITY;
-  //        cub = cub < INFINITY ? cub - lb : INFINITY;
-  //      }
-  //    }
-
-  //    if (clb > -INFINITY || cub < INFINITY) {//cons is redundant otherwise
-  //      flp = (FunctionPtr) new Function(lflp);
-  //      lp->newConstraint(flp, clb, cub);
-  //    }
-  //  }
-  //}
-
-  //if (lp->getNumCons() == 0) {
-  //    qvars.clear();
-  //    pv_lpv.clear();
-  //    delete lpe_;
-  //    delete lp;
-  //    return false;
-  //}
-  
   lp = rel->clone(env_);
 
   obj = lp->getObjective();
   cub = env_->getOptions()->findDouble("obj_cut_off")->getValue();
+  cub = std::min(cub, bestSol);
   if (cub < INFINITY) {
-    flp = obj->getFunction()->cloneWithVars(lp->varsBegin(), &err); 
-    assert(err==0);
-    lp->newConstraint(flp, -INFINITY, cub);
+    f = obj->getFunction();
+    if (f) {
+      flp = f->cloneWithVars(lp->varsBegin(), &err); 
+      assert(err==0);
+      lp->newConstraint(flp, -INFINITY, cub - obj->getConstant());
+    }
   }
 
-  //flp = (FunctionPtr) new Function();
-  //lp->newObjective(flp, 0.0, Minimize);
-  //lp->setEngine(lpe_);
   lpe_->load(lp);
 
   for (VariableConstIterator vit = lp->varsBegin(); vit != lp->varsEnd();
        ++vit) {
-    lflp = (LinearFunctionPtr) new LinearFunction();
-    lflp->addTerm(*vit, 1.0);
-    flp = (FunctionPtr) new Function(lflp);
-    lp->changeObj(flp, 0.0);
-    lb = getBndByLP_(is_inf);
-    if (is_inf) {
-      //qvars.clear();
-      //pv_lpv.clear();
-      delete lpe_;
-      delete lp;
-      return true;
+    v = *vit;
+    lb = -INFINITY;
+    ub = INFINITY;
+    itmp = p_->getVariable(v->getIndex())->getItmp();
+    if (itmp == 0) {
+      continue;
     }
-    lflp = (LinearFunctionPtr) new LinearFunction();
-    lflp->addTerm(*vit, -1.0);
-    flp = (FunctionPtr) new Function(lflp);
-    lp->changeObj(flp, 0.0);
-    ub = -getBndByLP_(is_inf);
-    if (is_inf) {
-      //qvars.clear();
-      //pv_lpv.clear();
-      delete lpe_;
-      delete lp;
-      return true;
+    if (itmp == 1 || itmp == 3) {
+      lflp = (LinearFunctionPtr) new LinearFunction();
+      lflp->addTerm(v, 1.0);
+      flp = (FunctionPtr) new Function(lflp);
+      lp->changeObj(flp, 0.0);
+      lb = getBndByLP_(is_inf);
+      if (is_inf) {
+        continue;
+      }
+      v->setItmp(itmp - 1);
+      setItmpFromSol_(lpe_->getSolution()->getPrimal());
+    }
+
+    if (itmp == 2) {
+      lflp = (LinearFunctionPtr) new LinearFunction();
+      lflp->addTerm(*vit, -1.0);
+      flp = (FunctionPtr) new Function(lflp);
+      lp->changeObj(flp, 0.0);
+      ub = -getBndByLP_(is_inf);
+      if (is_inf) {
+        continue;
+      }
+      v->setItmp(0);
+      setItmpFromSol_(lpe_->getSolution()->getPrimal());
     }
     c1 = false;
-    if (updatePBounds_(p_->getVariable((*vit)->getIndex()), lb, ub,
+    if (updatePBounds_(p_->getVariable(v->getIndex()), lb, ub,
                        rel, true, &c1, p_mods, r_mods) < 0) {
-      //qvars.clear();
-      //pv_lpv.clear();
-      delete lpe_;
+      //delete lpe_;
       delete lp;
       return true;
     }
     if (c1 == true) {
-      ++bStats_.vBndl;
+      //++bStats_.vBndl;
       *changed = true;
     }
   }
-  //qvars.clear();
-  //pv_lpv.clear();
-  delete lpe_;
+  //delete lpe_;
   delete lp;
   return false;
+}
+
+bool QuadHandler::getQfLfBnds_(LinearFunctionPtr lf, QuadraticFunctionPtr qf,
+                               double &implLb, double &implUb,
+                               DoubleVector &fwdLb, DoubleVector &fwdUb,
+                               UInt &count_inf_lb, UInt &count_inf_ub,
+                               VarVector &qvars) {
+  double lb = 0, ub = 0;
+  for (VariablePairGroupConstIterator qit = qf->begin();
+       qit != qf->end(); ++qit) {
+    if (qit->first.first->getIndex() == qit->first.second->getIndex()
+        && lf->hasVar(qit->first.first)) {
+      qvars.push_back(qit->first.first);
+      getTermBnds_(qit->first.first, qit->second,
+                  lf->getWeight(qit->first.first), lb, ub);
+      if (lb <= -INFINITY) {
+        ++count_inf_lb;
+      }
+      if (ub >= INFINITY) {
+        ++count_inf_ub;
+      }
+      implLb += lb;
+      implUb += ub;
+      fwdLb.push_back(lb);
+      fwdUb.push_back(ub);
+    } else {
+      getTermBnds_(qit->first.first, qit->first.second, qit->second,
+                       lb, ub);
+      if (lb <= -INFINITY) {
+        ++count_inf_lb;
+      }
+      if (ub >= INFINITY) {
+        ++count_inf_ub;
+      }
+      implLb += lb;
+      implUb += ub;
+      fwdLb.push_back(lb);
+      fwdUb.push_back(ub);
+    }
+  }
+  if (qvars.size() == 0) {
+    fwdLb.clear();
+    fwdUb.clear();
+    return false;
+  }
+  for (VariableGroupConstIterator lit = lf->termsBegin();
+       lit != lf->termsEnd(); ++lit) {
+    if (std::find(qvars.begin(), qvars.end(),
+        lit->first) == qvars.end()) {
+      getTermBnds_(lit->first, lit->second, lb, ub);
+      if (lb <= -INFINITY) {
+        ++count_inf_lb;
+      }
+      if (ub >= INFINITY) {
+        ++count_inf_ub;
+      }
+      implLb += lb;
+      implUb += ub;
+      fwdLb.push_back(lb);
+      fwdUb.push_back(ub);
+    }
+  }
+  return true;
+}
+
+bool QuadHandler::getQfLfBnds_(RelaxationPtr rel, LinearFunctionPtr lf,
+                               QuadraticFunctionPtr qf, double &implLb,
+                               double &implUb, DoubleVector &fwdLb,
+                               DoubleVector &fwdUb, UInt &count_inf_lb,
+                               UInt &count_inf_ub, VarVector &qvars) {
+  double lb = 0, ub = 0;
+  VariablePtr v1, v2;
+  for (VariablePairGroupConstIterator qit = qf->begin();
+       qit != qf->end(); ++qit) {
+    // Although getRelaxationVar requries problem var
+    // and we have original variables here
+    // But in the code we just return the variable with same id
+    // which is what is intended here
+    v1 = rel->getRelaxationVar(qit->first.first);
+    v2 = rel->getRelaxationVar(qit->first.second);
+    if (v1->getIndex() == v2->getIndex() && lf->hasVar(qit->first.first)) {
+      qvars.push_back(qit->first.first);
+      getTermBnds_(v1, qit->second, lf->getWeight(qit->first.first), lb, ub);
+      if (lb <= -INFINITY) {
+        ++count_inf_lb;
+      }
+      if (ub >= INFINITY) {
+        ++count_inf_ub;
+      }
+      implLb += lb;
+      implUb += ub;
+      fwdLb.push_back(lb);
+      fwdUb.push_back(ub);
+    } else {
+      getTermBnds_(v1, v2, qit->second, lb, ub);
+      if (lb <= -INFINITY) {
+        ++count_inf_lb;
+      }
+      if (ub >= INFINITY) {
+        ++count_inf_ub;
+      }
+      implLb += lb;
+      implUb += ub;
+      fwdLb.push_back(lb);
+      fwdUb.push_back(ub);
+    }
+  }
+  if (qvars.size() == 0) {
+    fwdLb.clear();
+    fwdUb.clear();
+    return false;
+  }
+  for (VariableGroupConstIterator lit = lf->termsBegin();
+       lit != lf->termsEnd(); ++lit) {
+    v1 = rel->getRelaxationVar(lit->first);
+    if (std::find(qvars.begin(), qvars.end(),
+        lit->first) == qvars.end()) {
+      getTermBnds_(v1, lit->second, lb, ub);
+      if (lb <= -INFINITY) {
+        ++count_inf_lb;
+      }
+      if (ub >= INFINITY) {
+        ++count_inf_ub;
+      }
+      implLb += lb;
+      implUb += ub;
+      fwdLb.push_back(lb);
+      fwdUb.push_back(ub);
+    }
+  }
+  return true;
 }
 
 bool QuadHandler::tightenQuad_(bool *changed) {
@@ -1701,142 +2293,115 @@ bool QuadHandler::tightenQuad_(bool *changed) {
   DoubleVector::iterator liter, uiter;
   double lb, ub, clb, cub;
   bool c1, c2;
+  UInt count_inf_lb = 0, count_inf_ub = 0;
 
   obj = p_->getObjective();
-  cub = env_->getOptions()->findDouble("obj_cut_off")->getValue();
+  cub = env_->getOptions()->findDouble("obj_cut_off")->getValue()
+        - obj->getConstant();
   clb = -INFINITY;
 
-  if (cub >= INFINITY) {
-    goto constraints;
-  }
-
-  implLb = 0.0;
-  implUb = 0.0;
-  if (obj->getFunctionType() == Quadratic) {
-    lf = obj->getFunction()->getLinearFunction();
-    if (lf) {
-      qf = obj->getFunction()->getQuadraticFunction();
-      if (qf) {
-        // Forward Propagation
-        for (VariablePairGroupConstIterator qit = qf->begin();
-             qit != qf->end(); ++qit) {
-          if (qit->first.first->getIndex() == qit->first.second->getIndex()
-              && lf->hasVar(qit->first.first)) {
-            qvars.push_back(qit->first.first);
-            getTermBnds_(qit->first.first, qit->second,
-                        lf->getWeight(qit->first.first), lb, ub);
-            implLb += lb;
-            implUb += ub;
-            fwdLb.push_back(lb);
-            fwdUb.push_back(ub);
-          } else {
-            getTermBnds_(qit->first.first, qit->first.second, qit->second,
-                             lb, ub);
-            implLb += lb;
-            implUb += ub;
-            fwdLb.push_back(lb);
-            fwdUb.push_back(ub);
+  if (cub < INFINITY) {
+    implLb = 0.0;
+    implUb = 0.0;
+    if (obj->getFunctionType() == Quadratic) {
+      lf = obj->getFunction()->getLinearFunction();
+      if (lf) {
+        qf = obj->getFunction()->getQuadraticFunction();
+        if (qf) {
+          // Forward Propagation
+          if (getQfLfBnds_(lf, qf, implLb, implUb, fwdLb, fwdUb, count_inf_lb,
+                           count_inf_ub, qvars)) {
+            doQT_ = true;
+            // Backward Propagation
+            liter = fwdLb.begin();
+            uiter = fwdUb.begin();
+            clb = clb > implLb ? clb : implLb;
+            cub = cub < implUb ? cub : implUb;
+            for (VariablePairGroupConstIterator qit = qf->begin();
+                 qit != qf->end(); ++qit) {
+              if (qit->first.first->getIndex() == qit->first.second->getIndex()
+                  && lf->hasVar(qit->first.first)) {
+                lb = clb - getSumExcept1_(fwdUb.begin(), fwdUb.end(), uiter,
+                                          Upper, implUb, count_inf_ub);
+                ub = cub - getSumExcept1_(fwdLb.begin(), fwdLb.end(), liter,
+                                          Lower, implLb, count_inf_lb);
+                c1 = false;
+                if (calcVarBnd_(qit->first.first, qit->second,
+                                lf->getWeight(qit->first.first), lb, ub,
+                                &c1)) {
+                  fwdLb.clear();
+                  fwdUb.clear();
+                  return true;
+                }
+                if (c1 == true) {
+                  //++bStats_.vBndq;
+                  *changed = true;
+                }
+                ++liter;
+                ++uiter;
+              } else {
+                lb = clb - getSumExcept1_(fwdUb.begin(), fwdUb.end(), uiter,
+                                          Upper, implUb, count_inf_ub);
+                ub = cub - getSumExcept1_(fwdLb.begin(), fwdLb.end(), liter,
+                                          Lower, implLb, count_inf_lb);
+                c1 = false;
+                c2 = false;
+                if (calcVarBnd_(qit->first.first, qit->first.second, qit->second,
+                                lb, ub, &c1, &c2)) {
+                  fwdLb.clear();
+                  fwdUb.clear();
+                  return true;
+                }
+                if (c1 == true) {
+                  //++bStats_.vBndq;
+                  *changed = true;
+                }
+                if (c2 == true) {
+                  //++bStats_.vBndq;
+                  *changed = true;
+                }
+                ++liter;
+                ++uiter;
+              }
+            }
+            
+            for (VariableGroupConstIterator lit = lf->termsBegin();
+                 lit != lf->termsEnd(); ++lit) {
+              if (std::find(qvars.begin(), qvars.end(),
+                  lit->first) == qvars.end()) {
+                lb = clb - getSumExcept1_(fwdUb.begin(), fwdUb.end(), uiter,
+                                          Upper, implUb, count_inf_ub);
+                ub = cub - getSumExcept1_(fwdLb.begin(), fwdLb.end(), liter,
+                                          Lower, implLb, count_inf_lb);
+                c1 = false;
+                if (calcVarBnd_(lit->first, lit->second, lb, ub, &c1)) {
+                  fwdLb.clear();
+                  fwdUb.clear();
+                  return true;
+                }
+                if (c1 == true) {
+                  //++bStats_.vBndq;
+                  *changed = true;
+                }
+                ++liter;
+                ++uiter;
+              }
+            }
+            fwdLb.clear();
+            fwdUb.clear();
           }
         }
-        if (qvars.size() == 0) {
-          fwdLb.clear();
-          fwdUb.clear();
-          goto constraints;
-        }
-        for (VariableGroupConstIterator lit = lf->termsBegin();
-             lit != lf->termsEnd(); ++lit) {
-          if (std::find(qvars.begin(), qvars.end(),
-              lit->first) == qvars.end()) {
-            getTermBnds_(lit->first, lit->second, lb, ub);
-            implLb += lb;
-            implUb += ub;
-            fwdLb.push_back(lb);
-            fwdUb.push_back(ub);
-          }
-        }
-        
-        // Backward Propagation
-        liter = fwdLb.begin();
-        uiter = fwdUb.begin();
-        clb = clb > implLb ? clb : implLb;
-        cub = cub < implUb ? cub : implUb;
-        for (VariablePairGroupConstIterator qit = qf->begin();
-             qit != qf->end(); ++qit) {
-          if (qit->first.first->getIndex() == qit->first.second->getIndex()
-              && std::find(qvars.begin(), qvars.end(),
-                           qit->first.first) != qvars.end()) {
-            lb = clb - getSumExcept1_(fwdUb.begin(), fwdUb.end(), uiter);
-            ub = cub - getSumExcept1_(fwdLb.begin(), fwdLb.end(), liter);
-            c1 = false;
-            if (calcVarBnd_(qit->first.first, qit->second,
-                            lf->getWeight(qit->first.first), lb, ub,
-                            &c1)) {
-              fwdLb.clear();
-              fwdUb.clear();
-              return true;
-            }
-            if (c1 == true) {
-              ++bStats_.vBndq;
-              *changed = true;
-            }
-            ++liter;
-            ++uiter;
-          } else {
-            lb = clb - getSumExcept1_(fwdUb.begin(), fwdUb.end(), uiter);
-            ub = cub - getSumExcept1_(fwdLb.begin(), fwdLb.end(), liter);
-            c1 = false;
-            c2 = false;
-            if (calcVarBnd_(qit->first.first, qit->first.second, qit->second,
-                            lb, ub, &c1, &c2)) {
-              fwdLb.clear();
-              fwdUb.clear();
-              return true;
-            }
-            if (c1 == true) {
-              ++bStats_.vBndq;
-              *changed = true;
-            }
-            if (c2 == true) {
-              ++bStats_.vBndq;
-              *changed = true;
-            }
-            ++liter;
-            ++uiter;
-          }
-        }
-        
-        for (VariableGroupConstIterator lit = lf->termsBegin();
-             lit != lf->termsEnd(); ++lit) {
-          if (std::find(qvars.begin(), qvars.end(),
-              lit->first) == qvars.end()) {
-            lb = clb - getSumExcept1_(fwdUb.begin(), fwdUb.end(), uiter);
-            ub = cub - getSumExcept1_(fwdLb.begin(), fwdLb.end(), liter);
-            c1 = false;
-            if (calcVarBnd_(lit->first, lit->second, lb, ub, &c1)) {
-              fwdLb.clear();
-              fwdUb.clear();
-              return true;
-            }
-            if (c1 == true) {
-              ++bStats_.vBndq;
-              *changed = true;
-            }
-            ++liter;
-            ++uiter;
-          }
-        }
-        fwdLb.clear();
-        fwdUb.clear();
       }
     }
   }
 
-constraints:
   for (ConstraintConstIterator cit = p_->consBegin(); cit != p_->consEnd();
                                ++cit) {
     c = *cit;
     implLb = 0.0;
     implUb = 0.0;
+    count_inf_lb = 0;
+    count_inf_ub = 0;
     // If the constraint is bilinear then simple tightening suffices
     if (c->getFunctionType() == Quadratic) {
       lf = c->getFunction()->getLinearFunction();
@@ -1844,43 +2409,11 @@ constraints:
         qf = c->getFunction()->getQuadraticFunction();
         if (qf) {
           // Forward Propagation
-          for (VariablePairGroupConstIterator qit = qf->begin();
-               qit != qf->end(); ++qit) {
-            if (qit->first.first->getIndex() == qit->first.second->getIndex()
-                && lf->hasVar(qit->first.first)) {
-              qvars.push_back(qit->first.first);
-              getTermBnds_(qit->first.first, qit->second,
-                          lf->getWeight(qit->first.first), lb, ub);
-              implLb += lb;
-              implUb += ub;
-              fwdLb.push_back(lb);
-              fwdUb.push_back(ub);
-            } else {
-              getTermBnds_(qit->first.first, qit->first.second, qit->second,
-                               lb, ub);
-              implLb += lb;
-              implUb += ub;
-              fwdLb.push_back(lb);
-              fwdUb.push_back(ub);
-            }
-          }
-          if (qvars.size() == 0) {
-            fwdLb.clear();
-            fwdUb.clear();
+          if (false == getQfLfBnds_(lf, qf, implLb, implUb, fwdLb, fwdUb,
+                                    count_inf_lb, count_inf_ub, qvars)) {
             continue;
           }
-          for (VariableGroupConstIterator lit = lf->termsBegin();
-               lit != lf->termsEnd(); ++lit) {
-            if (std::find(qvars.begin(), qvars.end(),
-                lit->first) == qvars.end()) {
-              getTermBnds_(lit->first, lit->second, lb, ub);
-              implLb += lb;
-              implUb += ub;
-              fwdLb.push_back(lb);
-              fwdUb.push_back(ub);
-            }
-          }
-          
+          doQT_ = true;
           clb = c->getLb();
           cub = c->getUb();
           
@@ -1905,19 +2438,20 @@ constraints:
           cub = cub < implUb ? cub : implUb;
           if (clb > c->getLb() + aTol_) {
             p_->changeBound(c, Lower, clb);
-            ++bStats_.cBndq;
+            //++bStats_.cBndq;
           }
           if (cub < c->getUb() - aTol_) {
             p_->changeBound(c, Upper, cub);
-            ++bStats_.cBndq;
+            //++bStats_.cBndq;
           }
           for (VariablePairGroupConstIterator qit = qf->begin();
                qit != qf->end(); ++qit) {
             if (qit->first.first->getIndex() == qit->first.second->getIndex()
-                && std::find(qvars.begin(), qvars.end(),
-                             qit->first.first) != qvars.end()) {
-              lb = clb - getSumExcept1_(fwdUb.begin(), fwdUb.end(), uiter);
-              ub = cub - getSumExcept1_(fwdLb.begin(), fwdLb.end(), liter);
+                && lf->hasVar(qit->first.first)) {
+              lb = clb - getSumExcept1_(fwdUb.begin(), fwdUb.end(), uiter,
+                                        Upper, implUb, count_inf_ub);
+              ub = cub - getSumExcept1_(fwdLb.begin(), fwdLb.end(), liter,
+                                        Lower, implLb, count_inf_lb);
               c1 = false;
               if (calcVarBnd_(qit->first.first, qit->second,
                               lf->getWeight(qit->first.first), lb, ub,
@@ -1927,14 +2461,16 @@ constraints:
                 return true;
               }
               if (c1 == true) {
-                ++bStats_.vBndq;
+                //++bStats_.vBndq;
                 *changed = true;
               }
               ++liter;
               ++uiter;
             } else {
-              lb = clb - getSumExcept1_(fwdUb.begin(), fwdUb.end(), uiter);
-              ub = cub - getSumExcept1_(fwdLb.begin(), fwdLb.end(), liter);
+              lb = clb - getSumExcept1_(fwdUb.begin(), fwdUb.end(), uiter,
+                                        Upper, implUb, count_inf_ub);
+              ub = cub - getSumExcept1_(fwdLb.begin(), fwdLb.end(), liter,
+                                        Lower, implLb, count_inf_lb);
               c1 = false;
               c2 = false;
               if (calcVarBnd_(qit->first.first, qit->first.second, qit->second,
@@ -1944,11 +2480,11 @@ constraints:
                 return true;
               }
               if (c1 == true) {
-                ++bStats_.vBndq;
+                //++bStats_.vBndq;
                 *changed = true;
               }
               if (c2 == true) {
-                ++bStats_.vBndq;
+                //++bStats_.vBndq;
                 *changed = true;
               }
               ++liter;
@@ -1960,8 +2496,10 @@ constraints:
                lit != lf->termsEnd(); ++lit) {
             if (std::find(qvars.begin(), qvars.end(),
                 lit->first) == qvars.end()) {
-              lb = clb - getSumExcept1_(fwdUb.begin(), fwdUb.end(), uiter);
-              ub = cub - getSumExcept1_(fwdLb.begin(), fwdLb.end(), liter);
+              lb = clb - getSumExcept1_(fwdUb.begin(), fwdUb.end(), uiter,
+                                        Upper, implUb, count_inf_ub);
+              ub = cub - getSumExcept1_(fwdLb.begin(), fwdLb.end(), liter,
+                                        Lower, implLb, count_inf_lb);
               c1 = false;
               if (calcVarBnd_(lit->first, lit->second, lb, ub, &c1)) {
                 fwdLb.clear();
@@ -1969,7 +2507,7 @@ constraints:
                 return true;
               }
               if (c1 == true) {
-                ++bStats_.vBndq;
+                //++bStats_.vBndq;
                 *changed = true;
               }
               ++liter;
@@ -1985,6 +2523,275 @@ constraints:
   return false;
 }
 
+bool QuadHandler::tightenQuad_(RelaxationPtr rel, double bestSol, bool *changed,
+                               ModVector &p_mods, ModVector &r_mods) {
+  ConstraintPtr c;
+  double implLb, implUb;
+  LinearFunctionPtr lf;
+  QuadraticFunctionPtr qf;
+  ObjectivePtr obj;
+  VarVector qvars;
+  DoubleVector fwdLb, fwdUb;
+  DoubleVector::iterator liter, uiter;
+  double lb, ub, clb, cub;
+  bool c1, c2;
+  UInt count_inf_lb = 0, count_inf_ub = 0;
+
+  obj = orig_->getObjective();
+  cub = bestSol - obj->getConstant();
+  clb = -INFINITY;
+
+  if (cub < INFINITY) {
+    implLb = 0.0;
+    implUb = 0.0;
+    if (obj->getFunctionType() == Quadratic) {
+      lf = obj->getFunction()->getLinearFunction();
+      if (lf) {
+        qf = obj->getFunction()->getQuadraticFunction();
+        if (qf) {
+          // Forward Propagation
+          if (getQfLfBnds_(rel, lf, qf, implLb, implUb, fwdLb, fwdUb,
+                           count_inf_lb, count_inf_ub, qvars)) {
+            // Backward Propagation
+            liter = fwdLb.begin();
+            uiter = fwdUb.begin();
+            clb = clb > implLb ? clb : implLb;
+            cub = cub < implUb ? cub : implUb;
+            for (VariablePairGroupConstIterator qit = qf->begin();
+                 qit != qf->end(); ++qit) {
+              if (qit->first.first->getIndex() == qit->first.second->getIndex()
+                  && lf->hasVar(qit->first.first)) {
+                lb = clb - getSumExcept1_(fwdUb.begin(), fwdUb.end(), uiter,
+                                          Upper, implUb, count_inf_ub);
+                ub = cub - getSumExcept1_(fwdLb.begin(), fwdLb.end(), liter,
+                                          Lower, implLb, count_inf_lb);
+                c1 = false;
+                if (calcVarBnd_(rel, p_->getVariable(qit->first.first->getIndex()),
+                                qit->second, lf->getWeight(qit->first.first),
+                                lb, ub, &c1, p_mods, r_mods)) {
+                  fwdLb.clear();
+                  fwdUb.clear();
+                  return true;
+                }
+                if (c1 == true) {
+                  //++bStats_.vBndq;
+                  *changed = true;
+                }
+                ++liter;
+                ++uiter;
+              } else {
+                lb = clb - getSumExcept1_(fwdUb.begin(), fwdUb.end(), uiter,
+                                          Upper, implUb, count_inf_ub);
+                ub = cub - getSumExcept1_(fwdLb.begin(), fwdLb.end(), liter,
+                                          Lower, implLb, count_inf_lb);
+                c1 = false;
+                c2 = false;
+                if (calcVarBnd_(rel, p_->getVariable(qit->first.first->getIndex()),
+                                p_->getVariable(qit->first.second->getIndex()),
+                                qit->second, lb, ub, &c1, &c2, p_mods, r_mods)) {
+                  fwdLb.clear();
+                  fwdUb.clear();
+                  return true;
+                }
+                if (c1 == true) {
+                  //++bStats_.vBndq;
+                  *changed = true;
+                }
+                if (c2 == true) {
+                  //++bStats_.vBndq;
+                  *changed = true;
+                }
+                ++liter;
+                ++uiter;
+              }
+            }
+            
+            for (VariableGroupConstIterator lit = lf->termsBegin();
+                 lit != lf->termsEnd(); ++lit) {
+              if (std::find(qvars.begin(), qvars.end(),
+                  lit->first) == qvars.end()) {
+                lb = clb - getSumExcept1_(fwdUb.begin(), fwdUb.end(), uiter,
+                                          Upper, implUb, count_inf_ub);
+                ub = cub - getSumExcept1_(fwdLb.begin(), fwdLb.end(), liter,
+                                          Lower, implLb, count_inf_lb);
+                c1 = false;
+                if (calcVarBnd_(rel, p_->getVariable(lit->first->getIndex()),
+                                lit->second, lb, ub, &c1, p_mods, r_mods)) {
+                  fwdLb.clear();
+                  fwdUb.clear();
+                  return true;
+                }
+                if (c1 == true) {
+                  //++bStats_.vBndq;
+                  *changed = true;
+                }
+                ++liter;
+                ++uiter;
+              }
+            }
+            fwdLb.clear();
+            fwdUb.clear();
+          }
+        }
+      }
+    }
+  }
+
+  for (ConstraintConstIterator cit = orig_->consBegin();
+       cit != orig_->consEnd(); ++cit) {
+    c = *cit;
+    implLb = 0.0;
+    implUb = 0.0;
+    count_inf_lb = 0;
+    count_inf_ub = 0;
+    // If the constraint is bilinear then simple tightening suffices
+    if (c->getFunctionType() == Quadratic) {
+      lf = c->getFunction()->getLinearFunction();
+      if (lf) {
+        qf = c->getFunction()->getQuadraticFunction();
+        if (qf) {
+          // Forward Propagation
+          if (false == getQfLfBnds_(rel, lf, qf, implLb, implUb, fwdLb, fwdUb,
+                                    count_inf_lb, count_inf_ub, qvars)) {
+            continue;
+          }
+          clb = c->getLb();
+          cub = c->getUb();
+          
+          // constraint is infeasible
+          if (implLb > cub + aTol_ || implUb < clb - aTol_) {
+            return true;
+          }
+
+          // Backward Propagation
+          liter = fwdLb.begin();
+          uiter = fwdUb.begin();
+          clb = clb > implLb ? clb : implLb;
+          cub = cub < implUb ? cub : implUb;
+          for (VariablePairGroupConstIterator qit = qf->begin();
+               qit != qf->end(); ++qit) {
+            if (qit->first.first->getIndex() == qit->first.second->getIndex()
+                && lf->hasVar(qit->first.first)) {
+              lb = clb - getSumExcept1_(fwdUb.begin(), fwdUb.end(), uiter,
+                                        Upper, implUb, count_inf_ub);
+              ub = cub - getSumExcept1_(fwdLb.begin(), fwdLb.end(), liter,
+                                        Lower, implLb, count_inf_lb);
+              c1 = false;
+              if (calcVarBnd_(rel, p_->getVariable(qit->first.first->getIndex()),
+                              qit->second, lf->getWeight(qit->first.first),
+                              lb, ub, &c1, p_mods, r_mods)) {
+                fwdLb.clear();
+                fwdUb.clear();
+                return true;
+              }
+              if (c1 == true) {
+                //++bStats_.vBndq;
+                *changed = true;
+              }
+              ++liter;
+              ++uiter;
+            } else {
+              lb = clb - getSumExcept1_(fwdUb.begin(), fwdUb.end(), uiter,
+                                        Upper, implUb, count_inf_ub);
+              ub = cub - getSumExcept1_(fwdLb.begin(), fwdLb.end(), liter,
+                                        Lower, implLb, count_inf_lb);
+              c1 = false;
+              c2 = false;
+              if (calcVarBnd_(rel, p_->getVariable(qit->first.first->getIndex()),
+                              p_->getVariable(qit->first.second->getIndex()),
+                              qit->second, lb, ub, &c1, &c2, p_mods, r_mods)) {
+                fwdLb.clear();
+                fwdUb.clear();
+                return true;
+              }
+              if (c1 == true) {
+                //++bStats_.vBndq;
+                *changed = true;
+              }
+              if (c2 == true) {
+                //++bStats_.vBndq;
+                *changed = true;
+              }
+              ++liter;
+              ++uiter;
+            }
+          }
+          
+          for (VariableGroupConstIterator lit = lf->termsBegin();
+               lit != lf->termsEnd(); ++lit) {
+            if (std::find(qvars.begin(), qvars.end(),
+                lit->first) == qvars.end()) {
+              lb = clb - getSumExcept1_(fwdUb.begin(), fwdUb.end(), uiter,
+                                        Upper, implUb, count_inf_ub);
+              ub = cub - getSumExcept1_(fwdLb.begin(), fwdLb.end(), liter,
+                                        Lower, implLb, count_inf_lb);
+              c1 = false;
+              if (calcVarBnd_(rel, p_->getVariable(lit->first->getIndex()),
+                              lit->second, lb, ub, &c1, p_mods, r_mods)) {
+                fwdLb.clear();
+                fwdUb.clear();
+                return true;
+              }
+              if (c1 == true) {
+                //++bStats_.vBndq;
+                *changed = true;
+              }
+              ++liter;
+              ++uiter;
+            }
+          }
+          fwdLb.clear();
+          fwdUb.clear();
+        }
+      }
+    }
+  }
+  return false;
+}
+
+void QuadHandler::getLfBnds_(LinearFunctionPtr lf, double &implLb,
+                             double &implUb, DoubleVector &fwdLb,
+                             DoubleVector &fwdUb, UInt &count_inf_lb,
+                             UInt &count_inf_ub) {
+  double lb = 0, ub = 0;
+  for (VariableGroupConstIterator lit = lf->termsBegin(); lit != lf->termsEnd();
+       ++ lit) {
+    getTermBnds_(lit->first, lit->second, lb, ub);
+    if (lb <= -INFINITY) {
+      ++count_inf_lb;
+    }
+    if (ub >= INFINITY) {
+      ++count_inf_ub;
+    }
+    implLb += lb;
+    implUb += ub;
+    fwdLb.push_back(lb);
+    fwdUb.push_back(ub);
+  }
+}
+
+void QuadHandler::getQfBnds_(QuadraticFunctionPtr qf, double &implLb,
+                             double &implUb, DoubleVector &fwdLb,
+                             DoubleVector &fwdUb, UInt &count_inf_lb,
+                             UInt &count_inf_ub) {
+  double lb = 0, ub = 0;
+  for (VariablePairGroupConstIterator qit = qf->begin();
+       qit != qf->end(); ++qit) {
+    getTermBnds_(qit->first.first, qit->first.second, qit->second,
+                     lb, ub);
+    if (lb <= -INFINITY) {
+      ++count_inf_lb;
+    }
+    if (ub >= INFINITY) {
+      ++count_inf_ub;
+    }
+    implLb += lb;
+    implUb += ub;
+    fwdLb.push_back(lb);
+    fwdUb.push_back(ub);
+  }
+}
+
 bool QuadHandler::tightenSimple_(bool *changed) {
   double implLb, implUb;
   DoubleVector fwdLb, fwdUb;
@@ -1995,9 +2802,11 @@ bool QuadHandler::tightenSimple_(bool *changed) {
   ObjectivePtr obj;
   double clb, cub, lb, ub;
   bool c1, c2;
+  UInt count_inf_lb = 0, count_inf_ub = 0;
 
   obj = p_->getObjective();
-  cub = env_->getOptions()->findDouble("obj_cut_off")->getValue();
+  cub = env_->getOptions()->findDouble("obj_cut_off")->getValue()
+        - obj->getConstant();
   clb = -INFINITY;
 
   if (cub < INFINITY) {
@@ -2007,25 +2816,10 @@ bool QuadHandler::tightenSimple_(bool *changed) {
     qf = obj->getFunction()->getQuadraticFunction();
     // Forward Propagation
     if (lf) {
-      for (VariableGroupConstIterator lit = lf->termsBegin();
-           lit != lf->termsEnd(); ++lit) {
-        getTermBnds_(lit->first, lit->second, lb, ub);
-        implLb += lb;
-        implUb += ub;
-        fwdLb.push_back(lb);
-        fwdUb.push_back(ub);
-      }
+      getLfBnds_(lf, implLb, implUb, fwdLb, fwdUb, count_inf_lb, count_inf_ub);
     }
     if (qf) {
-      for (VariablePairGroupConstIterator qit = qf->begin();
-           qit != qf->end(); ++qit) {
-        getTermBnds_(qit->first.first, qit->first.second, qit->second,
-                         lb, ub);
-        implLb += lb;
-        implUb += ub;
-        fwdLb.push_back(lb);
-        fwdUb.push_back(ub);
-      }
+      getQfBnds_(qf, implLb, implUb, fwdLb, fwdUb, count_inf_lb, count_inf_ub);
     }
     liter = fwdLb.begin();
     uiter = fwdUb.begin();
@@ -2034,8 +2828,10 @@ bool QuadHandler::tightenSimple_(bool *changed) {
     if (lf) {
       for (VariableGroupConstIterator lit = lf->termsBegin();
            lit != lf->termsEnd(); ++lit) {
-        lb = clb - getSumExcept1_(fwdUb.begin(), fwdUb.end(), uiter);
-        ub = cub - getSumExcept1_(fwdLb.begin(), fwdLb.end(), liter);
+        lb = clb - getSumExcept1_(fwdUb.begin(), fwdUb.end(), uiter, Upper,
+                                  implUb, count_inf_ub);
+        ub = cub - getSumExcept1_(fwdLb.begin(), fwdLb.end(), liter, Lower,
+                                  implLb, count_inf_lb);
         c1 = false;
         if (calcVarBnd_(lit->first, lit->second, lb, ub, &c1)) {
           fwdLb.clear();
@@ -2043,7 +2839,7 @@ bool QuadHandler::tightenSimple_(bool *changed) {
           return true;
         }
         if (c1 == true) {
-          ++bStats_.vBnds;
+          //++bStats_.vBnds;
           *changed = true;
         }
         ++liter;
@@ -2054,8 +2850,10 @@ bool QuadHandler::tightenSimple_(bool *changed) {
     if (qf) {
       for (VariablePairGroupConstIterator qit = qf->begin();
            qit != qf->end(); ++qit) {
-        lb = clb - (implUb - *uiter);
-        ub = cub - (implLb - *liter);
+        lb = clb - getSumExcept1_(fwdUb.begin(), fwdUb.end(), uiter, Upper,
+                                  implUb, count_inf_ub);
+        ub = cub - getSumExcept1_(fwdLb.begin(), fwdLb.end(), liter, Lower,
+                                  implLb, count_inf_lb);
         c1 = false;
         c2 = false;
         if (calcVarBnd_(qit->first.first, qit->first.second, qit->second,
@@ -2065,11 +2863,11 @@ bool QuadHandler::tightenSimple_(bool *changed) {
           return true;
         }
         if (c1 == true) {
-          ++bStats_.vBnds;
+          //++bStats_.vBnds;
           *changed = true;
         }
         if (c2 == true) {
-          ++bStats_.vBnds;
+          //++bStats_.vBnds;
           *changed = true;
         }
         ++liter;
@@ -2086,6 +2884,8 @@ bool QuadHandler::tightenSimple_(bool *changed) {
     c = *cit;
     implLb = 0.0;
     implUb = 0.0;
+    count_inf_lb = 0;
+    count_inf_ub = 0;
     if (c->getFunctionType() == Quadratic || c->getFunctionType() == Bilinear){
       // delete the constraint if unbounded on both sides
       clb = c->getLb();
@@ -2100,26 +2900,11 @@ bool QuadHandler::tightenSimple_(bool *changed) {
       qf = c->getFunction()->getQuadraticFunction();
       // Forward Propagation
       if (lf) {
-        for (VariableGroupConstIterator lit = lf->termsBegin();
-             lit != lf->termsEnd(); ++lit) {
-          getTermBnds_(lit->first, lit->second, lb, ub);
-          implLb += lb;
-          implUb += ub;
-          fwdLb.push_back(lb);
-          fwdUb.push_back(ub);
-        }
+        getLfBnds_(lf, implLb, implUb, fwdLb, fwdUb, count_inf_lb, count_inf_ub);
       }
 
       if (qf) {
-        for (VariablePairGroupConstIterator qit = qf->begin();
-             qit != qf->end(); ++qit) {
-          getTermBnds_(qit->first.first, qit->first.second, qit->second,
-                           lb, ub);
-          implLb += lb;
-          implUb += ub;
-          fwdLb.push_back(lb);
-          fwdUb.push_back(ub);
-        }
+        getQfBnds_(qf, implLb, implUb, fwdLb, fwdUb, count_inf_lb, count_inf_ub);
       }
       // Implied bounds already better than constraint bounds.
       // The constraint is redundant.
@@ -2141,17 +2926,19 @@ bool QuadHandler::tightenSimple_(bool *changed) {
       cub = cub < implUb ? cub : implUb;
       if (clb > c->getLb() + aTol_) {
         p_->changeBound(c, Lower, clb);
-        ++bStats_.cBnds;
+        //++bStats_.cBnds;
       }
       if (cub < c->getUb() - aTol_) {
         p_->changeBound(c, Upper, cub);
-        ++bStats_.cBnds;
+        //++bStats_.cBnds;
       }
       if (lf) {
         for (VariableGroupConstIterator lit = lf->termsBegin();
              lit != lf->termsEnd(); ++lit) {
-          lb = clb - getSumExcept1_(fwdUb.begin(), fwdUb.end(), uiter);
-          ub = cub - getSumExcept1_(fwdLb.begin(), fwdLb.end(), liter);
+          lb = clb - getSumExcept1_(fwdUb.begin(), fwdUb.end(), uiter, Upper,
+                                    implUb, count_inf_ub);
+          ub = cub - getSumExcept1_(fwdLb.begin(), fwdLb.end(), liter, Lower,
+                                    implLb, count_inf_lb);
           c1 = false;
           if (calcVarBnd_(lit->first, lit->second, lb, ub, &c1)) {
             fwdLb.clear();
@@ -2159,7 +2946,7 @@ bool QuadHandler::tightenSimple_(bool *changed) {
             return true;
           }
           if (c1 == true) {
-            ++bStats_.vBnds;
+            //++bStats_.vBnds;
             *changed = true;
           }
           ++liter;
@@ -2170,8 +2957,10 @@ bool QuadHandler::tightenSimple_(bool *changed) {
       if (qf) {
         for (VariablePairGroupConstIterator qit = qf->begin();
              qit != qf->end(); ++qit) {
-          lb = clb - getSumExcept1_(fwdUb.begin(), fwdUb.end(), uiter);
-          ub = cub - getSumExcept1_(fwdLb.begin(), fwdLb.end(), liter);
+          lb = clb - getSumExcept1_(fwdUb.begin(), fwdUb.end(), uiter, Upper,
+                                    implUb, count_inf_ub);
+          ub = cub - getSumExcept1_(fwdLb.begin(), fwdLb.end(), liter, Lower,
+                                    implLb, count_inf_lb);
           c1 = false;
           c2 = false;
           if (calcVarBnd_(qit->first.first, qit->first.second, qit->second,
@@ -2181,11 +2970,11 @@ bool QuadHandler::tightenSimple_(bool *changed) {
             return true;
           }
           if (c1 == true) {
-            ++bStats_.vBnds;
+            //++bStats_.vBnds;
             *changed = true;
           }
           if (c2 == true) {
-            ++bStats_.vBnds;
+            //++bStats_.vBnds;
             *changed = true;
           }
           ++liter;
@@ -2438,29 +3227,27 @@ void QuadHandler::writeStats(std::ostream &out) const
     << me_ << "Number of cuts added           = "<< sStats_.cuts   << std::endl
     << me_ << "Time taken in separation       = "<< sStats_.time   << std::endl
     ;
-}
 
-void QuadHandler::writeBTStats_(std::ostream &out, bool flag) {
-  if (flag) {
-    out << me_ << "Statistics for Bound tightening:" << std::endl << me_ <<
-    "Time taken for presolve      ="
-    << bStats_.time << std::endl << me_ <<
-    "Average Range of variable bounds                = "
-    << bStats_.avg_range << std::endl << me_ <<
-    "Standard deviation of Range of variable bounds  = "
-    << bStats_.sd_range << std::endl << me_ <<
-    "Length of Body Diagonal      = "
-    << bStats_.body_diag << std::endl;
-  } else {
-    out << me_ << "Statistics for Bound Tightening:" << std::endl << me_ <<
-    "Time taken in solving LPs      ="
-    << bStats_.timeLP << std::endl << me_ <<
-    "Average Range of variable bounds after LP tightening                = "
-    << bStats_.avg_range << std::endl << me_ <<
-    "Standard deviation of Range of variable bounds after LP tightening  = "
-    << bStats_.sd_range << std::endl << me_ <<
-    "Length of Body Diagonal after LP tightening      = "
-    << bStats_.body_diag << std::endl;
+  out << me_ << "Statistics for Bound Tightening:" << std::endl << me_
+    << "Number of LPs solved                               = " <<
+    bStats_.nLP << std::endl << me_
+    << "Number of variables for which default lb was added = " <<
+    bStats_.dlb << std::endl << me_
+    << "Number of variables for which default ub was added = " <<
+    bStats_.dub << std::endl << me_
+    << "Time taken in solving LPs                          = " <<
+    bStats_.timeLP << std::endl;
+  
+  if (nlpStats_.flag) {
+    out << me_ << "Statistics for NLP solved by QuadHandler:" << std::endl
+      << me_ << "Number of NLPs solved                         = "
+      << nlpStats_.nlp << std::endl
+      << me_ << "Number of NLPs optimal                        = "
+      << nlpStats_.opt << std::endl
+      << me_ << "Number of NLPs infeasible                     = "
+      << nlpStats_.inf << std::endl
+      << me_ << "Number of NLPs for which EngineIterationLimit = "
+      << nlpStats_.iter_limit << std::endl;
   }
 }
 

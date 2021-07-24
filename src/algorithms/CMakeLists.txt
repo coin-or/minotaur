@@ -125,8 +125,26 @@ install(TARGETS oa RUNTIME DESTINATION bin)
 ## Add lines specific to your binaries in this section. 
 ## Use the lines meant for bnb as a template.
 ##############################################################################
+set (QG2_SOURCES
+  Solver.cpp
+  QG2.cpp
+  QGMain.cpp 
+)
+
+add_executable(qg2 ${QG2_SOURCES})
+target_link_libraries(qg2 ${ALL_EXEC_LIBS})
+
+# This will install the binary in bin directory.
+install(TARGETS qg2 RUNTIME DESTINATION bin)
+
+##############################################################################
+## Add lines specific to your binaries in this section. 
+## Use the lines meant for bnb as a template.
+##############################################################################
 set (BNB_SOURCES
+  Solver.cpp
   Bnb.cpp 
+  BnbMain.cpp
 )
 
 add_executable(bnb ${BNB_SOURCES})
@@ -269,6 +287,9 @@ install(TARGETS qg RUNTIME DESTINATION bin)
 ##############################################################################
 set (GLOB_SOURCES
  Glob.cpp 
+ QG2.cpp
+ Solver.cpp
+ GlobMain.cpp
 )
 
 add_executable(glob ${GLOB_SOURCES})

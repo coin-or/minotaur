@@ -1,7 +1,7 @@
 // 
 //     MINOTAUR -- It's only 1/2 bull
 // 
-//     (C)opyright 2009 - 2017 The MINOTAUR Team.
+//     (C)opyright 2009 - 2021 The MINOTAUR Team.
 // 
 
 /**
@@ -227,6 +227,8 @@ std::string Minotaur::getSolveStatusString(SolveStatus s)
     return "Reached time limit";
   case (SolLimitReached):
     return "Reached the limit on number of solutions";
+  case (SolveError):
+    return "Error in solving";
   case (Finished):
     return "Finished for some other reason";
   default:

@@ -1,7 +1,7 @@
 //
 //     MINOTAUR -- It's only 1/2 bull
 //
-//     (C)opyright 2008 - 2017 The MINOTAUR Team.
+//     (C)opyright 2008 - 2021 The MINOTAUR Team.
 //
 
 /**
@@ -955,7 +955,7 @@ void NlPresHandler::perspRef_(ProblemPtr p, PreModQ *, bool *changed)
 }
 
 
-SolveStatus NlPresHandler::presolve(PreModQ *mods, bool *changed0)
+SolveStatus NlPresHandler::presolve(PreModQ *mods, bool *changed0, Solution **)
 {
   bool changed = true;
   Timer *tim = env_->getNewTimer();

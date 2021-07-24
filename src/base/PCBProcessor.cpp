@@ -1,7 +1,7 @@
 // 
 //     MINOTAUR -- It's only 1/2 bull
 // 
-//     (C)opyright 2009 - 2017 The MINOTAUR Team.
+//     (C)opyright 2009 - 2021 The MINOTAUR Team.
 // 
 
 /**
@@ -38,6 +38,7 @@ PCBProcessor::PCBProcessor (EnvPtr env, EnginePtr engine, HandlerVector handlers
 : branches_(0),
   contOnErr_(false),
   cutMan_(0),
+  infHand_(0),
   numSolutions_(0),
   ws_(0)
 {
@@ -54,6 +55,7 @@ PCBProcessor::PCBProcessor (EnvPtr env, EnginePtr engine, HandlerVector handlers
   stats_.prob = 0;
   stats_.proc = 0;
   stats_.ub = 0;
+  stats_.tol_err = 0;
 }
 
 
@@ -113,6 +115,7 @@ bool PCBProcessor::isFeasible_(NodePtr node, ConstSolutionPtr sol,
   for (h = handlers_.begin(); h != handlers_.end(); ++h) {
     is_feas = (*h)->isFeasible(sol, relaxation_, should_prune, inf_meas);
     if (is_feas == false || should_prune == true) {
+      infHand_ = *h;
       break;
     }
   }
@@ -177,11 +180,14 @@ void PCBProcessor::process(NodePtr node, RelaxationPtr rel,
 {
   bool should_prune = true;
   bool should_resolve;
+  bool sol_found = false;
+  DoubleVector *debug_sol = 0;
   BrancherStatus br_status;
   ConstSolutionPtr sol;
   ModVector mods;
   SeparationStatus sep_status = SepaContinue;
-  int iter = 0;
+  int iter = 0, error;
+  bool debug_feas = false;
 
   ++stats_.proc;
   relaxation_ = rel;
@@ -191,43 +197,13 @@ void PCBProcessor::process(NodePtr node, RelaxationPtr rel,
     branches_ = 0;
   }
 
-#if 0
-  double *svar = new double[20];
-  bool xfeas = true;
-  svar[1-1]   = 0.000000000  ;
-  svar[2-1]   = 0.000000000  ;
-  svar[3-1]   = 1.042899924  ;
-  svar[4-1]   = 0.000000000  ;
-  svar[5-1]   = 0.000000000  ;
-  svar[6-1]   = 0.000000000  ;
-  svar[7-1]   = 0.000000000  ;
-  svar[8-1]   = 0.000000000  ;
-  svar[9-1]   = 0.000000000  ;
-  svar[10-1]  = 0.000000000  ;
-  svar[11-1]  = 1.746743790  ;
-  svar[12-1]  = 0.000000000  ;
-  svar[13-1]  = 0.431470884  ;
-  svar[14-1]  = 0.000000000  ;
-  svar[15-1]  = 0.000000000  ;
-  svar[16-1]  = 4.433050274  ;
-  svar[17-1]  = 0.000000000  ;
-  svar[18-1]  = 15.858931758 ;
-  svar[19-1]  = 0.000000000  ;
-  svar[20-1]  = 16.486903370 ;
+  //debug_sol = relaxation_->getDebugSol();
+  if (debug_sol) {
+    for (ConstraintConstIterator it=relaxation_->consBegin();
+         it!=relaxation_->consEnd(); ++it) {
 
-  for (UInt i=0; i<20; ++i) {
-    if (svar[i] > rel->getVariable(i)->getUb()+1e-6 || 
-        svar[i] < rel->getVariable(i)->getLb()-1e-6) {
-      xfeas = false;
-      break;
     }
   }
-  if (true==xfeas) {
-    std::cout << "xsol feasible in node " << node->getId() << std::endl;
-  } else {
-    std::cout << "xsol NOT feasible in node " << node->getId() << std::endl;
-  }
-#endif 
   
   // presolve
   should_prune = presolveNode_(node, s_pool);
@@ -282,13 +258,17 @@ void PCBProcessor::process(NodePtr node, RelaxationPtr rel,
       for (HeurVector::iterator it=heurs_.begin(); it!=heurs_.end(); ++it) {
         (*it)->solve(node, rel, s_pool);
       }
+      tightenBounds_(node, s_pool, sol, &sep_status);
     }
 
 
     // the node can not be pruned because of infeasibility or high cost.
     // continue processing.
-    tightenBounds_();
-    separate_(sol, node, s_pool, &sep_status);
+    if (!(!node->getParent() && iter == 1 && sep_status == SepaResolve)) {
+      // Do not do separate if we are in root and it is first iteration
+      // and we have resolved it by tightenBounds_()
+      separate_(sol, node, s_pool, &sep_status);
+    }
 
     if (sep_status == SepaPrune) {
       node->setStatus(NodeInfeasible);
@@ -328,6 +308,28 @@ void PCBProcessor::process(NodePtr node, RelaxationPtr rel,
           break;
         }
         should_resolve = true;
+      } else if (br_status==NoCandToBranch) {
+        logger_->msgStream(LogDebug2) << "No candidates to branch for the node"
+          << " Calling an NLP solver to resolve it" << std::endl;
+        error = infHand_->fixNodeErr(relaxation_, sol, s_pool, sol_found);
+        ++stats_.tol_err;
+        assert(error >= 0);
+        if (error == 0) {
+          if (sol_found) {
+            ++numSolutions_;
+            node->setStatus(NodeOptimal);
+            ++stats_.opt;
+            should_prune = true;
+          } else {
+            should_prune = true;
+            node->setStatus(NodeHitUb);
+            stats_.ub++;
+          }
+        } else if (error == 1) {
+          should_prune = true;
+          node->setStatus(NodeInfeasible);
+          stats_.inf++;
+        }
       } else if (cutMan_){
         cutMan_->nodeIsBranched(node,sol,branches_->size());
       }
@@ -528,20 +530,49 @@ void PCBProcessor::solveRelaxation_()
 }
 
 
-void PCBProcessor::tightenBounds_() 
-{
+void PCBProcessor::tightenBounds_(NodePtr node, SolutionPoolPtr s_pool,
+                                  ConstSolutionPtr sol,
+                                  SeparationStatus *status) {
+  ModVector p_mods;      // Mods that are applied to the problem
+  ModVector r_mods;      // Mods that are applied to the relaxation.
+  bool is_feas;
+  
+  for (HandlerIterator h = handlers_.begin(); h != handlers_.end(); ++h) {
+    is_feas = (*h)->postSolveRootNode(relaxation_, s_pool, sol, p_mods, r_mods);
+    for (ModificationConstIterator m_iter=p_mods.begin();
+         m_iter!=p_mods.end(); ++m_iter) {
+      node->addPMod(*m_iter);
+    }
+    for (ModificationConstIterator m_iter=r_mods.begin();
+         m_iter!=r_mods.end(); ++m_iter) {
+      node->addRMod(*m_iter);
+    }
+    p_mods.clear();
+    r_mods.clear();
 
+    if (!(is_feas)) {
+      *status = SepaResolve;
+    }
+  }
 }
 
 
 void PCBProcessor::writeStats(std::ostream &out) const
 {
-  out << me_ << "nodes processed     = " << stats_.proc << std::endl 
-      << me_ << "nodes branched      = " << stats_.bra << std::endl 
-      << me_ << "nodes infeasible    = " << stats_.inf << std::endl 
-      << me_ << "nodes optimal       = " << stats_.opt << std::endl 
-      << me_ << "nodes hit ub        = " << stats_.ub << std::endl 
-      << me_ << "nodes with problems = " << stats_.prob << std::endl 
+  out << me_ << "nodes processed                       = "
+      << stats_.proc << std::endl
+      << me_ << "nodes branched                        = "
+      << stats_.bra << std::endl 
+      << me_ << "nodes infeasible                      = "
+      << stats_.inf << std::endl 
+      << me_ << "nodes optimal                         = "
+      << stats_.opt << std::endl 
+      << me_ << "nodes hit ub                          = "
+      << stats_.ub << std::endl 
+      << me_ << "nodes with problems                   = "
+      << stats_.prob << std::endl
+      << me_ << "nodes for which fixNodeErr was called = "
+      << stats_.tol_err << std::endl
       ;
 }
 

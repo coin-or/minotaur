@@ -1,7 +1,7 @@
 //
 //     MINOTAUR -- It's only 1/2 bull
 //
-//     (C)opyright 2008 - 2017 The MINOTAUR Team.
+//     (C)opyright 2008 - 2021 The MINOTAUR Team.
 //
 
 /**
@@ -34,7 +34,8 @@ Objective::Objective()
 Objective::Objective(double cb, ObjectiveType otyp)
 : cb_(cb), 
   otyp_(otyp), 
-  state_(NormalObj) 
+  state_(NormalObj),
+  f_(0)
 {
 }
 

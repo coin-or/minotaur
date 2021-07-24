@@ -1,7 +1,7 @@
 // 
 //     MINOTAUR -- It's only 1/2 bull
 // 
-//     (C)opyright 2008 - 2017 The MINOTAUR Team.
+//     (C)opyright 2008 - 2021 The MINOTAUR Team.
 // 
 
 /**
@@ -302,6 +302,9 @@ void OsiLPEngine::clear() {
   }
 }
 
+//void OsiLPEngine::disableFactorization() {
+//  osilp_->disableFactorization();
+//}
 
 void OsiLPEngine::disableStrBrSetup() 
 {
@@ -328,6 +331,9 @@ void OsiLPEngine::enableStrBrSetup()
   strBr_ = true;
 }
 
+//void OsiLPEngine::enableFactorization() {
+//  osilp_->enableFactorization();
+//}
 
 int OsiLPEngine::getIterationCount()
 {
@@ -347,6 +353,13 @@ void OsiLPEngine::fillStats(std::vector<double> &lpStats)
   }
 }
 
+//void OsiLPEngine::getBasics(int *index) {
+//  osilp_->getBasics(index);
+//}
+
+//void OsiLPEngine::getBInvARow(int row, double *z, double *slack) {
+//  osilp_->getBInvARow(row, z, slack);
+//}
 
 std::string OsiLPEngine::getName() const
 {
@@ -575,7 +588,6 @@ void OsiLPEngine::setIterationLimit(int limit)
   OsiIntParam key = OsiMaxNumIteration;
   osilp_->setIntParam(key, limit);
 }
-  
 
 EngineStatus OsiLPEngine::solve()
 {
@@ -593,7 +605,6 @@ EngineStatus OsiLPEngine::solve()
 #endif
 
   osilp_->resolve();
-
   if (osilp_->isProvenOptimal()) {
     status_ = ProvenOptimal;  
     sol_->setPrimal(osilp_->getStrictColSolution());
