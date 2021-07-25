@@ -329,6 +329,12 @@ void PCBProcessor::process(NodePtr node, RelaxationPtr rel,
           should_prune = true;
           node->setStatus(NodeInfeasible);
           stats_.inf++;
+        } else if (error == 2) {
+          s_pool->addSolution(sol);
+          ++numSolutions_;
+          node->setStatus(NodeOptimal);
+          ++stats_.opt;
+          should_prune = true;
         }
       } else if (cutMan_){
         cutMan_->nodeIsBranched(node,sol,branches_->size());
