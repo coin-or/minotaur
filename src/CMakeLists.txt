@@ -1,4 +1,4 @@
-CMAKE_MINIMUM_REQUIRED(VERSION 2.4)
+CMAKE_MINIMUM_REQUIRED(VERSION 3.0)
 
 # configure a header file to pass some of the CMake settings
 # to the source code
@@ -288,8 +288,6 @@ set (MINOTAUR_HEADERS
 install(FILES ${MINOTAUR_HEADERS} DESTINATION include/minotaur)
 
 include_directories("${PROJECT_SOURCE_DIR}/src/interfaces")
-link_directories(${IPOPT_LIB_DIR})
-link_directories(${OSI_LIB_DIR})
 
 set (ENGFAC_SOURCES
   interfaces/EngineFactory.cpp
@@ -300,6 +298,7 @@ set (ENGFAC_HEADERS
 if (LINK_IPOPT)
   add_definitions(-DUSE_IPOPT)
   include_directories("${IPOPT_INC_DIR_F}")
+  link_directories(${IPOPT_LIB_DIR_F})
 
   list(APPEND ENGFAC_SOURCES 
               interfaces/IpoptDummy.f
@@ -311,10 +310,23 @@ if (LINK_IPOPT)
   )
 endif()
 
+if (LINK_FILTER_SQP)
+  add_definitions(-DUSE_BQPD -DUSE_FILTERSQP)
+  list (APPEND ENGFAC_SOURCES 
+    interfaces/BqpdEngine.cpp 
+    interfaces/BqpdAux.f 
+    interfaces/BqpdAux2.f 
+    interfaces/FilterSQPEngine.cpp
+  )
+  list (APPEND ENGFAC_HEADERS 
+    interfaces/BqpdEngine.h 
+    interfaces/FilterSQPEngine.h 
+  )
+endif()
 
 if (LINK_OSI)
   add_definitions(-DUSE_OSILP)
-  include_directories("${PROJECT_SOURCE_DIR}/src/interfaces")
+  link_directories(${OSI_LIB_DIR_F})
   if (OSI_INC_DIR_F)
     include_directories("${OSI_INC_DIR_F}")
   endif (OSI_INC_DIR_F)
@@ -354,33 +366,54 @@ endif()
 
 set (GFORTRAN_COMPILER)
 if (Fortran_COMPILER_NAME STREQUAL "gfortran")
-  if (LINK_IPOPT OR LINK_FILTER_SQP OR LINK_BQPD)
+  if (LINK_IPOPT OR LINK_FILTER_SQP)
     set (GFORTRAN_COMPILER gfortran)
   endif()
 endif()
 
-set (ALL_EXEC_LIBS 
-	"${IPOPT_LIBS}"
-	"${CPX_LIBS}"
-        "${OSI_LIBS}"
-	"${ASL_LIBS}"
-        "lapack"
-	"blas"
-        "${GFORTRAN_COMPILER}"
-        "${MNTR_EXTRA_LIBS}"
-)
+# Add all nonempty libs
+set (ALL_EXEC_LIBS "minotaur")
+
+if (IPOPT_LIBS)
+  list(APPEND ALL_EXEC_LIBS "${IPOPT_LIBS}")
+endif()
+if (CPX_LIBS)
+  list(APPEND ALL_EXEC_LIBS "${CPX_LIBS}")
+endif()
+if (OSI_LIBS)
+  list(APPEND ALL_EXEC_LIBS "${OSI_LIBS}")
+endif()
+if (ASL_LIBS)
+  list(APPEND ALL_EXEC_LIBS "${ASL_LIBS}")
+endif()
+if (FILTER_SQP_LIBS)
+  list(APPEND ALL_EXEC_LIBS ${FILTER_SQP_LIBS})
+endif()
+
+list(APPEND ALL_EXEC_LIBS "lapack" "blas")
+
+if (GFORTRAN_COMPILER)
+  list(APPEND ALL_EXEC_LIBS "${GFORTRAN_COMPILER}")
+endif()
+if (MNTR_EXTRA_LIBS)
+  list(APPEND ALL_EXEC_LIBS "${MNTR_EXTRA_LIBS}")
+endif()
+
 message(STATUS ${MSG_HEAD} "ALL_EXEC_LIBS =  ${ALL_EXEC_LIBS}")
 list(REVERSE ALL_EXEC_LIBS)
 list(REMOVE_DUPLICATES ALL_EXEC_LIBS)
 list(REVERSE ALL_EXEC_LIBS)
+
 message(STATUS ${MSG_HEAD} "ALL_EXEC_LIBS after removing duplicates =  ${ALL_EXEC_LIBS}")
 
-set (SOLVER_SOURCES
-  solvers/Solver.cpp
-  solvers/Bnb.cpp 
-  solvers/Glob.cpp 
-  solvers/QG2.cpp 
-)
+if (IFACE_SOURCES)
+  set (SOLVER_SOURCES
+    solvers/Solver.cpp
+    solvers/Bnb.cpp 
+    solvers/Glob.cpp 
+    solvers/QG2.cpp 
+  )
+endif()
 
 add_library(minotaur ${MINOTAUR_SOURCES} ${ENGFAC_SOURCES} ${IFACE_SOURCES} ${SOLVER_SOURCES})
 if (BUILD_SHARED_LIBS)
@@ -393,22 +426,27 @@ else (BUILD_SHARED_LIBS)
           DESTINATION lib)
 endif (BUILD_SHARED_LIBS)
 
-set (ALL_EXEC_LIBS minotaur ${ALL_EXEC_LIBS})
-add_executable(mbnb solvers/BnbMain.cpp)
-target_link_libraries(mbnb ${ALL_EXEC_LIBS})
-install(TARGETS mbnb RUNTIME DESTINATION bin)
-
-add_executable(mqg solvers/QGMain.cpp)
-target_link_libraries(mqg ${ALL_EXEC_LIBS})
-install(TARGETS mqg RUNTIME DESTINATION bin)
-
-add_executable(mqgpar solvers/QGPar.cpp)
-target_link_libraries(mqgpar ${ALL_EXEC_LIBS})
-install(TARGETS mqgpar RUNTIME DESTINATION bin)
-
-add_executable(mglob solvers/GlobMain.cpp)
-target_link_libraries(mglob ${ALL_EXEC_LIBS})
-install(TARGETS mglob RUNTIME DESTINATION bin)
+if (IFACE_SOURCES)
+  add_executable(mbnb solvers/BnbMain.cpp)
+  target_link_libraries(mbnb ${ALL_EXEC_LIBS})
+  install(TARGETS mbnb RUNTIME DESTINATION bin)
+  set_target_properties(mbnb PROPERTIES INSTALL_RPATH "${MNTR_INSTALL_RPATH}")
+  
+  add_executable(mqg solvers/QGMain.cpp)
+  target_link_libraries(mqg ${ALL_EXEC_LIBS})
+  install(TARGETS mqg RUNTIME DESTINATION bin)
+  set_target_properties(mqg PROPERTIES INSTALL_RPATH "${MNTR_INSTALL_RPATH}")
+  
+  add_executable(mqgpar solvers/QGPar.cpp)
+  target_link_libraries(mqgpar ${ALL_EXEC_LIBS})
+  install(TARGETS mqgpar RUNTIME DESTINATION bin)
+  set_target_properties(mqgpar PROPERTIES INSTALL_RPATH "${MNTR_INSTALL_RPATH}")
+  
+  add_executable(mglob solvers/GlobMain.cpp)
+  target_link_libraries(mglob ${ALL_EXEC_LIBS})
+  install(TARGETS mglob RUNTIME DESTINATION bin)
+  set_target_properties(mglob PROPERTIES INSTALL_RPATH "${MNTR_INSTALL_RPATH}")
+endif()
 
 install(FILES ${ENGFAC_HEADERS} DESTINATION include/minotaur)
 install(FILES ${IFACE_HEADERS} DESTINATION include/minotaur)

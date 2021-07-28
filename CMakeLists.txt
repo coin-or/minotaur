@@ -1,7 +1,7 @@
 ## Minotaur CMake file
 
 project(MINOTAUR CXX C Fortran)
-CMAKE_MINIMUM_REQUIRED(VERSION 2.8 FATAL_ERROR) 
+CMAKE_MINIMUM_REQUIRED(VERSION 3.0 FATAL_ERROR) 
 cmake_policy(SET CMP0003 NEW)
 
 ## Fortran is required for Bqpd, Filter.
@@ -77,16 +77,12 @@ OPTION(BUILD_SHARED_LIBS "Build Minotaur with shared libraries." ON)
 # the RPATH to be used when installing, but only if it's not a system 
 # directory
 if (${BUILD_SHARED_LIBS})
-  LIST(FIND CMAKE_PLATFORM_IMPLICIT_LINK_DIRECTORIES "${CMAKE_INSTALL_PREFIX}/lib" isSystemDir)
-  if ("${isSystemDir}" STREQUAL "-1")
     if (IS_ABSOLUTE ${CMAKE_INSTALL_PREFIX})
-      set(CMAKE_INSTALL_RPATH 
-        ${CMAKE_INSTALL_RPATH}${SEP}${CMAKE_INSTALL_PREFIX}/lib)
+      set(MNTR_INSTALL_RPATH ${CMAKE_INSTALL_PREFIX}/lib)
     else()
-      set(CMAKE_INSTALL_RPATH ${CMAKE_INSTALL_RPATH}${SEP}${PROJECT_BINARY_DIR}/${CMAKE_INSTALL_PREFIX}/lib)
+      set(MNTR_INSTALL_RPATH ${PROJECT_BINARY_DIR}/${CMAKE_INSTALL_PREFIX}/lib)
     endif()
   endif()
-endif()
 
 ###########################################################################
 ## getrusage
@@ -191,48 +187,14 @@ endif()
 
 
 ###########################################################################
-## Bqpd
-###########################################################################
-set (BQPD_LIB_DIR)      ## NULL
-set (LINK_BQPD)         ## NULL
-message(STATUS ${MSG_HEAD} "Searching for bqpd ...")
-
-set (BQPD_LIB_DIR "" CACHE PATH 
-  "Full path to libbqpd.a library directory, e.g. /home/path/to/third-party/lib")
-set (BQPD_LIB_DIR_F ${BQPD_LIB_DIR})
-
-if (("${BQPD_LIB_DIR_F}" STREQUAL "") AND 
-  (NOT ("${TP_ABS_PATH}" STREQUAL "")))
-  set (BQPD_LIB_DIR_F ${TP_ABS_PATH}/lib)
-endif()
-
-message(STATUS ${MSG_HEAD} "BQPD_LIB_DIR_F is set to ${BQPD_LIB_DIR_F}")
-if (BQPD_LIB_DIR_F)
-  if (EXISTS "${BQPD_LIB_DIR_F}")
-    message(STATUS ${MSG_HEAD} "BQPD library directory exists.")
-    set (LINK_BQPD 1)
-  else()
-    message(FATAL_ERROR " ${MSG_HEAD} BQPD_LIB_DIR_F ${BQPD_LIB_DIR_F} not found.")
-  endif()
-endif()
-
-if (LINK_BQPD)
-  message(STATUS ${MSG_HEAD} "Link BQPD? Yes.")
-else()
-  set (BQPD_LIB_DIR_F)
-  message(STATUS ${MSG_HEAD} "Link BQPD? No.")
-endif()
-
-
-###########################################################################
-## Filter-SQP 
+## Filter-SQP and BQPD
 ###########################################################################
 set (FILTER_LIB_DIR)          ## NULL
 set (LINK_FILTER_SQP)         ## NULL
 
-message(STATUS ${MSG_HEAD} "Searching for Filter-SQP ...")
+message(STATUS ${MSG_HEAD} "Searching for Filter-SQP and BQPD ...")
 set (FILTER_LIB_DIR "" CACHE PATH 
-  "Path to Filter-SQP library. This directory must have a libfilter file.") 
+  "Path to Filter-SQP library. This directory must have a libfilter and libbqpd file.") 
 set (FILTER_LIB_DIR_F ${FILTER_LIB_DIR})
 
 if (("${FILTER_LIB_DIR_F}" STREQUAL "") AND 
@@ -245,6 +207,7 @@ if (FILTER_LIB_DIR_F)
   if (EXISTS "${FILTER_LIB_DIR_F}")
     message(STATUS ${MSG_HEAD} "Filter-SQP library directory exists.")
     set (LINK_FILTER_SQP 1)
+    set (FILTER_SQP_LIBS "bqpd" "filtersqp")
   else()
     message(FATAL_ERROR " ${MSG_HEAD} FILTER_LIB_DIR_F "
     "${FILTER_LIB_DIR_F} not found.")
@@ -252,10 +215,10 @@ if (FILTER_LIB_DIR_F)
 endif()
 
 if (LINK_FILTER_SQP)
-  message(STATUS ${MSG_HEAD} "Link Filter-SQP? Yes.")
+  message(STATUS ${MSG_HEAD} "Link Filter-SQP and BQPD? Yes.")
 else()
   set (FILTER_LIB_DIR_F)
-  message(STATUS ${MSG_HEAD} "Link Filter-SQP? No.")
+  message(STATUS ${MSG_HEAD} "Link Filter-SQP and BQPD? No.")
 endif()
 
 ###########################################################################
@@ -310,7 +273,7 @@ if (IPOPT_INC_DIR_F)
     message(STATUS ${MSG_HEAD} "Ipopt library directory exists.")
     set (LINK_IPOPT 1)
     if (${BUILD_SHARED_LIBS})
-      set (CMAKE_INSTALL_RPATH ${CMAKE_INSTALL_RPATH}${SEP}${IPOPT_LIB_DIR_F})
+      set (MNTR_INSTALL_RPATH ${MNTR_INSTALL_RPATH} ${IPOPT_LIB_DIR_F})
     endif()
 
     set (MNTR_IPOPT_PC_LIBRARIES)
@@ -406,7 +369,7 @@ if (OSI_INC_DIR_F)
   set (LINK_OSI 1)
 
   if (${BUILD_SHARED_LIBS})
-    set (CMAKE_INSTALL_RPATH ${CMAKE_INSTALL_RPATH}${SEP}${OSI_LIB_DIR_F})
+    set (MNTR_INSTALL_RPATH ${MNTR_INSTALL_RPATH} ${OSI_LIB_DIR_F})
   endif()
 
   set (OSI_LIBS)
@@ -488,7 +451,7 @@ if (NOT ("${CLP_INC_DIR_F}" STREQUAL ""))
   set (LINK_OSI 1)
 
   if (${BUILD_SHARED_LIBS})
-    set (CMAKE_INSTALL_RPATH ${CMAKE_INSTALL_RPATH}${SEP}${CLP_LIB_DIR_F})
+    set (MNTR_INSTALL_RPATH ${MNTR_INSTALL_RPATH} ${CLP_LIB_DIR_F})
   endif()
 
   set (MNTR_OSI_PC_LIBRARIES)
@@ -554,10 +517,10 @@ if (CPX_INC_DIR)
     add_subdirectory(src/engines/Cplex)
     set (LINK_CPX 1)
     if (${BUILD_SHARED_LIBS})
-       set (CMAKE_INSTALL_RPATH ${CMAKE_INSTALL_RPATH}${SEP}${CPX_LIB_DIR_F})
+      set (MNTR_INSTALL_RPATH ${MNTR_INSTALL_RPATH} ${CPX_LIB_DIR_F})
     endif()
 
-    set (CPX_LIBS mntrcpx "${CPX_LIB_DIR_F}/libcplex.a")
+    set (CPX_LIBS "${CPX_LIB_DIR_F}/libcplex.a")
 
   else()
     message(FATAL_ERROR " ${MSG_HEAD} "
@@ -634,86 +597,86 @@ endif()
 ###########################################################################
 ## Cbc
 ###########################################################################
-set (CBC_INC_DIR)          ## NULL
-set (CBC_LIB_DIR)          ## NULL
-set (LINK_CBC)             ## NULL
-set (CBC_LIBS)             ## NULL
-
-message(STATUS ${MSG_HEAD} "Searching for Cbc ...")
-set (CBC_INC_DIR "" CACHE PATH 
-  "Path to Cbc headers. It must have coin/CbcModel.hpp file.") 
-set (CBC_INC_DIR_F ${CBC_INC_DIR})
-
-if (("${CBC_INC_DIR_F}" STREQUAL "") AND
-    (NOT ("${TP_ABS_PATH}" STREQUAL "")))
-  set (CBC_INC_DIR_F "${TP_ABS_PATH}/include")
-endif()
-
-
-set (CBC_LIB_DIR "" CACHE PATH 
-  "Path to Cbc library. It must have a Cbc library file.") 
-set (CBC_LIB_DIR_F ${CBC_LIB_DIR})
-
-if (("${CBC_LIB_DIR_F}" STREQUAL "") AND
-       (NOT ("${TP_ABS_PATH}" STREQUAL "")))
-  set (CBC_LIB_DIR_F "${TP_ABS_PATH}/lib")
-endif()
-
-message(STATUS ${MSG_HEAD} "CBC_INC_DIR_F is set to ${CBC_INC_DIR_F}")
-message(STATUS ${MSG_HEAD} "CBC_LIB_DIR_F is set to ${CBC_LIB_DIR_F}")
-
-if (CBC_INC_DIR_F)
-  ## complain if header not found
-  if (NOT EXISTS "${CBC_INC_DIR_F}/coin/CbcModel.hpp")
-    message(FATAL_ERROR " ${MSG_HEAD}" 
-	    "${CBC_INC_DIR_F}/coin/CbcModel.hpp not found.")
-  endif()
-
-  ## complain if library not specified
-  if (NOT CBC_LIB_DIR_F)
-    message(FATAL_ERROR " ${MSG_HEAD}" 
-	    "CBC_LIB_DIR must be set along with CBC_INC_DIR")
-  endif()
-
-  ## check if library found
-  if (EXISTS ${CBC_LIB_DIR_F})
-    message(STATUS ${MSG_HEAD} "Cbc library directory exists.")
-    set (LINK_CBC 1)
-    if (${BUILD_SHARED_LIBS})
-      set (CMAKE_INSTALL_RPATH ${CMAKE_INSTALL_RPATH}${SEP}${CBC_LIB_DIR_F})
-    endif()
-
-    set (MNTR_CBC_PC_LIBRARIES)
-    if (MNTR_HAVE_PKGCON)
-       set (ENV{PKG_CONFIG_PATH}
-	       "${CBC_LIB_DIR_F}/pkgconfig${SEP}$ENV{PKG_CONFIG_PATH}")
-       pkg_check_modules(MNTR_CBC_PC cbc)
-       message(STATUS ${MSG_HEAD} "Cbc libraries: "
-	       "${MNTR_CBC_PC_LIBRARIES}")
-       set (CBC_LIBS "mntrcbc" ${MNTR_CBC_PC_LIBRARIES})
-    endif()
-
-    if ((NOT (MNTR_HAVE_PKGCON)) OR
-	    ("${MNTR_CBC_PC_LIBRARIES}" STREQUAL ""))
-      set (CBC_LIBS "mntrcbc" "cbc")
-    endif()
-
-  else()
-    message(FATAL_ERROR " ${MSG_HEAD} "
-	    "CBC_LIB_DIR_F ${CBC_LIB_DIR_F} not found.")
-  endif()
-elseif (CBC_LIB_DIR_F)
-  message(FATAL_ERROR " ${MSG_HEAD}" 
-	  "CBC_INC_DIR must be set along with CBC_LIB_DIR")
-endif()
-
-if (LINK_CBC)
-  message(STATUS ${MSG_HEAD} "Link Cbc? Yes.")
-else()
-  set (CBC_INC_DIR_F)
-  set (CBC_LIB_DIR_F)
-  message(STATUS ${MSG_HEAD} "Link Cbc? No.")
-endif()
+#set (CBC_INC_DIR)          ## NULL
+#set (CBC_LIB_DIR)          ## NULL
+#set (LINK_CBC)             ## NULL
+#set (CBC_LIBS)             ## NULL
+#
+#message(STATUS ${MSG_HEAD} "Searching for Cbc ...")
+#set (CBC_INC_DIR "" CACHE PATH 
+#  "Path to Cbc headers. It must have coin/CbcModel.hpp file.") 
+#set (CBC_INC_DIR_F ${CBC_INC_DIR})
+#
+#if (("${CBC_INC_DIR_F}" STREQUAL "") AND
+#    (NOT ("${TP_ABS_PATH}" STREQUAL "")))
+#  set (CBC_INC_DIR_F "${TP_ABS_PATH}/include")
+#endif()
+#
+#
+#set (CBC_LIB_DIR "" CACHE PATH 
+#  "Path to Cbc library. It must have a Cbc library file.") 
+#set (CBC_LIB_DIR_F ${CBC_LIB_DIR})
+#
+#if (("${CBC_LIB_DIR_F}" STREQUAL "") AND
+#       (NOT ("${TP_ABS_PATH}" STREQUAL "")))
+#  set (CBC_LIB_DIR_F "${TP_ABS_PATH}/lib")
+#endif()
+#
+#message(STATUS ${MSG_HEAD} "CBC_INC_DIR_F is set to ${CBC_INC_DIR_F}")
+#message(STATUS ${MSG_HEAD} "CBC_LIB_DIR_F is set to ${CBC_LIB_DIR_F}")
+#
+#if (CBC_INC_DIR_F)
+#  ## complain if header not found
+#  if (NOT EXISTS "${CBC_INC_DIR_F}/coin/CbcModel.hpp")
+#    message(FATAL_ERROR " ${MSG_HEAD}" 
+#	    "${CBC_INC_DIR_F}/coin/CbcModel.hpp not found.")
+#  endif()
+#
+#  ## complain if library not specified
+#  if (NOT CBC_LIB_DIR_F)
+#    message(FATAL_ERROR " ${MSG_HEAD}" 
+#	    "CBC_LIB_DIR must be set along with CBC_INC_DIR")
+#  endif()
+#
+#  ## check if library found
+#  if (EXISTS ${CBC_LIB_DIR_F})
+#    message(STATUS ${MSG_HEAD} "Cbc library directory exists.")
+#    set (LINK_CBC 1)
+#    if (${BUILD_SHARED_LIBS})
+#      set (MNTR_INSTALL_RPATH ${MNTR_INSTALL_RPATH} ${CBC_LIB_DIR_F})
+#    endif()
+#
+#    set (MNTR_CBC_PC_LIBRARIES)
+#    if (MNTR_HAVE_PKGCON)
+#       set (ENV{PKG_CONFIG_PATH}
+#	       "${CBC_LIB_DIR_F}/pkgconfig${SEP}$ENV{PKG_CONFIG_PATH}")
+#       pkg_check_modules(MNTR_CBC_PC cbc)
+#       message(STATUS ${MSG_HEAD} "Cbc libraries: "
+#	       "${MNTR_CBC_PC_LIBRARIES}")
+#       set (CBC_LIBS ${MNTR_CBC_PC_LIBRARIES})
+#    endif()
+#
+#    if ((NOT (MNTR_HAVE_PKGCON)) OR
+#	    ("${MNTR_CBC_PC_LIBRARIES}" STREQUAL ""))
+#      set (CBC_LIBS "cbc")
+#    endif()
+#
+#  else()
+#    message(FATAL_ERROR " ${MSG_HEAD} "
+#	    "CBC_LIB_DIR_F ${CBC_LIB_DIR_F} not found.")
+#  endif()
+#elseif (CBC_LIB_DIR_F)
+#  message(FATAL_ERROR " ${MSG_HEAD}" 
+#	  "CBC_INC_DIR must be set along with CBC_LIB_DIR")
+#endif()
+#
+#if (LINK_CBC)
+#  message(STATUS ${MSG_HEAD} "Link Cbc? Yes.")
+#else()
+#  set (CBC_INC_DIR_F)
+#  set (CBC_LIB_DIR_F)
+#  message(STATUS ${MSG_HEAD} "Link Cbc? No.")
+#endif()
 
 ###########################################################################
 ## qpOASES
@@ -741,7 +704,7 @@ if (QPOASES_INC_DIR)
   if (EXISTS ${QPOASES_LIB_DIR})
     message(STATUS ${MSG_HEAD} "qpOASES library directory exists.")
     add_subdirectory(src/engines/qpOASES)
-    set(CMAKE_INSTALL_RPATH ${CMAKE_INSTALL_RPATH}${SEP}${QPOASES_LIB_DIR})
+    set(MNTR_INSTALL_RPATH ${MNTR_INSTALL_RPATH} ${QPOASES_LIB_DIR})
     set (LINK_QPOASES 1)
   else()
     message(FATAL_ERROR " ${MSG_HEAD} "
@@ -807,8 +770,9 @@ else()
   message(STATUS ${MSG_HEAD} "Link AMPL-ASL? No.")
 endif()
 
+list(REMOVE_DUPLICATES MNTR_INSTALL_RPATH)
 ###########################################################################
-## Engine Factory
+## Compile the source and interfaces to various libraries
 ###########################################################################
 add_subdirectory(src)
 
@@ -874,13 +838,15 @@ else()
 endif()
 
 
-## for make test, copy instances, cd to src testing, and run unittest
-add_custom_target(utest 
-  ${CMAKE_COMMAND} -E remove_directory ./src/testing/instances
-  COMMAND ${CMAKE_COMMAND} -E copy_directory 
-  ${PROJECT_SOURCE_DIR}/src/testing/instances ./instances 
-  COMMAND unittest all
-  WORKING_DIRECTORY src/testing)
+## for make utest, copy instances, cd to src testing, and run unittest
+if (LINK_CPPUNIT)
+  add_custom_target(utest 
+    ${CMAKE_COMMAND} -E remove_directory ./src/testing/instances
+    COMMAND ${CMAKE_COMMAND} -E copy_directory 
+    ${PROJECT_SOURCE_DIR}/src/testing/instances ./instances 
+    COMMAND unittest all
+    WORKING_DIRECTORY src/testing)
+endif()
 
 
 ###########################################################################
@@ -903,9 +869,6 @@ add_custom_target(doc
   COMMAND ${CMAKE_COMMAND} -E copy ${PROJECT_SOURCE_DIR}/doc/logo/small.jpg html
   COMMAND ${CMAKE_COMMAND} -E copy ${PROJECT_SOURCE_DIR}/doc/logo/tiny.jpg html
   WORKING_DIRECTORY doxygen)
-
-message (STATUS ${MSG_HEAD} 
-  "rpath for installation is set to ${CMAKE_INSTALL_RPATH}")
 
 ###########################################################################
 ## hide unused options
