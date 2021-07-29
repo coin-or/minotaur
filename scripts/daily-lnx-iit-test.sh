@@ -291,7 +291,7 @@ doTest; testFiles; checkTest
 
 ## static
 NAME=build-osi-static
-FILES="lib/libminotaur.a lib/libmntrosilp.a"
+FILES="lib/libminotaur.a"
 CARGS="-DBOOST_INC_DIR:PATH=${TP_DIR}/include "
 CARGS+=" -DCPPUNIT_INC_DIR:PATH=${TP_DIR}/include/"
 CARGS+=" -DCPPUNIT_LIB_DIR:PATH=${TP_DIR}/lib" 
@@ -306,7 +306,7 @@ doTest; testFiles; checkTest
 ## Build Minotaur with Osi+Cbc alone
 ##########################################################################
 NAME=build-cbc
-FILES="lib/libminotaur.so lib/libmntrosilp.so lib/libmntrcbc.so"
+FILES="lib/libminotaur.so"
 CARGS="-DBOOST_INC_DIR:PATH=${TP_DIR}/include "
 CARGS+=" -DCPPUNIT_INC_DIR:PATH=${TP_DIR}/include/"
 CARGS+=" -DCPPUNIT_LIB_DIR:PATH=${TP_DIR}/lib" 
@@ -319,13 +319,13 @@ doTest; testFiles; checkTest
 
 ## debug
 NAME=build-cbc-debug
-FILES="lib/libminotaur.so lib/libmntrosilp.so lib/libmntrcbc.so"
+FILES="lib/libminotaur.so"
 CARGS+=" -DCMAKE_BUILD_TYPE:String=Debug"
 doTest; testFiles; checkTest
 
 ## static+debug
 NAME=build-cbc-static-debug
-FILES="lib/libminotaur.a lib/libmntrosilp.a lib/libmntrcbc.a"
+FILES="lib/libminotaur.a"
 CARGS+=" -DBUILD_SHARED_LIBS:BOOL=0"
 doTest; testFiles; checkTest
 
@@ -347,7 +347,7 @@ doTest; testFiles; checkTest
 ## Build Minotaur with ampl alone
 ##########################################################################
 NAME=build-ampl
-FILES="lib/libminotaur.so lib/libmntrampl.so"
+FILES="lib/libminotaur.so"
 CARGS="-DBOOST_INC_DIR:PATH=${TP_DIR}/include "
 CARGS+=" -DCPPUNIT_INC_DIR:PATH=${TP_DIR}/include/"
 CARGS+=" -DCPPUNIT_LIB_DIR:PATH=${TP_DIR}/lib" 
@@ -362,7 +362,7 @@ doTest; listBins; testFiles; checkTest
 
 ## static+debug
 NAME=build-ampl-static-debug
-FILES="lib/libminotaur.a lib/libmntrampl.a"
+FILES="lib/libminotaur.a"
 CARGS+=" -DBUILD_SHARED_LIBS:BOOL=0"
 doTest; listBins; testFiles; checkTest
 
