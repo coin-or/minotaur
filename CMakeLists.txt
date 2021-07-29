@@ -770,7 +770,9 @@ else()
   message(STATUS ${MSG_HEAD} "Link AMPL-ASL? No.")
 endif()
 
-list(REMOVE_DUPLICATES MNTR_INSTALL_RPATH)
+if (MNTR_INSTALL_RPATH)
+  list(REMOVE_DUPLICATES MNTR_INSTALL_RPATH)
+endif()
 ###########################################################################
 ## Compile the source and interfaces to various libraries
 ###########################################################################
