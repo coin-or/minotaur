@@ -383,7 +383,6 @@ int Bnb::solve(ProblemPtr p)
   VarVector *orig_v=0;
   HandlerVector handlers;
   int err = 0;
-  double obj_sense = 1.0;
   OptionDBPtr options = env_->getOptions();
  
   oinst_ = p;

@@ -340,10 +340,10 @@ void ParTreeManager::removeActiveNode(NodePtr node)
 
 void ParTreeManager::removeNode_(NodePtr node)
 {
-  NodePtr cNode, parent;
+  NodePtr cNode = 0;
+  NodePtr  parent = node->getParent();;
   NodePtrIterator node_i;
 
-  parent = node->getParent();
   if (node->getId()>0) {
     // Find the iterator corresponding to this node
     for (node_i = parent->childrenBegin(); node_i != parent->childrenEnd(); 

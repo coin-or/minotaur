@@ -181,13 +181,13 @@ void PCBProcessor::process(NodePtr node, RelaxationPtr rel,
   bool should_prune = true;
   bool should_resolve;
   bool sol_found = false;
-  DoubleVector *debug_sol = 0;
+  //DoubleVector *debug_sol = 0;
   BrancherStatus br_status;
   ConstSolutionPtr sol;
   ModVector mods;
   SeparationStatus sep_status = SepaContinue;
   int iter = 0, error;
-  bool debug_feas = false;
+  //bool debug_feas = false;
 
   ++stats_.proc;
   relaxation_ = rel;
@@ -198,12 +198,12 @@ void PCBProcessor::process(NodePtr node, RelaxationPtr rel,
   }
 
   //debug_sol = relaxation_->getDebugSol();
-  if (debug_sol) {
-    for (ConstraintConstIterator it=relaxation_->consBegin();
-         it!=relaxation_->consEnd(); ++it) {
+  //if (debug_sol) {
+  //  for (ConstraintConstIterator it=relaxation_->consBegin();
+  //       it!=relaxation_->consEnd(); ++it) {
 
-    }
-  }
+  //  }
+  //}
   
   // presolve
   should_prune = presolveNode_(node, s_pool);

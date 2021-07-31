@@ -194,7 +194,6 @@ void AMPLInterface::addLinearTermsFromObj_(Minotaur::LinearFunctionPtr & lf,
 
 void AMPLInterface::addOptions_()
 {
-  Minotaur::FlagOptionPtr f_option; 
   Minotaur::BoolOptionPtr b_option; 
   Minotaur::OptionDBPtr options = env_->getOptions();
 
@@ -1515,6 +1514,7 @@ Minotaur::FunctionType AMPLInterface::getMultExpressionType_(expr *e_ptr)
          f2 == Minotaur::Polynomial) {
        return Minotaur::Polynomial;
      }
+     return Minotaur::Nonlinear;
    default:
      return Minotaur::Nonlinear;
   }
