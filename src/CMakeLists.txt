@@ -107,8 +107,6 @@ set (MINOTAUR_SOURCES
      base/QGHandler.cpp 
      #base/QGHandlerAdvance.cpp 
      #base/QGHandlerPDE.cpp 
-     base/QPDRelaxer.cpp 
-     base/QPDProcessor.cpp 
      base/QuadHandler.cpp 
      base/QuadraticFunction.cpp
      base/QuadTransformer.cpp 
@@ -246,9 +244,7 @@ set (MINOTAUR_HEADERS
      base/QGHandlerAdvance.h 
      #base/QGAdvHandler.h 
      #base/QGHandlerPDE.h
-     base/QPDProcessor.h 
      base/QuadHandler.h 
-     base/QPDRelaxer.h 
      base/QuadraticFunction.h
      base/QuadTransformer.h
      base/RandomBrancher.h
@@ -411,7 +407,15 @@ if (IFACE_SOURCES)
     solvers/Solver.cpp
     solvers/Bnb.cpp 
     solvers/Glob.cpp 
+    #solvers/MultiStart.cpp 
     solvers/QG2.cpp 
+  )
+  set (SOLVER_HEADERS
+    solvers/Solver.h
+    solvers/Bnb.h 
+    solvers/Glob.h 
+    #solvers/MultiStart.h 
+    solvers/QG2.h 
   )
 endif()
 
@@ -446,10 +450,19 @@ if (IFACE_SOURCES)
   target_link_libraries(mglob ${ALL_EXEC_LIBS})
   install(TARGETS mglob RUNTIME DESTINATION bin)
   set_target_properties(mglob PROPERTIES INSTALL_RPATH "${MNTR_INSTALL_RPATH}")
+
+  #add_executable(mmultistart solvers/MultiStartMain.cpp)
+  #target_link_libraries(mmultistart ${ALL_EXEC_LIBS})
+  #install(TARGETS mmultistart RUNTIME DESTINATION bin)
+  #set_target_properties(mmultistart PROPERTIES INSTALL_RPATH "${MNTR_INSTALL_RPATH}")
+  
 endif()
 
 install(FILES ${ENGFAC_HEADERS} DESTINATION include/minotaur)
 install(FILES ${IFACE_HEADERS} DESTINATION include/minotaur)
+if (IFACE_SOURCES)
+  install(FILES ${SOLVER_HEADERS} DESTINATION include/minotaur)
+endif()
 install(FILES ${PROJECT_BINARY_DIR}/src/base/MinotaurConfig.h DESTINATION include/minotaur)
 install(FILES ${PROJECT_BINARY_DIR}/src/base/MinotaurCFortran.h DESTINATION include/minotaur)
 install(FILES ${PROJECT_BINARY_DIR}/src/base/Version.h DESTINATION include/minotaur)
