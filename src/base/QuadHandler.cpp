@@ -376,8 +376,14 @@ int QuadHandler::fixNodeErr(RelaxationPtr rel, ConstSolutionPtr sol,
         << " this node will be considered infeasible" << std::endl;
       break;
     }
-  case (FailedFeas):
   case (EngineError):
+    {
+      sol_found = false;
+      error = 2;
+      ++nlpStats_.inf;
+      break;
+    }
+  case (FailedFeas):
   case (FailedInfeas):
   case (ProvenUnbounded):
   case (ProvenFailedCQFeas):

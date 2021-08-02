@@ -450,6 +450,8 @@ ProblemPtr Reader::readMps(std::string fname, int &err)
       }
       break;
     default:
+      lb = -INFINITY;
+      ub =  INFINITY;
       break;
     }
     if (rowtypes[i] != 'N') {

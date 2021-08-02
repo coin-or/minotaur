@@ -163,7 +163,10 @@ void ParQGHandler::cutIntSol_(ConstSolutionPtr sol, CutManager *cutMan,
   relobj_ = (sol) ? sol->getObjValue() : -INFINITY;
 
   fixInts_(lpx);           // Fix integer variables
-  solveNLP_();
+#pragma omp critical (fixedNLPSolve)
+  {
+    solveNLP_();
+  }
   unfixInts_();            // Unfix integer variables
   
   switch(nlpStatus_) {

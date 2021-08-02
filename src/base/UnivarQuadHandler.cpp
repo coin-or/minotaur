@@ -984,7 +984,6 @@ std::vector<LinearFunctionPtr> UnivarQuadHandler::getSecant_(VariablePtr y,
                 VariablePtr x1, VariablePtr x2, bool pos, DoubleVector &rhs) {
   std::vector<LinearFunctionPtr> lfs(2);
   LinearFunctionPtr lf;
-  FunctionPtr f;
   double alpha1, alpha2;
   DoubleVector fns(4);
   UInt mind;

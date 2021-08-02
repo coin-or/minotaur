@@ -95,6 +95,11 @@ void Environment::createDefaultOptions_()
       "Should separability be used: <0/1>", true, false);
   options_->insert(b_option);
 
+  //Extra cuts follow the mcqgHyb as in the paper
+  b_option = (BoolOptionPtr) new Option<bool>("extraCuts",
+      "Should extra cuts be generated to tighten relaxations at various nodes: <0/1>", true, false);
+  options_->insert(b_option);
+
   b_option = (BoolOptionPtr) new Option<bool>("persp_ref", 
       "Should prespective reformulation be used: <0/1>", true, false);
   options_->insert(b_option);
@@ -255,9 +260,6 @@ void Environment::createDefaultOptions_()
   b_option = (BoolOptionPtr) new Option<bool>("storeCutsAtNode",
       "Store the cuts generated at a node in the cut-pool of the node: <0/1>", true, false);
   options_->insert(b_option);
-  //b_option = (BoolOptionPtr) new Option<bool>("root_genLinScheme2", 
-      //"Rounds of extra linearizations to be added at root node under gen scheme 2: <0/1>", true, false);
-  //options_->insert(b_option);
 
   // reset, so that we don't accidently add it again.
   b_option = 0;
@@ -378,10 +380,6 @@ void Environment::createDefaultOptions_()
       "MultilinearTermsHandler feasibility tolerance.", true, 0.00001);
   options_->insert(d_option);
 
-    //d_option = (DoubleOptionPtr) new Option<double>("max_vio", 
-      //"Max. violation threshold", true, 50);
-  //options_->insert(d_option);
-
   d_option = (DoubleOptionPtr) new Option<double>("bnb_time_limit", 
       "Limit on time in branch-and-bound in seconds: >0",
       true, 1e20);
@@ -443,7 +441,7 @@ void Environment::createDefaultOptions_()
   options_->insert(d_option);
 
   d_option = (DoubleOptionPtr) new Option<double>("root_linScheme1", 
-      "Rounds of extra linearizations to be added at root node under scheme 1", true, 0);
+      "Percentage violation allowed at root node for generating extra linearizations", true, 5);
   options_->insert(d_option);
 
   d_option = (DoubleOptionPtr) new Option<double>("root_linScheme2", 
@@ -451,7 +449,7 @@ void Environment::createDefaultOptions_()
   options_->insert(d_option);
 
   d_option = (DoubleOptionPtr) new Option<double>("root_linGenScheme2_per", 
-      "Threshold for slope change in root linearization gen scheme 2", true, 0);
+      "Threshold for slope change in root linearization gen scheme 2", true, 2);
   options_->insert(d_option);
 
 
@@ -460,7 +458,7 @@ void Environment::createDefaultOptions_()
   options_->insert(d_option);
 
   d_option = (DoubleOptionPtr) new Option<double>("maxVioPer", 
-      "Percentage above which constraint violation is unacceptable", true, 0);
+      "Percentage above which constraint violation is unacceptable", true, 150);
   options_->insert(d_option);
 
   d_option = (DoubleOptionPtr) new Option<double>("objVioMul", 

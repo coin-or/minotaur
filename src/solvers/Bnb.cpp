@@ -227,7 +227,6 @@ int Bnb::getEngine_(Engine **e)
 {
   EngineFactory efac(env_);
   bool cont=false;
-  const std::string me("bnb main: ");
   EnginePtr eptr = 0;
   int err = 0;
 
@@ -256,7 +255,7 @@ int Bnb::getEngine_(Engine **e)
                                    << std::endl;
     err = 1;
   } else {
-    env_->getLogger()->msgStream(LogExtraInfo) << me <<
+    env_->getLogger()->msgStream(LogExtraInfo) << me_ <<
       "engine used = " << eptr->getName() << std::endl;
   }
   *e = eptr;
@@ -383,7 +382,6 @@ int Bnb::solve(ProblemPtr p)
   VarVector *orig_v=0;
   HandlerVector handlers;
   int err = 0;
-  double obj_sense = 1.0;
   OptionDBPtr options = env_->getOptions();
  
   oinst_ = p;

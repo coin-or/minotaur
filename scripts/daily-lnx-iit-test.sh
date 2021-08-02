@@ -200,7 +200,7 @@ doTest; testFiles; checkTest
 ## Build Minotaur with filter alone
 ##########################################################################
 NAME=build-filter
-FILES="lib/libminotaur.so lib/libmntrbqpd.a lib/libmntrfiltersqp.so"
+FILES="lib/libminotaur.so"
 CARGS="-DBOOST_INC_DIR:PATH=${TP_DIR}/include "
 CARGS+=" -DCPPUNIT_INC_DIR:PATH=${TP_DIR}/include/"
 CARGS+=" -DCPPUNIT_LIB_DIR:PATH=${TP_DIR}/lib" 
@@ -210,13 +210,13 @@ doTest; testFiles; checkTest
 
 ## debug
 NAME=build-filter-debug
-FILES="lib/libminotaur.so lib/libmntrbqpd.a lib/libmntrfiltersqp.so"
+FILES="lib/libminotaur.so"
 CARGS+=" -DCMAKE_BUILD_TYPE:String=Debug"
 doTest; testFiles; checkTest
 
 ## static+debug
 NAME=build-filter-static-debug
-FILES="lib/libminotaur.a lib/libmntrbqpd.a lib/libmntrfiltersqp.a"
+FILES="lib/libminotaur.a"
 CARGS+=" -DBUILD_SHARED_LIBS:BOOL=0"
 doTest; testFiles; checkTest
 
@@ -235,7 +235,7 @@ doTest; testFiles; checkTest
 ## Build Minotaur with ipopt alone
 ##########################################################################
 NAME=build-ipopt
-FILES="lib/libminotaur.so lib/libmntripopt.so"
+FILES="lib/libminotaur.so"
 CARGS="-DBOOST_INC_DIR:PATH=${TP_DIR}/include "
 CARGS+=" -DCPPUNIT_INC_DIR:PATH=${TP_DIR}/include/"
 CARGS+=" -DCPPUNIT_LIB_DIR:PATH=${TP_DIR}/lib" 
@@ -250,7 +250,7 @@ doTest; testFiles; checkTest
 
 ## debug+static
 NAME=build-ipopt-static-debug
-FILES="lib/libminotaur.a lib/libmntripopt.a"
+FILES="lib/libminotaur.a"
 CARGS+=" -DBUILD_SHARED_LIBS:BOOL=0"
 doTest; testFiles; checkTest
 
@@ -269,7 +269,7 @@ doTest; testFiles; checkTest
 ## Build Minotaur with osi alone
 ##########################################################################
 NAME=build-osi
-FILES="lib/libminotaur.so lib/libmntrosilp.so"
+FILES="lib/libminotaur.so"
 CARGS="-DBOOST_INC_DIR:PATH=${TP_DIR}/include "
 CARGS+=" -DCPPUNIT_INC_DIR:PATH=${TP_DIR}/include/"
 CARGS+=" -DCPPUNIT_LIB_DIR:PATH=${TP_DIR}/lib" 
@@ -285,13 +285,13 @@ doTest; testFiles; checkTest
 
 ## static+debug
 NAME=build-osi-static-debug
-FILES="lib/libminotaur.a lib/libmntrosilp.a"
+FILES="lib/libminotaur.a"
 CARGS+=" -DBUILD_SHARED_LIBS:BOOL=0"
 doTest; testFiles; checkTest
 
 ## static
 NAME=build-osi-static
-FILES="lib/libminotaur.a lib/libmntrosilp.a"
+FILES="lib/libminotaur.a"
 CARGS="-DBOOST_INC_DIR:PATH=${TP_DIR}/include "
 CARGS+=" -DCPPUNIT_INC_DIR:PATH=${TP_DIR}/include/"
 CARGS+=" -DCPPUNIT_LIB_DIR:PATH=${TP_DIR}/lib" 
@@ -306,7 +306,7 @@ doTest; testFiles; checkTest
 ## Build Minotaur with Osi+Cbc alone
 ##########################################################################
 NAME=build-cbc
-FILES="lib/libminotaur.so lib/libmntrosilp.so lib/libmntrcbc.so"
+FILES="lib/libminotaur.so"
 CARGS="-DBOOST_INC_DIR:PATH=${TP_DIR}/include "
 CARGS+=" -DCPPUNIT_INC_DIR:PATH=${TP_DIR}/include/"
 CARGS+=" -DCPPUNIT_LIB_DIR:PATH=${TP_DIR}/lib" 
@@ -319,13 +319,13 @@ doTest; testFiles; checkTest
 
 ## debug
 NAME=build-cbc-debug
-FILES="lib/libminotaur.so lib/libmntrosilp.so lib/libmntrcbc.so"
+FILES="lib/libminotaur.so"
 CARGS+=" -DCMAKE_BUILD_TYPE:String=Debug"
 doTest; testFiles; checkTest
 
 ## static+debug
 NAME=build-cbc-static-debug
-FILES="lib/libminotaur.a lib/libmntrosilp.a lib/libmntrcbc.a"
+FILES="lib/libminotaur.a"
 CARGS+=" -DBUILD_SHARED_LIBS:BOOL=0"
 doTest; testFiles; checkTest
 
@@ -347,7 +347,7 @@ doTest; testFiles; checkTest
 ## Build Minotaur with ampl alone
 ##########################################################################
 NAME=build-ampl
-FILES="lib/libminotaur.so lib/libmntrampl.so"
+FILES="lib/libminotaur.so"
 CARGS="-DBOOST_INC_DIR:PATH=${TP_DIR}/include "
 CARGS+=" -DCPPUNIT_INC_DIR:PATH=${TP_DIR}/include/"
 CARGS+=" -DCPPUNIT_LIB_DIR:PATH=${TP_DIR}/lib" 
@@ -362,7 +362,7 @@ doTest; listBins; testFiles; checkTest
 
 ## static+debug
 NAME=build-ampl-static-debug
-FILES="lib/libminotaur.a lib/libmntrampl.a"
+FILES="lib/libminotaur.a"
 CARGS+=" -DBUILD_SHARED_LIBS:BOOL=0"
 doTest; listBins; testFiles; checkTest
 
@@ -381,7 +381,7 @@ doTest; listBins; testFiles; checkTest
 ## Build Minotaur with ampl + osi + cbc + ipopt + filter 
 ##########################################################################
 NAME=build-all
-FILES="lib/libminotaur.so lib/libmntrbqpd.a lib/libmntrampl.so lib/libmntrfiltersqp.so lib/libmntripopt.so lib/libmntrosilp.so lib/libmntrcbc.so bin/bnb bin/glob bin/qg bin/qpd"
+FILES="lib/libminotaur.so bin/mbnb bin/mglob bin/mqg bin/mqgpar"
 CARGS="-DBOOST_INC_DIR:PATH=${TP_DIR}/include "
 CARGS+=" -DCPPUNIT_INC_DIR:PATH=${TP_DIR}/include/"
 CARGS+=" -DCPPUNIT_LIB_DIR:PATH=${TP_DIR}/lib" 
@@ -417,7 +417,7 @@ echo "" >> ${SUMMARY}
 
 ## static+debug
 NAME=build-all-static-debug
-FILES="lib/libminotaur.a lib/libmntrbqpd.a lib/libmntrampl.a lib/libmntrfiltersqp.a lib/libmntripopt.a lib/libmntrosilp.a lib/libmntrcbc.a bin/bnb bin/glob bin/qg bin/qpd"
+FILES="bin/mbnb bin/mglob bin/mqg bin/mqgpar"
 CARGS+=" -DBUILD_SHARED_LIBS:BOOL=0"
 doTest; listBins; testFiles; checkTest
 
@@ -458,7 +458,7 @@ cp ${TEST_DIR}/Makefile.manual Makefile
 echo "Making using Makefile.manual" >> ../${NAME}.log 2>> ../${NAME}.err
 make -j ${CPUS} BQPD_LIB=${TP_DIR}/lib/libbqpd.a FILTERSQP_LIB=${TP_DIR}/lib/libfiltersqp.a IPOPT_INST=${TP_DIR} OSI_INST=${TP_DIR} AMPL_INCS=-I${TP_DIR}/include/asl AMPL_INST=${TP_DIR}/lib BOOST_INC=${TP_DIR} MINOTAUR=${TEST_DIR} EXTRA_LIBS="-lcoinmumps -lz -lbz2" >> ../${NAME}.log 2>> ../${NAME}.err
 echo "finished Making" >> ../${NAME}.log 2>> ../${NAME}.err
-FILES="lib/libminotaur.a lib/libmntrbqpd.a lib/libmntrampl.a lib/libmntrfiltersqp.a lib/libmntripopt.a lib/libmntrosilp.a bin/bnb bin/glob bin/qg bin/qpd"
+FILES="lib/libminotaur.a bin/mbnb bin/mglob bin/mqg bin/mqgpar"
 cd ${TEST_DIR}
 listBins; testFiles; checkTest
 

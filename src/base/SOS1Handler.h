@@ -73,7 +73,7 @@ public:
   bool isNeeded();
 
   /// Presolve. Do not do any presolving.
-  SolveStatus presolve(PreModQ *, bool *, Solution **sol) {return Finished;};
+  SolveStatus presolve(PreModQ *, bool *, Solution **) {return Finished;};
 
   /// Does nothing.
   void postsolveGetX(const double *, UInt, DoubleVector *);

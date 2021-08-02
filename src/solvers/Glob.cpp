@@ -140,13 +140,13 @@ BranchAndBound * Glob::createBab_(EnginePtr e, HandlerVector &handlers) {
     ReliabilityBrancherPtr rel_br;
     rel_br = (ReliabilityBrancherPtr) new ReliabilityBrancher(env_, handlers);
     rel_br->setEngine(e);
-    t = (inst_->getSize()->ints + inst_->getSize()->bins)/10;
+    t = (newp_->getSize()->ints + newp_->getSize()->bins)/10;
     t = std::max(t, (UInt) 2);
     t = std::min(t, (UInt) 4);
     rel_br->setThresh(t);
     env_->getLogger()->msgStream(LogExtraInfo) << me_
       << "setting reliability threshhold to " << t << std::endl;
-    t = (UInt) inst_->getSize()->ints + inst_->getSize()->bins/20+2;
+    t = (UInt) newp_->getSize()->ints + newp_->getSize()->bins/20+2;
     t = std::min(t, (UInt) 10);
     rel_br->setMaxDepth(t);
     env_->getLogger()->msgStream(LogExtraInfo) << me_
@@ -173,16 +173,16 @@ BranchAndBound * Glob::createBab_(EnginePtr e, HandlerVector &handlers) {
   bab->setNodeProcessor(nproc);
 
   nr = (NodeIncRelaxerPtr) new NodeIncRelaxer(env_, handlers);
-  nr->setProblem(inst_);
+  nr->setProblem(newp_);
   nr->setEngine(e);
   bab->setNodeRelaxer(nr);
   bab->shouldCreateRoot(true);
 
   if (env_->getOptions()->findBool("msheur")->getValue() == true && 
-      (inst_->getSize()->bins == 0 && inst_->getSize()->ints == 0)) {
+      (newp_->getSize()->bins == 0 && newp_->getSize()->ints == 0)) {
     EnginePtr nlp_e = getNLPEngine_();
-    inst_->setNativeDer();
-    NLPMSPtr ms_heur = (NLPMSPtr) new NLPMultiStart(env_, inst_, nlp_e);
+    newp_->setNativeDer();
+    NLPMSPtr ms_heur = (NLPMSPtr) new NLPMultiStart(env_, newp_, nlp_e);
     bab->addPreRootHeur(ms_heur); 
   }
 

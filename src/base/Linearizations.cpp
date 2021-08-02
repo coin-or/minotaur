@@ -50,6 +50,7 @@ using namespace Minotaur;
 typedef std::vector<ConstraintPtr>::const_iterator CCIter;
 const std::string Linearizations::me_ = "Linearizations: ";
 
+
 Linearizations::Linearizations(EnvPtr env, RelaxationPtr rel,
                                ProblemPtr minlp, std::vector<ConstraintPtr> nlCons,
                                VariablePtr objVar, ConstSolutionPtr sol)
@@ -68,7 +69,6 @@ Linearizations::Linearizations(EnvPtr env, RelaxationPtr rel,
 {
   nlCons_ = nlCons;
   logger_ = env->getLogger();
-  //MS: set the option for root_LinSchemes
   rs1_ = env_->getOptions()->findDouble("root_linScheme1")->getValue();
   rs2Per_ = env_->getOptions()->findDouble("root_linScheme2")->getValue();
   rs2NbhSize_ = env_->getOptions()->findDouble("root_linScheme2_nbhSize")->getValue();
@@ -579,7 +579,6 @@ void Linearizations::findCenter()
 
   stats_->linSchemesTime = stats_->linSchemesTime + timer_->query();
   timer_->stop();
-  //exit(1);
   return;
 }
 
@@ -746,13 +745,13 @@ void Linearizations::linearAt_(FunctionPtr f, double fval, const double *x,
 }
 
 
-void Linearizations::rootLinearizations()
+bool Linearizations::rootLinearizationsUniS()
 {
   timer_->start();
   
   FunctionPtr f; 
   ConstraintPtr con;
-  bool isFound = false;
+  bool isFound = false, allFound = true;
   UInt nVarIdx, lVarIdx;
   double lVarCoeff = 0, nVarCoeff = 0, ub;
    
@@ -774,8 +773,13 @@ void Linearizations::rootLinearizations()
         if (rs2Per_ > 0) { // there is a default neighborhood
           rootLinScheme2_(f, ub, lVarCoeff, lVarIdx, nVarIdx, 0);
         }
+      } else {
+        if (allFound) {
+          allFound = false;       
+        }
       }
     }
+
     if (oNl_) {      
       ObjectivePtr o = minlp_->getObjective();
       f = o->getFunction();
@@ -792,15 +796,18 @@ void Linearizations::rootLinearizations()
       }      
     }
   }
+
+  stats_->linSchemesTime = stats_->linSchemesTime + timer_->query();
+  timer_->stop();
+  return allFound;
+}
+
+
+void Linearizations::rootLinearizationsGen()
+{
+  timer_->start();
   /// General scheme at root
-  // Option for general scheme
   if (solC_) {
-    // varPtrs_ has variables that appear in the nonlinear part of constraints
-    // and objective
-    //varsInNonlinCons_();
-    //if (varPtrs_.size() == 0 || (oNl_ == 0 && nlCons_.size() == 0)) {
-      //return;    
-    //}
     // General scheme using center and  positive spanning vectors
     if (!hasEqCons_) {
       varsInNonlinCons_();
@@ -2218,7 +2225,6 @@ void Linearizations::rootLinScheme1_(FunctionPtr fun, double lVarCoeff,
       vUb = nlpx_[nVarIdx] + 50;
     } 
   }
-  //exit(1);
     
   b1[nVarIdx] = vLb;
   act = nVarCoeff*vLb;
@@ -2295,7 +2301,7 @@ void Linearizations::rootLinScheme1_(FunctionPtr fun, double lVarCoeff,
   }
 
   if ((stopCond < solAbsTol_) || 
-      (UB !=0 && stopCond < fabs(UB)*solRelTol_ )) { 
+      (UB != 0 && stopCond < fabs(UB)*solRelTol_)) { 
     delete [] b1;
     return;
   }

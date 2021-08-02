@@ -165,7 +165,9 @@ private:
    
   /// Root linearization schemes
   //void rootLinearizations(const double * nlpx);
-  void rootLinearizations();
+  bool rootLinearizationsUniS();
+  
+  void rootLinearizationsGen();
 
   double * getCenter() {return solC_;}
   
