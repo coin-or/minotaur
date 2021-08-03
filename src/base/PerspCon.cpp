@@ -504,7 +504,7 @@ bool PerspCon::checkLVars_(double *x, VariableGroup &lVarVal, VariableGroup &nVa
 {  
   ConstVariablePtr v;
   LinearFunctionPtr lf;
-  bool isFound, allFound;
+  bool isFound = false, allFound = false; //MS: recheck
   std::forward_list<impliVar>::iterator it1;
   
   if (isObj_) {
@@ -1007,9 +1007,9 @@ bool PerspCon::multiTermsFunc_(ConstraintPtr c, VariablePtr var,
 bool PerspCon::twoTermsFunc_(ConstraintPtr c, VariablePtr var, 
                             std::forward_list<impliVar> *varList, bool z)
 {
-  VariablePtr v;
+  VariablePtr v = NULL;
   impliVar impli;
-  double vc, bc = 0, val, vlb, vub;
+  double vc = 1, bc = 0, val, vlb, vub; //MS: recheck
   bool isFixed = false, allBin = true;
   double lb = c->getLb(), ub = c->getUb();
   std::forward_list<impliVar>::iterator it1;
