@@ -598,6 +598,7 @@ bool TransSep::coeffValue(CNode * n2, double *c,bool *n, CNode **n1,
     }
     // fall through
   case (OpIntDiv):
+    nr = n2->getR();
     *c = (*c)*(nr->getVal());
     *n = 1;        
     *n1 = n2;
