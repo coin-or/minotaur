@@ -45,7 +45,7 @@ public:
   /// get status of the last solve.
   virtual SolveStatus getStatus();
 
-  /// get status of the last solve.
+  /// get solution of the last solve.
   virtual DoubleVector getSolution();
 
   /// Return the upper bound for the optimal value

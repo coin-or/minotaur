@@ -375,7 +375,6 @@ int Bnb::showInfo()
 
 int Bnb::solve(ProblemPtr p)
 {
-  MINOTAUR_AMPL::AMPLInterface* iface = 0;
   BranchAndBound *bab = 0;
   EnginePtr engine = 0;     // engine for solving relaxations. 
   PresolverPtr pres = 0;
@@ -433,7 +432,7 @@ int Bnb::solve(ProblemPtr p)
     env_->getLogger()->msgStream(LogInfo) << me_ 
       << "status of presolve: " 
       << getSolveStatusString(pres->getStatus()) << std::endl;
-    writeSol_(env_, orig_v, pres, pres->getSolution(), pres->getStatus(), iface);
+    writeSol_(env_, orig_v, pres, pres->getSolution(), pres->getStatus(), iface_);
     goto CLEANUP;
   }
 
@@ -451,7 +450,7 @@ int Bnb::solve(ProblemPtr p)
     (*it)->writeStats(env_->getLogger()->msgStream(LogExtraInfo));
   }
 
-  writeSol_(env_, orig_v, pres, bab->getSolution(), bab->getStatus(), iface);
+  writeSol_(env_, orig_v, pres, bab->getSolution(), bab->getStatus(), iface_);
   writeBnbStatus_(bab);
   
 CLEANUP:
@@ -460,9 +459,6 @@ CLEANUP:
   }
   if (engine) {
     delete engine;
-  }
-  if (iface) {
-    delete iface;
   }
   if (pres) {
     delete pres;
@@ -502,7 +498,6 @@ int Bnb::writeBnbStatus_(BranchAndBound *bab)
       << env_->getTime(err) << std::endl
       << me_ << "status of branch-and-bound = " 
       << getSolveStatusString(bab->getStatus()) << std::endl;
-    env_->stopTimer(err); 
   } else {
     env_->getLogger()->msgStream(LogInfo)
       << me_ << std::fixed << std::setprecision(4)
@@ -515,7 +510,6 @@ int Bnb::writeBnbStatus_(BranchAndBound *bab)
       << env_->getTime(err) << std::endl 
       << me_ << "status of branch-and-bound: " 
       << getSolveStatusString(NotStarted) << std::endl;
-    env_->stopTimer(err);
   }
   return err;
 }

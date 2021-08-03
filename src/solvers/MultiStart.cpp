@@ -164,7 +164,7 @@ BranchAndBound* MultiStart::getBab_(EnginePtr e, HandlerVector &handlers)
 
 BrancherPtr MultiStart::getBrancher_(HandlerVector handlers, EnginePtr e)
 {
-  BrancherPtr br;
+  BrancherPtr br = 0;
   UInt t;
 
   if (env_->getOptions()->findString("brancher")->getValue() == "rel") {
@@ -246,79 +246,29 @@ int MultiStart::getEngine_(Engine **e)
 }
 
 
-void loadProblem(EnvPtr env, MINOTAUR_AMPL::AMPLInterface* iface,
-                 ProblemPtr &oinst, double *obj_sense)
+DoubleVector MultiStart::getSolution()
 {
-  Timer *timer     = env->getNewTimer();
-  OptionDBPtr options = env->getOptions();
-  JacobianPtr jac;
-  HessianOfLagPtr hess;
-  const std::string me("msbnb main: ");
-
-  timer->start();
-  oinst = iface->readInstance(options->findString("problem_file")->getValue());
-  env->getLogger()->msgStream(LogInfo) << me 
-    << "time used in reading instance = " << std::fixed 
-    << std::setprecision(2) << timer->query() << std::endl;
-  
-  // display the problem
-  oinst->calculateSize();
-  if (options->findBool("display_problem")->getValue()==true) {
-    oinst->write(env->getLogger()->msgStream(LogNone), 12);
-  }
-  if (options->findBool("display_size")->getValue()==true) {
-    oinst->writeSize(env->getLogger()->msgStream(LogNone));
-  }
-  // create the jacobian
-  if (false==options->findBool("use_native_cgraph")->getValue()) {
-    jac = (MINOTAUR_AMPL::AMPLJacobianPtr) 
-      new MINOTAUR_AMPL::AMPLJacobian(iface);
-    oinst->setJacobian(jac);
-
-    // create the hessian
-    hess = (MINOTAUR_AMPL::AMPLHessianPtr)
-      new MINOTAUR_AMPL::AMPLHessian(iface);
-    oinst->setHessian(hess);
-  }
-
-  // set initial point
-  oinst->setInitialPoint(iface->getInitialPoint(), 
-                         oinst->getNumVars()-iface->getNumDefs());
-
-  if (oinst->getObjective() &&
-      oinst->getObjective()->getObjectiveType()==Maximize) {
-    *obj_sense = -1.0;
-    env->getLogger()->msgStream(LogInfo) << me 
-      << "objective sense: maximize (will be converted to Minimize)"
-      << std::endl;
-  } else {
-    *obj_sense = 1.0;
-    env->getLogger()->msgStream(LogInfo) << me 
-      << "objective sense: minimize" << std::endl;
-  }
-
-  delete timer;
+  DoubleVector x;
+  return x;
 }
 
 
-void overrideOptions(EnvPtr env)
+SolveStatus MultiStart::getStatus()
 {
-  env->getOptions()->findString("interface_type")->setValue("AMPL");
+  return status_;
 }
 
 
-PresolverPtr presolve(EnvPtr env, ProblemPtr p, size_t ndefs,
-                      HandlerVector &handlers)
+PresolverPtr MultiStart::presolve_(HandlerVector &handlers)
 {
-  PresolverPtr pres = PresolverPtr(); // NULL
-  const std::string me("msbnb main: ");
+  PresolverPtr pres = 0; // NULL
 
-  p->calculateSize();
-  if (env->getOptions()->findBool("presolve")->getValue() == true) {
-    LinHandlerPtr lhandler = (LinHandlerPtr) new LinearHandler(env, p);
+  oinst_->calculateSize();
+  if (env_->getOptions()->findBool("presolve")->getValue() == true) {
+    LinHandlerPtr lhandler = (LinHandlerPtr) new LinearHandler(env_, oinst_);
     handlers.push_back(lhandler);
-    if (p->isQP() || p->isQuadratic() || p->isLinear() ||
-        true==env->getOptions()->findBool("use_native_cgraph")->getValue()) {
+    if (oinst_->isQP() || oinst_->isQuadratic() || oinst_->isLinear() ||
+        true==env_->getOptions()->findBool("use_native_cgraph")->getValue()) {
       lhandler->setPreOptPurgeVars(true);
       lhandler->setPreOptPurgeCons(true);
       lhandler->setPreOptCoeffImp(true);
@@ -327,72 +277,70 @@ PresolverPtr presolve(EnvPtr env, ProblemPtr p, size_t ndefs,
       lhandler->setPreOptPurgeCons(false);
       lhandler->setPreOptCoeffImp(false);
     }
-    if (ndefs>0) {
+    if (iface_ && iface_->getNumDefs()>0) {
       lhandler->setPreOptDualFix(false);
     } else {
       lhandler->setPreOptDualFix(true);
     }
 
-    if (!p->isLinear() && 
-        true==env->getOptions()->findBool("use_native_cgraph")->getValue() && 
-        true==env->getOptions()->findBool("nl_presolve")->getValue() 
+    if (!oinst_->isLinear() && 
+        true==env_->getOptions()->findBool("use_native_cgraph")->getValue() && 
+        true==env_->getOptions()->findBool("nl_presolve")->getValue() 
        ) {
-      NlPresHandlerPtr nlhand = (NlPresHandlerPtr) new NlPresHandler(env, p);
+      NlPresHandlerPtr nlhand = (NlPresHandlerPtr) new NlPresHandler(env_, oinst_);
       handlers.push_back(nlhand);
     }
 
     // write the names.
-    env->getLogger()->msgStream(LogExtraInfo) << me 
+    env_->getLogger()->msgStream(LogExtraInfo) << me_ 
       << "handlers used in presolve:" << std::endl;
     for (HandlerIterator h = handlers.begin(); h != handlers.end(); 
          ++h) {
-       env->getLogger()->msgStream(LogExtraInfo) << me 
+       env_->getLogger()->msgStream(LogExtraInfo) << me_ 
         << (*h)->getName() << std::endl;
     }
   }
 
-  pres = (PresolverPtr) new Presolver(p, env, handlers);
+  pres = (PresolverPtr) new Presolver(oinst_, env_, handlers);
   pres->standardize(); 
-  if (env->getOptions()->findBool("presolve")->getValue() == true) {
+  if (env_->getOptions()->findBool("presolve")->getValue() == true) {
     pres->solve();
     for (HandlerVector::iterator h=handlers.begin(); h!=handlers.end(); ++h) {
-      (*h)->writeStats(env->getLogger()->msgStream(LogExtraInfo));
+      (*h)->writeStats(env_->getLogger()->msgStream(LogExtraInfo));
     }
   }
   return pres;
 }
 
 
-void setInitialOptions(EnvPtr env)
+void MultiStart::setInitialOptions_()
 {
-  env->getOptions()->findBool("presolve")->setValue(true);
-  env->getOptions()->findBool("use_native_cgraph")->setValue(true);
-  env->getOptions()->findBool("nl_presolve")->setValue(true);
-  env->getOptions()->findString("nlp_engine")->setValue("IPOPT");
-  env->getOptions()->findString("qp_engine")->setValue("None"); 
-  env->getOptions()->findString("brancher")->setValue("maxvio");
+  env_->getOptions()->findString("nlp_engine")->setValue("IPOPT");
+  env_->getOptions()->findString("qp_engine")->setValue("None"); 
+  env_->getOptions()->findString("brancher")->setValue("maxvio");
 }
 
 
-void showHelp()
+void MultiStart::showHelp() const
 {
-  std::cout << "NLP-based branch-and-estimate heuristic for nonconvex MINLP."
-    << std::endl
-    << "**Works in parallel with a thread-safe NLP solver only "
-    << "(e.g. IPOPT with MA97)**" << std::endl
-    << "Usage:" << std::endl
-    << "To show version: msbnb -v (or --display_version yes) " << std::endl
-    << "To show all options: msbnb -= (or --display_options yes)" 
-    << std::endl
-    << "To solve an instance: msbnb --option1 [value] "
-    << "--option2 [value] ... " << " .nl-file" << std::endl;
+  env_->getLogger()->errStream()
+      << "NLP-based branch-and-estimate heuristic for nonconvex MINLP."
+      << std::endl
+      << "**Works in parallel with a thread-safe NLP solver only "
+      << "(e.g. IPOPT with MA97)**" << std::endl
+      << "Usage:" << std::endl
+      << "To show version: multistart -v (or --display_version yes) "
+      << std::endl
+      << "To show all options: multistart -= (or --display_options yes)" 
+      << std::endl
+      << "To solve an instance: multistart --option1 [value] "
+      << "--option2 [value] ... " << " .nl-file" << std::endl;
 }
 
 
-int showInfo(EnvPtr env)
+int MultiStart::showInfo()
 {
-  OptionDBPtr options = env->getOptions();
-  const std::string me("msbnb main: ");
+  OptionDBPtr options = env_->getOptions();
 
   if (options->findBool("display_options")->getValue() ||
       options->findFlag("=")->getValue()) {
@@ -408,8 +356,8 @@ int showInfo(EnvPtr env)
 
   if (options->findBool("display_version")->getValue() ||
       options->findFlag("v")->getValue()) {
-    env->getLogger()->msgStream(LogNone) << me << "Minotaur version "
-      << env->getVersion() << std::endl << me 
+    env_->getLogger()->msgStream(LogNone) << me_ << "Minotaur version "
+      << env_->getVersion() << std::endl << me_ 
       << "Multistart NLP-based branch-and-bound solver for nonconvex MINLP"
       << std::endl;
     return 1;
@@ -420,9 +368,9 @@ int showInfo(EnvPtr env)
     return 1;
   }
 
-  env->getLogger()->msgStream(LogInfo)
-    << me << "Minotaur version " << env->getVersion() << std::endl
-    << me << "Multistart NLP-based branch-and-bound solver for nonconvex MINLP"
+  env_->getLogger()->msgStream(LogInfo)
+    << me_ << "Minotaur version " << env_->getVersion() << std::endl
+    << me_ << "Multistart NLP-based branch-and-bound solver for nonconvex MINLP"
     << std::endl;
   return 0;
 }
@@ -446,41 +394,39 @@ void writeSol(EnvPtr env, VarVector *orig_v,
 }
 
 
-void writeBnbStatus(EnvPtr env, BranchAndBound *bab, double obj_sense)
+int MultiStart::writeBnbStatus_(BranchAndBound *bab)
 {
 
-  const std::string me("msbnb main: ");
   int err = 0;
 
   if (bab) {
-    env->getLogger()->msgStream(LogInfo)
-      << me << std::fixed << std::setprecision(4) 
-      << "best solution value = " << obj_sense*bab->getUb() << std::endl
-      << me << std::fixed << std::setprecision(4)
+    env_->getLogger()->msgStream(LogInfo)
+      << me_ << std::fixed << std::setprecision(4) 
+      << "best solution value = " << objSense_*bab->getUb() << std::endl
+      << me_ << std::fixed << std::setprecision(4)
       << "best bound estimate from remaining nodes = "
-      <<  obj_sense*bab->getLb() << std::endl
-      << me << "gap = " << std::max(0.0,bab->getUb() - bab->getLb())
+      <<  objSense_*bab->getLb() << std::endl
+      << me_ << "gap = " << std::max(0.0,bab->getUb() - bab->getLb())
       << std::endl
-      << me << "gap percentage = " << bab->getPerGap() << std::endl
-      << me << "time used (s) = " << std::fixed << std::setprecision(2) 
-      << env->getTime(err) << std::endl
-      << me << "status of branch-and-bound: " 
+      << me_ << "gap percentage = " << bab->getPerGap() << std::endl
+      << me_ << "time used (s) = " << std::fixed << std::setprecision(2) 
+      << env_->getTime(err) << std::endl
+      << me_ << "status of branch-and-bound: " 
       << getSolveStatusString(bab->getStatus()) << std::endl;
-    env->stopTimer(err); assert(0==err);
   } else {
-    env->getLogger()->msgStream(LogInfo)
-      << me << std::fixed << std::setprecision(4)
+    env_->getLogger()->msgStream(LogInfo)
+      << me_ << std::fixed << std::setprecision(4)
       << "best solution value = " << INFINITY << std::endl
-      << me << std::fixed << std::setprecision(4)
+      << me_ << std::fixed << std::setprecision(4)
       << "best bound estimate from remaining nodes = " << INFINITY << std::endl
-      << me << "gap = " << INFINITY << std::endl
-      << me << "gap percentage = " << INFINITY << std::endl
-      << me << "time used (s) = " << std::fixed << std::setprecision(2) 
-      << env->getTime(err) << std::endl
-      << me << "status of branch-and-bound: " 
+      << me_ << "gap = " << INFINITY << std::endl
+      << me_ << "gap percentage = " << INFINITY << std::endl
+      << me_ << "time used (s) = " << std::fixed << std::setprecision(2) 
+      << env_->getTime(err) << std::endl
+      << me_ << "status of branch-and-bound: " 
       << getSolveStatusString(NotStarted) << std::endl;
-    env->stopTimer(err); assert(0==err);
   }
+  return 0;
 }
 
 
@@ -496,95 +442,119 @@ double getWallTime() {
 
 int MultiStart::solve(ProblemPtr p)
 {
-
-  double WallTimeStart = getWallTime();
-  EnvPtr env      = (EnvPtr) new Environment();
-  OptionDBPtr options;
-  MINOTAUR_AMPL::AMPLInterface* iface = 0;
-  ProblemPtr oinst;      // instance that needs to be solved.
+  double walltime_start = getWallTime();
   EnginePtr engine = 0;  // engine for solving relaxations. 
-  SolutionPtr sol, sol2;
-  JacobianPtr jPtr;
-  HessianOfLagPtr hPtr;
   BranchAndBound * bab = 0;
   PresolverPtr pres;
-  const std::string me("msbnb main: ");
   VarVector *orig_v=0;
   HandlerVector handlers;
   int err = 0;
-  double obj_sense = 1.0;
+  OptionDBPtr options = env_->getOptions();
 
-  env->startTimer(err);
-  if (err) {
-    goto CLEANUP;
+  setInitialOptions_();
+
+  oinst_ = p;
+  oinst_->calculateSize();
+  if (options->findBool("display_problem")->getValue()==true) {
+    oinst_->write(env_->getLogger()->msgStream(LogNone), 12);
+  }
+  if (options->findBool("display_size")->getValue()==true) {
+    oinst_->writeSize(env_->getLogger()->msgStream(LogNone));
   }
 
-  setInitialOptions(env);
 
-  // Important to setup AMPL Interface first as it adds several options.
-  iface = new MINOTAUR_AMPL::AMPLInterface(env, "msbnb");
+  // setup the jacobian and hessian
+  if (false==options->findBool("use_native_cgraph")->getValue()) {
+    JacobianPtr jac = new MINOTAUR_AMPL::AMPLJacobian(iface_);
+    oinst_->setJacobian(jac);
 
-  // Parse command line for options set by the user.
-  env->readOptions(argc, argv);
+    // create the hessian
+    HessianOfLagPtr hess = new MINOTAUR_AMPL::AMPLHessian(iface_);
+    oinst_->setHessian(hess);
 
-  overrideOptions(env);
-  if (0!=showInfo(env)) {
-    goto CLEANUP;
+    // set initial point
+    oinst_->setInitialPoint(iface_->getInitialPoint(), 
+                            oinst_->getNumVars()-iface_->getNumDefs());
   }
 
-  loadProblem(env, iface, oinst, &obj_sense);
-  orig_v = new VarVector(oinst->varsBegin(), oinst->varsEnd());
-  pres = presolve(env, oinst, iface->getNumDefs(), handlers);
+  if (oinst_->getObjective() &&
+      oinst_->getObjective()->getObjectiveType()==Maximize) {
+    objSense_ = -1.0;
+    env_->getLogger()->msgStream(LogInfo) << me_ 
+      << "objective sense: maximize (will be converted to Minimize)"
+      << std::endl;
+  } else {
+    objSense_ = 1.0;
+    env_->getLogger()->msgStream(LogInfo) << me_ 
+      << "objective sense: minimize" << std::endl;
+  }
+
+
+  // First store all original variables in a vector, then presolve.
+  // Keep a pointer to presolver for postsolving after the main solve.
+  orig_v = new VarVector(oinst_->varsBegin(), oinst_->varsEnd());
+  pres = presolve_(handlers);
+  for (HandlerVector::iterator it=handlers.begin(); it!=handlers.end(); ++it) {
+    delete (*it);
+  }
   handlers.clear();
+
   if (Finished != pres->getStatus() && NotStarted != pres->getStatus()) {
-    env->getLogger()->msgStream(LogInfo) << me 
+    env_->getLogger()->msgStream(LogInfo) << me_ 
       << "status of presolve: " 
       << getSolveStatusString(pres->getStatus()) << std::endl;
-    writeSol(env, orig_v, pres, SolutionPtr(), pres->getStatus(), iface);
-    writeBnbStatus(env, bab, obj_sense);
+    writeSol_(env_, orig_v, pres, pres->getSolution(), pres->getStatus(), iface_);
     goto CLEANUP;
   }
 
-  if (false==env->getOptions()->findBool("solve")->getValue()) {
-    goto CLEANUP;
-  }
-
-  engine = getEngine(env, oinst, err);
+  err = getEngine_(&engine);
   if (err) {
     goto CLEANUP;
   }
 
   bab = getBab_(engine, handlers);
-  if (env->getOptions()->findInt("threads")->getValue() > 1) {
-   env->getLogger()->msgStream(LogInfo) 
-     << "**Works in parallel with a thread-safe "
+
+  if (env_->getOptions()->findInt("threads")->getValue() > 1) {
+   env_->getLogger()->msgStream(LogError) 
+     << "Warning: Multiple threads can works with a thread-safe "
      << "NLP solver only (e.g. IPOPT with MA97)**" << std::endl;
   }
   bab->solve();
-  bab->writeStats(env->getLogger()->msgStream(LogExtraInfo));
-  engine->writeStats(env->getLogger()->msgStream(LogExtraInfo));
+  bab->writeStats(env_->getLogger()->msgStream(LogExtraInfo));
+  engine->writeStats(env_->getLogger()->msgStream(LogExtraInfo));
   for (HandlerVector::iterator it=handlers.begin(); it!=handlers.end(); ++it) {
-    (*it)->writeStats(env->getLogger()->msgStream(LogExtraInfo));
+    (*it)->writeStats(env_->getLogger()->msgStream(LogExtraInfo));
   }
 
-  writeSol(env, orig_v, pres, bab->getSolution(), bab->getStatus(), iface);
-  writeBnbStatus(env, bab, obj_sense);
+  writeSol_(env_, orig_v, pres, bab->getSolution(), bab->getStatus(), iface_);
+  writeBnbStatus_(bab);
 
 CLEANUP:
+  for (HandlerVector::iterator it=handlers.begin(); it!=handlers.end(); ++it) {
+    delete (*it);
+  }
   if (engine) {
     delete engine;
   }
-  if (iface) {
-    delete iface;
-  }
-  if (bab) {
-    delete bab;
+  if (pres) {
+    delete pres;
   }
   if (orig_v) {
     delete orig_v;
   }
-  std::cout << "msbnb main: wall clock time used (s) = "
-            << getWallTime() - WallTimeStart << std::endl; 
+  if (bab) {
+    if (bab->getNodeRelaxer()) {
+      delete bab->getNodeRelaxer();
+    }
+    if (bab->getNodeProcessor()) {
+      delete bab->getNodeProcessor();
+    }
+    delete bab;
+  }
+  oinst_ = 0;
+  env_->getLogger()->msgStream(LogInfo) << me_ << "wall clock time used (s) = "
+                                       << getWallTime() - walltime_start 
+                                       << std::endl; 
   return 0;
 }
 

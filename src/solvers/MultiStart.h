@@ -46,7 +46,7 @@ public:
   /// get status of the last solve.
   virtual SolveStatus getStatus();
 
-  /// get status of the last solve.
+  /// get solution of the last solve.
   virtual DoubleVector getSolution();
 
   /// Return the upper bound for the optimal value
@@ -65,6 +65,7 @@ private:
   BrancherPtr getBrancher_(HandlerVector handlers, Engine *e);
   int getEngine_(Engine **e);
   PresolverPtr presolve_(HandlerVector &handlers);
+  void setInitialOptions_();
   int writeBnbStatus_(BranchAndBound *bab);
 };
 }

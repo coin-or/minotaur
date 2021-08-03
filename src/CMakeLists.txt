@@ -407,14 +407,14 @@ if (IFACE_SOURCES)
     solvers/Solver.cpp
     solvers/Bnb.cpp 
     solvers/Glob.cpp 
-    #solvers/MultiStart.cpp 
+    solvers/MultiStart.cpp 
     solvers/QG2.cpp 
   )
   set (SOLVER_HEADERS
     solvers/Solver.h
     solvers/Bnb.h 
     solvers/Glob.h 
-    #solvers/MultiStart.h 
+    solvers/MultiStart.h 
     solvers/QG2.h 
   )
 endif()
@@ -451,10 +451,10 @@ if (IFACE_SOURCES)
   install(TARGETS mglob RUNTIME DESTINATION bin)
   set_target_properties(mglob PROPERTIES INSTALL_RPATH "${MNTR_INSTALL_RPATH}")
 
-  #add_executable(mmultistart solvers/MultiStartMain.cpp)
-  #target_link_libraries(mmultistart ${ALL_EXEC_LIBS})
-  #install(TARGETS mmultistart RUNTIME DESTINATION bin)
-  #set_target_properties(mmultistart PROPERTIES INSTALL_RPATH "${MNTR_INSTALL_RPATH}")
+  add_executable(mmultistart solvers/MultiStartMain.cpp)
+  target_link_libraries(mmultistart ${ALL_EXEC_LIBS})
+  install(TARGETS mmultistart RUNTIME DESTINATION bin)
+  set_target_properties(mmultistart PROPERTIES INSTALL_RPATH "${MNTR_INSTALL_RPATH}")
   
 endif()
 
