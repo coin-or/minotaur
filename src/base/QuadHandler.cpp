@@ -1771,8 +1771,8 @@ bool QuadHandler::calcVarBnd_(VariablePtr v, double a, double b, double ly,
 
   if (fabs(a) <= aTol_) {
     assert(fabs(b) > aTol_);
-    lb = ly/b;
-    ub = uy/b;
+    lb = b > 0 ? ly/b : uy/b;
+    ub = b > 0 ? uy/b : ly/b;
   } else if (a > aTol_) { /// the term is convex
     if (uy < INFINITY) { /// finite upper bound
       delta = b*b + 4.0*a*uy;
@@ -1839,8 +1839,8 @@ bool QuadHandler::calcVarBnd_(VariablePtr v, double a, double b, double ly,
     } else { /// infinite lower bound
       delta = b*b + 4.0*a*uy;
       if (delta > aTol_) {
-        lb2 = (-b - sqrt(delta))/(2.0*a);
-        ub2 = (-b + sqrt(delta))/(2.0*a);
+        lb2 = (-b + sqrt(delta))/(2.0*a);
+        ub2 = (-b - sqrt(delta))/(2.0*a);
         if (lx > lb2 + bTol_ && lx < ub2 - bTol_) {
           lb = ub2;
         }
