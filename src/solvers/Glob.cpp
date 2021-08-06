@@ -35,7 +35,7 @@
 #include "Presolver.h"
 #include "ProblemSize.h"
 #include "Problem.h"
-#include "QG2.h"
+#include "QG.h"
 #include "QuadHandler.h"
 #include "Relaxation.h"
 #include "ReliabilityBrancher.h"
@@ -334,8 +334,8 @@ int Glob::solve(ProblemPtr inst) {
     // call QG
     env_->getLogger()->msgStream(LogInfo) << me_ <<
       "All constraints and objective found to be convex" << std::endl
-      << "Problem is forwarded to QG2 - convex MINLP solver" << std::endl;
-    QG2 qg(env_);
+      << "Problem is forwarded to QG - convex MINLP solver" << std::endl;
+    QG qg(env_);
     if (0!=qg.showInfo()) {
       goto CLEANUP;
     }
