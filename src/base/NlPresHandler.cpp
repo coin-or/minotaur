@@ -846,7 +846,7 @@ void NlPresHandler::perspRef_(ProblemPtr p, PreModQ *, bool *changed)
   VarSet nlvars;
   VarSet indvars;
   VarSet candvars;
-  VariablePtr v, z;
+  VariablePtr v, z = 0;
 
   p->calculateSize();
 
