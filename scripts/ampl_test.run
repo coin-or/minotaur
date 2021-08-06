@@ -1,0 +1,57 @@
+##
+## \author Mustafa Vora and Ashutosh Mahajan, IIT Bombay
+## 
+## AMPL run script to check the solution returned by a solver.
+## It runs the solver, then gets the solution and checks whether all
+## constraints include integer constraints are satisfied by the solution. Does
+## not check for optimality or the objective value.
+##
+## How to run:
+## ampl foo.mod ampl_test.run
+##
+
+
+option solver mbnb;
+## option mbnb_options '--display_problem=1';
+param MTEST_ETOL=1e-6; ## Absolute tolerance beyond which constraint
+                       ## violations are flagged.
+param MTEST_ERR=0; ## count of number of errors
+
+solve;
+for {i in 1.._ncons} {
+  ## printf "constraint name = %s, slack = %f, constraint lb = %f, ub = %f\n",_conname[i],_con[i].slack,_con[i].lb,_con[i].ub;
+  if _con[i].lb == _con[i].ub then {
+    if (abs(_con[i].slack) > MTEST_ETOL) then {
+      printf "Constraint %s is violated by %f\n", _conname[i], abs(_con[i].slack);
+      let MTEST_ERR:=MTEST_ERR+1;
+    }
+  } else {
+    if _con[i].slack < -MTEST_ETOL then {
+      printf "Constraint %s is violated by %f\n", _conname[i], -_con[i].slack;
+      let MTEST_ERR:=MTEST_ERR+1;
+    }
+  }
+}
+
+for {i in 1.._nvars} {
+  if _var[i].int == 1 then {
+    if abs(_var[i].val - floor(_var[i].val + 0.5)) > MTEST_ETOL then {
+      printf "Variable %s violates integer constraint: value = %f\n", _varname[i], _var[i].val;
+      let MTEST_ERR:=MTEST_ERR+1;
+    }
+  }
+
+  if (_var[i].val - _var[i].lb) < -MTEST_ETOL then {
+    printf "Variable %s has value %f smaller than its lower bound %f\n", _varname[i], _var[i].val, _var[i].lb;
+    let MTEST_ERR:=MTEST_ERR+1;
+  }
+  
+  if (_var[i].val - _var[i].ub) > MTEST_ETOL then {
+    printf "Variable %s has value %f greater than its upper bound %f\n", _varname[i], _var[i].val, _var[i].ub;
+    let MTEST_ERR:=MTEST_ERR+1;
+  }
+}
+
+printf "Total Number of errors detected = %d\n", MTEST_ERR;
+
+
