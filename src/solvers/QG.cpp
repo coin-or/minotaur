@@ -5,9 +5,9 @@
 //
 
 /**
- * \file QG2.cpp
- * \brief Define QG class for solving MINLPs
- * \author Ashutosh Mahajan, IIT Bombay
+ * \file QG.cpp
+ * \brief Define class for Quesada-Grossmann (QG) algorithm for solving MINLPs
+ * \author Ashutosh Mahajan and Meenarli Sharma, IIT Bombay
  */
 
 #include <algorithm>
@@ -30,7 +30,7 @@
 #include "NlPresHandler.h"
 #include "Option.h"
 #include "PCBProcessor.h"
-#include "QG2.h"
+#include "QG.h"
 #include "QGHandler.h"
 #include "QPEngine.h"
 #include "RCHandler.h"
@@ -48,50 +48,48 @@
 #include "AMPLHessian.h"
 
 using namespace Minotaur;
-const std::string QG2::me_ = "QG2: ";
+const std::string QG::me_ = "QG: ";
 
 
-QG2::QG2(EnvPtr env) 
-: objSense_(1.0),
-  status_(NotStarted)
+QG::QG(EnvPtr env) 
+: objSense_(1.0), sol_(0), lb_(-INFINITY), ub_(INFINITY), status_(NotStarted)
 {
   env_ = env;
   iface_ = 0;
 }
 
 
-QG2::~QG2() 
+QG::~QG() 
 {
 }
 
 
-DoubleVector QG2::getSolution()
-{
-  DoubleVector x;
-  return x;
-}
+//DoubleVector QG::getSolution()
+//{
+  //DoubleVector x;
+  //return x;
+//}
 
 
-
-double QG2::getUb()
-{
-  return INFINITY;
-}
-
-
-double QG2::getLb()
-{
-  return -INFINITY;
-}
+//double QG::getUb()
+//{
+  //return INFINITY;
+//}
 
 
-SolveStatus QG2::getStatus()
-{
-  return status_;
-}
+//double QG::getLb()
+//{
+  //return -INFINITY;
+//}
 
 
-int QG2::getEngines_(Engine **nlp_e, LPEngine **lp_e)
+//SolveStatus QG::getStatus()
+//{
+  //return status_;
+//}
+
+
+int QG::getEngines_(Engine **nlp_e, LPEngine **lp_e)
 {
   EngineFactory *efac = new EngineFactory(env_);
   oinst_->calculateSize();
@@ -115,7 +113,7 @@ int QG2::getEngines_(Engine **nlp_e, LPEngine **lp_e)
 }
 
 
-PresolverPtr QG2::presolve_(HandlerVector &handlers)
+PresolverPtr QG::presolve_(HandlerVector &handlers)
 {
   PresolverPtr pres = 0;
 
@@ -165,7 +163,7 @@ PresolverPtr QG2::presolve_(HandlerVector &handlers)
 }
 
 
-void QG2::showHelp() const
+void QG::showHelp() const
 { 
   env_->getLogger()->errStream()
       << "Quesada-Grossmann (LP/NLP) algorithm for convex MINLP" << std::endl
@@ -177,7 +175,7 @@ void QG2::showHelp() const
 }
 
 
-int QG2::showInfo()
+int QG::showInfo()
 {
   OptionDBPtr options = env_->getOptions();
 
@@ -210,7 +208,7 @@ int QG2::showInfo()
 }
 
 
-int QG2::solve(ProblemPtr p)
+int QG::solve(ProblemPtr p)
 {
   OptionDBPtr options = env_->getOptions();
   Timer *timer = env_->getNewTimer();
@@ -280,7 +278,7 @@ int QG2::solve(ProblemPtr p)
   if (Finished != status_ && NotStarted != status_) {
     env_->getLogger()->msgStream(LogInfo) << me_ 
       << "status of presolve: " << getSolveStatusString(status_) << std::endl;
-    writeSol_(env_, orig_v, pres, SolutionPtr(), pres->getStatus(), iface_);
+    writeSol_(env_, orig_v, pres, SolutionPtr(), status_, iface_);
     goto CLEANUP;
   }
 
@@ -305,129 +303,134 @@ int QG2::solve(ProblemPtr p)
   handlers.push_back(l_hand);
   assert(l_hand);
 
-    v_hand = (IntVarHandlerPtr) new IntVarHandler(env_, oinst_);
-    v_hand->setModFlags(false, true); 
-    handlers.push_back(v_hand);
-    assert(v_hand);
+  v_hand = (IntVarHandlerPtr) new IntVarHandler(env_, oinst_);
+  v_hand->setModFlags(false, true); 
+  handlers.push_back(v_hand);
+  assert(v_hand);
 
-    qg_hand = (QGHandlerPtr) new QGHandler(env_, oinst_, nlp_e); 
-    qg_hand->setModFlags(false, true);
+  qg_hand = (QGHandlerPtr) new QGHandler(env_, oinst_, nlp_e); 
+  qg_hand->setModFlags(false, true);
+  
+  handlers.push_back(qg_hand);
+  assert(qg_hand);
    
-    handlers.push_back(qg_hand);
-    assert(qg_hand);
-     
-    // report name
-    env_->getLogger()->msgStream(LogExtraInfo) << me_ << "handlers used:"
+  // report name
+  env_->getLogger()->msgStream(LogExtraInfo) << me_ << "handlers used:"
+    << std::endl;
+  for (HandlerIterator h = handlers.begin(); h != handlers.end(); ++h) {
+    env_->getLogger()->msgStream(LogExtraInfo) << me_ << (*h)->getName()
       << std::endl;
-    for (HandlerIterator h = handlers.begin(); h != handlers.end(); ++h) {
-      env_->getLogger()->msgStream(LogExtraInfo) << me_ << (*h)->getName()
-        << std::endl;
-    }
+  }
 
-    // Only store bound-changes of relaxation (not problem)
-    nr = (NodeIncRelaxerPtr) new NodeIncRelaxer(env_, handlers);
-    nr->setModFlag(false);
-    nr->setEngine(lp_e);
-    nproc = (PCBProcessorPtr) new PCBProcessor(env_, lp_e, handlers);
-    if (env_->getOptions()->findString("brancher")->getValue() == "rel") {
-      ReliabilityBrancherPtr rel_br = 
-        (ReliabilityBrancherPtr) new ReliabilityBrancher(env_, handlers);
-      rel_br->setEngine(lp_e);
-      nproc->setBrancher(rel_br);
-      br = rel_br;
-    } else if (env_->getOptions()->findString("brancher")->getValue()
-               == "maxvio") {
-      MaxVioBrancherPtr mbr = (MaxVioBrancherPtr) 
-        new MaxVioBrancher(env_, handlers);
-      nproc->setBrancher(mbr);
-      br = mbr;
-    } else if (env_->getOptions()->findString("brancher")->getValue()
-               == "lex") {
-      LexicoBrancherPtr lbr = (LexicoBrancherPtr) 
-        new LexicoBrancher(env_, handlers);
-      br = lbr;
-    }
-    nproc->setBrancher(br);
-    env_->getLogger()->msgStream(LogExtraInfo) << me_ <<
-      "brancher used = " << br->getName() << std::endl;
+  // Only store bound-changes of relaxation (not problem)
+  nr = (NodeIncRelaxerPtr) new NodeIncRelaxer(env_, handlers);
+  nr->setModFlag(false);
+  nr->setEngine(lp_e);
+  nproc = (PCBProcessorPtr) new PCBProcessor(env_, lp_e, handlers);
+  if (env_->getOptions()->findString("brancher")->getValue() == "rel") {
+    ReliabilityBrancherPtr rel_br = 
+      (ReliabilityBrancherPtr) new ReliabilityBrancher(env_, handlers);
+    rel_br->setEngine(lp_e);
+    nproc->setBrancher(rel_br);
+    br = rel_br;
+  } else if (env_->getOptions()->findString("brancher")->getValue()
+             == "maxvio") {
+    MaxVioBrancherPtr mbr = (MaxVioBrancherPtr) 
+      new MaxVioBrancher(env_, handlers);
+    nproc->setBrancher(mbr);
+    br = mbr;
+  } else if (env_->getOptions()->findString("brancher")->getValue()
+             == "lex") {
+    LexicoBrancherPtr lbr = (LexicoBrancherPtr) 
+      new LexicoBrancher(env_, handlers);
+    br = lbr;
+  }
+  nproc->setBrancher(br);
+  env_->getLogger()->msgStream(LogExtraInfo) << me_ <<
+    "brancher used = " << br->getName() << std::endl;
 
-    bab = new BranchAndBound(env_, oinst_);
-    bab->setNodeRelaxer(nr);
-    bab->setNodeProcessor(nproc);
-    bab->shouldCreateRoot(true);
+  bab = new BranchAndBound(env_, oinst_);
+  bab->setNodeRelaxer(nr);
+  bab->setNodeProcessor(nproc);
+  bab->shouldCreateRoot(true);
 
-    // start solving
-    bab->solve();
+  // start solving
+  bab->solve();
+  
+  status_ = bab->getStatus();
+  lb_ = bab->getLb();
+  ub_ = bab->getUb();
+  sol_ = bab->getSolution();
 
-    bab->writeStats(env_->getLogger()->msgStream(LogExtraInfo));
-    nlp_e->writeStats(env_->getLogger()->msgStream(LogExtraInfo));
-    lp_e->writeStats(env_->getLogger()->msgStream(LogExtraInfo));
+  bab->writeStats(env_->getLogger()->msgStream(LogExtraInfo));
+  nlp_e->writeStats(env_->getLogger()->msgStream(LogExtraInfo));
+  lp_e->writeStats(env_->getLogger()->msgStream(LogExtraInfo));
 
-    for (HandlerVector::iterator it=handlers.begin(); it!=handlers.end();
-         ++it) {
-      (*it)->writeStats(env_->getLogger()->msgStream(LogExtraInfo));
-    }
+  for (HandlerVector::iterator it=handlers.begin(); it!=handlers.end();
+       ++it) {
+    (*it)->writeStats(env_->getLogger()->msgStream(LogExtraInfo));
+  }
 
-    err = writeSol_(env_, orig_v, pres, bab->getSolution(), bab->getStatus(), iface_);
-    if (err) {
-      goto CLEANUP;
-    }
-    err = writeBnbStatus_(bab);
+  err = writeSol_(env_, orig_v, pres, sol_, status_, iface_);
+  if (err) {
+    goto CLEANUP;
+  }
+  err = writeBnbStatus_(bab);
 
 CLEANUP:
-    for (HandlerVector::iterator it=handlers.begin(); it!=handlers.end(); ++it) {
-      delete (*it);
+  for (HandlerVector::iterator it=handlers.begin(); it!=handlers.end(); ++it) {
+    delete (*it);
+  }
+  if (lp_e) {
+    delete lp_e;
+  }
+  if (nlp_e) {
+    delete nlp_e;
+  }
+  if (iface_) {
+    delete iface_; iface_ = 0;
+  }
+  if (pres) {
+    delete pres;
+  }
+  if (bab) {
+    if (bab->getNodeRelaxer()) {
+      delete bab->getNodeRelaxer();
     }
-    if (lp_e) {
-      delete lp_e;
+    if (bab->getNodeProcessor()) {
+      delete bab->getNodeProcessor();
     }
-    if (nlp_e) {
-      delete nlp_e;
-    }
-    if (iface_) {
-      delete iface_; iface_ = 0;
-    }
-    if (pres) {
-      delete pres;
-    }
-    if (bab) {
-      if (bab->getNodeRelaxer()) {
-        delete bab->getNodeRelaxer();
-      }
-      if (bab->getNodeProcessor()) {
-        delete bab->getNodeProcessor();
-      }
-      delete bab;
-    }
-    if (orig_v) {
-      delete orig_v;
-    }
-    if (timer) {
-      delete timer;
-    }
-    oinst_ = 0;
-    return err;
+    delete bab;
+  }
+  if (orig_v) {
+    delete orig_v;
+  }
+  if (timer) {
+    delete timer;
+  }
+  oinst_ = 0;
+  return err;
 }
 
 
-int QG2::writeBnbStatus_(BranchAndBound *bab)
+int QG::writeBnbStatus_(BranchAndBound *bab)
 {
   int err = 0;
 
   if (bab) {
     env_->getLogger()->msgStream(LogInfo)
       << me_ << std::fixed << std::setprecision(4) 
-      << "best solution value = " << objSense_*bab->getUb() << std::endl
+      << "best solution value = " << objSense_*ub_ << std::endl
       << me_ << std::fixed << std::setprecision(4)
       << "best bound estimate from remaining nodes = "
-      << objSense_*bab->getLb() << std::endl
-      << me_ << "gap = " << std::max(0.0,bab->getUb() - bab->getLb())
+      << objSense_*lb_ << std::endl
+      << me_ << "gap = " << std::max(0.0,ub_ - lb_)
       << std::endl
       << me_ << "gap percentage = " << bab->getPerGap() << std::endl
       << me_ << "time used (s) = " << std::fixed << std::setprecision(2) 
       << env_->getTime(err) << std::endl
       << me_ << "status of branch-and-bound = " 
-      << getSolveStatusString(bab->getStatus()) << std::endl;
+      << getSolveStatusString(status_) << std::endl;
     env_->stopTimer(err); 
   } else {
     env_->getLogger()->msgStream(LogInfo)
@@ -447,3 +450,36 @@ int QG2::writeBnbStatus_(BranchAndBound *bab)
 }
 
 
+void writeSol_(EnvPtr env, VarVector *orig_v,
+              PresolverPtr pres, SolutionPtr sol, SolveStatus status,
+              MINOTAUR_AMPL::AMPLInterface* iface)
+{
+  Solution* final_sol = 0;
+  if (sol) {
+    final_sol = pres->getPostSol(sol);
+  }
+
+  if (env->getOptions()->findFlag("AMPL")->getValue() ||
+      true == env->getOptions()->findBool("write_sol_file")->getValue()) {
+    iface->writeSolution(final_sol, status);
+  } else if (final_sol && env->getLogger()->getMaxLevel()>=LogExtraInfo &&
+             env->getOptions()->findBool("display_solution")->getValue()) {
+    final_sol->writePrimal(env->getLogger()->msgStream(LogExtraInfo), orig_v);
+  }
+
+  if (final_sol) {
+    delete final_sol;
+  }
+}
+
+
+// Local Variables: 
+// mode: c++ 
+// eval: (c-set-style "k&r") 
+// eval: (c-set-offset 'innamespace 0) 
+// eval: (setq c-basic-offset 2) 
+// eval: (setq fill-column 78) 
+// eval: (auto-fill-mode 1) 
+// eval: (setq column-number-mode 1) 
+// eval: (setq indent-tabs-mode nil) 
+// End:

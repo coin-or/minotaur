@@ -7,11 +7,11 @@
 /**
  * \file QG.h
  * \brief Define the QG class.
- * \author Ashutosh Mahajan, IIT Bombay
+ * \author Ashutosh Mahajan and Meenarli Sharma, IIT Bombay
  */
 
-#ifndef QG2_H
-#define QG2_H
+#ifndef QG_H
+#define QG_H
 
 #include "Types.h"
 #include "AMPLInterface.h"
@@ -25,13 +25,13 @@ namespace Minotaur {
    * The QG class sets up methods for solving a convex MINLP instance using
    * the LP/NLP based Quesada Grossmann algorithm.
    */
-  class QG2 : public Solver {
+  class QG : public Solver {
     public:
       /// Default constructor.
-      QG2(EnvPtr env);
+      QG(EnvPtr env);
 
       /// Destroy.
-      ~QG2();
+      ~QG();
 
       /// show help messages
       void showHelp() const;
@@ -43,20 +43,22 @@ namespace Minotaur {
       virtual int solve(ProblemPtr p);
 
       /// get status of the last solve.
-      virtual SolveStatus getStatus();
+      virtual SolveStatus getStatus() {return status_;};
 
       /// get status of the last solve.
-      virtual DoubleVector getSolution();
+      virtual SolutionPtr getSolution() {return sol_;};
 
       /// Return the upper bound for the optimal value
-      double getUb();
+      double getUb() {return ub_;};
 
       /// Return the lower bound for the optimal value
-      double getLb();
+      double getLb() {return lb_;};
 
     private:
       const static std::string me_;
       double objSense_;
+      SolutionPtr sol_;
+      double lb_, ub_;
       ProblemPtr oinst_;
       SolveStatus status_;
 

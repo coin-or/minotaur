@@ -6,7 +6,7 @@
 
 /**
  * \file QGMain.cpp
- * \brief The main function for solving instances by LP/NLP based QG
+ * \brief The main function for solving instances by Quesada-Grossmann (QG)
  * algorithm.
  * \author Ashutosh Mahajan, IIT Bombay
  */
@@ -16,7 +16,7 @@
 #include "Option.h"
 #include "Problem.h"
 #include "Types.h"
-#include "QG2.h"
+#include "QG.h"
 
 using namespace Minotaur;
 
@@ -24,7 +24,7 @@ int main(int argc, char** argv)
 {
   EnvPtr env = (EnvPtr) new Environment();
   int err = 0;
-  QG2 qg(env);
+  QG qg(env);
   ProblemPtr p = 0;
   std::string fname, dname;
  
