@@ -77,8 +77,10 @@ ProblemPtr Solver::readProblem(std::string fname, std::string dname, int &err)
       delete timer;
       return 0;
     }
-  } else if ((ft==NL) || options->findString("interface_type")->getValue()=="AMPL") {
-    iface_ = new MINOTAUR_AMPL::AMPLInterface(env_, "qg2");
+  } else if ((ft==NL) || 
+             options->findFlag("AMPL")->getValue()==1 ||
+             options->findString("interface_type")->getValue()=="AMPL") {
+    iface_ = new MINOTAUR_AMPL::AMPLInterface(env_, "mbnb");
     options->findString("interface_type")->setValue("AMPL");
     p = iface_->readInstance(fname);
     env_->getLogger()->msgStream(LogInfo) << me_ 
