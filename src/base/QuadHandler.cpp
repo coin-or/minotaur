@@ -1420,7 +1420,11 @@ bool QuadHandler::postSolveRootNode(RelaxationPtr rel, SolutionPoolPtr s_pool,
   }
   ub = s_pool->getBestSolutionValue();
   is_inf = tightenLP_(rel, ub, &lchanged, p_mods, r_mods);
-  assert(!is_inf);
+  if (is_inf) {
+    logger_->msgStream(LogError) << me_
+                          << "WARNING: OBBT returns infeasibility after "
+                          << "root node is solved"<< std::endl;
+  }
   bStats_.timeLP = timer_->query()-stime;
   
   if (true == lchanged) {
