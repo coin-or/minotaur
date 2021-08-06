@@ -408,14 +408,14 @@ if (IFACE_SOURCES)
     solvers/Bnb.cpp 
     solvers/Glob.cpp 
     solvers/MultiStart.cpp 
-    solvers/QG2.cpp 
+    solvers/QG.cpp 
   )
   set (SOLVER_HEADERS
     solvers/Solver.h
     solvers/Bnb.h 
     solvers/Glob.h 
     solvers/MultiStart.h 
-    solvers/QG2.h 
+    solvers/QG.h 
   )
 endif()
 
