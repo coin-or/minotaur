@@ -727,11 +727,11 @@ int main(int argc, char** argv)
   }
   parbab = createParBab(env, numThreads, node, relCopy, pCopy, nodePrcssr,
                         parNodeRlxr, handlersCopy, lpeCopy, eCopy, prune);
-  if (true==env->getOptions()->findBool("mcbnb_oppor_mode")->getValue()) {
+  //if (true==env->getOptions()->findBool("mcbnb_oppor_mode")->getValue()) {
     parbab->parsolveOppor(parNodeRlxr, nodePrcssr, numThreads, prune);
-  } else {
-    parbab->parsolve(parNodeRlxr, nodePrcssr, numThreads, prune);
-  }
+  //} else {
+    //parbab->parsolve(parNodeRlxr, nodePrcssr, numThreads, prune);
+  //}
   //parbab->parsolve(parNodeRlxr, nodePrcssr, numThreads, prune);
   
   //Take care of important bnb statistics
