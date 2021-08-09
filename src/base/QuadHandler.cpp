@@ -1310,6 +1310,7 @@ bool QuadHandler::postSolveRootNode(RelaxationPtr rel, SolutionPoolPtr s_pool,
   double stime = timer_->query();
   bool is_inf, lchanged = false;
   const double *x = sol->getPrimal();
+  const double max_vio = 1e-3;
 
   for (VariableConstIterator vit = p_->varsBegin(); vit != p_->varsEnd();
        ++vit) {
@@ -1321,7 +1322,7 @@ bool QuadHandler::postSolveRootNode(RelaxationPtr rel, SolutionPoolPtr s_pool,
     yval = x[y->getIndex()];
     xval = x[x0->getIndex()];
     vio1 = fabs(xval*xval - yval);
-    if (vio1 > 1e-3 && vio1 > 0.1*fabs(yval)) {
+    if (vio1 > max_vio && vio1 > 0.1*fabs(yval)) {
       range = x0->getUb() - x0->getLb();
       if (range >= 2) {
         x0->setItmp(3);
@@ -1329,7 +1330,7 @@ bool QuadHandler::postSolveRootNode(RelaxationPtr rel, SolutionPoolPtr s_pool,
       range = y->getUb() - y->getLb();
       if (range >= 2) {
         vio1 = yval - y->getLb();
-        if (vio1 > 1e-3 && vio1 > 0.1*y->getLb()) {
+        if (vio1 > max_vio && vio1 > 0.1*y->getLb()) {
           y->setItmp(3);
         } else {
           y->setItmp(2);
@@ -1343,13 +1344,13 @@ bool QuadHandler::postSolveRootNode(RelaxationPtr rel, SolutionPoolPtr s_pool,
     x1 = (*it)->getX1();
     yval = x[y->getIndex()];
     vio1 = fabs(x[x0->getIndex()]*x[x1->getIndex()] - x[y->getIndex()]);
-    if (vio1 > 1e-3 && vio1 > 0.1*fabs(yval)) {
+    if (vio1 > max_vio && vio1 > 0.1*fabs(yval)) {
       range = x0->getUb() - x0->getLb();
       if (range >= 2 && x0->getItmp() != 3) {
         vio1 = x[x0->getIndex()] - x0->getLb();
         vio2 = x0->getUb() - x[x0->getIndex()];
-        if (vio1 > 1e-3 && vio1 > 0.1*fabs(x0->getLb())) {
-          if (vio2 > 1e-3 && vio2 > 0.1*fabs(x0->getUb())) {
+        if (vio1 > max_vio && vio1 > 0.1*fabs(x0->getLb())) {
+          if (vio2 > max_vio && vio2 > 0.1*fabs(x0->getUb())) {
             x0->setItmp(3);
           } else {
             if (x0->getItmp() == 2) {
@@ -1359,7 +1360,7 @@ bool QuadHandler::postSolveRootNode(RelaxationPtr rel, SolutionPoolPtr s_pool,
             }
           }
         } else {
-          if (vio2 > 1e-3 && vio2 > fabs(x0->getUb())) {
+          if (vio2 > max_vio && vio2 > fabs(x0->getUb())) {
             if (x0->getItmp() == 1) {
               x0->setItmp(3);
             } else {
@@ -1372,8 +1373,8 @@ bool QuadHandler::postSolveRootNode(RelaxationPtr rel, SolutionPoolPtr s_pool,
       if (range >= 2 && x1->getItmp() != 3) {
         vio1 = x[x1->getIndex()] - x1->getLb();
         vio2 = x1->getUb() - x[x1->getIndex()];
-        if (vio1 > 1e-3 && vio1 > 0.1*fabs(x1->getLb())) {
-          if (vio2 > 1e-3 && vio2 > 0.1*fabs(x1->getUb())) {
+        if (vio1 > max_vio && vio1 > 0.1*fabs(x1->getLb())) {
+          if (vio2 > max_vio && vio2 > 0.1*fabs(x1->getUb())) {
             x1->setItmp(3);
           } else {
             if (x1->getItmp() == 2) {
@@ -1383,7 +1384,7 @@ bool QuadHandler::postSolveRootNode(RelaxationPtr rel, SolutionPoolPtr s_pool,
             }
           }
         } else {
-          if (vio2 > 1e-3 && vio2 > fabs(x1->getUb())) {
+          if (vio2 > max_vio && vio2 > fabs(x1->getUb())) {
             if (x1->getItmp() == 1) {
               x1->setItmp(3);
             } else {
@@ -1396,8 +1397,8 @@ bool QuadHandler::postSolveRootNode(RelaxationPtr rel, SolutionPoolPtr s_pool,
       if (range >= 2 && y->getItmp() != 3) {
         vio1 = x[y->getIndex()] - y->getLb();
         vio2 = y->getUb() - x[y->getIndex()];
-        if (vio1 > 1e-3 && vio1 > 0.1*fabs(y->getLb())) {
-          if (vio2 > 1e-3 && vio2 > 0.1*fabs(y->getUb())) {
+        if (vio1 > max_vio && vio1 > 0.1*fabs(y->getLb())) {
+          if (vio2 > max_vio && vio2 > 0.1*fabs(y->getUb())) {
             y->setItmp(3);
           } else {
             if (y->getItmp() == 2) {
@@ -1407,7 +1408,7 @@ bool QuadHandler::postSolveRootNode(RelaxationPtr rel, SolutionPoolPtr s_pool,
             }
           }
         } else {
-          if (vio2 > 1e-3 && vio2 > fabs(y->getUb())) {
+          if (vio2 > max_vio && vio2 > fabs(y->getUb())) {
             if (y->getItmp() == 1) {
               y->setItmp(3);
             } else {
