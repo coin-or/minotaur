@@ -88,7 +88,7 @@ namespace Ipopt {
                       nnz_h_lag, IndexStyleEnum& index_style);
 
     /// Get solution.
-    const Minotaur::IpoptSolPtr getSolution() {return sol_;}
+    Minotaur::IpoptSolPtr getSolution() {return sol_;}
 
     /// Get solution value.
     double getSolutionValue() const;
