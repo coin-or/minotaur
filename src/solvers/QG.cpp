@@ -64,31 +64,6 @@ QG::~QG()
 }
 
 
-//DoubleVector QG::getSolution()
-//{
-  //DoubleVector x;
-  //return x;
-//}
-
-
-//double QG::getUb()
-//{
-  //return INFINITY;
-//}
-
-
-//double QG::getLb()
-//{
-  //return -INFINITY;
-//}
-
-
-//SolveStatus QG::getStatus()
-//{
-  //return status_;
-//}
-
-
 int QG::getEngines_(Engine **nlp_e, LPEngine **lp_e)
 {
   EngineFactory *efac = new EngineFactory(env_);
