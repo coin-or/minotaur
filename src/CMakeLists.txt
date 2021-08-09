@@ -291,6 +291,22 @@ set (ENGFAC_SOURCES
 set (ENGFAC_HEADERS
   interfaces/EngineFactory.h
 )
+if (LINK_CPX)
+  add_definitions(-DUSE_CPX -DIL_STD)
+  include_directories("${CPX_INC_DIR_F}")
+  include_directories("${CPX_INC_DIR_F}/../../concert/include")
+  link_directories(${CPX_LIB_DIR_F})
+
+  list(APPEND ENGFAC_SOURCES
+              interfaces/CplexMILPEngine.cpp
+              interfaces/CplexLPEngine.cpp
+  )
+  list (APPEND ENGFAC_HEADERS
+               interfaces/CplexMILPEngine.h
+               interfaces/CplexLPEngine.h
+  )
+endif()
+
 if (LINK_IPOPT)
   add_definitions(-DUSE_IPOPT)
   include_directories("${IPOPT_INC_DIR_F}")
@@ -446,6 +462,16 @@ if (IFACE_SOURCES)
   install(TARGETS mqgpar RUNTIME DESTINATION bin)
   set_target_properties(mqgpar PROPERTIES INSTALL_RPATH "${MNTR_INSTALL_RPATH}")
   
+  add_executable(moa solvers/OA.cpp)
+  target_link_libraries(moa ${ALL_EXEC_LIBS})
+  install(TARGETS moa RUNTIME DESTINATION bin)
+  set_target_properties(moa PROPERTIES INSTALL_RPATH "${MNTR_INSTALL_RPATH}")
+
+  add_executable(mlstoa solvers/LSTOA.cpp)
+  target_link_libraries(mlstoa ${ALL_EXEC_LIBS})
+  install(TARGETS mlstoa RUNTIME DESTINATION bin)
+  set_target_properties(mlstoa PROPERTIES INSTALL_RPATH "${MNTR_INSTALL_RPATH}")
+
   add_executable(mglob solvers/GlobMain.cpp)
   target_link_libraries(mglob ${ALL_EXEC_LIBS})
   install(TARGETS mglob RUNTIME DESTINATION bin)

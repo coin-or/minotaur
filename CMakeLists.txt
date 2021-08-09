@@ -514,13 +514,14 @@ if (CPX_INC_DIR)
   ## check if library found
   if (EXISTS ${CPX_LIB_DIR_F})
     message(STATUS ${MSG_HEAD} "Cplex library directory exists.")
-    add_subdirectory(src/engines/Cplex)
+    #add_subdirectory(src/engines/Cplex)
     set (LINK_CPX 1)
     if (${BUILD_SHARED_LIBS})
       set (MNTR_INSTALL_RPATH ${MNTR_INSTALL_RPATH} ${CPX_LIB_DIR_F})
     endif()
 
     set (CPX_LIBS "${CPX_LIB_DIR_F}/libcplex.a")
+    set (MNTR_CPX_PC_LIBRARIES)
 
   else()
     message(FATAL_ERROR " ${MSG_HEAD} "
