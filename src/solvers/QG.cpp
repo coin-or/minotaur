@@ -68,15 +68,12 @@ int QG::getEngines_(Engine **nlp_e, LPEngine **lp_e)
 {
   EngineFactory *efac = new EngineFactory(env_);
   oinst_->calculateSize();
+  
+  *lp_e = efac->getLPEngine();
 
   if (oinst_->isLinear()) {
-    env_->getLogger()->errStream() << me_ 
-      << "input problem is linear. Can not solve." << std::endl;
-    delete efac;
-    return 1;
-  }
-
-  if (oinst_->isQP()) {
+    *nlp_e = efac->getLPEngine();
+  } else if (oinst_->isQP()) {
     *nlp_e = efac->getQPEngine();
     if (*nlp_e == 0) {
       *nlp_e = efac->getNLPEngine();
@@ -85,7 +82,6 @@ int QG::getEngines_(Engine **nlp_e, LPEngine **lp_e)
     *nlp_e = efac->getNLPEngine();
   }
 
-  *lp_e = efac->getLPEngine();
   delete efac;
   return 0;
 }
