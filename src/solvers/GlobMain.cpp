@@ -46,7 +46,7 @@ int main(int argc, char** argv)
     goto CLEANUP;
   }
 
-  inst = glob.readProblem(fname, dname, err);
+  inst = glob.readProblem(fname, dname, "mglob", err);
   if (err) {
     goto CLEANUP;
   }

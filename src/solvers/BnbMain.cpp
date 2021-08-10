@@ -47,7 +47,7 @@ int main(int argc, char** argv)
     goto CLEANUP;
   }
 
-  p = bnb.readProblem(fname, dname, err);
+  p = bnb.readProblem(fname, dname, "mbnb", err);
   if (err) {
     goto CLEANUP;
   }

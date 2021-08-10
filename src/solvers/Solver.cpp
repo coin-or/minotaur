@@ -57,7 +57,8 @@ FileType Solver::getFileType(std::string fname)
 }
 
 
-ProblemPtr Solver::readProblem(std::string fname, std::string dname, int &err)
+ProblemPtr Solver::readProblem(std::string fname, std::string dname,
+                               std::string sname, int &err)
 {
   FileType ft;
   OptionDBPtr options = env_->getOptions();
@@ -80,7 +81,7 @@ ProblemPtr Solver::readProblem(std::string fname, std::string dname, int &err)
   } else if ((ft==NL) || 
              options->findFlag("AMPL")->getValue()==1 ||
              options->findString("interface_type")->getValue()=="AMPL") {
-    iface_ = new MINOTAUR_AMPL::AMPLInterface(env_, "mbnb");
+    iface_ = new MINOTAUR_AMPL::AMPLInterface(env_, sname);
     options->findString("interface_type")->setValue("AMPL");
     p = iface_->readInstance(fname);
     env_->getLogger()->msgStream(LogInfo) << me_ 

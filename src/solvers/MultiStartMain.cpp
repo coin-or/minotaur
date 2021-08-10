@@ -47,7 +47,7 @@ int main(int argc, char** argv)
     goto CLEANUP;
   }
 
-  p = ms.readProblem(fname, dname, err);
+  p = ms.readProblem(fname, dname, "mmultistart", err);
   if (err) {
     goto CLEANUP;
   }

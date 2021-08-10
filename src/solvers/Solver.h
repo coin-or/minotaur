@@ -37,7 +37,7 @@ namespace Minotaur {
     virtual FileType getFileType(std::string fname);
 
     virtual ProblemPtr readProblem(std::string fname, std::string dname,
-                                   int &err);
+                                   std::string sname, int &err);
 
     /// Solve the problem
     virtual int solve(ProblemPtr p) = 0;
