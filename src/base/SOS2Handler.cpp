@@ -66,16 +66,16 @@ bool SOS2Handler::isFeasible(ConstSolutionPtr sol, RelaxationPtr rel,
        ++siter) {
     sos = *siter;
     is_feas = isXFeasible_(x, sos);
+#if SPEW
+    logger_->msgStream(LogDebug2) << me_ << "isFeasible "
+                                 << sos->getName() << " is_feas = " << is_feas
+                                 << std::endl;
+#endif
     if (false==is_feas) {
       //is_inf = isInf_(sos);
     }
     break;
   }
-#if SPEW
-    logger_->msgStream(LogDebug) << me_ << "isFeasible "
-                                 << sos->getName() << " is_feas = " << is_feas
-                                 << std::endl;
-#endif
   return is_feas;
 }
 
