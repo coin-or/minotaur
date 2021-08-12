@@ -16,6 +16,9 @@
 #include "Problem.h"
 #include "Types.h"
 #include "Glob.h"
+#include "Logger.h"
+
+#include <iostream>
 
 using namespace Minotaur;
 
@@ -48,6 +51,14 @@ int main(int argc, char** argv)
 
   inst = glob.readProblem(fname, dname, "mglob", err);
   if (err) {
+    goto CLEANUP;
+  }
+
+  if (!(inst->isLinear() || inst->isQP() || inst->isQuadratic())) {
+    env->getLogger()->msgStream(LogError) << "mglob error : " <<
+      "mglob only solves Mixed Integer Quadratically Constrained Quadratic"
+      << " problems (MIQCQP). " << fname << " is not an MIQCQP."
+      << std::endl << "Problem not solved"<< std::endl;
     goto CLEANUP;
   }
 
