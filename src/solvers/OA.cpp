@@ -433,6 +433,18 @@ int main(int argc, char* argv[])
     goto CLEANUP;
   }
 
+  // Initialize engines
+  efac = new EngineFactory(env);
+  milp_e = efac->getMILPEngine();
+  if (!milp_e) {
+    //assert(!"No MILP engine!");
+    env->getLogger()->msgStream(LogInfo) << me
+     << "No MILP engine found, exiting." << std::endl;
+    goto CLEANUP;
+ }
+
+  delete efac; efac = 0;
+
   numThreads = std::min(env->getOptions()->findInt("threads")->getValue(),
                         omp_get_num_procs());
   omp_set_num_threads(numThreads);
@@ -441,15 +453,6 @@ int main(int argc, char* argv[])
   nlp_e = new EnginePtr[numThreads];
 
   loadProblem(env, iface, inst[0], &obj_sense);
-
-  // Initialize engines
-  efac = new EngineFactory(env);
-  milp_e = efac->getMILPEngine();
-  if (!milp_e) {
-    assert(!"No MILP engine!");
-  }
-
-  delete efac; efac = 0;
 
   // get presolver.
   orig_v = new VarVector(inst[0]->varsBegin(), inst[0]->varsEnd());
