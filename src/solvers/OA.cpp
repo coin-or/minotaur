@@ -18,6 +18,9 @@
 #else
 #error "Cannot compile parallel algorithms: turn USE_OpenMP flag ON."
 #endif
+#ifdef USE_CPX
+#include <CplexMILPEngine.h>
+#endif
 #include "MinotaurConfig.h"
 #include "AMPLHessian.h"
 #include "AMPLJacobian.h"
@@ -437,10 +440,14 @@ int main(int argc, char* argv[])
   efac = new EngineFactory(env);
   milp_e = efac->getMILPEngine();
   if (!milp_e) {
-    //assert(!"No MILP engine!");
-    env->getLogger()->msgStream(LogInfo) << me
-     << "No MILP engine found, exiting." << std::endl;
-    goto CLEANUP;
+#ifdef USE_CPX
+    milp_e = new CplexMILPEngine(env);
+#endif
+    if (!milp_e) {
+      env->getLogger()->msgStream(LogInfo) << me
+        << "No MILP engine found, exiting." << std::endl;
+      goto CLEANUP;
+    }
  }
 
   delete efac; efac = 0;
