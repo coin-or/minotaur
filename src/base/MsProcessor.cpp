@@ -627,6 +627,7 @@ double * MsProcessor::getStartPointScheme5 (UInt n, RelaxationPtr rel1,
   }
   delete[] newDir;
   delete[] tempCorner;
+  delete[] farCorner;
   return initPoint;
 }
 
@@ -849,6 +850,9 @@ void MsProcessor::process(NodePtr node, RelaxationPtr rel,
 #endif
           //5. Compare with/obtain the best solution (thread critical region)
           if (threadBestVal < bestVal) {
+            if (bestsol) {
+              delete bestsol; bestsol=0;
+            }
             bestsol = (SolutionPtr) new Solution(bestsolthd);
             bestVal = threadBestVal;
           }
@@ -909,7 +913,14 @@ void MsProcessor::process(NodePtr node, RelaxationPtr rel,
       break;
     }
   }
+
+  for(UInt i = 0; i < numThreads_; ++i) {
+    delete relCopy[i];
+  }
   delete[] relCopy;
+  for(UInt i = 0; i < numThreads_; ++i) {
+    delete eCopy[i];
+  }
   delete[] eCopy;
   delete[] eStatus;
   delete[] solCount;

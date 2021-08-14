@@ -89,6 +89,8 @@ BranchAndBound* MultiStart::getBab_(EnginePtr e, HandlerVector &handlers)
   if (s_hand->isNeeded()) {
     s_hand->setModFlags(false, true);
     handlers.push_back(s_hand);
+  } else {
+    delete s_hand;
   }
 
   // add SOS2 handler here.
@@ -96,6 +98,8 @@ BranchAndBound* MultiStart::getBab_(EnginePtr e, HandlerVector &handlers)
   if (s2_hand->isNeeded()) {
     s2_hand->setModFlags(false, true);
     handlers.push_back(s2_hand);
+  } else {
+    delete s2_hand;
   }
 
 
