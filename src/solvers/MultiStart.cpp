@@ -326,8 +326,8 @@ void MultiStart::showHelp() const
   env_->getLogger()->errStream()
       << "NLP-based branch-and-estimate heuristic for nonconvex MINLP."
       << std::endl
-      << "**Works in parallel with a thread-safe NLP solver only "
-      << "(e.g. IPOPT with MA97)**" << std::endl
+      << "** Shared memory parallelism works with a thread-safe NLP solver only "
+      << "(e.g. IPOPT with MA97). **" << std::endl
       << "Usage:" << std::endl
       << "To show version: multistart -v (or --display_version yes) "
       << std::endl
@@ -516,8 +516,8 @@ int MultiStart::solve(ProblemPtr p)
 
   if (env_->getOptions()->findInt("threads")->getValue() > 1) {
    env_->getLogger()->msgStream(LogError) 
-     << "Warning: Multiple threads can works with a thread-safe "
-     << "NLP solver only (e.g. IPOPT with MA97)**" << std::endl;
+     << "Warning: ** Multiple threads work with a thread-safe "
+     << "NLP solver only (e.g. IPOPT with MA97) **" << std::endl;
   }
   bab->solve();
   bab->writeStats(env_->getLogger()->msgStream(LogExtraInfo));

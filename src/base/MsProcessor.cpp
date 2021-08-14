@@ -61,6 +61,7 @@ MsProcessor::MsProcessor (EnvPtr env, EnginePtr engine,
 : contOnErr_(false),						
   engine_(engine),
   engineStatus_(EngineUnknownStatus),
+  env_(env),
   numSolutions_(0),
   relaxation_(RelaxationPtr()),
   ws_(WarmStartPtr())
