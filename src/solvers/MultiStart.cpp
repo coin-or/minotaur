@@ -89,6 +89,8 @@ BranchAndBound* MultiStart::getBab_(EnginePtr e, HandlerVector &handlers)
   if (s_hand->isNeeded()) {
     s_hand->setModFlags(false, true);
     handlers.push_back(s_hand);
+  } else {
+    delete s_hand;
   }
 
   // add SOS2 handler here.
@@ -96,6 +98,8 @@ BranchAndBound* MultiStart::getBab_(EnginePtr e, HandlerVector &handlers)
   if (s2_hand->isNeeded()) {
     s2_hand->setModFlags(false, true);
     handlers.push_back(s2_hand);
+  } else {
+    delete s2_hand;
   }
 
 
@@ -326,8 +330,8 @@ void MultiStart::showHelp() const
   env_->getLogger()->errStream()
       << "NLP-based branch-and-estimate heuristic for nonconvex MINLP."
       << std::endl
-      << "**Works in parallel with a thread-safe NLP solver only "
-      << "(e.g. IPOPT with MA97)**" << std::endl
+      << "** Shared memory parallelism works with a thread-safe NLP solver only "
+      << "(e.g. IPOPT with MA97). **" << std::endl
       << "Usage:" << std::endl
       << "To show version: multistart -v (or --display_version yes) "
       << std::endl
@@ -516,8 +520,8 @@ int MultiStart::solve(ProblemPtr p)
 
   if (env_->getOptions()->findInt("threads")->getValue() > 1) {
    env_->getLogger()->msgStream(LogError) 
-     << "Warning: Multiple threads can works with a thread-safe "
-     << "NLP solver only (e.g. IPOPT with MA97)**" << std::endl;
+     << "Warning: ** Multiple threads work with a thread-safe "
+     << "NLP solver only (e.g. IPOPT with MA97) **" << std::endl;
   }
   bab->solve();
   bab->writeStats(env_->getLogger()->msgStream(LogExtraInfo));
