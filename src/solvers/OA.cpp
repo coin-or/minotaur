@@ -328,6 +328,32 @@ void writeOAStatus(EnvPtr env, double gap, double objLb, double objUb,
 }
 
 
+void writeOAStatus(EnvPtr env, double gap, double objLb, double objUb,
+                   double obj_sense, SolveStatus status, UInt iterNum,
+                   double time)
+{
+
+  const std::string me("oa main: ");
+  int err = 0;
+
+  env->getLogger()->msgStream(LogInfo)
+    << me << std::fixed << std::setprecision(4)
+    << "best solution value = " << obj_sense*objUb << std::endl
+    << me << std::fixed << std::setprecision(4)
+    << "best bound estimate = "
+    <<  obj_sense*objLb << std::endl
+    << me << "gap = " << std::max(0.0, objUb - objLb)
+    << std::endl
+    << me << "gap percentage = " << gap << std::endl
+    << me << "iterations = " << iterNum << std::endl
+    << me << "time used (s) = " << std::fixed << std::setprecision(2)
+    //<< env->getTime(err) << std::endl
+    << time << std::endl
+    << me << "status of outer approximation: " << getSolveStatusString(status) << std::endl;
+  env->stopTimer(err); assert(0==err);
+}
+
+
 void showStatus(EnvPtr env, double objLb, double objUb, double gap, int iterNum, UInt numSols)
 {
   int err = 0;
@@ -647,8 +673,13 @@ int main(int argc, char* argv[])
     //MS: Other solve status and right way of writing them
     //writeSol(env, orig_v, pres, solPool->getBestSolution(), solveStatus, iface);
     solPool->writeStats(env->getLogger()->msgStream(LogExtraInfo));
-    writeOAStatus(env, gap, objLb, objUb, obj_sense, status, iterNum, time,
-                  totSepTime, solsPerIter, totNumSols);
+    if (options->findBool("oa_use_solutions")->getValue() == true) {
+      writeOAStatus(env, gap, objLb, objUb, obj_sense, status, iterNum,
+                    time, totSepTime, solsPerIter, totNumSols);
+    } else {
+      writeOAStatus(env, gap, objLb, objUb, obj_sense, status, iterNum,
+                    time);
+    }
   }
 
 CLEANUP:
