@@ -374,7 +374,7 @@ void showHelp()
 {
   std::cout << "Parallel Advanced Quesada-Grossmann (LP/NLP) algorithm for convex MINLP"
             << std::endl
-            << "Requires a thread-safe NLP and LP solver."
+            << "Requires a thread-safe LP solver."
             //<< "(e.g. IPOPT with MA97)**" << std::endl
             << std::endl
             << "Usage:" << std::endl
@@ -605,7 +605,7 @@ int main(int argc, char** argv)
   clock_t clockTimeStart = clock();
   EnvPtr env      = (EnvPtr) new Environment();
   MINOTAUR_AMPL::AMPLInterface* iface = 0;
-  ProblemPtr oinst;      // instance that needs to be solved.
+  ProblemPtr oinst = 0;  // instance that needs to be solved.
   EnginePtr engine = 0;  // engine for solving relaxations. 
   ParQGBranchAndBound * parbab = 0;
   double wallTimeStart = parbab->getWallTime();  //use Timer: to be done!!!
@@ -720,7 +720,7 @@ int main(int argc, char** argv)
   if (numThreads > 1) {
     env->getLogger()->msgStream(LogInfo)
       << "Number of threads = " << numThreads 
-      << ". Requires a thread-safe LP and NLP solver." << std::endl;
+      << ". Requires a thread-safe LP solver." << std::endl;
   } else {
     env->getLogger()->msgStream(LogInfo)
       << "Number of threads = " << numThreads << std::endl;

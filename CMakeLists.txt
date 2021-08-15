@@ -490,7 +490,7 @@ set (CPX_LIB_DIR)          ## NULL
 set (CPX_INC_DIR)          ## NULL
 set (LINK_CPX 0)
 set (CPX_INC_DIR "" CACHE PATH 
-     "Path to Cplex headers. It must have cplex.h file.") 
+     "Path to Cplex headers. It must have ilcplex/cplex.h file.") 
 set (CPX_LIB_DIR "" CACHE PATH 
      "Path to Cplex static library. It must have libcplex.a file.") 
 set (CPX_LIB_DIR_F ${CPX_LIB_DIR})
@@ -500,7 +500,7 @@ if (CPX_INC_DIR)
   #if (NOT EXISTS "${CPX_INC_DIR}/cplex.h")
   if (NOT EXISTS "${CPX_INC_DIR}/ilcplex/cplex.h")
     message(FATAL_ERROR " ${MSG_HEAD} "
-            "ilcplex/cplex.h not found at ${CPX_INC_DIR} not found.")
+            "ilcplex/cplex.h not found at ${CPX_INC_DIR}.")
   endif()
   set (LINK_CPX 1)
   set (CPX_INC_DIR_F ${CPX_INC_DIR})
