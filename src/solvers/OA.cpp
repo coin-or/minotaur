@@ -315,7 +315,7 @@ void writeOAStatus(EnvPtr env, double gap, double objLb, double objUb,
     << me << "gap = " << std::max(0.0, objUb - objLb)
     << std::endl
     << me << "gap percentage = " << gap << std::endl
-    << me << "iterations = " << iterNum << std::endl
+    << me << "iteration = " << iterNum << std::endl
     << me << "solutions separated = " << totNumSols << std::endl
     << me << "separation time = " << std::setprecision(2) << totSepTime << std::endl
     << me << "mean separation time = " << std::setprecision(2)
@@ -358,16 +358,33 @@ void showStatus(EnvPtr env, double objLb, double objUb, double gap, int iterNum,
 {
   int err = 0;
   env->getLogger()->msgStream(LogInfo)
-    << std::endl
+    //<< std::endl
     << "oa main: " 
     << std::fixed
     << std::setprecision(1)  << "time = "  << env->getTime(err)
     << std::setprecision(4)  << " lb = "   << objLb
     << std::setprecision(4)  << " ub = "   << objUb
     << std::setprecision(2)  << " gap% = " << gap
-    << " iterations = " << iterNum 
+    << " iteration = " << iterNum
     << " solutions = " << numSols
-    << std::endl
+    //<< std::endl
+    << std::endl;
+}
+
+
+void showStatus(EnvPtr env, double objLb, double objUb, double gap, int iterNum)
+{
+  int err = 0;
+  env->getLogger()->msgStream(LogInfo)
+    //<< std::endl
+    << "oa main: "
+    << std::fixed
+    << std::setprecision(1)  << "time = "  << env->getTime(err)
+    << std::setprecision(4)  << " lb = "   << objLb
+    << std::setprecision(4)  << " ub = "   << objUb
+    << std::setprecision(2)  << " gap% = " << gap
+    << " iteration = " << iterNum
+    //<< std::endl
     << std::endl;
 }
 
@@ -589,12 +606,13 @@ int main(int argc, char* argv[])
         objUb = solPool->getBestSolutionValue();
         status = SolvedOptimal;
         gap = 0;
-        showStatus(env, objLb, objUb, gap, iterNum, numSols);
+        //showStatus(env, objLb, objUb, gap, iterNum, numSols);
         break;
       }
       // Update MILP by adding OA cuts at various solutions obtained from the
       // solution pool of MILP engine
       if (options->findBool("oa_use_solutions")->getValue() == true) {
+        showStatus(env, objLb, objUb, gap, iterNum, numSols);
         sepTimeStart = getWallTime();
         numSols = oa_hand[0]->getMILPEngine()->getNumSols();
         // id -1 fetches the incumbent from Cplex
@@ -630,12 +648,13 @@ int main(int argc, char* argv[])
           }
           j = j + numThreads;
         }
-        env->getLogger()->msgStream(LogInfo) << "number of solutions used = "
+        env->getLogger()->msgStream(LogExtraInfo) << "number of solutions used = "
           << numSols << " separation time = " << getWallTime() - sepTimeStart
           << " separation time per sol = " << (getWallTime() - sepTimeStart)*numSols
           << std::endl;
       } else {
         // Solve NLP and update MILP by adding OA cuts
+        showStatus(env, objLb, objUb, gap, iterNum);
         oa_hand[0]->setRelObj(objLb);
         oa_hand[0]->separate(sol, NodePtr(), milp, cutMan, solPool, pmod, rmod, &solFound[0], &sepStatus[0]);
         if (solFound[0]) {
@@ -657,7 +676,11 @@ int main(int argc, char* argv[])
       totSepTime += getWallTime() - sepTimeStart;
       solsPerIter += ceil((double(numSols)/double(numThreads)));
       gap = getPerGap(objLb, objUb);
-      showStatus(env, objLb, objUb, gap, iterNum, numSols);
+      //if (options->findBool("oa_use_solutions")->getValue() == true) {
+        //showStatus(env, objLb, objUb, gap, iterNum, numSols);
+      //} else {
+        //showStatus(env, objLb, objUb, gap, iterNum);
+      //}
     } // end while (objLo <= objUp) or time limit
     gap = getPerGap(objLb, objUb);
     time = -wallTimeStart + getWallTime();

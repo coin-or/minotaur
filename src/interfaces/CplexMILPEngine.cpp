@@ -629,6 +629,7 @@ EngineStatus CplexMILPEngine::solve()
                                << std::endl;
 #endif
   int solstat;
+  //char cpxbuffer;
   double objval = INFINITY;
   double cpxtimeStart = 0, cpxtimeEnd = 0;
   int cur_numcols = CPXXgetnumcols (cpxenv_, cpxlp_);
@@ -641,6 +642,16 @@ EngineStatus CplexMILPEngine::solve()
   problem_->write(std::cout);
   writeLP();
 #endif
+
+  /* Set no-display for changed parameters after first iteration */
+  if (stats_->calls > 1) {
+    cpxstatus_ = CPXXsetintparam (cpxenv_, CPX_PARAM_PARAMDISPLAY, 0);
+    if (cpxstatus_) {
+       logger_->msgStream(LogError) << me_ << "Failure to set parameter display, error "
+         << cpxstatus_ << std::endl;
+       goto TERMINATE;
+    }
+  }
 
   /* Set time limit (wallclock) for this iteration */
   cpxstatus_ = CPXXsetdblparam (cpxenv_, CPXPARAM_TimeLimit, timeLimit_);
@@ -668,7 +679,9 @@ EngineStatus CplexMILPEngine::solve()
        << cpxstatus_ << std::endl;
      goto TERMINATE;
   }
-  logger_->msgStream(LogInfo) << me_ << "Number of cores = " << numcores << std::endl;
+  if (stats_->calls == 1) {
+   logger_->msgStream(LogInfo) << me_ << "Number of cores = " << numcores << std::endl;
+  }
 
   /* Set number of threads (default 1) */
   cpxstatus_ = CPXXsetintparam (cpxenv_, CPXPARAM_Threads,
@@ -678,6 +691,36 @@ EngineStatus CplexMILPEngine::solve()
        << cpxstatus_ << std::endl;
      goto TERMINATE;
   }
+
+  // Set display options
+  if (env_->getOptions()->findInt("log_level")->getValue() <= 3) {
+    //cpxstatus_ = CPXXsetintparam (cpxenv_, CPXPARAM_MIP_Interval, 1);
+    //if (cpxstatus_) {
+      //logger_->msgStream(LogError) << me_ << "Failure to set MILP log interval, error "
+        //<< cpxstatus_ << std::endl;
+      //goto TERMINATE;
+    //}
+    cpxstatus_ = CPXXsetintparam (cpxenv_, CPXPARAM_MIP_Display, 0);
+    if (cpxstatus_) {
+      logger_->msgStream(LogError) << me_ << "Failure to set MILP display parameter, error "
+        << cpxstatus_ << std::endl;
+      goto TERMINATE;
+    }
+  //} else {
+     //cpxstatus_ = CPXXsetintparam (cpxenv_, CPXPARAM_MIP_Interval, 1);
+    //if (cpxstatus_) {
+      //logger_->msgStream(LogError) << me_ << "Failure to set MILP log interval, error "
+        //<< cpxstatus_ << std::endl;
+      //goto TERMINATE;
+    //}
+    //cpxstatus_ = CPXXsetintparam (cpxenv_, CPXPARAM_MIP_Display, 4);
+    //if (cpxstatus_) {
+      //logger_->msgStream(LogError) << me_ << "Failure to set MILP display parameter, error "
+        //<< cpxstatus_ << std::endl;
+      //goto TERMINATE;
+    //}
+  }
+
 
   // Read MIP starts if they exist (in a file)
   if (writeMipStarts_) {
@@ -716,6 +759,7 @@ EngineStatus CplexMILPEngine::solve()
   if (cpxstatus_) {
      logger_->msgStream(LogInfo) << me_ << "Failed to obtain solution data." << std::endl;
      solstat = CPXXgetstat(cpxenv_, cpxlp_); //get solve status
+     //cpxstatus_ = CPXXgetstatstring (cpxenv_, solstat, cpxbuffer);
   }
 
   // Write MIP start for the next iteration
@@ -727,7 +771,7 @@ EngineStatus CplexMILPEngine::solve()
     }
   }
 
-  logger_->msgStream(LogInfo) << me_ << "status = " << solstat << std::endl
+  logger_->msgStream(LogExtraInfo) << me_ << "status = " << solstat << std::endl
                                << me_ << "solution value = "
                                << objval << std::endl
                                << me_ << "nodes processed = "
