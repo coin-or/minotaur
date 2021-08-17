@@ -267,8 +267,6 @@ void ParQGHandlerAdvance::fixInts_(const double *x)
     switch (v->getType()) {
     case Binary:
     case Integer:
-    case ImplBin:
-    case ImplInt:
       xval = x[v->getIndex()];
       xval = floor(xval + 0.5);
       m = new VarBoundMod2(v, xval, xval);

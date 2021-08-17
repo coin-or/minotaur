@@ -602,28 +602,29 @@ void ParQGBranchAndBound::parsolveOppor(ParNodeIncRelaxerPtr parNodeRlxr[],
                                                       should_prune[i]);
         // CAUTION: if parRel branching is not used, cuts are also not shared.
         // Sharing pseudocosts must be separated from sharing cuts.
-        if (isParRel) {
-          for(UInt j = 0; j < numThreads; ++j) {
-            if (i!=j) {
-              std::vector<ConstraintPtr > consVec = nodePrcssr[j]->getCutManager()->getPoolCons();
-              if (consVec.size() > 0) {
-                for (UInt k=cutsIndex[i*numThreads+j]; k < consVec.size(); ++k) {
-                  lf = consVec[k]->getLinearFunction();
-                  if (lf) {
-                    lfnew = (LinearFunctionPtr) new LinearFunction();
-                    for (VariableGroupConstIterator it=lf->termsBegin(); it!=lf->termsEnd();++it) {
-                      v = it->first;
-                      //transform the cut
-                      lfnew->addTerm(rel[i]->getRelaxationVar(rel[i]->getOriginalVar(v)),it->second); //rel[j] not needed
-                    }
-                    f = (FunctionPtr) new Function(lfnew);
-                    rel[i]->newConstraint(f, consVec[k]->getLb(),
-                                          consVec[k]->getUb(), consVec[k]->getName());
+        for(UInt j = 0; j < numThreads; ++j) {
+          if (i!=j) {
+            std::vector<ConstraintPtr > consVec = nodePrcssr[j]->getCutManager()->getPoolCons();
+            if (consVec.size() > 0) {
+              for (UInt k=cutsIndex[i*numThreads+j]; k < consVec.size(); ++k) {
+                lf = consVec[k]->getLinearFunction();
+                if (lf) {
+                  lfnew = (LinearFunctionPtr) new LinearFunction();
+                  for (VariableGroupConstIterator it=lf->termsBegin(); it!=lf->termsEnd();++it) {
+                    v = it->first;
+                    //transform the cut
+                    lfnew->addTerm(rel[i]->getRelaxationVar(rel[i]->getOriginalVar(v)),it->second); //rel[j] not needed
                   }
+                  f = (FunctionPtr) new Function(lfnew);
+                  rel[i]->newConstraint(f, consVec[k]->getLb(),
+                                        consVec[k]->getUb(), consVec[k]->getName());
                 }
-                cutsIndex[i*numThreads+j] = consVec.size();
-                consVec.clear();
               }
+              cutsIndex[i*numThreads+j] = consVec.size();
+              consVec.clear();
+            }
+        
+            if (isParRel) {
               parRelBr = dynamic_cast <ParReliabilityBrancher*> (nodePrcssr[j]->getBrancher());
               tmpTimesUp = parRelBr->getTimesUp();
               tmpTimesDown = parRelBr->getTimesDown();
@@ -1076,28 +1077,29 @@ void ParQGBranchAndBound::parsolve(ParNodeIncRelaxerPtr parNodeRlxr[],
                                                         should_prune[i]);
           // CAUTION: if parRel branching is not used, cuts are also not shared.
           // Sharing pseudocosts must be separated from sharing cuts.
-          if (isParRel) {
-            for(UInt j = 0; j < numThreads; ++j) {
-              if (i!=j) {
-                std::vector<ConstraintPtr > consVec = nodePrcssr[j]->getCutManager()->getPoolCons();
-                if (consVec.size() > 0) {
-                  for (UInt k=cutsIndex[i*numThreads+j]; k < consVec.size(); ++k) {
-                    lf = consVec[k]->getLinearFunction();
-                    if (lf) {
-                      lfnew = (LinearFunctionPtr) new LinearFunction();
-                      for (VariableGroupConstIterator it=lf->termsBegin(); it!=lf->termsEnd();++it) {
-                        v = it->first;
-                        //transform the cut
-                        lfnew->addTerm(rel[i]->getRelaxationVar(rel[i]->getOriginalVar(v)),it->second); //rel[j] not needed
-                      }
-                      f = (FunctionPtr) new Function(lfnew);
-                      rel[i]->newConstraint(f, consVec[k]->getLb(),
-                                            consVec[k]->getUb(), consVec[k]->getName());
+          for(UInt j = 0; j < numThreads; ++j) {
+            if (i!=j) {
+              std::vector<ConstraintPtr > consVec = nodePrcssr[j]->getCutManager()->getPoolCons();
+              if (consVec.size() > 0) {
+                for (UInt k=cutsIndex[i*numThreads+j]; k < consVec.size(); ++k) {
+                  lf = consVec[k]->getLinearFunction();
+                  if (lf) {
+                    lfnew = (LinearFunctionPtr) new LinearFunction();
+                    for (VariableGroupConstIterator it=lf->termsBegin(); it!=lf->termsEnd();++it) {
+                      v = it->first;
+                      //transform the cut
+                      lfnew->addTerm(rel[i]->getRelaxationVar(rel[i]->getOriginalVar(v)),it->second); //rel[j] not needed
                     }
+                    f = (FunctionPtr) new Function(lfnew);
+                    rel[i]->newConstraint(f, consVec[k]->getLb(),
+                                          consVec[k]->getUb(), consVec[k]->getName());
                   }
-                  cutsIndex[i*numThreads+j] = consVec.size();
-                  consVec.clear();
                 }
+                cutsIndex[i*numThreads+j] = consVec.size();
+                consVec.clear();
+              }
+          
+              if (isParRel) {
                 parRelBr = dynamic_cast <ParReliabilityBrancher*> (nodePrcssr[j]->getBrancher());
                 tmpTimesUp = parRelBr->getTimesUp();
                 tmpTimesDown = parRelBr->getTimesDown();
