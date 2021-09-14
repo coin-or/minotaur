@@ -1,9 +1,9 @@
-Copyright 2017, UChicago Argonne, LLC and University of Wisconsin, Madison
-All Rights Reserved
-MINOTAUR (Mixed Integer Nonlinear Optimization Toolkit, Algorithms Underestimators, Relaxations), Version 0.2
-Sven Leyffer and Todd S. Munson (Argonne)
-Jeffrey T. Linderoth and James T. Luedtke (Wisconsin)
-Ashutosh Mahajan (IIT Bombay) 
+Copyright 2012, UChicago Argonne, LLC and University of Wisconsin, Madison.
+All Rights Reserved.
+
+MINOTAUR (Mixed Integer Nonlinear Optimization Toolkit, Algorithms
+Underestimators, Relaxations), Version 0.3.
+
 Contact: minotaur@mcs.anl.gov
 
 
