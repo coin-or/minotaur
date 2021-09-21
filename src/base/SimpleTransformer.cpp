@@ -936,6 +936,7 @@ void SimpleTransformer::reformulate(ProblemPtr &newp, HandlerVector &handlers,
   if (checkQuadConvexity_()) {
     status = 2; // status 2 means the problem is convex
     clearUnusedHandlers_(handlers);
+    writeStats(logger_->msgStream(LogExtraInfo));
     delete newp_;
     return;
   }

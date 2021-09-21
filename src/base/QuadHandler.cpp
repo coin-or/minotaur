@@ -2935,14 +2935,14 @@ bool QuadHandler::tightenSimple_(bool *changed) {
       uiter = fwdUb.begin();
       clb = clb > implLb ? clb : implLb;
       cub = cub < implUb ? cub : implUb;
-      if (clb > c->getLb() + aTol_) {
-        p_->changeBound(c, Lower, clb);
-        //++bStats_.cBnds;
-      }
-      if (cub < c->getUb() - aTol_) {
-        p_->changeBound(c, Upper, cub);
-        //++bStats_.cBnds;
-      }
+      //if (clb > c->getLb() + aTol_) {
+      //  p_->changeBound(c, Lower, clb);
+      //  //++bStats_.cBnds;
+      //}
+      //if (cub < c->getUb() - aTol_) {
+      //  p_->changeBound(c, Upper, cub);
+      //  //++bStats_.cBnds;
+      //}
       if (lf) {
         for (VariableGroupConstIterator lit = lf->termsBegin();
              lit != lf->termsEnd(); ++lit) {
