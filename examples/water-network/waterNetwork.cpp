@@ -1,6 +1,8 @@
 #include <iostream>
 #include <stdio.h>
 #include <string.h>
+#include <filesystem>
+#include <unistd.h>
 #include "cmath"
 
 #include "minotaur/Environment.h"
@@ -52,8 +54,14 @@ void printList(struct ptr *node)
 
 int main()
 {
-  // char address[]="/home/user/Desktop/DDP/JalTantra/FILES/Data/Basic/HG_SP_4_2.dat";
-  char address[]="/home/user/Desktop/DDP/JalTantra/FILES/Data/Basic/Sample_input_cycle_twoloop.dat";
+  char file[] = "/Data/Sample_input_cycle_twoloop.dat";
+  // char file[] = "/Data/HG_SP_4_2.dat";
+  char tmp[256];
+  getcwd(tmp, 256);
+  cout<<tmp<<endl;
+  char * address = new char[strlen(tmp)+strlen(file)+1];
+  strcpy(address,tmp);
+  strcat(address,file);
   cout<<"Running ~"<<address<<endl;
 
   map<int,array<int,2>> arcs;
@@ -319,7 +327,7 @@ int main()
   Minotaur::EnvPtr env(new Minotaur::Environment());
 
   // Write full version.
-  cout << env->getVersion();
+  cout << env->getVersion() << endl;
 
   // Greetings.
   // cout << endl << "Hello World" << endl;
