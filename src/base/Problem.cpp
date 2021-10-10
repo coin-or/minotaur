@@ -776,10 +776,9 @@ void Problem::cg2qf()
       obj_ = newobj;
     }
   }
-
-  //constraint
   qfindex = new int[getNumCons()];
-  memset(qfindex, -1, getNumCons()*sizeof(UInt));
+  // int n = getNumCons();
+  // memset(qfindex, -1, getNumCons()*sizeof(UInt));
   qfi=0;
   for (ConstraintConstIterator cit=consBegin(); cit!=consEnd();
        ++cit) {
@@ -789,9 +788,8 @@ void Problem::cg2qf()
       continue;
       }
     if (Quadratic==f->getType()) {
-      qfindex[c->getIndex()] = qfi;
       qfi=qfi+1;
-        }
+      }
     }
     
   QuadraticFunctionPtr *qfcons = new QuadraticFunctionPtr[qfi];
@@ -834,15 +832,16 @@ void Problem::cg2qf()
       //refine
       FunctionPtr fc = (FunctionPtr) new Function(lfcons[qfi2], qfcons[qfi2]);
       fcons[qfi2] = fc;
-      
 
       markDelete(c);
-    
+      qfindex[qfi2] = qfi2;
+      
       qfi2=qfi2+1;
+
     }
   }
 
-  for (int i = 0; i != qfi; ++i) {
+  for (int i = 0; i !=qfi2 ; ++i) {
     if (qfindex[i] >= 0){
       c = getConstraint(i); // constraint that is to be changed
       f = c->getFunction();
@@ -853,6 +852,7 @@ void Problem::cg2qf()
                     c->getUb()-nlconstcons[qfindex[i]]);
     }
   }
+
   delMarkedCons();
   setNativeDer();
 
