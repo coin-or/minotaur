@@ -137,11 +137,60 @@ namespace Minotaur {
     /// Return an empty OsiLPEngine pointer.
     EnginePtr emptyCopy();
 
+    void enableFactorization();
+
     // Implement Engine::enableStrBrSetup()
     void enableStrBrSetup();
 
     // Implement Engine::fillStats()
     void fillStats(std::vector<double> &);
+
+    // Get the indices of the basic variables from the tableau
+    void getBasics(int *index);
+
+    /* \brief Get basic status of the variables in the sovler
+     * param[out] cstat - A vector for column status (Variables of the problem)
+     * param[in] rstat - A vector for row status (Constraints of the problem)
+     * Output values are
+     * 0 : Free variable
+     * 1 : Basic
+     * 2 : At upper bound (Non-basic)
+     * 3 : At lower bound (Non-basic)
+     */
+    void getBasisStatus(int *cstat, int *rstat);
+
+    // Get lower bounds of the variables in the solver
+    const double * getColLower();
+
+    // Get upper bounds of the variables in the solver
+    const double * getColUpper();
+
+    // Get lower bounds of the constraints in the solver
+    const double * getRowLower();
+
+    // Get upper bounds of the constraints in the solver
+    const double * getRowUpper();
+
+    // Get number of columns to the solver
+    int getNumCols();
+
+    // Get number of rows to the solver
+    int getNumRows();
+
+    // Get row activity
+    const double * getRowActivity();
+
+    // To get the original tableau from the solver
+    const double * getOriginalTableau();
+
+    // Get start index for each row in the original tableau
+    const int* getRowStarts();
+
+    // Gets indices of variables in the elements of the original tableau
+    const int* getIndicesofVars();
+
+    // Get the length of each row in the original tableau
+    const int* getRowLength();
 
     /// Return the solution value of the objective after solving the LP.
     double getSolutionValue();
@@ -161,7 +210,7 @@ namespace Minotaur {
     std::string getName() const;
 
     /// Return the osilp interface. For hacks.
-    OsiSolverInterface * getSolver();
+    // OsiSolverInterface * getSolver();
 
     // Implement Engine::getWarmStart().
     // See OsiLPSolver.hpp to see Osi's description of warm-start pointer.
@@ -171,6 +220,9 @@ namespace Minotaur {
 
     // Implement Engine::getWarmStartCopy().
     WarmStartPtr getWarmStartCopy();
+
+    // Returns true if Optimal basis is available with the sovler
+    bool IsOptimalBasisAvailable();
 
     /** 
      * Load the problem into the engine. We create arrays of variables and

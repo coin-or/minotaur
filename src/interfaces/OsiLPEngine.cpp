@@ -353,13 +353,65 @@ void OsiLPEngine::fillStats(std::vector<double> &lpStats)
   }
 }
 
-//void OsiLPEngine::getBasics(int *index) {
-//  osilp_->getBasics(index);
-//}
+void OsiLPEngine::enableFactorization() {
+  osilp_->enableFactorization();
+}
+
+void OsiLPEngine::getBasics(int *index) {
+  osilp_->getBasics(index);
+}
 
 //void OsiLPEngine::getBInvARow(int row, double *z, double *slack) {
 //  osilp_->getBInvARow(row, z, slack);
 //}
+
+void OsiLPEngine::getBasisStatus(int *cstat, int *rstat) {
+  osilp_->getBasisStatus(cstat, rstat);
+}
+
+const double * OsiLPEngine::getColLower() {
+  return osilp_->getColLower();
+}
+
+const double * OsiLPEngine::getColUpper() {
+  return osilp_->getColUpper();
+}
+
+const double * OsiLPEngine::getRowLower() {
+  return osilp_->getRowLower();
+}
+
+const double * OsiLPEngine::getRowUpper() {
+  return osilp_->getRowUpper();
+}
+
+int OsiLPEngine::getNumCols() {
+  return osilp_->getNumCols();
+}
+
+int OsiLPEngine::getNumRows() {
+  return osilp_->getNumRows();
+}
+
+const double * OsiLPEngine::getRowActivity() {
+  return osilp_->getRowActivity();
+}
+
+const double * OsiLPEngine::getOriginalTableau() {
+  return osilp_->getMatrixByRow()->getElements();
+}
+
+const int* OsiLPEngine::getRowStarts() {
+  return osilp_->getMatrixByRow()->getVectorStarts();
+}
+
+const int* OsiLPEngine::getIndicesofVars() {
+  return osilp_->getMatrixByRow()->getIndices();
+}
+
+const int* OsiLPEngine::getRowLength() {
+  return osilp_->getMatrixByRow()->getVectorLengths();
+}
 
 std::string OsiLPEngine::getName() const
 {
@@ -379,10 +431,10 @@ ConstSolutionPtr OsiLPEngine::getSolution()
 }
 
 
-OsiSolverInterface * OsiLPEngine::getSolver() 
-{
-  return osilp_;
-}
+//OsiSolverInterface * OsiLPEngine::getSolver() 
+//{
+//  return osilp_;
+//}
 
 
 EngineStatus OsiLPEngine::getStatus() 
@@ -401,6 +453,10 @@ WarmStartPtr OsiLPEngine::getWarmStartCopy()
   ws->setCoinWarmStart(coin_copy, true);
 
   return ws;
+}
+
+bool OsiLPEngine::IsOptimalBasisAvailable() {
+  return osilp_->optimalBasisIsAvailable();
 }
 
 
