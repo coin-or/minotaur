@@ -35,6 +35,10 @@ struct TableauInfo {
   const int *rowLen;          // Vector of row lengths
 }
 
+typedef std::pair<int, int>
+    VarProd;
+typedef std::map<VarProd, double> QuadTerm;
+
 class SimplexQuadCutGen {
  public:
   // Default Constructor
@@ -47,7 +51,7 @@ class SimplexQuadCutGen {
   ~SimplexQuadCutGen();
 
   // Generate the cuts that violate the given point
-  CutVector generateCuts(const double *x);
+  CutVector generateCuts(RelaxationPtr rel, const double *x);
 
  private:
   // Environment pointer
@@ -74,19 +78,25 @@ class SimplexQuadCutGen {
   // Row index of the basic original variables in the tableau
   // Key - index of the original variable which is basic
   // Value - Row index of the corresponding variable
-  std::map<UInt, UInt> basicInd_;
+  std::map<int, int> basicInd_;
 
   // An array of indices of non-basic original variables
   int *nbOrig_;
 
+  // Number of non-basic original variables
+  int nnbOrig_;
+
   // An array of indices of non-basic slack variables
   int *nbSlack_;
 
+  // Number of non-basic slack variables
+  int nnbSlack_;
+
   // Finds the non basic variables indices
   fillNonBasicIndex_(RelaxationPtr rel, int &basic,
-                     std::map<UInt, UInt> &nb_index)
+                     std::map<UInt, UInt> &nb_index);
 
-      // Save the nonlinear constraints of the problem
-      void findQuadCons_();
+  // Save the nonlinear constraints of the problem
+  void findQuadCons_();
 }
 }  // namespace Minotaur
