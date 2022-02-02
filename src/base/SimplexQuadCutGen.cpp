@@ -52,6 +52,7 @@ CutVector SimplexQuadCutGen::generateCuts(RelaxationPtr rel, const double *x) {
   // cutCoefs - Coefficient of cut for slack variables
   std::map<int, double> cutCoefo, cutCoefs;
   VariablePtr v1, v2;
+  int ncuts;
 
   lpe_->enableFactorization();
   sortVariables_();
@@ -122,7 +123,33 @@ CutVector SimplexQuadCutGen::generateCuts(RelaxationPtr rel, const double *x) {
       }
     }
 
-    relaxQuadTerms_(oxo, oxs, sxs, cutCoefo, cutCoefs, cutConst);
+    if (act > c->getUb() + eTol_) {
+      ncuts =
+          relaxQuadTerms_(oxo, oxs, sxs, cutCoefo, cutCoefs, cutConst, true);
+      if (ncuts == 0) {
+#if SPEW
+        logger_->msgStream(LogDebug)
+            << me_ << "Constraint " << c->getName()
+            << " is infeasible at this point yet no cuts generated"
+            << std::endl;
+#endif
+      } else {
+        ncuts_ += ncuts;
+      }
+    } else {
+      ncuts =
+          relaxQuadTerms_(oxo, oxs, sxs, cutCoefo, cutCoefs, cutConst, false);
+      if (ncuts == 0) {
+#if SPEW
+        logger_->msgStream(LogDebug)
+            << me_ << "Constraint " << c->getName()
+            << " is infeasible at this point yet no cuts generated"
+            << std::endl;
+#endif
+      } else {
+        ncuts_ += ncuts;
+      }
+    }
   }
 }
 
@@ -202,12 +229,29 @@ void SimplexQuadCutGen::getBasicInfo_() {
   tabInfo_.colUpper = lpe_->getColUpper();
   tabInfo_.rowLower = lpe_->getRowLower();
   tabInfo_.rowUpper = lpe_->getRowUpper();
-  // tabInfo_.rowRhs = lpe_-.>getRightHandSide();
+  tabInfo_.rowRhs = lpe_->getRightHandSide();
   tabInfo_.rowActivity = lpe_->getRowActivity();
   tabInfo_->origTab = lpe_->getOriginalTableau();
   tabInfo_->rowStart = lpe_->getRowStarts();
   tabInfo_->indices = lpe_->getIndicesofVars();
   tabInfo_->rowLen = lpe_->getRowLength();
+}
+
+void SimplexQuadCutGen::getSlackBounds() {
+  double lb, ub;
+  int row, upto;
+
+  for (int i = 0; i < nnbSlack_; ++i) {
+    row = nbSlack_[i];
+    lb = 0.0;
+    ub = 0.0;
+    upto = tabInfo_.rowStart[row] + tabInfo_.rowLen[row];
+    for (int j = tabInfo_.rowStart[row]; j < upto; ++j) {
+      getTermBounds_(tabInfo_.origTab[j],
+                     tabInfo_.colLower[tabInfo_.indices[j]],
+                     tabInfo_.colUpper[tabInfo_.indices[j]], lb, ub);
+    }
+  }
 }
 
 void SimplexQuadCutGen::multiplyBB_(int b1, int b2, double coef,

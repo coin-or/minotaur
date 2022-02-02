@@ -21,13 +21,13 @@ namespace Minotaur {
 /** \brief A structure to store info from the simplex tableau
  */
 struct TableauInfo {
-  int ncol;                // Number of columns in the simplex
-  int nrow;                // Number of rows in the simplex
-  const double *colLower;  // Lower bounds of the variables
-  const double *colUpper;  // Upper bounds of the variables
-  const double *rowLower;  // Lower bounds of the constraints
-  const double *rowUpper;  // Upper bounds of the constraints
-  // double * rowRhs; // Right hand side of constraints -- Required?
+  int ncol;                   // Number of columns in the simplex
+  int nrow;                   // Number of rows in the simplex
+  const double *colLower;     // Lower bounds of the variables
+  const double *colUpper;     // Upper bounds of the variables
+  const double *rowLower;     // Lower bounds of the constraints
+  const double *rowUpper;     // Upper bounds of the constraints
+  const double *rowRhs;       // Right hand side of constraints
   const double *rowActivity;  // Constraints Activity
   const double *origTab;      // Original simplex tableau
   const int *rowStart;        // Vector of row starts
@@ -38,6 +38,7 @@ struct TableauInfo {
 typedef std::pair<int, int>
     VarProd;
 typedef std::map<VarProd, double> QuadTerm;
+typedef std::map<int, std::pair<double, double>> SlackBound;
 
 class SimplexQuadCutGen {
  public:
@@ -91,6 +92,9 @@ class SimplexQuadCutGen {
 
   // Number of non-basic slack variables
   int nnbSlack_;
+
+  // Lower and Upper bounds of the slack variables
+  SlackBound sb_;
 
   // Finds the non basic variables indices
   fillNonBasicIndex_(RelaxationPtr rel, int &basic,

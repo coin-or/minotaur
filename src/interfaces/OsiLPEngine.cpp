@@ -329,6 +329,10 @@ const double *OsiLPEngine::getRowLower() { return osilp_->getRowLower(); }
 
 const double *OsiLPEngine::getRowUpper() { return osilp_->getRowUpper(); }
 
+const double *OsiLPEngine::getRightHandSide() {
+  return osilp_->getRightHandSide();
+}
+
 int OsiLPEngine::getNumCols() { return osilp_->getNumCols(); }
 
 int OsiLPEngine::getNumRows() { return osilp_->getNumRows(); }

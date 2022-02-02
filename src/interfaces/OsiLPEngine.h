@@ -174,6 +174,9 @@ class OsiLPEngine : public LPEngine {
   // Get upper bounds of the constraints in the solver
   const double *getRowUpper();
 
+  // Get right hand side of the rows in the simplex tableau
+  const double *getRightHandSide();
+
   // Get number of columns to the solver
   int getNumCols();
 
