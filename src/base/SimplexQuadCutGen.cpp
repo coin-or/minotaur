@@ -238,7 +238,7 @@ void SimplexQuadCutGen::getBasicInfo_() {
 }
 
 void SimplexQuadCutGen::getSlackBounds() {
-  double lb, ub;
+  double lb, ub, rhs;
   int row, upto;
 
   for (int i = 0; i < nnbSlack_; ++i) {
@@ -251,6 +251,32 @@ void SimplexQuadCutGen::getSlackBounds() {
                      tabInfo_.colLower[tabInfo_.indices[j]],
                      tabInfo_.colUpper[tabInfo_.indices[j]], lb, ub);
     }
+
+    if (lb > tabInfo_.rowLower[row] + eTol_) {
+      lb = tabInfo_.rowLower[row];
+    }
+    if (ub < tabInfo_.rowUpper[row] - eTol_) {
+      ub = tabInfo_.rowUpper[row];
+    }
+
+    rhs = tabInfo_.rowRhs[row];
+    sb_.insert(std::make_pair(row, std::make_pair(rhs - ub, rhs - lb)));
+  }
+}
+
+void SimplexQuadCutGen::getTermBounds_(double coef, double vlb, double vub,
+                                       double &lb, double &ub) {
+  if (fabs(coef) < eTol_) {
+    // Coef is zero
+    return;
+  }
+
+  if (coef > eTol_) {
+    lb += coef * vlb;
+    ub += coef * vub;
+  } else {
+    lb += coef * vub;
+    ub += coef * vlb
   }
 }
 
