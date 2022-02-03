@@ -153,6 +153,47 @@ CutVector SimplexQuadCutGen::generateCuts(RelaxationPtr rel, const double *x) {
   }
 }
 
+void SimplexQuadCutGen::relaxSqOrigTerm_(double coef, int var, bool atLower,
+                                         std::map<int, double> &cutCoefo,
+                                         double &cutConst, bool under) {
+  // We assume coef will be nonzero
+  if (under) {
+    if (coef > eTol_) {
+      if (atLower) {
+        double l = tabInfo_.colLower[var];
+        addTerm_(cutCoefo, var, 2 * l * coef);
+        cutConst -= l * l * coef;
+      } else {
+        double u = tabInfo_.colUpper[var];
+        addTerm_(cutCoefo, var, 2 * u * coef);
+        cutConst -= u * u * coef;
+      }
+    } else {
+      double l = tabInfo_.colLower[var];
+      double u = tabInfo_.colUpper[var];
+      addTerm_(cutCoefo, var, (l + u) * coef);
+      cutConst -= u * l;
+    }
+  } else {
+    if (coef < -eTol_) {
+      if (atLower) {
+        double l = tabInfo_.colLower[var];
+        addTerm_(cutCoefo, var, 2 * l * coef);
+        cutConst -= l * l * coef;
+      } else {
+        double u = tabInfo_.colUpper[var];
+        addTerm_(cutCoefo, var, 2 * u * coef);
+        cutConst -= u * u * coef;
+      }
+    } else {
+      double l = tabInfo_.colLower[var];
+      double u = tabInfo_.colUpper[var];
+      addTerm_(cutCoefo, var, (l + u) * coef);
+      cutConst -= u * l;
+    }
+  }
+}
+
 void SimplexQuadCutGen::addTerm_(std::map<int, double> &t, int v, double coef) {
   if (fabs(coef) > eTol_) {
     std::map<int, double>::iterator it = t->find(v);
