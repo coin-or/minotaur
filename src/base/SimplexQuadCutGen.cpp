@@ -153,45 +153,119 @@ CutVector SimplexQuadCutGen::generateCuts(RelaxationPtr rel, const double *x) {
   }
 }
 
-void SimplexQuadCutGen::relaxSqOrigTerm_(double coef, int var, bool atLower,
-                                         std::map<int, double> &cutCoefo,
-                                         double &cutConst, bool under) {
+void SimplexQuadCutGen::relaxSqTerm_(double coef, int var, bool atLower,
+                                     double l, double u, double &lincoef,
+                                     double &cnst, bool under) {
   // We assume coef will be nonzero
   if (under) {
     if (coef > eTol_) {
       if (atLower) {
-        double l = tabInfo_.colLower[var];
-        addTerm_(cutCoefo, var, 2 * l * coef);
-        cutConst -= l * l * coef;
+        lincoef = 2 * l * coef;
+        cnst -= l * l * coef;
       } else {
-        double u = tabInfo_.colUpper[var];
-        addTerm_(cutCoefo, var, 2 * u * coef);
-        cutConst -= u * u * coef;
+        lincoef = 2 * u * coef;
+        cnst -= u * u * coef;
       }
     } else {
-      double l = tabInfo_.colLower[var];
-      double u = tabInfo_.colUpper[var];
-      addTerm_(cutCoefo, var, (l + u) * coef);
-      cutConst -= u * l;
+      lincoef = (l + u) * coef;
+      cnst -= u * l;
     }
   } else {
     if (coef < -eTol_) {
       if (atLower) {
-        double l = tabInfo_.colLower[var];
-        addTerm_(cutCoefo, var, 2 * l * coef);
-        cutConst -= l * l * coef;
+        lincoef = 2 * l * coef;
+        cnst -= l * l * coef;
       } else {
-        double u = tabInfo_.colUpper[var];
-        addTerm_(cutCoefo, var, 2 * u * coef);
-        cutConst -= u * u * coef;
+        lincoef = 2 * u * coef;
+        cnst -= u * u * coef;
       }
     } else {
-      double l = tabInfo_.colLower[var];
-      double u = tabInfo_.colUpper[var];
-      addTerm_(cutCoefo, var, (l + u) * coef);
-      cutConst -= u * l;
+      lincoef = (l + u) * coef;
+      cnst -= u * l;
     }
   }
+}
+
+int SimplexQuadCutGen::relaxBilTerm_(double coef, int v1, int v2, bool lower1,
+                                     bool lower2, double l1, double u1,
+                                     double l2, double u2, double &c1v1,
+                                     double &c1v2, double &c2v1, double &c2v2,
+                                     double &cnst1, double &cnst2, bool under) {
+  int numCuts;
+  if (under) {
+    if (coef > eTol_) {
+      if (lower1 == lower2) {
+        double p1 = lower1 ? l1 : u1;
+        double p2 = lower2 ? l2 : u2;
+        c1v1 = coef * p2;
+        c1v2 = coef * p1;
+        cnst1 = -coef * p1 * p2;
+        numCuts = 1;
+      } else {
+        c1v1 = coef * l2;
+        c1v2 = coef * l1;
+        cnst1 = -coef * l1 * l2;
+        c2v1 = coef * u2;
+        c2v2 = coef * u1;
+        cnst2 = -coef * u1 * u2;
+        numCuts = 2;
+      }
+    } else {
+      if (lower1 == lower2) {
+        c1v1 = coef * l2;
+        c1v2 = coef * u1;
+        cnst1 = -coef * u1 * l2;
+        c2v1 = coef * u2;
+        c2v2 = coef * l1;
+        cnst2 = -coef * l1 * u2;
+        numCuts = 2;
+      } else {
+        double p1 = lower1 ? l1 : u1;
+        double p2 = lower2 ? l2 : u2;
+        c1v1 = coef * p2;
+        c1v2 = coef * p1;
+        cnst1 = -coef * p1 * p2;
+        numCuts = 1;
+      }
+    }
+  } else {
+    if (coef < -eTol_) {
+      if (lower1 == lower2) {
+        double p1 = lower1 ? l1 : u1;
+        double p2 = lower2 ? l2 : u2;
+        c1v1 = coef * p2;
+        c1v2 = coef * p1;
+        cnst1 = -coef * p1 * p2;
+        numCuts = 1;
+      } else {
+        c1v1 = coef * l2;
+        c1v2 = coef * l1;
+        cnst1 = -coef * l1 * l2;
+        c2v1 = coef * u2;
+        c2v2 = coef * u1;
+        cnst2 = -coef * u1 * u2;
+        numCuts = 2;
+      }
+    } else {
+      if (lower1 == lower2) {
+        c1v1 = coef * l2;
+        c1v2 = coef * u1;
+        cnst1 = -coef * u1 * l2;
+        c2v1 = coef * u2;
+        c2v2 = coef * l1;
+        cnst2 = -coef * l1 * u2;
+        numCuts = 2;
+      } else {
+        double p1 = lower1 ? l1 : u1;
+        double p2 = lower2 ? l2 : u2;
+        c1v1 = coef * p2;
+        c1v2 = coef * p1;
+        cnst1 = -coef * p1 * p2;
+        numCuts = 1;
+      }
+    }
+  }
+  return numCuts;
 }
 
 void SimplexQuadCutGen::addTerm_(std::map<int, double> &t, int v, double coef) {
