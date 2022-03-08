@@ -11,7 +11,7 @@
  * \author Mustafa Vora, Indian Institute of Technology Bombay
  */
 
-#include "Cut.h"
+#include "Constraint.h"
 #include "Environment.h"
 #include "LPEngine.h"
 #include "Problem.h"
@@ -35,10 +35,19 @@ struct TableauInfo {
   const int *rowLen;          // Vector of row lengths
 }
 
+struct SimplexCut {
+  LinearFunctionPtr lf;  // The linear function of the cut
+  double lb;             // Lower Bound
+  double ub;             // Upper Bound
+  UInt numInactive;      // Number of times the cut has remained inactive
+}
+
 typedef std::pair<int, int>
     VarProd;
 typedef std::map<VarProd, double> QuadTerm;
 typedef std::map<int, std::pair<double, double>> SlackBound;
+typedef SimplexCut *SimplexCutPtr;
+typedef std::vector<SimplexCutPtr> SimplexCutVector;
 
 class SimplexQuadCutGen {
  public:
@@ -70,8 +79,8 @@ class SimplexQuadCutGen {
   // Number of cuts generated
   UInt ncuts_;
 
-  // Nonlinear Constraints in the problem
-  ConstraintVector qcons_;
+  // All the cuts generated
+  SimplexCutVector allCuts_;
 
   // Basic Tableau Info
   TableauInfo tabInfo_;
