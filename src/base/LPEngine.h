@@ -1,15 +1,14 @@
-// 
+//
 //     MINOTAUR -- It's only 1/2 bull
-// 
+//
 //     (C)opyright 2008 - 2021 The MINOTAUR Team.
-// 
+//
 
 /**
  * \file LPEngine.h
  * \author Ashutosh Mahajan, Argonne National Laboratory.
  * \brief Declare the class LPEngine for solving LPs and getting solution.
  */
-
 
 #ifndef MINOTAURLPENGINE_H
 #define MINOTAURLPENGINE_H
@@ -18,37 +17,70 @@
 
 namespace Minotaur {
 
-  /**
-   * The LPEengine class is an abstract class for interfacing LP solvers (like
-   * OsiLPEngine). A derived class must implement calls to the LP solver for 
-   * the methods described here.
-   * 
-   * \todo  add more methods for accessing simplex tableaux.
-   * \todo  add more methods for accessing dual rays etc.
-   */
+/**
+ * The LPEengine class is an abstract class for interfacing LP solvers (like
+ * OsiLPEngine). A derived class must implement calls to the LP solver for
+ * the methods described here.
+ *
+ * \todo  add more methods for accessing simplex tableaux.
+ * \todo  add more methods for accessing dual rays etc.
+ */
 
-  class LPEngine : public Engine {
+class LPEngine : public Engine {
+ public:
+  friend class Problem;
 
-    public:
-      friend class Problem;
+  /// Constructor. May set default parameters/options here.
+  LPEngine(){};
 
-      /// Constructor. May set default parameters/options here.
-      LPEngine() {};
+  /// Destructor must be implemented if memory needs to be freed
+  virtual ~LPEngine(){};
 
-      /// Destructor must be implemented if memory needs to be freed
-      virtual ~LPEngine() {};
-  };
-  typedef LPEngine* LPEnginePtr;
-}
+  virtual void enableFactorization(){};
+
+  virtual void disableFactorization(){};
+
+  virtual bool IsOptimalBasisAvailable() { return true; };
+
+  virtual void getBasics(int*){};
+
+  virtual void getBInvARow(int, double*, double*){};
+
+  virtual int getNumCols() { return 0; };
+
+  virtual int getNumRows() { return 0; };
+
+  virtual const double* getColLower() { return 0; };
+
+  virtual const double* getColUpper() { return 0; };
+
+  virtual const double* getRowLower() { return 0; };
+
+  virtual const double* getRowUpper() { return 0; };
+
+  virtual const double* getRightHandSide() { return 0; };
+
+  virtual const double* getRowActivity() { return 0; };
+
+  virtual const double* getOriginalTableau() { return 0; };
+
+  virtual const int* getRowStarts() { return 0; };
+
+  virtual const int* getIndicesofVars() { return 0; };
+
+  virtual const int* getRowLength() { return 0; };
+};
+typedef LPEngine* LPEnginePtr;
+}  // namespace Minotaur
 
 #endif
-// Local Variables: 
-// mode: c++ 
-// eval: (c-set-style "k&r") 
-// eval: (c-set-offset 'innamespace 0) 
-// eval: (setq c-basic-offset 2) 
-// eval: (setq fill-column 78) 
-// eval: (auto-fill-mode 1) 
-// eval: (setq column-number-mode 1) 
-// eval: (setq indent-tabs-mode nil) 
+// Local Variables:
+// mode: c++
+// eval: (c-set-style "k&r")
+// eval: (c-set-offset 'innamespace 0)
+// eval: (setq c-basic-offset 2)
+// eval: (setq fill-column 78)
+// eval: (auto-fill-mode 1)
+// eval: (setq column-number-mode 1)
+// eval: (setq indent-tabs-mode nil)
 // End:

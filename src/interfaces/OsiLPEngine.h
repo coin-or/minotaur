@@ -135,6 +135,8 @@ class OsiLPEngine : public LPEngine {
 
   void enableFactorization();
 
+  void disableFactorization();
+
   // Implement Engine::enableStrBrSetup()
   void enableStrBrSetup();
 

@@ -292,10 +292,6 @@ void OsiLPEngine::enableStrBrSetup() {
   strBr_ = true;
 }
 
-// void OsiLPEngine::enableFactorization() {
-//  osilp_->enableFactorization();
-//}
-
 int OsiLPEngine::getIterationCount() { return osilp_->getIterationCount(); }
 
 void OsiLPEngine::fillStats(std::vector<double> &lpStats) {
@@ -308,6 +304,8 @@ void OsiLPEngine::fillStats(std::vector<double> &lpStats) {
     lpStats[5] += stats_->strIters;
   }
 }
+
+void OsiLPEngine::disableFactorization() { osilp_->disableFactorization(); }
 
 void OsiLPEngine::enableFactorization() { osilp_->enableFactorization(); }
 

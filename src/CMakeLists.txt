@@ -117,7 +117,8 @@ set (MINOTAUR_SOURCES
      base/Reader.cpp 
      base/SecantMod.cpp 
      base/SimpleCutMan.cpp 
-     base/SimpleTransformer.cpp 
+     base/SimpleTransformer.cpp
+     base/SimplexQuadCutGen.cpp
      base/Solution.cpp 
      base/SolutionPool.cpp 
      base/SOS.cpp 
@@ -253,7 +254,8 @@ set (MINOTAUR_HEADERS
      base/ReliabilityBrancher.h
      base/SecantMod.h
      base/SimpleCutMan.h 
-     base/SimpleTransformer.h 
+     base/SimpleTransformer.h
+     base/SimplexQuadCutGen.h
      base/Solution.h
      base/SolutionPool.h
      base/SOS.h
