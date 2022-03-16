@@ -13,13 +13,13 @@
 #ifndef GLOB_H
 #define GLOB_H
 
-#include "Types.h"
 #include "AMPLInterface.h"
 #include "BranchAndBound.h"
 #include "Brancher.h"
+#include "NLPEngine.h"
 #include "Presolver.h"
 #include "Solver.h"
-#include "NLPEngine.h"
+#include "Types.h"
 
 namespace Minotaur {
 /**
@@ -27,7 +27,7 @@ namespace Minotaur {
  * global optimality
  */
 class Glob : public Solver {
-public:
+ public:
   /// Default constructor.
   Glob(EnvPtr env);
 
@@ -58,21 +58,21 @@ public:
   /// Return the lower bound for the optimal value
   double getLb();
 
-private:
+ private:
   const static std::string me_;
   double objSense_;
   ProblemPtr inst_;
   ProblemPtr newp_;
   SolveStatus status_;
 
-  BranchAndBound* createBab_(EnginePtr e, HandlerVector &handlers);
+  BranchAndBound *createBab_(EnginePtr e, HandlerVector &handlers);
   PresolverPtr createPres_(HandlerVector &handlers);
   BrancherPtr getBrancher_(HandlerVector handlers, Engine *e);
-  EnginePtr getEngine_();
+  LPEnginePtr getEngine_();
   NLPEnginePtr getNLPEngine_();
   void setInitialOptions_();
-  int transform_(ProblemPtr &newp, HandlerVector &handlers);
+  int transform_(ProblemPtr &newp, HandlerVector &handlers, LPEnginePtr engine);
   void writeStatus_(BranchAndBound *bab);
 };
-}
+}  // namespace Minotaur
 #endif

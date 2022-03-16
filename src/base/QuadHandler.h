@@ -19,30 +19,31 @@
 
 #include "Handler.h"
 #include "LinBil.h"
+#include "SimplexQuadCutGen.h"
 
 namespace Minotaur {
 
 class LinearFunction;
 class Timer;
-typedef LinearFunction* LinearFunctionPtr;
+typedef LinearFunction *LinearFunctionPtr;
+typedef Engine *EnginePtr;
 
 /**
  * \brief A structure to save information about constraints of the form \f$ y
  * \leq x^2 \f$.
  */
 struct LinSqr {
-  VariablePtr   y;     ///> The variable y.
-  VariablePtr   x;     ///> The variable x.
-  ConstraintPtr oeCon; ///> The linear constraint that gives the over estimator
+  VariablePtr y;        ///> The variable y.
+  VariablePtr x;        ///> The variable x.
+  ConstraintPtr oeCon;  ///> The linear constraint that gives the over estimator
 };
-typedef LinSqr* LinSqrPtr;                 ///> Pointer to LinSqr
-typedef std::vector<LinSqrPtr> LinSqrVec;  ///> Vector of LinSqr
-typedef LinSqrVec::iterator LinSqrVecIter; ///> Iterator for LinSqr
+typedef LinSqr *LinSqrPtr;                  ///> Pointer to LinSqr
+typedef std::vector<LinSqrPtr> LinSqrVec;   ///> Vector of LinSqr
+typedef LinSqrVec::iterator LinSqrVecIter;  ///> Iterator for LinSqr
 
 /// Map of 'x' and the LinSqr that is used for \f$ y = x^2 \f$.
 typedef std::map<VariablePtr, LinSqrPtr, CompareVariablePtr> LinSqrMap;
-typedef LinSqrMap::iterator LinSqrMapIter; ///> Iterator for LinSqrMap
-
+typedef LinSqrMap::iterator LinSqrMapIter;  ///> Iterator for LinSqrMap
 
 /**
  * A QuadHandler handles the quadratic functions of a problem in a simplistic
@@ -50,12 +51,12 @@ typedef LinSqrMap::iterator LinSqrMapIter; ///> Iterator for LinSqrMap
  * \f$x_1^2 = y_1\f$, and bilinear terms: \f$x_1x_2 = y_1\f$.
  */
 class QuadHandler : public Handler {
-public:
+ public:
   /// Default constructor.
   QuadHandler(EnvPtr env, ProblemPtr problem);
 
   QuadHandler(EnvPtr env, ProblemPtr problem, ProblemPtr orig_p);
-  
+
   /// Destroy
   ~QuadHandler();
 
@@ -63,32 +64,31 @@ public:
   void addConstraint(ConstraintPtr newcon);
 
   // Implement Handler::getBranches().
-  Branches getBranches(BrCandPtr cand, DoubleVector & x,
-                       RelaxationPtr rel, SolutionPoolPtr s_pool);
+  Branches getBranches(BrCandPtr cand, DoubleVector &x, RelaxationPtr rel,
+                       SolutionPoolPtr s_pool);
 
   // base class method
   void getBranchingCandidates(RelaxationPtr rel, const DoubleVector &x,
-                              ModVector &mods, BrVarCandSet &cands, 
+                              ModVector &mods, BrVarCandSet &cands,
                               BrCandVector &gencands, bool &is_inf);
 
   // base class method
-  ModificationPtr getBrMod(BrCandPtr cand, DoubleVector &x, 
-                           RelaxationPtr rel, BranchDirection dir);
+  ModificationPtr getBrMod(BrCandPtr cand, DoubleVector &x, RelaxationPtr rel,
+                           BranchDirection dir);
 
   // base class method
   std::string getName() const;
 
   // base class method.
-  bool isFeasible(ConstSolutionPtr sol, RelaxationPtr relaxation, 
+  bool isFeasible(ConstSolutionPtr sol, RelaxationPtr relaxation,
                   bool &should_prune, double &inf_meas);
 
   // base class method.
   SolveStatus presolve(PreModQ *pre_mods, bool *changed, Solution **sol);
 
   // base class method. Tightens bounds.
-  bool presolveNode(RelaxationPtr p, NodePtr node,
-                    SolutionPoolPtr s_pool, ModVector &p_mods,
-                    ModVector &r_mods);
+  bool presolveNode(RelaxationPtr p, NodePtr node, SolutionPoolPtr s_pool,
+                    ModVector &p_mods, ModVector &r_mods);
 
   // implement Handler::postSolveRootNode
   bool postSolveRootNode(RelaxationPtr rel, SolutionPoolPtr s_pool,
@@ -111,40 +111,38 @@ public:
   // Does nothing.
   void relaxNodeInc(NodePtr node, RelaxationPtr rel, bool *is_inf);
 
-
   // base class method. Adds linearlization cuts when available.
-  void separate(ConstSolutionPtr sol, NodePtr node, RelaxationPtr rel, 
+  void separate(ConstSolutionPtr sol, NodePtr node, RelaxationPtr rel,
                 CutManager *cutman, SolutionPoolPtr s_pool, ModVector &p_mods,
                 ModVector &r_mods, bool *sol_found, SeparationStatus *status);
 
-  void setLPEngine(Engine* engine);
+  void setBTEngine(LPEnginePtr engine);
+
+  void setCutEngine(LPEnginePtr engine);
 
   void setNLPEngine(EnginePtr engine);
 
-  // base class method. 
+  // base class method.
   void writeStats(std::ostream &out) const;
 
-private:
+ private:
   /// Store statistics of presolving.
-  struct SepaStats 
-  {
-    int iters;   ///> Number of times separation routine called. 
-    int cuts;    ///> Number of cuts added.
-    double time; ///> Total time used in separation
+  struct SepaStats {
+    int iters;    ///> Number of times separation routine called.
+    int cuts;     ///> Number of cuts added.
+    double time;  ///> Total time used in separation
   };
 
   /// Store statistics of presolving.
-  struct PresolveStats 
-  {
-    int iters;   ///> Number of iterations (main cycle).
-    double time; ///> Total time used in initial presolve.
-    double timeN;///> Total time used in presolveNode.
-    int vBnd;    ///> Number of times variable-bounds were tightened.
-    int nMods;   ///> Number of changes made in all nodes.
+  struct PresolveStats {
+    int iters;     ///> Number of iterations (main cycle).
+    double time;   ///> Total time used in initial presolve.
+    double timeN;  ///> Total time used in presolveNode.
+    int vBnd;      ///> Number of times variable-bounds were tightened.
+    int nMods;     ///> Number of changes made in all nodes.
   };
 
-  struct NLPStats
-  {
+  struct NLPStats {
     bool flag;        ///> if true that means NLP was solved at least once
     UInt nlp;         ///> Number of NLPs solved
     UInt opt;         ///> Number of NLPs optimal
@@ -152,41 +150,41 @@ private:
     UInt iter_limit;  ///> Number of NLPs for which EngineIterationLimit
   };
 
-  struct BoundTighteningStats
-  {
-    int niters;        ///> Number of iterations
-    //VariableSet qvars; ///> The variables with quadratic terms
-    //int nqlb;          ///> Number of quadratic variables with finite lb
-    //int nqub;          ///> Number of quadratic variables with finite ub
-    //int nqlbs;         ///> Number of quadratic variables whose lb was
+  struct BoundTighteningStats {
+    int niters;  ///> Number of iterations
+    // VariableSet qvars; ///> The variables with quadratic terms
+    // int nqlb;          ///> Number of quadratic variables with finite lb
+    // int nqub;          ///> Number of quadratic variables with finite ub
+    // int nqlbs;         ///> Number of quadratic variables whose lb was
     //                   ///> found by simple tightening
-    //int nqubs;         ///> Number of quadratic variables whose ub was
+    // int nqubs;         ///> Number of quadratic variables whose ub was
     //                   ///> found by simple tightening
-    //int vBnds;         ///> Number of times bounds tightened by
+    // int vBnds;         ///> Number of times bounds tightened by
     //                   ///> simple tightening
-    //int cBnds;         ///> Number of times cons tightened by
+    // int cBnds;         ///> Number of times cons tightened by
     //                   ///> simple tightening
-    //int nqlbq;         ///> Number of quadratic variables whose lb was
+    // int nqlbq;         ///> Number of quadratic variables whose lb was
     //                   ///> found by quad tightening
-    //int nqubq;         ///> Number of quadratic variables whose ub was
+    // int nqubq;         ///> Number of quadratic variables whose ub was
     //                   ///> found by quad tightening
-    //int vBndq;         ///> Number of times bounds tightened by
+    // int vBndq;         ///> Number of times bounds tightened by
     //                   ///> quad tightening
-    //int cBndq;         ///> Number of times cons tightened by
+    // int cBndq;         ///> Number of times cons tightened by
     //                   ///> quad tightening
-    //int nqlbl;         ///> Number of quadratic variables whose lb was
+    // int nqlbl;         ///> Number of quadratic variables whose lb was
     //                   ///> found by lp tightening
-    //int nqubl;         ///> Number of quadratic variables whose ub was
+    // int nqubl;         ///> Number of quadratic variables whose ub was
     //                   ///> found by lp tightening
-    //int vBndl;         ///> Number of times bounds tightened by
+    // int vBndl;         ///> Number of times bounds tightened by
     //                   ///> lp tightening
-    int nLP;           ///> Number of LP solved
-    int dlb;           ///> Number of variables for which default lb was added
-    int dub;           ///> Number of variables for which default ub was added
-    double timeLP;     ///> Time taken in solving LPs
-    //double avg_range;  ///> Average range of bounds of quadratic variables
-    //double sd_range;   ///> Standard deviation of range
-    //double body_diag;  ///> The length of body diagonal of hypercube formed by
+    int nLP;        ///> Number of LP solved
+    int dlb;        ///> Number of variables for which default lb was added
+    int dub;        ///> Number of variables for which default ub was added
+    double timeLP;  ///> Time taken in solving LPs
+    // double avg_range;  ///> Average range of bounds of quadratic variables
+    // double sd_range;   ///> Standard deviation of range
+    // double body_diag;  ///> The length of body diagonal of hypercube formed
+    // by
     //                   ///> the range of quadratic variables
   };
 
@@ -212,15 +210,18 @@ private:
   /// Logger.
   LoggerPtr logger_;
 
-  /// LP engine
-  EnginePtr lpe_;
+  /// Bound tightening LP engine
+  LPEnginePtr bte_;
+
+  /// Cut generation LP engine
+  LPEnginePtr cute_;
 
   /// NLP engine
   EnginePtr nlpe_;
 
   /// NLP stats
   NLPStats nlpStats_;
-      
+
   /// For printing messages.
   static const std::string me_;
 
@@ -239,11 +240,14 @@ private:
   /// Relative feasibility tolerance
   double rTol_;
 
+  /// Simplex Cut generater
+  SimplexQuadCutGenPtr simplexCut_;
+
   /// Statistics about separation
   SepaStats sStats_;
 
   /// Keep track of time
-  const Timer* timer_;
+  const Timer *timer_;
 
   /**
    * \brief Container for all bilinear functions. This should contain
@@ -252,8 +256,8 @@ private:
   LinBilSet x0x1Funs_;
 
   /**
-   * \brief Container for all square functions. This should contain variables and
-   * constraints of the problem, not the relaxation.
+   * \brief Container for all square functions. This should contain variables
+   * and constraints of the problem, not the relaxation.
    */
   LinSqrMap x2Funs_;
 
@@ -294,8 +298,7 @@ private:
    * \param[in] ub The upper bound of the linear term
    * \param[out] c1 true if the bounds on the variable are changed
    */
-  bool calcVarBnd_(VariablePtr v, double coef, double lb, double ub,
-                   bool *c1);
+  bool calcVarBnd_(VariablePtr v, double coef, double lb, double ub, bool *c1);
 
   bool calcVarBnd_(RelaxationPtr rel, VariablePtr v, double coef, double lb,
                    double ub, bool *c1, ModVector &p_mods, ModVector &r_mods);
@@ -311,12 +314,12 @@ private:
    * \param[out] c2 true if the bounds on second variable are changed
    */
   bool calcVarBnd_(VariablePtr v1, VariablePtr v2, double coef, double lb,
-                   double ub, bool *c1, bool*c2);
+                   double ub, bool *c1, bool *c2);
 
   bool calcVarBnd_(RelaxationPtr rel, VariablePtr v1, VariablePtr v2,
                    double coef, double lb, double ub, bool *c1, bool *c2,
                    ModVector &p_mods, ModVector &r_mods);
-  
+
   /**
    * \brief Calculate bounds of the variables from a univariate quadratic
    * term bounds
@@ -365,9 +368,9 @@ private:
    * \param[out] count_inf_ub # of infinities in upper bound
    */
   void getLfBnds_(LinearFunctionPtr lf, double &implLb, double &implUb,
-                  DoubleVector &fwdLb, DoubleVector &fwdUb,
-                  UInt &count_inf_lb, UInt &count_inf_ub);
-  
+                  DoubleVector &fwdLb, DoubleVector &fwdUb, UInt &count_inf_lb,
+                  UInt &count_inf_ub);
+
   /**
    * \brief Get one of the four linear functions and right hand sides for the
    * linear relaxation of a bilinear constraint y = x0x1.
@@ -379,7 +382,7 @@ private:
    * \param[in] ub1 New upper bound of x1
    * \param[in] y The y variable
    * \param[in] type Could be 0,1,2,3. It tells the function which (out of the
-   * four) linear constraints do we want. 
+   * four) linear constraints do we want.
    * \param[out] rhs The rhs (upperbound) of the linear constraint
    * \return A linear function such that lf <= rhs is a relaxation of the
    * bilinear constraint.
@@ -399,8 +402,8 @@ private:
    * \return A linear function such that lf <= rhs is a relaxation of the
    * square constraint.
    */
-  LinearFunctionPtr getNewSqLf_(VariablePtr x, VariablePtr y, 
-                                double lb, double ub, double & r);
+  LinearFunctionPtr getNewSqLf_(VariablePtr x, VariablePtr y, double lb,
+                                double ub, double &r);
 
   /**
    * \brief Get bounds of a qf of a constraint
@@ -413,9 +416,9 @@ private:
    * \param[out] count_inf_ub # of infinities in upper bound
    */
   void getQfBnds_(QuadraticFunctionPtr qf, double &implLb, double &implUb,
-                  DoubleVector &fwdLb, DoubleVector &fwdUb,
-                  UInt &count_inf_lb, UInt &count_inf_ub);
-  
+                  DoubleVector &fwdLb, DoubleVector &fwdUb, UInt &count_inf_lb,
+                  UInt &count_inf_ub);
+
   /**
    * \brief Get bounds of a qf and lf of a constraint
    * \param[in] lf Linear Function
@@ -431,8 +434,8 @@ private:
    */
   bool getQfLfBnds_(LinearFunctionPtr lf, QuadraticFunctionPtr qf,
                     double &implLb, double &implUb, DoubleVector &fwdLb,
-                    DoubleVector &fwdUb, UInt &count_inf_lb,
-                    UInt &count_inf_ub, VarVector &qvars);
+                    DoubleVector &fwdUb, UInt &count_inf_lb, UInt &count_inf_ub,
+                    VarVector &qvars);
 
   bool getQfLfBnds_(RelaxationPtr rel, LinearFunctionPtr lf,
                     QuadraticFunctionPtr qf, double &implLb, double &implUb,
@@ -449,9 +452,9 @@ private:
    * \param[in] inf_count count of infinities in the vector
    * return the sum of the vector except current element
    */
-  double getSumExcept1_(DoubleVector::iterator b,DoubleVector::iterator e,
-                        DoubleVector::iterator curr, BoundType bt,
-                        double bound, UInt inf_count);
+  double getSumExcept1_(DoubleVector::iterator b, DoubleVector::iterator e,
+                        DoubleVector::iterator curr, BoundType bt, double bound,
+                        UInt inf_count);
 
   /**
    * \brief Calculate bounds of a linear term from the variable bounds
@@ -483,7 +486,7 @@ private:
    * \param[out] ub The calculated upper bound of the term
    */
   void getTermBnds_(VariablePtr v, double a, double b, double &lb, double &ub);
-  
+
   /// Return true if xval is one of the bounds of variable x
   bool isAtBnds_(ConstVariablePtr x, double xval);
 
@@ -498,7 +501,7 @@ private:
    * Return true if the new bounds are inconsistent (i.e., lb > ub for any of
    * the three variables)
    */
-  bool propBilBnds_(LinBil* lx0x1, bool *changed);
+  bool propBilBnds_(LinBil *lx0x1, bool *changed);
 
   /**
    * \brief Strengthen bounds of variables in a bilinear constraint y=x0x1,
@@ -509,12 +512,12 @@ private:
    * (or transformed) problem p_ is always modified.
    * \param[out] changed True if any bounds of y, x0 or x1 have changed. False
    * otherwise.
-   * \param[in] p_mods A vector to save the modifications to the problem 
-   * \param[in] r_mods A vector to save the modifications to the relaxation 
+   * \param[in] p_mods A vector to save the modifications to the problem
+   * \param[in] r_mods A vector to save the modifications to the relaxation
    * Return true if the new bounds are inconsistent (i.e., lb > ub for any of
    * the three variables)
    */
-  bool propBilBnds_(LinBil* lx0x1, RelaxationPtr rel, bool mod_rel,
+  bool propBilBnds_(LinBil *lx0x1, RelaxationPtr rel, bool mod_rel,
                     bool *changed, ModVector &p_mods, ModVector &r_mods);
 
   /**
@@ -536,8 +539,8 @@ private:
    * (or transformed) problem p_ is always modified.
    * \param[out] changed True if any bounds of y or x0 have changed. False
    * otherwise.
-   * \param[in] p_mods A vector to save the modifications to the problem 
-   * \param[in] r_mods A vector to save the modifications to the relaxation 
+   * \param[in] p_mods A vector to save the modifications to the problem
+   * \param[in] r_mods A vector to save the modifications to the relaxation
    * Return true if the new bounds are inconsistent (i.e., lb > ub for any of
    * the two variables)
    */
@@ -577,8 +580,8 @@ private:
    * \param[out] changed True is some changes are made in the bounds on any
    * variables.
    */
-  bool tightenLP_(RelaxationPtr rel, double bestSol, bool *changed, ModVector &p_mods,
-                  ModVector &r_mods);
+  bool tightenLP_(RelaxationPtr rel, double bestSol, bool *changed,
+                  ModVector &p_mods, ModVector &r_mods);
 
   /**
    * \brief Bound tightening of the problem by considering linear and quadratic
@@ -610,7 +613,7 @@ private:
    * \param[out] varlb vector of ub on variables before bound changes
    */
   void updateBoundsinOrig_(RelaxationPtr rel, const double *x,
-                          DoubleVector &varlb, DoubleVector &varub);
+                           DoubleVector &varlb, DoubleVector &varub);
 
   /**
    * \brief Modify bounds of a variable in the problem to the new bounds lb
@@ -639,8 +642,8 @@ private:
    * original (or transformed) problem is always modified.
    * \param[out] changed True if the new bounds are tighter than the existing
    * bounds. False otherwise.
-   * \param[in] p_mods A vector to save the modifications to the problem 
-   * \param[in] r_mods A vector to save the modifications to the relaxation 
+   * \param[in] p_mods A vector to save the modifications to the problem
+   * \param[in] r_mods A vector to save the modifications to the relaxation
    * \return the number of bound changes (1 or 2) if any bounds are changed.
    * Returns -1 if the new bounds make the problem infeasible. Returns 0
    * otherwise.
@@ -667,8 +670,7 @@ private:
    * \param[in] r_mods A vector into which the modifications are appended so
    * that they can be reverted at a later time.
    */
-  void upBilCon_(LinBil* lx0x1, RelaxationPtr rel, ModVector &r_mods);
-
+  void upBilCon_(LinBil *lx0x1, RelaxationPtr rel, ModVector &r_mods);
 
   /**
    * \brief Update linear relaxation of the square constraints (y=x^2) after
@@ -676,13 +678,13 @@ private:
    * constraint is binding at the required extreme points of the box. If not,
    * the constraint is updated.
    * \param[in] con The linear constraint that can be updated
-   * \param[in] x The variable x. 
-   * \param[in] y The variable y. 
+   * \param[in] x The variable x.
+   * \param[in] y The variable y.
    * \param[in] rel The relaxation which contains the linear constraint
    * \param[in] r_mods A vector into which the modifications are appended so
    * that they can be reverted at a later time.
    */
-  void upSqCon_(ConstraintPtr con, VariablePtr x, VariablePtr y, 
+  void upSqCon_(ConstraintPtr con, VariablePtr x, VariablePtr y,
                 RelaxationPtr rel, ModVector &r_mods);
 
   /**
@@ -697,17 +699,17 @@ private:
 };
 
 /// Shared pointer to QuadHandler.
-typedef QuadHandler* QuadHandlerPtr;
-}
+typedef QuadHandler *QuadHandlerPtr;
+}  // namespace Minotaur
 #endif
 
-// Local Variables: 
-// mode: c++ 
-// eval: (c-set-style "k&r") 
-// eval: (c-set-offset 'innamespace 0) 
-// eval: (setq c-basic-offset 2) 
-// eval: (setq fill-column 78) 
-// eval: (auto-fill-mode 1) 
-// eval: (setq column-number-mode 1) 
-// eval: (setq indent-tabs-mode nil) 
+// Local Variables:
+// mode: c++
+// eval: (c-set-style "k&r")
+// eval: (c-set-offset 'innamespace 0)
+// eval: (setq c-basic-offset 2)
+// eval: (setq fill-column 78)
+// eval: (auto-fill-mode 1)
+// eval: (setq column-number-mode 1)
+// eval: (setq indent-tabs-mode nil)
 // End:

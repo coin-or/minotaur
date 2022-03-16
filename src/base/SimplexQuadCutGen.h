@@ -11,6 +11,9 @@
  * \author Mustafa Vora, Indian Institute of Technology Bombay
  */
 
+#ifndef MINOTAURSIMPLEXQUADCUTGEN_H
+#define MINOTAURSIMPLEXQUADCUTGEN_H
+
 #include "Constraint.h"
 #include "Environment.h"
 #include "LPEngine.h"
@@ -61,7 +64,7 @@ class SimplexQuadCutGen {
   ~SimplexQuadCutGen();
 
   // Generate the cuts that violate the given point
-  void generateCuts(RelaxationPtr rel, const double *x);
+  int generateCuts(RelaxationPtr rel, const double *x);
 
  private:
   // Environment pointer
@@ -81,6 +84,9 @@ class SimplexQuadCutGen {
 
   // Number of cuts generated
   UInt ncuts_;
+
+  // Number of iterations of cut generation
+  int iter_;
 
   // All the cuts generated
   SimplexCutVector allCuts_;
@@ -323,4 +329,17 @@ class SimplexQuadCutGen {
 
   void sortVariables_();
 };
+typedef SimplexQuadCutGen *SimplexQuadCutGenPtr;
 }  // namespace Minotaur
+#endif
+
+// Local Variables:
+// mode: c++
+// eval: (c-set-style "k&r")
+// eval: (c-set-offset 'innamespace 0)
+// eval: (setq c-basic-offset 2)
+// eval: (setq fill-column 78)
+// eval: (auto-fill-mode 1)
+// eval: (setq column-number-mode 1)
+// eval: (setq indent-tabs-mode nil)
+// End:

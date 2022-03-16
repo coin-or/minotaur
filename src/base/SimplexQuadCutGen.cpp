@@ -26,6 +26,7 @@
 #include "Logger.h"
 #include "MinotaurConfig.h"
 #include "Operations.h"
+#include "Option.h"
 #include "Problem.h"
 #include "QuadraticFunction.h"
 #include "Relaxation.h"
@@ -41,6 +42,7 @@ SimplexQuadCutGen::SimplexQuadCutGen() {}
 SimplexQuadCutGen::SimplexQuadCutGen(EnvPtr env, ProblemPtr p, LPEnginePtr lpe)
     : env_(env), eTol_(1e-6), p_(p), lpe_(lpe) {
   ncuts_ = 0;
+  iter_ = 0;
   allCuts_.clear();
   basicInd_.clear();
   sb_.clear();
@@ -55,7 +57,10 @@ SimplexQuadCutGen::~SimplexQuadCutGen() {
   sb_.clear();
 }
 
-void SimplexQuadCutGen::generateCuts(RelaxationPtr rel, const double *x) {
+int SimplexQuadCutGen::generateCuts(RelaxationPtr rel, const double *x) {
+  if (iter_ < env_->getOptions()->findInt("simplex_cut_rounds")->getValue()) {
+    return 0;
+  }
   ConstraintPtr c;
   FunctionType ftype;
   double act, cutConst, coef;
@@ -72,6 +77,7 @@ void SimplexQuadCutGen::generateCuts(RelaxationPtr rel, const double *x) {
   VariablePtr v1, v2;
   int ncuts;
 
+  ++iter_;
   lpe_->enableFactorization();
   sortVariables_();
   getSlackBounds_();
@@ -171,6 +177,7 @@ void SimplexQuadCutGen::generateCuts(RelaxationPtr rel, const double *x) {
     }
   }
   lpe_->disableFactorization();
+  return ncuts;
 }
 
 void SimplexQuadCutGen::addCutsToRel_(SimplexCutVector cuts,
