@@ -99,14 +99,14 @@ class SimplexQuadCutGen {
   // Value - Row index of the corresponding variable
   std::map<int, int> basicInd_;
 
-  // An array of indices of non-basic original variables
-  int *nbOrig_;
+  // A vector of indices of non-basic original variables
+  std::vector<int> nbOrig_;
 
   // Number of non-basic original variables
   int nnbOrig_;
 
-  // An array of indices of non-basic slack variables
-  int *nbSlack_;
+  // A vector of indices of non-basic slack variables
+  std::vector<int> nbSlack_;
 
   // Number of non-basic slack variables
   int nnbSlack_;

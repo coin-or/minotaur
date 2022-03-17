@@ -45,6 +45,8 @@ SimplexQuadCutGen::SimplexQuadCutGen(EnvPtr env, ProblemPtr p, LPEnginePtr lpe)
   iter_ = 0;
   allCuts_.clear();
   basicInd_.clear();
+  nbOrig_.clear();
+  nbSlack_.clear();
   sb_.clear();
 }
 
@@ -52,13 +54,13 @@ SimplexQuadCutGen::~SimplexQuadCutGen() {
   allCuts_.clear();
   delTabInfo_();
   basicInd_.clear();
-  delete[] nbOrig_;
-  delete[] nbSlack_;
+  nbOrig_.clear();
+  nbSlack_.clear();
   sb_.clear();
 }
 
 int SimplexQuadCutGen::generateCuts(RelaxationPtr rel, const double *x) {
-  if (iter_ < env_->getOptions()->findInt("simplex_cut_rounds")->getValue()) {
+  if (iter_ >= env_->getOptions()->findInt("simplex_cut_rounds")->getValue()) {
     return 0;
   }
   ConstraintPtr c;
@@ -79,6 +81,7 @@ int SimplexQuadCutGen::generateCuts(RelaxationPtr rel, const double *x) {
 
   ++iter_;
   lpe_->enableFactorization();
+  getBasicInfo_();
   sortVariables_();
   getSlackBounds_();
   for (ConstraintConstIterator cit = p_->consBegin(); cit != p_->consEnd();
@@ -1045,22 +1048,22 @@ void SimplexQuadCutGen::sortVariables_() {
     if (basicVars[i] < tabInfo_.ncol) {
       basicInd_.insert(std::make_pair(basicVars[i], i));
     } else {
-      nonbasicslack[i - tabInfo_.ncol] = 1;
+      nonbasicslack[basicVars[i] - tabInfo_.ncol] = 1;
     }
   }
 
   nnbOrig_ = 0;
   for (int i = 0; i < tabInfo_.ncol; ++i) {
     if (basicInd_.count(i) == 0) {
-      nbOrig_[nnbOrig_] = i;
+      nbOrig_.push_back(i);
       ++nnbOrig_;
     }
   }
 
   nnbSlack_ = 0;
   for (int i = 0; i < tabInfo_.nrow; ++i) {
-    if (nonbasicslack[i] == 1) {
-      nbSlack_[nnbSlack_] = i;
+    if (nonbasicslack[i] == 0) {
+      nbSlack_.push_back(i);
       ++nnbSlack_;
     }
   }
