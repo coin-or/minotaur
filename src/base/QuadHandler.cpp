@@ -115,6 +115,10 @@ QuadHandler::~QuadHandler() {
   if (bte_) {
     delete bte_;
   }
+
+  if (simplexCut_) {
+    delete simplexCut_;
+  }
 }
 
 void QuadHandler::addConstraint(ConstraintPtr newcon) {

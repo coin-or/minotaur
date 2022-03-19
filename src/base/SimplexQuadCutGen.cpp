@@ -470,7 +470,7 @@ SimplexCutVector SimplexQuadCutGen::getCutVec_(RelaxationPtr rel,
                                                double cutConst, bool under,
                                                double rhs) {
   SimplexCutVector cuts;
-  SimplexCutPtr cut;
+  SimplexCutPtr cut = (SimplexCutPtr) new SimplexCut();
   LinearFunctionPtr lf = (LinearFunctionPtr) new LinearFunction();
   std::map<int, double>::iterator it, itrow;
   std::map<int, double> row;
@@ -608,10 +608,10 @@ void SimplexQuadCutGen::getSlackBounds_() {
                      tabInfo_.colUpper[tabInfo_.indices[j]], lb, ub);
     }
 
-    if (lb > tabInfo_.rowLower[row] + eTol_) {
+    if (lb < tabInfo_.rowLower[row] - eTol_) {
       lb = tabInfo_.rowLower[row];
     }
-    if (ub < tabInfo_.rowUpper[row] - eTol_) {
+    if (ub > tabInfo_.rowUpper[row] + eTol_) {
       ub = tabInfo_.rowUpper[row];
     }
 
@@ -653,6 +653,12 @@ void SimplexQuadCutGen::multiplyBB_(int b1, int b2, double coef,
   lpe_->getBInvARow(basicInd_[b1], origRow1, slackRow1);
   lpe_->getBInvARow(basicInd_[b2], origRow2, slackRow2);
 
+  // We assume non-basic slack variables will be zero
+  for (int i = 0; i < nnbOrig_; ++i) {
+    beta1 -= origRow1[nbOrig_[i]] * x[nbOrig_[i]];
+    beta2 -= origRow2[nbOrig_[i]] * x[nbOrig_[i]];
+  }
+
   // We assume that the coef is always nonzero
   for (int i = 0; i < nnbOrig_; ++i) {
     elem1 = origRow1[nbOrig_[i]];
@@ -678,7 +684,7 @@ void SimplexQuadCutGen::multiplyBB_(int b1, int b2, double coef,
         }
       }
 
-      addTerm_(cutCoefo, nbOrig_[i], -coef * beta2);
+      addTerm_(cutCoefo, nbOrig_[i], -coef * elem1 * beta2);
     }
   }
 
@@ -724,7 +730,7 @@ void SimplexQuadCutGen::multiplyBB_(int b1, int b2, double coef,
     }
   }
 
-  cutConst += beta1 * beta2;
+  cutConst += coef * beta1 * beta2;
 
   delete[] origRow1;
   delete[] origRow2;
@@ -743,6 +749,11 @@ void SimplexQuadCutGen::multiplyBNB_(int b, int nb, double coef,
 
   lpe_->getBInvARow(basicInd_[b], origRow, slackRow);
 
+  // We assume non-basic slack variables will be zero
+  for (int i = 0; i < nnbOrig_; ++i) {
+    beta -= origRow[nbOrig_[i]] * x[nbOrig_[i]];
+  }
+
   for (int i = 0; i < nnbOrig_; ++i) {
     elem = origRow[nbOrig_[i]];
     if (fabs(elem) > eTol_) {
@@ -755,7 +766,7 @@ void SimplexQuadCutGen::multiplyBNB_(int b, int nb, double coef,
   }
 
   for (int i = 0; i < nnbSlack_; ++i) {
-    elem = origRow[nbSlack_[i]];
+    elem = slackRow[nbSlack_[i]];
     if (fabs(elem) > eTol_) {
       addTerm_(oxs, std::make_pair(nb, nbSlack_[i]), -coef * elem);
     }
@@ -778,6 +789,11 @@ void SimplexQuadCutGen::multiplyCB_(int b, double coef, const double *x,
 
   lpe_->getBInvARow(basicInd_[b], origRow, slackRow);
 
+  // We assume non-basic slack variables will be zero
+  for (int i = 0; i < nnbOrig_; ++i) {
+    beta -= origRow[nbOrig_[i]] * x[nbOrig_[i]];
+  }
+
   for (int i = 0; i < nnbOrig_; ++i) {
     elem = origRow[nbOrig_[i]];
     if (fabs(elem) > eTol_) {
@@ -786,13 +802,13 @@ void SimplexQuadCutGen::multiplyCB_(int b, double coef, const double *x,
   }
 
   for (int i = 0; i < nnbSlack_; ++i) {
-    elem = origRow[nbSlack_[i]];
+    elem = slackRow[nbSlack_[i]];
     if (fabs(elem) > eTol_) {
       addTerm_(cutCoefs, nbSlack_[i], -coef * elem);
     }
   }
 
-  cutConst += elem * beta;
+  cutConst += coef * beta;
 
   delete[] origRow;
   delete[] slackRow;
