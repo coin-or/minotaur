@@ -13,6 +13,8 @@
 
 #include "SimplexQuadCutGen.h"
 
+#include <string.h>
+
 #include <array>
 #include <cmath>
 #include <iterator>
@@ -109,6 +111,8 @@ int SimplexQuadCutGen::generateCuts(RelaxationPtr rel, const double *x) {
     lf = c->getFunction()->getLinearFunction();
     cutConst = 0.0;
 
+    assert(qf);  // An infeasible constraint must have some quadratic part
+
     for (VariablePairGroupConstIterator qit = qf->begin(); qit != qf->end();
          ++qit) {
       v1 = rel->getRelaxationVar(qit->first.first);
@@ -138,16 +142,18 @@ int SimplexQuadCutGen::generateCuts(RelaxationPtr rel, const double *x) {
       }
     }
 
-    for (VariableGroupConstIterator lit = lf->termsBegin();
-         lit != lf->termsEnd(); ++lit) {
-      v1 = rel->getRelaxationVar(lit->first);
-      coef = lit->second;
-      if (basicInd_.count(v1->getIndex()) > 0) {
-        // v1 is basic
-        multiplyCB_(v1->getIndex(), coef, x, cutCoefo, cutCoefs, cutConst);
-      } else {
-        // v1 is non-basic
-        multiplyCNB_(v1->getIndex(), coef, cutCoefo);
+    if (lf) {
+      for (VariableGroupConstIterator lit = lf->termsBegin();
+           lit != lf->termsEnd(); ++lit) {
+        v1 = rel->getRelaxationVar(lit->first);
+        coef = lit->second;
+        if (basicInd_.count(v1->getIndex()) > 0) {
+          // v1 is basic
+          multiplyCB_(v1->getIndex(), coef, x, cutCoefo, cutCoefs, cutConst);
+        } else {
+          // v1 is non-basic
+          multiplyCNB_(v1->getIndex(), coef, cutCoefo);
+        }
       }
     }
 
@@ -650,13 +656,18 @@ void SimplexQuadCutGen::multiplyBB_(int b1, int b2, double coef,
   double beta2 = x[b2];
   double elem1, elem2;
 
+  memset(origRow1, 0, tabInfo_.ncol * sizeof(double));
+  memset(origRow2, 0, tabInfo_.ncol * sizeof(double));
+  memset(slackRow1, 0, tabInfo_.nrow * sizeof(double));
+  memset(slackRow2, 0, tabInfo_.nrow * sizeof(double));
+
   lpe_->getBInvARow(basicInd_[b1], origRow1, slackRow1);
   lpe_->getBInvARow(basicInd_[b2], origRow2, slackRow2);
 
   // We assume non-basic slack variables will be zero
   for (int i = 0; i < nnbOrig_; ++i) {
-    beta1 -= origRow1[nbOrig_[i]] * x[nbOrig_[i]];
-    beta2 -= origRow2[nbOrig_[i]] * x[nbOrig_[i]];
+    beta1 += origRow1[nbOrig_[i]] * x[nbOrig_[i]];
+    beta2 += origRow2[nbOrig_[i]] * x[nbOrig_[i]];
   }
 
   // We assume that the coef is always nonzero
@@ -747,11 +758,14 @@ void SimplexQuadCutGen::multiplyBNB_(int b, int nb, double coef,
   double elem;
   double beta = x[b];
 
+  memset(origRow, 0, tabInfo_.ncol * sizeof(double));
+  memset(slackRow, 0, tabInfo_.nrow * sizeof(double));
+
   lpe_->getBInvARow(basicInd_[b], origRow, slackRow);
 
   // We assume non-basic slack variables will be zero
   for (int i = 0; i < nnbOrig_; ++i) {
-    beta -= origRow[nbOrig_[i]] * x[nbOrig_[i]];
+    beta += origRow[nbOrig_[i]] * x[nbOrig_[i]];
   }
 
   for (int i = 0; i < nnbOrig_; ++i) {
@@ -787,11 +801,14 @@ void SimplexQuadCutGen::multiplyCB_(int b, double coef, const double *x,
   double elem;
   double beta = x[b];
 
+  memset(origRow, 0, tabInfo_.ncol * sizeof(double));
+  memset(slackRow, 0, tabInfo_.nrow * sizeof(double));
+
   lpe_->getBInvARow(basicInd_[b], origRow, slackRow);
 
   // We assume non-basic slack variables will be zero
   for (int i = 0; i < nnbOrig_; ++i) {
-    beta -= origRow[nbOrig_[i]] * x[nbOrig_[i]];
+    beta += origRow[nbOrig_[i]] * x[nbOrig_[i]];
   }
 
   for (int i = 0; i < nnbOrig_; ++i) {
@@ -1024,7 +1041,7 @@ void SimplexQuadCutGen::relaxSqTerm_(double coef, bool atLower, double l,
       }
     } else {
       lincoef = (l + u) * coef;
-      cnst -= u * l;
+      cnst -= u * l * coef;
     }
   } else {
     if (coef < -eTol_) {
@@ -1037,7 +1054,7 @@ void SimplexQuadCutGen::relaxSqTerm_(double coef, bool atLower, double l,
       }
     } else {
       lincoef = (l + u) * coef;
-      cnst -= u * l;
+      cnst -= u * l * coef;
     }
   }
 }
