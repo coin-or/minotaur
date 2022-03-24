@@ -1093,6 +1093,7 @@ void SimplexQuadCutGen::sortVariables_() {
   }
 
   nnbOrig_ = 0;
+  nbOrig_.clear();
   for (int i = 0; i < tabInfo_->ncol; ++i) {
     if (basicInd_.count(i) == 0) {
       nbOrig_.push_back(i);
@@ -1101,6 +1102,7 @@ void SimplexQuadCutGen::sortVariables_() {
   }
 
   nnbSlack_ = 0;
+  nbSlack_.clear();
   for (int i = 0; i < tabInfo_->nrow; ++i) {
     if (nonbasicslack[i] == 0) {
       nbSlack_.push_back(i);
