@@ -373,6 +373,10 @@ CLEANUP:
   if (engine) {
     delete engine;
   }
+  if (iface_) {
+    delete iface_;
+    iface_ = 0;
+  }
   if (pres) {
     delete pres;
   }

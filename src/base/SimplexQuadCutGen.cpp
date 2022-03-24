@@ -42,7 +42,7 @@ const std::string SimplexQuadCutGen::me_ = "SimplexQuadCutGen";
 SimplexQuadCutGen::SimplexQuadCutGen() {}
 
 SimplexQuadCutGen::SimplexQuadCutGen(EnvPtr env, ProblemPtr p, LPEnginePtr lpe)
-    : env_(env), eTol_(1e-6), p_(p), lpe_(lpe) {
+    : env_(env), eTol_(1e-6), p_(p), lpe_(lpe), tabInfo_(0) {
   ncuts_ = 0;
   iter_ = 0;
   allCuts_.clear();
@@ -53,8 +53,14 @@ SimplexQuadCutGen::SimplexQuadCutGen(EnvPtr env, ProblemPtr p, LPEnginePtr lpe)
 }
 
 SimplexQuadCutGen::~SimplexQuadCutGen() {
+  for (SimplexCutVector::iterator it = allCuts_.begin(); it != allCuts_.end();
+       ++it) {
+    delete (*it);
+  }
   allCuts_.clear();
-  delTabInfo_();
+  if (tabInfo_) {
+    delete tabInfo_;
+  }
   basicInd_.clear();
   nbOrig_.clear();
   nbSlack_.clear();
@@ -80,6 +86,7 @@ int SimplexQuadCutGen::generateCuts(RelaxationPtr rel, const double *x) {
   std::map<int, double> cutCoefo, cutCoefs;
   VariablePtr v1, v2;
   int ncuts;
+  SimplexCutVector cuts;
 
   ++iter_;
   lpe_->enableFactorization();
@@ -158,8 +165,8 @@ int SimplexQuadCutGen::generateCuts(RelaxationPtr rel, const double *x) {
     }
 
     if (act > c->getUb() + eTol_) {
-      ncuts = relaxQuadTerms_(rel, oxo, oxs, sxs, cutCoefo, cutCoefs, cutConst,
-                              x, true, c->getUb());
+      ncuts = relaxQuadTerms_(cuts, rel, oxo, oxs, sxs, cutCoefo, cutCoefs,
+                              cutConst, x, true, c->getUb());
       if (ncuts == 0) {
 #if SPEW
         env_->getLogger()->msgStream(LogDebug)
@@ -171,8 +178,8 @@ int SimplexQuadCutGen::generateCuts(RelaxationPtr rel, const double *x) {
         ncuts_ += ncuts;
       }
     } else {
-      ncuts = relaxQuadTerms_(rel, oxo, oxs, sxs, cutCoefo, cutCoefs, cutConst,
-                              x, false, c->getLb());
+      ncuts = relaxQuadTerms_(cuts, rel, oxo, oxs, sxs, cutCoefo, cutCoefs,
+                              cutConst, x, false, c->getLb());
       if (ncuts == 0) {
 #if SPEW
         env_->getLogger()->msgStream(LogDebug)
@@ -186,6 +193,7 @@ int SimplexQuadCutGen::generateCuts(RelaxationPtr rel, const double *x) {
     }
   }
   lpe_->disableFactorization();
+  addCutsToRel_(cuts, rel);
   return ncuts;
 }
 
@@ -441,15 +449,15 @@ void SimplexQuadCutGen::addTerm_(QuadTerm &t, VarProd vp, double coef) {
 }
 
 void SimplexQuadCutGen::delTabInfo_() {
-  delete[] tabInfo_.colLower;
-  delete[] tabInfo_.colUpper;
-  delete[] tabInfo_.rowLower;
-  delete[] tabInfo_.rowUpper;
-  delete[] tabInfo_.rowRhs;
-  delete[] tabInfo_.origTab;
-  delete[] tabInfo_.rowStart;
-  delete[] tabInfo_.indices;
-  delete[] tabInfo_.rowLen;
+  delete[] tabInfo_->colLower;
+  delete[] tabInfo_->colUpper;
+  delete[] tabInfo_->rowLower;
+  delete[] tabInfo_->rowUpper;
+  delete[] tabInfo_->rowRhs;
+  delete[] tabInfo_->origTab;
+  delete[] tabInfo_->rowStart;
+  delete[] tabInfo_->indices;
+  delete[] tabInfo_->rowLen;
 }
 
 void SimplexQuadCutGen::getBasicInfo_() {
@@ -457,17 +465,19 @@ void SimplexQuadCutGen::getBasicInfo_() {
     env_->getLogger()->msgStream(LogDebug)
         << me_ << "Solver provided no Optimal Basis" << std::endl;
   }
-  tabInfo_.ncol = lpe_->getNumCols();
-  tabInfo_.nrow = lpe_->getNumRows();
-  tabInfo_.colLower = lpe_->getColLower();
-  tabInfo_.colUpper = lpe_->getColUpper();
-  tabInfo_.rowLower = lpe_->getRowLower();
-  tabInfo_.rowUpper = lpe_->getRowUpper();
-  tabInfo_.rowRhs = lpe_->getRightHandSide();
-  tabInfo_.origTab = lpe_->getOriginalTableau();
-  tabInfo_.rowStart = lpe_->getRowStarts();
-  tabInfo_.indices = lpe_->getIndicesofVars();
-  tabInfo_.rowLen = lpe_->getRowLength();
+
+  tabInfo_ = (TableauInfo *)new TableauInfo();
+  tabInfo_->ncol = lpe_->getNumCols();
+  tabInfo_->nrow = lpe_->getNumRows();
+  tabInfo_->colLower = lpe_->getColLower();
+  tabInfo_->colUpper = lpe_->getColUpper();
+  tabInfo_->rowLower = lpe_->getRowLower();
+  tabInfo_->rowUpper = lpe_->getRowUpper();
+  tabInfo_->rowRhs = lpe_->getRightHandSide();
+  tabInfo_->origTab = lpe_->getOriginalTableau();
+  tabInfo_->rowStart = lpe_->getRowStarts();
+  tabInfo_->indices = lpe_->getIndicesofVars();
+  tabInfo_->rowLen = lpe_->getRowLength();
 }
 
 SimplexCutVector SimplexQuadCutGen::getCutVec_(RelaxationPtr rel,
@@ -607,21 +617,21 @@ void SimplexQuadCutGen::getSlackBounds_() {
     row = nbSlack_[i];
     lb = 0.0;
     ub = 0.0;
-    upto = tabInfo_.rowStart[row] + tabInfo_.rowLen[row];
-    for (int j = tabInfo_.rowStart[row]; j < upto; ++j) {
-      getTermBounds_(tabInfo_.origTab[j],
-                     tabInfo_.colLower[tabInfo_.indices[j]],
-                     tabInfo_.colUpper[tabInfo_.indices[j]], lb, ub);
+    upto = tabInfo_->rowStart[row] + tabInfo_->rowLen[row];
+    for (int j = tabInfo_->rowStart[row]; j < upto; ++j) {
+      getTermBounds_(tabInfo_->origTab[j],
+                     tabInfo_->colLower[tabInfo_->indices[j]],
+                     tabInfo_->colUpper[tabInfo_->indices[j]], lb, ub);
     }
 
-    if (lb < tabInfo_.rowLower[row] - eTol_) {
-      lb = tabInfo_.rowLower[row];
+    if (lb < tabInfo_->rowLower[row] - eTol_) {
+      lb = tabInfo_->rowLower[row];
     }
-    if (ub > tabInfo_.rowUpper[row] + eTol_) {
-      ub = tabInfo_.rowUpper[row];
+    if (ub > tabInfo_->rowUpper[row] + eTol_) {
+      ub = tabInfo_->rowUpper[row];
     }
 
-    rhs = tabInfo_.rowRhs[row];
+    rhs = tabInfo_->rowRhs[row];
     sb_.insert(std::make_pair(row, std::make_pair(rhs - ub, rhs - lb)));
   }
 }
@@ -648,18 +658,13 @@ void SimplexQuadCutGen::multiplyBB_(int b1, int b2, double coef,
                                     std::map<int, double> &cutCoefo,
                                     std::map<int, double> &cutCoefs,
                                     double &cutConst) {
-  double *origRow1 = new double[tabInfo_.ncol];
-  double *origRow2 = new double[tabInfo_.ncol];
-  double *slackRow1 = new double[tabInfo_.nrow];
-  double *slackRow2 = new double[tabInfo_.nrow];
+  double *origRow1 = new double[tabInfo_->ncol];
+  double *origRow2 = new double[tabInfo_->ncol];
+  double *slackRow1 = new double[tabInfo_->nrow];
+  double *slackRow2 = new double[tabInfo_->nrow];
   double beta1 = x[b1];
   double beta2 = x[b2];
   double elem1, elem2;
-
-  memset(origRow1, 0, tabInfo_.ncol * sizeof(double));
-  memset(origRow2, 0, tabInfo_.ncol * sizeof(double));
-  memset(slackRow1, 0, tabInfo_.nrow * sizeof(double));
-  memset(slackRow2, 0, tabInfo_.nrow * sizeof(double));
 
   lpe_->getBInvARow(basicInd_[b1], origRow1, slackRow1);
   lpe_->getBInvARow(basicInd_[b2], origRow2, slackRow2);
@@ -753,13 +758,13 @@ void SimplexQuadCutGen::multiplyBNB_(int b, int nb, double coef,
                                      const double *x, QuadTerm &oxo,
                                      QuadTerm &oxs,
                                      std::map<int, double> &cutCoefo) {
-  double *origRow = new double[tabInfo_.ncol];
-  double *slackRow = new double[tabInfo_.nrow];
+  double *origRow = new double[tabInfo_->ncol];
+  double *slackRow = new double[tabInfo_->nrow];
   double elem;
   double beta = x[b];
 
-  memset(origRow, 0, tabInfo_.ncol * sizeof(double));
-  memset(slackRow, 0, tabInfo_.nrow * sizeof(double));
+  // memset(origRow, 0, tabInfo_.ncol * sizeof(double));
+  // memset(slackRow, 0, tabInfo_.nrow * sizeof(double));
 
   lpe_->getBInvARow(basicInd_[b], origRow, slackRow);
 
@@ -796,13 +801,13 @@ void SimplexQuadCutGen::multiplyCB_(int b, double coef, const double *x,
                                     std::map<int, double> &cutCoefo,
                                     std::map<int, double> &cutCoefs,
                                     double &cutConst) {
-  double *origRow = new double[tabInfo_.ncol];
-  double *slackRow = new double[tabInfo_.nrow];
+  double *origRow = new double[tabInfo_->ncol];
+  double *slackRow = new double[tabInfo_->nrow];
   double elem;
   double beta = x[b];
 
-  memset(origRow, 0, tabInfo_.ncol * sizeof(double));
-  memset(slackRow, 0, tabInfo_.nrow * sizeof(double));
+  // memset(origRow, 0, tabInfo_->ncol * sizeof(double));
+  // memset(slackRow, 0, tabInfo_.nrow * sizeof(double));
 
   lpe_->getBInvARow(basicInd_[b], origRow, slackRow);
 
@@ -927,7 +932,8 @@ int SimplexQuadCutGen::relaxBilTerm_(double coef, bool lower1, bool lower2,
   return numCuts;
 }
 
-int SimplexQuadCutGen::relaxQuadTerms_(RelaxationPtr rel, QuadTerm oxo,
+int SimplexQuadCutGen::relaxQuadTerms_(SimplexCutVector &iter_cuts,
+                                       RelaxationPtr rel, QuadTerm oxo,
                                        QuadTerm oxs, QuadTerm sxs,
                                        std::map<int, double> cutCoefo,
                                        std::map<int, double> cutCoefs,
@@ -1022,7 +1028,7 @@ int SimplexQuadCutGen::relaxQuadTerms_(RelaxationPtr rel, QuadTerm oxo,
       }
     }
   }
-  addCutsToRel_(cuts, rel);
+  iter_cuts.insert(iter_cuts.end(), cuts.begin(), cuts.end());
   return cuts.size();
 }
 
@@ -1063,30 +1069,31 @@ void SimplexQuadCutGen::slackSubstitute_(int slackInd, double coef,
                                          std::map<int, double> &row,
                                          double &rhs) {
   // Get the row from tabInfo_
-  int upto = tabInfo_.rowStart[slackInd] + tabInfo_.rowLen[slackInd];
-  for (int j = tabInfo_.rowStart[slackInd]; j < upto; ++j) {
-    row.insert(std::make_pair(tabInfo_.indices[j], coef * tabInfo_.origTab[j]));
+  int upto = tabInfo_->rowStart[slackInd] + tabInfo_->rowLen[slackInd];
+  for (int j = tabInfo_->rowStart[slackInd]; j < upto; ++j) {
+    row.insert(
+        std::make_pair(tabInfo_->indices[j], coef * tabInfo_->origTab[j]));
   }
-  rhs = coef * tabInfo_.rowRhs[slackInd];
+  rhs = coef * tabInfo_->rowRhs[slackInd];
 }
 
 void SimplexQuadCutGen::sortVariables_() {
-  int *basicVars = new int[tabInfo_.nrow];
-  std::vector<int> nonbasicslack(tabInfo_.nrow, 0);
+  int *basicVars = new int[tabInfo_->nrow];
+  std::vector<int> nonbasicslack(tabInfo_->nrow, 0);
 
   lpe_->getBasics(basicVars);
   basicInd_.clear();
 
-  for (int i = 0; i < tabInfo_.nrow; ++i) {
-    if (basicVars[i] < tabInfo_.ncol) {
+  for (int i = 0; i < tabInfo_->nrow; ++i) {
+    if (basicVars[i] < tabInfo_->ncol) {
       basicInd_.insert(std::make_pair(basicVars[i], i));
     } else {
-      nonbasicslack[basicVars[i] - tabInfo_.ncol] = 1;
+      nonbasicslack[basicVars[i] - tabInfo_->ncol] = 1;
     }
   }
 
   nnbOrig_ = 0;
-  for (int i = 0; i < tabInfo_.ncol; ++i) {
+  for (int i = 0; i < tabInfo_->ncol; ++i) {
     if (basicInd_.count(i) == 0) {
       nbOrig_.push_back(i);
       ++nnbOrig_;
@@ -1094,7 +1101,7 @@ void SimplexQuadCutGen::sortVariables_() {
   }
 
   nnbSlack_ = 0;
-  for (int i = 0; i < tabInfo_.nrow; ++i) {
+  for (int i = 0; i < tabInfo_->nrow; ++i) {
     if (nonbasicslack[i] == 0) {
       nbSlack_.push_back(i);
       ++nnbSlack_;

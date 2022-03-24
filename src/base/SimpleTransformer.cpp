@@ -543,7 +543,7 @@ void SimpleTransformer::refNonlinObj_(ConstProblemPtr oldp) {
   double d = 0;
   VariablePtr v = VariablePtr();
   LinearFunctionPtr lf, lf2;
-  QuadraticFunctionPtr qf, qf2 = new QuadraticFunction();
+  QuadraticFunctionPtr qf, qf2;
   CGraphPtr cg;
 
   assert(newp_);
@@ -562,6 +562,7 @@ void SimpleTransformer::refNonlinObj_(ConstProblemPtr oldp) {
   }
 
   if (f->getType() != Linear && f->getType() != Constant) {
+    qf2 = (QuadraticFunctionPtr) new QuadraticFunction();
     lf = f->getLinearFunction();
     if (lf) {
       lf2 = lf->cloneWithVars(newp_->varsBegin());

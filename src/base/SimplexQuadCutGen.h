@@ -92,7 +92,7 @@ class SimplexQuadCutGen {
   SimplexCutVector allCuts_;
 
   // Basic Tableau Info
-  TableauInfo tabInfo_;
+  TableauInfo *tabInfo_;
 
   // Row index of the basic original variables in the tableau
   // Key - index of the original variable which is basic
@@ -316,8 +316,9 @@ class SimplexQuadCutGen {
                     double &c2v1, double &c2v2, double &cnst1, double &cnst2,
                     bool under);
 
-  int relaxQuadTerms_(RelaxationPtr rel, QuadTerm oxo, QuadTerm oxs,
-                      QuadTerm sxs, std::map<int, double> cutCoefo,
+  int relaxQuadTerms_(SimplexCutVector &cuts, RelaxationPtr rel, QuadTerm oxo,
+                      QuadTerm oxs, QuadTerm sxs,
+                      std::map<int, double> cutCoefo,
                       std::map<int, double> cutCoefs, double cutConst,
                       const double *x, bool under, double rhs);
 

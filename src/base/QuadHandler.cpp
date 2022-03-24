@@ -1547,14 +1547,17 @@ void QuadHandler::separate(ConstSolutionPtr sol, NodePtr, RelaxationPtr rel,
   bool ifcuts;
   int ncuts;
 
-  if (!simplexCut_) {
+  if ((!simplexCut_) &&
+      (env_->getOptions()->findInt("simplex_cut_rounds")->getValue() > 0)) {
     simplexCut_ = (SimplexQuadCutGenPtr) new SimplexQuadCutGen(env_, p_, cute_);
   }
 
-  ncuts = simplexCut_->generateCuts(rel, x);
-  if (ncuts > 0) {
-    *status = SepaResolve;
-    return;
+  if (simplexCut_) {
+    ncuts = simplexCut_->generateCuts(rel, x);
+    if (ncuts > 0) {
+      *status = SepaResolve;
+      return;
+    }
   }
 
   ++sStats_.iters;
