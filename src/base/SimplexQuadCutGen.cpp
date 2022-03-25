@@ -856,6 +856,7 @@ int SimplexQuadCutGen::relaxBilTerm_(double coef, bool lower1, bool lower2,
                                      double &c2v2, double &cnst1, double &cnst2,
                                      bool under) {
   int numCuts;
+  int variant = env_->getOptions()->findInt("simplex_cut_variant")->getValue();
   if (under) {
     if (coef > eTol_) {
       if (lower1 == lower2) {
@@ -866,23 +867,37 @@ int SimplexQuadCutGen::relaxBilTerm_(double coef, bool lower1, bool lower2,
         cnst1 = -coef * p1 * p2;
         numCuts = 1;
       } else {
-        c1v1 = coef * l2;
-        c1v2 = coef * l1;
-        cnst1 = -coef * l1 * l2;
-        c2v1 = coef * u2;
-        c2v2 = coef * u1;
-        cnst2 = -coef * u1 * u2;
-        numCuts = 2;
+        if (variant == 1) {
+          c1v1 = coef * l2;
+          c1v2 = coef * l1;
+          cnst1 = -coef * l1 * l2;
+          c2v1 = coef * u2;
+          c2v2 = coef * u1;
+          cnst2 = -coef * u1 * u2;
+          numCuts = 2;
+        } else {
+          c1v1 = coef * (0.5 * l2 + 0.5 * u2);
+          c1v2 = coef * (0.5 * l1 + 0.5 * u1);
+          cnst1 = -coef * (0.5 * l1 * l2 + 0.5 * u1 * u2);
+          numCuts = 1;
+        }
       }
     } else {
       if (lower1 == lower2) {
-        c1v1 = coef * l2;
-        c1v2 = coef * u1;
-        cnst1 = -coef * u1 * l2;
-        c2v1 = coef * u2;
-        c2v2 = coef * l1;
-        cnst2 = -coef * l1 * u2;
-        numCuts = 2;
+        if (variant == 1) {
+          c1v1 = coef * l2;
+          c1v2 = coef * u1;
+          cnst1 = -coef * u1 * l2;
+          c2v1 = coef * u2;
+          c2v2 = coef * l1;
+          cnst2 = -coef * l1 * u2;
+          numCuts = 2;
+        } else {
+          c1v1 = coef * (0.5 * l2 + 0.5 * u2);
+          c1v2 = coef * (0.5 * l1 + 0.5 * u1);
+          cnst1 = -coef * (0.5 * u1 * l2 + 0.5 * l1 * u2);
+          numCuts = 1;
+        }
       } else {
         double p1 = lower1 ? l1 : u1;
         double p2 = lower2 ? l2 : u2;
@@ -902,23 +917,37 @@ int SimplexQuadCutGen::relaxBilTerm_(double coef, bool lower1, bool lower2,
         cnst1 = -coef * p1 * p2;
         numCuts = 1;
       } else {
-        c1v1 = coef * l2;
-        c1v2 = coef * l1;
-        cnst1 = -coef * l1 * l2;
-        c2v1 = coef * u2;
-        c2v2 = coef * u1;
-        cnst2 = -coef * u1 * u2;
-        numCuts = 2;
+        if (variant == 1) {
+          c1v1 = coef * l2;
+          c1v2 = coef * l1;
+          cnst1 = -coef * l1 * l2;
+          c2v1 = coef * u2;
+          c2v2 = coef * u1;
+          cnst2 = -coef * u1 * u2;
+          numCuts = 2;
+        } else {
+          c1v1 = coef * (0.5 * l2 + 0.5 * u2);
+          c1v2 = coef * (0.5 * l1 + 0.5 * u1);
+          cnst1 = -coef * (0.5 * l1 * l2 + 0.5 * u1 * u2);
+          numCuts = 1;
+        }
       }
     } else {
       if (lower1 == lower2) {
-        c1v1 = coef * l2;
-        c1v2 = coef * u1;
-        cnst1 = -coef * u1 * l2;
-        c2v1 = coef * u2;
-        c2v2 = coef * l1;
-        cnst2 = -coef * l1 * u2;
-        numCuts = 2;
+        if (variant == 1) {
+          c1v1 = coef * l2;
+          c1v2 = coef * u1;
+          cnst1 = -coef * u1 * l2;
+          c2v1 = coef * u2;
+          c2v2 = coef * l1;
+          cnst2 = -coef * l1 * u2;
+          numCuts = 2;
+        } else {
+          c1v1 = coef * (0.5 * l2 + 0.5 * u2);
+          c1v2 = coef * (0.5 * l1 + 0.5 * u1);
+          cnst1 = -coef * (0.5 * u1 * l2 + 0.5 * l1 * u2);
+          numCuts = 1;
+        }
       } else {
         double p1 = lower1 ? l1 : u1;
         double p2 = lower2 ? l2 : u2;

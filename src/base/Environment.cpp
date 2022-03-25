@@ -422,6 +422,10 @@ void Environment::createDefaultOptions_() {
       "simplex_cut_rounds", "No. of cut rounds for SimplexQuadCutGen", true, 0);
   options_->insert(i_option);
 
+  i_option = (IntOptionPtr) new Option<int>(
+      "simplex_cut_variant", "Variant of the simplex cut to be used", true, 2);
+  options_->insert(i_option);
+
   i_option = 0;
 
   // double options
