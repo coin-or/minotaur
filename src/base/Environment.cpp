@@ -299,6 +299,10 @@ void Environment::createDefaultOptions_() {
       true, false);
   options_->insert(b_option);
 
+  b_option = (BoolOptionPtr) new Option<bool>(
+      "doPostSolve", "Post solve root node: <0/1>", true, true);
+  options_->insert(b_option);
+
   // reset, so that we don't accidently add it again.
   b_option = 0;
 

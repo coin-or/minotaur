@@ -220,11 +220,15 @@ void SimplexQuadCutGen::addCutsToRel_(SimplexCutVector cuts, RelaxationPtr rel,
       continue;
     }
     if (cut->lb > -INFINITY) {
-      cut->lf->multiply(1 / fabs(cut->lb));
-      cut->lb = cut->lb / fabs(cut->lb);
+      if (fabs(cut->lb) > 1e-3) {
+        cut->lf->multiply(1 / fabs(cut->lb));
+        cut->lb = cut->lb / fabs(cut->lb);
+      }
     } else {
-      cut->lf->multiply(1 / fabs(cut->ub));
-      cut->ub = cut->ub / fabs(cut->ub);
+      if (fabs(cut->ub) > 1e-3) {
+        cut->lf->multiply(1 / fabs(cut->ub));
+        cut->ub = cut->ub / fabs(cut->ub);
+      }
     }
     f = (FunctionPtr) new Function(cut->lf);
     c = rel->newConstraint(f, cut->lb, cut->ub);
