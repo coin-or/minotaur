@@ -44,6 +44,7 @@ SimplexQuadCutGen::SimplexQuadCutGen() {}
 SimplexQuadCutGen::SimplexQuadCutGen(EnvPtr env, ProblemPtr p, LPEnginePtr lpe)
     : env_(env), eTol_(1e-6), p_(p), lpe_(lpe), tabInfo_(0) {
   ncuts_ = 0;
+  minDepth_ = 1e-3;
   iter_ = 0;
   allCuts_.clear();
   basicInd_.clear();
@@ -193,19 +194,49 @@ int SimplexQuadCutGen::generateCuts(RelaxationPtr rel, const double *x) {
     }
   }
   lpe_->disableFactorization();
-  addCutsToRel_(cuts, rel);
+  addCutsToRel_(cuts, rel, x, ncuts);
   return ncuts;
 }
 
-void SimplexQuadCutGen::addCutsToRel_(SimplexCutVector cuts,
-                                      RelaxationPtr rel) {
+void SimplexQuadCutGen::addCutsToRel_(SimplexCutVector cuts, RelaxationPtr rel,
+                                      const double *x, int &ncuts) {
   SimplexCutPtr cut;
   FunctionPtr f;
+  ConstraintPtr c;
+  double depth;
 
   for (SimplexCutVector::iterator it = cuts.begin(); it != cuts.end(); ++it) {
     cut = (*it);
+    // both lower and upper bounds must not be finite
+    assert(!(cut->lb > -INFINITY && cut->ub < INFINITY));
+    depth = calcDepth_(cut, x);
+    if (depth < minDepth_) {
+#if SPEW
+      env_->getLogger()->msgStream(LogDebug)
+          << me_ << " Cut not added since the depth of cut is very small"
+          << std::endl;
+#endif
+      --ncuts;
+      continue;
+    }
+    if (cut->lb > -INFINITY) {
+      if (fabs(cut->lb) > 1e-3) {
+        cut->lf->multiply(1 / fabs(cut->lb));
+        cut->lb = cut->lb / fabs(cut->lb);
+      }
+    } else {
+      if (fabs(cut->ub) > 1e-3) {
+        cut->lf->multiply(1 / fabs(cut->ub));
+        cut->ub = cut->ub / fabs(cut->ub);
+      }
+    }
     f = (FunctionPtr) new Function(cut->lf);
-    rel->newConstraint(f, cut->lb, cut->ub);
+    c = rel->newConstraint(f, cut->lb, cut->ub);
+#if SPEW
+    env_->getLogger()->msgStream(LogDebug)
+        << me_ << " added new cut. Depth of cut = " << depth << std::endl;
+    c->write(env_->getLogger()->msgStream(LogDebug));
+#endif
     allCuts_.push_back(cut);
   }
 }
@@ -458,6 +489,24 @@ void SimplexQuadCutGen::delTabInfo_() {
   delete[] tabInfo_->rowStart;
   delete[] tabInfo_->indices;
   delete[] tabInfo_->rowLen;
+}
+
+double SimplexQuadCutGen::calcDepth_(SimplexCutPtr cut, const double *x) {
+  double depth;
+  double norm = 0;
+
+  for (VariableGroupConstIterator it = cut->lf->termsBegin();
+       it != cut->lf->termsEnd(); ++it) {
+    norm += (it->second) * (it->second);
+  }
+  norm = sqrt(norm);
+
+  if (cut->lb > -INFINITY) {
+    depth = (cut->lb - cut->lf->eval(x)) / norm;
+  } else {
+    depth = (cut->lf->eval(x) - cut->ub) / norm;
+  }
+  return depth;
 }
 
 void SimplexQuadCutGen::getBasicInfo_() {

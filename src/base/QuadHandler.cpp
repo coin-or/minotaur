@@ -1290,6 +1290,9 @@ bool QuadHandler::propSqrBnds_(LinSqrMapIter lx2, RelaxationPtr rel,
 bool QuadHandler::postSolveRootNode(RelaxationPtr rel, SolutionPoolPtr s_pool,
                                     ConstSolutionPtr sol, ModVector &p_mods,
                                     ModVector &r_mods) {
+  if (!(env_->getOptions()->findBool("doPostSolve")->getValue())) {
+    return true;
+  }
   double vio1, vio2, range, yval, xval, ub;
   VariablePtr y, x0, x1;
   double stime = timer_->query();

@@ -85,6 +85,9 @@ class SimplexQuadCutGen {
   // Number of cuts generated
   UInt ncuts_;
 
+  // Minimum allowed depth of cut for a cut to be added
+  double minDepth_;
+
   // Number of iterations of cut generation
   int iter_;
 
@@ -117,7 +120,9 @@ class SimplexQuadCutGen {
   // \brief Add the generated cuts to the relaxation
   // \param[in] cuts - The vector of cuts to be added to relaxation
   // \param[in] rel - Relaxation to which the cuts needs to be added
-  void addCutsToRel_(SimplexCutVector cuts, RelaxationPtr rel);
+  // \param[in] x - The current LP solution
+  void addCutsToRel_(SimplexCutVector cuts, RelaxationPtr rel, const double *x,
+                     int &ncuts);
 
   // \brief Add relaxed term in the cut lf for a square original term
   // \param[in] cuts - The vector of cuts.
@@ -221,6 +226,9 @@ class SimplexQuadCutGen {
   // \param[in] vp - The product of variables which are to be added
   // \param[in] coef - The coefficient of the product
   void addTerm_(QuadTerm &t, VarProd vp, double coef);
+
+  // Calculate the depth of cut from the current point
+  double calcDepth_(SimplexCutPtr cut, const double *x);
 
   // Delete tabInfo_. Called in the destructor.
   void delTabInfo_();
