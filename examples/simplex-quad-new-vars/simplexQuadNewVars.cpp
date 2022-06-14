@@ -13,17 +13,18 @@
 #include <cmath>
 #include <iostream>
 
-#include "Environment.h"
 #include "EngineFactory.h"
+#include "Environment.h"
 #include "Function.h"
 #include "Glob.h"
 #include "LPEngine.h"
-#include "LinearHandler.h"
 #include "LinearFunction.h"
+#include "LinearHandler.h"
 #include "Logger.h"
 #include "MinotaurConfig.h"
 #include "NlPresHandler.h"
 #include "Objective.h"
+#include "Operations.h"
 #include "Option.h"
 #include "Presolver.h"
 #include "Problem.h"
@@ -144,8 +145,8 @@ void writeSol(EnvPtr env, VarVector* orig_v, PresolverPtr pres, SolutionPtr sol,
 }
 
 RelaxationPtr getRelaxation(EnvPtr env, ProblemPtr p, int& status,
-                            std::map << int, int >, int > &map4origAux) {
-  LinearHandler lhand = (LinearHandlerPtr) new LinearHandler(env, p);
+                            std::map<std::pair<int, int>, int>& map4origAux) {
+  LinearHandlerPtr lhand = (LinearHandlerPtr) new LinearHandler(env, p);
   QuadHandlerPtr qhand = (QuadHandlerPtr) new QuadHandler(env, p);
   RelaxationPtr rel = (RelaxationPtr) new Relaxation(env);
   FunctionType ftype;
@@ -157,7 +158,7 @@ RelaxationPtr getRelaxation(EnvPtr env, ProblemPtr p, int& status,
        ++cit) {
     // p is a transformed problem hence will have linear objective
     c = *cit;
-    ftype = c->getFunction()->getFunctionType();
+    ftype = c->getFunctionType();
     if (Linear != ftype) {
       qhand->addConstraint(c);
     }
@@ -171,7 +172,7 @@ RelaxationPtr getRelaxation(EnvPtr env, ProblemPtr p, int& status,
     status = 1;
   }
 
-  qhand->fillauxVars(map4origAux);
+  qhand->fillmap4auxVars(map4origAux);
 
   delete lhand;
   delete qhand;
@@ -206,7 +207,7 @@ void addMcCormick(RelaxationPtr rel, VariablePtr y, VariablePtr x, double lb,
 }
 
 void addMcCormick(RelaxationPtr rel, VariablePtr y, VariablePtr x1,
-                  VariablePtr x2, double l1, double u1, double, l2, double u2) {
+                  VariablePtr x2, double l1, double u1, double l2, double u2) {
   LinearFunctionPtr lf = (LinearFunctionPtr) new LinearFunction();
   FunctionPtr f;
 
@@ -302,7 +303,7 @@ void addMcCormick(RelaxationPtr rel, VariablePtr y, LinearFunctionPtr lf1,
   lf2clone->multiply(-l1);
   lfnew = lf1->copyAdd(lf2);
   lfnew->addTerm(y, 1.0);
-  f = (FunctionPtr) new Function(lf);
+  f = (FunctionPtr) new Function(lfnew);
   rel->newConstraint(f, l2 * d1 + l1 * d2 - l1 * l2, INFINITY);
   delete lf1clone;
   delete lf2clone;
@@ -314,13 +315,13 @@ void addMcCormick(RelaxationPtr rel, VariablePtr y, LinearFunctionPtr lf1,
   lf2clone->multiply(-u1);
   lfnew = lf1->copyAdd(lf2);
   lfnew->addTerm(y, 1.0);
-  f = (FunctionPtr) new Function(lf);
+  f = (FunctionPtr) new Function(lfnew);
   rel->newConstraint(f, u2 * d1 + u1 * d2 - u1 * u2, INFINITY);
   delete lf1clone;
   delete lf2clone;
 }
 
-void addMcCormick(RelaxationPtr rel, VariablePtr y, Variable x,
+void addMcCormick(RelaxationPtr rel, VariablePtr y, VariablePtr x,
                   LinearFunctionPtr lf, double d, double l1, double u1,
                   double l2, double u2) {
   LinearFunctionPtr lf1 = lf->clone();
@@ -331,28 +332,28 @@ void addMcCormick(RelaxationPtr rel, VariablePtr y, Variable x,
   lf1->addTerm(x, -u2);
   lf1->addTerm(y, 1.0);
   f = (FunctionPtr) new Function(lf1);
-  rel->newConstraint(f, -INFINITY, l1 * d2 - l1 * u2);
+  rel->newConstraint(f, -INFINITY, l1 * d - l1 * u2);
 
   // Secant at (u1, l2)
   lf1->multiply(-u1);
   lf1->addTerm(x, -l2);
   lf1->addTerm(y, 1.0);
   f = (FunctionPtr) new Function(lf1);
-  rel->newConstraint(f, -INFINITY, u1 * d2 - u1 * l2);
+  rel->newConstraint(f, -INFINITY, u1 * d - u1 * l2);
 
   // Tangent at (l1, l2)
   lf1->multiply(-l1);
   lf1->addTerm(x, -l2);
   lf1->addTerm(y, 1.0);
   f = (FunctionPtr) new Function(lf1);
-  rel->newConstraint(f, l1 * d2 - l1 * l2, INFINITY);
+  rel->newConstraint(f, l1 * d - l1 * l2, INFINITY);
 
   // Tangent at (u1, u2)
   lf1->multiply(-u1);
   lf1->addTerm(x, -u2);
   lf1->addTerm(y, 1.0);
   f = (FunctionPtr) new Function(lf1);
-  rel->newConstraint(f, u1 * d2 - u1 * l2, INFINITY);
+  rel->newConstraint(f, u1 * d - u1 * l2, INFINITY);
 }
 
 int getNewVar(RelaxationPtr rel, SimplexQuadCutGenPtr cutgen, int x1, int x2,
@@ -392,7 +393,7 @@ int getNewVar(RelaxationPtr rel, SimplexQuadCutGenPtr cutgen, int x1, int x2,
         v = rel->newVariable(lb, ub, Continuous);
         lf1 = (LinearFunctionPtr) new LinearFunction();
         d1 = 0.0;
-        cutgen->getAffineFnForSlack(rel, x1, lf, d);
+        cutgen->getAffineFnForSlack(rel, x1, lf1, d1);
         addMcCormick(rel, v, lf1, d1, l1, u1);
         delete lf1;
       } else {
@@ -423,7 +424,7 @@ int getNewVar(RelaxationPtr rel, SimplexQuadCutGenPtr cutgen, int x1, int x2,
       v = rel->newVariable(lb, ub, Continuous);
       lf2 = (LinearFunctionPtr) new LinearFunction();
       d2 = 0.0;
-      cutgen->getAffineFnForSlack(rel, x1, lf, d);
+      cutgen->getAffineFnForSlack(rel, x1, lf2, d2);
       addMcCormick(rel, v, v1, lf2, d2, l1, u1, l2, u2);
       delete lf2;
   }
@@ -431,13 +432,13 @@ int getNewVar(RelaxationPtr rel, SimplexQuadCutGenPtr cutgen, int x1, int x2,
 }
 
 void addTerm(std::map<int, double>& t, int v, double coef) {
-  if (fabs(coef) > eTol_) {
+  if (fabs(coef) > 1e-6) {
     std::map<int, double>::iterator it = t.find(v);
     if (it == t.end()) {
       t.insert(std::make_pair(v, coef));
     } else {
       double nv = it->second + coef;
-      if (fabs(nv) < eTol_) {
+      if (fabs(nv) < 1e-6) {
         t.erase(v);
       } else {
         it->second = nv;
@@ -449,13 +450,13 @@ void addTerm(std::map<int, double>& t, int v, double coef) {
 void addCutToRel(RelaxationPtr rel, SimplexQuadCutGenPtr cutgen,
                  std::map<int, double> cutCoefo, std::map<int, double> cutCoefs,
                  double cutConst, double clb, double cub) {
-  LinearFunctionPtr lf = (LinearHandlerPtr) new LinearFunction();
+  LinearFunctionPtr lf = (LinearFunctionPtr) new LinearFunction();
   LinearFunctionPtr lfs;
   FunctionPtr f;
   double ds;
   std::map<int, double>::iterator it;
 
-  for (it = cutCoefo.begin(); it != cutCoefo.end()++ it) {
+  for (it = cutCoefo.begin(); it != cutCoefo.end(); ++it) {
     lf->incTerm(rel->getVariable(it->first), it->second);
   }
 
@@ -484,7 +485,7 @@ void updateRel(EnvPtr env, RelaxationPtr rel, SimplexQuadCutGenPtr cutgen,
   AuxVarsPtr aptr;
 
   cutgen->preprocessSimplexTab();
-  cutgen->getQuadratic(c, x, oxo, oxs, sxs, cutCoefo, cutCoefs, cutConst);
+  cutgen->getQuadratic(c, x, rel, oxo, oxs, sxs, cutCoefo, cutCoefs, cutConst);
 
   for (QuadTerm::iterator it = oxo.begin(); it != oxo.end(); ++it) {
     if (fabs(it->second) < etol) {
@@ -537,7 +538,8 @@ void updateRel(EnvPtr env, RelaxationPtr rel, SimplexQuadCutGenPtr cutgen,
     addTerm(cutCoefo, y, it->second);
   }
 
-  addCutToRel(rel, cutCoefo, cutCoefs, cutConst, c->getLb(), c->getUb());
+  addCutToRel(rel, cutgen, cutCoefo, cutCoefs, cutConst, c->getLb(),
+              c->getUb());
   oxo.clear();
   oxs.clear();
   sxs.clear();
@@ -572,7 +574,7 @@ bool isFeasible(EnvPtr env, ProblemPtr p, ConstSolutionPtr sol,
         lbinf = (act < clb - at) && (clb == 0 || act < clb - fabs(clb) * rt);
         if (ubinf || lbinf) {
           is_feas = false;
-          updateRel(env, rel, cutgen, auxVars, x, lpe, c)
+          updateRel(env, rel, cutgen, auxVars, x, lpe, c);
         }
       } else {
         std::cout << c->getName() << " Constraint not defined at this point."
@@ -590,7 +592,7 @@ RelaxationPtr solveRelaxation(EnvPtr env, ProblemPtr p, RelaxationPtr rel,
                               AuxVarVector& auxVars) {
   LPEnginePtr lpe = efac->getLPEngine();
   ConstSolutionPtr sol;
-  RelaxationPtr newrel = rel->clone();
+  RelaxationPtr newrel = rel->clone(env);
 
   /* TO DO : Instead of directly loading and solving the problem
    * we should get the dual information of the previous iteration
@@ -630,7 +632,7 @@ int main(int argc, char** argv) {
   PresolverPtr pres = 0, pres2;
   int rounds;
   bool is_feas = false;
-  std::map << int, int >, int > map4origAux;
+  std::map<std::pair<int, int>, int> map4origAux;
   AuxVarVector auxVars;
   AuxVarsPtr aptr;
 
@@ -721,7 +723,7 @@ int main(int argc, char** argv) {
   status = 0;
   map4origAux.clear();
   rel = getRelaxation(env, p, status, map4origAux);
-  for (std::map << int, int >, int > ::iterator itr = map4origAux.begin();
+  for (std::map<std::pair<int, int>, int>::iterator itr = map4origAux.begin();
        itr != map4origAux.end(); ++itr) {
     aptr = (AuxVarsPtr) new AuxVars();
     aptr->x1 = itr->first.first;
