@@ -51,7 +51,7 @@ typedef AuxVars* AuxVarsPtr;
 typedef std::vector<AuxVarsPtr> AuxVarVector;
 
 void usage() {
-  std::cout << "./simplexQuadNewVars {name-of-.nl-file} "
+  std::cout << "./scuts {name-of-.nl-file} "
             << "--{any-other-minotaur-option}\n";
   return;
 }
