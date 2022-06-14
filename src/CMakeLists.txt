@@ -271,6 +271,7 @@ set (MINOTAUR_HEADERS
      base/Types.h
      base/UnivarQuadHandler.h
      base/UnambRelBrancher.h
+     base/VarBoundMod.h 
      base/WarmStart.h
      base/Variable.h
      base/YEqBivar.h
