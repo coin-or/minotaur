@@ -13,14 +13,17 @@
 #include <cmath>
 #include <iostream>
 
-#include "EngineFactory.h"
 #include "Environment.h"
+#include "EngineFactory.h"
+#include "Function.h"
 #include "Glob.h"
 #include "LPEngine.h"
 #include "LinearHandler.h"
+#include "LinearFunction.h"
 #include "Logger.h"
 #include "MinotaurConfig.h"
 #include "NlPresHandler.h"
+#include "Objective.h"
 #include "Option.h"
 #include "Presolver.h"
 #include "Problem.h"
@@ -29,6 +32,7 @@
 #include "Relaxation.h"
 #include "SimpleTransformer.h"
 #include "SimplexQuadCutGen.h"
+#include "Solution.h"
 #include "Types.h"
 
 using namespace Minotaur;
