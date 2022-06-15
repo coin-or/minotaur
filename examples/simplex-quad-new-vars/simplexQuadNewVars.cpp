@@ -630,7 +630,7 @@ int main(int argc, char** argv) {
   ProblemPtr p = 0;
   RelaxationPtr rel;
   PresolverPtr pres = 0, pres2;
-  int rounds;
+  int rounds, err = 0;
   bool is_feas = false;
   std::map<std::pair<int, int>, int> map4origAux;
   AuxVarVector auxVars;
@@ -652,6 +652,8 @@ int main(int argc, char** argv) {
     usage();
     goto CLEANUP;
   }
+
+  env->startTimer(err);
 
   iface = new MINOTAUR_AMPL::AMPLInterface(env, "mglob");
   options->findString("interface_type")->setValue("AMPL");
@@ -755,10 +757,6 @@ CLEANUP:
     delete efac;
   }
 
-  if (bte) {
-    delete bte;
-  }
-
   if (iface) {
     delete iface;
     iface = 0;
@@ -795,3 +793,5 @@ CLEANUP:
 
   return 0;
 }
+
+// Made changes ?
