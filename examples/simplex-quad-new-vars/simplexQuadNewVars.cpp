@@ -608,8 +608,8 @@ RelaxationPtr solveRelaxation(EnvPtr env, ProblemPtr p, RelaxationPtr rel,
     return 0;
   }
 
+  // delete sol;
   delete lpe;
-  delete sol;
   delete rel;
   return newrel;
 }
@@ -794,4 +794,4 @@ CLEANUP:
   return 0;
 }
 
-// Made changes ?
+// Made changes

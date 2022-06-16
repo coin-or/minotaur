@@ -188,9 +188,7 @@ void Relaxation::setProblem(ProblemPtr p) { p_ = p; }
 void Relaxation::setProblem(ConstProblemPtr p) { p_ = p; }
 
 Relaxation* Relaxation::clone(EnvPtr env) {
-  RelaxationPtr clonePtr;
-
-  clonePtr = dynamic_cast<RelaxationPtr>(this->clone(env));
+  RelaxationPtr clonePtr = (RelaxationPtr) new Relaxation(this, env);
   clonePtr->setProblem(p_);
 
   return clonePtr;
