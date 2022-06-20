@@ -84,11 +84,11 @@ int SimplexQuadCutGen::generateCuts(RelaxationPtr rel, const double *x) {
   // cutCoefo - Coefficient of cut for original variables
   // cutCoefs - Coefficient of cut for slack variables
   std::map<int, double> cutCoefo, cutCoefs;
-  int ncuts;
+  int ncuts, iter_cuts = 0;
   SimplexCutVector cuts;
 
   ++iter_;
-  env_->getLogger()->msdStream(LogExtraInfo) << me_ << "Round " << iter_
+  env_->getLogger()->msgStream(LogExtraInfo) << me_ << "Round " << iter_
     << std::endl;
   preprocessSimplexTab();
   for (ConstraintConstIterator cit = p_->consBegin(); cit != p_->consEnd();
@@ -144,7 +144,7 @@ int SimplexQuadCutGen::generateCuts(RelaxationPtr rel, const double *x) {
   }
   disableFactorization();
   addCutsToRel_(cuts, rel, x, ncuts);
-  env_->getLogger()->msdStream(LogExtraInfo) << me_ << "No. of cuts generated: "
+  env_->getLogger()->msgStream(LogExtraInfo) << me_ << "No. of cuts generated: "
     << iter_cuts << std::endl;
   ncuts_ += iter_cuts;
   return ncuts;
@@ -268,7 +268,7 @@ void SimplexQuadCutGen::addCutsToRel_(SimplexCutVector cuts, RelaxationPtr rel,
       --ncuts;
       continue;
     }
-    env_->getLogger()->msdStream(LogExtraInfo) << me_ << "Depth of cut = " << std::fixed << std::setprecision(6) << cut->depth << std::endl;
+    env_->getLogger()->msgStream(LogExtraInfo) << me_ << "Depth of cut = " << std::fixed << std::setprecision(6) << cut->depth << std::endl;
     if (cut->lb > -INFINITY) {
       if (fabs(cut->lb) > 1e-3) {
         cut->lf->multiply(1 / fabs(cut->lb));
