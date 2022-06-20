@@ -71,6 +71,12 @@ void Environment::createDefaultOptions_() {
   options_->insert(b_option);
 
   b_option = (BoolOptionPtr) new Option<bool>(
+      "eval_within_bnds",
+      "Pull values of a variable to its bounds if it is not within bounds for function and derivative evaluations <0/1>", true,
+      false);
+  options_->insert(b_option);
+
+  b_option = (BoolOptionPtr) new Option<bool>(
       "use_internal_quad",
       "Should quadratic functions be treated natively: <0/1>", true, false);
   options_->insert(b_option);

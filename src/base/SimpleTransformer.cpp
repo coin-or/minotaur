@@ -894,9 +894,15 @@ void SimpleTransformer::reformulate(ProblemPtr &newp, HandlerVector &handlers,
   handlers.push_back(lHandler_);
   qHandler_ = (QuadHandlerPtr) new QuadHandler(env_, newp_, p_);
   qHandler_->setModFlags(true, true);
-  qHandler_->setBTEngine(bte_);
-  qHandler_->setCutEngine(cute_);
-  qHandler_->setNLPEngine(nlpe_);
+  if (bte_) {
+    qHandler_->setBTEngine(bte_);
+  }
+  if (cute_) {
+    qHandler_->setCutEngine(cute_);
+  }
+  if (nlpe_) {
+    qHandler_->setNLPEngine(nlpe_);
+  }
   handlers.push_back(qHandler_);
   uHandler_ = (CxUnivarHandlerPtr) new CxUnivarHandler(env_, newp_);
   handlers.push_back(uHandler_);

@@ -21,7 +21,8 @@ namespace Ipopt {
   public:
 
     /// Default constructor.
-    IpoptFunInterface(Minotaur::ProblemPtr problem, 
+    IpoptFunInterface(Minotaur::EnvPtr env,
+                      Minotaur::ProblemPtr problem, 
                       Minotaur::IpoptSolPtr sol);
 
     /// default destructor.
@@ -117,6 +118,13 @@ namespace Ipopt {
     /// If fabs(lb-ub)<bTol_ for a given variable, it is fixed to lb.
     double bTol_;
 
+    /// Pull values of a variable to its bounds if it is not within bounds for
+    /// function and derivative evaluations
+    bool evalWithinBnds_;
+
+    /// Where to put logs.
+    Minotaur::LoggerPtr logger_;
+
     /// Problem that is being solved.
     Minotaur::ProblemPtr problem_;
 
@@ -127,6 +135,18 @@ namespace Ipopt {
      * changed within IpoptFunInterface
      */
     Minotaur::IpoptSolPtr sol_;
+
+    /**
+     * If x violates the lower or upperbounds on the variables, then function
+     * evaluation or derivatives may give error (e.g. (x1)^1.852). It may be
+     * desirable to first change x so that it is within the bounds. This
+     * function does this. 
+     * \param[in] x array of coordinates of the currect point.
+     * \param[in] n size of x.
+     * \param[out] A new array of size n with values same as x if it is in
+     * bounds and bounds if any is violated.
+     */
+    double *pullXToBnds_(const Number* x, Index n);
   };
 }
 #endif

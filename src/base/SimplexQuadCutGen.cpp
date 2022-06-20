@@ -75,10 +75,8 @@ int SimplexQuadCutGen::generateCuts(RelaxationPtr rel, const double *x) {
   }
   ConstraintPtr c;
   FunctionType ftype;
-  double act, cutConst, coef;
+  double act, cutConst;
   int error = 0;
-  QuadraticFunctionPtr qf;
-  LinearFunctionPtr lf;
   // oxo - product of two original non-basic variables
   // oxs - product of an original and a slack non-basic variables
   // sxs - product of two slack non-basic variables
@@ -86,17 +84,13 @@ int SimplexQuadCutGen::generateCuts(RelaxationPtr rel, const double *x) {
   // cutCoefo - Coefficient of cut for original variables
   // cutCoefs - Coefficient of cut for slack variables
   std::map<int, double> cutCoefo, cutCoefs;
-  VariablePtr v1, v2;
-  int ncuts, iter_cuts = 0;
+  int ncuts;
   SimplexCutVector cuts;
 
   ++iter_;
   env_->getLogger()->msdStream(LogExtraInfo) << me_ << "Round " << iter_
     << std::endl;
-  lpe_->enableFactorization();
-  getBasicInfo_();
-  sortVariables_();
-  getSlackBounds_();
+  preprocessSimplexTab();
   for (ConstraintConstIterator cit = p_->consBegin(); cit != p_->consEnd();
        ++cit) {
     c = *cit;
@@ -118,55 +112,7 @@ int SimplexQuadCutGen::generateCuts(RelaxationPtr rel, const double *x) {
           << " is not defined at this point." << std::endl;
 #endif
     }
-    qf = c->getFunction()->getQuadraticFunction();
-    lf = c->getFunction()->getLinearFunction();
-    cutConst = 0.0;
-
-    assert(qf);  // An infeasible constraint must have some quadratic part
-
-    for (VariablePairGroupConstIterator qit = qf->begin(); qit != qf->end();
-         ++qit) {
-      v1 = rel->getRelaxationVar(qit->first.first);
-      v2 = rel->getRelaxationVar(qit->first.second);
-      coef = qit->second;
-      if (basicInd_.count(v1->getIndex()) > 0) {
-        // v1 is basic
-        if (basicInd_.count(v2->getIndex()) > 0) {
-          // v2 is basic
-          multiplyBB_(v1->getIndex(), v2->getIndex(), coef, x, oxo, oxs, sxs,
-                      cutCoefo, cutCoefs, cutConst);
-        } else {
-          // v2 is non-basic
-          multiplyBNB_(v1->getIndex(), v2->getIndex(), coef, x, oxo, oxs,
-                       cutCoefo);
-        }
-      } else {
-        // v1 is non-basic
-        if (basicInd_.count(v2->getIndex()) > 0) {
-          // v2 is basic
-          multiplyBNB_(v2->getIndex(), v1->getIndex(), coef, x, oxo, oxs,
-                       cutCoefo);
-        } else {
-          // v2 is non-basic
-          multiplyNBNB_(v1->getIndex(), v2->getIndex(), coef, oxo);
-        }
-      }
-    }
-
-    if (lf) {
-      for (VariableGroupConstIterator lit = lf->termsBegin();
-           lit != lf->termsEnd(); ++lit) {
-        v1 = rel->getRelaxationVar(lit->first);
-        coef = lit->second;
-        if (basicInd_.count(v1->getIndex()) > 0) {
-          // v1 is basic
-          multiplyCB_(v1->getIndex(), coef, x, cutCoefo, cutCoefs, cutConst);
-        } else {
-          // v1 is non-basic
-          multiplyCNB_(v1->getIndex(), coef, cutCoefo);
-        }
-      }
-    }
+    getQuadratic(c, x, rel, oxo, oxs, sxs, cutCoefo, cutCoefs, cutConst);
 
     if (act > c->getUb() + eTol_) {
       ncuts = relaxQuadTerms_(cuts, rel, oxo, oxs, sxs, cutCoefo, cutCoefs,
@@ -196,12 +142,104 @@ int SimplexQuadCutGen::generateCuts(RelaxationPtr rel, const double *x) {
       }
     }
   }
-  lpe_->disableFactorization();
-  addCutsToRel_(cuts, rel, x, iter_cuts);
+  disableFactorization();
+  addCutsToRel_(cuts, rel, x, ncuts);
   env_->getLogger()->msdStream(LogExtraInfo) << me_ << "No. of cuts generated: "
     << iter_cuts << std::endl;
   ncuts_ += iter_cuts;
-  return iter_cuts;
+  return ncuts;
+}
+
+double SimplexQuadCutGen::getSlackLb(int s) {
+  return sb_[s].first;
+}
+
+double SimplexQuadCutGen::getSlackUb(int s) {
+  return sb_[s].second;
+}
+
+void SimplexQuadCutGen::preprocessSimplexTab() {
+  lpe_->enableFactorization();
+  getBasicInfo_();
+  sortVariables_();
+  getSlackBounds_();
+}
+
+void SimplexQuadCutGen::getAffineFnForSlack(RelaxationPtr rel, int s,
+                                            LinearFunctionPtr &lf, double &d) {
+  std::map<int, double> row;
+
+  slackSubstitute_(s, 1.0, row, d);
+  for (std::map<int, double>::iterator it = row.begin(); it != row.end();
+       ++it) {
+    lf->addTerm(rel->getVariable(it->first), -it->second);
+  }
+}
+
+void SimplexQuadCutGen::disableFactorization() {
+  lpe_->disableFactorization();
+}
+
+void SimplexQuadCutGen::getQuadratic(ConstraintPtr c, const double *x,
+                                     RelaxationPtr rel, QuadTerm &oxo,
+                                     QuadTerm &oxs, QuadTerm &sxs,
+                                     std::map<int, double> &cutCoefo,
+                                     std::map<int, double> &cutCoefs,
+                                     double &cutConst) {
+  VariablePtr v1, v2;
+  double coef;
+  QuadraticFunctionPtr qf;
+  LinearFunctionPtr lf;
+
+  qf = c->getFunction()->getQuadraticFunction();
+  lf = c->getFunction()->getLinearFunction();
+  cutConst = 0.0;
+
+  assert(qf);  // An infeasible constraint must have some quadratic part
+
+  for (VariablePairGroupConstIterator qit = qf->begin(); qit != qf->end();
+       ++qit) {
+    v1 = rel->getRelaxationVar(qit->first.first);
+    v2 = rel->getRelaxationVar(qit->first.second);
+    coef = qit->second;
+    if (basicInd_.count(v1->getIndex()) > 0) {
+      // v1 is basic
+      if (basicInd_.count(v2->getIndex()) > 0) {
+        // v2 is basic
+        multiplyBB_(v1->getIndex(), v2->getIndex(), coef, x, oxo, oxs, sxs,
+                    cutCoefo, cutCoefs, cutConst);
+      } else {
+        // v2 is non-basic
+        multiplyBNB_(v1->getIndex(), v2->getIndex(), coef, x, oxo, oxs,
+                     cutCoefo);
+      }
+    } else {
+      // v1 is non-basic
+      if (basicInd_.count(v2->getIndex()) > 0) {
+        // v2 is basic
+        multiplyBNB_(v2->getIndex(), v1->getIndex(), coef, x, oxo, oxs,
+                     cutCoefo);
+      } else {
+        // v2 is non-basic
+        multiplyNBNB_(v1->getIndex(), v2->getIndex(), coef, oxo);
+      }
+    }
+  }
+
+  if (lf) {
+    for (VariableGroupConstIterator lit = lf->termsBegin();
+         lit != lf->termsEnd(); ++lit) {
+      v1 = rel->getRelaxationVar(lit->first);
+      coef = lit->second;
+      if (basicInd_.count(v1->getIndex()) > 0) {
+        // v1 is basic
+        multiplyCB_(v1->getIndex(), coef, x, cutCoefo, cutCoefs, cutConst);
+      } else {
+        // v1 is non-basic
+        multiplyCNB_(v1->getIndex(), coef, cutCoefo);
+      }
+    }
+  }
 }
 
 void SimplexQuadCutGen::addCutsToRel_(SimplexCutVector cuts, RelaxationPtr rel,

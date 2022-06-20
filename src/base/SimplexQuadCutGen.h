@@ -70,8 +70,28 @@ class SimplexQuadCutGen {
   // Destructor
   ~SimplexQuadCutGen();
 
+  // disable factorization
+  void disableFactorization();
+
   // Generate the cuts that violate the given point
   int generateCuts(RelaxationPtr rel, const double *x);
+
+  // get preprocessing info from the simplex tableau
+  void preprocessSimplexTab();
+
+  // get affine function of a slack variable
+  void getAffineFnForSlack(RelaxationPtr rel, int s, LinearFunctionPtr &lf,
+                           double &d);
+
+  // get the quadratic for a constraint
+  void getQuadratic(ConstraintPtr c, const double *x, RelaxationPtr rel,
+                    QuadTerm &oxo, QuadTerm &oxs, QuadTerm &sxs,
+                    std::map<int, double> &cutCoefo,
+                    std::map<int, double> &cutCoefs, double &cutConst);
+
+  double getSlackLb(int s);
+
+  double getSlackUb(int s);
 
  private:
   // Environment pointer

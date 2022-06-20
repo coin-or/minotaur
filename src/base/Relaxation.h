@@ -1,8 +1,8 @@
-// 
+//
 //     MINOTAUR -- It's only 1/2 bull
-// 
+//
 //     (C)opyright 2009 - 2021 The MINOTAUR Team.
-// 
+//
 
 /**
  * \file Relaxation.h
@@ -11,7 +11,6 @@
  * \author Ashutosh Mahajan, Argonne National Laboratory
  */
 
-
 #ifndef MINOTAURRELAXATION_H
 #define MINOTAURRELAXATION_H
 
@@ -19,31 +18,30 @@
 
 namespace Minotaur {
 
-
 /**
  * Relaxation is a derived class of Problem. A relaxation is what is
- * actually solved at each iteration of an algorithm. 
- * 
+ * actually solved at each iteration of an algorithm.
+ *
  * A Relaxation need not be a relaxation of the original problem. It could
  * be a relaxation of the problem being solved at a given node. Since a
- * relaxation could be as big as the 
+ * relaxation could be as big as the
  * the original problem (and even much bigger), we should take care to have
- * as few copies of a relaxation around as possible. 
- * 
+ * as few copies of a relaxation around as possible.
+ *
  * A relaxation is created from a Problem by using Handlers. It is assumed
  * that a Problem is in its standard form. Each constraint is relaxed by one
  * or more handlers. A handler may break the constraint into two parts,
  * adding a new variable to the relaxed problem. For instance: a constraint
  * \f$x^2 + y^2 - z^2 \leq 5\f$ can be broken as \f$x^2 + y^2 - v \leq 0\f$,
  * \f$-z^2 + w \leq 0\f$, \f$v - w \leq 5\f$.
- * 
+ *
  * Besides having constraints, variables, functions, jacobians and hessians
  * much like the Problem, a relaxation can have additional data structures
  * that may be used to solve the problem, e.g. reduced costs, conflict
  * graphs, implications, valid inequalities, symmetry groups etc.
  * Typically one would input a Problem and ask Minotaur to solve it using,
- * say, branch-and-bound. 
- * 
+ * say, branch-and-bound.
+ *
  * Since a Relaxation is obtained by reformulating the original Problem, it
  * should thus have methods to translate and return the solution values of
  * the variables of the original problem. It should also keep a pointer to
@@ -53,8 +51,7 @@ namespace Minotaur {
  * branch-and-bound only.
  */
 class Relaxation : public Problem {
-    
-public:
+ public:
   /// Default constructor.
   Relaxation(EnvPtr env);
 
@@ -68,31 +65,35 @@ public:
   Relaxation(ProblemPtr problem, EnvPtr env);
 
   /// Destructor. No need yet. Use ~Problem().
-  ~Relaxation() {};
+  ~Relaxation(){};
 
   VariablePtr getOriginalVar(VariablePtr r_var);
-  
+
   VariablePtr getRelaxationVar(VariablePtr p_var);
 
   void setProblem(ProblemPtr p);
 
-protected:
+  void setProblem(ConstProblemPtr p);
+
+  Relaxation* clone(EnvPtr env);
+
+ protected:
   /// Pointer to the original problem.
   ConstProblemPtr p_;
 };
 
 typedef Relaxation* RelaxationPtr;
-typedef const Relaxation* ConstRelaxationPtr;  
-}
+typedef const Relaxation* ConstRelaxationPtr;
+}  // namespace Minotaur
 #endif
 
-// Local Variables: 
-// mode: c++ 
-// eval: (c-set-style "k&r") 
-// eval: (c-set-offset 'innamespace 0) 
-// eval: (setq c-basic-offset 2) 
-// eval: (setq fill-column 78) 
-// eval: (auto-fill-mode 1) 
-// eval: (setq column-number-mode 1) 
-// eval: (setq indent-tabs-mode nil) 
+// Local Variables:
+// mode: c++
+// eval: (c-set-style "k&r")
+// eval: (c-set-offset 'innamespace 0)
+// eval: (setq c-basic-offset 2)
+// eval: (setq fill-column 78)
+// eval: (auto-fill-mode 1)
+// eval: (setq column-number-mode 1)
+// eval: (setq indent-tabs-mode nil)
 // End:
