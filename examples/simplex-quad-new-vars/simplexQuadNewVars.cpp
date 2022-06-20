@@ -609,8 +609,13 @@ RelaxationPtr solveRelaxation(EnvPtr env, ProblemPtr p, RelaxationPtr rel,
   lpe->solve();
   sol = lpe->getSolution();
 
+  std::cout << "Lower bound = " << sol->getObjValue() << std::endl;
+  ;
+
   is_feas = isFeasible(env, p, sol, newrel, auxVars, lpe);
   if (is_feas) {
+    std::cout << "Feasible Solution found" << std::endl;
+    std::cout << "Upper bound = " << sol->getObjValue() << std::endl;
     return 0;
   }
 
@@ -749,7 +754,7 @@ int main(int argc, char** argv) {
     if (is_feas) {
       break;
     }
-    rel = solveRelaxation(env, inst, rel, efac, is_feas, status, auxVars);
+    rel = solveRelaxation(env, p, rel, efac, is_feas, status, auxVars);
   }
 
 CLEANUP:
