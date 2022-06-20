@@ -44,6 +44,13 @@ struct SimplexCut {
   double lb;             // Lower Bound
   double ub;             // Upper Bound
   UInt numInactive;      // Number of times the cut has remained inactive
+  double depth;          // Depth of cut
+  bool operator < (const SimplexCut& cut) const {
+    return depth < cut.depth;
+  }
+  bool operator > (const SimplexCut& cut) const {
+    return depth > cut.depth;
+  }
 };
 
 typedef std::pair<int, int> VarProd;
@@ -228,7 +235,7 @@ class SimplexQuadCutGen {
   void addTerm_(QuadTerm &t, VarProd vp, double coef);
 
   // Calculate the depth of cut from the current point
-  double calcDepth_(SimplexCutPtr cut, const double *x);
+  void calcDepth_(SimplexCutVector cuts, const double *x);
 
   // Delete tabInfo_. Called in the destructor.
   void delTabInfo_();
@@ -267,6 +274,11 @@ class SimplexQuadCutGen {
   // get bounds on the linear terms. Called for calculating slack bounds.
   void getTermBounds_(double coef, double vlb, double vub, double &lb,
                       double &ub);
+
+  // \brief to get top cuts whose depth of cut is in highest
+  // \param[in] cuts - the cuts vector
+  // \param[in] num - number of cuts to select 
+  SimplexCutVector getTopCuts_(SimplexCutVector cuts, UInt num);
 
   // \brief multiply two basic variables coef*b1*b2
   // \param[in] b1 - index of the first basic variable

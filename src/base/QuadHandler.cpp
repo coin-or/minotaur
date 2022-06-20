@@ -1541,7 +1541,7 @@ void QuadHandler::resetStats_() {
   // bStats_.body_diag = 0;
 }
 
-void QuadHandler::separate(ConstSolutionPtr sol, NodePtr, RelaxationPtr rel,
+void QuadHandler::separate(ConstSolutionPtr sol, NodePtr node, RelaxationPtr rel,
                            CutManager *, SolutionPoolPtr, ModVector &,
                            ModVector &, bool *, SeparationStatus *status) {
   double yval, xval;
@@ -1555,7 +1555,7 @@ void QuadHandler::separate(ConstSolutionPtr sol, NodePtr, RelaxationPtr rel,
     simplexCut_ = (SimplexQuadCutGenPtr) new SimplexQuadCutGen(env_, p_, cute_);
   }
 
-  if (simplexCut_) {
+  if (!node->getParent() && simplexCut_) {
     ncuts = simplexCut_->generateCuts(rel, x);
     if (ncuts > 0) {
       *status = SepaResolve;
