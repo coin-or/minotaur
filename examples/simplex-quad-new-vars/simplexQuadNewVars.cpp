@@ -186,22 +186,22 @@ void addMcCormick(RelaxationPtr rel, VariablePtr y, VariablePtr x, double lb,
   FunctionPtr f;
 
   // Secant
-  lf->addTerm(y, 1.0);
-  lf->addTerm(x, -(lb + ub));
+  lf->incTerm(y, 1.0);
+  lf->incTerm(x, -(lb + ub));
   f = (FunctionPtr) new Function(lf);
   rel->newConstraint(f, -INFINITY, -lb * ub);
 
   // Tangent at lb
   lf = (LinearFunctionPtr) new LinearFunction();
-  lf->addTerm(y, 1.0);
-  lf->addTerm(x, -2 * lb);
+  lf->incTerm(y, 1.0);
+  lf->incTerm(x, -2 * lb);
   f = (FunctionPtr) new Function(lf);
   rel->newConstraint(f, -lb * lb, INFINITY);
 
   // Tangent at ub
   lf = (LinearFunctionPtr) new LinearFunction();
-  lf->addTerm(y, 1.0);
-  lf->addTerm(x, -2 * ub);
+  lf->incTerm(y, 1.0);
+  lf->incTerm(x, -2 * ub);
   f = (FunctionPtr) new Function(lf);
   rel->newConstraint(f, -ub * ub, INFINITY);
 }
@@ -212,30 +212,33 @@ void addMcCormick(RelaxationPtr rel, VariablePtr y, VariablePtr x1,
   FunctionPtr f;
 
   // Secant at (l1, u2)
-  lf->addTerm(y, 1.0);
-  lf->addTerm(x1, -u2);
-  lf->addTerm(x2, -l1);
+  lf->incTerm(y, 1.0);
+  lf->incTerm(x1, -u2);
+  lf->incTerm(x2, -l1);
   f = (FunctionPtr) new Function(lf);
   rel->newConstraint(f, -INFINITY, -l1 * u2);
 
   // Secant at (u1, l2)
-  lf->addTerm(y, 1.0);
-  lf->addTerm(x1, -l2);
-  lf->addTerm(x2, -u1);
+  lf = (LinearFunctionPtr) new LinearFunction();
+  lf->incTerm(y, 1.0);
+  lf->incTerm(x1, -l2);
+  lf->incTerm(x2, -u1);
   f = (FunctionPtr) new Function(lf);
   rel->newConstraint(f, -INFINITY, -u1 * l2);
 
   // Tangent at (l1, l2)
-  lf->addTerm(y, 1.0);
-  lf->addTerm(x1, -l2);
-  lf->addTerm(x2, -l1);
+  lf = (LinearFunctionPtr) new LinearFunction();
+  lf->incTerm(y, 1.0);
+  lf->incTerm(x1, -l2);
+  lf->incTerm(x2, -l1);
   f = (FunctionPtr) new Function(lf);
   rel->newConstraint(f, -l1 * l2, INFINITY);
 
   // Tangent at (u1, u2)
-  lf->addTerm(y, 1.0);
-  lf->addTerm(x1, -u2);
-  lf->addTerm(x2, -u1);
+  lf = (LinearFunctionPtr) new LinearFunction();
+  lf->incTerm(y, 1.0);
+  lf->incTerm(x1, -u2);
+  lf->incTerm(x2, -u1);
   f = (FunctionPtr) new Function(lf);
   rel->newConstraint(f, -u1 * u2, INFINITY);
 }
@@ -247,21 +250,21 @@ void addMcCormick(RelaxationPtr rel, VariablePtr y, LinearFunctionPtr lf,
 
   // Secant
   lf1->multiply(-(lb + ub));
-  lf1->addTerm(y, 1.0);
+  lf1->incTerm(y, 1.0);
   f = (FunctionPtr) new Function(lf1);
   rel->newConstraint(f, -INFINITY, (lb + ub) * d - lb * ub);
 
   // Tangent at lb
   lf1 = lf->clone();
   lf1->multiply(-2 * lb);
-  lf1->addTerm(y, 1.0);
+  lf1->incTerm(y, 1.0);
   f = (FunctionPtr) new Function(lf1);
   rel->newConstraint(f, 2 * lb * d - lb * lb, INFINITY);
 
   // Tangent at ub
   lf1 = lf->clone();
   lf1->multiply(-2 * ub);
-  lf1->addTerm(y, 1.0);
+  lf1->incTerm(y, 1.0);
   f = (FunctionPtr) new Function(lf1);
   rel->newConstraint(f, 2 * ub * d - ub * ub, INFINITY);
 }
@@ -277,8 +280,8 @@ void addMcCormick(RelaxationPtr rel, VariablePtr y, LinearFunctionPtr lf1,
   lf2clone = lf2->clone();
   lf1clone->multiply(-u2);
   lf2clone->multiply(-l1);
-  lfnew = lf1->copyAdd(lf2);
-  lfnew->addTerm(y, 1.0);
+  lfnew = lf1clone->copyAdd(lf2clone);
+  lfnew->incTerm(y, 1.0);
   f = (FunctionPtr) new Function(lfnew);
   rel->newConstraint(f, -INFINITY, u2 * d1 + l1 * d2 - l1 * u2);
   delete lf1clone;
@@ -289,8 +292,8 @@ void addMcCormick(RelaxationPtr rel, VariablePtr y, LinearFunctionPtr lf1,
   lf2clone = lf2->clone();
   lf1clone->multiply(-l2);
   lf2clone->multiply(-u1);
-  lfnew = lf1->copyAdd(lf2);
-  lfnew->addTerm(y, 1.0);
+  lfnew = lf1clone->copyAdd(lf2clone);
+  lfnew->incTerm(y, 1.0);
   f = (FunctionPtr) new Function(lfnew);
   rel->newConstraint(f, -INFINITY, l2 * d1 + u1 * d2 - u1 * l2);
   delete lf1clone;
@@ -301,8 +304,8 @@ void addMcCormick(RelaxationPtr rel, VariablePtr y, LinearFunctionPtr lf1,
   lf2clone = lf2->clone();
   lf1clone->multiply(-l2);
   lf2clone->multiply(-l1);
-  lfnew = lf1->copyAdd(lf2);
-  lfnew->addTerm(y, 1.0);
+  lfnew = lf1clone->copyAdd(lf2clone);
+  lfnew->incTerm(y, 1.0);
   f = (FunctionPtr) new Function(lfnew);
   rel->newConstraint(f, l2 * d1 + l1 * d2 - l1 * l2, INFINITY);
   delete lf1clone;
@@ -313,8 +316,8 @@ void addMcCormick(RelaxationPtr rel, VariablePtr y, LinearFunctionPtr lf1,
   lf2clone = lf2->clone();
   lf1clone->multiply(-u2);
   lf2clone->multiply(-u1);
-  lfnew = lf1->copyAdd(lf2);
-  lfnew->addTerm(y, 1.0);
+  lfnew = lf1clone->copyAdd(lf2clone);
+  lfnew->incTerm(y, 1.0);
   f = (FunctionPtr) new Function(lfnew);
   rel->newConstraint(f, u2 * d1 + u1 * d2 - u1 * u2, INFINITY);
   delete lf1clone;
@@ -329,31 +332,34 @@ void addMcCormick(RelaxationPtr rel, VariablePtr y, VariablePtr x,
 
   // Secant at (l1, u2)
   lf1->multiply(-l1);
-  lf1->addTerm(x, -u2);
-  lf1->addTerm(y, 1.0);
+  lf1->incTerm(x, -u2);
+  lf1->incTerm(y, 1.0);
   f = (FunctionPtr) new Function(lf1);
   rel->newConstraint(f, -INFINITY, l1 * d - l1 * u2);
 
   // Secant at (u1, l2)
+  lf1 = lf->clone();
   lf1->multiply(-u1);
-  lf1->addTerm(x, -l2);
-  lf1->addTerm(y, 1.0);
+  lf1->incTerm(x, -l2);
+  lf1->incTerm(y, 1.0);
   f = (FunctionPtr) new Function(lf1);
   rel->newConstraint(f, -INFINITY, u1 * d - u1 * l2);
 
   // Tangent at (l1, l2)
+  lf1 = lf->clone();
   lf1->multiply(-l1);
-  lf1->addTerm(x, -l2);
-  lf1->addTerm(y, 1.0);
+  lf1->incTerm(x, -l2);
+  lf1->incTerm(y, 1.0);
   f = (FunctionPtr) new Function(lf1);
   rel->newConstraint(f, l1 * d - l1 * l2, INFINITY);
 
   // Tangent at (u1, u2)
+  lf1 = lf->clone();
   lf1->multiply(-u1);
-  lf1->addTerm(x, -u2);
-  lf1->addTerm(y, 1.0);
+  lf1->incTerm(x, -u2);
+  lf1->incTerm(y, 1.0);
   f = (FunctionPtr) new Function(lf1);
-  rel->newConstraint(f, u1 * d - u1 * l2, INFINITY);
+  rel->newConstraint(f, u1 * d - u1 * u2, INFINITY);
 }
 
 int getNewVar(RelaxationPtr rel, SimplexQuadCutGenPtr cutgen, int x1, int x2,
@@ -408,7 +414,7 @@ int getNewVar(RelaxationPtr rel, SimplexQuadCutGenPtr cutgen, int x1, int x2,
         cutgen->getAffineFnForSlack(rel, x1, lf1, d1);
         lf2 = (LinearFunctionPtr) new LinearFunction();
         d2 = 0.0;
-        cutgen->getAffineFnForSlack(rel, x1, lf2, d2);
+        cutgen->getAffineFnForSlack(rel, x2, lf2, d2);
         addMcCormick(rel, v, lf1, d1, lf2, d2, l1, u1, l2, u2);
         delete lf1;
         delete lf2;
@@ -424,7 +430,7 @@ int getNewVar(RelaxationPtr rel, SimplexQuadCutGenPtr cutgen, int x1, int x2,
       v = rel->newVariable(lb, ub, Continuous);
       lf2 = (LinearFunctionPtr) new LinearFunction();
       d2 = 0.0;
-      cutgen->getAffineFnForSlack(rel, x1, lf2, d2);
+      cutgen->getAffineFnForSlack(rel, x2, lf2, d2);
       addMcCormick(rel, v, v1, lf2, d2, l1, u1, l2, u2);
       delete lf2;
   }
@@ -747,7 +753,11 @@ int main(int argc, char** argv) {
   }
 
 CLEANUP:
+  for (AuxVarVector::iterator it = auxVars.begin(); it != auxVars.end(); ++it) {
+    delete (*it);
+  }
   auxVars.clear();
+
   for (HandlerVector::iterator it = handlers.begin(); it != handlers.end();
        ++it) {
     delete (*it);
