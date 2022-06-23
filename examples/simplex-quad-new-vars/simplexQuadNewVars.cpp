@@ -625,6 +625,45 @@ RelaxationPtr solveRelaxation(EnvPtr env, ProblemPtr p, RelaxationPtr rel,
   return newrel;
 }
 
+void bringObjToCons(ProblemPtr inst) {
+  QuadraticFunctionPtr qf = inst->getObjective()->getQuadraticFunction();
+  LinearFunctionPtr lf = inst->getObjective()->getLinearFunction();
+  LinearFunctionPtr conslf;
+  QuadraticFunctionPtr consqf;
+  FunctionPtr f;
+  double lb = 0.0, ub = 0.0, qlb = 0.0, qub = 0.0;
+  VariablePtr y, v1, v2;
+  double coef;
+
+  for (VariablePairGroupConstIterator qit = qf->begin(); qit != qf->end();
+       ++qit) {
+    v1 = qit->first.first;
+    v2 = qit->first.second;
+    coef = qit->second;
+    if (v1->getIndex() == v2->getIndex()) {
+      BoundsOnSquare(v1, qlb, qub);
+    } else {
+      BoundsOnProduct(true, v1, v2, qlb, qub);
+    }
+    if (coef > 0) {
+      lb += qlb > -INFINITY ? coef * qlb : -INFINITY;
+      ub += qub < INFINITY ? coef * qub : INFINITY;
+    } else {
+      lb += qub < INFINITY ? coef * qub : -INFINITY;
+      ub += qlb > -INFINITY ? coef * qlb : INFINITY;
+    }
+  }
+
+  y = inst->newVariable(lb, ub, Continuous, "yobj");
+  conslf = (LinearFunctionPtr) new LinearFunction();
+  conslf->addTerm(y, -1.0);
+  consqf = qf->clone();
+  f = (FunctionPtr) new Function(conslf, consqf);
+  inst->newConstraint(f, 0.0, 0.0);
+  lf->addTerm(y, 1.0);
+  inst->removeQuadFromObj();
+}
+
 int main(int argc, char** argv) {
   EnvPtr env = (EnvPtr) new Environment();
   ProblemPtr inst = 0;  // instance that needs to be solved.
@@ -641,6 +680,7 @@ int main(int argc, char** argv) {
   ProblemPtr p = 0;
   RelaxationPtr rel;
   PresolverPtr pres = 0, pres2;
+  FunctionType objType;
   int rounds, err = 0;
   bool is_feas = false;
   std::map<std::pair<int, int>, int> map4origAux;
@@ -717,6 +757,11 @@ int main(int argc, char** argv) {
         << std::endl;
     writeSol(env, orig_v, pres, pres->getSolution(), pres->getStatus(), iface);
     goto CLEANUP;
+  }
+
+  objType = inst->getObjective()->getFunctionType();
+  if (objType != Linear || objType != Constant) {
+    bringObjToCons(inst);
   }
 
   inst->setNativeDer();
