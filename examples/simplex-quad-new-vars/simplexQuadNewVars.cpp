@@ -760,7 +760,7 @@ int main(int argc, char** argv) {
   }
 
   objType = inst->getObjective()->getFunctionType();
-  if (objType != Linear || objType != Constant) {
+  if (objType != Linear && objType != Constant) {
     bringObjToCons(inst);
   }
 
