@@ -799,7 +799,7 @@ int main(int argc, char** argv) {
     if (is_feas) {
       break;
     }
-    rel = solveRelaxation(env, p, rel, efac, is_feas, status, auxVars);
+    rel = solveRelaxation(env, inst, rel, efac, is_feas, status, auxVars);
   }
 
 CLEANUP:
