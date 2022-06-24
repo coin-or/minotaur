@@ -38,6 +38,8 @@
 
 using namespace Minotaur;
 
+bool showCuts = false;
+
 struct AuxVars {
   int x1;            // index of the first variable
   int x2;            // index of the second variable
@@ -45,6 +47,8 @@ struct AuxVars {
                      // c - both first and second variables are "Constraints"
                      // m - first is "Variable", second is "Constriant"
   int y;             // index of the auxiliary variable
+  double scale;      // Scale y by this amount
+  bool isScaled;     // is y scaled?
 };
 
 typedef AuxVars* AuxVarsPtr;
@@ -56,12 +60,15 @@ void usage() {
   return;
 }
 
-int findY(AuxVarVector aux, int x1, int x2, char productType) {
+int findY(AuxVarVector aux, int x1, int x2, char productType, double& scale,
+          bool& isScaled) {
   AuxVarsPtr aptr;
   for (AuxVarVector::iterator it = aux.begin(); it != aux.end(); ++it) {
     aptr = (*it);
     if (aptr->productType == productType) {
       if (aptr->x1 == x1 && aptr->x2 == x2) {
+        scale = aptr->scale;
+        isScaled = aptr->isScaled;
         return aptr->y;
       }
     }
@@ -181,99 +188,135 @@ RelaxationPtr getRelaxation(EnvPtr env, ProblemPtr p, int& status,
 }
 
 void addMcCormick(RelaxationPtr rel, VariablePtr y, VariablePtr x, double lb,
-                  double ub) {
+                  double ub, double scale, bool isScaled) {
   LinearFunctionPtr lf = (LinearFunctionPtr) new LinearFunction();
   FunctionPtr f;
+  ConstraintPtr c;
 
   // Secant
-  lf->incTerm(y, 1.0);
+  lf->incTerm(y, isScaled ? scale : 1.0);
   lf->incTerm(x, -(lb + ub));
   f = (FunctionPtr) new Function(lf);
-  rel->newConstraint(f, -INFINITY, -lb * ub);
+  c = rel->newConstraint(f, -INFINITY, -lb * ub);
+  if (showCuts) {
+    c->write(std::cout);
+  }
 
   // Tangent at lb
   lf = (LinearFunctionPtr) new LinearFunction();
-  lf->incTerm(y, 1.0);
+  lf->incTerm(y, isScaled ? scale : 1.0);
   lf->incTerm(x, -2 * lb);
   f = (FunctionPtr) new Function(lf);
-  rel->newConstraint(f, -lb * lb, INFINITY);
+  c = rel->newConstraint(f, -lb * lb, INFINITY);
+  if (showCuts) {
+    c->write(std::cout);
+  }
 
   // Tangent at ub
   lf = (LinearFunctionPtr) new LinearFunction();
-  lf->incTerm(y, 1.0);
+  lf->incTerm(y, isScaled ? scale : 1.0);
   lf->incTerm(x, -2 * ub);
   f = (FunctionPtr) new Function(lf);
-  rel->newConstraint(f, -ub * ub, INFINITY);
+  c = rel->newConstraint(f, -ub * ub, INFINITY);
+  if (showCuts) {
+    c->write(std::cout);
+  }
 }
 
 void addMcCormick(RelaxationPtr rel, VariablePtr y, VariablePtr x1,
-                  VariablePtr x2, double l1, double u1, double l2, double u2) {
+                  VariablePtr x2, double l1, double u1, double l2, double u2,
+                  double scale, bool isScaled) {
   LinearFunctionPtr lf = (LinearFunctionPtr) new LinearFunction();
   FunctionPtr f;
+  ConstraintPtr c;
 
   // Secant at (l1, u2)
-  lf->incTerm(y, 1.0);
+  lf->incTerm(y, isScaled ? scale : 1.0);
   lf->incTerm(x1, -u2);
   lf->incTerm(x2, -l1);
   f = (FunctionPtr) new Function(lf);
-  rel->newConstraint(f, -INFINITY, -l1 * u2);
+  c = rel->newConstraint(f, -INFINITY, -l1 * u2);
+  if (showCuts) {
+    c->write(std::cout);
+  }
 
   // Secant at (u1, l2)
   lf = (LinearFunctionPtr) new LinearFunction();
-  lf->incTerm(y, 1.0);
+  lf->incTerm(y, isScaled ? scale : 1.0);
   lf->incTerm(x1, -l2);
   lf->incTerm(x2, -u1);
   f = (FunctionPtr) new Function(lf);
-  rel->newConstraint(f, -INFINITY, -u1 * l2);
+  c = rel->newConstraint(f, -INFINITY, -u1 * l2);
+  if (showCuts) {
+    c->write(std::cout);
+  }
 
   // Tangent at (l1, l2)
   lf = (LinearFunctionPtr) new LinearFunction();
-  lf->incTerm(y, 1.0);
+  lf->incTerm(y, isScaled ? scale : 1.0);
   lf->incTerm(x1, -l2);
   lf->incTerm(x2, -l1);
   f = (FunctionPtr) new Function(lf);
-  rel->newConstraint(f, -l1 * l2, INFINITY);
+  c = rel->newConstraint(f, -l1 * l2, INFINITY);
+  if (showCuts) {
+    c->write(std::cout);
+  }
 
   // Tangent at (u1, u2)
   lf = (LinearFunctionPtr) new LinearFunction();
-  lf->incTerm(y, 1.0);
+  lf->incTerm(y, isScaled ? scale : 1.0);
   lf->incTerm(x1, -u2);
   lf->incTerm(x2, -u1);
   f = (FunctionPtr) new Function(lf);
-  rel->newConstraint(f, -u1 * u2, INFINITY);
+  c = rel->newConstraint(f, -u1 * u2, INFINITY);
+  if (showCuts) {
+    c->write(std::cout);
+  }
 }
 
 void addMcCormick(RelaxationPtr rel, VariablePtr y, LinearFunctionPtr lf,
-                  double d, double lb, double ub) {
+                  double d, double lb, double ub, double scale, bool isScaled) {
   LinearFunctionPtr lf1 = lf->clone();
   FunctionPtr f;
+  ConstraintPtr c;
 
   // Secant
   lf1->multiply(-(lb + ub));
-  lf1->incTerm(y, 1.0);
+  lf1->incTerm(y, isScaled ? scale : 1.0);
   f = (FunctionPtr) new Function(lf1);
-  rel->newConstraint(f, -INFINITY, (lb + ub) * d - lb * ub);
+  c = rel->newConstraint(f, -INFINITY, (lb + ub) * d - lb * ub);
+  if (showCuts) {
+    c->write(std::cout);
+  }
 
   // Tangent at lb
   lf1 = lf->clone();
   lf1->multiply(-2 * lb);
-  lf1->incTerm(y, 1.0);
+  lf1->incTerm(y, isScaled ? scale : 1.0);
   f = (FunctionPtr) new Function(lf1);
-  rel->newConstraint(f, 2 * lb * d - lb * lb, INFINITY);
+  c = rel->newConstraint(f, 2 * lb * d - lb * lb, INFINITY);
+  if (showCuts) {
+    c->write(std::cout);
+  }
 
   // Tangent at ub
   lf1 = lf->clone();
   lf1->multiply(-2 * ub);
-  lf1->incTerm(y, 1.0);
+  lf1->incTerm(y, isScaled ? scale : 1.0);
   f = (FunctionPtr) new Function(lf1);
-  rel->newConstraint(f, 2 * ub * d - ub * ub, INFINITY);
+  c = rel->newConstraint(f, 2 * ub * d - ub * ub, INFINITY);
+  if (showCuts) {
+    c->write(std::cout);
+  }
 }
 
 void addMcCormick(RelaxationPtr rel, VariablePtr y, LinearFunctionPtr lf1,
                   double d1, LinearFunctionPtr lf2, double d2, double l1,
-                  double u1, double l2, double u2) {
+                  double u1, double l2, double u2, double scale,
+                  bool isScaled) {
   LinearFunctionPtr lfnew, lf1clone, lf2clone;
   FunctionPtr f;
+  ConstraintPtr c;
 
   // Secant at (l1, u2)
   lf1clone = lf1->clone();
@@ -281,9 +324,12 @@ void addMcCormick(RelaxationPtr rel, VariablePtr y, LinearFunctionPtr lf1,
   lf1clone->multiply(-u2);
   lf2clone->multiply(-l1);
   lfnew = lf1clone->copyAdd(lf2clone);
-  lfnew->incTerm(y, 1.0);
+  lfnew->incTerm(y, isScaled ? scale : 1.0);
   f = (FunctionPtr) new Function(lfnew);
-  rel->newConstraint(f, -INFINITY, u2 * d1 + l1 * d2 - l1 * u2);
+  c = rel->newConstraint(f, -INFINITY, u2 * d1 + l1 * d2 - l1 * u2);
+  if (showCuts) {
+    c->write(std::cout);
+  }
   delete lf1clone;
   delete lf2clone;
 
@@ -293,9 +339,12 @@ void addMcCormick(RelaxationPtr rel, VariablePtr y, LinearFunctionPtr lf1,
   lf1clone->multiply(-l2);
   lf2clone->multiply(-u1);
   lfnew = lf1clone->copyAdd(lf2clone);
-  lfnew->incTerm(y, 1.0);
+  lfnew->incTerm(y, isScaled ? scale : 1.0);
   f = (FunctionPtr) new Function(lfnew);
-  rel->newConstraint(f, -INFINITY, l2 * d1 + u1 * d2 - u1 * l2);
+  c = rel->newConstraint(f, -INFINITY, l2 * d1 + u1 * d2 - u1 * l2);
+  if (showCuts) {
+    c->write(std::cout);
+  }
   delete lf1clone;
   delete lf2clone;
 
@@ -305,9 +354,12 @@ void addMcCormick(RelaxationPtr rel, VariablePtr y, LinearFunctionPtr lf1,
   lf1clone->multiply(-l2);
   lf2clone->multiply(-l1);
   lfnew = lf1clone->copyAdd(lf2clone);
-  lfnew->incTerm(y, 1.0);
+  lfnew->incTerm(y, isScaled ? scale : 1.0);
   f = (FunctionPtr) new Function(lfnew);
-  rel->newConstraint(f, l2 * d1 + l1 * d2 - l1 * l2, INFINITY);
+  c = rel->newConstraint(f, l2 * d1 + l1 * d2 - l1 * l2, INFINITY);
+  if (showCuts) {
+    c->write(std::cout);
+  }
   delete lf1clone;
   delete lf2clone;
 
@@ -317,53 +369,69 @@ void addMcCormick(RelaxationPtr rel, VariablePtr y, LinearFunctionPtr lf1,
   lf1clone->multiply(-u2);
   lf2clone->multiply(-u1);
   lfnew = lf1clone->copyAdd(lf2clone);
-  lfnew->incTerm(y, 1.0);
+  lfnew->incTerm(y, isScaled ? scale : 1.0);
   f = (FunctionPtr) new Function(lfnew);
-  rel->newConstraint(f, u2 * d1 + u1 * d2 - u1 * u2, INFINITY);
+  c = rel->newConstraint(f, u2 * d1 + u1 * d2 - u1 * u2, INFINITY);
+  if (showCuts) {
+    c->write(std::cout);
+  }
   delete lf1clone;
   delete lf2clone;
 }
 
 void addMcCormick(RelaxationPtr rel, VariablePtr y, VariablePtr x,
                   LinearFunctionPtr lf, double d, double l1, double u1,
-                  double l2, double u2) {
+                  double l2, double u2, double scale, bool isScaled) {
   LinearFunctionPtr lf1 = lf->clone();
   FunctionPtr f;
+  ConstraintPtr c;
 
   // Secant at (l1, u2)
   lf1->multiply(-l1);
   lf1->incTerm(x, -u2);
-  lf1->incTerm(y, 1.0);
+  lf1->incTerm(y, isScaled ? scale : 1.0);
   f = (FunctionPtr) new Function(lf1);
-  rel->newConstraint(f, -INFINITY, l1 * d - l1 * u2);
+  c = rel->newConstraint(f, -INFINITY, l1 * d - l1 * u2);
+  if (showCuts) {
+    c->write(std::cout);
+  }
 
   // Secant at (u1, l2)
   lf1 = lf->clone();
   lf1->multiply(-u1);
   lf1->incTerm(x, -l2);
-  lf1->incTerm(y, 1.0);
+  lf1->incTerm(y, isScaled ? scale : 1.0);
   f = (FunctionPtr) new Function(lf1);
-  rel->newConstraint(f, -INFINITY, u1 * d - u1 * l2);
+  c = rel->newConstraint(f, -INFINITY, u1 * d - u1 * l2);
+  if (showCuts) {
+    c->write(std::cout);
+  }
 
   // Tangent at (l1, l2)
   lf1 = lf->clone();
   lf1->multiply(-l1);
   lf1->incTerm(x, -l2);
-  lf1->incTerm(y, 1.0);
+  lf1->incTerm(y, isScaled ? scale : 1.0);
   f = (FunctionPtr) new Function(lf1);
-  rel->newConstraint(f, l1 * d - l1 * l2, INFINITY);
+  c = rel->newConstraint(f, l1 * d - l1 * l2, INFINITY);
+  if (showCuts) {
+    c->write(std::cout);
+  }
 
   // Tangent at (u1, u2)
   lf1 = lf->clone();
   lf1->multiply(-u1);
   lf1->incTerm(x, -u2);
-  lf1->incTerm(y, 1.0);
+  lf1->incTerm(y, isScaled ? scale : 1.0);
   f = (FunctionPtr) new Function(lf1);
-  rel->newConstraint(f, u1 * d - u1 * u2, INFINITY);
+  c = rel->newConstraint(f, u1 * d - u1 * u2, INFINITY);
+  if (showCuts) {
+    c->write(std::cout);
+  }
 }
 
 int getNewVar(RelaxationPtr rel, SimplexQuadCutGenPtr cutgen, int x1, int x2,
-              char productType) {
+              char productType, double& scale, bool& isScaled) {
   double l1, u1, l2, u2;
   double lb = 0.0, ub = 0.0;
   VariablePtr v, v1, v2;
@@ -377,8 +445,14 @@ int getNewVar(RelaxationPtr rel, SimplexQuadCutGenPtr cutgen, int x1, int x2,
         l1 = v1->getLb();
         u1 = v1->getUb();
         BoundsOnSquare(l1, u1, lb, ub);
+        scale = std::max(fabs(lb), fabs(ub));
+        isScaled = scale > 1000;
+        if (isScaled) {
+          lb = lb / scale;
+          ub = ub / scale;
+        }
         v = rel->newVariable(lb, ub, Continuous);
-        addMcCormick(rel, v, v1, l1, u1);
+        addMcCormick(rel, v, v1, l1, u1, scale, isScaled);
       } else {
         v1 = rel->getVariable(x1);
         v2 = rel->getVariable(x2);
@@ -387,8 +461,14 @@ int getNewVar(RelaxationPtr rel, SimplexQuadCutGenPtr cutgen, int x1, int x2,
         l2 = v2->getLb();
         u2 = v2->getUb();
         BoundsOnProduct(true, l1, u1, l2, u2, lb, ub);
+        scale = std::max(fabs(lb), fabs(ub));
+        isScaled = scale > 1000;
+        if (isScaled) {
+          lb = lb / scale;
+          ub = ub / scale;
+        }
         v = rel->newVariable(lb, ub, Continuous);
-        addMcCormick(rel, v, v1, v2, l1, u1, l2, u2);
+        addMcCormick(rel, v, v1, v2, l1, u1, l2, u2, scale, isScaled);
       }
       break;
     case 'c':
@@ -396,11 +476,17 @@ int getNewVar(RelaxationPtr rel, SimplexQuadCutGenPtr cutgen, int x1, int x2,
         l1 = cutgen->getSlackLb(x1);
         u1 = cutgen->getSlackUb(x1);
         BoundsOnSquare(l1, u1, lb, ub);
+        scale = std::max(fabs(lb), fabs(ub));
+        isScaled = scale > 1000;
+        if (isScaled) {
+          lb = lb / scale;
+          ub = ub / scale;
+        }
         v = rel->newVariable(lb, ub, Continuous);
         lf1 = (LinearFunctionPtr) new LinearFunction();
         d1 = 0.0;
         cutgen->getAffineFnForSlack(rel, x1, lf1, d1);
-        addMcCormick(rel, v, lf1, d1, l1, u1);
+        addMcCormick(rel, v, lf1, d1, l1, u1, scale, isScaled);
         delete lf1;
       } else {
         l1 = cutgen->getSlackLb(x1);
@@ -408,6 +494,12 @@ int getNewVar(RelaxationPtr rel, SimplexQuadCutGenPtr cutgen, int x1, int x2,
         l2 = cutgen->getSlackLb(x2);
         u2 = cutgen->getSlackUb(x2);
         BoundsOnProduct(true, l1, u1, l2, u2, lb, ub);
+        scale = std::max(fabs(lb), fabs(ub));
+        isScaled = scale > 1000;
+        if (isScaled) {
+          lb = lb / scale;
+          ub = ub / scale;
+        }
         v = rel->newVariable(lb, ub, Continuous);
         lf1 = (LinearFunctionPtr) new LinearFunction();
         d1 = 0.0;
@@ -415,7 +507,7 @@ int getNewVar(RelaxationPtr rel, SimplexQuadCutGenPtr cutgen, int x1, int x2,
         lf2 = (LinearFunctionPtr) new LinearFunction();
         d2 = 0.0;
         cutgen->getAffineFnForSlack(rel, x2, lf2, d2);
-        addMcCormick(rel, v, lf1, d1, lf2, d2, l1, u1, l2, u2);
+        addMcCormick(rel, v, lf1, d1, lf2, d2, l1, u1, l2, u2, scale, isScaled);
         delete lf1;
         delete lf2;
       }
@@ -427,17 +519,25 @@ int getNewVar(RelaxationPtr rel, SimplexQuadCutGenPtr cutgen, int x1, int x2,
       l2 = cutgen->getSlackLb(x2);
       u2 = cutgen->getSlackUb(x2);
       BoundsOnProduct(true, l1, u1, l2, u2, lb, ub);
+      scale = std::max(fabs(lb), fabs(ub));
+      isScaled = scale > 1000;
+      if (isScaled) {
+        lb = lb / scale;
+        ub = ub / scale;
+      }
       v = rel->newVariable(lb, ub, Continuous);
       lf2 = (LinearFunctionPtr) new LinearFunction();
       d2 = 0.0;
       cutgen->getAffineFnForSlack(rel, x2, lf2, d2);
-      addMcCormick(rel, v, v1, lf2, d2, l1, u1, l2, u2);
+      addMcCormick(rel, v, v1, lf2, d2, l1, u1, l2, u2, scale, isScaled);
       delete lf2;
   }
   return v->getIndex();
 }
 
-void addTerm(std::map<int, double>& t, int v, double coef) {
+void addTerm(std::map<int, double>& t, int v, double coef, double scale,
+             bool isScaled) {
+  coef = isScaled ? scale * coef : coef;
   if (fabs(coef) > 1e-6) {
     std::map<int, double>::iterator it = t.find(v);
     if (it == t.end()) {
@@ -461,6 +561,7 @@ void addCutToRel(RelaxationPtr rel, SimplexQuadCutGenPtr cutgen,
   FunctionPtr f;
   double ds;
   std::map<int, double>::iterator it;
+  ConstraintPtr c;
 
   for (it = cutCoefo.begin(); it != cutCoefo.end(); ++it) {
     lf->incTerm(rel->getVariable(it->first), it->second);
@@ -477,7 +578,10 @@ void addCutToRel(RelaxationPtr rel, SimplexQuadCutGenPtr cutgen,
   }
 
   f = (FunctionPtr) new Function(lf);
-  rel->newConstraint(f, clb - cutConst, cub - cutConst);
+  c = rel->newConstraint(f, clb - cutConst, cub - cutConst);
+  if (showCuts) {
+    c->write(std::cout);
+  }
 }
 
 void updateRel(EnvPtr env, RelaxationPtr rel, SimplexQuadCutGenPtr cutgen,
@@ -489,6 +593,8 @@ void updateRel(EnvPtr env, RelaxationPtr rel, SimplexQuadCutGenPtr cutgen,
   double etol = 1e-6;
   int y;
   AuxVarsPtr aptr;
+  double scale = 1.0;
+  bool isScaled = false;
 
   cutgen->preprocessSimplexTab();
   cutgen->getQuadratic(c, x, rel, oxo, oxs, sxs, cutCoefo, cutCoefs, cutConst);
@@ -497,26 +603,30 @@ void updateRel(EnvPtr env, RelaxationPtr rel, SimplexQuadCutGenPtr cutgen,
     if (fabs(it->second) < etol) {
       continue;
     }
-    y = findY(auxVars, it->first.first, it->first.second, 'v');
+    y = findY(auxVars, it->first.first, it->first.second, 'v', scale, isScaled);
     if (y == -1) {
-      y = getNewVar(rel, cutgen, it->first.first, it->first.second, 'v');
+      y = getNewVar(rel, cutgen, it->first.first, it->first.second, 'v', scale,
+                    isScaled);
       aptr = (AuxVarsPtr) new AuxVars();
       aptr->x1 = it->first.first;
       aptr->x2 = it->first.second;
       aptr->productType = 'v';
       aptr->y = y;
+      aptr->isScaled = isScaled;
+      aptr->scale = isScaled ? scale : 1.0;
       auxVars.push_back(aptr);
     }
-    addTerm(cutCoefo, y, it->second);
+    addTerm(cutCoefo, y, it->second, scale, isScaled);
   }
 
   for (QuadTerm::iterator it = oxs.begin(); it != oxs.end(); ++it) {
     if (fabs(it->second) < etol) {
       continue;
     }
-    y = findY(auxVars, it->first.first, it->first.second, 'm');
+    y = findY(auxVars, it->first.first, it->first.second, 'm', scale, isScaled);
     if (y == -1) {
-      y = getNewVar(rel, cutgen, it->first.first, it->first.second, 'm');
+      y = getNewVar(rel, cutgen, it->first.first, it->first.second, 'm', scale,
+                    isScaled);
       aptr = (AuxVarsPtr) new AuxVars();
       aptr->x1 = it->first.first;
       aptr->x2 = it->first.second;
@@ -524,16 +634,17 @@ void updateRel(EnvPtr env, RelaxationPtr rel, SimplexQuadCutGenPtr cutgen,
       aptr->y = y;
       auxVars.push_back(aptr);
     }
-    addTerm(cutCoefo, y, it->second);
+    addTerm(cutCoefo, y, it->second, scale, isScaled);
   }
 
   for (QuadTerm::iterator it = sxs.begin(); it != sxs.end(); ++it) {
     if (fabs(it->second) < etol) {
       continue;
     }
-    y = findY(auxVars, it->first.first, it->first.second, 'c');
+    y = findY(auxVars, it->first.first, it->first.second, 'c', scale, isScaled);
     if (y == -1) {
-      y = getNewVar(rel, cutgen, it->first.first, it->first.second, 'c');
+      y = getNewVar(rel, cutgen, it->first.first, it->first.second, 'c', scale,
+                    isScaled);
       aptr = (AuxVarsPtr) new AuxVars();
       aptr->x1 = it->first.first;
       aptr->x2 = it->first.second;
@@ -541,7 +652,7 @@ void updateRel(EnvPtr env, RelaxationPtr rel, SimplexQuadCutGenPtr cutgen,
       aptr->y = y;
       auxVars.push_back(aptr);
     }
-    addTerm(cutCoefo, y, it->second);
+    addTerm(cutCoefo, y, it->second, scale, isScaled);
   }
 
   addCutToRel(rel, cutgen, cutCoefo, cutCoefs, cutConst, c->getLb(),
@@ -610,7 +721,6 @@ RelaxationPtr solveRelaxation(EnvPtr env, ProblemPtr p, RelaxationPtr rel,
   sol = lpe->getSolution();
 
   std::cout << "Lower bound = " << sol->getObjValue() << std::endl;
-  ;
 
   is_feas = isFeasible(env, p, sol, newrel, auxVars, lpe);
   if (is_feas) {
@@ -788,6 +898,8 @@ int main(int argc, char** argv) {
     aptr->x2 = itr->first.second;
     aptr->y = itr->second;
     aptr->productType = 'v';
+    aptr->scale = 1.0;
+    aptr->isScaled = false;
     auxVars.push_back(aptr);
   }
   map4origAux.clear();
