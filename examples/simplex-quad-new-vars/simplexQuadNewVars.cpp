@@ -40,6 +40,7 @@
 using namespace Minotaur;
 
 bool showCuts = false;
+bool showQuadVars = false;
 int numCons = 0;
 double* dualVec = 0;
 
@@ -460,6 +461,15 @@ int getNewVar(RelaxationPtr rel, SimplexQuadCutGenPtr cutgen, int x1, int x2,
           ub = ub / scale;
         }
         v = rel->newVariable(lb, ub, Continuous);
+        if (showQuadVars) {
+          if (scale > 1000) {
+            std::cout << scale << "*" << v->getName() << " = " << v1->getName()
+                      << "^2" << std::endl;
+          } else {
+            std::cout << v->getName() << " = " << v1->getName() << "^2"
+                      << std::endl;
+          }
+        }
         addMcCormick(rel, v, v1, l1, u1, scale, isScaled);
       } else {
         v1 = rel->getVariable(x1);
@@ -476,6 +486,15 @@ int getNewVar(RelaxationPtr rel, SimplexQuadCutGenPtr cutgen, int x1, int x2,
           ub = ub / scale;
         }
         v = rel->newVariable(lb, ub, Continuous);
+        if (showQuadVars) {
+          if (scale > 1000) {
+            std::cout << scale << "*" << v->getName() << " = " << v1->getName()
+                      << "*" << v2->getName() << std::endl;
+          } else {
+            std::cout << v->getName() << " = " << v1->getName() << "*"
+                      << v2->getName() << std::endl;
+          }
+        }
         addMcCormick(rel, v, v1, v2, l1, u1, l2, u2, scale, isScaled);
       }
       break;
@@ -494,6 +513,15 @@ int getNewVar(RelaxationPtr rel, SimplexQuadCutGenPtr cutgen, int x1, int x2,
         lf1 = (LinearFunctionPtr) new LinearFunction();
         d1 = 0.0;
         cutgen->getAffineFnForSlack(rel, x1, lf1, d1);
+        if (showQuadVars) {
+          if (scale > 1000) {
+            std::cout << scale << "*" << v->getName() << " = "
+                      << rel->getConstraint(x1)->getName() << "^2" << std::endl;
+          } else {
+            std::cout << v->getName() << " = "
+                      << rel->getConstraint(x1)->getName() << "^2" << std::endl;
+          }
+        }
         addMcCormick(rel, v, lf1, d1, l1, u1, scale, isScaled);
         delete lf1;
       } else {
@@ -515,6 +543,17 @@ int getNewVar(RelaxationPtr rel, SimplexQuadCutGenPtr cutgen, int x1, int x2,
         lf2 = (LinearFunctionPtr) new LinearFunction();
         d2 = 0.0;
         cutgen->getAffineFnForSlack(rel, x2, lf2, d2);
+        if (showQuadVars) {
+          if (scale > 1000) {
+            std::cout << scale << "*" << v->getName() << " = "
+                      << rel->getConstraint(x1)->getName() << "*"
+                      << rel->getConstraint(x2)->getName() << std::endl;
+          } else {
+            std::cout << v->getName() << " = "
+                      << rel->getConstraint(x1)->getName() << "*"
+                      << rel->getConstraint(x2)->getName() << std::endl;
+          }
+        }
         addMcCormick(rel, v, lf1, d1, lf2, d2, l1, u1, l2, u2, scale, isScaled);
         delete lf1;
         delete lf2;
@@ -537,6 +576,15 @@ int getNewVar(RelaxationPtr rel, SimplexQuadCutGenPtr cutgen, int x1, int x2,
       lf2 = (LinearFunctionPtr) new LinearFunction();
       d2 = 0.0;
       cutgen->getAffineFnForSlack(rel, x2, lf2, d2);
+      if (showQuadVars) {
+        if (scale > 1000) {
+          std::cout << scale << "*" << v->getName() << " = " << v1->getName()
+                    << "*" << rel->getConstraint(x2)->getName() << std::endl;
+        } else {
+          std::cout << v->getName() << " = " << v1->getName() << "*"
+                    << rel->getConstraint(x2)->getName() << std::endl;
+        }
+      }
       addMcCormick(rel, v, v1, lf2, d2, l1, u1, l2, u2, scale, isScaled);
       delete lf2;
   }
@@ -589,6 +637,7 @@ void addCutToRel(RelaxationPtr rel, SimplexQuadCutGenPtr cutgen,
   c = rel->newConstraint(f, clb > -INFINITY ? clb - cutConst : -INFINITY,
                          cub < INFINITY ? cub - cutConst : INFINITY);
   if (showCuts) {
+    std::cout << "Actual cut" << std::endl;
     c->write(std::cout);
   }
 }
@@ -603,6 +652,7 @@ void updateRel(EnvPtr env, RelaxationPtr rel, SimplexQuadCutGenPtr cutgen,
   int y;
   AuxVarsPtr aptr;
   double scale = 1.0;
+  double clb, cub;
   bool isScaled = false;
 
   cutgen->preprocessSimplexTab();
@@ -632,6 +682,11 @@ void updateRel(EnvPtr env, RelaxationPtr rel, SimplexQuadCutGenPtr cutgen,
     if (fabs(it->second) < etol) {
       continue;
     }
+    clb = rel->getConstraint(it->first.second)->getLb();
+    cub = rel->getConstraint(it->first.second)->getUb();
+    if (cub - clb < etol) {
+      continue;
+    }
     y = findY(auxVars, it->first.first, it->first.second, 'm', scale, isScaled);
     if (y == -1) {
       y = getNewVar(rel, cutgen, it->first.first, it->first.second, 'm', scale,
@@ -641,6 +696,8 @@ void updateRel(EnvPtr env, RelaxationPtr rel, SimplexQuadCutGenPtr cutgen,
       aptr->x2 = it->first.second;
       aptr->productType = 'm';
       aptr->y = y;
+      aptr->isScaled = isScaled;
+      aptr->scale = isScaled ? scale : 1.0;
       auxVars.push_back(aptr);
     }
     addTerm(cutCoefo, y, it->second, scale, isScaled);
@@ -648,6 +705,16 @@ void updateRel(EnvPtr env, RelaxationPtr rel, SimplexQuadCutGenPtr cutgen,
 
   for (QuadTerm::iterator it = sxs.begin(); it != sxs.end(); ++it) {
     if (fabs(it->second) < etol) {
+      continue;
+    }
+    clb = rel->getConstraint(it->first.first)->getLb();
+    cub = rel->getConstraint(it->first.first)->getUb();
+    if (cub - clb < etol) {
+      continue;
+    }
+    clb = rel->getConstraint(it->first.second)->getLb();
+    cub = rel->getConstraint(it->first.second)->getUb();
+    if (cub - clb < etol) {
       continue;
     }
     y = findY(auxVars, it->first.first, it->first.second, 'c', scale, isScaled);
@@ -659,6 +726,8 @@ void updateRel(EnvPtr env, RelaxationPtr rel, SimplexQuadCutGenPtr cutgen,
       aptr->x2 = it->first.second;
       aptr->productType = 'c';
       aptr->y = y;
+      aptr->isScaled = isScaled;
+      aptr->scale = isScaled ? scale : 1.0;
       auxVars.push_back(aptr);
     }
     addTerm(cutCoefo, y, it->second, scale, isScaled);
