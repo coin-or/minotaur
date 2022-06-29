@@ -11,6 +11,7 @@
 */
 
 #include <cmath>
+#include <cstring>
 #include <iostream>
 
 #include "EngineFactory.h"
@@ -39,6 +40,8 @@
 using namespace Minotaur;
 
 bool showCuts = false;
+int numCons = 0;
+double* dualVec = 0;
 
 struct AuxVars {
   int x1;            // index of the first variable
@@ -156,6 +159,7 @@ RelaxationPtr getRelaxation(EnvPtr env, ProblemPtr p, int& status,
   LinearHandlerPtr lhand = (LinearHandlerPtr) new LinearHandler(env, p);
   QuadHandlerPtr qhand = (QuadHandlerPtr) new QuadHandler(env, p);
   RelaxationPtr rel = (RelaxationPtr) new Relaxation(env);
+  RelaxationPtr shuffrel;
   FunctionType ftype;
   ConstraintPtr c;
   bool is_inf = false;
@@ -180,9 +184,13 @@ RelaxationPtr getRelaxation(EnvPtr env, ProblemPtr p, int& status,
   }
 
   qhand->fillmap4auxVars(map4origAux);
+  // shuffrel =
+  //  (RelaxationPtr) new Relaxation(rel->shuffle(false, true, env), env);
+  // shuffrel->setProblem(p);
 
   delete lhand;
   delete qhand;
+  // delete rel;
 
   return rel;
 }
@@ -578,7 +586,8 @@ void addCutToRel(RelaxationPtr rel, SimplexQuadCutGenPtr cutgen,
   }
 
   f = (FunctionPtr) new Function(lf);
-  c = rel->newConstraint(f, clb - cutConst, cub - cutConst);
+  c = rel->newConstraint(f, clb > -INFINITY ? clb - cutConst : -INFINITY,
+                         cub < INFINITY ? cub - cutConst : INFINITY);
   if (showCuts) {
     c->write(std::cout);
   }
@@ -586,7 +595,7 @@ void addCutToRel(RelaxationPtr rel, SimplexQuadCutGenPtr cutgen,
 
 void updateRel(EnvPtr env, RelaxationPtr rel, SimplexQuadCutGenPtr cutgen,
                AuxVarVector& auxVars, const double* x, LPEnginePtr lpe,
-               ConstraintPtr c) {
+               ConstraintPtr c, bool ubinf, bool lbinf) {
   QuadTerm oxo, oxs, sxs;
   std::map<int, double> cutCoefo, cutCoefs;
   double cutConst = 0.0;
@@ -655,8 +664,8 @@ void updateRel(EnvPtr env, RelaxationPtr rel, SimplexQuadCutGenPtr cutgen,
     addTerm(cutCoefo, y, it->second, scale, isScaled);
   }
 
-  addCutToRel(rel, cutgen, cutCoefo, cutCoefs, cutConst, c->getLb(),
-              c->getUb());
+  addCutToRel(rel, cutgen, cutCoefo, cutCoefs, cutConst,
+              lbinf ? c->getLb() : -INFINITY, ubinf ? c->getUb() : INFINITY);
   oxo.clear();
   oxs.clear();
   sxs.clear();
@@ -691,7 +700,7 @@ bool isFeasible(EnvPtr env, ProblemPtr p, ConstSolutionPtr sol,
         lbinf = (act < clb - at) && (clb == 0 || act < clb - fabs(clb) * rt);
         if (ubinf || lbinf) {
           is_feas = false;
-          updateRel(env, rel, cutgen, auxVars, x, lpe, c);
+          updateRel(env, rel, cutgen, auxVars, x, lpe, c, ubinf, lbinf);
         }
       } else {
         std::cout << c->getName() << " Constraint not defined at this point."
@@ -704,21 +713,45 @@ bool isFeasible(EnvPtr env, ProblemPtr p, ConstSolutionPtr sol,
   return is_feas;
 }
 
+void resizeDualVec(int newSize) {
+  double* newVec = new double[newSize];
+  std::memset(newVec, 0.0, newSize * sizeof(double));
+  std::memcpy(newVec, dualVec, numCons * sizeof(double));
+
+  numCons = newSize;
+  delete[] dualVec;
+  dualVec = newVec;
+}
+
 RelaxationPtr solveRelaxation(EnvPtr env, ProblemPtr p, RelaxationPtr rel,
                               EngineFactory* efac, bool& is_feas, int& status,
                               AuxVarVector& auxVars) {
   LPEnginePtr lpe = efac->getLPEngine();
   ConstSolutionPtr sol;
   RelaxationPtr newrel = rel->clone(env);
+  const double* dualCons;
 
   /* TO DO : Instead of directly loading and solving the problem
    * we should get the dual information of the previous iteration
    * and then set extra dual variables to zero to warm start
    * dual simplex algorithm
    */
+
   lpe->load(rel);
-  lpe->solve();
+  if (dualVec) {
+    resizeDualVec(rel->getNumCons());
+    lpe->loadDualWarmStart(numCons, dualVec);
+    lpe->solve();
+  } else {
+    numCons = rel->getNumCons();
+    dualVec = new double[numCons];
+    lpe->solve();
+  }
   sol = lpe->getSolution();
+
+  dualCons = sol->getDualOfCons();
+  std::memcpy(dualVec, dualCons, numCons * sizeof(double));
+  // delete[] dualCons;
 
   std::cout << "Lower bound = " << sol->getObjValue() << std::endl;
 
@@ -911,7 +944,7 @@ int main(int argc, char** argv) {
     if (is_feas) {
       break;
     }
-    rel = solveRelaxation(env, inst, rel, efac, is_feas, status, auxVars);
+    rel = solveRelaxation(env, p, rel, efac, is_feas, status, auxVars);
   }
 
 CLEANUP:
