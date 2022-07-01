@@ -203,30 +203,30 @@ void addMcCormick(RelaxationPtr rel, VariablePtr y, VariablePtr x, double lb,
   ConstraintPtr c;
 
   // Secant
-  lf->incTerm(y, isScaled ? scale : 1.0);
-  lf->incTerm(x, -(lb + ub));
+  lf->incTerm(y, 1.0);
+  lf->incTerm(x, isScaled ? -(lb + ub) / scale : -(lb + ub));
   f = (FunctionPtr) new Function(lf);
-  c = rel->newConstraint(f, -INFINITY, -lb * ub);
+  c = rel->newConstraint(f, -INFINITY, isScaled ? -lb * ub / scale : -lb * ub);
   if (showCuts) {
     c->write(std::cout);
   }
 
   // Tangent at lb
   lf = (LinearFunctionPtr) new LinearFunction();
-  lf->incTerm(y, isScaled ? scale : 1.0);
-  lf->incTerm(x, -2 * lb);
+  lf->incTerm(y, 1.0);
+  lf->incTerm(x, isScaled ? -2 * lb / scale : -2 * lb);
   f = (FunctionPtr) new Function(lf);
-  c = rel->newConstraint(f, -lb * lb, INFINITY);
+  c = rel->newConstraint(f, isScaled ? -lb * lb / scale : -lb * lb, INFINITY);
   if (showCuts) {
     c->write(std::cout);
   }
 
   // Tangent at ub
   lf = (LinearFunctionPtr) new LinearFunction();
-  lf->incTerm(y, isScaled ? scale : 1.0);
-  lf->incTerm(x, -2 * ub);
+  lf->incTerm(y, 1.0);
+  lf->incTerm(x, isScaled ? -2 * ub / scale : -2 * ub);
   f = (FunctionPtr) new Function(lf);
-  c = rel->newConstraint(f, -ub * ub, INFINITY);
+  c = rel->newConstraint(f, isScaled ? -ub * ub / scale : -ub * ub, INFINITY);
   if (showCuts) {
     c->write(std::cout);
   }
@@ -240,44 +240,44 @@ void addMcCormick(RelaxationPtr rel, VariablePtr y, VariablePtr x1,
   ConstraintPtr c;
 
   // Secant at (l1, u2)
-  lf->incTerm(y, isScaled ? scale : 1.0);
-  lf->incTerm(x1, -u2);
-  lf->incTerm(x2, -l1);
+  lf->incTerm(y, 1.0);
+  lf->incTerm(x1, isScaled ? -u2 / scale : -u2);
+  lf->incTerm(x2, isScaled ? -l1 / scale : -l1);
   f = (FunctionPtr) new Function(lf);
-  c = rel->newConstraint(f, -INFINITY, -l1 * u2);
+  c = rel->newConstraint(f, -INFINITY, isScaled ? -l1 * u2 / scale : -l1 * u2);
   if (showCuts) {
     c->write(std::cout);
   }
 
   // Secant at (u1, l2)
   lf = (LinearFunctionPtr) new LinearFunction();
-  lf->incTerm(y, isScaled ? scale : 1.0);
-  lf->incTerm(x1, -l2);
-  lf->incTerm(x2, -u1);
+  lf->incTerm(y, 1.0);
+  lf->incTerm(x1, isScaled ? -l2 / scale : -l2);
+  lf->incTerm(x2, isScaled ? -u1 / scale : -u1);
   f = (FunctionPtr) new Function(lf);
-  c = rel->newConstraint(f, -INFINITY, -u1 * l2);
+  c = rel->newConstraint(f, -INFINITY, isScaled ? -u1 * l2 / scale : -u1 * l2);
   if (showCuts) {
     c->write(std::cout);
   }
 
   // Tangent at (l1, l2)
   lf = (LinearFunctionPtr) new LinearFunction();
-  lf->incTerm(y, isScaled ? scale : 1.0);
-  lf->incTerm(x1, -l2);
-  lf->incTerm(x2, -l1);
+  lf->incTerm(y, 1.0);
+  lf->incTerm(x1, isScaled ? -l2 / scale : -l2);
+  lf->incTerm(x2, isScaled ? -l1 / scale : -l1);
   f = (FunctionPtr) new Function(lf);
-  c = rel->newConstraint(f, -l1 * l2, INFINITY);
+  c = rel->newConstraint(f, isScaled ? -l1 * l2 / scale : -l1 * l2, INFINITY);
   if (showCuts) {
     c->write(std::cout);
   }
 
   // Tangent at (u1, u2)
   lf = (LinearFunctionPtr) new LinearFunction();
-  lf->incTerm(y, isScaled ? scale : 1.0);
-  lf->incTerm(x1, -u2);
-  lf->incTerm(x2, -u1);
+  lf->incTerm(y, 1.0);
+  lf->incTerm(x1, isScaled ? -u2 / scale : -u2);
+  lf->incTerm(x2, isScaled ? -u1 / scale : -u1);
   f = (FunctionPtr) new Function(lf);
-  c = rel->newConstraint(f, -u1 * u2, INFINITY);
+  c = rel->newConstraint(f, isScaled ? -u1 * u2 / scale : -u1 * u2, INFINITY);
   if (showCuts) {
     c->write(std::cout);
   }
@@ -290,30 +290,36 @@ void addMcCormick(RelaxationPtr rel, VariablePtr y, LinearFunctionPtr lf,
   ConstraintPtr c;
 
   // Secant
-  lf1->multiply(-(lb + ub));
-  lf1->incTerm(y, isScaled ? scale : 1.0);
+  lf1->multiply(isScaled ? -(lb + ub) / scale : -(lb + ub));
+  lf1->incTerm(y, 1.0);
   f = (FunctionPtr) new Function(lf1);
-  c = rel->newConstraint(f, -INFINITY, (lb + ub) * d - lb * ub);
+  c = rel->newConstraint(
+      f, -INFINITY,
+      isScaled ? ((lb + ub) * d - lb * ub) / scale : (lb + ub) * d - lb * ub);
   if (showCuts) {
     c->write(std::cout);
   }
 
   // Tangent at lb
   lf1 = lf->clone();
-  lf1->multiply(-2 * lb);
-  lf1->incTerm(y, isScaled ? scale : 1.0);
+  lf1->multiply(isScaled ? -2 * lb / scale : -2 * lb);
+  lf1->incTerm(y, 1.0);
   f = (FunctionPtr) new Function(lf1);
-  c = rel->newConstraint(f, 2 * lb * d - lb * lb, INFINITY);
+  c = rel->newConstraint(
+      f, isScaled ? (2 * lb * d - lb * lb) / scale : 2 * lb * d - lb * lb,
+      INFINITY);
   if (showCuts) {
     c->write(std::cout);
   }
 
   // Tangent at ub
   lf1 = lf->clone();
-  lf1->multiply(-2 * ub);
-  lf1->incTerm(y, isScaled ? scale : 1.0);
+  lf1->multiply(isScaled ? -2 * ub / scale : -2 * ub);
+  lf1->incTerm(y, 1.0);
   f = (FunctionPtr) new Function(lf1);
-  c = rel->newConstraint(f, 2 * ub * d - ub * ub, INFINITY);
+  c = rel->newConstraint(
+      f, isScaled ? (2 * ub * d - ub * ub) / scale : 2 * ub * d - ub * ub,
+      INFINITY);
   if (showCuts) {
     c->write(std::cout);
   }
@@ -330,12 +336,14 @@ void addMcCormick(RelaxationPtr rel, VariablePtr y, LinearFunctionPtr lf1,
   // Secant at (l1, u2)
   lf1clone = lf1->clone();
   lf2clone = lf2->clone();
-  lf1clone->multiply(-u2);
-  lf2clone->multiply(-l1);
+  lf1clone->multiply(isScaled ? -u2 / scale : -u2);
+  lf2clone->multiply(isScaled ? -l1 / scale : -l1);
   lfnew = lf1clone->copyAdd(lf2clone);
-  lfnew->incTerm(y, isScaled ? scale : 1.0);
+  lfnew->incTerm(y, 1.0);
   f = (FunctionPtr) new Function(lfnew);
-  c = rel->newConstraint(f, -INFINITY, u2 * d1 + l1 * d2 - l1 * u2);
+  c = rel->newConstraint(f, -INFINITY,
+                         isScaled ? (u2 * d1 + l1 * d2 - l1 * u2) / scale
+                                  : u2 * d1 + l1 * d2 - l1 * u2);
   if (showCuts) {
     c->write(std::cout);
   }
@@ -345,12 +353,14 @@ void addMcCormick(RelaxationPtr rel, VariablePtr y, LinearFunctionPtr lf1,
   // Secant at (u1, l2)
   lf1clone = lf1->clone();
   lf2clone = lf2->clone();
-  lf1clone->multiply(-l2);
-  lf2clone->multiply(-u1);
+  lf1clone->multiply(isScaled ? -l2 / scale : -l2);
+  lf2clone->multiply(isScaled ? -u1 / scale : -u1);
   lfnew = lf1clone->copyAdd(lf2clone);
-  lfnew->incTerm(y, isScaled ? scale : 1.0);
+  lfnew->incTerm(y, 1.0);
   f = (FunctionPtr) new Function(lfnew);
-  c = rel->newConstraint(f, -INFINITY, l2 * d1 + u1 * d2 - u1 * l2);
+  c = rel->newConstraint(f, -INFINITY,
+                         isScaled ? (l2 * d1 + u1 * d2 - u1 * l2) / scale
+                                  : l2 * d1 + u1 * d2 - u1 * l2);
   if (showCuts) {
     c->write(std::cout);
   }
@@ -360,12 +370,15 @@ void addMcCormick(RelaxationPtr rel, VariablePtr y, LinearFunctionPtr lf1,
   // Tangent at (l1, l2)
   lf1clone = lf1->clone();
   lf2clone = lf2->clone();
-  lf1clone->multiply(-l2);
-  lf2clone->multiply(-l1);
+  lf1clone->multiply(isScaled ? -l2 / scale : -l2);
+  lf2clone->multiply(isScaled ? -l1 / scale : -l1);
   lfnew = lf1clone->copyAdd(lf2clone);
-  lfnew->incTerm(y, isScaled ? scale : 1.0);
+  lfnew->incTerm(y, 1.0);
   f = (FunctionPtr) new Function(lfnew);
-  c = rel->newConstraint(f, l2 * d1 + l1 * d2 - l1 * l2, INFINITY);
+  c = rel->newConstraint(f,
+                         isScaled ? (l2 * d1 + l1 * d2 - l1 * l2) / scale
+                                  : l2 * d1 + l1 * d2 - l1 * l2,
+                         INFINITY);
   if (showCuts) {
     c->write(std::cout);
   }
@@ -375,12 +388,15 @@ void addMcCormick(RelaxationPtr rel, VariablePtr y, LinearFunctionPtr lf1,
   // Tangent at (u1, u2)
   lf1clone = lf1->clone();
   lf2clone = lf2->clone();
-  lf1clone->multiply(-u2);
-  lf2clone->multiply(-u1);
+  lf1clone->multiply(isScaled ? -u2 / scale : -u2);
+  lf2clone->multiply(isScaled ? -u1 / scale : -u1);
   lfnew = lf1clone->copyAdd(lf2clone);
-  lfnew->incTerm(y, isScaled ? scale : 1.0);
+  lfnew->incTerm(y, 1.0);
   f = (FunctionPtr) new Function(lfnew);
-  c = rel->newConstraint(f, u2 * d1 + u1 * d2 - u1 * u2, INFINITY);
+  c = rel->newConstraint(f,
+                         isScaled ? (u2 * d1 + u1 * d2 - u1 * u2) / scale
+                                  : u2 * d1 + u1 * d2 - u1 * u2,
+                         INFINITY);
   if (showCuts) {
     c->write(std::cout);
   }
@@ -396,44 +412,48 @@ void addMcCormick(RelaxationPtr rel, VariablePtr y, VariablePtr x,
   ConstraintPtr c;
 
   // Secant at (l1, u2)
-  lf1->multiply(-l1);
-  lf1->incTerm(x, -u2);
-  lf1->incTerm(y, isScaled ? scale : 1.0);
+  lf1->multiply(isScaled ? -l1 / scale : -l1);
+  lf1->incTerm(x, isScaled ? -u2 / scale : -u2);
+  lf1->incTerm(y, 1.0);
   f = (FunctionPtr) new Function(lf1);
-  c = rel->newConstraint(f, -INFINITY, l1 * d - l1 * u2);
+  c = rel->newConstraint(
+      f, -INFINITY, isScaled ? (l1 * d - l1 * u2) / scale : l1 * d - l1 * u2);
   if (showCuts) {
     c->write(std::cout);
   }
 
   // Secant at (u1, l2)
   lf1 = lf->clone();
-  lf1->multiply(-u1);
-  lf1->incTerm(x, -l2);
-  lf1->incTerm(y, isScaled ? scale : 1.0);
+  lf1->multiply(isScaled ? -u1 / scale : -u1);
+  lf1->incTerm(x, isScaled ? -l2 / scale : -l2);
+  lf1->incTerm(y, 1.0);
   f = (FunctionPtr) new Function(lf1);
-  c = rel->newConstraint(f, -INFINITY, u1 * d - u1 * l2);
+  c = rel->newConstraint(
+      f, -INFINITY, isScaled ? (u1 * d - u1 * l2) / scale : u1 * d - u1 * l2);
   if (showCuts) {
     c->write(std::cout);
   }
 
   // Tangent at (l1, l2)
   lf1 = lf->clone();
-  lf1->multiply(-l1);
-  lf1->incTerm(x, -l2);
-  lf1->incTerm(y, isScaled ? scale : 1.0);
+  lf1->multiply(isScaled ? -l1 / scale : -l1);
+  lf1->incTerm(x, isScaled ? -l2 / scale : -l2);
+  lf1->incTerm(y, 1.0);
   f = (FunctionPtr) new Function(lf1);
-  c = rel->newConstraint(f, l1 * d - l1 * l2, INFINITY);
+  c = rel->newConstraint(
+      f, isScaled ? (l1 * d - l1 * l2) / scale : l1 * d - l1 * l2, INFINITY);
   if (showCuts) {
     c->write(std::cout);
   }
 
   // Tangent at (u1, u2)
   lf1 = lf->clone();
-  lf1->multiply(-u1);
-  lf1->incTerm(x, -u2);
-  lf1->incTerm(y, isScaled ? scale : 1.0);
+  lf1->multiply(isScaled ? -u1 / scale : -u1);
+  lf1->incTerm(x, isScaled ? -u2 / scale : -u2);
+  lf1->incTerm(y, 1.0);
   f = (FunctionPtr) new Function(lf1);
-  c = rel->newConstraint(f, u1 * d - u1 * u2, INFINITY);
+  c = rel->newConstraint(
+      f, isScaled ? (u1 * d - u1 * u2) / scale : u1 * d - u1 * u2, INFINITY);
   if (showCuts) {
     c->write(std::cout);
   }
@@ -876,6 +896,41 @@ void bringObjToCons(ProblemPtr inst) {
   inst->removeQuadFromObj();
 }
 
+void addTangentsForSqVars(RelaxationPtr rel, AuxVarVector auxVars) {
+  AuxVarsPtr aptr;
+  double lb, ub;
+  VariablePtr x, y;
+  LinearFunctionPtr lf;
+  FunctionPtr f;
+
+  for (AuxVarVector::iterator it = auxVars.begin(); it != auxVars.end(); ++it) {
+    aptr = *it;
+    if (aptr->x1 == aptr->x2) {
+      if (aptr->productType != 'v') {
+        continue;
+      }
+      x = rel->getVariable(aptr->x1);
+      y = rel->getVariable(aptr->y);
+      lb = x->getLb();
+      ub = x->getUb();
+      if (fabs(lb) > 1e-6) {
+        lf = (LinearFunctionPtr) new LinearFunction();
+        lf->addTerm(y, -1.0);
+        lf->addTerm(x, 2 * lb);
+        f = (FunctionPtr) new Function(lf);
+        rel->newConstraint(f, -INFINITY, lb * lb);
+      }
+      if (fabs(ub) > 1e-6) {
+        lf = (LinearFunctionPtr) new LinearFunction();
+        lf->addTerm(y, -1.0);
+        lf->addTerm(x, 2 * ub);
+        f = (FunctionPtr) new Function(lf);
+        rel->newConstraint(f, -INFINITY, ub * ub);
+      }
+    }
+  }
+}
+
 int main(int argc, char** argv) {
   EnvPtr env = (EnvPtr) new Environment();
   ProblemPtr inst = 0;  // instance that needs to be solved.
@@ -1004,6 +1059,8 @@ int main(int argc, char** argv) {
     aptr->isScaled = false;
     auxVars.push_back(aptr);
   }
+
+  addTangentsForSqVars(rel, auxVars);
   map4origAux.clear();
   if (status == 1) {
     std::cout << "Problem identified as infeasible" << std::endl;
