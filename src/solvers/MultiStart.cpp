@@ -322,6 +322,7 @@ void MultiStart::setInitialOptions_()
   env_->getOptions()->findString("nlp_engine")->setValue("IPOPT");
   env_->getOptions()->findString("qp_engine")->setValue("None"); 
   env_->getOptions()->findString("brancher")->setValue("maxvio");
+  env_->getOptions()->findBool("use_warmstart")->setValue(false);
 }
 
 

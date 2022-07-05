@@ -462,7 +462,7 @@ void IpoptEngine::load(ProblemPtr problem)
     delete sol_;
   }
   sol_ = new IpoptSolution(0, INFINITY, problem);
-  mynlp_ = new Ipopt::IpoptFunInterface(problem, sol_);
+  mynlp_ = new Ipopt::IpoptFunInterface(env_, problem, sol_);
   //Ipopt::ApplicationReturnStatus status;
   //status = myapp_->Initialize();
   myapp_->Initialize();
@@ -625,8 +625,7 @@ void IpoptEngine::setOptionsForRepeatedSolve()
     //myapp_->Options()->SetIntegerValue("max_iter", 30);
     //myapp_->Options()->SetStringValue("mu_strategy", "adaptive");
     //myapp_->Options()->SetStringValue("output_file", "ipopt.out");
-    //myapp_->Options()->SetStringValue("hessian_approximation", 
-    //"limited-memory");
+    // myapp_->Options()->SetStringValue("hessian_approximation", "limited-memory");
     //myapp_->Initialize("");
     //myapp_->Options()->SetNumericValue("dual_inf_tol", 1e-7);    
     //myapp_->Options()->SetNumericValue("constr_viol_tol", 1e-7);
@@ -653,6 +652,7 @@ void IpoptEngine::setOptionsForRepeatedSolve()
 void IpoptEngine::setOptionsForSingleSolve()
 {
   if (myapp_) {
+    // myapp_->Options()->SetStringValue("hessian_approximation", "limited-memory");
     myapp_->Options()->SetIntegerValue("print_level", 0);
     myapp_->Options()->SetStringValue("expect_infeasible_problem","yes", true, 
                                       true);
@@ -671,7 +671,7 @@ EngineStatus IpoptEngine::solve()
   bool should_stop;
 
   stats_->calls += 1;
-  if (!(bndChanged_ || consChanged_)) {
+  if (!(bndChanged_ || consChanged_ || true)) {
     return status_;
   }
   // Check if warm start is enabled. If so, load the information and
@@ -855,13 +855,16 @@ void IpoptEngine::writeStats(std::ostream &out) const
 /* Constructor. */
 namespace Ipopt{
 
-IpoptFunInterface::IpoptFunInterface(Minotaur::ProblemPtr problem, 
+IpoptFunInterface::IpoptFunInterface(Minotaur::EnvPtr env,
+                                     Minotaur::ProblemPtr problem, 
                                      Minotaur::IpoptSolPtr sol)
 : bOff_(1e-9),
   bTol_(1e-6),
   problem_(problem),
   sol_(sol)
 {
+  evalWithinBnds_ = env->getOptions()->findBool("eval_within_bnds")->getValue();
+  logger_ = env->getLogger();
 }
 
 
@@ -964,12 +967,24 @@ bool IpoptFunInterface::get_starting_point(Index n, bool init_x, Number* x,
 
   if (init_z == false || init_lambda == false) {
     double* xp = x;
+#if SPEW
+    logger_->msgStream(Minotaur::LogDebug2) << "IpoptFunInterface: "
+                                  << "setting initial point using the values "
+                                  << " available in the Problem object."
+                                  << std::endl;
+#endif
     for (Minotaur::VariableConstIterator vit=problem_->varsBegin();
          vit!=problem_->varsEnd(); ++vit, ++xp) {
       *xp = (*vit)->getInitVal();
     }
   } else {
     const double *initial_point;
+#if SPEW
+    logger_->msgStream(Minotaur::LogDebug2) << "IpoptFunInterface: "
+                                  << "setting initial point using the values "
+                                  << " available from previous solve."
+                                  << std::endl;
+#endif
     // we should have some starting information in sol_.
     assert(sol_);
     initial_point = sol_->getPrimal();
@@ -1005,31 +1020,59 @@ bool IpoptFunInterface::get_starting_point(Index n, bool init_x, Number* x,
 }
 
 
-bool IpoptFunInterface::eval_f(Index, const Number* x, bool, Number& obj_value)
+bool IpoptFunInterface::eval_f(Index n, const Number* x, bool, Number& obj_value)
 {
   int error = 0;
+  double *ex = 0; // it will be assigned to xx if evalWithinBnds_ is true,
+                  // otherwise to x.
+  double *xx = 0;
+
+  if (evalWithinBnds_) {
+    xx = pullXToBnds_(x, n);
+    ex = xx;
+  } else {
+    ex = (double *) x;
+  }
   // return the value of the objective function
-  obj_value = problem_->getObjValue((double *)x, &error);
+  obj_value = problem_->getObjValue(ex, &error);
   return (0==error);
 }
 
 
-bool IpoptFunInterface::eval_g(Index, const Number* x, bool, Index, Number* g)
+bool IpoptFunInterface::eval_g(Index n, const Number* x, bool, Index, Number* g)
 {
   // return the value (activity) of the constraints: g(x)
   Minotaur::ConstraintConstIterator cIter;
   Minotaur::ConstraintPtr cPtr;
   Minotaur::UInt i=0;
   int error = 0, e = 0;
+  double *ex = 0; // it will be assigned to xx if evalWithinBnds_ is true,
+                  // otherwise to x.
+  double *xx = 0;
+
+  if (evalWithinBnds_) {
+    xx = pullXToBnds_(x, n);
+    ex = xx;
+  } else {
+    ex = (double *) x;
+  }
   for (cIter=problem_->consBegin(); cIter!=problem_->consEnd(); ++cIter) {
     cPtr = *cIter;
     e = 0;
-    g[i] = cPtr->getActivity((double *)x, &e);
+    g[i] = cPtr->getActivity(ex, &e);
     if (e!=0) {
       error=1;
+#if SPEW
+      logger_->msgStream(Minotaur::LogDebug)
+        << "IpoptFunInterface: error in evaluating constraint\n";
+      cPtr->write(logger_->msgStream(Minotaur::LogDebug));
+#endif
     }
-    //std::cout << "activity " << i << " = " << g[i] << std::endl;
     ++i;
+  }
+
+  if (xx) {
+    delete [] xx ;
   }
 
   return (0==error);
@@ -1043,29 +1086,55 @@ bool IpoptFunInterface::eval_grad_f(Index n, const Number* x, bool,
 
   int error = 0;
   Minotaur::ObjectivePtr o;
+  double *ex = NULL; // it will be assigned to xx if evalWithinBnds_ is true,
+                     // otherwise to x.
+  double *xx = NULL;
+
   std::fill(grad_f, grad_f+n, 0);
+
+  if (evalWithinBnds_) {
+    xx = pullXToBnds_(x, n);
+    ex = xx;
+  } else {
+    ex = (double *) x;
+  }
+
   o = problem_->getObjective();
   if (o) {
-    o->evalGradient((const double *) x, (double *)grad_f, &error);
+    o->evalGradient(ex, (double *)grad_f, &error);
   }
+
+  if (xx) {
+    delete [] xx ;
+  }
+
   //for (int i=0; i<n; ++i) {
   //  std::cout << "grad obj [" << i << "] = " << grad_f[i] << std::endl;
   //}
-
   return (0==error);
 }
 
 
-bool IpoptFunInterface::eval_h(Index, const Number* x, bool, Number obj_factor, 
+bool IpoptFunInterface::eval_h(Index n, const Number* x, bool, Number obj_factor, 
                                Index, const Number* lambda, bool, Index,
                                Index* iRow, Index* jCol, Number* values)
 {
   int error = 0;
+  double *ex = NULL; // it will be assigned to xx if evalWithinBnds_ is true,
+                     // otherwise to x.
+  double *xx = NULL;
+
   if (x==0 && lambda==0 && values==0) {
     problem_->getHessian()->fillRowColIndices((Minotaur::UInt *)iRow,
         (Minotaur::UInt *)jCol);
   } else if (x!=0 && lambda!=0 && values!=0) {
-    problem_->getHessian()->fillRowColValues((double *)x, 
+    if (evalWithinBnds_) {
+      xx = pullXToBnds_(x, n);
+      ex = xx;
+    } else {
+      ex = (double *) x;
+    }
+    problem_->getHessian()->fillRowColValues(ex, 
         (double) obj_factor, (double *) lambda, 
         (double *)values, &error);
     //std::cout << "error = " << error << std::endl;
@@ -1075,6 +1144,9 @@ bool IpoptFunInterface::eval_h(Index, const Number* x, bool, Number obj_factor,
     //for (int i=0; i<problem_->getHessian()->getNumNz(); ++i) {
     //  std::cout << std::setprecision(8) << "h["<<i<<"] = "<<values[i] << std::endl;
     //}
+    if (xx) {
+      delete [] xx ;
+    }
   } else {
     assert (!"one of x, lambda and values is NULL!");
   }
@@ -1082,21 +1154,39 @@ bool IpoptFunInterface::eval_h(Index, const Number* x, bool, Number obj_factor,
 }
 
 
-bool IpoptFunInterface::eval_jac_g(Index, const Number* x, bool, Index, 
+bool IpoptFunInterface::eval_jac_g(Index n, const Number* x, bool, Index, 
                                    Index, Index* iRow, Index *jCol, 
                                    Number* values)
 {
   int error = 0;
+  double *ex = NULL; // it will be assigned to xx if evalWithinBnds_ is true,
+                     // otherwise to x.
+  double *xx = NULL;
+
+
   if (values == 0) {
     // return the structure of the jacobian of the constraints
     problem_->getJacobian()->fillRowColIndices((Minotaur::UInt *) iRow,
         (Minotaur::UInt *) jCol);
   }
   else {
+    if (evalWithinBnds_) {
+      xx = pullXToBnds_(x, n);
+      ex = xx;
+    } else {
+      ex = (double *) x;
+    }
     // return the values of the jacobian of the constraints
-    problem_->getJacobian()->fillRowColValues((double *) x, 
+    problem_->getJacobian()->fillRowColValues((double *) ex, 
         (double *) values, &error);
+    if (xx) {
+      delete [] xx ;
+    }
   }
+  if (error!=0) {
+    std::cout << "IpoptEngine: error in evaluating jacobian\n";
+  }
+
   return (0==error);
 }
 
@@ -1121,6 +1211,21 @@ double IpoptFunInterface::getSolutionValue() const
   return sol_->getObjValue();
 }
 
+
+double* IpoptFunInterface::pullXToBnds_(const Number* x, Index n)
+{
+  double *xx = new double[n];
+  for (int ii=0; ii<n; ++ii) {
+    if (x[ii]<problem_->getVariable(ii)->getLb()) {
+      xx[ii] = problem_->getVariable(ii)->getLb();
+    } else if (x[ii]>problem_->getVariable(ii)->getUb()) {
+      xx[ii] = problem_->getVariable(ii)->getUb();
+    } else {
+      xx[ii] = x[ii];
+    }
+  }
+  return xx;
+}
 
 } // namespace Ipopt
 

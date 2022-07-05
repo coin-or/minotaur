@@ -95,6 +95,8 @@ class QuadHandler : public Handler {
                          ConstSolutionPtr sol, ModVector &p_mods,
                          ModVector &r_mods);
 
+  void fillmap4auxVars(std::map<std::pair<int, int>, int> &map4auxVars);
+
   // implement Handler::fixNodeErr
   int fixNodeErr(RelaxationPtr rel, ConstSolutionPtr sol,
                  SolutionPoolPtr s_pool, bool &sol_found);

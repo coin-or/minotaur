@@ -23,6 +23,7 @@
 #endif
 #include "coin/CoinPackedMatrix.hpp"
 #include "coin/CoinWarmStart.hpp"
+#include "coin/CoinWarmStartDual.hpp"
 
 #undef F77_FUNC_
 #undef F77_FUNC
@@ -79,6 +80,11 @@ void OsiLPWarmStart::setCoinWarmStart(CoinWarmStart *coin_ws,
 
   coinWs_ = coin_ws;
   mustDelete_ = must_delete;
+}
+
+void OsiLPWarmStart::setDualWarmStart(int size, const double *dual) {
+  CoinWarmStart *coin_ws = (CoinWarmStart *)new CoinWarmStartDual(size, dual);
+  setCoinWarmStart(coin_ws, true);
 }
 
 void OsiLPWarmStart::write(std::ostream &) const { assert(!"implement me!"); }
@@ -493,6 +499,12 @@ void OsiLPEngine::loadFromWarmStart(const WarmStartPtr ws) {
   assert(ws2);
   CoinWarmStart *coin_ws = ws2->getCoinWarmStart();
   osilp_->setWarmStart(coin_ws);
+}
+
+void OsiLPEngine::loadDualWarmStart(int size, double *dualVec) {
+  OsiLPWarmStartPtr ws = (OsiLPWarmStartPtr) new OsiLPWarmStart();
+  ws->setDualWarmStart(size, dualVec);
+  loadFromWarmStart(ws);
 }
 
 void OsiLPEngine::negateObj() {

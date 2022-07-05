@@ -14,7 +14,8 @@
 #include "SimplexQuadCutGen.h"
 
 #include <string.h>
-
+#include <iomanip>
+#include <algorithm>
 #include <array>
 #include <cmath>
 #include <iterator>
@@ -74,10 +75,8 @@ int SimplexQuadCutGen::generateCuts(RelaxationPtr rel, const double *x) {
   }
   ConstraintPtr c;
   FunctionType ftype;
-  double act, cutConst, coef;
+  double act, cutConst;
   int error = 0;
-  QuadraticFunctionPtr qf;
-  LinearFunctionPtr lf;
   // oxo - product of two original non-basic variables
   // oxs - product of an original and a slack non-basic variables
   // sxs - product of two slack non-basic variables
@@ -85,15 +84,13 @@ int SimplexQuadCutGen::generateCuts(RelaxationPtr rel, const double *x) {
   // cutCoefo - Coefficient of cut for original variables
   // cutCoefs - Coefficient of cut for slack variables
   std::map<int, double> cutCoefo, cutCoefs;
-  VariablePtr v1, v2;
-  int ncuts;
+  int ncuts, iter_cuts = 0;
   SimplexCutVector cuts;
 
   ++iter_;
-  lpe_->enableFactorization();
-  getBasicInfo_();
-  sortVariables_();
-  getSlackBounds_();
+  env_->getLogger()->msgStream(LogExtraInfo) << me_ << "Round " << iter_
+    << std::endl;
+  preprocessSimplexTab();
   for (ConstraintConstIterator cit = p_->consBegin(); cit != p_->consEnd();
        ++cit) {
     c = *cit;
@@ -115,55 +112,7 @@ int SimplexQuadCutGen::generateCuts(RelaxationPtr rel, const double *x) {
           << " is not defined at this point." << std::endl;
 #endif
     }
-    qf = c->getFunction()->getQuadraticFunction();
-    lf = c->getFunction()->getLinearFunction();
-    cutConst = 0.0;
-
-    assert(qf);  // An infeasible constraint must have some quadratic part
-
-    for (VariablePairGroupConstIterator qit = qf->begin(); qit != qf->end();
-         ++qit) {
-      v1 = rel->getRelaxationVar(qit->first.first);
-      v2 = rel->getRelaxationVar(qit->first.second);
-      coef = qit->second;
-      if (basicInd_.count(v1->getIndex()) > 0) {
-        // v1 is basic
-        if (basicInd_.count(v2->getIndex()) > 0) {
-          // v2 is basic
-          multiplyBB_(v1->getIndex(), v2->getIndex(), coef, x, oxo, oxs, sxs,
-                      cutCoefo, cutCoefs, cutConst);
-        } else {
-          // v2 is non-basic
-          multiplyBNB_(v1->getIndex(), v2->getIndex(), coef, x, oxo, oxs,
-                       cutCoefo);
-        }
-      } else {
-        // v1 is non-basic
-        if (basicInd_.count(v2->getIndex()) > 0) {
-          // v2 is basic
-          multiplyBNB_(v2->getIndex(), v1->getIndex(), coef, x, oxo, oxs,
-                       cutCoefo);
-        } else {
-          // v2 is non-basic
-          multiplyNBNB_(v1->getIndex(), v2->getIndex(), coef, oxo);
-        }
-      }
-    }
-
-    if (lf) {
-      for (VariableGroupConstIterator lit = lf->termsBegin();
-           lit != lf->termsEnd(); ++lit) {
-        v1 = rel->getRelaxationVar(lit->first);
-        coef = lit->second;
-        if (basicInd_.count(v1->getIndex()) > 0) {
-          // v1 is basic
-          multiplyCB_(v1->getIndex(), coef, x, cutCoefo, cutCoefs, cutConst);
-        } else {
-          // v1 is non-basic
-          multiplyCNB_(v1->getIndex(), coef, cutCoefo);
-        }
-      }
-    }
+    getQuadratic(c, x, rel, oxo, oxs, sxs, cutCoefo, cutCoefs, cutConst);
 
     if (act > c->getUb() + eTol_) {
       ncuts = relaxQuadTerms_(cuts, rel, oxo, oxs, sxs, cutCoefo, cutCoefs,
@@ -176,7 +125,7 @@ int SimplexQuadCutGen::generateCuts(RelaxationPtr rel, const double *x) {
             << std::endl;
 #endif
       } else {
-        ncuts_ += ncuts;
+        iter_cuts += ncuts;
       }
     } else {
       ncuts = relaxQuadTerms_(cuts, rel, oxo, oxs, sxs, cutCoefo, cutCoefs,
@@ -189,13 +138,108 @@ int SimplexQuadCutGen::generateCuts(RelaxationPtr rel, const double *x) {
             << std::endl;
 #endif
       } else {
-        ncuts_ += ncuts;
+        iter_cuts += ncuts;
       }
     }
   }
-  lpe_->disableFactorization();
+  disableFactorization();
   addCutsToRel_(cuts, rel, x, ncuts);
+  env_->getLogger()->msgStream(LogExtraInfo) << me_ << "No. of cuts generated: "
+    << iter_cuts << std::endl;
+  ncuts_ += iter_cuts;
   return ncuts;
+}
+
+double SimplexQuadCutGen::getSlackLb(int s) {
+  return sb_[s].first;
+}
+
+double SimplexQuadCutGen::getSlackUb(int s) {
+  return sb_[s].second;
+}
+
+void SimplexQuadCutGen::preprocessSimplexTab() {
+  lpe_->enableFactorization();
+  getBasicInfo_();
+  sortVariables_();
+  getSlackBounds_();
+}
+
+void SimplexQuadCutGen::getAffineFnForSlack(RelaxationPtr rel, int s,
+                                            LinearFunctionPtr &lf, double &d) {
+  std::map<int, double> row;
+
+  slackSubstitute_(s, 1.0, row, d);
+  for (std::map<int, double>::iterator it = row.begin(); it != row.end();
+       ++it) {
+    lf->addTerm(rel->getVariable(it->first), -it->second);
+  }
+}
+
+void SimplexQuadCutGen::disableFactorization() {
+  lpe_->disableFactorization();
+}
+
+void SimplexQuadCutGen::getQuadratic(ConstraintPtr c, const double *x,
+                                     RelaxationPtr rel, QuadTerm &oxo,
+                                     QuadTerm &oxs, QuadTerm &sxs,
+                                     std::map<int, double> &cutCoefo,
+                                     std::map<int, double> &cutCoefs,
+                                     double &cutConst) {
+  VariablePtr v1, v2;
+  double coef;
+  QuadraticFunctionPtr qf;
+  LinearFunctionPtr lf;
+
+  qf = c->getFunction()->getQuadraticFunction();
+  lf = c->getFunction()->getLinearFunction();
+  cutConst = 0.0;
+
+  assert(qf);  // An infeasible constraint must have some quadratic part
+
+  for (VariablePairGroupConstIterator qit = qf->begin(); qit != qf->end();
+       ++qit) {
+    v1 = rel->getRelaxationVar(qit->first.first);
+    v2 = rel->getRelaxationVar(qit->first.second);
+    coef = qit->second;
+    if (basicInd_.count(v1->getIndex()) > 0) {
+      // v1 is basic
+      if (basicInd_.count(v2->getIndex()) > 0) {
+        // v2 is basic
+        multiplyBB_(v1->getIndex(), v2->getIndex(), coef, x, oxo, oxs, sxs,
+                    cutCoefo, cutCoefs, cutConst);
+      } else {
+        // v2 is non-basic
+        multiplyBNB_(v1->getIndex(), v2->getIndex(), coef, x, oxo, oxs,
+                     cutCoefo);
+      }
+    } else {
+      // v1 is non-basic
+      if (basicInd_.count(v2->getIndex()) > 0) {
+        // v2 is basic
+        multiplyBNB_(v2->getIndex(), v1->getIndex(), coef, x, oxo, oxs,
+                     cutCoefo);
+      } else {
+        // v2 is non-basic
+        multiplyNBNB_(v1->getIndex(), v2->getIndex(), coef, oxo);
+      }
+    }
+  }
+
+  if (lf) {
+    for (VariableGroupConstIterator lit = lf->termsBegin();
+         lit != lf->termsEnd(); ++lit) {
+      v1 = rel->getRelaxationVar(lit->first);
+      coef = lit->second;
+      if (basicInd_.count(v1->getIndex()) > 0) {
+        // v1 is basic
+        multiplyCB_(v1->getIndex(), coef, x, cutCoefo, cutCoefs, cutConst);
+      } else {
+        // v1 is non-basic
+        multiplyCNB_(v1->getIndex(), coef, cutCoefo);
+      }
+    }
+  }
 }
 
 void SimplexQuadCutGen::addCutsToRel_(SimplexCutVector cuts, RelaxationPtr rel,
@@ -203,14 +247,19 @@ void SimplexQuadCutGen::addCutsToRel_(SimplexCutVector cuts, RelaxationPtr rel,
   SimplexCutPtr cut;
   FunctionPtr f;
   ConstraintPtr c;
-  double depth;
+  int variant = env_->getOptions()->findInt("simplex_cut_variant")->getValue();
+
+  calcDepth_(cuts, x);
+  if (variant == 3) {
+    cuts = getTopCuts_(cuts, 5);
+    ncuts = cuts.size();
+  }
 
   for (SimplexCutVector::iterator it = cuts.begin(); it != cuts.end(); ++it) {
     cut = (*it);
     // both lower and upper bounds must not be finite
     assert(!(cut->lb > -INFINITY && cut->ub < INFINITY));
-    depth = calcDepth_(cut, x);
-    if (depth < minDepth_) {
+    if (cut->depth < minDepth_) {
 #if SPEW
       env_->getLogger()->msgStream(LogDebug)
           << me_ << " Cut not added since the depth of cut is very small"
@@ -219,6 +268,7 @@ void SimplexQuadCutGen::addCutsToRel_(SimplexCutVector cuts, RelaxationPtr rel,
       --ncuts;
       continue;
     }
+    env_->getLogger()->msgStream(LogExtraInfo) << me_ << "Depth of cut = " << std::fixed << std::setprecision(6) << cut->depth << std::endl;
     if (cut->lb > -INFINITY) {
       if (fabs(cut->lb) > 1e-3) {
         cut->lf->multiply(1 / fabs(cut->lb));
@@ -234,7 +284,7 @@ void SimplexQuadCutGen::addCutsToRel_(SimplexCutVector cuts, RelaxationPtr rel,
     c = rel->newConstraint(f, cut->lb, cut->ub);
 #if SPEW
     env_->getLogger()->msgStream(LogDebug)
-        << me_ << " added new cut. Depth of cut = " << depth << std::endl;
+        << me_ << " added new cut. Depth of cut = " << cut->depth << std::endl;
     c->write(env_->getLogger()->msgStream(LogDebug));
 #endif
     allCuts_.push_back(cut);
@@ -491,22 +541,26 @@ void SimplexQuadCutGen::delTabInfo_() {
   delete[] tabInfo_->rowLen;
 }
 
-double SimplexQuadCutGen::calcDepth_(SimplexCutPtr cut, const double *x) {
+void SimplexQuadCutGen::calcDepth_(SimplexCutVector cuts, const double *x) {
   double depth;
   double norm = 0;
+  SimplexCutPtr cut;
 
-  for (VariableGroupConstIterator it = cut->lf->termsBegin();
-       it != cut->lf->termsEnd(); ++it) {
-    norm += (it->second) * (it->second);
-  }
-  norm = sqrt(norm);
+  for (SimplexCutVector::iterator vit = cuts.begin(); vit != cuts.end(); ++vit) {
+    cut = (*vit);
+    for (VariableGroupConstIterator it = cut->lf->termsBegin();
+         it != cut->lf->termsEnd(); ++it) {
+      norm += (it->second) * (it->second);
+    }
+    norm = sqrt(norm);
 
-  if (cut->lb > -INFINITY) {
-    depth = (cut->lb - cut->lf->eval(x)) / norm;
-  } else {
-    depth = (cut->lf->eval(x) - cut->ub) / norm;
+    if (cut->lb > -INFINITY) {
+      depth = (cut->lb - cut->lf->eval(x)) / norm;
+    } else {
+      depth = (cut->lf->eval(x) - cut->ub) / norm;
+    }
+    cut->depth = depth;
   }
-  return depth;
 }
 
 void SimplexQuadCutGen::getBasicInfo_() {
@@ -699,6 +753,24 @@ void SimplexQuadCutGen::getTermBounds_(double coef, double vlb, double vub,
     lb += coef * vub;
     ub += coef * vlb;
   }
+}
+
+SimplexCutVector SimplexQuadCutGen::getTopCuts_(SimplexCutVector cuts, UInt num) {
+  if (cuts.size() <= num) {
+    return cuts;
+  }
+  SimplexCutVector::iterator it = cuts.begin();
+  for (UInt i = 0; i < num; ++i) {
+    ++it;
+  }
+  std::nth_element(cuts.begin(),
+                   ++it,
+                   cuts.end(),
+                   [](const SimplexCutPtr lhs, const SimplexCutPtr rhs){
+                     return (*lhs) > (*rhs);
+                   });
+  cuts.erase(cuts.begin() + num, cuts.end());
+  return cuts;
 }
 
 void SimplexQuadCutGen::multiplyBB_(int b1, int b2, double coef,
@@ -916,7 +988,7 @@ int SimplexQuadCutGen::relaxBilTerm_(double coef, bool lower1, bool lower2,
         cnst1 = -coef * p1 * p2;
         numCuts = 1;
       } else {
-        if (variant == 1) {
+        if (variant == 1 || variant == 3) {
           c1v1 = coef * l2;
           c1v2 = coef * l1;
           cnst1 = -coef * l1 * l2;
@@ -933,7 +1005,7 @@ int SimplexQuadCutGen::relaxBilTerm_(double coef, bool lower1, bool lower2,
       }
     } else {
       if (lower1 == lower2) {
-        if (variant == 1) {
+        if (variant == 1 || variant == 3) {
           c1v1 = coef * l2;
           c1v2 = coef * u1;
           cnst1 = -coef * u1 * l2;
@@ -966,7 +1038,7 @@ int SimplexQuadCutGen::relaxBilTerm_(double coef, bool lower1, bool lower2,
         cnst1 = -coef * p1 * p2;
         numCuts = 1;
       } else {
-        if (variant == 1) {
+        if (variant == 1 || variant == 3) {
           c1v1 = coef * l2;
           c1v2 = coef * l1;
           cnst1 = -coef * l1 * l2;
@@ -983,7 +1055,7 @@ int SimplexQuadCutGen::relaxBilTerm_(double coef, bool lower1, bool lower2,
       }
     } else {
       if (lower1 == lower2) {
-        if (variant == 1) {
+        if (variant == 1 || variant == 3) {
           c1v1 = coef * l2;
           c1v2 = coef * u1;
           cnst1 = -coef * u1 * l2;

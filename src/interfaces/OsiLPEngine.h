@@ -74,6 +74,11 @@ class OsiLPWarmStart : public WarmStart {
    */
   void setCoinWarmStart(CoinWarmStart *coin_ws, bool must_delete);
 
+  /**
+   * Set dual warm start information
+   */
+  void setDualWarmStart(int size, const double *dual);
+
   // Implement Engine::write().
   void write(std::ostream &out) const;
 
@@ -243,6 +248,9 @@ class OsiLPEngine : public LPEngine {
 
   // Implement Engine::loadFromWarmStart().
   void loadFromWarmStart(const WarmStartPtr ws);
+
+  // Load dual warm start info in the solver
+  void loadDualWarmStart(int size, double *dualVec);
 
   // Convert 'min f' to 'min -f'.
   void negateObj();

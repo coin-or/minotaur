@@ -335,6 +335,21 @@ void QuadHandler::updateUb_(SolutionPoolPtr s_pool, double nlpval,
   delete[] new_x;
 }
 
+void QuadHandler::fillmap4auxVars(
+    std::map<std::pair<int, int>, int> &map4auxVars) {
+  for (LinSqrMapIter it = x2Funs_.begin(); it != x2Funs_.end(); ++it) {
+    map4auxVars.insert(std::make_pair(
+        std::make_pair(it->first->getIndex(), it->first->getIndex()),
+        it->second->y->getIndex()));
+  }
+
+  for (LinBilSetIter it = x0x1Funs_.begin(); it != x0x1Funs_.end(); ++it) {
+    map4auxVars.insert(std::make_pair(
+        std::make_pair((*it)->getX0()->getIndex(), (*it)->getX1()->getIndex()),
+        (*it)->getY()->getIndex()));
+  }
+}
+
 int QuadHandler::fixNodeErr(RelaxationPtr rel, ConstSolutionPtr sol,
                             SolutionPoolPtr s_pool, bool &sol_found) {
   DoubleVector varlb, varub;
@@ -1541,7 +1556,7 @@ void QuadHandler::resetStats_() {
   // bStats_.body_diag = 0;
 }
 
-void QuadHandler::separate(ConstSolutionPtr sol, NodePtr, RelaxationPtr rel,
+void QuadHandler::separate(ConstSolutionPtr sol, NodePtr node, RelaxationPtr rel,
                            CutManager *, SolutionPoolPtr, ModVector &,
                            ModVector &, bool *, SeparationStatus *status) {
   double yval, xval;
@@ -1555,7 +1570,7 @@ void QuadHandler::separate(ConstSolutionPtr sol, NodePtr, RelaxationPtr rel,
     simplexCut_ = (SimplexQuadCutGenPtr) new SimplexQuadCutGen(env_, p_, cute_);
   }
 
-  if (simplexCut_) {
+  if (!node->getParent() && simplexCut_) {
     ncuts = simplexCut_->generateCuts(rel, x);
     if (ncuts > 0) {
       *status = SepaResolve;

@@ -69,6 +69,8 @@ class LPEngine : public Engine {
   virtual const int* getIndicesofVars() { return 0; };
 
   virtual const int* getRowLength() { return 0; };
+
+  virtual void loadDualWarmStart(int, double*){};
 };
 typedef LPEngine* LPEnginePtr;
 }  // namespace Minotaur
