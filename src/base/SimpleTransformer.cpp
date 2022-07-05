@@ -35,6 +35,7 @@
 #include "Problem.h"
 #include "ProblemSize.h"
 #include "QuadHandler.h"
+#include "kPowHandler.h"
 #include "QuadraticFunction.h"
 #include "Solution.h"
 #include "Timer.h"
@@ -92,7 +93,7 @@ void SimpleTransformer::bilRef_(LinearFunctionPtr lfl, VariablePtr vl,
                                 LinearFunctionPtr &lf, VariablePtr &v,
                                 double &d) {
   if (lfl) {
-    vl = newVar_(lfl, dl, newp_);
+    //vl = newVar_(lfl, dl, newp_);
     if (vr) {
       vr = newVar_(vr, dr, newp_);
     } else if (lfr) {
@@ -100,6 +101,7 @@ void SimpleTransformer::bilRef_(LinearFunctionPtr lfl, VariablePtr vl,
     }
     if (vr) {
       // lf.reset();
+      vl = newVar_(lfl, dl, newp_);
       lf = 0;
       d = 0;
       v = newBilVar_(vl, vr);
@@ -201,13 +203,14 @@ void SimpleTransformer::powKRef_(LinearFunctionPtr lfl, VariablePtr vl,
                                  double dl, double k, LinearFunctionPtr &lf,
                                  VariablePtr &v, double &d) {
   CNode *n1, *n2;
-  if (fabs(k - floor(k + 0.5)) > zTol_) {
-    assert(!"fractional powers can not be handled yet!");
+  if (k < 1) {
+    assert(!"powers less than one can not be handled yet!");
   } else if (k < -zTol_) {
     assert(!"negative powers can not be handled yet!");
-  } else if (fabs(k / 2 - floor(k / 2 + 0.5)) > zTol_) {
-    logger_->errStream() << "odd powers can not be handled yet!" << std::endl;
-  }
+  } 
+  // else if (fabs(k / 2 - floor(k / 2 + 0.5)) > zTol_) {
+  //   logger_->errStream() << "odd powers can not be handled yet!" << std::endl;
+  // }
 
   if (lfl) {
     vl = newVar_(lfl, dl, newp_);
@@ -245,11 +248,11 @@ void SimpleTransformer::recursRef_(const CNode *node, LinearFunctionPtr &lf,
   VariablePtr vr = VariablePtr();
   VariablePtr v2 = VariablePtr();
   CNode *n1 = 0;
-
+  
   lf = LinearFunctionPtr();  // NULL
   v = VariablePtr();
   d = 0.0;
-
+  
   switch (node->getOp()) {
     case (OpAbs):
     case (OpAcos):
@@ -309,7 +312,6 @@ void SimpleTransformer::recursRef_(const CNode *node, LinearFunctionPtr &lf,
       break;
     case (OpExp):
     case (OpFloor):
-    case (OpInt):
     case (OpIntDiv):
     case (OpLog):
     case (OpLog10):
@@ -354,6 +356,7 @@ void SimpleTransformer::recursRef_(const CNode *node, LinearFunctionPtr &lf,
       break;
     case (OpNone):
       break;
+    case (OpInt):
     case (OpNum):
       d = node->getVal();
       break;
@@ -390,8 +393,11 @@ void SimpleTransformer::recursRef_(const CNode *node, LinearFunctionPtr &lf,
       powKRef_(lfl, vl, dl, node->getR()->getVal(), lf, v, d);
       break;
     case (OpRound):
+      break;
     case (OpSin):
+      break;
     case (OpSinh):
+      break;
     case (OpSqr):
       recursRef_(node->getL(), lfl, vl, dl);
       uniVarRef_(node, lfl, vl, dl, lf, v, d);
@@ -419,6 +425,7 @@ void SimpleTransformer::recursRef_(const CNode *node, LinearFunctionPtr &lf,
       }
       break;
     case (OpTan):
+      break;
     case (OpTanh):
       recursRef_(node->getL(), lfl, vl, dl);
       uniVarRef_(node, lfl, vl, dl, lf, v, d);
@@ -761,6 +768,9 @@ bool SimpleTransformer::checkQuadConvexity_() {
       }
       qf_vector.clear();
     }
+    else {
+      return false;
+    }
   }
   qf = p_->getObjective()->getFunction()->getQuadraticFunction();
   if (qf) {
@@ -900,8 +910,10 @@ void SimpleTransformer::reformulate(ProblemPtr &newp, HandlerVector &handlers,
   handlers.push_back(qHandler_);
   uHandler_ = (CxUnivarHandlerPtr) new CxUnivarHandler(env_, newp_);
   handlers.push_back(uHandler_);
-
+  kHandler_ = (kPowHandlerPtr) new kPowHandler(env_, newp_, p_);
+  handlers.push_back(kHandler_);
   copyLinear_(p_, newp_);
+
   if (checkQuadConvexity_()) {
     status = 2;  // status 2 means the problem is convex
     clearUnusedHandlers_(handlers);
@@ -912,7 +924,7 @@ void SimpleTransformer::reformulate(ProblemPtr &newp, HandlerVector &handlers,
   refNonlinCons_(p_);
   refNonlinObj_(p_);
   newp_->calculateSize();
-
+  // newp_->write(std::cout);
 #if DEBUG
   assert(0 == newp_->checkConVars());
 #endif
@@ -924,7 +936,6 @@ void SimpleTransformer::reformulate(ProblemPtr &newp, HandlerVector &handlers,
   clearUnusedHandlers_(handlers);
   status = 0;
   newp = newp_;
-  // newp->write(std::cout);
   stats_.time = env_->getTimer()->query() - stime;
   writeStats(logger_->msgStream(LogExtraInfo));
 }
