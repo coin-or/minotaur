@@ -108,6 +108,7 @@ set (MINOTAUR_SOURCES
      #base/QGHandlerAdvance.cpp 
      #base/QGHandlerPDE.cpp 
      base/QuadHandler.cpp 
+     base/kPowHandler.cpp 
      base/QuadraticFunction.cpp
      base/QuadTransformer.cpp 
      base/RandomBrancher.cpp
@@ -245,7 +246,8 @@ set (MINOTAUR_HEADERS
      base/QGHandlerAdvance.h 
      #base/QGAdvHandler.h 
      #base/QGHandlerPDE.h
-     base/QuadHandler.h 
+     base/QuadHandler.h
+     base/kPowHandler.h 
      base/QuadraticFunction.h
      base/QuadTransformer.h
      base/RandomBrancher.h
