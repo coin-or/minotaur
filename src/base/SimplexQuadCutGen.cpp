@@ -14,10 +14,11 @@
 #include "SimplexQuadCutGen.h"
 
 #include <string.h>
-#include <iomanip>
+
 #include <algorithm>
 #include <array>
 #include <cmath>
+#include <iomanip>
 #include <iterator>
 
 #include "Constraint.h"
@@ -43,7 +44,7 @@ const std::string SimplexQuadCutGen::me_ = "SimplexQuadCutGen";
 SimplexQuadCutGen::SimplexQuadCutGen() {}
 
 SimplexQuadCutGen::SimplexQuadCutGen(EnvPtr env, ProblemPtr p, LPEnginePtr lpe)
-    : env_(env), eTol_(1e-6), p_(p), lpe_(lpe), tabInfo_(0) {
+    : env_(env), eTol_(1e-8), p_(p), lpe_(lpe), tabInfo_(0) {
   ncuts_ = 0;
   minDepth_ = 1e-3;
   iter_ = 0;
@@ -88,8 +89,8 @@ int SimplexQuadCutGen::generateCuts(RelaxationPtr rel, const double *x) {
   SimplexCutVector cuts;
 
   ++iter_;
-  env_->getLogger()->msgStream(LogExtraInfo) << me_ << "Round " << iter_
-    << std::endl;
+  env_->getLogger()->msgStream(LogExtraInfo)
+      << me_ << "Round " << iter_ << std::endl;
   preprocessSimplexTab();
   for (ConstraintConstIterator cit = p_->consBegin(); cit != p_->consEnd();
        ++cit) {
@@ -144,19 +145,15 @@ int SimplexQuadCutGen::generateCuts(RelaxationPtr rel, const double *x) {
   }
   disableFactorization();
   addCutsToRel_(cuts, rel, x, ncuts);
-  env_->getLogger()->msgStream(LogExtraInfo) << me_ << "No. of cuts generated: "
-    << iter_cuts << std::endl;
+  env_->getLogger()->msgStream(LogExtraInfo)
+      << me_ << "No. of cuts generated: " << iter_cuts << std::endl;
   ncuts_ += iter_cuts;
   return ncuts;
 }
 
-double SimplexQuadCutGen::getSlackLb(int s) {
-  return sb_[s].first;
-}
+double SimplexQuadCutGen::getSlackLb(int s) { return sb_[s].first; }
 
-double SimplexQuadCutGen::getSlackUb(int s) {
-  return sb_[s].second;
-}
+double SimplexQuadCutGen::getSlackUb(int s) { return sb_[s].second; }
 
 void SimplexQuadCutGen::preprocessSimplexTab() {
   lpe_->enableFactorization();
@@ -176,9 +173,7 @@ void SimplexQuadCutGen::getAffineFnForSlack(RelaxationPtr rel, int s,
   }
 }
 
-void SimplexQuadCutGen::disableFactorization() {
-  lpe_->disableFactorization();
-}
+void SimplexQuadCutGen::disableFactorization() { lpe_->disableFactorization(); }
 
 void SimplexQuadCutGen::getQuadratic(ConstraintPtr c, const double *x,
                                      RelaxationPtr rel, QuadTerm &oxo,
@@ -268,7 +263,9 @@ void SimplexQuadCutGen::addCutsToRel_(SimplexCutVector cuts, RelaxationPtr rel,
       --ncuts;
       continue;
     }
-    env_->getLogger()->msgStream(LogExtraInfo) << me_ << "Depth of cut = " << std::fixed << std::setprecision(6) << cut->depth << std::endl;
+    env_->getLogger()->msgStream(LogExtraInfo)
+        << me_ << "Depth of cut = " << std::fixed << std::setprecision(6)
+        << cut->depth << std::endl;
     if (cut->lb > -INFINITY) {
       if (fabs(cut->lb) > 1e-3) {
         cut->lf->multiply(1 / fabs(cut->lb));
@@ -546,7 +543,8 @@ void SimplexQuadCutGen::calcDepth_(SimplexCutVector cuts, const double *x) {
   double norm = 0;
   SimplexCutPtr cut;
 
-  for (SimplexCutVector::iterator vit = cuts.begin(); vit != cuts.end(); ++vit) {
+  for (SimplexCutVector::iterator vit = cuts.begin(); vit != cuts.end();
+       ++vit) {
     cut = (*vit);
     for (VariableGroupConstIterator it = cut->lf->termsBegin();
          it != cut->lf->termsEnd(); ++it) {
@@ -755,7 +753,8 @@ void SimplexQuadCutGen::getTermBounds_(double coef, double vlb, double vub,
   }
 }
 
-SimplexCutVector SimplexQuadCutGen::getTopCuts_(SimplexCutVector cuts, UInt num) {
+SimplexCutVector SimplexQuadCutGen::getTopCuts_(SimplexCutVector cuts,
+                                                UInt num) {
   if (cuts.size() <= num) {
     return cuts;
   }
@@ -763,10 +762,8 @@ SimplexCutVector SimplexQuadCutGen::getTopCuts_(SimplexCutVector cuts, UInt num)
   for (UInt i = 0; i < num; ++i) {
     ++it;
   }
-  std::nth_element(cuts.begin(),
-                   ++it,
-                   cuts.end(),
-                   [](const SimplexCutPtr lhs, const SimplexCutPtr rhs){
+  std::nth_element(cuts.begin(), ++it, cuts.end(),
+                   [](const SimplexCutPtr lhs, const SimplexCutPtr rhs) {
                      return (*lhs) > (*rhs);
                    });
   cuts.erase(cuts.begin() + num, cuts.end());
