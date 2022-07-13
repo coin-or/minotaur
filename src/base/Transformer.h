@@ -13,8 +13,8 @@
 #ifndef MINOTAURTRANSFORMER_H
 #define MINOTAURTRANSFORMER_H
 
-#include "Types.h"
 #include "OpCode.h"
+#include "Types.h"
 
 namespace Minotaur {
 class CxUnivarHandler;
@@ -25,19 +25,20 @@ class Engine;
 class LinearHandler;
 class Problem;
 class QuadHandler;
+class kPowHandler;
 class Solution;
 class UnivarQuadHandler;
 class YEqLFs;
 class YEqUCGs;
 class YEqVars;
-typedef CxUnivarHandler* CxUnivarHandlerPtr;
-typedef CGraph* CGraphPtr;
-typedef LinearHandler* LinearHandlerPtr;
-typedef QuadHandler* QuadHandlerPtr;
-typedef UnivarQuadHandler* UnivarQuadHandlerPtr;
-typedef Solution* SolutionPtr;
-typedef const Solution* ConstSolutionPtr;
-
+typedef CxUnivarHandler *CxUnivarHandlerPtr;
+typedef CGraph *CGraphPtr;
+typedef LinearHandler *LinearHandlerPtr;
+typedef QuadHandler *QuadHandlerPtr;
+typedef kPowHandler *kPowHandlerPtr;
+typedef UnivarQuadHandler *UnivarQuadHandlerPtr;
+typedef Solution *SolutionPtr;
+typedef const Solution *ConstSolutionPtr;
 
 /**
  * \brief Abstract base class for reformulating a problem so that handlers can
@@ -50,8 +51,7 @@ typedef const Solution* ConstSolutionPtr;
  * class. Other commonly used functions are implemented here.
  */
 class Transformer {
-public:
-
+ public:
   /// Default Constructor.
   Transformer();
 
@@ -85,7 +85,7 @@ public:
   virtual SolutionPtr getSolTrans(ConstSolutionPtr sol, int &err) = 0;
 
   /**
-   * \brief Perform the reformulation, and assign handlers.  
+   * \brief Perform the reformulation, and assign handlers.
    *
    * \param [out] newp The new, reformulated problem.
    * \param [out] handlers A vector of handlers used to reformulate the
@@ -95,7 +95,7 @@ public:
   virtual void reformulate(ProblemPtr &newp, HandlerVector &handlers,
                            int &status) = 0;
 
-protected:
+ protected:
   /// The pointer to environment.
   EnvPtr env_;
 
@@ -110,6 +110,9 @@ protected:
 
   /// The original problem
   ProblemPtr p_;
+
+  /// Handler for y = x^k type constraints
+  kPowHandlerPtr kHandler_;
 
   /// Handler for quadratic terms
   QuadHandlerPtr qHandler_;
@@ -157,7 +160,7 @@ protected:
    * \param[in] cg A nonlinear function which is be replaced by the auxiliary
    * variable.
    * \param[in] c The nonlinear constraint \f$y_i = f(x)\f$ that is being
-   * assigned to. 
+   * assigned to.
    */
   void assignHandler_(CGraphPtr cg, ConstraintPtr c);
 
@@ -229,7 +232,7 @@ protected:
    * \brief Find the auxiliary variable associated with \f$y_i = f(x)+d\f$ or
    * create a new one.
    *
-   * \param [in] The nonlinear function. 
+   * \param [in] The nonlinear function.
    * \param [in] newp The transformed problem to which the new constraint
    * should be added, in case this constraint is not found.
    * \return The variable \f$y\f$. If the constraint is found, it returns the
@@ -238,26 +241,24 @@ protected:
    */
   VariablePtr newVar_(CGraphPtr cg, ProblemPtr newp);
 
-private:
+ private:
   static const std::string me_;
-    
 };
 
-typedef Transformer* TransformerPtr;
-typedef const Transformer* ConstTransformerPtr;
+typedef Transformer *TransformerPtr;
+typedef const Transformer *ConstTransformerPtr;
 
-}
+}  // namespace Minotaur
 
 #endif
 
-
-// Local Variables: 
-// mode: c++ 
-// eval: (c-set-style "k&r") 
-// eval: (c-set-offset 'innamespace 0) 
-// eval: (setq c-basic-offset 2) 
-// eval: (setq fill-column 78) 
-// eval: (auto-fill-mode 1) 
-// eval: (setq column-number-mode 1) 
-// eval: (setq indent-tabs-mode nil) 
+// Local Variables:
+// mode: c++
+// eval: (c-set-style "k&r")
+// eval: (c-set-offset 'innamespace 0)
+// eval: (setq c-basic-offset 2)
+// eval: (setq fill-column 78)
+// eval: (auto-fill-mode 1)
+// eval: (setq column-number-mode 1)
+// eval: (setq indent-tabs-mode nil)
 // End:

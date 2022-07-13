@@ -24,9 +24,9 @@
 
 #include "BrVarCand.h"
 #include "Branch.h"
-#include "Constraint.h"
 #include "CGraph.h"
 #include "CNode.h"
+#include "Constraint.h"
 #include "Engine.h"
 #include "Environment.h"
 #include "Function.h"
@@ -112,11 +112,11 @@ void kPowHandler::addConstraint(ConstraintPtr newcon) {
 
   assert(lf && nlf);
   assert(1 == lf->getNumTerms());
-  assert(1 == nlf->numVars());  
+  assert(1 == nlf->numVars());
 
-  y = lf->termsBegin()->first;  
+  y = lf->termsBegin()->first;
   cg = dynamic_cast<CGraph *>(nlf);
-  
+
   k = cg->getOut()->getR()->getVal();
   x = VariablePtr(cg->getOut()->getL()->getV());
   lxk = new LinkPow();
@@ -183,7 +183,8 @@ double kPowHandler::addDefaultBounds_(VariablePtr v, BoundType lu) {
   }
 }
 
-void kPowHandler::findLinPt_(double xval, double yval, double &xl, double &yl, double k) {
+void kPowHandler::findLinPt_(double xval, double yval, double &xl, double &yl,
+                             double k) {
   // The point (xval, yval) satisfies yval < xval^2.
   // We want to find a new point (xl, yl) on the curve y=x^2 so that
   // the gradient inequality at (xl, yl) cuts off (xval, yval).
@@ -211,25 +212,29 @@ void kPowHandler::findLinPt_(double xval, double yval, double &xl, double &yl, d
 
   mu = a + alfa * (b - a);
   la = b - alfa * (b - a);
-  mu_val = (mu - xval) * (mu - xval) + (pow(mu,k) - yval) * (pow(mu,k) - yval);
-  la_val = (la - xval) * (la - xval) + (pow(la,k) - yval) * (pow(la,k) - yval);
+  mu_val =
+      (mu - xval) * (mu - xval) + (pow(mu, k) - yval) * (pow(mu, k) - yval);
+  la_val =
+      (la - xval) * (la - xval) + (pow(la, k) - yval) * (pow(la, k) - yval);
   while ((b - a) > errlim) {
     if (mu_val < la_val) {
       a = la;
       la = mu;
       la_val = mu_val;
       mu = a + alfa * (b - a);
-      mu_val = (mu - xval) * (mu - xval) + (pow(mu,k) - yval) * (pow(mu,k) - yval);
+      mu_val =
+          (mu - xval) * (mu - xval) + (pow(mu, k) - yval) * (pow(mu, k) - yval);
     } else {
       b = mu;
       mu = la;
       mu_val = la_val;
       la = b - alfa * (b - a);
-      la_val = (la - xval) * (la - xval) + (pow(la,k) - yval) * (pow(la,k) - yval);
+      la_val =
+          (la - xval) * (la - xval) + (pow(la, k) - yval) * (pow(la, k) - yval);
     }
   }
   xl = la;
-  yl = pow(la,k);
+  yl = pow(la, k);
 }
 
 void kPowHandler::updateBoundsinOrig_(RelaxationPtr rel, const double *x,
@@ -403,7 +408,7 @@ void kPowHandler::getBranchingCandidates(RelaxationPtr rel,
                                          bool &is_inf) {
   double yval, xval, udist, ddist, k;
   BrVarCandPtr br_can;
-  VariablePtr x0,x1;
+  VariablePtr x0, x1;
   std::pair<BrVarCandIter, bool> ret;
   bool check;
 
@@ -416,8 +421,8 @@ void kPowHandler::getBranchingCandidates(RelaxationPtr rel,
     xval = x[x0->getIndex()];
     x1 = rel->getRelaxationVar(s_it->second->y);
     yval = x[x1->getIndex()];
-    if (yval - pow(xval,k) > fabs(yval) * rTol_ &&
-        yval - pow(xval,k) > aTol_) {
+    if (yval - pow(xval, k) > fabs(yval) * rTol_ &&
+        yval - pow(xval, k) > aTol_) {
 #if SPEW
       logger_->msgStream(LogDebug2)
           << std::setprecision(9) << me_
@@ -425,10 +430,8 @@ void kPowHandler::getBranchingCandidates(RelaxationPtr rel,
           << " value = " << xval << " aux var: " << s_it->second->y->getName()
           << " value = " << yval << std::endl;
 #endif
-      ddist = (yval - pow(xval,k)) /
-              sqrt(1.0 + pow((x0->getLb() + xval),k));
-      udist = (yval - pow(xval,k)) /
-              sqrt(1.0 + pow((x0->getUb() + xval),k));
+      ddist = (yval - pow(xval, k)) / sqrt(1.0 + pow((x0->getLb() + xval), k));
+      udist = (yval - pow(xval, k)) / sqrt(1.0 + pow((x0->getUb() + xval), k));
       br_can = (BrVarCandPtr) new BrVarCand(x0, x0->getIndex(), ddist, udist);
       ret = cands.insert(br_can);
       if (false == ret.second) {  // already exists.
@@ -458,14 +461,14 @@ ModificationPtr kPowHandler::getBrMod(BrCandPtr cand, DoubleVector &x,
       xval = x[it->first->getIndex()];
       yval = x[it->second->y->getIndex()];
       k = it->second->k;
-      vio = pow(xval,k) - yval;
+      vio = pow(xval, k) - yval;
       if (vio > aTol_ && vio > fabs(yval) * rTol_) {
         x0 = rel->getRelaxationVar(it->first);
         y = rel->getRelaxationVar(it->second->y);
         if (dir == DownBranch) {
-          lf = getNewKpowLf_(y, x0, k, x0->getLb(), xval, rhs,2);
+          lf = getNewKpowLf_(y, x0, k, x0->getLb(), xval, rhs, 2);
         } else {
-          lf = getNewKpowLf_(y, x0, k, xval, x0->getUb(), rhs,2);
+          lf = getNewKpowLf_(y, x0, k, xval, x0->getUb(), rhs, 2);
         }
         lmod =
             (LinConModPtr) new LinConMod(it->second->oeCon, lf, -INFINITY, rhs);
@@ -480,9 +483,9 @@ std::string kPowHandler::getName() const {
   return "kPowHandler (Handling k power terms of the form y=x^k where k>1).";
 }
 
-LinearFunctionPtr kPowHandler::getNewKpowLf_(VariablePtr y,VariablePtr x,double k, 
-                                double lb, double ub, double &rhs,
-                                int type){
+LinearFunctionPtr kPowHandler::getNewKpowLf_(VariablePtr y, VariablePtr x,
+                                             double k, double lb, double ub,
+                                             double &rhs, int type) {
   LinearFunctionPtr lf = LinearFunctionPtr();
   double new_lb = lb;
   double new_ub = ub;
@@ -496,30 +499,31 @@ LinearFunctionPtr kPowHandler::getNewKpowLf_(VariablePtr y,VariablePtr x,double 
   if (ub > 1e12) {
     new_ub = addDefaultBounds_(x, Upper);
   }
-  std::cout<<"NEW LB:"<<lb<<"\n";
-  std::cout<<"NEW UB:"<<ub<<"\n";
+  std::cout << "NEW LB:" << lb << "\n";
+  std::cout << "NEW UB:" << ub << "\n";
   assert(ub < 1e21 && lb >= 0);
 
   switch (type) {
     case (0):
       // tangent at lower bound
       lf->addTerm(y, 1.);
-      lf->addTerm(x, -k*pow(ub,k-1));
-      rhs = (1-k)*pow(ub,k);
+      lf->addTerm(x, -k * pow(ub, k - 1));
+      rhs = (1 - k) * pow(ub, k);
       break;
     case (1):
       // tangent at lower bound
       lf->addTerm(y, 1.);
-      lf->addTerm(x, -k*pow(lb,k-1));
-      rhs = (1-k)*pow(lb,k);
+      lf->addTerm(x, -k * pow(lb, k - 1));
+      rhs = (1 - k) * pow(lb, k);
       break;
     case (2):
-      //Relaxed Overestimator
+      // Relaxed Overestimator
       assert(ub < 1e21 && lb >= 0);
-      rhs = -ub * lb * (pow(ub,k-1)-pow(lb,k-1))/(ub-lb);
+      rhs = -ub * lb * (pow(ub, k - 1) - pow(lb, k - 1)) / (ub - lb);
       lf = (LinearFunctionPtr) new LinearFunction();
       lf->addTerm(y, 1.);
-      lf->addTerm(x, -1. * (pow(ub,k)-pow(lb,k))/(ub-lb));      // y >= l0x1 + l1x0 - l1l0
+      lf->addTerm(x, -1. * (pow(ub, k) - pow(lb, k)) /
+                         (ub - lb));  // y >= l0x1 + l1x0 - l1l0
       // std::cout<<"OE:  "<<rhs<<" = ";
       // lf->write(std::cout);
       // std::cout<<std::endl;
@@ -531,30 +535,29 @@ LinearFunctionPtr kPowHandler::getNewKpowLf_(VariablePtr y,VariablePtr x,double 
   return lf;
 }
 
-
 void kPowHandler::addCut_(VariablePtr x, VariablePtr y, double xl, double yl,
                           double xval, double yval, RelaxationPtr rel,
                           bool &ifcuts, double k) {
   // add the cut k(xl^(k-1))x-(k-1)(yl)-y <= 0
   ifcuts = false;
-  if (k * pow(xl,k-1) * xval - yval - (k-1) * yl > 1e-5 &&
-      k * pow(xl,k-1) * xval - yval - k * yl > yl * (1e-4)) {
+  if (k * pow(xl, k - 1) * xval - yval - (k - 1) * yl > 1e-5 &&
+      k * pow(xl, k - 1) * xval - yval - k * yl > yl * (1e-4)) {
     LinearFunctionPtr lf = (LinearFunctionPtr) new LinearFunction();
     FunctionPtr f;
 
-    lf->addTerm(x, k*pow(xl,k-1));
+    lf->addTerm(x, k * pow(xl, k - 1));
     lf->addTerm(y, -1.0);
     f = (FunctionPtr) new Function(lf);
     ifcuts = true;
     ++sStats_.cuts;
 #if SPEW
     {
-      ConstraintPtr c = rel->newConstraint(f, -INFINITY, (k-1)*yl);
+      ConstraintPtr c = rel->newConstraint(f, -INFINITY, (k - 1) * yl);
       logger_->msgStream(LogDebug2) << me_ << "new cut added" << std::endl;
       c->write(logger_->msgStream(LogDebug2));
     }
 #else
-    rel->newConstraint(f, -INFINITY, (k-1)*yl);
+    rel->newConstraint(f, -INFINITY, (k - 1) * yl);
 #endif
   } else {
 #if SPEW
@@ -588,7 +591,8 @@ void kPowHandler::addCut_(VariablePtr x, VariablePtr y, double xl, double yl,
 //     }
 
 //     if (nlf) {
-//       for (VariablePairGroupConstIterator qit = nlf->begin(); qit != nlf->end();
+//       for (VariablePairGroupConstIterator qit = nlf->begin(); qit !=
+//       nlf->end();
 //            ++qit) {
 //         if (fabs(qit->second) < min_coeff) {
 //           min_coeff = fabs(qit->second);
@@ -669,8 +673,7 @@ bool kPowHandler::isFeasible(ConstSolutionPtr sol, RelaxationPtr, bool &,
           is_feas = false;
           inf_meas += clb - act;
         }
-      } 
-      else {
+      } else {
         logger_->msgStream(LogError)
             << me_ << c->getName() << " Constraint not defined at this point."
             << std::endl;
@@ -861,7 +864,7 @@ bool kPowHandler::presolveNode(RelaxationPtr rel, NodePtr,
   bool is_inf = false;
   double stime = timer_->query();
   double ub = s_pool->getBestSolutionValue();
-  std::cout<<"SSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSS\n";
+  std::cout << "SSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSS\n";
 
   // visit each quadratic constraint and see if bounds can be improved.
   ++bStats_.niters;
@@ -879,7 +882,7 @@ bool kPowHandler::presolveNode(RelaxationPtr rel, NodePtr,
       }
     }
   }
-  std::cout<<"SSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSS\n";
+  std::cout << "SSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSS\n";
 
   if (doQT_ || bStats_.niters <= 1) {
     lchanged = false;
@@ -892,12 +895,11 @@ bool kPowHandler::presolveNode(RelaxationPtr rel, NodePtr,
       return true;
     }
   }
-  std::cout<<"SSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSS\n";
+  std::cout << "SSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSS\n";
 
   for (LinkPowMapIter it = xkFuns_.begin(); it != xkFuns_.end(); ++it) {
     upSqCon_(it->second->oeCon, rel->getRelaxationVar(it->first),
-             rel->getRelaxationVar(it->second->y), 
-             it->second->k, rel, r_mods);
+             rel->getRelaxationVar(it->second->y), it->second->k, rel, r_mods);
   }
 
   if (modRel_) {
@@ -907,24 +909,22 @@ bool kPowHandler::presolveNode(RelaxationPtr rel, NodePtr,
   }
   // rel->write(std::cout);
 
-  std::cout<<"SSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSS\n";
+  std::cout << "SSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSS\n";
   pStats_.timeN += timer_->query() - stime;
   return false;
 }
 
-
-void BoundsOnKPow_(ConstVariablePtr x, double &lb, double &ub, double k){
+void BoundsOnKPow_(ConstVariablePtr x, double &lb, double &ub, double k) {
   double l1 = x->getLb();
   double u1 = x->getUb();
 
-  if ((u1 < 0.)||(l1 > 0.)) {         // both bounds are negative.
+  if ((u1 < 0.) || (l1 > 0.)) {  // both bounds are negative.
     assert("!!!negative bound(s). Infeasible for pow k");
   } else if (l1 > 0.) {  // both bounds are positive.
-    lb = pow(l1,k);
-    ub = pow(u1,k);
+    lb = pow(l1, k);
+    ub = pow(u1, k);
   }
 }
-
 
 bool kPowHandler::propKPowBnds_(LinkPowMapIter lxk, bool *changed) {
   VariablePtr x = lxk->first;  // x0 and y are variables in p_
@@ -939,18 +939,18 @@ bool kPowHandler::propKPowBnds_(LinkPowMapIter lxk, bool *changed) {
 
   // other direction.
   if (y->getUb() > bTol_) {
-    ub = pow(y->getUb(),1/k);
+    ub = pow(y->getUb(), 1 / k);
     lb = -ub;
     assert(y->getLb() >= 0.0);  // square of a number.
-    if (x->getLb() > -pow(y->getLb(),1/k) + bTol_) {
-      lb = pow(y->getLb(),1/k);
+    if (x->getLb() > -pow(y->getLb(), 1 / k) + bTol_) {
+      lb = pow(y->getLb(), 1 / k);
     }
     if (updatePBounds_(x, lb, ub, changed) < 0) {
       return true;
     }
   } else if (y->getUb() < -bTol_) {
     return true;
-  } 
+  }
   // else {
   //   if (updatePBounds_(x, 0.0, 0.0, changed) < 0) {
   //     std::cout<<"Case4\n";
@@ -962,32 +962,32 @@ bool kPowHandler::propKPowBnds_(LinkPowMapIter lxk, bool *changed) {
 }
 
 bool kPowHandler::propKPowBnds_(LinkPowMapIter lxk, RelaxationPtr rel,
-                               bool mod_rel, bool *changed, ModVector &p_mods,
-                               ModVector &r_mods) {
+                                bool mod_rel, bool *changed, ModVector &p_mods,
+                                ModVector &r_mods) {
   double lb, ub;
   VariablePtr x = lxk->first;  // x and y are variables in p_
   VariablePtr y = lxk->second->y;
   double k = lxk->second->k;
 
-  BoundsOnKPow_(x, lb, ub,k);
+  BoundsOnKPow_(x, lb, ub, k);
   if (updatePBounds_(y, lb, ub, rel, mod_rel, changed, p_mods, r_mods) < 0) {
     return true;  // infeasible
   }
 
   // other direction.
   if (y->getUb() > bTol_) {
-    ub = pow(y->getUb(),1/k);
+    ub = pow(y->getUb(), 1 / k);
     lb = -ub;
     assert(y->getLb() >= 0.0);
-    if (x->getLb() > -pow(y->getLb() + bTol_,1/k)) {
-      lb = pow(y->getLb(),1/k);
+    if (x->getLb() > -pow(y->getLb() + bTol_, 1 / k)) {
+      lb = pow(y->getLb(), 1 / k);
     }
     if (updatePBounds_(x, lb, ub, rel, mod_rel, changed, p_mods, r_mods) < 0) {
       return true;  // infeasible
     }
   } else if (y->getUb() < -bTol_) {
     return true;  // infeasible
-  } 
+  }
   // else {
   //   if (updatePBounds_(x, 0.0, 0.0, rel, mod_rel, changed, p_mods, r_mods) <
   //       0) {
@@ -1023,7 +1023,7 @@ bool kPowHandler::postSolveRootNode(RelaxationPtr rel, SolutionPoolPtr s_pool,
 
     yval = x[y->getIndex()];
     xval = x[x0->getIndex()];
-    vio1 = fabs(pow(xval,k) - yval);
+    vio1 = fabs(pow(xval, k) - yval);
     if (vio1 > max_vio && vio1 > 0.1 * fabs(yval)) {
       range = x0->getUb() - x0->getLb();
       if (range >= 2) {
@@ -1053,8 +1053,8 @@ bool kPowHandler::postSolveRootNode(RelaxationPtr rel, SolutionPoolPtr s_pool,
   if (true == lchanged) {
     for (LinkPowMapIter it = xkFuns_.begin(); it != xkFuns_.end(); ++it) {
       upSqCon_(it->second->oeCon, rel->getRelaxationVar(it->first),
-               rel->getRelaxationVar(it->second->y), 
-               it->second->k,rel, r_mods);
+               rel->getRelaxationVar(it->second->y), it->second->k, rel,
+               r_mods);
     }
 
     if (modRel_) {
@@ -1081,8 +1081,7 @@ void kPowHandler::relax_(RelaxationPtr rel, bool *) {
   for (LinkPowMapIter it = xkFuns_.begin(); it != xkFuns_.end(); ++it) {
     x = rel->getRelaxationVar(it->second->x);
     y = rel->getRelaxationVar(it->second->y);
-    lf = getNewKpowLf_(y, x, it->second->k, x->getLb(), x->getUb(),
-                         rhs, 2);
+    lf = getNewKpowLf_(y, x, it->second->k, x->getLb(), x->getUb(), rhs, 2);
     f = (FunctionPtr) new Function(lf);
     it->second->oeCon = rel->newConstraint(f, -INFINITY, rhs);
   }
@@ -1163,8 +1162,7 @@ void kPowHandler::resetStats_() {
 void kPowHandler::separate(ConstSolutionPtr sol, NodePtr, RelaxationPtr rel,
                            CutManager *, SolutionPoolPtr, ModVector &,
                            ModVector &, bool *, SeparationStatus *status) {
-  std::cout<<"AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA\n";
-  double yval, xval,k;
+  double yval, xval, k;
   double yl, xl;
   const double *x = sol->getPrimal();
   bool ifcuts;
@@ -1176,7 +1174,7 @@ void kPowHandler::separate(ConstSolutionPtr sol, NodePtr, RelaxationPtr rel,
   }
 
   if (simplexCut_) {
-    ncuts = simplexCut_->generateCuts(rel, x);
+    ncuts = simplexCut_->generateCuts(rel, sol);
     if (ncuts > 0) {
       *status = SepaResolve;
       return;
@@ -1188,8 +1186,8 @@ void kPowHandler::separate(ConstSolutionPtr sol, NodePtr, RelaxationPtr rel,
     xval = x[it->first->getIndex()];
     yval = x[it->second->y->getIndex()];
     k = it->second->k;
-    if (pow(xval,k) - yval > rTol_ * fabs(yval) &&
-        fabs(pow(xval,k) - yval) > aTol_) {
+    if (pow(xval, k) - yval > rTol_ * fabs(yval) &&
+        fabs(pow(xval, k) - yval) > aTol_) {
 #if SPEW
       logger_->msgStream(LogDebug2)
           << me_ << "xval = " << xval << " yval = " << yval
@@ -2587,8 +2585,8 @@ bool kPowHandler::tightenSimple_(bool *changed) {
       }
 
       if (nlf) {
-        for (VariablePairGroupConstIterator qit = nlf->begin(); qit != nlf->end();
-             ++qit) {
+        for (VariablePairGroupConstIterator qit = nlf->begin();
+             qit != nlf->end(); ++qit) {
           lb = clb - getSumExcept1_(fwdUb.begin(), fwdUb.end(), uiter, Upper,
                                     implUb, count_inf_ub);
           ub = cub - getSumExcept1_(fwdLb.begin(), fwdLb.end(), liter, Lower,
@@ -2628,9 +2626,9 @@ int kPowHandler::updatePBounds_(VariablePtr v, double lb, double ub,
         << me_ << "inconsistent bounds of" << v->getName() << " " << v->getLb()
         << " " << v->getUb() << std::endl;
 #endif
-    std::cout<<"v->getLb()="<<v->getLb()<<"\n";
-    std::cout<<"v->getLb()="<<v->getUb()<<"\n";
-    std::cout<<"bTol_="<<bTol_<<"\n";
+    std::cout << "v->getLb()=" << v->getLb() << "\n";
+    std::cout << "v->getLb()=" << v->getUb() << "\n";
+    std::cout << "bTol_=" << bTol_ << "\n";
     return -1;
   }
 

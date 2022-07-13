@@ -17,8 +17,8 @@
 #ifndef MINOTAURQuadraticHANDLER_H
 #define MINOTAURQuadraticHANDLER_H
 
-#include "Handler.h"
 #include "CGraph.h"
+#include "Handler.h"
 #include "SimplexQuadCutGen.h"
 
 namespace Minotaur {
@@ -37,7 +37,6 @@ struct LinkPow {
   VariablePtr x;        ///> The variable x.
   double k;             ///> The power k
   ConstraintPtr oeCon;  ///> The linear constraint that gives the over estimator
-
 };
 typedef LinkPow *LinkPowPtr;                  ///> Pointer to LinkPow
 typedef std::vector<LinkPowPtr> LinkPowVec;   ///> Vector of LinkPow
@@ -381,9 +380,8 @@ class kPowHandler : public Handler {
    * \param[in] type Could be 0,1,2. It tells the function which (out of the
    * four) linear constraints do we want.
    */
-  LinearFunctionPtr getNewKpowLf_(VariablePtr y,VariablePtr x,double k, 
-                                  double lb, double ub, double &rhs,
-                                  int type);
+  LinearFunctionPtr getNewKpowLf_(VariablePtr y, VariablePtr x, double k,
+                                  double lb, double ub, double &rhs, int type);
 
   /**
    * \brief Get bounds of a qf of a constraint
@@ -498,7 +496,7 @@ class kPowHandler : public Handler {
    * the two variables)
    */
   bool propKPowBnds_(LinkPowMapIter lxk, RelaxationPtr rel, bool mod_rel,
-                    bool *changed, ModVector &p_mods, ModVector &r_mods);
+                     bool *changed, ModVector &p_mods, ModVector &r_mods);
 
   /**
    * \brief Relax all the square constraints: y=x0^2 and bilinear constraints

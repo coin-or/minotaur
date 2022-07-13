@@ -34,6 +34,7 @@
 #include "Problem.h"
 #include "QuadraticFunction.h"
 #include "Relaxation.h"
+#include "Solution.h"
 #include "Types.h"
 #include "Variable.h"
 
@@ -48,6 +49,7 @@ SimplexQuadCutGen::SimplexQuadCutGen(EnvPtr env, ProblemPtr p, LPEnginePtr lpe)
   ncuts_ = 0;
   minDepth_ = 1e-3;
   iter_ = 0;
+  variant_ = env->getOptions()->findInt("simplex_cut_variant")->getValue();
   allCuts_.clear();
   basicInd_.clear();
   nbOrig_.clear();
@@ -70,7 +72,7 @@ SimplexQuadCutGen::~SimplexQuadCutGen() {
   sb_.clear();
 }
 
-int SimplexQuadCutGen::generateCuts(RelaxationPtr rel, const double *x) {
+int SimplexQuadCutGen::generateCuts(RelaxationPtr rel, ConstSolutionPtr sol) {
   if (iter_ >= env_->getOptions()->findInt("simplex_cut_rounds")->getValue()) {
     return 0;
   }
@@ -100,7 +102,7 @@ int SimplexQuadCutGen::generateCuts(RelaxationPtr rel, const double *x) {
       // Linear constraints should be satisfied thus no cuts will be generated
       continue;
     }
-    act = c->getActivity(x, &error);
+    act = c->getActivity(sol->getPrimal(), &error);
     if (error == 0) {
       if (act <= c->getUb() + eTol_ && act >= c->getLb() - eTol_) {
         // Constraint already satisfied
@@ -113,11 +115,12 @@ int SimplexQuadCutGen::generateCuts(RelaxationPtr rel, const double *x) {
           << " is not defined at this point." << std::endl;
 #endif
     }
-    getQuadratic(c, x, rel, oxo, oxs, sxs, cutCoefo, cutCoefs, cutConst);
+    getQuadratic(c, sol->getPrimal(), rel, oxo, oxs, sxs, cutCoefo, cutCoefs,
+                 cutConst);
 
     if (act > c->getUb() + eTol_) {
       ncuts = relaxQuadTerms_(cuts, rel, oxo, oxs, sxs, cutCoefo, cutCoefs,
-                              cutConst, x, true, c->getUb());
+                              cutConst, sol, true, c->getUb());
       if (ncuts == 0) {
 #if SPEW
         env_->getLogger()->msgStream(LogDebug)
@@ -130,7 +133,7 @@ int SimplexQuadCutGen::generateCuts(RelaxationPtr rel, const double *x) {
       }
     } else {
       ncuts = relaxQuadTerms_(cuts, rel, oxo, oxs, sxs, cutCoefo, cutCoefs,
-                              cutConst, x, false, c->getLb());
+                              cutConst, sol, false, c->getLb());
       if (ncuts == 0) {
 #if SPEW
         env_->getLogger()->msgStream(LogDebug)
@@ -144,7 +147,7 @@ int SimplexQuadCutGen::generateCuts(RelaxationPtr rel, const double *x) {
     }
   }
   disableFactorization();
-  addCutsToRel_(cuts, rel, x, ncuts);
+  addCutsToRel_(cuts, rel, sol->getPrimal(), ncuts);
   env_->getLogger()->msgStream(LogExtraInfo)
       << me_ << "No. of cuts generated: " << iter_cuts << std::endl;
   ncuts_ += iter_cuts;
@@ -242,11 +245,10 @@ void SimplexQuadCutGen::addCutsToRel_(SimplexCutVector cuts, RelaxationPtr rel,
   SimplexCutPtr cut;
   FunctionPtr f;
   ConstraintPtr c;
-  int variant = env_->getOptions()->findInt("simplex_cut_variant")->getValue();
 
   calcDepth_(cuts, x);
-  if (variant == 3) {
-    cuts = getTopCuts_(cuts, 5);
+  if (variant_ == 3) {
+    cuts = getTopCuts_(cuts, 1);
     ncuts = cuts.size();
   }
 
@@ -970,11 +972,11 @@ void SimplexQuadCutGen::multiplyNBNB_(int nb1, int nb2, double coef,
 
 int SimplexQuadCutGen::relaxBilTerm_(double coef, bool lower1, bool lower2,
                                      double l1, double u1, double l2, double u2,
-                                     double &c1v1, double &c1v2, double &c2v1,
-                                     double &c2v2, double &cnst1, double &cnst2,
-                                     bool under) {
+                                     double w1, double w2, double &c1v1,
+                                     double &c1v2, double &c2v1, double &c2v2,
+                                     double &cnst1, double &cnst2, bool under) {
   int numCuts;
-  int variant = env_->getOptions()->findInt("simplex_cut_variant")->getValue();
+
   if (under) {
     if (coef > eTol_) {
       if (lower1 == lower2) {
@@ -985,7 +987,7 @@ int SimplexQuadCutGen::relaxBilTerm_(double coef, bool lower1, bool lower2,
         cnst1 = -coef * p1 * p2;
         numCuts = 1;
       } else {
-        if (variant == 1 || variant == 3) {
+        if (variant_ == 1 || variant_ == 3) {
           c1v1 = coef * l2;
           c1v2 = coef * l1;
           cnst1 = -coef * l1 * l2;
@@ -994,15 +996,22 @@ int SimplexQuadCutGen::relaxBilTerm_(double coef, bool lower1, bool lower2,
           cnst2 = -coef * u1 * u2;
           numCuts = 2;
         } else {
-          c1v1 = coef * (0.5 * l2 + 0.5 * u2);
-          c1v2 = coef * (0.5 * l1 + 0.5 * u1);
-          cnst1 = -coef * (0.5 * l1 * l2 + 0.5 * u1 * u2);
+          if (lower2) {
+            std::swap(w1, w2);
+          }
+          if (variant_ == 4) {
+            w1 = fabs(l1) + fabs(l2) < fabs(u1) + fabs(u2) ? 1 : 0;
+            w2 = fabs(l1) + fabs(l2) < fabs(u1) + fabs(u2) ? 0 : 1;
+          }
+          c1v1 = coef * (w1 * l2 + w2 * u2);
+          c1v2 = coef * (w1 * l1 + w2 * u1);
+          cnst1 = -coef * (w1 * l1 * l2 + w2 * u1 * u2);
           numCuts = 1;
         }
       }
     } else {
       if (lower1 == lower2) {
-        if (variant == 1 || variant == 3) {
+        if (variant_ == 1 || variant_ == 3) {
           c1v1 = coef * l2;
           c1v2 = coef * u1;
           cnst1 = -coef * u1 * l2;
@@ -1011,9 +1020,16 @@ int SimplexQuadCutGen::relaxBilTerm_(double coef, bool lower1, bool lower2,
           cnst2 = -coef * l1 * u2;
           numCuts = 2;
         } else {
-          c1v1 = coef * (0.5 * l2 + 0.5 * u2);
-          c1v2 = coef * (0.5 * l1 + 0.5 * u1);
-          cnst1 = -coef * (0.5 * u1 * l2 + 0.5 * l1 * u2);
+          if (!lower1) {
+            std::swap(w1, w2);
+          }
+          if (variant_ == 4) {
+            w1 = fabs(l1) + fabs(u2) < fabs(u1) + fabs(l2) ? 1 : 0;
+            w2 = fabs(l1) + fabs(u2) < fabs(u1) + fabs(l2) ? 0 : 1;
+          }
+          c1v1 = coef * (w1 * u2 + w2 * l2);
+          c1v2 = coef * (w1 * l1 + w2 * u1);
+          cnst1 = -coef * (w1 * l1 * u2 + w2 * u1 * l2);
           numCuts = 1;
         }
       } else {
@@ -1035,7 +1051,7 @@ int SimplexQuadCutGen::relaxBilTerm_(double coef, bool lower1, bool lower2,
         cnst1 = -coef * p1 * p2;
         numCuts = 1;
       } else {
-        if (variant == 1 || variant == 3) {
+        if (variant_ == 1 || variant_ == 3) {
           c1v1 = coef * l2;
           c1v2 = coef * l1;
           cnst1 = -coef * l1 * l2;
@@ -1044,15 +1060,22 @@ int SimplexQuadCutGen::relaxBilTerm_(double coef, bool lower1, bool lower2,
           cnst2 = -coef * u1 * u2;
           numCuts = 2;
         } else {
-          c1v1 = coef * (0.5 * l2 + 0.5 * u2);
-          c1v2 = coef * (0.5 * l1 + 0.5 * u1);
-          cnst1 = -coef * (0.5 * l1 * l2 + 0.5 * u1 * u2);
+          if (lower2) {
+            std::swap(w1, w2);
+          }
+          if (variant_ == 4) {
+            w1 = fabs(l1) + fabs(l2) < fabs(u1) + fabs(u2) ? 1 : 0;
+            w2 = fabs(l1) + fabs(l2) < fabs(u1) + fabs(u2) ? 0 : 1;
+          }
+          c1v1 = coef * (w1 * l2 + w2 * u2);
+          c1v2 = coef * (w1 * l1 + w2 * u1);
+          cnst1 = -coef * (w1 * l1 * l2 + w2 * u1 * u2);
           numCuts = 1;
         }
       }
     } else {
       if (lower1 == lower2) {
-        if (variant == 1 || variant == 3) {
+        if (variant_ == 1 || variant_ == 3) {
           c1v1 = coef * l2;
           c1v2 = coef * u1;
           cnst1 = -coef * u1 * l2;
@@ -1061,9 +1084,16 @@ int SimplexQuadCutGen::relaxBilTerm_(double coef, bool lower1, bool lower2,
           cnst2 = -coef * l1 * u2;
           numCuts = 2;
         } else {
-          c1v1 = coef * (0.5 * l2 + 0.5 * u2);
-          c1v2 = coef * (0.5 * l1 + 0.5 * u1);
-          cnst1 = -coef * (0.5 * u1 * l2 + 0.5 * l1 * u2);
+          if (!lower1) {
+            std::swap(w1, w2);
+          }
+          if (variant_ == 4) {
+            w1 = fabs(l1) + fabs(u2) < fabs(u1) + fabs(l2) ? 1 : 0;
+            w2 = fabs(l1) + fabs(u2) < fabs(u1) + fabs(l2) ? 0 : 1;
+          }
+          c1v1 = coef * (w1 * u2 + w2 * l2);
+          c1v2 = coef * (w1 * l1 + w2 * u1);
+          cnst1 = -coef * (w1 * l1 * u2 + w2 * u1 * l2);
           numCuts = 1;
         }
       } else {
@@ -1084,7 +1114,7 @@ int SimplexQuadCutGen::relaxQuadTerms_(SimplexCutVector &iter_cuts,
                                        QuadTerm oxs, QuadTerm sxs,
                                        std::map<int, double> cutCoefo,
                                        std::map<int, double> cutCoefs,
-                                       double cutConst, const double *x,
+                                       double cutConst, ConstSolutionPtr sol,
                                        bool under, double rhs) {
   SimplexCutVector cuts =
       getCutVec_(rel, cutCoefo, cutCoefs, cutConst, under, rhs);
@@ -1094,6 +1124,10 @@ int SimplexQuadCutGen::relaxQuadTerms_(SimplexCutVector &iter_cuts,
   bool lower1, lower2;
   VariablePtr v1, v2;
   int ncuts;
+  double w1 = 0.0, w2 = 0.0;
+  const double *x = sol->getPrimal();
+  const double *dualVars = sol->getDualOfVars();
+  const double *dualCons = sol->getDualOfCons();
 
   // For oxo. Assume that all original variables are at its bounds since they
   // are non-basic
@@ -1115,9 +1149,13 @@ int SimplexQuadCutGen::relaxQuadTerms_(SimplexCutVector &iter_cuts,
       v2 = rel->getVariable(vp.second);
       lower1 = fabs(x[vp.first] - v1->getLb()) < eTol_ ? true : false;
       lower2 = fabs(x[vp.second] - v1->getLb()) < eTol_ ? true : false;
+      if (variant_ == 4) {
+        w1 = dualVars[vp.first] / (dualVars[vp.first] + dualVars[vp.second]);
+        w2 = dualVars[vp.second] / (dualVars[vp.first] + dualVars[vp.second]);
+      }
       ncuts = relaxBilTerm_(it->second, lower1, lower2, v1->getLb(),
-                            v1->getUb(), v2->getLb(), v2->getUb(), c1v1, c1v2,
-                            c2v1, c2v2, cnst1, cnst2, under);
+                            v1->getUb(), v2->getLb(), v2->getUb(), w1, w2, c1v1,
+                            c1v2, c2v1, c2v2, cnst1, cnst2, under);
       if (ncuts == 1) {
         addLfTerm_(cuts, v1, v2, c1v1, c1v2, cnst1);
       } else {
@@ -1136,9 +1174,13 @@ int SimplexQuadCutGen::relaxQuadTerms_(SimplexCutVector &iter_cuts,
     v1 = rel->getVariable(vp.first);
     lower1 = fabs(x[vp.first] - v1->getLb()) < eTol_ ? true : false;
     lower2 = sb_[vp.second].second > eTol_ ? true : false;
+    if (variant_ == 4) {
+      w1 = dualVars[vp.first] / (dualVars[vp.first] + dualCons[vp.second]);
+      w2 = dualCons[vp.second] / (dualVars[vp.first] + dualCons[vp.second]);
+    }
     ncuts = relaxBilTerm_(it->second, lower1, lower2, v1->getLb(), v1->getUb(),
-                          sb_[vp.second].first, sb_[vp.second].second, c1v1,
-                          c1v2, c2v1, c2v2, cnst1, cnst2, under);
+                          sb_[vp.second].first, sb_[vp.second].second, w1, w2,
+                          c1v1, c1v2, c2v1, c2v2, cnst1, cnst2, under);
     if (ncuts == 1) {
       addLfTerm_(cuts, rel, v1, vp.second, c1v1, c1v2, cnst1);
     } else {
@@ -1163,10 +1205,14 @@ int SimplexQuadCutGen::relaxQuadTerms_(SimplexCutVector &iter_cuts,
       // Slack bilinear term
       lower1 = sb_[vp.first].second > eTol_ ? true : false;
       lower2 = sb_[vp.second].second > eTol_ ? true : false;
+      if (variant_ == 4) {
+        w1 = dualCons[vp.first] / (dualCons[vp.first] + dualCons[vp.second]);
+        w2 = dualCons[vp.second] / (dualCons[vp.first] + dualCons[vp.second]);
+      }
       ncuts = relaxBilTerm_(it->second, lower1, lower2, sb_[vp.first].first,
                             sb_[vp.first].second, sb_[vp.second].first,
-                            sb_[vp.second].second, c1v1, c1v2, c2v1, c2v2,
-                            cnst1, cnst2, under);
+                            sb_[vp.second].second, w1, w2, c1v1, c1v2, c2v1,
+                            c2v2, cnst1, cnst2, under);
       if (ncuts == 1) {
         addLfTerm_(cuts, rel, vp.first, vp.second, c1v1, c1v2, cnst1);
       } else {

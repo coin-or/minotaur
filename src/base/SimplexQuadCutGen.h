@@ -45,12 +45,8 @@ struct SimplexCut {
   double ub;             // Upper Bound
   UInt numInactive;      // Number of times the cut has remained inactive
   double depth;          // Depth of cut
-  bool operator < (const SimplexCut& cut) const {
-    return depth < cut.depth;
-  }
-  bool operator > (const SimplexCut& cut) const {
-    return depth > cut.depth;
-  }
+  bool operator<(const SimplexCut &cut) const { return depth < cut.depth; }
+  bool operator>(const SimplexCut &cut) const { return depth > cut.depth; }
 };
 
 typedef std::pair<int, int> VarProd;
@@ -74,7 +70,7 @@ class SimplexQuadCutGen {
   void disableFactorization();
 
   // Generate the cuts that violate the given point
-  int generateCuts(RelaxationPtr rel, const double *x);
+  int generateCuts(RelaxationPtr rel, ConstSolutionPtr sol);
 
   // get preprocessing info from the simplex tableau
   void preprocessSimplexTab();
@@ -143,6 +139,9 @@ class SimplexQuadCutGen {
 
   // Lower and Upper bounds of the slack variables
   SlackBound sb_;
+
+  // variant we are solving
+  int variant_;
 
   // \brief Add the generated cuts to the relaxation
   // \param[in] cuts - The vector of cuts to be added to relaxation
@@ -297,7 +296,7 @@ class SimplexQuadCutGen {
 
   // \brief to get top cuts whose depth of cut is in highest
   // \param[in] cuts - the cuts vector
-  // \param[in] num - number of cuts to select 
+  // \param[in] num - number of cuts to select
   SimplexCutVector getTopCuts_(SimplexCutVector cuts, UInt num);
 
   // \brief multiply two basic variables coef*b1*b2
@@ -352,15 +351,15 @@ class SimplexQuadCutGen {
   void multiplyNBNB_(int nb1, int nb2, double coef, QuadTerm &oxo);
 
   int relaxBilTerm_(double coef, bool lower1, bool lower2, double l1, double u1,
-                    double l2, double u2, double &c1v1, double &c1v2,
-                    double &c2v1, double &c2v2, double &cnst1, double &cnst2,
-                    bool under);
+                    double l2, double u2, double w1, double w2, double &c1v1,
+                    double &c1v2, double &c2v1, double &c2v2, double &cnst1,
+                    double &cnst2, bool under);
 
   int relaxQuadTerms_(SimplexCutVector &cuts, RelaxationPtr rel, QuadTerm oxo,
                       QuadTerm oxs, QuadTerm sxs,
                       std::map<int, double> cutCoefo,
                       std::map<int, double> cutCoefs, double cutConst,
-                      const double *x, bool under, double rhs);
+                      ConstSolutionPtr sol, bool under, double rhs);
 
   void relaxSqTerm_(double coef, bool atLower, double l, double u,
                     double &lincoef, double &cnst, bool under);
