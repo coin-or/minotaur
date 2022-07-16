@@ -1003,6 +1003,10 @@ int SimplexQuadCutGen::relaxBilTerm_(double coef, bool lower1, bool lower2,
             w1 = fabs(l1) + fabs(l2) < fabs(u1) + fabs(u2) ? 1 : 0;
             w2 = fabs(l1) + fabs(l2) < fabs(u1) + fabs(u2) ? 0 : 1;
           }
+          if (variant_ == 5) {
+            w1 = 0.5;
+            w2 = 0.5;
+          }
           c1v1 = coef * (w1 * l2 + w2 * u2);
           c1v2 = coef * (w1 * l1 + w2 * u1);
           cnst1 = -coef * (w1 * l1 * l2 + w2 * u1 * u2);
@@ -1026,6 +1030,10 @@ int SimplexQuadCutGen::relaxBilTerm_(double coef, bool lower1, bool lower2,
           if (variant_ == 4) {
             w1 = fabs(l1) + fabs(u2) < fabs(u1) + fabs(l2) ? 1 : 0;
             w2 = fabs(l1) + fabs(u2) < fabs(u1) + fabs(l2) ? 0 : 1;
+          }
+          if (variant_ == 5) {
+            w1 = 0.5;
+            w2 = 0.5;
           }
           c1v1 = coef * (w1 * u2 + w2 * l2);
           c1v2 = coef * (w1 * l1 + w2 * u1);
@@ -1067,6 +1075,10 @@ int SimplexQuadCutGen::relaxBilTerm_(double coef, bool lower1, bool lower2,
             w1 = fabs(l1) + fabs(l2) < fabs(u1) + fabs(u2) ? 1 : 0;
             w2 = fabs(l1) + fabs(l2) < fabs(u1) + fabs(u2) ? 0 : 1;
           }
+          if (variant_ == 5) {
+            w1 = 0.5;
+            w2 = 0.5;
+          }
           c1v1 = coef * (w1 * l2 + w2 * u2);
           c1v2 = coef * (w1 * l1 + w2 * u1);
           cnst1 = -coef * (w1 * l1 * l2 + w2 * u1 * u2);
@@ -1090,6 +1102,10 @@ int SimplexQuadCutGen::relaxBilTerm_(double coef, bool lower1, bool lower2,
           if (variant_ == 4) {
             w1 = fabs(l1) + fabs(u2) < fabs(u1) + fabs(l2) ? 1 : 0;
             w2 = fabs(l1) + fabs(u2) < fabs(u1) + fabs(l2) ? 0 : 1;
+          }
+          if (variant_ == 5) {
+            w1 = 0.5;
+            w2 = 0.5;
           }
           c1v1 = coef * (w1 * u2 + w2 * l2);
           c1v2 = coef * (w1 * l1 + w2 * u1);
