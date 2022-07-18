@@ -151,7 +151,7 @@ int SimplexQuadCutGen::generateCuts(RelaxationPtr rel, ConstSolutionPtr sol) {
   env_->getLogger()->msgStream(LogExtraInfo)
       << me_ << "No. of cuts generated: " << iter_cuts << std::endl;
   ncuts_ += iter_cuts;
-  return ncuts;
+  return iter_cuts;
 }
 
 double SimplexQuadCutGen::getSlackLb(int s) { return sb_[s].first; }
