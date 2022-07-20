@@ -43,7 +43,10 @@ bool showCuts = false;
 bool showQuadVars = false;
 bool allVars = false;
 int numCons = 0;
-double* dualVec = 0;
+int numVars = 0;
+double* dualVecCons = 0;
+double* dualVecVars = 0;
+int variant = 2;
 std::vector<double> optSol = {0, 0, 1, 1,   0,   0,   0,   0, 0,  // ex9_2_6
                               0, 0, 0, 0.5, 0.5, 0.5, 0.5, 1};
 // std::vector<double> optSol = {50, 75.485880502600196, 93.262254147831101,
@@ -773,9 +776,51 @@ void linearize(double x1val, double x2val, double coef, int v1, int v2,
   addTerm(t2, v2, coef2, 1.0, false);
 }
 
-void updateRel(EnvPtr env, RelaxationPtr rel, SimplexQuadCutGenPtr cutgen,
+void dualLinearze(double coef, int v1, int v2, bool lower1, bool lower2,
+                  double l1, double u1, double l2, double u2, double w1,
+                  double w2, std::map<int, double>& t1,
+                  std::map<int, double>& t2, double& cutConst, bool under) {
+  double normal = w1 + w2;
+  w1 = w1 / normal;
+  w2 = w2 / normal;
+  if (under) {
+    if (coef > 1e-8) {
+      if (lower2) {
+        std::swap(w1, w2);
+      }
+      addTerm(t1, v1, coef * (w1 * l2 + w2 * u2), 1.0, false);
+      addTerm(t2, v2, coef * (w1 * l1 + w2 * u1), 1.0, false);
+      cutConst -= coef * (w1 * l1 * l2 + w2 * u1 * u2);
+    } else {
+      if (!lower1) {
+        std::swap(w1, w2);
+      }
+      addTerm(t1, v1, coef * (w1 * u2 + w2 * l2), 1.0, false);
+      addTerm(t2, v2, coef * (w1 * l1 + w2 * u1), 1.0, false);
+      cutConst -= coef * (w1 * l1 * u2 + w2 * u1 * l2);
+    }
+  } else {
+    if (coef < -1e-8) {
+      if (lower2) {
+        std::swap(w1, w2);
+      }
+      addTerm(t1, v1, coef * (w1 * l2 + w2 * u2), 1.0, false);
+      addTerm(t2, v2, coef * (w1 * l1 + w2 * u1), 1.0, false);
+      cutConst -= coef * (w1 * l1 * l2 + w2 * u1 * u2);
+    } else {
+      if (!lower1) {
+        std::swap(w1, w2);
+      }
+      addTerm(t1, v1, coef * (w1 * u2 + w2 * l2), 1.0, false);
+      addTerm(t2, v2, coef * (w1 * l1 + w2 * u1), 1.0, false);
+      cutConst -= coef * (w1 * l1 * u2 + w2 * u1 * l2);
+    }
+  }
+}
+
+bool updateRel(EnvPtr env, RelaxationPtr rel, SimplexQuadCutGenPtr cutgen,
                AuxVarVector& auxVars, const double* x, LPEnginePtr lpe,
-               ConstraintPtr c, bool ubinf, bool lbinf) {
+               ConstraintPtr c, bool ubinf, bool lbinf, double obj) {
   QuadTerm oxo, oxs, sxs;
   std::map<int, double> cutCoefo, cutCoefs;
   double cutConst = 0.0;
@@ -787,8 +832,18 @@ void updateRel(EnvPtr env, RelaxationPtr rel, SimplexQuadCutGenPtr cutgen,
   bool isScaled = false;
   bool addVar, lower1, lower2;
   VariablePtr v1, v2;
+  int numTerms;
 
   cutgen->getQuadratic(c, x, rel, oxo, oxs, sxs, cutCoefo, cutCoefs, cutConst);
+
+  if (variant == 1) {
+    numTerms = oxo.size() + oxs.size() + sxs.size();
+    std::cout << "Num Terms = " << numTerms << std::endl;
+    if (numTerms > ceil(0.1 * (rel->getNumVars() + rel->getNumCons())) &&
+        numTerms > 10) {
+      return false;
+    }
+  }
 
   for (QuadTerm::iterator it = oxo.begin(); it != oxo.end(); ++it) {
     if (fabs(it->second) < etol) {
@@ -828,11 +883,41 @@ void updateRel(EnvPtr env, RelaxationPtr rel, SimplexQuadCutGenPtr cutgen,
                         it->first.first, it->first.second, cutCoefo, cutCoefo,
                         cutConst);
             } else {
-              addVar = true;
+              if (variant == 2) {
+                double dualProd = fabs(dualVecVars[it->first.first] *
+                                       dualVecVars[it->first.second]);
+                if (dualProd >= obj) {
+                  addVar = true;
+                } else {
+                  dualLinearze(it->second, lower1, lower2, it->first.first,
+                               it->first.second, v1->getLb(), v1->getUb(),
+                               v2->getLb(), v2->getUb(),
+                               dualVecVars[it->first.first],
+                               dualVecVars[it->first.second], cutCoefo,
+                               cutCoefo, cutConst, ubinf);
+                }
+              } else {
+                addVar = true;
+              }
             }
           } else {
             if (lower1 == lower2) {
-              addVar = true;
+              if (variant == 2) {
+                double dualProd = fabs(dualVecVars[it->first.first] *
+                                       dualVecVars[it->first.second]);
+                if (dualProd >= obj) {
+                  addVar = true;
+                } else {
+                  dualLinearze(it->second, lower1, lower2, it->first.first,
+                               it->first.second, v1->getLb(), v1->getUb(),
+                               v2->getLb(), v2->getUb(),
+                               dualVecVars[it->first.first],
+                               dualVecVars[it->first.second], cutCoefo,
+                               cutCoefo, cutConst, ubinf);
+                }
+              } else {
+                addVar = true;
+              }
             } else {
               addVar = false;
               linearize(x[it->first.first], x[it->first.second], it->second,
@@ -884,11 +969,43 @@ void updateRel(EnvPtr env, RelaxationPtr rel, SimplexQuadCutGenPtr cutgen,
             linearize(x[it->first.first], 0.0, it->second, it->first.first,
                       it->first.second, cutCoefo, cutCoefs, cutConst);
           } else {
-            addVar = true;
+            if (variant == 2) {
+              double dualProd = fabs(dualVecVars[it->first.first] *
+                                     dualVecCons[it->first.second]);
+              if (dualProd >= obj) {
+                addVar = true;
+              } else {
+                dualLinearze(it->second, lower1, lower2, it->first.first,
+                             it->first.second, v1->getLb(), v1->getUb(),
+                             cutgen->getSlackLb(it->first.second),
+                             cutgen->getSlackUb(it->first.second),
+                             dualVecVars[it->first.first],
+                             dualVecCons[it->first.second], cutCoefo, cutCoefs,
+                             cutConst, ubinf);
+              }
+            } else {
+              addVar = true;
+            }
           }
         } else {
           if (lower1 == lower2) {
-            addVar = true;
+            if (variant == 2) {
+              double dualProd = fabs(dualVecVars[it->first.first] *
+                                     dualVecVars[it->first.second]);
+              if (dualProd >= obj) {
+                addVar = true;
+              } else {
+                dualLinearze(it->second, lower1, it->first.first,
+                             it->first.second, lower2, v1->getLb(), v1->getUb(),
+                             cutgen->getSlackLb(it->first.second),
+                             cutgen->getSlackUb(it->first.second),
+                             dualVecVars[it->first.first],
+                             dualVecCons[it->first.second], cutCoefo, cutCoefs,
+                             cutConst, ubinf);
+              }
+            } else {
+              addVar = true;
+            }
           } else {
             linearize(x[it->first.first], 0.0, it->second, it->first.first,
                       it->first.second, cutCoefo, cutCoefs, cutConst);
@@ -957,11 +1074,47 @@ void updateRel(EnvPtr env, RelaxationPtr rel, SimplexQuadCutGenPtr cutgen,
               linearize(0.0, 0.0, it->second, it->first.first, it->first.second,
                         cutCoefs, cutCoefs, cutConst);
             } else {
-              addVar = true;
+              if (variant == 2) {
+                double dualProd = fabs(dualVecVars[it->first.first] *
+                                       dualVecVars[it->first.second]);
+                if (dualProd >= obj) {
+                  addVar = true;
+                } else {
+                  dualLinearze(it->second, lower1, lower2, it->first.first,
+                               it->first.second,
+                               cutgen->getSlackLb(it->first.first),
+                               cutgen->getSlackUb(it->first.first),
+                               cutgen->getSlackLb(it->first.second),
+                               cutgen->getSlackUb(it->first.second),
+                               dualVecCons[it->first.first],
+                               dualVecCons[it->first.second], cutCoefs,
+                               cutCoefs, cutConst, ubinf);
+                }
+              } else {
+                addVar = true;
+              }
             }
           } else {
             if (lower1 == lower2) {
-              addVar = true;
+              if (variant == 2) {
+                double dualProd = fabs(dualVecVars[it->first.first] *
+                                       dualVecVars[it->first.second]);
+                if (dualProd >= obj) {
+                  addVar = true;
+                } else {
+                  dualLinearze(it->second, lower1, lower2, it->first.first,
+                               it->first.second,
+                               cutgen->getSlackLb(it->first.first),
+                               cutgen->getSlackUb(it->first.first),
+                               cutgen->getSlackLb(it->first.second),
+                               cutgen->getSlackUb(it->first.second),
+                               dualVecCons[it->first.first],
+                               dualVecCons[it->first.second], cutCoefs,
+                               cutCoefs, cutConst, ubinf);
+                }
+              } else {
+                addVar = true;
+              }
             } else {
               addVar = false;
               linearize(0.0, 0.0, it->second, it->first.first, it->first.second,
@@ -995,10 +1148,27 @@ void updateRel(EnvPtr env, RelaxationPtr rel, SimplexQuadCutGenPtr cutgen,
   sxs.clear();
   cutCoefo.clear();
   cutCoefs.clear();
+  return true;
+}
+
+double getTarget() {
+  double max = 0;
+  for (int i = 0; i < numVars; ++i) {
+    if (fabs(dualVecVars[i]) > max) {
+      max = fabs(dualVecVars[i]);
+    }
+  }
+  for (int i = 0; i < numCons; ++i) {
+    if (fabs(dualVecCons[i]) > max) {
+      max = fabs(dualVecCons[i]);
+    }
+  }
+  return max * max / 4.0;
 }
 
 bool isFeasible(EnvPtr env, ProblemPtr p, ConstSolutionPtr sol,
-                RelaxationPtr rel, AuxVarVector& auxVars, LPEnginePtr lpe) {
+                RelaxationPtr rel, AuxVarVector& auxVars, LPEnginePtr lpe,
+                bool& separated) {
   ConstraintPtr c;
   double act, clb, cub;
   const double* x = sol->getPrimal();
@@ -1008,6 +1178,7 @@ bool isFeasible(EnvPtr env, ProblemPtr p, ConstSolutionPtr sol,
   bool ubinf, lbinf;
   double at = 1e-6;
   double rt = 1e-4;
+  double target = getTarget();
 
   SimplexQuadCutGenPtr cutgen =
       (SimplexQuadCutGenPtr) new SimplexQuadCutGen(env, p, lpe);
@@ -1025,7 +1196,10 @@ bool isFeasible(EnvPtr env, ProblemPtr p, ConstSolutionPtr sol,
         lbinf = (act < clb - at) && (clb == 0 || act < clb - fabs(clb) * rt);
         if (ubinf || lbinf) {
           is_feas = false;
-          updateRel(env, rel, cutgen, auxVars, x, lpe, c, ubinf, lbinf);
+          if (updateRel(env, rel, cutgen, auxVars, x, lpe, c, ubinf, lbinf,
+                        target)) {
+            separated = true;
+          }
         }
       } else {
         std::cout << c->getName() << " Constraint not defined at this point."
@@ -1038,14 +1212,22 @@ bool isFeasible(EnvPtr env, ProblemPtr p, ConstSolutionPtr sol,
   return is_feas;
 }
 
-void resizeDualVec(int newSize) {
-  double* newVec = new double[newSize];
-  std::memset(newVec, 0.0, newSize * sizeof(double));
-  std::memcpy(newVec, dualVec, numCons * sizeof(double));
+void resizeDualVec(int newConsSize, int newVarsSize) {
+  double* newVec = new double[newConsSize];
+  std::memset(newVec, 0.0, newConsSize * sizeof(double));
+  std::memcpy(newVec, dualVecCons, numCons * sizeof(double));
 
-  numCons = newSize;
-  delete[] dualVec;
-  dualVec = newVec;
+  numCons = newConsSize;
+  delete[] dualVecCons;
+  dualVecCons = newVec;
+
+  newVec = new double[newVarsSize];
+  std::memset(newVec, 0.0, newVarsSize * sizeof(double));
+  std::memcpy(newVec, dualVecVars, numVars * sizeof(double));
+
+  numVars = newVarsSize;
+  delete[] dualVecVars;
+  dualVecVars = newVec;
 }
 
 RelaxationPtr solveRelaxation(EnvPtr env, ProblemPtr p, RelaxationPtr rel,
@@ -1055,45 +1237,51 @@ RelaxationPtr solveRelaxation(EnvPtr env, ProblemPtr p, RelaxationPtr rel,
   ConstSolutionPtr sol;
   RelaxationPtr newrel = rel->clone(env);
   const double* dualCons;
+  const double* dualVars;
+  bool separated = false;
 
-  /* TO DO : Instead of directly loading and solving the problem
-   * we should get the dual information of the previous iteration
-   * and then set extra dual variables to zero to warm start
-   * dual simplex algorithm
-   */
   std::cout << "Number of variables = " << rel->getNumVars() << std::endl;
   std::cout << "Number of Constraints = " << rel->getNumCons() << std::endl;
 
-  if (!checkSol(rel, auxVars)) {
-    std::cout << "NOT FEASIBLE HERE" << std::endl;
-  }
+  // if (!checkSol(rel, auxVars)) {
+  //  std::cout << "NOT FEASIBLE HERE" << std::endl;
+  //}
 
   lpe->load(rel);
-  if (dualVec) {
-    resizeDualVec(rel->getNumCons());
-    lpe->loadDualWarmStart(numCons, dualVec);
+  if (dualVecCons) {
+    resizeDualVec(rel->getNumCons(), rel->getNumVars());
+    lpe->loadDualWarmStart(numCons, dualVecCons);
     lpe->solve();
   } else {
     numCons = rel->getNumCons();
-    dualVec = new double[numCons];
+    dualVecCons = new double[numCons];
+    numVars = rel->getNumVars();
+    dualVecVars = new double[numVars];
     lpe->solve();
   }
   sol = lpe->getSolution();
 
   dualCons = sol->getDualOfCons();
-  std::memcpy(dualVec, dualCons, numCons * sizeof(double));
-  // delete[] dualCons;
+  std::memcpy(dualVecCons, dualCons, numCons * sizeof(double));
+  dualVars = sol->getDualOfVars();
+  std::memcpy(dualVecVars, dualVars, numVars * sizeof(double));
 
   std::cout << "Lower bound = " << sol->getObjValue() << std::endl;
 
-  is_feas = isFeasible(env, p, sol, newrel, auxVars, lpe);
+  is_feas = isFeasible(env, p, sol, newrel, auxVars, lpe, separated);
   if (is_feas) {
     std::cout << "Feasible Solution found" << std::endl;
     std::cout << "Upper bound = " << sol->getObjValue() << std::endl;
     return 0;
   }
 
-  // delete sol;
+  if (!separated) {
+    std::cout << "All quadratic functions are has sparsity more than "
+                 "0.1\nHence point is not separated"
+              << std::endl;
+    return 0;
+  }
+
   delete lpe;
   delete rel;
   return newrel;
@@ -1367,6 +1555,14 @@ CLEANUP:
 
   if (orig_v) {
     delete orig_v;
+  }
+
+  if (dualVecCons) {
+    delete[] dualVecCons;
+  }
+
+  if (dualVecVars) {
+    delete[] dualVecVars;
   }
 
   return 0;
