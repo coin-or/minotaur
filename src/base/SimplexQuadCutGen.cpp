@@ -115,6 +115,12 @@ int SimplexQuadCutGen::generateCuts(RelaxationPtr rel, ConstSolutionPtr sol) {
           << " is not defined at this point." << std::endl;
 #endif
     }
+    oxo.clear();
+    oxs.clear();
+    sxs.clear();
+    cutCoefo.clear();
+    cutCoefs.clear();
+    cutConst = 0.0;
     getQuadratic(c, sol->getPrimal(), rel, oxo, oxs, sxs, cutCoefo, cutCoefs,
                  cutConst);
 
@@ -967,6 +973,21 @@ void SimplexQuadCutGen::multiplyNBNB_(int nb1, int nb2, double coef,
     addTerm_(oxo, std::make_pair(nb1, nb2), coef);
   } else {
     addTerm_(oxo, std::make_pair(nb2, nb1), coef);
+  }
+}
+
+void SimplexQuadCutGen::printTerm_(QuadTerm &t) {
+  for (QuadTerm::iterator it = t.begin(); it != t.end(); ++it) {
+    std::cout << std::fixed << std::setprecision(6);
+    std::cout << it->first.first << "," << it->first.second << "," << it->second
+              << std::endl;
+  }
+}
+
+void SimplexQuadCutGen::printTerm_(std::map<int, double> &t) {
+  for (std::map<int, double>::iterator it = t.begin(); it != t.end(); ++it) {
+    std::cout << std::fixed << std::setprecision(6);
+    std::cout << it->first << "," << it->second << std::endl;
   }
 }
 

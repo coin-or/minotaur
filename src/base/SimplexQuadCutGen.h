@@ -350,6 +350,9 @@ class SimplexQuadCutGen {
   // \param[out] oxo - the product map for original times original variables
   void multiplyNBNB_(int nb1, int nb2, double coef, QuadTerm &oxo);
 
+  void printTerm_(QuadTerm &t);
+  void printTerm_(std::map<int, double> &t);
+
   int relaxBilTerm_(double coef, bool lower1, bool lower2, double l1, double u1,
                     double l2, double u2, double w1, double w2, double &c1v1,
                     double &c1v2, double &c2v1, double &c2v2, double &cnst1,
