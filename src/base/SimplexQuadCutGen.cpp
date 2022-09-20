@@ -1186,7 +1186,7 @@ int SimplexQuadCutGen::relaxQuadTerms_(SimplexCutVector &iter_cuts,
       v2 = rel->getVariable(vp.second);
       lower1 = fabs(x[vp.first] - v1->getLb()) < eTol_ ? true : false;
       lower2 = fabs(x[vp.second] - v1->getLb()) < eTol_ ? true : false;
-      if (variant_ == 4) {
+      if (variant_ == 2) {
         w1 = dualVars[vp.first] / (dualVars[vp.first] + dualVars[vp.second]);
         w2 = dualVars[vp.second] / (dualVars[vp.first] + dualVars[vp.second]);
       }
@@ -1211,7 +1211,7 @@ int SimplexQuadCutGen::relaxQuadTerms_(SimplexCutVector &iter_cuts,
     v1 = rel->getVariable(vp.first);
     lower1 = fabs(x[vp.first] - v1->getLb()) < eTol_ ? true : false;
     lower2 = sb_[vp.second].second > eTol_ ? true : false;
-    if (variant_ == 4) {
+    if (variant_ == 2) {
       w1 = dualVars[vp.first] / (dualVars[vp.first] + dualCons[vp.second]);
       w2 = dualCons[vp.second] / (dualVars[vp.first] + dualCons[vp.second]);
     }
@@ -1242,7 +1242,7 @@ int SimplexQuadCutGen::relaxQuadTerms_(SimplexCutVector &iter_cuts,
       // Slack bilinear term
       lower1 = sb_[vp.first].second > eTol_ ? true : false;
       lower2 = sb_[vp.second].second > eTol_ ? true : false;
-      if (variant_ == 4) {
+      if (variant_ == 2) {
         w1 = dualCons[vp.first] / (dualCons[vp.first] + dualCons[vp.second]);
         w2 = dualCons[vp.second] / (dualCons[vp.first] + dualCons[vp.second]);
       }
