@@ -1187,8 +1187,13 @@ int SimplexQuadCutGen::relaxQuadTerms_(SimplexCutVector &iter_cuts,
       lower1 = fabs(x[vp.first] - v1->getLb()) < eTol_ ? true : false;
       lower2 = fabs(x[vp.second] - v1->getLb()) < eTol_ ? true : false;
       if (variant_ == 2) {
-        w1 = dualVars[vp.first] / (dualVars[vp.first] + dualVars[vp.second]);
-        w2 = dualVars[vp.second] / (dualVars[vp.first] + dualVars[vp.second]);
+        if (fabs(dualVars[vp.first] + dualVars[vp.second]) < eTol_) {
+          w1 = 0.5;
+          w2 = 0.5;
+        } else {
+          w1 = dualVars[vp.first] / (dualVars[vp.first] + dualVars[vp.second]);
+          w2 = dualVars[vp.second] / (dualVars[vp.first] + dualVars[vp.second]);
+        }
       }
       ncuts = relaxBilTerm_(it->second, lower1, lower2, v1->getLb(),
                             v1->getUb(), v2->getLb(), v2->getUb(), w1, w2, c1v1,
@@ -1212,8 +1217,13 @@ int SimplexQuadCutGen::relaxQuadTerms_(SimplexCutVector &iter_cuts,
     lower1 = fabs(x[vp.first] - v1->getLb()) < eTol_ ? true : false;
     lower2 = sb_[vp.second].second > eTol_ ? true : false;
     if (variant_ == 2) {
-      w1 = dualVars[vp.first] / (dualVars[vp.first] + dualCons[vp.second]);
-      w2 = dualCons[vp.second] / (dualVars[vp.first] + dualCons[vp.second]);
+      if ((dualVars[vp.first] + dualCons[vp.second]) < eTol_) {
+        w1 = 0.5;
+        w2 = 0.5;
+      } else {
+        w1 = dualVars[vp.first] / (dualVars[vp.first] + dualCons[vp.second]);
+        w2 = dualCons[vp.second] / (dualVars[vp.first] + dualCons[vp.second]);
+      }
     }
     ncuts = relaxBilTerm_(it->second, lower1, lower2, v1->getLb(), v1->getUb(),
                           sb_[vp.second].first, sb_[vp.second].second, w1, w2,
@@ -1243,8 +1253,13 @@ int SimplexQuadCutGen::relaxQuadTerms_(SimplexCutVector &iter_cuts,
       lower1 = sb_[vp.first].second > eTol_ ? true : false;
       lower2 = sb_[vp.second].second > eTol_ ? true : false;
       if (variant_ == 2) {
-        w1 = dualCons[vp.first] / (dualCons[vp.first] + dualCons[vp.second]);
-        w2 = dualCons[vp.second] / (dualCons[vp.first] + dualCons[vp.second]);
+        if ((dualCons[vp.first] + dualCons[vp.second]) < eTol_) {
+          w1 = 0.5;
+          w2 = 0.5;
+        } else {
+          w1 = dualCons[vp.first] / (dualCons[vp.first] + dualCons[vp.second]);
+          w2 = dualCons[vp.second] / (dualCons[vp.first] + dualCons[vp.second]);
+        }
       }
       ncuts = relaxBilTerm_(it->second, lower1, lower2, sb_[vp.first].first,
                             sb_[vp.first].second, sb_[vp.second].first,
