@@ -1445,7 +1445,7 @@ void LinearHandler::substVars_(bool *changed, PreModQ *mods)
   for (ConstraintConstIterator it= problem_->consBegin(); 
       it!=problem_->consEnd(); ++it) {
     c = *it;
-    if (c->getFunctionType()==Linear && 
+    if (c->getNonlinearFunction()==NULL && c->getQuadraticFunction()==NULL && 
         fabs(c->getUb()) < eTol_ && fabs(c->getLb()) < eTol_ &&
         c->getLinearFunction()->getNumTerms() == 2) {
       lf = c->getLinearFunction();
