@@ -1233,7 +1233,7 @@ void resizeDualVec(int newConsSize, int newVarsSize) {
 
 RelaxationPtr solveRelaxation(EnvPtr env, ProblemPtr p, RelaxationPtr rel,
                               EngineFactory* efac, bool& is_feas, int& status,
-                              AuxVarVector& auxVars) {
+                              AuxVarVector& auxVars, bool last) {
   LPEnginePtr lpe = efac->getLPEngine();
   ConstSolutionPtr sol;
   RelaxationPtr newrel = rel->clone(env);
@@ -1268,6 +1268,9 @@ RelaxationPtr solveRelaxation(EnvPtr env, ProblemPtr p, RelaxationPtr rel,
   std::memcpy(dualVecVars, dualVars, numVars * sizeof(double));
 
   std::cout << "Lower bound = " << sol->getObjValue() << std::endl;
+  if (last) {
+    return 0;
+  }
 
   is_feas = isFeasible(env, p, sol, newrel, auxVars, lpe, separated);
   if (is_feas) {
@@ -1507,7 +1510,7 @@ int main(int argc, char** argv) {
       break;
     }
     std::cout << "Iteration : " << i << std::endl;
-    rel = solveRelaxation(env, p, rel, efac, is_feas, status, auxVars);
+    rel = solveRelaxation(env, p, rel, efac, is_feas, status, auxVars, i==rounds);
   }
 
 CLEANUP:
