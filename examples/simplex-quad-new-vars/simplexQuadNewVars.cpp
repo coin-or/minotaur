@@ -39,7 +39,7 @@
 
 using namespace Minotaur;
 
-bool showCuts = false;
+bool showCuts = true;
 bool showQuadVars = false;
 bool allVars = false;
 int numCons = 0;
@@ -832,7 +832,7 @@ bool updateRel(EnvPtr env, RelaxationPtr rel, SimplexQuadCutGenPtr cutgen,
   bool isScaled = false;
   bool addVar, lower1, lower2;
   VariablePtr v1, v2;
-  int numTerms;
+  int numTerms, error = 0;
 
   cutgen->getQuadratic(c, x, rel, oxo, oxs, sxs, cutCoefo, cutCoefs, cutConst);
 
@@ -889,11 +889,11 @@ bool updateRel(EnvPtr env, RelaxationPtr rel, SimplexQuadCutGenPtr cutgen,
                 if (dualProd >= obj) {
                   addVar = true;
                 } else {
-                  dualLinearze(it->second, lower1, lower2, it->first.first,
-                               it->first.second, v1->getLb(), v1->getUb(),
+                  dualLinearze(it->second, it->first.first, it->first.second,
+                               lower1, lower2, v1->getLb(), v1->getUb(),
                                v2->getLb(), v2->getUb(),
-                               dualVecVars[it->first.first],
-                               dualVecVars[it->first.second], cutCoefo,
+                               fabs(dualVecVars[it->first.first]),
+                               fabs(dualVecVars[it->first.second]), cutCoefo,
                                cutCoefo, cutConst, ubinf);
                 }
               } else {
@@ -908,11 +908,11 @@ bool updateRel(EnvPtr env, RelaxationPtr rel, SimplexQuadCutGenPtr cutgen,
                 if (dualProd >= obj) {
                   addVar = true;
                 } else {
-                  dualLinearze(it->second, lower1, lower2, it->first.first,
-                               it->first.second, v1->getLb(), v1->getUb(),
+                  dualLinearze(it->second, it->first.first, it->first.second,
+                               lower1, lower2, v1->getLb(), v1->getUb(),
                                v2->getLb(), v2->getUb(),
-                               dualVecVars[it->first.first],
-                               dualVecVars[it->first.second], cutCoefo,
+                               fabs(dualVecVars[it->first.first]),
+                               fabs(dualVecVars[it->first.second]), cutCoefo,
                                cutCoefo, cutConst, ubinf);
                 }
               } else {
@@ -975,13 +975,13 @@ bool updateRel(EnvPtr env, RelaxationPtr rel, SimplexQuadCutGenPtr cutgen,
               if (dualProd >= obj) {
                 addVar = true;
               } else {
-                dualLinearze(it->second, lower1, lower2, it->first.first,
-                             it->first.second, v1->getLb(), v1->getUb(),
+                dualLinearze(it->second, it->first.first, it->first.second,
+                             lower1, lower2, v1->getLb(), v1->getUb(),
                              cutgen->getSlackLb(it->first.second),
                              cutgen->getSlackUb(it->first.second),
-                             dualVecVars[it->first.first],
-                             dualVecCons[it->first.second], cutCoefo, cutCoefs,
-                             cutConst, ubinf);
+                             fabs(dualVecVars[it->first.first]),
+                             fabs(dualVecCons[it->first.second]), cutCoefo,
+                             cutCoefs, cutConst, ubinf);
               }
             } else {
               addVar = true;
@@ -995,13 +995,13 @@ bool updateRel(EnvPtr env, RelaxationPtr rel, SimplexQuadCutGenPtr cutgen,
               if (dualProd >= obj) {
                 addVar = true;
               } else {
-                dualLinearze(it->second, lower1, it->first.first,
-                             it->first.second, lower2, v1->getLb(), v1->getUb(),
+                dualLinearze(it->second, it->first.first, it->first.second,
+                             lower1, lower2, v1->getLb(), v1->getUb(),
                              cutgen->getSlackLb(it->first.second),
                              cutgen->getSlackUb(it->first.second),
-                             dualVecVars[it->first.first],
-                             dualVecCons[it->first.second], cutCoefo, cutCoefs,
-                             cutConst, ubinf);
+                             fabs(dualVecVars[it->first.first]),
+                             fabs(dualVecCons[it->first.second]), cutCoefo,
+                             cutCoefs, cutConst, ubinf);
               }
             } else {
               addVar = true;
@@ -1080,14 +1080,14 @@ bool updateRel(EnvPtr env, RelaxationPtr rel, SimplexQuadCutGenPtr cutgen,
                 if (dualProd >= obj) {
                   addVar = true;
                 } else {
-                  dualLinearze(it->second, lower1, lower2, it->first.first,
-                               it->first.second,
+                  dualLinearze(it->second, it->first.first, it->first.second,
+                               lower1, lower2,
                                cutgen->getSlackLb(it->first.first),
                                cutgen->getSlackUb(it->first.first),
                                cutgen->getSlackLb(it->first.second),
                                cutgen->getSlackUb(it->first.second),
-                               dualVecCons[it->first.first],
-                               dualVecCons[it->first.second], cutCoefs,
+                               fabs(dualVecCons[it->first.first]),
+                               fabs(dualVecCons[it->first.second]), cutCoefs,
                                cutCoefs, cutConst, ubinf);
                 }
               } else {
@@ -1102,14 +1102,14 @@ bool updateRel(EnvPtr env, RelaxationPtr rel, SimplexQuadCutGenPtr cutgen,
                 if (dualProd >= obj) {
                   addVar = true;
                 } else {
-                  dualLinearze(it->second, lower1, lower2, it->first.first,
-                               it->first.second,
+                  dualLinearze(it->second, it->first.first, it->first.second,
+                               lower1, lower2,
                                cutgen->getSlackLb(it->first.first),
                                cutgen->getSlackUb(it->first.first),
                                cutgen->getSlackLb(it->first.second),
                                cutgen->getSlackUb(it->first.second),
-                               dualVecCons[it->first.first],
-                               dualVecCons[it->first.second], cutCoefs,
+                               fabs(dualVecCons[it->first.first]),
+                               fabs(dualVecCons[it->first.second]), cutCoefs,
                                cutCoefs, cutConst, ubinf);
                 }
               } else {
