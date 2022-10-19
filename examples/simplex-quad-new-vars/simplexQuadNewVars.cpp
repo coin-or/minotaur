@@ -835,6 +835,7 @@ bool updateRel(EnvPtr env, RelaxationPtr rel, SimplexQuadCutGenPtr cutgen,
   int numTerms;
 
   cutgen->getQuadratic(c, x, rel, oxo, oxs, sxs, cutCoefo, cutCoefs, cutConst);
+  //obj = 0;
 
   if (variant == 1) {
     numTerms = oxo.size() + oxs.size() + sxs.size();
@@ -1505,6 +1506,7 @@ int main(int argc, char** argv) {
     if (is_feas) {
       break;
     }
+    std::cout << "Iteration : " << i << std::endl;
     rel = solveRelaxation(env, p, rel, efac, is_feas, status, auxVars);
   }
 

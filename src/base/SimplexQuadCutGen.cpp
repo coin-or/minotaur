@@ -251,6 +251,7 @@ void SimplexQuadCutGen::addCutsToRel_(SimplexCutVector cuts, RelaxationPtr rel,
   SimplexCutPtr cut;
   FunctionPtr f;
   ConstraintPtr c;
+  double minelem;
 
   calcDepth_(cuts, x);
   if (variant_ == 3) {
@@ -276,12 +277,14 @@ void SimplexQuadCutGen::addCutsToRel_(SimplexCutVector cuts, RelaxationPtr rel,
         << cut->depth << std::endl;
     if (cut->lb > -INFINITY) {
       if (fabs(cut->lb) > 1e-3) {
-        cut->lf->multiply(1 / fabs(cut->lb));
+        minelem = getMin_(cut, fabs(cut->lb));
+        cut->lf->multiply(1 / minelem);
         cut->lb = cut->lb / fabs(cut->lb);
       }
     } else {
       if (fabs(cut->ub) > 1e-3) {
-        cut->lf->multiply(1 / fabs(cut->ub));
+        minelem = getMin_(cut, fabs(cut->ub));
+        cut->lf->multiply(1 / minelem);
         cut->ub = cut->ub / fabs(cut->ub);
       }
     }
@@ -625,6 +628,20 @@ SimplexCutVector SimplexQuadCutGen::getCutVec_(RelaxationPtr rel,
   cut->numInactive = 0;
   cuts.push_back(cut);
   return cuts;
+}
+
+double SimplexQuadCutGen::getMin_(SimplexCutPtr cut, double rhs) {
+  double minelem = INFINITY;
+  for (VariableGroupConstIterator it = cut->lf->termsBegin();
+       it != cut->lf->termsEnd(); ++it) {
+    if (fabs(it->second) < minelem && fabs(it->second) > eTol_) {
+      minelem = fabs(it->second);
+    }
+  }
+  if (rhs < minelem) {
+    minelem = rhs;
+  }
+  return minelem;
 }
 
 SimplexCutPtr SimplexQuadCutGen::getNewCut_(SimplexCutPtr cut, VariablePtr v1,

@@ -273,6 +273,8 @@ class SimplexQuadCutGen {
                               std::map<int, double> cutCoefs, double cutConst,
                               bool under, double rhs);
 
+  double getMin_(SimplexCutPtr cut, double rhs);
+
   // \brief Get the second cut for product of original variables
   SimplexCutPtr getNewCut_(SimplexCutPtr cut, VariablePtr v1, VariablePtr v2,
                            double coef1, double coef2, double cnst);
