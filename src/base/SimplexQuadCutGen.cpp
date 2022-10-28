@@ -279,13 +279,13 @@ void SimplexQuadCutGen::addCutsToRel_(SimplexCutVector cuts, RelaxationPtr rel,
       if (fabs(cut->lb) > 1e-3) {
         minelem = getMin_(cut, fabs(cut->lb));
         cut->lf->multiply(1 / minelem);
-        cut->lb = cut->lb / fabs(cut->lb);
+        cut->lb = cut->lb / minelem;
       }
     } else {
       if (fabs(cut->ub) > 1e-3) {
         minelem = getMin_(cut, fabs(cut->ub));
         cut->lf->multiply(1 / minelem);
-        cut->ub = cut->ub / fabs(cut->ub);
+        cut->ub = cut->ub / minelem;
       }
     }
     f = (FunctionPtr) new Function(cut->lf);
