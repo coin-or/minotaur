@@ -17,7 +17,7 @@ TEST_DIR=/home/amahajan/tmp/minotaur-test
 TP_DIR=${TEST_DIR}/third-party
 
 ## git info
-GIT_REPOS="https://github.com/minotaur-solver/minotaur"
+GIT_REPOS="https://github.com/coin-or/minotaur"
 
 ## Local LOGS
 WEB_DIR=/home/amahajan/misc/webpage/minotaur/nightly/origin
