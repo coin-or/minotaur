@@ -85,6 +85,11 @@ class SimplexQuadCutGen {
                     std::map<int, double> &cutCoefo,
                     std::map<int, double> &cutCoefs, double &cutConst);
 
+  void getQuadraticBNB(ConstraintPtr c, const double *x, RelaxationPtr rel,
+                       QuadTerm &oxo, QuadTerm &oxs,
+                       std::map<int, double> &cutCoefo, double &cutConst,
+                       int &count);
+
   double getSlackLb(int s);
 
   double getSlackUb(int s);
@@ -365,9 +370,17 @@ class SimplexQuadCutGen {
                       std::map<int, double> cutCoefo,
                       std::map<int, double> cutCoefs, double cutConst,
                       ConstSolutionPtr sol, bool under, double rhs);
+  int relaxQuadTermsBNB_(SimplexCutVector &iter_cuts, RelaxationPtr rel,
+                         QuadTerm oxo, QuadTerm oxs,
+                         std::map<int, double> cutCoefo, double cutConst,
+                         ConstSolutionPtr sol, bool under, double rhs);
 
   void relaxSqTerm_(double coef, bool atLower, double l, double u,
                     double &lincoef, double &cnst, bool under);
+
+  int relaxTermBNB_(double coef, bool lower, double bl, double bu, double nl,
+                    double nu, double &cb, double &cn, double &cnst,
+                    bool under);
 
   void slackSubstitute_(int slackInd, double coef, std::map<int, double> &row,
                         double &rhs);

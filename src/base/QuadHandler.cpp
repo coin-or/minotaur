@@ -792,6 +792,18 @@ LinearFunctionPtr QuadHandler::getNewSqLf_(VariablePtr x, VariablePtr y,
   return lf;
 }
 
+ConstraintPtr QuadHandler::addTangent_(VariablePtr x, VariablePtr y, double pt,
+                                       RelaxationPtr rel) {
+  LinearFunctionPtr lf = (LinearFunctionPtr) new LinearFunction();
+  FunctionPtr f;
+
+  lf->addTerm(x, 2 * pt);
+  lf->addTerm(y, -1.0);
+  f = (FunctionPtr) new Function(lf);
+  ConstraintPtr c = rel->newConstraint(f, -INFINITY, pt * pt);
+  return c;
+}
+
 void QuadHandler::addCut_(VariablePtr x, VariablePtr y, double xl, double yl,
                           double xval, double yval, RelaxationPtr rel,
                           bool &ifcuts) {
@@ -799,22 +811,14 @@ void QuadHandler::addCut_(VariablePtr x, VariablePtr y, double xl, double yl,
   ifcuts = false;
   if (2 * xl * xval - yval - yl > 1e-5 &&
       2 * xl * xval - yval > yl * (1 + 1e-4)) {
-    LinearFunctionPtr lf = (LinearFunctionPtr) new LinearFunction();
-    FunctionPtr f;
-
-    lf->addTerm(x, 2 * xl);
-    lf->addTerm(y, -1.0);
-    f = (FunctionPtr) new Function(lf);
+    ConstraintPtr c = addTangent_(x, y, xl, rel);
     ifcuts = true;
     ++sStats_.cuts;
 #if SPEW
     {
-      ConstraintPtr c = rel->newConstraint(f, -INFINITY, xl * xl);
       logger_->msgStream(LogDebug2) << me_ << "new cut added" << std::endl;
       c->write(logger_->msgStream(LogDebug2));
     }
-#else
-    rel->newConstraint(f, -INFINITY, xl * xl);
 #endif
   } else {
 #if SPEW
@@ -1468,6 +1472,11 @@ void QuadHandler::relax_(RelaxationPtr rel, bool *) {
 
     f = (FunctionPtr) new Function(lf);
     it->second->oeCon = rel->newConstraint(f, -INFINITY, rhs);
+
+    if (env_->getOptions()->findBool("sqTangentAtRoot")->getValue()) {
+      addTangent_(x0, y, x0->getLb(), rel);
+      addTangent_(x0, y, x0->getUb(), rel);
+    }
   }
 
   for (LinBilSetIter it = x0x1Funs_.begin(); it != x0x1Funs_.end(); ++it) {

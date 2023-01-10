@@ -121,34 +121,73 @@ int SimplexQuadCutGen::generateCuts(RelaxationPtr rel, ConstSolutionPtr sol) {
     cutCoefo.clear();
     cutCoefs.clear();
     cutConst = 0.0;
-    getQuadratic(c, sol->getPrimal(), rel, oxo, oxs, sxs, cutCoefo, cutCoefs,
-                 cutConst);
-
-    if (act > c->getUb() + eTol_) {
-      ncuts = relaxQuadTerms_(cuts, rel, oxo, oxs, sxs, cutCoefo, cutCoefs,
-                              cutConst, sol, true, c->getUb());
-      if (ncuts == 0) {
+    if (variant_ == 6) {
+      int count = 0;
+      while (count < 2) {
+        oxo.clear();
+        oxs.clear();
+        cutCoefo.clear();
+        ++count;
+        getQuadraticBNB(c, sol->getPrimal(), rel, oxo, oxs, cutCoefo, cutConst,
+                        count);
+        if (act > c->getUb() + eTol_) {
+          ncuts = relaxQuadTermsBNB_(cuts, rel, oxo, oxs, cutCoefo, cutConst,
+                                     sol, true, c->getUb());
+          if (ncuts == 0) {
 #if SPEW
-        env_->getLogger()->msgStream(LogDebug)
-            << me_ << "Constraint " << c->getName()
-            << " is infeasible at this point yet no cuts generated"
-            << std::endl;
+            env_->getLogger()->msgStream(LogDebug)
+                << me_ << "Constraint " << c->getName()
+                << " is infeasible at this point yet no cuts generated"
+                << std::endl;
 #endif
-      } else {
-        iter_cuts += ncuts;
+          } else {
+            iter_cuts += ncuts;
+          }
+        } else {
+          ncuts = relaxQuadTermsBNB_(cuts, rel, oxo, oxs, cutCoefo, cutConst,
+                                     sol, false, c->getLb());
+          if (ncuts == 0) {
+#if SPEW
+            env_->getLogger()->msgStream(LogDebug)
+                << me_ << "Constraint " << c->getName()
+                << " is infeasible at this point yet no cuts generated"
+                << std::endl;
+#endif
+          } else {
+            iter_cuts += ncuts;
+          }
+        }
       }
     } else {
-      ncuts = relaxQuadTerms_(cuts, rel, oxo, oxs, sxs, cutCoefo, cutCoefs,
-                              cutConst, sol, false, c->getLb());
-      if (ncuts == 0) {
+      getQuadratic(c, sol->getPrimal(), rel, oxo, oxs, sxs, cutCoefo, cutCoefs,
+                   cutConst);
+
+      if (act > c->getUb() + eTol_) {
+        ncuts = relaxQuadTerms_(cuts, rel, oxo, oxs, sxs, cutCoefo, cutCoefs,
+                                cutConst, sol, true, c->getUb());
+        if (ncuts == 0) {
 #if SPEW
-        env_->getLogger()->msgStream(LogDebug)
-            << me_ << "Constraint " << c->getName()
-            << " is infeasible at this point yet no cuts generated"
-            << std::endl;
+          env_->getLogger()->msgStream(LogDebug)
+              << me_ << "Constraint " << c->getName()
+              << " is infeasible at this point yet no cuts generated"
+              << std::endl;
 #endif
+        } else {
+          iter_cuts += ncuts;
+        }
       } else {
-        iter_cuts += ncuts;
+        ncuts = relaxQuadTerms_(cuts, rel, oxo, oxs, sxs, cutCoefo, cutCoefs,
+                                cutConst, sol, false, c->getLb());
+        if (ncuts == 0) {
+#if SPEW
+          env_->getLogger()->msgStream(LogDebug)
+              << me_ << "Constraint " << c->getName()
+              << " is infeasible at this point yet no cuts generated"
+              << std::endl;
+#endif
+        } else {
+          iter_cuts += ncuts;
+        }
       }
     }
   }
@@ -183,6 +222,47 @@ void SimplexQuadCutGen::getAffineFnForSlack(RelaxationPtr rel, int s,
 }
 
 void SimplexQuadCutGen::disableFactorization() { lpe_->disableFactorization(); }
+
+void SimplexQuadCutGen::getQuadraticBNB(ConstraintPtr c, const double *x,
+                                        RelaxationPtr rel, QuadTerm &oxo,
+                                        QuadTerm &oxs,
+                                        std::map<int, double> &cutCoefo,
+                                        double &cutConst, int &count) {
+  VariablePtr v1, v2;
+  double coef;
+  QuadraticFunctionPtr qf;
+  LinearFunctionPtr lf;
+
+  qf = c->getFunction()->getQuadraticFunction();
+  lf = c->getFunction()->getLinearFunction();
+  cutConst = 0.0;
+
+  assert(qf);
+
+  // We assume the constraint here is of the form y = x1x2 or y = x1^2
+  v1 = rel->getRelaxationVar(qf->begin()->first.first);
+  v2 = rel->getRelaxationVar(qf->begin()->first.second);
+  coef = qf->begin()->second;
+  if (v1->getIndex() == v2->getIndex()) {
+    ++count;
+  }
+  if (count == 1) {
+    // Multiply v1*NB2
+    multiplyBNB_(v1->getIndex(), v2->getIndex(), coef, x, oxo, oxs, cutCoefo);
+  } else {
+    // Multiply NB1*v2
+    multiplyBNB_(v2->getIndex(), v1->getIndex(), coef, x, oxo, oxs, cutCoefo);
+  }
+
+  if (lf) {
+    for (VariableGroupConstIterator lit = lf->termsBegin();
+         lit != lf->termsEnd(); ++lit) {
+      v1 = rel->getRelaxationVar(lit->first);
+      coef = lit->second;
+      multiplyCNB_(v1->getIndex(), coef, cutCoefo);
+    }
+  }
+}
 
 void SimplexQuadCutGen::getQuadratic(ConstraintPtr c, const double *x,
                                      RelaxationPtr rel, QuadTerm &oxo,
@@ -1164,6 +1244,109 @@ int SimplexQuadCutGen::relaxBilTerm_(double coef, bool lower1, bool lower2,
     }
   }
   return numCuts;
+}
+
+int SimplexQuadCutGen::relaxTermBNB_(double coef, bool lower, double bl,
+                                     double bu, double nl, double nu,
+                                     double &cb, double &cn, double &cnst,
+                                     bool under) {
+  if (under) {
+    if (coef > eTol_) {
+      if (lower) {
+        cb = coef * nl;
+        cn = coef * bl;
+        cnst = -coef * bl * nl;
+      } else {
+        cb = coef * nu;
+        cn = coef * bu;
+        cnst = -coef * bu * nu;
+      }
+    } else {
+      if (lower) {
+        cb = coef * nl;
+        cn = coef * bu;
+        cnst = -coef * bu * nl;
+      } else {
+        cb = coef * nu;
+        cn = coef * bl;
+        cnst = -coef * bl * nu;
+      }
+    }
+  } else {
+    if (coef < eTol_) {
+      if (lower) {
+        cb = coef * nl;
+        cn = coef * bl;
+        cnst = -coef * bl * nl;
+      } else {
+        cb = coef * nu;
+        cn = coef * bu;
+        cnst = -coef * bu * nu;
+      }
+    } else {
+      if (lower) {
+        cb = coef * nl;
+        cn = coef * bu;
+        cnst = -coef * bu * nl;
+      } else {
+        cb = coef * nu;
+        cn = coef * bl;
+        cnst = -coef * bl * nu;
+      }
+    }
+  }
+  return 1;
+}
+
+int SimplexQuadCutGen::relaxQuadTermsBNB_(SimplexCutVector &iter_cuts,
+                                          RelaxationPtr rel, QuadTerm oxo,
+                                          QuadTerm oxs,
+                                          std::map<int, double> cutCoefo,
+                                          double cutConst, ConstSolutionPtr sol,
+                                          bool under, double rhs) {
+  // Whenever this function is called only one cut must be generated. This is
+  // unlike its counterpart for other variants below.
+  SimplexCutVector cuts =
+      getCutVec_(rel, cutCoefo, std::map<int, double>(), cutConst, under, rhs);
+  VarProd vp;
+  bool lower;
+  VariablePtr b, nb;
+  int ncuts;
+  const double *x = sol->getPrimal();
+  double cb, cn, cnst;
+
+  for (QuadTerm::iterator it = oxo.begin(); it != oxo.end(); ++it) {
+    if (fabs(it->second) < eTol_) {
+      continue;
+    }
+    vp = it->first;
+    if (std::find(nbOrig_.begin(), nbOrig_.end(), vp.first) != nbOrig_.end()) {
+      nb = rel->getVariable(vp.first);
+      b = rel->getVariable(vp.second);
+    } else {
+      b = rel->getVariable(vp.first);
+      nb = rel->getVariable(vp.second);
+    }
+    lower = fabs(x[nb->getIndex()] - nb->getLb()) < eTol_ ? true : false;
+    ncuts = relaxTermBNB_(it->second, lower, b->getLb(), b->getUb(),
+                          nb->getLb(), nb->getUb(), cb, cn, cnst, under);
+    addLfTerm_(cuts, b, nb, cb, cn, cnst);
+  }
+
+  for (QuadTerm::iterator it = oxs.begin(); it != oxs.end(); ++it) {
+    if (fabs(it->second) < eTol_) {
+      continue;
+    }
+    vp = it->first;
+    b = rel->getVariable(vp.first);
+    lower = sb_[vp.second].second > eTol_ ? true : false;
+    ncuts = relaxTermBNB_(it->second, lower, b->getLb(), b->getUb(),
+                          sb_[vp.second].first, sb_[vp.second].second, cb, cn,
+                          cnst, under);
+    addLfTerm_(cuts, rel, b, vp.second, cb, cn, cnst);
+  }
+  iter_cuts.insert(iter_cuts.end(), cuts.begin(), cuts.end());
+  return cuts.size();
 }
 
 int SimplexQuadCutGen::relaxQuadTerms_(SimplexCutVector &iter_cuts,

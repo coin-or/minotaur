@@ -72,8 +72,9 @@ void Environment::createDefaultOptions_() {
 
   b_option = (BoolOptionPtr) new Option<bool>(
       "eval_within_bnds",
-      "Pull values of a variable to its bounds if it is not within bounds for function and derivative evaluations <0/1>", true,
-      false);
+      "Pull values of a variable to its bounds if it is not within bounds for "
+      "function and derivative evaluations <0/1>",
+      true, false);
   options_->insert(b_option);
 
   b_option = (BoolOptionPtr) new Option<bool>(
@@ -307,6 +308,12 @@ void Environment::createDefaultOptions_() {
 
   b_option = (BoolOptionPtr) new Option<bool>(
       "doPostSolve", "Post solve root node: <0/1>", true, true);
+  options_->insert(b_option);
+
+  b_option = (BoolOptionPtr) new Option<bool>(
+      "sqTangentAtRoot",
+      "Add tangents for bounds of square terms in root node: <0/1>", true,
+      false);
   options_->insert(b_option);
 
   // reset, so that we don't accidently add it again.

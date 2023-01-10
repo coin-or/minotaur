@@ -39,9 +39,9 @@
 
 using namespace Minotaur;
 
-bool showCuts = true;
+bool showCuts = false;
 bool showQuadVars = false;
-bool allVars = false;
+bool allVars = true;
 int numCons = 0;
 int numVars = 0;
 double* dualVecCons = 0;
@@ -835,7 +835,7 @@ bool updateRel(EnvPtr env, RelaxationPtr rel, SimplexQuadCutGenPtr cutgen,
   int numTerms, error = 0;
 
   cutgen->getQuadratic(c, x, rel, oxo, oxs, sxs, cutCoefo, cutCoefs, cutConst);
-  //obj = 0;
+  // obj = 0;
 
   if (variant == 1) {
     numTerms = oxo.size() + oxs.size() + sxs.size();
@@ -1510,7 +1510,8 @@ int main(int argc, char** argv) {
       break;
     }
     std::cout << "Iteration : " << i << std::endl;
-    rel = solveRelaxation(env, p, rel, efac, is_feas, status, auxVars, i==rounds);
+    rel = solveRelaxation(env, p, rel, efac, is_feas, status, auxVars,
+                          i == rounds);
   }
 
 CLEANUP:

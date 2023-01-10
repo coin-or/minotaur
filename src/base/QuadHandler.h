@@ -282,6 +282,9 @@ class QuadHandler : public Handler {
   /// are not found by presolve
   double addDefaultBounds_(VariablePtr x, BoundType lu);
 
+  ConstraintPtr addTangent_(VariablePtr x, VariablePtr y, double pt,
+                            RelaxationPtr rel);
+
   /**
    * \brief Calculate the upper bound of a univariate quadratic of the form
    * ax^2 + bx.
