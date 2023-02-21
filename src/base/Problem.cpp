@@ -1673,6 +1673,9 @@ void Problem::reverseSense(ConstraintPtr cons)
 
 void Problem::setDebugSol(const DoubleVector &x) 
 {
+  if (debugSol_) {
+    delete debugSol_;
+  }
   debugSol_ = new DoubleVector(x);
 }
 

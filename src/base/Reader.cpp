@@ -493,7 +493,7 @@ int Reader::readSol(ProblemPtr p, std::string sname)
     return 1;
   } 
 
-  logger_->msgStream(LogInfo) << me_ << "reading  file " << sname 
+  logger_->msgStream(LogInfo) << me_ << "reading solution file " << sname 
     << std::endl;
 
   while (0==err && std::getline(fs, line)) {
