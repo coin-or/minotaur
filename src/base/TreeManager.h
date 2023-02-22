@@ -18,27 +18,13 @@
 
 #include "Types.h"
 
+#include "ActiveNodeStore.h"
+#include "Environment.h"
+#include "Node.h"
+#include "WarmStart.h"
+
 namespace Minotaur {
   
-  class ActiveNodeStore;
-  class WarmStart;
-  typedef ActiveNodeStore* ActiveNodeStorePtr;
-  typedef WarmStart* WarmStartPtr;
-
-  // 1=like_red, 2=blue, 4=red, 5=yellow, 6=black, 7=pink, 8=cyan, 9=green
-  // 11=orange, 12=green, 13=pink, 14=light blue
-  /// Colors for tree-visualization using vbc
-  typedef enum {
-    VbcActive  = 4,   /// Unsolved, open.
-    VbcFeas    = 2,   /// incumbent.
-    VbcInf     = 11,  /// infeasible.
-    VbcSolved  = 9,   /// solved.
-    VbcSolving = 8,   /// currently being solved.
-    VbcSubInf  = 13,  /// subtree is infeasible.
-    VbcSubOpt  = 6    /// suboptimal.
-  } VbcColors;
-
-
   /// Base class for managing the branch-and-bound tree. 
   class TreeManager {
 

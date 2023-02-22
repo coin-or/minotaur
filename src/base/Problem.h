@@ -16,27 +16,16 @@
 
 #include<ios>
 #include "Types.h"
+#include "Constraint.h"
+#include "Engine.h"
+#include "HessianOfLag.h"
+#include "Jacobian.h"
+#include "Objective.h"
+#include "ProblemSize.h"
 #include "Variable.h"
+#include "SOS.h"
 
 namespace Minotaur {
-
-  class Engine;
-  class Function;
-  class HessianOfLag;
-  class Jacobian;
-  class LinearFunction;
-  class NonlinearFunction;
-  struct ProblemSize;
-  class QuadraticFunction;
-  class SOS;
-  class SparseMatrix;
-  typedef Jacobian* JacobianPtr;
-  typedef HessianOfLag* HessianOfLagPtr;
-  typedef LinearFunction* LinearFunctionPtr;
-  typedef NonlinearFunction* NonlinearFunctionPtr;
-  typedef ProblemSize* ProblemSizePtr;
-  typedef QuadraticFunction* QuadraticFunctionPtr;
-  typedef const ProblemSize* ConstProblemSizePtr;
 
   /**
    * \brief The Problem that needs to be solved.

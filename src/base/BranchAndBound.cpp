@@ -15,20 +15,6 @@
 
 #include "MinotaurConfig.h"
 #include "BranchAndBound.h"
-#include "Brancher.h"
-#include "Environment.h"
-#include "Heuristic.h"
-#include "Logger.h"
-#include "Node.h"
-#include "NodeProcessor.h"
-#include "NodeRelaxer.h"
-#include "Option.h"
-#include "Problem.h"
-#include "Relaxation.h"
-#include "Solution.h"
-#include "SolutionPool.h"
-#include "Timer.h"
-#include "TreeManager.h"
 
 
 //#define DEBUG 1

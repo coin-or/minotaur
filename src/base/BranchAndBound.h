@@ -6,7 +6,8 @@
 
 /**
  * \file BranchAndBound.h
- * \brief Declare the default branch-and-bound-algorithm.
+ * \brief Declare the BranchAndBound class for branch-and-bound-algorithm,
+ * BabStats class for statistics and BabOptions class for options.
  * \author Ashutosh Mahajan, Argonne National Laboratory
  */
 
@@ -14,25 +15,21 @@
 #define MINOTAURBRANCHANDBOUND_H
 
 #include "Types.h"
+#include "Environment.h"
+#include "Brancher.h"
+#include "Heuristic.h"
+#include "NodeProcessor.h"
+#include "NodeRelaxer.h"
+#include "Problem.h"
+#include "Relaxation.h"
+#include "SolutionPool.h"
+#include "TreeManager.h"
 
 namespace Minotaur {
 
   struct  BabOptions;
   struct  BabStats;
-  class   NodeProcessor;
-  class   NodeRelaxer;
-  class   Problem;
-  class   Solution;
-  class   SolutionPool;
-  class   Timer;
-  class   TreeManager;
   typedef BabOptions* BabOptionsPtr;
-  typedef NodeProcessor* NodeProcessorPtr;
-  typedef NodeRelaxer* NodeRelaxerPtr;
-  typedef Problem* ProblemPtr;
-  typedef Solution* SolutionPtr;
-  typedef SolutionPool* SolutionPoolPtr;
-  typedef TreeManager* TreeManagerPtr;
 
 
   /**

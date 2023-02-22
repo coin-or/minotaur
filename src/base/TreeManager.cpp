@@ -14,13 +14,9 @@
 
 #include "MinotaurConfig.h"
 #include "Branch.h"
-#include "Environment.h"
-#include "Node.h"
 #include "NodeHeap.h"
 #include "NodeStack.h"
 #include "Operations.h"
-#include "Option.h"
-#include "Timer.h"
 #include "TreeManager.h"
 
 using namespace Minotaur;

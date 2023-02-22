@@ -12,27 +12,14 @@
 
 #include <algorithm>
 #include <cmath>
-#include <ios>
 #include <iomanip>
 #include <sstream>
+#include <string.h> // for memset
 
 #include "MinotaurConfig.h"
-#include "Constraint.h"
-#include "Engine.h"
 #include "Environment.h"
-#include "Function.h"
-#include "HessianOfLag.h"
-#include "Jacobian.h"
-#include "LinearFunction.h"
-#include "Logger.h"
-#include "NonlinearFunction.h"
-#include "Objective.h"
 #include "Problem.h"
-#include "ProblemSize.h"
-#include "QuadraticFunction.h"
-#include "SOS.h"
-#include "Variable.h"
-#include <string.h>           // for memset
+
 
 using namespace Minotaur;
 const std::string Problem::me_ = "Problem: ";

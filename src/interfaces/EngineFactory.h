@@ -15,19 +15,13 @@
 #define MINOTAURENGINEFACTORY_H
 
 #include "Types.h"
+#include "Engine.h"
+#include "LPEngine.h"
+#include "NLPEngine.h"
+#include "MILPEngine.h"
+#include "QPEngine.h"
 
 namespace Minotaur {
-
-  class Engine;
-  class LPEngine;
-  class MILPEngine;
-  class NLPEngine;
-  class QPEngine;
-  typedef Engine* EnginePtr;
-  typedef LPEngine* LPEnginePtr;
-  typedef MILPEngine* MILPEnginePtr;
-  typedef NLPEngine* NLPEnginePtr;
-  typedef QPEngine* QPEnginePtr;
 
   class EngineFactory {
     public:

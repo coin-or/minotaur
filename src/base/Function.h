@@ -14,6 +14,9 @@
 #define MINOTAURFUNCTION_H
 
 #include "Types.h"
+#include "LinearFunction.h"
+#include "NonlinearFunction.h"
+#include "QuadraticFunction.h"
 
 namespace Minotaur {
 

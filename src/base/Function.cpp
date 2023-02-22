@@ -10,9 +10,6 @@
 
 #include "MinotaurConfig.h"
 #include "Function.h"
-#include "LinearFunction.h"
-#include "NonlinearFunction.h"
-#include "QuadraticFunction.h"
 #include "Variable.h"
 
 using namespace Minotaur;
