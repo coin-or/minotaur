@@ -293,7 +293,7 @@ void SimplexQuadCutGen::getQuadraticBNB(ConstraintPtr c, const double *x,
                                         QuadTerm &oxs,
                                         std::map<int, double> &cutCoefo,
                                         double &cutConst,
-                                        std::map<int, int> &count) {
+                                        std::map<int, int> &countInf) {
   VariablePtr v1, v2;
   double coef;
   QuadraticFunctionPtr qf;

@@ -89,6 +89,11 @@ class SimplexQuadCutGen {
   void getQuadraticBNB(ConstraintPtr c, const double *x, RelaxationPtr rel,
                        QuadTerm &oxo, QuadTerm &oxs,
                        std::map<int, double> &cutCoefo, double &cutConst,
+                       std::map<int, int> &countInf);
+
+  void getQuadraticBNB(ConstraintPtr c, const double *x, RelaxationPtr rel,
+                       QuadTerm &oxo, QuadTerm &oxs,
+                       std::map<int, double> &cutCoefo, double &cutConst,
                        int &count);
 
   double getSlackLb(int s);
