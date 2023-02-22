@@ -92,11 +92,64 @@ int SimplexQuadCutGen::generateCuts(RelaxationPtr rel, ConstSolutionPtr sol) {
   int ncuts, iter_cuts = 0;
   SimplexCutVector cuts;
   double stime = timer_->query();
+  std::map<int, int> countInf;
 
   ++iter_;
   env_->getLogger()->msgStream(LogExtraInfo)
       << me_ << "Round " << iter_ << std::endl;
   preprocessSimplexTab();
+  if (variant_ >= 7) {
+    std::map<int, int>::iterator countInfIt1, countInfIt2;
+    for (ConstraintConstIterator cit = p_->consBegin(); cit != p_->consEnd();
+         ++cit) {
+      c = *cit;
+      ftype = c->getFunction()->getType();
+      if (ftype != Quadratic && ftype != Bilinear) {
+        continue;
+      }
+      act = c->getActivity(sol->getPrimal(), &error);
+      if (error == 0) {
+        if (act <= c->getUb() + eTol_ && act >= c->getLb() - eTol_) {
+          continue;
+        }
+      } else {
+#if SPEW
+        env_->getLogger()->msgStream(LogDebug)
+            << me_ << "Constraint " << c->getName()
+            << " is not defined at this point." << std::endl;
+#endif
+      }
+      VariablePtr v1, v2;
+      QuadraticFunctionPtr qf;
+
+      qf = c->getFunction()->getQuadraticFunction();
+
+      // We assume the constraint here is of the form y = x1x2 or y = x1^2
+      v1 = rel->getRelaxationVar(qf->begin()->first.first);
+      v2 = rel->getRelaxationVar(qf->begin()->first.second);
+      if (v1->getIndex() == v2->getIndex()) {
+        countInfIt1 = countInf.find(v1->getIndex());
+        if (countInfIt1 == countInf.end()) {
+          countInf.insert({v1->getIndex(), 1});
+        } else {
+          ++(countInfIt1->second);
+        }
+      } else {
+        countInfIt1 = countInf.find(v1->getIndex());
+        countInfIt2 = countInf.find(v2->getIndex());
+        if (countInfIt1 == countInf.end()) {
+          countInf.insert({v1->getIndex(), 1});
+        } else {
+          ++(countInfIt1->second);
+        }
+        if (countInfIt2 == countInf.end()) {
+          countInf.insert({v2->getIndex(), 1});
+        } else {
+          ++(countInfIt2->second);
+        }
+      }
+    }
+  }
   for (ConstraintConstIterator cit = p_->consBegin(); cit != p_->consEnd();
        ++cit) {
     c = *cit;
@@ -124,15 +177,21 @@ int SimplexQuadCutGen::generateCuts(RelaxationPtr rel, ConstSolutionPtr sol) {
     cutCoefo.clear();
     cutCoefs.clear();
     cutConst = 0.0;
-    if (variant_ == 6) {
+    if (variant_ >= 6) {
       int count = 0;
       while (count < 2) {
         oxo.clear();
         oxs.clear();
         cutCoefo.clear();
         ++count;
-        getQuadraticBNB(c, sol->getPrimal(), rel, oxo, oxs, cutCoefo, cutConst,
-                        count);
+        if (variant_ == 6) {
+          getQuadraticBNB(c, sol->getPrimal(), rel, oxo, oxs, cutCoefo,
+                          cutConst, count);
+        } else {
+          ++count;
+          getQuadraticBNB(c, sol->getPrimal(), rel, oxo, oxs, cutCoefo,
+                          cutConst, countInf);
+        }
         if (act > c->getUb() + eTol_) {
           ncuts = relaxQuadTermsBNB_(cuts, rel, oxo, oxs, cutCoefo, cutConst,
                                      sol, true, c->getUb());
@@ -228,6 +287,105 @@ void SimplexQuadCutGen::getAffineFnForSlack(RelaxationPtr rel, int s,
 }
 
 void SimplexQuadCutGen::disableFactorization() { lpe_->disableFactorization(); }
+
+void SimplexQuadCutGen::getQuadraticBNB(ConstraintPtr c, const double *x,
+                                        RelaxationPtr rel, QuadTerm &oxo,
+                                        QuadTerm &oxs,
+                                        std::map<int, double> &cutCoefo,
+                                        double &cutConst,
+                                        std::map<int, int> &count) {
+  VariablePtr v1, v2;
+  double coef;
+  QuadraticFunctionPtr qf;
+  LinearFunctionPtr lf;
+
+  qf = c->getFunction()->getQuadraticFunction();
+  lf = c->getFunction()->getLinearFunction();
+  cutConst = 0.0;
+
+  assert(qf);
+
+  // We assume the constraint here is of the form y = x1x2 or y = x1^2
+  v1 = rel->getRelaxationVar(qf->begin()->first.first);
+  v2 = rel->getRelaxationVar(qf->begin()->first.second);
+  coef = qf->begin()->second;
+  if (v1->getIndex() == v2->getIndex()) {
+    multiplyBNB_(v1->getIndex(), v2->getIndex(), coef, x, oxo, oxs, cutCoefo);
+  } else {
+    double *origRow1 = new double[tabInfo_->ncol];
+    double *slackRow1 = new double[tabInfo_->nrow];
+    lpe_->getBInvARow(basicInd_[v1->getIndex()], origRow1, slackRow1);
+    double *origRow2 = new double[tabInfo_->ncol];
+    double *slackRow2 = new double[tabInfo_->nrow];
+    lpe_->getBInvARow(basicInd_[v2->getIndex()], origRow2, slackRow2);
+    int c1 = 0, c2 = 0;
+    double elem;
+    for (int i = 0; i < nnbOrig_; ++i) {
+      elem = origRow1[nbOrig_[i]];
+      if (fabs(elem) > eTol_) {
+        ++c1;
+      }
+      elem = origRow2[nbOrig_[i]];
+      if (fabs(elem) > eTol_) {
+        ++c2;
+      }
+    }
+    for (int i = 0; i < nnbSlack_; ++i) {
+      elem = slackRow1[nbSlack_[i]];
+      if (fabs(elem) > eTol_) {
+        ++c1;
+      }
+      elem = slackRow2[nbSlack_[i]];
+      if (fabs(elem) > eTol_) {
+        ++c2;
+      }
+    }
+
+    if (variant_ == 7) {
+      if (c1 < c2) {
+        multiplyBNB_(v2->getIndex(), v1->getIndex(), coef, x, oxo, oxs,
+                     cutCoefo);
+      } else if (c1 == c2) {
+        if (countInf[v1->getIndex()] <= countInf[v2->getIndex()]) {
+          multiplyBNB_(v2->getIndex(), v1->getIndex(), coef, x, oxo, oxs,
+                       cutCoefo);
+        } else {
+          multiplyBNB_(v1->getIndex(), v2->getIndex(), coef, x, oxo, oxs,
+                       cutCoefo);
+        }
+      } else {
+        multiplyBNB_(v1->getIndex(), v2->getIndex(), coef, x, oxo, oxs,
+                     cutCoefo);
+      }
+    }
+    if (variant_ == 8) {
+      if (countInf[v1->getIndex()] < countInf[v2->getIndex()]) {
+        multiplyBNB_(v2->getIndex(), v1->getIndex(), coef, x, oxo, oxs,
+                     cutCoefo);
+      } else if (countInf[v1->getIndex()] == countInf[v2->getIndex()]) {
+        if (c1 <= c2) {
+          multiplyBNB_(v2->getIndex(), v1->getIndex(), coef, x, oxo, oxs,
+                       cutCoefo);
+        } else {
+          multiplyBNB_(v1->getIndex(), v2->getIndex(), coef, x, oxo, oxs,
+                       cutCoefo);
+        }
+      } else {
+        multiplyBNB_(v1->getIndex(), v2->getIndex(), coef, x, oxo, oxs,
+                     cutCoefo);
+      }
+    }
+  }
+
+  if (lf) {
+    for (VariableGroupConstIterator lit = lf->termsBegin();
+         lit != lf->termsEnd(); ++lit) {
+      v1 = rel->getRelaxationVar(lit->first);
+      coef = lit->second;
+      multiplyCNB_(v1->getIndex(), coef, cutCoefo);
+    }
+  }
+}
 
 void SimplexQuadCutGen::getQuadraticBNB(ConstraintPtr c, const double *x,
                                         RelaxationPtr rel, QuadTerm &oxo,
