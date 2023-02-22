@@ -55,6 +55,7 @@ SimplexQuadCutGen::SimplexQuadCutGen(EnvPtr env, ProblemPtr p, LPEnginePtr lpe)
   nbOrig_.clear();
   nbSlack_.clear();
   sb_.clear();
+  timer_ = env->getTimer();
 }
 
 SimplexQuadCutGen::~SimplexQuadCutGen() {
@@ -89,6 +90,7 @@ int SimplexQuadCutGen::generateCuts(RelaxationPtr rel, ConstSolutionPtr sol) {
   std::map<int, double> cutCoefo, cutCoefs;
   int ncuts, iter_cuts = 0;
   SimplexCutVector cuts;
+  double stime = timer_->query();
 
   ++iter_;
   env_->getLogger()->msgStream(LogExtraInfo)
@@ -194,7 +196,10 @@ int SimplexQuadCutGen::generateCuts(RelaxationPtr rel, ConstSolutionPtr sol) {
   disableFactorization();
   addCutsToRel_(cuts, rel, sol->getPrimal(), ncuts);
   env_->getLogger()->msgStream(LogExtraInfo)
-      << me_ << "No. of cuts generated: " << iter_cuts << std::endl;
+      << me_ << ": No. of cuts generated: " << iter_cuts << std::endl;
+  env_->getLogger()->msgStream(LogExtraInfo)
+      << me_ << ": Time taken in cut generation: " << timer_->query() - stime
+      << std::endl;
   ncuts_ += iter_cuts;
   return iter_cuts;
 }
