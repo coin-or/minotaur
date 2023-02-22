@@ -14,10 +14,10 @@
 #define BNB_H
 
 #include "Types.h"
-#include "AMPLInterface.h"
 #include "BranchAndBound.h"
 #include "Brancher.h"
 #include "Presolver.h"
+#include "Problem.h"
 #include "Solver.h"
 
 namespace Minotaur {

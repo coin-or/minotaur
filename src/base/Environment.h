@@ -7,19 +7,18 @@
 /**
  * \file Environment.h
  * \brief Define the Environment class.
- * \author Ashutosh Mahajan, Argonne National Laboratory
+ * \author Ashutosh Mahajan, IIT Bombay
  */
 
 #ifndef ENVIRONMENT_H
 #define ENVIRONMENT_H
 
 #include "Types.h"
+#include "Logger.h"
+#include "Option.h"
+#include "Timer.h"
 
 namespace Minotaur {
-
-  class Interrupt;
-  class Timer;
-  class TimerFactory;
 
   /**
    * The environment is a container class that has pointers to the

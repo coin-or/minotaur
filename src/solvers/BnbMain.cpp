@@ -11,11 +11,9 @@
  */
 
 #include "MinotaurConfig.h"
-#include "Environment.h"
-#include "Option.h"
+#include "Bnb.h"
 #include "Problem.h"
 #include "Types.h"
-#include "Bnb.h"
 
 using namespace Minotaur;
 

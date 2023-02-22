@@ -16,6 +16,8 @@
 #include <string>
 
 #include "Types.h"
+#include "Function.h"
+#include "Variable.h"
 
 namespace Minotaur {
   typedef std::set<std::pair<VariablePtr, FunctionType> >::const_iterator 
