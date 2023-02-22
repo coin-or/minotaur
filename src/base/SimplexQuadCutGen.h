@@ -22,6 +22,7 @@
 
 namespace Minotaur {
 class Relaxation;
+class Timer;
 typedef Relaxation *RelaxationPtr;
 /** \brief A structure to store info from the simplex tableau
  */
@@ -118,6 +119,9 @@ class SimplexQuadCutGen {
 
   // Number of iterations of cut generation
   int iter_;
+
+  // To keep track of time
+  const Timer *timer_;
 
   // All the cuts generated
   SimplexCutVector allCuts_;

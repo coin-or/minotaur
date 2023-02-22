@@ -35,6 +35,7 @@
 #include "QuadraticFunction.h"
 #include "Relaxation.h"
 #include "Solution.h"
+#include "Timer.h"
 #include "Types.h"
 #include "Variable.h"
 
