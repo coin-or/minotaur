@@ -46,7 +46,7 @@ int numCons = 0;
 int numVars = 0;
 double* dualVecCons = 0;
 double* dualVecVars = 0;
-int variant = 2;
+int variant = 6;
 std::vector<double> optSol = {0, 0, 1, 1,   0,   0,   0,   0, 0,  // ex9_2_6
                               0, 0, 0, 0.5, 0.5, 0.5, 0.5, 1};
 // std::vector<double> optSol = {50, 75.485880502600196, 93.262254147831101,
@@ -821,8 +821,8 @@ void dualLinearze(double coef, int v1, int v2, bool lower1, bool lower2,
 bool updateRel(EnvPtr env, RelaxationPtr rel, SimplexQuadCutGenPtr cutgen,
                AuxVarVector& auxVars, const double* x, LPEnginePtr lpe,
                ConstraintPtr c, bool ubinf, bool lbinf, double obj) {
-  QuadTerm oxo, oxs, sxs;
-  std::map<int, double> cutCoefo, cutCoefs;
+  QuadTerm oxo, oxs, sxs, oxo1, oxs1;
+  std::map<int, double> cutCoefo, cutCoefo1, cutCoefs;
   double cutConst = 0.0;
   double etol = 1e-8;
   int y;
@@ -830,11 +830,28 @@ bool updateRel(EnvPtr env, RelaxationPtr rel, SimplexQuadCutGenPtr cutgen,
   double scale = 1.0;
   double clb, cub;
   bool isScaled = false;
-  bool addVar, lower1, lower2;
+  bool addVar, lower1, lower2, quad2 = false;
   VariablePtr v1, v2;
   int numTerms, error = 0;
 
-  cutgen->getQuadratic(c, x, rel, oxo, oxs, sxs, cutCoefo, cutCoefs, cutConst);
+  if (variant == 6) {
+    cutCoefs.clear();
+    int count = 0;
+    while (count < 2) {
+      ++count;
+      if (count == 1) {
+        cutgen->getQuadraticBNB(c, x, rel, oxo, oxs, cutCoefo, cutConst, count);
+      }
+      if (count == 2) {
+        cutgen->getQuadraticBNB(c, x, rel, oxo1, oxs1, cutCoefo1, cutConst,
+                                count);
+        quad2 = true;
+      }
+    }
+  } else {
+    cutgen->getQuadratic(c, x, rel, oxo, oxs, sxs, cutCoefo, cutCoefs,
+                         cutConst);
+  }
   // obj = 0;
 
   if (variant == 1) {
@@ -1144,10 +1161,70 @@ bool updateRel(EnvPtr env, RelaxationPtr rel, SimplexQuadCutGenPtr cutgen,
 
   addCutToRel(rel, cutgen, cutCoefo, cutCoefs, cutConst,
               lbinf ? c->getLb() : -INFINITY, ubinf ? c->getUb() : INFINITY);
+
+  if (quad2) {
+    for (QuadTerm::iterator it = oxo1.begin(); it != oxo1.end(); ++it) {
+      if (fabs(it->second) < etol) {
+        continue;
+      }
+      y = findY(auxVars, it->first.first, it->first.second, 'v', scale,
+                isScaled);
+      if (y == -1) {
+        y = getNewVar(rel, cutgen, it->first.first, it->first.second, 'v',
+                      scale, isScaled);
+        aptr = (AuxVarsPtr) new AuxVars();
+        aptr->x1 = it->first.first;
+        aptr->x2 = it->first.second;
+        aptr->productType = 'v';
+        aptr->y = y;
+        aptr->isScaled = isScaled;
+        aptr->scale = isScaled ? scale : 1.0;
+        auxVars.push_back(aptr);
+        addTerm(cutCoefo1, y, it->second, scale, isScaled);
+      } else {
+        addTerm(cutCoefo1, y, it->second, scale, isScaled);
+      }
+    }
+
+    for (QuadTerm::iterator it = oxs.begin(); it != oxs.end(); ++it) {
+      if (fabs(it->second) < etol) {
+        continue;
+      }
+      clb = rel->getConstraint(it->first.second)->getLb();
+      cub = rel->getConstraint(it->first.second)->getUb();
+      if (cub - clb < etol) {
+        continue;
+      }
+      y = findY(auxVars, it->first.first, it->first.second, 'm', scale,
+                isScaled);
+      if (y == -1) {
+        y = getNewVar(rel, cutgen, it->first.first, it->first.second, 'm',
+                      scale, isScaled);
+        aptr = (AuxVarsPtr) new AuxVars();
+        aptr->x1 = it->first.first;
+        aptr->x2 = it->first.second;
+        aptr->productType = 'm';
+        aptr->y = y;
+        aptr->isScaled = isScaled;
+        aptr->scale = isScaled ? scale : 1.0;
+        auxVars.push_back(aptr);
+        addTerm(cutCoefo1, y, it->second, scale, isScaled);
+      } else {
+        addTerm(cutCoefo1, y, it->second, scale, isScaled);
+      }
+    }
+
+    addCutToRel(rel, cutgen, cutCoefo1, cutCoefs, cutConst,
+                lbinf ? c->getLb() : -INFINITY, ubinf ? c->getUb() : INFINITY);
+  }
+
   oxo.clear();
   oxs.clear();
   sxs.clear();
+  oxo1.clear();
+  oxs1.clear();
   cutCoefo.clear();
+  cutCoefo1.clear();
   cutCoefs.clear();
   return true;
 }
