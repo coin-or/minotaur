@@ -46,9 +46,10 @@ int numCons = 0;
 int numVars = 0;
 double* dualVecCons = 0;
 double* dualVecVars = 0;
-int variant = 6 std::vector<double> optSol = {0, 0, 1, 1,   0,   0,   0,   0,
-                                              0,  // ex9_2_6
-                                              0, 0, 0, 0.5, 0.5, 0.5, 0.5, 1};
+int variant = 6;
+std::vector<double> optSol = {0, 0, 1, 1,   0,   0,   0,   0,
+                              0,  // ex9_2_6
+                              0, 0, 0, 0.5, 0.5, 0.5, 0.5, 1};
 // std::vector<double> optSol = {50, 75.485880502600196, 93.262254147831101,
 //                              8.748134650431270, 128.43232444132138};
 
