@@ -505,6 +505,7 @@ void OsiLPEngine::loadDualWarmStart(int size, double *dualVec) {
   OsiLPWarmStartPtr ws = (OsiLPWarmStartPtr) new OsiLPWarmStart();
   ws->setDualWarmStart(size, dualVec);
   loadFromWarmStart(ws);
+  delete ws;
 }
 
 void OsiLPEngine::negateObj() {

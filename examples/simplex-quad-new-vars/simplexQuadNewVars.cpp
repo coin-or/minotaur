@@ -46,9 +46,9 @@ int numCons = 0;
 int numVars = 0;
 double* dualVecCons = 0;
 double* dualVecVars = 0;
-int variant = 6;
-std::vector<double> optSol = {0, 0, 1, 1,   0,   0,   0,   0, 0,  // ex9_2_6
-                              0, 0, 0, 0.5, 0.5, 0.5, 0.5, 1};
+int variant = 6 std::vector<double> optSol = {0, 0, 1, 1,   0,   0,   0,   0,
+                                              0,  // ex9_2_6
+                                              0, 0, 0, 0.5, 0.5, 0.5, 0.5, 1};
 // std::vector<double> optSol = {50, 75.485880502600196, 93.262254147831101,
 //                              8.748134650431270, 128.43232444132138};
 
@@ -1287,6 +1287,7 @@ bool isFeasible(EnvPtr env, ProblemPtr p, ConstSolutionPtr sol,
     }
   }
 
+  delete cutgen;
   return is_feas;
 }
 
@@ -1346,6 +1347,9 @@ RelaxationPtr solveRelaxation(EnvPtr env, ProblemPtr p, RelaxationPtr rel,
 
   std::cout << "Lower bound = " << sol->getObjValue() << std::endl;
   if (last) {
+    if (newrel) {
+      delete newrel;
+    }
     return 0;
   }
 
