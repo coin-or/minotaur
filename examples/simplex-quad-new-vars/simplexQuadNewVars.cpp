@@ -35,6 +35,7 @@
 #include "SimpleTransformer.h"
 #include "SimplexQuadCutGen.h"
 #include "Solution.h"
+#include "Timer.h"
 #include "Types.h"
 
 using namespace Minotaur;
@@ -1319,6 +1320,7 @@ RelaxationPtr solveRelaxation(EnvPtr env, ProblemPtr p, RelaxationPtr rel,
   const double* dualCons;
   const double* dualVars;
   bool separated = false;
+  const Timer* timer = env->getTimer();
 
   std::cout << "Number of variables = " << rel->getNumVars() << std::endl;
   std::cout << "Number of Constraints = " << rel->getNumCons() << std::endl;
@@ -1354,6 +1356,7 @@ RelaxationPtr solveRelaxation(EnvPtr env, ProblemPtr p, RelaxationPtr rel,
     return 0;
   }
 
+  double stime = timer->query();
   is_feas = isFeasible(env, p, sol, newrel, auxVars, lpe, separated);
   if (is_feas) {
     std::cout << "Feasible Solution found" << std::endl;
@@ -1367,6 +1370,8 @@ RelaxationPtr solveRelaxation(EnvPtr env, ProblemPtr p, RelaxationPtr rel,
               << std::endl;
     return 0;
   }
+  std::cout << "Time taken in cut generation : " << timer->query() - stime
+            << std::endl;
 
   delete lpe;
   delete rel;
