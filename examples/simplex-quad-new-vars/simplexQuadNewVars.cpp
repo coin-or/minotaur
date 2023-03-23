@@ -10,6 +10,8 @@
  and resolve iteratively
 */
 
+#include <string.h>
+
 #include <cmath>
 #include <cstring>
 #include <iostream>
@@ -723,16 +725,17 @@ void addTerm(std::map<int, double>& t, int v, double coef, double scale,
       if (fabs(nv) < 1e-6) {
         t.erase(v);
       } else {
-        it->second = nv;
+        t[v] = nv;
       }
     }
   }
 }
 
 void addCutToRel(RelaxationPtr rel, SimplexQuadCutGenPtr cutgen,
-                 std::map<int, double> cutCoefo, std::map<int, double> cutCoefs,
-                 double cutConst, double clb, double cub) {
-  LinearFunctionPtr lf = (LinearFunctionPtr) new LinearFunction();
+                 double* cutCoefo, double* cutCoefs, double cutConst,
+                 double clb, double cub) {
+  LinearFunctionPtr lf = (LinearFunctionPtr) new LinearFunction(
+      cutCoefo, rel->varsBegin(), rel->varsEnd(), 1e-9);
   LinearFunctionPtr lfs;
   FunctionPtr f;
   double ds;
@@ -740,23 +743,24 @@ void addCutToRel(RelaxationPtr rel, SimplexQuadCutGenPtr cutgen,
   ConstraintPtr c;
   double lb, ub;
 
-  for (it = cutCoefo.begin(); it != cutCoefo.end(); ++it) {
-    lf->incTerm(rel->getVariable(it->first), it->second);
-  }
-
-  for (it = cutCoefs.begin(); it != cutCoefs.end(); ++it) {
-    lb = rel->getConstraint(it->first)->getLb();
-    ub = rel->getConstraint(it->first)->getUb();
-    if (fabs(ub - lb) < 1e-6) {
-      continue;
+  if (cutCoefs) {
+    for (int i = 0; i < rel->getNumCons(); ++i) {
+      if (fabs(cutCoefs[i]) < 1e-6) {
+        continue;
+      }
+      lb = rel->getConstraint(i)->getLb();
+      ub = rel->getConstraint(i)->getUb();
+      if (fabs(ub - lb) < 1e-6) {
+        continue;
+      }
+      lfs = (LinearFunctionPtr) new LinearFunction();
+      ds = 0.0;
+      cutgen->getAffineFnForSlack(rel, i, lfs, ds);
+      lfs->multiply(cutCoefs[i]);
+      lf->add(lfs);
+      cutConst += cutCoefs[i] * ds;
+      delete lfs;
     }
-    lfs = (LinearFunctionPtr) new LinearFunction();
-    ds = 0.0;
-    cutgen->getAffineFnForSlack(rel, it->first, lfs, ds);
-    lfs->multiply(it->second);
-    lf->add(lfs);
-    cutConst += it->second * ds;
-    delete lfs;
   }
 
   f = (FunctionPtr) new Function(lf);
@@ -769,19 +773,16 @@ void addCutToRel(RelaxationPtr rel, SimplexQuadCutGenPtr cutgen,
 }
 
 void linearize(double x1val, double x2val, double coef, int v1, int v2,
-               std::map<int, double>& t1, std::map<int, double>& t2,
-               double& cutConst) {
+               double* t1, double* t2, double& cutConst) {
   cutConst -= coef * x1val * x2val;
-  double coef1 = coef * x2val;
-  double coef2 = coef * x1val;
-  addTerm(t1, v1, coef1, 1.0, false);
-  addTerm(t2, v2, coef2, 1.0, false);
+  t1[v1] += coef * x2val;
+  t1[v2] += coef * x1val;
 }
 
 void dualLinearze(double coef, int v1, int v2, bool lower1, bool lower2,
                   double l1, double u1, double l2, double u2, double w1,
-                  double w2, std::map<int, double>& t1,
-                  std::map<int, double>& t2, double& cutConst, bool under) {
+                  double w2, double* t1, double* t2, double& cutConst,
+                  bool under) {
   double normal = w1 + w2;
   w1 = w1 / normal;
   w2 = w2 / normal;
@@ -790,15 +791,15 @@ void dualLinearze(double coef, int v1, int v2, bool lower1, bool lower2,
       if (lower2) {
         std::swap(w1, w2);
       }
-      addTerm(t1, v1, coef * (w1 * l2 + w2 * u2), 1.0, false);
-      addTerm(t2, v2, coef * (w1 * l1 + w2 * u1), 1.0, false);
+      t1[v1] += coef * (w1 * l2 + w2 * u2);
+      t2[v2] += coef * (w1 * l1 + w2 * u1);
       cutConst -= coef * (w1 * l1 * l2 + w2 * u1 * u2);
     } else {
       if (!lower1) {
         std::swap(w1, w2);
       }
-      addTerm(t1, v1, coef * (w1 * u2 + w2 * l2), 1.0, false);
-      addTerm(t2, v2, coef * (w1 * l1 + w2 * u1), 1.0, false);
+      t1[v1] += coef * (w1 * u2 + w2 * l2);
+      t2[v2] += coef * (w1 * l1 + w2 * u1);
       cutConst -= coef * (w1 * l1 * u2 + w2 * u1 * l2);
     }
   } else {
@@ -806,15 +807,15 @@ void dualLinearze(double coef, int v1, int v2, bool lower1, bool lower2,
       if (lower2) {
         std::swap(w1, w2);
       }
-      addTerm(t1, v1, coef * (w1 * l2 + w2 * u2), 1.0, false);
-      addTerm(t2, v2, coef * (w1 * l1 + w2 * u1), 1.0, false);
+      t1[v1] += coef * (w1 * l2 + w2 * u2);
+      t2[v2] += coef * (w1 * l1 + w2 * u1);
       cutConst -= coef * (w1 * l1 * l2 + w2 * u1 * u2);
     } else {
       if (!lower1) {
         std::swap(w1, w2);
       }
-      addTerm(t1, v1, coef * (w1 * u2 + w2 * l2), 1.0, false);
-      addTerm(t2, v2, coef * (w1 * l1 + w2 * u1), 1.0, false);
+      t1[v1] += coef * (w1 * u2 + w2 * l2);
+      t2[v2] += coef * (w1 * l1 + w2 * u1);
       cutConst -= coef * (w1 * l1 * u2 + w2 * u1 * l2);
     }
   }
@@ -823,8 +824,11 @@ void dualLinearze(double coef, int v1, int v2, bool lower1, bool lower2,
 bool updateRel(EnvPtr env, RelaxationPtr rel, SimplexQuadCutGenPtr cutgen,
                AuxVarVector& auxVars, const double* x, LPEnginePtr lpe,
                ConstraintPtr c, bool ubinf, bool lbinf, double obj) {
-  QuadTerm oxo, oxs, sxs, oxo1, oxs1;
-  std::map<int, double> cutCoefo, cutCoefo1, cutCoefs;
+  SubstQuadPtr oxo = 0, oxs = 0, sxs = 0, oxo1 = 0, oxs1 = 0;
+  int oldnumvars = rel->getNumVars();
+  double* cutCoefo = new double[oldnumvars];
+  double* cutCoefo1 = 0;
+  double* cutCoefs = 0;
   double cutConst = 0.0;
   double etol = 1e-8;
   int y;
@@ -835,29 +839,48 @@ bool updateRel(EnvPtr env, RelaxationPtr rel, SimplexQuadCutGenPtr cutgen,
   bool addVar, lower1, lower2, quad2 = false;
   VariablePtr v1, v2;
   int numTerms, error = 0;
+  std::vector<int>::size_type oxosize = 0, oxssize = 0, sxssize = 0,
+                              oxo1size = 0, oxs1size = 0;
+  std::map<int, double> newVars, newVars1;
 
+  memset(cutCoefo, 0, oldnumvars * sizeof(double));
+
+  oxo = (SubstQuadPtr) new SubstQuad();
+  oxs = (SubstQuadPtr) new SubstQuad();
   if (variant == 6) {
-    cutCoefs.clear();
     int count = 0;
     while (count < 2) {
       ++count;
       if (count == 1) {
         cutgen->getQuadraticBNB(c, x, rel, oxo, oxs, cutCoefo, cutConst, count);
+        oxosize = oxo->ind1.size();
+        oxssize = oxs->ind1.size();
       }
       if (count == 2) {
+        cutCoefo1 = new double[rel->getNumVars()];
+        memset(cutCoefo1, 0, oldnumvars * sizeof(double));
+        oxo1 = (SubstQuadPtr) new SubstQuad();
+        oxs1 = (SubstQuadPtr) new SubstQuad();
         cutgen->getQuadraticBNB(c, x, rel, oxo1, oxs1, cutCoefo1, cutConst,
                                 count);
+        oxo1size = oxo1->ind1.size();
+        oxs1size = oxs1->ind1.size();
         quad2 = true;
       }
     }
   } else {
+    cutCoefs = new double[rel->getNumCons()];
+    memset(cutCoefs, 0, rel->getNumCons() * sizeof(double));
+    sxs = (SubstQuadPtr) new SubstQuad();
     cutgen->getQuadratic(c, x, rel, oxo, oxs, sxs, cutCoefo, cutCoefs,
                          cutConst);
+    oxosize = oxo->ind1.size();
+    oxssize = oxs->ind1.size();
+    sxssize = sxs->ind1.size();
   }
-  // obj = 0;
 
   if (variant == 1) {
-    numTerms = oxo.size() + oxs.size() + sxs.size();
+    numTerms = oxosize + oxssize + sxssize;
     std::cout << "Num Terms = " << numTerms << std::endl;
     if (numTerms > ceil(0.1 * (rel->getNumVars() + rel->getNumCons())) &&
         numTerms > 10) {
@@ -865,55 +888,53 @@ bool updateRel(EnvPtr env, RelaxationPtr rel, SimplexQuadCutGenPtr cutgen,
     }
   }
 
-  for (QuadTerm::iterator it = oxo.begin(); it != oxo.end(); ++it) {
-    if (fabs(it->second) < etol) {
+  for (std::vector<int>::size_type i = 0; i < oxosize; ++i) {
+    if (fabs(oxo->val[i]) < etol) {
       continue;
     }
-    y = findY(auxVars, it->first.first, it->first.second, 'v', scale, isScaled);
+    y = findY(auxVars, oxo->ind1[i], oxo->ind2[i], 'v', scale, isScaled);
     if (y == -1) {
-      if (it->first.first == it->first.second) {
+      if (oxo->ind1[i] == oxo->ind2[i]) {
         if (allVars) {
           addVar = true;
         } else {
-          v1 = rel->getVariable(it->first.first);
+          v1 = rel->getVariable(oxo->ind1[i]);
           addVar = false;
-          if ((ubinf && it->second > etol) || (lbinf && it->second < etol)) {
+          if ((ubinf && oxo->val[i] > etol) || (lbinf && oxo->val[i] < etol)) {
             // assume that xval at the current point is at its bound because of
             // nonbasic var
-            linearize(x[it->first.first], x[it->first.second], it->second,
-                      it->first.first, it->first.second, cutCoefo, cutCoefo,
-                      cutConst);
+            linearize(x[oxo->ind1[i]], x[oxo->ind2[i]], oxo->val[i],
+                      oxo->ind1[i], oxo->ind2[i], cutCoefo, cutCoefo, cutConst);
           } else {
-            linearize(v1->getLb(), v1->getUb(), it->second, it->first.first,
-                      it->first.second, cutCoefo, cutCoefo, cutConst);
+            linearize(v1->getLb(), v1->getUb(), oxo->val[i], oxo->ind1[i],
+                      oxo->ind2[i], cutCoefo, cutCoefo, cutConst);
           }
         }
       } else {
         if (allVars) {
           addVar = true;
         } else {
-          v1 = rel->getVariable(it->first.first);
-          v2 = rel->getVariable(it->first.second);
-          lower1 = fabs(x[it->first.first] - v1->getLb()) < etol;
-          lower2 = fabs(x[it->first.second] - v2->getLb()) < etol;
-          if ((ubinf && it->second > etol) || (lbinf && it->second < etol)) {
+          v1 = rel->getVariable(oxo->ind1[i]);
+          v2 = rel->getVariable(oxo->ind2[i]);
+          lower1 = fabs(x[oxo->ind1[i]] - v1->getLb()) < etol;
+          lower2 = fabs(x[oxo->ind2[i]] - v2->getLb()) < etol;
+          if ((ubinf && oxo->val[i] > etol) || (lbinf && oxo->val[i] < etol)) {
             if (lower1 == lower2) {
               addVar = false;
-              linearize(x[it->first.first], x[it->first.second], it->second,
-                        it->first.first, it->first.second, cutCoefo, cutCoefo,
+              linearize(x[oxo->ind1[i]], x[oxo->ind2[i]], oxo->val[i],
+                        oxo->ind1[i], oxo->ind2[i], cutCoefo, cutCoefo,
                         cutConst);
             } else {
               if (variant == 2) {
-                double dualProd = fabs(dualVecVars[it->first.first] *
-                                       dualVecVars[it->first.second]);
+                double dualProd =
+                    fabs(dualVecVars[oxo->ind1[i]] * dualVecVars[oxo->ind2[i]]);
                 if (dualProd >= obj) {
                   addVar = true;
                 } else {
-                  dualLinearze(it->second, it->first.first, it->first.second,
-                               lower1, lower2, v1->getLb(), v1->getUb(),
-                               v2->getLb(), v2->getUb(),
-                               fabs(dualVecVars[it->first.first]),
-                               fabs(dualVecVars[it->first.second]), cutCoefo,
+                  dualLinearze(oxo->val[i], oxo->ind1[i], oxo->ind2[i], lower1,
+                               lower2, v1->getLb(), v1->getUb(), v2->getLb(),
+                               v2->getUb(), fabs(dualVecVars[oxo->ind1[i]]),
+                               fabs(dualVecVars[oxo->ind2[i]]), cutCoefo,
                                cutCoefo, cutConst, ubinf);
                 }
               } else {
@@ -923,16 +944,15 @@ bool updateRel(EnvPtr env, RelaxationPtr rel, SimplexQuadCutGenPtr cutgen,
           } else {
             if (lower1 == lower2) {
               if (variant == 2) {
-                double dualProd = fabs(dualVecVars[it->first.first] *
-                                       dualVecVars[it->first.second]);
+                double dualProd =
+                    fabs(dualVecVars[oxo->ind1[i]] * dualVecVars[oxo->ind2[i]]);
                 if (dualProd >= obj) {
                   addVar = true;
                 } else {
-                  dualLinearze(it->second, it->first.first, it->first.second,
-                               lower1, lower2, v1->getLb(), v1->getUb(),
-                               v2->getLb(), v2->getUb(),
-                               fabs(dualVecVars[it->first.first]),
-                               fabs(dualVecVars[it->first.second]), cutCoefo,
+                  dualLinearze(oxo->val[i], oxo->ind1[i], oxo->ind2[i], lower1,
+                               lower2, v1->getLb(), v1->getUb(), v2->getLb(),
+                               v2->getUb(), fabs(dualVecVars[oxo->ind1[i]]),
+                               fabs(dualVecVars[oxo->ind2[i]]), cutCoefo,
                                cutCoefo, cutConst, ubinf);
                 }
               } else {
@@ -940,67 +960,67 @@ bool updateRel(EnvPtr env, RelaxationPtr rel, SimplexQuadCutGenPtr cutgen,
               }
             } else {
               addVar = false;
-              linearize(x[it->first.first], x[it->first.second], it->second,
-                        it->first.first, it->first.second, cutCoefo, cutCoefo,
+              linearize(x[oxo->ind1[i]], x[oxo->ind2[i]], oxo->val[i],
+                        oxo->ind1[i], oxo->ind2[i], cutCoefo, cutCoefo,
                         cutConst);
             }
           }
         }
       }
       if (addVar) {
-        y = getNewVar(rel, cutgen, it->first.first, it->first.second, 'v',
-                      scale, isScaled);
+        y = getNewVar(rel, cutgen, oxo->ind1[i], oxo->ind2[i], 'v', scale,
+                      isScaled);
         aptr = (AuxVarsPtr) new AuxVars();
-        aptr->x1 = it->first.first;
-        aptr->x2 = it->first.second;
+        aptr->x1 = oxo->ind1[i];
+        aptr->x2 = oxo->ind2[i];
         aptr->productType = 'v';
         aptr->y = y;
         aptr->isScaled = isScaled;
         aptr->scale = isScaled ? scale : 1.0;
         auxVars.push_back(aptr);
-        addTerm(cutCoefo, y, it->second, scale, isScaled);
+        addTerm(newVars, y, oxo->val[i], scale, isScaled);
       }
     } else {
-      addTerm(cutCoefo, y, it->second, scale, isScaled);
+      addTerm(newVars, y, oxo->val[i], scale, isScaled);
     }
   }
 
-  for (QuadTerm::iterator it = oxs.begin(); it != oxs.end(); ++it) {
-    if (fabs(it->second) < etol) {
+  for (std::vector<int>::size_type i = 0; i < oxssize; ++i) {
+    if (fabs(oxs->val[i]) < etol) {
       continue;
     }
-    clb = rel->getConstraint(it->first.second)->getLb();
-    cub = rel->getConstraint(it->first.second)->getUb();
+    clb = rel->getConstraint(oxs->ind2[i])->getLb();
+    cub = rel->getConstraint(oxs->ind2[i])->getUb();
     if (cub - clb < etol) {
       continue;
     }
-    y = findY(auxVars, it->first.first, it->first.second, 'm', scale, isScaled);
+    y = findY(auxVars, oxs->ind1[i], oxs->ind2[i], 'm', scale, isScaled);
     if (y == -1) {
       if (allVars) {
         addVar = true;
       } else {
-        v1 = rel->getVariable(it->first.first);
-        lower1 = fabs(x[it->first.first] - v1->getLb()) < etol;
+        v1 = rel->getVariable(oxs->ind1[i]);
+        lower1 = fabs(x[oxs->ind1[i]] - v1->getLb()) < etol;
         // We assume nonbasic slack is at zero
-        lower2 = cutgen->getSlackUb(it->first.second) > etol;
-        if ((ubinf && it->second > etol) || (lbinf && it->second < etol)) {
+        lower2 = cutgen->getSlackUb(oxs->ind2[i]) > etol;
+        if ((ubinf && oxs->val[i] > etol) || (lbinf && oxs->val[i] < etol)) {
           if (lower1 == lower2) {
             addVar = false;
-            linearize(x[it->first.first], 0.0, it->second, it->first.first,
-                      it->first.second, cutCoefo, cutCoefs, cutConst);
+            linearize(x[oxs->ind1[i]], 0.0, oxs->val[i], oxs->ind1[i],
+                      oxs->ind2[i], cutCoefo, cutCoefs, cutConst);
           } else {
             if (variant == 2) {
-              double dualProd = fabs(dualVecVars[it->first.first] *
-                                     dualVecCons[it->first.second]);
+              double dualProd =
+                  fabs(dualVecVars[oxs->ind1[i]] * dualVecCons[oxs->ind2[i]]);
               if (dualProd >= obj) {
                 addVar = true;
               } else {
-                dualLinearze(it->second, it->first.first, it->first.second,
-                             lower1, lower2, v1->getLb(), v1->getUb(),
-                             cutgen->getSlackLb(it->first.second),
-                             cutgen->getSlackUb(it->first.second),
-                             fabs(dualVecVars[it->first.first]),
-                             fabs(dualVecCons[it->first.second]), cutCoefo,
+                dualLinearze(oxs->val[i], oxs->ind1[i], oxs->ind2[i], lower1,
+                             lower2, v1->getLb(), v1->getUb(),
+                             cutgen->getSlackLb(oxs->ind2[i]),
+                             cutgen->getSlackUb(oxs->ind2[i]),
+                             fabs(dualVecVars[oxs->ind1[i]]),
+                             fabs(dualVecCons[oxs->ind2[i]]), cutCoefo,
                              cutCoefs, cutConst, ubinf);
               }
             } else {
@@ -1010,104 +1030,102 @@ bool updateRel(EnvPtr env, RelaxationPtr rel, SimplexQuadCutGenPtr cutgen,
         } else {
           if (lower1 == lower2) {
             if (variant == 2) {
-              double dualProd = fabs(dualVecVars[it->first.first] *
-                                     dualVecVars[it->first.second]);
+              double dualProd =
+                  fabs(dualVecVars[oxs->ind1[i]] * dualVecVars[oxs->ind2[i]]);
               if (dualProd >= obj) {
                 addVar = true;
               } else {
-                dualLinearze(it->second, it->first.first, it->first.second,
-                             lower1, lower2, v1->getLb(), v1->getUb(),
-                             cutgen->getSlackLb(it->first.second),
-                             cutgen->getSlackUb(it->first.second),
-                             fabs(dualVecVars[it->first.first]),
-                             fabs(dualVecCons[it->first.second]), cutCoefo,
+                dualLinearze(oxs->val[i], oxs->ind1[i], oxs->ind2[i], lower1,
+                             lower2, v1->getLb(), v1->getUb(),
+                             cutgen->getSlackLb(oxs->ind2[i]),
+                             cutgen->getSlackUb(oxs->ind2[i]),
+                             fabs(dualVecVars[oxs->ind1[i]]),
+                             fabs(dualVecCons[oxs->ind2[i]]), cutCoefo,
                              cutCoefs, cutConst, ubinf);
               }
             } else {
               addVar = true;
             }
           } else {
-            linearize(x[it->first.first], 0.0, it->second, it->first.first,
-                      it->first.second, cutCoefo, cutCoefs, cutConst);
+            linearize(x[oxs->ind1[i]], 0.0, oxs->val[i], oxs->ind1[i],
+                      oxs->ind2[i], cutCoefo, cutCoefs, cutConst);
           }
         }
       }
       if (addVar) {
-        y = getNewVar(rel, cutgen, it->first.first, it->first.second, 'm',
-                      scale, isScaled);
+        y = getNewVar(rel, cutgen, oxs->ind1[i], oxs->ind2[i], 'm', scale,
+                      isScaled);
         aptr = (AuxVarsPtr) new AuxVars();
-        aptr->x1 = it->first.first;
-        aptr->x2 = it->first.second;
+        aptr->x1 = oxs->ind1[i];
+        aptr->x2 = oxs->ind2[i];
         aptr->productType = 'm';
         aptr->y = y;
         aptr->isScaled = isScaled;
         aptr->scale = isScaled ? scale : 1.0;
         auxVars.push_back(aptr);
-        addTerm(cutCoefo, y, it->second, scale, isScaled);
+        addTerm(newVars, y, oxs->val[i], scale, isScaled);
       }
     } else {
-      addTerm(cutCoefo, y, it->second, scale, isScaled);
+      addTerm(newVars, y, oxs->val[i], scale, isScaled);
     }
   }
 
-  for (QuadTerm::iterator it = sxs.begin(); it != sxs.end(); ++it) {
-    if (fabs(it->second) < etol) {
+  for (std::vector<int>::size_type i = 0; i < sxssize; ++i) {
+    if (fabs(sxs->val[i]) < etol) {
       continue;
     }
-    clb = rel->getConstraint(it->first.first)->getLb();
-    cub = rel->getConstraint(it->first.first)->getUb();
+    clb = rel->getConstraint(sxs->ind1[i])->getLb();
+    cub = rel->getConstraint(sxs->ind1[i])->getUb();
     if (cub - clb < etol) {
       continue;
     }
-    clb = rel->getConstraint(it->first.second)->getLb();
-    cub = rel->getConstraint(it->first.second)->getUb();
+    clb = rel->getConstraint(sxs->ind2[i])->getLb();
+    cub = rel->getConstraint(sxs->ind2[i])->getUb();
     if (cub - clb < etol) {
       continue;
     }
-    y = findY(auxVars, it->first.first, it->first.second, 'c', scale, isScaled);
+    y = findY(auxVars, sxs->ind1[i], sxs->ind2[i], 'c', scale, isScaled);
     if (y == -1) {
-      if (it->first.first == it->first.second) {
+      if (sxs->ind1[i] == sxs->ind2[i]) {
         if (allVars) {
           addVar = true;
         } else {
           addVar = false;
-          if ((ubinf && it->second > etol) || (lbinf && it->second < etol)) {
+          if ((ubinf && sxs->val[i] > etol) || (lbinf && sxs->val[i] < etol)) {
             // assume nonbasic slack variable are at zero
-            linearize(0.0, 0.0, it->second, it->first.first, it->first.second,
+            linearize(0.0, 0.0, sxs->val[i], sxs->ind1[i], sxs->ind2[i],
                       cutCoefs, cutCoefs, cutConst);
           } else {
-            linearize(cutgen->getSlackLb(it->first.first),
-                      cutgen->getSlackUb(it->first.second), it->second,
-                      it->first.first, it->first.second, cutCoefs, cutCoefs,
-                      cutConst);
+            linearize(cutgen->getSlackLb(sxs->ind1[i]),
+                      cutgen->getSlackUb(sxs->ind2[i]), sxs->val[i],
+                      sxs->ind1[i], sxs->ind2[i], cutCoefs, cutCoefs, cutConst);
           }
         }
       } else {
         if (allVars) {
           addVar = true;
         } else {
-          lower1 = cutgen->getSlackUb(it->first.first) > etol;
-          lower2 = cutgen->getSlackUb(it->first.second) > etol;
-          if ((ubinf && it->second > etol) || (lbinf && it->second < etol)) {
+          lower1 = cutgen->getSlackUb(sxs->ind1[i]) > etol;
+          lower2 = cutgen->getSlackUb(sxs->ind2[i]) > etol;
+          if ((ubinf && sxs->val[i] > etol) || (lbinf && sxs->val[i] < etol)) {
             if (lower1 == lower2) {
               addVar = false;
-              linearize(0.0, 0.0, it->second, it->first.first, it->first.second,
+              linearize(0.0, 0.0, sxs->val[i], sxs->ind1[i], sxs->ind2[i],
                         cutCoefs, cutCoefs, cutConst);
             } else {
               if (variant == 2) {
-                double dualProd = fabs(dualVecVars[it->first.first] *
-                                       dualVecVars[it->first.second]);
+                double dualProd =
+                    fabs(dualVecVars[sxs->ind1[i]] * dualVecVars[sxs->ind2[i]]);
                 if (dualProd >= obj) {
                   addVar = true;
                 } else {
-                  dualLinearze(it->second, it->first.first, it->first.second,
-                               lower1, lower2,
-                               cutgen->getSlackLb(it->first.first),
-                               cutgen->getSlackUb(it->first.first),
-                               cutgen->getSlackLb(it->first.second),
-                               cutgen->getSlackUb(it->first.second),
-                               fabs(dualVecCons[it->first.first]),
-                               fabs(dualVecCons[it->first.second]), cutCoefs,
+                  dualLinearze(sxs->val[i], sxs->ind1[i], sxs->ind2[i], lower1,
+                               lower2, cutgen->getSlackLb(sxs->ind1[i]),
+                               cutgen->getSlackUb(sxs->ind1[i]),
+                               cutgen->getSlackLb(sxs->ind2[i]),
+                               cutgen->getSlackUb(sxs->ind2[i]),
+                               fabs(dualVecCons[sxs->ind1[i]]),
+                               fabs(dualVecCons[sxs->ind2[i]]), cutCoefs,
                                cutCoefs, cutConst, ubinf);
                 }
               } else {
@@ -1117,19 +1135,18 @@ bool updateRel(EnvPtr env, RelaxationPtr rel, SimplexQuadCutGenPtr cutgen,
           } else {
             if (lower1 == lower2) {
               if (variant == 2) {
-                double dualProd = fabs(dualVecVars[it->first.first] *
-                                       dualVecVars[it->first.second]);
+                double dualProd =
+                    fabs(dualVecVars[sxs->ind1[i]] * dualVecVars[sxs->ind2[i]]);
                 if (dualProd >= obj) {
                   addVar = true;
                 } else {
-                  dualLinearze(it->second, it->first.first, it->first.second,
-                               lower1, lower2,
-                               cutgen->getSlackLb(it->first.first),
-                               cutgen->getSlackUb(it->first.first),
-                               cutgen->getSlackLb(it->first.second),
-                               cutgen->getSlackUb(it->first.second),
-                               fabs(dualVecCons[it->first.first]),
-                               fabs(dualVecCons[it->first.second]), cutCoefs,
+                  dualLinearze(sxs->val[i], sxs->ind1[i], sxs->ind2[i], lower1,
+                               lower2, cutgen->getSlackLb(sxs->ind1[i]),
+                               cutgen->getSlackUb(sxs->ind1[i]),
+                               cutgen->getSlackLb(sxs->ind2[i]),
+                               cutgen->getSlackUb(sxs->ind2[i]),
+                               fabs(dualVecCons[sxs->ind1[i]]),
+                               fabs(dualVecCons[sxs->ind2[i]]), cutCoefs,
                                cutCoefs, cutConst, ubinf);
                 }
               } else {
@@ -1137,97 +1154,129 @@ bool updateRel(EnvPtr env, RelaxationPtr rel, SimplexQuadCutGenPtr cutgen,
               }
             } else {
               addVar = false;
-              linearize(0.0, 0.0, it->second, it->first.first, it->first.second,
+              linearize(0.0, 0.0, sxs->val[i], sxs->ind1[i], sxs->ind2[i],
                         cutCoefs, cutCoefs, cutConst);
             }
           }
         }
       }
       if (addVar) {
-        y = getNewVar(rel, cutgen, it->first.first, it->first.second, 'c',
-                      scale, isScaled);
+        y = getNewVar(rel, cutgen, sxs->ind1[i], sxs->ind2[i], 'c', scale,
+                      isScaled);
         aptr = (AuxVarsPtr) new AuxVars();
-        aptr->x1 = it->first.first;
-        aptr->x2 = it->first.second;
+        aptr->x1 = sxs->ind1[i];
+        aptr->x2 = sxs->ind2[i];
         aptr->productType = 'c';
         aptr->y = y;
         aptr->isScaled = isScaled;
         aptr->scale = isScaled ? scale : 1.0;
         auxVars.push_back(aptr);
-        addTerm(cutCoefo, y, it->second, scale, isScaled);
+        addTerm(newVars, y, sxs->val[i], scale, isScaled);
       }
     } else {
-      addTerm(cutCoefo, y, it->second, scale, isScaled);
+      addTerm(newVars, y, sxs->val[i], scale, isScaled);
     }
   }
 
+  double* tmp = new double[rel->getNumVars()];
+  memcpy(tmp, cutCoefo, oldnumvars * sizeof(double));
+  delete[] cutCoefo;
+  cutCoefo = tmp;
+  memset(cutCoefo + oldnumvars, 0,
+         (rel->getNumVars() - oldnumvars) * sizeof(double));
+  for (std::map<int, double>::iterator it = newVars.begin();
+       it != newVars.end(); ++it) {
+    cutCoefo[it->first] += it->second;
+  }
   addCutToRel(rel, cutgen, cutCoefo, cutCoefs, cutConst,
               lbinf ? c->getLb() : -INFINITY, ubinf ? c->getUb() : INFINITY);
 
   if (quad2) {
-    for (QuadTerm::iterator it = oxo1.begin(); it != oxo1.end(); ++it) {
-      if (fabs(it->second) < etol) {
+    for (std::vector<int>::size_type i = 0; i < oxo1size; ++i) {
+      if (fabs(oxo1->val[i]) < etol) {
         continue;
       }
-      y = findY(auxVars, it->first.first, it->first.second, 'v', scale,
-                isScaled);
+      y = findY(auxVars, oxo1->ind1[i], oxo1->ind2[i], 'v', scale, isScaled);
       if (y == -1) {
-        y = getNewVar(rel, cutgen, it->first.first, it->first.second, 'v',
-                      scale, isScaled);
+        y = getNewVar(rel, cutgen, oxo1->ind1[i], oxo1->ind2[i], 'v', scale,
+                      isScaled);
         aptr = (AuxVarsPtr) new AuxVars();
-        aptr->x1 = it->first.first;
-        aptr->x2 = it->first.second;
+        aptr->x1 = oxo1->ind1[i];
+        aptr->x2 = oxo1->ind2[i];
         aptr->productType = 'v';
         aptr->y = y;
         aptr->isScaled = isScaled;
         aptr->scale = isScaled ? scale : 1.0;
         auxVars.push_back(aptr);
-        addTerm(cutCoefo1, y, it->second, scale, isScaled);
+        addTerm(newVars1, y, oxo1->val[i], scale, isScaled);
       } else {
-        addTerm(cutCoefo1, y, it->second, scale, isScaled);
+        addTerm(newVars1, y, oxo1->val[i], scale, isScaled);
       }
     }
 
-    for (QuadTerm::iterator it = oxs.begin(); it != oxs.end(); ++it) {
-      if (fabs(it->second) < etol) {
+    for (std::vector<int>::size_type i = 0; i < oxs1size; ++i) {
+      if (fabs(oxs1->val[i]) < etol) {
         continue;
       }
-      clb = rel->getConstraint(it->first.second)->getLb();
-      cub = rel->getConstraint(it->first.second)->getUb();
+      clb = rel->getConstraint(oxs1->ind2[i])->getLb();
+      cub = rel->getConstraint(oxs1->ind2[i])->getUb();
       if (cub - clb < etol) {
         continue;
       }
-      y = findY(auxVars, it->first.first, it->first.second, 'm', scale,
-                isScaled);
+      y = findY(auxVars, oxs1->ind1[i], oxs1->ind2[i], 'm', scale, isScaled);
       if (y == -1) {
-        y = getNewVar(rel, cutgen, it->first.first, it->first.second, 'm',
-                      scale, isScaled);
+        y = getNewVar(rel, cutgen, oxs1->ind1[i], oxs1->ind2[i], 'm', scale,
+                      isScaled);
         aptr = (AuxVarsPtr) new AuxVars();
-        aptr->x1 = it->first.first;
-        aptr->x2 = it->first.second;
+        aptr->x1 = oxs1->ind1[i];
+        aptr->x2 = oxs1->ind2[i];
         aptr->productType = 'm';
         aptr->y = y;
         aptr->isScaled = isScaled;
         aptr->scale = isScaled ? scale : 1.0;
         auxVars.push_back(aptr);
-        addTerm(cutCoefo1, y, it->second, scale, isScaled);
+        addTerm(newVars1, y, oxs1->val[i], scale, isScaled);
       } else {
-        addTerm(cutCoefo1, y, it->second, scale, isScaled);
+        addTerm(newVars1, y, oxs1->val[i], scale, isScaled);
       }
     }
 
+    double* tmp = new double[rel->getNumVars()];
+    memcpy(tmp, cutCoefo1, oldnumvars * sizeof(double));
+    delete[] cutCoefo1;
+    cutCoefo1 = tmp;
+    memset(cutCoefo1 + oldnumvars, 0,
+           (rel->getNumVars() - oldnumvars) * sizeof(double));
+    for (std::map<int, double>::iterator it = newVars.begin();
+         it != newVars.end(); ++it) {
+      cutCoefo1[it->first] += it->second;
+    }
     addCutToRel(rel, cutgen, cutCoefo1, cutCoefs, cutConst,
                 lbinf ? c->getLb() : -INFINITY, ubinf ? c->getUb() : INFINITY);
   }
 
-  oxo.clear();
-  oxs.clear();
-  sxs.clear();
-  oxo1.clear();
-  oxs1.clear();
-  cutCoefo.clear();
-  cutCoefo1.clear();
-  cutCoefs.clear();
+  if (oxo) {
+    delete oxo;
+  }
+  if (oxs) {
+    delete oxs;
+  }
+  if (sxs) {
+    delete sxs;
+  }
+  if (oxo1) {
+    delete oxo1;
+  }
+  if (oxs1) {
+    delete oxs1;
+  }
+  delete[] cutCoefo;
+  if (cutCoefo1) {
+    delete[] cutCoefo1;
+  }
+  if (cutCoefs) {
+    delete[] cutCoefs;
+  }
   return true;
 }
 

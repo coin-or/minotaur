@@ -41,20 +41,44 @@ struct TableauInfo {
 };
 
 struct SimplexCut {
-  LinearFunctionPtr lf;  // The linear function of the cut
-  double lb;             // Lower Bound
-  double ub;             // Upper Bound
-  UInt numInactive;      // Number of times the cut has remained inactive
-  double depth;          // Depth of cut
+  double *coef;      // The linear function of the cut
+  double lb;         // Lower Bound
+  double ub;         // Upper Bound
+  UInt numInactive;  // Number of times the cut has remained inactive
+  double depth;      // Depth of cut
+  SimplexCut() {}
+  ~SimplexCut() {
+    if (coef) {
+      delete[] coef;
+    }
+  }
   bool operator<(const SimplexCut &cut) const { return depth < cut.depth; }
   bool operator>(const SimplexCut &cut) const { return depth > cut.depth; }
 };
 
-typedef std::pair<int, int> VarProd;
-typedef std::map<VarProd, double> QuadTerm;
+struct SubstQuad {
+  std::vector<int> ind1;
+  std::vector<int> ind2;
+  std::vector<double> val;
+
+  SubstQuad() {
+    ind1.clear();
+    ind2.clear();
+    val.clear();
+  }
+  ~SubstQuad() {
+    ind1.clear();
+    ind2.clear();
+    val.clear();
+  }
+};
+
+// typedef std::pair<int, int> VarProd;
+// typedef std::map<VarProd, double> QuadTerm;
 typedef std::map<int, std::pair<double, double>> SlackBound;
 typedef SimplexCut *SimplexCutPtr;
 typedef std::vector<SimplexCutPtr> SimplexCutVector;
+typedef SubstQuad *SubstQuadPtr;
 
 class SimplexQuadCutGen {
  public:
@@ -82,19 +106,16 @@ class SimplexQuadCutGen {
 
   // get the quadratic for a constraint
   void getQuadratic(ConstraintPtr c, const double *x, RelaxationPtr rel,
-                    QuadTerm &oxo, QuadTerm &oxs, QuadTerm &sxs,
-                    std::map<int, double> &cutCoefo,
-                    std::map<int, double> &cutCoefs, double &cutConst);
+                    SubstQuadPtr &oxo, SubstQuadPtr &oxs, SubstQuadPtr &sxs,
+                    double *cutCoefo, double *cutCoefs, double &cutConst);
 
   void getQuadraticBNB(ConstraintPtr c, const double *x, RelaxationPtr rel,
-                       QuadTerm &oxo, QuadTerm &oxs,
-                       std::map<int, double> &cutCoefo, double &cutConst,
-                       std::map<int, int> &countInf);
+                       SubstQuadPtr &oxo, SubstQuadPtr &oxs, double *cutCoefo,
+                       double &cutConst, std::map<int, int> &countInf);
 
   void getQuadraticBNB(ConstraintPtr c, const double *x, RelaxationPtr rel,
-                       QuadTerm &oxo, QuadTerm &oxs,
-                       std::map<int, double> &cutCoefo, double &cutConst,
-                       int &count);
+                       SubstQuadPtr &oxo, SubstQuadPtr &oxs, double *cutCoefo,
+                       double &cutConst, int &count);
 
   double getSlackLb(int s);
 
@@ -178,8 +199,8 @@ class SimplexQuadCutGen {
   // \param[in] slackInd - The variable of the squared term
   // \param[in] coef - The coefficient of the term
   // \param[in] cnst - The constant of the relaxation of the square term
-  void addLfTerm_(SimplexCutVector cuts, RelaxationPtr rel, int slackInd,
-                  double coef, double cnst);
+  void addLfTerm_(SimplexCutVector cuts, int slackInd, double coef,
+                  double cnst);
 
   // \brief Add one relaxed term in the cut lf for a bilinear original term
   // \param[in] cuts - The vector of cuts.
@@ -199,8 +220,8 @@ class SimplexQuadCutGen {
   // \param[in] coef1 - The coefficient of slack1
   // \param[in] coef2 - The coefficient of slack2
   // \param[in] cnst - The constant of the relaxation of the bilinear term
-  void addLfTerm_(SimplexCutVector cuts, RelaxationPtr rel, int slackInd1,
-                  int slackInd2, double coef1, double coef2, double cnst);
+  void addLfTerm_(SimplexCutVector cuts, int slackInd1, int slackInd2,
+                  double coef1, double coef2, double cnst);
 
   // \brief Add one relaxed term in the cut lf for a product of orig and slack
   // \param[in] cuts - The vector of cuts.
@@ -210,8 +231,8 @@ class SimplexQuadCutGen {
   // \param[in] coef1 - The coefficient of orig_v
   // \param[in] coef2 - The coefficient of slack
   // \param[in] cnst - The constant of the relaxation of the product
-  void addLfTerm_(SimplexCutVector cuts, RelaxationPtr rel, VariablePtr orig_v,
-                  int slackInd, double coef1, double coef2, double cnst);
+  void addLfTerm_(SimplexCutVector cuts, VariablePtr orig_v, int slackInd,
+                  double coef1, double coef2, double cnst);
 
   // \brief Add two relaxed term in the cut lf for a bilinear original term
   // \param[out] cuts - The vector of cuts.
@@ -237,9 +258,9 @@ class SimplexQuadCutGen {
   // \param[in] c2v2 - The coefficient of slack in the second term
   // \param[in] cnst1 - The constant of the relaxation for the first term
   // \param[in] cnst2 - The constant of the relaxation for the second term
-  void addLfTerm_(SimplexCutVector &cuts, RelaxationPtr rel, VariablePtr orig_v,
-                  int slackInd, double c1v1, double c1v2, double c2v1,
-                  double c2v2, double cnst1, double cnst2);
+  void addLfTerm_(SimplexCutVector &cuts, VariablePtr orig_v, int slackInd,
+                  double c1v1, double c1v2, double c2v1, double c2v2,
+                  double cnst1, double cnst2);
 
   // \brief Add two relaxed term in the cut lf for a bilinear slack term
   // \param[out] cuts - The vector of cuts.
@@ -251,21 +272,20 @@ class SimplexQuadCutGen {
   // \param[in] c2v2 - The coefficient of v2 in the second term
   // \param[in] cnst1 - The constant of the relaxation for the first term
   // \param[in] cnst2 - The constant of the relaxation for the second term
-  void addLfTerm_(SimplexCutVector &cuts, RelaxationPtr rel, int slackInd1,
-                  int slackInd2, double c1v1, double c1v2, double c2v1,
-                  double c2v2, double cnst1, double cnst2);
+  void addLfTerm_(SimplexCutVector &cuts, int slackInd1, int slackInd2,
+                  double c1v1, double c1v2, double c2v1, double c2v2,
+                  double cnst1, double cnst2);
 
-  // \brief Add a linear term for the substituted quadratic
-  // \param[out] t - The map in which the term is to be added
-  // \param[in] v - The variable
-  // \param[in] coef - The coefficient of the variable
-  void addTerm_(std::map<int, double> &t, int v, double coef);
+  // \brief Add two matrix m1 and m2 and store the result in m1
+  // \param[in] m1 - Matrix m1 stored as SubstQuadPtr
+  // \param[in] m2 - Matrix m2 stored as SubstQuadPtr
+  void addMatrix_(SubstQuadPtr &m1, SubstQuadPtr &m2);
 
   // \brief Add a quadratic term for the substituted quadratic
   // \param[out] t - The map in which the term is to be added
   // \param[in] vp - The product of variables which are to be added
   // \param[in] coef - The coefficient of the product
-  void addTerm_(QuadTerm &t, VarProd vp, double coef);
+  // void addTerm_(QuadTerm &t, VarProd vp, double coef);
 
   // Calculate the depth of cut from the current point
   void calcDepth_(SimplexCutVector cuts, const double *x);
@@ -283,9 +303,8 @@ class SimplexQuadCutGen {
   // quadratic \param[in] cutConst - The constant in the substituted quadratic
   // \param[in] under - true if we need to underestimate the quad; false o/w
   // \param[in] rhs - rhs of the constraint for which the substitution is done
-  SimplexCutVector getCutVec_(RelaxationPtr rel, std::map<int, double> cutCoefo,
-                              std::map<int, double> cutCoefs, double cutConst,
-                              bool under, double rhs);
+  SimplexCutVector getCutVec_(double *cutCoefo, double *cutCoefs,
+                              double cutConst, bool under, double rhs);
 
   double getMin_(SimplexCutPtr cut, double rhs);
 
@@ -294,14 +313,12 @@ class SimplexQuadCutGen {
                            double coef1, double coef2, double cnst);
 
   // \brief Get the second cut for product of original and slack variables
-  SimplexCutPtr getNewCut_(SimplexCutPtr cut, RelaxationPtr rel,
-                           VariablePtr orig_v, int slackInd, double coef1,
-                           double coef2, double cnst);
+  SimplexCutPtr getNewCut_(SimplexCutPtr cut, VariablePtr orig_v, int slackInd,
+                           double coef1, double coef2, double cnst);
 
   // \brief Get the second cut for product of slack variables
-  SimplexCutPtr getNewCut_(SimplexCutPtr cut, RelaxationPtr rel, int slackInd1,
-                           int slackInd2, double coef1, double coef2,
-                           double cnst);
+  SimplexCutPtr getNewCut_(SimplexCutPtr cut, int slackInd1, int slackInd2,
+                           double coef1, double coef2, double cnst);
 
   // get the bounds on the slack variables
   void getSlackBounds_();
@@ -326,10 +343,9 @@ class SimplexQuadCutGen {
   // \param[out] cutCoefo - the linear terms for original variables
   // \param[out] cutCoefs - the linear terms for slack variables
   // \param[out] cutConst - the constant of the substituted quadratic
-  void multiplyBB_(int b1, int b2, double coef, const double *x, QuadTerm &oxo,
-                   QuadTerm &oxs, QuadTerm &sxs,
-                   std::map<int, double> &cutCoefo,
-                   std::map<int, double> &cutCoefs, double &cutConst);
+  void multiplyBB_(int b1, int b2, double coef, const double *x,
+                   SubstQuadPtr &oxo, SubstQuadPtr &oxs, SubstQuadPtr &sxs,
+                   double *cutCoefo, double *cutCoefs, double &cutConst);
 
   // \brief multiply a basic and a non-basic variable coef*b*nb
   // \param[in] b - index of the basic variable
@@ -339,8 +355,8 @@ class SimplexQuadCutGen {
   // \param[out] oxo - the product map for original times original variables
   // \param[out] oxs - the product map for original times slack variables
   // \param[out] cutCoefo - the linear terms for original variables
-  void multiplyBNB_(int b, int nb, double coef, const double *x, QuadTerm &oxo,
-                    QuadTerm &oxs, std::map<int, double> &cutCoefo);
+  void multiplyBNB_(int b, int nb, double coef, const double *x,
+                    SubstQuadPtr &oxo, SubstQuadPtr &oxs, double *cutCoefo);
 
   // \brief multiply a coefficient to a basic variable (linear term)
   // \param[in] b - index of the basic variable
@@ -349,40 +365,35 @@ class SimplexQuadCutGen {
   // \param[out] cutCoefo - the linear terms for original variables
   // \param[out] cutCoefs - the linear terms for slack variables
   // \param[out] cutConst - the constant of the substituted quadratic
-  void multiplyCB_(int b, double coef, const double *x,
-                   std::map<int, double> &cutCoefo,
-                   std::map<int, double> &cutCoefs, double &cutConst);
+  void multiplyCB_(int b, double coef, const double *x, double *cutCoefo,
+                   double *cutCoefs, double &cutConst);
 
   // \brief multiply a coefficient to a non-basic variable (linear term)
   // \param[in] nb - index of the non-basic variable
   // \param[in] coef - Coefficient for the term
   // \param[out] cutCoefo - the linear terms for original variables
-  void multiplyCNB_(int nb, double coef, std::map<int, double> &cutCoefo);
+  void multiplyCNB_(int nb, double coef, double *cutCoefo);
 
   // \brief multiply two non-basic variables coef*nb1*nb2
   // \param[in] nb1 - index of the first non-basic variable
   // \param[in] nb2 - index of the second non-basic variable
   // \param[in] coef - Coefficient for the term
   // \param[out] oxo - the product map for original times original variables
-  void multiplyNBNB_(int nb1, int nb2, double coef, QuadTerm &oxo);
-
-  void printTerm_(QuadTerm &t);
-  void printTerm_(std::map<int, double> &t);
+  void multiplyNBNB_(int nb1, int nb2, double coef, SubstQuadPtr &oxo);
 
   int relaxBilTerm_(double coef, bool lower1, bool lower2, double l1, double u1,
                     double l2, double u2, double w1, double w2, double &c1v1,
                     double &c1v2, double &c2v1, double &c2v2, double &cnst1,
                     double &cnst2, bool under);
 
-  int relaxQuadTerms_(SimplexCutVector &cuts, RelaxationPtr rel, QuadTerm oxo,
-                      QuadTerm oxs, QuadTerm sxs,
-                      std::map<int, double> cutCoefo,
-                      std::map<int, double> cutCoefs, double cutConst,
+  int relaxQuadTerms_(SimplexCutVector &cuts, RelaxationPtr rel,
+                      SubstQuadPtr oxo, SubstQuadPtr oxs, SubstQuadPtr sxs,
+                      double *cutCoefo, double *cutCoefs, double cutConst,
                       ConstSolutionPtr sol, bool under, double rhs);
   int relaxQuadTermsBNB_(SimplexCutVector &iter_cuts, RelaxationPtr rel,
-                         QuadTerm oxo, QuadTerm oxs,
-                         std::map<int, double> cutCoefo, double cutConst,
-                         ConstSolutionPtr sol, bool under, double rhs);
+                         SubstQuadPtr oxo, SubstQuadPtr oxs, double *cutCoefo,
+                         double cutConst, ConstSolutionPtr sol, bool under,
+                         double rhs);
 
   void relaxSqTerm_(double coef, bool atLower, double l, double u,
                     double &lincoef, double &cnst, bool under);
