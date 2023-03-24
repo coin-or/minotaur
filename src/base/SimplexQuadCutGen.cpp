@@ -99,7 +99,7 @@ int SimplexQuadCutGen::generateCuts(RelaxationPtr rel, ConstSolutionPtr sol) {
 
   ++iter_;
   env_->getLogger()->msgStream(LogExtraInfo)
-      << me_ << "Round " << iter_ << std::endl;
+      << me_ << " : Round " << iter_ << std::endl;
   preprocessSimplexTab();
   if (variant_ >= 7) {
     std::map<int, int>::iterator countInfIt1, countInfIt2;
@@ -174,6 +174,9 @@ int SimplexQuadCutGen::generateCuts(RelaxationPtr rel, ConstSolutionPtr sol) {
           << " is not defined at this point." << std::endl;
 #endif
     }
+    env_->getLogger()->msgStream(LogExtraInfo)
+        << me_ << " : Generating cuts for the constraint " << c->getName()
+        << std::endl;
     cutConst = 0.0;
     if (variant_ >= 6) {
       int count = 0;
