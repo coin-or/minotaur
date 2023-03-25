@@ -1077,124 +1077,142 @@ void SimplexQuadCutGen::multiplyBB_(int b1, int b2, double coef,
   double *slackRow2 = new double[tabInfo_->nrow];
   double beta1 = x[b1];
   double beta2 = x[b2];
-  std::map<int, double> orig1, orig2, slack1, slack2;
+  std::vector<int> nzOrig, nzSlack;
+  std::vector<bool> inOrig1, inOrig2, inSlack1, inSlack2;
+  SubstQuadPtr tempoxo = (SubstQuadPtr) new SubstQuad();
+  SubstQuadPtr tempoxs = (SubstQuadPtr) new SubstQuad();
+  SubstQuadPtr tempsxs = (SubstQuadPtr) new SubstQuad();
+  int a, b;
 
   lpe_->getBInvARow(basicInd_[b1], origRow1, slackRow1);
   lpe_->getBInvARow(basicInd_[b2], origRow2, slackRow2);
 
   // We assume non-basic slack variables will be zero
   for (int i = 0; i < nnbOrig_; ++i) {
-    if (fabs(origRow1[nbOrig_[i]]) > eTol_) {
-      orig1.insert(std::make_pair(nbOrig_[i], origRow1[nbOrig_[i]]));
+    bool in1 = fabs(origRow1[nbOrig_[i]]) > eTol_;
+    bool in2 = fabs(origRow2[nbOrig_[i]]) > eTol_;
+    if (in1 || in2) {
+      nzOrig.push_back(nbOrig_[i]);
+      inOrig1.push_back(in1);
+      inOrig2.push_back(in2);
       beta1 += origRow1[nbOrig_[i]] * x[nbOrig_[i]];
-    }
-    if (fabs(origRow2[nbOrig_[i]]) > eTol_) {
-      orig2.insert(std::make_pair(nbOrig_[i], origRow2[nbOrig_[i]]));
       beta2 += origRow2[nbOrig_[i]] * x[nbOrig_[i]];
     }
   }
-  delete[] origRow1;
-  delete[] origRow2;
 
   for (int i = 0; i < nnbSlack_; ++i) {
-    if (fabs(slackRow1[nbSlack_[i]]) > eTol_) {
-      slack1.insert(std::make_pair(nbSlack_[i], slackRow1[nbSlack_[i]]));
-    }
-    if (fabs(slackRow2[nbSlack_[i]]) > eTol_) {
-      slack2.insert(std::make_pair(nbSlack_[i], slackRow2[nbSlack_[i]]));
+    bool in1 = fabs(slackRow1[nbSlack_[i]]) > eTol_;
+    bool in2 = fabs(slackRow2[nbSlack_[i]]) > eTol_;
+    if (in1 || in2) {
+      nzSlack.push_back(nbSlack_[i]);
+      inSlack1.push_back(in1);
+      inSlack2.push_back(in2);
     }
   }
-  delete[] slackRow1;
-  delete[] slackRow2;
 
   // We assume that the coef is always nonzero
-  SubstQuadPtr tempoxo1 = (SubstQuadPtr) new SubstQuad();
-  SubstQuadPtr tempoxo2 = (SubstQuadPtr) new SubstQuad();
-  SubstQuadPtr tempoxs = (SubstQuadPtr) new SubstQuad();
-  for (std::map<int, double>::iterator it1 = orig1.begin(); it1 != orig1.end();
-       ++it1) {
-    // orig1 x orig2
-    for (std::map<int, double>::iterator it2 = orig2.begin();
-         it2 != orig2.end(); ++it2) {
-      if (it1->first <= it2->first) {
-        tempoxo1->ind1.push_back(it1->first);
-        tempoxo1->ind2.push_back(it2->first);
-        tempoxo1->val.push_back(coef * it1->second * it2->second);
-      } else {
-        tempoxo2->ind1.push_back(it2->first);
-        tempoxo2->ind2.push_back(it1->first);
-        tempoxo2->val.push_back(coef * it1->second * it2->second);
+  // oxo
+  a = 0;
+  for (std::vector<int>::iterator it1 = nzOrig.begin(); it1 != nzOrig.end();
+       ++it1, ++a) {
+    int i = *it1;
+    if (inOrig1[a] && inOrig2[a]) {
+      tempoxo->ind1.push_back(i);
+      tempoxo->ind2.push_back(i);
+      tempoxo->val.push_back(coef * origRow1[i] * origRow2[i]);
+    }
+    b = 0;
+    for (std::vector<int>::iterator it2 = it1 + 1; it2 != nzOrig.end();
+         ++it2, ++b) {
+      int j = *it2;
+      double val = 0.0;
+      if (inOrig1[a] && inOrig2[b]) {
+        val += coef * origRow1[i] * origRow2[j];
+      }
+      if (inOrig2[a] && inOrig1[b]) {
+        val += coef * origRow2[i] * origRow1[j];
+      }
+      if (fabs(val) > eTol_) {
+        tempoxo->ind1.push_back(i);
+        tempoxo->ind2.push_back(j);
+        tempoxo->val.push_back(val);
       }
     }
-    // orig1 x slack2
-    for (std::map<int, double>::iterator it2 = slack2.begin();
-         it2 != slack2.end(); ++it2) {
-      tempoxs->ind1.push_back(it1->first);
-      tempoxs->ind2.push_back(it2->first);
-      tempoxs->val.push_back(coef * it1->second * it2->second);
-    }
-    // orig1 x beta2
-    cutCoefo[it1->first] -= coef * it1->second * beta2;
+    cutCoefo[i] -= coef * origRow1[i] * beta2;
+    cutCoefo[i] -= coef * origRow2[i] * beta1;
   }
-  addMatrix_(oxo, tempoxo1);
-  addMatrix_(oxo, tempoxo2);
-  addMatrix_(oxs, tempoxs);
-  delete tempoxo1;
-  delete tempoxo2;
-  delete tempoxs;
-
-  tempoxs = (SubstQuadPtr) new SubstQuad();
-  SubstQuadPtr tempsxs1 = (SubstQuadPtr) new SubstQuad();
-  SubstQuadPtr tempsxs2 = (SubstQuadPtr) new SubstQuad();
-  for (std::map<int, double>::iterator it1 = slack1.begin();
-       it1 != slack1.end(); ++it1) {
-    // slack1 x orig2
-    for (std::map<int, double>::iterator it2 = orig2.begin();
-         it2 != orig2.end(); ++it2) {
-      tempoxs->ind1.push_back(it2->first);
-      tempoxs->ind2.push_back(it1->first);
-      tempoxs->val.push_back(coef * it1->second * it2->second);
-    }
-    // slack1 x slack2
-    for (std::map<int, double>::iterator it2 = slack2.begin();
-         it2 != slack2.end(); ++it2) {
-      if (it1->first <= it2->first) {
-        tempsxs1->ind1.push_back(it1->first);
-        tempsxs1->ind2.push_back(it2->first);
-        tempsxs1->val.push_back(coef * it1->second * it2->second);
-      } else {
-        tempsxs2->ind1.push_back(it2->first);
-        tempsxs2->ind2.push_back(it1->first);
-        tempsxs2->val.push_back(coef * it1->second * it2->second);
+  // oxs
+  a = 0;
+  for (std::vector<int>::iterator it1 = nzOrig.begin(); it1 != nzOrig.end();
+       ++it1, ++a) {
+    int i = *it1;
+    b = 0;
+    for (std::vector<int>::iterator it2 = nzSlack.begin(); it2 != nzSlack.end();
+         ++it2, ++b) {
+      int j = *it2;
+      double val = 0.0;
+      if (inOrig1[a] && inSlack2[b]) {
+        val += coef * origRow1[i] * slackRow2[j];
+      }
+      if (inOrig2[a] && inSlack1[b]) {
+        val += coef * origRow2[i] * slackRow1[j];
+      }
+      if (fabs(val) > eTol_) {
+        tempoxs->ind1.push_back(i);
+        tempoxs->ind2.push_back(j);
+        tempoxs->val.push_back(val);
       }
     }
-    // slack2 x beta2
-    cutCoefs[it1->first] -= coef * it1->second * beta2;
   }
-  addMatrix_(oxs, tempoxs);
-  addMatrix_(sxs, tempsxs1);
-  addMatrix_(sxs, tempsxs2);
-  delete tempoxs;
-  delete tempsxs1;
-  delete tempsxs2;
-
-  // beta1 x orig2
-  for (std::map<int, double>::iterator it2 = orig2.begin(); it2 != orig2.end();
-       ++it2) {
-    cutCoefo[it2->first] -= coef * beta1 * it2->second;
-  }
-  // beta1 x slack2
-  for (std::map<int, double>::iterator it2 = slack2.begin();
-       it2 != slack2.end(); ++it2) {
-    cutCoefs[it2->first] -= coef * beta1 * it2->second;
+  // sxs
+  a = 0;
+  for (std::vector<int>::iterator it1 = nzSlack.begin(); it1 != nzSlack.end();
+       ++it1, ++a) {
+    int i = *it1;
+    if (inSlack1[a] && inSlack2[a]) {
+      tempsxs->ind1.push_back(i);
+      tempsxs->ind2.push_back(i);
+      tempsxs->val.push_back(coef * slackRow1[i] * slackRow2[i]);
+    }
+    b = 0;
+    for (std::vector<int>::iterator it2 = it1 + 1; it2 != nzSlack.end();
+         ++it2, ++b) {
+      int j = *it2;
+      double val = 0.0;
+      if (inSlack1[a] && inSlack2[b]) {
+        val += coef * slackRow1[i] * slackRow2[j];
+      }
+      if (inSlack2[a] && inSlack1[b]) {
+        val += coef * slackRow2[i] * slackRow1[j];
+      }
+      if (fabs(val) > eTol_) {
+        tempsxs->ind1.push_back(i);
+        tempsxs->ind2.push_back(j);
+        tempsxs->val.push_back(val);
+      }
+    }
+    cutCoefs[i] -= coef * slackRow1[i] * beta2;
+    cutCoefs[i] -= coef * slackRow2[i] * beta1;
   }
   // beta1 x beta2
   cutConst += coef * beta1 * beta2;
+  addMatrix_(oxo, tempoxo);
+  addMatrix_(oxs, tempoxs);
+  addMatrix_(sxs, tempsxs);
 
-  orig1.clear();
-  orig2.clear();
-  slack1.clear();
-  slack2.clear();
+  nzOrig.clear();
+  inOrig1.clear();
+  inOrig2.clear();
+  nzSlack.clear();
+  inSlack1.clear();
+  inSlack2.clear();
+  delete[] origRow1;
+  delete[] origRow2;
+  delete[] slackRow1;
+  delete[] slackRow2;
+  delete tempoxo;
+  delete tempoxs;
+  delete tempsxs;
 }
 
 void SimplexQuadCutGen::multiplyBNB_(int b, int nb, double coef,
@@ -1220,7 +1238,8 @@ void SimplexQuadCutGen::multiplyBNB_(int b, int nb, double coef,
     elem = origRow[nbOrig_[i]];
     if (fabs(elem) > eTol_) {
       // Since nbOrig is sorted once the if condition becomes false it will be
-      // false till the end of loop. Thus the tempoxo will still remain sorted.
+      // false till the end of loop. Thus the tempoxo will still remain
+      // sorted.
       if (nbOrig_[i] <= nb) {
         tempoxo->ind1.push_back(nbOrig_[i]);
         tempoxo->ind2.push_back(nb);

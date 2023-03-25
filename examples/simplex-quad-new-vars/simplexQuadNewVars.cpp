@@ -44,12 +44,12 @@ using namespace Minotaur;
 
 bool showCuts = false;
 bool showQuadVars = false;
-bool allVars = true;
+bool allVars = false;
 int numCons = 0;
 int numVars = 0;
 double* dualVecCons = 0;
 double* dualVecVars = 0;
-int variant = 6;
+int variant = 3;
 std::vector<double> optSol = {0, 0, 1, 1,   0,   0,   0,   0,
                               0,  // ex9_2_6
                               0, 0, 0, 0.5, 0.5, 0.5, 0.5, 1};
