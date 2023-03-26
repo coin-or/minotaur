@@ -733,7 +733,7 @@ void addTerm(std::map<int, double>& t, int v, double coef, double scale,
 
 void addCutToRel(RelaxationPtr rel, SimplexQuadCutGenPtr cutgen,
                  double* cutCoefo, double* cutCoefs, double cutConst,
-                 double clb, double cub) {
+                 double clb, double cub, int numcons) {
   LinearFunctionPtr lf = (LinearFunctionPtr) new LinearFunction(
       cutCoefo, rel->varsBegin(), rel->varsEnd(), 1e-9);
   LinearFunctionPtr lfs;
@@ -744,7 +744,7 @@ void addCutToRel(RelaxationPtr rel, SimplexQuadCutGenPtr cutgen,
   double lb, ub;
 
   if (cutCoefs) {
-    for (int i = 0; i < rel->getNumCons(); ++i) {
+    for (int i = 0; i < numcons; ++i) {
       if (fabs(cutCoefs[i]) < 1e-6) {
         continue;
       }
@@ -776,7 +776,7 @@ void linearize(double x1val, double x2val, double coef, int v1, int v2,
                double* t1, double* t2, double& cutConst) {
   cutConst -= coef * x1val * x2val;
   t1[v1] += coef * x2val;
-  t1[v2] += coef * x1val;
+  t2[v2] += coef * x1val;
 }
 
 void dualLinearze(double coef, int v1, int v2, bool lower1, bool lower2,
@@ -826,6 +826,7 @@ bool updateRel(EnvPtr env, RelaxationPtr rel, SimplexQuadCutGenPtr cutgen,
                ConstraintPtr c, bool ubinf, bool lbinf, double obj) {
   SubstQuadPtr oxo = 0, oxs = 0, sxs = 0, oxo1 = 0, oxs1 = 0;
   int oldnumvars = rel->getNumVars();
+  int oldnumcons = rel->getNumCons();
   double* cutCoefo = new double[oldnumvars];
   double* cutCoefo1 = 0;
   double* cutCoefs = 0;
@@ -1189,7 +1190,8 @@ bool updateRel(EnvPtr env, RelaxationPtr rel, SimplexQuadCutGenPtr cutgen,
     cutCoefo[it->first] += it->second;
   }
   addCutToRel(rel, cutgen, cutCoefo, cutCoefs, cutConst,
-              lbinf ? c->getLb() : -INFINITY, ubinf ? c->getUb() : INFINITY);
+              lbinf ? c->getLb() : -INFINITY, ubinf ? c->getUb() : INFINITY,
+              oldnumcons);
 
   if (quad2) {
     for (std::vector<int>::size_type i = 0; i < oxo1size; ++i) {
@@ -1252,7 +1254,8 @@ bool updateRel(EnvPtr env, RelaxationPtr rel, SimplexQuadCutGenPtr cutgen,
       cutCoefo1[it->first] += it->second;
     }
     addCutToRel(rel, cutgen, cutCoefo1, cutCoefs, cutConst,
-                lbinf ? c->getLb() : -INFINITY, ubinf ? c->getUb() : INFINITY);
+                lbinf ? c->getLb() : -INFINITY, ubinf ? c->getUb() : INFINITY,
+                oldnumcons);
   }
 
   if (oxo) {
