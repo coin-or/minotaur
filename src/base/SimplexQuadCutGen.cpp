@@ -184,6 +184,15 @@ int SimplexQuadCutGen::generateCuts(RelaxationPtr rel, ConstSolutionPtr sol) {
       memset(cutCoefo, 0, tabInfo_->ncol * sizeof(double));
       while (count < 2) {
         ++count;
+        if (count == 2) {
+          oxo->ind1.clear();
+          oxo->ind2.clear();
+          oxo->val.clear();
+          oxs->ind1.clear();
+          oxs->ind2.clear();
+          oxs->val.clear();
+          memset(cutCoefo, 0, tabInfo_->ncol * sizeof(double));
+        }
         if (variant_ == 6) {
           getQuadraticBNB(c, sol->getPrimal(), rel, oxo, oxs, cutCoefo,
                           cutConst, count);
@@ -1121,7 +1130,7 @@ void SimplexQuadCutGen::multiplyBB_(int b1, int b2, double coef,
       tempoxo->ind2.push_back(i);
       tempoxo->val.push_back(coef * origRow1[i] * origRow2[i]);
     }
-    b = 0;
+    b = a + 1;
     for (std::vector<int>::iterator it2 = it1 + 1; it2 != nzOrig.end();
          ++it2, ++b) {
       int j = *it2;
@@ -1174,7 +1183,7 @@ void SimplexQuadCutGen::multiplyBB_(int b1, int b2, double coef,
       tempsxs->ind2.push_back(i);
       tempsxs->val.push_back(coef * slackRow1[i] * slackRow2[i]);
     }
-    b = 0;
+    b = a + 1;
     for (std::vector<int>::iterator it2 = it1 + 1; it2 != nzSlack.end();
          ++it2, ++b) {
       int j = *it2;
@@ -1775,7 +1784,7 @@ void SimplexQuadCutGen::slackSubstitute_(int slackInd, double coef,
   int upto = tabInfo_->rowStart[slackInd] + tabInfo_->rowLen[slackInd];
   row.clear();
   for (int j = tabInfo_->rowStart[slackInd]; j < upto; ++j) {
-    row.insert(std::make_pair(tabInfo_->indices[j], tabInfo_->origTab[j]));
+    row.insert(std::make_pair(tabInfo_->indices[j], coef*tabInfo_->origTab[j]));
   }
   rhs = coef * tabInfo_->rowRhs[slackInd];
 }
