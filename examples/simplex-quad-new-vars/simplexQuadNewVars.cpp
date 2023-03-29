@@ -1538,6 +1538,22 @@ int main(int argc, char** argv) {
   options->findBool("lin_presolve")->setValue(true);
   options->findBool("msheur")->setValue(true);
   options->findString("nlp_engine")->setValue("IPOPT");
+  variant = options->findInt("simplex_cut_variant")->getValue();
+  switch(variant) {
+    case 0:
+    case 6:
+      allVars = true;
+      break;
+    case 2:
+    case 3:
+      allVars = false;
+      break;
+    default:
+      std::cout << "Invalid variant" << std::endl;
+      std::cout << "Assumed variant 6";
+      variant = 6;
+      allVars = true;
+  }
   fname = options->findString("problem_file")->getValue();
   if ("" == fname) {
     usage();

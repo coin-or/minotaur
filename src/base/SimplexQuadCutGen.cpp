@@ -101,6 +101,10 @@ int SimplexQuadCutGen::generateCuts(RelaxationPtr rel, ConstSolutionPtr sol) {
   env_->getLogger()->msgStream(LogExtraInfo)
       << me_ << " : Round " << iter_ << std::endl;
   preprocessSimplexTab();
+  cutCoefo = new double[tabInfo_->ncol];
+  if (variant_ < 6) {
+    cutCoefs = new double[tabInfo_->nrow];
+  }
   if (variant_ >= 7) {
     std::map<int, int>::iterator countInfIt1, countInfIt2;
     for (ConstraintConstIterator cit = p_->consBegin(); cit != p_->consEnd();
@@ -180,8 +184,13 @@ int SimplexQuadCutGen::generateCuts(RelaxationPtr rel, ConstSolutionPtr sol) {
     cutConst = 0.0;
     if (variant_ >= 6) {
       int count = 0;
-      cutCoefo = new double[tabInfo_->ncol];
       memset(cutCoefo, 0, tabInfo_->ncol * sizeof(double));
+      oxo->ind1.clear();
+      oxo->ind2.clear();
+      oxo->val.clear();
+      oxs->ind1.clear();
+      oxs->ind2.clear();
+      oxs->val.clear();
       while (count < 2) {
         ++count;
         if (count == 2) {
@@ -230,10 +239,17 @@ int SimplexQuadCutGen::generateCuts(RelaxationPtr rel, ConstSolutionPtr sol) {
         }
       }
     } else {
-      cutCoefo = new double[tabInfo_->ncol];
-      cutCoefs = new double[tabInfo_->nrow];
       memset(cutCoefo, 0, tabInfo_->ncol * sizeof(double));
       memset(cutCoefs, 0, tabInfo_->nrow * sizeof(double));
+      oxo->ind1.clear();
+      oxo->ind2.clear();
+      oxo->val.clear();
+      oxs->ind1.clear();
+      oxs->ind2.clear();
+      oxs->val.clear();
+      sxs->ind1.clear();
+      sxs->ind2.clear();
+      sxs->val.clear();
       getQuadratic(c, sol->getPrimal(), rel, oxo, oxs, sxs, cutCoefo, cutCoefs,
                    cutConst);
 
