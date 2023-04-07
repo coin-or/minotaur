@@ -99,6 +99,7 @@ SolveStatus Presolver::solve()
   int n_hand = handlers_.size();
   int last_ch_subiter = -10000;
 
+
   env_->getLogger()->msgStream(LogInfo) << me_ << "Presolving ... "
     << std::endl;
   // call all handlers.
@@ -148,6 +149,20 @@ SolveStatus Presolver::solve()
     (*it)->writeStats(logger_->msgStream(LogExtraInfo));
   }
   problem_->calculateSize(true);
+
+  logger_->msgStream(LogDebug) << me_ << "Modifying debug solution."
+    << std::endl;
+  if (mods_.size()>0) {
+    logger_->msgStream(LogError) << me_
+      << "ERROR: code to modify debug sol after presolve not available"
+      << std::endl;
+  }
+
+  problem_->isDebugSolFeas(env_->getOptions()-> findDouble("feasAbs_tol")->
+                           getValue(),
+                           env_->getOptions()->findDouble("feasRel_tol")->
+                           getValue());
+  
   if (true == env_->getOptions()->findBool("display_presolved_size")->
       getValue()) {
     problem_->writeSize(logger_->msgStream(LogNone));

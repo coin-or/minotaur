@@ -1173,6 +1173,12 @@ ConstraintPtr Problem::getConstraint(UInt index) const
 }
 
 
+DoubleVector* Problem::getDebugSol() const
+{
+  return debugSol_;
+}
+
+
 HessianOfLagPtr Problem::getHessian() const
 { 
   return hessian_;
@@ -1254,6 +1260,60 @@ VariablePtr Problem::getVariable(UInt index) const
 bool Problem::hasNativeDer() const
 {
   return nativeDer_;
+}
+
+
+bool Problem::isDebugSolFeas(double atol, double rtol)
+{
+  if (debugSol_) {
+    double lb, ub;
+    int err = 0;
+    double act;
+    double *x = 0;
+    bool isfeas=true;
+
+    x = &(*debugSol_)[0]; // convert doublevector * to double array pointer
+    for (ConstraintConstIterator it=cons_.begin(); it!=cons_.end(); ++it) {
+      err = 0;
+      act = (*it)->getActivity(x, &err);
+      lb = (*it)->getLb();
+      ub = (*it)->getUb();
+      if (err) { 
+        logger_->msgStream(LogError) << me_ 
+          << "eval error for constraint " << (*it)->getName() << std::endl;
+      } else if ((act > ub + atol) && 
+                 (act > ub + fabs(ub)*rtol)) {
+        logger_->msgStream(LogError) << me_
+        << "ub constraint " << (*it)->getName() << " violated by the debug sol."
+        << " activity = " << act << " but ub = " << ub << std::endl;
+        isfeas = false;
+      } else if ((act < lb - atol) && 
+                 (act < lb - fabs(lb)*rtol)) {
+        logger_->msgStream(LogError) << me_
+        << "lb constraint " << (*it)->getName() << " violated by the debug sol."
+        << " activity = " << act << " but lb = " << lb << std::endl;
+        isfeas = false;
+      }
+    }
+
+    for (VariableConstIterator it=vars_.begin(); it!=vars_.end(); ++it) {
+      lb = (*it)->getLb();
+      ub = (*it)->getUb();
+      if ((act > ub + atol) && (act > ub + fabs(ub)*rtol)) {
+        logger_->msgStream(LogError) << me_
+        << "ub constraint " << (*it)->getName() << " violated by the debug sol."
+        << " activity = " << act << " but ub = " << ub << std::endl;
+        isfeas = false;
+      }
+    }
+
+    if (isfeas) {
+        logger_->msgStream(LogDebug) << me_
+        << "debug solution is feasible" << std::endl;
+    }
+    return isfeas;
+  } 
+  return false;
 }
 
 

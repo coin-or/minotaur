@@ -178,6 +178,14 @@ namespace Minotaur {
     /// Return a pointer to the constraint with a given index
     virtual ConstraintPtr getConstraint(UInt index) const;
 
+    /**
+     * \brief Give a pointer to the debug solution. 
+     *
+     * \Returns null if there is none, otherwise a pointer to a vector of
+     * doubles.
+     */
+    virtual DoubleVector* getDebugSol() const;
+
     /// Return the hessian of the lagrangean. Could be NULL.
     virtual HessianOfLagPtr getHessian() const;
 
@@ -242,6 +250,12 @@ namespace Minotaur {
      * routines for storing nonlinear functions.
      */
     virtual bool hasNativeDer() const;
+
+    /**
+     * \brief Returns true if the debug solution is cut off by the constraints
+     * of the problem.
+     */
+    virtual bool isDebugSolFeas(double atol, double rtol);
 
     /**
      * \brief Returns true if the problem has only linear constraints and linear

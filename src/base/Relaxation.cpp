@@ -30,10 +30,16 @@
 
 using namespace Minotaur;
 
-Relaxation::Relaxation(EnvPtr env) : Problem(env), p_(0) {}
+Relaxation::Relaxation(EnvPtr env)
+: Problem(env),
+  p_(0)
+{
+}
 
 Relaxation::Relaxation(ProblemPtr problem, EnvPtr env)
-    : Problem(env), p_(problem) {
+: Problem(env),
+  p_(problem)
+{
   VariablePtr vcopy, v0, v1;
   VariableGroupConstIterator vit;
 
@@ -172,22 +178,36 @@ Relaxation::Relaxation(ProblemPtr problem, EnvPtr env)
   nativeDer_ = p_->hasNativeDer();
 }
 
-VariablePtr Relaxation::getOriginalVar(VariablePtr r_var) {
+
+VariablePtr Relaxation::getOriginalVar(VariablePtr r_var)
+{
   if (p_->getNumVars() > r_var->getIndex()) {
     return p_->getVariable(r_var->getIndex());
   }
   return VariablePtr();
 }
 
-VariablePtr Relaxation::getRelaxationVar(VariablePtr p_var) {
+
+VariablePtr Relaxation::getRelaxationVar(VariablePtr p_var)
+{
   return vars_[p_var->getIndex()];
 }
 
-void Relaxation::setProblem(ProblemPtr p) { p_ = p; }
 
-void Relaxation::setProblem(ConstProblemPtr p) { p_ = p; }
+void Relaxation::setProblem(ProblemPtr p)
+{
+  p_ = p;
+}
 
-Relaxation* Relaxation::clone(EnvPtr env) {
+
+void Relaxation::setProblem(ConstProblemPtr p)
+{
+  p_ = p;
+}
+
+
+Relaxation* Relaxation::clone(EnvPtr env)
+{
   RelaxationPtr clonePtr = (RelaxationPtr) new Relaxation(this, env);
   clonePtr->setProblem(p_);
 
