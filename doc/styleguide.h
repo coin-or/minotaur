@@ -9,11 +9,11 @@
 //
 
 /**
-\page styleguide Minotaur Style Guide for developers.
+\page styleguide Minotaur style guide for developers
 
 The most important guideline is to be consistent!
 
-  - No line should exceed 80 characters including tabs and spaces.
+  - No line should exceed 80 characters including spaces.
   - Use spaces for indentation. No tabs.
   - All warnings from the compiler must be fixed.
 
@@ -22,11 +22,9 @@ The most important guideline is to be consistent!
     TreeManager and not tree_manager or treeManager.  
   - Function names are camel-case with first letter in lower case, e.g.
     TreeManager::getCandidate, and not get_candidate or GetCandidate.
+  - Variable names should be brief.
   - All private and protected variables and functions must end in an 
-    underscore, e.g. n_, m_, myVar_
-  - All private and protected variables should be named like private and 
-    protected functions (camel-case with first letter lowercase and an underscore 
-    at the end).
+    underscore, e.g. n_, m_, myvar_, doFun_()
 
 <b>Header Files</b>
   - Header file must have doxygen documentation.
@@ -60,6 +58,6 @@ The most important guideline is to be consistent!
     }
   - Do not throw exceptions. We do not know what to do with them.
   - Code in base/ directory should not include any files from interfaces/
-    algorithms/ or engines/ directories
+    solvers/ or engines/ directories
 */
 
