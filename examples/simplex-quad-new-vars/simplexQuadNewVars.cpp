@@ -42,8 +42,8 @@
 
 using namespace Minotaur;
 
-bool showCuts = false;
-bool showQuadVars = false;
+bool showCuts = true;
+bool showQuadVars = true;
 bool allVars = true;
 int numCons = 0;
 int numVars = 0;
