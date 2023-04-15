@@ -1706,18 +1706,19 @@ void CNode::updateBnd(int *error)
     if (l_->ub_<0) {
       lb_ = -l_->ub_;
       ub_ = -l_->lb_;
-    } else if (l_->lb_<0) {
+    } else if (l_->lb_<0) {    // l_->ub_ is >= 0 already
       if (-l_->lb_>l_->ub_) {
-        lb_ =  l_->ub_;
+        lb_ =  0.0;
         ub_ = -l_->lb_;
       } else {
-        lb_ = -l_->ub_;
-        ub_ =  l_->lb_;
+        lb_ = 0.0;
+        ub_ =  l_->ub_;
       }
     } else {
       lb_ = l_->lb_;
       ub_ = l_->ub_;
     }
+    assert(lb_>-1e-12);
     break;
   case (OpAcos):
     lb_ = 0.0;
