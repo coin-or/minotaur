@@ -22,7 +22,7 @@ usage ()
 
 MYNAME=clean_third_party
 
-SRCDIR="minotaur-0.3.0-third-party-src"
+SRCDIR="minotaur-0.3.1-third-party-src"
 CPPDIR=${SRCDIR}/cppunit-1.15.1/build
 ASLDIR=${SRCDIR}/asl-20210714
 IPOPTDIR=${SRCDIR}/ipopt-3.14.2/build

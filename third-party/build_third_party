@@ -42,7 +42,7 @@ err ()
   exit 1
 }
 
-TARNAME="minotaur-0.3.0-third-party-src"
+TARNAME="minotaur-0.3.1-third-party-src"
 TARURL=http://www.ieor.iitb.ac.in/files/faculty/amahajan/minotaur/third-party/${TARNAME}.tar.gz
 
 ASL="asl-20210714"
