@@ -25,7 +25,7 @@ MYNAME=clean_third_party
 SRCDIR="minotaur-0.3.1-third-party-src"
 CPPDIR=${SRCDIR}/cppunit-1.15.1/build
 ASLDIR=${SRCDIR}/asl-20210714
-IPOPTDIR=${SRCDIR}/ipopt-3.14.2/build
+IPOPTDIR=${SRCDIR}/ipopt-3.14.12/build
 LAPACKDIR=${SRCDIR}/lapack-3.10.0/build
 
 if [[ ! -f `pwd`/${MYNAME} ]]

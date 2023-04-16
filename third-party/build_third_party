@@ -51,7 +51,7 @@ BQPD="bqpd-3"
 CLP="clp-1.17.6"
 CPPUNIT="cppunit-1.15.1"
 FILTER="filter-102"
-IPOPT="ipopt-3.14.2"
+IPOPT="ipopt-3.14.12"
 LAPACK="lapack-3.10.0"
 OSI="osi-0.108.6"
 SNAME=${TARNAME}
@@ -204,7 +204,7 @@ else
   echo -n "Mumps Ipopt " > build/coin_subdirs.txt
   cd ${TPROOT}/${SNAME}/${IPOPT}/build/Mumps
   ${TPROOT}/${SNAME}/${IPOPT}/Mumps/configure ${STATIC_ARGS} ${MAC_ARGS} --disable-dependency-tracking --prefix=${TPROOT}
-  make -j ${CPUS} install
+  make install
   cd ${TPROOT}/${SNAME}/${IPOPT}/build/Ipopt
   ${TPROOT}/${SNAME}/${IPOPT}/Ipopt/configure ${STATIC_ARGS} ${MAC_ARGS} --disable-dependency-tracking --prefix=${TPROOT}
   make -j ${CPUS} install
