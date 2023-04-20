@@ -57,7 +57,7 @@ def find_str(arr0,st0):
 #########################ENDS HERE############################################################################################################
 # Function named 'find_str' has been defined here with two arguments namely 'arr0,st0' and is returning a variable at the end ################### #########################ENDS HERE############################################################################################################
 
-########starts here#######
+########starts here################################################################################
 ########Funtion named 'find_float' has been defined here with three arguments and is returning two  variables at the end ###########
 ####################starts here ##################
 
