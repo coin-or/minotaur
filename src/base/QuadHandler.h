@@ -36,6 +36,15 @@ struct LinSqr {
   VariablePtr y;        ///> The variable y.
   VariablePtr x;        ///> The variable x.
   ConstraintPtr oeCon;  ///> The linear constraint that gives the over estimator
+  ConstraintPtr tanLb;  ///> The tangent at lower bound
+  ConstraintPtr tanUb;  ///> The tangent at upper bound
+  LinSqr(VariablePtr y0, VariablePtr x0) {
+    y = y0;
+    x = x0;
+    oeCon = ConstraintPtr();
+    tanLb = ConstraintPtr();
+    tanUb = ConstraintPtr();
+  }
 };
 typedef LinSqr *LinSqrPtr;                  ///> Pointer to LinSqr
 typedef std::vector<LinSqrPtr> LinSqrVec;   ///> Vector of LinSqr
@@ -411,6 +420,19 @@ class QuadHandler : public Handler {
                                 double ub, double &r);
 
   /**
+   * \brief Get linear function and right hand side for the linear
+   * underestimator constraint for the square type y=x^2.
+   * \param[in] x The variable x
+   * \param[in] y The variable y
+   * \param[in] pt The point at which tangent is required
+   * \param[in] lu The tangent is at lower bound or upper bound
+   * \return A linear function such that lf <= rhs is a relaxation of the
+   * square constraint.
+   */
+  LinearFunctionPtr getNewSqTan_(VariablePtr x, VariablePtr y, double pt,
+                                 BoundType lu);
+
+  /**
    * \brief Get bounds of a qf of a constraint
    * \param[in] qf Quadratic Function
    * \param[out] implLb the implied lower bound of the qf
@@ -679,18 +701,14 @@ class QuadHandler : public Handler {
 
   /**
    * \brief Update linear relaxation of the square constraints (y=x^2) after
-   * some bounds have changed. The function checks whether the upper bounding
-   * constraint is binding at the required extreme points of the box. If not,
-   * the constraint is updated.
-   * \param[in] con The linear constraint that can be updated
-   * \param[in] x The variable x.
-   * \param[in] y The variable y.
+   * some bounds have changed.
+   * \param[in] ls The relaxation object for square constraint whose bounds have
+   * changed.
    * \param[in] rel The relaxation which contains the linear constraint
    * \param[in] r_mods A vector into which the modifications are appended so
    * that they can be reverted at a later time.
    */
-  void upSqCon_(ConstraintPtr con, VariablePtr x, VariablePtr y,
-                RelaxationPtr rel, ModVector &r_mods);
+  void upSqCon_(LinSqrPtr ls, RelaxationPtr rel, ModVector &r_mods);
 
   /**
    * \brief Tighten the bounds on variables of the original (or transformed)
