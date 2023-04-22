@@ -451,10 +451,12 @@ void  QuadraticFunction::fillHessStor(LTHessStor *stor)
         ++it;
       }
       if (it==inds->end()) {
-        inds->push_back(hFirst_[i2]);
+        it = inds->insert(it,hFirst_[i2]);
       } else if ((*it)!=hFirst_[i2]) {
         it = inds->insert(it,hFirst_[i2]);
       } else {
+        // In this case (*it) == hFirst_[i2]
+        // hessian storage already has this index. No need to add.
       }
     }
   }
@@ -814,7 +816,8 @@ void QuadraticFunction::prepHess()
     }
   }
 
-  // remember, we need lower triangle.
+  // remember, we need lower triangle, stored row-wise.
+  // Sort according to 'second' and then according to 'first'
   sortLT_(nterms, first, second, coeffs);
 
   prev = second[0];
