@@ -142,10 +142,7 @@ void QuadHandler::addConstraint(ConstraintPtr newcon) {
     if (qf->begin()->first.first->getId() ==
         qf->begin()->first.second->getId()) {
       x0 = qf->begin()->first.first;
-      lx2 = new LinSqr();
-      lx2->y = y;
-      lx2->x = x0;
-      lx2->oeCon = ConstraintPtr();
+      lx2 = new LinSqr(y, x0);
       x2Funs_.insert(std::pair<VariablePtr, LinSqrPtr>(x0, lx2));
     } else {
       x0 = qf->begin()->first.first;
@@ -164,10 +161,7 @@ void QuadHandler::addConstraint(ConstraintPtr newcon) {
     y = lf->termsBegin()->first;
     if (nlf->numVars() == 1) {
       x0 = *(nlf->varsBegin());
-      lx2 = new LinSqr();
-      lx2->y = y;
-      lx2->x = x0;
-      lx2->oeCon = ConstraintPtr();  // NULL
+      lx2 = new LinSqr(y, x0);
       x2Funs_.insert(std::pair<VariablePtr, LinSqrPtr>(x0, lx2));
     } else {
       VariableSet::iterator it = nlf->varsBegin();
@@ -629,8 +623,16 @@ ModificationPtr QuadHandler::getBrMod(BrCandPtr cand, DoubleVector &x,
         x0 = rel->getRelaxationVar(it->first);
         y = rel->getRelaxationVar(it->second->y);
         if (dir == DownBranch) {
+          lf = getNewSqTan_(x0, y, x0val, Upper);
+          lmod = (LinConModPtr) new LinConMod(it->second->tanUb, lf, -INFINITY,
+                                              x0val * x0val);
+          lmods->insert(lmod);
           lf = getNewSqLf_(x0, y, x0->getLb(), x0val, rhs);
         } else {
+          lf = getNewSqTan_(x0, y, x0val, Lower);
+          lmod = (LinConModPtr) new LinConMod(it->second->tanLb, lf, -INFINITY,
+                                              x0val * x0val);
+          lmods->insert(lmod);
           lf = getNewSqLf_(x0, y, x0val, x0->getUb(), rhs);
         }
         lmod =
@@ -769,11 +771,6 @@ LinearFunctionPtr QuadHandler::getNewSqLf_(VariablePtr x, VariablePtr y,
     if (ub > 1e12) {
       new_ub = addDefaultBounds_(x, Upper);
     }
-    //    logger_->errStream() << "can not relax " << y->getName() << "="
-    //                         << x->getName() << "^2, "
-    //                         << "because the bounds on latter are too weak"
-    //                         << std::endl;
-    //    exit(500);
   }
   r = -new_ub * new_lb;
   if (fabs(new_ub + new_lb) > eps) {
@@ -786,6 +783,32 @@ LinearFunctionPtr QuadHandler::getNewSqLf_(VariablePtr x, VariablePtr y,
 #if SPEW
     logger_->msgStream(LogDebug)
         << me_ << "warning: generating a bound as a secant constraint."
+        << std::endl;
+#endif
+  }
+  return lf;
+}
+
+LinearFunctionPtr QuadHandler::getNewSqTan_(VariablePtr x, VariablePtr y,
+                                            double pt, BoundType lu) {
+  LinearFunctionPtr lf = LinearFunctionPtr();
+  double new_pt = pt;
+  double eps = 5e-6;  // Coefficient smaller than 1e-5 not allowed in LP
+
+  if ((pt < -1e12 && lu == Lower) || (pt > 1e12 && lu == Upper)) {
+    new_pt = addDefaultBounds_(x, lu);
+  }
+
+  if (fabs(new_pt) > eps) {
+    lf = (LinearFunctionPtr) new LinearFunction();
+    lf->addTerm(y, -1.0);
+    lf->addTerm(x, 2 * new_pt);
+  } else {
+    lf = (LinearFunctionPtr) new LinearFunction();
+    lf->addTerm(y, 1.);
+#if SPEW
+    logger_->msgStream(LogDebug)
+        << me_ << "warning: generating a bound as a tangent constraint."
         << std::endl;
 #endif
   }
@@ -879,27 +902,6 @@ void QuadHandler::coeffImprov_() {
   }
 }
 
-// void QuadHandler::calcRangeOfQuadVars_() {
-//  double tot_range = 0, tot_sqr_range = 0, range;
-//  for (VariableSet::iterator vit = bStats_.qvars.begin();
-//         vit != bStats_.qvars.end(); ++vit) {
-//    range = (*vit)->getUb() - (*vit)->getLb();
-//    tot_range += range;
-//    tot_sqr_range += range*range;
-//  }
-//
-//  bStats_.avg_range = tot_range/bStats_.qvars.size();
-//  bStats_.body_diag = sqrt(tot_sqr_range);
-//
-//  tot_sqr_range = 0;
-//  for (VariableSet::iterator vit = bStats_.qvars.begin();
-//         vit != bStats_.qvars.end(); ++vit) {
-//    range = (*vit)->getUb() - (*vit)->getLb();
-//    tot_sqr_range += (range - bStats_.avg_range)*(range - bStats_.avg_range);
-//  }
-//  bStats_.sd_range = sqrt(tot_sqr_range/bStats_.qvars.size());
-//}
-
 bool QuadHandler::isAtBnds_(ConstVariablePtr x, double xval) {
   double lb = x->getLb();
   double ub = x->getUb();
@@ -985,43 +987,6 @@ bool QuadHandler::isFeasibleToRelaxation_(RelaxationPtr rel, const double *x) {
   return true;
 }
 
-// bool QuadHandler::isFeasible(ConstSolutionPtr sol, RelaxationPtr , bool &,
-//                             double &inf_meas)
-//{
-//  double yval, xval, vio;
-//  const double *x = sol->getPrimal();
-//  bool is_feas = true;
-//
-//  for (LinSqrMapIter it=x2Funs_.begin(); it != x2Funs_.end(); ++it) {
-//    // check if y <= x^2
-//    xval  = x[it->first->getIndex()];
-//    yval = x[it->second->y->getIndex()];
-//    vio = fabs(yval - xval*xval);
-//    if (vio > fabs(yval)*rTol_ && vio > aTol_) {
-//      is_feas = false;
-//      inf_meas += vio;
-//    }
-//  }
-//#if SPEW
-//  logger_->msgStream(LogDebug2) << me_ << "no branching candidates for y=x^2"
-//                                << std::endl;
-//#endif
-//
-//  for (LinBilSetIter it=x0x1Funs_.begin(); it != x0x1Funs_.end(); ++it) {
-//    if ((*it)->isViolated(x, vio)) {
-//      is_feas = false;
-//      inf_meas += vio;
-//    }
-//  }
-//
-//#if SPEW
-//  logger_->msgStream(LogDebug2) << me_ << "no branching candidates for y=x1x2"
-//                                << std::endl;
-//#endif
-//  return is_feas;
-//}
-//
-
 SolveStatus QuadHandler::presolve(PreModQ *, bool *changed, Solution **) {
   bool is_inf = false;
   SolveStatus status = Started;
@@ -1040,73 +1005,16 @@ SolveStatus QuadHandler::presolve(PreModQ *, bool *changed, Solution **) {
   } else {
     //++bStats_.niters;
     coeffImprov_();
-    // for (ConstraintConstIterator cit = p_->consBegin(); cit != p_->consEnd();
-    //                             ++cit) {
-    //  if ((*cit)->getFunctionType() == Quadratic ||
-    //      (*cit)->getFunctionType() == Bilinear) {
-    //    qf = (*cit)->getFunction()->getQuadraticFunction();
-    //    if (qf) {
-    //      for (VarIntMapConstIterator qit = qf->varsBegin();
-    //           qit != qf->varsEnd(); ++qit) {
-    //        bStats_.qvars.insert(qit->first);
-    //      }
-    //    }
-    //  }
-    //}
-    // obj = p_->getObjective();
-    // if (obj->getFunctionType() == Quadratic ||
-    //    obj->getFunctionType() == Bilinear) {
-    //  qf = obj->getFunction()->getQuadraticFunction();
-    //  if (qf) {
-    //    for (VarIntMapConstIterator qit = qf->varsBegin();
-    //         qit != qf->varsEnd(); ++qit) {
-    //      bStats_.qvars.insert(qit->first);
-    //    }
-    //  }
-    //}
-    // for (VariableSet::iterator vit = bStats_.qvars.begin();
-    //     vit != bStats_.qvars.end(); ++vit) {
-    //  if ((*vit)->getLb() > -INFINITY) {
-    //    ++bStats_.nqlb;
-    //  }
-    //  if ((*vit)->getUb() < INFINITY) {
-    //    ++bStats_.nqub;
-    //  }
-    //}
     is_inf = tightenSimple_(changed);
     if (is_inf) {
       status = SolvedInfeasible;
       return status;
     }
-    // for (VariableSet::iterator vit = bStats_.qvars.begin();
-    //     vit != bStats_.qvars.end(); ++vit) {
-    //  if ((*vit)->getLb() > -INFINITY) {
-    //    ++bStats_.nqlbs;
-    //  }
-    //  if ((*vit)->getUb() < INFINITY) {
-    //    ++bStats_.nqubs;
-    //  }
-    //}
-    // bStats_.nqlbs -= bStats_.nqlb;
-    // bStats_.nqubs -= bStats_.nqub;
-    // p_->delMarkedCons();
-
     is_inf = tightenQuad_(changed);
     if (is_inf) {
       status = SolvedInfeasible;
       return status;
     }
-    // for (VariableSet::iterator vit = bStats_.qvars.begin();
-    //     vit != bStats_.qvars.end(); ++vit) {
-    //  if ((*vit)->getLb() > -INFINITY) {
-    //    ++bStats_.nqlbq;
-    //  }
-    //  if ((*vit)->getUb() < INFINITY) {
-    //    ++bStats_.nqubq;
-    //  }
-    //}
-    // bStats_.nqlbq -= bStats_.nqlb + bStats_.nqlbs;
-    // bStats_.nqubq -= bStats_.nqub + bStats_.nqubs;
     p_->delMarkedCons();
   }
 
@@ -1165,8 +1073,7 @@ bool QuadHandler::presolveNode(RelaxationPtr rel, NodePtr,
   }
 
   for (LinSqrMapIter it = x2Funs_.begin(); it != x2Funs_.end(); ++it) {
-    upSqCon_(it->second->oeCon, rel->getRelaxationVar(it->first),
-             rel->getRelaxationVar(it->second->y), rel, r_mods);
+    upSqCon_(it->second, rel, r_mods);
   }
   for (LinBilSetIter it = x0x1Funs_.begin(); it != x0x1Funs_.end(); ++it) {
     upBilCon_(*it, rel, r_mods);
@@ -1437,8 +1344,7 @@ bool QuadHandler::postSolveRootNode(RelaxationPtr rel, SolutionPoolPtr s_pool,
 
   if (true == lchanged) {
     for (LinSqrMapIter it = x2Funs_.begin(); it != x2Funs_.end(); ++it) {
-      upSqCon_(it->second->oeCon, rel->getRelaxationVar(it->first),
-               rel->getRelaxationVar(it->second->y), rel, r_mods);
+      upSqCon_(it->second, rel, r_mods);
     }
     for (LinBilSetIter it = x0x1Funs_.begin(); it != x0x1Funs_.end(); ++it) {
       upBilCon_(*it, rel, r_mods);
@@ -1473,10 +1379,8 @@ void QuadHandler::relax_(RelaxationPtr rel, bool *) {
     f = (FunctionPtr) new Function(lf);
     it->second->oeCon = rel->newConstraint(f, -INFINITY, rhs);
 
-    if (env_->getOptions()->findBool("sqTangentAtRoot")->getValue()) {
-      addTangent_(x0, y, x0->getLb(), rel);
-      addTangent_(x0, y, x0->getUb(), rel);
-    }
+    it->second->tanLb = addTangent_(x0, y, x0->getLb(), rel);
+    it->second->tanUb = addTangent_(x0, y, x0->getUb(), rel);
   }
 
   for (LinBilSetIter it = x0x1Funs_.begin(); it != x0x1Funs_.end(); ++it) {
@@ -3201,22 +3105,45 @@ void QuadHandler::upBilCon_(LinBil *lx0x1, RelaxationPtr rel,
   }
 }
 
-void QuadHandler::upSqCon_(ConstraintPtr con, VariablePtr x, VariablePtr y,
-                           RelaxationPtr rel, ModVector &r_mods) {
-  LinearFunctionPtr lf = con->getLinearFunction();
-  double a_x = lf->getWeight(x);
+void QuadHandler::upSqCon_(LinSqrPtr ls, RelaxationPtr rel, ModVector &r_mods) {
+  double eps = aTol_ / 10.0;
+  double rhs;
+  VariablePtr x = rel->getRelaxationVar(ls->x);
+  VariablePtr y = rel->getRelaxationVar(ls->y);
+  LinearFunctionPtr lf;
+  double a_x;
   double lb = x->getLb();
   double ub = x->getUb();
   LinConModPtr lmod;
-  double rhs;
-  double eps = aTol_ / 10.0;
 
-  assert(fabs(lf->getWeight(y) - 1.0) <= 1e-8);
   // y - (lb+ub)x <= -ub*lb
-  if ((lb * lb + a_x * lb < con->getUb() - eps) ||
-      (ub * ub + a_x * ub < con->getUb() - eps)) {
+  lf = ls->oeCon->getLinearFunction();
+  a_x = lf->getWeight(x);
+  assert(fabs(lf->getWeight(y) - 1.0) <= 1e-8);
+  if ((lb * lb + a_x * lb < ls->oeCon->getUb() - eps) ||
+      (ub * ub + a_x * ub < ls->oeCon->getUb() - eps)) {
     lf = getNewSqLf_(x, y, x->getLb(), x->getUb(), rhs);
-    lmod = (LinConModPtr) new LinConMod(con, lf, -INFINITY, rhs);
+    lmod = (LinConModPtr) new LinConMod(ls->oeCon, lf, -INFINITY, rhs);
+    lmod->applyToProblem(rel);
+    r_mods.push_back(lmod);
+  }
+  // 2*lb*x - y <= lb*lb
+  lf = ls->tanLb->getLinearFunction();
+  a_x = lf->getWeight(x);
+  assert(fabs(lf->getWeight(y) + 1.0) <= 1e-8);
+  if (-lb * lb + a_x * lb < ls->tanLb->getUb() - eps) {
+    lf = getNewSqTan_(x, y, x->getLb(), Lower);
+    lmod = (LinConModPtr) new LinConMod(ls->tanLb, lf, -INFINITY, lb * lb);
+    lmod->applyToProblem(rel);
+    r_mods.push_back(lmod);
+  }
+  // 2*ub*x - y <= ub*ub
+  lf = ls->tanUb->getLinearFunction();
+  a_x = lf->getWeight(x);
+  assert(fabs(lf->getWeight(y) + 1.0) <= 1e-8);
+  if (-ub * ub + a_x * lb < ls->tanUb->getUb() - eps) {
+    lf = getNewSqTan_(x, y, x->getUb(), Upper);
+    lmod = (LinConModPtr) new LinConMod(ls->tanUb, lf, -INFINITY, ub * ub);
     lmod->applyToProblem(rel);
     r_mods.push_back(lmod);
   }
