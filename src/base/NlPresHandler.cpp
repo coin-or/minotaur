@@ -442,6 +442,9 @@ void  NlPresHandler::bin2Lin_(ProblemPtr p, PreModQ *mods, bool *changed)
   if (0==p->getSize()->quadCons && Quadratic!=p->getSize()->objType) {
     return;
   }
+  if (0==p->getSize()->bins && 0==p->getSize()->ints) {
+    return;
+  }
 
   mod = new PreAuxVars();
   p->setNativeDer(); // TODO: avoid setting it up repeatedly.
