@@ -1610,7 +1610,7 @@ bool QuadHandler::calcVarBnd_(VariablePtr v1, VariablePtr v2, double coef,
   if (v1->getIndex() == v2->getIndex()) {
     if (qub > bTol_) {
       vub = sqrt(qub);
-      vlb = -ub;
+      vlb = -vub;
       qlb = qlb >= 0 ? qlb : 0;  // square of a number.
       if (v1->getLb() > -sqrt(qlb) + bTol_) {
         vlb = sqrt(qlb);
