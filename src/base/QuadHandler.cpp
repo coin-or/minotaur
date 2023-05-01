@@ -1479,19 +1479,6 @@ void QuadHandler::separate(ConstSolutionPtr sol, NodePtr node,
   bool ifcuts;
   int ncuts;
 
-  if ((!simplexCut_) &&
-      (env_->getOptions()->findInt("simplex_cut_rounds")->getValue() > 0)) {
-    simplexCut_ = (SimplexQuadCutGenPtr) new SimplexQuadCutGen(env_, p_, cute_);
-  }
-
-  if (!node->getParent() && simplexCut_) {
-    ncuts = simplexCut_->generateCuts(rel, sol);
-    if (ncuts > 0) {
-      *status = SepaResolve;
-      return;
-    }
-  }
-
   ++sStats_.iters;
   for (LinSqrMapIter it = x2Funs_.begin(); it != x2Funs_.end(); ++it) {
     xval = x[it->first->getIndex()];
@@ -1510,6 +1497,18 @@ void QuadHandler::separate(ConstSolutionPtr sol, NodePtr node,
       if (true == ifcuts) {
         *status = SepaResolve;
       }
+    }
+  }
+
+  if ((!simplexCut_) &&
+      (env_->getOptions()->findInt("simplex_cut_rounds")->getValue() > 0)) {
+    simplexCut_ = (SimplexQuadCutGenPtr) new SimplexQuadCutGen(env_, p_, cute_);
+  }
+
+  if (!node->getParent() && simplexCut_) {
+    ncuts = simplexCut_->generateCuts(rel, sol);
+    if (ncuts > 0) {
+      *status = SepaResolve;
     }
   }
 }
