@@ -1505,7 +1505,7 @@ void QuadHandler::separate(ConstSolutionPtr sol, NodePtr node,
     simplexCut_ = (SimplexQuadCutGenPtr) new SimplexQuadCutGen(env_, p_, cute_);
   }
 
-  if (!node->getParent() && simplexCut_) {
+  if (!node->getParent() && simplexCut_ && (*status != SepaResolve)) {
     ncuts = simplexCut_->generateCuts(rel, sol);
     if (ncuts > 0) {
       *status = SepaResolve;

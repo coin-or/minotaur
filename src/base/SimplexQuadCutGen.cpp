@@ -58,7 +58,7 @@ SimplexQuadCutGen::SimplexQuadCutGen(EnvPtr env, ProblemPtr p, LPEnginePtr lpe)
 
 SimplexQuadCutGen::~SimplexQuadCutGen() {
   if (tabInfo_) {
-    delTabInfo_();
+    // delTabInfo_();
     delete tabInfo_;
   }
   basicInd_.clear();
@@ -290,9 +290,10 @@ void SimplexQuadCutGen::getTermBounds_(double coef, double vlb, double vub,
 void SimplexQuadCutGen::substituteAndRelax_(RelaxationPtr rel, const double *x,
                                             VariablePtr bkeep,
                                             VariablePtr bsubst, double beta,
-                                            double *coefs, double &cutConst) {
+                                            double *coefs, double &cutConst,
+                                            bool under) {
   double *origRow = new double[tabInfo_->ncol];
-  double *slackRow = new double[tabInfo_->ncol];
+  double *slackRow = new double[tabInfo_->nrow];
   std::map<int, double> row;
   double rhs = 0.0;
   VariablePtr nb;
@@ -308,7 +309,7 @@ void SimplexQuadCutGen::substituteAndRelax_(RelaxationPtr rel, const double *x,
       nb = rel->getVariable(nbOrig_[i]);
       lower = fabs(x[nb->getIndex()] - nb->getLb()) < eTol_ ? true : false;
       relaxTermBNB_(elem, lower, bkeep->getLb(), bkeep->getUb(), nb->getLb(),
-                    nb->getUb(), cb, cn, cnst, true);
+                    nb->getUb(), cb, cn, cnst, under);
       coefs[bkeep->getIndex()] += cb;
       coefs[nbOrig_[i]] += cn;
       cutConst += cnst;
@@ -321,7 +322,7 @@ void SimplexQuadCutGen::substituteAndRelax_(RelaxationPtr rel, const double *x,
       lower = sb_[nbSlack_[i]].second > eTol_ ? true : false;
       relaxTermBNB_(elem, lower, bkeep->getLb(), bkeep->getUb(),
                     sb_[nbSlack_[i]].first, sb_[nbSlack_[i]].second, cb, cn,
-                    cnst, true);
+                    cnst, under);
       coefs[bkeep->getIndex()] += cb;
       slackSubstitute_(nbSlack_[i], cn, row, rhs);
       for (std::map<int, double>::iterator itrow = row.begin();
@@ -339,7 +340,7 @@ void SimplexQuadCutGen::substituteAndRelax_(RelaxationPtr rel, const double *x,
   row.clear();
 }
 
-void SimplexQuadCutGen::relaxConsBNB_(SimplexCutVector cuts, ConstraintPtr c,
+void SimplexQuadCutGen::relaxConsBNB_(SimplexCutVector &cuts, ConstraintPtr c,
                                       const double *x, RelaxationPtr rel) {
   // Assume that the constraint is of the form y = x1x2 or y = x^2
   LinearFunctionPtr lf = c->getFunction()->getLinearFunction();
@@ -375,7 +376,7 @@ void SimplexQuadCutGen::relaxConsBNB_(SimplexCutVector cuts, ConstraintPtr c,
     cut->coef = new double[rel->getNumVars()];
     memset(cut->coef, 0, rel->getNumVars() * sizeof(double));
     cut->coef[y->getIndex()] += 1.0;
-    substituteAndRelax_(rel, x, v1, v1, x1val, cut->coef, cutConst);
+    substituteAndRelax_(rel, x, v1, v1, x1val, cut->coef, cutConst, true);
     cut->lb = -INFINITY;
     cut->ub = -cutConst;
     cuts.push_back(cut);
@@ -399,7 +400,7 @@ void SimplexQuadCutGen::relaxConsBNB_(SimplexCutVector cuts, ConstraintPtr c,
       cut->coef = new double[rel->getNumVars()];
       memset(cut->coef, 0, rel->getNumVars() * sizeof(double));
       cut->coef[y->getIndex()] += 1.0;
-      substituteAndRelax_(rel, x, v1, v2, x2val, cut->coef, cutConst);
+      substituteAndRelax_(rel, x, v1, v2, x2val, cut->coef, cutConst, false);
       cut->lb = -cutConst;
       cut->ub = INFINITY;
       cuts.push_back(cut);
@@ -410,7 +411,7 @@ void SimplexQuadCutGen::relaxConsBNB_(SimplexCutVector cuts, ConstraintPtr c,
       cut->coef = new double[rel->getNumVars()];
       memset(cut->coef, 0, rel->getNumVars() * sizeof(double));
       cut->coef[y->getIndex()] += 1.0;
-      substituteAndRelax_(rel, x, v2, v1, x1val, cut->coef, cutConst);
+      substituteAndRelax_(rel, x, v2, v1, x1val, cut->coef, cutConst, false);
       cut->lb = -cutConst;
       cut->ub = INFINITY;
       cuts.push_back(cut);
@@ -422,7 +423,7 @@ void SimplexQuadCutGen::relaxConsBNB_(SimplexCutVector cuts, ConstraintPtr c,
       cut->coef = new double[rel->getNumVars()];
       memset(cut->coef, 0, rel->getNumVars() * sizeof(double));
       cut->coef[y->getIndex()] += 1.0;
-      substituteAndRelax_(rel, x, v1, v2, x2val, cut->coef, cutConst);
+      substituteAndRelax_(rel, x, v1, v2, x2val, cut->coef, cutConst, true);
       cut->lb = -INFINITY;
       cut->ub = -cutConst;
       cuts.push_back(cut);
@@ -433,7 +434,7 @@ void SimplexQuadCutGen::relaxConsBNB_(SimplexCutVector cuts, ConstraintPtr c,
       cut->coef = new double[rel->getNumVars()];
       memset(cut->coef, 0, rel->getNumVars() * sizeof(double));
       cut->coef[y->getIndex()] += 1.0;
-      substituteAndRelax_(rel, x, v2, v1, x1val, cut->coef, cutConst);
+      substituteAndRelax_(rel, x, v2, v1, x1val, cut->coef, cutConst, true);
       cut->lb = -INFINITY;
       cut->ub = -cutConst;
       cuts.push_back(cut);

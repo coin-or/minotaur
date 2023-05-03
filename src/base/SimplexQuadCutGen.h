@@ -157,7 +157,7 @@ class SimplexQuadCutGen {
   void getTermBounds_(double coef, double vlb, double vub, double &lb,
                       double &ub);
 
-  void relaxConsBNB_(SimplexCutVector cuts, ConstraintPtr c, const double *x,
+  void relaxConsBNB_(SimplexCutVector &cuts, ConstraintPtr c, const double *x,
                      RelaxationPtr rel);
 
   int relaxTermBNB_(double coef, bool lower, double bl, double bu, double nl,
@@ -169,7 +169,7 @@ class SimplexQuadCutGen {
 
   void substituteAndRelax_(RelaxationPtr rel, const double *x,
                            VariablePtr bkeep, VariablePtr bsubst, double beta,
-                           double *coefs, double &cutConst);
+                           double *coefs, double &cutConst, bool under);
 
   void sortVariables_();
 };
