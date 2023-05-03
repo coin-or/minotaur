@@ -316,6 +316,10 @@ void Environment::createDefaultOptions_() {
       false);
   options_->insert(b_option);
 
+  b_option = (BoolOptionPtr) new Option<bool>(
+      "simplex_cut", "Get cuts from the simplex tableau for QCP", true, false);
+  options_->insert(b_option);
+
   // reset, so that we don't accidently add it again.
   b_option = 0;
 
@@ -433,14 +437,6 @@ void Environment::createDefaultOptions_() {
 
   i_option = (IntOptionPtr) new Option<int>(
       "root_linScheme3", "No. of iteration of ESH at root ", true, 0);
-  options_->insert(i_option);
-
-  i_option = (IntOptionPtr) new Option<int>(
-      "simplex_cut_rounds", "No. of cut rounds for SimplexQuadCutGen", true, 0);
-  options_->insert(i_option);
-
-  i_option = (IntOptionPtr) new Option<int>(
-      "simplex_cut_variant", "Variant of the simplex cut to be used", true, 2);
   options_->insert(i_option);
 
   i_option = 0;

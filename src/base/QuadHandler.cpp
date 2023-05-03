@@ -1501,7 +1501,7 @@ void QuadHandler::separate(ConstSolutionPtr sol, NodePtr node,
   }
 
   if ((!simplexCut_) &&
-      (env_->getOptions()->findInt("simplex_cut_rounds")->getValue() > 0)) {
+      (env_->getOptions()->findBool("simplex_cut")->getValue())) {
     simplexCut_ = (SimplexQuadCutGenPtr) new SimplexQuadCutGen(env_, p_, cute_);
   }
 
