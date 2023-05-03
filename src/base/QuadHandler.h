@@ -36,14 +36,10 @@ struct LinSqr {
   VariablePtr y;        ///> The variable y.
   VariablePtr x;        ///> The variable x.
   ConstraintPtr oeCon;  ///> The linear constraint that gives the over estimator
-  ConstraintPtr tanLb;  ///> The tangent at lower bound
-  ConstraintPtr tanUb;  ///> The tangent at upper bound
   LinSqr(VariablePtr y0, VariablePtr x0) {
     y = y0;
     x = x0;
     oeCon = ConstraintPtr();
-    tanLb = ConstraintPtr();
-    tanUb = ConstraintPtr();
   }
 };
 typedef LinSqr *LinSqrPtr;                  ///> Pointer to LinSqr
@@ -418,19 +414,6 @@ class QuadHandler : public Handler {
    */
   LinearFunctionPtr getNewSqLf_(VariablePtr x, VariablePtr y, double lb,
                                 double ub, double &r);
-
-  /**
-   * \brief Get linear function and right hand side for the linear
-   * underestimator constraint for the square type y=x^2.
-   * \param[in] x The variable x
-   * \param[in] y The variable y
-   * \param[in] pt The point at which tangent is required
-   * \param[in] lu The tangent is at lower bound or upper bound
-   * \return A linear function such that lf <= rhs is a relaxation of the
-   * square constraint.
-   */
-  LinearFunctionPtr getNewSqTan_(VariablePtr x, VariablePtr y, double pt,
-                                 BoundType lu);
 
   /**
    * \brief Get bounds of a qf of a constraint

@@ -623,16 +623,8 @@ ModificationPtr QuadHandler::getBrMod(BrCandPtr cand, DoubleVector &x,
         x0 = rel->getRelaxationVar(it->first);
         y = rel->getRelaxationVar(it->second->y);
         if (dir == DownBranch) {
-          lf = getNewSqTan_(x0, y, x0val, Upper);
-          lmod = (LinConModPtr) new LinConMod(it->second->tanUb, lf, -INFINITY,
-                                              x0val * x0val);
-          lmods->insert(lmod);
           lf = getNewSqLf_(x0, y, x0->getLb(), x0val, rhs);
         } else {
-          lf = getNewSqTan_(x0, y, x0val, Lower);
-          lmod = (LinConModPtr) new LinConMod(it->second->tanLb, lf, -INFINITY,
-                                              x0val * x0val);
-          lmods->insert(lmod);
           lf = getNewSqLf_(x0, y, x0val, x0->getUb(), rhs);
         }
         lmod =
@@ -783,32 +775,6 @@ LinearFunctionPtr QuadHandler::getNewSqLf_(VariablePtr x, VariablePtr y,
 #if SPEW
     logger_->msgStream(LogDebug)
         << me_ << "warning: generating a bound as a secant constraint."
-        << std::endl;
-#endif
-  }
-  return lf;
-}
-
-LinearFunctionPtr QuadHandler::getNewSqTan_(VariablePtr x, VariablePtr y,
-                                            double pt, BoundType lu) {
-  LinearFunctionPtr lf = LinearFunctionPtr();
-  double new_pt = pt;
-  double eps = 5e-6;  // Coefficient smaller than 1e-5 not allowed in LP
-
-  if ((pt < -1e12 && lu == Lower) || (pt > 1e12 && lu == Upper)) {
-    new_pt = addDefaultBounds_(x, lu);
-  }
-
-  if (fabs(new_pt) > eps) {
-    lf = (LinearFunctionPtr) new LinearFunction();
-    lf->addTerm(y, -1.0);
-    lf->addTerm(x, 2 * new_pt);
-  } else {
-    lf = (LinearFunctionPtr) new LinearFunction();
-    lf->addTerm(y, 1.);
-#if SPEW
-    logger_->msgStream(LogDebug)
-        << me_ << "warning: generating a bound as a tangent constraint."
         << std::endl;
 #endif
   }
@@ -1378,9 +1344,6 @@ void QuadHandler::relax_(RelaxationPtr rel, bool *) {
 
     f = (FunctionPtr) new Function(lf);
     it->second->oeCon = rel->newConstraint(f, -INFINITY, rhs);
-
-    it->second->tanLb = addTangent_(x0, y, x0->getLb(), rel);
-    it->second->tanUb = addTangent_(x0, y, x0->getUb(), rel);
   }
 
   for (LinBilSetIter it = x0x1Funs_.begin(); it != x0x1Funs_.end(); ++it) {
@@ -3123,26 +3086,6 @@ void QuadHandler::upSqCon_(LinSqrPtr ls, RelaxationPtr rel, ModVector &r_mods) {
       (ub * ub + a_x * ub < ls->oeCon->getUb() - eps)) {
     lf = getNewSqLf_(x, y, x->getLb(), x->getUb(), rhs);
     lmod = (LinConModPtr) new LinConMod(ls->oeCon, lf, -INFINITY, rhs);
-    lmod->applyToProblem(rel);
-    r_mods.push_back(lmod);
-  }
-  // 2*lb*x - y <= lb*lb
-  lf = ls->tanLb->getLinearFunction();
-  a_x = lf->getWeight(x);
-  assert(fabs(lf->getWeight(y) + 1.0) <= 1e-8);
-  if (-lb * lb + a_x * lb < ls->tanLb->getUb() - eps) {
-    lf = getNewSqTan_(x, y, x->getLb(), Lower);
-    lmod = (LinConModPtr) new LinConMod(ls->tanLb, lf, -INFINITY, lb * lb);
-    lmod->applyToProblem(rel);
-    r_mods.push_back(lmod);
-  }
-  // 2*ub*x - y <= ub*ub
-  lf = ls->tanUb->getLinearFunction();
-  a_x = lf->getWeight(x);
-  assert(fabs(lf->getWeight(y) + 1.0) <= 1e-8);
-  if (-ub * ub + a_x * lb < ls->tanUb->getUb() - eps) {
-    lf = getNewSqTan_(x, y, x->getUb(), Upper);
-    lmod = (LinConModPtr) new LinConMod(ls->tanUb, lf, -INFINITY, ub * ub);
     lmod->applyToProblem(rel);
     r_mods.push_back(lmod);
   }
