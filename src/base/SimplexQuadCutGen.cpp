@@ -45,8 +45,13 @@ const std::string SimplexQuadCutGen::me_ = "SimplexQuadCutGen";
 
 SimplexQuadCutGen::SimplexQuadCutGen() {}
 
-SimplexQuadCutGen::SimplexQuadCutGen(EnvPtr env, ProblemPtr p, LPEnginePtr lpe)
-    : env_(env), eTol_(1e-8), p_(p), lpe_(lpe), tabInfo_(0) {
+SimplexQuadCutGen::SimplexQuadCutGen(EnvPtr env, ProblemPtr p, LPEnginePtr lpe,
+                                     double ub)
+    : env_(env), eTol_(1e-8), p_(p), lpe_(lpe), tabInfo_(0), ub_(ub) {
+  bounds_.clear();
+  curround_ = 0;
+  nrounds_ = 5;
+  minChangeFrac_ = 0.1;
   ncuts_ = 0;
   minDepth_ = 1e-3;
   basicInd_.clear();
@@ -75,6 +80,30 @@ int SimplexQuadCutGen::generateCuts(RelaxationPtr rel, ConstSolutionPtr sol) {
   int error;
   int iter_cuts = 0;
   double stime = timer_->query();
+
+  ++curround_;
+  if (curround_ > nrounds_) {
+    double curlb = sol->getObjValue();
+    if (ub_ < INFINITY) {
+      double oldgap = ub_ - bounds_[0];
+      double newgap = ub_ - curlb;
+      if ((oldgap - newgap) / ub_ >= minChangeFrac_) {
+        bounds_.erase(bounds_.begin());
+        bounds_.push_back(curlb);
+      } else {
+        return 0;
+      }
+    } else {
+      if ((curlb - bounds_[0]) / bounds_[0] >= minChangeFrac_) {
+        bounds_.erase(bounds_.begin());
+        bounds_.push_back(curlb);
+      } else {
+        return 0;
+      }
+    }
+  } else {
+    bounds_.push_back(sol->getObjValue());
+  }
 
   preprocessSimplexTab();
   for (ConstraintConstIterator cit = p_->consBegin(); cit != p_->consEnd();

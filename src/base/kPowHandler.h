@@ -19,12 +19,13 @@
 
 #include "CGraph.h"
 #include "Handler.h"
-#include "SimplexQuadCutGen.h"
 
 namespace Minotaur {
 
 class LinearFunction;
 class Timer;
+class LPEngine;
+typedef LPEngine *LPEnginePtr;
 typedef LinearFunction *LinearFunctionPtr;
 typedef Engine *EnginePtr;
 
@@ -119,8 +120,6 @@ class kPowHandler : public Handler {
 
   void setBTEngine(LPEnginePtr engine);
 
-  void setCutEngine(LPEnginePtr engine);
-
   void setNLPEngine(EnginePtr engine);
 
   // base class method.
@@ -214,9 +213,6 @@ class kPowHandler : public Handler {
   /// Bound tightening LP engine
   LPEnginePtr bte_;
 
-  /// Cut generation LP engine
-  LPEnginePtr cute_;
-
   /// NLP engine
   EnginePtr nlpe_;
 
@@ -240,9 +236,6 @@ class kPowHandler : public Handler {
 
   /// Relative feasibility tolerance
   double rTol_;
-
-  /// Simplex Cut generater
-  SimplexQuadCutGenPtr simplexCut_;
 
   /// Statistics about separation
   SepaStats sStats_;

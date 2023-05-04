@@ -1399,6 +1399,7 @@ void QuadHandler::resetStats_() {
 
   sStats_.iters = 0;
   sStats_.cuts = 0;
+  sStats_.optcuts = 0;
   sStats_.time = 0.0;
 
   nlpStats_.flag = false;
@@ -1433,14 +1434,15 @@ void QuadHandler::resetStats_() {
 }
 
 void QuadHandler::separate(ConstSolutionPtr sol, NodePtr node,
-                           RelaxationPtr rel, CutManager *, SolutionPoolPtr,
-                           ModVector &, ModVector &, bool *,
-                           SeparationStatus *status) {
+                           RelaxationPtr rel, CutManager *,
+                           SolutionPoolPtr s_pool, ModVector &, ModVector &,
+                           bool *, SeparationStatus *status) {
   double yval, xval;
   double yl, xl;
   const double *x = sol->getPrimal();
   bool ifcuts;
   int ncuts;
+  double stime = timer_->query();
 
   ++sStats_.iters;
   for (LinSqrMapIter it = x2Funs_.begin(); it != x2Funs_.end(); ++it) {
@@ -1465,15 +1467,19 @@ void QuadHandler::separate(ConstSolutionPtr sol, NodePtr node,
 
   if ((!simplexCut_) &&
       (env_->getOptions()->findBool("simplex_cut")->getValue())) {
-    simplexCut_ = (SimplexQuadCutGenPtr) new SimplexQuadCutGen(env_, p_, cute_);
+    simplexCut_ = (SimplexQuadCutGenPtr) new SimplexQuadCutGen(
+        env_, p_, cute_, s_pool->getBestSolutionValue());
   }
 
   if (!node->getParent() && simplexCut_ && (*status != SepaResolve)) {
     ncuts = simplexCut_->generateCuts(rel, sol);
+    sStats_.cuts += ncuts;
+    sStats_.optcuts += ncuts;
     if (ncuts > 0) {
       *status = SepaResolve;
     }
   }
+  sStats_.time += timer_->query() - stime;
 }
 
 double QuadHandler::calcUpperUnivar_(double a, double b, double lx, double ux) {
@@ -3123,6 +3129,8 @@ void QuadHandler::writeStats(std::ostream &out) const {
       << me_ << "Number of calls to separate    = " << sStats_.iters
       << std::endl
       << me_ << "Number of cuts added           = " << sStats_.cuts << std::endl
+      << me_ << "Number of optional cuts added  = " << sStats_.optcuts
+      << std::endl
       << me_ << "Time taken in separation       = " << sStats_.time
       << std::endl;
 

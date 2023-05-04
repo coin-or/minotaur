@@ -136,7 +136,8 @@ class QuadHandler : public Handler {
   /// Store statistics of presolving.
   struct SepaStats {
     int iters;    ///> Number of times separation routine called.
-    int cuts;     ///> Number of cuts added.
+    int cuts;     ///> Number of total cuts added.
+    int optcuts;  ///> Number of optional cuts.
     double time;  ///> Total time used in separation
   };
 

@@ -67,7 +67,7 @@ class SimplexQuadCutGen {
   SimplexQuadCutGen();
 
   // Constructor
-  SimplexQuadCutGen(EnvPtr env, ProblemPtr p, LPEnginePtr lpe);
+  SimplexQuadCutGen(EnvPtr env, ProblemPtr p, LPEnginePtr lpe, double ub);
 
   // Destructor
   ~SimplexQuadCutGen();
@@ -82,6 +82,12 @@ class SimplexQuadCutGen {
   void preprocessSimplexTab();
 
  private:
+  // Bounds after each round of cutting, will have max size of nrounds_
+  std::vector<int> bounds_;
+
+  // Current round of cut generation
+  UInt curround_;
+
   // Environment pointer
   EnvPtr env_;
 
@@ -100,8 +106,14 @@ class SimplexQuadCutGen {
   // Number of cuts generated
   UInt ncuts_;
 
+  // Number of rounds after which improvement is checked
+  UInt nrounds_;
+
   // Minimum allowed depth of cut for a cut to be added
   double minDepth_;
+
+  // Minimum change in the bound for more cuts to be added
+  double minChangeFrac_;
 
   // To keep track of time
   const Timer *timer_;
@@ -128,6 +140,9 @@ class SimplexQuadCutGen {
 
   // Lower and Upper bounds of the slack variables
   SlackBound sb_;
+
+  // Upper bound at the current node
+  double ub_;
 
   // variant we are solving
   int variant_;

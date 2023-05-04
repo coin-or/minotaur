@@ -30,6 +30,7 @@
 #include "Engine.h"
 #include "Environment.h"
 #include "Function.h"
+#include "LPEngine.h"
 #include "LinMods.h"
 #include "LinearFunction.h"
 #include "Logger.h"
@@ -59,13 +60,7 @@ using namespace Minotaur;
 const std::string kPowHandler::me_ = "kPowHandler: ";
 
 kPowHandler::kPowHandler(EnvPtr env, ProblemPtr problem, ProblemPtr orig_p)
-    : aTol_(1e-6),
-      bTol_(1e-8),
-      env_(env),
-      bte_(0),
-      cute_(0),
-      nlpe_(0),
-      rTol_(1e-7) {
+    : aTol_(1e-6), bTol_(1e-8), env_(env), bte_(0), nlpe_(0), rTol_(1e-7) {
   orig_ = orig_p;
   p_ = problem;
   modProb_ = false;
@@ -76,7 +71,6 @@ kPowHandler::kPowHandler(EnvPtr env, ProblemPtr problem, ProblemPtr orig_p)
   defaultLb_ = 1e12;
   defaultUb_ = -1e12;
   doQT_ = false;
-  simplexCut_ = 0;
 }
 
 kPowHandler::~kPowHandler() {
@@ -91,10 +85,6 @@ kPowHandler::~kPowHandler() {
   }
   if (bte_) {
     delete bte_;
-  }
-
-  if (simplexCut_) {
-    delete simplexCut_;
   }
 }
 
@@ -1168,19 +1158,6 @@ void kPowHandler::separate(ConstSolutionPtr sol, NodePtr, RelaxationPtr rel,
   bool ifcuts;
   int ncuts;
 
-  if ((!simplexCut_) &&
-      (env_->getOptions()->findInt("simplex_cut_rounds")->getValue() > 0)) {
-    simplexCut_ = (SimplexQuadCutGenPtr) new SimplexQuadCutGen(env_, p_, cute_);
-  }
-
-  if (simplexCut_) {
-    ncuts = simplexCut_->generateCuts(rel, sol);
-    if (ncuts > 0) {
-      *status = SepaResolve;
-      return;
-    }
-  }
-
   ++sStats_.iters;
   for (LinkPowMapIter it = xkFuns_.begin(); it != xkFuns_.end(); ++it) {
     xval = x[it->first->getIndex()];
@@ -1638,13 +1615,6 @@ void kPowHandler::setBTEngine(LPEnginePtr engine) {
     bte_->clear();
   }
   bte_ = engine;
-}
-
-void kPowHandler::setCutEngine(LPEnginePtr engine) {
-  if (cute_ && cute_ != engine) {
-    cute_->clear();
-  }
-  cute_ = engine;
 }
 
 void kPowHandler::setNLPEngine(EnginePtr engine) {
