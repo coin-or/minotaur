@@ -127,6 +127,7 @@ set (MINOTAUR_SOURCES
      base/SOS2Handler.cpp
      base/SOSBrCand.cpp
      base/STOAHandler.cpp
+     #base/StrongBrancher.cpp
      base/Transformer.cpp 
      base/TransPoly.cpp 
      base/TransSep.cpp
@@ -265,6 +266,7 @@ set (MINOTAUR_HEADERS
      base/SOS2Handler.h
      base/SOSBrCand.h
      base/STOAHandler.h
+     #base/StrongBrancher.h
      base/Timer.h
      base/Transformer.h 
      base/TransPoly.h 

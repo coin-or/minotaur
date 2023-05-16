@@ -495,7 +495,7 @@ void QuadHandler::getBranchingCandidates(RelaxationPtr rel,
       if (false == ret.second) {  // already exists.
         delete br_can;
         br_can = *(ret.first);
-        br_can->setDist(ddist + br_can->getDDist(), udist + br_can->getDDist());
+        br_can->setDist(ddist + br_can->getDDist(), udist + br_can->getUDist());
       }
     }
   }
@@ -606,6 +606,7 @@ ModificationPtr QuadHandler::getBrMod(BrCandPtr cand, DoubleVector &x,
   LinModsPtr lmods = (LinModsPtr) new LinMods();
   LinearFunctionPtr lf;
   LinConModPtr lmod;
+  VarBoundModPtr bmod;
   // BrVarCandPtr vcand = boost::dynamic_pointer_cast <BrVarCand> (cand);
   BrVarCandPtr vcand = dynamic_cast<BrVarCand *>(cand);
   VariablePtr v = vcand->getVar();
@@ -613,6 +614,10 @@ ModificationPtr QuadHandler::getBrMod(BrCandPtr cand, DoubleVector &x,
   double x0val, yval, vio, rhs;
   UInt vind = v->getIndex();
   bool found = false;
+
+  bmod = (VarBoundModPtr) new VarBoundMod(v, dir == DownBranch ? Upper : Lower,
+                                          x[vind]);
+  lmods->insert(bmod);
 
   for (LinSqrMapIter it = x2Funs_.begin(); it != x2Funs_.end(); ++it) {
     if (vind == it->first->getIndex()) {
