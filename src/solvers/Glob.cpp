@@ -45,6 +45,7 @@
 #include "SimpleTransformer.h"
 #include "Solution.h"
 #include "Solver.h"
+#include "StrongBrancher.h"
 #include "Timer.h"
 #include "Transformer.h"
 #include "TreeManager.h"
@@ -159,6 +160,12 @@ BranchAndBound *Glob::createBab_(EnginePtr e, HandlerVector &handlers) {
     LexicoBrancherPtr lbr =
         (LexicoBrancherPtr) new LexicoBrancher(env_, handlers);
     br = lbr;
+  } else if (env_->getOptions()->findString("brancher")->getValue() ==
+             "strong") {
+    StrongBrancherPtr str_br =
+        (StrongBrancherPtr) new StrongBrancher(env_, handlers);
+    str_br->setEngine(e);
+    br = str_br;
   }
   env_->getLogger()->msgStream(LogExtraInfo)
       << me_ << "brancher used = " << br->getName() << std::endl;
