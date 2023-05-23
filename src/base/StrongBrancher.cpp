@@ -55,7 +55,50 @@ StrongBrancher::StrongBrancher(EnvPtr env, HandlerVector &handlers)
   stats_->time = 0.0;
 }
 
-StrongBrancher::~StrongBrancher() {}
+StrongBrancher::~StrongBrancher() { delete stats_; }
+
+BrCandPtr StrongBrancher::findBestCandidate_(const double objval,
+                                             double cutoff) {
+  double best_score = -INFINITY;
+  double score, change_up, change_down, maxchange;
+  UInt cnt;
+  EngineStatus status_up, status_down;
+  BrCandPtr cand, best_cand = 0;
+
+  maxchange = cutoff - objval;
+  BrVarCandIter it;
+  // engine_->enableStrBrSetup();
+  engine_->setIterationLimit(maxIterations_);  // TODO: make limit dynamic.
+  cnt = 0;
+  for (it = cands_.begin(); it != cands_.end() && cnt < maxCands_;
+       ++it, ++cnt) {
+    cand = *it;
+    strongBranch_(cand, change_up, change_down, status_up, status_down);
+    change_up = std::max(change_up - objval, 0.0);
+    change_down = std::max(change_down - objval, 0.0);
+    useStrongBranchInfo_(cand, maxchange, change_up, change_down, status_up,
+                         status_down);
+    score = getScore_(change_up, change_down);
+#if SPEW
+    writeScore_(cand, score, change_up, change_down);
+#endif
+    if (status_ != NotModifiedByBrancher) {
+      break;
+    }
+    if (score > best_score) {
+      best_score = score;
+      best_cand = cand;
+      if (change_up > change_down) {
+        best_cand->setDir(DownBranch);
+      } else {
+        best_cand->setDir(UpBranch);
+      }
+    }
+  }
+  engine_->resetIterationLimit();
+  // engine_->disableStrBrSetup();
+  return best_cand;
+}
 
 Branches StrongBrancher::findBranches(RelaxationPtr rel, NodePtr,
                                       ConstSolutionPtr sol,
@@ -131,170 +174,6 @@ Branches StrongBrancher::findBranches(RelaxationPtr rel, NodePtr,
   return branches;
 }
 
-void StrongBrancher::freeCandidates_(BrCandPtr no_del) {
-  for (BrCandVIter it = cands_.begin(); it != cands_.end(); ++it) {
-    if (no_del != *it) {
-      delete *it;
-    }
-  }
-  cands_.clear();
-}
-
-void StrongBrancher::strongBranch_(BrCandPtr cand, double &obj_up,
-                                   double &obj_down, EngineStatus &status_up,
-                                   EngineStatus &status_down) {
-  HandlerPtr h = cand->getHandler();
-  ModificationPtr mod;
-  double stime;
-
-  // first do down.
-  mod = h->getBrMod(cand, x_, rel_, DownBranch);
-  mod->applyToProblem(rel_);
-  stime = timer_->query();
-  status_down = engine_->solve();
-  stats_->time += timer_->query() - stime;
-  obj_down = engine_->getSolutionValue();
-  mod->undoToProblem(rel_);
-  delete mod;
-
-  // now go up.
-  mod = h->getBrMod(cand, x_, rel_, UpBranch);
-  mod->applyToProblem(rel_);
-  stime = timer_->query();
-  status_up = engine_->solve();
-  stats_->time += timer_->query() - stime;
-  obj_up = engine_->getSolutionValue();
-  mod->undoToProblem(rel_);
-  delete mod;
-}
-
-bool StrongBrancher::shouldPrune_(const double &chcutoff, const double &change,
-                                  const EngineStatus &status, bool *is_rel) {
-  switch (status) {
-    case (ProvenLocalInfeasible):
-      return true;
-    case (ProvenInfeasible):
-      return true;
-    case (ProvenObjectiveCutOff):
-      return true;
-    case (ProvenLocalOptimal):
-    case (ProvenOptimal):
-      if (change > chcutoff - eTol_) {
-        return true;
-      }
-      // check feasiblity
-      break;
-    case (EngineUnknownStatus):
-      assert(!"engine status is UnknownStatus in reliability branching!");
-      break;
-    case (EngineIterationLimit):
-      break;
-    case (ProvenFailedCQFeas):
-    case (ProvenFailedCQInfeas):
-      logger_->msgStream(LogInfo) << me_ << "Failed CQ."
-                                  << " Continuing." << std::endl;
-      *is_rel = false;
-      break;
-    default:
-      logger_->errStream() << me_ << "unexpected engine status. "
-                           << "status = " << status << std::endl;
-      *is_rel = false;
-      stats_->engProbs += 1;
-      break;
-  }
-  return false;
-}
-
-void StrongBrancher::useStrongBranchInfo_(BrCandPtr cand,
-                                          const double &chcutoff,
-                                          double &change_up,
-                                          double &change_down,
-                                          const EngineStatus &status_up,
-                                          const EngineStatus &status_down) {
-  bool should_prune_up = false;
-  bool should_prune_down = false;
-  bool is_rel = true;
-
-  should_prune_down = shouldPrune_(chcutoff, change_down, status_down, &is_rel);
-  should_prune_up = shouldPrune_(chcutoff, change_up, status_up, &is_rel);
-
-  if (!is_rel) {
-    change_up = 0.;
-    change_down = 0.;
-  } else if (should_prune_up == true && should_prune_down == true) {
-    status_ = PrunedByBrancher;
-    ++(stats_->nodePruned);
-  } else if (should_prune_up) {
-    status_ = ModifiedByBrancher;
-    mods_.push_back(cand->getHandler()->getBrMod(cand, x_, rel_, DownBranch));
-  } else if (should_prune_down) {
-    status_ = ModifiedByBrancher;
-    mods_.push_back(cand->getHandler()->getBrMod(cand, x_, rel_, UpBranch));
-  } else {
-    return;
-  }
-}
-
-double StrongBrancher::getScore_(const double &up_score,
-                                 const double &down_score) {
-  if (up_score > down_score) {
-    return down_score * 0.8 + up_score * 0.2;
-  } else {
-    return up_score * 0.8 + down_score * 0.2;
-  }
-}
-
-void StrongBrancher::writeScore_(BrCandPtr cand, double score, double change_up,
-                                 double change_down) {
-  logger_->msgStream(LogDebug2)
-      << me_ << "candidate: " << cand->getName()
-      << " down change = " << change_down << " up change = " << change_up
-      << " score = " << score << std::endl;
-}
-
-BrCandPtr StrongBrancher::findBestCandidate_(const double objval,
-                                             double cutoff) {
-  double best_score = -INFINITY;
-  double score, change_up, change_down, maxchange;
-  UInt cnt;
-  EngineStatus status_up, status_down;
-  BrCandPtr cand, best_cand = 0;
-
-  maxchange = cutoff - objval;
-  BrCandVIter it;
-  // engine_->enableStrBrSetup();
-  engine_->setIterationLimit(maxIterations_);  // TODO: make limit dynamic.
-  cnt = 0;
-  for (it = cands_.begin(); it != cands_.end() && cnt < maxCands_;
-       ++it, ++cnt) {
-    cand = *it;
-    strongBranch_(cand, change_up, change_down, status_up, status_down);
-    change_up = std::max(change_up - objval, 0.0);
-    change_down = std::max(change_down - objval, 0.0);
-    useStrongBranchInfo_(cand, maxchange, change_up, change_down, status_up,
-                         status_down);
-    score = getScore_(change_up, change_down);
-#if SPEW
-    writeScore_(cand, score, change_up, change_down);
-#endif
-    if (status_ != NotModifiedByBrancher) {
-      break;
-    }
-    if (score > best_score) {
-      best_score = score;
-      best_cand = cand;
-      if (change_up > change_down) {
-        best_cand->setDir(DownBranch);
-      } else {
-        best_cand->setDir(UpBranch);
-      }
-    }
-  }
-  engine_->resetIterationLimit();
-  // engine_->disableStrBrSetup();
-  return best_cand;
-}
-
 void StrongBrancher::findCandidates_(bool &should_prune) {
   BrVarCandSet cands2;     // Temporary set.
   BrCandVector gencands2;  // Temporary set.
@@ -357,3 +236,154 @@ void StrongBrancher::findCandidates_(bool &should_prune) {
 #endif
   return;
 }
+
+void StrongBrancher::freeCandidates_(BrCandPtr no_del) {
+  for (BrVarCandIter it = cands_.begin(); it != cands_.end(); ++it) {
+    if (no_del != *it) {
+      delete *it;
+    }
+  }
+  cands_.clear();
+}
+
+std::string StrongBrancher::getName() const { return "ReliabilityBrancher"; }
+
+double StrongBrancher::getScore_(const double &up_score,
+                                 const double &down_score) {
+  if (up_score > down_score) {
+    return down_score * 0.8 + up_score * 0.2;
+  } else {
+    return up_score * 0.8 + down_score * 0.2;
+  }
+}
+
+void StrongBrancher::setEngine(EnginePtr engine) { engine_ = engine; }
+
+bool StrongBrancher::shouldPrune_(const double &chcutoff, const double &change,
+                                  const EngineStatus &status, bool *is_rel) {
+  switch (status) {
+    case (ProvenLocalInfeasible):
+      return true;
+    case (ProvenInfeasible):
+      return true;
+    case (ProvenObjectiveCutOff):
+      return true;
+    case (ProvenLocalOptimal):
+    case (ProvenOptimal):
+      if (change > chcutoff - eTol_) {
+        return true;
+      }
+      // check feasiblity
+      break;
+    case (EngineUnknownStatus):
+      assert(!"engine status is UnknownStatus in reliability branching!");
+      break;
+    case (EngineIterationLimit):
+      break;
+    case (ProvenFailedCQFeas):
+    case (ProvenFailedCQInfeas):
+      logger_->msgStream(LogInfo) << me_ << "Failed CQ."
+                                  << " Continuing." << std::endl;
+      *is_rel = false;
+      break;
+    default:
+      logger_->errStream() << me_ << "unexpected engine status. "
+                           << "status = " << status << std::endl;
+      *is_rel = false;
+      stats_->engProbs += 1;
+      break;
+  }
+  return false;
+}
+
+void StrongBrancher::strongBranch_(BrCandPtr cand, double &obj_up,
+                                   double &obj_down, EngineStatus &status_up,
+                                   EngineStatus &status_down) {
+  HandlerPtr h = cand->getHandler();
+  ModificationPtr mod;
+  double stime;
+
+  // first do down.
+  mod = h->getBrMod(cand, x_, rel_, DownBranch);
+  mod->applyToProblem(rel_);
+  stime = timer_->query();
+  status_down = engine_->solve();
+  stats_->time += timer_->query() - stime;
+  obj_down = engine_->getSolutionValue();
+  mod->undoToProblem(rel_);
+  delete mod;
+
+  // now go up.
+  mod = h->getBrMod(cand, x_, rel_, UpBranch);
+  mod->applyToProblem(rel_);
+  stime = timer_->query();
+  status_up = engine_->solve();
+  stats_->time += timer_->query() - stime;
+  obj_up = engine_->getSolutionValue();
+  mod->undoToProblem(rel_);
+  delete mod;
+}
+
+void StrongBrancher::updateAfterSolve(NodePtr, ConstSolutionPtr) {}
+
+void StrongBrancher::useStrongBranchInfo_(BrCandPtr cand,
+                                          const double &chcutoff,
+                                          double &change_up,
+                                          double &change_down,
+                                          const EngineStatus &status_up,
+                                          const EngineStatus &status_down) {
+  bool should_prune_up = false;
+  bool should_prune_down = false;
+  bool is_rel = true;
+
+  should_prune_down = shouldPrune_(chcutoff, change_down, status_down, &is_rel);
+  should_prune_up = shouldPrune_(chcutoff, change_up, status_up, &is_rel);
+
+  if (!is_rel) {
+    change_up = 0.;
+    change_down = 0.;
+  } else if (should_prune_up == true && should_prune_down == true) {
+    status_ = PrunedByBrancher;
+    ++(stats_->nodePruned);
+  } else if (should_prune_up) {
+    status_ = ModifiedByBrancher;
+    mods_.push_back(cand->getHandler()->getBrMod(cand, x_, rel_, DownBranch));
+  } else if (should_prune_down) {
+    status_ = ModifiedByBrancher;
+    mods_.push_back(cand->getHandler()->getBrMod(cand, x_, rel_, UpBranch));
+  } else {
+    return;
+  }
+}
+
+void StrongBrancher::writeScore_(BrCandPtr cand, double score, double change_up,
+                                 double change_down) {
+  logger_->msgStream(LogDebug2)
+      << me_ << "candidate: " << cand->getName()
+      << " down change = " << change_down << " up change = " << change_up
+      << " score = " << score << std::endl;
+}
+
+void StrongBrancher::writeStats(std::ostream &out) const {
+  if (stats_) {
+    out << me_ << "times called                       = " << stats_->calls
+        << std::endl
+        << me_ << "no. of problems in engine          = " << stats_->engProbs
+        << std::endl
+        << me_ << "times nodes was pruned by brancher = " << stats_->nodePruned
+        << std::endl
+        << me_ << "time taken in strong branching     = " << stats_->time
+        << std::endl;
+  }
+}
+
+// Local Variables:
+// mode: c++
+// eval: (c-set-style "k&r")
+// eval: (c-set-offset 'innamespace 0)
+// eval: (setq c-basic-offset 2)
+// eval: (setq fill-column 78)
+// eval: (auto-fill-mode 1)
+// eval: (setq column-number-mode 1)
+// eval: (setq indent-tabs-mode nil)
+// End:

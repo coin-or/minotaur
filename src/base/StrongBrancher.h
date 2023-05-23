@@ -65,7 +65,7 @@ class StrongBrancher : public Brancher {
 
  private:
   /// A vector of candidates
-  std::vector<BrCandPtr> cands_;
+  BrVarCandSet cands_;
 
   /// Engine for strong branching
   EnginePtr engine_;
