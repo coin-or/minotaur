@@ -57,6 +57,20 @@ class StrongBrancher : public Brancher {
    */
   void setEngine(EnginePtr engine);
 
+  /**
+   * \brief Set maximum candidates for limited strong branching.
+   *
+   * \param[in] max_cands Maximum candidates to be strong branched on.
+   */
+  void setMaxCands(UInt max_cands);
+
+  /**
+   * \brief Set maximum iterations while limited strong branching
+   *
+   * \param[in] max_iter Maximum iterations to do in strong branching
+   */
+  void setMaxIter(UInt max_iter);
+
   // base class function.
   void updateAfterSolve(NodePtr node, ConstSolutionPtr sol);
 

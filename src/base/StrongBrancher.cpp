@@ -41,8 +41,8 @@ StrongBrancher::StrongBrancher(EnvPtr env, HandlerVector &handlers)
     : engine_(EnginePtr()),
       eTol_(1e-6),
       handlers_(handlers),
-      maxCands_(20),
-      maxIterations_(25),
+      maxCands_(0),
+      maxIterations_(0),
       rel_(RelaxationPtr()),
       status_(NotModifiedByBrancher),
       x_(0) {
@@ -68,10 +68,12 @@ BrCandPtr StrongBrancher::findBestCandidate_(const double objval,
   maxchange = cutoff - objval;
   BrVarCandIter it;
   // engine_->enableStrBrSetup();
-  engine_->setIterationLimit(maxIterations_);  // TODO: make limit dynamic.
+  if (maxIterations_ > 0) {
+    engine_->setIterationLimit(maxIterations_);
+  }
   cnt = 0;
-  for (it = cands_.begin(); it != cands_.end() && cnt < maxCands_;
-       ++it, ++cnt) {
+  for (it = cands_.begin();
+       it != cands_.end() && (cnt < maxCands_ || maxCands_ == 0); ++it, ++cnt) {
     cand = *it;
     strongBranch_(cand, change_up, change_down, status_up, status_down);
     change_up = std::max(change_up - objval, 0.0);
@@ -258,6 +260,10 @@ double StrongBrancher::getScore_(const double &up_score,
 }
 
 void StrongBrancher::setEngine(EnginePtr engine) { engine_ = engine; }
+
+void StrongBrancher::setMaxCands(UInt max_cands) { maxCands_ = max_cands; }
+
+void StrongBrancher::setMaxIter(UInt max_iter) { maxIterations_ = max_iter; }
 
 bool StrongBrancher::shouldPrune_(const double &chcutoff, const double &change,
                                   const EngineStatus &status, bool *is_rel) {

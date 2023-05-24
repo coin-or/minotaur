@@ -129,8 +129,9 @@ BranchAndBound *Glob::createBab_(EnginePtr e, HandlerVector &handlers) {
   PCBProcessorPtr nproc;
   NodeIncRelaxerPtr nr;
   BrancherPtr br = 0;
+  std::string brancher = env_->getOptions()->findString("brancher")->getValue();
 
-  if (env_->getOptions()->findString("brancher")->getValue() == "rel") {
+  if (brancher == "rel") {
     UInt t;
     ReliabilityBrancherPtr rel_br;
     rel_br = (ReliabilityBrancherPtr) new ReliabilityBrancher(env_, handlers);
@@ -151,20 +152,22 @@ BranchAndBound *Glob::createBab_(EnginePtr e, HandlerVector &handlers) {
         << "reliability branching iteration limit = " << rel_br->getIterLim()
         << std::endl;
     br = rel_br;
-  } else if (env_->getOptions()->findString("brancher")->getValue() ==
-             "maxvio") {
+  } else if (brancher == "maxvio") {
     MaxVioBrancherPtr mbr =
         (MaxVioBrancherPtr) new MaxVioBrancher(env_, handlers);
     br = mbr;
-  } else if (env_->getOptions()->findString("brancher")->getValue() == "lex") {
+  } else if (brancher == "lex") {
     LexicoBrancherPtr lbr =
         (LexicoBrancherPtr) new LexicoBrancher(env_, handlers);
     br = lbr;
-  } else if (env_->getOptions()->findString("brancher")->getValue() ==
-             "strong") {
+  } else if (brancher.find("strong") != std::string::npos) {
     StrongBrancherPtr str_br =
         (StrongBrancherPtr) new StrongBrancher(env_, handlers);
     str_br->setEngine(e);
+    if (brancher == "limstrong") {
+      str_br->setMaxCands(20);
+      str_br->setMaxIter(50);
+    }
     br = str_br;
   }
   env_->getLogger()->msgStream(LogExtraInfo)
