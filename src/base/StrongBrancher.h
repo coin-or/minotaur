@@ -96,6 +96,8 @@ class StrongBrancher : public Brancher {
    */
   HandlerVector handlers_;
 
+  bool init_;
+
   /// Do strong branching on maximum these many candidates
   UInt maxCands_;
 
@@ -123,6 +125,8 @@ class StrongBrancher : public Brancher {
   /// Timer
   const Timer *timer_;
 
+  UIntVector timesStrBranched_;
+
   /// Values of the varaible in the current solution of the relaxation
   DoubleVector x_;
 
@@ -144,6 +148,12 @@ class StrongBrancher : public Brancher {
    * Fills up the set of candidates in the cands_ array by calling all handlers.
    */
   void findCandidates_(bool &should_prune);
+
+  /**
+   * \brief this function is used to sort those candidates which are less
+   * frequently strong branched when limited strong branching is done.
+   */
+  UInt findMaxTSR_();
 
   /**
    * Clean up candidates, except for the no_del

@@ -12,6 +12,7 @@
 
 #include "StrongBrancher.h"
 
+#include <algorithm>
 #include <cmath>
 #include <iomanip>
 
@@ -53,6 +54,7 @@ StrongBrancher::StrongBrancher(EnvPtr env, HandlerVector &handlers)
   stats_->engProbs = 0;
   stats_->nodePruned = 0;
   stats_->time = 0.0;
+  init_ = false;
 }
 
 StrongBrancher::~StrongBrancher() { delete stats_; }
@@ -64,6 +66,7 @@ BrCandPtr StrongBrancher::findBestCandidate_(const double objval,
   UInt cnt;
   EngineStatus status_up, status_down;
   BrCandPtr cand, best_cand = 0;
+  UInt maxTSR;
 
   maxchange = cutoff - objval;
   BrVarCandIter it;
@@ -71,10 +74,17 @@ BrCandPtr StrongBrancher::findBestCandidate_(const double objval,
   if (maxIterations_ > 0) {
     engine_->setIterationLimit(maxIterations_);
   }
+  if (maxCands_ > 0) {
+    maxTSR = findMaxTSR_();
+  }
   cnt = 0;
   for (it = cands_.begin();
-       it != cands_.end() && (cnt < maxCands_ || maxCands_ == 0); ++it, ++cnt) {
+       it != cands_.end() && (cnt < maxCands_ || maxCands_ == 0); ++it) {
     cand = *it;
+    if (maxCands_ > 0 && timesStrBranched_[cand->getPCostIndex()] > maxTSR) {
+      continue;
+    }
+    ++cnt;
     strongBranch_(cand, change_up, change_down, status_up, status_down);
     change_up = std::max(change_up - objval, 0.0);
     change_down = std::max(change_down - objval, 0.0);
@@ -95,6 +105,9 @@ BrCandPtr StrongBrancher::findBestCandidate_(const double objval,
       } else {
         best_cand->setDir(UpBranch);
       }
+    }
+    if (maxCands_ > 0) {
+      timesStrBranched_[cand->getPCostIndex()] += 1;
     }
   }
   engine_->resetIterationLimit();
@@ -117,6 +130,12 @@ Branches StrongBrancher::findBranches(RelaxationPtr rel, NodePtr,
   br_status = NotModifiedByBrancher;
   status_ = NotModifiedByBrancher;
   mods_.clear();
+  if (!init_) {
+    init_ = true;
+    if (maxCands_ > 0) {
+      timesStrBranched_ = UIntVector(rel_->getNumVars(), 0);
+    }
+  }
 
   // make a copy of x, because it is overwritten while strong branching.
   x_.resize(rel->getNumVars());
@@ -237,6 +256,18 @@ void StrongBrancher::findCandidates_(bool &should_prune) {
   }
 #endif
   return;
+}
+
+UInt StrongBrancher::findMaxTSR_() {
+  UIntVector candElems;
+  candElems.clear();
+
+  for (BrVarCandIter it = cands_.begin(); it != cands_.end(); ++it) {
+    candElems.push_back(timesStrBranched_[(*it)->getPCostIndex()]);
+  }
+  std::nth_element(candElems.begin(), candElems.begin() + maxCands_,
+                   candElems.end());
+  return candElems[maxCands_ - 1];
 }
 
 void StrongBrancher::freeCandidates_(BrCandPtr no_del) {
