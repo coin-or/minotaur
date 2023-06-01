@@ -35,7 +35,6 @@
 #include "Problem.h"
 #include "ProblemSize.h"
 #include "QuadHandler.h"
-#include "kPowHandler.h"
 #include "QuadraticFunction.h"
 #include "Solution.h"
 #include "Timer.h"
@@ -45,6 +44,7 @@
 #include "YEqQfBil.h"
 #include "YEqUCGs.h"
 #include "YEqVars.h"
+#include "kPowHandler.h"
 
 // #define SPEW 1
 
@@ -93,7 +93,7 @@ void SimpleTransformer::bilRef_(LinearFunctionPtr lfl, VariablePtr vl,
                                 LinearFunctionPtr &lf, VariablePtr &v,
                                 double &d) {
   if (lfl) {
-    //vl = newVar_(lfl, dl, newp_);
+    // vl = newVar_(lfl, dl, newp_);
     if (vr) {
       vr = newVar_(vr, dr, newp_);
     } else if (lfr) {
@@ -207,9 +207,10 @@ void SimpleTransformer::powKRef_(LinearFunctionPtr lfl, VariablePtr vl,
     assert(!"powers less than one can not be handled yet!");
   } else if (k < -zTol_) {
     assert(!"negative powers can not be handled yet!");
-  } 
+  }
   // else if (fabs(k / 2 - floor(k / 2 + 0.5)) > zTol_) {
-  //   logger_->errStream() << "odd powers can not be handled yet!" << std::endl;
+  //   logger_->errStream() << "odd powers can not be handled yet!" <<
+  //   std::endl;
   // }
 
   if (lfl) {
@@ -248,11 +249,11 @@ void SimpleTransformer::recursRef_(const CNode *node, LinearFunctionPtr &lf,
   VariablePtr vr = VariablePtr();
   VariablePtr v2 = VariablePtr();
   CNode *n1 = 0;
-  
+
   lf = LinearFunctionPtr();  // NULL
   v = VariablePtr();
   d = 0.0;
-  
+
   switch (node->getOp()) {
     case (OpAbs):
     case (OpAcos):
@@ -717,12 +718,20 @@ bool SimpleTransformer::checkQuadConvexity_() {
   bool all_convex = true;
   ConstraintPtr c;
   QuadraticFunctionPtr qf;
+  NonlinearFunctionPtr nlf;
   Convexity sg = Unknown, sg_old = Unknown;
 
   for (ConstraintConstIterator cit = p_->consBegin(); cit != p_->consEnd();
        ++cit) {
     c = *cit;
     qf = c->getFunction()->getQuadraticFunction();
+    nlf = c->getFunction()->getNonlinearFunction();
+    if (nlf) {
+      convex_cons = false;
+      c->setConvexity(Nonconvex);
+      all_convex = false;
+      continue;
+    }
     if (qf) {
       convex_cons = true;
       qf_vector = qf->findSubgraphs();
@@ -768,12 +777,14 @@ bool SimpleTransformer::checkQuadConvexity_() {
       }
       qf_vector.clear();
     }
-    else {
-      return false;
-    }
   }
   qf = p_->getObjective()->getFunction()->getQuadraticFunction();
-  if (qf) {
+  nlf = p_->getObjective()->getFunction()->getNonlinearFunction();
+  if (nlf) {
+    convex_cons = false;
+    stats_.objConv = 2;
+    all_convex = false;
+  } else if (qf) {
     convex_cons = true;
     qf_vector = qf->findSubgraphs();
     for (it = qf_vector.begin(); it != qf_vector.end(); ++it) {
