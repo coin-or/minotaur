@@ -42,6 +42,11 @@ class StrongBrancher : public Brancher {
   /// Destructor.
   ~StrongBrancher();
 
+  /**
+   * /brief do stronger branching
+   */
+  void doStronger();
+
   // base class function.
   Branches findBranches(RelaxationPtr rel, NodePtr node, ConstSolutionPtr sol,
                         SolutionPoolPtr s_pool, BrancherStatus &br_status,
@@ -121,6 +126,8 @@ class StrongBrancher : public Brancher {
 
   /// Brancher status
   BrancherStatus status_;
+
+  bool stronger_;
 
   /// Timer
   const Timer *timer_;

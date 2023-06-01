@@ -142,12 +142,12 @@ void QuadHandler::addConstraint(ConstraintPtr newcon) {
     if (qf->begin()->first.first->getId() ==
         qf->begin()->first.second->getId()) {
       x0 = qf->begin()->first.first;
-      lx2 = new LinSqr(y, x0);
+      lx2 = new LinSqr(y, x0, newcon);
       x2Funs_.insert(std::pair<VariablePtr, LinSqrPtr>(x0, lx2));
     } else {
       x0 = qf->begin()->first.first;
       x1 = qf->begin()->first.second;
-      linbil = new LinBil(x0, x1, y);
+      linbil = new LinBil(x0, x1, y, newcon);
       x0x1Funs_.insert(linbil);
     }
   } else {
@@ -161,14 +161,14 @@ void QuadHandler::addConstraint(ConstraintPtr newcon) {
     y = lf->termsBegin()->first;
     if (nlf->numVars() == 1) {
       x0 = *(nlf->varsBegin());
-      lx2 = new LinSqr(y, x0);
+      lx2 = new LinSqr(y, x0, newcon);
       x2Funs_.insert(std::pair<VariablePtr, LinSqrPtr>(x0, lx2));
     } else {
       VariableSet::iterator it = nlf->varsBegin();
       x0 = *it;
       ++it;
       x1 = *it;
-      linbil = new LinBil(x0, x1, y);
+      linbil = new LinBil(x0, x1, y, newcon);
       x0x1Funs_.insert(linbil);
     }
   }
@@ -954,6 +954,125 @@ bool QuadHandler::isFeasibleToRelaxation_(RelaxationPtr rel, const double *x) {
           << me_ << c->getName() << " Constraint not defined at this point."
           << std::endl;
     }
+  }
+  return true;
+}
+
+void QuadHandler::linearize_(LinSqrMapIter lx2) {
+  ConstraintPtr qcon = lx2->second->qcon;
+  VariablePtr x = lx2->first;
+  double coef = qcon->getQuadraticFunction()->begin()->second;
+  qcon->getFunction()->removeQuadratic();
+  qcon->getLinearFunction()->incTerm(x, coef);
+#if SPEW
+  logger_->msgStream(LogDebug)
+      << me_ << qcon->getName() << " is changed to" << std::endl;
+  qcon->write(logger_->msgStream(LogDebug));
+#endif
+}
+
+bool QuadHandler::linearize_(LinBilSetIter linbil, bool isx0Binary,
+                             bool isx1Binary) {
+  ConstraintPtr qcon = (*linbil)->getQCon();
+  VariablePtr x0 = (*linbil)->getX0();
+  VariablePtr x1 = (*linbil)->getX1();
+  VariablePtr y = (*linbil)->getY();
+  LinearFunctionPtr lf;
+  FunctionPtr f;
+  ConstraintPtr cnew;
+
+  if (isx0Binary && isx1Binary) {
+    lf = (LinearFunctionPtr) new LinearFunction();
+    lf->incTerm(x0, 1.0);
+    lf->incTerm(x1, 1.0);
+    lf->incTerm(y, -1.0);
+    f = (FunctionPtr) new Function(lf);
+    cnew = p_->newConstraint(f, -INFINITY, 1.0);
+#if SPEW
+    logger_->msgStream(LogDebug) << me_ << " added new constraint" << std::endl;
+    cnew->write(logger_->msgStream(LogDebug));
+#endif
+
+    lf = (LinearFunctionPtr) new LinearFunction();
+    lf->incTerm(x0, 1.0);
+    lf->incTerm(y, -1.0);
+    f = (FunctionPtr) new Function(lf);
+    cnew = p_->newConstraint(f, 0.0, INFINITY);
+#if SPEW
+    logger_->msgStream(LogDebug) << me_ << " added new constraint" << std::endl;
+    cnew->write(logger_->msgStream(LogDebug));
+#endif
+
+    lf = (LinearFunctionPtr) new LinearFunction();
+    lf->incTerm(x0, 1.0);
+    lf->incTerm(y, -1.0);
+    f = (FunctionPtr) new Function(lf);
+    cnew = p_->newConstraint(f, 0.0, INFINITY);
+#if SPEW
+    logger_->msgStream(LogDebug) << me_ << " added new constraint" << std::endl;
+    cnew->write(logger_->msgStream(LogDebug));
+
+    logger_->msgStream(LogDebug)
+        << me_ << " deleting constraint " << qcon->getName() << std::endl;
+#endif
+    p_->markDelete(qcon);
+    p_->setVarType(y, ImplBin);
+  } else {
+    if ((!isx0Binary) && (!isx1Binary)) {
+      return false;
+    }
+    VariablePtr bin = isx0Binary ? x0 : x1;
+    VariablePtr cont = isx1Binary ? x0 : x1;
+    double l = cont->getLb();
+    double u = cont->getUb();
+    if (l <= -INFINITY || u >= INFINITY) {
+      return false;
+    }
+    lf = (LinearFunctionPtr) new LinearFunction();
+    lf->incTerm(bin, l);
+    lf->incTerm(y, -1.0);
+    f = (FunctionPtr) new Function(lf);
+    cnew = p_->newConstraint(f, -INFINITY, 0.0);
+#if SPEW
+    logger_->msgStream(LogDebug) << me_ << " added new constraint" << std::endl;
+    cnew->write(logger_->msgStream(LogDebug));
+#endif
+
+    lf = (LinearFunctionPtr) new LinearFunction();
+    lf->incTerm(bin, u);
+    lf->incTerm(y, -1.0);
+    f = (FunctionPtr) new Function(lf);
+    cnew = p_->newConstraint(f, 0.0, INFINITY);
+#if SPEW
+    logger_->msgStream(LogDebug) << me_ << " added new constraint" << std::endl;
+    cnew->write(logger_->msgStream(LogDebug));
+#endif
+
+    lf = (LinearFunctionPtr) new LinearFunction();
+    lf->incTerm(bin, l);
+    lf->incTerm(cont, 1.0);
+    lf->incTerm(y, -1.0);
+    f = (FunctionPtr) new Function(lf);
+    cnew = p_->newConstraint(f, l, INFINITY);
+#if SPEW
+    logger_->msgStream(LogDebug) << me_ << " added new constraint" << std::endl;
+    cnew->write(logger_->msgStream(LogDebug));
+#endif
+
+    lf = (LinearFunctionPtr) new LinearFunction();
+    lf->incTerm(bin, u);
+    lf->incTerm(cont, 1.0);
+    lf->incTerm(y, -1.0);
+    f = (FunctionPtr) new Function(lf);
+    cnew = p_->newConstraint(f, -INFINITY, u);
+#if SPEW
+    logger_->msgStream(LogDebug) << me_ << " added new constraint" << std::endl;
+    cnew->write(logger_->msgStream(LogDebug));
+
+    logger_->msgStream(LogDebug)
+        << me_ << " deleting constraint " << qcon->getName() << std::endl;
+#endif
+    p_->markDelete(qcon);
   }
   return true;
 }
@@ -3143,18 +3262,48 @@ void QuadHandler::upSqCon_(LinSqrPtr ls, RelaxationPtr rel, ModVector &r_mods) {
 
 bool QuadHandler::varBndsFromCons_(bool *changed) {
   bool is_inf = false;
+  VarVector lsqdel;
+  std::vector<LinBil *> lbildel;
+
   for (LinSqrMapIter it = x2Funs_.begin(); it != x2Funs_.end(); ++it) {
-    is_inf = propSqrBnds_(it, changed);
-    if (true == is_inf) {
-      return true;
+    if (it->first->getType() == Binary || it->first->getType() == ImplBin) {
+      linearize_(it);
+      lsqdel.push_back(it->first);
+    } else {
+      is_inf = propSqrBnds_(it, changed);
+      if (true == is_inf) {
+        return true;
+      }
     }
   }
   for (LinBilSetIter it = x0x1Funs_.begin(); it != x0x1Funs_.end(); ++it) {
-    is_inf = propBilBnds_(*it, changed);
-    if (true == is_inf) {
-      return true;
+    bool b0 = (*it)->getX0()->getType() == Binary ||
+              (*it)->getX0()->getType() == ImplBin;
+    bool b1 = (*it)->getX1()->getType() == Binary ||
+              (*it)->getX1()->getType() == ImplBin;
+    if ((b0 || b1) && (linearize_(it, b0, b1))) {
+      lbildel.push_back(*it);
+    } else {
+      is_inf = propBilBnds_(*it, changed);
+      if (true == is_inf) {
+        return true;
+      }
     }
   }
+
+  for (VariableIterator vit = lsqdel.begin(); vit != lsqdel.end(); ++vit) {
+    LinSqrMapIter it = x2Funs_.find(*vit);
+    delete it->second;
+    x2Funs_.erase(it);
+  }
+  for (std::vector<LinBil *>::iterator lit = lbildel.begin();
+       lit != lbildel.end(); ++lit) {
+    LinBilSetIter it = x0x1Funs_.find(*lit);
+    delete *it;
+    x0x1Funs_.erase(it);
+  }
+  lsqdel.clear();
+  lbildel.clear();
   return false;
 }
 

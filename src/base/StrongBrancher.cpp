@@ -55,9 +55,12 @@ StrongBrancher::StrongBrancher(EnvPtr env, HandlerVector &handlers)
   stats_->nodePruned = 0;
   stats_->time = 0.0;
   init_ = false;
+  stronger_ = false;
 }
 
 StrongBrancher::~StrongBrancher() { delete stats_; }
+
+void StrongBrancher::doStronger() { stronger_ = true; }
 
 BrCandPtr StrongBrancher::findBestCandidate_(const double objval,
                                              double cutoff) {

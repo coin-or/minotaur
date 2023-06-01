@@ -36,10 +36,12 @@ struct LinSqr {
   VariablePtr y;        ///> The variable y.
   VariablePtr x;        ///> The variable x.
   ConstraintPtr oeCon;  ///> The linear constraint that gives the over estimator
-  LinSqr(VariablePtr y0, VariablePtr x0) {
+  ConstraintPtr qcon;   ///> Quadratic constraint in the transformed problem
+  LinSqr(VariablePtr y0, VariablePtr x0, ConstraintPtr con) {
     y = y0;
     x = x0;
     oeCon = ConstraintPtr();
+    qcon = con;
   }
 };
 typedef LinSqr *LinSqrPtr;                  ///> Pointer to LinSqr
@@ -503,6 +505,12 @@ class QuadHandler : public Handler {
 
   /// Whether a given point is feasible to the relaxation
   bool isFeasibleToRelaxation_(RelaxationPtr rel, const double *x);
+
+  /// Linearize a given square constraint if x variable is binary
+  void linearize_(LinSqrMapIter lx2);
+
+  /// Linearize a given linbil if either variables is binary
+  bool linearize_(LinBilSetIter linbil, bool isx0Binary, bool isx1Binary);
 
   /**
    * \brief Strengthen bounds of variables in a bilinear constraint y=x0x1
