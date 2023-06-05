@@ -159,15 +159,19 @@ Branches StrongBrancher::findBranches(RelaxationPtr rel, NodePtr,
   // status_ might have changed now. Check again.
   if (status_ == NotModifiedByBrancher) {
     // surrounded by br_can :-)
-    branches = br_can->getHandler()->getBranches(br_can, x_, rel_, s_pool);
-    for (BranchConstIterator br_iter = branches->begin();
-         br_iter != branches->end(); ++br_iter) {
-      (*br_iter)->setBrCand(br_can);
-    }
+    if (br_can) {
+      branches = br_can->getHandler()->getBranches(br_can, x_, rel_, s_pool);
+      for (BranchConstIterator br_iter = branches->begin();
+           br_iter != branches->end(); ++br_iter) {
+        (*br_iter)->setBrCand(br_can);
+      }
 #if SPEW
-    logger_->msgStream(LogDebug)
-        << me_ << "best candidate = " << br_can->getName() << std::endl;
+      logger_->msgStream(LogDebug)
+          << me_ << "best candidate = " << br_can->getName() << std::endl;
 #endif
+    } else {
+      br_status = NoCandToBranch;
+    }
   } else {
     // we found some modifications that can be done to the node. Send these
     // back to the processor.
