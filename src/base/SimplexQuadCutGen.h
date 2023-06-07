@@ -109,6 +109,9 @@ class SimplexQuadCutGen {
   // Number of rounds after which improvement is checked
   UInt nrounds_;
 
+  // Maximum cuts to add during an iteration
+  UInt maxCuts_;
+
   // Minimum allowed depth of cut for a cut to be added
   double minDepth_;
 

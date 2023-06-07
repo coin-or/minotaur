@@ -53,6 +53,7 @@ SimplexQuadCutGen::SimplexQuadCutGen(EnvPtr env, ProblemPtr p, LPEnginePtr lpe,
   nrounds_ = 5;
   minChangeFrac_ = 0.1;
   ncuts_ = 0;
+  maxCuts_ = 20;
   minDepth_ = 1e-3;
   basicInd_.clear();
   nbOrig_.clear();
@@ -162,10 +163,12 @@ void SimplexQuadCutGen::addCutsToRel_(SimplexCutVector cuts, RelaxationPtr rel,
   FunctionPtr f;
   ConstraintPtr c;
   double minelem;
+  UInt numcuts = 0;
 
   calcDepth_(cuts, x);
+  std::sort(cuts.begin(), cuts.end());
 
-  for (SimplexCutVector::iterator it = cuts.begin(); it != cuts.end(); ++it) {
+  for (SimplexCutVector::iterator it = cuts.begin(); it != cuts.end() && numcuts < maxCuts_; ++it) {
     cut = (*it);
     // both lower and upper bounds must not be finite
     assert(!(cut->lb > -INFINITY && cut->ub < INFINITY));
@@ -199,6 +202,7 @@ void SimplexQuadCutGen::addCutsToRel_(SimplexCutVector cuts, RelaxationPtr rel,
     }
     f = (FunctionPtr) new Function(lf);
     c = rel->newConstraint(f, cut->lb, cut->ub);
+    ++numcuts;
 #if SPEW
     env_->getLogger()->msgStream(LogDebug)
         << me_ << " added new cut. Depth of cut = " << cut->depth << std::endl;
