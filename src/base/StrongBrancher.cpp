@@ -70,10 +70,12 @@ void StrongBrancher::doStronger()
   stronger_ = true;
 }
 
-BrCandPtr StrongBrancher::findBestCandidate_(const double objval, double cutoff)
+BrCandPtr StrongBrancher::findBestCandidate_(const double objval,
+                                             SolutionPoolPtr s_pool)
 {
   double best_score = -INFINITY;
   double score, change_up, change_down, maxchange;
+  double cutoff = s_pool->getBestSolutionValue();
   UInt cnt;
   EngineStatus status_up, status_down;
   BrCandPtr cand, best_cand = 0;
@@ -100,7 +102,7 @@ BrCandPtr StrongBrancher::findBestCandidate_(const double objval, double cutoff)
       continue;
     }
     ++cnt;
-    strongBranch_(cand, change_up, change_down, status_up, status_down);
+    strongBranch_(cand, change_up, change_down, status_up, status_down, s_pool);
     change_up = std::max(change_up - objval, 0.0);
     change_down = std::max(change_down - objval, 0.0);
     useStrongBranchInfo_(cand, maxchange, change_up, change_down, status_up,
@@ -175,8 +177,7 @@ Branches StrongBrancher::findBranches(RelaxationPtr rel, NodePtr,
 
   if(status_ == NotModifiedByBrancher)
   {
-    br_can =
-        findBestCandidate_(sol->getObjValue(), s_pool->getBestSolutionValue());
+    br_can = findBestCandidate_(sol->getObjValue(), s_pool);
   }
 
   // status_ might have changed now. Check again.
@@ -424,7 +425,8 @@ bool StrongBrancher::shouldPrune_(const double& chcutoff, const double& change,
 
 void StrongBrancher::strongBranch_(BrCandPtr cand, double& obj_up,
                                    double& obj_down, EngineStatus& status_up,
-                                   EngineStatus& status_down)
+                                   EngineStatus& status_down,
+                                   SolutionPoolPtr s_pool)
 {
   HandlerPtr h = cand->getHandler();
   ModificationPtr mod;
@@ -432,7 +434,6 @@ void StrongBrancher::strongBranch_(BrCandPtr cand, double& obj_up,
   ModificationPtr pmod;
   ModVector p_mods, r_mods;
   NodePtr node = NodePtr();
-  SolutionPoolPtr s_pool = SolutionPoolPtr();
 
   // first do down.
   mod = h->getBrMod(cand, x_, rel_, DownBranch);
@@ -450,7 +451,7 @@ void StrongBrancher::strongBranch_(BrCandPtr cand, double& obj_up,
     }
     p_mods.clear();
     r_mods.clear();
-    for(HandlerIterator it = handlers_.begin(); it != handlers_.end(); ++h)
+    for(HandlerIterator it = handlers_.begin(); it != handlers_.end(); ++it)
     {
       (*it)->getStrongerMods(rel_, node, s_pool, p_mods, r_mods);
     }
@@ -461,7 +462,7 @@ void StrongBrancher::strongBranch_(BrCandPtr cand, double& obj_up,
   obj_down = engine_->getSolutionValue();
   if(stronger_)
   {
-    h->undoStrongerMods(rel_, p_mods, r_mods);
+    h->undoStrongerMods(p_, rel_, p_mods, r_mods);
     if(pmod)
     {
       pmod->undoToProblem(p_);
@@ -483,7 +484,7 @@ void StrongBrancher::strongBranch_(BrCandPtr cand, double& obj_up,
     }
     p_mods.clear();
     r_mods.clear();
-    for(HandlerIterator it = handlers_.begin(); it != handlers_.end(); ++h)
+    for(HandlerIterator it = handlers_.begin(); it != handlers_.end(); ++it)
     {
       (*it)->getStrongerMods(rel_, node, s_pool, p_mods, r_mods);
     }
@@ -494,7 +495,7 @@ void StrongBrancher::strongBranch_(BrCandPtr cand, double& obj_up,
   obj_up = engine_->getSolutionValue();
   if(stronger_)
   {
-    h->undoStrongerMods(rel_, p_mods, r_mods);
+    h->undoStrongerMods(p_, rel_, p_mods, r_mods);
     if(pmod)
     {
       pmod->undoToProblem(p_);

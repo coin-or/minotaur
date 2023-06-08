@@ -18,15 +18,16 @@
 
 using namespace Minotaur;
 
-int Handler::fixNodeErr(RelaxationPtr, ConstSolutionPtr, SolutionPoolPtr,
-                        bool &) {
+int Handler::fixNodeErr(RelaxationPtr, ConstSolutionPtr, SolutionPoolPtr, bool&)
+{
   assert(!"FixNodeErr not implemented for the Handler");
   return 0;
 }
 
 bool Handler::getStrongerMods(RelaxationPtr rel, NodePtr node,
-                              SolutionPoolPtr s_pool, ModVector &p_mods,
-                              ModVector &r_mods) {
+                              SolutionPoolPtr s_pool, ModVector& p_mods,
+                              ModVector& r_mods)
+{
   bool oldModProb = modProb_;
   bool oldModRel = modRel_;
   bool is_inf;
@@ -40,22 +41,25 @@ bool Handler::getStrongerMods(RelaxationPtr rel, NodePtr node,
   return is_inf;
 }
 
-void Handler::undoStrongerMods(RelaxationPtr rel, ModVector &p_mods,
-                               ModVector &r_mods) {
+void Handler::undoStrongerMods(ProblemPtr p, RelaxationPtr rel,
+                               ModVector& p_mods, ModVector& r_mods)
+{
   ModificationRConstIterator mod_iter;
   ModificationPtr mod;
 
   ModificationRConstIterator rend = p_mods.rend();
 
-  for (mod_iter = p_mods.rbegin(); mod_iter != rend; ++mod_iter) {
+  for(mod_iter = p_mods.rbegin(); mod_iter != rend; ++mod_iter)
+  {
     mod = *mod_iter;
-    mod->undoToProblem(rel);
+    mod->undoToProblem(p);
     delete mod;
   }
   p_mods.clear();
 
   rend = r_mods.rend();
-  for (mod_iter = r_mods.rbegin(); mod_iter != rend; ++mod_iter) {
+  for(mod_iter = r_mods.rbegin(); mod_iter != rend; ++mod_iter)
+  {
     mod = *mod_iter;
     mod->undoToProblem(rel);
     delete mod;

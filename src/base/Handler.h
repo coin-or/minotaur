@@ -17,7 +17,8 @@
 
 #include "Types.h"
 
-namespace Minotaur {
+namespace Minotaur
+{
 
 class CutManager;
 class Engine;
@@ -27,10 +28,10 @@ class PreMod;
 class Solution;
 class SolutionPool;
 class Solution;
-typedef Relaxation *RelaxationPtr;
-typedef PreMod *PreModPtr;
-typedef const Solution *ConstSolutionPtr;
-typedef SolutionPool *SolutionPoolPtr;
+typedef Relaxation* RelaxationPtr;
+typedef PreMod* PreModPtr;
+typedef const Solution* ConstSolutionPtr;
+typedef SolutionPool* SolutionPoolPtr;
 typedef std::deque<PreModPtr> PreModQ;
 typedef PreModQ::iterator PreModQIter;
 typedef PreModQ::const_iterator PreModQConstIter;
@@ -44,8 +45,9 @@ typedef PreModQ::const_iterator PreModQConstIter;
  * is feasible, separating a given point and providing a branching
  * candidate.
  */
-class Handler {
- public:
+class Handler
+{
+public:
   /// Default constructor.
   Handler(){};
 
@@ -57,19 +59,24 @@ class Handler {
    *
    * \param[in] newcon Constraint to be added.
    */
-  virtual void addConstraint(ConstraintPtr newcon) { cons_.push_back(newcon); };
+  virtual void addConstraint(ConstraintPtr newcon)
+  {
+    cons_.push_back(newcon);
+  };
 
   /**
    * \returns The beginning of constraints handled by this handler.
    */
-  virtual ConstraintVector::const_iterator consBegin() const {
+  virtual ConstraintVector::const_iterator consBegin() const
+  {
     return cons_.begin();
   };
 
   /**
    * \returns The end of constraints handled by this handler.
    */
-  virtual ConstraintVector::const_iterator consEnd() const {
+  virtual ConstraintVector::const_iterator consEnd() const
+  {
     return cons_.end();
   };
 
@@ -78,7 +85,7 @@ class Handler {
    * found by the brancher. It is only implemented for QuadHandler as of now.
    */
   virtual int fixNodeErr(RelaxationPtr, ConstSolutionPtr, SolutionPoolPtr,
-                         bool &);
+                         bool&);
 
   /**
    * \brief Return branches for branching.
@@ -93,7 +100,7 @@ class Handler {
    * \param[in] s_pool Best feasible solutions found so far.
    * \return a vector of branch-objects.
    */
-  virtual Branches getBranches(BrCandPtr cand, DoubleVector &x,
+  virtual Branches getBranches(BrCandPtr cand, DoubleVector& x,
                                RelaxationPtr rel, SolutionPoolPtr s_pool) = 0;
 
   /**
@@ -113,9 +120,9 @@ class Handler {
    * \param[out] is_inf true if the handler finds that the problem
    * is infeasible and the node can be pruned.
    */
-  virtual void getBranchingCandidates(RelaxationPtr rel, const DoubleVector &x,
-                                      ModVector &mods, BrVarCandSet &cands,
-                                      BrCandVector &gencands, bool &is_inf) = 0;
+  virtual void getBranchingCandidates(RelaxationPtr rel, const DoubleVector& x,
+                                      ModVector& mods, BrVarCandSet& cands,
+                                      BrCandVector& gencands, bool& is_inf) = 0;
 
   /**
    * \brief Get the modifcation that creates a given (up or down) branch.
@@ -134,7 +141,7 @@ class Handler {
    * \return Modification that can be applied to the relaxation before
    * re-solving it.
    */
-  virtual ModificationPtr getBrMod(BrCandPtr cand, DoubleVector &x,
+  virtual ModificationPtr getBrMod(BrCandPtr cand, DoubleVector& x,
                                    RelaxationPtr rel, BranchDirection dir) = 0;
 
   /// Return the name of the handler.
@@ -145,7 +152,7 @@ class Handler {
    * All params are presolveNode params.
    */
   bool getStrongerMods(RelaxationPtr rel, NodePtr node, SolutionPoolPtr s_pool,
-                       ModVector &p_mods, ModVector &r_mods);
+                       ModVector& p_mods, ModVector& r_mods);
   /**
    * \brief Check if a solution is feasible.
    *
@@ -166,7 +173,7 @@ class Handler {
    * with this handler. False if sol is not feasible.
    */
   virtual bool isFeasible(ConstSolutionPtr sol, RelaxationPtr rel,
-                          bool &should_prune, double &inf_meas) = 0;
+                          bool& should_prune, double& inf_meas) = 0;
 
   /**
    * \brief Return true if this handler is needed for the problem.
@@ -174,7 +181,10 @@ class Handler {
    * It is useful to know if a handler is required or not. For example, a
    * handler may be deleted if it is not needed.
    */
-  virtual bool isNeeded() { return !cons_.empty(); }
+  virtual bool isNeeded()
+  {
+    return !cons_.empty();
+  }
 
   /**
    * \brief Initial presolve.
@@ -192,8 +202,8 @@ class Handler {
    * \param[out] sol Optimal solution found by the handler, if any. The
    * status must be SolvedOptimal if and only if sol is created.
    */
-  virtual SolveStatus presolve(PreModQ *pre_mods, bool *changed,
-                               Solution **sol) = 0;
+  virtual SolveStatus presolve(PreModQ* pre_mods, bool* changed,
+                               Solution** sol) = 0;
 
   /**
    * \brief Presolve the problem and its relaxation at a node.
@@ -217,8 +227,8 @@ class Handler {
    * \return true if Node can be pruned because infeasibility is detected.
    */
   virtual bool presolveNode(RelaxationPtr rel, NodePtr node,
-                            SolutionPoolPtr s_pool, ModVector &p_mods,
-                            ModVector &r_mods) = 0;
+                            SolutionPoolPtr s_pool, ModVector& p_mods,
+                            ModVector& r_mods) = 0;
 
   /**
    * \brief At the root node post solve the problem and its relaxation.
@@ -237,7 +247,8 @@ class Handler {
    * \return true if the LP solution still remains feasible to the relaxation.
    */
   virtual bool postSolveRootNode(RelaxationPtr, SolutionPoolPtr,
-                                 ConstSolutionPtr, ModVector &, ModVector &) {
+                                 ConstSolutionPtr, ModVector&, ModVector&)
+  {
     // Do Nothing
     // Only used for QuadHandler as of now
     return true;
@@ -254,7 +265,7 @@ class Handler {
    * \param[out] is_inf is true if the handler finds that the
    * problem is infeasible.
    */
-  virtual void relaxInitFull(RelaxationPtr rel, bool *is_inf) = 0;
+  virtual void relaxInitFull(RelaxationPtr rel, bool* is_inf) = 0;
 
   /**
    * \brief Create root relaxation if doing incremental node relaxations.
@@ -267,7 +278,7 @@ class Handler {
    * \param[out] is_inf is true if the handler finds that the
    * problem is infeasible.
    */
-  virtual void relaxInitInc(RelaxationPtr rel, bool *is_inf) = 0;
+  virtual void relaxInitInc(RelaxationPtr rel, bool* is_inf) = 0;
 
   /**
    * \brief Create a relaxation for a node, building from scratch.
@@ -282,7 +293,7 @@ class Handler {
    * new variables or constraints to it.
    * \param[out] is_inf is true if the node can be pruned.
    */
-  virtual void relaxNodeFull(NodePtr node, RelaxationPtr rel, bool *is_inf) = 0;
+  virtual void relaxNodeFull(NodePtr node, RelaxationPtr rel, bool* is_inf) = 0;
 
   /**
    * \brief Create an incremental relaxation for a node.
@@ -296,7 +307,7 @@ class Handler {
    * constraints to it.
    * \param[out] is_inf is true if the node can be pruned.
    */
-  virtual void relaxNodeInc(NodePtr node, RelaxationPtr rel, bool *is_inf) = 0;
+  virtual void relaxNodeInc(NodePtr node, RelaxationPtr rel, bool* is_inf) = 0;
 
   /**
    * \brief add cuts to separate a given point.
@@ -314,9 +325,9 @@ class Handler {
    * \param[out] status SeparationStatus returned by this routine.
    */
   virtual void separate(ConstSolutionPtr sol, NodePtr node, RelaxationPtr rel,
-                        CutManager *cutman, SolutionPoolPtr s_pool,
-                        ModVector &p_mods, ModVector &r_mods, bool *sol_found,
-                        SeparationStatus *status) = 0;
+                        CutManager* cutman, SolutionPoolPtr s_pool,
+                        ModVector& p_mods, ModVector& r_mods, bool* sol_found,
+                        SeparationStatus* status) = 0;
 
   /**
    * \brief Tell the handler whether the problem will be modified or the
@@ -328,7 +339,8 @@ class Handler {
    * \param[in] mod_rel If true, modify the relaxation in branching and
    * presolving.
    */
-  virtual void setModFlags(bool mod_prob, bool mod_rel) {
+  virtual void setModFlags(bool mod_prob, bool mod_rel)
+  {
     modProb_ = mod_prob;
     modRel_ = mod_rel;
   };
@@ -340,13 +352,13 @@ class Handler {
    * in this function. \param[in] r_mods Mods for the relaxation to undo. This
    * vector will be changed in this function.
    */
-  void undoStrongerMods(RelaxationPtr rel, ModVector &p_mods,
-                        ModVector &r_mods);
+  void undoStrongerMods(ProblemPtr p, RelaxationPtr rel, ModVector& p_mods,
+                        ModVector& r_mods);
 
   /// Write statistics to ostream out.
-  virtual void writeStats(std::ostream &) const {};
+  virtual void writeStats(std::ostream&) const {};
 
- protected:
+protected:
   ConstraintVector cons_;
 
   /// If true, modify the original (or transformed) problem.
@@ -356,7 +368,7 @@ class Handler {
   bool modRel_;
 };
 
-}  // namespace Minotaur
+} // namespace Minotaur
 #endif
 
 // Local Variables:
