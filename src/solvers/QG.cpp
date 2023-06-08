@@ -318,6 +318,10 @@ int QG::solve(ProblemPtr p) {
     if (env_->getOptions()->findString("brancher")->getValue() == "limstrong") {
       str_br->setMaxCands(20);
       str_br->setMaxIter(50);
+    } else if (env_->getOptions()->findString("brancher")->getValue() ==
+               "stronger") {
+      str_br->doStronger();
+      str_br->setProblem(oinst_);
     }
     br = str_br;
   }

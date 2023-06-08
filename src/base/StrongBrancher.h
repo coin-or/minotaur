@@ -76,6 +76,13 @@ class StrongBrancher : public Brancher {
    */
   void setMaxIter(UInt max_iter);
 
+  /**
+   * \brief Set problem
+   *
+   * \param[in] p problem.
+   */
+  void setProblem(ProblemPtr p);
+
   // base class function.
   void updateAfterSolve(NodePtr node, ConstSolutionPtr sol);
 
@@ -117,6 +124,9 @@ class StrongBrancher : public Brancher {
 
   /// Modifications that can be applied to the problem.
   ModVector mods_;
+
+  /// Problem
+  ProblemPtr p_;
 
   /// Relaxation solved at the node
   RelaxationPtr rel_;
