@@ -15,21 +15,24 @@
 
 #include "Brancher.h"
 
-namespace Minotaur {
+namespace Minotaur
+{
 
 class Engine;
 class Timer;
-typedef Engine *EnginePtr;
+typedef Engine* EnginePtr;
 
-struct StrBrStats {
-  UInt calls;       /// Number of calls to find branching candidate.
-  UInt engProbs;    /// Number of times an unexpected engine status was met.
-  UInt nodePruned;  /// Number of times node was pruned by strong branching.
-  double time;      /// Time taken in strong branching
+struct StrBrStats
+{
+  UInt calls; /// Number of calls to find branching candidate.
+  UInt engProbs; /// Number of times an unexpected engine status was met.
+  UInt nodePruned; /// Number of times node was pruned by strong branching.
+  double time; /// Time taken in strong branching
 };
 // A class to select a variable for branching using strong branching.
-class StrongBrancher : public Brancher {
- public:
+class StrongBrancher : public Brancher
+{
+public:
   /**
    * \brief Construct using an environment pointer and handlers.
    * \param [in] env Environment from which options etc. are obtained.
@@ -37,7 +40,7 @@ class StrongBrancher : public Brancher {
    * candidates and modifications. This array can not be changed while
    * branch-and-bound is running.
    */
-  StrongBrancher(EnvPtr env, HandlerVector &handlers);
+  StrongBrancher(EnvPtr env, HandlerVector& handlers);
 
   /// Destructor.
   ~StrongBrancher();
@@ -49,8 +52,8 @@ class StrongBrancher : public Brancher {
 
   // base class function.
   Branches findBranches(RelaxationPtr rel, NodePtr node, ConstSolutionPtr sol,
-                        SolutionPoolPtr s_pool, BrancherStatus &br_status,
-                        ModVector &mods);
+                        SolutionPoolPtr s_pool, BrancherStatus& br_status,
+                        ModVector& mods);
 
   // base class function.
   std::string getName() const;
@@ -76,13 +79,20 @@ class StrongBrancher : public Brancher {
    */
   void setMaxIter(UInt max_iter);
 
+  /**
+   * \brief Set problem
+   *
+   * \param[in] p problem.
+   */
+  void setProblem(ProblemPtr p);
+
   // base class function.
   void updateAfterSolve(NodePtr node, ConstSolutionPtr sol);
 
   /// Write statistics.
-  void writeStats(std::ostream &out) const;
+  void writeStats(std::ostream& out) const;
 
- private:
+private:
   /// A vector of candidates
   BrVarCandSet cands_;
 
@@ -118,11 +128,14 @@ class StrongBrancher : public Brancher {
   /// Modifications that can be applied to the problem.
   ModVector mods_;
 
+  /// Problem
+  ProblemPtr p_;
+
   /// Relaxation solved at the node
   RelaxationPtr rel_;
 
   /// Statistics.
-  StrBrStats *stats_;
+  StrBrStats* stats_;
 
   /// Brancher status
   BrancherStatus status_;
@@ -130,7 +143,7 @@ class StrongBrancher : public Brancher {
   bool stronger_;
 
   /// Timer
-  const Timer *timer_;
+  const Timer* timer_;
 
   UIntVector timesStrBranched_;
 
@@ -147,14 +160,14 @@ class StrongBrancher : public Brancher {
    * bound).
    * \param[in] node The node at which we are branching.
    */
-  BrCandPtr findBestCandidate_(const double objval, double cutoff);
+  BrCandPtr findBestCandidate_(const double objval, SolutionPoolPtr s_pool);
 
   /**
    * \brief Find candidates for branching.
    *
    * Fills up the set of candidates in the cands_ array by calling all handlers.
    */
-  void findCandidates_(bool &should_prune);
+  void findCandidates_(bool& should_prune);
 
   /**
    * \brief this function is used to sort those candidates which are less
@@ -174,7 +187,7 @@ class StrongBrancher : public Brancher {
    * \param[in] up_score Up score.
    * \param[in] down_score Down score.
    */
-  double getScore_(const double &up_score, const double &down_score);
+  double getScore_(const double& up_score, const double& down_score);
 
   /**
    * \brief Check if branch can be pruned on the basis of engine status and
@@ -190,8 +203,8 @@ class StrongBrancher : public Brancher {
    * \param[out] is_rel True if the engine status is reliable enough to use
    * the solution value as a reliable bound.
    */
-  bool shouldPrune_(const double &chcutoff, const double &change,
-                    const EngineStatus &status, bool *is_rel);
+  bool shouldPrune_(const double& chcutoff, const double& change,
+                    const EngineStatus& status, bool* is_rel);
 
   /**
    * \brief Do strong branching on candidate.
@@ -201,8 +214,9 @@ class StrongBrancher : public Brancher {
    * \param[out] status_up engine status in up branch.
    * \param[out] status_down engine status in down branch.
    */
-  void strongBranch_(BrCandPtr cand, double &obj_up, double &obj_down,
-                     EngineStatus &status_up, EngineStatus &status_down);
+  void strongBranch_(BrCandPtr cand, double& obj_up, double& obj_down,
+                     EngineStatus& status_up, EngineStatus& status_down,
+                     SolutionPoolPtr s_pool);
 
   /**
    * \brief Analyze the strong-branching results.
@@ -219,10 +233,10 @@ class StrongBrancher : public Brancher {
    * \param[in] status_up The engine status in up branch.
    * \param[in] status_down The engine status in down branch.
    */
-  void useStrongBranchInfo_(BrCandPtr cand, const double &chcutoff,
-                            double &change_up, double &change_down,
-                            const EngineStatus &status_up,
-                            const EngineStatus &status_down);
+  void useStrongBranchInfo_(BrCandPtr cand, const double& chcutoff,
+                            double& change_up, double& change_down,
+                            const EngineStatus& status_up,
+                            const EngineStatus& status_down);
 
   /**
    * \brief Display score details of the candidate.
@@ -235,8 +249,8 @@ class StrongBrancher : public Brancher {
   void writeScore_(BrCandPtr cand, double score, double change_up,
                    double change_down);
 };
-typedef StrongBrancher *StrongBrancherPtr;
-}  // namespace Minotaur
+typedef StrongBrancher* StrongBrancherPtr;
+} // namespace Minotaur
 #endif
 
 // Local Variables:

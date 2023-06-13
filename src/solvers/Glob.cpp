@@ -167,6 +167,9 @@ BranchAndBound *Glob::createBab_(EnginePtr e, HandlerVector &handlers) {
     if (brancher == "limstrong") {
       str_br->setMaxCands(20);
       str_br->setMaxIter(50);
+    } else if (brancher == "stronger") {
+      str_br->doStronger();
+      str_br->setProblem(newp_);
     }
     br = str_br;
   }

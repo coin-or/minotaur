@@ -43,6 +43,7 @@ set (MINOTAUR_SOURCES
      base/Environment.cpp 
      base/FeasibilityPump.cpp 
      base/Function.cpp 
+     base/Handler.cpp
      base/HessianOfLag.cpp 
      base/IntVarHandler.cpp 
      base/Jacobian.cpp

@@ -3055,40 +3055,6 @@ int QuadHandler::updatePBounds_(VariablePtr v, double lb, double ub,
   return 0;
 }
 
-// void QuadHandler::updatePBounds_(VariablePtr v, double lb, double ub,
-//                                  RelaxationPtr rel, bool *changed,
-//                                  ModVector &r_mods) {
-//   VarBoundMod2Ptr b2mod;
-//   VarBoundModPtr bmod;
-//
-//   if (lb > v->getLb() + bTol_ && ub < v->getUb() - bTol_ &&
-//       (v->getLb() == -INFINITY || lb > v->getLb() + rTol_ * fabs(v->getLb()))
-//       && (v->getUb() == INFINITY || ub < v->getUb() - rTol_ *
-//       fabs(v->getUb()))) {
-//     *changed = true;
-//     b2mod =
-//         (VarBoundMod2Ptr) new VarBoundMod2(rel->getRelaxationVar(v), lb, ub);
-//     r_mods.push_back(b2mod);
-//   } else if (lb > v->getLb() + bTol_ &&
-//              (v->getLb() == -INFINITY ||
-//               lb > v->getLb() + rTol_ * fabs(v->getLb()))) {
-//     *changed = true;
-//     bmod =
-//         (VarBoundModPtr) new VarBoundMod(rel->getRelaxationVar(v), Lower,
-//         lb);
-//     r_mods.push_back(bmod);
-//   } else if (ub < v->getUb() - bTol_ &&
-//              (v->getUb() == INFINITY ||
-//               ub < v->getUb() - rTol_ * fabs(v->getUb()))) {
-//     *changed = true;
-//     bmod =
-//         (VarBoundModPtr) new VarBoundMod(rel->getRelaxationVar(v), Upper,
-//         ub);
-//     bmod->applyToProblem(rel);
-//     r_mods.push_back(bmod);
-//   }
-// }
-
 int QuadHandler::updatePBounds_(VariablePtr v, double lb, double ub,
                                 RelaxationPtr rel, bool mod_rel, bool *changed,
                                 ModVector &p_mods, ModVector &r_mods) {
@@ -3098,11 +3064,6 @@ int QuadHandler::updatePBounds_(VariablePtr v, double lb, double ub,
   if (lb > v->getUb() + bTol_ || ub < v->getLb() - bTol_) {
     return -1;
   }
-
-  // if (stronger_) {
-  //   updatePBounds_(v, lb, ub, rel, changed, r_mods);
-  //   return 0;
-  // }
 
   if (lb > v->getLb() + bTol_ && ub < v->getUb() - bTol_ &&
       (v->getLb() == -INFINITY || lb > v->getLb() + rTol_ * fabs(v->getLb())) &&
