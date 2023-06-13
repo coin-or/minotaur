@@ -20,49 +20,67 @@
 #include "Problem.h"
 #include "Types.h"
 
-namespace Minotaur {
+namespace Minotaur
+{
 class Relaxation;
 class Timer;
-typedef Relaxation *RelaxationPtr;
+typedef Relaxation* RelaxationPtr;
 /** \brief A structure to store info from the simplex tableau
  */
-struct TableauInfo {
-  int ncol;                // Number of columns in the simplex
-  int nrow;                // Number of rows in the simplex
-  const double *colLower;  // Lower bounds of the variables
-  const double *colUpper;  // Upper bounds of the variables
-  const double *rowLower;  // Lower bounds of the constraints
-  const double *rowUpper;  // Upper bounds of the constraints
-  const double *rowRhs;    // Right hand side of constraints
-  const double *origTab;   // Original simplex tableau
-  const int *rowStart;     // Vector of row starts
-  const int *indices;      // Vector of indices
-  const int *rowLen;       // Vector of row lengths
+struct TableauInfo
+{
+  int ncol;               // Number of columns in the simplex
+  int nrow;               // Number of rows in the simplex
+  const double* colLower; // Lower bounds of the variables
+  const double* colUpper; // Upper bounds of the variables
+  const double* rowLower; // Lower bounds of the constraints
+  const double* rowUpper; // Upper bounds of the constraints
+  const double* rowRhs;   // Right hand side of constraints
+  const double* origTab;  // Original simplex tableau
+  const int* rowStart;    // Vector of row starts
+  const int* indices;     // Vector of indices
+  const int* rowLen;      // Vector of row lengths
 };
 
-struct SimplexCut {
-  double *coef;  // The linear function of the cut
-  double lb;     // Lower Bound
-  double ub;     // Upper Bound
-  double depth;  // Depth of cut
-  SimplexCut() {}
-  ~SimplexCut() {
-    if (coef) {
+struct CutStats
+{
+  UInt gencuts;   // Number of cuts generated
+  UInt cutsadded; // Number of cuts added
+  UInt numrounds; // Number of rounds of cutting
+  double time;    // Time taken in cut generation
+};
+
+struct SimplexCut
+{
+  double* coef; // The linear function of the cut
+  double lb;    // Lower Bound
+  double ub;    // Upper Bound
+  double depth; // Depth of cut
+  SimplexCut() { }
+  ~SimplexCut()
+  {
+    if(coef)
+    {
       delete[] coef;
     }
   }
-  bool operator<(const SimplexCut &cut) const { return depth < cut.depth; }
-  bool operator>(const SimplexCut &cut) const { return depth > cut.depth; }
+  bool operator<(const SimplexCut& cut) const
+  {
+    return depth < cut.depth;
+  }
+  bool operator>(const SimplexCut& cut) const
+  {
+    return depth > cut.depth;
+  }
 };
 
-// typedef std::pair<int, int> VarProd;
-// typedef std::map<VarProd, double> QuadTerm;
 typedef std::map<int, std::pair<double, double>> SlackBound;
-typedef SimplexCut *SimplexCutPtr;
+typedef SimplexCut* SimplexCutPtr;
 typedef std::vector<SimplexCutPtr> SimplexCutVector;
 
-class SimplexQuadCutGen {
- public:
+class SimplexQuadCutGen
+{
+public:
   // Default Constructor
   SimplexQuadCutGen();
 
@@ -81,12 +99,11 @@ class SimplexQuadCutGen {
   // get preprocessing info from the simplex tableau
   void preprocessSimplexTab();
 
- private:
+  void writeStats(std::ostream& out) const;
+
+private:
   // Bounds after each round of cutting, will have max size of nrounds_
   std::vector<int> bounds_;
-
-  // Current round of cut generation
-  UInt curround_;
 
   // Environment pointer
   EnvPtr env_;
@@ -118,11 +135,14 @@ class SimplexQuadCutGen {
   // Minimum change in the bound for more cuts to be added
   double minChangeFrac_;
 
+  // Cut statistics
+  CutStats stats_;
+
   // To keep track of time
-  const Timer *timer_;
+  const Timer* timer_;
 
   // Basic Tableau Info
-  TableauInfo *tabInfo_;
+  TableauInfo* tabInfo_;
 
   // Row index of the basic original variables in the tableau
   // Key - index of the original variable which is basic
@@ -154,11 +174,11 @@ class SimplexQuadCutGen {
   // \param[in] cuts - The vector of cuts to be added to relaxation
   // \param[in] rel - Relaxation to which the cuts needs to be added
   // \param[in] x - The current LP solution
-  void addCutsToRel_(SimplexCutVector cuts, RelaxationPtr rel, const double *x,
-                     int &ncuts);
+  void addCutsToRel_(SimplexCutVector cuts, RelaxationPtr rel, const double* x,
+                     UInt& ncuts);
 
   // Calculate the depth of cut from the current point
-  void calcDepth_(SimplexCutVector cuts, const double *x);
+  void calcDepth_(SimplexCutVector cuts, const double* x);
 
   // Delete tabInfo_. Called in the destructor.
   void delTabInfo_();
@@ -172,27 +192,27 @@ class SimplexQuadCutGen {
   void getSlackBounds_();
 
   // get bounds on the linear terms. Called for calculating slack bounds.
-  void getTermBounds_(double coef, double vlb, double vub, double &lb,
-                      double &ub);
+  void getTermBounds_(double coef, double vlb, double vub, double& lb,
+                      double& ub);
 
-  void relaxConsBNB_(SimplexCutVector &cuts, ConstraintPtr c, const double *x,
+  void relaxConsBNB_(SimplexCutVector& cuts, ConstraintPtr c, const double* x,
                      RelaxationPtr rel);
 
   int relaxTermBNB_(double coef, bool lower, double bl, double bu, double nl,
-                    double nu, double &cb, double &cn, double &cnst,
+                    double nu, double& cb, double& cn, double& cnst,
                     bool under);
 
-  void slackSubstitute_(int slackInd, double coef, std::map<int, double> &row,
-                        double &rhs);
+  void slackSubstitute_(int slackInd, double coef, std::map<int, double>& row,
+                        double& rhs);
 
-  void substituteAndRelax_(RelaxationPtr rel, const double *x,
+  void substituteAndRelax_(RelaxationPtr rel, const double* x,
                            VariablePtr bkeep, VariablePtr bsubst, double beta,
-                           double *coefs, double &cutConst, bool under);
+                           double* coefs, double& cutConst, bool under);
 
   void sortVariables_();
 };
-typedef SimplexQuadCutGen *SimplexQuadCutGenPtr;
-}  // namespace Minotaur
+typedef SimplexQuadCutGen* SimplexQuadCutGenPtr;
+} // namespace Minotaur
 #endif
 
 // Local Variables:

@@ -41,30 +41,40 @@
 
 using namespace Minotaur;
 
-const std::string SimplexQuadCutGen::me_ = "SimplexQuadCutGen";
+const std::string SimplexQuadCutGen::me_ = "SimplexQuadCutGen: ";
 
-SimplexQuadCutGen::SimplexQuadCutGen() {}
+SimplexQuadCutGen::SimplexQuadCutGen() { }
 
 SimplexQuadCutGen::SimplexQuadCutGen(EnvPtr env, ProblemPtr p, LPEnginePtr lpe,
                                      double ub)
-    : env_(env), eTol_(1e-8), p_(p), lpe_(lpe), tabInfo_(0), ub_(ub) {
+  : env_(env),
+    eTol_(1e-8),
+    p_(p),
+    lpe_(lpe),
+    tabInfo_(0),
+    ub_(ub)
+{
   bounds_.clear();
-  curround_ = 0;
   nrounds_ = 5;
   minChangeFrac_ = 0.1;
   ncuts_ = 0;
-  maxCuts_ = 20;
+  maxCuts_ = 0.2 * p->getNumVars() > 20 ? 20 : ceil(0.2 * p->getNumVars());
   minDepth_ = 1e-3;
   basicInd_.clear();
   nbOrig_.clear();
   nbSlack_.clear();
   sb_.clear();
   timer_ = env->getTimer();
+  stats_.gencuts = 0;
+  stats_.cutsadded = 0;
+  stats_.numrounds = 0;
+  stats_.time = 0.0;
 }
 
-SimplexQuadCutGen::~SimplexQuadCutGen() {
-  if (tabInfo_) {
-    // delTabInfo_();
+SimplexQuadCutGen::~SimplexQuadCutGen()
+{
+  if(tabInfo_)
+  {
     delete tabInfo_;
   }
   basicInd_.clear();
@@ -73,128 +83,164 @@ SimplexQuadCutGen::~SimplexQuadCutGen() {
   sb_.clear();
 }
 
-int SimplexQuadCutGen::generateCuts(RelaxationPtr rel, ConstSolutionPtr sol) {
+int SimplexQuadCutGen::generateCuts(RelaxationPtr rel, ConstSolutionPtr sol)
+{
   SimplexCutVector cuts;
   ConstraintPtr c;
   FunctionType ftype;
   double act;
   int error;
-  int iter_cuts = 0;
+  UInt iter_cuts = 0;
   double stime = timer_->query();
+  double iter_time;
 
-  ++curround_;
-  if (curround_ > nrounds_) {
+  ++stats_.numrounds;
+  if(stats_.numrounds > nrounds_)
+  {
     double curlb = sol->getObjValue();
-    if (ub_ < INFINITY) {
+    if(ub_ < INFINITY)
+    {
       double oldgap = ub_ - bounds_[0];
       double newgap = ub_ - curlb;
-      if ((oldgap - newgap) / ub_ >= minChangeFrac_) {
+      if((oldgap - newgap) / ub_ >= minChangeFrac_)
+      {
         bounds_.erase(bounds_.begin());
         bounds_.push_back(curlb);
-      } else {
-        return 0;
       }
-    } else {
-      if ((curlb - bounds_[0]) / bounds_[0] >= minChangeFrac_) {
-        bounds_.erase(bounds_.begin());
-        bounds_.push_back(curlb);
-      } else {
+      else
+      {
         return 0;
       }
     }
-  } else {
+    else
+    {
+      if((curlb - bounds_[0]) / bounds_[0] >= minChangeFrac_)
+      {
+        bounds_.erase(bounds_.begin());
+        bounds_.push_back(curlb);
+      }
+      else
+      {
+        return 0;
+      }
+    }
+  }
+  else
+  {
     bounds_.push_back(sol->getObjValue());
   }
 
   preprocessSimplexTab();
-  for (ConstraintConstIterator cit = p_->consBegin(); cit != p_->consEnd();
-       ++cit) {
+  for(ConstraintConstIterator cit = p_->consBegin(); cit != p_->consEnd();
+      ++cit)
+  {
     c = *cit;
     ftype = c->getFunction()->getType();
-    if (ftype != Quadratic && ftype != Bilinear) {
+    if(ftype != Quadratic && ftype != Bilinear)
+    {
       // Linear constraints should be satisfied thus no cuts will be generated
       continue;
     }
     act = c->getActivity(sol->getPrimal(), &error);
-    if (error == 0) {
-      if (act <= c->getUb() + eTol_ && act >= c->getLb() - eTol_) {
+    if(error == 0)
+    {
+      if(act <= c->getUb() + eTol_ && act >= c->getLb() - eTol_)
+      {
         // Constraint already satisfied
         continue;
       }
-    } else {
+    }
+    else
+    {
 #if SPEW
       env_->getLogger()->msgStream(LogDebug)
           << me_ << "Constraint " << c->getName()
           << " is not defined at this point." << std::endl;
 #endif
     }
-    env_->getLogger()->msgStream(LogExtraInfo)
+    env_->getLogger()->msgStream(LogDebug)
         << me_ << " : Generating cuts for the constraint " << c->getName()
         << std::endl;
     relaxConsBNB_(cuts, c, sol->getPrimal(), rel);
   }
   iter_cuts = cuts.size();
   disableFactorization();
+  stats_.gencuts += iter_cuts;
   env_->getLogger()->msgStream(LogExtraInfo)
-      << me_ << ": No. of cuts generated: " << iter_cuts << std::endl;
+      << me_ << "No. of cuts generated: " << iter_cuts << std::endl;
   addCutsToRel_(cuts, rel, sol->getPrimal(), iter_cuts);
+  stats_.cutsadded += iter_cuts;
   env_->getLogger()->msgStream(LogExtraInfo)
-      << me_ << ": No. of cuts added: " << iter_cuts << std::endl;
+      << me_ << "No. of cuts added: " << iter_cuts << std::endl;
+  iter_time = timer_->query() - stime;
+  stats_.time += iter_time;
   env_->getLogger()->msgStream(LogExtraInfo)
-      << me_ << ": Time taken in cut generation: " << timer_->query() - stime
-      << std::endl;
+      << me_ << "Time taken in cut generation: " << iter_time << std::endl;
 
   return iter_cuts;
 }
 
-void SimplexQuadCutGen::preprocessSimplexTab() {
+void SimplexQuadCutGen::preprocessSimplexTab()
+{
   lpe_->enableFactorization();
   getBasicInfo_();
   sortVariables_();
   getSlackBounds_();
 }
 
-void SimplexQuadCutGen::disableFactorization() { lpe_->disableFactorization(); }
+void SimplexQuadCutGen::disableFactorization()
+{
+  lpe_->disableFactorization();
+}
 
 void SimplexQuadCutGen::addCutsToRel_(SimplexCutVector cuts, RelaxationPtr rel,
-                                      const double *x, int &ncuts) {
+                                      const double* x, UInt& ncuts)
+{
   SimplexCutPtr cut;
   LinearFunctionPtr lf;
   FunctionPtr f;
   ConstraintPtr c;
   double minelem;
-  UInt numcuts = 0;
+
+  ncuts = 0;
 
   calcDepth_(cuts, x);
   std::sort(cuts.begin(), cuts.end());
 
-  for (SimplexCutVector::iterator it = cuts.begin(); it != cuts.end() && numcuts < maxCuts_; ++it) {
+  for(SimplexCutVector::iterator it = cuts.begin();
+      it != cuts.end() && ncuts < maxCuts_; ++it)
+  {
     cut = (*it);
     // both lower and upper bounds must not be finite
     assert(!(cut->lb > -INFINITY && cut->ub < INFINITY));
-    if (cut->depth < minDepth_) {
+    if(cut->depth < minDepth_)
+    {
 #if SPEW
       env_->getLogger()->msgStream(LogDebug)
           << me_ << " Cut not added since the depth of cut is very small"
           << std::endl;
 #endif
       delete cut;
-      --ncuts;
       continue;
     }
     lf = (LinearFunctionPtr) new LinearFunction(cut->coef, rel->varsBegin(),
                                                 rel->varsEnd(), 1e-9);
-    env_->getLogger()->msgStream(LogExtraInfo)
+    env_->getLogger()->msgStream(LogDebug)
         << me_ << "Depth of cut = " << std::fixed << std::setprecision(6)
         << cut->depth << std::endl;
-    if (cut->lb > -INFINITY) {
-      if (fabs(cut->lb) > 1e-3) {
+    if(cut->lb > -INFINITY)
+    {
+      if(fabs(cut->lb) > 1e-3)
+      {
         minelem = getMin_(cut, fabs(cut->lb));
         lf->multiply(1 / minelem);
         cut->lb = cut->lb / minelem;
       }
-    } else {
-      if (fabs(cut->ub) > 1e-3) {
+    }
+    else
+    {
+      if(fabs(cut->ub) > 1e-3)
+      {
         minelem = getMin_(cut, fabs(cut->ub));
         lf->multiply(1 / minelem);
         cut->ub = cut->ub / minelem;
@@ -202,7 +248,7 @@ void SimplexQuadCutGen::addCutsToRel_(SimplexCutVector cuts, RelaxationPtr rel,
     }
     f = (FunctionPtr) new Function(lf);
     c = rel->newConstraint(f, cut->lb, cut->ub);
-    ++numcuts;
+    ++ncuts;
 #if SPEW
     env_->getLogger()->msgStream(LogDebug)
         << me_ << " added new cut. Depth of cut = " << cut->depth << std::endl;
@@ -212,7 +258,8 @@ void SimplexQuadCutGen::addCutsToRel_(SimplexCutVector cuts, RelaxationPtr rel,
   }
 }
 
-void SimplexQuadCutGen::delTabInfo_() {
+void SimplexQuadCutGen::delTabInfo_()
+{
   delete[] tabInfo_->colLower;
   delete[] tabInfo_->colUpper;
   delete[] tabInfo_->rowLower;
@@ -224,32 +271,38 @@ void SimplexQuadCutGen::delTabInfo_() {
   delete[] tabInfo_->rowLen;
 }
 
-void SimplexQuadCutGen::calcDepth_(SimplexCutVector cuts, const double *x) {
+void SimplexQuadCutGen::calcDepth_(SimplexCutVector cuts, const double* x)
+{
   double norm = 0;
   SimplexCutPtr cut;
 
-  for (SimplexCutVector::iterator vit = cuts.begin(); vit != cuts.end();
-       ++vit) {
+  for(SimplexCutVector::iterator vit = cuts.begin(); vit != cuts.end(); ++vit)
+  {
     cut = (*vit);
     norm = sqrt(InnerProduct(cut->coef, cut->coef, tabInfo_->ncol));
 
-    if (cut->lb > -INFINITY) {
+    if(cut->lb > -INFINITY)
+    {
       cut->depth =
           (cut->lb - InnerProduct(x, cut->coef, tabInfo_->ncol)) / norm;
-    } else {
+    }
+    else
+    {
       cut->depth =
           (InnerProduct(x, cut->coef, tabInfo_->ncol) - cut->ub) / norm;
     }
   }
 }
 
-void SimplexQuadCutGen::getBasicInfo_() {
-  if (!lpe_->IsOptimalBasisAvailable()) {
+void SimplexQuadCutGen::getBasicInfo_()
+{
+  if(!lpe_->IsOptimalBasisAvailable())
+  {
     env_->getLogger()->msgStream(LogDebug)
         << me_ << "Solver provided no Optimal Basis" << std::endl;
   }
 
-  tabInfo_ = (TableauInfo *)new TableauInfo();
+  tabInfo_ = (TableauInfo*)new TableauInfo();
   tabInfo_->ncol = lpe_->getNumCols();
   tabInfo_->nrow = lpe_->getNumRows();
   tabInfo_->colLower = lpe_->getColLower();
@@ -263,39 +316,48 @@ void SimplexQuadCutGen::getBasicInfo_() {
   tabInfo_->rowLen = lpe_->getRowLength();
 }
 
-double SimplexQuadCutGen::getMin_(SimplexCutPtr cut, double rhs) {
+double SimplexQuadCutGen::getMin_(SimplexCutPtr cut, double rhs)
+{
   double minelem = INFINITY;
-  for (int i = 0; i < tabInfo_->ncol; ++i) {
-    if (fabs(cut->coef[i]) > eTol_ && fabs(cut->coef[i]) < minelem) {
+  for(int i = 0; i < tabInfo_->ncol; ++i)
+  {
+    if(fabs(cut->coef[i]) > eTol_ && fabs(cut->coef[i]) < minelem)
+    {
       minelem = fabs(cut->coef[i]);
     }
   }
-  if (rhs < minelem) {
+  if(rhs < minelem)
+  {
     minelem = rhs;
   }
   return minelem;
 }
 
-void SimplexQuadCutGen::getSlackBounds_() {
+void SimplexQuadCutGen::getSlackBounds_()
+{
   double lb, ub, rhs;
   int row, upto;
 
   sb_.clear();
-  for (int i = 0; i < nnbSlack_; ++i) {
+  for(int i = 0; i < nnbSlack_; ++i)
+  {
     row = nbSlack_[i];
     lb = 0.0;
     ub = 0.0;
     upto = tabInfo_->rowStart[row] + tabInfo_->rowLen[row];
-    for (int j = tabInfo_->rowStart[row]; j < upto; ++j) {
+    for(int j = tabInfo_->rowStart[row]; j < upto; ++j)
+    {
       getTermBounds_(tabInfo_->origTab[j],
                      tabInfo_->colLower[tabInfo_->indices[j]],
                      tabInfo_->colUpper[tabInfo_->indices[j]], lb, ub);
     }
 
-    if (lb < tabInfo_->rowLower[row] - eTol_) {
+    if(lb < tabInfo_->rowLower[row] - eTol_)
+    {
       lb = tabInfo_->rowLower[row];
     }
-    if (ub > tabInfo_->rowUpper[row] + eTol_) {
+    if(ub > tabInfo_->rowUpper[row] + eTol_)
+    {
       ub = tabInfo_->rowUpper[row];
     }
 
@@ -305,28 +367,34 @@ void SimplexQuadCutGen::getSlackBounds_() {
 }
 
 void SimplexQuadCutGen::getTermBounds_(double coef, double vlb, double vub,
-                                       double &lb, double &ub) {
-  if (fabs(coef) < eTol_) {
+                                       double& lb, double& ub)
+{
+  if(fabs(coef) < eTol_)
+  {
     // Coef is zero
     return;
   }
 
-  if (coef > eTol_) {
+  if(coef > eTol_)
+  {
     lb += coef * vlb;
     ub += coef * vub;
-  } else {
+  }
+  else
+  {
     lb += coef * vub;
     ub += coef * vlb;
   }
 }
 
-void SimplexQuadCutGen::substituteAndRelax_(RelaxationPtr rel, const double *x,
+void SimplexQuadCutGen::substituteAndRelax_(RelaxationPtr rel, const double* x,
                                             VariablePtr bkeep,
                                             VariablePtr bsubst, double beta,
-                                            double *coefs, double &cutConst,
-                                            bool under) {
-  double *origRow = new double[tabInfo_->ncol];
-  double *slackRow = new double[tabInfo_->nrow];
+                                            double* coefs, double& cutConst,
+                                            bool under)
+{
+  double* origRow = new double[tabInfo_->ncol];
+  double* slackRow = new double[tabInfo_->nrow];
   std::map<int, double> row;
   double rhs = 0.0;
   VariablePtr nb;
@@ -335,9 +403,11 @@ void SimplexQuadCutGen::substituteAndRelax_(RelaxationPtr rel, const double *x,
   double cb = 0., cn = 0., cnst = 0.;
 
   lpe_->getBInvARow(basicInd_[bsubst->getIndex()], origRow, slackRow);
-  for (int i = 0; i < nnbOrig_; ++i) {
+  for(int i = 0; i < nnbOrig_; ++i)
+  {
     elem = origRow[nbOrig_[i]];
-    if (fabs(elem) > eTol_) {
+    if(fabs(elem) > eTol_)
+    {
       beta += elem * x[nbOrig_[i]];
       nb = rel->getVariable(nbOrig_[i]);
       lower = fabs(x[nb->getIndex()] - nb->getLb()) < eTol_ ? true : false;
@@ -349,17 +419,20 @@ void SimplexQuadCutGen::substituteAndRelax_(RelaxationPtr rel, const double *x,
     }
   }
 
-  for (int i = 0; i < nnbSlack_; ++i) {
+  for(int i = 0; i < nnbSlack_; ++i)
+  {
     elem = slackRow[nbSlack_[i]];
-    if (fabs(elem) > eTol_) {
+    if(fabs(elem) > eTol_)
+    {
       lower = sb_[nbSlack_[i]].second > eTol_ ? true : false;
       relaxTermBNB_(elem, lower, bkeep->getLb(), bkeep->getUb(),
                     sb_[nbSlack_[i]].first, sb_[nbSlack_[i]].second, cb, cn,
                     cnst, under);
       coefs[bkeep->getIndex()] += cb;
       slackSubstitute_(nbSlack_[i], cn, row, rhs);
-      for (std::map<int, double>::iterator itrow = row.begin();
-           itrow != row.end(); ++itrow) {
+      for(std::map<int, double>::iterator itrow = row.begin();
+          itrow != row.end(); ++itrow)
+      {
         coefs[itrow->first] -= itrow->second;
       }
       cutConst += cnst + rhs;
@@ -373,15 +446,17 @@ void SimplexQuadCutGen::substituteAndRelax_(RelaxationPtr rel, const double *x,
   row.clear();
 }
 
-void SimplexQuadCutGen::relaxConsBNB_(SimplexCutVector &cuts, ConstraintPtr c,
-                                      const double *x, RelaxationPtr rel) {
+void SimplexQuadCutGen::relaxConsBNB_(SimplexCutVector& cuts, ConstraintPtr c,
+                                      const double* x, RelaxationPtr rel)
+{
   // Assume that the constraint is of the form y = x1x2 or y = x^2
   LinearFunctionPtr lf = c->getFunction()->getLinearFunction();
   QuadraticFunctionPtr qf = c->getFunction()->getQuadraticFunction();
   VariablePtr v1, v2, y;
   SimplexCutPtr cut;
   double x1val, x2val, yval, cutConst;
-  double rtol = 1e-3;
+  double viotol = 0.1;
+  double maxvio;
 
   assert(lf->getNumTerms() == 1);
   assert(qf->getNumTerms() == 1);
@@ -389,14 +464,18 @@ void SimplexQuadCutGen::relaxConsBNB_(SimplexCutVector &cuts, ConstraintPtr c,
   v2 = rel->getRelaxationVar(qf->begin()->first.second);
   y = rel->getRelaxationVar(lf->termsBegin()->first);
 
-  if (v1->getIndex() == v2->getIndex()) {
+  if(v1->getIndex() == v2->getIndex())
+  {
     x1val = x[v1->getIndex()];
     yval = x[y->getIndex()];
-    if (yval < x1val * x1val - eTol_) {
+    if(yval < x1val * x1val - eTol_)
+    {
       return;
     }
     // Violated constraint y - x1^2 <= 0
-    if (yval - x1val * x1val < rtol * fabs(x1val)) {
+    maxvio = pow((v1->getUb() - v1->getLb()) / 2, 2);
+    if(yval - x1val * x1val < viotol * maxvio)
+    {
 #if SPEW
       env_->getLogger()->msgStream(LogDebug)
           << me_ << "Constraint " << c->getName()
@@ -413,11 +492,15 @@ void SimplexQuadCutGen::relaxConsBNB_(SimplexCutVector &cuts, ConstraintPtr c,
     cut->lb = -INFINITY;
     cut->ub = -cutConst;
     cuts.push_back(cut);
-  } else {
+  }
+  else
+  {
     x1val = x[v1->getIndex()];
     x2val = x[v2->getIndex()];
     yval = x[y->getIndex()];
-    if (fabs(yval - x1val * x2val) < rtol * sqrt(x1val * x2val)) {
+    maxvio = ((v1->getUb() - v1->getLb()) * (v2->getUb() - v2->getLb())) / 4;
+    if(fabs(yval - x1val * x2val) < viotol * maxvio)
+    {
 #if SPEW
       env_->getLogger()->msgStream(LogDebug)
           << me_ << "Constraint " << c->getName()
@@ -425,7 +508,8 @@ void SimplexQuadCutGen::relaxConsBNB_(SimplexCutVector &cuts, ConstraintPtr c,
 #endif
       return;
     }
-    if (yval < x1val * x2val - eTol_) {
+    if(yval < x1val * x2val - eTol_)
+    {
       // Violated constraint y - x1x2 >= 0
       // v1 is kept basic and v2 is substituted
       cut = (SimplexCutPtr) new SimplexCut();
@@ -448,7 +532,9 @@ void SimplexQuadCutGen::relaxConsBNB_(SimplexCutVector &cuts, ConstraintPtr c,
       cut->lb = -cutConst;
       cut->ub = INFINITY;
       cuts.push_back(cut);
-    } else {
+    }
+    else
+    {
       // Violated constraint y - x1x2 <= 0
       // v1 is kept basic and v2 is substituted
       cut = (SimplexCutPtr) new SimplexCut();
@@ -477,47 +563,69 @@ void SimplexQuadCutGen::relaxConsBNB_(SimplexCutVector &cuts, ConstraintPtr c,
 
 int SimplexQuadCutGen::relaxTermBNB_(double coef, bool lower, double bl,
                                      double bu, double nl, double nu,
-                                     double &cb, double &cn, double &cnst,
-                                     bool under) {
-  if (under) {
-    if (coef > eTol_) {
-      if (lower) {
+                                     double& cb, double& cn, double& cnst,
+                                     bool under)
+{
+  if(under)
+  {
+    if(coef > eTol_)
+    {
+      if(lower)
+      {
         cb = coef * nl;
         cn = coef * bl;
         cnst = -coef * bl * nl;
-      } else {
+      }
+      else
+      {
         cb = coef * nu;
         cn = coef * bu;
         cnst = -coef * bu * nu;
       }
-    } else {
-      if (lower) {
+    }
+    else
+    {
+      if(lower)
+      {
         cb = coef * nl;
         cn = coef * bu;
         cnst = -coef * bu * nl;
-      } else {
+      }
+      else
+      {
         cb = coef * nu;
         cn = coef * bl;
         cnst = -coef * bl * nu;
       }
     }
-  } else {
-    if (coef < eTol_) {
-      if (lower) {
+  }
+  else
+  {
+    if(coef < eTol_)
+    {
+      if(lower)
+      {
         cb = coef * nl;
         cn = coef * bl;
         cnst = -coef * bl * nl;
-      } else {
+      }
+      else
+      {
         cb = coef * nu;
         cn = coef * bu;
         cnst = -coef * bu * nu;
       }
-    } else {
-      if (lower) {
+    }
+    else
+    {
+      if(lower)
+      {
         cb = coef * nl;
         cn = coef * bu;
         cnst = -coef * bu * nl;
-      } else {
+      }
+      else
+      {
         cb = coef * nu;
         cn = coef * bl;
         cnst = -coef * bl * nu;
@@ -528,37 +636,46 @@ int SimplexQuadCutGen::relaxTermBNB_(double coef, bool lower, double bl,
 }
 
 void SimplexQuadCutGen::slackSubstitute_(int slackInd, double coef,
-                                         std::map<int, double> &row,
-                                         double &rhs) {
+                                         std::map<int, double>& row,
+                                         double& rhs)
+{
   // Get the row from tabInfo_
   int upto = tabInfo_->rowStart[slackInd] + tabInfo_->rowLen[slackInd];
   row.clear();
-  for (int j = tabInfo_->rowStart[slackInd]; j < upto; ++j) {
+  for(int j = tabInfo_->rowStart[slackInd]; j < upto; ++j)
+  {
     row.insert(
         std::make_pair(tabInfo_->indices[j], coef * tabInfo_->origTab[j]));
   }
   rhs = coef * tabInfo_->rowRhs[slackInd];
 }
 
-void SimplexQuadCutGen::sortVariables_() {
-  int *basicVars = new int[tabInfo_->nrow];
+void SimplexQuadCutGen::sortVariables_()
+{
+  int* basicVars = new int[tabInfo_->nrow];
   std::vector<int> nonbasicslack(tabInfo_->nrow, 0);
 
   lpe_->getBasics(basicVars);
   basicInd_.clear();
 
-  for (int i = 0; i < tabInfo_->nrow; ++i) {
-    if (basicVars[i] < tabInfo_->ncol) {
+  for(int i = 0; i < tabInfo_->nrow; ++i)
+  {
+    if(basicVars[i] < tabInfo_->ncol)
+    {
       basicInd_.insert(std::make_pair(basicVars[i], i));
-    } else {
+    }
+    else
+    {
       nonbasicslack[basicVars[i] - tabInfo_->ncol] = 1;
     }
   }
 
   nnbOrig_ = 0;
   nbOrig_.clear();
-  for (int i = 0; i < tabInfo_->ncol; ++i) {
-    if (basicInd_.count(i) == 0) {
+  for(int i = 0; i < tabInfo_->ncol; ++i)
+  {
+    if(basicInd_.count(i) == 0)
+    {
       nbOrig_.push_back(i);
       ++nnbOrig_;
     }
@@ -566,8 +683,10 @@ void SimplexQuadCutGen::sortVariables_() {
 
   nnbSlack_ = 0;
   nbSlack_.clear();
-  for (int i = 0; i < tabInfo_->nrow; ++i) {
-    if (nonbasicslack[i] == 0) {
+  for(int i = 0; i < tabInfo_->nrow; ++i)
+  {
+    if(nonbasicslack[i] == 0)
+    {
       nbSlack_.push_back(i);
       ++nnbSlack_;
     }
@@ -575,4 +694,15 @@ void SimplexQuadCutGen::sortVariables_() {
 
   delete[] basicVars;
   nonbasicslack.clear();
+}
+
+void SimplexQuadCutGen::writeStats(std::ostream& out) const
+{
+  out << me_ << "Statistics for cutting:" << std::endl
+      << me_ << "Number of rounds of cutting = " << stats_.numrounds
+      << std::endl
+      << me_ << "Number of cuts generated    = " << stats_.gencuts << std::endl
+      << me_ << "Number of cuts added        = " << stats_.cutsadded
+      << std::endl
+      << me_ << "Time taken in cutting       = " << stats_.time << std::endl;
 }
