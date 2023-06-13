@@ -2,8 +2,7 @@
 //     MINOTAUR -- It's only 1/2 bull
 // 
 //     (C)opyright 2008 - 2021 The MINOTAUR Team.
-// 
-
+//
 /**
  * \file BranchAndBound.cpp
  * \brief Define BranchAndBound class for a generic branch-and-bound method.
@@ -121,7 +120,7 @@ SolutionPtr BranchAndBound::getSolution()
 
 //SolutionPtr BranchAndBound::getRootSolution()
 //{
-  //return solPool_->getRootSolution();
+// return solPool_->getRootSolution();
 //}
 
 
@@ -297,27 +296,47 @@ bool BranchAndBound::shouldStop_()
 }
 
 
+
+
 void BranchAndBound::showStatus_(bool current_uncounted)
 {
-  UInt off=0;
+  static bool header = false;
+  
+  UInt off = 0;
   if (current_uncounted) {
-    off=1;
+    off = 1;
   }
-  if (timer_->query()-stats_->updateTime > options_->logInterval) {
+  
+  if (!header) {
+    std::cout << " " << std::endl;	  
+    std::cout << "----------------------------------------------------------------------------"<<std::endl;
+    std::cout << std::setw(6) << "Time(s)"
+              << std::setw(12) << "LB"
+              << std::setw(15) << "UB"
+              << std::setw(10) << "Gap%"
+              << std::setw(12) << "   Nodes-Proc"
+              << std::setw(12) << "   Nodes-Rem"
+              << std :: setw(6)<< "#Sol"
+              << std::endl;
+    std::cout << "----------------------------------------------------------------------------"<<std::endl;
+    header = true;
+  }
+  
+  if (timer_->query() - stats_->updateTime > options_->logInterval) {
     double lb = tm_->updateLb();
-    logger_->msgStream(LogInfo) 
-      << me_ 
-      << std::fixed
-      << std::setprecision(1)  << "time = "            << timer_->query()
-      << std::setprecision(4)  << " lb = "             << lb
-      << std::setprecision(4)  << " ub = "             << tm_->getUb()
-      << std::setprecision(2)  << " gap% = "           << tm_->getPerGap()
-      << " nodes processed = " << tm_->getSize()-tm_->getActiveNodes()-off 
-      << " left = "            << tm_->getActiveNodes()+off
-      << std::endl;
+    std::cout << std::setw(6) << std::fixed<< std::setprecision(0) << timer_->query()
+              << std::setw(14) << std::setprecision(4) << std::scientific << lb
+              << std::setw(14) << std::setprecision(4) << std::scientific << tm_->getUb()
+              << std::setw(10) << std::setprecision(2) << std::fixed << tm_->getPerGap()
+              << std::setw(12) << tm_->getSize() - tm_->getActiveNodes() - off
+              << std::setw(12) << tm_->getActiveNodes() + off
+              << std::setw(6) << std::setprecision(2) << solPool_->getNumSols()
+              << std::endl;
     stats_->updateTime = timer_->query();
   }
+
 }
+
 
 
 void BranchAndBound::solve()
@@ -479,7 +498,11 @@ void BranchAndBound::solve()
         << me_ << "ub = " << tm_->getUb() << std::endl;
 #endif
     }
-  } 
+  }
+  std::cout << " " << std::endl;
+  std::cout << "----------------------------------------------------------------------------" << std::endl;
+  std::cout << " " << std::endl;
+
   logger_->msgStream(LogInfo) << me_ << "stopping branch-and-bound"
     << std::endl
     << me_ << "nodes processed = " << stats_->nodesProc << std::endl
