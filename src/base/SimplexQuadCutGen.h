@@ -27,8 +27,7 @@ class Timer;
 typedef Relaxation* RelaxationPtr;
 /** \brief A structure to store info from the simplex tableau
  */
-struct TableauInfo
-{
+struct TableauInfo {
   int ncol;               // Number of columns in the simplex
   int nrow;               // Number of rows in the simplex
   const double* colLower; // Lower bounds of the variables
@@ -42,16 +41,14 @@ struct TableauInfo
   const int* rowLen;      // Vector of row lengths
 };
 
-struct CutStats
-{
+struct CutStats {
   UInt gencuts;   // Number of cuts generated
   UInt cutsadded; // Number of cuts added
   UInt numrounds; // Number of rounds of cutting
   double time;    // Time taken in cut generation
 };
 
-struct SimplexCut
-{
+struct SimplexCut {
   double* coef; // The linear function of the cut
   double lb;    // Lower Bound
   double ub;    // Upper Bound
@@ -59,8 +56,7 @@ struct SimplexCut
   SimplexCut() { }
   ~SimplexCut()
   {
-    if(coef)
-    {
+    if(coef) {
       delete[] coef;
     }
   }
@@ -92,6 +88,9 @@ public:
 
   // disable factorization
   void disableFactorization();
+
+  // Check whether cutting needs to be done or not
+  bool doCutting(double curlb);
 
   // Generate the cuts that violate the given point
   int generateCuts(RelaxationPtr rel, ConstSolutionPtr sol);
@@ -128,6 +127,9 @@ private:
 
   // Maximum cuts to add during an iteration
   UInt maxCuts_;
+
+  // Maximum rounds after which not cutting will be done
+  UInt maxrounds_;
 
   // Minimum allowed depth of cut for a cut to be added
   double minDepth_;
