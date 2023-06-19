@@ -47,27 +47,23 @@ bool showQuadVars = true;
 bool allVars = true;
 int numCons = 0;
 int numVars = 0;
-double* dualVecCons = 0;
-double* dualVecVars = 0;
+double *dualVecCons = 0;
+double *dualVecVars = 0;
 int variant = 6;
-std::vector<double> optSol = {0, 0, 1, 1,   0,   0,   0,   0,
-                              0,  // ex9_2_6
-                              0, 0, 0, 0.5, 0.5, 0.5, 0.5, 1};
-// std::vector<double> optSol = {50, 75.485880502600196, 93.262254147831101,
-//                              8.748134650431270, 128.43232444132138};
+std::vector<double> optSol = {};
 
 struct AuxVars {
-  int x1;            // index of the first variable
-  int x2;            // index of the second variable
-  char productType;  // v - both first and second variables are "Variables"
-                     // c - both first and second variables are "Constraints"
-                     // m - first is "Variable", second is "Constriant"
-  int y;             // index of the auxiliary variable
-  double scale;      // Scale y by this amount
-  bool isScaled;     // is y scaled?
+  int x1;           // index of the first variable
+  int x2;           // index of the second variable
+  char productType; // v - both first and second variables are "Variables"
+                    // c - both first and second variables are "Constraints"
+                    // m - first is "Variable", second is "Constriant"
+  int y;            // index of the auxiliary variable
+  double scale;     // Scale y by this amount
+  bool isScaled;    // is y scaled?
 };
 
-typedef AuxVars* AuxVarsPtr;
+typedef AuxVars *AuxVarsPtr;
 typedef std::vector<AuxVarsPtr> AuxVarVector;
 
 void usage() {
@@ -90,7 +86,7 @@ int findAuxVar(int n, AuxVarVector auxVars) {
 
 double calcSlackVal(int ind, RelaxationPtr rel) {
   ConstraintPtr c = rel->getConstraint(ind);
-  double* sol = optSol.data();
+  double *sol = optSol.data();
   int error = 0;
   double act = c->getActivity(sol, &error);
 
@@ -104,15 +100,15 @@ double calcSlackVal(int ind, RelaxationPtr rel) {
 double calcyVal(AuxVarsPtr aptr, RelaxationPtr rel) {
   double prod = 0.0;
   switch (aptr->productType) {
-    case 'v':
-      prod = optSol[aptr->x1] * optSol[aptr->x2];
-      break;
-    case 'm':
-      prod = optSol[aptr->x1] * calcSlackVal(aptr->x2, rel);
-      break;
-    case 'c':
-      prod = calcSlackVal(aptr->x1, rel) * calcSlackVal(aptr->x2, rel);
-      break;
+  case 'v':
+    prod = optSol[aptr->x1] * optSol[aptr->x2];
+    break;
+  case 'm':
+    prod = optSol[aptr->x1] * calcSlackVal(aptr->x2, rel);
+    break;
+  case 'c':
+    prod = calcSlackVal(aptr->x1, rel) * calcSlackVal(aptr->x2, rel);
+    break;
   }
   return aptr->isScaled ? prod / aptr->scale : prod;
 }
@@ -120,15 +116,17 @@ double calcyVal(AuxVarsPtr aptr, RelaxationPtr rel) {
 void updateOptSol(RelaxationPtr rel, AuxVarVector auxVars) {
   int nOpt = optSol.size();
   int nVars = rel->getNumVars();
-  int found;
 
   if (nVars == nOpt) {
     return;
+  } else {
+    optSol.resize(nVars, 0);
   }
 
-  found = findAuxVar(nOpt, auxVars);
-  for (int i = found; i < auxVars.size(); ++i) {
-    optSol.push_back(calcyVal(auxVars[i], rel));
+  for (AuxVarVector::iterator it = auxVars.begin(); it != auxVars.end(); ++it) {
+    if ((*it)->y >= nOpt) {
+      optSol[(*it)->y] = calcyVal(*it, rel);
+    }
   }
 }
 
@@ -142,7 +140,7 @@ bool checkSol(RelaxationPtr rel, AuxVarVector auxVars) {
   double rt = 1e-4;
 
   updateOptSol(rel, auxVars);
-  double* x = optSol.data();
+  double *x = optSol.data();
   for (ConstraintConstIterator cit = rel->consBegin(); cit != rel->consEnd();
        ++cit) {
     c = *cit;
@@ -166,8 +164,8 @@ bool checkSol(RelaxationPtr rel, AuxVarVector auxVars) {
   return is_feas;
 }
 
-int findY(AuxVarVector aux, int x1, int x2, char productType, double& scale,
-          bool& isScaled) {
+int findY(AuxVarVector aux, int x1, int x2, char productType, double &scale,
+          bool &isScaled) {
   AuxVarsPtr aptr;
   for (AuxVarVector::iterator it = aux.begin(); it != aux.end(); ++it) {
     aptr = (*it);
@@ -179,12 +177,12 @@ int findY(AuxVarVector aux, int x1, int x2, char productType, double& scale,
       }
     }
   }
-  return -1;  // Does not exist
+  return -1; // Does not exist
 }
 
-PresolverPtr createPres(EnvPtr env, ProblemPtr inst, HandlerVector& handlers) {
+PresolverPtr createPres(EnvPtr env, ProblemPtr inst, HandlerVector &handlers) {
   // create handlers for presolve
-  PresolverPtr pres = PresolverPtr();  // NULL
+  PresolverPtr pres = PresolverPtr(); // NULL
 
   inst->calculateSize();
   if (env->getOptions()->findBool("presolve")->getValue() == true) {
@@ -234,9 +232,9 @@ PresolverPtr createPres(EnvPtr env, ProblemPtr inst, HandlerVector& handlers) {
   return pres;
 }
 
-void writeSol(EnvPtr env, VarVector* orig_v, PresolverPtr pres, SolutionPtr sol,
-              SolveStatus status, MINOTAUR_AMPL::AMPLInterface* iface) {
-  Solution* final_sol = 0;
+void writeSol(EnvPtr env, VarVector *orig_v, PresolverPtr pres, SolutionPtr sol,
+              SolveStatus status, MINOTAUR_AMPL::AMPLInterface *iface) {
+  Solution *final_sol = 0;
 
   if (sol) {
     final_sol = pres->getPostSol(sol);
@@ -257,8 +255,8 @@ void writeSol(EnvPtr env, VarVector* orig_v, PresolverPtr pres, SolutionPtr sol,
   }
 }
 
-RelaxationPtr getRelaxation(EnvPtr env, ProblemPtr p, int& status,
-                            std::map<std::pair<int, int>, int>& map4origAux) {
+RelaxationPtr getRelaxation(EnvPtr env, ProblemPtr p, int &status,
+                            std::map<std::pair<int, int>, int> &map4origAux) {
   LinearHandlerPtr lhand = (LinearHandlerPtr) new LinearHandler(env, p);
   QuadHandlerPtr qhand = (QuadHandlerPtr) new QuadHandler(env, p);
   RelaxationPtr rel = (RelaxationPtr) new Relaxation(env);
@@ -395,9 +393,9 @@ void addMcCormick(RelaxationPtr rel, VariablePtr y, LinearFunctionPtr lf,
   lf1->multiply(isScaled ? -(lb + ub) / scale : -(lb + ub));
   lf1->incTerm(y, 1.0);
   f = (FunctionPtr) new Function(lf1);
-  c = rel->newConstraint(
-      f, -INFINITY,
-      isScaled ? ((lb + ub) * d - lb * ub) / scale : (lb + ub) * d - lb * ub);
+  c = rel->newConstraint(f, -INFINITY,
+                         isScaled ? ((lb + ub) * d - lb * ub) / scale
+                                  : (lb + ub) * d - lb * ub);
   if (showCuts) {
     c->write(std::cout);
   }
@@ -562,7 +560,7 @@ void addMcCormick(RelaxationPtr rel, VariablePtr y, VariablePtr x,
 }
 
 int getNewVar(RelaxationPtr rel, SimplexQuadCutGenPtr cutgen, int x1, int x2,
-              char productType, double& scale, bool& isScaled) {
+              char productType, double &scale, bool &isScaled) {
   double l1, u1, l2, u2;
   double lb = 0.0, ub = 0.0;
   VariablePtr v, v1, v2;
@@ -570,133 +568,94 @@ int getNewVar(RelaxationPtr rel, SimplexQuadCutGenPtr cutgen, int x1, int x2,
   double d1, d2;
 
   switch (productType) {
-    case 'v':
-      if (x1 == x2) {
-        v1 = rel->getVariable(x1);
-        l1 = v1->getLb();
-        u1 = v1->getUb();
-        BoundsOnSquare(l1, u1, lb, ub);
-        scale = std::max(fabs(lb), fabs(ub));
-        if (scale >= 1e+06) {
-          return -1;
-        }
-        isScaled = scale > 1000;
-        if (isScaled) {
-          lb = lb / scale;
-          ub = ub / scale;
-        }
-        v = rel->newVariable(lb, ub, Continuous);
-        if (showQuadVars) {
-          if (scale > 1000) {
-            std::cout << scale << "*" << v->getName() << " = " << v1->getName()
-                      << "^2" << std::endl;
-          } else {
-            std::cout << v->getName() << " = " << v1->getName() << "^2"
-                      << std::endl;
-          }
-        }
-        addMcCormick(rel, v, v1, l1, u1, scale, isScaled);
-      } else {
-        v1 = rel->getVariable(x1);
-        v2 = rel->getVariable(x2);
-        l1 = v1->getLb();
-        u1 = v1->getUb();
-        l2 = v2->getLb();
-        u2 = v2->getUb();
-        BoundsOnProduct(true, l1, u1, l2, u2, lb, ub);
-        scale = std::max(fabs(lb), fabs(ub));
-        if (scale >= 1e+06) {
-          return -1;
-        }
-        isScaled = scale > 1000;
-        if (isScaled) {
-          lb = lb / scale;
-          ub = ub / scale;
-        }
-        v = rel->newVariable(lb, ub, Continuous);
-        if (showQuadVars) {
-          if (scale > 1000) {
-            std::cout << scale << "*" << v->getName() << " = " << v1->getName()
-                      << "*" << v2->getName() << std::endl;
-          } else {
-            std::cout << v->getName() << " = " << v1->getName() << "*"
-                      << v2->getName() << std::endl;
-          }
-        }
-        addMcCormick(rel, v, v1, v2, l1, u1, l2, u2, scale, isScaled);
-      }
-      break;
-    case 'c':
-      if (x1 == x2) {
-        l1 = cutgen->getSlackLb(x1);
-        u1 = cutgen->getSlackUb(x1);
-        BoundsOnSquare(l1, u1, lb, ub);
-        scale = std::max(fabs(lb), fabs(ub));
-        if (scale >= 1e+06) {
-          return -1;
-        }
-        isScaled = scale > 1000;
-        if (isScaled) {
-          lb = lb / scale;
-          ub = ub / scale;
-        }
-        v = rel->newVariable(lb, ub, Continuous);
-        lf1 = (LinearFunctionPtr) new LinearFunction();
-        d1 = 0.0;
-        cutgen->getAffineFnForSlack(rel, x1, lf1, d1);
-        if (showQuadVars) {
-          if (scale > 1000) {
-            std::cout << scale << "*" << v->getName() << " = "
-                      << rel->getConstraint(x1)->getName() << "^2" << std::endl;
-          } else {
-            std::cout << v->getName() << " = "
-                      << rel->getConstraint(x1)->getName() << "^2" << std::endl;
-          }
-        }
-        addMcCormick(rel, v, lf1, d1, l1, u1, scale, isScaled);
-        delete lf1;
-      } else {
-        l1 = cutgen->getSlackLb(x1);
-        u1 = cutgen->getSlackUb(x1);
-        l2 = cutgen->getSlackLb(x2);
-        u2 = cutgen->getSlackUb(x2);
-        BoundsOnProduct(true, l1, u1, l2, u2, lb, ub);
-        scale = std::max(fabs(lb), fabs(ub));
-        if (scale >= 1e+06) {
-          return -1;
-        }
-        isScaled = scale > 1000;
-        if (isScaled) {
-          lb = lb / scale;
-          ub = ub / scale;
-        }
-        v = rel->newVariable(lb, ub, Continuous);
-        lf1 = (LinearFunctionPtr) new LinearFunction();
-        d1 = 0.0;
-        cutgen->getAffineFnForSlack(rel, x1, lf1, d1);
-        lf2 = (LinearFunctionPtr) new LinearFunction();
-        d2 = 0.0;
-        cutgen->getAffineFnForSlack(rel, x2, lf2, d2);
-        if (showQuadVars) {
-          if (scale > 1000) {
-            std::cout << scale << "*" << v->getName() << " = "
-                      << rel->getConstraint(x1)->getName() << "*"
-                      << rel->getConstraint(x2)->getName() << std::endl;
-          } else {
-            std::cout << v->getName() << " = "
-                      << rel->getConstraint(x1)->getName() << "*"
-                      << rel->getConstraint(x2)->getName() << std::endl;
-          }
-        }
-        addMcCormick(rel, v, lf1, d1, lf2, d2, l1, u1, l2, u2, scale, isScaled);
-        delete lf1;
-        delete lf2;
-      }
-      break;
-    case 'm':
+  case 'v':
+    if (x1 == x2) {
       v1 = rel->getVariable(x1);
       l1 = v1->getLb();
       u1 = v1->getUb();
+      BoundsOnSquare(l1, u1, lb, ub);
+      scale = std::max(fabs(lb), fabs(ub));
+      if (scale >= 1e+06) {
+        return -1;
+      }
+      isScaled = scale > 1000;
+      if (isScaled) {
+        lb = lb / scale;
+        ub = ub / scale;
+      }
+      v = rel->newVariable(lb, ub, Continuous);
+      if (showQuadVars) {
+        if (scale > 1000) {
+          std::cout << scale << "*" << v->getName() << " = " << v1->getName()
+                    << "^2" << std::endl;
+        } else {
+          std::cout << v->getName() << " = " << v1->getName() << "^2"
+                    << std::endl;
+        }
+      }
+      addMcCormick(rel, v, v1, l1, u1, scale, isScaled);
+    } else {
+      v1 = rel->getVariable(x1);
+      v2 = rel->getVariable(x2);
+      l1 = v1->getLb();
+      u1 = v1->getUb();
+      l2 = v2->getLb();
+      u2 = v2->getUb();
+      BoundsOnProduct(true, l1, u1, l2, u2, lb, ub);
+      scale = std::max(fabs(lb), fabs(ub));
+      if (scale >= 1e+06) {
+        return -1;
+      }
+      isScaled = scale > 1000;
+      if (isScaled) {
+        lb = lb / scale;
+        ub = ub / scale;
+      }
+      v = rel->newVariable(lb, ub, Continuous);
+      if (showQuadVars) {
+        if (scale > 1000) {
+          std::cout << scale << "*" << v->getName() << " = " << v1->getName()
+                    << "*" << v2->getName() << std::endl;
+        } else {
+          std::cout << v->getName() << " = " << v1->getName() << "*"
+                    << v2->getName() << std::endl;
+        }
+      }
+      addMcCormick(rel, v, v1, v2, l1, u1, l2, u2, scale, isScaled);
+    }
+    break;
+  case 'c':
+    if (x1 == x2) {
+      l1 = cutgen->getSlackLb(x1);
+      u1 = cutgen->getSlackUb(x1);
+      BoundsOnSquare(l1, u1, lb, ub);
+      scale = std::max(fabs(lb), fabs(ub));
+      if (scale >= 1e+06) {
+        return -1;
+      }
+      isScaled = scale > 1000;
+      if (isScaled) {
+        lb = lb / scale;
+        ub = ub / scale;
+      }
+      v = rel->newVariable(lb, ub, Continuous);
+      lf1 = (LinearFunctionPtr) new LinearFunction();
+      d1 = 0.0;
+      cutgen->getAffineFnForSlack(rel, x1, lf1, d1);
+      if (showQuadVars) {
+        if (scale > 1000) {
+          std::cout << scale << "*" << v->getName() << " = "
+                    << rel->getConstraint(x1)->getName() << "^2" << std::endl;
+        } else {
+          std::cout << v->getName() << " = "
+                    << rel->getConstraint(x1)->getName() << "^2" << std::endl;
+        }
+      }
+      addMcCormick(rel, v, lf1, d1, l1, u1, scale, isScaled);
+      delete lf1;
+    } else {
+      l1 = cutgen->getSlackLb(x1);
+      u1 = cutgen->getSlackUb(x1);
       l2 = cutgen->getSlackLb(x2);
       u2 = cutgen->getSlackUb(x2);
       BoundsOnProduct(true, l1, u1, l2, u2, lb, ub);
@@ -710,25 +669,64 @@ int getNewVar(RelaxationPtr rel, SimplexQuadCutGenPtr cutgen, int x1, int x2,
         ub = ub / scale;
       }
       v = rel->newVariable(lb, ub, Continuous);
+      lf1 = (LinearFunctionPtr) new LinearFunction();
+      d1 = 0.0;
+      cutgen->getAffineFnForSlack(rel, x1, lf1, d1);
       lf2 = (LinearFunctionPtr) new LinearFunction();
       d2 = 0.0;
       cutgen->getAffineFnForSlack(rel, x2, lf2, d2);
       if (showQuadVars) {
         if (scale > 1000) {
-          std::cout << scale << "*" << v->getName() << " = " << v1->getName()
-                    << "*" << rel->getConstraint(x2)->getName() << std::endl;
+          std::cout << scale << "*" << v->getName() << " = "
+                    << rel->getConstraint(x1)->getName() << "*"
+                    << rel->getConstraint(x2)->getName() << std::endl;
         } else {
-          std::cout << v->getName() << " = " << v1->getName() << "*"
+          std::cout << v->getName() << " = "
+                    << rel->getConstraint(x1)->getName() << "*"
                     << rel->getConstraint(x2)->getName() << std::endl;
         }
       }
-      addMcCormick(rel, v, v1, lf2, d2, l1, u1, l2, u2, scale, isScaled);
+      addMcCormick(rel, v, lf1, d1, lf2, d2, l1, u1, l2, u2, scale, isScaled);
+      delete lf1;
       delete lf2;
+    }
+    break;
+  case 'm':
+    v1 = rel->getVariable(x1);
+    l1 = v1->getLb();
+    u1 = v1->getUb();
+    l2 = cutgen->getSlackLb(x2);
+    u2 = cutgen->getSlackUb(x2);
+    BoundsOnProduct(true, l1, u1, l2, u2, lb, ub);
+    scale = std::max(fabs(lb), fabs(ub));
+    if (scale >= 1e+06) {
+      return -1;
+    }
+    isScaled = scale > 1000;
+    if (isScaled) {
+      lb = lb / scale;
+      ub = ub / scale;
+    }
+    v = rel->newVariable(lb, ub, Continuous);
+    lf2 = (LinearFunctionPtr) new LinearFunction();
+    d2 = 0.0;
+    cutgen->getAffineFnForSlack(rel, x2, lf2, d2);
+    if (showQuadVars) {
+      if (scale > 1000) {
+        std::cout << scale << "*" << v->getName() << " = " << v1->getName()
+                  << "*" << rel->getConstraint(x2)->getName() << std::endl;
+      } else {
+        std::cout << v->getName() << " = " << v1->getName() << "*"
+                  << rel->getConstraint(x2)->getName() << std::endl;
+      }
+    }
+    addMcCormick(rel, v, v1, lf2, d2, l1, u1, l2, u2, scale, isScaled);
+    delete lf2;
   }
   return v->getIndex();
 }
 
-void addTerm(std::map<int, double>& t, int v, double coef, double scale,
+void addTerm(std::map<int, double> &t, int v, double coef, double scale,
              bool isScaled) {
   coef = isScaled ? scale * coef : coef;
   if (fabs(coef) > 1e-6) {
@@ -747,7 +745,7 @@ void addTerm(std::map<int, double>& t, int v, double coef, double scale,
 }
 
 void addCutToRel(RelaxationPtr rel, SimplexQuadCutGenPtr cutgen,
-                 double* cutCoefo, double* cutCoefs, double cutConst,
+                 double *cutCoefo, double *cutCoefs, double cutConst,
                  double clb, double cub, int numcons) {
   LinearFunctionPtr lf = (LinearFunctionPtr) new LinearFunction(
       cutCoefo, rel->varsBegin(), rel->varsEnd(), 1e-9);
@@ -788,7 +786,7 @@ void addCutToRel(RelaxationPtr rel, SimplexQuadCutGenPtr cutgen,
 }
 
 void linearize(double x1val, double x2val, double coef, int v1, int v2,
-               double* t1, double* t2, double& cutConst) {
+               double *t1, double *t2, double &cutConst) {
   cutConst -= coef * x1val * x2val;
   t1[v1] += coef * x2val;
   t2[v2] += coef * x1val;
@@ -796,7 +794,7 @@ void linearize(double x1val, double x2val, double coef, int v1, int v2,
 
 void dualLinearize(double coef, int v1, int v2, bool lower1, bool lower2,
                    double l1, double u1, double l2, double u2, double w1,
-                   double w2, double* t1, double* t2, double& cutConst,
+                   double w2, double *t1, double *t2, double &cutConst,
                    bool under) {
   double normal = w1 + w2;
   w1 = w1 / normal;
@@ -838,69 +836,123 @@ void dualLinearize(double coef, int v1, int v2, bool lower1, bool lower2,
 
 void callLinearize(double x1Val, double x2Val, double coef, int x1, int x2,
                    char prodType, double l1, double l2, double u1, double u2,
-                   bool lower1, bool lower2, bool under, double* t1, double* t2,
-                   double& cutConst) {
+                   bool lower1, bool lower2, bool under, double *t1, double *t2,
+                   double &cutConst) {
   // Calling linearize here
+  bool under1 = coef > 1e-8 ? under : !under;
   switch (prodType) {
-    case 'v':
-      if (x1 == x2) {
-        if (under) {
-          linearize(x1Val, x1Val, coef, x1, x1, t1, t1, cutConst);
-        } else {
-          linearize(l1, u1, coef, x1, x1, t1, t1, cutConst);
-        }
+  case 'v':
+    if (x1 == x2) {
+      if (under1) {
+        linearize(x1Val, x1Val, coef, x1, x1, t1, t1, cutConst);
       } else {
-        if ((under && (lower1 == lower2)) || (!under && (lower1 != lower2))) {
-          linearize(x1Val, x2Val, coef, x1, x2, t1, t2, cutConst);
-        } else {
-          dualLinearize(coef, x1, x2, lower1, lower2, l1, u1, l2, u2,
-                        fabs(dualVecVars[x1]), fabs(dualVecVars[x2]), t1, t2,
-                        cutConst, under);
-        }
+        linearize(l1, u1, coef, x1, x1, t1, t1, cutConst);
       }
-      break;
-    case 'm':
-      if ((under && (lower1 == lower2)) || (!under && (lower1 != lower2))) {
+    } else {
+      if ((under1 && (lower1 == lower2)) || (!under1 && (lower1 != lower2))) {
         linearize(x1Val, x2Val, coef, x1, x2, t1, t2, cutConst);
       } else {
         dualLinearize(coef, x1, x2, lower1, lower2, l1, u1, l2, u2,
-                      fabs(dualVecVars[x1]), fabs(dualVecCons[x2]), t1, t2,
+                      fabs(dualVecVars[x1]), fabs(dualVecVars[x2]), t1, t2,
                       cutConst, under);
       }
-      break;
-    case 'c':
-      if (x1 == x2) {
-        if (under) {
-          linearize(x1Val, x1Val, coef, x1, x1, t1, t1, cutConst);
-        } else {
-          linearize(l1, u1, coef, x1, x1, t1, t1, cutConst);
-        }
+    }
+    break;
+  case 'm':
+    if ((under1 && (lower1 == lower2)) || (!under1 && (lower1 != lower2))) {
+      linearize(x1Val, x2Val, coef, x1, x2, t1, t2, cutConst);
+    } else {
+      dualLinearize(coef, x1, x2, lower1, lower2, l1, u1, l2, u2,
+                    fabs(dualVecVars[x1]), fabs(dualVecCons[x2]), t1, t2,
+                    cutConst, under);
+    }
+    break;
+  case 'c':
+    if (x1 == x2) {
+      if (under1) {
+        linearize(x1Val, x1Val, coef, x1, x1, t1, t1, cutConst);
       } else {
-        if ((under && (lower1 == lower2)) || (!under && (lower1 != lower2))) {
-          linearize(x1Val, x2Val, coef, x1, x2, t1, t2, cutConst);
-        } else {
-          dualLinearize(coef, x1, x2, lower1, lower2, l1, u1, l2, u2,
-                        fabs(dualVecCons[x1]), fabs(dualVecCons[x2]), t1, t2,
-                        cutConst, under);
-        }
+        linearize(l1, u1, coef, x1, x1, t1, t1, cutConst);
       }
-      break;
-    default:
-      std::cout << "THIS SHOULD NOT HAPPEN" << std::endl;
-      break;
+    } else {
+      if ((under1 && (lower1 == lower2)) || (!under1 && (lower1 != lower2))) {
+        linearize(x1Val, x2Val, coef, x1, x2, t1, t2, cutConst);
+      } else {
+        dualLinearize(coef, x1, x2, lower1, lower2, l1, u1, l2, u2,
+                      fabs(dualVecCons[x1]), fabs(dualVecCons[x2]), t1, t2,
+                      cutConst, under);
+      }
+    }
+    break;
+  default:
+    std::cout << "THIS SHOULD NOT HAPPEN" << std::endl;
+    break;
+  }
+}
+
+void getLowers(VariablePtr v1, VariablePtr v2, double val1, double val2,
+               double coef, bool under, bool &lower1, bool &lower2) {
+  double etol = 1e-8;
+  bool l1 = fabs(val1 - v1->getLb()) < etol;
+  bool u1 = fabs(val1 - v1->getUb()) < etol;
+  bool l2 = fabs(val2 - v2->getLb()) < etol;
+  bool u2 = fabs(val2 - v2->getUb()) < etol;
+
+  under = coef > etol ? under : !under;
+
+  if (under) {
+    if (l1 || u1) {
+      if (l1) {
+        lower1 = true;
+        lower2 = true;
+      } else {
+        lower1 = false;
+        lower2 = false;
+      }
+    } else if (l2 || u2) {
+      if (l2) {
+        lower1 = true;
+        lower2 = true;
+      } else {
+        lower1 = false;
+        lower2 = false;
+      }
+    } else {
+      std::cout << "Get lowers has no bounded variable" << std::endl;
+    }
+  } else {
+    if (l1 || u1) {
+      if (l1) {
+        lower1 = true;
+        lower2 = false;
+      } else {
+        lower1 = false;
+        lower2 = true;
+      }
+    } else if (l2 || u2) {
+      if (l2) {
+        lower1 = false;
+        lower2 = true;
+      } else {
+        lower1 = true;
+        lower2 = false;
+      }
+    } else {
+      std::cout << "Get lowers has no bounded variable" << std::endl;
+    }
   }
 }
 
 bool updateRel(EnvPtr env, RelaxationPtr rel, SimplexQuadCutGenPtr cutgen,
-               AuxVarVector& auxVars, const double* x, LPEnginePtr lpe,
+               AuxVarVector &auxVars, const double *x, LPEnginePtr lpe,
                ConstraintPtr c, bool ubinf, bool lbinf, double obj) {
   SubstQuadPtr oxo = 0, oxs = 0, sxs = 0, oxo1 = 0, oxs1 = 0;
   int oldnumvars = rel->getNumVars();
   int oldnumcons = rel->getNumCons();
-  double* cutCoefo = new double[oldnumvars];
-  double* cutCoefo1 = 0;
-  double* cutCoefs = new double[rel->getNumCons()];
-  double cutConst = 0.0;
+  double *cutCoefo = new double[oldnumvars];
+  double *cutCoefo1 = 0;
+  double *cutCoefs = new double[rel->getNumCons()];
+  double cutConst = 0.0, cutConst1;
   double etol = 1e-8;
   int y;
   AuxVarsPtr aptr;
@@ -915,7 +967,7 @@ bool updateRel(EnvPtr env, RelaxationPtr rel, SimplexQuadCutGenPtr cutgen,
   std::map<int, double> newVars, newVars1;
 
   memset(cutCoefo, 0, oldnumvars * sizeof(double));
-  memset(cutCoefs, 0, rel->getNumCons() * sizeof(double));
+  memset(cutCoefs, 0, oldnumcons * sizeof(double));
 
   oxo = (SubstQuadPtr) new SubstQuad();
   oxs = (SubstQuadPtr) new SubstQuad();
@@ -927,13 +979,13 @@ bool updateRel(EnvPtr env, RelaxationPtr rel, SimplexQuadCutGenPtr cutgen,
         cutgen->getQuadraticBNB(c, x, rel, oxo, oxs, cutCoefo, cutConst, count);
         oxosize = oxo->ind1.size();
         oxssize = oxs->ind1.size();
-      }
-      if (count == 2) {
+      } else if (count == 2) {
         cutCoefo1 = new double[rel->getNumVars()];
+        cutConst1 = 0.0;
         memset(cutCoefo1, 0, oldnumvars * sizeof(double));
         oxo1 = (SubstQuadPtr) new SubstQuad();
         oxs1 = (SubstQuadPtr) new SubstQuad();
-        cutgen->getQuadraticBNB(c, x, rel, oxo1, oxs1, cutCoefo1, cutConst,
+        cutgen->getQuadraticBNB(c, x, rel, oxo1, oxs1, cutCoefo1, cutConst1,
                                 count);
         oxo1size = oxo1->ind1.size();
         oxs1size = oxs1->ind1.size();
@@ -1043,12 +1095,25 @@ bool updateRel(EnvPtr env, RelaxationPtr rel, SimplexQuadCutGenPtr cutgen,
         if (y == -1) {
           v1 = rel->getVariable(oxo->ind1[i]);
           v2 = rel->getVariable(oxo->ind2[i]);
-          lower1 = fabs(x[oxo->ind1[i]] - v1->getLb()) < etol;
-          lower2 = fabs(x[oxo->ind2[i]] - v2->getLb()) < etol;
-          callLinearize(x[oxo->ind1[i]], x[oxo->ind2[i]], oxo->val[i],
-                        oxo->ind1[i], oxo->ind2[i], 'v', v1->getLb(),
-                        v2->getLb(), v1->getUb(), v2->getUb(), lower1, lower2,
-                        ubinf, cutCoefo, cutCoefo, cutConst);
+          if (variant == 6) {
+            lower1 = true;
+            lower2 = true;
+            getLowers(v1, v2, x[oxo->ind1[i]], x[oxo->ind2[i]], oxo->val[i],
+                      ubinf, lower1, lower2);
+            double x1val = lower1 ? v1->getLb() : v1->getUb();
+            double x2val = lower2 ? v2->getLb() : v2->getUb();
+            callLinearize(x1val, x2val, oxo->val[i], oxo->ind1[i], oxo->ind2[i],
+                          'v', v1->getLb(), v2->getLb(), v1->getUb(),
+                          v2->getUb(), lower1, lower2, ubinf, cutCoefo,
+                          cutCoefo, cutConst);
+          } else {
+            lower1 = fabs(x[oxo->ind1[i]] - v1->getLb()) < etol;
+            lower2 = fabs(x[oxo->ind2[i]] - v2->getLb()) < etol;
+            callLinearize(x[oxo->ind1[i]], x[oxo->ind2[i]], oxo->val[i],
+                          oxo->ind1[i], oxo->ind2[i], 'v', v1->getLb(),
+                          v2->getLb(), v1->getUb(), v2->getUb(), lower1, lower2,
+                          ubinf, cutCoefo, cutCoefo, cutConst);
+          }
         } else {
           aptr = (AuxVarsPtr) new AuxVars();
           aptr->x1 = oxo->ind1[i];
@@ -1138,13 +1203,26 @@ bool updateRel(EnvPtr env, RelaxationPtr rel, SimplexQuadCutGenPtr cutgen,
                       isScaled);
         if (y == -1) {
           v1 = rel->getVariable(oxs->ind1[i]);
-          lower1 = fabs(x[oxs->ind1[i]] - v1->getLb()) < etol;
-          lower2 = cutgen->getSlackUb(oxs->ind2[i]) > etol;
-          callLinearize(x[oxs->ind1[i]], 0.0, oxs->val[i], oxs->ind1[i],
-                        oxs->ind2[i], 'm', v1->getLb(),
-                        cutgen->getSlackLb(oxs->ind2[i]), v1->getUb(),
-                        cutgen->getSlackUb(oxs->ind2[i]), lower1, lower2, ubinf,
-                        cutCoefo, cutCoefs, cutConst);
+          if (variant == 6) {
+            lower2 = cutgen->getSlackUb(oxs->ind2[i]) > etol;
+            lower1 =
+                (ubinf && oxs->val[i] > etol) || (lbinf && oxs->val[i] < etol)
+                    ? lower2
+                    : !lower2;
+            double x1val = lower1 ? v1->getLb() : v1->getUb();
+            callLinearize(x1val, 0.0, oxs->val[i], oxs->ind1[i], oxs->ind2[i],
+                          'm', v1->getLb(), cutgen->getSlackLb(oxs->ind2[i]),
+                          v1->getUb(), cutgen->getSlackUb(oxs->ind2[i]), lower1,
+                          lower2, ubinf, cutCoefo, cutCoefs, cutConst);
+          } else {
+            lower1 = fabs(x[oxs->ind1[i]] - v1->getLb()) < etol;
+            lower2 = cutgen->getSlackUb(oxs->ind2[i]) > etol;
+            callLinearize(x[oxs->ind1[i]], 0.0, oxs->val[i], oxs->ind1[i],
+                          oxs->ind2[i], 'm', v1->getLb(),
+                          cutgen->getSlackLb(oxs->ind2[i]), v1->getUb(),
+                          cutgen->getSlackUb(oxs->ind2[i]), lower1, lower2,
+                          ubinf, cutCoefo, cutCoefs, cutConst);
+          }
         } else {
           aptr = (AuxVarsPtr) new AuxVars();
           aptr->x1 = oxs->ind1[i];
@@ -1281,7 +1359,7 @@ bool updateRel(EnvPtr env, RelaxationPtr rel, SimplexQuadCutGenPtr cutgen,
     }
   }
 
-  double* tmp = new double[rel->getNumVars()];
+  double *tmp = new double[rel->getNumVars()];
   memcpy(tmp, cutCoefo, oldnumvars * sizeof(double));
   delete[] cutCoefo;
   cutCoefo = tmp;
@@ -1296,6 +1374,7 @@ bool updateRel(EnvPtr env, RelaxationPtr rel, SimplexQuadCutGenPtr cutgen,
               oldnumcons);
 
   if (quad2) {
+    memset(cutCoefs, 0, oldnumcons * sizeof(double));
     for (std::vector<int>::size_type i = 0; i < oxo1size; ++i) {
       if (fabs(oxo1->val[i]) < etol) {
         continue;
@@ -1307,12 +1386,16 @@ bool updateRel(EnvPtr env, RelaxationPtr rel, SimplexQuadCutGenPtr cutgen,
         if (y == -1) {
           v1 = rel->getVariable(oxo1->ind1[i]);
           v2 = rel->getVariable(oxo1->ind2[i]);
-          lower1 = fabs(x[oxo1->ind1[i]] - v1->getLb()) < etol;
-          lower2 = fabs(x[oxo1->ind2[i]] - v2->getLb()) < etol;
-          callLinearize(x[oxo1->ind1[i]], x[oxo1->ind2[i]], oxo1->val[i],
-                        oxo1->ind1[i], oxo1->ind2[i], 'v', v1->getLb(),
-                        v2->getLb(), v1->getUb(), v2->getUb(), lower1, lower2,
-                        ubinf, cutCoefo1, cutCoefo1, cutConst);
+          lower1 = true;
+          lower2 = true;
+          getLowers(v1, v2, x[oxo1->ind1[i]], x[oxo1->ind2[i]], oxo1->val[i],
+                    ubinf, lower1, lower2);
+          double x1val = lower1 ? v1->getLb() : v1->getUb();
+          double x2val = lower2 ? v2->getLb() : v2->getUb();
+          callLinearize(x1val, x2val, oxo1->val[i], oxo1->ind1[i],
+                        oxo1->ind2[i], 'v', v1->getLb(), v2->getLb(),
+                        v1->getUb(), v2->getUb(), lower1, lower2, ubinf,
+                        cutCoefo1, cutCoefo1, cutConst1);
         } else {
           aptr = (AuxVarsPtr) new AuxVars();
           aptr->x1 = oxo1->ind1[i];
@@ -1344,13 +1427,16 @@ bool updateRel(EnvPtr env, RelaxationPtr rel, SimplexQuadCutGenPtr cutgen,
                       isScaled);
         if (y == -1) {
           v1 = rel->getVariable(oxs1->ind1[i]);
-          lower1 = fabs(x[oxs1->ind1[i]] - v1->getLb()) < etol;
           lower2 = cutgen->getSlackUb(oxs1->ind2[i]) > etol;
-          callLinearize(x[oxs1->ind1[i]], 0.0, oxs1->val[i], oxs1->ind1[i],
-                        oxs1->ind2[i], 'm', v1->getLb(),
-                        cutgen->getSlackLb(oxs1->ind2[i]), v1->getUb(),
-                        cutgen->getSlackUb(oxs1->ind2[i]), lower1, lower2,
-                        ubinf, cutCoefo1, cutCoefs, cutConst);
+          lower1 =
+              (ubinf && oxs1->val[i] > etol) || (lbinf && oxs1->val[i] < etol)
+                  ? lower2
+                  : !lower2;
+          double x1val = lower1 ? v1->getLb() : v1->getUb();
+          callLinearize(x1val, 0.0, oxs1->val[i], oxs1->ind1[i], oxs1->ind2[i],
+                        'm', v1->getLb(), cutgen->getSlackLb(oxs1->ind2[i]),
+                        v1->getUb(), cutgen->getSlackUb(oxs1->ind2[i]), lower1,
+                        lower2, ubinf, cutCoefo1, cutCoefs, cutConst1);
         } else {
           aptr = (AuxVarsPtr) new AuxVars();
           aptr->x1 = oxs1->ind1[i];
@@ -1367,17 +1453,17 @@ bool updateRel(EnvPtr env, RelaxationPtr rel, SimplexQuadCutGenPtr cutgen,
       }
     }
 
-    double* tmp = new double[rel->getNumVars()];
+    double *tmp = new double[rel->getNumVars()];
     memcpy(tmp, cutCoefo1, oldnumvars * sizeof(double));
     delete[] cutCoefo1;
     cutCoefo1 = tmp;
     memset(cutCoefo1 + oldnumvars, 0,
            (rel->getNumVars() - oldnumvars) * sizeof(double));
-    for (std::map<int, double>::iterator it = newVars.begin();
-         it != newVars.end(); ++it) {
+    for (std::map<int, double>::iterator it = newVars1.begin();
+         it != newVars1.end(); ++it) {
       cutCoefo1[it->first] += it->second;
     }
-    addCutToRel(rel, cutgen, cutCoefo1, cutCoefs, cutConst,
+    addCutToRel(rel, cutgen, cutCoefo1, cutCoefs, cutConst1,
                 lbinf ? c->getLb() : -INFINITY, ubinf ? c->getUb() : INFINITY,
                 oldnumcons);
   }
@@ -1423,11 +1509,11 @@ double getTarget() {
 }
 
 bool isFeasible(EnvPtr env, ProblemPtr p, ConstSolutionPtr sol,
-                RelaxationPtr rel, AuxVarVector& auxVars, LPEnginePtr lpe,
-                bool& separated) {
+                RelaxationPtr rel, AuxVarVector &auxVars, LPEnginePtr lpe,
+                bool &separated) {
   ConstraintPtr c;
   double act, clb, cub;
-  const double* x = sol->getPrimal();
+  const double *x = sol->getPrimal();
   int error = 0;
   bool is_feas = true;
   double vio;
@@ -1470,7 +1556,7 @@ bool isFeasible(EnvPtr env, ProblemPtr p, ConstSolutionPtr sol,
 }
 
 void resizeDualVec(int newConsSize, int newVarsSize) {
-  double* newVec = new double[newConsSize];
+  double *newVec = new double[newConsSize];
   std::memset(newVec, 0.0, newConsSize * sizeof(double));
   std::memcpy(newVec, dualVecCons, numCons * sizeof(double));
 
@@ -1488,22 +1574,22 @@ void resizeDualVec(int newConsSize, int newVarsSize) {
 }
 
 RelaxationPtr solveRelaxation(EnvPtr env, ProblemPtr p, RelaxationPtr rel,
-                              EngineFactory* efac, bool& is_feas, int& status,
-                              AuxVarVector& auxVars, bool last) {
+                              EngineFactory *efac, bool &is_feas, int &status,
+                              AuxVarVector &auxVars, bool last) {
   LPEnginePtr lpe = efac->getLPEngine();
   ConstSolutionPtr sol;
   RelaxationPtr newrel = rel->clone(env);
-  const double* dualCons;
-  const double* dualVars;
+  const double *dualCons;
+  const double *dualVars;
   bool separated = false;
-  const Timer* timer = env->getTimer();
+  const Timer *timer = env->getTimer();
 
   std::cout << "Number of variables = " << rel->getNumVars() << std::endl;
   std::cout << "Number of Constraints = " << rel->getNumCons() << std::endl;
 
   // if (!checkSol(rel, auxVars)) {
-  //  std::cout << "NOT FEASIBLE HERE" << std::endl;
-  //}
+  //   std::cout << "NOT FEASIBLE HERE" << std::endl;
+  // }
 
   lpe->load(rel);
   if (dualVecCons) {
@@ -1628,18 +1714,18 @@ void addTangentsForSqVars(RelaxationPtr rel, AuxVarVector auxVars) {
   }
 }
 
-int main(int argc, char** argv) {
+int main(int argc, char **argv) {
   EnvPtr env = (EnvPtr) new Environment();
-  ProblemPtr inst = 0;  // instance that needs to be solved.
-  VarVector* orig_v = 0;
+  ProblemPtr inst = 0; // instance that needs to be solved.
+  VarVector *orig_v = 0;
   std::string dname, fname;
-  MINOTAUR_AMPL::AMPLInterface* iface;
+  MINOTAUR_AMPL::AMPLInterface *iface;
   OptionDBPtr options = env->getOptions();
   HandlerVector handlers;
   int objSense = 1;
   int status = 0;
   TransformerPtr trans;
-  EngineFactory* efac = new EngineFactory(env);
+  EngineFactory *efac = new EngineFactory(env);
   LPEnginePtr bte = LPEnginePtr();
   ProblemPtr p = 0;
   RelaxationPtr rel;
@@ -1664,19 +1750,19 @@ int main(int argc, char** argv) {
   options->findString("nlp_engine")->setValue("IPOPT");
   variant = options->findInt("simplex_cut_variant")->getValue();
   switch (variant) {
-    case 0:
-    case 6:
-      allVars = true;
-      break;
-    case 2:
-    case 3:
-      allVars = false;
-      break;
-    default:
-      std::cout << "Invalid variant" << std::endl;
-      std::cout << "Assumed variant 6";
-      variant = 6;
-      allVars = true;
+  case 0:
+  case 6:
+    allVars = true;
+    break;
+  case 2:
+  case 3:
+    allVars = false;
+    break;
+  default:
+    std::cout << "Invalid variant" << std::endl;
+    std::cout << "Assumed variant 6";
+    variant = 6;
+    allVars = true;
   }
   fname = options->findString("problem_file")->getValue();
   if ("" == fname) {

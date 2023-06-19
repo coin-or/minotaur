@@ -52,16 +52,20 @@
 using namespace Minotaur;
 const std::string Glob::me_ = "mntr-glob: ";
 
-Glob::Glob(EnvPtr env) : objSense_(1.0), status_(NotStarted) {
+Glob::Glob(EnvPtr env)
+  : objSense_(1.0),
+    status_(NotStarted)
+{
   env_ = env;
   iface_ = 0;
   inst_ = 0;
   newp_ = 0;
 }
 
-Glob::~Glob() {}
+Glob::~Glob() { }
 
-void Glob::doSetup() {
+void Glob::doSetup()
+{
   int err = 0;
   env_->startTimer(err);
 
@@ -71,11 +75,12 @@ void Glob::doSetup() {
       env_, "glob");
 }
 
-LPEnginePtr Glob::getEngine_() {
-  EngineFactory *efac = new EngineFactory(env_);
-  LPEnginePtr e = LPEnginePtr();  // NULL
+LPEnginePtr Glob::getEngine_()
+{
+  EngineFactory* efac = new EngineFactory(env_);
+  LPEnginePtr e = LPEnginePtr(); // NULL
   e = efac->getLPEngine();
-  if (!e) {
+  if(!e) {
     env_->getLogger()->errStream()
         << me_ << "Cannot find an LP engine. Cannot proceed!" << std::endl;
   }
@@ -84,11 +89,12 @@ LPEnginePtr Glob::getEngine_() {
   return e;
 }
 
-NLPEnginePtr Glob::getNLPEngine_() {
-  EngineFactory *efac = new EngineFactory(env_);
-  NLPEnginePtr e = NLPEnginePtr();  // NULL
+NLPEnginePtr Glob::getNLPEngine_()
+{
+  EngineFactory* efac = new EngineFactory(env_);
+  NLPEnginePtr e = NLPEnginePtr(); // NULL
   e = efac->getNLPEngine();
-  if (!e) {
+  if(!e) {
     env_->getLogger()->errStream()
         << me_ << "Cannot find an NLP engine. Cannot proceed!" << std::endl;
   }
@@ -97,25 +103,26 @@ NLPEnginePtr Glob::getNLPEngine_() {
   return e;
 }
 
-int Glob::transform_(ProblemPtr &newp, HandlerVector &handlers,
-                     LPEnginePtr engine) {
+int Glob::transform_(ProblemPtr& newp, HandlerVector& handlers,
+                     LPEnginePtr engine)
+{
   TransformerPtr trans;
   int status = 0;
   std::string tr = env_->getOptions()->findString("transformer")->getValue();
 
   handlers.clear();
-  if (tr == "simp") {
+  if(tr == "simp") {
     trans = (SimpTranPtr) new SimpleTransformer(env_, inst_, getEngine_(),
                                                 engine, getNLPEngine_());
-  } else {  // if (tr == "quad") {
+  } else { // if (tr == "quad") {
     trans = (QuadTranPtr) new QuadTransformer(env_, inst_);
   }
   trans->reformulate(newp, handlers, status);
 
   env_->getLogger()->msgStream(LogInfo)
       << me_ << "handlers used in transformer: " << std::endl;
-  for (HandlerVector::iterator it = handlers.begin(); it != handlers.end();
-       ++it) {
+  for(HandlerVector::iterator it = handlers.begin(); it != handlers.end();
+      ++it) {
     env_->getLogger()->msgStream(LogInfo)
         << "  " << (*it)->getName() << std::endl;
   }
@@ -123,13 +130,14 @@ int Glob::transform_(ProblemPtr &newp, HandlerVector &handlers,
   return status;
 }
 
-BranchAndBound *Glob::createBab_(EnginePtr e, HandlerVector &handlers) {
-  BranchAndBound *bab = new BranchAndBound(env_, newp_);
+BranchAndBound* Glob::createBab_(EnginePtr e, HandlerVector& handlers)
+{
+  BranchAndBound* bab = new BranchAndBound(env_, newp_);
   PCBProcessorPtr nproc;
   NodeIncRelaxerPtr nr;
   BrancherPtr br = 0;
 
-  if (env_->getOptions()->findString("brancher")->getValue() == "rel") {
+  if(env_->getOptions()->findString("brancher")->getValue() == "rel") {
     UInt t;
     ReliabilityBrancherPtr rel_br;
     rel_br = (ReliabilityBrancherPtr) new ReliabilityBrancher(env_, handlers);
@@ -150,12 +158,12 @@ BranchAndBound *Glob::createBab_(EnginePtr e, HandlerVector &handlers) {
         << "reliability branching iteration limit = " << rel_br->getIterLim()
         << std::endl;
     br = rel_br;
-  } else if (env_->getOptions()->findString("brancher")->getValue() ==
-             "maxvio") {
+  } else if(env_->getOptions()->findString("brancher")->getValue() ==
+            "maxvio") {
     MaxVioBrancherPtr mbr =
         (MaxVioBrancherPtr) new MaxVioBrancher(env_, handlers);
     br = mbr;
-  } else if (env_->getOptions()->findString("brancher")->getValue() == "lex") {
+  } else if(env_->getOptions()->findString("brancher")->getValue() == "lex") {
     LexicoBrancherPtr lbr =
         (LexicoBrancherPtr) new LexicoBrancher(env_, handlers);
     br = lbr;
@@ -172,8 +180,8 @@ BranchAndBound *Glob::createBab_(EnginePtr e, HandlerVector &handlers) {
   bab->setNodeRelaxer(nr);
   bab->shouldCreateRoot(true);
 
-  if (env_->getOptions()->findBool("msheur")->getValue() == true &&
-      (newp_->getSize()->bins == 0 && newp_->getSize()->ints == 0)) {
+  if(env_->getOptions()->findBool("msheur")->getValue() == true &&
+     (newp_->getSize()->bins == 0 && newp_->getSize()->ints == 0)) {
     EnginePtr nlp_e = getNLPEngine_();
     newp_->setNativeDer();
     NLPMSPtr ms_heur = (NLPMSPtr) new NLPMultiStart(env_, newp_, nlp_e);
@@ -183,16 +191,17 @@ BranchAndBound *Glob::createBab_(EnginePtr e, HandlerVector &handlers) {
   return bab;
 }
 
-PresolverPtr Glob::createPres_(HandlerVector &handlers) {
+PresolverPtr Glob::createPres_(HandlerVector& handlers)
+{
   // create handlers for presolve
-  PresolverPtr pres = PresolverPtr();  // NULL
+  PresolverPtr pres = PresolverPtr(); // NULL
 
   inst_->calculateSize();
-  if (env_->getOptions()->findBool("presolve")->getValue() == true) {
+  if(env_->getOptions()->findBool("presolve")->getValue() == true) {
     LinearHandlerPtr lhandler =
         (LinearHandlerPtr) new LinearHandler(env_, inst_);
     handlers.push_back(lhandler);
-    if (inst_->isQP() || inst_->isQuadratic() || inst_->isLinear()) {
+    if(inst_->isQP() || inst_->isQuadratic() || inst_->isLinear()) {
       lhandler->setPreOptPurgeVars(true);
       lhandler->setPreOptPurgeCons(true);
       lhandler->setPreOptCoeffImp(true);
@@ -203,12 +212,12 @@ PresolverPtr Glob::createPres_(HandlerVector &handlers) {
     }
     lhandler->setPreOptDualFix(true);
 
-    if (!inst_->isLinear() && (inst_->isQP() || inst_->isQuadratic())) {
-      if (true == env_->getOptions()->findBool("cgtoqf")->getValue()) {
+    if(!inst_->isLinear() && (inst_->isQP() || inst_->isQuadratic())) {
+      if(true == env_->getOptions()->findBool("cgtoqf")->getValue()) {
         QuadHandlerPtr qhand = (QuadHandlerPtr) new QuadHandler(env_, inst_);
         handlers.push_back(qhand);
       } else {
-        if (true == env_->getOptions()->findBool("nl_presolve")->getValue()) {
+        if(true == env_->getOptions()->findBool("nl_presolve")->getValue()) {
           NlPresHandlerPtr nlhand =
               (NlPresHandlerPtr) new NlPresHandler(env_, inst_);
           handlers.push_back(nlhand);
@@ -216,8 +225,8 @@ PresolverPtr Glob::createPres_(HandlerVector &handlers) {
       }
     }
 
-    if (!(inst_->isLinear() || inst_->isQP() || inst_->isQuadratic()) &&
-        true == env_->getOptions()->findBool("nl_presolve")->getValue()) {
+    if(!(inst_->isLinear() || inst_->isQP() || inst_->isQuadratic()) &&
+       true == env_->getOptions()->findBool("nl_presolve")->getValue()) {
       NlPresHandlerPtr nlhand =
           (NlPresHandlerPtr) new NlPresHandler(env_, inst_);
       handlers.push_back(nlhand);
@@ -226,7 +235,7 @@ PresolverPtr Glob::createPres_(HandlerVector &handlers) {
     // write the names.
     env_->getLogger()->msgStream(LogExtraInfo)
         << me_ << "handlers used in presolve:" << std::endl;
-    for (HandlerIterator h = handlers.begin(); h != handlers.end(); ++h) {
+    for(HandlerIterator h = handlers.begin(); h != handlers.end(); ++h) {
       env_->getLogger()->msgStream(LogExtraInfo)
           << "  " << (*h)->getName() << std::endl;
     }
@@ -237,51 +246,57 @@ PresolverPtr Glob::createPres_(HandlerVector &handlers) {
   return pres;
 }
 
-DoubleVector Glob::getSolution() {
+DoubleVector Glob::getSolution()
+{
   DoubleVector x;
   return x;
 }
 
-SolveStatus Glob::getStatus() { return status_; }
+SolveStatus Glob::getStatus()
+{
+  return status_;
+}
 
-void Glob::setInitialOptions_() {
+void Glob::setInitialOptions_()
+{
   OptionDBPtr options = env_->getOptions();
   options->findString("interface_type")->setValue("AMPL");
   options->findBool("presolve")->setValue(true);
   options->findBool("nl_presolve")->setValue(true);
   options->findBool("lin_presolve")->setValue(true);
-  options->findBool("msheur")->setValue(true);
+  options->findBool("msheur")->setValue(false);
   options->findString("brancher")->setValue("maxvio");
   options->findString("nlp_engine")->setValue("IPOPT");
   options->findBool("cgtoqf")->setValue(true);
 }
 
-int Glob::solve(ProblemPtr inst) {
+int Glob::solve(ProblemPtr inst)
+{
   LPEnginePtr engine = 0;
   HandlerVector handlers;
-  VarVector *orig_v = 0;
+  VarVector* orig_v = 0;
   PresolverPtr pres = 0, pres2 = 0;
   int err = 0;
   ProblemPtr newp = 0;
-  BranchAndBound *bab = 0;
+  BranchAndBound* bab = 0;
   OptionDBPtr options = env_->getOptions();
 
   inst_ = inst;
-  if (options->findBool("cgtoqf")->getValue() == 1) {
+  if(options->findBool("cgtoqf")->getValue() == 1) {
     inst_->cg2qf();
   }
 
   // display the problem
   inst_->calculateSize();
-  if (options->findBool("display_problem")->getValue() == true) {
+  if(options->findBool("display_problem")->getValue() == true) {
     inst_->write(env_->getLogger()->msgStream(LogNone), 9);
   }
-  if (options->findBool("display_size")->getValue() == true) {
+  if(options->findBool("display_size")->getValue() == true) {
     inst_->writeSize(env_->getLogger()->msgStream(LogNone));
   }
 
-  if (inst_->getObjective() &&
-      inst_->getObjective()->getObjectiveType() == Maximize) {
+  if(inst_->getObjective() &&
+     inst_->getObjective()->getObjectiveType() == Maximize) {
     objSense_ = -1.0;
     env_->getLogger()->msgStream(LogInfo)
         << me_ << "objective sense: maximize (will be converted to Minimize)"
@@ -299,16 +314,16 @@ int Glob::solve(ProblemPtr inst) {
   handlers.clear();
   orig_v = new VarVector(inst_->varsBegin(), inst_->varsEnd());
   pres = createPres_(handlers);
-  if (env_->getOptions()->findBool("presolve")->getValue() == true) {
+  if(env_->getOptions()->findBool("presolve")->getValue() == true) {
     pres->solve();
   }
-  for (HandlerVector::iterator it = handlers.begin(); it != handlers.end();
-       ++it) {
-    delete (*it);
+  for(HandlerVector::iterator it = handlers.begin(); it != handlers.end();
+      ++it) {
+    delete(*it);
   }
   handlers.clear();
 
-  if (Finished != pres->getStatus() && NotStarted != pres->getStatus()) {
+  if(Finished != pres->getStatus() && NotStarted != pres->getStatus()) {
     env_->getLogger()->msgStream(LogInfo)
         << me_
         << "status of presolve: " << getSolveStatusString(pres->getStatus())
@@ -320,16 +335,16 @@ int Glob::solve(ProblemPtr inst) {
 
   inst_->setNativeDer();
   err = transform_(newp, handlers, engine);
-  assert(0 == err || 2 == err);  // return status 2 means problem is convex
+  assert(0 == err || 2 == err); // return status 2 means problem is convex
 
-  if (err == 2) {
+  if(err == 2) {
     // call QG
     env_->getLogger()->msgStream(LogInfo)
         << me_ << "All constraints and objective found to be convex"
         << std::endl
         << "Problem is forwarded to QG - convex MINLP solver" << std::endl;
     QG qg(env_);
-    if (0 != qg.showInfo()) {
+    if(0 != qg.showInfo()) {
       goto CLEANUP;
     }
 
@@ -349,7 +364,7 @@ int Glob::solve(ProblemPtr inst) {
   // get branch-and-bound
   bab = createBab_(engine, handlers);
 
-  if (false == env_->getOptions()->findBool("solve")->getValue()) {
+  if(false == env_->getOptions()->findBool("solve")->getValue()) {
     goto CLEANUP;
   }
 
@@ -357,8 +372,8 @@ int Glob::solve(ProblemPtr inst) {
   bab->solve();
   bab->writeStats(env_->getLogger()->msgStream(LogExtraInfo));
   engine->writeStats(env_->getLogger()->msgStream(LogExtraInfo));
-  for (HandlerVector::iterator it = handlers.begin(); it != handlers.end();
-       ++it) {
+  for(HandlerVector::iterator it = handlers.begin(); it != handlers.end();
+      ++it) {
     (*it)->writeStats(env_->getLogger()->msgStream(LogExtraInfo));
   }
 
@@ -366,43 +381,44 @@ int Glob::solve(ProblemPtr inst) {
   writeStatus_(bab);
 
 CLEANUP:
-  for (HandlerVector::iterator it = handlers.begin(); it != handlers.end();
-       ++it) {
-    delete (*it);
+  for(HandlerVector::iterator it = handlers.begin(); it != handlers.end();
+      ++it) {
+    delete(*it);
   }
-  if (engine) {
+  if(engine) {
     delete engine;
   }
-  if (iface_) {
+  if(iface_) {
     delete iface_;
     iface_ = 0;
   }
-  if (pres) {
+  if(pres) {
     delete pres;
   }
-  if (pres2) {
+  if(pres2) {
     delete pres2;
   }
-  if (bab) {
-    if (bab->getNodeRelaxer()) {
+  if(bab) {
+    if(bab->getNodeRelaxer()) {
       delete bab->getNodeRelaxer();
     }
-    if (bab->getNodeProcessor()) {
+    if(bab->getNodeProcessor()) {
       delete bab->getNodeProcessor();
     }
     delete bab;
   }
-  if (newp_) {
+  if(newp_) {
     delete newp;
   }
-  if (orig_v) {
+  if(orig_v) {
     delete orig_v;
   }
   inst_ = 0;
   return 0;
 }
 
-void Glob::showHelp() const {
+void Glob::showHelp() const
+{
   std::cout << "global optimization for general QCQP" << std::endl
             << "Usage:" << std::endl
             << "To show version: glob -v (or --display_version yes)"
@@ -414,30 +430,31 @@ void Glob::showHelp() const {
             << " .nl-file" << std::endl;
 }
 
-int Glob::showInfo() {
+int Glob::showInfo()
+{
   OptionDBPtr options = env_->getOptions();
 
-  if (options->findBool("display_options")->getValue() ||
-      options->findFlag("=")->getValue()) {
+  if(options->findBool("display_options")->getValue() ||
+     options->findFlag("=")->getValue()) {
     options->write(std::cout);
     return 1;
   }
 
-  if (options->findBool("display_help")->getValue() ||
-      options->findFlag("?")->getValue()) {
+  if(options->findBool("display_help")->getValue() ||
+     options->findFlag("?")->getValue()) {
     showHelp();
     return 1;
   }
 
-  if (options->findBool("display_version")->getValue() ||
-      options->findFlag("v")->getValue()) {
+  if(options->findBool("display_version")->getValue() ||
+     options->findFlag("v")->getValue()) {
     env_->getLogger()->msgStream(LogNone)
         << me_ << "Minotaur version " << env_->getVersion() << std::endl
         << me_ << "global optimization for nonconvex QCQP" << std::endl;
     return 1;
   }
 
-  if (options->findString("problem_file")->getValue() == "") {
+  if(options->findString("problem_file")->getValue() == "") {
     showHelp();
     return 1;
   }
@@ -448,10 +465,11 @@ int Glob::showInfo() {
   return 0;
 }
 
-void Glob::writeStatus_(BranchAndBound *bab) {
+void Glob::writeStatus_(BranchAndBound* bab)
+{
   int err = 0;
 
-  if (bab) {
+  if(bab) {
     status_ = bab->getStatus();
     env_->getLogger()->msgStream(LogInfo)
         << me_ << std::fixed << std::setprecision(4)
