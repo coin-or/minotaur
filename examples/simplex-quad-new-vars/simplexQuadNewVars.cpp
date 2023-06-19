@@ -1337,10 +1337,10 @@ bool updateRel(EnvPtr env, RelaxationPtr rel, SimplexQuadCutGenPtr cutgen,
           lower1 = cutgen->getSlackUb(sxs->ind1[i]) > etol;
           lower2 = cutgen->getSlackUb(sxs->ind2[i]) > etol;
           callLinearize(0.0, 0.0, sxs->val[i], sxs->ind1[i], sxs->ind2[i], 'c',
-                        cutgen->getSlackLb(oxs->ind1[i]),
-                        cutgen->getSlackLb(oxs->ind2[i]),
-                        cutgen->getSlackUb(oxs->ind1[i]),
-                        cutgen->getSlackUb(oxs->ind2[i]), lower1, lower2, ubinf,
+                        cutgen->getSlackLb(sxs->ind1[i]),
+                        cutgen->getSlackLb(sxs->ind2[i]),
+                        cutgen->getSlackUb(sxs->ind1[i]),
+                        cutgen->getSlackUb(sxs->ind2[i]), lower1, lower2, ubinf,
                         cutCoefs, cutCoefs, cutConst);
         } else {
           aptr = (AuxVarsPtr) new AuxVars();
