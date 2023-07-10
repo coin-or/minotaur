@@ -28,7 +28,8 @@ using namespace Minotaur;
 
 const std::string Environment::me_ = "Environment: ";
 
-Environment::Environment() {
+Environment::Environment()
+{
   logger_ = (LoggerPtr) new Logger();
   options_ = (OptionDBPtr) new OptionDB();
   timerFac_ = new TimerFactory();
@@ -36,14 +37,16 @@ Environment::Environment() {
   createDefaultOptions_();
 }
 
-Environment::~Environment() {
+Environment::~Environment()
+{
   delete logger_;
   delete options_;
   delete timer_;
   delete timerFac_;
 }
 
-void Environment::createDefaultOptions_() {
+void Environment::createDefaultOptions_()
+{
   BoolOptionPtr b_option;
   IntOptionPtr i_option;
   DoubleOptionPtr d_option;
@@ -307,7 +310,7 @@ void Environment::createDefaultOptions_() {
   options_->insert(b_option);
 
   b_option = (BoolOptionPtr) new Option<bool>(
-      "doPostSolve", "Post solve root node: <0/1>", true, true);
+      "OBBT", "Post solve root node: <0/1>", true, true);
   options_->insert(b_option);
 
   b_option = (BoolOptionPtr) new Option<bool>(
@@ -318,6 +321,11 @@ void Environment::createDefaultOptions_() {
 
   b_option = (BoolOptionPtr) new Option<bool>(
       "simplex_cut", "Get cuts from the simplex tableau for QCP", true, false);
+  options_->insert(b_option);
+
+  b_option = (BoolOptionPtr) new Option<bool>(
+      "doQuadTightening", "Do tightening of quadratic function aggressively",
+      true, true);
   options_->insert(b_option);
 
   // reset, so that we don't accidently add it again.
@@ -338,7 +346,7 @@ void Environment::createDefaultOptions_() {
   i_option = (IntOptionPtr) new Option<int>(
       "separability_intensity_level",
       "Intensity of separability detection: 0-1", true, 0);
-  options_->insert(i_option);  // MS: disable later after confirming with sir.
+  options_->insert(i_option); // MS: disable later after confirming with sir.
 
   i_option = (IntOptionPtr) new Option<int>(
       "pres_freq", "Frequency of node-presolves in branch-and-bound", true, 5);
@@ -650,18 +658,19 @@ void Environment::createDefaultOptions_() {
 }
 
 void Environment::convertAndAddOneOption_(
-    BoolOptionPtr &b_option, IntOptionPtr &i_option, DoubleOptionPtr &d_option,
-    StringOptionPtr &s_option, FlagOptionPtr &f_option, std::string &name,
-    std::string &value, std::ostringstream &logstr) {
-  std::stringstream mystream;  // to convert string to int, bool, double.
+    BoolOptionPtr& b_option, IntOptionPtr& i_option, DoubleOptionPtr& d_option,
+    StringOptionPtr& s_option, FlagOptionPtr& f_option, std::string& name,
+    std::string& value, std::ostringstream& logstr)
+{
+  std::stringstream mystream; // to convert string to int, bool, double.
   std::string off = "  ";
   // now add the option.
-  if (b_option) {
+  if(b_option) {
     bool b_value = getBoolValue_(value);
     b_option->setValue(b_value);
     logstr << off << b_option->getName() << " = " << b_option->getValue()
            << std::endl;
-  } else if (i_option) {
+  } else if(i_option) {
     int i_value;
     mystream << std::flush;
     mystream << value;
@@ -669,7 +678,7 @@ void Environment::convertAndAddOneOption_(
     i_option->setValue(i_value);
     logstr << off << i_option->getName() << " = " << i_option->getValue()
            << std::endl;
-  } else if (d_option) {
+  } else if(d_option) {
     double d_value;
     mystream << std::flush;
     mystream << value;
@@ -677,7 +686,7 @@ void Environment::convertAndAddOneOption_(
     d_option->setValue(d_value);
     logstr << off << d_option->getName() << " = " << d_option->getValue()
            << std::endl;
-  } else if (s_option) {
+  } else if(s_option) {
     s_option->setValue(value);
     logstr << off << s_option->getName() << " = " << s_option->getValue()
            << std::endl;
@@ -688,7 +697,7 @@ void Environment::convertAndAddOneOption_(
     // option, otherwise it is a 'flag' option. We can not have 'int' or
     // 'double' option here.
     logstr << off << name << " is not a known option. ";
-    if (value == "") {
+    if(value == "") {
       logstr << "Added as a flag." << std::endl;
       f_option = (FlagOptionPtr) new Option<bool>(name, "Flag added by user",
                                                   false, true);
@@ -703,62 +712,77 @@ void Environment::convertAndAddOneOption_(
   }
 }
 
-void Environment::findOption_(const std::string &name, BoolOptionPtr &b_option,
-                              IntOptionPtr &i_option, DoubleOptionPtr &d_option,
-                              StringOptionPtr &s_option,
-                              FlagOptionPtr &f_option) {
-  b_option = BoolOptionPtr();    // NULL
-  i_option = IntOptionPtr();     // NULL
-  d_option = DoubleOptionPtr();  // NULL
-  s_option = StringOptionPtr();  // NULL
-  f_option = FlagOptionPtr();    // NULL
+void Environment::findOption_(const std::string& name, BoolOptionPtr& b_option,
+                              IntOptionPtr& i_option, DoubleOptionPtr& d_option,
+                              StringOptionPtr& s_option,
+                              FlagOptionPtr& f_option)
+{
+  b_option = BoolOptionPtr();   // NULL
+  i_option = IntOptionPtr();    // NULL
+  d_option = DoubleOptionPtr(); // NULL
+  s_option = StringOptionPtr(); // NULL
+  f_option = FlagOptionPtr();   // NULL
 
   b_option = options_->findBool(name);
-  if (b_option) {
+  if(b_option) {
     return;
   }
 
   i_option = options_->findInt(name);
-  if (i_option) {
+  if(i_option) {
     return;
   }
 
   d_option = options_->findDouble(name);
-  if (d_option) {
+  if(d_option) {
     return;
   }
 
   s_option = options_->findString(name);
-  if (s_option) {
+  if(s_option) {
     return;
   }
 
   f_option = options_->findFlag(name);
 }
 
-bool Environment::getBoolValue_(const std::string &str) {
-  if (str == "") {
+bool Environment::getBoolValue_(const std::string& str)
+{
+  if(str == "") {
     return false;
   }
 
-  if (str == "Y" || str == "YES" || str == "y" || str == "yes" || str == "T" ||
-      str == "TRUE" || str == "t" || str == "true" || str == "1") {
+  if(str == "Y" || str == "YES" || str == "y" || str == "yes" || str == "T" ||
+     str == "TRUE" || str == "t" || str == "true" || str == "1") {
     return true;
   }
 
   return false;
 }
 
-LoggerPtr Environment::getLogger() const { return logger_; }
+LoggerPtr Environment::getLogger() const
+{
+  return logger_;
+}
 
-LogLevel Environment::getLogLevel() const { return logger_->getMaxLevel(); }
+LogLevel Environment::getLogLevel() const
+{
+  return logger_->getMaxLevel();
+}
 
-Timer *Environment::getNewTimer() { return timerFac_->getTimer(); }
+Timer* Environment::getNewTimer()
+{
+  return timerFac_->getTimer();
+}
 
-OptionDBPtr Environment::getOptions() { return options_; }
+OptionDBPtr Environment::getOptions()
+{
+  return options_;
+}
 
-double Environment::getTime(int &err) {
-  if (timer_) {
+double Environment::getTime(int& err)
+{
+  if(timer_) {
     err = 0;
     return timer_->query();
   }
@@ -770,9 +794,13 @@ double Environment::getTime(int &err) {
   return 0.0;
 }
 
-const Timer *Environment::getTimer() { return timer_; }
+const Timer* Environment::getTimer()
+{
+  return timer_;
+}
 
-std::string Environment::getVersion() {
+std::string Environment::getVersion()
+{
   std::stringstream name_stream;
   name_stream << MINOTAUR_MAJOR_VERSION << '.' << MINOTAUR_MINOR_VERSION
               << " patch " << MINOTAUR_PATCH_VERSION << " git revision "
@@ -780,7 +808,8 @@ std::string Environment::getVersion() {
   return name_stream.str();
 }
 
-void Environment::readConfigFile_(std::string fname, UInt &num_p) {
+void Environment::readConfigFile_(std::string fname, UInt& num_p)
+{
   std::string line, w1, w2;
   std::ifstream istr(fname.c_str());
   const std::string spc = " \t\r\n";
@@ -792,14 +821,14 @@ void Environment::readConfigFile_(std::string fname, UInt &num_p) {
   FlagOptionPtr f_option;
   std::ostringstream logstr;
 
-  if (!istr.is_open()) {
+  if(!istr.is_open()) {
     logger_->errStream() << me_ << "cannot open file " << fname << std::endl;
     return;
   }
 
-  while (istr.good()) {
+  while(istr.good()) {
     getline(istr, line);
-    if (line.empty()) {
+    if(line.empty()) {
       continue;
     }
     // remove everything after comment.
@@ -811,24 +840,24 @@ void Environment::readConfigFile_(std::string fname, UInt &num_p) {
     // remove first word from line. Get second word. It is the value.
     line = line.substr(w1.length());
     w2 = line.substr(0, line.find_first_not_of(spc));
-    if (w2.length() == line.length()) {
+    if(w2.length() == line.length()) {
       w2 = "";
     } else {
       w2 = line.substr(w2.length());
     }
     w2 = w2.substr(0, w2.find_first_of(spc));
 
-    if (w1.empty()) {
+    if(w1.empty()) {
       continue;
     }
-    if (w2.empty()) {
+    if(w2.empty()) {
       logger_->errStream() << me_ << "parameter " << w1
                            << " in configuration file " << fname
                            << " has no value. Ignored this parameter."
                            << std::endl;
       continue;
     }
-    if ("problem_file" == w1) {
+    if("problem_file" == w1) {
       ++num_p;
     }
     // add the option.
@@ -839,10 +868,11 @@ void Environment::readConfigFile_(std::string fname, UInt &num_p) {
   istr.close();
 }
 
-void Environment::readOptions(int argc, char **argv) {
+void Environment::readOptions(int argc, char** argv)
+{
   std::string name, s_value;
   int leading_dashes;
-  UInt num_p = 0;  // number of filenames provided for solve.
+  UInt num_p = 0; // number of filenames provided for solve.
   BoolOptionPtr b_option;
   IntOptionPtr i_option;
   DoubleOptionPtr d_option;
@@ -851,13 +881,13 @@ void Environment::readOptions(int argc, char **argv) {
   std::string offset = "  ";
   std::ostringstream ostr;
 
-  if (argc < 2) {
+  if(argc < 2) {
     logger_->msgStream(LogInfo)
         << me_ << "User provided no options." << std::endl;
   } else {
     ostr << me_ << "User provided options:" << std::endl;
   }
-  for (int i = 1; i < argc; ++i) {
+  for(int i = 1; i < argc; ++i) {
     name = argv[i];
 
     // removing leading dashes
@@ -865,7 +895,7 @@ void Environment::readOptions(int argc, char **argv) {
     leading_dashes = removeDashes_(name);
     assert(name.size() > 0);
 
-    if (leading_dashes == 0) {
+    if(leading_dashes == 0) {
       // looks like an name of instance
       s_option = options_->findString("problem_file");
       s_option->setValue(name);
@@ -883,8 +913,8 @@ void Environment::readOptions(int argc, char **argv) {
       // find if it is a recognized option
       findOption_(name, b_option, i_option, d_option, s_option, f_option);
 
-      if (f_option) {  // true means we have a known flag.
-        if (s_value == "") {
+      if(f_option) { // true means we have a known flag.
+        if(s_value == "") {
           f_option->setValue(true);
         } else {
           f_option->setValue(getBoolValue_(s_value));
@@ -892,21 +922,21 @@ void Environment::readOptions(int argc, char **argv) {
         ostr << offset << f_option->getName() << " = " << f_option->getValue()
              << std::endl;
       } else {
-        if (s_value == "" && (b_option || i_option || d_option || s_option)) {
+        if(s_value == "" && (b_option || i_option || d_option || s_option)) {
           // the next argv is the argument
-          assert(i + 1 < argc);  // throw exception instead
+          assert(i + 1 < argc); // throw exception instead
           ++i;
           s_value = argv[i];
         }
         convertAndAddOneOption_(b_option, i_option, d_option, s_option,
                                 f_option, name, s_value, ostr);
-        if (s_option && "config_file" == s_option->getName()) {
+        if(s_option && "config_file" == s_option->getName()) {
           readConfigFile_(s_option->getValue(), num_p);
         }
       }
     }
   }
-  if (argc > 1) {
+  if(argc > 1) {
     ostr << me_ << "End of user provided options." << std::endl << std::endl;
   }
 
@@ -916,7 +946,7 @@ void Environment::readOptions(int argc, char **argv) {
   // display all the new options set.
   logger_->msgStream(LogInfo) << ostr.str();
 
-  if (num_p > 1) {
+  if(num_p > 1) {
     logger_->msgStream(LogInfo)
         << me_ << "more than one filename given as input." << std::endl
         << me_ << "Only file \""
@@ -925,32 +955,33 @@ void Environment::readOptions(int argc, char **argv) {
         << std::endl;
   }
 #if SPEW
-  if (num_p == 0) {
+  if(num_p == 0) {
     logger_->msgStream(LogInfo)
         << me_ << "No filename provided as input." << std::endl;
   }
 #endif
 }
 
-UInt Environment::removeDashes_(std::string &name) {
+UInt Environment::removeDashes_(std::string& name)
+{
   size_t first_occ;
 
   // exit if string is NULL.
-  if (name.length() < 1) {
+  if(name.length() < 1) {
     return 0;
   }
 
   // check for '--'
   first_occ = name.find("--");
-  if (first_occ == 0) {
-    name = name.substr(2);  // todo catch exception out_of_range.
+  if(first_occ == 0) {
+    name = name.substr(2); // todo catch exception out_of_range.
     return 2;
   }
 
   // check for '-'
   first_occ = name.find("-");
-  if (first_occ == 0) {
-    name = name.substr(1);  // todo catch exception out_of_range.
+  if(first_occ == 0) {
+    name = name.substr(1); // todo catch exception out_of_range.
     return 1;
   }
 
@@ -958,15 +989,17 @@ UInt Environment::removeDashes_(std::string &name) {
 }
 
 /// \todo implement me.
-void Environment::removeMinotaurPrepend_(std::string &) {
+void Environment::removeMinotaurPrepend_(std::string&)
+{
   // std::cout << fullname << std::endl;
 }
 
-std::string Environment::separateEqualToArg_(std::string &name) {
-  if (name.size() > 1) {
+std::string Environment::separateEqualToArg_(std::string& name)
+{
+  if(name.size() > 1) {
     // search for the '=' sign from position 1 only (can't be at 0).
     size_t pos = name.find('=', 1);
-    if (pos == std::string::npos) {
+    if(pos == std::string::npos) {
       // '=' not found
       return "";
     } else {
@@ -979,10 +1012,14 @@ std::string Environment::separateEqualToArg_(std::string &name) {
   return "";
 }
 
-void Environment::setLogLevel(LogLevel l) { logger_->setMaxLevel(l); }
+void Environment::setLogLevel(LogLevel l)
+{
+  logger_->setMaxLevel(l);
+}
 
-void Environment::startTimer(int &err) {
-  if (timer_) {
+void Environment::startTimer(int& err)
+{
+  if(timer_) {
     err = 0;
     timer_->start();
   } else {
@@ -990,8 +1027,9 @@ void Environment::startTimer(int &err) {
   }
 }
 
-void Environment::stopTimer(int &err) {
-  if (timer_) {
+void Environment::stopTimer(int& err)
+{
+  if(timer_) {
     err = 0;
     timer_->stop();
   } else {
