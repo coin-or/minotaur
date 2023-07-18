@@ -357,6 +357,254 @@ int Problem::checkConVars() const
 }
 
 
+void Problem::classifyCon()
+{
+   ConstraintPtr c;
+   FunctionPtr f;
+   LinearFunctionPtr lf;
+   VariablePtr v;
+   double wt;
+   double INFTY=std::numeric_limits<double>::infinity();
+   int ag=0 ,vb=0,sp=0,sc=0,mb=0,gb=0,ik=0,cc=0,ek=0,kc=0,spp=0,ikk=0,pr=0,bp=0;
+   double wtn;
+   VariablePtr vn;
+   int nposcoefone = 0,nnegcoefone = 0,nposcoef = 0,nnegcoef = 0,nposcont = 0,
+   nnegcont = 0,nposbin = 0,nnegbin = 0,nposint=0,nnegint=0,con=0;
+   double wt1=0,wt2=0,sumnegwt=0;
+   int nvars;
+
+   for (ConstraintConstIterator citer = cons_.begin(); citer != cons_.end(); 
+	++citer) {
+     c = *citer;
+     f = c->getFunction();
+     if (f->getType() != Linear) {
+	continue;
+}
+     lf = f->getLinearFunction();
+     nvars = lf->getNumTerms();
+     nposcoefone = 0;
+     nnegcoefone = 0;
+     nposcoef = 0;
+     nnegcoef = 0;
+     nposcont = 0;
+     nnegcont = 0;
+     nposbin = 0;
+     nnegbin = 0;
+     nposint=0;
+     nnegint=0;
+     wt1=0;
+     wt2=0;
+     sumnegwt=0;
+     con=0;		
+     for (VariableGroupConstIterator it=lf->termsBegin(); it != lf->termsEnd(); ++it) {
+       v = it->first;
+       wt = it->second;
+        if (f->getNumVars() == 2){
+	 if (wt>1e-6){
+	     wt1=wt;	   
+	}
+	 else if (wt<1e-6){
+	     wt2=wt;	   
+	}	
+       }
+	
+	if (wt == 1) {            
+          ++nposcoefone;
+       }
+	else if (wt == -1) {
+            ++nnegcoefone ;
+       }
+	if (wt > 1e-6) {            
+           ++nposcoef;
+       }
+	else if (wt < 1e-6) {            
+           ++nnegcoef;
+       }
+	if (wt>1e-6 && v->getType()!=Binary && v->getType()!=Integer){
+	++nposcont;		
+       }
+	else if (wt<1e-6 && v->getType()!=Binary && v->getType()!=Integer){
+	++nnegcont;			
+       }
+	if (v->getType()==Binary){			
+	  if (wt > 1e-6){
+	     ++nposbin;
+       }
+	  else if (wt < 1e-6){				
+	     ++nnegbin;
+	     sumnegwt+=abs(wt);			
+       }			
+       }
+	if (v->getType()==Integer){
+	   if (wt>1e-6){
+	      ++nposint;
+       }
+	else if (wt <1e-6){
+             ++nnegint;
+       }			
+			
+     }
+
+   }
+
+//for loop used here to find out condition for bin packing if con >=1 means satisfying (ub+sum of neg wt==wt of any of variable) 
+     for (VariableGroupConstIterator it2=lf->termsBegin(); it2 != lf->termsEnd(); ++it2) {
+	wtn = it2->second;
+	vn = it2->first;
+        if (vn->getType()==Binary){
+	  if (c->getUb() + sumnegwt == abs(wtn)){
+	  ++con;       	 
+       }	      
+      }
+     }
+//Code for Aggregation
+ 	if (f->getNumVars() == 2 ){
+	  if (c->getLb()==c->getUb()){
+            logger_->msgStream(LogError) << me_ << "Type is Aggregation!! " << std::endl;
+            c->write(logger_->msgStream(LogError));
+	    ++ag;
+      }
+// Code for Precedence
+	else if (wt1== -wt2 && nposcoef==1 && nnegcoef==1 && c->getUb()<=INFTY && c->getLb()==-INFTY
+	     && (nposbin+nnegbin==2 or nposint+nnegint==2 or nposcont+nnegcont==2)){	
+	     logger_->msgStream(LogError) << me_ << "Type is Precendence!! " << std::endl;
+             c->write(logger_->msgStream(LogError));
+	     ++pr;	
+      }
+// Code for Variable Bound
+	else if ((nposbin + nnegbin >=1) or ((nposcont + nnegcont==1) or (nposint+nnegint==1)) && 
+	     (c->getUb()<= INFTY && c->getLb()>=-INFTY)){
+	      logger_->msgStream(LogError) << me_ << "Type is Variable Bound!! " << std::endl;
+              c->write(logger_->msgStream(LogError));
+	      ++vb;
+      }
+							
+    } 
+
+	else if (v->getType() == Binary ){
+	  if (nposcoefone + nnegcoefone == nvars){
+// Code for Set Partitioning
+	    if ((c->getLb()==1-nnegcoefone && c->getUb()==1-nnegcoefone)) {
+	       logger_->msgStream(LogError) << me_ << "Type is Set Partitioning!! " << std::endl;
+	       c->write(logger_->msgStream(LogError));
+	       ++sp;
+       }
+// Code for Set Packing
+	    else if ((c->getLb()==nposcoefone-1 && c->getUb()==INFTY)
+	        or (c->getUb()==1-nnegcoefone && c->getLb()== -INFTY)){	       
+	       	logger_->msgStream(LogError) << me_ << "Type is Set Packing!! " << std::endl;
+	        c->write(logger_->msgStream(LogError));
+	        ++spp;   
+       }
+// Code for Set Covering 
+	    else if ((c->getLb() == 1 - nnegcoefone && c->getUb() == INFTY)
+		or (c->getUb() == nposcoefone - 1 && c->getLb() == -INFTY)){	            
+	        logger_->msgStream(LogError) << me_ << "Type is Set Covering!! " << std::endl;
+	 	c->write(logger_->msgStream(LogError));
+		++sc;   
+	}
+//Code for Cardinality
+	    else if (c->getLb()==c->getUb() && c->getUb()>=2+nnegcoefone){
+	        logger_->msgStream(LogError) << me_ << "Type is Cardinality!! " << std::endl;
+	 	c->write(logger_->msgStream(LogError));  
+		++cc;	       
+	}
+// Code for Invarient Knapsack
+	    else if (((c->getUb() >= 2 - nnegcoefone && c->getLb() == -INFTY) or 
+		(c->getLb()==nposcoefone-2 && c->getUb()==INFTY))&&(std::abs(c->getUb() - std::floor(c->getUb() + 0.5)) < 1e-6)){	       
+	       	logger_->msgStream(LogError) << me_ << "Type is Invarient Knapsack!! " << std::endl;
+		c->write(logger_->msgStream(LogError)); 
+		++ik; 
+	} 
+// Here adding code for mixed binary
+ 	    else if (nposbin + nnegbin ==nvars && ((c->getLb()>=-INFTY && c->getUb()<=INFTY) or (c->getUb()== c->getLb()))){
+		logger_->msgStream(LogError) << me_ << "Type is Mixed Binary!! " << std::endl;
+		c->write(logger_->msgStream(LogError));
+		++mb;		
+	}
+      }
+// Code for Equation Knapsack 
+	else if (nposcoef + nnegcoef ==nvars){	  
+           if ((c->getUb()+sumnegwt >=2 && c->getUb()== c->getLb()) &&
+	      (std::abs(c->getUb() - std::floor(c->getUb() + 0.5)) < 1e-6)){
+	      logger_->msgStream(LogError) << me_ << "Type is Equation Knapsack!! " << std::endl;
+	      c->write(logger_->msgStream(LogError)); 
+	      ++ek; 
+      }
+//Code for bin packing
+	else if (c->getUb() + sumnegwt >=2 && (std::abs(c->getUb() - std::floor(c->getUb() + 0.5)) < 1e-6)&& con>=1){ 
+	        logger_->msgStream(LogError) << me_ << "Type Bin Packing!! " << std::endl;
+			    c->write(logger_->msgStream(LogError)); 
+	     ++bp; 	       
+	       }
+// Code for Knapsack
+	else if (((c->getLb()+2<=sumnegwt && c->getUb()==INFTY) && (std::abs(c->getLb() - std::floor(c->getLb() + 0.5)) < 1e-6))
+	     or(c->getUb()+sumnegwt >=2 && c->getLb()== -INFTY && (std::abs(c->getUb() - std::floor(c->getUb() + 0.5)) < 1e-6))){	       
+	     logger_->msgStream(LogError) << me_ << "Type is Knapsack!! " << std::endl;
+	     c->write(logger_->msgStream(LogError)); 
+	     ++kc;  
+       }
+// Code for Mixed Binary
+    	else if (nposbin + nnegbin ==nvars && ((c->getLb()>=-INFTY && c->getUb()<=INFTY) or (c->getUb()== c->getLb()))){
+	     logger_->msgStream(LogError) << me_ << "Type is Mixed Binary!! " << std::endl;
+	     c->write(logger_->msgStream(LogError));
+	     ++mb;		
+	}	   
+      }
+    }
+//For Integer Knapsack
+	else if (nposcoef + nnegcoef ==nvars && v->getType() == Integer && 
+		        (std::abs(c->getUb() - std::floor(c->getUb() + 0.5)) < 1e-6)){
+	     if (c->getLb()==-INFTY && c->getUb()<=INFTY){					
+		logger_->msgStream(LogError) << me_ << "Type is Integer Knapsack!! " << std::endl;
+		c->write(logger_->msgStream(LogError));
+		++ikk;			
+	}
+      }
+//For Mixed Binary	
+	else if (nposcont + nnegcont + nposbin + nnegbin+nposint + nnegint ==nvars){
+	     if (((c->getLb()==-INFTY && c->getUb()<=INFTY) or (c->getUb()== c->getLb()))&& nposbin + nnegbin>=1){					
+	     logger_->msgStream(LogError) << me_ << "Type is Mixed Binary!! " << std::endl;
+	     c->write(logger_->msgStream(LogError));
+	     ++mb;			
+      }
+	else if (nposcont + nnegcont+nposint+nnegint==nvars ){
+	    if ((c->getLb()==-INFTY && c->getUb()<=INFTY) or (c->getUb()== c->getLb())){
+	     logger_->msgStream(LogError) << me_ << "Type is General Mixed Linear!! " << std::endl;
+	     c->write(logger_->msgStream(LogError));
+	     ++gb;		
+      }	
+    }
+	else {
+             logger_->msgStream(LogError) << me_ << "Type is General Linear with no specific structure!! " << std::endl;
+	     c->write(logger_->msgStream(LogError));
+    }
+
+  }
+
+ }
+//Here Adding table for Number of each constraints
+std::cout << "--------------------------------------------" << std::endl;
+    std::cout << "|        Constraints Size                  |" << std::endl;
+    std::cout << "|------------------------------------------|" << std::endl;
+    std::cout << "|Aggregation Constraints      |" << std::setw(7) << ag << "     |" << std::endl;
+    std::cout << "|Precedence Constraints       |" << std::setw(7) << pr << "     |" << std::endl;
+    std::cout << "|Variable bound Constraints   |" << std::setw(7) << vb << "     |" << std::endl;
+    std::cout << "|Partitioning Constraints     |" << std::setw(7) << sp << "     |" << std::endl;
+    std::cout << "|Set covering Constraints     |" << std::setw(7) << sc << "     |" << std::endl;
+    std::cout << "|Mixed Binary Constraints     |" << std::setw(7) << mb << "     |" << std::endl;
+    std::cout << "|General Mixed Constraint     |" << std::setw(7) << gb << "     |" << std::endl;
+    std::cout << "|Set Packing Constraints      |" << std::setw(7) << spp << "     |" << std::endl;
+    std::cout << "|Cardinality Constraints      |" << std::setw(7) << cc << "     |" << std::endl;
+    std::cout << "|Invarient Knapsack Constraint|" << std::setw(7) << ik << "     |" << std::endl;
+    std::cout << "|Equation Knapsack Constraint |" << std::setw(7) << ek << "     |" << std::endl;
+    std::cout << "|Bin Packing Constraint       |" << std::setw(7) << bp << "     |" << std::endl;
+    std::cout << "|Knapsack Constraints         |" << std::setw(7) << kc << "     |" << std::endl;
+    std::cout << "|Integer Knapsack Constraint  |" << std::setw(7) << ikk << "     |" << std::endl;
+    std::cout << "--------------------------------------------" << std::endl;
+	
+}
+
 // Does not clone Jacobian and Hessian yet.
 ProblemPtr Problem::clone(EnvPtr env) const
 {
@@ -467,8 +715,6 @@ ProblemPtr Problem::clone(EnvPtr env) const
 
   return clonePtr;
 }
-
-
 
 
 ProblemPtr Problem::shuffle(bool varshuff, bool conshuff, EnvPtr env)
@@ -682,14 +928,6 @@ ProblemPtr Problem::shuffle(bool varshuff, bool conshuff, EnvPtr env)
 
   return newp;
 }
-
-
-
-
-
-
-
-
 
 
 void Problem::cg2qf()
@@ -1932,45 +2170,38 @@ double Problem::getSizeEstimate()
 }
 
 
-void Problem::writeSize(std::ostream &out) const
-{
-  out << "Problem size:" << std::endl
-    << " Number of variables = " << size_->vars << std::endl
-    << " Number of binary variables = " << size_->bins << std::endl
-    << " Number of general integer variables = " << size_->ints << std::endl
-    << " Number of continuous variables = " << size_->conts << std::endl
-    << " Number of fixed variables = " << size_->fixed << std::endl
-    << " Number of constraints = " << size_->cons << std::endl
-    << " Number of linear constraints = " << size_->linCons << std::endl
-    << " Number of SOS1 constraints = " << size_->SOS1Cons << std::endl
-    << " Number of SOS2 constraints = " << size_->SOS2Cons << std::endl
-    << " Number of bilinear constraints = " << size_->bilinCons << std::endl
-    << " Number of multilinear constraints = " << size_->multilinCons 
-    << std::endl
-    << " Number of quadratic constraints = " << size_->quadCons << std::endl
-    << " Number of nonlinear constraints = " << size_->nonlinCons << std::endl
-    << " Number of constraints with linear terms = " << size_->consWithLin 
-    << std::endl
-    << " Number of constraints with bilinear terms = " << size_->consWithBilin 
-    << std::endl
-    << " Number of constraints with multilinear terms = " 
-    << size_->consWithMultilin << std::endl
-    << " Number of constraints with quadratic terms = " << size_->consWithQuad 
-    << std::endl
-    << " Number of linear terms in constraints = " << size_->linTerms 
-    << std::endl
-    << " Number of multilinear terms in constraints = " << size_->multiLinTerms 
-    << std::endl
-    << " Number of quadratic terms in constraints = " << size_->quadTerms 
-    << std::endl
-    << " Number of objectives = " << size_->objs << std::endl
-    << " Number of linear terms in objective = " << size_->objLinTerms 
-    << std::endl
-    << " Number of quadratic terms in objective = " <<  size_->objQuadTerms
-    << std::endl
-    << " Type of objective = " <<  getFunctionTypeString(size_->objType)
-    << std::endl;
+void Problem::writeSize(std::ostream& out) const {
+    out << "-----------------------------------------------------" << std::endl;
+    out << "|                 Problem Size                      |" << std::endl;
+    out << "|---------------------------------------------------|" << std::endl;
+    out << "| # variables                            " << std::setw(7) << size_->vars << "    |" << std::endl;
+    out << "| # binary variables                     " << std::setw(7) << size_->bins << "    |" << std::endl;
+    out << "| # general integer variables            " << std::setw(7) << size_->ints << "    |" << std::endl;
+    out << "| # continuous variables                 " << std::setw(7) << size_->conts << "    |" << std::endl;
+    out << "| # fixed variables                      " << std::setw(7) << size_->fixed << "    |" << std::endl;
+    out << "| # constraints                          " << std::setw(7) << size_->cons << "    |" << std::endl;
+    out << "| # linear constraints                   " << std::setw(7) << size_->linCons << "    |" << std::endl;
+    out << "| # SOS1 constraints                     " << std::setw(7) << size_->SOS1Cons << "    |" << std::endl;
+    out << "| # SOS2 constraints                     " << std::setw(7) << size_->SOS2Cons << "    |" << std::endl;
+    out << "| # bilinear constraints                 " << std::setw(7) << size_->bilinCons << "    |" << std::endl;
+    out << "| # multilinear constraints              " << std::setw(7) << size_->multilinCons << "    |" << std::endl;
+    out << "| # quadratic constraints                " << std::setw(7) << size_->quadCons << "    |" << std::endl;
+    out << "| # nonlinear constraints                " << std::setw(7) << size_->nonlinCons << "    |" << std::endl;
+    out << "| # constraints with linear terms        " << std::setw(7) << size_->consWithLin << "    |" << std::endl;
+    out << "| # constraints with bilinear terms      " << std::setw(7) << size_->consWithBilin << "    |" << std::endl;
+    out << "| # constraints with multilinear terms   " << std::setw(7) << size_->consWithMultilin << "    |" << std::endl;
+    out << "| # constraints with quadratic terms     " << std::setw(7) << size_->consWithQuad << "    |" << std::endl;
+    out << "| # linear terms in constraints          " << std::setw(7) << size_->linTerms << "    |" << std::endl;
+    out << "| # multilinear terms in constraints     " << std::setw(7) << size_->multiLinTerms << "    |" << std::endl;
+    out << "| # quadratic terms in constraints       " << std::setw(7) << size_->quadTerms << "    |" << std::endl;
+    out << "| # objectives                           " << std::setw(7) << size_->objs << "    |" << std::endl;
+    out << "| # linear terms in objective            " << std::setw(7) << size_->objLinTerms << "    |" << std::endl;
+    out << "| # quadratic terms in objective         " << std::setw(7) << size_->objQuadTerms << "    |" << std::endl;
+    out << "| Type of objective           :   " <<std::setw(4)<< getFunctionTypeString(size_->objType) << "         |" << std::endl;
+    out << "-----------------------------------------------------" << std::endl;
 }
+
+
 
 // Local Variables: 
 // mode: c++ 

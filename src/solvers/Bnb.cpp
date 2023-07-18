@@ -428,10 +428,18 @@ int Bnb::solve(ProblemPtr p)
     goto CLEANUP;
   }
 
+
+  env_->getLogger()->msgStream(LogInfo) << me_ << "Starting constraint classification\n";
+  oinst_->classifyCon();
+  env_->getLogger()->msgStream(LogInfo) << me_ << "Finished constraint classification\n";
+
+
   err = getEngine_(&engine);
   if (err) {
     goto CLEANUP;
   }
+
+
 
   bab = getBab_(engine, handlers);
 
