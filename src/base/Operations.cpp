@@ -77,7 +77,7 @@ double Minotaur::InnerProduct(const double *x, const double *a, int n)
 }
 
 
-bool Minotaur::IsInt(double v, double tol) 
+bool Minotaur::isInt(double v, double tol) 
 {
   return (fabs(floor(v+0.5)-v)<tol);
 }

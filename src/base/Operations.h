@@ -16,7 +16,7 @@
 #include "LinearFunction.h"
 
 namespace Minotaur {
-  bool IsInt(double v, double tol=1e-12);
+  bool isInt(double v, double tol=1e-12);
 
   double InnerProduct(const VariableGroup &g1, const VariableGroup &g2);
 
