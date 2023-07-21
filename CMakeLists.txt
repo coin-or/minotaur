@@ -16,7 +16,6 @@ INCLUDE(FindPkgConfig OPTIONAL RESULT_VARIABLE MNTR_PKGCON)
 
 set (MSG_HEAD "Minotaur config: ")  ## must preceed every message.
 
-
 if("${CMAKE_HOST_SYSTEM}" MATCHES ".*Windows.*")
   set(SEP "\\;")
 else() # e.g. Linux
@@ -83,6 +82,20 @@ if (${BUILD_SHARED_LIBS})
       set(MNTR_INSTALL_RPATH ${PROJECT_BINARY_DIR}/${CMAKE_INSTALL_PREFIX}/lib)
     endif()
   endif()
+
+###########################################################################
+## OpenMP is a requirement 
+###########################################################################
+FIND_PACKAGE(OpenMP)
+if(OPENMP_FOUND)
+  message(STATUS ${MSG_HEAD} "OpenMP support detected.")
+  add_definitions(-DUSE_OPENMP=1)	
+  set (CMAKE_C_FLAGS "${CMAKE_C_FLAGS} ${OpenMP_C_FLAGS}")
+  set (CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} ${OpenMP_CXX_FLAGS}")
+else()
+  message(FATAL_ERROR
+  ${MSG_HEAD} "OpenMP is required, but was not found")
+endif()
 
 ###########################################################################
 ## getrusage
@@ -155,26 +168,6 @@ message(STATUS ${MSG_HEAD} "SPEW flag is " ${SPEW_FLAG})
 
 
 ###########################################################################
-## OPENMP option
-###########################################################################
-OPTION (USE_OpenMP "Use OpenMP." ON)
-if(${USE_OpenMP})
-  FIND_PACKAGE(OpenMP)
-  if(OPENMP_FOUND)
-    add_definitions(-DUSE_OPENMP=1)	
-    set (CMAKE_C_FLAGS "${CMAKE_C_FLAGS} ${OpenMP_C_FLAGS}")
-    set (CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} ${OpenMP_CXX_FLAGS}")
-    message(STATUS ${MSG_HEAD} "OpenMP support detected.")
-  else()
-    message(FATAL_ERROR " ${MSG_HEAD}" 
-	    "Cannot find OPENMP in the system.")
-  endif()
-else()
-  add_definitions(-DUSE_OPENMP=0)	
-endif()
-
-
-###########################################################################
 ## Debug options
 ###########################################################################
 if ("${CMAKE_BUILD_TYPE}" STREQUAL "Debug")
@@ -189,31 +182,36 @@ endif()
 ###########################################################################
 ## Filter-SQP and BQPD
 ###########################################################################
+set (USE_FILTERSQP TRUE CACHE BOOL 
+  "If true, link to FilterSQP and BQPD solvers")
 set (FILTER_LIB_DIR)          ## NULL
 set (LINK_FILTER_SQP)         ## NULL
+set (FILTER_SQP_LIBS)         ## NULL
 
-message(STATUS ${MSG_HEAD} "Searching for Filter-SQP and BQPD ...")
-set (FILTER_LIB_DIR "" CACHE PATH 
-  "Path to Filter-SQP library. This directory must have a libfilter and libbqpd file.") 
-set (FILTER_LIB_DIR_F ${FILTER_LIB_DIR})
-
-if (("${FILTER_LIB_DIR_F}" STREQUAL "") AND 
-    (NOT ("${TP_ABS_PATH}" STREQUAL "")))
-    set (FILTER_LIB_DIR_F ${TP_ABS_PATH}/lib)
-endif()
-
-message(STATUS ${MSG_HEAD} "FILTER_LIB_DIR_F is set to ${FILTER_LIB_DIR_F}")
-if (FILTER_LIB_DIR_F)
-  if (EXISTS "${FILTER_LIB_DIR_F}")
-    message(STATUS ${MSG_HEAD} "Filter-SQP library directory exists.")
-    set (LINK_FILTER_SQP 1)
-    set (FILTER_SQP_LIBS "bqpd" "filtersqp")
-  else()
-    message(FATAL_ERROR " ${MSG_HEAD} FILTER_LIB_DIR_F "
-    "${FILTER_LIB_DIR_F} not found.")
+if (${USE_FILTERSQP})
+  message(STATUS ${MSG_HEAD} "Searching for Filter-SQP and BQPD ...")
+  set (FILTER_LIB_DIR "" CACHE PATH 
+    "Path to Filter-SQP library. This directory must have a libfilter and libbqpd file.") 
+  set (FILTER_LIB_DIR_F ${FILTER_LIB_DIR})
+  
+  if (("${FILTER_LIB_DIR_F}" STREQUAL "") AND 
+      (NOT ("${TP_ABS_PATH}" STREQUAL "")))
+      set (FILTER_LIB_DIR_F ${TP_ABS_PATH}/lib)
+  endif()
+  
+  message(STATUS ${MSG_HEAD} "FILTER_LIB_DIR_F is set to ${FILTER_LIB_DIR_F}")
+  if (FILTER_LIB_DIR_F)
+    if (EXISTS "${FILTER_LIB_DIR_F}")
+      message(STATUS ${MSG_HEAD} "Filter-SQP library directory exists.")
+      set (LINK_FILTER_SQP 1)
+      set (FILTER_SQP_LIBS "bqpd" "filtersqp")
+    else()
+      message(FATAL_ERROR " ${MSG_HEAD} FILTER_LIB_DIR_F "
+      "${FILTER_LIB_DIR_F} not found.")
+    endif()
   endif()
 endif()
-
+  
 if (LINK_FILTER_SQP)
   message(STATUS ${MSG_HEAD} "Link Filter-SQP and BQPD? Yes.")
 else()
@@ -229,77 +227,80 @@ set (USE_PKGCON_BOOL TRUE CACHE BOOL
 ###########################################################################
 ## Ipopt
 ###########################################################################
+set (USE_IPOPT TRUE CACHE BOOL "If true, link to IPOPT solver")
 set (IPOPT_INC_DIR)          ## NULL
 set (IPOPT_LIB_DIR)          ## NULL
 set (LINK_IPOPT)             ## NULL
 set (IPOPT_LIBS)             ## NULL
 
-message(STATUS ${MSG_HEAD} "Searching for Ipopt ...")
-set (IPOPT_INC_DIR "" CACHE PATH 
-  "Path to Ipopt headers. It must have coin/IpIpoptApplication.hpp file.") 
-set (IPOPT_INC_DIR_F ${IPOPT_INC_DIR})
-if (("${IPOPT_INC_DIR_F}" STREQUAL "") AND
-    (NOT ("${TP_ABS_PATH}" STREQUAL "")))
-  set (IPOPT_INC_DIR_F "${TP_ABS_PATH}/include")
-endif()
-
-
-set (IPOPT_LIB_DIR "" CACHE PATH 
-  "Path to Ipopt library. It must have a libipopt file.") 
-set (IPOPT_LIB_DIR_F ${IPOPT_LIB_DIR})
-if (("${IPOPT_LIB_DIR_F}" STREQUAL "") AND
-       (NOT ("${TP_ABS_PATH}" STREQUAL "")))
-  set (IPOPT_LIB_DIR_F "${TP_ABS_PATH}/lib")
-endif()
-
-message(STATUS ${MSG_HEAD} "IPOPT_INC_DIR_F is set to ${IPOPT_INC_DIR_F}")
-message(STATUS ${MSG_HEAD} "IPOPT_LIB_DIR_F is set to ${IPOPT_LIB_DIR_F}")
-
-if (IPOPT_INC_DIR_F)
-  ## complain if header not found
-  if (NOT EXISTS "${IPOPT_INC_DIR_F}/coin/IpIpoptApplication.hpp")
-    message(FATAL_ERROR " ${MSG_HEAD}" 
-            "${IPOPT_INC_DIR_F}/coin/IpIpoptApplication.hpp not found.")
+if (${USE_IPOPT})
+  message(STATUS ${MSG_HEAD} "Searching for Ipopt ...")
+  set (IPOPT_INC_DIR "" CACHE PATH 
+    "Path to Ipopt headers. It must have coin/IpIpoptApplication.hpp file.") 
+  set (IPOPT_INC_DIR_F ${IPOPT_INC_DIR})
+  if (("${IPOPT_INC_DIR_F}" STREQUAL "") AND
+      (NOT ("${TP_ABS_PATH}" STREQUAL "")))
+    set (IPOPT_INC_DIR_F "${TP_ABS_PATH}/include")
   endif()
-
-  ## complain if library not specified
-  if (NOT IPOPT_LIB_DIR_F)
-    message(FATAL_ERROR " ${MSG_HEAD}" 
-            "IPOPT_LIB_DIR must be set along with IPOPT_INC_DIR")
+  
+  
+  set (IPOPT_LIB_DIR "" CACHE PATH 
+    "Path to Ipopt library. It must have a libipopt file.") 
+  set (IPOPT_LIB_DIR_F ${IPOPT_LIB_DIR})
+  if (("${IPOPT_LIB_DIR_F}" STREQUAL "") AND
+         (NOT ("${TP_ABS_PATH}" STREQUAL "")))
+    set (IPOPT_LIB_DIR_F "${TP_ABS_PATH}/lib")
   endif()
-
-  ## check if library found
-  if (EXISTS ${IPOPT_LIB_DIR_F})
-    message(STATUS ${MSG_HEAD} "Ipopt library directory exists.")
-    set (LINK_IPOPT 1)
-    if (${BUILD_SHARED_LIBS})
-      set (MNTR_INSTALL_RPATH ${MNTR_INSTALL_RPATH} ${IPOPT_LIB_DIR_F})
+  
+  message(STATUS ${MSG_HEAD} "IPOPT_INC_DIR_F is set to ${IPOPT_INC_DIR_F}")
+  message(STATUS ${MSG_HEAD} "IPOPT_LIB_DIR_F is set to ${IPOPT_LIB_DIR_F}")
+  
+  if (IPOPT_INC_DIR_F)
+    ## complain if header not found
+    if (NOT EXISTS "${IPOPT_INC_DIR_F}/coin/IpIpoptApplication.hpp")
+      message(FATAL_ERROR " ${MSG_HEAD}" 
+              "${IPOPT_INC_DIR_F}/coin/IpIpoptApplication.hpp not found.")
     endif()
-
-    set (MNTR_IPOPT_PC_LIBRARIES)
-    if (MNTR_HAVE_PKGCON)
-       set (ENV{PKG_CONFIG_PATH}
-           "${IPOPT_LIB_DIR_F}/pkgconfig${SEP}$ENV{PKG_CONFIG_PATH}")
-       pkg_check_modules(MNTR_IPOPT_PC ipopt)
-       message(STATUS ${MSG_HEAD} "Ipopt libraries: "
-	       "${MNTR_IPOPT_PC_LIBRARIES}")
-       message(STATUS ${MSG_HEAD} "pkgconfig path = "
-	       "${IPOPT_LIB_DIR_F}/pkgconfig")
-       set (IPOPT_LIBS ${MNTR_IPOPT_PC_LIBRARIES})
+  
+    ## complain if library not specified
+    if (NOT IPOPT_LIB_DIR_F)
+      message(FATAL_ERROR " ${MSG_HEAD}" 
+              "IPOPT_LIB_DIR must be set along with IPOPT_INC_DIR")
     endif()
-
-    if ((NOT (MNTR_HAVE_PKGCON)) OR
-	("${MNTR_IPOPT_PC_LIBRARIES}" STREQUAL ""))
-       set (IPOPT_LIBS "ipopt")
+  
+    ## check if library found
+    if (EXISTS ${IPOPT_LIB_DIR_F})
+      message(STATUS ${MSG_HEAD} "Ipopt library directory exists.")
+      set (LINK_IPOPT 1)
+      if (${BUILD_SHARED_LIBS})
+        set (MNTR_INSTALL_RPATH ${MNTR_INSTALL_RPATH} ${IPOPT_LIB_DIR_F})
+      endif()
+  
+      set (MNTR_IPOPT_PC_LIBRARIES)
+      if (MNTR_HAVE_PKGCON)
+         set (ENV{PKG_CONFIG_PATH}
+             "${IPOPT_LIB_DIR_F}/pkgconfig${SEP}$ENV{PKG_CONFIG_PATH}")
+         pkg_check_modules(MNTR_IPOPT_PC ipopt)
+         message(STATUS ${MSG_HEAD} "Ipopt libraries: "
+  	       "${MNTR_IPOPT_PC_LIBRARIES}")
+         message(STATUS ${MSG_HEAD} "pkgconfig path = "
+  	       "${IPOPT_LIB_DIR_F}/pkgconfig")
+         set (IPOPT_LIBS ${MNTR_IPOPT_PC_LIBRARIES})
+      endif()
+  
+      if ((NOT (MNTR_HAVE_PKGCON)) OR
+  	("${MNTR_IPOPT_PC_LIBRARIES}" STREQUAL ""))
+         set (IPOPT_LIBS "ipopt")
+      endif()
+  
+    else()
+      message(FATAL_ERROR " ${MSG_HEAD} "
+              "IPOPT_LIB_DIR_F ${IPOPT_LIB_DIR_F} not found.")
     endif()
-
-  else()
-    message(FATAL_ERROR " ${MSG_HEAD} "
-            "IPOPT_LIB_DIR_F ${IPOPT_LIB_DIR_F} not found.")
+  elseif (IPOPT_LIB_DIR_F)
+      message(FATAL_ERROR " ${MSG_HEAD}" 
+              "IPOPT_INC_DIR must be set along with IPOPT_LIB_DIR")
   endif()
-elseif (IPOPT_LIB_DIR_F)
-    message(FATAL_ERROR " ${MSG_HEAD}" 
-            "IPOPT_INC_DIR must be set along with IPOPT_LIB_DIR")
 endif()
 
 if (LINK_IPOPT)
