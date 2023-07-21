@@ -1364,7 +1364,7 @@ void CNode::propBounds(bool *is_inf, int *error)
     break;
   case (OpPowK):
     if (r_->val_>0) {
-      if (IsInt(r_->val_/2.0)) { 
+      if (isInt(r_->val_/2.0)) { 
         if (ub_<-1e-12) {
           *error = 3141;
         } else {
@@ -1373,7 +1373,7 @@ void CNode::propBounds(bool *is_inf, int *error)
           l_->propBounds_(lb, ub, is_inf);
           // std::cout << "new bounds = " << lb << " " << ub << std::endl;
         }
-      } else if (IsInt((r_->val_+1)/2.0)) { 
+      } else if (isInt((r_->val_+1)/2.0)) { 
         if (lb < 0) {
           lb = -pow(-lb_, 1.0/r_->val_);
         } else {
