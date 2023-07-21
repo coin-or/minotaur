@@ -122,6 +122,8 @@ namespace Minotaur {
      */
     virtual int checkConVars() const;
 
+    virtual void classifyCon();
+
     /**
      * \brief Clone the given Problem class. Jacobian and Hessian in the cloned
      * problem are NULL.
