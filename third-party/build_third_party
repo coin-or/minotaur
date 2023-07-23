@@ -69,11 +69,15 @@ ENABLE_STATIC=0
 STATIC_ARGS=
 USE_CURL=0
 USE_MAC=0
+LAPACK_COMP=0
+LAPACK_FLAGS=( )
 MAC_ARGS=
-while getopts "bc:Cdfg:hij:l:Or:st:" flag
+WIN=0
+
+while getopts "bc:Cdfg:hij:l:Or:st:w" flag
 do
   case ${flag} in
-    b) LAPACK=1 ;;
+    b) LAPACK_COMP=1 ;;
     c) CPX_OPT=${OPTARG} ;;
     C) USE_CURL=1 ;;
     d) DL_TAR=0 ;;
@@ -87,6 +91,7 @@ do
     r) ERR=${OPTARG} ;;
     s) ENABLE_STATIC=1 ;;
     t) TARURL=${OPTARG} ;;
+    w) WIN=1 ;;
     *) echo>&2 "invalid option ${flag}"; usage; exit 1;;
   esac
 done
@@ -165,7 +170,7 @@ cd ${TPROOT}/${SNAME}/${CPPUNIT}
 rm -rf build
 mkdir -p build  
 cd build
-../configure --prefix=${TPROOT} --enable-doxygen=no ${STATIC_ARGS} LIBS='-ldl'
+../configure --prefix=${TPROOT} --enable-doxygen=no ${STATIC_ARGS}
 make -j ${CPUS} && make -j ${CPUS} install
 cd ${TPROOT}
 
@@ -178,15 +183,20 @@ else
 	cp ${TPROOT}/${SNAME}/${BQPD}/libbqpd.a ${TPROOT}/lib/
 fi
 
-if [ "${LAPACK}" == "1" ]
+if [ "${LAPACK_COMP}" == "1" ]
 then
   echo "compiling LAPACK"
   cd ${TPROOT}/${SNAME}/${LAPACK}
   rm -rf build
   mkdir -p build  
   cd build
-  cmake -DCMAKE_INSTALL_PREFIX:PATH=${TPROOT} -DBUILD_TESTING:BOOL=OFF ..
+  if [ "${WIN}" == "1" ]
+  then
+    WIN_FLAGS=(-G "MSYS Makefiles")
+  fi
+  cmake -DCMAKE_INSTALL_PREFIX:PATH=${TPROOT} -DBUILD_TESTING:BOOL=OFF "${WIN_FLAGS[@]}" ..
   make -j ${CPUS} && make -j ${CPUS} install
+  LAPACK_FLAGS=(--with-lapack="-L${TPROOT}/lib -llapack -lblas -lgfortran")
 else
   echo "not compiling LAPACK"
 fi
@@ -203,10 +213,10 @@ else
   mkdir -p build/Ipopt build/Mumps  
   echo -n "Mumps Ipopt " > build/coin_subdirs.txt
   cd ${TPROOT}/${SNAME}/${IPOPT}/build/Mumps
-  ${TPROOT}/${SNAME}/${IPOPT}/Mumps/configure ${STATIC_ARGS} ${MAC_ARGS} --disable-dependency-tracking --prefix=${TPROOT}
+  ${TPROOT}/${SNAME}/${IPOPT}/Mumps/configure --without-metis --disable-openmp ${STATIC_ARGS} ${MAC_ARGS} --disable-dependency-tracking --prefix=${TPROOT} "${LAPACK_FLAGS[@]}"
   make install
   cd ${TPROOT}/${SNAME}/${IPOPT}/build/Ipopt
-  ${TPROOT}/${SNAME}/${IPOPT}/Ipopt/configure ${STATIC_ARGS} ${MAC_ARGS} --disable-dependency-tracking --prefix=${TPROOT}
+  ${TPROOT}/${SNAME}/${IPOPT}/Ipopt/configure ${STATIC_ARGS} ${MAC_ARGS} --disable-java --disable-sipopt --disable-dependency-tracking --prefix=${TPROOT}  "${LAPACK_FLAGS[@]}"
   make -j ${CPUS} install
   mv -t ${TPROOT}/include/coin/ ${TPROOT}/include/coin-or/* 
 fi
