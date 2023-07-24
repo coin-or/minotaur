@@ -424,6 +424,7 @@ void StrongBrancher::strongBranch_(BrCandPtr cand, double& obj_up,
   delete mod;
 
   // now go up.
+  status_up = EngineUnknownStatus;
   mod = h->getBrMod(cand, x_, rel_, UpBranch);
   mod->applyToProblem(rel_);
   if(stronger_) {
@@ -436,12 +437,12 @@ void StrongBrancher::strongBranch_(BrCandPtr cand, double& obj_up,
     for(HandlerIterator it = handlers_.begin(); it != handlers_.end(); ++it) {
       is_inf = (*it)->getStrongerMods(rel_, node, s_pool, p_mods, r_mods);
       if(is_inf) {
-        status_down = ProvenInfeasible;
+        status_up = ProvenInfeasible;
         break;
       }
     }
   }
-  if(status_down == EngineUnknownStatus) {
+  if(status_up == EngineUnknownStatus) {
     stime = timer_->query();
     status_up = engine_->solve();
     stats_->time += timer_->query() - stime;
