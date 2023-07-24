@@ -134,6 +134,7 @@ set (MINOTAUR_SOURCES
      base/TransSep.cpp
      base/TreeManager.cpp 
      base/UnivarQuadHandler.cpp
+     base/WeakBrancher.cpp
      base/Types.cpp 
      base/UnambRelBrancher.cpp
      base/VarBoundMod.cpp 
@@ -276,6 +277,7 @@ set (MINOTAUR_HEADERS
      base/Types.h
      base/UnivarQuadHandler.h
      base/UnambRelBrancher.h
+     base/WeakBrancher.h
      base/VarBoundMod.h 
      base/WarmStart.h
      base/Variable.h
