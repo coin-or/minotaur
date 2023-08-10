@@ -72,6 +72,11 @@ double WeakBrancher::computeObjChange_(DoubleVector oldLb, DoubleVector oldUb)
       change = rCost_[v->getIndex()] * (v->getUb() - oldUb[v->getIndex()]);
       obj_change += change > 0 ? change : 0;
     }
+#if SPEW
+    logger_->msgStream(LogDebug2) << me_ << "variable " << v->getName()
+                                  << " reduced cost = " << rCost_[v->getIndex()]
+                                  << " change = " << change << std::endl;
+#endif
   }
 
   return obj_change;

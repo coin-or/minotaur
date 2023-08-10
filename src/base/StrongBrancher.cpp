@@ -67,6 +67,10 @@ StrongBrancher::~StrongBrancher()
 void StrongBrancher::doStronger()
 {
   stronger_ = true;
+#if SPEW
+  logger_->msgStream(LogDebug)
+      << me_ << "Enabling Stronger Branching" << std::endl;
+#endif
 }
 
 BrCandPtr StrongBrancher::findBestCandidate_(const double objval,
