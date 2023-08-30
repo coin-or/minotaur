@@ -122,6 +122,8 @@ namespace Minotaur {
      */
     virtual int checkConVars() const;
 
+
+    // Here adding code for Classification of Constraints 
     virtual void classifyCon();
 
     /**

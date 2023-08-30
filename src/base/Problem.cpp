@@ -357,6 +357,10 @@ int Problem::checkConVars() const
 }
 
 
+
+
+// Here code for Contraints Classification
+
 void Problem::classifyCon()
 {
    ConstraintPtr c;
@@ -587,23 +591,39 @@ void Problem::classifyCon()
 std::cout << "--------------------------------------------" << std::endl;
     std::cout << "|        Constraints Size                  |" << std::endl;
     std::cout << "|------------------------------------------|" << std::endl;
-    std::cout << "|Aggregation Constraints      |" << std::setw(7) << ag << "     |" << std::endl;
-    std::cout << "|Precedence Constraints       |" << std::setw(7) << pr << "     |" << std::endl;
-    std::cout << "|Variable bound Constraints   |" << std::setw(7) << vb << "     |" << std::endl;
-    std::cout << "|Partitioning Constraints     |" << std::setw(7) << sp << "     |" << std::endl;
-    std::cout << "|Set covering Constraints     |" << std::setw(7) << sc << "     |" << std::endl;
-    std::cout << "|Mixed Binary Constraints     |" << std::setw(7) << mb << "     |" << std::endl;
+    std::cout << "|Aggregation Constraint       |" << std::setw(7) << ag << "     |" << std::endl;
+    std::cout << "|Precedence Constraint        |" << std::setw(7) << pr << "     |" << std::endl;
+    std::cout << "|Variable bound Constraint    |" << std::setw(7) << vb << "     |" << std::endl;
+    std::cout << "|Partitioning Constraint      |" << std::setw(7) << sp << "     |" << std::endl;
+    std::cout << "|Set covering Constraint      |" << std::setw(7) << sc << "     |" << std::endl;
+    std::cout << "|Mixed Binary Constraint      |" << std::setw(7) << mb << "     |" << std::endl;
     std::cout << "|General Mixed Constraint     |" << std::setw(7) << gb << "     |" << std::endl;
-    std::cout << "|Set Packing Constraints      |" << std::setw(7) << spp << "     |" << std::endl;
-    std::cout << "|Cardinality Constraints      |" << std::setw(7) << cc << "     |" << std::endl;
+    std::cout << "|Set Packing Constraint       |" << std::setw(7) << spp << "     |" << std::endl;
+    std::cout << "|Cardinality Constraint       |" << std::setw(7) << cc << "     |" << std::endl;
     std::cout << "|Invarient Knapsack Constraint|" << std::setw(7) << ik << "     |" << std::endl;
     std::cout << "|Equation Knapsack Constraint |" << std::setw(7) << ek << "     |" << std::endl;
     std::cout << "|Bin Packing Constraint       |" << std::setw(7) << bp << "     |" << std::endl;
-    std::cout << "|Knapsack Constraints         |" << std::setw(7) << kc << "     |" << std::endl;
+    std::cout << "|Knapsack Constraint          |" << std::setw(7) << kc << "     |" << std::endl;
     std::cout << "|Integer Knapsack Constraint  |" << std::setw(7) << ikk << "     |" << std::endl;
     std::cout << "--------------------------------------------" << std::endl;
 	
 }
+
+
+
+//End of Constraints Classifications
+
+
+
+
+
+
+
+
+
+
+
+
 
 // Does not clone Jacobian and Hessian yet.
 ProblemPtr Problem::clone(EnvPtr env) const
@@ -2171,6 +2191,7 @@ double Problem::getSizeEstimate()
 
 
 void Problem::writeSize(std::ostream& out) const {
+    
     out << "-----------------------------------------------------" << std::endl;
     out << "|                 Problem Size                      |" << std::endl;
     out << "|---------------------------------------------------|" << std::endl;
@@ -2197,7 +2218,7 @@ void Problem::writeSize(std::ostream& out) const {
     out << "| # objectives                           " << std::setw(7) << size_->objs << "    |" << std::endl;
     out << "| # linear terms in objective            " << std::setw(7) << size_->objLinTerms << "    |" << std::endl;
     out << "| # quadratic terms in objective         " << std::setw(7) << size_->objQuadTerms << "    |" << std::endl;
-    out << "| Type of objective           :   " <<std::setw(4)<< getFunctionTypeString(size_->objType) << "         |" << std::endl;
+    out << "  Type of objective           :   " <<std::setw(4)<< getFunctionTypeString(size_->objType) << "         " << std::endl;
     out << "-----------------------------------------------------" << std::endl;
 }
 

@@ -379,9 +379,15 @@ int Bnb::solve(ProblemPtr p)
   oinst_->calculateSize();
   if (options->findBool("display_problem")->getValue()==true) {
     oinst_->write(env_->getLogger()->msgStream(LogNone), 12);
+    env_->getLogger()->msgStream(LogInfo) << me_ << "Starting Constraint Classification\n";
+    oinst_->classifyCon();
+    env_->getLogger()->msgStream(LogInfo) << me_ << "Finished Constraint Classification\n";
   }
   if (options->findBool("display_size")->getValue()==true) {
     oinst_->writeSize(env_->getLogger()->msgStream(LogNone));
+    env_->getLogger()->msgStream(LogInfo) << me_ << "Starting constraint classification\n";
+    oinst_->classifyCon();
+    env_->getLogger()->msgStream(LogInfo) << me_ << "Finished constraint classification\n";
   }
 
   // setup the jacobian and hessian
@@ -428,11 +434,11 @@ int Bnb::solve(ProblemPtr p)
     goto CLEANUP;
   }
 
-
+/*
   env_->getLogger()->msgStream(LogInfo) << me_ << "Starting constraint classification\n";
   oinst_->classifyCon();
   env_->getLogger()->msgStream(LogInfo) << me_ << "Finished constraint classification\n";
-
+*/
 
   err = getEngine_(&engine);
   if (err) {
