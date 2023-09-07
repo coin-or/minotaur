@@ -13,5 +13,6 @@ See the LICENSE file for details on license to use and distribute it.
 * [Join the users mailing list](https://lists.mcs.anl.gov/mailman/listinfo/minotaur)
 * [See existing issues and file new ones](https://github.com/minotaur-solver/minotaur/issues)
 * [Mailing list for developers](https://lists.mcs.anl.gov/mailman/listinfo/minotaur-dev)
+* [Github repository for website](https://github.com/minotaur-solver/minotaur-solver.github.io)
 
 
