@@ -22,12 +22,11 @@ class Engine;
 class Timer;
 typedef Engine* EnginePtr;
 
-struct StrBrStats
-{
-  UInt calls; /// Number of calls to find branching candidate.
-  UInt engProbs; /// Number of times an unexpected engine status was met.
+struct StrBrStats {
+  UInt calls;      /// Number of calls to find branching candidate.
+  UInt engProbs;   /// Number of times an unexpected engine status was met.
   UInt nodePruned; /// Number of times node was pruned by strong branching.
-  double time; /// Time taken in strong branching
+  double time;     /// Time taken in strong branching
 };
 // A class to select a variable for branching using strong branching.
 class StrongBrancher : public Brancher
@@ -59,25 +58,20 @@ public:
   std::string getName() const;
 
   /**
+   * \brief Do reliability branching setup.
+   *
+   * \param[in] max_cands Maximum candidates to be strong branched on.
+   * \param[in] max_iter Maximum iterations while strong branching.
+   * \param[in] Number of times strong branch before a candidate is reliable.
+   */
+  void reliabilitySetup(UInt max_cands, UInt max_iter, UInt thresh);
+
+  /**
    * \brief Set engine.
    *
    * \param[in] engine Pointer to the engine used in strong branching.
    */
   void setEngine(EnginePtr engine);
-
-  /**
-   * \brief Set maximum candidates for limited strong branching.
-   *
-   * \param[in] max_cands Maximum candidates to be strong branched on.
-   */
-  void setMaxCands(UInt max_cands);
-
-  /**
-   * \brief Set maximum iterations while limited strong branching
-   *
-   * \param[in] max_iter Maximum iterations to do in strong branching
-   */
-  void setMaxIter(UInt max_iter);
 
   /**
    * \brief Set problem
@@ -93,9 +87,6 @@ public:
   void writeStats(std::ostream& out) const;
 
 private:
-  /// A vector of candidates
-  BrVarCandSet cands_;
-
   /// Engine for strong branching
   EnginePtr engine_;
 
@@ -131,8 +122,20 @@ private:
   /// Problem
   ProblemPtr p_;
 
+  /// Pseudo costs for the down direction
+  DoubleVector pseudoDown_;
+
+  /// Pseudo costs for the up direction
+  DoubleVector pseudoUp_;
+
   /// Relaxation solved at the node
   RelaxationPtr rel_;
+
+  /// A set of reliable candidates
+  BrVarCandSet relCands_;
+
+  /// Are we doing reliability branching
+  bool reliability_;
 
   /// Statistics.
   StrBrStats* stats_;
@@ -145,7 +148,17 @@ private:
   /// Timer
   const Timer* timer_;
 
-  UIntVector timesStrBranched_;
+  /// Number of times strong branch before the candidate is reliable.
+  UInt thresh_;
+
+  /// Number of times a candidate is strong branched down
+  UIntVector timesDown_;
+
+  /// Number of times a candidate is strong branched up
+  UIntVector timesUp_;
+
+  /// A set of unreliable candidates
+  BrVarCandSet unrelCands_;
 
   /// Values of the varaible in the current solution of the relaxation
   DoubleVector x_;
@@ -182,12 +195,35 @@ private:
   void freeCandidates_(BrCandPtr no_del);
 
   /**
+   * \brief Calculate psuedo cost score of reliable candidates
+   * \param[in] cand Candidate for which score is calculated
+   * \param[out] ch_dn Estimated down change
+   * \param[out] ch_up Estimated up change
+   * \param[out] score Score of the candidate
+   */
+  void getPCScore_(BrCandPtr cand, double* ch_dn, double* ch_up, double* score);
+
+  /**
    * \brief Calculate score from the up score and down score.
    *
    * \param[in] up_score Up score.
    * \param[in] down_score Down score.
    */
   double getScore_(const double& up_score, const double& down_score);
+
+  /**
+   * \brief Initialize reliability branching related vectors
+   *
+   * \param[in] rel Relaxation for which branching is done
+   */
+  void initialize_(RelaxationPtr rel);
+
+  /**
+   * \brief check if the candidate with pcost index is reliable or not
+   *
+   * \param[in] pcostIndex
+   */
+  bool isReliable_(int pcostIndex);
 
   /**
    * \brief Check if branch can be pruned on the basis of engine status and
@@ -207,6 +243,12 @@ private:
                     const EngineStatus& status, bool* is_rel);
 
   /**
+   * \brief Sort unreliable candidates based on violation scores
+   * and number of times they are stronger branched
+   */
+  double sortUnrelCands_(DoubleVector& vio);
+
+  /**
    * \brief Do strong branching on candidate.
    * \param[in] cand Candidate for strong branching.
    * \param[out] obj_up objective value estimate in up branch.
@@ -217,6 +259,19 @@ private:
   void strongBranch_(BrCandPtr cand, double& obj_up, double& obj_down,
                      EngineStatus& status_up, EngineStatus& status_down,
                      SolutionPoolPtr s_pool);
+
+  /**
+   * \brief Update Pseudocost based on the new costs.
+   *
+   * \param[in] i Index of the candidate.
+   * \param[in] new_cost The new cost estimate.
+   * \param[in] cost The vector of costs of all candidates. cost[i] is to
+   * be updated
+   * \param[in] count The vector that keeps a cound of how many times cost
+   * has been updated for each candidate.
+   */
+  void updatePCost_(const int& i, const double& new_cost, DoubleVector& cost,
+                    UIntVector& count);
 
   /**
    * \brief Analyze the strong-branching results.

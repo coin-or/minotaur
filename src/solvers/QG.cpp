@@ -299,7 +299,8 @@ int QG::solve(ProblemPtr p)
   nr->setEngine(lp_e);
   nproc = (PCBProcessorPtr) new PCBProcessor(env_, lp_e, handlers);
   if(env_->getOptions()->findString("brancher")->getValue() == "rel" ||
-     env_->getOptions()->findString("brancher")->getValue() == "weak") {
+     env_->getOptions()->findString("brancher")->getValue() == "weak" ||
+     env_->getOptions()->findString("brancher")->getValue() == "relstronger") {
     ReliabilityBrancherPtr rel_br =
         (ReliabilityBrancherPtr) new ReliabilityBrancher(env_, handlers);
     rel_br->setEngine(lp_e);
@@ -322,11 +323,7 @@ int QG::solve(ProblemPtr p)
     StrongBrancherPtr str_br =
         (StrongBrancherPtr) new StrongBrancher(env_, handlers);
     str_br->setEngine(lp_e);
-    if(env_->getOptions()->findString("brancher")->getValue() == "limstrong") {
-      str_br->setMaxCands(20);
-      str_br->setMaxIter(50);
-    } else if(env_->getOptions()->findString("brancher")->getValue() ==
-              "stronger") {
+    if(env_->getOptions()->findString("brancher")->getValue() == "stronger") {
       str_br->doStronger();
       str_br->setProblem(oinst_);
     }

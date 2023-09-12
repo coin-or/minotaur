@@ -173,11 +173,11 @@ BranchAndBound* Glob::createBab_(EnginePtr e, HandlerVector& handlers)
     StrongBrancherPtr str_br =
         (StrongBrancherPtr) new StrongBrancher(env_, handlers);
     str_br->setEngine(e);
-    if(brancher == "limstrong") {
-      str_br->setMaxCands(20);
-      str_br->setMaxIter(50);
-    } else if(brancher == "stronger") {
+    if(brancher == "stronger") {
       str_br->doStronger();
+      str_br->setProblem(newp_);
+    } else if(brancher == "relstronger") {
+      str_br->reliabilitySetup(20, 50, 5);
       str_br->setProblem(newp_);
     }
     br = str_br;

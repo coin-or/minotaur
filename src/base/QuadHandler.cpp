@@ -445,7 +445,7 @@ Branches QuadHandler::getBranches(BrCandPtr cand, DoubleVector& x,
     mod = (VarBoundModPtr) new VarBoundMod(v, Upper, value);
     branch->addRMod(mod);
   }
-  branch->setActivity(0.5); // TODO: set this correctly
+  branch->setActivity(-1); // This just indicates branching direction
   branches->push_back(branch);
 
   // up branch
@@ -458,7 +458,7 @@ Branches QuadHandler::getBranches(BrCandPtr cand, DoubleVector& x,
     mod = (VarBoundModPtr) new VarBoundMod(v, Lower, value);
     branch->addRMod(mod);
   }
-  branch->setActivity(0.5); // TODO: set this correctly
+  branch->setActivity(1); // This just indicates branching direction
   branches->push_back(branch);
   vcand->setNumBranches(2);
 
