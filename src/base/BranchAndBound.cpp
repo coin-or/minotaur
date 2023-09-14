@@ -309,29 +309,32 @@ void BranchAndBound::showStatus_(bool current_uncounted)
   
   if (!header) {
     std::cout << " " << std::endl;	  
-    std::cout << "----------------------------------------------------------------------------"<<std::endl;
-    std::cout << std::setw(6) << "Time(s)"
-              << std::setw(12) << "LB"
-              << std::setw(15) << "UB"
-              << std::setw(10) << "Gap%"
-              << std::setw(12) << "   Nodes-Proc"
-              << std::setw(12) << "   Nodes-Rem"
-              << std :: setw(6)<< "#Sol"
-              << std::endl;
-    std::cout << "----------------------------------------------------------------------------"<<std::endl;
+    std::cout << "---------------------------------------------------------------------------------------------"<<std::endl;
+    std::cout << std::setw(6) << "C-Time(s)"
+	      << std::setw(10) << "W-Time(s)"
+              << std::setw(7) << "LB"
+              << std::setw(17) << "UB"
+              << std::setw(12) << "Gap%"
+              << std::setw(14) << "   Nodes-Proc"
+              << std::setw(14) << "   Nodes-Rem"
+              << std :: setw(10)<< "#Sol"
+	      << std::endl;
+    std::cout << "---------------------------------------------------------------------------------------------"<<std::endl;
     header = true;
   }
   
   if (timer_->query() - stats_->updateTime > options_->logInterval) {
     double lb = tm_->updateLb();
-    std::cout << std::setw(6) << std::fixed<< std::setprecision(0) << timer_->query()
-              << std::setw(14) << std::setprecision(4) << std::scientific << lb
-              << std::setw(14) << std::setprecision(4) << std::scientific << tm_->getUb()
-              << std::setw(10) << std::setprecision(2) << std::fixed << tm_->getPerGap()
-              << std::setw(12) << tm_->getSize() - tm_->getActiveNodes() - off
-              << std::setw(12) << tm_->getActiveNodes() + off
-              << std::setw(6) << std::setprecision(2) << solPool_->getNumSols()
-              << std::endl;
+    double wallTime = timer_->wQuery();
+    std::cout << std::setw(3) << std::fixed<< std::setprecision(0) << timer_->query()
+	      << std::setw(10) << std::fixed << std::setprecision(0) << wallTime // Print wall time
+              << std::setw(17) << std::setprecision(4) << std::scientific << lb
+              << std::setw(13) << std::setprecision(4) << std::scientific << tm_->getUb()
+              << std::setw(12) << std::setprecision(2) << std::fixed << tm_->getPerGap()
+              << std::setw(13) << tm_->getSize() - tm_->getActiveNodes() - off
+              << std::setw(15) << tm_->getActiveNodes() + off
+              << std::setw(8) << std::setprecision(5) << solPool_->getNumSols()
+	      << std::endl;
     stats_->updateTime = timer_->query();
   }
 
@@ -500,7 +503,7 @@ void BranchAndBound::solve()
     }
   }
   std::cout << " " << std::endl;
-  std::cout << "----------------------------------------------------------------------------" << std::endl;
+  std::cout << "---------------------------------------------------------------------------------------------" << std::endl;
   std::cout << " " << std::endl;
 
   logger_->msgStream(LogInfo) << me_ << "stopping branch-and-bound"
