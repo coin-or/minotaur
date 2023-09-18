@@ -295,24 +295,22 @@ bool BranchAndBound::shouldStop_()
   return stop_bnb;
 }
 
-
-
-
 void BranchAndBound::showStatus_(bool current_uncounted)
 {
   static bool header = false;
-  
+  static bool firstRow = true; // Add a flag for the first row
+
   UInt off = 0;
   if (current_uncounted) {
     off = 1;
   }
-  
+
   if (!header) {
     std::cout << " " << std::endl;	  
     std::cout << "---------------------------------------------------------------------------------------------"<<std::endl;
-    std::cout << std::setw(6) << "C-Time(s)"
-	      << std::setw(10) << "W-Time(s)"
-              << std::setw(7) << "LB"
+    std::cout << std::setw(6) << "Cpu(s)"
+	      << std::setw(10) << "Wall(s)"
+              << std::setw(10) << "LB"
               << std::setw(17) << "UB"
               << std::setw(12) << "Gap%"
               << std::setw(14) << "   Nodes-Proc"
@@ -321,6 +319,20 @@ void BranchAndBound::showStatus_(bool current_uncounted)
 	      << std::endl;
     std::cout << "---------------------------------------------------------------------------------------------"<<std::endl;
     header = true;
+  }
+  
+  if (firstRow) {
+    // Print the initial row with all values set to zero
+    std::cout << std::setw(3) << "0"
+	      << std::setw(10) << "0"
+              << std::setw(13) << "inf"
+              << std::setw(17) << "inf"
+              << std::setw(12) << "inf"
+              << std::setw(12) << "0"
+              << std::setw(14) << "0"
+              << std::setw(10) << "0"
+	      << std::endl;
+    firstRow = false;
   }
   
   if (timer_->query() - stats_->updateTime > options_->logInterval) {
@@ -337,7 +349,6 @@ void BranchAndBound::showStatus_(bool current_uncounted)
 	      << std::endl;
     stats_->updateTime = timer_->query();
   }
-
 }
 
 
