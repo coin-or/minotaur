@@ -325,7 +325,7 @@ void BranchAndBound::showStatus_(bool current_uncounted)
     // Print the initial row with all values set to zero
     std::cout << std::setw(3) << "0"
 	      << std::setw(10) << "0"
-              << std::setw(13) << "inf"
+              << std::setw(13) << "-inf"
               << std::setw(17) << "inf"
               << std::setw(12) << "inf"
               << std::setw(12) << "0"

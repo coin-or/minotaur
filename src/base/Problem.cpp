@@ -371,7 +371,7 @@ void Problem::classifyCon()
   double wt;
   const double tol=1e-6;
   double INFTY=std::numeric_limits<double>::infinity();
-  int ag=0 ,vb=0,sp=0,sc=0,mb=0,gb=0,ik=0,cc=0,ek=0,kc=0,spp=0,ikk=0,pr=0,bp=0;
+  int ag=0 ,vb=0,sp=0,sc=0,mb=0,gb=0,ik=0,cc=0,ek=0,kc=0,spp=0,ikk=0,pr=0,bp=0,ns=0;
   double wtn;
   VariablePtr vn;
   int nposcoefone = 0,nnegcoefone = 0,nposcoef = 0,nnegcoef = 0,nposcont = 0,
@@ -463,7 +463,7 @@ void Problem::classifyCon()
 //Code for Aggregation
        if (f->getNumVars() == 2 ){
 	 if (c->getLb()==c->getUb()){
-           /* logger_->msgStream(LogError) << me_ << "Type is Aggregation!! " << std::endl;
+            /*logger_->msgStream(LogError) << me_ << "Type is Aggregation!! " << std::endl;
             c->write(logger_->msgStream(LogError));*/
 	    ++ag;
       }
@@ -471,14 +471,15 @@ void Problem::classifyCon()
 // Code for Precedence
 	else if (wt1== -wt2 && nposcoef==1 && nnegcoef==1 && (c->getUb()<=INFTY && c->getLb()>=-INFTY) 
 	     && (nposbin+nnegbin==2 || nposint+nnegint==2 || nposcont+nnegcont==2)){	
-	     /*logger_->msgStream(LogError) << me_ << "Type is Precendence!! " << std::endl;
+	    /* logger_->msgStream(LogError) << me_ << "Type is Precendence!! " << std::endl;
              c->write(logger_->msgStream(LogError));*/
 	     ++pr;	
       }
 // Code for Variable Bound
-	else if (((nposbin + nnegbin >=1) || ((nposbin + (nposcont + nnegcont==1))||(nposbin+(nposint+nnegint==1)))) && 
-	     (c->getUb()<= INFTY && c->getLb()>=-INFTY)){
-	      /*logger_->msgStream(LogError) << me_ << "Type is Variable Bound!! " << std::endl;
+	else if (((nposbin+nnegbin==2) || ((nposbin||nnegbin)+(nposcont || nnegcont)==2)||
+	((nposbin||nnegbin)+(nposint || nnegint)==2)) && (c->getUb()<= INFTY && c->getLb()>=-INFTY))
+	{
+	     /* logger_->msgStream(LogError) << me_ << "Type is Variable Bound!! " << std::endl;
               c->write(logger_->msgStream(LogError));*/
 	      ++vb;
       }							
@@ -495,7 +496,7 @@ void Problem::classifyCon()
 // Code for Set Packing
 	    else if ((c->getLb()==nposcoefone-1 && c->getUb()==INFTY)
 	        || (c->getUb()==1-nnegcoefone && c->getLb()== -INFTY)){	       
-	       	/*logger_->msgStream(LogError) << me_ << "Type is Set Packing!! " << std::endl;
+	       /*	logger_->msgStream(LogError) << me_ << "Type is Set Packing!! " << std::endl;
 	        c->write(logger_->msgStream(LogError));*/
 	        ++spp;   
        }
@@ -509,14 +510,14 @@ void Problem::classifyCon()
 //Code for Cardinality
 	    else if (c->getLb()==c->getUb() && c->getUb()>=2+nnegcoefone){
 	        /*logger_->msgStream(LogError) << me_ << "Type is Cardinality!! " << std::endl;
-	 	c->write(logger_->msgStream(LogError));*/  
+	 	c->write(logger_->msgStream(LogError)); */
 		++cc;	       
 	}
 // Code for Invarient Knapsack
 	    else if (((c->getUb() >= 2 - nnegcoefone && c->getLb() == -INFTY) || 
 		(c->getLb()==nposcoefone-2 && c->getUb()==INFTY))&& (isInt(c->getUb()))){	       
 	       	/*logger_->msgStream(LogError) << me_ << "Type is Invarient Knapsack!! " << std::endl;
-		c->write(logger_->msgStream(LogError));*/ 
+		c->write(logger_->msgStream(LogError));*/
 		++ik; 
 	} 
 // Here adding code for mixed binary
@@ -530,25 +531,25 @@ void Problem::classifyCon()
 	else if (nposcoef + nnegcoef ==nvars){	  
            if ((c->getUb()+sumnegwt >=2 && c->getUb()== c->getLb()) && (isInt(c->getUb()))){
 	      /*logger_->msgStream(LogError) << me_ << "Type is Equation Knapsack!! " << std::endl;
-	      c->write(logger_->msgStream(LogError));*/ 
+	      c->write(logger_->msgStream(LogError));*/
 	      ++ek; 
       }
 //Code for bin packing
 	else if (c->getUb() + sumnegwt >=2 && (isInt(c->getUb())) && con>=1){ 
-	        /*logger_->msgStream(LogError) << me_ << "Type Bin Packing!! " << std::endl;
-			    c->write(logger_->msgStream(LogError));*/ 
+	       /* logger_->msgStream(LogError) << me_ << "Type Bin Packing!! " << std::endl;
+			    c->write(logger_->msgStream(LogError)); */
 	     ++bp; 	       
 	       }
 // Code for Knapsack
 	else if (((c->getLb()+2<=sumnegwt && c->getUb()==INFTY) && (isInt(c->getLb())))
 	     ||(c->getUb()+sumnegwt >=2 && c->getLb()== -INFTY && (isInt(c->getUb())))){	       
 	     /*logger_->msgStream(LogError) << me_ << "Type is Knapsack!! " << std::endl;
-	     c->write(logger_->msgStream(LogError));*/ 
+	     c->write(logger_->msgStream(LogError)); */
 	     ++kc;  
        }
 // Code for Mixed Binary
     	else if (nposbin + nnegbin ==nvars && ((c->getLb()>=-INFTY && c->getUb()<=INFTY) || (c->getUb()== c->getLb()))){
-	     /*logger_->msgStream(LogError) << me_ << "Type is Mixed Binary!! " << std::endl;
+	    /* logger_->msgStream(LogError) << me_ << "Type is Mixed Binary!! " << std::endl;
 	     c->write(logger_->msgStream(LogError));*/
 	     ++mb;		
 	}	   
@@ -565,25 +566,24 @@ void Problem::classifyCon()
 //For Mixed Binary	
 	else if (nposcont + nnegcont + nposbin + nnegbin+nposint + nnegint ==nvars){
 	     if (((c->getLb()==-INFTY && c->getUb()<=INFTY) || (c->getUb()== c->getLb()))&& nposbin + nnegbin>=1){					
-	     /*logger_->msgStream(LogError) << me_ << "Type is Mixed Binary!! " << std::endl;
+	    /* logger_->msgStream(LogError) << me_ << "Type is Mixed Binary!! " << std::endl;
 	     c->write(logger_->msgStream(LogError));*/
 	     ++mb;			
       }
 	else if (nposcont + nnegcont+nposint+nnegint==nvars ){
 	    if ((c->getLb()==-INFTY && c->getUb()<=INFTY) || (c->getUb()== c->getLb())){
-	     /*logger_->msgStream(LogError) << me_ << "Type is General Mixed Linear!! " << std::endl;
+	    /* logger_->msgStream(LogError) << me_ << "Type is General Mixed Linear!! " << std::endl;
 	     c->write(logger_->msgStream(LogError));*/
 	     ++gb;		
       }	
     }
 	else {
-             /*logger_->msgStream(LogError) << me_ << "Type is General Linear with no specific structure!! " << std::endl;
+           /*  logger_->msgStream(LogError) << me_ << "Type is General Linear with no specific structure!! " << std::endl;
 	     c->write(logger_->msgStream(LogError));*/
+		++ns;
 		
     }
-
   }
-
  }
   
 //Here Adding table for Number of each constraints

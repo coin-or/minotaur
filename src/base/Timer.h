@@ -48,11 +48,11 @@ namespace Minotaur {
     virtual double wQuery() const {
       using namespace std::chrono;   
       steady_clock::time_point currentTime = steady_clock::now();
-      duration<double> time_span = duration_cast<duration<double>>(currentTime - startTime_);
+      duration<double> time_span = duration_cast<duration<double>>(currentTime - w_);
       return time_span.count();
     }
   protected:
-       std::chrono::steady_clock::time_point startTime_;
+       std::chrono::steady_clock::time_point w_;
        bool is_started_ = false;
   private: 
     Timer (const Timer &);
@@ -74,7 +74,7 @@ namespace Minotaur {
 
     /// Start the timer.
     void start() {
-      startTime_ = std::chrono::steady_clock::now();
+      w_ = std::chrono::steady_clock::now();
       s_ = clock();
       is_started_ = true;      
       return;
