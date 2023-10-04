@@ -305,51 +305,52 @@ void BranchAndBound::showStatus_(bool current_uncounted)
     off = 1;
   }
 
+  std::streamsize defaultPrecision = logger_->msgStream(LogError).precision(); // Store default precision
+
   if (!header) {
-    std::cout << " " << std::endl;	  
-    std::cout << "---------------------------------------------------------------------------------------------"<<std::endl;
-    std::cout << std::setw(6) << "Cpu(s)"
-	      << std::setw(10) << "Wall(s)"
-              << std::setw(16) << "LB"
-              << std::setw(13) << "UB"
-              << std::setw(12) << "Gap%"
-              << std::setw(15) << "   Nodes-Proc"
-              << std::setw(14) << "   Nodes-Rem"
-              << std :: setw(7)<< "#Sol"
-	      << std::endl;
-    std::cout << "---------------------------------------------------------------------------------------------"<<std::endl;
+    logger_->msgStream(LogError) << " " << std::endl;	  
+    logger_->msgStream(LogError) << "---------------------------------------------------------------------------------------------" << std::endl;
+    logger_->msgStream(LogError) << std::setw(6) << "Cpu(s)"
+      << std::setw(10) << "Wall(s)"
+      << std::setw(16) << "LB"
+      << std::setw(13) << "UB"
+      << std::setw(12) << "Gap%"
+      << std::setw(15) << "   Nodes-Proc"
+      << std::setw(14) << "   Nodes-Rem"
+      << std::setw(7) << "#Sol"
+      << std::endl;
+    logger_->msgStream(LogError) << "---------------------------------------------------------------------------------------------" << std::endl;
     header = true;
   }
-  
+
   if (firstRow) {
     // Print the initial row with all values set to zero
-    std::cout << std::setw(5) << "0"
-	      << std::setw(10) << "0"
-              << std::setw(17) << "-inf"
-              << std::setw(13) << "inf"
-              << std::setw(12) << "inf"
-              << std::setw(15) << "0"
-              << std::setw(14) << "0"
-              << std::setw(7) << "0"
-	      << std::endl;
+    logger_->msgStream(LogError) << std::setw(5) << "0"
+      << std::setw(10) << "0"
+      << std::setw(17) << "-inf"
+      << std::setw(13) << "inf"
+      << std::setw(12) << "inf"
+      << std::setw(15) << "0"
+      << std::setw(14) << "0"
+      << std::setw(7) << "0"
+      << std::endl;
     firstRow = false;
   }
-  
+
   if (timer_->query() - stats_->updateTime > options_->logInterval) {
-              std::cout << std::setw(5) << std::fixed<< std::setprecision(0) << timer_->query()
-	      << std::setw(10) << std::fixed << std::setprecision(0) << timer_->wQuery() // Print wall time
-              << std::setw(17) << std::setprecision(4) << std::scientific << tm_->updateLb()
-              << std::setw(13) << std::setprecision(4) << std::scientific << tm_->getUb()
-              << std::setw(12) << std::setprecision(2) << std::fixed << tm_->getPerGap()
-              << std::setw(15) << tm_->getSize() - tm_->getActiveNodes() - off
-              << std::setw(14) << tm_->getActiveNodes() + off
-              << std::setw(7) << std::setprecision(5) << solPool_->getNumSols()
-	      << std::endl;
+    logger_->msgStream(LogError).precision(defaultPrecision); // Reset precision to default
+    logger_->msgStream(LogError) << std::setw(5) << std::fixed << std::setprecision(0) << timer_->query()
+      << std::setw(10) << std::fixed << std::setprecision(0) << timer_->wQuery() // Print wall time
+      << std::setw(17) << std::setprecision(4) << std::scientific << tm_->updateLb()
+      << std::setw(13) << std::setprecision(4) << std::scientific << tm_->getUb()
+      << std::setw(12) << std::setprecision(2) << std::fixed << tm_->getPerGap()
+      << std::setw(15) << tm_->getSize() - tm_->getActiveNodes() - off
+      << std::setw(14) << tm_->getActiveNodes() + off
+      << std::setw(7) << std::setprecision(5) << solPool_->getNumSols()
+      << std::endl;
     stats_->updateTime = timer_->query();
   }
 }
-
-
 
 void BranchAndBound::solve()
 {
