@@ -283,9 +283,10 @@ void Glob::setInitialOptions_()
   options->findBool("nl_presolve")->setValue(true);
   options->findBool("lin_presolve")->setValue(true);
   options->findBool("msheur")->setValue(true);
-  options->findString("brancher")->setValue("maxvio");
+  options->findString("brancher")->setValue("relstronger");
   options->findString("nlp_engine")->setValue("IPOPT");
   options->findBool("cgtoqf")->setValue(true);
+  options->findBool("simplex_cut")->setValue(true);
 }
 
 int Glob::solve(ProblemPtr inst)

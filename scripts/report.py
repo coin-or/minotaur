@@ -111,10 +111,11 @@ def find_int(arr0,st0,in0):
 def getInstList(fname):
 	ins_list = []
 	f = open(fname,'r')
+	#CHANGE THIS CODE TO READ SOLU FILE
 	for line in f:
-            if len(line.split(None, 1)) == 0:
+            if len(line.split(None, 2)) == 0:
                 continue
-            ins_list.append(line.split(None, 1)[0])
+            ins_list.append(line.split(None, 2)[1])
 	f.close()
 	return ins_list
 
@@ -126,7 +127,7 @@ class Col:
     title = ""
     fmt = "%8s"
     fval = "NF"
-    width = 8
+    width = 20
     
     def __init__(self, title, width, fmt):
         self.title = title
@@ -152,19 +153,6 @@ class Col:
         
 # ---------------------------------------------------------------------------
 # ---------------------------------------------------------------------------
-# class Cuts(Col):
-
-# 	val = INFTY
-# 	def extract(self):
-# 		val = INFTY
-# 		find,val=find_int(outfile,'QPDProcessor: cuts added', val)
-# 		if (find<0 or val >= INFTY):
-# 			self.val = INFTY
-# 			self.writeFail()
-   
-# 		else:
-# 			self.val = val
-# 			self.write(self.val)
     
 class Cuts(Col):
     val = INFTY
@@ -187,6 +175,7 @@ class BKnown(Col):
 	def extract(self):
 		self.val = INFTY
 		find = -1
+		#ASSUME IT IS A SOLU FILE.
 		lines = open(BEST_FILE).read().split('\n')
 		for l in lines:
 			n_v_pair = l.split()
@@ -216,11 +205,10 @@ class EChk(Col):
 					osen.val*(bnd.val-bknown.val)/(abs(bknown.val)+1e-6) > RELTOL):
 				self.val = "W-BND"
 				errors.append(instance)
-			elif (osen.val*(bknown.val-sol.val) > ABSTOL and
-					osen.val*(bknown.val-sol.val)/(abs(bknown.val)+1e-6) > RELTOL):
+			elif (osen.val*(bknown.val-sol.val) > ABSTOL and osen.val*(bknown.val-sol.val)/(abs(bknown.val)+1e-6) > RELTOL):
 				self.val = "NEWSOL"
 				errors.append(instance)
-			elif (abs(bknown.val) >= INFTY and abs(sol.val) < INFTY):
+			elif (abs(bknown.val) >= INFTY and abs(sol.val) < INFTY): 
 				self.val = "NEWSOL"
 				errors.append(instance)
 			else:
@@ -232,28 +220,20 @@ class EChk(Col):
 
 # ---------------------------------------------------------------------------
 # ---------------------------------------------------------------------------
-# class Bnd(Col):
+#class Bnd(Col):
+#    def extract(self):
+#        self.val = INFTY
+#        val = INFTY
+#        find,val=find_float(outfile,"best bound estimate from remaining nodes = ",val)
+#        if (find<0 or val >= INFTY):
+#            self.writeFail()
+#            self.val = INFTY
+#            return self.val
+#        else:
+#            self.write(val)
+#            self.val = val
+#            return self.val
 
-# 	val = INFTY
-# 	def extract(self):
-# 		self.val = INFTY
-# 		if (claims_opt.val=="OPT"):
-# 			self.val = sol.val
-# 			if (self.val==INFTY):
-# 				self.writeFail()
-# 			else:
-# 				self.write(self.val)
-# 		else:
-# 			val = INFTY
-# 			find,val=find_float(outfile,
-# 					'best bound estimate from remaining nodes =',val)
-# 			if (find<0 or val >= INFTY):
-# 				self.writeFail()
-# 				self.val = INFTY
-# 			else:
-# 				self.write(val)
-# 				self.val = val
-			
 class Bnd(Col):
     val = INFTY
     def extract(self):
@@ -338,20 +318,6 @@ class Status(Col):
 
 # ---------------------------------------------------------------------------
 # ---------------------------------------------------------------------------
-# class Sol(Col):
-
-# 	val = INFTY
-# 	def extract(self):
-# 		self.val = INFTY
-# 		val = INFTY
-# 		find,val=find_float(outfile,'best solution value = ',val)
-# 		if (find<0 or val >= INFTY):
-# 			self.writeFail()
-# 			self.val = INFTY
-# 		else:
-# 			self.write(val)
-# 			self.val = val
-
 class Sol(Col):
     val = INFTY
     def extract(self):
@@ -373,7 +339,7 @@ class WallTime(Col):
 
 	def extract(self):
 		val = INFTY
-		find,val=find_float(outfile,'time used =',val)
+		find,val=find_float(outfile,"time used \(s\)",val)
 		if (find<0 or val >= INFTY):
 			val = -1.0
 		self.write(val)
@@ -381,7 +347,7 @@ class WallTime(Col):
 
 def print_usage():
     print("usage: python report.py -l <file containing instance names>")
-    print("-d <path to dir> [-b <file conataining best upper bound>]")
+    print("-d <path to dir> [-b <file conataining best solution>]")
 
 if (len(sys.argv)<2):
     print_usage()
@@ -419,7 +385,7 @@ while(i < len(sys.argv)):
             sys.exit(0)
         else:
             BEST_FILE=sys.argv[i+1]
-            print("### Best upper bound listed in :", BEST_FILE)
+            print("### Best solution listed in :", BEST_FILE)
             i = i+1
     else:
         print("Invalid option: %s"%sys.argv[i])
