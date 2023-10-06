@@ -799,6 +799,29 @@ const Timer* Environment::getTimer()
   return timer_;
 }
 
+//Adding Code for wall time
+
+
+double Environment::getwTime(int& err)
+{
+  if(timer_) {
+    err = 0;
+    return timer_->wQuery();
+  }
+#if SPEW
+  logger_->msgStream(LogError)
+      << me_ << "wall timer queried before it is started." << std::endl;
+#endif
+  err = 1;
+  return 0.0;
+}
+
+const Timer* Environment::getwTimer()
+{
+  return timer_;
+}
+
+
 std::string Environment::getVersion()
 {
   std::stringstream name_stream;

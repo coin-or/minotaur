@@ -379,14 +379,18 @@ int Bnb::solve(ProblemPtr p)
   oinst_->calculateSize();
   if (options->findBool("display_problem")->getValue()==true) {
     oinst_->write(env_->getLogger()->msgStream(LogNone), 12);
-    env_->getLogger()->msgStream(LogInfo) << me_ << "Starting Constraint Classification\n";
-    oinst_->classifyCon();
-    env_->getLogger()->msgStream(LogInfo) << me_ << "Finished Constraint Classification\n";
   }
   if (options->findBool("display_size")->getValue()==true) {
     oinst_->writeSize(env_->getLogger()->msgStream(LogNone));
     env_->getLogger()->msgStream(LogInfo) << me_ << "Starting constraint classification\n";
-    oinst_->classifyCon();
+    oinst_->classifyCon(false);
+    env_->getLogger()->msgStream(LogInfo) << me_ << "Finished constraint classification\n";
+  }
+
+   if (env_->getOptions()->findInt("log_level")->getValue() == 6){
+    oinst_->writeSize(env_->getLogger()->msgStream(LogNone));
+    env_->getLogger()->msgStream(LogInfo) << me_ << "Starting constraint classification\n";
+    oinst_->classifyCon(true);
     env_->getLogger()->msgStream(LogInfo) << me_ << "Finished constraint classification\n";
   }
 
@@ -433,13 +437,10 @@ int Bnb::solve(ProblemPtr p)
     writeSol_(env_, orig_v, pres, pres->getSolution(), pres->getStatus(), iface_);
     goto CLEANUP;
   }
-
-/*
-  env_->getLogger()->msgStream(LogInfo) << me_ << "Starting constraint classification\n";
-  oinst_->classifyCon();
-  env_->getLogger()->msgStream(LogInfo) << me_ << "Finished constraint classification\n";
-*/
-
+   if (options->findBool("solve")->getValue() == false) {
+    env_->getLogger()->msgStream(LogInfo) << me_ << "Solve option is set to 0, Stopping further processing." << std::endl;
+    goto CLEANUP; // Return early to stop processing.
+  }
   err = getEngine_(&engine);
   if (err) {
     goto CLEANUP;
@@ -500,8 +501,10 @@ int Bnb::writeBnbStatus_(BranchAndBound *bab)
       << me_ << "gap = " << std::max(0.0,bab->getUb() - bab->getLb())
       << std::endl
       << me_ << "gap percentage = " << bab->getPerGap() << std::endl
-      << me_ << "time used (s) = " << std::fixed << std::setprecision(2) 
+      << me_ << "cpu time used (s) = " << std::fixed << std::setprecision(2) 
       << env_->getTime(err) << std::endl
+      << me_ << "wall time used (s) = " << std::fixed << std::setprecision(2) 
+      << env_->getwTime(err) << std::endl 
       << me_ << "status of branch-and-bound = " 
       << getSolveStatusString(bab->getStatus()) << std::endl;
   } else {
@@ -512,8 +515,10 @@ int Bnb::writeBnbStatus_(BranchAndBound *bab)
       << "best bound estimate from remaining nodes = " << INFINITY << std::endl
       << me_ << "gap = " << INFINITY << std::endl
       << me_ << "gap percentage = " << INFINITY << std::endl
-      << me_ << "time used (s) = " << std::fixed << std::setprecision(2) 
+      << me_ << "cpu time used (s) = " << std::fixed << std::setprecision(2) 
       << env_->getTime(err) << std::endl 
+      << me_ << "wall time used (s) = " << std::fixed << std::setprecision(2) 
+      << env_->getwTime(err) << std::endl 
       << me_ << "status of branch-and-bound: " 
       << getSolveStatusString(NotStarted) << std::endl;
   }
