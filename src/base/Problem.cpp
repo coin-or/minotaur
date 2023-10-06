@@ -362,7 +362,7 @@ int Problem::checkConVars() const
 
 // Here code for Contraints Classification
 
-void Problem::classifyCon()
+void Problem::classifyCon(bool printTypes)
 {
   ConstraintPtr c;
   FunctionPtr f;
@@ -457,156 +457,181 @@ void Problem::classifyCon()
     for (VariableGroupConstIterator it2=lf->termsBegin(); it2 != lf->termsEnd(); ++it2) {
     wtn = it2->second;
     vn = it2->first;
-       if (vn->getType()==Binary){
-	 if (c->getUb() + sumnegwt == abs(wtn)){
+      if (vn->getType()==Binary){
+       if (c->getUb() + sumnegwt == abs(wtn)){
 	  ++con;       	 
-          }	      
-        }
-      }
+      }	      
+  }
+}
 //Code for Aggregation
-       if (f->getNumVars() == 2){
-	 if (notHandled){
-	 if (c->getLb()==c->getUb()){
-           /* logger_->msgStream(LogError) << me_ << "Type is Aggregation!! " << std::endl;
-            c->write(logger_->msgStream(LogError));*/
-	    ++ag;
-	    notHandled = false;
-      }
+     if (f->getNumVars() == 2){
+      if (notHandled){
+        if (c->getLb()==c->getUb()){
+         if (printTypes==true){
+           logger_->msgStream(LogError) << me_ << "Type is Aggregation!! " << std::endl;
+           c->write(logger_->msgStream(LogError));}
+	   ++ag;
+	   notHandled = false;
+  }
 
-// Code for Precedence
-	else if (wt1== -wt2 && nposcoef==1 && nnegcoef==1 && (c->getUb()<=INFTY && c->getLb()>=-INFTY) 
-	     && (nposbin+nnegbin==2 || nposint+nnegint==2 || nposcont+nnegcont==2)){	
-	   /* logger_->msgStream(LogError) << me_ << "Type is Precendence!! " << std::endl;
-             c->write(logger_->msgStream(LogError));*/
+//Code for Precedence
+     else if (wt1== -wt2 && nposcoef==1 && nnegcoef==1 && (c->getUb()<=INFTY && c->getLb()>=-INFTY) 
+	     && (nposbin+nnegbin==2 || nposint+nnegint==2 || nposcont+nnegcont==2)){
+	   if (printTypes==true){	
+	     logger_->msgStream(LogError) << me_ << "Type is Precendence!! " << std::endl;
+             c->write(logger_->msgStream(LogError));}
 	     ++pr;
-          notHandled = false;	     
-      }
+             notHandled = false;	     
+  }
+
 // Code for Variable Bound
-	else if (((nposbin+nnegbin==2) || ((nposbin||nnegbin)+(nposcont || nnegcont)==2)||
-	((nposbin||nnegbin)+(nposint || nnegint)==2)) && (c->getUb()<= INFTY && c->getLb()>=-INFTY))
-	{
-	    /* logger_->msgStream(LogError) << me_ << "Type is Variable Bound!! " << std::endl;
-              c->write(logger_->msgStream(LogError));*/
-	      ++vb;
-	      notHandled = false;
+     else if (((nposbin+nnegbin==2) || ((nposbin||nnegbin)+(nposcont || nnegcont)==2)||
+	      ((nposbin||nnegbin)+(nposint || nnegint)==2)) && (c->getUb()<= INFTY && c->getLb()>=-INFTY)){
+            if (printTypes==true){
+	    logger_->msgStream(LogError) << me_ << "Type is Variable Bound!! " << std::endl;
+            c->write(logger_->msgStream(LogError));}
+	    ++vb;
+	    notHandled = false;
      }							
    } 
  }
-// Code for Set Partitioning
+
+//Code for Set Partitioning
      if(notHandled){
-        if (v->getType() == Binary ){
-	  if (nposcoefone + nnegcoefone == nvars){
-	    if ((c->getLb()==1-nnegcoefone && c->getUb()==1-nnegcoefone)) {
-	      /* logger_->msgStream(LogError) << me_ << "Type is Set Partitioning!! " << std::endl;
-	       c->write(logger_->msgStream(LogError));*/
-	       ++sp;
-	       notHandled = false;
-       }
-// Code for Set Packing
-	    else if ((c->getLb()==nposcoefone-1 && c->getUb()==INFTY)
-	        || (c->getUb()==1-nnegcoefone && c->getLb()== -INFTY)){	       
-	       /*logger_->msgStream(LogError) << me_ << "Type is Set Packing!! " << std::endl;
-	        c->write(logger_->msgStream(LogError));*/
-	        ++spp;
-	        notHandled = false;	
-       }
-// Code for Set Covering 
-	    else if ((c->getLb() == 1 - nnegcoefone && c->getUb() == INFTY)
-		|| (c->getUb() == nposcoefone - 1 && c->getLb() == -INFTY)){	            
-	        /*logger_->msgStream(LogError) << me_ << "Type is Set Covering!! " << std::endl;
-	 	c->write(logger_->msgStream(LogError));*/
-		++sc; 
-	        notHandled = false;	
-	}
+      if (v->getType() == Binary ){
+       if (nposcoefone + nnegcoefone == nvars){
+	if ((c->getLb()==1-nnegcoefone && c->getUb()==1-nnegcoefone)) {
+	 if (printTypes==true){
+	  logger_->msgStream(LogError) << me_ << "Type is Set Partitioning!! " << std::endl;
+	  c->write(logger_->msgStream(LogError));}
+	  ++sp;
+	  notHandled = false;
+   }
+
+//Code for Set Packing
+     else if ((c->getLb()==nposcoefone-1 && c->getUb()==INFTY)
+	     || (c->getUb()==1-nnegcoefone && c->getLb()== -INFTY)){
+           if (printTypes==true){		    
+	    logger_->msgStream(LogError) << me_ << "Type is Set Packing!! " << std::endl;
+	    c->write(logger_->msgStream(LogError));}
+	    ++spp;
+	    notHandled = false;	
+   }
+
+//Code for Set Covering 
+     else if ((c->getLb() == 1 - nnegcoefone && c->getUb() == INFTY)
+	      || (c->getUb() == nposcoefone - 1 && c->getLb() == -INFTY)){
+           if (printTypes==true){		    
+	    logger_->msgStream(LogError) << me_ << "Type is Set Covering!! " << std::endl;
+	    c->write(logger_->msgStream(LogError));}
+	    ++sc; 
+	    notHandled = false;	
+   }
+
 //Code for Cardinality
-	    else if (c->getLb()==c->getUb() && c->getUb()>=2+nnegcoefone){
-	        /*logger_->msgStream(LogError) << me_ << "Type is Cardinality!! " << std::endl;
-	 	c->write(logger_->msgStream(LogError)); */
-		++cc;
-                notHandled = false;		
-	}
-// Code for Invarient Knapsack
-	    else if (((c->getUb() >= 2 - nnegcoefone && c->getLb() == -INFTY) || 
-		(c->getLb()==nposcoefone-2 && c->getUb()==INFTY))&& (isInt(c->getUb()))){	       
-	      /*logger_->msgStream(LogError) << me_ << "Type is Invarient Knapsack!! " << std::endl;
-		c->write(logger_->msgStream(LogError));*/
-		++ik;
-	        notHandled = false;	
-	} 
-// Here adding code for mixed binary
- 	    else if (nposbin + nnegbin ==nvars && ((c->getLb()>=-INFTY && c->getUb()<=INFTY) || (c->getUb()== c->getLb()))){
-		/*logger_->msgStream(LogError) << me_ << "Type is Mixed Binary!! " << std::endl;
-		c->write(logger_->msgStream(LogError));*/
-		++mb;
-                notHandled = false;		
-	}
-      }
+     else if (c->getLb()==c->getUb() && c->getUb()>=2+nnegcoefone){
+	   if (printTypes==true){
+	    logger_->msgStream(LogError) << me_ << "Type is Cardinality!! " << std::endl;
+	    c->write(logger_->msgStream(LogError));}
+	    ++cc;
+            notHandled = false;		
+   }
+
+//Code for Invarient Knapsack
+     else if (((c->getUb() >= 2 - nnegcoefone && c->getLb() == -INFTY) || 
+	      (c->getLb()==nposcoefone-2 && c->getUb()==INFTY))&& (isInt(c->getUb()))){
+           if (printTypes==true){		    
+	    logger_->msgStream(LogError) << me_ << "Type is Invarient Knapsack!! " << std::endl;
+	    c->write(logger_->msgStream(LogError));}
+	    ++ik;
+	    notHandled = false;	
+   } 
+
+//Code for mixed binary
+     else if (nposbin + nnegbin ==nvars && ((c->getLb()>=-INFTY && c->getUb()<=INFTY) || (c->getUb()== c->getLb()))){
+	   if (printTypes==true){
+	     logger_->msgStream(LogError) << me_ << "Type is Mixed Binary!! " << std::endl;
+	     c->write(logger_->msgStream(LogError));}
+	     ++mb;
+             notHandled = false;		
+   }
+}
+
 // Code for Equation Knapsack 
-	else if (nposcoef + nnegcoef ==nvars){	  
-           if ((c->getUb()+sumnegwt >=2 && c->getUb()== c->getLb()) && (isInt(c->getUb()))){
-	      /*logger_->msgStream(LogError) << me_ << "Type is Equation Knapsack!! " << std::endl;
-	      c->write(logger_->msgStream(LogError));*/
+      else if (nposcoef + nnegcoef ==nvars){	  
+            if ((c->getUb()+sumnegwt >=2 && c->getUb()== c->getLb()) && (isInt(c->getUb()))){
+	     if (printTypes==true){
+	      logger_->msgStream(LogError) << me_ << "Type is Equation Knapsack!! " << std::endl;
+	      c->write(logger_->msgStream(LogError));}
 	      ++ek;
 	      notHandled = false; 
-      }
+   }
+
 //Code for bin packing
-	else if (c->getUb() + sumnegwt >=2 && (isInt(c->getUb())) && con>=1){ 
-	        /*logger_->msgStream(LogError) << me_ << "Type Bin Packing!! " << std::endl;
-			    c->write(logger_->msgStream(LogError)); */
-	     ++bp;
-             notHandled = false;	     
-	       }
+     else if (c->getUb() + sumnegwt >=2 && (isInt(c->getUb())) && con>=1){
+	   if (printTypes==true){	
+	   logger_->msgStream(LogError) << me_ << "Type Bin Packing!! " << std::endl;
+	   c->write(logger_->msgStream(LogError));}
+	   ++bp;
+           notHandled = false;	     
+   }
+
 // Code for Knapsack
-	else if (((c->getLb()+2<=sumnegwt && c->getUb()==INFTY) && (isInt(c->getLb())))
-	     ||(c->getUb()+sumnegwt >=2 && c->getLb()== -INFTY && (isInt(c->getUb())))){	       
-	     /*logger_->msgStream(LogError) << me_ << "Type is Knapsack!! " << std::endl;
-	     c->write(logger_->msgStream(LogError)); */
-	     ++kc;
+      else if (((c->getLb()+2<=sumnegwt && c->getUb()==INFTY) && (isInt(c->getLb())))
+	     ||(c->getUb()+sumnegwt >=2 && c->getLb()== -INFTY && (isInt(c->getUb())))){
+            if (printTypes==true){		
+	    logger_->msgStream(LogError) << me_ << "Type is Knapsack!! " << std::endl;
+	    c->write(logger_->msgStream(LogError));}
+	    ++kc;
 	    notHandled = false;  
-       }
+   }
 // Code for Mixed Binary
-    	else if (nposbin + nnegbin ==nvars && ((c->getLb()>=-INFTY && c->getUb()<=INFTY) || (c->getUb()== c->getLb()))){
-	    /*logger_->msgStream(LogError) << me_ << "Type is Mixed Binary!! " << std::endl;
-	     c->write(logger_->msgStream(LogError));*/
+      else if (nposbin + nnegbin ==nvars && ((c->getLb()>=-INFTY && c->getUb()<=INFTY) || (c->getUb()== c->getLb()))){
+	    if (printTypes==true){
+	    logger_->msgStream(LogError) << me_ << "Type is Mixed Binary!! " << std::endl;
+	    c->write(logger_->msgStream(LogError));}
+	    ++mb;
+            notHandled = false;	     
+      }	   
+   }
+}
+//Code for Integer Knapsack
+     else if (nposcoef + nnegcoef ==nvars && v->getType() == Integer && (isInt(c->getUb()))){
+	   if (c->getLb()==-INFTY && c->getUb()<=INFTY){
+            if (printTypes==true){		     
+	     logger_->msgStream(LogError) << me_ << "Type is Integer Knapsack!! " << std::endl;
+	     c->write(logger_->msgStream(LogError));}
+	     ++ikk;
+             notHandled = false;		
+   }
+}
+//Code for Mixed Binary	
+     else if (nposcont + nnegcont + nposbin + nnegbin+nposint + nnegint ==nvars){
+           if (((c->getLb()==-INFTY && c->getUb()<=INFTY) || (c->getUb()== c->getLb()))&& (nposbin + nnegbin>=1)){
+             if (printTypes==true){		     
+	     logger_->msgStream(LogError) << me_ << "Type is Mixed Binary!! " << std::endl;
+	     c->write(logger_->msgStream(LogError));}
 	     ++mb;
              notHandled = false;	     
-	}	   
-      }
-  }
-//For Integer Knapsack
-	else if (nposcoef + nnegcoef ==nvars && v->getType() == Integer && (isInt(c->getUb()))){
-	     if (c->getLb()==-INFTY && c->getUb()<=INFTY){					
-		/*logger_->msgStream(LogError) << me_ << "Type is Integer Knapsack!! " << std::endl;
-		c->write(logger_->msgStream(LogError));*/
-		++ikk;
-                notHandled = false;		
-	}
-      }
-//For Mixed Binary	
-	else if (nposcont + nnegcont + nposbin + nnegbin+nposint + nnegint ==nvars){
-	     if (((c->getLb()==-INFTY && c->getUb()<=INFTY) || (c->getUb()== c->getLb()))&& (nposbin + nnegbin>=1)){					
-	   /* logger_->msgStream(LogError) << me_ << "Type is Mixed Binary!! " << std::endl;
-	     c->write(logger_->msgStream(LogError));*/
-	     ++mb;
-             notHandled = false;	     
-      }
-    }
-	else if (nposcont + nnegcont+nposint+nnegint==nvars ){
+   }
+}
+     else if (nposcont + nnegcont+nposint+nnegint==nvars ){
 	    if ((c->getLb()==-INFTY && c->getUb()<=INFTY) || (c->getUb()== c->getLb())){
-	    /*logger_->msgStream(LogError) << me_ << "Type is General Mixed Linear!! " << std::endl;
-	     c->write(logger_->msgStream(LogError));*/
+	     if (printTypes==true){
+	     logger_->msgStream(LogError) << me_ << "Type is General Mixed Linear!! " << std::endl;
+	     c->write(logger_->msgStream(LogError));}
 	     ++gb;
              notHandled = false;	     
-      }	
-    }
- 
+   }	
+}
      if (notHandled) {
-            /*logger_->msgStream(LogError) << me_ << "No specific structure!! " << std::endl;
-	     c->write(logger_->msgStream(LogError));*/
-		++ns;
-    }		
+       if (printTypes==true){
+          logger_->msgStream(LogError) << me_ << "No specific structure!! " << std::endl;
+	  c->write(logger_->msgStream(LogError));}
+	  ++ns;
+      }		
    }
- }
+}
 logger_->msgStream(LogError)
     << "--------------------------------------------"<<std::endl
     <<"|            Constraints Size              |\n"

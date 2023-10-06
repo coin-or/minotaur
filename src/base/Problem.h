@@ -124,7 +124,7 @@ namespace Minotaur {
 
 
     // Here adding code for Classification of Constraints 
-    virtual void classifyCon();
+    virtual void classifyCon(bool printTypes);
 
     /**
      * \brief Clone the given Problem class. Jacobian and Hessian in the cloned

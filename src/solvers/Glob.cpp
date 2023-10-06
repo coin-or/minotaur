@@ -309,8 +309,11 @@ int Glob::solve(ProblemPtr inst)
   if(options->findBool("display_problem")->getValue() == true) {
     inst_->write(env_->getLogger()->msgStream(LogNone), 9);
   }
-  if(options->findBool("display_size")->getValue() == true) {
+  if (options->findBool("display_size")->getValue()==true) {
     inst_->writeSize(env_->getLogger()->msgStream(LogNone));
+    env_->getLogger()->msgStream(LogInfo) << me_ << "Starting constraint classification\n";
+    inst_->classifyCon(false);
+    env_->getLogger()->msgStream(LogInfo) << me_ << "Finished constraint classification\n";
   }
 
   if(inst_->getObjective() &&

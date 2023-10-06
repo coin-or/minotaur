@@ -512,9 +512,9 @@ void BranchAndBound::solve()
 #endif
     }
   }
-  std::cout << " " << std::endl;
-  std::cout << "---------------------------------------------------------------------------------------------" << std::endl;
-  std::cout << " " << std::endl;
+  logger_->msgStream(LogError) << " " << std::endl;
+  logger_->msgStream(LogError) << "---------------------------------------------------------------------------------------------" << std::endl;
+  logger_->msgStream(LogError) << " " << std::endl;
 
   logger_->msgStream(LogInfo) << me_ << "stopping branch-and-bound"
     << std::endl

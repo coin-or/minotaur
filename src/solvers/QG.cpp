@@ -206,8 +206,12 @@ int QG::solve(ProblemPtr p)
   if(options->findBool("display_problem")->getValue() == true) {
     oinst_->write(env_->getLogger()->msgStream(LogNone), 12);
   }
-  if(options->findBool("display_size")->getValue() == true) {
+
+  if (options->findBool("display_size")->getValue()==true) {
     oinst_->writeSize(env_->getLogger()->msgStream(LogNone));
+    env_->getLogger()->msgStream(LogInfo) << me_ << "Starting constraint classification\n";
+    oinst_->classifyCon(false);
+    env_->getLogger()->msgStream(LogInfo) << me_ << "Finished constraint classification\n";
   }
 
   // setup the jacobian and hessian
