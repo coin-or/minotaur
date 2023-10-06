@@ -138,9 +138,7 @@ namespace Minotaur {
       void setConvexity(Convexity convex) { convex_ = convex; }
       
       void incrAct() { numAct_++;}
-      void minmaxDepth(UInt depth);
-      void consActStat(UInt &n, UInt &min, UInt &max);
-
+      
       /// Set the value of the bool flag.
       void setBFlag(bool b) { bTemp_ = b; }
 
@@ -206,8 +204,6 @@ namespace Minotaur {
       FunctionPtr f_;
 
       UInt numAct_;
-      UInt minDepth_;
-      UInt maxDepth_;
       /// id that is unique for this constraint in the problem.
       UInt id_;         
       

@@ -24,8 +24,6 @@ using namespace Minotaur;
 Constraint::Constraint() 
 : f_(FunctionPtr()),
   numAct_(0),
-  minDepth_(1000000000),
-  maxDepth_(0),
   id_(0),
   index_(0),
   lb_(-INFINITY),
@@ -41,8 +39,6 @@ Constraint::Constraint(UInt id, UInt index, FunctionPtr f, double lb,
                        double ub, std::string name)
 : f_(f),
   numAct_(0),
-  minDepth_(1000000000),
-  maxDepth_(0),
   id_(id),
   index_(index),
   lb_(lb),
@@ -131,24 +127,6 @@ NonlinearFunctionPtr Constraint::getNonlinearFunction() const
 QuadraticFunctionPtr Constraint::getQuadraticFunction() const 
 { 
   return f_->getQuadraticFunction();
-}
-
-void Constraint::consActStat(UInt &n, UInt &min, UInt &max)
-{
-  n = numAct_;
-  min = minDepth_;
-  max = maxDepth_;
-
-}
-
-void Constraint::minmaxDepth(UInt depth)
-{
-  if (depth > maxDepth_) {
-    maxDepth_ = depth;
-  }
-  if (depth < minDepth_) {
-    minDepth_ = depth;
-  }
 }
 
 void Constraint::reverseSense_()
