@@ -1,6 +1,6 @@
-## MINOTAUR
+## Minotaur
 
-[MINOTAUR](https://minotaur-solver.github.io/) is a framework for developing algorithms for mixed-integer nonlinear
+[Minotaur](https://minotaur-solver.github.io/) is a framework for developing algorithms for mixed-integer nonlinear
 optimization problems. It includes a few solvers. It is free and open-source.
 See the LICENSE file for details on license to use and distribute it.
 
