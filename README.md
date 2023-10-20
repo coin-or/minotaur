@@ -5,7 +5,7 @@ optimization problems. It includes a few solvers. It is free and open-source.
 See the LICENSE file for details on license to use and distribute it.
 
 ### Important Links
-* [MINOTAUR home page](https://minotaur-solver.github.io/)
+* [Minotaur home page](https://minotaur-solver.github.io/)
 * [Reference Paper describing the classes, structure and solvers in
   Minotaur](http://www.optimization-online.org/DB_HTML/2017/10/6275.html)
 * [Download current release-version with third-party libraries (open-source
