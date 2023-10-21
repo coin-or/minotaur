@@ -5,12 +5,13 @@
 
 # Set the following parameters before running
 
-OUTDIR=small-500
-INSTDIR=/home/amahajan/instances/minlplib/nl              ## directory where input files are located
-INSTLIST=/home/amahajan/instances/minlplib/minlplib.solu  ## which instances to run
-EXEC='./bin/mglob --bnb_time_limit 120 --log_level 3 '    ## what to run
+OUTDIR=/home/23m1523/minotaur/scripts/test1/
+INSTDIR=/home/23m1523/minlplib              ## directory where input files are located
+INSTLIST=/home/23m1523/minotaur/scripts/instances.csv ## which instances to run
+EXEC='/home/23m1523/minotaur/build/bin/mglob --bnb_time_limit 600 --log_level 3 '    ## what to run
 FILESUFF=".nl"                                            ## .nl or .mps etc
-KILLAFTER=240                                             ## should be more than timelimit
+KILLAFTER=5                                             ## should be more than timelimit
+NCPUS=1
 
 # End of parameters
 
@@ -18,7 +19,7 @@ KILLAFTER=240                                             ## should be more than
 
 echo setting hard time limit of $KILLAFTER
 echo pwd is `pwd`
-ulimit -S -t $KILLAFTER
+
 
 if [ -d $OUTDIR ];
 then
@@ -28,10 +29,7 @@ else
 	exit 9
 fi
 
-for i in `cat $INSTLIST | awk '{print $2}'`
-do
-	echo $EXEC $INSTDIR/$i$FILESUFF
-	$EXEC $INSTDIR/$i$FILESUFF > $OUTDIR/$i.out 2>> $OUTDIR/all.err
-done
+#for i in `
+cat $INSTLIST | awk '{print $1}' | parallel --timeout $KILLAFTER --eta -j $NCPUS "(echo {} start ; $EXEC $INSTDIR/{} > $OUTDIR/{}.out 2>> $OUTDIR/all.err)" 
 
 
