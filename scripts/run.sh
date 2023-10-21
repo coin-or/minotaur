@@ -29,7 +29,6 @@ else
 	exit 9
 fi
 
-#for i in `
 cat $INSTLIST | awk '{print $1}' | parallel --timeout $KILLAFTER --eta -j $NCPUS "(echo {} start ; $EXEC $INSTDIR/{} > $OUTDIR/{}.out 2>> $OUTDIR/all.err)" 
 
 
