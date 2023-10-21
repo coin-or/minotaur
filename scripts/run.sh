@@ -5,7 +5,7 @@
 
 # Set the following parameters before running
 
-OUTDIR=/home/23m1523/minotaur/scripts/test1/
+OUTDIR=/home/23m1523/minotaur/scripts/test1/						## directory where output files are stored
 INSTDIR=/home/23m1523/minlplib              						## directory where input files are located
 INSTLIST=/home/23m1523/minotaur/scripts/instances.csv 					## which instances to run
 EXEC='/home/23m1523/minotaur/build/bin/mglob --bnb_time_limit 600 --log_level 3'	## what to run
