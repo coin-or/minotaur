@@ -6,12 +6,12 @@
 # Set the following parameters before running
 
 OUTDIR=/home/23m1523/minotaur/scripts/test1/
-INSTDIR=/home/23m1523/minlplib              ## directory where input files are located
-INSTLIST=/home/23m1523/minotaur/scripts/instances.csv ## which instances to run
-EXEC='/home/23m1523/minotaur/build/bin/mglob --bnb_time_limit 600 --log_level 3 '    ## what to run
-FILESUFF=".nl"                                            ## .nl or .mps etc
-KILLAFTER=5                                             ## should be more than timelimit
-NCPUS=1
+INSTDIR=/home/23m1523/minlplib              						## directory where input files are located
+INSTLIST=/home/23m1523/minotaur/scripts/instances.csv 					## which instances to run
+EXEC='/home/23m1523/minotaur/build/bin/mglob --bnb_time_limit 600 --log_level 3'	## what to run
+FILESUFF=".nl"                                            				## .nl or .mps etc
+KILLAFTER=5                                             				## should be more than timelimit
+NCPUS=10
 
 # End of parameters
 
