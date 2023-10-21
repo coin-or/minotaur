@@ -31,6 +31,6 @@ fi
 
 cat $INSTLIST | awk '{print $1}' | parallel --timeout $KILLAFTER --eta -j $NCPUS "(echo {} start ; $EXEC $INSTDIR/{} > $OUTDIR/{}.out 2>> $OUTDIR/all.err)" 
 
-# { print $column number} - column number in file starts from 1
+# { print $column number} - column number in file 
 
 
