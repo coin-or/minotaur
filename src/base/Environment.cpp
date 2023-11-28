@@ -403,7 +403,7 @@ void Environment::createDefaultOptions_()
 
   i_option = (IntOptionPtr) new Option<int>(
       "rand_seed", "Seed to random number generator: >=0 (0 = time(NULL))",
-      true, 0);
+      true, 37);
   options_->insert(i_option);
 
   i_option = (IntOptionPtr) new Option<int>(
@@ -830,6 +830,17 @@ std::string Environment::getVersion()
               << MINOTAUR_GIT_VERSION;
   return name_stream.str();
 }
+
+
+void Environment::initRand()
+{
+  int seed = options_->findInt("rand_seed")->getValue();
+  if (0==seed) {
+    seed = time(NULL);
+   }
+  srand(seed);
+}
+
 
 void Environment::readConfigFile_(std::string fname, UInt& num_p)
 {

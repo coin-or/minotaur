@@ -77,6 +77,12 @@ namespace Minotaur {
 
       /// Get the version string
       std::string getVersion();
+      
+      /**
+       * \brief Initialize random number generator. It reads the option value of rand_seed 
+       * provided by the user, and sets the random seed using srand() function.
+      */
+      void initRand();
 
       /// Read the options using a char array that has 'argc' words in it.
       void readOptions(int argc, char **argv);

@@ -300,6 +300,9 @@ int Glob::solve(ProblemPtr inst)
   BranchAndBound* bab = 0;
   OptionDBPtr options = env_->getOptions();
 
+
+  env_->initRand();
+
   inst_ = inst;
   if(options->findBool("cgtoqf")->getValue() == 1) {
     inst_->cg2qf();
