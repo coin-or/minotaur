@@ -16,7 +16,8 @@
 #include "Transformer.h"
 #include "Types.h"
 
-namespace Minotaur {
+namespace Minotaur
+{
 class CxUnivarHandler;
 class CGraph;
 class CNode;
@@ -31,14 +32,14 @@ class YEqCGs;
 class YEqLFs;
 class YEqVars;
 class YEqQfBil;
-typedef CxUnivarHandler *CxUnivarHandlerPtr;
-typedef CGraph *CGraphPtr;
-typedef LinearHandler *LinearHandlerPtr;
-typedef QuadHandler *QuadHandlerPtr;
-typedef Solution *SolutionPtr;
-typedef const Solution *ConstSolutionPtr;
-typedef LPEngine *LPEnginePtr;
-typedef Engine *EnginePtr;
+typedef CxUnivarHandler* CxUnivarHandlerPtr;
+typedef CGraph* CGraphPtr;
+typedef LinearHandler* LinearHandlerPtr;
+typedef QuadHandler* QuadHandlerPtr;
+typedef Solution* SolutionPtr;
+typedef const Solution* ConstSolutionPtr;
+typedef LPEngine* LPEnginePtr;
+typedef Engine* EnginePtr;
 
 /**
  * \brief Class for reformulating a problem using simple rules so that
@@ -50,8 +51,9 @@ typedef Engine *EnginePtr;
  * TrigHandler is used for trigonometric functions. Mainly used to teach
  * Ashu some global optimization.
  */
-class SimpleTransformer : public Transformer {
- public:
+class SimpleTransformer : public Transformer
+{
+public:
   /// Default Constructor.
   SimpleTransformer();
 
@@ -66,26 +68,26 @@ class SimpleTransformer : public Transformer {
   std::string getName() const;
 
   // base class method.
-  SolutionPtr getSolOrig(ConstSolutionPtr sol, int &err);
+  SolutionPtr getSolOrig(ConstSolutionPtr sol, int& err);
 
   // base class method.
-  SolutionPtr getSolTrans(ConstSolutionPtr sol, int &err);
+  SolutionPtr getSolTrans(ConstSolutionPtr sol, int& err);
 
   // base class method.
-  void reformulate(ProblemPtr &newp, HandlerVector &handlers, int &status);
+  void reformulate(ProblemPtr& newp, HandlerVector& handlers, int& status);
 
-  void writeStats(std::ostream &out) const;
+  void writeStats(std::ostream& out) const;
 
- private:
+private:
   // Store statistics of reformulation
   struct RefStats {
-    double time;   ///> Total time reformulation and convexity detection
-    UInt nvars;    ///> Number of variables added
-    UInt ncons;    ///> Number of constraints added
-    UInt nconv;    ///> Number of convex constraints
-    UInt objConv;  ///> 0 : Linear objective
-                   ///> 1 : Convex Quadratic Objective
-                   ///> 2 : Nonconvex Quadratic Objective
+    double time;  ///> Total time reformulation and convexity detection
+    UInt nvars;   ///> Number of variables added
+    UInt ncons;   ///> Number of constraints added
+    UInt nconv;   ///> Number of convex constraints
+    UInt objConv; ///> 0 : Linear objective
+                  ///> 1 : Convex Quadratic Objective
+                  ///> 2 : Nonconvex Quadratic Objective
   };
 
   static const std::string me_;
@@ -98,15 +100,15 @@ class SimpleTransformer : public Transformer {
 
   RefStats stats_;
 
-  YEqCGs *yBiVars_;
-  YEqQfBil *yQfBil_;
+  YEqCGs* yBiVars_;
+  YEqQfBil* yQfBil_;
 
-  void absRef_(LinearFunctionPtr lfl, VariablePtr vl, double dl, VariablePtr &v,
-               double &d);
+  void absRef_(LinearFunctionPtr lfl, VariablePtr vl, double dl, VariablePtr& v,
+               double& d);
 
   void bilRef_(LinearFunctionPtr lfl, VariablePtr vl, double dl,
                LinearFunctionPtr lfr, VariablePtr vr, double dr,
-               LinearFunctionPtr &lf, VariablePtr &v, double &d);
+               LinearFunctionPtr& lf, VariablePtr& v, double& d);
 
   VariablePtr newBilVar_(VariablePtr vl, VariablePtr vr);
 
@@ -116,7 +118,7 @@ class SimpleTransformer : public Transformer {
   bool checkQuadConvexity_();
 
   void powKRef_(LinearFunctionPtr lfl, VariablePtr vl, double dl, double k,
-                LinearFunctionPtr &lf, VariablePtr &v, double &d);
+                LinearFunctionPtr& lf, VariablePtr& v, double& d);
 
   /**
    * \brief Reformulate the nonlinear constraints of the problem.
@@ -132,27 +134,28 @@ class SimpleTransformer : public Transformer {
    */
   void refNonlinObj_(ConstProblemPtr oldp);
 
-  void refQuadCons_(QuadraticFunctionPtr qf, LinearFunctionPtr &lf);
+  void refQuadCons_(QuadraticFunctionPtr qf, LinearFunctionPtr& lf,
+                    char cons_type);
 
   /**
    * TODO
    */
-  void recursRef_(const CNode *node, LinearFunctionPtr &lf, VariablePtr &v,
-                  double &d);
+  void recursRef_(const CNode* node, LinearFunctionPtr& lf, VariablePtr& v,
+                  double& d);
 
   // Reset the statistics for transformer
   void resetStats_();
 
   void trigRef_(OpCode op, LinearFunctionPtr lfl, VariablePtr vl, double dl,
-                VariablePtr &v, double &d);
+                VariablePtr& v, double& d);
 
-  void uniVarRef_(const CNode *n0, LinearFunctionPtr lfl, VariablePtr vl,
-                  double dl, LinearFunctionPtr &lf, VariablePtr &v, double &d);
+  void uniVarRef_(const CNode* n0, LinearFunctionPtr lfl, VariablePtr vl,
+                  double dl, LinearFunctionPtr& lf, VariablePtr& v, double& d);
 };
-typedef SimpleTransformer *SimpTranPtr;
-typedef const SimpleTransformer *ConstSimpTranPtr;
+typedef SimpleTransformer* SimpTranPtr;
+typedef const SimpleTransformer* ConstSimpTranPtr;
 
-}  // namespace Minotaur
+} // namespace Minotaur
 
 #endif
 

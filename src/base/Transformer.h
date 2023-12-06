@@ -16,7 +16,9 @@
 #include "OpCode.h"
 #include "Types.h"
 
-namespace Minotaur {
+namespace Minotaur
+{
+class CxQuadHandler;
 class CxUnivarHandler;
 class CGraph;
 class CNode;
@@ -31,14 +33,15 @@ class UnivarQuadHandler;
 class YEqLFs;
 class YEqUCGs;
 class YEqVars;
-typedef CxUnivarHandler *CxUnivarHandlerPtr;
-typedef CGraph *CGraphPtr;
-typedef LinearHandler *LinearHandlerPtr;
-typedef QuadHandler *QuadHandlerPtr;
-typedef kPowHandler *kPowHandlerPtr;
-typedef UnivarQuadHandler *UnivarQuadHandlerPtr;
-typedef Solution *SolutionPtr;
-typedef const Solution *ConstSolutionPtr;
+typedef CxQuadHandler* CxQuadHandlerPtr;
+typedef CxUnivarHandler* CxUnivarHandlerPtr;
+typedef CGraph* CGraphPtr;
+typedef LinearHandler* LinearHandlerPtr;
+typedef QuadHandler* QuadHandlerPtr;
+typedef kPowHandler* kPowHandlerPtr;
+typedef UnivarQuadHandler* UnivarQuadHandlerPtr;
+typedef Solution* SolutionPtr;
+typedef const Solution* ConstSolutionPtr;
 
 /**
  * \brief Abstract base class for reformulating a problem so that handlers can
@@ -50,8 +53,9 @@ typedef const Solution *ConstSolutionPtr;
  * class has some abstract virtual methods that must be implemented by a derived
  * class. Other commonly used functions are implemented here.
  */
-class Transformer {
- public:
+class Transformer
+{
+public:
   /// Default Constructor.
   Transformer();
 
@@ -72,7 +76,7 @@ class Transformer {
    * \param [out] err Zero if no error is encountered, nonzero otherwise.
    * \return Solution of original problem.
    */
-  virtual SolutionPtr getSolOrig(ConstSolutionPtr sol, int &err) = 0;
+  virtual SolutionPtr getSolOrig(ConstSolutionPtr sol, int& err) = 0;
 
   /**
    * \brief Translate the solution of originial problem into that of
@@ -82,7 +86,7 @@ class Transformer {
    * \param [out] err Zero if no error is encountered, nonzero otherwise.
    * \return Solution of the reformulated problem.
    */
-  virtual SolutionPtr getSolTrans(ConstSolutionPtr sol, int &err) = 0;
+  virtual SolutionPtr getSolTrans(ConstSolutionPtr sol, int& err) = 0;
 
   /**
    * \brief Perform the reformulation, and assign handlers.
@@ -92,10 +96,10 @@ class Transformer {
    * problem.
    * \param [out] status Zero if reformulated successfully. Nonzero otherwise.
    */
-  virtual void reformulate(ProblemPtr &newp, HandlerVector &handlers,
-                           int &status) = 0;
+  virtual void reformulate(ProblemPtr& newp, HandlerVector& handlers,
+                           int& status) = 0;
 
- protected:
+protected:
   /// The pointer to environment.
   EnvPtr env_;
 
@@ -110,6 +114,9 @@ class Transformer {
 
   /// The original problem
   ProblemPtr p_;
+
+  /// Handler for convex quadratic constraints
+  CxQuadHandlerPtr cxqHandler_;
 
   /// Handler for y = x^k type constraints
   kPowHandlerPtr kHandler_;
@@ -127,19 +134,19 @@ class Transformer {
    * \brief Storage for auxiliary variables defined by relations of the form
    * \f$y_i = c^Tx + d\f$.
    */
-  YEqLFs *yLfs_;
+  YEqLFs* yLfs_;
 
   /**
    * \brief Storage for auxiliary variables defined by relations of the form
    * \f$y_i = f(x_j)\f$.
    */
-  YEqUCGs *yUniExprs_;
+  YEqUCGs* yUniExprs_;
 
   /**
    * \brief Storage for auxiliary variables defined by relations of the form
    * \f$y_i = x_j + d\f$.
    */
-  YEqVars *yVars_;
+  YEqVars* yVars_;
 
   /// Tolerance for checking if a value is zero.
   const double zTol_;
@@ -151,7 +158,7 @@ class Transformer {
    * \param[in] p Problem whose constraints need to be checked.
    * \returns True if all constraints have been assigned. False otherwise.
    */
-  bool allConsAssigned_(ProblemPtr p, HandlerVector &handlers);
+  bool allConsAssigned_(ProblemPtr p, HandlerVector& handlers);
 
   /**
    * \brief Assign an appropriate handler to a nonlinear constraint of the
@@ -170,7 +177,7 @@ class Transformer {
    * \param [in/out] handlers. Contains pointers to each handler. Unused ones
    * are removed from the vector.
    */
-  void clearUnusedHandlers_(HandlerVector &handlers);
+  void clearUnusedHandlers_(HandlerVector& handlers);
 
   /**
    * \brief Copy all the linear constraints of the problem into the new problem.
@@ -241,14 +248,14 @@ class Transformer {
    */
   VariablePtr newVar_(CGraphPtr cg, ProblemPtr newp);
 
- private:
+private:
   static const std::string me_;
 };
 
-typedef Transformer *TransformerPtr;
-typedef const Transformer *ConstTransformerPtr;
+typedef Transformer* TransformerPtr;
+typedef const Transformer* ConstTransformerPtr;
 
-}  // namespace Minotaur
+} // namespace Minotaur
 
 #endif
 
