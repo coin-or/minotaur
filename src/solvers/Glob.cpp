@@ -49,6 +49,7 @@
 #include "Timer.h"
 #include "Transformer.h"
 #include "TreeManager.h"
+#include "TrivialHeur.h"
 #include "WeakBrancher.h"
 
 using namespace Minotaur;
@@ -198,6 +199,11 @@ BranchAndBound* Glob::createBab_(EnginePtr e, HandlerVector& handlers)
   bab->setNodeRelaxer(nr);
   bab->shouldCreateRoot(true);
 
+  if(env_->getOptions()->findBool("trivialheur")->getValue() == true) {
+    TrivialHeurPtr t_heur = (TrivialHeurPtr) new TrivialHeur(env_, newp_);
+    bab->addPreRootHeur(t_heur);
+  }
+
   if(env_->getOptions()->findBool("msheur")->getValue() == true &&
      (newp_->getSize()->bins == 0 && newp_->getSize()->ints == 0)) {
     EnginePtr nlp_e = getNLPEngine_();
@@ -300,7 +306,6 @@ int Glob::solve(ProblemPtr inst)
   BranchAndBound* bab = 0;
   OptionDBPtr options = env_->getOptions();
 
-
   env_->initRand();
 
   inst_ = inst;
@@ -313,11 +318,13 @@ int Glob::solve(ProblemPtr inst)
   if(options->findBool("display_problem")->getValue() == true) {
     inst_->write(env_->getLogger()->msgStream(LogNone), 9);
   }
-  if (options->findBool("display_size")->getValue()==true) {
+  if(options->findBool("display_size")->getValue() == true) {
     inst_->writeSize(env_->getLogger()->msgStream(LogNone));
-    env_->getLogger()->msgStream(LogInfo) << me_ << "Starting constraint classification\n";
+    env_->getLogger()->msgStream(LogInfo)
+        << me_ << "Starting constraint classification\n";
     inst_->classifyCon(false);
-    env_->getLogger()->msgStream(LogInfo) << me_ << "Finished constraint classification\n";
+    env_->getLogger()->msgStream(LogInfo)
+        << me_ << "Finished constraint classification\n";
   }
 
   if(inst_->getObjective() &&

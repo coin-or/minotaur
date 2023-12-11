@@ -191,6 +191,12 @@ void Environment::createDefaultOptions_()
   options_->insert(b_option);
 
   b_option = (BoolOptionPtr) new Option<bool>(
+      "Trivialheur",
+      "Use trivial heuristic for continuous nonlinear problem: <0/1>", true,
+      false);
+  options_->insert(b_option);
+
+  b_option = (BoolOptionPtr) new Option<bool>(
       "multisolheur", "Use multisol heuristic for MINLP: <0/1>", true, false);
   options_->insert(b_option);
 
@@ -801,7 +807,6 @@ const Timer* Environment::getTimer()
 
 //Adding Code for wall time
 
-
 double Environment::getwTime(int& err)
 {
   if(timer_) {
@@ -821,7 +826,6 @@ const Timer* Environment::getwTimer()
   return timer_;
 }
 
-
 std::string Environment::getVersion()
 {
   std::stringstream name_stream;
@@ -831,16 +835,14 @@ std::string Environment::getVersion()
   return name_stream.str();
 }
 
-
 void Environment::initRand()
 {
   int seed = options_->findInt("rand_seed")->getValue();
-  if (0==seed) {
+  if(0 == seed) {
     seed = time(NULL);
-   }
+  }
   srand(seed);
 }
-
 
 void Environment::readConfigFile_(std::string fname, UInt& num_p)
 {
