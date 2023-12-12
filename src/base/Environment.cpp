@@ -193,7 +193,7 @@ void Environment::createDefaultOptions_()
   b_option = (BoolOptionPtr) new Option<bool>(
       "Trivialheur",
       "Use trivial heuristic for continuous nonlinear problem: <0/1>", true,
-      false);
+      true);
   options_->insert(b_option);
 
   b_option = (BoolOptionPtr) new Option<bool>(
