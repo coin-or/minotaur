@@ -55,14 +55,24 @@ void TrivialHeur::solve(NodePtr, RelaxationPtr, SolutionPoolPtr s_pool)
   SolutionPtr sol;
   VariablePtr v;
   ObjectivePtr obj = p_->getObjective();
-  bool checklb = true, checkub = true;
+  bool checkzero = true, checklb = true, checkub = true;
   int error = 0;
 
   std::memset(x, 0, n * sizeof(double));
-  if(isFeasible_(x)) {
-    sol = (SolutionPtr) new Solution(obj->eval(x, &error), x, p_);
-    s_pool->addSolution(sol);
-    stats_->isZero = true;
+  for(VariableConstIterator vit = p_->varsBegin(); vit != p_->varsEnd();
+      ++vit) {
+    v = *vit;
+    if(v->getLb() > 0 || v->getUb() < 0) {
+      checkzero = false;
+      break;
+    }
+  }
+  if(checkzero) {
+    if(isFeasible_(x)) {
+      sol = (SolutionPtr) new Solution(obj->eval(x, &error), x, p_);
+      s_pool->addSolution(sol);
+      stats_->isZero = true;
+    }
   }
 
   for(VariableConstIterator vit = p_->varsBegin(); vit != p_->varsEnd();
@@ -109,6 +119,8 @@ void TrivialHeur::solve(NodePtr, RelaxationPtr, SolutionPoolPtr s_pool)
       stats_->isLockPoint = true;
     }
   }
+
+  delete[] x;
 }
 
 bool TrivialHeur::getLockPoint_(double* x)
