@@ -164,9 +164,17 @@ bool TrivialHeur::getLockPoint_(double* x)
     if(lockNum[i] == 0) {
       return false;
     } else if(lockNum[i] > 0) {
-      x[i] = p_->getVariable(i)->getUb();
+      if(p_->getVariable(i)->getUb() < INFINITY) {
+        x[i] = p_->getVariable(i)->getUb();
+      } else {
+        return false;
+      }
     } else {
-      x[i] = p_->getVariable(i)->getLb();
+      if(p_->getVariable(i)->getLb() > -INFINITY) {
+        x[i] = p_->getVariable(i)->getLb();
+      } else {
+        return false;
+      }
     }
   }
   return true;
