@@ -191,9 +191,7 @@ void Environment::createDefaultOptions_()
   options_->insert(b_option);
 
   b_option = (BoolOptionPtr) new Option<bool>(
-      "Trivialheur",
-      "Use trivial heuristic for continuous nonlinear problem: <0/1>", true,
-      true);
+      "Samplingheur", "Use Sampling heuristic for MINLP: <0/1>", true, true);
   options_->insert(b_option);
 
   b_option = (BoolOptionPtr) new Option<bool>(

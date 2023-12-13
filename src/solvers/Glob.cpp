@@ -42,6 +42,7 @@
 #include "QuadTransformer.h"
 #include "Relaxation.h"
 #include "ReliabilityBrancher.h"
+#include "SamplingHeur.h"
 #include "SimpleTransformer.h"
 #include "Solution.h"
 #include "Solver.h"
@@ -49,7 +50,6 @@
 #include "Timer.h"
 #include "Transformer.h"
 #include "TreeManager.h"
-#include "TrivialHeur.h"
 #include "WeakBrancher.h"
 
 using namespace Minotaur;
@@ -199,9 +199,9 @@ BranchAndBound* Glob::createBab_(EnginePtr e, HandlerVector& handlers)
   bab->setNodeRelaxer(nr);
   bab->shouldCreateRoot(true);
 
-  if(env_->getOptions()->findBool("trivialheur")->getValue() == true) {
-    TrivialHeurPtr t_heur = (TrivialHeurPtr) new TrivialHeur(env_, newp_);
-    bab->addPreRootHeur(t_heur);
+  if(env_->getOptions()->findBool("samplingheur")->getValue() == true) {
+    SamplingHeurPtr s_heur = (SamplingHeurPtr) new SamplingHeur(env_, newp_);
+    bab->addPreRootHeur(s_heur);
   }
 
   if(env_->getOptions()->findBool("msheur")->getValue() == true &&

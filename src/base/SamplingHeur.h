@@ -5,11 +5,11 @@
 //
 
 /**
- * \file TrivialHeur.h
- * \brief Define the class TrivialHeur derived from base class Heuristics.
+ * \file SamplingHeur.h
+ * \brief Define the class SamplingHeur derived from base class Heuristics.
  * \author Mustafa Vora, Indian Institute of Technology Bombay
  *
- * Declares the class TrivialHeur.
+ * Declares the class SamplingHeur.
  */
 
 #ifndef MINOTAURTRIVIALHEUR_H
@@ -24,22 +24,21 @@ class Problem;
 /**
     * \brief A statistic struct for trivial heuristic
     */
-struct TrivialHeurStats {
-  bool isZero;      /// Zero solution was feasible?
-  bool isLB;        /// Lower bound solution was feasible?
-  bool isUB;        /// Upper bound solution was feasible?
-  UInt numRand;     /// Number of random solutions feasible
-  bool isLockPoint; /// Lock point solution was feasible?
+struct SamplingHeurStats {
+  bool isZero;  /// Zero solution was feasible?
+  bool isLB;    /// Lower bound solution was feasible?
+  bool isUB;    /// Upper bound solution was feasible?
+  UInt numRand; /// Number of random solutions feasible
 };
 
-class TrivialHeur : public Heuristic
+class SamplingHeur : public Heuristic
 {
 public:
   /// default constructor
-  TrivialHeur(EnvPtr env, ProblemPtr p);
+  SamplingHeur(EnvPtr env, ProblemPtr p);
 
   /// default destructor
-  ~TrivialHeur();
+  ~SamplingHeur();
 
   /// call to heuristic
   void solve(NodePtr, RelaxationPtr, SolutionPoolPtr s_pool);
@@ -51,6 +50,9 @@ protected:
   // Environment
   EnvPtr env_;
 
+  // Maximum random solutions to check
+  UInt maxRand_;
+
   // For printing messages
   static const std::string me_;
 
@@ -58,16 +60,13 @@ protected:
   ProblemPtr p_;
 
   // Statistics
-  TrivialHeurStats* stats_;
-
-  // get the lock point
-  bool getLockPoint_(double* x);
+  SamplingHeurStats* stats_;
 
   // Check whether x is feasible
   bool isFeasible_(const double* x);
 };
 
-typedef TrivialHeur* TrivialHeurPtr;
+typedef SamplingHeur* SamplingHeurPtr;
 } // namespace Minotaur
 #endif
 

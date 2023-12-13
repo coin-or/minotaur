@@ -133,7 +133,7 @@ set (MINOTAUR_SOURCES
      base/TransPoly.cpp 
      base/TransSep.cpp
      base/TreeManager.cpp 
-     base/TrivialHeur.cpp
+     base/SamplingHeur.cpp
      base/UnivarQuadHandler.cpp
      base/WeakBrancher.cpp
      base/Types.cpp 
@@ -275,7 +275,7 @@ set (MINOTAUR_HEADERS
      base/TransPoly.h 
      base/TransSep.h
      base/TreeManager.h
-     base/TrivialHeur.h
+     base/SamplingHeur.h
      base/Types.h
      base/UnivarQuadHandler.h
      base/UnambRelBrancher.h
