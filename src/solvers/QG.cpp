@@ -43,6 +43,7 @@
 #include "RCHandler.h"
 #include "Reader.h"
 #include "ReliabilityBrancher.h"
+#include "SamplingHeur.h"
 #include "StrongBrancher.h"
 #include "Timer.h"
 #include "Types.h"
@@ -207,11 +208,13 @@ int QG::solve(ProblemPtr p)
     oinst_->write(env_->getLogger()->msgStream(LogNone), 12);
   }
 
-  if (options->findBool("display_size")->getValue()==true) {
+  if(options->findBool("display_size")->getValue() == true) {
     oinst_->writeSize(env_->getLogger()->msgStream(LogNone));
-    env_->getLogger()->msgStream(LogInfo) << me_ << "Starting constraint classification\n";
+    env_->getLogger()->msgStream(LogInfo)
+        << me_ << "Starting constraint classification\n";
     oinst_->classifyCon(false);
-    env_->getLogger()->msgStream(LogInfo) << me_ << "Finished constraint classification\n";
+    env_->getLogger()->msgStream(LogInfo)
+        << me_ << "Finished constraint classification\n";
   }
 
   // setup the jacobian and hessian
@@ -341,6 +344,11 @@ int QG::solve(ProblemPtr p)
   bab->setNodeRelaxer(nr);
   bab->setNodeProcessor(nproc);
   bab->shouldCreateRoot(true);
+
+  if(env_->getOptions()->findBool("samplingheur")->getValue() == true) {
+    SamplingHeurPtr s_heur = (SamplingHeurPtr) new SamplingHeur(env_, newp_);
+    bab->addPreRootHeur(s_heur);
+  }
 
   // start solving
   bab->solve();
