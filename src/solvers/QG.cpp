@@ -346,7 +346,7 @@ int QG::solve(ProblemPtr p)
   bab->shouldCreateRoot(true);
 
   if(env_->getOptions()->findBool("samplingheur")->getValue() == true) {
-    SamplingHeurPtr s_heur = (SamplingHeurPtr) new SamplingHeur(env_, newp_);
+    SamplingHeurPtr s_heur = (SamplingHeurPtr) new SamplingHeur(env_, oinst_);
     bab->addPreRootHeur(s_heur);
   }
 
