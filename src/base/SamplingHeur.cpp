@@ -36,10 +36,9 @@ SamplingHeur::SamplingHeur(EnvPtr env, ProblemPtr p)
 {
   maxRand_ = 100;
   stats_ = (SamplingHeurStats*)new SamplingHeurStats();
-  stats_->isZero = false;
-  stats_->isLB = false;
-  stats_->isUB = false;
-  stats_->numRand = 0;
+  stats_->numSol = 0;
+  stats_->time = 0;
+  stats_->checked = 0;
 }
 
 SamplingHeur::~SamplingHeur()
@@ -49,6 +48,8 @@ SamplingHeur::~SamplingHeur()
 
 void SamplingHeur::solve(NodePtr, RelaxationPtr, SolutionPoolPtr s_pool)
 {
+  const Timer* timer = env_->getTimer();
+  double stime = timer->query();
   UInt n = p_->getNumVars();
   double* x = new double[n];
   double* xl = new double[n];
@@ -61,6 +62,10 @@ void SamplingHeur::solve(NodePtr, RelaxationPtr, SolutionPoolPtr s_pool)
   int error = 0;
 
   std::memset(x, 0, n * sizeof(double));
+#if SPEW
+  env_->getLogger()->msgStream(LogDebug2)
+      << "Checking if zero is feasible" << std::endl;
+#endif
   for(VariableConstIterator vit = p_->varsBegin(); vit != p_->varsEnd();
       ++vit) {
     v = *vit;
@@ -70,10 +75,16 @@ void SamplingHeur::solve(NodePtr, RelaxationPtr, SolutionPoolPtr s_pool)
     }
   }
   if(checkzero) {
+    ++stats_->checked;
     if(isFeasible_(x)) {
+#if SPEW
+      env_->getLogger()->msgStream(LogDebug2)
+          << "zero is feasible. Objective value: " << obj->eval(x, &error)
+          << std::endl;
+#endif
       sol = (SolutionPtr) new Solution(obj->eval(x, &error), x, p_);
       s_pool->addSolution(sol);
-      stats_->isZero = true;
+      ++stats_->numSol;
     }
   }
 
@@ -99,20 +110,45 @@ void SamplingHeur::solve(NodePtr, RelaxationPtr, SolutionPoolPtr s_pool)
     }
   }
 
+  ++stats_->checked;
+#if SPEW
+  env_->getLogger()->msgStream(LogDebug2)
+      << "Checking if LB is feasible" << std::endl;
+#endif
   if(isFeasible_(xl)) {
+#if SPEW
+    env_->getLogger()->msgStream(LogDebug2)
+        << "LB is feasible. Objective value: " << obj->eval(xl, &error)
+        << std::endl;
+#endif
     error = 0;
     sol = (SolutionPtr) new Solution(obj->eval(xl, &error), xl, p_);
     s_pool->addSolution(sol);
-    stats_->isLB = true;
+    ++stats_->numSol;
   }
+#if SPEW
+  env_->getLogger()->msgStream(LogDebug2)
+      << "Checking if UB is feasible" << std::endl;
+#endif
+  ++stats_->checked;
   if(isFeasible_(xu)) {
+#if SPEW
+    env_->getLogger()->msgStream(LogDebug2)
+        << "UB is feasible. Objective value: " << obj->eval(xu, &error)
+        << std::endl;
+#endif
     error = 0;
     sol = (SolutionPtr) new Solution(obj->eval(xu, &error), xu, p_);
     s_pool->addSolution(sol);
-    stats_->isUB = true;
+    ++stats_->numSol;
   }
 
+  stats_->checked += maxRand_;
   for(UInt i = 0; i < maxRand_; ++i) {
+#if SPEW
+    env_->getLogger()->msgStream(LogDebug2)
+        << "Checking if random point " << i << " is feasible" << std::endl;
+#endif
     for(VariableConstIterator vit = p_->varsBegin(); vit != p_->varsEnd();
         ++vit) {
       v = *vit;
@@ -123,25 +159,44 @@ void SamplingHeur::solve(NodePtr, RelaxationPtr, SolutionPoolPtr s_pool)
       }
     }
     if(isFeasible_(x)) {
+#if SPEW
+      env_->getLogger()->msgStream(LogDebug2)
+          << "Random point " << i
+          << " is feasible. Objective value: " << obj->eval(x, &error)
+          << std::endl;
+#endif
       error = 0;
       sol = (SolutionPtr) new Solution(obj->eval(x, &error), x, p_);
       s_pool->addSolution(sol);
-      ++stats_->numRand;
+      ++stats_->numSol;
     }
   }
 
-  if(stats_->isZero || stats_->isLB || stats_->isUB || stats_->numRand > 0) {
+  if(stats_->numSol > 0) {
+    stats_->checked += maxRand_;
     for(UInt i = 0; i < maxRand_; ++i) {
       getNewPoint_(x, s_pool);
+#if SPEW
+      env_->getLogger()->msgStream(LogDebug2)
+          << "Checking if random point " << i + maxRand_ << " is feasible"
+          << std::endl;
+#endif
       if(isFeasible_(x)) {
+#if SPEW
+        env_->getLogger()->msgStream(LogDebug2)
+            << "Random point " << i + maxRand_
+            << " is feasible. Objective value: " << obj->eval(x, &error)
+            << std::endl;
+#endif
         error = 0;
         sol = (SolutionPtr) new Solution(obj->eval(x, &error), x, p_);
         s_pool->addSolution(sol);
-        ++stats_->numRand;
+        ++stats_->numSol;
       }
     }
   }
 
+  stats_->time += timer->query() - stime;
   delete[] xl;
   delete[] xu;
   delete[] x;
@@ -239,11 +294,11 @@ bool SamplingHeur::isFeasible_(const double* x)
 
 void SamplingHeur::writeStats(std::ostream& out) const
 {
-  out << me_ << " 0 was feasible? : " << stats_->isZero << std::endl;
-  out << me_ << " lb was feasible? : " << stats_->isLB << std::endl;
-  out << me_ << " ub was feasible? : " << stats_->isUB << std::endl;
-  out << me_ << " number of random solution feasible : " << stats_->numRand
+  out << me_ << "number of points checked for feasibility : " << stats_->checked
       << std::endl;
+  out << me_ << "number of feasible solutions found : " << stats_->numSol
+      << std::endl;
+  out << me_ << "Time taken : " << stats_->time << std::endl;
 }
 // Local Variables:
 // mode: c++

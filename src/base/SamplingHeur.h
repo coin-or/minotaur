@@ -25,10 +25,9 @@ class Problem;
     * \brief A statistic struct for trivial heuristic
     */
 struct SamplingHeurStats {
-  bool isZero;  /// Zero solution was feasible?
-  bool isLB;    /// Lower bound solution was feasible?
-  bool isUB;    /// Upper bound solution was feasible?
-  UInt numRand; /// Number of random solutions feasible
+  UInt numSol;  // Number of solutions found
+  double time;  // Time taken in this heuristic
+  UInt checked; // Number of points checked
 };
 
 class SamplingHeur : public Heuristic
