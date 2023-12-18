@@ -130,9 +130,81 @@ void SamplingHeur::solve(NodePtr, RelaxationPtr, SolutionPoolPtr s_pool)
     }
   }
 
+  if(stats_->isZero || stats_->isLB || stats_->isUB || stats_->numRand > 0) {
+    for(UInt i = 0; i < maxRand_; ++i) {
+      getNewPoint_(x, s_pool);
+      if(isFeasible_(x)) {
+        error = 0;
+        sol = (SolutionPtr) new Solution(obj->eval(x, &error), x, p_);
+        s_pool->addSolution(sol);
+        ++stats_->numRand;
+      }
+    }
+  }
+
   delete[] xl;
   delete[] xu;
   delete[] x;
+}
+
+void SamplingHeur::getNewPoint_(double* x, SolutionPoolPtr s_pool)
+{
+  const double* best = s_pool->getBestSolution()->getPrimal();
+  UInt r, ind;
+  double ldist, udist;
+  VariablePtr v;
+
+  for(VariableConstIterator vit = p_->varsBegin(); vit != p_->varsEnd();
+      ++vit) {
+    v = *vit;
+    ind = v->getIndex();
+    r = rand() % 10;
+    if(r < 8) {
+      x[ind] = best[ind];
+    } else if(r == 8) {
+      ldist = best[ind] - v->getLb();
+      udist = v->getUb() - best[ind];
+      if(ldist < udist) {
+        x[ind] = v->getUb();
+      } else if(udist < ldist) {
+        x[ind] = v->getLb();
+      } else {
+        x[ind] = rand() % 2 == 0 ? v->getLb() : v->getUb();
+      }
+    } else {
+      if(v->getType() == Binary || v->getType() == ImplBin) {
+        x[ind] = best[ind] > 0.5 ? 0 : 1;
+      } else if(v->getType() == Integer || v->getType() == ImplInt) {
+        ldist = best[ind] - v->getLb();
+        udist = v->getUb() - best[ind];
+        if(ldist < udist) {
+          x[ind] = ceil(v->getUb() - udist / 2.0);
+        } else if(udist < ldist) {
+          x[ind] = floor(v->getLb() + ldist / 2.0);
+        } else {
+          if(rand() % 2 == 0) {
+            x[ind] = floor(v->getLb() + ldist / 2.0);
+          } else {
+            x[ind] = ceil(v->getUb() - udist / 2.0);
+          }
+        }
+      } else {
+        ldist = best[ind] - v->getLb();
+        udist = v->getUb() - best[ind];
+        if(ldist < udist) {
+          x[ind] = v->getUb() - udist / 2.0;
+        } else if(udist < ldist) {
+          x[ind] = v->getLb() + ldist / 2.0;
+        } else {
+          if(rand() % 2 == 0) {
+            x[ind] = v->getLb() + ldist / 2.0;
+          } else {
+            x[ind] = v->getUb() - udist / 2.0;
+          }
+        }
+      }
+    }
+  }
 }
 
 bool SamplingHeur::isFeasible_(const double* x)
