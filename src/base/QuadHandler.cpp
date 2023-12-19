@@ -3114,6 +3114,11 @@ bool QuadHandler::tightenSimple_(bool* changed)
 int QuadHandler::updatePBounds_(VariablePtr v, double lb, double ub,
                                 bool* changed)
 {
+  if(v->getType() == Binary || v->getType() == ImplBin ||
+     v->getType() == Integer || v->getType() == ImplInt) {
+    ub = floor(ub);
+    lb = ceil(lb);
+  }
   if(ub < v->getLb() - bTol_ || lb > v->getUb() + bTol_) {
 #if SPEW
     logger_->msgStream(LogDebug2)
@@ -3154,6 +3159,11 @@ int QuadHandler::updatePBounds_(VariablePtr v, double lb, double ub,
   VarBoundMod2Ptr b2mod;
   VarBoundModPtr bmod;
 
+  if(v->getType() == Binary || v->getType() == ImplBin ||
+     v->getType() == Integer || v->getType() == ImplInt) {
+    ub = floor(ub);
+    lb = ceil(lb);
+  }
   if(lb > v->getUb() + bTol_ || ub < v->getLb() - bTol_) {
     return -1;
   }
