@@ -60,6 +60,7 @@ QG::QG(EnvPtr env)
 {
   env_ = env;
   iface_ = 0;
+  ownIface_=true;
 }
 
 QG::~QG() { }
@@ -367,6 +368,7 @@ int QG::solve(ProblemPtr p)
     (*it)->writeStats(env_->getLogger()->msgStream(LogExtraInfo));
   }
 
+
   err = writeSol_(env_, orig_v, pres, sol_, status_, iface_);
   if(err) {
     goto CLEANUP;
@@ -384,7 +386,7 @@ CLEANUP:
   if(nlp_e) {
     delete nlp_e;
   }
-  if(iface_) {
+  if(iface_ && ownIface_) {
     delete iface_;
     iface_ = 0;
   }
@@ -448,6 +450,7 @@ int QG::writeBnbStatus_(BranchAndBound* bab)
   return err;
 }
 
+/**
 void writeSol_(EnvPtr env, VarVector* orig_v, PresolverPtr pres,
                SolutionPtr sol, SolveStatus status,
                MINOTAUR_AMPL::AMPLInterface* iface)
@@ -463,12 +466,13 @@ void writeSol_(EnvPtr env, VarVector* orig_v, PresolverPtr pres,
   } else if(final_sol && env->getLogger()->getMaxLevel() >= LogExtraInfo &&
             env->getOptions()->findBool("display_solution")->getValue()) {
     final_sol->writePrimal(env->getLogger()->msgStream(LogExtraInfo), orig_v);
-  }
+  } 
 
   if(final_sol) {
     delete final_sol;
   }
 }
+*/
 
 // Local Variables:
 // mode: c++

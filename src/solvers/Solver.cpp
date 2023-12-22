@@ -25,13 +25,16 @@ using namespace Minotaur;
 const std::string Solver::me_ = "Solver: ";
 
 Solver::Solver()
+: env_(0),
+  iface_(0),
+  ownIface_(true)
 {
 }
 
 
 Solver::~Solver()
 {
-  if (iface_) {
+  if (iface_ && ownIface_) {
     delete iface_;
   }
 }
@@ -68,7 +71,6 @@ ProblemPtr Solver::readProblem(std::string fname, std::string dname,
 
   timer->start();
   err = 0;
-  iface_ = 0;
   ft = getFileType(fname);
 
   if (ft==MPS) {
@@ -81,7 +83,6 @@ ProblemPtr Solver::readProblem(std::string fname, std::string dname,
   } else if ((ft==NL) || 
              options->findFlag("AMPL")->getValue()==1 ||
              options->findString("interface_type")->getValue()=="AMPL") {
-    iface_ = new MINOTAUR_AMPL::AMPLInterface(env_, sname);
     options->findString("interface_type")->setValue("AMPL");
     p = iface_->readInstance(fname);
     env_->getLogger()->msgStream(LogInfo) << me_ 
@@ -102,6 +103,13 @@ ProblemPtr Solver::readProblem(std::string fname, std::string dname,
     err = rdr.readSol(p, dname);
   }
   return p;
+}
+
+
+void Solver::setIface(MINOTAUR_AMPL::AMPLInterface* iface)
+{
+  iface_ = iface;
+  ownIface_ = false;
 }
 
 

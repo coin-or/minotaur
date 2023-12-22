@@ -371,11 +371,12 @@ int Glob::solve(ProblemPtr inst)
 
   if(err == 2) {
     // call QG
+    QG qg(env_);
     env_->getLogger()->msgStream(LogInfo)
         << me_ << "All constraints and objective found to be convex"
         << std::endl
         << "Problem is forwarded to QG - convex MINLP solver" << std::endl;
-    QG qg(env_);
+    qg.setIface(iface_);
     if(0 != qg.showInfo()) {
       goto CLEANUP;
     }
