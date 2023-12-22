@@ -270,6 +270,17 @@ PresolverPtr Glob::createPres_(HandlerVector& handlers)
   return pres;
 }
 
+void Glob::fwd2QG_()
+{
+  QG qg(env_);
+  if(0 != qg.showInfo()) {
+    return;
+  }
+
+  qg.solve(inst_);
+  return;
+}
+
 DoubleVector Glob::getSolution()
 {
   DoubleVector x;
@@ -309,6 +320,10 @@ int Glob::solve(ProblemPtr inst)
   env_->initRand();
 
   inst_ = inst;
+  if(options->findBool("convex")->getValue() == 1) {
+    fwd2QG_();
+    goto CLEANUP;
+  }
   if(options->findBool("cgtoqf")->getValue() == 1) {
     inst_->cg2qf();
   }
@@ -375,12 +390,7 @@ int Glob::solve(ProblemPtr inst)
         << me_ << "All constraints and objective found to be convex"
         << std::endl
         << "Problem is forwarded to QG - convex MINLP solver" << std::endl;
-    QG qg(env_);
-    if(0 != qg.showInfo()) {
-      goto CLEANUP;
-    }
-
-    err = qg.solve(inst_);
+    fwd2QG_();
     goto CLEANUP;
   }
 

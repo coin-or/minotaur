@@ -99,6 +99,11 @@ void Environment::createDefaultOptions_()
   options_->insert(b_option);
 
   b_option = (BoolOptionPtr) new Option<bool>(
+      "convex", "Should we assume the problem to be convex: <0/1>", true,
+      false);
+  options_->insert(b_option);
+
+  b_option = (BoolOptionPtr) new Option<bool>(
       "separability", "Should separability be used: <0/1>", true, false);
   options_->insert(b_option);
 
