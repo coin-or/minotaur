@@ -12,8 +12,8 @@
  * Declares the class SamplingHeur.
  */
 
-#ifndef MINOTAURTRIVIALHEUR_H
-#define MINOTAURTRIVIALHEUR_H
+#ifndef MINOTAURSAMPLINGHEUR_H
+#define MINOTAURSAMPLINGHEUR_H
 
 #include "Heuristic.h"
 #include "Types.h"
