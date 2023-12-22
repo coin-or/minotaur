@@ -54,6 +54,8 @@ void SamplingHeur::solve(NodePtr, RelaxationPtr, SolutionPoolPtr s_pool)
   double* x = new double[n];
   double* xl = new double[n];
   double* xu = new double[n];
+  double best_obj = s_pool->getBestSolutionValue();
+  double curr_obj;
   SolutionPtr sol;
   VariablePtr v;
   ObjectivePtr obj = p_->getObjective();
@@ -77,13 +79,16 @@ void SamplingHeur::solve(NodePtr, RelaxationPtr, SolutionPoolPtr s_pool)
   if(checkzero) {
     ++stats_->checked;
     if(isFeasible_(x)) {
+      curr_obj = obj->eval(x, &error);
 #if SPEW
       env_->getLogger()->msgStream(LogDebug2)
-          << "zero is feasible. Objective value: " << obj->eval(x, &error)
-          << std::endl;
+          << "zero is feasible. Objective value: " << curr_obj << std::endl;
 #endif
-      sol = (SolutionPtr) new Solution(obj->eval(x, &error), x, p_);
-      s_pool->addSolution(sol);
+      if(curr_obj < best_obj - 1e-6) {
+        sol = (SolutionPtr) new Solution(curr_obj, x, p_);
+        s_pool->addSolution(sol);
+        best_obj = curr_obj;
+      }
       ++stats_->numSol;
     }
   }
@@ -116,14 +121,17 @@ void SamplingHeur::solve(NodePtr, RelaxationPtr, SolutionPoolPtr s_pool)
       << "Checking if LB is feasible" << std::endl;
 #endif
   if(isFeasible_(xl)) {
+    error = 0;
+    curr_obj = obj->eval(xl, &error);
 #if SPEW
     env_->getLogger()->msgStream(LogDebug2)
-        << "LB is feasible. Objective value: " << obj->eval(xl, &error)
-        << std::endl;
+        << "LB is feasible. Objective value: " << curr_obj << std::endl;
 #endif
-    error = 0;
-    sol = (SolutionPtr) new Solution(obj->eval(xl, &error), xl, p_);
-    s_pool->addSolution(sol);
+    if(curr_obj < best_obj - 1e-6) {
+      sol = (SolutionPtr) new Solution(curr_obj, xl, p_);
+      s_pool->addSolution(sol);
+      best_obj = curr_obj;
+    }
     ++stats_->numSol;
   }
 #if SPEW
@@ -132,14 +140,17 @@ void SamplingHeur::solve(NodePtr, RelaxationPtr, SolutionPoolPtr s_pool)
 #endif
   ++stats_->checked;
   if(isFeasible_(xu)) {
+    error = 0;
+    curr_obj = obj->eval(xu, &error);
 #if SPEW
     env_->getLogger()->msgStream(LogDebug2)
-        << "UB is feasible. Objective value: " << obj->eval(xu, &error)
-        << std::endl;
+        << "UB is feasible. Objective value: " << curr_obj << std::endl;
 #endif
-    error = 0;
-    sol = (SolutionPtr) new Solution(obj->eval(xu, &error), xu, p_);
-    s_pool->addSolution(sol);
+    if(curr_obj < best_obj - 1e-6) {
+      sol = (SolutionPtr) new Solution(curr_obj, xu, p_);
+      s_pool->addSolution(sol);
+      best_obj = curr_obj;
+    }
     ++stats_->numSol;
   }
 
@@ -159,15 +170,18 @@ void SamplingHeur::solve(NodePtr, RelaxationPtr, SolutionPoolPtr s_pool)
       }
     }
     if(isFeasible_(x)) {
+      error = 0;
+      curr_obj = obj->eval(x, &error);
 #if SPEW
       env_->getLogger()->msgStream(LogDebug2)
           << "Random point " << i
-          << " is feasible. Objective value: " << obj->eval(x, &error)
-          << std::endl;
+          << " is feasible. Objective value: " << curr_obj << std::endl;
 #endif
-      error = 0;
-      sol = (SolutionPtr) new Solution(obj->eval(x, &error), x, p_);
-      s_pool->addSolution(sol);
+      if(curr_obj < best_obj - 1e-6) {
+        sol = (SolutionPtr) new Solution(curr_obj, x, p_);
+        s_pool->addSolution(sol);
+        best_obj = curr_obj;
+      }
       ++stats_->numSol;
     }
   }
@@ -182,15 +196,18 @@ void SamplingHeur::solve(NodePtr, RelaxationPtr, SolutionPoolPtr s_pool)
           << std::endl;
 #endif
       if(isFeasible_(x)) {
+        error = 0;
+        curr_obj = obj->eval(x, &error);
 #if SPEW
         env_->getLogger()->msgStream(LogDebug2)
             << "Random point " << i + maxRand_
-            << " is feasible. Objective value: " << obj->eval(x, &error)
-            << std::endl;
+            << " is feasible. Objective value: " << curr_obj << std::endl;
 #endif
-        error = 0;
-        sol = (SolutionPtr) new Solution(obj->eval(x, &error), x, p_);
-        s_pool->addSolution(sol);
+        if(curr_obj < best_obj - 1e-6) {
+          sol = (SolutionPtr) new Solution(curr_obj, x, p_);
+          s_pool->addSolution(sol);
+          best_obj = curr_obj;
+        }
         ++stats_->numSol;
       }
     }
