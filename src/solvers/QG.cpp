@@ -46,6 +46,7 @@
 #include "SamplingHeur.h"
 #include "StrongBrancher.h"
 #include "Timer.h"
+#include "TransSep.h"
 #include "Types.h"
 
 using namespace Minotaur;
@@ -63,7 +64,23 @@ QG::QG(EnvPtr env)
   ownIface_=true;
 }
 
-QG::~QG() { }
+
+QG::~QG()
+{
+}
+
+
+void QG::doSetup()
+{
+  int err = 0;
+  env_->startTimer(err);
+
+  setInitialOptions_();
+
+  iface_ = (MINOTAUR_AMPL::AMPLInterfacePtr) new MINOTAUR_AMPL::AMPLInterface(
+      env_, "qg");
+}
+
 
 int QG::getEngines_(Engine** nlp_e, LPEngine** lp_e)
 {
@@ -134,6 +151,36 @@ PresolverPtr QG::presolve_(HandlerVector& handlers)
   }
   return pres;
 }
+
+void QG::sepDetection()
+{
+  TransSepPtr sep = TransSepPtr();
+  if (env_->getOptions()->findBool("separability")->getValue() == true) {
+    if (oinst_->isLinear()) {
+      env_->getLogger()->msgStream(LogInfo) << me_
+        << "No separability detection as problem is linear." 
+        << std::endl;
+    } else {
+      sep = (TransSepPtr) new TransSep(env_, oinst_);
+      sep->sepDetection();
+    }
+  }
+}
+
+
+void QG::setInitialOptions_()
+{
+  OptionDBPtr options = env_->getOptions();
+  options->findString("interface_type")->setValue("AMPL");
+  options->findBool("presolve")->setValue(true);
+  options->findBool("nl_presolve")->setValue(true);
+  options->findBool("lin_presolve")->setValue(true);
+  options->findString("brancher")->setValue("rel");
+  options->findString("nlp_engine")->setValue("IPOPT");
+  options->findBool("cgtoqf")->setValue(true);
+  options->findBool("simplex_cut")->setValue(true);
+}
+
 
 void QG::showHelp() const
 {
@@ -260,6 +307,9 @@ int QG::solve(ProblemPtr p)
     writeSol_(env_, orig_v, pres, SolutionPtr(), status_, iface_);
     goto CLEANUP;
   }
+
+  // transform to exploit separability
+  sepDetection();
 
   // create engines for solving LPs and NLPs
   err = getEngines_(&nlp_e, &lp_e);

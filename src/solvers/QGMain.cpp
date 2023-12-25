@@ -28,6 +28,7 @@ int main(int argc, char** argv)
   ProblemPtr p = 0;
   std::string fname, dname;
  
+  qg.doSetup();
   env->startTimer(err);
   if (err) {
     goto CLEANUP;

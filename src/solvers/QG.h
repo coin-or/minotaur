@@ -33,6 +33,10 @@ namespace Minotaur {
       /// Destroy.
       ~QG();
 
+      void doSetup();
+
+      void sepDetection();
+
       /// show help messages
       void showHelp() const;
 
@@ -64,6 +68,7 @@ namespace Minotaur {
 
       int getEngines_(Engine **nlp_e, LPEngine **lp_e);
       PresolverPtr presolve_(HandlerVector &handlers);
+      void setInitialOptions_();
       int writeBnbStatus_(BranchAndBound *bab);
   };
 }
