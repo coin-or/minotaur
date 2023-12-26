@@ -45,11 +45,20 @@ public:
   void writeStats(std::ostream& out) const;
 
 protected:
+  // A map of constraints with the number of unfixed variables in the constratint
+  std::map<ConstraintPtr, UInt> consNumVar_;
+
   // Environment
   EnvPtr env_;
 
   // For printing messages
   static const std::string me_;
+
+  // Multiplier for binary variables to create a priority
+  UInt mbin_;
+
+  // Multiplier for nonlinear variables to create a priority
+  UInt mnl_;
 
   // Problem
   ProblemPtr p_;
@@ -57,8 +66,17 @@ protected:
   // Statistics
   FixVarsHeurStats* stats_;
 
+  // Fix Variables
+  void FixVars_(UIntSet& unfixedVars);
+
+  // initialize the correct data structures for heuristic
+  void initialize_();
+
   // Check whether x is feasible
   bool isFeasible_(const double* x);
+
+  // update itmp of each variable in the constraint once it is covered
+  void updateItmp_(ConstraintPtr c);
 };
 
 typedef FixVarsHeur* FixVarsHeurPtr;
