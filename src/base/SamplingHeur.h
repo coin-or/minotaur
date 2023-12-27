@@ -62,7 +62,7 @@ protected:
   SamplingHeurStats* stats_;
 
   // get new point from a feasible point
-  void getNewPoint_(double* x, SolutionPoolPtr s_pool);
+  void getNewPoint_(double* x, double* xl, double* xu, SolutionPoolPtr s_pool);
 
   // Check whether x is feasible
   bool isFeasible_(const double* x);

@@ -189,7 +189,7 @@ void SamplingHeur::solve(NodePtr, RelaxationPtr, SolutionPoolPtr s_pool)
   if(stats_->numSol > 0) {
     stats_->checked += maxRand_;
     for(UInt i = 0; i < maxRand_; ++i) {
-      getNewPoint_(x, s_pool);
+      getNewPoint_(x, xl, xu, s_pool);
 #if SPEW
       env_->getLogger()->msgStream(LogDebug2)
           << "Checking if random point " << i + maxRand_ << " is feasible"
@@ -219,7 +219,8 @@ void SamplingHeur::solve(NodePtr, RelaxationPtr, SolutionPoolPtr s_pool)
   delete[] x;
 }
 
-void SamplingHeur::getNewPoint_(double* x, SolutionPoolPtr s_pool)
+void SamplingHeur::getNewPoint_(double* x, double* xl, double* xu,
+                                SolutionPoolPtr s_pool)
 {
   const double* best = s_pool->getBestSolution()->getPrimal();
   UInt r, ind;
@@ -234,44 +235,44 @@ void SamplingHeur::getNewPoint_(double* x, SolutionPoolPtr s_pool)
     if(r < 8) {
       x[ind] = best[ind];
     } else if(r == 8) {
-      ldist = best[ind] - v->getLb();
-      udist = v->getUb() - best[ind];
+      ldist = best[ind] - xl[ind];
+      udist = xu[ind] - best[ind];
       if(ldist < udist) {
-        x[ind] = v->getUb();
+        x[ind] = xu[ind];
       } else if(udist < ldist) {
-        x[ind] = v->getLb();
+        x[ind] = xl[ind];
       } else {
-        x[ind] = rand() % 2 == 0 ? v->getLb() : v->getUb();
+        x[ind] = rand() % 2 == 0 ? xl[ind] : xu[ind];
       }
     } else {
       if(v->getType() == Binary || v->getType() == ImplBin) {
         x[ind] = best[ind] > 0.5 ? 0 : 1;
       } else if(v->getType() == Integer || v->getType() == ImplInt) {
-        ldist = best[ind] - v->getLb();
-        udist = v->getUb() - best[ind];
+        ldist = best[ind] - xl[ind];
+        udist = xu[ind] - best[ind];
         if(ldist < udist) {
-          x[ind] = ceil(v->getUb() - udist / 2.0);
+          x[ind] = ceil(xu[ind] - udist / 2.0);
         } else if(udist < ldist) {
-          x[ind] = floor(v->getLb() + ldist / 2.0);
+          x[ind] = floor(xl[ind] + ldist / 2.0);
         } else {
           if(rand() % 2 == 0) {
-            x[ind] = floor(v->getLb() + ldist / 2.0);
+            x[ind] = floor(xl[ind] + ldist / 2.0);
           } else {
-            x[ind] = ceil(v->getUb() - udist / 2.0);
+            x[ind] = ceil(xu[ind] - udist / 2.0);
           }
         }
       } else {
-        ldist = best[ind] - v->getLb();
-        udist = v->getUb() - best[ind];
+        ldist = best[ind] - xl[ind];
+        udist = xu[ind] - best[ind];
         if(ldist < udist) {
-          x[ind] = v->getUb() - udist / 2.0;
+          x[ind] = xu[ind] - udist / 2.0;
         } else if(udist < ldist) {
-          x[ind] = v->getLb() + ldist / 2.0;
+          x[ind] = xl[ind] + ldist / 2.0;
         } else {
           if(rand() % 2 == 0) {
-            x[ind] = v->getLb() + ldist / 2.0;
+            x[ind] = xl[ind] + ldist / 2.0;
           } else {
-            x[ind] = v->getUb() - udist / 2.0;
+            x[ind] = xu[ind] - udist / 2.0;
           }
         }
       }
