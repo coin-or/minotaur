@@ -60,11 +60,17 @@ protected:
   // Multiplier for nonlinear variables to create a priority
   UInt mnl_;
 
+  // Variable fixing mods done
+  std::stack<Modification*> mods_;
+
   // Problem
   ProblemPtr p_;
 
   // Statistics
   FixVarsHeurStats* stats_;
+
+  // fix the variable v
+  void fix_(VariablePtr v);
 
   // Fix Variables
   void FixVars_(UIntSet& unfixedVars);
@@ -75,8 +81,14 @@ protected:
   // Check whether x is feasible
   bool isFeasible_(const double* x);
 
-  // update itmp of each variable in the constraint once it is covered
-  void updateItmp_(ConstraintPtr c);
+  // Compares two elements in a map
+  bool mapCompare_(std::pair<UInt, UInt>& p1, std::pair<UInt, UInt>& p2);
+
+  // gets the best variable to fix
+  VariablePtr selectVarToFix_(std::map<UInt, UInt>& unfixedVars);
+
+  // update Map of each variable in the constraint once it is covered
+  void updateMap_(ConstraintPtr c, std::map<UInt, UInt>& unfixedVars);
 };
 
 typedef FixVarsHeur* FixVarsHeurPtr;

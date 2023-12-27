@@ -12,6 +12,7 @@
  * Implements the class FixVarsHeur.
  */
 
+#include <algorithm>
 #include <cmath>
 #include <cstdlib>
 #include <cstring>
@@ -50,16 +51,31 @@ FixVarsHeur::~FixVarsHeur()
 
 void FixVarsHeur::solve(NodePtr, RelaxationPtr, SolutionPoolPtr s_pool)
 {
-  //  while all vars are not fixed:
-  //    while constraints are not covered:
-  //      select var to fix
-  //      fix var to lb or ub randomly by creating a mod
-  //    presolve the problem
-  //    If presolve says infeasible:
-  //      restart
+  bool restart = true;
+  UInt min_iter = 5, max_iter = 20, iter = 0;
+  std::map<UInt, UInt> unfixedVars;
 
-  initialize_();
-  FixVars_();
+  while(iter < min_iter || (restart && iter < max_iter)) {
+    ++iter;
+    restart = false;
+    initialize_();
+    for(VariableConstIterator vit = p_->varsBegin(); vit != p_->varsEnd();
+        ++vit) {
+      unfixedVars.insert({(*vit)->getIndex(), (*vit)->getItmp()});
+    }
+    while(unfixedVars.size() > 0) {
+      FixVars_(unfixedVars);
+      if(presolve_()) {
+        unfixVars_();
+        restart = true;
+        break;
+      }
+    }
+    if(!restart) {
+      foundNewSol_(s_pool);
+      ++stats_->numSol;
+    }
+  }
 }
 
 void FixVarsHeur::initialize_()
@@ -87,6 +103,7 @@ void FixVarsHeur::initialize_()
     }
   }
 
+  consNumVar_.clear();
   for(ConstraintConstIterator cit = p_->consBegin(); cit != p_->consEnd();
       ++cit) {
     c = *cit;
@@ -94,7 +111,17 @@ void FixVarsHeur::initialize_()
   }
 }
 
-void FixVarsHeur::FixVars_(UIntSet& unfixedVars)
+void FixVarsHeur::fix_(VariablePtr v)
+{
+  double fix_at = rand() % 10 < 8 ? v->getLb() : v->getUb();
+  VarBoundMod2* m = 0;
+
+  m = new VarBoundMod2(v, fix_at, fix_at);
+  m->applyToProblem(p_);
+  mods_.push(m);
+}
+
+void FixVarsHeur::FixVars_(std::map<UInt, UInt>& unfixedVars)
 {
   ConstrSet covered;
   ConstraintPtr c;
@@ -116,7 +143,7 @@ void FixVarsHeur::FixVars_(UIntSet& unfixedVars)
           for(ConstrSet::iterator cit = v->consBegin(); cit != v->consEnd();
               ++cit) {
             c = *cit;
-            updateItmp_(c);
+            updateMap_(c, unfixedVars);
             covered.insert(c);
             --(consNumVar_[c]);
           }
@@ -132,7 +159,7 @@ void FixVarsHeur::FixVars_(UIntSet& unfixedVars)
     fix_(v);
     for(ConstrSet::iterator cit = v->consBegin(); cit != v->consEnd(); ++cit) {
       c = *cit;
-      updateItmp_(c);
+      updateMap_(c, unfixedVars);
       covered.insert(c);
       --(consNumVar_[c]);
     }
@@ -140,7 +167,19 @@ void FixVarsHeur::FixVars_(UIntSet& unfixedVars)
   }
 }
 
-void FixVarsHeur::updateItmp_(ConstraintPtr c)
+bool mapCompare_(std::pair<UInt, UInt>& p1, std::pair<UInt, UInt>& p2)
+{
+  return p1.second < p2.second;
+}
+
+VariablePtr FixVarsHeur::selectVarToFix_(std::map<UInt, UInt>& unfixedVars)
+{
+  std::map<UInt, UInt>::iterator it =
+      std::max_element(unfixedVars.begin(), unfixedVars.end(), mapCompare_);
+  return p_->getVariable(it->first);
+}
+
+void FixVarsHeur::updateMap_(ConstraintPtr c, std::map<UInt, UInt>& unfixedVars)
 {
   FunctionPtr f = c->getFunction();
   VariablePtr v;
@@ -148,11 +187,11 @@ void FixVarsHeur::updateItmp_(ConstraintPtr c)
   for(VariableConstIterator vit = f->varsBegin(); vit != f->varsEnd(); ++vit) {
     v = *vit;
     if(v->getType() == Binary || v->getType() == ImplBinary) {
-      v->setItmp(v->getItmp() - mbin_);
+      unfixedVars[v->getIndex()] -= mbin_;
     } else if(v->getFunType != Linear && v->getFunType() != Constant) {
-      v->setItmp(v->getItmp - mnl_);
+      unfixedVars[v->getIndex()] -= mnl_;
     } else {
-      v->setItmp(v->getItmp - 1);
+      --(unfixedVars[v->getIndex()]);
     }
   }
 }
