@@ -844,6 +844,7 @@ void SimpleTransformer::refQuadCons_(QuadraticFunctionPtr qf,
     if((it->first.first->getIndex() == it->first.second->getIndex()) &&
        (it->first.first->getType() == Binary)) {
       lf->addTerm(it->first.first, it->second);
+      continue;
     }
     v = yQfBil_->findY(it->first.first, it->first.second);
     if(!v) {
