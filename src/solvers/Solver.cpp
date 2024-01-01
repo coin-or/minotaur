@@ -65,37 +65,35 @@ ProblemPtr Solver::readProblem(std::string fname, std::string dname,
 {
   FileType ft;
   OptionDBPtr options = env_->getOptions();
-  Timer *timer = env_->getNewTimer();
+  double tstrt; 
   ProblemPtr p = 0;
   Reader rdr(env_);
 
-  timer->start();
   err = 0;
+  tstrt = env_->getTime(err);
   ft = getFileType(fname);
 
   if (ft==MPS) {
     options->findString("interface_type")->setValue("mps");
     p = rdr.readMps(fname, err);
     if (err) {
-      delete timer;
       return 0;
     }
   } else if ((ft==NL) || 
              options->findFlag("AMPL")->getValue()==1 ||
              options->findString("interface_type")->getValue()=="AMPL") {
+    iface_ = new MINOTAUR_AMPL::AMPLInterface(env_, sname);
     options->findString("interface_type")->setValue("AMPL");
     p = iface_->readInstance(fname);
     env_->getLogger()->msgStream(LogInfo) << me_ 
       << "time used in reading instance = " << std::fixed 
-      << std::setprecision(2) << timer->query() << std::endl;
-    delete timer;
+      << std::setprecision(2) << env_->getTime(err)-tstrt << std::endl;
   } else {
     env_->getLogger()->errStream() << me_
       << "Unable to read the problem from file " << fname 
       << " Either provide a file with .nl or .mps extension or use -AMPL flag"
       << std::endl;
     err = 1;
-    delete timer;
     return 0;
   }
 

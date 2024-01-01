@@ -74,8 +74,6 @@ void Glob::doSetup()
 
   setInitialOptions_();
 
-  iface_ = (MINOTAUR_AMPL::AMPLInterfacePtr) new MINOTAUR_AMPL::AMPLInterface(
-      env_, "glob");
 }
 
 LPEnginePtr Glob::getEngine_()
