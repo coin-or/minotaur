@@ -73,7 +73,6 @@ void Glob::doSetup()
   env_->startTimer(err);
 
   setInitialOptions_();
-
 }
 
 LPEnginePtr Glob::getEngine_()
@@ -394,6 +393,8 @@ int Glob::solve(ProblemPtr inst)
     goto CLEANUP;
   }
 
+  // any other value not allowed
+  env_->getOptions()->findInt("pres_freq")->setValue(1);
   newp_ = newp;
   env_->getLogger()->msgStream(LogExtraInfo)
       << me_ << "Presolving transformed problem ... " << std::endl;
