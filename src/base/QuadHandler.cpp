@@ -496,7 +496,8 @@ void QuadHandler::getBranchingCandidates(RelaxationPtr rel,
           << std::setprecision(9) << me_
           << "branching candidate for x^2: " << s_it->first->getName()
           << " value = " << x0val << " aux var: " << s_it->second->y->getName()
-          << " value = " << yval << std::endl;
+          << " value = " << yval << "violation = " << yval - x0val * x0val
+          << std::endl;
 #endif
       ddist = (yval - x0val * x0val) /
           sqrt(1.0 + (x0->getLb() + x0val) * (x0->getLb() + x0val));
@@ -1632,7 +1633,6 @@ void QuadHandler::separate(ConstSolutionPtr sol, NodePtr node,
 
   if(!node->getParent() && simplexCut_ && (*status != SepaResolve)) {
     ncuts = simplexCut_->generateCuts(rel, sol);
-    sStats_.cuts += ncuts;
     sStats_.optcuts += ncuts;
     if(ncuts > 0) {
       *status = SepaResolve;
@@ -2206,7 +2206,7 @@ bool QuadHandler::tightenLP_(RelaxationPtr rel, double bestSol, bool* changed,
 
     if(itmp == 2) {
       lflp = (LinearFunctionPtr) new LinearFunction();
-      lflp->addTerm(*vit, -1.0);
+      lflp->addTerm(v, -1.0);
       flp = (FunctionPtr) new Function(lflp);
       lp->changeObj(flp, 0.0);
       ub = -getBndByLP_(is_inf);
@@ -3388,7 +3388,7 @@ void QuadHandler::writeStats(std::ostream& out) const
   out << me_ << "Statistics for separation by QuadHandler:" << std::endl
       << me_ << "Number of calls to separate    = " << sStats_.iters
       << std::endl
-      << me_ << "Number of cuts added           = " << sStats_.cuts << std::endl
+      << me_ << "Number of tangent cuts added   = " << sStats_.cuts << std::endl
       << me_ << "Number of optional cuts added  = " << sStats_.optcuts
       << std::endl
       << me_ << "Time taken in separation       = " << sStats_.time

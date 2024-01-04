@@ -126,8 +126,8 @@ int SimplexQuadCutGen::generateCuts(RelaxationPtr rel, ConstSolutionPtr sol)
   double stime = timer_->query();
   double iter_time;
 
-  ++stats_.numrounds;
   if(doCutting(sol->getObjValue())) {
+    ++stats_.numrounds;
     preprocessSimplexTab();
     for(ConstraintConstIterator cit = p_->consBegin(); cit != p_->consEnd();
         ++cit) {

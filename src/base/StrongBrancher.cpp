@@ -93,6 +93,9 @@ BrCandPtr StrongBrancher::findBestCandidate_(const double objval,
   for(it = relCands_.begin(); it != relCands_.end(); ++it) {
     cand = *it;
     getPCScore_(cand, &change_down, &change_up, &score);
+#if SPEW
+    writeScore_(cand, score, change_up, change_down);
+#endif
     if(score > best_score) {
       best_score = score;
       best_cand = cand;
@@ -148,6 +151,9 @@ BrCandPtr StrongBrancher::findBestCandidate_(const double objval,
       if(vio[j] < minscore || j >= i) {
         cand = *it;
         getPCScore_(cand, &change_down, &change_up, &score);
+#if SPEW
+        writeScore_(cand, score, change_up, change_down);
+#endif
         if(score > best_score) {
           best_score = score;
           best_cand = cand;
@@ -318,19 +324,25 @@ void StrongBrancher::findCandidates_(bool& should_prune)
   }
 
 #if SPEW
+  int ind;
   logger_->msgStream(LogDebug2) << me_ << " reliable candidates: " << std::endl;
   for(BrVarCandIter it = relCands_.begin(); it != relCands_.end(); ++it) {
-    int ind = (*it)->getPCostIndex();
+    ind = (*it)->getPCostIndex();
     logger_->msgStream(LogDebug2)
-        << (*it)->getName() << "\t" << pseudoDown_[ind] << "\t"
-        << pseudoUp_[ind] << std::endl;
+        << (*it)->getName() << ": down pseudo cost = " << pseudoDown_[ind]
+        << " up psuedo cost = " << pseudoUp_[ind]
+        << " times down = " << timesDown_[ind]
+        << " times up = " << timesUp_[ind] << std::endl;
   }
   logger_->msgStream(LogDebug2)
       << me_ << " unreliable candidates: " << std::endl;
   for(BrVarCandIter it = unrelCands_.begin(); it != unrelCands_.end(); ++it) {
+    ind = (*it)->getPCostIndex();
     logger_->msgStream(LogDebug2)
-        << (*it)->getName() << "\t" << (*it)->getDDist() << "\t"
-        << (*it)->getUDist() << std::endl;
+        << (*it)->getName() << ": down violation = " << (*it)->getDDist()
+        << " up violation = " << (*it)->getUDist()
+        << " times down = " << timesDown_[ind]
+        << " times up = " << timesUp_[ind] << std::endl;
   }
 #endif
   return;
