@@ -211,7 +211,7 @@ NodePtr BranchAndBound::processRoot_(bool *should_prune, bool *should_dive)
 
   tm_->updateLb();
 
-  showStatus_(*should_dive);
+  showStatus_(*should_dive, false);
   *should_prune = prune;
   return current_node;
 }
@@ -295,7 +295,7 @@ bool BranchAndBound::shouldStop_()
   return stop_bnb;
 }
 
-void BranchAndBound::showStatus_(bool current_uncounted)
+void BranchAndBound::showStatus_(bool current_uncounted, bool last_line)
 {
   static bool header = false;
   static bool firstRow = true; // Add a flag for the first row
@@ -309,8 +309,8 @@ void BranchAndBound::showStatus_(bool current_uncounted)
 
   if (!header) {
     logger_->msgStream(LogError) << " " << std::endl;	  
-    logger_->msgStream(LogError) << "---------------------------------------------------------------------------------------------" << std::endl;
-    logger_->msgStream(LogError) << std::setw(6) << "Cpu(s)"
+    logger_->msgStream(LogError) << "----------------------------------------------------------------------------------------------" << std::endl;
+    logger_->msgStream(LogError) << std::setw(7) << "Cpu(s)"
       << std::setw(10) << "Wall(s)"
       << std::setw(16) << "LB"
       << std::setw(13) << "UB"
@@ -319,13 +319,13 @@ void BranchAndBound::showStatus_(bool current_uncounted)
       << std::setw(14) << "   Nodes-Rem"
       << std::setw(7) << "#Sol"
       << std::endl;
-    logger_->msgStream(LogError) << "---------------------------------------------------------------------------------------------" << std::endl;
+    logger_->msgStream(LogError) << "----------------------------------------------------------------------------------------------" << std::endl;
     header = true;
   }
 
   if (firstRow) {
     // Print the initial row with all values set to zero
-    logger_->msgStream(LogError) << std::setw(5) << "0"
+    logger_->msgStream(LogError) << std::setw(6) << "0"
       << std::setw(10) << "0"
       << std::setw(17) << "-inf"
       << std::setw(13) << "inf"
@@ -337,16 +337,16 @@ void BranchAndBound::showStatus_(bool current_uncounted)
     firstRow = false;
   }
 
-  if (timer_->query() - stats_->updateTime > options_->logInterval) {
+  if (timer_->query() - stats_->updateTime > options_->logInterval || last_line == true) {
     logger_->msgStream(LogError).precision(defaultPrecision); // Reset precision to default
-    logger_->msgStream(LogError) << std::setw(5) << std::fixed << std::setprecision(0) << timer_->query()
+    logger_->msgStream(LogError) << std::setw(6) << std::fixed << std::setprecision(0) << timer_->query()
       << std::setw(10) << std::fixed << std::setprecision(0) << timer_->wQuery() // Print wall time
       << std::setw(17) << std::setprecision(4) << std::scientific << tm_->updateLb()
       << std::setw(13) << std::setprecision(4) << std::scientific << tm_->getUb()
-      << std::setw(12) << std::setprecision(2) << std::fixed << tm_->getPerGap()
+      << std::setw(12) << std::setprecision(2) << std::scientific << tm_->getPerGap()
       << std::setw(15) << tm_->getSize() - tm_->getActiveNodes() - off
       << std::setw(14) << tm_->getActiveNodes() + off
-      << std::setw(7) << std::setprecision(5) << solPool_->getNumSols()
+      << std::setw(7) << std::setprecision(5) << solPool_->getNumSolsFound()
       << std::endl;
     stats_->updateTime = timer_->query();
   }
@@ -484,7 +484,7 @@ void BranchAndBound::solve()
     }
     current_node = new_node;
 
-    showStatus_(should_dive);
+    showStatus_(should_dive, false);
 
     // stop if done
     if (!current_node) {
@@ -512,8 +512,9 @@ void BranchAndBound::solve()
 #endif
     }
   }
-  logger_->msgStream(LogError) << " " << std::endl;
-  logger_->msgStream(LogError) << "---------------------------------------------------------------------------------------------" << std::endl;
+  showStatus_(false, true);
+  //logger_->msgStream(LogError) << " " << std::endl;
+  logger_->msgStream(LogError) << "----------------------------------------------------------------------------------------------" << std::endl;
   logger_->msgStream(LogError) << " " << std::endl;
 
   logger_->msgStream(LogInfo) << me_ << "stopping branch-and-bound"

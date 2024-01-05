@@ -386,14 +386,14 @@ int Bnb::solve(ProblemPtr p)
     oinst_->classifyCon(false);
     env_->getLogger()->msgStream(LogInfo) << me_ << "Finished constraint classification\n";
   }
-
+# if SPEW
    if (env_->getOptions()->findInt("log_level")->getValue() == 6){
     oinst_->writeSize(env_->getLogger()->msgStream(LogNone));
     env_->getLogger()->msgStream(LogInfo) << me_ << "Starting constraint classification\n";
     oinst_->classifyCon(true);
     env_->getLogger()->msgStream(LogInfo) << me_ << "Finished constraint classification\n";
   }
-
+# endif
   // setup the jacobian and hessian
   if (false==options->findBool("use_native_cgraph")->getValue()) {
     JacobianPtr jac = new MINOTAUR_AMPL::AMPLJacobian(iface_);

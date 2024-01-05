@@ -229,7 +229,7 @@ namespace Minotaur {
      * log-message is incremented by one. This may happen when diving: the
      * node being processed is not in the list of active nodes in the tree.
      */
-    void showStatus_(bool current_uncounted);
+    void showStatus_(bool current_uncounted,bool last_line);
   };
 
   /// Statistics about the branch-and-bound.
