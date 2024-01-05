@@ -574,11 +574,11 @@ BabOptions::BabOptions(EnvPtr env)
 {
   OptionDBPtr options = env->getOptions();
 
-  logInterval = options->findDouble("bnb_log_interval")->getValue();
-  nodeLimit   = options->findInt("bnb_node_limit")->getValue();
+  logInterval = options->findDouble("log_interval")->getValue();
+  nodeLimit   = options->findInt("node_limit")->getValue();
   perGapLimit = options->findDouble("obj_gap_percent")->getValue();
-  solLimit    = options->findInt("bnb_sol_limit")->getValue();
-  timeLimit   = options->findDouble("bnb_time_limit")->getValue();
+  solLimit    = options->findInt("sol_limit")->getValue();
+  timeLimit   = options->findDouble("time_limit")->getValue();
   createRoot  = true;
 }
 

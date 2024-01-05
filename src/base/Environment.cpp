@@ -342,13 +342,13 @@ void Environment::createDefaultOptions_()
 
   // int options
   i_option = (IntOptionPtr) new Option<int>(
-      "bnb_node_limit",
+      "node_limit",
       "Limit on number of nodes created in branch-and-bound: >0", true,
       1000000000);
   options_->insert(i_option);
 
   i_option = (IntOptionPtr) new Option<int>(
-      "bnb_sol_limit", "Limit on the number of solutions found: >0", true,
+      "sol_limit", "Limit on the number of solutions found: >0", true,
       1000000000);
   options_->insert(i_option);
 
@@ -465,7 +465,7 @@ void Environment::createDefaultOptions_()
   options_->insert(d_option);
 
   d_option = (DoubleOptionPtr) new Option<double>(
-      "bnb_time_limit", "Limit on time in branch-and-bound in seconds: >0",
+      "time_limit", "Limit on time in branch-and-bound in seconds: >0",
       true, 1e20);
   options_->insert(d_option);
 
@@ -475,7 +475,7 @@ void Environment::createDefaultOptions_()
   options_->insert(d_option);
 
   d_option = (DoubleOptionPtr) new Option<double>(
-      "bnb_log_interval",
+      "log_interval",
       "Display interval in seconds for branch-and-bound status: >0", true, 5.);
   options_->insert(d_option);
 
