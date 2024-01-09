@@ -24,16 +24,13 @@ then
   exit 1
 fi
 
-NEW_STRING=" - ${ARG_STRING} The MINOTAUR Team."
+NEW_STRING=" - ${ARG_STRING} The Minotaur Team."
 
 GREP_QUERY='(C)opyright[[:space:]][0-9]\{4\}'
 
-for f in ../src/engines/*/*.h ../src/engines/*/*.cpp ../src/engines/*/*.f \
-	 ../src/engines/*.h ../src/engines/*.cpp \
-	 ../src/base/*.h ../src/base/*.cpp \
-         ../src/testing/*.cpp ../src/testing/*.h  \
-	 ../src/interfaces/ampl/*cpp ../src/interfaces/ampl/*.h \
-	 ../src/algorithms/*.cpp 
+for f in ../src/base/*.cpp ../src/base/*.h ../src/interfaces/*.cpp \
+         ../src/interfaces/*.h ../src/interfaces/*.f ../src/solvers/*.cpp \
+         ../src/solvers/*.h ../src/testing/*.cpp ../src/testing/*.h
 do
   # first check if we have the required line in the file
   if grep -q -G ${GREP_QUERY} ${f}
@@ -44,4 +41,3 @@ do
     echo ${f} does not have copyright information!
   fi
 done
-

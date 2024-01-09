@@ -1,7 +1,7 @@
 //
 //     MINOTAUR -- It's only 1/2 bull
 //
-//     (C)opyright 2010 - 2021 The MINOTAUR Team.
+//     (C)opyright 2010 - 2024 The Minotaur Team.
 //
 
 /**
