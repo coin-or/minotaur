@@ -42,18 +42,18 @@ err ()
   exit 1
 }
 
-TARNAME="minotaur-0.3.1-third-party-src"
+TARNAME="minotaur-0.4-third-party-src"
 TARURL=http://www.ieor.iitb.ac.in/files/faculty/amahajan/minotaur/third-party/${TARNAME}.tar.gz
 
 ASL="asl-20210714"
 BQPD="bqpd-3"
 #CBC="cbc-2.10.2"
-CLP="clp-1.17.6"
+CLP="clp-1.17.9"
 CPPUNIT="cppunit-1.15.1"
 FILTER="filter-102"
 IPOPT="ipopt-3.14.12"
-LAPACK="lapack-3.10.0"
-OSI="osi-0.108.6"
+LAPACK="lapack-3.12.0"
+OSI="osi-0.108.9"
 SNAME=${TARNAME}
 
 LOG=
