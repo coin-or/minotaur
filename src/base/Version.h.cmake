@@ -1,7 +1,7 @@
 //
-//     MINOTAUR -- It's only 1/2 bull
+//     Minotaur -- It's only 1/2 bull
 //
-//     (C)opyright 2008 -- 2021 The MINOTAUR Team.
+//     (C)opyright 2008 -- 2024 The Minotaur Team.
 //
 
 #ifndef MINOTAURVERSION_H
@@ -15,7 +15,7 @@
  * patch MINOTAUR_PATCH_VERSION
  */
 #define MINOTAUR_MAJOR_VERSION 0
-#define MINOTAUR_MINOR_VERSION 3
+#define MINOTAUR_MINOR_VERSION 4
 #define MINOTAUR_PATCH_VERSION 0
 
 #endif
