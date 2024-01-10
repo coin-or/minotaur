@@ -236,7 +236,7 @@ set (IPOPT_LIBS)             ## NULL
 if (${USE_IPOPT})
   message(STATUS ${MSG_HEAD} "Searching for Ipopt ...")
   set (IPOPT_INC_DIR "" CACHE PATH 
-    "Path to Ipopt headers. It must have coin/IpIpoptApplication.hpp file.") 
+    "Path to Ipopt headers. It must have coin-or/IpIpoptApplication.hpp file.") 
   set (IPOPT_INC_DIR_F ${IPOPT_INC_DIR})
   if (("${IPOPT_INC_DIR_F}" STREQUAL "") AND
       (NOT ("${TP_ABS_PATH}" STREQUAL "")))
@@ -257,9 +257,9 @@ if (${USE_IPOPT})
   
   if (IPOPT_INC_DIR_F)
     ## complain if header not found
-    if (NOT EXISTS "${IPOPT_INC_DIR_F}/coin/IpIpoptApplication.hpp")
+    if (NOT EXISTS "${IPOPT_INC_DIR_F}/coin-or/IpIpoptApplication.hpp")
       message(FATAL_ERROR " ${MSG_HEAD}" 
-              "${IPOPT_INC_DIR_F}/coin/IpIpoptApplication.hpp not found.")
+              "${IPOPT_INC_DIR_F}/coin-or/IpIpoptApplication.hpp not found.")
     endif()
   
     ## complain if library not specified
