@@ -24,9 +24,10 @@ MYNAME=clean_third_party
 
 SRCDIR="minotaur-0.4-third-party-src"
 CPPDIR=${SRCDIR}/cppunit-1.15.1/build
-ASLDIR=${SRCDIR}/asl-20210714
-IPOPTDIR=${SRCDIR}/ipopt-3.14.12/build
-LAPACKDIR=${SRCDIR}/lapack-3.10.0/build
+ASLDIR=${SRCDIR}/asl-2473f4e/src/solvers/
+MUMPSDIR=${SRCDIR}/mumps-3.0.5/build
+IPOPTDIR=${SRCDIR}/ipopt-3.14.13/build
+LAPACKDIR=${SRCDIR}/lapack-3.12.0/build
 
 if [[ ! -f `pwd`/${MYNAME} ]]
 then
@@ -97,7 +98,7 @@ then
   echo "running make clean in ${ASLDIR}"
   cd ${ASLDIR} && make clean
   cd -
-  for i in $CPPDIR $IPOPTDIR $LAPACKDIR
+  for i in $CPPDIR $IPOPTDIR $MUMPSDIR $LAPACKDIR
   do
     echo "removing ${i}"
     rm -rfv ${i}

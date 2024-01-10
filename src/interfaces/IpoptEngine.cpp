@@ -15,10 +15,10 @@
 
 // undefine some package names
 // #include "MinotaurDeconfig.h" // no need for now.
-#include "coin/IpTNLP.hpp"
-#include "coin/IpIpoptApplication.hpp"
-#include "coin/IpIpoptCalculatedQuantities.hpp"
-#include "coin/IpSolveStatistics.hpp"
+#include "coin-or/IpTNLP.hpp"
+#include "coin-or/IpIpoptApplication.hpp"
+#include "coin-or/IpIpoptCalculatedQuantities.hpp"
+#include "coin-or/IpSolveStatistics.hpp"
 #undef F77_FUNC_
 #undef F77_FUNC
 

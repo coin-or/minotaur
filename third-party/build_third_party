@@ -45,15 +45,16 @@ err ()
 TARNAME="minotaur-0.4-third-party-src"
 TARURL=http://www.ieor.iitb.ac.in/files/faculty/amahajan/minotaur/third-party/${TARNAME}.tar.gz
 
-ASL="asl-20210714"
+ASL="asl-2473f4e"
 BQPD="bqpd-3"
 #CBC="cbc-2.10.2"
 CLP="clp-1.17.9"
 CPPUNIT="cppunit-1.15.1"
 FILTER="filter-102"
-IPOPT="ipopt-3.14.12"
+IPOPT="ipopt-3.14.13"
+MUMPS="mumps-3.0.5"
 LAPACK="lapack-3.12.0"
-OSI="osi-0.108.9"
+OSI="osi-0.108.6"
 SNAME=${TARNAME}
 
 LOG=
@@ -143,7 +144,7 @@ mkdir lib ||  err "lib directory already exists, run clean_third_party first"
 mkdir include ||  err "include directory already exists, run clean_third_party first"
 
 echo "compiling ASL"
-cd ${TPROOT}/${SNAME}/${ASL}
+cd ${TPROOT}/${SNAME}/${ASL}/src/solvers/
 chmod a+rx configurehere  
 ./configurehere
 make -j ${CPUS}
@@ -194,7 +195,7 @@ then
   then
     WIN_FLAGS=(-G "MSYS Makefiles")
   fi
-  cmake -DCMAKE_INSTALL_PREFIX:PATH=${TPROOT} -DBUILD_TESTING:BOOL=OFF "${WIN_FLAGS[@]}" ..
+  cmake -DCMAKE_INSTALL_PREFIX:PATH=${TPROOT} -DBUILD_SHARED_LIBS:BOOL=ON -DBUILD_TESTING:BOOL=OFF "${WIN_FLAGS[@]}" ..
   make -j ${CPUS} && make -j ${CPUS} install
   LAPACK_FLAGS=(--with-lapack="-L${TPROOT}/lib -llapack -lblas -lgfortran")
 else
@@ -203,24 +204,26 @@ fi
 cd ${TPROOT}
 
 
+
 if [ "x${IPOPT}" == "x" ]
 then
-  echo "not compiling IPOPT"
+  echo "not compiling IPOPT and MUMPS"
 else
+  echo "compiling MUMPS"
+  mkdir -p ${TPROOT}/${SNAME}/${MUMPS}/build
+  cd ${TPROOT}/${SNAME}/${MUMPS}/build
+  ${TPROOT}/${SNAME}/${MUMPS}/configure --without-metis --disable-openmp ${STATIC_ARGS} ${MAC_ARGS} --disable-dependency-tracking --prefix=${TPROOT} "${LAPACK_FLAGS[@]}"
+  # parallel compile may not work here
+  make install -j 1   
+  cd ${TPROOT}
+
   echo "compiling IPOPT"
-  cd ${TPROOT}/${SNAME}/${IPOPT}
-  rm -rf build
-  mkdir -p build/Ipopt build/Mumps  
-  echo -n "Mumps Ipopt " > build/coin_subdirs.txt
-  cd ${TPROOT}/${SNAME}/${IPOPT}/build/Mumps
-  ${TPROOT}/${SNAME}/${IPOPT}/Mumps/configure --without-metis --disable-openmp ${STATIC_ARGS} ${MAC_ARGS} --disable-dependency-tracking --prefix=${TPROOT} "${LAPACK_FLAGS[@]}"
-  make install
-  cd ${TPROOT}/${SNAME}/${IPOPT}/build/Ipopt
-  ${TPROOT}/${SNAME}/${IPOPT}/Ipopt/configure ${STATIC_ARGS} ${MAC_ARGS} --disable-java --disable-sipopt --disable-dependency-tracking --prefix=${TPROOT}  "${LAPACK_FLAGS[@]}"
-  make -j ${CPUS} install
-  mv -t ${TPROOT}/include/coin/ ${TPROOT}/include/coin-or/* 
+  mkdir -p ${TPROOT}/${SNAME}/${IPOPT}/build
+  cd ${TPROOT}/${SNAME}/${IPOPT}/build
+  ${TPROOT}/${SNAME}/${IPOPT}/configure --without-metis --disable-openmp ${STATIC_ARGS} ${MAC_ARGS} --disable-dependency-tracking --prefix=${TPROOT} "${LAPACK_FLAGS[@]}"
+  make install -j ${CPUS}
+  cd ${TPROOT}
 fi
-cd ${TPROOT}
 
 if [ "x${CPX_OPT}${GRB_OPT}" == "x" ]
 then
