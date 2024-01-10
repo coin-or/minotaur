@@ -28,6 +28,7 @@ ASLDIR=${SRCDIR}/asl-2473f4e/src/solvers/
 MUMPSDIR=${SRCDIR}/mumps-3.0.5/build
 IPOPTDIR=${SRCDIR}/ipopt-3.14.13/build
 LAPACKDIR=${SRCDIR}/lapack-3.12.0/build
+CLPDIR=${SRCDIR}/clp-1.17.9/build
 
 if [[ ! -f `pwd`/${MYNAME} ]]
 then
@@ -98,7 +99,7 @@ then
   echo "running make clean in ${ASLDIR}"
   cd ${ASLDIR} && make clean
   cd -
-  for i in $CPPDIR $IPOPTDIR $MUMPSDIR $LAPACKDIR
+  for i in $CPPDIR $IPOPTDIR $MUMPSDIR $LAPACKDIR $CLPDIR
   do
     echo "removing ${i}"
     rm -rfv ${i}
