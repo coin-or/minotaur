@@ -1,5 +1,5 @@
 //
-//	MINOTAUR -- It's only 1/2 bull
+//	Minotaur -- It's only 1/2 bull
 //
 //	(C)opyright 2009 - 2024 The Minotaur Team.
 //
