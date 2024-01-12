@@ -150,7 +150,7 @@ int SimplexQuadCutGen::generateCuts(RelaxationPtr rel, ConstSolutionPtr sol)
             << " is not defined at this point." << std::endl;
 #endif
       }
-      env_->getLogger()->msgStream(LogDebug)
+      env_->getLogger()->msgStream(LogDebug2)
           << me_ << " : Generating cuts for the constraint " << c->getName()
           << std::endl;
       relaxConsBNB_(cuts, c, sol->getPrimal(), rel);
@@ -158,7 +158,7 @@ int SimplexQuadCutGen::generateCuts(RelaxationPtr rel, ConstSolutionPtr sol)
     iter_cuts = cuts.size();
     disableFactorization();
     stats_.gencuts += iter_cuts;
-    env_->getLogger()->msgStream(LogExtraInfo)
+    env_->getLogger()->msgStream(LogDebug)
         << me_ << "No. of cuts generated: " << iter_cuts << std::endl;
     addCutsToRel_(cuts, rel, sol->getPrimal(), iter_cuts);
     stats_.cutsadded += iter_cuts;
