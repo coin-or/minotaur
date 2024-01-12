@@ -415,7 +415,6 @@ void kPowHandler::getBranchingCandidates(RelaxationPtr rel,
   BrVarCandPtr br_can;
   VariablePtr x0, x1;
   std::pair<BrVarCandIter, bool> ret;
-  bool check;
 
   is_inf = false;
 
@@ -460,7 +459,6 @@ ModificationPtr kPowHandler::getBrMod(BrCandPtr cand, DoubleVector& x,
   VariablePtr x0, y;
   double xval, yval, vio, rhs, k;
   UInt vind = v->getIndex();
-  bool found = false;
 
   for(LinkPowMapIter it = xkFuns_.begin(); it != xkFuns_.end(); ++it) {
     if(vind == it->first->getIndex()) {
@@ -494,18 +492,12 @@ LinearFunctionPtr kPowHandler::getNewKpowLf_(VariablePtr y, VariablePtr x,
                                              double k, double lb, double ub,
                                              double& rhs, int type)
 {
-  LinearFunctionPtr lf = LinearFunctionPtr();
-  double new_lb = lb;
-  double new_ub = ub;
-  double eps = 1e-5;
-  // std::cout<<"OLD LB:"<<lb<<"\n";
-  // std::cout<<"OLD UB:"<<ub<<"\n";
+  LinearFunctionPtr lf = (LinearFunctionPtr) new LinearFunction();
   if(lb < 0) {
-    // new_lb = addDefaultBounds_(x, Lower);
     assert("negative value raised to fractional power is imaginary!");
   }
   if(ub > 1e12) {
-    new_ub = addDefaultBounds_(x, Upper);
+    addDefaultBounds_(x, Upper);
   }
   std::cout << "NEW LB:" << lb << "\n";
   std::cout << "NEW UB:" << ub << "\n";
@@ -1022,7 +1014,7 @@ bool kPowHandler::postSolveRootNode(RelaxationPtr rel, SolutionPoolPtr s_pool,
   if(!(env_->getOptions()->findBool("OBBT")->getValue())) {
     return true;
   }
-  double vio1, vio2, range, yval, xval, ub, k;
+  double vio1, range, yval, xval, ub, k;
   VariablePtr y, x0;
   double stime = timer_->query();
   bool is_inf, lchanged = false;
@@ -1190,7 +1182,6 @@ void kPowHandler::separate(ConstSolutionPtr sol, NodePtr, RelaxationPtr rel,
   double yl, xl;
   const double* x = sol->getPrimal();
   bool ifcuts;
-  int ncuts;
 
   ++sStats_.iters;
   for(LinkPowMapIter it = xkFuns_.begin(); it != xkFuns_.end(); ++it) {
