@@ -162,11 +162,11 @@ int SimplexQuadCutGen::generateCuts(RelaxationPtr rel, ConstSolutionPtr sol)
         << me_ << "No. of cuts generated: " << iter_cuts << std::endl;
     addCutsToRel_(cuts, rel, sol->getPrimal(), iter_cuts);
     stats_.cutsadded += iter_cuts;
-    env_->getLogger()->msgStream(LogExtraInfo)
+    env_->getLogger()->msgStream(LogDebug)
         << me_ << "No. of cuts added: " << iter_cuts << std::endl;
     iter_time = timer_->query() - stime;
     stats_.time += iter_time;
-    env_->getLogger()->msgStream(LogExtraInfo)
+    env_->getLogger()->msgStream(LogDebug)
         << me_ << "Time taken in cut generation: " << iter_time << std::endl;
   }
   return iter_cuts;
