@@ -195,7 +195,12 @@ then
   then
     WIN_FLAGS=(-G "MSYS Makefiles")
   fi
-  cmake -DCMAKE_INSTALL_PREFIX:PATH=${TPROOT} -DBUILD_SHARED_LIBS:BOOL=ON -DBUILD_TESTING:BOOL=OFF "${WIN_FLAGS[@]}" ..
+  if [ "${ENABLE_STATIC}" == "1" ]
+  then
+    cmake -DCMAKE_INSTALL_PREFIX:PATH=${TPROOT} -DBUILD_SHARED_LIBS:BOOL=OFF -DBUILD_TESTING:BOOL=OFF "${WIN_FLAGS[@]}" ..
+  else
+    cmake -DCMAKE_INSTALL_PREFIX:PATH=${TPROOT} -DBUILD_SHARED_LIBS:BOOL=ON -DBUILD_TESTING:BOOL=OFF "${WIN_FLAGS[@]}" ..
+  fi
   make -j ${CPUS} && make -j ${CPUS} install
   LAPACK_FLAGS=(--with-lapack="-L${TPROOT}/lib -llapack -lblas -lgfortran")
 else

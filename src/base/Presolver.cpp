@@ -153,7 +153,7 @@ SolveStatus Presolver::solve()
   logger_->msgStream(LogDebug) << me_ << "Modifying debug solution."
     << std::endl;
   if (mods_.size()>0) {
-    logger_->msgStream(LogError) << me_
+    logger_->msgStream(LogExtraInfo) << me_
       << "ERROR: code to modify debug sol after presolve not available"
       << std::endl;
   }
