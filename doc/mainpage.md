@@ -1,7 +1,7 @@
 // 
 //     MINOTAUR -- It's only 1/2 bull
 // 
-//     (C)opyright 2009 - 2021 The MINOTAUR Team
+//     (C)opyright 2009 - 2024 The MINOTAUR Team
 // 
 
 \mainpage Minotaur documentation for developers and advanced users
@@ -19,5 +19,5 @@ Links:
 * [Minotaur Homepage](https://minotaur-solver.github.io/)
 * [Minotaur Source](https://coin-or.github.com/minotaur)
 
-Copyright 2009 - 2021
+Copyright 2009 - 2024
 
