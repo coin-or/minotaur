@@ -349,7 +349,7 @@ void Problem::classifyCon(bool printTypes)
   ConstraintPtr c;
   FunctionPtr f;
   LinearFunctionPtr lf;
-  VariablePtr v;
+  VariablePtr v=0;
   double wt;
   const double tol = 1e-6;
   double INFTY = std::numeric_limits<double>::infinity();
@@ -487,7 +487,7 @@ void Problem::classifyCon(bool printTypes)
 
     //Code for Set Partitioning
     if(notHandled) {
-      if(v->getType() == Binary) {
+      if(v->getType() == Binary) { // TODO: Krushna! v is not set
         if(nposcoefone + nnegcoefone == nvars) {
           if((c->getLb() == 1 - nnegcoefone && c->getUb() == 1 - nnegcoefone)) {
             if(printTypes == true) {
@@ -1568,6 +1568,7 @@ bool Problem::isDebugSolFeas(double atol, double rtol)
     double act;
     double* x = 0;
     bool isfeas = true;
+    int i;
 
     x = &(*debugSol_)[0]; // convert doublevector * to double array pointer
     for(ConstraintConstIterator it = cons_.begin(); it != cons_.end(); ++it) {
@@ -1593,9 +1594,11 @@ bool Problem::isDebugSolFeas(double atol, double rtol)
       }
     }
 
+    i=0;
     for(VariableConstIterator it = vars_.begin(); it != vars_.end(); ++it) {
       lb = (*it)->getLb();
       ub = (*it)->getUb();
+      act = x[i];
       if((act > ub + atol) && (act > ub + fabs(ub) * rtol)) {
         logger_->msgStream(LogError)
             << me_ << "ub constraint " << (*it)->getName()

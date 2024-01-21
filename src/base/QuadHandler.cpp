@@ -807,11 +807,12 @@ ConstraintPtr QuadHandler::addTangent_(VariablePtr x, VariablePtr y, double pt,
 {
   LinearFunctionPtr lf = (LinearFunctionPtr) new LinearFunction();
   FunctionPtr f;
+  ConstraintPtr c; 
 
   lf->addTerm(x, 2 * pt);
   lf->addTerm(y, -1.0);
   f = (FunctionPtr) new Function(lf);
-  ConstraintPtr c = rel->newConstraint(f, -INFINITY, pt * pt);
+  c = rel->newConstraint(f, -INFINITY, pt * pt);
   return c;
 }
 
@@ -827,10 +828,10 @@ void QuadHandler::addCut_(VariablePtr x, VariablePtr y, double xl, double yl,
     ifcuts = true;
     ++sStats_.cuts;
 #if SPEW
-    {
-      logger_->msgStream(LogDebug2) << me_ << "new cut added" << std::endl;
-      c->write(logger_->msgStream(LogDebug2));
-    }
+    logger_->msgStream(LogDebug2) << me_ << "new cut added" << std::endl;
+    c->write(logger_->msgStream(LogDebug2));
+#else
+    if (0 && c) {} // intentionally empty to suppress warning
 #endif
   } else {
 #if SPEW
@@ -1001,7 +1002,7 @@ bool QuadHandler::linearize_(LinBilSetIter linbil, bool isx0Binary,
   VariablePtr y = (*linbil)->getY();
   LinearFunctionPtr lf;
   FunctionPtr f;
-  ConstraintPtr cnew;
+  ConstraintPtr cnew=0;
 
   if(isx0Binary && isx1Binary) {
     lf = (LinearFunctionPtr) new LinearFunction();
@@ -1096,6 +1097,8 @@ bool QuadHandler::linearize_(LinBilSetIter linbil, bool isx0Binary,
 #endif
     p_->markDelete(qcon);
   }
+
+  if (0 && cnew) {} // intentionally empty to suppress warning
   return true;
 }
 

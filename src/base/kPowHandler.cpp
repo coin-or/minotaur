@@ -924,6 +924,9 @@ void BoundsOnKPow_(ConstVariablePtr x, double& lb, double& ub, double k)
   double l1 = x->getLb();
   double u1 = x->getUb();
 
+  lb = -INFINITY;
+  ub = INFINITY;
+
   if((u1 < 0.) || (l1 > 0.)) { // both bounds are negative.
     assert("!!!negative bound(s). Infeasible for pow k");
   } else if(l1 > 0.) { // both bounds are positive.

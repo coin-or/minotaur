@@ -305,7 +305,7 @@ void SimpleTransformer::recursRef_(const CNode* node, LinearFunctionPtr& lf,
       v = vl;
     } else if(!lfr && !vr) {
       d = dl / dr;
-      lf = lfr->clone();
+      lf = lfl->clone();
       lf->multiply(1.0 / dr);
     } else {
       CGraphPtr cg = (CGraphPtr) new CGraph();

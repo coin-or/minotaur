@@ -191,7 +191,7 @@ void SimplexQuadCutGen::addCutsToRel_(SimplexCutVector cuts, RelaxationPtr rel,
   SimplexCutPtr cut;
   LinearFunctionPtr lf;
   FunctionPtr f;
-  ConstraintPtr c;
+  ConstraintPtr c=0;
   double minelem;
 
   ncuts = 0;
@@ -241,6 +241,8 @@ void SimplexQuadCutGen::addCutsToRel_(SimplexCutVector cuts, RelaxationPtr rel,
 #endif
     delete cut;
   }
+
+  if (0 && c) {} // intentionally empty to suppress warnings
 }
 
 void SimplexQuadCutGen::delTabInfo_()

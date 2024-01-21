@@ -504,7 +504,7 @@ void StrongBrancher::strongBranch_(BrCandPtr cand, double& obj_up,
   HandlerPtr h = cand->getHandler();
   ModificationPtr mod;
   double stime;
-  ModificationPtr pmod;
+  ModificationPtr pmod=0;
   ModVector p_mods, r_mods;
   NodePtr node = NodePtr();
   bool is_inf;
@@ -542,8 +542,9 @@ void StrongBrancher::strongBranch_(BrCandPtr cand, double& obj_up,
     h->undoStrongerMods(p_, rel_, p_mods, r_mods);
     if(pmod) {
       pmod->undoToProblem(p_);
+      delete pmod;
+      pmod = 0;
     }
-    delete pmod;
   }
   mod->undoToProblem(rel_);
   delete mod;
@@ -577,8 +578,9 @@ void StrongBrancher::strongBranch_(BrCandPtr cand, double& obj_up,
     h->undoStrongerMods(p_, rel_, p_mods, r_mods);
     if(pmod) {
       pmod->undoToProblem(p_);
+      delete pmod;
+      pmod = 0;
     }
-    delete pmod;
   }
   mod->undoToProblem(rel_);
   delete mod;
