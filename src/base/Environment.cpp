@@ -319,7 +319,7 @@ void Environment::createDefaultOptions_()
   options_->insert(b_option);
 
   b_option = (BoolOptionPtr) new Option<bool>(
-      "OBBT", "Post solve root node: <0/1>", true, true);
+      "OBBT", "Do optimization based bound tightening: <0/1>", true, true);
   options_->insert(b_option);
 
   b_option = (BoolOptionPtr) new Option<bool>(
@@ -342,9 +342,8 @@ void Environment::createDefaultOptions_()
 
   // int options
   i_option = (IntOptionPtr) new Option<int>(
-      "node_limit",
-      "Limit on number of nodes created in branch-and-bound: >0", true,
-      1000000000);
+      "node_limit", "Limit on number of nodes created in branch-and-bound: >0",
+      true, 1000000000);
   options_->insert(i_option);
 
   i_option = (IntOptionPtr) new Option<int>(
@@ -465,8 +464,8 @@ void Environment::createDefaultOptions_()
   options_->insert(d_option);
 
   d_option = (DoubleOptionPtr) new Option<double>(
-      "time_limit", "Limit on time in branch-and-bound in seconds: >0",
-      true, 1e20);
+      "time_limit", "Limit on time in branch-and-bound in seconds: >0", true,
+      1e20);
   options_->insert(d_option);
 
   d_option = (DoubleOptionPtr) new Option<double>(
