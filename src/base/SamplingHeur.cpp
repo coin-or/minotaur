@@ -85,8 +85,7 @@ void SamplingHeur::solve(NodePtr, RelaxationPtr, SolutionPoolPtr s_pool)
           << "zero is feasible. Objective value: " << curr_obj << std::endl;
 #endif
       if(curr_obj < best_obj - 1e-6) {
-        sol = (SolutionPtr) new Solution(curr_obj, x, p_);
-        s_pool->addSolution(sol);
+        s_pool->addSolution(x, curr_obj);
         best_obj = curr_obj;
       }
       ++stats_->numSol;
@@ -128,8 +127,7 @@ void SamplingHeur::solve(NodePtr, RelaxationPtr, SolutionPoolPtr s_pool)
         << "LB is feasible. Objective value: " << curr_obj << std::endl;
 #endif
     if(curr_obj < best_obj - 1e-6) {
-      sol = (SolutionPtr) new Solution(curr_obj, xl, p_);
-      s_pool->addSolution(sol);
+      s_pool->addSolution(xl, curr_obj);
       best_obj = curr_obj;
     }
     ++stats_->numSol;
@@ -147,8 +145,7 @@ void SamplingHeur::solve(NodePtr, RelaxationPtr, SolutionPoolPtr s_pool)
         << "UB is feasible. Objective value: " << curr_obj << std::endl;
 #endif
     if(curr_obj < best_obj - 1e-6) {
-      sol = (SolutionPtr) new Solution(curr_obj, xu, p_);
-      s_pool->addSolution(sol);
+      s_pool->addSolution(xu, curr_obj);
       best_obj = curr_obj;
     }
     ++stats_->numSol;
@@ -178,8 +175,7 @@ void SamplingHeur::solve(NodePtr, RelaxationPtr, SolutionPoolPtr s_pool)
           << " is feasible. Objective value: " << curr_obj << std::endl;
 #endif
       if(curr_obj < best_obj - 1e-6) {
-        sol = (SolutionPtr) new Solution(curr_obj, x, p_);
-        s_pool->addSolution(sol);
+        s_pool->addSolution(x, curr_obj);
         best_obj = curr_obj;
       }
       ++stats_->numSol;
@@ -204,8 +200,7 @@ void SamplingHeur::solve(NodePtr, RelaxationPtr, SolutionPoolPtr s_pool)
             << " is feasible. Objective value: " << curr_obj << std::endl;
 #endif
         if(curr_obj < best_obj - 1e-6) {
-          sol = (SolutionPtr) new Solution(curr_obj, x, p_);
-          s_pool->addSolution(sol);
+          s_pool->addSolution(x, curr_obj);
           best_obj = curr_obj;
         }
         ++stats_->numSol;

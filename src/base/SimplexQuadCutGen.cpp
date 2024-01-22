@@ -168,6 +168,10 @@ int SimplexQuadCutGen::generateCuts(RelaxationPtr rel, ConstSolutionPtr sol)
     stats_.time += iter_time;
     env_->getLogger()->msgStream(LogDebug)
         << me_ << "Time taken in cut generation: " << iter_time << std::endl;
+    if(tabInfo_) {
+      delete tabInfo_;
+      tabInfo_ = 0;
+    }
   }
   return iter_cuts;
 }
@@ -191,7 +195,7 @@ void SimplexQuadCutGen::addCutsToRel_(SimplexCutVector cuts, RelaxationPtr rel,
   SimplexCutPtr cut;
   LinearFunctionPtr lf;
   FunctionPtr f;
-  ConstraintPtr c=0;
+  ConstraintPtr c = 0;
   double minelem;
 
   ncuts = 0;
@@ -242,7 +246,8 @@ void SimplexQuadCutGen::addCutsToRel_(SimplexCutVector cuts, RelaxationPtr rel,
     delete cut;
   }
 
-  if (0 && c) {} // intentionally empty to suppress warnings
+  if(0 && c) {
+  } // intentionally empty to suppress warnings
 }
 
 void SimplexQuadCutGen::delTabInfo_()
