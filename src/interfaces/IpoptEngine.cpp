@@ -1184,7 +1184,10 @@ bool IpoptFunInterface::eval_jac_g(Index n, const Number* x, bool, Index,
     }
   }
   if (error!=0) {
-    std::cout << "IpoptEngine: error in evaluating jacobian\n";
+    logger_->msgStream(Minotaur::LogError) << "IpoptFunInterface: " 
+      << "error in evaluating jacobian. Setting eval_within_bnds to True."
+      << std::endl;
+    evalWithinBnds_ = true;
   }
 
   return (0==error);
