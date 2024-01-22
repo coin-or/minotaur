@@ -56,7 +56,6 @@ void SamplingHeur::solve(NodePtr, RelaxationPtr, SolutionPoolPtr s_pool)
   double* xu = new double[n];
   double best_obj = s_pool->getBestSolutionValue();
   double curr_obj;
-  SolutionPtr sol;
   VariablePtr v;
   ObjectivePtr obj = p_->getObjective();
   bool checkzero = true;
