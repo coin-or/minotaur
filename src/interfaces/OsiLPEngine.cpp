@@ -450,10 +450,13 @@ void OsiLPEngine::load(ProblemPtr problem) {
     varub[i] = (*v_iter)->getUb();
   }
 
-  // XXX: check if linear function is NULL
-  lin = problem->getObjective()->getLinearFunction();
-  if (problem->getObjective()->getObjectiveType() == Minotaur::Maximize) {
-    obj_sense = -1.;
+  if (problem->getObjective()) {
+    lin = problem->getObjective()->getLinearFunction();
+    if (problem->getObjective()->getObjectiveType() == Minotaur::Maximize) {
+      obj_sense = -1.;
+    }
+  } else {
+    lin = 0;
   }
   obj = new double[numvars];
   i = 0;
@@ -565,7 +568,13 @@ void OsiLPEngine::setIterationLimit(int limit) {
   osilp_->setIntParam(key, limit);
 }
 
-EngineStatus OsiLPEngine::solve() {
+EngineStatus OsiLPEngine::solve()
+{ 
+  double off=0;
+
+  if (problem_->getObjective()) {
+    off = problem_->getObjective()->getConstant();
+  }
   timer_->start();
   if (true == objChanged_ && false == bndChanged_ && false == consChanged_) {
     osilp_->setHintParam(OsiDoDualInResolve, false);
@@ -583,8 +592,7 @@ EngineStatus OsiLPEngine::solve() {
   if (osilp_->isProvenOptimal()) {
     status_ = ProvenOptimal;
     sol_->setPrimal(osilp_->getStrictColSolution());
-    sol_->setObjValue(osilp_->getObjValue() +
-                      problem_->getObjective()->getConstant());
+    sol_->setObjValue(osilp_->getObjValue() + off);
     sol_->setDualOfCons(osilp_->getRowPrice());
     sol_->setDualOfVars(osilp_->getReducedCost());
   } else if (osilp_->isProvenPrimalInfeasible()) {
@@ -600,8 +608,7 @@ EngineStatus OsiLPEngine::solve() {
   } else if (osilp_->isIterationLimitReached()) {
     status_ = EngineIterationLimit;
     sol_->setPrimal(osilp_->getStrictColSolution());
-    sol_->setObjValue(osilp_->getObjValue() +
-                      problem_->getObjective()->getConstant());
+    sol_->setObjValue(osilp_->getObjValue() + off);
     sol_->setDualOfCons(osilp_->getRowPrice());
     sol_->setDualOfVars(osilp_->getReducedCost());
   } else if (osilp_->isAbandoned()) {
@@ -611,8 +618,7 @@ EngineStatus OsiLPEngine::solve() {
              osilp_->isDualObjectiveLimitReached()) {
     status_ = ProvenObjectiveCutOff;
     sol_->setPrimal(osilp_->getStrictColSolution());
-    sol_->setObjValue(osilp_->getObjValue() +
-                      problem_->getObjective()->getConstant());
+    sol_->setObjValue(osilp_->getObjValue() + off);
     sol_->setDualOfCons(osilp_->getRowPrice());
     sol_->setDualOfVars(osilp_->getReducedCost());
   } else {
