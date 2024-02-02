@@ -21,44 +21,47 @@
 #include "LinBil.h"
 #include "SimplexQuadCutGen.h"
 
-namespace Minotaur {
+namespace Minotaur
+{
 
 class LinearFunction;
 class Timer;
-typedef LinearFunction *LinearFunctionPtr;
-typedef Engine *EnginePtr;
+typedef LinearFunction* LinearFunctionPtr;
+typedef Engine* EnginePtr;
 
 /**
  * \brief A structure to save information about constraints of the form \f$ y
  * \leq x^2 \f$.
  */
 struct LinSqr {
-  VariablePtr y;        ///> The variable y.
-  VariablePtr x;        ///> The variable x.
-  ConstraintPtr oeCon;  ///> The linear constraint that gives the over estimator
-  ConstraintPtr qcon;   ///> Quadratic constraint in the transformed problem
-  LinSqr(VariablePtr y0, VariablePtr x0, ConstraintPtr con) {
+  VariablePtr y;       ///> The variable y.
+  VariablePtr x;       ///> The variable x.
+  ConstraintPtr oeCon; ///> The linear constraint that gives the over estimator
+  ConstraintPtr qcon;  ///> Quadratic constraint in the transformed problem
+  LinSqr(VariablePtr y0, VariablePtr x0, ConstraintPtr con)
+  {
     y = y0;
     x = x0;
     oeCon = ConstraintPtr();
     qcon = con;
   }
 };
-typedef LinSqr *LinSqrPtr;                  ///> Pointer to LinSqr
-typedef std::vector<LinSqrPtr> LinSqrVec;   ///> Vector of LinSqr
-typedef LinSqrVec::iterator LinSqrVecIter;  ///> Iterator for LinSqr
+typedef LinSqr* LinSqrPtr;                 ///> Pointer to LinSqr
+typedef std::vector<LinSqrPtr> LinSqrVec;  ///> Vector of LinSqr
+typedef LinSqrVec::iterator LinSqrVecIter; ///> Iterator for LinSqr
 
 /// Map of 'x' and the LinSqr that is used for \f$ y = x^2 \f$.
 typedef std::map<VariablePtr, LinSqrPtr, CompareVariablePtr> LinSqrMap;
-typedef LinSqrMap::iterator LinSqrMapIter;  ///> Iterator for LinSqrMap
+typedef LinSqrMap::iterator LinSqrMapIter; ///> Iterator for LinSqrMap
 
 /**
  * A QuadHandler handles the quadratic functions of a problem in a simplistic
  * fashion. For now, we will just handle squares of singleton variables e.g.
  * \f$x_1^2 = y_1\f$, and bilinear terms: \f$x_1x_2 = y_1\f$.
  */
-class QuadHandler : public Handler {
- public:
+class QuadHandler : public Handler
+{
+public:
   /// Default constructor.
   QuadHandler(EnvPtr env, ProblemPtr problem);
 
@@ -71,16 +74,16 @@ class QuadHandler : public Handler {
   void addConstraint(ConstraintPtr newcon);
 
   // Implement Handler::getBranches().
-  Branches getBranches(BrCandPtr cand, DoubleVector &x, RelaxationPtr rel,
+  Branches getBranches(BrCandPtr cand, DoubleVector& x, RelaxationPtr rel,
                        SolutionPoolPtr s_pool);
 
   // base class method
-  void getBranchingCandidates(RelaxationPtr rel, const DoubleVector &x,
-                              ModVector &mods, BrVarCandSet &cands,
-                              BrCandVector &gencands, bool &is_inf);
+  void getBranchingCandidates(RelaxationPtr rel, const DoubleVector& x,
+                              ModVector& mods, BrVarCandSet& cands,
+                              BrCandVector& gencands, bool& is_inf);
 
   // base class method
-  ModificationPtr getBrMod(BrCandPtr cand, DoubleVector &x, RelaxationPtr rel,
+  ModificationPtr getBrMod(BrCandPtr cand, DoubleVector& x, RelaxationPtr rel,
                            BranchDirection dir);
 
   // base class method
@@ -88,42 +91,42 @@ class QuadHandler : public Handler {
 
   // base class method.
   bool isFeasible(ConstSolutionPtr sol, RelaxationPtr relaxation,
-                  bool &should_prune, double &inf_meas);
+                  bool& should_prune, double& inf_meas);
 
   // base class method.
-  SolveStatus presolve(PreModQ *pre_mods, bool *changed, Solution **sol);
+  SolveStatus presolve(PreModQ* pre_mods, bool* changed, Solution** sol);
 
   // base class method. Tightens bounds.
   bool presolveNode(RelaxationPtr p, NodePtr node, SolutionPoolPtr s_pool,
-                    ModVector &p_mods, ModVector &r_mods);
+                    ModVector& p_mods, ModVector& r_mods);
 
   // implement Handler::postSolveRootNode
   bool postSolveRootNode(RelaxationPtr rel, SolutionPoolPtr s_pool,
-                         ConstSolutionPtr sol, ModVector &p_mods,
-                         ModVector &r_mods);
+                         ConstSolutionPtr sol, ModVector& p_mods,
+                         ModVector& r_mods);
 
-  void fillmap4auxVars(std::map<std::pair<int, int>, int> &map4auxVars);
+  void fillmap4auxVars(std::map<std::pair<int, int>, int>& map4auxVars);
 
   // implement Handler::fixNodeErr
   int fixNodeErr(RelaxationPtr rel, ConstSolutionPtr sol,
-                 SolutionPoolPtr s_pool, bool &sol_found);
+                 SolutionPoolPtr s_pool, bool& sol_found);
 
   // base class method. Adds linear inequalities
-  void relaxInitFull(RelaxationPtr rel, bool *is_inf);
+  void relaxInitFull(RelaxationPtr rel, bool* is_inf);
 
   // Does nothing.
-  void relaxInitInc(RelaxationPtr rel, bool *is_inf);
+  void relaxInitInc(RelaxationPtr rel, bool* is_inf);
 
   // Does nothing.
-  void relaxNodeFull(NodePtr node, RelaxationPtr rel, bool *is_inf);
+  void relaxNodeFull(NodePtr node, RelaxationPtr rel, bool* is_inf);
 
   // Does nothing.
-  void relaxNodeInc(NodePtr node, RelaxationPtr rel, bool *is_inf);
+  void relaxNodeInc(NodePtr node, RelaxationPtr rel, bool* is_inf);
 
   // base class method. Adds linearlization cuts when available.
   void separate(ConstSolutionPtr sol, NodePtr node, RelaxationPtr rel,
-                CutManager *cutman, SolutionPoolPtr s_pool, ModVector &p_mods,
-                ModVector &r_mods, bool *sol_found, SeparationStatus *status);
+                CutManager* cutman, SolutionPoolPtr s_pool, ModVector& p_mods,
+                ModVector& r_mods, bool* sol_found, SeparationStatus* status);
 
   void setBTEngine(LPEnginePtr engine);
 
@@ -131,37 +134,39 @@ class QuadHandler : public Handler {
 
   void setNLPEngine(EnginePtr engine);
 
+  void simplePresolve(ProblemPtr p, SolutionPoolPtr spool, ModVector& t_mods,
+                      SolveStatus& status);
   // base class method.
-  void writeStats(std::ostream &out) const;
+  void writeStats(std::ostream& out) const;
 
- private:
+private:
   /// Store statistics of presolving.
   struct SepaStats {
-    int iters;    ///> Number of times separation routine called.
-    int cuts;     ///> Number of total cuts added.
-    int optcuts;  ///> Number of optional cuts.
-    double time;  ///> Total time used in separation
+    int iters;   ///> Number of times separation routine called.
+    int cuts;    ///> Number of total cuts added.
+    int optcuts; ///> Number of optional cuts.
+    double time; ///> Total time used in separation
   };
 
   /// Store statistics of presolving.
   struct PresolveStats {
-    int iters;     ///> Number of iterations (main cycle).
-    double time;   ///> Total time used in initial presolve.
-    double timeN;  ///> Total time used in presolveNode.
-    int vBnd;      ///> Number of times variable-bounds were tightened.
-    int nMods;     ///> Number of changes made in all nodes.
+    int iters;    ///> Number of iterations (main cycle).
+    double time;  ///> Total time used in initial presolve.
+    double timeN; ///> Total time used in presolveNode.
+    int vBnd;     ///> Number of times variable-bounds were tightened.
+    int nMods;    ///> Number of changes made in all nodes.
   };
 
   struct NLPStats {
-    bool flag;        ///> if true that means NLP was solved at least once
-    UInt nlp;         ///> Number of NLPs solved
-    UInt opt;         ///> Number of NLPs optimal
-    UInt inf;         ///> Number of NLPs infeasible
-    UInt iter_limit;  ///> Number of NLPs for which EngineIterationLimit
+    bool flag;       ///> if true that means NLP was solved at least once
+    UInt nlp;        ///> Number of NLPs solved
+    UInt opt;        ///> Number of NLPs optimal
+    UInt inf;        ///> Number of NLPs infeasible
+    UInt iter_limit; ///> Number of NLPs for which EngineIterationLimit
   };
 
   struct BoundTighteningStats {
-    int niters;  ///> Number of iterations
+    int niters; ///> Number of iterations
     // VariableSet qvars; ///> The variables with quadratic terms
     // int nqlb;          ///> Number of quadratic variables with finite lb
     // int nqub;          ///> Number of quadratic variables with finite ub
@@ -187,10 +192,10 @@ class QuadHandler : public Handler {
     //                   ///> found by lp tightening
     // int vBndl;         ///> Number of times bounds tightened by
     //                   ///> lp tightening
-    int nLP;        ///> Number of LP solved
-    int dlb;        ///> Number of variables for which default lb was added
-    int dub;        ///> Number of variables for which default ub was added
-    double timeLP;  ///> Time taken in solving LPs
+    int nLP;       ///> Number of LP solved
+    int dlb;       ///> Number of variables for which default lb was added
+    int dub;       ///> Number of variables for which default ub was added
+    double timeLP; ///> Time taken in solving LPs
     // double avg_range;  ///> Average range of bounds of quadratic variables
     // double sd_range;   ///> Standard deviation of range
     // double body_diag;  ///> The length of body diagonal of hypercube formed
@@ -257,7 +262,7 @@ class QuadHandler : public Handler {
   SepaStats sStats_;
 
   /// Keep track of time
-  const Timer *timer_;
+  const Timer* timer_;
 
   /**
    * \brief Container for all bilinear functions. This should contain
@@ -284,7 +289,7 @@ class QuadHandler : public Handler {
    *                    (xval,yval)
    */
   void addCut_(VariablePtr x, VariablePtr y, double xl, double yl, double xval,
-               double yval, RelaxationPtr rel, bool &ifcuts);
+               double yval, RelaxationPtr rel, bool& ifcuts);
 
   /// This will add default variable bounds if finite bounds
   /// are not found by presolve
@@ -311,10 +316,10 @@ class QuadHandler : public Handler {
    * \param[in] ub The upper bound of the linear term
    * \param[out] c1 true if the bounds on the variable are changed
    */
-  bool calcVarBnd_(VariablePtr v, double coef, double lb, double ub, bool *c1);
+  bool calcVarBnd_(VariablePtr v, double coef, double lb, double ub, bool* c1);
 
   bool calcVarBnd_(RelaxationPtr rel, VariablePtr v, double coef, double lb,
-                   double ub, bool *c1, ModVector &p_mods, ModVector &r_mods);
+                   double ub, bool* c1, ModVector& p_mods, ModVector& r_mods);
 
   /**
    * \brief Calculate bounds of the variables from a quadratic term bounds
@@ -327,11 +332,11 @@ class QuadHandler : public Handler {
    * \param[out] c2 true if the bounds on second variable are changed
    */
   bool calcVarBnd_(VariablePtr v1, VariablePtr v2, double coef, double lb,
-                   double ub, bool *c1, bool *c2);
+                   double ub, bool* c1, bool* c2);
 
   bool calcVarBnd_(RelaxationPtr rel, VariablePtr v1, VariablePtr v2,
-                   double coef, double lb, double ub, bool *c1, bool *c2,
-                   ModVector &p_mods, ModVector &r_mods);
+                   double coef, double lb, double ub, bool* c1, bool* c2,
+                   ModVector& p_mods, ModVector& r_mods);
 
   /**
    * \brief Calculate bounds of the variables from a univariate quadratic
@@ -344,11 +349,11 @@ class QuadHandler : public Handler {
    * \param[out] changed true if the bounds on the variables are changed
    */
   bool calcVarBnd_(VariablePtr v, double a, double b, double ly, double uy,
-                   bool *c1);
+                   bool* c1);
 
   bool calcVarBnd_(RelaxationPtr rel, VariablePtr v, double a, double b,
-                   double ly, double uy, bool *c1, ModVector &p_mods,
-                   ModVector &r_mods);
+                   double ly, double uy, bool* c1, ModVector& p_mods,
+                   ModVector& r_mods);
 
   void coeffImprov_();
 
@@ -360,7 +365,7 @@ class QuadHandler : public Handler {
    * \param[in] xl x coordinate of point at which gradient can be evaluated
    * \param[in] yl y coordinate of point at which gradient can be evaluated
    */
-  void findLinPt_(double xval, double yval, double &xl, double &yl);
+  void findLinPt_(double xval, double yval, double& xl, double& yl);
 
   /**
    * \brief Solve the lp and get the bounds of the variable.
@@ -368,7 +373,7 @@ class QuadHandler : public Handler {
    * \param[in] e The engine where lp is loaded
    * \param[out] is_inf True if the lp is infeasible.
    */
-  double getBndByLP_(bool &is_inf);
+  double getBndByLP_(bool& is_inf);
 
   /**
    * \brief Get bounds of a lf of a constraint
@@ -380,9 +385,9 @@ class QuadHandler : public Handler {
    * \param[out] count_inf_lb # of infinities in lower bound
    * \param[out] count_inf_ub # of infinities in upper bound
    */
-  void getLfBnds_(LinearFunctionPtr lf, double &implLb, double &implUb,
-                  DoubleVector &fwdLb, DoubleVector &fwdUb, UInt &count_inf_lb,
-                  UInt &count_inf_ub);
+  void getLfBnds_(LinearFunctionPtr lf, double& implLb, double& implUb,
+                  DoubleVector& fwdLb, DoubleVector& fwdUb, UInt& count_inf_lb,
+                  UInt& count_inf_ub);
 
   /**
    * \brief Get one of the four linear functions and right hand sides for the
@@ -402,7 +407,7 @@ class QuadHandler : public Handler {
    */
   LinearFunctionPtr getNewBilLf_(VariablePtr x0, double lb0, double ub0,
                                  VariablePtr x1, double lb1, double ub1,
-                                 VariablePtr y, int type, double &rhs);
+                                 VariablePtr y, int type, double& rhs);
 
   /**
    * \brief Get linear function and right hand side for the linear
@@ -416,7 +421,7 @@ class QuadHandler : public Handler {
    * square constraint.
    */
   LinearFunctionPtr getNewSqLf_(VariablePtr x, VariablePtr y, double lb,
-                                double ub, double &r);
+                                double ub, double& r);
 
   /**
    * \brief Get bounds of a qf of a constraint
@@ -428,9 +433,9 @@ class QuadHandler : public Handler {
    * \param[out] count_inf_lb # of infinities in lower bound
    * \param[out] count_inf_ub # of infinities in upper bound
    */
-  void getQfBnds_(QuadraticFunctionPtr qf, double &implLb, double &implUb,
-                  DoubleVector &fwdLb, DoubleVector &fwdUb, UInt &count_inf_lb,
-                  UInt &count_inf_ub);
+  void getQfBnds_(QuadraticFunctionPtr qf, double& implLb, double& implUb,
+                  DoubleVector& fwdLb, DoubleVector& fwdUb, UInt& count_inf_lb,
+                  UInt& count_inf_ub);
 
   /**
    * \brief Get bounds of a qf and lf of a constraint
@@ -446,14 +451,14 @@ class QuadHandler : public Handler {
    * return false if qvars has no element, true otherwise
    */
   bool getQfLfBnds_(LinearFunctionPtr lf, QuadraticFunctionPtr qf,
-                    double &implLb, double &implUb, DoubleVector &fwdLb,
-                    DoubleVector &fwdUb, UInt &count_inf_lb, UInt &count_inf_ub,
-                    VarVector &qvars);
+                    double& implLb, double& implUb, DoubleVector& fwdLb,
+                    DoubleVector& fwdUb, UInt& count_inf_lb, UInt& count_inf_ub,
+                    VarVector& qvars);
 
   bool getQfLfBnds_(RelaxationPtr rel, LinearFunctionPtr lf,
-                    QuadraticFunctionPtr qf, double &implLb, double &implUb,
-                    DoubleVector &fwdLb, DoubleVector &fwdUb,
-                    UInt &count_inf_lb, UInt &count_inf_ub, VarVector &qvars);
+                    QuadraticFunctionPtr qf, double& implLb, double& implUb,
+                    DoubleVector& fwdLb, DoubleVector& fwdUb,
+                    UInt& count_inf_lb, UInt& count_inf_ub, VarVector& qvars);
 
   /**
    * \brief Calculate sum of a vector except current element
@@ -476,7 +481,7 @@ class QuadHandler : public Handler {
    * \param[out] lb The calculated lower bound of the linear term
    * \param[out] ub The calculated upper bound of the linear term
    */
-  void getTermBnds_(VariablePtr v, double coef, double &lb, double &ub);
+  void getTermBnds_(VariablePtr v, double coef, double& lb, double& ub);
 
   /**
    * \brief Calculate bounds of a quadratic term from the variable bounds
@@ -486,8 +491,8 @@ class QuadHandler : public Handler {
    * \param[out] lb The calculated lower bound of the quadratic term
    * \param[out] ub The calculated upper bound of the quadratic term
    */
-  void getTermBnds_(VariablePtr v1, VariablePtr v2, double coef, double &lb,
-                    double &ub);
+  void getTermBnds_(VariablePtr v1, VariablePtr v2, double coef, double& lb,
+                    double& ub);
 
   /**
    * \brief Calculate bounds of a univariate quadratic term of the
@@ -498,13 +503,13 @@ class QuadHandler : public Handler {
    * \param[out] lb The calculated lower bound of the term
    * \param[out] ub The calculated upper bound of the term
    */
-  void getTermBnds_(VariablePtr v, double a, double b, double &lb, double &ub);
+  void getTermBnds_(VariablePtr v, double a, double b, double& lb, double& ub);
 
   /// Return true if xval is one of the bounds of variable x
   bool isAtBnds_(ConstVariablePtr x, double xval);
 
   /// Whether a given point is feasible to the relaxation
-  bool isFeasibleToRelaxation_(RelaxationPtr rel, const double *x);
+  bool isFeasibleToRelaxation_(RelaxationPtr rel, const double* x);
 
   /// Linearize a given square constraint if x variable is binary
   void linearize_(LinSqrMapIter lx2);
@@ -520,7 +525,7 @@ class QuadHandler : public Handler {
    * Return true if the new bounds are inconsistent (i.e., lb > ub for any of
    * the three variables)
    */
-  bool propBilBnds_(LinBil *lx0x1, bool *changed);
+  bool propBilBnds_(LinBil* lx0x1, bool* changed);
 
   /**
    * \brief Strengthen bounds of variables in a bilinear constraint y=x0x1,
@@ -536,8 +541,8 @@ class QuadHandler : public Handler {
    * Return true if the new bounds are inconsistent (i.e., lb > ub for any of
    * the three variables)
    */
-  bool propBilBnds_(LinBil *lx0x1, RelaxationPtr rel, bool mod_rel,
-                    bool *changed, ModVector &p_mods, ModVector &r_mods);
+  bool propBilBnds_(LinBil* lx0x1, RelaxationPtr rel, bool mod_rel,
+                    bool* changed, ModVector& p_mods, ModVector& r_mods);
 
   /**
    * \brief Strengthen bounds of variables in a square constraint y=x0^2.
@@ -547,7 +552,7 @@ class QuadHandler : public Handler {
    * Return true if the new bounds are inconsistent (i.e., lb > ub for any of
    * the two variables)
    */
-  bool propSqrBnds_(LinSqrMapIter lx2, bool *changed);
+  bool propSqrBnds_(LinSqrMapIter lx2, bool* changed);
 
   /**
    * \brief Strengthen bounds of variables in a square constraint y=x0^2,
@@ -564,7 +569,7 @@ class QuadHandler : public Handler {
    * the two variables)
    */
   bool propSqrBnds_(LinSqrMapIter lx2, RelaxationPtr rel, bool mod_rel,
-                    bool *changed, ModVector &p_mods, ModVector &r_mods);
+                    bool* changed, ModVector& p_mods, ModVector& r_mods);
 
   /**
    * \brief Relax all the square constraints: y=x0^2 and bilinear constraints
@@ -575,20 +580,20 @@ class QuadHandler : public Handler {
    * (because of inconsistent bounds or other reasons).
    */
 
-  void relax_(RelaxationPtr rel, bool *is_inf);
+  void relax_(RelaxationPtr rel, bool* is_inf);
 
   /**
    * \brief Resetting the bounds on original variables
    * \param[in] varlb the vector of original lb
    * \param[in] varub the vector of original ub
    */
-  void resetBoundsinOrig_(DoubleVector &varlb, DoubleVector &varub);
+  void resetBoundsinOrig_(DoubleVector& varlb, DoubleVector& varub);
 
   /// Reset all statistics to zero.
   void resetStats_();
 
   /// Setting Itmp for each variable based on the solution from LP
-  void setItmpFromSol_(const double *x);
+  void setItmpFromSol_(const double* x);
 
   /**
    * \brief Bound tightening of the problem by solving LP after removing all
@@ -599,8 +604,8 @@ class QuadHandler : public Handler {
    * \param[out] changed True is some changes are made in the bounds on any
    * variables.
    */
-  bool tightenLP_(RelaxationPtr rel, double bestSol, bool *changed,
-                  ModVector &p_mods, ModVector &r_mods);
+  bool tightenLP_(RelaxationPtr rel, double bestSol, bool* changed,
+                  ModVector& p_mods, ModVector& r_mods);
 
   /**
    * \brief Bound tightening of the problem by considering linear and quadratic
@@ -609,10 +614,10 @@ class QuadHandler : public Handler {
    * \pram[out] changed True is some changes are made in the bounds on any
    * variables.
    */
-  bool tightenQuad_(bool *changed);
+  bool tightenQuad_(bool* changed);
 
-  bool tightenQuad_(RelaxationPtr rel, double bestSol, bool *changed,
-                    ModVector &p_mods, ModVector &r_mods);
+  bool tightenQuad_(RelaxationPtr rel, double bestSol, bool* changed,
+                    ModVector& p_mods, ModVector& r_mods);
 
   /**
    * \brief Bound tightening of the problem by using simple interval
@@ -621,7 +626,7 @@ class QuadHandler : public Handler {
    * \pram[out] changed True is some changes are made in the bounds on any
    * variables.
    */
-  bool tightenSimple_(bool *changed);
+  bool tightenSimple_(bool* changed);
 
   /**
    * \brief Update bounds of variable in original problem as the bounds
@@ -631,8 +636,8 @@ class QuadHandler : public Handler {
    * \param[out] varlb vector of lb on variables before bound changes
    * \param[out] varlb vector of ub on variables before bound changes
    */
-  void updateBoundsinOrig_(RelaxationPtr rel, const double *x,
-                           DoubleVector &varlb, DoubleVector &varub);
+  void updateBoundsinOrig_(RelaxationPtr rel, const double* x,
+                           DoubleVector& varlb, DoubleVector& varub);
 
   /**
    * \brief Modify bounds of a variable in the problem to the new bounds lb
@@ -646,7 +651,22 @@ class QuadHandler : public Handler {
    * Returns -1 if the new bounds make the problem infeasible. Returns 0
    * otherwise.
    */
-  int updatePBounds_(VariablePtr v, double lb, double ub, bool *changed);
+  int updatePBounds_(VariablePtr v, double lb, double ub, bool* changed);
+
+  /**
+   * \brief Provide Modifications on bounds of a variable in the problem to
+   * the new bounds lb and ub if the new bounds are tighter.
+   * \param[in] p The problem
+   * \param[in] v The variable
+   * \param[in] lb The new lower bound
+   * \param[in] ub The new upper bound
+   * \param[out] mods The vector of modifications
+   * \return the number of bound changes (1 or 2) if any bounds are changed.
+   * Returns -1 if the new bounds make the problem infeasible. Returns 0
+   * otherwise.
+   */
+  int updatePBounds_(ProblemPtr p, VariablePtr v, double lb, double ub,
+                     ModVector& mods);
 
   /**
    * \brief Modify bounds of a variable in the problem to the new bounds lb
@@ -668,8 +688,8 @@ class QuadHandler : public Handler {
    * otherwise.
    */
   int updatePBounds_(VariablePtr v, double lb, double ub, RelaxationPtr rel,
-                     bool mod_rel, bool *changed, ModVector &p_mods,
-                     ModVector &r_mods);
+                     bool mod_rel, bool* changed, ModVector& p_mods,
+                     ModVector& r_mods);
   /**
    * \brief After solving an NLP update ub of the problem.
    * \param[in] s_pool Current solution pool
@@ -677,7 +697,7 @@ class QuadHandler : public Handler {
    * \param[out] sol_found true if the NLP solution is better than all
    * solutions in s_pool
    */
-  void updateUb_(SolutionPoolPtr s_pool, double nlpval, bool &sol_found);
+  void updateUb_(SolutionPoolPtr s_pool, double nlpval, bool& sol_found);
 
   /**
    * \brief Update linear relaxation of the bilinear constraints after some
@@ -689,7 +709,7 @@ class QuadHandler : public Handler {
    * \param[in] r_mods A vector into which the modifications are appended so
    * that they can be reverted at a later time.
    */
-  void upBilCon_(LinBil *lx0x1, RelaxationPtr rel, ModVector &r_mods);
+  void upBilCon_(LinBil* lx0x1, RelaxationPtr rel, ModVector& r_mods);
 
   /**
    * \brief Update linear relaxation of the square constraints (y=x^2) after
@@ -700,7 +720,7 @@ class QuadHandler : public Handler {
    * \param[in] r_mods A vector into which the modifications are appended so
    * that they can be reverted at a later time.
    */
-  void upSqCon_(LinSqrPtr ls, RelaxationPtr rel, ModVector &r_mods);
+  void upSqCon_(LinSqrPtr ls, RelaxationPtr rel, ModVector& r_mods);
 
   /**
    * \brief Tighten the bounds on variables of the original (or transformed)
@@ -710,12 +730,12 @@ class QuadHandler : public Handler {
    * \return true if some bounds become inconsistent, making the problem
    * infeasible. Flase otherwise.
    */
-  bool varBndsFromCons_(bool *changed);
+  bool varBndsFromCons_(bool* changed);
 };
 
 /// Shared pointer to QuadHandler.
-typedef QuadHandler *QuadHandlerPtr;
-}  // namespace Minotaur
+typedef QuadHandler* QuadHandlerPtr;
+} // namespace Minotaur
 #endif
 
 // Local Variables:

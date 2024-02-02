@@ -807,7 +807,7 @@ ConstraintPtr QuadHandler::addTangent_(VariablePtr x, VariablePtr y, double pt,
 {
   LinearFunctionPtr lf = (LinearFunctionPtr) new LinearFunction();
   FunctionPtr f;
-  ConstraintPtr c; 
+  ConstraintPtr c;
 
   lf->addTerm(x, 2 * pt);
   lf->addTerm(y, -1.0);
@@ -831,7 +831,8 @@ void QuadHandler::addCut_(VariablePtr x, VariablePtr y, double xl, double yl,
     logger_->msgStream(LogDebug2) << me_ << "new cut added" << std::endl;
     c->write(logger_->msgStream(LogDebug2));
 #else
-    if (0 && c) {} // intentionally empty to suppress warning
+    if(0 && c) {
+    } // intentionally empty to suppress warning
 #endif
   } else {
 #if SPEW
@@ -1002,7 +1003,7 @@ bool QuadHandler::linearize_(LinBilSetIter linbil, bool isx0Binary,
   VariablePtr y = (*linbil)->getY();
   LinearFunctionPtr lf;
   FunctionPtr f;
-  ConstraintPtr cnew=0;
+  ConstraintPtr cnew = 0;
 
   if(isx0Binary && isx1Binary) {
     lf = (LinearFunctionPtr) new LinearFunction();
@@ -1098,7 +1099,8 @@ bool QuadHandler::linearize_(LinBilSetIter linbil, bool isx0Binary,
     p_->markDelete(qcon);
   }
 
-  if (0 && cnew) {} // intentionally empty to suppress warning
+  if(0 && cnew) {
+  } // intentionally empty to suppress warning
   return true;
 }
 
@@ -1139,6 +1141,64 @@ SolveStatus QuadHandler::presolve(PreModQ*, bool* changed, Solution**)
     status = Finished;
   }
   return status;
+}
+
+void QuadHandler::simplePresolve(ProblemPtr p, SolutionPoolPtr,
+                                 ModVector& t_mods, SolveStatus& status)
+{
+  VariablePtr x1, x2, y;
+  double lb, ub;
+
+  for(LinSqrMapIter it = x2Funs_.begin(); it != x2Funs_.end(); ++it) {
+    x1 = p->getVariable(it->first->getIndex()); // x1 and y are variables in p_
+    y = p->getVariable(it->second->y->getIndex());
+
+    BoundsOnSquare(x1, lb, ub);
+    if(updatePBounds_(p, y, lb, ub, t_mods) < 0) {
+      status = SolvedInfeasible;
+    }
+
+    // other direction.
+    if(y->getUb() > bTol_) {
+      ub = sqrt(y->getUb());
+      lb = -ub;
+      assert(y->getLb() >= 0.0); // square of a number.
+      if(x1->getLb() > -sqrt(y->getLb()) + bTol_) {
+        lb = sqrt(y->getLb());
+      }
+      if(updatePBounds_(p, x1, lb, ub, t_mods) < 0) {
+        status = SolvedInfeasible;
+      }
+    } else if(y->getUb() < -bTol_) {
+      status = SolvedInfeasible;
+    } else {
+      if(updatePBounds_(p_, x1, 0.0, 0.0, t_mods) < 0) {
+        status = SolvedInfeasible;
+      }
+    }
+  }
+  for(LinBilSetIter it = x0x1Funs_.begin(); it != x0x1Funs_.end(); ++it) {
+    x1 = p->getVariable((*it)->getX0()->getIndex());
+    x2 = p->getVariable((*it)->getX1()->getIndex());
+    y = p->getVariable((*it)->getY()->getIndex());
+
+    BoundsOnProduct(true, x1, x2, lb, ub);
+    if(updatePBounds_(p, y, lb, ub, t_mods) < 0) {
+      status = SolvedInfeasible;
+    }
+
+    // reverse
+    BoundsOnDiv(y->getLb(), y->getUb(), x1->getLb(), x1->getUb(), lb, ub);
+    if(updatePBounds_(p, x2, lb, ub, t_mods) < 0) {
+      status = SolvedInfeasible;
+    }
+
+    BoundsOnDiv(y->getLb(), y->getUb(), x2->getLb(), x2->getUb(), lb, ub);
+    if(updatePBounds_(p, x1, lb, ub, t_mods) < 0) {
+      status = SolvedInfeasible;
+    }
+  }
+  status = Finished;
 }
 
 bool QuadHandler::presolveNode(RelaxationPtr rel, NodePtr,
@@ -3150,6 +3210,36 @@ int QuadHandler::updatePBounds_(VariablePtr v, double lb, double ub,
     logger_->msgStream(LogDebug2) << me_ << "new lb of " << v->getName()
                                   << " = " << v->getLb() << std::endl;
 #endif
+  }
+
+  return 0;
+}
+
+int QuadHandler::updatePBounds_(ProblemPtr p, VariablePtr v, double lb,
+                                double ub, ModVector& mods)
+{
+  VarBoundModPtr bmod;
+
+  if(v->getType() == Binary || v->getType() == ImplBin ||
+     v->getType() == Integer || v->getType() == ImplInt) {
+    ub = floor(ub);
+    lb = ceil(lb);
+  }
+  if(ub < v->getLb() - bTol_ || lb > v->getUb() + bTol_) {
+    return -1;
+  }
+
+  if(ub < v->getUb() - bTol_ &&
+     (v->getUb() == INFINITY || ub < v->getUb() - fabs(v->getUb()) * rTol_)) {
+    bmod = (VarBoundModPtr) new VarBoundMod(v, Upper, ub);
+    bmod->applyToProblem(p);
+    mods.push_back(bmod);
+  }
+  if(lb > v->getLb() + aTol_ &&
+     (v->getLb() == -INFINITY || lb > v->getLb() + fabs(v->getLb()) * rTol_)) {
+    bmod = (VarBoundModPtr) new VarBoundMod(v, Lower, lb);
+    bmod->applyToProblem(p);
+    mods.push_back(bmod);
   }
 
   return 0;
