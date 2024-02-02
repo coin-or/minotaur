@@ -349,7 +349,7 @@ void Problem::classifyCon(bool printTypes)
   ConstraintPtr c;
   FunctionPtr f;
   LinearFunctionPtr lf;
-  VariablePtr v=0;
+  VariablePtr v = 0;
   double wt;
   const double tol = 1e-6;
   double INFTY = std::numeric_limits<double>::infinity();
@@ -1081,6 +1081,7 @@ void Problem::cg2qf()
 
       delete obj_;
       obj_ = newobj;
+      consModed_ = true;
     }
   }
   qfindex = new int[getNumCons()];
@@ -1594,7 +1595,7 @@ bool Problem::isDebugSolFeas(double atol, double rtol)
       }
     }
 
-    i=0;
+    i = 0;
     for(VariableConstIterator it = vars_.begin(); it != vars_.end(); ++it) {
       lb = (*it)->getLb();
       ub = (*it)->getUb();
@@ -1768,6 +1769,7 @@ ConstraintPtr Problem::newConstraint(FunctionPtr funPtr, double lb, double ub)
   if(engine_ != 0) {
     engine_->addConstraint(c);
   }
+  consModed_ = true;
 
   return c;
 }
