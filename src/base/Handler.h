@@ -346,6 +346,21 @@ public:
   };
 
   /**
+   * Do simple presolve. This may involve quick bound inference and other simple
+   * tricks. Can be cheaper than node presolve and root presolve.
+   * \param[in] p Problem for which presolving to be done.
+   * \param[in] spool Solution pool.
+   * \param[out] t_mods Modification derived from presolve.
+   * \param[out] status Presolve status.
+   */
+  void simplePresolve(ProblemPtr, SolutionPoolPtr, ModVector&,
+                      SolveStatus& status)
+  {
+    // Do Nothing
+    status = Finished;
+  }
+
+  /**
    * \brief Undo Modifications made during stronger branching
    * \param[in] rel Relaxation at the current node
    * \param[in] p_mods Mods for the problem to undo. This vector will be changed
