@@ -52,13 +52,14 @@ FixVarsHeur::~FixVarsHeur()
 void FixVarsHeur::solve(NodePtr, RelaxationPtr, SolutionPoolPtr s_pool)
 {
   bool restart = true;
-  UInt min_iter = 5, max_iter = 20, iter = 0;
+  UInt min_iter = 3, max_iter = 10, iter = 0;
   std::map<UInt, UInt> unfixedVars;
 
+  initialize_();
   while(iter < min_iter || (restart && iter < max_iter)) {
     ++iter;
     restart = false;
-    initialize_();
+    unfixedVars.clear();
     for(VariableConstIterator vit = p_->varsBegin(); vit != p_->varsEnd();
         ++vit) {
       unfixedVars.insert({(*vit)->getIndex(), (*vit)->getItmp()});

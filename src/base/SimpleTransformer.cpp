@@ -848,71 +848,73 @@ void SimpleTransformer::refQuadCons_(QuadraticFunctionPtr qf,
     }
     v = yQfBil_->findY(it->first.first, it->first.second);
     if(!v) {
-      v = newp_->newVariable();
-      ++stats_.nvars;
-      lfnew = (LinearFunctionPtr) new LinearFunction();
-      lfnew->addTerm(v, -1.0);
-      qfnew = (QuadraticFunctionPtr) new QuadraticFunction();
-      qfnew->addTerm(it->first.first, it->first.second, 1.0);
-      fnew = (FunctionPtr) new Function(lfnew, qfnew);
-      cnew = newp_->newConstraint(fnew, 0.0, 0.0);
-      ++stats_.ncons;
+      // Linearizing the product of binaries
+      if((it->first.first->getType() == Binary) &&
+         (it->first.second->getType() == Binary)) {
+        // changing the bounds of the new variable
+        v = newp_->newBinaryVariable();
+        ++stats_.nvars;
+        newp_->changeBound(v, 0.0, 1.0);
+
+        // y<=x1
+        lfnew = (LinearFunctionPtr) new LinearFunction();
+        lfnew->addTerm(v, 1.0);
+        lfnew->addTerm(it->first.first, -1.0);
+        fnew = (FunctionPtr) new Function(lfnew);
+        cnew = newp_->newConstraint(fnew, -INFINITY, 0.0);
 #if SPEW
-      logger_->msgStream(LogDebug)
-          << me_ << "added new constraint" << std::endl;
-      cnew->write(logger_->msgStream(LogDebug));
+        logger_->msgStream(LogDebug)
+            << me_ << "added new constraint" << std::endl;
+        cnew->write(logger_->msgStream(LogDebug));
 #endif
-      qHandler_->addConstraint(cnew);
-      yQfBil_->insert(v, it->first.first, it->first.second);
+        lHandler_->addConstraint(cnew);
+
+        // y<=x2
+        lfnew = (LinearFunctionPtr) new LinearFunction();
+        lfnew->addTerm(v, 1.0);
+        lfnew->addTerm(it->first.second, -1.0);
+        fnew = (FunctionPtr) new Function(lfnew);
+        cnew = newp_->newConstraint(fnew, -INFINITY, 0.0);
+#if SPEW
+        logger_->msgStream(LogDebug)
+            << me_ << "added new constraint" << std::endl;
+        cnew->write(logger_->msgStream(LogDebug));
+#endif
+        lHandler_->addConstraint(cnew);
+
+        // y>=x1+x2-1
+        lfnew = (LinearFunctionPtr) new LinearFunction();
+        lfnew->addTerm(v, -1.0);
+        lfnew->addTerm(it->first.first, 1.0);
+        lfnew->addTerm(it->first.second, 1.0);
+        fnew = (FunctionPtr) new Function(lfnew);
+        cnew = newp_->newConstraint(fnew, -INFINITY, 1.0);
+#if SPEW
+        logger_->msgStream(LogDebug)
+            << me_ << "added new constraint" << std::endl;
+        cnew->write(logger_->msgStream(LogDebug));
+#endif
+        lHandler_->addConstraint(cnew);
+      } else {
+        v = newp_->newVariable();
+        ++stats_.nvars;
+        lfnew = (LinearFunctionPtr) new LinearFunction();
+        lfnew->addTerm(v, -1.0);
+        qfnew = (QuadraticFunctionPtr) new QuadraticFunction();
+        qfnew->addTerm(it->first.first, it->first.second, 1.0);
+        fnew = (FunctionPtr) new Function(lfnew, qfnew);
+        cnew = newp_->newConstraint(fnew, 0.0, 0.0);
+        ++stats_.ncons;
+#if SPEW
+        logger_->msgStream(LogDebug)
+            << me_ << "added new constraint" << std::endl;
+        cnew->write(logger_->msgStream(LogDebug));
+#endif
+        qHandler_->addConstraint(cnew);
+        yQfBil_->insert(v, it->first.first, it->first.second);
+      }
     }
     lf->addTerm(v, it->second);
-
-    // Linearizing the product of bilinear terms
-    if((it->first.first->getType() == Binary) &&
-       (it->first.second->getType() == Binary)) {
-      // changing the bounds of the new variable
-      newp_->changeBound(v, 0.0, 1.0);
-
-      // y<=x1
-      lfnew = (LinearFunctionPtr) new LinearFunction();
-      lfnew->addTerm(v, 1.0);
-      lfnew->addTerm(it->first.first, -1.0);
-      fnew = (FunctionPtr) new Function(lfnew);
-      cnew = newp_->newConstraint(fnew, -INFINITY, 0.0);
-#if SPEW
-      logger_->msgStream(LogDebug)
-          << me_ << "added new constraint" << std::endl;
-      cnew->write(logger_->msgStream(LogDebug));
-#endif
-      lHandler_->addConstraint(cnew);
-
-      // y<=x2
-      lfnew = (LinearFunctionPtr) new LinearFunction();
-      lfnew->addTerm(v, 1.0);
-      lfnew->addTerm(it->first.second, -1.0);
-      fnew = (FunctionPtr) new Function(lfnew);
-      cnew = newp_->newConstraint(fnew, -INFINITY, 0.0);
-#if SPEW
-      logger_->msgStream(LogDebug)
-          << me_ << "added new constraint" << std::endl;
-      cnew->write(logger_->msgStream(LogDebug));
-#endif
-      lHandler_->addConstraint(cnew);
-
-      // y>=x1+x2-1
-      lfnew = (LinearFunctionPtr) new LinearFunction();
-      lfnew->addTerm(v, -1.0);
-      lfnew->addTerm(it->first.first, 1.0);
-      lfnew->addTerm(it->first.second, 1.0);
-      fnew = (FunctionPtr) new Function(lfnew);
-      cnew = newp_->newConstraint(fnew, -INFINITY, 1.0);
-#if SPEW
-      logger_->msgStream(LogDebug)
-          << me_ << "added new constraint" << std::endl;
-      cnew->write(logger_->msgStream(LogDebug));
-#endif
-      lHandler_->addConstraint(cnew);
-    }
   }
 }
 
