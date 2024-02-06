@@ -42,6 +42,7 @@ set (MINOTAUR_SOURCES
      base/Engine.cpp 
      base/Environment.cpp 
      base/FeasibilityPump.cpp 
+     base/FixVarsHeur.cpp
      base/Function.cpp 
      base/Handler.cpp
      base/HessianOfLag.cpp 
@@ -173,6 +174,7 @@ set (MINOTAUR_HEADERS
      base/Engine.h
      base/Environment.h
      base/FeasibilityPump.h 
+     base/FixVarsHeur.h
      base/Exception.h
      base/Function.h
      base/Handler.h

@@ -41,6 +41,9 @@ public:
   /// call to heuristic
   void solve(NodePtr, RelaxationPtr, SolutionPoolPtr s_pool);
 
+  /// set handlers of the problem
+  void setHandlers(HandlerVector& handlers);
+
   /// writing the statistics to the logger
   void writeStats(std::ostream& out) const;
 
@@ -50,6 +53,9 @@ protected:
 
   // Environment
   EnvPtr env_;
+
+  // Handlers for the problem
+  HandlerVector handlers_;
 
   // For printing messages
   static const std::string me_;
@@ -61,7 +67,7 @@ protected:
   UInt mnl_;
 
   // Variable fixing mods done
-  std::stack<Modification*> mods_;
+  ModVector mods_;
 
   // Problem
   ProblemPtr p_;
@@ -73,7 +79,10 @@ protected:
   void fix_(VariablePtr v);
 
   // Fix Variables
-  void FixVars_(UIntSet& unfixedVars);
+  void FixVars_(std::map<UInt, UInt>& unfixedVars);
+
+  // Update the solution in solution pool if found
+  void foundNewSol_(SolutionPoolPtr s_pool, bool& restart);
 
   // initialize the correct data structures for heuristic
   void initialize_();
@@ -82,10 +91,17 @@ protected:
   bool isFeasible_(const double* x);
 
   // Compares two elements in a map
-  bool mapCompare_(std::pair<UInt, UInt>& p1, std::pair<UInt, UInt>& p2);
+  static bool mapCompare_(const std::pair<UInt, UInt>& p1,
+                          const std::pair<UInt, UInt>& p2);
+
+  // presolve here.
+  bool presolve_(SolutionPoolPtr s_pool, std::map<UInt, UInt>& unfixedVars);
 
   // gets the best variable to fix
   VariablePtr selectVarToFix_(std::map<UInt, UInt>& unfixedVars);
+
+  // Unfix fixed variables.
+  void unfixVars_();
 
   // update Map of each variable in the constraint once it is covered
   void updateMap_(ConstraintPtr c, std::map<UInt, UInt>& unfixedVars);

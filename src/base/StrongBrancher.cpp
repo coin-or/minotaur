@@ -5,7 +5,7 @@
 //
 
 /**
- * \file StongBrancher.cpp
+ * \file StrongBrancher.cpp
  * \brief Define methods for strong branching.
  * \author Mustafa Vora, Indian Institute of Technology Bombay
  */
@@ -504,7 +504,7 @@ void StrongBrancher::strongBranch_(BrCandPtr cand, double& obj_up,
   HandlerPtr h = cand->getHandler();
   ModificationPtr mod;
   double stime;
-  ModificationPtr pmod=0;
+  ModificationPtr pmod = 0;
   ModVector p_mods, r_mods;
   NodePtr node = NodePtr();
   bool is_inf;

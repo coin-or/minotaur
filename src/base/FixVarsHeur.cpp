@@ -19,6 +19,7 @@
 
 #include "Environment.h"
 #include "FixVarsHeur.h"
+#include "Handler.h"
 #include "MinotaurConfig.h"
 #include "Problem.h"
 #include "SolutionPool.h"
@@ -87,7 +88,6 @@ void FixVarsHeur::foundNewSol_(SolutionPoolPtr s_pool, bool& restart)
   double* xl = new double[n];
   double best_obj = s_pool->getBestSolutionValue();
   double curr_obj;
-  bool lbinf, ubinf;
   int error = 0;
 
   std::memset(xl, 0, n * sizeof(double));
@@ -98,7 +98,7 @@ void FixVarsHeur::foundNewSol_(SolutionPoolPtr s_pool, bool& restart)
   }
   if(isFeasible_(xl)) {
     error = 0;
-    curr_obj = obj->eval(xl, &error);
+    curr_obj = p_->getObjective()->eval(xl, &error);
 #if SPEW
     env_->getLogger()->msgStream(LogDebug2)
         << me_ << "Found feasible solution. Objective value: " << curr_obj
@@ -167,7 +167,7 @@ void FixVarsHeur::fix_(VariablePtr v)
 
   m = new VarBoundMod2(v, fix_at, fix_at);
   m->applyToProblem(p_);
-  mods_.push(m);
+  mods_.push_back(m);
 }
 
 void FixVarsHeur::FixVars_(std::map<UInt, UInt>& unfixedVars)
@@ -184,7 +184,7 @@ void FixVarsHeur::FixVars_(std::map<UInt, UInt>& unfixedVars)
       covered.insert(it->first);
     } else if(it->second == 1) {
       f = it->first->getFunction();
-      for(VariableConstIterator vit = f->varsBegin(); vit != f->varsEnd();
+      for(VarSetConstIterator vit = f->varsBegin(); vit != f->varsEnd();
           ++vit) {
         v = *vit;
         if(unfixedVars.find(v->getIndex()) != unfixedVars.end()) {
@@ -216,7 +216,8 @@ void FixVarsHeur::FixVars_(std::map<UInt, UInt>& unfixedVars)
   }
 }
 
-bool mapCompare_(std::pair<UInt, UInt>& p1, std::pair<UInt, UInt>& p2)
+bool FixVarsHeur::mapCompare_(const std::pair<UInt, UInt>& p1,
+                              const std::pair<UInt, UInt>& p2)
 {
   return p1.second < p2.second;
 }
@@ -233,11 +234,11 @@ void FixVarsHeur::updateMap_(ConstraintPtr c, std::map<UInt, UInt>& unfixedVars)
   FunctionPtr f = c->getFunction();
   VariablePtr v;
 
-  for(VariableConstIterator vit = f->varsBegin(); vit != f->varsEnd(); ++vit) {
+  for(VarSetConstIterator vit = f->varsBegin(); vit != f->varsEnd(); ++vit) {
     v = *vit;
-    if(v->getType() == Binary || v->getType() == ImplBinary) {
+    if(v->getType() == Binary || v->getType() == ImplBin) {
       unfixedVars[v->getIndex()] -= mbin_;
-    } else if(v->getFunType != Linear && v->getFunType() != Constant) {
+    } else if(v->getFunType() != Linear && v->getFunType() != Constant) {
       unfixedVars[v->getIndex()] -= mnl_;
     } else {
       --(unfixedVars[v->getIndex()]);
