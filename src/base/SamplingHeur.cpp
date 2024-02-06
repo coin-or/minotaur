@@ -65,7 +65,7 @@ void SamplingHeur::solve(NodePtr, RelaxationPtr, SolutionPoolPtr s_pool)
   std::memset(x, 0, n * sizeof(double));
 #if SPEW
   env_->getLogger()->msgStream(LogDebug2)
-      << "Checking if zero is feasible" << std::endl;
+      << me_ << " Checking if zero is feasible" << std::endl;
 #endif
   for(VariableConstIterator vit = p_->varsBegin(); vit != p_->varsEnd();
       ++vit) {
@@ -81,7 +81,8 @@ void SamplingHeur::solve(NodePtr, RelaxationPtr, SolutionPoolPtr s_pool)
       curr_obj = obj->eval(x, &error);
 #if SPEW
       env_->getLogger()->msgStream(LogDebug2)
-          << "zero is feasible. Objective value: " << curr_obj << std::endl;
+          << me_ << " zero is feasible. Objective value: " << curr_obj
+          << std::endl;
 #endif
       if(curr_obj < best_obj - 1e-6) {
         s_pool->addSolution(x, curr_obj);
@@ -116,14 +117,14 @@ void SamplingHeur::solve(NodePtr, RelaxationPtr, SolutionPoolPtr s_pool)
   ++stats_->checked;
 #if SPEW
   env_->getLogger()->msgStream(LogDebug2)
-      << "Checking if LB is feasible" << std::endl;
+      << me_ << " Checking if LB is feasible" << std::endl;
 #endif
   if(isFeasible_(xl)) {
     error = 0;
     curr_obj = obj->eval(xl, &error);
 #if SPEW
     env_->getLogger()->msgStream(LogDebug2)
-        << "LB is feasible. Objective value: " << curr_obj << std::endl;
+        << me_ << " LB is feasible. Objective value: " << curr_obj << std::endl;
 #endif
     if(curr_obj < best_obj - 1e-6) {
       s_pool->addSolution(xl, curr_obj);
@@ -133,7 +134,7 @@ void SamplingHeur::solve(NodePtr, RelaxationPtr, SolutionPoolPtr s_pool)
   }
 #if SPEW
   env_->getLogger()->msgStream(LogDebug2)
-      << "Checking if UB is feasible" << std::endl;
+      << me_ << " Checking if UB is feasible" << std::endl;
 #endif
   ++stats_->checked;
   if(isFeasible_(xu)) {
@@ -141,7 +142,7 @@ void SamplingHeur::solve(NodePtr, RelaxationPtr, SolutionPoolPtr s_pool)
     curr_obj = obj->eval(xu, &error);
 #if SPEW
     env_->getLogger()->msgStream(LogDebug2)
-        << "UB is feasible. Objective value: " << curr_obj << std::endl;
+        << me_ << " UB is feasible. Objective value: " << curr_obj << std::endl;
 #endif
     if(curr_obj < best_obj - 1e-6) {
       s_pool->addSolution(xu, curr_obj);
@@ -154,7 +155,8 @@ void SamplingHeur::solve(NodePtr, RelaxationPtr, SolutionPoolPtr s_pool)
   for(UInt i = 0; i < maxRand_; ++i) {
 #if SPEW
     env_->getLogger()->msgStream(LogDebug2)
-        << "Checking if random point " << i << " is feasible" << std::endl;
+        << me_ << " Checking if random point " << i << " is feasible"
+        << std::endl;
 #endif
     for(VariableConstIterator vit = p_->varsBegin(); vit != p_->varsEnd();
         ++vit) {
@@ -170,7 +172,7 @@ void SamplingHeur::solve(NodePtr, RelaxationPtr, SolutionPoolPtr s_pool)
       curr_obj = obj->eval(x, &error);
 #if SPEW
       env_->getLogger()->msgStream(LogDebug2)
-          << "Random point " << i
+          << me_ << " Random point " << i
           << " is feasible. Objective value: " << curr_obj << std::endl;
 #endif
       if(curr_obj < best_obj - 1e-6) {
@@ -187,15 +189,15 @@ void SamplingHeur::solve(NodePtr, RelaxationPtr, SolutionPoolPtr s_pool)
       getNewPoint_(x, xl, xu, s_pool);
 #if SPEW
       env_->getLogger()->msgStream(LogDebug2)
-          << "Checking if random point " << i + maxRand_ << " is feasible"
-          << std::endl;
+          << me_ << " Checking if random point " << i + maxRand_
+          << " is feasible" << std::endl;
 #endif
       if(isFeasible_(x)) {
         error = 0;
         curr_obj = obj->eval(x, &error);
 #if SPEW
         env_->getLogger()->msgStream(LogDebug2)
-            << "Random point " << i + maxRand_
+            << me_ << " Random point " << i + maxRand_
             << " is feasible. Objective value: " << curr_obj << std::endl;
 #endif
         if(curr_obj < best_obj - 1e-6) {

@@ -41,6 +41,7 @@ FixVarsHeur::FixVarsHeur(EnvPtr env, ProblemPtr p)
   stats_ = (FixVarsHeurStats*)new FixVarsHeurStats();
   stats_->numSol = 0;
   stats_->time = 0;
+  handlers_.clear();
 }
 
 FixVarsHeur::~FixVarsHeur()
@@ -66,17 +67,52 @@ void FixVarsHeur::solve(NodePtr, RelaxationPtr, SolutionPoolPtr s_pool)
     }
     while(unfixedVars.size() > 0) {
       FixVars_(unfixedVars);
-      if(presolve_()) {
+      if(presolve_(s_pool, unfixedVars)) {
         unfixVars_();
         restart = true;
         break;
       }
     }
     if(!restart) {
-      foundNewSol_(s_pool);
+      foundNewSol_(s_pool, restart);
+      unfixVars_();
       ++stats_->numSol;
     }
   }
+}
+
+void FixVarsHeur::foundNewSol_(SolutionPoolPtr s_pool, bool& restart)
+{
+  UInt n = p_->getNumVars();
+  double* xl = new double[n];
+  double best_obj = s_pool->getBestSolutionValue();
+  double curr_obj;
+  bool lbinf, ubinf;
+  int error = 0;
+
+  std::memset(xl, 0, n * sizeof(double));
+  for(VariableConstIterator vit = p_->varsBegin(); vit != p_->varsEnd();
+      ++vit) {
+    // We assume all variables are fixed here
+    xl[(*vit)->getIndex()] = (*vit)->getLb();
+  }
+  if(isFeasible_(xl)) {
+    error = 0;
+    curr_obj = obj->eval(xl, &error);
+#if SPEW
+    env_->getLogger()->msgStream(LogDebug2)
+        << me_ << "Found feasible solution. Objective value: " << curr_obj
+        << std::endl;
+#endif
+    if(curr_obj < best_obj - 1e-6) {
+      s_pool->addSolution(xl, curr_obj);
+    }
+    ++stats_->numSol;
+  } else {
+    restart = true;
+  }
+
+  delete[] xl;
 }
 
 void FixVarsHeur::initialize_()
@@ -114,7 +150,19 @@ void FixVarsHeur::initialize_()
 
 void FixVarsHeur::fix_(VariablePtr v)
 {
-  double fix_at = rand() % 10 < 8 ? v->getLb() : v->getUb();
+  double fix_at;
+  bool lbinf = v->getLb() <= -INFINITY;
+  bool ubinf = v->getUb() >= INFINITY;
+
+  if(lbinf && ubinf) {
+    fix_at = rand() % 10 < 8 ? -1000 : 1000;
+  } else if(lbinf) {
+    fix_at = v->getUb();
+  } else if(ubinf) {
+    fix_at = v->getLb();
+  } else {
+    fix_at = rand() % 10 < 8 ? v->getLb() : v->getUb();
+  }
   VarBoundMod2* m = 0;
 
   m = new VarBoundMod2(v, fix_at, fix_at);
@@ -225,6 +273,57 @@ bool FixVarsHeur::isFeasible_(const double* x)
     }
   }
   return true;
+}
+
+bool FixVarsHeur::presolve_(SolutionPoolPtr s_pool,
+                            std::map<UInt, UInt>& unfixedVars)
+{
+  SolveStatus status = Started;
+  ModVector pres_mod;
+  UIntVector gotFixed;
+  double tol = 1e-3;
+  VariablePtr v;
+
+  for(HandlerIterator it = handlers_.begin(); it != handlers_.end(); ++it) {
+    (*it)->simplePresolve(p_, s_pool, pres_mod, status);
+    mods_.insert(mods_.end(), pres_mod.begin(), pres_mod.end());
+    if(status == SolvedInfeasible) {
+      return true;
+    }
+  }
+
+  gotFixed.clear();
+  for(std::map<UInt, UInt>::iterator it = unfixedVars.begin();
+      it != unfixedVars.end(); ++it) {
+    v = p_->getVariable(it->first);
+    if(v->getUb() - v->getLb() < tol) {
+      gotFixed.push_back(it->first);
+    }
+  }
+
+  for(UIntVector::iterator it = gotFixed.begin(); it != gotFixed.end(); ++it) {
+    unfixedVars.erase(*it);
+  }
+  gotFixed.clear();
+  return false;
+}
+
+void FixVarsHeur::setHandlers(HandlerVector& handlers)
+{
+  handlers_ = handlers;
+}
+
+void FixVarsHeur::unfixVars_()
+{
+  ModificationRConstIterator mod_iter;
+  ModificationPtr mod;
+
+  for(mod_iter = mods_.rbegin(); mod_iter != mods_.rend(); ++mod_iter) {
+    mod = *mod_iter;
+    mod->undoToProblem(p_);
+    delete mod;
+  }
+  mods_.clear();
 }
 
 void FixVarsHeur::writeStats(std::ostream& out) const
