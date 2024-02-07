@@ -21,6 +21,7 @@
 #include "Engine.h"
 #include "EngineFactory.h"
 #include "Environment.h"
+#include "FixVarsHeur.h"
 #include "LPEngine.h"
 #include "LexicoBrancher.h"
 #include "LinearHandler.h"
@@ -199,6 +200,12 @@ BranchAndBound* Glob::createBab_(EnginePtr e, HandlerVector& handlers)
   if(env_->getOptions()->findBool("samplingheur")->getValue() == true) {
     SamplingHeurPtr s_heur = (SamplingHeurPtr) new SamplingHeur(env_, newp_);
     bab->addPreRootHeur(s_heur);
+  }
+
+  if(env_->getOptions()->findBool("fixvarsheur")->getValue() == true) {
+    FixVarsHeurPtr f_heur = (FixVarsHeurPtr) new FixVarsHeur(env_, newp_);
+    f_heur->setHandlers(handlers);
+    bab->addPreRootHeur(f_heur);
   }
 
   if(env_->getOptions()->findBool("msheur")->getValue() == true &&

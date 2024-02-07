@@ -55,7 +55,8 @@ void FixVarsHeur::solve(NodePtr, RelaxationPtr, SolutionPoolPtr s_pool)
 {
   bool restart = true;
   UInt min_iter = 3, max_iter = 10, iter = 0;
-  std::map<UInt, UInt> unfixedVars;
+  std::map<VariablePtr, UInt> unfixedVars;
+  double stime = env_->getTimer()->query();
 
   initialize_();
   while(iter < min_iter || (restart && iter < max_iter)) {
@@ -64,7 +65,13 @@ void FixVarsHeur::solve(NodePtr, RelaxationPtr, SolutionPoolPtr s_pool)
     unfixedVars.clear();
     for(VariableConstIterator vit = p_->varsBegin(); vit != p_->varsEnd();
         ++vit) {
-      unfixedVars.insert({(*vit)->getIndex(), (*vit)->getItmp()});
+      unfixedVars.insert({*vit, (*vit)->getItmp()});
+    }
+
+    consNumVar_.clear();
+    for(ConstraintConstIterator cit = p_->consBegin(); cit != p_->consEnd();
+        ++cit) {
+      consNumVar_.insert({*cit, (*cit)->getFunction()->getNumVars()});
     }
     while(unfixedVars.size() > 0) {
       FixVars_(unfixedVars);
@@ -73,13 +80,17 @@ void FixVarsHeur::solve(NodePtr, RelaxationPtr, SolutionPoolPtr s_pool)
         restart = true;
         break;
       }
+      for(std::map<VariablePtr, UInt>::iterator uit = unfixedVars.begin();
+          uit != unfixedVars.end(); ++uit) {
+        uit->second = uit->first->getItmp();
+      }
     }
     if(!restart) {
       foundNewSol_(s_pool, restart);
       unfixVars_();
-      ++stats_->numSol;
     }
   }
+  stats_->time = env_->getTimer()->query() - stime;
 }
 
 void FixVarsHeur::foundNewSol_(SolutionPoolPtr s_pool, bool& restart)
@@ -97,6 +108,7 @@ void FixVarsHeur::foundNewSol_(SolutionPoolPtr s_pool, bool& restart)
     xl[(*vit)->getIndex()] = (*vit)->getLb();
   }
   if(isFeasible_(xl)) {
+    ++stats_->numSol;
     error = 0;
     curr_obj = p_->getObjective()->eval(xl, &error);
 #if SPEW
@@ -118,7 +130,6 @@ void FixVarsHeur::foundNewSol_(SolutionPoolPtr s_pool, bool& restart)
 void FixVarsHeur::initialize_()
 {
   VariablePtr v;
-  ConstraintPtr c;
 
   if(p_->getNumCons() <= 2) {
     mbin_ = 10;
@@ -138,13 +149,6 @@ void FixVarsHeur::initialize_()
     } else {
       v->setItmp(v->getNumCons());
     }
-  }
-
-  consNumVar_.clear();
-  for(ConstraintConstIterator cit = p_->consBegin(); cit != p_->consEnd();
-      ++cit) {
-    c = *cit;
-    consNumVar_.insert({c, c->getFunction()->getNumVars()});
   }
 }
 
@@ -170,12 +174,13 @@ void FixVarsHeur::fix_(VariablePtr v)
   mods_.push_back(m);
 }
 
-void FixVarsHeur::FixVars_(std::map<UInt, UInt>& unfixedVars)
+void FixVarsHeur::FixVars_(std::map<VariablePtr, UInt>& unfixedVars)
 {
   ConstrSet covered;
   ConstraintPtr c;
   FunctionPtr f;
   VariablePtr v;
+  std::pair<ConstrSet::iterator, bool> ret;
 
   covered.clear();
   for(std::map<ConstraintPtr, UInt>::iterator it = consNumVar_.begin();
@@ -187,16 +192,18 @@ void FixVarsHeur::FixVars_(std::map<UInt, UInt>& unfixedVars)
       for(VarSetConstIterator vit = f->varsBegin(); vit != f->varsEnd();
           ++vit) {
         v = *vit;
-        if(unfixedVars.find(v->getIndex()) != unfixedVars.end()) {
+        if(unfixedVars.find(v) != unfixedVars.end()) {
           fix_(v);
           for(ConstrSet::iterator cit = v->consBegin(); cit != v->consEnd();
               ++cit) {
             c = *cit;
-            updateMap_(c, unfixedVars);
-            covered.insert(c);
+            ret = covered.insert(c);
+            if(ret.second == true) {
+              updateMap_(c, unfixedVars);
+            }
             --(consNumVar_[c]);
           }
-          unfixedVars.erase(v->getIndex());
+          unfixedVars.erase(v);
           break;
         }
       }
@@ -208,40 +215,46 @@ void FixVarsHeur::FixVars_(std::map<UInt, UInt>& unfixedVars)
     fix_(v);
     for(ConstrSet::iterator cit = v->consBegin(); cit != v->consEnd(); ++cit) {
       c = *cit;
-      updateMap_(c, unfixedVars);
-      covered.insert(c);
+      ret = covered.insert(c);
+      if(ret.second == true) {
+        updateMap_(c, unfixedVars);
+      }
       --(consNumVar_[c]);
     }
-    unfixedVars.erase(v->getIndex());
+    unfixedVars.erase(v);
   }
 }
 
-bool FixVarsHeur::mapCompare_(const std::pair<UInt, UInt>& p1,
-                              const std::pair<UInt, UInt>& p2)
+bool FixVarsHeur::mapCompare_(const std::pair<VariablePtr, UInt>& p1,
+                              const std::pair<VariablePtr, UInt>& p2)
 {
   return p1.second < p2.second;
 }
 
-VariablePtr FixVarsHeur::selectVarToFix_(std::map<UInt, UInt>& unfixedVars)
+VariablePtr
+FixVarsHeur::selectVarToFix_(std::map<VariablePtr, UInt>& unfixedVars)
 {
-  std::map<UInt, UInt>::iterator it =
+  std::map<VariablePtr, UInt>::iterator it =
       std::max_element(unfixedVars.begin(), unfixedVars.end(), mapCompare_);
-  return p_->getVariable(it->first);
+  return it->first;
 }
 
-void FixVarsHeur::updateMap_(ConstraintPtr c, std::map<UInt, UInt>& unfixedVars)
+void FixVarsHeur::updateMap_(ConstraintPtr c,
+                             std::map<VariablePtr, UInt>& unfixedVars)
 {
   FunctionPtr f = c->getFunction();
   VariablePtr v;
 
   for(VarSetConstIterator vit = f->varsBegin(); vit != f->varsEnd(); ++vit) {
     v = *vit;
-    if(v->getType() == Binary || v->getType() == ImplBin) {
-      unfixedVars[v->getIndex()] -= mbin_;
-    } else if(v->getFunType() != Linear && v->getFunType() != Constant) {
-      unfixedVars[v->getIndex()] -= mnl_;
-    } else {
-      --(unfixedVars[v->getIndex()]);
+    if(unfixedVars.find(v) != unfixedVars.end()) {
+      if(v->getType() == Binary || v->getType() == ImplBin) {
+        unfixedVars[v] -= mbin_;
+      } else if(v->getFunType() != Linear && v->getFunType() != Constant) {
+        unfixedVars[v] -= mnl_;
+      } else {
+        --(unfixedVars[v]);
+      }
     }
   }
 }
@@ -277,13 +290,14 @@ bool FixVarsHeur::isFeasible_(const double* x)
 }
 
 bool FixVarsHeur::presolve_(SolutionPoolPtr s_pool,
-                            std::map<UInt, UInt>& unfixedVars)
+                            std::map<VariablePtr, UInt>& unfixedVars)
 {
   SolveStatus status = Started;
   ModVector pres_mod;
-  UIntVector gotFixed;
+  VarVector gotFixed;
   double tol = 1e-3;
   VariablePtr v;
+  ConstraintPtr c;
 
   for(HandlerIterator it = handlers_.begin(); it != handlers_.end(); ++it) {
     (*it)->simplePresolve(p_, s_pool, pres_mod, status);
@@ -294,16 +308,21 @@ bool FixVarsHeur::presolve_(SolutionPoolPtr s_pool,
   }
 
   gotFixed.clear();
-  for(std::map<UInt, UInt>::iterator it = unfixedVars.begin();
+  for(std::map<VariablePtr, UInt>::iterator it = unfixedVars.begin();
       it != unfixedVars.end(); ++it) {
-    v = p_->getVariable(it->first);
+    v = it->first;
     if(v->getUb() - v->getLb() < tol) {
-      gotFixed.push_back(it->first);
+      gotFixed.push_back(v);
     }
   }
 
-  for(UIntVector::iterator it = gotFixed.begin(); it != gotFixed.end(); ++it) {
-    unfixedVars.erase(*it);
+  for(VariableIterator it = gotFixed.begin(); it != gotFixed.end(); ++it) {
+    v = *it;
+    for(ConstrSet::iterator cit = v->consBegin(); cit != v->consEnd(); ++cit) {
+      c = *cit;
+      --(consNumVar_[c]);
+    }
+    unfixedVars.erase(v);
   }
   gotFixed.clear();
   return false;

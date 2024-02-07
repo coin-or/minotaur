@@ -200,6 +200,10 @@ void Environment::createDefaultOptions_()
   options_->insert(b_option);
 
   b_option = (BoolOptionPtr) new Option<bool>(
+      "FixVarsHeur", "Use FixVars heuristic for MINLP: <0/1>", true, false);
+  options_->insert(b_option);
+
+  b_option = (BoolOptionPtr) new Option<bool>(
       "multisolheur", "Use multisol heuristic for MINLP: <0/1>", true, false);
   options_->insert(b_option);
 

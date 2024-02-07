@@ -79,7 +79,7 @@ protected:
   void fix_(VariablePtr v);
 
   // Fix Variables
-  void FixVars_(std::map<UInt, UInt>& unfixedVars);
+  void FixVars_(std::map<VariablePtr, UInt>& unfixedVars);
 
   // Update the solution in solution pool if found
   void foundNewSol_(SolutionPoolPtr s_pool, bool& restart);
@@ -91,20 +91,21 @@ protected:
   bool isFeasible_(const double* x);
 
   // Compares two elements in a map
-  static bool mapCompare_(const std::pair<UInt, UInt>& p1,
-                          const std::pair<UInt, UInt>& p2);
+  static bool mapCompare_(const std::pair<VariablePtr, UInt>& p1,
+                          const std::pair<VariablePtr, UInt>& p2);
 
   // presolve here.
-  bool presolve_(SolutionPoolPtr s_pool, std::map<UInt, UInt>& unfixedVars);
+  bool presolve_(SolutionPoolPtr s_pool,
+                 std::map<VariablePtr, UInt>& unfixedVars);
 
   // gets the best variable to fix
-  VariablePtr selectVarToFix_(std::map<UInt, UInt>& unfixedVars);
+  VariablePtr selectVarToFix_(std::map<VariablePtr, UInt>& unfixedVars);
 
   // Unfix fixed variables.
   void unfixVars_();
 
   // update Map of each variable in the constraint once it is covered
-  void updateMap_(ConstraintPtr c, std::map<UInt, UInt>& unfixedVars);
+  void updateMap_(ConstraintPtr c, std::map<VariablePtr, UInt>& unfixedVars);
 };
 
 typedef FixVarsHeur* FixVarsHeurPtr;
