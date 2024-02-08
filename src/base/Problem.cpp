@@ -343,15 +343,14 @@ int Problem::checkConVars() const
 }
 
 // Here code for Contraints Classification
-
 void Problem::classifyCon(bool printTypes)
 {
   ConstraintPtr c;
   FunctionPtr f;
   LinearFunctionPtr lf;
-  VariablePtr v = 0;
+  VariablePtr v ;
   double wt;
-  const double tol = 1e-6;
+  const double tol = 1e-5;
   double INFTY = std::numeric_limits<double>::infinity();
   int ag = 0, vb = 0, sp = 0, sc = 0, mb = 0, gb = 0, ik = 0, cc = 0, ek = 0,
       kc = 0, spp = 0, ikk = 0, pr = 0, bp = 0, ns = 0;
@@ -393,31 +392,31 @@ void Problem::classifyCon(bool printTypes)
       v = it->first;
       wt = it->second;
       if(f->getNumVars() == 2) {
-        if(wt > tol) {
+        if(wt > 0) {
           wt1 = wt;
-        } else if(wt < tol) {
+        } else if(wt < 0) {
           wt2 = wt;
         }
       }
-      if(wt == 1) {
+      if(abs(wt-1) < tol) { 
         ++nposcoefone;
-      } else if(wt == -1) {
+      } else if(abs(wt+1) < tol) {
         ++nnegcoefone;
       }
       if(wt > tol) {
         ++nposcoef;
-      } else if(wt < tol) {
+      } else if(wt < -tol) {
         ++nnegcoef;
       }
       if(wt > tol && v->getType() != Binary && v->getType() != Integer) {
         ++nposcont;
-      } else if(wt < tol && v->getType() != Binary && v->getType() != Integer) {
+      } else if(wt < -tol && v->getType() != Binary && v->getType() != Integer) {
         ++nnegcont;
       }
       if(v->getType() == Binary) {
         if(wt > tol) {
           ++nposbin;
-        } else if(wt < tol) {
+        } else if(wt < -tol) {
           ++nnegbin;
           sumnegwt += abs(wt);
         }
@@ -425,12 +424,11 @@ void Problem::classifyCon(bool printTypes)
       if(v->getType() == Integer) {
         if(wt > tol) {
           ++nposint;
-        } else if(wt < tol) {
+        } else if(wt < -tol) {
           ++nnegint;
         }
       }
     }
-
     //for loop used here to find out condition for bin packing if con >=1 means satisfying (ub+sum of neg wt==wt of any of variable)
     for(VariableGroupConstIterator it2 = lf->termsBegin();
         it2 != lf->termsEnd(); ++it2) {
@@ -448,7 +446,7 @@ void Problem::classifyCon(bool printTypes)
         if(c->getLb() == c->getUb()) {
           if(printTypes == true) {
             logger_->msgStream(LogError)
-                << me_ << "Type is Aggregation!! " << std::endl;
+                << me_ << "Type is Aggregation" << std::endl;
             c->write(logger_->msgStream(LogError));
           }
           ++ag;
@@ -456,13 +454,12 @@ void Problem::classifyCon(bool printTypes)
         }
 
         //Code for Precedence
-        else if(wt1 == -wt2 && nposcoef == 1 && nnegcoef == 1 &&
-                (c->getUb() <= INFTY && c->getLb() >= -INFTY) &&
-                (nposbin + nnegbin == 2 || nposint + nnegint == 2 ||
-                 nposcont + nnegcont == 2)) {
+        else if(wt1== -wt2 && (c->getUb() <= INFTY && c->getLb() >= -INFTY) &&
+                ((nposbin + nnegbin == 2) || (nposint + nnegint == 2) ||
+                 (nposcont + nnegcont == 2))) {
           if(printTypes == true) {
             logger_->msgStream(LogError)
-                << me_ << "Type is Precendence!! " << std::endl;
+                << me_ << "Type is Precendence" << std::endl;
             c->write(logger_->msgStream(LogError));
           }
           ++pr;
@@ -470,13 +467,13 @@ void Problem::classifyCon(bool printTypes)
         }
 
         // Code for Variable Bound
-        else if(((nposbin + nnegbin == 2) ||
-                 ((nposbin || nnegbin) + (nposcont || nnegcont) == 2) ||
-                 ((nposbin || nnegbin) + (nposint || nnegint) == 2)) &&
+        else if(((nposbin + nnegbin == 2)||(nposcoefone+nnegcoefone==2) ||
+                 ((nposbin + nnegbin==1) && (nposcont + nnegcont) == 1) ||
+                 ((nposbin + nnegbin==1) && (nposint + nnegint) == 1)) &&
                 (c->getUb() <= INFTY && c->getLb() >= -INFTY)) {
           if(printTypes == true) {
             logger_->msgStream(LogError)
-                << me_ << "Type is Variable Bound!! " << std::endl;
+                << me_ << "Type is Variable Bound" << std::endl;
             c->write(logger_->msgStream(LogError));
           }
           ++vb;
@@ -487,12 +484,13 @@ void Problem::classifyCon(bool printTypes)
 
     //Code for Set Partitioning
     if(notHandled) {
-      if(v->getType() == Binary) { // TODO: Krushna! v is not set
+      if(nposbin + nnegbin == nvars) { 
         if(nposcoefone + nnegcoefone == nvars) {
-          if((c->getLb() == 1 - nnegcoefone && c->getUb() == 1 - nnegcoefone)) {
+          if((c->getLb() == 1 - nnegcoefone && c->getUb() == 1 - nnegcoefone)|| 
+	     (c->getLb() == nposcoefone-1 && c->getUb() == nposcoefone-1)) {
             if(printTypes == true) {
               logger_->msgStream(LogError)
-                  << me_ << "Type is Set Partitioning!! " << std::endl;
+                  << me_ << "Type is Set Partitioning" << std::endl;
               c->write(logger_->msgStream(LogError));
             }
             ++sp;
@@ -500,11 +498,11 @@ void Problem::classifyCon(bool printTypes)
           }
 
           //Code for Set Packing
-          else if((c->getLb() == nposcoefone - 1 && c->getUb() == INFTY) ||
-                  (c->getUb() == 1 - nnegcoefone && c->getLb() == -INFTY)) {
+          else if((c->getLb() == nposcoefone - 1 ||c->getUb() == 1 - nnegcoefone)&&
+                  (c->getLb() >= -INFTY ||c->getUb() <= INFTY)) {
             if(printTypes == true) {
               logger_->msgStream(LogError)
-                  << me_ << "Type is Set Packing!! " << std::endl;
+                  << me_ << "Type is Set Packing" << std::endl;
               c->write(logger_->msgStream(LogError));
             }
             ++spp;
@@ -512,11 +510,11 @@ void Problem::classifyCon(bool printTypes)
           }
 
           //Code for Set Covering
-          else if((c->getLb() == 1 - nnegcoefone && c->getUb() == INFTY) ||
-                  (c->getUb() == nposcoefone - 1 && c->getLb() == -INFTY)) {
+          else if((c->getLb() == 1 - nnegcoefone && c->getUb() <= INFTY) ||
+                  (c->getUb() == nposcoefone - 1 && c->getLb() >= -INFTY)) {
             if(printTypes == true) {
               logger_->msgStream(LogError)
-                  << me_ << "Type is Set Covering!! " << std::endl;
+                  << me_ << "Type is Set Covering" << std::endl;
               c->write(logger_->msgStream(LogError));
             }
             ++sc;
@@ -524,10 +522,10 @@ void Problem::classifyCon(bool printTypes)
           }
 
           //Code for Cardinality
-          else if(c->getLb() == c->getUb() && c->getUb() >= 2 + nnegcoefone) {
+          else if(c->getLb() == c->getUb() && c->getUb() <= 2 + nnegcoefone) {
             if(printTypes == true) {
               logger_->msgStream(LogError)
-                  << me_ << "Type is Cardinality!! " << std::endl;
+                  << me_ << "Type is Cardinality" << std::endl;
               c->write(logger_->msgStream(LogError));
             }
             ++cc;
@@ -540,23 +538,10 @@ void Problem::classifyCon(bool printTypes)
                   (isInt(c->getUb()))) {
             if(printTypes == true) {
               logger_->msgStream(LogError)
-                  << me_ << "Type is Invarient Knapsack!! " << std::endl;
+                  << me_ << "Type is Invarient Knapsack" << std::endl;
               c->write(logger_->msgStream(LogError));
             }
             ++ik;
-            notHandled = false;
-          }
-
-          //Code for mixed binary
-          else if(nposbin + nnegbin == nvars &&
-                  ((c->getLb() >= -INFTY && c->getUb() <= INFTY) ||
-                   (c->getUb() == c->getLb()))) {
-            if(printTypes == true) {
-              logger_->msgStream(LogError)
-                  << me_ << "Type is Mixed Binary!! " << std::endl;
-              c->write(logger_->msgStream(LogError));
-            }
-            ++mb;
             notHandled = false;
           }
         }
@@ -567,7 +552,7 @@ void Problem::classifyCon(bool printTypes)
              (isInt(c->getUb()))) {
             if(printTypes == true) {
               logger_->msgStream(LogError)
-                  << me_ << "Type is Equation Knapsack!! " << std::endl;
+                  << me_ << "Type is Equation Knapsack" << std::endl;
               c->write(logger_->msgStream(LogError));
             }
             ++ek;
@@ -579,7 +564,7 @@ void Problem::classifyCon(bool printTypes)
                   con >= 1) {
             if(printTypes == true) {
               logger_->msgStream(LogError)
-                  << me_ << "Type Bin Packing!! " << std::endl;
+                  << me_ << "Type Bin Packing" << std::endl;
               c->write(logger_->msgStream(LogError));
             }
             ++bp;
@@ -587,39 +572,27 @@ void Problem::classifyCon(bool printTypes)
           }
 
           // Code for Knapsack
-          else if(((c->getLb() + 2 <= sumnegwt && c->getUb() == INFTY) &&
+          else if(((c->getLb() + 2 <= sumnegwt && c->getUb() <= INFTY) &&
                    (isInt(c->getLb()))) ||
-                  (c->getUb() + sumnegwt >= 2 && c->getLb() == -INFTY &&
+                  (c->getUb() + sumnegwt >= 2 && c->getLb() >= -INFTY &&
                    (isInt(c->getUb())))) {
             if(printTypes == true) {
               logger_->msgStream(LogError)
-                  << me_ << "Type is Knapsack!! " << std::endl;
+                  << me_ << "Type is Knapsack" << std::endl;
               c->write(logger_->msgStream(LogError));
             }
             ++kc;
             notHandled = false;
           }
-          // Code for Mixed Binary
-          else if(nposbin + nnegbin == nvars &&
-                  ((c->getLb() >= -INFTY && c->getUb() <= INFTY) ||
-                   (c->getUb() == c->getLb()))) {
-            if(printTypes == true) {
-              logger_->msgStream(LogError)
-                  << me_ << "Type is Mixed Binary!! " << std::endl;
-              c->write(logger_->msgStream(LogError));
-            }
-            ++mb;
-            notHandled = false;
-          }
         }
       }
       //Code for Integer Knapsack
-      else if(nposcoef + nnegcoef == nvars && v->getType() == Integer &&
+      else if(nposcoef + nnegcoef == nvars && nposint+nnegint==nvars &&
               (isInt(c->getUb()))) {
-        if(c->getLb() == -INFTY && c->getUb() <= INFTY) {
+        if(c->getLb() >= -INFTY && c->getUb() <= INFTY) {
           if(printTypes == true) {
             logger_->msgStream(LogError)
-                << me_ << "Type is Integer Knapsack!! " << std::endl;
+                << me_ << "Type is Integer Knapsack" << std::endl;
             c->write(logger_->msgStream(LogError));
           }
           ++ikk;
@@ -627,35 +600,34 @@ void Problem::classifyCon(bool printTypes)
         }
       }
       //Code for Mixed Binary
-      else if(nposcont + nnegcont + nposbin + nnegbin + nposint + nnegint ==
-              nvars) {
-        if(((c->getLb() == -INFTY && c->getUb() <= INFTY) ||
+      else if(nposcont + nnegcont + nposint + nnegint ==nvars) {
+        if(((c->getLb() >= -INFTY && c->getUb() <= INFTY) ||
             (c->getUb() == c->getLb())) &&
            (nposbin + nnegbin >= 1)) {
           if(printTypes == true) {
             logger_->msgStream(LogError)
-                << me_ << "Type is Mixed Binary!! " << std::endl;
-            c->write(logger_->msgStream(LogError));
-          }
-          ++mb;
-          notHandled = false;
-        }
-      } else if(nposcont + nnegcont + nposint + nnegint == nvars) {
-        if((c->getLb() == -INFTY && c->getUb() <= INFTY) ||
-           (c->getUb() == c->getLb())) {
-          if(printTypes == true) {
-            logger_->msgStream(LogError)
-                << me_ << "Type is General Mixed Linear!! " << std::endl;
+                << me_ << "Type is General Mixed Binary" << std::endl;
             c->write(logger_->msgStream(LogError));
           }
           ++gb;
+          notHandled = false;
+        }
+      } else if(nposcont + nnegcont + nposint + nnegint + nposbin + nnegbin == nvars) {
+        if((c->getLb() >= -INFTY && c->getUb() <= INFTY) ||
+           (c->getUb() == c->getLb())) {
+          if(printTypes == true) {
+            logger_->msgStream(LogError)
+                << me_ << "Type is General Linear" << std::endl;
+            c->write(logger_->msgStream(LogError));
+          }
+          ++mb;
           notHandled = false;
         }
       }
       if(notHandled) {
         if(printTypes == true) {
           logger_->msgStream(LogError)
-              << me_ << "No specific structure!! " << std::endl;
+              << me_ << "No specific structure" << std::endl;
           c->write(logger_->msgStream(LogError));
         }
         ++ns;
@@ -670,16 +642,16 @@ void Problem::classifyCon(bool printTypes)
       << "|Precedence constraint        |" << std::setw(7) << pr << "     |\n"
       << "|Variable bound constraint    |" << std::setw(7) << vb << "     |\n"
       << "|Partitioning constraint      |" << std::setw(7) << sp << "     |\n"
-      << "|Set covering constraint      |" << std::setw(7) << sc << "     |\n"
-      << "|Mixed binary constraint      |" << std::setw(7) << mb << "     |\n"
-      << "|General mixed constraint     |" << std::setw(7) << gb << "     |\n"
       << "|Set Packing constraint       |" << std::setw(7) << spp << "     |\n"
+      << "|Set covering constraint      |" << std::setw(7) << sc << "     |\n"
       << "|Cardinality constraint       |" << std::setw(7) << cc << "     |\n"
       << "|Invariant knapsack constraint|" << std::setw(7) << ik << "     |\n"
       << "|Equation knapsack constraint |" << std::setw(7) << ek << "     |\n"
       << "|Bin packing constraint       |" << std::setw(7) << bp << "     |\n"
       << "|Knapsack constraint          |" << std::setw(7) << kc << "     |\n"
       << "|Integer knapsack constraint  |" << std::setw(7) << ikk << "     |\n"
+      << "|Mixed binary constraint      |" << std::setw(7) << gb << "     |\n"
+      << "|General linear constraint    |" << std::setw(7) << mb << "     |\n"
       << "|No specific structure        |" << std::setw(7) << ns << "     |\n"
       << "--------------------------------------------\n";
 }

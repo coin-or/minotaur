@@ -172,6 +172,12 @@ SolveStatus Presolver::solve()
     problem_->write(logger_->msgStream(LogNone));
   }
 
+  if (env_->getOptions()->findBool("display_presolved_size")->getValue()==true) {
+    env_->getLogger()->msgStream(LogInfo) << me_ << "Starting constraint classification\n";
+    problem_->classifyCon(false);
+    env_->getLogger()->msgStream(LogInfo) << me_ << "Finished constraint classification\n";
+  }
+
   return status_;
 }
 
