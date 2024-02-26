@@ -940,6 +940,9 @@ void SimpleTransformer::reformulate(ProblemPtr& newp, HandlerVector& handlers,
     handlers.push_back(ihandler);
   }
   lHandler_ = (LinearHandlerPtr) new LinearHandler(env_, newp_);
+
+  // disable deletion of vars and cons as we do not have a post-solve after
+  // transformation yet.
   lHandler_->setPreOptPurgeVars(false);
   lHandler_->setPreOptPurgeCons(false);
   lHandler_->setPreOptDualFix(false);
