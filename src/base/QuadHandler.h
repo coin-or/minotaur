@@ -123,6 +123,8 @@ public:
   // Does nothing.
   void relaxNodeInc(NodePtr node, RelaxationPtr rel, bool* is_inf);
 
+  void removeCuts(RelaxationPtr rel, ConstSolutionPtr sol);
+
   // base class method. Adds linearlization cuts when available.
   void separate(ConstSolutionPtr sol, NodePtr node, RelaxationPtr rel,
                 CutManager* cutman, SolutionPoolPtr s_pool, ModVector& p_mods,
@@ -142,10 +144,11 @@ public:
 private:
   /// Store statistics of presolving.
   struct SepaStats {
-    int iters;   ///> Number of times separation routine called.
-    int cuts;    ///> Number of total cuts added.
-    int optcuts; ///> Number of optional cuts.
-    double time; ///> Total time used in separation
+    int iters;       ///> Number of times separate called.
+    int tangentcuts; ///> Number of total cuts added.
+    int optcuts;     ///> Number of optional cuts added.
+    int optrem;      ///> Number of optional cuts removed.
+    double time;     ///> Total time used in separation
   };
 
   /// Store statistics of presolving.
@@ -251,6 +254,9 @@ private:
 
   /// if true only then tightenQuad_ will be called every node
   bool doQT_;
+
+  /// Optional cuts that can be removed
+  ConstraintVector optCuts_;
 
   /// Relative feasibility tolerance
   double rTol_;
@@ -505,6 +511,9 @@ private:
    */
   void getTermBnds_(VariablePtr v, double a, double b, double& lb, double& ub);
 
+  /// Return true if the cut is active at the given solution
+  bool isActive_(ConstraintPtr c, ConstSolutionPtr sol);
+
   /// Return true if xval is one of the bounds of variable x
   bool isAtBnds_(ConstVariablePtr x, double xval);
 
@@ -581,6 +590,9 @@ private:
    */
 
   void relax_(RelaxationPtr rel, bool* is_inf);
+
+  /// Remove the given cut
+  void removeCut_(RelaxationPtr rel, ConstraintPtr c);
 
   /**
    * \brief Resetting the bounds on original variables

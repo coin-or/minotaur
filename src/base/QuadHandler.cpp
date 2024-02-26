@@ -76,6 +76,7 @@ QuadHandler::QuadHandler(EnvPtr env, ProblemPtr problem)
   defaultUb_ = -1e12;
   doQT_ = false;
   simplexCut_ = 0;
+  optCuts_.clear();
 }
 
 QuadHandler::QuadHandler(EnvPtr env, ProblemPtr problem, ProblemPtr orig_p)
@@ -98,6 +99,7 @@ QuadHandler::QuadHandler(EnvPtr env, ProblemPtr problem, ProblemPtr orig_p)
   defaultUb_ = -1e12;
   doQT_ = false;
   simplexCut_ = 0;
+  optCuts_.clear();
 }
 
 QuadHandler::~QuadHandler()
@@ -122,6 +124,7 @@ QuadHandler::~QuadHandler()
   if(simplexCut_) {
     delete simplexCut_;
   }
+  optCuts_.clear();
 }
 
 void QuadHandler::addConstraint(ConstraintPtr newcon)
@@ -826,7 +829,7 @@ void QuadHandler::addCut_(VariablePtr x, VariablePtr y, double xl, double yl,
      2 * xl * xval - yval > yl * (1 + 1e-4)) {
     ConstraintPtr c = addTangent_(x, y, xl, rel);
     ifcuts = true;
-    ++sStats_.cuts;
+    ++sStats_.tangentcuts;
 #if SPEW
     logger_->msgStream(LogDebug2) << me_ << "new cut added" << std::endl;
     c->write(logger_->msgStream(LogDebug2));
@@ -892,6 +895,15 @@ void QuadHandler::coeffImprov_()
       }
     }
   }
+}
+
+bool QuadHandler::isActive_(ConstraintPtr c, ConstSolutionPtr sol)
+{
+  int error = 0;
+  const double* x = sol->getPrimal();
+  double act = c->getActivity(x, &error);
+
+  return (fabs(act - c->getLb()) < bTol_ || fabs(act - c->getUb()) < bTol_);
 }
 
 bool QuadHandler::isAtBnds_(ConstVariablePtr x, double xval)
@@ -1611,6 +1623,31 @@ void QuadHandler::relaxNodeInc(NodePtr, RelaxationPtr, bool*)
   // do nothing. Presolve will take care of tightening bounds
 }
 
+void QuadHandler::removeCuts(RelaxationPtr rel, ConstSolutionPtr sol)
+{
+  ConstraintPtr c;
+  for(ConstraintConstIterator cit = optCuts_.begin(); cit != optCuts_.end();
+      ++cit) {
+    c = *cit;
+    if(!isActive_(c, sol)) {
+      removeCut_(rel, c);
+    }
+  }
+  rel->delMarkedCons();
+}
+
+void QuadHandler::removeCut_(RelaxationPtr rel, ConstraintPtr c)
+{
+  rel->markDelete(c);
+  ++sStats_.optrem;
+#if SPEW
+  logger_->msgStream(LogDebug2)
+      << me_ << "The following cut was removed because it was inactive"
+      << std::endl;
+  c->write(logger_->msgStream(LogDebug2));
+#endif
+}
+
 void QuadHandler::resetStats_()
 {
   pStats_.iters = 0;
@@ -1620,8 +1657,9 @@ void QuadHandler::resetStats_()
   pStats_.nMods = 0;
 
   sStats_.iters = 0;
-  sStats_.cuts = 0;
+  sStats_.tangentcuts = 0;
   sStats_.optcuts = 0;
+  sStats_.optrem = 0;
   sStats_.time = 0.0;
 
   nlpStats_.flag = false;
@@ -1695,7 +1733,7 @@ void QuadHandler::separate(ConstSolutionPtr sol, NodePtr node,
   }
 
   if(!node->getParent() && simplexCut_ && (*status != SepaResolve)) {
-    ncuts = simplexCut_->generateCuts(rel, sol);
+    ncuts = simplexCut_->generateCuts(rel, sol, optCuts_);
     sStats_.optcuts += ncuts;
     if(ncuts > 0) {
       *status = SepaResolve;
@@ -3479,12 +3517,15 @@ void QuadHandler::writeStats(std::ostream& out) const
       << std::endl;
 
   out << me_ << "Statistics for separation by QuadHandler:" << std::endl
-      << me_ << "Number of calls to separate    = " << sStats_.iters
+      << me_ << "Number of calls to separate     = " << sStats_.iters
       << std::endl
-      << me_ << "Number of tangent cuts added   = " << sStats_.cuts << std::endl
-      << me_ << "Number of optional cuts added  = " << sStats_.optcuts
+      << me_ << "Number of tangent cuts added    = " << sStats_.tangentcuts
       << std::endl
-      << me_ << "Time taken in separation       = " << sStats_.time
+      << me_ << "Number of optional cuts added   = " << sStats_.optcuts
+      << std::endl
+      << me_ << "Number of optional cuts removed = " << sStats_.optrem
+      << std::endl
+      << me_ << "Time taken in separation        = " << sStats_.time
       << std::endl;
 
   out << me_ << "Statistics for Bound Tightening:" << std::endl

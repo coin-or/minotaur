@@ -115,7 +115,8 @@ bool SimplexQuadCutGen::doCutting(double curlb)
   return false;
 }
 
-int SimplexQuadCutGen::generateCuts(RelaxationPtr rel, ConstSolutionPtr sol)
+int SimplexQuadCutGen::generateCuts(RelaxationPtr rel, ConstSolutionPtr sol,
+                                    ConstraintVector& added)
 {
   SimplexCutVector cuts;
   ConstraintPtr c;
@@ -160,7 +161,8 @@ int SimplexQuadCutGen::generateCuts(RelaxationPtr rel, ConstSolutionPtr sol)
     stats_.gencuts += iter_cuts;
     env_->getLogger()->msgStream(LogDebug)
         << me_ << "No. of cuts generated: " << iter_cuts << std::endl;
-    addCutsToRel_(cuts, rel, sol->getPrimal(), iter_cuts);
+    //added.clear();
+    addCutsToRel_(cuts, rel, sol->getPrimal(), iter_cuts, added);
     stats_.cutsadded += iter_cuts;
     env_->getLogger()->msgStream(LogDebug)
         << me_ << "No. of cuts added: " << iter_cuts << std::endl;
@@ -190,7 +192,8 @@ void SimplexQuadCutGen::disableFactorization()
 }
 
 void SimplexQuadCutGen::addCutsToRel_(SimplexCutVector cuts, RelaxationPtr rel,
-                                      const double* x, UInt& ncuts)
+                                      const double* x, UInt& ncuts,
+                                      ConstraintVector& added)
 {
   SimplexCutPtr cut;
   LinearFunctionPtr lf;
@@ -237,6 +240,7 @@ void SimplexQuadCutGen::addCutsToRel_(SimplexCutVector cuts, RelaxationPtr rel,
     }
     f = (FunctionPtr) new Function(lf);
     c = rel->newConstraint(f, cut->lb, cut->ub);
+    added.push_back(c);
     ++ncuts;
 #if SPEW
     env_->getLogger()->msgStream(LogDebug)

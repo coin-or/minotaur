@@ -310,6 +310,11 @@ public:
   virtual void relaxNodeInc(NodePtr node, RelaxationPtr rel, bool* is_inf) = 0;
 
   /**
+   * Remove optional cuts added by the handler if not required now.
+   */
+  virtual void removeCuts(RelaxationPtr, ConstSolutionPtr) { }
+
+  /**
    * \brief add cuts to separate a given point.
    *
    * Add cuts to the relaxation to cutoff a solution. We assume that all

@@ -93,7 +93,8 @@ public:
   bool doCutting(double curlb);
 
   // Generate the cuts that violate the given point
-  int generateCuts(RelaxationPtr rel, ConstSolutionPtr sol);
+  int generateCuts(RelaxationPtr rel, ConstSolutionPtr sol,
+                   ConstraintVector& added);
 
   // get preprocessing info from the simplex tableau
   void preprocessSimplexTab();
@@ -177,7 +178,7 @@ private:
   // \param[in] rel - Relaxation to which the cuts needs to be added
   // \param[in] x - The current LP solution
   void addCutsToRel_(SimplexCutVector cuts, RelaxationPtr rel, const double* x,
-                     UInt& ncuts);
+                     UInt& ncuts, ConstraintVector& added);
 
   // Calculate the depth of cut from the current point
   void calcDepth_(SimplexCutVector cuts, const double* x);
