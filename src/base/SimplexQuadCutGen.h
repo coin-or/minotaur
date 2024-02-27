@@ -102,6 +102,10 @@ public:
   void writeStats(std::ostream& out) const;
 
 private:
+  // Average sparsity of the relaxation. This is computed as the total number of
+  // nonzeros in the coefficient matrix divided by the number of constraints.
+  double avgSparsity_;
+
   // Bounds after each round of cutting, will have max size of nrounds_
   std::vector<int> bounds_;
 
@@ -116,6 +120,9 @@ private:
 
   // LP Engine to access the Simplex tableau
   LPEnginePtr lpe_;
+
+  // max number of terms allowed in the cut
+  UInt maxTerms_;
 
   // For printing msgs
   static const std::string me_;

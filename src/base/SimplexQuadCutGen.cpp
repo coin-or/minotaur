@@ -54,7 +54,9 @@ SimplexQuadCutGen::SimplexQuadCutGen(EnvPtr env, ProblemPtr p, LPEnginePtr lpe,
     tabInfo_(0),
     ub_(ub)
 {
+  avgSparsity_ = -1;
   bounds_.clear();
+  maxTerms_ = 200;
   nrounds_ = 3;
   minChangeFrac_ = 0.1;
   ncuts_ = 0;
@@ -126,7 +128,17 @@ int SimplexQuadCutGen::generateCuts(RelaxationPtr rel, ConstSolutionPtr sol,
   UInt iter_cuts = 0;
   double stime = timer_->query();
   double iter_time;
+  UInt terms;
 
+  if(avgSparsity_ < 0) {
+    terms = 0;
+    for(ConstraintConstIterator cit = rel->consBegin(); cit != rel->consEnd();
+        ++cit) {
+      c = *cit;
+      terms += c->getFunction()->getLinearFunction()->getNumTerms();
+    }
+    avgSparsity_ = ((double)terms) / rel->getNumCons();
+  }
   if(doCutting(sol->getObjValue())) {
     ++stats_.numrounds;
     preprocessSimplexTab();
@@ -200,6 +212,7 @@ void SimplexQuadCutGen::addCutsToRel_(SimplexCutVector cuts, RelaxationPtr rel,
   FunctionPtr f;
   ConstraintPtr c = 0;
   double minelem;
+  UInt factor = 3;
 
   ncuts = 0;
 
@@ -222,6 +235,16 @@ void SimplexQuadCutGen::addCutsToRel_(SimplexCutVector cuts, RelaxationPtr rel,
     }
     lf = (LinearFunctionPtr) new LinearFunction(cut->coef, rel->varsBegin(),
                                                 rel->varsEnd(), 1e-9);
+    if(lf->getNumTerms() > maxTerms_ ||
+       lf->getNumTerms() > factor * avgSparsity_) {
+#if SPEW
+      env_->getLogger()->msgStream(LogDebug)
+          << me_ << " Cut not added since it is very dense" << std::endl;
+#endif
+      delete cut;
+      delete lf;
+      continue;
+    }
     env_->getLogger()->msgStream(LogDebug)
         << me_ << "Depth of cut = " << std::fixed << std::setprecision(6)
         << cut->depth << std::endl;
