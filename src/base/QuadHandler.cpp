@@ -2265,6 +2265,7 @@ bool QuadHandler::tightenLP_(RelaxationPtr rel, double bestSol, bool* changed,
   bool is_inf;
   bool c1;
   int err;
+  double tol = 1e-4;
   UInt itmp;
 
   lp = rel->clone(env_);
@@ -2297,7 +2298,7 @@ bool QuadHandler::tightenLP_(RelaxationPtr rel, double bestSol, bool* changed,
       lflp->addTerm(v, 1.0);
       flp = (FunctionPtr) new Function(lflp);
       lp->changeObj(flp, 0.0);
-      lb = getBndByLP_(is_inf);
+      lb = getBndByLP_(is_inf) - tol;
       if(is_inf) {
         continue;
       }
@@ -2310,7 +2311,7 @@ bool QuadHandler::tightenLP_(RelaxationPtr rel, double bestSol, bool* changed,
       lflp->addTerm(v, -1.0);
       flp = (FunctionPtr) new Function(lflp);
       lp->changeObj(flp, 0.0);
-      ub = -getBndByLP_(is_inf);
+      ub = tol - getBndByLP_(is_inf);
       if(is_inf) {
         continue;
       }
