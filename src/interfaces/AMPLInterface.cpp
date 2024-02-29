@@ -421,13 +421,23 @@ void AMPLInterface::addVariablesFromASL_(Minotaur::ProblemPtr instance)
 {
   Minotaur::UInt stop_index, start_index;
   Minotaur::VariablePtr vPtr;
-  std::string vName;
+  std::string vname;
 
-  // add variables to the instance
+  // add variables to the instance as continuous variables, with names and
+  // bounds from ASL
+  start_index = 0;
+  stop_index = myAsl_->i.n_var_;
+  for (Minotaur::UInt i=start_index; i<stop_index; ++i) {
+    vname = std::string(var_name_ASL(myAsl_, i));
+    vPtr = instance->newVariable(myAsl_->i.LUv_[2*i], 
+        myAsl_->i.LUv_[2*i+1], Minotaur::Continuous, vname);
+    vars_.push_back(vPtr);
+  }
   
+  // Now change the type of integer variables. This is tricky.
   //
   // Ordering of variables by ampl:
-  // http://www.ampl.com/REFS/HOOKING/index.html
+  // https://ampl.com/wp-content/uploads/Hooking-Your-Solver-to-AMPL-by-David-M.-Gay.pdf
   //
   // category           count
   // -------------------------------------------------------------------------
@@ -448,6 +458,7 @@ void AMPLInterface::addVariablesFromASL_(Minotaur::ProblemPtr instance)
   // continuous         only obj        nlvo - (nlvc + nlvoi); **
   // integer            only obj        nlvoi;
   //
+  // The first nlvc variables appear nonlinearly in at least one constraint.
   // ** may seem to be a bug. you may think that nlvc should be replaced by
   // nlvo. it is NOT a bug.  
   // if nlvo > nlvc, the first nlvc variables in the objective may or may not
@@ -458,70 +469,29 @@ void AMPLInterface::addVariablesFromASL_(Minotaur::ProblemPtr instance)
   //
 
   // first visit all nonlinear variables
-  // continuous nonlinear variables in both obj and cons
-  start_index = 0;
-  stop_index = myAsl_->i.nlvb_ - myAsl_->i.nlvbi_;
-  for (Minotaur::UInt i=start_index; i<stop_index; ++i) {
-    vName = std::string(var_name_ASL(myAsl_, i));
-    vPtr = instance->newVariable(myAsl_->i.LUv_[2*i], 
-        myAsl_->i.LUv_[2*i+1], Minotaur::Continuous, vName);
-    vars_.push_back(vPtr);
-  }
   // integer nonlinear variables in both obj and cons
-  start_index = stop_index;
-  stop_index += myAsl_->i.nlvbi_;
+  start_index = myAsl_->i.nlvb_ - myAsl_->i.nlvbi_;
+  stop_index  = myAsl_->i.nlvb_;
   for (Minotaur::UInt i=start_index; i<stop_index; ++i) {
-    vName = std::string(var_name_ASL(myAsl_, i));
-    vPtr = instance->newVariable(myAsl_->i.LUv_[2*i], 
-        myAsl_->i.LUv_[2*i+1], Minotaur::Integer, vName);
-    vars_.push_back(vPtr);
+    instance->setVarType(instance->getVariable(i), Minotaur::Integer);
   }
-  // continuous nonlinear variables in cons only
-  start_index = stop_index;
-  stop_index += myAsl_->i.nlvc_ - (myAsl_->i.nlvb_ + myAsl_->i.nlvci_);
-  for (Minotaur::UInt i=start_index; i<stop_index; ++i) {
-    vName = std::string(var_name_ASL(myAsl_, i));
-    vPtr = instance->newVariable(myAsl_->i.LUv_[2*i], 
-        myAsl_->i.LUv_[2*i+1], Minotaur::Continuous, vName);
-    vars_.push_back(vPtr);
-  }
+
   // integer nonlinear variables in cons only
-  start_index = stop_index;
-  stop_index += myAsl_->i.nlvci_;
+  start_index = myAsl_->i.nlvc_ - myAsl_->i.nlvci_;
+  stop_index  = myAsl_->i.nlvc_;
   for (Minotaur::UInt i=start_index; i<stop_index; ++i) {
-    vName = std::string(var_name_ASL(myAsl_, i));
-    vPtr = instance->newVariable(myAsl_->i.LUv_[2*i], 
-        myAsl_->i.LUv_[2*i+1], Minotaur::Integer, vName);
-    vars_.push_back(vPtr);
+    instance->setVarType(instance->getVariable(i), Minotaur::Integer);
   }
 
   if (myAsl_->i.nlvo_ > myAsl_->i.nlvc_) {
     // there are some variables that are linear in constraints but nonlinear
-    // in objective. the first 'nlvc' are already counted.
-    // continuous nonlinear variables in obj only
-    start_index = stop_index;
-    stop_index += myAsl_->i.nlvo_ - (myAsl_->i.nlvc_ + myAsl_->i.nlvoi_);
-    for (Minotaur::UInt i=start_index; i<stop_index; ++i) {
-      vName = std::string(var_name_ASL(myAsl_, i));
-      vPtr = instance->newVariable(myAsl_->i.LUv_[2*i], 
-          myAsl_->i.LUv_[2*i+1], Minotaur::Continuous, vName);
-      vars_.push_back(vPtr);
-    }
+    // in objective. 
     // integer nonlinear variables in obj only
-    start_index = stop_index;
-    stop_index += myAsl_->i.nlvoi_;
+    start_index = myAsl_->i.nlvo_ - myAsl_->i.nlvoi_ ;
+    stop_index  = myAsl_->i.nlvo_;
     for (Minotaur::UInt i=start_index; i<stop_index; ++i) {
-      vName = std::string(var_name_ASL(myAsl_, i));
-      vPtr = instance->newVariable(myAsl_->i.LUv_[2*i], 
-          myAsl_->i.LUv_[2*i+1], Minotaur::Integer, vName);
-      vars_.push_back(vPtr);
+      instance->setVarType(instance->getVariable(i), Minotaur::Integer);
     }
-
-    assert ((int) stop_index == myAsl_->i.nlvo_);
-  } else {
-    // all variables that are nonlinear in objective are also nonlinear in
-    // constraints and hence we dont need to add anything more.
-    assert ((int) stop_index == myAsl_->i.nlvc_);
   } // all nonlinear variables have been added.
 
 
@@ -529,37 +499,12 @@ void AMPLInterface::addVariablesFromASL_(Minotaur::ProblemPtr instance)
   assert(myAsl_->i.nwv_ == 0);
 
   // visit all linear continuous variables
-  // continuous linear variables
-  start_index = stop_index;
-  stop_index  = myAsl_->i.n_var_ - (myAsl_->i.niv_ + myAsl_->i.nbv_);
-  for (Minotaur::UInt i=start_index; i<stop_index; ++i) {
-    vName = std::string(var_name_ASL(myAsl_, i));
-    vPtr = instance->newVariable(myAsl_->i.LUv_[2*i], 
-        myAsl_->i.LUv_[2*i+1], Minotaur::Continuous, vName);
-    vars_.push_back(vPtr);
-  }
-
   // binary linear variables
-  start_index = stop_index;
-  stop_index += myAsl_->i.nbv_;
+  start_index = myAsl_->i.n_var_ - (myAsl_->i.niv_ + myAsl_->i.nbv_);
+  stop_index  = myAsl_->i.n_var_;
   for (Minotaur::UInt i=start_index; i<stop_index; ++i) {
-    vName = std::string(var_name_ASL(myAsl_, i));
-    vPtr = instance->newVariable(myAsl_->i.LUv_[2*i], 
-        myAsl_->i.LUv_[2*i+1], Minotaur::Binary, vName);
-    vars_.push_back(vPtr);
+    instance->setVarType(instance->getVariable(i), Minotaur::Integer);
   }
-
-  // integer linear variables
-  start_index = stop_index;
-  stop_index += myAsl_->i.niv_;
-  for (Minotaur::UInt i=start_index; i<stop_index; ++i) {
-    vName = std::string(var_name_ASL(myAsl_, i));
-    vPtr = instance->newVariable(myAsl_->i.LUv_[2*i], 
-        myAsl_->i.LUv_[2*i+1], Minotaur::Integer, vName);
-    vars_.push_back(vPtr);
-  }
-
-  assert ((int) stop_index == myAsl_->i.n_var_);
   // ALL variables have been added.
 }
 
