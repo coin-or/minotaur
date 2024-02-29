@@ -178,9 +178,9 @@ void QG::setInitialOptions_()
   options->findString("brancher")->setValue("rel");
   options->findString("nlp_engine")->setValue("IPOPT");
   options->findBool("cgtoqf")->setValue(true);
+  options->findBool("separability")->setValue(true);
   options->findBool("simplex_cut")->setValue(true);
 }
-
 
 void QG::showHelp() const
 {
@@ -219,6 +219,17 @@ int QG::showInfo()
         << std::endl;
     return 1;
   }
+  
+  // code for printing whether we use cgtoqf or not
+   
+  if (options->findBool("cgtoqf")->getValue() == 1) {
+    env_->getLogger()->msgStream(LogInfo)
+        << me_ << "Using quadratic function to store quadratic problem." << std::endl;
+  } else {
+    env_->getLogger()->msgStream(LogInfo)
+        << me_ << "Using cgraph function to store non-quadratic problem." << std::endl;
+  }
+  // code ended
 
   env_->getLogger()->msgStream(LogInfo)
       << me_ << "Minotaur version " << env_->getVersion() << std::endl
@@ -246,16 +257,23 @@ int QG::solve(ProblemPtr p)
   LinearHandlerPtr l_hand;
   QGHandlerPtr qg_hand;
   RCHandlerPtr rc_hand;
+  int err = 0;
 
   oinst_ = p;
+  if (oinst_->isQuadratic() && true==options->findBool("cgtoqf")->getValue()) {
+    env_->getLogger()->msgStream(LogInfo) << me_ << "Using quadratic function to store quadratic problem." << std::endl;
+    oinst_->cg2qf();
+  }
+
   oinst_->calculateSize();
-  int err = 0;
+  
+
 
   timer->start();
   if(options->findBool("display_problem")->getValue() == true) {
     oinst_->write(env_->getLogger()->msgStream(LogNone), 12);
   }
-
+  
   if(options->findBool("display_size")->getValue() == true) {
     oinst_->writeSize(env_->getLogger()->msgStream(LogNone));
     env_->getLogger()->msgStream(LogInfo)
@@ -264,7 +282,7 @@ int QG::solve(ProblemPtr p)
     env_->getLogger()->msgStream(LogInfo)
         << me_ << "Finished constraint classification\n";
   }
-
+  
   // setup the jacobian and hessian
   if(false == options->findBool("use_native_cgraph")->getValue()) {
     JacobianPtr jac = new MINOTAUR_AMPL::AMPLJacobian(iface_);
@@ -318,8 +336,10 @@ int QG::solve(ProblemPtr p)
   }
 
   if(true == options->findBool("use_native_cgraph")->getValue()) {
-    oinst_->setNativeDer();
+   oinst_->setNativeDer();
   }
+  
+  
   if(options->findBool("rc_fix")->getValue() && 0) {
     rc_hand = (RCHandlerPtr) new RCHandler(env_);
     rc_hand->setModFlags(false, true);
