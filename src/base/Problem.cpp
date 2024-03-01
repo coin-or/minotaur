@@ -348,7 +348,7 @@ void Problem::classifyCon(bool printTypes)
   ConstraintPtr c;
   FunctionPtr f;
   LinearFunctionPtr lf;
-  VariablePtr v ;
+  VariablePtr v;
   double wt;
   const double tol = 1e-5;
   double INFTY = std::numeric_limits<double>::infinity();
@@ -398,9 +398,9 @@ void Problem::classifyCon(bool printTypes)
           wt2 = wt;
         }
       }
-      if(abs(wt-1) < tol) { 
+      if(abs(wt - 1) < tol) {
         ++nposcoefone;
-      } else if(abs(wt+1) < tol) {
+      } else if(abs(wt + 1) < tol) {
         ++nnegcoefone;
       }
       if(wt > tol) {
@@ -410,7 +410,8 @@ void Problem::classifyCon(bool printTypes)
       }
       if(wt > tol && v->getType() != Binary && v->getType() != Integer) {
         ++nposcont;
-      } else if(wt < -tol && v->getType() != Binary && v->getType() != Integer) {
+      } else if(wt < -tol && v->getType() != Binary &&
+                v->getType() != Integer) {
         ++nnegcont;
       }
       if(v->getType() == Binary) {
@@ -454,7 +455,7 @@ void Problem::classifyCon(bool printTypes)
         }
 
         //Code for Precedence
-        else if(wt1== -wt2 && (c->getUb() <= INFTY && c->getLb() >= -INFTY) &&
+        else if(wt1 == -wt2 && (c->getUb() <= INFTY && c->getLb() >= -INFTY) &&
                 ((nposbin + nnegbin == 2) || (nposint + nnegint == 2) ||
                  (nposcont + nnegcont == 2))) {
           if(printTypes == true) {
@@ -467,9 +468,9 @@ void Problem::classifyCon(bool printTypes)
         }
 
         // Code for Variable Bound
-        else if(((nposbin + nnegbin == 2)||(nposcoefone+nnegcoefone==2) ||
-                 ((nposbin + nnegbin==1) && (nposcont + nnegcont) == 1) ||
-                 ((nposbin + nnegbin==1) && (nposint + nnegint) == 1)) &&
+        else if(((nposbin + nnegbin == 2) || (nposcoefone + nnegcoefone == 2) ||
+                 ((nposbin + nnegbin == 1) && (nposcont + nnegcont) == 1) ||
+                 ((nposbin + nnegbin == 1) && (nposint + nnegint) == 1)) &&
                 (c->getUb() <= INFTY && c->getLb() >= -INFTY)) {
           if(printTypes == true) {
             logger_->msgStream(LogError)
@@ -484,10 +485,10 @@ void Problem::classifyCon(bool printTypes)
 
     //Code for Set Partitioning
     if(notHandled) {
-      if(nposbin + nnegbin == nvars) { 
+      if(nposbin + nnegbin == nvars) {
         if(nposcoefone + nnegcoefone == nvars) {
-          if((c->getLb() == 1 - nnegcoefone && c->getUb() == 1 - nnegcoefone)|| 
-	     (c->getLb() == nposcoefone-1 && c->getUb() == nposcoefone-1)) {
+          if((c->getLb() == 1 - nnegcoefone && c->getUb() == 1 - nnegcoefone) ||
+             (c->getLb() == nposcoefone - 1 && c->getUb() == nposcoefone - 1)) {
             if(printTypes == true) {
               logger_->msgStream(LogError)
                   << me_ << "Type is Set Partitioning" << std::endl;
@@ -498,8 +499,9 @@ void Problem::classifyCon(bool printTypes)
           }
 
           //Code for Set Packing
-          else if((c->getLb() == nposcoefone - 1 ||c->getUb() == 1 - nnegcoefone)&&
-                  (c->getLb() >= -INFTY ||c->getUb() <= INFTY)) {
+          else if((c->getLb() == nposcoefone - 1 ||
+                   c->getUb() == 1 - nnegcoefone) &&
+                  (c->getLb() >= -INFTY || c->getUb() <= INFTY)) {
             if(printTypes == true) {
               logger_->msgStream(LogError)
                   << me_ << "Type is Set Packing" << std::endl;
@@ -587,7 +589,7 @@ void Problem::classifyCon(bool printTypes)
         }
       }
       //Code for Integer Knapsack
-      else if(nposcoef + nnegcoef == nvars && nposint+nnegint==nvars &&
+      else if(nposcoef + nnegcoef == nvars && nposint + nnegint == nvars &&
               (isInt(c->getUb()))) {
         if(c->getLb() >= -INFTY && c->getUb() <= INFTY) {
           if(printTypes == true) {
@@ -600,7 +602,7 @@ void Problem::classifyCon(bool printTypes)
         }
       }
       //Code for Mixed Binary
-      else if(nposcont + nnegcont + nposint + nnegint ==nvars) {
+      else if(nposcont + nnegcont + nposint + nnegint == nvars) {
         if(((c->getLb() >= -INFTY && c->getUb() <= INFTY) ||
             (c->getUb() == c->getLb())) &&
            (nposbin + nnegbin >= 1)) {
@@ -612,7 +614,8 @@ void Problem::classifyCon(bool printTypes)
           ++gb;
           notHandled = false;
         }
-      } else if(nposcont + nnegcont + nposint + nnegint + nposbin + nnegbin == nvars) {
+      } else if(nposcont + nnegcont + nposint + nnegint + nposbin + nnegbin ==
+                nvars) {
         if((c->getLb() >= -INFTY && c->getUb() <= INFTY) ||
            (c->getUb() == c->getLb())) {
           if(printTypes == true) {
@@ -989,15 +992,18 @@ void Problem::cg2qf()
   double* x = 0;
   double* values = 0;
   double* grad = 0;
-  int* qfindex = 0;
-  int qfi;
-  int qfi2;
 
   UInt* irow = 0;
   UInt* jcol = 0;
   UInt nz = 0;
 
   VariableConstIterator vit0;
+  QuadraticFunctionPtr qfnew;
+  LinearFunctionPtr lfnew;
+  FunctionPtr fnew;
+  double nlconst = 0;
+  std::map<FunctionPtr, std::pair<double, double>> newCons;
+
   vit0 = vars_.begin();
 
   setNativeDer();
@@ -1020,10 +1026,6 @@ void Problem::cg2qf()
 
   hessian_->fillRowColIndices(irow, jcol);
 
-  QuadraticFunctionPtr qfobj;
-  LinearFunctionPtr lfobj;
-  double nlconst = 0;
-
   // objective
   f = getObjective()->getFunction();
   if(f) {
@@ -1031,13 +1033,13 @@ void Problem::cg2qf()
       hessian_->fillRowColValues(x, 1.0, mult, values, &err);
       assert(0 == err);
 
-      qfobj = (QuadraticFunctionPtr) new QuadraticFunction(nz, values, irow,
+      qfnew = (QuadraticFunctionPtr) new QuadraticFunction(nz, values, irow,
                                                            jcol, vit0);
       memset(grad, 0, getNumVars() * sizeof(double));
 
       f->evalGradient(x, grad, &err);
       assert(0 == err);
-      lfobj = (LinearFunctionPtr) new LinearFunction(grad, varsBegin(),
+      lfnew = (LinearFunctionPtr) new LinearFunction(grad, varsBegin(),
                                                      varsEnd(), 1e-12);
 
       nlconst = f->eval(x, &err);
@@ -1046,38 +1048,16 @@ void Problem::cg2qf()
       ObjectiveType newobjtype;
       newobjtype = getObjective()->getObjectiveType();
 
-      FunctionPtr fobj = (FunctionPtr) new Function(lfobj, qfobj);
+      fnew = (FunctionPtr) new Function(lfnew, qfnew);
 
       ObjectivePtr newobj =
-          (ObjectivePtr) new Objective(fobj, nlconst, newobjtype);
+          (ObjectivePtr) new Objective(fnew, nlconst, newobjtype);
 
       delete obj_;
       obj_ = newobj;
       consModed_ = true;
     }
   }
-  qfindex = new int[getNumCons()];
-  // int n = getNumCons();
-  // memset(qfindex, -1, getNumCons()*sizeof(UInt));
-  qfi = 0;
-  for(ConstraintConstIterator cit = consBegin(); cit != consEnd(); ++cit) {
-    c = *cit;
-    f = c->getFunction();
-    if(!f) {
-      continue;
-    }
-    if(Quadratic == f->getType()) {
-      qfi = qfi + 1;
-    }
-  }
-
-  QuadraticFunctionPtr* qfcons = new QuadraticFunctionPtr[qfi];
-  LinearFunctionPtr* lfcons = new LinearFunctionPtr[qfi];
-  double* nlconstcons = new double[qfi];
-
-  FunctionPtr* fcons = new FunctionPtr[qfi];
-
-  qfi2 = 0;
 
   for(ConstraintConstIterator cit = consBegin(); cit != consEnd(); ++cit) {
     c = *cit;
@@ -1091,8 +1071,8 @@ void Problem::cg2qf()
       memset(values, 0, nz * sizeof(UInt));
       hessian_->fillRowColValues(x, 0.0, mult, values, &err);
       assert(0 == err);
-      qfcons[qfi2] = (QuadraticFunctionPtr) new QuadraticFunction(
-          nz, values, irow, jcol, vit0);
+      qfnew = (QuadraticFunctionPtr) new QuadraticFunction(nz, values, irow,
+                                                           jcol, vit0);
       mult[c->getIndex()] = 0.0;
 
       memset(grad, 0, getNumVars() * sizeof(double));
@@ -1100,51 +1080,40 @@ void Problem::cg2qf()
       assert(0 == err);
       if(std::all_of(grad, grad + getNumVars(),
                      [](double comp) { return fabs(comp) < 1e-8; })) {
-        lfcons[qfi2] = 0;
+        lfnew = 0;
       } else {
-        lfcons[qfi2] = (LinearFunctionPtr) new LinearFunction(grad, varsBegin(),
-                                                              varsEnd(), 1e-12);
+        lfnew = (LinearFunctionPtr) new LinearFunction(grad, varsBegin(),
+                                                       varsEnd(), 1e-12);
       }
-      nlconstcons[qfi2] = f->eval(x, &err);
+      nlconst = f->eval(x, &err);
       assert(0 == err);
 
       //refine
-      FunctionPtr fc = (FunctionPtr) new Function(lfcons[qfi2], qfcons[qfi2]);
-      fcons[qfi2] = fc;
+      fnew = (FunctionPtr) new Function(lfnew, qfnew);
+
+      newCons.insert(std::make_pair(
+          fnew, std::make_pair(c->getLb() - nlconst, c->getUb() - nlconst)));
 
       markDelete(c);
-      qfindex[qfi2] = qfi2;
-
-      qfi2 = qfi2 + 1;
     }
   }
 
-  for(int i = 0; i != qfi2; ++i) {
-    if(qfindex[i] >= 0) {
-      c = getConstraint(i); // constraint that is to be changed
-      f = c->getFunction();
-      if(!f) {
-        continue;
-      }
-      newConstraint(fcons[qfindex[i]], c->getLb() - nlconstcons[qfindex[i]],
-                    c->getUb() - nlconstcons[qfindex[i]]);
-    }
+  for(std::map<FunctionPtr, std::pair<double, double>>::iterator it =
+          newCons.begin();
+      it != newCons.end(); ++it) {
+    newConstraint(it->first, it->second.first, it->second.second);
   }
 
   delMarkedCons();
   setNativeDer();
 
-  delete[] qfindex;
-  delete[] nlconstcons;
-  delete[] lfcons;
-  delete[] qfcons;
-  delete[] fcons;
   delete[] mult;
   delete[] values;
   delete[] irow;
   delete[] jcol;
   delete[] x;
   delete[] grad;
+  newCons.clear();
 }
 
 void Problem::countConsTypes_()
