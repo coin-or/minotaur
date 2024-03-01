@@ -154,6 +154,8 @@ cd ${TEST_DIR}
 echo "Minotaur version: `git describe`"
 
 NAME=
+
+
 ##########################################################################
 ## TEST 1
 ## Build third-party
@@ -422,6 +424,39 @@ tar -zcf build-log.tar.gz build-log
 rsync -a ${WEB_DIR}/build-log.tar.gz ${REM_WEB_DIR}/
 cd ${TEST_DIR}
 
+###########################################################################
+### Nightly build for Linux
+###########################################################################
+NAME=third-party-static
+rm -rf ${NAME}
+mkdir ${NAME}
+cd ${NAME}
+echo "compiling third-party static libraries" >> ../${NAME}.log 2>> ../${NAME}.err
+cp ${TP_DIR}/build_third_party .
+./build_third_party -j 8 -s -l ${NAME}.log -r ${NAME}.err 
+cd ${TEST_DIR} 
+
+NAME=static-dist
+FILES="bin/mbnb bin/mglob bin/mqg bin/mmultistart"
+CARGS=" -DTHIRD_PARTY_PATH:PATH=${TEST_DIR}/third-party-static"
+CARGS+=" -DBUILD_SHARED_LIBS:BOOL=0"
+CARGS+=" -DCMAKE_BUILD_TYPE=Release"
+CARGS+=" -DCMAKE_EXE_LINKER_FLAGS=-static"
+doTest; listBins; testFiles; checkTest
+
+# tar the bins and put on web
+if [ ${files_exist} -eq 1 ]
+then
+  cp -a ${NAME}/bin minotaur-nightly >> /dev/null
+  echo "Minotaur version: `git describe`" > minotaur-nightly/README
+  echo "Compiled on: `date` on Linux" >> minotaur-nightly/README
+  tar -zcvf minotaur-nightly.tar.gz minotaur-nightly
+  scp minotaur-nightly.tar.gz powai:webpage/minotaur/bin/ >> /dev/null && echo "Nightly distribution posted" >> ${SUMMARY}
+else
+  echo "Nightly distribution not built" >> ${SUMMARY}
+fi
+
+###########################################################################
 echo ""
 echo Summary
 echo ${LINE}
