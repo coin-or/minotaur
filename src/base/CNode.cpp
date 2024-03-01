@@ -1469,7 +1469,7 @@ void CNode::propBounds(bool *is_inf, int *error)
               tub = ub_-lb;
             }
           } else {
-            tub = -INFINITY;
+            tub =  INFINITY;
           }
           (*c)->propBounds_(tlb, tub, is_inf);
           if (true==(*is_inf)) {

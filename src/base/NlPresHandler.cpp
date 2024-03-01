@@ -480,11 +480,17 @@ void  NlPresHandler::bin2Lin_(ProblemPtr p, PreModQ *mods, bool *changed)
         p->newObjective(f, p->getObjective()->getConstant()+nlconst, Minimize);
         *changed = true;
 
-        // resize mult. Others need not be changed as we add only linear
-        // constraints.
+        // resize x, mult and grad. Others need not be changed as we add only
+        // linear constraints.
         delete [] mult;
+        delete [] x;
+        delete [] grad;
         mult = new double[p->getNumCons()];
+        x = new double[p->getNumVars()];
+        grad = new double[p->getNumVars()];
         memset(mult, 0, p->getNumCons()*sizeof(double));
+        memset(x, 0, p->getNumVars()*sizeof(double));
+        memset(grad, 0, p->getNumVars()*sizeof(double));
       }
     }
   }
@@ -518,11 +524,18 @@ void  NlPresHandler::bin2Lin_(ProblemPtr p, PreModQ *mods, bool *changed)
           delete lf;
           lf = 0;
         }
-        // resize mult. Others need not be changed as we add only linear
-        // constraints.
+        // resize x, mult and grad. Others need not be changed as we add only
+        // linear constraints.
         delete [] mult;
+        delete [] x;
+        delete [] grad;
         mult = new double[p->getNumCons()];
+        x = new double[p->getNumVars()];
+        grad = new double[p->getNumVars()];
         memset(mult, 0, p->getNumCons()*sizeof(double));
+        memset(x, 0, p->getNumVars()*sizeof(double));
+        memset(grad, 0, p->getNumVars()*sizeof(double));
+
         p->markDelete(c);
         *changed = true;
 #if SPEW
