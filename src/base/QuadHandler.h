@@ -517,6 +517,9 @@ private:
   /// Return true if xval is one of the bounds of variable x
   bool isAtBnds_(ConstVariablePtr x, double xval);
 
+  /// Whether a given point is feasible to the original problem
+  bool isFeasible_(const double* x, double objval, double& inf_meas);
+
   /// Whether a given point is feasible to the relaxation
   bool isFeasibleToRelaxation_(RelaxationPtr rel, const double* x);
 
@@ -706,10 +709,12 @@ private:
    * \brief After solving an NLP update ub of the problem.
    * \param[in] s_pool Current solution pool
    * \param[in] nlpval NLP objective value
+   * \parm[in] check_feas If true check feasibility of nlp solution
    * \param[out] sol_found true if the NLP solution is better than all
    * solutions in s_pool
    */
-  void updateUb_(SolutionPoolPtr s_pool, double nlpval, bool& sol_found);
+  void updateUb_(SolutionPoolPtr s_pool, double nlpval, bool check_feas,
+                 bool& sol_found);
 
   /**
    * \brief Update linear relaxation of the bilinear constraints after some

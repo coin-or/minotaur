@@ -702,9 +702,11 @@ EngineStatus IpoptEngine::solve()
     break;
   case Ipopt::Maximum_Iterations_Exceeded:
     status_ = EngineIterationLimit;
+    sol_ = mynlp_->getSolution();
     break;
   case Ipopt::Maximum_CpuTime_Exceeded:
     status_ = EngineIterationLimit;
+    sol_ = mynlp_->getSolution();
     break;
   case Ipopt::Restoration_Failed: // don't know what else to do.
     logger_->msgStream(LogInfo) << me_ << "restoration failed, "
@@ -716,7 +718,8 @@ EngineStatus IpoptEngine::solve()
     status_ = ProvenUnbounded;
     break;
   case Ipopt::Search_Direction_Becomes_Too_Small:
-    assert(!"Ipopt: search direction becomes too small.");
+    status_ = EngineIterationLimit;
+    sol_ = mynlp_->getSolution();
     break;
   case Ipopt::User_Requested_Stop:
     assert(!"Ipopt: user requested stop.");
@@ -737,6 +740,7 @@ EngineStatus IpoptEngine::solve()
   case Ipopt::Internal_Error:
   default:
     logger_->msgStream(LogNone) << me_ << "error reported." << std::endl;
+    logger_->msgStream(LogNone) << me_ << getStatusString() << std::endl;
     status_ = EngineError;
   }
   if(prepareWs_) {

@@ -325,7 +325,7 @@ void QuadHandler::resetBoundsinOrig_(DoubleVector& varlb, DoubleVector& varub)
 }
 
 void QuadHandler::updateUb_(SolutionPoolPtr s_pool, double nlpval,
-                            bool& sol_found)
+                            bool check_feas, bool& sol_found)
 {
   double bestval = s_pool->getBestSolutionValue();
   double* new_x = new double[p_->getNumVars()];
@@ -334,8 +334,18 @@ void QuadHandler::updateUb_(SolutionPoolPtr s_pool, double nlpval,
      (bestval != 0 && (bestval - fabs(bestval) * rTol_ > nlpval))) {
     const double* x = nlpe_->getSolution()->getPrimal();
     memcpy(new_x, x, orig_->getNumVars() * sizeof(double));
-    s_pool->addSolution(new_x, nlpval);
-    sol_found = true;
+    if(check_feas) {
+      double inf_meas = 0;
+      if(isFeasible_(new_x, nlpval, inf_meas)) {
+        s_pool->addSolution(new_x, nlpval);
+        sol_found = true;
+      } else {
+        sol_found = false;
+      }
+    } else {
+      s_pool->addSolution(new_x, nlpval);
+      sol_found = true;
+    }
   }
   delete[] new_x;
 }
@@ -362,6 +372,7 @@ int QuadHandler::fixNodeErr(RelaxationPtr rel, ConstSolutionPtr sol,
   DoubleVector varlb, varub;
   EngineStatus status;
   int error;
+  double nlpval;
 
   varlb.clear();
   varub.clear();
@@ -376,8 +387,8 @@ int QuadHandler::fixNodeErr(RelaxationPtr rel, ConstSolutionPtr sol,
   switch(status) {
   case(ProvenOptimal):
   case(ProvenLocalOptimal): {
-    double nlpval = nlpe_->getSolutionValue();
-    updateUb_(s_pool, nlpval, sol_found);
+    nlpval = nlpe_->getSolutionValue();
+    updateUb_(s_pool, nlpval, false, sol_found);
     error = 0;
     ++nlpStats_.opt;
     break;
@@ -395,8 +406,9 @@ int QuadHandler::fixNodeErr(RelaxationPtr rel, ConstSolutionPtr sol,
     error = 1;
     ++nlpStats_.iter_limit;
     logger_->msgStream(LogDebug2)
-        << me_ << "NLP iteration limit reached"
-        << " this node will be considered infeasible" << std::endl;
+        << me_ << "NLP iteration limit reached" << std::endl;
+    nlpval = nlpe_->getSolutionValue();
+    updateUb_(s_pool, nlpval, true, sol_found);
     break;
   }
   case(EngineError): {
@@ -913,12 +925,10 @@ bool QuadHandler::isAtBnds_(ConstVariablePtr x, double xval)
   return (fabs(xval - lb) < bTol_ || fabs(xval - ub) < bTol_);
 }
 
-bool QuadHandler::isFeasible(ConstSolutionPtr sol, RelaxationPtr, bool&,
-                             double& inf_meas)
+bool QuadHandler::isFeasible_(const double* x, double objval, double& inf_meas)
 {
   ConstraintPtr c;
   double act, clb, cub;
-  const double* x = sol->getPrimal();
   int error = 0;
   bool is_feas = true;
   ObjectivePtr obj;
@@ -954,7 +964,7 @@ bool QuadHandler::isFeasible(ConstSolutionPtr sol, RelaxationPtr, bool&,
      obj->getFunctionType() == Bilinear) {
     act = obj->eval(x, &error);
     if(error == 0) {
-      vio = fabs(sol->getObjValue() - act);
+      vio = fabs(objval - act);
       if(vio > fabs(act) * rTol_ && vio > aTol_) {
         is_feas = false;
         inf_meas += vio;
@@ -962,6 +972,13 @@ bool QuadHandler::isFeasible(ConstSolutionPtr sol, RelaxationPtr, bool&,
     }
   }
   return is_feas;
+}
+
+bool QuadHandler::isFeasible(ConstSolutionPtr sol, RelaxationPtr, bool&,
+                             double& inf_meas)
+{
+  const double* x = sol->getPrimal();
+  return isFeasible_(x, sol->getObjValue(), inf_meas);
 }
 
 bool QuadHandler::isFeasibleToRelaxation_(RelaxationPtr rel, const double* x)
