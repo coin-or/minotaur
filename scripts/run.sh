@@ -12,6 +12,7 @@ EXEC='/home/23m1523/minotaur/build/bin/mglob --bnb_time_limit 600 --log_level 3'
 FILESUFF=".nl"                                            				## .nl or .mps etc
 KILLAFTER=5                                             				## should be more than timelimit
 NCPUS=10
+MEMLIM=20000000                                                                         ## Max memory to use per process in kB
 
 # End of parameters
 
@@ -29,7 +30,7 @@ else
 	exit 9
 fi
 
-cat $INSTLIST | awk '{print $1}' | parallel --timeout $KILLAFTER --eta -j $NCPUS "(echo {} start ; $EXEC $INSTDIR/{}$FILESUFF > $OUTDIR/{}.out 2>> $OUTDIR/{}.err)" 
+cat $INSTLIST | awk '{print $1}' | parallel --timeout $KILLAFTER --eta -j $NCPUS "(echo {} start ; ulimit -S -v $MEMLIM; $EXEC $INSTDIR/{}$FILESUFF > $OUTDIR/{}.out 2>> $OUTDIR/{}.err)" 
 
 # { print $column number} - column number in file 
 
