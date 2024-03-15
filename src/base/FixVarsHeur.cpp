@@ -57,10 +57,15 @@ void FixVarsHeur::solve(NodePtr, RelaxationPtr, SolutionPoolPtr s_pool)
   UInt min_iter = 3, max_iter = 10, iter = 0;
   std::map<VariablePtr, UInt> unfixedVars;
   double stime = env_->getTimer()->query();
+  UInt numvars;
 
   initialize_();
   while(iter < min_iter || (restart && iter < max_iter)) {
     ++iter;
+#if SPEW
+    env_->getLogger()->msgStream(LogDebug)
+        << me_ << "Iteration Number : " << iter << std::endl;
+#endif
     restart = false;
     unfixedVars.clear();
     for(VariableConstIterator vit = p_->varsBegin(); vit != p_->varsEnd();
@@ -71,7 +76,13 @@ void FixVarsHeur::solve(NodePtr, RelaxationPtr, SolutionPoolPtr s_pool)
     consNumVar_.clear();
     for(ConstraintConstIterator cit = p_->consBegin(); cit != p_->consEnd();
         ++cit) {
-      consNumVar_.insert({*cit, (*cit)->getFunction()->getNumVars()});
+      numvars = (*cit)->getFunction()->getNumVars();
+      if(numvars == 1) {
+        // Just a bound constraint, should not be considered for convering.
+        consNumVar_.insert({*cit, 0});
+      } else {
+        consNumVar_.insert({*cit, numvars});
+      }
     }
     while(unfixedVars.size() > 0) {
       FixVars_(unfixedVars);
@@ -131,13 +142,8 @@ void FixVarsHeur::initialize_()
 {
   VariablePtr v;
 
-  if(p_->getNumCons() <= 2) {
-    mbin_ = 10;
-    mnl_ = 1;
-  } else {
-    mbin_ = p_->getNumCons() + 1;
-    mnl_ = ceil(p_->getNumCons() / 2.0);
-  }
+  mbin_ = p_->getNumCons() + 1;
+  mnl_ = 2;
 
   for(VariableConstIterator vit = p_->varsBegin(); vit != p_->varsEnd();
       ++vit) {
@@ -171,6 +177,10 @@ void FixVarsHeur::fix_(VariablePtr v)
 
   m = new VarBoundMod2(v, fix_at, fix_at);
   m->applyToProblem(p_);
+#if SPEW
+  env_->getLogger()->msgStream(LogDebug)
+      << me_ << v->getName() << " is fixed at " << fix_at << std::endl;
+#endif
   mods_.push_back(m);
 }
 
@@ -210,7 +220,7 @@ void FixVarsHeur::FixVars_(std::map<VariablePtr, UInt>& unfixedVars)
     }
   }
 
-  while(covered.size() < p_->getNumCons()) {
+  while((covered.size() < p_->getNumCons()) && (unfixedVars.size() > 0)) {
     v = selectVarToFix_(unfixedVars);
     fix_(v);
     for(ConstrSet::iterator cit = v->consBegin(); cit != v->consEnd(); ++cit) {
@@ -300,6 +310,7 @@ bool FixVarsHeur::presolve_(SolutionPoolPtr s_pool,
   ConstraintPtr c;
 
   for(HandlerIterator it = handlers_.begin(); it != handlers_.end(); ++it) {
+    pres_mod.clear();
     (*it)->simplePresolve(p_, s_pool, pres_mod, status);
     mods_.insert(mods_.end(), pres_mod.begin(), pres_mod.end());
     if(status == SolvedInfeasible) {
@@ -313,6 +324,11 @@ bool FixVarsHeur::presolve_(SolutionPoolPtr s_pool,
     v = it->first;
     if(v->getUb() - v->getLb() < tol) {
       gotFixed.push_back(v);
+#if SPEW
+      env_->getLogger()->msgStream(LogDebug)
+          << me_ << "Presolve fixed " << v->getName() << " at " << v->getLb()
+          << std::endl;
+#endif
     }
   }
 

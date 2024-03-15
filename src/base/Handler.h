@@ -358,8 +358,8 @@ public:
    * \param[out] t_mods Modification derived from presolve.
    * \param[out] status Presolve status.
    */
-  void simplePresolve(ProblemPtr, SolutionPoolPtr, ModVector&,
-                      SolveStatus& status)
+  virtual void simplePresolve(ProblemPtr, SolutionPoolPtr, ModVector&,
+                              SolveStatus& status)
   {
     // Do Nothing
     status = Finished;
