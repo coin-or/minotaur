@@ -188,10 +188,10 @@ public:
   void postsolveGetX(const double *, UInt, DoubleVector *) {};
 
   /// Base class method. calls relax_().
-  void relaxInitFull(RelaxationPtr rel, bool *is_inf);
+  void relaxInitFull(RelaxationPtr rel, SolutionPool *, bool *is_inf);
 
   /// Base class method. calls relax_().
-  void relaxInitInc(RelaxationPtr rel, bool *is_inf);
+  void relaxInitInc(RelaxationPtr rel, SolutionPool *, bool *is_inf);
 
   /// Base class method. Does nothing.
   void relaxNodeFull(NodePtr node, RelaxationPtr rel, bool *is_inf);

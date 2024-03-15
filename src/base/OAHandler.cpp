@@ -660,7 +660,7 @@ void OAHandler::cutToObj_(const double *nlpx, const double *lpx,
 }
 
 
-void OAHandler::relaxInitInc(RelaxationPtr rel, bool *isInf)
+void OAHandler::relaxInitInc(RelaxationPtr rel, SolutionPool *, bool *isInf)
 {
   rel_ = rel;
   relax_(isInf);

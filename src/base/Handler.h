@@ -262,10 +262,12 @@ public:
    * rebuilt. The relaxation is already created, it should not be
    * freed or re-allocated.
    * \param[in,out] rel The relaxation that is being constructed.
+   * \param[in] Solution pool for storing any new solutions found.
    * \param[out] is_inf is true if the handler finds that the
    * problem is infeasible.
    */
-  virtual void relaxInitFull(RelaxationPtr rel, bool* is_inf) = 0;
+  virtual void relaxInitFull(RelaxationPtr rel, SolutionPool *sp,
+                             bool* is_inf) = 0;
 
   /**
    * \brief Create root relaxation if doing incremental node relaxations.
@@ -275,10 +277,12 @@ public:
    * relaxed. The relaxation is already created, it should not be
    * freed or re-allocated.
    * \param[in,out] rel The relaxation that is being constructed.
+   * \param[in] Solution pool for storing any new solutions found.
    * \param[out] is_inf is true if the handler finds that the
    * problem is infeasible.
    */
-  virtual void relaxInitInc(RelaxationPtr rel, bool* is_inf) = 0;
+  virtual void relaxInitInc(RelaxationPtr rel, SolutionPool *sp,
+                            bool* is_inf) = 0;
 
   /**
    * \brief Create a relaxation for a node, building from scratch.

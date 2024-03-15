@@ -188,9 +188,9 @@ namespace Minotaur {
      *  For this handler, nothing is different at root or any node when doing full
      *  relax
      */
-    void relaxInitFull(RelaxationPtr /*rel*/, bool* /* is_inf */) {};
+    void relaxInitFull(RelaxationPtr, SolutionPool *, bool*) {};
 
-    void relaxInitInc(RelaxationPtr rel, bool* is_inf);  
+    void relaxInitInc(RelaxationPtr rel, SolutionPool *, bool* is_inf);  
 
     /**
      * Check feasibility.

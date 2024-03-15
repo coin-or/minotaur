@@ -134,10 +134,10 @@ public:
                   double &inf_meas );
     
   // Does nothing.
-  void relaxInitFull(RelaxationPtr, bool *) { assert(0); } ;
+  void relaxInitFull(RelaxationPtr, SolutionPool *, bool *) { assert(0); } ;
 
   // Build initial relaxation
-  void relaxInitInc(RelaxationPtr, bool *);
+  void relaxInitInc(RelaxationPtr, SolutionPool *, bool *);
 
   // Does nothing.
   void relaxNodeFull(NodePtr, RelaxationPtr, bool *) {assert(0); };

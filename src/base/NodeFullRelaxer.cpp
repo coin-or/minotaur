@@ -25,7 +25,7 @@
 #include "Variable.h"
 #include "VarBoundMod.h"
 
-#define DEBUG_NODEFULLRELAXER
+// #define DEBUG_NODEFULLRELAXER
 
 
 using namespace Minotaur;
@@ -69,7 +69,8 @@ NodeFullRelaxer::~NodeFullRelaxer ()
 }
 
 
-RelaxationPtr NodeFullRelaxer::createRootRelaxation(NodePtr rootNode,
+RelaxationPtr NodeFullRelaxer::createRootRelaxation(NodePtr root,
+                                                    SolutionPool *sp,
                                                     bool &prune)
 {
 
@@ -77,7 +78,7 @@ RelaxationPtr NodeFullRelaxer::createRootRelaxation(NodePtr rootNode,
   rel_ = (RelaxationPtr) new Relaxation(env_);
   for (HandlerIterator h = handlers_.begin(); h != handlers_.end() && !prune; 
       ++h) {
-    (*h)->relaxInitFull(rel_, &prune);
+    (*h)->relaxInitFull(rel_, sp, &prune);
   }
   if (!prune) {
     rel_->calculateSize();
@@ -85,15 +86,15 @@ RelaxationPtr NodeFullRelaxer::createRootRelaxation(NodePtr rootNode,
 
   engine_->load(rel_);  
 
-  //Here we do strong pre-processing, and make changes to rootNode
+  //Here we do strong pre-processing, and make changes to root
   if (!prune) {
-    bool changedNode = strongBoundsTighten_(rootNode);
+    bool changedNode = strongBoundsTighten_(root);
     if (changedNode) {
       // Delete relaxation: Not sure how.  Or will smart pointer do it for you?
       //delete(rel_);
       std::cout << "HOORAY: We were able to strengthen bounds" << std::endl;
       rel_ = (RelaxationPtr) new Relaxation(env_);      
-      rel_ = createNodeRelaxation(rootNode, false, prune);      
+      rel_ = createNodeRelaxation(root, false, prune);      
     }
   }
 

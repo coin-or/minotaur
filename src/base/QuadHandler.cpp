@@ -1620,12 +1620,13 @@ void QuadHandler::relax_(RelaxationPtr rel, bool*)
   return;
 }
 
-void QuadHandler::relaxInitFull(RelaxationPtr rel, bool* is_inf)
+void QuadHandler::relaxInitFull(RelaxationPtr rel, SolutionPool *,
+                                bool* is_inf)
 {
   relax_(rel, is_inf);
 }
 
-void QuadHandler::relaxInitInc(RelaxationPtr rel, bool* is_inf)
+void QuadHandler::relaxInitInc(RelaxationPtr rel, SolutionPool *, bool* is_inf)
 {
   relax_(rel, is_inf);
 }

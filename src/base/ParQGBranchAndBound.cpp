@@ -185,7 +185,7 @@ NodePtr ParQGBranchAndBound::processRoot_(bool *should_prune, bool *should_dive,
   tm_->insertRoot(current_node);
 
   if (options_->createRoot == true) {
-    rel = parNodeRlxr0->createRootRelaxation(current_node, prune);
+    rel = parNodeRlxr0->createRootRelaxation(current_node, solPool_, prune);
     rel->setProblem(problem_);
   } else {
     rel = parNodeRlxr0->getRelaxation();

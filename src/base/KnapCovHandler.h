@@ -62,10 +62,10 @@ public:
   ~KnapCovHandler();
 
   /// Does nothing. 
-  void relaxInitFull(RelaxationPtr , bool * ) {};
+  void relaxInitFull(RelaxationPtr , SolutionPool *, bool * ) {};
 
   /// Does nothing.
-  void relaxInitInc(RelaxationPtr , bool * ) {};
+  void relaxInitInc(RelaxationPtr , SolutionPool *, bool * ) {};
 
   /// Does nothing.
   void relaxNodeFull(NodePtr , RelaxationPtr , bool * ) {};

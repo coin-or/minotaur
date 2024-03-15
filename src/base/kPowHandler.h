@@ -102,10 +102,10 @@ class kPowHandler : public Handler {
                  SolutionPoolPtr s_pool, bool &sol_found);
 
   // base class method. Adds linear inequalities
-  void relaxInitFull(RelaxationPtr rel, bool *is_inf);
+  void relaxInitFull(RelaxationPtr rel, SolutionPool *, bool *is_inf);
 
   // Does nothing.
-  void relaxInitInc(RelaxationPtr rel, bool *is_inf);
+  void relaxInitInc(RelaxationPtr rel, SolutionPool *, bool *is_inf);
 
   // Does nothing.
   void relaxNodeFull(NodePtr node, RelaxationPtr rel, bool *is_inf);

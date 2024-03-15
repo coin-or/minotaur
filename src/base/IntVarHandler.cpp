@@ -209,13 +209,13 @@ bool IntVarHandler::isNeeded()
 }
 
 
-void IntVarHandler::relaxInitFull(RelaxationPtr, bool *is_inf)
+void IntVarHandler::relaxInitFull(RelaxationPtr, SolutionPool *, bool *is_inf)
 {
   *is_inf = false;
 }
 
 
-void IntVarHandler::relaxInitInc(RelaxationPtr , bool *is_inf)
+void IntVarHandler::relaxInitInc(RelaxationPtr , SolutionPool *, bool *is_inf)
 {
   *is_inf = false;
 }

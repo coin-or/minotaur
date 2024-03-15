@@ -134,7 +134,7 @@ namespace Minotaur {
      * Handler which are then used to construct a linear relaxation
      * from the original problem
      */
-    bool prepareLP_();
+    bool prepareLP_(SolutionPool *sp);
 
     /**
      * \brief This function makes a cut by including the objective as

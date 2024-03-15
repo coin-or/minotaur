@@ -16,12 +16,11 @@
 #define MINOTAURNODERELAXER_H
 
 #include "Types.h"
+#include "Modification.h"
+#include "Relaxation.h"
+#include "SolutionPool.h"
 
 namespace Minotaur {
-
-class   Modification;
-class   Relaxation;
-typedef Relaxation* RelaxationPtr;
 
 /**
  * NodeRelaxer class is used to create relaxations for nodes in a tree.
@@ -48,19 +47,27 @@ public:
   /// Destroy.
   virtual ~NodeRelaxer() { }
 
-  /**Create the root node.  Prune is true if then node can be pruned.
-     Also returns a vector of modifications that can be applied to the 
-     root node.  This is used if "strong" (LP-based) bounds tightening is
-     done. 
-  */
-  virtual RelaxationPtr createRootRelaxation(NodePtr rootNode, 
-                                             bool &prune) = 0; 
+  /**
+   * \brief Create the root node relaxation.
+   * \param[in] rootNode A pointer to root node.
+   * \param[out] prune is true if the root node can be pruned, either because
+   * the relaxation is found to be infeasible or because a trivial solution
+   * has been found.
+   * \returns a pointer to the relaxation. The method must create a relaxation
+   * even if we want to prune the root node.
+   */
+  virtual RelaxationPtr createRootRelaxation(NodePtr rootNode,
+                                             SolutionPool *sp, bool &prune) =0; 
 
   /**
-   * Set the brancher that will be used with this node processor. dived
-   * is true if this node is processed right after its parent. prune is
-   * true if the node was found to be infeasible after creating the
-   * relaxation.
+   * Create a relaxation for the current node. Relaxation can be an
+   * incremental change to an existing relaxation or it can be a new
+   * relaxation created from scratch.
+   * \param[in] node the node for which relaxation is created
+   * \param[in] dived is true if we dived down from the previous node, i.e.
+   * if this node is processed right after its parent.
+   * \param[out] prune is true if the node was found to be infeasible after
+   * creating the relaxation.
    */
   virtual RelaxationPtr createNodeRelaxation(NodePtr node, bool dived, 
                                              bool &prune) = 0;

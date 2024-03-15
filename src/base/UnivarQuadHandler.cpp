@@ -1841,12 +1841,14 @@ void UnivarQuadHandler::relax_(RelaxationPtr rel, bool *) {
   }
 }
 
-void UnivarQuadHandler::relaxInitFull(RelaxationPtr rel, bool *is_inf)
+void UnivarQuadHandler::relaxInitFull(RelaxationPtr rel, SolutionPool *,
+                                      bool *is_inf)
 {
   relax_(rel, is_inf);
 }
 
-void UnivarQuadHandler::relaxInitInc(RelaxationPtr rel, bool *is_inf)
+void UnivarQuadHandler::relaxInitInc(RelaxationPtr rel, SolutionPool *,
+                                     bool *is_inf)
 {
   relax_(rel, is_inf);
 }

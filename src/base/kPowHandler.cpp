@@ -1114,12 +1114,13 @@ void kPowHandler::relax_(RelaxationPtr rel, bool*)
   return;
 }
 
-void kPowHandler::relaxInitFull(RelaxationPtr rel, bool* is_inf)
+void kPowHandler::relaxInitFull(RelaxationPtr rel, SolutionPool *,
+                                bool* is_inf)
 {
   relax_(rel, is_inf);
 }
 
-void kPowHandler::relaxInitInc(RelaxationPtr rel, bool* is_inf)
+void kPowHandler::relaxInitInc(RelaxationPtr rel, SolutionPool *, bool* is_inf)
 {
   relax_(rel, is_inf);
 }

@@ -114,13 +114,15 @@ void CxQuadHandler::relax_(RelaxationPtr rel, bool *)
 }
 
 
-void CxQuadHandler::relaxInitFull(RelaxationPtr rel, bool *is_inf)
+void CxQuadHandler::relaxInitFull(RelaxationPtr rel, SolutionPool *,
+                                  bool *is_inf)
 {
   relax_(rel, is_inf);
 }
 
 
-void CxQuadHandler::relaxInitInc(RelaxationPtr rel, bool *is_inf)
+void CxQuadHandler::relaxInitInc(RelaxationPtr rel, SolutionPool *,
+                                 bool *is_inf)
 {
   relax_(rel, is_inf);
 }

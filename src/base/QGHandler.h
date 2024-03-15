@@ -156,10 +156,10 @@ public:
   void postsolveGetX(const double *, UInt, DoubleVector *) {};
 
   /// Base class method. calls relax_().
-  void relaxInitFull(RelaxationPtr rel, bool *is_inf);
+  void relaxInitFull(RelaxationPtr rel, SolutionPool *sp, bool *is_inf);
 
   /// Base class method. calls relax_().
-  void relaxInitInc(RelaxationPtr rel, bool *is_inf);
+  void relaxInitInc(RelaxationPtr rel, SolutionPool *sp, bool *is_inf);
 
   /// Base class method. Does nothing.
   void relaxNodeFull(NodePtr node, RelaxationPtr rel, bool *is_inf);
@@ -205,7 +205,7 @@ private:
    * the optimal point. isInf is set to true if the relaxation is found
    * infeasible. Throw an assert if the relaxation is unbounded.
    */
-  void initLinear_(bool *isInf);
+  void initLinear_(SolutionPool *sp, bool *isInf);
 
   /**
    * Obtain the linear function (lf) and constant (c) from the
@@ -250,7 +250,7 @@ private:
    * Create the initial relaxation. It is called from relaxInitFull and
    * relaxInitInc functions.
    */
-  void relax_(bool *is_inf);
+  void relax_(SolutionPool *sp, bool *is_inf);
 
   /// Solve the nlp.
   void solveNLP_();
@@ -262,7 +262,7 @@ private:
    * Update the upper bound. XXX: Needs proper integration with
    * Minotaur's Handler design. 
    */
-  void updateUb_(SolutionPoolPtr s_pool, double nlpval, bool *sol_found);
+  void updateUb_(SolutionPool* s_pool, double nlpval, bool *sol_found);
 
   };
 

@@ -366,13 +366,13 @@ bool SOS1Handler::isNeeded()
 }
 
 
-void SOS1Handler::relaxInitFull(RelaxationPtr, bool *is_inf)
+void SOS1Handler::relaxInitFull(RelaxationPtr, SolutionPool *, bool *is_inf)
 {
   *is_inf = false;
 }
 
 
-void SOS1Handler::relaxInitInc(RelaxationPtr , bool *is_inf)
+void SOS1Handler::relaxInitInc(RelaxationPtr, SolutionPool *, bool *is_inf)
 {
   *is_inf = false;
 }

@@ -111,10 +111,10 @@ public:
                     ModVector &r_mods);
 
   // base class method. Adds linear inequalities
-  void relaxInitFull(RelaxationPtr rel, bool *is_inf);
+  void relaxInitFull(RelaxationPtr rel, SolutionPool *sp, bool *is_inf);
 
   // Does nothing.
-  void relaxInitInc(RelaxationPtr rel, bool *is_inf);
+  void relaxInitInc(RelaxationPtr rel, SolutionPool *sp, bool *is_inf);
 
   // Does nothing.
   void relaxNodeFull(NodePtr node, RelaxationPtr rel, bool *is_inf);

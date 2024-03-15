@@ -163,7 +163,7 @@ NodePtr BranchAndBound::processRoot_(bool *should_prune, bool *should_dive)
   tm_->insertRoot(current_node);
 
   if (options_->createRoot == true) {
-    rel = nodeRlxr_->createRootRelaxation(current_node, prune);
+    rel = nodeRlxr_->createRootRelaxation(current_node, solPool_, prune);
     rel->setProblem(problem_);
   } else {
     rel = nodeRlxr_->getRelaxation();
@@ -171,7 +171,7 @@ NodePtr BranchAndBound::processRoot_(bool *should_prune, bool *should_dive)
 
   if (!prune) {
   // solve the root node only if the initial root relaxation is not pruned
-  // because of the unboundedness or infeasibility
+  // because of the unboundedness or infeasibility or something else
 #if SPEW
   logger_->msgStream(LogDebug) << me_ << "processing root node" << 
     std::endl;
