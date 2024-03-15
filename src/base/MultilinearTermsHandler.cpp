@@ -354,7 +354,8 @@ MultilinearTermsHandler::isFeasible(ConstSolutionPtr sol, RelaxationPtr ,
 }
 
 void
-MultilinearTermsHandler::relaxInitInc(RelaxationPtr relaxation, bool *)
+MultilinearTermsHandler::relaxInitInc(RelaxationPtr relaxation, SolutionPool *,
+                                      bool *)
 {
 
   //  General notes...

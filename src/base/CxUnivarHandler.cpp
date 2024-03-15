@@ -158,7 +158,7 @@ CxUnivarHandler::~CxUnivarHandler()
 
 }
 
-void CxUnivarHandler::relaxInitInc(RelaxationPtr rel, bool *) 
+void CxUnivarHandler::relaxInitInc(RelaxationPtr rel, SolutionPool *, bool *) 
 {
 
   if (tmpX_.size() != problem_->getNumVars()) {

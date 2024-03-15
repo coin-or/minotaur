@@ -1368,12 +1368,13 @@ void LinearHandler::relax_(ProblemPtr p, RelaxationPtr rel, bool* is_inf)
   //std::cout << "\nEnd of relaxation from IntVarHandler.\n";
 }
 
-void LinearHandler::relaxInitFull(RelaxationPtr rel, bool* is_inf)
+void LinearHandler::relaxInitFull(RelaxationPtr rel, SolutionPool*,
+                                  bool* is_inf)
 {
   relax_(problem_, rel, is_inf);
 }
 
-void LinearHandler::relaxInitInc(RelaxationPtr rel, bool* is_inf)
+void LinearHandler::relaxInitInc(RelaxationPtr rel, SolutionPool*, bool* is_inf)
 {
   relax_(problem_, rel, is_inf);
 }

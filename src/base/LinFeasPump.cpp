@@ -132,7 +132,7 @@ void LinFeasPump::implementFP_(const double*, SolutionPoolPtr s_pool)
   bool to_continue            = true;
   bool is_feasible            = false;
   bool sol_found              = false;
-  bool is_prob_infeasible     = prepareLP_();
+  bool is_prob_infeasible     = prepareLP_(s_pool);
   bool should_separate        = true;
   UInt max_NLP                = 10;
   UInt max_LP                 = 2000;
@@ -238,7 +238,7 @@ double LinFeasPump::getSolGap_(double f_nlp, double f_feas)
 }
 
 
-bool LinFeasPump::prepareLP_()
+bool LinFeasPump::prepareLP_(SolutionPool *sp)
 {
   bool is_inf = false;
  //  std::vector<bool> c_list(p_->getNumCons(), false);
@@ -247,12 +247,12 @@ bool LinFeasPump::prepareLP_()
   lh_ = (LinearHandlerPtr) new LinearHandler(env_, p_);
   qh_ = (QGHandlerPtr)  new QGHandler(env_, p_, e_);
   
-  lh_->relaxInitInc(r_, &is_inf);
+  lh_->relaxInitInc(r_, sp, &is_inf);
   if (is_inf == true) {
     return is_inf;
   }
 
-  qh_->relaxInitInc(r_, &is_inf);
+  qh_->relaxInitInc(r_, sp, &is_inf);
   if (is_inf == true) {
     return is_inf;
   }

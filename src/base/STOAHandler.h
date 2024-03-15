@@ -185,10 +185,10 @@ public:
   void postsolveGetX(const double *, UInt, DoubleVector *) {};
 
   // Base class method. calls relax_().
-  void relaxInitFull(RelaxationPtr, bool *) {};
+  void relaxInitFull(RelaxationPtr, SolutionPool *, bool *) {};
 
   // Base class method. calls relax_().
-  void relaxInitInc(RelaxationPtr rel, bool *);
+  void relaxInitInc(RelaxationPtr rel, SolutionPool *, bool *);
 
   // Base class method. Does nothing.
   void relaxNodeFull(NodePtr, RelaxationPtr, bool *) {};

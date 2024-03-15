@@ -768,7 +768,7 @@ void STOAHandler::cutToObj_(const double *nlpx, const double *lpx,
 }
 
 
-void STOAHandler::relaxInitInc(RelaxationPtr rel, bool *isInf)
+void STOAHandler::relaxInitInc(RelaxationPtr rel, SolutionPool *, bool *isInf)
 {
   rel_ = rel;
   relax_(isInf);

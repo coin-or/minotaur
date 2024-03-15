@@ -38,7 +38,8 @@ public:
   ~ParNodeIncRelaxer();
 
   // Implement NodeRelaxer::CreateRootRelaxation()
-  RelaxationPtr createRootRelaxation(NodePtr rootNode, bool &prune);
+  RelaxationPtr createRootRelaxation(NodePtr rootNode, SolutionPool *sp,
+                                     bool &prune);
 
   // Implement NodeRelaxer::CreateNodeRelaxation()
   RelaxationPtr createNodeRelaxation(NodePtr node, bool dived, bool &prune);

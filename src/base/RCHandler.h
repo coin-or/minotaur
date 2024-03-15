@@ -88,10 +88,10 @@ public:
   void postsolveGetX(const double *, UInt, DoubleVector *) {};
 
   // Base class method 
-  void relaxInitFull(RelaxationPtr, bool *) {};
+  void relaxInitFull(RelaxationPtr, SolutionPool *, bool *) {};
 
   // Base class method. calls relax_().
-  void relaxInitInc(RelaxationPtr, bool *) {};
+  void relaxInitInc(RelaxationPtr, SolutionPool *, bool *) {};
 
   // Base class method.
   void relaxNodeFull(NodePtr, RelaxationPtr, bool *) {};

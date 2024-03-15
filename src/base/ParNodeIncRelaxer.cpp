@@ -45,13 +45,15 @@ ParNodeIncRelaxer::~ParNodeIncRelaxer ()
 }
 
 
-RelaxationPtr ParNodeIncRelaxer::createRootRelaxation(NodePtr, bool &prune)
+RelaxationPtr ParNodeIncRelaxer::createRootRelaxation(NodePtr, 
+                                                      SolutionPool *sp,
+                                                      bool &prune)
 {
   prune = false;
   rel_ = (RelaxationPtr) new Relaxation(env_);
   for (HandlerIterator h = handlers_.begin(); h != handlers_.end() && !prune; 
       ++h) {
-    (*h)->relaxInitInc(rel_, &prune);
+    (*h)->relaxInitInc(rel_, sp, &prune);
     if (prune) {
       break;
     }

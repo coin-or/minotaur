@@ -221,10 +221,14 @@ void QGHandler::fixInts_(const double* x)
   return;
 }
 
-void QGHandler::initLinear_(bool* isInf)
+void QGHandler::initLinear_(SolutionPool *sp, bool* is_inf)
 {
-  *isInf = false;
+  *is_inf = false;
   const double* x;
+  double val;
+  VariablePtr var;
+  bool int_feas = true;
+  VariableType v_type;
 
   nlpe_->load(minlp_);
   solveNLP_();
@@ -234,6 +238,26 @@ void QGHandler::initLinear_(bool* isInf)
   case(ProvenLocalOptimal):
     ++(stats_->nlpF);
     x = nlpe_->getSolution()->getPrimal();
+    // Check if the solution is already integer feasible to MINLP
+    for(VariableConstIterator v_iter = minlp_->varsBegin();
+        v_iter != minlp_->varsEnd();
+        ++v_iter) {
+      var = *v_iter;
+      v_type = var->getType();
+      if(v_type == Binary || v_type == Integer) {
+        val = x[var->getIndex()];
+        if(fabs(val - floor(val + 0.5)) > intTol_) {
+          int_feas = false;
+          break;
+        }
+      }
+    }
+    if (int_feas) {
+      *is_inf = true; // It is not really infeasible, but still can be pruned.
+      logger_->msgStream(LogInfo) << me_ << "Optimal solution found while "
+       << "solving the initial NLP" << std::endl;
+      updateUb_(sp, nlpe_->getSolutionValue(), &int_feas);
+    } 
     addInitLinearX_(x);
     break;
   case(EngineIterationLimit):
@@ -245,7 +269,7 @@ void QGHandler::initLinear_(bool* isInf)
   case(ProvenLocalInfeasible):
   case(ProvenObjectiveCutOff):
     ++(stats_->nlpI);
-    *isInf = true;
+    *is_inf = true;
     break;
   case(FailedFeas):
   case(EngineError):
@@ -256,8 +280,10 @@ void QGHandler::initLinear_(bool* isInf)
   case(ProvenFailedCQInfeas):
   default:
     logger_->msgStream(LogError)
-        << me_ << "NLP engine status at root= " << nlpStatus_ << std::endl;
-    assert(!"In QGHandler: stopped at root. Check error log.");
+        << me_ << "NLP engine has an error status at root node = "
+        << nlpStatus_ << std::endl
+        << "Assuming that the relaxation is infeasible" << std::endl;
+    *is_inf = true;
     break;
   }
   return;
@@ -557,15 +583,15 @@ void QGHandler::cutToObj_(const double* nlpx, const double* lpx, CutManager*,
   return;
 }
 
-void QGHandler::relaxInitFull(RelaxationPtr, bool*)
+void QGHandler::relaxInitFull(RelaxationPtr, SolutionPool *, bool*)
 {
   //Does nothing
 }
 
-void QGHandler::relaxInitInc(RelaxationPtr rel, bool* isInf)
+void QGHandler::relaxInitInc(RelaxationPtr rel, SolutionPool *sp, bool* is_inf)
 {
   rel_ = rel;
-  relax_(isInf);
+  relax_(sp, is_inf);
   return;
 }
 
@@ -579,7 +605,7 @@ void QGHandler::relaxNodeInc(NodePtr, RelaxationPtr, bool*)
   //Does nothing
 }
 
-void QGHandler::relax_(bool* isInf)
+void QGHandler::relax_(SolutionPool *sp, bool* is_inf)
 {
   ConstraintPtr c;
   FunctionType fType;
@@ -594,7 +620,7 @@ void QGHandler::relax_(bool* isInf)
   }
 
   linearizeObj_();
-  initLinear_(isInf);
+  initLinear_(sp, is_inf);
   return;
 }
 

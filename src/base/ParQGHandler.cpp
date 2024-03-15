@@ -650,13 +650,13 @@ void ParQGHandler::cutToObj_(const double *nlpx, const double *lpx,
 }
 
 
-void ParQGHandler::relaxInitFull(RelaxationPtr , bool *)
+void ParQGHandler::relaxInitFull(RelaxationPtr , SolutionPool *, bool *)
 {
   //Does nothing
 }
 
 
-void ParQGHandler::relaxInitInc(RelaxationPtr rel, bool *isInf)
+void ParQGHandler::relaxInitInc(RelaxationPtr rel, SolutionPool *, bool *isInf)
 {
   rel_ = rel;
   relax_(isInf);
