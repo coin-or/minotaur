@@ -198,7 +198,7 @@ BranchAndBound* Glob::createBab_(EnginePtr e, HandlerVector& handlers)
   bab->shouldCreateRoot(true);
 
   if(env_->getOptions()->findBool("samplingheur")->getValue() == true) {
-    SamplingHeurPtr s_heur = (SamplingHeurPtr) new SamplingHeur(env_, newp_);
+    SamplingHeurPtr s_heur = (SamplingHeurPtr) new SamplingHeur(env_, inst_);
     bab->addPreRootHeur(s_heur);
   }
 

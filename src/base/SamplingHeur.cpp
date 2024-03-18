@@ -227,10 +227,10 @@ void SamplingHeur::getNewPoint_(double* x, double* xl, double* xu,
       ++vit) {
     v = *vit;
     ind = v->getIndex();
-    r = rand() % 10;
-    if(r < 8) {
+    r = rand() % 100;
+    if(r < 95) {
       x[ind] = best[ind];
-    } else if(r == 8) {
+    } else if(r < 98) {
       ldist = best[ind] - xl[ind];
       udist = xu[ind] - best[ind];
       if(ldist < udist) {
