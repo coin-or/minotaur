@@ -204,6 +204,7 @@ VariablePtr SimpleTransformer::newBilVar_(VariablePtr vl, VariablePtr vr)
       lf->addTerm(ov, -1.0);
       f = (FunctionPtr) new Function(lf, cg);
       cnew = newp_->newConstraint(f, 0.0, 0.0);
+      cnew->setSrcType(ConsTran);
 #if SPEW
       logger_->msgStream(LogDebug)
           << me_ << "added new constraint" << std::endl;
@@ -842,6 +843,7 @@ void SimpleTransformer::refBinxBin_(VariablePtr bin1, VariablePtr bin2,
   lfnew->addTerm(bin1, -1.0);
   fnew = (FunctionPtr) new Function(lfnew);
   cnew = newp_->newConstraint(fnew, -INFINITY, 0.0);
+  cnew->setSrcType(ConsTran);
 #if SPEW
   logger_->msgStream(LogDebug) << me_ << "added new constraint" << std::endl;
   cnew->write(logger_->msgStream(LogDebug));
@@ -854,6 +856,7 @@ void SimpleTransformer::refBinxBin_(VariablePtr bin1, VariablePtr bin2,
   lfnew->addTerm(bin2, -1.0);
   fnew = (FunctionPtr) new Function(lfnew);
   cnew = newp_->newConstraint(fnew, -INFINITY, 0.0);
+  cnew->setSrcType(ConsTran);
 #if SPEW
   logger_->msgStream(LogDebug) << me_ << "added new constraint" << std::endl;
   cnew->write(logger_->msgStream(LogDebug));
@@ -867,6 +870,7 @@ void SimpleTransformer::refBinxBin_(VariablePtr bin1, VariablePtr bin2,
   lfnew->addTerm(bin2, 1.0);
   fnew = (FunctionPtr) new Function(lfnew);
   cnew = newp_->newConstraint(fnew, -INFINITY, 1.0);
+  cnew->setSrcType(ConsTran);
 #if SPEW
   logger_->msgStream(LogDebug) << me_ << "added new constraint" << std::endl;
   cnew->write(logger_->msgStream(LogDebug));
@@ -888,6 +892,7 @@ void SimpleTransformer::refBinxCont_(VariablePtr bin, VariablePtr cont,
   lfnew->addTerm(bin, -lb);
   fnew = (FunctionPtr) new Function(lfnew);
   cnew = newp_->newConstraint(fnew, 0.0, INFINITY);
+  cnew->setSrcType(ConsTran);
 #if SPEW
   logger_->msgStream(LogDebug) << me_ << "added new constraint" << std::endl;
   cnew->write(logger_->msgStream(LogDebug));
@@ -901,6 +906,7 @@ void SimpleTransformer::refBinxCont_(VariablePtr bin, VariablePtr cont,
   lfnew->addTerm(cont, -1.0);
   fnew = (FunctionPtr) new Function(lfnew);
   cnew = newp_->newConstraint(fnew, -ub, INFINITY);
+  cnew->setSrcType(ConsTran);
 #if SPEW
   logger_->msgStream(LogDebug) << me_ << "added new constraint" << std::endl;
   cnew->write(logger_->msgStream(LogDebug));
@@ -913,6 +919,7 @@ void SimpleTransformer::refBinxCont_(VariablePtr bin, VariablePtr cont,
   lfnew->addTerm(bin, -ub);
   fnew = (FunctionPtr) new Function(lfnew);
   cnew = newp_->newConstraint(fnew, -INFINITY, 0.0);
+  cnew->setSrcType(ConsTran);
 #if SPEW
   logger_->msgStream(LogDebug) << me_ << "added new constraint" << std::endl;
   cnew->write(logger_->msgStream(LogDebug));
@@ -926,6 +933,7 @@ void SimpleTransformer::refBinxCont_(VariablePtr bin, VariablePtr cont,
   lfnew->addTerm(cont, -1.0);
   fnew = (FunctionPtr) new Function(lfnew);
   cnew = newp_->newConstraint(fnew, -INFINITY, -lb);
+  cnew->setSrcType(ConsTran);
 #if SPEW
   logger_->msgStream(LogDebug) << me_ << "added new constraint" << std::endl;
   cnew->write(logger_->msgStream(LogDebug));
@@ -975,6 +983,7 @@ void SimpleTransformer::refQuadCons_(QuadraticFunctionPtr qf,
         qfnew->addTerm(it->first.first, it->first.second, 1.0);
         fnew = (FunctionPtr) new Function(lfnew, qfnew);
         cnew = newp_->newConstraint(fnew, 0.0, 0.0);
+        cnew->setSrcType(ConsTran);
         ++stats_.ncons;
 #if SPEW
         logger_->msgStream(LogDebug)
