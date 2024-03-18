@@ -22,6 +22,7 @@
 #include "AMPLJacobian.h"
 #include "EngineFactory.h"
 #include "Environment.h"
+#include "FixVarsHeur.h"
 #include "Handler.h"
 #include "IntVarHandler.h"
 #include "LPEngine.h"
@@ -61,14 +62,10 @@ QG::QG(EnvPtr env)
 {
   env_ = env;
   iface_ = 0;
-  ownIface_=true;
+  ownIface_ = true;
 }
 
-
-QG::~QG()
-{
-}
-
+QG::~QG() { }
 
 void QG::doSetup()
 {
@@ -80,7 +77,6 @@ void QG::doSetup()
   iface_ = (MINOTAUR_AMPL::AMPLInterfacePtr) new MINOTAUR_AMPL::AMPLInterface(
       env_, "qg");
 }
-
 
 int QG::getEngines_(Engine** nlp_e, LPEngine** lp_e)
 {
@@ -155,18 +151,17 @@ PresolverPtr QG::presolve_(HandlerVector& handlers)
 void QG::sepDetection()
 {
   TransSepPtr sep = TransSepPtr();
-  if (env_->getOptions()->findBool("separability")->getValue() == true) {
-    if (oinst_->isLinear()) {
-      env_->getLogger()->msgStream(LogInfo) << me_
-        << "No separability detection as problem is linear." 
-        << std::endl;
+  if(env_->getOptions()->findBool("separability")->getValue() == true) {
+    if(oinst_->isLinear()) {
+      env_->getLogger()->msgStream(LogInfo)
+          << me_ << "No separability detection as problem is linear."
+          << std::endl;
     } else {
       sep = (TransSepPtr) new TransSep(env_, oinst_);
       sep->sepDetection();
     }
   }
 }
-
 
 void QG::setInitialOptions_()
 {
@@ -219,15 +214,17 @@ int QG::showInfo()
         << std::endl;
     return 1;
   }
-  
+
   // code for printing whether we use cgtoqf or not
-   
-  if (options->findBool("cgtoqf")->getValue() == 1) {
+
+  if(options->findBool("cgtoqf")->getValue() == 1) {
     env_->getLogger()->msgStream(LogInfo)
-        << me_ << "Using quadratic function to store quadratic problem." << std::endl;
+        << me_ << "Using quadratic function to store quadratic problem."
+        << std::endl;
   } else {
     env_->getLogger()->msgStream(LogInfo)
-        << me_ << "Using cgraph function to store non-quadratic problem." << std::endl;
+        << me_ << "Using cgraph function to store non-quadratic problem."
+        << std::endl;
   }
   // code ended
 
@@ -260,20 +257,20 @@ int QG::solve(ProblemPtr p)
   int err = 0;
 
   oinst_ = p;
-  if (oinst_->isQuadratic() && true==options->findBool("cgtoqf")->getValue()) {
-    env_->getLogger()->msgStream(LogInfo) << me_ << "Using quadratic function to store quadratic problem." << std::endl;
+  if(oinst_->isQuadratic() && true == options->findBool("cgtoqf")->getValue()) {
+    env_->getLogger()->msgStream(LogInfo)
+        << me_ << "Using quadratic function to store quadratic problem."
+        << std::endl;
     oinst_->cg2qf();
   }
 
   oinst_->calculateSize();
-  
-
 
   timer->start();
   if(options->findBool("display_problem")->getValue() == true) {
     oinst_->write(env_->getLogger()->msgStream(LogNone), 12);
   }
-  
+
   if(options->findBool("display_size")->getValue() == true) {
     oinst_->writeSize(env_->getLogger()->msgStream(LogNone));
     env_->getLogger()->msgStream(LogInfo)
@@ -282,7 +279,7 @@ int QG::solve(ProblemPtr p)
     env_->getLogger()->msgStream(LogInfo)
         << me_ << "Finished constraint classification\n";
   }
-  
+
   // setup the jacobian and hessian
   if(false == options->findBool("use_native_cgraph")->getValue()) {
     JacobianPtr jac = new MINOTAUR_AMPL::AMPLJacobian(iface_);
@@ -336,10 +333,9 @@ int QG::solve(ProblemPtr p)
   }
 
   if(true == options->findBool("use_native_cgraph")->getValue()) {
-   oinst_->setNativeDer();
+    oinst_->setNativeDer();
   }
-  
-  
+
   if(options->findBool("rc_fix")->getValue() && 0) {
     rc_hand = (RCHandlerPtr) new RCHandler(env_);
     rc_hand->setModFlags(false, true);
@@ -421,6 +417,11 @@ int QG::solve(ProblemPtr p)
     bab->addPreRootHeur(s_heur);
   }
 
+  if(env_->getOptions()->findBool("fixvarsheur")->getValue() == true) {
+    FixVarsHeurPtr f_heur = (FixVarsHeurPtr) new FixVarsHeur(env_, oinst_);
+    bab->addPreRootHeur(f_heur);
+  }
+
   // start solving
   bab->solve();
 
@@ -437,7 +438,6 @@ int QG::solve(ProblemPtr p)
       ++it) {
     (*it)->writeStats(env_->getLogger()->msgStream(LogExtraInfo));
   }
-
 
   err = writeSol_(env_, orig_v, pres, sol_, status_, iface_);
   if(err) {
