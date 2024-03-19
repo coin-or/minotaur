@@ -144,6 +144,12 @@ public:
     return state_;
   }
 
+  /// Get the src type of the constraint
+  ConsSrcType getSrcType() const
+  {
+    return src_;
+  }
+
   /// Get the 'u' value. or the upper bound constraint on 'f'.
   double getUb() const
   {

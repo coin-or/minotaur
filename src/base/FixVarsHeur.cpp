@@ -76,12 +76,17 @@ void FixVarsHeur::solve(NodePtr, RelaxationPtr, SolutionPoolPtr s_pool)
     consNumVar_.clear();
     for(ConstraintConstIterator cit = p_->consBegin(); cit != p_->consEnd();
         ++cit) {
-      numvars = (*cit)->getFunction()->getNumVars();
-      if(numvars == 1) {
-        // Just a bound constraint, should not be considered for convering.
-        consNumVar_.insert({*cit, 0});
+      if((*cit)->getSrcType() == ConsOrig ||
+         (*cit)->getSrcType() == ConsTranOrig) {
+        numvars = (*cit)->getFunction()->getNumVars();
+        if(numvars == 1) {
+          // Just a bound constraint, should not be considered for convering.
+          consNumVar_.insert({*cit, 0});
+        } else {
+          consNumVar_.insert({*cit, numvars});
+        }
       } else {
-        consNumVar_.insert({*cit, numvars});
+        consNumVar_.insert({*cit, 0});
       }
     }
     while(unfixedVars.size() > 0) {
@@ -211,7 +216,9 @@ void FixVarsHeur::FixVars_(std::map<VariablePtr, UInt>& unfixedVars)
             if(ret.second == true) {
               updateMap_(c, unfixedVars);
             }
-            --(consNumVar_[c]);
+            if(consNumVar_[c] > 0) {
+              --(consNumVar_[c]);
+            }
           }
           unfixedVars.erase(v);
           break;
@@ -229,7 +236,9 @@ void FixVarsHeur::FixVars_(std::map<VariablePtr, UInt>& unfixedVars)
       if(ret.second == true) {
         updateMap_(c, unfixedVars);
       }
-      --(consNumVar_[c]);
+      if(consNumVar_[c] > 0) {
+        --(consNumVar_[c]);
+      }
     }
     unfixedVars.erase(v);
   }
@@ -336,7 +345,9 @@ bool FixVarsHeur::presolve_(SolutionPoolPtr s_pool,
     v = *it;
     for(ConstrSet::iterator cit = v->consBegin(); cit != v->consEnd(); ++cit) {
       c = *cit;
-      --(consNumVar_[c]);
+      if(consNumVar_[c] > 0) {
+        --(consNumVar_[c]);
+      }
     }
     unfixedVars.erase(v);
   }

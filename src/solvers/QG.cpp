@@ -419,6 +419,7 @@ int QG::solve(ProblemPtr p)
 
   if(env_->getOptions()->findBool("fixvarsheur")->getValue() == true) {
     FixVarsHeurPtr f_heur = (FixVarsHeurPtr) new FixVarsHeur(env_, oinst_);
+    f_heur->setHandlers(handlers);
     bab->addPreRootHeur(f_heur);
   }
 

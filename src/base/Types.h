@@ -95,6 +95,9 @@ typedef enum {
 typedef enum {
   ConsOrig, ///> Constraint was part of the original problem
   ConsTran, ///> Constraint added by Transformer
+  ConsTranOrig, ///> Constraint added by Transformer as a reformulation of original constraint
+  ConsHand, ///> Constraint added by Handler
+  ConsCut   ///> Constraint added as a cut
 } ConsSrcType;
 
 /// Different types of variable-bounds.
