@@ -1046,12 +1046,14 @@ void SimpleTransformer::reformulate(ProblemPtr& newp, HandlerVector& handlers,
   handlers.push_back(kHandler_);
   copyLinear_(p_, newp_);
 
-  if(checkQuadConvexity_()) {
-    status = 2; // status 2 means the problem is convex
-    clearUnusedHandlers_(handlers);
-    writeStats(logger_->msgStream(LogExtraInfo));
-    delete newp_;
-    return;
+  if(env_->getOptions()->findInt("convex")->getValue() == 0) {
+    if(checkQuadConvexity_()) {
+      status = 2; // status 2 means the problem is convex
+      clearUnusedHandlers_(handlers);
+      writeStats(logger_->msgStream(LogExtraInfo));
+      delete newp_;
+      return;
+    }
   }
   refNonlinCons_(p_);
   refNonlinObj_(p_);
