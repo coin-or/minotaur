@@ -99,11 +99,6 @@ void Environment::createDefaultOptions_()
   options_->insert(b_option);
 
   b_option = (BoolOptionPtr) new Option<bool>(
-      "convex", "Should we assume the problem to be convex: <0/1>", true,
-      false);
-  options_->insert(b_option);
-
-  b_option = (BoolOptionPtr) new Option<bool>(
       "separability", "Should separability be used: <0/1>", true, false);
   options_->insert(b_option);
 
@@ -457,6 +452,13 @@ void Environment::createDefaultOptions_()
 
   i_option = (IntOptionPtr) new Option<int>(
       "root_linScheme3", "No. of iteration of ESH at root ", true, 0);
+  options_->insert(i_option);
+
+  // -1 - Do not check convexity. Assume nonconvex.
+  // 0 - Check convexity
+  // 1 - Assume convex
+  i_option = (IntOptionPtr) new Option<int>(
+      "convex", "Should we assume the problem to be convex: <-1/0/1>", true, 0);
   options_->insert(i_option);
 
   i_option = 0;

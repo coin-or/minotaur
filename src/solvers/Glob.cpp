@@ -17,6 +17,7 @@
 #include <iostream>
 
 #include "AMPLInterface.h"
+#include "Bnb.h"
 #include "BranchAndBound.h"
 #include "Engine.h"
 #include "EngineFactory.h"
@@ -293,6 +294,13 @@ void Glob::fwd2QG_()
   return;
 }
 
+void Glob::fwd2Bnb_()
+{
+  Bnb bnb(env_);
+  bnb.solve(inst_);
+  return;
+}
+
 DoubleVector Glob::getSolution()
 {
   DoubleVector x;
@@ -332,7 +340,7 @@ int Glob::solve(ProblemPtr inst)
   env_->initRand();
 
   inst_ = inst;
-  if(options->findBool("convex")->getValue() == 1) {
+  if(options->findInt("convex")->getValue() == 1) {
     fwd2QG_();
     goto CLEANUP;
   }
@@ -397,7 +405,25 @@ int Glob::solve(ProblemPtr inst)
   assert(0 == err || 2 == err); // return status 2 means problem is convex
 
   if(err == 2) {
-    // call QG
+    // call convex solvers
+    if(inst_->isQP()) {
+      QuadraticFunctionPtr qf = inst_->getObjective()->getQuadraticFunction();
+      bool check = true;
+      for(VariablePairGroupConstIterator it = qf->begin(); it != qf->end();
+          ++it) {
+        if((it->first.first->getType() != Binary) &&
+           (it->first.second->getType() != Binary)) {
+          check = false;
+          break;
+        }
+      }
+      if(check) {
+        env_->getOptions()->findBool("nl_presolve")->setValue(false);
+        env_->getOptions()->findString("brancher")->setValue("rel");
+        fwd2Bnb_();
+        goto CLEANUP;
+      }
+    }
     env_->getLogger()->msgStream(LogInfo)
         << me_ << "All constraints and objective found to be convex"
         << std::endl

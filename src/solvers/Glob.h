@@ -69,6 +69,7 @@ private:
 
   BranchAndBound* createBab_(EnginePtr e, HandlerVector& handlers);
   PresolverPtr createPres_(HandlerVector& handlers);
+  void fwd2Bnb_();
   void fwd2QG_();
   BrancherPtr getBrancher_(HandlerVector handlers, Engine* e);
   LPEnginePtr getEngine_();
