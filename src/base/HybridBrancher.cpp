@@ -5,12 +5,12 @@
 //
 
 /**
- * \file StrongBrancher.cpp
- * \brief Define methods for strong branching.
+ * \file HybridBrancher.cpp
+ * \brief Define methods for Hybrid branching.
  * \author Mustafa Vora, Indian Institute of Technology Bombay
  */
 
-#include "StrongBrancher.h"
+#include "HybridBrancher.h"
 
 #include <algorithm>
 #include <cmath>
@@ -36,9 +36,9 @@
 
 using namespace Minotaur;
 
-const std::string StrongBrancher::me_ = "strong brancher: ";
+const std::string HybridBrancher::me_ = "Hybrid brancher: ";
 
-StrongBrancher::StrongBrancher(EnvPtr env, HandlerVector& handlers)
+HybridBrancher::HybridBrancher(EnvPtr env, HandlerVector& handlers)
   : engine_(EnginePtr()),
     eTol_(1e-6),
     handlers_(handlers),
@@ -62,12 +62,12 @@ StrongBrancher::StrongBrancher(EnvPtr env, HandlerVector& handlers)
   stronger_ = false;
 }
 
-StrongBrancher::~StrongBrancher()
+HybridBrancher::~HybridBrancher()
 {
   delete stats_;
 }
 
-void StrongBrancher::doStronger()
+void HybridBrancher::doStronger()
 {
   stronger_ = true;
 #if SPEW
@@ -76,7 +76,7 @@ void StrongBrancher::doStronger()
 #endif
 }
 
-BrCandPtr StrongBrancher::findBestCandidate_(const double objval,
+BrCandPtr HybridBrancher::findBestCandidate_(const double objval,
                                              SolutionPoolPtr s_pool)
 {
   double best_score = -INFINITY;
@@ -181,7 +181,7 @@ BrCandPtr StrongBrancher::findBestCandidate_(const double objval,
   return best_cand;
 }
 
-Branches StrongBrancher::findBranches(RelaxationPtr rel, NodePtr,
+Branches HybridBrancher::findBranches(RelaxationPtr rel, NodePtr,
                                       ConstSolutionPtr sol,
                                       SolutionPoolPtr s_pool,
                                       BrancherStatus& br_status,
@@ -263,7 +263,7 @@ Branches StrongBrancher::findBranches(RelaxationPtr rel, NodePtr,
   return branches;
 }
 
-void StrongBrancher::findCandidates_(bool& should_prune)
+void HybridBrancher::findCandidates_(bool& should_prune)
 {
   BrVarCandSet cands2;    // Temporary set.
   BrCandVector gencands2; // Temporary set.
@@ -348,7 +348,7 @@ void StrongBrancher::findCandidates_(bool& should_prune)
   return;
 }
 
-void StrongBrancher::freeCandidates_(BrCandPtr no_del)
+void HybridBrancher::freeCandidates_(BrCandPtr no_del)
 {
   for(BrVarCandIter it = unrelCands_.begin(); it != unrelCands_.end(); ++it) {
     if(no_del != *it) {
@@ -358,12 +358,12 @@ void StrongBrancher::freeCandidates_(BrCandPtr no_del)
   unrelCands_.clear();
 }
 
-std::string StrongBrancher::getName() const
+std::string HybridBrancher::getName() const
 {
-  return "StrongBrancher";
+  return "HybridBrancher";
 }
 
-void StrongBrancher::getPCScore_(BrCandPtr cand, double* ch_dn, double* ch_up,
+void HybridBrancher::getPCScore_(BrCandPtr cand, double* ch_dn, double* ch_up,
                                  double* score)
 {
   int index = cand->getPCostIndex();
@@ -378,7 +378,7 @@ void StrongBrancher::getPCScore_(BrCandPtr cand, double* ch_dn, double* ch_up,
   }
 }
 
-double StrongBrancher::getScore_(const double& up_score,
+double HybridBrancher::getScore_(const double& up_score,
                                  const double& down_score)
 {
   if(up_score > down_score) {
@@ -388,7 +388,7 @@ double StrongBrancher::getScore_(const double& up_score,
   }
 }
 
-void StrongBrancher::initialize_(RelaxationPtr rel)
+void HybridBrancher::initialize_(RelaxationPtr rel)
 {
   if(!reliability_) {
     return;
@@ -400,18 +400,18 @@ void StrongBrancher::initialize_(RelaxationPtr rel)
   timesUp_ = std::vector<UInt>(n, 0);
 }
 
-bool StrongBrancher::isReliable_(int pcostindex)
+bool HybridBrancher::isReliable_(int pcostindex)
 {
   return reliability_ && timesUp_[pcostindex] >= thresh_ &&
       timesDown_[pcostindex] >= thresh_;
 }
 
-void StrongBrancher::setEngine(EnginePtr engine)
+void HybridBrancher::setEngine(EnginePtr engine)
 {
   engine_ = engine;
 }
 
-void StrongBrancher::reliabilitySetup(UInt max_cands, UInt max_iter,
+void HybridBrancher::reliabilitySetup(UInt max_cands, UInt max_iter,
                                       UInt thresh)
 {
   maxCands_ = max_cands;
@@ -421,12 +421,12 @@ void StrongBrancher::reliabilitySetup(UInt max_cands, UInt max_iter,
   stronger_ = true;
 }
 
-void StrongBrancher::setProblem(ProblemPtr p)
+void HybridBrancher::setProblem(ProblemPtr p)
 {
   p_ = p;
 }
 
-double StrongBrancher::sortUnrelCands_(DoubleVector& vio)
+double HybridBrancher::sortUnrelCands_(DoubleVector& vio)
 {
   if(unrelCands_.size() == 0) {
     return 0;
@@ -458,7 +458,7 @@ double StrongBrancher::sortUnrelCands_(DoubleVector& vio)
   return -topn.top();
 }
 
-bool StrongBrancher::shouldPrune_(const double& chcutoff, const double& change,
+bool HybridBrancher::shouldPrune_(const double& chcutoff, const double& change,
                                   const EngineStatus& status, bool* is_rel)
 {
   switch(status) {
@@ -496,7 +496,7 @@ bool StrongBrancher::shouldPrune_(const double& chcutoff, const double& change,
   return false;
 }
 
-void StrongBrancher::strongBranch_(BrCandPtr cand, double& obj_up,
+void HybridBrancher::strongBranch_(BrCandPtr cand, double& obj_up,
                                    double& obj_down, EngineStatus& status_up,
                                    EngineStatus& status_down,
                                    SolutionPoolPtr s_pool)
@@ -586,7 +586,7 @@ void StrongBrancher::strongBranch_(BrCandPtr cand, double& obj_up,
   delete mod;
 }
 
-void StrongBrancher::updateAfterSolve(NodePtr node, ConstSolutionPtr sol)
+void HybridBrancher::updateAfterSolve(NodePtr node, ConstSolutionPtr sol)
 {
   if(!reliability_) {
     return;
@@ -642,14 +642,14 @@ void StrongBrancher::updateAfterSolve(NodePtr node, ConstSolutionPtr sol)
   }
 }
 
-void StrongBrancher::updatePCost_(const int& i, const double& new_cost,
+void HybridBrancher::updatePCost_(const int& i, const double& new_cost,
                                   DoubleVector& cost, UIntVector& count)
 {
   cost[i] = (cost[i] * count[i] + new_cost) / (count[i] + 1);
   count[i] += 1;
 }
 
-void StrongBrancher::useStrongBranchInfo_(BrCandPtr cand,
+void HybridBrancher::useStrongBranchInfo_(BrCandPtr cand,
                                           const double& chcutoff,
                                           double& change_up,
                                           double& change_down,
@@ -688,7 +688,7 @@ void StrongBrancher::useStrongBranchInfo_(BrCandPtr cand,
   }
 }
 
-void StrongBrancher::writeScore_(BrCandPtr cand, double score, double change_up,
+void HybridBrancher::writeScore_(BrCandPtr cand, double score, double change_up,
                                  double change_down)
 {
   logger_->msgStream(LogDebug2)
@@ -697,7 +697,7 @@ void StrongBrancher::writeScore_(BrCandPtr cand, double score, double change_up,
       << " score = " << score << std::endl;
 }
 
-void StrongBrancher::writeStats(std::ostream& out) const
+void HybridBrancher::writeStats(std::ostream& out) const
 {
   if(stats_) {
     out << me_ << "times called                       = " << stats_->calls

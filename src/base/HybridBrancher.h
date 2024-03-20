@@ -5,13 +5,13 @@
 //
 
 /**
- * \file StrongBrancher.h
- * \brief Declare methods and data structures for strong branching.
+ * \file HybridBrancher.h
+ * \brief Declare methods and data structures for Hybrid branching.
  * \author Mustafa Vora, Indian Institute of Technology Bombay
  */
 
-#ifndef MINOTAURSTRONGBRANCHER_H
-#define MINOTAURSTRONGBRANCHER_H
+#ifndef MINOTAURHYBRIDBRANCHER_H
+#define MINOTAURHYBRIDBRANCHER_H
 
 #include "Brancher.h"
 
@@ -28,8 +28,8 @@ struct StrBrStats {
   UInt nodePruned; /// Number of times node was pruned by strong branching.
   double time;     /// Time taken in strong branching
 };
-// A class to select a variable for branching using strong branching.
-class StrongBrancher : public Brancher
+// A class to select a variable for branching using Hybrid branching.
+class HybridBrancher : public Brancher
 {
 public:
   /**
@@ -39,10 +39,10 @@ public:
    * candidates and modifications. This array can not be changed while
    * branch-and-bound is running.
    */
-  StrongBrancher(EnvPtr env, HandlerVector& handlers);
+  HybridBrancher(EnvPtr env, HandlerVector& handlers);
 
   /// Destructor.
-  ~StrongBrancher();
+  ~HybridBrancher();
 
   /**
    * /brief do stronger branching
@@ -304,7 +304,7 @@ private:
   void writeScore_(BrCandPtr cand, double score, double change_up,
                    double change_down);
 };
-typedef StrongBrancher* StrongBrancherPtr;
+typedef HybridBrancher* HybridBrancherPtr;
 } // namespace Minotaur
 #endif
 

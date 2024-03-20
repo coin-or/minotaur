@@ -24,6 +24,7 @@
 #include "Environment.h"
 #include "FixVarsHeur.h"
 #include "Handler.h"
+#include "HybridBrancher.h"
 #include "IntVarHandler.h"
 #include "LPEngine.h"
 #include "LexicoBrancher.h"
@@ -45,7 +46,6 @@
 #include "Reader.h"
 #include "ReliabilityBrancher.h"
 #include "SamplingHeur.h"
-#include "StrongBrancher.h"
 #include "Timer.h"
 #include "TransSep.h"
 #include "Types.h"
@@ -374,7 +374,7 @@ int QG::solve(ProblemPtr p)
   nproc = (PCBProcessorPtr) new PCBProcessor(env_, lp_e, handlers);
   if(env_->getOptions()->findString("brancher")->getValue() == "rel" ||
      env_->getOptions()->findString("brancher")->getValue() == "weak" ||
-     env_->getOptions()->findString("brancher")->getValue() == "relstronger") {
+     env_->getOptions()->findString("brancher")->getValue() == "hybrid") {
     ReliabilityBrancherPtr rel_br =
         (ReliabilityBrancherPtr) new ReliabilityBrancher(env_, handlers);
     rel_br->setEngine(lp_e);
@@ -394,14 +394,14 @@ int QG::solve(ProblemPtr p)
                 ->findString("brancher")
                 ->getValue()
                 .find("strong") != std::string::npos) {
-    StrongBrancherPtr str_br =
-        (StrongBrancherPtr) new StrongBrancher(env_, handlers);
-    str_br->setEngine(lp_e);
-    if(env_->getOptions()->findString("brancher")->getValue() == "stronger") {
-      str_br->doStronger();
-      str_br->setProblem(oinst_);
+    HybridBrancherPtr hyb_br =
+        (HybridBrancherPtr) new HybridBrancher(env_, handlers);
+    hyb_br->setEngine(lp_e);
+    if(env_->getOptions()->findString("brancher")->getValue() == "btstrong") {
+      hyb_br->doStronger();
+      hyb_br->setProblem(oinst_);
     }
-    br = str_br;
+    br = hyb_br;
   }
   nproc->setBrancher(br);
   env_->getLogger()->msgStream(LogExtraInfo)

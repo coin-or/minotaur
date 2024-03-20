@@ -22,6 +22,7 @@
 #include "EngineFactory.h"
 #include "Environment.h"
 #include "FixVarsHeur.h"
+#include "HybridBrancher.h"
 #include "LPEngine.h"
 #include "LexicoBrancher.h"
 #include "LinearHandler.h"
@@ -47,7 +48,6 @@
 #include "SimpleTransformer.h"
 #include "Solution.h"
 #include "Solver.h"
-#include "StrongBrancher.h"
 #include "Timer.h"
 #include "Transformer.h"
 #include "TreeManager.h"
@@ -168,18 +168,25 @@ BranchAndBound* Glob::createBab_(EnginePtr e, HandlerVector& handlers)
     LexicoBrancherPtr lbr =
         (LexicoBrancherPtr) new LexicoBrancher(env_, handlers);
     br = lbr;
-  } else if(brancher.find("strong") != std::string::npos) {
-    StrongBrancherPtr str_br =
-        (StrongBrancherPtr) new StrongBrancher(env_, handlers);
-    str_br->setEngine(e);
-    if(brancher == "stronger") {
-      str_br->doStronger();
-      str_br->setProblem(newp_);
-    } else if(brancher == "relstronger") {
-      str_br->reliabilitySetup(20, 50, 5);
-      str_br->setProblem(newp_);
-    }
-    br = str_br;
+  } else if(brancher == "strong") {
+    HybridBrancherPtr hyb_br =
+        (HybridBrancherPtr) new HybridBrancher(env_, handlers);
+    hyb_br->setEngine(e);
+    br = hyb_br;
+  } else if(brancher == "btstrong") {
+    HybridBrancherPtr hyb_br =
+        (HybridBrancherPtr) new HybridBrancher(env_, handlers);
+    hyb_br->setEngine(e);
+    hyb_br->doStronger();
+    hyb_br->setProblem(newp_);
+    br = hyb_br;
+  } else if(brancher == "hybrid") {
+    HybridBrancherPtr hyb_br =
+        (HybridBrancherPtr) new HybridBrancher(env_, handlers);
+    hyb_br->setEngine(e);
+    hyb_br->reliabilitySetup(20, 50, 5);
+    hyb_br->setProblem(newp_);
+    br = hyb_br;
   } else if(brancher == "weak") {
     WeakBrancherPtr wbr = (WeakBrancherPtr) new WeakBrancher(env_, handlers);
     wbr->setProblem(newp_);
@@ -305,7 +312,7 @@ void Glob::setInitialOptions_()
   options->findBool("nl_presolve")->setValue(true);
   options->findBool("lin_presolve")->setValue(true);
   options->findBool("msheur")->setValue(true);
-  options->findString("brancher")->setValue("relstronger");
+  options->findString("brancher")->setValue("hybrid");
   options->findString("nlp_engine")->setValue("IPOPT");
   options->findBool("cgtoqf")->setValue(true);
   options->findBool("simplex_cut")->setValue(true);

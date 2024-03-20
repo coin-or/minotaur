@@ -572,7 +572,8 @@ void Environment::createDefaultOptions_()
   // string options
   s_option = (StringOptionPtr) new Option<std::string>(
       "brancher",
-      "Name of brancher: rel, maxvio, lex, rand, maxfreq, parRel, unambRel",
+      "Name of brancher: rel, maxvio, lex, rand, maxfreq, parRel, unambRel, "
+      "hybrid, strong, btstrong",
       true, "rel");
   options_->insert(s_option);
 
