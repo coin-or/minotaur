@@ -152,6 +152,8 @@ NodePtr BranchAndBound::processRoot_(bool* should_prune, bool* should_dive)
   } else {
     rel = nodeRlxr_->getRelaxation();
   }
+  // We may find a solution while creating a relaxation. Setting upper bound here.
+  tm_->setUb(solPool_->getBestSolutionValue());
 
   if(!prune) {
     // solve the root node only if the initial root relaxation is not pruned
