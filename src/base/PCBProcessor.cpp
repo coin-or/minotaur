@@ -248,9 +248,6 @@ void PCBProcessor::process(NodePtr node, RelaxationPtr rel,
       // in root, in first iteration, run a heuristic. XXX: better management.
       for(HeurVector::iterator it = heurs_.begin(); it != heurs_.end(); ++it) {
         (*it)->solve(node, rel, s_pool);
-        if(s_pool->getBestSolutionValue() < INFINITY) {
-          break;
-        }
       }
       tightenBounds_(node, s_pool, sol, &sep_status);
     }
