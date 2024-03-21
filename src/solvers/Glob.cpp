@@ -205,6 +205,14 @@ BranchAndBound* Glob::createBab_(EnginePtr e, HandlerVector& handlers)
   bab->setNodeRelaxer(nr);
   bab->shouldCreateRoot(true);
 
+  if(env_->getOptions()->findBool("msheur")->getValue() == true &&
+     (newp_->getSize()->bins == 0 && newp_->getSize()->ints == 0)) {
+    EnginePtr nlp_e = getNLPEngine_();
+    newp_->setNativeDer();
+    NLPMSPtr ms_heur = (NLPMSPtr) new NLPMultiStart(env_, newp_, nlp_e);
+    bab->addPreRootHeur(ms_heur);
+  }
+
   if(env_->getOptions()->findBool("samplingheur")->getValue() == true) {
     SamplingHeurPtr s_heur = (SamplingHeurPtr) new SamplingHeur(env_, inst_);
     bab->addPreRootHeur(s_heur);
@@ -214,14 +222,6 @@ BranchAndBound* Glob::createBab_(EnginePtr e, HandlerVector& handlers)
     FixVarsHeurPtr f_heur = (FixVarsHeurPtr) new FixVarsHeur(env_, newp_);
     f_heur->setHandlers(handlers);
     bab->addPreRootHeur(f_heur);
-  }
-
-  if(env_->getOptions()->findBool("msheur")->getValue() == true &&
-     (newp_->getSize()->bins == 0 && newp_->getSize()->ints == 0)) {
-    EnginePtr nlp_e = getNLPEngine_();
-    newp_->setNativeDer();
-    NLPMSPtr ms_heur = (NLPMSPtr) new NLPMultiStart(env_, newp_, nlp_e);
-    bab->addPreRootHeur(ms_heur);
   }
 
   return bab;
