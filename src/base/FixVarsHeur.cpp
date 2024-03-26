@@ -54,13 +54,13 @@ FixVarsHeur::~FixVarsHeur()
 void FixVarsHeur::solve(NodePtr, RelaxationPtr, SolutionPoolPtr s_pool)
 {
   bool restart = true;
-  UInt min_iter = 3, max_iter = 10, iter = 0;
+  UInt max_iter = 10, iter = 0;
   std::map<VariablePtr, UInt> unfixedVars;
   double stime = env_->getTimer()->query();
   UInt numvars;
 
   initialize_();
-  while(iter < min_iter || (restart && iter < max_iter)) {
+  while(restart && iter < max_iter) {
     ++iter;
 #if SPEW
     env_->getLogger()->msgStream(LogDebug)
