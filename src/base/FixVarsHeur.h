@@ -104,6 +104,9 @@ protected:
   // Unfix fixed variables.
   void unfixVars_();
 
+  // update itmp of each variable in the constraint if it is covered right from start
+  void updateItmp_(ConstraintPtr c);
+
   // update Map of each variable in the constraint once it is covered
   void updateMap_(ConstraintPtr c, std::map<VariablePtr, UInt>& unfixedVars);
 };

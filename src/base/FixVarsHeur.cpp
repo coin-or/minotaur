@@ -67,12 +67,6 @@ void FixVarsHeur::solve(NodePtr, RelaxationPtr, SolutionPoolPtr s_pool)
         << me_ << "Iteration Number : " << iter << std::endl;
 #endif
     restart = false;
-    unfixedVars.clear();
-    for(VariableConstIterator vit = p_->varsBegin(); vit != p_->varsEnd();
-        ++vit) {
-      unfixedVars.insert({*vit, (*vit)->getItmp()});
-    }
-
     consNumVar_.clear();
     for(ConstraintConstIterator cit = p_->consBegin(); cit != p_->consEnd();
         ++cit) {
@@ -82,13 +76,25 @@ void FixVarsHeur::solve(NodePtr, RelaxationPtr, SolutionPoolPtr s_pool)
         if(numvars == 1) {
           // Just a bound constraint, should not be considered for convering.
           consNumVar_.insert({*cit, 0});
+          if(iter == 1) {
+            updateItmp_(*cit);
+          }
         } else {
           consNumVar_.insert({*cit, numvars});
         }
       } else {
         consNumVar_.insert({*cit, 0});
+        if(iter == 1) {
+          updateItmp_(*cit);
+        }
       }
     }
+    unfixedVars.clear();
+    for(VariableConstIterator vit = p_->varsBegin(); vit != p_->varsEnd();
+        ++vit) {
+      unfixedVars.insert({*vit, (*vit)->getItmp()});
+    }
+
     while(unfixedVars.size() > 0) {
       FixVars_(unfixedVars);
       if(presolve_(s_pool, unfixedVars)) {
@@ -274,6 +280,23 @@ void FixVarsHeur::updateMap_(ConstraintPtr c,
       } else {
         --(unfixedVars[v]);
       }
+    }
+  }
+}
+
+void FixVarsHeur::updateItmp_(ConstraintPtr c)
+{
+  FunctionPtr f = c->getFunction();
+  VariablePtr v;
+
+  for(VarSetConstIterator vit = f->varsBegin(); vit != f->varsEnd(); ++vit) {
+    v = *vit;
+    if(v->getType() == Binary || v->getType() == ImplBin) {
+      v->setItmp(v->getItmp() - mbin_);
+    } else if(v->getFunType() != Linear && v->getFunType() != Constant) {
+      v->setItmp(v->getItmp() - mnl_);
+    } else {
+      v->setItmp(v->getItmp() - 1);
     }
   }
 }
