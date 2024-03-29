@@ -219,8 +219,7 @@ BranchAndBound* Glob::createBab_(EnginePtr e, HandlerVector& handlers)
   }
 
   if(env_->getOptions()->findBool("fixvarsheur")->getValue() == true) {
-    FixVarsHeurPtr f_heur = (FixVarsHeurPtr) new FixVarsHeur(env_, newp_);
-    f_heur->setHandlers(handlers);
+    FixVarsHeurPtr f_heur = (FixVarsHeurPtr) new FixVarsHeur(env_, inst_);
     bab->addPreRootHeur(f_heur);
   }
 
