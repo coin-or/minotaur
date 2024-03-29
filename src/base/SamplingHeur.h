@@ -45,7 +45,7 @@ public:
   /// writing the statistics to the logger
   void writeStats(std::ostream& out) const;
 
-protected:
+private:
   // Environment
   EnvPtr env_;
 

@@ -25,8 +25,9 @@ class Problem;
     * \brief A statistic struct for trivial heuristic
     */
 struct FixVarsHeurStats {
-  UInt numSol; // Number of solutions found
-  double time; // Time taken in this heuristic
+  UInt numSol;      // Number of solutions found
+  UInt numPresolve; // Number of times presolve was done
+  double time;      // Time taken in this heuristic
 };
 
 class FixVarsHeur : public Heuristic
@@ -38,6 +39,9 @@ public:
   /// default destructor
   ~FixVarsHeur();
 
+  /// create handlers for the problem
+  void createHandlers();
+
   /// call to heuristic
   void solve(NodePtr, RelaxationPtr, SolutionPoolPtr s_pool);
 
@@ -47,15 +51,21 @@ public:
   /// writing the statistics to the logger
   void writeStats(std::ostream& out) const;
 
-protected:
+private:
   // A map of constraints with the number of unfixed variables in the constratint
   std::map<ConstraintPtr, UInt> consNumVar_;
+
+  // Down lock for each variable
+  UIntVector downLock_;
 
   // Environment
   EnvPtr env_;
 
   // Handlers for the problem
   HandlerVector handlers_;
+
+  // Check with lock number done?
+  bool lock_;
 
   // For printing messages
   static const std::string me_;
@@ -75,8 +85,17 @@ protected:
   // Statistics
   FixVarsHeurStats* stats_;
 
+  // Up lock for each variable
+  UIntVector upLock_;
+
+  // Compute lock number of each variable
+  void computeLocks_();
+
   // fix the variable v
   void fix_(VariablePtr v);
+
+  // fix the variable v based on its lock number
+  void fixByLock_(VariablePtr v);
 
   // Fix Variables
   void FixVars_(std::map<VariablePtr, UInt>& unfixedVars);

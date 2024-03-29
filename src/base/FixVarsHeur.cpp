@@ -20,8 +20,11 @@
 #include "Environment.h"
 #include "FixVarsHeur.h"
 #include "Handler.h"
+#include "LinearHandler.h"
 #include "MinotaurConfig.h"
+#include "NlPresHandler.h"
 #include "Problem.h"
+#include "QuadHandler.h"
 #include "SolutionPool.h"
 #include "Types.h"
 #include "Variable.h"
@@ -37,6 +40,7 @@ FixVarsHeur::FixVarsHeur(EnvPtr env, ProblemPtr p)
     p_(p)
 {
   consNumVar_.clear();
+  lock_ = false;
   mbin_ = 0;
   mnl_ = 0;
   stats_ = (FixVarsHeurStats*)new FixVarsHeurStats();
@@ -58,41 +62,73 @@ void FixVarsHeur::solve(NodePtr, RelaxationPtr, SolutionPoolPtr s_pool)
   std::map<VariablePtr, UInt> unfixedVars;
   double stime = env_->getTimer()->query();
   UInt numvars;
+  bool doPres = false;
+  VariablePtr v;
+  ConstraintPtr c;
 
   initialize_();
-  while(restart && iter < max_iter) {
+  while(restart && (iter < max_iter || !lock_)) {
     ++iter;
 #if SPEW
     env_->getLogger()->msgStream(LogDebug)
         << me_ << "Iteration Number : " << iter << std::endl;
 #endif
-    restart = false;
-    consNumVar_.clear();
-    for(ConstraintConstIterator cit = p_->consBegin(); cit != p_->consEnd();
-        ++cit) {
-      if((*cit)->getSrcType() == ConsOrig ||
-         (*cit)->getSrcType() == ConsTranOrig) {
-        numvars = (*cit)->getFunction()->getNumVars();
-        if(numvars == 1) {
-          // Just a bound constraint, should not be considered for convering.
-          consNumVar_.insert({*cit, 0});
-          if(iter == 1) {
-            updateItmp_(*cit);
+    if(iter == max_iter) {
+      lock_ = true;
+#if SPEW
+      env_->getLogger()->msgStream(LogDebug)
+          << me_ << "Trying Lock Number fixing" << std::endl;
+#endif
+      computeLocks_();
+    }
+    if(!lock_) {
+      restart = false;
+      consNumVar_.clear();
+      for(ConstraintConstIterator cit = p_->consBegin(); cit != p_->consEnd();
+          ++cit) {
+        c = *cit;
+        if(c->getSrcType() == ConsOrig || c->getSrcType() == ConsTranOrig) {
+          numvars = c->getFunction()->getNumVars();
+          if(numvars == 1) {
+            // Just a bound constraint, should not be considered for convering.
+            consNumVar_.insert({c, 0});
+            if(iter == 1) {
+              updateItmp_(c);
+            }
+          } else {
+            consNumVar_.insert({c, numvars});
           }
         } else {
-          consNumVar_.insert({*cit, numvars});
-        }
-      } else {
-        consNumVar_.insert({*cit, 0});
-        if(iter == 1) {
-          updateItmp_(*cit);
+          consNumVar_.insert({c, 0});
+          if(iter == 1) {
+            updateItmp_(c);
+          }
         }
       }
     }
     unfixedVars.clear();
     for(VariableConstIterator vit = p_->varsBegin(); vit != p_->varsEnd();
         ++vit) {
-      unfixedVars.insert({*vit, (*vit)->getItmp()});
+      v = *vit;
+      if(lock_) {
+        if(downLock_[v->getIndex()] > 0 && upLock_[v->getIndex()] > 0) {
+          unfixedVars.insert(
+              {v, -(downLock_[v->getIndex()] + upLock_[v->getIndex()])});
+        } else {
+          fixByLock_(v);
+          doPres = true;
+        }
+      } else {
+        unfixedVars.insert({v, v->getItmp()});
+      }
+    }
+
+    if(doPres) {
+      if(presolve_(s_pool, unfixedVars)) {
+        unfixVars_();
+        restart = true;
+        break;
+      }
     }
 
     while(unfixedVars.size() > 0) {
@@ -102,9 +138,11 @@ void FixVarsHeur::solve(NodePtr, RelaxationPtr, SolutionPoolPtr s_pool)
         restart = true;
         break;
       }
-      for(std::map<VariablePtr, UInt>::iterator uit = unfixedVars.begin();
-          uit != unfixedVars.end(); ++uit) {
-        uit->second = uit->first->getItmp();
+      if(!lock_) {
+        for(std::map<VariablePtr, UInt>::iterator uit = unfixedVars.begin();
+            uit != unfixedVars.end(); ++uit) {
+          uit->second = uit->first->getItmp();
+        }
       }
     }
     if(!restart) {
@@ -113,6 +151,45 @@ void FixVarsHeur::solve(NodePtr, RelaxationPtr, SolutionPoolPtr s_pool)
     }
   }
   stats_->time = env_->getTimer()->query() - stime;
+}
+
+void FixVarsHeur::computeLocks_()
+{
+  VariablePtr v;
+  ConstraintPtr c;
+  LinearFunctionPtr lf;
+  bool up, down;
+
+  downLock_ = UIntVector(p_->getNumVars(), 0);
+  upLock_ = UIntVector(p_->getNumVars(), 0);
+
+  for(ConstraintConstIterator cit = p_->consBegin(); cit != p_->consEnd();
+      ++cit) {
+    c = *cit;
+    up = c->getUb() < INFINITY;
+    down = c->getLb() > -INFINITY;
+    lf = c->getFunction()->getLinearFunction();
+    if(lf) {
+      for(VariableGroupConstIterator it = lf->termsBegin();
+          it != lf->termsEnd(); ++it) {
+        v = it->first;
+        if(up) {
+          if(it->second > 0) {
+            ++upLock_[v->getIndex()];
+          } else {
+            ++downLock_[v->getIndex()];
+          }
+        }
+        if(down) {
+          if(it->second < 0) {
+            ++upLock_[v->getIndex()];
+          } else {
+            ++downLock_[v->getIndex()];
+          }
+        }
+      }
+    }
+  }
 }
 
 void FixVarsHeur::foundNewSol_(SolutionPoolPtr s_pool, bool& restart)
@@ -195,6 +272,30 @@ void FixVarsHeur::fix_(VariablePtr v)
   mods_.push_back(m);
 }
 
+void FixVarsHeur::fixByLock_(VariablePtr v)
+{
+  double fix_at;
+  UInt ind = v->getIndex();
+
+  if(downLock_[ind] < upLock_[ind]) {
+    fix_at = v->getLb();
+  } else if(upLock_[ind] < downLock_[ind]) {
+    fix_at = v->getUb();
+  } else {
+    fix_at = rand() % 2 == 0 ? v->getLb() : v->getUb();
+  }
+
+  VarBoundMod2* m = 0;
+
+  m = new VarBoundMod2(v, fix_at, fix_at);
+  m->applyToProblem(p_);
+#if SPEW
+  env_->getLogger()->msgStream(LogDebug)
+      << me_ << v->getName() << " is fixed at " << fix_at << std::endl;
+#endif
+  mods_.push_back(m);
+}
+
 void FixVarsHeur::FixVars_(std::map<VariablePtr, UInt>& unfixedVars)
 {
   ConstrSet covered;
@@ -202,6 +303,16 @@ void FixVarsHeur::FixVars_(std::map<VariablePtr, UInt>& unfixedVars)
   FunctionPtr f;
   VariablePtr v;
   std::pair<ConstrSet::iterator, bool> ret;
+
+  if(lock_) {
+    UInt to_fix = floor(0.2 * p_->getNumVars());
+    for(UInt i = 0; i < to_fix && unfixedVars.size() > 0; ++i) {
+      v = selectVarToFix_(unfixedVars);
+      fixByLock_(v);
+      unfixedVars.erase(v);
+    }
+    return;
+  }
 
   covered.clear();
   for(std::map<ConstraintPtr, UInt>::iterator it = consNumVar_.begin();
@@ -349,6 +460,7 @@ bool FixVarsHeur::presolve_(SolutionPoolPtr s_pool,
       return true;
     }
   }
+  ++stats_->numPresolve;
 
   gotFixed.clear();
   for(std::map<VariablePtr, UInt>::iterator it = unfixedVars.begin();
@@ -366,10 +478,13 @@ bool FixVarsHeur::presolve_(SolutionPoolPtr s_pool,
 
   for(VariableIterator it = gotFixed.begin(); it != gotFixed.end(); ++it) {
     v = *it;
-    for(ConstrSet::iterator cit = v->consBegin(); cit != v->consEnd(); ++cit) {
-      c = *cit;
-      if(consNumVar_[c] > 0) {
-        --(consNumVar_[c]);
+    if(!lock_) {
+      for(ConstrSet::iterator cit = v->consBegin(); cit != v->consEnd();
+          ++cit) {
+        c = *cit;
+        if(consNumVar_[c] > 0) {
+          --(consNumVar_[c]);
+        }
       }
     }
     unfixedVars.erase(v);
@@ -381,6 +496,19 @@ bool FixVarsHeur::presolve_(SolutionPoolPtr s_pool,
 void FixVarsHeur::setHandlers(HandlerVector& handlers)
 {
   handlers_ = handlers;
+}
+
+void FixVarsHeur::createHandlers()
+{
+  LinearHandlerPtr lhandler = (LinearHandlerPtr) new LinearHandler(env_, p_);
+  handlers_.push_back(lhandler);
+  lhandler->setPreOptPurgeVars(false);
+  lhandler->setPreOptPurgeCons(false);
+  lhandler->setPreOptCoeffImp(false);
+  lhandler->setPreOptDualFix(true);
+
+  NlPresHandlerPtr nlhand = (NlPresHandlerPtr) new NlPresHandler(env_, p_);
+  handlers_.push_back(nlhand);
 }
 
 void FixVarsHeur::unfixVars_()
@@ -399,6 +527,8 @@ void FixVarsHeur::unfixVars_()
 void FixVarsHeur::writeStats(std::ostream& out) const
 {
   out << me_ << "number of feasible solutions found : " << stats_->numSol
+      << std::endl;
+  out << me_ << "number of times presolve was done : " << stats_->numPresolve
       << std::endl;
   out << me_ << "Time taken : " << stats_->time << std::endl;
 }
