@@ -11,6 +11,7 @@
  */
 
 #include "HybridBrancher.h"
+#include <iomanip>
 
 #include <algorithm>
 #include <cmath>
@@ -212,7 +213,28 @@ Branches HybridBrancher::findBranches(RelaxationPtr rel, NodePtr,
     ++(stats_->nodePruned);
     return 0;
   }
-
+  updateFracCount_();
+  updateUnfixedCount_();
+ 
+#if SPEW
+  logger_->msgStream(LogDebug) << me_ << "candidates: " << std::endl;
+  for (BrVarCandIter it = relCands_.begin(); it != relCands_.end(); ++it) {
+    logger_->msgStream(LogDebug)
+        << std::setprecision(6) << (*it)->getName() << "\t" 
+        << x_[(*it)->getPCostIndex()] << "\t"
+        << fracCount_[(*it)->getPCostIndex()] << "\t"
+        << unfixedCount_[(*it)->getPCostIndex()] << "\t"
+        << std::endl;
+  }
+  for (BrVarCandIter it = unrelCands_.begin(); it != unrelCands_.end(); ++it) {
+    logger_->msgStream(LogDebug)
+        << std::setprecision(6) << (*it)->getName() << "\t" 
+        << x_[(*it)->getPCostIndex()] << "\t"
+        << fracCount_[(*it)->getPCostIndex()] << "\t"
+        << unfixedCount_[(*it)->getPCostIndex()] << "\t"
+        << std::endl;
+  }
+#endif
   if(status_ == NotModifiedByBrancher) {
     br_can = findBestCandidate_(sol->getObjValue(), s_pool);
   }
@@ -260,6 +282,7 @@ Branches HybridBrancher::findBranches(RelaxationPtr rel, NodePtr,
   if(status_ != NotModifiedByBrancher && br_can) {
     delete br_can;
   }
+
   return branches;
 }
 
@@ -394,16 +417,49 @@ void HybridBrancher::initialize_(RelaxationPtr rel)
     return;
   }
   int n = rel->getNumVars();
+  std::cout << " n = " << n << std::endl;
   pseudoDown_ = DoubleVector(n, 0.0);
   pseudoUp_ = DoubleVector(n, 0.0);
   timesDown_ = std::vector<UInt>(n, 0);
   timesUp_ = std::vector<UInt>(n, 0);
+  fracCount_ = std::vector<UInt>(n,0); 
+  unfixedCount_ = std::vector<UInt>(n,0);
+  actualTimesDown_ = std::vector<UInt>(n, 0);
+  actualTimesUp_ = std::vector<UInt>(n, 0);
+  for (int i=0; i<n; ++i) {
+    variableNames_.push_back(rel->getVariable(i)->getName());
+  }
 }
 
 bool HybridBrancher::isReliable_(int pcostindex)
 {
   return reliability_ && timesUp_[pcostindex] >= thresh_ &&
       timesDown_[pcostindex] >= thresh_;
+}
+
+void HybridBrancher::updateFracCount_() {
+  for (BrVarCandIter it = relCands_.begin(); it != relCands_.end(); ++it) {
+    int index = (*it)->getPCostIndex();
+    fracCount_[index] += 1; // Increment the fractional count for the variable index.
+  }
+  for (BrVarCandIter it = unrelCands_.begin(); it != unrelCands_.end(); ++it) {
+    int index = (*it)->getPCostIndex();
+    fracCount_[index] += 1; // Increment the fractional count for the variable index.
+  }
+}
+
+void HybridBrancher::updateUnfixedCount_()
+{
+  VariablePtr v;
+  UInt index;
+  for (VariableConstIterator it = rel_->varsBegin(); it != rel_->varsEnd();
+       ++it) {
+    v = (*it);
+    index = v->getIndex();
+    if (fabs(v->getLb() - v->getUb()) > eTol_) {
+      unfixedCount_[index] += 1;
+    }
+  }
 }
 
 void HybridBrancher::setEngine(EnginePtr engine)
@@ -638,8 +694,13 @@ void HybridBrancher::updateAfterSolve(NodePtr node, ConstSolutionPtr sol)
             << me_ << " psuedo cost update is not implemented for " << hname
             << " psuedo cost is not updated for current node" << std::endl;
       }
+        if (cand->getDir() == UpBranch) {
+            actualTimesUp_[cand->getPCostIndex()]++;
+      } else if (cand->getDir() == DownBranch)  {
+            actualTimesDown_[cand->getPCostIndex()]++;
+      }
     }
-  }
+  } 
 }
 
 void HybridBrancher::updatePCost_(const int& i, const double& new_cost,
@@ -695,6 +756,42 @@ void HybridBrancher::writeScore_(BrCandPtr cand, double score, double change_up,
       << me_ << "candidate: " << cand->getName()
       << " down change = " << change_down << " up change = " << change_up
       << " score = " << score << std::endl;
+      
+}
+
+void HybridBrancher::statsTable()const {
+    // Print header
+  static bool header = false;
+  if (!header) {
+   logger_->msgStream(LogExtraInfo) << std::endl;	  
+   logger_->msgStream(LogExtraInfo) << "----------------------------------------------------------------------------------------------------------------------------------------------" << std::endl;
+   logger_->msgStream(LogExtraInfo) << std::left << std::setw(15) << "Variable"
+      << std::setw(15) << "Pseudo Up"
+      << std::setw(15) << "Pseudo Down"
+      << std::setw(15) << "Times Up"
+      << std::setw(15) << "Times Down"
+      << std::setw(15) << "Fractional"
+      << std::setw(15) << "Not Fixed"
+      << std::setw(20) << "Actual Times Up"
+      << std::setw(20) << "Actual Times Down"
+      << std::endl;
+   logger_->msgStream(LogExtraInfo) << "----------------------------------------------------------------------------------------------------------------------------------------------" << std::endl;
+  header = true;
+   }
+  for (std::vector<double>::size_type i = 0; i < pseudoUp_.size(); ++i) {
+   logger_->msgStream(LogExtraInfo)
+      << std::left << std::setw(18) << variableNames_[i]
+      << std::setw(15) << pseudoUp_[i]
+      << std::setw(15) << pseudoDown_[i]
+      << std::setw(15) << timesUp_[i]
+      << std::setw(15) << timesDown_[i]
+      << std::setw(15) << fracCount_[i] // Print fractional count
+      << std::setw(15) << unfixedCount_[i] // Print unfixed count
+      << std::setw(20) << actualTimesUp_[i]
+      << std::setw(20) << actualTimesDown_[i]
+      << std::endl;
+   }   
+  logger_->msgStream(LogExtraInfo) << "----------------------------------------------------------------------------------------------------------------------------------------------" << std::endl; 
 }
 
 void HybridBrancher::writeStats(std::ostream& out) const
@@ -709,6 +806,7 @@ void HybridBrancher::writeStats(std::ostream& out) const
         << me_ << "time taken in strong branching     = " << stats_->time
         << std::endl;
   }
+  statsTable();
 }
 
 // Local Variables:

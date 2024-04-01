@@ -275,7 +275,7 @@ int QG::solve(ProblemPtr p)
     oinst_->writeSize(env_->getLogger()->msgStream(LogNone));
     env_->getLogger()->msgStream(LogInfo)
         << me_ << "Starting constraint classification\n";
-    oinst_->classifyCon(false);
+    oinst_->classifyCon();
     env_->getLogger()->msgStream(LogInfo)
         << me_ << "Finished constraint classification\n";
   }

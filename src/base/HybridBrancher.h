@@ -85,8 +85,11 @@ public:
 
   /// Write statistics.
   void writeStats(std::ostream& out) const;
+  ///Print Table 
+  void statsTable()const;
 
 private:
+  std::vector<std::string> variableNames_;
   /// Engine for strong branching
   EnginePtr engine_;
 
@@ -121,6 +124,34 @@ private:
 
   /// Problem
   ProblemPtr p_;
+
+  /** 
+   * \brief The vector that keeps a count of how many times a candidate
+   * has been fraction, for each candidate.
+   */
+   UIntVector fracCount_;
+
+  /** 
+   * \brief The vector that keeps a count of how many times a candidate
+   * has been not fixed, for each candidate.
+  */
+   UIntVector unfixedCount_;
+  /**
+   * \brief Update fractional count vector fracCount_ based upon current
+   * set of candidates.
+  */
+   void updateFracCount_();
+  /**
+   * \brief Update unfixed count vector unfixedCount_ based upon current
+   * relaxation.
+  */ 
+   void updateUnfixedCount_();
+
+  /// Vector for actial times up 
+   UIntVector actualTimesUp_;
+
+  ///Vector for actual times down
+   UIntVector actualTimesDown_;
 
   /// Pseudo costs for the down direction
   DoubleVector pseudoDown_;

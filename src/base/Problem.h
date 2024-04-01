@@ -24,7 +24,7 @@
 #include "ProblemSize.h"
 #include "Variable.h"
 #include "SOS.h"
-
+#include <limits>
 namespace Minotaur {
 
   /**
@@ -46,6 +46,24 @@ namespace Minotaur {
    * A Problem is a very generic class. The Relaxation classes
    * are derived from it. 
    */
+struct ConstraintStats {
+    int nvars = 0;
+    int nposcoefone = 0;
+    int nnegcoefone = 0;
+    int nposcoef = 0;
+    int nnegcoef = 0;
+    int nposcont = 0;
+    int nnegcont = 0;
+    int nposbin = 0;
+    int nnegbin = 0;
+    int nposint = 0;
+    int nnegint = 0;
+    double wt1 = 0.0;
+    double wt2 = 0.0;
+    double sumnegwt = 0.0;
+    int con = 0;
+};	
+
   class Problem {
   public:
     /// Default constructor
@@ -124,7 +142,7 @@ namespace Minotaur {
 
 
     // Here adding code for Classification of Constraints 
-    virtual void classifyCon(bool printTypes);
+    virtual void classifyCon();
 
     /**
      * \brief Clone the given Problem class. Jacobian and Hessian in the cloned
@@ -590,7 +608,74 @@ namespace Minotaur {
     /// Write the problem size to logger_
     virtual void writeSize(std::ostream &out) const;
 
+    const double INFTY = std::numeric_limits<double>::infinity();
+
+    const std::vector<ConstraintPtr>& getAggregationConstraints() const;
+    const std::vector<ConstraintPtr>& getPrecedenceConstraints() const;
+    const std::vector<ConstraintPtr>& getVariableBoundConstraints() const;
+    const std::vector<ConstraintPtr>& getSetPartitioningConstraints() const;
+    const std::vector<ConstraintPtr>& getSetPackingConstraints() const;
+    const std::vector<ConstraintPtr>& getSetCoveringConstraints() const;
+    const std::vector<ConstraintPtr>& getCardinalityConstraints() const;
+    const std::vector<ConstraintPtr>& getInvariantKnapsackConstraints() const;
+    const std::vector<ConstraintPtr>& getEquationKnapsackConstraints() const;
+    const std::vector<ConstraintPtr>& getBinPackingConstraints() const;
+    const std::vector<ConstraintPtr>& getKnapsackConstraints() const;
+    const std::vector<ConstraintPtr>& getIntegerKnapsackConstraints() const;
+    const std::vector<ConstraintPtr>& getMixedBinaryConstraints() const;
+    const std::vector<ConstraintPtr>& getGeneralLinearConstraints() const;
+    
   protected:
+
+    bool checkAggregation(ConstraintPtr c);
+    bool checkPrecedence(ConstraintPtr c, const ConstraintStats& stats);
+    bool checkVariableBound(ConstraintPtr c, const ConstraintStats& stats);
+    bool checkSetPartitioning(ConstraintPtr c, const ConstraintStats& stats);
+    bool checkSetPacking(ConstraintPtr c, const ConstraintStats& stats);
+    bool checkSetCovering(ConstraintPtr c, const ConstraintStats& stats);
+    bool checkCardinality(ConstraintPtr c, const ConstraintStats& stats);
+    bool checkInvariantKnapsack(ConstraintPtr c, const ConstraintStats& stats);
+    bool checkEquationKnapsack(ConstraintPtr c, const ConstraintStats& stats);
+    bool checkBinPacking(ConstraintPtr c, const ConstraintStats& stats);
+    bool checkKnapsack(ConstraintPtr c, const ConstraintStats& stats);
+    bool checkIntegerKnapsack(ConstraintPtr c, const ConstraintStats& stats);
+    bool checkMixedBinary(ConstraintPtr c, const ConstraintStats& stats);
+    bool checkGeneralLinear(ConstraintPtr c, const ConstraintStats& stats);
+    bool checkNoSpecificStructure();
+
+    std::vector<ConstraintPtr> aggregationConstraints;
+    std::vector<ConstraintPtr> precedenceConstraints;
+    std::vector<ConstraintPtr> variableBoundConstraints;
+    std::vector<ConstraintPtr> setPartitioningConstraints;
+    std::vector<ConstraintPtr> setPackingConstraints;
+    std::vector<ConstraintPtr> setCoveringConstraints;
+    std::vector<ConstraintPtr> cardinalityConstraints;
+    std::vector<ConstraintPtr> invariantKnapsackConstraints;
+    std::vector<ConstraintPtr> equationKnapsackConstraints;
+    std::vector<ConstraintPtr> binPackingConstraints;
+    std::vector<ConstraintPtr> knapsackConstraints;
+    std::vector<ConstraintPtr> integerKnapsackConstraints;
+    std::vector<ConstraintPtr> mixedBinaryConstraints;
+    std::vector<ConstraintPtr> generalLinearConstraints;
+     
+    void printConstraintStatistics();
+
+    int countAggregation = 0;
+    int countPrecedence = 0;
+    int countVariableBound = 0;
+    int countSetPartitioning = 0;
+    int countSetPacking = 0;
+    int countSetCovering = 0;
+    int countCardinality = 0;
+    int countInvariantKnapsack = 0;
+    int countEquationKnapsack = 0;
+    int countBinPacking = 0;
+    int countKnapsack = 0;
+    int countIntegerKnapsack = 0;
+    int countMixedBinary = 0;
+    int countGeneralLinear = 0;
+    int countNoSpecificStructure = 0;
+       
     /// Vector of constraints.
     ConstraintVector cons_;
 

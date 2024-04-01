@@ -8,7 +8,7 @@
  * \brief Define Presolver class for presolving.
  * \author Ashutosh Mahajan, Argonne National Laboratory
  */
-
+#include <iomanip>
 #include <cmath>
 
 #include "MinotaurConfig.h"
@@ -137,13 +137,22 @@ SolveStatus Presolver::solve()
     }
     ++iters;
   }
-  if (Started == status_) {
+   if (Started == status_) {
     status_ = Finished;
   }
 
   // wrap up.
   env_->getLogger()->msgStream(LogInfo) << me_ << "Finished presolving."
     << std::endl;
+  if (status_ == SolvedOptimal){
+  int err = 0;
+  env_->getLogger()->msgStream(LogInfo) 
+   << me_ << "best solution value: " << sol_->getObjValue() << std::endl
+   << me_ << "cpu time used (s) = " << std::fixed << std::setprecision(2) 
+   << env_->getTime(err) << std::endl
+   << me_ << "wall time used (s) = " << std::fixed << std::setprecision(2) 
+   << env_->getwTime(err) << std::endl;
+  }
   for (HandlerVector::iterator it=handlers_.begin(); it!=handlers_.end();
        ++it) {
     (*it)->writeStats(logger_->msgStream(LogExtraInfo));
@@ -174,7 +183,7 @@ SolveStatus Presolver::solve()
 
   if (env_->getOptions()->findBool("display_presolved_size")->getValue()==true) {
     env_->getLogger()->msgStream(LogInfo) << me_ << "Starting constraint classification\n";
-    problem_->classifyCon(false);
+    problem_->classifyCon();
     env_->getLogger()->msgStream(LogInfo) << me_ << "Finished constraint classification\n";
   }
 

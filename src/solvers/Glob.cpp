@@ -356,7 +356,7 @@ int Glob::solve(ProblemPtr inst)
     inst_->writeSize(env_->getLogger()->msgStream(LogNone));
     env_->getLogger()->msgStream(LogInfo)
         << me_ << "Starting constraint classification\n";
-    inst_->classifyCon(false);
+    inst_->classifyCon();
     env_->getLogger()->msgStream(LogInfo)
         << me_ << "Finished constraint classification\n";
   }
