@@ -103,6 +103,48 @@ namespace Minotaur {
     /// Type of objective: constant, linear, quadratic ...
     FunctionType objType;
 
+    ///Count the number of aggregation type constraints.
+    UInt countAggregation;
+
+    ///Count the number of precedence type constraints.
+    UInt countPrecedence;
+
+    ///Count the number of variable bound type constraints.
+    UInt countVariableBound;
+
+    ///Count the number of set partitioning type constraints.
+    UInt countSetPartitioning;
+
+    ///Count the number of set packing type constraints.
+    UInt countSetPacking;
+
+    ///Count the number of set covering type constraints.
+    UInt countSetCovering;
+
+    ///Count the number of cardinality type constraints.
+    UInt countCardinality;
+
+    ///Count the number of invariant knapsack type constraints.
+    UInt countInvariantKnapsack;
+
+    ///Count the number of equation knapsack type constraints.
+    UInt countEquationKnapsack;
+
+    ///Count the number of bin packing type constraints.
+    UInt countBinPacking;
+
+    ///Count the number of knapsack type constraints.
+    UInt countKnapsack;
+
+    ///Count the number of integer knapsack type constraints.
+    UInt countIntegerKnapsack;
+
+    ///Count the number of mixed binary type constraints.
+    UInt countMixedBinary;
+
+    ///Count the number of constraints with no specific structure.
+    UInt countNoSpecificStructure;
+
   };
   typedef  ProblemSize * ProblemSizePtr;
   typedef  const ProblemSize * ConstProblemSizePtr;

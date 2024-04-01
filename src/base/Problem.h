@@ -609,72 +609,25 @@ struct ConstraintStats {
     virtual void writeSize(std::ostream &out) const;
 
     const double INFTY = std::numeric_limits<double>::infinity();
-
-    const std::vector<ConstraintPtr>& getAggregationConstraints() const;
-    const std::vector<ConstraintPtr>& getPrecedenceConstraints() const;
-    const std::vector<ConstraintPtr>& getVariableBoundConstraints() const;
-    const std::vector<ConstraintPtr>& getSetPartitioningConstraints() const;
-    const std::vector<ConstraintPtr>& getSetPackingConstraints() const;
-    const std::vector<ConstraintPtr>& getSetCoveringConstraints() const;
-    const std::vector<ConstraintPtr>& getCardinalityConstraints() const;
-    const std::vector<ConstraintPtr>& getInvariantKnapsackConstraints() const;
-    const std::vector<ConstraintPtr>& getEquationKnapsackConstraints() const;
-    const std::vector<ConstraintPtr>& getBinPackingConstraints() const;
-    const std::vector<ConstraintPtr>& getKnapsackConstraints() const;
-    const std::vector<ConstraintPtr>& getIntegerKnapsackConstraints() const;
-    const std::vector<ConstraintPtr>& getMixedBinaryConstraints() const;
-    const std::vector<ConstraintPtr>& getGeneralLinearConstraints() const;
     
   protected:
 
-    bool checkAggregation(ConstraintPtr c);
-    bool checkPrecedence(ConstraintPtr c, const ConstraintStats& stats);
-    bool checkVariableBound(ConstraintPtr c, const ConstraintStats& stats);
-    bool checkSetPartitioning(ConstraintPtr c, const ConstraintStats& stats);
-    bool checkSetPacking(ConstraintPtr c, const ConstraintStats& stats);
-    bool checkSetCovering(ConstraintPtr c, const ConstraintStats& stats);
-    bool checkCardinality(ConstraintPtr c, const ConstraintStats& stats);
-    bool checkInvariantKnapsack(ConstraintPtr c, const ConstraintStats& stats);
-    bool checkEquationKnapsack(ConstraintPtr c, const ConstraintStats& stats);
-    bool checkBinPacking(ConstraintPtr c, const ConstraintStats& stats);
-    bool checkKnapsack(ConstraintPtr c, const ConstraintStats& stats);
-    bool checkIntegerKnapsack(ConstraintPtr c, const ConstraintStats& stats);
-    bool checkMixedBinary(ConstraintPtr c, const ConstraintStats& stats);
-    bool checkGeneralLinear(ConstraintPtr c, const ConstraintStats& stats);
-    bool checkNoSpecificStructure();
-
-    std::vector<ConstraintPtr> aggregationConstraints;
-    std::vector<ConstraintPtr> precedenceConstraints;
-    std::vector<ConstraintPtr> variableBoundConstraints;
-    std::vector<ConstraintPtr> setPartitioningConstraints;
-    std::vector<ConstraintPtr> setPackingConstraints;
-    std::vector<ConstraintPtr> setCoveringConstraints;
-    std::vector<ConstraintPtr> cardinalityConstraints;
-    std::vector<ConstraintPtr> invariantKnapsackConstraints;
-    std::vector<ConstraintPtr> equationKnapsackConstraints;
-    std::vector<ConstraintPtr> binPackingConstraints;
-    std::vector<ConstraintPtr> knapsackConstraints;
-    std::vector<ConstraintPtr> integerKnapsackConstraints;
-    std::vector<ConstraintPtr> mixedBinaryConstraints;
-    std::vector<ConstraintPtr> generalLinearConstraints;
+    bool isAggregation_(ConstraintPtr c);
+    bool isPrecedence_(ConstraintPtr c, const ConstraintStats& stats);
+    bool isVariableBound_(ConstraintPtr c, const ConstraintStats& stats);
+    bool isSetPartitioning_(ConstraintPtr c, const ConstraintStats& stats);
+    bool isSetPacking_(ConstraintPtr c, const ConstraintStats& stats);
+    bool isSetCovering_(ConstraintPtr c, const ConstraintStats& stats);
+    bool isCardinality_(ConstraintPtr c, const ConstraintStats& stats);
+    bool isInvariantKnapsack_(ConstraintPtr c, const ConstraintStats& stats);
+    bool isEquationKnapsack_(ConstraintPtr c, const ConstraintStats& stats);
+    bool isBinPacking_(ConstraintPtr c, const ConstraintStats& stats);
+    bool isKnapsack_(ConstraintPtr c, const ConstraintStats& stats);
+    bool isIntegerKnapsack_(ConstraintPtr c, const ConstraintStats& stats);
+    bool isMixedBinary_(ConstraintPtr c, const ConstraintStats& stats);
+    bool isNoSpecificStructure_(ConstraintPtr c);
      
     void printConstraintStatistics();
-
-    int countAggregation = 0;
-    int countPrecedence = 0;
-    int countVariableBound = 0;
-    int countSetPartitioning = 0;
-    int countSetPacking = 0;
-    int countSetCovering = 0;
-    int countCardinality = 0;
-    int countInvariantKnapsack = 0;
-    int countEquationKnapsack = 0;
-    int countBinPacking = 0;
-    int countKnapsack = 0;
-    int countIntegerKnapsack = 0;
-    int countMixedBinary = 0;
-    int countGeneralLinear = 0;
-    int countNoSpecificStructure = 0;
        
     /// Vector of constraints.
     ConstraintVector cons_;
