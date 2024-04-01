@@ -100,6 +100,25 @@ typedef enum {
   ConsCut   ///> Constraint added as a cut
 } ConsSrcType;
 
+/// What type of constraint is this.
+/// Add enum items here if more constraint types are identified.
+typedef enum {
+  Aggregation,   ///> ax + by = c
+  Precedence,    ///> ax - ay \leq b, x & y have the same type
+  VariableBound, ///> ax + by \leq c, x is Binary
+  SetPartition,  ///> \sum_{i=1}^n x_i = 1, x_i is Binary
+  SetPack,       ///> \sum_{i=1}^n x_i \leq 1, x_i is Binary
+  SetCover,      ///> \sum_{i=1}^n x_i \geq 1, x_i is Binary
+  Cardinality,   ///> \sum_{i=1}^n x_i = k, x_i is Binary, k \geq 2
+  InvariantKnapsack, ///> \sum_{i=1}^n x_i \leq b, x_i is Binary, b \in \mathbb{N} \geq 2
+  EquationKnapsack, ///> \sum_{i=1}^n a_i*x_i = b, x_i is Binary, b \in \mathbb{N} \geq 2
+  BinPack, ///> \sum_{i=1}^n a_i*x_i + by = b, x_i, y is Binary, b \in \mathbb{N} \geq 2
+  Knapsack,        ///> \sum_{i=1}^n a_i*x_i \leq b, x_i is Binary
+  IntegerKnapsack, ///> \sum_{i=1}^n a_i*x_i \leq b, x_i is Integer
+  MixedBinary, ///> Linear combination of at least one binary variable with continuous variables
+  General      ///> No specific structure identififed.
+} ConsType;
+
 /// Different types of variable-bounds.
 typedef enum { Lower, Upper } BoundType;
 

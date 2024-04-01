@@ -150,6 +150,11 @@ public:
     return src_;
   }
 
+  ConsType getType() const
+  {
+    return type_;
+  }
+
   /// Get the 'u' value. or the upper bound constraint on 'f'.
   double getUb() const
   {
@@ -196,6 +201,11 @@ public:
   void setSrcType(ConsSrcType src)
   {
     src_ = src;
+  }
+
+  void setType(ConsType type)
+  {
+    type_ = type;
   }
 
   /// display the constraint
@@ -297,6 +307,9 @@ private:
 
   /// free or fixed etc.
   ConsState state_;
+
+  /// Type of the constraint
+  ConsType type_;
 
   /// Temporary boolean variable for misc processes
   bool bTemp_;

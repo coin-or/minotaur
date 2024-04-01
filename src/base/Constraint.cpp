@@ -29,6 +29,7 @@ Constraint::Constraint()
     name_(""),
     src_(ConsOrig),
     state_(NormalCons),
+    type_(General),
     ub_(INFINITY),
     convex_(Unknown)
 { }
@@ -43,6 +44,7 @@ Constraint::Constraint(UInt id, UInt index, FunctionPtr f, double lb, double ub,
     name_(name),
     src_(ConsOrig),
     state_(NormalCons),
+    type_(General),
     ub_(ub),
     convex_(Unknown)
 { }

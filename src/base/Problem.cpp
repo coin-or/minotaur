@@ -342,320 +342,366 @@ int Problem::checkConVars() const
   return err;
 }
 
-void Problem::classifyCon() {
-    const double tol = 1e-5;
-    for (ConstraintConstIterator citer = cons_.begin(); citer != cons_.end(); ++citer) {
-     ConstraintPtr c = *citer;
-     ConstraintStats stats;
-     FunctionPtr f = c->getFunction();
-     bool isClassified = false;
-     if (f->getType() == Linear) {
-     LinearFunctionPtr lf = f->getLinearFunction();
-     stats.nvars = lf->getNumTerms();
-     stats.nposcoefone = 0;
-     stats.nnegcoefone = 0;
-     stats.nposcoef = 0;
-     stats.nnegcoef = 0;
-     stats.nposcont = 0;
-     stats.nnegcont = 0;
-     stats.nposbin = 0;
-     stats.nnegbin = 0;
-     stats.nposint = 0;
-     stats.nnegint = 0;
-     stats.wt1 = 0;
-     stats.wt2 = 0;
-     stats.sumnegwt = 0;
-     stats.con = 0;
-     for (VariableGroupConstIterator it = lf->termsBegin(); it != lf->termsEnd(); ++it) {
-      VariablePtr v = it->first;
-      double wt = it->second;
-      if(f->getNumVars() == 2) {
-        if(wt > 0) {
-          stats.wt1 = wt;
-        } else if(wt < 0) {
-          stats.wt2 = wt;
+void Problem::classifyCon()
+{
+  const double tol = 1e-5;
+  for(ConstraintConstIterator citer = cons_.begin(); citer != cons_.end();
+      ++citer) {
+    ConstraintPtr c = *citer;
+    ConstraintStats stats;
+    FunctionPtr f = c->getFunction();
+    bool isClassified = false;
+    if(f->getType() == Linear) {
+      LinearFunctionPtr lf = f->getLinearFunction();
+      stats.nvars = lf->getNumTerms();
+      stats.nposcoefone = 0;
+      stats.nnegcoefone = 0;
+      stats.nposcoef = 0;
+      stats.nnegcoef = 0;
+      stats.nposcont = 0;
+      stats.nnegcont = 0;
+      stats.nposbin = 0;
+      stats.nnegbin = 0;
+      stats.nposint = 0;
+      stats.nnegint = 0;
+      stats.wt1 = 0;
+      stats.wt2 = 0;
+      stats.sumnegwt = 0;
+      stats.con = 0;
+      for(VariableGroupConstIterator it = lf->termsBegin();
+          it != lf->termsEnd(); ++it) {
+        VariablePtr v = it->first;
+        double wt = it->second;
+        if(f->getNumVars() == 2) {
+          if(wt > 0) {
+            stats.wt1 = wt;
+          } else if(wt < 0) {
+            stats.wt2 = wt;
+          }
         }
-      }
-      if(abs(wt - 1) < tol) {
-        ++stats.nposcoefone;
-      } else if(abs(wt + 1) < tol) {
-        ++stats.nnegcoefone;
-      }
-      if(wt > tol) {
-        ++stats.nposcoef;
-      } else if(wt < -tol) {
-        ++stats.nnegcoef;
-      }
-      if(wt > tol && v->getType() != Binary && v->getType() != Integer) {
-        ++stats.nposcont;
-      } else if(wt < -tol && v->getType() != Binary &&
-                v->getType() != Integer) {
-        ++stats.nnegcont;
-      }
-      if(v->getType() == Binary) {
+        if(abs(wt - 1) < tol) {
+          ++stats.nposcoefone;
+        } else if(abs(wt + 1) < tol) {
+          ++stats.nnegcoefone;
+        }
         if(wt > tol) {
-          ++stats.nposbin;
+          ++stats.nposcoef;
         } else if(wt < -tol) {
-          ++stats.nnegbin;
-          stats.sumnegwt += abs(wt);
+          ++stats.nnegcoef;
+        }
+        if(wt > tol && v->getType() != Binary && v->getType() != Integer) {
+          ++stats.nposcont;
+        } else if(wt < -tol && v->getType() != Binary &&
+                  v->getType() != Integer) {
+          ++stats.nnegcont;
+        }
+        if(v->getType() == Binary) {
+          if(wt > tol) {
+            ++stats.nposbin;
+          } else if(wt < -tol) {
+            ++stats.nnegbin;
+            stats.sumnegwt += abs(wt);
+          }
+        }
+        if(v->getType() == Integer) {
+          if(wt > tol) {
+            ++stats.nposint;
+          } else if(wt < -tol) {
+            ++stats.nnegint;
+          }
         }
       }
-      if(v->getType() == Integer) {
-        if(wt > tol) {
-          ++stats.nposint;
-        } else if(wt < -tol) {
-          ++stats.nnegint;
+      // Continuing from the previous for-loop where stats are calculated...
+      double sumnegwt = stats.sumnegwt;
+      for(VariableGroupConstIterator it2 = lf->termsBegin();
+          it2 != lf->termsEnd(); ++it2) {
+        double wtn = it2->second;
+        VariablePtr vn = it2->first;
+        if(vn->getType() == Binary) {
+          if(c->getUb() + sumnegwt == std::abs(wtn)) {
+            ++stats.con;
+          }
         }
       }
-   }
-    // Continuing from the previous for-loop where stats are calculated...
-    double sumnegwt = stats.sumnegwt; 
-    for (VariableGroupConstIterator it2 = lf->termsBegin(); it2 != lf->termsEnd(); ++it2) {
-    double wtn = it2->second;
-    VariablePtr vn = it2->first;
-    if (vn->getType() == Binary) {
-     if (c->getUb() + sumnegwt == std::abs(wtn)) {
-         ++stats.con;
+      // Now pass the populated stats structure to each checker function
+      if(stats.nvars == 2) {
+        if(!isClassified) {
+          isClassified = checkAggregation(c) || isClassified;
         }
+        if(!isClassified) {
+          isClassified = checkPrecedence(c, stats) || isClassified;
+        }
+        if(!isClassified) {
+          isClassified = checkVariableBound(c, stats) || isClassified;
+        }
+      } else if(stats.nposbin + stats.nnegbin == stats.nvars) {
+        if(stats.nposcoefone + stats.nnegcoefone == stats.nvars) {
+          if(!isClassified) {
+            isClassified = checkSetPartitioning(c, stats) || isClassified;
+          }
+          if(!isClassified) {
+            isClassified = checkSetPacking(c, stats) || isClassified;
+          }
+          if(!isClassified) {
+            isClassified = checkSetCovering(c, stats) || isClassified;
+          }
+          if(!isClassified) {
+            isClassified = checkCardinality(c, stats) || isClassified;
+          }
+          if(!isClassified) {
+            isClassified = checkInvariantKnapsack(c, stats) || isClassified;
+          }
+        } else if(stats.nposcoef + stats.nnegcoef == stats.nvars) {
+          if(!isClassified) {
+            isClassified = checkEquationKnapsack(c, stats) || isClassified;
+          }
+          if(!isClassified) {
+            isClassified = checkBinPacking(c, stats) || isClassified;
+          }
+          if(!isClassified) {
+            isClassified = checkKnapsack(c, stats) || isClassified;
+          }
+        }
+      }
+      if(!isClassified) {
+        isClassified = checkIntegerKnapsack(c, stats) || isClassified;
+      }
+      if(!isClassified) {
+        isClassified = checkMixedBinary(c, stats) || isClassified;
+      }
+      if(!isClassified) {
+        isClassified = checkGeneralLinear(c, stats) || isClassified;
+      }
+      if(!isClassified) {
+        isClassified = checkNoSpecificStructure() || isClassified;
+      }
     }
-}
-     // Now pass the populated stats structure to each checker function
-  if (stats.nvars == 2){
-   if (!isClassified){
-      isClassified = checkAggregation(c) || isClassified;
-   }
-   if(!isClassified){
-      isClassified = checkPrecedence(c, stats) || isClassified;
-   }
-   if(!isClassified){
-      isClassified = checkVariableBound(c, stats) || isClassified;
   }
-}
-  else if (stats.nposbin + stats.nnegbin == stats.nvars){
-        if (stats.nposcoefone + stats.nnegcoefone == stats.nvars){
-	  if (!isClassified){
-             isClassified = checkSetPartitioning(c, stats) || isClassified ;
-	}
-	  if (!isClassified){
-             isClassified = checkSetPacking(c, stats) || isClassified ;
-	}
-          if (!isClassified){
-             isClassified = checkSetCovering(c, stats) || isClassified ;
-	}
-	  if (!isClassified){
-             isClassified = checkCardinality(c, stats) || isClassified;
-	}
-	  if (!isClassified){
-             isClassified = checkInvariantKnapsack(c, stats) || isClassified;
-	}
-     }
-  else if (stats.nposcoef + stats.nnegcoef == stats.nvars){ 
-	if (!isClassified){
-	    isClassified = checkEquationKnapsack(c, stats) || isClassified;
-	}
-	if (!isClassified){
-            isClassified = checkBinPacking(c, stats)|| isClassified;
-	}
-	if (!isClassified){
-           isClassified = checkKnapsack(c, stats)|| isClassified;
-	}
-      }
-   }
-        if (!isClassified){
-           isClassified = checkIntegerKnapsack(c, stats)|| isClassified;
-	}
-        if (!isClassified){
-           isClassified = checkMixedBinary(c, stats)|| isClassified;
-	}
-        if (!isClassified){
-           isClassified = checkGeneralLinear(c, stats)|| isClassified;
-	}
-        if (!isClassified){
-           isClassified = checkNoSpecificStructure()|| isClassified;
-	}
-      }
-   }
-        printConstraintStatistics();
+  printConstraintStatistics();
 }
 
-bool Problem::checkAggregation(ConstraintPtr c) {
-   if (c->getLb() == c->getUb()) {
-        aggregationConstraints.push_back(c);
-        ++countAggregation;
-	return true;
+bool Problem::checkAggregation(ConstraintPtr c)
+{
+  if(c->getLb() == c->getUb()) {
+    aggregationConstraints.push_back(c);
+    ++countAggregation;
+    return true;
+  }
+  return false;
+}
+
+bool Problem::checkPrecedence(ConstraintPtr c, const ConstraintStats& stats)
+{
+  if(stats.wt1 == -(stats.wt2) &&
+     (c->getUb() <= INFTY && c->getLb() >= -INFTY) &&
+     ((stats.nposbin + stats.nnegbin == 2) ||
+      (stats.nposint + stats.nnegint == 2) ||
+      (stats.nposcont + stats.nnegcont == 2))) {
+    c->setType(Precedence);
+    ++countPrecedence;
+    return true;
+  }
+  return false;
+}
+
+bool Problem::checkVariableBound(ConstraintPtr c, const ConstraintStats& stats)
+{
+  if(((stats.nposbin + stats.nnegbin == 2) ||
+      (stats.nposcoefone + stats.nnegcoefone == 2) ||
+      ((stats.nposbin + stats.nnegbin == 1) &&
+       (stats.nposcont + stats.nnegcont) == 1) ||
+      ((stats.nposbin + stats.nnegbin == 1) &&
+       (stats.nposint + stats.nnegint) == 1)) &&
+     (c->getUb() <= INFTY && c->getLb() >= -INFTY)) {
+    variableBoundConstraints.push_back(c);
+    ++countVariableBound;
+    return true;
+  }
+  return false;
+}
+
+bool Problem::checkSetPartitioning(ConstraintPtr c,
+                                   const ConstraintStats& stats)
+{
+  if(((c->getLb() == 1 - stats.nnegcoefone &&
+       c->getUb() == 1 - stats.nnegcoefone) ||
+      (c->getLb() == stats.nposcoefone - 1 &&
+       c->getUb() == stats.nposcoefone - 1))) {
+    setPartitioningConstraints.push_back(c);
+    ++countSetPartitioning;
+    return true;
+  }
+  return false;
+}
+
+bool Problem::checkSetPacking(ConstraintPtr c, const ConstraintStats& stats)
+{
+  if((c->getLb() == stats.nposcoefone - 1 ||
+      c->getUb() == 1 - stats.nnegcoefone) &&
+     (c->getLb() >= -INFTY || c->getUb() <= INFTY)) {
+    setPackingConstraints.push_back(c);
+    ++countSetPacking;
+    return true;
+  }
+  return false;
+}
+
+bool Problem::checkSetCovering(ConstraintPtr c, const ConstraintStats& stats)
+{
+  if((c->getLb() == 1 - stats.nnegcoefone && c->getUb() <= INFTY) ||
+     (c->getUb() == stats.nposcoefone - 1 && c->getLb() >= -INFTY)) {
+    setCoveringConstraints.push_back(c);
+    ++countSetCovering;
+    return true;
+  }
+  return false;
+}
+
+bool Problem::checkCardinality(ConstraintPtr c, const ConstraintStats& stats)
+{
+  if(c->getLb() == c->getUb() && c->getUb() <= 2 + stats.nnegcoefone) {
+    cardinalityConstraints.push_back(c);
+    ++countCardinality;
+    return true;
+  }
+  return false;
+}
+
+bool Problem::checkInvariantKnapsack(ConstraintPtr c,
+                                     const ConstraintStats& stats)
+{
+  if(((c->getUb() >= 2 - stats.nnegcoefone && c->getLb() == -INFTY) ||
+      (c->getLb() == stats.nposcoefone - 2 && c->getUb() == INFTY)) &&
+     (isInt(c->getUb()))) {
+    invariantKnapsackConstraints.push_back(c);
+    ++countInvariantKnapsack;
+    return true;
+  }
+  return false;
+}
+
+bool Problem::checkEquationKnapsack(ConstraintPtr c,
+                                    const ConstraintStats& stats)
+{
+  if((c->getUb() + stats.sumnegwt >= 2 && c->getUb() == c->getLb()) &&
+     (isInt(c->getUb()))) {
+    equationKnapsackConstraints.push_back(c);
+    ++countEquationKnapsack;
+    return true;
+  }
+  return false;
+}
+
+bool Problem::checkBinPacking(ConstraintPtr c, const ConstraintStats& stats)
+{
+  if(c->getUb() + stats.sumnegwt >= 2 && (isInt(c->getUb())) &&
+     stats.con >= 1) {
+    binPackingConstraints.push_back(c);
+    ++countBinPacking;
+    return true;
+  }
+  return false;
+}
+
+bool Problem::checkKnapsack(ConstraintPtr c, const ConstraintStats& stats)
+{
+  if(((c->getLb() + 2 <= stats.sumnegwt && c->getUb() <= INFTY) &&
+      (isInt(c->getLb()))) ||
+     (c->getUb() + stats.sumnegwt >= 2 && c->getLb() >= -INFTY &&
+      (isInt(c->getUb())))) {
+    knapsackConstraints.push_back(c);
+    ++countKnapsack;
+    return true;
+  }
+  return false;
+}
+
+bool Problem::checkIntegerKnapsack(ConstraintPtr c,
+                                   const ConstraintStats& stats)
+{
+  if(stats.nposint + stats.nnegint == stats.nvars && (isInt(c->getUb()))) {
+    if(c->getLb() >= -INFTY && c->getUb() <= INFTY) {
+      integerKnapsackConstraints.push_back(c);
+      ++countIntegerKnapsack;
+      return true;
     }
-   return false;
+  }
+  return false;
 }
 
-bool Problem::checkPrecedence(ConstraintPtr c, const ConstraintStats& stats) {
-   if(stats.wt1 == -(stats.wt2) && (c->getUb() <= INFTY && c->getLb() >= -INFTY) &&
-       ((stats.nposbin + stats.nnegbin == 2) || (stats.nposint + stats.nnegint == 2) ||
-       (stats.nposcont + stats.nnegcont == 2))){
-        precedenceConstraints.push_back(c);
-	++countPrecedence;
-	return true;
+bool Problem::checkMixedBinary(ConstraintPtr c, const ConstraintStats& stats)
+{
+  if(stats.nposcont + stats.nnegcont + stats.nposbin + stats.nnegbin ==
+     stats.nvars) {
+    if(((c->getLb() >= -INFTY && c->getUb() <= INFTY) ||
+        (c->getUb() == c->getLb())) &&
+       (stats.nposbin + stats.nnegbin >= 1)) {
+      mixedBinaryConstraints.push_back(c);
+      ++countMixedBinary;
+      return true;
     }
-    return false;
+  }
+  return false;
 }
 
-bool Problem::checkVariableBound(ConstraintPtr c, const ConstraintStats& stats) {
-    if(((stats.nposbin + stats.nnegbin == 2) || (stats.nposcoefone + stats.nnegcoefone == 2) ||
-       ((stats.nposbin + stats.nnegbin == 1) && (stats.nposcont + stats.nnegcont) == 1) ||
-                 ((stats.nposbin + stats.nnegbin == 1) && (stats.nposint + stats.nnegint) == 1)) &&
-                (c->getUb() <= INFTY && c->getLb() >= -INFTY)){
-        variableBoundConstraints.push_back(c);
-	++countVariableBound;
-	return true;
+bool Problem::checkGeneralLinear(ConstraintPtr c, const ConstraintStats& stats)
+{
+  if(stats.nposcont + stats.nnegcont + stats.nposint + stats.nnegint +
+         stats.nposbin + stats.nnegbin ==
+     stats.nvars) {
+    if((c->getLb() >= -INFTY && c->getUb() <= INFTY) ||
+       (c->getUb() == c->getLb())) {
+      generalLinearConstraints.push_back(c);
+      ++countGeneralLinear;
+      return true;
     }
-     return false;
+  }
+  return false;
 }
 
-bool Problem::checkSetPartitioning(ConstraintPtr c, const ConstraintStats& stats) {
-    if (((c->getLb() == 1 - stats.nnegcoefone && c->getUb() == 1 - stats.nnegcoefone) ||
-         (c->getLb() == stats.nposcoefone - 1 && c->getUb() == stats.nposcoefone - 1))) {
-          setPartitioningConstraints.push_back(c);
-          ++countSetPartitioning;
-	  return true;
-    }
-    return false;
+bool Problem::checkNoSpecificStructure()
+{
+  ++countNoSpecificStructure;
+  return true;
 }
 
-bool Problem::checkSetPacking(ConstraintPtr c, const ConstraintStats& stats) {
-    if ((c->getLb() == stats.nposcoefone - 1 ||
-         c->getUb() == 1 - stats.nnegcoefone) &&
-        (c->getLb() >= -INFTY || c->getUb() <= INFTY)) {
-        setPackingConstraints.push_back(c);
-        ++countSetPacking;
-	return true;
-    }
-    return false;
-}
-
-bool Problem::checkSetCovering(ConstraintPtr c, const ConstraintStats& stats) {
-    if ((c->getLb() == 1 - stats.nnegcoefone && c->getUb() <= INFTY) ||
-        (c->getUb() == stats.nposcoefone - 1 && c->getLb() >= -INFTY)) {
-        setCoveringConstraints.push_back(c);
-        ++countSetCovering;
-	return true;
-    }
-    return false;
-}
-
-bool Problem::checkCardinality(ConstraintPtr c, const ConstraintStats& stats) {
-    if (c->getLb() == c->getUb() && c->getUb() <= 2 + stats.nnegcoefone) {
-        cardinalityConstraints.push_back(c);
-        ++countCardinality;
-	return true;
-    }
-    return false;
-}
-
-bool Problem::checkInvariantKnapsack(ConstraintPtr c, const ConstraintStats& stats) {
-    if (((c->getUb() >= 2 - stats.nnegcoefone && c->getLb() == -INFTY) ||
-         (c->getLb() == stats.nposcoefone - 2 && c->getUb() == INFTY)) &&
-        (isInt(c->getUb()))) {
-        invariantKnapsackConstraints.push_back(c);
-        ++countInvariantKnapsack;
-	return true;
-    }
-    return false;
-}
-
-bool Problem::checkEquationKnapsack(ConstraintPtr c, const ConstraintStats& stats) {   
-        if ((c->getUb() + stats.sumnegwt >= 2 && c->getUb() == c->getLb()) &&
-            (isInt(c->getUb()))) {
-            equationKnapsackConstraints.push_back(c);
-            ++countEquationKnapsack;
-	    return true;
-        }
-	return false;
-}
-
-bool Problem::checkBinPacking(ConstraintPtr c, const ConstraintStats& stats) {
-    if (c->getUb() + stats.sumnegwt >= 2 && (isInt(c->getUb())) && stats.con >= 1) {
-        binPackingConstraints.push_back(c);
-        ++countBinPacking;
-	return true;
-    }
-    return false;
-}
-
-bool Problem::checkKnapsack(ConstraintPtr c, const ConstraintStats& stats) {
-    if (((c->getLb() + 2 <= stats.sumnegwt && c->getUb() <= INFTY) &&
-         (isInt(c->getLb()))) ||
-        (c->getUb() + stats.sumnegwt >= 2 && c->getLb() >= -INFTY &&
-         (isInt(c->getUb())))) {
-        knapsackConstraints.push_back(c);
-        ++countKnapsack;
-	return true;
-    }
-    return false;
-}
-
-bool Problem::checkIntegerKnapsack(ConstraintPtr c, const ConstraintStats& stats) {
-    if (stats.nposint + stats.nnegint == stats.nvars &&
-        (isInt(c->getUb()))) {
-        if (c->getLb() >= -INFTY && c->getUb() <= INFTY) {
-            integerKnapsackConstraints.push_back(c);
-            ++countIntegerKnapsack;
-	    return true;
-        }
-    }
-    return false;
-}
-
-bool Problem::checkMixedBinary(ConstraintPtr c, const ConstraintStats& stats) {
-    if (stats.nposcont + stats.nnegcont + stats.nposbin + stats.nnegbin == stats.nvars) {
-        if (((c->getLb() >= -INFTY && c->getUb() <= INFTY) ||
-             (c->getUb() == c->getLb())) &&
-            (stats.nposbin + stats.nnegbin >= 1)) {
-            mixedBinaryConstraints.push_back(c);
-            ++countMixedBinary;
-	    return true;
-        }
-    }
-    return false;
-}
-
-bool Problem::checkGeneralLinear(ConstraintPtr c, const ConstraintStats& stats) {
-    if (stats.nposcont + stats.nnegcont + stats.nposint + stats.nnegint + stats.nposbin + stats.nnegbin ==
-        stats.nvars) {
-        if ((c->getLb() >= -INFTY && c->getUb() <= INFTY) ||
-            (c->getUb() == c->getLb())) {
-            generalLinearConstraints.push_back(c);
-            ++countGeneralLinear;
-	    return true;
-        }
-    }
-    return false;
-}
-
-bool Problem::checkNoSpecificStructure() {
-        ++countNoSpecificStructure;
-	return true;
-}
-
-void Problem::printConstraintStatistics() {
-    logger_->msgStream(LogError)
-        << "--------------------------------------------" << std::endl
-        << "|            Constraints Size              |\n"
-        << "|------------------------------------------|\n"
-        << "|Aggregation constraint       |" << std::setw(7) << countAggregation << "     |\n"
-        << "|Precedence constraint        |" << std::setw(7) << countPrecedence << "     |\n"
-        << "|Variable Bound constraint    |" << std::setw(7) << countVariableBound << "     |\n"
-        << "|Partitioning constraint      |" << std::setw(7) << countSetPartitioning << "     |\n"
-        << "|Set Packing constraint       |" << std::setw(7) << countSetPacking << "     |\n"
-        << "|Set Covering constraint      |" << std::setw(7) << countSetCovering << "     |\n"
-        << "|Cardinality constraint       |" << std::setw(7) << countCardinality << "     |\n"
-        << "|Invariant Knapsack constraint|" << std::setw(7) << countInvariantKnapsack << "     |\n"
-        << "|Equation Knapsack constraint |" << std::setw(7) << countEquationKnapsack << "     |\n"
-        << "|Bin Packing constraint       |" << std::setw(7) << countBinPacking << "     |\n"
-        << "|Knapsack constraint          |" << std::setw(7) << countKnapsack << "     |\n"
-        << "|Integer Knapsack constraint  |" << std::setw(7) << countIntegerKnapsack << "     |\n"
-        << "|Mixed Binary constraint      |" << std::setw(7) << countMixedBinary << "     |\n"
-        << "|General Linear constraint    |" << std::setw(7) << countGeneralLinear << "     |\n"
-        << "|No specific structure        |" << std::setw(7) << countNoSpecificStructure << "     |\n"
-        << "--------------------------------------------\n";
+void Problem::printConstraintStatistics()
+{
+  logger_->msgStream(LogError)
+      << "--------------------------------------------" << std::endl
+      << "|            Constraints Size              |\n"
+      << "|------------------------------------------|\n"
+      << "|Aggregation constraint       |" << std::setw(7) << countAggregation
+      << "     |\n"
+      << "|Precedence constraint        |" << std::setw(7) << countPrecedence
+      << "     |\n"
+      << "|Variable Bound constraint    |" << std::setw(7) << countVariableBound
+      << "     |\n"
+      << "|Partitioning constraint      |" << std::setw(7)
+      << countSetPartitioning << "     |\n"
+      << "|Set Packing constraint       |" << std::setw(7) << countSetPacking
+      << "     |\n"
+      << "|Set Covering constraint      |" << std::setw(7) << countSetCovering
+      << "     |\n"
+      << "|Cardinality constraint       |" << std::setw(7) << countCardinality
+      << "     |\n"
+      << "|Invariant Knapsack constraint|" << std::setw(7)
+      << countInvariantKnapsack << "     |\n"
+      << "|Equation Knapsack constraint |" << std::setw(7)
+      << countEquationKnapsack << "     |\n"
+      << "|Bin Packing constraint       |" << std::setw(7) << countBinPacking
+      << "     |\n"
+      << "|Knapsack constraint          |" << std::setw(7) << countKnapsack
+      << "     |\n"
+      << "|Integer Knapsack constraint  |" << std::setw(7)
+      << countIntegerKnapsack << "     |\n"
+      << "|Mixed Binary constraint      |" << std::setw(7) << countMixedBinary
+      << "     |\n"
+      << "|General Linear constraint    |" << std::setw(7) << countGeneralLinear
+      << "     |\n"
+      << "|No specific structure        |" << std::setw(7)
+      << countNoSpecificStructure << "     |\n"
+      << "--------------------------------------------\n";
 }
 
 // Does not clone Jacobian and Hessian yet.
