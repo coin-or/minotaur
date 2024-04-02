@@ -406,22 +406,13 @@ int Glob::solve(ProblemPtr inst)
   if(err == 2) {
     // call convex solvers
     if(inst_->isQP()) {
-      QuadraticFunctionPtr qf = inst_->getObjective()->getQuadraticFunction();
-      bool check = true;
-      for(VariablePairGroupConstIterator it = qf->begin(); it != qf->end();
-          ++it) {
-        if((it->first.first->getType() != Binary) &&
-           (it->first.second->getType() != Binary)) {
-          check = false;
-          break;
-        }
-      }
-      if(check) {
-        env_->getOptions()->findBool("nl_presolve")->setValue(false);
-        env_->getOptions()->findString("brancher")->setValue("rel");
-        fwd2Bnb_();
-        goto CLEANUP;
-      }
+      env_->getLogger()->msgStream(LogInfo)
+          << me_ << "The objective function in this QP is convex" << std::endl
+          << "Problem is forwarded to Branch and bound" << std::endl;
+      env_->getOptions()->findBool("nl_presolve")->setValue(false);
+      env_->getOptions()->findString("brancher")->setValue("rel");
+      fwd2Bnb_();
+      goto CLEANUP;
     }
     env_->getLogger()->msgStream(LogInfo)
         << me_ << "All constraints and objective found to be convex"
