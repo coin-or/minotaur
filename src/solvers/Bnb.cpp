@@ -154,15 +154,18 @@ BranchAndBound* Bnb::getBab_(Engine* engine, HandlerVector& handlers)
     div_heur = (MINLPDivingPtr) new MINLPDiving(env_, oinst_, e2);
     bab->addPreRootHeur(div_heur);
   }
-  if(options->findBool("samplingheur")->getValue() == true) {
-    SamplingHeurPtr s_heur = (SamplingHeurPtr) new SamplingHeur(env_, oinst_);
-    bab->addPreRootHeur(s_heur);
-  }
 
-  if(options->findBool("fixvarsheur")->getValue() == true) {
-    FixVarsHeurPtr f_heur = (FixVarsHeurPtr) new FixVarsHeur(env_, oinst_);
-    f_heur->setHandlers(handlers);
-    bab->addPreRootHeur(f_heur);
+  if(options->findBool("prerootheur")->getValue() == true) {
+    if(options->findBool("samplingheur")->getValue() == true) {
+      SamplingHeurPtr s_heur = (SamplingHeurPtr) new SamplingHeur(env_, oinst_);
+      bab->addPreRootHeur(s_heur);
+    }
+
+    if(options->findBool("fixvarsheur")->getValue() == true) {
+      FixVarsHeurPtr f_heur = (FixVarsHeurPtr) new FixVarsHeur(env_, oinst_);
+      f_heur->setHandlers(handlers);
+      bab->addPreRootHeur(f_heur);
+    }
   }
 
   if(true == options->findBool("FPump")->getValue()) {

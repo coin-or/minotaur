@@ -252,6 +252,10 @@ void Environment::createDefaultOptions_()
   options_->insert(b_option);
 
   b_option = (BoolOptionPtr) new Option<bool>(
+      "prerootheur", "Enable pre root heuristics: <0/1>", true, true);
+  options_->insert(b_option);
+
+  b_option = (BoolOptionPtr) new Option<bool>(
       "msheur", "Enable multi-start initial heuristic: <0/1>", true, false);
   options_->insert(b_option);
 

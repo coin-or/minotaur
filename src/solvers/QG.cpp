@@ -412,15 +412,17 @@ int QG::solve(ProblemPtr p)
   bab->setNodeProcessor(nproc);
   bab->shouldCreateRoot(true);
 
-  if(env_->getOptions()->findBool("samplingheur")->getValue() == true) {
-    SamplingHeurPtr s_heur = (SamplingHeurPtr) new SamplingHeur(env_, oinst_);
-    bab->addPreRootHeur(s_heur);
-  }
+  if(env_->getOptions()->findBool("prerootheur")->getValue() == true) {
+    if(env_->getOptions()->findBool("samplingheur")->getValue() == true) {
+      SamplingHeurPtr s_heur = (SamplingHeurPtr) new SamplingHeur(env_, oinst_);
+      bab->addPreRootHeur(s_heur);
+    }
 
-  if(env_->getOptions()->findBool("fixvarsheur")->getValue() == true) {
-    FixVarsHeurPtr f_heur = (FixVarsHeurPtr) new FixVarsHeur(env_, oinst_);
-    f_heur->setHandlers(handlers);
-    bab->addPreRootHeur(f_heur);
+    if(env_->getOptions()->findBool("fixvarsheur")->getValue() == true) {
+      FixVarsHeurPtr f_heur = (FixVarsHeurPtr) new FixVarsHeur(env_, oinst_);
+      f_heur->setHandlers(handlers);
+      bab->addPreRootHeur(f_heur);
+    }
   }
 
   // start solving
