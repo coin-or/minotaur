@@ -417,7 +417,6 @@ void HybridBrancher::initialize_(RelaxationPtr rel)
     return;
   }
   int n = rel->getNumVars();
-  std::cout << " n = " << n << std::endl;
   pseudoDown_ = DoubleVector(n, 0.0);
   pseudoUp_ = DoubleVector(n, 0.0);
   timesDown_ = std::vector<UInt>(n, 0);
