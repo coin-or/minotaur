@@ -181,7 +181,7 @@ void QuadHandler::addConstraint(ConstraintPtr newcon)
   }
 }
 
-double QuadHandler::addDefaultBounds_(VariablePtr v, BoundType lu)
+double QuadHandler::addDefaultBounds(VariablePtr v, BoundType lu)
 {
   if(lu == Lower) {
     if(defaultLb_ < 1e12) {
@@ -724,16 +724,16 @@ LinearFunctionPtr QuadHandler::getNewBilLf_(VariablePtr x0, double lb0,
 
   if(lb0 < -1e12 || lb1 < -1e12 || ub0 > 1e12 || ub1 > 1e12) {
     if(lb0 < -1e12) {
-      lb0 = addDefaultBounds_(x0, Lower);
+      lb0 = addDefaultBounds(x0, Lower);
     }
     if(lb1 < -1e12) {
-      lb1 = addDefaultBounds_(x1, Lower);
+      lb1 = addDefaultBounds(x1, Lower);
     }
     if(ub0 > 1e12) {
-      ub0 = addDefaultBounds_(x0, Upper);
+      ub0 = addDefaultBounds(x0, Upper);
     }
     if(ub1 > 1e12) {
-      ub1 = addDefaultBounds_(x1, Upper);
+      ub1 = addDefaultBounds(x1, Upper);
     }
     //    logger_->errStream() << "can not relax " << x0->getName() << "*"
     //                         << x1->getName() << " = " << y->getName()
@@ -794,10 +794,10 @@ LinearFunctionPtr QuadHandler::getNewSqLf_(VariablePtr x, VariablePtr y,
 
   if(lb < -1e12 || ub > 1e12) {
     if(lb < -1e12) {
-      new_lb = addDefaultBounds_(x, Lower);
+      new_lb = addDefaultBounds(x, Lower);
     }
     if(ub > 1e12) {
-      new_ub = addDefaultBounds_(x, Upper);
+      new_ub = addDefaultBounds(x, Upper);
     }
   }
   r = -new_ub * new_lb;
@@ -1620,13 +1620,12 @@ void QuadHandler::relax_(RelaxationPtr rel, bool*)
   return;
 }
 
-void QuadHandler::relaxInitFull(RelaxationPtr rel, SolutionPool *,
-                                bool* is_inf)
+void QuadHandler::relaxInitFull(RelaxationPtr rel, SolutionPool*, bool* is_inf)
 {
   relax_(rel, is_inf);
 }
 
-void QuadHandler::relaxInitInc(RelaxationPtr rel, SolutionPool *, bool* is_inf)
+void QuadHandler::relaxInitInc(RelaxationPtr rel, SolutionPool*, bool* is_inf)
 {
   relax_(rel, is_inf);
 }

@@ -73,6 +73,10 @@ public:
   // base class method
   void addConstraint(ConstraintPtr newcon);
 
+  /// This will add default variable bounds if finite bounds
+  /// are not found by presolve
+  double addDefaultBounds(VariablePtr x, BoundType lu);
+
   // Implement Handler::getBranches().
   Branches getBranches(BrCandPtr cand, DoubleVector& x, RelaxationPtr rel,
                        SolutionPoolPtr s_pool);
@@ -112,10 +116,10 @@ public:
                  SolutionPoolPtr s_pool, bool& sol_found);
 
   // base class method. Adds linear inequalities
-  void relaxInitFull(RelaxationPtr rel, SolutionPool *sp, bool* is_inf);
+  void relaxInitFull(RelaxationPtr rel, SolutionPool* sp, bool* is_inf);
 
   // Does nothing.
-  void relaxInitInc(RelaxationPtr rel, SolutionPool *sp, bool* is_inf);
+  void relaxInitInc(RelaxationPtr rel, SolutionPool* sp, bool* is_inf);
 
   // Does nothing.
   void relaxNodeFull(NodePtr node, RelaxationPtr rel, bool* is_inf);
@@ -296,10 +300,6 @@ private:
    */
   void addCut_(VariablePtr x, VariablePtr y, double xl, double yl, double xval,
                double yval, RelaxationPtr rel, bool& ifcuts);
-
-  /// This will add default variable bounds if finite bounds
-  /// are not found by presolve
-  double addDefaultBounds_(VariablePtr x, BoundType lu);
 
   ConstraintPtr addTangent_(VariablePtr x, VariablePtr y, double pt,
                             RelaxationPtr rel);

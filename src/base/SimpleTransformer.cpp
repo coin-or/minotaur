@@ -886,6 +886,13 @@ void SimpleTransformer::refBinxCont_(VariablePtr bin, VariablePtr cont,
   ConstraintPtr cnew;
   double lb = cont->getLb(), ub = cont->getUb();
 
+  if(lb < -1e12) {
+    lb = qHandler_->addDefaultBounds(cont, Lower);
+  }
+  if(ub > 1e12) {
+    ub = qHandler_->addDefaultBounds(cont, Upper);
+  }
+
   // y>=l*b
   lfnew = (LinearFunctionPtr) new LinearFunction();
   lfnew->addTerm(aux, 1.0);
