@@ -1217,12 +1217,12 @@ void QuadHandler::simplePresolve(ProblemPtr p, SolutionPoolPtr,
     }
 
     // reverse
-    BoundsOnDiv(y->getLb(), y->getUb(), x1->getLb(), x1->getUb(), lb, ub);
+    RevBoundsOnMult(y->getLb(), y->getUb(), x1->getLb(), x1->getUb(), lb, ub);
     if(updatePBounds_(p, x2, lb, ub, t_mods) < 0) {
       status = SolvedInfeasible;
     }
 
-    BoundsOnDiv(y->getLb(), y->getUb(), x2->getLb(), x2->getUb(), lb, ub);
+    RevBoundsOnMult(y->getLb(), y->getUb(), x2->getLb(), x2->getUb(), lb, ub);
     if(updatePBounds_(p, x1, lb, ub, t_mods) < 0) {
       status = SolvedInfeasible;
     }
@@ -1316,12 +1316,12 @@ bool QuadHandler::propBilBnds_(LinBil* lx0x1, RelaxationPtr rel, bool mod_rel,
   }
 
   // other direction
-  BoundsOnDiv(y->getLb(), y->getUb(), x0->getLb(), x0->getUb(), lb, ub);
+  RevBoundsOnMult(y->getLb(), y->getUb(), x0->getLb(), x0->getUb(), lb, ub);
   if(updatePBounds_(x1, lb, ub, rel, mod_rel, changed, p_mods, r_mods) < 0) {
     return true; // infeasible
   }
 
-  BoundsOnDiv(y->getLb(), y->getUb(), x1->getLb(), x1->getUb(), lb, ub);
+  RevBoundsOnMult(y->getLb(), y->getUb(), x1->getLb(), x1->getUb(), lb, ub);
   if(updatePBounds_(x0, lb, ub, rel, mod_rel, changed, p_mods, r_mods) < 0) {
     return true; // infeasible
   }
@@ -1342,12 +1342,12 @@ bool QuadHandler::propBilBnds_(LinBil* lx0x1, bool* changed)
   }
 
   // reverse
-  BoundsOnDiv(y->getLb(), y->getUb(), x0->getLb(), x0->getUb(), lb, ub);
+  RevBoundsOnMult(y->getLb(), y->getUb(), x0->getLb(), x0->getUb(), lb, ub);
   if(updatePBounds_(x1, lb, ub, changed) < 0) {
     return true;
   }
 
-  BoundsOnDiv(y->getLb(), y->getUb(), x1->getLb(), x1->getUb(), lb, ub);
+  RevBoundsOnMult(y->getLb(), y->getUb(), x1->getLb(), x1->getUb(), lb, ub);
   if(updatePBounds_(x0, lb, ub, changed) < 0) {
     return true;
   }
@@ -1880,12 +1880,12 @@ bool QuadHandler::calcVarBnd_(VariablePtr v1, VariablePtr v2, double coef,
     return false;
     // if term is bilinear
   } else {
-    BoundsOnDiv(qlb, qub, v1->getLb(), v1->getUb(), vlb, vub);
+    RevBoundsOnMult(qlb, qub, v1->getLb(), v1->getUb(), vlb, vub);
     if(updatePBounds_(v2, vlb, vub, c2) < 0) {
       return true;
     }
 
-    BoundsOnDiv(qlb, qub, v2->getLb(), v2->getUb(), vlb, vub);
+    RevBoundsOnMult(qlb, qub, v2->getLb(), v2->getUb(), vlb, vub);
     if(updatePBounds_(v1, vlb, vub, c1) < 0) {
       return true;
     }
@@ -1922,12 +1922,12 @@ bool QuadHandler::calcVarBnd_(RelaxationPtr rel, VariablePtr v1, VariablePtr v2,
     return false;
     // if term is bilinear
   } else {
-    BoundsOnDiv(qlb, qub, v1->getLb(), v1->getUb(), vlb, vub);
+    RevBoundsOnMult(qlb, qub, v1->getLb(), v1->getUb(), vlb, vub);
     if(updatePBounds_(v2, vlb, vub, rel, modRel_, c2, p_mods, r_mods) < 0) {
       return true;
     }
 
-    BoundsOnDiv(qlb, qub, v2->getLb(), v2->getUb(), vlb, vub);
+    RevBoundsOnMult(qlb, qub, v2->getLb(), v2->getUb(), vlb, vub);
     if(updatePBounds_(v1, vlb, vub, rel, modRel_, c1, p_mods, r_mods) < 0) {
       return true;
     }
