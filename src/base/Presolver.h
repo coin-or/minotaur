@@ -22,6 +22,7 @@ namespace Minotaur {
   typedef Solution* SolutionPtr;
   typedef std::deque<PreModPtr> PreModQ;
   typedef PreModQ::iterator PreModQIter;
+  typedef PreModQ::reverse_iterator PreModQRIter;
   typedef PreModQ::const_iterator PreModQConstIter;
 
    /**

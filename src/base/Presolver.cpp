@@ -60,7 +60,7 @@ Presolver::Presolver(ProblemPtr problem, EnvPtr env, HandlerVector handlers)
 Presolver::~Presolver()
 {
   handlers_.clear();
-  for (PreModQIter m=mods_.begin(); m!=mods_.end(); ++m) {
+  for (PreModQRIter m=mods_.rbegin(); m!=mods_.rend(); ++m) {
     delete (*m);
   }
   mods_.clear();
@@ -165,6 +165,7 @@ SolveStatus Presolver::solve()
     logger_->msgStream(LogExtraInfo) << me_
       << "ERROR: code to modify debug sol after presolve not available"
       << std::endl;
+    std::cout << "size of mods = " << mods_.size() << std::endl;
   }
 
   problem_->isDebugSolFeas(env_->getOptions()-> findDouble("feasAbs_tol")->
@@ -283,7 +284,7 @@ void Presolver::getX(const double *x, DoubleVector *newx)
     DoubleVector xx(problem_->getNumVars());
     std::copy(x, x+problem_->getNumVars(), xx.begin());
     // call all mods.
-    for (PreModQIter m=mods_.begin(); m!=mods_.end(); ++m) {
+    for (PreModQRIter m=mods_.rbegin(); m!=mods_.rend(); ++m) {
       (*m)->postsolveGetX(xx, newx);
       xx = *newx; // make a copy
     }

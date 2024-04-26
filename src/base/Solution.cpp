@@ -27,7 +27,7 @@ using namespace Minotaur;
 Solution::Solution()
 : n_(0),
   m_(0),
-  problem_(ProblemPtr()),
+  problem_(0),
   x_(0),
   dualCons_(0),
   dualX_(0),
@@ -113,6 +113,7 @@ Solution::Solution(ConstSolutionPtr sol)
   } else {
     dualX_ = 0;
   }
+  problem_  = sol->problem_;
   consViol_ = sol->consViol_;
   objValue_ = sol->objValue_;
   comple_   = sol->comple_;

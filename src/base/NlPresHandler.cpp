@@ -478,6 +478,12 @@ void NlPresHandler::bin2Lin_(ProblemPtr p, PreModQ* mods, bool* changed)
         f = (FunctionPtr) new Function(lf);
         p->newObjective(f, p->getObjective()->getConstant() + nlconst,
                         Minimize);
+#if SPEW
+        logger_->msgStream(LogDebug2)
+            << me_ << " products of binary variables in objective replaced" 
+            <<  std::endl;
+#endif
+
         *changed = true;
 
         // resize x, mult and grad. Others need not be changed as we add only
@@ -552,6 +558,11 @@ void NlPresHandler::bin2Lin_(ProblemPtr p, PreModQ* mods, bool* changed)
     }
   }
 
+#if SPEW
+  logger_->msgStream(LogDebug2)
+      << me_ << "new auxiliary variables added: " <<  mod->getSize() 
+      <<  std::endl;
+#endif
   if(mod->getSize() > 0) {
     mods->push_back(mod);
   } else {

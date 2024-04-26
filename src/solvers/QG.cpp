@@ -73,9 +73,6 @@ void QG::doSetup()
   env_->startTimer(err);
 
   setInitialOptions_();
-
-  iface_ = (MINOTAUR_AMPL::AMPLInterfacePtr) new MINOTAUR_AMPL::AMPLInterface(
-      env_, "qg");
 }
 
 int QG::getEngines_(Engine** nlp_e, LPEngine** lp_e)
@@ -319,7 +316,7 @@ int QG::solve(ProblemPtr p)
     env_->getLogger()->msgStream(LogInfo)
         << me_ << "status of presolve: " << getSolveStatusString(status_)
         << std::endl;
-    writeSol_(env_, orig_v, pres, SolutionPtr(), status_, iface_);
+    writeSol_(env_, orig_v, pres, pres->getSolution(), status_, iface_);
     goto CLEANUP;
   }
 

@@ -1042,6 +1042,14 @@ void LinearHandler::updateLfBoundsFromLb_(ProblemPtr p, bool apply_to_prob,
         vub = 0.; // should be zero when we have a singleton infinity.
       }
       nlb = (lb - uu) / coef + vub;
+
+      // round up if integer
+      if(cvar->getType() == Integer || cvar->getType() == Binary) {
+        if(nlb > -infty_ && fabs(nlb - floor(nlb + 0.5)) > intTol_) {
+          nlb = ceil(nlb); 
+        }
+      }
+
       if(nlb > vlb + eTol_) {
         // TODO: remove this hack of converting a const var to var.
         var = p->getVariable(cvar->getIndex());
@@ -1076,6 +1084,14 @@ void LinearHandler::updateLfBoundsFromLb_(ProblemPtr p, bool apply_to_prob,
         vlb = 0.; // should be zero when we have a singleton infinity.
       }
       nub = (lb - uu) / coef + vlb;
+
+      // round down if integer
+      if(cvar->getType() == Integer || cvar->getType() == Binary) {
+        if(nub < infty_ && fabs(nub - floor(nub + 0.5)) > intTol_) {
+          nub = floor(nub); 
+        }
+      }
+
       if(nub < vub - eTol_) {
         // TODO: remove this hack of converting a const var to var.
         var = p->getVariable(cvar->getIndex());
@@ -1110,6 +1126,7 @@ void LinearHandler::updateLfBoundsFromLb_(ProblemPtr p, bool apply_to_prob,
   }
 }
 
+
 void LinearHandler::updateLfBoundsFromUb_(ProblemPtr p, bool apply_to_prob,
                                           LinearFunctionPtr lf, double ub,
                                           double ll, bool is_sing,
@@ -1132,6 +1149,14 @@ void LinearHandler::updateLfBoundsFromUb_(ProblemPtr p, bool apply_to_prob,
         vlb = 0.; // should be zero when we have a singleton infinity.
       }
       nub = (ub - ll) / coef + vlb;
+
+      // round down if integer
+      if(cvar->getType() == Integer || cvar->getType() == Binary) {
+        if(nub < infty_ && fabs(nub - floor(nub + 0.5)) > intTol_) {
+          nub = floor(nub); 
+        }
+      }
+
       if(nub < vub - eTol_) {
         // TODO: remove this hack of converting a const var to var.
         var = p->getVariable(cvar->getIndex());
@@ -1166,6 +1191,14 @@ void LinearHandler::updateLfBoundsFromUb_(ProblemPtr p, bool apply_to_prob,
         vub = 0.; // should be zero when we have a singleton infinity.
       }
       nlb = (ub - ll) / coef + vub;
+
+      // round up if integer
+      if(cvar->getType() == Integer || cvar->getType() == Binary) {
+        if(nlb > -infty_ && fabs(nlb - floor(nlb + 0.5)) > intTol_) {
+          nlb = ceil(nlb); 
+        }
+      }
+
       if(nlb > vlb + eTol_) {
         // TODO: remove this hack of converting a const var to var.
         var = p->getVariable(cvar->getIndex());
