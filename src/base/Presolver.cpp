@@ -165,7 +165,6 @@ SolveStatus Presolver::solve()
     logger_->msgStream(LogExtraInfo) << me_
       << "ERROR: code to modify debug sol after presolve not available"
       << std::endl;
-    std::cout << "size of mods = " << mods_.size() << std::endl;
   }
 
   problem_->isDebugSolFeas(env_->getOptions()-> findDouble("feasAbs_tol")->

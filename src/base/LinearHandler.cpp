@@ -1544,7 +1544,7 @@ void LinearHandler::substVars_(bool* changed, PreModQ* mods)
     }
   }
   if(smod->getSize() > 0) {
-    mods->push_front(smod);
+    mods->push_back(smod);
   } else {
     delete smod;
   }
@@ -1570,14 +1570,15 @@ void LinearHandler::purgeVars_(PreModQ* pre_mods)
         dmod->insert(v);
 #if SPEW
         logger_->msgStream(LogDebug)
-            << me_ << "removing variable " << v->getName() << std::endl;
+            << me_ << "removing variable " << v->getName() << " with index " 
+            << v->getIndex() << std::endl;
 #endif
         //preDelVars_.push_front(v);
       }
     }
     //std::cout << "**** " << //preDelVars_.size() << " ****\n";
     problem_->delMarkedVars(true);
-    pre_mods->push_front(dmod);
+    pre_mods->push_back(dmod);
   }
 }
 
