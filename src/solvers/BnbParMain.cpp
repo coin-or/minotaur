@@ -48,7 +48,7 @@ int main(int argc, char** argv)
     goto CLEANUP;
   }
 
-  p = bnbpar.readProblem(fname, dname, "mcbnb", err);
+  p = bnbpar.readProblem(fname, dname, "bnbpar", err);
   if (err) {
     goto CLEANUP;
   }

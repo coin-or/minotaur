@@ -231,21 +231,21 @@ void Environment::createDefaultOptions_()
   options_->insert(b_option);
 
   b_option = (BoolOptionPtr) new Option<bool>(
-      "mcbnb_deter_mode",
+      "bnbpar_deter_mode",
       "If true, synchronize all threads in determinisitic mode in parallel "
       "branch-and-bound: <0/1>",
       true, false);
   options_->insert(b_option);
 
   b_option = (BoolOptionPtr) new Option<bool>(
-      "mcbnb_oppor_mode",
+      "bnbpar_oppor_mode",
       "If true, run the parallel branch-and-bound algorithm in opportunistic "
       "mode: <0/1>",
       true, false);
   options_->insert(b_option);
 
   b_option = (BoolOptionPtr) new Option<bool>(
-      "mcbnb_iter_mode",
+      "bnbpar_iter_mode",
       "If true, synchronize node processing in each iteration across all "
       "threads in parallel branch-and-bound: <0/1>",
       true, false);

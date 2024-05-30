@@ -48,7 +48,7 @@ int main(int argc, char** argv)
     goto CLEANUP;
   }
 
-  p = qgpar.readProblem(fname, dname, "mcqg", err);
+  p = qgpar.readProblem(fname, dname, "qgpar", err);
   if (err) {
     goto CLEANUP;
   }

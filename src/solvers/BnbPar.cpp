@@ -557,10 +557,10 @@ int BnbPar::solve(ProblemPtr p)
 
   parbab = createParBab_(numThreads, relCopy, nodePrcssr, parNodeRlxr, handlersCopy, eCopy);
 
-  if (true==env_->getOptions()->findBool("mcbnb_deter_mode")->getValue()) {
+  if (true==env_->getOptions()->findBool("bnbpar_deter_mode")->getValue()) {
     //assert(!"Deterministic mode not available right now!");
     parbab->parsolveSync(parNodeRlxr, nodePrcssr, numThreads);
-  } else if (true==env_->getOptions()->findBool("mcbnb_oppor_mode")->getValue()) {
+  } else if (true==env_->getOptions()->findBool("bnbpar_oppor_mode")->getValue()) {
     parbab->parsolveOppor(parNodeRlxr, nodePrcssr, numThreads);
   } else {
     parbab->parsolve(parNodeRlxr, nodePrcssr, numThreads);
