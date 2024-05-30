@@ -440,6 +440,7 @@ if (IFACE_SOURCES)
     solvers/MultiStart.cpp 
     solvers/QG.cpp 
     solvers/QGPar.cpp 
+    solvers/BnbPar.cpp 
   )
   set (SOLVER_HEADERS
     solvers/Solver.h
@@ -448,6 +449,7 @@ if (IFACE_SOURCES)
     solvers/MultiStart.h 
     solvers/QG.h 
     solvers/QGPar.h 
+    solvers/BnbPar.h 
   )
 endif()
 
@@ -477,7 +479,12 @@ if (IFACE_SOURCES)
   target_link_libraries(mqgpar ${ALL_EXEC_LIBS})
   install(TARGETS mqgpar RUNTIME DESTINATION bin)
   set_target_properties(mqgpar PROPERTIES INSTALL_RPATH "${MNTR_INSTALL_RPATH}")
-  
+   
+  add_executable(mbnbpar solvers/BnbParMain.cpp)
+  target_link_libraries(mbnbpar ${ALL_EXEC_LIBS})
+  install(TARGETS mbnbpar RUNTIME DESTINATION bin)
+  set_target_properties(mbnbpar PROPERTIES INSTALL_RPATH "${MNTR_INSTALL_RPATH}")
+
   #add_executable(moa solvers/OA.cpp)
   #target_link_libraries(moa ${ALL_EXEC_LIBS})
   #install(TARGETS moa RUNTIME DESTINATION bin)
