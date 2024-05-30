@@ -37,7 +37,7 @@ int main(int argc, char** argv)
   // Parse command line for options set by the user.
   env->readOptions(argc, argv);
   
-  if (0!=qg.showInfo()) {
+  if (0!=qgpar.showInfo()) {
     goto CLEANUP;
   }
 

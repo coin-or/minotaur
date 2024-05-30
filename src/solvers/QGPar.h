@@ -10,20 +10,23 @@
  * \author Meenarli Sharma and Prashant Palkar, IIT Bombay
  */
 
-#ifndef QGPAR_H
-#define QGPAR_H
+#ifndef QGPar_H
+#define QGPar_H
 
 #include "Types.h"
 #include "AMPLInterface.h"
-#include "BranchAndBound.h"
 #include "LPEngine.h"
+#include "ParBranchAndBound.h"
+#include "ParReliabilityBrancher.h"
+#include "ParQGBranchAndBound.h"
 #include "Presolver.h"
 #include "Solver.h"
 
 namespace Minotaur {
+  typedef SolutionPool* SolutionPoolPtr;
   /**
    * The QGPar class sets up methods for solving a convex MINLP instance using
-   * the LP/NLP based Quesada Grossmann algorithm.
+   * Parallel LP/NLP based Quesada Grossmann algorithm.
    */
   class QGPar : public Solver {
     public:
@@ -66,10 +69,24 @@ namespace Minotaur {
       ProblemPtr oinst_;
       SolveStatus status_;
 
+
+      BrancherPtr createBrancher_(ProblemPtr p, HandlerVector handlers,
+                           EnginePtr e);
+      ParQGBranchAndBound* createParBab_(UInt numThreads, NodePtr &node,
+                                  RelaxationPtr relCopy[], ProblemPtr pCopy[],
+                                  ParPCBProcessorPtr nodePrcssr[],
+                                  ParNodeIncRelaxerPtr parNodeRlxr[],
+                                  SolutionPoolPtr solPool,
+                                  HandlerVector handlersCopy[],
+                                  LPEnginePtr lpeCopy[], EnginePtr eCopy[],
+                                  bool &prune);
       int getEngines_(Engine **nlp_e, LPEngine **lp_e);
       PresolverPtr presolve_(HandlerVector &handlers);
       void setInitialOptions_();
-      int writeBnbStatus_(BranchAndBound *bab);
+      void writeLPStats_(std::string name, std::vector<double> stats);
+      void writeNLPStats_(std::string name, std::vector<double> stats);
+      void writeParQGStats_(ParQGBranchAndBound *parbab, UInt numThreads, HandlerVector handlersCopy[]);
+      void writeParBnbStatus_(ParQGBranchAndBound *parbab, double wallTimeStart, clock_t clockTimeStart);
   };
 }
 #endif

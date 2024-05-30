@@ -21,6 +21,10 @@
 #else
 #error "Cannot compile parallel algorithms: turn USE_OpenMP flag ON."
 #endif
+
+#include "AMPLHessian.h"
+#include "AMPLInterface.h"
+#include "AMPLJacobian.h"
 #include "MinotaurConfig.h"
 #include "BranchAndBound.h"
 #include "EngineFactory.h"
@@ -58,10 +62,6 @@
 #include "ParQGHandlerAdvance.h"
 #include "Timer.h"
 
-#include "AMPLHessian.h"
-#include "AMPLInterface.h"
-#include "AMPLJacobian.h"
-
 using namespace Minotaur;
 const std::string QGPar::me_ = "QGPar: ";
 
@@ -87,7 +87,7 @@ void QGPar::doSetup()
   setInitialOptions_();
 }
 
-int QG::getEngines_(Engine** nlp_e, LPEngine** lp_e)
+int QGPar::getEngines_(Engine** nlp_e, LPEngine** lp_e)
 {
   EngineFactory* efac = new EngineFactory(env_);
   oinst_->calculateSize();
@@ -109,7 +109,7 @@ int QG::getEngines_(Engine** nlp_e, LPEngine** lp_e)
   return 0;
 }
 
-PresolverPtr QG::presolve_(HandlerVector &handlers)
+PresolverPtr QGPar::presolve_(HandlerVector &handlers)
 {
   PresolverPtr pres = PresolverPtr(); // NULL
   oinst_->calculateSize();
@@ -156,7 +156,7 @@ PresolverPtr QG::presolve_(HandlerVector &handlers)
   return pres;
 }
 
-void QG::setInitialOptions_()
+void QGPar::setInitialOptions_()
 {
   OptionDBPtr options = env_->getOptions();
   options->findString("interface_type")->setValue("AMPL");
@@ -165,12 +165,12 @@ void QG::setInitialOptions_()
   options->findBool("lin_presolve")->setValue(true);
   options->findString("brancher")->setValue("parRel");
   options->findString("nlp_engine")->setValue("IPOPT");
-  options->findBool("cgtoqf")->setValue(true);
-  options->findBool("separability")->setValue(true);
-  options->findBool("simplex_cut")->setValue(true);
+  //options->findBool("cgtoqf")->setValue(true);
+  //options->findBool("separability")->setValue(true);
+  //options->findBool("simplex_cut")->setValue(true);
 }
 
-void QG::showHelp() const
+void QGPar::showHelp() const
 {
   env_->getLogger()->errStream()
        << "Parallel Advanced Quesada-Grossmann (LP/NLP) algorithm for convex MINLP" << std::endl
@@ -183,7 +183,7 @@ void QG::showHelp() const
       << " .nl-file" << std::endl;
 }
 
-int QG::showInfo()
+int QGPar::showInfo()
 {
   OptionDBPtr options = env_->getOptions();
 
@@ -229,14 +229,10 @@ int QG::showInfo()
   return 0;
 }
 
-BrancherPtr createBrancher(ProblemPtr p, HandlerVector handlers,
-                           EnginePtr e);
-
-
-ParQGBranchAndBound* createParBab(UInt numThreads, NodePtr &node,
+ParQGBranchAndBound* QGPar::createParBab_(UInt numThreads, NodePtr &node,
                                   RelaxationPtr relCopy[], ProblemPtr pCopy[],
                                   ParPCBProcessorPtr nodePrcssr[],
-                                  ParNodeIncRelaxerPtr parNodeRlxr[],
+                                  ParNodeIncRelaxerPtr parNodeRlxr[], SolutionPoolPtr solPool,
                                   HandlerVector handlersCopy[],
                                   LPEnginePtr lpeCopy[], EnginePtr eCopy[],
                                   bool &prune)
@@ -276,13 +272,13 @@ ParQGBranchAndBound* createParBab(UInt numThreads, NodePtr &node,
     }
 
 
-    br = createBrancher(pCopy[i], handlersCopy[i], lpeCopy[i]);
+    br = createBrancher_(pCopy[i], handlersCopy[i], lpeCopy[i]);
     nodePrcssr[i] = (ParPCBProcessorPtr) new ParPCBProcessor(env_, lpeCopy[i], handlersCopy[i]);
     nodePrcssr[i]->setBrancher(br);
     parNodeRlxr[i] = (ParNodeIncRelaxerPtr) new ParNodeIncRelaxer(env_, handlersCopy[i]);
     if (i==0) {
       node = (NodePtr) new Node ();
-      relCopy[0] = parNodeRlxr[0]->createRootRelaxation(node, prune);
+      relCopy[0] = parNodeRlxr[0]->createRootRelaxation(node, solPool, prune);
     } else {
       relCopy[i] = (RelaxationPtr) new Relaxation(relCopy[0], env_);
       parNodeRlxr[i]->setRelaxation(relCopy[i]);
@@ -298,7 +294,7 @@ ParQGBranchAndBound* createParBab(UInt numThreads, NodePtr &node,
   if (options->findBool("pardivheur")->getValue()) {
     ParMINLPDivingPtr div_heur;
     if (options->findBool("divheurLP")->getValue()) {
-      RelaxationPtr lp = (RelaxationPtr) new Relaxation(relCopy[0], env);
+      RelaxationPtr lp = (RelaxationPtr) new Relaxation(relCopy[0], env_);
       lp->setNativeDer();
       div_heur = (ParMINLPDivingPtr) new ParMINLPDiving(env_, lp, lpeCopy[0]);
       div_heur->setAltEngine(eCopy[0]);
@@ -313,7 +309,7 @@ ParQGBranchAndBound* createParBab(UInt numThreads, NodePtr &node,
 }
 
 
-BrancherPtr createBrancher(ProblemPtr p, HandlerVector handlers,
+BrancherPtr QGPar::createBrancher_(ProblemPtr p, HandlerVector handlers,
                            EnginePtr e)
 {
   BrancherPtr br = 0;
@@ -379,7 +375,7 @@ BrancherPtr createBrancher(ProblemPtr p, HandlerVector handlers,
   return br;
 }
 
-int QG::solve(ProblemPtr p)
+int QGPar::solve(ProblemPtr p)
 {
   clock_t clockTimeStart = clock();
   OptionDBPtr options = env_->getOptions();
@@ -394,8 +390,6 @@ int QG::solve(ProblemPtr p)
   ParNodeIncRelaxerPtr *parNodeRlxr = 0;
   ParPCBProcessorPtr *nodePrcssr = 0; 
 
-  BrancherPtr br = BrancherPtr(); // NULL
- 
   ProblemPtr *pCopy = 0;
   RelaxationPtr *relCopy = 0;
   HandlerVector *handlersCopy = 0;
@@ -404,8 +398,8 @@ int QG::solve(ProblemPtr p)
   EnginePtr *eCopy = 0;
   ObjectivePtr oPtr = 0;
   NodePtr node = 0;
-  std::string name = "";
   bool prune = false;
+  SolutionPoolPtr solPool = 0;
  
   std::vector<double> lpStats(6,0);
   std::vector<double> nlpStats(9,0);
@@ -478,7 +472,7 @@ int QG::solve(ProblemPtr p)
         << me_ << "status of presolve: " << getSolveStatusString(status_)
         << std::endl;
     writeSol_(env_, orig_v, pres, pres->getSolution(), status_, iface_);
-    writeParBnbStatus(env_, parbab, obj_sense, wallTimeStart, clockTimeStart);
+    writeParBnbStatus_(parbab, wallTimeStart, clockTimeStart);
     goto CLEANUP;
   }
 
@@ -510,18 +504,17 @@ int QG::solve(ProblemPtr p)
   // If objective is nonlinear add an extra var name eta to move objective to
   // constraint in ParQGHandlerAdvance
   pCopy[0] = oinst_->clone(env_);
-  oPtr = oinst->getObjective();
+  oPtr = oinst_->getObjective();
   if (!oPtr) {
     assert(!"No objective function in the problem!");
   } else if (oPtr->getFunctionType() != Linear &&
              oPtr->getFunctionType() != Constant) {
-    name = "eta";
-    pCopy[0]->newVariable(-INFINITY,INFINITY,Continuous,name);
+    pCopy[0]->newVariable(-INFINITY,INFINITY,Continuous,"eta");
   }
 
   for(UInt i=0; i < numThreads; ++i) {
     lpeCopy[i] = efac->getLPEngine();
-    eCopy[i] = engine->emptyCopy();
+    eCopy[i] = nlp_e->emptyCopy();
     if (i > 0) {
       pCopy[i] = pCopy[0]->clone(env_);
     }
@@ -536,10 +529,8 @@ int QG::solve(ProblemPtr p)
       << "Number of threads = " << numThreads << std::endl;
   }
 
-
-
-  parbab = createParBab(numThreads, node, relCopy, pCopy, nodePrcssr,
-                        parNodeRlxr, handlersCopy, lpeCopy, eCopy, prune);
+  parbab = createParBab_(numThreads, node, relCopy, pCopy, nodePrcssr,
+                        parNodeRlxr, solPool, handlersCopy, lpeCopy, eCopy, prune);
 
   parbab->parsolveOppor(parNodeRlxr, nodePrcssr, numThreads, prune);
   
@@ -553,14 +544,13 @@ int QG::solve(ProblemPtr p)
   if(err) {
     goto CLEANUP;
   }
-  err = writeBnbStatus_(bab);
  //Take care of important engine statistics
   for (UInt i=0; i < numThreads; i++) {
     lpeCopy[i]->fillStats(lpStats);
     eCopy[i]->fillStats(nlpStats);
   }
-  writeLPStats(lpeCopy[0]->getName(), lpStats);
-  writeNLPStats(eCopy[0]->getName(), nlpStats);
+  writeLPStats_(lpeCopy[0]->getName(), lpStats);
+  writeNLPStats_(eCopy[0]->getName(), nlpStats);
   
   //Take care of important handler statistics
   //for (UInt i=0; i < numThreads; i++) {
@@ -570,8 +560,8 @@ int QG::solve(ProblemPtr p)
     //}
   //}
 
-  writeParQGStats(parbab, numThreads, handlersCopy);
-  writeParBnbStatus(parbab, obj_sense, wallTimeStart, clockTimeStart);
+  writeParQGStats_(parbab, numThreads, handlersCopy);
+  writeParBnbStatus_(parbab, wallTimeStart, clockTimeStart);
 
 
 CLEANUP:
@@ -653,8 +643,7 @@ CLEANUP:
   return err;
 }
 
-void writeParBnbStatus(ParQGBranchAndBound *parbab, double obj_sense,
-                       double wallTimeStart, clock_t clockTimeStart)
+void QGPar::writeParBnbStatus_(ParQGBranchAndBound *parbab, double wallTimeStart, clock_t clockTimeStart)
 {
 
   int err = 0;
@@ -662,10 +651,10 @@ void writeParBnbStatus(ParQGBranchAndBound *parbab, double obj_sense,
   if (parbab) {
     env_->getLogger()->msgStream(LogInfo)
       << me_ << std::fixed << std::setprecision(4) 
-      << "best solution value = " << obj_sense*parbab->getUb() << std::endl
+      << "best solution value = " << objSense_*parbab->getUb() << std::endl
       << me_ << std::fixed << std::setprecision(4)
       << "best bound estimate from remaining nodes = "
-      <<  obj_sense*parbab->getLb() << std::endl
+      <<  objSense_*parbab->getLb() << std::endl
       << me_ << "gap = " << std::max(0.0,parbab->getUb() - parbab->getLb())
       << std::endl
       << me_ << "gap percentage = " << parbab->getPerGap() << std::endl
@@ -693,7 +682,7 @@ void writeParBnbStatus(ParQGBranchAndBound *parbab, double obj_sense,
 }
 
 
-void writeParQGStats(ParQGBranchAndBound *parbab, UInt numThreads,
+void QGPar::writeParQGStats_(ParQGBranchAndBound *parbab, UInt numThreads,
                      HandlerVector handlersCopy[])
 {
   if (parbab) {
@@ -736,33 +725,33 @@ void writeParQGStats(ParQGBranchAndBound *parbab, UInt numThreads,
 }
 
 
-void writeLPStats(std::string name, std::vector<double> stats) {
+void QGPar::writeLPStats_(std::string name, std::vector<double> stats) {
   if (stats.size()) {
-    std::string me_ = name + ": ";
+    std::string me = me_ + "_" + name + ": ";
     env_->getLogger()->msgStream(LogExtraInfo)
-    << me_  <<"total calls            = " << UInt(stats[0]) << std::endl
-    << me_  <<"strong branching calls = " << UInt(stats[1]) << std::endl
-    << me_  <<"total time in solving  = " << stats[2] << std::endl
-    << me_  <<"time in str branching  = " << stats[3] << std::endl
-    << me_  <<"total iterations       = " << UInt(stats[4]) << std::endl
-    << me_  <<"strong br iterations   = " << UInt(stats[5]) << std::endl;
+    << me <<"total calls            = " << UInt(stats[0]) << std::endl
+    << me <<"strong branching calls = " << UInt(stats[1]) << std::endl
+    << me <<"total time in solving  = " << stats[2] << std::endl
+    << me <<"time in str branching  = " << stats[3] << std::endl
+    << me <<"total iterations       = " << UInt(stats[4]) << std::endl
+    << me <<"strong br iterations   = " << UInt(stats[5]) << std::endl;
   }
 }
 
 
-void writeNLPStats(std::string name, std::vector<double> stats) {
+void QGPar::writeNLPStats_(std::string name, std::vector<double> stats) {
   if (stats.size()) {
-    std::string me_ = name + ": ";
+    std::string me = me_ + "_" + name + ": ";
     env_->getLogger()->msgStream(LogExtraInfo)
-    << me_  << "total calls            = " << UInt(stats[0]) << std::endl
-    << me_  << "calls to Optimize      = " << UInt(stats[1]) << std::endl
-    << me_  << "calls to ReOptimize    = " << UInt(stats[2]) << std::endl
-    << me_  << "strong branching calls = " << UInt(stats[3]) << std::endl
-    << me_  << "total time in solving  = " << stats[4] << std::endl
-    << me_  << "total time in presolve = " << stats[5] << std::endl
-    << me_  << "time in str branching  = " << stats[6] << std::endl
-    << me_  << "total iterations       = " << UInt(stats[7]) << std::endl
-    << me_  << "strong br iterations   = " << UInt(stats[8]) << std::endl;
+    << me << "total calls            = " << UInt(stats[0]) << std::endl
+    << me << "calls to Optimize      = " << UInt(stats[1]) << std::endl
+    << me << "calls to ReOptimize    = " << UInt(stats[2]) << std::endl
+    << me << "strong branching calls = " << UInt(stats[3]) << std::endl
+    << me << "total time in solving  = " << stats[4] << std::endl
+    << me << "total time in presolve = " << stats[5] << std::endl
+    << me << "time in str branching  = " << stats[6] << std::endl
+    << me << "total iterations       = " << UInt(stats[7]) << std::endl
+    << me << "strong br iterations   = " << UInt(stats[8]) << std::endl;
   }
 }
 
