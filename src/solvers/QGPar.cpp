@@ -26,9 +26,9 @@
 #include "AMPLInterface.h"
 #include "AMPLJacobian.h"
 #include "MinotaurConfig.h"
-#include "BranchAndBound.h"
 #include "EngineFactory.h"
 #include "Environment.h"
+#include "FixVarsHeur.h"
 #include "IntVarHandler.h"
 #include "LexicoBrancher.h"
 #include "LinearHandler.h"
@@ -53,9 +53,11 @@
 #include "Problem.h"
 #include "QPEngine.h"
 #include "RandomBrancher.h"
+#include "RCHandler.h"
 #include "Relaxation.h"
 #include "ReliabilityBrancher.h"
 #include "ParReliabilityBrancher.h"
+#include "SamplingHeur.h"
 #include "Solution.h"
 #include "SOS1Handler.h"
 #include "SOS2Handler.h"
@@ -253,6 +255,15 @@ ParQGBranchAndBound* QGPar::createParBab_(UInt numThreads, NodePtr &node,
     handlersCopy[i].push_back(v_hand);
     assert(v_hand);
 
+    RCHandlerPtr rc_hand;
+    //adding RCHandler
+    if (options->findBool("rc_fix")->getValue()) {
+        rc_hand = (RCHandlerPtr) new RCHandler(env_);
+        rc_hand->setModFlags(false, true);
+        handlersCopy[i].push_back(rc_hand);
+        assert(rc_hand);
+    }
+
     ParQGHandlerAdvancePtr qg_hand = (ParQGHandlerAdvancePtr) new ParQGHandlerAdvance(env_, pCopy[i], eCopy[i]);
     qg_hand->setModFlags(false, true);
     qg_hand->loadProbToEngine();
@@ -291,19 +302,31 @@ ParQGBranchAndBound* QGPar::createParBab_(UInt numThreads, NodePtr &node,
   }
   
   // when using heuristic, check if engine copy[0] should be cleared etc.
-  if (options->findBool("pardivheur")->getValue()) {
-    ParMINLPDivingPtr div_heur;
-    if (options->findBool("divheurLP")->getValue()) {
-      RelaxationPtr lp = (RelaxationPtr) new Relaxation(relCopy[0], env_);
-      lp->setNativeDer();
-      div_heur = (ParMINLPDivingPtr) new ParMINLPDiving(env_, lp, lpeCopy[0]);
-      div_heur->setAltEngine(eCopy[0]);
-      div_heur->setOrigProb(pCopy[0]);
+  //if (options->findBool("pardivheur")->getValue()) {
+  //  ParMINLPDivingPtr div_heur;
+  //  if (options->findBool("divheurLP")->getValue()) {
+  //    RelaxationPtr lp = (RelaxationPtr) new Relaxation(relCopy[0], env_);
+  //    lp->setNativeDer();
+  //    div_heur = (ParMINLPDivingPtr) new ParMINLPDiving(env_, lp, lpeCopy[0]);
+  //    div_heur->setAltEngine(eCopy[0]);
+  //    div_heur->setOrigProb(pCopy[0]);
+  //  }
+  //  else {
+  //    div_heur = (ParMINLPDivingPtr) new ParMINLPDiving(env_, pCopy[0], eCopy[0]);
+  //  }
+  //  bab->addPreRootHeur(div_heur);
+  //}
+  if (env_->getOptions()->findBool("prerootheur")->getValue() == true) {
+    if(env_->getOptions()->findBool("samplingheur")->getValue() == true) {
+      SamplingHeurPtr s_heur = (SamplingHeurPtr) new SamplingHeur(env_, oinst_);
+      bab->addPreRootHeur(s_heur);
     }
-    else {
-      div_heur = (ParMINLPDivingPtr) new ParMINLPDiving(env_, pCopy[0], eCopy[0]);
+
+    if(env_->getOptions()->findBool("fixvarsheur")->getValue() == true) {
+      FixVarsHeurPtr f_heur = (FixVarsHeurPtr) new FixVarsHeur(env_, oinst_);
+      f_heur->setHandlers(handlersCopy[0]);
+      bab->addPreRootHeur(f_heur);
     }
-    bab->addPreRootHeur(div_heur);
   }
   return bab;
 }
