@@ -6,7 +6,7 @@
 
 /**
  * \file BnbParMain.cpp
- * \brief The main function for solving instances by Quesada-Grossmann (Bnb)
+ * \brief The main function for solving instances by parallel Branch-and-Bound (Bnb)
  * algorithm.
  * \author Meenarli Sharma and Prashant Palkar, IIT Bombay
  */
