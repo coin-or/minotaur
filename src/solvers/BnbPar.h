@@ -10,8 +10,8 @@
  * \author Meenarli Sharma and Prashant Palkar, IIT Bombay
  */
 
-#ifndef BnbPar_H
-#define BnbPar_H
+#ifndef BNBPAR_H
+#define BNBPAR_H
 
 #include "Types.h"
 #include "AMPLInterface.h"

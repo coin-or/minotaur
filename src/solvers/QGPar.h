@@ -10,8 +10,8 @@
  * \author Meenarli Sharma and Prashant Palkar, IIT Bombay
  */
 
-#ifndef QGPar_H
-#define QGPar_H
+#ifndef QGPAR_H
+#define QGPAR_H
 
 #include "Types.h"
 #include "AMPLInterface.h"
