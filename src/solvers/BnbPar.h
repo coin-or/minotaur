@@ -68,7 +68,7 @@ namespace Minotaur {
       SolveStatus status_;
 
       BrancherPtr createBrancher_(HandlerVector handlers, EnginePtr e);
-      ParBranchAndBound* createParBab_(UInt numThreads, RelaxationPtr relCopy[],
+      ParBranchAndBound* createParBab_(UInt numThreads, EnginePtr e, RelaxationPtr relCopy[],
                                   ParPCBProcessorPtr nodePrcssr[],
                                   ParNodeIncRelaxerPtr parNodeRlxr[],
                                   HandlerVector handlersCopy[],

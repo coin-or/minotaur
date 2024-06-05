@@ -94,18 +94,17 @@ int BnbPar::getEngines_(Engine** nlp_e, LPEngine** lp_e)
   EngineFactory* efac = new EngineFactory(env_);
   oinst_->calculateSize();
 
-  *lp_e = efac->getLPEngine();
-
   if(oinst_->isLinear()) {
-    *nlp_e = efac->getLPEngine();
+    *lp_e = efac->getLPEngine();
   } else if(oinst_->isQP()) {
     *nlp_e = efac->getQPEngine();
-    if(*nlp_e == 0) {
-      *nlp_e = efac->getNLPEngine();
-    }
-  } else {
-    *nlp_e = efac->getNLPEngine();
-  }
+    //if(*nlp_e == 0) {
+    //  *nlp_e = efac->getNLPEngine();
+    //}
+  } 
+  //else {
+  //  *nlp_e = efac->getNLPEngine();
+  //}
 
   delete efac;
   return 0;
@@ -232,7 +231,7 @@ int BnbPar::showInfo()
   return 0;
 }
 
-ParBranchAndBound* BnbPar::createParBab_(UInt numThreads,
+ParBranchAndBound* BnbPar::createParBab_(UInt numThreads, EnginePtr e,
                                   RelaxationPtr relCopy[],
                                   ParPCBProcessorPtr nodePrcssr[],
                                   ParNodeIncRelaxerPtr parNodeRlxr[],
@@ -245,6 +244,7 @@ ParBranchAndBound* BnbPar::createParBab_(UInt numThreads,
  
   for(UInt i = 0; i < numThreads; ++i) {
     BrancherPtr br = 0;
+    eCopy[i] = e->emptyCopy();
     IntVarHandlerPtr v_hand = (IntVarHandlerPtr) new IntVarHandler(env_, oinst_);
     LinHandlerPtr l_hand = (LinHandlerPtr) new LinearHandler(env_, oinst_);
     NlPresHandlerPtr nlhand;
@@ -569,8 +569,11 @@ int BnbPar::solve(ProblemPtr p)
       << "Number of threads = " << numThreads << std::endl;
   }
 
-  parbab = createParBab_(numThreads, relCopy, nodePrcssr, parNodeRlxr, handlersCopy, eCopy);
-
+  if (oinst_->isLinear()) {
+    parbab = createParBab_(numThreads, lp_e, relCopy, nodePrcssr, parNodeRlxr, handlersCopy, eCopy);
+  } else {
+    parbab = createParBab_(numThreads, nlp_e, relCopy, nodePrcssr, parNodeRlxr, handlersCopy, eCopy);
+  }
   if (true==env_->getOptions()->findBool("bnbpar_deter_mode")->getValue()) {
     //assert(!"Deterministic mode not available right now!");
     parbab->parsolveSync(parNodeRlxr, nodePrcssr, numThreads);
