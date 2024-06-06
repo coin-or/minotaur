@@ -96,15 +96,16 @@ int BnbPar::getEngines_(Engine** nlp_e, LPEngine** lp_e)
 
   if(oinst_->isLinear()) {
     *lp_e = efac->getLPEngine();
-  } else if(oinst_->isQP()) {
-    *nlp_e = efac->getQPEngine();
-    //if(*nlp_e == 0) {
-    //  *nlp_e = efac->getNLPEngine();
-    //}
-  } 
-  //else {
+  } else {
+    *nlp_e = efac->getNLPEngine();
+  }
+  //else if(oinst_->isQP()) {
   //  *nlp_e = efac->getNLPEngine();
-  //}
+  //  if(*nlp_e == 0) {
+  //    *nlp_e = efac->getNLPEngine();
+  //  }
+  //} 
+
 
   delete efac;
   return 0;
