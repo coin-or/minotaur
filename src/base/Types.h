@@ -253,6 +253,15 @@ typedef enum {
   VbcSubOpt = 6   /// suboptimal.
 } VbcColors;
 
+/// Tags (int) for messages for distributed-memory (MPI) parallel tree-search
+typedef enum {
+  Terminate = 0,  /// Tree fully solved, terminate.
+  NodeFound = 1,  /// Node is available, receive it.
+  Wait = 2,       /// Wait untill further notice.
+  UB = 3,       /// Upper bound is shared.
+  LB = 4,       /// Lower bound is shared.
+} MpiMessageTag;
+
 // Miscellaneous functions related to above types.
 
 /// What is the function type on adding two functions f1 and f2?
