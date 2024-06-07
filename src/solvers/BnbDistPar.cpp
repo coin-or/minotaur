@@ -236,7 +236,7 @@ int BnbDistPar::showInfo()
   return 0;
 }
 
-DistParBranchAndBound* BnbDistPar::createDistParBab_(UInt numThreads,
+DistParBranchAndBound* BnbDistPar::createDistParBab_(UInt numThreads, EnginePtr e,
                                   RelaxationPtr relCopy[],
                                   ParPCBProcessorPtr nodePrcssr[],
                                   ParNodeIncRelaxerPtr parNodeRlxr[],
@@ -263,6 +263,7 @@ DistParBranchAndBound* BnbDistPar::createDistParBab_(UInt numThreads,
  
   for(UInt i = 0; i < numThreads; ++i) {
     BrancherPtr br = 0;
+    eCopy[i] = e->emptyCopy();
     IntVarHandlerPtr v_hand = (IntVarHandlerPtr) new IntVarHandler(env_, oinst_);
     LinHandlerPtr l_hand = (LinHandlerPtr) new LinearHandler(env_, oinst_);
     NlPresHandlerPtr nlhand;
@@ -577,7 +578,11 @@ int BnbDistPar::solve(ProblemPtr p)
       << "Number of threads = " << numThreads << std::endl;
   }
 
-  parbab = createDistParBab_(numThreads, relCopy, nodePrcssr, parNodeRlxr, handlersCopy, eCopy, proc_rank, num_procs);
+  if (oinst_->isLinear()) {
+    parbab = createDistParBab_(numThreads, lp_e, relCopy, nodePrcssr, parNodeRlxr, handlersCopy, eCopy, proc_rank, num_procs);
+  } else {
+    parbab = createDistParBab_(numThreads, nlp_e, relCopy, nodePrcssr, parNodeRlxr, handlersCopy, eCopy, proc_rank, num_procs);
+  }
  //------------------ 
   trap_key = 0;
   //MPI_Status status;
