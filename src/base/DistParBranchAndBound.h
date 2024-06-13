@@ -176,6 +176,12 @@ namespace Minotaur {
     void parsolveOppor(ParNodeIncRelaxerPtr parNodeRelaxer[],
                   ParPCBProcessorPtr parPCBProcessor[],
                   UInt nThreads);
+    void solveMasterProc_(ParNodeIncRelaxerPtr parNodeRelaxer[],
+                  ParPCBProcessorPtr parPCBProcessor[],
+                  UInt nThreads);
+    void solveWorkerProc_(ParNodeIncRelaxerPtr parNodeRelaxer[],
+                  ParPCBProcessorPtr parPCBProcessor[],
+                  UInt nThreads);
 
     /// Print a two-dimensional vector (customized).
     void print2dvec(std::vector<std::vector<int> > output);
@@ -228,7 +234,9 @@ namespace Minotaur {
 
     void getBoundChanges_(NodePtr node, std::vector<double>& bound_changes);
 
-    void checkBoundUpdatesFromOtherProcs_();
+    void updateProcsRunningStatus_(std::vector<int>& proc_running);
+    void checkUbUpdates_(const std::vector<int>& proc_running);
+    void checkLbUpdatesFromOtherProcs_(double& globalBestLB, const std::vector<int>& proc_running);
     void distributeNodes_();
 
     void getStartingNode_(bool *shouldWait, bool *shouldRun, std::vector<double>& node_data);
@@ -283,6 +291,7 @@ namespace Minotaur {
 
     double best_tree_lb;
 
+
     /**
      * \brief Process the root node.
      *
@@ -309,7 +318,7 @@ namespace Minotaur {
                          NodePtr &node);
 
 
-    void sendValToOtherProcs_(double val, MpiMessageTag val_type);
+    void sendUbToOtherProcs_(double val, const std::vector<int>& proc_running);
 
     /// Return True if a node can be pruned.
     bool shouldPrune_(NodePtr node);
@@ -350,7 +359,7 @@ namespace Minotaur {
      * \param [out] threadId is the id of a thread in parallel mode (else 0)
      */
     void showParStatus_(UInt current_uncounted, double treeLb,
-                        double wallStartTime, UInt threadId);
+                        double wallStartTime);
   };
 
   /// Statistics about the branch-and-bound.
