@@ -236,7 +236,8 @@ namespace Minotaur {
 
     void updateProcsRunningStatus_(std::vector<int>& proc_running);
     void checkUbUpdates_(const std::vector<int>& proc_running);
-    void checkLbUpdatesFromOtherProcs_(double& globalBestLB, const std::vector<int>& proc_running);
+    void checkLbUpdatesFromOtherProcs_(double& globalBestLB, std::vector<double>& proc_lb);
+    //void checkLbUpdatesFromOtherProcs_(double& globalBestLB, const std::vector<int>& proc_running);
     void distributeNodes_();
 
     void getStartingNode_(bool *shouldWait, bool *shouldRun, std::vector<double>& node_data);
@@ -323,12 +324,6 @@ namespace Minotaur {
     /// Return True if a node can be pruned.
     bool shouldPrune_(NodePtr node);
 
-    /**
-     * \brief Check whether the branch-and-bound can stop because of time
-     * limit, or node limit or if solved?
-     */
-    bool shouldStop_();
-    
     /**
      * \brief Check whether the branch-and-bound can stop because of time
      * limit, or node limit or if solved?
