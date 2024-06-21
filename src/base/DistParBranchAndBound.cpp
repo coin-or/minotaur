@@ -1316,10 +1316,10 @@ void DistParBranchAndBound::solveMasterProc_(ParNodeIncRelaxerPtr parNodeRlxr[],
 
   for (int i = 1; i < num_procs_; ++i) {
     if (shouldRun) {
-      proc_running.resize(num_procs_,0);
+      //proc_running.resize(1,0);
       MPI_Isend(&shoulRun_int_val, 1, MPI_INT, i, TAG_Wait, MPI_COMM_WORLD, &mpi_request_0);
     } else {
-      proc_running.resize(num_procs_,0);
+      //proc_running.resize(1,0);
       MPI_Isend(&shoulRun_int_val, 1, MPI_INT, i, TAG_Terminate, MPI_COMM_WORLD, &mpi_request_0);
       shouldDistribute = false;
     }
@@ -1462,7 +1462,8 @@ void DistParBranchAndBound::solveMasterProc_(ParNodeIncRelaxerPtr parNodeRlxr[],
           {
             std::cout << "shouldDistribute "<< shouldDistribute << "\n";
             // Send updated ub to all
-            if (num_procs_ > 1 && solPool_->getBestSolutionValue() < tm_->getUb()) {
+            std::cout << " Sol value " << solPool_->getBestSolutionValue() << " tm best ub " << tm_->getUb() << "\n"; 
+            if (num_procs_ > 1 && solPool_->getBestSolutionValue() < tm_->getUb() && !shouldDistribute) {
               std::cout << " Found a solution, value " << tm_->getUb() << "\n"; 
               sendUbToOtherProcs_(solPool_->getBestSolutionValue(), proc_running);
             }
@@ -1591,15 +1592,19 @@ void DistParBranchAndBound::solveMasterProc_(ParNodeIncRelaxerPtr parNodeRlxr[],
       }
       // Regular tree status logs (check MPI-thread binding and remove
       // critical accordingly)
-      if (num_procs_ > 1 && i==0 && getWallTime() - last_log_time_lb > log_freq_lb && (!shouldDistribute)) {
+      if (i==0 && getWallTime() - last_log_time_lb > log_freq_lb) {
+        if (!shouldDistribute) {
+          checkLbUpdatesFromOtherProcs_(globalBestLb, proc_lb);
+          showParStatus_(nodeCountTh[i], globalBestLb, wallTimeStart);
+        } else {
+          showParStatus_(nodeCountTh[i], tm_->getLb(), wallTimeStart);
+        }
         //checkLbUpdatesFromOtherProcs_(globalBestLb, proc_running);
-        checkLbUpdatesFromOtherProcs_(globalBestLb, proc_lb);
         last_log_time_lb = getWallTime();
         //MPI_Wait(&mpi_request, MPI_STATUS_IGNORE);
 //#pragma omp critical (logger)
 //        {
-        std::cout << "globalBestLb " << globalBestLb << "\n";
-        showParStatus_(nodeCountTh[i], globalBestLb, wallTimeStart);
+//        std::cout << "globalBestLb " << globalBestLb << "\n";
 //        }
       }
 //      if (shouldStopPar_(wallTimeStart, treeLbTh[i])) {
@@ -1685,18 +1690,21 @@ void DistParBranchAndBound::solveMasterProc_(ParNodeIncRelaxerPtr parNodeRlxr[],
     double value = 0.0;
     for (proc = 1; proc < num_procs_; ++proc) {
       MPI_Send(&value, 1, MPI_DOUBLE, proc, TAG_Terminate, MPI_COMM_WORLD);
-      proc_running[i] = 0;
+      std::cout << " CAME HERE\n";
+      //proc_running[i] = 0;
     }
   }
 
   std::cout << " After parallel region exit for proc " << proc_rank_ << " solved_at_root " << solved_at_root << "\n";
   shouldRun = false;
-  std::cout << "Came here\n";
+  //std::cout << "Came here\n";
   std::cout <<"TM LB " << tm_->getLb() << "\n";
-  while (!solved_at_root && num_procs_ > 1) {
+  //while (!solved_at_root && num_procs_ > 1 && !shouldDistribute) {
+  while (num_procs_ > 1 && !shouldDistribute) {
     //std::cout << "Came here\n";
     //std::cout <<"End: globalBestLb "<< globalBestLb << "\n";
     for (int j = 1; j < num_procs_; ++j) {
+      //std::cout << " Proc " << j << " running status " << proc_running[j] << " \n";
       if (proc_running[j]) {
         shouldRun = true;
         if (!checkPrint && shouldRun) {
@@ -1708,14 +1716,6 @@ void DistParBranchAndBound::solveMasterProc_(ParNodeIncRelaxerPtr parNodeRlxr[],
     }
 
     if (shouldRun) {
-      if (getWallTime() - last_log_time_status > log_freq_status) {
-        updateProcsRunningStatus_(proc_running);
-        last_log_time_status = getWallTime();
-      }
-      if (getWallTime() - last_log_time_ub > log_freq_ub) {
-        checkUbUpdates_(proc_running);
-        last_log_time_ub = getWallTime();
-      }
       if (getWallTime() - last_log_time_lb > log_freq_lb) {
         //checkLbUpdatesFromOtherProcs_(globalBestLb, proc_running);
         checkLbUpdatesFromOtherProcs_(globalBestLb, proc_lb);
@@ -1723,19 +1723,37 @@ void DistParBranchAndBound::solveMasterProc_(ParNodeIncRelaxerPtr parNodeRlxr[],
         //std::cout << "End: globalBestLb " << globalBestLb << "\n";
         showParStatus_(0, globalBestLb, wallTimeStart);
       }
+      //std::cout << " Proc 0 running Status before update\n";
+      //for (int k = 1; k < num_procs_; ++k) {
+        //std::cout << " Proc " << k << " running status " << proc_running[k] << " \n";
+      //}
+      if (getWallTime() - last_log_time_status > log_freq_status) {
+        updateProcsRunningStatus_(proc_running);
+        last_log_time_status = getWallTime();
+      }
+      //std::cout << " Proc 0 running Status after update\n";
+      //for (int k = 1; k < num_procs_; ++k) {
+        //std::cout << " Proc " << k << " running status " << proc_running[k] << " \n";
+      //}
+      if (getWallTime() - last_log_time_ub > log_freq_ub) {
+        checkUbUpdates_(proc_running);
+        last_log_time_ub = getWallTime();
+      }
     } else {
       checkUbUpdates_(proc_running);
       //checkLbUpdatesFromOtherProcs_(globalBestLb, proc_running);
       checkLbUpdatesFromOtherProcs_(globalBestLb, proc_lb);
       tm_->setLb(globalBestLb);
-      std::cout <<"Final lower bound "<< globalBestLb << " " << tm_->getLb() << "\n";
-      std::cout <<"Final upper bound "<< tm_->getUb() << "\n";
+      std::cout <<"Proc 0 final lower bound "<< globalBestLb << " " << tm_->getLb() << "\n";
+      std::cout <<"Proc 0 Final upper bound "<< tm_->getUb() << "\n";
       break;
     }
     shouldRun = false;
   }
+  std::cout << "\nProc " << proc_rank_ << " ub and lb " << tm_->getUb() << " " << tm_->getLb() << "\n";
   
-  if (!solved_at_root && num_procs_ > 1) {
+  //if (!solved_at_root && num_procs_ > 1) {
+  if (!shouldDistribute && num_procs_ > 1) {
     if (tm_->getPerGapPar(globalBestLb) <= 0.0) {
       status_ = SolvedOptimal;
     } else if (globalBestLb < -INFINITY) {
@@ -1841,7 +1859,7 @@ void DistParBranchAndBound::solveWorkerProc_(ParNodeIncRelaxerPtr parNodeRlxr[],
   UInt numVars = 0;
   MPI_Request termination_req, lb_req, ub_req;
   int termination_status = 0;
-  double tree_lb, tree_ub;
+  //double tree_lb;
   std::vector<int> proc_running;
   
   int checkPrint = true;
@@ -1955,7 +1973,6 @@ void DistParBranchAndBound::solveWorkerProc_(ParNodeIncRelaxerPtr parNodeRlxr[],
     if (tm_->getUb() <= -INFINITY) {
       status_ = SolvedUnbounded;
     } else if (tm_->getUb() < INFINITY) {
-      tree_lb = tm_->getLb(); 
       status_ = SolvedOptimal;
     } else {
       status_ = SolvedInfeasible; 
@@ -1967,10 +1984,8 @@ void DistParBranchAndBound::solveWorkerProc_(ParNodeIncRelaxerPtr parNodeRlxr[],
     shouldRun = false;
   } else if (shouldStopPar_(wallTimeStart, tm_->getLb())) {
     //tm_->updateLb();
-    tree_lb = tm_->getLb(); 
     shouldRun = false;
   } else {
-    tree_lb = tm_->getLb(); 
 #if SPEW
     logger_->msgStream(LogDebug) << std::setprecision(8)
       << me_ << "lb = " << tm_->updateLb() << std::endl
@@ -2002,7 +2017,7 @@ void DistParBranchAndBound::solveWorkerProc_(ParNodeIncRelaxerPtr parNodeRlxr[],
       lastStrBranched.resize(numVars,0);
     }
  
-    std::cout << "Proc " << proc_rank_ << " entering while." << "\n";
+    //std::cout << "Proc " << proc_rank_ << " entering while." << "\n";
     while (nodeCountTh[i] > 0 && shouldRun) {
       if (checkPrint) {
         std::cout << "Proc " << proc_rank_ << " entered while." << "\n";
@@ -2019,9 +2034,12 @@ void DistParBranchAndBound::solveWorkerProc_(ParNodeIncRelaxerPtr parNodeRlxr[],
           last_log_time_ub = getWallTime();
         }
         if (getWallTime() - last_log_time_lb > log_freq_lb) {
-          tree_lb = tm_->getLb();
-          std::cout <<"From worker sent lb: treeLb "<< tree_lb << "\n";
-          MPI_Isend(&tree_lb, 1, MPI_DOUBLE, 0, TAG_Lb, MPI_COMM_WORLD, &lb_req);
+          //tree_lb = tm_->getLb();
+          if (tm_->getLb() < INFINITY) {
+            double lower_bound = tm_->getLb() ;
+            std::cout <<"Proc " << proc_rank_ << " sent lb: treeLb "<< lower_bound << "\n";
+            MPI_Isend(&lower_bound, 1, MPI_DOUBLE, 0, TAG_Lb, MPI_COMM_WORLD, &lb_req);
+          }
           last_log_time_lb = getWallTime();
         }
       //}
@@ -2110,9 +2128,9 @@ void DistParBranchAndBound::solveWorkerProc_(ParNodeIncRelaxerPtr parNodeRlxr[],
           {
             // Send updated ub to all
             if (solPool_->getBestSolutionValue() < tm_->getUb()) {
-              tree_ub = solPool_->getBestSolutionValue();
+              double tree_ub = solPool_->getBestSolutionValue();
               MPI_Isend(&tree_ub, 1, MPI_DOUBLE, 0, TAG_Ub, MPI_COMM_WORLD, &ub_req);
-              std::cout << "\n\nUB update: Proc " << proc_rank_ << "sent ub to Proc " << 0 << "\n\n";
+              std::cout << "\nUB update: Proc " << proc_rank_ << " sent ub " << tree_ub << " to Proc " << 0 << "\n";
               //sendUbToMaster_(solPool_->getBestSolutionValue());
             }
             tm_->setUb(solPool_->getBestSolutionValue());
@@ -2256,7 +2274,7 @@ void DistParBranchAndBound::solveWorkerProc_(ParNodeIncRelaxerPtr parNodeRlxr[],
         if (tm_->getUb() <= -INFINITY) {
           status_ = SolvedUnbounded;
         } else if (tm_->getUb() < INFINITY) {
-          tree_lb = tm_->getLb(); 
+          //tree_lb = tm_->getUb(); 
           status_ = SolvedOptimal; // TODO: get the right status
         } else {
           status_ = SolvedInfeasible; // TODO: get the right status
@@ -2271,10 +2289,10 @@ void DistParBranchAndBound::solveWorkerProc_(ParNodeIncRelaxerPtr parNodeRlxr[],
         {
           tm_->updateLb();
         }
-        tree_lb = tm_->getLb(); 
+        //tree_lb = tm_->getLb(); 
         shouldRun = false;
       } else {
-        tree_lb = tm_->getLb(); 
+        //tree_lb = tm_->getLb(); 
 //#if SPEW
 //#pragma omp critical (logger)
 //        //logger_->msgStream(LogInfo) << "nodesCount " << nodeCountThread << " thread " << i << std::endl;
@@ -2306,15 +2324,25 @@ void DistParBranchAndBound::solveWorkerProc_(ParNodeIncRelaxerPtr parNodeRlxr[],
   //}
   //std::cout << "Proc " << proc_rank_ << " sent termination." << "\n";
   //exit(0);
+  std::cout << "\nProc " << proc_rank_ << " status_ " << status_ << "\n";
   if (status_ == SolvedOptimal) {
     tm_->setLb(tm_->getUb());
   }
   //if (tree_lb < INFINITY) {
   //  MPI_Isend(&tree_lb, 1, MPI_DOUBLE, 0, TAG_Lb, MPI_COMM_WORLD, &lb_req);
   //}
-  tree_lb = tm_->getLb();
-  MPI_Isend(&tree_lb, 1, MPI_DOUBLE, 0, TAG_Lb, MPI_COMM_WORLD, &lb_req);
+  std::cout << "\nProc " << proc_rank_ << " ub and lb " << tm_->getUb() << " " << tm_->getLb() << "\n";
+  //MPI_Isend(&tree_lb, 1, MPI_DOUBLE, 0, TAG_Lb, MPI_COMM_WORLD, &lb_req);
+  if (tm_->getLb() < INFINITY) {
+    double lower_bound = tm_->getLb(); 
+    std::cout << "\nProc " << proc_rank_ << " sending treelb to Proc 0 " << lower_bound << "\n";
+    MPI_Send(&lower_bound, 1, MPI_DOUBLE, 0, TAG_Lb, MPI_COMM_WORLD);
+    std::cout << "\nProc " << proc_rank_ << " sent treelb to Proc 0 " << lower_bound << "\n";
+  }
+  std::cout << "\nProc " << proc_rank_ << " sending status to Proc 0 " << termination_status << "\n";
   MPI_Isend(&termination_status, 1, MPI_INT, 0, TAG_Terminate, MPI_COMM_WORLD, &termination_req);
+  //MPI_Send(&termination_status, 1, MPI_INT, 0, TAG_Terminate, MPI_COMM_WORLD);
+  std::cout << "\nProc " << proc_rank_ << " sent status to Proc 0 " << termination_status << "\n";
 
   stats_->timeUsed = timer_->query();
   timer_->stop();
@@ -2413,13 +2441,14 @@ void DistParBranchAndBound::updateProcsRunningStatus_(std::vector<int>& proc_run
   //MPI_Request request;
 
   for (int i = 1; i < num_procs_; ++i) {
+    //std::cout << "\n Proc " << i << " running status " << proc_running[i] << "\n";
     if (i != proc_rank_) {
       if (proc_running[i]) {
         MPI_Iprobe(i, TAG_Terminate, MPI_COMM_WORLD, &flag, &mpi_status);
         if (flag) {
           //MPI_Irecv(&value, 1, MPI_DOUBLE, mpi_status.MPI_SOURCE, mpi_status.MPI_TAG, MPI_COMM_WORLD, &request);
           MPI_Recv(&value, 1, MPI_DOUBLE, mpi_status.MPI_SOURCE, mpi_status.MPI_TAG, MPI_COMM_WORLD, MPI_STATUS_IGNORE);
-          std::cout << "\n\nProc " << proc_rank_ << " terminating\n\n";
+          std::cout << "\nReceived Termination status: Proc " << mpi_status.MPI_SOURCE << " terminating\n";
           proc_running[i] = 0; 
         }
       }
@@ -2489,12 +2518,12 @@ void DistParBranchAndBound::checkUbUpdates_(const std::vector<int>& proc_running
       if (flag) {
         //MPI_Irecv(&value, 1, MPI_DOUBLE, mpi_status.MPI_SOURCE, mpi_status.MPI_TAG, MPI_COMM_WORLD, &request);
         MPI_Recv(&value, 1, MPI_DOUBLE, mpi_status.MPI_SOURCE, mpi_status.MPI_TAG, MPI_COMM_WORLD, MPI_STATUS_IGNORE);
-        std::cout << "\n\nUB update: Proc " << proc_rank_ << " received ub from Proc " << i << "\n\n";
+        std::cout << "\nUB update: Proc " << proc_rank_ << " received ub " << value << " from Proc " << i << "\n";
         if (value < tm_->getUb()) {
           for (int j = 1; j < num_procs_; ++j) {
             if (j != i && proc_running[j]) {
               MPI_Isend(&value, 1, MPI_DOUBLE, j, TAG_Ub, MPI_COMM_WORLD, &req);
-              std::cout << "\n\nUB update: Proc " << proc_rank_ << "sent ub to Proc " << j << "\n\n";
+              std::cout << "\nUB update: Proc " << proc_rank_ << " sent ub " << value << " to Proc " << j << " of value " << value << "\n";
             }
           }
 #pragma omp critical (treeManager)
@@ -2512,7 +2541,7 @@ void DistParBranchAndBound::checkUbUpdates_(const std::vector<int>& proc_running
       if (flag) {
         //MPI_Irecv(&value, 1, MPI_DOUBLE, mpi_status.MPI_SOURCE, mpi_status.MPI_TAG, MPI_COMM_WORLD, &request);
         MPI_Recv(&value, 1, MPI_DOUBLE, mpi_status.MPI_SOURCE, mpi_status.MPI_TAG, MPI_COMM_WORLD, MPI_STATUS_IGNORE);
-        std::cout << "\n\nUB update: Proc " << proc_rank_ << "received ub from Proc " << 0 << "\n\n";
+        std::cout << "\nUB update: Proc " << proc_rank_ << " received ub " << value << " from Proc 0" << "\n";
         if (value < tm_->getUb()) {
 #pragma omp critical (treeManager)
           {
@@ -2532,10 +2561,13 @@ void DistParBranchAndBound::checkUbUpdates_(const std::vector<int>& proc_running
 void DistParBranchAndBound::sendUbToOtherProcs_(double val, const std::vector<int>& proc_running)
 {
   MPI_Request req;
+  if (proc_running.empty()) {
+    std::cout << "\n EMPTY!!\n";
+  }
   for (int i = 1; i < num_procs_; ++i) {
     std::cout << " inside sendUb: proc running " << i << " " << proc_running[i] << "\n";
     if (proc_running[i]) {
-      std::cout << "\n\nUB update: Proc " << proc_rank_ << "sent ub to Proc " << i << "\n\n";
+      std::cout << "\nUB update: Proc " << proc_rank_ << " sent ub " << val << " to Proc " << i << "\n";
       MPI_Isend(&val, 1, MPI_DOUBLE, i, TAG_Ub, MPI_COMM_WORLD, &req);
     }
   }
@@ -2545,23 +2577,23 @@ void DistParBranchAndBound::sendUbToOtherProcs_(double val, const std::vector<in
 
 void DistParBranchAndBound::distributeNodes_() 
 {
-  int count;
+  //int count;
   NodePtr node = 0;
   
-  std::vector<double> bound_changes;
-  //std::cout << "In distribute() tm size " << tm_->getSize() << "\n";
+    //std::cout << "In distribute() tm size " << tm_->getSize() << "\n";
   std::cout << " Num procs " << num_procs_ << "\n";
   for (int i = 1; i < num_procs_; ++i) {
     //std::cout << "Inside\n";
     node = tm_->getCandidate();
     std::cout <<"Node " << node << "\n";
     if (node) {
+      std::vector<double> bound_changes;
       std::cout << " Proc " << proc_rank_ << " about to send node " << node->getId() << " with tag " << TAG_NodeFound << " to proc " << i << "\n";
       getBoundChanges_(node, bound_changes);
-      count = bound_changes.size();
+      int count = bound_changes.size();
       //std::cout << "Before Send\n";
       //std::cout << "Count " << count << std::endl;
-      MPI_Send(&bound_changes, count, MPI_DOUBLE, i, TAG_NodeFound, MPI_COMM_WORLD);
+      MPI_Send(bound_changes.data(), count, MPI_DOUBLE, i, TAG_NodeFound, MPI_COMM_WORLD);
       tm_->removeActiveNode(node);
       std::cout << " Proc " << proc_rank_ << " sent node, tm size " << tm_->getActiveNodes() << "\n";
     }
