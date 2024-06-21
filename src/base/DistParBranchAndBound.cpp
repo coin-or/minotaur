@@ -2509,7 +2509,8 @@ void DistParBranchAndBound::checkUbUpdates_(const std::vector<int>& proc_running
   double value;
   int flag;
   MPI_Status mpi_status;
-  MPI_Request req;
+  //MPI_Request req;
+  std::vector<MPI_Request> requests;  // To store MPI_Request objects
   //MPI_Request request;
 
   if (proc_rank_ == 0) {
@@ -2522,10 +2523,18 @@ void DistParBranchAndBound::checkUbUpdates_(const std::vector<int>& proc_running
         if (value < tm_->getUb()) {
           for (int j = 1; j < num_procs_; ++j) {
             if (j != i && proc_running[j]) {
+              MPI_Request req;
               MPI_Isend(&value, 1, MPI_DOUBLE, j, TAG_Ub, MPI_COMM_WORLD, &req);
+              requests.push_back(req);  // Store the request
               std::cout << "\nUB update: Proc " << proc_rank_ << " sent ub " << value << " to Proc " << j << " of value " << value << "\n";
             }
           }
+    // Wait for all non-blocking sends to complete
+          if (!requests.empty()) {
+            MPI_Waitall(requests.size(), requests.data(),
+            MPI_STATUSES_IGNORE);
+          }
+
 #pragma omp critical (treeManager)
           {
             tm_->setUb(value); 
