@@ -141,9 +141,9 @@ struct ConstraintStats {
     virtual int checkConVars() const;
 
 
-    // Here adding code for Classification of Constraints 
+    // Classification of Constraints 
     virtual void classifyCon();
-
+   
     /**
      * \brief Clone the given Problem class. Jacobian and Hessian in the cloned
      * problem are NULL.
@@ -609,9 +609,10 @@ struct ConstraintStats {
     virtual void writeSize(std::ostream &out) const;
 
     const double INFTY = std::numeric_limits<double>::infinity();
-    
+
   protected:
 
+    //To check type of constraint
     bool isAggregation_(ConstraintPtr c);
     bool isPrecedence_(ConstraintPtr c, const ConstraintStats& stats);
     bool isVariableBound_(ConstraintPtr c, const ConstraintStats& stats);
@@ -626,9 +627,13 @@ struct ConstraintStats {
     bool isIntegerKnapsack_(ConstraintPtr c, const ConstraintStats& stats);
     bool isMixedBinary_(ConstraintPtr c, const ConstraintStats& stats);
     bool isNoSpecificStructure_(ConstraintPtr c);
-     
-    void printConstraintStatistics();
-       
+    
+    //Print Count table for constraint size
+    void printConstraintStatistics_();
+
+    //function for lock number
+    void lockNum_(); 
+
     /// Vector of constraints.
     ConstraintVector cons_;
 

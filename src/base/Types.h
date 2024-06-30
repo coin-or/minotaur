@@ -116,7 +116,9 @@ typedef enum {
   Knapsack,        ///> \sum_{i=1}^n a_i*x_i \leq b, x_i is Binary
   IntegerKnapsack, ///> \sum_{i=1}^n a_i*x_i \leq b, x_i is Integer
   MixedBinary, ///> Linear combination of at least one binary variable with continuous variables
-  General      ///> No specific structure identififed.
+  General,      ///> No specific structure identififed
+  Quad,        ///> Quadratic
+  NonLin       ///>Non-linear
 } ConsType;
 
 /// Different types of variable-bounds.
