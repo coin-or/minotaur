@@ -29,6 +29,7 @@
 #include "LinFeasPump.h"
 #include "MINLPDiving.h"
 #include "MaxFreqBrancher.h"
+#include "MaxInfBrancher.h"
 #include "MaxVioBrancher.h"
 #include "NodeIncRelaxer.h"
 #include "PCBProcessor.h"
@@ -218,6 +219,31 @@ BrancherPtr Bnb::getBrancher_(HandlerVector handlers, EnginePtr e)
   } else if(env_->getOptions()->findString("brancher")->getValue() ==
             "maxfreq") {
     br = (MaxFreqBrancherPtr) new MaxFreqBrancher(env_, handlers);
+  }
+    else if(env_->getOptions()->findString("brancher")->getValue() ==
+            "maxinf") {
+    MaxInfBrancherPtr inf_br;  
+    inf_br = (MaxInfBrancherPtr) new MaxInfBrancher(env_, handlers);
+    inf_br->setEngine(e);
+    t = (oinst_->getSize()->ints + oinst_->getSize()->bins) / 10;
+    t = std::max(t, (UInt)2);
+    t = std::min(t, (UInt)4);
+    inf_br->setThresh(t);
+    env_->getLogger()->msgStream(LogExtraInfo)
+        << me_ << "setting reliability threshhold to " << t << std::endl;
+    t = (UInt)oinst_->getSize()->ints + oinst_->getSize()->bins / 20 + 2;
+    t = std::min(t, (UInt)10);
+    inf_br->setMaxDepth(t);
+    env_->getLogger()->msgStream(LogExtraInfo)
+        << me_ << "setting reliability maxdepth to " << t << std::endl;
+    if(e->getName() == "Filter-SQP") {
+      inf_br->setIterLim(5);
+    }
+    env_->getLogger()->msgStream(LogExtraInfo)
+        << me_
+        << "Inference branching iteration limit = " << inf_br->getIterLim()
+        << std::endl;
+    br = inf_br;
   }
   env_->getLogger()->msgStream(LogExtraInfo)
       << me_ << "brancher used = " << br->getName() << std::endl;

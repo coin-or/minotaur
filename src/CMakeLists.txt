@@ -63,6 +63,7 @@ set (MINOTAUR_SOURCES
      base/Linearizations.cpp
      base/Logger.cpp 
      base/MaxFreqBrancher.cpp
+     base/MaxInfBrancher.cpp
      base/MaxVioBrancher.cpp
      base/MINLPDiving.cpp
      #base/MultiSolHeur.cpp
@@ -199,6 +200,7 @@ set (MINOTAUR_HEADERS
      base/LPEngine.h
      base/LPRelaxation.h
      base/MaxFreqBrancher.h
+     base/MaxInfBrancher.h
      base/MaxVioBrancher.h
      base/MILPEngine.h
      base/MINLPDiving.h
