@@ -176,7 +176,7 @@ NodePtr BranchAndBound::processRoot_(bool* should_prune, bool* should_dive)
     tm_->removeActiveNode(current_node);
   } else {
 #if SPEW
-    logger_->msgStream(LogDebug1) << me_ << "branching in root" << std::endl;
+    logger_->msgStream(LogDebug) << me_ << "branching in root" << std::endl;
 #endif
     // branch.
     branches = nodePrcssr_->getBranches();
@@ -407,8 +407,11 @@ void BranchAndBound::solve()
   // solve root outside the loop. save the useful information.
   while(should_stop == false) {
 #if SPEW
-    logger_->msgStream(LogDebug1)
-        << me_ << "processing node " << current_node->getId() << std::endl
+    logger_->msgStream(LogDebug)
+        << std::endl
+        << me_ << "processing node " << current_node->getId() 
+        << " child of node " << current_node->getParent()->getId()
+        << std::endl
         << me_ << "depth = " << current_node->getDepth() << std::endl
         << me_ << "did we dive = " << dived_prev << std::endl;
 #endif
@@ -420,8 +423,11 @@ void BranchAndBound::solve()
 
     ++stats_->nodesProc;
 #if SPEW
-    logger_->msgStream(LogDebug1)
-        << me_ << "node lower bound = " << current_node->getLb() << std::endl;
+    logger_->msgStream(LogDebug)
+        << me_ << "node " << current_node->getId() << " processed"
+        << std::endl 
+        << me_ << "node lower bound = " << current_node->getLb() << std::endl
+        << std::endl;
 #endif
 
     if(nodePrcssr_->foundNewSolution()) {
@@ -431,7 +437,7 @@ void BranchAndBound::solve()
     should_prune = shouldPrune_(current_node);
     if(should_prune) {
 #if SPEW
-      logger_->msgStream(LogDebug1) << me_ << "node pruned" << std::endl;
+      logger_->msgStream(LogDebug) << me_ << "node pruned" << std::endl;
 #endif
       nodeRlxr_->reset(current_node, false);
       tm_->pruneNode(current_node);
@@ -442,7 +448,7 @@ void BranchAndBound::solve()
       dived_prev = false;
     } else {
 #if SPEW
-      logger_->msgStream(LogDebug1) << me_ << "branching" << std::endl;
+      logger_->msgStream(LogDebug) << me_ << "branching" << std::endl;
 #endif
       branches = nodePrcssr_->getBranches();
 
@@ -489,8 +495,8 @@ void BranchAndBound::solve()
     } else {
 #if SPEW
       logger_->msgStream(LogDebug)
-          << std::setprecision(8) << me_ << "lb = " << tm_->getLb() << std::endl
-          << me_ << "ub = " << tm_->getUb() << std::endl;
+          << std::setprecision(8) << me_ << "tree lb = " << tm_->getLb() << std::endl
+          << me_ << "tree ub = " << tm_->getUb() << std::endl;
 #endif
     }
   }

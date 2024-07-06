@@ -173,13 +173,14 @@ void PCBProcessor::process(NodePtr node, RelaxationPtr rel,
   bool should_prune = true;
   bool should_resolve;
   bool sol_found = false;
-  //DoubleVector *debug_sol = 0;
+  DoubleVector *debug_sol = 0;
+  bool debug_feas;
   BrancherStatus br_status;
   ConstSolutionPtr sol;
   ModVector mods;
   SeparationStatus sep_status = SepaContinue;
   int iter = 0, error;
-  //bool debug_feas = false;
+  int parid=(node->getId()==0)?-1:node->getParent()->getId();
 
   ++stats_.proc;
   relaxation_ = rel;
@@ -189,18 +190,28 @@ void PCBProcessor::process(NodePtr node, RelaxationPtr rel,
     branches_ = 0;
   }
 
-  //debug_sol = relaxation_->getDebugSol();
-  //if (debug_sol) {
-  //  for (ConstraintConstIterator it=relaxation_->consBegin();
-  //       it!=relaxation_->consEnd(); ++it) {
-
-  //  }
-  //}
+  debug_sol = relaxation_->getDebugSol();
+  debug_feas = false;
+  if (debug_sol) {
+    if (relaxation_->isDebugSolFeas(0.000001, 0.000001)) {
+      logger_->msgStream(LogDebug1) << me_ << "debug solution is feasible in"
+       << " node " << node->getId() << " parent node " << parid << std::endl;
+      debug_feas = true;
+    } else {
+      logger_->msgStream(LogDebug1) << me_ << "debug solution is not feasible "
+        " in node " << node->getId() << " parent node " << parid << std::endl;
+    }
+  } 
 
   // presolve
   should_prune = presolveNode_(node, s_pool);
   if(should_prune) {
     node->removeWarmStart();
+    if (debug_feas) {
+      logger_->msgStream(LogDebug1) << me_ << "Presolve thinks node should be "
+        << "pruned even though debug solution was feasible initially"
+        << std::endl;
+    }
     return;
   }
 
@@ -230,6 +241,11 @@ void PCBProcessor::process(NodePtr node, RelaxationPtr rel,
     // In either case we can prune. Also set lb of node.
     should_prune = shouldPrune_(node, sol->getObjValue(), s_pool);
     if(should_prune) {
+      if (debug_feas) {
+        logger_->msgStream(LogDebug) << me_
+          << "node is pruned even though debug solution was feasible initially"
+          << std::endl;
+      }
       break;
     }
 
@@ -241,6 +257,10 @@ void PCBProcessor::process(NodePtr node, RelaxationPtr rel,
     // check feasibility. if it is feasible, we can still prune this node.
     isFeasible_(node, sol, s_pool, should_prune);
     if(should_prune) {
+      if (debug_feas) {
+        logger_->msgStream(LogDebug) << me_ << " node is pruned with a feasible"
+          << " solution" << std::endl;
+      }
       break;
     }
 
@@ -258,6 +278,13 @@ void PCBProcessor::process(NodePtr node, RelaxationPtr rel,
       // Do not do separate if we are in root and it is first iteration
       // and we have resolved it by tightenBounds_()
       separate_(sol, node, s_pool, &sep_status);
+      if (debug_feas) {
+        if (false==relaxation_->isDebugSolFeas(0.000001, 0.000001)) {
+          logger_->msgStream(LogDebug) << me_ << "separation routine has cut "
+            << "out the debug solution that was feasible at the start of node"
+            << std::endl;
+        }
+      }
     }
 
     if(sep_status == SepaPrune) {
@@ -285,6 +312,11 @@ void PCBProcessor::process(NodePtr node, RelaxationPtr rel,
           delete *miter;
         }
         mods.clear();
+        if (debug_feas) {
+          logger_->msgStream(LogDebug1) << me_ <<  "node pruned by brancher "
+            << "even though debug solution was feasible initially"
+            << std::endl;
+        }
         break;
       } else if(br_status == ModifiedByBrancher) {
         for(ModificationConstIterator miter = mods.begin(); miter != mods.end();
@@ -295,11 +327,16 @@ void PCBProcessor::process(NodePtr node, RelaxationPtr rel,
         mods.clear();
         should_prune = presolveNode_(node, s_pool);
         if(should_prune) {
+          if (debug_feas) {
+            logger_->msgStream(LogDebug1) << me_ <<  "node pruned by presolve "
+            << "even though debug solution was feasible initially"
+            << std::endl;
+          }
           break;
         }
         should_resolve = true;
       } else if(br_status == NoCandToBranch) {
-        logger_->msgStream(LogDebug2)
+        logger_->msgStream(LogDebug2) << me_
             << "No candidates to branch for the node"
             << " Calling an NLP solver to resolve it" << std::endl;
         error = infHand_->fixNodeErr(relaxation_, sol, s_pool, sol_found);

@@ -1537,6 +1537,30 @@ bool Problem::isDebugSolFeas(double atol, double rtol)
     int i;
 
     x = &(*debugSol_)[0]; // convert doublevector * to double array pointer
+    i = 0;
+    for(VariableConstIterator it = vars_.begin(); it != vars_.end(); ++it) {
+      lb = (*it)->getLb();
+      ub = (*it)->getUb();
+      act = x[i];
+      if((act > ub + atol) && (act > ub + fabs(ub) * rtol)) {
+        logger_->msgStream(LogDebug2)
+            << me_ << "variable ub constraint " << (*it)->getName()
+            << " violated by the debug sol."
+            << " activity = " << act << " but ub = " << ub << std::endl;
+        isfeas = false;
+        break;
+      }
+      if((act < lb - atol) && (act < lb - fabs(lb) * rtol)) {
+        logger_->msgStream(LogDebug2)
+            << me_ << "variable lb constraint " << (*it)->getName()
+            << " violated by the debug sol."
+            << " activity = " << act << " but lb = " << lb << std::endl;
+        isfeas = false;
+        break;
+      }
+      ++i;
+    }
+
     for(ConstraintConstIterator it = cons_.begin(); it != cons_.end(); ++it) {
       err = 0;
       act = (*it)->getActivity(x, &err);
@@ -1551,31 +1575,22 @@ bool Problem::isDebugSolFeas(double atol, double rtol)
             << " violated by the debug sol."
             << " activity = " << act << " but ub = " << ub << std::endl;
         isfeas = false;
+        break;
       } else if((act < lb - atol) && (act < lb - fabs(lb) * rtol)) {
         logger_->msgStream(LogError)
             << me_ << "lb constraint " << (*it)->getName()
             << " violated by the debug sol."
             << " activity = " << act << " but lb = " << lb << std::endl;
         isfeas = false;
+        break;
       }
     }
 
-    i = 0;
-    for(VariableConstIterator it = vars_.begin(); it != vars_.end(); ++it) {
-      lb = (*it)->getLb();
-      ub = (*it)->getUb();
-      act = x[i];
-      if((act > ub + atol) && (act > ub + fabs(ub) * rtol)) {
-        logger_->msgStream(LogError)
-            << me_ << "ub constraint " << (*it)->getName()
-            << " violated by the debug sol."
-            << " activity = " << act << " but ub = " << ub << std::endl;
-        isfeas = false;
-      }
-    }
+    act = obj_->eval(x, &err);
+
 
     if(isfeas) {
-      logger_->msgStream(LogDebug)
+      logger_->msgStream(LogDebug1)
           << me_ << "debug solution is feasible" << std::endl;
     }
     return isfeas;

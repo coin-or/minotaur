@@ -176,6 +176,11 @@ Relaxation::Relaxation(ProblemPtr problem, EnvPtr env)
   nextCId_ = cons_.size();
   nextVId_ = vars_.size();
   nativeDer_ = p_->hasNativeDer();
+
+  // debug solution should also be copied
+  if (p_->getDebugSol()) {
+    debugSol_ = new DoubleVector(*(p_->getDebugSol()));
+  }
 }
 
 

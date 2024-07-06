@@ -30,13 +30,17 @@ const std::string RCHandler::me_ = "RCHandler: ";
 
 RCHandler::RCHandler(EnvPtr env)
 {
+  lastBest_ = INFINITY;
+  logger_ = env->getLogger();
+  rootDuals_ = 0;
+  rootX_ = 0;
+  rootObj_ = -INFINITY;
+  timer_ = env->getTimer();
+
   stats_ = new RCStats();
   stats_->nlb = 0;
   stats_->nub = 0;
   stats_->time = 0;
-  rootDuals_ = 0;
-  logger_ = env->getLogger();
-  timer_ = env->getTimer();
 }
 
 RCHandler::~RCHandler()
@@ -62,6 +66,7 @@ void RCHandler::separate(ConstSolutionPtr sol, NodePtr node,
   const double rel_obj = sol->getObjValue();
   double rnode, rroot; //Reduced costs
   double  xval;
+  const double TOL=1e-3;
   VariablePtr v; 
   VariableConstIterator v_iter;
   
@@ -69,25 +74,30 @@ void RCHandler::separate(ConstSolutionPtr sol, NodePtr node,
     copyRootDetails_(sol, rel);
   }
 
-  if (s_pool->getNumSols() > 0)
-  {
+  if (s_pool->getNumSols() > 0) {
     bestobj = s_pool->getBestSolutionValue();
-  } else{
+  } else {
     stats_->time += (timer_->query() - start);
     return;
   }
 
-  for (v_iter = rel->varsBegin(); v_iter != rel->varsEnd(); ++v_iter){
+  int i=0;
+  for (v_iter = rel->varsBegin(); v_iter != rel->varsEnd(); ++v_iter,++i) {
     v = *v_iter;
-    rnode = p[v->getIndex()];
-    xval = x[v->getIndex()];
+    rnode = p[i];
+    xval = x[i];
     rcfix_( rel, r_mods, bestobj, rel_obj, xval, rnode, v);
-    if (rootDuals_) {
+    
+  }
+
+  if (rootDuals_ && bestobj<lastBest_-TOL) {
+    lastBest_=bestobj;
+    for (v_iter = rel->varsBegin(); v_iter != rel->varsEnd(); ++v_iter){
+      v = *v_iter;
       rroot = rootDuals_[v->getIndex()];
-    } else {
-      rroot = 0.0;
-    }
-    rcfix_( rel, r_mods, bestobj, rel_obj, xval, rroot, v);
+      xval = rootX_[v->getIndex()];
+      rcfix_(rel, r_mods, bestobj, rootObj_, xval, rroot, v);
+    } 
   }
 
   stats_->time += (timer_->query() - start);
@@ -100,7 +110,15 @@ void RCHandler::rcfix_(RelaxationPtr rel,
                        double r, VariablePtr v)
 {
 
-  double tolerance = (std::pow(10.0, -6));
+  double ZTOL = 1e-6; // tolerance for checking if the variable is already fixed.
+  double MINR = 1e-3; // if abs reduced cost is more than MINR then it is used
+                      // for fixing, otherwise it may be error prone.
+  double MINIMP = 1e-3; // bound changes less than MINIMP (before rounding) are
+                        // ignored (integer variable)
+  double MINREL = 1e-2; // bounds of continuous variable must improve
+                        // by both MINIMP (abs) and MINREL (rel). bounds of 
+                        // integer variable must improve by MINREL (rel) to
+                        // be accepted.
   double new_ub, ub;
   double new_lb, lb;
   VarBoundModPtr m;
@@ -108,78 +126,81 @@ void RCHandler::rcfix_(RelaxationPtr rel,
   lb = v->getLb();
   ub = v->getUb();
 
-  if (ub - lb < tolerance) {
+  if (ub - lb < ZTOL) {
     return;
   }
 
   v_type = v->getType();
 
-  if (r > tolerance){
+  if (r > MINR){ //update upper bound
     new_ub = xval + (bestobj - rel_obj) / r;
     if (v_type == Binary || v_type == Integer || v_type == ImplBin ||
         v_type == ImplInt){
-          new_ub = floor(new_ub + tolerance*100);
-          if (new_ub < ub){
-            m = (VarBoundModPtr) new VarBoundMod(v, Upper, new_ub);
-            m->applyToProblem(rel);
-            r_mods.push_back(m);
+      new_ub = floor(new_ub + MINIMP);
+      if (new_ub<ub-MINREL*abs(ub)) {
+        m = (VarBoundModPtr) new VarBoundMod(v, Upper, new_ub);
+        m->applyToProblem(rel);
+        r_mods.push_back(m);
 #if SPEW
-            logger_->msgStream(LogDebug) << me_ << "Variable name = "
-                                         << v->getName() << " bound type = ub"
-                                         << " old value = " << ub << " new value = "
-                                         << new_ub << " (type = Int)" << std::endl;
+        logger_->msgStream(LogDebug1) << me_ << "Variable name = "
+          << v->getName() << " bound type = ub"
+          << " old value = " << ub << " new value = "
+          << new_ub << " (type = Int)" 
+          << " xval = " << xval 
+          << " red cost = " << r <<std::endl;
 #endif
-            ++(stats_->nub);
-          } else{
-            if (new_ub < ub*0.9){
-              m = (VarBoundModPtr) new VarBoundMod(v, Upper, new_ub);
-              m->applyToProblem(rel);
-              r_mods.push_back(m);
+        ++(stats_->nub);
+      } 
+    } else { // a continuous variable
+      if (new_ub<ub-MINIMP && new_ub<ub-MINREL*abs(ub)) {
+        m = (VarBoundModPtr) new VarBoundMod(v, Upper, new_ub);
+        m->applyToProblem(rel);
+        r_mods.push_back(m);
 #if SPEW
-              logger_->msgStream(LogDebug) << me_ << "Variable name = "
-                                           << v->getName() << " bound type = ub"
-                                           << " old value = "
-                                           << ub << " new value = " << new_ub << std::endl;
+        logger_->msgStream(LogDebug1) << me_ << "Variable name = "
+          << v->getName() << " bound type = ub"
+          << " old value = "
+          << ub << " new value = " << new_ub << std::endl;
 #endif
-              ++(stats_->nub);
-            }
-          }
-
+        ++(stats_->nub);
+      }
     }
-  } else if (r < -tolerance){
+  } else if (r < -MINR) { // update lower bound
     new_lb = xval + (bestobj - rel_obj) / r;
     if (v_type == Binary || v_type == Integer || v_type == ImplBin ||
         v_type == ImplInt){
-          new_lb = ceil(new_lb - tolerance * 100);
-          if (new_lb > lb){
-            m = (VarBoundModPtr) new VarBoundMod(v, Lower, new_lb);
-            m->applyToProblem(rel);
-            r_mods.push_back(m);
+      new_lb = ceil(new_lb - MINIMP);
+      if (new_lb > lb+MINREL*abs(lb)) {
+        m = (VarBoundModPtr) new VarBoundMod(v, Lower, new_lb);
+        m->applyToProblem(rel);
+        r_mods.push_back(m);
 #if SPEW
-            logger_->msgStream(LogDebug) << me_ << "Variable name = "
-                                         << (v)->getName()
-                                         << " bound type = lb old value = "
-                                         << lb << " new value = "
-                                         << new_lb << " (type =Int)"
-                                         << std::endl;
+        logger_->msgStream(LogDebug1) << me_ << "Variable name = "
+          << (v)->getName()
+          << " bound type = lb old value = "
+          << lb << " new value = "
+          << new_lb << " (type =Int)"
+          << " xval = " << xval 
+          << " red cost = " << r 
+          << std::endl;
 #endif
-            ++(stats_->nlb);
-          }
-        }else{
-          if (new_lb > lb * 1.1){
-            m = (VarBoundModPtr) new VarBoundMod(v, Lower, new_lb);
-            m->applyToProblem(rel);
-            r_mods.push_back(m);
+        ++(stats_->nlb);
+      }
+    } else { // continuous variable
+      if (new_lb > lb+MINIMP && new_lb > lb+MINREL*abs(lb)) {
+        m = (VarBoundModPtr) new VarBoundMod(v, Lower, new_lb);
+        m->applyToProblem(rel);
+        r_mods.push_back(m);
 #if SPEW
-            logger_->msgStream(LogDebug) << me_ << "Variable name = "
-                                         << (v)->getName()
-                                         << " bound type = lb, old value = "
-                                         << lb << " new value = "
-                                         << new_lb << std::endl;
+        logger_->msgStream(LogDebug1) << me_ << "Variable name = "
+          << (v)->getName()
+          << " bound type = lb, old value = "
+          << lb << " new value = "
+          << new_lb << std::endl;
 #endif
-            ++(stats_->nlb);
-          }
-        }
+        ++(stats_->nlb);
+      }
+    }
   }
   return;
 }
@@ -191,17 +212,21 @@ std::string RCHandler::getName() const
 
 void RCHandler::copyRootDetails_(ConstSolutionPtr sol, RelaxationPtr rel)
 {
-  rootValue_ = sol->getObjValue();
-  VariableConstIterator vIter;
   const double *p1 = sol->getDualOfVars();
+  const double *x  = sol->getPrimal();
   int n = rel->getNumVars();
+  int i;
 
   if (!rootDuals_){
     rootDuals_ = new double[n];
+    rootX_     = new double[n];
+    rootObj_   = sol->getObjValue();
   }
 
-  for (vIter = rel->varsBegin(); vIter != rel->varsEnd(); ++vIter){
-    rootDuals_[(*vIter)->getIndex()] = p1[(*vIter)->getIndex()];
+  i=0;
+  for (i=0; i!=n; ++i){
+    rootDuals_[i] = p1[i];
+    rootX_[i] = x[i];
   }
   return;
 }
