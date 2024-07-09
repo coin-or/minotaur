@@ -40,7 +40,24 @@ namespace Minotaur {
       /// Default constructor
       QuadraticFunction();
 
-      /// Constructor for an array of values
+      /**
+       * \brief Constructor using an array of values
+       *
+       * \param[in] nz Number of non zero elements in hessian of quadratic function.
+       * \param[in] vals The pointer to the array of value of hessian.
+       * \param[in] irow The pointer to the array of index of the row.
+       * \param[in] jcol The pointer to the array of index of the column.
+
+       * Example: 
+       * x1^2 + 2x1x2 + x2^2
+       * Hessian of above matrix is:
+       * [[2 2]
+       *  [2 2]]
+       * nz = 3
+       * vals = [2 2 2]
+       * irow = [0 1 1]
+       * jcol = [0 0 1]
+       */
       QuadraticFunction(UInt nz, double *vals, UInt *irow, UInt *jcol,
                         VariableConstIterator vbeg );
 
@@ -60,6 +77,10 @@ namespace Minotaur {
        */
       QuadraticFunctionPtr clone() const;
 
+      /**
+       * Create the clone of the quadratic function while substituting the variables
+       * with the new one.
+       */
       QuadraticFunctionPtr cloneWithVars(VariableConstIterator vbeg) const;
 
       /**
@@ -73,7 +94,11 @@ namespace Minotaur {
        * if a similar term does not exist. 
        */
       void addTerm(ConstVariablePtr v1, ConstVariablePtr v2, double weight);
-
+      
+      /**
+       * Returns the value of square term of a variable in quadratic function, 
+       * when it has val value and has some non zero coefficient.
+      */
       double getFixVarOffset(VariablePtr v, double val);
 
       /**
@@ -90,9 +115,8 @@ namespace Minotaur {
        */
       void incTerm(ConstVariablePtr v1, ConstVariablePtr v2, const double weight);
 
-      /*
-       * Multiply by a constant. If constant is zero, all terms are removed.
-       */
+      
+      /// Multiply by a constant. If constant is zero, all terms are removed.
       void multiply(double c);
 
       /**
@@ -101,6 +125,10 @@ namespace Minotaur {
        */
       void removeVar(VariablePtr v, double val, LinearFunctionPtr lf);
 
+      /**
+       * Substitutes some of the variables from the quadratic function with new variables 
+       * and changing the coefficient value of those variable terms by the ration of 'rat'.
+       */
       void subst(VariablePtr out, VariablePtr in, double rat);
 
       /**
@@ -206,9 +234,7 @@ namespace Minotaur {
 
 
 
-      /**
-       * Compute bounds for using in Presolver
-       */
+      /// Compute bounds for using in Presolver
       void computeBounds(double *l, double *u);
 
       // /**
@@ -221,12 +247,16 @@ namespace Minotaur {
        // /**
       //  * getting b for variable v (in ax^2 +bx)
       //  */
+
+      /// Finds bound of quadratic term having v variable.
       void bndsquadterms(double *l, double *u, VariablePtr v);
 
 
       // /**
       //  * getting b for variable v (in ax^2 +bx), excluding terms containing v2
       //  */ 
+
+      /// Finds bound of quadratic term having v and excluding contribution of v2.
       void bndsquadterms_2(double *l, double *u, VariablePtr v, VariablePtr v2);
 
 
@@ -244,6 +274,8 @@ namespace Minotaur {
        */
       void evalGradient(const std::vector<double> &x,
                         std::vector<double> &grad_f); 
+      
+      /// Evaluate the summation of multiplier and hessian of constraints.
       void evalHessian(const double mult, const double *x, 
                        const LTHessStor *stor, double *values , int *error);
       
@@ -262,11 +294,16 @@ namespace Minotaur {
        * common between them.
        */
       QfVector findSubgraphs();
-
+      
+      /// Stores Jacobian values, offset and indices in different arrays.
       void prepJac(VarSetConstIter vbeg, VarSetConstIter vend);
+
+      /// Stores hessian matrix values, row and column indices in arrays. 
       void prepHess();
 
       void fillHessStor(LTHessStor *hess);
+
+      /// Fills the value of jacobian of a function in an array. 
       void fillJac(const double *x, double *values, int *error);
       void finalHessStor(const LTHessStor *hess);
 
@@ -276,6 +313,7 @@ namespace Minotaur {
       /// Get the number of variables in this expression
       UInt getNumVars() const;
 
+      /// Get the variables in the variable set from the variable frequency map
       void getVars(VariableSet *vars);
 
       /**
@@ -299,11 +337,27 @@ namespace Minotaur {
     private:
       /// Tolerance below which a coefficient is deemed zero
       const double etol_;
-
+      
+      /// Stores coefficient of quadratic terms.
       double *hCoeffs_;
+
+      /**
+       * The array of indices of column where the value of positive 
+       * semi-definite or positive definite matrix is greater than zero.
+       */ 
       UInt *hFirst_;
       UInt *hOff_;
+
+      /**
+       * The array of indices of row where the value of positive 
+       * semi-definite or positive definite matrix is greater than zero.
+       */ 
       UInt *hSecond_;
+
+      /**
+       *  Array of unique values of hSecond having 0 and nz at first and 
+       * last index
+       */
       UIntVector hStarts_;
 
       UIntVector jacOff_;
@@ -323,7 +377,7 @@ namespace Minotaur {
       VarIntMap varFreq_;
 
       Convexity convex_;
-
+ 
       void sortLT_(UInt n, UInt *f, UInt *s, double *c);
   };
 

@@ -560,6 +560,7 @@ void Glob::writeStatus_(BranchAndBound* bab)
         << me_
         << "status of branch-and-bound: " << getSolveStatusString(status_)
         << std::endl;
+
     env_->stopTimer(err);
     assert(0 == err);
   } else {
@@ -576,10 +577,12 @@ void Glob::writeStatus_(BranchAndBound* bab)
         << me_
         << "status of branch-and-bound: " << getSolveStatusString(NotStarted)
         << std::endl;
+
     env_->stopTimer(err);
     assert(0 == err);
   }
 }
+
 
 // ProblemPtr Glob::loadProblem()
 //{
