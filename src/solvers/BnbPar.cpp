@@ -5,14 +5,13 @@
 //
 
 /**
- * \file QGPar.cpp
+ * \file BnbPar.cpp
  * \brief The main function for solving instances in ampl format (.nl) by
- * using a parallel implementation of Advanced Quesada-Grossmann (QG)
- * algorithm for solving convex MINLPs.
- * \author Meenarli Sharma, Prashant Palkar, IIT Bombay
+ * using a parallel implementation of Branch-and-Bound.
+ * \author Prashant Palkar, IIT Bombay
  */
 
-#include "QGPar.h"
+#include "BnbPar.h"
 
 #include <iomanip>
 #include <iostream>
@@ -26,6 +25,7 @@
 #include "AMPLInterface.h"
 #include "AMPLJacobian.h"
 #include "MinotaurConfig.h"
+#include "BranchAndBound.h"
 #include "EngineFactory.h"
 #include "Environment.h"
 #include "FixVarsHeur.h"
@@ -47,7 +47,7 @@
 #include "Option.h"
 #include "ParNodeIncRelaxer.h"
 #include "ParPCBProcessor.h"
-#include "ParQGBranchAndBound.h"
+#include "ParBranchAndBound.h"
 #include "Presolver.h"
 #include "ProblemSize.h"
 #include "Problem.h"
@@ -61,13 +61,13 @@
 #include "Solution.h"
 #include "SOS1Handler.h"
 #include "SOS2Handler.h"
-#include "ParQGHandlerAdvance.h"
 #include "Timer.h"
+#include "UnambRelBrancher.h"
 
 using namespace Minotaur;
-const std::string QGPar::me_ = "QGPar: ";
+const std::string BnbPar::me_ = "BnbPar: ";
 
-QGPar::QGPar(EnvPtr env)
+BnbPar::BnbPar(EnvPtr env)
   : objSense_(1.0),
     sol_(0),
     lb_(-INFINITY),
@@ -79,9 +79,9 @@ QGPar::QGPar(EnvPtr env)
   ownIface_ = true;
 }
 
-QGPar::~QGPar() { }
+BnbPar::~BnbPar() { }
 
-void QGPar::doSetup()
+void BnbPar::doSetup()
 {
   int err = 0;
   env_->startTimer(err);
@@ -89,29 +89,29 @@ void QGPar::doSetup()
   setInitialOptions_();
 }
 
-int QGPar::getEngines_(Engine** nlp_e, LPEngine** lp_e)
+int BnbPar::getEngines_(Engine** nlp_e, LPEngine** lp_e)
 {
   EngineFactory* efac = new EngineFactory(env_);
   oinst_->calculateSize();
 
-  *lp_e = efac->getLPEngine();
-
   if(oinst_->isLinear()) {
-    *nlp_e = efac->getLPEngine();
-  } else if(oinst_->isQP()) {
-    *nlp_e = efac->getQPEngine();
-    if(*nlp_e == 0) {
-      *nlp_e = efac->getNLPEngine();
-    }
+    *lp_e = efac->getLPEngine();
   } else {
     *nlp_e = efac->getNLPEngine();
   }
+  //else if(oinst_->isQP()) {
+  //  *nlp_e = efac->getNLPEngine();
+  //  if(*nlp_e == 0) {
+  //    *nlp_e = efac->getNLPEngine();
+  //  }
+  //} 
+
 
   delete efac;
   return 0;
 }
 
-PresolverPtr QGPar::presolve_(HandlerVector &handlers)
+PresolverPtr BnbPar::presolve_(HandlerVector &handlers)
 {
   PresolverPtr pres = PresolverPtr(); // NULL
   oinst_->calculateSize();
@@ -158,7 +158,7 @@ PresolverPtr QGPar::presolve_(HandlerVector &handlers)
   return pres;
 }
 
-void QGPar::setInitialOptions_()
+void BnbPar::setInitialOptions_()
 {
   OptionDBPtr options = env_->getOptions();
   options->findString("interface_type")->setValue("AMPL");
@@ -172,11 +172,12 @@ void QGPar::setInitialOptions_()
   //options->findBool("simplex_cut")->setValue(true);
 }
 
-void QGPar::showHelp() const
+void BnbPar::showHelp() const
 {
   env_->getLogger()->errStream()
-       << "Parallel Advanced Quesada-Grossmann (LP/NLP) algorithm for convex MINLP" << std::endl
-      << "Requires a thread-safe LP solver." << std::endl
+       << "NLP-based parallel branch-and-bound solver for convex MINLP" << std::endl
+      << "**Works in parallel with a thread-safe NLP solver only "
+      << "(e.g. IPOPT with MA97)**" << std::endl
       << "Usage:" << std::endl
       << "To show version: qg -v (or --display_version yes) " << std::endl
       << "To show all options: qg -= (or --display_options yes)" << std::endl
@@ -185,7 +186,7 @@ void QGPar::showHelp() const
       << " .nl-file" << std::endl;
 }
 
-int QGPar::showInfo()
+int BnbPar::showInfo()
 {
   OptionDBPtr options = env_->getOptions();
 
@@ -206,7 +207,7 @@ int QGPar::showInfo()
     env_->getLogger()->msgStream(LogNone)
         << me_ << "Minotaur version " << env_->getVersion() << std::endl;
     env_->getLogger()->msgStream(LogNone)
-        << me_ << "Parallel Advanced Quesada-Grossmann (LP/NLP) algorithm for convex MINLP"
+        << me_ << "NLP-based parallel branch-and-bound solver for convex MINLP"
         << std::endl;
     return 1;
   }
@@ -226,36 +227,39 @@ int QGPar::showInfo()
 
   env_->getLogger()->msgStream(LogInfo)
       << me_ << "Minotaur version " << env_->getVersion() << std::endl
-      << me_ << "Parallel Advanced Quesada-Grossmann (LP/NLP) algorithm for convex MINLP"
+      << me_ << "NLP-based parallel branch-and-bound solver for convex MINLP"
       << std::endl;
   return 0;
 }
 
-ParQGBranchAndBound* QGPar::createParBab_(UInt numThreads, NodePtr &node,
-                                  RelaxationPtr relCopy[], ProblemPtr pCopy[],
+ParBranchAndBound* BnbPar::createParBab_(UInt numThreads, EnginePtr e,
+                                  RelaxationPtr relCopy[],
                                   ParPCBProcessorPtr nodePrcssr[],
-                                  ParNodeIncRelaxerPtr parNodeRlxr[], SolutionPoolPtr solPool,
+                                  ParNodeIncRelaxerPtr parNodeRlxr[],
                                   HandlerVector handlersCopy[],
-                                  LPEnginePtr lpeCopy[], EnginePtr eCopy[],
-                                  bool &prune)
+                                  EnginePtr eCopy[])
 {
-  ParQGBranchAndBound *bab = new ParQGBranchAndBound(env_, pCopy[0]);
+  ParBranchAndBound *bab = new ParBranchAndBound(env_, oinst_);
   OptionDBPtr options = env_->getOptions();
   bab->shouldCreateRoot(false);
  
   for(UInt i = 0; i < numThreads; ++i) {
     BrancherPtr br = 0;
-    LinHandlerPtr l_hand = (LinHandlerPtr) new LinearHandler(env_, pCopy[i]);
-    l_hand->setModFlags(false, true);
-    handlersCopy[i].push_back(l_hand);
-    assert(l_hand);
-
-    IntVarHandlerPtr v_hand = (IntVarHandlerPtr) new IntVarHandler(env_, pCopy[i]);
-    v_hand->setModFlags(false, true);
-    handlersCopy[i].push_back(v_hand);
-    assert(v_hand);
-
+    eCopy[i] = e->emptyCopy();
+    IntVarHandlerPtr v_hand = (IntVarHandlerPtr) new IntVarHandler(env_, oinst_);
+    LinHandlerPtr l_hand = (LinHandlerPtr) new LinearHandler(env_, oinst_);
+    NlPresHandlerPtr nlhand;
+    SOS2HandlerPtr s2_hand;
     RCHandlerPtr rc_hand;
+    
+    SOS1HandlerPtr s_hand = (SOS1HandlerPtr) new SOS1Handler(env_, oinst_);
+    if (s_hand->isNeeded()) {
+      s_hand->setModFlags(false, true);
+      handlersCopy[i].push_back(s_hand);
+    } else {
+      delete s_hand;
+    }
+
     //adding RCHandler
     if (options->findBool("rc_fix")->getValue()) {
         rc_hand = (RCHandlerPtr) new RCHandler(env_);
@@ -264,15 +268,28 @@ ParQGBranchAndBound* QGPar::createParBab_(UInt numThreads, NodePtr &node,
         assert(rc_hand);
     }
 
-    ParQGHandlerAdvancePtr qg_hand = (ParQGHandlerAdvancePtr) new ParQGHandlerAdvance(env_, pCopy[i], eCopy[i]);
-    qg_hand->setModFlags(false, true);
-    qg_hand->loadProbToEngine();
-    if (i>0) {
-      qg_hand->nlCons();
+    // add SOS2 handler here.
+    s2_hand = (SOS2HandlerPtr) new SOS2Handler(env_, oinst_);
+    if (s2_hand->isNeeded()) {
+      s2_hand->setModFlags(false, true);
+      handlersCopy[i].push_back(s2_hand);
+    } else {
+      delete s2_hand;
     }
-    handlersCopy[i].push_back(qg_hand);
-    assert(qg_hand);
 
+    handlersCopy[i].push_back(v_hand);
+    if (true==options->findBool("presolve")->getValue()) {
+      l_hand->setModFlags(false, true);
+      handlersCopy[i].push_back(l_hand);
+    }
+    if (!oinst_->isLinear() && 
+        true==options->findBool("presolve")->getValue() &&
+        true==options->findBool("use_native_cgraph")->getValue() &&
+        true==options->findBool("nl_presolve")->getValue()) {
+      nlhand = (NlPresHandlerPtr) new NlPresHandler(env_, oinst_);
+      nlhand->setModFlags(false, true);
+      handlersCopy[i].push_back(nlhand);
+    }
 
     // report name
     env_->getLogger()->msgStream(LogExtraInfo)
@@ -283,57 +300,61 @@ ParQGBranchAndBound* QGPar::createParBab_(UInt numThreads, NodePtr &node,
     }
 
 
-    br = createBrancher_(pCopy[i], handlersCopy[i], lpeCopy[i]);
-    nodePrcssr[i] = (ParPCBProcessorPtr) new ParPCBProcessor(env_, lpeCopy[i], handlersCopy[i]);
-    nodePrcssr[i]->setBrancher(br);
-    parNodeRlxr[i] = (ParNodeIncRelaxerPtr) new ParNodeIncRelaxer(env_, handlersCopy[i]);
-    if (i==0) {
-      node = (NodePtr) new Node ();
-      relCopy[0] = parNodeRlxr[0]->createRootRelaxation(node, solPool, prune);
+    br = createBrancher_(handlersCopy[i], eCopy[i]);
+    relCopy[i] = (RelaxationPtr) new Relaxation(oinst_, env_);
+    relCopy[i]->calculateSize();
+    if (options->findBool("use_native_cgraph")->getValue() ||
+        relCopy[i]->isQP() || relCopy[i]->isQuadratic()) {
+      relCopy[i]->setNativeDer();
     } else {
-      relCopy[i] = (RelaxationPtr) new Relaxation(relCopy[0], env_);
-      parNodeRlxr[i]->setRelaxation(relCopy[i]);
-      qg_hand->setRelaxation(relCopy[i]);
-      qg_hand->setObjVar();
+      relCopy[i]->setJacobian(oinst_->getJacobian());
+      relCopy[i]->setHessian(oinst_->getHessian());
     }
-    relCopy[i]->setProblem(pCopy[i]);
+
+    nodePrcssr[i] = (ParPCBProcessorPtr) new ParPCBProcessor(env_, eCopy[i], handlersCopy[i]);
+    nodePrcssr[i]->setBrancher(br);
+    
+    parNodeRlxr[i] = (ParNodeIncRelaxerPtr) new ParNodeIncRelaxer(env_, handlersCopy[i]);
     parNodeRlxr[i]->setModFlag(false);
-    parNodeRlxr[i]->setEngine(lpeCopy[i]);
+    parNodeRlxr[i]->setRelaxation(relCopy[i]);
+    parNodeRlxr[i]->setEngine(eCopy[i]);
   }
   
   // when using heuristic, check if engine copy[0] should be cleared etc.
   //if (options->findBool("pardivheur")->getValue()) {
   //  ParMINLPDivingPtr div_heur;
-  //  if (options->findBool("divheurLP")->getValue()) {
-  //    RelaxationPtr lp = (RelaxationPtr) new Relaxation(relCopy[0], env_);
-  //    lp->setNativeDer();
-  //    div_heur = (ParMINLPDivingPtr) new ParMINLPDiving(env_, lp, lpeCopy[0]);
-  //    div_heur->setAltEngine(eCopy[0]);
-  //    div_heur->setOrigProb(pCopy[0]);
+  //  if (true==options->findBool("use_native_cgraph")->getValue() ||
+  //      relCopy[0]->isQP() || relCopy[0]->isQuadratic()) {
+  //    oinst_->setNativeDer();
   //  }
-  //  else {
-  //    div_heur = (ParMINLPDivingPtr) new ParMINLPDiving(env_, pCopy[0], eCopy[0]);
-  //  }
+  //  div_heur = (ParMINLPDivingPtr) new ParMINLPDiving(env_, oinst_, eCopy[0]);
   //  bab->addPreRootHeur(div_heur);
   //}
+  //if (true == options->findBool("FPump")->getValue()) {
+  //  EngineFactory efac(env_);
+  //  EnginePtr lpe = efac.getLPEngine();
+  //  //EnginePtr nlpe = e->emptyCopy();
+  //  LinFeasPumpPtr lin_feas_pump = (LinFeasPumpPtr) 
+  //    new LinFeasPump(env_, oinst_, eCopy[0], lpe);
+  //  bab->addPreRootHeur(lin_feas_pump);
+  //}
   if (env_->getOptions()->findBool("prerootheur")->getValue() == true) {
-    if(env_->getOptions()->findBool("samplingheur")->getValue() == true) {
+    if (env_->getOptions()->findBool("samplingheur")->getValue() == true) {
       SamplingHeurPtr s_heur = (SamplingHeurPtr) new SamplingHeur(env_, oinst_);
       bab->addPreRootHeur(s_heur);
     }
 
-    if(env_->getOptions()->findBool("fixvarsheur")->getValue() == true) {
+    if (env_->getOptions()->findBool("fixvarsheur")->getValue() == true) {
       FixVarsHeurPtr f_heur = (FixVarsHeurPtr) new FixVarsHeur(env_, oinst_);
       f_heur->setHandlers(handlersCopy[0]);
       bab->addPreRootHeur(f_heur);
     }
-  }
+  } 
   return bab;
 }
 
 
-BrancherPtr QGPar::createBrancher_(ProblemPtr p, HandlerVector handlers,
-                           EnginePtr e)
+BrancherPtr BnbPar::createBrancher_(HandlerVector handlers, EnginePtr e)
 {
   BrancherPtr br = 0;
   UInt t;
@@ -342,13 +363,13 @@ BrancherPtr QGPar::createBrancher_(ProblemPtr p, HandlerVector handlers,
     ReliabilityBrancherPtr rel_br;
     rel_br = (ReliabilityBrancherPtr) new ReliabilityBrancher(env_, handlers);
     rel_br->setEngine(e);
-    t = (p->getSize()->ints + p->getSize()->bins)/10;
+    t = (oinst_->getSize()->ints + oinst_->getSize()->bins)/10;
     t = std::max(t, (UInt) 2);
     t = std::min(t, (UInt) 4);
     rel_br->setThresh(t);
     env_->getLogger()->msgStream(LogExtraInfo) << me_ <<
       "setting reliability threshhold to " << t << std::endl;
-    t = (UInt) p->getSize()->ints + p->getSize()->bins/20+2;
+    t = (UInt) oinst_->getSize()->ints + oinst_->getSize()->bins/20+2;
     t = std::min(t, (UInt) 10);
     rel_br->setMaxDepth(t);
     env_->getLogger()->msgStream(LogExtraInfo) << me_ <<
@@ -364,13 +385,13 @@ BrancherPtr QGPar::createBrancher_(ProblemPtr p, HandlerVector handlers,
     ParReliabilityBrancherPtr parRel_br;
     parRel_br = (ParReliabilityBrancherPtr) new ParReliabilityBrancher(env_, handlers);
     parRel_br->setEngine(e);
-    t = (p->getSize()->ints + p->getSize()->bins)/10;
+    t = (oinst_->getSize()->ints + oinst_->getSize()->bins)/10;
     t = std::max(t, (UInt) 2);
     t = std::min(t, (UInt) 4);
     parRel_br->setThresh(t);
     env_->getLogger()->msgStream(LogExtraInfo) << me_ <<
       "setting reliability threshhold to " << t << std::endl;
-    t = (UInt) p->getSize()->ints + p->getSize()->bins/20+2;
+    t = (UInt) oinst_->getSize()->ints + oinst_->getSize()->bins/20+2;
     t = std::min(t, (UInt) 10);
     parRel_br->setMaxDepth(t);
     env_->getLogger()->msgStream(LogExtraInfo) << me_ <<
@@ -398,7 +419,7 @@ BrancherPtr QGPar::createBrancher_(ProblemPtr p, HandlerVector handlers,
   return br;
 }
 
-int QGPar::solve(ProblemPtr p)
+int BnbPar::solve(ProblemPtr p)
 {
   clock_t clockTimeStart = clock();
   OptionDBPtr options = env_->getOptions();
@@ -406,25 +427,22 @@ int QGPar::solve(ProblemPtr p)
   EnginePtr nlp_e = 0;
   LPEnginePtr lp_e = 0; // lp engine
   VarVector* orig_v = 0;
-  ParQGBranchAndBound* parbab = 0;
+  ParBranchAndBound* parbab = 0;
   double wallTimeStart = parbab->getWallTime();  //use Timer: to be done!!!
   PresolverPtr pres = 0;
   UInt numThreads = 0;
   ParNodeIncRelaxerPtr *parNodeRlxr = 0;
   ParPCBProcessorPtr *nodePrcssr = 0; 
 
-  ProblemPtr *pCopy = 0;
   RelaxationPtr *relCopy = 0;
   HandlerVector *handlersCopy = 0;
-  EngineFactory *efac = 0;
-  LPEnginePtr *lpeCopy = 0;
+  //EngineFactory *efac = 0;
   EnginePtr *eCopy = 0;
-  ObjectivePtr oPtr = 0;
-  NodePtr node = 0;
-  bool prune = false;
-  SolutionPoolPtr solPool = 0;
+  //ObjectivePtr oPtr = 0;
+  //NodePtr node = 0;
+  //bool prune = false;
+  //SolutionPoolPtr solPool = 0;
  
-  std::vector<double> lpStats(6,0);
   std::vector<double> nlpStats(9,0);
  
   // handlers
@@ -518,44 +536,53 @@ int QGPar::solve(ProblemPtr p)
   nodePrcssr = new ParPCBProcessorPtr[numThreads];
   parNodeRlxr = new ParNodeIncRelaxerPtr[numThreads];
   relCopy = new RelaxationPtr[numThreads];
-  pCopy = new ProblemPtr[numThreads];
+  //pCopy = new ProblemPtr[numThreads];
   handlersCopy = new HandlerVector[numThreads];
-  efac = new EngineFactory(env_);
-  lpeCopy = new LPEnginePtr[numThreads];
+  //efac = new EngineFactory(env_);
+  //lpeCopy = new LPEnginePtr[numThreads];
   eCopy = new EnginePtr[numThreads];
 
   // If objective is nonlinear add an extra var name eta to move objective to
-  // constraint in ParQGHandlerAdvance
-  pCopy[0] = oinst_->clone(env_);
-  oPtr = oinst_->getObjective();
-  if (!oPtr) {
-    assert(!"No objective function in the problem!");
-  } else if (oPtr->getFunctionType() != Linear &&
-             oPtr->getFunctionType() != Constant) {
-    pCopy[0]->newVariable(-INFINITY,INFINITY,Continuous,"eta");
-  }
+  // constraint in ParBnbHandlerAdvance
+  //pCopy[0] = oinst_->clone(env_);
+  //oPtr = oinst_->getObjective();
+  //if (!oPtr) {
+  //  assert(!"No objective function in the problem!");
+  //} else if (oPtr->getFunctionType() != Linear &&
+  //           oPtr->getFunctionType() != Constant) {
+  //  pCopy[0]->newVariable(-INFINITY,INFINITY,Continuous,"eta");
+  //}
 
-  for(UInt i=0; i < numThreads; ++i) {
-    lpeCopy[i] = efac->getLPEngine();
-    eCopy[i] = nlp_e->emptyCopy();
-    if (i > 0) {
-      pCopy[i] = pCopy[0]->clone(env_);
-    }
-  }
+  //for(UInt i=0; i < numThreads; ++i) {
+  //  lpeCopy[i] = efac->getLPEngine();
+  //  eCopy[i] = nlp_e->emptyCopy();
+  //  if (i > 0) {
+  //    pCopy[i] = pCopy[0]->clone(env_);
+  //  }
+  //}
 
   if (numThreads > 1) {
     env_->getLogger()->msgStream(LogInfo)
-      << "Number of threads = " << numThreads 
-      << ". Requires a thread-safe LP solver." << std::endl;
+      << "**Works in parallel with a thread-safe "
+      << "NLP solver only (e.g. IPOPT with MA97)**" << std::endl;
   } else {
     env_->getLogger()->msgStream(LogInfo)
       << "Number of threads = " << numThreads << std::endl;
   }
 
-  parbab = createParBab_(numThreads, node, relCopy, pCopy, nodePrcssr,
-                        parNodeRlxr, solPool, handlersCopy, lpeCopy, eCopy, prune);
-
-  parbab->parsolveOppor(parNodeRlxr, nodePrcssr, numThreads, prune);
+  if (oinst_->isLinear()) {
+    parbab = createParBab_(numThreads, lp_e, relCopy, nodePrcssr, parNodeRlxr, handlersCopy, eCopy);
+  } else {
+    parbab = createParBab_(numThreads, nlp_e, relCopy, nodePrcssr, parNodeRlxr, handlersCopy, eCopy);
+  }
+  if (true==env_->getOptions()->findBool("bnbpar_deter_mode")->getValue()) {
+    //assert(!"Deterministic mode not available right now!");
+    parbab->parsolveSync(parNodeRlxr, nodePrcssr, numThreads);
+  } else if (true==env_->getOptions()->findBool("bnbpar_oppor_mode")->getValue()) {
+    parbab->parsolveOppor(parNodeRlxr, nodePrcssr, numThreads);
+  } else {
+    parbab->parsolve(parNodeRlxr, nodePrcssr, numThreads);
+  }
   
   
   status_ = parbab->getStatus();
@@ -569,10 +596,8 @@ int QGPar::solve(ProblemPtr p)
   }
  //Take care of important engine statistics
   for (UInt i=0; i < numThreads; i++) {
-    lpeCopy[i]->fillStats(lpStats);
     eCopy[i]->fillStats(nlpStats);
   }
-  writeLPStats_(lpeCopy[0]->getName(), lpStats);
   writeNLPStats_(eCopy[0]->getName(), nlpStats);
   
   //Take care of important handler statistics
@@ -583,14 +608,10 @@ int QGPar::solve(ProblemPtr p)
     //}
   //}
 
-  writeParQGStats_(parbab, numThreads, handlersCopy);
   writeParBnbStatus_(parbab, wallTimeStart, clockTimeStart);
 
 
 CLEANUP:
-  if(lp_e) {
-    delete lp_e;
-  }
   if(nlp_e) {
     delete nlp_e;
   }
@@ -606,14 +627,8 @@ CLEANUP:
          it!=handlersCopy[i].end(); ++it) {
       delete (*it);
     }
-    if (lpeCopy[i]) {
-      delete lpeCopy[i];
-    }
     if (eCopy[i]) {
       delete eCopy[i];
-    }
-    if (pCopy[i]) {
-      delete pCopy[i];
     }
     if (parNodeRlxr[i]) {
       delete parNodeRlxr[i];
@@ -622,9 +637,6 @@ CLEANUP:
     if (nodePrcssr[i]) {
       delete nodePrcssr[i];
     }
-  }
-  if (node) {
-    delete node;
   }
   if (nodePrcssr) {
     delete[] nodePrcssr;
@@ -635,14 +647,8 @@ CLEANUP:
   if (relCopy) {
     delete[] relCopy;
   }
-  if (pCopy) {
-    delete[] pCopy;
-  }
   if (eCopy) {
     delete[] eCopy;
-  }
-  if (handlersCopy) {
-    delete[] lpeCopy;
   }
   if (handlersCopy) {
     delete[] handlersCopy;
@@ -666,7 +672,7 @@ CLEANUP:
   return err;
 }
 
-void QGPar::writeParBnbStatus_(ParQGBranchAndBound *parbab, double wallTimeStart, clock_t clockTimeStart)
+void BnbPar::writeParBnbStatus_(ParBranchAndBound *parbab, double wallTimeStart, clock_t clockTimeStart)
 {
 
   int err = 0;
@@ -704,65 +710,7 @@ void QGPar::writeParBnbStatus_(ParQGBranchAndBound *parbab, double wallTimeStart
   }
 }
 
-
-void QGPar::writeParQGStats_(ParQGBranchAndBound *parbab, UInt numThreads,
-                     HandlerVector handlersCopy[])
-{
-  if (parbab) {
-    const std::string me("ParQGHandlerAdvance: ");
-    UInt nlpSolved = 0, nlpInf = 0, nlpFeas = 0, nlpItLim = 0, numCuts = 0,
-         numLinCuts = 0, numFracCuts = 0;
-    for (UInt i=0; i < numThreads; i++) {
-      for (HandlerVector::iterator it=handlersCopy[i].begin(); it!=handlersCopy[i].end(); ++it) {
-        if ((*it)->getName() == "ParQGHandlerAdvance (Quesada-Grossmann)") {
-          ParQGHandlerAdvancePtr parqgHand = dynamic_cast <ParQGHandlerAdvance*> (*it);
-          nlpSolved += parqgHand->getStats()->nlpS;
-          nlpInf += parqgHand->getStats()->nlpI;
-          nlpFeas += parqgHand->getStats()->nlpF;
-          nlpItLim += parqgHand->getStats()->nlpIL;
-          numCuts += parqgHand->getStats()->cuts;
-          numFracCuts += parqgHand->getStats()->fracCuts;
-          if (i == 0) {
-            numLinCuts += parqgHand->getStats()->rcuts;
-          }
-        }
-      }
-    }
-
-    env_->getLogger()->msgStream(LogInfo)
-      << me_ << "number of nlps solved                       = "
-      << nlpSolved << std::endl
-      << me_ << "number of infeasible nlps                   = "
-      << nlpInf << std::endl
-      << me_ << "number of feasible nlps                     = "
-      << nlpFeas << std::endl
-      << me_ << "number of nlps hit engine iterations limit  = "
-      << nlpItLim << std::endl
-      << me_ << "number of extra root Linearizations         = "
-      << numLinCuts << std::endl
-      << me_ << "number of fractional cuts added             = "
-      << numFracCuts << std::endl
-      << me_ << "number of cuts added                        = "
-      << numCuts << std::endl;
-  }
-}
-
-
-void QGPar::writeLPStats_(std::string name, std::vector<double> stats) {
-  if (stats.size()) {
-    std::string me = me_ + "_" + name + ": ";
-    env_->getLogger()->msgStream(LogExtraInfo)
-    << me <<"total calls            = " << UInt(stats[0]) << std::endl
-    << me <<"strong branching calls = " << UInt(stats[1]) << std::endl
-    << me <<"total time in solving  = " << stats[2] << std::endl
-    << me <<"time in str branching  = " << stats[3] << std::endl
-    << me <<"total iterations       = " << UInt(stats[4]) << std::endl
-    << me <<"strong br iterations   = " << UInt(stats[5]) << std::endl;
-  }
-}
-
-
-void QGPar::writeNLPStats_(std::string name, std::vector<double> stats) {
+void BnbPar::writeNLPStats_(std::string name, std::vector<double> stats) {
   if (stats.size()) {
     std::string me = me_ + "_" + name + ": ";
     env_->getLogger()->msgStream(LogExtraInfo)

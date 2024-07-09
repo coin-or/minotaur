@@ -116,7 +116,9 @@ typedef enum {
   Knapsack,        ///> \sum_{i=1}^n a_i*x_i \leq b, x_i is Binary
   IntegerKnapsack, ///> \sum_{i=1}^n a_i*x_i \leq b, x_i is Integer
   MixedBinary, ///> Linear combination of at least one binary variable with continuous variables
-  General      ///> No specific structure identififed.
+  General,      ///> No specific structure identififed
+  Quad,        ///> Quadratic
+  NonLin       ///>Non-linear
 } ConsType;
 
 /// Different types of variable-bounds.
@@ -252,6 +254,15 @@ typedef enum {
   VbcSubInf = 13, /// subtree is infeasible.
   VbcSubOpt = 6   /// suboptimal.
 } VbcColors;
+
+/// Tags (int) for messages for distributed-memory (MPI) parallel tree-search
+typedef enum {
+  Terminate = 0,  /// Tree fully solved, terminate.
+  NodeFound = 1,  /// Node is available, receive it.
+  Wait = 2,       /// Wait untill further notice.
+  UB = 3,       /// Upper bound is shared.
+  LB = 4,       /// Lower bound is shared.
+} MpiMessageTag;
 
 // Miscellaneous functions related to above types.
 

@@ -20,10 +20,8 @@
 #include "MinotaurConfig.h"
 #include "Operations.h"
 #include "Problem.h"
-#include <unordered_map>
 using namespace Minotaur;
 const std::string Problem::me_ = "Problem: ";
-
 Problem::Problem(EnvPtr env)
   : cons_(0),
     consModed_(false),
@@ -351,7 +349,13 @@ void Problem::classifyCon()
     ConstraintStats stats;
     FunctionPtr f = c->getFunction();
     bool isClassified = false;
-    if(f->getType() == Linear) {
+    if(f->getType() == Quadratic){
+      c->setType(Quad);
+    }
+    else if(f->getType() == Quadratic){
+      c->setType(NonLin);
+    }
+    else if(f->getType() == Linear) {
       LinearFunctionPtr lf = f->getLinearFunction();
       stats.nvars = lf->getNumTerms();
       stats.nposcoefone = 0;
@@ -373,9 +377,9 @@ void Problem::classifyCon()
         VariablePtr v = it->first;
         double wt = it->second;
         if(f->getNumVars() == 2) {
-          if(wt > 0) {
+          if(wt > tol) {
             stats.wt1 = wt;
-          } else if(wt < 0) {
+          } else if(wt < tol) {
             stats.wt2 = wt;
           }
         }
@@ -474,7 +478,7 @@ void Problem::classifyCon()
       }
     }
   }
-  printConstraintStatistics();
+  printConstraintStatistics_();
 }
 
 bool Problem::isAggregation_(ConstraintPtr c)
@@ -648,7 +652,7 @@ bool Problem::isNoSpecificStructure_(ConstraintPtr c)
   return true;
 }
 
-void Problem::printConstraintStatistics()
+void Problem::printConstraintStatistics_()
 {
   logger_->msgStream(LogError)
       << "--------------------------------------------" << std::endl
@@ -684,6 +688,34 @@ void Problem::printConstraintStatistics()
       << size_->countNoSpecificStructure << "     |\n"
       << "--------------------------------------------\n";
 }
+
+// Lock Number Calculation (Not used anywhere)
+
+/*
+void Problem::lockNum_() {
+ std::map<VariablePtr, std::pair<int, int>> Locknumber;
+ for(ConstraintConstIterator citer = cons_.begin(); citer != cons_.end();
+      ++citer) {
+ ConstraintPtr c = *citer;
+ FunctionPtr f = c->getFunction();
+ LinearFunctionPtr lf = f->getLinearFunction();
+ for (VariableGroupConstIterator it = lf->termsBegin(); it != lf->termsEnd(); ++it) {
+  VariablePtr v = it->first;
+  double wt = it->second;
+  if (c->getUb() == c->getLb()) {
+   Locknumber[v].first += 1;  // Increment the count for the upper lock
+   Locknumber[v].second += 1; // Increment the count for the lower lock
+  }else {
+    if (wt > 0) {
+     Locknumber[v].first += 1; // Increment the count for the upper lock
+  }else {
+     Locknumber[v].second += 1; // Increment the count for the lower lock
+    }
+   }
+  }
+ }
+}
+*/
 
 // Does not clone Jacobian and Hessian yet.
 ProblemPtr Problem::clone(EnvPtr env) const
@@ -1537,6 +1569,30 @@ bool Problem::isDebugSolFeas(double atol, double rtol)
     int i;
 
     x = &(*debugSol_)[0]; // convert doublevector * to double array pointer
+    i = 0;
+    for(VariableConstIterator it = vars_.begin(); it != vars_.end(); ++it) {
+      lb = (*it)->getLb();
+      ub = (*it)->getUb();
+      act = x[i];
+      if((act > ub + atol) && (act > ub + fabs(ub) * rtol)) {
+        logger_->msgStream(LogDebug2)
+            << me_ << "variable ub constraint " << (*it)->getName()
+            << " violated by the debug sol."
+            << " activity = " << act << " but ub = " << ub << std::endl;
+        isfeas = false;
+        break;
+      }
+      if((act < lb - atol) && (act < lb - fabs(lb) * rtol)) {
+        logger_->msgStream(LogDebug2)
+            << me_ << "variable lb constraint " << (*it)->getName()
+            << " violated by the debug sol."
+            << " activity = " << act << " but lb = " << lb << std::endl;
+        isfeas = false;
+        break;
+      }
+      ++i;
+    }
+
     for(ConstraintConstIterator it = cons_.begin(); it != cons_.end(); ++it) {
       err = 0;
       act = (*it)->getActivity(x, &err);
@@ -1551,31 +1607,22 @@ bool Problem::isDebugSolFeas(double atol, double rtol)
             << " violated by the debug sol."
             << " activity = " << act << " but ub = " << ub << std::endl;
         isfeas = false;
+        break;
       } else if((act < lb - atol) && (act < lb - fabs(lb) * rtol)) {
         logger_->msgStream(LogError)
             << me_ << "lb constraint " << (*it)->getName()
             << " violated by the debug sol."
             << " activity = " << act << " but lb = " << lb << std::endl;
         isfeas = false;
+        break;
       }
     }
 
-    i = 0;
-    for(VariableConstIterator it = vars_.begin(); it != vars_.end(); ++it) {
-      lb = (*it)->getLb();
-      ub = (*it)->getUb();
-      act = x[i];
-      if((act > ub + atol) && (act > ub + fabs(ub) * rtol)) {
-        logger_->msgStream(LogError)
-            << me_ << "ub constraint " << (*it)->getName()
-            << " violated by the debug sol."
-            << " activity = " << act << " but ub = " << ub << std::endl;
-        isfeas = false;
-      }
-    }
+    act = obj_->eval(x, &err);
+
 
     if(isfeas) {
-      logger_->msgStream(LogDebug)
+      logger_->msgStream(LogDebug1)
           << me_ << "debug solution is feasible" << std::endl;
     }
     return isfeas;

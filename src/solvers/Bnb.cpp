@@ -29,6 +29,7 @@
 #include "LinFeasPump.h"
 #include "MINLPDiving.h"
 #include "MaxFreqBrancher.h"
+#include "MaxInfBrancher.h"
 #include "MaxVioBrancher.h"
 #include "NodeIncRelaxer.h"
 #include "PCBProcessor.h"
@@ -219,6 +220,31 @@ BrancherPtr Bnb::getBrancher_(HandlerVector handlers, EnginePtr e)
             "maxfreq") {
     br = (MaxFreqBrancherPtr) new MaxFreqBrancher(env_, handlers);
   }
+    else if(env_->getOptions()->findString("brancher")->getValue() ==
+            "maxinf") {
+    MaxInfBrancherPtr inf_br;  
+    inf_br = (MaxInfBrancherPtr) new MaxInfBrancher(env_, handlers);
+    inf_br->setEngine(e);
+    t = (oinst_->getSize()->ints + oinst_->getSize()->bins) / 10;
+    t = std::max(t, (UInt)2);
+    t = std::min(t, (UInt)4);
+    inf_br->setThresh(t);
+    env_->getLogger()->msgStream(LogExtraInfo)
+        << me_ << "setting reliability threshhold to " << t << std::endl;
+    t = (UInt)oinst_->getSize()->ints + oinst_->getSize()->bins / 20 + 2;
+    t = std::min(t, (UInt)10);
+    inf_br->setMaxDepth(t);
+    env_->getLogger()->msgStream(LogExtraInfo)
+        << me_ << "setting reliability maxdepth to " << t << std::endl;
+    if(e->getName() == "Filter-SQP") {
+      inf_br->setIterLim(5);
+    }
+    env_->getLogger()->msgStream(LogExtraInfo)
+        << me_
+        << "Inference branching iteration limit = " << inf_br->getIterLim()
+        << std::endl;
+    br = inf_br;
+  }
   env_->getLogger()->msgStream(LogExtraInfo)
       << me_ << "brancher used = " << br->getName() << std::endl;
   return br;
@@ -384,23 +410,28 @@ int Bnb::solve(ProblemPtr p)
   if(options->findBool("display_problem")->getValue() == true) {
     oinst_->write(env_->getLogger()->msgStream(LogNone), 12);
   }
-  if(options->findBool("display_size")->getValue() == true) {
-    oinst_->writeSize(env_->getLogger()->msgStream(LogNone));
-    env_->getLogger()->msgStream(LogInfo)
-        << me_ << "Starting constraint classification\n";
-    oinst_->classifyCon();
-    env_->getLogger()->msgStream(LogInfo)
-        << me_ << "Finished constraint classification\n";
+  
+  if (env_->getOptions()->findInt("log_level")->getValue() >= 3 ) {
+        options->findBool("display_size")->setValue(true);
   }
+  
+  if (options->findBool("display_size")->getValue() == true) {
+    oinst_->writeSize(env_->getLogger()->msgStream(LogNone));
+    env_->getLogger()->msgStream(LogInfo) << me_ << "Starting constraint classification\n";
+    oinst_->classifyCon();
+    env_->getLogger()->msgStream(LogInfo) << me_ << "Finished constraint classification\n";
+  }
+
 #if SPEW
-  if(env_->getOptions()->findInt("log_level")->getValue() == 6) {
-    oinst_->writeSize(env_->getLogger()->msgStream(LogNone));
-    env_->getLogger()->msgStream(LogInfo)
-        << me_ << "Starting constraint classification\n";
-    oinst_->classifyCon();
-    env_->getLogger()->msgStream(LogInfo)
-        << me_ << "Finished constraint classification\n";
-  }
+  //if(env_->getOptions()->findInt("log_level")->getValue() == 3) {
+    //oinst_->writeSize(env_->getLogger()->msgStream(LogNone));
+    //env_->getLogger()->msgStream(LogInfo)
+        //<< me_ << "Starting constraint classification\n";
+    //oinst_->classifyCon();
+    //env_->getLogger()->msgStream(LogInfo)
+      //  << me_ << "Finished constraint classification\n";
+  //}
+
 #endif
   // setup the jacobian and hessian
   if(false == options->findBool("use_native_cgraph")->getValue()) {

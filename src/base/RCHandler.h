@@ -109,17 +109,23 @@ public:
   void writeStats(std::ostream &) const;
   
 private:
+  /// previous best known objective value (for root-node based Reduced Costs)
+  double lastBest_;
+
   /// Pointer to environment's logger
   LoggerPtr logger_;
 
   /// For logging
   static const std::string me_;
 
-  /// Vector of duals of variables of the root relaxation
+  /// Array of duals (reduced costs) of variables of the root relaxation
   double *rootDuals_;
   
   /// root node relaxtion objective value
-  double rootValue_;
+  double rootObj_;
+  
+  /// Array of duals (reduced costs) of variables of the root relaxation
+  double *rootX_;
   
   /// For statistics.
   RCStats *stats_;

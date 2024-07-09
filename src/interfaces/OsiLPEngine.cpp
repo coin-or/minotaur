@@ -280,7 +280,7 @@ void OsiLPEngine::clear() {
 
 void OsiLPEngine::disableStrBrSetup() {
 #if SPEW
-  logger_->msgStream(LogDebug)
+  logger_->msgStream(LogDebug2)
       << me_ << "disabling strong branching." << std::endl;
 #endif
   strBr_ = false;
@@ -292,7 +292,7 @@ EnginePtr OsiLPEngine::emptyCopy() {
 
 void OsiLPEngine::enableStrBrSetup() {
 #if SPEW
-  logger_->msgStream(LogDebug)
+  logger_->msgStream(LogDebug2)
       << me_ << "enabling strong branching." << std::endl;
 #endif
   strBr_ = true;
@@ -584,7 +584,7 @@ EngineStatus OsiLPEngine::solve()
 
   stats_->calls += 1;
 #if SPEW
-  logger_->msgStream(LogDebug)
+  logger_->msgStream(LogDebug2)
       << me_ << "in call number " << stats_->calls << std::endl;
 #endif
 
@@ -635,7 +635,7 @@ EngineStatus OsiLPEngine::solve()
   }
 
 #if SPEW
-  logger_->msgStream(LogDebug)
+  logger_->msgStream(LogDebug2)
       << me_ << "status = " << status_ << std::endl
       << me_ << "solution value = " << sol_->getObjValue() << std::endl
       << me_ << "iterations = " << osilp_->getIterationCount() << std::endl;
