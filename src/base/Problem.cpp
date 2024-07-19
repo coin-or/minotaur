@@ -2258,8 +2258,8 @@ void Problem::writeSize(std::ostream& out) const
       << size_->objLinTerms << "    |" << std::endl;
   out << "| # quadratic terms in objective         " << std::setw(7)
       << size_->objQuadTerms << "    |" << std::endl;
-  out << "  Type of objective           :   " << std::setw(4)
-      << getFunctionTypeString(size_->objType) << "         " << std::endl;
+  out << "| Type of objective:                   " << std::setw(9)
+      << getFunctionTypeString(size_->objType) << "    |" << std::endl;
   out << "-----------------------------------------------------" << std::endl;
 }
 
