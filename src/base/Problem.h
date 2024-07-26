@@ -498,6 +498,8 @@ struct ConstraintStats {
      */
     virtual void resetDer();
 
+    virtual void resConTypCnt();
+
     /**
      * \brief Reverse the sense of a constraint.
      * 

@@ -340,23 +340,31 @@ int Problem::checkConVars() const
   return err;
 }
 
+
 void Problem::classifyCon()
 {
   const double tol = 1e-5;
+  ConstraintPtr c;
+  FunctionPtr f;
+  LinearFunctionPtr lf;
+  bool isClassified;
+
+  resConTypCnt();
+
   for(ConstraintConstIterator citer = cons_.begin(); citer != cons_.end();
       ++citer) {
-    ConstraintPtr c = *citer;
     ConstraintStats stats;
-    FunctionPtr f = c->getFunction();
-    bool isClassified = false;
+    c = *citer;
+    f = c->getFunction();
+    isClassified = false;
     if(f->getType() == Quadratic){
       c->setType(Quad);
-    }
-    else if(f->getType() == Quadratic){
+    } else if(f->getType() == Bilinear){
+      c->setType(Quad);
+    } else if (f->getType() != Constant && f->getType() != Linear) {
       c->setType(NonLin);
-    }
-    else if(f->getType() == Linear) {
-      LinearFunctionPtr lf = f->getLinearFunction();
+    } else if(f->getType() == Linear) {
+      lf = f->getLinearFunction();
       stats.nvars = lf->getNumTerms();
       stats.nposcoefone = 0;
       stats.nnegcoefone = 0;
@@ -393,13 +401,15 @@ void Problem::classifyCon()
         } else if(wt < -tol) {
           ++stats.nnegcoef;
         }
-        if(wt > tol && v->getType() != Binary && v->getType() != Integer) {
+        if(wt > tol && v->getType() != Binary && v->getType() != Integer 
+           && v->getType() != ImplBin && v->getType() != ImplInt) {
           ++stats.nposcont;
         } else if(wt < -tol && v->getType() != Binary &&
-                  v->getType() != Integer) {
+                  v->getType() != Integer && v->getType() != ImplInt 
+                  && v->getType() != ImplBin) {
           ++stats.nnegcont;
         }
-        if(v->getType() == Binary) {
+        if(v->getType() == Binary || v->getType() == ImplBin) {
           if(wt > tol) {
             ++stats.nposbin;
           } else if(wt < -tol) {
@@ -407,7 +417,7 @@ void Problem::classifyCon()
             stats.sumnegwt += abs(wt);
           }
         }
-        if(v->getType() == Integer) {
+        if(v->getType() == Integer || v->getType() == ImplInt) {
           if(wt > tol) {
             ++stats.nposint;
           } else if(wt < -tol) {
@@ -421,7 +431,7 @@ void Problem::classifyCon()
           it2 != lf->termsEnd(); ++it2) {
         double wtn = it2->second;
         VariablePtr vn = it2->first;
-        if(vn->getType() == Binary) {
+        if(vn->getType() == Binary || vn->getType() == ImplBin) {
           if(c->getUb() + sumnegwt == std::abs(wtn)) {
             ++stats.con;
           }
@@ -1998,6 +2008,24 @@ void Problem::resetDer()
 {
   jacobian_ = JacobianPtr();    // NULL.
   hessian_ = HessianOfLagPtr(); // NULL.
+}
+
+void Problem::resConTypCnt()
+{
+    size_->countAggregation = 0;
+    size_->countPrecedence = 0;
+    size_->countVariableBound = 0;
+    size_->countSetPartitioning = 0;
+    size_->countSetPacking = 0;
+    size_->countSetCovering = 0;
+    size_->countCardinality = 0;
+    size_->countInvariantKnapsack = 0;
+    size_->countEquationKnapsack = 0;
+    size_->countBinPacking = 0;
+    size_->countKnapsack = 0;
+    size_->countIntegerKnapsack = 0;
+    size_->countMixedBinary = 0;
+    size_->countNoSpecificStructure = 0;
 }
 
 void Problem::reverseSense(ConstraintPtr cons)
