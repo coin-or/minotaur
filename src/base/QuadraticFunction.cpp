@@ -582,6 +582,29 @@ UInt QuadraticFunction::getNumTerms() const
   return terms_.size(); 
 }
 
+UInt QuadraticFunction::getNumSqTerms() const
+{
+  int sq = 0;
+  for (VariablePairGroupConstIterator it = terms_.begin(); it != terms_.end(); 
+      it++) { 
+    if(it->first.first->getId()==it->first.second->getId()){
+      sq +=1;
+     }
+  }
+  return sq;
+}
+
+UInt QuadraticFunction::getNumBilTerms() const
+{
+  int bil = 0;
+  for (VariablePairGroupConstIterator it = terms_.begin(); it != terms_.end(); 
+      it++) { 
+    if(it->first.first->getId()!=it->first.second->getId()){
+      bil +=1;
+     }
+  }
+  return bil;
+}
 
 UInt QuadraticFunction::getNumVars() const
 { 
@@ -898,7 +921,6 @@ void QuadraticFunction::sortLT_(UInt n, UInt *f, UInt *s, double *c)
   sortLT_(n-pivot-1, f+pivot+1, s+pivot+1, c+pivot+1);
 }
 
-
 void QuadraticFunction::subst(VariablePtr out, VariablePtr in, double rat)
 {
   std::queue <std::pair<VariablePair, double> > newterms;
@@ -907,7 +929,7 @@ void QuadraticFunction::subst(VariablePtr out, VariablePtr in, double rat)
   VariablePtr swap = 0;
 
   vit = varFreq_.find(out);
-  if (vit==varFreq_.end()) {
+  if (vit==varFreq_.end()) { 
     return;
   }
 

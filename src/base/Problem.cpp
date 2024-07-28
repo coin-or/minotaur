@@ -1192,7 +1192,7 @@ void Problem::countConsTypes_()
        nonlinCons = 0;
   UInt consWithLin = 0, consWithBilin = 0, consWithMultilin = 0,
        consWithQuad = 0, consWithNonlin = 0;
-  UInt linTerms = 0, quadTerms = 0;
+  UInt linTerms = 0, quadTerms = 0, bilinTerms = 0, sqTerms = 0;
 
   for(citer = cons_.begin(); citer != cons_.end(); ++citer) {
     cPtr = *citer;
@@ -1221,6 +1221,13 @@ void Problem::countConsTypes_()
     }
     qf = cPtr->getQuadraticFunction();
     if(qf) {
+      if(qf->getNumBilTerms()>0){
+        consWithBilin++;
+        bilinTerms += qf->getNumBilTerms();
+      }
+      if(qf->getNumSqTerms()>0){
+        sqTerms += qf->getNumSqTerms();
+      }
       consWithQuad++;
       quadTerms += qf->getNumTerms();
     }
@@ -1244,6 +1251,8 @@ void Problem::countConsTypes_()
   size_->consWithNonlin = consWithNonlin;
 
   size_->linTerms = linTerms;
+  size_->bilinTerms = bilinTerms;
+  size_->sqTerms = sqTerms;
   size_->quadTerms = quadTerms;
   return;
 }
@@ -2276,6 +2285,10 @@ void Problem::writeSize(std::ostream& out) const
       << size_->consWithQuad << "    |" << std::endl;
   out << "| # linear terms in constraints          " << std::setw(7)
       << size_->linTerms << "    |" << std::endl;
+  out << "| # bilinear terms in constraints        " << std::setw(7)
+      << size_->bilinTerms << "    |" << std::endl;
+  out << "| # square terms in constraints          " << std::setw(7)
+      << size_->sqTerms << "    |" << std::endl;
   out << "| # multilinear terms in constraints     " << std::setw(7)
       << size_->multiLinTerms << "    |" << std::endl;
   out << "| # quadratic terms in constraints       " << std::setw(7)
