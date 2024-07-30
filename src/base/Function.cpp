@@ -44,12 +44,11 @@ Function::Function(LinearFunctionPtr lf, QuadraticFunctionPtr qf)
   qf_(qf)
 {
   if (qf) {
-    // Check whether quadratic is bilinear or quadratic
-    type_ = Bilinear;
+    // Check whether quadratic
     for(VariablePairGroupConstIterator it = qf_->begin(); it != qf_->end(); 
         ++it) {
       if (it->second != 0.0) {        
-        if (it->first.first->getId() == it->first.second->getId()) {
+        if (it->first.first->getId() == it->first.second->getId() || it->first.first->getId() != it->first.second->getId()) {
           type_ = Quadratic;
           break;
         }

@@ -146,7 +146,7 @@ int SimplexQuadCutGen::generateCuts(RelaxationPtr rel, ConstSolutionPtr sol,
         ++cit) {
       c = *cit;
       ftype = c->getFunction()->getType();
-      if(ftype != Quadratic && ftype != Bilinear) {
+      if(ftype != Quadratic ) {
         // Linear constraints should be satisfied thus no cuts will be generated
         continue;
       }

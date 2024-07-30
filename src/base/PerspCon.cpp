@@ -1833,7 +1833,6 @@ void PerspCon::findPRCons()
       break;
     case Nonlinear:
     case Quadratic:
-    case Bilinear:
     case Polynomial:
     case Multilinear:
       detect_();

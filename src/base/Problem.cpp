@@ -359,8 +359,6 @@ void Problem::classifyCon()
     isClassified = false;
     if(f->getType() == Quadratic){
       c->setType(Quad);
-    } else if(f->getType() == Bilinear){
-      c->setType(Quad);
     } else if (f->getType() != Constant && f->getType() != Linear) {
       c->setType(NonLin);
     } else if(f->getType() == Linear) {
@@ -1201,9 +1199,6 @@ void Problem::countConsTypes_()
     case Linear:
       linCons++;
       break;
-    case Bilinear:
-      bilinCons++;
-      break;
     case Multilinear:
       multilinCons++;
       break;
@@ -1403,13 +1398,13 @@ ProblemType Problem::findType()
      (Constant == size_->objType || Linear == size_->objType)) {
     return (size_->bins + size_->ints > 0) ? MILP : LP;
   } else if(size_->cons == size_->linCons &&
-            (Quadratic == size_->objType || Bilinear == size_->objType)) {
+            (Quadratic == size_->objType )) {
     return (size_->bins + size_->ints > 0) ? MIQP : QP;
 
   } else if(size_->cons ==
                 size_->linCons + size_->bilinCons + size_->quadCons &&
-            (Quadratic == size_->objType || Bilinear == size_->objType ||
-             Linear == size_->objType || Constant == size_->objType)) {
+            (Quadratic == size_->objType ||Linear == size_->objType || 
+            Constant == size_->objType)) {
     return (size_->bins + size_->ints > 0) ? MIQCQP : QCQP;
   } else if(isPolyp_()) {
     return (size_->bins + size_->ints > 0) ? MIPOLYP : POLYP;
@@ -1695,7 +1690,7 @@ bool Problem::isQP()
       return false;
     } else if((size_->linCons == size_->cons) &&
               (Constant == size_->objType || Linear == size_->objType ||
-               Quadratic == size_->objType || Bilinear == size_->objType)) {
+               Quadratic == size_->objType )) {
       return true;
     }
   }
@@ -1710,7 +1705,7 @@ bool Problem::isQuadratic()
     } else if((size_->linCons + size_->quadCons + size_->bilinCons ==
                size_->cons) &&
               (Constant == size_->objType || Linear == size_->objType ||
-               Quadratic == size_->objType || Bilinear == size_->objType)) {
+               Quadratic == size_->objType)) {
       return true;
     }
   }
@@ -2267,8 +2262,6 @@ void Problem::writeSize(std::ostream& out) const
       << size_->SOS1Cons << "    |" << std::endl;
   out << "| # SOS2 constraints                     " << std::setw(7)
       << size_->SOS2Cons << "    |" << std::endl;
-  out << "| # bilinear constraints                 " << std::setw(7)
-      << size_->bilinCons << "    |" << std::endl;
   out << "| # multilinear constraints              " << std::setw(7)
       << size_->multilinCons << "    |" << std::endl;
   out << "| # quadratic constraints                " << std::setw(7)

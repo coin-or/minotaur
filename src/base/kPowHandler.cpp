@@ -685,8 +685,7 @@ bool kPowHandler::isFeasible(ConstSolutionPtr sol, RelaxationPtr, bool&,
   }
 
   obj = orig_->getObjective();
-  if(obj->getFunctionType() == Quadratic ||
-     obj->getFunctionType() == Bilinear) {
+  if(obj->getFunctionType() == Quadratic) {
     act = obj->eval(x, &error);
     if(error == 0) {
       vio = fabs(sol->getObjValue() - act);
@@ -2564,7 +2563,7 @@ bool kPowHandler::tightenSimple_(bool* changed)
     implUb = 0.0;
     count_inf_lb = 0;
     count_inf_ub = 0;
-    if(c->getFunctionType() == Quadratic || c->getFunctionType() == Bilinear) {
+    if(c->getFunctionType() == Quadratic) {
       // delete the constraint if unbounded on both sides
       clb = c->getLb();
       cub = c->getUb();
