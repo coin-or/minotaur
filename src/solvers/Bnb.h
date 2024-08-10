@@ -14,6 +14,7 @@
 #define BNB_H
 
 #include "Types.h"
+#include "AMPLInterface.h"
 #include "BranchAndBound.h"
 #include "Brancher.h"
 #include "Presolver.h"
@@ -32,6 +33,8 @@ public:
 
   /// Destroy.
   ~Bnb();
+  
+  void doSetup();
 
   /// show help messages
   void showHelp() const;
@@ -65,6 +68,7 @@ private:
   int getEngine_(Engine **e);
   PresolverPtr presolve_(HandlerVector &handlers);
   int writeBnbStatus_(BranchAndBound *bab);
+  void setInitialOptions_();
 };
 }
 #endif

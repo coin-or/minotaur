@@ -26,6 +26,7 @@ int main(int argc, char** argv)
   std::string dname, fname;
   ProblemPtr p = 0;
  
+  bnb.doSetup();
   env->startTimer(err);
   if (err) {
     goto CLEANUP;
