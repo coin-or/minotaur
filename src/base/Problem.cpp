@@ -1199,9 +1199,6 @@ void Problem::countConsTypes_()
     case Linear:
       linCons++;
       break;
-    case Multilinear:
-      multilinCons++;
-      break;
     case Quadratic:
       quadCons++;
       break;
@@ -2262,8 +2259,6 @@ void Problem::writeSize(std::ostream& out) const
       << size_->SOS1Cons << "    |" << std::endl;
   out << "| # SOS2 constraints                     " << std::setw(7)
       << size_->SOS2Cons << "    |" << std::endl;
-  out << "| # multilinear constraints              " << std::setw(7)
-      << size_->multilinCons << "    |" << std::endl;
   out << "| # quadratic constraints                " << std::setw(7)
       << size_->quadCons << "    |" << std::endl;
   out << "| # nonlinear constraints                " << std::setw(7)
@@ -2272,8 +2267,6 @@ void Problem::writeSize(std::ostream& out) const
       << size_->consWithLin << "    |" << std::endl;
   out << "| # constraints with bilinear terms      " << std::setw(7)
       << size_->consWithBilin << "    |" << std::endl;
-  out << "| # constraints with multilinear terms   " << std::setw(7)
-      << size_->consWithMultilin << "    |" << std::endl;
   out << "| # constraints with quadratic terms     " << std::setw(7)
       << size_->consWithQuad << "    |" << std::endl;
   out << "| # linear terms in constraints          " << std::setw(7)
@@ -2282,8 +2275,6 @@ void Problem::writeSize(std::ostream& out) const
       << size_->bilinTerms << "    |" << std::endl;
   out << "| # square terms in constraints          " << std::setw(7)
       << size_->sqTerms << "    |" << std::endl;
-  out << "| # multilinear terms in constraints     " << std::setw(7)
-      << size_->multiLinTerms << "    |" << std::endl;
   out << "| # quadratic terms in constraints       " << std::setw(7)
       << size_->quadTerms << "    |" << std::endl;
   out << "| # objectives                           " << std::setw(7)
