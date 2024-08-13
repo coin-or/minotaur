@@ -465,6 +465,7 @@ int MultiStart::solve(ProblemPtr p)
   }
   if (env_->getOptions()->findInt("log_level")->getValue() >= 3 ) {
         options->findBool("display_size")->setValue(true);
+        options->findBool("display_presolved_size")->setValue(true);
   }
   
   if (options->findBool("display_size")->getValue() == true) {

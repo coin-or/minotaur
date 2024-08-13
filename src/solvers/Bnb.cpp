@@ -435,6 +435,7 @@ int Bnb::solve(ProblemPtr p)
   
   if (env_->getOptions()->findInt("log_level")->getValue() >= 3 ) {
         options->findBool("display_size")->setValue(true);
+        options->findBool("display_presolved_size")->setValue(true);
   }
   
   if (options->findBool("display_size")->getValue() == true) {
@@ -494,9 +495,7 @@ int Bnb::solve(ProblemPtr p)
         << me_ << "Solve option is set to 0, Stopping further processing."
         << std::endl;
     goto CLEANUP; // Return early to stop processing.
-  }
-
-  oinst_->classifyCon();
+  } 
 
   err = getEngine_(&engine);
   if(err) {
