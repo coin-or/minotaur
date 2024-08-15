@@ -250,6 +250,14 @@ BrancherPtr Bnb::getBrancher_(HandlerVector handlers, EnginePtr e)
   return br;
 }
 
+void Bnb::doSetup()
+{
+  int err = 0;
+  env_->startTimer(err);
+
+  setInitialOptions_();
+}
+
 int Bnb::getEngine_(Engine** e)
 {
   EngineFactory efac(env_);
@@ -350,6 +358,20 @@ PresolverPtr Bnb::presolve_(HandlerVector& handlers)
   return pres;
 }
 
+void Bnb::setInitialOptions_()
+{
+  OptionDBPtr options = env_->getOptions();
+  options->findString("interface_type")->setValue("AMPL");
+  //options->findBool("presolve")->setValue(true);
+  //options->findBool("nl_presolve")->setValue(true);
+  //options->findBool("lin_presolve")->setValue(true);
+  //options->findString("brancher")->setValue("parRel");
+  //options->findString("nlp_engine")->setValue("IPOPT");
+  //options->findBool("cgtoqf")->setValue(true);
+  //options->findBool("separability")->setValue(true);
+  //options->findBool("simplex_cut")->setValue(true);
+}
+
 void Bnb::showHelp() const
 {
   env_->getLogger()->errStream()
@@ -415,6 +437,7 @@ int Bnb::solve(ProblemPtr p)
   
   if (env_->getOptions()->findInt("log_level")->getValue() >= 3 ) {
         options->findBool("display_size")->setValue(true);
+        options->findBool("display_presolved_size")->setValue(true);
   }
   
   if (options->findBool("display_size")->getValue() == true) {
@@ -474,9 +497,7 @@ int Bnb::solve(ProblemPtr p)
         << me_ << "Solve option is set to 0, Stopping further processing."
         << std::endl;
     goto CLEANUP; // Return early to stop processing.
-  }
-
-  oinst_->classifyCon();
+  } 
 
   err = getEngine_(&engine);
   if(err) {

@@ -359,8 +359,6 @@ void Problem::classifyCon()
     isClassified = false;
     if(f->getType() == Quadratic){
       c->setType(Quad);
-    } else if(f->getType() == Bilinear){
-      c->setType(Quad);
     } else if (f->getType() != Constant && f->getType() != Linear) {
       c->setType(NonLin);
     } else if(f->getType() == Linear) {
@@ -1192,7 +1190,7 @@ void Problem::countConsTypes_()
        nonlinCons = 0;
   UInt consWithLin = 0, consWithBilin = 0, consWithMultilin = 0,
        consWithQuad = 0, consWithNonlin = 0;
-  UInt linTerms = 0, quadTerms = 0;
+  UInt linTerms = 0, quadTerms = 0, bilinTerms = 0, sqTerms = 0;
 
   for(citer = cons_.begin(); citer != cons_.end(); ++citer) {
     cPtr = *citer;
@@ -1200,12 +1198,6 @@ void Problem::countConsTypes_()
     case Constant: // TODO: for now consider it linear
     case Linear:
       linCons++;
-      break;
-    case Bilinear:
-      bilinCons++;
-      break;
-    case Multilinear:
-      multilinCons++;
       break;
     case Quadratic:
       quadCons++;
@@ -1221,6 +1213,13 @@ void Problem::countConsTypes_()
     }
     qf = cPtr->getQuadraticFunction();
     if(qf) {
+      if(qf->getNumBilTerms()>0){
+        consWithBilin++;
+        bilinTerms += qf->getNumBilTerms();
+      }
+      if(qf->getNumSqTerms()>0){
+        sqTerms += qf->getNumSqTerms();
+      }
       consWithQuad++;
       quadTerms += qf->getNumTerms();
     }
@@ -1244,6 +1243,8 @@ void Problem::countConsTypes_()
   size_->consWithNonlin = consWithNonlin;
 
   size_->linTerms = linTerms;
+  size_->bilinTerms = bilinTerms;
+  size_->sqTerms = sqTerms;
   size_->quadTerms = quadTerms;
   return;
 }
@@ -1394,13 +1395,13 @@ ProblemType Problem::findType()
      (Constant == size_->objType || Linear == size_->objType)) {
     return (size_->bins + size_->ints > 0) ? MILP : LP;
   } else if(size_->cons == size_->linCons &&
-            (Quadratic == size_->objType || Bilinear == size_->objType)) {
+            (Quadratic == size_->objType )) {
     return (size_->bins + size_->ints > 0) ? MIQP : QP;
 
   } else if(size_->cons ==
                 size_->linCons + size_->bilinCons + size_->quadCons &&
-            (Quadratic == size_->objType || Bilinear == size_->objType ||
-             Linear == size_->objType || Constant == size_->objType)) {
+            (Quadratic == size_->objType ||Linear == size_->objType || 
+            Constant == size_->objType)) {
     return (size_->bins + size_->ints > 0) ? MIQCQP : QCQP;
   } else if(isPolyp_()) {
     return (size_->bins + size_->ints > 0) ? MIPOLYP : POLYP;
@@ -1686,7 +1687,7 @@ bool Problem::isQP()
       return false;
     } else if((size_->linCons == size_->cons) &&
               (Constant == size_->objType || Linear == size_->objType ||
-               Quadratic == size_->objType || Bilinear == size_->objType)) {
+               Quadratic == size_->objType )) {
       return true;
     }
   }
@@ -1701,7 +1702,7 @@ bool Problem::isQuadratic()
     } else if((size_->linCons + size_->quadCons + size_->bilinCons ==
                size_->cons) &&
               (Constant == size_->objType || Linear == size_->objType ||
-               Quadratic == size_->objType || Bilinear == size_->objType)) {
+               Quadratic == size_->objType)) {
       return true;
     }
   }
@@ -2258,10 +2259,6 @@ void Problem::writeSize(std::ostream& out) const
       << size_->SOS1Cons << "    |" << std::endl;
   out << "| # SOS2 constraints                     " << std::setw(7)
       << size_->SOS2Cons << "    |" << std::endl;
-  out << "| # bilinear constraints                 " << std::setw(7)
-      << size_->bilinCons << "    |" << std::endl;
-  out << "| # multilinear constraints              " << std::setw(7)
-      << size_->multilinCons << "    |" << std::endl;
   out << "| # quadratic constraints                " << std::setw(7)
       << size_->quadCons << "    |" << std::endl;
   out << "| # nonlinear constraints                " << std::setw(7)
@@ -2270,14 +2267,14 @@ void Problem::writeSize(std::ostream& out) const
       << size_->consWithLin << "    |" << std::endl;
   out << "| # constraints with bilinear terms      " << std::setw(7)
       << size_->consWithBilin << "    |" << std::endl;
-  out << "| # constraints with multilinear terms   " << std::setw(7)
-      << size_->consWithMultilin << "    |" << std::endl;
   out << "| # constraints with quadratic terms     " << std::setw(7)
       << size_->consWithQuad << "    |" << std::endl;
   out << "| # linear terms in constraints          " << std::setw(7)
       << size_->linTerms << "    |" << std::endl;
-  out << "| # multilinear terms in constraints     " << std::setw(7)
-      << size_->multiLinTerms << "    |" << std::endl;
+  out << "| # bilinear terms in constraints        " << std::setw(7)
+      << size_->bilinTerms << "    |" << std::endl;
+  out << "| # square terms in constraints          " << std::setw(7)
+      << size_->sqTerms << "    |" << std::endl;
   out << "| # quadratic terms in constraints       " << std::setw(7)
       << size_->quadTerms << "    |" << std::endl;
   out << "| # objectives                           " << std::setw(7)

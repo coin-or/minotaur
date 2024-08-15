@@ -88,6 +88,12 @@ namespace Minotaur {
     /// Number of terms in the all linear functions in the constraints.
     UInt linTerms;
 
+    /// Number of bilinear terms in the all Quadratic functions in the constraints.
+    UInt bilinTerms;
+
+    /// Number of square terms in the all Quadratic functions in the constraints.
+    UInt sqTerms;
+
     /// Number of terms in the all multilinear functions in the constraints.
     UInt multiLinTerms;
 

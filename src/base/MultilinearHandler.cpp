@@ -612,8 +612,8 @@ MultilinearHandler::makeGroupedConvexHull(RelaxationPtr relaxation, bool &should
 
     // Check the type of the function
     // - Linear: add the constraint to the relaxation
-    // - Bilinear, Quadratic, and Polynomial: mark the constraint
-    if (ft == Quadratic || ft == Bilinear || ft == Polynomial) {
+    // - Quadratic, and Polynomial: mark the constraint
+    if (ft == Quadratic || ft == Polynomial) {
       mlcid.push_back((*it)->getId());
       //c_list[cix] = true;
     }
@@ -1453,7 +1453,7 @@ MultilinearHandler::makeMcCormick(RelaxationPtr relaxation, bool &should_prune)
     // Check the type of the function
     // - Linear: add the constraint to the relaxation
     // - Bilinear, Quadratic, and Polynomial: mark the constraint
-    if (ft == Quadratic || ft == Bilinear || ft == Polynomial) {
+    if (ft == Quadratic || ft == Polynomial) {
       mlcid.push_back((*it)->getId());
       //c_list[cix] = true;
     }

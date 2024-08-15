@@ -228,12 +228,6 @@ namespace Minotaur {
        */
       double eval(const double *x) const;
 
-
-
-
-
-
-
       /// Compute bounds for using in Presolver
       void computeBounds(double *l, double *u);
 
@@ -309,6 +303,12 @@ namespace Minotaur {
 
       /// Get the number of terms in this expression
       UInt getNumTerms() const;
+      
+      /// Get the number of bilinear terms in the expression
+      UInt getNumBilTerms() const;
+
+      /// Get the number of square terms in the expression
+      UInt getNumSqTerms() const;
 
       /// Get the number of variables in this expression
       UInt getNumVars() const;

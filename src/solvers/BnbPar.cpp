@@ -428,7 +428,8 @@ int BnbPar::solve(ProblemPtr p)
   LPEnginePtr lp_e = 0; // lp engine
   VarVector* orig_v = 0;
   ParBranchAndBound* parbab = 0;
-  double wallTimeStart = parbab->getWallTime();  //use Timer: to be done!!!
+  // double wallTimeStart = parbab->getWallTime();  //use Timer: to be done!!!
+  double wallTimeStart = 0.0;
   PresolverPtr pres = 0;
   UInt numThreads = 0;
   ParNodeIncRelaxerPtr *parNodeRlxr = 0;
@@ -463,6 +464,11 @@ int BnbPar::solve(ProblemPtr p)
   if(options->findBool("display_problem")->getValue() == true) {
     oinst_->write(env_->getLogger()->msgStream(LogNone), 12);
   }
+  
+  if (env_->getOptions()->findInt("log_level")->getValue() >= 3 ) {
+        options->findBool("display_size")->setValue(true);
+        options->findBool("display_presolved_size")->setValue(true);
+  }  
 
   if(options->findBool("display_size")->getValue() == true) {
     oinst_->writeSize(env_->getLogger()->msgStream(LogNone));
@@ -575,6 +581,8 @@ int BnbPar::solve(ProblemPtr p)
   } else {
     parbab = createParBab_(numThreads, nlp_e, relCopy, nodePrcssr, parNodeRlxr, handlersCopy, eCopy);
   }
+  //edit wtime
+  wallTimeStart = timer->query();  // Use the Timer object to get the current wall time
   if (true==env_->getOptions()->findBool("bnbpar_deter_mode")->getValue()) {
     //assert(!"Deterministic mode not available right now!");
     parbab->parsolveSync(parNodeRlxr, nodePrcssr, numThreads);
@@ -678,6 +686,9 @@ void BnbPar::writeParBnbStatus_(ParBranchAndBound *parbab, double wallTimeStart,
   int err = 0;
 
   if (parbab) {
+ 
+  
+ //-----------------------------------------------------------------------------------------------
     env_->getLogger()->msgStream(LogInfo)
       << me_ << std::fixed << std::setprecision(4) 
       << "best solution value = " << objSense_*parbab->getUb() << std::endl
@@ -693,6 +704,7 @@ void BnbPar::writeParBnbStatus_(ParBranchAndBound *parbab, double wallTimeStart,
       << (double)(clock() - clockTimeStart)/CLOCKS_PER_SEC << std::endl
       << me_ << "status of branch-and-bound: " 
       << getSolveStatusString(parbab->getStatus()) << std::endl;
+      
     env_->stopTimer(err); assert(0==err);
   } else {
     env_->getLogger()->msgStream(LogInfo)
@@ -706,6 +718,9 @@ void BnbPar::writeParBnbStatus_(ParBranchAndBound *parbab, double wallTimeStart,
       << env_->getTime(err) << std::endl 
       << me_ << "status of branch-and-bound: " 
       << getSolveStatusString(NotStarted) << std::endl;
+      
+
+	//--------------------------------------------------------------------------------------
     env_->stopTimer(err); assert(0==err);
   }
 }

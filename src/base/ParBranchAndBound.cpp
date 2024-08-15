@@ -481,24 +481,81 @@ void ParBranchAndBound::showStatus_(bool current_uncounted)
 }
 
 
+// void ParBranchAndBound::showParStatus_(UInt off, double treeLb,
+//                                        double WallTimeStart, UInt i)
+// {
+//   if (timer_->query()-stats_->updateTime > options_->logInterval) {
+//     logger_->msgStream(LogInfo) 
+//       << me_ 
+//       << std::fixed
+//       << std::setprecision(1)  << "time PAR= " << getWallTime() - WallTimeStart
+//       << std::setprecision(4)  << " lb = "  << treeLb
+//       << std::setprecision(4)  << " ub = "  << tm_->getUb()
+//       << std::setprecision(2)  << " gap% = " << tm_->getPerGapPar(treeLb)
+//       << " nodes processed = " << tm_->getSize()-tm_->getActiveNodes()-off 
+//       << " left = " << tm_->getActiveNodes()+off
+//       << " thread " << i
+//       << std::endl;
+//     stats_->updateTime = timer_->query();
+//   }
+// }
+//updating showParstatus
 void ParBranchAndBound::showParStatus_(UInt off, double treeLb,
-                                       double WallTimeStart, UInt i)
+                                      double WallTimeStart, UInt i)
 {
-  if (timer_->query()-stats_->updateTime > options_->logInterval) {
-    logger_->msgStream(LogInfo) 
-      << me_ 
-      << std::fixed
-      << std::setprecision(1)  << "time = " << getWallTime() - WallTimeStart
-      << std::setprecision(4)  << " lb = "  << treeLb
-      << std::setprecision(4)  << " ub = "  << tm_->getUb()
-      << std::setprecision(2)  << " gap% = " << tm_->getPerGapPar(treeLb)
-      << " nodes processed = " << tm_->getSize()-tm_->getActiveNodes()-off 
-      << " left = " << tm_->getActiveNodes()+off
-      << " thread " << i
-      << std::endl;
-    stats_->updateTime = timer_->query();
-  }
-}
+ static bool header = false; // Ensure the header for the log table is printed only once
+ static bool firstRow = true; // Ensure the initial row with default values is printed only once
+
+
+ if (timer_->query() - stats_->updateTime > options_->logInterval) {
+   if (!header) {
+     logger_->msgStream(LogInfo) << " " << std::endl;
+     logger_->msgStream(LogInfo)
+         << "---------------------------------------------------------------------------------------" << std::endl;
+     logger_->msgStream(LogInfo)
+         << std::setw(7) << "CPU(s)" << std::setw(10) << "Wall(s)"
+         << std::setw(16) << "LB" << std::setw(13) << "UB" << std::setw(12)
+         << "Gap%" << std::setw(15) << "   Nodes-Proc" << std::setw(14)
+         << "   Nodes-Rem" << std::endl;
+     logger_->msgStream(LogInfo)
+         << "---------------------------------------------------------------------------------------" << std::endl;
+     header = true;
+   }
+
+
+   if (firstRow) {
+     // Print the initial row with default values
+     logger_->msgStream(LogInfo)
+         << std::setw(6) << "0.0"
+         << std::setw(10) << "0.0"
+         << std::setw(17) << "-inf"
+         << std::setw(13) << "inf"
+         << std::setw(12) << "inf"
+         << std::setw(15) << "0"
+         << std::setw(14) << "0"
+         << std::endl;
+     firstRow = false;
+   }
+
+
+   logger_->msgStream(LogInfo)
+      //  << std::setw(6) << i
+      //   << std::setw(10) << std::fixed << std::setprecision(1) << getWallTime() - WallTimeStart
+      << std::setw(6)  << std::fixed << std::setprecision(1) << timer_->query()
+       << std::setw(10) << std::fixed << std::setprecision(1) << timer_->wQuery()
+       << std::setw(17) << std::setprecision(4) << std::scientific << treeLb
+       << std::setw(13) << std::setprecision(4) << std::scientific << tm_->getUb()
+       << std::setw(12) << std::setprecision(2) << std::scientific << tm_->getPerGapPar(treeLb)
+       << std::setw(15) << tm_->getSize() - tm_->getActiveNodes() - off
+       << std::setw(14) << tm_->getActiveNodes() + off
+       << std::endl;
+      
+
+
+   stats_->updateTime = timer_->query();
+ }
+ }
+
 
 
 int ParBranchAndBound::strToInt(std::string str)
@@ -1387,6 +1444,8 @@ void ParBranchAndBound::parsolve(ParNodeIncRelaxerPtr parNodeRlxr[],
   }
 
   //if (iterMode) {
+  logger_->msgStream(LogInfo)
+        << "---------------------------------------------------------------------------------------" << std::endl;
   logger_->msgStream(LogInfo) << me_ << "iterations = " << iterCount
       << std::endl;
   //}
@@ -1740,7 +1799,7 @@ void ParBranchAndBound::parsolveSync(ParNodeIncRelaxerPtr parNodeRlxr[],
         }
         showParStatus_(nodeCount, treeLb, wallTimeStart, 0);
 
-        // update stopping conditions
+        // update stopping conditions for par
         if (nodeCount == 0 && !(tm_->anyActiveNodesLeft())) {
           tm_->updateLb();
           if (tm_->getUb() <= -INFINITY) {
@@ -1770,6 +1829,8 @@ void ParBranchAndBound::parsolveSync(ParNodeIncRelaxerPtr parNodeRlxr[],
       } //omp master/single ended
     }   //parallel region ends
   }     //while ends
+  logger_->msgStream(LogInfo)
+        << "---------------------------------------------------------------------------------------" << std::endl;
   logger_->msgStream(LogInfo) << me_ << "stopping branch-and-bound"
     << std::endl
     << me_ << "nodes processed = " << stats_->nodesProc << std::endl

@@ -65,7 +65,6 @@ typedef enum { Minimize, Maximize } ObjectiveType;
 typedef enum {
   Constant,
   Linear,
-  Bilinear,
   Multilinear,
   Quadratic,
   Nonlinear,
