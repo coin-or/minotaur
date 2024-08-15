@@ -59,6 +59,12 @@ void BoundsOnSquare(ConstVariablePtr x1, double& lb, double& ub);
 void BoundsOnSquare(const double x_lb, const double y_lb, double& lb,
                     double& ub);
 
+/** 
+ * Comparison to sort constraints in the increasing number of number of
+ * variables they have.
+ */
+bool CompareLen(Constraint *c1, Constraint *c2);
+
 /**
    * Get gcd(d1, d2). Returns d2 if d1 is zero. Returns d1 if d2 is zero.
    * Otherwise, returns largest x > 0 s.t. d1/x and d2/x are integers.

@@ -405,6 +405,8 @@ int Bnb::solve(ProblemPtr p)
   int err = 0;
   OptionDBPtr options = env_->getOptions();
 
+  env_->initRand();
+
   oinst_ = p;
   oinst_->calculateSize();
   if(options->findBool("display_problem")->getValue() == true) {

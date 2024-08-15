@@ -17,6 +17,7 @@
 #include <sstream>
 
 #include "MinotaurConfig.h"
+#include "Constraint.h"
 #include "Operations.h"
 #include "Types.h"
 #include "Variable.h"
@@ -253,6 +254,11 @@ void Minotaur::displayArray(const double* point, UInt n, std::ostream& out)
     out << *point << "\t";
   }
   out << std::endl;
+}
+
+bool Minotaur::CompareLen(Constraint *c1, Constraint *c2)
+{
+  return (c1->getFunction()->getNumVars() < c2->getFunction()->getNumVars());
 }
 
 double Minotaur::Gcd(double d1, double d2, const double& etol)

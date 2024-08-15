@@ -452,7 +452,7 @@ void Function::evalGradient(const double *x, double *grad_f, int *error) const
 void Function::prepJac() 
 {
   if (lf_) {
-    lf_->prepJac(vars_.begin(), vars_.end());
+    lf_->prepJac(vars_.size(), vars_.begin(), vars_.end());
   }
   if (qf_) {
     qf_->prepJac(vars_.begin(), vars_.end());

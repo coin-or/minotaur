@@ -109,11 +109,13 @@ LinearFunctionPtr LinearFunction::clone() const
 LinearFunctionPtr LinearFunction::cloneWithVars(VariableConstIterator vbeg) 
   const
 {
+    
    LinearFunctionPtr lf = (LinearFunctionPtr) new LinearFunction();
    for (VariableGroupConstIterator it = terms_.begin(); it != terms_.end(); 
        ++it) {
-      lf->addTerm(*(vbeg+it->first->getIndex()), it->second);
+      lf->terms_.insert(std::make_pair(*(vbeg+it->first->getIndex()), it->second));
    }
+   lf->hasChanged_ = true;
    return lf;
 }
 
@@ -289,15 +291,13 @@ double LinearFunction::getFixVarOffset(VariablePtr v, double val)
 }
 
 
-void LinearFunction::prepJac(VarSetConstIter vbeg, VarSetConstIter vend)
+void LinearFunction::prepJac(UInt s, VarSetConstIter vbeg, VarSetConstIter vend)
 {
   if (hasChanged_) {
     UInt i;
     VariableGroupConstIterator vit;
 
-    i = 0;
-    for (VarSetConstIter it=vbeg; it!=vend; ++it, ++i) {}
-    off_.resize(i);
+    off_.resize(s);
 
     i = 0;
     for (VarSetConstIter it=vbeg; it!=vend; ++it, ++i) {

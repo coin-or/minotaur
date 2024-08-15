@@ -213,25 +213,7 @@ namespace Minotaur {
     /// The variables that occur in this function
     VariableSet vars_;
 
-    /**
-     * This map describes what variable exists in what kind of a function.
-     * For instance, if the function is x1^2 + e^x1 + ln(x1) + 2x1, then
-     * this map will have three entries, one at quadratic, one as nonlinear
-     * (e^x1 + ln(x1)) and one as linear.
-     */
-    std::set<std::pair<VariablePtr, FunctionType> > varFuns_;
-
-    /**
-     * Pairs of variables for which the corresponding entry in the hessian
-     * is non-zero is saved along with the index of that pair. Thus, if
-     * \f$x_3x_4\f$ is a term in the function, then the element (4,3) is
-     * non-zero in the hessian. Let us also suppose that this is the 7th
-     * nonzero element in the hessian. Then \f$((x_3,x_4), 7)\f$ is a member
-     * of this map.
-     */
-    // VarPairIntMap hessMap_;
-
-  private:
+    private:
 
     /// The linear function part of the function. Could be NULL.
     LinearFunctionPtr lf_;

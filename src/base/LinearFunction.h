@@ -147,7 +147,7 @@ namespace Minotaur {
     
     void multiply(double d);
 
-    void prepJac(VarSetConstIter vbeg, VarSetConstIter vend);
+    void prepJac(UInt s, VarSetConstIter vbeg, VarSetConstIter vend);
 
     /// Remove a variable v from the function.
     void removeVar(VariablePtr v, double val);
