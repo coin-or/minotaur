@@ -316,13 +316,13 @@ SolveStatus Glob::getStatus()
 void Glob::setInitialOptions_()
 {
   OptionDBPtr options = env_->getOptions();
-  options->findString("interface_type")->setValue("AMPL");
+  options->findString("interface_type")->setValue("ampl");
   options->findBool("presolve")->setValue(true);
   options->findBool("nl_presolve")->setValue(true);
   options->findBool("lin_presolve")->setValue(true);
   options->findBool("msheur")->setValue(true);
   options->findString("brancher")->setValue("hybrid");
-  options->findString("nlp_engine")->setValue("IPOPT");
+  options->findString("nlp_engine")->setValue("ipopt");
   options->findBool("cgtoqf")->setValue(true);
   options->findBool("simplex_cut")->setValue(true);
 }
@@ -644,7 +644,7 @@ void Glob::writeStatus_(BranchAndBound* bab)
 //    sol = pres->getPostSol(sol);
 //  }
 //
-//  if (env->getOptions()->findFlag("AMPL")->getValue() ||
+//  if (env->getOptions()->findFlag("ampl")->getValue() ||
 //      true == env->getOptions()->findBool("write_sol_file")->getValue()) {
 //    iface->writeSolution(sol, status);
 //  } else if (sol && env->getLogger()->getMaxLevel()>=LogExtraInfo &&

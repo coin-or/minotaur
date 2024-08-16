@@ -383,7 +383,7 @@ void IpoptEngine::enableStrBrSetup()
 
 std::string IpoptEngine::getName() const
 {
-  return "IPOPT";
+  return "ipopt";
 }
 
 ConstSolutionPtr IpoptEngine::getSolution()

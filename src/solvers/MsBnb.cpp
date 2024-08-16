@@ -172,7 +172,7 @@ BrancherPtr createBrancher(EnvPtr env, ProblemPtr p, HandlerVector handlers,
     rel_br->setMaxDepth(t);
     env->getLogger()->msgStream(LogExtraInfo) << me <<
       "setting reliability maxdepth to " << t << std::endl;
-    if (e->getName()=="Filter-SQP") {
+    if (e->getName()=="filter-sqp") {
       rel_br->setIterLim(5);
     }
     env->getLogger()->msgStream(LogExtraInfo) << me <<
@@ -294,7 +294,7 @@ void loadProblem(EnvPtr env, MINOTAUR_AMPL::AMPLInterface* iface,
 
 void overrideOptions(EnvPtr env)
 {
-  env->getOptions()->findString("interface_type")->setValue("AMPL");
+  env->getOptions()->findString("interface_type")->setValue("ampl");
 }
 
 
@@ -359,8 +359,8 @@ void setInitialOptions(EnvPtr env)
   env->getOptions()->findBool("presolve")->setValue(true);
   env->getOptions()->findBool("use_native_cgraph")->setValue(true);
   env->getOptions()->findBool("nl_presolve")->setValue(true);
-  env->getOptions()->findString("nlp_engine")->setValue("IPOPT");
-  env->getOptions()->findString("qp_engine")->setValue("None"); 
+  env->getOptions()->findString("nlp_engine")->setValue("ipopt");
+  env->getOptions()->findString("qp_engine")->setValue("none"); 
   env->getOptions()->findString("brancher")->setValue("maxvio");
 }
 
@@ -427,7 +427,7 @@ void writeSol(EnvPtr env, VarVector *orig_v,
     sol = pres->getPostSol(sol);
   }
 
-  if (env->getOptions()->findFlag("AMPL")->getValue() ||
+  if (env->getOptions()->findFlag("ampl")->getValue() ||
       true == env->getOptions()->findBool("write_sol_file")->getValue()) {
     iface->writeSolution(sol, status);
   } else if (sol && env->getLogger()->getMaxLevel()>=LogExtraInfo &&

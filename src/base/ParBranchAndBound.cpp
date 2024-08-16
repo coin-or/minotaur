@@ -312,7 +312,7 @@ void ParBranchAndBound::processRoot_(bool *should_prune, bool *should_dive,
     ws0 = nodePrcssr0->getWarmStart();
     tm_->removeActiveNode(current_node);
     *should_dive = tm_->shouldDive();
-    if (env_->getOptions()->findString("tb_rule")->getValue() == "twoChild") {
+    if (env_->getOptions()->findString("tb_rule")->getValue() == "twochild") {
       current_node->setTbScore(1);
     }
     new_node = tm_->branch(branches, current_node, ws0);
@@ -501,7 +501,7 @@ void ParBranchAndBound::showStatus_(bool current_uncounted)
 // }
 //updating showParstatus
 void ParBranchAndBound::showParStatus_(UInt off, double treeLb,
-                                      double WallTimeStart, UInt i)
+                                      double /*WallTimeStart*/, UInt /*i*/)
 {
  static bool header = false; // Ensure the header for the log table is printed only once
  static bool firstRow = true; // Ensure the initial row with default values is printed only once
@@ -529,7 +529,7 @@ void ParBranchAndBound::showParStatus_(UInt off, double treeLb,
          << std::setw(6) << "0.0"
          << std::setw(10) << "0.0"
          << std::setw(17) << "-inf"
-         << std::setw(13) << "inf"
+         << std::setw(13) << std::setprecision(4) << std::scientific << tm_->getUb()
          << std::setw(12) << "inf"
          << std::setw(15) << "0"
          << std::setw(14) << "0"

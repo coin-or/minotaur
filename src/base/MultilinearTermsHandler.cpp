@@ -734,7 +734,7 @@ MultilinearTermsHandler::makeGroups_()
       groups_.push_back(it->second);
     }
   }
-  else if (s == "TC") {
+  else if (s == "tc") {
     std::cout << "Grouping: term cover" << std::endl;
 
 

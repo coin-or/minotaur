@@ -80,10 +80,10 @@ ProblemPtr Solver::readProblem(std::string fname, std::string dname,
       return 0;
     }
   } else if ((ft==NL) || 
-             options->findFlag("AMPL")->getValue()==1 ||
-             options->findString("interface_type")->getValue()=="AMPL") {
+             options->findFlag("ampl")->getValue()==1 ||
+             options->findString("interface_type")->getValue()=="ampl") {
     iface_ = new MINOTAUR_AMPL::AMPLInterface(env_, sname);
-    options->findString("interface_type")->setValue("AMPL");
+    options->findString("interface_type")->setValue("ampl");
     p = iface_->readInstance(fname);
     env_->getLogger()->msgStream(LogInfo) << me_ 
       << "time used in reading instance = " << std::fixed 
@@ -122,7 +122,7 @@ int Solver::writeSol_(EnvPtr env, VarVector *orig_v, PresolverPtr pres,
     final_sol = pres->getPostSol(sol);
   }
 
-  if (env->getOptions()->findFlag("AMPL")->getValue() ||
+  if (env->getOptions()->findFlag("ampl")->getValue() ||
       true == env->getOptions()->findBool("write_sol_file")->getValue()) {
     iface->writeSolution(final_sol, status);
   } 

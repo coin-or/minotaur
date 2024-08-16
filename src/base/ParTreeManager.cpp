@@ -40,7 +40,7 @@ ParTreeManager::ParTreeManager(EnvPtr env)
     searchType_ = DepthFirst;
   } else if ("bfs"==s) {
     searchType_ = BestFirst;
-  } else if ("BthenD"==s) {
+  } else if ("bthend"==s) {
     searchType_ = BestThenDive;
   } else {
      assert (!"search strategy must be defined!");
@@ -260,7 +260,7 @@ void ParTreeManager::insertCandidate_(NodePtr node, bool pop_now)
   // set node id and depth
   node->setId(size_);
   node->setDepth(node->getParent()->getDepth()+1);
-  if (tbRule_ == "twoChild") {
+  if (tbRule_ == "twochild") {
     bool dir = node->getBranch()->getBrCand()->getDir();
       if (pop_now) {
         if (!dir) { // down branch

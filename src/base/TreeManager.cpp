@@ -36,7 +36,7 @@ TreeManager::TreeManager(EnvPtr env)
     searchType_ = DepthFirst;
   } else if ("bfs"==s) {
     searchType_ = BestFirst;
-  } else if ("BthenD"==s) {
+  } else if ("bthend"==s) {
     searchType_ = BestThenDive;
   } else {
      assert (!"search strategy must be defined!");
