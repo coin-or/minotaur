@@ -217,7 +217,7 @@ NodePtr ParQGBranchAndBound::processRoot_(bool *should_prune, bool *should_dive,
     ws0 = nodePrcssr0->getWarmStart();
     tm_->removeActiveNode(current_node);
     *should_dive = tm_->shouldDive();
-    if (env_->getOptions()->findString("tb_rule")->getValue() == "twoChild") {
+    if (env_->getOptions()->findString("tb_rule")->getValue() == "twochild") {
       current_node->setTbScore(1);
     }
     new_node = tm_->branch(branches, current_node, ws0);

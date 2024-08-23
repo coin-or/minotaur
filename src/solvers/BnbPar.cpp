@@ -157,12 +157,12 @@ PresolverPtr BnbPar::presolve_(HandlerVector &handlers)
 void BnbPar::setInitialOptions_()
 {
   OptionDBPtr options = env_->getOptions();
-  options->findString("interface_type")->setValue("AMPL");
+  options->findString("interface_type")->setValue("ampl");
   options->findBool("presolve")->setValue(true);
   options->findBool("nl_presolve")->setValue(true);
   options->findBool("lin_presolve")->setValue(true);
-  options->findString("brancher")->setValue("parRel");
-  options->findString("nlp_engine")->setValue("IPOPT");
+  options->findString("brancher")->setValue("parrel");
+  options->findString("nlp_engine")->setValue("ipopt");
   //options->findBool("cgtoqf")->setValue(true);
   //options->findBool("separability")->setValue(true);
   //options->findBool("simplex_cut")->setValue(true);
@@ -370,14 +370,14 @@ BrancherPtr BnbPar::createBrancher_(HandlerVector handlers, EnginePtr e)
     rel_br->setMaxDepth(t);
     env_->getLogger()->msgStream(LogExtraInfo) << me_ <<
       "setting reliability maxdepth to " << t << std::endl;
-    if (e->getName()=="Filter-SQP") {
+    if (e->getName()=="filter-sqp") {
       rel_br->setIterLim(5);
     }
     env_->getLogger()->msgStream(LogExtraInfo) << me_ <<
       "reliability branching iteration limit = " <<
       rel_br->getIterLim() << std::endl;
     br = rel_br;
-  } else if (env_->getOptions()->findString("brancher")->getValue() == "parRel") {
+  } else if (env_->getOptions()->findString("brancher")->getValue() == "parrel") {
     ParReliabilityBrancherPtr parRel_br;
     parRel_br = (ParReliabilityBrancherPtr) new ParReliabilityBrancher(env_, handlers);
     parRel_br->setEngine(e);
@@ -392,7 +392,7 @@ BrancherPtr BnbPar::createBrancher_(HandlerVector handlers, EnginePtr e)
     parRel_br->setMaxDepth(t);
     env_->getLogger()->msgStream(LogExtraInfo) << me_ <<
       "setting reliability maxdepth to " << t << std::endl;
-    if (e->getName()=="Filter-SQP") {
+    if (e->getName()=="filter-sqp") {
       parRel_br->setIterLim(5);
     }
     env_->getLogger()->msgStream(LogExtraInfo) << me_ <<

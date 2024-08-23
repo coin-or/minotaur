@@ -159,12 +159,12 @@ void QG::sepDetection()
 void QG::setInitialOptions_()
 {
   OptionDBPtr options = env_->getOptions();
-  options->findString("interface_type")->setValue("AMPL");
+  options->findString("interface_type")->setValue("ampl");
   options->findBool("presolve")->setValue(true);
   options->findBool("nl_presolve")->setValue(true);
   options->findBool("lin_presolve")->setValue(true);
   options->findString("brancher")->setValue("rel");
-  options->findString("nlp_engine")->setValue("IPOPT");
+  options->findString("nlp_engine")->setValue("ipopt");
   options->findBool("cgtoqf")->setValue(true);
   options->findBool("separability")->setValue(true);
   options->findBool("simplex_cut")->setValue(true);
@@ -522,7 +522,7 @@ void writeSol_(EnvPtr env, VarVector* orig_v, PresolverPtr pres,
     final_sol = pres->getPostSol(sol);
   }
 
-  if(env->getOptions()->findFlag("AMPL")->getValue() ||
+  if(env->getOptions()->findFlag("ampl")->getValue() ||
      true == env->getOptions()->findBool("write_sol_file")->getValue()) {
     iface->writeSolution(final_sol, status);
   } else if(final_sol && env->getLogger()->getMaxLevel() >= LogExtraInfo &&

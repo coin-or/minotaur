@@ -105,7 +105,7 @@ QPDProcessor::QPDProcessor(EnvPtr env, ProblemPtr p, EnginePtr e, EnginePtr qe,
   stats_.ub = 0;
   logger_ = env->getLogger();
   solveQPafNLP_ = (env->getOptions()->findString("nlp_engine")->getValue()
-                   == "Filter-SQP");
+                   == "filter-sqp");
   negDuals_ = solveQPafNLP_;
 #if SPEW
   logger_->msgStream(LogDebug2) << me_ << "initialized." << std::endl;

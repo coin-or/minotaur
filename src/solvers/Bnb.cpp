@@ -207,7 +207,7 @@ BrancherPtr Bnb::getBrancher_(HandlerVector handlers, EnginePtr e)
     rel_br->setMaxDepth(t);
     env_->getLogger()->msgStream(LogExtraInfo)
         << me_ << "setting reliability maxdepth to " << t << std::endl;
-    if(e->getName() == "Filter-SQP") {
+    if(e->getName() == "filter-sqp") {
       rel_br->setIterLim(5);
     }
     env_->getLogger()->msgStream(LogExtraInfo)
@@ -242,7 +242,7 @@ BrancherPtr Bnb::getBrancher_(HandlerVector handlers, EnginePtr e)
     inf_br->setMaxDepth(t);
     env_->getLogger()->msgStream(LogExtraInfo)
         << me_ << "setting reliability maxdepth to " << t << std::endl;
-    if(e->getName() == "Filter-SQP") {
+    if(e->getName() == "filter-sqp") {
       inf_br->setIterLim(5);
     }
     env_->getLogger()->msgStream(LogExtraInfo)
@@ -364,12 +364,12 @@ PresolverPtr Bnb::presolve_(HandlerVector& handlers)
 void Bnb::setInitialOptions_()
 {
   OptionDBPtr options = env_->getOptions();
-  options->findString("interface_type")->setValue("AMPL");
+  options->findString("interface_type")->setValue("ampl");
   //options->findBool("presolve")->setValue(true);
   //options->findBool("nl_presolve")->setValue(true);
   //options->findBool("lin_presolve")->setValue(true);
-  //options->findString("brancher")->setValue("parRel");
-  //options->findString("nlp_engine")->setValue("IPOPT");
+  //options->findString("brancher")->setValue("parrel");
+  //options->findString("nlp_engine")->setValue("ipopt");
   //options->findBool("cgtoqf")->setValue(true);
   //options->findBool("separability")->setValue(true);
   //options->findBool("simplex_cut")->setValue(true);

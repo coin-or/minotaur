@@ -79,7 +79,7 @@ LPEnginePtr EngineFactory::getLPEngine()
   }
 #endif
 #ifdef USE_OSILP
-  if (env_->getOptions()->findString("lp_engine")->getValue()!="None") {
+  if (env_->getOptions()->findString("lp_engine")->getValue()!="none") {
     return ((OsiLPEnginePtr) new OsiLPEngine(env_));
   }
 #endif
@@ -121,7 +121,7 @@ QPEnginePtr EngineFactory::getQPEngine()
 
 NLPEnginePtr EngineFactory::getNLPEngine()
 {
-  if (env_->getOptions()->findString("nlp_engine")->getValue()=="Filter-SQP") {
+  if (env_->getOptions()->findString("nlp_engine")->getValue()=="filter-sqp") {
 #ifdef USE_FILTERSQP
     return ((FilterSQPEnginePtr) new FilterSQPEngine(env_));
 #endif
@@ -130,7 +130,7 @@ NLPEnginePtr EngineFactory::getNLPEngine()
 #endif
   }
 
-  if (env_->getOptions()->findString("nlp_engine")->getValue()=="IPOPT") {
+  if (env_->getOptions()->findString("nlp_engine")->getValue()=="ipopt") {
 #ifdef USE_IPOPT
     return ((IpoptEnginePtr) new IpoptEngine(env_));
 #endif

@@ -186,7 +186,7 @@ BrancherPtr MultiStart::getBrancher_(HandlerVector handlers, EnginePtr e)
     rel_br->setMaxDepth(t);
     env_->getLogger()->msgStream(LogExtraInfo) << me_ <<
       "setting reliability maxdepth to " << t << std::endl;
-    if (e->getName()=="Filter-SQP") {
+    if (e->getName()=="filter-sqp") {
       rel_br->setIterLim(5);
     }
     env_->getLogger()->msgStream(LogExtraInfo) << me_ <<
@@ -319,8 +319,8 @@ PresolverPtr MultiStart::presolve_(HandlerVector &handlers)
 
 void MultiStart::setInitialOptions_()
 {
-  env_->getOptions()->findString("nlp_engine")->setValue("IPOPT");
-  env_->getOptions()->findString("qp_engine")->setValue("None"); 
+  env_->getOptions()->findString("nlp_engine")->setValue("ipopt");
+  env_->getOptions()->findString("qp_engine")->setValue("none"); 
   env_->getOptions()->findString("brancher")->setValue("maxvio");
   env_->getOptions()->findBool("use_warmstart")->setValue(false);
 }
@@ -389,7 +389,7 @@ void writeSol(EnvPtr env, VarVector *orig_v,
     sol = pres->getPostSol(sol);
   }
 
-  if (env->getOptions()->findFlag("AMPL")->getValue() ||
+  if (env->getOptions()->findFlag("ampl")->getValue() ||
       true == env->getOptions()->findBool("write_sol_file")->getValue()) {
     iface->writeSolution(sol, status);
   } else if (sol && env->getLogger()->getMaxLevel()>=LogExtraInfo &&

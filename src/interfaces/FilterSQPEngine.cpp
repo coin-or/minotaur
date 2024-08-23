@@ -541,7 +541,7 @@ void FilterSQPEngine::freeStorage_()
 
 std::string FilterSQPEngine::getName() const
 {
-  return "Filter-SQP";
+  return "filter-sqp";
 }
 
 

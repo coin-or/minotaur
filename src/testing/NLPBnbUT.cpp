@@ -288,7 +288,7 @@ void NLPBnbUT::testNLPBnb1()
 {
   EnvPtr env = (EnvPtr) new Environment();
   env->getOptions()->findBool("modify_rel_only")->setValue(true);
-  env->getOptions()->findString("nlp_engine")->setValue("IPOPT");
+  env->getOptions()->findString("nlp_engine")->setValue("ipopt");
   ProblemPtr p = createInstance1_(env);
   HandlerVector handlers;
   ReliabilityBrancherPtr br;

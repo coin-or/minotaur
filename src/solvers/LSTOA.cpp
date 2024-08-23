@@ -382,7 +382,7 @@ int main(int argc, char* argv[])
   // parse options
   env->readOptions(argc, argv);
   options = env->getOptions();
-  options->findString("interface_type")->setValue("AMPL");
+  options->findString("interface_type")->setValue("ampl");
 
   if (0!=showInfo(env)) {
     goto CLEANUP;
@@ -549,7 +549,7 @@ void writeSol(EnvPtr env, VarVector *orig_v,
     final_sol = pres->getPostSol(sol);
   }
 
-  if (env->getOptions()->findFlag("AMPL")->getValue() ||
+  if (env->getOptions()->findFlag("ampl")->getValue() ||
       true == env->getOptions()->findBool("write_sol_file")->getValue()) {
     iface->writeSolution(final_sol, status);
   } else if (final_sol && env->getLogger()->getMaxLevel()>=LogExtraInfo &&
