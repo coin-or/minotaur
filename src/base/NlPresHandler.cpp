@@ -1046,9 +1046,7 @@ void NlPresHandler::simplePresolve(ProblemPtr p, SolutionPoolPtr s_pool,
   UInt max_iters = 4;
   UInt min_iters = 2;
   UInt iters = 1;
-  int err = 0;
-  double stime = env_->getTime(err);
-  assert(0 == err);
+  double stime = env_->getTime();
   double ub = (s_pool) ? s_pool->getBestSolutionValue() : INFINITY;
 
   while(true == changed && iters <= max_iters && iters <= min_iters &&
@@ -1075,8 +1073,7 @@ void NlPresHandler::simplePresolve(ProblemPtr p, SolutionPoolPtr s_pool,
     t_mods.push_back(*it);
   }
   stats_.nMods += mods.size();
-  stats_.timeN += (env_->getTime(err) - stime);
-  assert(0 == err);
+  stats_.timeN += (env_->getTime() - stime);
 }
 
 void NlPresHandler::fixObjBins_(ProblemPtr p, double ub, bool* changed,

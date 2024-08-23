@@ -32,6 +32,7 @@ Environment::Environment()
 {
   timerFac_ = new TimerFactory();
   timer_ = timerFac_->getTimer();
+  timer_->start();
   logger_ = (LoggerPtr) new Logger();
   options_ = (OptionDBPtr) new OptionDB();
   createDefaultOptions_();
@@ -192,6 +193,11 @@ void Environment::createDefaultOptions_()
 
   b_option = (BoolOptionPtr) new Option<bool>(
       "Samplingheur", "Use Sampling heuristic for MINLP: <0/1>", true, true);
+  options_->insert(b_option);
+
+  b_option = (BoolOptionPtr) new Option<bool>(
+      "sppheur", "Use heuristic specifically for set partitioning: <0/1>",
+      true, false);
   options_->insert(b_option);
 
   b_option = (BoolOptionPtr) new Option<bool>(
@@ -804,18 +810,9 @@ OptionDBPtr Environment::getOptions()
   return options_;
 }
 
-double Environment::getTime(int& err)
+double Environment::getTime()
 {
-  if(timer_) {
-    err = 0;
     return timer_->query();
-  }
-#if SPEW
-  logger_->msgStream(LogError)
-      << me_ << "timer queried before it is started." << std::endl;
-#endif
-  err = 1;
-  return 0.0;
 }
 
 const Timer* Environment::getTimer()
@@ -825,18 +822,9 @@ const Timer* Environment::getTimer()
 
 //Adding Code for wall time
 
-double Environment::getwTime(int& err)
+double Environment::getwTime()
 {
-  if(timer_) {
-    err = 0;
     return timer_->wQuery();
-  }
-#if SPEW
-  logger_->msgStream(LogError)
-      << me_ << "wall timer queried before it is started." << std::endl;
-#endif
-  err = 1;
-  return 0.0;
 }
 
 const Timer* Environment::getwTimer()
@@ -1069,26 +1057,6 @@ std::string Environment::separateEqualToArg_(std::string& name)
 void Environment::setLogLevel(LogLevel l)
 {
   logger_->setMaxLevel(l);
-}
-
-void Environment::startTimer(int& err)
-{
-  if(timer_) {
-    err = 0;
-    timer_->start();
-  } else {
-    err = 1;
-  }
-}
-
-void Environment::stopTimer(int& err)
-{
-  if(timer_) {
-    err = 0;
-    timer_->stop();
-  } else {
-    err = 1;
-  }
 }
 
 // Local Variables:

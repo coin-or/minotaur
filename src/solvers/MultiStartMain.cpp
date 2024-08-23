@@ -28,11 +28,6 @@ int main(int argc, char** argv)
   std::string dname, fname;
   ProblemPtr p = 0;
  
-  env->startTimer(err);
-  if (err) {
-    goto CLEANUP;
-  }
-
   // Parse command line for options set by the user.
   env->readOptions(argc, argv);
   

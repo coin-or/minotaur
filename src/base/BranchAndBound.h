@@ -230,6 +230,8 @@ namespace Minotaur {
      * node being processed is not in the list of active nodes in the tree.
      */
     void showStatus_(bool current_uncounted,bool last_line);
+
+    void showStatusHead_();
   };
 
   /// Statistics about the branch-and-bound.

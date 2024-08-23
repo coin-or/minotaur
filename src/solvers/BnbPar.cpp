@@ -61,7 +61,6 @@
 #include "Solution.h"
 #include "SOS1Handler.h"
 #include "SOS2Handler.h"
-#include "Timer.h"
 #include "UnambRelBrancher.h"
 
 using namespace Minotaur;
@@ -83,9 +82,6 @@ BnbPar::~BnbPar() { }
 
 void BnbPar::doSetup()
 {
-  int err = 0;
-  env_->startTimer(err);
-
   setInitialOptions_();
 }
 
@@ -423,7 +419,6 @@ int BnbPar::solve(ProblemPtr p)
 {
   clock_t clockTimeStart = clock();
   OptionDBPtr options = env_->getOptions();
-  Timer* timer = env_->getNewTimer();
   EnginePtr nlp_e = 0;
   LPEnginePtr lp_e = 0; // lp engine
   VarVector* orig_v = 0;
@@ -460,7 +455,6 @@ int BnbPar::solve(ProblemPtr p)
 
   oinst_->calculateSize();
 
-  timer->start();
   if(options->findBool("display_problem")->getValue() == true) {
     oinst_->write(env_->getLogger()->msgStream(LogNone), 12);
   }
@@ -582,7 +576,7 @@ int BnbPar::solve(ProblemPtr p)
     parbab = createParBab_(numThreads, nlp_e, relCopy, nodePrcssr, parNodeRlxr, handlersCopy, eCopy);
   }
   //edit wtime
-  wallTimeStart = timer->query();  // Use the Timer object to get the current wall time
+  wallTimeStart = env_->getwTime();  
   if (true==env_->getOptions()->findBool("bnbpar_deter_mode")->getValue()) {
     //assert(!"Deterministic mode not available right now!");
     parbab->parsolveSync(parNodeRlxr, nodePrcssr, numThreads);
@@ -673,17 +667,12 @@ CLEANUP:
   if(orig_v) {
     delete orig_v;
   }
-  if(timer) {
-    delete timer;
-  }
   oinst_ = 0;
   return err;
 }
 
 void BnbPar::writeParBnbStatus_(ParBranchAndBound *parbab, double wallTimeStart, clock_t clockTimeStart)
 {
-
-  int err = 0;
 
   if (parbab) {
  
@@ -704,8 +693,6 @@ void BnbPar::writeParBnbStatus_(ParBranchAndBound *parbab, double wallTimeStart,
       << (double)(clock() - clockTimeStart)/CLOCKS_PER_SEC << std::endl
       << me_ << "status of branch-and-bound: " 
       << getSolveStatusString(parbab->getStatus()) << std::endl;
-      
-    env_->stopTimer(err); assert(0==err);
   } else {
     env_->getLogger()->msgStream(LogInfo)
       << me_ << std::fixed << std::setprecision(4)
@@ -715,13 +702,9 @@ void BnbPar::writeParBnbStatus_(ParBranchAndBound *parbab, double wallTimeStart,
       << me_ << "gap = " << INFINITY << std::endl
       << me_ << "gap percentage = " << INFINITY << std::endl
       << me_ << "time used (s) = " << std::fixed << std::setprecision(2) 
-      << env_->getTime(err) << std::endl 
+      << env_->getTime() << std::endl 
       << me_ << "status of branch-and-bound: " 
       << getSolveStatusString(NotStarted) << std::endl;
-      
-
-	//--------------------------------------------------------------------------------------
-    env_->stopTimer(err); assert(0==err);
   }
 }
 

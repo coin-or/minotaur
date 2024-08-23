@@ -141,9 +141,12 @@ NodePtr BranchAndBound::processRoot_(bool* should_prune, bool* should_dive)
   bool prune = *should_prune;
   Branches branches = 0;
   WarmStartPtr ws;
+
 #if SPEW
   logger_->msgStream(LogDebug) << me_ << "creating root node" << std::endl;
 #endif
+
+  showStatusHead_();
   tm_->insertRoot(current_node);
 
   if(options_->createRoot == true) {
@@ -273,52 +276,41 @@ bool BranchAndBound::shouldStop_()
   return stop_bnb;
 }
 
+
+void BranchAndBound::showStatusHead_()
+{
+  // Print the header and the initial row 
+  logger_->msgStream(LogInfo)
+     << " " << std::endl
+     << "-------------------------------------------------------------------"
+     << "---------------------------"
+     << std::endl
+     << std::setw(7) << "Cpu(s)" << std::setw(10) << "Wall(s)"
+     << std::setw(16) << "LB" << std::setw(13) << "UB" << std::setw(12)
+     << "Gap%" << std::setw(15) << "   Nodes-Proc" << std::setw(14)
+     << "   Nodes-Rem" << std::setw(7) << "#Sol" << std::endl
+     << "-------------------------------------------------------------------"
+     "---------------------------"
+     << std::endl
+    
+     << std::setw(6) << "0" << std::setw(10) << "0" << std::setw(17)
+     << "-inf" << std::setw(13) << "inf" << std::setw(12) << "inf"
+     << std::setw(15) << "0" << std::setw(14) << "0" << std::setw(7) << "0"
+     << std::endl;
+  stats_->updateTime = timer_->query();
+}
+
+
 void BranchAndBound::showStatus_(bool current_uncounted, bool last_line)
 {
-  static bool header = false;
-  static bool firstRow = true; // Add a flag for the first row
-
-  UInt off = 0;
-  if(current_uncounted) {
-    off = 1;
-  }
-
-  std::streamsize defaultPrecision =
-      logger_->msgStream(LogError).precision(); // Store default precision
-
-  if(!header) {
-    logger_->msgStream(LogError) << " " << std::endl;
-    logger_->msgStream(LogError)
-        << "-------------------------------------------------------------------"
-           "---------------------------"
-        << std::endl;
-    logger_->msgStream(LogError)
-        << std::setw(7) << "Cpu(s)" << std::setw(10) << "Wall(s)"
-        << std::setw(16) << "LB" << std::setw(13) << "UB" << std::setw(12)
-        << "Gap%" << std::setw(15) << "   Nodes-Proc" << std::setw(14)
-        << "   Nodes-Rem" << std::setw(7) << "#Sol" << std::endl;
-    logger_->msgStream(LogError)
-        << "-------------------------------------------------------------------"
-           "---------------------------"
-        << std::endl;
-    header = true;
-  }
-
-  if(firstRow) {
-    // Print the initial row with all values set to zero
-    logger_->msgStream(LogError)
-        << std::setw(6) << "0" << std::setw(10) << "0" << std::setw(17)
-        << "-inf" << std::setw(13) << "inf" << std::setw(12) << "inf"
-        << std::setw(15) << "0" << std::setw(14) << "0" << std::setw(7) << "0"
-        << std::endl;
-    firstRow = false;
-  }
-
   if(timer_->query() - stats_->updateTime > options_->logInterval ||
      last_line == true) {
-    logger_->msgStream(LogError).precision(
-        defaultPrecision); // Reset precision to default
-    logger_->msgStream(LogError)
+    UInt off = 0;
+    if(current_uncounted) {
+      off = 1;
+    }
+
+    logger_->msgStream(LogInfo)
         << std::setw(6) << std::fixed << std::setprecision(0) << timer_->query()
         << std::setw(10) << std::fixed << std::setprecision(0)
         << timer_->wQuery() // Print wall time
@@ -332,6 +324,7 @@ void BranchAndBound::showStatus_(bool current_uncounted, bool last_line)
     stats_->updateTime = timer_->query();
   }
 }
+
 
 void BranchAndBound::solve()
 {

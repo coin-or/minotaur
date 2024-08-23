@@ -27,10 +27,6 @@ int main(int argc, char** argv)
   ProblemPtr p = 0;
  
   bnb.doSetup();
-  env->startTimer(err);
-  if (err) {
-    goto CLEANUP;
-  }
 
   // Parse command line for options set by the user.
   env->readOptions(argc, argv);

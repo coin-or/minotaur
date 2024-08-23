@@ -78,8 +78,7 @@ void SppHeur::addSol_(SolutionPool *spool)
 
 void SppHeur::solve(NodePtr, RelaxationPtr, SolutionPoolPtr spool)
 {
-  int err=0;
-  double start = env_->getTime(err);
+  double start = env_->getTime();
 
   stats_->calls += 1;
   if (!isSpp_()) {
@@ -91,8 +90,9 @@ void SppHeur::solve(NodePtr, RelaxationPtr, SolutionPoolPtr spool)
     conWise_(NULL, NULL, spool);
   }
 
-  stats_->time += env_->getTime(err)-start;
-  // writeStats(logger_->msgStream(LogExtraInfo));
+  stats_->time += env_->getTime()-start;
+
+  writeStats(logger_->msgStream(LogExtraInfo));
   // solveLP_(spool);
 }
 
@@ -110,6 +110,8 @@ void SppHeur::solveLP_(SolutionPool *spool)
 
   x = spool->getBestSolution()->getPrimal();
   lpe.load(p_);
+  //lpe.writeLP("presolved-model.lp");
+  exit(10); 
 
 
   // Fix 80% of variables in solution at 1 to get a much smaller LP.
@@ -139,7 +141,7 @@ void SppHeur::solveLP_(SolutionPool *spool)
       p_->changeBound((*vit),0.0,1.0);
   }
   lpe.solve();
-  exit(9);
+  std::cout << "Time: " << env_->getTime() << std::endl;
 }
 
 
@@ -431,7 +433,6 @@ bool SppHeur::propVal_(VariablePtr v, int &num0)
 {
   FunctionPtr f;
 
-  logger_->msgStream(LogDebug) << me_ << " variable " << v->getName() << "appears in " << v->getNumCons() << " constraints" << std::endl;
   for (ConstrSet::iterator cit=v->consBegin(); cit!=v->consEnd(); ++cit) {
     if (true==(*cit)->getBFlag()) {
       // logger_->msgStream(LogDebug) << me_ << " cant set variable " << v->getName() << " as it appears in " << (*cit)->getName() << std::endl;

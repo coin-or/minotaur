@@ -17,6 +17,7 @@
 #include "MinotaurConfig.h"
 #include "Relaxation.h"
 #include "Solution.h"
+#include "SppHeur.h"
 
 #include "EngineFactory.h"
 #include "NlWriter.h"
@@ -157,6 +158,11 @@ BranchAndBound* Bnb::getBab_(Engine* engine, HandlerVector& handlers)
   }
 
   if(options->findBool("prerootheur")->getValue() == true) {
+    if(options->findBool("sppheur")->getValue() == true) {
+      SppHeur* sp = new SppHeur(env_, oinst_);
+      bab->addPreRootHeur(sp);
+    }
+
     if(options->findBool("samplingheur")->getValue() == true) {
       SamplingHeurPtr s_heur = (SamplingHeurPtr) new SamplingHeur(env_, oinst_);
       bab->addPreRootHeur(s_heur);
@@ -252,9 +258,6 @@ BrancherPtr Bnb::getBrancher_(HandlerVector handlers, EnginePtr e)
 
 void Bnb::doSetup()
 {
-  int err = 0;
-  env_->startTimer(err);
-
   setInitialOptions_();
 }
 
@@ -544,10 +547,8 @@ CLEANUP:
   return 0;
 }
 
-int Bnb::writeBnbStatus_(BranchAndBound* bab)
+void Bnb::writeBnbStatus_(BranchAndBound* bab)
 {
-  int err = 0;
-
   if(bab) {
     env_->getLogger()->msgStream(LogInfo)
         << me_ << std::fixed << std::setprecision(4)
@@ -559,9 +560,9 @@ int Bnb::writeBnbStatus_(BranchAndBound* bab)
         << std::endl
         << me_ << "gap percentage = " << bab->getPerGap() << std::endl
         << me_ << "cpu time used (s) = " << std::fixed << std::setprecision(2)
-        << env_->getTime(err) << std::endl
+        << env_->getTime() << std::endl
         << me_ << "wall time used (s) = " << std::fixed << std::setprecision(2)
-        << env_->getwTime(err) << std::endl
+        << env_->getwTime() << std::endl
         << me_ << "status of branch-and-bound = "
         << getSolveStatusString(bab->getStatus()) << std::endl;
   } else {
@@ -574,14 +575,14 @@ int Bnb::writeBnbStatus_(BranchAndBound* bab)
         << me_ << "gap = " << INFINITY << std::endl
         << me_ << "gap percentage = " << INFINITY << std::endl
         << me_ << "cpu time used (s) = " << std::fixed << std::setprecision(2)
-        << env_->getTime(err) << std::endl
+        << env_->getTime() << std::endl
         << me_ << "wall time used (s) = " << std::fixed << std::setprecision(2)
-        << env_->getwTime(err) << std::endl
+        << env_->getwTime() << std::endl
         << me_
         << "status of branch-and-bound: " << getSolveStatusString(NotStarted)
         << std::endl;
   }
-  return err;
+  return;
 }
 
 // Local Variables:

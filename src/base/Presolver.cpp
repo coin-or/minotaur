@@ -145,13 +145,12 @@ SolveStatus Presolver::solve()
   env_->getLogger()->msgStream(LogInfo) << me_ << "Finished presolving."
     << std::endl;
   if (status_ == SolvedOptimal){
-  int err = 0;
   env_->getLogger()->msgStream(LogInfo) 
    << me_ << "best solution value: " << sol_->getObjValue() << std::endl
    << me_ << "cpu time used (s) = " << std::fixed << std::setprecision(2) 
-   << env_->getTime(err) << std::endl
+   << env_->getTime() << std::endl
    << me_ << "wall time used (s) = " << std::fixed << std::setprecision(2) 
-   << env_->getwTime(err) << std::endl;
+   << env_->getwTime() << std::endl;
   }
   for (HandlerVector::iterator it=handlers_.begin(); it!=handlers_.end();
        ++it) {

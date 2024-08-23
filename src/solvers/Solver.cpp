@@ -70,7 +70,7 @@ ProblemPtr Solver::readProblem(std::string fname, std::string dname,
   Reader rdr(env_);
 
   err = 0;
-  tstrt = env_->getTime(err);
+  tstrt = env_->getTime();
   ft = getFileType(fname);
 
   if (ft==MPS) {
@@ -87,7 +87,7 @@ ProblemPtr Solver::readProblem(std::string fname, std::string dname,
     p = iface_->readInstance(fname);
     env_->getLogger()->msgStream(LogInfo) << me_ 
       << "time used in reading instance = " << std::fixed 
-      << std::setprecision(2) << env_->getTime(err)-tstrt << std::endl;
+      << std::setprecision(2) << env_->getTime()-tstrt << std::endl;
   } else {
     env_->getLogger()->errStream() << me_
       << "Unable to read the problem from file " << fname 

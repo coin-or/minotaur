@@ -402,7 +402,6 @@ void writeSol(EnvPtr env, VarVector *orig_v,
 int MultiStart::writeBnbStatus_(BranchAndBound *bab)
 {
 
-  int err = 0;
 
   if (bab) {
     env_->getLogger()->msgStream(LogInfo)
@@ -415,7 +414,7 @@ int MultiStart::writeBnbStatus_(BranchAndBound *bab)
       << std::endl
       << me_ << "gap percentage = " << bab->getPerGap() << std::endl
       << me_ << "time used (s) = " << std::fixed << std::setprecision(2) 
-      << env_->getTime(err) << std::endl
+      << env_->getTime() << std::endl
       << me_ << "status of branch-and-bound: " 
       << getSolveStatusString(bab->getStatus()) << std::endl;
   } else {
@@ -427,7 +426,7 @@ int MultiStart::writeBnbStatus_(BranchAndBound *bab)
       << me_ << "gap = " << INFINITY << std::endl
       << me_ << "gap percentage = " << INFINITY << std::endl
       << me_ << "time used (s) = " << std::fixed << std::setprecision(2) 
-      << env_->getTime(err) << std::endl
+      << env_->getTime() << std::endl
       << me_ << "status of branch-and-bound: " 
       << getSolveStatusString(NotStarted) << std::endl;
   }

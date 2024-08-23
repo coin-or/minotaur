@@ -67,7 +67,7 @@ private:
   BrancherPtr getBrancher_(HandlerVector handlers, Engine *e);
   int getEngine_(Engine **e);
   PresolverPtr presolve_(HandlerVector &handlers);
-  int writeBnbStatus_(BranchAndBound *bab);
+  void writeBnbStatus_(BranchAndBound *bab);
   void setInitialOptions_();
 };
 }

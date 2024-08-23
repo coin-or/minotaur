@@ -52,7 +52,7 @@ namespace Minotaur {
        * \param[out] err 0 if no error occured, positive otherwise.
        * \return The time used so far.
        */
-      double getTime(int &err);
+      double getTime();
 
       /**
        * \brief Get the global timer.
@@ -64,7 +64,7 @@ namespace Minotaur {
 
 
       // code for wall time
-      double getwTime(int &err);
+      double getwTime();
        /**
        * \brief Get the global timer.
        *
@@ -92,21 +92,6 @@ namespace Minotaur {
 
       /// Set the log level of the default logger
       void setLogLevel(LogLevel l);
-
-      /**
-       * \brief Start a 'global' timer that can be queried for the total time used
-       * so far by the solution process.
-       *
-       * \param[out] err 0 if no error occured, positive otherwise.
-       */
-      void startTimer(int &err);
-      
-      /**
-       * \brief Stop the 'global' timer.
-       *
-       * \param[out] err 0 if no error occured, positive otherwise.
-       */
-      void stopTimer(int &err);
 
     private:
       /// Logger that is used for the whole environment.

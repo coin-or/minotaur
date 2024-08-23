@@ -49,7 +49,6 @@
 #include "SimpleTransformer.h"
 #include "Solution.h"
 #include "Solver.h"
-#include "Timer.h"
 #include "Transformer.h"
 #include "TreeManager.h"
 #include "WeakBrancher.h"
@@ -71,9 +70,6 @@ Glob::~Glob() { }
 
 void Glob::doSetup()
 {
-  int err = 0;
-  env_->startTimer(err);
-
   setInitialOptions_();
 }
 
@@ -547,8 +543,6 @@ int Glob::showInfo()
 
 void Glob::writeStatus_(BranchAndBound* bab)
 {
-  int err = 0;
-
   if(bab) {
     status_ = bab->getStatus();
     env_->getLogger()->msgStream(LogInfo)
@@ -561,13 +555,10 @@ void Glob::writeStatus_(BranchAndBound* bab)
         << std::endl
         << me_ << "gap percentage = " << bab->getPerGap() << std::endl
         << me_ << "time used = " << std::fixed << std::setprecision(2)
-        << env_->getTime(err) << std::endl
+        << env_->getTime() << std::endl
         << me_
         << "status of branch-and-bound: " << getSolveStatusString(status_)
         << std::endl;
-
-    env_->stopTimer(err);
-    assert(0 == err);
   } else {
     env_->getLogger()->msgStream(LogInfo)
         << me_ << std::fixed << std::setprecision(4)
@@ -578,13 +569,10 @@ void Glob::writeStatus_(BranchAndBound* bab)
         << me_ << "gap = " << INFINITY << std::endl
         << me_ << "gap percentage = " << INFINITY << std::endl
         << me_ << "time used = " << std::fixed << std::setprecision(2)
-        << env_->getTime(err) << std::endl
+        << env_->getTime() << std::endl
         << me_
         << "status of branch-and-bound: " << getSolveStatusString(NotStarted)
         << std::endl;
-
-    env_->stopTimer(err);
-    assert(0 == err);
   }
 }
 

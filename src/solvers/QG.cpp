@@ -46,7 +46,6 @@
 #include "Reader.h"
 #include "ReliabilityBrancher.h"
 #include "SamplingHeur.h"
-#include "Timer.h"
 #include "TransSep.h"
 #include "Types.h"
 
@@ -69,9 +68,6 @@ QG::~QG() { }
 
 void QG::doSetup()
 {
-  int err = 0;
-  env_->startTimer(err);
-
   setInitialOptions_();
 }
 
@@ -235,7 +231,6 @@ int QG::showInfo()
 int QG::solve(ProblemPtr p)
 {
   OptionDBPtr options = env_->getOptions();
-  Timer* timer = env_->getNewTimer();
   EnginePtr nlp_e = 0;
   LPEnginePtr lp_e = 0; // lp engine
   VarVector* orig_v = 0;
@@ -263,7 +258,6 @@ int QG::solve(ProblemPtr p)
 
   oinst_->calculateSize();
 
-  timer->start();
   if(options->findBool("display_problem")->getValue() == true) {
     oinst_->write(env_->getLogger()->msgStream(LogNone), 12);
   }
@@ -478,9 +472,6 @@ CLEANUP:
   if(orig_v) {
     delete orig_v;
   }
-  if(timer) {
-    delete timer;
-  }
   oinst_ = 0;
   return err;
 }
@@ -499,11 +490,10 @@ int QG::writeBnbStatus_(BranchAndBound* bab)
         << me_ << "gap = " << std::max(0.0, ub_ - lb_) << std::endl
         << me_ << "gap percentage = " << bab->getPerGap() << std::endl
         << me_ << "time used (s) = " << std::fixed << std::setprecision(2)
-        << env_->getTime(err) << std::endl
+        << env_->getTime() << std::endl
         << me_
         << "status of branch-and-bound = " << getSolveStatusString(status_)
         << std::endl;
-    env_->stopTimer(err);
   } else {
     env_->getLogger()->msgStream(LogInfo)
         << me_ << std::fixed << std::setprecision(4)
@@ -514,11 +504,10 @@ int QG::writeBnbStatus_(BranchAndBound* bab)
         << me_ << "gap = " << INFINITY << std::endl
         << me_ << "gap percentage = " << INFINITY << std::endl
         << me_ << "time used (s) = " << std::fixed << std::setprecision(2)
-        << env_->getTime(err) << std::endl
+        << env_->getTime() << std::endl
         << me_
         << "status of branch-and-bound: " << getSolveStatusString(NotStarted)
         << std::endl;
-    env_->stopTimer(err);
   }
   return err;
 }

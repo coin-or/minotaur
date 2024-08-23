@@ -83,9 +83,6 @@ QGPar::~QGPar() { }
 
 void QGPar::doSetup()
 {
-  int err = 0;
-  env_->startTimer(err);
-
   setInitialOptions_();
 }
 
@@ -687,7 +684,6 @@ void QGPar::writeParBnbStatus_(ParQGBranchAndBound *parbab, double wallTimeStart
       << (double)(clock() - clockTimeStart)/CLOCKS_PER_SEC << std::endl
       << me_ << "status of branch-and-bound: " 
       << getSolveStatusString(parbab->getStatus()) << std::endl;
-    env_->stopTimer(err); assert(0==err);
   } else {
     env_->getLogger()->msgStream(LogInfo)
       << me_ << std::fixed << std::setprecision(4)
@@ -697,10 +693,9 @@ void QGPar::writeParBnbStatus_(ParQGBranchAndBound *parbab, double wallTimeStart
       << me_ << "gap = " << INFINITY << std::endl
       << me_ << "gap percentage = " << INFINITY << std::endl
       << me_ << "time used (s) = " << std::fixed << std::setprecision(2) 
-      << env_->getTime(err) << std::endl 
+      << env_->getTime() << std::endl 
       << me_ << "status of branch-and-bound: " 
       << getSolveStatusString(NotStarted) << std::endl;
-    env_->stopTimer(err); assert(0==err);
   }
 }
 
