@@ -309,6 +309,9 @@ class OsiLPEngine : public LPEngine {
    */
   OsiSolverInterface *osilp_;
 
+  /// True: tell CLP to stick to dual or primal simplex. False: CLP decides.
+  bool pickLPMeth_;
+
   /// Problem that is loaded, if any.
   ProblemPtr problem_;
 

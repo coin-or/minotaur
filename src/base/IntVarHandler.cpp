@@ -59,6 +59,8 @@ bool IntVarHandler::isFeasible(ConstSolutionPtr sol, RelaxationPtr relaxation,
   double value;
   const double *x = sol->getPrimal();
   bool is_feas = true;
+  int num_inf=0;
+  int num1 = 0;
 
   inf_meas = 0.0;
   for (v_iter=relaxation->varsBegin(); v_iter!=relaxation->varsEnd(); 
@@ -74,11 +76,16 @@ bool IntVarHandler::isFeasible(ConstSolutionPtr sol, RelaxationPtr relaxation,
           std::endl;
 #endif
         inf_meas += fabs(value-floor(value+0.5));
+        ++num_inf;
+      } else if (fabs(value - 1.0)<intTol_) {
+        ++num1;
       }
     }
   }
 #if SPEW
-  logger_->msgStream(LogDebug1) << me_ << "is_feas = " << is_feas << std::endl;
+  logger_->msgStream(LogDebug1) << me_ << "is_feas = " << is_feas 
+    << " num infeas = " << num_inf << " inf measure = " << inf_meas 
+    << " number of 1 = " << num1 << std::endl;
 #endif
   return is_feas;
 }

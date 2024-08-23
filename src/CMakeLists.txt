@@ -119,6 +119,7 @@ set (MINOTAUR_SOURCES
      base/Relaxation.cpp 
      base/ReliabilityBrancher.cpp 
      base/Reader.cpp 
+     base/SamplingHeur.cpp
      base/SecantMod.cpp 
      base/SimpleCutMan.cpp 
      base/SimpleTransformer.cpp
@@ -129,13 +130,13 @@ set (MINOTAUR_SOURCES
      base/SOS1Handler.cpp
      base/SOS2Handler.cpp
      base/SOSBrCand.cpp
+     base/SppHeur.cpp
      base/STOAHandler.cpp
      base/HybridBrancher.cpp
      base/Transformer.cpp 
      base/TransPoly.cpp 
      base/TransSep.cpp
      base/TreeManager.cpp 
-     base/SamplingHeur.cpp
      base/UnivarQuadHandler.cpp
      base/WeakBrancher.cpp
      base/Types.cpp 
@@ -272,6 +273,7 @@ set (MINOTAUR_HEADERS
      base/SOS1Handler.h
      base/SOS2Handler.h
      base/SOSBrCand.h
+     base/SppHeur.h
      base/STOAHandler.h
      base/HybridBrancher.h
      base/Timer.h

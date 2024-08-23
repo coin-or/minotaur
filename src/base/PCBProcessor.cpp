@@ -38,6 +38,7 @@ PCBProcessor::PCBProcessor(EnvPtr env, EnginePtr engine, HandlerVector handlers)
   : branches_(0),
     contOnErr_(false),
     cutMan_(0),
+    env_(env),
     infHand_(0),
     numSolutions_(0),
     ws_(0)
@@ -104,6 +105,12 @@ bool PCBProcessor::isFeasible_(NodePtr node, ConstSolutionPtr sol,
   HandlerIterator h;
   double inf_meas = 0.0;
 
+#if SPEW
+  int err = 0;
+  logger_->msgStream(LogDebug1) << " checking feasibility. Time = " 
+    << env_->getTime(err) << std::endl;
+#endif
+
   // visit each handler and check feasibility. Stop on the first
   // infeasibility.
   for(h = handlers_.begin(); h != handlers_.end(); ++h) {
@@ -132,6 +139,12 @@ bool PCBProcessor::presolveNode_(NodePtr node, SolutionPoolPtr s_pool)
   int it = 0;
   int max_iter = 1;
   bool cont = true;
+
+#if SPEW
+  int err = 0;
+  logger_->msgStream(LogDebug) << me_ << "presolving node. Time = " <<
+    env_->getTime(err) << std::endl;
+#endif
 
   if(presFreq_ < 1 || node->getId() % presFreq_ != 0) {
     return false;
@@ -230,7 +243,8 @@ void PCBProcessor::process(NodePtr node, RelaxationPtr rel,
     }
 
 #if SPEW
-    logger_->msgStream(LogDebug) << me_ << "iteration " << iter << std::endl;
+    logger_->msgStream(LogDebug) << me_ << "iteration " << iter <<
+      ". Time = " << env_->getTime(error) << std::endl;
 #endif
     engine_->setDualObjLimit(s_pool->getBestSolutionValue());
 
@@ -439,25 +453,25 @@ bool PCBProcessor::shouldPrune_(NodePtr node, double solval,
   bool should_prune = false;
   double best_cutoff;
 #if SPEW
-  logger_->msgStream(LogDebug2)
-      << me_ << "solution value = " << solval << std::endl;
+  int err = 0;
+  logger_->msgStream(LogDebug1)
+      << me_ << "in shouldPrune_(), solution value = " << solval 
+             << " engine status = " << engine_->getStatusString() 
+             << " time = " << env_->getTime(err)
+             << std::endl;
 #endif
   switch(engineStatus_) {
   case(FailedInfeas):
-    logger_->msgStream(LogInfo)
-        << me_ << "failed to converge "
-        << "(infeasible) in node " << node->getId() << std::endl;
     node->setStatus(NodeInfeasible);
     should_prune = true;
     ++stats_.inf;
     ++stats_.prob;
     break;
+
   case(ProvenFailedCQInfeas):
-    logger_->msgStream(LogInfo)
-        << me_ << "constraint qualification "
-        << "violated in node " << node->getId() << std::endl;
     ++stats_.prob;
     //fall through
+
   case(ProvenInfeasible):
   case(ProvenLocalInfeasible):
     node->setStatus(NodeInfeasible);
@@ -473,15 +487,9 @@ bool PCBProcessor::shouldPrune_(NodePtr node, double solval,
 
   case(ProvenUnbounded):
     should_prune = false;
-    logger_->msgStream(LogDebug2) << me_ << "problem relaxation is "
-                                  << "unbounded!" << std::endl;
-    assert(!"Relaxation unbounded.");
     break;
 
   case(FailedFeas):
-    logger_->msgStream(LogInfo)
-        << me_ << "Failed to converge "
-        << "(feasible) in node " << node->getId() << std::endl;
     if(node->getParent()) {
       node->setLb(node->getParent()->getLb());
     } else {
@@ -490,10 +498,8 @@ bool PCBProcessor::shouldPrune_(NodePtr node, double solval,
     node->setStatus(NodeContinue);
     ++stats_.prob;
     break;
+    
   case(ProvenFailedCQFeas):
-    logger_->msgStream(LogInfo)
-        << me_ << "constraint qualification "
-        << "violated in node " << node->getId() << std::endl;
     if(node->getParent()) {
       node->setLb(node->getParent()->getLb());
     } else {
@@ -502,13 +508,12 @@ bool PCBProcessor::shouldPrune_(NodePtr node, double solval,
     node->setStatus(NodeContinue);
     ++stats_.prob;
     break;
+    
   case(EngineIterationLimit):
     ++stats_.prob;
-    logger_->msgStream(LogInfo)
-        << me_ << "engine hit iteration limit, "
-        << "continuing in node " << node->getId() << std::endl;
     // continue with this node by following ProvenLocalOptimal case.
     // fall through
+
   case(ProvenLocalOptimal):
   case(ProvenOptimal):
     node->setLb(solval);
@@ -530,6 +535,7 @@ bool PCBProcessor::shouldPrune_(NodePtr node, double solval,
       node->setStatus(NodeContinue);
     }
     break;
+    
   case(EngineError):
     if(contOnErr_) {
       logger_->msgStream(LogError)
@@ -560,14 +566,14 @@ bool PCBProcessor::shouldPrune_(NodePtr node, double solval,
 
 void PCBProcessor::solveRelaxation_()
 {
+#if SPEW
+  int err = 0;
+  logger_->msgStream(LogDebug1) << me_ << "solving relaxation. Time = "
+    << env_->getTime(err) << std::endl;
+#endif
   engineStatus_ = EngineError;
   engine_->solve();
   engineStatus_ = engine_->getStatus();
-#if SPEW
-  logger_->msgStream(LogDebug2)
-      << me_ << "solving relaxation" << std::endl
-      << me_ << "engine status = " << engine_->getStatusString() << std::endl;
-#endif
 }
 
 void PCBProcessor::tightenBounds_(NodePtr node, SolutionPoolPtr s_pool,
@@ -577,6 +583,12 @@ void PCBProcessor::tightenBounds_(NodePtr node, SolutionPoolPtr s_pool,
   ModVector p_mods; // Mods that are applied to the problem
   ModVector r_mods; // Mods that are applied to the relaxation.
   bool is_feas;
+
+#if SPEW
+  int err = 0;
+  logger_->msgStream(LogDebug1) << me_ << " tightening bounds. Time = " 
+    << env_->getTime(err) << std::endl;
+#endif
 
   for(HandlerIterator h = handlers_.begin(); h != handlers_.end(); ++h) {
     is_feas = (*h)->postSolveRootNode(relaxation_, s_pool, sol, p_mods, r_mods);

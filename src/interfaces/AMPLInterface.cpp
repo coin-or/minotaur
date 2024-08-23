@@ -2027,6 +2027,8 @@ void AMPLInterface::readFile_(std::string *fname, ReaderType readerType)
 
 Minotaur::ProblemPtr AMPLInterface::readInstance(std::string fname) 
 {
+  logger_->msgStream(Minotaur::LogExtraInfo) << me_ << "reading file " 
+    << fname << std::endl;
   if (false==env_->getOptions()->findBool("use_native_cgraph")->getValue()) {
     return readInstanceASL_(fname);
   } 

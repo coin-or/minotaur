@@ -30,10 +30,10 @@ const std::string Environment::me_ = "Environment: ";
 
 Environment::Environment()
 {
-  logger_ = (LoggerPtr) new Logger();
-  options_ = (OptionDBPtr) new OptionDB();
   timerFac_ = new TimerFactory();
   timer_ = timerFac_->getTimer();
+  logger_ = (LoggerPtr) new Logger();
+  options_ = (OptionDBPtr) new OptionDB();
   createDefaultOptions_();
 }
 
@@ -323,6 +323,11 @@ void Environment::createDefaultOptions_()
 
   b_option = (BoolOptionPtr) new Option<bool>(
       "OBBT", "Do optimization based bound tightening: <0/1>", true, true);
+  options_->insert(b_option);
+
+  b_option = (BoolOptionPtr) new Option<bool>(
+      "set_lp_method", "If true, Minotaur decides the LP simplex variant<0/1>",
+      true, true);
   options_->insert(b_option);
 
   b_option = (BoolOptionPtr) new Option<bool>(

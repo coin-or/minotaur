@@ -99,6 +99,17 @@ public:
     return bTemp_;
   }
 
+  int getITemp() const
+  {
+    return iTemp_;
+  }
+
+  void setITemp(int i) 
+  {
+    iTemp_ = i;
+  }
+
+
   /// Return a pointer to the function.
   FunctionPtr getFunction() const
   {
@@ -313,6 +324,9 @@ private:
 
   /// Temporary boolean variable for misc processes
   bool bTemp_;
+
+  /// Temporary boolean variable for misc processes
+  int iTemp_;
 
   /// 'u' (-infinity, infinity].
   double ub_;

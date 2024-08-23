@@ -98,6 +98,7 @@ OsiLPEngine::OsiLPEngine(EnvPtr env)
       env_(env),
       maxIterLimit_(10000),
       objChanged_(true),
+      pickLPMeth_(true),
       problem_(0),
       sol_(0),
       strBr_(false) {
@@ -108,6 +109,7 @@ OsiLPEngine::OsiLPEngine(EnvPtr env)
   std::string etype = env_->getOptions()->findString("lp_engine")->getValue();
 
   logger_ = env_->getLogger();
+  pickLPMeth_ = env_->getOptions()->findBool("set_lp_method")->getValue();
   eName_ = OsiUndefEngine;
   if (etype == "OsiClp") {
     eName_ = OsiClpEngine;
@@ -576,10 +578,13 @@ EngineStatus OsiLPEngine::solve()
     off = problem_->getObjective()->getConstant();
   }
   timer_->start();
-  if (true == objChanged_ && false == bndChanged_ && false == consChanged_) {
-    osilp_->setHintParam(OsiDoDualInResolve, false);
-  } else {
-    osilp_->setHintParam(OsiDoDualInResolve, true);
+  if (true == pickLPMeth_) {
+    if (true == objChanged_ && false == bndChanged_ && 
+        false == consChanged_) {
+      osilp_->setHintParam(OsiDoDualInResolve, false);
+    } else {
+      osilp_->setHintParam(OsiDoDualInResolve, true);
+    }
   }
 
   stats_->calls += 1;
@@ -588,7 +593,11 @@ EngineStatus OsiLPEngine::solve()
       << me_ << "in call number " << stats_->calls << std::endl;
 #endif
 
-  osilp_->resolve();
+  if (1==stats_->calls) {
+    osilp_->initialSolve();
+  } else {
+    osilp_->resolve();
+  }
   if (osilp_->isProvenOptimal()) {
     status_ = ProvenOptimal;
     sol_->setPrimal(osilp_->getStrictColSolution());
@@ -641,7 +650,8 @@ EngineStatus OsiLPEngine::solve()
       << me_ << "iterations = " << osilp_->getIterationCount() << std::endl;
 #endif
   timer_->stop();
-  if (true == objChanged_ && false == bndChanged_ && false == consChanged_) {
+  if (true == pickLPMeth_ && true == objChanged_ && false == bndChanged_ 
+      && false == consChanged_) {
     osilp_->setHintParam(OsiDoDualInResolve, true);
   }
   bndChanged_ = false;

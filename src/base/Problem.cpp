@@ -662,39 +662,40 @@ bool Problem::isNoSpecificStructure_(ConstraintPtr c)
 
 void Problem::printConstraintStatistics_()
 {
+  const int wid=8;
   logger_->msgStream(LogError)
-      << "--------------------------------------------" << std::endl
-      << "|            Constraints Size              |\n"
-      << "|------------------------------------------|\n"
-      << "|Aggregation constraint       |" << std::setw(7) << size_->countAggregation
-      << "     |\n"
-      << "|Precedence constraint        |" << std::setw(7) << size_->countPrecedence
-      << "     |\n"
-      << "|Variable Bound constraint    |" << std::setw(7) << size_->countVariableBound
-      << "     |\n"
-      << "|Partitioning constraint      |" << std::setw(7)
-      << size_->countSetPartitioning << "     |\n"
-      << "|Set Packing constraint       |" << std::setw(7) << size_->countSetPacking
-      << "     |\n"
-      << "|Set Covering constraint      |" << std::setw(7) <<size_-> countSetCovering
-      << "     |\n"
-      << "|Cardinality constraint       |" << std::setw(7) <<size_-> countCardinality
-      << "     |\n"
-      << "|Invariant Knapsack constraint|" << std::setw(7)
-      << size_->countInvariantKnapsack << "     |\n"
-      << "|Equation Knapsack constraint |" << std::setw(7)
-      <<size_-> countEquationKnapsack << "     |\n"
-      << "|Bin Packing constraint       |" << std::setw(7) << size_->countBinPacking
-      << "     |\n"
-      << "|Knapsack constraint          |" << std::setw(7) << size_->countKnapsack
-      << "     |\n"
-      << "|Integer Knapsack constraint  |" << std::setw(7)
-      << size_->countIntegerKnapsack << "     |\n"
-      << "|Mixed Binary constraint      |" << std::setw(7) << size_->countMixedBinary
-      << "     |\n"
-      << "|No specific structure        |" << std::setw(7)
-      << size_->countNoSpecificStructure << "     |\n"
-      << "--------------------------------------------\n";
+      << "-----------------------------------------" << std::endl
+      << "|Constraint Statistics                  |\n"
+      << "|---------------------------------------|\n"
+      << "|Aggregation constraint       |" << std::setw(wid) << size_->countAggregation
+      << " |\n"
+      << "|Precedence constraint        |" << std::setw(wid) << size_->countPrecedence
+      << " |\n"
+      << "|Variable Bound constraint    |" << std::setw(wid) << size_->countVariableBound
+      << " |\n"
+      << "|Partitioning constraint      |" << std::setw(wid)
+      << size_->countSetPartitioning << " |\n"
+      << "|Set Packing constraint       |" << std::setw(wid) << size_->countSetPacking
+      << " |\n"
+      << "|Set Covering constraint      |" << std::setw(wid) <<size_-> countSetCovering
+      << " |\n"
+      << "|Cardinality constraint       |" << std::setw(wid) <<size_-> countCardinality
+      << " |\n"
+      << "|Invariant Knapsack constraint|" << std::setw(wid)
+      << size_->countInvariantKnapsack << " |\n"
+      << "|Equation Knapsack constraint |" << std::setw(wid)
+      <<size_-> countEquationKnapsack << " |\n"
+      << "|Bin Packing constraint       |" << std::setw(wid) << size_->countBinPacking
+      << " |\n"
+      << "|Knapsack constraint          |" << std::setw(wid) << size_->countKnapsack
+      << " |\n"
+      << "|Integer Knapsack constraint  |" << std::setw(wid)
+      << size_->countIntegerKnapsack << " |\n"
+      << "|Mixed Binary constraint      |" << std::setw(wid) << size_->countMixedBinary
+      << " |\n"
+      << "|No specific structure        |" << std::setw(wid)
+      << size_->countNoSpecificStructure << " |\n"
+      << "-----------------------------------------\n";
 }
 
 // Lock Number Calculation (Not used anywhere)
@@ -2237,55 +2238,56 @@ double Problem::getSizeEstimate()
 
 void Problem::writeSize(std::ostream& out) const
 {
+  const int wid=8;
 
-  out << "-----------------------------------------------------" << std::endl;
-  out << "|                 Problem Size                      |" << std::endl;
-  out << "|---------------------------------------------------|" << std::endl;
-  out << "| # variables                            " << std::setw(7)
-      << size_->vars << "    |" << std::endl;
-  out << "| # binary variables                     " << std::setw(7)
-      << size_->bins << "    |" << std::endl;
-  out << "| # general integer variables            " << std::setw(7)
-      << size_->ints << "    |" << std::endl;
-  out << "| # continuous variables                 " << std::setw(7)
-      << size_->conts << "    |" << std::endl;
-  out << "| # fixed variables                      " << std::setw(7)
-      << size_->fixed << "    |" << std::endl;
-  out << "| # constraints                          " << std::setw(7)
-      << size_->cons << "    |" << std::endl;
-  out << "| # linear constraints                   " << std::setw(7)
-      << size_->linCons << "    |" << std::endl;
-  out << "| # SOS1 constraints                     " << std::setw(7)
-      << size_->SOS1Cons << "    |" << std::endl;
-  out << "| # SOS2 constraints                     " << std::setw(7)
-      << size_->SOS2Cons << "    |" << std::endl;
-  out << "| # quadratic constraints                " << std::setw(7)
-      << size_->quadCons << "    |" << std::endl;
-  out << "| # nonlinear constraints                " << std::setw(7)
-      << size_->nonlinCons << "    |" << std::endl;
-  out << "| # constraints with linear terms        " << std::setw(7)
-      << size_->consWithLin << "    |" << std::endl;
-  out << "| # constraints with bilinear terms      " << std::setw(7)
-      << size_->consWithBilin << "    |" << std::endl;
-  out << "| # constraints with quadratic terms     " << std::setw(7)
-      << size_->consWithQuad << "    |" << std::endl;
-  out << "| # linear terms in constraints          " << std::setw(7)
-      << size_->linTerms << "    |" << std::endl;
-  out << "| # bilinear terms in constraints        " << std::setw(7)
-      << size_->bilinTerms << "    |" << std::endl;
-  out << "| # square terms in constraints          " << std::setw(7)
-      << size_->sqTerms << "    |" << std::endl;
-  out << "| # quadratic terms in constraints       " << std::setw(7)
-      << size_->quadTerms << "    |" << std::endl;
-  out << "| # objectives                           " << std::setw(7)
-      << size_->objs << "    |" << std::endl;
-  out << "| # linear terms in objective            " << std::setw(7)
-      << size_->objLinTerms << "    |" << std::endl;
-  out << "| # quadratic terms in objective         " << std::setw(7)
-      << size_->objQuadTerms << "    |" << std::endl;
-  out << "| Type of objective:                   " << std::setw(9)
-      << getFunctionTypeString(size_->objType) << "    |" << std::endl;
-  out << "-----------------------------------------------------" << std::endl;
+  out << "---------------------------------------------------" << std::endl;
+  out << "|Model Statistics                                 |" << std::endl;
+  out << "|-------------------------------------------------|" << std::endl;
+  out << "| # variables                            " << std::setw(wid)
+      << size_->vars << " |" << std::endl;
+  out << "| # binary variables                     " << std::setw(wid)
+      << size_->bins << " |" << std::endl;
+  out << "| # general integer variables            " << std::setw(wid)
+      << size_->ints << " |" << std::endl;
+  out << "| # continuous variables                 " << std::setw(wid)
+      << size_->conts << " |" << std::endl;
+  out << "| # fixed variables                      " << std::setw(wid)
+      << size_->fixed << " |" << std::endl;
+  out << "| # constraints                          " << std::setw(wid)
+      << size_->cons << " |" << std::endl;
+  out << "| # linear constraints                   " << std::setw(wid)
+      << size_->linCons << " |" << std::endl;
+  out << "| # SOS1 constraints                     " << std::setw(wid)
+      << size_->SOS1Cons << " |" << std::endl;
+  out << "| # SOS2 constraints                     " << std::setw(wid)
+      << size_->SOS2Cons << " |" << std::endl;
+  out << "| # quadratic constraints                " << std::setw(wid)
+      << size_->quadCons << " |" << std::endl;
+  out << "| # nonlinear constraints                " << std::setw(wid)
+      << size_->nonlinCons << " |" << std::endl;
+  out << "| # constraints with linear terms        " << std::setw(wid)
+      << size_->consWithLin << " |" << std::endl;
+  out << "| # constraints with bilinear terms      " << std::setw(wid)
+      << size_->consWithBilin << " |" << std::endl;
+  out << "| # constraints with quadratic terms     " << std::setw(wid)
+      << size_->consWithQuad << " |" << std::endl;
+  out << "| # linear terms in constraints          " << std::setw(wid)
+      << size_->linTerms << " |" << std::endl;
+  out << "| # bilinear terms in constraints        " << std::setw(wid)
+      << size_->bilinTerms << " |" << std::endl;
+  out << "| # square terms in constraints          " << std::setw(wid)
+      << size_->sqTerms << " |" << std::endl;
+  out << "| # quadratic terms in constraints       " << std::setw(wid)
+      << size_->quadTerms << " |" << std::endl;
+  out << "| # objectives                           " << std::setw(wid)
+      << size_->objs << " |" << std::endl;
+  out << "| # linear terms in objective            " << std::setw(wid)
+      << size_->objLinTerms << " |" << std::endl;
+  out << "| # quadratic terms in objective         " << std::setw(wid)
+      << size_->objQuadTerms << " |" << std::endl;
+  out << "| Type of objective:                    " << std::setw(9)
+      << getFunctionTypeString(size_->objType) << " |" << std::endl;
+  out << "---------------------------------------------------" << std::endl;
 }
 
 // Local Variables:
