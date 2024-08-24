@@ -44,7 +44,7 @@ BranchAndBound::BranchAndBound(EnvPtr env, ProblemPtr p)
     stats_(0),
     status_(NotStarted)
 {
-  timer_ = env->getNewTimer();
+  timer_ = env->getTimer();
   tm_ = (TreeManagerPtr) new TreeManager(env);
   options_ = (BabOptionsPtr) new BabOptions(env);
   logger_ = env->getLogger();
@@ -64,9 +64,6 @@ BranchAndBound::~BranchAndBound()
   }
   if(stats_) {
     delete stats_;
-  }
-  if(timer_) {
-    delete timer_;
   }
   if(tm_) {
     delete tm_;
@@ -293,9 +290,16 @@ void BranchAndBound::showStatusHead_()
      "---------------------------"
      << std::endl
     
-     << std::setw(6) << "0" << std::setw(10) << "0" << std::setw(17)
-     << "-inf" << std::setw(13) << "inf" << std::setw(12) << "inf"
-     << std::setw(15) << "0" << std::setw(14) << "0" << std::setw(7) << "0"
+     << std::setw(6) << std::fixed << std::setprecision(0) << timer_->query()
+     << std::setw(10) << std::fixed << std::setprecision(0)
+        << timer_->wQuery() // Print wall time
+     << std::setw(17) << "-inf" 
+     << std::setw(13) << std::setprecision(4) << std::scientific 
+        << tm_->getUb() 
+     << std::setw(12) << "inf"
+     << std::setw(15) << "0" 
+     << std::setw(14) << "0" 
+     << std::setw(7) << std::setprecision(5) << solPool_->getNumSolsFound()
      << std::endl;
   stats_->updateTime = timer_->query();
 }
@@ -313,14 +317,17 @@ void BranchAndBound::showStatus_(bool current_uncounted, bool last_line)
     logger_->msgStream(LogInfo)
         << std::setw(6) << std::fixed << std::setprecision(0) << timer_->query()
         << std::setw(10) << std::fixed << std::setprecision(0)
-        << timer_->wQuery() // Print wall time
+           << timer_->wQuery() // Print wall time
         << std::setw(17) << std::setprecision(4) << std::scientific
-        << tm_->updateLb() << std::setw(13) << std::setprecision(4)
-        << std::scientific << tm_->getUb() << std::setw(12)
-        << std::setprecision(2) << std::scientific << tm_->getPerGap()
+           << tm_->updateLb() 
+        << std::setw(13) << std::setprecision(4)
+           << std::scientific << tm_->getUb() 
+        << std::setw(12)
+           << std::setprecision(2) << std::scientific << tm_->getPerGap()
         << std::setw(15) << tm_->getSize() - tm_->getActiveNodes() - off
-        << std::setw(14) << tm_->getActiveNodes() + off << std::setw(7)
-        << std::setprecision(5) << solPool_->getNumSolsFound() << std::endl;
+        << std::setw(14) << tm_->getActiveNodes() + off 
+        << std::setw(7) << std::setprecision(5) << solPool_->getNumSolsFound()
+        << std::endl;
     stats_->updateTime = timer_->query();
   }
 }
@@ -336,9 +343,8 @@ void BranchAndBound::solve()
   WarmStartPtr ws;
   RelaxationPtr rel = RelaxationPtr();
   bool should_stop = false;
+  double tstart = timer_->query();
 
-  // initialize timer
-  timer_->start();
   logger_->msgStream(LogInfo)
       << me_ << "starting branch-and-bound" << std::endl;
 
@@ -505,8 +511,7 @@ void BranchAndBound::solve()
       << me_ << "stopping branch-and-bound" << std::endl
       << me_ << "nodes processed = " << stats_->nodesProc << std::endl
       << me_ << "nodes created   = " << tm_->getSize() << std::endl;
-  stats_->timeUsed = timer_->query();
-  timer_->stop();
+  stats_->timeUsed = timer_->query()-tstart;
 }
 
 void BranchAndBound::writeStats(std::ostream& out)
