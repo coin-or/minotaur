@@ -78,6 +78,7 @@ BranchAndBound* Bnb::getBab_(Engine* engine, HandlerVector& handlers)
   OptionDBPtr options = env_->getOptions();
   SOS2HandlerPtr s2_hand;
   RCHandlerPtr rc_hand;
+  SppHeur* sp = 0;
 
   SOS1HandlerPtr s_hand = (SOS1HandlerPtr) new SOS1Handler(env_, oinst_);
   if(s_hand->isNeeded()) {
@@ -119,7 +120,10 @@ BranchAndBound* Bnb::getBab_(Engine* engine, HandlerVector& handlers)
     handlers.push_back(nlhand);
   }
   if(handlers.size() > 1) {
-    nproc = (PCBProcessorPtr) new PCBProcessor(env_, engine, handlers);
+    PCBProcessorPtr pproc = new PCBProcessor(env_, engine, handlers);
+    sp = new SppHeur(env_, oinst_);
+    pproc->addHeur(sp);
+    nproc = pproc;
   } else {
     nproc = (BndProcessorPtr) new BndProcessor(env_, engine, handlers);
   }
@@ -159,7 +163,6 @@ BranchAndBound* Bnb::getBab_(Engine* engine, HandlerVector& handlers)
 
   if(options->findBool("prerootheur")->getValue() == true) {
     if(options->findBool("sppheur")->getValue() == true) {
-      SppHeur* sp = new SppHeur(env_, oinst_);
       bab->addPreRootHeur(sp);
     }
 

@@ -51,6 +51,9 @@ RCHandler::~RCHandler()
   if (rootDuals_) {
     delete [] rootDuals_;
   }
+  if (rootX_) {
+    delete [] rootX_;
+  }
 }
 
 void RCHandler::separate(ConstSolutionPtr sol, NodePtr node,

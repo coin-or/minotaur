@@ -16,14 +16,13 @@
 #define MINOTAURHEURISTIC_H
 
 #include "Types.h"
+#include "SolutionPool.h"
 
 namespace Minotaur {
 
   class   Node;
   class   Relaxation;
-  class   SolutionPool;
   typedef Relaxation* RelaxationPtr;
-  typedef SolutionPool* SolutionPoolPtr;
 
 
   /**
@@ -40,6 +39,12 @@ namespace Minotaur {
       /// Use this heuristic.
       virtual void solve(NodePtr node, RelaxationPtr rel, 
           SolutionPoolPtr s_pool) = 0;
+
+      /// Use this heuristic.
+      virtual void solveNode(ConstSolutionPtr , NodePtr , RelaxationPtr , 
+          SolutionPoolPtr )
+      {}
+  
 
       /// Write statistics to the logger.
       virtual void writeStats(std::ostream &out) const = 0;

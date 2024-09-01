@@ -38,13 +38,13 @@ public:
   ~SppHeur() {};
 
   /// call to heuristic
-  virtual void solve(NodePtr, RelaxationPtr, SolutionPoolPtr s_pool);
+  void solve(NodePtr, RelaxationPtr, SolutionPoolPtr s_pool);
 
-  /// call to heuristic
-  virtual void solveRand(NodePtr, RelaxationPtr, SolutionPoolPtr s_pool);
-
+  void solveNode(ConstSolutionPtr sol, NodePtr node, RelaxationPtr rel, 
+             SolutionPoolPtr s_pool);
+  
   /// writing the statistics to the logger
-  virtual void writeStats(std::ostream& out) const;
+  void writeStats(std::ostream& out) const;
 
 private:
   // Environment
@@ -54,8 +54,6 @@ private:
   Logger* logger_;
 
   // Maximum random solutions to check
-  UInt maxRand_;
-
   // For printing messages
   static const std::string me_;
 
@@ -63,7 +61,7 @@ private:
   ProblemPtr p_;
 
   // Statistics
-  SppHeurStats* stats_;
+  SppHeurStats stats_;
 
   // Vector of cons
   ConstraintVector cv2_;
@@ -72,20 +70,20 @@ private:
 
   /// call to heuristic
   void conWise_(NodePtr, RelaxationPtr, SolutionPoolPtr s_pool);
+  void conWise2_(NodePtr, RelaxationPtr, SolutionPoolPtr spool);
+  void varWise_(NodePtr, RelaxationPtr, SolutionPoolPtr spool);
+  void sortVars_(VarVector &vvec);
 
   /// call to heuristic
-  void flip_(NodePtr, RelaxationPtr, SolutionPoolPtr s_pool);
+  void conWiseNb_(const double *x, NodePtr, RelaxationPtr, SolutionPoolPtr s_pool);
 
   /// check if the problem is set partitioning
   bool isSpp_();
 
-  // get new point from a feasible point
-  void getNewPoint_(double* x, double* xl, double* xu, SolutionPoolPtr s_pool);
-
   // Check whether x is feasible
   bool isFeasible_(const double* x);
 
-  bool propVal_(VariablePtr v, int &num0);
+  bool propVal_(VariablePtr v, int &num0, int &consfixed);
 
   void solveLP_(SolutionPool *spool);
 };

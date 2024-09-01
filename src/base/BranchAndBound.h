@@ -200,7 +200,7 @@ namespace Minotaur {
      * set up the timer and even start it before sending it to
      * branch-and-bound.
      */
-    Timer *timer_;
+    const Timer *timer_;
    
     /// The TreeManager used to manage the search tree.
     TreeManagerPtr tm_;

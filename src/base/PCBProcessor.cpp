@@ -106,9 +106,8 @@ bool PCBProcessor::isFeasible_(NodePtr node, ConstSolutionPtr sol,
   double inf_meas = 0.0;
 
 #if SPEW
-  int err = 0;
   logger_->msgStream(LogDebug1) << " checking feasibility. Time = " 
-    << env_->getTime(err) << std::endl;
+    << env_->getTime() << std::endl;
 #endif
 
   // visit each handler and check feasibility. Stop on the first
@@ -141,9 +140,8 @@ bool PCBProcessor::presolveNode_(NodePtr node, SolutionPoolPtr s_pool)
   bool cont = true;
 
 #if SPEW
-  int err = 0;
   logger_->msgStream(LogDebug) << me_ << "presolving node. Time = " <<
-    env_->getTime(err) << std::endl;
+    env_->getTime() << std::endl;
 #endif
 
   if(presFreq_ < 1 || node->getId() % presFreq_ != 0) {
@@ -244,7 +242,7 @@ void PCBProcessor::process(NodePtr node, RelaxationPtr rel,
 
 #if SPEW
     logger_->msgStream(LogDebug) << me_ << "iteration " << iter <<
-      ". Time = " << env_->getTime(error) << std::endl;
+      ". Time = " << env_->getTime() << std::endl;
 #endif
     engine_->setDualObjLimit(s_pool->getBestSolutionValue());
 
@@ -281,7 +279,7 @@ void PCBProcessor::process(NodePtr node, RelaxationPtr rel,
     if(iter == 1 && !node->getParent()) {
       // in root, in first iteration, run a heuristic. XXX: better management.
       for(HeurVector::iterator it = heurs_.begin(); it != heurs_.end(); ++it) {
-        (*it)->solve(node, rel, s_pool);
+        (*it)->solveNode(sol, node, rel, s_pool);
       }
       tightenBounds_(node, s_pool, sol, &sep_status);
     }
@@ -453,11 +451,10 @@ bool PCBProcessor::shouldPrune_(NodePtr node, double solval,
   bool should_prune = false;
   double best_cutoff;
 #if SPEW
-  int err = 0;
   logger_->msgStream(LogDebug1)
       << me_ << "in shouldPrune_(), solution value = " << solval 
              << " engine status = " << engine_->getStatusString() 
-             << " time = " << env_->getTime(err)
+             << " time = " << env_->getTime()
              << std::endl;
 #endif
   switch(engineStatus_) {
@@ -567,9 +564,8 @@ bool PCBProcessor::shouldPrune_(NodePtr node, double solval,
 void PCBProcessor::solveRelaxation_()
 {
 #if SPEW
-  int err = 0;
   logger_->msgStream(LogDebug1) << me_ << "solving relaxation. Time = "
-    << env_->getTime(err) << std::endl;
+    << env_->getTime() << std::endl;
 #endif
   engineStatus_ = EngineError;
   engine_->solve();
@@ -585,9 +581,8 @@ void PCBProcessor::tightenBounds_(NodePtr node, SolutionPoolPtr s_pool,
   bool is_feas;
 
 #if SPEW
-  int err = 0;
   logger_->msgStream(LogDebug1) << me_ << " tightening bounds. Time = " 
-    << env_->getTime(err) << std::endl;
+    << env_->getTime() << std::endl;
 #endif
 
   for(HandlerIterator h = handlers_.begin(); h != handlers_.end(); ++h) {

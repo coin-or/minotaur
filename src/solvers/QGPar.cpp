@@ -666,8 +666,6 @@ CLEANUP:
 void QGPar::writeParBnbStatus_(ParQGBranchAndBound *parbab, double wallTimeStart, clock_t clockTimeStart)
 {
 
-  int err = 0;
-
   if (parbab) {
     env_->getLogger()->msgStream(LogInfo)
       << me_ << std::fixed << std::setprecision(4) 
