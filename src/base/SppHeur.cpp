@@ -81,13 +81,12 @@ void SppHeur::solve(NodePtr, RelaxationPtr, SolutionPoolPtr spool)
   stats_.calls += 1;
   if (!isSpp_()) {
 #if SPEW
-    logger_->msgStream(LogNone) << me_ << "not a set partitioning model" 
+    logger_->msgStream(LogDebug1) << me_ << "not a set partitioning model" 
       << std::endl;
 #endif
     return;
   }
 
-  srand(time(NULL));
   cv2_.clear();
 
   for (int i=0; i<15; ++i) {
