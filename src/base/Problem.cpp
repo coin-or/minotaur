@@ -663,7 +663,7 @@ bool Problem::isNoSpecificStructure_(ConstraintPtr c)
 void Problem::printConstraintStatistics_()
 {
   const int wid=8;
-  logger_->msgStream(LogError)
+  logger_->msgStream(LogExtraInfo)
       << "-----------------------------------------" << std::endl
       << "|Constraint Statistics                  |\n"
       << "|---------------------------------------|\n"

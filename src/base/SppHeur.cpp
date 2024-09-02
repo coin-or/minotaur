@@ -80,6 +80,10 @@ void SppHeur::solve(NodePtr, RelaxationPtr, SolutionPoolPtr spool)
 
   stats_.calls += 1;
   if (!isSpp_()) {
+#if SPEW
+    logger_->msgStream(LogNone) << me_ << "not a set partitioning model" 
+      << std::endl;
+#endif
     return;
   }
 
@@ -109,7 +113,7 @@ void SppHeur::solveNode(ConstSolutionPtr sol, NodePtr , RelaxationPtr ,
   }
 
   cv2_.clear();
-  for (int i=0; i<1; ++i) {
+  for (int i=0; i<10; ++i) {
     conWiseNb_(x, NULL, NULL, spool);
   }
 
@@ -209,7 +213,7 @@ void SppHeur::conWiseNb_(const double *x, NodePtr, RelaxationPtr, SolutionPoolPt
     c = *cit;
     f = c->getFunction();
 #if SPEW
-    logger_->msgStream(LogInfo) << me_ << " trying constraint number " << j
+    logger_->msgStream(LogDebug2) << me_ << " trying constraint number " << j
       << " out of " << cv2_.size() << " with " << f->getNumVars() << " vars. "
       << c->getName() << " "
       << num1 << " vars at 1 and " << num0 << " vars at 0 " << std::endl;
@@ -218,19 +222,19 @@ void SppHeur::conWiseNb_(const double *x, NodePtr, RelaxationPtr, SolutionPoolPt
     // check if already fixed
     if (true==c->getBFlag()) {
 #if SPEW
-      logger_->msgStream(LogInfo) << me_ << " constraint " << c->getName()
+      logger_->msgStream(LogDebug2) << me_ << " constraint " << c->getName()
         << " is feasible already. Skipping " << std::endl;
 #endif
       continue;
     }
 
     // pick one variable to set to 1. Go left to right and pick the one that
-    // is nonzero in x and appears in highest number of constraints.
+    // is nonzero in x 
     UInt i=0;
     cfixed=false;
     for (vsit = f->varsBegin(); vsit != f->varsEnd(); ++vsit,++i) {
       v = *vsit;
-      if (10==v->getItmp() && x[v->getIndex()]>tol) {
+      if (10==v->getItmp() && x[v->getIndex()]>tol && rand()%100<30) {
 #if SPEW
         logger_->msgStream(LogDebug2) << me_ << " setting variable " << v->getName() << " to 1, i =  " << i <<  std::endl;
 #endif
@@ -250,7 +254,7 @@ void SppHeur::conWiseNb_(const double *x, NodePtr, RelaxationPtr, SolutionPoolPt
     }
     if (cfixed) {
 #if SPEW
-      logger_->msgStream(LogInfo) << me_ << " constraint " << c->getName()
+      logger_->msgStream(LogDebug2) << me_ << " constraint " << c->getName()
         << " feasible from nz x." << std::endl;
 #endif
       continue;
@@ -338,7 +342,7 @@ void SppHeur::varWise_(NodePtr, RelaxationPtr, SolutionPoolPtr spool)
   const double *xx=0;
 
   stats_.runs += 1;
-  logger_->msgStream(LogInfo) << me_ << " running in Variable Wise mode" 
+  logger_->msgStream(LogDebug1) << me_ << " running in Variable Wise mode" 
     << " round " << stats_.runs << " Time = " << env_->getTime() << std::endl;
 
   if (spool->getNumSols()>0) {
@@ -541,12 +545,12 @@ void SppHeur::conWise_(NodePtr, RelaxationPtr, SolutionPoolPtr spool)
 
     if (cfixed) {
 #if SPEW
-      logger_->msgStream(LogInfo) << me_ << " constraint " << c->getName()
+      logger_->msgStream(LogDebug2) << me_ << " constraint " << c->getName()
         << " feasible." << std::endl;
 #endif
     } else {
 #if SPEW
-      logger_->msgStream(LogInfo) << me_ << " constraint " << c->getName()
+      logger_->msgStream(LogDebug2) << me_ << " constraint " << c->getName()
         << "has all zeros. Infeasible." << std::endl;
 #endif
       cv.insert(cv.begin(),c);
@@ -612,7 +616,7 @@ void SppHeur::conWise2_(NodePtr, RelaxationPtr, SolutionPoolPtr spool)
     for (VariableConstIterator vit = p_->varsBegin(); vit != p_->varsEnd();
          ++vit,++j) {
       (*vit)->setItmp(10); // 10 for FREE, 0 for FIXED at 0, 1 for FIXED at 1
-      if (fabs(xx[j]-1.0)<1e-6 && (*vit)->getNumCons()>3 && rand()%100<10) {
+      if (fabs(xx[j]-1.0)<1e-6 && (*vit)->getNumCons()>3 && rand()%100<30) {
         (*vit)->setItmp(0);
         ++num0;
       }

@@ -437,20 +437,19 @@ int Bnb::solve(ProblemPtr p)
 
   oinst_ = p;
   oinst_->calculateSize();
+  oinst_->classifyCon();
+
   if(options->findBool("display_problem")->getValue() == true) {
     oinst_->write(env_->getLogger()->msgStream(LogNone), 12);
   }
   
   if (env_->getOptions()->findInt("log_level")->getValue() >= 3 ) {
-        options->findBool("display_size")->setValue(true);
-        options->findBool("display_presolved_size")->setValue(true);
+    options->findBool("display_size")->setValue(true);
+    options->findBool("display_presolved_size")->setValue(true);
   }
   
   if (options->findBool("display_size")->getValue() == true) {
     oinst_->writeSize(env_->getLogger()->msgStream(LogNone));
-    env_->getLogger()->msgStream(LogInfo) << me_ << "Starting constraint classification\n";
-    oinst_->classifyCon();
-    env_->getLogger()->msgStream(LogInfo) << me_ << "Finished constraint classification\n";
   }
 
   // setup the jacobian and hessian
