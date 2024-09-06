@@ -41,7 +41,6 @@ int main()
   std::cout << "solution status = " << e.getStatusString() << std::endl;
   std::cout << "solution value = " << e.getSolutionValue() << std::endl;
 
-  p->clear();
   return 0;
 }
 
