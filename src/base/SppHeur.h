@@ -27,6 +27,14 @@ struct SppHeurStats {
   double time;  // Time taken in this heuristic
 };
 
+struct SppHeurMods {
+  VarSetConstIter vit; 
+  std::deque<Variable *> vq0; 
+  ConstraintConstIterator cit;
+  std::deque<Constraint *> cq; 
+};
+
+
 
 class SppHeur : public Heuristic
 {
@@ -66,9 +74,13 @@ private:
   // Vector of cons
   ConstraintVector cv2_;
 
-  void addSol_(SolutionPool *spool) ;
+  std::deque<SppHeurMods *> mstack_;
+  std::deque<Variable *> vq_; 
+
+  double addSol_(SolutionPool *spool) ;
 
   /// call to heuristic
+  void enum_(NodePtr, RelaxationPtr, SolutionPoolPtr spool);
   void conWise_(NodePtr, RelaxationPtr, SolutionPoolPtr s_pool);
   void conWise2_(NodePtr, RelaxationPtr, SolutionPoolPtr spool);
   void varWise_(NodePtr, RelaxationPtr, SolutionPoolPtr spool);
@@ -84,6 +96,7 @@ private:
   bool isFeasible_(const double* x);
 
   bool propVal_(VariablePtr v, int &num0, int &consfixed);
+  bool propEnum_(Variable* v, ConstraintConstIterator cit2, VarSetConstIter vit2);
 
   void solveLP_(SolutionPool *spool);
 };

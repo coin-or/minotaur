@@ -595,9 +595,15 @@ EngineStatus OsiLPEngine::solve()
 
   if (1==stats_->calls) {
     osilp_->initialSolve();
-  } else {
+  } else if (true == pickLPMeth_) {
     osilp_->resolve();
+  } else {
+    Problem *p = problem_;
+    clear();
+    load(p);
+    osilp_->initialSolve();
   }
+
   if (osilp_->isProvenOptimal()) {
     status_ = ProvenOptimal;
     sol_->setPrimal(osilp_->getStrictColSolution());

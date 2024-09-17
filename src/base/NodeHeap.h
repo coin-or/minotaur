@@ -30,8 +30,7 @@ namespace Minotaur {
    * .
    * In order to create a heap, we need to have criteria for comparing nodes.
    * These criteria are determined by the parameter for
-   * node-selection-strategy: best bound, best estimate, best estimate+guided
-   * dive etc.
+   * node-selection-strategy: best bound, best estimate, etc
    */
    class NodeHeap : public ActiveNodeStore {
 
