@@ -43,7 +43,7 @@ SppHeur::SppHeur(EnvPtr env, ProblemPtr p)
   stats_.time = 0.0;
 }
 
-void SppHeur::addSol_(SolutionPool *spool) 
+double SppHeur::addSol_(SolutionPool *spool) 
 {
   double objval=0.0;
   LinearFunction* lf=p_->getObjective()->getFunction()->getLinearFunction();
@@ -71,7 +71,7 @@ void SppHeur::addSol_(SolutionPool *spool)
       << "feasible is not really feasible " << std::endl;
   } 
   delete[] x;
-  return;
+  return objval;
 }
 
 void SppHeur::solve(NodePtr, RelaxationPtr, SolutionPoolPtr spool)
@@ -89,12 +89,16 @@ void SppHeur::solve(NodePtr, RelaxationPtr, SolutionPoolPtr spool)
 
   cv2_.clear();
 
-  for (int i=0; i<15; ++i) {
-    conWise2_(NULL, NULL, spool);
-  }
   for (int i=0; i<5; ++i) {
     conWise_(NULL, NULL, spool);
   }
+  for (int i=0; i<15; ++i) {
+     conWise2_(NULL, NULL, spool);
+  }
+  // for (int i=0; i<1; ++i) {
+  //   conWise_(NULL, NULL, spool);
+  // }
+  // enum_(NULL, NULL, spool);
 
   stats_.time += env_->getTime()-start;
 
@@ -196,24 +200,31 @@ void SppHeur::conWiseNb_(const double *x, NodePtr, RelaxationPtr, SolutionPoolPt
 #endif
   }
 
+  // shuffle the constraints
+  for (int i=0; i<5; ++i) {
+    j = rand()%cv.size();
+    c = cv[i];
+    cv[i] = cv[j];
+    cv[j] = c;
+  }
+
   std::sort(cv.begin(), cv.end(), CompareLen);
   for (VariableConstIterator vit = p_->varsBegin(); vit != p_->varsEnd();
        ++vit) {
     (*vit)->setItmp(10); // 10 for FREE, 0 for FIXED at 0, 1 for FIXED at 1
   }
-  cv2_.insert(cv2_.end(), cv.begin(), cv.end());
-  cv.clear();
+
   feas=true;
 
   // start fixing vars in constraints one by one
   j=0;
-  for (ConstraintConstIterator cit = cv2_.begin(); cit != cv2_.end(); ++cit) {
+  for (ConstraintConstIterator cit = cv.begin(); cit != cv.end(); ++cit) {
     ++j;
     c = *cit;
     f = c->getFunction();
 #if SPEW
     logger_->msgStream(LogDebug2) << me_ << " trying constraint number " << j
-      << " out of " << cv2_.size() << " with " << f->getNumVars() << " vars. "
+      << " out of " << cv.size() << " with " << f->getNumVars() << " vars. "
       << c->getName() << " "
       << num1 << " vars at 1 and " << num0 << " vars at 0 " << std::endl;
 #endif
@@ -233,7 +244,7 @@ void SppHeur::conWiseNb_(const double *x, NodePtr, RelaxationPtr, SolutionPoolPt
     cfixed=false;
     for (vsit = f->varsBegin(); vsit != f->varsEnd(); ++vsit,++i) {
       v = *vsit;
-      if (10==v->getItmp() && x[v->getIndex()]>tol && rand()%100<30) {
+      if (10==v->getItmp() && x[v->getIndex()]>tol && rand()%100<10) {
 #if SPEW
         logger_->msgStream(LogDebug2) << me_ << " setting variable " << v->getName() << " to 1, i =  " << i <<  std::endl;
 #endif
@@ -313,8 +324,6 @@ void SppHeur::conWiseNb_(const double *x, NodePtr, RelaxationPtr, SolutionPoolPt
     }
   }
 
-  cv2_.clear();
-  cv2_.insert(cv2_.begin(), cv.begin(), cv.end());
 #if SPEW
   logger_->msgStream(LogDebug2) << me_ << " cv size = " << cv.size() << std::endl;
 #endif
@@ -423,6 +432,128 @@ void SppHeur::varWise_(NodePtr, RelaxationPtr, SolutionPoolPtr spool)
       << std::endl;
   }
 }
+
+void SppHeur::enum_(NodePtr, RelaxationPtr, SolutionPoolPtr spool)
+{
+  ConstraintPtr c;
+  VariablePtr v;
+  ConstraintVector cv;
+  Function *f;
+  bool cfixed;
+  VarSetConstIter vsit;
+  ConstraintConstIterator cit;
+  SppHeurMods *m = 0;
+  UInt minsize = 100000;
+  int iter=0;
+
+  for (cit = p_->consBegin(); cit != p_->consEnd();
+      ++cit) {
+    c = *cit;
+    c->setBFlag(false);
+    cv.push_back(c);
+  }
+  std::sort(cv.begin(), cv.end(), CompareLen);
+
+  for (VariableConstIterator vit = p_->varsBegin(); vit != p_->varsEnd();
+       ++vit) {
+    (*vit)->setItmp(10); // 10 for FREE, 0 for FIXED at 0, 1 for FIXED at 1
+  }
+
+  // start fixing vars one by one
+  mstack_.clear();
+
+  cit = cv.begin();
+  f = (*cit)->getFunction();
+  for (vsit = f->varsBegin(); vsit != f->varsEnd(); ++vsit) {
+    v = *vsit;
+    if (10==v->getItmp()) {
+      if (true==propEnum_(v, cit, vsit)) {
+        break;
+      }
+    }
+  }
+
+  while (true) {
+    ++iter;
+    c = *cit;
+    cfixed = false;
+
+#if SPEW
+    logger_->msgStream(LogDebug2) << me_ << " trying constraint " 
+      << c->getName() << " " << std::endl;
+#endif
+
+    // check if already fixed
+    if (true==c->getBFlag()) {
+#if SPEW
+      logger_->msgStream(LogDebug2) << me_ << " constraint " << c->getName()
+        << " is feasible already. Skipping " << std::endl;
+#endif
+      cfixed = true;
+    } else {
+      f = c->getFunction();
+      for (; vsit != f->varsEnd(); ++vsit) {
+        v = *vsit;
+        if (10==v->getItmp()) {
+          if (false==propEnum_(v, cit, vsit)) {
+            continue;
+          } else {
+            cfixed=true;
+            break;
+          }
+        }
+      }
+    }
+
+    if (cfixed) {
+      ++cit;
+    }
+
+    if (cit==cv.end() || false==cfixed || mstack_.size()>=minsize) {
+
+      // logger_->msgStream(LogDebug2) << me_ << " reached the end\n" << std::endl
+      //   << me_ << "stack size = " << mstack_.size() << std::endl;
+      if (true==cfixed && cit==cv.end()) {
+        minsize = mstack_.size();
+        addSol_(spool);
+      }
+
+      if (false==cfixed) {
+        // logger_->msgStream(LogInfo) << me_ << (*cit)->getName() << " exhausted " << std::endl;
+        if (cit == cv.begin()) {
+          // logger_->msgStream(LogInfo) << me_ << " all done " << std::endl;
+          break;
+        }
+      }
+
+
+      m = mstack_.back();
+
+      vsit = m->vit;
+      ++vsit;
+
+      cit = m->cit;
+
+      if (mstack_.size()<100 && cit!=cv.end()) {
+        logger_->msgStream(LogDebug2) << me_ << " depth = " << mstack_.size() 
+          << " " << (*cit)->getIndex() << " " << env_->getTime() << std::endl;
+      }
+
+      for (std::deque<Constraint *>::iterator it=m->cq.begin(); it!=m->cq.end(); ++it) {
+        (*it)->setBFlag(false);
+      }
+      for (std::deque<Variable *>::iterator it=m->vq0.begin(); it!=m->vq0.end(); ++it) {
+        (*it)->setItmp(10);
+      }
+      mstack_.pop_back();
+      delete m;
+    } else {
+      vsit=(*cit)->getFunction()->varsBegin();
+    }
+  }
+  exit(0);
+}
+
 
 void SppHeur::conWise_(NodePtr, RelaxationPtr, SolutionPoolPtr spool)
 {
@@ -582,7 +713,7 @@ void SppHeur::conWise2_(NodePtr, RelaxationPtr, SolutionPoolPtr spool)
   ConstraintVector cv;
   FunctionPtr f;
   VarSetConstIter vsit;
-  int val, j, num1, num0, nz, kk;
+  int j, num1, num0, nz, kk;
   bool cfixed, feas;
   const double *xx;
   VarVector vvec;
@@ -665,7 +796,7 @@ void SppHeur::conWise2_(NodePtr, RelaxationPtr, SolutionPoolPtr spool)
 
     f = c->getFunction();
 #if SPEW
-    logger_->msgStream(LogDebug1) << me_ << " trying constraint number " << j
+    logger_->msgStream(LogDebug2) << me_ << " trying constraint number " << j
       << " out of " << cv.size() << " with " << f->getNumVars() << " vars. "
       << c->getName() << " " << c->getITemp() << " unfixed vars. " 
       << num1 << " vars at 1 and " << num0 << " vars at 0 in model " 
@@ -684,36 +815,31 @@ void SppHeur::conWise2_(NodePtr, RelaxationPtr, SolutionPoolPtr spool)
 
     // pick one variable to set to 1
     cfixed=false;
+    i=0;
+    // std::cout << c->getITemp() << " " ;
     for (VariableConstIterator vit = vvec.begin(); vit != vvec.end(); ++vit,++i) {
+      if (vvec.size()>500 && rand()%100<60) {
+        continue;
+      }
       v = *vit;
-      val = v->getItmp();
-      if (10==val) {
 #if SPEW
-        logger_->msgStream(LogDebug2) << me_ << " setting variable " 
-          << v->getName() << " to 1, i =  " << i << " of " << vvec.size()
-          << ". Con count = " << v->getNumCons() <<  std::endl;
+      logger_->msgStream(LogDebug2) << me_ << " setting variable " 
+        << v->getName() << " to 1, i =  " << i << " of " << vvec.size()
+        << ". Con count = " << v->getNumCons() <<  std::endl;
 #endif
-        if (false==propVal_(v, num0, kk)) {
-          v->setItmp(0);
+      if (false==propVal_(v, num0, kk)) {
+        v->setItmp(0);
 #if SPEW
-          logger_->msgStream(LogDebug2) << me_ << " propagation found that var "
-           << "cannot be 1 " << v->getName() <<  ". Should be caught earlier"
-           <<  std::endl;
+        logger_->msgStream(LogDebug2) << me_ << " propagation found that var "
+          << "cannot be 1 " << v->getName() <<  ". Should be caught earlier"
+          <<  std::endl;
 #endif
-        } else {
-          cfixed = true;
-          ++consfixed;
-          ++num1;
-          break;
-        }
-      } else if(1==val) {
-        logger_->msgStream(LogError) << me_ << " variable " << v->getName()
-          << " already at 1. Cant happen " << std::endl;
       } else {
-#if SPEW
-        logger_->msgStream(LogDebug2) << me_ << " variable "
-          << v->getName() << " already at 0, trying next" << std::endl;
-#endif
+        // std::cout << i << " " << vvec.size() << " " << v->getNumCons() << std::endl;
+        cfixed = true;
+        ++consfixed;
+        ++num1;
+        break;
       }
     }
 
@@ -734,6 +860,7 @@ void SppHeur::conWise2_(NodePtr, RelaxationPtr, SolutionPoolPtr spool)
 
   if (feas) {
     addSol_(spool);
+    // exit(0);
   } else {
 #if SPEW
     logger_->msgStream(LogDebug1) << me_ << "Failed to find a feasible solution."
@@ -753,6 +880,38 @@ void SppHeur::sortVars_(VarVector &vvec)
     }
   } compvars;
   std::sort(vvec.begin(), vvec.end(), compvars);
+}
+
+bool SppHeur::propEnum_(Variable* v, ConstraintConstIterator cit2, VarSetConstIter vit2)
+{
+  SppHeurMods *m = 0;
+  Function* f = 0;
+
+  for (ConstrSet::iterator cit=v->consBegin(); cit!=v->consEnd(); ++cit) {
+    if (true==(*cit)->getBFlag()) {
+      return false;
+    } 
+  }
+
+  m = new SppHeurMods();
+  for (ConstrSet::iterator cit=v->consBegin(); cit!=v->consEnd(); ++cit) {
+    if ((*cit)->getBFlag() == false) {
+      (*cit)->setBFlag(true);
+      m->cq.push_back(*cit);
+      f = (*cit)->getFunction();
+      for (VarSetConstIterator vit=f->varsBegin(); vit!=f->varsEnd(); ++vit) {
+        if ((*vit)->getItmp()==10) {
+          (*vit)->setItmp(0);
+	  m->vq0.push_back(*vit);
+        }
+      }
+    }
+  }
+  v->setItmp(1);
+  m->cit = cit2;
+  m->vit = vit2;
+  mstack_.push_back(m);
+  return true;
 }
 
 

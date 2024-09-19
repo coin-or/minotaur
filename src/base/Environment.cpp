@@ -154,11 +154,6 @@ void Environment::createDefaultOptions_()
   options_->insert(b_option);
 
   b_option = (BoolOptionPtr) new Option<bool>(
-      "guided_dive", "Should perform guided dives after branching: <0/1>", true,
-      true);
-  options_->insert(b_option);
-
-  b_option = (BoolOptionPtr) new Option<bool>(
       "solve", "Should solve the problem: <0/1>", true, true);
   options_->insert(b_option);
 
@@ -384,6 +379,11 @@ void Environment::createDefaultOptions_()
 
   i_option = (IntOptionPtr) new Option<int>(
       "bqpd_mxiwk", "Override value of mxiwk used by Bqpd", true, 0);
+  options_->insert(i_option);
+
+  i_option = new Option<int>(
+      "branch_dir", "which branch to select for next solve. 0: down branch,"
+     " 1: up branch first, 2: guided by incumbent and brancher", true, 2);
   options_->insert(i_option);
 
   i_option = (IntOptionPtr) new Option<int>(

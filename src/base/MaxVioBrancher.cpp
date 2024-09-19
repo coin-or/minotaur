@@ -101,7 +101,8 @@ Branches MaxVioBrancher::findBranches(RelaxationPtr rel, NodePtr,
   return branches;
 }
 
-void MaxVioBrancher::findCandidates_(ModVector &mods, bool &should_prune) {
+void MaxVioBrancher::findCandidates_(ModVector &mods, bool &should_prune) 
+{
   BrVarCandSet cands2;     // Temporary set.
   BrCandVector gencands2;  // Temporary set.
   BrCandPtr br_can;
@@ -151,9 +152,9 @@ void MaxVioBrancher::findCandidates_(ModVector &mods, bool &should_prune) {
   }
 
 #if SPEW
-  logger_->msgStream(LogDebug) << me_ << "candidates: " << std::endl;
+  logger_->msgStream(LogDebug1) << me_ << cands_.size() << " candidates: " << std::endl;
   for (BrVarCandIter it = cands_.begin(); it != cands_.end(); ++it) {
-    logger_->msgStream(LogDebug)
+    logger_->msgStream(LogDebug2)
         << std::setprecision(6) << (*it)->getName() << "\t" << (*it)->getDDist()
         << "\t" << (*it)->getUDist() << std::endl;
   }

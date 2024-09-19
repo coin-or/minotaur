@@ -41,7 +41,7 @@ IntVarHandler::IntVarHandler(EnvPtr env, ProblemPtr problem)
   modProb_  = true;
   modRel_   = true;
   intTol_   = env_->getOptions()->findDouble("int_tol")->getValue();
-  gDive_    = env_->getOptions()->findBool("guided_dive")->getValue();
+  bdRule_   = env_->getOptions()->findInt("branch_dir")->getValue();
   problem_  = problem;
 }
 
@@ -177,7 +177,13 @@ Branches IntVarHandler::getBranches(BrCandPtr cand, DoubleVector & x,
   branch2->setActivity(value);
   vcand->setNumBranches(2);
 
-  if (true==gDive_ && bestsol) {
+  if (0==bdRule_) {
+    branches->push_back(branch1);
+    branches->push_back(branch2);
+  } else if (1==bdRule_) {
+    branches->push_back(branch2);
+    branches->push_back(branch1);
+  } else if (2==bdRule_ && bestsol) {
     if (bestsol->getPrimal()[v->getIndex()] < x[v->getIndex()]) {
       branches->push_back(branch1);
       branches->push_back(branch2);

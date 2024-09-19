@@ -104,8 +104,8 @@ private:
   /// Environment.
   EnvPtr env_;
 
-  /// True if we are doing guided dive, false otherwise.
-  bool gDive_;
+  /// rule for selecting the branch to be processed first
+  int bdRule_;
 
   /**
    * Tolerance for checking integrality.
