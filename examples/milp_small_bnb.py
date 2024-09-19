@@ -18,6 +18,8 @@
 
 #####################################################
 
+solver_path = '../build/bin/mbnb' #The solver path to be added by the user
+
 from pyomo.environ import *
 
 # Create a model
@@ -39,7 +41,7 @@ model.constr2 = Constraint(expr=(2 * model.x1 + model.x2 <= 10))
 model.constr2_lower = Constraint(expr=(2 * model.x1 + model.x2 >= 0))
 
 # Create a solver
-solver = SolverFactory("mbnb", executable='../../build/bin/mbnb') 
+solver = SolverFactory("mbnb", executable=solver_path) 
 
 # Solve the model
 results = solver.solve(model, tee=True)

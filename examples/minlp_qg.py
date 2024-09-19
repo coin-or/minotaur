@@ -19,7 +19,7 @@
 # #################################################
 # Where nonlinear function = x1 * x2^2
 # #################################################
-
+solver_path = '../build/bin/mqg' #The solver path to be added by the user
 from pyomo.environ import *
 from pyomo.opt import SolverFactory
 
@@ -40,7 +40,7 @@ model.nl_con = Constraint(expr=model.x1 * model.x2**2 <= 1)
 model.lin_con = Constraint(expr=model.x1 + model.x2 >= 1)
 
 # Solve the problem
-solver = SolverFactory("mqg", executable='../../build/bin/mqg') 
+solver = SolverFactory("mqg", executable=solver_path) 
 results = solver.solve(model, tee=True)
 
 # Display the results

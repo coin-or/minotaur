@@ -14,7 +14,7 @@
 
 # subject to cons0: 1 <= + 1*x1 + 1*x2 ;
 # ===============================================
-
+solver_path = '../build/bin/mbnb' #The solver path to be added by the user
 from pyomo.environ import *
 from pyomo.opt import SolverFactory
 
@@ -32,7 +32,7 @@ model.obj = Objective(expr=model.x1**2 + model.x2**2, sense=maximize)
 model.con = Constraint(expr=model.x1 + model.x2 >= 1)
 
 # Solve the problem using  BnB
-solver = SolverFactory("mbnb", executable='../../build/bin/mbnb') 
+solver = SolverFactory("mbnb", executable=solver_path) 
 
 # Solve the problem
 solver.solve(model, tee=True)

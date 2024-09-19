@@ -44,6 +44,7 @@
 
 
 ###################################################################################################################
+solver_path = '../build/bin/mbnb' #The solver path to be added by the user
 
 from pyomo.environ import *
 
@@ -68,7 +69,7 @@ for i in range(10):
     )
 
 # Create a solver
-solver = SolverFactory('mbnb', executable='../../build/bin/mbnb')  # Update with appropriate solver path
+solver = SolverFactory('mbnb', executable=solver_path)  # Update with appropriate solver path
 
 # Solve the model
 solver.solve(model, tee=True)

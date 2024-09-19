@@ -8,6 +8,7 @@
 # subject to cons0: 0 <= + 30*x1 + 10*x2 + 40*x3  <= 40;
 
 #################################################################
+solver_path = '../build/bin/mbnb' #The solver path to be added by the user
 
 from pyomo.environ import *
 
@@ -30,7 +31,7 @@ model.obj = Objective(expr=sum(values[i] * model.x[i] for i in range(n_items)), 
 model.weight_constraint = Constraint(expr=sum(weights[i] * model.x[i] for i in range(n_items)) <= capacity)
 
 # Create a solver
-solver = SolverFactory("mbnb", executable='../../build/bin/mbnb') 
+solver = SolverFactory("mbnb", executable=solver_path) 
 
 # Solve the model
 solver.solve(model, tee=True)

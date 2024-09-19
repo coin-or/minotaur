@@ -7,7 +7,7 @@
 
 # subject to cons0: + 0.5*x1*x1 + 1*x1*x2 - 1*x2*x2  <= 1;
 # =========================================================================
-
+solver_path = '../build/bin/mglob' #The solver path to be added by the user
 from pyomo.environ import *
 
 # Create a model
@@ -24,7 +24,7 @@ model.obj = Objective(expr=0.5 * model.x1**2 + 0.5 * model.x2**2, sense=maximize
 model.cons = Constraint(expr=0.5 * model.x1**2 + model.x1 * model.x2 - model.x2**2 <= 1)
 
 # Create a solver
-solver = SolverFactory("mglob", executable='../../build/bin/mglob') 
+solver = SolverFactory("mglob", executable=solver_path) 
 
 # Solve the problem
 results = solver.solve(model, tee=True)
