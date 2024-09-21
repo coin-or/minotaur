@@ -936,6 +936,10 @@ foreach(EXAMPLE_FILE ${EXAMPLE_CPP_FILES})
         ${LD_ADD}
     )
 
+    # Make sure examples do not build by default
+    set_target_properties(${EXAMPLE_NAME} PROPERTIES
+        EXCLUDE_FROM_ALL TRUE)
+
     # Set the RPATH flags
     set_target_properties(${EXAMPLE_NAME} PROPERTIES
         LINK_FLAGS "${RPATH_FLAGS}"
