@@ -887,81 +887,81 @@ set(LIBRARY_OUTPUT_PATH "${LIBRARY_OUTPUT_PATH}" CACHE INTERNAL "")
 # Check if TP_ABS_PATH is set, otherwise exit with an error
 
 if(NOT DEFINED TP_ABS_PATH OR "${TP_ABS_PATH}" STREQUAL "")
-    message(FATAL_ERROR "TP_ABS_PATH is not set. Please set this variable to the correct third-party libraries path.")
+    message(WARNING "THIRD_PARTY_PATH is not set. Examples will not be compiled. Continuing with rest of the build process...")
+else()
+    # Set variables
+    set(CXX_FLAGS "-ggdb")
+    set(LD_ADD "-lgfortran -llapack -ldl")
+    set(MINCDIR "${CMAKE_CURRENT_BINARY_DIR}/include/minotaur")
+    set(MLIBDIR "${CMAKE_CURRENT_BINARY_DIR}/lib")
+    set(TARGET_DIR "${CMAKE_SOURCE_DIR}/examples")
+    set(ASL_LIB "${TP_ABS_PATH}/lib/amplsolver.a")
+    set(FILTERSQP_LIB "${TP_ABS_PATH}/lib/libfiltersqp.a")
+    set(BPQD_LIB "${TP_ABS_PATH}/lib/libbqpd.a")
+    set(RPATH_FLAGS "-Wl,-rpath=${MLIBDIR}:${TP_ABS_PATH}/lib")
+
+    # Set include directories
+    include_directories(${MINCDIR} ${TP_ABS_PATH}/include/asl)
+
+    # Set link directories
+    link_directories(${MLIBDIR} ${TP_ABS_PATH}/lib)
+
+    # Get all .cpp files in the examples directory
+    file(GLOB EXAMPLE_CPP_FILES "${TARGET_DIR}/*.cpp")
+
+    # List of executables to be built
+    set(EXAMPLE_EXECUTABLES)
+    # List of executables to be removed
+    set(RM_EXAMPLE_EXECUTABLES)
+
+    # Create an executable for each example and set output directory to be the examples folder
+    foreach(EXAMPLE_FILE ${EXAMPLE_CPP_FILES})
+        get_filename_component(EXAMPLE_NAME ${EXAMPLE_FILE} NAME_WE)
+
+        # Add the executable target for each example
+        add_executable(${EXAMPLE_NAME} ${EXAMPLE_FILE})
+
+        # Link required libraries
+        target_link_libraries(${EXAMPLE_NAME}
+            -lminotaur
+            -lipopt
+            -lOsiClp
+            -lOsi
+            -lClp
+            -lCoinUtils
+            -lcoinmumps
+            ${FILTERSQP_LIB}
+            ${BPQD_LIB}
+            ${ASL_LIB}
+            ${LD_ADD}
+        )
+
+        # Make sure examples do not build by default
+        set_target_properties(${EXAMPLE_NAME} PROPERTIES
+            EXCLUDE_FROM_ALL TRUE)
+
+        # Set the RPATH flags
+        set_target_properties(${EXAMPLE_NAME} PROPERTIES
+            LINK_FLAGS "${RPATH_FLAGS}"
+        )
+
+        # Set the output directory to be the same as the examples directory
+        set_target_properties(${EXAMPLE_NAME} PROPERTIES
+            RUNTIME_OUTPUT_DIRECTORY "${TARGET_DIR}"
+        )
+
+        # Add the executable to the list
+        list(APPEND EXAMPLE_EXECUTABLES ${EXAMPLE_NAME})
+        list(APPEND RM_EXAMPLE_EXECUTABLES ${TARGET_DIR}/${EXAMPLE_NAME})
+    endforeach()
+
+    # Add a custom target to build all examples at once
+    add_custom_target(examples
+        COMMAND ${CMAKE_COMMAND} --build ${CMAKE_BINARY_DIR} --target ${EXAMPLE_EXECUTABLES}
+        DEPENDS ${EXAMPLE_EXECUTABLES}
+        COMMENT "Building all examples in the examples directory..."
+    )
 endif()
-# Set variables
-set(CXX_FLAGS "-ggdb")
-set(LD_ADD "-lgfortran -llapack -ldl")
-set(MINCDIR "${CMAKE_CURRENT_BINARY_DIR}/include/minotaur")
-set(MLIBDIR "${CMAKE_CURRENT_BINARY_DIR}/lib")
-set(TARGET_DIR "${CMAKE_SOURCE_DIR}/examples")
-set(ASL_LIB "${TP_ABS_PATH}/lib/amplsolver.a")
-set(FILTERSQP_LIB "${TP_ABS_PATH}/lib/libfiltersqp.a")
-set(BPQD_LIB "${TP_ABS_PATH}/lib/libbqpd.a")
-set(RPATH_FLAGS "-Wl,-rpath=${MLIBDIR}:${TP_ABS_PATH}/lib")
-
-# Set include directories
-include_directories(${MINCDIR} ${TP_ABS_PATH}/include/asl)
-
-# Set link directories
-link_directories(${MLIBDIR} ${TP_ABS_PATH}/lib)
-
-# Get all .cpp files in the examples directory
-file(GLOB EXAMPLE_CPP_FILES "${TARGET_DIR}/*.cpp")
-
-# List of executables to be built
-set(EXAMPLE_EXECUTABLES)
-# List of executables to be removed
-set(RM_EXAMPLE_EXECUTABLES)
-
-# Create an executable for each example and set output directory to be the examples folder
-foreach(EXAMPLE_FILE ${EXAMPLE_CPP_FILES})
-    get_filename_component(EXAMPLE_NAME ${EXAMPLE_FILE} NAME_WE)
-
-    # Add the executable target for each example
-    add_executable(${EXAMPLE_NAME} ${EXAMPLE_FILE})
-
-    # Link required libraries
-    target_link_libraries(${EXAMPLE_NAME}
-        -lminotaur
-        -lipopt
-        -lOsiClp
-        -lOsi
-        -lClp
-        -lCoinUtils
-        -lcoinmumps
-        ${FILTERSQP_LIB}
-        ${BPQD_LIB}
-        ${ASL_LIB}
-        ${LD_ADD}
-    )
-
-    # Make sure examples do not build by default
-    set_target_properties(${EXAMPLE_NAME} PROPERTIES
-        EXCLUDE_FROM_ALL TRUE)
-
-    # Set the RPATH flags
-    set_target_properties(${EXAMPLE_NAME} PROPERTIES
-        LINK_FLAGS "${RPATH_FLAGS}"
-    )
-
-    # Set the output directory to be the same as the examples directory
-    set_target_properties(${EXAMPLE_NAME} PROPERTIES
-        RUNTIME_OUTPUT_DIRECTORY "${TARGET_DIR}"
-    )
-
-    # Add the executable to the list
-    list(APPEND EXAMPLE_EXECUTABLES ${EXAMPLE_NAME})
-    list(APPEND RM_EXAMPLE_EXECUTABLES ${TARGET_DIR}/${EXAMPLE_NAME})
-endforeach()
-
-# Add a custom target to build all examples at once
-add_custom_target(examples
-    COMMAND ${CMAKE_COMMAND} --build ${CMAKE_BINARY_DIR} --target ${EXAMPLE_EXECUTABLES}
-    DEPENDS ${EXAMPLE_EXECUTABLES}
-    COMMENT "Building all examples in the examples directory..."
-)
-
 ###########################################################################
 ## make clean_examples
 ###########################################################################
