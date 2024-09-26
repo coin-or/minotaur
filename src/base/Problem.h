@@ -48,6 +48,9 @@ namespace Minotaur {
    */
 struct ConstraintStats {
     int nvars = 0;
+    int nterms = 0;
+    int nsqterm = 0;
+    int nbilterm = 0;
     int nposcoefone = 0;
     int nnegcoefone = 0;
     int nposcoef = 0;
@@ -58,6 +61,7 @@ struct ConstraintStats {
     int nnegbin = 0;
     int nposint = 0;
     int nnegint = 0;
+    int eqwt = 0;
     double wt1 = 0.0;
     double wt2 = 0.0;
     double sumnegwt = 0.0;
@@ -629,9 +633,18 @@ struct ConstraintStats {
     bool isIntegerKnapsack_(ConstraintPtr c, const ConstraintStats& stats);
     bool isMixedBinary_(ConstraintPtr c, const ConstraintStats& stats);
     bool isNoSpecificStructure_(ConstraintPtr c);
+    bool isDiagonalQuadratic_(ConstraintPtr c, const ConstraintStats& stats);
+    bool isSimpleBall_(ConstraintPtr c, const ConstraintStats& stats);
+    bool isEllipsoid_(ConstraintPtr c, const ConstraintStats& stats);
+    bool isComplementEllipsoid_(ConstraintPtr c, const ConstraintStats& stats);
+    bool isComplementSimpleBall_(ConstraintPtr c, const ConstraintStats& stats);
+    bool isOtherQuadType_(ConstraintPtr c, const ConstraintStats& stats);
     
     //Print Count table for constraint size
     void printConstraintStatistics_();
+
+    //Print Count table for Quadratic constraint size 
+    void printConstraintStatisticsQuad_();
 
     //function for lock number
     void lockNum_(); 

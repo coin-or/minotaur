@@ -117,6 +117,11 @@ typedef enum {
   MixedBinary, ///> Linear combination of at least one binary variable with continuous variables
   General,      ///> No specific structure identififed
   Quad,        ///> Quadratic
+  DiagQuad,    ///> Purely Quadratic with all zero elements of hessian except diagonal elements
+  SimpleBall,  ///> \sum_{i=1}^n x_i^2 \leq b, b \geq 0
+  Ellipsoid,    ///> \sum_{i=1}^n a_i*x_i^2 \leq b, b \geq 0, a_i \geq 0
+  ComplementSimpleBall, ///> Complement of SimpleBall
+  ComplementEllipsoid,   ///> Complement of Ellipse 
   NonLin       ///>Non-linear
 } ConsType;
 
