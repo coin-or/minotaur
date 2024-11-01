@@ -416,6 +416,19 @@ int Bnb::showInfo()
     return 1;
   }
 
+  // code for printing whether we use cgtoqf or not
+
+  if(options->findBool("cgtoqf")->getValue() == 1) {
+    env_->getLogger()->msgStream(LogInfo)
+        << me_ << "Using quadratic function to store quadratic problem."
+        << std::endl;
+  } else {
+    env_->getLogger()->msgStream(LogInfo)
+        << me_ << "Using cgraph function to store non-quadratic problem."
+        << std::endl;
+  }
+  // code ended
+
   env_->getLogger()->msgStream(LogInfo)
       << me_ << "Minotaur version " << env_->getVersion() << std::endl
       << me_ << "NLP based Branch-and-bound algorithm for convex MINLP"
@@ -436,6 +449,12 @@ int Bnb::solve(ProblemPtr p)
   env_->initRand();
 
   oinst_ = p;
+  if(oinst_->isQuadratic() && true == options->findBool("cgtoqf")->getValue()) {
+    env_->getLogger()->msgStream(LogInfo)
+        << me_ << "Using quadratic function to store quadratic problem."
+        << std::endl;
+    oinst_->cg2qf();
+  }
   oinst_->calculateSize();
   oinst_->classifyCon();
 
