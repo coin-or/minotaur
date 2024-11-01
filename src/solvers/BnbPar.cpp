@@ -576,7 +576,7 @@ int BnbPar::solve(ProblemPtr p)
     parbab = createParBab_(numThreads, nlp_e, relCopy, nodePrcssr, parNodeRlxr, handlersCopy, eCopy);
   }
   //edit wtime
-  wallTimeStart = env_->getwTime();  
+  wallTimeStart = env_->getWTime();  
   if (true==env_->getOptions()->findBool("bnbpar_deter_mode")->getValue()) {
     //assert(!"Deterministic mode not available right now!");
     parbab->parsolveSync(parNodeRlxr, nodePrcssr, numThreads);
@@ -647,9 +647,7 @@ CLEANUP:
     delete[] parNodeRlxr;
   }
   if (relCopy) {
-    delete[] relCopy;
-  }
-  if (eCopy) {
+    delete[] relCopy; } if (eCopy) {
     delete[] eCopy;
   }
   if (handlersCopy) {
@@ -688,7 +686,7 @@ void BnbPar::writeParBnbStatus_(ParBranchAndBound *parbab, double wallTimeStart,
       << std::endl
       << me_ << "gap percentage = " << parbab->getPerGap() << std::endl
       << me_ << "wall time used (s) = " << std::fixed << std::setprecision(2)
-      << parbab->getWallTime() - wallTimeStart << std::endl
+      << env_->getWTime() - wallTimeStart << std::endl
       << me_ << "process time used (s) = " << std::fixed << std::setprecision(2)
       << (double)(clock() - clockTimeStart)/CLOCKS_PER_SEC << std::endl
       << me_ << "status of branch-and-bound: " 

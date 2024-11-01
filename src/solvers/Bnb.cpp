@@ -564,7 +564,7 @@ void Bnb::writeBnbStatus_(BranchAndBound* bab)
         << me_ << "cpu time used (s) = " << std::fixed << std::setprecision(2)
         << env_->getTime() << std::endl
         << me_ << "wall time used (s) = " << std::fixed << std::setprecision(2)
-        << env_->getwTime() << std::endl
+        << env_->getWTime() << std::endl
         << me_ << "status of branch-and-bound = "
         << getSolveStatusString(bab->getStatus()) << std::endl;
   } else {
@@ -579,7 +579,7 @@ void Bnb::writeBnbStatus_(BranchAndBound* bab)
         << me_ << "cpu time used (s) = " << std::fixed << std::setprecision(2)
         << env_->getTime() << std::endl
         << me_ << "wall time used (s) = " << std::fixed << std::setprecision(2)
-        << env_->getwTime() << std::endl
+        << env_->getWTime() << std::endl
         << me_
         << "status of branch-and-bound: " << getSolveStatusString(NotStarted)
         << std::endl;

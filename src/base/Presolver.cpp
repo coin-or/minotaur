@@ -150,7 +150,7 @@ SolveStatus Presolver::solve()
    << me_ << "cpu time used (s) = " << std::fixed << std::setprecision(2) 
    << env_->getTime() << std::endl
    << me_ << "wall time used (s) = " << std::fixed << std::setprecision(2) 
-   << env_->getwTime() << std::endl;
+   << env_->getWTime() << std::endl;
   }
   for (HandlerVector::iterator it=handlers_.begin(); it!=handlers_.end();
        ++it) {
