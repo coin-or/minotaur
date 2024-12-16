@@ -1,0 +1,68 @@
+---
+BasedOnStyle: Google
+AccessModifierOffset: -2
+AlignAfterOpenBracket: Align
+AlignConsecutiveAssignments: false
+AlignConsecutiveDeclarations: false
+AlignEscapedNewlines: Left
+AlignOperands: true
+AlignTrailingComments: true
+AllowShortBlocksOnASingleLine: false
+AllowShortCaseLabelsOnASingleLine: false
+AllowShortFunctionsOnASingleLine: None
+AllowShortIfStatementsOnASingleLine: false
+AllowShortLoopsOnASingleLine: false
+AlwaysBreakAfterReturnType: TopLevelDefinitions
+AlwaysBreakBeforeMultilineStrings: false
+BreakBeforeBraces: Custom
+BraceWrapping:
+  AfterClass: true
+  AfterControlStatement: false
+  AfterEnum: true
+  AfterFunction: true
+  AfterNamespace: true
+  AfterObjCDeclaration: true
+  AfterStruct: true
+  AfterUnion: true
+  AfterExternBlock: true
+  BeforeCatch: true
+  BeforeElse: false
+  IndentBraces: false
+BreakBeforeTernaryOperators: true
+BreakConstructorInitializers: BeforeColon
+ReflowComments: true
+ColumnLimit: 78
+PackConstructorInitializers: Never
+ConstructorInitializerIndentWidth: 2
+ContinuationIndentWidth: 4
+DerivePointerAlignment: false
+PointerAlignment: Left
+IndentWidth: 2
+TabWidth: 2
+UseTab: Never
+SpaceBeforeBinaryOperators: false 
+BreakBeforeBinaryOperators: None 
+BreakBeforeLessLess: None 
+BreakFunctionDefinitionParameters: false
+IndentCaseLabels: false
+KeepEmptyLinesAtTheStartOfBlocks: true
+KeepEmptyLinesAtTheEndOfBlocks: true
+OverEmptyLines: 2
+MaxEmptyLinesToKeep: 2
+KeepEmptyLines:
+  AtEndOfFunction: true
+  AtStartOfFunction: true
+NamespaceIndentation: None
+SpacesInLineCommentPrefix:
+  Minimum: 0
+#ReflowComments: true
+SortIncludes: false
+SpaceBeforeParens: ControlStatements
+SpacesInAngles: false
+SpacesInContainerLiterals: false
+SpacesInCStyleCastParentheses: false
+SpacesInParentheses: false
+SpacesInSquareBrackets: false
+BreakAfterReturnType: None
+Standard: Cpp11
+Cpp11BracedListStyle: true
