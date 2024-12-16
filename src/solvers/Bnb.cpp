@@ -416,6 +416,19 @@ int Bnb::showInfo()
     return 1;
   }
 
+  // code for printing whether we use cgtoqf or not
+
+  if(options->findBool("cgtoqf")->getValue() == 1) {
+    env_->getLogger()->msgStream(LogInfo)
+        << me_ << "Using quadratic function to store quadratic problem."
+        << std::endl;
+  } else {
+    env_->getLogger()->msgStream(LogInfo)
+        << me_ << "Using cgraph function to store non-quadratic problem."
+        << std::endl;
+  }
+  // code ended
+
   env_->getLogger()->msgStream(LogInfo)
       << me_ << "Minotaur version " << env_->getVersion() << std::endl
       << me_ << "NLP based Branch-and-bound algorithm for convex MINLP"
@@ -436,6 +449,12 @@ int Bnb::solve(ProblemPtr p)
   env_->initRand();
 
   oinst_ = p;
+  if(oinst_->isQuadratic() && true == options->findBool("cgtoqf")->getValue()) {
+    env_->getLogger()->msgStream(LogInfo)
+        << me_ << "Using quadratic function to store quadratic problem."
+        << std::endl;
+    oinst_->cg2qf();
+  }
   oinst_->calculateSize();
   oinst_->classifyCon();
 
@@ -564,7 +583,7 @@ void Bnb::writeBnbStatus_(BranchAndBound* bab)
         << me_ << "cpu time used (s) = " << std::fixed << std::setprecision(2)
         << env_->getTime() << std::endl
         << me_ << "wall time used (s) = " << std::fixed << std::setprecision(2)
-        << env_->getwTime() << std::endl
+        << env_->getWTime() << std::endl
         << me_ << "status of branch-and-bound = "
         << getSolveStatusString(bab->getStatus()) << std::endl;
   } else {
@@ -579,7 +598,7 @@ void Bnb::writeBnbStatus_(BranchAndBound* bab)
         << me_ << "cpu time used (s) = " << std::fixed << std::setprecision(2)
         << env_->getTime() << std::endl
         << me_ << "wall time used (s) = " << std::fixed << std::setprecision(2)
-        << env_->getwTime() << std::endl
+        << env_->getWTime() << std::endl
         << me_
         << "status of branch-and-bound: " << getSolveStatusString(NotStarted)
         << std::endl;

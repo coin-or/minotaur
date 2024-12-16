@@ -347,7 +347,9 @@ void Problem::classifyCon()
   ConstraintPtr c;
   FunctionPtr f;
   LinearFunctionPtr lf;
+  QuadraticFunctionPtr qf;
   bool isClassified;
+  bool isDiagQuadClassified;
 
   resConTypCnt();
 
@@ -357,8 +359,76 @@ void Problem::classifyCon()
     c = *citer;
     f = c->getFunction();
     isClassified = false;
+    isDiagQuadClassified = false;
     if(f->getType() == Quadratic){
       c->setType(Quad);
+      qf = f->getQuadraticFunction();
+      lf = f->getLinearFunction();
+      if (qf) {
+        stats.nterms = qf->getNumTerms();
+      } else {
+        // Handle the null qf case
+        stats.nterms = 0;
+      }
+      if (lf) {
+        stats.nvars = lf->getNumTerms();
+      }
+      stats.nsqterm = 0;
+      stats.nbilterm = 0;
+      stats.nposcoefone = 0;
+      stats.nnegcoefone = 0;
+      stats.wt1 = 0;
+      stats.wt2 = 0;
+      stats.eqwt = 0;
+      if(qf){
+        VariablePairGroupConstIterator it0 = qf->begin();
+        double wt0 = it0->second;
+        for(VariablePairGroupConstIterator it = qf->begin();
+            it != qf->end(); ++it) {
+          VariablePair vp = it->first;
+          double wt = it->second;
+          if(abs(wt - 1) < tol) {
+            ++stats.nposcoefone;
+          } else if(abs(wt + 1) < tol) {
+            ++stats.nnegcoefone;
+          }
+          if(wt > tol) {
+            ++stats.nposcoef;
+          } else if(wt < -tol) {
+            ++stats.nnegcoef;
+          }
+          if(vp.first==vp.second){
+            ++stats.nsqterm;
+          }else{
+            ++stats.nbilterm;
+          }
+          if(abs(wt0-wt)<tol){
+            ++stats.eqwt;
+          }
+        }
+      }
+      if(stats.nterms > 2) {
+          if(!isDiagQuadClassified) {
+            isDiagQuadClassified = isDiagonalQuadratic_(c,stats) || isDiagQuadClassified;
+          }
+          if(!isClassified) {
+            isClassified = isSimpleBall_(c, stats) || isClassified;
+          }
+          if(!isClassified) {
+            isClassified = isEllipsoid_(c, stats) || isClassified;
+          }
+          if(!isClassified) {
+            isClassified = isComplementSimpleBall_(c, stats) || isClassified;
+          }
+          if(!isClassified) {
+            isClassified = isComplementEllipsoid_(c, stats) || isClassified;
+          }
+      }
+      else{
+          if(!isDiagQuadClassified) {
+            isDiagQuadClassified = isDiagonalQuadratic_(c,stats) || isDiagQuadClassified;
+          }
+      }
     } else if (f->getType() != Constant && f->getType() != Linear) {
       c->setType(NonLin);
     } else if(f->getType() == Linear) {
@@ -487,6 +557,7 @@ void Problem::classifyCon()
     }
   }
   printConstraintStatistics_();
+  printConstraintStatisticsQuad_();
 }
 
 bool Problem::isAggregation_(ConstraintPtr c)
@@ -660,12 +731,76 @@ bool Problem::isNoSpecificStructure_(ConstraintPtr c)
   return true;
 }
 
+bool Problem::isDiagonalQuadratic_(ConstraintPtr c, const ConstraintStats& stats)
+{
+  if(stats.nsqterm ==  stats.nterms + stats.nvars){
+      c->setType(DiagQuad);
+      ++size_->countDiagQuad;
+      return true;
+  }
+  return false;
+}
+
+bool Problem::isSimpleBall_(ConstraintPtr c, const ConstraintStats& stats)
+{
+  if((c->getLb() < c->getUb() && c->getUb() > 0 && c->getLb()==-INFTY) &&
+     ((stats.nsqterm ==  stats.nterms + stats.nvars && 
+     stats.nposcoefone == stats.nterms + stats.nvars) || 
+     (stats.nsqterm ==  stats.nterms + stats.nvars &&
+     stats.nposcoef == stats.nterms + stats.nvars &&
+     stats.eqwt == stats.nterms + stats.nvars))){
+      c->setType(SimpleBall);
+      ++size_->countSimpleBall;
+      return true;
+  }
+  return false;
+}
+
+bool Problem::isComplementSimpleBall_(ConstraintPtr c, 
+                                      const ConstraintStats& stats)
+{
+  if(c->getLb() < c->getUb() && c->getUb() == INFTY && c->getLb()>0 &&
+    stats.nsqterm ==  stats.nterms + stats.nvars &&
+    stats.nposcoefone == stats.nterms + stats.nvars){
+      c->setType(ComplementSimpleBall);
+      ++size_->countComplementSimpleBall;
+      return true;
+  }
+  return false;
+}
+
+bool Problem::isEllipsoid_(ConstraintPtr c, const ConstraintStats& stats)
+{
+  if(c->getLb() < c->getUb() && c->getLb() == -INFTY && c->getUb() < INFTY &&
+     stats.nsqterm ==  stats.nterms + stats.nvars &&
+     stats.nposcoef == stats.nterms + stats.nvars)
+    {
+      c->setType(Ellipsoid);
+      ++size_->countEllipsoid;
+      return true;
+  }
+  return false;
+}
+
+bool Problem::isComplementEllipsoid_(ConstraintPtr c, 
+                                      const ConstraintStats& stats)
+{
+  if(c->getLb() < c->getUb() && c->getLb() > 0 && c->getUb() == INFTY &&
+     stats.nsqterm ==  stats.nterms + stats.nvars&&
+     stats.nposcoef == stats.nterms + stats.nvars){
+      c->setType(ComplementEllipsoid);
+      ++size_->countComplementEllipsoid;
+      return true;
+  }
+  return false;
+}
+
 void Problem::printConstraintStatistics_()
 {
   const int wid=8;
   logger_->msgStream(LogExtraInfo)
       << "-----------------------------------------" << std::endl
-      << "|Constraint Statistics                  |\n"
+      << "|     Linear Constraint Statistics      |\n"
       << "|---------------------------------------|\n"
       << "|Aggregation constraint       |" << std::setw(wid) << size_->countAggregation
       << " |\n"
@@ -696,6 +831,25 @@ void Problem::printConstraintStatistics_()
       << "|No specific structure        |" << std::setw(wid)
       << size_->countNoSpecificStructure << " |\n"
       << "-----------------------------------------\n";
+}
+
+void Problem::printConstraintStatisticsQuad_()
+{
+  logger_->msgStream(LogError)
+      << "--------------------------------------------" << std::endl
+      << "|     Quadratic Constraint Statistics      |\n"
+      << "|------------------------------------------|\n"
+      << "|Diagonal Quadratic constraint    |" << std::setw(3) << size_->countDiagQuad
+      << "     |\n"
+      << "|Simple Ball constraint           |" << std::setw(3) << size_->countSimpleBall
+      << "     |\n"
+      << "|Ellipsoid constraint             |" << std::setw(3) << size_->countEllipsoid
+      << "     |\n"
+      << "|Complement Simple Ball constraint|" << std::setw(3) << size_->countComplementSimpleBall
+      << "     |\n"
+      << "|Complement Ellipsoid constraint  |" << std::setw(3) << size_->countComplementEllipsoid
+      << "     |\n"
+      << "--------------------------------------------\n";
 }
 
 // Lock Number Calculation (Not used anywhere)
@@ -2028,6 +2182,11 @@ void Problem::resConTypCnt()
     size_->countIntegerKnapsack = 0;
     size_->countMixedBinary = 0;
     size_->countNoSpecificStructure = 0;
+    size_->countDiagQuad = 0;
+    size_->countSimpleBall = 0;
+    size_->countEllipsoid = 0;
+    size_->countComplementSimpleBall = 0;
+    size_->countComplementEllipsoid = 0;
 }
 
 void Problem::reverseSense(ConstraintPtr cons)

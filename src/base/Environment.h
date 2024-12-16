@@ -64,14 +64,14 @@ namespace Minotaur {
 
 
       // code for wall time
-      double getwTime();
+      double getWTime();
        /**
        * \brief Get the global timer.
        *
        * \return The timer used to query the time elapsed since the solver
        * started.
        */
-      const Timer* getwTimer();
+      const Timer* getWTimer();
 
 
 

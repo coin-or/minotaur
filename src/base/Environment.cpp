@@ -20,6 +20,7 @@
 
 #include "Logger.h"
 #include "MinotaurConfig.h"
+#include "Operations.h"
 #include "Option.h"
 #include "Timer.h"
 #include "Version.h"
@@ -822,12 +823,12 @@ const Timer* Environment::getTimer()
 
 //Adding Code for wall time
 
-double Environment::getwTime()
+double Environment::getWTime()
 {
     return timer_->wQuery();
 }
 
-const Timer* Environment::getwTimer()
+const Timer* Environment::getWTimer()
 {
   return timer_;
 }
@@ -1020,15 +1021,6 @@ void Environment::readOptions(int argc, char** argv)
   std::string offset = "  ";
   std::ostringstream ostr;
 
-  auto toLower = [](std::string &str) {
-    std::transform(str.begin(), str.end(), str.begin(), [](unsigned char c) { return std::tolower(c); });
-
-    // Special case for "c++"
-    if (str == "c++") {
-      str = "C++";
-    }
-  };
-
   auto isExceptionOption = [](const std::string &optionName) {
     return optionName == "config_file" ||
            optionName == "debug_sol" ||
@@ -1087,7 +1079,7 @@ void Environment::readOptions(int argc, char** argv)
         
         // Convert to lowercase if it's not one of the exceptions
         if (s_option && !isExceptionOption(s_option->getName())) {
-          toLower(s_value);
+          toLowerCase(s_value);
         }
 
         convertAndAddOneOption_(b_option, i_option, d_option, s_option,

@@ -151,6 +151,21 @@ namespace Minotaur {
     ///Count the number of constraints with no specific structure.
     UInt countNoSpecificStructure;
 
+    ///Count the number of diagonal quadratic constraints.
+    UInt countDiagQuad;
+    
+    ///Count the number of simple ball constraints.
+    UInt countSimpleBall;
+    
+    ///Count the number of ellipsoid constraints.
+    UInt countEllipsoid;
+    
+    ///Counst the number of simple ball complement constraint
+    UInt countComplementSimpleBall;
+
+    ///Counst the number of ellipsoid complement constraint
+    UInt countComplementEllipsoid;
+
   };
   typedef  ProblemSize * ProblemSizePtr;
   typedef  const ProblemSize * ConstProblemSizePtr;
