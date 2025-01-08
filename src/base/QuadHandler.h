@@ -157,6 +157,7 @@ private:
 
   /// Store statistics of presolving.
   struct PresolveStats {
+    int conDel; ///> Number of constraints deleted 
     int iters;    ///> Number of iterations (main cycle).
     double time;  ///> Total time used in initial presolve.
     double timeN; ///> Total time used in presolveNode.
@@ -362,6 +363,12 @@ private:
                    ModVector& r_mods);
 
   void coeffImprov_();
+
+  /**
+   * \brief Removes the duplicate constraints
+   * \param[in] changed false if the constraint is not duplicate
+   */
+  void dupRows_(bool* changed);
 
   /**
    * \brief Find the point at which a gradient-based linearization inequality
@@ -653,6 +660,15 @@ private:
    */
   void updateBoundsinOrig_(RelaxationPtr rel, const double* x,
                            DoubleVector& varlb, DoubleVector& varub);
+
+  /**
+   * \brief Check for the duplicate constraints and delete one
+   * \param[in] c1 Pointer to first constraint
+   * \param[in] c2 Pointer to second constraint
+   * \param[out] changed true if the constraint is duplicate
+   */
+  bool treatDupRows_(ConstraintPtr c1, ConstraintPtr c2, double mult,
+                     bool* changed);
 
   /**
    * \brief Modify bounds of a variable in the problem to the new bounds lb

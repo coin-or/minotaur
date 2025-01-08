@@ -866,7 +866,6 @@ void QuadHandler::coeffImprov_()
   LinearFunctionPtr lf;
   QuadraticFunctionPtr qf;
   double eps = 1e-3; // don't want coefficient smaller than this
-
   for(ConstraintConstIterator cit = p_->consBegin(); cit != p_->consEnd();
       ++cit) {
     c = *cit;
@@ -1148,7 +1147,8 @@ SolveStatus QuadHandler::presolve(PreModQ*, bool* changed, Solution**)
       return status;
     }
   } else {
-    //++bStats_.niters;
+    dupRows_(changed);
+    p_->delMarkedCons();
     coeffImprov_();
     is_inf = tightenSimple_(changed);
     if(is_inf) {
@@ -1669,6 +1669,7 @@ void QuadHandler::resetStats_()
   pStats_.iters = 0;
   pStats_.time = 0.0;
   pStats_.timeN = 0.0;
+  pStats_.conDel = 0;
   pStats_.vBnd = 0;
   pStats_.nMods = 0;
 
@@ -2479,6 +2480,179 @@ bool QuadHandler::getQfLfBnds_(RelaxationPtr rel, LinearFunctionPtr lf,
     }
   }
   return true;
+}
+
+
+void QuadHandler::dupRows_(bool* changed)
+{
+  const UInt n = p_->getNumVars();
+  const UInt m = p_->getNumCons();
+  UInt i, j;
+  int err = 0;
+  DoubleVector r1, r2;
+  DoubleVector h1;
+  DoubleVector h2;
+  ConstraintPtr c1, c2;
+  bool is_deleted;
+
+  r1.reserve(n);
+  r2.reserve(n);
+  h1.reserve(m);
+  h2.reserve(m);
+
+  for(i = 0; i < n; ++i) {
+    r1.push_back((double)rand() / (RAND_MAX)*10.0);
+    r2.push_back((double)rand() / (RAND_MAX)*10.0);
+  }
+
+  i = 0;
+  for(ConstraintConstIterator it = p_->consBegin();
+      it != p_->consEnd(); ++it, ++i) {
+    c1 = *it;
+    if(c1->getFunctionType() == Quadratic) {
+      h1[i] = c1->getActivity(&(r1[0]), &err);
+      h2[i] = c1->getActivity(&(r2[0]), &err);
+    } else {
+      h1[i] = h2[i] = 1e30;
+    }
+  }
+
+  for(i = 0; i < m; ++i) {
+    if(h1[i] < 1e29) {
+      for(j = i + 1; j < m; ++j) {
+        if(fabs(h1[j] - h1[i]) < 1e-10 || fabs(h1[j] + h1[i]) < 1e-10) {
+          c1 = p_->getConstraint(i);
+          c2 = p_->getConstraint(j);
+          is_deleted = treatDupRows_(c1, c2, 1.0, changed);
+          if(is_deleted) {
+            h1[j] = h2[j] = 1e30;
+          }
+        } else if(h1[j] < 1e29 && fabs(h1[i] / h1[j] - h2[i] / h2[j]) < 1e-10) {
+          c1 = p_->getConstraint(i);
+          c2 = p_->getConstraint(j);
+          is_deleted = treatDupRows_(c1, c2, h1[i] / h1[j], changed);
+          if(is_deleted) {
+            h1[j] = h2[j] = 1e30;
+          }
+        }
+      }
+    }
+  }
+}
+
+bool QuadHandler::treatDupRows_(ConstraintPtr c1, ConstraintPtr c2,
+                                  double mult, bool* changed)
+{
+  QuadraticFunctionPtr qf1 = c1->getFunction()->getQuadraticFunction();
+  QuadraticFunctionPtr qf2 = c2->getFunction()->getQuadraticFunction();
+  LinearFunctionPtr lf1 = c1->getFunction()->getLinearFunction();
+  LinearFunctionPtr lf2 = c2->getFunction()->getLinearFunction();
+  VariablePairGroupConstIterator qit1, qit2;
+  VariableGroupConstIterator lit1, lit2;
+  bool b1 = true; // if the two quad constraint are alike.
+  bool b2 = true; // if one quad constraint is negative of other.
+  bool b3 = true; // if one quad constraint is some multiple of other.
+  double d1, d2;
+  double lb, ub;
+
+  if((lf1 && !lf2) || (!lf1 && lf2)){
+    return false;
+  }
+
+  if(lf1 && lf2){
+    if((qf1->getNumTerms()+ lf1->getNumTerms() != 
+      qf2->getNumTerms() + lf2->getNumTerms()) ||
+      (qf1->getNumTerms() != qf2->getNumTerms()) ||
+      (lf1->getNumTerms() != lf2->getNumTerms()) ||
+      (qf1->getNumSqTerms() != qf2->getNumSqTerms()) ||
+      (qf1->getNumBilTerms() != qf2->getNumBilTerms())) {
+      return false;
+    }
+    for(lit1 = lf1->termsBegin(), lit2 = lf2->termsBegin(); lit1 != lf1->termsEnd();
+      ++lit1, ++lit2) {
+      if(lit1->first != lit2->first) {
+        return false;
+      }
+      d1 = lit1->second;
+      d2 = lit2->second;
+      if(fabs(d1 - d2) > 1e-12) {
+        b1 = false;
+      }
+      if(fabs(d1 + d2) > 1e-12) {
+        b2 = false;
+      }
+      if(fabs(d1 / d2 - mult) > 1e-12) {
+        b3 = false;
+      }
+    }
+    for(qit1 = qf1->begin(), qit2 = qf2->begin(); qit1 != qf1->end(); ++qit1, ++qit2){
+        if(qit1->first.first != qit2->first.first || 
+        qit1->first.second != qit2->first.second){
+          return false;
+        }
+        d1 = qit1->second;
+        d2 = qit2->second;
+        if(fabs(d1 - d2) > 1e-12) {
+          b1 = false;
+        }
+        if(fabs(d1 + d2) > 1e-12) {
+          b2 = false;
+        }
+        if(fabs(d1 / d2 - mult) > 1e-12) {
+          b3 = false;
+        }
+    } 
+  }
+
+  if(!lf1 && !lf2){
+    if((qf1->getNumTerms() != qf2->getNumTerms()) ||
+      (qf1->getNumSqTerms() != qf2->getNumSqTerms()) ||
+      (qf1->getNumBilTerms() != qf2->getNumBilTerms())) {
+      return false;
+    }
+    for(qit1 = qf1->begin(), qit2 = qf2->begin(); qit1 != qf1->end();
+       ++qit1, ++qit2){
+        if(qit1->first.first != qit2->first.first || 
+        qit1->first.second != qit2->first.second){
+          return false;
+        }
+        d1 = qit1->second;
+        d2 = qit2->second;
+        if(fabs(d1 - d2) > 1e-12) {
+          b1 = false;
+        }
+        if(fabs(d1 + d2) > 1e-12) {
+          b2 = false;
+        }
+        if(fabs(d1 / d2 - mult) > 1e-12) {
+          b3 = false;
+        }
+    } 
+  }
+
+  if(true == b1 || true == b2 || true == b3) {
+    if(true == b1) {
+      mult = 1.0;
+    } else if(true == b2) {
+      mult = -1.0;
+    }
+    if(mult > 0) {
+      lb = mult * c2->getLb();
+      ub = mult * c2->getUb();
+    } else {
+      lb = mult * c2->getUb();
+      ub = mult * c2->getLb();
+    }
+    lb = (c1->getLb() < lb) ? lb : c1->getLb();
+    ub = (c1->getUb() < ub) ? c1->getUb() : ub;
+    p_->changeBound(c1, lb, ub);
+    c1->setBFlag(true);
+    p_->markDelete(c2);
+    ++(pStats_.conDel);
+    *changed = true;
+    return true;
+  }
+  return false;
 }
 
 bool QuadHandler::tightenQuad_(bool* changed)
@@ -3478,7 +3652,6 @@ bool QuadHandler::varBndsFromCons_(bool* changed)
   bool is_inf = false;
   VarVector lsqdel;
   std::vector<LinBil*> lbildel;
-
   for(LinSqrMapIter it = x2Funs_.begin(); it != x2Funs_.end(); ++it) {
     if(it->first->getType() == Binary || it->first->getType() == ImplBin) {
       linearize_(it);
@@ -3528,6 +3701,8 @@ void QuadHandler::writeStats(std::ostream& out) const
       << std::endl
       << me_ << "Time taken in initial presolve = " << pStats_.time << std::endl
       << me_ << "Time taken in node presolves   = " << pStats_.timeN
+      << std::endl
+      << me_ << "Number of constraints deleted  = " << pStats_.conDel
       << std::endl
       << me_ << "Times variables tightened      = " << pStats_.vBnd << std::endl
       << me_ << "Changes in nodes               = " << pStats_.nMods
