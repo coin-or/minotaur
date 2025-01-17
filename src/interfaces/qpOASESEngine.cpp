@@ -540,7 +540,7 @@ void qpOASESEngine::solve_ (int mode, double *f)
   ldWarm_=false;
   n_changed_=0;
 
-#ifdef DEBUG
+#ifdef MDBUG
   logger_->MsgStream(LogDebug)
     << "qpOASES: returnvalue = " << rv
     << " message = " << qpOASES::MessageHandling::getErrorCodeMessage (rv)

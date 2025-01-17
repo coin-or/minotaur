@@ -844,7 +844,7 @@ void QuadraticFunction::prepHess()
   sortLT_(nterms, first, second, coeffs);
 
   prev = second[0];
-#if DEBUG
+#if MDBUG
   for (UInt i=0; i+1<nterms; ++i) {
     assert(second[i]<second[i+1] || (second[i] == second[i+1] && first[i]<first[i+1]));
   }

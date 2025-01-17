@@ -1066,7 +1066,7 @@ void SimpleTransformer::reformulate(ProblemPtr& newp, HandlerVector& handlers,
   refNonlinObj_(p_);
   newp_->calculateSize();
   // newp_->write(std::cout);
-#if DEBUG
+#if MDBUG
   assert(0 == newp_->checkConVars());
 #endif
 

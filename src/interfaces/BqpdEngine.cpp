@@ -311,7 +311,7 @@ void BqpdEngine::setHessian_()
     //std::cout << iRow[i] << ", " << jCol[i] << std::endl;
   }
 
-#if DEBUG
+#if MDBUG
   if (hess_nnzs>0) {
     for (UInt i=0; i<hess_nnzs-1; ++i) {
       assert(jCol[i] <= jCol[i+1]);

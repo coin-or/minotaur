@@ -604,7 +604,7 @@ void CxQuadHandler::getBranchingCandidates(RelaxationPtr,
   VariablePtr x0, x1;
   UIntSet cand_inds;
   std::pair<UIntSet::iterator, bool> ret;
-#if DEBUG
+#if MDBUG
   bool check;
 #endif
 
@@ -644,12 +644,12 @@ void CxQuadHandler::getBranchingCandidates(RelaxationPtr,
     x1val = x[x1->getIndex()];
     yval  = x[bil->getAux()->getIndex()];
     if (bil->isViolated(x0val, x1val, yval, eTol_)) {
-#if DEBUG
+#if MDBUG
       check = false;
 #endif
       // If a variable is at bounds, then it is not a candidate.
       if (x0val < x0->getUb() - eTol_ && x0val > x0->getLb() + eTol_) {
-#if DEBUG
+#if MDBUG
         check = true;
 #endif
         ret = cand_inds.insert(x0->getIndex());
@@ -660,7 +660,7 @@ void CxQuadHandler::getBranchingCandidates(RelaxationPtr,
       }
 
       if (x1val < x1->getUb() - eTol_ && x1val > x1->getLb() + eTol_) {
-#if DEBUG
+#if MDBUG
         check = true;
 #endif
         ret = cand_inds.insert(x1->getIndex());
@@ -676,7 +676,7 @@ void CxQuadHandler::getBranchingCandidates(RelaxationPtr,
       //   << " = " << yval << std::endl;
       //  rel->write(std::cout);
       //}
-#if DEBUG
+#if MDBUG
       assert (check); // If both variables are at bounds, the McCormick 
                       // inequalities can not be violated.
 #endif

@@ -770,7 +770,7 @@ void FilterSQPEngine::setStructure_()
   // }
 
   // check if iRow is non-decreasing. Complain otherwise and stop.
-#if DEBUG
+#if MDBUG
   if (jac_nnzs>0) {
     for (UInt i=0; i<jac_nnzs-1; ++i) {
       assert(iRow[i] <= iRow[i+1]);
@@ -823,7 +823,7 @@ void FilterSQPEngine::setStructure_()
     ++jCol[i];
     //std::cout << iRow[i] << ", " << jCol[i] << std::endl;
   }
-#if DEBUG
+#if MDBUG
   if (hess_nnzs>0) {
     for (UInt i=0; i<hess_nnzs-1; ++i) {
       assert(jCol[i] <= jCol[i+1]);

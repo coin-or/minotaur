@@ -15,7 +15,7 @@
 #include "BranchAndBound.h"
 #include "MinotaurConfig.h"
 
-//#define DEBUG 1
+//#define MDBUG 1
 //#define SPEW 1
 
 using namespace Minotaur;

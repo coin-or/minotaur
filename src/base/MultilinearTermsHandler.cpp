@@ -1319,7 +1319,7 @@ Hypergraph::resetWeights()
 
 double Hypergraph::getWeight(const SetOfVars &e) 
 {
-#if DEBUG
+#if MDBUG
   // Just check that it exists (debugging)
   SetOfVarsDoubleMap::const_iterator pos = weights_.find(e);
   assert(pos != weights_.end());
@@ -1344,7 +1344,7 @@ Hypergraph::incidentEdges(ConstVariablePtr v) const
 
 void Hypergraph::setWeight(const SetOfVars &e, double w)
 {
-#if DEBUG
+#if MDBUG
   // Just check that it exists (debugging)
   SetOfVarsDoubleMap::iterator pos = weights_.find(e);
   assert(pos != weights_.end());

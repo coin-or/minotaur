@@ -1129,7 +1129,7 @@ Minotaur::FunctionType AMPLInterface::getConstraintsType_()
   // check the constraints that define the 'defined variables'
   for (int i=0; i<nDefVarsBco_; ++i) {
     function_type = getDefConstraintType_(i);
-#if DEBUG
+#if MDBUG
     logger_->msgStream(Minotaur::LogDebug) << "Constraint (def) " << i << 
       " is " << getFunctionTypeString(function_type) << std::endl;
 #endif
@@ -1140,7 +1140,7 @@ Minotaur::FunctionType AMPLInterface::getConstraintsType_()
   // check the constraints that define the 'defined variables' (only 1)
   for (int i=0; i<nDefVarsCo1_; ++i) {
     function_type = getDef1ConstraintType_(i);
-#if DEBUG
+#if MDBUG
     logger_->msgStream(Minotaur::LogDebug) << "Constraint (def1) " << i 
       << " is " << getFunctionTypeString(function_type) << std::endl;
 #endif

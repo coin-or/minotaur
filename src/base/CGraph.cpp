@@ -87,7 +87,7 @@ CGraphPtr CGraph::clone_(int *err) const
 
   for (UInt i=0; i<aNodes_.size(); ++i) {
     const_node = aNodes_[i];
-#if DEBUG
+#if MDBUG
     mit = nnmap.find(const_node);
     assert (mit==nnmap.end());
 #endif
@@ -135,7 +135,7 @@ NonlinearFunctionPtr CGraph::cloneWithVars(VariableConstIterator vbeg,
 
   for (UInt i=0; i<aNodes_.size(); ++i) {
     const_node = aNodes_[i];
-#if DEBUG
+#if MDBUG
     mit = nnmap.find(const_node);
     assert (mit==nnmap.end());
 #endif

@@ -317,7 +317,7 @@ void QuadTransformer::reformulate(ProblemPtr &newp, HandlerVector &handlers,
   refObj_(p_);
   newp_->calculateSize();
 
-#if DEBUG
+#if MDBUG
   assert(0==newp_->checkConVars());
 #endif 
 
