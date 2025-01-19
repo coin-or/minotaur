@@ -171,11 +171,11 @@ message(STATUS ${MSG_HEAD} "SPEW flag is " ${SPEW_FLAG})
 ## Debug options
 ###########################################################################
 if ("${CMAKE_BUILD_TYPE}" STREQUAL "Debug")
-  add_definitions(-DDEBUG=1)
+  add_definitions(-DMDBUG=1)
 else()
   set (CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -O3")
   set (CMAKE_FORTRAN_FLAGS "${CMAKE_FORTRAN_FLAGS} -O3")
-  add_definitions(-DDEBUG=0 -DNDEBUG)
+  add_definitions(-DMDBUG=0 -DNDEBUG)
 endif()
 
 
