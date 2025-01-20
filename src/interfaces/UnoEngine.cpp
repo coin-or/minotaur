@@ -267,10 +267,26 @@ void UnoEngine::load(ProblemPtr problem)
   }*/
   // std::cout << "\nThis is UnoEngine::Load Function\n";
   problem_ = problem;
-
+  int n = problem_->getNumVars();
+  int m = problem_->getNumCons();
+  int kmax = 0;
   sol_ = new UnoSolution(0, INFINITY, problem);
   options = uno::Options::get_default_options(
       "/home/22m1526/minotaur/src/interfaces/uno.options");
+
+  //set k_max value according to the number of variables
+  if (n <= 1500) {
+    kmax = n;
+  } else if (n <= 5000) {
+    kmax = n - (int)(m / 5);
+  } else {
+    kmax = 5000;
+  }
+  options["BQPD_kmax"] = std::to_string(kmax);
+  const std::string& logger_level = options["logger"];
+
+  uno::Logger::set_logger(logger_level);
+
   uno_model_ = std::make_unique<uno::UnoModel>(env_, problem_, sol_, options);
   // std::cout << "\nUno Model pointer created\n";
   // set the status of the engine to unknown.
@@ -400,7 +416,7 @@ UnoModel::UnoModel(Minotaur::EnvPtr env, Minotaur::ProblemPtr problem,
   } else {
     this->obj_sense_ = 1.;
   }
-  std ::cout << "Objective Sense=" << this->obj_sense_;
+  //std ::cout << "Objective Sense=" << this->obj_sense_;
   // std::cout << "\nUnoModel::UnoModel:Model() Called\n";
   primals_ = new double[problem->getNumVars()];  // Allocate memory
   duals_ = new double[problem->getNumCons()];    // Allocate memory
