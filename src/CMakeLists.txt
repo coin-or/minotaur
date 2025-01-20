@@ -354,6 +354,26 @@ if (LINK_FILTER_SQP)
   )
 endif()
 
+if (LINK_UNO)
+  #set(CXX_FLAGS "-std=c++17")
+  add_definitions(-DUSE_UNO)
+  #include_directories("/home/22m1526/Uno/uno")
+  link_directories(${UNO_LIB_DIR_F})
+  if (UNO_INC_DIR_F)
+    include_directories("${UNO_INC_DIR_F}")
+  endif (UNO_INC_DIR_F)
+
+  add_definitions(-DCOIN_BIG_INDEX=0) ## avoid warnings
+  list (APPEND ENGFAC_SOURCES 
+    interfaces/UnoEngine.cpp
+    #interfaces/UnoModels.cpp
+  )
+  list (APPEND ENGFAC_HEADERS 
+    interfaces/UnoEngine.h 
+    interfaces/UnoModel.h
+  )
+endif()
+
 if (LINK_OSI)
   add_definitions(-DUSE_OSILP)
   link_directories(${OSI_LIB_DIR_F})
@@ -418,6 +438,9 @@ if (ASL_LIBS)
 endif()
 if (FILTER_SQP_LIBS)
   list(APPEND ALL_EXEC_LIBS ${FILTER_SQP_LIBS})
+endif()
+if (UNO_LIBS)
+  list(APPEND ALL_EXEC_LIBS "${UNO_LIBS}")
 endif()
 
 list(APPEND ALL_EXEC_LIBS "lapack" "blas")
