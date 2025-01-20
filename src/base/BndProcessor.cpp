@@ -253,6 +253,11 @@ void BndProcessor::process(NodePtr node, RelaxationPtr rel,
       should_prune = true;
       node->setStatus(NodeInfeasible);
       stats_.inf++;
+      for(ModificationConstIterator miter = mods.begin(); miter != mods.end();
+          ++miter) {
+        delete *miter;
+      }
+      mods.clear();
       break;
     } else if (br_status==ModifiedByBrancher) {
       for (ModificationConstIterator miter=mods.begin(); miter!=mods.end();
@@ -260,6 +265,7 @@ void BndProcessor::process(NodePtr node, RelaxationPtr rel,
         node->addRMod(*miter);
         (*miter)->applyToProblem(relaxation_);
       }
+      mods.clear();
       should_resolve = true;
     } 
     if (should_resolve == false) {
