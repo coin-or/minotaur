@@ -6809,13 +6809,3 @@ void write_point(const double *xo, const double *xp, int numvars0, int numvars1)
   myfile0.close();
   myfile1.close();
 }
-// Local Variables: 
-// mode: c++ 
-// eval: (c-set-style "k&r") 
-// eval: (c-set-offset 'innamespace 0) 
-// eval: (setq c-basic-offset 2) 
-// eval: (setq fill-column 78) 
-// eval: (auto-fill-mode 1) 
-// eval: (setq column-number-mode 1) 
-// eval: (setq indent-tabs-mode nil) 
-// End:

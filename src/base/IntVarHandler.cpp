@@ -256,13 +256,3 @@ std::string IntVarHandler::getName() const
 {
   return "IntVarHandler (Handling integrality of variables).";
 }
-// Local Variables: 
-// mode: c++ 
-// eval: (c-set-style "k&r") 
-// eval: (c-set-offset 'innamespace 0) 
-// eval: (setq c-basic-offset 2) 
-// eval: (setq fill-column 78) 
-// eval: (auto-fill-mode 1) 
-// eval: (setq column-number-mode 1) 
-// eval: (setq indent-tabs-mode nil) 
-// End:

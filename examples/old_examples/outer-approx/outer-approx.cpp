@@ -160,9 +160,4 @@ CLEANUP:
   return 0;
 } // end outer approximation main
 
-// Local Variables:
-// mode: c++
-// eval: (c-set-style "gnu")
-// eval: (setq indent-tabs-mode nil)
-// End:
 

@@ -72,13 +72,3 @@ double myNLFun2::eval(const double *x, int *error)
   return 6*x[0]*x[1]*x[2] + x[3]*x[3]*x[3];
 }
 
-// Local Variables: 
-// mode: c++ 
-// eval: (c-set-style "k&r") 
-// eval: (c-set-offset 'innamespace 0) 
-// eval: (setq c-basic-offset 2) 
-// eval: (setq fill-column 78) 
-// eval: (auto-fill-mode 1) 
-// eval: (setq column-number-mode 1) 
-// eval: (setq indent-tabs-mode nil) 
-// End:

@@ -375,9 +375,4 @@ PolynomialPtr operator*(const double c,
 
 }
 
-// Local Variables:
-// mode: c++
-// eval: (c-set-style "gnu")
-// eval: (setq indent-tabs-mode nil)
-// End:
 

@@ -56,8 +56,3 @@ namespace Minotaur {
 }
 #endif
 
-// Local Variables:
-// mode: c++
-// eval: (c-set-style "gnu")
-// eval: (setq indent-tabs-mode nil)
-// End:
