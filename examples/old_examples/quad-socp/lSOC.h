@@ -1,7 +1,7 @@
 // 
 //     MINOTAUR -- It's only 1/2 bull
 // 
-//     (C)opyright 2009 -- The MINOTAUR Team
+//     (C)opyright 2009 - 2025 -- The MINOTAUR Team
 // 
 
 #ifndef MINOTAURLSOCFUNCTION_H
