@@ -45,6 +45,8 @@ public:
   /// Solve the problem
   virtual int solve(ProblemPtr p);
 
+  virtual std::string getAbout();
+
   /// get status of the last solve.
   virtual SolveStatus getStatus();
 

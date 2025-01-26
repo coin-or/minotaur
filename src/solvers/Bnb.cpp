@@ -53,7 +53,7 @@
 #include "AMPLJacobian.h"
 
 using namespace Minotaur;
-const std::string Bnb::me_ = "Bnb: ";
+const std::string Bnb::me_ = "mbnb: ";
 
 Bnb::Bnb(EnvPtr env)
   : objSense_(1.0),
@@ -264,6 +264,23 @@ void Bnb::doSetup()
   setInitialOptions_();
 }
 
+
+std::string Bnb::getAbout()
+{
+  std::ostringstream ostr;
+        
+  ostr << me_ 
+       << "Minotaur version " << env_->getVersion()
+       << std::endl
+       << me_ << "NLP based Branch-and-bound algorithm for convex MINLP"
+       << std::endl
+       << me_ << "Visit https://minotaur-solver.github.io/ for details" 
+       << std::endl
+       << std::endl;
+  return ostr.str();
+}
+
+
 int Bnb::getEngine_(Engine** e)
 {
   EngineFactory efac(env_);
@@ -381,7 +398,6 @@ void Bnb::setInitialOptions_()
 void Bnb::showHelp() const
 {
   env_->getLogger()->errStream()
-      << "NLP based Branch-and-bound algorithm for convex MINLP" << std::endl
       << "Usage:" << std::endl
       << "To show version: bnb -v (or --display_version yes) " << std::endl
       << "To show all options: bnb -= (or --display_options yes)" << std::endl
@@ -408,31 +424,24 @@ int Bnb::showInfo()
 
   if(options->findBool("display_version")->getValue() ||
      options->findFlag("v")->getValue()) {
-    env_->getLogger()->msgStream(LogNone)
-        << me_ << "Minotaur version " << env_->getVersion() << std::endl;
-    env_->getLogger()->msgStream(LogNone)
-        << me_ << "NLP based Branch-and-bound algorithm for convex MINLP"
-        << std::endl;
+    env_->getLogger()->msgStream(LogNone) << getAbout();
     return 1;
   }
 
   // code for printing whether we use cgtoqf or not
 
   if(options->findBool("cgtoqf")->getValue() == 1) {
-    env_->getLogger()->msgStream(LogInfo)
+    env_->getLogger()->msgStream(LogDebug)
         << me_ << "Using quadratic function to store quadratic problem."
         << std::endl;
   } else {
-    env_->getLogger()->msgStream(LogInfo)
+    env_->getLogger()->msgStream(LogDebug)
         << me_ << "Using cgraph function to store non-quadratic problem."
         << std::endl;
   }
   // code ended
 
-  env_->getLogger()->msgStream(LogInfo)
-      << me_ << "Minotaur version " << env_->getVersion() << std::endl
-      << me_ << "NLP based Branch-and-bound algorithm for convex MINLP"
-      << std::endl;
+  env_->getLogger()->msgStream(LogInfo) << getAbout();
   return 0;
 }
 

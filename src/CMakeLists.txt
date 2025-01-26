@@ -512,9 +512,9 @@ if (IFACE_SOURCES)
   set_target_properties(mmultistart PROPERTIES INSTALL_RPATH "${MNTR_INSTALL_RPATH}")
   
   add_executable(mcheck solvers/SolCheckerMain.cpp)
-  target_link_libraries(mmultistart ${ALL_EXEC_LIBS})
-  install(TARGETS mmultistart RUNTIME DESTINATION bin)
-  set_target_properties(mmultistart PROPERTIES INSTALL_RPATH "${MNTR_INSTALL_RPATH}")
+  target_link_libraries(mcheck ${ALL_EXEC_LIBS})
+  install(TARGETS mcheck RUNTIME DESTINATION bin)
+  set_target_properties(mcheck PROPERTIES INSTALL_RPATH "${MNTR_INSTALL_RPATH}")
   
 endif()
 
