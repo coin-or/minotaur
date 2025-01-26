@@ -1,7 +1,7 @@
 //
 //     MINOTAUR -- It's only 1/2 bull
 //
-//     (C)opyright 2008--2010 The MINOTAUR Team
+//     (C)opyright 2008 - 2025 The Minotaur Team.
 // 
 
 /** 
@@ -385,9 +385,4 @@ ProblemPtr createProblem(UInt mybit, ProblemPtr inst)
 
 
 
-// Local Variables:
-// mode: c++
-// eval: (c-set-style "gnu")
-// eval: (setq indent-tabs-mode nil)
-// End:
 

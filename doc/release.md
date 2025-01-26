@@ -1,7 +1,7 @@
 // 
 //     MINOTAUR -- It's only 1/2 bull
 // 
-//     (C)opyright 2009 -- 2024 The MINOTAUR Team.
+//     (C)opyright 2009 - 2025 The Minotaur Team.
 // 
 
 \page release How to make a new release

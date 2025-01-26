@@ -1,7 +1,7 @@
 // 
 //     MINOTAUR -- It's only 1/2 bull
 // 
-//     (C)opyright 2009 -- 2024 The MINOTAUR Team.
+//     (C)opyright 2009 - 2025 The Minotaur Team.
 // 
 
 \page stcompile Compile statically linked binaries on Linux
