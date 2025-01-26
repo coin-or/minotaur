@@ -16,9 +16,6 @@ INCLUDE(FindPkgConfig OPTIONAL RESULT_VARIABLE MNTR_PKGCON)
 
 #set flags
 set (MSG_HEAD "Minotaur config: ")  ## must preceed every message.
-set(CMAKE_CXX_FLAGS "-Wall -Wextra -Wnon-virtual-dtor -pedantic -Wunused-value -Wconversion -Wmaybe-uninitialized")
-#set(CMAKE_CXX_FLAGS_DEBUG "-pg")
-#set(CMAKE_CXX_FLAGS_RELEASE "-O3 -DNDEBUG") # disable asserts
 
 enable_language(CXX C Fortran)
 include(FortranCInterface)
@@ -41,11 +38,9 @@ endif()
 ## Enable compiler warnings
 OPTION(COMPILER_WARN "Turn compiler warnings on/off " ON)
 if (${COMPILER_WARN})
-  set (CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wall -pedantic -Wmissing-include-dirs -Wunused")
-  set (CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wextra -Wundef -Wshadow")
-  set (CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wredundant-decls")
-  set (CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Woverloaded-virtual")
-
+  set (CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wall -pedantic \
+  -Wmissing-include-dirs -Wunused -Wextra -Wundef -Wshadow -Wredundant-decls \
+  -Woverloaded-virtual -Wnon-virtual-dtor -Wmaybe-uninitialized")
   endif()
 
 ###########################################################################
