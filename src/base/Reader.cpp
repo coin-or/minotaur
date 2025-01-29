@@ -52,19 +52,20 @@ ProblemPtr Reader::readMps(std::string fname, int &err)
   bool comment;
   VariableType vtype = Continuous;
   std::vector<LinearFunctionPtr> lfs;
+  std::vector<QuadraticFunctionPtr> qfs;
   std::vector<char> rowtypes;
   std::vector<std::string> rownamesvec;
   std::vector<double> rowrhs, rowranges;
   std::string objname;
   std::map<std::string,int> rownames;
   std::map<std::string,int> colnames;
-  VariablePtr v;
+  VariablePtr v, v2;
   FunctionPtr f;
   double dval, lb, ub;
   std::string::size_type echars; // size of string
+  QuadraticFunction *qfo=0; // objective quadratic function
 
-  int section = 0; // 0: None, 1: NAME, 2: ROWS, 3: COLUMNS, 4: RHS,
-                   // 5: RANGES, 6: BOUNDS, 7: ENDDATA
+  MpsSec section = MpsNone; 
 
   err = 0;
   fs.open(fname.c_str());
@@ -83,7 +84,7 @@ ProblemPtr Reader::readMps(std::string fname, int &err)
   vtype = Continuous;
   m = n = 0;
   lcnt = 0;
-  while (0==err && 7!=section && std::getline(fs, line)) {
+  while (0==err && MpsEnd!=section && std::getline(fs, line)) {
     iss.clear();   // deletes only flags internal to iss
     iss.str(line); // convert line into ifstream
     ++lcnt;
@@ -103,41 +104,60 @@ ProblemPtr Reader::readMps(std::string fname, int &err)
     // check if a new section starts
     if (line[0] == word[0]) { // we have no white space in the beginning
       if (word=="NAME") {
-        section = 1;
+        section = MpsName;
         continue;
       } else if (word=="ROWS") {
-        section = 2;
+        section = MpsRows;
         continue;
       } else if (word=="COLUMNS") {
-        section = 3;
+        section = MpsCols;
         continue;
       } else if (word=="RHS") {
-        section = 4;
+        section = MpsRhs;
         continue;
       } else if (word=="RANGES") {
-        section = 5;
+        section = MpsRang;
         continue;
       } else if (word=="BOUNDS") {
-        section = 6;
+        section = MpsBoun;
+        continue;
+      } else if (word=="QUADOBJ") {
+        section = MpsQO;
+        qfo = new QuadraticFunction();
+        continue;
+      } else if (word=="QCMATRIX") {
+        section = MpsQC;
+        // read the name of the quad constraint now
+        if (!(iss >> word2)) {
+          logger_->errStream() << me_ << "ERROR: Missing row name in line " << lcnt
+            << std::endl;
+          err = 10;
+        } else if (rownames.find(word2)==rownames.end()) {
+          rownames[word2] = m;
+          rownamesvec.push_back(word);
+          lfs.push_back(new LinearFunction());
+          qfs.push_back(new QuadraticFunction());
+          ++m;
+        }
         continue;
       } else if (word=="ENDATA") {
-        section = 7;
+        section = MpsEnd;
         continue;
       }
     }
 
     // we are in an existing section
     switch (section) {
-    case(0):
+    case(MpsNone):
       if (!comment) {
         logger_->errStream() << me_ << "error while parsing the MPS file in line " << lcnt
           << std::endl << line  <<  std::endl;
         err = 10;
       }
       break;
-    case(1): // NAME can be ignored for now
+    case(MpsName): // NAME can be ignored for now
       break;
-    case(2): // ROWS
+    case(MpsRows): // ROWS
       if (word[0] == 'N' || word[0] == 'G' || word[0] == 'L'
           || word[0] == 'E' ) {
         rowtypes.push_back(word[0]);
@@ -152,6 +172,7 @@ ProblemPtr Reader::readMps(std::string fname, int &err)
           rownames[word] = m;
           rownamesvec.push_back(word);
           lfs.push_back(new LinearFunction());
+          qfs.push_back(NULL);
           ++m;
         } else {
           logger_->errStream() << me_ << "ERROR: Row " << word 
@@ -171,7 +192,7 @@ ProblemPtr Reader::readMps(std::string fname, int &err)
         err = 10;
       }
       break;
-    case(3): // COLUMNS
+    case(MpsCols): // COLUMNS
       // Read the next two words. Every line must have 3 or 5 words
       if (!(iss >> word2)  || !(iss >> word3)) {
         logger_->errStream() << me_ << "ERROR: not enough fields in column "
@@ -237,7 +258,7 @@ ProblemPtr Reader::readMps(std::string fname, int &err)
         }
       }
       break;
-    case(4): // RHS
+    case(MpsRhs): // RHS
       if (rhsid=="") {
         rhsid = word;
       } else if (word != rhsid) {
@@ -288,7 +309,7 @@ ProblemPtr Reader::readMps(std::string fname, int &err)
         }
       }
       break;
-    case(5): // RANGES
+    case(MpsRang): // RANGES
       if (rangeid=="") {
         rangeid = word;
       } else if (word != rangeid) {
@@ -339,7 +360,7 @@ ProblemPtr Reader::readMps(std::string fname, int &err)
         rowranges[r] = dval;
       }
       break;
-    case(6): // BOUNDS
+    case(MpsBoun): // BOUNDS
       // If a bound on a variable is seen more than once, the later bound
       // value overrides the earlier ones
       // e.g. if we have
@@ -409,7 +430,25 @@ ProblemPtr Reader::readMps(std::string fname, int &err)
         break;
       }
       break;
-    case(7):
+    case(MpsQO): // Quadratic Objective
+        logger_->errStream() << me_ << "reading quadratic objective " 
+          << std::endl;
+        if (!(iss >> word2)  || !(iss >> word3)) {
+          logger_->errStream() << me_ << "ERROR: not enough fields in QUADOBJ "
+            << "line " << lcnt << std::endl;
+          err = 10;
+          break;
+        }
+        v  = p->getVariable(colnames[word]);
+        v2 = p->getVariable(colnames[word2]);
+        dval = std::stod(word3, &echars);
+        qfo->incTerm(v, v2, dval*0.5);
+        break;
+    case(MpsQC): // Quadratic Objective
+        logger_->errStream() << me_ << "ERROR: Cannot read quadratic cons " 
+          << std::endl;
+        break;
+    case(MpsEnd):
       break; // out of the mps file
     default:
       break;
@@ -417,9 +456,15 @@ ProblemPtr Reader::readMps(std::string fname, int &err)
   }
   fs.close();
 
-  // put all cons in p
+  // put all cons and obj in p
   for (int i=0; i<m; ++i) {
-    f = new Function(lfs[i]);
+
+    if (rowtypes[i] == 'N') { // objective function
+      f = new Function(lfs[i], qfo);
+    } else {
+      f = new Function(lfs[i], qfs[i]);
+    }
+
     switch (rowtypes[i]) {
     case ('G'):
       lb = (rowrhs[i]==INFINITY)?0.0:rowrhs[i];

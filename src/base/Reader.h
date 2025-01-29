@@ -52,6 +52,19 @@ namespace Minotaur {
 
     /// For logging
     static const std::string me_;
+
+    enum MpsSec {
+      MpsNone,
+      MpsName,
+      MpsRows,
+      MpsCols,
+      MpsRhs,
+      MpsRang,
+      MpsBoun,
+      MpsQO,
+      MpsQC,
+      MpsEnd
+    };
   };
 }
 #endif
