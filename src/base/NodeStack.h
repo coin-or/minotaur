@@ -1,8 +1,8 @@
-// 
+//
 //     Minotaur -- It's only 1/2 bull
-// 
+//
 //     (C)opyright 2008 - 2025 The Minotaur Team.
-// 
+//
 
 /**
  * \file NodeStack.h
@@ -23,62 +23,61 @@ namespace Minotaur {
   typedef NodePtrStack::iterator NodeStackIter;
   typedef NodePtrStack::const_iterator NodeStackConstIter;
 
-  /** 
+  /**
    * When the active nodes of the branch-and-bound tree are explored in a
    * last-in-first-out (LIFO) order, we store them in a stack. This is
    * essentially a depth first search.
    */
   class NodeStack : public ActiveNodeStore {
 
-    public:
-      /// Constructor
-      NodeStack();
+  public:
+    /// Constructor
+    NodeStack();
 
-      /// Destroy
-      virtual ~NodeStack();
+    /// Destroy
+    virtual ~NodeStack();
 
-      /** 
-       * \brief Return true if there are no active nodes in the heap,
-       * otherwise return false.
-       */
-      virtual bool isEmpty() const;
+    /**
+     * \brief Return true if there are no active nodes in the heap,
+     * otherwise return false.
+     */
+    virtual bool isEmpty() const;
 
-      /**
-       * \brief Find the minimum lower bound of all the active nodes in the
-       * stack.  This function is expensive and must be avoided for large
-       * trees.
-       */
-      virtual double getBestLB() const;
+    /**
+     * \brief Find the minimum lower bound of all the active nodes in the
+     * stack.  This function is expensive and must be avoided for large
+     * trees.
+     */
+    virtual double getBestLB() const;
 
-      /// The maximum depth is the depth of the topmost node in the stack.
-      virtual UInt getDeepestLevel() const;
+    /// The maximum depth is the depth of the topmost node in the stack.
+    virtual UInt getDeepestLevel() const;
 
-      /// Remove the best node from the heap.
-      virtual void pop();
+    /// Remove the best node from the heap.
+    virtual void pop();
 
-      /// Write in order the node ID and the depth of each active node.
-      virtual void write(std::ostream &out) const;
+    /// Write in order the node ID and the depth of each active node.
+    virtual void write(std::ostream &out) const;
 
-      /// Add a node to the set of active nodes.
-      virtual void push(NodePtr n);
+    /// Add a node to the set of active nodes.
+    virtual void push(NodePtr n);
 
-      /// Get access to the best node in this heap.
-      virtual NodePtr top() const { return (nodes_.front()); }
+    /// Get access to the best node in this heap.
+    virtual NodePtr top() const { return (nodes_.front()); }
 
-      /// Get the number of active nodes in the heap.
-      virtual UInt getSize() const { return (nodes_.size()); }
+    /// Get the number of active nodes in the heap.
+    virtual size_t getSize() const { return (nodes_.size()); }
 
-      /// Get iterator to the first node in the heap.
-      NodeStackIter nodesBegin();
+    /// Get iterator to the first node in the heap.
+    NodeStackIter nodesBegin();
 
-      /// Get iterator to the last node in the heap.
-      NodeStackIter nodesEnd();
+    /// Get iterator to the last node in the heap.
+    NodeStackIter nodesEnd();
 
-    private:
-      /// stack of active nodes.
-      NodePtrStack nodes_;
+  private:
+    /// stack of active nodes.
+    NodePtrStack nodes_;
   };
-  typedef NodeStack* NodeStackPtr;
-}
+  typedef NodeStack *NodeStackPtr;
+}  //namespace Minotaur
 #endif
-

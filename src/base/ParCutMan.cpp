@@ -1,12 +1,12 @@
-// 
+//
 //     Minotaur -- It's only 1/2 bull
-// 
+//
 //     (C)opyright 2010 - 2025 The Minotaur Team.
-// 
+//
 
 /**
  * \file ParCutMan.cpp
- * \brief Implement the methods of ParCutMan class. 
+ * \brief Implement the methods of ParCutMan class.
  * \author Meenarli Sharma, Prashant Palkar, IIT Bombay
  */
 
@@ -31,11 +31,11 @@ using namespace Minotaur;
 typedef std::list<CutPtr>::const_iterator CCIter;
 typedef std::vector<ConstraintPtr>::const_iterator ConstIter;
 
-const std::string ParCutMan::me_ = "ParCutMan: "; 
+const std::string ParCutMan::me_ = "ParCutMan: ";
 
 ParCutMan::ParCutMan()
   : absTol_(1e-6),
-    env_(EnvPtr()),   // NULL
+    env_(EnvPtr()),  // NULL
     maxDisCutAge_(3),
     maxInactCutAge_(1),
     p_(ProblemPtr())  // NULL
@@ -57,7 +57,7 @@ ParCutMan::ParCutMan(EnvPtr env, ProblemPtr p)
 
 ParCutMan::~ParCutMan()
 {
-  for (CutList::iterator it=pool_.begin(); it != pool_.end(); ++it) {
+  for (CutList::iterator it = pool_.begin(); it != pool_.end(); ++it) {
     delete (*it);
   }
   pool_.clear();
@@ -65,34 +65,33 @@ ParCutMan::~ParCutMan()
 }
 
 
-UInt ParCutMan::getNumCuts() const
+size_t ParCutMan::getNumCuts() const
 {
   return getNumEnabledCuts() + getNumDisabledCuts() + getNumNewCuts();
 }
 
 
-UInt ParCutMan::getNumEnabledCuts() const
+size_t ParCutMan::getNumEnabledCuts() const
 {
   return enCuts_.size();
 }
 
 
-UInt ParCutMan::getNumDisabledCuts() const
+size_t ParCutMan::getNumDisabledCuts() const
 {
   return disCuts_.size();
 }
 
 
-UInt ParCutMan::getNumNewCuts() const
+size_t ParCutMan::getNumNewCuts() const
 {
- 
   return newCuts_.size();
 }
 
 
 void ParCutMan::postSolveUpdate(ConstSolutionPtr sol, EngineStatus)
 {
-  UInt n = p_->getNumVars();
+  size_t n = p_->getNumVars();
   const double *x = new double[n];
   x = sol->getPrimal();
   CutPtr con;
@@ -124,11 +123,11 @@ void ParCutMan::postSolveUpdate(ConstSolutionPtr sol, EngineStatus)
     } else {
       cpyrel.push_back(con);
     }
-  }  
+  }
   enCuts_.clear();
   enCuts_ = cpyrel;
 
-  if (del_const == true){
+  if (del_const == true) {
     p_->delMarkedCons();
   }
 
@@ -136,9 +135,9 @@ void ParCutMan::postSolveUpdate(ConstSolutionPtr sol, EngineStatus)
 }
 
 
-void ParCutMan::separate(ProblemPtr p, ConstSolutionPtr sol, bool *, UInt *)
+void ParCutMan::separate(ProblemPtr p, ConstSolutionPtr sol, bool *, size_t *)
 {
-  UInt n = p->getNumVars();
+  size_t n = p->getNumVars();
   const double *x = new double[n];
   x = sol->getPrimal();
   CutPtr con;
@@ -146,21 +145,19 @@ void ParCutMan::separate(ProblemPtr p, ConstSolutionPtr sol, bool *, UInt *)
   CutList cpypool;
   int err;
   CutInfo *cinfo;
- 
-  for (CCIter it=pool_.begin(); it != pool_.end(); ++it)
-  {
+
+  for (CCIter it = pool_.begin(); it != pool_.end(); ++it) {
     con = *it;
     err = 0;
     con->eval(x, &err);
     cinfo = con->getInfo();
-    if (viol < -absTol_) 
-    {
+    if (viol < -absTol_) {
       ++(cinfo->cntSinceViol);
       cpypool.push_back(con);
     } else if (viol > absTol_) {
       addToRel_(con, true);
     } else if (con->getInfo()->cntSinceActive <= maxDisCutAge_ ||
-               con->getInfo()->neverDelete==true) {
+               con->getInfo()->neverDelete == true) {
       cpypool.push_back(con);
     }
   }
@@ -170,10 +167,10 @@ void ParCutMan::separate(ProblemPtr p, ConstSolutionPtr sol, bool *, UInt *)
 }
 
 
-std::vector<ConstraintPtr > ParCutMan::getPoolCons()
+std::vector<ConstraintPtr> ParCutMan::getPoolCons()
 {
-  std::vector<ConstraintPtr > cp;
-  for (CCIter it=pool_.begin(); it != pool_.end(); ++it) {
+  std::vector<ConstraintPtr> cp;
+  for (CCIter it = pool_.begin(); it != pool_.end(); ++it) {
     cp.push_back((*it)->getConstraint());
   }
   return cp;
@@ -188,13 +185,13 @@ void ParCutMan::addCut(CutPtr c)
 
 void ParCutMan::addCuts(CutVectorIter cbeg, CutVectorIter cend)
 {
-  for (CutVectorIter it=cbeg; it!=cend; ++it) {
+  for (CutVectorIter it = cbeg; it != cend; ++it) {
     addCut(*it);
   }
 }
 
 
-void ParCutMan::addToRel_(CutPtr cut, bool )
+void ParCutMan::addToRel_(CutPtr cut, bool)
 {
   enCuts_.push_back(cut);
   ++(cut->getInfo()->numActive);
@@ -223,5 +220,3 @@ void ParCutMan::writeStats(std::ostream &out) const
 {
   out << me_ << "No stats availale" << std::endl;
 }
-
-

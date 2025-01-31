@@ -44,8 +44,8 @@ Cut::Cut()
 }
 
 
-Cut::Cut(UInt n, FunctionPtr f, double lb, double ub,
-         bool never_delete, bool never_disable)
+Cut::Cut(size_t n, FunctionPtr f, double lb, double ub, bool never_delete,
+         bool never_disable)
   : cons_(ConstraintPtr()),
     f_(f),
     lb_(lb),
@@ -56,8 +56,8 @@ Cut::Cut(UInt n, FunctionPtr f, double lb, double ub,
   initInfo_(never_delete, never_disable);
 }
 
-Cut::Cut(ProblemPtr p, FunctionPtr f, double lb, double ub,
-	 bool never_delete, bool never_disable)
+Cut::Cut(ProblemPtr p, FunctionPtr f, double lb, double ub, bool never_delete,
+         bool never_disable)
   : cons_(ConstraintPtr()),
     f_(f),
     lb_(lb),
@@ -65,8 +65,8 @@ Cut::Cut(ProblemPtr p, FunctionPtr f, double lb, double ub,
     n_(p->getNumVars()),
     ub_(ub)
 {
-  cons_ = p->newConstraint(f,lb,ub);
-  initInfo_(never_delete,never_disable);
+  cons_ = p->newConstraint(f, lb, ub);
+  initInfo_(never_delete, never_disable);
 }
 
 Cut::~Cut()
@@ -77,7 +77,7 @@ Cut::~Cut()
 
 void Cut::applyToProblem(ProblemPtr p)
 {
-  cons_ = p->newConstraint(f_,lb_,ub_);
+  cons_ = p->newConstraint(f_, lb_, ub_);
 }
 
 double Cut::eval(const double *x, int *err)
@@ -90,10 +90,10 @@ void Cut::evalScore(const double *x, double *vio, double *score)
   int error = 0;
   *vio = 0.0;
   *score = 0.0;
-  double act = eval(x, &error);		
-  if ( ub_ < INFINITY) 
-    *vio = act - ub_;  
-  else if (lb_ > -INFINITY) 
+  double act = eval(x, &error);
+  if (ub_ < INFINITY)
+    *vio = act - ub_;
+  else if (lb_ > -INFINITY)
     *vio = lb_ - act;
   *score = *vio / fixedScore_;
 }
@@ -101,11 +101,10 @@ void Cut::evalScore(const double *x, double *vio, double *score)
 void Cut::evalFixedScore_()
 {
   double *gr = new double[n_];
-  
-  std::fill(gr,gr+n_,0.0);
+
+  std::fill(gr, gr + n_, 0.0);
   f_->getLinearFunction()->evalGradient(gr);
-  fixedScore_ = sqrt(InnerProduct(gr,gr,n_));
-  
+  fixedScore_ = sqrt(InnerProduct(gr, gr, (int)n_));
 }
 
 void Cut::initInfo_(bool never_delete, bool never_disable)
@@ -143,20 +142,18 @@ void Cut::write(std::ostream &out) const
 
 void Cut::writeStats(std::ostream &out) const
 {
-  out << "timesEnabled   = " << info_.timesEnabled   << std::endl
-      << "timesDisabled  = " << info_.timesDisabled  << std::endl
-      << "lastEnabled    = " << info_.lastEnabled    << std::endl
-      << "lastDisabled   = " << info_.lastDisabled   << std::endl
+  out << "timesEnabled   = " << info_.timesEnabled << std::endl
+      << "timesDisabled  = " << info_.timesDisabled << std::endl
+      << "lastEnabled    = " << info_.lastEnabled << std::endl
+      << "lastDisabled   = " << info_.lastDisabled << std::endl
       << "cntSinceActive = " << info_.cntSinceActive << std::endl
-      << "cntSinceViol   = " << info_.cntSinceViol   << std::endl
-      << "numActive      = " << info_.numActive      << std::endl
+      << "cntSinceViol   = " << info_.cntSinceViol << std::endl
+      << "numActive      = " << info_.numActive << std::endl
 
-      << "hash           = " << info_.hash           << std::endl
-      << "fixedScore     = " << info_.fixedScore     << std::endl
-      << "varScore       = " << info_.varScore       << std::endl
+      << "hash           = " << info_.hash << std::endl
+      << "fixedScore     = " << info_.fixedScore << std::endl
+      << "varScore       = " << info_.varScore << std::endl
 
-      << "neverDelete    = " << info_.neverDelete    << std::endl
-      << "neverDisable   = " << info_.neverDisable   << std::endl
-  ;
+      << "neverDelete    = " << info_.neverDelete << std::endl
+      << "neverDisable   = " << info_.neverDisable << std::endl;
 }
-

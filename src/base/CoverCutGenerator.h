@@ -6,9 +6,9 @@
 
 
 /**
- * \file CoverCutGenerator.h 
- * \brief Declare base class CoverCutGenerator. 
- * \author Serdar Yildiz, Argonne National Laboratory 
+ * \file CoverCutGenerator.h
+ * \brief Declare base class CoverCutGenerator.
+ * \author Serdar Yildiz, Argonne National Laboratory
  */
 
 #ifndef MINOTAURCOVERCUTGENERATOR_H
@@ -30,14 +30,16 @@ using std::string;
 
 namespace Minotaur {
 
-  typedef enum {
+  typedef enum
+  {
     Cover = 0,
     Cons,
     Obj,
     Set
   } PrintType;
 
-  typedef enum {
+  typedef enum
+  {
     Totalcuts = 0,
     Cuts,
     Violated,
@@ -52,32 +54,34 @@ namespace Minotaur {
 
   struct CovCutGenStats
   {
-    UInt knaps; /// Number of total knapsacks solved.
-    UInt totalcuts; /// Number of all cuts i.e. included duplicates as well.
-    UInt cuts;  /// Number of total cover cuts generated.
-    UInt violated; /// Number of violated cuts.
-    UInt extended; /// Number of extended cuts generated.
-    UInt simple; /// Number of simple lifted cover cuts generated.
-    UInt gns; /// Number of Gu, Nemhauser, Savelsbergh cuts generated.
-    UInt singlectwo; /// Number of general lifted only a single element for C2
+    UInt knaps;      /// Number of total knapsacks solved.
+    UInt totalcuts;  /// Number of all cuts i.e. included duplicates as well.
+    UInt cuts;       /// Number of total cover cuts generated.
+    UInt violated;   /// Number of violated cuts.
+    UInt extended;   /// Number of extended cuts generated.
+    UInt simple;     /// Number of simple lifted cover cuts generated.
+    UInt gns;        /// Number of Gu, Nemhauser, Savelsbergh cuts generated.
+    UInt
+        singlectwo;  /// Number of general lifted only a single element for C2
     /// is downlifted.
-    UInt basic; /// Number of cuts generated from initial cover set.
+    UInt basic;  /// Number of cuts generated from initial cover set.
     // Time is not calculated yet.
-    UInt noviol; // GNS procedure terminated since there is no violation after
+    UInt
+        noviol;  // GNS procedure terminated since there is no violation after
     // upliftin F
-    UInt noinitcov; // GNS procedure terminated since there is no initial cover generated.
-    double time; // Total time used by generator.
+    UInt noinitcov;  // GNS procedure terminated since there is no initial
+                     // cover generated.
+    double time;     // Total time used by generator.
   };
 
 
-
-  typedef const Cut* ConstCutPtr;
-  typedef CovCutGenStats* CovCutGenStatsPtr; 
-  typedef CovCutGenStats const * ConstCovCutGenStatsPtr;
-  typedef ofstream* OfstreamPtr;
+  typedef const Cut *ConstCutPtr;
+  typedef CovCutGenStats *CovCutGenStatsPtr;
+  typedef CovCutGenStats const *ConstCovCutGenStatsPtr;
+  typedef ofstream *OfstreamPtr;
 
   /**
-   * The CoverCutGenerator class generates a set of minimal covers 
+   * The CoverCutGenerator class generates a set of minimal covers
    * for each knapsack constraint.
    * First, the knapsack list is created.
    * Second, Cover cuts for a chosen minimal cover for a corresponding
@@ -111,29 +115,28 @@ namespace Minotaur {
     bool GUB(ConstraintIterator itcons);
 
     // Constructs a vector of nonzero variables in the given solution.
-    void nonzeroVars(LinearFunctionPtr lf,
-                     CoverSetPtr nonzerovars,
+    void nonzeroVars(LinearFunctionPtr lf, CoverSetPtr nonzerovars,
                      CoverSetPtr zerovars);
 
     // Sort nonzero variables array in nonincreasing order.
     void sortNonIncreasing(CoverSetPtr nonzeros);
 
     // Sort the variables in nondecreasing order of their reduced costs.
-    void sortReducedCosts(CoverSetPtr & vars);
+    void sortReducedCosts(CoverSetPtr &vars);
 
-    /** Generates a cover set from a vector of variables and their coefficients
-     * in the knapsack constraint.
-     * It uses Gu, Nemhauser, Savelsbergh approach.
+    /** Generates a cover set from a vector of variables and their
+     * coefficients in the knapsack constraint. It uses Gu, Nemhauser,
+     * Savelsbergh approach.
      */
     bool coverSetGeneratorGNS(ConstConstraintPtr cons, CoverSetPtr cover);
 
 
-
     /* Modified GNS cover set generator such that it always generates a cover.
        This function generates a cover set by using different strategies.
-     * For now, it generates a modified version of Gu, Nemhauser, Savelsbergh 
+     * For now, it generates a modified version of Gu, Nemhauser, Savelsbergh
      * such that it generates a cover set even though the number of nonzero
-     * elements in solution vector given is not enough for cover set generation 
+     * elements in solution vector given is not enough for cover set
+     generation
      * s.t sum(a_i) <= b for i s.t. x^*_i != 0.
      */
     CoverSetPtr coverSetGenGNSModified(ConstConstraintPtr cons);
@@ -142,7 +145,7 @@ namespace Minotaur {
     /** This is the default cover set generator.
      * It simply adds the variables to the set until the sum > b.
      * It orders the variables in order of their coefficients in nonincreasing
-     * order. 
+     * order.
      * By this way, the cover will probably be minimal cover.
      */
     CoverSetPtr coverSetGeneratorDefault(ConstConstraintPtr cons);
@@ -152,7 +155,7 @@ namespace Minotaur {
     //CoverSetPtr initialCover(ConstConstraintPtr constraintPtr);
 
     /**
-     * This generates the variable-coefficient pair vector 
+     * This generates the variable-coefficient pair vector
      * from a given linear function.
      */
     CoverSetPtr varCoeff(LinearFunctionPtr lf);
@@ -160,7 +163,7 @@ namespace Minotaur {
     /** Constructs the variable-value pair vector from a given vector and a
      * linear function that inclued coefficients.
      */
-    void variableCoeffPair(CoverSetPtr cover,LinearFunctionPtr lf);
+    void variableCoeffPair(CoverSetPtr cover, LinearFunctionPtr lf);
 
     /** Calculates the sum of coefficients of a given vector of
      * variable-coefficient pairs
@@ -170,8 +173,7 @@ namespace Minotaur {
     /** Drops some of the variables and obtains a minimal cover form a given
      * cover.
      */
-    void minimalCover(CoverSetPtr cover,
-                      ConstConstraintPtr cons);
+    void minimalCover(CoverSetPtr cover, ConstConstraintPtr cons);
 
     // Generates all the cover cuts from all knapsack constraints.
     void generateAllCuts();
@@ -179,69 +181,50 @@ namespace Minotaur {
     // Generate cover partitions C1, C2 and Cbar according to Gu, Nemhauser,
     // Savelsbergh.
     void coverPartitionGNS(const ConstConstraintPtr cons,
-                           const ConstCoverSetPtr cover,
-                           CoverSetPtr cone,
-                           CoverSetPtr ctwo,
-                           CoverSetPtr fset,
+                           const ConstCoverSetPtr cover, CoverSetPtr cone,
+                           CoverSetPtr ctwo, CoverSetPtr fset,
                            CoverSetPtr rset);
 
     // Generates set N\C, the variables outside of cover set.
-    void cBar(const ConstCoverSetPtr coverSetPtr, 
-              CoverSetPtr cBar,
+    void cBar(const ConstCoverSetPtr coverSetPtr, CoverSetPtr cBar,
               const ConstConstraintPtr constraint);
 
     // Lifts a variables up or down as it is specified by uplift.
-    double lift(const ConstCoverSetPtr obj,
-                const ConstCoverSetPtr constraint,
-                const CoverSetConstIterator variable,
-                double & rhs,
-                double & inititalb,
-                bool uplift);
+    double lift(const ConstCoverSetPtr obj, const ConstCoverSetPtr constraint,
+                const CoverSetConstIterator variable, double &rhs,
+                double &inititalb, bool uplift);
 
     // Simple lifted cover
-    void simple(const ConstCoverSetPtr cover,
-                const ConstCoverSetPtr cbar,
+    void simple(const ConstCoverSetPtr cover, const ConstCoverSetPtr cbar,
                 const ConstConstraintPtr cons);
 
     // Simple lifted cover
-    void allCTwo(const ConstCoverSetPtr cover,
-                 const ConstCoverSetPtr cone,
-                 const ConstCoverSetPtr cbar,
-                 const ConstConstraintPtr cons);  
+    void allCTwo(const ConstCoverSetPtr cover, const ConstCoverSetPtr cone,
+                 const ConstCoverSetPtr cbar, const ConstConstraintPtr cons);
 
-    // Initialize the cover inequality by changing the coefficients of cover set
-    // by 1s.
-    void initCoverIneq(const ConstCoverSetPtr coverset, CoverSetPtr coverineq);
+    // Initialize the cover inequality by changing the coefficients of cover
+    // set by 1s.
+    void initCoverIneq(const ConstCoverSetPtr coverset,
+                       CoverSetPtr coverineq);
 
     // Lifting strategy of Gu, Nemhauser, and Savelsbergh.i
-    bool liftingGNS(const ConstCoverSetPtr cone,
-                    const ConstCoverSetPtr ctwo,
-                    const ConstCoverSetPtr fset,
-                    const ConstCoverSetPtr rset,
-                    CoverSetPtr constraint,
-                    const ConstConstraintPtr cons,
-                    double & ub);
+    bool liftingGNS(const ConstCoverSetPtr cone, const ConstCoverSetPtr ctwo,
+                    const ConstCoverSetPtr fset, const ConstCoverSetPtr rset,
+                    CoverSetPtr constraint, const ConstConstraintPtr cons,
+                    double &ub);
 
 
     // This lifts the variables in a given set according to Gu, Nemhauser and
     // Savelsbergh algorithm by considering the amount of contribution.
-    void liftSetF(CoverSetPtr obj,
-                  CoverSetPtr consknap,
-                  const ConstCoverSetPtr setf,
-                  CoverSetPtr coverineq,
-                  double & ub,
-                  double & initialb,
-                  const bool liftup);
+    void liftSetF(CoverSetPtr obj, CoverSetPtr consknap,
+                  const ConstCoverSetPtr setf, CoverSetPtr coverineq,
+                  double &ub, double &initialb, const bool liftup);
 
     // This function lifts up and lifts down the variables similar to liftSet
     // but the assumprions are changed as the same as liftSetGNS.
-    void liftSet(CoverSetPtr obj,
-                 CoverSetPtr consknap,
-                 const ConstCoverSetPtr varset,
-                 CoverSetPtr constraint,
-                 double & ub,
-                 double & initialb,
-                 bool liftup);
+    void liftSet(CoverSetPtr obj, CoverSetPtr consknap,
+                 const ConstCoverSetPtr varset, CoverSetPtr constraint,
+                 double &ub, double &initialb, bool liftup);
 
     // Generates a Gu, Nemhauser, Savelsbergh lifted cover inequality.
     bool GNS(const ConstConstraintPtr cons);
@@ -260,68 +243,65 @@ namespace Minotaur {
     void generateCuts(ConstConstraintPtr constraint);
 
     // Generates an extended cover from a given cover set.
-    void extendedCover(CoverSetPtr cover, ConstConstraintPtr cons); 
+    void extendedCover(CoverSetPtr cover, ConstConstraintPtr cons);
 
     // Implementation based on Horowitz-Shahni algorithm implementation in
     // CglKnapsackCover
-    UInt binaryKnapsackSolver(UInt n, double b, double const * c,
-                              double const *a, double & z, int * x);
+    UInt binaryKnapsackSolver(size_t n, double b, double const *c,
+                              double const *a, double &z, int *x);
 
     // Calculates the violation for the given cut.
     double violation(CutPtr cut);
 
     // Return const pointer for problem, check if this works!!!.
-    ConstProblemPtr getProblem() const {return ConstProblemPtr(p_);}    
+    ConstProblemPtr getProblem() const { return ConstProblemPtr(p_); }
 
     // Return const knapsack list.
-    ConstKnapsackListPtr getKnapsackList() const 
-    {return ConstKnapsackListPtr(knapsackListPtr_);}
+    ConstKnapsackListPtr getKnapsackList() const
+    {
+      return ConstKnapsackListPtr(knapsackListPtr_);
+    }
 
     // Return const solution.
-    ConstSolutionPtr getSolution() const
-    {return ConstSolutionPtr(s_);}
+    ConstSolutionPtr getSolution() const { return ConstSolutionPtr(s_); }
 
     // Return const cut list.
-    CutVector getCutList() const
-    {return cutVec_;}
+    CutVector getCutList() const { return cutVec_; }
 
     // Return violation list.
-    DoubleVector getViolList() const
-    {return violList_;}
+    DoubleVector getViolList() const { return violList_; }
 
     // Return number of constraints considered.
-    UInt getNumCons() const {return numCons_;}
+    UInt getNumCons() const { return numCons_; }
 
     // Return statistics of cover cut generator.
-    ConstCovCutGenStatsPtr getStats() const {return ConstCovCutGenStatsPtr(stats_);}
+    ConstCovCutGenStatsPtr getStats() const
+    {
+      return ConstCovCutGenStatsPtr(stats_);
+    }
 
     // Initialize statistics
     void initStats();
 
-    // Adds a cut from a given cover set and rhs by checking integrality and if
-    // the cut already exists.
+    // Adds a cut from a given cover set and rhs by checking integrality and
+    // if the cut already exists.
     bool addCut(CoverSetPtr cov, double rhs, UInt cuttype);
 
     // Return only the violated cuts.
-    CutVector getViolatedCutList() const
-    {return violatedCuts_;};
+    CutVector getViolatedCutList() const { return violatedCuts_; };
 
     // Check if the given solution satisfies integrality for given problem.
     bool checkIntegral(RelaxationPtr p, ConstSolutionPtr s);
 
     // Print inequality
-    void printIneq(const ConstCoverSetPtr cov, double rhs, 
-                   PrintType type, string message);
+    void printIneq(const ConstCoverSetPtr cov, double rhs, PrintType type,
+                   string message);
 
     // Print lifting problem.
     void printLiftProb(const ConstCoverSetPtr obj,
                        const ConstCoverSetPtr consknap,
-                       const CoverSetConstIterator variable,
-                       double rhs,
-                       double initialb,
-                       bool uplift,
-                       double b,
-                       double gamma,
+                       const CoverSetConstIterator variable, double rhs,
+                       double initialb, bool uplift, double b, double gamma,
                        double alpha);
 
   private:
@@ -344,7 +324,7 @@ namespace Minotaur {
     KnapsackListPtr knapsackListPtr_;
 
     /**
-     * Given (possibly fractional) solution. 
+     * Given (possibly fractional) solution.
      * Cut will be designed to violate this solution.
      */
     ConstSolutionPtr s_;
@@ -356,7 +336,7 @@ namespace Minotaur {
     CovCutGenStatsPtr stats_;
 
     // Hash map that is used to check if a cut is already created or not.
-    std::map< std::vector<double>, UInt> cutmap;  
+    std::map<std::vector<double>, UInt> cutmap;
 
     // Integer tolerance.
     double intTol_;
@@ -365,13 +345,11 @@ namespace Minotaur {
     double objtol_;
 
     // Output file.
-    OfstreamPtr  output_;
+    OfstreamPtr output_;
 
     // Output file name
-    string  outfile_;
+    string outfile_;
   };
-}
+}  //namespace Minotaur
 
-#endif // MINOTAURCOVERCUTGENERATOR_H
-
-
+#endif  // MINOTAURCOVERCUTGENERATOR_H

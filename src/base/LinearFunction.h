@@ -1,13 +1,13 @@
-// 
+//
 //     Minotaur -- It's only 1/2 bull
-// 
+//
 //     (C)opyright 2008 - 2025 The Minotaur Team.
-// 
+//
 
 /**
  * \file LinearFunction.h
  * \author Ashutosh Mahajan, Argonne National Laboratory.
- * \brief Declare the class LinearFunction for storing and modifying a 
+ * \brief Declare the class LinearFunction for storing and modifying a
  * linear function.
  */
 
@@ -21,10 +21,10 @@ namespace Minotaur {
   class QuadraticFunction;
   class Variable;
 
-  typedef LinearFunction* LinearFunctionPtr;
-  typedef const LinearFunction* ConstLinearFunctionPtr;
-  typedef QuadraticFunction* QuadraticFunctionPtr;
-  typedef const QuadraticFunction* ConstQuadraticFunctionPtr;
+  typedef LinearFunction *LinearFunctionPtr;
+  typedef const LinearFunction *ConstLinearFunctionPtr;
+  typedef QuadraticFunction *QuadraticFunctionPtr;
+  typedef const QuadraticFunction *ConstQuadraticFunctionPtr;
 
 
   /// The base class linear function is of the form c'x.
@@ -33,7 +33,7 @@ namespace Minotaur {
     /// Default constructor
     LinearFunction();
 
-    /** 
+    /**
      * Constructor with a tolerance level below which a coefficient is
      * considered to be zero.
      */
@@ -43,8 +43,8 @@ namespace Minotaur {
      * Construct a linear function from a coefficient array of size n and n
      * variables.
      */
-    LinearFunction(double *a, VariableConstIterator vbeg, 
-                   VariableConstIterator vend, double tol); 
+    LinearFunction(double *a, VariableConstIterator vbeg,
+                   VariableConstIterator vend, double tol);
 
 
     /// Destroy
@@ -52,22 +52,22 @@ namespace Minotaur {
 
     void add(LinearFunctionPtr lf);
 
-    void add(ConstLinearFunctionPtr lf );
+    void add(ConstLinearFunctionPtr lf);
 
     /**
      * Add new a linear term to this linear function, with coefficient a. Use
      * this method only when you are sure that the linear function does not
-     * already contain this variable. Otherwise use incTerm(). If the weight "a" 
-     * is zero, then nothing is added.
+     * already contain this variable. Otherwise use incTerm(). If the weight
+     * "a" is zero, then nothing is added.
      */
-    void addTerm(ConstVariablePtr var, const double a); 
+    void addTerm(ConstVariablePtr var, const double a);
 
     /**
      * Removes all terms from the function
      */
     void clearAll();
 
-    /** 
+    /**
      * Copy the linear function. Variables and weights are copied. The weights
      * in the clone and the original do not share the same space in memory.
      */
@@ -75,8 +75,8 @@ namespace Minotaur {
 
     LinearFunctionPtr cloneWithVars(VariableConstIterator vbeg) const;
 
-    LinearFunctionPtr cloneWithVarsPermute(VariableConstIterator vbeg, UIntVector variableaddress) 
-  const;
+    LinearFunctionPtr cloneWithVarsPermute(VariableConstIterator vbeg,
+                                           UIntVector variableaddress) const;
 
     /**
      * \brief Get bounds based on lower and upperbounds of each variable
@@ -110,14 +110,14 @@ namespace Minotaur {
     double getFixVarOffset(VariablePtr v, double val);
 
     /// Get the number of terms in this function.
-    UInt getNumTerms() const { return(terms_.size()); }
+    size_t getNumTerms() const { return (terms_.size()); }
 
     void getVars(VariableSet *vars);
 
     /**
      * Get the weight of a variable in this function. If the variable is not
      * found, it returns zero. Conversely, if the weight returned is zero,
-     * then variable is not stored in the data structures of this function. 
+     * then variable is not stored in the data structures of this function.
      */
     double getWeight(ConstVariablePtr var) const;
 
@@ -125,7 +125,7 @@ namespace Minotaur {
      * \brief Check if function contains a variable.
      *
      * \param[in] v The variable that we want to test.
-     * \return True if this function is has v. False if it doesn't use it. 
+     * \return True if this function is has v. False if it doesn't use it.
      */
     bool hasVar(ConstVariablePtr v) const;
 
@@ -142,9 +142,9 @@ namespace Minotaur {
     void minus(LinearFunctionPtr lf);
 
     //void mult(LinearFunctionPtr lf);
-    
+
     /// Multiply the linear function by a number.
-    
+
     void multiply(double d);
 
     void prepJac(UInt s, VarSetConstIter vbeg, VarSetConstIter vend);
@@ -166,7 +166,8 @@ namespace Minotaur {
 
 
     /**
-     * Create a new LinearFunction by copying this function and adding another one.
+     * Create a new LinearFunction by copying this function and adding another
+     * one.
      */
     LinearFunctionPtr copyAdd(ConstLinearFunctionPtr l1);
 
@@ -176,14 +177,14 @@ namespace Minotaur {
      */
     LinearFunctionPtr copyMinus(ConstLinearFunctionPtr l1);
 
-    /** 
+    /**
      * Create a new LinearFunction by copying this function and multiplying
      * by a constant.
      */
     LinearFunctionPtr copyMult(const double c);
 
     /**
-     * Create a new QuadraticFunction by multiplying this function and 
+     * Create a new QuadraticFunction by multiplying this function and
      * another LinearFunction.
      */
     QuadraticFunctionPtr copyMult(ConstLinearFunctionPtr l1);
@@ -208,12 +209,10 @@ namespace Minotaur {
     double tol_;
 
     /// Copy constructor is not allowed.
-    LinearFunction (const LinearFunction &l);
+    LinearFunction(const LinearFunction &l);
 
     /// Copy by assignment is not allowed.
-    LinearFunction  & operator = (const LinearFunction &l);
-
+    LinearFunction &operator=(const LinearFunction &l);
   };
-}
+}  //namespace Minotaur
 #endif
-

@@ -16,27 +16,28 @@
 #include "Types.h"
 
 namespace Minotaur {
-  
+
   class Function;
 
-  struct CutInfo {
-    UInt timesEnabled;       /// No. of times it was moved from pool to problem. 
-    UInt timesDisabled;      /// No. of times it was removed from problem.
-    UInt lastEnabled;        /// How many iters since it was last enabled.
-    UInt lastDisabled;       /// How many iters since it was last disabled.
-    UInt cntSinceActive;     /// Updated for cuts enabled in problem.
-    UInt cntSinceViol;	     /// Updated for cuts disabled in pool.
-    UInt numActive;	     /// Updated only for cuts in problem.
+  struct CutInfo
+  {
+    UInt timesEnabled;    /// No. of times it was moved from pool to problem.
+    UInt timesDisabled;   /// No. of times it was removed from problem.
+    UInt lastEnabled;     /// How many iters since it was last enabled.
+    UInt lastDisabled;    /// How many iters since it was last disabled.
+    UInt cntSinceActive;  /// Updated for cuts enabled in problem.
+    UInt cntSinceViol;    /// Updated for cuts disabled in pool.
+    UInt numActive;       /// Updated only for cuts in problem.
     int parent_active_cnts;  /// No. of cuts active in a node with
                              /// un-processed children
 
-    double hash;             /// Hash value of this cut.
-    double varScore;         /// Variable score (changes every iteration.)
-    double fixedScore;       /// Fixed score (does not change.)
+    double hash;        /// Hash value of this cut.
+    double varScore;    /// Variable score (changes every iteration.)
+    double fixedScore;  /// Fixed score (does not change.)
 
-    bool neverDelete;        /// If true, never delete cut from pool.
-    bool neverDisable;       /// If true, never remove cut from problem.
-    bool inRel;		     /// Whether the cut is in Rel or Pool
+    bool neverDelete;   /// If true, never delete cut from pool.
+    bool neverDisable;  /// If true, never remove cut from problem.
+    bool inRel;         /// Whether the cut is in Rel or Pool
   };
 
 
@@ -48,7 +49,7 @@ namespace Minotaur {
    * classes of cuts can be derived from it. Also stores auxiliary information
    * and statistics about this cut.
    */
-  class Cut { 
+  class Cut {
 
   public:
     /// Empty Constructor.
@@ -67,7 +68,7 @@ namespace Minotaur {
      * \param [in] never_disable If true, this cut is never removed from the
      * problem.
      */
-    Cut(UInt n, FunctionPtr f, double lb, double ub, bool never_delete,
+    Cut(size_t n, FunctionPtr f, double lb, double ub, bool never_delete,
         bool never_disable);
 
 
@@ -102,13 +103,13 @@ namespace Minotaur {
      * \brief Get Constraint pointer if this cut is in the problem. Null
      * otherwise.
      */
-    ConstraintPtr getConstraint() {return cons_;}
+    ConstraintPtr getConstraint() { return cons_; }
 
     /// Get Function Pointer of the cut.
     FunctionPtr getFunction() { return f_; }
 
     /// Get pointer to the cut info data structure.
-    CutInfo * getInfo() {return &info_;}
+    CutInfo *getInfo() { return &info_; }
 
     /// Get lb of the inequality.
     double getLb() { return lb_; }
@@ -148,7 +149,7 @@ namespace Minotaur {
     LoggerPtr logger_;
 
     /// Number of variables in the problem. Used to calculate hash.
-    UInt n_;
+    size_t n_;
 
     /// Upper bound
     double ub_;
@@ -173,9 +174,8 @@ namespace Minotaur {
     void evalFixedScore_();
   };
 
-  typedef std::vector< CutPtr > CutVector;
+  typedef std::vector<CutPtr> CutVector;
   typedef CutVector::iterator CutIterator;
   typedef CutVector::const_iterator CutConstIterator;
-}
+}  //namespace Minotaur
 #endif
-

@@ -20,107 +20,106 @@
 
 namespace Minotaur {
 
-/**
- * \brief Derived class for managing cuts. Add and remove cuts based on
- * priority and violation.
- */
-class CutMan1 : public CutManager {
-
-public:
-  /// Empty constructor.
-  CutMan1();
-
   /**
-   * \brief Default constructor.
-   *
-   * \param [in] env Minotaur Environment pointer.
-   * \param [in] p Problem pointer to which cuts will be added or deleted.
+   * \brief Derived class for managing cuts. Add and remove cuts based on
+   * priority and violation.
    */
-  CutMan1(EnvPtr env, ProblemPtr p);
+  class CutMan1 : public CutManager {
 
-  /// Destroy.
-  ~CutMan1();
+  public:
+    /// Empty constructor.
+    CutMan1();
 
-  // Base class method.
-  void addCut(CutPtr c);
+    /**
+     * \brief Default constructor.
+     *
+     * \param [in] env Minotaur Environment pointer.
+     * \param [in] p Problem pointer to which cuts will be added or deleted.
+     */
+    CutMan1(EnvPtr env, ProblemPtr p);
 
-  ConstraintPtr addCut(ProblemPtr, FunctionPtr, double, double, 
-                       bool, bool) {return ConstraintPtr();};
+    /// Destroy.
+    ~CutMan1();
 
-  // Base class method.
-  void addCuts(CutVectorIter cbeg, CutVectorIter cend);
+    // Base class method.
+    void addCut(CutPtr c);
 
-  // Base class method.
-  UInt getNumCuts() const;
+    ConstraintPtr addCut(ProblemPtr, FunctionPtr, double, double, bool, bool)
+    {
+      return ConstraintPtr();
+    };
 
-  // Base class method.
-  UInt getNumEnabledCuts() const;
+    // Base class method.
+    void addCuts(CutVectorIter cbeg, CutVectorIter cend);
 
-  // Base class method.
-  UInt getNumDisabledCuts() const;
+    // Base class method.
+    size_t getNumCuts() const;
 
-  // Base class method.
-  UInt getNumNewCuts() const;
+    // Base class method.
+    size_t getNumEnabledCuts() const;
 
-  // Base class method.
-  void postSolveUpdate(ConstSolutionPtr sol, EngineStatus eng_status);
+    // Base class method.
+    size_t getNumDisabledCuts() const;
 
-  // Base class method.
-  void separate(ProblemPtr p, ConstSolutionPtr sol, bool *separated,
-                UInt *n_added);
+    // Base class method.
+    size_t getNumNewCuts() const;
 
-  // Base class method.
-  void write(std::ostream &out) const;
+    // Base class method.
+    void postSolveUpdate(ConstSolutionPtr sol, EngineStatus eng_status);
 
-  // Base class method.
-  void writeStats(std::ostream &out) const;
+    // Base class method.
+    void separate(ProblemPtr p, ConstSolutionPtr sol, bool *separated,
+                  size_t *n_added);
 
-private:
+    // Base class method.
+    void write(std::ostream &out) const;
 
-  /// Absolute tolerance limit for comparing double values.
-  double absTol_;
+    // Base class method.
+    void writeStats(std::ostream &out) const;
 
-  /// Cut storage for disabled cuts, i.e., those not added to the problem.
-  CutList disCuts_;
+  private:
+    /// Absolute tolerance limit for comparing double values.
+    double absTol_;
 
-  /// Cut storage for enabled cuts, i.e. those added to the problem.
-  CutList enCuts_;
+    /// Cut storage for disabled cuts, i.e., those not added to the problem.
+    CutList disCuts_;
 
-  /// Environment.
-  EnvPtr env_;
+    /// Cut storage for enabled cuts, i.e. those added to the problem.
+    CutList enCuts_;
 
-  /// For logging.
-  LoggerPtr logger_;
+    /// Environment.
+    EnvPtr env_;
 
-  /// Maximum number of iterations before which a disabled cut is deleted. 
-  UInt maxDisCutAge_;
+    /// For logging.
+    LoggerPtr logger_;
 
-  /**
-   * \brief Maximum number of iterations before which an inactive cut is moved out
-   * of the problem.
-   */
-  UInt maxInactCutAge_;
+    /// Maximum number of iterations before which a disabled cut is deleted.
+    size_t maxDisCutAge_;
 
-  /// For logging.
-  const static std::string me_;
+    /**
+     * \brief Maximum number of iterations before which an inactive cut is
+     * moved out of the problem.
+     */
+    size_t maxInactCutAge_;
 
-  /**
-   * Cut storage for new cuts, i.e. those sent to pool after previous
-   * separate or postSolveUpdate().
-   */
-  CutList newCuts_;
+    /// For logging.
+    const static std::string me_;
 
-  /// The relaxation problem that cuts are added to and deleted from.
-  ProblemPtr p_;
+    /**
+     * Cut storage for new cuts, i.e. those sent to pool after previous
+     * separate or postSolveUpdate().
+     */
+    CutList newCuts_;
 
-  CutList pool_;
+    /// The relaxation problem that cuts are added to and deleted from.
+    ProblemPtr p_;
 
-  void addToRel_(CutPtr cons, bool new_cut);
+    CutList pool_;
 
-  void addToPool_(CutPtr cons);
+    void addToRel_(CutPtr cons, bool new_cut);
 
-};
+    void addToPool_(CutPtr cons);
+  };
 
-}
+}  //namespace Minotaur
 #endif
-

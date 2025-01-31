@@ -48,30 +48,30 @@ namespace Minotaur {
     void addCut(CutPtr c);
 
     // Base class method.
-    ConstraintPtr addCut(ProblemPtr p, FunctionPtr f, double lb,
-                         double ub, bool directToRel, bool neverDelete);
+    ConstraintPtr addCut(ProblemPtr p, FunctionPtr f, double lb, double ub,
+                         bool directToRel, bool neverDelete);
 
     // Base class method.
     void addCuts(CutVectorIter cbeg, CutVectorIter cend);
 
     // Base class method.
-    UInt getNumCuts() const;
+    size_t getNumCuts() const;
 
     // Base class method.
-    UInt getNumEnabledCuts() const;
+    size_t getNumEnabledCuts() const;
 
     // Base class method.
-    UInt getNumDisabledCuts() const;
+    size_t getNumDisabledCuts() const;
 
     // Base class method.
-    UInt getNumNewCuts() const;
+    size_t getNumNewCuts() const;
 
     // Base class method.
     void postSolveUpdate(ConstSolutionPtr sol, EngineStatus eng_status);
 
     // Base class method.
     void separate(ProblemPtr p, ConstSolutionPtr sol, bool *separated,
-                  UInt *added);
+                  size_t *added);
 
     // Base class method.
     void write(std::ostream &out) const;
@@ -80,8 +80,8 @@ namespace Minotaur {
     void writeStats(std::ostream &out) const;
 
   private:
-    /// Cuts already in the relaxation. 
-    UInt enCuts_;
+    /// Cuts already in the relaxation.
+    size_t enCuts_;
 
     /// Environment.
     EnvPtr env_;
@@ -101,7 +101,8 @@ namespace Minotaur {
     /// The relaxation problem that cuts are added to and deleted from.
     ProblemPtr p_;
 
-    /// Pool of cuts that were left unviolated. They may be added in the future.
+    /// Pool of cuts that were left unviolated. They may be added in the
+    /// future.
     CutList pool_;
 
     /// A cut will be added only if the violation exceeds violAbs_.
@@ -115,7 +116,6 @@ namespace Minotaur {
     void mvNewToPool_();
   };
 
-//typedef CutManager* CutManagerPtr;
-}
+  //typedef CutManager* CutManagerPtr;
+}  //namespace Minotaur
 #endif
-

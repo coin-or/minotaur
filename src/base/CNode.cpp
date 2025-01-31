@@ -7,7 +7,7 @@
 
 /**
  * \file CNode.cpp
- * \brief Define class CNode for representing a node of computational graph 
+ * \brief Define class CNode for representing a node of computational graph
  * of a nonlinear function.
  * \author Ashutosh Mahajan, Argonne National Laboratory
  */
@@ -94,7 +94,7 @@ CNode::CNode(OpCode op, CNode *lchild, CNode *rchild)
 }
 
 
-CNode::CNode(OpCode op, CNode **children, UInt num_child)
+CNode::CNode(OpCode op, CNode **children, size_t num_child)
   : child_(0),
     d_(0),
     fType_(OtherFunctionType),
@@ -117,15 +117,15 @@ CNode::CNode(OpCode op, CNode **children, UInt num_child)
     v_(0),
     val_(0)
 {
-  if (0<num_child) {
+  if (0 < num_child) {
     l_ = *children;
-    if (1<num_child) {
-      r_ = *(children+num_child-1);
+    if (1 < num_child) {
+      r_ = *(children + num_child - 1);
     }
-    if (2<num_child || OpSumList==op_) {
-      child_ = new CNode*[num_child+1];
-      for (UInt i=0; i<num_child; ++i) {
-        child_[i] = *(children+i);
+    if (2 < num_child || OpSumList == op_) {
+      child_ = new CNode *[num_child + 1];
+      for (UInt i = 0; i < num_child; ++i) {
+        child_[i] = *(children + i);
         child_[i]->addPar(this);
       }
       child_[numChild_] = 0;
@@ -138,11 +138,11 @@ CNode::CNode(OpCode op, CNode **children, UInt num_child)
       }
     }
     findFType();
-  } else if (OpNum==op_) { 
+  } else if (OpNum == op_) {
     fType_ = Constant;
-  } else if (OpInt==op_) {
+  } else if (OpInt == op_) {
     fType_ = Constant;
-  } else if (OpVar==op_) {
+  } else if (OpVar == op_) {
     fType_ = Linear;
   } else {
     assert(!"unknown function. Can't proceed further!");
@@ -154,7 +154,7 @@ CNode::~CNode()
 {
   CQIter2 *it;
   if (child_) {
-    delete [] child_;
+    delete[] child_;
     child_ = 0;
   }
   l_ = 0;
@@ -170,34 +170,34 @@ CNode::~CNode()
 
 void CNode::addPar(CNode *par)
 {
-  if (0==numPar_) {
+  if (0 == numPar_) {
     numPar_ = 1;
     uPar_ = par;
-  } else if (1==numPar_) {
+  } else if (1 == numPar_) {
     parB_ = new CQIter2();
     parB_->prev = 0;
     parB_->node = uPar_;
     uPar_ = 0;
 
-    parE_       = new CQIter2();
+    parE_ = new CQIter2();
     parE_->prev = parB_;
     parE_->next = 0;
     parE_->node = par;
     parB_->next = parE_;
-    numPar_     = 2;
+    numPar_ = 2;
   } else {
-    CQIter2 *it  = new CQIter2();
-    parE_->next  = it;
-    it->prev     = parE_;
-    it->next     = 0;
-    it->node     = par;
-    parE_        = it;
+    CQIter2 *it = new CQIter2();
+    parE_->next = it;
+    it->prev = parE_;
+    it->next = 0;
+    it->node = par;
+    parE_ = it;
     ++numPar_;
   }
 }
 
 
-CNode* CNode::clone() const
+CNode *CNode::clone() const
 {
   CNode *node = 0;
 
@@ -229,37 +229,37 @@ void CNode::changeChild(CNode *out, CNode *in)
 
   switch (numChild_) {
   case 1:
-    assert(l_==out);
+    assert(l_ == out);
     l_ = in;
     break;
   case 2:
-    assert(l_==out || r_==out);
-    if (l_==out) {
+    assert(l_ == out || r_ == out);
+    if (l_ == out) {
       l_ = in;
-    } else if (r_==out) {
+    } else if (r_ == out) {
       r_ = in;
     }
     break;
   default:
     c = child_;
-    for (i=0; i<numChild_; ++i, ++c) {
-      if ((*c)==out) {
+    for (i = 0; i < numChild_; ++i, ++c) {
+      if ((*c) == out) {
         *c = in;
         break;
       }
     }
-    assert(i<numChild_);
+    assert(i < numChild_);
   }
 }
 
 
 void CNode::copyParChild(CNode *out,
-                         std::map<const CNode*, CNode*> *nmap) const
+                         std::map<const CNode *, CNode *> *nmap) const
 {
-  std::map<const CNode*, CNode*>::iterator mit;
+  std::map<const CNode *, CNode *>::iterator mit;
   out->numPar_ = numPar_;
   if (uPar_) {
-    out->uPar_   = nmap->find(uPar_)->second;
+    out->uPar_ = nmap->find(uPar_)->second;
   }
   if (parB_) {
     CQIter2 *it = 0;
@@ -282,10 +282,10 @@ void CNode::copyParChild(CNode *out,
   }
 
   if (child_) {
-    out->child_ = new CNode*[numChild_+1];
-    for (UInt i=0; i<numChild_; ++i) {
+    out->child_ = new CNode *[numChild_ + 1];
+    for (UInt i = 0; i < numChild_; ++i) {
       mit = nmap->find(child_[i]);
-      assert (mit!=nmap->end());
+      assert(mit != nmap->end());
       out->child_[i] = mit->second;
     }
     out->child_[numChild_] = 0;
@@ -293,13 +293,13 @@ void CNode::copyParChild(CNode *out,
 
   if (l_) {
     mit = nmap->find(l_);
-    assert (mit!=nmap->end());
+    assert(mit != nmap->end());
     out->l_ = mit->second;
   }
 
   if (r_) {
     mit = nmap->find(r_);
-    assert (mit!=nmap->end());
+    assert(mit != nmap->end());
     out->r_ = mit->second;
   }
 }
@@ -307,7 +307,7 @@ void CNode::copyParChild(CNode *out,
 
 double CNode::evalSingle(double x, int *error) const
 {
-  errno = 0; //declared in cerrno
+  errno = 0;  //declared in cerrno
   double val = 0;
   switch (op_) {
   case (OpAbs):
@@ -365,7 +365,7 @@ double CNode::evalSingle(double x, int *error) const
     val = pow(x, r_->val_);
     break;
   case (OpRound):
-    val = floor(x+0.5);
+    val = floor(x + 0.5);
     break;
   case (OpSin):
     val = sin(x);
@@ -374,7 +374,7 @@ double CNode::evalSingle(double x, int *error) const
     val = sinh(x);
     break;
   case (OpSqr):
-    val = x*x;
+    val = x * x;
     break;
   case (OpSqrt):
     val = sqrt(x);
@@ -391,7 +391,7 @@ double CNode::evalSingle(double x, int *error) const
   default:
     *error = 1;
   }
-  if (errno!=0) {
+  if (errno != 0) {
     *error = errno;
   }
   return val;
@@ -401,7 +401,7 @@ double CNode::evalSingle(double x, int *error) const
 
 void CNode::eval(const double *x, int *error)
 {
-  errno = 0; //declared in cerrno
+  errno = 0;  //declared in cerrno
   //writeSubExp(std::cout);
   //std::cout << "\n";
   switch (op_) {
@@ -440,7 +440,7 @@ void CNode::eval(const double *x, int *error)
     break;
   case (OpDiv):
     if (fabs(r_->val_) > DIV_BY_ZERO_TOL) {
-      val_ = l_->val_/r_->val_;
+      val_ = l_->val_ / r_->val_;
     } else {
       *error = 1;
     }
@@ -455,9 +455,9 @@ void CNode::eval(const double *x, int *error)
     break;
   case (OpIntDiv):
     // always round towards zero
-    val_ = l_->val_/r_->val_;
-    if (val_>0) {
-      val_ = floor(val_); 
+    val_ = l_->val_ / r_->val_;
+    if (val_ > 0) {
+      val_ = floor(val_);
     } else {
       val_ = ceil(val_);
     }
@@ -488,7 +488,7 @@ void CNode::eval(const double *x, int *error)
     val_ = pow(l_->val_, r_->val_);
     break;
   case (OpRound):
-    val_ = floor(l_->val_+0.5);
+    val_ = floor(l_->val_ + 0.5);
     break;
   case (OpSin):
     val_ = sin(l_->val_);
@@ -497,20 +497,18 @@ void CNode::eval(const double *x, int *error)
     val_ = sinh(l_->val_);
     break;
   case (OpSqr):
-    val_ = l_->val_*l_->val_;
+    val_ = l_->val_ * l_->val_;
     break;
   case (OpSqrt):
     val_ = sqrt(l_->val_);
     break;
-  case (OpSumList):
-    {
+  case (OpSumList): {
     CNode **c = child_;
     val_ = 0;
-    for (UInt i=0; i<numChild_; ++i, ++c) {
+    for (UInt i = 0; i < numChild_; ++i, ++c) {
       val_ += (*c)->val_;
     }
-    }
-    break;
+  } break;
   case (OpTan):
     val_ = tan(l_->val_);
     break;
@@ -526,7 +524,7 @@ void CNode::eval(const double *x, int *error)
   default:
     assert(!"cannot evaluate!");
   }
-  if (errno!=0) {
+  if (errno != 0) {
     *error = errno;
   }
   //std::cout << "value = " << val_ << std::endl;
@@ -535,12 +533,12 @@ void CNode::eval(const double *x, int *error)
 
 FunctionType CNode::findFType()
 {
-  errno = 0; // declared in cerrno
+  errno = 0;  // declared in cerrno
   FunctionType f0;
   fType_ = OtherFunctionType;
   switch (op_) {
   case (OpAbs):
-    if (Constant==l_->fType_) {
+    if (Constant == l_->fType_) {
       fType_ = Constant;
       val_ = fabs(l_->val_);
     } else {
@@ -548,7 +546,7 @@ FunctionType CNode::findFType()
     }
     break;
   case (OpAcos):
-    if (Constant==l_->fType_) {
+    if (Constant == l_->fType_) {
       fType_ = Constant;
       val_ = acos(l_->val_);
     } else {
@@ -556,7 +554,7 @@ FunctionType CNode::findFType()
     }
     break;
   case (OpAcosh):
-    if (Constant==l_->fType_) {
+    if (Constant == l_->fType_) {
       fType_ = Constant;
       val_ = acosh(l_->val_);
     } else {
@@ -564,7 +562,7 @@ FunctionType CNode::findFType()
     }
     break;
   case (OpAsin):
-    if (Constant==l_->fType_) {
+    if (Constant == l_->fType_) {
       fType_ = Constant;
       val_ = asin(l_->val_);
     } else {
@@ -572,7 +570,7 @@ FunctionType CNode::findFType()
     }
     break;
   case (OpAsinh):
-    if (Constant==l_->fType_) {
+    if (Constant == l_->fType_) {
       fType_ = Constant;
       val_ = asinh(l_->val_);
     } else {
@@ -580,7 +578,7 @@ FunctionType CNode::findFType()
     }
     break;
   case (OpAtan):
-    if (Constant==l_->fType_) {
+    if (Constant == l_->fType_) {
       fType_ = Constant;
       val_ = atan(l_->val_);
     } else {
@@ -588,7 +586,7 @@ FunctionType CNode::findFType()
     }
     break;
   case (OpAtanh):
-    if (Constant==l_->fType_) {
+    if (Constant == l_->fType_) {
       fType_ = Constant;
       val_ = atanh(l_->val_);
     } else {
@@ -596,7 +594,7 @@ FunctionType CNode::findFType()
     }
     break;
   case (OpCeil):
-    if (Constant==l_->fType_) {
+    if (Constant == l_->fType_) {
       fType_ = Constant;
       val_ = ceil(l_->val_);
     } else {
@@ -604,7 +602,7 @@ FunctionType CNode::findFType()
     }
     break;
   case (OpCos):
-    if (Constant==l_->fType_) {
+    if (Constant == l_->fType_) {
       fType_ = Constant;
       val_ = cos(l_->val_);
     } else {
@@ -612,7 +610,7 @@ FunctionType CNode::findFType()
     }
     break;
   case (OpCosh):
-    if (Constant==l_->fType_) {
+    if (Constant == l_->fType_) {
       fType_ = Constant;
       val_ = cosh(l_->val_);
     } else {
@@ -620,7 +618,7 @@ FunctionType CNode::findFType()
     }
     break;
   case (OpCPow):
-    if (Constant==r_->fType_) {
+    if (Constant == r_->fType_) {
       fType_ = Constant;
       val_ = pow(l_->val_, r_->val_);
     } else {
@@ -628,17 +626,17 @@ FunctionType CNode::findFType()
     }
     break;
   case (OpDiv):
-    if (Constant==l_->fType_ && Constant==r_->fType_) {
+    if (Constant == l_->fType_ && Constant == r_->fType_) {
       fType_ = Constant;
-      val_ = l_->val_/r_->val_;
-    } else if (Constant==r_->fType_) {
+      val_ = l_->val_ / r_->val_;
+    } else if (Constant == r_->fType_) {
       fType_ = l_->fType_;
     } else {
       fType_ = Nonlinear;
     }
     break;
   case (OpExp):
-    if (Constant==l_->fType_) {
+    if (Constant == l_->fType_) {
       fType_ = Constant;
       val_ = exp(l_->val_);
     } else {
@@ -646,7 +644,7 @@ FunctionType CNode::findFType()
     }
     break;
   case (OpFloor):
-    if (Constant==l_->fType_) {
+    if (Constant == l_->fType_) {
       fType_ = Constant;
       val_ = floor(l_->val_);
     } else {
@@ -657,22 +655,22 @@ FunctionType CNode::findFType()
     fType_ = Constant;
     break;
   case (OpIntDiv):
-    if (Constant==l_->fType_ && Constant==r_->fType_) {
+    if (Constant == l_->fType_ && Constant == r_->fType_) {
       fType_ = Constant;
-      val_ = (l_->val_/r_->val_);
+      val_ = (l_->val_ / r_->val_);
       if (val_ < 0) {
         val_ = ceil(val_);
       } else {
         val_ = floor(val_);
       }
-    } else if (Constant==r_->fType_) {
+    } else if (Constant == r_->fType_) {
       fType_ = l_->fType_;
     } else {
       fType_ = Nonlinear;
     }
     break;
   case (OpLog):
-    if (Constant==l_->fType_) {
+    if (Constant == l_->fType_) {
       fType_ = Constant;
       val_ = log(l_->val_);
     } else {
@@ -680,7 +678,7 @@ FunctionType CNode::findFType()
     }
     break;
   case (OpLog10):
-    if (Constant==l_->fType_) {
+    if (Constant == l_->fType_) {
       fType_ = Constant;
       val_ = log10(l_->val_);
     } else {
@@ -689,13 +687,13 @@ FunctionType CNode::findFType()
     break;
   case (OpMinus):
     fType_ = funcTypesAdd(l_->fType_, r_->fType_);
-    if (Constant==fType_) {
+    if (Constant == fType_) {
       val_ = l_->val_ - r_->val_;
     }
     break;
   case (OpMult):
     fType_ = funcTypesMult(l_->fType_, r_->fType_);
-    if (Constant==fType_) {
+    if (Constant == fType_) {
       val_ = l_->val_ * r_->val_;
     }
     break;
@@ -705,7 +703,7 @@ FunctionType CNode::findFType()
     break;
   case (OpPlus):
     fType_ = funcTypesAdd(l_->fType_, r_->fType_);
-    if (Constant==fType_) {
+    if (Constant == fType_) {
       val_ = l_->val_ + r_->val_;
     }
     break;
@@ -713,46 +711,46 @@ FunctionType CNode::findFType()
     fType_ = Nonlinear;
     break;
   case (OpPowK):
-    if (Constant==l_->fType_) {
+    if (Constant == l_->fType_) {
       fType_ = Constant;
-      val_ = pow(l_->val_,r_->val_);
+      val_ = pow(l_->val_, r_->val_);
     } else {
       fType_ = Nonlinear;
     }
     break;
   case (OpRound):
-    if (Constant==l_->fType_) {
+    if (Constant == l_->fType_) {
       fType_ = Constant;
-      val_ = floor(l_->val_+0.5);
+      val_ = floor(l_->val_ + 0.5);
     } else {
       fType_ = Nonlinear;
     }
     break;
   case (OpSumList):
     f0 = Constant;
-    for (UInt i=0; i<numChild_; ++i) {
+    for (UInt i = 0; i < numChild_; ++i) {
       f0 = funcTypesAdd(f0, child_[i]->fType_);
     }
     fType_ = f0;
-    if (Constant==fType_) {
+    if (Constant == fType_) {
       val_ = 0.0;
-      for (UInt i=0; i<numChild_; ++i) {
+      for (UInt i = 0; i < numChild_; ++i) {
         val_ += child_[i]->val_;
       }
     }
     break;
   case (OpSqr):
-    if (Constant==l_->fType_) {
+    if (Constant == l_->fType_) {
       fType_ = Constant;
       val_ = l_->val_ * l_->val_;
-    } else if (Linear==l_->fType_) {
+    } else if (Linear == l_->fType_) {
       fType_ = Quadratic;
     } else {
       fType_ = Nonlinear;
     }
     break;
   case (OpSqrt):
-    if (Constant==l_->fType_) {
+    if (Constant == l_->fType_) {
       fType_ = Constant;
       val_ = sqrt(l_->val_);
     } else {
@@ -760,7 +758,7 @@ FunctionType CNode::findFType()
     }
     break;
   case (OpSin):
-    if (Constant==l_->fType_) {
+    if (Constant == l_->fType_) {
       fType_ = Constant;
       val_ = sin(l_->val_);
     } else {
@@ -768,7 +766,7 @@ FunctionType CNode::findFType()
     }
     break;
   case (OpSinh):
-    if (Constant==l_->fType_) {
+    if (Constant == l_->fType_) {
       fType_ = Constant;
       val_ = sinh(l_->val_);
     } else {
@@ -776,7 +774,7 @@ FunctionType CNode::findFType()
     }
     break;
   case (OpTan):
-    if (Constant==l_->fType_) {
+    if (Constant == l_->fType_) {
       fType_ = Constant;
       val_ = tan(l_->val_);
     } else {
@@ -784,7 +782,7 @@ FunctionType CNode::findFType()
     }
     break;
   case (OpTanh):
-    if (Constant==l_->fType_) {
+    if (Constant == l_->fType_) {
       fType_ = Constant;
       val_ = tanh(l_->val_);
     } else {
@@ -793,7 +791,7 @@ FunctionType CNode::findFType()
     break;
   case (OpUMinus):
     fType_ = l_->fType_;
-    if (Constant==fType_) {
+    if (Constant == fType_) {
       val_ = -(l_->val_);
     }
     break;
@@ -803,7 +801,7 @@ FunctionType CNode::findFType()
   default:
     fType_ = OtherFunctionType;
   }
-  assert(errno==0);
+  assert(errno == 0);
   return fType_;
 }
 
@@ -813,57 +811,57 @@ void CNode::fwdGrad()
   // TODO: check for errors.
   switch (op_) {
   case (OpAbs):
-    if (l_->val_>1e-10) {
+    if (l_->val_ > 1e-10) {
       gi_ += 1.0;
-    } else if (l_->val_<-1e-10) {
+    } else if (l_->val_ < -1e-10) {
       gi_ -= 1.0;
     } else {
       gi_ += 0.0;
     }
     break;
   case (OpAcos):
-    gi_ -= l_->gi_/sqrt(1-l_->val_*l_->val_); // -1/sqrt(1-x^2)
+    gi_ -= l_->gi_ / sqrt(1 - l_->val_ * l_->val_);  // -1/sqrt(1-x^2)
     break;
   case (OpAcosh):
-    gi_ += l_->gi_/sqrt(l_->val_*l_->val_ - 1.0); // 1/sqrt(x^2-1)
+    gi_ += l_->gi_ / sqrt(l_->val_ * l_->val_ - 1.0);  // 1/sqrt(x^2-1)
     break;
   case (OpAsin):
-    gi_ += l_->gi_/sqrt(1-l_->val_*l_->val_); // 1/sqrt(1-x^2)
+    gi_ += l_->gi_ / sqrt(1 - l_->val_ * l_->val_);  // 1/sqrt(1-x^2)
     break;
   case (OpAsinh):
-    gi_ += l_->gi_/sqrt(l_->val_*l_->val_ + 1.0); // 1/sqrt(x^2+1)
+    gi_ += l_->gi_ / sqrt(l_->val_ * l_->val_ + 1.0);  // 1/sqrt(x^2+1)
     break;
   case (OpAtan):
-    gi_ += l_->gi_/(1+l_->val_*l_->val_); // 1/(1+x^2)
+    gi_ += l_->gi_ / (1 + l_->val_ * l_->val_);  // 1/(1+x^2)
     break;
   case (OpAtanh):
-    gi_ += l_->gi_/(1-l_->val_*l_->val_); // 1/(1-x^2)
+    gi_ += l_->gi_ / (1 - l_->val_ * l_->val_);  // 1/(1-x^2)
     break;
   case (OpCeil):
-    if (fabs(l_->val_ - floor(0.5+l_->val_))<1e-12) {
+    if (fabs(l_->val_ - floor(0.5 + l_->val_)) < 1e-12) {
       gi_ += l_->gi_;
     } else {
       gi_ += 0.0;
     }
     break;
   case (OpCos):
-    gi_ -= l_->gi_*sin(l_->val_);
+    gi_ -= l_->gi_ * sin(l_->val_);
     break;
   case (OpCosh):
-    gi_ += l_->gi_*sinh(l_->val_);
+    gi_ += l_->gi_ * sinh(l_->val_);
     break;
   case (OpCPow):
-    gi_ += r_->gi_*log(l_->val_)*val_; // val_ = a^(r_->val_)
+    gi_ += r_->gi_ * log(l_->val_) * val_;  // val_ = a^(r_->val_)
     break;
   case (OpDiv):
-    gi_ += l_->gi_/r_->val_;
-    gi_ -= r_->gi_*l_->val_/(r_->val_*r_->val_);
+    gi_ += l_->gi_ / r_->val_;
+    gi_ -= r_->gi_ * l_->val_ / (r_->val_ * r_->val_);
     break;
   case (OpExp):
-    gi_ += l_->gi_*val_; // val_ = e^(l_val_)
+    gi_ += l_->gi_ * val_;  // val_ = e^(l_val_)
     break;
   case (OpFloor):
-    gi_ += l_->gi_; // val_ = e^(l_val_)
+    gi_ += l_->gi_;  // val_ = e^(l_val_)
     break;
   case (OpInt):
     break;
@@ -871,18 +869,18 @@ void CNode::fwdGrad()
     assert(!"derivative of OpIntDiv not implemented!");
     break;
   case (OpLog):
-    gi_ += l_->gi_/l_->val_;
+    gi_ += l_->gi_ / l_->val_;
     break;
   case (OpLog10):
-    gi_ += l_->gi_/l_->val_/log(10.0);
+    gi_ += l_->gi_ / l_->val_ / log(10.0);
     break;
   case (OpMinus):
     gi_ += l_->gi_;
     gi_ -= r_->gi_;
     break;
   case (OpMult):
-    gi_ += l_->gi_*r_->val_;
-    gi_ += r_->gi_*l_->val_;
+    gi_ += l_->gi_ * r_->val_;
+    gi_ += r_->gi_ * l_->val_;
     break;
   case (OpNone):
     break;
@@ -896,43 +894,37 @@ void CNode::fwdGrad()
     assert(!"derivative of OpPow not implemented!");
     break;
   case (OpPowK):
-    gi_ += l_->gi_*r_->val_*pow(l_->val_,r_->val_-1.0);
+    gi_ += l_->gi_ * r_->val_ * pow(l_->val_, r_->val_ - 1.0);
     break;
   case (OpRound):
     assert(!"derivative of OpRound not implemented!");
     break;
   case (OpSin):
-    gi_ += l_->gi_*cos(l_->val_);
+    gi_ += l_->gi_ * cos(l_->val_);
     break;
   case (OpSinh):
-    gi_ += l_->gi_*cosh(l_->val_);
+    gi_ += l_->gi_ * cosh(l_->val_);
     break;
   case (OpSqr):
-    gi_ += 2.0*l_->gi_*l_->val_; 
+    gi_ += 2.0 * l_->gi_ * l_->val_;
     break;
   case (OpSqrt):
-    gi_ += l_->gi_*0.5/val_; // since val_ = sqrt(l_->val_).
+    gi_ += l_->gi_ * 0.5 / val_;  // since val_ = sqrt(l_->val_).
     break;
-  case (OpSumList):
-    {
+  case (OpSumList): {
     CNode **c = child_;
-    for (UInt i=0; i<numChild_; ++i, ++c) {
+    for (UInt i = 0; i < numChild_; ++i, ++c) {
       gi_ += (*c)->gi_;
     }
-    }
-    break;
-  case (OpTan):
-    {
-      double r = cos(l_->val_);
-      gi_ += l_->gi_/(r*r);
-    }
-    break;
-  case (OpTanh):
-    { 
-      double r = cosh(l_->val_);
-      gi_ += l_->gi_/(r*r);
-    }
-    break;
+  } break;
+  case (OpTan): {
+    double r = cos(l_->val_);
+    gi_ += l_->gi_ / (r * r);
+  } break;
+  case (OpTanh): {
+    double r = cosh(l_->val_);
+    gi_ += l_->gi_ / (r * r);
+  } break;
   case (OpUMinus):
     gi_ -= l_->gi_;
     break;
@@ -946,64 +938,64 @@ void CNode::fwdGrad()
 
 void CNode::grad(int *error)
 {
-  errno = 0; // declared in cerrno
+  errno = 0;  // declared in cerrno
   switch (op_) {
   case (OpAbs):
-    if (l_->val_>1e-10) {
+    if (l_->val_ > 1e-10) {
       l_->g_ += g_;
-    } else if (l_->val_<-1e-10) {
+    } else if (l_->val_ < -1e-10) {
       l_->g_ -= g_;
     } else {
       l_->g_ += 0.0;
     }
     break;
   case (OpAcos):
-    l_->g_ -= g_/sqrt(1-l_->val_*l_->val_); // -1/sqrt(1-x^2)
+    l_->g_ -= g_ / sqrt(1 - l_->val_ * l_->val_);  // -1/sqrt(1-x^2)
     break;
   case (OpAcosh):
-    l_->g_ += g_/sqrt(l_->val_*l_->val_ - 1.0); // 1/sqrt(x^2-1)
+    l_->g_ += g_ / sqrt(l_->val_ * l_->val_ - 1.0);  // 1/sqrt(x^2-1)
     break;
   case (OpAsin):
-    l_->g_ += g_/sqrt(1-l_->val_*l_->val_); // 1/sqrt(1-x^2)
+    l_->g_ += g_ / sqrt(1 - l_->val_ * l_->val_);  // 1/sqrt(1-x^2)
     break;
   case (OpAsinh):
-    l_->g_ += g_/sqrt(l_->val_*l_->val_ + 1.0); // 1/sqrt(x^2+1)
+    l_->g_ += g_ / sqrt(l_->val_ * l_->val_ + 1.0);  // 1/sqrt(x^2+1)
     break;
   case (OpAtan):
-    l_->g_ += g_/(1+l_->val_*l_->val_); // 1/(1+x^2)
+    l_->g_ += g_ / (1 + l_->val_ * l_->val_);  // 1/(1+x^2)
     break;
   case (OpAtanh):
-    l_->g_ += g_/(1-l_->val_*l_->val_); // 1/(1-x^2)
+    l_->g_ += g_ / (1 - l_->val_ * l_->val_);  // 1/(1-x^2)
     break;
   case (OpCeil):
-    if (fabs(l_->val_ - floor(0.5+l_->val_))<1e-12) {
+    if (fabs(l_->val_ - floor(0.5 + l_->val_)) < 1e-12) {
       l_->g_ += g_;
     } else {
       l_->g_ += 0.0;
     }
     break;
   case (OpCos):
-    l_->g_ -= g_*sin(l_->val_);
+    l_->g_ -= g_ * sin(l_->val_);
     break;
   case (OpCosh):
-    l_->g_ += g_*sinh(l_->val_);
+    l_->g_ += g_ * sinh(l_->val_);
     break;
   case (OpCPow):
-    r_->g_ += g_*log(l_->val_)*val_;
+    r_->g_ += g_ * log(l_->val_) * val_;
     break;
   case (OpDiv):
     if (fabs(r_->val_) > DIV_BY_ZERO_TOL) {
-      l_->g_ += g_/r_->val_;
-      r_->g_ -= g_*l_->val_/(r_->val_*r_->val_);
+      l_->g_ += g_ / r_->val_;
+      r_->g_ -= g_ * l_->val_ / (r_->val_ * r_->val_);
     } else {
       *error = 1;
     }
     break;
   case (OpExp):
-    l_->g_ += g_*val_; // val_ = e^(l_val_)
+    l_->g_ += g_ * val_;  // val_ = e^(l_val_)
     break;
   case (OpFloor):
-    l_->g_ += g_; // assuming that gradient is 1.
+    l_->g_ += g_;  // assuming that gradient is 1.
     break;
   case (OpInt):
     break;
@@ -1011,18 +1003,18 @@ void CNode::grad(int *error)
     assert(!"derivative of OpIntDiv not implemented!");
     break;
   case (OpLog):
-    l_->g_ += g_/l_->val_;
+    l_->g_ += g_ / l_->val_;
     break;
   case (OpLog10):
-    l_->g_ += g_/l_->val_/log(10.0);
+    l_->g_ += g_ / l_->val_ / log(10.0);
     break;
   case (OpMinus):
     l_->g_ += g_;
     r_->g_ -= g_;
     break;
   case (OpMult):
-    l_->g_ += g_*r_->val_;
-    r_->g_ += g_*l_->val_;
+    l_->g_ += g_ * r_->val_;
+    r_->g_ += g_ * l_->val_;
     break;
   case (OpNone):
     break;
@@ -1036,47 +1028,43 @@ void CNode::grad(int *error)
     assert(!"derivative of OpPow not implemented!");
     break;
   case (OpPowK):
-    l_->g_ += g_*r_->val_*pow(l_->val_, r_->val_-1.0);
+    l_->g_ += g_ * r_->val_ * pow(l_->val_, r_->val_ - 1.0);
     break;
   case (OpRound):
     assert(!"derivative of OpRound not implemented!");
     break;
   case (OpSin):
-    l_->g_ += g_*cos(l_->val_);
+    l_->g_ += g_ * cos(l_->val_);
     break;
   case (OpSinh):
-    l_->g_ += g_*cosh(l_->val_);
+    l_->g_ += g_ * cosh(l_->val_);
     break;
   case (OpSqr):
-    l_->g_ += 2.0*g_*l_->val_; 
+    l_->g_ += 2.0 * g_ * l_->val_;
     break;
   case (OpSqrt):
     if (fabs(val_) > DIV_BY_ZERO_TOL) {
-      l_->g_ += g_*0.5/val_; // same as l_->g += g_*0.5/sqrt(l_->val_).
+      l_->g_ += g_ * 0.5 / val_;  // same as l_->g += g_*0.5/sqrt(l_->val_).
     } else {
       *error = 1;
     }
     break;
   case (OpSumList):
-    if (g_!=0.0) {
+    if (g_ != 0.0) {
       CNode **c = child_;
-      for (UInt i=0; i<numChild_; ++i, ++c) {
+      for (UInt i = 0; i < numChild_; ++i, ++c) {
         (*c)->g_ += g_;
       }
     }
     break;
-  case (OpTan):
-    {
-      double r = cos(l_->val_);
-      l_->g_ += g_/(r*r);
-    }
-    break;
-  case (OpTanh):
-    { 
-      double r = cosh(l_->val_);
-      l_->g_ += g_/(r*r);
-    }
-    break;
+  case (OpTan): {
+    double r = cos(l_->val_);
+    l_->g_ += g_ / (r * r);
+  } break;
+  case (OpTanh): {
+    double r = cosh(l_->val_);
+    l_->g_ += g_ / (r * r);
+  } break;
   case (OpUMinus):
     l_->g_ -= g_;
     break;
@@ -1099,59 +1087,58 @@ void CNode::hess(int *error)
     l_->h_ += 0.0;
     break;
   case (OpAcos):
-    l_->h_ += -h_/sqrt(1-l_->val_*l_->val_) 
-            - g_ * l_->gi_ * l_->val_/pow((1.0-l_->val_*l_->val_),1.5) ; 
+    l_->h_ += -h_ / sqrt(1 - l_->val_ * l_->val_) -
+              g_ * l_->gi_ * l_->val_ / pow((1.0 - l_->val_ * l_->val_), 1.5);
     // -x/(1-x^2)^1.5
     break;
   case (OpAcosh):
-    l_->h_ +=  h_/sqrt(l_->val_*l_->val_-1.0) 
-            - g_ * l_->gi_ * l_->val_/pow((l_->val_*l_->val_-1.0),1.5) ; 
+    l_->h_ += h_ / sqrt(l_->val_ * l_->val_ - 1.0) -
+              g_ * l_->gi_ * l_->val_ / pow((l_->val_ * l_->val_ - 1.0), 1.5);
     break;
   case (OpAsin):
-    l_->h_ +=  h_/sqrt(1-l_->val_*l_->val_) 
-            + g_ * l_->gi_ * l_->val_/pow((1-l_->val_*l_->val_),1.5) ; 
+    l_->h_ += h_ / sqrt(1 - l_->val_ * l_->val_) +
+              g_ * l_->gi_ * l_->val_ / pow((1 - l_->val_ * l_->val_), 1.5);
     break;
   case (OpAsinh):
-    l_->h_ +=  h_/sqrt(1+l_->val_*l_->val_) 
-            - g_ * l_->gi_ * l_->val_/pow((1+l_->val_*l_->val_),1.5) ; 
+    l_->h_ += h_ / sqrt(1 + l_->val_ * l_->val_) -
+              g_ * l_->gi_ * l_->val_ / pow((1 + l_->val_ * l_->val_), 1.5);
     break;
-  case (OpAtan):
-    {
-    double d = 1+l_->val_*l_->val_;
-    l_->h_ +=  h_/d - 2.0 * g_ * l_->gi_ * l_->val_/(d*d); 
-    }
-    break;
-  case (OpAtanh):
-    {
-    double d = (1.0 - l_->val_*l_->val_);
-    l_->h_ +=  h_/d + 2.0 * g_ * l_->gi_ * l_->val_/(d*d);
-    }
-    break;
+  case (OpAtan): {
+    double d = 1 + l_->val_ * l_->val_;
+    l_->h_ += h_ / d - 2.0 * g_ * l_->gi_ * l_->val_ / (d * d);
+  } break;
+  case (OpAtanh): {
+    double d = (1.0 - l_->val_ * l_->val_);
+    l_->h_ += h_ / d + 2.0 * g_ * l_->gi_ * l_->val_ / (d * d);
+  } break;
   case (OpCeil):
-    l_->h_ +=  h_;
+    l_->h_ += h_;
     break;
   case (OpCos):
-    l_->h_ += -h_*sin(l_->val_) - g_ * l_->gi_ * val_; // since val_ = cos(). 
+    l_->h_ +=
+        -h_ * sin(l_->val_) - g_ * l_->gi_ * val_;  // since val_ = cos().
     break;
   case (OpCosh):
-    l_->h_ += h_*sinh(l_->val_) + g_ * l_->gi_ * val_; // since val_ = cosh().
+    l_->h_ +=
+        h_ * sinh(l_->val_) + g_ * l_->gi_ * val_;  // since val_ = cosh().
     break;
   case (OpCPow):
-    r_->h_ += h_*log(l_->val_)*val_ 
-            + g_*r_->gi_*log(l_->val_)*log(l_->val_)*val_;
+    r_->h_ += h_ * log(l_->val_) * val_ +
+              g_ * r_->gi_ * log(l_->val_) * log(l_->val_) * val_;
     break;
   case (OpDiv):
     if (fabs(r_->val_) > DIV_BY_ZERO_TOL) {
-      l_->h_ += h_/r_->val_ - g_ * r_->gi_ /(r_->val_*r_->val_);
-      r_->h_ += -h_*l_->val_/(r_->val_*r_->val_) 
-              - g_ * l_->gi_ /(r_->val_*r_->val_)
-              + g_ * r_->gi_ * l_->val_ * 2.0 /(r_->val_*r_->val_*r_->val_);
+      l_->h_ += h_ / r_->val_ - g_ * r_->gi_ / (r_->val_ * r_->val_);
+      r_->h_ +=
+          -h_ * l_->val_ / (r_->val_ * r_->val_) -
+          g_ * l_->gi_ / (r_->val_ * r_->val_) +
+          g_ * r_->gi_ * l_->val_ * 2.0 / (r_->val_ * r_->val_ * r_->val_);
     } else {
       *error = 1;
     }
     break;
   case (OpExp):
-    l_->h_ += h_*val_ + g_ * l_->gi_ * val_;
+    l_->h_ += h_ * val_ + g_ * l_->gi_ * val_;
     break;
   case (OpFloor):
     l_->h_ += h_;
@@ -1162,18 +1149,19 @@ void CNode::hess(int *error)
     assert(!"derivative of OpIntDiv not implemented!");
     break;
   case (OpLog):
-    l_->h_ += h_/l_->val_ - g_ * l_->gi_  / (l_->val_ * l_->val_); // -1/x^2
+    l_->h_ += h_ / l_->val_ - g_ * l_->gi_ / (l_->val_ * l_->val_);  // -1/x^2
     break;
   case (OpLog10):
-    l_->h_ += h_/l_->val_/log(10) - g_ * l_->gi_ / (log(10)*l_->val_*l_->val_);
+    l_->h_ += h_ / l_->val_ / log(10) -
+              g_ * l_->gi_ / (log(10) * l_->val_ * l_->val_);
     break;
   case (OpMinus):
     l_->h_ += h_;
     r_->h_ -= h_;
     break;
   case (OpMult):
-    l_->h_ += h_*r_->val_ + g_*r_->gi_;
-    r_->h_ += h_*l_->val_ + g_*l_->gi_;
+    l_->h_ += h_ * r_->val_ + g_ * r_->gi_;
+    r_->h_ += h_ * l_->val_ + g_ * l_->gi_;
     break;
   case (OpNone):
     break;
@@ -1187,52 +1175,51 @@ void CNode::hess(int *error)
     assert(!"derivative of OpPow not implemented!");
     break;
   case (OpPowK):
-    l_->h_ += h_ * r_->val_ * pow(l_->val_,r_->val_-1.0) 
-            + g_*l_->gi_*r_->val_*(r_->val_-1.0)*pow(l_->val_, r_->val_-2.0);
+    l_->h_ += h_ * r_->val_ * pow(l_->val_, r_->val_ - 1.0) +
+              g_ * l_->gi_ * r_->val_ * (r_->val_ - 1.0) *
+                  pow(l_->val_, r_->val_ - 2.0);
     break;
   case (OpRound):
     assert(!"derivative of OpRound not implemented!");
     break;
   case (OpSin):
-    l_->h_ += h_*cos(l_->val_) - g_ * l_->gi_ * val_; // since val_ = sin(). 
+    l_->h_ +=
+        h_ * cos(l_->val_) - g_ * l_->gi_ * val_;  // since val_ = sin().
     break;
   case (OpSinh):
-    l_->h_ += h_*cosh(l_->val_) + g_ * l_->gi_ * val_; // since val_ = sinh().
+    l_->h_ +=
+        h_ * cosh(l_->val_) + g_ * l_->gi_ * val_;  // since val_ = sinh().
     break;
   case (OpSqr):
-    l_->h_ += 2.0*h_*l_->val_ + g_ * 2.0 * l_->gi_;
+    l_->h_ += 2.0 * h_ * l_->val_ + g_ * 2.0 * l_->gi_;
     break;
   case (OpSqrt):
     if (fabs(val_) > DIV_BY_ZERO_TOL) {
-      l_->h_ += h_*0.5/val_ - g_ * l_->gi_ * 0.25 /(val_ * l_->val_); 
+      l_->h_ += h_ * 0.5 / val_ - g_ * l_->gi_ * 0.25 / (val_ * l_->val_);
       // -1/4/x^1.5
     } else {
       *error = 1;
     }
     break;
   case (OpSumList):
-    if (h_!=0.0) {
+    if (h_ != 0.0) {
       CNode **c = child_;
-      for (UInt i=0; i<numChild_; ++i, ++c) {
+      for (UInt i = 0; i < numChild_; ++i, ++c) {
         (*c)->h_ += h_;
       }
     }
     break;
-  case (OpTan):
-    {
+  case (OpTan): {
     double d = cos(l_->val_);
-           d *= d;
-    l_->h_ += h_/d  + 2.0 * g_ * l_->gi_ * tan(l_->val_)/d;
-    }
-    break;
-  case (OpTanh):
-    { 
+    d *= d;
+    l_->h_ += h_ / d + 2.0 * g_ * l_->gi_ * tan(l_->val_) / d;
+  } break;
+  case (OpTanh): {
     double d = cosh(l_->val_);
-           d *= d;
-    l_->h_ += h_/d  - 2.0 * g_ * l_->gi_ * tanh(l_->val_)/d;
-      
-    }
-    break;
+    d *= d;
+    l_->h_ += h_ / d - 2.0 * g_ * l_->gi_ * tanh(l_->val_) / d;
+
+  } break;
   case (OpUMinus):
     l_->h_ -= h_;
     break;
@@ -1258,12 +1245,12 @@ void CNode::hess2(CNodeRSet *nset, int *error)
 
 void CNode::propBounds(bool *is_inf, int *error)
 {
-  errno = 0; //declared in cerrno
+  errno = 0;  //declared in cerrno
   double lb = -INFINITY;
   double ub = INFINITY;
   switch (op_) {
   case (OpAbs):
-    assert(lb_>-1e-12);
+    assert(lb_ > -1e-12);
     lb = -ub_;
     ub = ub_;
     l_->propBounds_(lb, ub, is_inf);
@@ -1352,37 +1339,37 @@ void CNode::propBounds(bool *is_inf, int *error)
   case (OpNum):
     break;
   case (OpPlus):
-    lb = lb_-r_->ub_;
-    ub = ub_-r_->lb_;
+    lb = lb_ - r_->ub_;
+    ub = ub_ - r_->lb_;
     l_->propBounds_(lb, ub, is_inf);
-    lb = lb_-l_->ub_;
-    ub = ub_-l_->lb_;
+    lb = lb_ - l_->ub_;
+    ub = ub_ - l_->lb_;
     r_->propBounds_(lb, ub, is_inf);
     break;
   case (OpPow):
     // TODO: Implement me
     break;
   case (OpPowK):
-    if (r_->val_>0) {
-      if (isInt(r_->val_/2.0)) { 
-        if (ub_<-1e-12) {
+    if (r_->val_ > 0) {
+      if (isInt(r_->val_ / 2.0)) {
+        if (ub_ < -1e-12) {
           *error = 3141;
         } else {
-          ub =  pow(ub_, 1.0/r_->val_);
+          ub = pow(ub_, 1.0 / r_->val_);
           lb = -ub;
           l_->propBounds_(lb, ub, is_inf);
           // std::cout << "new bounds = " << lb << " " << ub << std::endl;
         }
-      } else if (isInt((r_->val_+1)/2.0)) { 
+      } else if (isInt((r_->val_ + 1) / 2.0)) {
         if (lb < 0) {
-          lb = -pow(-lb_, 1.0/r_->val_);
+          lb = -pow(-lb_, 1.0 / r_->val_);
         } else {
-          lb = pow(lb_, 1.0/r_->val_);
+          lb = pow(lb_, 1.0 / r_->val_);
         }
         if (ub < 0) {
-          ub = -pow(-ub_, 1.0/r_->val_);
+          ub = -pow(-ub_, 1.0 / r_->val_);
         } else {
-          ub = pow(ub_, 1.0/r_->val_);
+          ub = pow(ub_, 1.0 / r_->val_);
         }
         l_->propBounds_(lb, ub, is_inf);
       }
@@ -1402,83 +1389,81 @@ void CNode::propBounds(bool *is_inf, int *error)
     l_->propBounds_(lb, ub, is_inf);
     break;
   case (OpSqrt):
-    if (ub_<0.0) {
+    if (ub_ < 0.0) {
       *is_inf = true;
-    } else if (lb>=0.0) {
-      l_->propBounds_(lb*lb, ub*ub, is_inf);
+    } else if (lb >= 0.0) {
+      l_->propBounds_(lb * lb, ub * ub, is_inf);
     } else {
-      l_->propBounds_(0.0, ub*ub, is_inf);
+      l_->propBounds_(0.0, ub * ub, is_inf);
     }
     break;
-  case (OpSumList):
-    {
-      // TODO: move to a separate function
-      CNode **c = child_;
-      bool inf_lb = false;
-      bool inf_ub = false;
-      double tlb;
-      double tub;
+  case (OpSumList): {
+    // TODO: move to a separate function
+    CNode **c = child_;
+    bool inf_lb = false;
+    bool inf_ub = false;
+    double tlb;
+    double tub;
 
-      lb = 0.0;
-      for (UInt i=0; i<numChild_; ++i, ++c) {
-        if ((*c)->lb_>-INFINITY) {
-          lb += (*c)->lb_;
-        } else if (true==inf_lb) {
-          lb = -INFINITY;
-          break;
-        } else {
-          inf_lb = true;
-        }
+    lb = 0.0;
+    for (UInt i = 0; i < numChild_; ++i, ++c) {
+      if ((*c)->lb_ > -INFINITY) {
+        lb += (*c)->lb_;
+      } else if (true == inf_lb) {
+        lb = -INFINITY;
+        break;
+      } else {
+        inf_lb = true;
       }
+    }
 
+    c = child_;
+    ub = 0.0;
+    for (UInt i = 0; i < numChild_; ++i, ++c) {
+      if ((*c)->ub_ < INFINITY) {
+        ub += (*c)->ub_;
+      } else if (true == inf_ub) {
+        ub = INFINITY;
+        break;
+      } else {
+        inf_ub = true;
+      }
+    }
+
+    if (lb > -INFINITY || ub < INFINITY) {
       c = child_;
-      ub = 0.0;
-      for (UInt i=0; i<numChild_; ++i, ++c) {
-        if ((*c)->ub_ < INFINITY) {
-          ub += (*c)->ub_;
-        } else if (true==inf_ub) {
-          ub = INFINITY;
-          break;
-        } else {
-          inf_ub = true;
-        }
-      }
-
-      if (lb > -INFINITY || ub < INFINITY) {
-        c = child_;
-        for (UInt i=0; i<numChild_; ++i, ++c) {
-          tlb = -INFINITY;
-          tub =  INFINITY;
-          if (ub<INFINITY) {
-            if (false == inf_ub) {
-              tlb = lb_-(ub-(*c)->ub_);
-            } else if ((*c)->ub_ < INFINITY) {
-              tlb = -INFINITY;
-            } else {
-              tlb = lb_-ub;
-            }
-          } else {
+      for (UInt i = 0; i < numChild_; ++i, ++c) {
+        tlb = -INFINITY;
+        tub = INFINITY;
+        if (ub < INFINITY) {
+          if (false == inf_ub) {
+            tlb = lb_ - (ub - (*c)->ub_);
+          } else if ((*c)->ub_ < INFINITY) {
             tlb = -INFINITY;
-          }
-          if (lb>-INFINITY) {
-            if (false == inf_lb) {
-              tub = ub_-(lb-(*c)->lb_);
-            } else if ((*c)->lb_ > -INFINITY) {
-              tub = INFINITY;
-            } else {
-              tub = ub_-lb;
-            }
           } else {
-            tub =  INFINITY;
+            tlb = lb_ - ub;
           }
-          (*c)->propBounds_(tlb, tub, is_inf);
-          if (true==(*is_inf)) {
-            break;
+        } else {
+          tlb = -INFINITY;
+        }
+        if (lb > -INFINITY) {
+          if (false == inf_lb) {
+            tub = ub_ - (lb - (*c)->lb_);
+          } else if ((*c)->lb_ > -INFINITY) {
+            tub = INFINITY;
+          } else {
+            tub = ub_ - lb;
           }
+        } else {
+          tub = INFINITY;
+        }
+        (*c)->propBounds_(tlb, tub, is_inf);
+        if (true == (*is_inf)) {
+          break;
         }
       }
     }
-    break;
+  } break;
   case (OpTan):
     // TODO: Implement me
     break;
@@ -1486,8 +1471,8 @@ void CNode::propBounds(bool *is_inf, int *error)
     // TODO: Implement me
     break;
   case (OpUMinus):
-    lb =-ub_;
-    ub =-lb_;
+    lb = -ub_;
+    ub = -lb_;
     l_->propBounds_(lb, ub, is_inf);
     break;
   case (OpVar):
@@ -1495,7 +1480,7 @@ void CNode::propBounds(bool *is_inf, int *error)
   default:
     break;
   }
-  if (errno!=0) {
+  if (errno != 0) {
     *error = errno;
   }
 }
@@ -1504,16 +1489,16 @@ void CNode::propBounds(bool *is_inf, int *error)
 void CNode::propBounds_(double lb, double ub, bool *is_inf)
 {
   double etol = 1e-7;
-  assert(false==std::isnan(lb));
-  assert(false==std::isnan(ub));
+  assert(false == std::isnan(lb));
+  assert(false == std::isnan(ub));
 
-  if (lb<-MINFTY) {
+  if (lb < -MINFTY) {
     lb = -INFINITY;
   }
-  if (ub>MINFTY) {
+  if (ub > MINFTY) {
     ub = INFINITY;
   }
-  if (lb > ub + etol || ub < lb_- etol || lb > ub_ + etol) {
+  if (lb > ub + etol || ub < lb_ - etol || lb > ub_ + etol) {
     *is_inf = true;
   } else {
     if (lb > lb_) {
@@ -1521,7 +1506,7 @@ void CNode::propBounds_(double lb, double ub, bool *is_inf)
     }
     if (ub < ub_) {
       ub_ = ub;
-    } 
+    }
   }
 }
 
@@ -1529,61 +1514,59 @@ void CNode::propBounds_(double lb, double ub, bool *is_inf)
 void CNode::propHessSpa2(CNodeRSet *nset)
 {
   propHessSpa();
-  switch(numChild_) {
-  case(0):
+  switch (numChild_) {
+  case (0):
     break;
-  case(1):
-    if ((l_->b_ || l_->ti_>0) && l_->op_!=OpNum && l_->op_!=OpInt) {
+  case (1):
+    if ((l_->b_ || l_->ti_ > 0) && l_->op_ != OpNum && l_->op_ != OpInt) {
       nset->insert(l_);
     }
     break;
-  case(2):
-    if ((l_->b_ || l_->ti_>0) && l_->op_!=OpNum && l_->op_!=OpInt) {
+  case (2):
+    if ((l_->b_ || l_->ti_ > 0) && l_->op_ != OpNum && l_->op_ != OpInt) {
       nset->insert(l_);
     }
-    if ((r_->b_ || r_->ti_>0) && r_->op_!=OpNum && r_->op_!=OpInt) {
+    if ((r_->b_ || r_->ti_ > 0) && r_->op_ != OpNum && r_->op_ != OpInt) {
       nset->insert(r_);
     }
     break;
-  default:
-    {
+  default: {
     CNode **c = child_;
-    for (UInt i=0; i<numChild_; ++i, ++c) {
-      if ( ((*c)->b_  || (*c)->ti_>0) &&
-           (*c)->op_!=OpNum && (*c)->op_!=OpInt) {
+    for (UInt i = 0; i < numChild_; ++i, ++c) {
+      if (((*c)->b_ || (*c)->ti_ > 0) && (*c)->op_ != OpNum &&
+          (*c)->op_ != OpInt) {
         nset->insert(*c);
       }
     }
-    }
+  }
   }
 }
 
 
 void CNode::propHessSpa()
 {
-  if (numChild_<1) {
+  if (numChild_ < 1) {
     //write(std::cout);
     return;
   } else if (b_) {
-    switch(numChild_) {
-    case(1):
+    switch (numChild_) {
+    case (1):
       l_->b_ = true;
       break;
-    case(2):
+    case (2):
       l_->b_ = true;
       r_->b_ = true;
       break;
-    default:
-      {
+    default: {
       CNode **c = child_;
-      for (UInt i=0; i<numChild_; ++i, ++c) {
+      for (UInt i = 0; i < numChild_; ++i, ++c) {
         (*c)->b_ = true;
       }
-      }
+    }
     }
   } else {
     // g_ is false
-    switch(op_) {
+    switch (op_) {
     case (OpAbs):
     case (OpAcos):
     case (OpAcosh):
@@ -1591,7 +1574,7 @@ void CNode::propHessSpa()
     case (OpAsinh):
     case (OpAtan):
     case (OpAtanh):
-      if (l_->ti_>0) {
+      if (l_->ti_ > 0) {
         l_->b_ = true;
       }
       break;
@@ -1599,48 +1582,48 @@ void CNode::propHessSpa()
       break;
     case (OpCos):
     case (OpCosh):
-      if (l_->ti_>0) {
+      if (l_->ti_ > 0) {
         l_->b_ = true;
       }
       break;
     case (OpCPow):
-      if (r_->ti_>0) {
+      if (r_->ti_ > 0) {
         r_->b_ = true;
       }
       break;
     case (OpDiv):
-      if (r_->ti_>0) {
+      if (r_->ti_ > 0) {
         l_->b_ = true;
         r_->b_ = true;
-      } else if (l_->ti_>0) {
+      } else if (l_->ti_ > 0) {
         r_->b_ = true;
       }
       break;
-    case(OpExp):
-      if (l_->ti_>0) {
+    case (OpExp):
+      if (l_->ti_ > 0) {
         l_->b_ = true;
       }
       break;
-    case(OpFloor):
+    case (OpFloor):
       break;
-    case(OpInt):
+    case (OpInt):
       break;
     case (OpIntDiv):
       assert(!"not implemented yet!");
       break;
     case (OpLog):
     case (OpLog10):
-      if (l_->ti_>0) {
+      if (l_->ti_ > 0) {
         l_->b_ = true;
       }
       break;
     case (OpMinus):
       break;
     case (OpMult):
-      if (r_->ti_>0) {
+      if (r_->ti_ > 0) {
         l_->b_ = true;
       }
-      if (l_->ti_>0) {
+      if (l_->ti_ > 0) {
         r_->b_ = true;
       }
       break;
@@ -1658,7 +1641,7 @@ void CNode::propHessSpa()
     case (OpSinh):
     case (OpSqr):
     case (OpSqrt):
-      if (l_->ti_>0) {
+      if (l_->ti_ > 0) {
         l_->b_ = true;
       }
       break;
@@ -1666,7 +1649,7 @@ void CNode::propHessSpa()
       break;
     case (OpTan):
     case (OpTanh):
-      if (l_->ti_>0) {
+      if (l_->ti_ > 0) {
         l_->b_ = true;
       }
     case (OpUMinus):
@@ -1693,32 +1676,32 @@ void CNode::setType(FunctionType t)
 void CNode::setVal(double v)
 {
   val_ = v;
-  if (OpNum==op_) {
+  if (OpNum == op_) {
     lb_ = ub_ = val_;
   }
 }
 
 void CNode::updateBnd(int *error)
 {
-  errno = 0; //declared in cerrno
+  errno = 0;  //declared in cerrno
   switch (op_) {
   case (OpAbs):
-    if (l_->ub_<0) {
+    if (l_->ub_ < 0) {
       lb_ = -l_->ub_;
       ub_ = -l_->lb_;
-    } else if (l_->lb_<0) {    // l_->ub_ is >= 0 already
-      if (-l_->lb_>l_->ub_) {
-        lb_ =  0.0;
+    } else if (l_->lb_ < 0) {  // l_->ub_ is >= 0 already
+      if (-l_->lb_ > l_->ub_) {
+        lb_ = 0.0;
         ub_ = -l_->lb_;
       } else {
         lb_ = 0.0;
-        ub_ =  l_->ub_;
+        ub_ = l_->ub_;
       }
     } else {
       lb_ = l_->lb_;
       ub_ = l_->ub_;
     }
-    assert(lb_>-1e-12);
+    assert(lb_ > -1e-12);
     break;
   case (OpAcos):
     lb_ = 0.0;
@@ -1730,8 +1713,8 @@ void CNode::updateBnd(int *error)
     ub_ = INFINITY;
     break;
   case (OpAsin):
-    lb_ = -PI/2;
-    ub_ =  PI/2;
+    lb_ = -PI / 2;
+    ub_ = PI / 2;
     break;
   case (OpAsinh):
     // TODO: Implement me
@@ -1739,8 +1722,8 @@ void CNode::updateBnd(int *error)
     ub_ = INFINITY;
     break;
   case (OpAtan):
-    lb_ = -PI/2;
-    ub_ =  PI/2;
+    lb_ = -PI / 2;
+    ub_ = PI / 2;
     break;
   case (OpAtanh):
     // TODO: Implement me
@@ -1769,12 +1752,12 @@ void CNode::updateBnd(int *error)
     BoundsOnDiv(l_->lb_, l_->ub_, r_->lb_, r_->ub_, lb_, ub_);
     break;
   case (OpExp):
-    if (l_->lb_==-INFINITY) {
+    if (l_->lb_ == -INFINITY) {
       lb_ = 0.0;
     } else {
       lb_ = exp(l_->lb_);
     }
-    if (l_->ub_==INFINITY) {
+    if (l_->ub_ == INFINITY) {
       ub_ = INFINITY;
     } else {
       ub_ = exp(l_->ub_);
@@ -1790,7 +1773,7 @@ void CNode::updateBnd(int *error)
     ub_ = INFINITY;
     break;
   case (OpLog):
-    if (l_->lb_<=0.0) {
+    if (l_->lb_ <= 0.0) {
       lb_ = -INFINITY;
     } else {
       lb_ = log(l_->lb_);
@@ -1798,7 +1781,7 @@ void CNode::updateBnd(int *error)
     ub_ = log(l_->ub_);
     break;
   case (OpLog10):
-    if (l_->lb_<=0.0) {
+    if (l_->lb_ <= 0.0) {
       lb_ = -INFINITY;
     } else {
       lb_ = log10(l_->lb_);
@@ -1823,8 +1806,8 @@ void CNode::updateBnd(int *error)
     ub_ = d_;
     break;
   case (OpPlus):
-    lb_ = l_->lb_+r_->lb_;
-    ub_ = l_->ub_+r_->ub_;
+    lb_ = l_->lb_ + r_->lb_;
+    ub_ = l_->ub_ + r_->ub_;
     break;
   case (OpPow):
     // TODO: Implement me
@@ -1843,7 +1826,7 @@ void CNode::updateBnd(int *error)
     break;
   case (OpSin):
     lb_ = -1.0;
-    ub_ =  1.0;
+    ub_ = 1.0;
     break;
   case (OpSinh):
     // TODO: Implement me
@@ -1854,23 +1837,21 @@ void CNode::updateBnd(int *error)
     BoundsOnSquare(l_->lb_, l_->ub_, lb_, ub_);
     break;
   case (OpSqrt):
-    if (l_->lb_<1e-12) {
+    if (l_->lb_ < 1e-12) {
       lb_ = 0.0;
     } else {
       lb_ = sqrt(l_->lb_);
     }
     ub_ = sqrt(l_->ub_);
     break;
-  case (OpSumList):
-    {
-      lb_ = ub_ = 0.0;
-      CNode **c = child_;
-      for (UInt i=0; i<numChild_; ++i, ++c) {
-        lb_ += (*c)->lb_;
-        ub_ += (*c)->ub_;
-      }
+  case (OpSumList): {
+    lb_ = ub_ = 0.0;
+    CNode **c = child_;
+    for (UInt i = 0; i < numChild_; ++i, ++c) {
+      lb_ += (*c)->lb_;
+      ub_ += (*c)->ub_;
     }
-    break;
+  } break;
   case (OpTan):
     // TODO: Implement me
     lb_ = -INFINITY;
@@ -1882,8 +1863,8 @@ void CNode::updateBnd(int *error)
     ub_ = INFINITY;
     break;
   case (OpUMinus):
-    lb_ =-l_->ub_;
-    ub_ =-l_->lb_;
+    lb_ = -l_->ub_;
+    ub_ = -l_->lb_;
     break;
   case (OpVar):
     lb_ = v_->getLb();
@@ -1892,13 +1873,13 @@ void CNode::updateBnd(int *error)
   default:
     break;
   }
-  if (errno!=0) {
+  if (errno != 0) {
     *error = errno;
   }
-  if (lb_<-MINFTY) {
+  if (lb_ < -MINFTY) {
     lb_ = -INFINITY;
   }
-  if (ub_>MINFTY) {
+  if (ub_ > MINFTY) {
     ub_ = INFINITY;
   }
 }
@@ -1906,16 +1887,15 @@ void CNode::updateBnd(int *error)
 
 void CNode::write(std::ostream &out) const
 {
-  out 
-    << "\n"
-    << "d_ = " << d_ << std::endl
-    << "function type = " << fType_ << std::endl
-    << "g_ = " << g_ << std::endl
-    << "number of children = " << numChild_ << std::endl
-    << "number of parents = " << numPar_ << std::endl
-    << "opcode = " << op_ << std::endl
-    << "value = " << val_ << std::endl
-    << "\n";
+  out << "\n"
+      << "d_ = " << d_ << std::endl
+      << "function type = " << fType_ << std::endl
+      << "g_ = " << g_ << std::endl
+      << "number of children = " << numChild_ << std::endl
+      << "number of parents = " << numPar_ << std::endl
+      << "opcode = " << op_ << std::endl
+      << "value = " << val_ << std::endl
+      << "\n";
 }
 
 
@@ -2055,7 +2035,7 @@ void CNode::writeSubNl(std::stringstream &s, int *err) const
     break;
   case (OpSumList):
     s << "o54" << std::endl << numChild_ << std::endl;
-    for (UInt i=0; i<numChild_; ++i) {
+    for (UInt i = 0; i < numChild_; ++i) {
       child_[i]->writeSubNl(s, err);
     }
     break;
@@ -2237,9 +2217,9 @@ void CNode::writeSubExp(std::ostream &out) const
     break;
   case (OpSumList):
     out << "(";
-    for (UInt i=0; i<numChild_; ++i) {
+    for (UInt i = 0; i < numChild_; ++i) {
       child_[i]->writeSubExp(out);
-      if (i<numChild_-1) {
+      if (i < numChild_ - 1) {
         out << " + ";
       }
     }
@@ -2270,21 +2250,23 @@ void CNode::writeSubExp(std::ostream &out) const
 }
 
 
-bool Minotaur::CompareCNodes::operator()(const CNode* n1, const CNode *n2) const
+bool Minotaur::CompareCNodes::operator()(const CNode *n1,
+                                         const CNode *n2) const
 {
   // process lower ids first and lower variables first.
-  if (n1->getId()==n2->getId() && n1->getId()==0) {
-    return (n1->getV()->getIndex()<n2->getV()->getIndex());
+  if (n1->getId() == n2->getId() && n1->getId() == 0) {
+    return (n1->getV()->getIndex() < n2->getV()->getIndex());
   }
-  return (n1->getId()<n2->getId());
+  return (n1->getId() < n2->getId());
 }
 
 
-bool Minotaur::CompareCNodesR::operator()(const CNode* n1, const CNode *n2) const
+bool Minotaur::CompareCNodesR::operator()(const CNode *n1,
+                                          const CNode *n2) const
 {
   // process higher ids first, but lower variables first.
-  if (n1->getId()==n2->getId() && n1->getId()==0) {
-    return (n1->getV()->getIndex()<n2->getV()->getIndex());
+  if (n1->getId() == n2->getId() && n1->getId() == 0) {
+    return (n1->getV()->getIndex() < n2->getV()->getIndex());
   }
-  return (n1->getId()>n2->getId());
+  return (n1->getId() > n2->getId());
 }

@@ -1,8 +1,8 @@
-// 
+//
 //     Minotaur -- It's only 1/2 bull
-// 
+//
 //     (C)opyright 2008 - 2025 The Minotaur Team.
-// 
+//
 
 /**
  * \file Eigen.cpp
@@ -30,63 +30,63 @@ extern "C"
                                 int *il, int *iu, double *abstol, int *m,
                                 double *w, double *z, int *ldz, int *isuppz,
                                 double *work, int *lwork, int *iwork,
-                                int *liwork, int *info );
+                                int *liwork, int *info);
 }
 
 
 EigenCalculator::EigenCalculator()
-  :n_(0),
-   A_(0),
-   abstol_(1e-6)
+  : n_(0),
+    A_(0),
+    abstol_(1e-6)
 {
 }
 
 
 EigenPtr EigenCalculator::findValues(ConstQuadraticFunctionPtr qf)
 {
-  EigenPtr ePtr = EigenPtr(); // NULL
+  EigenPtr ePtr = EigenPtr();  // NULL
   if (qf) {
     qf_ = qf;
     fillA_();
-    findVectors_ = 'N'; // N for eigen values only, V for values and vectors.
+    findVectors_ = 'N';  // N for eigen values only, V for values and vectors.
     w_ = new double[n_];
-    z_ = 0; 
+    z_ = 0;
     isuppz_ = 0;
 
     calculate_();
     ePtr = getEigen_();
-    delete [] w_;
-    delete [] A_;
+    delete[] w_;
+    delete[] A_;
     vars_.clear();
     indices_.clear();
   }
   return ePtr;
 }
 
-EigenPtr EigenCalculator::findValues(int n, double** H)
+EigenPtr EigenCalculator::findValues(int n, double **H)
 {
-  EigenPtr ePtr = EigenPtr(); // NULL
+  EigenPtr ePtr = EigenPtr();  // NULL
   n_ = n;
-  A_ = new double [n_*n_];
-  std::fill(A_, A_+(n_*n_), 0);
+  A_ = new double[n_ * n_];
+  std::fill(A_, A_ + (n_ * n_), 0);
   indices_.clear();
   vars_.clear();
 
   // visit each term in qf and populate A_
-  for (int row=0; row<n; ++row) {
-    for (int col=0; col<=row; ++col) {
-      A_[row+col*n_] += H[row][col];
+  for (int row = 0; row < n; ++row) {
+    for (int col = 0; col <= row; ++col) {
+      A_[row + col * n_] += H[row][col];
     }
   }
-  findVectors_ = 'N'; // N for eigen values only, V for values and vectors.
+  findVectors_ = 'N';  // N for eigen values only, V for values and vectors.
   w_ = new double[n_];
-  z_ = 0; 
+  z_ = 0;
   isuppz_ = 0;
 
   calculate_();
   ePtr = getEigen_();
-  delete [] w_;
-  delete [] A_;
+  delete[] w_;
+  delete[] A_;
   vars_.clear();
   indices_.clear();
   return ePtr;
@@ -95,14 +95,14 @@ EigenPtr EigenCalculator::findValues(int n, double** H)
 
 EigenPtr EigenCalculator::findVectors(ConstQuadraticFunctionPtr qf)
 {
-  EigenPtr ePtr = EigenPtr(); // NULL
+  EigenPtr ePtr = EigenPtr();  // NULL
   if (qf) {
     qf_ = qf;
     fillA_();
-    findVectors_ = 'V'; // N for eigen values only, V for values and vectors.
+    findVectors_ = 'V';  // N for eigen values only, V for values and vectors.
     w_ = new double[n_];
-    z_ = new double [n_*n_];
-    isuppz_ = new int [2*n_];
+    z_ = new double[n_ * n_];
+    isuppz_ = new int[2 * n_];
 
     // fill z_ with 0. necessary because of a bug in lapack for n_ = 2
     // also bug in lapack for n_ = 1
@@ -114,10 +114,10 @@ EigenPtr EigenCalculator::findVectors(ConstQuadraticFunctionPtr qf)
 
     calculate_();
     ePtr = getEigen_();
-    delete [] w_;
-    delete [] A_;
-    delete [] z_;
-    delete [] isuppz_;
+    delete[] w_;
+    delete[] A_;
+    delete[] z_;
+    delete[] isuppz_;
     w_ = 0;
     A_ = 0;
     z_ = 0;
@@ -128,46 +128,46 @@ EigenPtr EigenCalculator::findVectors(ConstQuadraticFunctionPtr qf)
 
 void EigenCalculator::fillA_()
 {
-  UInt i,j;
-  VarCountConstMap * qf_map = qf_->getVarMap();
+  UInt i, j;
+  VarCountConstMap *qf_map = qf_->getVarMap();
   n_ = qf_map->size();
 
   // allocate space and create a map of what row/column corresponds to each
   // variable in qf.
-  A_ = new double [n_*n_];
-  std::fill(A_, A_+(n_*n_), 0);
-  i=0;
+  A_ = new double[n_ * n_];
+  std::fill(A_, A_ + (n_ * n_), 0);
+  i = 0;
   indices_.clear();
   vars_.clear();
   for (VarCountConstMap::const_iterator it = qf_map->begin();
-      it != qf_map->end(); ++it, ++i) {
+       it != qf_map->end(); ++it, ++i) {
     indices_[it->first] = i;
     vars_.push_back(it->first);
   }
 
   // visit each term in qf and populate A_
-  for (VariablePairGroupConstIterator it = qf_->begin(); it != qf_->end(); 
-      ++it) {
+  for (VariablePairGroupConstIterator it = qf_->begin(); it != qf_->end();
+       ++it) {
     i = indices_[it->first.first];
     j = indices_[it->first.second];
-    A_[i+j*n_] += 0.5*it->second;
-    A_[j+i*n_] += 0.5*it->second;
+    A_[i + j * n_] += 0.5 * it->second;
+    A_[j + i * n_] += 0.5 * it->second;
   }
 }
 
 
-void EigenCalculator::getSumOfSquares (
-    std::vector<LinearFunctionPtr> & p_terms, 
-    std::vector<LinearFunctionPtr> & n_terms,
-    std::vector<double> & p_const,
-    std::vector<double> & n_const,
-    LinearFunctionPtr & lin_terms, double & c,
-    ConstQuadraticFunctionPtr qf, ConstLinearFunctionPtr lf)
+void EigenCalculator::getSumOfSquares(std::vector<LinearFunctionPtr> &p_terms,
+                                      std::vector<LinearFunctionPtr> &n_terms,
+                                      std::vector<double> &p_const,
+                                      std::vector<double> &n_const,
+                                      LinearFunctionPtr &lin_terms, double &c,
+                                      ConstQuadraticFunctionPtr qf,
+                                      ConstLinearFunctionPtr lf)
 {
   EigenPtr ePtr;
   LinearFunctionPtr lf2;
   ConstVariablePtr v_ptr;
-  VarCountConstMap * qf_map;
+  VarCountConstMap *qf_map;
   VarCountConstMap::const_iterator qf_it;
   double evalue, coeff;
   LinearFunctionPtr evector;
@@ -189,8 +189,8 @@ void EigenCalculator::getSumOfSquares (
   qf_map = qf_->getVarMap();
   lf2 = (LinearFunctionPtr) new LinearFunction();
   if (lf) {
-    for (VariableGroupConstIterator it=lf->termsBegin(); it!=lf->termsEnd(); 
-        ++it) {
+    for (VariableGroupConstIterator it = lf->termsBegin();
+         it != lf->termsEnd(); ++it) {
       v_ptr = it->first;
       qf_it = qf_map->find(v_ptr);
       if (qf_it != qf_map->end()) {
@@ -205,8 +205,8 @@ void EigenCalculator::getSumOfSquares (
 
   // lf2 only has variables that occur in qf. it may not have all of qf's
   // variables.
-  // now calculate b = R^(-1)Q'c. b_i = 
-  for (EigenPairConstIterator it=ePtr->begin(); it!=ePtr->end(); ++it) {
+  // now calculate b = R^(-1)Q'c. b_i =
+  for (EigenPairConstIterator it = ePtr->begin(); it != ePtr->end(); ++it) {
     evector = it->second;
     evalue = it->first;
     if (fabs(evalue) > abstol_) {
@@ -222,7 +222,7 @@ void EigenCalculator::getSumOfSquares (
       // Show to AM sir
       // (*lin_terms) += -1*coeff*evector;
       LinearFunctionPtr lfTemp = 0;
-      lfTemp  = evector->copyMult(-1*coeff);
+      lfTemp = evector->copyMult(-1 * coeff);
       lin_terms->add(lfTemp);
       delete lfTemp;
 
@@ -231,16 +231,16 @@ void EigenCalculator::getSumOfSquares (
       //std::cout << "\n";
 
       // constant term
-      c -= 0.25*coeff*coeff/evalue;
+      c -= 0.25 * coeff * coeff / evalue;
 
       if (evalue > 0) {
         evector->multiply(sqrt(evalue));
         p_terms.push_back(evector);
-        p_const.push_back(0.5/sqrt(evalue)*coeff);
+        p_const.push_back(0.5 / sqrt(evalue) * coeff);
       } else {
         evector->multiply(sqrt(-evalue));
         n_terms.push_back(evector);
-        n_const.push_back(-0.5/sqrt(-evalue)*coeff);
+        n_const.push_back(-0.5 / sqrt(-evalue) * coeff);
       }
     } else {
     }
@@ -249,11 +249,11 @@ void EigenCalculator::getSumOfSquares (
 }
 
 
-double EigenCalculator::getDotProduct_(ConstLinearFunctionPtr lf1, 
-    ConstLinearFunctionPtr lf2)
+double EigenCalculator::getDotProduct_(ConstLinearFunctionPtr lf1,
+                                       ConstLinearFunctionPtr lf2)
 {
-  ConstLinearFunctionPtr tmp; // for exchange
-  double d_product = 0;   // the dot product of coefficients of lf1 and lf2.
+  ConstLinearFunctionPtr tmp;  // for exchange
+  double d_product = 0;  // the dot product of coefficients of lf1 and lf2.
   ConstVariablePtr v_ptr;
 
   if (!lf1 || !lf2) {
@@ -266,8 +266,8 @@ double EigenCalculator::getDotProduct_(ConstLinearFunctionPtr lf1,
     lf2 = tmp;
   }
 
-  for (VariableGroupConstIterator it1 = lf1->termsBegin(); 
-      it1 != lf1->termsEnd(); ++it1) {
+  for (VariableGroupConstIterator it1 = lf1->termsBegin();
+       it1 != lf1->termsEnd(); ++it1) {
     v_ptr = it1->first;
     d_product += it1->second * lf2->getWeight(v_ptr);
   }
@@ -278,24 +278,24 @@ double EigenCalculator::getDotProduct_(ConstLinearFunctionPtr lf1,
 
 void EigenCalculator::calculate_()
 {
-  char range = 'A'; // A for all eigen values/vectors, V for values in range (vl, vu]
-                    // I for il-th through iu-th eigen value.
+  char range = 'A';  // A for all eigen values/vectors, V for values in range
+                     // (vl, vu] I for il-th through iu-th eigen value.
   char uplo = 'L';  // L for storing only lower triangular part of the matrix,
                     // U for upper.
   int lda = n_;     // The leading dimension of A, lda >= max(1,n)
-  int vl=0, vu=0;   // Not used when range='A'
-  int il=0, iu=0;   // Not used when range ='A'
-  int n=n_;
-  int ldz = 1;      // The leading dimension of the array z_.
-  double *work;     // Work space.
-  int lwork;        // length of the array 'work'
-  int *iwork;       // Work space.
-  int liwork;       // length of the array 'iwork'
-  int info = 0;     //  0 => successful exit
-                    // -i => i-th argument has some problems
-                    //  i => i off-diagonal elements of an intermediate
-                    //       tridiagonal form did not converge to zero.
-  m_=0;             // number of eigen values found.
+  int vl = 0, vu = 0;  // Not used when range='A'
+  int il = 0, iu = 0;  // Not used when range ='A'
+  int n = n_;
+  int ldz = 1;   // The leading dimension of the array z_.
+  double *work;  // Work space.
+  int lwork;     // length of the array 'work'
+  int *iwork;    // Work space.
+  int liwork;    // length of the array 'iwork'
+  int info = 0;  //  0 => successful exit
+                 // -i => i-th argument has some problems
+                 //  i => i off-diagonal elements of an intermediate
+                 //       tridiagonal form did not converge to zero.
+  m_ = 0;        // number of eigen values found.
   assert(n_);
   assert(A_);
 
@@ -310,29 +310,29 @@ void EigenCalculator::calculate_()
   work[0] = 0.0;
   iwork[0] = 0;
 
-  F77_FUNC(dsyevr,DSYEVR)(&findVectors_, &range, &uplo, &n, A_, &lda, &vl, &vu,
-      &il, &iu, &abstol_, &m_, w_, z_, &ldz, isuppz_, work, &lwork, iwork,
-      &liwork, &info);
-  assert(info==0);
+  F77_FUNC(dsyevr, DSYEVR)(&findVectors_, &range, &uplo, &n, A_, &lda, &vl,
+                           &vu, &il, &iu, &abstol_, &m_, w_, z_, &ldz,
+                           isuppz_, work, &lwork, iwork, &liwork, &info);
+  assert(info == 0);
 
   // allocate memory
-  lwork = (int) work[0];
+  lwork = (int)work[0];
   liwork = iwork[0];
-  delete [] work; 
-  delete [] iwork;
+  delete[] work;
+  delete[] iwork;
   work = new double[lwork];
   iwork = new int[liwork];
-  std::fill(work, work+lwork, 0.0);
-  std::fill(iwork, iwork+liwork, 0);
+  std::fill(work, work + lwork, 0.0);
+  std::fill(iwork, iwork + liwork, 0);
 
   // do actual evaluation.
-  F77_FUNC(dsyevr,DSYEVR)(&findVectors_, &range, &uplo, &n, A_, &lda, &vl,
-      &vu, &il, &iu, &abstol_, &m_, w_, z_, &ldz, isuppz_, work, &lwork, iwork,
-      &liwork, &info);
-  assert(info==0);
+  F77_FUNC(dsyevr, DSYEVR)(&findVectors_, &range, &uplo, &n, A_, &lda, &vl,
+                           &vu, &il, &iu, &abstol_, &m_, w_, z_, &ldz,
+                           isuppz_, work, &lwork, iwork, &liwork, &info);
+  assert(info == 0);
   // free
-  delete [] work; 
-  delete [] iwork;
+  delete[] work;
+  delete[] iwork;
 }
 
 
@@ -343,8 +343,8 @@ EigenPtr EigenCalculator::getEigen_()
   LinearFunctionPtr null_ptr = LinearFunctionPtr();
   LinearFunctionPtr lf;
   EigenPtr eigen = (EigenPtr) new Eigen();
-  if (findVectors_=='V') {
-    for (int i=0; i<m_; ++i) {
+  if (findVectors_ == 'V') {
+    for (int i = 0; i < m_; ++i) {
       lf = getLinearFunction_(i);
       if (fabs(w_[i]) < abstol_) {
         eigen->add(0, lf);
@@ -352,8 +352,8 @@ EigenPtr EigenCalculator::getEigen_()
         eigen->add(w_[i], lf);
       }
     }
-  } else if (findVectors_=='N') {
-    for (int i=0; i<m_; ++i) {
+  } else if (findVectors_ == 'N') {
+    for (int i = 0; i < m_; ++i) {
       if (fabs(w_[i]) < abstol_) {
         eigen->add(0, null_ptr);
       } else {
@@ -361,7 +361,7 @@ EigenPtr EigenCalculator::getEigen_()
       }
     }
   } else {
-    assert (!"findVectors_ value is not supported!");
+    assert(!"findVectors_ value is not supported!");
   }
   return eigen;
 }
@@ -373,8 +373,8 @@ LinearFunctionPtr EigenCalculator::getLinearFunction_(const int i)
   // lapack has a bug in dstemr for when n_ = 2.
   // It also does not give correct values in isuppz_. We will ignore isuppz_
   // altogether.
-  for (UInt j=0; j<n_; ++j) {
-    lf->addTerm(vars_[j], z_[i*n_+j]);
+  for (UInt j = 0; j < n_; ++j) {
+    lf->addTerm(vars_[j], z_[i * n_ + j]);
   }
   return lf;
 }
@@ -436,7 +436,8 @@ EigenPairConstIterator Eigen::end() const
 
 void Eigen::write(std::ostream &out) const
 {
-  for (EigenPairConstIterator it=evPairs_.begin(); it!=evPairs_.end(); ++it) { 
+  for (EigenPairConstIterator it = evPairs_.begin(); it != evPairs_.end();
+       ++it) {
     out << "eigen value = " << it->first << std::endl;
     out << "eigen vector = ";
     if (it->second) {
@@ -456,4 +457,3 @@ void Eigen::write(std::ostream &out) const
 // }
 
 #endif
-

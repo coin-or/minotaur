@@ -1,8 +1,8 @@
-// 
+//
 //     Minotaur -- It's only 1/2 bull
-// 
+//
 //     (C)opyright 2008 - 2025 The Minotaur Team.
-// 
+//
 
 /**
  * \file NodeHeap.h
@@ -20,7 +20,7 @@
 
 namespace Minotaur {
 
-  /** 
+  /**
    * When the active nodes of the branch-and-bound tree are not explored in a
    * last-in-first-out (LIFO) order, we store them in a heap. A heap is a
    * binary tree with the properties:
@@ -32,69 +32,75 @@ namespace Minotaur {
    * These criteria are determined by the parameter for
    * node-selection-strategy: best bound, best estimate, etc
    */
-   class NodeHeap : public ActiveNodeStore {
+  class NodeHeap : public ActiveNodeStore {
 
-      public:
-        /// Types of ordering.
-        enum Type { Value, Depth };
+  public:
+    /// Types of ordering.
+    enum Type
+    {
+      Value,
+      Depth
+    };
 
-        /// Constructor.
-        NodeHeap(Type type) : type_(type) {}
+    /// Constructor.
+    NodeHeap(Type type)
+      : type_(type)
+    {
+    }
 
-        /// Destroy.
-        virtual ~NodeHeap();
+    /// Destroy.
+    virtual ~NodeHeap();
 
-        /**
-         * Return true if there are no active nodes in the heap, otherwise
-         * return false.
-         */
-        virtual bool isEmpty() const { return nodes_.empty(); }
+    /**
+     * Return true if there are no active nodes in the heap, otherwise
+     * return false.
+     */
+    virtual bool isEmpty() const { return nodes_.empty(); }
 
-        /**
-         * Find the minimum lower bound of all the active nodes in the heap.
-         * If the heap is ordered by best bound, then the root has the
-         * minimum value.
-         */
-        virtual double getBestLB() const;
+    /**
+     * Find the minimum lower bound of all the active nodes in the heap.
+     * If the heap is ordered by best bound, then the root has the
+     * minimum value.
+     */
+    virtual double getBestLB() const;
 
-        /// Find the maximum depth of all active nodes.
-        virtual UInt getDeepestLevel() const;
+    /// Find the maximum depth of all active nodes.
+    virtual UInt getDeepestLevel() const;
 
-        /// Remove the best node from the heap.
-        virtual void pop();
+    /// Remove the best node from the heap.
+    virtual void pop();
 
-        /**
-         * Write in order the node ID and the criteria used to order the
-         * heap, e.g. bound value and depth. 
-         */
-        virtual void write(std::ostream &out) const;
+    /**
+     * Write in order the node ID and the criteria used to order the
+     * heap, e.g. bound value and depth.
+     */
+    virtual void write(std::ostream &out) const;
 
-        /// Add a node to the set of active nodes.
-        virtual void push(NodePtr n);
+    /// Add a node to the set of active nodes.
+    virtual void push(NodePtr n);
 
-        /// Set the type of ordering of this heap.
-        virtual void setType(Type type);
+    /// Set the type of ordering of this heap.
+    virtual void setType(Type type);
 
-        /// Get access to the best node in this heap.
-        virtual NodePtr top() const { return (nodes_.front()); }
+    /// Get access to the best node in this heap.
+    virtual NodePtr top() const { return (nodes_.front()); }
 
-        /// Get the number of active nodes in the heap.
-        virtual UInt getSize() const { return (nodes_.size()); }
+    /// Get the number of active nodes in the heap.
+    virtual size_t getSize() const { return (nodes_.size()); }
 
-        /// Get iterator to the first node in the heap.
-        NodePtrIterator nodesBegin();
+    /// Get iterator to the first node in the heap.
+    NodePtrIterator nodesBegin();
 
-        /// Get iterator to the last node in the heap.
-        NodePtrIterator nodesEnd();
+    /// Get iterator to the last node in the heap.
+    NodePtrIterator nodesEnd();
 
-      private:
-        /// Vector of active nodes.
-        NodePtrVector nodes_;
+  private:
+    /// Vector of active nodes.
+    NodePtrVector nodes_;
 
-        /// The type of criteria used to order the heap.
-        Type type_;
-   };
-   typedef NodeHeap* NodeHeapPtr;
-}
+    /// The type of criteria used to order the heap.
+    Type type_;
+  };
+  typedef NodeHeap *NodeHeapPtr;
+}  //namespace Minotaur
 #endif
-
