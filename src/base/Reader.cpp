@@ -45,7 +45,9 @@ ProblemPtr Reader::readMps(std::string fname, int &err)
   std::string line, word, word2, word3, word4;
   std::string rhsid="";
   std::string rangeid="";
-  std::string bndid="";
+  std::string bndid="";  // second word of all lines in BOUNDS section must be
+                         // common across the file. 
+  std::string qcname; //name of the row for QCMatrix
   ProblemPtr p = 0;
   std::istringstream iss;
   int lcnt, m, n, r;
@@ -63,9 +65,12 @@ ProblemPtr Reader::readMps(std::string fname, int &err)
   FunctionPtr f;
   double dval, lb, ub;
   std::string::size_type echars; // size of string
-  QuadraticFunction *qfo=0; // objective quadratic function
-
+  QuadraticFunction *qfo= new QuadraticFunction() ; // objective quadratic
+                                                    // function
+  QuadraticFunction *qfc=0; // quadratic function being populated in QCMATRIX
+                            // section
   MpsSec section = MpsNone; 
+  ObjectiveType ot = Minimize;
 
   err = 0;
   fs.open(fname.c_str());
@@ -89,7 +94,6 @@ ProblemPtr Reader::readMps(std::string fname, int &err)
     iss.str(line); // convert line into ifstream
     ++lcnt;
 
-    // std::cout << line <<  std::endl;
 
     if (!(iss >> word)) {
       continue; // empty line
@@ -104,7 +108,20 @@ ProblemPtr Reader::readMps(std::string fname, int &err)
     // check if a new section starts
     if (line[0] == word[0]) { // we have no white space in the beginning
       if (word=="NAME") {
-        section = MpsName;
+        section = MpsNone; // back to new unknown section. This should not be
+                           // set to MpsName
+        continue;
+      } else if (word=="OBJSENSE") {
+        if (!(iss >> word2)) {
+          logger_->errStream() << me_ << "ERROR: Missing value of OBJSENSE "
+            << "in line " << lcnt << std::endl;
+          err = 10;
+        } else if (word2=="MAX") {
+          ot = Maximize;
+        } else {
+          logger_->msgStream(LogError) << me_ << "warning: OBJSENSE " << word2
+            << " ignored on line " << lcnt << std::endl;
+        }
         continue;
       } else if (word=="ROWS") {
         section = MpsRows;
@@ -123,7 +140,6 @@ ProblemPtr Reader::readMps(std::string fname, int &err)
         continue;
       } else if (word=="QUADOBJ") {
         section = MpsQO;
-        qfo = new QuadraticFunction();
         continue;
       } else if (word=="QCMATRIX") {
         section = MpsQC;
@@ -134,11 +150,18 @@ ProblemPtr Reader::readMps(std::string fname, int &err)
           err = 10;
         } else if (rownames.find(word2)==rownames.end()) {
           rownames[word2] = m;
-          rownamesvec.push_back(word);
+          rownamesvec.push_back(word2);
+          logger_->errStream() << me_ << "Adding QCMatrix in new constraint " << word2 << std::endl;
           lfs.push_back(new LinearFunction());
-          qfs.push_back(new QuadraticFunction());
+          qfc = new QuadraticFunction();
+          qfs.push_back(qfc);
           ++m;
+        } else {
+          logger_->errStream() << me_ << "Adding QCMatrix in constraint " << word2 << std::endl;
+          r = rownames[word2];
+          qfc = qfs[r];
         }
+        qcname = word2;
         continue;
       } else if (word=="ENDATA") {
         section = MpsEnd;
@@ -155,7 +178,7 @@ ProblemPtr Reader::readMps(std::string fname, int &err)
         err = 10;
       }
       break;
-    case(MpsName): // NAME can be ignored for now
+    case(MpsName):       // NAME can be ignored for now
       break;
     case(MpsRows): // ROWS
       if (word[0] == 'N' || word[0] == 'G' || word[0] == 'L'
@@ -172,7 +195,7 @@ ProblemPtr Reader::readMps(std::string fname, int &err)
           rownames[word] = m;
           rownamesvec.push_back(word);
           lfs.push_back(new LinearFunction());
-          qfs.push_back(NULL);
+          qfs.push_back(new QuadraticFunction());
           ++m;
         } else {
           logger_->errStream() << me_ << "ERROR: Row " << word 
@@ -431,8 +454,6 @@ ProblemPtr Reader::readMps(std::string fname, int &err)
       }
       break;
     case(MpsQO): // Quadratic Objective
-        logger_->errStream() << me_ << "reading quadratic objective " 
-          << std::endl;
         if (!(iss >> word2)  || !(iss >> word3)) {
           logger_->errStream() << me_ << "ERROR: not enough fields in QUADOBJ "
             << "line " << lcnt << std::endl;
@@ -444,13 +465,25 @@ ProblemPtr Reader::readMps(std::string fname, int &err)
         dval = std::stod(word3, &echars);
         qfo->incTerm(v, v2, dval*0.5);
         break;
-    case(MpsQC): // Quadratic Objective
-        logger_->errStream() << me_ << "ERROR: Cannot read quadratic cons " 
-          << std::endl;
+    case(MpsQC): // Quadratic Constraint
+        // We should have three words in this row (var1 var2 coeff)
+        if (!(iss >> word2) || !(iss >> word3)) {
+          logger_->errStream() << me_ << "ERROR: not enough fields in QCMATRIX "
+            << "line " << lcnt << std::endl;
+          err = 10;
+          break;
+        } else {
+          v = p->getVariable(colnames[word]);
+          v2 = p->getVariable(colnames[word2]);
+          dval = std::stod(word3, &echars);
+          qfc->incTerm(v, v2, dval);
+        }
         break;
     case(MpsEnd):
       break; // out of the mps file
     default:
+      logger_->errStream() << me_ << "Unknown Section in MPS file near for line " << lcnt << std::endl;
+      err = 10;
       break;
     }
   }
@@ -460,9 +493,17 @@ ProblemPtr Reader::readMps(std::string fname, int &err)
   for (int i=0; i<m; ++i) {
 
     if (rowtypes[i] == 'N') { // objective function
-      f = new Function(lfs[i], qfo);
+      if (qfo && qfo->getNumTerms()>0) {
+        f = new Function(lfs[i], qfo);
+      } else {
+        f = new Function(lfs[i]);
+      }
     } else {
-      f = new Function(lfs[i], qfs[i]);
+      if (qfs[i]->getNumTerms()>0) {
+        f = new Function(lfs[i], qfs[i]);
+      } else {
+        f = new Function(lfs[i]);
+      }
     }
 
     switch (rowtypes[i]) {
@@ -507,7 +548,7 @@ ProblemPtr Reader::readMps(std::string fname, int &err)
       delete f; f = 0;
     } else {
       lb = (rowrhs[i] == INFINITY)?0.0:-rowrhs[i];
-      p->newObjective(f, lb, Minimize, rownamesvec[i]);
+      p->newObjective(f, lb, ot, rownamesvec[i]);
     }
   }
 
