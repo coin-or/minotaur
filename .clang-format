@@ -1,4 +1,6 @@
 ---
+########## This clang-format file is tested on:
+########## clang-format version 19.1.7 (https://github.com/llvm/llvm-project.git cd708029e0b2869e80abe31ddb175f7c35361f90)
 BasedOnStyle: Google
 AccessModifierOffset: -2
 AlignAfterOpenBracket: Align
@@ -9,18 +11,17 @@ AlignOperands: true
 AlignTrailingComments: true
 AllowShortBlocksOnASingleLine: false
 AllowShortCaseLabelsOnASingleLine: false
-AllowShortFunctionsOnASingleLine: None
 AllowShortIfStatementsOnASingleLine: false
 AllowShortLoopsOnASingleLine: false
-AlwaysBreakAfterReturnType: TopLevelDefinitions
+AlwaysBreakAfterReturnType: None #TopLevelDefinitions
 AlwaysBreakBeforeMultilineStrings: false
 BreakBeforeBraces: Custom
 BraceWrapping:
-  AfterClass: true
+  AfterClass: false
   AfterControlStatement: false
   AfterEnum: true
   AfterFunction: true
-  AfterNamespace: true
+  AfterNamespace: false
   AfterObjCDeclaration: true
   AfterStruct: true
   AfterUnion: true
@@ -32,11 +33,12 @@ BreakBeforeTernaryOperators: true
 BreakConstructorInitializers: BeforeColon
 ReflowComments: true
 ColumnLimit: 78
+Cpp11BracedListStyle: true
 PackConstructorInitializers: Never
 ConstructorInitializerIndentWidth: 2
 ContinuationIndentWidth: 4
 DerivePointerAlignment: false
-PointerAlignment: Left
+PointerAlignment: Right
 IndentWidth: 2
 TabWidth: 2
 UseTab: Never
@@ -47,12 +49,16 @@ BreakFunctionDefinitionParameters: false
 IndentCaseLabels: false
 KeepEmptyLinesAtTheStartOfBlocks: true
 KeepEmptyLinesAtTheEndOfBlocks: true
+ReferenceAlignment: Right
+#NamespaceIndentation: All
+AllowShortFunctionsOnASingleLine: InlineOnly
+#SpaceAroundPointerQualifiers: SAPQ_Default
 OverEmptyLines: 2
 MaxEmptyLinesToKeep: 2
 KeepEmptyLines:
   AtEndOfFunction: true
   AtStartOfFunction: true
-NamespaceIndentation: None
+NamespaceIndentation: All
 SpacesInLineCommentPrefix:
   Minimum: 0
 #ReflowComments: true
@@ -65,4 +71,3 @@ SpacesInParentheses: false
 SpacesInSquareBrackets: false
 BreakAfterReturnType: None
 Standard: Cpp11
-Cpp11BracedListStyle: true
