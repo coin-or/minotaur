@@ -65,8 +65,7 @@ ProblemPtr Reader::readMps(std::string fname, int &err)
   FunctionPtr f;
   double dval, lb, ub;
   std::string::size_type echars; // size of string
-  QuadraticFunction *qfo= new QuadraticFunction() ; // objective quadratic
-                                                    // function
+  QuadraticFunction *qfo= NULL;
   QuadraticFunction *qfc=0; // quadratic function being populated in QCMATRIX
                             // section
   MpsSec section = MpsNone; 
@@ -151,13 +150,11 @@ ProblemPtr Reader::readMps(std::string fname, int &err)
         } else if (rownames.find(word2)==rownames.end()) {
           rownames[word2] = m;
           rownamesvec.push_back(word2);
-          logger_->errStream() << me_ << "Adding QCMatrix in new constraint " << word2 << std::endl;
           lfs.push_back(new LinearFunction());
           qfc = new QuadraticFunction();
           qfs.push_back(qfc);
           ++m;
         } else {
-          logger_->errStream() << me_ << "Adding QCMatrix in constraint " << word2 << std::endl;
           r = rownames[word2];
           qfc = qfs[r];
         }
@@ -196,6 +193,9 @@ ProblemPtr Reader::readMps(std::string fname, int &err)
           rownamesvec.push_back(word);
           lfs.push_back(new LinearFunction());
           qfs.push_back(new QuadraticFunction());
+          if ('N' == rowtypes[m] && !qfo) {
+            qfo = qfs[m];
+          }
           ++m;
         } else {
           logger_->errStream() << me_ << "ERROR: Row " << word 
@@ -492,20 +492,13 @@ ProblemPtr Reader::readMps(std::string fname, int &err)
   // put all cons and obj in p
   for (int i=0; i<m; ++i) {
 
-    if (rowtypes[i] == 'N') { // objective function
-      if (qfo && qfo->getNumTerms()>0) {
-        f = new Function(lfs[i], qfo);
-      } else {
-        f = new Function(lfs[i]);
-      }
+    if (qfs[i]->getNumTerms()>0) {
+      f = new Function(lfs[i], qfs[i]);
     } else {
-      if (qfs[i]->getNumTerms()>0) {
-        f = new Function(lfs[i], qfs[i]);
-      } else {
-        f = new Function(lfs[i]);
-      }
+      f = new Function(lfs[i]);
+      delete qfs[i];
+      qfs[i] = NULL;
     }
-
     switch (rowtypes[i]) {
     case ('G'):
       lb = (rowrhs[i]==INFINITY)?0.0:rowrhs[i];
