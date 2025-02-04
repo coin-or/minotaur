@@ -1,20 +1,39 @@
 ---
 ########## This clang-format file is tested on:
 ########## clang-format version 19.1.7 (https://github.com/llvm/llvm-project.git cd708029e0b2869e80abe31ddb175f7c35361f90)
+#
+# Author: Sumanto Kar, IIT Bombay
+#
+
 BasedOnStyle: Google
+
+ColumnLimit: 78
+IndentWidth: 2
+TabWidth: 2
+UseTab: Never
 AccessModifierOffset: -2
-AlignAfterOpenBracket: Align
-AlignConsecutiveAssignments: false
-AlignConsecutiveDeclarations: false
-AlignEscapedNewlines: Left
-AlignOperands: true
-AlignTrailingComments: true
-AllowShortBlocksOnASingleLine: false
-AllowShortCaseLabelsOnASingleLine: false
-AllowShortIfStatementsOnASingleLine: false
-AllowShortLoopsOnASingleLine: false
-AlwaysBreakAfterReturnType: None #TopLevelDefinitions
-AlwaysBreakBeforeMultilineStrings: false
+NamespaceIndentation: All
+ConstructorInitializerIndentWidth: 2
+ContinuationIndentWidth: 4
+IndentCaseLabels: false
+
+ReflowComments: true
+SpacesInLineCommentPrefix:
+  Minimum: 0
+AlignTrailingComments:
+  Kind:            Always
+  OverEmptyLines:  0
+
+SpaceBeforeParens: ControlStatements
+SpacesInAngles: false
+SpacesInContainerLiterals: false
+SpacesInCStyleCastParentheses: false
+SpacesInParentheses: false
+SpacesInSquareBrackets: false
+
+PointerAlignment: Right
+ReferenceAlignment: Right
+
 BreakBeforeBraces: Custom
 BraceWrapping:
   AfterClass: false
@@ -29,45 +48,32 @@ BraceWrapping:
   BeforeCatch: true
   BeforeElse: false
   IndentBraces: false
+AlignAfterOpenBracket: Align
+
+BreakFunctionDefinitionParameters: false
+AllowShortFunctionsOnASingleLine: InlineOnly
+
+AlignConsecutiveAssignments: false
+AlignConsecutiveDeclarations: false
+AlignEscapedNewlines: Left
+AlignOperands: true
+
+AllowShortBlocksOnASingleLine: false
+AllowShortCaseLabelsOnASingleLine: false
+AllowShortIfStatementsOnASingleLine: false
+AllowShortLoopsOnASingleLine: false
+AlwaysBreakAfterReturnType: None #TopLevelDefinitions
+AlwaysBreakBeforeMultilineStrings: false
 BreakBeforeTernaryOperators: true
 BreakConstructorInitializers: BeforeColon
-ReflowComments: true
-ColumnLimit: 78
 Cpp11BracedListStyle: true
 PackConstructorInitializers: Never
-ConstructorInitializerIndentWidth: 2
-ContinuationIndentWidth: 4
 DerivePointerAlignment: false
-PointerAlignment: Right
-IndentWidth: 2
-TabWidth: 2
-UseTab: Never
-SpaceBeforeBinaryOperators: false 
 BreakBeforeBinaryOperators: None 
-BreakBeforeLessLess: None 
-BreakFunctionDefinitionParameters: false
-IndentCaseLabels: false
-KeepEmptyLinesAtTheStartOfBlocks: true
-KeepEmptyLinesAtTheEndOfBlocks: true
-ReferenceAlignment: Right
-#NamespaceIndentation: All
-AllowShortFunctionsOnASingleLine: InlineOnly
-#SpaceAroundPointerQualifiers: SAPQ_Default
-OverEmptyLines: 2
-MaxEmptyLinesToKeep: 2
 KeepEmptyLines:
-  AtEndOfFunction: true
-  AtStartOfFunction: true
-NamespaceIndentation: All
-SpacesInLineCommentPrefix:
-  Minimum: 0
-#ReflowComments: true
+  AtStartOfBlock: true
+MaxEmptyLinesToKeep: 2
 SortIncludes: false
-SpaceBeforeParens: ControlStatements
-SpacesInAngles: false
-SpacesInContainerLiterals: false
-SpacesInCStyleCastParentheses: false
-SpacesInParentheses: false
-SpacesInSquareBrackets: false
 BreakAfterReturnType: None
 Standard: Cpp11
+
