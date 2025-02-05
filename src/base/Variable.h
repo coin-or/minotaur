@@ -139,7 +139,7 @@ protected:
   void setState_(VarState state) { state_ = state; return; }
 
   /// Change the type to a new value.
-  void setType_(VariableType vtype) { vtype_ = vtype; return; }
+  void setType_(VariableType vtype);
 
   /// Change the upperbound to a new value.
   void setUb_(double newUb) { ub_ = newUb; }

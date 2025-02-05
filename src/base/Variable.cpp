@@ -40,6 +40,14 @@ Variable::Variable(UInt id, UInt index, double lb, double ub, VariableType vtype
   itmp_(0) 
 {
   cons_.clear();
+  if (Binary==vtype_) {
+    if (lb_<0.0) {
+      lb_ = 0.0;
+    }
+    if (ub_>1.0) {
+      ub_ = 1.0;
+    }
+  }
 }
 
 
@@ -108,6 +116,20 @@ void Variable::outOfConstraint_(ConstraintPtr cPtr)
 void Variable::setItmp(UInt itmp)
 {
   itmp_ = itmp;
+}
+
+void Variable::setType_(VariableType vtype)
+{ 
+  vtype_ = vtype; 
+  if (Binary==vtype) {
+    if (lb_<0.0) {
+      lb_ = 0.0;
+    }
+    if (ub_>1.0) {
+      ub_ = 1.0;
+    }
+  }
+  return; 
 }
 
 void Variable::write(std::ostream &out) const
