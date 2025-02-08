@@ -294,6 +294,7 @@ SolveStatus LinearHandler::presolve(PreModQ* pre_mods, bool* changed0,
     }
     if(true == chkDupRows_ && true == pOpts_->purgeCons) {
       dupRows_(&changed);
+      domRows_(&changed);
       problem_->delMarkedCons();
       chkDupRows_ = false;
     }
@@ -858,6 +859,63 @@ void LinearHandler::dualFix_(bool* changed)
     }
   }
 }
+
+
+void LinearHandler::domRows_(bool* changed)
+{
+  return;
+  const UInt n = problem_->getNumVars();
+  const UInt m = problem_->getNumCons();
+  UInt i, j;
+  int err = 0;
+  DoubleVector r0, r1;
+  double h1, h2;
+  ConstraintPtr c1, c2;
+  FunctionPtr f;
+
+  logger_->msgStream(LogDebug) << me_ << "searching for dominated " << std::endl;
+
+  r0.reserve(n); // random numbers for evaluating hash values
+  r1.reserve(n); // random numbers for evaluating hash values
+                 
+  for (i=0; i<n; ++i) {
+    r0[i] = (double)rand() / (RAND_MAX)*10.0;
+  }
+
+  for(i=0; i<m; ++i) {
+    c1 = problem_->getConstraint(i);
+    if(c1->getFunctionType() != Linear || problem_->isMarkedDel(c1)) {
+      continue;
+    }
+
+    for (j=0; j<n; ++j) {
+      r1[j] = 0.0;
+    }
+
+    f = c1->getFunction();
+    for (VarSetConstIterator vit=f->varsBegin(); vit!=f->varsEnd(); ++vit) {
+      r1[(*vit)->getIndex()] = r0[(*vit)->getIndex()];
+    }
+    h1 = c1->getActivity(&(r1[0]), &err);
+
+    for (j=0; j<m; ++j) {
+      c2 = problem_->getConstraint(j);
+      if(c2->getFunctionType() != Linear || c1==c2 || problem_->isMarkedDel(c2)) {
+        continue;
+      }
+      h2 = c2->getActivity(&(r1[0]), &err);
+      if (fabs(h1 - h2) < 1e-10) {
+        c1->write(std::cout);
+        std::cout << std::endl;
+        c2->write(std::cout); 
+        std::cout << std::endl;
+        std::cout << "h1 = " << h1 << " h2 = " << h2 << std::endl;
+        exit(9);
+      }
+    }
+  } 
+}
+
 
 void LinearHandler::dupRows_(bool* changed)
 {

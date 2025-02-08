@@ -233,6 +233,7 @@ protected:
   void delFixedVars_(bool* changed);
 
   void dualFix_(bool* changed);
+  void domRows_(bool* changed);
   void dupRows_(bool* changed);
 
   /// check if lb <= ub for all variables and constraints.
