@@ -354,6 +354,26 @@ if (LINK_FILTER_SQP)
   )
 endif()
 
+if (LINK_UNO)
+  #set(CXX_FLAGS "-std=c++17")
+  add_definitions(-DUSE_UNO)
+  #include_directories("/home/22m1526/Uno/uno")
+  link_directories(${UNO_LIB_DIR_F})
+  if (UNO_INC_DIR_F)
+    include_directories("${UNO_INC_DIR_F}")
+  endif (UNO_INC_DIR_F)
+
+  add_definitions(-DCOIN_BIG_INDEX=0) ## avoid warnings
+  list (APPEND ENGFAC_SOURCES 
+    interfaces/UnoEngine.cpp
+    #interfaces/UnoModels.cpp
+  )
+  list (APPEND ENGFAC_HEADERS 
+    interfaces/UnoEngine.h 
+    interfaces/UnoModel.h
+  )
+endif()
+
 if (LINK_OSI)
   add_definitions(-DUSE_OSILP)
   link_directories(${OSI_LIB_DIR_F})
@@ -419,6 +439,9 @@ endif()
 if (FILTER_SQP_LIBS)
   list(APPEND ALL_EXEC_LIBS ${FILTER_SQP_LIBS})
 endif()
+if (UNO_LIBS)
+  list(APPEND ALL_EXEC_LIBS "${UNO_LIBS}")
+endif()
 
 list(APPEND ALL_EXEC_LIBS "lapack" "blas")
 
@@ -442,6 +465,7 @@ if (IFACE_SOURCES)
     solvers/Bnb.cpp 
     solvers/Glob.cpp 
     solvers/MultiStart.cpp 
+    solvers/SolChecker.cpp 
     solvers/QG.cpp 
     solvers/QGPar.cpp 
     solvers/BnbPar.cpp 
@@ -451,6 +475,7 @@ if (IFACE_SOURCES)
     solvers/Bnb.h 
     solvers/Glob.h 
     solvers/MultiStart.h 
+    solvers/SolChecker.h 
     solvers/QG.h 
     solvers/QGPar.h 
     solvers/BnbPar.h 
@@ -508,6 +533,11 @@ if (IFACE_SOURCES)
   target_link_libraries(mmultistart ${ALL_EXEC_LIBS})
   install(TARGETS mmultistart RUNTIME DESTINATION bin)
   set_target_properties(mmultistart PROPERTIES INSTALL_RPATH "${MNTR_INSTALL_RPATH}")
+  
+  add_executable(mcheck solvers/SolCheckerMain.cpp)
+  target_link_libraries(mcheck ${ALL_EXEC_LIBS})
+  install(TARGETS mcheck RUNTIME DESTINATION bin)
+  set_target_properties(mcheck PROPERTIES INSTALL_RPATH "${MNTR_INSTALL_RPATH}")
   
 endif()
 

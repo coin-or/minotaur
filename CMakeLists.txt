@@ -3,7 +3,7 @@
 project(MINOTAUR CXX C Fortran)
 CMAKE_MINIMUM_REQUIRED(VERSION 3.0 FATAL_ERROR) 
 cmake_policy(SET CMP0003 NEW)
-
+set(CMAKE_CXX_STANDARD 17)
 ## Fortran is required for Bqpd, Filter.
 ## C is required for FortranCInterface.
 INCLUDE(CheckIncludeFile)
@@ -14,7 +14,12 @@ INCLUDE(FortranCInterface)
 INCLUDE(FindSubversion)
 INCLUDE(FindPkgConfig OPTIONAL RESULT_VARIABLE MNTR_PKGCON)
 
+#set flags
 set (MSG_HEAD "Minotaur config: ")  ## must preceed every message.
+
+enable_language(CXX C Fortran)
+include(FortranCInterface)
+FortranCInterface_VERIFY(CXX)
 
 if("${CMAKE_HOST_SYSTEM}" MATCHES ".*Windows.*")
   set(SEP "\\;")
@@ -33,11 +38,10 @@ endif()
 ## Enable compiler warnings
 OPTION(COMPILER_WARN "Turn compiler warnings on/off " ON)
 if (${COMPILER_WARN})
-  set (CMAKE_CXX_FLAGS "-Wall -pedantic -Wmissing-include-dirs -Wunused")
-  set (CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wextra -Wundef -Wshadow")
-  set (CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wredundant-decls")
-  set (CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Woverloaded-virtual")
-endif()
+  set (CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wall -pedantic \
+  -Wmissing-include-dirs -Wunused -Wextra -Wundef -Wshadow -Wredundant-decls \
+  -Woverloaded-virtual -Wnon-virtual-dtor -Wmaybe-uninitialized")
+  endif()
 
 ###########################################################################
 ## Don't install in /usr/local
@@ -168,16 +172,38 @@ message(STATUS ${MSG_HEAD} "SPEW flag is " ${SPEW_FLAG})
 
 
 ###########################################################################
-## Debug options
+## MDBUG options
 ###########################################################################
 if ("${CMAKE_BUILD_TYPE}" STREQUAL "Debug")
-  add_definitions(-DDEBUG=1)
+  add_definitions(-DMDBUG=1) #Minotaur Debug Flag MDBUG
 else()
   set (CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -O3")
   set (CMAKE_FORTRAN_FLAGS "${CMAKE_FORTRAN_FLAGS} -O3")
-  add_definitions(-DDEBUG=0 -DNDEBUG)
+  add_definitions(-DMDBUG=0 -DNDEBUG)
 endif()
 
+###########################################################################
+# Choose between FILTERSQP and UNO
+###########################################################################
+# Define options
+OPTION(USE_UNO "Enable UNO solver" OFF)
+OPTION(USE_FILTERSQP "Enable FilterSQP solver" ON)
+message(STATUS ${MSG_HEAD} "Choosing between FILTERSQP and UNO...")
+if (NOT ${USE_FILTERSQP} AND NOT ${USE_UNO})
+  message(STATUS ${MSG_HEAD} "Both USE_FILTERSQP and USE_UNO are not set.")
+  set(USE_FILTERSQP FALSE) # Enable FilterSQP
+  set(USE_UNO FALSE) # Disable UNO if FilterSQP is enabled
+elseif (${USE_FILTERSQP} AND ${USE_UNO})
+  message(STATUS ${MSG_HEAD} "Both USE_FILTERSQP and USE_UNO are set. Prioritizing FilterSQP.")
+  set(USE_UNO FALSE) # Disable UNO if FilterSQP is enabled
+elseif (${USE_FILTERSQP})
+  message(STATUS ${MSG_HEAD} "USE_FILTERSQP is set and USE_UNO is not set. Solver in use: FilterSQP")
+  set(USE_UNO FALSE) # Disable UNO if FilterSQP is enabled
+elseif (${USE_UNO})
+  message(STATUS ${MSG_HEAD} "USE_FILTERSQP is not set and USE_UNO is set. Solver in use: UNO")
+  set(USE_FILTERSQP FALSE) # Disable FilterSQP if UNO is enabled
+endif()
+###########################################################################
 
 ###########################################################################
 ## Filter-SQP and BQPD
@@ -187,7 +213,7 @@ set (USE_FILTERSQP TRUE CACHE BOOL
 set (FILTER_LIB_DIR)          ## NULL
 set (LINK_FILTER_SQP)         ## NULL
 set (FILTER_SQP_LIBS)         ## NULL
-
+#set (USE_FILTERSQP 0)
 if (${USE_FILTERSQP})
   message(STATUS ${MSG_HEAD} "Searching for Filter-SQP and BQPD ...")
   set (FILTER_LIB_DIR "" CACHE PATH 
@@ -481,6 +507,102 @@ else()
   message(STATUS ${MSG_HEAD} "Link CLP? No.")
   add_definitions("-DMNTROSICLP=0")
 endif()
+
+
+
+###########################################################################
+## Uno
+###########################################################################
+#set (USE_UNO TRUE CACHE BOOL "If true, link to UNO solver")
+
+set (UNO_INC_DIR)          ## NULL
+set (UNO_LIB_DIR)          ## NULL
+set (LINK_UNO)             ## NULL
+set (UNO_LIBS)             ## NULL
+#set (CMAKE_CXX_FLAGS1  "${CMAKE_CXX_FLAGS}")
+#set (CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++17")
+
+
+if (${USE_UNO})
+  message(STATUS ${MSG_HEAD} "Searching for Uno ...")
+  set (UNO_INC_DIR "" CACHE PATH 
+    "Path to Uno headers. It must have uno/Uno.hpp file.") 
+  set (UNO_INC_DIR_F ${UNO_INC_DIR})
+  if (("${UNO_INC_DIR_F}" STREQUAL "") AND
+      (NOT ("${TP_ABS_PATH}" STREQUAL "")))
+    set (UNO_INC_DIR_F "${TP_ABS_PATH}/include/uno")
+  endif()
+  
+  
+  set (UNO_LIB_DIR "" CACHE PATH 
+    "Path to Uno library. It must have a libuno file.") 
+  set (UNO_LIB_DIR_F ${UNO_LIB_DIR})
+  if (("${UNO_LIB_DIR_F}" STREQUAL "") AND
+        (NOT ("${TP_ABS_PATH}" STREQUAL "")))
+    set (UNO_LIB_DIR_F "${TP_ABS_PATH}/lib")
+  endif()
+  
+  message(STATUS ${MSG_HEAD} "UNO_INC_DIR_F is set to ${UNO_INC_DIR_F}")
+  message(STATUS ${MSG_HEAD} "UNO_LIB_DIR_F is set to ${UNO_LIB_DIR_F}")
+endif()
+#   if (UNO_INC_DIR_F)
+#     ## complain if header not found
+#     if (NOT EXISTS "${UNO_INC_DIR_F}/uno/Uno.hpp")
+#       message(FATAL_ERROR " ${MSG_HEAD}" 
+#               "${UNO_INC_DIR_F}/uno/Uno.hpp not found.")
+#     endif()
+  
+#     ## complain if library not specified
+#     if (NOT UNO_LIB_DIR_F)
+#       message(FATAL_ERROR " ${MSG_HEAD}" 
+#               "UNO_LIB_DIR must be set along with UNO_INC_DIR")
+#     endif()
+  
+#     ## check if library found
+    if (EXISTS ${UNO_LIB_DIR_F})
+      message(STATUS ${MSG_HEAD} "Uno library directory exists.")
+      set (LINK_UNO 1)
+      set (UNO_LIBS "uno" "ma57" "metis" "GKlib" "bqpd" "coinmumps")
+      if (${BUILD_SHARED_LIBS})
+        set (MNTR_INSTALL_RPATH ${MNTR_INSTALL_RPATH} ${UNO_LIB_DIR_F})
+      endif()
+  
+#       set (MNTR_UNO_PC_LIBRARIES)
+#       if (MNTR_HAVE_PKGCON)
+#          set (ENV{PKG_CONFIG_PATH}
+#              "${UNO_LIB_DIR_F}/pkgconfig${SEP}$ENV{PKG_CONFIG_PATH}")
+#          pkg_check_modules(MNTR_UNO_PC UNO)
+#          message(STATUS ${MSG_HEAD} "Uno libraries: "
+#   	       "${MNTR_UNO_PC_LIBRARIES}")
+#          message(STATUS ${MSG_HEAD} "pkgconfig path = "
+#   	       "${UNO_LIB_DIR_F}/pkgconfig")
+#          set (UNO_LIBS ${MNTR_UNO_PC_LIBRARIES})
+#       endif()
+  
+#       if ((NOT (MNTR_HAVE_PKGCON)) OR
+#   	("${MNTR_UNO_PC_LIBRARIES}" STREQUAL ""))
+#          set (UNO_LIBS "uno")
+#       endif()
+  
+#     else()
+#       message(FATAL_ERROR " ${MSG_HEAD} "
+#               "UNO_LIB_DIR_F ${UNO_LIB_DIR_F} not found.")
+#     endif()
+#   elseif (UNO_LIB_DIR_F)
+#       message(FATAL_ERROR " ${MSG_HEAD}" 
+#               "UNO_INC_DIR must be set along with UNO_LIB_DIR")
+#   endif()
+endif()
+
+if (LINK_UNO)
+  message(STATUS ${MSG_HEAD} "Link UNO? Yes.")
+else()
+  set (UNO_INC_DIR_F)
+  set (UNO_LIB_DIR_F)
+  message(STATUS ${MSG_HEAD} "Link UNO? No.")
+endif()
+
+#set (CMAKE_CXX_FLAGS ${CMAKE_CXX_FLAGS1})
 
 ###########################################################################
 ## CPLEX

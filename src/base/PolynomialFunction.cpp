@@ -1,7 +1,7 @@
 //
 //     Minotaur -- It's only 1/2 bull
 //
-//     (C)opyright 2009 - 2024 The Minotaur Team.
+//     (C)opyright 2009 - 2025 The Minotaur Team.
 //
 
 /**
@@ -25,29 +25,29 @@
 using namespace Minotaur;
 
 MonomialFunction::MonomialFunction()
-: coeff_(0),
-  deg_(0),
-  eTol_(1e-10)
+  : coeff_(0),
+    deg_(0),
+    eTol_(1e-10)
 {
   terms_.clear();
 }
 
 
 MonomialFunction::MonomialFunction(double c)
-: coeff_(c),
-  deg_(0),
-  eTol_(1e-10)
+  : coeff_(c),
+    deg_(0),
+    eTol_(1e-10)
 {
   terms_.clear();
 }
 
 
 MonomialFunction::MonomialFunction(double c, ConstVariablePtr v, UInt p)
-: coeff_(c),
-  deg_(p),
-  eTol_(1e-10)
+  : coeff_(c),
+    deg_(p),
+    eTol_(1e-10)
 {
-  if (p>0) {
+  if (p > 0) {
     terms_[v] = p;
   }
 }
@@ -56,20 +56,20 @@ MonomialFunction::MonomialFunction(double c, ConstVariablePtr v, UInt p)
 MonomialFunPtr MonomialFunction::clone() const
 {
   MonomialFunPtr m2 = (MonomialFunPtr) new MonomialFunction(coeff_);
-  m2->terms_ = terms_; // creates copy
-  m2->deg_   = deg_;
+  m2->terms_ = terms_;  // creates copy
+  m2->deg_ = deg_;
   return m2;
 }
 
 
-NonlinearFunctionPtr 
-MonomialFunction::cloneWithVars(VariableConstIterator vbeg, int *) const
+NonlinearFunctionPtr MonomialFunction::cloneWithVars(
+    VariableConstIterator vbeg, int *) const
 {
   MonomialFunPtr m2 = (MonomialFunPtr) new MonomialFunction(coeff_);
-  for (VarIntMapConstIterator it=terms_.begin(); it!=terms_.end(); ++it) {
-    m2->terms_[*(vbeg+it->first->getIndex())] = it->second;
+  for (VarIntMapConstIterator it = terms_.begin(); it != terms_.end(); ++it) {
+    m2->terms_[*(vbeg + it->first->getIndex())] = it->second;
   }
-  m2->deg_   = deg_;
+  m2->deg_ = deg_;
   return m2;
 }
 
@@ -81,34 +81,34 @@ MonomialFunction::~MonomialFunction()
 }
 
 
-CNode* MonomialFunction::fillCG(CGraphPtr cg)
+CNode *MonomialFunction::fillCG(CGraphPtr cg)
 {
   CNode *n0 = 0;
   CNode *n1 = 0;
   CNode *n2 = 0;
-  for (VarIntMapConstIterator it=terms_.begin(); it!=terms_.end(); 
-       ++it) {
-    n1 = 0; n2 = 0;
-    if (it->second>0) {
+  for (VarIntMapConstIterator it = terms_.begin(); it != terms_.end(); ++it) {
+    n1 = 0;
+    n2 = 0;
+    if (it->second > 0) {
       n1 = cg->newNode(it->first);
-      if (it->second>1) {
-        if (it->second>2) {
-          n2 = cg->newNode((int) it->second);
+      if (it->second > 1) {
+        if (it->second > 2) {
+          n2 = cg->newNode((int)it->second);
           n1 = cg->newNode(OpPowK, n1, n2);
         } else {
           n1 = cg->newNode(OpSqr, n1, 0);
         }
-      } 
+      }
     }
-    if (0==n0) {
+    if (0 == n0) {
       n0 = n1;
-    } else if (0!=n1) {
+    } else if (0 != n1) {
       n0 = cg->newNode(OpMult, n0, n1);
     }
   }
   if (fabs(coeff_ + 1.0) < eTol_) {
     n0 = cg->newNode(OpUMinus, n0, 0);
-  } else if (fabs(coeff_-1.0)>eTol_) {
+  } else if (fabs(coeff_ - 1.0) > eTol_) {
     n1 = cg->newNode(coeff_);
     n0 = cg->newNode(OpMult, n0, n1);
   }
@@ -140,7 +140,7 @@ VarIntMapConstIterator MonomialFunction::termsEnd()
 }
 
 
-const VarIntMap* MonomialFunction::getTerms() const
+const VarIntMap *MonomialFunction::getTerms() const
 {
   return &terms_;
 }
@@ -151,7 +151,7 @@ void MonomialFunction::multiply(double coeff, ConstVariablePtr v, int p)
   if (fabs(coeff) < eTol_) {
     terms_.clear();
     coeff_ = 0;
-    deg_   = 0;
+    deg_ = 0;
   } else if ((int)terms_[v] + p >= 0) {
     terms_[v] += p;
     deg_ += p;
@@ -171,12 +171,12 @@ void MonomialFunction::multiply(ConstMonomialFunPtr m2)
     coeff_ = 0.;
     deg_ = 0;
   } else {
-    for (VarIntMapConstIterator it=m2->terms_.begin(); it!=m2->terms_.end(); 
-        ++it) {
+    for (VarIntMapConstIterator it = m2->terms_.begin();
+         it != m2->terms_.end(); ++it) {
       terms_[it->first] += it->second;
     }
     coeff_ *= m2->coeff_;
-    deg_   += m2->deg_;
+    deg_ += m2->deg_;
   }
 }
 
@@ -184,7 +184,7 @@ void MonomialFunction::multiply(ConstMonomialFunPtr m2)
 void MonomialFunction::multiply(double c)
 {
   coeff_ *= c;
-  if (fabs(coeff_)<eTol_) {
+  if (fabs(coeff_) < eTol_) {
     terms_.clear();
     coeff_ = 0;
     deg_ = 0;
@@ -208,10 +208,10 @@ double MonomialFunction::eval(const double *x, int *error)
 {
   double prod = 1.;
   *error = 0;
-  for (VarIntMapConstIterator it=terms_.begin(); it!=terms_.end(); ++it) {
-    prod *= pow(x[it->first->getIndex()],it->second);
+  for (VarIntMapConstIterator it = terms_.begin(); it != terms_.end(); ++it) {
+    prod *= pow(x[it->first->getIndex()], it->second);
   }
-  return coeff_*prod;
+  return coeff_ * prod;
 }
 
 
@@ -221,17 +221,19 @@ double MonomialFunction::eval(const DoubleVector &x, int *error)
 }
 
 
-void MonomialFunction::evalGradient(const double *x, double *grad_f, 
-                                    int *error) 
+void MonomialFunction::evalGradient(const double *x, double *grad_f,
+                                    int *error)
 {
   double prod;
 
   *error = 0;
-  for (VarIntMapConstIterator it=terms_.begin(); it!=terms_.end(); ++it) {
-    prod = coeff_ * pow(x[it->first->getIndex()], it->second-1) * it->second;
-    for (VarIntMapConstIterator it2=terms_.begin(); it2!=terms_.end(); ++it2) {
-      if (it!=it2) {
-        prod *= pow(x[it2->first->getIndex()],it2->second);
+  for (VarIntMapConstIterator it = terms_.begin(); it != terms_.end(); ++it) {
+    prod =
+        coeff_ * pow(x[it->first->getIndex()], it->second - 1) * it->second;
+    for (VarIntMapConstIterator it2 = terms_.begin(); it2 != terms_.end();
+         ++it2) {
+      if (it != it2) {
+        prod *= pow(x[it2->first->getIndex()], it2->second);
       }
     }
     grad_f[it->first->getIndex()] += prod;
@@ -241,15 +243,15 @@ void MonomialFunction::evalGradient(const double *x, double *grad_f,
 
 void MonomialFunction::toPower(int k)
 {
-  assert(k>=0);
-  if (0==k) {
+  assert(k >= 0);
+  if (0 == k) {
     coeff_ = 1;
     deg_ = 0;
     terms_.clear();
   } else {
     coeff_ = pow(coeff_, k);
     deg_ *= k;
-    for (VarIntMapIterator it=terms_.begin(); it!=terms_.end(); ++it) {
+    for (VarIntMapIterator it = terms_.begin(); it != terms_.end(); ++it) {
       it->second *= k;
     }
   }
@@ -259,7 +261,7 @@ void MonomialFunction::toPower(int k)
 void MonomialFunction::write(std::ostream &out) const
 {
   out << "(" << coeff_ << ")";
-  for (VarIntMapConstIterator it=terms_.begin(); it!=terms_.end(); ++it) {
+  for (VarIntMapConstIterator it = terms_.begin(); it != terms_.end(); ++it) {
     out << "(" << it->first->getName() << ")^(" << it->second << ")";
   }
 }
@@ -269,19 +271,19 @@ void MonomialFunction::write(std::ostream &out) const
 // --------------------------------------------------------------------------
 
 PolynomialFunction::PolynomialFunction()
- : cb_(0),
-   cg_(0), 
-   eTol_(1e-10),
-   terms_(0)
+  : cb_(0),
+    cg_(0),
+    eTol_(1e-10),
+    terms_(0)
 {
 }
 
 
 PolynomialFunction::PolynomialFunction(CGraphPtr cg)
- : cb_(0),
-   cg_(cg), 
-   eTol_(1e-10),
-   terms_(0)
+  : cb_(0),
+    cg_(cg),
+    eTol_(1e-10),
+    terms_(0)
 {
   if (cg->getOut()) {
     recCG_(cg->getOut(), &cb_, &terms_);
@@ -307,7 +309,7 @@ void PolynomialFunction::add(ConstMonomialFunPtr m)
 void PolynomialFunction::clear_()
 {
   cb_ = 0;
-  for (MonomialConstIter it = terms_.begin(); it!=terms_.end(); ++it) {
+  for (MonomialConstIter it = terms_.begin(); it != terms_.end(); ++it) {
     delete (*it);
   }
   if (cg_) {
@@ -322,7 +324,7 @@ PolyFunPtr PolynomialFunction::clone() const
 {
   PolyFunPtr p = (PolyFunPtr) new PolynomialFunction();
   MonomialFunPtr m2;
-  for (MonomialConstIter it = terms_.begin(); it!=terms_.end(); ++it) {
+  for (MonomialConstIter it = terms_.begin(); it != terms_.end(); ++it) {
     m2 = (*it)->clone();
     p->terms_.push_back(m2);
   }
@@ -331,20 +333,19 @@ PolyFunPtr PolynomialFunction::clone() const
 }
 
 
-NonlinearFunctionPtr
-PolynomialFunction::cloneWithVars(VariableConstIterator vbeg, int *err) const
+NonlinearFunctionPtr PolynomialFunction::cloneWithVars(
+    VariableConstIterator vbeg, int *err) const
 {
   PolyFunPtr p = (PolyFunPtr) new PolynomialFunction();
   MonomialFunPtr m2;
-  for (MonomialConstIter it = terms_.begin(); it!=terms_.end(); ++it) {
-    m2 = dynamic_cast <MonomialFunction*> 
-      ((*it)->cloneWithVars(vbeg, err));
+  for (MonomialConstIter it = terms_.begin(); it != terms_.end(); ++it) {
+    m2 = dynamic_cast<MonomialFunction *>((*it)->cloneWithVars(vbeg, err));
     p->terms_.push_back(m2);
   }
-  p->cb_   = cb_;
+  p->cb_ = cb_;
   if (cg_) {
-    p->cg_ = dynamic_cast<CGraph*> (cg_->cloneWithVars(vbeg, err));
-    // hack 
+    p->cg_ = dynamic_cast<CGraph *>(cg_->cloneWithVars(vbeg, err));
+    // hack
     p->cg_->getVars(&(p->vars_));
   }
   return p;
@@ -355,31 +356,31 @@ void PolynomialFunction::createCG()
 {
   CNode **cnodes;
   CNode *n1;
-  UInt size = terms_.size();
-  UInt nz=0;
+  size_t size = terms_.size();
+  UInt nz = 0;
 
-  if (fabs(cb_)<eTol_) {
+  if (fabs(cb_) < eTol_) {
     ++size;
   }
-  cnodes = new CNode*[size];
+  cnodes = new CNode *[size];
 
   if (cg_) {
     delete cg_;
   }
 
   cg_ = (CGraphPtr) new CGraph();
-  if (fabs(cb_)<eTol_) {
+  if (fabs(cb_) < eTol_) {
     cnodes[0] = cg_->newNode(cb_);
     ++nz;
   }
 
-  for (MonomialConstIter it = terms_.begin(); it!=terms_.end(); ++it) {
-    if (fabs((*it)->getCoeff())>eTol_) {
+  for (MonomialConstIter it = terms_.begin(); it != terms_.end(); ++it) {
+    if (fabs((*it)->getCoeff()) > eTol_) {
       cnodes[nz] = (*it)->fillCG(cg_);
       ++nz;
     }
   }
-  if (nz>0) {
+  if (nz > 0) {
     n1 = cg_->newNode(OpSumList, cnodes, nz);
   } else {
     n1 = cg_->newNode(0.0);
@@ -387,7 +388,7 @@ void PolynomialFunction::createCG()
   cg_->setOut(n1);
   cg_->finalize();
 
-  delete [] cnodes;
+  delete[] cnodes;
 }
 
 
@@ -398,29 +399,31 @@ double PolynomialFunction::eval(const double *x, int *error)
   } else {
     double sum = cb_;
     *error = 0;
-    for (MonomialConstIter it=terms_.begin(); it!=terms_.end(); ++it) {
+    for (MonomialConstIter it = terms_.begin(); it != terms_.end(); ++it) {
       sum += (*it)->eval(x, error);
-      if (0!=*error) break;
+      if (0 != *error)
+        break;
     }
     return sum;
   }
 }
 
 
-void PolynomialFunction::evalGradient(const double *x, double *grad_f, 
+void PolynomialFunction::evalGradient(const double *x, double *grad_f,
                                       int *error)
 {
   *error = 0;
-  for (MonomialConstIter it=terms_.begin(); it!=terms_.end(); ++it) {
+  for (MonomialConstIter it = terms_.begin(); it != terms_.end(); ++it) {
     (*it)->evalGradient(x, grad_f, error);
-    if (0!=*error) break;
+    if (0 != *error)
+      break;
   }
 }
 
 
-void PolynomialFunction::evalHessian(const double mult, const double *x, 
-                                     const LTHessStor *stor, double *values, 
-                                     int *error) 
+void PolynomialFunction::evalHessian(const double mult, const double *x,
+                                     const LTHessStor *stor, double *values,
+                                     int *error)
 {
   if (cg_) {
     cg_->evalHessian(mult, x, stor, values, error);
@@ -430,7 +433,7 @@ void PolynomialFunction::evalHessian(const double mult, const double *x,
 }
 
 
-void  PolynomialFunction::fillHessStor(LTHessStor *stor)
+void PolynomialFunction::fillHessStor(LTHessStor *stor)
 {
   if (cg_) {
     cg_->fillHessStor(stor);
@@ -474,9 +477,9 @@ void PolynomialFunction::getVars(VariableSet *vars)
 }
 
 
-bool PolynomialFunction::isEmpty() const 
+bool PolynomialFunction::isEmpty() const
 {
-  return (fabs(cb_)<eTol_ && terms_.empty());
+  return (fabs(cb_) < eTol_ && terms_.empty());
 }
 
 
@@ -486,14 +489,15 @@ void PolynomialFunction::multiply(ConstLinearFunctionPtr lf, double c)
   MonomialVector terms2 = terms_;
   terms_.clear();
   if (lf) {
-    for (VariableGroupConstIterator it=lf->termsBegin(); it!=lf->termsEnd();
-        ++it) {
-      for (MonomialConstIter it2 = terms2.begin(); it2!=terms2.end(); ++it2) {
+    for (VariableGroupConstIterator it = lf->termsBegin();
+         it != lf->termsEnd(); ++it) {
+      for (MonomialConstIter it2 = terms2.begin(); it2 != terms2.end();
+           ++it2) {
         m = (*it2)->clone();
         m->multiply(it->second, it->first, 1);
         terms_.push_back(m);
       }
-      if (fabs(cb_)>eTol_) {
+      if (fabs(cb_) > eTol_) {
         m = (MonomialFunPtr) new MonomialFunction(cb_);
         m->multiply(it->second, it->first, 1);
         terms_.push_back(m);
@@ -501,8 +505,8 @@ void PolynomialFunction::multiply(ConstLinearFunctionPtr lf, double c)
     }
   }
 
-  if (fabs(c)>eTol_) {
-    for (MonomialConstIter it2 = terms2.begin(); it2!=terms2.end(); ++it2) {
+  if (fabs(c) > eTol_) {
+    for (MonomialConstIter it2 = terms2.begin(); it2 != terms2.end(); ++it2) {
       m = (*it2)->clone();
       (*m) *= c;
       terms_.push_back(m);
@@ -510,7 +514,7 @@ void PolynomialFunction::multiply(ConstLinearFunctionPtr lf, double c)
   }
 
   cb_ *= c;
-  for (MonomialConstIter it2 = terms2.begin(); it2!=terms2.end(); ++it2) {
+  for (MonomialConstIter it2 = terms2.begin(); it2 != terms2.end(); ++it2) {
     delete *it2;
   }
   terms2.clear();
@@ -519,9 +523,9 @@ void PolynomialFunction::multiply(ConstLinearFunctionPtr lf, double c)
 
 void PolynomialFunction::multiply(double c)
 {
-  if (fabs(c)>eTol_) {
+  if (fabs(c) > eTol_) {
     cb_ *= c;
-    for (MonomialConstIter it = terms_.begin(); it!=terms_.end(); ++it) {
+    for (MonomialConstIter it = terms_.begin(); it != terms_.end(); ++it) {
       **it *= c;
     }
   } else {
@@ -540,7 +544,7 @@ void PolynomialFunction::prepJac(VarSetConstIter vb, VarSetConstIter ve)
 }
 
 
-void PolynomialFunction::recCG_(const CNode* cnode, double *c,
+void PolynomialFunction::recCG_(const CNode *cnode, double *c,
                                 MonomialVector *terms)
 {
   MonomialVector t1, t2;
@@ -552,7 +556,7 @@ void PolynomialFunction::recCG_(const CNode* cnode, double *c,
   case (OpDiv):
     recCG_(cnode->getL(), &c1, &t1);
     recCG_(cnode->getR(), &c2, &t2);
-    *c = c1+c2;
+    *c = c1 + c2;
     terms->insert(terms->end(), t1.begin(), t1.end());
     break;
   case (OpInt):
@@ -561,9 +565,9 @@ void PolynomialFunction::recCG_(const CNode* cnode, double *c,
   case (OpMinus):
     recCG_(cnode->getL(), &c1, &t1);
     recCG_(cnode->getR(), &c2, &t2);
-    *c = c1-c2;
+    *c = c1 - c2;
     terms->insert(terms->end(), t1.begin(), t1.end());
-    for (MonomialConstIter it = t2.begin(); it!=t2.end(); ++it) {
+    for (MonomialConstIter it = t2.begin(); it != t2.end(); ++it) {
       m = (*it)->clone();
       (*m) *= -1;
       terms->push_back(m);
@@ -580,13 +584,13 @@ void PolynomialFunction::recCG_(const CNode* cnode, double *c,
   case (OpPlus):
     recCG_(cnode->getL(), &c1, &t1);
     recCG_(cnode->getR(), &c2, &t2);
-    *c = c1+c2;
+    *c = c1 + c2;
     terms->insert(terms->end(), t1.begin(), t1.end());
     terms->insert(terms->end(), t2.begin(), t2.end());
     break;
   case (OpPowK):
     c2 = 1.0;
-    for (int i=0; i<cnode->getR()->getVal(); ++i) {
+    for (int i = 0; i < cnode->getR()->getVal(); ++i) {
       recCG_(cnode->getL(), &c1, &t1);
       terms->clear();
       *c = 0.0;
@@ -600,20 +604,18 @@ void PolynomialFunction::recCG_(const CNode* cnode, double *c,
     recCG_(cnode->getL(), &c1, &t1);
     recCGMult_(&t1, &t1, c1, c2, terms, c);
     break;
-  case (OpSumList):
-    {
-      for (CNode **cp=cnode->getListL(); cp<cnode->getListR(); ++cp) {
-        recCG_(*cp, &c1, &t1);
-        *c += c1;
-        terms->insert(terms->end(), t1.begin(), t1.end());
-        t1.clear();
-      }
+  case (OpSumList): {
+    for (CNode **cp = cnode->getListL(); cp < cnode->getListR(); ++cp) {
+      recCG_(*cp, &c1, &t1);
+      *c += c1;
+      terms->insert(terms->end(), t1.begin(), t1.end());
+      t1.clear();
     }
-    break;
+  } break;
   case (OpUMinus):
     recCG_(cnode->getL(), &c1, &t1);
     *c = -c1;
-    for (MonomialConstIter it = t2.begin(); it!=t2.end(); ++it) {
+    for (MonomialConstIter it = t2.begin(); it != t2.end(); ++it) {
       m = (*it)->clone();
       (*m) *= -1;
       terms->push_back(m);
@@ -634,23 +636,23 @@ void PolynomialFunction::recCGMult_(MonomialVector *t1, MonomialVector *t2,
                                     MonomialVector *terms, double *c)
 {
   MonomialFunPtr m;
-  *c = c1*c2;
-  for (MonomialConstIter it = t1->begin(); it!=t1->end(); ++it) {
-    for (MonomialConstIter it2 = t2->begin(); it2!= t2->end(); ++it2) {
+  *c = c1 * c2;
+  for (MonomialConstIter it = t1->begin(); it != t1->end(); ++it) {
+    for (MonomialConstIter it2 = t2->begin(); it2 != t2->end(); ++it2) {
       m = (*it)->clone();
       (*m) *= (*it2);
       terms->push_back(m);
     }
   }
-  if (fabs(c2)>eTol_) {
-    for (MonomialConstIter it = t1->begin(); it!=t1->end(); ++it) {
+  if (fabs(c2) > eTol_) {
+    for (MonomialConstIter it = t1->begin(); it != t1->end(); ++it) {
       m = (*it)->clone();
       (*m) *= c2;
       terms->push_back(m);
     }
   }
-  if (fabs(c1)>eTol_) {
-    for (MonomialConstIter it = t1->begin(); it!=t1->end(); ++it) {
+  if (fabs(c1) > eTol_) {
+    for (MonomialConstIter it = t1->begin(); it != t1->end(); ++it) {
       m = (*it)->clone();
       (*m) *= c1;
       terms->push_back(m);
@@ -669,7 +671,7 @@ double PolynomialFunction::removeConstant()
 
 void PolynomialFunction::removeLinear(LinearFunctionPtr lf)
 {
-  for (MonomialIter it = terms_.begin(); it!=terms_.end(); ) {
+  for (MonomialIter it = terms_.begin(); it != terms_.end();) {
     if ((*it)->getDegree() == 1) {
       VarIntMapConstIterator it2 = (*it)->termsBegin();
       lf->incTerm(it2->first, (*it)->getCoeff());
@@ -683,7 +685,7 @@ void PolynomialFunction::removeLinear(LinearFunctionPtr lf)
 
 void PolynomialFunction::removeQuadratic(QuadraticFunctionPtr qf)
 {
-  for (MonomialIter it = terms_.begin(); it!=terms_.end(); ) {
+  for (MonomialIter it = terms_.begin(); it != terms_.end();) {
     if ((*it)->getDegree() == 2) {
       VarIntMapConstIterator it2 = (*it)->termsBegin();
       if (it2->second == 2) {
@@ -707,17 +709,17 @@ MonomialConstIter PolynomialFunction::termsBegin()
 {
   return terms_.begin();
 }
-  
+
 
 MonomialConstIter PolynomialFunction::termsEnd()
 {
   return terms_.end();
 }
-  
+
 
 void PolynomialFunction::write(std::ostream &out) const
 {
-  for (MonomialConstIter it = terms_.begin(); it!=terms_.end(); ++it) {
+  for (MonomialConstIter it = terms_.begin(); it != terms_.end(); ++it) {
     out << " + ";
     (*it)->write(out);
   }
@@ -734,8 +736,8 @@ void PolynomialFunction::add(ConstLinearFunctionPtr lf)
 {
   if (lf) {
     MonomialFunPtr m;
-    for (VariableGroupConstIterator it=lf->termsBegin(); it!=lf->termsEnd();
-        ++it) {
+    for (VariableGroupConstIterator it = lf->termsBegin();
+         it != lf->termsEnd(); ++it) {
       m = (MonomialFunPtr) new MonomialFunction(1.);
       m->multiply(it->second, it->first, 1);
       terms_.push_back(m);
@@ -746,16 +748,16 @@ void PolynomialFunction::add(ConstLinearFunctionPtr lf)
 
 void PolynomialFunction::add(ConstQuadraticFunctionPtr qf)
 {
-    if (qf) {
-        MonomialFunPtr m;
-        for (VariablePairGroupConstIterator it=qf->begin(); it!=qf->end();
-             ++it) {
-            m = (MonomialFunPtr) new MonomialFunction(it->second);
-            m->multiply(1, it->first.first, 1);
-            m->multiply(1, it->first.second, 1);
-            terms_.push_back(m);
-        }
+  if (qf) {
+    MonomialFunPtr m;
+    for (VariablePairGroupConstIterator it = qf->begin(); it != qf->end();
+         ++it) {
+      m = (MonomialFunPtr) new MonomialFunction(it->second);
+      m->multiply(1, it->first.first, 1);
+      m->multiply(1, it->first.second, 1);
+      terms_.push_back(m);
     }
+  }
 }
 
 
@@ -763,7 +765,8 @@ void PolynomialFunction::add(ConstPolyFunPtr p)
 {
   if (p) {
     MonomialFunPtr m2;
-    for (MonomialConstIter it = p->terms_.begin(); it!=p->terms_.end(); ++it) {
+    for (MonomialConstIter it = p->terms_.begin(); it != p->terms_.end();
+         ++it) {
       m2 = (*it)->clone();
       terms_.push_back(m2);
     }
@@ -778,22 +781,23 @@ void PolynomialFunction::multiply(ConstQuadraticFunctionPtr qf)
     MonomialFunPtr m;
     MonomialVector terms2 = terms_;
     terms_.clear();
-    for (VariablePairGroupConstIterator it = qf->begin(); 
-        it != qf->end(); ++it) {
-      for (MonomialConstIter it2 = terms2.begin(); it2!=terms2.end(); ++it2) {
+    for (VariablePairGroupConstIterator it = qf->begin(); it != qf->end();
+         ++it) {
+      for (MonomialConstIter it2 = terms2.begin(); it2 != terms2.end();
+           ++it2) {
         m = (*it2)->clone();
         m->multiply(it->second, it->first.first, 1);
         m->multiply(1., it->first.second, 1);
         terms_.push_back(m);
       }
-      if (fabs(cb_)>eTol_) {
+      if (fabs(cb_) > eTol_) {
         m = (MonomialFunPtr) new MonomialFunction(cb_);
         m->multiply(it->second, it->first.first, 1);
         m->multiply(1., it->first.second, 1);
         terms_.push_back(m);
       }
     }
-    for (MonomialConstIter it2 = terms2.begin(); it2!=terms2.end(); ++it2) {
+    for (MonomialConstIter it2 = terms2.begin(); it2 != terms2.end(); ++it2) {
       delete *it2;
     }
     terms2.clear();
@@ -810,26 +814,28 @@ void PolynomialFunction::multiply(ConstPolyFunPtr p2)
     MonomialFunPtr m;
 
     terms_.clear();
-    for (MonomialConstIter it = oldterms.begin(); it!=oldterms.end(); ++it) {
-      for (MonomialConstIter it2 = p2->terms_.begin(); it2!=p2->terms_.end(); 
-          ++it2) {
+    for (MonomialConstIter it = oldterms.begin(); it != oldterms.end();
+         ++it) {
+      for (MonomialConstIter it2 = p2->terms_.begin();
+           it2 != p2->terms_.end(); ++it2) {
         m = (*it)->clone();
         (*m) *= (*it2);
         terms_.push_back(m);
       }
     }
 
-    if (fabs(c2)>eTol_) {
-      for (MonomialConstIter it = oldterms.begin(); it!=oldterms.end(); ++it) {
+    if (fabs(c2) > eTol_) {
+      for (MonomialConstIter it = oldterms.begin(); it != oldterms.end();
+           ++it) {
         m = (*it)->clone();
         (*m) *= c2;
         terms_.push_back(m);
       }
     }
 
-    if (fabs(cb_)>eTol_) {
-      for (MonomialConstIter it = p2->terms_.begin(); it!=p2->terms_.end();
-          ++it) {
+    if (fabs(cb_) > eTol_) {
+      for (MonomialConstIter it = p2->terms_.begin(); it != p2->terms_.end();
+           ++it) {
         m = (*it)->clone();
         (*m) *= cb_;
         terms_.push_back(m);
@@ -845,7 +851,7 @@ void PolynomialFunction::multiply(ConstPolyFunPtr p2)
 
 PolyFunPtr PolynomialFunction::copyAdd(ConstPolyFunPtr p2) const
 {
-  PolyFunPtr p = 0;  
+  PolyFunPtr p = 0;
   if (!p2) {
     // do nothing.
   } else if (!p2) {
@@ -872,11 +878,11 @@ PolyFunPtr PolynomialFunction::copyMinus(ConstPolyFunPtr p2)
 }
 
 
-PolyFunPtr PolynomialFunction::copyMult(double c) 
+PolyFunPtr PolynomialFunction::copyMult(double c)
 {
   PolyFunPtr p = 0;
-  if ( fabs(c)>this->eTol_) {
-    LinearFunctionPtr lf = 0; 
+  if (fabs(c) > this->eTol_) {
+    LinearFunctionPtr lf = 0;
     p = this->clone();
     p->multiply(lf, c);
   }
@@ -899,7 +905,7 @@ PolyFunPtr PolynomialFunction::copyMult(ConstQuadraticFunctionPtr q2) const
   if (q2) {
     p = this->clone();
     p->multiply(q2);
-  } 
+  }
   return p;
 }
 
@@ -913,14 +919,3 @@ PolyFunPtr PolynomialFunction::copyMult(ConstPolyFunPtr p2) const
   }
   return p;
 }
-
-// Local Variables: 
-// mode: c++ 
-// eval: (c-set-style "k&r") 
-// eval: (c-set-offset 'innamespace 0) 
-// eval: (setq c-basic-offset 2) 
-// eval: (setq fill-column 78) 
-// eval: (auto-fill-mode 1) 
-// eval: (setq column-number-mode 1) 
-// eval: (setq indent-tabs-mode nil) 
-// End:

@@ -1,12 +1,12 @@
-// 
+//
 //     Minotaur -- It's only 1/2 bull
-// 
-//     (C)opyright 2010 - 2024 The Minotaur Team.
-// 
+//
+//     (C)opyright 2010 - 2025 The Minotaur Team.
+//
 
 /**
  * \file CutMan2.cpp
- * \brief Implement the methods of CutMan2 class. 
+ * \brief Implement the methods of CutMan2 class.
  * \author Mahdi Hamzeei, University of Wisconsin-Madison
  */
 
@@ -38,7 +38,7 @@ typedef std::list<CutPtr>::const_iterator CCIter;
 typedef std::vector<ConstraintPtr>::const_iterator ConstIter;
 
 CutMan2::CutMan2()
-  : env_(EnvPtr()),   // NULL
+  : env_(EnvPtr()),  // NULL
     hashVec_(0),
     p_(ProblemPtr()),  // NULL
     absTol_(5e-2),
@@ -54,13 +54,13 @@ CutMan2::CutMan2()
   stats_->numAddedCuts = 0;
   stats_->numDeletedCuts = 0;
   stats_->numPoolToRel = 0;
-  stats_->numRelToPool = 0 ;
-  stats_->numCuts= 0;
+  stats_->numRelToPool = 0;
+  stats_->numCuts = 0;
 
-  ctmngrInfo_.t = ctMngrtime_;
-  ctmngrInfo_.RelTr = MaxInactiveInRel_;
-  ctmngrInfo_.PoolTr = PoolSize_;
-  ctmngrInfo_.PrntActCnt = PrntCntThrsh_;
+  ctmngrInfo_.t = (int)ctMngrtime_;
+  ctmngrInfo_.RelTr = (int)MaxInactiveInRel_;
+  ctmngrInfo_.PoolTr = (int)PoolSize_;
+  ctmngrInfo_.PrntActCnt = (int)PrntCntThrsh_;
 }
 
 CutMan2::CutMan2(EnvPtr env, ProblemPtr p)
@@ -74,12 +74,12 @@ CutMan2::CutMan2(EnvPtr env, ProblemPtr p)
 {
   stats_ = new CutStat();
   timer_ = env_->getNewTimer();
-  UInt n = p->getNumVars();
+  size_t n = p->getNumVars();
   hashVec_ = new double[n];
   CtThrsh_ = 6 * (n + p->getNumCons());
 
-  for (UInt i = 0; i < n; i++) {
-    hashVec_[i] = rand()/double (RAND_MAX);
+  for (size_t i = 0; i < n; i++) {
+    hashVec_[i] = rand() / double(RAND_MAX);
   }
 
   updateTime_ = 0.0;
@@ -90,11 +90,11 @@ CutMan2::CutMan2(EnvPtr env, ProblemPtr p)
   stats_->numAddedCuts = 0;
   stats_->numDeletedCuts = 0;
   stats_->numPoolToRel = 0;
-  stats_->numRelToPool = 0 ;
+  stats_->numRelToPool = 0;
   stats_->callNums = 0;
   stats_->PoolSize = 0;
   stats_->RelSize = 0;
-  stats_->numCuts= 0;
+  stats_->numCuts = 0;
   ctmngrInfo_.t = ctMngrtime_;
   ctmngrInfo_.PoolTr = PoolSize_;
   ctmngrInfo_.PrntActCnt = PrntCntThrsh_;
@@ -102,7 +102,7 @@ CutMan2::CutMan2(EnvPtr env, ProblemPtr p)
 
 CutMan2::~CutMan2()
 {
-  if (stats_){
+  if (stats_) {
     writeStat();
     delete stats_;
   }
@@ -120,52 +120,52 @@ CutMan2::~CutMan2()
 
 void CutMan2::updateRel(ConstSolutionPtr sol, ProblemPtr rel)
 {
-  if ( numCuts_ >= CtThrsh_){
+  if (numCuts_ >= CtThrsh_) {
     timer_->start();
-    UInt m = rel->getNumCons();
+    size_t m = rel->getNumCons();
     const double *y = new double[m];
     y = sol->getDualOfCons();
     int i;
     CutPtr cut;
     cutList temp;
 
-    for (std::list<CutPtr>::iterator it = rel_.begin(); it != rel_.end();)
-    {
+    for (std::list<CutPtr>::iterator it = rel_.begin(); it != rel_.end();) {
       cut = *it;
-      i =cut->getConstraint()->getId();
-      if (y[i] > 1e-6 || y[i] < -1e-6)
-      {
+      i = cut->getConstraint()->getId();
+      if (y[i] > 1e-6 || y[i] < -1e-6) {
         ++(cut->getInfo()->cntSinceActive);
         cut->getInfo()->cntSinceActive = 0;
       } else {
         ++(cut->getInfo()->cntSinceActive);
-      } 
+      }
 
-      if ( (y[i] > -1e-6 && y[i] < 1e-6) && cut->getInfo()->parent_active_cnts <=PrntCntThrsh_ &&  
-	   cut->getInfo()->cntSinceActive > MaxInactiveInRel_) 
-      {
+      if ((y[i] > -1e-6 && y[i] < 1e-6) &&
+          cut->getInfo()->parent_active_cnts <= PrntCntThrsh_ &&
+          cut->getInfo()->cntSinceActive > MaxInactiveInRel_) {
         temp.push_back(cut);
         it = rel_.erase(it);
       } else {
         ++it;
       }
-    }  
+    }
     double al;
 
-    if (stats_->numRelToPool != 0){
+    if (stats_->numRelToPool != 0) {
       al = 1.0 * stats_->numPoolToRel / stats_->numRelToPool;
       //am = 1.0 * stats_->RelSize / stats_->numCuts;
-      if ( (al > 0.1 && MaxInactiveInRel_ < 250)){ // || (am < 1.0 &&  MaxInactiveInRel_ > 0 )){
+      if ((al > 0.1 &&
+           MaxInactiveInRel_ <
+               250)) {  // || (am < 1.0 &&  MaxInactiveInRel_ > 0 )){
         MaxInactiveInRel_++;
-      } else if (MaxInactiveInRel_ > 0){
-        MaxInactiveInRel_ = MaxInactiveInRel_-1;
+      } else if (MaxInactiveInRel_ > 0) {
+        MaxInactiveInRel_ = MaxInactiveInRel_ - 1;
       }
       ctmngrInfo_.RelTr = MaxInactiveInRel_;
     }
-    if (temp.size() > 5){
-      for (std::list<CutPtr>::iterator it = temp.begin(); 
-  	   it != temp.end();++it){
-	cut = *it;
+    if (temp.size() > 5) {
+      for (std::list<CutPtr>::iterator it = temp.begin(); it != temp.end();
+           ++it) {
+        cut = *it;
         addToPool_(cut);
         cut->getInfo()->cntSinceViol = 0;
         rel->markDelete(cut->getConstraint());
@@ -173,7 +173,7 @@ void CutMan2::updateRel(ConstSolutionPtr sol, ProblemPtr rel)
       }
       rel->delMarkedCons();
     } else {
-	rel_.merge(temp);        
+      rel_.merge(temp);
     }
     double a1 = timer_->query();
     ctMngrtime_ += a1;
@@ -184,7 +184,7 @@ void CutMan2::updateRel(ConstSolutionPtr sol, ProblemPtr rel)
 
 void CutMan2::updatePool(ProblemPtr rel, ConstSolutionPtr sol)
 {
-  if ( numCuts_ >= CtThrsh_){
+  if (numCuts_ >= CtThrsh_) {
     timer_->start();
     const double *x = sol->getPrimal();
     double viol;
@@ -192,34 +192,34 @@ void CutMan2::updatePool(ProblemPtr rel, ConstSolutionPtr sol)
     int toRel = 0;
     int deleted = 0;
     CutPtr cut;
-    for (std::list<CutPtr>::iterator it = pool_.begin(); it != pool_.end();)
-    {
+    for (std::list<CutPtr>::iterator it = pool_.begin(); it != pool_.end();) {
       cut = *it;
       cut->evalScore(x, &viol, &score);
 
-      if (score < 1e-6){
+      if (score < 1e-6) {
         ++(cut->getInfo()->cntSinceViol);
         ++it;
-      }else if (score < absTol_){ 
-	++it;
-      } else {    
-	addToRel_(rel,cut,false);
-	toRel++;
+      } else if (score < absTol_) {
+        ++it;
+      } else {
+        addToRel_(rel, cut, false);
+        toRel++;
         stats_->numPoolToRel++;
-  	it = pool_.erase(it);
-      } 
+        it = pool_.erase(it);
+      }
     }
     stats_->numDeletedCuts += deleted;
     ctMngrtime_ += timer_->query();
     checkTime_ += timer_->query();
-    timer_->stop(); 
+    timer_->stop();
   }
 }
 
-ConstraintPtr CutMan2::addCut(ProblemPtr rel,FunctionPtr fn, double lb, double ub, bool, bool neverDelete)
+ConstraintPtr CutMan2::addCut(ProblemPtr rel, FunctionPtr fn, double lb,
+                              double ub, bool, bool neverDelete)
 {
-  CutPtr cut = (CutPtr) new Cut(rel,fn, lb, ub,neverDelete,false);
-  addToRel_(rel,cut,true);
+  CutPtr cut = (CutPtr) new Cut(rel, fn, lb, ub, neverDelete, false);
+  addToRel_(rel, cut, true);
   stats_->numAddedCuts++;
   cut->getInfo()->inRel = true;
   stats_->numCuts++;
@@ -236,7 +236,6 @@ void CutMan2::addToRel_(ProblemPtr rel, CutPtr cut, bool newcut)
   cut->getInfo()->cntSinceActive = 0;
   cut->getInfo()->cntSinceViol = 0;
   cut->getInfo()->inRel = true;
-
 }
 
 void CutMan2::addToRel_(CutPtr cut)
@@ -250,31 +249,30 @@ void CutMan2::addToRel_(CutPtr cut)
 
 void CutMan2::addToPool_(CutPtr cut)
 {
-/*
-  std::list<CutPtr>::iterator it = pool_.begin();
-  CutPtr c;
-  c = *it;
-  int n = c->getInfo()->parent_active_cnts;
-  if (pool_.size() > PoolSize_ - 1){
-    while ( n >  PrntCntThrsh_ && it != pool_.end() )
-    {
-      ++it;
-      c = *it;
-      n = c->getInfo()->parent_active_cnts;
+  /*
+    std::list<CutPtr>::iterator it = pool_.begin();
+    CutPtr c;
+    c = *it;
+    int n = c->getInfo()->parent_active_cnts;
+    if (pool_.size() > PoolSize_ - 1){
+      while ( n >  PrntCntThrsh_ && it != pool_.end() )
+      {
+        ++it;
+        c = *it;
+        n = c->getInfo()->parent_active_cnts;
+      }
+      if ( n <=  PrntCntThrsh_ ){
+        it = pool_.erase(it);
+      }
     }
-    if ( n <=  PrntCntThrsh_ ){
-      it = pool_.erase(it);
-    }
-  }
-*/
-  if (pool_.size() > PoolSize_ - 1){
+  */
+  if (pool_.size() > PoolSize_ - 1) {
     std::list<CutPtr>::iterator it = pool_.begin();
     it = pool_.erase(it);
   }
 
   pool_.push_back(cut);
   cut->getInfo()->inRel = false;
-
 }
 
 void CutMan2::NodeIsBranched(NodePtr node, ConstSolutionPtr sol, int num)
@@ -284,18 +282,18 @@ void CutMan2::NodeIsBranched(NodePtr node, ConstSolutionPtr sol, int num)
   const double *y = sol->getDualOfCons();
   int i;
   timer_->start();
-    
-  for (CCIter it=rel_.begin(); it != rel_.end(); ++it){
+
+  for (CCIter it = rel_.begin(); it != rel_.end(); ++it) {
     cut = *it;
     i = cut->getConstraint()->getId();
-    if (y[i] > 1e-6 || y[i] < -1e-6){
+    if (y[i] > 1e-6 || y[i] < -1e-6) {
       cut->getInfo()->parent_active_cnts += num;
       cutlist.push_back(cut);
     }
   }
-  NodeCutsMap_[node] = cutlist; 
+  NodeCutsMap_[node] = cutlist;
   ChildNum_[node] = num;
-  double a1 =  timer_->query();
+  double a1 = timer_->query();
   ctMngrtime_ += a1;
   branchedTime_ += a1;
   timer_->stop();
@@ -308,20 +306,20 @@ void CutMan2::NodeIsProcessed(NodePtr node)
 
   timer_->start();
   if (NodeCutsMap_.count(node->getParent()) > 0) {
-  	//cutList cutlist = NodeCutsMap_[node->getParent()];
-  	//for (CCIter it=cutlist.begin(); it!=cutlist.end(); ++it){
-	for (CCIter it = NodeCutsMap_[node->getParent()].begin(); 
-		it != NodeCutsMap_[node->getParent()].end(); ++it){
-	  cut = *it;
-          --(cut->getInfo()->parent_active_cnts);
-  	}
-	ChildNum_[node->getParent()] += -1;
+    //cutList cutlist = NodeCutsMap_[node->getParent()];
+    //for (CCIter it=cutlist.begin(); it!=cutlist.end(); ++it){
+    for (CCIter it = NodeCutsMap_[node->getParent()].begin();
+         it != NodeCutsMap_[node->getParent()].end(); ++it) {
+      cut = *it;
+      --(cut->getInfo()->parent_active_cnts);
+    }
+    ChildNum_[node->getParent()] += -1;
   }
-  if (ChildNum_[node->getParent()] == 0){
+  if (ChildNum_[node->getParent()] == 0) {
     NodeCutsMap_.erase(node->getParent());
   }
-   
-  double a1 =  timer_->query();
+
+  double a1 = timer_->query();
   ctMngrtime_ += a1;
   processedTime_ += a1;
   timer_->stop();
@@ -333,20 +331,19 @@ void CutMan2::NodeIsProcessed(NodePtr node)
   ctmngrInfo_.PoolSize = pool_.size();
   ctmngrInfo_.RelToPool = stats_->numRelToPool;
   ctmngrInfo_.PoolToRel = stats_->numPoolToRel;
-  ctmngrInfo_.RelAve = (double)stats_->RelSize/stats_->callNums;
-  ctmngrInfo_.PoolAve = (double)stats_->PoolSize/stats_->callNums;
-
+  ctmngrInfo_.RelAve = (double)stats_->RelSize / stats_->callNums;
+  ctmngrInfo_.PoolAve = (double)stats_->PoolSize / stats_->callNums;
 }
 
-void CutMan2::write(std::ostream &out) const {
+void CutMan2::write(std::ostream &out) const
+{
 
   out << " CutManager " << std::endl;
-
 }
 
-void CutMan2::addCuts(CutVectorIter cbeg,CutVectorIter cend)
+void CutMan2::addCuts(CutVectorIter cbeg, CutVectorIter cend)
 {
-  for (CutVectorIter it=cbeg; it!=cend; ++it){
+  for (CutVectorIter it = cbeg; it != cend; ++it) {
     addCut(*it);
   }
 }
@@ -363,35 +360,38 @@ void CutMan2::writeStats(std::ostream &out) const
 }
 void CutMan2::writeStat()
 {
-  std::cout
-    << "CutManager: number of cuts added........................ = " << stats_->numAddedCuts << std::endl
-    << "CutManager: number of cuts deleted...................... = " << stats_->numDeletedCuts << std::endl
-    << "CutManager: number of cuts moved from relaxation to pool = " << stats_->numRelToPool << std::endl
-    << "CutManager: number of cuts moved from pool to relaxation = " << stats_->numPoolToRel << std::endl
-    << "CutManager: number of calls............................. = " << stats_->callNums << std::endl
-    << "CutManager: size of rel................................. = " << rel_.size() << std::endl  
-    << "CutManager: size of pool................................ = " << pool_.size() << std::endl
-    << "CutManager: average size of rel......................... = " << (double)stats_->RelSize/stats_->callNums << std::endl
-    << "CutManager: average size of pool........................ = " << (double)stats_->PoolSize/stats_->callNums << std::endl
-    << "CutManager: MaxInactiveInRel............................ = " << MaxInactiveInRel_ << std::endl
-    << "CutManager: PrntActCnt.................................. = " << PrntCntThrsh_ << std::endl
-    << "CutManager: time........................................ = " << ctMngrtime_ << std::endl
-    << "CutManager: Map size.................................... = " << NodeCutsMap_.size() <<  "\n"
-    << "CutManager: update cut.................................. = " << updateTime_ << "\n"
-    << "CutManager: check cut................................... = " << checkTime_ << "\n"
-    << "CutManager: processed................................... = " << processedTime_ << "\n"
-    << "CutManager: branchedt................................... = " << branchedTime_ << "\n";
-
-    
+  std::cout << "CutManager: number of cuts added........................ = "
+            << stats_->numAddedCuts << std::endl
+            << "CutManager: number of cuts deleted...................... = "
+            << stats_->numDeletedCuts << std::endl
+            << "CutManager: number of cuts moved from relaxation to pool = "
+            << stats_->numRelToPool << std::endl
+            << "CutManager: number of cuts moved from pool to relaxation = "
+            << stats_->numPoolToRel << std::endl
+            << "CutManager: number of calls............................. = "
+            << stats_->callNums << std::endl
+            << "CutManager: size of rel................................. = "
+            << rel_.size() << std::endl
+            << "CutManager: size of pool................................ = "
+            << pool_.size() << std::endl
+            << "CutManager: average size of rel......................... = "
+            << (double)stats_->RelSize / stats_->callNums << std::endl
+            << "CutManager: average size of pool........................ = "
+            << (double)stats_->PoolSize / stats_->callNums << std::endl
+            << "CutManager: MaxInactiveInRel............................ = "
+            << MaxInactiveInRel_ << std::endl
+            << "CutManager: PrntActCnt.................................. = "
+            << PrntCntThrsh_ << std::endl
+            << "CutManager: time........................................ = "
+            << ctMngrtime_ << std::endl
+            << "CutManager: Map size.................................... = "
+            << NodeCutsMap_.size() << "\n"
+            << "CutManager: update cut.................................. = "
+            << updateTime_ << "\n"
+            << "CutManager: check cut................................... = "
+            << checkTime_ << "\n"
+            << "CutManager: processed................................... = "
+            << processedTime_ << "\n"
+            << "CutManager: branchedt................................... = "
+            << branchedTime_ << "\n";
 }
-
-// Local Variables: 
-// mode: c++ 
-// eval: (c-set-style "k&r") 
-// eval: (c-set-offset 'innamespace 0) 
-// eval: (setq c-basic-offset 2) 
-// eval: (setq fill-column 78) 
-// eval: (auto-fill-mode 1) 
-// eval: (setq column-number-mode 1) 
-// eval: (setq indent-tabs-mode nil) 
-// End:

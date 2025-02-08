@@ -1,15 +1,15 @@
 //
 //    Minotaur -- It's only 1/2 bull
 //
-//    (C)opyright 2008 - 2024 The Minotaur Team.
+//    (C)opyright 2008 - 2025 The Minotaur Team.
 //
 
 
 /**
- * \file KnapsackList.h 
- * \brief Declare base class KnapsackList. 
- * \author Serdar Yildiz, Argonne National Laboratory 
-*/
+ * \file KnapsackList.h
+ * \brief Declare base class KnapsackList.
+ * \author Serdar Yildiz, Argonne National Laboratory
+ */
 
 #ifndef MINOTAURKNAPSACKLIST_H
 #define MINOTAURKNAPSACKLIST_H
@@ -18,65 +18,52 @@
 #include "Constraint.h"
 
 namespace Minotaur {
-/**
- * The KnapsackList class generates the list of knapsack
- * constraint pointers for a given problem.
-*/
-class KnapsackList{
-public:    
-  // Default constructor.
-  KnapsackList();
+  /**
+   * The KnapsackList class generates the list of knapsack
+   * constraint pointers for a given problem.
+   */
+  class KnapsackList {
+  public:
+    // Default constructor.
+    KnapsackList();
 
-  // Constructs list from a given problem.
-  KnapsackList(ProblemPtr p);
-  
-  // Destructor.
-  ~KnapsackList();
-  
-  // Generates the list of knapsack constraints.
-  void generateList();
+    // Constructs list from a given problem.
+    KnapsackList(ProblemPtr p);
 
-  // Evaluate a constraint and decide to add it to the list.
-  void evalConstraint(ConstraintConstIterator it);
+    // Destructor.
+    ~KnapsackList();
 
-  // Add a constraint to list not.
-  void addConstraint(ConstraintConstIterator it);
+    // Generates the list of knapsack constraints.
+    void generateList();
 
-  // Get number of knapsack constraints.
-  UInt getNumKnaps() const {return list_->size();} 
-  
-  // Get number of constrainst checked for linear or not.
-  UInt getNumConsChecked() const {return numConsChecked_;}
-  
-  // Get an iterator for the beginning of knapsack list.
-  ConstraintIterator getListBegin() {return list_->begin();}
+    // Evaluate a constraint and decide to add it to the list.
+    void evalConstraint(ConstraintConstIterator it);
 
-  // Get an iterator for the end of the knapsack list.
-  ConstraintIterator getListEnd() {return list_->end();}
+    // Add a constraint to list not.
+    void addConstraint(ConstraintConstIterator it);
 
+    // Get number of knapsack constraints.
+    size_t getNumKnaps() const { return list_->size(); }
 
-private:
-  // The problem that knapsack list is generated from.
-  ProblemPtr p_;
-  // A vector of pointers to kanpsack constraints.
-  ConstraintVectorPtr list_;
-  // Number of constraints checked.
-  UInt numConsChecked_;
-};
+    // Get number of constrainst checked for linear or not.
+    UInt getNumConsChecked() const { return numConsChecked_; }
 
-}
+    // Get an iterator for the beginning of knapsack list.
+    ConstraintIterator getListBegin() { return list_->begin(); }
 
-#endif // MINOTAURKNAPSACKLIST_H
+    // Get an iterator for the end of the knapsack list.
+    ConstraintIterator getListEnd() { return list_->end(); }
 
 
+  private:
+    // The problem that knapsack list is generated from.
+    ProblemPtr p_;
+    // A vector of pointers to kanpsack constraints.
+    ConstraintVectorPtr list_;
+    // Number of constraints checked.
+    UInt numConsChecked_;
+  };
 
-// Local Variables:
-// mode: c++ 
-// eval: (c-set-style "k&r")
-// eval: (c-set-offset 'innamespace 0)
-// eval: (setq c-basic-offset 2)
-// eval: (setq fill-column 78)
-// eval: (auto-fill-mode 1) 
-// eval: (setq column-number-mode 1)
-// eval: (setq indent-tabs-mode nil)
-// End:
+}  //namespace Minotaur
+
+#endif  // MINOTAURKNAPSACKLIST_H

@@ -1,7 +1,7 @@
 //
 //    Minotaur -- It's only 1/2 bull
 //
-//    (C)opyright 2009 - 2024 The Minotaur Team.
+//    (C)opyright 2009 - 2025 The Minotaur Team.
 //
 
 /**
@@ -27,8 +27,8 @@
 using namespace Minotaur;
 const std::string Reader::me_ = "Reader: ";
 
-Reader::Reader(EnvPtr env) 
-: env_(env) 
+Reader::Reader(EnvPtr env)
+  : env_(env)
 {
   logger_ = env->getLogger();
 }
@@ -43,224 +43,278 @@ ProblemPtr Reader::readMps(std::string fname, int &err)
 {
   std::ifstream fs;
   std::string line, word, word2, word3, word4;
-  std::string rhsid="";
-  std::string rangeid="";
-  std::string bndid="";
+  std::string rhsid = "";
+  std::string rangeid = "";
+  std::string bndid = "";  // second word of all lines in BOUNDS section must
+                           // be common across the file.
+  std::string qcname;  //name of the row for QCMatrix
   ProblemPtr p = 0;
   std::istringstream iss;
   int lcnt, m, n, r;
   bool comment;
   VariableType vtype = Continuous;
   std::vector<LinearFunctionPtr> lfs;
+  std::vector<QuadraticFunctionPtr> qfs;
   std::vector<char> rowtypes;
   std::vector<std::string> rownamesvec;
   std::vector<double> rowrhs, rowranges;
   std::string objname;
-  std::map<std::string,int> rownames;
-  std::map<std::string,int> colnames;
-  VariablePtr v;
+  std::map<std::string, int> rownames;
+  std::map<std::string, int> colnames;
+  VariablePtr v, v2;
   FunctionPtr f;
   double dval, lb, ub;
-  std::string::size_type echars; // size of string
-
-  int section = 0; // 0: None, 1: NAME, 2: ROWS, 3: COLUMNS, 4: RHS,
-                   // 5: RANGES, 6: BOUNDS, 7: ENDDATA
+  std::string::size_type echars;  // size of string
+  QuadraticFunction *qfo = NULL;
+  QuadraticFunction *qfc = 0;  // quadratic function being populated in
+                               // QCMATRIX section
+  MpsSec section = MpsNone;
+  ObjectiveType ot = Minimize;
 
   err = 0;
   fs.open(fname.c_str());
   if (!fs.is_open()) {
     logger_->errStream() << me_ << "could not open file " << fname
-      << " for reading" << std::endl;
+                         << " for reading" << std::endl;
     err = 1;
     return 0;
-  } 
+  }
 
-  logger_->msgStream(LogInfo) << me_ << "reading MPS file " << fname 
-    << std::endl;
+  logger_->msgStream(LogInfo)
+      << me_ << "reading MPS file " << fname << std::endl;
 
   p = new Problem(env_);
 
   vtype = Continuous;
   m = n = 0;
   lcnt = 0;
-  while (0==err && 7!=section && std::getline(fs, line)) {
-    iss.clear();   // deletes only flags internal to iss
-    iss.str(line); // convert line into ifstream
+  while (0 == err && MpsEnd != section && std::getline(fs, line)) {
+    iss.clear();    // deletes only flags internal to iss
+    iss.str(line);  // convert line into ifstream
     ++lcnt;
 
-    // std::cout << line <<  std::endl;
 
     if (!(iss >> word)) {
-      continue; // empty line
+      continue;  // empty line
     }
 
     comment = false;
-    if ('*'==word[0]) {
+    if ('*' == word[0]) {
       comment = true;
-      continue; // ignore line, because it is a comment
+      continue;  // ignore line, because it is a comment
     }
 
     // check if a new section starts
-    if (line[0] == word[0]) { // we have no white space in the beginning
-      if (word=="NAME") {
-        section = 1;
+    if (line[0] == word[0]) {  // we have no white space in the beginning
+      if (word == "NAME") {
+        section = MpsNone;  // back to new unknown section. This should not be
+                            // set to MpsName
         continue;
-      } else if (word=="ROWS") {
-        section = 2;
+      } else if (word == "OBJSENSE") {
+        if (!(iss >> word2)) {
+          logger_->errStream() << me_ << "ERROR: Missing value of OBJSENSE "
+                               << "in line " << lcnt << std::endl;
+          err = 10;
+        } else if (word2 == "MAX") {
+          ot = Maximize;
+        } else {
+          logger_->msgStream(LogError)
+              << me_ << "warning: OBJSENSE " << word2 << " ignored on line "
+              << lcnt << std::endl;
+        }
         continue;
-      } else if (word=="COLUMNS") {
-        section = 3;
+      } else if (word == "ROWS") {
+        section = MpsRows;
         continue;
-      } else if (word=="RHS") {
-        section = 4;
+      } else if (word == "COLUMNS") {
+        section = MpsCols;
         continue;
-      } else if (word=="RANGES") {
-        section = 5;
+      } else if (word == "RHS") {
+        section = MpsRhs;
         continue;
-      } else if (word=="BOUNDS") {
-        section = 6;
+      } else if (word == "RANGES") {
+        section = MpsRang;
         continue;
-      } else if (word=="ENDATA") {
-        section = 7;
+      } else if (word == "BOUNDS") {
+        section = MpsBoun;
+        continue;
+      } else if (word == "QUADOBJ") {
+        section = MpsQO;
+        continue;
+      } else if (word == "QCMATRIX") {
+        section = MpsQC;
+        // read the name of the quad constraint now
+        if (!(iss >> word2)) {
+          logger_->errStream() << me_ << "ERROR: Missing row name in line "
+                               << lcnt << std::endl;
+          err = 10;
+        } else if (rownames.find(word2) == rownames.end()) {
+          rownames[word2] = m;
+          rownamesvec.push_back(word2);
+          lfs.push_back(new LinearFunction());
+          qfc = new QuadraticFunction();
+          qfs.push_back(qfc);
+          ++m;
+        } else {
+          r = rownames[word2];
+          qfc = qfs[r];
+        }
+        qcname = word2;
+        continue;
+      } else if (word == "ENDATA") {
+        section = MpsEnd;
         continue;
       }
     }
 
     // we are in an existing section
     switch (section) {
-    case(0):
+    case (MpsNone):
       if (!comment) {
-        logger_->errStream() << me_ << "error while parsing the MPS file in line " << lcnt
-          << std::endl << line  <<  std::endl;
+        logger_->errStream() << me_ << "error parsing the MPS file in line "
+                             << lcnt << std::endl
+                             << line << std::endl;
         err = 10;
       }
       break;
-    case(1): // NAME can be ignored for now
+    case (MpsName):  // NAME can be ignored for now
       break;
-    case(2): // ROWS
-      if (word[0] == 'N' || word[0] == 'G' || word[0] == 'L'
-          || word[0] == 'E' ) {
+    case (MpsRows):  // ROWS
+      if (word[0] == 'N' || word[0] == 'G' || word[0] == 'L' ||
+          word[0] == 'E') {
         rowtypes.push_back(word[0]);
         rowrhs.push_back(INFINITY);
         rowranges.push_back(INFINITY);
 
-        if (!(iss>>word)) { // read the next word
-          logger_->errStream() << me_ << "ERROR: Missing row name in line " << lcnt
-            << std::endl;
+        if (!(iss >> word)) {  // read the next word
+          logger_->errStream() << me_ << "ERROR: Missing row name in line "
+                               << lcnt << std::endl;
           err = 10;
-        } else if (rownames.find(word)==rownames.end()) {
+        } else if (rownames.find(word) == rownames.end()) {
           rownames[word] = m;
           rownamesvec.push_back(word);
           lfs.push_back(new LinearFunction());
+          qfs.push_back(new QuadraticFunction());
+          if ('N' == rowtypes[m] && !qfo) {
+            qfo = qfs[m];
+          }
           ++m;
         } else {
-          logger_->errStream() << me_ << "ERROR: Row " << word 
-            << " seen more than once in the ROWS section of MPS file "
-            << std::endl;
+          logger_->errStream()
+              << me_ << "ERROR: Row " << word
+              << " seen more than once in the ROWS section of MPS file "
+              << std::endl;
           err = 10;
         }
 
-        if (0==err && (iss>>word)) { // check for eol
-          logger_->errStream() << me_ << "ERROR: line " << lcnt 
-            << " should have ended before " << word << std::endl;
+        if (0 == err && (iss >> word)) {  // check for eol
+          logger_->errStream()
+              << me_ << "ERROR: line " << lcnt << " should have ended before "
+              << word << std::endl;
           err = 10;
         }
       } else {
         logger_->errStream() << me_ << "Unexpected word " << word
-          << " in line " << lcnt << std::endl;
+                             << " in line " << lcnt << std::endl;
         err = 10;
       }
       break;
-    case(3): // COLUMNS
+    case (MpsCols):  // COLUMNS
       // Read the next two words. Every line must have 3 or 5 words
-      if (!(iss >> word2)  || !(iss >> word3)) {
+      if (!(iss >> word2) || !(iss >> word3)) {
         logger_->errStream() << me_ << "ERROR: not enough fields in column "
-          << "line " << lcnt  << std::endl;
+                             << "line " << lcnt << std::endl;
         err = 10;
         break;
-      } 
+      }
 
       if (word2 == "'MARKER'") {
         if (word3 == "'INTORG'") {
-          if (Integer==vtype) {
-            logger_->errStream() << me_ << "ERROR: 'INTORG' seen within " 
-              << "'INTORG' section, line " << lcnt << std::endl;
+          if (Integer == vtype) {
+            logger_->errStream()
+                << me_ << "ERROR: 'INTORG' seen within "
+                << "'INTORG' section, line " << lcnt << std::endl;
             err = 10;
           } else {
             vtype = Integer;
           }
         } else if (word3 == "'INTEND'") {
-          if (Continuous==vtype) {
-            logger_->errStream() << me_ << "ERROR: 'INTEND' seen outside " 
-              << "'INTORG' section, line " << lcnt << std::endl;
+          if (Continuous == vtype) {
+            logger_->errStream()
+                << me_ << "ERROR: 'INTEND' seen outside "
+                << "'INTORG' section, line " << lcnt << std::endl;
             err = 10;
           } else {
             vtype = Continuous;
           }
         } else {
           logger_->errStream() << me_ << "ERROR: Unknown marker " << word3
-            << " in line " << lcnt << std::endl;
+                               << " in line " << lcnt << std::endl;
           err = 10;
         }
-      } else if (rownames.find(word2)==rownames.end()) {
-          logger_->errStream() << me_ << "ERROR: rowname " << word2
-            << " in line " << lcnt << " undeclared " << std::endl;
-          break;
+      } else if (rownames.find(word2) == rownames.end()) {
+        logger_->errStream()
+            << me_ << "ERROR: rowname " << word2 << " in line " << lcnt
+            << " undeclared " << std::endl;
+        break;
       } else {
-        if (colnames.find(word)==colnames.end()) {
+        if (colnames.find(word) == colnames.end()) {
           v = p->newVariable(0, INFINITY, vtype, word);
           colnames[word] = n;
           ++n;
         } else {
-          v = p->getVariable(colnames[word]); 
+          v = p->getVariable(colnames[word]);
         }
         dval = std::stod(word3, &echars);
         r = rownames[word2];
-        lfs[r]->incTerm(v,dval);
+        lfs[r]->incTerm(v, dval);
 
         // we may have two more terms (but not one)
         if (iss >> word2) {
           if (!(iss >> word3)) {
-            logger_->errStream() << me_ << "ERROR: not enough fields in column "
-              << "line " << lcnt << std::endl;
+            logger_->errStream()
+                << me_ << "ERROR: not enough fields in column "
+                << "line " << lcnt << std::endl;
             err = 10;
             break;
-          } else if (rownames.find(word2)==rownames.end()) {
-            logger_->errStream() << me_ << "ERROR: rowname " << word2
-              << " in line " << lcnt << " undeclared " << std::endl;
+          } else if (rownames.find(word2) == rownames.end()) {
+            logger_->errStream()
+                << me_ << "ERROR: rowname " << word2 << " in line " << lcnt
+                << " undeclared " << std::endl;
             err = 10;
             break;
           }
           dval = std::stod(word3, &echars);
           r = rownames[word2];
-          lfs[r]->incTerm(v,dval);
+          lfs[r]->incTerm(v, dval);
         }
       }
       break;
-    case(4): // RHS
-      if (rhsid=="") {
+    case (MpsRhs):  // RHS
+      if (rhsid == "") {
         rhsid = word;
       } else if (word != rhsid) {
-        logger_->msgStream(LogError) << me_ << rhsid << " ignored in line " 
-          << lcnt << std::endl;
+        logger_->msgStream(LogError)
+            << me_ << rhsid << " ignored in line " << lcnt << std::endl;
         break;
       }
-      if (!(iss >> word2)  || !(iss >> word3)) {
+      if (!(iss >> word2) || !(iss >> word3)) {
         logger_->errStream() << me_ << "ERROR: not enough fields in column "
-          << "line " << lcnt << std::endl;
+                             << "line " << lcnt << std::endl;
         err = 10;
         break;
-      } else if (rownames.find(word2)==rownames.end()) {
-        logger_->errStream() << me_ << "ERROR: rowname " << word2
-          << " in line " << lcnt << " undeclared " << std::endl;
+      } else if (rownames.find(word2) == rownames.end()) {
+        logger_->errStream()
+            << me_ << "ERROR: rowname " << word2 << " in line " << lcnt
+            << " undeclared " << std::endl;
         break;
       } else {
         dval = std::stod(word3, &echars);
         r = rownames[word2];
-        if (rowrhs[r] != INFINITY) { // if previously set, warn
-          logger_->msgStream(LogExtraInfo) << me_ 
-            << "Warning: overwriting rhs for row " << word2 << " in line " 
-            << lcnt << std::endl;
+        if (rowrhs[r] != INFINITY) {  // if previously set, warn
+          logger_->msgStream(LogExtraInfo)
+              << me_ << "Warning: overwriting rhs for row " << word2
+              << " in line " << lcnt << std::endl;
         }
         rowrhs[r] = dval;
 
@@ -268,50 +322,52 @@ ProblemPtr Reader::readMps(std::string fname, int &err)
         if (iss >> word2) {
           if (!(iss >> word3)) {
             logger_->errStream() << me_ << "ERROR: not enough fields in rhs "
-              << "line " << lcnt << std::endl;
+                                 << "line " << lcnt << std::endl;
             err = 10;
             break;
-          } else if (rownames.find(word2)==rownames.end()) {
-            logger_->errStream() << me_ << "ERROR: rowname " << word2
-              << " in line " << lcnt << " undeclared " << std::endl;
+          } else if (rownames.find(word2) == rownames.end()) {
+            logger_->errStream()
+                << me_ << "ERROR: rowname " << word2 << " in line " << lcnt
+                << " undeclared " << std::endl;
             err = 10;
             break;
           }
           dval = std::stod(word3, &echars);
           r = rownames[word2];
-          if (rowrhs[r] != INFINITY) { // if previously set, warn
-            logger_->msgStream(LogExtraInfo) << me_ 
-              << "Warning: overwriting rhs for row " << word2 << " in line " 
-              << lcnt << std::endl;
+          if (rowrhs[r] != INFINITY) {  // if previously set, warn
+            logger_->msgStream(LogExtraInfo)
+                << me_ << "Warning: overwriting rhs for row " << word2
+                << " in line " << lcnt << std::endl;
           }
           rowrhs[r] = dval;
         }
       }
       break;
-    case(5): // RANGES
-      if (rangeid=="") {
+    case (MpsRang):  // RANGES
+      if (rangeid == "") {
         rangeid = word;
       } else if (word != rangeid) {
-        logger_->msgStream(LogError) << me_ << rangeid << " ignored in line " 
-          << lcnt << std::endl;
+        logger_->msgStream(LogError)
+            << me_ << rangeid << " ignored in line " << lcnt << std::endl;
         break;
       }
-      if (!(iss >> word2)  || !(iss >> word3)) {
+      if (!(iss >> word2) || !(iss >> word3)) {
         logger_->errStream() << me_ << "ERROR: not enough fields in ranges "
-          << "line " << lcnt << std::endl;
+                             << "line " << lcnt << std::endl;
         err = 10;
         break;
-      } else if (rownames.find(word2)==rownames.end()) {
-        logger_->errStream() << me_ << "ERROR: rowname " << word2
-          << " in line " << lcnt << " undeclared " << std::endl;
+      } else if (rownames.find(word2) == rownames.end()) {
+        logger_->errStream()
+            << me_ << "ERROR: rowname " << word2 << " in line " << lcnt
+            << " undeclared " << std::endl;
         break;
       } else {
         dval = std::stod(word3, &echars);
         r = rownames[word2];
-        if (rowranges[r] != INFINITY) { // warn
-          logger_->msgStream(LogExtraInfo) << me_ 
-            << "Warning: overwriting range for row " << word2 << " in line " 
-            << lcnt << std::endl;
+        if (rowranges[r] != INFINITY) {  // warn
+          logger_->msgStream(LogExtraInfo)
+              << me_ << "Warning: overwriting range for row " << word2
+              << " in line " << lcnt << std::endl;
         }
         rowranges[r] = dval;
       }
@@ -320,46 +376,49 @@ ProblemPtr Reader::readMps(std::string fname, int &err)
       if (iss >> word2) {
         if (!(iss >> word3)) {
           logger_->errStream() << me_ << "ERROR: not enough fields in ranges "
-            << "line " << lcnt << std::endl;
+                               << "line " << lcnt << std::endl;
           err = 10;
           break;
-        } else if (rownames.find(word2)==rownames.end()) {
-          logger_->errStream() << me_ << "ERROR: rowname " << word2
-            << " in line " << lcnt << " undeclared " << std::endl;
+        } else if (rownames.find(word2) == rownames.end()) {
+          logger_->errStream()
+              << me_ << "ERROR: rowname " << word2 << " in line " << lcnt
+              << " undeclared " << std::endl;
           err = 10;
           break;
         }
         dval = std::stod(word3, &echars);
         r = rownames[word2];
-        if (rowranges[r] != INFINITY) { // warn
-          logger_->msgStream(LogExtraInfo) << me_ 
-            << "Warning: overwriting range for row " << word2 << " in line " 
-            << lcnt << std::endl;
+        if (rowranges[r] != INFINITY) {  // warn
+          logger_->msgStream(LogExtraInfo)
+              << me_ << "Warning: overwriting range for row " << word2
+              << " in line " << lcnt << std::endl;
         }
         rowranges[r] = dval;
       }
       break;
-    case(6): // BOUNDS
+    case (MpsBoun):  // BOUNDS
       // If a bound on a variable is seen more than once, the later bound
       // value overrides the earlier ones
       // e.g. if we have
       // UP BND x1 40
       // UP BND x1 50
       // then the ub of x1 is set to 50.
-      if (!(iss >> word2)  || !(iss >> word3)) {
+      if (!(iss >> word2) || !(iss >> word3)) {
         logger_->errStream() << me_ << "ERROR: not enough fields in BOUNDS "
-          << "line " << lcnt << std::endl;
+                             << "line " << lcnt << std::endl;
         err = 10;
         break;
-      } else if (bndid=="") {
+      } else if (bndid == "") {
         bndid = word2;
       } else if (word2 != bndid) {
-        logger_->msgStream(LogError) << me_ << "Warning: " << bndid 
-          << " ignored in line " << lcnt << std::endl;
+        logger_->msgStream(LogError)
+            << me_ << "Warning: " << bndid << " ignored in line " << lcnt
+            << std::endl;
         break;
-      } else if (colnames.find(word3)==colnames.end()) {
-        logger_->errStream() << me_ << "ERROR: column name " << word2
-          << " in line " << lcnt << " undeclared " << std::endl;
+      } else if (colnames.find(word3) == colnames.end()) {
+        logger_->errStream()
+            << me_ << "ERROR: column name " << word2 << " in line " << lcnt
+            << " undeclared " << std::endl;
         err = 10;
         break;
       }
@@ -367,16 +426,17 @@ ProblemPtr Reader::readMps(std::string fname, int &err)
       dval = INFINITY;
       if (iss >> word4) {
         dval = std::stod(word4, &echars);
-      } else if (word3=="LO" || word3=="UP" || word3=="FX") {
-        logger_->msgStream(LogError) << me_ << "ERROR: " << word3 
-          << " key requires a number in line " << lcnt << std::endl;
+      } else if (word3 == "LO" || word3 == "UP" || word3 == "FX") {
+        logger_->msgStream(LogError)
+            << me_ << "ERROR: " << word3 << " key requires a number in line "
+            << lcnt << std::endl;
         err = 10;
         break;
       }
       v = p->getVariable(colnames[word3]);
-      if (word=="LO") {
+      if (word == "LO") {
         p->changeBound(v, Lower, dval);
-      } else if (word=="UP") {
+      } else if (word == "UP") {
         if (dval < 0.0) {
           if (v->getLb() == 0.0) {
             p->changeBound(v, -INFINITY, dval);
@@ -386,43 +446,80 @@ ProblemPtr Reader::readMps(std::string fname, int &err)
         } else {
           p->changeBound(v, Upper, dval);
         }
-      } else if (word=="FX") {
+      } else if (word == "FX") {
         p->changeBound(v, dval, dval);
-      } else if (word=="FR") {
+      } else if (word == "FR") {
         p->changeBound(v, -INFINITY, INFINITY);
-      } else if (word=="MI") {
+      } else if (word == "MI") {
         p->changeBound(v, Lower, -INFINITY);
-      } else if (word=="PL") {
+      } else if (word == "PL") {
         p->changeBound(v, Upper, INFINITY);
-      } else if (word=="BV") {
+      } else if (word == "BV") {
         p->setVarType(v, Binary);
-      } else if (word=="LI") {
+      } else if (word == "LI") {
         p->setVarType(v, Integer);
         p->changeBound(v, Lower, dval);
-      } else if (word=="UI") {
+      } else if (word == "UI") {
         p->setVarType(v, Integer);
         p->changeBound(v, Upper, dval);
       } else {
         logger_->errStream() << me_ << "ERROR: unknown bound type " << word
-          << " in line " << lcnt << std::endl;
+                             << " in line " << lcnt << std::endl;
         err = 10;
         break;
       }
       break;
-    case(7):
-      break; // out of the mps file
+    case (MpsQO):  // Quadratic Objective
+      if (!(iss >> word2) || !(iss >> word3)) {
+        logger_->errStream() << me_ << "ERROR: not enough fields in QUADOBJ "
+                             << "line " << lcnt << std::endl;
+        err = 10;
+        break;
+      }
+      v = p->getVariable(colnames[word]);
+      v2 = p->getVariable(colnames[word2]);
+      dval = std::stod(word3, &echars);
+      qfo->incTerm(v, v2, dval * 0.5);
+      break;
+    case (MpsQC):  // Quadratic Constraint
+      // We should have three words in this row (var1 var2 coeff)
+      if (!(iss >> word2) || !(iss >> word3)) {
+        logger_->errStream() << me_ << "ERROR: not enough fields in QCMATRIX "
+                             << "line " << lcnt << std::endl;
+        err = 10;
+        break;
+      } else {
+        v = p->getVariable(colnames[word]);
+        v2 = p->getVariable(colnames[word2]);
+        dval = std::stod(word3, &echars);
+        qfc->incTerm(v, v2, dval);
+      }
+      break;
+    case (MpsEnd):
+      break;  // out of the mps file
     default:
+      logger_->errStream() << me_
+                           << "Unknown Section in MPS file near for line "
+                           << lcnt << std::endl;
+      err = 10;
       break;
     }
   }
   fs.close();
 
-  // put all cons in p
-  for (int i=0; i<m; ++i) {
-    f = new Function(lfs[i]);
+  // put all cons and obj in p
+  for (int i = 0; i < m; ++i) {
+
+    if (qfs[i]->getNumTerms() > 0) {
+      f = new Function(lfs[i], qfs[i]);
+    } else {
+      f = new Function(lfs[i]);
+      delete qfs[i];
+      qfs[i] = NULL;
+    }
     switch (rowtypes[i]) {
     case ('G'):
-      lb = (rowrhs[i]==INFINITY)?0.0:rowrhs[i];
+      lb = (rowrhs[i] == INFINITY) ? 0.0 : rowrhs[i];
       if (rowranges[i] < INFINITY) {
         ub = lb + fabs(rowranges[i]);
       } else {
@@ -430,7 +527,7 @@ ProblemPtr Reader::readMps(std::string fname, int &err)
       }
       break;
     case ('L'):
-      ub = (rowrhs[i]==INFINITY)?0.0:rowrhs[i];
+      ub = (rowrhs[i] == INFINITY) ? 0.0 : rowrhs[i];
       if (rowranges[i] < INFINITY) {
         lb = ub - fabs(rowranges[i]);
       } else {
@@ -438,31 +535,32 @@ ProblemPtr Reader::readMps(std::string fname, int &err)
       }
       break;
     case ('E'):
-      if (rowranges[i]==INFINITY) {
-        ub = (rowrhs[i]==INFINITY)?0.0:rowrhs[i];
+      if (rowranges[i] == INFINITY) {
+        ub = (rowrhs[i] == INFINITY) ? 0.0 : rowrhs[i];
         lb = ub;
-      } else if (rowranges[i]>0.0) {
-        lb = (rowrhs[i]==INFINITY)?0.0:rowrhs[i];
+      } else if (rowranges[i] > 0.0) {
+        lb = (rowrhs[i] == INFINITY) ? 0.0 : rowrhs[i];
         ub = lb + rowranges[i];
       } else {
-        ub = (rowrhs[i]==INFINITY)?0.0:rowrhs[i];
+        ub = (rowrhs[i] == INFINITY) ? 0.0 : rowrhs[i];
         lb = ub - rowranges[i];
       }
       break;
     default:
       lb = -INFINITY;
-      ub =  INFINITY;
+      ub = INFINITY;
       break;
     }
     if (rowtypes[i] != 'N') {
-      p->newConstraint(f,lb,ub,rownamesvec[i]);
+      p->newConstraint(f, lb, ub, rownamesvec[i]);
     } else if (p->getObjective()) {
-      logger_->msgStream(LogError) << me_ << "Warning: ignored objective " 
-        << rownamesvec[i] << std::endl;
-      delete f; f = 0;
+      logger_->msgStream(LogError) << me_ << "Warning: ignored objective "
+                                   << rownamesvec[i] << std::endl;
+      delete f;
+      f = 0;
     } else {
-      lb = (rowrhs[i] == INFINITY)?0.0:-rowrhs[i];
-      p->newObjective(f, lb, Minimize, rownamesvec[i]);
+      lb = (rowrhs[i] == INFINITY) ? 0.0 : -rowrhs[i];
+      p->newObjective(f, lb, ot, rownamesvec[i]);
     }
   }
 
@@ -479,48 +577,49 @@ int Reader::readSol(ProblemPtr p, std::string sname)
   std::ifstream fs;
   std::istringstream iss;
   std::string line, word, word2;
-  std::string rhsid="";
-  DoubleVector x(p->getNumVars(),0.0);
+  std::string rhsid = "";
+  DoubleVector x(p->getNumVars(), 0.0);
   std::vector<std::string> names;
-  std::string::size_type echars; // size of string
+  std::string::size_type echars;  // size of string
   bool found = false;
   double dval;
 
   fs.open(sname.c_str());
   if (!fs.is_open()) {
     logger_->errStream() << me_ << "could not open file " << sname
-      << " for reading" << std::endl;
+                         << " for reading" << std::endl;
     return 1;
-  } 
+  }
 
-  logger_->msgStream(LogInfo) << me_ << "reading solution file " << sname 
-    << std::endl;
+  logger_->msgStream(LogInfo)
+      << me_ << "reading solution file " << sname << std::endl;
 
-  while (0==err && std::getline(fs, line)) {
-    iss.clear();   // deletes only flags internal to iss
-    iss.str(line); // convert line into ifstream
+  while (0 == err && std::getline(fs, line)) {
+    iss.clear();    // deletes only flags internal to iss
+    iss.str(line);  // convert line into ifstream
     ++lcnt;
 
     // std::cout << line <<  std::endl;
 
     if (!(iss >> word)) {
-      continue; // empty line
+      continue;  // empty line
     }
 
-    if ('#'==word[0]) {
-      continue; // ignore line, because it is a comment
+    if ('#' == word[0]) {
+      continue;  // ignore line, because it is a comment
     }
 
     if (!(iss >> word2)) {
       logger_->errStream() << me_ << "ERROR: not enough fields in line "
-        << lcnt << " of " << sname << std::endl;
+                           << lcnt << " of " << sname << std::endl;
       err = 1;
     } else {
       // word = name-of-variable, and word2 = value
       dval = std::stod(word2, &echars);
       found = false;
       vcnt = 0;
-      for (VariableConstIterator it=p->varsBegin(); it!=p->varsEnd(); ++it) {
+      for (VariableConstIterator it = p->varsBegin(); it != p->varsEnd();
+           ++it) {
         if ((*it)->getName() == word) {
           found = true;
           x[vcnt] = dval;
@@ -528,19 +627,18 @@ int Reader::readSol(ProblemPtr p, std::string sname)
         }
         ++vcnt;
       }
-      if (false==found) {
-        logger_->msgStream(LogError) << "Variable " << word 
-                                     << " not found in the solution file "
-                                     << sname << std::endl;
+      if (false == found) {
+        logger_->msgStream(LogError)
+            << "Variable " << word << " not found in the solution file "
+            << sname << std::endl;
         err = 1;
       }
     }
   }
 
-  if (0==err) {
+  if (0 == err) {
     p->setDebugSol(x);
   }
 
   return err;
 }
-

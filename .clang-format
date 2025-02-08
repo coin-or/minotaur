@@ -1,0 +1,79 @@
+---
+########## This clang-format file is tested on:
+########## clang-format version 19.1.7 (https://github.com/llvm/llvm-project.git cd708029e0b2869e80abe31ddb175f7c35361f90)
+#
+# Author: Sumanto Kar, IIT Bombay
+#
+
+BasedOnStyle: Google
+
+ColumnLimit: 78
+IndentWidth: 2
+TabWidth: 2
+UseTab: Never
+AccessModifierOffset: -2
+NamespaceIndentation: All
+ConstructorInitializerIndentWidth: 2
+ContinuationIndentWidth: 4
+IndentCaseLabels: false
+
+ReflowComments: true
+SpacesInLineCommentPrefix:
+  Minimum: 0
+AlignTrailingComments:
+  Kind:            Always
+  OverEmptyLines:  0
+
+SpaceBeforeParens: ControlStatements
+SpacesInAngles: false
+SpacesInContainerLiterals: false
+SpacesInCStyleCastParentheses: false
+SpacesInParentheses: false
+SpacesInSquareBrackets: false
+
+PointerAlignment: Right
+ReferenceAlignment: Right
+
+BreakBeforeBraces: Custom
+BraceWrapping:
+  AfterClass: false
+  AfterControlStatement: false
+  AfterEnum: true
+  AfterFunction: true
+  AfterNamespace: false
+  AfterObjCDeclaration: true
+  AfterStruct: true
+  AfterUnion: true
+  AfterExternBlock: true
+  BeforeCatch: true
+  BeforeElse: false
+  IndentBraces: false
+AlignAfterOpenBracket: Align
+
+BreakFunctionDefinitionParameters: false
+AllowShortFunctionsOnASingleLine: InlineOnly
+
+AlignConsecutiveAssignments: false
+AlignConsecutiveDeclarations: false
+AlignEscapedNewlines: Left
+AlignOperands: true
+
+AllowShortBlocksOnASingleLine: false
+AllowShortCaseLabelsOnASingleLine: false
+AllowShortIfStatementsOnASingleLine: false
+AllowShortLoopsOnASingleLine: false
+AlwaysBreakAfterReturnType: None #TopLevelDefinitions
+AlwaysBreakBeforeMultilineStrings: false
+BreakBeforeTernaryOperators: true
+BreakConstructorInitializers: BeforeColon
+Cpp11BracedListStyle: true
+PackConstructorInitializers: Never
+DerivePointerAlignment: false
+BreakBeforeBinaryOperators: None 
+KeepEmptyLines:
+  AtStartOfBlock: true
+MaxEmptyLinesToKeep: 2
+SortIncludes: false
+BreakAfterReturnType: None
+Standard: Cpp11
+

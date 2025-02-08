@@ -1,12 +1,12 @@
-// 
+//
 //     Minotaur -- It's only 1/2 bull
-// 
-//     (C)opyright 2010 - 2024 The Minotaur Team.
-// 
+//
+//     (C)opyright 2010 - 2025 The Minotaur Team.
+//
 
 /**
  * \file CutMan1.cpp
- * \brief Implement the methods of CutMan1 class. 
+ * \brief Implement the methods of CutMan1 class.
  * \author Ashutosh Mahajan, Argonne National Laboratory
  */
 
@@ -31,11 +31,11 @@ using namespace Minotaur;
 typedef std::list<CutPtr>::const_iterator CCIter;
 typedef std::vector<ConstraintPtr>::const_iterator ConstIter;
 
-const std::string CutMan1::me_ = "CutMan1: "; 
+const std::string CutMan1::me_ = "CutMan1: ";
 
 CutMan1::CutMan1()
   : absTol_(1e-6),
-    env_(EnvPtr()),   // NULL
+    env_(EnvPtr()),  // NULL
     maxDisCutAge_(3),
     maxInactCutAge_(1),
     p_(ProblemPtr())  // NULL
@@ -62,34 +62,34 @@ CutMan1::~CutMan1()
 }
 
 
-UInt CutMan1::getNumCuts() const
+size_t CutMan1::getNumCuts() const
 {
   return getNumEnabledCuts() + getNumDisabledCuts() + getNumNewCuts();
 }
 
 
-UInt CutMan1::getNumEnabledCuts() const
+size_t CutMan1::getNumEnabledCuts() const
 {
   return enCuts_.size();
 }
 
 
-UInt CutMan1::getNumDisabledCuts() const
+size_t CutMan1::getNumDisabledCuts() const
 {
   return disCuts_.size();
 }
 
 
-UInt CutMan1::getNumNewCuts() const
+size_t CutMan1::getNumNewCuts() const
 {
- 
+
   return newCuts_.size();
 }
 
 
 void CutMan1::postSolveUpdate(ConstSolutionPtr sol, EngineStatus)
 {
-  UInt n = p_->getNumVars();
+  size_t n = p_->getNumVars();
   const double *x = new double[n];
   x = sol->getPrimal();
   CutPtr con;
@@ -121,11 +121,11 @@ void CutMan1::postSolveUpdate(ConstSolutionPtr sol, EngineStatus)
     } else {
       cpyrel.push_back(con);
     }
-  }  
+  }
   enCuts_.clear();
   enCuts_ = cpyrel;
 
-  if (del_const == true){
+  if (del_const == true) {
     p_->delMarkedCons();
   }
 
@@ -133,9 +133,9 @@ void CutMan1::postSolveUpdate(ConstSolutionPtr sol, EngineStatus)
 }
 
 
-void CutMan1::separate(ProblemPtr p, ConstSolutionPtr sol, bool *, UInt *)
+void CutMan1::separate(ProblemPtr p, ConstSolutionPtr sol, bool *, size_t *)
 {
-  UInt n = p->getNumVars();
+  size_t n = p->getNumVars();
   const double *x = new double[n];
   x = sol->getPrimal();
   CutPtr con;
@@ -143,21 +143,19 @@ void CutMan1::separate(ProblemPtr p, ConstSolutionPtr sol, bool *, UInt *)
   CutList cpypool;
   int err;
   CutInfo *cinfo;
- 
-  for (CCIter it=pool_.begin(); it != pool_.end(); ++it)
-  {
+
+  for (CCIter it = pool_.begin(); it != pool_.end(); ++it) {
     con = *it;
     err = 0;
     con->eval(x, &err);
     cinfo = con->getInfo();
-    if (viol < -absTol_) 
-    {
+    if (viol < -absTol_) {
       ++(cinfo->cntSinceViol);
       cpypool.push_back(con);
     } else if (viol > absTol_) {
       addToRel_(con, true);
     } else if (con->getInfo()->cntSinceActive <= maxDisCutAge_ ||
-               con->getInfo()->neverDelete==true) {
+               con->getInfo()->neverDelete == true) {
       cpypool.push_back(con);
     }
   }
@@ -175,13 +173,13 @@ void CutMan1::addCut(CutPtr c)
 
 void CutMan1::addCuts(CutVectorIter cbeg, CutVectorIter cend)
 {
-  for (CutVectorIter it=cbeg; it!=cend; ++it) {
+  for (CutVectorIter it = cbeg; it != cend; ++it) {
     addCut(*it);
   }
 }
 
 
-void CutMan1::addToRel_(CutPtr cut, bool )
+void CutMan1::addToRel_(CutPtr cut, bool)
 {
   enCuts_.push_back(cut);
   ++(cut->getInfo()->numActive);
@@ -205,15 +203,3 @@ void CutMan1::writeStats(std::ostream &out) const
 {
   out << me_ << "No stats availale" << std::endl;
 }
-
-
-// Local Variables: 
-// mode: c++ 
-// eval: (c-set-style "k&r") 
-// eval: (c-set-offset 'innamespace 0) 
-// eval: (setq c-basic-offset 2) 
-// eval: (setq fill-column 78) 
-// eval: (auto-fill-mode 1) 
-// eval: (setq column-number-mode 1) 
-// eval: (setq indent-tabs-mode nil) 
-// End:

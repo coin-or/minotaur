@@ -1,7 +1,7 @@
 //
 // Minotaur -- It's only half bull!
 //
-// (C)opyright 2009 - 2024 The Minotaur Team.
+// (C)opyright 2009 - 2025 The Minotaur Team.
 //
 
 /**
@@ -44,6 +44,8 @@ public:
 
   /// Solve the problem
   virtual int solve(ProblemPtr p);
+
+  virtual std::string getAbout();
 
   /// get status of the last solve.
   virtual SolveStatus getStatus();

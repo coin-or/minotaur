@@ -1,7 +1,7 @@
 //
 //    Minotaur -- It's only 1/2 bull
 //
-//    (C)opyright 2009 - 2024 The Minotaur Team.
+//    (C)opyright 2009 - 2025 The Minotaur Team.
 //
 
 /**
@@ -36,6 +36,10 @@
 #include "OsiLPEngine.h"
 #endif
 
+#ifdef USE_UNO
+#include "UnoEngine.h"
+#endif
+
 #ifdef USE_FILTERSQP
 #include "FilterSQPEngine.h"
 #endif
@@ -53,14 +57,12 @@ using namespace Minotaur;
 EngineFactory::EngineFactory()
   : env_(EnvPtr())
 {
-
 }
 
 
 EngineFactory::EngineFactory(EnvPtr env)
   : env_(env)
 {
-
 }
 
 
@@ -74,12 +76,12 @@ EngineFactory::~EngineFactory()
 LPEnginePtr EngineFactory::getLPEngine()
 {
 #ifdef USE_CPX
-  if (env_->getOptions()->findString("lp_engine")->getValue()=="Cplex") {
+  if (env_->getOptions()->findString("lp_engine")->getValue() == "Cplex") {
     return ((CplexLPEnginePtr) new CplexLPEngine(env_));
   }
 #endif
 #ifdef USE_OSILP
-  if (env_->getOptions()->findString("lp_engine")->getValue()!="none") {
+  if (env_->getOptions()->findString("lp_engine")->getValue() != "none") {
     return ((OsiLPEnginePtr) new OsiLPEngine(env_));
   }
 #endif
@@ -90,12 +92,12 @@ LPEnginePtr EngineFactory::getLPEngine()
 MILPEnginePtr EngineFactory::getMILPEngine()
 {
 #ifdef USE_CBC
-  if (env_->getOptions()->findString("milp_engine")->getValue()=="Cbc") {
+  if (env_->getOptions()->findString("milp_engine")->getValue() == "Cbc") {
     return ((CbcEnginePtr) new CbcEngine(env_));
   }
 #endif
 #ifdef USE_CPX
-  if (env_->getOptions()->findString("milp_engine")->getValue()=="Cplex") {
+  if (env_->getOptions()->findString("milp_engine")->getValue() == "Cplex") {
     return ((CplexMILPEnginePtr) new CplexMILPEngine(env_));
   }
 #endif
@@ -106,12 +108,12 @@ MILPEnginePtr EngineFactory::getMILPEngine()
 QPEnginePtr EngineFactory::getQPEngine()
 {
 #ifdef USE_BQPD
-  if (env_->getOptions()->findString("qp_engine")->getValue()=="bqpd") {
+  if (env_->getOptions()->findString("qp_engine")->getValue() == "bqpd") {
     return ((BqpdEnginePtr) new BqpdEngine(env_));
   }
 #endif
 #ifdef USE_QPOASES
-  if (env_->getOptions()->findString("qp_engine")->getValue()=="qpOASES") {
+  if (env_->getOptions()->findString("qp_engine")->getValue() == "qpOASES") {
     return ((qpOASESEnginePtr) new qpOASESEngine(env_));
   }
 #endif
@@ -121,16 +123,34 @@ QPEnginePtr EngineFactory::getQPEngine()
 
 NLPEnginePtr EngineFactory::getNLPEngine()
 {
-  if (env_->getOptions()->findString("nlp_engine")->getValue()=="filter-sqp") {
+  if (env_->getOptions()->findString("nlp_engine")->getValue() ==
+      "filter-sqp") {
 #ifdef USE_FILTERSQP
     return ((FilterSQPEnginePtr) new FilterSQPEngine(env_));
 #endif
 #ifdef USE_IPOPT
     return ((IpoptEnginePtr) new IpoptEngine(env_));
+#endif
+#ifdef USE_UNO
+    return ((UnoEnginePtr) new UnoEngine(env_));
 #endif
   }
 
-  if (env_->getOptions()->findString("nlp_engine")->getValue()=="ipopt") {
+  if (env_->getOptions()->findString("nlp_engine")->getValue() == "ipopt") {
+#ifdef USE_IPOPT
+    return ((IpoptEnginePtr) new IpoptEngine(env_));
+#endif
+#ifdef USE_FILTERSQP
+    return ((FilterSQPEnginePtr) new FilterSQPEngine(env_));
+#endif
+#ifdef USE_UNO
+    return ((UnoEnginePtr) new UnoEngine(env_));
+#endif
+  }
+  if (env_->getOptions()->findString("nlp_engine")->getValue() == "uno") {
+#ifdef USE_UNO
+    return ((UnoEnginePtr) new UnoEngine(env_));
+#endif
 #ifdef USE_IPOPT
     return ((IpoptEnginePtr) new IpoptEngine(env_));
 #endif
@@ -138,16 +158,6 @@ NLPEnginePtr EngineFactory::getNLPEngine()
     return ((FilterSQPEnginePtr) new FilterSQPEngine(env_));
 #endif
   }
-  return (NLPEnginePtr()); // NULL
+  return (NLPEnginePtr());  // NULL
 }
 
-// Local Variables:
-// mode: c++
-// eval: (c-set-style "k&r")
-// eval: (c-set-offset 'innamespace 0)
-// eval: (setq c-basic-offset 2)
-// eval: (setq fill-column 78)
-// eval: (auto-fill-mode 1)
-// eval: (setq column-number-mode 1)
-// eval: (setq indent-tabs-mode nil)
-// End:

@@ -1,7 +1,7 @@
 // 
 //     Minotaur -- It's only 1/2 bull
 // 
-//     (C)opyright 2010 - 2024 The Minotaur Team.
+//     (C)opyright 2010 - 2025 The Minotaur Team.
 // 
 
 /**
@@ -604,7 +604,7 @@ void CxQuadHandler::getBranchingCandidates(RelaxationPtr,
   VariablePtr x0, x1;
   UIntSet cand_inds;
   std::pair<UIntSet::iterator, bool> ret;
-#if DEBUG
+#if MDBUG
   bool check;
 #endif
 
@@ -644,12 +644,12 @@ void CxQuadHandler::getBranchingCandidates(RelaxationPtr,
     x1val = x[x1->getIndex()];
     yval  = x[bil->getAux()->getIndex()];
     if (bil->isViolated(x0val, x1val, yval, eTol_)) {
-#if DEBUG
+#if MDBUG
       check = false;
 #endif
       // If a variable is at bounds, then it is not a candidate.
       if (x0val < x0->getUb() - eTol_ && x0val > x0->getLb() + eTol_) {
-#if DEBUG
+#if MDBUG
         check = true;
 #endif
         ret = cand_inds.insert(x0->getIndex());
@@ -660,7 +660,7 @@ void CxQuadHandler::getBranchingCandidates(RelaxationPtr,
       }
 
       if (x1val < x1->getUb() - eTol_ && x1val > x1->getLb() + eTol_) {
-#if DEBUG
+#if MDBUG
         check = true;
 #endif
         ret = cand_inds.insert(x1->getIndex());
@@ -676,7 +676,7 @@ void CxQuadHandler::getBranchingCandidates(RelaxationPtr,
       //   << " = " << yval << std::endl;
       //  rel->write(std::cout);
       //}
-#if DEBUG
+#if MDBUG
       assert (check); // If both variables are at bounds, the McCormick 
                       // inequalities can not be violated.
 #endif
@@ -1210,13 +1210,3 @@ VariablePtr McCormick::getOtherX(ConstVariablePtr x) const
 }
 
 
-// Local Variables: 
-// mode: c++ 
-// eval: (c-set-style "k&r") 
-// eval: (c-set-offset 'innamespace 0) 
-// eval: (setq c-basic-offset 2) 
-// eval: (setq fill-column 78) 
-// eval: (auto-fill-mode 1) 
-// eval: (setq column-number-mode 1) 
-// eval: (setq indent-tabs-mode nil) 
-// End:

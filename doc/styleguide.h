@@ -1,7 +1,7 @@
 // 
 //     MINOTAUR -- It's only 1/2 bull
 // 
-//     (C)opyright 2009 -- 2024 The MINOTAUR Team.
+//     (C)opyright 2009 - 2025 The Minotaur Team.
 // 
 
 //
@@ -59,5 +59,13 @@ The most important guideline is to be consistent!
   - Do not throw exceptions. We do not know what to do with them.
   - Code in base/ directory should not include any files from interfaces/
     solvers/ or engines/ directories
-*/
 
+<b>Code Formatting Guidelines</b>
+  - Write the code in a file using an editor. 
+  - Save the file without formatting.  
+  - Run 'clang-format' using the following command:
+      clang-format --style=file -i file_name.cpp\n
+  - Review the formatted code.
+  - Compile, build and run to test its functionality. 
+  - Commit the file.
+*/

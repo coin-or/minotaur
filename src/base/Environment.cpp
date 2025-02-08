@@ -1,7 +1,7 @@
 //
 //     Minotaur -- It's only 1/2 bull
 //
-//     (C)opyright 2008 - 2024 The Minotaur Team.
+//     (C)opyright 2008 - 2025 The Minotaur Team.
 //
 
 /**
@@ -20,6 +20,7 @@
 
 #include "Logger.h"
 #include "MinotaurConfig.h"
+#include "Operations.h"
 #include "Option.h"
 #include "Timer.h"
 #include "Version.h"
@@ -822,12 +823,12 @@ const Timer* Environment::getTimer()
 
 //Adding Code for wall time
 
-double Environment::getwTime()
+double Environment::getWTime()
 {
     return timer_->wQuery();
 }
 
-const Timer* Environment::getwTimer()
+const Timer* Environment::getWTimer()
 {
   return timer_;
 }
@@ -909,103 +910,7 @@ void Environment::readConfigFile_(std::string fname, UInt& num_p)
   }
   istr.close();
 }
-///////////////
-// void Environment::readOptions(int argc, char** argv)
-// {
-//   std::string name, s_value;
-//   int leading_dashes;
-//   UInt num_p = 0; // number of filenames provided for solve.
-//   BoolOptionPtr b_option;
-//   IntOptionPtr i_option;
-//   DoubleOptionPtr d_option;
-//   StringOptionPtr s_option;
-//   FlagOptionPtr f_option;
-//   std::string offset = "  ";
-//   std::ostringstream ostr;
 
-//   if(argc < 2) {
-//     logger_->msgStream(LogInfo)
-//         << me_ << "User provided no options." << std::endl;
-//   } else {
-//     ostr << me_ << "User provided options:" << std::endl;
-//   }
-//   for(int i = 1; i < argc; ++i) {
-//     name = argv[i];
-
-//     // removing leading dashes
-//     leading_dashes = 0;
-//     leading_dashes = removeDashes_(name);
-//     assert(name.size() > 0);
-
-//     if(leading_dashes == 0) {
-//       // looks like an name of instance
-//       s_option = options_->findString("problem_file");
-//       s_option->setValue(name);
-//       ++num_p;
-//       ostr << offset << s_option->getName() << " = " << s_option->getValue()
-//            << std::endl;
-//     } else {
-//       // looks like an option. remove leading minotaur dot, if any.
-//       removeMinotaurPrepend_(name);
-
-//       // we have an option for which we need an argument also. First check
-//       // if the option contains an '=' sign followed by a string.
-//       s_value = separateEqualToArg_(name);
-
-//       // find if it is a recognized option
-//       findOption_(name, b_option, i_option, d_option, s_option, f_option);
-
-//       if(f_option) { // true means we have a known flag.
-//         if(s_value == "") {
-//           f_option->setValue(true);
-//         } else {
-//           f_option->setValue(getBoolValue_(s_value));
-//         }
-//         ostr << offset << f_option->getName() << " = " << f_option->getValue()
-//              << std::endl;
-//       } else {
-//         if(s_value == "" && (b_option || i_option || d_option || s_option)) {
-//           // the next argv is the argument
-//           assert(i + 1 < argc); // throw exception instead
-//           ++i;
-//           s_value = argv[i];
-//         }
-//         convertAndAddOneOption_(b_option, i_option, d_option, s_option,
-//                                 f_option, name, s_value, ostr);
-//         if(s_option && "config_file" == s_option->getName()) {
-//           readConfigFile_(s_option->getValue(), num_p);
-//         }
-//       }
-//     }
-//   }
-//   if(argc > 1) {
-//     ostr << me_ << "End of user provided options." << std::endl << std::endl;
-//   }
-
-//   // update the log level if set by the user
-//   logger_->setMaxLevel(
-//       (LogLevel)getOptions()->findInt("log_level")->getValue());
-//   // display all the new options set.
-//   logger_->msgStream(LogInfo) << ostr.str();
-
-//   if(num_p > 1) {
-//     logger_->msgStream(LogInfo)
-//         << me_ << "more than one filename given as input." << std::endl
-//         << me_ << "Only file \""
-//         << options_->findString("problem_file")->getValue()
-//         << "\" will be read." << std::endl
-//         << std::endl;
-//   }
-// #if SPEW
-//   if(num_p == 0) {
-//     logger_->msgStream(LogInfo)
-//         << me_ << "No filename provided as input." << std::endl;
-//   }
-// #endif
-// }
-
-#include <algorithm>  // For std::transform
-#include <cctype>     // For std::tolower
 
 void Environment::readOptions(int argc, char** argv)
 {
@@ -1020,16 +925,7 @@ void Environment::readOptions(int argc, char** argv)
   std::string offset = "  ";
   std::ostringstream ostr;
 
-  auto toLower = [](std::string &str) {
-    std::transform(str.begin(), str.end(), str.begin(), [](unsigned char c) { return std::tolower(c); });
-
-    // Special case for "c++"
-    if (str == "c++") {
-      str = "C++";
-    }
-  };
-
-  auto isExceptionOption = [](const std::string &optionName) {
+  auto isCaseSenseOpt = [](const std::string &optionName) {
     return optionName == "config_file" ||
            optionName == "debug_sol" ||
            optionName == "problem_file" ||
@@ -1038,7 +934,8 @@ void Environment::readOptions(int argc, char** argv)
 
   if(argc < 2) {
     logger_->msgStream(LogInfo)
-        << me_ << "User provided no options." << std::endl;
+        << me_ << "User provided no options." << std::endl << std::endl; 
+    // deliberately std::endl two times
   } else {
     ostr << me_ << "User provided options:" << std::endl;
   }
@@ -1086,8 +983,8 @@ void Environment::readOptions(int argc, char** argv)
         }
         
         // Convert to lowercase if it's not one of the exceptions
-        if (s_option && !isExceptionOption(s_option->getName())) {
-          toLower(s_value);
+        if (s_option && !isCaseSenseOpt(s_option->getName())) {
+          toLowerCase(s_value);
         }
 
         convertAndAddOneOption_(b_option, i_option, d_option, s_option,
@@ -1183,13 +1080,3 @@ void Environment::setLogLevel(LogLevel l)
   logger_->setMaxLevel(l);
 }
 
-// Local Variables:
-// mode: c++
-// eval: (c-set-style "k&r")
-// eval: (c-set-offset 'innamespace 0)
-// eval: (setq c-basic-offset 2)
-// eval: (setq fill-column 78)
-// eval: (auto-fill-mode 1)
-// eval: (setq column-number-mode 1)
-// eval: (setq indent-tabs-mode nil)
-// End:

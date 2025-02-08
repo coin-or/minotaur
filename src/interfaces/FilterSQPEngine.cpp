@@ -1,7 +1,7 @@
 // 
 //     Minotaur -- It's only 1/2 bull
 // 
-//     (C)opyright 2010 - 2024 The Minotaur Team.
+//     (C)opyright 2010 - 2025 The Minotaur Team.
 // 
 
 /**
@@ -770,7 +770,7 @@ void FilterSQPEngine::setStructure_()
   // }
 
   // check if iRow is non-decreasing. Complain otherwise and stop.
-#if DEBUG
+#if MDBUG
   if (jac_nnzs>0) {
     for (UInt i=0; i<jac_nnzs-1; ++i) {
       assert(iRow[i] <= iRow[i+1]);
@@ -823,7 +823,7 @@ void FilterSQPEngine::setStructure_()
     ++jCol[i];
     //std::cout << iRow[i] << ", " << jCol[i] << std::endl;
   }
-#if DEBUG
+#if MDBUG
   if (hess_nnzs>0) {
     for (UInt i=0; i<hess_nnzs-1; ++i) {
       assert(jCol[i] <= jCol[i+1]);
@@ -1060,13 +1060,3 @@ void FilterSQPEngine::writeStats(std::ostream &out) const
 }
 
 
-// Local Variables: 
-// mode: c++ 
-// eval: (c-set-style "k&r") 
-// eval: (c-set-offset 'innamespace 0) 
-// eval: (setq c-basic-offset 2) 
-// eval: (setq fill-column 78) 
-// eval: (auto-fill-mode 1) 
-// eval: (setq column-number-mode 1) 
-// eval: (setq indent-tabs-mode nil) 
-// End:

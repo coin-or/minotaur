@@ -1,7 +1,7 @@
 //
 //    Minotaur -- It's only 1/2 bull
 //
-//    (C)opyright 2009 - 2024 The Minotaur Team.
+//    (C)opyright 2009 - 2025 The Minotaur Team.
 //
 
 /**
@@ -576,7 +576,7 @@ int BnbPar::solve(ProblemPtr p)
     parbab = createParBab_(numThreads, nlp_e, relCopy, nodePrcssr, parNodeRlxr, handlersCopy, eCopy);
   }
   //edit wtime
-  wallTimeStart = env_->getwTime();  
+  wallTimeStart = env_->getWTime();  
   if (true==env_->getOptions()->findBool("bnbpar_deter_mode")->getValue()) {
     //assert(!"Deterministic mode not available right now!");
     parbab->parsolveSync(parNodeRlxr, nodePrcssr, numThreads);
@@ -647,9 +647,7 @@ CLEANUP:
     delete[] parNodeRlxr;
   }
   if (relCopy) {
-    delete[] relCopy;
-  }
-  if (eCopy) {
+    delete[] relCopy; } if (eCopy) {
     delete[] eCopy;
   }
   if (handlersCopy) {
@@ -688,7 +686,7 @@ void BnbPar::writeParBnbStatus_(ParBranchAndBound *parbab, double wallTimeStart,
       << std::endl
       << me_ << "gap percentage = " << parbab->getPerGap() << std::endl
       << me_ << "wall time used (s) = " << std::fixed << std::setprecision(2)
-      << parbab->getWallTime() - wallTimeStart << std::endl
+      << env_->getWTime() - wallTimeStart << std::endl
       << me_ << "process time used (s) = " << std::fixed << std::setprecision(2)
       << (double)(clock() - clockTimeStart)/CLOCKS_PER_SEC << std::endl
       << me_ << "status of branch-and-bound: " 
@@ -725,13 +723,3 @@ void BnbPar::writeNLPStats_(std::string name, std::vector<double> stats) {
 }
 
 
-// Local Variables: 
-// mode: c++ 
-// eval: (c-set-style "k&r") 
-// eval: (c-set-offset 'innamespace 0) 
-// eval: (setq c-basic-offset 2) 
-// eval: (setq fill-column 78) 
-// eval: (auto-fill-mode 1) 
-// eval: (setq column-number-mode 1) 
-// eval: (setq indent-tabs-mode nil) 
-// End:

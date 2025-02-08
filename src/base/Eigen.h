@@ -1,8 +1,8 @@
-// 
+//
 //     Minotaur -- It's only 1/2 bull
-// 
-//     (C)opyright 2008 - 2024 The Minotaur Team.
-// 
+//
+//     (C)opyright 2008 - 2025 The Minotaur Team.
+//
 
 /**
  * \file Eigen.h
@@ -21,8 +21,8 @@
 namespace Minotaur {
 
   class QuadraticFunction;
-  typedef QuadraticFunction* QuadraticFunctionPtr;
-  typedef const QuadraticFunction* ConstQuadraticFunctionPtr;
+  typedef QuadraticFunction *QuadraticFunctionPtr;
+  typedef const QuadraticFunction *ConstQuadraticFunctionPtr;
   //class EigenVector;
   //typedef LinearFunction EigenVector;
   //typedef LinearFunctionPtr EigenVectorPtr;
@@ -30,10 +30,10 @@ namespace Minotaur {
   typedef std::vector<EigenPair>::const_iterator EigenPairConstIterator;
 
   class Eigen;
-  typedef Eigen* EigenPtr;
-  
+  typedef Eigen *EigenPtr;
+
   // /**
-  // In Minotaur, EigenVectors are used only in the context of quadratic 
+  // In Minotaur, EigenVectors are used only in the context of quadratic
   // functions. Thus an Eigen Vector is just a linear function.
   // */
   // class EigenVector {
@@ -68,7 +68,6 @@ namespace Minotaur {
   // */
   class EigenCalculator {
   public:
-
     /// Default constructor
     EigenCalculator();
 
@@ -80,10 +79,10 @@ namespace Minotaur {
 
     /// Calculate EigenValues for a full dense matrix. H is a square symmetric
     /// array of arrays. Its size is nxn.
-    EigenPtr findValues(int n, double** H);
+    EigenPtr findValues(int n, double **H);
 
     /// Calculate EigenVectors as well
-    EigenPtr findVectors(ConstQuadraticFunctionPtr qf); 
+    EigenPtr findVectors(ConstQuadraticFunctionPtr qf);
 
     // /**
     // Let qf = x'Ax, lf = cx. First find eigen vectors of the hessian of
@@ -91,7 +90,7 @@ namespace Minotaur {
     // diagonal matrix with i-th diagonal element being the square root of
     // i-th eigen value. E has entries 1,-1 along the diagonal. Let y =
     // RQ'x. Then c'x = c'QR^(-1)y = b'y.  b = R^(-1)Q'c. This function
-    // calculates Q, RER, b. 
+    // calculates Q, RER, b.
     //
     // The "x" vectors in qf and lf are not the same. e.g.  x0*x0 + x1*x1 +
     // 2x0*x1 + 2x0 + x2 + x3.  here lf does not contain x1 and has extra
@@ -101,17 +100,15 @@ namespace Minotaur {
     // terms that have negative eigen values.  lin_terms will have
     // x0-x1+x2+x3 and cb = -0.25.
     // */
-    void getSumOfSquares (
-                          std::vector<LinearFunctionPtr> & p_terms, 
-                          std::vector<LinearFunctionPtr> & n_terms,
-                          std::vector<double> & p_const,
-                          std::vector<double> & n_const,
-                          LinearFunctionPtr & lin_terms, double & c,
-                          ConstQuadraticFunctionPtr qf,
-                          ConstLinearFunctionPtr lf);
+    void getSumOfSquares(std::vector<LinearFunctionPtr> &p_terms,
+                         std::vector<LinearFunctionPtr> &n_terms,
+                         std::vector<double> &p_const,
+                         std::vector<double> &n_const,
+                         LinearFunctionPtr &lin_terms, double &c,
+                         ConstQuadraticFunctionPtr qf,
+                         ConstLinearFunctionPtr lf);
 
   private:
-
     /**
     \brief The quadratic function for whose Hessian we wish to find the eigen
     values.
@@ -119,7 +116,7 @@ namespace Minotaur {
     ConstQuadraticFunctionPtr qf_;
 
     /// Dimension of the square matrix
-    UInt n_;
+    size_t n_;
 
     /**
     \brief The square matrix is stored as a single array. The element A[i,j]
@@ -133,13 +130,13 @@ namespace Minotaur {
     /**
     The absolute error tolerance for the eigenvalues.  An approximate
     eigenvalue is accepted as converged when it is determined to lie in an
-    interval [a,b] of width less than or equal to 
+    interval [a,b] of width less than or equal to
     ABSTOL + EPS *   max(|a|,|b|)
     */
     double abstol_;
 
     /// N for eigen values only, V for values and vectors.
-    char findVectors_; 
+    char findVectors_;
 
     /// Array where the eigen vectors are stored by LAPACK.
     double *w_;
@@ -153,22 +150,22 @@ namespace Minotaur {
     // the exact value of M is not known in advance and an upper bound must
     // be used.  Supplying N columns is always safe.
     // */
-    double *z_;        
+    double *z_;
 
     // /**
-    // The i-th eigenvector is nonzero only in elements 
+    // The i-th eigenvector is nonzero only in elements
     // ISUPPZ( 2*i-1 ) through ISUPPZ( 2*i ).
     // */
-    int *isuppz_;    
+    int *isuppz_;
 
     /// A map of what is the  index in matrix A_ of a variable
     std::map<ConstVariablePtr, UInt, CompareVariablePtr> indices_;
 
-    /// What variable does column 'i' of matrix A_ represent. 
+    /// What variable does column 'i' of matrix A_ represent.
     std::vector<ConstVariablePtr> vars_;
 
     /// Dot product of coefficients of two linear functions
-    double getDotProduct_(ConstLinearFunctionPtr lf1, 
+    double getDotProduct_(ConstLinearFunctionPtr lf1,
                           ConstLinearFunctionPtr lf2);
 
     /// Call Lapack routines to calculate the values.
@@ -233,16 +230,5 @@ namespace Minotaur {
     UInt pos_;
   };
 
-}
+}  //namespace Minotaur
 #endif
-
-// Local Variables: 
-// mode: c++ 
-// eval: (c-set-style "k&r") 
-// eval: (c-set-offset 'innamespace 0) 
-// eval: (setq c-basic-offset 2) 
-// eval: (setq fill-column 78) 
-// eval: (auto-fill-mode 1) 
-// eval: (setq column-number-mode 1) 
-// eval: (setq indent-tabs-mode nil) 
-// End:

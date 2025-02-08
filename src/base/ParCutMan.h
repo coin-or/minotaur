@@ -1,7 +1,7 @@
 //
 //     Minotaur -- It's only 1/2 bull
 //
-//     (C)opyright 2010 - 2024 The Minotaur Team.
+//     (C)opyright 2010 - 2025 The Minotaur Team.
 //
 
 /**
@@ -20,122 +20,111 @@
 
 namespace Minotaur {
 
-/**
- * \brief Derived class for managing cuts. Add and remove cuts based on
- * priority and violation.
- */
-class ParCutMan : public CutManager {
-
-public:
-  /// Empty constructor.
-  ParCutMan();
-
   /**
-   * \brief Default constructor.
-   *
-   * \param [in] env Minotaur Environment pointer.
-   * \param [in] p Problem pointer to which cuts will be added or deleted.
+   * \brief Derived class for managing cuts. Add and remove cuts based on
+   * priority and violation.
    */
-  ParCutMan(EnvPtr env, ProblemPtr p);
+  class ParCutMan : public CutManager {
 
-  /// Destroy.
-  ~ParCutMan();
+  public:
+    /// Empty constructor.
+    ParCutMan();
 
-  // Base class method.
-  void addCut(CutPtr c);
-  
-  void addCutToPool(CutPtr cut);
-  
-  std::vector<ConstraintPtr > getPoolCons();
+    /**
+     * \brief Default constructor.
+     *
+     * \param [in] env Minotaur Environment pointer.
+     * \param [in] p Problem pointer to which cuts will be added or deleted.
+     */
+    ParCutMan(EnvPtr env, ProblemPtr p);
 
-  ConstraintPtr addCut(ProblemPtr, FunctionPtr, double, double, 
-                       bool, bool) {return ConstraintPtr();};
+    /// Destroy.
+    ~ParCutMan();
 
-  // Base class method.
-  void addCuts(CutVectorIter cbeg, CutVectorIter cend);
+    // Base class method.
+    void addCut(CutPtr c);
 
-  // Base class method.
-  UInt getNumCuts() const;
+    void addCutToPool(CutPtr cut);
 
-  // Base class method.
-  UInt getNumEnabledCuts() const;
+    std::vector<ConstraintPtr> getPoolCons();
 
-  // Base class method.
-  UInt getNumDisabledCuts() const;
+    ConstraintPtr addCut(ProblemPtr, FunctionPtr, double, double, bool, bool)
+    {
+      return ConstraintPtr();
+    };
 
-  // Base class method.
-  UInt getNumNewCuts() const;
-  
-  // Base class method.
-  void postSolveUpdate(ConstSolutionPtr sol, EngineStatus eng_status);
+    // Base class method.
+    void addCuts(CutVectorIter cbeg, CutVectorIter cend);
 
-  // Base class method.
-  void separate(ProblemPtr p, ConstSolutionPtr sol, bool *separated,
-                UInt *n_added);
+    // Base class method.
+    size_t getNumCuts() const;
 
-  // Base class method.
-  void write(std::ostream &out) const;
+    // Base class method.
+    size_t getNumEnabledCuts() const;
 
-  // Base class method.
-  void writeStats(std::ostream &out) const;
+    // Base class method.
+    size_t getNumDisabledCuts() const;
 
-private:
+    // Base class method.
+    size_t getNumNewCuts() const;
 
-  /// Absolute tolerance limit for comparing double values.
-  double absTol_;
+    // Base class method.
+    void postSolveUpdate(ConstSolutionPtr sol, EngineStatus eng_status);
 
-  /// Cut storage for disabled cuts, i.e., those not added to the problem.
-  CutList disCuts_;
+    // Base class method.
+    void separate(ProblemPtr p, ConstSolutionPtr sol, bool *separated,
+                  size_t *n_added);
 
-  /// Cut storage for enabled cuts, i.e. those added to the problem.
-  CutList enCuts_;
+    // Base class method.
+    void write(std::ostream &out) const;
 
-  /// Environment.
-  EnvPtr env_;
+    // Base class method.
+    void writeStats(std::ostream &out) const;
 
-  /// For logging.
-  LoggerPtr logger_;
+  private:
+    /// Absolute tolerance limit for comparing double values.
+    double absTol_;
 
-  /// Maximum number of iterations before which a disabled cut is deleted. 
-  UInt maxDisCutAge_;
+    /// Cut storage for disabled cuts, i.e., those not added to the problem.
+    CutList disCuts_;
 
-  /**
-   * \brief Maximum number of iterations before which an inactive cut is moved out
-   * of the problem.
-   */
-  UInt maxInactCutAge_;
+    /// Cut storage for enabled cuts, i.e. those added to the problem.
+    CutList enCuts_;
 
-  /// For logging.
-  const static std::string me_;
+    /// Environment.
+    EnvPtr env_;
 
-  /**
-   * Cut storage for new cuts, i.e. those sent to pool after previous
-   * separate or postSolveUpdate().
-   */
-  CutList newCuts_;
+    /// For logging.
+    LoggerPtr logger_;
 
-  /// The relaxation problem that cuts are added to and deleted from.
-  ProblemPtr p_;
+    /// Maximum number of iterations before which a disabled cut is deleted.
+    size_t maxDisCutAge_;
 
-  CutList pool_;
+    /**
+     * \brief Maximum number of iterations before which an inactive cut is
+     * moved out of the problem.
+     */
+    size_t maxInactCutAge_;
 
-  void addToRel_(CutPtr cons, bool new_cut);
+    /// For logging.
+    const static std::string me_;
 
-  void addToPool_(CutPtr cons);
+    /**
+     * Cut storage for new cuts, i.e. those sent to pool after previous
+     * separate or postSolveUpdate().
+     */
+    CutList newCuts_;
 
-};
+    /// The relaxation problem that cuts are added to and deleted from.
+    ProblemPtr p_;
 
-//typedef ParCutMan * ParCutManPtr;
-}
+    CutList pool_;
+
+    void addToRel_(CutPtr cons, bool new_cut);
+
+    void addToPool_(CutPtr cons);
+  };
+
+  //typedef ParCutMan * ParCutManPtr;
+}  //namespace Minotaur
 #endif
-
-// Local Variables: 
-// mode: c++ 
-// eval: (c-set-style "k&r") 
-// eval: (c-set-offset 'innamespace 0) 
-// eval: (setq c-basic-offset 2) 
-// eval: (setq fill-column 78) 
-// eval: (auto-fill-mode 1) 
-// eval: (setq column-number-mode 1) 
-// eval: (setq indent-tabs-mode nil) 
-// End:

@@ -1,8 +1,8 @@
-// 
+//
 //     Minotaur -- It's only 1/2 bull
-// 
-//     (C)opyright 2009 - 2024 The Minotaur Team.
-// 
+//
+//     (C)opyright 2009 - 2025 The Minotaur Team.
+//
 
 /**
  * \file Variable.cpp
@@ -19,35 +19,43 @@
 
 using namespace Minotaur;
 
-Variable::Variable() 
+Variable::Variable()
 {
   cons_.clear();
 }
 
 
-Variable::Variable(UInt id, UInt index, double lb, double ub, VariableType vtype, 
-                   std::string name)
-: ftype_(Constant),
-  id_(id), 
-  index_(index),
-  lb_(lb), 
-  name_(name),
-  initVal_(0.0),
-  state_(NormalVar), 
-  stype_(VarOrig),
-  ub_(ub),
-  vtype_(vtype),
-  itmp_(0) 
+Variable::Variable(UInt id, UInt index, double lb, double ub,
+                   VariableType vtype, std::string name)
+  : ftype_(Constant),
+    id_(id),
+    index_(index),
+    lb_(lb),
+    name_(name),
+    initVal_(0.0),
+    state_(NormalVar),
+    stype_(VarOrig),
+    ub_(ub),
+    vtype_(vtype),
+    itmp_(0)
 {
   cons_.clear();
+  if (Binary == vtype_) {
+    if (lb_ < 0.0) {
+      lb_ = 0.0;
+    }
+    if (ub_ > 1.0) {
+      ub_ = 1.0;
+    }
+  }
 }
 
 
 VariablePtr Variable::clone(UInt id) const
 {
   // id_ is not copied. id is used instead.
-  VariablePtr newvar = (VariablePtr) new Variable(id, index_, lb_, ub_, vtype_, 
-                                                  name_);
+  VariablePtr newvar =
+      (VariablePtr) new Variable(id, index_, lb_, ub_, vtype_, name_);
   newvar->stype_ = stype_;
   newvar->initVal_ = initVal_;
   return newvar;
@@ -78,9 +86,9 @@ ConstrSet::iterator Variable::consEnd()
 }
 
 
-const std::string Variable::getName() const 
+const std::string Variable::getName() const
 {
-    return name_;
+  return name_;
 }
 
 
@@ -110,6 +118,20 @@ void Variable::setItmp(UInt itmp)
   itmp_ = itmp;
 }
 
+void Variable::setType_(VariableType vtype)
+{
+  vtype_ = vtype;
+  if (Binary == vtype) {
+    if (lb_ < 0.0) {
+      lb_ = 0.0;
+    }
+    if (ub_ > 1.0) {
+      ub_ = 1.0;
+    }
+  }
+  return;
+}
+
 void Variable::write(std::ostream &out) const
 {
   out << "var " << getName() << " ";
@@ -121,23 +143,23 @@ void Variable::write(std::ostream &out) const
     out << "<= " << ub_ << " ";
   }
   switch (vtype_) {
-   case (Binary):
-     out << " binary ";
-     break;
-   case (Continuous):
-     break;
-   case (Integer):
-     out << " integer ";
-     break;
-   case (ImplBin):
-     out << " binary ";
-     break;
-   case (ImplInt):
-     out << " integer ";
-     break;
-   default:
-     out << " unknown type ";
-     break;
+  case (Binary):
+    out << " binary ";
+    break;
+  case (Continuous):
+    break;
+  case (Integer):
+    out << " integer ";
+    break;
+  case (ImplBin):
+    out << " binary ";
+    break;
+  case (ImplInt):
+    out << " integer ";
+    break;
+  default:
+    out << " unknown type ";
+    break;
   }
   out << ";" << std::endl;
   return;
@@ -150,20 +172,8 @@ void Variable::writeConstraintMap(std::ostream &out) const
   out << std::endl << "in constraint set for variable " << getName();
   out << ", number of constraints = " << cons_.size() << ": " << std::endl;
 
-  for (cIter=cons_.begin(); cIter!=cons_.end(); ++cIter) {
-    out <<  (*cIter)->getName();
+  for (cIter = cons_.begin(); cIter != cons_.end(); ++cIter) {
+    out << (*cIter)->getName();
     out << std::endl;
   }
 }
-
-
-// Local Variables: 
-// mode: c++ 
-// eval: (c-set-style "k&r") 
-// eval: (c-set-offset 'innamespace 0) 
-// eval: (setq c-basic-offset 2) 
-// eval: (setq fill-column 78) 
-// eval: (auto-fill-mode 1) 
-// eval: (setq column-number-mode 1) 
-// eval: (setq indent-tabs-mode nil) 
-// End:

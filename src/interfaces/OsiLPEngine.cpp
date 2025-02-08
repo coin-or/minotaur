@@ -1,7 +1,7 @@
 //
 //     Minotaur -- It's only 1/2 bull
 //
-//     (C)opyright 2008 - 2024 The Minotaur Team.
+//     (C)opyright 2008 - 2025 The Minotaur Team.
 //
 
 /**
@@ -52,16 +52,22 @@ const std::string OsiLPEngine::me_ = "OsiLPEngine: ";
 // ----------------------------------------------------------------------- //
 // ----------------------------------------------------------------------- //
 
-OsiLPWarmStart::OsiLPWarmStart() : coinWs_(0), mustDelete_(true) {}
+OsiLPWarmStart::OsiLPWarmStart()
+  : coinWs_(0),
+    mustDelete_(true)
+{
+}
 
-OsiLPWarmStart::~OsiLPWarmStart() {
+OsiLPWarmStart::~OsiLPWarmStart()
+{
   if (coinWs_ && mustDelete_) {
     delete coinWs_;
     coinWs_ = 0;
   }
 }
 
-bool OsiLPWarmStart::hasInfo() {
+bool OsiLPWarmStart::hasInfo()
+{
   if (coinWs_) {
     return true;
   } else {
@@ -69,10 +75,14 @@ bool OsiLPWarmStart::hasInfo() {
   }
 }
 
-CoinWarmStart *OsiLPWarmStart::getCoinWarmStart() const { return coinWs_; }
+CoinWarmStart *OsiLPWarmStart::getCoinWarmStart() const
+{
+  return coinWs_;
+}
 
 void OsiLPWarmStart::setCoinWarmStart(CoinWarmStart *coin_ws,
-                                      bool must_delete) {
+                                      bool must_delete)
+{
   if (coinWs_ && mustDelete_) {
     delete coinWs_;
     coinWs_ = 0;
@@ -82,26 +92,31 @@ void OsiLPWarmStart::setCoinWarmStart(CoinWarmStart *coin_ws,
   mustDelete_ = must_delete;
 }
 
-void OsiLPWarmStart::setDualWarmStart(int size, const double *dual) {
+void OsiLPWarmStart::setDualWarmStart(int size, const double *dual)
+{
   CoinWarmStart *coin_ws = (CoinWarmStart *)new CoinWarmStartDual(size, dual);
   setCoinWarmStart(coin_ws, true);
 }
 
-void OsiLPWarmStart::write(std::ostream &) const { assert(!"implement me!"); }
+void OsiLPWarmStart::write(std::ostream &) const
+{
+  assert(!"implement me!");
+}
 
 // ----------------------------------------------------------------------- //
 // ----------------------------------------------------------------------- //
 
 OsiLPEngine::OsiLPEngine(EnvPtr env)
-    : bndChanged_(true),
-      consChanged_(true),
-      env_(env),
-      maxIterLimit_(10000),
-      objChanged_(true),
-      pickLPMeth_(true),
-      problem_(0),
-      sol_(0),
-      strBr_(false) {
+  : bndChanged_(true),
+    consChanged_(true),
+    env_(env),
+    maxIterLimit_(10000),
+    objChanged_(true),
+    pickLPMeth_(true),
+    problem_(0),
+    sol_(0),
+    strBr_(false)
+{
 #if USE_OSILP
 #else
 #error Need to set USE_OSILP
@@ -138,7 +153,8 @@ OsiLPEngine::OsiLPEngine(EnvPtr env)
 #endif
 }
 
-OsiLPEngine::~OsiLPEngine() {
+OsiLPEngine::~OsiLPEngine()
+{
   delete osilp_;
   delete stats_;
   delete timer_;
@@ -151,9 +167,10 @@ OsiLPEngine::~OsiLPEngine() {
   }
 }
 
-void OsiLPEngine::addConstraint(ConstraintPtr con) {
+void OsiLPEngine::addConstraint(ConstraintPtr con)
+{
   LinearFunctionPtr lf = con->getLinearFunction();
-  int nz = lf->getNumTerms();
+  int nz = static_cast<int>(lf->getNumTerms());
   int *cols = new int[nz];
   double *elems = new double[nz];
   VariableGroupConstIterator it;
@@ -172,7 +189,8 @@ void OsiLPEngine::addConstraint(ConstraintPtr con) {
 }
 
 void OsiLPEngine::changeBound(ConstraintPtr cons, BoundType lu,
-                              double new_val) {
+                              double new_val)
+{
   if (Upper == lu) {
     osilp_->setRowUpper(cons->getIndex(), new_val);
   } else {
@@ -181,24 +199,26 @@ void OsiLPEngine::changeBound(ConstraintPtr cons, BoundType lu,
   bndChanged_ = true;
 }
 
-void OsiLPEngine::changeBound(VariablePtr var, BoundType lu, double new_val) {
-  // XXX: need a better map than the following for mapping variables to indices
-  // and vice versa
+void OsiLPEngine::changeBound(VariablePtr var, BoundType lu, double new_val)
+{
+  // XXX: need a better map than the following for mapping variables to
+  // indices and vice versa
   int col = var->getIndex();
   switch (lu) {
-    case Lower:
-      osilp_->setColLower(col, new_val);
-      break;
-    case Upper:
-      osilp_->setColUpper(col, new_val);
-      break;
-    default:
-      break;
+  case Lower:
+    osilp_->setColLower(col, new_val);
+    break;
+  case Upper:
+    osilp_->setColUpper(col, new_val);
+    break;
+  default:
+    break;
   }
   bndChanged_ = true;
 }
 
-void OsiLPEngine::changeBound(VariablePtr var, double new_lb, double new_ub) {
+void OsiLPEngine::changeBound(VariablePtr var, double new_lb, double new_ub)
+{
   int col = var->getIndex();
   osilp_->setColBounds(col, new_lb, new_ub);
   bndChanged_ = true;
@@ -214,10 +234,10 @@ void OsiLPEngine::changeConstraint(ConstraintPtr, LinearFunctionPtr, double,
 {
   if (eName_ == OsiClpEngine) {
 #if MNTROSICLP
-    // OsiLPInterface does not have a modifyCoefficient function. So we have to
-    // downcast it to OsiClpSolverInterface. XXX: Clean this code by creating a
-    // map from constraints in problem, to those in engine. Then use deleteRow
-    // and addRow, instead of modifyCoefficient().
+    // OsiLPInterface does not have a modifyCoefficient function. So we have
+    // to downcast it to OsiClpSolverInterface. XXX: Clean this code by
+    // creating a map from constraints in problem, to those in engine. Then
+    // use deleteRow and addRow, instead of modifyCoefficient().
     OsiClpSolverInterface *osiclp =
         (OsiClpSolverInterface *)(dynamic_cast<OsiClpSolverInterface *>(
             osilp_));
@@ -231,8 +251,8 @@ void OsiLPEngine::changeConstraint(ConstraintPtr, LinearFunctionPtr, double,
     }
 
     // assign new coefficients in the row.
-    for (VariableGroupConstIterator it = lf->termsBegin(); it != lf->termsEnd();
-         ++it) {
+    for (VariableGroupConstIterator it = lf->termsBegin();
+         it != lf->termsEnd(); ++it) {
       osiclp->modifyCoefficient(row, it->first->getIndex(), it->second);
     }
     osiclp->setRowUpper(row, ub);
@@ -244,17 +264,19 @@ void OsiLPEngine::changeConstraint(ConstraintPtr, LinearFunctionPtr, double,
   }
 }
 
-void OsiLPEngine::changeConstraint(ConstraintPtr, NonlinearFunctionPtr) {
+void OsiLPEngine::changeConstraint(ConstraintPtr, NonlinearFunctionPtr)
+{
   assert(!"Cannot change a nonlinear function in OsiLPEngine");
 }
 
-void OsiLPEngine::changeObj(FunctionPtr f, double) {
+void OsiLPEngine::changeObj(FunctionPtr f, double)
+{
   LinearFunctionPtr lf = (f) ? f->getLinearFunction() : 0;
   double *obj = new double[problem_->getNumVars()];
   std::fill(obj, obj + problem_->getNumVars(), 0.0);
   if (lf) {
-    for (VariableGroupConstIterator it = lf->termsBegin(); it != lf->termsEnd();
-         ++it) {
+    for (VariableGroupConstIterator it = lf->termsBegin();
+         it != lf->termsEnd(); ++it) {
       obj[it->first->getIndex()] = it->second;
     }
   }
@@ -263,7 +285,8 @@ void OsiLPEngine::changeObj(FunctionPtr f, double) {
   delete[] obj;
 }
 
-void OsiLPEngine::clear() {
+void OsiLPEngine::clear()
+{
   if (osilp_) {
     osilp_->reset();
     osilp_->setHintParam(OsiDoReducePrint);
@@ -280,7 +303,8 @@ void OsiLPEngine::clear() {
 //  osilp_->disableFactorization();
 //}
 
-void OsiLPEngine::disableStrBrSetup() {
+void OsiLPEngine::disableStrBrSetup()
+{
 #if SPEW
   logger_->msgStream(LogDebug2)
       << me_ << "disabling strong branching." << std::endl;
@@ -288,11 +312,13 @@ void OsiLPEngine::disableStrBrSetup() {
   strBr_ = false;
 }
 
-EnginePtr OsiLPEngine::emptyCopy() {
+EnginePtr OsiLPEngine::emptyCopy()
+{
   return (OsiLPEnginePtr) new OsiLPEngine(env_);
 }
 
-void OsiLPEngine::enableStrBrSetup() {
+void OsiLPEngine::enableStrBrSetup()
+{
 #if SPEW
   logger_->msgStream(LogDebug2)
       << me_ << "enabling strong branching." << std::endl;
@@ -300,9 +326,13 @@ void OsiLPEngine::enableStrBrSetup() {
   strBr_ = true;
 }
 
-int OsiLPEngine::getIterationCount() { return osilp_->getIterationCount(); }
+int OsiLPEngine::getIterationCount()
+{
+  return osilp_->getIterationCount();
+}
 
-void OsiLPEngine::fillStats(std::vector<double> &lpStats) {
+void OsiLPEngine::fillStats(std::vector<double> &lpStats)
+{
   if (lpStats.size()) {
     lpStats[0] += stats_->calls;
     lpStats[1] += stats_->strCalls;
@@ -313,68 +343,118 @@ void OsiLPEngine::fillStats(std::vector<double> &lpStats) {
   }
 }
 
-void OsiLPEngine::disableFactorization() { osilp_->disableFactorization(); }
+void OsiLPEngine::disableFactorization()
+{
+  osilp_->disableFactorization();
+}
 
-void OsiLPEngine::enableFactorization() { osilp_->enableFactorization(); }
+void OsiLPEngine::enableFactorization()
+{
+  osilp_->enableFactorization();
+}
 
-void OsiLPEngine::getBasics(int *index) { osilp_->getBasics(index); }
+void OsiLPEngine::getBasics(int *index)
+{
+  osilp_->getBasics(index);
+}
 
-void OsiLPEngine::getBInvARow(int row, double *z, double *slack) {
+void OsiLPEngine::getBInvARow(int row, double *z, double *slack)
+{
   osilp_->getBInvARow(row, z, slack);
 }
 
-void OsiLPEngine::getBasisStatus(int *cstat, int *rstat) {
+void OsiLPEngine::getBasisStatus(int *cstat, int *rstat)
+{
   osilp_->getBasisStatus(cstat, rstat);
 }
 
-const double *OsiLPEngine::getColLower() { return osilp_->getColLower(); }
+const double *OsiLPEngine::getColLower()
+{
+  return osilp_->getColLower();
+}
 
-const double *OsiLPEngine::getColUpper() { return osilp_->getColUpper(); }
+const double *OsiLPEngine::getColUpper()
+{
+  return osilp_->getColUpper();
+}
 
-const double *OsiLPEngine::getRowLower() { return osilp_->getRowLower(); }
+const double *OsiLPEngine::getRowLower()
+{
+  return osilp_->getRowLower();
+}
 
-const double *OsiLPEngine::getRowUpper() { return osilp_->getRowUpper(); }
+const double *OsiLPEngine::getRowUpper()
+{
+  return osilp_->getRowUpper();
+}
 
-const double *OsiLPEngine::getRightHandSide() {
+const double *OsiLPEngine::getRightHandSide()
+{
   return osilp_->getRightHandSide();
 }
 
-int OsiLPEngine::getNumCols() { return osilp_->getNumCols(); }
+int OsiLPEngine::getNumCols()
+{
+  return osilp_->getNumCols();
+}
 
-int OsiLPEngine::getNumRows() { return osilp_->getNumRows(); }
+int OsiLPEngine::getNumRows()
+{
+  return osilp_->getNumRows();
+}
 
-const double *OsiLPEngine::getRowActivity() { return osilp_->getRowActivity(); }
+const double *OsiLPEngine::getRowActivity()
+{
+  return osilp_->getRowActivity();
+}
 
-const double *OsiLPEngine::getOriginalTableau() {
+const double *OsiLPEngine::getOriginalTableau()
+{
   return osilp_->getMatrixByRow()->getElements();
 }
 
-const int *OsiLPEngine::getRowStarts() {
+const int *OsiLPEngine::getRowStarts()
+{
   return osilp_->getMatrixByRow()->getVectorStarts();
 }
 
-const int *OsiLPEngine::getIndicesofVars() {
+const int *OsiLPEngine::getIndicesofVars()
+{
   return osilp_->getMatrixByRow()->getIndices();
 }
 
-const int *OsiLPEngine::getRowLength() {
+const int *OsiLPEngine::getRowLength()
+{
   return osilp_->getMatrixByRow()->getVectorLengths();
 }
 
-std::string OsiLPEngine::getName() const { return "OsiLP"; }
+std::string OsiLPEngine::getName() const
+{
+  return "OsiLP";
+}
 
-double OsiLPEngine::getSolutionValue() { return sol_->getObjValue(); }
+double OsiLPEngine::getSolutionValue()
+{
+  return sol_->getObjValue();
+}
 
-ConstSolutionPtr OsiLPEngine::getSolution() { return sol_; }
+ConstSolutionPtr OsiLPEngine::getSolution()
+{
+  return sol_;
+}
 
 // OsiSolverInterface * OsiLPEngine::getSolver()
 //{
 //  return osilp_;
 //}
 
-EngineStatus OsiLPEngine::getStatus() { return status_; }
+EngineStatus OsiLPEngine::getStatus()
+{
+  return status_;
+}
 
-WarmStartPtr OsiLPEngine::getWarmStartCopy() {
+WarmStartPtr OsiLPEngine::getWarmStartCopy()
+{
   // create a new copy of warm-start information from osilp_
   CoinWarmStart *coin_copy = osilp_->getWarmStart();
 
@@ -385,14 +465,16 @@ WarmStartPtr OsiLPEngine::getWarmStartCopy() {
   return ws;
 }
 
-bool OsiLPEngine::IsOptimalBasisAvailable() {
+bool OsiLPEngine::IsOptimalBasisAvailable()
+{
   return osilp_->optimalBasisIsAvailable();
 }
 
-void OsiLPEngine::load(ProblemPtr problem) {
+void OsiLPEngine::load(ProblemPtr problem)
+{
   problem_ = problem;
-  int numvars = problem->getNumVars();
-  int numcons = problem->getNumCons();
+  int numvars = static_cast<int>(problem->getNumVars());
+  int numcons = static_cast<int>(problem->getNumCons());
   int i, j;
   double obj_sense = 1.;
   CoinPackedMatrix *r_mat;
@@ -410,18 +492,20 @@ void OsiLPEngine::load(ProblemPtr problem) {
   varub = new double[numvars];
 
   VariableGroupConstIterator it;
-  /* map the variables in this constraint to the function type (linear here) */
+  /* map the variables in this constraint to the function type (linear here)
+   */
 
   // XXX Need to count the number of nnz in the problem
   //     -- maybe add it to class later
   LinearFunctionPtr lin;
   int nnz = 0;
-  for (c_iter = problem->consBegin(); c_iter != problem->consEnd(); ++c_iter) {
+  for (c_iter = problem->consBegin(); c_iter != problem->consEnd();
+       ++c_iter) {
     // XXX Don't want assert here, but not sure of eventually calling sequence
     //     and assumptions
     assert((*c_iter)->getFunctionType() == Linear);
     lin = (*c_iter)->getLinearFunction();
-    nnz += lin->getNumTerms();
+    nnz += static_cast<int>(lin->getNumTerms());
   }
 
   index = new int[nnz];
@@ -431,7 +515,8 @@ void OsiLPEngine::load(ProblemPtr problem) {
   i = 0;
   j = 0;
   start[0] = 0;
-  for (c_iter = problem->consBegin(); c_iter != problem->consEnd(); ++c_iter) {
+  for (c_iter = problem->consBegin(); c_iter != problem->consEnd();
+       ++c_iter) {
     conlb[i] = (*c_iter)->getLb();
     conub[i] = (*c_iter)->getUb();
     lin = (*c_iter)->getLinearFunction();
@@ -499,22 +584,25 @@ void OsiLPEngine::load(ProblemPtr problem) {
   problem->setEngine(this);
 }
 
-void OsiLPEngine::loadFromWarmStart(const WarmStartPtr ws) {
+void OsiLPEngine::loadFromWarmStart(const WarmStartPtr ws)
+{
   ConstOsiLPWarmStartPtr ws2 = dynamic_cast<const OsiLPWarmStart *>(ws);
   assert(ws2);
   CoinWarmStart *coin_ws = ws2->getCoinWarmStart();
   osilp_->setWarmStart(coin_ws);
 }
 
-void OsiLPEngine::loadDualWarmStart(int size, double *dualVec) {
+void OsiLPEngine::loadDualWarmStart(int size, double *dualVec)
+{
   OsiLPWarmStartPtr ws = (OsiLPWarmStartPtr) new OsiLPWarmStart();
   ws->setDualWarmStart(size, dualVec);
   loadFromWarmStart(ws);
   delete ws;
 }
 
-void OsiLPEngine::negateObj() {
-  UInt n = problem_->getNumVars();
+void OsiLPEngine::negateObj()
+{
+  UInt n = static_cast<int>(problem_->getNumVars());
   double *obj = new double[n];
   const double *old_obj = osilp_->getObjCoefficients();
   std::copy(old_obj, old_obj + n, obj);
@@ -523,35 +611,37 @@ void OsiLPEngine::negateObj() {
   delete[] obj;
 }
 
-OsiSolverInterface *OsiLPEngine::newSolver_(OsiLPEngineName ename) {
+OsiSolverInterface *OsiLPEngine::newSolver_(OsiLPEngineName ename)
+{
   OsiSolverInterface *si = 0;
   switch (ename) {
-    case (OsiClpEngine):
+  case (OsiClpEngine):
 #if MNTROSICLP
-      si = new OsiClpSolverInterface();
-      si->setHintParam(OsiDoReducePrint);
-      si->messageHandler()->setLogLevel(0);
+    si = new OsiClpSolverInterface();
+    si->setHintParam(OsiDoReducePrint);
+    si->messageHandler()->setLogLevel(0);
 #else
-      logger_->errStream() << me_ << "Minotaur is not compiled with OsiClp!"
-                           << std::endl;
+    logger_->errStream() << me_ << "Minotaur is not compiled with OsiClp!"
+                         << std::endl;
 #endif
-      break;
-    case (OsiGrbEngine):
+    break;
+  case (OsiGrbEngine):
 #if MNTROSIGRB
-      si = new OsiGrbSolverInterface();
+    si = new OsiGrbSolverInterface();
 #else
-      logger_->errStream() << me_ << "Minotaur is not compiled with OsiGrb!"
-                           << std::endl;
+    logger_->errStream() << me_ << "Minotaur is not compiled with OsiGrb!"
+                         << std::endl;
 #endif
-      break;
-    default:
-      break;
+    break;
+  default:
+    break;
   }
   return si;
 }
 
-void OsiLPEngine::removeCons(std::vector<ConstraintPtr> &delcons) {
-  int num = delcons.size();
+void OsiLPEngine::removeCons(std::vector<ConstraintPtr> &delcons)
+{
+  int num = static_cast<int>(delcons.size());
   int *inds = new int[num];
   for (int i = 0; i < num; ++i) {
     inds[i] = delcons[i]->getIndex();
@@ -560,26 +650,28 @@ void OsiLPEngine::removeCons(std::vector<ConstraintPtr> &delcons) {
   consChanged_ = true;
 }
 
-void OsiLPEngine::resetIterationLimit() {
+void OsiLPEngine::resetIterationLimit()
+{
   OsiIntParam key = OsiMaxNumIteration;
   osilp_->setIntParam(key, maxIterLimit_);
 }
 
-void OsiLPEngine::setIterationLimit(int limit) {
+void OsiLPEngine::setIterationLimit(int limit)
+{
   OsiIntParam key = OsiMaxNumIteration;
   osilp_->setIntParam(key, limit);
 }
 
 EngineStatus OsiLPEngine::solve()
-{ 
-  double off=0;
+{
+  double off = 0;
 
   if (problem_->getObjective()) {
     off = problem_->getObjective()->getConstant();
   }
   timer_->start();
   if (true == pickLPMeth_) {
-    if (true == objChanged_ && false == bndChanged_ && 
+    if (true == objChanged_ && false == bndChanged_ &&
         false == consChanged_) {
       osilp_->setHintParam(OsiDoDualInResolve, false);
     } else {
@@ -593,7 +685,7 @@ EngineStatus OsiLPEngine::solve()
       << me_ << "in call number " << stats_->calls << std::endl;
 #endif
 
-  if (1==stats_->calls) {
+  if (1 == stats_->calls) {
     osilp_->initialSolve();
   } else if (true == pickLPMeth_) {
     osilp_->resolve();
@@ -656,8 +748,8 @@ EngineStatus OsiLPEngine::solve()
       << me_ << "iterations = " << osilp_->getIterationCount() << std::endl;
 #endif
   timer_->stop();
-  if (true == pickLPMeth_ && true == objChanged_ && false == bndChanged_ 
-      && false == consChanged_) {
+  if (true == pickLPMeth_ && true == objChanged_ && false == bndChanged_ &&
+      false == consChanged_) {
     osilp_->setHintParam(OsiDoDualInResolve, true);
   }
   bndChanged_ = false;
@@ -667,11 +759,13 @@ EngineStatus OsiLPEngine::solve()
   return status_;
 }
 
-void OsiLPEngine::writeLP(const char *filename) const {
+void OsiLPEngine::writeLP(const char *filename) const
+{
   osilp_->writeLp(filename);
 }
 
-void OsiLPEngine::writeStats(std::ostream &out) const {
+void OsiLPEngine::writeStats(std::ostream &out) const
+{
   if (stats_) {
     std::string me = "OsiLP: ";
     out << me << "total calls            = " << stats_->calls << std::endl
@@ -682,14 +776,3 @@ void OsiLPEngine::writeStats(std::ostream &out) const {
         << me << "strong br iterations   = " << stats_->strIters << std::endl;
   }
 }
-
-// Local Variables:
-// mode: c++
-// eval: (c-set-style "k&r")
-// eval: (c-set-offset 'innamespace 0)
-// eval: (setq c-basic-offset 2)
-// eval: (setq fill-column 78)
-// eval: (auto-fill-mode 1)
-// eval: (setq column-number-mode 1)
-// eval: (setq indent-tabs-mode nil)
-// End:

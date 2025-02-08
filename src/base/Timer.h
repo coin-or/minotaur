@@ -1,7 +1,7 @@
 //
 //    Minotaur -- It's only 1/2 bull
 //
-//    (C)opyright 2009 - 2024 The Minotaur Team.
+//    (C)opyright 2009 - 2025 The Minotaur Team.
 //
 
 /**
@@ -17,15 +17,15 @@
 #include <time.h>
 
 #ifndef CLOCKS_PER_SEC
-#  define CLOCKS_PER_SEC 1000000
+#define CLOCKS_PER_SEC 1000000
 #endif
 
 #ifdef MINOTAUR_RUSAGE
-#  include <sys/resource.h>
+#include <sys/resource.h>
 
-#  ifndef MICROSEC
-#    define MICROSEC 1000000
-#  endif
+#ifndef MICROSEC
+#define MICROSEC 1000000
+#endif
 #endif
 
 #include "Types.h"
@@ -39,24 +39,28 @@ namespace Minotaur {
    */
   class Timer {
   public:
-    Timer() { };
-    virtual ~Timer() { };
-    virtual void start()   = 0;
-    virtual void stop()    = 0;
+    Timer() {};
+    virtual ~Timer() {};
+    virtual void start() = 0;
+    virtual void stop() = 0;
     virtual double query() const = 0;
     // New function to query wall time
-    virtual double wQuery() const {
-      using namespace std::chrono;   
+    virtual double wQuery() const
+    {
+      using namespace std::chrono;
       steady_clock::time_point currentTime = steady_clock::now();
-      duration<double> time_span = duration_cast<duration<double>>(currentTime - w_);
+      duration<double> time_span =
+          duration_cast<duration<double>>(currentTime - w_);
       return time_span.count();
     }
+
   protected:
-       std::chrono::steady_clock::time_point w_;
-       bool is_started_ = false;
-  private: 
-    Timer (const Timer &);
-    Timer & operator = (const Timer &);
+    std::chrono::steady_clock::time_point w_;
+    bool is_started_ = false;
+
+  private:
+    Timer(const Timer &);
+    Timer &operator=(const Timer &);
   };
 
   /**
@@ -69,29 +73,33 @@ namespace Minotaur {
     bool is_started_;
 
   public:
-    ClockTimer() : is_started_(false)  {  };
-    ~ClockTimer() { };
+    ClockTimer()
+      : is_started_(false) {};
+    ~ClockTimer() {};
 
     /// Start the timer.
-    void start() {
+    void start()
+    {
       w_ = std::chrono::steady_clock::now();
       s_ = clock();
-      is_started_ = true;      
+      is_started_ = true;
       return;
     };
 
     /// Stop the timer. Can not query after this.
-    void stop() {
+    void stop()
+    {
       is_started_ = false;
       return;
     };
 
-    double query() const {
+    double query() const
+    {
       if (!is_started_) {
         throw("Some exception");
       }
-      
-      return ((clock() - s_) / (double) CLOCKS_PER_SEC);
+
+      return ((double)(clock() - s_) / (double)CLOCKS_PER_SEC);
     };
   };
 
@@ -106,24 +114,28 @@ namespace Minotaur {
     bool is_started_;
 
   public:
-    UsageTimer() : is_started_(false)  { };
-    ~UsageTimer() { };
+    UsageTimer()
+      : is_started_(false) {};
+    ~UsageTimer() {};
 
     /// Start the timer.
-    void start() {
+    void start()
+    {
       getrusage(RUSAGE_SELF, &s_);
-      is_started_ = true;      
+      is_started_ = true;
       return;
     };
 
     /// Stop the timer. Can not query after this.
-    void stop() {
+    void stop()
+    {
       is_started_ = false;
       return;
     };
 
     /// Get how much cpu time has been used since this timer was started.
-    double query() const {
+    double query() const
+    {
       double t1, t2, m1, m2, s1, s2, m, s;
       struct rusage e;
       if (!is_started_) {
@@ -131,22 +143,22 @@ namespace Minotaur {
       }
       getrusage(RUSAGE_SELF, &e);
 
-      m1 = (double) e.ru_utime.tv_usec;
-      m2 = (double) s_.ru_utime.tv_usec;
+      m1 = (double)e.ru_utime.tv_usec;
+      m2 = (double)s_.ru_utime.tv_usec;
       m = m1 - m2;
 
-      s1 = (double) e.ru_utime.tv_sec;
-      s2 = (double) s_.ru_utime.tv_sec;
+      s1 = (double)e.ru_utime.tv_sec;
+      s2 = (double)s_.ru_utime.tv_sec;
       s = s1 - s2;
 
       t1 = s + m / MICROSEC;
-    
-      m1 = (double) e.ru_stime.tv_usec;
-      m2 = (double) s_.ru_stime.tv_usec;
+
+      m1 = (double)e.ru_stime.tv_usec;
+      m2 = (double)s_.ru_stime.tv_usec;
       m = m1 - m2;
 
-      s1 = (double) e.ru_stime.tv_sec;
-      s2 = (double) s_.ru_stime.tv_sec;
+      s1 = (double)e.ru_stime.tv_sec;
+      s2 = (double)s_.ru_stime.tv_sec;
       s = s1 - s2;
 
       t2 = s + m / MICROSEC;
@@ -160,13 +172,14 @@ namespace Minotaur {
   class TimerFactory {
   public:
     /// Default constructor.
-    TimerFactory() { };
+    TimerFactory() {};
 
     /// Destroy.
-    virtual ~TimerFactory() { };
+    virtual ~TimerFactory() {};
 
     /// Return an appropriate Timer.
-    virtual Timer *getTimer() {
+    virtual Timer *getTimer()
+    {
 #ifdef MINOTAUR_RUSAGE
       return new UsageTimer;
 #else
@@ -174,21 +187,10 @@ namespace Minotaur {
 #endif
     };
 
-  private: 
-    TimerFactory (const TimerFactory &);
-    TimerFactory & operator = (const TimerFactory &);
+  private:
+    TimerFactory(const TimerFactory &);
+    TimerFactory &operator=(const TimerFactory &);
   };
-}
+}  //namespace Minotaur
 
 #endif
-
-// Local Variables: 
-// mode: c++ 
-// eval: (c-set-style "k&r") 
-// eval: (c-set-offset 'innamespace 0) 
-// eval: (setq c-basic-offset 2) 
-// eval: (setq fill-column 78) 
-// eval: (auto-fill-mode 1) 
-// eval: (setq column-number-mode 1) 
-// eval: (setq indent-tabs-mode nil) 
-// End:

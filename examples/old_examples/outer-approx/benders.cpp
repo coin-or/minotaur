@@ -1,7 +1,7 @@
 //
 //     MINOTAUR -- It's only 1/2 bull
 //
-//     (C)opyright 2008--2011 The MINOTAUR Team
+//     (C)opyright 2008 - 2025 The Minotaur Team.
 // 
 
 /*! \brief Example implementing generalized Benders decomposition with MINOTAUR
@@ -162,9 +162,4 @@ CLEANUP:
   return 0;
 } // end outer approximation main
 
-// Local Variables:
-// mode: c++
-// eval: (c-set-style "gnu")
-// eval: (setq indent-tabs-mode nil)
-// End:
 

@@ -1,8 +1,8 @@
-// 
+//
 //     Minotaur -- It's only 1/2 bull
-// 
-//     (C)opyright 2009 - 2024 The Minotaur Team.
-// 
+//
+//     (C)opyright 2009 - 2025 The Minotaur Team.
+//
 
 /**
  * \file NonlinearFunction.h
@@ -20,13 +20,13 @@ namespace Minotaur {
   struct LTHessStor;
   class NonlinearFunction;
   class VarBoundMod;
-  typedef NonlinearFunction* NonlinearFunctionPtr;
-  typedef VarBoundMod* VarBoundModPtr;
+  typedef NonlinearFunction *NonlinearFunctionPtr;
+  typedef VarBoundMod *VarBoundModPtr;
   typedef std::vector<VarBoundModPtr> VarBoundModVector;
   typedef VarBoundModVector::iterator VarBoundModIter;
 
   /**
-   * \brief Base class for nonlinear functions. 
+   * \brief Base class for nonlinear functions.
    */
   class NonlinearFunction {
 
@@ -46,21 +46,21 @@ namespace Minotaur {
      * z*f(x/(z+e))
      * \param [in] d The value of the constant.
      * \param [out] err must be nonzero if the constant could not be added.
-    */
-    virtual void addConst(const double d, int &err); 
+     */
+    virtual void addConst(const double d, int &err);
 
     /**
      * \brief Change the nonlinear function to its square-root.
      *
      * \param [out] err must be nonzero if the operation is unsuccessful
-    */
-    virtual void sqrRoot(int &err); 
+     */
+    virtual void sqrRoot(int &err);
 
-    /** 
-     * \brief Make a clone using new variables. 
+    /**
+     * \brief Make a clone using new variables.
      *
      * \param [in] vbeg it points to the variable id 0.  vbeg+k points to
-     * variable id k, where k>=0. 
+     * variable id k, where k>=0.
      * \param [out] err must be nonzero if function wasn't cloned.
      */
     virtual NonlinearFunctionPtr cloneWithVars(VariableConstIterator vbeg,
@@ -78,8 +78,8 @@ namespace Minotaur {
     /**
      * \brief Evaluate the function at a given point x.
      *
-     * \param [in] x The size of the array x must exceed the highest index of the
-     * variables used in the function.
+     * \param [in] x The size of the array x must exceed the highest index of
+     * the variables used in the function.
      * \param [out] *error It should be set a positive value if there is
      * error encountered while evaluating. Leave undisturbed otherwise.
      * \return The value of function of x.
@@ -89,15 +89,15 @@ namespace Minotaur {
     /**
      * \brief Evaluate and add gradient at a given point.
      *
-     * \param [in] x The size of the array x must exceed the highest index of the
-     * variables used in the function.
+     * \param [in] x The size of the array x must exceed the highest index of
+     * the variables used in the function.
      * \param [out] grad_f The values of grad_f are incremented with the
      * gradient of this function at x. The array grad_f is dense.
      * \param [out] error It should be set a positive value if there is
      * error encountered while evaluating. Leave undisturbed otherwise.
      */
-    virtual void evalGradient(const double *x, double *grad_f, int *error) 
-      = 0;
+    virtual void evalGradient(const double *x, double *grad_f,
+                              int *error) = 0;
 
     /**
      * \brief Evaluate and add hessian at a given point.
@@ -107,11 +107,11 @@ namespace Minotaur {
      * \param [in] stor The Hessian storage information.
      * \param [out] values The Hessian values to which we add Hessian of
      * this function.
-     * \param [out] error We set it to nonzero if any errors are encountered. Do
-     * not change it otherwise.
+     * \param [out] error We set it to nonzero if any errors are encountered.
+     * Do not change it otherwise.
      */
-    virtual void evalHessian(const double mult, const double *x, 
-                             const LTHessStor *stor, double *values, 
+    virtual void evalHessian(const double mult, const double *x,
+                             const LTHessStor *stor, double *values,
                              int *error) = 0;
 
     /**
@@ -119,31 +119,31 @@ namespace Minotaur {
      *
      * \param [in,out] stor We add variables into stor->cols
      */
-    virtual void  fillHessStor(LTHessStor *stor ) = 0;
+    virtual void fillHessStor(LTHessStor *stor) = 0;
 
     /**
      * \brief Evaluate and add gradient at a given point to the jacobian.
      *
-     * \param [in] x The size of the array x must exceed the highest index of the
-     * variables used in the function.
+     * \param [in] x The size of the array x must exceed the highest index of
+     * the variables used in the function.
      * \param [out] values The values of jacobian are incremented with the
      * gradient of this function at x. 'values' only contains nonzeros of
      * jacobian. The indices (or offsets) where this nonlinear function
      * should put in the values should be calculated in the prepJac
-     * function.  
+     * function.
      * \param [out] error It should be set a zero value if there is
      * error encountered while evaluating. Leave undisturbed otherwise.
      */
     virtual void fillJac(const double *x, double *values, int *error) = 0;
 
     /**
-     * \brief Finalize hessian preparation. 
+     * \brief Finalize hessian preparation.
      *
      * \param [in] stor contains the sparsity pattern of hessian of
      * lagrangian. The nonlinear function should save offsets or make
      * other preparation to evaluate hessian.
      */
-    virtual void  finalHessStor(const LTHessStor *stor) = 0;
+    virtual void finalHessStor(const LTHessStor *stor) = 0;
 
     /**
      * \brief Return a string in AMPL's .nl format (postfix notation) of this
@@ -162,10 +162,13 @@ namespace Minotaur {
      * param [in] val The value at which v is to be fixed. <BR>
      * \return Return the value of the offset.
      */
-    virtual double getFixVarOffset(VariablePtr /* v */, double /* val */) 
-    {assert (!"implment me!"); return 0;};
+    virtual double getFixVarOffset(VariablePtr /* v */, double /* val */)
+    {
+      assert(!"implment me!");
+      return 0;
+    };
 
-    /// Return the type of function: polynomial, ... 
+    /// Return the type of function: polynomial, ...
     virtual FunctionType getType() const;
 
     /**
@@ -180,7 +183,7 @@ namespace Minotaur {
      * \brief Check if function contains a variable.
      *
      * \param [in] v The variable that we want to test.
-     * \return True if this function is has v. False if it doesn't use it. 
+     * \return True if this function is has v. False if it doesn't use it.
      */
     virtual bool hasVar(ConstVariablePtr v) const;
 
@@ -189,9 +192,7 @@ namespace Minotaur {
      *
      * \return True if this function is a sum of squares, False otherwise
      */
-    virtual bool isSumOfSquares() const {
-      return true;
-    }
+    virtual bool isSumOfSquares() const { return true; }
 
     /**
      * \brief Multiply by a constant.
@@ -201,10 +202,10 @@ namespace Minotaur {
     virtual void multiply(double c) = 0;
 
     /// Return the number of variables in this function.
-    virtual UInt numVars() { return vars_.size(); };
+    virtual size_t numVars() { return vars_.size(); };
 
     /**
-     * \brief Prepare for evaluating sparse jacobian. 
+     * \brief Prepare for evaluating sparse jacobian.
      *
      * All the variables that are in this function can occur in one or more
      * of linear, quadratic and nonlinear functions. All variables that
@@ -216,15 +217,20 @@ namespace Minotaur {
 
     /// Remove a variable v from the function after fixing it to value val.
     virtual void removeVar(VariablePtr /* v */, double /* val */)
-    {assert (!"implement me!");};
+    {
+      assert(!"implement me!");
+    };
 
     /// Substitute a variable with another.
     virtual void subst(VariablePtr /* out */, VariablePtr /* in */,
                        double /* rat */)
-    {assert (!"implement me!");};
+    {
+      assert(!"implement me!");
+    };
 
     /**
-     * \brief Take perspective of this function with respect to a given variable.
+     * \brief Take perspective of this function with respect to a given
+     * variable.
      *
      * Perspective of a given function f(x) with respect to a given variable z
      * is g(x,z) = z.f(x/z)
@@ -235,7 +241,7 @@ namespace Minotaur {
      * an approximation in Hessian is used when z < eps.
      * \param [out] err must be nonzero if function wasn't cloned.
      * \return A new nonlinear function with an additional variable that gives
-     * the perspective of this function 
+     * the perspective of this function
      */
     virtual NonlinearFunctionPtr getPersp(VariablePtr z, double eps,
                                           int *err) const;
@@ -256,24 +262,21 @@ namespace Minotaur {
      */
     virtual void varBoundMods(double /* lb */, double /* ub */,
                               VarBoundModVector & /* mods */,
-                              SolveStatus * /* status */)
-    {};
+                              SolveStatus * /* status */) {};
 
     /**
      * \brief First iterator for variables
      *
      * \return first iterator for the variables in this function.
      */
-    virtual VariableSet::iterator varsBegin()
-    {return vars_.begin();};
+    virtual VariableSet::iterator varsBegin() { return vars_.begin(); };
 
     /**
      * \brief Last iterator for variables
      *
      * \return last iterator for the variables in this function.
      */
-    virtual VariableSet::iterator varsEnd()
-    {return vars_.end();};
+    virtual VariableSet::iterator varsEnd() { return vars_.end(); };
 
     /// Display the nonlinear function.
     virtual void write(std::ostream &out) const;
@@ -283,19 +286,8 @@ namespace Minotaur {
     VariableSet vars_;
   };
 
-  typedef NonlinearFunction* NonlinearFunctionPtr;
-  typedef const NonlinearFunction* ConstNonlinearFunctionPtr;  
+  typedef NonlinearFunction *NonlinearFunctionPtr;
+  typedef const NonlinearFunction *ConstNonlinearFunctionPtr;
 
-}
+}  //namespace Minotaur
 #endif
-
-// Local Variables: 
-// mode: c++ 
-// eval: (c-set-style "k&r") 
-// eval: (c-set-offset 'innamespace 0) 
-// eval: (setq c-basic-offset 2) 
-// eval: (setq fill-column 78) 
-// eval: (auto-fill-mode 1) 
-// eval: (setq column-number-mode 1) 
-// eval: (setq indent-tabs-mode nil) 
-// End:

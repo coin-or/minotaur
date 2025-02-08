@@ -1,7 +1,7 @@
 //
 //     Minotaur -- It's only 1/2 bull
 //
-//     (C)opyright 2008 - 2024 The Minotaur Team.
+//     (C)opyright 2008 - 2025 The Minotaur Team.
 //
 
 /**
@@ -157,6 +157,7 @@ private:
 
   /// Store statistics of presolving.
   struct PresolveStats {
+    int conDel; ///> Number of constraints deleted 
     int iters;    ///> Number of iterations (main cycle).
     double time;  ///> Total time used in initial presolve.
     double timeN; ///> Total time used in presolveNode.
@@ -362,6 +363,12 @@ private:
                    ModVector& r_mods);
 
   void coeffImprov_();
+
+  /**
+   * \brief Removes the duplicate constraints
+   * \param[in] changed false if the constraint is not duplicate
+   */
+  void dupRows_(bool* changed);
 
   /**
    * \brief Find the point at which a gradient-based linearization inequality
@@ -655,6 +662,15 @@ private:
                            DoubleVector& varlb, DoubleVector& varub);
 
   /**
+   * \brief Check for the duplicate constraints and delete one
+   * \param[in] c1 Pointer to first constraint
+   * \param[in] c2 Pointer to second constraint
+   * \param[out] changed true if the constraint is duplicate
+   */
+  bool treatDupRows_(ConstraintPtr c1, ConstraintPtr c2, double mult,
+                     bool* changed);
+
+  /**
    * \brief Modify bounds of a variable in the problem to the new bounds lb
    * and ub if the new bounds are tighter.
    * \param[in] v The variable
@@ -755,13 +771,3 @@ typedef QuadHandler* QuadHandlerPtr;
 } // namespace Minotaur
 #endif
 
-// Local Variables:
-// mode: c++
-// eval: (c-set-style "k&r")
-// eval: (c-set-offset 'innamespace 0)
-// eval: (setq c-basic-offset 2)
-// eval: (setq fill-column 78)
-// eval: (auto-fill-mode 1)
-// eval: (setq column-number-mode 1)
-// eval: (setq indent-tabs-mode nil)
-// End:

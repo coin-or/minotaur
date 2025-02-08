@@ -1,7 +1,7 @@
 //
 //     Minotaur -- It's only 1/2 bull
 //
-//     (C)opyright 2008 - 2024 The Minotaur Team.
+//     (C)opyright 2008 - 2025 The Minotaur Team.
 //
 
 /**
@@ -1066,7 +1066,7 @@ void SimpleTransformer::reformulate(ProblemPtr& newp, HandlerVector& handlers,
   refNonlinObj_(p_);
   newp_->calculateSize();
   // newp_->write(std::cout);
-#if DEBUG
+#if MDBUG
   assert(0 == newp_->checkConVars());
 #endif
 
@@ -1174,13 +1174,3 @@ void SimpleTransformer::writeStats(std::ostream& out) const
   }
 }
 
-// Local Variables:
-// mode: c++
-// eval: (c-set-style "k&r")
-// eval: (c-set-offset 'innamespace 0)
-// eval: (setq c-basic-offset 2)
-// eval: (setq fill-column 78)
-// eval: (auto-fill-mode 1)
-// eval: (setq column-number-mode 1)
-// eval: (setq indent-tabs-mode nil)
-// End:
