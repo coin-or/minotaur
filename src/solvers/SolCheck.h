@@ -5,29 +5,29 @@
 //
 
 /**
- * \file SolChecker.h
- * \brief Define the SolChecker class.
+ * \file SolCheck.h
+ * \brief SolCheck class for checking feasibility of a solution
  * \author Ashutosh Mahajan, IIT Bombay
  */
 
-#ifndef SOLCHECKER_H
-#define SOLCHECKER_H
+#ifndef SOLCHECK_H
+#define SOLCHECK_H
 
 #include "Types.h"
 #include "Solver.h"
 
 namespace Minotaur {
 /**
- * The SolChecker class sets up methods for solving a convex MINLP instance
- * using the NLP based Branch-and-Bound
+ * For a given MINLO model and a solution, report constraint violations and
+ * objective value of the solution. Used for debugging.
  */
-class SolChecker : public Solver {
+class SolCheck : public Solver {
 public:
   /// Default constructor.
-  SolChecker(EnvPtr env);
+  SolCheck(EnvPtr env);
 
   /// Destroy.
-  ~SolChecker();
+  ~SolCheck();
 
   void doSetup();
 
@@ -39,6 +39,9 @@ public:
 
   /// Solve the problem
   int solve(ProblemPtr p);
+
+  /// get status of the last solve.
+  std::string getAbout();
 
   /// get status of the last solve.
   SolveStatus getStatus();

@@ -6,7 +6,7 @@
 
 /**
  * \file Bnb.cpp
- * \brief The Bnb class for solving instances in ampl format (.nl) by
+ * \brief The Bnb class for solving instances in mps or ampl format (.nl) by
  * using Branch-and-Bound alone.
  * \author Ashutosh Mahajan, IIT Bombay
  */
@@ -403,7 +403,7 @@ void Bnb::showHelp() const
       << "To show all options: bnb -= (or --display_options yes)" << std::endl
       << "To solve an instance: bnb --option1 [value] "
       << "--option2 [value] ... "
-      << " .nl-file" << std::endl;
+      << " file.[mps|nl]" << std::endl;
 }
 
 int Bnb::showInfo()

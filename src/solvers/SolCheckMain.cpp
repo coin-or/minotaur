@@ -15,7 +15,7 @@
 #include "Option.h"
 #include "Problem.h"
 #include "Types.h"
-#include "SolChecker.h"
+#include "SolCheck.h"
 
 using namespace Minotaur;
 
@@ -23,7 +23,7 @@ using namespace Minotaur;
 int main(int argc, char** argv)
 {
   EnvPtr env      = (EnvPtr) new Environment();
-  SolChecker ch(env);
+  SolCheck ch(env);
   int err = 0;
   std::string dname, fname;
   ProblemPtr p = 0;
@@ -63,14 +63,3 @@ CLEANUP:
   return 0;
 }
 
-
-// Local Variables: 
-// mode: c++ 
-// eval: (c-set-style "k&r") 
-// eval: (c-set-offset 'innamespace 0) 
-// eval: (setq c-basic-offset 2) 
-// eval: (setq fill-column 78) 
-// eval: (auto-fill-mode 1) 
-// eval: (setq column-number-mode 1) 
-// eval: (setq indent-tabs-mode nil) 
-// End:
