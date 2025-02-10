@@ -121,8 +121,6 @@ BranchAndBound* Bnb::getBab_(Engine* engine, HandlerVector& handlers)
   }
   if(handlers.size() > 1) {
     PCBProcessorPtr pproc = new PCBProcessor(env_, engine, handlers);
-    sp = new SppHeur(env_, oinst_);
-    pproc->addHeur(sp);
     nproc = pproc;
   } else {
     nproc = (BndProcessorPtr) new BndProcessor(env_, engine, handlers);
