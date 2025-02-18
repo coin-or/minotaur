@@ -14,7 +14,7 @@
 #include <cmath>
 #include <iomanip>
 #include <sstream>
-#include <string.h> // for memset
+#include <string.h>  // for memset
 
 #include "Environment.h"
 #include "MinotaurConfig.h"
@@ -51,41 +51,41 @@ Problem::~Problem()
   SOSIterator siter;
   VariablePtr v;
 
-  for(viter = vars_.begin(); viter != vars_.end(); viter++) {
+  for (viter = vars_.begin(); viter != vars_.end(); viter++) {
     v = *viter;
     v->clearConstraints_();
     delete v;
   }
 
-  for(viter = varsRem_.begin(); viter != varsRem_.end(); viter++) {
+  for (viter = varsRem_.begin(); viter != varsRem_.end(); viter++) {
     delete *viter;
   }
 
-  for(citer = cons_.begin(); citer != cons_.end(); ++citer) {
+  for (citer = cons_.begin(); citer != cons_.end(); ++citer) {
     delete *citer;
   }
-  for(siter = sos1_.begin(); siter != sos1_.end(); siter++) {
+  for (siter = sos1_.begin(); siter != sos1_.end(); siter++) {
     delete *siter;
   }
-  for(siter = sos2_.begin(); siter != sos2_.end(); siter++) {
+  for (siter = sos2_.begin(); siter != sos2_.end(); siter++) {
     delete *siter;
   }
-  if(engine_) {
+  if (engine_) {
     engine_->clear();
   }
-  if(hessian_) {
+  if (hessian_) {
     delete hessian_;
   }
-  if(jacobian_) {
+  if (jacobian_) {
     delete jacobian_;
   }
-  if(size_) {
+  if (size_) {
     delete size_;
   }
-  if(obj_) {
+  if (obj_) {
     delete obj_;
   }
-  if(debugSol_) {
+  if (debugSol_) {
     delete debugSol_;
   }
   vars_.clear();
@@ -98,7 +98,7 @@ void Problem::addToObj(LinearFunctionPtr lf)
 {
   assert(engine_ == 0 ||
          (!"Cannot change objective after loading problem to engine\n"));
-  if(obj_) {
+  if (obj_) {
     obj_->add_(lf);
   } else {
     assert(!"Cannot add lf to an empty objective!");
@@ -110,7 +110,7 @@ void Problem::addToObj(double c)
 {
   assert(engine_ == 0 ||
          (!"Cannot change objective after loading problem to engine\n"));
-  if(obj_) {
+  if (obj_) {
     obj_->add_(c);
   } else {
     assert(!"Cannot add c to an empty objective!");
@@ -125,16 +125,16 @@ void Problem::addToCons(ConstraintPtr cons, double c)
 
 void Problem::calculateSize(bool shouldRedo)
 {
-  if(!size_) {
+  if (!size_) {
     shouldRedo = true;
     size_ = (ProblemSizePtr) new ProblemSize();
   }
 
-  if(consModed_ || varsModed_) {
+  if (consModed_ || varsModed_) {
     shouldRedo = true;
   }
 
-  if(shouldRedo) {
+  if (shouldRedo) {
     size_->vars = vars_.size();
     size_->cons = cons_.size();
     size_->objs = (obj_) ? 1 : 0;
@@ -151,15 +151,16 @@ void Problem::calculateSize(bool shouldRedo)
 void Problem::changeBoundByInd(UInt ind, BoundType lu, double new_val)
 {
 
-  assert(ind < vars_.size() ||
-         !"Problem::changeBound: index of variable exceeds no. of variables.");
+  assert(
+      ind < vars_.size() ||
+      !"Problem::changeBound: index of variable exceeds no. of variables.");
 
-  if(lu == Lower) {
+  if (lu == Lower) {
     vars_[ind]->setLb_(new_val);
   } else {
     vars_[ind]->setUb_(new_val);
   }
-  if(engine_) {
+  if (engine_) {
     engine_->changeBound(vars_[ind], lu, new_val);
   }
 }
@@ -167,12 +168,13 @@ void Problem::changeBoundByInd(UInt ind, BoundType lu, double new_val)
 void Problem::changeBoundByInd(UInt ind, double new_lb, double new_ub)
 {
 
-  assert(ind < vars_.size() ||
-         !"Problem::changeBound: index of variable exceeds no. of variables.");
+  assert(
+      ind < vars_.size() ||
+      !"Problem::changeBound: index of variable exceeds no. of variables.");
 
   vars_[ind]->setLb_(new_lb);
   vars_[ind]->setUb_(new_ub);
-  if(engine_) {
+  if (engine_) {
     engine_->changeBound(vars_[ind], new_lb, new_ub);
   }
 }
@@ -183,12 +185,12 @@ void Problem::changeBound(VariablePtr var, BoundType lu, double new_val)
   assert(var == vars_[var->getIndex()] ||
          !"Problem: Bound of variable not in a problem can't be changed.");
 
-  if(lu == Lower) {
+  if (lu == Lower) {
     var->setLb_(new_val);
   } else {
     var->setUb_(new_val);
   }
-  if(engine_) {
+  if (engine_) {
     engine_->changeBound(var, lu, new_val);
   }
 }
@@ -202,7 +204,7 @@ void Problem::changeBound(VariablePtr var, double new_lb, double new_ub)
 
   var->setLb_(new_lb);
   var->setUb_(new_ub);
-  if(engine_) {
+  if (engine_) {
     engine_->changeBound(var, new_lb, new_ub);
   }
 }
@@ -210,9 +212,9 @@ void Problem::changeBound(VariablePtr var, double new_lb, double new_ub)
 void Problem::changeBound(ConstraintPtr con, double new_lb, double new_ub)
 {
 
-  assert(
-      con == cons_[con->getIndex()] ||
-      !"Problem: Bound of constraint that is not in problem can't be changed.");
+  assert(con == cons_[con->getIndex()] ||
+         !"Problem: Bound of constraint that is not in problem can't be "
+          "changed.");
   assert(engine_ == 0 ||
          (!"Cannot change constraint after loading problem to engine\n"));
 
@@ -224,14 +226,14 @@ void Problem::changeBound(ConstraintPtr con, double new_lb, double new_ub)
 void Problem::changeBound(ConstraintPtr con, BoundType lu, double new_val)
 {
 
-  assert(
-      con == cons_[con->getIndex()] ||
-      !"Problem: Bound of constraint that is not in problem can't be changed.");
+  assert(con == cons_[con->getIndex()] ||
+         !"Problem: Bound of constraint that is not in problem can't be "
+          "changed.");
 
-  if(engine_) {
+  if (engine_) {
     engine_->changeBound(con, lu, new_val);
   }
-  if(lu == Lower) {
+  if (lu == Lower) {
     con->setLb_(new_val);
   } else {
     con->setUb_(new_val);
@@ -251,18 +253,18 @@ void Problem::changeConstraint(ConstraintPtr con, NonlinearFunctionPtr nlf)
 
   // It is important to apply changes to engine first. Some engines use the
   // old constraint stored in problem to make changes.
-  if(engine_) {
+  if (engine_) {
     engine_->changeConstraint(con, nlf);
   }
 
-  for(VarSet::iterator vit = f->varsBegin(); vit != f->varsEnd(); ++vit) {
+  for (VarSet::iterator vit = f->varsBegin(); vit != f->varsEnd(); ++vit) {
     (*vit)->outOfConstraint_(con);
   }
 
   con->changeNlf_(nlf);
 
   f = con->getFunction();
-  for(VarSet::iterator vit = f->varsBegin(); vit != f->varsEnd(); ++vit) {
+  for (VarSet::iterator vit = f->varsBegin(); vit != f->varsEnd(); ++vit) {
     (*vit)->inConstraint_(con);
   }
   consModed_ = true;
@@ -281,11 +283,11 @@ void Problem::changeConstraint(ConstraintPtr con, LinearFunctionPtr lf,
 
   // It is important to apply changes to engine first. Some engines use the
   // old constraint stored in problem to make changes.
-  if(engine_) {
+  if (engine_) {
     engine_->changeConstraint(con, lf, lb, ub);
   }
 
-  for(VarSet::iterator vit = f->varsBegin(); vit != f->varsEnd(); ++vit) {
+  for (VarSet::iterator vit = f->varsBegin(); vit != f->varsEnd(); ++vit) {
     (*vit)->outOfConstraint_(con);
   }
 
@@ -294,7 +296,7 @@ void Problem::changeConstraint(ConstraintPtr con, LinearFunctionPtr lf,
   con->setUb_(ub);
 
   f = con->getFunction();
-  for(VarSet::iterator vit = f->varsBegin(); vit != f->varsEnd(); ++vit) {
+  for (VarSet::iterator vit = f->varsBegin(); vit != f->varsEnd(); ++vit) {
     (*vit)->inConstraint_(con);
   }
   consModed_ = true;
@@ -303,11 +305,11 @@ void Problem::changeConstraint(ConstraintPtr con, LinearFunctionPtr lf,
 void Problem::changeObj(FunctionPtr f, double cb)
 {
   std::string name = (obj_) ? obj_->getName() : "obj";
-  if(engine_) {
+  if (engine_) {
     engine_->changeObj(f, cb);
   }
 
-  if(obj_) {
+  if (obj_) {
     delete obj_;
   }
   obj_ = (ObjectivePtr) new Objective(f, cb, Minimize, name);
@@ -320,13 +322,13 @@ int Problem::checkConVars() const
   VariablePtr v;
   int err = 0;
 
-  for(ConstraintConstIterator citer = cons_.begin(); citer != cons_.end();
-      ++citer) {
+  for (ConstraintConstIterator citer = cons_.begin(); citer != cons_.end();
+       ++citer) {
     c = *citer;
-    for(VarSet::iterator vit = c->getFunction()->varsBegin();
-        vit != c->getFunction()->varsEnd(); ++vit) {
+    for (VarSet::iterator vit = c->getFunction()->varsBegin();
+         vit != c->getFunction()->varsEnd(); ++vit) {
       v = *vit;
-      if(v != vars_[v->getIndex()]) {
+      if (v != vars_[v->getIndex()]) {
         err = 1;
         logger_->msgStream(LogError)
             << me_ << "variable " << v->getName() << " in constraint "
@@ -353,14 +355,14 @@ void Problem::classifyCon()
 
   resConTypCnt();
 
-  for(ConstraintConstIterator citer = cons_.begin(); citer != cons_.end();
-      ++citer) {
+  for (ConstraintConstIterator citer = cons_.begin(); citer != cons_.end();
+       ++citer) {
     ConstraintStats stats;
     c = *citer;
     f = c->getFunction();
     isClassified = false;
     isDiagQuadClassified = false;
-    if(f->getType() == Quadratic){
+    if (f->getType() == Quadratic) {
       c->setType(Quad);
       qf = f->getQuadraticFunction();
       lf = f->getLinearFunction();
@@ -380,58 +382,73 @@ void Problem::classifyCon()
       stats.wt1 = 0;
       stats.wt2 = 0;
       stats.eqwt = 0;
-      if(qf){
+      if (qf) {
         VariablePairGroupConstIterator it0 = qf->begin();
         double wt0 = it0->second;
-        for(VariablePairGroupConstIterator it = qf->begin();
-            it != qf->end(); ++it) {
+        for (VariablePairGroupConstIterator it = qf->begin(); it != qf->end();
+             ++it) {
           VariablePair vp = it->first;
           double wt = it->second;
-          if(abs(wt - 1) < tol) {
+          if (abs(wt - 1) < tol) {
             ++stats.nposcoefone;
-          } else if(abs(wt + 1) < tol) {
+          } else if (abs(wt + 1) < tol) {
             ++stats.nnegcoefone;
           }
-          if(wt > tol) {
+          if (wt > tol) {
             ++stats.nposcoef;
-          } else if(wt < -tol) {
+          } else if (wt < -tol) {
             ++stats.nnegcoef;
           }
-          if(vp.first==vp.second){
+          if (vp.first == vp.second) {
             ++stats.nsqterm;
-          }else{
+          } else {
             ++stats.nbilterm;
           }
-          if(abs(wt0-wt)<tol){
+          if (abs(wt0 - wt) < tol) {
             ++stats.eqwt;
           }
         }
       }
-      if(stats.nterms > 2) {
-          if(!isDiagQuadClassified) {
-            isDiagQuadClassified = isDiagonalQuadratic_(c,stats) || isDiagQuadClassified;
+      if (stats.nterms > 2) {
+        if (!isDiagQuadClassified) {
+          isDiagQuadClassified =
+              isDiagonalQuadratic_(c, stats) || isDiagQuadClassified;
+        }
+        if (!isClassified) {
+          isClassified = isSimpleBall_(c, stats) || isClassified;
+        }
+        if (!isClassified) {
+          isClassified = isEllipsoid_(c, stats) || isClassified;
+        }
+        if (!isClassified) {
+          isClassified = isComplementSimpleBall_(c, stats) || isClassified;
+        }
+        if (!isClassified) {
+          isClassified = isComplementEllipsoid_(c, stats) || isClassified;
+        }
+        if (!isClassified) {
+          isClassified = isSocSimple_(c, stats) || isClassified;
+        }
+        if (!isClassified) {
+          isClassified = isPureBilinear_(c, stats) || isClassified;
+        }
+      } else {
+        if (!isDiagQuadClassified) {
+          isDiagQuadClassified =
+              isDiagonalQuadratic_(c, stats) || isDiagQuadClassified;
+        }
+        if (!isClassified) {
+          isClassified = isPureBilinear_(c, stats) || isClassified;
+        }
+        if (stats.nterms == 2) {
+          if (!isClassified) {
+            isClassified = isSocSimple_(c, stats) || isClassified;
           }
-          if(!isClassified) {
-            isClassified = isSimpleBall_(c, stats) || isClassified;
-          }
-          if(!isClassified) {
-            isClassified = isEllipsoid_(c, stats) || isClassified;
-          }
-          if(!isClassified) {
-            isClassified = isComplementSimpleBall_(c, stats) || isClassified;
-          }
-          if(!isClassified) {
-            isClassified = isComplementEllipsoid_(c, stats) || isClassified;
-          }
-      }
-      else{
-          if(!isDiagQuadClassified) {
-            isDiagQuadClassified = isDiagonalQuadratic_(c,stats) || isDiagQuadClassified;
-          }
+        }
       }
     } else if (f->getType() != Constant && f->getType() != Linear) {
       c->setType(NonLin);
-    } else if(f->getType() == Linear) {
+    } else if (f->getType() == Linear) {
       lf = f->getLinearFunction();
       stats.nvars = lf->getNumTerms();
       stats.nposcoefone = 0;
@@ -448,110 +465,110 @@ void Problem::classifyCon()
       stats.wt2 = 0;
       stats.sumnegwt = 0;
       stats.con = 0;
-      for(VariableGroupConstIterator it = lf->termsBegin();
-          it != lf->termsEnd(); ++it) {
+      for (VariableGroupConstIterator it = lf->termsBegin();
+           it != lf->termsEnd(); ++it) {
         VariablePtr v = it->first;
         double wt = it->second;
-        if(f->getNumVars() == 2) {
-          if(wt > tol) {
+        if (f->getNumVars() == 2) {
+          if (wt > tol) {
             stats.wt1 = wt;
-          } else if(wt < tol) {
+          } else if (wt < tol) {
             stats.wt2 = wt;
           }
         }
-        if(abs(wt - 1) < tol) {
+        if (abs(wt - 1) < tol) {
           ++stats.nposcoefone;
-        } else if(abs(wt + 1) < tol) {
+        } else if (abs(wt + 1) < tol) {
           ++stats.nnegcoefone;
         }
-        if(wt > tol) {
+        if (wt > tol) {
           ++stats.nposcoef;
-        } else if(wt < -tol) {
+        } else if (wt < -tol) {
           ++stats.nnegcoef;
         }
-        if(wt > tol && v->getType() != Binary && v->getType() != Integer 
-           && v->getType() != ImplBin && v->getType() != ImplInt) {
+        if (wt > tol && v->getType() != Binary && v->getType() != Integer &&
+            v->getType() != ImplBin && v->getType() != ImplInt) {
           ++stats.nposcont;
-        } else if(wt < -tol && v->getType() != Binary &&
-                  v->getType() != Integer && v->getType() != ImplInt 
-                  && v->getType() != ImplBin) {
+        } else if (wt < -tol && v->getType() != Binary &&
+                   v->getType() != Integer && v->getType() != ImplInt &&
+                   v->getType() != ImplBin) {
           ++stats.nnegcont;
         }
-        if(v->getType() == Binary || v->getType() == ImplBin) {
-          if(wt > tol) {
+        if (v->getType() == Binary || v->getType() == ImplBin) {
+          if (wt > tol) {
             ++stats.nposbin;
-          } else if(wt < -tol) {
+          } else if (wt < -tol) {
             ++stats.nnegbin;
             stats.sumnegwt += abs(wt);
           }
         }
-        if(v->getType() == Integer || v->getType() == ImplInt) {
-          if(wt > tol) {
+        if (v->getType() == Integer || v->getType() == ImplInt) {
+          if (wt > tol) {
             ++stats.nposint;
-          } else if(wt < -tol) {
+          } else if (wt < -tol) {
             ++stats.nnegint;
           }
         }
       }
       // Continuing from the previous for-loop where stats are calculated...
       double sumnegwt = stats.sumnegwt;
-      for(VariableGroupConstIterator it2 = lf->termsBegin();
-          it2 != lf->termsEnd(); ++it2) {
+      for (VariableGroupConstIterator it2 = lf->termsBegin();
+           it2 != lf->termsEnd(); ++it2) {
         double wtn = it2->second;
         VariablePtr vn = it2->first;
-        if(vn->getType() == Binary || vn->getType() == ImplBin) {
-          if(c->getUb() + sumnegwt == std::abs(wtn)) {
+        if (vn->getType() == Binary || vn->getType() == ImplBin) {
+          if (c->getUb() + sumnegwt == std::abs(wtn)) {
             ++stats.con;
           }
         }
       }
       // Now pass the populated stats structure to each checker function
-      if(stats.nvars == 2) {
-        if(!isClassified) {
+      if (stats.nvars == 2) {
+        if (!isClassified) {
           isClassified = isAggregation_(c) || isClassified;
         }
-        if(!isClassified) {
+        if (!isClassified) {
           isClassified = isPrecedence_(c, stats) || isClassified;
         }
-        if(!isClassified) {
+        if (!isClassified) {
           isClassified = isVariableBound_(c, stats) || isClassified;
         }
-      } else if(stats.nposbin + stats.nnegbin == stats.nvars) {
-        if(stats.nposcoefone + stats.nnegcoefone == stats.nvars) {
-          if(!isClassified) {
+      } else if (stats.nposbin + stats.nnegbin == stats.nvars) {
+        if (stats.nposcoefone + stats.nnegcoefone == stats.nvars) {
+          if (!isClassified) {
             isClassified = isSetPartitioning_(c, stats) || isClassified;
           }
-          if(!isClassified) {
+          if (!isClassified) {
             isClassified = isSetPacking_(c, stats) || isClassified;
           }
-          if(!isClassified) {
+          if (!isClassified) {
             isClassified = isSetCovering_(c, stats) || isClassified;
           }
-          if(!isClassified) {
+          if (!isClassified) {
             isClassified = isCardinality_(c, stats) || isClassified;
           }
-          if(!isClassified) {
+          if (!isClassified) {
             isClassified = isInvariantKnapsack_(c, stats) || isClassified;
           }
-        } else if(stats.nposcoef + stats.nnegcoef == stats.nvars) {
-          if(!isClassified) {
+        } else if (stats.nposcoef + stats.nnegcoef == stats.nvars) {
+          if (!isClassified) {
             isClassified = isEquationKnapsack_(c, stats) || isClassified;
           }
-          if(!isClassified) {
+          if (!isClassified) {
             isClassified = isBinPacking_(c, stats) || isClassified;
           }
-          if(!isClassified) {
+          if (!isClassified) {
             isClassified = isKnapsack_(c, stats) || isClassified;
           }
         }
       }
-      if(!isClassified) {
+      if (!isClassified) {
         isClassified = isIntegerKnapsack_(c, stats) || isClassified;
       }
-      if(!isClassified) {
+      if (!isClassified) {
         isClassified = isMixedBinary_(c, stats) || isClassified;
       }
-      if(!isClassified) {
+      if (!isClassified) {
         isClassified = isNoSpecificStructure_(c) || isClassified;
       }
     }
@@ -562,7 +579,7 @@ void Problem::classifyCon()
 
 bool Problem::isAggregation_(ConstraintPtr c)
 {
-  if(c->getLb() == c->getUb()) {
+  if (c->getLb() == c->getUb()) {
     c->setType(Aggregation);
     ++size_->countAggregation;
     return true;
@@ -572,11 +589,11 @@ bool Problem::isAggregation_(ConstraintPtr c)
 
 bool Problem::isPrecedence_(ConstraintPtr c, const ConstraintStats& stats)
 {
-  if(stats.wt1 == -(stats.wt2) &&
-     (c->getUb() <= INFTY && c->getLb() >= -INFTY) &&
-     ((stats.nposbin + stats.nnegbin == 2) ||
-      (stats.nposint + stats.nnegint == 2) ||
-      (stats.nposcont + stats.nnegcont == 2))) {
+  if (stats.wt1 == -(stats.wt2) &&
+      (c->getUb() <= INFTY && c->getLb() >= -INFTY) &&
+      ((stats.nposbin + stats.nnegbin == 2) ||
+       (stats.nposint + stats.nnegint == 2) ||
+       (stats.nposcont + stats.nnegcont == 2))) {
     c->setType(Precedence);
     ++size_->countPrecedence;
     return true;
@@ -586,13 +603,13 @@ bool Problem::isPrecedence_(ConstraintPtr c, const ConstraintStats& stats)
 
 bool Problem::isVariableBound_(ConstraintPtr c, const ConstraintStats& stats)
 {
-  if(((stats.nposbin + stats.nnegbin == 2) ||
-      (stats.nposcoefone + stats.nnegcoefone == 2) ||
-      ((stats.nposbin + stats.nnegbin == 1) &&
-       (stats.nposcont + stats.nnegcont) == 1) ||
-      ((stats.nposbin + stats.nnegbin == 1) &&
-       (stats.nposint + stats.nnegint) == 1)) &&
-     (c->getUb() <= INFTY && c->getLb() >= -INFTY)) {
+  if (((stats.nposbin + stats.nnegbin == 2) ||
+       (stats.nposcoefone + stats.nnegcoefone == 2) ||
+       ((stats.nposbin + stats.nnegbin == 1) &&
+        (stats.nposcont + stats.nnegcont) == 1) ||
+       ((stats.nposbin + stats.nnegbin == 1) &&
+        (stats.nposint + stats.nnegint) == 1)) &&
+      (c->getUb() <= INFTY && c->getLb() >= -INFTY)) {
     c->setType(VariableBound);
     ++size_->countVariableBound;
     return true;
@@ -601,12 +618,12 @@ bool Problem::isVariableBound_(ConstraintPtr c, const ConstraintStats& stats)
 }
 
 bool Problem::isSetPartitioning_(ConstraintPtr c,
-                                   const ConstraintStats& stats)
+                                 const ConstraintStats& stats)
 {
-  if(((c->getLb() == 1 - stats.nnegcoefone &&
-       c->getUb() == 1 - stats.nnegcoefone) ||
-      (c->getLb() == stats.nposcoefone - 1 &&
-       c->getUb() == stats.nposcoefone - 1))) {
+  if (((c->getLb() == 1 - stats.nnegcoefone &&
+        c->getUb() == 1 - stats.nnegcoefone) ||
+       (c->getLb() == stats.nposcoefone - 1 &&
+        c->getUb() == stats.nposcoefone - 1))) {
     c->setType(SetPartition);
     ++size_->countSetPartitioning;
     return true;
@@ -616,9 +633,9 @@ bool Problem::isSetPartitioning_(ConstraintPtr c,
 
 bool Problem::isSetPacking_(ConstraintPtr c, const ConstraintStats& stats)
 {
-  if((c->getLb() == stats.nposcoefone - 1 ||
-      c->getUb() == 1 - stats.nnegcoefone) &&
-     (c->getLb() >= -INFTY || c->getUb() <= INFTY)) {
+  if ((c->getLb() == stats.nposcoefone - 1 ||
+       c->getUb() == 1 - stats.nnegcoefone) &&
+      (c->getLb() >= -INFTY || c->getUb() <= INFTY)) {
     c->setType(SetPack);
     ++size_->countSetPacking;
     return true;
@@ -628,8 +645,8 @@ bool Problem::isSetPacking_(ConstraintPtr c, const ConstraintStats& stats)
 
 bool Problem::isSetCovering_(ConstraintPtr c, const ConstraintStats& stats)
 {
-  if((c->getLb() == 1 - stats.nnegcoefone && c->getUb() <= INFTY) ||
-     (c->getUb() == stats.nposcoefone - 1 && c->getLb() >= -INFTY)) {
+  if ((c->getLb() == 1 - stats.nnegcoefone && c->getUb() <= INFTY) ||
+      (c->getUb() == stats.nposcoefone - 1 && c->getLb() >= -INFTY)) {
     c->setType(SetCover);
     ++size_->countSetCovering;
     return true;
@@ -639,7 +656,7 @@ bool Problem::isSetCovering_(ConstraintPtr c, const ConstraintStats& stats)
 
 bool Problem::isCardinality_(ConstraintPtr c, const ConstraintStats& stats)
 {
-  if(c->getLb() == c->getUb() && c->getUb() <= 2 + stats.nnegcoefone) {
+  if (c->getLb() == c->getUb() && c->getUb() <= 2 + stats.nnegcoefone) {
     c->setType(Cardinality);
     ++size_->countCardinality;
     return true;
@@ -648,11 +665,11 @@ bool Problem::isCardinality_(ConstraintPtr c, const ConstraintStats& stats)
 }
 
 bool Problem::isInvariantKnapsack_(ConstraintPtr c,
-                                     const ConstraintStats& stats)
+                                   const ConstraintStats& stats)
 {
-  if(((c->getUb() >= 2 - stats.nnegcoefone && c->getLb() == -INFTY) ||
-      (c->getLb() == stats.nposcoefone - 2 && c->getUb() == INFTY)) &&
-     (isInt(c->getUb()))) {
+  if (((c->getUb() >= 2 - stats.nnegcoefone && c->getLb() == -INFTY) ||
+       (c->getLb() == stats.nposcoefone - 2 && c->getUb() == INFTY)) &&
+      (isInt(c->getUb()))) {
     c->setType(InvariantKnapsack);
     ++size_->countInvariantKnapsack;
     return true;
@@ -661,10 +678,10 @@ bool Problem::isInvariantKnapsack_(ConstraintPtr c,
 }
 
 bool Problem::isEquationKnapsack_(ConstraintPtr c,
-                                    const ConstraintStats& stats)
+                                  const ConstraintStats& stats)
 {
-  if((c->getUb() + stats.sumnegwt >= 2 && c->getUb() == c->getLb()) &&
-     (isInt(c->getUb()))) {
+  if ((c->getUb() + stats.sumnegwt >= 2 && c->getUb() == c->getLb()) &&
+      (isInt(c->getUb()))) {
     c->setType(EquationKnapsack);
     ++size_->countEquationKnapsack;
     return true;
@@ -674,8 +691,8 @@ bool Problem::isEquationKnapsack_(ConstraintPtr c,
 
 bool Problem::isBinPacking_(ConstraintPtr c, const ConstraintStats& stats)
 {
-  if(c->getUb() + stats.sumnegwt >= 2 && (isInt(c->getUb())) &&
-     stats.con >= 1) {
+  if (c->getUb() + stats.sumnegwt >= 2 && (isInt(c->getUb())) &&
+      stats.con >= 1) {
     c->setType(BinPack);
     ++size_->countBinPacking;
     return true;
@@ -685,10 +702,10 @@ bool Problem::isBinPacking_(ConstraintPtr c, const ConstraintStats& stats)
 
 bool Problem::isKnapsack_(ConstraintPtr c, const ConstraintStats& stats)
 {
-  if(((c->getLb() + 2 <= stats.sumnegwt && c->getUb() <= INFTY) &&
-      (isInt(c->getLb()))) ||
-     (c->getUb() + stats.sumnegwt >= 2 && c->getLb() >= -INFTY &&
-      (isInt(c->getUb())))) {
+  if (((c->getLb() + 2 <= stats.sumnegwt && c->getUb() <= INFTY) &&
+       (isInt(c->getLb()))) ||
+      (c->getUb() + stats.sumnegwt >= 2 && c->getLb() >= -INFTY &&
+       (isInt(c->getUb())))) {
     c->setType(Knapsack);
     ++size_->countKnapsack;
     return true;
@@ -697,10 +714,10 @@ bool Problem::isKnapsack_(ConstraintPtr c, const ConstraintStats& stats)
 }
 
 bool Problem::isIntegerKnapsack_(ConstraintPtr c,
-                                   const ConstraintStats& stats)
+                                 const ConstraintStats& stats)
 {
-  if(stats.nposint + stats.nnegint == stats.nvars && (isInt(c->getUb()))) {
-    if(c->getLb() >= -INFTY && c->getUb() <= INFTY) {
+  if (stats.nposint + stats.nnegint == stats.nvars && (isInt(c->getUb()))) {
+    if (c->getLb() >= -INFTY && c->getUb() <= INFTY) {
       c->setType(IntegerKnapsack);
       ++size_->countIntegerKnapsack;
       return true;
@@ -711,11 +728,11 @@ bool Problem::isIntegerKnapsack_(ConstraintPtr c,
 
 bool Problem::isMixedBinary_(ConstraintPtr c, const ConstraintStats& stats)
 {
-  if(stats.nposcont + stats.nnegcont + stats.nposbin + stats.nnegbin ==
-     stats.nvars) {
-    if(((c->getLb() >= -INFTY && c->getUb() <= INFTY) ||
-        (c->getUb() == c->getLb())) &&
-       (stats.nposbin + stats.nnegbin >= 1)) {
+  if (stats.nposcont + stats.nnegcont + stats.nposbin + stats.nnegbin ==
+      stats.nvars) {
+    if (((c->getLb() >= -INFTY && c->getUb() <= INFTY) ||
+         (c->getUb() == c->getLb())) &&
+        (stats.nposbin + stats.nnegbin >= 1)) {
       c->setType(MixedBinary);
       ++size_->countMixedBinary;
       return true;
@@ -731,73 +748,203 @@ bool Problem::isNoSpecificStructure_(ConstraintPtr c)
   return true;
 }
 
-bool Problem::isDiagonalQuadratic_(ConstraintPtr c, const ConstraintStats& stats)
+bool Problem::isDiagonalQuadratic_(ConstraintPtr c,
+                                   const ConstraintStats& stats)
 {
-  if(stats.nsqterm ==  stats.nterms + stats.nvars){
-      c->setType(DiagQuad);
-      ++size_->countDiagQuad;
-      return true;
+  if (stats.nsqterm == stats.nterms + stats.nvars) {
+    c->setType(DiagQuad);
+    ++size_->countDiagQuad;
+    return true;
   }
   return false;
 }
 
 bool Problem::isSimpleBall_(ConstraintPtr c, const ConstraintStats& stats)
 {
-  if((c->getLb() < c->getUb() && c->getUb() > 0 && c->getLb()==-INFTY) &&
-     ((stats.nsqterm ==  stats.nterms + stats.nvars && 
-     stats.nposcoefone == stats.nterms + stats.nvars) || 
-     (stats.nsqterm ==  stats.nterms + stats.nvars &&
-     stats.nposcoef == stats.nterms + stats.nvars &&
-     stats.eqwt == stats.nterms + stats.nvars))){
-      c->setType(SimpleBall);
-      ++size_->countSimpleBall;
-      return true;
+  const double lb = c->getLb();
+  const double ub = c->getUb();
+
+  if ((ub > 0 && lb == -INFTY && checkQuadCond(stats) &&
+       checkCoeffCond(stats, true)) ||
+      (ub == INFTY && lb < 0 && checkQuadCond(stats) &&
+       checkCoeffCond(stats, false))) {
+    c->setType(SimpleBall);
+    ++size_->countSimpleBall;
+    return true;
   }
   return false;
 }
 
-bool Problem::isComplementSimpleBall_(ConstraintPtr c, 
+bool Problem::isComplementSimpleBall_(ConstraintPtr c,
                                       const ConstraintStats& stats)
 {
-  if(c->getLb() < c->getUb() && c->getUb() == INFTY && c->getLb()>0 &&
-    stats.nsqterm ==  stats.nterms + stats.nvars &&
-    stats.nposcoefone == stats.nterms + stats.nvars){
-      c->setType(ComplementSimpleBall);
-      ++size_->countComplementSimpleBall;
-      return true;
+  const double lb = c->getLb();
+  const double ub = c->getUb();
+
+  if ((ub == INFTY && lb > 0 && checkQuadCond(stats) &&
+       checkCoeffCond(stats, true)) ||
+      (ub < 0 && lb == -INFTY && checkQuadCond(stats) &&
+       checkCoeffCond(stats, false))) {
+    c->setType(ComplementSimpleBall);
+    ++size_->countComplementSimpleBall;
+    return true;
   }
   return false;
 }
 
 bool Problem::isEllipsoid_(ConstraintPtr c, const ConstraintStats& stats)
 {
-  if(c->getLb() < c->getUb() && c->getLb() == -INFTY && c->getUb() < INFTY &&
-     stats.nsqterm ==  stats.nterms + stats.nvars &&
-     stats.nposcoef == stats.nterms + stats.nvars)
-    {
-      c->setType(Ellipsoid);
-      ++size_->countEllipsoid;
-      return true;
+  const double lb = c->getLb();
+  const double ub = c->getUb();
+
+  if ((lb == -INFTY && ub > 0 && ub < INFTY && checkQuadCond(stats) &&
+       stats.nposcoef == stats.nterms + stats.nvars) ||
+      (lb < 0 && ub == INFTY && checkQuadCond(stats) &&
+       stats.nnegcoef == stats.nterms + stats.nvars)) {
+    c->setType(Ellipsoid);
+    ++size_->countEllipsoid;
+    return true;
   }
   return false;
 }
 
-bool Problem::isComplementEllipsoid_(ConstraintPtr c, 
-                                      const ConstraintStats& stats)
+bool Problem::isComplementEllipsoid_(ConstraintPtr c,
+                                     const ConstraintStats& stats)
 {
-  if(c->getLb() < c->getUb() && c->getLb() > 0 && c->getUb() == INFTY &&
-     stats.nsqterm ==  stats.nterms + stats.nvars&&
-     stats.nposcoef == stats.nterms + stats.nvars){
-      c->setType(ComplementEllipsoid);
-      ++size_->countComplementEllipsoid;
-      return true;
+  const double lb = c->getLb();
+  const double ub = c->getUb();
+
+  if ((lb > 0 && ub == INFTY && checkQuadCond(stats) &&
+       stats.nposcoef == stats.nterms + stats.nvars) ||
+      (lb == -INFTY && ub < 0 && checkQuadCond(stats) &&
+       stats.nnegcoef == stats.nterms + stats.nvars)) {
+    c->setType(ComplementEllipsoid);
+    ++size_->countComplementEllipsoid;
+    return true;
+  }
+  return false;
+}
+
+bool Problem::isPureBilinear_(ConstraintPtr c, const ConstraintStats& stats)
+{
+  if (stats.nbilterm == stats.nterms + stats.nvars) {
+    c->setType(PureBilinear);
+    ++size_->countPureBilinear;
+    return true;
+  }
+  return false;
+}
+
+bool Problem::isSocSimple_(ConstraintPtr c, const ConstraintStats& stats)
+{
+  if (c->getLb() == -INFTY && c->getUb() >= 0 && stats.nnegcoef == 1 &&
+      stats.nsqterm == stats.nterms) {
+    if (c->getUb() == 0 && stats.nsqterm == stats.nterms + stats.nvars &&
+        stats.nposcoef == stats.nterms + stats.nvars - 1) {
+      QuadraticFunctionPtr qf = c->getQuadraticFunction();
+      for (VariablePairGroupConstIterator it = qf->begin(); it != qf->end();
+           it++) {
+        if (it->second < 0 && it->first.first->getLb() >= 0) {
+          c->setType(SOCRepresentableQuad);
+          ++size_->countQuadConvertSOC;
+          return true;
+        }
+      }
+    }
+    if (stats.nsqterm == stats.nterms && stats.nvars == 1 && c->getUb() > 0) {
+      QuadraticFunctionPtr qf = c->getQuadraticFunction();
+      LinearFunctionPtr lf = c->getLinearFunction();
+      VariableGroupConstIterator it0 = lf->termsBegin();
+      if (it0->second > 0) {
+        for (VariablePairGroupConstIterator it = qf->begin(); it != qf->end();
+             it++) {
+          if (it->second < 0 &&
+              it0->first->getId() == it->first.first->getId() &&
+              abs(it->second) * (it->first.first->getLb()) >=
+                  sqrt(c->getUb()) &&
+              abs((it0->second / (sqrt(abs(it->second)) * sqrt(c->getUb())) -
+                   2)) <= 1e-7) {
+            c->setType(SOCRepresentableQuad);
+            ++size_->countQuadConvertSOC;
+            return true;
+          }
+        }
+      }
+      if (it0->second < 0) {
+        for (VariablePairGroupConstIterator it = qf->begin(); it != qf->end();
+             it++) {
+          if (it->second < 0 &&
+              it0->first->getId() == it->first.first->getId() &&
+              abs(it->second) * (it->first.first->getLb()) -
+                      sqrt(c->getUb()) >=
+                  0 &&
+              abs((abs(it0->second) /
+                       (sqrt(abs(it->second)) * sqrt(c->getUb())) -
+                   2)) <= 1e-7) {
+            c->setType(SOCRepresentableQuad);
+            ++size_->countQuadConvertSOC;
+            return true;
+          }
+        }
+      }
+    }
+  }
+  if (c->getLb() <= 0 && c->getUb() == INFTY &&
+      stats.nnegcoef == stats.nterms - 1 && stats.nsqterm == stats.nterms) {
+    if (c->getLb() == 0 && stats.nsqterm == stats.nterms + stats.nvars &&
+        stats.nnegcoef == stats.nterms + stats.nvars - 1) {
+      QuadraticFunctionPtr qf = c->getQuadraticFunction();
+      for (VariablePairGroupConstIterator it = qf->begin(); it != qf->end();
+           it++) {
+        if (it->second > 0 && it->first.first->getLb() >= 0) {
+          c->setType(SOCRepresentableQuad);
+          ++size_->countQuadConvertSOC;
+          return true;
+        }
+      }
+    }
+    if (stats.nsqterm == stats.nterms && stats.nvars == 1 && c->getLb() < 0) {
+      QuadraticFunctionPtr qf = c->getQuadraticFunction();
+      LinearFunctionPtr lf = c->getLinearFunction();
+      VariableGroupConstIterator it0 = lf->termsBegin();
+      if (it0->second < 0) {
+        for (VariablePairGroupConstIterator it = qf->begin(); it != qf->end();
+             it++) {
+          if (it->second > 0 &&
+              it0->first->getId() == it->first.first->getId() &&
+              (it->second) * (it->first.first->getLb()) >=
+                  sqrt(-c->getLb()) &&
+              abs((-it0->second / (sqrt(it->second) * sqrt(-c->getLb())) -
+                   2)) <= 1e-7) {
+            c->setType(SOCRepresentableQuad);
+            ++size_->countQuadConvertSOC;
+            return true;
+          }
+        }
+      }
+      if (it0->second > 0) {
+        for (VariablePairGroupConstIterator it = qf->begin(); it != qf->end();
+             it++) {
+          if (it->second > 0 &&
+              it0->first->getId() == it->first.first->getId() &&
+              it->second * (it->first.first->getLb()) - sqrt(-c->getLb()) >=
+                  0 &&
+              abs((it0->second / (sqrt(it->second) * sqrt(-c->getLb())) -
+                   2)) <= 1e-7) {
+            c->setType(SOCRepresentableQuad);
+            ++size_->countQuadConvertSOC;
+            return true;
+          }
+        }
+      }
+    }
   }
   return false;
 }
 
 void Problem::printConstraintStatistics_()
 {
-  const int wid=8;
+  const int wid = 8;
   logger_->msgStream(LogExtraInfo)
       << "-------------------------------" << std::endl
       << "|   Linear Constraint Types   |\n"
@@ -806,20 +953,20 @@ void Problem::printConstraintStatistics_()
       << " |\n"
       << "|Precedence         |" << std::setw(wid) << size_->countPrecedence
       << " |\n"
-      << "|Variable Bound     |" << std::setw(wid) << size_->countVariableBound
-      << " |\n"
+      << "|Variable Bound     |" << std::setw(wid)
+      << size_->countVariableBound << " |\n"
       << "|Partitioning       |" << std::setw(wid)
       << size_->countSetPartitioning << " |\n"
       << "|Set Packing        |" << std::setw(wid) << size_->countSetPacking
       << " |\n"
-      << "|Set Covering       |" << std::setw(wid) <<size_-> countSetCovering
+      << "|Set Covering       |" << std::setw(wid) << size_->countSetCovering
       << " |\n"
-      << "|Cardinality        |" << std::setw(wid) <<size_-> countCardinality
+      << "|Cardinality        |" << std::setw(wid) << size_->countCardinality
       << " |\n"
       << "|Invariant Knapsack |" << std::setw(wid)
       << size_->countInvariantKnapsack << " |\n"
       << "|Equation Knapsack  |" << std::setw(wid)
-      <<size_-> countEquationKnapsack << " |\n"
+      << size_->countEquationKnapsack << " |\n"
       << "|Bin Packing        |" << std::setw(wid) << size_->countBinPacking
       << " |\n"
       << "|Knapsack           |" << std::setw(wid) << size_->countKnapsack
@@ -835,22 +982,26 @@ void Problem::printConstraintStatistics_()
 
 void Problem::printConstraintStatisticsQuad_()
 {
-  const int wid=7;
+  const int wid = 8;
   logger_->msgStream(LogExtraInfo)
-      << "-----------------------------------" << std::endl
-      << "|   Quadratic Constraint Typres   |\n"
-      << "|---------------------------------|\n"
-      << "|Diagonal Quadratic       |" << std::setw(wid) << size_->countDiagQuad
-      << "|\n"
-      << "|Simple Ball              |" << std::setw(wid) << size_->countSimpleBall
-      << "|\n"
-      << "|Ellipsoid                |" << std::setw(wid) << size_->countEllipsoid
-      << "|\n"
-      << "|Complement Simple Ball   |" << std::setw(wid) << size_->countComplementSimpleBall
-      << "|\n"
-      << "|Complement Ellipsoid     |" << std::setw(wid) << size_->countComplementEllipsoid
-      << "|\n"
-      << "-----------------------------------\n";
+      << "------------------------------------" << std::endl
+      << "|   Quadratic Constraint Types     |\n"
+      << "|----------------------------------|\n"
+      << "|Diagonal Quadratic       |" << std::setw(wid)
+      << size_->countDiagQuad << "|\n"
+      << "|Simple Ball              |" << std::setw(wid)
+      << size_->countSimpleBall << "|\n"
+      << "|Ellipsoid                |" << std::setw(wid)
+      << size_->countEllipsoid << "|\n"
+      << "|Complement Simple Ball   |" << std::setw(wid)
+      << size_->countComplementSimpleBall << "|\n"
+      << "|Complement Ellipsoid     |" << std::setw(wid)
+      << size_->countComplementEllipsoid << "|\n"
+      << "|Pure Bilinear            |" << std::setw(wid)
+      << size_->countPureBilinear << "|\n"
+      << "|SOC Representable        |" << std::setw(wid)
+      << size_->countQuadConvertSOC << "|\n"
+      << "------------------------------------\n";
 }
 
 // Lock Number Calculation (Not used anywhere)
@@ -863,12 +1014,10 @@ void Problem::lockNum_() {
  ConstraintPtr c = *citer;
  FunctionPtr f = c->getFunction();
  LinearFunctionPtr lf = f->getLinearFunction();
- for (VariableGroupConstIterator it = lf->termsBegin(); it != lf->termsEnd(); ++it) {
-  VariablePtr v = it->first;
-  double wt = it->second;
-  if (c->getUb() == c->getLb()) {
-   Locknumber[v].first += 1;  // Increment the count for the upper lock
-   Locknumber[v].second += 1; // Increment the count for the lower lock
+ for (VariableGroupConstIterator it = lf->termsBegin(); it != lf->termsEnd();
+++it) { VariablePtr v = it->first; double wt = it->second; if (c->getUb() ==
+c->getLb()) { Locknumber[v].first += 1;  // Increment the count for the upper
+lock Locknumber[v].second += 1; // Increment the count for the lower lock
   }else {
     if (wt > 0) {
      Locknumber[v].first += 1; // Increment the count for the upper lock
@@ -897,7 +1046,7 @@ ProblemPtr Problem::clone(EnvPtr env) const
   ProblemPtr clonePtr = (ProblemPtr) new Problem(env);
 
   // Copy the variables.
-  for(VariableConstIterator it = vars_.begin(); it != vars_.end(); ++it) {
+  for (VariableConstIterator it = vars_.begin(); it != vars_.end(); ++it) {
     cv = *it;
     v = clonePtr->newVariable(cv->getLb(), cv->getUb(), cv->getType(),
                               cv->getName(), cv->getSrcType());
@@ -910,7 +1059,7 @@ ProblemPtr Problem::clone(EnvPtr env) const
 
   vit0 = clonePtr->varsBegin();
   // add constraints
-  for(ConstraintConstIterator it = cons_.begin(); it != cons_.end(); ++it) {
+  for (ConstraintConstIterator it = cons_.begin(); it != cons_.end(); ++it) {
     cc = *it;
     // clone the function.
     f = cc->getFunction()->cloneWithVars(vit0, &err);
@@ -922,9 +1071,9 @@ ProblemPtr Problem::clone(EnvPtr env) const
 
   // copy SOS1 constraints
   vvec.clear();
-  for(SOSConstIterator it = sos1_.begin(); it != sos1_.end(); ++it) {
-    for(VariableConstIterator it2 = (*it)->varsBegin(); it2 != (*it)->varsEnd();
-        ++it2) {
+  for (SOSConstIterator it = sos1_.begin(); it != sos1_.end(); ++it) {
+    for (VariableConstIterator it2 = (*it)->varsBegin();
+         it2 != (*it)->varsEnd(); ++it2) {
       vvec.push_back(*it2);
     }
     clonePtr->newSOS((*it)->getNz(), (*it)->getType(), (*it)->getWeights(),
@@ -934,8 +1083,8 @@ ProblemPtr Problem::clone(EnvPtr env) const
 
   // add objective
   oPtr = getObjective();
-  if(oPtr) {
-    if(oPtr->getFunction()) {
+  if (oPtr) {
+    if (oPtr->getFunction()) {
       f = oPtr->getFunction()->cloneWithVars(vit0, &err);
       assert(err == 0);
       clonePtr->newObjective(f, oPtr->getConstant(), oPtr->getObjectiveType(),
@@ -945,11 +1094,11 @@ ProblemPtr Problem::clone(EnvPtr env) const
     }
   }
 
-  clonePtr->jacobian_ = JacobianPtr(); // NULL.
+  clonePtr->jacobian_ = JacobianPtr();  // NULL.
   clonePtr->nextCId_ = nextCId_;
   clonePtr->nextSId_ = nextSId_;
   clonePtr->nextVId_ = nextVId_;
-  clonePtr->hessian_ = HessianOfLagPtr(); // NULL.
+  clonePtr->hessian_ = HessianOfLagPtr();  // NULL.
   clonePtr->numDVars_ = numDVars_;
   clonePtr->numDCons_ = numDCons_;
   clonePtr->engine_ = 0;
@@ -957,7 +1106,7 @@ ProblemPtr Problem::clone(EnvPtr env) const
   clonePtr->varsModed_ = varsModed_;
 
   // clone size
-  if(size_) {
+  if (size_) {
     clonePtr->size_ = (ProblemSizePtr) new ProblemSize();
     clonePtr->size_->vars = size_->vars;
     clonePtr->size_->cons = size_->cons;
@@ -985,9 +1134,9 @@ ProblemPtr Problem::clone(EnvPtr env) const
     clonePtr->size_->objQuadTerms = size_->objQuadTerms;
     clonePtr->size_->objType = size_->objType;
   } else {
-    clonePtr->size_ = ProblemSizePtr(); // NULL
+    clonePtr->size_ = ProblemSizePtr();  // NULL
   }
-  clonePtr->nativeDer_ = nativeDer_; // NULL
+  clonePtr->nativeDer_ = nativeDer_;  // NULL
 
   return clonePtr;
 }
@@ -1009,25 +1158,25 @@ ProblemPtr Problem::shuffle(bool varshuff, bool conshuff, EnvPtr env)
   int rand_seedvar = 8;
   srand(rand_seedvar);
 
-  if(varshuff == 1) {
+  if (varshuff == 1) {
     shuf_vars = vars_;
     std::random_shuffle(shuf_vars.begin(), shuf_vars.end());
     std::vector<UInt> variableindex;
-    for(VariableConstIterator it = shuf_vars.begin(); it != shuf_vars.end();
-        ++it) {
+    for (VariableConstIterator it = shuf_vars.begin(); it != shuf_vars.end();
+         ++it) {
       cv = *it;
       variableindex.push_back(cv->getIndex());
     }
 
     std::vector<UInt> variableaddress(vars_.size());
-    for(UInt j = 0; j != vars_.size(); ++j) {
+    for (UInt j = 0; j != vars_.size(); ++j) {
       variableaddress[variableindex[j]] = j;
     }
 
     // Copy the variables.
     i = 0;
-    for(VariableConstIterator it = shuf_vars.begin(); it != shuf_vars.end();
-        ++it) {
+    for (VariableConstIterator it = shuf_vars.begin(); it != shuf_vars.end();
+         ++it) {
       cv = *it;
       v = newp->newVariable(cv->getLb(), cv->getUb(), cv->getType(),
                             cv->getName(), cv->getSrcType());
@@ -1043,11 +1192,12 @@ ProblemPtr Problem::shuffle(bool varshuff, bool conshuff, EnvPtr env)
     vit0 = newp->vars_.begin();
 
     // add constraints
-    if(conshuff == 1) {
+    if (conshuff == 1) {
       i = 0;
       ConstraintVector cons2 = cons_;
       std::random_shuffle(cons2.begin(), cons2.end());
-      for(ConstraintConstIterator it = cons2.begin(); it != cons2.end(); ++it) {
+      for (ConstraintConstIterator it = cons2.begin(); it != cons2.end();
+           ++it) {
         cc = *it;
         // clone the function.
         f = cc->getFunction()->cloneWithVarsPermute(vit0, variableaddress,
@@ -1062,7 +1212,8 @@ ProblemPtr Problem::shuffle(bool varshuff, bool conshuff, EnvPtr env)
     }
 
     else {
-      for(ConstraintConstIterator it = cons_.begin(); it != cons_.end(); ++it) {
+      for (ConstraintConstIterator it = cons_.begin(); it != cons_.end();
+           ++it) {
         cc = *it;
         // clone the function.
         f = cc->getFunction()->cloneWithVarsPermute(vit0, variableaddress,
@@ -1075,8 +1226,9 @@ ProblemPtr Problem::shuffle(bool varshuff, bool conshuff, EnvPtr env)
     }
 
     obj = getObjective();
-    if(obj) {
-      f = obj->getFunction()->cloneWithVarsPermute(vit0, variableaddress, &err);
+    if (obj) {
+      f = obj->getFunction()->cloneWithVarsPermute(vit0, variableaddress,
+                                                   &err);
       assert(err == 0);
       newp->newObjective(f, obj->getConstant(), obj->getObjectiveType(),
                          obj->getName());
@@ -1084,7 +1236,7 @@ ProblemPtr Problem::shuffle(bool varshuff, bool conshuff, EnvPtr env)
 
   } else {
     // Copy the variables.
-    for(VariableConstIterator it = vars_.begin(); it != vars_.end(); ++it) {
+    for (VariableConstIterator it = vars_.begin(); it != vars_.end(); ++it) {
       cv = *it;
       v = newp->newVariable(cv->getLb(), cv->getUb(), cv->getType(),
                             cv->getName(), cv->getSrcType());
@@ -1099,11 +1251,12 @@ ProblemPtr Problem::shuffle(bool varshuff, bool conshuff, EnvPtr env)
 
     // add constraints
 
-    if(conshuff == 1) {
+    if (conshuff == 1) {
       i = 0;
       ConstraintVector cons2 = cons_;
       std::random_shuffle(cons2.begin(), cons2.end());
-      for(ConstraintConstIterator it = cons2.begin(); it != cons2.end(); ++it) {
+      for (ConstraintConstIterator it = cons2.begin(); it != cons2.end();
+           ++it) {
         cc = *it;
         // clone the function.
         f = cc->getFunction()->cloneWithVars(vit0, &err);
@@ -1117,7 +1270,8 @@ ProblemPtr Problem::shuffle(bool varshuff, bool conshuff, EnvPtr env)
     }
 
     else {
-      for(ConstraintConstIterator it = cons_.begin(); it != cons_.end(); ++it) {
+      for (ConstraintConstIterator it = cons_.begin(); it != cons_.end();
+           ++it) {
         cc = *it;
         // clone the function.
         f = cc->getFunction()->cloneWithVars(vit0, &err);
@@ -1129,7 +1283,7 @@ ProblemPtr Problem::shuffle(bool varshuff, bool conshuff, EnvPtr env)
     }
     // add objective
     obj = getObjective();
-    if(obj) {
+    if (obj) {
       f = obj->getFunction()->cloneWithVars(vit0, &err);
       assert(err == 0);
       newp->newObjective(f, obj->getConstant(), obj->getObjectiveType(),
@@ -1153,11 +1307,11 @@ ProblemPtr Problem::shuffle(bool varshuff, bool conshuff, EnvPtr env)
   // }
 
   // Now clone everything else...
-  newp->jacobian_ = JacobianPtr(); // NULL.
+  newp->jacobian_ = JacobianPtr();  // NULL.
   newp->nextCId_ = nextCId_;
   newp->nextSId_ = nextSId_;
   newp->nextVId_ = nextVId_;
-  newp->hessian_ = HessianOfLagPtr(); // NULL.
+  newp->hessian_ = HessianOfLagPtr();  // NULL.
   newp->numDVars_ = numDVars_;
   newp->numDCons_ = numDCons_;
   newp->engine_ = 0;
@@ -1165,7 +1319,7 @@ ProblemPtr Problem::shuffle(bool varshuff, bool conshuff, EnvPtr env)
   newp->varsModed_ = varsModed_;
 
   // clone size
-  if(size_) {
+  if (size_) {
     newp->size_ = (ProblemSizePtr) new ProblemSize();
     newp->size_->vars = size_->vars;
     newp->size_->cons = size_->cons;
@@ -1193,9 +1347,9 @@ ProblemPtr Problem::shuffle(bool varshuff, bool conshuff, EnvPtr env)
     newp->size_->objQuadTerms = size_->objQuadTerms;
     newp->size_->objType = size_->objType;
   } else {
-    newp->size_ = ProblemSizePtr(); // NULL
+    newp->size_ = ProblemSizePtr();  // NULL
   }
-  newp->nativeDer_ = nativeDer_; // Boolean
+  newp->nativeDer_ = nativeDer_;  // Boolean
 
   // newp->write(std::cout);
 
@@ -1248,8 +1402,8 @@ void Problem::cg2qf()
 
   // objective
   f = getObjective()->getFunction();
-  if(f) {
-    if(Quadratic == f->getType()) {
+  if (f) {
+    if (Quadratic == f->getType()) {
       hessian_->fillRowColValues(x, 1.0, mult, values, &err);
       assert(0 == err);
 
@@ -1279,14 +1433,14 @@ void Problem::cg2qf()
     }
   }
 
-  for(ConstraintConstIterator cit = consBegin(); cit != consEnd(); ++cit) {
+  for (ConstraintConstIterator cit = consBegin(); cit != consEnd(); ++cit) {
     c = *cit;
     f = c->getFunction();
 
-    if(!f) {
+    if (!f) {
       continue;
     }
-    if(Quadratic == f->getType()) {
+    if (Quadratic == f->getType()) {
       mult[c->getIndex()] = 1.0;
       memset(values, 0, nz * sizeof(UInt));
       hessian_->fillRowColValues(x, 0.0, mult, values, &err);
@@ -1298,8 +1452,8 @@ void Problem::cg2qf()
       memset(grad, 0, getNumVars() * sizeof(double));
       f->evalGradient(x, grad, &err);
       assert(0 == err);
-      if(std::all_of(grad, grad + getNumVars(),
-                     [](double comp) { return fabs(comp) < 1e-8; })) {
+      if (std::all_of(grad, grad + getNumVars(),
+                      [](double comp) { return fabs(comp) < 1e-8; })) {
         lfnew = 0;
       } else {
         lfnew = (LinearFunctionPtr) new LinearFunction(grad, varsBegin(),
@@ -1318,9 +1472,9 @@ void Problem::cg2qf()
     }
   }
 
-  for(std::map<FunctionPtr, std::pair<double, double>>::iterator it =
-          newCons.begin();
-      it != newCons.end(); ++it) {
+  for (std::map<FunctionPtr, std::pair<double, double>>::iterator it =
+           newCons.begin();
+       it != newCons.end(); ++it) {
     newConstraint(it->first, it->second.first, it->second.second);
   }
 
@@ -1348,10 +1502,10 @@ void Problem::countConsTypes_()
        consWithQuad = 0, consWithNonlin = 0;
   UInt linTerms = 0, quadTerms = 0, bilinTerms = 0, sqTerms = 0;
 
-  for(citer = cons_.begin(); citer != cons_.end(); ++citer) {
+  for (citer = cons_.begin(); citer != cons_.end(); ++citer) {
     cPtr = *citer;
-    switch(cPtr->getFunctionType()) {
-    case Constant: // TODO: for now consider it linear
+    switch (cPtr->getFunctionType()) {
+    case Constant:  // TODO: for now consider it linear
     case Linear:
       linCons++;
       break;
@@ -1363,23 +1517,23 @@ void Problem::countConsTypes_()
       break;
     }
     lf = cPtr->getLinearFunction();
-    if(lf) {
+    if (lf) {
       consWithLin++;
       linTerms += lf->getNumTerms();
     }
     qf = cPtr->getQuadraticFunction();
-    if(qf) {
-      if(qf->getNumBilTerms()>0){
+    if (qf) {
+      if (qf->getNumBilTerms() > 0) {
         consWithBilin++;
         bilinTerms += qf->getNumBilTerms();
       }
-      if(qf->getNumSqTerms()>0){
+      if (qf->getNumSqTerms() > 0) {
         sqTerms += qf->getNumSqTerms();
       }
       consWithQuad++;
       quadTerms += qf->getNumTerms();
     }
-    if(cPtr->getNonlinearFunction()) {
+    if (cPtr->getNonlinearFunction()) {
       consWithNonlin++;
     }
   }
@@ -1411,17 +1565,17 @@ void Problem::countObjTypes_()
   QuadraticFunctionPtr qf;
   UInt linTerms = 0, quadTerms = 0;
 
-  if(obj_) {
+  if (obj_) {
     size_->objType = obj_->getFunctionType();
     lf = obj_->getLinearFunction();
-    if(lf) {
+    if (lf) {
       linTerms += lf->getNumTerms();
     }
     qf = obj_->getQuadraticFunction();
-    if(qf) {
+    if (qf) {
       quadTerms += qf->getNumTerms();
     }
-    if(obj_->getNonlinearFunction()) {
+    if (obj_->getNonlinearFunction()) {
     }
   }
 
@@ -1436,22 +1590,22 @@ void Problem::countVarTypes_()
   VariablePtr vPtr;
   UInt bins = 0, ints = 0, conts = 0, fixed = 0;
 
-  for(viter = vars_.begin(); viter != vars_.end(); viter++) {
+  for (viter = vars_.begin(); viter != vars_.end(); viter++) {
     vPtr = *viter;
-    switch(vPtr->getType()) {
-    case(Binary):
+    switch (vPtr->getType()) {
+    case (Binary):
       ++bins;
       break;
-    case(Integer):
+    case (Integer):
       ++ints;
       break;
-    case(Continuous):
+    case (Continuous):
       ++conts;
       break;
     default:
       break;
     }
-    if(fabs(vPtr->getUb() - vPtr->getLb()) < 1e-9) {
+    if (fabs(vPtr->getUb() - vPtr->getLb()) < 1e-9) {
       ++fixed;
     }
   }
@@ -1465,29 +1619,29 @@ void Problem::countVarTypes_()
 
 void Problem::delMarkedCons()
 {
-  if(numDCons_ > 0) {
+  if (numDCons_ > 0) {
     ConstraintPtr c;
     UInt i;
     std::vector<ConstraintPtr> copycons;
     std::vector<ConstraintPtr> delcons;
 
-    for(ConstraintIterator it = cons_.begin(); it != cons_.end(); ++it) {
+    for (ConstraintIterator it = cons_.begin(); it != cons_.end(); ++it) {
       c = *it;
-      if(c->getState() == DeletedCons) {
+      if (c->getState() == DeletedCons) {
         delcons.push_back(c);
       } else {
         copycons.push_back(c);
       }
     }
 
-    if(engine_) {
+    if (engine_) {
       engine_->removeCons(delcons);
     }
 
-    for(ConstraintIterator it = delcons.begin(); it != delcons.end(); ++it) {
+    for (ConstraintIterator it = delcons.begin(); it != delcons.end(); ++it) {
       c = *it;
-      for(VarSet::iterator vit = c->getFunction()->varsBegin();
-          vit != c->getFunction()->varsEnd(); ++vit) {
+      for (VarSet::iterator vit = c->getFunction()->varsBegin();
+           vit != c->getFunction()->varsEnd(); ++vit) {
         (*vit)->outOfConstraint_(c);
       }
       delete c;
@@ -1495,7 +1649,8 @@ void Problem::delMarkedCons()
     }
 
     i = 0;
-    for(ConstraintIterator it = copycons.begin(); it != copycons.end(); ++it) {
+    for (ConstraintIterator it = copycons.begin(); it != copycons.end();
+         ++it) {
       (*it)->setIndex_(i);
       ++i;
     }
@@ -1510,21 +1665,21 @@ void Problem::delMarkedVars(bool keep)
 {
   assert(engine_ == 0 ||
          (!"Cannot delete variables after loading problem to engine\n"));
-  if(numDVars_ > 0) {
+  if (numDVars_ > 0) {
     VariablePtr v = 0;
     UInt i = 0;
     std::vector<VariablePtr> copyvars;
-    for(VariableIterator it = vars_.begin(); it != vars_.end(); ++it) {
+    for (VariableIterator it = vars_.begin(); it != vars_.end(); ++it) {
       v = *it;
-      if(v->getState() == DeletedVar) {
-        for(ConstrSet::const_iterator cit = v->consBegin(); cit != v->consEnd();
-            ++cit) {
+      if (v->getState() == DeletedVar) {
+        for (ConstrSet::const_iterator cit = v->consBegin();
+             cit != v->consEnd(); ++cit) {
           (*cit)->delFixedVar_(v, v->getLb());
         }
-        if(obj_) {
+        if (obj_) {
           obj_->delFixedVar_(v, v->getLb());
         }
-        if(keep) {
+        if (keep) {
           varsRem_.push_back(v);
         } else {
           delete v;
@@ -1547,19 +1702,18 @@ ProblemType Problem::findType()
 {
   calculateSize();
 
-  if(size_->cons == size_->linCons &&
-     (Constant == size_->objType || Linear == size_->objType)) {
+  if (size_->cons == size_->linCons &&
+      (Constant == size_->objType || Linear == size_->objType)) {
     return (size_->bins + size_->ints > 0) ? MILP : LP;
-  } else if(size_->cons == size_->linCons &&
-            (Quadratic == size_->objType )) {
+  } else if (size_->cons == size_->linCons && (Quadratic == size_->objType)) {
     return (size_->bins + size_->ints > 0) ? MIQP : QP;
 
-  } else if(size_->cons ==
-                size_->linCons + size_->bilinCons + size_->quadCons &&
-            (Quadratic == size_->objType ||Linear == size_->objType || 
-            Constant == size_->objType)) {
+  } else if (size_->cons ==
+                 size_->linCons + size_->bilinCons + size_->quadCons &&
+             (Quadratic == size_->objType || Linear == size_->objType ||
+              Constant == size_->objType)) {
     return (size_->bins + size_->ints > 0) ? MIQCQP : QCQP;
-  } else if(isPolyp_()) {
+  } else if (isPolyp_()) {
     return (size_->bins + size_->ints > 0) ? MIPOLYP : POLYP;
   } else {
     return (size_->bins + size_->ints > 0) ? MINLP : NLP;
@@ -1597,43 +1751,44 @@ void Problem::findVarFunTypes_()
     }
   }
 #else
-  for(VariableConstIterator it = vars_.begin(); it != vars_.end(); ++it) {
+  for (VariableConstIterator it = vars_.begin(); it != vars_.end(); ++it) {
     (*it)->setFunType_(Constant);
   }
-  for(ConstraintConstIterator it = cons_.begin(); it != cons_.end(); ++it) {
+  for (ConstraintConstIterator it = cons_.begin(); it != cons_.end(); ++it) {
     f = (*it)->getFunction();
-    if(f) {
+    if (f) {
       lf = f->getLinearFunction();
       qf = f->getQuadraticFunction();
       nlf = f->getNonlinearFunction();
-      if(lf) {
-        for(VariableGroupConstIterator lit = lf->termsBegin();
-            lit != lf->termsEnd(); ++lit) {
+      if (lf) {
+        for (VariableGroupConstIterator lit = lf->termsBegin();
+             lit != lf->termsEnd(); ++lit) {
           v = lit->first;
           ftype = funcTypesAdd(v->getFunType(), Linear);
           v->setFunType_(ftype);
         }
       }
-      if(qf) {
+      if (qf) {
         VarCountConstMap* vmap = qf->getVarMap();
-        for(VarCountConstMap::const_iterator lit = vmap->begin();
-            lit != vmap->end(); ++lit) {
+        for (VarCountConstMap::const_iterator lit = vmap->begin();
+             lit != vmap->end(); ++lit) {
           v = lit->first;
           ftype = funcTypesAdd(v->getFunType(), Quadratic);
           v->setFunType_(ftype);
         }
       }
-      if(nlf) {
-        for(VariableSet::const_iterator lit = nlf->varsBegin();
-            lit != nlf->varsEnd(); ++lit) {
+      if (nlf) {
+        for (VariableSet::const_iterator lit = nlf->varsBegin();
+             lit != nlf->varsEnd(); ++lit) {
           v = *lit;
           v->setFunType_(Nonlinear);
         }
       }
     }
   }
-  if(of) {
-    for(VarSet::iterator vit = of->varsBegin(); vit != of->varsEnd(); ++vit) {
+  if (of) {
+    for (VarSet::iterator vit = of->varsBegin(); vit != of->varsEnd();
+         ++vit) {
       v = *vit;
       ftype = funcTypesAdd(v->getFunType(), of->getVarFunType(v));
       v->setFunType_(ftype);
@@ -1665,7 +1820,7 @@ JacobianPtr Problem::getJacobian() const
 
 UInt Problem::getNumHessNnzs() const
 {
-  if(hessian_) {
+  if (hessian_) {
     return hessian_->getNumNz();
   }
   return 0;
@@ -1673,7 +1828,7 @@ UInt Problem::getNumHessNnzs() const
 
 UInt Problem::getNumJacNnzs() const
 {
-  if(jacobian_) {
+  if (jacobian_) {
     return jacobian_->getNumNz();
   }
   return 0;
@@ -1703,7 +1858,7 @@ ObjectivePtr Problem::getObjective() const
 // number of variables in the problem
 double Problem::getObjValue(const double* x, int* err) const
 {
-  if(obj_) {
+  if (obj_) {
     return obj_->eval(x, err);
   } else {
     return 0;
@@ -1727,7 +1882,7 @@ bool Problem::hasNativeDer() const
 
 bool Problem::isDebugSolFeas(double atol, double rtol)
 {
-  if(debugSol_) {
+  if (debugSol_) {
     double lb, ub;
     int err = 0;
     double act;
@@ -1735,13 +1890,13 @@ bool Problem::isDebugSolFeas(double atol, double rtol)
     bool isfeas = true;
     int i;
 
-    x = &(*debugSol_)[0]; // convert doublevector * to double array pointer
+    x = &(*debugSol_)[0];  // convert doublevector * to double array pointer
     i = 0;
-    for(VariableConstIterator it = vars_.begin(); it != vars_.end(); ++it) {
+    for (VariableConstIterator it = vars_.begin(); it != vars_.end(); ++it) {
       lb = (*it)->getLb();
       ub = (*it)->getUb();
       act = x[i];
-      if((act > ub + atol) && (act > ub + fabs(ub) * rtol)) {
+      if ((act > ub + atol) && (act > ub + fabs(ub) * rtol)) {
         logger_->msgStream(LogDebug2)
             << me_ << "variable ub constraint " << (*it)->getName()
             << " violated by the debug sol."
@@ -1749,7 +1904,7 @@ bool Problem::isDebugSolFeas(double atol, double rtol)
         isfeas = false;
         break;
       }
-      if((act < lb - atol) && (act < lb - fabs(lb) * rtol)) {
+      if ((act < lb - atol) && (act < lb - fabs(lb) * rtol)) {
         logger_->msgStream(LogDebug2)
             << me_ << "variable lb constraint " << (*it)->getName()
             << " violated by the debug sol."
@@ -1760,22 +1915,23 @@ bool Problem::isDebugSolFeas(double atol, double rtol)
       ++i;
     }
 
-    for(ConstraintConstIterator it = cons_.begin(); it != cons_.end(); ++it) {
+    for (ConstraintConstIterator it = cons_.begin(); it != cons_.end();
+         ++it) {
       err = 0;
       act = (*it)->getActivity(x, &err);
       lb = (*it)->getLb();
       ub = (*it)->getUb();
-      if(err) {
+      if (err) {
         logger_->msgStream(LogError) << me_ << "eval error for constraint "
                                      << (*it)->getName() << std::endl;
-      } else if((act > ub + atol) && (act > ub + fabs(ub) * rtol)) {
+      } else if ((act > ub + atol) && (act > ub + fabs(ub) * rtol)) {
         logger_->msgStream(LogError)
             << me_ << "ub constraint " << (*it)->getName()
             << " violated by the debug sol."
             << " activity = " << act << " but ub = " << ub << std::endl;
         isfeas = false;
         break;
-      } else if((act < lb - atol) && (act < lb - fabs(lb) * rtol)) {
+      } else if ((act < lb - atol) && (act < lb - fabs(lb) * rtol)) {
         logger_->msgStream(LogError)
             << me_ << "lb constraint " << (*it)->getName()
             << " violated by the debug sol."
@@ -1788,7 +1944,7 @@ bool Problem::isDebugSolFeas(double atol, double rtol)
     act = obj_->eval(x, &err);
 
 
-    if(isfeas) {
+    if (isfeas) {
       logger_->msgStream(LogDebug1)
           << me_ << "debug solution is feasible" << std::endl;
     }
@@ -1799,9 +1955,9 @@ bool Problem::isDebugSolFeas(double atol, double rtol)
 
 bool Problem::isLinear()
 {
-  if(size_) {
-    if(size_->cons == size_->linCons &&
-       (Constant == size_->objType || Linear == size_->objType)) {
+  if (size_) {
+    if (size_->cons == size_->linCons &&
+        (Constant == size_->objType || Linear == size_->objType)) {
       return true;
     }
   }
@@ -1822,14 +1978,15 @@ bool Problem::isPolyp_()
 {
   // assume that we have already check for linear, quadratic ...
   FunctionPtr f;
-  if(obj_ && obj_->getFunction() &&
-     (obj_->getFunction()->getType() == Nonlinear ||
-      obj_->getFunction()->getType() == OtherFunctionType)) {
+  if (obj_ && obj_->getFunction() &&
+      (obj_->getFunction()->getType() == Nonlinear ||
+       obj_->getFunction()->getType() == OtherFunctionType)) {
     return false;
   }
-  for(ConstraintIterator it = cons_.begin(); it != cons_.end(); ++it) {
+  for (ConstraintIterator it = cons_.begin(); it != cons_.end(); ++it) {
     f = (*it)->getFunction();
-    if(f && (f->getType() == Nonlinear || f->getType() == OtherFunctionType)) {
+    if (f &&
+        (f->getType() == Nonlinear || f->getType() == OtherFunctionType)) {
       return false;
     }
   }
@@ -1838,12 +1995,12 @@ bool Problem::isPolyp_()
 
 bool Problem::isQP()
 {
-  if(size_) {
-    if(isLinear()) {
+  if (size_) {
+    if (isLinear()) {
       return false;
-    } else if((size_->linCons == size_->cons) &&
-              (Constant == size_->objType || Linear == size_->objType ||
-               Quadratic == size_->objType )) {
+    } else if ((size_->linCons == size_->cons) &&
+               (Constant == size_->objType || Linear == size_->objType ||
+                Quadratic == size_->objType)) {
       return true;
     }
   }
@@ -1852,13 +2009,13 @@ bool Problem::isQP()
 
 bool Problem::isQuadratic()
 {
-  if(size_) {
-    if(isLinear()) {
+  if (size_) {
+    if (isLinear()) {
       return false;
-    } else if((size_->linCons + size_->quadCons + size_->bilinCons ==
-               size_->cons) &&
-              (Constant == size_->objType || Linear == size_->objType ||
-               Quadratic == size_->objType)) {
+    } else if ((size_->linCons + size_->quadCons + size_->bilinCons ==
+                size_->cons) &&
+               (Constant == size_->objType || Linear == size_->objType ||
+                Quadratic == size_->objType)) {
       return true;
     }
   }
@@ -1881,13 +2038,13 @@ void Problem::markDelete(VariablePtr var)
 
 void Problem::negateObj()
 {
-  if(engine_) {
+  if (engine_) {
     engine_->negateObj();
   }
-  if(obj_) {
+  if (obj_) {
     obj_->negate_();
   }
-  if(hessian_) {
+  if (hessian_) {
     hessian_->negateObj();
   }
 }
@@ -1919,13 +2076,13 @@ ConstraintPtr Problem::newConstraint(FunctionPtr f, double lb, double ub,
   ConstraintPtr c =
       (ConstraintPtr) new Constraint(nextCId_, cons_.size(), f, lb, ub, name);
   ++nextCId_;
-  if(f) {
-    for(VarSet::iterator vit = f->varsBegin(); vit != f->varsEnd(); ++vit) {
+  if (f) {
+    for (VarSet::iterator vit = f->varsBegin(); vit != f->varsEnd(); ++vit) {
       (*vit)->inConstraint_(c);
     }
   }
   cons_.push_back(c);
-  if(engine_ != 0) {
+  if (engine_ != 0) {
     engine_->addConstraint(c);
   }
   consModed_ = true;
@@ -1945,7 +2102,7 @@ ConstraintPtr Problem::newConstraint(FunctionPtr funPtr, double lb, double ub)
 
   // make a constraint,
   c = (ConstraintPtr)newConstraint(funPtr, lb, ub, name);
-  if(engine_ != 0) {
+  if (engine_ != 0) {
     engine_->addConstraint(c);
   }
   consModed_ = true;
@@ -1953,7 +2110,8 @@ ConstraintPtr Problem::newConstraint(FunctionPtr funPtr, double lb, double ub)
   return c;
 }
 
-ObjectivePtr Problem::newObjective(FunctionPtr f, double cb, ObjectiveType otyp)
+ObjectivePtr Problem::newObjective(FunctionPtr f, double cb,
+                                   ObjectiveType otyp)
 {
   assert(engine_ == 0 ||
          (!"Cannot add objective after loading problem to engine\n"));
@@ -1972,7 +2130,7 @@ ObjectivePtr Problem::newObjective(double cb, ObjectiveType otyp)
 {
   assert(engine_ == 0 ||
          (!"Cannot add objective after loading problem to engine\n"));
-  if(obj_) {
+  if (obj_) {
     delete obj_;
     obj_ = 0;
   }
@@ -1981,13 +2139,13 @@ ObjectivePtr Problem::newObjective(double cb, ObjectiveType otyp)
   return obj_;
 }
 
-ObjectivePtr Problem::newObjective(FunctionPtr f, double cb, ObjectiveType otyp,
-                                   std::string name)
+ObjectivePtr Problem::newObjective(FunctionPtr f, double cb,
+                                   ObjectiveType otyp, std::string name)
 {
   assert(engine_ == 0 ||
          (!"Cannot add objective after loading problem to engine\n"));
 
-  if(obj_) {
+  if (obj_) {
     delete obj_;
     obj_ = 0;
   }
@@ -2001,9 +2159,9 @@ SOSPtr Problem::newSOS(int n, SOSType type, const double* weights,
 {
   SOSPtr sos = new SOS(n, type, weights, vars, nextSId_, priority, name);
   ++nextSId_;
-  if(SOS1 == type) {
+  if (SOS1 == type) {
     sos1_.push_back(sos);
-  } else if(SOS2 == type) {
+  } else if (SOS2 == type) {
     sos2_.push_back(sos);
   }
   return sos;
@@ -2014,9 +2172,9 @@ SOSPtr Problem::newSOS(int n, SOSType type, const double* weights,
 {
   std::string name;
   std::stringstream name_stream;
-  if(SOS1 == type) {
+  if (SOS1 == type) {
     name_stream << "sos1_" << (sos1_.size() + sos2_.size());
-  } else if(SOS2 == type) {
+  } else if (SOS2 == type) {
     name_stream << "sos2_" << (sos1_.size() + sos2_.size());
   } else {
     name_stream << "sos_" << (sos1_.size() + sos2_.size());
@@ -2073,7 +2231,7 @@ void Problem::newVariables(VariableConstIterator v_begin,
          (!"Cannot add variables after loading problem to engine\n"));
   VariableConstIterator v_iter;
 
-  for(v_iter = v_begin; v_iter != v_end; v_iter++) {
+  for (v_iter = v_begin; v_iter != v_end; v_iter++) {
     newVariable((*v_iter)->getLb(), (*v_iter)->getUb(), (*v_iter)->getType(),
                 (*v_iter)->getName(), stype);
   }
@@ -2082,10 +2240,10 @@ void Problem::newVariables(VariableConstIterator v_begin,
 void Problem::objToCons()
 {
   std::string name = "eta";
-  if(!obj_) {
+  if (!obj_) {
     assert(!"No objective function in the problem!");
-  } else if(obj_->getFunctionType() != Linear &&
-            obj_->getFunctionType() != Constant) {
+  } else if (obj_->getFunctionType() != Linear &&
+             obj_->getFunctionType() != Constant) {
     FunctionPtr fold = 0, fnew = 0;
     double objCons = obj_->getConstant();
     ObjectiveType objType = obj_->getObjectiveType();
@@ -2095,16 +2253,16 @@ void Problem::objToCons()
     LinearFunctionPtr lfnew = (LinearFunctionPtr) new LinearFunction();
     VariablePtr vPtr = newVariable(-INFINITY, INFINITY, Continuous, name);
     lfnew->addTerm(vPtr, -1.0);
-    if(nlf != NULL && qf != NULL) {
+    if (nlf != NULL && qf != NULL) {
       fold = (FunctionPtr) new Function(lfnew, qf, nlf);
-    } else if(nlf) {
+    } else if (nlf) {
       fold = (FunctionPtr) new Function(lfnew, nlf);
-    } else if(qf) {
+    } else if (qf) {
       fold = (FunctionPtr) new Function(lfnew, qf);
     }
     name = "objToCons";
     newConstraint(fold, -INFINITY, 0.0, name);
-    if(!lf) {
+    if (!lf) {
       lf = (LinearFunctionPtr) new LinearFunction();
     }
     lf->addTerm(vPtr, 1.0);
@@ -2119,11 +2277,11 @@ void Problem::prepareForSolve()
 {
   bool reload = false;
 
-  if(consModed_ || varsModed_) {
+  if (consModed_ || varsModed_) {
     reload = true;
   }
   calculateSize();
-  if(nativeDer_ && (true == reload || !hessian_)) {
+  if (nativeDer_ && (true == reload || !hessian_)) {
     setNativeDer();
   }
 }
@@ -2132,7 +2290,7 @@ void Problem::removeObjective()
 {
   assert(engine_ == 0 ||
          (!"Cannot change objective after loading problem to engine\n"));
-  if(obj_) {
+  if (obj_) {
     delete obj_;
     obj_ = 0;
   }
@@ -2143,51 +2301,53 @@ QuadraticFunctionPtr Problem::removeQuadFromObj()
 {
   assert(engine_ == 0 ||
          (!"Cannot change objective after loading problem to engine\n"));
-  if(obj_) {
+  if (obj_) {
     return obj_->removeQuadratic_();
   }
   consModed_ = true;
-  return QuadraticFunctionPtr(); // NULL
+  return QuadraticFunctionPtr();  // NULL
 }
 
 NonlinearFunctionPtr Problem::removeNonlinFromObj()
 {
   assert(engine_ == 0 ||
          (!"Cannot change objective after loading problem to engine\n"));
-  if(obj_) {
+  if (obj_) {
     return obj_->removeNonlinear_();
   }
   consModed_ = true;
-  return NonlinearFunctionPtr(); // NULL
+  return NonlinearFunctionPtr();  // NULL
 }
 
 void Problem::resetDer()
 {
-  jacobian_ = JacobianPtr();    // NULL.
-  hessian_ = HessianOfLagPtr(); // NULL.
+  jacobian_ = JacobianPtr();     // NULL.
+  hessian_ = HessianOfLagPtr();  // NULL.
 }
 
 void Problem::resConTypCnt()
 {
-    size_->countAggregation = 0;
-    size_->countPrecedence = 0;
-    size_->countVariableBound = 0;
-    size_->countSetPartitioning = 0;
-    size_->countSetPacking = 0;
-    size_->countSetCovering = 0;
-    size_->countCardinality = 0;
-    size_->countInvariantKnapsack = 0;
-    size_->countEquationKnapsack = 0;
-    size_->countBinPacking = 0;
-    size_->countKnapsack = 0;
-    size_->countIntegerKnapsack = 0;
-    size_->countMixedBinary = 0;
-    size_->countNoSpecificStructure = 0;
-    size_->countDiagQuad = 0;
-    size_->countSimpleBall = 0;
-    size_->countEllipsoid = 0;
-    size_->countComplementSimpleBall = 0;
-    size_->countComplementEllipsoid = 0;
+  size_->countAggregation = 0;
+  size_->countPrecedence = 0;
+  size_->countVariableBound = 0;
+  size_->countSetPartitioning = 0;
+  size_->countSetPacking = 0;
+  size_->countSetCovering = 0;
+  size_->countCardinality = 0;
+  size_->countInvariantKnapsack = 0;
+  size_->countEquationKnapsack = 0;
+  size_->countBinPacking = 0;
+  size_->countKnapsack = 0;
+  size_->countIntegerKnapsack = 0;
+  size_->countMixedBinary = 0;
+  size_->countNoSpecificStructure = 0;
+  size_->countDiagQuad = 0;
+  size_->countSimpleBall = 0;
+  size_->countEllipsoid = 0;
+  size_->countComplementSimpleBall = 0;
+  size_->countComplementEllipsoid = 0;
+  size_->countPureBilinear = 0;
+  size_->countQuadConvertSOC = 0;
 }
 
 void Problem::reverseSense(ConstraintPtr cons)
@@ -2198,7 +2358,7 @@ void Problem::reverseSense(ConstraintPtr cons)
 
 void Problem::setDebugSol(const DoubleVector& x)
 {
-  if(debugSol_) {
+  if (debugSol_) {
     delete debugSol_;
   }
   debugSol_ = new DoubleVector(x);
@@ -2206,7 +2366,7 @@ void Problem::setDebugSol(const DoubleVector& x)
 
 void Problem::setEngine(Engine* engine)
 {
-  if(engine_ && engine_ != engine) {
+  if (engine_ && engine_ != engine) {
     engine_->clear();
   }
   engine_ = engine;
@@ -2225,12 +2385,12 @@ void Problem::setIndex_(VariablePtr v, UInt i)
 void Problem::setInitialPoint(const double* x)
 {
   const double* xp = x;
-  if(!x || vars_.size() == 0) {
+  if (!x || vars_.size() == 0) {
     return;
   }
 
-  for(VariableIterator viter = vars_.begin(); viter != vars_.end();
-      ++viter, ++xp) {
+  for (VariableIterator viter = vars_.begin(); viter != vars_.end();
+       ++viter, ++xp) {
     (*viter)->setInitVal_(*xp);
   }
 }
@@ -2240,11 +2400,11 @@ void Problem::setInitialPoint(const double* x, size_t k)
   const double* xp = x;
   VariableIterator viter = vars_.begin();
 
-  if(!x || vars_.size() == 0) {
+  if (!x || vars_.size() == 0) {
     return;
   }
 
-  for(size_t i = 0; i < k; ++viter, ++xp, ++i) {
+  for (size_t i = 0; i < k; ++viter, ++xp, ++i) {
     (*viter)->setInitVal_(*xp);
   }
 }
@@ -2268,11 +2428,11 @@ void Problem::setNativeDer()
 {
   calculateSize();
   nativeDer_ = true;
-  if(jacobian_) {
+  if (jacobian_) {
     delete jacobian_;
     jacobian_ = 0;
   }
-  if(hessian_) {
+  if (hessian_) {
     delete hessian_;
     hessian_ = 0;
   }
@@ -2282,30 +2442,31 @@ void Problem::setNativeDer()
 
 void Problem::setVarType(VariablePtr var, VariableType type)
 {
-  assert(var == vars_[var->getIndex()] ||
-         !"Problem: Type of variable that is not in problem can't be changed.");
+  assert(
+      var == vars_[var->getIndex()] ||
+      !"Problem: Type of variable that is not in problem can't be changed.");
 
-  if(size_) {
-    switch(var->getType()) {
-    case(Binary):
-    case(ImplBin):
+  if (size_) {
+    switch (var->getType()) {
+    case (Binary):
+    case (ImplBin):
       --(size_->bins);
       break;
-    case(Integer):
-    case(ImplInt):
+    case (Integer):
+    case (ImplInt):
       --(size_->ints);
       break;
     default:
       --(size_->conts);
     }
 
-    switch(type) {
-    case(Binary):
-    case(ImplBin):
+    switch (type) {
+    case (Binary):
+    case (ImplBin):
       ++(size_->bins);
       break;
-    case(Integer):
-    case(ImplInt):
+    case (Integer):
+    case (ImplInt):
       ++(size_->ints);
       break;
     default:
@@ -2323,10 +2484,10 @@ void Problem::subst(VariablePtr out, VariablePtr in, double rat)
          (!"Cannot substitute variables after loading problem to engine\n"));
   ConstrQ q;
 
-  for(ConstrSet::const_iterator it = out->consBegin(); it != out->consEnd();
-      ++it) {
+  for (ConstrSet::const_iterator it = out->consBegin(); it != out->consEnd();
+       ++it) {
     (*it)->subst_(out, in, rat, &stayin);
-    if(stayin) {
+    if (stayin) {
       in->inConstraint_(*it);
     } else {
       in->outOfConstraint_(*it);
@@ -2334,7 +2495,7 @@ void Problem::subst(VariablePtr out, VariablePtr in, double rat)
     q.push_back(*it);
   }
 
-  for(ConstrQ::iterator it = q.begin(); it != q.end(); ++it) {
+  for (ConstrQ::iterator it = q.begin(); it != q.end(); ++it) {
     out->outOfConstraint_(*it);
   }
   q.clear();
@@ -2355,20 +2516,20 @@ void Problem::write(std::ostream& out, std::streamsize out_p) const
   std::streamsize old_p = out.precision();
 
   out.precision(out_p);
-  if(size_) {
+  if (size_) {
     //writeSize(out);
   }
 
-  for(viter = vars_.begin(); viter != vars_.end(); ++viter) {
+  for (viter = vars_.begin(); viter != vars_.end(); ++viter) {
     (*viter)->write(out);
   }
 
-  if(obj_) {
+  if (obj_) {
     obj_->write(out);
     out << std::endl;
   }
 
-  for(citer = cons_.begin(); citer != cons_.end(); ++citer) {
+  for (citer = cons_.begin(); citer != cons_.end(); ++citer) {
     (*citer)->write(out);
     out << std::endl;
   }
@@ -2384,10 +2545,10 @@ double Problem::getSizeEstimate()
   double estimate = 0, lb, ub;
   VariableConstIterator viter;
 
-  for(viter = vars_.begin(); viter != vars_.end(); ++viter) {
+  for (viter = vars_.begin(); viter != vars_.end(); ++viter) {
     lb = (*viter)->getLb();
     ub = (*viter)->getUb();
-    if(lb == -INFINITY || ub == INFINITY) {
+    if (lb == -INFINITY || ub == INFINITY) {
       return -1;
     } else {
       estimate += pow(ub - lb, 2);
@@ -2396,14 +2557,15 @@ double Problem::getSizeEstimate()
   return pow(estimate, 0.5);
 }
 
-void Problem::statistics(std::ostream& out) const{
-  std::cout<<"No of variables:"<< size_->vars<<
-  ", integer variables:"<<size_->ints<<", binary variables:"<<size_->bins<<", constraints:"<<size_->cons<<std::endl;
-}
+// void Problem::statistics(std::ostream& out) const{
+//   std::cout<<"No of variables:"<< size_->vars<<
+//   ", integer variables:"<<size_->ints<<", binary
+//   variables:"<<size_->bins<<", constraints:"<<size_->cons<<std::endl;
+// }
 
 void Problem::writeSize(std::ostream& out) const
 {
-  const int wid=8;
+  const int wid = 8;
 
   out << "--------------------------------------------------" << std::endl;
   out << "|Model Statistics                                |" << std::endl;
@@ -2454,4 +2616,3 @@ void Problem::writeSize(std::ostream& out) const
       << getFunctionTypeString(size_->objType) << " |" << std::endl;
   out << "--------------------------------------------------" << std::endl;
 }
-
