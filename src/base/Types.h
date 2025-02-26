@@ -122,6 +122,8 @@ typedef enum {
   Ellipsoid,    ///> \sum_{i=1}^n a_i*x_i^2 \leq b, b \geq 0, a_i \geq 0
   ComplementSimpleBall, ///> Complement of SimpleBall
   ComplementEllipsoid,   ///> Complement of Ellipse 
+  PureBilinear, ///> \sum_{i=1}^n x_i*x_{i+a} \leq b or \geq b, where a \in \mathbb{Z}^{+}
+  SOCRepresentableQuad, ///> Quadratic constraint which can be represented as SOC constraint
   NonLin       ///>Non-linear
 } ConsType;
 
