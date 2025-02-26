@@ -590,7 +590,7 @@ void LinearHandler::coeffImp_(bool* changed)
   double a0;
   ConstraintPtr c;
   bool implic = true;
-  double coeftol = 1e-4; // improve coeffs only if improvement is more than
+  double coeftol = 1e-2; // improve coeffs only if improvement is more than
                          // this number.
   double bslack = 1e-4;  // relax bounds by this amount. Otherwise constraints
                          // may get numerically difficult to solve, e.g.

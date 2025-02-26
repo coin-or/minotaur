@@ -116,8 +116,8 @@ int SolCheck::solve(ProblemPtr p)
   DoubleVector x;
   Variable *v;
   Constraint *c;
-  const double ATOL = 1e-6;
-  const double RTOL = 1e-3;
+  double ATOL = 1e-6;
+  double RTOL = 1e-6;
   double act;
   int i;
   int err = 0;
@@ -133,9 +133,10 @@ int SolCheck::solve(ProblemPtr p)
     return 1;
   }
 
-  log->msgStream(LogInfo) << std::endl << me_
-    << "absolute tolerance = " << ATOL << std::endl
-    << me_ << "relative tolerance = " << RTOL << std::endl << std::endl;
+  log->msgStream(LogInfo) << std::setprecision(8) << std::endl << me_
+    << "absolute tolerance for bounds on variables = " << ATOL << std::endl
+    << me_ << "relative tolerance for bounds on variables = " << RTOL <<
+    std::endl << std::endl;
 
   x = *px;
 
@@ -178,6 +179,12 @@ int SolCheck::solve(ProblemPtr p)
   }
 
   // check constraints 
+  ATOL = 1e-5;
+  RTOL = 1e-5;
+  log->msgStream(LogInfo) << std::setprecision(8) << std::endl << me_
+    << "absolute tolerance for constraints = " << ATOL << std::endl
+    << me_ << "relative tolerance for constraints = " << RTOL <<
+    std::endl << std::endl;
   i = 0;
   for (ConstraintConstIterator cit = p->consBegin(); cit != p->consEnd(); 
        ++cit, ++i) {

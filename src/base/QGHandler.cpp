@@ -621,6 +621,11 @@ void QGHandler::relax_(SolutionPool *sp, bool* is_inf)
 
   linearizeObj_();
   initLinear_(sp, is_inf);
+
+  // debug solution should also be copied
+  if (minlp_->getDebugSol()) {
+    rel_->setDebugSol(*(minlp_->getDebugSol()));
+  }
   return;
 }
 
