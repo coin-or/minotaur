@@ -1,4 +1,4 @@
-// 
+//
 //     Minotaur -- It's only 1/2 bull
 // 
 //     (C)opyright 2008 - 2025 The Minotaur Team.
@@ -32,36 +32,36 @@
 using namespace Minotaur;
 
 
-QuadraticFunction::QuadraticFunction() 
+QuadraticFunction::QuadraticFunction()
   : etol_(1e-8),
     hCoeffs_(0),
     hFirst_(0),
     hOff_(0),
     hSecond_(0),
-    terms_(), 
+    terms_(),
     varFreq_(),
     convex_(Unknown)
 {
 }
 
 
-QuadraticFunction::QuadraticFunction(UInt nz, double *vals, UInt *irow,
-                                     UInt *jcol, VariableConstIterator vbeg)
-: etol_(1e-8),
-  hCoeffs_(0),
-  hFirst_(0),
-  hOff_(0),
-  hSecond_(0),
-  terms_(), 
-  varFreq_(),
-  convex_(Unknown)
+QuadraticFunction::QuadraticFunction(UInt nz, double* vals, UInt* irow,
+                                     UInt* jcol, VariableConstIterator vbeg)
+  : etol_(1e-8),
+    hCoeffs_(0),
+    hFirst_(0),
+    hOff_(0),
+    hSecond_(0),
+    terms_(),
+    varFreq_(),
+    convex_(Unknown)
 {
   VariablePtr v1, v2;
-  for (UInt i=0; i<nz; ++i) {
-    v1 = *(vbeg+irow[i]); 
-    v2 = *(vbeg+jcol[i]); 
-    if (v1==v2) {
-      incTerm(v1, v2, 0.5*vals[i]);
+  for (UInt i = 0; i < nz; ++i) {
+    v1 = *(vbeg + irow[i]);
+    v2 = *(vbeg + jcol[i]);
+    if (v1 == v2) {
+      incTerm(v1, v2, 0.5 * vals[i]);
     } else {
       incTerm(v1, v2, vals[i]);
     }
@@ -70,27 +70,22 @@ QuadraticFunction::QuadraticFunction(UInt nz, double *vals, UInt *irow,
 
 
 QuadraticFunction::QuadraticFunction(double* vals, VariableConstIterator vbeg,
-                                    VariableConstIterator vend)
-: etol_(1e-8),
-  hCoeffs_(0),
-  hFirst_(0),
-  hOff_(0),
-  hSecond_(0),
-  terms_(), 
-  varFreq_(),
-  convex_(Unknown)
+                                     VariableConstIterator vend)
+  : etol_(1e-8),
+    hCoeffs_(0),
+    hFirst_(0),
+    hOff_(0),
+    hSecond_(0),
+    terms_(),
+    varFreq_(),
+    convex_(Unknown)
 {
   UInt i = 0;
-  for(VariableConstIterator it = vbeg; it != vend; ++it)
-  {
-    for(VariableConstIterator it2 = vbeg; it2 != vend; ++it2)
-    {
-      if(*it == *it2)
-      {
+  for (VariableConstIterator it = vbeg; it != vend; ++it) {
+    for (VariableConstIterator it2 = vbeg; it2 != vend; ++it2) {
+      if (*it == *it2) {
         incTerm(*it, *it2, 0.5 * vals[i++]);
-      }
-      else
-      {
+      } else {
         incTerm(*it, *it2, vals[i++]);
       }
     }
@@ -98,13 +93,13 @@ QuadraticFunction::QuadraticFunction(double* vals, VariableConstIterator vbeg,
 }
 
 
-QuadraticFunction::~QuadraticFunction() 
+QuadraticFunction::~QuadraticFunction()
 {
   if (hCoeffs_) {
-    delete [] hCoeffs_;
-    delete [] hOff_;
-    delete [] hFirst_;
-    delete [] hSecond_;
+    delete[] hCoeffs_;
+    delete[] hOff_;
+    delete[] hFirst_;
+    delete[] hSecond_;
   }
   terms_.clear();
   varFreq_.clear();
@@ -113,47 +108,48 @@ QuadraticFunction::~QuadraticFunction()
 
 QuadraticFunctionPtr QuadraticFunction::clone() const
 {
-   QuadraticFunctionPtr qf = (QuadraticFunctionPtr) new QuadraticFunction();
-   qf->terms_.insert(terms_.begin(), terms_.end());
-   qf->varFreq_.insert(varFreq_.begin(), varFreq_.end());
-   return qf;
+  QuadraticFunctionPtr qf = (QuadraticFunctionPtr) new QuadraticFunction();
+  qf->terms_.insert(terms_.begin(), terms_.end());
+  qf->varFreq_.insert(varFreq_.begin(), varFreq_.end());
+  return qf;
 }
 
 
-QuadraticFunctionPtr QuadraticFunction::cloneWithVars(VariableConstIterator vbeg) 
-  const
+QuadraticFunctionPtr QuadraticFunction::cloneWithVars(
+    VariableConstIterator vbeg) const
 {
   QuadraticFunctionPtr qf = (QuadraticFunctionPtr) new QuadraticFunction();
-  for(VariablePairGroupConstIterator it = begin(); it != end(); ++it) {
-    qf->addTerm(*(vbeg+it->first.first->getIndex()), 
-        *(vbeg+it->first.second->getIndex()), it->second);
+  for (VariablePairGroupConstIterator it = begin(); it != end(); ++it) {
+    qf->addTerm(*(vbeg + it->first.first->getIndex()),
+                *(vbeg + it->first.second->getIndex()), it->second);
   }
   return qf;
 }
 
 
-double QuadraticFunction::eval(const std::vector<double> &x) const
+double QuadraticFunction::eval(const std::vector<double>& x) const
 {
-   double sum = 0.0;
-   for(VariablePairGroupConstIterator it = begin(); it != end(); ++it) {
-      sum += it->second * x[it->first.first->getIndex()] * 
-        x[it->first.second->getIndex()];
-   }
-   return sum;
+  double sum = 0.0;
+  for (VariablePairGroupConstIterator it = begin(); it != end(); ++it) {
+    sum += it->second * x[it->first.first->getIndex()] *
+           x[it->first.second->getIndex()];
+  }
+  return sum;
 }
 
 
-double QuadraticFunction::eval(const double *x) const
+double QuadraticFunction::eval(const double* x) const
 {
-   double sum = 0.0;
-   for(VariablePairGroupConstIterator it = begin(); it != end(); ++it) {
-      sum += it->second * x[it->first.first->getIndex()] * 
-        x[it->first.second->getIndex()];
-   }
-   return sum;
+  double sum = 0.0;
+  for (VariablePairGroupConstIterator it = begin(); it != end(); ++it) {
+    sum += it->second * x[it->first.first->getIndex()] *
+           x[it->first.second->getIndex()];
+  }
+  return sum;
 }
 
-void QuadraticFunction::computeBounds(double *l, double *u){
+void QuadraticFunction::computeBounds(double* l, double* u)
+{
   double a;
   double b;
   double c;
@@ -162,24 +158,25 @@ void QuadraticFunction::computeBounds(double *l, double *u){
   double ub = 0;
   double m;
   for (VariablePairGroupConstIterator it = begin(); it != end(); ++it) {
-      a = it->second * (it->first.first -> getLb()) * 
-        (it->first.second -> getLb());
-      b = it->second * (it->first.first -> getLb()) * 
-        (it->first.second -> getUb());
-      c = it->second * (it->first.first -> getUb()) * 
-        (it->first.second -> getLb());
-      d = it->second * (it->first.first -> getUb()) * 
-        (it->first.second -> getUb());
-      m = std::min(a,b); m = std::min(m,c); m = std::min(m,d);
-      lb += m;
-      m = std::max(a,b); m = std::max(m,c); m = std::max(m,d);
-      ub += m; 
+    a = it->second * (it->first.first->getLb()) * (it->first.second->getLb());
+    b = it->second * (it->first.first->getLb()) * (it->first.second->getUb());
+    c = it->second * (it->first.first->getUb()) * (it->first.second->getLb());
+    d = it->second * (it->first.first->getUb()) * (it->first.second->getUb());
+    m = std::min(a, b);
+    m = std::min(m, c);
+    m = std::min(m, d);
+    lb += m;
+    m = std::max(a, b);
+    m = std::max(m, c);
+    m = std::max(m, d);
+    ub += m;
   }
   *l = lb;
   *u = ub;
 }
 
-void QuadraticFunction::bndsquadterms(double *l, double *u, VariablePtr v){
+void QuadraticFunction::bndsquadterms(double* l, double* u, VariablePtr v)
+{
   double a1;
   double a2;
   double b1;
@@ -187,28 +184,28 @@ void QuadraticFunction::bndsquadterms(double *l, double *u, VariablePtr v){
   double lb = 0;
   double ub = 0;
   for (VariablePairGroupConstIterator it = begin(); it != end(); ++it) {
-    if (it->first.first == v || it->first.second == v){
-      if (it->first.first != v){
-      a1 = it->second * (it->first.first -> getLb());
-      a2 = it->second * (it->first.first -> getUb());
-      lb += std::min(a1,a2);
-      ub += std::max(a1,a2);
+    if (it->first.first == v || it->first.second == v) {
+      if (it->first.first != v) {
+        a1 = it->second * (it->first.first->getLb());
+        a2 = it->second * (it->first.first->getUb());
+        lb += std::min(a1, a2);
+        ub += std::max(a1, a2);
       }
-      if (it->first.second != v){
-      b1 = it->second * (it->first.second -> getLb());
-      b2 = it->second * (it->first.second -> getUb());
-      lb += std::min(b1,b2);
-      ub += std::max(b1,b2);
+      if (it->first.second != v) {
+        b1 = it->second * (it->first.second->getLb());
+        b2 = it->second * (it->first.second->getUb());
+        lb += std::min(b1, b2);
+        ub += std::max(b1, b2);
       }
-      
-      
     }
   }
   *l = lb;
   *u = ub;
 }
 
-void QuadraticFunction::bndsquadterms_2(double *l, double *u, VariablePtr v, VariablePtr v2){
+void QuadraticFunction::bndsquadterms_2(double* l, double* u, VariablePtr v,
+                                        VariablePtr v2)
+{
   double a1;
   double a2;
   double b1;
@@ -216,28 +213,28 @@ void QuadraticFunction::bndsquadterms_2(double *l, double *u, VariablePtr v, Var
   double lb = 0;
   double ub = 0;
   for (VariablePairGroupConstIterator it = begin(); it != end(); ++it) {
-    if ((it->first.first == v || it->first.second == v) && (it->first.first != v2) && (it->first.second != v2)){
-      if (it->first.first != v){
-      a1 = it->second * (it->first.first -> getLb());
-      a2 = it->second * (it->first.first -> getUb());
-      lb += std::min(a1,a2);
-      ub += std::max(a1,a2);
+    if ((it->first.first == v || it->first.second == v) &&
+        (it->first.first != v2) && (it->first.second != v2)) {
+      if (it->first.first != v) {
+        a1 = it->second * (it->first.first->getLb());
+        a2 = it->second * (it->first.first->getUb());
+        lb += std::min(a1, a2);
+        ub += std::max(a1, a2);
       }
-      if (it->first.second != v){
-      b1 = it->second * (it->first.second -> getLb());
-      b2 = it->second * (it->first.second -> getUb());
-      lb += std::min(b1,b2);
-      ub += std::max(b1,b2);
+      if (it->first.second != v) {
+        b1 = it->second * (it->first.second->getLb());
+        b2 = it->second * (it->first.second->getUb());
+        lb += std::min(b1, b2);
+        ub += std::max(b1, b2);
       }
-      
-      
     }
   }
   *l = lb;
   *u = ub;
 }
 
-// void QuadraticFunction::varBoundMods(double lb, double ub, VarBoundModVector &mods,
+// void QuadraticFunction::varBoundMods(double lb, double ub,
+// VarBoundModVector &mods,
 //                           SolveStatus *status)
 // {
 //   double lb2 = -INFINITY;
@@ -260,20 +257,21 @@ void QuadraticFunction::bndsquadterms_2(double *l, double *u, VariablePtr v, Var
 //   ub2 = fmin(ub,ub2);
 
 //   getVars(vars);
-    
+
 //    for (VariableConstIterator itv=vars.begin(); itv!=vars.end(); ++itv) {
 //     cv = *itv;
 //     lbv = cv->getLb();
 //     ubv = cv->getUb();
 //     for (VariablePairGroupConstIterator it = begin(); it != end(); ++it) {
-//      if (itv -> getIndex() != first.first ->index_ || itv -> getIndex() != first.second ->index_  ){
-//       a = it->second * (it->first.first -> getLb()) * 
+//      if (itv -> getIndex() != first.first ->index_ || itv -> getIndex() !=
+//      first.second ->index_  ){
+//       a = it->second * (it->first.first -> getLb()) *
 //         (it->first.second -> getLb());
-//       b = it->second * (it->first.first -> getLb()) * 
+//       b = it->second * (it->first.first -> getLb()) *
 //         (it->first.second -> getUb());
-//       c = it->second * (it->first.first -> getUb()) * 
+//       c = it->second * (it->first.first -> getUb()) *
 //         (it->first.second -> getLb());
-//       d = it->second * (it->first.first -> getUb()) * 
+//       d = it->second * (it->first.first -> getUb()) *
 //         (it->first.second -> getUb());
 //       lb2 -= std::min({a,b,c,d});
 //       ub2 -= std::max({a,b,c,d});
@@ -281,42 +279,47 @@ void QuadraticFunction::bndsquadterms_2(double *l, double *u, VariablePtr v, Var
 //      }
 //     }
 
-//     if (itv -> getIndex() == first.first ->getIndex() && itv -> getIndex() == first.second ->getIndex() ){
+//     if (itv -> getIndex() == first.first ->getIndex() && itv -> getIndex()
+//     == first.second ->getIndex() ){
 //       lb2 = sqrt(lb2/it->second);
 //       ub2 = sqrt(ub2/it->second);
 //       if (lbv < fmax(-ub2,lb2)){
-//         mods.push_back((VarBoundModPtr) new VarBoundMod(getVar(*itv), Lower,
+//         mods.push_back((VarBoundModPtr) new VarBoundMod(getVar(*itv),
+//         Lower,
 //                                                       fmax(-ub2,lb2)));
 //       }
 //       if (ubv > fmin(ub2,-lb2)){
-//         mods.push_back((VarBoundModPtr) new VarBoundMod(getVar(*itv), Upper,
+//         mods.push_back((VarBoundModPtr) new VarBoundMod(getVar(*itv),
+//         Upper,
 //                                                       fmin(ub2,-lb2)));
 //       }
 //     }
 //    }
 // }
 
-void QuadraticFunction::evalGradient(const double *x, double *grad_f)
+void QuadraticFunction::evalGradient(const double* x, double* grad_f)
 {
-  assert (grad_f);
+  assert(grad_f);
   if (x) {
-    for(VariablePairGroupConstIterator it = terms_.begin(); it != terms_.end(); ++it) {
-      grad_f[it->first.first->getIndex()] +=  it->second * 
-        x[it->first.second->getIndex()];
-      grad_f[it->first.second->getIndex()] +=  it->second * 
-        x[it->first.first->getIndex()];
+    for (VariablePairGroupConstIterator it = terms_.begin();
+         it != terms_.end(); ++it) {
+      grad_f[it->first.first->getIndex()] +=
+          it->second * x[it->first.second->getIndex()];
+      grad_f[it->first.second->getIndex()] +=
+          it->second * x[it->first.first->getIndex()];
     }
   }
 }
 
-void QuadraticFunction::evalGradient(const std::vector<double> & x, 
-    std::vector<double> & grad_f)
+void QuadraticFunction::evalGradient(const std::vector<double>& x,
+                                     std::vector<double>& grad_f)
 {
-  for(VariablePairGroupConstIterator it = terms_.begin(); it != terms_.end(); ++it) {
-    grad_f[it->first.first->getIndex()] +=  it->second * 
-      x[it->first.second->getIndex()];
-    grad_f[it->first.second->getIndex()] +=  it->second * 
-      x[it->first.first->getIndex()];
+  for (VariablePairGroupConstIterator it = terms_.begin(); it != terms_.end();
+       ++it) {
+    grad_f[it->first.first->getIndex()] +=
+        it->second * x[it->first.second->getIndex()];
+    grad_f[it->first.second->getIndex()] +=
+        it->second * x[it->first.first->getIndex()];
   }
 }
 
@@ -325,11 +328,12 @@ QfVector QuadraticFunction::findSubgraphs()
   QfVector qf_vector;
   QuadraticFunctionPtr qf;
   UInt count = 0;
-  UInt i,j;
+  UInt i, j;
   QfVector::iterator qit;
   std::vector<UInt> to_del;
 
-  for (VariablePairGroupConstIterator it = terms_.begin(); it != terms_.end(); ++it) {
+  for (VariablePairGroupConstIterator it = terms_.begin(); it != terms_.end();
+       ++it) {
     i = it->first.first->getItmp();
     j = it->first.second->getItmp();
     if (i == 0) {
@@ -341,36 +345,38 @@ QfVector QuadraticFunction::findSubgraphs()
         it->first.first->setItmp(count);
         it->first.second->setItmp(count);
       } else {
-        qf_vector[j-1]->addTerm(it->first, it->second);
+        qf_vector[j - 1]->addTerm(it->first, it->second);
         it->first.first->setItmp(j);
       }
     } else {
       if (j != 0) {
         if (i != j) {
           if (i > j) {
-            qf_vector[j-1]->addTerm(it->first, it->second);
-            qf_vector[j-1]->add(qf_vector[i-1]);
-            to_del.push_back(i-1);
-            for (VariablePairGroupConstIterator it1 = qf_vector[i-1]->begin();
-                 it1 != qf_vector[i-1]->end(); ++it1) {
+            qf_vector[j - 1]->addTerm(it->first, it->second);
+            qf_vector[j - 1]->add(qf_vector[i - 1]);
+            to_del.push_back(i - 1);
+            for (VariablePairGroupConstIterator it1 =
+                     qf_vector[i - 1]->begin();
+                 it1 != qf_vector[i - 1]->end(); ++it1) {
               it1->first.first->setItmp(j);
               it1->first.second->setItmp(j);
             }
           } else {
-            qf_vector[i-1]->addTerm(it->first, it->second);
-            qf_vector[i-1]->add(qf_vector[j-1]);
-            to_del.push_back(j-1);
-            for (VariablePairGroupConstIterator it1 = qf_vector[j-1]->begin();
-                 it1 != qf_vector[j-1]->end(); ++it1) {
+            qf_vector[i - 1]->addTerm(it->first, it->second);
+            qf_vector[i - 1]->add(qf_vector[j - 1]);
+            to_del.push_back(j - 1);
+            for (VariablePairGroupConstIterator it1 =
+                     qf_vector[j - 1]->begin();
+                 it1 != qf_vector[j - 1]->end(); ++it1) {
               it1->first.first->setItmp(i);
               it1->first.second->setItmp(i);
             }
           }
         } else {
-          qf_vector[i-1]->addTerm(it->first, it->second);
+          qf_vector[i - 1]->addTerm(it->first, it->second);
         }
       } else {
-        qf_vector[i-1]->addTerm(it->first, it->second);
+        qf_vector[i - 1]->addTerm(it->first, it->second);
         it->first.second->setItmp(i);
       }
     }
@@ -378,16 +384,18 @@ QfVector QuadraticFunction::findSubgraphs()
 
   i = 0;
   std::sort(to_del.begin(), to_del.end());
-  for (std::vector<UInt>::iterator uit = to_del.begin(); uit != to_del.end(); ++uit) {
+  for (std::vector<UInt>::iterator uit = to_del.begin(); uit != to_del.end();
+       ++uit) {
     qit = qf_vector.begin();
-    std::advance(qit, (*uit)-i);
+    std::advance(qit, (*uit) - i);
     delete (*qit);
     qf_vector.erase(qit);
     ++i;
   }
   to_del.clear();
   // resetting Itmp
-  for (VariablePairGroupConstIterator it = terms_.begin(); it != terms_.end(); ++it) {
+  for (VariablePairGroupConstIterator it = terms_.begin(); it != terms_.end();
+       ++it) {
     it->first.first->setItmp(0);
     it->first.second->setItmp(0);
   }
@@ -400,10 +408,9 @@ Convexity QuadraticFunction::isConvex()
   if (convex_ != Unknown) {
     return convex_;
   }
-  EigenCalculator *ecalc = new EigenCalculator();
+  EigenCalculator* ecalc = new EigenCalculator();
   eptr = ecalc->findValues(this);
-  if(eptr->numNegative() == 0)
-  {
+  if (eptr->numNegative() == 0) {
     convex_ = Convex;
   } else if (eptr->numPositive() == 0) {
     convex_ = Concave;
@@ -419,41 +426,41 @@ Convexity QuadraticFunction::isConvex()
   return convex_;
 }
 
-void QuadraticFunction::evalHessian(const double mul, const double *, 
-                                    const LTHessStor *, double *values, int *)
+void QuadraticFunction::evalHessian(const double mul, const double*,
+                                    const LTHessStor*, double* values, int*)
 {
-  for (UInt i=0; i<terms_.size(); ++i) {
-    values[hOff_[i]] += mul*hCoeffs_[i];
+  for (UInt i = 0; i < terms_.size(); ++i) {
+    values[hOff_[i]] += mul * hCoeffs_[i];
   }
 }
 
 
-void  QuadraticFunction::fillHessStor(LTHessStor *stor)
+void QuadraticFunction::fillHessStor(LTHessStor* stor)
 {
   UInt vindex;
   UInt j;
-  std::deque<UInt> *inds;
+  std::deque<UInt>* inds;
   std::deque<UInt>::iterator it;
 
   prepHess();
 
   j = 0;
-  for (UInt i=0; i<hStarts_.size()-1; ++i) {
+  for (UInt i = 0; i < hStarts_.size() - 1; ++i) {
     vindex = hSecond_[hStarts_[i]];
-    while (vindex!=stor->rows[j]->getIndex()) {
+    while (vindex != stor->rows[j]->getIndex()) {
       ++j;
     }
-    inds = stor->colQs+j;
+    inds = stor->colQs + j;
 
     it = inds->begin();
-    for (UInt i2=hStarts_[i]; i2<hStarts_[i+1]; ++i2) {
-      while (it!=inds->end() && (*it)<hFirst_[i2]) {
+    for (UInt i2 = hStarts_[i]; i2 < hStarts_[i + 1]; ++i2) {
+      while (it != inds->end() && (*it) < hFirst_[i2]) {
         ++it;
       }
-      if (it==inds->end()) {
-        it = inds->insert(it,hFirst_[i2]);
-      } else if ((*it)!=hFirst_[i2]) {
-        it = inds->insert(it,hFirst_[i2]);
+      if (it == inds->end()) {
+        it = inds->insert(it, hFirst_[i2]);
+      } else if ((*it) != hFirst_[i2]) {
+        it = inds->insert(it, hFirst_[i2]);
       } else {
         // In this case (*it) == hFirst_[i2]
         // hessian storage already has this index. No need to add.
@@ -463,42 +470,42 @@ void  QuadraticFunction::fillHessStor(LTHessStor *stor)
 }
 
 
-void QuadraticFunction::finalHessStor(const LTHessStor *stor)
+void QuadraticFunction::finalHessStor(const LTHessStor* stor)
 {
   UInt vindex;
-  UInt *inds;
+  UInt* inds;
   UInt nz = 0;
   UInt j;
   UInt off;
 
   j = 0;
-  for (UInt i=0; i<hStarts_.size()-1; ++i) {
+  for (UInt i = 0; i < hStarts_.size() - 1; ++i) {
     vindex = hSecond_[hStarts_[i]];
-    while (vindex!=stor->rows[j]->getIndex()) {
+    while (vindex != stor->rows[j]->getIndex()) {
       ++j;
     }
-    inds = stor->cols+stor->starts[j];
-    off  = stor->starts[j];
+    inds = stor->cols + stor->starts[j];
+    off = stor->starts[j];
 
-    for (UInt i2=hStarts_[i]; i2<hStarts_[i+1]; ++i2) {
+    for (UInt i2 = hStarts_[i]; i2 < hStarts_[i + 1]; ++i2) {
       while (*inds != hFirst_[i2]) {
         ++inds;
         ++off;
-        assert(off < stor->starts[j+1]);
+        assert(off < stor->starts[j + 1]);
       }
       hOff_[nz] = off;
       ++nz;
     }
   }
-  assert(nz==terms_.size());
+  assert(nz == terms_.size());
 }
 
 
-void QuadraticFunction::fillJac(const double *x, double *values, int *) 
+void QuadraticFunction::fillJac(const double* x, double* values, int*)
 {
-  UInt i=0;
-  for (VariablePairGroupConstIterator it = terms_.begin(); it != terms_.end(); 
-      ++it) {
+  UInt i = 0;
+  for (VariablePairGroupConstIterator it = terms_.begin(); it != terms_.end();
+       ++it) {
     values[jacOff_[i]] += it->second * x[jacInd_[i]];
     ++i;
     values[jacOff_[i]] += it->second * x[jacInd_[i]];
@@ -507,19 +514,18 @@ void QuadraticFunction::fillJac(const double *x, double *values, int *)
 }
 
 
-void QuadraticFunction::getVars(VariableSet *vars)
+void QuadraticFunction::getVars(VariableSet* vars)
 {
-  for (VarIntMap::const_iterator it=varFreq_.begin(); it!= varFreq_.end();
+  for (VarIntMap::const_iterator it = varFreq_.begin(); it != varFreq_.end();
        ++it) {
     vars->insert(it->first);
   }
 }
 
 
-
 void QuadraticFunction::addTerm(VariablePair vp, const double weight)
 {
-  assert (vp.first->getId() <= vp.second->getId());
+  assert(vp.first->getId() <= vp.second->getId());
   if (fabs(weight) >= etol_) {
     terms_.insert(std::make_pair(vp, weight));
     varFreq_[vp.first] += 1;
@@ -528,11 +534,11 @@ void QuadraticFunction::addTerm(VariablePair vp, const double weight)
 }
 
 
-void QuadraticFunction::addTerm(ConstVariablePtr v1, ConstVariablePtr v2, 
-    const double weight)
+void QuadraticFunction::addTerm(ConstVariablePtr v1, ConstVariablePtr v2,
+                                const double weight)
 {
-  VariablePair vp = (v1->getId() < v2->getId()) ? std::make_pair(v1, v2) :
-    std::make_pair(v2, v1);
+  VariablePair vp = (v1->getId() < v2->getId()) ? std::make_pair(v1, v2)
+                                                : std::make_pair(v2, v1);
   addTerm(vp, weight);
 }
 
@@ -569,27 +575,27 @@ void QuadraticFunction::incTerm(ConstVariablePair vp, const double a)
 
 
 void QuadraticFunction::incTerm(ConstVariablePtr v1, ConstVariablePtr v2,
-    const double a)
+                                const double a)
 {
   VariablePair vp = (v1->getId() < v2->getId()) ? std::make_pair(v1, v2)
-    : std::make_pair(v2, v1);
+                                                : std::make_pair(v2, v1);
   incTerm(vp, a);
 }
 
 
 UInt QuadraticFunction::getNumTerms() const
-{ 
-  return terms_.size(); 
+{
+  return terms_.size();
 }
 
 UInt QuadraticFunction::getNumSqTerms() const
 {
   int sq = 0;
-  for (VariablePairGroupConstIterator it = terms_.begin(); it != terms_.end(); 
-      it++) { 
-    if(it->first.first->getId()==it->first.second->getId()){
-      sq +=1;
-     }
+  for (VariablePairGroupConstIterator it = terms_.begin(); it != terms_.end();
+       it++) {
+    if (it->first.first->getId() == it->first.second->getId()) {
+      sq += 1;
+    }
   }
   return sq;
 }
@@ -597,29 +603,29 @@ UInt QuadraticFunction::getNumSqTerms() const
 UInt QuadraticFunction::getNumBilTerms() const
 {
   int bil = 0;
-  for (VariablePairGroupConstIterator it = terms_.begin(); it != terms_.end(); 
-      it++) { 
-    if(it->first.first->getId()!=it->first.second->getId()){
-      bil +=1;
-     }
+  for (VariablePairGroupConstIterator it = terms_.begin(); it != terms_.end();
+       it++) {
+    if (it->first.first->getId() != it->first.second->getId()) {
+      bil += 1;
+    }
   }
   return bil;
 }
 
 UInt QuadraticFunction::getNumVars() const
-{ 
-  return varFreq_.size(); 
+{
+  return varFreq_.size();
 }
 
 
-VarCountConstMap * QuadraticFunction::getVarMap() const
+VarCountConstMap* QuadraticFunction::getVarMap() const
 {
   return &varFreq_;
 }
 
 
-double QuadraticFunction::getWeight(ConstVariablePair & vp) 
-{ 
+double QuadraticFunction::getWeight(ConstVariablePair& vp)
+{
   VariablePairGroupConstIterator it = terms_.find(vp);
   if (it == terms_.end()) {
     return 0.0;
@@ -628,10 +634,10 @@ double QuadraticFunction::getWeight(ConstVariablePair & vp)
 }
 
 
-double QuadraticFunction::getWeight(ConstVariablePtr v1, ConstVariablePtr v2) 
-{ 
+double QuadraticFunction::getWeight(ConstVariablePtr v1, ConstVariablePtr v2)
+{
   ConstVariablePair vp = (v1->getId() < v2->getId()) ? std::make_pair(v1, v2)
-    : std::make_pair(v2, v1);
+                                                     : std::make_pair(v2, v1);
   return getWeight(vp);
 }
 
@@ -648,8 +654,8 @@ bool QuadraticFunction::hasVar(ConstVariablePtr v) const
 }
 
 
-void QuadraticFunction::removeVar(VariablePtr v, double val, 
-    LinearFunctionPtr lf) 
+void QuadraticFunction::removeVar(VariablePtr v, double val,
+                                  LinearFunctionPtr lf)
 {
   for (VariablePairGroupIterator it = terms_.begin(); it != terms_.end();) {
     if (it->first.first == v && it->first.first == it->first.second) {
@@ -667,24 +673,26 @@ void QuadraticFunction::removeVar(VariablePtr v, double val,
 }
 
 NonlinearFunctionPtr QuadraticFunction::getPersp(VariablePtr z, double eps,
-                                      VariableGroup nNonzeroVar, double intTol)
+                                                 VariableGroup nNonzeroVar,
+                                                 double intTol)
 {
   VariablePtr v, v1;
   VariableGroupConstIterator vit;
   UInt i = 0, numChild = terms_.size();
   CGraphPtr t = (CGraphPtr) new CGraph();
-  CNode **childr = new Minotaur::CNode *[numChild];
-  CNode *dnode = 0, *vnode = 0, *anode = 0, *znode = 0, *node1 = 0, *node2 = 0,
-        *cnode = 0, *zNewnode = t->newNode(z);        
-  
+  CNode** childr = new Minotaur::CNode*[numChild];
+  CNode *dnode = 0, *vnode = 0, *anode = 0, *znode = 0, *node1 = 0,
+        *node2 = 0, *cnode = 0, *zNewnode = t->newNode(z);
+
   if (eps > 0.0) {
-    anode = t->newNode(1.0-eps);
-    znode = t->newNode(OpMult, anode, zNewnode); // z*(1-eps)
+    anode = t->newNode(1.0 - eps);
+    znode = t->newNode(OpMult, anode, zNewnode);  // z*(1-eps)
     anode = t->newNode(eps);
-    znode = t->newNode(OpPlus, anode, znode); // eps + z*(1-eps)
-  } 
-  
-  for(VariablePairGroupConstIterator it = terms_.begin(); it != terms_.end(); ++it) {
+    znode = t->newNode(OpPlus, anode, znode);  // eps + z*(1-eps)
+  }
+
+  for (VariablePairGroupConstIterator it = terms_.begin(); it != terms_.end();
+       ++it) {
     v = it->first.first;
     v1 = it->first.second;
     if (v->getId() != v1->getId()) {
@@ -692,12 +700,13 @@ NonlinearFunctionPtr QuadraticFunction::getPersp(VariablePtr z, double eps,
       anode = t->getVarNode(v);
       if (anode) {
         if (anode->getUPar()->getOp() == Minotaur::OpMinus) {
-          node1 = anode->getUPar()->getUPar(); // all existing vars have a unique parent
+          node1 = anode->getUPar()
+                      ->getUPar();  // all existing vars have a unique parent
         } else {
-          node1 = anode->getUPar(); // all existing vars have a unique parent
-        }     
+          node1 = anode->getUPar();  // all existing vars have a unique parent
+        }
       } else {
-        vnode = t->newNode(v);            
+        vnode = t->newNode(v);
         vit = nNonzeroVar.find(v);
         if (vit != nNonzeroVar.end() && fabs(vit->second) > intTol) {
           anode = t->newNode(vit->second);
@@ -709,17 +718,18 @@ NonlinearFunctionPtr QuadraticFunction::getPersp(VariablePtr z, double eps,
         node1 = t->newNode(OpDiv, vnode, znode);
       }
 
-        
+
       // for v1
       dnode = t->getVarNode(v1);
       if (dnode) {
         if (dnode->getUPar()->getOp() == Minotaur::OpMinus) {
-          node2 = dnode->getUPar()->getUPar(); // all existing vars have a unique parent
+          node2 = dnode->getUPar()
+                      ->getUPar();  // all existing vars have a unique parent
         } else {
-          node2 = dnode->getUPar(); // all existing vars have a unique parent
-        }     
+          node2 = dnode->getUPar();  // all existing vars have a unique parent
+        }
       } else {
-        vnode = t->newNode(v);            
+        vnode = t->newNode(v);
         vit = nNonzeroVar.find(v);
         if (vit != nNonzeroVar.end() && fabs(vit->second) > intTol) {
           dnode = t->newNode(vit->second);
@@ -730,18 +740,19 @@ NonlinearFunctionPtr QuadraticFunction::getPersp(VariablePtr z, double eps,
         }
         node2 = t->newNode(OpDiv, vnode, znode);
       }
-      dnode = t->newNode(OpMult, node1, node2); 
-      anode = t->newNode(it->second);     
+      dnode = t->newNode(OpMult, node1, node2);
+      anode = t->newNode(it->second);
     } else {
       anode = t->getVarNode(v);
       if (anode) {
         if (anode->getUPar()->getOp() == Minotaur::OpMinus) {
-          node1 = anode->getUPar()->getUPar(); // all existing vars have a unique parent
+          node1 = anode->getUPar()
+                      ->getUPar();  // all existing vars have a unique parent
         } else {
-          node1 = anode->getUPar(); // all existing vars have a unique parent
-        }     
+          node1 = anode->getUPar();  // all existing vars have a unique parent
+        }
       } else {
-        vnode = t->newNode(v);            
+        vnode = t->newNode(v);
         vit = nNonzeroVar.find(v);
         if (vit != nNonzeroVar.end() && fabs(vit->second) > intTol) {
           anode = t->newNode(vit->second);
@@ -752,15 +763,15 @@ NonlinearFunctionPtr QuadraticFunction::getPersp(VariablePtr z, double eps,
         }
         node1 = t->newNode(OpDiv, vnode, znode);
       }
-      dnode = t->newNode(OpSqr, node1, 0); 
+      dnode = t->newNode(OpSqr, node1, 0);
       anode = t->newNode(it->second);
     }
-    childr[i] = t->newNode(Minotaur::OpMult, node1, node2);     
+    childr[i] = t->newNode(Minotaur::OpMult, node1, node2);
     ++i;
   }
-  
+
   anode = t->newNode(Minotaur::OpSumList, childr, numChild);
-  delete [] childr;
+  delete[] childr;
   anode = t->newNode(OpMult, anode, znode);
   t->setOut(anode);
   t->finalize();
@@ -773,19 +784,19 @@ void QuadraticFunction::prepJac(VarSetConstIter vbeg, VarSetConstIter vend)
   VarIntMap omap;
   std::map<ConstVariablePtr, UInt>::iterator vit;
 
-  i=0;
-  for (VarSetConstIter it=vbeg; it!=vend; ++it, ++i) {
+  i = 0;
+  for (VarSetConstIter it = vbeg; it != vend; ++it, ++i) {
     vit = varFreq_.find(*it);
-    if (vit!=varFreq_.end()) {
+    if (vit != varFreq_.end()) {
       omap[*it] = i;
     }
   }
-  jacOff_.resize(2*terms_.size());
-  jacInd_.resize(2*terms_.size());
+  jacOff_.resize(2 * terms_.size());
+  jacInd_.resize(2 * terms_.size());
 
-  i=0;
-  for (VariablePairGroupIterator it = terms_.begin(); it != terms_.end(); 
-      ++it) {
+  i = 0;
+  for (VariablePairGroupIterator it = terms_.begin(); it != terms_.end();
+       ++it) {
     jacOff_[i] = omap[it->first.first];
     jacInd_[i] = it->first.second->getIndex();
     ++i;
@@ -798,20 +809,20 @@ void QuadraticFunction::prepJac(VarSetConstIter vbeg, VarSetConstIter vend)
 
 void QuadraticFunction::prepHess()
 {
-  UInt nterms    = terms_.size();
-  UInt *first    = new UInt[nterms];
-  UInt *f        = first;
-  UInt *second   = new UInt[nterms];
-  UInt *s        = second;
-  double *coeffs = new double[nterms];
-  double *c      = coeffs;
+  UInt nterms = terms_.size();
+  UInt* first = new UInt[nterms];
+  UInt* f = first;
+  UInt* second = new UInt[nterms];
+  UInt* s = second;
+  double* coeffs = new double[nterms];
+  double* c = coeffs;
   UInt prev;
 
   if (hFirst_) {
-    delete [] hCoeffs_;
-    delete [] hFirst_;
-    delete [] hOff_;
-    delete [] hSecond_;
+    delete[] hCoeffs_;
+    delete[] hFirst_;
+    delete[] hOff_;
+    delete[] hSecond_;
     hFirst_ = 0;
     hSecond_ = 0;
     hCoeffs_ = 0;
@@ -820,11 +831,11 @@ void QuadraticFunction::prepHess()
   hStarts_.clear();
   hStarts_.push_back(0);
 
-  if (0==nterms) {
+  if (0 == nterms) {
     // delete not necessary, but valgrind complains.
-    delete [] first;
-    delete [] second;
-    delete [] coeffs;
+    delete[] first;
+    delete[] second;
+    delete[] coeffs;
     return;
   }
 
@@ -833,7 +844,7 @@ void QuadraticFunction::prepHess()
     *f = it->first.first->getIndex();
     *s = it->first.second->getIndex();
     if (*f == *s) {
-      *c = 2.0*it->second;
+      *c = 2.0 * it->second;
     } else {
       *c = it->second;
     }
@@ -848,39 +859,39 @@ void QuadraticFunction::prepHess()
   for (UInt i=0; i+1<nterms; ++i) {
     assert(second[i]<second[i+1] || (second[i] == second[i+1] && first[i]<first[i+1]));
   }
-#endif 
-  for (UInt i=0; i<nterms; ++i) {
-    if (second[i]>prev) {
+#endif
+  for (UInt i = 0; i < nterms; ++i) {
+    if (second[i] > prev) {
       prev = second[i];
       hStarts_.push_back(i);
     }
   }
   hStarts_.push_back(nterms);
 
-  hFirst_  = first;
+  hFirst_ = first;
   hSecond_ = second;
   hCoeffs_ = coeffs;
-  hOff_    = new UInt[nterms];
+  hOff_ = new UInt[nterms];
 }
 
 
-void QuadraticFunction::sortLT_(UInt n, UInt *f, UInt *s, double *c)
+void QuadraticFunction::sortLT_(UInt n, UInt* f, UInt* s, double* c)
 {
   UInt l = 0;
-  UInt r = n-1;
-  UInt pivot = r/2;
+  UInt r = n - 1;
+  UInt pivot = r / 2;
   UInt sp, fp;
   double dtmp;
   UInt itmp;
 
-  if (n<2) {
+  if (n < 2) {
     return;
   }
 
   sp = s[pivot];
   fp = f[pivot];
-  while (l<r) {
-    while (l<=pivot) {
+  while (l < r) {
+    while (l <= pivot) {
       if (s[l] > sp) {
         break;
       } else if (s[l] == sp && f[l] >= fp) {
@@ -888,7 +899,7 @@ void QuadraticFunction::sortLT_(UInt n, UInt *f, UInt *s, double *c)
       }
       ++l;
     }
-    while (r>=pivot) {
+    while (r >= pivot) {
       if (s[r] < sp) {
         break;
       } else if (s[r] == sp && f[r] <= fp) {
@@ -896,7 +907,7 @@ void QuadraticFunction::sortLT_(UInt n, UInt *f, UInt *s, double *c)
       }
       --r;
     }
-    if (l<r) {
+    if (l < r) {
       itmp = s[l];
       s[l] = s[r];
       s[r] = itmp;
@@ -908,40 +919,40 @@ void QuadraticFunction::sortLT_(UInt n, UInt *f, UInt *s, double *c)
       dtmp = c[l];
       c[l] = c[r];
       c[r] = dtmp;
-      if (l==pivot) {
-        pivot=r;
+      if (l == pivot) {
+        pivot = r;
         ++l;
-      } else if (r==pivot) {
-        pivot=l;
+      } else if (r == pivot) {
+        pivot = l;
         --r;
       }
     }
   }
   sortLT_(pivot, f, s, c);
-  sortLT_(n-pivot-1, f+pivot+1, s+pivot+1, c+pivot+1);
+  sortLT_(n - pivot - 1, f + pivot + 1, s + pivot + 1, c + pivot + 1);
 }
 
 void QuadraticFunction::subst(VariablePtr out, VariablePtr in, double rat)
 {
-  std::queue <std::pair<VariablePair, double> > newterms;
-  std::pair <VariablePair, double> vpg;
+  std::queue<std::pair<VariablePair, double>> newterms;
+  std::pair<VariablePair, double> vpg;
   std::map<ConstVariablePtr, UInt>::iterator vit;
   VariablePtr swap = 0;
 
   vit = varFreq_.find(out);
-  if (vit==varFreq_.end()) { 
+  if (vit == varFreq_.end()) {
     return;
   }
 
-  for (VariablePairGroupIterator it = terms_.begin(); it != terms_.end();){
-    if (it->first.first == out || it->first.second==out) {
+  for (VariablePairGroupIterator it = terms_.begin(); it != terms_.end();) {
+    if (it->first.first == out || it->first.second == out) {
       vpg = *it;
 
-      if (vpg.first.first==out) {
+      if (vpg.first.first == out) {
         vpg.first.first = in;
         vpg.second *= rat;
       }
-      if (vpg.first.second==out) {
+      if (vpg.first.second == out) {
         vpg.first.second = in;
         vpg.second *= rat;
       }
@@ -953,7 +964,7 @@ void QuadraticFunction::subst(VariablePtr out, VariablePtr in, double rat)
       }
 
       newterms.push(vpg);
-      varFreq_[it->first.first]  -= 1;
+      varFreq_[it->first.first] -= 1;
       varFreq_[it->first.second] -= 1;
       terms_.erase(it++);
     } else {
@@ -972,7 +983,7 @@ void QuadraticFunction::subst(VariablePtr out, VariablePtr in, double rat)
 
 double QuadraticFunction::getFixVarOffset(VariablePtr v, double val)
 {
-  if (fabs(val)>1e-7) {
+  if (fabs(val) > 1e-7) {
     ConstVariablePair vp = std::make_pair(v, v);
     return val * val * getWeight(vp);
   } else {
@@ -996,21 +1007,22 @@ VarIntMapConstIterator QuadraticFunction::varsEnd() const
 void QuadraticFunction::add(ConstQuadraticFunctionPtr q2)
 {
   if (q2) {
-    for (VariablePairGroupConstIterator it = q2->terms_.begin(); 
-        it != q2->terms_.end(); ++it) {
+    for (VariablePairGroupConstIterator it = q2->terms_.begin();
+         it != q2->terms_.end(); ++it) {
       incTerm(it->first, it->second);
     }
   }
 }
 
 
-void QuadraticFunction::multiply(const double c) {
+void QuadraticFunction::multiply(const double c)
+{
   if (fabs(c) < 1e-7) {
     terms_.clear();
     varFreq_.clear();
   } else {
-    for (VariablePairGroupIterator it = terms_.begin(); it != terms_.end(); 
-        ++it) {
+    for (VariablePairGroupIterator it = terms_.begin(); it != terms_.end();
+         ++it) {
       it->second *= c;
     }
   }
@@ -1020,47 +1032,48 @@ void QuadraticFunction::multiply(const double c) {
 //  convex_ = convex;
 //}
 
-void QuadraticFunction::write(std::ostream &s) const
+void QuadraticFunction::write(std::ostream& s) const
 {
-   for (VariablePairGroupConstIterator it = terms_.begin(); it != terms_.end(); 
+  for (VariablePairGroupConstIterator it = terms_.begin(); it != terms_.end();
        ++it) {
-     if (it->second > 0.0) {
-       s << "+ ";
-     } 
-     else {
-       s << "- ";
-     }
-     s << std::abs(it->second) << "*" << it->first.first->getName();
-     s << "*" << it->first.second->getName() << " ";
-   }
+    if (it->second > 0.0) {
+      s << "+ ";
+    } else {
+      s << "- ";
+    }
+    s << std::abs(it->second) << "*" << it->first.first->getName();
+    s << "*" << it->first.second->getName() << " ";
+  }
 }
 
 
-QuadraticFunctionPtr QuadraticFunction::copyMinus(ConstQuadraticFunctionPtr q2) const
+QuadraticFunctionPtr QuadraticFunction::copyMinus(
+    ConstQuadraticFunctionPtr q2) const
 {
   QuadraticFunctionPtr qf = QuadraticFunctionPtr();  //NULL
   if (!q2) {
     qf = this->clone();
   } else {
     qf = this->clone();
-    for (VariablePairGroupConstIterator it = q2->terms_.begin(); 
-        it != q2->terms_.end(); it++) {
-      qf->incTerm(it->first, -1*it->second);
+    for (VariablePairGroupConstIterator it = q2->terms_.begin();
+         it != q2->terms_.end(); it++) {
+      qf->incTerm(it->first, -1 * it->second);
     }
   }
   return qf;
 }
 
 
-QuadraticFunctionPtr QuadraticFunction::copyAdd(ConstQuadraticFunctionPtr q2) const
+QuadraticFunctionPtr QuadraticFunction::copyAdd(
+    ConstQuadraticFunctionPtr q2) const
 {
   QuadraticFunctionPtr qf = QuadraticFunctionPtr();  //NULL
   if (!q2) {
     qf = this->clone();
   } else {
     qf = this->clone();
-    for (VariablePairGroupConstIterator it = q2->terms_.begin(); 
-        it != q2->terms_.end(); it++) {
+    for (VariablePairGroupConstIterator it = q2->terms_.begin();
+         it != q2->terms_.end(); it++) {
       qf->incTerm(it->first, it->second);
     }
   }
@@ -1071,9 +1084,9 @@ QuadraticFunctionPtr QuadraticFunction::copyAdd(ConstQuadraticFunctionPtr q2) co
 QuadraticFunctionPtr QuadraticFunction::copyMult(double c) const
 {
   QuadraticFunctionPtr qf = new QuadraticFunction();
-  for (VariablePairGroupConstIterator it = this->terms_.begin(); 
+  for (VariablePairGroupConstIterator it = this->terms_.begin();
        it != this->terms_.end(); it++) {
-    qf->addTerm(it->first, c*it->second);
+    qf->addTerm(it->first, c * it->second);
   }
   return qf;
 }
@@ -1081,13 +1094,14 @@ QuadraticFunctionPtr QuadraticFunction::copyMult(double c) const
 
 PolyFunPtr QuadraticFunction::copyMult(ConstQuadraticFunctionPtr q2) const
 {
-  PolyFunPtr pf = 0; 
+  PolyFunPtr pf = 0;
   if (q2) {
     pf = new PolynomialFunction();
     pf->add(this);
     pf->multiply(q2);
     if (pf->isEmpty()) {
-      delete pf; pf = 0;
+      delete pf;
+      pf = 0;
     }
   }
   return pf;
@@ -1096,17 +1110,17 @@ PolyFunPtr QuadraticFunction::copyMult(ConstQuadraticFunctionPtr q2) const
 
 PolyFunPtr QuadraticFunction::copyMult(LinearFunctionPtr l2) const
 {
-  PolyFunPtr pf = 0; 
+  PolyFunPtr pf = 0;
   if (l2) {
     pf = new PolynomialFunction();
     pf->add(this);
     pf->multiply(l2, 0.0);
     if (pf->isEmpty()) {
-      delete pf; pf = 0;
+      delete pf;
+      pf = 0;
     }
   }
   return pf;
 }
-
 
 
