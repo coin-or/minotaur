@@ -37,6 +37,9 @@ void BoundsOnDiv(double l0, double u0, double l1, double u1, double& lb,
 void RevBoundsOnMult(double l0, double u0, double l1, double u1, double& lb,
                      double& ub);
 
+/// return the nearest integer to the given double value
+double round(double v);
+
 /// Get bounds on y, where \f$ y = x_0x_1 \f$. If zero_x_inf_zero is true,
 /// then  product of 0 and infinity is taken as zero.
 void BoundsOnProduct(bool zero_x_inf_zero, ConstVariablePtr x0,

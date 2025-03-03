@@ -114,16 +114,21 @@ int SolCheck::solve(ProblemPtr p)
 {
   DoubleVector *px = p->getDebugSol();
   DoubleVector x;
-  Variable *v;
+  Variable *v = NULL;
   Constraint *c;
-  double ATOL = 1e-6;
-  double RTOL = 1e-6;
+  double AVTOL = 1e-6;
+  double RVTOL = 1e-6;
+  double ITOL = 1e-6;
+  double ACTOL = 1e-5;
+  double RCTOL = 1e-5;
   double act;
+  double vio, vabsmax;
   int i;
   int err = 0;
   size_t vvio = 0;
   size_t cvio = 0;
   size_t ivio = 0;
+  std::string vname = "none";
   LoggerPtr log = env_->getLogger();
 
   if (!px) {
@@ -133,34 +138,51 @@ int SolCheck::solve(ProblemPtr p)
     return 1;
   }
 
-  log->msgStream(LogInfo) << std::setprecision(8) << std::endl << me_
-    << "absolute tolerance for bounds on variables = " << ATOL << std::endl
-    << me_ << "relative tolerance for bounds on variables = " << RTOL <<
-    std::endl << std::endl;
+  log->msgStream(LogExtraInfo) << std::setprecision(8) << std::endl << me_
+    << "absolute tolerance for bounds on variables = " << AVTOL << std::endl
+    << me_ << "relative tolerance for bounds on variables = " << RVTOL  << std::endl
+    << me_ << "absolute tolerance for integer value = " << ITOL << std::endl
+    << me_ << "absolute tolerance for constraints = " << ACTOL << std::endl
+    << me_ << "relative tolerance for constraints = " << RCTOL << std::endl
+    << std::endl << std::endl;
 
   x = *px;
 
   // check integrality 
   i = 0;
+  vabsmax = 0.0;
   for (VariableConstIterator vit = p->varsBegin(); vit != p->varsEnd(); 
        ++vit, ++i) {
     v = *vit;
     if (v->getType() == Integer || v->getType() == Binary) {
-      if (false == isInt(x[i], 1e-6)) {
+      vio = fabs(round(x[i]) - x[i]);
+      if (vio > ITOL) {
         ivio++;
         log->msgStream(LogInfo) << me_ << v->getName() << " value " << x[i] << " violates integer constraint" << std::endl;
       }
+      if (vio > vabsmax) {
+        vabsmax = vio;
+        vname = v->getName();
+      }
     }
   }
+  log->msgStream(LogError) << std::scientific << me_ << "maximum integer violation = " << vabsmax
+    << " for " << vname << std::endl;
 
 
   // check bounds on variables
   i = 0;
+  vabsmax = 0.0;
+  vname = "none";
   for (VariableConstIterator vit = p->varsBegin(); vit != p->varsEnd(); 
        ++vit, ++i) {
     v = *vit;
     if (v->getLb() > -INFINITY) {
-      if (x[i] < v->getLb() - ATOL && x[i] < v->getLb()*(1.0-RTOL)) {
+      vio = v->getLb() - x[i];
+      if (vio > vabsmax) {
+        vabsmax = vio;
+      }
+      if (x[i] < v->getLb() - AVTOL && x[i] < v->getLb()*(1.0-RVTOL)) {
         log->msgStream(LogInfo) << me_ << v->getName() << " value " << x[i] << " violates its lower bound " << v->getLb() << std::endl;
         vvio++;
       } else {
@@ -169,7 +191,12 @@ int SolCheck::solve(ProblemPtr p)
     }
 
     if (v->getUb() < INFINITY) {
-      if (x[i] > v->getUb() + ATOL && x[i] > v->getUb()*(1.0+RTOL)) {
+      vio = x[i] - v->getUb();
+      if (vio > vabsmax) {
+        vabsmax = vio;
+        vname = v->getName();
+      }
+      if (x[i] > v->getUb() + AVTOL && x[i] > v->getUb()*(1.0+RVTOL)) {
         log->msgStream(LogInfo) << me_ << v->getName() << " value " << x[i] << " violates its upper bound " << v->getUb() << std::endl;
         vvio++;
       } else {
@@ -177,14 +204,12 @@ int SolCheck::solve(ProblemPtr p)
       }
     }
   }
+  log->msgStream(LogError) << me_ 
+    << "maximum bound violation on variables = " << vabsmax << " for " << vname << std::endl;
 
   // check constraints 
-  ATOL = 1e-5;
-  RTOL = 1e-5;
-  log->msgStream(LogInfo) << std::setprecision(8) << std::endl << me_
-    << "absolute tolerance for constraints = " << ATOL << std::endl
-    << me_ << "relative tolerance for constraints = " << RTOL <<
-    std::endl << std::endl;
+  vabsmax = 0.0;
+  vname = "none";
   i = 0;
   for (ConstraintConstIterator cit = p->consBegin(); cit != p->consEnd(); 
        ++cit, ++i) {
@@ -196,7 +221,12 @@ int SolCheck::solve(ProblemPtr p)
         continue;
     }
     if (c->getLb() > -INFINITY) {
-      if (c->getLb() - act > std::max(ATOL, c->getLb()*RTOL)) {
+      vio = c->getLb() - act;
+      if (vio > vabsmax) {
+        vabsmax = vio;
+        vname = c->getName();
+      }
+      if (vio > std::max(ACTOL, c->getLb()*RCTOL)) {
         log->msgStream(LogInfo) << me_ << c->getName() << " value " << act << " violates its lower bound " << c->getLb() << std::endl;
         cvio++;
       } else {
@@ -205,7 +235,12 @@ int SolCheck::solve(ProblemPtr p)
     }
 
     if (c->getUb() < INFINITY) {
-      if (act - c->getUb() > std::max(ATOL, c->getUb()*RTOL)) {
+      vio = act - c->getUb();
+      if (vio > vabsmax) {
+        vabsmax = vio;
+        vname = c->getName();
+      }
+      if (vio > std::max(ACTOL, c->getUb()*RCTOL)) {
         log->msgStream(LogInfo) << me_ << c->getName() << " value " << act << " violates its upper bound " << c->getUb() << std::endl;
         cvio++;
       } else {
@@ -213,12 +248,24 @@ int SolCheck::solve(ProblemPtr p)
       }
     }
   }
+  log->msgStream(LogError) << me_ 
+    << "maximum bound violation on constraints = " << vabsmax << " for " 
+    << vname << std::endl;
 
   log->msgStream(LogInfo) << std::endl;
 
-  log->msgStream(LogError) << me_ << "integer violations: " << ivio 
-    << std::endl << me_ << "bound violations " << vvio << std::endl
-    << me_ << "constraint violations " << cvio << std::endl;
+  // objective
+  err = 0;
+  act = p->getObjValue(&x[0], &err);
+  if (err) {
+    log->msgStream(LogError) << me_ << "error evaluating the objective."
+      << std::endl;
+  }
+
+  log->msgStream(LogError) << me_ << "objective value = " << act << std::endl
+    << me_ << "integer violations = " << ivio << std::endl 
+    << me_ << "bound violations = " << vvio << std::endl
+    << me_ << "constraint violations = " << cvio << std::endl;
   return 0;
 }
 

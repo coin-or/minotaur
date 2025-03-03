@@ -77,6 +77,11 @@ bool Minotaur::isInt(double v, double tol)
   return (fabs(floor(v + 0.5) - v) < tol);
 }
 
+double Minotaur::round(double v)
+{
+  return floor(v + 0.5);
+}
+
 void Minotaur::symMatDotV(UInt nz, const double* mat, const UInt* irow,
                           const UInt* jcol, const double* v, double* prod)
 {
