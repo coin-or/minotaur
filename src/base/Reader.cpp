@@ -62,7 +62,7 @@ ProblemPtr Reader::readMps(std::string fname, int &err)
   std::string objname;
   std::map<std::string, int> rownames;
   std::map<std::string, VariablePtr> colnames;
-  VariablePtr v, v2;
+  VariablePtr v = NULL, v2 = NULL;
   FunctionPtr f;
   double dval, lb, ub;
   std::string::size_type echars;  // size of string
@@ -131,21 +131,33 @@ ProblemPtr Reader::readMps(std::string fname, int &err)
         continue;
       } else if (word == "ROWS") {
         section = MpsRows;
+        logger_->msgStream(LogDebug) << me_ << "Reading ROWS "
+          << env_->getTime() << std::endl;
         continue;
       } else if (word == "COLUMNS") {
         section = MpsCols;
+        logger_->msgStream(LogDebug) << me_ << "Reading COLUMNS "
+          << env_->getTime() << std::endl;
         continue;
       } else if (word == "RHS") {
         section = MpsRhs;
+        logger_->msgStream(LogDebug) << me_ << "Reading RHS "
+          << env_->getTime() << std::endl;
         continue;
       } else if (word == "RANGES") {
         section = MpsRang;
+        logger_->msgStream(LogDebug) << me_ << "Reading RANGES "
+          << env_->getTime() << std::endl;
         continue;
       } else if (word == "BOUNDS") {
         section = MpsBoun;
+        logger_->msgStream(LogDebug) << me_ << "Reading BOUNDS "
+          << env_->getTime() << std::endl;
         continue;
       } else if (word == "QUADOBJ") {
         section = MpsQO;
+        logger_->msgStream(LogDebug) << me_ << "Reading QUADOBJ "
+          << env_->getTime() << std::endl;
         continue;
       } else if (word == "QCMATRIX") {
         section = MpsQC;
