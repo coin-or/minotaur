@@ -55,6 +55,7 @@ namespace Minotaur {
 
     enum MpsSec {
       MpsNone,
+      MpsSense,
       MpsName,
       MpsRows,
       MpsCols,

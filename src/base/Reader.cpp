@@ -48,9 +48,10 @@ ProblemPtr Reader::readMps(std::string fname, int &err)
   std::string bndid = "";  // second word of all lines in BOUNDS section must
                            // be common across the file.
   std::string qcname;  //name of the row for QCMatrix
+  std::string oldcol = "";
   ProblemPtr p = 0;
   std::istringstream iss;
-  int lcnt, m, n, r;
+  int lcnt, m, r;
   bool comment;
   VariableType vtype = Continuous;
   std::vector<LinearFunctionPtr> lfs;
@@ -60,7 +61,7 @@ ProblemPtr Reader::readMps(std::string fname, int &err)
   std::vector<double> rowrhs, rowranges;
   std::string objname;
   std::map<std::string, int> rownames;
-  std::map<std::string, int> colnames;
+  std::map<std::string, VariablePtr> colnames;
   VariablePtr v, v2;
   FunctionPtr f;
   double dval, lb, ub;
@@ -87,7 +88,7 @@ ProblemPtr Reader::readMps(std::string fname, int &err)
   p = new Problem(env_);
 
   vtype = Continuous;
-  m = n = 0;
+  m = 0;
   lcnt = 0;
   while (0 == err && MpsEnd != section && std::getline(fs, line)) {
     iss.clear();    // deletes only flags internal to iss
@@ -113,15 +114,19 @@ ProblemPtr Reader::readMps(std::string fname, int &err)
         continue;
       } else if (word == "OBJSENSE") {
         if (!(iss >> word2)) {
-          logger_->errStream() << me_ << "ERROR: Missing value of OBJSENSE "
-                               << "in line " << lcnt << std::endl;
-          err = 10;
-        } else if (word2 == "MAX") {
-          ot = Maximize;
+          section = MpsSense; // sense is not written the current line, check
+                              // the next line
         } else {
-          logger_->msgStream(LogError)
+          toLowerCase(word2);
+          if (word2 == "max") {
+            ot = Maximize;
+          } else if (word2 == "min") {
+            ot = Minimize;
+          } else {
+            logger_->msgStream(LogError)
               << me_ << "warning: OBJSENSE " << word2 << " ignored on line "
               << lcnt << std::endl;
+          }
         }
         continue;
       } else if (word == "ROWS") {
@@ -175,6 +180,19 @@ ProblemPtr Reader::readMps(std::string fname, int &err)
         logger_->errStream() << me_ << "error parsing the MPS file in line "
                              << lcnt << std::endl
                              << line << std::endl;
+        err = 10;
+      }
+      break;
+    case (MpsSense):
+      toLowerCase(word);
+      if ( word == "max") {
+        ot = Maximize;
+      } else if (word == "min") {
+        ot = Minimize;
+      } else {
+        logger_->errStream() << me_ << "Unexpected word " << word
+                             << " in line " << lcnt 
+                             << " in section OBJSENSE" << std::endl;
         err = 10;
       }
       break;
@@ -259,16 +277,19 @@ ProblemPtr Reader::readMps(std::string fname, int &err)
             << " undeclared " << std::endl;
         break;
       } else {
-        if (colnames.find(word) == colnames.end()) {
+        if (word == oldcol) {
+          // v stays the same, no need to lookup
+        } else if (colnames.find(word) == colnames.end()) {
           v = p->newVariable(0, INFINITY, vtype, word);
-          colnames[word] = n;
-          ++n;
+          colnames[word] = v;
+          oldcol = word;
         } else {
-          v = p->getVariable(colnames[word]);
+          v = colnames[word];
+          oldcol = word;
         }
         dval = std::stod(word3, &echars);
         r = rownames[word2];
-        lfs[r]->incTerm(v, dval);
+        lfs[r]->addTerm(v, dval);
 
         // we may have two more terms (but not one)
         if (iss >> word2) {
@@ -287,7 +308,7 @@ ProblemPtr Reader::readMps(std::string fname, int &err)
           }
           dval = std::stod(word3, &echars);
           r = rownames[word2];
-          lfs[r]->incTerm(v, dval);
+          lfs[r]->addTerm(v, dval);
         }
       }
       break;
@@ -434,7 +455,7 @@ ProblemPtr Reader::readMps(std::string fname, int &err)
         err = 10;
         break;
       }
-      v = p->getVariable(colnames[word3]);
+      v = colnames[word3];
       if (word == "LO") {
         p->changeBound(v, Lower, dval);
       } else if (word == "UP") {
@@ -477,8 +498,8 @@ ProblemPtr Reader::readMps(std::string fname, int &err)
         err = 10;
         break;
       }
-      v = p->getVariable(colnames[word]);
-      v2 = p->getVariable(colnames[word2]);
+      v = colnames[word];
+      v2 = colnames[word2];
       dval = std::stod(word3, &echars);
       qfo->incTerm(v, v2, dval * 0.5);
       break;
@@ -490,8 +511,8 @@ ProblemPtr Reader::readMps(std::string fname, int &err)
         err = 10;
         break;
       } else {
-        v = p->getVariable(colnames[word]);
-        v2 = p->getVariable(colnames[word2]);
+        v = colnames[word];
+        v2 = colnames[word2];
         dval = std::stod(word3, &echars);
         qfc->incTerm(v, v2, dval);
       }
