@@ -13,6 +13,7 @@
 #include <sstream>
 #include <stdint.h>
 #include <iostream>
+#include <iomanip>
 #include "opcode.hd"
 
 #include "MinotaurConfig.h"
@@ -2027,12 +2028,20 @@ void AMPLInterface::readFile_(std::string *fname, ReaderType readerType)
 
 Minotaur::ProblemPtr AMPLInterface::readInstance(std::string fname) 
 {
-  logger_->msgStream(Minotaur::LogExtraInfo) << me_ << "reading file " 
+  Minotaur::ProblemPtr p = NULL;
+  double tstrt = env_->getTime();
+  logger_->msgStream(Minotaur::LogInfo) << me_ << "reading .nl file " 
     << fname << std::endl;
   if (false==env_->getOptions()->findBool("use_native_cgraph")->getValue()) {
-    return readInstanceASL_(fname);
+    p = readInstanceASL_(fname);
   } 
-  return readInstanceCG_(fname);
+  p = readInstanceCG_(fname);
+
+  env_->getLogger()->msgStream(Minotaur::LogInfo) << me_ 
+    << "time used in reading file = " << std::fixed 
+    << std::setprecision(2) << env_->getTime()-tstrt << " seconds." 
+    << std::endl;
+  return p;
 }
 
 

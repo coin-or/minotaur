@@ -70,6 +70,7 @@ ProblemPtr Reader::readMps(std::string fname, int &err)
                                // QCMATRIX section
   MpsSec section = MpsNone;
   ObjectiveType ot = Minimize;
+  double tstrt = env_->getTime();
 
   err = 0;
   fs.open(fname.c_str());
@@ -563,6 +564,11 @@ ProblemPtr Reader::readMps(std::string fname, int &err)
       p->newObjective(f, lb, ot, rownamesvec[i]);
     }
   }
+
+  env_->getLogger()->msgStream(LogInfo) << me_ 
+    << "time used in reading file = " << std::fixed 
+    << std::setprecision(2) << env_->getTime()-tstrt << " seconds." 
+    << std::endl;
 
   //p->write(std::cout);
   p->calculateSize();
