@@ -52,7 +52,6 @@ ProblemPtr Reader::readMps(std::string fname, int &err)
   ProblemPtr p = 0;
   std::istringstream iss;
   int lcnt, m, r;
-  bool comment;
   VariableType vtype = Continuous;
   std::vector<LinearFunctionPtr> lfs;
   std::vector<QuadraticFunctionPtr> qfs;
@@ -61,17 +60,22 @@ ProblemPtr Reader::readMps(std::string fname, int &err)
   std::vector<double> rowrhs, rowranges;
   std::string objname;
   std::map<std::string, int> rownames;
+  std::map<std::string, int>::iterator rnit;
   std::map<std::string, VariablePtr> colnames;
+  std::map<std::string, VariablePtr>::iterator cnit;
   VariablePtr v = NULL, v2 = NULL;
   FunctionPtr f;
   double dval, lb, ub;
-  std::string::size_type echars;  // size of string
   QuadraticFunction *qfo = NULL;
   QuadraticFunction *qfc = 0;  // quadratic function being populated in
                                // QCMATRIX section
   MpsSec section = MpsNone;
   ObjectiveType ot = Minimize;
   double tstrt = env_->getTime();
+
+  // std::ios_base::sync_with_stdio(false); 
+  // std::cin.tie(NULL);
+
 
   err = 0;
   fs.open(fname.c_str());
@@ -81,6 +85,7 @@ ProblemPtr Reader::readMps(std::string fname, int &err)
     err = 1;
     return 0;
   }
+
 
   logger_->msgStream(LogInfo)
       << me_ << "reading MPS file " << fname << std::endl;
@@ -100,9 +105,7 @@ ProblemPtr Reader::readMps(std::string fname, int &err)
       continue;  // empty line
     }
 
-    comment = false;
     if ('*' == word[0]) {
-      comment = true;
       continue;  // ignore line, because it is a comment
     }
 
@@ -181,6 +184,8 @@ ProblemPtr Reader::readMps(std::string fname, int &err)
         continue;
       } else if (word == "ENDATA") {
         section = MpsEnd;
+        logger_->msgStream(LogDebug) << me_ << "Reached the end "
+          << env_->getTime() << std::endl;
         continue;
       }
     }
@@ -188,12 +193,10 @@ ProblemPtr Reader::readMps(std::string fname, int &err)
     // we are in an existing section
     switch (section) {
     case (MpsNone):
-      if (!comment) {
-        logger_->errStream() << me_ << "error parsing the MPS file in line "
-                             << lcnt << std::endl
-                             << line << std::endl;
-        err = 10;
-      }
+      logger_->errStream() << me_ << "error parsing the MPS file in line "
+        << lcnt << std::endl
+        << line << std::endl;
+      err = 10;
       break;
     case (MpsSense):
       toLowerCase(word);
@@ -283,44 +286,53 @@ ProblemPtr Reader::readMps(std::string fname, int &err)
                                << " in line " << lcnt << std::endl;
           err = 10;
         }
-      } else if (rownames.find(word2) == rownames.end()) {
-        logger_->errStream()
+      } else {
+        rnit = rownames.find(word2);
+        if (rnit == rownames.end()) {
+          logger_->errStream()
             << me_ << "ERROR: rowname " << word2 << " in line " << lcnt
             << " undeclared " << std::endl;
-        break;
-      } else {
-        if (word == oldcol) {
-          // v stays the same, no need to lookup
-        } else if (colnames.find(word) == colnames.end()) {
-          v = p->newVariable(0, INFINITY, vtype, word);
-          colnames[word] = v;
-          oldcol = word;
+          break;
         } else {
-          v = colnames[word];
-          oldcol = word;
-        }
-        dval = std::stod(word3, &echars);
-        r = rownames[word2];
-        lfs[r]->addTerm(v, dval);
+          if (word == oldcol) {
+            // v stays the same, no need to lookup
+          } else {
+            cnit =  colnames.find(word);
+            if (cnit == colnames.end()) {
+              v = p->newVariable(0, INFINITY, vtype, word);
+              colnames[word] = v;
+              oldcol = word;
+            } else {
+              v = cnit->second;
+              oldcol = word;
+            }
+          }
+          dval = std::stod(word3);
+          r = rnit->second; 
+          lfs[r]->addTerm(v, dval);
 
-        // we may have two more terms (but not one)
-        if (iss >> word2) {
-          if (!(iss >> word3)) {
-            logger_->errStream()
+          // we may have two more terms (but not one)
+          if (iss >> word2) {
+            if (!(iss >> word3)) {
+              logger_->errStream()
                 << me_ << "ERROR: not enough fields in column "
                 << "line " << lcnt << std::endl;
-            err = 10;
-            break;
-          } else if (rownames.find(word2) == rownames.end()) {
-            logger_->errStream()
-                << me_ << "ERROR: rowname " << word2 << " in line " << lcnt
-                << " undeclared " << std::endl;
-            err = 10;
-            break;
+              err = 10;
+              break;
+            } else {
+              rnit = rownames.find(word2);
+              if (rnit == rownames.end()) {
+                logger_->errStream()
+                  << me_ << "ERROR: rowname " << word2 << " in line " << lcnt
+                  << " undeclared " << std::endl;
+                err = 10;
+                break;
+              }
+              dval = std::stod(word3);
+              r = rownames[word2];
+              lfs[r]->addTerm(v, dval);
+            }
           }
-          dval = std::stod(word3, &echars);
-          r = rownames[word2];
-          lfs[r]->addTerm(v, dval);
         }
       }
       break;
@@ -343,7 +355,7 @@ ProblemPtr Reader::readMps(std::string fname, int &err)
             << " undeclared " << std::endl;
         break;
       } else {
-        dval = std::stod(word3, &echars);
+        dval = std::stod(word3);
         r = rownames[word2];
         if (rowrhs[r] != INFINITY) {  // if previously set, warn
           logger_->msgStream(LogExtraInfo)
@@ -366,7 +378,7 @@ ProblemPtr Reader::readMps(std::string fname, int &err)
             err = 10;
             break;
           }
-          dval = std::stod(word3, &echars);
+          dval = std::stod(word3);
           r = rownames[word2];
           if (rowrhs[r] != INFINITY) {  // if previously set, warn
             logger_->msgStream(LogExtraInfo)
@@ -396,7 +408,7 @@ ProblemPtr Reader::readMps(std::string fname, int &err)
             << " undeclared " << std::endl;
         break;
       } else {
-        dval = std::stod(word3, &echars);
+        dval = std::stod(word3);
         r = rownames[word2];
         if (rowranges[r] != INFINITY) {  // warn
           logger_->msgStream(LogExtraInfo)
@@ -420,7 +432,7 @@ ProblemPtr Reader::readMps(std::string fname, int &err)
           err = 10;
           break;
         }
-        dval = std::stod(word3, &echars);
+        dval = std::stod(word3);
         r = rownames[word2];
         if (rowranges[r] != INFINITY) {  // warn
           logger_->msgStream(LogExtraInfo)
@@ -449,7 +461,10 @@ ProblemPtr Reader::readMps(std::string fname, int &err)
             << me_ << "Warning: " << bndid << " ignored in line " << lcnt
             << std::endl;
         break;
-      } else if (colnames.find(word3) == colnames.end()) {
+      } 
+      
+      cnit =  colnames.find(word3);
+      if (cnit == colnames.end()) {
         logger_->errStream()
             << me_ << "ERROR: column name " << word2 << " in line " << lcnt
             << " undeclared " << std::endl;
@@ -459,7 +474,7 @@ ProblemPtr Reader::readMps(std::string fname, int &err)
 
       dval = INFINITY;
       if (iss >> word4) {
-        dval = std::stod(word4, &echars);
+        dval = std::stod(word4);
       } else if (word3 == "LO" || word3 == "UP" || word3 == "FX") {
         logger_->msgStream(LogError)
             << me_ << "ERROR: " << word3 << " key requires a number in line "
@@ -467,7 +482,8 @@ ProblemPtr Reader::readMps(std::string fname, int &err)
         err = 10;
         break;
       }
-      v = colnames[word3];
+      v = cnit->second;
+
       if (word == "LO") {
         p->changeBound(v, Lower, dval);
       } else if (word == "UP") {
@@ -512,7 +528,7 @@ ProblemPtr Reader::readMps(std::string fname, int &err)
       }
       v = colnames[word];
       v2 = colnames[word2];
-      dval = std::stod(word3, &echars);
+      dval = std::stod(word3);
       qfo->incTerm(v, v2, dval * 0.5);
       break;
     case (MpsQC):  // Quadratic Constraint
@@ -525,7 +541,7 @@ ProblemPtr Reader::readMps(std::string fname, int &err)
       } else {
         v = colnames[word];
         v2 = colnames[word2];
-        dval = std::stod(word3, &echars);
+        dval = std::stod(word3);
         qfc->incTerm(v, v2, dval);
       }
       break;
@@ -540,6 +556,8 @@ ProblemPtr Reader::readMps(std::string fname, int &err)
     }
   }
   fs.close();
+  env_->getLogger()->msgStream(LogDebug) << me_ 
+    << "File closed " <<  env_->getTime() << std::endl;
 
   // put all cons and obj in p
   for (int i = 0; i < m; ++i) {
