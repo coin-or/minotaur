@@ -28,7 +28,8 @@ using namespace Minotaur;
 const std::string Reader::me_ = "Reader: ";
 
 Reader::Reader(EnvPtr env)
-  : env_(env)
+  : env_(env),
+    p_(NULL)
 {
   logger_ = env->getLogger();
 }
@@ -49,7 +50,6 @@ ProblemPtr Reader::readMps(std::string fname, int &err)
                            // be common across the file.
   std::string qcname;  //name of the row for QCMatrix
   std::string oldcol = "";
-  ProblemPtr p = 0;
   std::istringstream iss;
   int lcnt, m, r;
   VariableType vtype = Continuous;
@@ -59,8 +59,6 @@ ProblemPtr Reader::readMps(std::string fname, int &err)
   std::vector<std::string> rownamesvec;
   std::vector<double> rowrhs, rowranges;
   std::string objname;
-  std::map<std::string, int> rownames;
-  std::map<std::string, int>::iterator rnit;
   std::map<std::string, VariablePtr> colnames;
   std::map<std::string, VariablePtr>::iterator cnit;
   VariablePtr v = NULL, v2 = NULL;
@@ -76,6 +74,12 @@ ProblemPtr Reader::readMps(std::string fname, int &err)
   // std::ios_base::sync_with_stdio(false); 
   // std::cin.tie(NULL);
 
+  if (p_) {
+    logger_->errStream() << me_ 
+      << "Problem already defined. Can not read new one " << std::endl;
+    err = 1;
+    return 0;
+  }
 
   err = 0;
   fs.open(fname.c_str());
@@ -90,7 +94,7 @@ ProblemPtr Reader::readMps(std::string fname, int &err)
   logger_->msgStream(LogInfo)
       << me_ << "reading MPS file " << fname << std::endl;
 
-  p = new Problem(env_);
+  p_ = new Problem(env_);
 
   vtype = Continuous;
   m = 0;
@@ -99,7 +103,6 @@ ProblemPtr Reader::readMps(std::string fname, int &err)
     iss.clear();    // deletes only flags internal to iss
     iss.str(line);  // convert line into ifstream
     ++lcnt;
-
 
     if (!(iss >> word)) {
       continue;  // empty line
@@ -169,18 +172,21 @@ ProblemPtr Reader::readMps(std::string fname, int &err)
           logger_->errStream() << me_ << "ERROR: Missing row name in line "
                                << lcnt << std::endl;
           err = 10;
-        } else if (rownames.find(word2) == rownames.end()) {
-          rownames[word2] = m;
-          rownamesvec.push_back(word2);
-          lfs.push_back(new LinearFunction());
-          qfc = new QuadraticFunction();
-          qfs.push_back(qfc);
-          ++m;
         } else {
-          r = rownames[word2];
-          qfc = qfs[r];
+          r = getMpsRow_(word2); 
+          if (r < 0) {
+            rmap_[word2] = m;
+            rownamesvec.push_back(word2);
+            lfs.push_back(new LinearFunction());
+            qfc = new QuadraticFunction();
+            qfs.push_back(qfc);
+            ++m;
+          } else {
+            r = getMpsRow_(word2);
+            qfc = qfs[r];
+          }
+          qcname = word2;
         }
-        qcname = word2;
         continue;
       } else if (word == "ENDATA") {
         section = MpsEnd;
@@ -224,29 +230,25 @@ ProblemPtr Reader::readMps(std::string fname, int &err)
           logger_->errStream() << me_ << "ERROR: Missing row name in line "
                                << lcnt << std::endl;
           err = 10;
-        } else if (rownames.find(word) == rownames.end()) {
-          rownames[word] = m;
-          rownamesvec.push_back(word);
-          lfs.push_back(new LinearFunction());
-          qfs.push_back(new QuadraticFunction());
-          if ('N' == rowtypes[m] && !qfo) {
-            qfo = qfs[m];
-          }
-          ++m;
-        } else {
+          break;
+        } 
+        r = getMpsRow_(word);
+        if (r < -1) {
           logger_->errStream()
-              << me_ << "ERROR: Row " << word
-              << " seen more than once in the ROWS section of MPS file "
-              << std::endl;
+            << me_ << "ERROR: Row " << word
+            << " seen more than once in the ROWS section of MPS file "
+            << std::endl;
           err = 10;
+          break;
+        } 
+        rmap_[word] = m;
+        rownamesvec.push_back(word);
+        lfs.push_back(new LinearFunction());
+        qfs.push_back(new QuadraticFunction());
+        if ('N' == rowtypes[m] && !qfo) {
+          qfo = qfs[m];
         }
-
-        if (0 == err && (iss >> word)) {  // check for eol
-          logger_->errStream()
-              << me_ << "ERROR: line " << lcnt << " should have ended before "
-              << word << std::endl;
-          err = 10;
-        }
+        ++m;
       } else {
         logger_->errStream() << me_ << "Unexpected word " << word
                              << " in line " << lcnt << std::endl;
@@ -269,70 +271,60 @@ ProblemPtr Reader::readMps(std::string fname, int &err)
                 << me_ << "ERROR: 'INTORG' seen within "
                 << "'INTORG' section, line " << lcnt << std::endl;
             err = 10;
-          } else {
-            vtype = Integer;
-          }
+            break;
+          } 
+          vtype = Integer;
         } else if (word3 == "'INTEND'") {
           if (Continuous == vtype) {
             logger_->errStream()
                 << me_ << "ERROR: 'INTEND' seen outside "
                 << "'INTORG' section, line " << lcnt << std::endl;
             err = 10;
-          } else {
-            vtype = Continuous;
-          }
+            break;
+          } 
+          vtype = Continuous;
         } else {
           logger_->errStream() << me_ << "ERROR: Unknown marker " << word3
                                << " in line " << lcnt << std::endl;
           err = 10;
+          break;
         }
       } else {
-        rnit = rownames.find(word2);
-        if (rnit == rownames.end()) {
+        r = getMpsRow_(word2);
+        if (r < 0) {
           logger_->errStream()
             << me_ << "ERROR: rowname " << word2 << " in line " << lcnt
             << " undeclared " << std::endl;
           break;
+        } 
+        if (word == oldcol) {
+          // v stays the same, no need to lookup
         } else {
-          if (word == oldcol) {
-            // v stays the same, no need to lookup
-          } else {
-            cnit =  colnames.find(word);
-            if (cnit == colnames.end()) {
-              v = p->newVariable(0, INFINITY, vtype, word);
-              colnames[word] = v;
-              oldcol = word;
-            } else {
-              v = cnit->second;
-              oldcol = word;
-            }
+          v =  getMpsVar_(word, vtype);
+          oldcol = word;
+        }
+        dval = std::stod(word3);
+        lfs[r]->addTerm(v, dval);
+
+        // we may have two more terms (but not one)
+        if (iss >> word2) {
+          if (!(iss >> word3)) {
+            logger_->errStream()
+              << me_ << "ERROR: not enough fields in column "
+              << "line " << lcnt << std::endl;
+            err = 10;
+            break;
+          } 
+          r = getMpsRow_(word2);
+          if (r < -1) {
+            logger_->errStream()
+              << me_ << "ERROR: rowname " << word2 << " in line " << lcnt
+              << " undeclared " << std::endl;
+            err = 10;
+            break;
           }
           dval = std::stod(word3);
-          r = rnit->second; 
           lfs[r]->addTerm(v, dval);
-
-          // we may have two more terms (but not one)
-          if (iss >> word2) {
-            if (!(iss >> word3)) {
-              logger_->errStream()
-                << me_ << "ERROR: not enough fields in column "
-                << "line " << lcnt << std::endl;
-              err = 10;
-              break;
-            } else {
-              rnit = rownames.find(word2);
-              if (rnit == rownames.end()) {
-                logger_->errStream()
-                  << me_ << "ERROR: rowname " << word2 << " in line " << lcnt
-                  << " undeclared " << std::endl;
-                err = 10;
-                break;
-              }
-              dval = std::stod(word3);
-              r = rownames[word2];
-              lfs[r]->addTerm(v, dval);
-            }
-          }
         }
       }
       break;
@@ -349,44 +341,47 @@ ProblemPtr Reader::readMps(std::string fname, int &err)
                              << "line " << lcnt << std::endl;
         err = 10;
         break;
-      } else if (rownames.find(word2) == rownames.end()) {
+      } 
+
+      r = getMpsRow_(word2);
+      if (r < 0) {
         logger_->errStream()
+          << me_ << "ERROR: rowname " << word2 << " in line " << lcnt
+          << " undeclared " << std::endl;
+        break;
+      } 
+      dval = std::stod(word3);
+      if (rowrhs[r] != INFINITY) {  // if previously set, warn
+        logger_->msgStream(LogExtraInfo)
+          << me_ << "Warning: overwriting rhs for row " << word2
+          << " in line " << lcnt << std::endl;
+      }
+      rowrhs[r] = dval;
+
+      // we may have two more terms (but not one)
+      if (iss >> word2) {
+        if (!(iss >> word3)) {
+          logger_->errStream() << me_ << "ERROR: not enough fields in rhs "
+            << "line " << lcnt << std::endl;
+          err = 10;
+          break;
+        } 
+
+        r = getMpsRow_(word2);
+        if (r < 0) {
+          logger_->errStream()
             << me_ << "ERROR: rowname " << word2 << " in line " << lcnt
             << " undeclared " << std::endl;
-        break;
-      } else {
+          err = 10;
+          break;
+        }
         dval = std::stod(word3);
-        r = rownames[word2];
         if (rowrhs[r] != INFINITY) {  // if previously set, warn
           logger_->msgStream(LogExtraInfo)
-              << me_ << "Warning: overwriting rhs for row " << word2
-              << " in line " << lcnt << std::endl;
+            << me_ << "Warning: overwriting rhs for row " << word2
+            << " in line " << lcnt << std::endl;
         }
         rowrhs[r] = dval;
-
-        // we may have two more terms (but not one)
-        if (iss >> word2) {
-          if (!(iss >> word3)) {
-            logger_->errStream() << me_ << "ERROR: not enough fields in rhs "
-                                 << "line " << lcnt << std::endl;
-            err = 10;
-            break;
-          } else if (rownames.find(word2) == rownames.end()) {
-            logger_->errStream()
-                << me_ << "ERROR: rowname " << word2 << " in line " << lcnt
-                << " undeclared " << std::endl;
-            err = 10;
-            break;
-          }
-          dval = std::stod(word3);
-          r = rownames[word2];
-          if (rowrhs[r] != INFINITY) {  // if previously set, warn
-            logger_->msgStream(LogExtraInfo)
-                << me_ << "Warning: overwriting rhs for row " << word2
-                << " in line " << lcnt << std::endl;
-          }
-          rowrhs[r] = dval;
-        }
       }
       break;
     case (MpsRang):  // RANGES
@@ -402,21 +397,21 @@ ProblemPtr Reader::readMps(std::string fname, int &err)
                              << "line " << lcnt << std::endl;
         err = 10;
         break;
-      } else if (rownames.find(word2) == rownames.end()) {
+      } 
+      r = getMpsRow_(word2);
+      if (r < 0) {
         logger_->errStream()
-            << me_ << "ERROR: rowname " << word2 << " in line " << lcnt
-            << " undeclared " << std::endl;
+          << me_ << "ERROR: rowname " << word2 << " in line " << lcnt
+          << " undeclared " << std::endl;
         break;
-      } else {
-        dval = std::stod(word3);
-        r = rownames[word2];
-        if (rowranges[r] != INFINITY) {  // warn
-          logger_->msgStream(LogExtraInfo)
-              << me_ << "Warning: overwriting range for row " << word2
-              << " in line " << lcnt << std::endl;
-        }
-        rowranges[r] = dval;
+      } 
+      dval = std::stod(word3);
+      if (rowranges[r] != INFINITY) {  // warn
+        logger_->msgStream(LogExtraInfo)
+          << me_ << "Warning: overwriting range for row " << word2
+          << " in line " << lcnt << std::endl;
       }
+      rowranges[r] = dval;
 
       // we may have two more terms (but not one)
       if (iss >> word2) {
@@ -425,15 +420,17 @@ ProblemPtr Reader::readMps(std::string fname, int &err)
                                << "line " << lcnt << std::endl;
           err = 10;
           break;
-        } else if (rownames.find(word2) == rownames.end()) {
+        } 
+        r = getMpsRow_(word2);
+        if (r < 0) {
           logger_->errStream()
-              << me_ << "ERROR: rowname " << word2 << " in line " << lcnt
-              << " undeclared " << std::endl;
+            << me_ << "ERROR: rowname " << word2 << " in line " << lcnt
+            << " undeclared " << std::endl;
           err = 10;
           break;
         }
+        
         dval = std::stod(word3);
-        r = rownames[word2];
         if (rowranges[r] != INFINITY) {  // warn
           logger_->msgStream(LogExtraInfo)
               << me_ << "Warning: overwriting range for row " << word2
@@ -454,7 +451,9 @@ ProblemPtr Reader::readMps(std::string fname, int &err)
                              << "line " << lcnt << std::endl;
         err = 10;
         break;
-      } else if (bndid == "") {
+      } 
+      
+      if (bndid == "") {
         bndid = word2;
       } else if (word2 != bndid) {
         logger_->msgStream(LogError)
@@ -462,15 +461,8 @@ ProblemPtr Reader::readMps(std::string fname, int &err)
             << std::endl;
         break;
       } 
-      
-      cnit =  colnames.find(word3);
-      if (cnit == colnames.end()) {
-        logger_->errStream()
-            << me_ << "ERROR: column name " << word2 << " in line " << lcnt
-            << " undeclared " << std::endl;
-        err = 10;
-        break;
-      }
+
+      v =  getMpsVar_(word3, Continuous);
 
       dval = INFINITY;
       if (iss >> word4) {
@@ -482,36 +474,35 @@ ProblemPtr Reader::readMps(std::string fname, int &err)
         err = 10;
         break;
       }
-      v = cnit->second;
 
       if (word == "LO") {
-        p->changeBound(v, Lower, dval);
+        p_->changeBound(v, Lower, dval);
       } else if (word == "UP") {
         if (dval < 0.0) {
           if (v->getLb() == 0.0) {
-            p->changeBound(v, -INFINITY, dval);
+            p_->changeBound(v, -INFINITY, dval);
           } else {
-            p->changeBound(v, Upper, dval);
+            p_->changeBound(v, Upper, dval);
           }
         } else {
-          p->changeBound(v, Upper, dval);
+          p_->changeBound(v, Upper, dval);
         }
       } else if (word == "FX") {
-        p->changeBound(v, dval, dval);
+        p_->changeBound(v, dval, dval);
       } else if (word == "FR") {
-        p->changeBound(v, -INFINITY, INFINITY);
+        p_->changeBound(v, -INFINITY, INFINITY);
       } else if (word == "MI") {
-        p->changeBound(v, Lower, -INFINITY);
+        p_->changeBound(v, Lower, -INFINITY);
       } else if (word == "PL") {
-        p->changeBound(v, Upper, INFINITY);
+        p_->changeBound(v, Upper, INFINITY);
       } else if (word == "BV") {
-        p->setVarType(v, Binary);
+        p_->setVarType(v, Binary);
       } else if (word == "LI") {
-        p->setVarType(v, Integer);
-        p->changeBound(v, Lower, dval);
+        p_->setVarType(v, Integer);
+        p_->changeBound(v, Lower, dval);
       } else if (word == "UI") {
-        p->setVarType(v, Integer);
-        p->changeBound(v, Upper, dval);
+        p_->setVarType(v, Integer);
+        p_->changeBound(v, Upper, dval);
       } else {
         logger_->errStream() << me_ << "ERROR: unknown bound type " << word
                              << " in line " << lcnt << std::endl;
@@ -538,12 +529,11 @@ ProblemPtr Reader::readMps(std::string fname, int &err)
                              << "line " << lcnt << std::endl;
         err = 10;
         break;
-      } else {
-        v = colnames[word];
-        v2 = colnames[word2];
-        dval = std::stod(word3);
-        qfc->incTerm(v, v2, dval);
-      }
+      } 
+      v = colnames[word];
+      v2 = colnames[word2];
+      dval = std::stod(word3);
+      qfc->incTerm(v, v2, dval);
       break;
     case (MpsEnd):
       break;  // out of the mps file
@@ -559,7 +549,7 @@ ProblemPtr Reader::readMps(std::string fname, int &err)
   env_->getLogger()->msgStream(LogDebug) << me_ 
     << "File closed " <<  env_->getTime() << std::endl;
 
-  // put all cons and obj in p
+  // put all cons and obj in p_
   for (int i = 0; i < m; ++i) {
 
     if (qfs[i]->getNumTerms() > 0) {
@@ -604,15 +594,15 @@ ProblemPtr Reader::readMps(std::string fname, int &err)
       break;
     }
     if (rowtypes[i] != 'N') {
-      p->newConstraint(f, lb, ub, rownamesvec[i]);
-    } else if (p->getObjective()) {
+      p_->newConstraint(f, lb, ub, rownamesvec[i]);
+    } else if (p_->getObjective()) {
       logger_->msgStream(LogError) << me_ << "Warning: ignored objective "
                                    << rownamesvec[i] << std::endl;
       delete f;
       f = 0;
     } else {
       lb = (rowrhs[i] == INFINITY) ? 0.0 : -rowrhs[i];
-      p->newObjective(f, lb, ot, rownamesvec[i]);
+      p_->newObjective(f, lb, ot, rownamesvec[i]);
     }
   }
 
@@ -621,9 +611,9 @@ ProblemPtr Reader::readMps(std::string fname, int &err)
     << std::setprecision(2) << env_->getTime()-tstrt << " seconds." 
     << std::endl;
 
-  //p->write(std::cout);
-  p->calculateSize();
-  return p;
+  //p_->write(std::cout);
+  p_->calculateSize();
+  return p_;
 }
 
 
@@ -699,3 +689,29 @@ int Reader::readSol(ProblemPtr p, std::string sname)
 
   return err;
 }
+
+Variable* Reader::getMpsVar_(const std::string &s, VariableType vtype)
+{
+  Variable *v = NULL;
+  std::map<std::string, Variable *>::iterator it = vmap_.find(s);
+
+  if (it != vmap_.end()) {
+    v = it->second;
+  } else {
+    v = p_->newVariable(0, INFINITY, vtype, s);
+    vmap_[s] = v;
+  }
+  return v;
+}
+
+int Reader::getMpsRow_(const std::string &s)
+{
+  std::map<std::string, int>::iterator it = rmap_.find(s);
+
+  if (it == rmap_.end()) {
+    return -1;
+  } 
+  return it->second;
+}
+
+

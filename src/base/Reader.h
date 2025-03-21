@@ -14,6 +14,7 @@
 #ifndef MINOTAURREADER_H
 #define MINOTAURREADER_H
 
+#include <string>
 #include "Types.h"
 #include "Variable.h"
 
@@ -66,7 +67,25 @@ namespace Minotaur {
       MpsQC,
       MpsEnd
     };
+
+    /// Map of row-names (constraints and objective) and the row number
+    std::map<std::string, int> rmap_;
+
+    /// Map of column-names (variable names) and pointer to variable
+    std::map<std::string, Variable *> vmap_;
+
+    /// Problem that is being constructed
+    Problem *p_;
+
+    /// Get variable pointer for the given name. If the variable does not
+    /// exist, then it is created.
+    Variable *getMpsVar_(const std::string &s, VariableType vtype);
+
+    /// Get row number (>= 0) for the given name. If the row does not exist,
+    /// then it returns -1.
+    int getMpsRow_(const std::string &s);
   };
 }
+
 #endif
 
