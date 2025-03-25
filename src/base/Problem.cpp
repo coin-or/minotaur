@@ -1890,6 +1890,8 @@ bool Problem::isDebugSolFeas(double atol, double rtol)
     bool isfeas = true;
     int i;
 
+    logger_->msgStream(LogNone) << std::setprecision(7);
+
     x = &(*debugSol_)[0];  // convert doublevector * to double array pointer
     i = 0;
     for (VariableConstIterator it = vars_.begin(); it != vars_.end(); ++it) {

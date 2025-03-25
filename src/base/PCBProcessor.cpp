@@ -289,6 +289,11 @@ void PCBProcessor::process(NodePtr node, RelaxationPtr rel,
     if(!(!node->getParent() && iter == 1 && sep_status == SepaResolve)) {
       // Do not do separate if we are in root and it is first iteration
       // and we have resolved it by tightenBounds_()
+      if (debug_feas) {
+        if (false==relaxation_->isDebugSolFeas(0.000001, 0.000001)) {
+          logger_->msgStream(LogDebug) << me_ << "debug solution is cut before separate_\n";
+        }
+      }
       separate_(sol, node, s_pool, &sep_status);
       if (debug_feas) {
         if (false==relaxation_->isDebugSolFeas(0.000001, 0.000001)) {

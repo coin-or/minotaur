@@ -1088,6 +1088,16 @@ void LinearHandler::updateLfBoundsFromLb_(ProblemPtr p, bool apply_to_prob,
   VariablePtr var;
   double coef, vlb, vub, nlb, nub;
   VarBoundModPtr mod;
+  const double confac = 1e-5;  // factor by which we should relax the
+                               // constraint upper bound so that we don't run
+                               // into tolerance issues.
+  const double varfac = 1e-5;  // factor by which we should relax the new
+                               // computed bound, to avoid cutting of
+                               // solutions by a tolerance factor
+
+
+  lb -= confac*std::max(1.0, fabs(lb));
+
 
   for(VariableGroupConstIterator it = lf->termsBegin(); it != lf->termsEnd();
       ++it) {
@@ -1100,6 +1110,7 @@ void LinearHandler::updateLfBoundsFromLb_(ProblemPtr p, bool apply_to_prob,
         vub = 0.; // should be zero when we have a singleton infinity.
       }
       nlb = (lb - uu) / coef + vub;
+      nlb -= varfac*std::max(1.0, fabs(nlb));
 
       // round up if integer
       if(cvar->getType() == Integer || cvar->getType() == Binary) {
@@ -1142,6 +1153,7 @@ void LinearHandler::updateLfBoundsFromLb_(ProblemPtr p, bool apply_to_prob,
         vlb = 0.; // should be zero when we have a singleton infinity.
       }
       nub = (lb - uu) / coef + vlb;
+      nub += varfac*std::max(1.0, fabs(nub));
 
       // round down if integer
       if(cvar->getType() == Integer || cvar->getType() == Binary) {
@@ -1195,6 +1207,15 @@ void LinearHandler::updateLfBoundsFromUb_(ProblemPtr p, bool apply_to_prob,
   VariablePtr var;
   double coef, vlb, vub, nlb, nub;
   VarBoundModPtr mod;
+  const double confac = 1e-5;  // factor by which we should relax the
+                               // constraint upper bound so that we don't run
+                               // into tolerance issues.
+  const double varfac = 1e-5;  // factor by which we should relax the new
+                               // computed bound, to avoid cutting of
+                               // solutions by a tolerance factor
+
+
+  ub += confac*std::max(1.0, fabs(ub));
 
   for(VariableGroupConstIterator it = lf->termsBegin(); it != lf->termsEnd();
       ++it) {
@@ -1207,6 +1228,7 @@ void LinearHandler::updateLfBoundsFromUb_(ProblemPtr p, bool apply_to_prob,
         vlb = 0.; // should be zero when we have a singleton infinity.
       }
       nub = (ub - ll) / coef + vlb;
+      nub += varfac*std::max(1.0, fabs(nub));
 
       // round down if integer
       if(cvar->getType() == Integer || cvar->getType() == Binary) {
@@ -1249,6 +1271,7 @@ void LinearHandler::updateLfBoundsFromUb_(ProblemPtr p, bool apply_to_prob,
         vub = 0.; // should be zero when we have a singleton infinity.
       }
       nlb = (ub - ll) / coef + vub;
+      nlb -= varfac*std::max(1.0, fabs(nlb));
 
       // round up if integer
       if(cvar->getType() == Integer || cvar->getType() == Binary) {
