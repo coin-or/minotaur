@@ -496,6 +496,10 @@ int Bnb::solve(ProblemPtr p)
     oinst_->setInitialPoint(iface_->getInitialPoint(),
                             oinst_->getNumVars() - iface_->getNumDefs());
   }
+  
+  if (env_->getOptions()->findInt("log_level")->getValue() == 2) {
+    oinst_->statistics(env_->getLogger()->msgStream(LogInfo));
+  }
 
   if(oinst_->getObjective() &&
      oinst_->getObjective()->getObjectiveType() == Maximize) {
