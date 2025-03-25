@@ -73,7 +73,7 @@ namespace Minotaur {
        */
       const Timer* getWTimer();
 
-
+			double timeLimit();
 
       /// Get the version string
       std::string getVersion();
