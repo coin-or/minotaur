@@ -254,6 +254,11 @@ BrancherPtr Bnb::getBrancher_(HandlerVector handlers, EnginePtr e)
   }
   env_->getLogger()->msgStream(LogExtraInfo)
       << me_ << "brancher used = " << br->getName() << std::endl;
+  //env_->getLogger()->msgStream(LogInfo) << me_  << "time before starting BAB
+  //= " << std::fixed << std::setprecision(2) << env_->getTime() << std::endl;
+  if (timeCheck() == true) {
+    return 0;
+  }
   return br;
 }
 
@@ -504,6 +509,14 @@ int Bnb::solve(ProblemPtr p)
         << me_ << "objective sense: minimize" << std::endl;
   }
 
+  env_->getLogger()->msgStream(LogInfo)
+      << me_ << "time after constraint classification = " << std::fixed
+      << std::setprecision(2) << env_->getTime() << std::endl;
+
+  if (timeCheck() == true) {
+    return 0;
+  }
+
   // First store all original variables in a vector, then presolve.
   // Keep a pointer to presolver for postsolving after the main solve.
   orig_v = new VarVector(oinst_->varsBegin(), oinst_->varsEnd());
@@ -523,7 +536,16 @@ int Bnb::solve(ProblemPtr p)
               iface_);
     goto CLEANUP;
   }
-  if(options->findBool("solve")->getValue() == false) {
+
+  env_->getLogger()->msgStream(LogInfo)
+      << me_ << "time after presolve = " << std::fixed << std::setprecision(2)
+      << env_->getTime() << std::endl;
+
+  if (timeCheck() == true) {
+    return 0;
+  }
+
+  if (options->findBool("solve")->getValue() == false) {
     env_->getLogger()->msgStream(LogInfo)
         << me_ << "Solve option is set to 0, Stopping further processing."
         << std::endl;

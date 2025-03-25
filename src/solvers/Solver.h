@@ -38,6 +38,8 @@ namespace Minotaur {
 
     virtual ProblemPtr readProblem(std::string fname, std::string dname,
                                    std::string sname, int &err);
+                                   
+    virtual bool timeCheck();
 
     /// Solve the problem
     virtual int solve(ProblemPtr p) = 0;
