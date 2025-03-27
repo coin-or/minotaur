@@ -88,6 +88,7 @@ public:
   /// Add a constant term to the objective.
   virtual void addToObj(double cb);
 
+
   /// Fill up the statistics about the size of the problem into size_.
   virtual void calculateSize(bool shouldRedo = false);
 
@@ -668,6 +669,9 @@ public:
 
   /// Write the problem size to logger_
   virtual void writeSize(std::ostream& out) const;
+
+  //Print statistics in log_level 2 
+  void statistics(std::ostream& out) const;
 
   const double INFTY = std::numeric_limits<double>::infinity();
 

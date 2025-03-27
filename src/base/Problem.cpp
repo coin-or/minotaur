@@ -2559,11 +2559,12 @@ double Problem::getSizeEstimate()
   return pow(estimate, 0.5);
 }
 
-// void Problem::statistics(std::ostream& out) const{
-//   std::cout<<"No of variables:"<< size_->vars<<
-//   ", integer variables:"<<size_->ints<<", binary
-//   variables:"<<size_->bins<<", constraints:"<<size_->cons<<std::endl;
-// }
+void Problem::statistics(std::ostream& out) const{
+  std::cout << "No of variables: " << size_->vars
+  << ", integer variables: " << size_->ints
+  << ", binary variables: " << size_->bins
+  << ", constraints: " << size_->cons << std::endl;
+}
 
 void Problem::writeSize(std::ostream& out) const
 {

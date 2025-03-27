@@ -58,6 +58,13 @@ FileType Solver::getFileType(std::string fname)
   } 
   return ft;
 }
+bool Solver::timeCheck()
+{  
+  if (env_->timeLimit() > 0.0 && env_->getTime() > env_->timeLimit()) {
+    return true;
+  }
+  return false;
+}
 
 
 ProblemPtr Solver::readProblem(std::string fname, std::string dname,
@@ -65,10 +72,12 @@ ProblemPtr Solver::readProblem(std::string fname, std::string dname,
 {
   FileType ft;
   OptionDBPtr options = env_->getOptions();
+  double tstrt;
   ProblemPtr p = 0;
   Reader rdr(env_);
 
   err = 0;
+  tstrt = env_->getTime();
   ft = getFileType(fname);
 
   if (ft==MPS) {
@@ -83,6 +92,9 @@ ProblemPtr Solver::readProblem(std::string fname, std::string dname,
     iface_ = new MINOTAUR_AMPL::AMPLInterface(env_, sname);
     options->findString("interface_type")->setValue("ampl");
     p = iface_->readInstance(fname);
+    env_->getLogger()->msgStream(LogInfo) << me_ 
+    << "time used in reading instance = " << std::fixed 
+    << std::setprecision(2) << env_->getTime()-tstrt << std::endl;
   } else {
     env_->getLogger()->errStream() << me_
       << "Unable to read the problem from file " << fname 
@@ -91,6 +103,10 @@ ProblemPtr Solver::readProblem(std::string fname, std::string dname,
     err = 1;
     return 0;
   }
+
+  if (timeCheck() == true) {
+    return nullptr;
+  }  
 
   if (!dname.empty()) {
     err = rdr.readSol(p, dname);

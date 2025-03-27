@@ -821,6 +821,11 @@ const Timer* Environment::getTimer()
   return timer_;
 }
 
+double Environment::timeLimit()
+{
+	return options_->findDouble("time_limit")->getValue();
+}
+
 //Adding Code for wall time
 
 double Environment::getWTime()
