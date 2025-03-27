@@ -260,8 +260,9 @@ SolveStatus LinearHandler::presolve(PreModQ* pre_mods, bool* changed0,
     logger_->msgStream(LogDebug)
         << me_ << "presolve iteration " << pStats_->iters << std::endl;
 #endif
-    if(true == pOpts_->purgeVars)
+    if(true == pOpts_->purgeVars) {
       delFixedVars_(&changed);
+    } 
     status = checkBounds_(problem_);
     if(status == SolvedInfeasible) {
       delete timer;
@@ -433,7 +434,7 @@ void LinearHandler::tightenInts_(ProblemPtr p, bool apply_to_prob,
         } else {
           mods->push_back(mod);
 #if SPEW
-          mod->write(logger_->msgStream(LogDebug));
+          mod->write(logger_->msgStream(LogDebug2));
 #endif
         }
         *changed = true;
@@ -448,7 +449,7 @@ void LinearHandler::tightenInts_(ProblemPtr p, bool apply_to_prob,
         } else {
           mods->push_back(mod);
 #if SPEW
-          mod->write(logger_->msgStream(LogDebug));
+          mod->write(logger_->msgStream(LogDebug2));
 #endif
         }
         *changed = true;
@@ -852,7 +853,7 @@ void LinearHandler::dualFix_(bool* changed)
 #if SPEW
       logger_->msgStream(LogDebug) << me_ << "variable " << v->getName()
                                    << " fixed by dual fixing" << std::endl;
-      mod->write(logger_->msgStream(LogDebug));
+      mod->write(logger_->msgStream(LogDebug2));
 #endif
       delete mod;
       mod = 0;
@@ -1091,13 +1092,14 @@ void LinearHandler::updateLfBoundsFromLb_(ProblemPtr p, bool apply_to_prob,
   const double confac = 1e-5;  // factor by which we should relax the
                                // constraint upper bound so that we don't run
                                // into tolerance issues.
-  const double varfac = 1e-5;  // factor by which we should relax the new
+  const double varfac = 1e-9;  // factor by which we should relax the new
                                // computed bound, to avoid cutting of
                                // solutions by a tolerance factor
 
 
-  lb -= confac*std::max(1.0, fabs(lb));
-
+  if (lb > -INFINITY && lf->getNumTerms()>1) {
+    lb -= confac*std::max(1.0, fabs(lb));
+  }
 
   for(VariableGroupConstIterator it = lf->termsBegin(); it != lf->termsEnd();
       ++it) {
@@ -1210,12 +1212,14 @@ void LinearHandler::updateLfBoundsFromUb_(ProblemPtr p, bool apply_to_prob,
   const double confac = 1e-5;  // factor by which we should relax the
                                // constraint upper bound so that we don't run
                                // into tolerance issues.
-  const double varfac = 1e-5;  // factor by which we should relax the new
+  const double varfac = 1e-9;  // factor by which we should relax the new
                                // computed bound, to avoid cutting of
                                // solutions by a tolerance factor
 
 
-  ub += confac*std::max(1.0, fabs(ub));
+  if (ub < INFINITY && lf->getNumTerms()>1) {
+    ub += confac*std::max(1.0, fabs(ub));
+  }
 
   for(VariableGroupConstIterator it = lf->termsBegin(); it != lf->termsEnd();
       ++it) {
