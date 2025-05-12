@@ -1704,6 +1704,11 @@ void LinearHandler::simplePresolve(ProblemPtr p, SolutionPoolPtr spool,
     nintmods = 0;
     changed = false;
     ++iters;
+    status = checkBounds_(p);
+    if(status == SolvedInfeasible) {
+      break;
+    }
+    tightenInts_(p, false, &changed, &mods);
     status = varBndsFromCons_(p, false, &changed, &mods, &nintmods);
     if(status == SolvedInfeasible) {
       break;
@@ -1721,8 +1726,6 @@ void LinearHandler::simplePresolve(ProblemPtr p, SolutionPoolPtr spool,
     if(status == SolvedInfeasible) {
       break;
     }
-    tightenInts_(p, false, &changed, &mods);
-    status = checkBounds_(p);
   }
 
   for(ModQ::const_iterator it = mods.begin(); it != mods.end(); ++it) {
