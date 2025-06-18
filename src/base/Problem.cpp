@@ -1416,7 +1416,7 @@ void Problem::cg2qf()
       lfnew = (LinearFunctionPtr) new LinearFunction(grad, varsBegin(),
                                                      varsEnd(), 1e-12);
 
-      nlconst = f->eval(x, &err);
+      nlconst = f->eval(x, &err) + getObjective()->getConstant();
       assert(0 == err);
 
       ObjectiveType newobjtype;
