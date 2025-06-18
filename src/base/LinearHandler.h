@@ -216,9 +216,9 @@ protected:
   void chkIntToBin_(VariablePtr v);
 
   /**
-   * \brief Find each variable that appears in exactly one constraint in
-   * linear form and does not appear in objective. Such a variable can be
-   * fixed depending on its coefficient in the constraint.
+   * \brief Find variables that appear in exactly one constraint in
+   * linear form and do not appear in objective. Such a variable can be
+   * removed after changing the bounds on the constraint.
    *
    * \param[out] changed Set to true if some such variables are found and
    * fixed.
