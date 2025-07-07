@@ -66,6 +66,7 @@ private:
   ProblemPtr inst_;
   ProblemPtr newp_;
   SolveStatus status_;
+  SolutionPtr sol_;
 
   BranchAndBound* createBab_(EnginePtr e, HandlerVector& handlers);
   PresolverPtr createPres_(HandlerVector& handlers);

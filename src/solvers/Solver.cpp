@@ -58,6 +58,8 @@ FileType Solver::getFileType(std::string fname)
   } 
   return ft;
 }
+
+
 bool Solver::timeCheck()
 {  
   if (env_->timeLimit() > 0.0 && env_->getTime() > env_->timeLimit()) {
@@ -122,30 +124,21 @@ void Solver::setIface(MINOTAUR_AMPL::AMPLInterface* iface)
 }
 
 
-int Solver::writeSol_(EnvPtr env, VarVector *orig_v, PresolverPtr pres,
+int Solver::writeSol_(EnvPtr env, VarVector *orig_v, 
                       SolutionPtr sol, SolveStatus status,
                       MINOTAUR_AMPL::AMPLInterface* iface)
 {
-  Solution* final_sol = 0;
   int err = 0;
-
-  if (sol) {
-    final_sol = pres->getPostSol(sol);
-  }
 
   if (env->getOptions()->findFlag("ampl")->getValue() ||
       true == env->getOptions()->findBool("write_sol_file")->getValue()) {
-    iface->writeSolution(final_sol, status);
+    iface->writeSolution(sol, status);
   } 
   
-  if (final_sol && 
+  if (sol && 
       env->getOptions()->findBool("display_solution")->getValue()) {
-    final_sol->writePrimal(env->getLogger()->msgStream(LogNone), orig_v);
+    sol->writePrimal(env->getLogger()->msgStream(LogNone), orig_v);
   } 
-
-  if (final_sol) {
-    delete final_sol;
-  }
   return err;
 }
 

@@ -47,18 +47,24 @@ namespace Minotaur {
     /// get status of the last solve
     virtual SolveStatus getStatus() = 0;
 
+    /// get solution of the last solve
+    virtual SolutionPtr getSol() = 0;
+
     void setIface(MINOTAUR_AMPL::AMPLInterface* iface);
 
 
   protected:
+    /// Minotaur Environment
     EnvPtr env_;
+
+    /// AMPL Interface
     MINOTAUR_AMPL::AMPLInterface* iface_;
 
     /// True if iface was initialized by this solver, false if provided by a
     /// calling function.
     bool ownIface_;
 
-    virtual int writeSol_(EnvPtr env, VarVector *orig_v, PresolverPtr pres,
+    virtual int writeSol_(EnvPtr env, VarVector *orig_v, 
                           SolutionPtr sol, SolveStatus status,
                           MINOTAUR_AMPL::AMPLInterface* iface);
 

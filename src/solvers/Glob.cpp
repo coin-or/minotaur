@@ -58,7 +58,8 @@ const std::string Glob::me_ = "mntr-glob: ";
 
 Glob::Glob(EnvPtr env)
   : objSense_(1.0),
-    status_(NotStarted)
+    status_(NotStarted),
+    sol_(NULL)
 {
   env_ = env;
   iface_ = 0;
@@ -66,7 +67,12 @@ Glob::Glob(EnvPtr env)
   newp_ = 0;
 }
 
-Glob::~Glob() { }
+Glob::~Glob()
+{ 
+  if (sol_) {
+    delete sol_;
+  }
+}
 
 void Glob::doSetup()
 {
@@ -397,8 +403,10 @@ int Glob::solve(ProblemPtr inst)
         << me_
         << "status of presolve: " << getSolveStatusString(pres->getStatus())
         << std::endl;
-    writeSol_(env_, orig_v, pres, pres->getSolution(), pres->getStatus(),
-              iface_);
+    if (pres->getSolution()) {
+      sol_ = pres->getPostSol(pres->getSolution());
+    }
+    writeSol_(env_, orig_v, sol_, pres->getStatus(), iface_);
     goto CLEANUP;
   }
 
@@ -453,7 +461,11 @@ int Glob::solve(ProblemPtr inst)
     (*it)->writeStats(env_->getLogger()->msgStream(LogExtraInfo));
   }
 
-  writeSol_(env_, orig_v, pres, bab->getSolution(), bab->getStatus(), iface_);
+  sol_ = bab->getSolution();
+  if (sol_ && pres) {
+    sol_ = pres->getPostSol(sol_);
+  }
+  writeSol_(env_, orig_v, sol_, bab->getStatus(), iface_);
   writeStatus_(bab);
 
 CLEANUP:

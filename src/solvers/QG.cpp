@@ -310,10 +310,13 @@ int QG::solve(ProblemPtr p)
   handlers.clear();
   status_ = pres->getStatus();
   if(Finished != status_ && NotStarted != status_) {
+    if (pres->getSolution()) {
+      sol_ = pres->getPostSol(pres->getSolution());
+    }
     env_->getLogger()->msgStream(LogInfo)
         << me_ << "status of presolve: " << getSolveStatusString(status_)
         << std::endl;
-    writeSol_(env_, orig_v, pres, pres->getSolution(), status_, iface_);
+    writeSol_(env_, orig_v, sol_, status_, iface_);
     goto CLEANUP;
   }
 
@@ -426,6 +429,9 @@ int QG::solve(ProblemPtr p)
   lb_ = bab->getLb();
   ub_ = bab->getUb();
   sol_ = bab->getSolution();
+  if (sol_ && pres) {
+    sol_ = pres->getPostSol(sol_);
+  }
 
   bab->writeStats(env_->getLogger()->msgStream(LogExtraInfo));
   nlp_e->writeStats(env_->getLogger()->msgStream(LogExtraInfo));
@@ -436,7 +442,7 @@ int QG::solve(ProblemPtr p)
     (*it)->writeStats(env_->getLogger()->msgStream(LogExtraInfo));
   }
 
-  err = writeSol_(env_, orig_v, pres, sol_, status_, iface_);
+  err = writeSol_(env_, orig_v, sol_, status_, iface_);
   if(err) {
     goto CLEANUP;
   }

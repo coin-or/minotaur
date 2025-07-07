@@ -57,13 +57,19 @@ const std::string Bnb::me_ = "mbnb: ";
 
 Bnb::Bnb(EnvPtr env)
   : objSense_(1.0),
+    sol_(NULL),
     status_(NotStarted)
 {
   env_ = env;
   iface_ = 0;
 }
 
-Bnb::~Bnb() { }
+Bnb::~Bnb()
+{
+  if (sol_) {
+    delete sol_;
+  }
+}
 
 BranchAndBound* Bnb::getBab_(Engine* engine, HandlerVector& handlers)
 {
@@ -323,10 +329,9 @@ int Bnb::getEngine_(Engine** e)
   return err;
 }
 
-DoubleVector Bnb::getSolution()
+SolutionPtr Bnb::getSol()
 {
-  DoubleVector x;
-  return x;
+  return sol_;
 }
 
 SolveStatus Bnb::getStatus()
@@ -532,12 +537,14 @@ int Bnb::solve(ProblemPtr p)
   handlers.clear();
 
   if(Finished != pres->getStatus() && NotStarted != pres->getStatus()) {
+    if (pres->getSolution()) {
+      sol_ = pres->getPostSol(pres->getSolution());
+    }
     env_->getLogger()->msgStream(LogInfo)
         << me_
         << "status of presolve: " << getSolveStatusString(pres->getStatus())
         << std::endl;
-    writeSol_(env_, orig_v, pres, pres->getSolution(), pres->getStatus(),
-              iface_);
+    writeSol_(env_, orig_v, sol_, pres->getStatus(), iface_);
     goto CLEANUP;
   }
 
@@ -571,7 +578,11 @@ int Bnb::solve(ProblemPtr p)
     (*it)->writeStats(env_->getLogger()->msgStream(LogExtraInfo));
   }
 
-  writeSol_(env_, orig_v, pres, bab->getSolution(), bab->getStatus(), iface_);
+  sol_ = bab->getSolution();
+  if (sol_ && pres) {
+    sol_ = pres->getPostSol(sol_);
+  }
+  writeSol_(env_, orig_v, sol_, bab->getStatus(), iface_);
   writeBnbStatus_(bab);
 
 CLEANUP:
