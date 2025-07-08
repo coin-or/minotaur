@@ -59,7 +59,10 @@ const std::string MultiStart::me_ = "MultiStart: ";
 
 MultiStart::MultiStart(EnvPtr env) 
 : objSense_(1.0),
-  status_(NotStarted)
+  status_(NotStarted),
+  sol_(NULL)
+
+
 {
   env_ = env;
   iface_ = 0;
@@ -455,6 +458,7 @@ int MultiStart::solve(ProblemPtr p)
   int err = 0;
   OptionDBPtr options = env_->getOptions();
 
+
   setInitialOptions_();
 
   oinst_ = p;
@@ -515,7 +519,10 @@ int MultiStart::solve(ProblemPtr p)
     env_->getLogger()->msgStream(LogInfo) << me_ 
       << "status of presolve: " 
       << getSolveStatusString(pres->getStatus()) << std::endl;
-    writeSol_(env_, orig_v, pres, pres->getSolution(), pres->getStatus(), iface_);
+    if (pres->getSolution()) {
+      sol_ = pres->getPostSol(pres->getSolution());
+    }
+    writeSol_(env_, orig_v, sol_, pres->getStatus(), iface_);
     goto CLEANUP;
   }
 
@@ -538,8 +545,15 @@ int MultiStart::solve(ProblemPtr p)
     (*it)->writeStats(env_->getLogger()->msgStream(LogExtraInfo));
   }
 
-  writeSol_(env_, orig_v, pres, bab->getSolution(), bab->getStatus(), iface_);
-  writeBnbStatus_(bab);
+  sol_ = bab->getSolution();
+  if (sol_ && pres) {
+    sol_ = pres->getPostSol(sol_);
+  }
+  writeSol_(env_, orig_v, sol_, bab->getStatus(), iface_);
+  // writeStatus_(bab);
+  
+  // writeSol_(env_, orig_v, pres, bab->getSolution(), bab->getStatus(), iface_);
+  // writeBnbStatus_(bab);
 
 CLEANUP:
   for (HandlerVector::iterator it=handlers.begin(); it!=handlers.end(); ++it) {

@@ -65,6 +65,7 @@ namespace Minotaur {
       double lb_, ub_;
       ProblemPtr oinst_;
       SolveStatus status_;
+      // SolutionPtr sol_;
 
       int getEngines_(Engine **nlp_e, LPEngine **lp_e);
       PresolverPtr presolve_(HandlerVector &handlers);

@@ -47,13 +47,13 @@ namespace Minotaur {
       int showInfo();
 
       /// Solve the problem
-      virtual int solve(ProblemPtr p);
+      virtual int solve(ProblemPtr p);  
 
       /// get status of the last solve.
       virtual SolveStatus getStatus() {return status_;};
 
       /// get status of the last solve.
-      virtual SolutionPtr getSolution() {return sol_;};
+      virtual SolutionPtr getSol() {return sol_;};
 
       /// Return the upper bound for the optimal value
       double getUb() {return ub_;};

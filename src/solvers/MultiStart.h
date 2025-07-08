@@ -48,6 +48,7 @@ public:
 
   /// get solution of the last solve.
   virtual DoubleVector getSolution();
+  virtual SolutionPtr getSol() {return sol_;};
 
   /// Return the upper bound for the optimal value
   double getUb();
@@ -60,6 +61,7 @@ private:
   double objSense_;
   ProblemPtr oinst_;
   SolveStatus status_;
+  SolutionPtr sol_;
 
   BranchAndBound* getBab_(Engine *engine, HandlerVector &handlers);
   BrancherPtr getBrancher_(HandlerVector handlers, Engine *e);

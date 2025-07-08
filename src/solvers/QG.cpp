@@ -316,6 +316,7 @@ int QG::solve(ProblemPtr p)
     env_->getLogger()->msgStream(LogInfo)
         << me_ << "status of presolve: " << getSolveStatusString(status_)
         << std::endl;
+
     writeSol_(env_, orig_v, sol_, status_, iface_);
     goto CLEANUP;
   }

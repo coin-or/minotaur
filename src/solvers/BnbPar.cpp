@@ -512,7 +512,12 @@ int BnbPar::solve(ProblemPtr p)
     env_->getLogger()->msgStream(LogInfo)
         << me_ << "status of presolve: " << getSolveStatusString(status_)
         << std::endl;
-    writeSol_(env_, orig_v, pres, pres->getSolution(), status_, iface_);
+
+    if (pres->getSolution()) {
+      sol_ = pres->getPostSol(pres->getSolution());
+    }
+    writeSol_(env_, orig_v, sol_, pres->getStatus(), iface_);    
+    // writeSol_(env_, orig_v, pres, pres->getSolution(), status_, iface_);
     writeParBnbStatus_(parbab, wallTimeStart, clockTimeStart);
     goto CLEANUP;
   }
@@ -592,7 +597,7 @@ int BnbPar::solve(ProblemPtr p)
   ub_ = parbab->getUb();
   sol_= parbab->getSolution();
 
-  err = writeSol_(env_, orig_v, pres, sol_, status_, iface_);
+  err = writeSol_(env_, orig_v, sol_, status_, iface_);
   if(err) {
     goto CLEANUP;
   }
