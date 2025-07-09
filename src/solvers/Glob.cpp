@@ -297,10 +297,15 @@ void Glob::fwd2QG_()
   return;
 }
 
-void Glob::fwd2Bnb_()
+void Glob::fwd2Bnb_(VarVector *x)
 {
   Bnb bnb(env_);
+  // std::cout << "\n\n\n **** solving **** \n";
   bnb.solve(inst_);
+  // std::cout << "\n\n\n **** solved **** \n";
+  // std::cout << "writing solution\n";
+  writeSol_(env_, x, bnb.getSol(), bnb.getStatus(), iface_);
+  // std::cout << "solution written\n";
   return;
 }
 
@@ -422,7 +427,7 @@ int Glob::solve(ProblemPtr inst)
           << "Problem is forwarded to Branch and bound" << std::endl;
       env_->getOptions()->findBool("nl_presolve")->setValue(false);
       env_->getOptions()->findString("brancher")->setValue("rel");
-      fwd2Bnb_();
+      fwd2Bnb_(orig_v);
       goto CLEANUP;
     }
     env_->getLogger()->msgStream(LogInfo)

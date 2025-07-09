@@ -47,8 +47,8 @@ public:
   SolveStatus getStatus();
 
   /// get solution of the last solve.
-  virtual DoubleVector getSolution();
-  // virtual SolutionPtr getSol() {return sol_;};
+  // virtual DoubleVector getSolution();
+  virtual SolutionPtr getSol() {return NULL;};
 
   /// Return the upper bound for the optimal value
   double getUb();
