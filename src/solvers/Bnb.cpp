@@ -123,7 +123,6 @@ BranchAndBound* Bnb::getBab_(Engine* engine, HandlerVector& handlers)
      true == options->findBool("nl_presolve")->getValue()) {
     nlhand = (NlPresHandlerPtr) new NlPresHandler(env_, oinst_);
     nlhand->setModFlags(false, true);
-    // std::cout << "\n\n Nonlinear handler *** \n\n\n";
     handlers.push_back(nlhand);
   }
   if(handlers.size() > 1) {
@@ -537,15 +536,16 @@ int Bnb::solve(ProblemPtr p)
   }
   handlers.clear();
 
-  if(Finished != pres->getStatus() && NotStarted != pres->getStatus()) {
+  status_ = pres->getStatus();
+  if(Finished != status_ && NotStarted != status_) {
     if (pres->getSolution()) {
       sol_ = pres->getPostSol(pres->getSolution());
     }
     env_->getLogger()->msgStream(LogInfo)
         << me_
-        << "status of presolve: " << getSolveStatusString(pres->getStatus())
+        << "status of presolve: " << getSolveStatusString(status_)
         << std::endl;
-    writeSol_(env_, orig_v, sol_, pres->getStatus(), iface_);
+    writeSol_(env_, orig_v, sol_, status_, iface_);
     goto CLEANUP;
   }
 
@@ -558,6 +558,7 @@ int Bnb::solve(ProblemPtr p)
   }
 
   if (options->findBool("solve")->getValue() == false) {
+    status_ = NotStarted;
     env_->getLogger()->msgStream(LogInfo)
         << me_ << "Solve option is set to 0, Stopping further processing."
         << std::endl;
@@ -572,28 +573,20 @@ int Bnb::solve(ProblemPtr p)
   bab = getBab_(engine, handlers);
 
   bab->solve();
+  status_ = bab->getStatus();
 
-  // std::cout << "\n\n\n **** writing stats **** \n";
   bab->writeStats(env_->getLogger()->msgStream(LogExtraInfo));
-  // std::cout << "\n\n\n **** engine stats **** \n";
   engine->writeStats(env_->getLogger()->msgStream(LogExtraInfo));
-  // std::cout << "\n\n\n **** handler stats **** \n";
   for(HandlerVector::iterator it = handlers.begin(); it != handlers.end();
       ++it) {
-    // std::cout << "\n\n\n **** handler = **** \n" << *it;
-    // std::cout << "\n\n\n **** handler name = **** \n" << (*it)->getName() << "\n\n";
     (*it)->writeStats(env_->getLogger()->msgStream(LogExtraInfo));
   }
 
-  // std::cout << "\n\n\n **** bnb getting sol **** \n";
   sol_ = bab->getSolution();
   if (sol_ && pres) {
-    // std::cout << "\n\n\n **** bnb getting postsolve solution **** \n";
     sol_ = pres->getPostSol(sol_);
   }
-  // std::cout << "\n\n\n **** bnb writing sol **** \n";
-  writeSol_(env_, orig_v, sol_, bab->getStatus(), iface_);
-  // std::cout << "\n\n\n **** bnb writing status **** \n";
+  writeSol_(env_, orig_v, sol_, status_, iface_);
   writeBnbStatus_(bab);
 
 CLEANUP:
@@ -640,7 +633,7 @@ void Bnb::writeBnbStatus_(BranchAndBound* bab)
         << me_ << "wall time used (s) = " << std::fixed << std::setprecision(2)
         << env_->getWTime() << std::endl
         << me_ << "status of branch-and-bound = "
-        << getSolveStatusString(bab->getStatus()) << std::endl;
+        << getSolveStatusString(status_) << std::endl;
   } else {
     env_->getLogger()->msgStream(LogInfo)
         << me_ << std::fixed << std::setprecision(4)

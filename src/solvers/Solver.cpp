@@ -133,8 +133,8 @@ int Solver::writeSol_(EnvPtr env, VarVector *orig_v,
   if (iface && 
       (env->getOptions()->findFlag("ampl")->getValue() ||
       true == env->getOptions()->findBool("write_sol_file")->getValue())) {
-    iface->writeSolution(sol, status);
-  } 
+        iface->writeSolution(sol, status);
+} 
   
   if (sol && 
       env->getOptions()->findBool("display_solution")->getValue()) {
