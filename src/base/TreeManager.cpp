@@ -72,8 +72,38 @@ TreeManager::TreeManager(EnvPtr env)
       timer_->start();
     }
   }
-} 
+}
 
+TreeSearchOrder TreeManager::getSearchType() const
+{
+  return searchType_;
+}
+
+void TreeManager::setSearchType(TreeSearchOrder newType) {
+  if (searchType_ == newType) return;
+  searchType_ = newType;
+  // store all active nodes in a vector
+  std::vector<NodePtr> nodes;
+
+  while (!activeNodes_->isEmpty()) {
+    NodePtr node = activeNodes_->top();
+    activeNodes_->pop();
+    nodes.push_back(node);
+  }
+  // reset the active nodes store
+  if (activeNodes_) {
+    delete activeNodes_;
+  }
+  if (newType == DepthFirst) {
+    activeNodes_ = (NodeStackPtr) new NodeStack();
+  } else {
+    activeNodes_ = (NodeHeapPtr) new NodeHeap(NodeHeap::Value);
+  }
+  // push all nodes back into the new active nodes store
+  for (const auto& node : nodes) {
+    activeNodes_->push(node);
+  }
+}
 
 TreeManager::~TreeManager()
 {

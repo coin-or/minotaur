@@ -343,6 +343,11 @@ void BranchAndBound::solve()
   WarmStartPtr ws;
   RelaxationPtr rel = RelaxationPtr();
   bool should_stop = false;
+  int dfs_thresh  = 30000; // Default threshold for switching to DFS
+  if (env_ && env_->getOptions()->findInt("dfsthresh")) {
+    dfs_thresh = env_->getOptions()->findInt("dfsthresh")->getValue();
+  }
+
   double tstart = timer_->query();
 
   logger_->msgStream(LogInfo)
@@ -472,6 +477,14 @@ void BranchAndBound::solve()
     current_node = new_node;
 
     showStatus_(should_dive, false);
+
+    if (tm_->getActiveNodes() >= dfs_thresh  && tm_->getSearchType() != DepthFirst ) {
+      // If we have too many active nodes, switch to depth first search.
+      logger_->msgStream(LogDebug) << me_ << "switching tree_search to DFS as active nodes = "
+                                  << tm_->getActiveNodes()  //<< " exceeds threshold "<< dfs_thresh
+                                  << std::endl;
+      tm_->setSearchType(DepthFirst);
+    }
 
     // stop if done
     if(!current_node) {

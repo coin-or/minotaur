@@ -361,6 +361,12 @@ void Environment::createDefaultOptions_()
       1000000000);
   options_->insert(i_option);
 
+  i_option = (IntOptionPtr) new Option(
+    "dfsthresh",
+    "Threshold for active nodes to switch to DFS in branch-and-bound, If not set defaults to 30000.",
+    true, 30000);
+  options_->insert(i_option);
+
   i_option = (IntOptionPtr) new Option<int>(
       "separability_intensity_level",
       "Intensity of separability detection: 0-1", true, 0);

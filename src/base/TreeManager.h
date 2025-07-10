@@ -35,6 +35,10 @@ namespace Minotaur {
     /// Destroy.
     ~TreeManager();
 
+    /// Set the search type for the tree manager.
+    void setSearchType(TreeSearchOrder newType);
+    TreeSearchOrder getSearchType() const;
+
     /// Return true if any active nodes remain in the tree. False otherwise.
     bool anyActiveNodesLeft();
 
