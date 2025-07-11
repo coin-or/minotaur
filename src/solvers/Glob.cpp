@@ -302,10 +302,7 @@ void Glob::fwd2Bnb_(VarVector *x)
   Bnb bnb(env_);
   bnb.solve(inst_);
   SolutionPtr solution = bnb.getSol();
-
-  std::cout << "writing solution\n";
   writeSol_(env_, x, solution, bnb.getStatus(), iface_);
-  std::cout << "solution written, status = " << bnb.getStatus() << "\n";
   return;
 }
 
