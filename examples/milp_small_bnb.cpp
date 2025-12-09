@@ -75,7 +75,7 @@ int main() {
    
     Bnb bnb(env);
     bnb.solve(problem);
-    bnb.getSolution();
+    bnb.getSol();
     std::cout << "=====================================================================\n";
     
     return 0;
