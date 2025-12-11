@@ -1,15 +1,16 @@
 //
 //     Minotaur -- It's only 1/2 bull
 //
-//     (C)opyright 2008 - 2025 The Minotaur Team.
+//     (C)opyright 2010 - 2025 The Minotaur Team.
 //
 
 /**
- * \file  #LogHandler.h
- * \brief Define the  #LogHandler class for handling convex univariate
- * functions.
- * \author Neeraj kumar
+ * \file LogHandler.h
+ * \brief Implement the handler for functions of type
+ * y=log(x).
+ * \author Neeraj Kumar, IIT Bombay
  */
+
 
 #ifndef MINOTAURLOGHANDLER_H
 #define MINOTAURLOGHANDLER_H
@@ -27,242 +28,58 @@ namespace Minotaur {
   typedef Objective *ObjectivePtr;
 
 
-  class LogConstraintData {
-  
-  friend class LogHandler;
-  public:
-    /// Creates initial relaxations
-    void initRelax(RelaxationPtr rel, DoubleVector &tmpX, DoubleVector &grad);
-
-    /// Update the current relaxation based on current variable bounds
-    void updateRelax(RelaxationPtr rel, DoubleVector &tmpX,
-                     DoubleVector &grad, ModVector &mods);
-
-    double getViol(const std::vector<double> &x);
-
-    // Creates and adds the secant inequality defined by current constraint to
-    // the relaxation
-    // Returns the constraint that was added, which may be null if it was not
-    // possible to add a constraint (e.g., due to an infinite bound)
-    void addSecant(RelaxationPtr rel, ConstVariablePtr iv,
-                   ConstVariablePtr ov, FunctionPtr fn, DoubleVector &tmpX,
-                   bool init, ModVector &mods);
-
-    // Creates and adds linearization inequalities to approximate the lower
-    // envelope of the convex function
-    // Returns a vector of constraints that were added
-    void addLin(RelaxationPtr rel, ConstVariablePtr iv, ConstVariablePtr ov,
-                FunctionPtr fn, DoubleVector &tmpX, DoubleVector &grad,
-                bool init, ModVector &mods);
-
-    ConstraintPtr getOriginalCon() const { return con_; }
-    ConstraintPtr getSecantCon() const { return secCon_; }
-
-    ConstVariablePtr getROutVar() const { return rov_; };
-
-    ConstVariablePtr getRInputVar() const { return riv_; };
-
-    //ConstraintVector & getLinCons
-    ConstraintIterator linConsBegin() { return linCons_.begin(); }
-    ConstraintIterator linConsEnd() { return linCons_.end(); }
-
-
-    char getSense() { return sense_; };
-
-    /// Default constructor.
-    LogConstraintData(double eTol, double vTol, ConstraintPtr newcon,
-                      ConstVariablePtr ovar, ConstVariablePtr ivar,
-                      char sense);
-
-    /// Destroy
-    ~LogConstraintData() {};
-
-  private:
-
-    Logger *log_;
-
-    /// For printing.
-    static const std::string me_;
-
-    /// Tolerance for constraint violation.
-    double eTol_;
-
-    /// Tolerance for when upper and lower bounds considered equal.
-    double vTol_;
-
-    /// This is the constraint of the orginal problem
-    ConstraintPtr con_;
-
-    /// Input variable, i.e., x in y = f(x)
-    /// This should be a pointer to the `original' variable, look at
-    /// corresponding bounds in the relaxation to get bounds
-    ConstVariablePtr iv_;
-
-    // Points to the relaxation version of the input variable
-    // Updated only after relaxInit is called
-    VariablePtr riv_;
-
-    /// Output variable, i.e., y in y = f(x)
-    /// This is a pointer to the `original' variable
-    ConstVariablePtr ov_;
-
-    // Points to the relaxation version of the output variable
-    // Updated only after relaxInit is called
-    VariablePtr rov_;
-
-    /// 'L' => y <= f(x), so only add secants
-    /// 'G' -> y >= f(x), so only add linearizations
-    /// 'E' -> y == f(x), so do both
-    char sense_;
-
-    /// Secant constraint in the relaxation
-    ConstraintPtr secCon_;
-
-    /// Array of linearization constraints in the relaxation
-    ConstraintVector linCons_;
-
-
-  };
-
-  typedef LogConstraintData *LogConsPtr;
-  typedef std::vector<LogConsPtr> LogConsVec;
-  typedef LogConsVec::iterator LogConsIter;
-
-
-  /**
-   * A  #LogHandler handles log functions. The upper relaxation is
-   * handled with the single secant inequality, the lower relaxation is
-   * handled with linearizations.
-   */
-
-  /**
-   *  TODO: This class could easily be extended to handle perspective cuts if
-   * a binary varaible is known which turns off the input variable
-   *
-   */
   class LogHandler : public Handler {
 
 
-  protected:
-    /// Tolerance for constraint violation.
-    double eTol_;
+  private:
+    // ---------------------------------------------------------
+    // Per-constraint data for log constraints (data only)
+    // ---------------------------------------------------------
+    struct LogCons
+    {
+      ConstraintPtr con;         ///< Original constraint
+      ConstVariablePtr iv;       ///< Input variable x
+      ConstVariablePtr ov;       ///< Output variable y
+      VariablePtr riv;           ///< Relaxation var for x
+      VariablePtr rov;           ///< Relaxation var for y
+      char sense;                ///< 'L','G','E'
+      ConstraintPtr secCon;      ///< Secant constraint
+      ConstraintVector linCons;  ///< Linearization constraints
 
-    /// Tolerance for when upper and lower bounds considered equal.
-    double vTol_;
+      LogCons(ConstraintPtr newcon, ConstVariablePtr ivar,
+              ConstVariablePtr ovar, char s)
+        : con(newcon),
+          iv(ivar),
+          ov(ovar),
+          riv(0),
+          rov(0),
+          sense(s),
+          secCon(0),
+          linCons()
+      {
+      }
+    };
 
-    /// Original problem.
-    ProblemPtr p_;
+    typedef LogCons *LogConsPtr;
+    typedef std::vector<LogConsPtr> LogConsVec;
+    typedef LogConsVec::iterator LogConsIter;
 
-    /// Logger.
-    LoggerPtr log_;
-
-    /// For printing.
-    static const std::string me_;
-
-    /// Internal data associated with each constraint
+    /// All registered log constraints
     LogConsVec consd_;
 
-    /// A temporary vector of zeros, for evaluating functions
-    DoubleVector tmpX_;
+    /// For printing
+    static const std::string me_;
 
-    /// A temporary vector of zeros, for getting gradients
-    DoubleVector grad_;
-
-  public:
-    /// Default constructor.
-    LogHandler(EnvPtr env, ProblemPtr problem);
-
-    /// Destroy
-    ~LogHandler();
-
-    /**
-     * Adds constraint to list (as all handlers), but also constructs the
-     * associated constraint data.
-     */
-    void addConstraint(ConstraintPtr newcon, ConstVariablePtr ivar,
-                       ConstVariablePtr ovar, char sense = 'E');
-
-    // base class method.
-    void addConstraint(ConstraintPtr) { assert(0); };
-
-    /**
-     *  For this handler, nothing is different at root or any node when doing
-     * full relax
-     */
-    void relaxInitFull(RelaxationPtr, SolutionPool *, bool *) {};
-
-    void relaxInitInc(RelaxationPtr rel, SolutionPool *, bool *is_inf);
-
-    /**
-     * Check feasibility.
-     */
-    bool isFeasible(ConstSolutionPtr sol, RelaxationPtr relaxation,
-                    bool &should_prune, double &inf_meas);
-
-    /**
-     * Not implemented yet. Eventually, could add violated linearization
-     * inequalities for underestimator portion
-     */
-    void separate(ConstSolutionPtr sol, NodePtr node, RelaxationPtr rel,
-                  CutManager *cutman, SolutionPoolPtr s_pool,
-                  ModVector &p_mods, ModVector &r_mods, bool *sol_found,
-                  SeparationStatus *status);
-
-
-    /**
-     * Create a relaxation by adding the secant inequality for the upper
-     * estimator, and some number of linearization inequalities, at a minimum
-     * from the end points
-     */
-    virtual void relaxNodeFull(NodePtr /* node */, RelaxationPtr /* rel */,
-                               bool * /* should_prune */) {};
-
-    /**
-     * Create a relaxation by updating the secant inequality for the upper
-     * estimator, and adding lineariations at the end points, if they are new
-     */
-    virtual void relaxNodeInc(NodePtr node, RelaxationPtr rel,
-                              bool *isInfeasible);
-
-    // base class method
-    virtual void getBranchingCandidates(RelaxationPtr rel,
-                                        const DoubleVector &x,
-                                        ModVector &mods, BrVarCandSet &cands,
-                                        BrCandVector &gencands, bool &is_inf);
-
-    // Implement Handler::getBrMod().
-    virtual ModificationPtr getBrMod(BrCandPtr cand, DoubleVector &x,
-                                     RelaxationPtr rel, BranchDirection dir);
-
-    // Implement Handler::getBranches().
-    virtual Branches getBranches(BrCandPtr cand, DoubleVector &x,
-                                 RelaxationPtr rel, SolutionPoolPtr s_pool);
-
-    // presolve.
-    virtual SolveStatus presolve(PreModQ *pre_mods, bool *changed,
-                                 Solution **sol);
-
-    // Implement Handler::presolveNode().
-    virtual bool presolveNode(RelaxationPtr p, NodePtr node,
-                              SolutionPoolPtr s_pool, ModVector &p_mods,
-                              ModVector &r_mods);
-    // Write name
-    virtual std::string getName() const;
-
-    //base class method
-    void writeStats(std::ostream &out) const;
-
-
-  private:
-    /// Store statistics of presolving.
-
+    // ---------------------------------------------------------
+    // Presolve statistics containers
+    // ---------------------------------------------------------
     struct LogPresolveStats
     {
-      UInt iters;   // number of presolve calls
-      double time;  // total time in presolve (optional)
-      UInt conDel;  // log constraints deleted
-      UInt vBnd;    // variable bounds tightened
-      UInt nMods;   // other modifications
+      UInt iters;
+      double time;
+      UInt conDel;
+      UInt vBnd;
+      UInt nMods;
 
       LogPresolveStats()
         : iters(0),
@@ -276,82 +93,195 @@ namespace Minotaur {
 
     struct BoundTighteningStats
     {
-      int niters;     ///> Number of iterations
-      int nLP;        ///> Number of LP solved
-      int dlb;        ///> Number of variables for which default lb was added
-      int dub;        ///> Number of variables for which default ub was added
-      double timeLP;  ///> Time taken in solving LPs
+      int niters;
+      int nLP;
+      int dlb;
+      int dub;
+      double timeLP;
     };
 
-    /// Absolute feasibility tolerance
-    double aTol_;
-
-    /// Statistics about bound tightening
     BoundTighteningStats bStats_;
-
-    /// Update bounds if they can be improved by at least this quantity
-    double bTol_;
-
-    /// Lower bound to be used for a variable if presolve does not
-    /// give us a finite lower bound
-    double defaultLb_;
-
-    /// Upper bound to be used for a variable if presolve does not
-    /// give us a finite upper bound
-    double defaultUb_;
-
-    EnvPtr env_;
-
-
-    /// Original problem (not the transformed)
-    ProblemPtr orig_;
-
-    /// if true only then tightenQuad_ will be called every node
-    bool doQT_;
-
-    /// Optional cuts that can be removed
-    ConstraintVector optCuts_;
-
-    /// Statistics about presolve
     LogPresolveStats pStats_;
 
+    /// Default bounds for presolve
+    double LBd_;
+    double UBd_;
+    double bTol_;  ///< minimum tightening threshold
+
+    /// Environment
+    EnvPtr env_;
+
+    /// Original problem
+    ProblemPtr orig_;
+
+    /// Optional cuts
+    ConstraintVector optCuts_;
+
+    // ---------------------------------------------------------
+    /**
+     * Add or update linearization cuts for y = log(x) around sample points.
+     * Used for convex underestimators of log(x) and equality constraints.
+     */
+    void addLin_(LogCons &cd, RelaxationPtr rel, DoubleVector &tmpX,
+                 DoubleVector &grad, ModVector &mods, bool init);
+
+
+    /**
+    * Add or update the secant inequality for y = log(x).
+
+    * Used in both initRelaxFor() and updateRelaxFor().
+    */
+    void addSecant_(LogCons &cd, RelaxationPtr rel, DoubleVector &tmpX,
+                    ModVector &mods, bool init);
+
+    /**
+     * Compute scaled violation of log constraint for branching.
+     *
+     * Evaluates f(x) for the stored constraint:
+     *    - For y = log(x):  check f(x) ∈ [lb - tol , ub + tol]
+     * Returns:
+     *    - Relative violation (0 = feasible, >0 = violated)
+     *
+     * Used inside getBranchingCandidates().
+     */
+
+    //Marks duplicate constraint if changed == True
+    void dupRows_(bool *changed);
+
+
+    double getViol_(const LogCons &cd, const DoubleVector &x) const;
+
+    /**
+     * Initialize relaxation components for a single log constraint.
+     *
+     *
+     * Called once when relaxation is constructed at a node.
+     */
+    void initRelax_(LogCons &cd, RelaxationPtr rel, DoubleVector &tmpX,
+                    DoubleVector &grad);
+
+
+    // adding bounds on the added variable
+    bool propLogBnds_(LogConsPtr lcd, bool *changed);
+    //Deletes duplicate row which was marked by dupRows
+    bool treatDupRows_(ConstraintPtr c1, ConstraintPtr c2, double mult,
+                       bool *changed);
+
+    //multiple times bound tightening
+    bool tightenSimple_(bool *changed);
+
+    /**
+     * Update the relaxation for a log constraint when bounds have changed.
+     *
+     * Performs:
+     *  - Recompute/update the secant inequality
+     *  - Update linearizations at current variable bounds
+     *  - Append Modifications (mods) so that the B&B node receives them
+     *
+     * Called inside relaxNodeInc().
+     */
+    void updateRelax_(LogCons &cd, RelaxationPtr rel, DoubleVector &tmpX,
+                      DoubleVector &grad, ModVector &mods);
+
+
+    int updatePBnds_(VariablePtr p, double newlb, double newub,
+                     bool *changed);
+    bool varBndsFromCons_(bool *changed);
+
+
+  public:
+    /// Absolute feasibility tolerance
+    double aTol_;
 
     /// Relative feasibility tolerance
     double rTol_;
 
+    /// Tolerances for log constraints
+    double eTol_;
+    double vTol_;
 
-    //bound propagation for presolve 1
-    bool propLogBnds_(LogConsPtr consd_, bool *changed);
+    /// Problem pointer
+    ProblemPtr p_;
+
+    /// Logger
+    LoggerPtr log_;
+
+    /// Temporary vectors for evaluations
+    DoubleVector tmpX_;
+    DoubleVector grad_;
+
+    /// Constructor
+    LogHandler(EnvPtr env, ProblemPtr problem);
+
+    /// Destructor
+    ~LogHandler();
+
+    /**
+     * Register a log constraint with the handler.
+     * - ivar: input variable x
+     * - ovar: output variable y
+     * - sense: 'L', 'G', or 'E'
+     */
+    void addConstraint(ConstraintPtr newcon, ConstVariablePtr ivar,
+                       ConstVariablePtr ovar, char sense = 'E');
+
+    // base class method—not used here
+    void addConstraint(ConstraintPtr) { assert(0); }
 
 
-    // Helper functions
     BranchPtr doBranch_(BranchDirection UpOrDown, ConstVariablePtr v,
                         double bvalue);
 
-    //identify duplicate rows and delete one.returns false if no identical
-    //constraint
-    void dupRows_(bool *changed);
 
+    /// Full relaxation (unused)
+    void relaxInitFull(RelaxationPtr, SolutionPool *, bool *) {}
 
-    //deleting the identical constraint and updating the tighter bound
-    bool treatDupRows_(ConstraintPtr c1, ConstraintPtr c2, double mult,
-                       bool *changed);
+    /// Create initial incremental relaxation.
+    void relaxInitInc(RelaxationPtr rel, SolutionPool *, bool *is_inf);
 
-    // Similar as QuadHandler::tightenSimple_:
-    // return true  -> problem detected infeasible
-    // return false -> no infeasibility, maybe tightened bounds
-    // *changed set to true if any var bound improved
+    /// Check feasibility.
+    bool isFeasible(ConstSolutionPtr sol, RelaxationPtr relaxation,
+                    bool &should_prune, double &inf_meas);
 
-    bool tightenSimple_(bool *changed);
+    /// Separation (cuts) — not implemented yet.
+    void separate(ConstSolutionPtr sol, NodePtr node, RelaxationPtr rel,
+                  CutManager *cutman, SolutionPoolPtr s_pool,
+                  ModVector &p_mods, ModVector &r_mods, bool *sol_found,
+                  SeparationStatus *status);
 
-    // Update bounds on variable p with new [newlb, newub]
-    // Returns: -1 if infeasible, 0 otherwise
-    int updatePBnds_(VariablePtr p, double newlb, double newub,
-                     bool *changed);
+    /// Full relaxation at a node (unused for LogHandler)
+    void relaxNodeFull(NodePtr, RelaxationPtr, bool *) {}
 
-    //iterates over all log constraint return true if infeasibility detetcted
-    bool varBndsFromCons_(bool *changed);
+    /// Incremental relaxation at a node.
+    void relaxNodeInc(NodePtr node, RelaxationPtr rel, bool *isInfeasible);
+
+    /// Branching candidates.
+    void getBranchingCandidates(RelaxationPtr rel, const DoubleVector &x,
+                                ModVector &mods, BrVarCandSet &cands,
+                                BrCandVector &gencands, bool &is_inf);
+
+    /// Branch modification for a variable.
+    ModificationPtr getBrMod(BrCandPtr cand, DoubleVector &x,
+                             RelaxationPtr rel, BranchDirection dir);
+
+    /// Generate branches.
+    Branches getBranches(BrCandPtr cand, DoubleVector &x, RelaxationPtr rel,
+                         SolutionPoolPtr s_pool);
+
+    /// Top-level presolve.
+    SolveStatus presolve(PreModQ *pre_mods, bool *changed, Solution **sol);
+
+    /// Node-level presolve.
+    bool presolveNode(RelaxationPtr p, NodePtr node, SolutionPoolPtr s_pool,
+                      ModVector &p_mods, ModVector &r_mods);
+
+    /// Name of the handler.
+    std::string getName() const override;
+
+    /// Stats
+    void writeStats(std::ostream &out) const override;
   };
 
-}  //namespace Minotaur
-#endif
+}  // namespace Minotaur
+
+#endif  // MINOTAURLOGHANDLER_H
