@@ -334,13 +334,14 @@ void SimpleTransformer::recursRef_(const CNode* node, LinearFunctionPtr& lf,
     break;
   case(OpExp):
   case(OpFloor):
-  case(OpIntDiv):
-  case(OpLog):
-  case(OpLog10):
+  case (OpIntDiv):
+  case (OpLog):
     recursRef_(node->getL(), lfl, vl, dl);
     uniVarRef_(node, lfl, vl, dl, lf, v, d);
     break;
-  case(OpMinus):
+
+  case (OpLog10):
+  case (OpMinus):
     recursRef_(node->getL(), lfl, vl, dl);
     recursRef_(node->getR(), lfr, vr, dr);
     d = dl - dr;

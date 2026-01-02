@@ -64,10 +64,10 @@ namespace Minotaur {
     typedef std::vector<LogConsPtr> LogConsVec;
     typedef LogConsVec::iterator LogConsIter;
 
-    /// All registered log constraints
+    // All log constraints data
     LogConsVec consd_;
 
-    /// For printing
+    // For printing
     static const std::string me_;
 
     // ---------------------------------------------------------
@@ -103,124 +103,127 @@ namespace Minotaur {
     BoundTighteningStats bStats_;
     LogPresolveStats pStats_;
 
-    /// Default bounds for presolve
+    // Default bounds for presolve
     double LBd_;
     double UBd_;
     double bTol_;  ///< minimum tightening threshold
 
-    /// Environment
+    // Environment
     EnvPtr env_;
 
-    /// Original problem
+    // Original problem
     ProblemPtr orig_;
 
-    /// Optional cuts
+    // Optional cuts
     ConstraintVector optCuts_;
 
-    // ---------------------------------------------------------
+    
     /**
-     * Add or update linearization cuts for y = log(x) around sample points.
-     * Used for convex underestimators of log(x) and equality constraints.
+     * \Add or update linearization cuts for y = log(x) around sample points.
+     * \Used for convex underestimators of log(x) and equality constraints.
      */
     void addLin_(LogCons &cd, RelaxationPtr rel, DoubleVector &tmpX,
                  DoubleVector &grad, ModVector &mods, bool init);
 
 
     /**
-    * Add or update the secant inequality for y = log(x).
-
-    * Used in both initRelaxFor() and updateRelaxFor().
+    * \Add or update the secant inequality for y = log(x).
+    * \Used in both initRelaxFor() and updateRelaxFor().
     */
     void addSecant_(LogCons &cd, RelaxationPtr rel, DoubleVector &tmpX,
                     ModVector &mods, bool init);
 
     /**
-     * Compute scaled violation of log constraint for branching.
+     * \Compute scaled violation of log constraint for branching.
      *
-     * Evaluates f(x) for the stored constraint:
+     * \Evaluates f(x) for the stored constraint:
      *    - For y = log(x):  check f(x) ∈ [lb - tol , ub + tol]
-     * Returns:
+     * \Returns:
      *    - Relative violation (0 = feasible, >0 = violated)
      *
-     * Used inside getBranchingCandidates().
+     * \Used inside getBranchingCandidates().
      */
 
     //Marks duplicate constraint if changed == True
     void dupRows_(bool *changed);
+    //branching decision
+    BranchPtr doBranch_(BranchDirection UpOrDown, ConstVariablePtr v,
+                        double bvalue);
 
 
     double getViol_(const LogCons &cd, const DoubleVector &x) const;
 
     /**
-     * Initialize relaxation components for a single log constraint.
-     *
-     *
-     * Called once when relaxation is constructed at a node.
+     * \Initialize relaxation components for a single log constraint.
+     * \Called once when relaxation is constructed at a node.
      */
     void initRelax_(LogCons &cd, RelaxationPtr rel, DoubleVector &tmpX,
                     DoubleVector &grad);
 
 
-    // adding bounds on the added variable
+    // For a given y = log(x) constraint,
+    // derive bounds on y from bounds on x. Also derive bounds on x from bounds
+    // on y.
     bool propLogBnds_(LogConsPtr lcd, bool *changed);
+
     //Deletes duplicate row which was marked by dupRows
     bool treatDupRows_(ConstraintPtr c1, ConstraintPtr c2, double mult,
                        bool *changed);
 
-    //multiple times bound tightening
-    bool tightenSimple_(bool *changed);
+  
 
     /**
-     * Update the relaxation for a log constraint when bounds have changed.
-     *
-     * Performs:
-     *  - Recompute/update the secant inequality
-     *  - Update linearizations at current variable bounds
-     *  - Append Modifications (mods) so that the B&B node receives them
-     *
-     * Called inside relaxNodeInc().
+     * \Update the relaxation for a log constraint when bounds have changed.
+     * \Performs:
+     *  \ Recompute/update the secant inequality
+     *  \Update linearizations at current variable bounds
+     *  \ Append Modifications (mods) so that the B&B node receives them
+     * \Called inside relaxNodeInc().
      */
     void updateRelax_(LogCons &cd, RelaxationPtr rel, DoubleVector &tmpX,
                       DoubleVector &grad, ModVector &mods);
 
-
+    /// Update problem bounds
     int updatePBnds_(VariablePtr p, double newlb, double newub,
                      bool *changed);
+
     bool varBndsFromCons_(bool *changed);
 
 
-  public:
-    /// Absolute feasibility tolerance
+    // Absolute feasibility tolerance
     double aTol_;
 
-    /// Relative feasibility tolerance
+    // Relative feasibility tolerance
     double rTol_;
 
-    /// Tolerances for log constraints
+    // Tolerances for log constraints
     double eTol_;
+
+    // Tolerance for when lower and upper bounds are considered equal
     double vTol_;
 
-    /// Problem pointer
+    // Problem pointer
     ProblemPtr p_;
 
-    /// Logger
+    // Logger
     LoggerPtr log_;
 
-    /// Temporary vectors for evaluations
+    // Temporary vectors for evaluations
     DoubleVector tmpX_;
     DoubleVector grad_;
 
-    /// Constructor
+  public:
+    // Constructor
     LogHandler(EnvPtr env, ProblemPtr problem);
 
-    /// Destructor
+    // Destructor
     ~LogHandler();
 
     /**
-     * Register a log constraint with the handler.
-     * - ivar: input variable x
-     * - ovar: output variable y
-     * - sense: 'L', 'G', or 'E'
+     * \Register a log constraint with the handler.
+     * \ ivar: input variable x
+     * \ ovar: output variable y
+     * \ sense: 'L', 'G', or 'E'
      */
     void addConstraint(ConstraintPtr newcon, ConstVariablePtr ivar,
                        ConstVariablePtr ovar, char sense = 'E');
@@ -228,57 +231,53 @@ namespace Minotaur {
     // base class method—not used here
     void addConstraint(ConstraintPtr) { assert(0); }
 
-
-    BranchPtr doBranch_(BranchDirection UpOrDown, ConstVariablePtr v,
-                        double bvalue);
-
-
-    /// Full relaxation (unused)
+   
+    // Full relaxation (unused)
     void relaxInitFull(RelaxationPtr, SolutionPool *, bool *) {}
 
-    /// Create initial incremental relaxation.
+    // Create initial incremental relaxation.
     void relaxInitInc(RelaxationPtr rel, SolutionPool *, bool *is_inf);
 
-    /// Check feasibility.
+    // Check feasibility.
     bool isFeasible(ConstSolutionPtr sol, RelaxationPtr relaxation,
                     bool &should_prune, double &inf_meas);
 
-    /// Separation (cuts) — not implemented yet.
+    // Separation (cuts) — not implemented yet.
     void separate(ConstSolutionPtr sol, NodePtr node, RelaxationPtr rel,
                   CutManager *cutman, SolutionPoolPtr s_pool,
                   ModVector &p_mods, ModVector &r_mods, bool *sol_found,
                   SeparationStatus *status);
 
-    /// Full relaxation at a node (unused for LogHandler)
+    // Full relaxation at a node (unused for LogHandler)
     void relaxNodeFull(NodePtr, RelaxationPtr, bool *) {}
 
-    /// Incremental relaxation at a node.
+    // Incremental relaxation at a node.
     void relaxNodeInc(NodePtr node, RelaxationPtr rel, bool *isInfeasible);
 
-    /// Branching candidates.
+    // Branching candidates.
     void getBranchingCandidates(RelaxationPtr rel, const DoubleVector &x,
                                 ModVector &mods, BrVarCandSet &cands,
                                 BrCandVector &gencands, bool &is_inf);
 
-    /// Branch modification for a variable.
+    // Branch modification for a variable.
     ModificationPtr getBrMod(BrCandPtr cand, DoubleVector &x,
                              RelaxationPtr rel, BranchDirection dir);
 
-    /// Generate branches.
+    // Generate branches.
     Branches getBranches(BrCandPtr cand, DoubleVector &x, RelaxationPtr rel,
                          SolutionPoolPtr s_pool);
 
-    /// Top-level presolve.
+    // Top-level presolve.
     SolveStatus presolve(PreModQ *pre_mods, bool *changed, Solution **sol);
 
-    /// Node-level presolve.
+    // Node-level presolve.
     bool presolveNode(RelaxationPtr p, NodePtr node, SolutionPoolPtr s_pool,
                       ModVector &p_mods, ModVector &r_mods);
 
-    /// Name of the handler.
+    // Name of the handler.
     std::string getName() const override;
 
-    /// Stats
+    // Stats
     void writeStats(std::ostream &out) const override;
   };
 

@@ -634,7 +634,7 @@ bool LogHandler::treatDupRows_(ConstraintPtr c1,
 }
 
 //-----------------------------------------------------------------------------
-// Presolve + bound tightening
+// Presolve 
 //-----------------------------------------------------------------------------
 
 bool LogHandler::propLogBnds_(LogConsPtr cdata, bool *changed)
@@ -647,17 +647,29 @@ bool LogHandler::propLogBnds_(LogConsPtr cdata, bool *changed)
   double ylb = y->getLb();
   double yub = y->getUb();
 
+  double newlb, newub;
+
   // --- Forward propagation: x -> y ---
-  if (xub < 0) {
-    return true;
+  if (xub < 0.0) {
+    return true; // infeasible
   }
-  if (xlb < 0) {
-    xlb = 0;  // negative is not allowed in log
+
+  if (xlb < 0.0) {
+    xlb = 0.0;  // negative is not allowed in log
   }
+
   if (xlb > 0.0) {
-    double new_ylb = std::log(xlb);
-    double new_yub = std::log(xub);
-    if (updatePBnds_(y, new_ylb, new_yub, changed) < 0) {
+    newlb = std::log(xlb);
+    newub = std::log(xub);
+    if (updatePBnds_(y, newlb, newub, changed) < 0) {
+      return true;
+    }
+  }
+
+  if (xlb==0 && xub>0){
+    newub = std::log(xub);
+    newlb = -1e-6;      // only to update upper bound of y
+    if (updatePBnds_(y, newlb,  newub, changed)<0){
       return true;
     }
   }
@@ -674,43 +686,6 @@ bool LogHandler::propLogBnds_(LogConsPtr cdata, bool *changed)
   return false;
 }
 
-bool LogHandler::tightenSimple_(bool *changed)
-{
-  bool is_inf = false;
-  bool local_changed = false;
-
-  if (changed) {
-    *changed = false;
-  }
-
-  if (consd_.empty()) {
-    return false;
-  }
-
-  const UInt max_passes = 5;
-  for (UInt pass = 0; pass < max_passes; ++pass) {
-    local_changed = false;
-
-    for (LogConsIter it = consd_.begin(); it != consd_.end(); ++it) {
-      LogConsPtr cdata = *it;
-
-      is_inf = propLogBnds_(cdata, &local_changed);
-      if (is_inf) {
-        return true;
-      }
-    }
-
-    if (!local_changed) {
-      break;
-    }
-
-    if (changed) {
-      *changed = true;
-    }
-  }
-
-  return false;
-}
 
 int LogHandler::updatePBnds_(VariablePtr p,
                              double newlb,
@@ -721,6 +696,27 @@ int LogHandler::updatePBnds_(VariablePtr p,
   double oldub = p->getUb();
   double lb = oldlb;
   double ub = oldub;
+
+
+  if (p->getType() == Binary || p->getType() == ImplBin ||
+      p->getType() == Integer || p->getType() == ImplInt) {
+    // ---- Lower bound: ceil only if newlb is significantly greater,
+    // else floor ----
+    if (newlb - floor(newlb)  < eTol_) {
+      newlb = floor(newlb);
+    } else {
+      newlb = ceil(newlb);
+    }
+
+    // ---- Upper bound: floor only if newub is siginficantly smaller
+    // else ceil ----
+
+    if (ceil(newub) - newub < eTol_) {
+      newub = ceil(newub);
+    } else {
+      newub = floor(newub);
+    }
+  }
 
   // Tighten lower bound if possible
   if (newlb > lb + eTol_) {
@@ -736,15 +732,23 @@ int LogHandler::updatePBnds_(VariablePtr p,
     ++pStats_.vBnd;
   }
 
-  // Infeasibility check
-  if (lb > ub + eTol_) {
+
+ // Infeasibility check
+  if (lb > ub + eTol_ ) {
     log_->msgStream(LogDebug) << me_
       << "Infeasible bounds for variable " << p->getName()
       << ": [" << lb << ", " << ub << "]" << std::endl;
     return -1;
   }
-
-  // Apply changes
+ 
+   //Treat nearly-equal boundS
+  if (fabs(ub - lb) <= vTol_) {
+    double mid = 0.5 * (lb + ub);
+    lb = mid;
+    ub = mid;
+  }
+ 
+   // Apply changes
   if (*changed) {
     p->setLb_(lb);
     p->setUb_(ub);
@@ -788,15 +792,7 @@ SolveStatus LogHandler::presolve(PreModQ *,
   // Remove duplicates
   dupRows_(changed);
   p_->delMarkedCons();
-
-  // Stronger tightening: multiple passes of log bound propagation
-  is_inf = tightenSimple_(changed);
-  if (is_inf) {
-    status = SolvedInfeasible;
-    return status;
-  }
-
-  if (status == Started) {
+   if (status == Started) {
     status = Finished;
   }
 
@@ -830,6 +826,6 @@ void LogHandler::writeStats(std::ostream &out) const
       << std::endl
       << me_ << "Number of constraints deleted  = " << pStats_.conDel
       << std::endl
-      << me_ << "Times variables tightened      = " << pStats_.vBnd;
+      << me_ << "Times variables tightened      = " << pStats_.vBnd<<std::endl;
 }
 
