@@ -1,4 +1,3 @@
-CMAKE_MINIMUM_REQUIRED(VERSION 3.0 FATAL_ERROR) 
 include_directories("${PROJECT_BINARY_DIR}/src/base")
 include_directories("${PROJECT_SOURCE_DIR}/src/base")
 include_directories("${PROJECT_SOURCE_DIR}/src/interfaces")
