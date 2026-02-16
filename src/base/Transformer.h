@@ -23,6 +23,7 @@ class CNode;
 class Environment;
 class Engine;
 class LinearHandler;
+class LogHandler;
 class Problem;
 class QuadHandler;
 class kPowHandler;
@@ -34,6 +35,7 @@ class YEqVars;
 typedef CxUnivarHandler *CxUnivarHandlerPtr;
 typedef CGraph *CGraphPtr;
 typedef LinearHandler *LinearHandlerPtr;
+typedef LogHandler *LogHandlerPtr;
 typedef QuadHandler *QuadHandlerPtr;
 typedef kPowHandler *kPowHandlerPtr;
 typedef UnivarQuadHandler *UnivarQuadHandlerPtr;
@@ -101,6 +103,9 @@ class Transformer {
 
   /// Handler for linear constraints and variables.
   LinearHandlerPtr lHandler_;
+
+ ///Handle for Log Constraints
+  LogHandlerPtr logHandler_;
 
   /// Logger
   LoggerPtr logger_;

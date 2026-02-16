@@ -442,7 +442,6 @@ int Glob::solve(ProblemPtr inst)
   env_->getLogger()->msgStream(LogExtraInfo)
       << me_ << "Presolving transformed problem ... " << std::endl;
   pres2 = (PresolverPtr) new Presolver(newp_, env_, handlers);
-
   pres2->solve();
   env_->getLogger()->msgStream(LogExtraInfo)
       << me_ << "Finished presolving transformed problem" << std::endl;

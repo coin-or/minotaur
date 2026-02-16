@@ -141,7 +141,7 @@ namespace Minotaur {
        * Reach options from config file and increment the number of
        * instances.
        */
-      void readConfigFile_(std::string fname, UInt &num_p);
+      void readConfigFile_(std::string fname, UInt &num_p, std::ostringstream& ostr);
 
       /**
        * Remove leading dashes "--" or "-" from front of a string. Returns

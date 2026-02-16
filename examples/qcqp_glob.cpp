@@ -67,7 +67,7 @@ int main() {
     // Solve the problem using Glob
     Glob glob(env);
     glob.solve(problem);
-    glob.getSolution();
+    glob.getSol();
 
     std::cout << "=====================================================================\n";
 

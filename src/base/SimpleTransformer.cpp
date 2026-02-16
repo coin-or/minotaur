@@ -28,6 +28,7 @@
 #include "LinearFunction.h"
 #include "LinearHandler.h"
 #include "Logger.h"
+#include "LogHandler.h"
 #include "MinotaurConfig.h"
 #include "NonlinearFunction.h"
 #include "Objective.h"
@@ -333,13 +334,14 @@ void SimpleTransformer::recursRef_(const CNode* node, LinearFunctionPtr& lf,
     break;
   case(OpExp):
   case(OpFloor):
-  case(OpIntDiv):
-  case(OpLog):
-  case(OpLog10):
+  case (OpIntDiv):
+  case (OpLog):
     recursRef_(node->getL(), lfl, vl, dl);
     uniVarRef_(node, lfl, vl, dl, lf, v, d);
     break;
-  case(OpMinus):
+
+  case (OpLog10):
+  case (OpMinus):
     recursRef_(node->getL(), lfl, vl, dl);
     recursRef_(node->getR(), lfr, vr, dr);
     d = dl - dr;
@@ -1051,6 +1053,8 @@ void SimpleTransformer::reformulate(ProblemPtr& newp, HandlerVector& handlers,
   handlers.push_back(uHandler_);
   kHandler_ = (kPowHandlerPtr) new kPowHandler(env_, newp_, p_);
   handlers.push_back(kHandler_);
+  logHandler_=(LogHandlerPtr) new LogHandler(env_,newp_);
+  handlers.push_back(logHandler_);
   copyLinear_(p_, newp_);
 
   if(env_->getOptions()->findInt("convex")->getValue() == 0) {

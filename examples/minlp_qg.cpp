@@ -104,7 +104,7 @@ int main() {
     // Solve the problem using QG
     QG qg(env);
     qg.solve(problem);
-    qg.getSolution();
+    qg.getSol();
 
     std::cout << "=====================================================================\n";
 
