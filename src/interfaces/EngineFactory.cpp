@@ -76,7 +76,7 @@ EngineFactory::~EngineFactory()
 LPEnginePtr EngineFactory::getLPEngine()
 {
 #ifdef USE_CPX
-  if (env_->getOptions()->findString("lp_engine")->getValue() == "Cplex") {
+  if (env_->getOptions()->findString("lp_engine")->getValue() == "cplex") {
     return ((CplexLPEnginePtr) new CplexLPEngine(env_));
   }
 #endif
@@ -92,12 +92,12 @@ LPEnginePtr EngineFactory::getLPEngine()
 MILPEnginePtr EngineFactory::getMILPEngine()
 {
 #ifdef USE_CBC
-  if (env_->getOptions()->findString("milp_engine")->getValue() == "Cbc") {
+  if (env_->getOptions()->findString("milp_engine")->getValue() == "cbc") {
     return ((CbcEnginePtr) new CbcEngine(env_));
   }
 #endif
 #ifdef USE_CPX
-  if (env_->getOptions()->findString("milp_engine")->getValue() == "Cplex") {
+  if (env_->getOptions()->findString("milp_engine")->getValue() == "cplex") {
     return ((CplexMILPEnginePtr) new CplexMILPEngine(env_));
   }
 #endif
