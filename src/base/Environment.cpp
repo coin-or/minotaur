@@ -862,7 +862,7 @@ void Environment::initRand()
   srand(seed);
 }
 
-void Environment::readConfigFile_(std::string fname, UInt& num_p)
+void Environment::readConfigFile_(std::string fname, UInt& num_p, std::ostringstream& ostr)
 {
   std::string line, w1, w2;
   std::ifstream istr(fname.c_str());
@@ -874,6 +874,7 @@ void Environment::readConfigFile_(std::string fname, UInt& num_p)
   StringOptionPtr s_option;
   FlagOptionPtr f_option;
   std::ostringstream logstr;
+  std::string offset = "  ";
 
   if(!istr.is_open()) {
     logger_->errStream() << me_ << "cannot open file " << fname << std::endl;
@@ -918,6 +919,9 @@ void Environment::readConfigFile_(std::string fname, UInt& num_p)
     findOption_(w1, b_option, i_option, d_option, s_option, f_option);
     convertAndAddOneOption_(b_option, i_option, d_option, s_option, f_option,
                             w1, w2, logstr);
+
+    //append the config file options to the string stream ostr
+    ostr << offset << w1 << " = " << w2 << std::endl; 
   }
   istr.close();
 }
@@ -1001,7 +1005,7 @@ void Environment::readOptions(int argc, char** argv)
         convertAndAddOneOption_(b_option, i_option, d_option, s_option,
                                 f_option, name, s_value, ostr);
         if(s_option && "config_file" == s_option->getName()) {
-          readConfigFile_(s_option->getValue(), num_p);
+          readConfigFile_(s_option->getValue(), num_p, ostr);
         }
       }
     }
