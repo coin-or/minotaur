@@ -197,7 +197,7 @@ BranchAndBound* Glob::createBab_(EnginePtr e, HandlerVector& handlers)
   }
   env_->getLogger()->msgStream(LogExtraInfo)
       << me_ << "brancher used = " << br->getName() << std::endl;
-  nproc = (PCBProcessorPtr) new PCBProcessor(env_, e, handlers);
+  nproc = (PCBProcessorPtr) new PCBProcessor(env_, e, handlers, inst_);
   nproc->setBrancher(br);
   bab->setNodeProcessor(nproc);
 
@@ -356,7 +356,7 @@ int Glob::solve(ProblemPtr inst)
   // display the problem
   inst_->calculateSize();
   if(options->findBool("display_problem")->getValue() == true) {
-    inst_->write(env_->getLogger()->msgStream(LogNone), 9);
+    inst_->write(env_->getLogger()->msgStream(LogNone), 1);
   }
   
   // display the size

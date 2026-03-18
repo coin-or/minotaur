@@ -30,192 +30,10 @@ namespace Minotaur {
 
   class LogHandler : public Handler {
 
-
-  private:
-    // ---------------------------------------------------------
-    // Per-constraint data for log constraints (data only)
-    // ---------------------------------------------------------
-    struct LogCons
-    {
-      ConstraintPtr con;         ///< Original constraint
-      ConstVariablePtr iv;       ///< Input variable x
-      ConstVariablePtr ov;       ///< Output variable y
-      VariablePtr riv;           ///< Relaxation var for x
-      VariablePtr rov;           ///< Relaxation var for y
-      char sense;                ///< 'L','G','E'
-      ConstraintPtr secCon;      ///< Secant constraint
-      ConstraintVector linCons;  ///< Linearization constraints
-
-      LogCons(ConstraintPtr newcon, ConstVariablePtr ivar,
-              ConstVariablePtr ovar, char s)
-        : con(newcon),
-          iv(ivar),
-          ov(ovar),
-          riv(0),
-          rov(0),
-          sense(s),
-          secCon(0),
-          linCons()
-      {
-      }
-    };
-
-    typedef LogCons *LogConsPtr;
-    typedef std::vector<LogConsPtr> LogConsVec;
-    typedef LogConsVec::iterator LogConsIter;
-
-    // All log constraints data
-    LogConsVec consd_;
-
-    // For printing
-    static const std::string me_;
-
-    // ---------------------------------------------------------
-    // Presolve statistics containers
-    // ---------------------------------------------------------
-    struct LogPresolveStats
-    {
-      UInt iters;
-      double time;
-      UInt conDel;
-      UInt vBnd;
-      UInt nMods;
-
-      LogPresolveStats()
-        : iters(0),
-          time(0.0),
-          conDel(0),
-          vBnd(0),
-          nMods(0)
-      {
-      }
-    };
-
-    struct BoundTighteningStats
-    {
-      int niters;
-      int nLP;
-      int dlb;
-      int dub;
-      double timeLP;
-    };
-
-    BoundTighteningStats bStats_;
-    LogPresolveStats pStats_;
-
-    // Default bounds for presolve
-    double LBd_;
-    double UBd_;
-    double bTol_;  ///< minimum tightening threshold
-
-    // Environment
-    EnvPtr env_;
-
-    // Original problem
-    ProblemPtr orig_;
-
-    // Optional cuts
-    ConstraintVector optCuts_;
-
-    
-    /**
-     * \Add or update linearization cuts for y = log(x) around sample points.
-     * \Used for convex underestimators of log(x) and equality constraints.
-     */
-    void addLin_(LogCons &cd, RelaxationPtr rel, DoubleVector &tmpX,
-                 DoubleVector &grad, ModVector &mods, bool init);
-
-
-    /**
-    * \Add or update the secant inequality for y = log(x).
-    * \Used in both initRelaxFor() and updateRelaxFor().
-    */
-    void addSecant_(LogCons &cd, RelaxationPtr rel, DoubleVector &tmpX,
-                    ModVector &mods, bool init);
-
-    /**
-     * \Compute scaled violation of log constraint for branching.
-     *
-     * \Evaluates f(x) for the stored constraint:
-     *    - For y = log(x):  check f(x) ∈ [lb - tol , ub + tol]
-     * \Returns:
-     *    - Relative violation (0 = feasible, >0 = violated)
-     *
-     * \Used inside getBranchingCandidates().
-     */
-
-    //Marks duplicate constraint if changed == True
-    void dupRows_(bool *changed);
-    //branching decision
-    BranchPtr doBranch_(BranchDirection UpOrDown, ConstVariablePtr v,
-                        double bvalue);
-
-
-    double getViol_(const LogCons &cd, const DoubleVector &x) const;
-
-    /**
-     * \Initialize relaxation components for a single log constraint.
-     * \Called once when relaxation is constructed at a node.
-     */
-    void initRelax_(LogCons &cd, RelaxationPtr rel, DoubleVector &tmpX,
-                    DoubleVector &grad);
-
-
-    // For a given y = log(x) constraint,
-    // derive bounds on y from bounds on x. Also derive bounds on x from bounds
-    // on y.
-    bool propLogBnds_(LogConsPtr lcd, bool *changed);
-
-    //Deletes duplicate row which was marked by dupRows
-    bool treatDupRows_(ConstraintPtr c1, ConstraintPtr c2, double mult,
-                       bool *changed);
-
-  
-
-    /**
-     * \Update the relaxation for a log constraint when bounds have changed.
-     * \Performs:
-     *  \ Recompute/update the secant inequality
-     *  \Update linearizations at current variable bounds
-     *  \ Append Modifications (mods) so that the B&B node receives them
-     * \Called inside relaxNodeInc().
-     */
-    void updateRelax_(LogCons &cd, RelaxationPtr rel, DoubleVector &tmpX,
-                      DoubleVector &grad, ModVector &mods);
-
-    /// Update problem bounds
-    int updatePBnds_(VariablePtr p, double newlb, double newub,
-                     bool *changed);
-
-    bool varBndsFromCons_(bool *changed);
-
-
-    // Absolute feasibility tolerance
-    double aTol_;
-
-    // Relative feasibility tolerance
-    double rTol_;
-
-    // Tolerances for log constraints
-    double eTol_;
-
-    // Tolerance for when lower and upper bounds are considered equal
-    double vTol_;
-
-    // Problem pointer
-    ProblemPtr p_;
-
-    // Logger
-    LoggerPtr log_;
-
-    // Temporary vectors for evaluations
-    DoubleVector tmpX_;
-    DoubleVector grad_;
-
   public:
     // Constructor
     LogHandler(EnvPtr env, ProblemPtr problem);
-
+    LogHandler(EnvPtr env, ProblemPtr problem, ProblemPtr orig_);
     // Destructor
     ~LogHandler();
 
@@ -235,10 +53,10 @@ namespace Minotaur {
     // Full relaxation (unused)
     void relaxInitFull(RelaxationPtr, SolutionPool *, bool *) {}
 
-    // Create initial incremental relaxation.
+    // Create initial relaxation at root and then updation
     void relaxInitInc(RelaxationPtr rel, SolutionPool *, bool *is_inf);
 
-    // Check feasibility.
+    //Base Class method
     bool isFeasible(ConstSolutionPtr sol, RelaxationPtr relaxation,
                     bool &should_prune, double &inf_meas);
 
@@ -279,7 +97,232 @@ namespace Minotaur {
 
     // Stats
     void writeStats(std::ostream &out) const override;
+  
+
+
+
+  private:
+    // ---------------------------------------------------------
+    // Per-constraint data for log constraints (data only)
+    // ---------------------------------------------------------
+    struct LogCons
+    {
+      ConstraintPtr con;         ///< Original constraint
+      ConstVariablePtr iv;       ///< Input variable x
+      ConstVariablePtr ov;       ///< Output variable y
+      VariablePtr riv;           ///< Relaxation var for x
+      VariablePtr rov;           ///< Relaxation var for y
+      char sense;                ///< 'L','G','E'
+      ConstraintPtr secCon;      ///< Secant constraint
+      ConstraintVector linCons;  ///< Linearization constraints
+
+      LogCons(ConstraintPtr newcon, ConstVariablePtr ivar,
+              ConstVariablePtr ovar, char s)
+        : con(newcon),
+          iv(ivar),
+          ov(ovar),
+          riv(0),
+          rov(0),
+          sense(s),
+          secCon(0),
+          linCons()
+      {
+      }
+    };
+
+    typedef LogCons *LogConsPtr;
+    typedef std::vector<LogConsPtr> LogConsVec;
+    typedef LogConsVec::iterator LogConsIter;
+
+    // All log constraints data
+    LogConsVec consd_;
+
+    // For printing
+    static const std::string me_;
+
+    //Stats to store separation data
+ struct SepaStats {
+    int iters;       ///> Number of times separate called.
+    int tangentcuts; ///> Number of total cuts added.
+    int optcuts;     ///> Number of optional cuts added.
+    int optrem;      ///> Number of optional cuts removed.
+    double time;     ///> Total time used in separation
   };
+
+
+    // ---------------------------------------------------------
+    // Presolve statistics containers
+    // ---------------------------------------------------------
+    struct LogPresolveStats
+    {
+      UInt iters;
+      double time;
+      UInt conDel;
+      UInt vBnd;
+      UInt nMods;
+
+      LogPresolveStats()
+        : iters(0),
+          time(0.0),
+          conDel(0),
+          vBnd(0),
+          nMods(0)
+      {
+      }
+    };
+
+    struct BoundTighteningStats
+    {
+      int niters;
+      int nLP;
+      int dlb;
+      int dub;
+      double timeLP;
+    };
+
+    BoundTighteningStats bStats_;
+    LogPresolveStats pStats_;
+    SepaStats sStats_;
+    // Default bounds for presolve
+    double LBd_;
+    double UBd_;
+
+    double bTol_;  ///< minimum tightening threshold
+
+    // Environment
+    EnvPtr env_;
+
+    //Problem pointer to the original problem
+    ProblemPtr orig_;
+
+ // Optional cuts
+    ConstraintVector optCuts_;
+
+
+    // Absolute feasibility tolerance
+    double aTol_;
+
+    // Relative feasibility tolerance
+    double rTol_;
+
+    // Tolerances for log constraints
+    double eTol_;
+
+    // Tolerance for when lower and upper bounds are considered equal
+    double vTol_;
+    // Problem pointer to the transformed problem
+    ProblemPtr p_;
+
+        // Logger
+    LoggerPtr log_;
+
+    // Temporary vectors for evaluations
+    DoubleVector tmpX_;
+    DoubleVector grad_;
+
+    
+    //separating 
+    void addCut_(VariablePtr x, VariablePtr y, double xval, double yval, 
+                         RelaxationPtr rel, bool& ifcuts); 
+
+
+    //add default bounds for x in y=log(x) if no finite bound was added by presolve
+    double addDefaultLogBounds_(VariablePtr x, BoundType lu);
+
+    /**
+     * \Add or update linearization cuts for y = log(x) around sample points.
+     * \Used for convex underestimators of log(x) and equality constraints.
+     */
+    void addLin_(LogCons &cd, RelaxationPtr rel, DoubleVector &tmpX,
+                 DoubleVector &grad, ModVector &mods, bool init);
+
+
+    /**
+    * \Add or update the secant inequality for y = log(x).
+    * \Used in both initRelaxFor() and updateRelaxFor().
+    */
+    void addSecant_(LogCons &cd, RelaxationPtr rel, DoubleVector &tmpX,
+                    ModVector &mods, bool init);
+
+    /**
+     * \Compute scaled violation of log constraint for branching.
+     *
+     * \Evaluates f(x) for the stored constraint:
+     *    - For y = log(x):  check f(x) ∈ [lb - tol , ub + tol]
+     * \Returns:
+     *    - Relative violation (0 = feasible, >0 = violated)
+     *
+     * \Used inside getBranchingCandidates().
+     */
+
+    //Marks duplicate constraint if changed == True
+    void dupRows_(bool *changed);
+    //branching decision
+    BranchPtr doBranch_(BranchDirection UpOrDown, ConstVariablePtr v,
+                        double bvalue);
+
+    /**
+     * Generates secant inequality for y= log(x)
+     * y>=mx+b where m = (log(u)-log(l))/(u-l) and b = log(l) - ml
+     * where l and u are lower and upper bound
+     */
+    LinearFunctionPtr getLogSec_(VariablePtr x, VariablePtr y, double lb,
+                                 double ub, double &rhs);
+
+    //returns the violation for functon y=log(x) and takes  input solution vector 
+    double getViol_(const LogCons &cd, const DoubleVector &x) const;
+
+
+ // Check feasibility.
+    bool isFeasible_(ConstSolutionPtr sol, RelaxationPtr relaxation,
+                    bool &should_prune, double &inf_meas);
+
+
+
+
+    /**
+     * \Initialize relaxation components for a single log constraint.
+     * \Called when relaxation is constructed at a node.
+     */
+    void initRelax_(LogCons &cd, RelaxationPtr rel, DoubleVector &tmpX,
+                    DoubleVector &grad);
+
+
+    // For a given y = log(x) constraint,
+    // derive bounds on y from bounds on x. Also derive bounds on x from bounds
+    // on y.
+    bool propLogBnds_(LogConsPtr lcd, bool *changed);
+
+    //Deletes duplicate row which was marked by dupRows
+    bool treatDupRows_(ConstraintPtr c1, ConstraintPtr c2, double mult,
+                       bool *changed);
+
+  
+
+    /**
+     * \Update the relaxation for a log constraint when bounds have changed.
+     * \Performs:
+     *  \ Recompute/update the secant inequality
+     *  \Update linearizations at current variable bounds
+     *  \ Append Modifications (mods) so that the B&B node receives them
+     * \Called inside relaxNodeInc().
+     */
+    void updateRelax_(LogCons &cd, RelaxationPtr rel, DoubleVector &tmpX,
+                      DoubleVector &grad, ModVector &mods);
+
+    /// Update problem bounds
+    int updatePBnds_(VariablePtr p, double newlb, double newub,
+                     bool *changed);
+
+    int updatePBnds_(VariablePtr v, double newlb, double newub,
+                             RelaxationPtr rel, bool mod_rel, bool *changed,
+                             ModVector &p_mods, ModVector &r_mods);
+
+
+    bool varBndsFromCons_(bool *changed);
+
+
+     };
 
 }  // namespace Minotaur
 

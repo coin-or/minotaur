@@ -12,6 +12,7 @@
 
 #include <algorithm>
 #include <cmath>
+#include <cstdio>
 #include <iomanip>
 #include <sstream>
 #include <string.h>  // for memset
@@ -1954,6 +1955,127 @@ bool Problem::isDebugSolFeas(double atol, double rtol)
   }
   return false;
 }
+
+
+bool Problem::isFeasible(const double* x, double objval, double& inf_meas) const
+{
+  
+
+  ConstraintPtr c;
+  FunctionPtr f;
+  double act, clb, cub;
+  int error = 0;
+  bool is_feas = true;
+  double vio;
+  double val;
+  double nearest;
+  const double aTol = 1e-5; 
+  const double rTol = 1e-5; 
+
+  // INTEGRALITY CHECK
+  for (VariableConstIterator vit = varsBegin(); vit != varsEnd(); ++vit) {
+    VariablePtr v = *vit;
+     
+    VariableType vtype = v->getType();
+    if (vtype == Binary || vtype == ImplBin || vtype == Integer || vtype == ImplInt) {
+      val = x[v->getIndex()];
+      nearest = std::round(val);
+        if (std::abs(val - nearest) > aTol) {
+        is_feas = false;
+        inf_meas += std::abs(val - nearest);
+        if (logger_) {
+          logger_->msgStream(LogDebug1) << me_ <<"Integrality violated for '" 
+                                        << v->getName() << "'! Val: " << val 
+                                        << " Nearest: " << nearest << std::endl;
+        }
+      }
+    }
+  }
+
+   for (ConstraintConstIterator cit = consBegin(); cit != consEnd(); ++cit) {
+    c = *cit;
+    f = c->getFunction();
+  
+   // f->eval(x) works for any function type in Minotaur
+    act = f->eval(x, &error);
+    
+    if (error == 0) {
+      cub = c->getUb();
+      clb = c->getLb();
+      
+      if (logger_) {
+        logger_->msgStream(LogDebug1) << me_ <<"Constraint " << c->getName() 
+          << "' activity = " << act << " range = " << clb << " " << cub << std::endl;
+      }
+
+      // Check Upper Bound with scaled relative tolerance
+      double ubTol = aTol + rTol * std::fabs(cub);
+      if (cub < 1e15 && act > cub + ubTol){
+        is_feas = false;
+        inf_meas += act - cub;
+        if (logger_) {
+          logger_->msgStream(LogDebug1) << me_<< "Constraint " << c->getName() 
+                                        << "' UB violated! Act: " << act 
+                                        << ", UB: " << cub 
+                                        << ", Tol: " << ubTol << std::endl;
+        }
+      }
+      
+      // Check Lower Bound with scaled relative tolerance
+      double lbTol = aTol + rTol * std::fabs(clb);
+      if (clb > -1e15 && act < clb - lbTol){
+        is_feas = false;
+        inf_meas += clb - act;
+        if (logger_) {
+          logger_->msgStream(LogDebug1) << me_<< "Constraint " << c->getName() 
+                                        << "' LB violated! Act: " << act 
+                                        << ", LB: " << clb 
+                                        << ", Tol: " << lbTol << std::endl;
+        }
+      }
+    } else {
+      if (logger_) {
+        logger_->msgStream(LogError) << me_<< c->getName() 
+                                     << " Constraint evaluation failed at this point." << std::endl;
+      }
+      is_feas = false;
+      error = 0; // Reset for next iteration
+    }
+  }
+
+  // 2. Check Objective Function
+  ObjectivePtr obj = getObjective();
+  if (obj) {
+    act = obj->eval(x, &error);
+    if (error == 0) {
+      vio = std::fabs(objval - act);
+      
+      // Check Objective Gap with scaled relative tolerance
+      double objTol = aTol + rTol * std::fabs(act);
+      if (vio > objTol) {
+        is_feas = false;
+        inf_meas += vio;
+        if (logger_) {
+          logger_->msgStream(LogDebug1) << me_<< "Obj LP: " << objval 
+                                        << ", Original Act: " << act 
+                                        << ", Gap: " << vio 
+                                        << ", Tol: " << objTol << std::endl;
+        }
+      }
+    }
+  }
+  
+  if (logger_) {
+    logger_->msgStream(LogDebug1) << me_<< "isFeasible returning: " 
+                                  << (is_feas ? "TRUE" : "FALSE") 
+                                  << " | inf_meas: " << inf_meas << std::endl;
+  }
+
+  return is_feas;
+}
+
+
+
 
 bool Problem::isLinear()
 {

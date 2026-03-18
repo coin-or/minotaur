@@ -24,6 +24,7 @@
 #include "Node.h"
 #include "Option.h"
 #include "PCBProcessor.h"
+#include "Problem.h"
 #include "Relaxation.h"
 #include "SolutionPool.h"
 #include "WarmStart.h"
@@ -34,20 +35,21 @@ using namespace Minotaur;
 
 const std::string PCBProcessor::me_ = "PCBProcessor: ";
 
-PCBProcessor::PCBProcessor(EnvPtr env, EnginePtr engine, HandlerVector handlers)
+PCBProcessor::PCBProcessor(EnvPtr env, EnginePtr engine, HandlerVector handlers, ProblemPtr orig)
   : branches_(0),
     contOnErr_(false),
     cutMan_(0),
+    engine_(engine),
     env_(env),
+    handlers_(handlers),
     infHand_(0),
     numSolutions_(0),
+    orig_(orig),      // Initialize orig_
     ws_(0)
 {
   oATol_ = env->getOptions()->findDouble("solAbs_tol")->getValue();
   oRTol_ = env->getOptions()->findDouble("solRel_tol")->getValue();
   cutOff_ = env->getOptions()->findDouble("obj_cut_off")->getValue();
-  engine_ = engine;
-  handlers_ = handlers;
   logger_ = env->getLogger();
   presFreq_ = env->getOptions()->findInt("pres_freq")->getValue();
   stats_.bra = 0;
@@ -58,7 +60,6 @@ PCBProcessor::PCBProcessor(EnvPtr env, EnginePtr engine, HandlerVector handlers)
   stats_.ub = 0;
   stats_.tol_err = 0;
 }
-
 PCBProcessor::~PCBProcessor()
 {
   if(ws_) {
@@ -104,31 +105,31 @@ bool PCBProcessor::isFeasible_(NodePtr node, ConstSolutionPtr sol,
   bool is_feas = true;
   HandlerIterator h;
   double inf_meas = 0.0;
+  // Variables required for original constraint/objective evaluation
+  const double* x = sol->getPrimal();
+  double objval = sol->getObjValue(); // Get LP objective value
+  int error = 0;
 
 #if SPEW
   logger_->msgStream(LogDebug1) << " checking feasibility. Time = " 
     << env_->getTime() << std::endl;
 #endif
 
-  // visit each handler and check feasibility. Stop on the first
-  // infeasibility.
-  for(h = handlers_.begin(); h != handlers_.end(); ++h) {
-    is_feas = (*h)->isFeasible(sol, relaxation_, should_prune, inf_meas);
-    if(is_feas == false || should_prune == true) {
-      infHand_ = *h;
-      break;
-    }
-  }
+   // Instead of looping, just create a single call to Problem::isFeasible()
+  is_feas=orig_->isFeasible(x, objval, inf_meas);
 
-  if(is_feas == true && h == handlers_.end()) {
-    s_pool->addSolution(sol);
-    ++numSolutions_;
-    node->setStatus(NodeOptimal);
-    ++stats_.opt;
-    should_prune = true;
+ 
+
+   if(is_feas == true) {
+     s_pool->addSolution(sol);
+     ++numSolutions_;
+     node->setStatus(NodeOptimal);
+     ++stats_.opt;
+     should_prune = true;
   }
   return is_feas;
 }
+
 
 bool PCBProcessor::presolveNode_(NodePtr node, SolutionPoolPtr s_pool)
 {
