@@ -34,6 +34,7 @@ namespace Minotaur {
     /// are private.
     friend class AnalyticalCenter;
     friend class Linearizations;
+    friend class LogHandler;
     friend class QGHandlerAdvance;
     friend class ParQGHandlerAdvance;
     friend class PerspCon;

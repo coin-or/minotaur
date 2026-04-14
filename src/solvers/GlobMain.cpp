@@ -48,20 +48,11 @@ int main(int argc, char** argv)
   }
 
   inst = glob.readProblem(fname, dname, "mglob", err);
-  if(err) {
+  if (err) {
     goto CLEANUP;
   }
 
-  if(!(inst->isLinear() || inst->isQP() || inst->isQuadratic())) {
-    env->getLogger()->msgStream(LogError)
-        << "mglob error : "
-        << "mglob only solves Mixed Integer Quadratically Constrained Quadratic"
-        << " problems (MIQCQP). " << fname << " is not an MIQCQP." << std::endl
-        << "Problem not solved" << std::endl;
-    goto CLEANUP;
-  }
-
-  glob.solve(inst);
+ glob.solve(inst);
 
 CLEANUP:
   if(inst) {

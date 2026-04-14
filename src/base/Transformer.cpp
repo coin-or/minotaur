@@ -24,6 +24,7 @@
 #include "IntVarHandler.h"
 #include "LinearFunction.h"
 #include "LinearHandler.h"
+#include "LogHandler.h"
 #include "Logger.h"
 #include "NonlinearFunction.h"
 #include "Option.h"
@@ -113,23 +114,32 @@ bool Transformer::allConsAssigned_(ProblemPtr p, HandlerVector &handlers)
 
 void Transformer::assignHandler_(CGraphPtr cg, ConstraintPtr c)
 {
+  VariablePtr iv = NULL;
+  VariablePtr ov = NULL;
+  LinearFunctionPtr lf = NULL;
+
   switch (cg->getOut()->getOp()) {
   case OpMult:
   case OpSqr:
     qHandler_->addConstraint(c);
     break;
-  default:
-    {
-    VariablePtr iv;
-    VariablePtr ov = VariablePtr();
-    LinearFunctionPtr lf = c->getFunction()->getLinearFunction();
+  case OpLog:
+    lf = c->getFunction()->getLinearFunction();
     if (lf) {
-      assert(lf->getNumTerms()==1);
+      assert(lf->getNumTerms() == 1);
+      ov = lf->termsBegin()->first;
+    }
+    iv = *(c->getFunction()->getNonlinearFunction()->varsBegin());
+    logHandler_->addConstraint(c, iv, ov, 'E');
+    break;
+  default:
+    lf = c->getFunction()->getLinearFunction();
+    if (lf) {
+      assert(lf->getNumTerms() == 1);
       ov = lf->termsBegin()->first;
     }
     iv = *(c->getFunction()->getNonlinearFunction()->varsBegin());
     uHandler_->addConstraint(c, iv, ov, 'E');
-    }
   }
 }
 

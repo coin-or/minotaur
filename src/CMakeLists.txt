@@ -62,6 +62,7 @@ set (MINOTAUR_SOURCES
      base/LinFeasPump.cpp 
      base/Linearizations.cpp
      base/Logger.cpp 
+     base/LogHandler.cpp 
      base/MaxFreqBrancher.cpp
      base/MaxInfBrancher.cpp
      base/MaxVioBrancher.cpp

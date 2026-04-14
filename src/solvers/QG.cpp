@@ -369,7 +369,7 @@ int QG::solve(ProblemPtr p)
   nr = (NodeIncRelaxerPtr) new NodeIncRelaxer(env_, handlers);
   nr->setModFlag(false);
   nr->setEngine(lp_e);
-  nproc = (PCBProcessorPtr) new PCBProcessor(env_, lp_e, handlers);
+  nproc = (PCBProcessorPtr) new PCBProcessor(env_, lp_e, handlers, oinst_);
   if(env_->getOptions()->findString("brancher")->getValue() == "rel" ||
      env_->getOptions()->findString("brancher")->getValue() == "weak" ||
      env_->getOptions()->findString("brancher")->getValue() == "hybrid") {

@@ -67,7 +67,7 @@ int main() {
     std::cout << "=====================================================================\n";
     //std::cout << "status = " << bnb.getStatus() << std::endl;
 
-    //DoubleVector s = bnb.getSolution();
+    //DoubleVector s = bnb.getSol();
     
     
     delete problem;
