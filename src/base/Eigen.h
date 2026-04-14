@@ -75,7 +75,7 @@ namespace Minotaur {
     ~EigenCalculator() {};
 
     /// Calculate EigenValues only
-    EigenPtr findValues(ConstQuadraticFunctionPtr qf);
+    EigenPtr findValues(ConstQuadraticFunctionPtr qf, bool scaletol = false);
 
     /// Calculate EigenValues for a full dense matrix. H is a square symmetric
     /// array of arrays. Its size is nxn.
@@ -137,7 +137,7 @@ namespace Minotaur {
 
     /// N for eigen values only, V for values and vectors.
     char findVectors_;
-
+    
     /// Array where the eigen vectors are stored by LAPACK.
     double *w_;
 
@@ -178,10 +178,12 @@ namespace Minotaur {
     void fillA_();
 
     /**
-    \brief Get eigen values and (if calculated) eigen vectors from the
-    calculator.
+     * Get eigen values and (if calculated) eigen vectors from the
+     * calculator. If scaletol is true, then the tolerance for zero eigen 
+     * values is scaled based on the minimum magnitude of the eigen values. 
+     * Otherwise, the default absolute tolerance is used.
     */
-    EigenPtr getEigen_();
+    EigenPtr getEigen_(bool scaletol);
 
     /// Construct a linear function based on the eigen vectors of A_.
     LinearFunctionPtr getLinearFunction_(const int i);
@@ -193,7 +195,7 @@ namespace Minotaur {
     Eigen();
 
     /// Add an eigen value and an eigen vector to the current list.
-    void add(double value, LinearFunctionPtr e_vector);
+    void add(double value, LinearFunctionPtr e_vector, double tol);
 
     /// Get the number of negative eigen values
     UInt numNegative() const;
@@ -231,4 +233,5 @@ namespace Minotaur {
   };
 
 }  //namespace Minotaur
-#endif
+
+#endif  // MINOTAUREIGEN_H

@@ -1325,6 +1325,7 @@ ProblemPtr Problem::shuffle(bool varshuff, bool conshuff, EnvPtr env)
     newp->size_->cons = size_->cons;
     newp->size_->objs = size_->objs;
     newp->size_->bins = size_->bins;
+    newp->size_->impBins = size_->impBins;
     newp->size_->fixed = size_->fixed;
     newp->size_->ints = size_->ints;
     newp->size_->conts = size_->conts;
@@ -1588,7 +1589,7 @@ void Problem::countVarTypes_()
 {
   VariableIterator viter;
   VariablePtr vPtr;
-  UInt bins = 0, ints = 0, conts = 0, fixed = 0;
+  UInt bins = 0, ints = 0, conts = 0, fixed = 0, impBins=0;
 
   for (viter = vars_.begin(); viter != vars_.end(); viter++) {
     vPtr = *viter;
@@ -1602,6 +1603,9 @@ void Problem::countVarTypes_()
     case (Continuous):
       ++conts;
       break;
+    case (ImplBin):
+      ++impBins;
+      break;
     default:
       break;
     }
@@ -1610,6 +1614,7 @@ void Problem::countVarTypes_()
     }
   }
   size_->bins = bins;
+  size_->impBins = impBins;
   size_->ints = ints;
   size_->conts = conts;
   size_->fixed = fixed;

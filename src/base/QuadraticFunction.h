@@ -279,7 +279,7 @@ namespace Minotaur {
        * convex (PSD hessian), concave (NSD hessian) or nonconvex (Indefinte
        * hessian).
        */
-      Convexity isConvex();
+      Convexity isConvex(bool scaledtol);
 
       /**
        * For the quadratic function finding the subgraphs (where each node

@@ -78,6 +78,7 @@ private:
   LPEnginePtr getEngine_();
   NLPEnginePtr getNLPEngine_();
   void setInitialOptions_();
+  void eigenShift_();
   int transform_(ProblemPtr& newp, HandlerVector& handlers, LPEnginePtr engine);
   void writeStatus_(BranchAndBound* bab);
 };

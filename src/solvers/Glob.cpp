@@ -15,7 +15,10 @@
 #include <cmath>
 #include <iomanip>
 #include <iostream>
-
+#include <algorithm>
+#include <ostream>
+//  / Base class for @c char output streams.
+  // typedef basic_ostream<char> 		ostream;
 #include "AMPLInterface.h"
 #include "Bnb.h"
 #include "BranchAndBound.h"
@@ -52,6 +55,7 @@
 #include "Transformer.h"
 #include "TreeManager.h"
 #include "WeakBrancher.h"
+#include "Eigen.h"
 
 using namespace Minotaur;
 const std::string Glob::me_ = "mntr-glob: ";
@@ -331,6 +335,53 @@ void Glob::setInitialOptions_()
   options->findBool("simplex_cut")->setValue(true);
 }
 
+// Eigen_Shift framework for QP/MIQP with binary convexification --developed by Sachin Pandey
+void Glob::eigenShift_() 
+{
+  ObjectivePtr obj = inst_->getObjective();
+  QuadraticFunctionPtr qf = nullptr; 
+  LinearFunctionPtr lf = nullptr;
+  QuadraticFunctionPtr new_qf = nullptr; 
+  LinearFunctionPtr new_lf = nullptr; 
+  FunctionPtr new_f = nullptr;
+  double mineval = std::numeric_limits<double>::infinity();
+  double absmineval;
+  EigenCalculator ecalc;
+
+  if (!obj) {
+    env_->getLogger()->errStream() << me_ << "Objective Function is null\n";
+  } else {
+    qf = obj->getQuadraticFunction(); // get the original quadratic function before modification
+    lf = obj->getLinearFunction();   // get the original linear function before modification
+    if (qf->isConvex(true) != Convex) { // Proceed only if not convex
+      EigenPtr eigen_v = ecalc.findValues(qf,true);
+      for (auto it = eigen_v->begin(); it != eigen_v->end(); ++it) {
+        mineval = std::min(mineval, it->first);
+      }
+      absmineval = 1.01 * std::fabs(mineval);
+      env_->getLogger()->msgStream(LogDebug1) << me_ 
+      << "Minimum Eigen Value = " << mineval << " Added Value = " 
+      << absmineval << std::endl;
+
+      new_qf = qf->clone();   
+      new_lf = lf ? lf->clone() : new LinearFunction(); 
+
+      // Add absMinEval square term and subtract absMinEval linear term
+      for (auto it = inst_->varsBegin(); it != inst_->varsEnd(); ++it) {
+        VariablePtr v = *it;
+        if (!v) continue;
+        new_qf->incTerm(v, v, absmineval);  // include absmineval_ as square term
+        new_lf->incTerm(v, -absmineval);    // subtract absmineval_ as linear term
+      }
+      new_f = new Function(new_lf, new_qf);  // create a new objective function
+      inst_->changeObj(new_f,obj->getConstant()); // update the problem's objective function
+      env_->getLogger()->msgStream(LogDebug1) << me_ << " Problem transformed through ES" << std::endl;
+    } else {
+      env_->getLogger()->msgStream(LogDebug1) << me_ << "Skipped ES convexification" << std::endl;
+    }
+  }
+}
+
 int Glob::solve(ProblemPtr inst)
 {
   LPEnginePtr engine = 0;
@@ -382,6 +433,7 @@ int Glob::solve(ProblemPtr inst)
     env_->getLogger()->msgStream(LogInfo)
         << me_ << "objective sense: minimize" << std::endl;
   }
+  
   // Get the right engine.
   engine = getEngine_();
   env_->getLogger()->msgStream(LogExtraInfo)
@@ -400,6 +452,7 @@ int Glob::solve(ProblemPtr inst)
   }
   handlers.clear();
 
+  // get the presolved problem.
   if(Finished != pres->getStatus() && NotStarted != pres->getStatus()) {
     env_->getLogger()->msgStream(LogInfo)
         << me_
@@ -411,13 +464,30 @@ int Glob::solve(ProblemPtr inst)
     writeSol_(env_, orig_v, sol_, pres->getStatus(), iface_);
     goto CLEANUP;
   }
+  
+
+  // If we have a pure binary QP, shift the objective functin using Eigen Values to
+  // make it convex binary QP  
+  if (inst_->findType() == QP || inst_->findType() == MIQP){
+    if (inst_->getNumVars() == inst_->getSize()->impBins + inst_->getSize()->bins){
+      eigenShift_();
+      if (inst_->getObjective()->getQuadraticFunction()->isConvex(true) == Convex){
+        env_->getLogger()->msgStream(LogDebug1)
+        << me_ << " The objective function is convex after Eigen Shifting method" << std::endl
+        << me_ << "Problem is forwarded to Branch and bound" << std::endl;
+        env_->getOptions()->findBool("nl_presolve")->setValue(false);
+        env_->getOptions()->findString("brancher")->setValue("rel");
+        fwd2Bnb_(orig_v);
+        goto CLEANUP;
+      }
+    }
+  }
 
   inst_->setNativeDer();
   err = transform_(newp, handlers, engine);
   assert(0 == err || 2 == err); // return status 2 means problem is convex
-
   if(err == 2) {
-    // call convex solvers
+  // call convex solvers
     if(inst_->isQP()) {
       env_->getLogger()->msgStream(LogInfo)
           << me_ << "The objective function in this QP is convex" << std::endl
@@ -428,28 +498,26 @@ int Glob::solve(ProblemPtr inst)
       goto CLEANUP;
     }
     env_->getLogger()->msgStream(LogInfo)
-        << me_ << "All constraints and objective found to be convex"
-        << std::endl
-        << "Problem is forwarded to QG - convex MINLP solver" << std::endl;
+      << me_ << "All constraints and objective found to be convex"
+      << std::endl
+      << "Problem is forwarded to QG - convex MINLP solver" << std::endl;
 
     fwd2QG_();
     goto CLEANUP;
   }
-
+  
   // any other value not allowed
   env_->getOptions()->findInt("pres_freq")->setValue(1);
   newp_ = newp;
   env_->getLogger()->msgStream(LogExtraInfo)
       << me_ << "Presolving transformed problem ... " << std::endl;
   pres2 = (PresolverPtr) new Presolver(newp_, env_, handlers);
-
   pres2->solve();
   env_->getLogger()->msgStream(LogExtraInfo)
-      << me_ << "Finished presolving transformed problem" << std::endl;
-
+      << me_ << "Finished presolving transformed problem" << std::endl;   
+  
   // get branch-and-bound
   bab = createBab_(engine, handlers);
-
   if(false == env_->getOptions()->findBool("solve")->getValue()) {
     goto CLEANUP;
   }
@@ -462,7 +530,6 @@ int Glob::solve(ProblemPtr inst)
       ++it) {
     (*it)->writeStats(env_->getLogger()->msgStream(LogExtraInfo));
   }
-
   sol_ = bab->getSolution();
   if (sol_ && pres) {
     sol_ = pres->getPostSol(sol_);
@@ -507,6 +574,7 @@ CLEANUP:
   return 0;
 }
 
+
 void Glob::showHelp() const
 {
   std::cout << "global optimization for general QCQP" << std::endl
@@ -523,7 +591,6 @@ void Glob::showHelp() const
 int Glob::showInfo()
 {
   OptionDBPtr options = env_->getOptions();
-
   if(options->findBool("display_options")->getValue() ||
      options->findFlag("=")->getValue()) {
     options->write(std::cout);
