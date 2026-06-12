@@ -33,6 +33,7 @@ namespace Minotaur {
     /// Following classes can modify a Variable. All modification methods
     /// are private.
     friend class AnalyticalCenter;
+    friend class ExpHandler;
     friend class Linearizations;
     friend class LogHandler;
     friend class QGHandlerAdvance;
@@ -43,6 +44,7 @@ namespace Minotaur {
     friend class QGHandler;
     friend class OAHandler;
     friend class QuadHandler;
+    friend class RecipHandler;
     friend class MultiSolHeur;
 
     /// Default constructor.

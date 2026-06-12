@@ -43,8 +43,8 @@ PCBProcessor::PCBProcessor(EnvPtr env, EnginePtr engine, HandlerVector handlers,
     env_(env),
     handlers_(handlers),
     infHand_(0),
-    numSolutions_(0),
-    orig_(orig),      // Initialize orig_
+    orig_(orig),   // Initialize orig_
+    numSolutions_(0), 
     ws_(0)
 {
   oATol_ = env->getOptions()->findDouble("solAbs_tol")->getValue();
@@ -108,7 +108,6 @@ bool PCBProcessor::isFeasible_(NodePtr node, ConstSolutionPtr sol,
   // Variables required for original constraint/objective evaluation
   const double* x = sol->getPrimal();
   double objval = sol->getObjValue(); // Get LP objective value
-  int error = 0;
 
 #if SPEW
   logger_->msgStream(LogDebug1) << " checking feasibility. Time = " 
@@ -357,6 +356,21 @@ void PCBProcessor::process(NodePtr node, RelaxationPtr rel,
         logger_->msgStream(LogDebug2) << me_
             << "No candidates to branch for the node"
             << " Calling an NLP solver to resolve it" << std::endl;
+        // Accept the solution if no candidate to branch on and there is  small infeasibility in original constraint  
+        if (!infHand_) {
+          logger_->msgStream(LogInfo) << me_ 
+              << "handlers report 0 violations. "
+              << "Overruling strict tolerance: accepting LP point as valid MINLP solution." 
+              << std::endl;
+          
+          // Force the solver to accept this solution and update the Upper Bound
+          s_pool->addSolution(sol);
+          ++numSolutions_;
+          node->setStatus(NodeOptimal);
+          ++stats_.opt;
+          should_prune = true;
+          break; 
+        }
         error = infHand_->fixNodeErr(relaxation_, sol, s_pool, sol_found);
         ++stats_.tol_err;
         assert(error >= 0);

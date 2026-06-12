@@ -40,7 +40,8 @@ set (MINOTAUR_SOURCES
      base/CxUnivarHandler.cpp
      base/Eigen.cpp 
      base/Engine.cpp 
-     base/Environment.cpp 
+     base/Environment.cpp
+     base/ExpHandler.cpp
      base/FeasibilityPump.cpp 
      base/FixVarsHeur.cpp
      base/Function.cpp 
@@ -119,7 +120,8 @@ set (MINOTAUR_SOURCES
      base/RCHandler.cpp
      base/Relaxation.cpp 
      base/ReliabilityBrancher.cpp 
-     base/Reader.cpp 
+     base/Reader.cpp
+     base/RecipHandler.cpp
      base/SamplingHeur.cpp
      base/SecantMod.cpp 
      base/SimpleCutMan.cpp 
@@ -179,6 +181,7 @@ set (MINOTAUR_HEADERS
      base/FeasibilityPump.h 
      base/FixVarsHeur.h
      base/Exception.h
+     base/ExpHandler.h
      base/Function.h
      base/Handler.h
      base/HessianOfLag.h
@@ -264,6 +267,7 @@ set (MINOTAUR_HEADERS
      base/RCHandler.h
      base/Relaxation.h
      base/ReliabilityBrancher.h
+     base/RecipHandler.h
      base/SecantMod.h
      base/SimpleCutMan.h 
      base/SimpleTransformer.h

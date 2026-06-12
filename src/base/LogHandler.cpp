@@ -42,8 +42,8 @@ LogHandler::LogHandler(EnvPtr env, ProblemPtr problem)
   : bStats_(),
     pStats_(),
     sStats_(),
-    LBd_(-1e-6),
-    UBd_(1e6),
+    LBd_(1e-6),
+    UBd_(1e50),
     bTol_(1e-6),
     env_(env),
     orig_(problem),
@@ -138,8 +138,8 @@ void LogHandler::addLin_(LogCons &cd,
 {
   int error = 0;
   ConstraintPtr cons;
-  double xlb = std::max(cd.riv->getLb(), 1e-7);
-  double xub = std::min(cd.riv->getUb(), 1e12);
+  double xlb = std::max(cd.riv->getLb(), LBd_);
+  double xub = std::min(cd.riv->getUb(), UBd_);
   double fxlbval = 0.0, fxubval = 0.0, dfxlbval = 0.0, dfxubval = 0.0;
   double tmpxval = 0.0, fxval = 0.0, dfxval = 0.0;
   LinearFunctionPtr lf;
@@ -215,15 +215,12 @@ void LogHandler::addSecant_(LogCons &cd,
                               bool init)
 {
   int error = 0;
-  double xlb = std::max(cd.riv->getLb(), 1e-7);
-  double xub = std::min(cd.riv->getUb(), 1e12);
+  double xlb = std::max(cd.riv->getLb(), LBd_);
+  double xub = std::min(cd.riv->getUb(), UBd_);
   double fxlb, fxub, m, intercept;
   LinearFunctionPtr lf;
   FunctionPtr f;
   FunctionPtr fn = cd.con->getFunction();
-
-  xlb = cd.riv->getLb();
-  xub = cd.riv->getUb();
 
   // No secant if unbounded either way
   if (xlb <= -0.9 * INFINITY || xub >= 0.9 * INFINITY) {
@@ -241,7 +238,7 @@ void LogHandler::addSecant_(LogCons &cd,
   fxub = fn->eval(tmpX, &error);
   tmpX[cd.riv->getIndex()] = 0.0;///reset tmpX
 
-  if (xub - xlb > 10e-7) {
+  if (xub - xlb > 10e-6) {
     m = (fxub - fxlb) / (xub - xlb);
   } else {
     m = 0.0;
@@ -337,7 +334,7 @@ void LogHandler::addCut_(VariablePtr x, VariablePtr y, double xval, double yval,
   // Calculate scaled tolerance
   double cutTol = aTol_ ;
 
-  // Check if the violation is mathematically significant
+  // Check if the violation is  significant
   if (violation > cutTol) {
     // Tangent (Overestimator)
     deriv = 1.0 / xval;
@@ -442,7 +439,7 @@ void LogHandler::separate(ConstSolutionPtr sol, NodePtr node, RelaxationPtr rel,
     if (xval <= 1e-9) continue; 
 
     bool added = false;
-    if( yval - log(xval) > aTol_)
+    if( yval - log(xval) > 1e-3)
     {
 
 #if SPEW
@@ -764,55 +761,68 @@ bool LogHandler::treatDupRows_(ConstraintPtr c1,
 
 bool LogHandler::propLogBnds_(LogConsPtr cdata, bool *changed)
 {
-  VariablePtr x = cdata->iv;  // input variable
-  VariablePtr y = cdata->ov;  // output variable (y = log(x))
+  VariablePtr x, y;
+  double xlb, xub, ylb, yub;
+  double new_ylb, new_yub, new_xlb, new_xub;
 
-  double xlb = x->getLb();
-  double xub = x->getUb();
-  double ylb = y->getLb();
-  double yub = y->getUb();
+  x = cdata->iv;  // input variable x
+  y = cdata->ov;  // output variable y = log(x)
 
-  double newlb, newub;
+  xlb = x->getLb();
+  xub = x->getUb();
+  ylb = y->getLb();
+  yub = y->getUb();
 
-  // --- Forward propagation: x -> y ---
-  if (xub < 0.0) {
-    return true; // infeasible
+  // Infeasibility Check 
+  // strictly undefined for x <= 0
+  if (xub <= 0.0) {
+    return true; 
   }
 
-  if (xlb < 0.0) {
-    xlb = 0.0;  // negative is not allowed in log
-  }
+  //   x -> y 
 
   if (xlb > 0.0) {
-    newlb = std::log(xlb);
-    newub = std::log(xub);
-    if (updatePBnds_(y, newlb, newub, changed) < 0) {
-      return true;
-    }
+    new_ylb = std::log(xlb);
+  } else {
+    // If xlb <= 0, the valid domain of log(x) has negative infinity.
+    // We MUST allow y to go to -INFINITY to support fractional x values.
+    new_ylb = -INFINITY; 
   }
 
-  if (xlb==0 && xub>0){
-    newub = std::log(xub);
-    newlb = -1e-6;      // only to update upper bound of y
-    if (updatePBnds_(y, newlb,  newub, changed)<0){
-      return true;
-    }
+  // Map xub to new_yub
+  if (xub < INFINITY) {
+    new_yub = std::log(xub);
+  } else {
+    new_yub = INFINITY;
   }
 
-  // --- Backward propagation: y -> x ---
-  if (yub < INFINITY && ylb > -INFINITY) {
-    double new_xlb = std::exp(ylb);
-    double new_xub = std::exp(yub);
-    if (updatePBnds_(x, new_xlb, new_xub, changed) < 0) {
-      return true;
-    }
+  if (updatePBnds_(y, new_ylb, new_yub, changed) < 0) {
+    return true;
   }
+
+  //y -> x ---
+  // The inverse:w of y = log(x) is x = e^y.
+  // e^y maps (-inf, inf) to (0, inf).
+  
+  // Lower bound 
+  if (ylb > -1e15) {
+    new_xlb = std::exp(ylb);
+  } else {
+    new_xlb = 0.0; // e^(-inf) approaches 0
+  }
+
+  // Upper bound deduction (with overflow protection)
+  if (yub < 700.0) {
+    new_xub = std::exp(yub);
+  } else {
+    new_xub = INFINITY;
+  }
+
+  if (updatePBnds_(x, new_xlb, new_xub, changed) < 0) {
+    return true;  }
 
   return false;
-}
-
-
-int LogHandler::updatePBnds_(VariablePtr p,
+}int LogHandler::updatePBnds_(VariablePtr p,
                              double newlb,
                              double newub,
                              bool *changed)
@@ -822,7 +832,7 @@ int LogHandler::updatePBnds_(VariablePtr p,
   double lb = oldlb;
   double ub = oldub;
   
-// ---it checks if that number is extremely close (within 0.0001) to a whole number or not--
+// it checks if that number is extremely close (within 0.0001) to a whole number or not
    if (std::abs(newlb - std::round(newlb)) < 1e-4) {
     newlb = std::round(newlb);
   }
@@ -838,16 +848,16 @@ int LogHandler::updatePBnds_(VariablePtr p,
 
   if (p->getType() == Binary || p->getType() == ImplBin ||
       p->getType() == Integer || p->getType() == ImplInt) {
-    // ---- Lower bound: ceil only if newlb is significantly greater,
-    // else floor ----
+    // Lower bound: ceil only if newlb is significantly greater,
+    // else floor 
     if (newlb - floor(newlb)  < eTol_) {
       newlb = floor(newlb);
     } else {
       newlb = ceil(newlb);
     }
 
-    // ---- Upper bound: floor only if newub is siginficantly smaller
-    // else ceil ----
+    // Upper bound: floor only if newub is siginficantly smaller
+    // else ceil 
 
     if (ceil(newub) - newub < eTol_) {
       newub = ceil(newub);

@@ -57,8 +57,9 @@ const std::string Bnb::me_ = "mbnb: ";
 
 Bnb::Bnb(EnvPtr env)
   : objSense_(1.0),
-    sol_(NULL),
-    status_(NotStarted)
+    status_(NotStarted),
+    sol_(NULL)
+
 {
   env_ = env;
   iface_ = 0;

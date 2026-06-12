@@ -11,7 +11,7 @@
  * \author Neeraj Kumar, IIT Bombay
  */
 
-
+//y=log(x) and log constraint have same meaning
 #ifndef MINOTAURLOGHANDLER_H
 #define MINOTAURLOGHANDLER_H
 
@@ -60,7 +60,7 @@ namespace Minotaur {
     bool isFeasible(ConstSolutionPtr sol, RelaxationPtr relaxation,
                     bool &should_prune, double &inf_meas);
 
-    // Separation (cuts) — not implemented yet.
+    // Separation (cuts) -cutmanager not implemented
     void separate(ConstSolutionPtr sol, NodePtr node, RelaxationPtr rel,
                   CutManager *cutman, SolutionPoolPtr s_pool,
                   ModVector &p_mods, ModVector &r_mods, bool *sol_found,
@@ -102,9 +102,8 @@ namespace Minotaur {
 
 
   private:
-    // ---------------------------------------------------------
-    // Per-constraint data for log constraints (data only)
-    // ---------------------------------------------------------
+
+    // Per-constraint data for log constraints 
     struct LogCons
     {
       ConstraintPtr con;         ///< Original constraint
@@ -149,11 +148,8 @@ namespace Minotaur {
     double time;     ///> Total time used in separation
   };
 
-
-    // ---------------------------------------------------------
-    // Presolve statistics containers
-    // ---------------------------------------------------------
-    struct LogPresolveStats
+    // Presolve statistics container
+      struct LogPresolveStats
     {
       UInt iters;
       double time;
@@ -243,17 +239,6 @@ namespace Minotaur {
     */
     void addSecant_(LogCons &cd, RelaxationPtr rel, DoubleVector &tmpX,
                     ModVector &mods, bool init);
-
-    /**
-     * \Compute scaled violation of log constraint for branching.
-     *
-     * \Evaluates f(x) for the stored constraint:
-     *    - For y = log(x):  check f(x) ∈ [lb - tol , ub + tol]
-     * \Returns:
-     *    - Relative violation (0 = feasible, >0 = violated)
-     *
-     * \Used inside getBranchingCandidates().
-     */
 
     //Marks duplicate constraint if changed == True
     void dupRows_(bool *changed);

@@ -22,6 +22,7 @@
 #include "CxUnivarHandler.h"
 #include "Engine.h"
 #include "Environment.h"
+#include "ExpHandler.h"
 #include "Function.h"
 #include "IntVarHandler.h"
 #include "LinBil.h"
@@ -37,6 +38,7 @@
 #include "ProblemSize.h"
 #include "QuadHandler.h"
 #include "QuadraticFunction.h"
+#include "RecipHandler.h"
 #include "Solution.h"
 #include "Timer.h"
 #include "Variable.h"
@@ -285,11 +287,7 @@ void SimpleTransformer::recursRef_(const CNode* node, LinearFunctionPtr& lf,
   case(OpAtanh):
   case(OpCeil):
   case(OpCos):
-  case(OpCosh):
-  case(OpCPow):
-    recursRef_(node->getL(), lfl, vl, dl);
-    uniVarRef_(node, lfl, vl, dl, lf, v, d);
-    break;
+  case(OpCosh): 
   case(OpDiv):
     // (lfl+vl+dl)/(lfr+vr+dr), there are many sub-cases
     recursRef_(node->getL(), lfl, vl, dl);
@@ -333,6 +331,10 @@ void SimpleTransformer::recursRef_(const CNode* node, LinearFunctionPtr& lf,
     }
     break;
   case(OpExp):
+    recursRef_(node->getL(), lfl, vl, dl);
+    uniVarRef_(node, lfl, vl, dl, lf, v, d);
+    break;
+
   case(OpFloor):
   case (OpIntDiv):
   case (OpLog):
@@ -341,6 +343,7 @@ void SimpleTransformer::recursRef_(const CNode* node, LinearFunctionPtr& lf,
     break;
 
   case (OpLog10):
+    assert(!"log10 not implemented!");
   case (OpMinus):
     recursRef_(node->getL(), lfl, vl, dl);
     recursRef_(node->getR(), lfr, vr, dr);
@@ -408,8 +411,87 @@ void SimpleTransformer::recursRef_(const CNode* node, LinearFunctionPtr& lf,
       v = 0;
     }
     break;
+ case(OpCPow):
+  {
+    double base = 0.0;
+    LinearFunctionPtr exp_lf = 0;
+    VariablePtr exp_v = 0;
+    double exp_d = 0.0;
+
+    if (node->numChild() == 2 || node->getR()) {
+      // Binary Node: One child is the base, the other is the exponent
+      recursRef_(node->getL(), lfl, vl, dl);
+      recursRef_(node->getR(), lfr, vr, dr);
+      
+      if (!lfl && !vl) {
+        base = dl;             // Left child is the constant base
+        exp_lf = lfr; exp_v = vr; exp_d = dr; // Right is the exponent
+      } else if (!lfr && !vr) {
+        base = dr;             // Right child is the constant base
+        exp_lf = lfl; exp_v = vl; exp_d = dl; // Left is the exponent
+      } else {
+        assert(!"OpCPow contains variables in both base and exponent!");
+      }
+    } else {
+      // Unary Node Fallback (just in case)
+      recursRef_(node->getL(), lfl, vl, dl);
+      base = node->getVal();
+      exp_lf = lfl; exp_v = vl; exp_d = dl;
+    }
+
+    // Perform the transformation
+    if (base > zTol_) {
+      double ln_a = std::log(base);
+
+      // 1. Scale the exponent by ln(a)
+      if (exp_lf) {
+        exp_lf->multiply(ln_a);
+      } else if (exp_v) {
+        exp_lf = (LinearFunctionPtr) new LinearFunction();
+        exp_lf->addTerm(exp_v, ln_a);
+        exp_v = 0;
+      }
+      exp_d *= ln_a;
+
+      // Similar to univarref
+      if (exp_lf) {
+        exp_v = newVar_(exp_lf, exp_d, newp_);
+        exp_d = 0.0;
+      }
+      
+      if (exp_v) {
+        if (fabs(exp_d) > zTol_) {
+          exp_v = newVar_(exp_v, exp_d, newp_);
+        }
+        
+        CGraphPtr cg = (CGraphPtr) new CGraph();
+        CNode* n1 = cg->newNode(exp_v);
+        CNode* n2 = 0;
+        
+        // Build the native exponential graph
+        n2 = cg->newNode(OpExp, n1, n2); 
+        cg->setOut(n2);
+        cg->finalize();
+        
+        // Output mapped back to standard variables
+        v = newVar_(cg, newp_);
+        lf = 0;
+        d = 0.0;
+      } else {
+        // Exponent is a constant
+        d = std::exp(exp_d);
+        lf = 0;
+        v = 0;
+      }
+    } else if (fabs(base) < zTol_) {
+      d = 0.0; lf = 0; v = 0; // 0^x = 0
+    } else {
+      assert(!"Negative base in OpCPow not supported!");
+    }
+    break;
+  }  
   case(OpPow):
-    assert(!"not implemented!");
+    assert(!" Power operator not implemented!");
     break;
   case(OpPowK):
     recursRef_(node->getL(), lfl, vl, dl);
@@ -1055,6 +1137,11 @@ void SimpleTransformer::reformulate(ProblemPtr& newp, HandlerVector& handlers,
   handlers.push_back(kHandler_);
   logHandler_=(LogHandlerPtr) new LogHandler(env_,newp_);
   handlers.push_back(logHandler_);
+  expHandler_=(ExpHandlerPtr) new ExpHandler(env_,newp_);
+  handlers.push_back(expHandler_);
+  recipHandler_=(RecipHandlerPtr) new RecipHandler(env_,newp_);
+  handlers.push_back(recipHandler_);
+
   copyLinear_(p_, newp_);
 
   if(env_->getOptions()->findInt("convex")->getValue() == 0) {

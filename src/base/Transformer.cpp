@@ -16,6 +16,7 @@
 #include "MinotaurConfig.h"
 
 #include "Environment.h"
+#include "ExpHandler.h"
 #include "CGraph.h"
 #include "CNode.h"
 #include "Constraint.h"
@@ -33,6 +34,7 @@
 #include "ProblemSize.h"
 #include "QuadraticFunction.h"
 #include "QuadHandler.h"
+#include "RecipHandler.h"
 #include "Solution.h"
 #include "Transformer.h"
 #include "Variable.h"
@@ -132,6 +134,27 @@ void Transformer::assignHandler_(CGraphPtr cg, ConstraintPtr c)
     iv = *(c->getFunction()->getNonlinearFunction()->varsBegin());
     logHandler_->addConstraint(c, iv, ov, 'E');
     break;
+  case OpExp:
+    lf = c->getFunction()->getLinearFunction();
+    if (lf) {
+      assert(lf->getNumTerms() == 1);
+      ov = lf->termsBegin()->first;
+    }
+    iv = *(c->getFunction()->getNonlinearFunction()->varsBegin());
+    expHandler_->addConstraint(c, iv, ov, 'E');
+    break;
+ case OpDiv: 
+    lf = c->getFunction()->getLinearFunction();
+    if (lf) {
+      assert(lf->getNumTerms() == 1);
+      ov = lf->termsBegin()->first;
+    }
+    iv = *(c->getFunction()->getNonlinearFunction()->varsBegin());
+    recipHandler_->addConstraint(c, iv, ov, 'E');
+    break;
+
+
+
   default:
     lf = c->getFunction()->getLinearFunction();
     if (lf) {

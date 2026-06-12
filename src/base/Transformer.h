@@ -25,7 +25,9 @@ class Engine;
 class LinearHandler;
 class LogHandler;
 class Problem;
+class ExpHandler;
 class QuadHandler;
+class RecipHandler;
 class kPowHandler;
 class Solution;
 class UnivarQuadHandler;
@@ -35,7 +37,9 @@ class YEqVars;
 typedef CxUnivarHandler *CxUnivarHandlerPtr;
 typedef CGraph *CGraphPtr;
 typedef LinearHandler *LinearHandlerPtr;
+typedef RecipHandler *RecipHandlerPtr;
 typedef LogHandler *LogHandlerPtr;
+typedef ExpHandler *ExpHandlerPtr;
 typedef QuadHandler *QuadHandlerPtr;
 typedef kPowHandler *kPowHandlerPtr;
 typedef UnivarQuadHandler *UnivarQuadHandlerPtr;
@@ -104,8 +108,14 @@ class Transformer {
   /// Handler for linear constraints and variables.
   LinearHandlerPtr lHandler_;
 
- ///Handle for Log Constraints
+ ///Handler for Log Constraints
   LogHandlerPtr logHandler_;
+
+  ///Handler for Exponential Constraints
+  ExpHandlerPtr expHandler_;
+
+  ///handler for y=1/x constraint
+  RecipHandlerPtr recipHandler_;
 
   /// Logger
   LoggerPtr logger_;
