@@ -843,7 +843,7 @@ bool SimpleTransformer::checkQuadConvexity_()
       convex_cons = true;
       qf_vector = qf->findSubgraphs();
       for(it = qf_vector.begin(); it != qf_vector.end(); ++it) {
-        sg = (*it)->isConvex();
+        sg = (*it)->isConvex(false);
         if(sg == Nonconvex) {
           convex_cons = false;
           c->setConvexity(Nonconvex);
@@ -895,7 +895,7 @@ bool SimpleTransformer::checkQuadConvexity_()
     convex_cons = true;
     qf_vector = qf->findSubgraphs();
     for(it = qf_vector.begin(); it != qf_vector.end(); ++it) {
-      sg = (*it)->isConvex();
+      sg = (*it)->isConvex(false);
       if(sg == Nonconvex || sg == Concave) {
         convex_cons = false;
         all_convex = false;

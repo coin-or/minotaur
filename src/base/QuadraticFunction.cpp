@@ -7,7 +7,7 @@
 /**
  * \file QuadraticFunction.cpp
  * \brief Define class QuadraticFunction for storing quadratic functions.
- * \author Ashutosh Mahajan, Argonne National Laboratory
+ * \author Ashutosh Mahajan, IIT Bombay
  */
 
 #include <cmath>
@@ -33,7 +33,7 @@ using namespace Minotaur;
 
 
 QuadraticFunction::QuadraticFunction()
-  : etol_(1e-8),
+  : etol_(1e-14),
     hCoeffs_(0),
     hFirst_(0),
     hOff_(0),
@@ -47,7 +47,7 @@ QuadraticFunction::QuadraticFunction()
 
 QuadraticFunction::QuadraticFunction(UInt nz, double* vals, UInt* irow,
                                      UInt* jcol, VariableConstIterator vbeg)
-  : etol_(1e-8),
+  : etol_(1e-14),
     hCoeffs_(0),
     hFirst_(0),
     hOff_(0),
@@ -71,7 +71,7 @@ QuadraticFunction::QuadraticFunction(UInt nz, double* vals, UInt* irow,
 
 QuadraticFunction::QuadraticFunction(double* vals, VariableConstIterator vbeg,
                                      VariableConstIterator vend)
-  : etol_(1e-8),
+  : etol_(1e-14),
     hCoeffs_(0),
     hFirst_(0),
     hOff_(0),
@@ -402,14 +402,14 @@ QfVector QuadraticFunction::findSubgraphs()
   return qf_vector;
 }
 
-Convexity QuadraticFunction::isConvex()
+Convexity QuadraticFunction::isConvex(bool scaledtol)
 {
   EigenPtr eptr;
-  if (convex_ != Unknown) {
+  if (convex_ != Unknown) { 
     return convex_;
   }
   EigenCalculator* ecalc = new EigenCalculator();
-  eptr = ecalc->findValues(this);
+  eptr = ecalc->findValues(this,scaledtol);
   if (eptr->numNegative() == 0) {
     convex_ = Convex;
   } else if (eptr->numPositive() == 0) {

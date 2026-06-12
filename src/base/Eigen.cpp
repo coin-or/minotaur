@@ -13,11 +13,13 @@
 
 #include <cmath>
 #include <iostream>
+#include <iomanip>
 
 #include "MinotaurConfig.h"
 #include "Eigen.h"
 #include "LinearFunction.h"
 #include "Variable.h"
+#include <algorithm>
 
 using namespace Minotaur;
 
@@ -38,25 +40,24 @@ EigenCalculator::EigenCalculator()
   : n_(0),
     A_(0),
     abstol_(1e-6)
-{
+{ 
 }
 
-
-EigenPtr EigenCalculator::findValues(ConstQuadraticFunctionPtr qf)
-{
+EigenPtr EigenCalculator::findValues(ConstQuadraticFunctionPtr qf, bool scaletol)
+{ 
   EigenPtr ePtr = EigenPtr();  // NULL
   if (qf) {
     qf_ = qf;
-    fillA_();
+    fillA_(); 
     findVectors_ = 'N';  // N for eigen values only, V for values and vectors.
     w_ = new double[n_];
     z_ = 0;
     isuppz_ = 0;
 
     calculate_();
-    ePtr = getEigen_();
+    ePtr = getEigen_(scaletol);
     delete[] w_;
-    delete[] A_;
+    delete[] A_;  
     vars_.clear();
     indices_.clear();
   }
@@ -84,7 +85,7 @@ EigenPtr EigenCalculator::findValues(int n, double **H)
   isuppz_ = 0;
 
   calculate_();
-  ePtr = getEigen_();
+  ePtr = getEigen_(false);
   delete[] w_;
   delete[] A_;
   vars_.clear();
@@ -113,7 +114,7 @@ EigenPtr EigenCalculator::findVectors(ConstQuadraticFunctionPtr qf)
     // }
 
     calculate_();
-    ePtr = getEigen_();
+    ePtr = getEigen_(false);
     delete[] w_;
     delete[] A_;
     delete[] z_;
@@ -152,9 +153,8 @@ void EigenCalculator::fillA_()
     j = indices_[it->first.second];
     A_[i + j * n_] += 0.5 * it->second;
     A_[j + i * n_] += 0.5 * it->second;
-  }
+  } 
 }
-
 
 void EigenCalculator::getSumOfSquares(std::vector<LinearFunctionPtr> &p_terms,
                                       std::vector<LinearFunctionPtr> &n_terms,
@@ -275,7 +275,6 @@ double EigenCalculator::getDotProduct_(ConstLinearFunctionPtr lf1,
   return d_product;
 }
 
-
 void EigenCalculator::calculate_()
 {
   char range = 'A';  // A for all eigen values/vectors, V for values in range
@@ -335,37 +334,65 @@ void EigenCalculator::calculate_()
   delete[] iwork;
 }
 
-
 // If we calculated eigen vectors, then copy values and vectors, otherwise
 // just copy values.
-EigenPtr EigenCalculator::getEigen_()
+EigenPtr EigenCalculator::getEigen_(bool scaletol)
 {
   LinearFunctionPtr null_ptr = LinearFunctionPtr();
   LinearFunctionPtr lf;
   EigenPtr eigen = (EigenPtr) new Eigen();
+  double absval;
+  double eps = std::numeric_limits<double>::epsilon();  // machine precision
+  double maxEigen = 0.0;                               
+  double minEigenMag = std::numeric_limits<double>::max();
+  double tol=0.0;
+  double scaledmin;
+
+  for (int i = 0; i < m_; ++i) {
+    absval = std::abs(w_[i]);
+    if (absval > maxEigen)
+      maxEigen = absval;
+
+    if (absval > 0 && absval < minEigenMag)
+      minEigenMag = absval;
+  }
+
+  if (scaletol) {
+    if (minEigenMag > 0 && minEigenMag < std::numeric_limits<double>::max()) {
+      scaledmin = std::pow(10.0, std::floor(std::log10(minEigenMag)));
+    } else {
+      scaledmin = abstol_;  // fallback if minEigenMag is zero
+    }
+    // clamped to [eps, abstol_]
+    tol = std::clamp(scaledmin, eps, abstol_);
+  } else {
+    // General solver tolerance: max of fixed tolerance and relative precision
+    tol = std::max(abstol_, eps * maxEigen);
+  }
+
   if (findVectors_ == 'V') {
     for (int i = 0; i < m_; ++i) {
       lf = getLinearFunction_(i);
-      if (fabs(w_[i]) < abstol_) {
-        eigen->add(0, lf);
+      if (fabs(w_[i]) < tol) {
+        eigen->add(0, lf, tol);
       } else {
-        eigen->add(w_[i], lf);
+        eigen->add(w_[i], lf, tol);
       }
     }
   } else if (findVectors_ == 'N') {
     for (int i = 0; i < m_; ++i) {
-      if (fabs(w_[i]) < abstol_) {
-        eigen->add(0, null_ptr);
+      if (fabs(w_[i]) < tol) {
+        eigen->add(0, null_ptr, tol);
       } else {
-        eigen->add(w_[i], null_ptr);
+        eigen->add(w_[i], null_ptr, tol);
       }
     }
   } else {
     assert(!"findVectors_ value is not supported!");
   }
+
   return eigen;
 }
-
 
 LinearFunctionPtr EigenCalculator::getLinearFunction_(const int i)
 {
@@ -391,10 +418,10 @@ Eigen::Eigen()
 }
 
 
-void Eigen::add(double value, LinearFunctionPtr e_vector)
+void Eigen::add(double value, LinearFunctionPtr e_vector, double tol)
 {
   evPairs_.push_back(std::make_pair(value, e_vector));
-  if (fabs(value) < 1e-7) {
+  if (fabs(value) < tol) {
     ++zero_;
   } else if (value < 0) {
     ++neg_;
