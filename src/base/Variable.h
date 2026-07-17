@@ -39,6 +39,7 @@ namespace Minotaur {
     friend class QGHandlerAdvance;
     friend class ParQGHandlerAdvance;
     friend class PerspCon;
+    friend class PowHandler;
     friend class Problem;
     friend class TransSep;
     friend class QGHandler;

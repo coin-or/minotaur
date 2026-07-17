@@ -255,7 +255,7 @@ void LogHandler::addSecant_(LogCons &cd,
 #if SPEW
    log_->msgStream(LogDebug1) << me_ << "added new secant at root node for " 
                                << cd.rov->getName() << " = log(" << cd.riv->getName() << ")" << std::endl;
-    cd.secCon->write(log_->msgStream(LogDebug1));
+    cd.secCon->write(log_->msgStream(LogDebug2));
 #endif
 
   } else {
@@ -263,7 +263,7 @@ void LogHandler::addSecant_(LogCons &cd,
 #if SPEW
    log_->msgStream(LogDebug1) << me_ << "modified secant at a node for " 
                                << cd.rov->getName() << " = log(" << cd.riv->getName() << ")" << std::endl;
-    cd.secCon->write(log_->msgStream(LogDebug1));
+    cd.secCon->write(log_->msgStream(LogDebug2));
 #endif
 
     LinConModPtr lcmod =
@@ -446,7 +446,7 @@ void LogHandler::separate(ConstSolutionPtr sol, NodePtr node, RelaxationPtr rel,
       log_->msgStream(LogDebug1) << me_ << "Separation Function called. Point above log(x);";
       log_->msgStream(LogDebug1) << " | x = " << xval <<" |log(x)"<<log(xval)<< " | y = " << yval << " | Violation = " <<yval - log(xval) << std::endl;
       log_->msgStream(LogDebug1) << "Adding tangent for "<<std::endl; 
-      cd->con->write(log_->msgStream(LogDebug1));
+      cd->con->write(log_->msgStream(LogDebug2));
          
 #endif
         addCut_(x_var, y_var, xval, yval, rel, added);

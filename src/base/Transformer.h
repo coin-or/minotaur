@@ -26,6 +26,7 @@ class LinearHandler;
 class LogHandler;
 class Problem;
 class ExpHandler;
+class PowHandler;
 class QuadHandler;
 class RecipHandler;
 class kPowHandler;
@@ -37,6 +38,7 @@ class YEqVars;
 typedef CxUnivarHandler *CxUnivarHandlerPtr;
 typedef CGraph *CGraphPtr;
 typedef LinearHandler *LinearHandlerPtr;
+typedef PowHandler *PowHandlerPtr;
 typedef RecipHandler *RecipHandlerPtr;
 typedef LogHandler *LogHandlerPtr;
 typedef ExpHandler *ExpHandlerPtr;
@@ -114,6 +116,8 @@ class Transformer {
   ///Handler for Exponential Constraints
   ExpHandlerPtr expHandler_;
 
+  ///Handler for Power constraints
+  PowHandlerPtr powHandler_;
   ///handler for y=1/x constraint
   RecipHandlerPtr recipHandler_;
 

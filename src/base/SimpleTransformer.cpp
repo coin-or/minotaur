@@ -36,6 +36,7 @@
 #include "Option.h"
 #include "Problem.h"
 #include "ProblemSize.h"
+#include "PowHandler.h"
 #include "QuadHandler.h"
 #include "QuadraticFunction.h"
 #include "RecipHandler.h"
@@ -220,47 +221,38 @@ VariablePtr SimpleTransformer::newBilVar_(VariablePtr vl, VariablePtr vr)
   return ov;
 }
 
+
 void SimpleTransformer::powKRef_(LinearFunctionPtr lfl, VariablePtr vl,
                                  double dl, double k, LinearFunctionPtr& lf,
                                  VariablePtr& v, double& d)
 {
   CNode *n1, *n2;
-  if(k < 1) {
-    assert(!"powers less than one can not be handled yet!");
-  } else if(k < -zTol_) {
-    assert(!"negative powers can not be handled yet!");
-  }
-  // else if (fabs(k / 2 - floor(k / 2 + 0.5)) > zTol_) {
-  //   logger_->errStream() << "odd powers can not be handled yet!" <<
-  //   std::endl;
-  // }
-
-  if(lfl) {
+  
+  
+  // 1. If the base is a linear function, convert it to a single variable
+  if (lfl) {
     vl = newVar_(lfl, dl, newp_);
   }
-  if(vl) {
+  
+  // 2. If the base is a variable, build the x^k expression graph
+  if (vl) {
     CGraphPtr cg = (CGraphPtr) new CGraph();
     n1 = cg->newNode(vl);
     n2 = cg->newNode(k);
     n2 = cg->newNode(OpPowK, n1, n2);
     cg->setOut(n2);
     cg->finalize();
-    v = 0;
-    // lf.reset();
-    lf = 0;
+    
+    // Reset output linear function/constant and assign the new power variable
+    lf = 0; 
     v = newVar_(cg, newp_);
     d = 0;
-  } else {
-    d = pow(dl, k);
+  } 
+  // 3. If the base is purely a constant, just calculate the static value
+  else {
+    d = std::pow(dl, k);
   }
 }
-
-// Returns one of the following four:
-// #1 lf + d,
-// #2  v + d, or
-// d.
-// d may be zero, lf and v may simultaneously be NULL.
-// TODO: return an error code if there is an error?
 void SimpleTransformer::recursRef_(const CNode* node, LinearFunctionPtr& lf,
                                    VariablePtr& v, double& d)
 {
@@ -1141,6 +1133,8 @@ void SimpleTransformer::reformulate(ProblemPtr& newp, HandlerVector& handlers,
   handlers.push_back(expHandler_);
   recipHandler_=(RecipHandlerPtr) new RecipHandler(env_,newp_);
   handlers.push_back(recipHandler_);
+  powHandler_=(PowHandlerPtr) new PowHandler(env_,newp_);
+  handlers.push_back(powHandler_);
 
   copyLinear_(p_, newp_);
 

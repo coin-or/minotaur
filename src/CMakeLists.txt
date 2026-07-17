@@ -100,7 +100,8 @@ set (MINOTAUR_SOURCES
      base/PCBProcessor.cpp 
      base/PerspCon.cpp
      base/PerspCutGenerator.cpp 
-     #base/PerspCutHandler.cpp 
+     #base/PerspCutHandler.cpp
+     base/PowHandler.cpp
      base/PolynomialFunction.cpp 
      base/PreAuxVars.cpp
      base/PreDelVars.cpp
@@ -245,6 +246,7 @@ set (MINOTAUR_HEADERS
      base/PerspCon.h
      base/PerspCutGenerator.h 
      #base/PerspCutHandler.h
+     base/PowHandler.h
      base/PolynomialFunction.h
      base/PreAuxVars.h
      base/PreDelVars.h
