@@ -117,7 +117,7 @@ QuadHandler::~QuadHandler()
   if(nlpe_) {
     delete nlpe_;
   }
-  if(bte_) {
+if(bte_) {
     delete bte_;
   }
 
@@ -933,6 +933,7 @@ bool QuadHandler::isFeasible_(const double* x, double objval, double& inf_meas)
   ObjectivePtr obj;
   double vio;
 
+
   for(ConstraintConstIterator cit = orig_->consBegin(); cit != orig_->consEnd();
       ++cit) {
     c = *cit;
@@ -941,13 +942,29 @@ bool QuadHandler::isFeasible_(const double* x, double objval, double& inf_meas)
       if(error == 0) {
         cub = c->getUb();
         clb = c->getLb();
+        logger_->msgStream(LogDebug1) << me_ << " Constraint '" << c->getName() 
+          << " activity = " << act << " range = " << clb << " " << cub << std::endl;
+
+
         if((act > cub + aTol_) && (cub == 0 || act > cub + fabs(cub) * rTol_)) {
           is_feas = false;
           inf_meas += act - cub;
+//  UB Violation
+          logger_->msgStream(LogDebug1) << me_ << " Constraint '" << c->getName() 
+                                      << "' UB violated! Act: " << act 
+                                      << ", UB: " << cub 
+                                      << ", Violation: " << (act - cub) 
+                                      << std::endl;
         }
         if((act < clb - aTol_) && (clb == 0 || act < clb - fabs(clb) * rTol_)) {
           is_feas = false;
           inf_meas += clb - act;
+          // LB Violation
+          logger_->msgStream(LogDebug1) << me_ << " Constraint '" << c->getName() 
+                                      << "' LB violated! Act: " << act 
+                                      << ", LB: " << clb 
+                                      << ", Violation: " << (clb - act) 
+                                      << std::endl;
         }
       } else {
         logger_->msgStream(LogError)
@@ -959,16 +976,26 @@ bool QuadHandler::isFeasible_(const double* x, double objval, double& inf_meas)
   }
 
   obj = orig_->getObjective();
-  if(obj->getFunctionType() == Quadratic) {
+  // if(obj->getFunctionType() == Quadratic) {}
     act = obj->eval(x, &error);
     if(error == 0) {
       vio = fabs(objval - act);
       if(vio > fabs(act) * rTol_ && vio > aTol_) {
         is_feas = false;
         inf_meas += vio;
+        // SPEW MESSAGE: Objective Violation
+        logger_->msgStream(LogDebug1) << me_ << "Obj: " << objval 
+                                    << ", Act: " << act 
+                                    << ", Gap : " << vio 
+                                    << std::endl;
       }
     }
-  }
+  
+
+  logger_->msgStream(LogDebug1) << me_ << " isFeasible_ returning: " 
+                              << (is_feas ? "TRUE" : "FALSE") 
+                              << " | inf_meas: " << inf_meas 
+                              << std::endl;
   return is_feas;
 }
 
@@ -1581,15 +1608,27 @@ void QuadHandler::relax_(RelaxationPtr rel, bool*)
   VariablePtr y, x0, x1;
   FunctionPtr f;
   ConstraintVector cons(4);
-
-  for(LinSqrMapIter it = x2Funs_.begin(); it != x2Funs_.end(); ++it) {
+  #if SPEW
+ logger_->msgStream(LogDebug1) << me_ << "adding cuts for y=x^2 "<< std::endl;
+#endif  
+for(LinSqrMapIter it = x2Funs_.begin(); it != x2Funs_.end(); ++it) {
     x0 = rel->getRelaxationVar(it->second->x);
     y = rel->getRelaxationVar(it->second->y);
     lf = getNewSqLf_(x0, y, x0->getLb(), x0->getUb(), rhs);
 
     f = (FunctionPtr) new Function(lf);
     it->second->oeCon = rel->newConstraint(f, -INFINITY, rhs);
+    #if SPEW
+   logger_->msgStream(LogDebug1) << me_ << y->getName()<<" = "<<x0->getName()<<"^2 " 
+                               << it->second->oeCon->getName() <<  std::endl;
+    it->second->oeCon->write(logger_->msgStream(LogDebug1));
+      #endif
+
+
   }
+#if SPEW
+   logger_->msgStream(LogDebug1) << me_ << "adding cuts  for y=x1*x2 "<<std::endl;
+#endif
 
   for(LinBilSetIter it = x0x1Funs_.begin(); it != x0x1Funs_.end(); ++it) {
     x0 = rel->getRelaxationVar((*it)->getX0());
@@ -1600,8 +1639,16 @@ void QuadHandler::relax_(RelaxationPtr rel, bool*)
                         x1->getUb(), y, i, rhs);
       f = (FunctionPtr) new Function(lf);
       cons[i] = rel->newConstraint(f, -INFINITY, rhs);
+
+      #if SPEW
+   logger_->msgStream(LogDebug1) << me_ << y->getName()<<" = "<<x0->getName()<<" * "<<x1->getName() 
+                               << cons[i]->getName() <<  std::endl;
+    cons[i]->write(logger_->msgStream(LogDebug1));
+      #endif
+
     }
     (*it)->setCons(cons[0], cons[1], cons[2], cons[3]);
+
   }
 
   assert(0 == rel->checkConVars());

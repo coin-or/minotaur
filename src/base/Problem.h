@@ -300,6 +300,15 @@ public:
    */
   virtual bool isDebugSolFeas(double atol, double rtol);
 
+ /**
+   * \brief Check feasibility of original constraints and objective.
+   * Evaluates all constraints and the objective function at point x, 
+   *  constraint violations into inf_meas.
+   */
+  virtual bool isFeasible(const double* x, double objval, double& inf_meas) const;
+
+
+
   /**
    * \brief Returns true if the problem has only linear constraints and linear
    * objectives.

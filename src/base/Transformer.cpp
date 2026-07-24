@@ -16,6 +16,7 @@
 #include "MinotaurConfig.h"
 
 #include "Environment.h"
+#include "ExpHandler.h"
 #include "CGraph.h"
 #include "CNode.h"
 #include "Constraint.h"
@@ -31,8 +32,10 @@
 #include "Objective.h"
 #include "Problem.h"
 #include "ProblemSize.h"
+#include "PowHandler.h"
 #include "QuadraticFunction.h"
 #include "QuadHandler.h"
+#include "RecipHandler.h"
 #include "Solution.h"
 #include "Transformer.h"
 #include "Variable.h"
@@ -117,7 +120,9 @@ void Transformer::assignHandler_(CGraphPtr cg, ConstraintPtr c)
   VariablePtr iv = NULL;
   VariablePtr ov = NULL;
   LinearFunctionPtr lf = NULL;
-
+  double k; 
+ const CNode* root ;
+ const CNode* expNode; 
   switch (cg->getOut()->getOp()) {
   case OpMult:
   case OpSqr:
@@ -132,6 +137,50 @@ void Transformer::assignHandler_(CGraphPtr cg, ConstraintPtr c)
     iv = *(c->getFunction()->getNonlinearFunction()->varsBegin());
     logHandler_->addConstraint(c, iv, ov, 'E');
     break;
+  case OpExp:
+    lf = c->getFunction()->getLinearFunction();
+    if (lf) {
+      assert(lf->getNumTerms() == 1);
+      ov = lf->termsBegin()->first;
+    }
+    iv = *(c->getFunction()->getNonlinearFunction()->varsBegin());
+    expHandler_->addConstraint(c, iv, ov, 'E');
+    break;
+ case OpDiv: 
+    lf = c->getFunction()->getLinearFunction();
+    if (lf) {
+      assert(lf->getNumTerms() == 1);
+      ov = lf->termsBegin()->first;
+    }
+    iv = *(c->getFunction()->getNonlinearFunction()->varsBegin());
+    recipHandler_->addConstraint(c, iv, ov, 'E');
+    break;
+case OpPowK:
+  lf = c->getFunction()->getLinearFunction();
+  if (lf) {
+    assert(lf->getNumTerms() == 1);
+    ov = lf->termsBegin()->first;
+  }
+  
+  iv = *(c->getFunction()->getNonlinearFunction()->varsBegin());
+
+  // Use the correct Minotaur CNode API:
+  root = cg->getOut(); 
+  
+  // getR() gets the right child (the exponent)
+  expNode = root->getR(); 
+  
+  // getVal() extracts the double value
+   k = expNode->getVal();
+      
+   if (std::abs(k - 2.0) < 1e-9) {
+      qHandler_->addConstraint(c);
+  } 
+  // Fallback: Send everything else to the PowHandler
+  else {
+      powHandler_->addConstraint(c, iv, ov, k, 'E');
+  }
+  break;
   default:
     lf = c->getFunction()->getLinearFunction();
     if (lf) {

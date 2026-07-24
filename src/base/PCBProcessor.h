@@ -48,8 +48,10 @@ public:
   /// Default constructor
   PCBProcessor() { }
 
-  /// Constructor with a given engine.
-  PCBProcessor(EnvPtr env, EnginePtr engine, HandlerVector handlers_);
+ 
+/// Constructor with a given engine.
+  PCBProcessor(EnvPtr env, EnginePtr engine, HandlerVector handlers, ProblemPtr orig = nullptr);
+
 
   /// Destroy
   ~PCBProcessor();
@@ -121,6 +123,8 @@ private:
   /// all nodes. If 0, then never. If 4, then every fourth node, etc.
   int presFreq_;
 
+  //pointer to the original problem
+  ProblemPtr orig_;
   /// How many new solutions were found by the processor.
   UInt numSolutions_;
 

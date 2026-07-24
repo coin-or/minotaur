@@ -33,6 +33,9 @@ struct ProblemSize
   /// Number of binary variables.
   UInt bins;
 
+  ///
+  UInt impBins;
+  
   /// Number of integer variables not including binary variables
   UInt fixed;
 

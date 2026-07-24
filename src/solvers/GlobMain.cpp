@@ -52,7 +52,7 @@ int main(int argc, char** argv)
     goto CLEANUP;
   }
 
-  glob.solve(inst);
+ glob.solve(inst);
 
 CLEANUP:
   if(inst) {

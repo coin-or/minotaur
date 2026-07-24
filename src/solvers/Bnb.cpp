@@ -57,8 +57,9 @@ const std::string Bnb::me_ = "mbnb: ";
 
 Bnb::Bnb(EnvPtr env)
   : objSense_(1.0),
-    sol_(NULL),
-    status_(NotStarted)
+    status_(NotStarted),
+    sol_(NULL)
+
 {
   env_ = env;
   iface_ = 0;
@@ -126,7 +127,7 @@ BranchAndBound* Bnb::getBab_(Engine* engine, HandlerVector& handlers)
     handlers.push_back(nlhand);
   }
   if(handlers.size() > 1) {
-    PCBProcessorPtr pproc = new PCBProcessor(env_, engine, handlers);
+    PCBProcessorPtr pproc = new PCBProcessor(env_, engine, handlers, oinst_);
     nproc = pproc;
   } else {
     nproc = (BndProcessorPtr) new BndProcessor(env_, engine, handlers);

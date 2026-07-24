@@ -5,15 +5,15 @@
 //
 
 /**
- * \file LogHandler.h
+ * \file ExpHandler.h
  * \brief Implement the handler for functions of type
- * y=log(x).
+ * y=e^x
  * \author Neeraj Kumar, IIT Bombay
  */
 
-//y=log(x) and log constraint have same meaning
-#ifndef MINOTAURLOGHANDLER_H
-#define MINOTAURLOGHANDLER_H
+//y=e^x and exp constraints have same meaning
+#ifndef MINOTAUREXPHANDLER_H
+#define MINOTAUREXPHANDLER_H
 
 #include "Handler.h"
 #include "Types.h"
@@ -28,17 +28,17 @@ namespace Minotaur {
   typedef Objective *ObjectivePtr;
 
 
-  class LogHandler : public Handler {
+  class ExpHandler : public Handler {
 
   public:
     // Constructor
-    LogHandler(EnvPtr env, ProblemPtr problem);
-    LogHandler(EnvPtr env, ProblemPtr problem, ProblemPtr orig_);
+    ExpHandler(EnvPtr env, ProblemPtr problem);
+    ExpHandler(EnvPtr env, ProblemPtr problem, ProblemPtr orig_);
     // Destructor
-    ~LogHandler();
+    ~ExpHandler();
 
     /**
-     * \Register a log constraint with the handler.
+     * \Register an exponential constraint with the handler.
      * \ ivar: input variable x
      * \ ovar: output variable y
      * \ sense: 'L', 'G', or 'E'
@@ -60,13 +60,13 @@ namespace Minotaur {
     bool isFeasible(ConstSolutionPtr sol, RelaxationPtr relaxation,
                     bool &should_prune, double &inf_meas);
 
-    // Separation (cuts) -cutmanager not implemented
+    // Separation (cuts) — not implemented yet.
     void separate(ConstSolutionPtr sol, NodePtr node, RelaxationPtr rel,
                   CutManager *cutman, SolutionPoolPtr s_pool,
                   ModVector &p_mods, ModVector &r_mods, bool *sol_found,
                   SeparationStatus *status);
 
-    // Full relaxation at a node (unused for LogHandler)
+    // Full relaxation at a node (unused for ExpHandler)
     void relaxNodeFull(NodePtr, RelaxationPtr, bool *) {}
 
     // Incremental relaxation at a node.
@@ -102,9 +102,8 @@ namespace Minotaur {
 
 
   private:
-
-    // Per-constraint data for log constraints 
-    struct LogCons
+    // Per-constraint data for exponential constraints
+    struct ExpCons
     {
       ConstraintPtr con;         ///< Original constraint
       ConstVariablePtr iv;       ///< Input variable x
@@ -115,7 +114,7 @@ namespace Minotaur {
       ConstraintPtr secCon;      ///< Secant constraint
       ConstraintVector linCons;  ///< Linearization constraints
 
-      LogCons(ConstraintPtr newcon, ConstVariablePtr ivar,
+      ExpCons(ConstraintPtr newcon, ConstVariablePtr ivar,
               ConstVariablePtr ovar, char s)
         : con(newcon),
           iv(ivar),
@@ -129,12 +128,12 @@ namespace Minotaur {
       }
     };
 
-    typedef LogCons *LogConsPtr;
-    typedef std::vector<LogConsPtr> LogConsVec;
-    typedef LogConsVec::iterator LogConsIter;
+    typedef ExpCons *ExpConsPtr;
+    typedef std::vector<ExpConsPtr> ExpConsVec;
+    typedef ExpConsVec::iterator ExpConsIter;
 
-    // All log constraints data
-    LogConsVec consd_;
+    // All exp constraints data
+    ExpConsVec consd_;
 
     // For printing
     static const std::string me_;
@@ -148,8 +147,11 @@ namespace Minotaur {
     double time;     ///> Total time used in separation
   };
 
-    // Presolve statistics container
-      struct LogPresolveStats
+
+    // ---------------------------------------------------------
+    // Presolve statistics containers
+    // ---------------------------------------------------------
+    struct ExpPresolveStats
     {
       UInt iters;
       double time;
@@ -157,7 +159,7 @@ namespace Minotaur {
       UInt vBnd;
       UInt nMods;
 
-      LogPresolveStats()
+      ExpPresolveStats()
         : iters(0),
           time(0.0),
           conDel(0),
@@ -177,7 +179,7 @@ namespace Minotaur {
     };
 
     BoundTighteningStats bStats_;
-    LogPresolveStats pStats_;
+    ExpPresolveStats pStats_;
     SepaStats sStats_;
     // Default bounds for presolve
     double LBd_;
@@ -201,7 +203,7 @@ namespace Minotaur {
     // Relative feasibility tolerance
     double rTol_;
 
-    // Tolerances for log constraints
+    // Tolerances for exp constraints
     double eTol_;
 
     // Tolerance for when lower and upper bounds are considered equal
@@ -209,7 +211,7 @@ namespace Minotaur {
     // Problem pointer to the transformed problem
     ProblemPtr p_;
 
-        // Logger
+        // Expger
     LoggerPtr log_;
 
     // Temporary vectors for evaluations
@@ -222,24 +224,25 @@ namespace Minotaur {
                          RelaxationPtr rel, bool& ifcuts); 
 
 
-    //add default bounds for x in y=log(x) if no finite bound was added by presolve
-    double addDefaultLogBounds_(VariablePtr x, BoundType lu);
+    //add default bounds for x in y=e^x if no finite bound was added by presolve
+    double addDefaultExpBounds_(VariablePtr x, BoundType lu);
 
     /**
-     * \Add or update linearization cuts for y = log(x) around sample points.
-     * \Used for convex underestimators of log(x) and equality constraints.
+     * \Add or update linearization cuts for y = e^x around sample points.
+     * \Used for convex underestimators of e^x and equality constraints.
      */
-    void addLin_(LogCons &cd, RelaxationPtr rel, DoubleVector &tmpX,
+    void addLin_(ExpCons &cd, RelaxationPtr rel, DoubleVector &tmpX,
                  DoubleVector &grad, ModVector &mods, bool init);
 
 
     /**
-    * \Add or update the secant inequality for y = log(x).
-    * \Used in both initRelaxFor() and updateRelaxFor().
+    * \Add or update the secant inequality for y = e^x
+    * \Used in both initRelaxFor() and updateRelaxFor()
     */
-    void addSecant_(LogCons &cd, RelaxationPtr rel, DoubleVector &tmpX,
+    void addSecant_(ExpCons &cd, RelaxationPtr rel, DoubleVector &tmpX,
                     ModVector &mods, bool init);
 
+    
     //Marks duplicate constraint if changed == True
     void dupRows_(bool *changed);
     //branching decision
@@ -247,15 +250,15 @@ namespace Minotaur {
                         double bvalue);
 
     /**
-     * Generates secant inequality for y= log(x)
-     * y>=mx+b where m = (log(u)-log(l))/(u-l) and b = log(l) - ml
+     * Generates secant inequality for y= e^x
+     * y>=mx+b where m =  and b = 
      * where l and u are lower and upper bound
      */
-    LinearFunctionPtr getLogSec_(VariablePtr x, VariablePtr y, double lb,
+    LinearFunctionPtr getExpSec_(VariablePtr x, VariablePtr y, double lb,
                                  double ub, double &rhs);
 
-    //returns the violation for functon y=log(x) and takes  input solution vector 
-    double getViol_(const LogCons &cd, const DoubleVector &x) const;
+    //returns the violation for functon y=e^x and takes  input solution vector 
+    double getViol_(const ExpCons &cd, const DoubleVector &x) const;
 
 
  // Check feasibility.
@@ -266,17 +269,17 @@ namespace Minotaur {
 
 
     /**
-     * \Initialize relaxation components for a single log constraint.
+     * \Initialize relaxation components for a single exp constraint.
      * \Called when relaxation is constructed at a node.
      */
-    void initRelax_(LogCons &cd, RelaxationPtr rel, DoubleVector &tmpX,
+    void initRelax_(ExpCons &cd, RelaxationPtr rel, DoubleVector &tmpX,
                     DoubleVector &grad);
 
 
-    // For a given y = log(x) constraint,
+    // For a given y = e^x constraint,
     // derive bounds on y from bounds on x. Also derive bounds on x from bounds
     // on y.
-    bool propLogBnds_(LogConsPtr lcd, bool *changed);
+    bool propExpBnds_(ExpConsPtr lcd, bool *changed);
 
     //Deletes duplicate row which was marked by dupRows
     bool treatDupRows_(ConstraintPtr c1, ConstraintPtr c2, double mult,
@@ -285,14 +288,14 @@ namespace Minotaur {
   
 
     /**
-     * \Update the relaxation for a log constraint when bounds have changed.
+     * \Update the relaxation for a exp constraint when bounds have changed.
      * \Performs:
      *  \ Recompute/update the secant inequality
      *  \Update linearizations at current variable bounds
      *  \ Append Modifications (mods) so that the B&B node receives them
      * \Called inside relaxNodeInc().
      */
-    void updateRelax_(LogCons &cd, RelaxationPtr rel, DoubleVector &tmpX,
+    void updateRelax_(ExpCons &cd, RelaxationPtr rel, DoubleVector &tmpX,
                       DoubleVector &grad, ModVector &mods);
 
     /// Update problem bounds
@@ -310,5 +313,4 @@ namespace Minotaur {
      };
 
 }  // namespace Minotaur
-
-#endif  // MINOTAURLOGHANDLER_H
+#endif  // MINOTAUREXPHANDLER_H
