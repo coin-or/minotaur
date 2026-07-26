@@ -520,13 +520,14 @@ ModificationPtr ExpHandler::getBrMod(BrCandPtr cand,
 
   double xval = x[v->getIndex()];
   double value = xval;
-  double len = v->getUb() - v->getLb();
-  if (value < v->getLb() + minFromBds * len) {
-    value = v->getLb() + minFromBds * len;
-  } else if (value > v->getUb() - minFromBds * len) {
-    value = v->getUb() - minFromBds * len;
-  }
-
+double lb  = std::max(v->getLb(), LBd_);
+double ub  = std::min(v->getUb(), UBd_);
+double len = ub - lb;
+    if (value < lb + minFromBds * len) {
+  value = lb + minFromBds * len;
+} else if (value > ub - minFromBds * len) {
+  value = ub - minFromBds * len;
+}
   if (!(value > v->getLb() + 1e-8 && value < v->getUb() - 1e-8)) {
     std::cerr << "Warning!  Branching on variable with bounds/value: ["
               << v->getLb() << " , " << value << "  " << v->getUb() << " ]"
@@ -557,16 +558,15 @@ Branches ExpHandler::getBranches(BrCandPtr cand,
   VariablePtr v2 = 0;              // Original variable
   double xval = x[v->getIndex()];
   double value = xval;
-  double len = v->getUb() - v->getLb();
-  VarBoundModPtr mod;
+ double lb  = std::max(v->getLb(), LBd_);
+double ub  = std::min(v->getUb(), UBd_);
+double len = ub - lb;  VarBoundModPtr mod;
   Branches branches = (Branches) new BranchPtrVector();
-
-  if (value < v->getLb() + minFromBds * len) {
-    value = v->getLb() + minFromBds * len;
-  } else if (value > v->getUb() - minFromBds * len) {
-    value = v->getUb() - minFromBds * len;
-  }
-
+if (value < lb + minFromBds * len) {
+  value = lb + minFromBds * len;
+} else if (value > ub - minFromBds * len) {
+  value = ub - minFromBds * len;
+}
   if (!(value > v->getLb() + 1e-8 && value < v->getUb() - 1e-8)) {
     std::cerr << "Warning!  Branching on variable with bounds/value: ["
               << v->getLb() << " , " << value << "  " << v->getUb() << " ]"

@@ -332,7 +332,7 @@ void Glob::setInitialOptions_()
   options->findString("brancher")->setValue("hybrid");
   options->findString("nlp_engine")->setValue("ipopt");
   options->findBool("cgtoqf")->setValue(true);
-  options->findBool("simplex_cut")->setValue(true);
+  options->findBool("simplex_cut")->setValue(false);
 }
 
 // Eigen_Shift framework for QP/MIQP with binary convexification --developed by Sachin Pandey

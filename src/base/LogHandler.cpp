@@ -113,18 +113,30 @@ double LogHandler::getViol_(const LogCons &cd,
                               const DoubleVector &x) const
 {
  
+ double xval, fval, fhat, absViol, relViol;
 
-  double fval = log(x[cd.riv->getIndex()]);
-  double fhat=x[cd.rov->getIndex()];
-  double absViol = std::abs(fhat-fval); 
-  double relViol = 0.0;
+  xval = x[cd.riv->getIndex()];
+  fhat = x[cd.rov->getIndex()];
 
-  
+  // If the variable's own domain has already been branched down to
+  // (near-)zero width around the pole, further branching cannot help --
+  // this is a decided quantity, not an open violation. Report no
+  // violation here and let bound propagation / isFeasible_ handle the
+  // actual feasibility of x landing at the pole.
+  double xlb = cd.riv->getLb();
+  double xub = cd.riv->getUb();
+ if (xub - xlb < vTol_ && xlb > 0.0) {
+  return 0.0;
+}  
+  if (xval < 1e-9) return 1e9;
+
+  fval = std::log(xval);
+  absViol = std::abs(fhat - fval);
   relViol = absViol;
+
   if (std::fabs(fval) + absViol > 1.0) {
     relViol = absViol / (std::fabs(fval) + absViol);
   }
-  // log_->msgStream(LogDebug1) << me_ << "absolute viol "<<absViol << std::endl;
 
   return relViol;
 }
@@ -388,8 +400,7 @@ bool LogHandler::isFeasible_ (ConstSolutionPtr sol,
 
     if (viol > eTol_) {
       // Check if variable range is larger than tolerance before flagging infeasibility
-      if (cd->riv->getUb() - cd->riv->getLb() > vTol_) {
-        isfeas = false;
+            isfeas = false;
         inf_meas += viol;
         num_inf++;
 #if SPEW
@@ -397,7 +408,7 @@ bool LogHandler::isFeasible_ (ConstSolutionPtr sol,
         cd->con->write(log_->msgStream(LogDebug1));
         log_->msgStream(LogDebug1) << " | Violation = " << viol << std::endl;
 #endif
-      }
+      
 
     }  
   }
@@ -525,15 +536,18 @@ ModificationPtr LogHandler::getBrMod(BrCandPtr cand,
   BrVarCandPtr vcand = dynamic_cast<BrVarCand *>(cand);
   VariablePtr v = vcand->getVar();
 
-  double xval = x[v->getIndex()];
-  double value = xval;
-  double len = v->getUb() - v->getLb();
-  if (value < v->getLb() + minFromBds * len) {
-    value = v->getLb() + minFromBds * len;
-  } else if (value > v->getUb() - minFromBds * len) {
-    value = v->getUb() - minFromBds * len;
-  }
+ double lb  = std::max(v->getLb(), LBd_);
+double ub  = std::min(v->getUb(), UBd_);
+double len = ub - lb;
 
+double xval  = x[v->getIndex()];
+double value = xval;
+
+if (value < lb + minFromBds * len) {
+  value = lb + minFromBds * len;
+} else if (value > ub - minFromBds * len) {
+  value = ub - minFromBds * len;
+}
   if (!(value > v->getLb() + 1e-8 && value < v->getUb() - 1e-8)) {
     std::cerr << "Warning!  Branching on variable with bounds/value: ["
               << v->getLb() << " , " << value << "  " << v->getUb() << " ]"
@@ -564,16 +578,17 @@ Branches LogHandler::getBranches(BrCandPtr cand,
   VariablePtr v2 = 0;              // Original variable
   double xval = x[v->getIndex()];
   double value = xval;
-  double len = v->getUb() - v->getLb();
-  VarBoundModPtr mod;
+ double lb  = std::max(v->getLb(), LBd_);
+double ub  = std::min(v->getUb(), UBd_);
+double len = ub - lb;
+ VarBoundModPtr mod;
   Branches branches = (Branches) new BranchPtrVector();
 
-  if (value < v->getLb() + minFromBds * len) {
-    value = v->getLb() + minFromBds * len;
-  } else if (value > v->getUb() - minFromBds * len) {
-    value = v->getUb() - minFromBds * len;
-  }
-
+if (value < lb + minFromBds * len) {
+  value = lb + minFromBds * len;
+} else if (value > ub - minFromBds * len) {
+  value = ub - minFromBds * len;
+}
   if (!(value > v->getLb() + 1e-8 && value < v->getUb() - 1e-8)) {
     std::cerr << "Warning!  Branching on variable with bounds/value: ["
               << v->getLb() << " , " << value << "  " << v->getUb() << " ]"
@@ -822,7 +837,9 @@ bool LogHandler::propLogBnds_(LogConsPtr cdata, bool *changed)
     return true;  }
 
   return false;
-}int LogHandler::updatePBnds_(VariablePtr p,
+}
+
+int LogHandler::updatePBnds_(VariablePtr p,
                              double newlb,
                              double newub,
                              bool *changed)

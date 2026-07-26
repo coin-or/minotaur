@@ -42,7 +42,7 @@ const std::string PowHandler::me_ = "PowHandler: ";
 PowHandler::PowHandler(EnvPtr env, ProblemPtr problem)
   : bStats_(), pStats_(), sStats_(), LBd_(-1e6), UBd_(1e6), bTol_(1e-6),
     env_(env), orig_(problem), optCuts_(), aTol_(1e-6), rTol_(1e-6),
-    eTol_(1e-6), vTol_(1e-6), p_(problem), log_(env->getLogger()),
+    eTol_(1e-8), vTol_(1e-6), p_(problem), log_(env->getLogger()),
     tmpX_(), grad_()
 {
   tmpX_.assign(problem->getNumVars(), 0.0);
@@ -131,12 +131,9 @@ double PowHandler::getViol_(const PowCons &cd, const DoubleVector &x) const {
   double xval = x[cd.riv->getIndex()];
   double fhat = x[cd.rov->getIndex()];
   double fval = getF_(xval, cd.k, cd.type);
-  double absViol = std::abs(fhat - fval); 
-  double relViol = absViol;
-  if (std::abs(fval) + absViol > 1.0) {
-    relViol = absViol / (std::abs(fval) + absViol);
-  }
-  return relViol;
+double absViol = std::abs(fhat - fval);
+    double deriv = getDf_(xval, cd.k, cd.type);
+    return absViol / std::sqrt(1.0 + deriv * deriv);
 }
 
 double PowHandler::getF_(double xv, double k, PowType type) const {
@@ -207,8 +204,7 @@ double PowHandler::computeWStar_(double k) const {
   double lo = 1e-12, hi = 1.0 - 1e-12;
   double glo = G(lo), ghi = G(hi);
 
-  // Defensive check -- should never trigger given the proof above, but
-  // guards against pathological floating point behavior at extreme k.
+  // Defensive check  should never trigger.
   if (glo * ghi > 0.0) {
     return -1.0; // signal: no sign change found, caller should handle/log
   }
@@ -257,17 +253,44 @@ double PowHandler::computeWCross_(double n) const {
 }
 
 
+// SLOT HANDLING
+//
+// The relaxation is one LP shared by the whole tree, so a row added
+// with rel->newConstraint() lives in every node forever.  A cut is only valid
+// on the box it was built for, so such a row cuts off feasible points in
+// sibling subtrees.
+//
+// Every cut this handler builds therefore lives in a slot: created once,
+// rewritten in place at each node with changeConstraint + LinConMod.  A branch
+// that emits fewer cuts than another must relax the leftover slots, otherwise
+// the parent's rows stay live on a box they were not built for.
 
-void PowHandler::relaxSlot_(PowCons &cd, RelaxationPtr rel, size_t slot, ModVector &mods) {
-  if (slot >= cd.secCons.size() || cd.secCons[slot] == nullptr) return;
-  ConstraintPtr target = cd.secCons[slot];
+void PowHandler::relaxSlot_(PowCons &cd, RelaxationPtr rel,
+                            std::vector<ConstraintPtr> &slots, size_t slot,
+                            ModVector &mods) {
+  if (slot >= slots.size() || slots[slot] == nullptr) return;
+  ConstraintPtr target = slots[slot];
   LinearFunctionPtr lf = (LinearFunctionPtr) new LinearFunction();
   lf->addTerm(cd.rov, 1.0);
+  lf->addTerm(cd.riv, 0.0);
   rel->changeConstraint(target, lf, -INFINITY, INFINITY);
   LinConModPtr lcmod = (LinConModPtr) new LinConMod(target, lf, -INFINITY, INFINITY);
   mods.push_back(lcmod);
+#if SPEW
+  log_->msgStream(LogDebug1) << me_ << "Relaxed unused slot " << slot
+                             << " at node for x^" << cd.k << std::endl;
+#endif
 }
 
+// Relax slots [from, to). Called at the end of every branch of every build
+// function, with `from` = number of slots that branch actually filled.
+void PowHandler::relaxSlotsFrom_(PowCons &cd, RelaxationPtr rel,
+                                 std::vector<ConstraintPtr> &slots,
+                                 size_t from, size_t to, ModVector &mods) {
+  for (size_t s = from; s < to; ++s) {
+    relaxSlot_(cd, rel, slots, s, mods);
+  }
+}
 
 
 // ----------------------------------------------------------------------------
@@ -275,23 +298,22 @@ void PowHandler::relaxSlot_(PowCons &cd, RelaxationPtr rel, size_t slot, ModVect
 // ----------------------------------------------------------------------------
 
 void PowHandler::relaxInitInc(RelaxationPtr rel, SolutionPool *, bool *is_inf) {
-  ModVector dummy_mods; 
+  ModVector mods; 
   for (auto it = consd_.begin(); it != consd_.end(); ++it) {
     (*it)->riv = rel->getVariable((*it)->iv->getIndex());
     (*it)->rov = rel->getVariable((*it)->ov->getIndex());
-    linearize_(**it, rel, dummy_mods, true);
+    linearize_(**it, rel, mods, true);
   }
   *is_inf = false;
 }
-
-void PowHandler::relaxNodeInc(NodePtr node, RelaxationPtr rel, bool *is_infeasible) {
+void PowHandler::relaxNodeInc(NodePtr , RelaxationPtr rel, bool *is_inf) {
   ModVector mods;
   for (auto it = consd_.begin(); it != consd_.end(); ++it) {
     (*it)->riv = rel->getVariable((*it)->iv->getIndex());
     (*it)->rov = rel->getVariable((*it)->ov->getIndex());
     linearize_(**it, rel, mods, false);
   }
-  *is_infeasible = false;
+  *is_inf = false;
 }
 
 
@@ -376,74 +398,103 @@ void PowHandler::linearize_(PowCons &cd, RelaxationPtr rel, ModVector &mods, boo
 
 void PowHandler::buildPosEO_GT1_(PowCons &cd, RelaxationPtr rel, ModVector &mods, bool init) {
   double xlb = cd.riv->getLb(), xub = cd.riv->getUb();
-  if (xub - xlb < 1e-6) return;
-  addSecXSq_(cd, rel, xlb, xub, 1, mods, init);   // secant: always update, bound-dependent
-  if (init) {                                      // tangent adding only at root
-    double pts[3] = {xlb, xub, xlb + (xub - xlb) / 2.0};
-    for (int i = 0; i < 3; ++i) addTanXSq_(cd, rel, pts[i], -1);
+  size_t ps = 0, ts = 0;   // slots filled in this call
+  if (xub - xlb < 1e-6) {
+    relaxSlotsFrom_(cd, rel, cd.ptCons, 0, POW_NUM_PT_SLOTS, mods);
+    relaxSlotsFrom_(cd, rel, cd.tanCons, 0, POW_NUM_TAN_SLOTS, mods);
+    return;
   }
+  addCutByPts_(cd, rel, xlb, xub, 1, mods, init, ps++);   // 2-pt cut: always update, bound-dependent
+  double pts[3] = {xlb, xub, xlb + (xub - xlb) / 2.0};
+    for (int i = 0; i < 3; ++i) addCutByTan_(cd, rel, pts[i], -1, mods, ts++);
+
+  relaxSlotsFrom_(cd, rel, cd.ptCons, ps, POW_NUM_PT_SLOTS, mods);
+  relaxSlotsFrom_(cd, rel, cd.tanCons, ts, POW_NUM_TAN_SLOTS, mods);
 }
 
 void PowHandler::buildPosOE_GT1_(PowCons &cd, RelaxationPtr rel, ModVector &mods, bool init) {
   double xlb = cd.riv->getLb(), xub = cd.riv->getUb();
-  if (xub - xlb < 1e-6) return;
-  addSecXSq_(cd, rel, xlb, xub, 1, mods, init);   // secant: always update, bound-dependent
-  if (init) {                                      // tangent adding only at root
-    double pts[3] = {xlb, xub, xlb + (xub - xlb) / 2.0};
-    for (int i = 0; i < 3; ++i) addTanXSq_(cd, rel, pts[i], -1);
+  size_t ps = 0, ts = 0;
+  if (xub - xlb < 1e-6) {
+    relaxSlotsFrom_(cd, rel, cd.ptCons, 0, POW_NUM_PT_SLOTS, mods);
+    relaxSlotsFrom_(cd, rel, cd.tanCons, 0, POW_NUM_TAN_SLOTS, mods);
+    return;
   }
+  addCutByPts_(cd, rel, xlb, xub, 1, mods, init, ps++);   // 2-pt cut: always update, bound-dependent
+  
+  double pts[3] = {xlb, xub, xlb + (xub - xlb) / 2.0};
+    for (int i = 0; i < 3; ++i) addCutByTan_(cd, rel, pts[i], -1, mods, ts++);
+
+  relaxSlotsFrom_(cd, rel, cd.ptCons, ps, POW_NUM_PT_SLOTS, mods);
+  relaxSlotsFrom_(cd, rel, cd.tanCons, ts, POW_NUM_TAN_SLOTS, mods);
 }
 
 
 void PowHandler::buildPosOO_GT1_(PowCons &cd, RelaxationPtr rel, ModVector &mods, bool init) {
   double xlb = cd.riv->getLb();
   double xub = cd.riv->getUb();
-
-  if (xub - xlb < 1e-6) return;
+  size_t ps = 0, ts = 0;
+  if (xub - xlb < 1e-6) {
+    relaxSlotsFrom_(cd, rel, cd.ptCons, 0, POW_NUM_PT_SLOTS, mods);
+    relaxSlotsFrom_(cd, rel, cd.tanCons, 0, POW_NUM_TAN_SLOTS, mods);
+    return;
+  }
 
   if (xlb >= -1e-6) {
     // Standard convex case
-    addSecXSq_(cd, rel, xlb, xub, 1, mods, init);
-    if (init) {
-      addTanXSq_(cd, rel, xlb, -1);
-      addTanXSq_(cd, rel, xub, -1);
-      addTanXSq_(cd, rel, xlb + (xub - xlb) / 2.0, -1);
-    }
+    addCutByPts_(cd, rel, xlb, xub, 1, mods, init, ps++);
+
+    addCutByTan_(cd, rel, xlb, -1, mods, ts++);
+    addCutByTan_(cd, rel, xub, -1, mods, ts++);
+    addCutByTan_(cd, rel, xlb + (xub - xlb) / 2.0, -1, mods, ts++);
 
   } else if (xub <= 1e-6) {
     // Standard concave case
-    addSecXSq_(cd, rel, xlb, xub, -1, mods, init);
-    if (init) {
-      addTanXSq_(cd, rel, xlb, 1);
-      addTanXSq_(cd, rel, xub, 1);
-      addTanXSq_(cd, rel, xlb + (xub - xlb) / 2.0, 1);
-    }
+    addCutByPts_(cd, rel, xlb, xub, -1, mods, init, ps++);
+
+    addCutByTan_(cd, rel, xlb, 1, mods, ts++);
+    addCutByTan_(cd, rel, xub, 1, mods, ts++);
+    addCutByTan_(cd, rel, xlb + (xub - xlb) / 2.0, 1, mods, ts++);
 
   } else {
-    // INFLECTION ENVELOPE (unchanged)
+    // INFLECTION ENVELOPE: both bounding lines are chords through two points
+    // we already know (the tangency point and the opposite bound), so they
+    // are built with addCutByPts_ and need no separate tangent machinery.
     double w = computeWStar_(cd.k);
-    double t_over = w * xub;
-    addTanXSq_(cd, rel, t_over, +1);
-    double t_under = w * xlb;
-    addTanXSq_(cd, rel, t_under, -1);
+    double t_over = w * xub;    // < 0
+    double t_under = w * xlb;   // > 0
+
+    // tangency point outside the box -> plain chord is valid and tighter
+    double lo_over = (t_over >= xlb) ? t_over : xlb;
+    double hi_under = (t_under <= xub) ? t_under : xub;
+
+    addCutByPts_(cd, rel, lo_over, xub, +1, mods, init, ps++);
+    addCutByPts_(cd, rel, xlb, hi_under, -1, mods, init, ps++);
 #if SPEW
-    log_->msgStream(LogDebug1) << me_ << "Added Inflection Envelope tangents for x^" << cd.k
+    log_->msgStream(LogDebug1) << me_ << "Added Inflection Envelope cuts for x^" << cd.k
                                << " | w=" << w << std::endl;
 #endif
   }
+
+  relaxSlotsFrom_(cd, rel, cd.ptCons, ps, POW_NUM_PT_SLOTS, mods);
+  relaxSlotsFrom_(cd, rel, cd.tanCons, ts, POW_NUM_TAN_SLOTS, mods);
 }
 
 void PowHandler::buildPosOE_LT1_(PowCons &cd, RelaxationPtr rel, ModVector &mods, bool init) {
   double xlb = cd.riv->getLb(), xub = cd.riv->getUb();
-  if (xub - xlb < 1e-6) return;
-  addSecXSq_(cd, rel, xlb, xub, -1, mods, init);
-
-  if(init)
-  {
-    double pts[3] = {xlb, xub, xlb + (xub - xlb) / 2.0};
-    for (int i = 0; i < 3; ++i) addTanXSq_(cd, rel, pts[i], +1);
+  size_t ps = 0, ts = 0;
+  if (xub - xlb < 1e-6) {
+    relaxSlotsFrom_(cd, rel, cd.ptCons, 0, POW_NUM_PT_SLOTS, mods);
+    relaxSlotsFrom_(cd, rel, cd.tanCons, 0, POW_NUM_TAN_SLOTS, mods);
+    return;
   }
+  addCutByPts_(cd, rel, xlb, xub, -1, mods, init, ps++);
 
+  double pts[3] = {xlb, xub, xlb + (xub - xlb) / 2.0};
+  for (int i = 0; i < 3; ++i) addCutByTan_(cd, rel, pts[i], +1, mods, ts++);
+
+  relaxSlotsFrom_(cd, rel, cd.ptCons, ps, POW_NUM_PT_SLOTS, mods);
+  relaxSlotsFrom_(cd, rel, cd.tanCons, ts, POW_NUM_TAN_SLOTS, mods);
 }
 
 
@@ -452,30 +503,29 @@ void PowHandler::buildPosOE_LT1_(PowCons &cd, RelaxationPtr rel, ModVector &mods
 void PowHandler::buildPosOO_LT1_(PowCons &cd, RelaxationPtr rel, ModVector &mods, bool init) {
   double xlb = cd.riv->getLb();
   double xub = cd.riv->getUb();
-  if (xub - xlb < 1e-6) return;
+  size_t ps = 0, ts = 0;
+  if (xub - xlb < 1e-6) {
+    relaxSlotsFrom_(cd, rel, cd.ptCons, 0, POW_NUM_PT_SLOTS, mods);
+    relaxSlotsFrom_(cd, rel, cd.tanCons, 0, POW_NUM_TAN_SLOTS, mods);
+    return;
+  }
 
   if (xlb >= -1e-6) {
     // Strictly Concave Domain (Right of Y-axis)
-    addSecXSq_(cd, rel, xlb, xub, -1, mods, init);
+    addCutByPts_(cd, rel, xlb, xub, -1, mods, init, ps++);
 
-    if(init)
-    {
-    addTanXSq_(cd, rel, xlb, 1);
-    addTanXSq_(cd, rel, xub, 1);
-    addTanXSq_(cd, rel, xlb + (xub - xlb) / 2.0, 1);
+    addCutByTan_(cd, rel, xlb, 1, mods, ts++);
+    addCutByTan_(cd, rel, xub, 1, mods, ts++);
+    addCutByTan_(cd, rel, xlb + (xub - xlb) / 2.0, 1, mods, ts++);
 
-    }
-   
   } else if (xub <= 1e-6) {
     // Strictly Convex Domain (Left of Y-axis)
-    addSecXSq_(cd, rel, xlb, xub, 1, mods, init);
-    if(init)
-    {
-    addTanXSq_(cd, rel, xlb, -1);
-    addTanXSq_(cd, rel, xub, -1);
-    addTanXSq_(cd, rel, xlb + (xub - xlb) / 2.0, -1);
-
-    }
+    addCutByPts_(cd, rel, xlb, xub, 1, mods, init, ps++);
+    
+    addCutByTan_(cd, rel, xlb, -1, mods, ts++);
+    addCutByTan_(cd, rel, xub, -1, mods, ts++);
+    addCutByTan_(cd, rel, xlb + (xub - xlb) / 2.0, -1, mods, ts++);
+           
     
   } else {
     // --- CROSSING ZERO: INFLECTION ENVELOPE (k < 1) ---
@@ -486,19 +536,22 @@ void PowHandler::buildPosOO_LT1_(PowCons &cd, RelaxationPtr rel, ModVector &mods
     // 1. Lower Bounding Line (Underestimator)
     // Tangent point t_under is on the negative side (< 0), anchored at positive bound xub > 0
     double t_under = w * xub; 
-    addTanXSq_(cd, rel, t_under, -1);
+    addCutByTan_(cd, rel, t_under, -1, mods, ts++);
 
     // 2. Upper Bounding Line (Overestimator)
     // Tangent point t_over is on the positive side (> 0), anchored at negative bound xlb < 0
     double t_over = w * xlb;  
-    addTanXSq_(cd, rel, t_over, 1);
+    addCutByTan_(cd, rel, t_over, 1, mods, ts++);
 
 #if SPEW
-    log_->msgStream(LogDebug1) << me_ << "Added Inflection Envelope tangents for k < 1 (x^" << cd.k 
+    log_->msgStream(LogDebug1) << me_ << "Added Inflection Envelope cuts for k < 1 (x^" << cd.k 
                                << ") | w_star=" << w 
                                << " | t_under=" << t_under << ", t_over=" << t_over << std::endl;
 #endif
   }
+
+  relaxSlotsFrom_(cd, rel, cd.ptCons, ps, POW_NUM_PT_SLOTS, mods);
+  relaxSlotsFrom_(cd, rel, cd.tanCons, ts, POW_NUM_TAN_SLOTS, mods);
 }
 
 
@@ -506,33 +559,34 @@ void PowHandler::buildPosOO_LT1_(PowCons &cd, RelaxationPtr rel, ModVector &mods
 void PowHandler::buildPosEO_LT1_(PowCons &cd, RelaxationPtr rel, ModVector &mods, bool init) {
   double xlb = cd.riv->getLb();
   double xub = cd.riv->getUb();
-  if (xub - xlb < 1e-6) return;
+  size_t ps = 0, ts = 0;
+  if (xub - xlb < 1e-6) {
+    relaxSlotsFrom_(cd, rel, cd.ptCons, 0, POW_NUM_PT_SLOTS, mods);
+    relaxSlotsFrom_(cd, rel, cd.tanCons, 0, POW_NUM_TAN_SLOTS, mods);
+    return;
+  }
   const double eps = 1e-6;
 
-  const size_t SLOT_LEFT = 0, SLOT_RIGHT = 1, SLOT_UPPER = 2;
-
   if (xlb >= -eps) {
-    addSecXSq_(cd, rel, xlb, xub, -1, mods, init, SLOT_LEFT);
-    if (!init) { relaxSlot_(cd, rel, SLOT_RIGHT, mods); relaxSlot_(cd, rel, SLOT_UPPER, mods); }
-    if (init) {
-      if (xlb > eps) addTanXSq_(cd, rel, xlb, 1);
-      addTanXSq_(cd, rel, xub, 1);
-      addTanXSq_(cd, rel, xlb + (xub - xlb) / 2.0, 1);
-    }
+    addCutByPts_(cd, rel, xlb, xub, -1, mods, init, ps++);
+
+      if (xlb > eps) addCutByTan_(cd, rel, xlb, 1, mods, ts++);
+      addCutByTan_(cd, rel, xub, 1, mods, ts++);
+      addCutByTan_(cd, rel, xlb + (xub - xlb) / 2.0, 1, mods, ts++);
+    
 
   } else if (xub <= eps) {
-    addSecXSq_(cd, rel, xlb, xub, -1, mods, init, SLOT_RIGHT);
-    if (!init) { relaxSlot_(cd, rel, SLOT_LEFT, mods); relaxSlot_(cd, rel, SLOT_UPPER, mods); }
-    if (init) {
-      addTanXSq_(cd, rel, xlb, 1);
-      if (xub < -eps) addTanXSq_(cd, rel, xub, 1);
-      addTanXSq_(cd, rel, xlb + (xub - xlb) / 2.0, 1);
-    }
+    addCutByPts_(cd, rel, xlb, xub, -1, mods, init, ps++);
+     
+      addCutByTan_(cd, rel, xlb, 1, mods, ts++);
+      if (xub < -eps) addCutByTan_(cd, rel, xub, 1, mods, ts++);
+      addCutByTan_(cd, rel, xlb + (xub - xlb) / 2.0, 1, mods, ts++);
+    
 
   } else {
     // CROSSING ZERO
-    addSecXSq_(cd, rel, xlb, 0.0, -1, mods, init, SLOT_LEFT);
-    addSecXSq_(cd, rel, 0.0, xub, -1, mods, init, SLOT_RIGHT);
+    addCutByPts_(cd, rel, xlb, 0.0, -1, mods, init, ps++);
+    addCutByPts_(cd, rel, 0.0, xub, -1, mods, init, ps++);
 
     double w_cross = computeWCross_(cd.k);
     double L = std::abs(xlb);
@@ -548,13 +602,11 @@ void PowHandler::buildPosEO_LT1_(PowCons &cd, RelaxationPtr rel, ModVector &mods
     }
 
     if (tangentChosen) {
-      // Tangent is a permanently-valid global cut once added -- add it
-      // whichever node first reaches this regime; relax the upper-secant
-      // slot so a stale extrapolated secant can't linger.
-      addTanXSq_(cd, rel, (L > xub) ? xlb : xub, 1);
-      if (!init) relaxSlot_(cd, rel, SLOT_UPPER, mods);
+      // Box is lopsided: the chord across it dips below the curve on the long
+      // side, so the tangent at the far endpoint is the correct upper line.
+      addCutByTan_(cd, rel, (L > xub) ? xlb : xub, 1, mods, ts++);
     } else {
-      addSecXSq_(cd, rel, xlb, xub, 1, mods, init, SLOT_UPPER);
+      addCutByPts_(cd, rel, xlb, xub, 1, mods, init, ps++);
     }
 
 #if SPEW
@@ -562,39 +614,52 @@ void PowHandler::buildPosEO_LT1_(PowCons &cd, RelaxationPtr rel, ModVector &mods
                                << " | w_cross=" << w_cross << " | t=" << t << std::endl;
 #endif
   }
+
+  relaxSlotsFrom_(cd, rel, cd.ptCons, ps, POW_NUM_PT_SLOTS, mods);
+  relaxSlotsFrom_(cd, rel, cd.tanCons, ts, POW_NUM_TAN_SLOTS, mods);
 }
 
 void PowHandler::buildNegOE_(PowCons &cd, RelaxationPtr rel, ModVector &mods, bool init) {
   // n = -p/q, p odd, q even => domain x >= 0 only.
   // f(x) = x^n: convex, strictly decreasing, pole (f->+inf) as x->0+.
   double xlb = cd.riv->getLb(), xub = cd.riv->getUb();
-  if (xub - xlb < 1e-6) return;
+  size_t ps = 0, ts = 0;
+  if (xub - xlb < 1e-6) {
+    relaxSlotsFrom_(cd, rel, cd.ptCons, 0, POW_NUM_PT_SLOTS, mods);
+    relaxSlotsFrom_(cd, rel, cd.tanCons, 0, POW_NUM_TAN_SLOTS, mods);
+    return;
+  }
   const double eps = 1e-6;
 
-  if(init){
-   double xlb_safe = std::max(xlb, eps); // can't differentiate AT the pole
+  double xlb_safe = std::max(xlb, eps); // can't differentiate AT the pole
   double pts[3] = {xlb_safe, xub, xlb_safe + (xub - xlb_safe) / 2.0};
-  for (int i = 0; i < 3; ++i) addTanXSq_(cd, rel, pts[i], -1);
-  
-  }
-   // The secant (upper bound)  // strictly between bounds
+  for (int i = 0; i < 3; ++i) addCutByTan_(cd, rel, pts[i], -1, mods, ts++);
+   // The 2-pt cut (upper bound)  // strictly between bounds
   if (xlb > eps) {
-    addSecXSq_(cd, rel, xlb, xub, 1, mods, init);
+    addCutByPts_(cd, rel, xlb, xub, 1, mods, init, ps++);
 
   }
 #if SPEW
   else {
     log_->msgStream(LogDebug1) << me_ << "NegOE:(x^(-1/2)) xlb within eps of pole, "
-        "skipping secant (y left unbounded above near pole)" << std::endl;
+        "skipping 2-pt cut (y left unbounded above near pole)" << std::endl;
   }
 #endif
+
+  relaxSlotsFrom_(cd, rel, cd.ptCons, ps, POW_NUM_PT_SLOTS, mods);
+  relaxSlotsFrom_(cd, rel, cd.tanCons, ts, POW_NUM_TAN_SLOTS, mods);
 }
 
 void PowHandler::buildNegEO_(PowCons &cd, RelaxationPtr rel, ModVector &mods, bool init) {
   // n = -p/q, p even, q odd => domain x != 0, f(x)=|x|^n > 0 everywhere,
   // pole from both sides, each side individually convex.
   double xlb = cd.riv->getLb(), xub = cd.riv->getUb();
-  if (xub - xlb < 1e-6) return;
+  size_t ps = 0, ts = 0;
+  if (xub - xlb < 1e-6) {
+    relaxSlotsFrom_(cd, rel, cd.ptCons, 0, POW_NUM_PT_SLOTS, mods);
+    relaxSlotsFrom_(cd, rel, cd.tanCons, 0, POW_NUM_TAN_SLOTS, mods);
+    return;
+  }
   const double eps = 1e-6;
 
   if (xlb >= eps || xub <= -eps) {
@@ -603,29 +668,25 @@ void PowHandler::buildNegEO_(PowCons &cd, RelaxationPtr rel, ModVector &mods, bo
     double near = rightSide ? xlb : xub;   // endpoint closest to the pole
     double far  = rightSide ? xub : xlb;
     double nearSafe = rightSide ? std::max(near, eps) : std::min(near, -eps);
-    if(init)
-    {
-     double pts[3] = {nearSafe, far, nearSafe + (far - nearSafe) / 2.0};
-      for (int i = 0; i < 3; ++i) addTanXSq_(cd, rel, pts[i], -1);
+    
+       double pts[3] = {nearSafe, far, nearSafe + (far - nearSafe) / 2.0};
+      for (int i = 0; i < 3; ++i) addCutByTan_(cd, rel, pts[i], -1, mods, ts++);
 
-    }
        if (std::abs(near) > eps) {
-      addSecXSq_(cd, rel, xlb, xub, 1, mods, init);
+      addCutByPts_(cd, rel, xlb, xub, 1, mods, init, ps++);
     }
 #if SPEW
     else {
       log_->msgStream(LogDebug1) << me_ << "NegEO: near-pole endpoint "
-          "inside eps, skipping secant " << std::endl;
+          "inside eps, skipping 2-pt cut " << std::endl;
     }
 #endif
 
   } else {
+      // Pole strictly inside the box: no valid envelope. |x|^n > 0 is all we
+      // can say, and it is valid on the whole box, so it goes in a slot too.
+      addCutByTan_(cd, rel, 0, -1, mods, ts++);
 
-    if(init)
-    {
-      addTanXSq_(cd,rel,0,-1);
-
-    }
       
 #if SPEW
     log_->msgStream(LogDebug1) << me_ << "NegEO: domain has 0 "
@@ -633,35 +694,41 @@ void PowHandler::buildNegEO_(PowCons &cd, RelaxationPtr rel, ModVector &mods, bo
         "branching to split the domain at x=0." << std::endl;
 #endif
   }
+
+  relaxSlotsFrom_(cd, rel, cd.ptCons, ps, POW_NUM_PT_SLOTS, mods);
+  relaxSlotsFrom_(cd, rel, cd.tanCons, ts, POW_NUM_TAN_SLOTS, mods);
 }
 
 void PowHandler::buildNegOO_(PowCons &cd, RelaxationPtr rel, ModVector &mods, bool init) {
   // n = -p/q, p,q odd => f odd, domain x != 0. Convex+positive on x>0,
   // concave+negative on x<0.
   double xlb = cd.riv->getLb(), xub = cd.riv->getUb();
-  if (xub - xlb < 1e-6) return;
+  size_t ps = 0, ts = 0;
+  if (xub - xlb < 1e-6) {
+    relaxSlotsFrom_(cd, rel, cd.ptCons, 0, POW_NUM_PT_SLOTS, mods);
+    relaxSlotsFrom_(cd, rel, cd.tanCons, 0, POW_NUM_TAN_SLOTS, mods);
+    return;
+  }
   const double eps = 1e-6;
 
   if (xlb >= eps) {
     // Entirely right of pole: convex, positive -- same as NegOE.
-    if (init) {
-      double xlb_safe = std::max(xlb, eps);
+      double xlb_safe = std::max(xlb,eps);
       double pts[3] = {xlb_safe, xub, xlb_safe + (xub - xlb_safe) / 2.0};
-      for (int i = 0; i < 3; ++i) addTanXSq_(cd, rel, pts[i], -1);
-    }
-    addSecXSq_(cd, rel, xlb, xub, 1, mods, init);
-
-  } else if (xub <= -eps) {
-    // Entirely left of pole: concave, negative. Tangent/secant roles
+      for (int i = 0; i < 3; ++i) addCutByTan_(cd, rel, pts[i], -1, mods, ts++);
+    addCutByPts_(cd, rel, xlb, xub, 1, mods, init, ps++);
+  }
+  else if (xub <= -eps) {
+    // Entirely left of pole: concave, negative. Tangent/2-pt cut roles
     // flip relative to the right branch.
-    if (init) {
       double xub_safe = std::min(xub, -eps);
       double pts[3] = {xlb, xub_safe, xlb + (xub_safe - xlb) / 2.0};
-      for (int i = 0; i < 3; ++i) addTanXSq_(cd, rel, pts[i], 1);
-    }
-    addSecXSq_(cd, rel, xlb, xub, -1, mods, init);
+      for (int i = 0; i < 3; ++i) addCutByTan_(cd, rel, pts[i], 1, mods, ts++);
+      
+      addCutByPts_(cd, rel, xlb, xub, -1, mods, init, ps++);
 
-  } else {
+  } 
+else{
     
 #if SPEW
     log_->msgStream(LogDebug1) << me_ << "NegOO: domain has pole "
@@ -670,17 +737,23 @@ void PowHandler::buildNegOO_(PowCons &cd, RelaxationPtr rel, ModVector &mods, bo
          << std::endl;
 #endif
   }
+
+  relaxSlotsFrom_(cd, rel, cd.ptCons, ps, POW_NUM_PT_SLOTS, mods);
+  relaxSlotsFrom_(cd, rel, cd.tanCons, ts, POW_NUM_TAN_SLOTS, mods);
 }
 
-
-void PowHandler::addSecXSq_(PowCons &cd, RelaxationPtr rel, double xlb, double xub,
-                             int bound_dir, ModVector &mods, bool init,
+// Cut through the two points (xlb, f(xlb)) and (xub, f(xub)).  Used for
+// secants on single-curvature boxes and for the inflection envelope lines,
+// which are chords through a tangency point and the opposite bound.
+void PowHandler::addCutByPts_(PowCons &cd, RelaxationPtr rel, double xlb, double xub,
+                             int bound_dir, ModVector &mods, bool ,
                              size_t slot) {
   double fxlb = getF_(xlb, cd.k, cd.type);
   double fxub = getF_(xub, cd.k, cd.type);
   double m = 0.0;
 
   if (xlb <= -1e15 || xub >= 1e15) {
+    relaxSlot_(cd, rel, cd.ptCons, slot, mods);
     return;
   }
 
@@ -691,79 +764,105 @@ void PowHandler::addSecXSq_(PowCons &cd, RelaxationPtr rel, double xlb, double x
   LinearFunctionPtr lf = (LinearFunctionPtr) new LinearFunction();
   lf->addTerm(cd.rov, 1.0);
   lf->addTerm(cd.riv, -m);
-
-  double lb = (bound_dir == 1) ? -INFINITY : intercept;
-  double ub = (bound_dir == -1) ? INFINITY : intercept;
-
-  bool slotExists = (slot < cd.secCons.size() && cd.secCons[slot] != nullptr);
+// FLOAT SAFETY RELAXATION: Push cut slightly outwards to prevent boundary pinching
+  double eps_relax = 1e-7;
+  double lb = (bound_dir == 1) ? -INFINITY : intercept - eps_relax;
+  double ub = (bound_dir == -1) ? INFINITY : intercept + eps_relax;
+  bool slotExists = (slot < cd.ptCons.size() && cd.ptCons[slot] != nullptr);
 
   if (!slotExists) {
     // First time this slot is needed -- create it now, whether or not
-    // this is the init call. A regime that never touched addSecXSq_
-    // before (e.g. the crossing-zero branch, which only adds tangents)
-    // can still reach here later once bounds shrink into a single-sided
-    // regime that does need a secant.
+    // this is the init call.  A slot can still reach here later once
+    // bounds shrink into a regime that needs one more cut than before.
     FunctionPtr f = (FunctionPtr) new Function(lf);
     ConstraintPtr newCon = rel->newConstraint(f, lb, ub);
-    if (cd.secCons.size() <= slot) {
-      cd.secCons.resize(slot + 1, nullptr);
+    if (cd.ptCons.size() <= slot) {
+      cd.ptCons.resize(slot + 1, nullptr);
     }
-    cd.secCons[slot] = newCon;
+    cd.ptCons[slot] = newCon;
 #if SPEW
-    log_->msgStream(LogDebug1) << me_ << "Added new secant (slot " << slot
+    log_->msgStream(LogDebug1) << me_ << "Added new 2-pt cut (slot " << slot
                                << ") at node for x^" << cd.k << std::endl;
-    newCon->write(log_->msgStream(LogDebug2));
+    newCon->write(log_->msgStream(LogDebug1));
 #endif
   } else {
-    ConstraintPtr target = cd.secCons[slot];
+    ConstraintPtr target = cd.ptCons[slot];
     rel->changeConstraint(target, lf, lb, ub);
     LinConModPtr lcmod = (LinConModPtr) new LinConMod(target, lf, lb, ub);
     mods.push_back(lcmod);
 #if SPEW
-    log_->msgStream(LogDebug1) << me_ << "Modified secant (slot " << slot
+    log_->msgStream(LogDebug1) << me_ << "Modified 2-pt cut (slot " << slot
                                << ") at node for x^" << cd.k << std::endl;
-    target->write(log_->msgStream(LogDebug2));
+    target->write(log_->msgStream(LogDebug1));
 #endif
   }
 }
 
-void PowHandler::addTanXSq_(PowCons &cd, RelaxationPtr rel, double xv, int bound_dir) {
-  double fx = getF_(xv, cd.k, cd.type);
-  double dfx = getDf_(xv, cd.k, cd.type);
-  if (!std::isfinite(fx) || !std::isfinite(dfx)) {
-  log_->msgStream(LogError)
-      << me_ << "Invalid tangent at x=" << xv
-      << " k=" << cd.k
-      << " fx=" << fx
-      << " dfx=" << dfx << std::endl;
-  return;
-}
-  double rhs = fx - dfx * xv;
+// Cut tangent to the curve at xv.  A tangent is NOT globally valid when the
+// curvature changes sign inside the root box (x^3, x^5, ...): a tangent taken
+// at a point on one side of the inflection is violated on the other side.  It
+// therefore lives in a slot and is rewritten at every node, exactly like a
+// 2-pt cut.  If xv sits at a singular point (x=0 with k<1 or k<0, where the
+// derivative is infinite/undefined), substitute a nearby point where the
+// derivative IS defined rather than skipping the cut.
+void PowHandler::addCutByTan_(PowCons &cd, RelaxationPtr rel, double xv, int bound_dir,
+                              ModVector &mods, size_t slot) {
+  double xv_safe = safeX_(xv, cd.k);
 
-if (!std::isfinite(rhs)) {
-  log_->msgStream(LogError)
-      << me_ << "Invalid tangent RHS at x=" << xv
-      << " rhs=" << rhs << std::endl;
-  return;
-}
+  double fx = getF_(xv_safe, cd.k, cd.type);
+  double dfx = getDf_(xv_safe, cd.k, cd.type);
+
+  
+  if (!std::isfinite(fx) || !std::isfinite(dfx)) {
+    log_->msgStream(LogError)
+        << me_ << "Invalid tangent at x=" << xv
+        << " (no nearby point yields a finite derivative) k=" << cd.k
+        << " fx=" << fx
+        << " dfx=" << dfx << std::endl;
+    // Slot not written: relax it so the parent's row cannot linger.
+    relaxSlot_(cd, rel, cd.tanCons, slot, mods);
+    return;
+  }
+
+  double rhs = fx - dfx * xv_safe;
+ 
   LinearFunctionPtr lf = (LinearFunctionPtr) new LinearFunction();
   lf->addTerm(cd.rov, 1.0);
   lf->addTerm(cd.riv, -dfx);
+ // FLOAT SAFETY RELAXATION: Push tangent slightly outwards to prevent boundary pinching
+  double eps_relax = 1e-7;
+  double lb = (bound_dir == 1) ? -INFINITY : rhs - eps_relax;
+  double ub = (bound_dir == -1) ? INFINITY : rhs + eps_relax;
+  bool slotExists = (slot < cd.tanCons.size() && cd.tanCons[slot] != nullptr);
 
-  double lb = (bound_dir == 1) ? -INFINITY : rhs;
-  double ub = (bound_dir == -1) ? INFINITY : rhs;
-  FunctionPtr f = (FunctionPtr) new Function(lf);
-  ConstraintPtr cons = rel->newConstraint(f, lb, ub);
-  cd.linCons.push_back(cons);
-
-  #if SPEW
-  log_->msgStream(LogDebug1) << me_ << "Added tangent cut at x=" << xv 
-                             << " | Bounds: [" << lb << ", " << ub << "]" << std::endl;
-   cons->write(log_->msgStream(LogDebug1)); 
-
+  if (!slotExists) {
+    FunctionPtr f = (FunctionPtr) new Function(lf);
+    ConstraintPtr newCon = rel->newConstraint(f, lb, ub);
+    if (cd.tanCons.size() <= slot) {
+      cd.tanCons.resize(slot + 1, nullptr);
+    }
+    cd.tanCons[slot] = newCon;
+#if SPEW
+    log_->msgStream(LogDebug1) << me_ << "Added new tangent cut (slot " << slot
+                               << ") at x=" << xv_safe
+                               << " (requested x=" << xv << ")"
+                               << " | Bounds: [" << lb << ", " << ub << "]" << std::endl;
+    newCon->write(log_->msgStream(LogDebug1));
 #endif
+  } else {
+    ConstraintPtr target = cd.tanCons[slot];
+    rel->changeConstraint(target, lf, lb, ub);
+    LinConModPtr lcmod = (LinConModPtr) new LinConMod(target, lf, lb, ub);
+    mods.push_back(lcmod);
+#if SPEW
+    log_->msgStream(LogDebug1) << me_ << "Modified tangent cut (slot " << slot
+                               << ") at x=" << xv_safe
+                               << " (requested x=" << xv << ")"
+                               << " | Bounds: [" << lb << ", " << ub << "]" << std::endl;
+    target->write(log_->msgStream(LogDebug1));
+#endif
+  }
 }
-
 
 
 
@@ -828,15 +927,15 @@ PowHandler::PowCurvature PowHandler::getCurvature_(const PowCons &cd, double xlb
   }
   return PC_MIXED;
 }
-
+//here ate 14:47..
 void PowHandler::addCut_(VariablePtr x, VariablePtr y, double xval, double yval,
                           RelaxationPtr rel, bool &ifcuts, PowCons *cd_) {
   ifcuts = false;
 
-  double xlb = cd_->riv->getLb(), xub = cd_->riv->getUb();
-  PowCurvature curv = getCurvature_(*cd_, xlb, xub);
-  if (curv == PC_MIXED) return;
-
+  // AFTER
+  if (!sepIsGlobal_(*cd_)) return;
+  PowCurvature curv = getCurvature_(*cd_, cd_->riv->getLb(), cd_->riv->getUb());
+  if (curv == PC_MIXED) return; 
   double xv = safeX_(xval, cd_->k);
   double fval  = getF_(xv, cd_->k, cd_->type);
   double deriv = getDf_(xv, cd_->k, cd_->type);
@@ -858,15 +957,42 @@ void PowHandler::addCut_(VariablePtr x, VariablePtr y, double xval, double yval,
       rel->newConstraint(f, -INFINITY, rhs);
     }
     ifcuts = true;
+    #if SPEW
+  log_->msgStream(LogDebug1) << me_ << "Added cutting plane at x= " << xv
+                             << " | violation= "<<violation << std::endl;
+#endif
+
   }
 }
+
+// A separation cut is added with newConstraint() and never removed, so it
+// lives in the shared relaxation for the whole tree.  It is safe only if it
+// is valid on EVERY box, which holds only when x^k has one curvature across
+// its entire domain.  Odd powers (x^3, x^5) flip curvature at the origin and
+// negative exponents are split by the pole, so those never separate.
+bool PowHandler::sepIsGlobal_(const PowCons &cd) const {
+  switch (cd.type) {
+    case POS_EO: return cd.k >= 1.0;   // x^4, x^6: convex on all of R
+    case POS_OE: return true;          // domain x >= 0
+    case NEG_OE: return true;          // domain x > 0, convex
+    default:     return false;         // POS_OO, NEG_EO, NEG_OO
+  }
+}
+
+
 
 void PowHandler::separate(ConstSolutionPtr sol, NodePtr, RelaxationPtr rel, CutManager*,
                            SolutionPoolPtr, ModVector&, ModVector&, bool* sol_found,
                            SeparationStatus* /*status*/) {
+  // KNOWN ISSUE: cuts added here go in with newConstraint() and are never
+  // removed, so they live in the shared relaxation for the whole tree -- the
+  // same lifetime problem the slot mechanism fixes for the build cuts above.
+  // They happen to be valid today because addCut_ bails out on PC_MIXED
+  // boxes, but nothing enforces that. To be revisited.
+  return;
   *sol_found = false;
   const double* x = sol->getPrimal();
-
+  ++sStats_.iters;
   for (auto cd : consd_) {
     VariablePtr x_var = rel->getRelaxationVar(cd->iv);
     VariablePtr y_var = rel->getRelaxationVar(cd->ov);

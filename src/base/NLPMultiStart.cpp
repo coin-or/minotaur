@@ -142,7 +142,8 @@ void NLPMultiStart::solve(NodePtr, RelaxationPtr, SolutionPoolPtr s_pool)
     status = e_->solve();
     ++(stats_.numNLPs);
     sol = e_->getSolution();
-    if (sol->getObjValue() < stats_.bestObjValue - obj_tol) {
+    bool solvedOk = (status == ProvenOptimal || status == ProvenLocalOptimal);
+    if (sol->getObjValue() && solvedOk < stats_.bestObjValue - obj_tol) {
       stats_.bestObjValue = sol->getObjValue();
       rho = rho_initial;
       unchanged_obj_count = 0;
@@ -209,7 +210,7 @@ void NLPMultiStart::writeStats(std::ostream &out) const
     << me_ << " number of Improvements in objective   = " 
     << stats_.numImprove << std::endl
     << me_ << " number of Bad status(unbounded etc)   = " 
-    << stats_.numNLPs << std::endl
+    << stats_.numBadstatus << std::endl
     << me_ << " total time taken                      = " 
     << stats_.time << std::endl
     << me_ << " number of iterations                  = " 

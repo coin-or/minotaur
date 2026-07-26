@@ -20,6 +20,7 @@ include_directories("${PROJECT_SOURCE_DIR}/src/interfaces")
  
 set (MINOTAUR_SOURCES
      base/AnalyticalCenter.cpp
+     base/AbsHandler.cpp
      base/BndProcessor.cpp 
      base/Branch.cpp 
      base/BranchAndBound.cpp 
@@ -160,6 +161,7 @@ set (MINOTAUR_SOURCES
 set (MINOTAUR_HEADERS
      base/MinotaurDeconfig.h
      base/ActiveNodeStore.h
+     base/AbsHandler.h
      base/AnalyticalCenter.h
      base/BndProcessor.h
      base/Branch.h

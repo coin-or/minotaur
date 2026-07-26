@@ -89,7 +89,12 @@ namespace Minotaur {
       NEG_OE,
       NEG_EO,
     };
+/// Max number of two-point cuts any single branch emits.
+/// buildPosEO_LT1_'s crossing-zero branch is the largest: 3.
+static const size_t POW_NUM_PT_SLOTS = 3;
 
+/// Max number of tangent cuts any single branch emits.
+static const size_t POW_NUM_TAN_SLOTS = 3;
     struct PowCons {
       ConstraintPtr con;         
       ConstVariablePtr iv;       
@@ -101,13 +106,12 @@ namespace Minotaur {
       VariablePtr riv;           
       VariablePtr rov;           
       char sense;                
-      std::vector<ConstraintPtr> secCons;      
-      ConstraintVector linCons;  
-
+      std::vector<ConstraintPtr> ptCons;    // cuts through two points, by slot
+      std::vector<ConstraintPtr> tanCons;   // cuts tangent at a point, by slot
       PowCons(ConstraintPtr newcon, ConstVariablePtr ivar,
                 ConstVariablePtr ovar, double degree, int num, int den, PowType t, char s)
         : con(newcon), iv(ivar), ov(ovar), k(degree), p(num), q(den) , type(t) ,riv(0), rov(0),
-          sense(s), linCons() {}
+          sense(s) {}
     };
  PowCurvature getCurvature_(const PowCons &cd, double xlb, double xub) const;
 
@@ -117,7 +121,7 @@ namespace Minotaur {
 
     PowConsVec consd_;
     static const std::string me_;
-
+bool sepIsGlobal_(const PowCons &cd) const;
     struct SepaStats {
       int iters;       
       int tangentcuts; 
@@ -164,11 +168,17 @@ namespace Minotaur {
 
 
 private:
-  // PowHandler.h — add:
-void relaxSlot_(PowCons &cd, RelaxationPtr rel, size_t slot, ModVector &mods);
- void addSecXSq_(PowCons &cd, RelaxationPtr rel, double xlb, double xub, int bound_dir, ModVector &mods, bool init, size_t slot = 0);
-  void addTanXSq_(PowCons &cd, RelaxationPtr rel, double xv, int bound_dir);
+  void relaxSlot_(PowCons &cd, RelaxationPtr rel,
+                std::vector<ConstraintPtr> &slots, size_t slot,
+                ModVector &mods);
 
+  void relaxSlotsFrom_(PowCons &cd, RelaxationPtr rel,
+                     std::vector<ConstraintPtr> &slots,
+                     size_t from, size_t to, ModVector &mods); 
+  void addCutByTan_(PowCons &cd, RelaxationPtr rel, double xv, int bound_dir,
+                  ModVector &mods, size_t slot);
+  void addCutByPts_(PowCons &cd, RelaxationPtr rel, double xlb, double xub,
+                  int bound_dir, ModVector &mods, bool init, size_t slot);
   void linearize_(PowCons &cd, RelaxationPtr rel, ModVector &mods, bool init);
 
   void buildPosEO_GT1_(PowCons &cd, RelaxationPtr rel, ModVector &mods, bool init);

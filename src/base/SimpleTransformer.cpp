@@ -16,6 +16,7 @@
 #include <cmath>
 #include <iostream>
 
+#include "AbsHandler.h"
 #include "CGraph.h"
 #include "CNode.h"
 #include "Constraint.h"
@@ -271,6 +272,9 @@ void SimpleTransformer::recursRef_(const CNode* node, LinearFunctionPtr& lf,
 
   switch(node->getOp()) {
   case(OpAbs):
+  recursRef_(node->getL(), lfl, vl, dl);
+  uniVarRef_(node, lfl, vl, dl, lf, v, d);
+  break;  
   case(OpAcos):
   case(OpAcosh):
   case(OpAsin):
@@ -457,7 +461,7 @@ void SimpleTransformer::recursRef_(const CNode* node, LinearFunctionPtr& lf,
         }
         
         CGraphPtr cg = (CGraphPtr) new CGraph();
-        CNode* n1 = cg->newNode(exp_v);
+        n1 = cg->newNode(exp_v);
         CNode* n2 = 0;
         
         // Build the native exponential graph
@@ -1125,8 +1129,6 @@ void SimpleTransformer::reformulate(ProblemPtr& newp, HandlerVector& handlers,
   handlers.push_back(qHandler_);
   uHandler_ = (CxUnivarHandlerPtr) new CxUnivarHandler(env_, newp_);
   handlers.push_back(uHandler_);
-  kHandler_ = (kPowHandlerPtr) new kPowHandler(env_, newp_, p_);
-  handlers.push_back(kHandler_);
   logHandler_=(LogHandlerPtr) new LogHandler(env_,newp_);
   handlers.push_back(logHandler_);
   expHandler_=(ExpHandlerPtr) new ExpHandler(env_,newp_);
@@ -1135,6 +1137,8 @@ void SimpleTransformer::reformulate(ProblemPtr& newp, HandlerVector& handlers,
   handlers.push_back(recipHandler_);
   powHandler_=(PowHandlerPtr) new PowHandler(env_,newp_);
   handlers.push_back(powHandler_);
+  absHandler_=(AbsHandlerPtr) new AbsHandler(env_,newp_);
+  handlers.push_back(absHandler_);
 
   copyLinear_(p_, newp_);
 
@@ -1213,6 +1217,14 @@ void SimpleTransformer::uniVarRef_(const CNode* n0, LinearFunctionPtr lfl,
     if(fabs(dl) > zTol_) {
       vl = newVar_(vl, dl, newp_);
     }
+
+  if(n0->getOp() == OpAbs) {
+  v = newVarAbs_(vl, newp_);
+  lf = 0;
+  d = 0;
+  return;
+}   
+
     CGraphPtr cg = (CGraphPtr) new CGraph();
     n1 = cg->newNode(vl);
     n2 = 0;
@@ -1229,7 +1241,6 @@ void SimpleTransformer::uniVarRef_(const CNode* n0, LinearFunctionPtr lfl,
     assert(0 == err);
   }
 }
-
 void SimpleTransformer::writeStats(std::ostream& out) const
 {
   out << me_
