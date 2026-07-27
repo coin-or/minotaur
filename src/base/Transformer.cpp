@@ -14,8 +14,8 @@
 #include <iostream>
 
 #include "MinotaurConfig.h"
-
 #include "Environment.h"
+#include "AbsHandler.h"
 #include "ExpHandler.h"
 #include "CGraph.h"
 #include "CNode.h"
@@ -336,7 +336,50 @@ VariablePtr Transformer::newVar_(VariablePtr iv, double d, ProblemPtr newp)
   }
 }
 
+VariablePtr Transformer::newVarAbs_(VariablePtr vl, ProblemPtr newp)
+{
+  std::map<VariablePtr, VariablePtr>::iterator it = absVarCache_.find(vl);
+  if (it != absVarCache_.end()) {
+    return it->second;   // reuse existing t = |vl|, no new var/constraints
+  }
 
+  // t = |vl| implies tight bounds derivable from vl's bounds. Setting them
+  // here is essential: without a finite ub on t, downstream terms built on
+  // t (e.g. t^k in PowHandler, products in QuadHandler) have no derivable
+  // bounds, forcing QuadHandler::addDefaultBounds to bake huge invented
+  // placeholder coefficients (~1e9) into McCormick cuts. Those corrupt the
+  // LP relaxation and can produce false optimality certificates.
+  double lb = 0.0;
+  double ub = INFINITY;
+  double vlb = vl->getLb();
+  double vub = vl->getUb();
+  if (vlb > -INFINITY && vub < INFINITY) {
+    ub = std::max(fabs(vlb), fabs(vub));
+  }
+  // optional but free: if vl's range excludes 0, |vl| is bounded away from 0.
+  if (vlb > 0.0) {
+    lb = vlb;
+  } else if (vub < 0.0) {
+    lb = -vub;
+  }
+
+  VariablePtr t = newp->newVariable(lb, ub, Continuous);
+
+  LinearFunctionPtr lf1 = (LinearFunctionPtr) new LinearFunction();
+  lf1->addTerm(t, 1.0);
+  lf1->addTerm(vl, -1.0);
+  ConstraintPtr c1 = newp->newConstraint((FunctionPtr) new Function(lf1), 0.0, INFINITY);
+  absHandler_->addConstraint(c1);
+
+  LinearFunctionPtr lf2 = (LinearFunctionPtr) new LinearFunction();
+  lf2->addTerm(t, 1.0);
+  lf2->addTerm(vl, 1.0);
+  ConstraintPtr c2 = newp->newConstraint((FunctionPtr) new Function(lf2), 0.0, INFINITY);
+  absHandler_->addConstraint(c2);
+
+  absVarCache_[vl] = t;
+  return t;
+}
 VariablePtr Transformer::newVar_(LinearFunctionPtr lf, double d,
                                  ProblemPtr newp)
 {

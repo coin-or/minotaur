@@ -32,6 +32,7 @@ namespace Minotaur {
   public:
     /// Following classes can modify a Variable. All modification methods
     /// are private.
+    friend class AbsHandler;
     friend class AnalyticalCenter;
     friend class ExpHandler;
     friend class Linearizations;

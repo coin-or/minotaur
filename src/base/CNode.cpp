@@ -1489,8 +1489,9 @@ void CNode::propBounds(bool *is_inf, int *error)
 void CNode::propBounds_(double lb, double ub, bool *is_inf)
 {
   double etol = 1e-7;
-  assert(false == std::isnan(lb));
-  assert(false == std::isnan(ub));
+   if (std::isnan(lb) || std::isnan(ub)) {
+    return;
+  }
 
   if (lb < -MINFTY) {
     lb = -INFINITY;

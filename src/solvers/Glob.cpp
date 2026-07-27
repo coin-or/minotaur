@@ -332,7 +332,7 @@ void Glob::setInitialOptions_()
   options->findString("brancher")->setValue("hybrid");
   options->findString("nlp_engine")->setValue("ipopt");
   options->findBool("cgtoqf")->setValue(true);
-  options->findBool("simplex_cut")->setValue(true);
+  options->findBool("simplex_cut")->setValue(false);
 }
 
 // Eigen_Shift framework for QP/MIQP with binary convexification --developed by Sachin Pandey
@@ -607,7 +607,7 @@ int Glob::showInfo()
      options->findFlag("v")->getValue()) {
     env_->getLogger()->msgStream(LogNone)
         << me_ << "Minotaur version " << env_->getVersion() << std::endl
-        << me_ << "global optimization for nonconvex QCQP" << std::endl;
+        << me_ << "Global Optimization for General MINLPs" << std::endl;
     return 1;
   }
 
@@ -618,7 +618,7 @@ int Glob::showInfo()
 
   env_->getLogger()->msgStream(LogInfo)
       << me_ << "Minotaur version " << env_->getVersion() << std::endl
-      << me_ << "global optimization for nonconvex QCQP" << std::endl;
+      << me_ << "Global Optimization for General MINLPs" << std::endl;
   return 0;
 }
 

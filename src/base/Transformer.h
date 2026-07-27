@@ -25,6 +25,7 @@ class Engine;
 class LinearHandler;
 class LogHandler;
 class Problem;
+class AbsHandler;
 class ExpHandler;
 class PowHandler;
 class QuadHandler;
@@ -39,6 +40,7 @@ typedef CxUnivarHandler *CxUnivarHandlerPtr;
 typedef CGraph *CGraphPtr;
 typedef LinearHandler *LinearHandlerPtr;
 typedef PowHandler *PowHandlerPtr;
+typedef AbsHandler *AbsHandlerPtr;
 typedef RecipHandler *RecipHandlerPtr;
 typedef LogHandler *LogHandlerPtr;
 typedef ExpHandler *ExpHandlerPtr;
@@ -106,7 +108,8 @@ class Transformer {
  protected:
   /// The pointer to environment.
   EnvPtr env_;
-
+  ///Handler for absolute value constraint
+  AbsHandlerPtr absHandler_;
   /// Handler for linear constraints and variables.
   LinearHandlerPtr lHandler_;
 
@@ -159,7 +162,7 @@ class Transformer {
    * \f$y_i = x_j + d\f$.
    */
   YEqVars *yVars_;
-
+std::map<VariablePtr, VariablePtr> absVarCache_;  // vl -> existing t = |vl|
   /// Tolerance for checking if a value is zero.
   const double zTol_;
 
@@ -259,6 +262,7 @@ class Transformer {
    * and returns it.
    */
   VariablePtr newVar_(CGraphPtr cg, ProblemPtr newp);
+  VariablePtr newVarAbs_(VariablePtr vl, ProblemPtr newp);
 
  private:
   static const std::string me_;

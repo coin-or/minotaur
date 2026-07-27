@@ -98,15 +98,25 @@ void RecipHandler::updateRelax_(RecipCons &cd, RelaxationPtr rel, DoubleVector &
 double RecipHandler::getViol_(const RecipCons &cd, const DoubleVector &x) const
 {
   double xval, fval, fhat, absViol, relViol;
-  
+
   xval = x[cd.riv->getIndex()];
   fhat = x[cd.rov->getIndex()];
 
-  // Massive violation if evaluated directly at  0
-  if (std::abs(xval) < 1e-9) return 1e9;
+  // If the variable's own domain has already been branched down to
+  // (near-)zero width around the pole, further branching cannot help --
+  // this is a decided quantity, not an open violation. Report no
+  // violation here and let bound propagation / isFeasible_ handle the
+  // actual feasibility of x landing at the pole.
+  double xlb = cd.riv->getLb();
+  double xub = cd.riv->getUb();
+  if (xub - xlb < vTol_) {
+    return 0.0;
+  }
+
+  // if (std::abs(xval) < 1e-9) return 1e9;
 
   fval = 1.0 / xval;
-  absViol = std::abs(fhat - fval); 
+  absViol = std::abs(fhat - fval);
   relViol = absViol;
 
   if (std::fabs(fval) + absViol > 1.0) {
@@ -344,13 +354,11 @@ bool RecipHandler::isFeasible_(ConstSolutionPtr sol, RelaxationPtr, bool &isfeas
     cd = *it;
     viol = getViol_(*cd, x);
 
-    if (viol > eTol_) {
-      if (cd->riv->getUb() - cd->riv->getLb() > vTol_) {
-        isfeas = false;
-        inf_meas += viol;
-        num_inf++;
-      }
-    }  
+  if (viol > aTol_) {
+  isfeas = false;
+  inf_meas += viol;
+  num_inf++;
+} 
   }
   return isfeas;
 }
@@ -436,10 +444,14 @@ ModificationPtr RecipHandler::getBrMod(BrCandPtr cand, DoubleVector &x, Relaxati
   value = xval;
   len = v->getUb() - v->getLb();
 
-  // Zero Check
-  if (v->getLb() < -1e-6 && v->getUb() > 1e-6) {
-    value = 0.0; // Force spatial branch at 0
-  } else {
+ // getBrMod / getBranches -- broaden the zero-check to one-sided pole-touching domains too
+// AFTER
+if ((v->getLb() < -1e-6 && v->getUb() > 1e-6) ||
+    (v->getLb() > -1e-6 && v->getLb() < 1e-6 && v->getUb() > 1e-6) ||
+    (v->getUb() > -1e-6 && v->getUb() < 1e-6 && v->getLb() < -1e-6)) {
+  value = 1e-4;
+}
+else {
     if (value < v->getLb() + minFromBds * len) value = v->getLb() + minFromBds * len;
     else if (value > v->getUb() - minFromBds * len) value = v->getUb() - minFromBds * len;
   }
@@ -453,7 +465,6 @@ ModificationPtr RecipHandler::getBrMod(BrCandPtr cand, DoubleVector &x, Relaxati
   lmods->insert(bmod);
   return lmods;
 }
-
 Branches RecipHandler::getBranches(BrCandPtr cand, DoubleVector &x, RelaxationPtr rel, SolutionPoolPtr)
 {
   double minFromBds, xval, value, len;
@@ -465,19 +476,27 @@ Branches RecipHandler::getBranches(BrCandPtr cand, DoubleVector &x, RelaxationPt
 
   minFromBds = 0.1;
   vcand = dynamic_cast<BrVarCand *>(cand);
-  v = vcand->getVar(); 
+  v = vcand->getVar();
   v2 = rel->getOriginalVar(v);
   xval = x[v->getIndex()];
   value = xval;
   len = v->getUb() - v->getLb();
   branches = (Branches) new BranchPtrVector();
 
-  //  ZERO  CHECK
-  if (v->getLb() < -1e-6 && v->getUb() > 1e-6) {
-    value = 0.0; // Split node exactly at 0 to stabilize children
+  const double poleEps = bTol_;
+  double lb = v->getLb();
+  double ub = v->getUb();
+  bool straddles      = (lb < -poleEps && ub > poleEps);
+  bool touchesFromPos  = (lb > -poleEps && lb < poleEps && ub > poleEps);
+  bool touchesFromNeg  = (ub > -poleEps && ub < poleEps && lb < -poleEps);
+
+  if (straddles) {
+    value = 0.0;
+  } else if (touchesFromPos || touchesFromNeg) {
+    value = touchesFromPos ? poleEps : -poleEps;
   } else {
-    if (value < v->getLb() + minFromBds * len) value = v->getLb() + minFromBds * len;
-    else if (value > v->getUb() - minFromBds * len) value = v->getUb() - minFromBds * len;
+    if (value < lb + minFromBds * len) value = lb + minFromBds * len;
+    else if (value > ub - minFromBds * len) value = ub - minFromBds * len;
   }
 
   // Down Branch
@@ -495,13 +514,18 @@ Branches RecipHandler::getBranches(BrCandPtr cand, DoubleVector &x, RelaxationPt
   branch->addPMod(mod);
   mod = (VarBoundModPtr) new VarBoundMod(v, Lower, value);
   branch->addRMod(mod);
+  if (touchesFromNeg) {
+    mod = (VarBoundModPtr) new VarBoundMod(v2, Upper, -poleEps);
+    branch->addPMod(mod);
+    mod = (VarBoundModPtr) new VarBoundMod(v, Upper, -poleEps);
+    branch->addRMod(mod);
+  }
   branch->setActivity(value);
   branches->push_back(branch);
-  
+
   vcand->setNumBranches(2);
   return branches;
-}
-
+} 
 BranchPtr RecipHandler::doBranch_(BranchDirection UpOrDown, ConstVariablePtr v, double bvalue)
 {
   BranchPtr branch;
@@ -606,25 +630,24 @@ bool RecipHandler::propRecipBnds_(RecipConsPtr cdata, bool *changed)
   VariablePtr x, z;
   double xlb, xub, zlb, zub;
   double new_zlb, new_zub, new_xlb, new_xub;
+  const double poleEps = 1e-6;  // below this, treat as "touching the pole"
 
   x = cdata->iv;
-  z = cdata->ov; 
-  
+  z = cdata->ov;
+
   xlb = x->getLb();
   xub = x->getUb();
   zlb = z->getLb();
   zub = z->getUb();
 
-  if (xlb == 0.0 && xub == 0.0) return true; 
+  if (xlb == 0.0 && xub == 0.0) return true;
 
-  // Forward (x -> z) 
-  if (xlb >= 0.0) { 
-    double safe_xlb = std::max(xlb, 1e-9); // Prevent 1/0
+  // Forward (x -> z)
+  if (xlb >= 0.0) {
     new_zlb = (xub < 1e15) ? 1.0 / xub : 0.0;
-    new_zub = 1.0 / safe_xlb;
-  } else if (xub <= 0.0) { 
-    double safe_xub = std::min(xub, -1e-9);
-    new_zlb = 1.0 / safe_xub;
+    new_zub = (xlb > poleEps) ? 1.0 / xlb : INFINITY;
+  } else if (xub <= 0.0) {
+    new_zlb = (xub < -poleEps) ? 1.0 / xub : -INFINITY;
     new_zub = (xlb > -1e15) ? 1.0 / xlb : 0.0;
   } else {
     new_zlb = -INFINITY;
@@ -632,14 +655,12 @@ bool RecipHandler::propRecipBnds_(RecipConsPtr cdata, bool *changed)
   }
   if (updatePBnds_(z, new_zlb, new_zub, changed) < 0) return true;
 
-  //  Backward (z -> x) 
+  // Backward (z -> x) -- same principle
   if (zlb >= 0.0) {
-    double safe_zlb = std::max(zlb, 1e-9);
     new_xlb = (zub < 1e15) ? 1.0 / zub : 0.0;
-    new_xub = 1.0 / safe_zlb;
+    new_xub = (zlb > poleEps) ? 1.0 / zlb : INFINITY;
   } else if (zub <= 0.0) {
-    double safe_zub = std::min(zub, -1e-9);
-    new_xlb = 1.0 / safe_zub;
+    new_xlb = (zub < -poleEps) ? 1.0 / zub : -INFINITY;
     new_xub = (zlb > -1e15) ? 1.0 / zlb : 0.0;
   } else {
     new_xlb = -INFINITY;
