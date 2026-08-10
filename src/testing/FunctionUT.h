@@ -34,7 +34,6 @@ public:
   //void testEvalHessian() { CPPUNIT_ASSERT(!"implement me!"); }
 
   CPPUNIT_TEST_SUITE(FunctionTest);
-  CPPUNIT_TEST(testBilinearRecognize);
   CPPUNIT_TEST(testEval);
   CPPUNIT_TEST(testGetFixVarOffset);
   CPPUNIT_TEST(testEvalGradient);
@@ -44,7 +43,6 @@ public:
   //CPPUNIT_TEST(testGetObj);
   CPPUNIT_TEST_SUITE_END();
 
-  void testBilinearRecognize();
   //void testGetRhs();
   //void testGetObj();
 

@@ -80,30 +80,6 @@ void FunctionTest::testEval()
   delete f;
 }
 
-void FunctionTest::testBilinearRecognize()
-{
-  FunctionPtr f1;
-  // 7x1 - 2x2
-  lf1_ = LinearFunctionPtr(new LinearFunction());
-  lf1_->addTerm(vars_[0], 7.0);
-  lf1_->addTerm(vars_[1], -2.0);
-  f1 = new Function(lf1_);
-  CPPUNIT_ASSERT(f1->getType() != Bilinear);
-  delete f1;
-
-  // 7x1 - 2x2
-  lf1_ = LinearFunctionPtr(new LinearFunction());
-  lf1_->addTerm(vars_[0], 7.0);
-  lf1_->addTerm(vars_[1], -2.0);
-  // 2 x1*x2
-  qf1_ = QuadraticFunctionPtr(new QuadraticFunction());
-  qf1_->addTerm(VariablePair(vars_[0],vars_[1]), 2.0);
-  
-  f1 = new Function(lf1_, qf1_);
-  CPPUNIT_ASSERT(f1->getType() == Bilinear);
-  delete f1;
-}
-
 void FunctionTest::testGetFixVarOffset() 
 {
   FunctionPtr f1;

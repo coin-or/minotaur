@@ -294,9 +294,7 @@ void NLPBnbUT::testNLPBnb1()
   ReliabilityBrancherPtr br;
   RelaxationPtr rel;
   EnginePtr e;
-  int err = 0;
 
-  env->startTimer(err);
   BranchAndBound *bab = new BranchAndBound(env, p);
 
   IntVarHandlerPtr v_hand = (IntVarHandlerPtr) new IntVarHandler(env, p);
@@ -309,7 +307,7 @@ void NLPBnbUT::testNLPBnb1()
   EngineFactory efac(env);
   e = efac.getNLPEngine();
 
-  PCBProcessorPtr nproc = (PCBProcessorPtr) new PCBProcessor(env, e, handlers);
+  PCBProcessorPtr nproc = (PCBProcessorPtr) new PCBProcessor(env, e, handlers, p);
   br= (ReliabilityBrancherPtr) new ReliabilityBrancher(env, handlers);
   br->setEngine(e);
   nproc->setBrancher(br);

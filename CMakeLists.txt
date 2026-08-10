@@ -1,7 +1,7 @@
 ## Minotaur CMake file
 
+CMAKE_MINIMUM_REQUIRED(VERSION 3.10 FATAL_ERROR) 
 project(MINOTAUR CXX C Fortran)
-CMAKE_MINIMUM_REQUIRED(VERSION 3.0 FATAL_ERROR) 
 cmake_policy(SET CMP0003 NEW)
 set(CMAKE_CXX_STANDARD 17)
 ## Fortran is required for Bqpd, Filter.
