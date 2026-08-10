@@ -155,28 +155,32 @@ void Transformer::assignHandler_(CGraphPtr cg, ConstraintPtr c)
     iv = *(c->getFunction()->getNonlinearFunction()->varsBegin());
     recipHandler_->addConstraint(c, iv, ov, 'E');
     break;
+  case OpAbs:
+    lf = c->getFunction()->getLinearFunction();
+    if (lf) {
+      assert(lf->getNumTerms() == 1);
+      ov = lf->termsBegin()->first;
+    }
+    iv = *(c->getFunction()->getNonlinearFunction()->varsBegin());
+    absHandler_->addConstraint(c, iv, ov, 'E');
+    break;
+
 case OpPowK:
   lf = c->getFunction()->getLinearFunction();
   if (lf) {
     assert(lf->getNumTerms() == 1);
     ov = lf->termsBegin()->first;
-  }
-  
+  }  
   iv = *(c->getFunction()->getNonlinearFunction()->varsBegin());
 
-  // Use the correct Minotaur CNode API:
-  root = cg->getOut(); 
-  
-  // getR() gets the right child (the exponent)
+  // k=2 to quadhandler
+  root = cg->getOut();
   expNode = root->getR(); 
-  
-  // getVal() extracts the double value
-   k = expNode->getVal();
-      
+  k = expNode->getVal();    
    if (std::abs(k - 2.0) < 1e-9) {
       qHandler_->addConstraint(c);
   } 
-  // Fallback: Send everything else to the PowHandler
+  //Send everything else to the PowHandler
   else {
       powHandler_->addConstraint(c, iv, ov, k, 'E');
   }
@@ -336,50 +340,6 @@ VariablePtr Transformer::newVar_(VariablePtr iv, double d, ProblemPtr newp)
   }
 }
 
-VariablePtr Transformer::newVarAbs_(VariablePtr vl, ProblemPtr newp)
-{
-  std::map<VariablePtr, VariablePtr>::iterator it = absVarCache_.find(vl);
-  if (it != absVarCache_.end()) {
-    return it->second;   // reuse existing t = |vl|, no new var/constraints
-  }
-
-  // t = |vl| implies tight bounds derivable from vl's bounds. Setting them
-  // here is essential: without a finite ub on t, downstream terms built on
-  // t (e.g. t^k in PowHandler, products in QuadHandler) have no derivable
-  // bounds, forcing QuadHandler::addDefaultBounds to bake huge invented
-  // placeholder coefficients (~1e9) into McCormick cuts. Those corrupt the
-  // LP relaxation and can produce false optimality certificates.
-  double lb = 0.0;
-  double ub = INFINITY;
-  double vlb = vl->getLb();
-  double vub = vl->getUb();
-  if (vlb > -INFINITY && vub < INFINITY) {
-    ub = std::max(fabs(vlb), fabs(vub));
-  }
-  // optional but free: if vl's range excludes 0, |vl| is bounded away from 0.
-  if (vlb > 0.0) {
-    lb = vlb;
-  } else if (vub < 0.0) {
-    lb = -vub;
-  }
-
-  VariablePtr t = newp->newVariable(lb, ub, Continuous);
-
-  LinearFunctionPtr lf1 = (LinearFunctionPtr) new LinearFunction();
-  lf1->addTerm(t, 1.0);
-  lf1->addTerm(vl, -1.0);
-  ConstraintPtr c1 = newp->newConstraint((FunctionPtr) new Function(lf1), 0.0, INFINITY);
-  absHandler_->addConstraint(c1);
-
-  LinearFunctionPtr lf2 = (LinearFunctionPtr) new LinearFunction();
-  lf2->addTerm(t, 1.0);
-  lf2->addTerm(vl, 1.0);
-  ConstraintPtr c2 = newp->newConstraint((FunctionPtr) new Function(lf2), 0.0, INFINITY);
-  absHandler_->addConstraint(c2);
-
-  absVarCache_[vl] = t;
-  return t;
-}
 VariablePtr Transformer::newVar_(LinearFunctionPtr lf, double d,
                                  ProblemPtr newp)
 {

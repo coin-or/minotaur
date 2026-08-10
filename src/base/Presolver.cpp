@@ -103,10 +103,11 @@ SolveStatus Presolver::solve()
   env_->getLogger()->msgStream(LogInfo) << me_ << "Presolving ... "
     << std::endl;
   // call all handlers.
-   while (true==changed && false==stop && iters<5) {
-    logger_->msgStream(LogDebug) << me_ << "major iteration " << iters << std::endl;
+   while (false==stop && iters<5) {
+   logger_->msgStream(LogDebug) << me_ << "major iteration " << iters << std::endl;
     for (HandlerIterator h = handlers_.begin(); h != handlers_.end(); ++h) {
-      changed = false;
+     changed= false;
+     // bool h_changed = false;
       h_status = (*h)->presolve(&mods_, &changed, &sol_);
       if (h_status == SolvedOptimal) {
         logger_->msgStream(LogDebug) << me_ << "handler " << (*h)->getName()
@@ -126,7 +127,7 @@ SolveStatus Presolver::solve()
         stop = true;
         break;
       }
-      if (changed) {
+      if (changed) {        
        last_ch_subiter = subiters;
       }
       if (subiters>n_hand-2 && subiters-last_ch_subiter>n_hand-2) {

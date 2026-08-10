@@ -678,11 +678,11 @@ int RecipHandler::updatePBnds_(VariablePtr p, double newlb, double newub, bool *
   oldub = p->getUb();
   lb = oldlb;
   ub = oldub;
+   if (p->getType() == Binary || p->getType() == ImplBin || p->getType() == Integer || p->getType() == ImplInt) {
+ 
+    if (std::abs(newlb - std::round(newlb)) < 1e-4) newlb = std::round(newlb);
+    if (std::abs(newub - std::round(newub)) < 1e-4) newub = std::round(newub);
   
-  if (std::abs(newlb - std::round(newlb)) < 1e-4) newlb = std::round(newlb);
-  if (std::abs(newub - std::round(newub)) < 1e-4) newub = std::round(newub);
-  
-  if (p->getType() == Binary || p->getType() == ImplBin || p->getType() == Integer || p->getType() == ImplInt) {
     if (newlb - floor(newlb) < eTol_) newlb = floor(newlb);
     else newlb = ceil(newlb);
     if (ceil(newub) - newub < eTol_) newub = ceil(newub);
@@ -691,6 +691,7 @@ int RecipHandler::updatePBnds_(VariablePtr p, double newlb, double newub, bool *
 
   if (newlb > lb) { lb = newlb; *changed = true; ++pStats_.vBnd; }
   if (newub < ub) { ub = newub; *changed = true; ++pStats_.vBnd; }
+  if (newlb > ub + eTol_ || newub < lb - eTol_) return -1;
 
   if (lb > ub + eTol_) return -1;
  
@@ -721,6 +722,11 @@ int RecipHandler::updatePBnds_(VariablePtr v, double newlb, double newub, Relaxa
   if (std::abs(newub - std::round(newub)) < 1e-4) newub = std::round(newub);
 
   if (v->getType() == Binary || v->getType() == ImplBin || v->getType() == Integer || v->getType() == ImplInt) {
+
+    if (std::abs(newlb - std::round(newlb)) < 1e-4) newlb = std::round(newlb);
+    if (std::abs(newub - std::round(newub)) < 1e-4) newub = std::round(newub);
+  
+
     if (newlb - floor(newlb) < eTol_) newlb = floor(newlb);
     else newlb = ceil(newlb);
     if (ceil(newub) - newub < eTol_) newub = ceil(newub);

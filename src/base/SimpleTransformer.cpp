@@ -83,25 +83,41 @@ SimpleTransformer::~SimpleTransformer()
 void SimpleTransformer::absRef_(LinearFunctionPtr lfl, VariablePtr vl,
                                 double dl, VariablePtr& v, double& d)
 {
-  if(lfl) {
+  // Case 1: argument is a linear expression + constant
+  if (lfl) {
     vl = newVar_(lfl, dl, newp_);
-  } else if(vl && fabs(dl) > zTol_) {
+  }
+
+  // Case 2: argument is variable + constant
+  else if (vl && fabs(dl) > zTol_) {
     vl = newVar_(vl, dl, newp_);
   }
-  if(vl) {
+
+  // Case 3: argument now represented by a variable
+  if (vl) {
     CGraphPtr cg = (CGraphPtr) new CGraph();
+
     CNode* n1 = cg->newNode(vl);
     CNode* n2 = 0;
 
     n1 = cg->newNode(OpAbs, n1, n2);
+
     cg->setOut(n1);
     cg->finalize();
+
+    // Creates:
+    // |vl| - v = 0
+    // assignHandler_() will send this to AbsHandler
     v = newVar_(cg, newp_);
-  } else {
+
+    d = 0.0;
+  }
+
+  // Case 4: argument is purely constant
+  else {
     d = fabs(dl);
   }
 }
-
 void SimpleTransformer::bilRef_(LinearFunctionPtr lfl, VariablePtr vl,
                                 double dl, LinearFunctionPtr lfr,
                                 VariablePtr vr, double dr,
@@ -224,33 +240,40 @@ VariablePtr SimpleTransformer::newBilVar_(VariablePtr vl, VariablePtr vr)
 
 
 void SimpleTransformer::powKRef_(LinearFunctionPtr lfl, VariablePtr vl,
-                                 double dl, double k, LinearFunctionPtr& lf,
+                                 double dl, double k,
+                                 LinearFunctionPtr& lf,
                                  VariablePtr& v, double& d)
 {
   CNode *n1, *n2;
-  
-  
-  // 1. If the base is a linear function, convert it to a single variable
+
+  // Convert the complete base to one variable.
   if (lfl) {
     vl = newVar_(lfl, dl, newp_);
   }
-  
-  // 2. If the base is a variable, build the x^k expression graph
+  else if (vl && fabs(dl) > zTol_) {
+    vl = newVar_(vl, dl, newp_);
+  }
+
+  // Variable-dependent base.
   if (vl) {
     CGraphPtr cg = (CGraphPtr) new CGraph();
+
     n1 = cg->newNode(vl);
     n2 = cg->newNode(k);
-    n2 = cg->newNode(OpPowK, n1, n2);
-    cg->setOut(n2);
+
+    n1 = cg->newNode(OpPowK, n1, n2);
+
+    cg->setOut(n1);
     cg->finalize();
-    
-    // Reset output linear function/constant and assign the new power variable
-    lf = 0; 
+
+    lf = 0;
     v = newVar_(cg, newp_);
-    d = 0;
-  } 
-  // 3. If the base is purely a constant, just calculate the static value
+    d = 0.0;
+  }
+  // Pure constant base.
   else {
+    lf = 0;
+    v = 0;
     d = std::pow(dl, k);
   }
 }
@@ -273,7 +296,7 @@ void SimpleTransformer::recursRef_(const CNode* node, LinearFunctionPtr& lf,
   switch(node->getOp()) {
   case(OpAbs):
   recursRef_(node->getL(), lfl, vl, dl);
-  uniVarRef_(node, lfl, vl, dl, lf, v, d);
+  absRef_(lfl, vl, dl, v, d);
   break;  
   case(OpAcos):
   case(OpAcosh):
@@ -1217,13 +1240,6 @@ void SimpleTransformer::uniVarRef_(const CNode* n0, LinearFunctionPtr lfl,
     if(fabs(dl) > zTol_) {
       vl = newVar_(vl, dl, newp_);
     }
-
-  if(n0->getOp() == OpAbs) {
-  v = newVarAbs_(vl, newp_);
-  lf = 0;
-  d = 0;
-  return;
-}   
 
     CGraphPtr cg = (CGraphPtr) new CGraph();
     n1 = cg->newNode(vl);

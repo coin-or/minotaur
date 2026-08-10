@@ -779,7 +779,7 @@ bool LogHandler::propLogBnds_(LogConsPtr cdata, bool *changed)
   VariablePtr x, y;
   double xlb, xub, ylb, yub;
   double new_ylb, new_yub, new_xlb, new_xub;
-
+  const double logEps = 1e-7;  // x must stay strictly positive for log(x) to be defined
   x = cdata->iv;  // input variable x
   y = cdata->ov;  // output variable y = log(x)
 
@@ -801,7 +801,7 @@ bool LogHandler::propLogBnds_(LogConsPtr cdata, bool *changed)
   } else {
     // If xlb <= 0, the valid domain of log(x) has negative infinity.
     // We MUST allow y to go to -INFINITY to support fractional x values.
-    new_ylb = -INFINITY; 
+    new_ylb = std::log(logEps); 
   }
 
   // Map xub to new_yub
@@ -849,14 +849,6 @@ int LogHandler::updatePBnds_(VariablePtr p,
   double lb = oldlb;
   double ub = oldub;
   
-// it checks if that number is extremely close (within 0.0001) to a whole number or not
-   if (std::abs(newlb - std::round(newlb)) < 1e-4) {
-    newlb = std::round(newlb);
-  }
-  if (std::abs(newub - std::round(newub)) < 1e-4) {
-    newub = std::round(newub);
-  }
-  
   
   if (newlb > p->getLb() + eTol_ || newub < p->getUb() - eTol_) {
   log_->msgStream(LogDebug2) << me_ <<" Tightening bounds for: " << p->getName() 
@@ -864,7 +856,14 @@ int LogHandler::updatePBnds_(VariablePtr p,
   }
 
   if (p->getType() == Binary || p->getType() == ImplBin ||
-      p->getType() == Integer || p->getType() == ImplInt) {
+        p->getType() == Integer || p->getType() == ImplInt) {
+      // it checks if that number is extremely close (within 0.0001) to a whole number or not
+    if (std::abs(newlb - std::round(newlb)) < 1e-4) {
+    newlb = std::round(newlb);
+    }
+    if (std::abs(newub - std::round(newub)) < 1e-4) {
+    newub = std::round(newub);
+    }
     // Lower bound: ceil only if newlb is significantly greater,
     // else floor 
     if (newlb - floor(newlb)  < eTol_) {
@@ -943,7 +942,20 @@ int LogHandler::updatePBnds_(VariablePtr v, double newlb, double newub,
 
   // Rounding logic for integer variables
   if (v->getType() == Binary || v->getType() == ImplBin ||
-      v->getType() == Integer || v->getType() == ImplInt) {
+        v->getType() == Integer || v->getType() == ImplInt) {
+    // it checks if that number is extremely close (within 0.0001) to a whole number or not
+    if (std::abs(newlb - std::round(newlb)) < 1e-4) {
+    newlb = std::round(newlb);
+    }
+    if (std::abs(newub - std::round(newub)) < 1e-4) {
+    newub = std::round(newub);
+    }
+  
+
+
+
+
+
     if (newlb - floor(newlb) < eTol_) newlb = floor(newlb);
     else newlb = ceil(newlb);
 

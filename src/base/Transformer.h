@@ -262,7 +262,7 @@ std::map<VariablePtr, VariablePtr> absVarCache_;  // vl -> existing t = |vl|
    * and returns it.
    */
   VariablePtr newVar_(CGraphPtr cg, ProblemPtr newp);
-  VariablePtr newVarAbs_(VariablePtr vl, ProblemPtr newp);
+
 
  private:
   static const std::string me_;

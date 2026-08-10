@@ -238,6 +238,7 @@ PresolverPtr Glob::createPres_(HandlerVector& handlers)
 {
   // create handlers for presolve
   PresolverPtr pres = PresolverPtr(); // NULL
+  OptionDBPtr options = env_->getOptions();
 
   inst_->calculateSize();
   if(env_->getOptions()->findBool("presolve")->getValue() == true) {
@@ -258,6 +259,7 @@ PresolverPtr Glob::createPres_(HandlerVector& handlers)
     if(!inst_->isLinear() && (inst_->isQP() || inst_->isQuadratic())) {
       if(true == env_->getOptions()->findBool("cgtoqf")->getValue()) {
         QuadHandlerPtr qhand = (QuadHandlerPtr) new QuadHandler(env_, inst_);
+        options->findBool("simplex_cut")->setValue(true); 
         handlers.push_back(qhand);
       } else {
         if(true == env_->getOptions()->findBool("nl_presolve")->getValue()) {
