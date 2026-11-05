@@ -17,7 +17,6 @@
 #include "Types.h"
 
 namespace Minotaur {
-class CxUnivarHandler;
 class CGraph;
 class CNode;
 class Environment;
@@ -36,7 +35,6 @@ class UnivarQuadHandler;
 class YEqLFs;
 class YEqUCGs;
 class YEqVars;
-typedef CxUnivarHandler *CxUnivarHandlerPtr;
 typedef CGraph *CGraphPtr;
 typedef LinearHandler *LinearHandlerPtr;
 typedef PowHandler *PowHandlerPtr;
@@ -139,8 +137,6 @@ class Transformer {
   /// Handler for quadratic terms
   QuadHandlerPtr qHandler_;
 
-  /// Handler for univariate constraints.
-  CxUnivarHandlerPtr uHandler_;
 
   /// Handler for univariate quadratic constraints.
   UnivarQuadHandlerPtr uqHandler_;

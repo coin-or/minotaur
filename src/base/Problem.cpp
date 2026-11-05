@@ -2008,11 +2008,7 @@ bool Problem::isFeasible(const double* x, double objval, double& inf_meas) const
       cub = c->getUb();
       clb = c->getLb();
       
-      if (logger_) {
-        logger_->msgStream(LogDebug1) << me_ <<"Constraint " << c->getName() 
-          << "' activity = " << act << " range = " << clb << " " << cub << std::endl;
-      }
-
+    
       // Check Upper Bound with scaled relative tolerance
       double ubTol = aTol + rTol * std::fabs(cub);
       if (cub < 1e15 && act > cub + ubTol){

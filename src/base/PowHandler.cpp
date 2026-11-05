@@ -57,9 +57,20 @@ PowHandler::~PowHandler()
 }
 
 void continuedFraction(double val, int64_t &num, int64_t &den,
-                        double relTol = 1e-9, double absTol = 1e-12,
-                        int64_t maxDen = 1000000) {
-  bool neg = val < 0;
+                       double relTol = 1e-9, double absTol = 1e-12,
+                       int64_t maxDen = 1000000)
+{
+  bool neg;
+  int64_t h1, h2, k1, k2;
+  double x;
+  int64_t bestNum, bestDen;
+  bool found;
+  int i;
+  int64_t a, h, k;
+  double approx, relErr, absErr, frac;
+  int64_t g;
+
+  neg = val < 0;
   val = std::fabs(val);
 
   // Handle zero
@@ -69,25 +80,33 @@ void continuedFraction(double val, int64_t &num, int64_t &den,
     return;
   }
 
-  int64_t h1 = 1, h2 = 0, k1 = 0, k2 = 1;
-  double x = val;
+  h1 = 1;
+  h2 = 0;
+  k1 = 0;
+  k2 = 1;
+  x = val;
 
-  int64_t bestNum = 0, bestDen = 1;  // fallback
-  bool found = false;
+  bestNum = 0;
+  bestDen = 1;  // fallback
+  found = false;
 
-  for (int i = 0; i < 64; ++i) {
-    int64_t a = static_cast<int64_t>(std::floor(x));
-    int64_t h = a * h1 + h2;
-    int64_t k = a * k1 + k2;
+  for (i = 0; i < 64; ++i) {
+    a = static_cast<int64_t>(std::floor(x));
+    h = a * h1 + h2;
+    k = a * k1 + k2;
 
-    if (k > maxDen) break;
+    if (k > maxDen) {
+      break;
+    }
 
-    h2 = h1; h1 = h;
-    k2 = k1; k1 = k;
+    h2 = h1;
+    h1 = h;
+    k2 = k1;
+    k1 = k;
 
-    double approx = static_cast<double>(h1) / static_cast<double>(k1);
-    double relErr = std::fabs(val - approx) / val;
-    double absErr = std::fabs(val - approx);
+    approx = static_cast<double>(h1) / static_cast<double>(k1);
+    relErr = std::fabs(val - approx) / val;
+    absErr = std::fabs(val - approx);
 
     // First convergent inside rel_tol is the simplest possible -- stop immediately
     if (relErr <= relTol) {
@@ -105,8 +124,11 @@ void continuedFraction(double val, int64_t &num, int64_t &den,
       break;
     }
 
-    double frac = x - static_cast<double>(a);
-    if (frac < 1e-13) break;  // next CF term would be infinite
+    frac = x - static_cast<double>(a);
+    if (frac < 1e-13) {
+      break;  // next CF term would be infinite
+    }
+
     x = 1.0 / frac;
   }
 
@@ -117,7 +139,7 @@ void continuedFraction(double val, int64_t &num, int64_t &den,
   }
 
   // Reduce the fraction using GCD
-  int64_t g = std::gcd(bestNum, bestDen);
+  g = std::gcd(bestNum, bestDen);
   if (g > 0) {
     bestNum /= g;
     bestDen /= g;
@@ -126,13 +148,12 @@ void continuedFraction(double val, int64_t &num, int64_t &den,
   num = neg ? -bestNum : bestNum;
   den = bestDen;
 }
-
 double PowHandler::getViol_(const PowCons &cd, const DoubleVector &x) const {
   double xval = x[cd.riv->getIndex()];
   double fhat = x[cd.rov->getIndex()];
   double fval = getF_(xval, cd.k, cd.type);
-double absViol = std::abs(fhat - fval);
-    double deriv = getDf_(xval, cd.k, cd.type);
+  double absViol = std::abs(fhat - fval);
+  double deriv = getDf_(xval, cd.k, cd.type);
     return absViol / std::sqrt(1.0 + deriv * deriv);
 }
 
@@ -140,10 +161,11 @@ double PowHandler::getF_(double xv, double k, PowType type) const {
   if (xv >= 0.0) return std::pow(xv, k);
   if (type == POS_EO || type == NEG_EO) return std::pow(std::abs(xv), k);
   if (type == POS_OO || type == NEG_OO) return -std::pow(std::abs(xv), k);
-  return 0.0;
+    return 0.0;
 }
 
-double PowHandler::getDf_(double xv, double k, PowType type) const {
+double PowHandler::getDf_(double xv, double k, PowType type) const
+{
   if (xv >= 0.0) return k * std::pow(xv, k - 1.0);
 
   // Assert domain safety
@@ -161,7 +183,8 @@ double PowHandler::getDf_(double xv, double k, PowType type) const {
 }
 
 
-double PowHandler::getD2f_(double xv, double k, PowType type) const {
+double PowHandler::getD2f_(double xv, double k, PowType type) const
+{
   // 1. Positive domain is always positive curvature (for k > 1)
   if (xv >= 0.0) return k * (k - 1.0) * std::pow(xv, k - 2.0);
 
@@ -181,7 +204,8 @@ double PowHandler::getD2f_(double xv, double k, PowType type) const {
 }
 
 
-double PowHandler::safeX_(double xv, double k) const {
+double PowHandler::safeX_(double xv, double k) const 
+{
   if ((k < 0.0 || (k > 0.0 && k < 1.0)) && std::abs(xv) < 1e-15) { 
       return (xv >= 0.0) ? 1e-15 : -1e-15; 
   }
@@ -189,7 +213,8 @@ double PowHandler::safeX_(double xv, double k) const {
 }
 
 
-double PowHandler::computeWStar_(double k) const {
+double PowHandler::computeWStar_(double k) const 
+{
   // Solves G(s) = k*s^{k-1} + (k-1)*s^k - 1 = 0 for s in (0,1).s=x/l or x/u
   // True root is alpha = -s (odd/odd sign convention applied by caller).
   //
@@ -219,14 +244,16 @@ double PowHandler::computeWStar_(double k) const {
     }
     if ((gmid > 0.0) == (glo > 0.0)) {
       lo = mid; glo = gmid;
-    } else {
+    } 
+    else {
       hi = mid; ghi = gmid;
     }
   }
   return -mid;
 }
 
-double PowHandler::computeWCross_(double n) const {
+double PowHandler::computeWCross_(double n) const 
+{
   // Solves h(w) = |w|^n - n*w + n - 1 = 0 for w in (-1, 0). w=x/l or x/u
   // w = x*/l, where x* is where the tangent to |x|^n at x=l (l<0)
   // recrosses the curve on the positive branch.
@@ -246,28 +273,20 @@ double PowHandler::computeWCross_(double n) const {
     w = 0.5 * (lo + hi);
     double hw = h(w);
     if (std::abs(hw) < 1e-14 || (hi - lo) < 1e-14) break;
-    if ((hw > 0.0) == (hlo > 0.0)) { lo = w; hlo = hw; }
-    else                            { hi = w; hhi = hw; }
+    if ((hw > 0.0) == (hlo > 0.0)) {lo = w; hlo = hw;}
+    else { hi = w; hhi = hw; }
   }
   return w; // x*/l ratio, in (-1,0)
 }
 
-
-// SLOT HANDLING
-//
 // The relaxation is one LP shared by the whole tree, so a row added
-// with rel->newConstraint() lives in every node forever.  A cut is only valid
-// on the box it was built for, so such a row cuts off feasible points in
-// sibling subtrees.
-//
-// Every cut this handler builds therefore lives in a slot: created once,
-// rewritten in place at each node with changeConstraint + LinConMod.  A branch
-// that emits fewer cuts than another must relax the leftover slots, otherwise
-// the parent's rows stay live on a box they were not built for.
+// with rel->newConstraint() lives in every node forever. Call this 
+// function for a constraint which is not valid at current node
 
 void PowHandler::relaxSlot_(PowCons &cd, RelaxationPtr rel,
                             std::vector<ConstraintPtr> &slots, size_t slot,
-                            ModVector &mods) {
+                            ModVector &mods) 
+{
   if (slot >= slots.size() || slots[slot] == nullptr) return;
   ConstraintPtr target = slots[slot];
   LinearFunctionPtr lf = (LinearFunctionPtr) new LinearFunction();
@@ -286,18 +305,18 @@ void PowHandler::relaxSlot_(PowCons &cd, RelaxationPtr rel,
 // function, with `from` = number of slots that branch actually filled.
 void PowHandler::relaxSlotsFrom_(PowCons &cd, RelaxationPtr rel,
                                  std::vector<ConstraintPtr> &slots,
-                                 size_t from, size_t to, ModVector &mods) {
+                                 size_t from, size_t to, ModVector &mods)
+{
   for (size_t s = from; s < to; ++s) {
     relaxSlot_(cd, rel, slots, s, mods);
   }
 }
 
 
-// ----------------------------------------------------------------------------
 // NODE PROCESSING
-// ----------------------------------------------------------------------------
 
-void PowHandler::relaxInitInc(RelaxationPtr rel, SolutionPool *, bool *is_inf) {
+void PowHandler::relaxInitInc(RelaxationPtr rel, SolutionPool *, bool *is_inf) 
+{
   ModVector mods; 
   for (auto it = consd_.begin(); it != consd_.end(); ++it) {
     (*it)->riv = rel->getVariable((*it)->iv->getIndex());
@@ -306,6 +325,7 @@ void PowHandler::relaxInitInc(RelaxationPtr rel, SolutionPool *, bool *is_inf) {
   }
   *is_inf = false;
 }
+
 void PowHandler::relaxNodeInc(NodePtr , RelaxationPtr rel, bool *is_inf) {
   ModVector mods;
   for (auto it = consd_.begin(); it != consd_.end(); ++it) {
@@ -316,11 +336,8 @@ void PowHandler::relaxNodeInc(NodePtr , RelaxationPtr rel, bool *is_inf) {
   *is_inf = false;
 }
 
-
-
-
-
-void PowHandler::linearize_(PowCons &cd, RelaxationPtr rel, ModVector &mods, bool init) {
+void PowHandler::linearize_(PowCons &cd, RelaxationPtr rel, ModVector &mods, bool init) 
+{
   double k = cd.k;
   
 #if SPEW
@@ -335,7 +352,8 @@ void PowHandler::linearize_(PowCons &cd, RelaxationPtr rel, ModVector &mods, boo
         log_->msgStream(LogDebug1) << me_ << "Routing to buildPosEO_GT1_(x^4 type)" << std::endl;
 #endif
         buildPosEO_GT1_(cd, rel, mods, init);
-      } else {
+      } 
+      else {
 #if SPEW
         log_->msgStream(LogDebug1) << me_ << "Routing to buildPosEO_LT1_( x^(2/3) type)" << std::endl;
 #endif
@@ -349,7 +367,8 @@ void PowHandler::linearize_(PowCons &cd, RelaxationPtr rel, ModVector &mods, boo
         log_->msgStream(LogDebug1) << me_ << "Routing to buildPosOO_GT1_(x^3 type )" << std::endl;
 #endif
         buildPosOO_GT1_(cd, rel, mods, init);
-      } else {
+      }
+      else {
 #if SPEW
         log_->msgStream(LogDebug1) << me_ << "Routing to buildPosOO_LT1_(x^(1/3) type )" << std::endl;
 #endif
@@ -363,7 +382,8 @@ void PowHandler::linearize_(PowCons &cd, RelaxationPtr rel, ModVector &mods, boo
         log_->msgStream(LogDebug1) << me_ << "Routing to buildPosOE_GT1_(x^(3/2) type)" << std::endl;
 #endif
         buildPosOE_GT1_(cd, rel, mods, init);
-      } else {
+      }
+      else {
 #if SPEW
         log_->msgStream(LogDebug1) << me_ << "Routing to buildPosOE_LT1_(root x type)" << std::endl;
 #endif
@@ -396,7 +416,8 @@ void PowHandler::linearize_(PowCons &cd, RelaxationPtr rel, ModVector &mods, boo
 
 
 
-void PowHandler::buildPosEO_GT1_(PowCons &cd, RelaxationPtr rel, ModVector &mods, bool init) {
+void PowHandler::buildPosEO_GT1_(PowCons &cd, RelaxationPtr rel, ModVector &mods, bool init) 
+{ 
   double xlb = cd.riv->getLb(), xub = cd.riv->getUb();
   size_t ps = 0, ts = 0;   // slots filled in this call
   if (xub - xlb < 1e-6) {
@@ -407,12 +428,13 @@ void PowHandler::buildPosEO_GT1_(PowCons &cd, RelaxationPtr rel, ModVector &mods
   addCutByPts_(cd, rel, xlb, xub, 1, mods, init, ps++);   // 2-pt cut: always update, bound-dependent
   double pts[3] = {xlb, xub, xlb + (xub - xlb) / 2.0};
     for (int i = 0; i < 3; ++i) addCutByTan_(cd, rel, pts[i], -1, mods, ts++);
-
+ 
   relaxSlotsFrom_(cd, rel, cd.ptCons, ps, POW_NUM_PT_SLOTS, mods);
   relaxSlotsFrom_(cd, rel, cd.tanCons, ts, POW_NUM_TAN_SLOTS, mods);
-}
-
-void PowHandler::buildPosOE_GT1_(PowCons &cd, RelaxationPtr rel, ModVector &mods, bool init) {
+} 
+ 
+void PowHandler::buildPosOE_GT1_(PowCons &cd, RelaxationPtr rel, ModVector &mods, bool init) 
+{ 
   double xlb = cd.riv->getLb(), xub = cd.riv->getUb();
   size_t ps = 0, ts = 0;
   if (xub - xlb < 1e-6) {
@@ -424,13 +446,14 @@ void PowHandler::buildPosOE_GT1_(PowCons &cd, RelaxationPtr rel, ModVector &mods
   
   double pts[3] = {xlb, xub, xlb + (xub - xlb) / 2.0};
     for (int i = 0; i < 3; ++i) addCutByTan_(cd, rel, pts[i], -1, mods, ts++);
-
+ 
   relaxSlotsFrom_(cd, rel, cd.ptCons, ps, POW_NUM_PT_SLOTS, mods);
   relaxSlotsFrom_(cd, rel, cd.tanCons, ts, POW_NUM_TAN_SLOTS, mods);
-}
-
-
-void PowHandler::buildPosOO_GT1_(PowCons &cd, RelaxationPtr rel, ModVector &mods, bool init) {
+} 
+ 
+ 
+void PowHandler::buildPosOO_GT1_(PowCons &cd, RelaxationPtr rel, ModVector &mods, bool init) 
+{ 
   double xlb = cd.riv->getLb();
   double xub = cd.riv->getUb();
   size_t ps = 0, ts = 0;
@@ -439,16 +462,17 @@ void PowHandler::buildPosOO_GT1_(PowCons &cd, RelaxationPtr rel, ModVector &mods
     relaxSlotsFrom_(cd, rel, cd.tanCons, 0, POW_NUM_TAN_SLOTS, mods);
     return;
   }
-
+ 
   if (xlb >= -1e-6) {
     // Standard convex case
     addCutByPts_(cd, rel, xlb, xub, 1, mods, init, ps++);
-
+ 
     addCutByTan_(cd, rel, xlb, -1, mods, ts++);
     addCutByTan_(cd, rel, xub, -1, mods, ts++);
     addCutByTan_(cd, rel, xlb + (xub - xlb) / 2.0, -1, mods, ts++);
-
-  } else if (xub <= 1e-6) {
+ 
+  }
+  else if (xub <= 1e-6) {
     // Standard concave case
     addCutByPts_(cd, rel, xlb, xub, -1, mods, init, ps++);
 
@@ -456,7 +480,8 @@ void PowHandler::buildPosOO_GT1_(PowCons &cd, RelaxationPtr rel, ModVector &mods
     addCutByTan_(cd, rel, xub, 1, mods, ts++);
     addCutByTan_(cd, rel, xlb + (xub - xlb) / 2.0, 1, mods, ts++);
 
-  } else {
+  }
+  else {
     // INFLECTION ENVELOPE: both bounding lines are chords through two points
     // we already know (the tangency point and the opposite bound), so they
     // are built with addCutByPts_ and need no separate tangent machinery.
@@ -480,7 +505,8 @@ void PowHandler::buildPosOO_GT1_(PowCons &cd, RelaxationPtr rel, ModVector &mods
   relaxSlotsFrom_(cd, rel, cd.tanCons, ts, POW_NUM_TAN_SLOTS, mods);
 }
 
-void PowHandler::buildPosOE_LT1_(PowCons &cd, RelaxationPtr rel, ModVector &mods, bool init) {
+void PowHandler::buildPosOE_LT1_(PowCons &cd, RelaxationPtr rel, ModVector &mods, bool init) 
+{
   double xlb = cd.riv->getLb(), xub = cd.riv->getUb();
   size_t ps = 0, ts = 0;
   if (xub - xlb < 1e-6) {
@@ -497,10 +523,8 @@ void PowHandler::buildPosOE_LT1_(PowCons &cd, RelaxationPtr rel, ModVector &mods
   relaxSlotsFrom_(cd, rel, cd.tanCons, ts, POW_NUM_TAN_SLOTS, mods);
 }
 
-
-
-
-void PowHandler::buildPosOO_LT1_(PowCons &cd, RelaxationPtr rel, ModVector &mods, bool init) {
+void PowHandler::buildPosOO_LT1_(PowCons &cd, RelaxationPtr rel, ModVector &mods, bool init)
+{
   double xlb = cd.riv->getLb();
   double xub = cd.riv->getUb();
   size_t ps = 0, ts = 0;
@@ -518,7 +542,8 @@ void PowHandler::buildPosOO_LT1_(PowCons &cd, RelaxationPtr rel, ModVector &mods
     addCutByTan_(cd, rel, xub, 1, mods, ts++);
     addCutByTan_(cd, rel, xlb + (xub - xlb) / 2.0, 1, mods, ts++);
 
-  } else if (xub <= 1e-6) {
+  } 
+  else if (xub <= 1e-6) {
     // Strictly Convex Domain (Left of Y-axis)
     addCutByPts_(cd, rel, xlb, xub, 1, mods, init, ps++);
     
@@ -527,8 +552,9 @@ void PowHandler::buildPosOO_LT1_(PowCons &cd, RelaxationPtr rel, ModVector &mods
     addCutByTan_(cd, rel, xlb + (xub - xlb) / 2.0, -1, mods, ts++);
            
     
-  } else {
-    // --- CROSSING ZERO: INFLECTION ENVELOPE (k < 1) ---
+  }
+  else {
+    //  CROSSING ZERO: INFLECTION ENVELOPE (k < 1)
     // Curvature is inverted compared to k > 1 (Convex on left, Concave on right).
     // Compute the ratio w
     double w = computeWStar_(cd.k);
@@ -556,7 +582,8 @@ void PowHandler::buildPosOO_LT1_(PowCons &cd, RelaxationPtr rel, ModVector &mods
 
 
 
-void PowHandler::buildPosEO_LT1_(PowCons &cd, RelaxationPtr rel, ModVector &mods, bool init) {
+void PowHandler::buildPosEO_LT1_(PowCons &cd, RelaxationPtr rel, ModVector &mods, bool init) 
+{
   double xlb = cd.riv->getLb();
   double xub = cd.riv->getUb();
   size_t ps = 0, ts = 0;
@@ -575,7 +602,8 @@ void PowHandler::buildPosEO_LT1_(PowCons &cd, RelaxationPtr rel, ModVector &mods
       addCutByTan_(cd, rel, xlb + (xub - xlb) / 2.0, 1, mods, ts++);
     
 
-  } else if (xub <= eps) {
+  } 
+  else if (xub <= eps) {
     addCutByPts_(cd, rel, xlb, xub, -1, mods, init, ps++);
      
       addCutByTan_(cd, rel, xlb, 1, mods, ts++);
@@ -583,7 +611,8 @@ void PowHandler::buildPosEO_LT1_(PowCons &cd, RelaxationPtr rel, ModVector &mods
       addCutByTan_(cd, rel, xlb + (xub - xlb) / 2.0, 1, mods, ts++);
     
 
-  } else {
+  }
+  else {
     // CROSSING ZERO
     addCutByPts_(cd, rel, xlb, 0.0, -1, mods, init, ps++);
     addCutByPts_(cd, rel, 0.0, xub, -1, mods, init, ps++);
@@ -596,7 +625,8 @@ void PowHandler::buildPosEO_LT1_(PowCons &cd, RelaxationPtr rel, ModVector &mods
     if (L > xub) {
       t = w_cross * xlb;
       tangentChosen = (t >= xub);
-    } else {
+    }
+    else {
       t = xub * w_cross;
       tangentChosen = (std::abs(t) >= L);
     }
@@ -605,7 +635,8 @@ void PowHandler::buildPosEO_LT1_(PowCons &cd, RelaxationPtr rel, ModVector &mods
       // Box is lopsided: the chord across it dips below the curve on the long
       // side, so the tangent at the far endpoint is the correct upper line.
       addCutByTan_(cd, rel, (L > xub) ? xlb : xub, 1, mods, ts++);
-    } else {
+    }
+    else {
       addCutByPts_(cd, rel, xlb, xub, 1, mods, init, ps++);
     }
 
@@ -619,7 +650,8 @@ void PowHandler::buildPosEO_LT1_(PowCons &cd, RelaxationPtr rel, ModVector &mods
   relaxSlotsFrom_(cd, rel, cd.tanCons, ts, POW_NUM_TAN_SLOTS, mods);
 }
 
-void PowHandler::buildNegOE_(PowCons &cd, RelaxationPtr rel, ModVector &mods, bool init) {
+void PowHandler::buildNegOE_(PowCons &cd, RelaxationPtr rel, ModVector &mods, bool init) 
+{
   // n = -p/q, p odd, q even => domain x >= 0 only.
   // f(x) = x^n: convex, strictly decreasing, pole (f->+inf) as x->0+.
   double xlb = cd.riv->getLb(), xub = cd.riv->getUb();
@@ -650,7 +682,8 @@ void PowHandler::buildNegOE_(PowCons &cd, RelaxationPtr rel, ModVector &mods, bo
   relaxSlotsFrom_(cd, rel, cd.tanCons, ts, POW_NUM_TAN_SLOTS, mods);
 }
 
-void PowHandler::buildNegEO_(PowCons &cd, RelaxationPtr rel, ModVector &mods, bool init) {
+void PowHandler::buildNegEO_(PowCons &cd, RelaxationPtr rel, ModVector &mods, bool init) 
+{
   // n = -p/q, p even, q odd => domain x != 0, f(x)=|x|^n > 0 everywhere,
   // pole from both sides, each side individually convex.
   double xlb = cd.riv->getLb(), xub = cd.riv->getUb();
@@ -676,15 +709,16 @@ void PowHandler::buildNegEO_(PowCons &cd, RelaxationPtr rel, ModVector &mods, bo
       addCutByPts_(cd, rel, xlb, xub, 1, mods, init, ps++);
     }
 #if SPEW
-    else {
+      else{
       log_->msgStream(LogDebug1) << me_ << "NegEO: near-pole endpoint "
           "inside eps, skipping 2-pt cut " << std::endl;
     }
 #endif
 
-  } else {
+  } 
+  else {
       // Pole strictly inside the box: no valid envelope. |x|^n > 0 is all we
-      // can say, and it is valid on the whole box, so it goes in a slot too.
+      // can say, and it is valid on the whole box.
       addCutByTan_(cd, rel, 0, -1, mods, ts++);
 
       
@@ -699,7 +733,8 @@ void PowHandler::buildNegEO_(PowCons &cd, RelaxationPtr rel, ModVector &mods, bo
   relaxSlotsFrom_(cd, rel, cd.tanCons, ts, POW_NUM_TAN_SLOTS, mods);
 }
 
-void PowHandler::buildNegOO_(PowCons &cd, RelaxationPtr rel, ModVector &mods, bool init) {
+void PowHandler::buildNegOO_(PowCons &cd, RelaxationPtr rel, ModVector &mods, bool init) 
+{
   // n = -p/q, p,q odd => f odd, domain x != 0. Convex+positive on x>0,
   // concave+negative on x<0.
   double xlb = cd.riv->getLb(), xub = cd.riv->getUb();
@@ -728,7 +763,7 @@ void PowHandler::buildNegOO_(PowCons &cd, RelaxationPtr rel, ModVector &mods, bo
       addCutByPts_(cd, rel, xlb, xub, -1, mods, init, ps++);
 
   } 
-else{
+  else{
     
 #if SPEW
     log_->msgStream(LogDebug1) << me_ << "NegOO: domain has pole "
@@ -747,7 +782,8 @@ else{
 // which are chords through a tangency point and the opposite bound.
 void PowHandler::addCutByPts_(PowCons &cd, RelaxationPtr rel, double xlb, double xub,
                              int bound_dir, ModVector &mods, bool ,
-                             size_t slot) {
+                             size_t slot)
+{
   double fxlb = getF_(xlb, cd.k, cd.type);
   double fxub = getF_(xub, cd.k, cd.type);
   double m = 0.0;
@@ -785,7 +821,8 @@ void PowHandler::addCutByPts_(PowCons &cd, RelaxationPtr rel, double xlb, double
                                << ") at node for x^" << cd.k << std::endl;
     newCon->write(log_->msgStream(LogDebug1));
 #endif
-  } else {
+  }
+  else {
     ConstraintPtr target = cd.ptCons[slot];
     rel->changeConstraint(target, lf, lb, ub);
     LinConModPtr lcmod = (LinConModPtr) new LinConMod(target, lf, lb, ub);
@@ -798,15 +835,10 @@ void PowHandler::addCutByPts_(PowCons &cd, RelaxationPtr rel, double xlb, double
   }
 }
 
-// Cut tangent to the curve at xv.  A tangent is NOT globally valid when the
-// curvature changes sign inside the root box (x^3, x^5, ...): a tangent taken
-// at a point on one side of the inflection is violated on the other side.  It
-// therefore lives in a slot and is rewritten at every node, exactly like a
-// 2-pt cut.  If xv sits at a singular point (x=0 with k<1 or k<0, where the
-// derivative is infinite/undefined), substitute a nearby point where the
-// derivative IS defined rather than skipping the cut.
+// Cut tangent to the curve at xv 
 void PowHandler::addCutByTan_(PowCons &cd, RelaxationPtr rel, double xv, int bound_dir,
-                              ModVector &mods, size_t slot) {
+                              ModVector &mods, size_t slot) 
+{
   double xv_safe = safeX_(xv, cd.k);
 
   double fx = getF_(xv_safe, cd.k, cd.type);
@@ -849,7 +881,8 @@ void PowHandler::addCutByTan_(PowCons &cd, RelaxationPtr rel, double xv, int bou
                                << " | Bounds: [" << lb << ", " << ub << "]" << std::endl;
     newCon->write(log_->msgStream(LogDebug1));
 #endif
-  } else {
+  } 
+  else {
     ConstraintPtr target = cd.tanCons[slot];
     rel->changeConstraint(target, lf, lb, ub);
     LinConModPtr lcmod = (LinConModPtr) new LinConMod(target, lf, lb, ub);
@@ -869,7 +902,8 @@ void PowHandler::addCutByTan_(PowCons &cd, RelaxationPtr rel, double xv, int bou
 // ADD CONSTRAINT & SEPARATION
 
 
-void PowHandler::addConstraint(ConstraintPtr newcon, ConstVariablePtr ivar, ConstVariablePtr ovar, double degree, char sense) {
+void PowHandler::addConstraint(ConstraintPtr newcon, ConstVariablePtr ivar, ConstVariablePtr ovar, double degree, char sense)
+{
   Handler::addConstraint(newcon); 
 
   int64_t p_64, q_64;
@@ -885,7 +919,8 @@ void PowHandler::addConstraint(ConstraintPtr newcon, ConstVariablePtr ivar, Cons
     if (p_odd && q_odd)        t = POS_OO;
     else if (!p_odd && q_odd)  t = POS_EO;
     else if (p_odd && !q_odd)  t = POS_OE;
-  } else {
+  } 
+  else {
     if (p_odd && q_odd)        t = NEG_OO;
     else if (!p_odd && q_odd)  t = NEG_EO;
     else if (p_odd && !q_odd)  t = NEG_OE;
@@ -897,7 +932,8 @@ void PowHandler::addConstraint(ConstraintPtr newcon, ConstVariablePtr ivar, Cons
   consd_.push_back(new PowCons(newcon, vivar, vovar, degree, p, q, t, sense));
 }
 
-PowHandler::PowCurvature PowHandler::getCurvature_(const PowCons &cd, double xlb, double xub) const {
+PowHandler::PowCurvature PowHandler::getCurvature_(const PowCons &cd, double xlb, double xub) const 
+{
   const double eps = 1e-6;
   switch (cd.type) {
     case POS_EO:
@@ -929,7 +965,8 @@ PowHandler::PowCurvature PowHandler::getCurvature_(const PowCons &cd, double xlb
 }
 //here ate 14:47..
 void PowHandler::addCut_(VariablePtr x, VariablePtr y, double xval, double yval,
-                          RelaxationPtr rel, bool &ifcuts, PowCons *cd_) {
+                          RelaxationPtr rel, bool &ifcuts, PowCons *cd_)
+{
   ifcuts = false;
 
   // AFTER
@@ -953,7 +990,8 @@ void PowHandler::addCut_(VariablePtr x, VariablePtr y, double xval, double yval,
 
     if (convex) {
       rel->newConstraint(f, rhs, INFINITY);
-    } else {
+    }
+    else {
       rel->newConstraint(f, -INFINITY, rhs);
     }
     ifcuts = true;
@@ -965,11 +1003,7 @@ void PowHandler::addCut_(VariablePtr x, VariablePtr y, double xval, double yval,
   }
 }
 
-// A separation cut is added with newConstraint() and never removed, so it
-// lives in the shared relaxation for the whole tree.  It is safe only if it
-// is valid on EVERY box, which holds only when x^k has one curvature across
-// its entire domain.  Odd powers (x^3, x^5) flip curvature at the origin and
-// negative exponents are split by the pole, so those never separate.
+// A separation cut is added with newConstraint() and never removed
 bool PowHandler::sepIsGlobal_(const PowCons &cd) const {
   switch (cd.type) {
     case POS_EO: return cd.k >= 1.0;   // x^4, x^6: convex on all of R
@@ -980,15 +1014,11 @@ bool PowHandler::sepIsGlobal_(const PowCons &cd) const {
 }
 
 
-
+//not in use
 void PowHandler::separate(ConstSolutionPtr sol, NodePtr, RelaxationPtr rel, CutManager*,
                            SolutionPoolPtr, ModVector&, ModVector&, bool* sol_found,
-                           SeparationStatus* /*status*/) {
-  // KNOWN ISSUE: cuts added here go in with newConstraint() and are never
-  // removed, so they live in the shared relaxation for the whole tree -- the
-  // same lifetime problem the slot mechanism fixes for the build cuts above.
-  // They happen to be valid today because addCut_ bails out on PC_MIXED
-  // boxes, but nothing enforces that. To be revisited.
+                           SeparationStatus* /*status*/) 
+{
   return;
   *sol_found = false;
   const double* x = sol->getPrimal();
@@ -1015,7 +1045,8 @@ bool PowHandler::isFeasible(ConstSolutionPtr sol, RelaxationPtr rel, bool& isfea
   return isFeasible_(sol, rel, isfeas, inf_meas);
 }
 
-bool PowHandler::isFeasible_(ConstSolutionPtr sol, RelaxationPtr, bool &isfeas, double &inf_meas) {
+bool PowHandler::isFeasible_(ConstSolutionPtr sol, RelaxationPtr, bool &isfeas, double &inf_meas) 
+{
   isfeas = true;
   inf_meas = 0.0;
   const double *primal = sol->getPrimal();
@@ -1033,7 +1064,8 @@ bool PowHandler::isFeasible_(ConstSolutionPtr sol, RelaxationPtr, bool &isfeas, 
   return isfeas;
 }
 
-void PowHandler::getBranchingCandidates(RelaxationPtr, const DoubleVector &x, ModVector &, BrVarCandSet &cands, BrCandVector &, bool &is_inf) {
+void PowHandler::getBranchingCandidates(RelaxationPtr, const DoubleVector &x, ModVector &, BrVarCandSet &cands, BrCandVector &, bool &is_inf)
+{
   std::map<ConstVariablePtr, double> allCands;
   is_inf = false;
 
@@ -1052,7 +1084,8 @@ void PowHandler::getBranchingCandidates(RelaxationPtr, const DoubleVector &x, Mo
   }
 }
 
-ModificationPtr PowHandler::getBrMod(BrCandPtr cand, DoubleVector &x, RelaxationPtr, BranchDirection brdir) {
+ModificationPtr PowHandler::getBrMod(BrCandPtr cand, DoubleVector &x, RelaxationPtr, BranchDirection brdir) 
+{
   LinModsPtr lmods = (LinModsPtr) new LinMods();
   BrVarCandPtr vcand = dynamic_cast<BrVarCand *>(cand);
   VariablePtr v = vcand->getVar();
@@ -1116,7 +1149,8 @@ Branches PowHandler::getBranches(BrCandPtr cand, DoubleVector &x, RelaxationPtr 
   return branches;
 }
 
-BranchPtr PowHandler::doBranch_(BranchDirection UpOrDown, ConstVariablePtr v, double bvalue) {
+BranchPtr PowHandler::doBranch_(BranchDirection UpOrDown, ConstVariablePtr v, double bvalue) 
+{
   BranchPtr branch = new Branch();
   std::fill(tmpX_.begin(), tmpX_.end(), 0.0);
   std::fill(grad_.begin(), grad_.end(), 0.0);
@@ -1178,20 +1212,15 @@ bool PowHandler::treatDupRows_(ConstraintPtr c1, ConstraintPtr c2, double, bool 
   return true;
 }
 
-bool PowHandler::propPowBnds_(PowConsPtr cd, bool *changed) {
+bool PowHandler::propPowBnds_(PowConsPtr cd, bool *changed) 
+{
   if (cd->type == POS_OE || cd->type == NEG_OE) {
     if (cd->iv->getUb() < 0.0) return true; 
     if (cd->iv->getLb() < 0.0) {
        if (updatePBnds_(cd->iv, 0.0, cd->iv->getUb(), changed) < 0) return true;
     }
   }
- // if (cd->type == POS_OO || cd->type == POS_EO) {
- //    if (cd->iv->getUb() < 0.0) return true;
- //    if (cd->iv->getLb() < 0.0) {
- //      if (updatePBnds_(cd->iv, 0.0, cd->iv->getUb(), changed) < 0) return true;
- //    }
- //  }
-  switch (cd->type) {
+ switch (cd->type) {
     case POS_OO: 
     case POS_OE: return propPosMonotonicBnds_(cd, changed);
     case POS_EO: return propPosEvenBnds_(cd, changed);    
@@ -1202,7 +1231,8 @@ bool PowHandler::propPowBnds_(PowConsPtr cd, bool *changed) {
   return false;
 }
 
-bool PowHandler::propPosEvenBnds_(PowConsPtr cd, bool *changed) {
+bool PowHandler::propPosEvenBnds_(PowConsPtr cd, bool *changed) 
+{
   VariablePtr x = cd->iv, z = cd->ov;
   double k = cd->k, inv_k = 1.0 / k;
   double xlb = x->getLb(), xub = x->getUb();
@@ -1219,7 +1249,8 @@ bool PowHandler::propPosEvenBnds_(PowConsPtr cd, bool *changed) {
   return false;
 }
 
-bool PowHandler::propPosMonotonicBnds_(PowConsPtr cd, bool *changed) {
+bool PowHandler::propPosMonotonicBnds_(PowConsPtr cd, bool *changed) 
+{
   VariablePtr x = cd->iv, z = cd->ov;
   double k = cd->k, inv_k = 1.0 / k;
   double xlb = x->getLb(), xub = x->getUb();
@@ -1245,7 +1276,8 @@ bool PowHandler::propPosMonotonicBnds_(PowConsPtr cd, bool *changed) {
   return false;
 }
 
-bool PowHandler::propNegEvenBnds_(PowConsPtr cd, bool *changed) {
+bool PowHandler::propNegEvenBnds_(PowConsPtr cd, bool *changed) 
+{
   VariablePtr x = cd->iv, z = cd->ov;
   double k = cd->k, inv_k = 1.0 / k;
   double xlb = x->getLb(), xub = x->getUb();
@@ -1253,10 +1285,12 @@ bool PowHandler::propNegEvenBnds_(PowConsPtr cd, bool *changed) {
   double new_zlb = -INFINITY, new_zub = INFINITY;
   if (xlb < 0.0 && xub > 0.0) { 
     new_zlb = std::pow(std::max(std::abs(xlb), std::abs(xub)), k);
-  } else if (xlb >= 0.0) { 
+  } 
+  else if (xlb >= 0.0) { 
     new_zlb = (xub < 1e15) ? std::pow(xub, k) : 0.0;
     new_zub = std::pow(std::max(xlb, 1e-9), k);
-  } else { 
+  }
+  else { 
     new_zlb = std::pow(std::abs(std::min(xub, -1e-9)), k);
     new_zub = (xlb > -1e15) ? std::pow(std::abs(xlb), k) : 0.0;
   }
@@ -1271,7 +1305,8 @@ bool PowHandler::propNegEvenBnds_(PowConsPtr cd, bool *changed) {
   return false;
 }
 
-bool PowHandler::propNegMonotonicBnds_(PowConsPtr cd, bool *changed) {
+bool PowHandler::propNegMonotonicBnds_(PowConsPtr cd, bool *changed) 
+{
   VariablePtr x = cd->iv, z = cd->ov;
   double k = cd->k, inv_k = 1.0 / k;
   double xlb = x->getLb(), xub = x->getUb();
@@ -1285,7 +1320,8 @@ bool PowHandler::propNegMonotonicBnds_(PowConsPtr cd, bool *changed) {
   if (xlb >= 0.0) { 
     new_zlb = (xub < 1e15) ? std::pow(xub, k) : 0.0;
     new_zub = std::pow(std::max(xlb, 1e-9), k);
-  } else if (xub <= 0.0) { 
+  }
+  else if (xub <= 0.0) { 
     new_zlb = (xlb > -1e15) ? -std::pow(-xlb, k) : 0.0;
     new_zub = -std::pow(-std::min(xub, -1e-9), k);
   }
@@ -1301,7 +1337,8 @@ bool PowHandler::propNegMonotonicBnds_(PowConsPtr cd, bool *changed) {
   if (zlb > 0.0) {        
     new_xub = std::pow(zlb, inv_k);
     new_xlb = (zub < 1e15) ? std::pow(zub, inv_k) : 0.0;
-  } else if (zub < 0.0) { 
+  } 
+  else if (zub < 0.0) { 
     new_xlb = -std::pow(-zub, inv_k);
     new_xub = (zlb > -1e15) ? -std::pow(-zlb, inv_k) : 0.0;
   }
@@ -1310,7 +1347,8 @@ bool PowHandler::propNegMonotonicBnds_(PowConsPtr cd, bool *changed) {
   return false;
 }
 
-int PowHandler::updatePBnds_(VariablePtr p, double newlb, double newub, bool *changed) {
+int PowHandler::updatePBnds_(VariablePtr p, double newlb, double newub, bool *changed) 
+{
   double lb = p->getLb(), ub = p->getUb();
   
   if (std::abs(newlb - std::round(newlb)) < 1e-4) newlb = std::round(newlb);
@@ -1333,7 +1371,8 @@ int PowHandler::updatePBnds_(VariablePtr p, double newlb, double newub, bool *ch
   return 0;
 }
 
-int PowHandler::updatePBnds_(VariablePtr v, double newlb, double newub, RelaxationPtr rel, bool mod_rel, bool *changed, ModVector &p_mods, ModVector &r_mods) {
+int PowHandler::updatePBnds_(VariablePtr v, double newlb, double newub, RelaxationPtr rel, bool mod_rel, bool *changed, ModVector &p_mods, ModVector &r_mods) 
+{
   double lb = v->getLb(), ub = v->getUb();
   bool tighten_lb = false, tighten_ub = false;
 
@@ -1367,7 +1406,8 @@ int PowHandler::updatePBnds_(VariablePtr v, double newlb, double newub, Relaxati
       b2mod->applyToProblem(rel);
       r_mods.push_back(b2mod);
     }
-  } else if (tighten_lb) {
+  } 
+  else if (tighten_lb) {
     VarBoundModPtr bmod = (VarBoundModPtr) new VarBoundMod(v, Lower, lb);
     bmod->applyToProblem(p_);
     p_mods.push_back(bmod);
@@ -1376,7 +1416,8 @@ int PowHandler::updatePBnds_(VariablePtr v, double newlb, double newub, Relaxati
       bmod->applyToProblem(rel);
       r_mods.push_back(bmod);
     }
-  } else if (tighten_ub) {
+  }
+  else if (tighten_ub) {
     VarBoundModPtr bmod = (VarBoundModPtr) new VarBoundMod(v, Upper, ub);
     bmod->applyToProblem(p_);
     p_mods.push_back(bmod);
@@ -1399,7 +1440,8 @@ bool PowHandler::varBndsFromCons_(bool *changed) {
   return false;
 }
 
-SolveStatus PowHandler::presolve(PreModQ *, bool *changed, Solution **) {
+SolveStatus PowHandler::presolve(PreModQ *, bool *changed, Solution **) 
+{
   SolveStatus status = Started;
   ++pStats_.iters;
   *changed = false;

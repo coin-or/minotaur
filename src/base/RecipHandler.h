@@ -1,4 +1,4 @@
-//
+///
 //     Minotaur -- It's only 1/2 bull
 //
 //     (C)opyright 2010 - 2025 The Minotaur Team.
@@ -19,165 +19,133 @@
 
 namespace Minotaur {
 
-  class Engine;
-  class Function;
   class LinearFunction;
-  class Objective;
-  class Problem;
   typedef LinearFunction *LinearFunctionPtr;
-  typedef Objective *ObjectivePtr;
 
   class RecipHandler : public Handler {
   public:
-    // Constructor
     RecipHandler(EnvPtr env, ProblemPtr problem);
-    RecipHandler(EnvPtr env, ProblemPtr problem, ProblemPtr orig_);
-    
-    // Destructor
     ~RecipHandler();
 
+    /**
+     * Register y = 1/x with the handler.
+     * sense: 'E' (y = 1/x), 'L' (y >= 1/x), 'G' (y <= 1/x)
+     */
     void addConstraint(ConstraintPtr newcon, ConstVariablePtr ivar,
                        ConstVariablePtr ovar, char sense = 'E');
-    //base method
-    void addConstraint(ConstraintPtr) { assert(0); }
-    
-    //Does nothing
-    void relaxInitFull(RelaxationPtr, SolutionPool *, bool *) {}
-    //Does Nothing
-    void relaxInitInc(RelaxationPtr rel, SolutionPool *, bool *is_inf);
+
+    // base class method -- not used here
+    void addConstraint(ConstraintPtr) override { assert(0); }
+
+    void relaxInitFull(RelaxationPtr, SolutionPool *, bool *) override {}
+    void relaxInitInc(RelaxationPtr rel, SolutionPool *, bool *is_inf) override;
+    void relaxNodeFull(NodePtr, RelaxationPtr, bool *) override {}
+    void relaxNodeInc(NodePtr node, RelaxationPtr rel,
+                      bool *isInfeasible) override;
+
     bool isFeasible(ConstSolutionPtr sol, RelaxationPtr relaxation,
-                    bool &should_prune, double &inf_meas);
-    //Checks if Cutting plane can be added or not based on convexity/concavity
+                    bool &should_prune, double &inf_meas) override;
+
     void separate(ConstSolutionPtr sol, NodePtr node, RelaxationPtr rel,
                   CutManager *cutman, SolutionPoolPtr s_pool,
                   ModVector &p_mods, ModVector &r_mods, bool *sol_found,
-                  SeparationStatus *status);
-
-    void relaxNodeFull(NodePtr, RelaxationPtr, bool *) {}
-
-  //Update the relaxation at each node
-    void relaxNodeInc(NodePtr node, RelaxationPtr rel, bool *isInfeasible);
+                  SeparationStatus *status) override;
 
     void getBranchingCandidates(RelaxationPtr rel, const DoubleVector &x,
                                 ModVector &mods, BrVarCandSet &cands,
-                                BrCandVector &gencands, bool &is_inf);
+                                BrCandVector &gencands, bool &is_inf) override;
 
     ModificationPtr getBrMod(BrCandPtr cand, DoubleVector &x,
-                             RelaxationPtr rel, BranchDirection dir);
+                             RelaxationPtr rel, BranchDirection dir) override;
 
     Branches getBranches(BrCandPtr cand, DoubleVector &x, RelaxationPtr rel,
-                         SolutionPoolPtr s_pool);
+                         SolutionPoolPtr s_pool) override;
 
-    SolveStatus presolve(PreModQ *pre_mods, bool *changed, Solution **sol);
+    SolveStatus presolve(PreModQ *pre_mods, bool *changed,
+                         Solution **sol) override;
 
     bool presolveNode(RelaxationPtr p, NodePtr node, SolutionPoolPtr s_pool,
-                      ModVector &p_mods, ModVector &r_mods);
+                      ModVector &p_mods, ModVector &r_mods) override;
 
     std::string getName() const override;
     void writeStats(std::ostream &out) const override;
 
   private:
     struct RecipCons {
-      ConstraintPtr con;         
-      ConstVariablePtr iv;       
-      ConstVariablePtr ov;       
-      VariablePtr riv;           
-      VariablePtr rov;           
-      char sense;                
-      ConstraintPtr secCon;      
-      ConstraintVector linCons;  
+      ConstraintPtr con;         ///< Original constraint
+      ConstVariablePtr iv;       ///< Input variable x
+      ConstVariablePtr ov;       ///< Output variable y
+      VariablePtr riv;           ///< Relaxation var for x
+      VariablePtr rov;           ///< Relaxation var for y
+      char sense;                ///< 'L','G','E'
+      ConstraintPtr secCon;      ///< Secant (chord) row
+      ConstraintVector linCons;  ///< Three tangent rows
 
       RecipCons(ConstraintPtr newcon, ConstVariablePtr ivar,
                 ConstVariablePtr ovar, char s)
-        : con(newcon), iv(ivar), ov(ovar), riv(0), rov(0),
-          sense(s), secCon(0), linCons() {}
+        : con(newcon), iv(ivar), ov(ovar), riv(0), rov(0), sense(s),
+          secCon(0), linCons(3)
+      {
+      }
     };
 
     typedef RecipCons *RecipConsPtr;
     typedef std::vector<RecipConsPtr> RecipConsVec;
     typedef RecipConsVec::iterator RecipConsIter;
 
-    RecipConsVec consd_;
-    static const std::string me_;
-
     struct SepaStats {
-      int iters;       
-      int tangentcuts; 
-      int optcuts;     
-      int optrem;      
-      double time;     
+      int iters;        ///< Number of times separate called
+      int tangentcuts;  ///< Number of tangent cuts added
     };
 
     struct RecipPresolveStats {
       UInt iters;
-      double time;
-      UInt conDel;
       UInt vBnd;
-      UInt nMods;
-      RecipPresolveStats() : iters(0), time(0.0), conDel(0), vBnd(0), nMods(0) {}
+      RecipPresolveStats() : iters(0), vBnd(0) {}
     };
 
-    struct BoundTighteningStats {
-      int niters;
-      int nLP;
-      int dlb;
-      int dub;
-      double timeLP;
-    };
-
-    BoundTighteningStats bStats_;
+    RecipConsVec consd_;
+    static const std::string me_;
     RecipPresolveStats pStats_;
     SepaStats sStats_;
-
-    double LBd_;
-    double UBd_;
-    double bTol_;
-    EnvPtr env_;
-    ProblemPtr orig_;
-    ConstraintVector optCuts_;
-    double aTol_;
-    double rTol_;
-    double eTol_;
-    double vTol_;
+    double eTol_;   ///< violation tolerance (feasibility, branching, cuts)
+    double vTol_;   ///< lb and ub closer than this are treated as equal
     ProblemPtr p_;
     LoggerPtr log_;
-    DoubleVector tmpX_;
-    DoubleVector grad_;
-    
-  //Add cuts after separate_ function is called 
-    void addCut_(VariablePtr x, VariablePtr y, double xval, double yval, 
-                 RelaxationPtr rel, bool& ifcuts); 
-  // Add Tangent at root and other node for y=1/x
-    void addLin_(RecipCons &cd, RelaxationPtr rel, DoubleVector &tmpX,
-                 DoubleVector &grad, ModVector &mods, bool init);
-  //Add Secant at root and other node for y=1/x
-    void addSecant_(RecipCons &cd, RelaxationPtr rel, DoubleVector &tmpX,
-                    ModVector &mods, bool init);
-  // delete duplicate constraint
-    void dupRows_(bool *changed);
-  //select branching point for a variable based on its domain 
-    BranchPtr doBranch_(BranchDirection UpOrDown, ConstVariablePtr v, double bvalue);
-  // returns violation in y-1/x
+
+    // Tangent cut at the current point (if violated)
+    void addCut_(VariablePtr x, VariablePtr y, double xval, double yval,
+                 RelaxationPtr rel, bool &ifcuts);
+
+    // Tangent of y = 1/x at x0 (x0 = 0: free placeholder row). Creates the
+    // row if 'row' is null, otherwise overwrites it.
+    ConstraintPtr addTangent_(VariablePtr x, VariablePtr y, double x0,
+                              RelaxationPtr rel, ConstraintPtr row);
+
+    // Three tangent rows over the current bounds of x
+    void addLin_(RecipCons &cd, RelaxationPtr rel);
+
+    // Chord row over the current bounds of x
+    void addSecant_(RecipCons &cd, RelaxationPtr rel);
+
+    // Branching point for x (relaxation variable)
+    double getBrPoint_(VariablePtr v, double xval) const;
+
+    // Violation of y = 1/x at the given solution vector
     double getViol_(const RecipCons &cd, const DoubleVector &x) const;
-     //Check Feasibility of y=1/x
+
     bool isFeasible_(ConstSolutionPtr sol, RelaxationPtr relaxation,
                      bool &should_prune, double &inf_meas);
-    // Creates root relaxation
-    void initRelax_(RecipCons &cd, RelaxationPtr rel, DoubleVector &tmpX,
-                    DoubleVector &grad);
-    //from bound on y->x to bound on x->y
-    bool propRecipBnds_(RecipConsPtr lcd, bool *changed);
-    //marks dup row for deletion
-    bool treatDupRows_(ConstraintPtr c1, ConstraintPtr c2, double mult,
-                       bool *changed);
-    // Update the node relaxation by changing the bound 
-    void updateRelax_(RecipCons &cd, RelaxationPtr rel, DoubleVector &tmpX,
-                      DoubleVector &grad, ModVector &mods);
 
-    int updatePBnds_(VariablePtr p, double newlb, double newub, bool *changed);
-    int updatePBnds_(VariablePtr v, double newlb, double newub,
-                     RelaxationPtr rel, bool mod_rel, bool *changed,
-                     ModVector &p_mods, ModVector &r_mods);
+    // Build/refresh the rows of one constraint. Returns true if the node
+    // is infeasible.
+    bool relaxRecip_(RecipCons &cd, RelaxationPtr rel, bool init);
+
+    // Bounds on y from bounds on x and vice versa. Returns true if infeasible.
+    bool propRecipBnds_(RecipConsPtr cd, bool *changed);
+
+    int updatePBnds_(VariablePtr p, double newlb, double newub,
+                     bool *changed);
 
     bool varBndsFromCons_(bool *changed);
   };

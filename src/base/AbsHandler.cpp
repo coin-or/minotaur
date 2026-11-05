@@ -1,4 +1,4 @@
-///
+////
 //     Minotaur -- It's only 1/2 bull
 //
 //     (C)opyright 2010 - 2025 The Minotaur Team.
@@ -9,12 +9,14 @@
  * \brief Implement the handler for functions of type y = |x|.
  * \author Neeraj Kumar, IIT Bombay
  */
-#include "Branch.h"
-#include "BrVarCand.h"
+
 #include <cmath>
 #include <iostream>
+#include <algorithm>
+#include <map>
 #include "MinotaurConfig.h"
-#include "Constraint.h"
+#include "Branch.h"
+#include "BrVarCand.h"
 #include "Environment.h"
 #include "AbsHandler.h"
 #include "Function.h"
@@ -29,12 +31,13 @@ using namespace Minotaur;
 
 const std::string AbsHandler::me_ = "AbsHandler: ";
 
+namespace {
+const double kBig = 1e15;   // |bound| above this counts as infinite
+}
+
 AbsHandler::AbsHandler(EnvPtr env, ProblemPtr problem)
-  : bTol_(1e-6),
-    env_(env),
-    aTol_(1e-6),
-    rTol_(1e-6),
-    eTol_(1e-6),
+  : pStats_(),
+    eTol_(1e-5),
     vTol_(1e-6),
     p_(problem),
     log_(env->getLogger())
@@ -48,141 +51,108 @@ AbsHandler::~AbsHandler()
   }
 }
 
-// -----------------------------------------------------------------------
-// y >= x and y >= -x. Both are GLOBAL, exact, and never change with
-// bounds -- so they are added exactly once, at init, and never touched
-// again (same as PowHandler's tangent cuts for a convex function).
-// -----------------------------------------------------------------------
-void AbsHandler::addLin_(AbsCons &cd, RelaxationPtr rel)
+void AbsHandler::addConstraint(ConstraintPtr newcon, ConstVariablePtr ivar,
+                               ConstVariablePtr ovar, char sense)
 {
-  LinearFunctionPtr lf1 = (LinearFunctionPtr) new LinearFunction();
-  lf1->addTerm(cd.rov, 1.0);
-  lf1->addTerm(cd.riv, -1.0);
-  FunctionPtr f1 = (FunctionPtr) new Function(lf1);
-  cd.linCons.push_back(rel->newConstraint(f1, 0.0, INFINITY));   // y - x >= 0
-
-  LinearFunctionPtr lf2 = (LinearFunctionPtr) new LinearFunction();
-  lf2->addTerm(cd.rov, 1.0);
-  lf2->addTerm(cd.riv, 1.0);
-  FunctionPtr f2 = (FunctionPtr) new Function(lf2);
-  cd.linCons.push_back(rel->newConstraint(f2, 0.0, INFINITY));   // y + x >= 0
+  Handler::addConstraint(newcon);
+  consd_.push_back(new AbsCons(newcon, (VariablePtr) ivar, (VariablePtr) ovar,
+                               sense));
 }
 
-// -----------------------------------------------------------------------
-// Upper-bounding secant: y <= m*x + c on [xlb, xub].
-// Only needed while the domain straddles zero -- once branching has
-// pushed the domain to one side of zero (xlb>=0 or xub<=0), |x| is
-// exactly linear on that side and this secant coincides exactly with
-// one of the two lines from addLin_. The relaxation is then EXACT.
-// -----------------------------------------------------------------------
-void AbsHandler::addSecant_(AbsCons &cd, RelaxationPtr rel, ModVector &mods,
-                            bool init)
+void AbsHandler::addLin_(AbsCons &cd, RelaxationPtr rel)
 {
-  double xlb = cd.riv->getLb();
-  double xub = cd.riv->getUb();
-
-  if (xlb <= -1e15 || xub >= 1e15) {
-    return;
+  for (int i = 0; i < 2; ++i) {
+    LinearFunctionPtr lf = (LinearFunctionPtr) new LinearFunction();
+    lf->addTerm(cd.rov, 1.0);
+    lf->addTerm(cd.riv, i == 0 ? -1.0 : 1.0);   // y - x >= 0, y + x >= 0
+    rel->newConstraint((FunctionPtr) new Function(lf), 0.0, INFINITY);
   }
+}
 
-  double fxlb = std::fabs(xlb);
-  double fxub = std::fabs(xub);
-  double m = 0.0;
-  if (xub - xlb > 1e-9) {
-    m = (fxub - fxlb) / (xub - xlb);
+void AbsHandler::addSecant_(AbsCons &cd, RelaxationPtr rel)
+{
+  double a = cd.riv->getLb(), b = cd.riv->getUb();
+  double m = 0.0, c = INFINITY;   // y - m*x <= c; c = inf: free row
+
+  // Only the y <= |x| side (sense E/G) needs an upper bound.
+  if (cd.sense != 'L') {
+    if (a >= 0.0) {                         // |x| = x: y <= x, exact
+      m = 1.0;
+      c = 0.0;
+    } else if (b <= 0.0) {                  // |x| = -x: y <= -x, exact
+      m = -1.0;
+      c = 0.0;
+    } else if (a > -kBig && b < kBig) {     // straddles 0: chord
+      m = (a + b) / (b - a);
+      c = -2.0 * a * b / (b - a);
+    } else if (a > -kBig) {                 // b = inf: slope-1 line through (a,|a|)
+      m = 1.0;
+      c = -2.0 * a;
+    } else if (b < kBig) {                  // a = -inf: slope -1 line through (b,b)
+      m = -1.0;
+      c = 2.0 * b;
+    }
   }
-  double intercept = fxlb - m * xlb;
 
   LinearFunctionPtr lf = (LinearFunctionPtr) new LinearFunction();
   lf->addTerm(cd.rov, 1.0);
-  lf->addTerm(cd.riv, -m);
-
-  if (!cd.secCon) {
-    FunctionPtr f = (FunctionPtr) new Function(lf);
-    cd.secCon = rel->newConstraint(f, -INFINITY, intercept);
-#if SPEW
-    log_->msgStream(LogDebug1) << me_ << "added secant at root for "
-                               << cd.rov->getName() << " = |" << cd.riv->getName()
-                               << "|" << std::endl;
-#endif
-  } else {
-    rel->changeConstraint(cd.secCon, lf, -INFINITY, intercept);
-    if (!init) {
-      LinConModPtr lcmod =
-        (LinConModPtr) new LinConMod(cd.secCon, lf, -INFINITY, intercept);
-      mods.push_back(lcmod);
-    }
-#if SPEW
-    log_->msgStream(LogDebug1) << me_ << "modified secant for "
-                               << cd.rov->getName() << " = |" << cd.riv->getName()
-                               << "|" << std::endl;
-#endif
+  if (m != 0.0) {
+    lf->addTerm(cd.riv, -m);
   }
-}
-
-void AbsHandler::initRelax_(AbsCons &cd, RelaxationPtr rel)
-{
-  cd.riv = rel->getVariable(cd.iv->getIndex());
-  cd.rov = rel->getVariable(cd.ov->getIndex());
-  ModVector dummy;
-  addLin_(cd, rel);
-  addSecant_(cd, rel, dummy, true);
-}
-
-void AbsHandler::updateRelax_(AbsCons &cd, RelaxationPtr rel, ModVector &mods)
-{
-  cd.riv = rel->getVariable(cd.iv->getIndex());
-  cd.rov = rel->getVariable(cd.ov->getIndex());
-  addSecant_(cd, rel, mods, false);
+  if (cd.secCon) {
+    rel->changeConstraint(cd.secCon, lf, -INFINITY, c);
+  } else {
+    cd.secCon = rel->newConstraint((FunctionPtr) new Function(lf), -INFINITY, c);
+  }
 }
 
 void AbsHandler::relaxInitInc(RelaxationPtr rel, SolutionPool *, bool *is_inf)
 {
   for (AbsConsIter it = consd_.begin(); it != consd_.end(); ++it) {
-    initRelax_(**it, rel);
+    AbsCons &cd = **it;
+    cd.riv = rel->getVariable(cd.iv->getIndex());
+    cd.rov = rel->getVariable(cd.ov->getIndex());
+    if (cd.sense != 'G') {   // y >= |x| is needed for E/L only
+      addLin_(cd, rel);
+    }
+    addSecant_(cd, rel);
   }
   *is_inf = false;
 }
 
 void AbsHandler::relaxNodeInc(NodePtr, RelaxationPtr rel, bool *is_infeasible)
 {
-  ModVector mods;
   for (AbsConsIter it = consd_.begin(); it != consd_.end(); ++it) {
-    updateRelax_(**it, rel, mods);
+    addSecant_(**it, rel);
   }
   *is_infeasible = false;
 }
 
-void AbsHandler::addConstraint(ConstraintPtr newcon, ConstVariablePtr ivar,
-                               ConstVariablePtr ovar, char sense)
-{
-  Handler::addConstraint(newcon);
-  VariablePtr vivar = (VariablePtr) ivar;
-  VariablePtr vovar = (VariablePtr) ovar;
-  consd_.push_back(new AbsCons(newcon, vivar, vovar, sense));
-}
-
 double AbsHandler::getViol_(const AbsCons &cd, const DoubleVector &x) const
 {
-  double xval = x[cd.riv->getIndex()];
-  double fhat = x[cd.rov->getIndex()];
-  double fval = std::fabs(xval);
-  double absViol = std::fabs(fhat - fval);
+  // x on one side of 0: |x| is linear, relaxation is exact, nothing to branch on
+  if (cd.riv->getLb() >= 0.0 || cd.riv->getUb() <= 0.0) {
+    return 0.0;
+  }
+
+  double fval = std::fabs(x[cd.riv->getIndex()]);
+  double absViol = std::fabs(x[cd.rov->getIndex()] - fval);
   double relViol = absViol;
-  if (std::fabs(fval) + absViol > 1.0) {
-    relViol = absViol / (std::fabs(fval) + absViol);
+
+  if (fval + absViol > 1.0) {
+    relViol = absViol / (fval + absViol);
   }
   return relViol;
 }
 
-bool AbsHandler::isFeasible(ConstSolutionPtr sol, RelaxationPtr, bool &isfeas,
+bool AbsHandler::isFeasible(ConstSolutionPtr sol, RelaxationPtr, bool &,
                             double &inf_meas)
 {
-  isfeas = true;
-  inf_meas = 0.0;
+  bool isfeas = true;
   const double *primal = sol->getPrimal();
   DoubleVector x(primal, primal + p_->getNumVars());
 
+  inf_meas = 0.0;
   for (AbsConsIter it = consd_.begin(); it != consd_.end(); ++it) {
     double viol = getViol_(**it, x);
     if (viol > eTol_) {
@@ -193,145 +163,162 @@ bool AbsHandler::isFeasible(ConstSolutionPtr sol, RelaxationPtr, bool &isfeas,
   return isfeas;
 }
 
-// -----------------------------------------------------------------------
-// Branching: always split exactly at x=0
-// further branching on this variable is ever needed.
-// -----------------------------------------------------------------------
-//
-void AbsHandler::separate(ConstSolutionPtr sol, NodePtr node, RelaxationPtr rel,
-                          CutManager *cutman, SolutionPoolPtr s_pool,
-                          ModVector &p_mods, ModVector &r_mods, bool *sol_found,
-                          SeparationStatus *status)
+void AbsHandler::separate(ConstSolutionPtr, NodePtr, RelaxationPtr,
+                          CutManager *, SolutionPoolPtr, ModVector &,
+                          ModVector &, bool *sol_found, SeparationStatus *)
 {
-  (void)sol; (void)node; (void)rel; (void)cutman; (void)s_pool;
-  (void)p_mods; (void)r_mods; (void)status;
   *sol_found = false;
-  // No separation needed on the underestimator side (t>=x, t>=-x are exact
-  // and global). Overestimator (secant) side is refreshed via updateRelax_
-  // at every node already; nothing additional to cut here for now.
 }
 
-ModificationPtr AbsHandler::getBrMod(BrCandPtr cand, DoubleVector &x,
-                                     RelaxationPtr rel, BranchDirection brdir)
-{
-  LinModsPtr lmods = (LinModsPtr) new LinMods();
-  double minFromBds = 0.1;
-  BrVarCandPtr vcand = dynamic_cast<BrVarCand *>(cand);
-  VariablePtr v = vcand->getVar();
-  (void)rel;
-
-  double xval = x[v->getIndex()];
-  double value = xval;
-  double len = v->getUb() - v->getLb();
-  if (value < v->getLb() + minFromBds * len) {
-    value = v->getLb() + minFromBds * len;
-  } else if (value > v->getUb() - minFromBds * len) {
-    value = v->getUb() - minFromBds * len;
-  }
-
-  if (brdir == DownBranch) {
-    VarBoundModPtr bmod = (VarBoundModPtr) new VarBoundMod(v, Upper, value);
-    lmods->insert(bmod);
-  } else if (brdir == UpBranch) {
-    VarBoundModPtr bmod = (VarBoundModPtr) new VarBoundMod(v, Lower, value);
-    lmods->insert(bmod);
-  }
-  return lmods;
-}
 void AbsHandler::getBranchingCandidates(RelaxationPtr, const DoubleVector &x,
                                         ModVector &, BrVarCandSet &cands,
                                         BrCandVector &, bool &is_inf)
 {
+  std::map<ConstVariablePtr, double> allCands;
+  std::map<ConstVariablePtr, double>::iterator curc_it;
+
   is_inf = false;
   for (AbsConsIter it = consd_.begin(); it != consd_.end(); ++it) {
-    AbsCons &cd = **it;
-    double curviol = getViol_(cd, x);
-    if (curviol > eTol_ && cd.riv->getLb() < -bTol_ && cd.riv->getUb() > bTol_) {
-      BrVarCandPtr br_can = (BrVarCandPtr) new BrVarCand(
-        cd.riv, cd.riv->getIndex(), curviol, curviol);
-      cands.insert(br_can);
+    double curviol = getViol_(**it, x);   // > 0 only if x straddles 0
+    if (curviol > eTol_) {
+      ConstVariablePtr v = (*it)->riv;
+      curc_it = allCands.find(v);
+      if (curc_it == allCands.end()) {
+        allCands[v] = curviol;
+      } else {
+        curc_it->second += curviol;
+      }
     }
+  }
+
+  for (curc_it = allCands.begin(); curc_it != allCands.end(); ++curc_it) {
+    BrVarCandPtr br_can = (BrVarCandPtr) new BrVarCand(
+        curc_it->first, curc_it->first->getIndex(), curc_it->second,
+        curc_it->second);
+    cands.insert(br_can);
   }
 }
 
-Branches AbsHandler::getBranches(BrCandPtr cand, DoubleVector &, RelaxationPtr rel,
-                                 SolutionPoolPtr)
+// Always branch exactly at x = 0: both children are one-sided, so the
+// relaxation is exact there and x is never branched on again.
+ModificationPtr AbsHandler::getBrMod(BrCandPtr cand, DoubleVector &,
+                                     RelaxationPtr, BranchDirection brdir)
+{
+  LinModsPtr lmods = (LinModsPtr) new LinMods();
+  VariablePtr v = dynamic_cast<BrVarCand *>(cand)->getVar();
+
+  VarBoundModPtr bmod = (VarBoundModPtr) new VarBoundMod(
+      v, (brdir == DownBranch) ? Upper : Lower, 0.0);
+  lmods->insert(bmod);
+  return lmods;
+}
+
+Branches AbsHandler::getBranches(BrCandPtr cand, DoubleVector &,
+                                 RelaxationPtr rel, SolutionPoolPtr)
 {
   BrVarCandPtr vcand = dynamic_cast<BrVarCand *>(cand);
-  VariablePtr v = vcand->getVar();
-  VariablePtr v2 = rel->getOriginalVar(v);
+  VariablePtr v = vcand->getVar();   // relaxation variable
+  VariablePtr v2 = 0;                // original variable
+  VarBoundModPtr mod;
   Branches branches = (Branches) new BranchPtrVector();
 
   // Down branch: x <= 0
-  BranchPtr branchDown = (BranchPtr) new Branch();
-  branchDown->addPMod((VarBoundModPtr) new VarBoundMod(v2, Upper, 0.0));
-  branchDown->addRMod((VarBoundModPtr) new VarBoundMod(v, Upper, 0.0));
-  branchDown->setActivity(0.0);
-  branches->push_back(branchDown);
+  BranchPtr branch = (BranchPtr) new Branch();
+  if (modProb_) {
+    v2 = rel->getOriginalVar(v);
+    mod = (VarBoundModPtr) new VarBoundMod(v2, Upper, 0.0);
+    branch->addPMod(mod);
+  }
+  if (modRel_) {
+    mod = (VarBoundModPtr) new VarBoundMod(v, Upper, 0.0);
+    branch->addRMod(mod);
+  }
+  branch->setActivity(0.0);
+  branches->push_back(branch);
 
   // Up branch: x >= 0
-  BranchPtr branchUp = (BranchPtr) new Branch();
-  branchUp->addPMod((VarBoundModPtr) new VarBoundMod(v2, Lower, 0.0));
-  branchUp->addRMod((VarBoundModPtr) new VarBoundMod(v, Lower, 0.0));
-  branchUp->setActivity(0.0);
-  branches->push_back(branchUp);
+  branch = (BranchPtr) new Branch();
+  if (modProb_) {
+    mod = (VarBoundModPtr) new VarBoundMod(v2, Lower, 0.0);
+    branch->addPMod(mod);
+  }
+  if (modRel_) {
+    mod = (VarBoundModPtr) new VarBoundMod(v, Lower, 0.0);
+    branch->addRMod(mod);
+  }
+  branch->setActivity(0.0);
+  branches->push_back(branch);
 
   vcand->setNumBranches(2);
+#if SPEW
+  log_->msgStream(LogDebug1) << me_ << "branching on " << v->getName()
+                             << " <= 0 or >= 0" << std::endl;
+#endif
   return branches;
 }
 
-int AbsHandler::updatePBnds_(VariablePtr p, double newlb, double newub, bool *changed)
+bool AbsHandler::propAbsBnds_(AbsConsPtr cd, bool *changed)
 {
-  double lb = p->getLb();
-  double ub = p->getUb();
+  VariablePtr x = cd->iv, y = cd->ov;
 
-  if (newlb > lb) { lb = newlb; *changed = true; }
-  if (newub < ub) { ub = newub; *changed = true; }
+  // bounds can be propagated only through the equality
+  if (cd->sense != 'E') {
+    return false;
+  }
 
+  // x -> y: y in [dist(0, [xlb,xub]), max(|xlb|,|xub|)]
+  double xlb = x->getLb(), xub = x->getUb();
+  double lo = (xlb > 0.0) ? xlb : (xub < 0.0) ? -xub : 0.0;
+  double hi = std::max(std::fabs(xlb), std::fabs(xub));
+  if (updatePBnds_(y, lo, hi, changed) < 0) {
+    return true;
+  }
+
+  // y -> x: |x| <= yub, and x cannot lie in (-ylb, ylb)
+  double ylb = y->getLb(), yub = y->getUb();   // re-read after tightening
+  lo = std::max(xlb, -yub);
+  hi = std::min(xub, yub);
+  if (xlb > -ylb) {
+    lo = std::max(lo, ylb);
+  }
+  if (xub < ylb) {
+    hi = std::min(hi, -ylb);
+  }
+  return updatePBnds_(x, lo, hi, changed) < 0;
+}
+
+int AbsHandler::updatePBnds_(VariablePtr p, double newlb, double newub,
+                             bool *changed)
+{
+  double lb, ub;
+
+  if (p->getType() == Binary || p->getType() == ImplBin ||
+      p->getType() == Integer || p->getType() == ImplInt) {
+    newlb = std::ceil(newlb - eTol_);
+    newub = std::floor(newub + eTol_);
+  }
+
+  lb = std::max(p->getLb(), newlb);
+  ub = std::min(p->getUb(), newub);
   if (lb > ub + eTol_) {
     return -1;
   }
-  if (fabs(ub - lb) <= vTol_) {
-    double mid = 0.5 * (lb + ub);
-    lb = mid;
-    ub = mid;
+  if (ub - lb <= vTol_) {   // treat nearly equal bounds as fixed
+    lb = ub = 0.5 * (lb + ub);
   }
-  if (*changed) {
-    p->setLb_(lb);   // fine: called from within a Handler-derived class
-    p->setUb_(ub);   // that Variable presumably grants access to
+
+  if (lb != p->getLb() || ub != p->getUb()) {
+    p->setLb_(lb);
+    p->setUb_(ub);
+    *changed = true;
+    ++pStats_.vBnd;
   }
   return 0;
 }
 
-bool AbsHandler::propAbsBnds_(AbsConsPtr cdata, bool *changed)
-{
-  VariablePtr x = cdata->iv, y = cdata->ov;
-  double xlb = x->getLb(), xub = x->getUb();
-
-  double new_ylb;
-  if (xlb > 0.0) {
-    new_ylb = xlb;
-  } else if (xub < 0.0) {
-    new_ylb = -xub;
-  } else {
-    new_ylb = 0.0;
-  }
-  double new_yub = std::max(std::fabs(xlb), std::fabs(xub));
-
-  if (updatePBnds_(y, new_ylb, new_yub, changed) < 0) {
-    return true;
-  }
-
-  double new_xlb = std::max(xlb, -y->getUb());
-  double new_xub = std::min(xub, y->getUb());
-  if (updatePBnds_(x, new_xlb, new_xub, changed) < 0) {
-    return true;
-  }
-
-  return false;
-}
 SolveStatus AbsHandler::presolve(PreModQ *, bool *changed, Solution **)
 {
+  ++pStats_.iters;
   *changed = false;
   for (AbsConsIter it = consd_.begin(); it != consd_.end(); ++it) {
     if (propAbsBnds_(*it, changed)) {
@@ -346,18 +333,7 @@ bool AbsHandler::presolveNode(RelaxationPtr, NodePtr, SolutionPoolPtr,
 {
   return false;
 }
-void AbsHandler::relaxInitFull(RelaxationPtr rel, SolutionPool *sp, bool *is_inf) {
-  // Usually, you just route this to your incremental init function, 
-  // or your shared relaxation builder.
-  relaxInitInc(rel, sp, is_inf);
-}
 
-void AbsHandler::relaxNodeFull(NodePtr node, RelaxationPtr rel, bool* is_inf) {
-  // If MINOTAUR is set up to use incremental node relaxations (relaxNodeInc),
-  // this is rarely called.
-  assert(!"AbsHandler::relaxNodeFull not implemented!");
-  *is_inf = false;
-}
 std::string AbsHandler::getName() const
 {
   return "AbsHandler (Handling y=|x| terms).";
@@ -365,5 +341,8 @@ std::string AbsHandler::getName() const
 
 void AbsHandler::writeStats(std::ostream &out) const
 {
-  out << me_ << "Number of abs constraints = " << consd_.size() << std::endl;
+  out << me_ << "Statistics for presolve by AbsHandler:" << std::endl
+      << me_ << "Number of iterations           = " << pStats_.iters << std::endl
+      << me_ << "Number of abs constraints      = " << consd_.size() << std::endl
+      << me_ << "Times variables tightened      = " << pStats_.vBnd << std::endl;
 }

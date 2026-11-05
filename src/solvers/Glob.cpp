@@ -45,7 +45,6 @@
 #include "ProblemSize.h"
 #include "QG.h"
 #include "QuadHandler.h"
-#include "QuadTransformer.h"
 #include "Relaxation.h"
 #include "ReliabilityBrancher.h"
 #include "SamplingHeur.h"
@@ -119,12 +118,8 @@ int Glob::transform_(ProblemPtr& newp, HandlerVector& handlers,
   std::string tr = env_->getOptions()->findString("transformer")->getValue();
 
   handlers.clear();
-  if(tr == "simp") {
-    trans = (SimpTranPtr) new SimpleTransformer(env_, inst_, getEngine_(),
+  trans = (SimpTranPtr) new SimpleTransformer(env_, inst_, getEngine_(),
                                                 engine, getNLPEngine_());
-  } else { // if (tr == "quad") {
-    trans = (QuadTranPtr) new QuadTransformer(env_, inst_);
-  }
   trans->reformulate(newp, handlers, status);
 
   env_->getLogger()->msgStream(LogInfo)
@@ -399,9 +394,25 @@ int Glob::solve(ProblemPtr inst)
 
   inst_ = inst;
   if(options->findInt("convex")->getValue() == 1) {
+    // call convex solvers
+    if(inst_->isQP()) {
+      env_->getLogger()->msgStream(LogInfo)
+          << me_ << "The objective function in this QP is convex" << std::endl
+          << "Problem is forwarded to Branch and bound" << std::endl;
+      env_->getOptions()->findBool("nl_presolve")->setValue(false);
+      env_->getOptions()->findString("brancher")->setValue("rel");
+      fwd2Bnb_(orig_v);
+      goto CLEANUP;
+    }
+    env_->getLogger()->msgStream(LogInfo)
+      << me_ << "All constraints and objective found to be convex"
+      << std::endl
+      << "Problem is forwarded to QG - convex MINLP solver" << std::endl;
+
     fwd2QG_();
     goto CLEANUP;
   }
+
   if(options->findBool("cgtoqf")->getValue() == 1) {
     inst_->cg2qf();
   }

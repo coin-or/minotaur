@@ -107,7 +107,7 @@ SolveStatus Presolver::solve()
    logger_->msgStream(LogDebug) << me_ << "major iteration " << iters << std::endl;
     for (HandlerIterator h = handlers_.begin(); h != handlers_.end(); ++h) {
      changed= false;
-     // bool h_changed = false;
+     
       h_status = (*h)->presolve(&mods_, &changed, &sol_);
       if (h_status == SolvedOptimal) {
         logger_->msgStream(LogDebug) << me_ << "handler " << (*h)->getName()

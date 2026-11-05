@@ -17,7 +17,6 @@
 #include "CGraph.h"
 #include "CNode.h"
 #include "Constraint.h"
-#include "CxUnivarHandler.h"
 #include "Function.h"
 #include "LinearFunction.h"
 #include "LinearHandler.h"
@@ -91,8 +90,7 @@ MonomialFunPtr TransPoly::monomToMl_(MonomialFunPtr mf)
   CGraphPtr cg;
   CNode *n1, *n2;
   LinearFunctionPtr lf;
-  ConstraintPtr cnew;
-  FunctionPtr f;
+ 
 
   for (VarIntMapConstIterator it=mf->termsBegin(); it!=mf->termsEnd(); ++it) {
     if (1==it->second) {
@@ -140,17 +138,17 @@ MonomialFunPtr TransPoly::monomToMl_(MonomialFunPtr mf)
         yUniExprs_->insert(v2, cg);
         lf = (LinearFunctionPtr) new LinearFunction();
         lf->addTerm(v2, -1.0);
-        f = (FunctionPtr) new Function(lf, cg);
-        cnew = newp_->newConstraint(f, 0.0, 0.0);
-
+        // f = (FunctionPtr) new Function(lf, cg);
+        // cnew = newp_->newConstraint(f, 0.0, 0.0);
+        //
         //assignHandler_(cg, cnew);
         // XXX JTL.  Currently for TransPoly, we will give the quadratics to
         // uHandler.
         
-        VariablePtr iv;
-        iv = *(f->getNonlinearFunction()->varsBegin());
-        uHandler_->addConstraint(cnew, iv, v2, 'E');
-        v = v2;
+        // VariablePtr iv;
+        // iv = *(f->getNonlinearFunction()->varsBegin());
+        // //uHandler_->addConstraint(cnew, iv, v2, 'E');
+        // v = v2;
       }
     }
     mf2->multiply(1.0, v, 1);
@@ -766,8 +764,6 @@ void TransPoly::reformulate(ProblemPtr &newp, HandlerVector &handlers,
   handlers.push_back(lHandler_);
   qHandler_ = (QuadHandlerPtr) new QuadHandler(env_, newp_);
   handlers.push_back(qHandler_);
-  uHandler_ = (CxUnivarHandlerPtr) new CxUnivarHandler(env_, newp_);
-  handlers.push_back(uHandler_);
   mHandler_ = (MultilinearTermsHandlerPtr) new MultilinearTermsHandler(env_,
                                                                        newp_);
   handlers.push_back(mHandler_);

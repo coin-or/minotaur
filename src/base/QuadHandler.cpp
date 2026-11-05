@@ -38,7 +38,6 @@
 #include "Objective.h"
 #include "Operations.h"
 #include "Option.h"
-#include "ProblemSize.h"
 #include "QuadraticFunction.h"
 #include "Relaxation.h"
 #include "Solution.h"

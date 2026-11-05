@@ -20,7 +20,6 @@
 #include "CGraph.h"
 #include "CNode.h"
 #include "Constraint.h"
-#include "CxUnivarHandler.h"
 #include "Engine.h"
 #include "Environment.h"
 #include "ExpHandler.h"
@@ -295,18 +294,36 @@ void SimpleTransformer::recursRef_(const CNode* node, LinearFunctionPtr& lf,
 
   switch(node->getOp()) {
   case(OpAbs):
-  recursRef_(node->getL(), lfl, vl, dl);
-  absRef_(lfl, vl, dl, v, d);
+    recursRef_(node->getL(), lfl, vl, dl);
+    absRef_(lfl, vl, dl, v, d);
   break;  
   case(OpAcos):
+    assert(!"OpAcos not implemented!");
+    break;
   case(OpAcosh):
+    assert(!"OpAcosh not implemented!");
+    break;
   case(OpAsin):
+    assert(!"OpAsin not implemented!");
+    break;
   case(OpAsinh):
+    assert(!"OpAsinh not implemented!");
+    break;
   case(OpAtan):
+    assert(!"OpAtan not implemented!");
+    break;
   case(OpAtanh):
+    assert(!"OpAtanh not implemented!");
+    break;
   case(OpCeil):
+    assert(!"OpCeil not implemented!");
+    break;
   case(OpCos):
+    assert(!"OpCos not implemented!");
+    break;
   case(OpCosh): 
+    assert(!"OpCosh not implemented!");
+    break;
   case(OpDiv):
     // (lfl+vl+dl)/(lfr+vr+dr), there are many sub-cases
     recursRef_(node->getL(), lfl, vl, dl);
@@ -349,6 +366,7 @@ void SimpleTransformer::recursRef_(const CNode* node, LinearFunctionPtr& lf,
       bilRef_(lfl, vl, dl, lfr, v2, 0.0, lf, v, d);
     }
     break;
+
   case(OpExp):
     recursRef_(node->getL(), lfl, vl, dl);
     uniVarRef_(node, lfl, vl, dl, lf, v, d);
@@ -360,7 +378,6 @@ void SimpleTransformer::recursRef_(const CNode* node, LinearFunctionPtr& lf,
     recursRef_(node->getL(), lfl, vl, dl);
     uniVarRef_(node, lfl, vl, dl, lf, v, d);
     break;
-
   case (OpLog10):
     assert(!"log10 not implemented!");
   case (OpMinus):
@@ -836,7 +853,7 @@ void SimpleTransformer::refNonlinObj_(ConstProblemPtr oldp)
 //  vars.clear();
 //}
 
-bool SimpleTransformer::checkQuadConvexity_()
+bool SimpleTransformer::checkNonLinConvexity_()
 {
   QfVector qf_vector;
   QfVector::iterator it;
@@ -1150,8 +1167,6 @@ void SimpleTransformer::reformulate(ProblemPtr& newp, HandlerVector& handlers,
     qHandler_->setNLPEngine(nlpe_);
   }
   handlers.push_back(qHandler_);
-  uHandler_ = (CxUnivarHandlerPtr) new CxUnivarHandler(env_, newp_);
-  handlers.push_back(uHandler_);
   logHandler_=(LogHandlerPtr) new LogHandler(env_,newp_);
   handlers.push_back(logHandler_);
   expHandler_=(ExpHandlerPtr) new ExpHandler(env_,newp_);
@@ -1166,7 +1181,7 @@ void SimpleTransformer::reformulate(ProblemPtr& newp, HandlerVector& handlers,
   copyLinear_(p_, newp_);
 
   if(env_->getOptions()->findInt("convex")->getValue() == 0) {
-    if(checkQuadConvexity_()) {
+    if(checkNonLinConvexity_()) {
       status = 2; // status 2 means the problem is convex
       clearUnusedHandlers_(handlers);
       writeStats(logger_->msgStream(LogExtraInfo));

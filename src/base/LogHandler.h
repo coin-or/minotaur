@@ -47,50 +47,50 @@ namespace Minotaur {
                        ConstVariablePtr ovar, char sense = 'E');
 
     // base class method—not used here
-    void addConstraint(ConstraintPtr) { assert(0); }
+    void addConstraint(ConstraintPtr) override { assert(0); }
 
    
     // Full relaxation (unused)
-    void relaxInitFull(RelaxationPtr, SolutionPool *, bool *) {}
+    void relaxInitFull(RelaxationPtr, SolutionPool *, bool *) override {}
 
     // Create initial relaxation at root and then updation
-    void relaxInitInc(RelaxationPtr rel, SolutionPool *, bool *is_inf);
+    void relaxInitInc(RelaxationPtr rel, SolutionPool *, bool *is_inf) override;
 
     //Base Class method
     bool isFeasible(ConstSolutionPtr sol, RelaxationPtr relaxation,
-                    bool &should_prune, double &inf_meas);
+                    bool &should_prune, double &inf_meas) override;
 
     // Separation (cuts) -cutmanager not implemented
     void separate(ConstSolutionPtr sol, NodePtr node, RelaxationPtr rel,
                   CutManager *cutman, SolutionPoolPtr s_pool,
                   ModVector &p_mods, ModVector &r_mods, bool *sol_found,
-                  SeparationStatus *status);
+                  SeparationStatus *status) override;
 
     // Full relaxation at a node (unused for LogHandler)
-    void relaxNodeFull(NodePtr, RelaxationPtr, bool *) {}
+    void relaxNodeFull(NodePtr, RelaxationPtr, bool *) override {}
 
     // Incremental relaxation at a node.
-    void relaxNodeInc(NodePtr node, RelaxationPtr rel, bool *isInfeasible);
+    void relaxNodeInc(NodePtr node, RelaxationPtr rel, bool *isInfeasible) override;
 
     // Branching candidates.
     void getBranchingCandidates(RelaxationPtr rel, const DoubleVector &x,
                                 ModVector &mods, BrVarCandSet &cands,
-                                BrCandVector &gencands, bool &is_inf);
+                                BrCandVector &gencands, bool &is_inf) override;
 
     // Branch modification for a variable.
     ModificationPtr getBrMod(BrCandPtr cand, DoubleVector &x,
-                             RelaxationPtr rel, BranchDirection dir);
+                             RelaxationPtr rel, BranchDirection dir) override;
 
     // Generate branches.
     Branches getBranches(BrCandPtr cand, DoubleVector &x, RelaxationPtr rel,
-                         SolutionPoolPtr s_pool);
+                         SolutionPoolPtr s_pool) override;
 
     // Top-level presolve.
-    SolveStatus presolve(PreModQ *pre_mods, bool *changed, Solution **sol);
+    SolveStatus presolve(PreModQ *pre_mods, bool *changed, Solution **sol) override;
 
     // Node-level presolve.
     bool presolveNode(RelaxationPtr p, NodePtr node, SolutionPoolPtr s_pool,
-                      ModVector &p_mods, ModVector &r_mods);
+                      ModVector &p_mods, ModVector &r_mods) override;
 
     // Name of the handler.
     std::string getName() const override;
@@ -226,26 +226,21 @@ namespace Minotaur {
     double addDefaultLogBounds_(VariablePtr x, BoundType lu);
 
     /**
-     * \Add or update linearization cuts for y = log(x) around sample points.
-     * \Used for convex underestimators of log(x) and equality constraints.
+     * \Add or update linearization cuts for y = log(x) given a point
      */
-    void addLin_(LogCons &cd, RelaxationPtr rel, DoubleVector &tmpX,
-                 DoubleVector &grad, ModVector &mods, bool init);
+    ConstraintPtr addTangent_(VariablePtr, VariablePtr, double, RelaxationPtr);
 
+
+    //Points at which linearisation is done 
+    void addLin_(LogCons &cd, RelaxationPtr rel);
 
     /**
     * \Add or update the secant inequality for y = log(x).
     * \Used in both initRelaxFor() and updateRelaxFor().
     */
-    void addSecant_(LogCons &cd, RelaxationPtr rel, DoubleVector &tmpX,
-                    ModVector &mods, bool init);
-
-    //Marks duplicate constraint if changed == True
-    void dupRows_(bool *changed);
-    //branching decision
-    BranchPtr doBranch_(BranchDirection UpOrDown, ConstVariablePtr v,
-                        double bvalue);
-
+    void addSecant_(LogCons &cd, RelaxationPtr rel);
+ 
+  
     /**
      * Generates secant inequality for y= log(x)
      * y>=mx+b where m = (log(u)-log(l))/(u-l) and b = log(l) - ml
@@ -269,20 +264,14 @@ namespace Minotaur {
      * \Initialize relaxation components for a single log constraint.
      * \Called when relaxation is constructed at a node.
      */
-    void initRelax_(LogCons &cd, RelaxationPtr rel, DoubleVector &tmpX,
-                    DoubleVector &grad);
-
+    void relaxLog_(LogCons &cd, RelaxationPtr rel, bool init);
 
     // For a given y = log(x) constraint,
     // derive bounds on y from bounds on x. Also derive bounds on x from bounds
     // on y.
     bool propLogBnds_(LogConsPtr lcd, bool *changed);
 
-    //Deletes duplicate row which was marked by dupRows
-    bool treatDupRows_(ConstraintPtr c1, ConstraintPtr c2, double mult,
-                       bool *changed);
-
-  
+     
 
     /**
      * \Update the relaxation for a log constraint when bounds have changed.
@@ -299,11 +288,7 @@ namespace Minotaur {
     int updatePBnds_(VariablePtr p, double newlb, double newub,
                      bool *changed);
 
-    int updatePBnds_(VariablePtr v, double newlb, double newub,
-                             RelaxationPtr rel, bool mod_rel, bool *changed,
-                             ModVector &p_mods, ModVector &r_mods);
-
-
+    
     bool varBndsFromCons_(bool *changed);
 
 

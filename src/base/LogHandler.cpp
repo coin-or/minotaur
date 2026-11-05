@@ -14,7 +14,6 @@
 
 #include <cmath>
 #include <iostream>
-#include <iomanip>
 #include "MinotaurConfig.h"
 #include "Branch.h"
 #include "BrVarCand.h"
@@ -25,15 +24,11 @@
 #include "LinMods.h"
 #include "Logger.h"
 #include "Node.h"
-#include "Objective.h"
-#include "Operations.h"
-#include "Option.h"
 #include "QuadraticFunction.h"
-#include "ProblemSize.h"
 #include "Relaxation.h"
 #include "SolutionPool.h"
 #include "Variable.h"
-//#define SPEW 1:
+
 
 using namespace Minotaur;
 
@@ -50,7 +45,7 @@ LogHandler::LogHandler(EnvPtr env, ProblemPtr problem)
     optCuts_(),
     aTol_(1e-6),
     rTol_(1e-6),
-    eTol_(1e-6),
+    eTol_(1e-5),
     vTol_(1e-6),
     p_(problem),
     log_(env->getLogger()),
@@ -67,220 +62,23 @@ LogHandler::~LogHandler()
   }
 }
 
-void LogHandler::initRelax_(LogCons &cd,
-                              RelaxationPtr rel,
-                              DoubleVector &tmpX,
-                              DoubleVector &grad)
+void LogHandler::relaxLog_(LogCons &cd, RelaxationPtr rel, bool init)
 {
-  // Get relaxation variables corresponding to original vars
-  cd.riv = rel->getVariable(cd.iv->getIndex());
-  cd.rov = rel->getVariable(cd.ov->getIndex());
+  ModVector mods; // only needed to match addSecant_'s signature
 
-  ModVector mods; // not used, but kept for uniform interface
+  if (init) {
+    cd.riv = rel->getVariable(cd.iv->getIndex());
+    cd.rov = rel->getVariable(cd.ov->getIndex());
+  }
 
-  // Add secant
+  // secant: created at the root (init), overwritten at every later node
   if (cd.sense == 'E' || cd.sense == 'L') {
-    addSecant_(cd, rel, tmpX, mods, /*init=*/true);
+    addSecant_(cd, rel);
   }
 
-  // Add linearizations
-  if (cd.sense == 'E' || cd.sense == 'G') {
-    addLin_(cd, rel, tmpX, grad, mods, /*init=*/true);
-  }
-}
-
-void LogHandler::updateRelax_(LogCons &cd,
-                                RelaxationPtr rel,
-                                DoubleVector &tmpX,
-                                DoubleVector &grad,
-                                ModVector &mods)
-{
-
-
-  // Add secant
-  if (cd.sense == 'E' || cd.sense == 'L') {
-    addSecant_(cd, rel, tmpX, mods, /*init=*/false);
-  }
-
-  // Add linearizations
-  if (cd.sense == 'E' || cd.sense == 'G') {
-    addLin_(cd, rel, tmpX, grad, mods, /*init=*/false);
-  }
-}
-
-
-double LogHandler::getViol_(const LogCons &cd,
-                              const DoubleVector &x) const
-{
- 
- double xval, fval, fhat, absViol, relViol;
-
-  xval = x[cd.riv->getIndex()];
-  fhat = x[cd.rov->getIndex()];
-
-  // If the variable's own domain has already been branched down to
-  // (near-)zero width around the pole, further branching cannot help --
-  // this is a decided quantity, not an open violation. Report no
-  // violation here and let bound propagation / isFeasible_ handle the
-  // actual feasibility of x landing at the pole.
-  double xlb = cd.riv->getLb();
-  double xub = cd.riv->getUb();
- if (xub - xlb < vTol_ && xlb > 0.0) {
-  return 0.0;
-}  
-  if (xval < 1e-9) return 1e9;
-
-  fval = std::log(xval);
-  absViol = std::abs(fhat - fval);
-  relViol = absViol;
-
-  if (std::fabs(fval) + absViol > 1.0) {
-    relViol = absViol / (std::fabs(fval) + absViol);
-  }
-
-  return relViol;
-}
-
-void LogHandler::addLin_(LogCons &cd,
-                           RelaxationPtr rel,
-                           DoubleVector &tmpX,
-                           DoubleVector &grad,
-                           ModVector &,
-                           bool )
-{
-  int error = 0;
-  ConstraintPtr cons;
-  double xlb = std::max(cd.riv->getLb(), LBd_);
-  double xub = std::min(cd.riv->getUb(), UBd_);
-  double fxlbval = 0.0, fxubval = 0.0, dfxlbval = 0.0, dfxubval = 0.0;
-  double tmpxval = 0.0, fxval = 0.0, dfxval = 0.0;
-  LinearFunctionPtr lf;
-  FunctionPtr f;
-  FunctionPtr fn = cd.con->getFunction();
-
-  int npts = 3;
-  double xvals[] = { xlb, xub, (xub - xlb) / 2.0 };
-
-
-  for (int i = 0; i < npts; ++i) {
-    // Zero out tmpX and grad each time
-    for (UInt j = 0; j < tmpX.size(); ++j) {
-      tmpX[j] = 0.0;
-      grad[j] = 0.0;
-    }
-
-    if (i == 2) {
-      // Third linearization point: where first two lines intersect
-      if (dfxubval - dfxlbval > 0.0001 || dfxubval - dfxlbval < -0.0001) {
-        tmpxval = (dfxubval * xub - dfxlbval * xlb + fxlbval - fxubval) /
-                  (dfxubval - dfxlbval);
-        if (tmpxval < xlb + (xub - xlb) * 0.05) {
-          xvals[2] = xlb + (xub - xlb) * 0.05;
-        } else if (tmpxval > xub - (xub - xlb) * 0.05) {
-          xvals[2] = xub - (xub - xlb) * 0.05;
-        } else {
-          xvals[2] = tmpxval;
-        }
-      }
-    }
-
-    tmpX[cd.riv->getIndex()] = xvals[i];
-    error = 0;
-    fxval = fn->eval(tmpX, &error);
-    fn->evalGradient(&tmpX[0], &grad[0], &error);
-
-
-    dfxval = grad[cd.riv->getIndex()];
-    if (i == 0) {
-      fxlbval = fxval;
-      dfxlbval = dfxval;
-    } else if (i == 1) {
-      fxubval = fxval;
-      dfxubval = dfxval;
-    }
-    //Tangents are global
-    lf = (LinearFunctionPtr) new LinearFunction();
-    lf->addTerm(cd.rov, 1.0);
-    lf->addTerm(cd.riv, -dfxval);
-
-    f = (FunctionPtr) new Function(lf);
-    cons = rel->newConstraint(f, -INFINITY ,fxval - dfxval * xvals[i]);
-    cd.linCons.push_back(cons);
-#if SPEW
-   log_->msgStream(LogDebug1) << me_ << "tangent added to the node for " 
-      << cd.rov->getName() << " = log(" << cd.riv->getName() << ")" << std::endl;
-      cd.linCons[i]->write(log_->msgStream(LogDebug1)); 
-#endif
-
-
-      
-  }
-
-  tmpX[cd.riv->getIndex()] = 0.0;
-  grad[cd.riv->getIndex()] = 0.0;
-}
-
-void LogHandler::addSecant_(LogCons &cd,
-                              RelaxationPtr rel,
-                              DoubleVector &tmpX,
-                              ModVector &mods,
-                              bool init)
-{
-  int error = 0;
-  double xlb = std::max(cd.riv->getLb(), LBd_);
-  double xub = std::min(cd.riv->getUb(), UBd_);
-  double fxlb, fxub, m, intercept;
-  LinearFunctionPtr lf;
-  FunctionPtr f;
-  FunctionPtr fn = cd.con->getFunction();
-
-  // No secant if unbounded either way
-  if (xlb <= -0.9 * INFINITY || xub >= 0.9 * INFINITY) {
-    log_->msgStream(LogDebug1) << me_
-                               << "Cannot add secant -- bound is infinite"
-                               << std::endl;
-    return;
-  }
-
-
-
-  tmpX[cd.riv->getIndex()] = xlb;
-  fxlb = fn->eval(tmpX, &error);
-  tmpX[cd.riv->getIndex()] = xub;
-  fxub = fn->eval(tmpX, &error);
-  tmpX[cd.riv->getIndex()] = 0.0;///reset tmpX
-
-  if (xub - xlb > 10e-6) {
-    m = (fxub - fxlb) / (xub - xlb);
-  } else {
-    m = 0.0;
-  }
-
-  intercept = fxlb - m * xlb;
-  lf = (LinearFunctionPtr) new LinearFunction();
-  lf->addTerm(cd.rov, 1.0);
-  lf->addTerm(cd.riv, -m);
-
-  if (init) {//if at the root node
-    f = (FunctionPtr) new Function(lf);
-    cd.secCon = rel->newConstraint(f, intercept ,INFINITY);
-#if SPEW
-   log_->msgStream(LogDebug1) << me_ << "added new secant at root node for " 
-                               << cd.rov->getName() << " = log(" << cd.riv->getName() << ")" << std::endl;
-    cd.secCon->write(log_->msgStream(LogDebug2));
-#endif
-
-  } else {
-    rel->changeConstraint(cd.secCon, lf,intercept, INFINITY); /// if not at root node modify the constraint
-#if SPEW
-   log_->msgStream(LogDebug1) << me_ << "modified secant at a node for " 
-                               << cd.rov->getName() << " = log(" << cd.riv->getName() << ")" << std::endl;
-    cd.secCon->write(log_->msgStream(LogDebug2));
-#endif
-
-    LinConModPtr lcmod =
-      (LinConModPtr) new LinConMod(cd.secCon, lf, intercept ,INFINITY);
-    mods.push_back(lcmod);
+  // tangents are added once at the root and then later using separation 
+  if (init && (cd.sense == 'E' || cd.sense == 'G')) {
+    addLin_(cd, rel);
   }
 }
 
@@ -296,30 +94,133 @@ void LogHandler::relaxInitInc(RelaxationPtr rel,
   }
 
   for (LogConsIter it = consd_.begin(); it != consd_.end(); ++it) {
-    initRelax_(**it, rel, tmpX_, grad_);
+    relaxLog_(**it, rel, true);
   }
 
   *is_inf = false;
 }
 
-void LogHandler::relaxNodeInc(NodePtr node  ,
-                              RelaxationPtr rel ,
+void LogHandler::relaxNodeInc(NodePtr node ,
+                              RelaxationPtr rel,
                               bool *is_infeasible)
-{ 
-  ModVector mods;
+{
+#if SPEW
+  log_->msgStream(LogDebug1) << me_ << "Updating log relaxation for node "
+                             << node->getId() << std::endl;
+#endif
 
   for (LogConsIter it = consd_.begin(); it != consd_.end(); ++it) {
-    (*it)->riv = rel->getVariable((*it)->iv->getIndex());
-    (*it)->rov = rel->getVariable((*it)->ov->getIndex());
-#if SPEW 
-    log_->msgStream(LogDebug1) << me_ << "Updating log relaxation for node " 
-                               << node->getId() << std::endl;
-# endif
-    updateRelax_(**it, rel, tmpX_, grad_, mods);
+    relaxLog_(**it, rel, false);
   }
+
   *is_infeasible = false;
 }
 
+double LogHandler::getViol_(const LogCons &cd,
+                              const DoubleVector &x) const
+{
+ 
+ double xval, fval, fhat, absViol, relViol;
+
+  xval = x[cd.riv->getIndex()];
+  fhat = x[cd.rov->getIndex()];
+
+
+  double xlb = cd.riv->getLb();
+  double xub = cd.riv->getUb();
+if (xlb > 0.0 && std::log(xub / xlb) < vTol_) return 0.0;
+
+if (xval < 1e-9) return 1e9;
+
+  fval = std::log(xval);
+  absViol = std::abs(fhat - fval);
+  relViol = absViol;
+
+  if (std::fabs(fval) + absViol > 1.0) {
+    relViol = absViol / (std::fabs(fval) + absViol);
+  }
+
+  return relViol;
+}
+
+ConstraintPtr LogHandler::addTangent_(VariablePtr x, VariablePtr y, double x0,
+                                      RelaxationPtr rel)
+{
+  LinearFunctionPtr lf = (LinearFunctionPtr) new LinearFunction();
+  lf->addTerm(y, 1.0);
+  lf->addTerm(x, -1.0 / x0);
+  FunctionPtr f = (FunctionPtr) new Function(lf);
+#if SPEW
+  log_->msgStream(LogDebug1) << me_ << "tangent for " << y->getName()
+                             << " = log(" << x->getName() << ") at " << x0
+                             << std::endl;
+#endif
+  return rel->newConstraint(f, -INFINITY, std::log(x0) - 1.0);
+}
+
+void LogHandler::addLin_(LogCons &cd, RelaxationPtr rel)
+{
+  double a = std::max(cd.riv->getLb(), LBd_);
+  double b = std::min(cd.riv->getUb(), UBd_);
+  double pts[3] = {a, b, 0.5 * (a + b)};
+  int n = 1;                       // fixed variable: one tangent is enough
+
+  if (b - a > 1e-5) {
+    // third point: intersection of the tangents at a and b, kept 5% inside
+    double xi  = a * b * std::log1p((b - a) / a) / (b - a);
+    double pad = 0.05 * (b - a);
+    pts[2] = std::min(std::max(xi, a + pad), b - pad);
+    n = 3;
+  }
+
+  for (int i = 0; i < n; ++i) {
+    cd.linCons.push_back(addTangent_(cd.riv, cd.rov, pts[i], rel));
+  }
+}
+
+void LogHandler::addCut_(VariablePtr x, VariablePtr y, double xval,
+                         double yval, RelaxationPtr rel, bool &ifcuts)
+{
+  ifcuts = (yval - std::log(xval) > aTol_);
+  if (ifcuts) {
+    addTangent_(x, y, xval, rel);
+#if SPEW
+    log_->msgStream(LogDebug1) << me_ << "Separation cut added for violation " <<yval - std::log(xval) 
+                               << " (Threshold was " << aTol_ << ")" << std::endl;
+#endif
+
+  }
+}
+
+
+void LogHandler::addSecant_(LogCons &cd, RelaxationPtr rel)
+{
+  double xlb = std::max(cd.riv->getLb(), LBd_);
+  double xub = std::min(cd.riv->getUb(), UBd_);
+  double fxlb = std::log(xlb);
+
+  // slope 0 (flat row y >= log(xlb)) if x is unbounded above or nearly fixed
+  double m = 0.0;
+  if (cd.riv->getUb() < 1e20 && std::log(xub / xlb) > 1e-6) {
+    m = (std::log(xub) - fxlb) / (xub - xlb);
+  }
+
+  LinearFunctionPtr lf = (LinearFunctionPtr) new LinearFunction();
+  lf->addTerm(cd.rov, 1.0);
+  lf->addTerm(cd.riv, -m);
+  double lb = fxlb - m * xlb;
+
+  if (cd.secCon) {
+    rel->changeConstraint(cd.secCon, lf, lb, INFINITY);
+  } else {
+    cd.secCon = rel->newConstraint((FunctionPtr) new Function(lf), lb, INFINITY);
+  }
+#if SPEW
+  log_->msgStream(LogDebug1) << me_ << "secant for " << cd.rov->getName()
+                             << " = log(" << cd.riv->getName() << ") on ["
+                             << xlb << ", " << xub << "]" << std::endl;
+#endif
+}
 
 void LogHandler::addConstraint(ConstraintPtr newcon,
                                ConstVariablePtr ivar,
@@ -336,36 +237,6 @@ void LogHandler::addConstraint(ConstraintPtr newcon,
 }
 
 
-void LogHandler::addCut_(VariablePtr x, VariablePtr y, double xval, double yval, 
-                         RelaxationPtr rel, bool& ifcuts) {
-  ifcuts = false;
-  double log_x = std::log(xval);
-  double violation = yval - log_x;
-  double deriv, rhs;
-
-  // Calculate scaled tolerance
-  double cutTol = aTol_ ;
-
-  // Check if the violation is  significant
-  if (violation > cutTol) {
-    // Tangent (Overestimator)
-    deriv = 1.0 / xval;
-    rhs = log_x - 1.0;
-
-    LinearFunctionPtr lf = (LinearFunctionPtr) new LinearFunction();
-    lf->addTerm(y, 1.0);
-    lf->addTerm(x, -deriv);
-    FunctionPtr f = (FunctionPtr) new Function(lf);
-    ConstraintPtr cut = rel->newConstraint(f, -INFINITY, rhs);
-    ifcuts = true;
-
-#if SPEW
-    log_->msgStream(LogDebug1) << me_ << "Separation cut added for violation " << violation 
-                               << " (Threshold was " << cutTol << ")" << std::endl;
-    cut->write(log_->msgStream(LogDebug1));
-#endif
-  } 
-}
 bool LogHandler::isFeasible(ConstSolutionPtr sol, RelaxationPtr rel, bool& isfeas,
                              double& inf_meas)
 {
@@ -418,10 +289,6 @@ bool LogHandler::isFeasible_ (ConstSolutionPtr sol,
     << " number of feasible log constraint= " << num1-num_inf << std::endl;
 #endif
 
-
-
-
-
   return isfeas;
 }
 void LogHandler::separate(ConstSolutionPtr sol, NodePtr node, RelaxationPtr rel,
@@ -450,7 +317,7 @@ void LogHandler::separate(ConstSolutionPtr sol, NodePtr node, RelaxationPtr rel,
     if (xval <= 1e-9) continue; 
 
     bool added = false;
-    if( yval - log(xval) > 1e-3)
+    if( yval - log(xval) > 1e-5) //thsi violation should be some scaled one 
     {
 
 #if SPEW
@@ -474,6 +341,7 @@ void LogHandler::separate(ConstSolutionPtr sol, NodePtr node, RelaxationPtr rel,
     // *status = SepaResolve; // Update status if cuts were added
   }
 }
+
 void LogHandler::getBranchingCandidates(RelaxationPtr,
                                         const DoubleVector &x,
                                         ModVector &,
@@ -536,18 +404,18 @@ ModificationPtr LogHandler::getBrMod(BrCandPtr cand,
   BrVarCandPtr vcand = dynamic_cast<BrVarCand *>(cand);
   VariablePtr v = vcand->getVar();
 
- double lb  = std::max(v->getLb(), LBd_);
-double ub  = std::min(v->getUb(), UBd_);
-double len = ub - lb;
+  double lb  = std::max(v->getLb(), LBd_);
+  double ub  = std::min(v->getUb(), UBd_);
+  double len = ub - lb;
 
-double xval  = x[v->getIndex()];
-double value = xval;
+  double xval  = x[v->getIndex()];
+  double value = xval;
 
-if (value < lb + minFromBds * len) {
+  if (value < lb + minFromBds * len) {
   value = lb + minFromBds * len;
-} else if (value > ub - minFromBds * len) {
+  } else if (value > ub - minFromBds * len) {
   value = ub - minFromBds * len;
-}
+  }
   if (!(value > v->getLb() + 1e-8 && value < v->getUb() - 1e-8)) {
     std::cerr << "Warning!  Branching on variable with bounds/value: ["
               << v->getLb() << " , " << value << "  " << v->getUb() << " ]"
@@ -578,10 +446,10 @@ Branches LogHandler::getBranches(BrCandPtr cand,
   VariablePtr v2 = 0;              // Original variable
   double xval = x[v->getIndex()];
   double value = xval;
- double lb  = std::max(v->getLb(), LBd_);
-double ub  = std::min(v->getUb(), UBd_);
-double len = ub - lb;
- VarBoundModPtr mod;
+  double lb  = std::max(v->getLb(), LBd_);
+  double ub  = std::min(v->getUb(), UBd_);
+  double len = ub - lb;
+  VarBoundModPtr mod;
   Branches branches = (Branches) new BranchPtrVector();
 
 if (value < lb + minFromBds * len) {
@@ -643,136 +511,8 @@ if (value < lb + minFromBds * len) {
   return branches;
 }
 
-BranchPtr LogHandler::doBranch_(BranchDirection UpOrDown,
-                                ConstVariablePtr v,
-                                double bvalue)
-{
-  BranchPtr branch;
-  LinModsPtr linmods;
-
-#if MDBUG
-  log_->msgStream(LogDebug1)
-    << me_ << "LogHandler, Branching: "
-    << (UpOrDown == DownBranch ? "Down" : "Up")
-    << " at value: " << bvalue << " on: " << std::endl;
-  v->write(log_->msgStream(LogDebug1));
-#endif
-
-  for (UInt j = 0; j < tmpX_.size(); ++j) {
-    tmpX_[j] = 0.0;
-    grad_[j] = 0.0;
-  }
-
-  branch  = (BranchPtr) new Branch();
-  linmods = (LinModsPtr) new LinMods();
-
-  if (UpOrDown == DownBranch) {
-    VarBoundModPtr mod = (VarBoundModPtr) new VarBoundMod(
-      VariablePtr(const_cast<Variable *>(v)), Upper, bvalue);
-    linmods->insert(mod);
-
-    // TODO: Update secants/linearizations if needed.
-  } else {
-    VarBoundModPtr mod = (VarBoundModPtr) new VarBoundMod(
-      VariablePtr(const_cast<Variable *>(v)), Lower, bvalue);
-    linmods->insert(mod);
-  }
-
- // assert(!"add Mod correctly here.");
-  branch->addPMod(linmods);
-  return branch;
-}
 
 
-// Duplicate row detection and correction
-void LogHandler::dupRows_(bool *changed)
-{
-  const UInt n = p_->getNumVars();
-  const UInt m = consd_.size();  // only log constraints
-  UInt i, j;
-  int err = 0;
-  DoubleVector r1, r2, h1, h2;
-  ConstraintPtr c1, c2;
-  bool is_deleted;
-
-  r1.reserve(n);
-  r2.reserve(n);
-  h1.reserve(m);
-  h2.reserve(m);
-
-  // Random positive test points for log(x)
-  for (i = 0; i < n; ++i) {
-    r1.push_back(1.0 + ((double)rand() / RAND_MAX) * 10.0);
-    r2.push_back(1.0 + ((double)rand() / RAND_MAX) * 10.0);
-  }
-
-  // Evaluate all log constraints
-  for (i = 0; i < m; ++i) {
-    LogConsPtr cdata = consd_[i];
-    c1 = cdata->con;
-    h1.push_back(c1->getActivity(&(r1[0]), &err));
-    h2.push_back(c1->getActivity(&(r2[0]), &err));
-  }
-
-  // Compare pairwise for duplicates
-  for (i = 0; i < m; ++i) {
-    if (h1[i] >= 1e29) {
-      continue;
-    }
-
-    for (j = i + 1; j < m; ++j) {
-      if (h1[j] >= 1e29) {
-        continue;
-      }
-
-      if (fabs(h1[i] - h1[j]) < 1e-10 && fabs(h2[i] - h2[j]) < 1e-10) {
-        c1 = consd_[i]->con;
-        c2 = consd_[j]->con;
-        is_deleted = treatDupRows_(c1, c2, 1.0, changed);
-        if (is_deleted) {
-          h1[j] = h2[j] = 1e30;
-        }
-      }
-    }
-  }
-}
-
-bool LogHandler::treatDupRows_(ConstraintPtr c1,
-                               ConstraintPtr c2,
-                               double,
-                               bool *changed)
-{
-  LogConsPtr d1 = nullptr;
-  LogConsPtr d2 = nullptr;
-
-  for (auto &cd : consd_) {
-    if (cd->con == c1) {
-      d1 = cd;
-    }
-    if (cd->con == c2) {
-      d2 = cd;
-    }
-  }
-
-  if (!d1 || !d2) {
-    return false;
-  }
-
-  if (d1->iv != d2->iv || d1->ov != d2->ov || d1->sense != d2->sense) {
-    return false;
-  }
-
-  double lb = std::max(c1->getLb(), c2->getLb());
-  double ub = std::min(c1->getUb(), c2->getUb());
-
-  p_->changeBound(c1, lb, ub);
-  c2->setBFlag(true);
-  p_->markDelete(c2);
-  ++pStats_.conDel;
-
-  *changed = true;
-  return true;
-}
 
 bool LogHandler::propLogBnds_(LogConsPtr cdata, bool *changed)
 {
@@ -815,7 +555,7 @@ bool LogHandler::propLogBnds_(LogConsPtr cdata, bool *changed)
     return true;
   }
 
-  //y -> x ---
+  //y -> x 
   // The inverse:w of y = log(x) is x = e^y.
   // e^y maps (-inf, inf) to (0, inf).
   
@@ -922,123 +662,6 @@ int LogHandler::updatePBnds_(VariablePtr p,
 }
 
 
-int LogHandler::updatePBnds_(VariablePtr v, double newlb, double newub,
-                             RelaxationPtr rel, bool mod_rel, bool *changed,
-                             ModVector &p_mods, ModVector &r_mods)
-{
-  VarBoundModPtr bmod;
-  VarBoundMod2Ptr b2mod;
-  double lb = v->getLb();
-  double ub = v->getUb();
-
-  // --- ADDED: Snapping logic for floating point noise ---
-  if (std::abs(newlb - std::round(newlb)) < 1e-4) {
-    newlb = std::round(newlb);
-  }
-  if (std::abs(newub - std::round(newub)) < 1e-4) {
-    newub = std::round(newub);
-  }
-  // ----------------------------------------------------
-
-  // Rounding logic for integer variables
-  if (v->getType() == Binary || v->getType() == ImplBin ||
-        v->getType() == Integer || v->getType() == ImplInt) {
-    // it checks if that number is extremely close (within 0.0001) to a whole number or not
-    if (std::abs(newlb - std::round(newlb)) < 1e-4) {
-    newlb = std::round(newlb);
-    }
-    if (std::abs(newub - std::round(newub)) < 1e-4) {
-    newub = std::round(newub);
-    }
-  
-
-
-
-
-
-    if (newlb - floor(newlb) < eTol_) newlb = floor(newlb);
-    else newlb = ceil(newlb);
-
-    if (ceil(newub) - newub < eTol_) newub = ceil(newub);
-    else newub = floor(newub);
-  }
-
-  // Sanity check: if new bounds are completely outside existing bounds
-  if (newlb > ub + eTol_ || newub < lb - eTol_) {
-    return -1; // Infeasible
-  }
-
-  bool tighten_lb = false;
-  bool tighten_ub = false;
-
-  // Check Lower Bound tightening (REMOVED eTol_)
-  if (newlb > lb) {
-    lb = newlb;
-    tighten_lb = true;
-  }
-
-  // Check Upper Bound tightening (REMOVED eTol_)
-  if (newub < ub) {
-    ub = newub;
-    tighten_ub = true;
-  }
-
-  // Check infeasibility after tightening
-  if (lb > ub + eTol_) {
-    return -1;
-  }
-
-  // If no change, return success
-  if (!tighten_lb && !tighten_ub) {
-    return 0;
-  }
-
-  *changed = true;
-  ++pStats_.vBnd;
-
-  // Apply changes using Modifications
-  if (tighten_lb && tighten_ub) {
-    // Both bounds changed: Use VarBoundMod2
-    b2mod = (VarBoundMod2Ptr) new VarBoundMod2(v, lb, ub);
-    b2mod->applyToProblem(p_);
-    p_mods.push_back(b2mod);
-
-    if (mod_rel) {
-      VariablePtr rv = rel->getVariable(v->getIndex());
-      b2mod = (VarBoundMod2Ptr) new VarBoundMod2(rv, lb, ub);
-      b2mod->applyToProblem(rel);
-      r_mods.push_back(b2mod);
-    }
-  } 
-  else if (tighten_lb) {
-    // Lower bound changed: Use VarBoundMod
-    bmod = (VarBoundModPtr) new VarBoundMod(v, Lower, lb);
-    bmod->applyToProblem(p_);
-    p_mods.push_back(bmod);
-
-    if (mod_rel) {
-      VariablePtr rv = rel->getVariable(v->getIndex());
-      bmod = (VarBoundModPtr) new VarBoundMod(rv, Lower, lb);
-      bmod->applyToProblem(rel);
-      r_mods.push_back(bmod);
-    }
-  } 
-  else if (tighten_ub) {
-    // Upper bound changed: Use VarBoundMod
-    bmod = (VarBoundModPtr) new VarBoundMod(v, Upper, ub);
-    bmod->applyToProblem(p_);
-    p_mods.push_back(bmod);
-
-    if (mod_rel) {
-      VariablePtr rv = rel->getVariable(v->getIndex());
-      bmod = (VarBoundModPtr) new VarBoundMod(rv, Upper, ub);
-      bmod->applyToProblem(rel);
-      r_mods.push_back(bmod);
-    }
-  }
-
-  return 0;
-}
 
 
 
@@ -1060,32 +683,16 @@ bool LogHandler::varBndsFromCons_(bool *changed)
   return false;
 }
 
-SolveStatus LogHandler::presolve(PreModQ *,
-                                 bool *changed,
-                                 Solution **)
+SolveStatus LogHandler::presolve(PreModQ *, bool *changed, Solution **)
 {
-  bool is_inf = false;
-  SolveStatus status = Started;
   ++pStats_.iters;
   *changed = false;
-
-  if (!consd_.empty()) {
-    is_inf = varBndsFromCons_(changed);
-    if (is_inf) {
-      status = SolvedInfeasible;
-      return status;
-    }
+  for (LogConsIter it = consd_.begin(); it != consd_.end(); ++it) {
+    if (propLogBnds_(*it, changed)) return SolvedInfeasible;
   }
-
-  // Remove duplicates
-  dupRows_(changed);
-  p_->delMarkedCons();
-   if (status == Started) {
-    status = Finished;
-  }
-
-  return status;
+  return Finished;
 }
+
 
 bool LogHandler::presolveNode(RelaxationPtr,
                               NodePtr,

@@ -18,7 +18,6 @@
 
 namespace Minotaur
 {
-class CxUnivarHandler;
 class CGraph;
 class CNode;
 class Environment;
@@ -32,7 +31,6 @@ class YEqCGs;
 class YEqLFs;
 class YEqVars;
 class YEqQfBil;
-typedef CxUnivarHandler* CxUnivarHandlerPtr;
 typedef CGraph* CGraphPtr;
 typedef LinearHandler* LinearHandlerPtr;
 typedef QuadHandler* QuadHandlerPtr;
@@ -115,7 +113,7 @@ private:
   /**
    * \brief Checks the convexity of quadratic problems
    */
-  bool checkQuadConvexity_();
+  bool checkNonLinConvexity_();
 
   void powKRef_(LinearFunctionPtr lfl, VariablePtr vl, double dl, double k,
                 LinearFunctionPtr& lf, VariablePtr& v, double& d);

@@ -36,7 +36,6 @@ set (MINOTAUR_SOURCES
      base/CutMan1.cpp
      base/CutMan2.cpp
      base/CxQuadHandler.cpp 
-     base/CxUnivarHandler.cpp
      base/Eigen.cpp 
      base/Engine.cpp 
      base/Environment.cpp
@@ -115,7 +114,7 @@ set (MINOTAUR_SOURCES
      base/QuadHandler.cpp 
      base/kPowHandler.cpp 
      base/QuadraticFunction.cpp
-     base/QuadTransformer.cpp 
+     #base/QuadTransformer.cpp 
      base/RandomBrancher.cpp
      base/RCHandler.cpp
      base/Relaxation.cpp 
@@ -175,7 +174,6 @@ set (MINOTAUR_HEADERS
      base/CutInfo.h
      base/CutManager.h
      base/CxQuadHandler.h 
-     base/CxUnivarHandler.h
      base/Eigen.h
      base/Engine.h
      base/Environment.h
@@ -264,7 +262,7 @@ set (MINOTAUR_HEADERS
      base/QuadHandler.h
      base/kPowHandler.h 
      base/QuadraticFunction.h
-     base/QuadTransformer.h
+     #base/QuadTransformer.h
      base/RandomBrancher.h
      base/RCHandler.h
      base/Relaxation.h

@@ -20,7 +20,6 @@
 #include "CGraph.h"
 #include "CNode.h"
 #include "Constraint.h"
-#include "CxUnivarHandler.h"
 #include "Function.h"
 #include "IntVarHandler.h"
 #include "LinearFunction.h"
@@ -124,6 +123,7 @@ void Transformer::assignHandler_(CGraphPtr cg, ConstraintPtr c)
  const CNode* root ;
  const CNode* expNode; 
   switch (cg->getOut()->getOp()) {
+  
   case OpMult:
   case OpSqr:
     qHandler_->addConstraint(c);
@@ -146,7 +146,7 @@ void Transformer::assignHandler_(CGraphPtr cg, ConstraintPtr c)
     iv = *(c->getFunction()->getNonlinearFunction()->varsBegin());
     expHandler_->addConstraint(c, iv, ov, 'E');
     break;
- case OpDiv: 
+  case OpDiv: 
     lf = c->getFunction()->getLinearFunction();
     if (lf) {
       assert(lf->getNumTerms() == 1);
@@ -164,35 +164,29 @@ void Transformer::assignHandler_(CGraphPtr cg, ConstraintPtr c)
     iv = *(c->getFunction()->getNonlinearFunction()->varsBegin());
     absHandler_->addConstraint(c, iv, ov, 'E');
     break;
-
-case OpPowK:
-  lf = c->getFunction()->getLinearFunction();
-  if (lf) {
-    assert(lf->getNumTerms() == 1);
-    ov = lf->termsBegin()->first;
-  }  
-  iv = *(c->getFunction()->getNonlinearFunction()->varsBegin());
-
-  // k=2 to quadhandler
-  root = cg->getOut();
-  expNode = root->getR(); 
-  k = expNode->getVal();    
-   if (std::abs(k - 2.0) < 1e-9) {
-      qHandler_->addConstraint(c);
-  } 
-  //Send everything else to the PowHandler
-  else {
-      powHandler_->addConstraint(c, iv, ov, k, 'E');
-  }
-  break;
-  default:
+  case OpPowK:
     lf = c->getFunction()->getLinearFunction();
     if (lf) {
       assert(lf->getNumTerms() == 1);
       ov = lf->termsBegin()->first;
-    }
+    }  
     iv = *(c->getFunction()->getNonlinearFunction()->varsBegin());
-    uHandler_->addConstraint(c, iv, ov, 'E');
+
+    // k=2 to quadhandler
+    root = cg->getOut();
+    expNode = root->getR(); 
+    k = expNode->getVal();    
+    if (std::abs(k - 2.0) < 1e-9) {
+      qHandler_->addConstraint(c);
+    } 
+  //Send everything else to the PowHandler
+    else {
+      powHandler_->addConstraint(c, iv, ov, k, 'E');
+    }
+  break;
+  default:
+    assert(false && "No suitable handler for this function");
+
   }
 }
 

@@ -1,4 +1,4 @@
-///
+////
 //     Minotaur -- It's only 1/2 bull
 //
 //     (C)opyright 2010 - 2025 The Minotaur Team.
@@ -18,100 +18,108 @@
 
 namespace Minotaur {
 
-class Environment;
-class Problem;
-class Logger;
+  class AbsHandler : public Handler {
+  public:
+    AbsHandler(EnvPtr env, ProblemPtr problem);
+    ~AbsHandler();
 
-typedef Environment* EnvPtr;
-typedef Problem* ProblemPtr;
-typedef Logger* LoggerPtr;
-/// Stores data for a single y = |x| constraint.
-struct AbsCons {
-  ConstraintPtr con;
-  VariablePtr iv;
-  VariablePtr ov;
-  VariablePtr riv;
-  VariablePtr rov;
-  char sense;
+    /**
+     * Register y = |x| with the handler.
+     * sense: 'E' (y = |x|), 'L' (y >= |x|), 'G' (y <= |x|)
+     */
+    void addConstraint(ConstraintPtr newcon, ConstVariablePtr ivar,
+                       ConstVariablePtr ovar, char sense = 'E');
 
-  ConstraintPtr secCon;
-  std::vector<ConstraintPtr> linCons;
+    // base class method -- not used here
+    void addConstraint(ConstraintPtr) override { assert(0); }
 
-  AbsCons(ConstraintPtr c, VariablePtr i, VariablePtr o, char s)
-    : con(c), iv(i), ov(o), riv(0), rov(0), sense(s), secCon(0)
-  {}
-};
+    void relaxInitFull(RelaxationPtr, SolutionPool *, bool *) override {}
+    void relaxInitInc(RelaxationPtr rel, SolutionPool *, bool *is_inf) override;
+    void relaxNodeFull(NodePtr, RelaxationPtr, bool *) override {}
+    void relaxNodeInc(NodePtr node, RelaxationPtr rel,
+                      bool *is_infeasible) override;
 
-typedef AbsCons* AbsConsPtr;
-typedef std::vector<AbsConsPtr> AbsConsVector;
-typedef AbsConsVector::iterator AbsConsIter;
-typedef AbsConsVector::const_iterator AbsConsConstIter;
+    bool isFeasible(ConstSolutionPtr sol, RelaxationPtr rel,
+                    bool &should_prune, double &inf_meas) override;
 
-class AbsHandler : public Handler {
-public:
-  AbsHandler(EnvPtr env, ProblemPtr problem);
-  ~AbsHandler();
+    // No cuts: the relaxation is exact once x is on one side of 0
+    void separate(ConstSolutionPtr sol, NodePtr node, RelaxationPtr rel,
+                  CutManager *cutman, SolutionPoolPtr s_pool,
+                  ModVector &p_mods, ModVector &r_mods, bool *sol_found,
+                  SeparationStatus *status) override;
 
-  using Handler::addConstraint;
-  void addConstraint(ConstraintPtr newcon, ConstVariablePtr ivar,
-                      ConstVariablePtr ovar, char sense);
+    void getBranchingCandidates(RelaxationPtr rel, const DoubleVector &x,
+                                ModVector &mods, BrVarCandSet &cands,
+                                BrCandVector &gencands, bool &is_inf) override;
 
-  void relaxInitInc(RelaxationPtr rel, SolutionPool *s_pool, bool *is_inf);
-  void relaxNodeInc(NodePtr node, RelaxationPtr rel, bool *is_infeasible);
-// Full relaxation methods required by the Handler base class
-  void relaxInitFull(RelaxationPtr rel, SolutionPool *sp, bool *is_inf) override;
-  void relaxNodeFull(NodePtr node, RelaxationPtr rel, bool* is_inf) override;
-  bool isFeasible(ConstSolutionPtr sol, RelaxationPtr rel, bool &isfeas,
-                   double &inf_meas);
+    ModificationPtr getBrMod(BrCandPtr cand, DoubleVector &x,
+                             RelaxationPtr rel, BranchDirection dir) override;
 
-  void separate(ConstSolutionPtr sol, NodePtr node, RelaxationPtr rel,
-                CutManager *cutman, SolutionPoolPtr s_pool,
-                ModVector &p_mods, ModVector &r_mods, bool *sol_found,
-                SeparationStatus *status);
+    Branches getBranches(BrCandPtr cand, DoubleVector &x, RelaxationPtr rel,
+                         SolutionPoolPtr s_pool) override;
 
-  void getBranchingCandidates(RelaxationPtr rel, const DoubleVector &x,
-                               ModVector &mods, BrVarCandSet &cands,
-                               BrCandVector &gencands, bool &is_inf);
+    SolveStatus presolve(PreModQ *pre_mods, bool *changed,
+                         Solution **sol) override;
 
-  ModificationPtr getBrMod(BrCandPtr cand, DoubleVector &x,
-                            RelaxationPtr rel, BranchDirection dir);
+    bool presolveNode(RelaxationPtr rel, NodePtr node, SolutionPoolPtr s_pool,
+                      ModVector &p_mods, ModVector &r_mods) override;
 
-  Branches getBranches(BrCandPtr cand, DoubleVector &x, RelaxationPtr rel,
-                        SolutionPoolPtr s_pool);
+    std::string getName() const override;
+    void writeStats(std::ostream &out) const override;
 
-  SolveStatus presolve(PreModQ *pre_mods, bool *changed, Solution **sol);
-  bool presolveNode(RelaxationPtr rel, NodePtr node, SolutionPoolPtr s_pool,
-                     ModVector &p_mods, ModVector &r_mods);
+  private:
+    struct AbsCons {
+      ConstraintPtr con;     ///< Original constraint
+      VariablePtr iv;        ///< Input variable x
+      VariablePtr ov;        ///< Output variable y
+      VariablePtr riv;       ///< Relaxation var for x
+      VariablePtr rov;       ///< Relaxation var for y
+      char sense;            ///< 'L','G','E'
+      ConstraintPtr secCon;  ///< Upper-side row (chord), rewritten at every node
 
-  std::string getName() const;
-  void writeStats(std::ostream &out) const;
-private:
-  static const std::string me_;
+      AbsCons(ConstraintPtr c, VariablePtr i, VariablePtr o, char s)
+        : con(c), iv(i), ov(o), riv(0), rov(0), sense(s), secCon(0)
+      {
+      }
+    };
 
-  double bTol_;
-  EnvPtr env_;
-  double aTol_;
-  double rTol_;
-  double eTol_;
-  double vTol_;
-  ProblemPtr p_;
-  LoggerPtr log_;
+    typedef AbsCons *AbsConsPtr;
+    typedef std::vector<AbsConsPtr> AbsConsVec;
+    typedef AbsConsVec::iterator AbsConsIter;
 
-  AbsConsVector consd_;
+    struct AbsPresolveStats {
+      UInt iters;
+      UInt vBnd;
+      AbsPresolveStats() : iters(0), vBnd(0) {}
+    };
 
-  void initRelax_(AbsCons &cd, RelaxationPtr rel);
-  void updateRelax_(AbsCons &cd, RelaxationPtr rel, ModVector &mods);
-  void addLin_(AbsCons &cd, RelaxationPtr rel);
-  void addSecant_(AbsCons &cd, RelaxationPtr rel, ModVector &mods, bool init);
-  double getViol_(const AbsCons &cd, const DoubleVector &x) const;
-  bool propAbsBnds_(AbsConsPtr cdata, bool *changed);
-  int updatePBnds_(VariablePtr p, double newlb, double newub, bool *changed);
-  int updatePBnds_(VariablePtr v, double newlb, double newub, RelaxationPtr rel,  
-                  bool mod_rel, bool *changed, ModVector &p_mods, ModVector &r_mods);
-};
+    AbsConsVec consd_;
+    static const std::string me_;
+    AbsPresolveStats pStats_;
+    double eTol_;   ///< violation tolerance (feasibility, branching)
+    double vTol_;   ///< lb and ub closer than this are treated as equal
+    ProblemPtr p_;
+    LoggerPtr log_;
 
-typedef AbsHandler* AbsHandlerPtr;
+    // y >= x and y >= -x: global and exact, added once at the root
+    void addLin_(AbsCons &cd, RelaxationPtr rel);
+
+    // Row y - m*x <= c valid on the current bounds of x. Created at the root,
+    // overwritten at every node; a free row if no valid upper side exists.
+    void addSecant_(AbsCons &cd, RelaxationPtr rel);
+
+    // Violation of y = |x|; 0 if x is on one side of 0 (relaxation exact)
+    double getViol_(const AbsCons &cd, const DoubleVector &x) const;
+
+    // Bounds on y from bounds on x and vice versa. Returns true if infeasible.
+    bool propAbsBnds_(AbsConsPtr cd, bool *changed);
+
+    int updatePBnds_(VariablePtr p, double newlb, double newub,
+                     bool *changed);
+  };
+
+  typedef AbsHandler *AbsHandlerPtr;
 
 }  // namespace Minotaur
 
-#endif
+#endif  // MINOTAURABSHANDLER_H

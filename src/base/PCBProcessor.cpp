@@ -103,7 +103,6 @@ bool PCBProcessor::isFeasible_(NodePtr node, ConstSolutionPtr sol,
 {
   should_prune = false;
   bool is_feas = true;
-  HandlerIterator h;
   double inf_meas = 0.0;
   // Variables required for original constraint/objective evaluation
   const double* x = sol->getPrimal();

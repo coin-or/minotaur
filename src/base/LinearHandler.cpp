@@ -862,7 +862,7 @@ void LinearHandler::dualFix_(bool* changed)
 }
 
 
-void LinearHandler::domRows_(bool* changed)
+void LinearHandler::domRows_(bool* )
 {
   return;
   const UInt n = problem_->getNumVars();
